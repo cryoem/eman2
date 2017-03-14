@@ -309,7 +309,7 @@ def rotavg_ctf(img, defocus, Cs, voltage, Pixel_size, bfactor, wgh, amp, ang):
 	return lr[:nc]
 
 
-def ctf_1d(nx, ctf, sign = 1):
+def ctf_1d(nx, ctf, sign = 1, doabs = False):
 	"""
 		Generate a list of 1D CTF values 
 		Input
@@ -332,8 +332,10 @@ def ctf_1d(nx, ctf, sign = 1):
 	scl    = 1./pixel_size/nx
 	length = int(1.41*float(nx/2)) + 1
 	ctf_1 = [0.0]*length
-	for i in xrange(length):
-		ctf_1[i] = Util.tf(dz, i*scl, voltage, cs, ampcont, bfactor, sign)
+	if doabs:
+		for i in xrange(length): ctf_1[i] = abs(Util.tf(dz, i*scl, voltage, cs, ampcont, bfactor, sign))
+	else:
+		for i in xrange(length): ctf_1[i] = Util.tf(dz, i*scl, voltage, cs, ampcont, bfactor, sign)
 	return ctf_1
 
 def ctf_2(nx, ctf):
@@ -902,12 +904,12 @@ def defocus_get_fast(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wgh=.1
 					if(print_screen == "p" or print_screen == "P"): print "defocus",defocus,"Euclidean distance", dis, "starting feq", istart, "stop freq", istop,"P R E", nr1,"P R B", nr2
 					if(defocus < dz_max): 				break
 			if(defocus >= dz_max): 					ERROR("defocus_get_fast fails at estimating defocus", fnam, action = 0)
-			print "micrograph", flist[i], '%5d'%(defocus) 	# screen output, give the user a general impression about estimated defoci
+			print "", flist[i], '%5d'%(defocus) 	# screen output, give the user a general impression about estimated defoci
 			if(writetodoc[0] == "w" or writetodoc[0] != "l"):	out.write("%d\t%5d\t%s\n" % (ncount,defocus,flist[i]))
 			if(writetodoc[0] == "l"):				res.append(defocus)
 			if type(micdir) is types.StringType : 
 				ctf_param = [defocus, Pixel_size, volt, Cs, wgh, 0, 1]
-				mic_name  = os.path.join(micdir,"micrograph"+ fnam_root+ ".hdf")
+				mic_name  = os.path.join(micdir,""+ fnam_root+ ".hdf")
 				if os.path.exists(mic_name) :
 					e = get_image (mic_name)
 					U______set_arb_params(e, ctf_param, ctf_dicts)  # THIS IS INCORRECT< PLEASE CHANGE
@@ -922,7 +924,7 @@ def defocus_get_fast(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wgh=.1
 		if(writetodoc[0] == "l"): 	return res
 		if(writetodoc[0] == "w"): 	out.close()
 
-def defocus_get_fast_MPI(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wgh=.1, round_off=100, dz_max0=50000, f_l0=30, f_h0=5, nr_1=5, nr_2=5, prefix_of_micrograph="roo", docf="a",skip="#",print_screen="no"):
+def defocus_get_fast_MPI(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wgh=.1, round_off=100, dz_max0=50000, f_l0=30, f_h0=5, nr_1=5, nr_2=5, prefix_of_="roo", docf="a",skip="#",print_screen="no"):
 	"""
 		Estimate defocus using user defined 1D power spectrum area
 		writetodoc="a" return the estimated defoci in a list, and write them down also in a text file
@@ -936,10 +938,10 @@ def defocus_get_fast_MPI(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wg
 	for i, v in enumerate(flist):
 		micname                  = os.path.join(indir,v)
 		(filename, filextension) = os.path.splitext(v)
-		if(filename[0:len(prefix_of_micrograph)] == prefix_of_micrograph):
+		if(filename[0:len(prefix_of_)] == prefix_of_):
 			mic_name_list.append(micname)
 			nima += 1
-	if nima < 1: 	ERROR("No micrograph is found, check either directory or prefix of micrographs is correctly given","pw2sp",1)
+	if nima < 1: 	ERROR("No  is found, check either directory or prefix of s is correctly given","pw2sp",1)
 	
 	sys.argv       = mpi_init(len(sys.argv),sys.argv)
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
@@ -986,9 +988,9 @@ def defocus_get_fast_MPI(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wg
 	istop	= int(f_h )
 	for i in xrange(image_start,image_end):
 		filename=mic_name_list[i] 
-		print '%-15s%-30s'%("micrographs # ",filename)
+		print '%-15s%-30s'%("s # ",filename)
 		(f_nam, filextension) = os.path.splitext(filename)
-		fnam_roo     = "particle_"+f_nam[len(prefix_of_micrograph)+len(indir)+2:]+filextension	
+		fnam_roo     = "particle_"+f_nam[len(prefix_of_)+len(indir)+2:]+filextension	
 #	for i, v in enumerate(flist):
 		ncount   += 1
 		defocus = defocus_get(fnam_roo, volt, Pixel_size, Cs, wgh, istart, istop, docf, skip, round_off, nr1, nr2)
@@ -1023,7 +1025,7 @@ def defocus_get_fast_MPI(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wg
 				if(print_screen == "p" or print_screen == "P"): print "defocus",defocus,"Euclidean distance", dis, "starting feq", istart, "stop freq", istop,"P R E", nr1,"P R B", nr2
 				if(defocus < dz_max): 				break
 		if(defocus >= dz_max): 					ERROR("defocus_get_fast fails at estimating defocus", fnam, action = 0)
-		print "micrograph", flist[i], '%10.3g'(defocus) 	# screen output, give the user a general impression about estimated defoci
+		print "", flist[i], '%10.3g'(defocus) 	# screen output, give the user a general impression about estimated defoci
 		if(writetodoc[0] == "w" or writetodoc[0] != "l"):	out.write("%d\t%f\t%s\n" % (ncount,defocus,flist[i]))
 		if(writetodoc[0] == "l"):				res.append(defocus)
 	if(len(res) == 0 and  writetodoc == "l" ):				ERROR("No input file is found, check the input directory of file prefix", indir, 1)
@@ -1034,7 +1036,7 @@ def defocus_get_fast_MPI(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wg
 	if(writetodoc[0] == "l"): 	return res
 	if(writetodoc[0] == "w"): 	out.close()
 
-def defocus_get_slow(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wgh=.1, round_off=100, dz_max0=50000, f_l0=30, f_h0=5, prefix="roo", docf="s", skip=";",micdir="micrograph", print_screen="p"):
+def defocus_get_slow(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wgh=.1, round_off=100, dz_max0=50000, f_l0=30, f_h0=5, prefix="roo", docf="s", skip=";",micdir="", print_screen="p"):
 	"""
 		Estimate defocus using user provided 1D power spectrum
 		mode=1 return the estimated defoci in a list, and writes them down also in a text file
@@ -1089,7 +1091,7 @@ def defocus_get_slow(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wgh=.1
 							defo = defocus
 							Mdis = dis
 			if(defo >= dz_max): 	ERROR("defo_get_s fails at estimating defocus from ", fnam, 0)
-			else:				print "micrograph", flist[i], defo # screen output, give the user a general impression about estimated defoci		
+			else:				print "", flist[i], defo # screen output, give the user a general impression about estimated defoci		
 			if writetodoc    == "w" or writetodoc[0] == "a":out.write("%d\t%f\t%s\n" % (ncount, defo, fdefo_nam))
 			if writetodoc[0] == "l" : 	res.append(defo)
 	if  len(res) == 0 and writetodoc == "l" :  ERROR("No input file, check the input directory", indir, 1)
@@ -1617,9 +1619,9 @@ def compute_bfactor(pws, freq_min, freq_max, pixel_size = 1.0):
 def cter(stack, outpwrot, outpartres, indir, nameroot, micsuffix, wn,  f_start= -1.0 , f_stop = -1.0, voltage=300.0, Pixel_size=2.29, Cs = 2.0, wgh=10.0, kboot=16, MPI=False, DEBug= False, overlap_x = 50, overlap_y=50 , edge_x = 0, edge_y=0, guimic=None, set_ctf_header=False):
 	'''
 	Input
-		stack	 : name of image stack (such as boxed particles) to be processed instead of micrographs.
-		indir    : Directory containing micrographs to be processed.
-		nameroot : Prefix of micrographs to be processed.
+		stack	 : name of image stack (such as boxed particles) to be processed instead of s.
+		indir    : Directory containing s to be processed.
+		nameroot : Prefix of s to be processed.
 	    nx       : Size of window to use (should be slightly larger than particle box size)
 	    
 	    guimic	 :
@@ -1642,7 +1644,7 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, micsuffix, wn,  f_start= 
 	from   global_def   import ERROR
 	import global_def
 
-	# Case of a single micrograph from gui mode
+	# Case of a single  from gui mode
 	if guimic != None:
 		MPI = False
 
@@ -1677,7 +1679,7 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, micsuffix, wn,  f_start= 
 					namics.append(os.path.join(indir,flist[i]))
 			if(len(namics) == 0):
 				ERROR('There are no files whose names match the name root and suffix provided', "cter", 1, myid)
-			# sort list of micrographs using case insensitive string comparison
+			# sort list of s using case insensitive string comparison
 			namics.sort(key=str.lower)
 		else:
 			namics = [guimic]
@@ -2097,7 +2099,7 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, micsuffix, wn,  f_start= 
 # This new version is added to avoid breaking e2boxer.py and sxhelixboxer.py
 #  
 # NOTE: 2016/03/16 Toshio Moriya
-# To get a single micrograph file name from a GUI application, 
+# To get a single  file name from a GUI application, 
 # there must be a better way than using guimic...
 # 
 # NOTE: 2016/11/16 Toshio Moriya
@@ -2106,7 +2108,7 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, micsuffix, wn,  f_start= 
 def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512, pixel_size = -1.0, Cs = 2.0, voltage = 300.0, wgh = 10.0, f_start = -1.0, f_stop = -1.0, kboot = 16, overlap_x = 50, overlap_y = 50, edge_x = 0, edge_y = 0, set_ctf_header = False, check_consistency = False, stack_mode = False, debug_mode = False, program_name = "cter_mrk() in morphology.py", RUNNING_UNDER_MPI = False, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1):
 	"""
 	Arguments
-		input_image_path  : micrograph file name pattern for Micrographs Modes (e.g. 'Micrographs/mic*.mrc') or particle stack file path for Stack Mode (e.g. 'bdb:stack'; must be stack_mode = True).
+		input_image_path  :  file name pattern for Micrographs Modes (e.g. 'Micrographs/mic*.mrc') or particle stack file path for Stack Mode (e.g. 'bdb:stack'; must be stack_mode = True).
 		output_directory  : output directory
 	"""
 	from   EMAN2 import periodogram
@@ -2151,9 +2153,9 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 	# Find the CTER Running Mode before checking error conditions
 	# ------------------------------------------------------------------------------------
 	i_enum = -1; idx_cter_mode_invalid       = i_enum; 
-	i_enum += 1; idx_cter_mode_all_mics      = i_enum  # All Micrographs Mode - Process all micrographs in a directory
-	i_enum += 1; idx_cter_mode_selected_mics = i_enum  # Selected Micrographs Mode - Process all micrographs in a selection list file
-	i_enum += 1; idx_cter_mode_single_mic    = i_enum  # Single Micrograph Mode - Process a single micrograph
+	i_enum += 1; idx_cter_mode_all_mics      = i_enum  # All Micrographs Mode - Process all s in a directory
+	i_enum += 1; idx_cter_mode_selected_mics = i_enum  # Selected Micrographs Mode - Process all s in a selection list file
+	i_enum += 1; idx_cter_mode_single_mic    = i_enum  # Single Micrograph Mode - Process a single 
 	i_enum += 1; idx_cter_mode_stack         = i_enum  # Stack Mode - Process a stack (Advanced Option)
 	i_enum += 1; idx_cter_mode_counts        = i_enum
 	
@@ -2201,7 +2203,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 		
 		# Check error conditions applicable to any of Micrograph Mode 
 		if input_image_path.find("*") == -1:
-			error_message_list.append("Input image file path (%s) for %s must be a micrograph path pattern containing wild card (*). Please check input_image_path argument." % (input_image_path, cter_mode_name))
+			error_message_list.append("Input image file path (%s) for %s must be a  path pattern containing wild card (*). Please check input_image_path argument." % (input_image_path, cter_mode_name))
 		
 		if input_image_path[:len("bdb:")].lower() == "bdb:":
 			error_message_list.append("BDB file can not be selected as input image file path (%s) for %s. Please check input_image_path argument and convert the image format." % (input_image_path, cter_mode_name))
@@ -2307,9 +2309,9 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 	input_file_path_list = []
 	if not stack_mode:
 		# --------------------------------------------------------------------------------
-		# Prepare the variables for all sections in micrograph mode case 
+		# Prepare the variables for all sections in  mode case 
 		# --------------------------------------------------------------------------------
-		# Micrograph basename pattern (directory path is removed from micrograph path pattern)
+		# Micrograph basename pattern (directory path is removed from  path pattern)
 		mic_pattern = input_image_path
 		mic_basename_pattern = os.path.basename(mic_pattern)
 	
@@ -2318,11 +2320,11 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 		subkey_input_mic_path = "Input Micrograph Path"
 		subkey_selected_mic_basename = "Selected Micrograph Basename"
 	
-		# List keeps only id substrings of micrographs whose all necessary information are available
+		# List keeps only id substrings of s whose all necessary information are available
 		valid_mic_id_substr_list = [] 
 		
 		# --------------------------------------------------------------------------------
-		# Obtain the list of micrograph id sustrings using a single CPU (i.e. main mpi process)
+		# Obtain the list of  id sustrings using a single CPU (i.e. main mpi process)
 		# --------------------------------------------------------------------------------
 		# NOTE: Toshio Moriya 2016/11/15
 		# The below is not a real while.  
@@ -2336,32 +2338,32 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			# --------------------------------------------------------------------------------
 			# Prepare variables for this section
 			# --------------------------------------------------------------------------------
-			# Prefix and suffix of micrograph basename pattern 
-			# to find the head/tail indices of micrograph id substring
+			# Prefix and suffix of  basename pattern 
+			# to find the head/tail indices of  id substring
 			mic_basename_tokens = mic_basename_pattern.split('*')
 			assert (len(mic_basename_tokens) == 2)
-			# Find head index of micrograph id substring
+			# Find head index of  id substring
 			mic_id_substr_head_idx = len(mic_basename_tokens[0])
 		
 			# --------------------------------------------------------------------------------
-			# Register micrograph id substrings found in the input directory (specified by micrograph path pattern)
+			# Register  id substrings found in the input directory (specified by  path pattern)
 			# to the global entry dictionary
 			# --------------------------------------------------------------------------------
-			# Generate the list of micrograph paths in the input directory
+			# Generate the list of  paths in the input directory
 			print(" ")
 			print("Checking the input directory...")
 			input_mic_path_list = glob.glob(mic_pattern)
-			# Check error condition of input micrograph file path list
+			# Check error condition of input  file path list
 			print("Found %d microgarphs in %s." % (len(input_mic_path_list), os.path.dirname(mic_pattern)))
 			if len(input_mic_path_list) == 0:
-				# The result shouldn't be empty if the specified micrograph file name pattern is invalid
-				error_status = ("There are no micrographs whose paths match with the specified file path pattern (%s) for %s. Please check input_image_path. Run %s -h for help." % (mic_pattern, cter_mode_name, program_name), getframeinfo(currentframe()))
+				# The result shouldn't be empty if the specified  file name pattern is invalid
+				error_status = ("There are no s whose paths match with the specified file path pattern (%s) for %s. Please check input_image_path. Run %s -h for help." % (mic_pattern, cter_mode_name, program_name), getframeinfo(currentframe()))
 				break
 			assert (len(input_mic_path_list) > 0)
 		
-			# Register micrograph id substrings to the global entry dictionary
+			# Register  id substrings to the global entry dictionary
 			for input_mic_path in input_mic_path_list:
-				# Find tail index of micrograph id substring and extract the substring from the micrograph name
+				# Find tail index of  id substring and extract the substring from the  name
 				input_mic_basename = os.path.basename(input_mic_path)
 				mic_id_substr_tail_idx = input_mic_basename.index(mic_basename_tokens[1])
 				mic_id_substr = input_mic_basename[mic_id_substr_head_idx:mic_id_substr_tail_idx]
@@ -2374,15 +2376,15 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			assert (len(global_entry_dict) > 0)
 		
 			# --------------------------------------------------------------------------------
-			# Register micrograph id substrings found in the selection list
+			# Register  id substrings found in the selection list
 			# to the global entry dictionary
 			# --------------------------------------------------------------------------------
-			# Generate the list of selected micrograph paths in the selection file
+			# Generate the list of selected  paths in the selection file
 			selected_mic_path_list = []
-			# Generate micrograph lists according to the execution mode
+			# Generate  lists according to the execution mode
 			if cter_mode_idx == idx_cter_mode_all_mics:
 				assert (selection_list == None)
-				# Treat all micrographs in the input directory as selected ones
+				# Treat all s in the input directory as selected ones
 				selected_mic_path_list = input_mic_path_list
 			else:
 				assert (cter_mode_idx != idx_cter_mode_all_mics)
@@ -2394,10 +2396,10 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 					assert (os.path.exists(selection_list))
 					selected_mic_path_list = read_text_file(selection_list)
 				
-					# Check error condition of micrograph entry lists
+					# Check error condition of  entry lists
 					print("Found %d microgarph entries in %s." % (len(selected_mic_path_list), selection_list))
 					if len(selected_mic_path_list) == 0:
-						error_status = ("The provided micrograph list file (%s) for %s mode contains no entries. Please check selection_list option and make sure the file contains a micrograph list. Run %s -h for help." % (selection_list, cter_mode_name, program_name), getframeinfo(currentframe()))
+						error_status = ("The provided  list file (%s) for %s mode contains no entries. Please check selection_list option and make sure the file contains a  list. Run %s -h for help." % (selection_list, cter_mode_name, program_name), getframeinfo(currentframe()))
 						break
 				else:
 					assert (cter_mode_idx == idx_cter_mode_single_mic)
@@ -2412,9 +2414,9 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			
 			assert (len(selected_mic_path_list) > 0)
 		
-			# Register micrograph id substrings to the global entry dictionary
+			# Register  id substrings to the global entry dictionary
 			for selected_mic_path in selected_mic_path_list:
-				# Find tail index of micrograph id substring and extract the substring from the micrograph name
+				# Find tail index of  id substring and extract the substring from the  name
 				selected_mic_basename = os.path.basename(selected_mic_path)
 				mic_id_substr_tail_idx = selected_mic_basename.index(mic_basename_tokens[1])
 				mic_id_substr = selected_mic_basename[mic_id_substr_head_idx:mic_id_substr_tail_idx]
@@ -2433,9 +2435,9 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			del mic_id_substr_head_idx
 		
 			# --------------------------------------------------------------------------------
-			# Create the list containing only valid micrograph id substrings
+			# Create the list containing only valid  id substrings
 			# --------------------------------------------------------------------------------
-			# Prepare lists to keep track of invalid (rejected) micrographs 
+			# Prepare lists to keep track of invalid (rejected) s 
 			no_input_mic_id_substr_list = []
 		
 			print(" ")
@@ -2446,12 +2448,12 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 				mic_id_entry = global_entry_dict[mic_id_substr]
 			
 				warinnig_messages = []
-				# selected micrograph basename must have been registed always .
+				# selected  basename must have been registed always .
 				if subkey_selected_mic_basename in mic_id_entry: 
-					# Check if associated input micrograph exists
+					# Check if associated input  exists
 					if not subkey_input_mic_path in mic_id_entry:
 						input_mic_path = mic_pattern.replace("*", mic_id_substr)
-						warinnig_messages.append("    associated input micrograph %s." % (input_mic_path))
+						warinnig_messages.append("    associated input  %s." % (input_mic_path))
 						no_input_mic_id_substr_list.append(mic_id_substr)
 				
 					if len(warinnig_messages) > 0:
@@ -2477,21 +2479,21 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 				print(" ")
 				print("Generating the input datasets consistency report in %s..." % (inconsist_mic_list_path))
 				inconsist_mic_list_file = open(inconsist_mic_list_path, "w")
-				inconsist_mic_list_file.write("# The information about inconsistent micrograph IDs\n")
+				inconsist_mic_list_file.write("# The information about inconsistent  IDs\n")
 				# Loop over substring id list
 				for mic_id_substr in global_entry_dict:
 					mic_id_entry = global_entry_dict[mic_id_substr]
 				
 					consistency_messages = []
-					# Check if associated input micrograph path exists
+					# Check if associated input  path exists
 					if not subkey_input_mic_path in mic_id_entry:
 						input_mic_path = mic_pattern.replace("*", mic_id_substr)
-						consistency_messages.append("    associated input micrograph %s." % (input_mic_path))
+						consistency_messages.append("    associated input  %s." % (input_mic_path))
 				
-					# Check if associated selected micrograph basename exists
+					# Check if associated selected  basename exists
 					if not subkey_selected_mic_basename in mic_id_entry:
 						input_mic_path = mic_pattern.replace("*", mic_id_substr)
-						consistency_messages.append("    associated selected micrograph %s." % (input_mic_path))
+						consistency_messages.append("    associated selected  %s." % (input_mic_path))
 				
 					if len(consistency_messages) > 0:
 						inconsist_mic_list_file.write("Micrograph ID %s does not have:\n" % (mic_id_substr))
@@ -2506,7 +2508,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			# Since mic_id_substr is once stored as the key of global_entry_dict and extracted with the key order
 			# we need sort the valid_mic_id_substr_list here
 			if debug_mode: print("BEFORE SORT: valid_mic_id_substr_list := ", valid_mic_id_substr_list)
-			valid_mic_id_substr_list.sort(key=str.lower) # Sort list of micrograph IDs using case insensitive string comparison
+			valid_mic_id_substr_list.sort(key=str.lower) # Sort list of  IDs using case insensitive string comparison
 			if debug_mode: print("AFTER SORT: valid_mic_id_substr_list := ", valid_mic_id_substr_list)
 			
 			# --------------------------------------------------------------------------------
@@ -2514,17 +2516,17 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			# --------------------------------------------------------------------------------
 			print(" ")
 			print("Summary of dataset consistency check...")
-			print("  Detected micrograph IDs          : %6d" % (len(global_entry_dict)))
+			print("  Detected  IDs          : %6d" % (len(global_entry_dict)))
 			print("  Entries in input directory       : %6d" % (len(input_mic_path_list)))
 			print("  Entries in selection list        : %6d" % (len(selected_mic_path_list)))
-			print("  Rejected by no input micrograph  : %6d" % (len(no_input_mic_id_substr_list)))
+			print("  Rejected by no input   : %6d" % (len(no_input_mic_id_substr_list)))
 			print("  Valid Entries                    : %6d" % (len(valid_mic_id_substr_list)))
 			
 			# --------------------------------------------------------------------------------
 			# Check MPI error condition
 			# --------------------------------------------------------------------------------
 			if len(valid_mic_id_substr_list) < n_mpi_procs:
-				error_status = ("Number of MPI processes (%d) supplied by --np in mpirun cannot be greater than %d (number of valid micrographs that satisfy all criteria to be processed). Run %s -h for help." % (n_mpi_procs, len(valid_mic_id_substr_list, program_name)), getframeinfo(currentframe()))
+				error_status = ("Number of MPI processes (%d) supplied by --np in mpirun cannot be greater than %d (number of valid s that satisfy all criteria to be processed). Run %s -h for help." % (n_mpi_procs, len(valid_mic_id_substr_list, program_name)), getframeinfo(currentframe()))
 				break
 			
 			# --------------------------------------------------------------------------------
@@ -2538,7 +2540,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			assert (len(input_file_path_list) > 0)
 			
 			# --------------------------------------------------------------------------------
-			# Clean up variables related to tracking of invalid (rejected) micrographs 
+			# Clean up variables related to tracking of invalid (rejected) s 
 			# --------------------------------------------------------------------------------
 			del input_mic_path_list
 			del selected_mic_path_list
@@ -2548,7 +2550,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 		
 		
 		# --------------------------------------------------------------------------------
-		# Clean up the variables for all sections in micrograph mode case 
+		# Clean up the variables for all sections in  mode case 
 		# --------------------------------------------------------------------------------
 		del mic_pattern
 		del mic_basename_pattern
@@ -2584,19 +2586,19 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 	# ====================================================================================
 	# 
 	# NOTE: 2016/03/17 Toshio Moriya
-	# From here on, stack (and namics) will be used to distinguish stack mode and micrograph mode.
+	# From here on, stack (and namics) will be used to distinguish stack mode and  mode.
 	# However, a single input_file_path_list should be sufficient since we already know the mode.
 	# Let's consider this refactoring in the future.
 	# 
-	stack = None # (particle) stack file name: if it is not None, cter runs with stack mode. Otherwise, runs with micrograph mode
-	namics = []  # micrograph file name list
+	stack = None # (particle) stack file name: if it is not None, cter runs with stack mode. Otherwise, runs with  mode
+	namics = []  #  file name list
 	if not stack_mode:
 		assert (cter_mode_idx in [idx_cter_mode_all_mics, idx_cter_mode_selected_mics, idx_cter_mode_single_mic])
 		assert (len(input_file_path_list) > 0)
 		namics = input_file_path_list
 		assert(len(namics) > 0)
 		if debug_mode: print("BEFORE SORT: namics := ", namics)
-		namics.sort(key=str.lower) # Sort list of micrographs using case insensitive string comparison
+		namics.sort(key=str.lower) # Sort list of s using case insensitive string comparison
 		if debug_mode: print("AFTER SORT: namics := ", namics)
 		assert(stack == None)
 		assert(len(namics) > 0)
@@ -2688,7 +2690,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			numFM = EMUtil.get_image_count(img_name)
 			#
 			# NOTE: 2016/03/21 Toshio Moriya
-			# For now, dbd file is a invalid input_image_path for micrograph modes
+			# For now, dbd file is a invalid input_image_path for  modes
 			# 
 			# assert(db_check_dict(img_name) == False)
 			img_basename_root = os.path.splitext(os.path.basename(img_name))[0]
@@ -3152,7 +3154,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 				
 		if stack == None:
 			img_mic = get_im(namics[ifi])
-			# create micrograph thumbnail
+			# create  thumbnail
 			nx_target = 512
 			nx = img_mic.get_xsize()
 			if nx > nx_target:
@@ -3320,6 +3322,44 @@ def defocus_baseline_fit(roo, i_start, i_stop, nrank, iswi):
 
 def simpw1d(defocus, data):
 	import numpy as np
+	from morphology import ctf_1d
+	from utilities import generate_ctf
+	
+	#[defocus, cs, voltage, apix, bfactor, ampcont, astigmatism_amplitude, astigmatism_angle]
+	#  data = [subpw[i_start:i_stop], envelope[i_start:i_stop], nx, defocus, Cs, voltage, Pixel_size, ampcont, i_start, i_stop]
+	# data[1] - envelope
+	ct = data[1]*np.array( ctf_1d(data[2], generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]), doabs= True)[data[8]:data[9]], np.float32)
+	#print  " 1d  ",sum(data[0]*ct),np.linalg.norm(ct,2)
+	return  2.0-sum(data[0]*ct)/np.linalg.norm(ct,2)
+
+def simpw2d(defocus, data2d):
+	from utilities import generate_ctf
+	from morphology import ctf2_rimg, square_root
+	from math import sqrt
+	
+	#             0        1     2      3     4         5             6                      7           
+	#           [defocus, cs, voltage, apix, bfactor, ampcont, astigmatism_amplitude, astigmatism_angle]
+	#
+	#             0        1             2      3    4         5           6        7            8                     9            10
+	#  data2d = [nx, experimental_pw, defocus, Cs, voltage, Pixel_size, bfactor, ampcont, astigmatism_amplitude, astigmatism_angle, mask]
+	
+
+	ct = ctf2_rimg(data2d[0], generate_ctf([defocus, data2d[3], data2d[4], data2d[5], data2d[6], data2d[7], data2d[8], data2d[9]]), ny=data2d[0])
+	q2 = Util.infomask(ct, data2d[10], True)
+	q2 = q2[0]
+	ct = square_root(ct)
+	q1 = ct.cmp("dot", data2d[1], dict(negative = 0, mask = data2d[10], normalize = 0))
+	'''
+	from utilities import info
+	print  info(data2d[1], data2d[10])
+	print  info(ct, data2d[10])
+	print q1,q2
+	'''
+	return  2.0-q1/q2
+
+
+def simpw1dc(defocus, data):
+	import numpy as np
 	from morphology import ctf_2
 	from utilities import generate_ctf
 	
@@ -3327,10 +3367,10 @@ def simpw1d(defocus, data):
 	#  data = [subpw[i_start:i_stop], envelope[i_start:i_stop], nx, defocus, Cs, voltage, Pixel_size, ampcont, i_start, i_stop]
 	# data[1] - envelope
 	ct = data[1]*np.array( ctf_2(data[2], generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]))[data[8]:data[9]], np.float32)
-	#print  " 1d  ",sum(data[0]*ct),np.linalg.norm(ct,2)
-	return  2.0-sum(data[0]*ct)/np.linalg.norm(ct,2)
+	print  " 1d  ",sum(data[0]*ct),np.linalg.norm(ct,2)
+	return  2.0-sum(data[0]*ct)/np.linalg.norm(ct,2),ctf_2(data[2], generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]))
 
-def simpw2d(defocus, data2d):
+def simpw2dc(defocus, data2d):
 	from utilities import generate_ctf
 	from morphology import ctf2_rimg
 	from math import sqrt
@@ -3349,9 +3389,9 @@ def simpw2d(defocus, data2d):
 	'''
 	print  info(data2d[1], data2d[10])
 	print  info(ct, data2d[10])
-	print q1,q2
 	'''
-	return  2.0-q1/q2
+	print " 2d  ",q1,q2
+	return  2.0-q1/q2,ct
 
 def movingaverage(data, window_size, skip = 3):
 	import numpy as np
@@ -3961,7 +4001,7 @@ def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.
 	#####################   Estimation from crossresolution   ############################
 
 
-	#  mpirun -np 1 python /Volumes/pawel//EDmicrograph/getastcrf.py <reference volume>  <name string of the data file>
+	#  mpirun -np 1 python /Volumes/pawel//ED/getastcrf.py <reference volume>  <name string of the data file>
 
 
 	"""
@@ -4318,7 +4358,7 @@ def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.
 def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512, pixel_size = -1.0, Cs = 2.0, voltage = 300.0, f_start = -1.0, f_stop = -1.0, kboot = 16, overlap_x = 50, overlap_y = 50, edge_x = 0, edge_y = 0, set_ctf_header = False, check_consistency = False, stack_mode = False, debug_mode = False, program_name = "cter_mrk() in morphology.py", RUNNING_UNDER_MPI = False, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1):
 	"""
 	Arguments
-		input_image_path  : micrograph file name pattern for Micrographs Modes (e.g. 'Micrographs/mic*.mrc') or particle stack file path for Stack Mode (e.g. 'bdb:stack'; must be stack_mode = True).
+		input_image_path  :  file name pattern for Micrographs Modes (e.g. 'Micrographs/mic*.mrc') or particle stack file path for Stack Mode (e.g. 'bdb:stack'; must be stack_mode = True).
 		output_directory  : output directory
 	"""
 	from   EMAN2 import periodogram
@@ -4363,9 +4403,9 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 	# Find the CTER Running Mode before checking error conditions
 	# ------------------------------------------------------------------------------------
 	i_enum = -1; idx_cter_mode_invalid       = i_enum; 
-	i_enum += 1; idx_cter_mode_all_mics      = i_enum  # All Micrographs Mode - Process all micrographs in a directory
-	i_enum += 1; idx_cter_mode_selected_mics = i_enum  # Selected Micrographs Mode - Process all micrographs in a selection list file
-	i_enum += 1; idx_cter_mode_single_mic    = i_enum  # Single Micrograph Mode - Process a single micrograph
+	i_enum += 1; idx_cter_mode_all_mics      = i_enum  # All Micrographs Mode - Process all s in a directory
+	i_enum += 1; idx_cter_mode_selected_mics = i_enum  # Selected Micrographs Mode - Process all s in a selection list file
+	i_enum += 1; idx_cter_mode_single_mic    = i_enum  # Single Micrograph Mode - Process a single 
 	i_enum += 1; idx_cter_mode_stack         = i_enum  # Stack Mode - Process a stack (Advanced Option)
 	i_enum += 1; idx_cter_mode_counts        = i_enum
 	
@@ -4413,7 +4453,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 		
 		# Check error conditions applicable to any of Micrograph Mode 
 		if input_image_path.find("*") == -1:
-			error_message_list.append("Input image file path (%s) for %s must be a micrograph path pattern containing wild card (*). Please check input_image_path argument." % (input_image_path, cter_mode_name))
+			error_message_list.append("Input image file path (%s) for %s must be a  path pattern containing wild card (*). Please check input_image_path argument." % (input_image_path, cter_mode_name))
 		
 		if input_image_path[:len("bdb:")].lower() == "bdb:":
 			error_message_list.append("BDB file can not be selected as input image file path (%s) for %s. Please check input_image_path argument and convert the image format." % (input_image_path, cter_mode_name))
@@ -4519,9 +4559,9 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 	input_file_path_list = []
 	if not stack_mode:
 		# --------------------------------------------------------------------------------
-		# Prepare the variables for all sections in micrograph mode case 
+		# Prepare the variables for all sections in  mode case 
 		# --------------------------------------------------------------------------------
-		# Micrograph basename pattern (directory path is removed from micrograph path pattern)
+		# Micrograph basename pattern (directory path is removed from  path pattern)
 		mic_pattern = input_image_path
 		mic_basename_pattern = os.path.basename(mic_pattern)
 	
@@ -4530,11 +4570,11 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 		subkey_input_mic_path = "Input Micrograph Path"
 		subkey_selected_mic_basename = "Selected Micrograph Basename"
 	
-		# List keeps only id substrings of micrographs whose all necessary information are available
+		# List keeps only id substrings of s whose all necessary information are available
 		valid_mic_id_substr_list = [] 
 		
 		# --------------------------------------------------------------------------------
-		# Obtain the list of micrograph id sustrings using a single CPU (i.e. main mpi process)
+		# Obtain the list of  id sustrings using a single CPU (i.e. main mpi process)
 		# --------------------------------------------------------------------------------
 		# NOTE: Toshio Moriya 2016/11/15
 		# The below is not a real while.  
@@ -4548,32 +4588,32 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			# --------------------------------------------------------------------------------
 			# Prepare variables for this section
 			# --------------------------------------------------------------------------------
-			# Prefix and suffix of micrograph basename pattern 
-			# to find the head/tail indices of micrograph id substring
+			# Prefix and suffix of  basename pattern 
+			# to find the head/tail indices of  id substring
 			mic_basename_tokens = mic_basename_pattern.split('*')
 			assert (len(mic_basename_tokens) == 2)
-			# Find head index of micrograph id substring
+			# Find head index of  id substring
 			mic_id_substr_head_idx = len(mic_basename_tokens[0])
 		
 			# --------------------------------------------------------------------------------
-			# Register micrograph id substrings found in the input directory (specified by micrograph path pattern)
+			# Register  id substrings found in the input directory (specified by  path pattern)
 			# to the global entry dictionary
 			# --------------------------------------------------------------------------------
-			# Generate the list of micrograph paths in the input directory
+			# Generate the list of  paths in the input directory
 			print(" ")
 			print("Checking the input directory...")
 			input_mic_path_list = glob.glob(mic_pattern)
-			# Check error condition of input micrograph file path list
+			# Check error condition of input  file path list
 			print("Found %d microgarphs in %s." % (len(input_mic_path_list), os.path.dirname(mic_pattern)))
 			if len(input_mic_path_list) == 0:
-				# The result shouldn't be empty if the specified micrograph file name pattern is invalid
-				error_status = ("There are no micrographs whose paths match with the specified file path pattern (%s) for %s. Please check input_image_path. Run %s -h for help." % (mic_pattern, cter_mode_name, program_name), getframeinfo(currentframe()))
+				# The result shouldn't be empty if the specified  file name pattern is invalid
+				error_status = ("There are no s whose paths match with the specified file path pattern (%s) for %s. Please check input_image_path. Run %s -h for help." % (mic_pattern, cter_mode_name, program_name), getframeinfo(currentframe()))
 				break
 			assert (len(input_mic_path_list) > 0)
 		
-			# Register micrograph id substrings to the global entry dictionary
+			# Register  id substrings to the global entry dictionary
 			for input_mic_path in input_mic_path_list:
-				# Find tail index of micrograph id substring and extract the substring from the micrograph name
+				# Find tail index of  id substring and extract the substring from the  name
 				input_mic_basename = os.path.basename(input_mic_path)
 				mic_id_substr_tail_idx = input_mic_basename.index(mic_basename_tokens[1])
 				mic_id_substr = input_mic_basename[mic_id_substr_head_idx:mic_id_substr_tail_idx]
@@ -4586,15 +4626,15 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			assert (len(global_entry_dict) > 0)
 		
 			# --------------------------------------------------------------------------------
-			# Register micrograph id substrings found in the selection list
+			# Register  id substrings found in the selection list
 			# to the global entry dictionary
 			# --------------------------------------------------------------------------------
-			# Generate the list of selected micrograph paths in the selection file
+			# Generate the list of selected  paths in the selection file
 			selected_mic_path_list = []
-			# Generate micrograph lists according to the execution mode
+			# Generate  lists according to the execution mode
 			if cter_mode_idx == idx_cter_mode_all_mics:
 				assert (selection_list == None)
-				# Treat all micrographs in the input directory as selected ones
+				# Treat all s in the input directory as selected ones
 				selected_mic_path_list = input_mic_path_list
 			else:
 				assert (cter_mode_idx != idx_cter_mode_all_mics)
@@ -4606,10 +4646,10 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 					assert (os.path.exists(selection_list))
 					selected_mic_path_list = read_text_file(selection_list)
 				
-					# Check error condition of micrograph entry lists
+					# Check error condition of  entry lists
 					print("Found %d microgarph entries in %s." % (len(selected_mic_path_list), selection_list))
 					if len(selected_mic_path_list) == 0:
-						error_status = ("The provided micrograph list file (%s) for %s mode contains no entries. Please check selection_list option and make sure the file contains a micrograph list. Run %s -h for help." % (selection_list, cter_mode_name, program_name), getframeinfo(currentframe()))
+						error_status = ("The provided  list file (%s) for %s mode contains no entries. Please check selection_list option and make sure the file contains a  list. Run %s -h for help." % (selection_list, cter_mode_name, program_name), getframeinfo(currentframe()))
 						break
 				else:
 					assert (cter_mode_idx == idx_cter_mode_single_mic)
@@ -4624,9 +4664,9 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			
 			assert (len(selected_mic_path_list) > 0)
 		
-			# Register micrograph id substrings to the global entry dictionary
+			# Register  id substrings to the global entry dictionary
 			for selected_mic_path in selected_mic_path_list:
-				# Find tail index of micrograph id substring and extract the substring from the micrograph name
+				# Find tail index of  id substring and extract the substring from the  name
 				selected_mic_basename = os.path.basename(selected_mic_path)
 				mic_id_substr_tail_idx = selected_mic_basename.index(mic_basename_tokens[1])
 				mic_id_substr = selected_mic_basename[mic_id_substr_head_idx:mic_id_substr_tail_idx]
@@ -4645,9 +4685,9 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			del mic_id_substr_head_idx
 		
 			# --------------------------------------------------------------------------------
-			# Create the list containing only valid micrograph id substrings
+			# Create the list containing only valid  id substrings
 			# --------------------------------------------------------------------------------
-			# Prepare lists to keep track of invalid (rejected) micrographs 
+			# Prepare lists to keep track of invalid (rejected) s 
 			no_input_mic_id_substr_list = []
 		
 			print(" ")
@@ -4658,12 +4698,12 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 				mic_id_entry = global_entry_dict[mic_id_substr]
 			
 				warinnig_messages = []
-				# selected micrograph basename must have been registed always .
+				# selected  basename must have been registed always .
 				if subkey_selected_mic_basename in mic_id_entry: 
-					# Check if associated input micrograph exists
+					# Check if associated input  exists
 					if not subkey_input_mic_path in mic_id_entry:
 						input_mic_path = mic_pattern.replace("*", mic_id_substr)
-						warinnig_messages.append("    associated input micrograph %s." % (input_mic_path))
+						warinnig_messages.append("    associated input  %s." % (input_mic_path))
 						no_input_mic_id_substr_list.append(mic_id_substr)
 				
 					if len(warinnig_messages) > 0:
@@ -4689,21 +4729,21 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 				print(" ")
 				print("Generating the input datasets consistency report in %s..." % (inconsist_mic_list_path))
 				inconsist_mic_list_file = open(inconsist_mic_list_path, "w")
-				inconsist_mic_list_file.write("# The information about inconsistent micrograph IDs\n")
+				inconsist_mic_list_file.write("# The information about inconsistent  IDs\n")
 				# Loop over substring id list
 				for mic_id_substr in global_entry_dict:
 					mic_id_entry = global_entry_dict[mic_id_substr]
 				
 					consistency_messages = []
-					# Check if associated input micrograph path exists
+					# Check if associated input  path exists
 					if not subkey_input_mic_path in mic_id_entry:
 						input_mic_path = mic_pattern.replace("*", mic_id_substr)
-						consistency_messages.append("    associated input micrograph %s." % (input_mic_path))
+						consistency_messages.append("    associated input  %s." % (input_mic_path))
 				
-					# Check if associated selected micrograph basename exists
+					# Check if associated selected  basename exists
 					if not subkey_selected_mic_basename in mic_id_entry:
 						input_mic_path = mic_pattern.replace("*", mic_id_substr)
-						consistency_messages.append("    associated selected micrograph %s." % (input_mic_path))
+						consistency_messages.append("    associated selected  %s." % (input_mic_path))
 				
 					if len(consistency_messages) > 0:
 						inconsist_mic_list_file.write("Micrograph ID %s does not have:\n" % (mic_id_substr))
@@ -4718,7 +4758,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			# Since mic_id_substr is once stored as the key of global_entry_dict and extracted with the key order
 			# we need sort the valid_mic_id_substr_list here
 			if debug_mode: print("BEFORE SORT: valid_mic_id_substr_list := ", valid_mic_id_substr_list)
-			valid_mic_id_substr_list.sort(key=str.lower) # Sort list of micrograph IDs using case insensitive string comparison
+			valid_mic_id_substr_list.sort(key=str.lower) # Sort list of  IDs using case insensitive string comparison
 			if debug_mode: print("AFTER SORT: valid_mic_id_substr_list := ", valid_mic_id_substr_list)
 			
 			# --------------------------------------------------------------------------------
@@ -4726,17 +4766,17 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			# --------------------------------------------------------------------------------
 			print(" ")
 			print("Summary of dataset consistency check...")
-			print("  Detected micrograph IDs          : %6d" % (len(global_entry_dict)))
+			print("  Detected  IDs          : %6d" % (len(global_entry_dict)))
 			print("  Entries in input directory       : %6d" % (len(input_mic_path_list)))
 			print("  Entries in selection list        : %6d" % (len(selected_mic_path_list)))
-			print("  Rejected by no input micrograph  : %6d" % (len(no_input_mic_id_substr_list)))
+			print("  Rejected by no input   : %6d" % (len(no_input_mic_id_substr_list)))
 			print("  Valid Entries                    : %6d" % (len(valid_mic_id_substr_list)))
 			
 			# --------------------------------------------------------------------------------
 			# Check MPI error condition
 			# --------------------------------------------------------------------------------
 			if len(valid_mic_id_substr_list) < n_mpi_procs:
-				error_status = ("Number of MPI processes (%d) supplied by --np in mpirun cannot be greater than %d (number of valid micrographs that satisfy all criteria to be processed). Run %s -h for help." % (n_mpi_procs, len(valid_mic_id_substr_list, program_name)), getframeinfo(currentframe()))
+				error_status = ("Number of MPI processes (%d) supplied by --np in mpirun cannot be greater than %d (number of valid s that satisfy all criteria to be processed). Run %s -h for help." % (n_mpi_procs, len(valid_mic_id_substr_list, program_name)), getframeinfo(currentframe()))
 				break
 			
 			# --------------------------------------------------------------------------------
@@ -4750,7 +4790,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			assert (len(input_file_path_list) > 0)
 			
 			# --------------------------------------------------------------------------------
-			# Clean up variables related to tracking of invalid (rejected) micrographs 
+			# Clean up variables related to tracking of invalid (rejected) s 
 			# --------------------------------------------------------------------------------
 			del input_mic_path_list
 			del selected_mic_path_list
@@ -4760,7 +4800,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 		
 		
 		# --------------------------------------------------------------------------------
-		# Clean up the variables for all sections in micrograph mode case 
+		# Clean up the variables for all sections in  mode case 
 		# --------------------------------------------------------------------------------
 		del mic_pattern
 		del mic_basename_pattern
@@ -4796,19 +4836,19 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 	# ====================================================================================
 	# 
 	# NOTE: 2016/03/17 Toshio Moriya
-	# From here on, stack (and namics) will be used to distinguish stack mode and micrograph mode.
+	# From here on, stack (and namics) will be used to distinguish stack mode and  mode.
 	# However, a single input_file_path_list should be sufficient since we already know the mode.
 	# Let's consider this refactoring in the future.
 	# 
-	stack = None # (particle) stack file name: if it is not None, cter runs with stack mode. Otherwise, runs with micrograph mode
-	namics = []  # micrograph file name list
+	stack = None # (particle) stack file name: if it is not None, cter runs with stack mode. Otherwise, runs with  mode
+	namics = []  #  file name list
 	if not stack_mode:
 		assert (cter_mode_idx in [idx_cter_mode_all_mics, idx_cter_mode_selected_mics, idx_cter_mode_single_mic])
 		assert (len(input_file_path_list) > 0)
 		namics = input_file_path_list
 		assert(len(namics) > 0)
 		if debug_mode: print("BEFORE SORT: namics := ", namics)
-		namics.sort(key=str.lower) # Sort list of micrographs using case insensitive string comparison
+		namics.sort(key=str.lower) # Sort list of s using case insensitive string comparison
 		if debug_mode: print("AFTER SORT: namics := ", namics)
 		assert(stack == None)
 		assert(len(namics) > 0)
@@ -4900,7 +4940,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			numFM = EMUtil.get_image_count(img_name)
 			#
 			# NOTE: 2016/03/21 Toshio Moriya
-			# For now, dbd file is a invalid input_image_path for micrograph modes
+			# For now, dbd file is a invalid input_image_path for  modes
 			# 
 			# assert(db_check_dict(img_name) == False)
 			img_basename_root = os.path.splitext(os.path.basename(img_name))[0]
@@ -4918,7 +4958,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			img_name = stack
 			# print(" ")
 			# print("Processing the stack %s ..." % img_name)
-			
+
 			numFM = EMUtil.get_image_count(img_name)
 			if db_check_dict(img_name) == False:
 				img_basename_root = os.path.splitext(os.path.basename(img_name))[0]
@@ -4928,6 +4968,9 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			
 			for i in xrange(numFM):
 				pw2.append(periodogram(get_im(img_name,i)))
+
+		for i in xrange(len(pw2)):
+			pw2[i] = square_root(pw2[i])
 		# assert(len(pw2) != [])
 		# assert(img_type != "")
 		# assert(img_name != "")
@@ -4945,7 +4988,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			allroo.append(rot_avg_table(pw2[imi]))
 		lenroo = len(allroo[0])
 		#print time(),nimi
-		
+
 		for nboot in xrange(kboot):
 			if(nboot == 0): boot = range(nimi)
 			else:
@@ -5006,7 +5049,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 
 			defc, ampcont, subpw, ctf2, baseline, envelope, istart, istop = defocusgett_vpp(rooc, wn, voltage = voltage, Pixel_size = pixel_size, Cs = Cs, f_start = f_start, f_stop = f_stop, round_off = 1.0, nr1 = 3, nr2 = 6, parent = None, DEBug = debug_mode)
 			if debug_mode or True:
-				print "  RESULT %s" % (img_name), defc, ampcont, istart, istop,(time()-at)/60.
+				print "  RESULT 1 %s" % (img_name), defc, ampcont, istart, istop,(time()-at)/60.
 
 				freq = range(len(subpw))
 				for i in xrange(len(freq)):  freq[i] = float(i) / wn / pixel_size
@@ -5059,7 +5102,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			Util.Applyws(crefim, numr, wr)
 			defc, ampcont, subpw, ctf2, baseline, envelope, istart, istop = defocusgett_vpp2(qse, rooc, wn, voltage = voltage, Pixel_size = pixel_size, Cs = Cs, f_start = f_start, f_stop = f_stop, round_off = 1.0, nr1 = 3, nr2 = 6, parent = None, DEBug = debug_mode)
 			if debug_mode or True:
-				print "  RESULT %s" % (img_name), defc, ampcont, istart, istop,(time()-at)/60.
+				print "  RESULT 2 %s" % (img_name), defc, ampcont, istart, istop,(time()-at)/60.
 				
 				freq = range(len(subpw))
 				for i in xrange(len(freq)):  freq[i] = float(i) / wn / pixel_size
@@ -5070,7 +5113,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			
 			#pc = ctf2_rimg(wn,generate_ctf([defc,Cs,voltage,pixel_size,0.0,wgh]))
 			#print ccc(pc*envl, subpw, mask)
-			
+			exit()  #  TO HERE
 			bang = 0.0      #  initial astigmatism angle
 			bamp = 0.0      #  initial astigmatism amplitude
 			baco = ampcont  #  initial amplitude contrast
@@ -5411,7 +5454,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 				
 		if stack == None:
 			img_mic = get_im(namics[ifi])
-			# create micrograph thumbnail
+			# create  thumbnail
 			nx_target = 512
 			nx = img_mic.get_xsize()
 			if nx > nx_target:
@@ -5657,9 +5700,8 @@ def defocusgett_vpp2(qse, roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_star
 	zizi = rot_avg_table(qse)[i_start:i_stop]
 	from utilities import write_text_file
 	dudi = subpw[i_start:i_stop]
-	print dudi.tolist()
-	print zizi
-	write_text_file([dudi.tolist(),zizi],"pwds.txt")
+	#print dudi.tolist()
+	#print zizi
 
 	cnx = wn // 2 + 1
 	cny = cnx
@@ -5677,17 +5719,39 @@ def defocusgett_vpp2(qse, roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_star
 	astdata = [crefim, numr, wn, bdef, Cs, voltage, Pixel_size, baco, bamp, bang, mask]
 	data2d = [nx, qse, bdef, Cs, voltage, Pixel_size, 0.0, baco, bamp, bang, mask]
 
+	print  " i_start:i_stop",i_start,i_stop
+
 	qm = 1.e23
 	dm = 1.e23
 	toto = []
-	for a in xrange(0,101,10):
+	'''
+	#for a in xrange(0,101,10):
+	for a in xrange(20,21,10):
 		data[7] = float(a)
 		print "  fdasfdsfa  ",a
 		#for i in xrange(1000,100000,50):
+		for i in xrange(5000,5001,5):
+			dc = float(i)/10000.0
+			qt,ct1 = simpw1dc(dc, data)
+			write_text_file(ct1,"testi1.txt")
+			write_text_file(data[0],"testd1.txt")
+			ju1 = dc # defocus
+			ju2 = float(a) # amp contrast
+			ju3 = 0.0  # astigma amp
+			#dama = amoeba([ju1,ju2,ju3], [0.02, 1.0, 0.02], fupw_vpp, 1.e-4, 1.e-4, 1, astdata)
+			data2d[7] = float(a)
+			zigi,ct2 = simpw2dc(dc, data2d)
+			ct2.write_image("testi2.hdf")
+			data2d[1].write_image("testd2.hdf")
+			#print  dc,data[7],qt,dama
+			toto.append([dc,data[7],qt,zigi])#,dama[-2]])
+	'''
+	for a in xrange(0,101,10):
+		data[7] = float(a)
+		print "  fdasfdsfa  ",a
 		for i in xrange(1000,100000,50):
 			dc = float(i)/10000.0
 			qt = simpw1d(dc, data)
-
 			ju1 = dc # defocus
 			ju2 = float(a) # amp contrast
 			ju3 = 0.0  # astigma amp
@@ -5696,7 +5760,7 @@ def defocusgett_vpp2(qse, roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_star
 			zigi = simpw2d(dc, data2d)
 			#print  dc,data[7],qt,dama
 			toto.append([dc,data[7],qt,zigi])#,dama[-2]])
-			
+
 
 			if(zigi<dm):
 				dm = zigi
@@ -5715,11 +5779,14 @@ def defocusgett_vpp2(qse, roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_star
 		#print " >>>>>>>>>  ",defi,simpw1d(defi, data)#,generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont])
 		#def1 = defi
 	#exit()
-	from morphology import ctf2_rimg
-	ctf2 = ctf2_rimg(nx, generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont]))
+	from morphology import ctf2_rimg, square_root
+	ctf2 = square_root(ctf2_rimg(nx, generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont])))
+	cq = ctf_1d(nx, generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont]), doabs = True)[20:150]
 	qse.write_image("qse.hdf")
 	ctf2.write_image("c1.hdf")
-	ctf22 = ctf2_rimg(nx, generate_ctf([ddefi, Cs, voltage, Pixel_size, 0.0, dampcont]))
+	ctf22 = square_root(ctf2_rimg(nx, generate_ctf([ddefi, Cs, voltage, Pixel_size, 0.0, dampcont])))
+	ci = ctf_1d(nx, generate_ctf([ddefi, Cs, voltage, Pixel_size, 0.0, dampcont]), doabs = True)[20:150]
+	write_text_file([dudi.tolist(),zizi,cq,ci],"pwds.txt")
 	ctf22.write_image("c2.hdf")
 	'''
 	from utilities import write_text_file
