@@ -14,11 +14,13 @@ def main():
 	parser.add_argument("--thresh", type=float,help="threshold", default=.0)
 	parser.add_argument("--edge", type=int,help="min distance to edge", default=0)
 	parser.add_argument("--sort", action="store_true",help="sort by density", default=False)
+	parser.add_argument("--random", type=int,help="randomly seed particles on density above threshold", default=-1)
 	parser.add_argument("--genptcls", type=str,help="generate particles", default=None)
 	parser.add_argument("--genmask", type=str,help="generate mask", default=None)
 	parser.add_argument("--boxsz", type=int,help="box size", default=48)
 	parser.add_argument("--shrink", type=float,help="shrink", default=0)
-	parser.add_argument("--apix", type=float,help="apix", default=1.0)
+	parser.add_argument("--zthick", type=int,help="make projection of this thickness", default=-1)
+	parser.add_argument("--apix", type=float,help="apix", default=-1.)
 	
 	
 	
@@ -35,13 +37,34 @@ def main():
 		else:
 			shrink=raw["nx"]/tomo["nx"]
 		
-		jsname=info_name(tomoname)
-		js=js_open_dict(jsname)
-		pks=(np.array([[j[0],j[1],j[3]] for j in js["boxes"]])*shrink).astype(int)
-		js=None
+		if options.apix<=0:
+			options.apix=tomo["apix_x"]
+			print "Reading apix from data: {}".format(options.apix)
+			
+			
+		nn=EMUtil.get_image_count(tomoname)
+		if nn>1:
+			print "Particle stack? getting coordinates from header.."
+			pks=[]
+			for i in range(nn):
+				e=EMData(tomoname, i, True)
+				pks.append(e["box"])
+			pks=np.array(pks)*shrink
+			
+		else:
+			jsname=info_name(tomoname)
+			js=js_open_dict(jsname)
+			pks=(np.array([[j[0],j[1],j[3]] for j in js["boxes"]])*shrink).astype(int)
+			js=None
 		
-		bxsz=options.boxsz*shrink
+		bxsz=int(options.boxsz*shrink)
 		b2=bxsz/2
+		
+		if options.zthick>0:
+			print "Making projection of {} pixel thickness".format(options.zthick)
+			zthick=options.zthick
+		else:
+			zthick=bxsz
 		
 		if options.genptcls:
 			
@@ -53,17 +76,21 @@ def main():
 
 			for p in pks:
 				
-				pj=EMData(rawname, 0, False,Region(p[0]-b2,p[1]-b2,p[2]-b2, bxsz, bxsz,bxsz))
+				pj=EMData(rawname, 0, False,Region(p[0]-b2,p[1]-b2,p[2]-zthick/2, bxsz, bxsz, zthick))
 				
-				pj["box"]=[p[0], p[1], p[2]]
-				pj["src"]=rawname
+				
 				pj.process_inplace("normalize")
 				pj.mult(-1)
 				pj["apix_x"]=pj["apix_y"]=pj["apix_z"]=options.apix/shrink
+				if options.zthick>0:
+					pj=pj.project("standard", Transform())
+				
+				pj["box"]=[p[0], p[1], p[2]]
+				pj["src"]=rawname
 				pj.write_image(pname, -1)
 		else:
 			pname=options.genmask
-			
+			print len(pks), " particles, unbin by ", shrink
 			try: os.remove(pname)
 			except: pass
 			
@@ -75,6 +102,7 @@ def main():
 			
 			for ii,p in enumerate(pks):
 				if ii%100==0: print ii
+				print ii,p
 				e.insert_scaled_sum(a, p.tolist())
 			
 			e.process_inplace("threshold.clampminmax",{"maxval":1, "minval":0})
@@ -88,6 +116,7 @@ def main():
 		e=EMData(segname)
 		img=e.numpy()
 		img[img<options.thresh]=0
+		
 		if options.shrink==0:
 			tm=EMData(tomoname,0,True)
 			shrinkz=tm["nz"]/e["nz"]
@@ -96,24 +125,35 @@ def main():
 		else:
 			shrinkz=shrinkxy=options.shrink
 		
-		if havescipy:
-			lb, nlb=ndimage.measurements.label(img)
-			pks=np.array(ndimage.maximum_position(img,lb,range(1,nlb)))
-			n=len(pks)
+		if options.random<=0:
+			if havescipy:
+				lb, nlb=ndimage.measurements.label(img)
+				pks=np.array(ndimage.maximum_position(img,lb,range(1,nlb)))
+				n=len(pks)
+			
+			else:
+				e.process_inplace("mask.onlypeaks")
+				#print np.sum(img>0)
+				pks= np.array(np.where(img>0)).T
+		
+			pk_new=[[-100,-100,-100]]
+			for p in pks:
+				
+				nb=np.sum(np.sum(np.array(pk_new-p)**2,axis=1)<(options.boxsz/4)**2)
+				#print p, nb
+				if nb<1:
+					pk_new.append(p)
+			pks=np.array(pk_new)
 		
 		else:
-			e.process_inplace("mask.onlypeaks")
-			#print np.sum(img>0)
-			pks= np.array(np.where(img>0)).T
+			pts=np.array(np.where(img>0)).T
+			ip=np.arange(len(pts))
+			print len(pts)
+			np.random.shuffle(ip)
+			pts=pts[ip]
+			pks=pts[:options.random].copy()
+			print pks
 		
-		pk_new=[[-100,-100,-100]]
-		for p in pks:
-			
-			nb=np.sum(np.sum(np.array(pk_new-p)**2,axis=1)<(options.boxsz/4)**2)
-			#print p, nb
-			if nb<1:
-				pk_new.append(p)
-		pks=np.array(pk_new)
 		n=len(pks)
 		#e.write_image("tmp2.hdf")
 		print "{} boxes found..".format(n)
@@ -125,7 +165,7 @@ def main():
 			#pks=pks[np.argsort(den)]
 		for j in range(n):
 			box=pks[j]
-			if min(box[2],box[1],e["nx"]-box[2],e["ny"]-box[1])<options.edge:
+			if min(box[2],box[1],e["nx"]-box[2],e["ny"]-box[1], box[0], e["nz"]-box[0])<options.edge:
 				continue
 			#box*=2
 			box[2]*=shrinkxy
