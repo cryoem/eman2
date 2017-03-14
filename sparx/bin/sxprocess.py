@@ -305,7 +305,7 @@ def main():
 										
 		sxprocess.py vol_0_unfil.hdf vol_1_unfil.hdf  --mask=mask15.hdf --postprocess   --pixel_size=1.12     --low_pass_filter =-1  --mtf=aa.txt  --fsc_adj --output=vol_post.hdf 
 		sxprocess.py vol_0_unfil.hdf vol_1_unfil.hdf  --mask=mask15.hdf --postprocess   --pixel_size=1.12     --low_pass_filter=4.7  --mtf=aa.txt --fsc_adj
-		sxprocess.py vol_0_unfil.hdf vol_1_unfil.hdf  --do_adaptive_mask   --postprocess   --pixel_size=1.12   --mtf=aa.txt --fsc_adj
+		sxprocess.py vol_0_unfil.hdf vol_1_unfil.hdf  --do_adaptive_mask   --postprocess   --pixel_size=1.12   --mtf=aa.txt --fsc_adj --output=ribosome_postrefine.hdf
 		
 	 for 2-D images:       calculate B-factor and apply negative B-factor to 2-D images.
 		
@@ -1140,7 +1140,7 @@ def main():
 					break
 					
 			if resolution_FSC143_left != resolution_FSC143_right: 
-				log_main.add("there is a deep in the fsc curve in the region 0.5 to 0.143 !")
+				log_main.add("there is a deep between 0.5 to 0.143 in FSC!")
 			else:                                           
 				log_main.add("fsc smoothly falls from 0.5 t0 0.143 !")
 			
@@ -1246,8 +1246,9 @@ def main():
 					cutoff = options.pixel_size/resolution_FSC143
 			else:
 				log_main.add("low_pass filter is not applied to map! ")
-					
-			map1.write_image("vol_postrefine_nomask.hdf")
+			
+			file_name, file_ext = os.path.splitext(options.output)
+			map1.write_image(file_name+"_nomask_"+file_ext)
 			if m: map1 *=m
 			else: log_main.add("The final map is not masked!")
 			
