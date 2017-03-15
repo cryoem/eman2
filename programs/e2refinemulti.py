@@ -458,7 +458,7 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 		if nx>=256 : shrinks1="--shrinks1 4"
 		elif nx>=96: shrinks1="--shrinks1 2"
 		else : shrinks1=""
-
+        else : shrinks1="--shrinks1 {}".format(options.shrinks1) #must pass shrinks1 to e2simmx2stage
 	if options.classaligncmp==None :
 		options.classaligncmp="ccc"
 
