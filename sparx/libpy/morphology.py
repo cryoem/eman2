@@ -3324,17 +3324,19 @@ def simpw1d(defocus, data):
 	import numpy as np
 	from morphology import ctf_1d
 	from utilities import generate_ctf
+	from math import sqrt
 	
 	#[defocus, cs, voltage, apix, bfactor, ampcont, astigmatism_amplitude, astigmatism_angle]
 	#  data = [subpw[i_start:i_stop], envelope[i_start:i_stop], nx, defocus, Cs, voltage, Pixel_size, ampcont, i_start, i_stop]
 	# data[1] - envelope
-	ct = data[1]*np.array( ctf_1d(data[2], generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]), doabs= True)[data[8]:data[9]], np.float32)
+	#ct = data[1]*np.array( ctf_1d(data[2], generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]), doabs= True)[data[8]:data[9]], np.float32)
+	ct = np.array( ctf_1d(data[2], generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]), doabs= True)[data[8]:data[9]], np.float32)
 	#print  " 1d  ",sum(data[0]*ct),np.linalg.norm(ct,2)
-	return  2.0-sum(data[0]*ct)/np.linalg.norm(ct,2)
+	return  -sum(data[0]*ct)/np.linalg.norm(ct,2)
 
 def simpw2d(defocus, data2d):
 	from utilities import generate_ctf
-	from morphology import ctf2_rimg, square_root
+	from morphology import ctf_rimg
 	from math import sqrt
 	
 	#             0        1     2      3     4         5             6                      7           
@@ -3343,11 +3345,10 @@ def simpw2d(defocus, data2d):
 	#             0        1             2      3    4         5           6        7            8                     9            10
 	#  data2d = [nx, experimental_pw, defocus, Cs, voltage, Pixel_size, bfactor, ampcont, astigmatism_amplitude, astigmatism_angle, mask]
 	
-
-	ct = ctf2_rimg(data2d[0], generate_ctf([defocus, data2d[3], data2d[4], data2d[5], data2d[6], data2d[7], data2d[8], data2d[9]]), ny=data2d[0])
-	q2 = Util.infomask(ct, data2d[10], True)
-	q2 = q2[0]
-	ct = square_root(ct)
+	defocust = max(min(defocus, 6.0), 0.01)
+	data2d[7] = max(min(data2d[7],99.0), 1.0)
+	ct = ctf_rimg(data2d[0], generate_ctf([defocust, data2d[3], data2d[4], data2d[5], data2d[6], data2d[7], data2d[8], data2d[9]]), sign=0, ny=data2d[0])
+	q2 = ct.cmp("dot", ct, dict(negative = 0, mask = data2d[10], normalize = 0))#Util.infomask(ct*ct, data2d[10], True)[0]
 	q1 = ct.cmp("dot", data2d[1], dict(negative = 0, mask = data2d[10], normalize = 0))
 	'''
 	from utilities import info
@@ -3355,7 +3356,7 @@ def simpw2d(defocus, data2d):
 	print  info(ct, data2d[10])
 	print q1,q2
 	'''
-	return  2.0-q1/q2
+	return  -q1/q2
 
 
 def simpw1dc(defocus, data):
@@ -3810,7 +3811,6 @@ def simctf2out(dz, data):
 
 def fupw(args, data):
 	from morphology import fastigmatism3
-	print  "  fupw",  args
 	return -fastigmatism3(args[1],[data[0], data[1], data[2], args[0], data[4], data[5], data[6], data[7], data[8], data[9]])
 
 ########################################
@@ -5049,7 +5049,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 
 			defc, ampcont, subpw, ctf2, baseline, envelope, istart, istop = defocusgett_vpp(rooc, wn, voltage = voltage, Pixel_size = pixel_size, Cs = Cs, f_start = f_start, f_stop = f_stop, round_off = 1.0, nr1 = 3, nr2 = 6, parent = None, DEBug = debug_mode)
 			if debug_mode or True:
-				print "  RESULT 1 %s" % (img_name), defc, ampcont, istart, istop,(time()-at)/60.
+				print "  RESULT 1 %s" % (img_name), defc, ampcont, istart, istop, (time()-at)/60.
 
 				freq = range(len(subpw))
 				for i in xrange(len(freq)):  freq[i] = float(i) / wn / pixel_size
@@ -5100,7 +5100,8 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			crefim = Util.Polar2Dm(qse*mask, cnx, cny, numr, mode)
 			Util.Frngs(crefim, numr)
 			Util.Applyws(crefim, numr, wr)
-			defc, ampcont, subpw, ctf2, baseline, envelope, istart, istop = defocusgett_vpp2(qse, rooc, wn, voltage = voltage, Pixel_size = pixel_size, Cs = Cs, f_start = f_start, f_stop = f_stop, round_off = 1.0, nr1 = 3, nr2 = 6, parent = None, DEBug = debug_mode)
+
+			defc, ampcont, subpw, ctf2, baseline, envelope, istart, istop = defocusgett_vpp2(qse, rooc, wn, defc, ampcont, voltage = voltage, Pixel_size = pixel_size, Cs = Cs, f_start = f_start, f_stop = f_stop, round_off = 1.0, nr1 = 3, nr2 = 6, parent = None, DEBug = debug_mode)
 			if debug_mode or True:
 				print "  RESULT 2 %s" % (img_name), defc, ampcont, istart, istop,(time()-at)/60.
 				
@@ -5614,9 +5615,9 @@ def defocusgett_vpp(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_start=-1.0
 	'''
 	qm = 1.e23
 	#toto = []
-	for a in xrange(0,101,10):
+	for a in xrange(5,95,5):
 		data[7] = float(a)
-		for i in xrange(1000,100000,50):
+		for i in xrange(1000,100000,500):
 			dc = float(i)/10000.0
 			qt = simpw1d(dc, data)
 			#toto.append([dc,qt])
@@ -5632,7 +5633,7 @@ def defocusgett_vpp(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_start=-1.0
 		#def1 = defi
 	#exit()
 	'''
-	ctf2 = ctf_2(nx, generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont]))
+	ctf2 = ctf_1d(nx, generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont]), doabs= True)
 	'''
 	from utilities import write_text_file
 	foki = subpw.tolist()
@@ -5642,18 +5643,262 @@ def defocusgett_vpp(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_start=-1.0
 
 
 def fupw_vpp(args, data):
-	from morphology import fastigmatism3
-	#print  "  fupw_vpp  ",  args
-	return -fastigmatism3(args[2],[data[0], data[1], data[2], args[0], data[4], data[5], data[6], args[1], data[8], data[9]])
+	from morphology import fastigmatism3_vpp
+	#  args = [defocus, ampcontrast, astigma-amp]
+	#                                   0       1     2   3     4    5         6          7     8     9    10
+	#            (astdata) =          [crefim, numr, wn, bdef, Cs, voltage, Pixel_size, baco, bamp, bang, mask]
+	#
+	#   [data[0], data[1], data[2], args[0], data[4], data[5], data[6], args[1], data[8], data[9], data[10]]
+	#   [crefim,   numr,   wn, (args)defocus, Cs,   voltage, Pixel_size,(a)ampcont, (a)astamp, ang, mask]
+	#
+	print  " fuw_vpp           ",args[0],args[1],args[2]
+	args[0] = max(min(args[0], 6.0), 0.01)
+	args[1] = max(min(args[1],99.0), 1.0)
+	args[2] = max(min(args[2], 3.0), 0.0)
+	#                        (a)astamp
+	return fastigmatism3_vpp(args[2],[data[0], data[1], data[2], args[0], data[4], data[5], data[6], args[1], data[8], data[9], data[10]])
 
 
+def fastigmatism3_vpp(amp, data):
+	from morphology import ctf2_rimg
+	from utilities  import generate_ctf
+	from alignment  import ornq
+	from math       import sqrt
+	#  data[0] - crefim
+	#  data[1] - numr
+	#  data[2] - nx (image is square)
+	#  data[8] - astigmatism amplitude
+	#  data[9] - mask defining the region of interest
+	#
+	#      0        1          2       3        4       5         6         7      8        9        10
+	#   [data[0], data[1], data[2], args[0], data[4], data[5], data[6], args[1], data[8], data[9], data[10]]
+	#   [crefim,   numr,   wn, (args)defocus, Cs,   voltage, Pixel_size,(a)ampcont, (a)astamp, ang, mask]
+	#
+	#  generate_ctf
+	#      0      1    2       3       4        5        6                      7
+	#  [defocus, cs, voltage, apix, bfactor, ampcont, astigmatism_amplitude, astigmatism_angle]
+	#  [ microns, mm, kV, Angstroms, A^2, microns, radians]
 
-def defocusgett_vpp2(qse, roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_start=-1.0, f_stop=-1.0, round_off=1.0, nr1=3, nr2=6, parent=None, DEBug=False):
+	cnx = data[2]//2+1
+	#qt = 0.5*nx**2
+	#B = 0.0
+	pc = ctf_rimg(data[2], generate_ctf([data[3], data[4], data[5], data[6], 0.0, data[7], amp, 0.0]), sign = 0. )
+	#st = pc.cmp("dot", pc, dict(negative = 0, mask = data[10], normalize = 0))
+	#Util.mul_scalar(pc, 1.0/st)
+	ang, sxs, sys, mirror, peak = ornq_vpp(pc, data[0], [0.0,0.0], [0.0,0.0], 1, "H", data[1], cnx, cnx)
+	#print  ang, sxs, sys, mirror, peak
+	print  " fastigmatism3_vpp ",round(data[3],3),data[7], amp,round(ang,2),round(peak,3)
+	if(peak<0.0):
+		print  "why negative??  ", Util.infomask(pc,data[-1],True)
+
+	#exit()
+	data[8] = ang
+	return  peak
+
+
+def ornq_vpp(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0):
+	"""Determine shift and rotation between image and reference image (refim)
+	   no mirror
+		quadratic interpolation
+		cnx, cny in FORTRAN convention
+	"""
+	from math import pi, cos, sin, radians
+	from alignment import ang_n
+	#from utilities import info
+	#print "ORNQ"
+	peak = -1.0E23
+
+	lkx = int(xrng[0]/step)
+	rkx = int(xrng[-1]/step)
+
+	lky = int(yrng[0]/step)
+	rky = int(yrng[-1]/step)
+
+	for i in xrange(-lky, rky+1):
+		iy = i*step
+		for j in xrange(-lkx, rkx+1):
+			ix = j*step
+			cimage = Util.Polar2Dm(image, cnx+ix, cny+iy, numr, mode)
+			Util.Frngs(cimage, numr)
+			#Util.Normalize_ring(cimage, numr)
+			retvals = Util.Crosrng_e(crefim, cimage, numr, 0, deltapsi)
+			qn = retvals["qn"]
+			if qn >= peak:
+				sx = -ix
+				sy = -iy
+				ang = ang_n(retvals["tot"], mode, numr[-1])
+				peak = qn
+	# mirror is returned as zero for consistency
+	mirror = 0
+	co =  cos(radians(ang))
+	so = -sin(radians(ang))
+	sxs = sx*co - sy*so
+	sys = sx*so + sy*co
+	return  ang, sxs, sys, mirror, peak
+
+
+def defocusgett_vpp2(qse, roo, nx, xdefc, xampcont, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_start=-1.0, f_stop=-1.0, round_off=1.0, nr1=3, nr2=6, parent=None, DEBug=False):
 	"""
 		1. Estimate envelope function and baseline noise using constrained simplex method
 		   so as to extract CTF imprints from 1D power spectrum
-		2. Based one extracted ctf imprints, perform exhaustive defocus searching to get 
-		   defocus which matches the extracted CTF imprints 
+		2. Based one extracted ctf imprints, perform exhaustive defocus searching to get
+		   defocus which matches the extracted CTF imprints
+	"""
+	from utilities  import generate_ctf
+	import numpy as np
+	from morphology import ctf_2, bracket_def, defocus_baseline_fit, ctflimit, simpw1d, goldsearch_astigmatism
+
+	#print "CTF params:", voltage, Pixel_size, Cs, wgh, f_start, f_stop, round_off, nr1, nr2, parent
+
+	if f_start == 0 : 	    i_start = 0
+	else: 			        i_start = int(Pixel_size*nx*f_start+0.5)
+	if f_stop <= f_start :
+		i_stop  = len(roo)
+		adjust_fstop = True
+	else:
+		i_stop  = min(len(roo), int(Pixel_size*nx*f_stop+0.5))
+		adjust_fstop = False
+
+	nroo = len(roo)
+
+	if DEBug:  print "f_start, i_start, f_stop, i_stop:", f_start, i_start, f_stop, i_stop-1
+	#TE  = defocus_env_baseline_fit(roo, i_start, i_stop, int(nr1), 4)
+	#baseline = defocus_baseline_fit(roo, i_start, i_stop, int(nr2), 3)
+
+	baseline = defocus_baseline_fit(roo, i_start,nroo, int(nr2), 3)
+	subpw = np.array(roo, np.float32) - baseline
+	subpw[0] = subpw[1]
+	#write_text_file([roo,baseline,subpw],"dbg.txt")
+	#print "IN defocusgett  ",np.min(subpw),np.max(subpw)
+	for i in xrange(len(subpw)):  subpw[i] = max(subpw[i],0.0)
+	#print "IN defocusgett  ",np.min(subpw),np.max(subpw)
+	#envelope = movingaverage(  subpw   , nroo//4, 3)
+	envelope = np.array([1.0]*len(subpw), np.float32)
+	#write_text_file([roo,baseline,subpw],"dbgt.txt")
+
+	#print "IN defocusgett  ",np.min(subpw),np.max(subpw),np.min(envelope)
+	#envelope = np.ones(nroo, np.float32)
+	defocus = 0.0
+	ampcont = 0.0
+	data = [subpw[i_start:i_stop], envelope[i_start:i_stop], nx, defocus, Cs, voltage, Pixel_size, ampcont, i_start, i_stop]
+	wn = 512
+	from utilities import model_circle, model_blank, amoeba
+	from alignment import Numrinit, ringwe
+	mask = model_circle(i_stop - 1, wn, wn) * (model_blank(wn, wn, 1, 1.0) - model_circle(i_start, wn, wn))
+	from fundamentals import rot_avg_table
+	zizi = rot_avg_table(qse)[i_start:i_stop]
+	from utilities import write_text_file
+	dudi = subpw[i_start:i_stop]
+	#print dudi.tolist()
+	#print zizi
+
+	cnx = wn // 2 + 1
+	cny = cnx
+	mode = "H"
+	numr = Numrinit(i_start, i_stop, 1, mode)
+	wr = ringwe(numr, mode)
+	
+	crefim = Util.Polar2Dm(qse*mask, cnx, cny, numr, mode)
+	print "  CREFIM    ",Util.infomask(qse*mask,None,True),Util.infomask(crefim,None,True)
+	Util.Frngs(crefim, numr)
+	Util.Applyws(crefim, numr, wr)
+	bdef = 0.
+	baco = 0.0  #  amplitude contrast
+	bamp = 0.0      #  initial astigmatism amplitude
+	bang = 0.0      #  initial astigmatism angle
+	astdata = [crefim, numr, wn, bdef, Cs, voltage, Pixel_size, baco, bamp, bang, mask]
+	data2d = [nx, qse, bdef, Cs, voltage, Pixel_size, 0.0, baco, bamp, bang, mask]
+
+	print  " i_start:i_stop",i_start,i_stop
+
+	qm = 1.e23
+	dm = 1.e23
+	dp = 1.0e23
+	toto = []
+	'''
+	#for a in xrange(0,101,10):
+	for a in xrange(20,21,10):
+		data[7] = float(a)
+		print "  fdasfdsfa  ",a
+		#for i in xrange(1000,100000,50):
+		for i in xrange(5000,5001,5):
+			dc = float(i)/10000.0
+			qt,ct1 = simpw1dc(dc, data)
+			write_text_file(ct1,"testi1.txt")
+			write_text_file(data[0],"testd1.txt")
+			ju1 = dc # defocus
+			ju2 = float(a) # amp contrast
+			ju3 = 0.0  # astigma amp
+			#dama = amoeba([ju1,ju2,ju3], [0.02, 1.0, 0.02], fupw_vpp, 1.e-4, 1.e-4, 1, astdata)
+			data2d[7] = float(a)
+			zigi,ct2 = simpw2dc(dc, data2d)
+			ct2.write_image("testi2.hdf")
+			data2d[1].write_image("testd2.hdf")
+			#print  dc,data[7],qt,dama
+			toto.append([dc,data[7],qt,zigi])#,dama[-2]])
+	'''
+	for aa in xrange(0,20,4):
+		a = xampcont + aa
+		data[7] = float(a)
+		print "  fdasfdsfa  ",a
+		for i in xrange(0,2000,200):
+			dc = xdefc + float(i-1000)/10000.0
+			qt = simpw1d(dc, data)
+			ju1 = dc # defocus
+			ju2 = float(a) # amp contrast
+			ju3 = 0.0  # astigma amp
+			dama = amoeba([ju1,ju2,ju3], [0.005, 2.0, 0.002], fupw_vpp, 1.e-4, 1.e-4, 200, astdata)
+			data2d[7] = float(a)
+			zigi = simpw2d(dc, data2d)
+			qma = -dama[-2]
+			print  " amoeba  %7.2f  %7.2f  %12.6g  %12.6g  %12.6g  %7.2f  %7.2f  %7.2f "%(dc,data[7],qma,zigi,qt,dama[0][0],dama[0][1],dama[0][2]), dama
+			toto.append([dc,data[7],qt,zigi,qma])
+			if(qma<dp):
+				dp = qma
+				dpefi = dama[0][0]
+				dpmpcont = dama[0][1]
+			if(zigi<dm):
+				dm = zigi
+				ddefi = dc
+				dampcont = data[7]
+			if(qt<qm):
+				qm = qt
+				defi = dc
+				ampcont = data[7]
+	if DEBug or True:
+		from utilities import write_text_row
+		write_text_row(toto,"toto1.txt")
+		print " repi3  ",dp,dpefi,dpmpcont
+		print " resi2  ",qm,defi,ampcont
+		print " resi1  ",dm,ddefi,dampcont
+		
+		#print " >>>>>>>>>  ",defi,simpw1d(defi, data)#,generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont])
+		#def1 = defi
+	#exit()
+	from morphology import ctf2_rimg, ctf_rimg, square_root
+	ctf2 = ctf_rimg(nx, generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont]), sign=0)
+	cq = ctf_1d(nx, generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont]), doabs = True)[20:150]
+	qse.write_image("qse.hdf")
+	ctf2.write_image("c1.hdf")
+	ctf22 = ctf_rimg(nx, generate_ctf([ddefi, Cs, voltage, Pixel_size, 0.0, dampcont]), sign=0)
+	ci = ctf_1d(nx, generate_ctf([ddefi, Cs, voltage, Pixel_size, 0.0, dampcont]), doabs = True)[20:150]
+	dq = ctf_1d(nx, generate_ctf([dpefi, Cs, voltage, Pixel_size, 0.0, dpmpcont]), doabs = True)[20:150]
+	write_text_file([dudi.tolist(),zizi,cq,ci,dq],"pwds.txt")
+	ctf22.write_image("c2.hdf")
+	'''
+	from utilities import write_text_file
+	foki = subpw.tolist()
+	write_text_file([foki,ctf2[:len(foki)]],"toto1.txt")
+	'''
+	return defi, ampcont, subpw, ctf2, baseline, envelope, i_start, i_stop
+
+
+def defocusgett_vpp22(qse, roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_start=-1.0, f_stop=-1.0, round_off=1.0, nr1=3, nr2=6, parent=None, DEBug=False):
+	"""
+		1. Estimate envelope function and baseline noise using constrained simplex method
+		   so as to extract CTF imprints from 1D power spectrum
+		2. Based one extracted ctf imprints, perform exhaustive defocus searching to get
+		   defocus which matches the extracted CTF imprints
 	"""
 	from utilities  import generate_ctf
 	import numpy as np
@@ -5723,6 +5968,7 @@ def defocusgett_vpp2(qse, roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_star
 
 	qm = 1.e23
 	dm = 1.e23
+	dp = 1.0e23
 	toto = []
 	'''
 	#for a in xrange(0,101,10):
@@ -5746,22 +5992,25 @@ def defocusgett_vpp2(qse, roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_star
 			#print  dc,data[7],qt,dama
 			toto.append([dc,data[7],qt,zigi])#,dama[-2]])
 	'''
-	for a in xrange(0,101,10):
+	for a in xrange(5,96,10):
 		data[7] = float(a)
 		print "  fdasfdsfa  ",a
-		for i in xrange(1000,100000,50):
+		for i in xrange(1000,100000,5000):
 			dc = float(i)/10000.0
 			qt = simpw1d(dc, data)
 			ju1 = dc # defocus
 			ju2 = float(a) # amp contrast
 			ju3 = 0.0  # astigma amp
-			#dama = amoeba([ju1,ju2,ju3], [0.02, 1.0, 0.02], fupw_vpp, 1.e-4, 1.e-4, 1, astdata)
+			dama = amoeba([ju1,ju2,ju3], [0.002, 0.001, 0.002], fupw_vpp, 1.e-4, 1.e-4, 1, astdata)
 			data2d[7] = float(a)
 			zigi = simpw2d(dc, data2d)
-			#print  dc,data[7],qt,dama
-			toto.append([dc,data[7],qt,zigi])#,dama[-2]])
-
-
+			qma = dama[-2]/42.
+			print  " amoeba  %7.2f  %7.2f  %12.6g  %12.6g  %12.6g  %7.2f  %7.2f  %7.2f "%(dc,data[7],qma,zigi,qt,dama[0][0],dama[0][1],dama[0][2]), dama
+			toto.append([dc,data[7],qt,zigi,qma])
+			if(qma<dp):
+				dp = qma
+				dpefi = dc
+				dpmpcont = data[7]
 			if(zigi<dm):
 				dm = zigi
 				ddefi = dc
@@ -5773,20 +6022,22 @@ def defocusgett_vpp2(qse, roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_star
 	if DEBug or True:
 		from utilities import write_text_row
 		write_text_row(toto,"toto1.txt")
+		print " repi3  ",dp,dpefi,dpmpcont
 		print " resi2  ",qm,defi,ampcont
 		print " resi1  ",dm,ddefi,dampcont
 		
 		#print " >>>>>>>>>  ",defi,simpw1d(defi, data)#,generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont])
 		#def1 = defi
 	#exit()
-	from morphology import ctf2_rimg, square_root
-	ctf2 = square_root(ctf2_rimg(nx, generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont])))
+	from morphology import ctf2_rimg, ctf_rimg, square_root
+	ctf2 = ctf_rimg(nx, generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont]), sign=0)
 	cq = ctf_1d(nx, generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont]), doabs = True)[20:150]
 	qse.write_image("qse.hdf")
 	ctf2.write_image("c1.hdf")
-	ctf22 = square_root(ctf2_rimg(nx, generate_ctf([ddefi, Cs, voltage, Pixel_size, 0.0, dampcont])))
+	ctf22 = ctf_rimg(nx, generate_ctf([ddefi, Cs, voltage, Pixel_size, 0.0, dampcont]), sign=0)
 	ci = ctf_1d(nx, generate_ctf([ddefi, Cs, voltage, Pixel_size, 0.0, dampcont]), doabs = True)[20:150]
-	write_text_file([dudi.tolist(),zizi,cq,ci],"pwds.txt")
+	dq = ctf_1d(nx, generate_ctf([dpefi, Cs, voltage, Pixel_size, 0.0, dpmpcont]), doabs = True)[20:150]
+	write_text_file([dudi.tolist(),zizi,cq,ci,dq],"pwds.txt")
 	ctf22.write_image("c2.hdf")
 	'''
 	from utilities import write_text_file

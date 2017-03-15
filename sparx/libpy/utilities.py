@@ -3527,7 +3527,7 @@ def generate_ctf(p):
 	amp_contrast = p[5]
 
 	if defocus > 100:  # which means it is very likely in Angstrom, therefore we are using the old convention
-		defocus *= 1e-4
+		defocus *= 1.0e-4
 
 	if amp_contrast < 1.0:
 		from math import sqrt
