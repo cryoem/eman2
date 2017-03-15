@@ -369,7 +369,7 @@ def gen_rings_ctf( prjref, nx, ctf, numr):
 
         for i in xrange( len(prjref) ):
 		cimage = Util.Polar2Dm(filt_ctf(prjref[i], ctf, True) , cnx, cny, numr, mode)  # currently set to quadratic....
-		Util.Normalize_ring(cimage, numr)
+		Util.Normalize_ring(cimage, numr, 0 )
 
 		Util.Frngs(cimage, numr)
 		Util.Applyws(cimage, numr, wr_four)

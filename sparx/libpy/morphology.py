@@ -5720,7 +5720,7 @@ def ornq_vpp(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0
 			ix = j*step
 			cimage = Util.Polar2Dm(image, cnx+ix, cny+iy, numr, mode)
 			Util.Frngs(cimage, numr)
-			#Util.Normalize_ring(cimage, numr)
+			#Util.Normalize_ring(cimage, numr, 0)
 			retvals = Util.Crosrng_e(crefim, cimage, numr, 0, deltapsi)
 			qn = retvals["qn"]
 			if qn >= peak:
