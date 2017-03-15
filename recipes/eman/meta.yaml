@@ -18,12 +18,12 @@ requirements:
             "jpeg",
             "libtiff",
             "libpng",
-            "szip",  # [win]
             "zlib",
     ] %}
     
     build:
         - cmake
+        - szip  # [win]
         
         {% for req in reqs_common %}
         - {{ req }}
@@ -34,6 +34,7 @@ requirements:
         - {{ req }}
         {% endfor %}
         
+        - szip  # [win]
         - bsddb  # [not win]
         - matplotlib
         - ipython
