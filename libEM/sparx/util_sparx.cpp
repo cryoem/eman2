@@ -20394,20 +20394,18 @@ float Util::polar_norm2( EMData* ring, const vector<int>& numr )
 }
 
 
-void Util::Normalize_ring( EMData* ring, const vector<int>& numr )
+void Util::Normalize_ring( EMData* ring, const vector<int>& numr, int norm_by_square )
 {
     float* data = ring->get_data();
     float av=0.0;
     float sq=0.0;
     float nn=0.0;
     int nring = numr.size()/3;
-    for( int i=0; i < nring; ++i )
-    {
+    for( int i=0; i < nring; ++i )  {
         int numr3i = numr[3*i+2];
         int numr2i = numr[3*i+1]-1;
         float w = numr[3*i]*2*M_PI/float(numr[3*i+2]);
-        for( int j=0; j < numr3i; ++j )
-        {
+        for( int j=0; j < numr3i; ++j )  {
             int jc = numr2i+j;
             av += data[jc] * w;
             sq += data[jc] * data[jc] * w;
@@ -20418,11 +20416,12 @@ void Util::Normalize_ring( EMData* ring, const vector<int>& numr )
     float avg = av/nn;
     float sgm = sqrt( (sq-av*av/nn)/nn );
     size_t n = (size_t)ring->get_xsize() * ring->get_ysize() * ring->get_zsize();
-    for( size_t i=0; i < n; ++i )
-    {
-        data[i] -= avg;
-        data[i] /= sgm;
-    }
+    if( norm_by_square == 0) {
+		for( size_t i=0; i < n; ++i )  data[i] = (data[i] - avg)/sgm;
+	}  else  {
+		sq /= nn;
+		for( size_t i=0; i < n; ++i )  data[i] /= sq;
+	}
 
     ring->update();
 }
@@ -24344,10 +24343,22 @@ EMData* Util::ctf_img(int nx, int ny, int nz, float dz,float ps,float voltage,fl
 
 EMData* Util::ctf_rimg(int nx, int ny, int nz, float dz, float ps, float voltage, float cs, float wgh, float b_factor, float dza, float azz, float sign)
 {
+	/*
+	sign"
+	 +1  =  positive CTF
+	 -1  =  negative CTF (as per physics)
+	  0  =  absolute |CTF|
+	*/
 	int    ix, iy, iz;
 	int    i,  j, k;
 	float  ak;
 	float  scx, scy, scz;
+	float signa = sign;
+	bool  doabs;
+	if( sign == 0.0f ) {
+		signa = 1.0;
+		doabs = true;
+	} else doabs = false;
 	EMData* ctf_img1 = new EMData();
 	ctf_img1->set_size(nx, ny, nz);
 	float freq = 1.0f/(2.0f*ps);
@@ -24373,13 +24384,14 @@ EMData* Util::ctf_rimg(int nx, int ny, int nz, float dz, float ps, float voltage
 				ix = i - ns2;
 				if( dza == 0.0f) {
 					ak=pow(ix*ix*scx*scx + oy2 + oz2, 0.5f)*freq;
-					(*ctf_img1) (i,j,k)   = Util::tf(dz, ak, voltage, cs, wgh, b_factor, sign);
+					(*ctf_img1) (i,j,k)   = Util::tf(dz, ak, voltage, cs, wgh, b_factor, signa);
 				} else {
 					float ox = ix*scx;
 					ak=pow(ox*ox + oy2 + oz2, 0.5f)*freq;
 					float dzz = dz - dza/2.0f*sin(2*(atan2(oy, ox)+azz*M_PI/180.0f));
-					(*ctf_img1) (i,j,k)   = Util::tf(dzz, ak, voltage, cs, wgh, b_factor, sign);
+					(*ctf_img1) (i,j,k)   = Util::tf(dzz, ak, voltage, cs, wgh, b_factor, signa);
 				}
+				if( doabs ) (*ctf_img1) (i,j,k) = fabs( (*ctf_img1) (i,j,k) );
 				ix = nx - i - nod;
 				if(ix<nx)  (*ctf_img1) (ix,jy,kz) = (*ctf_img1) (i,j,k);
 			}
