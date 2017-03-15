@@ -2272,7 +2272,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 	for i in xrange(nang_start, nang_end, 1):  # This will take care of process on a node less than nang.  Some loops will not be executed
 		temp = prgl(volprep,[ coarse_angles[i][0], coarse_angles[i][1],0.0, 0.0,0.0], 1, True)
 		crefim = Util.Polar2Dm(temp, cnx, cnx, numr, mode)
-		Util.Normalize_ring(crefim, numr)
+		Util.Normalize_ring(crefim, numr, 0)
 		Util.Frngs(crefim, numr)
 		Util.Applyws(crefim, numr, wr)
 		bigbuffer.insert_clip(crefim,(0,i) )
