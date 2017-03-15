@@ -20460,7 +20460,7 @@ vector<float> Util::multiref_polar_ali_2d(EMData* image, const vector< EMData* >
 			ix = j*step ;
 			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 
-			Normalize_ring( cimage, numr );
+			Normalize_ring( cimage, numr, 0 );
 
 			Frngs(cimage, numr);
 			//  compare with all reference images
@@ -20540,7 +20540,7 @@ vector<float> Util::multiref_polar_ali_3d(EMData* image, const vector< EMData* >
 
 				EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 
-				Normalize_ring( cimage, numr );
+				Normalize_ring( cimage, numr, 0 );
 
 				Frngs(cimage, numr);
 				//  compare with all reference images
@@ -20607,7 +20607,7 @@ vector<float> Util::multiref_polar_ali_2d_peaklist(EMData* image, const vector< 
 		for (int j = -lkx; j <= rkx; j++) {
 			ix = j*step ;
 			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
-			Normalize_ring( cimage, numr );
+			Normalize_ring( cimage, numr, 0 );
 			Frngs(cimage, numr);
 			for (int iref = 0; iref < (int)crefim_len; iref++) {
 				Dict retvals = Crosrng_ms(crefim[iref], cimage, numr, 0.0f);
@@ -20682,7 +20682,7 @@ vector<float> Util::multiref_polar_ali_2d_peaklist_local(EMData* image, const ve
 		for (int j = -lkx; j <= rkx; j++) {
 			float ix = j*step ;
 			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
-			Normalize_ring( cimage, numr );
+			Normalize_ring( cimage, numr, 0 );
 			Frngs(cimage, numr);
 			for (int iref = 0; iref < (int)crefim_len; iref++) {
 // UUU
@@ -21446,7 +21446,7 @@ vector<float> Util::multiref_polar_ali_2d_delta(EMData* image, const vector< EMD
 			ix = j*step ;
 			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 
-			Normalize_ring( cimage, numr );
+			Normalize_ring( cimage, numr, 0 );
 
 			Frngs(cimage, numr);
 			//  compare with all reference images
@@ -21619,7 +21619,7 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 					for (int j = -lkx; j <= rkx; j++) {
 						ix = j*step;
 						EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
-						Normalize_ring( cimage, numr );
+						Normalize_ring( cimage, numr, 0 );
 						Frngs(cimage, numr);
 						//  compare with all reference images that are on a new list
 						Dict retvals = Crosrng_e(crefim[iref], cimage, numr, mirror, 0.0f);
@@ -21737,7 +21737,7 @@ vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMD
 
 						if( i*i + j*j <= circle ) {
                             EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
-                            Normalize_ring( cimage, numr );
+                            Normalize_ring( cimage, numr, 0 );
                             Frngs(cimage, numr);
                             cimages[i+lky][j+lkx] = cimage;
 						}
@@ -21879,7 +21879,7 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 				for (int j = -lkx; j <= rkx; j++) {
 					ix = j*step ;
 					EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
-					Normalize_ring( cimage, numr );
+					Normalize_ring( cimage, numr, 0 );
 					Frngs(cimage, numr);
 					cimages[i+lky][j+lkx] = cimage;
 				}
@@ -21958,7 +21958,7 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 			for (int j = -lkx; j <= rkx; j++) {
 				ix = j*step;
 				EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
-				Normalize_ring( cimage, numr );
+				Normalize_ring( cimage, numr, 0 );
 				Frngs(cimage, numr);
 				cimages[i+lky][j+lkx] = cimage;
 			}
@@ -22051,7 +22051,7 @@ vector<float> Util::shc_multipeaks(EMData* image, const vector< EMData* >& crefi
 		for (int j = -lkx; j <= rkx; j++) {
 			ix = j*step ;
 			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
-			Normalize_ring( cimage, numr );
+			Normalize_ring( cimage, numr, 0 );
 			Frngs(cimage, numr);
 			cimages[i+lky][j+lkx] = cimage;
 		}
@@ -22231,7 +22231,7 @@ vector<float> Util::multiref_polar_ali_2d_local_psi(EMData* image, const vector<
 			ix = j*step ;
 			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 
-			Normalize_ring(cimage, numr);
+			Normalize_ring(cimage, numr, 0);
 
 			Frngs(cimage, numr);
 			//  compare with all reference images
@@ -22336,7 +22336,7 @@ vector<float> Util::multiref_polar_ali_helical(EMData* image, const vector< EMDa
 			ix = j*step ;
 			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 
-			Normalize_ring( cimage, numr );
+			Normalize_ring( cimage, numr, 0 );
 
 			Frngs(cimage, numr);
 			//  compare with all reference images
@@ -22473,7 +22473,7 @@ vector<float> Util::multiref_polar_ali_helical_local(EMData* image, const vector
 		for (int j = -lkx; j <= rkx; j++) {
 			ix = j*step ;
 			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
-			Normalize_ring( cimage, numr );
+			Normalize_ring( cimage, numr, 0 );
 	
 			Frngs(cimage, numr);
 			//  Compare with All reference images within neighborhood ant
@@ -22588,7 +22588,7 @@ vector<float> Util::multiref_polar_ali_helical_90(EMData* image, const vector< E
 			ix = j*step ;
 			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 
-			Normalize_ring( cimage, numr );
+			Normalize_ring( cimage, numr, 0 );
 
 			Frngs(cimage, numr);
 			//  compare with all reference images
@@ -22704,7 +22704,7 @@ vector<float> Util::multiref_polar_ali_helical_90_local(EMData* image, const vec
 			ix = j*step ;
 			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 
-			Normalize_ring( cimage, numr );
+			Normalize_ring( cimage, numr, 0 );
 
 			Frngs(cimage, numr);
 			//  compare with all reference images
@@ -22813,7 +22813,7 @@ vector<float> Util::multiref_polar_ali_helicon_local(EMData* image, const vector
 		for (int j = -lkx; j <= rkx; j++) {
 			ix = j*step ;
 			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
-			Normalize_ring( cimage, numr );
+			Normalize_ring( cimage, numr, 0 );
 	
 			Frngs(cimage, numr);
 			//  Compare with All reference images within neighborhood ant
@@ -22942,7 +22942,7 @@ vector<float> Util::multiref_polar_ali_helicon_90_local(EMData* image, const vec
 			ix = j*step ;
 			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 
-			Normalize_ring( cimage, numr );
+			Normalize_ring( cimage, numr, 0 );
 
 			Frngs(cimage, numr);
 			//  compare with all reference images
