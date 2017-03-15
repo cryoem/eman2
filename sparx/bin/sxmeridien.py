@@ -5982,7 +5982,7 @@ def update_tracker(shell_line_command):
 	parser_no_default.add_option("--center_method",				type="int")
 	parser_no_default.add_option("--target_radius", 			type="int")
 	parser_no_default.add_option("--mask3D",		         	type="string")
-	parser.add_option("--function",						type="string", default="do_volume_mask",  help="name of the reference preparation function (default do_volume_mask)")
+	parser_no_default.add_option("--function",					type="string")
 	parser_no_default.add_option("--ccfpercentage",		 		type="float")
 	parser_no_default.add_option("--nonorm",               		action="store_true")
 	parser_no_default.add_option("--do_final",             		type="int")# No change

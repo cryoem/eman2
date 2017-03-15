@@ -22,20 +22,22 @@ def group_pts(pts, dst0, d0):
 		group[r]=i
 		dst[:,r]=np.inf
 
-	for kk in range(100):
-		nochange=True
+	for kk in range(20):
+		nochange=np.sum(group<0)
 		for i,r in enumerate(rid):
 			mm=np.min(dst[r])
 			if mm>1: continue
 			ii=np.where(dst[r]==mm)[1]
-			nochange=False
+			
 			group[ii]=i
 			dst[:,ii]=np.inf
 			rid[i].extend(ii)
+		rid=np.unique(rid)
 		ss= np.sum(group<0)
-		#print ss
+		nochange-=ss
+		print ss
 		if ss==0: break
-		if nochange: break
+		if nochange<2: break
 	return group
 
 
@@ -365,9 +367,9 @@ def main():
 	if options.nres<0:
 		options.nres=len(path)
 	
-	if options.lowres:
-		print "Interpolate initial path.."
-		path=interp_points(path,options.nres)
+	#if options.lowres:
+		#print "Interpolate initial path.."
+		#path=interp_points(path,options.nres)
 	
 		
 	
@@ -403,6 +405,8 @@ def main():
 		
 		if options.lowres:
 			grp=group_pts(pts, dst, d0)
+			drawmap(pts, grp,shape, apix,"{}/group0.hdf".format(options.folder, itr))
+			
 		
 		shrtpath,sp=short_path_iter(pathint, pts, dst, d0, pval, 3, 1., 5, grp)
 		shrtpath,sp=short_path_iter(pathint, pts, dst, d0, pval, 5, 1., 5, grp,shrtpath)
