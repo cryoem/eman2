@@ -1111,7 +1111,7 @@ def main():
 			## determine resolution by two criterion from corrected FSC plus RH correction of FSC from masked volumes
 			resolution_FSC143_right  = 0.0
 			resolution_FSC143_left   = 0.0
-			deep_at_fsc              = False
+			dip_at_fsc              = False
 			nfreq0 = 1
 			
 			for ifreq in xrange(1, len(fsc_true[1])):
@@ -1140,7 +1140,7 @@ def main():
 					break
 					
 			if resolution_FSC143_left != resolution_FSC143_right: 
-				log_main.add("there is a deep between 0.5 to 0.143 in FSC!")
+				log_main.add("there is a dip between 0.5 to 0.143 in FSC!")
 			else:                                           
 				log_main.add("fsc smoothly falls from 0.5 t0 0.143 !")
 			
@@ -1256,7 +1256,7 @@ def main():
 			log_main.add("---------- >>>Summary<<<------------")
 			log_main.add("Resolution at criteria 0.143 is %7.2f Angstrom"%round((options.pixel_size/resolution_FSC143),3))
 			log_main.add("Resolution at criteria 0.5   is %7.2f Angstrom"%round((options.pixel_size/resolution_FSChalf),3))
-			if deep_at_fsc: log_main.add("There is a deep in your fsc in the region between 0.5 and 0.143, and you might consider ploting your fsc curve")
+			if dip_at_fsc: log_main.add("There is a dip in your fsc in the region between 0.5 and 0.143, and you might consider ploting your fsc curve")
 			if options.B_enhance !=-1:  log_main.add( "B-factor is  %6.2f Angstrom^2  "%(round((-global_b),2)))
 			else:                       log_main.add( "B-factor is not applied  ")
 			log_main.add("FSC curve is saved in fsc.txt ")
