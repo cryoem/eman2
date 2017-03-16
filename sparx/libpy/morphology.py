@@ -1767,8 +1767,6 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, micsuffix, wn,  f_start= 
 					if( tt < bp ):
 						bp = tt
 						istart = i
-				#istart = 25
-				#print istart
 				f_start = istart/(Pixel_size*wn)
 			"""
 			hi = hist_list(sroo,2)
@@ -5029,8 +5027,6 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 					if tt < bp:
 						bp = tt
 						istart = i
-				#istart = 25
-				#print istart
 				f_start = istart / (pixel_size * wn)
 			"""
 			hi = hist_list(sroo,2)
@@ -5047,16 +5043,17 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			from time import time
 			at = time()
 
-			defc, ampcont, subpw, ctf2, baseline, envelope, istart, istop = defocusgett_vpp(rooc, wn, voltage = voltage, Pixel_size = pixel_size, Cs = Cs, f_start = f_start, f_stop = f_stop, round_off = 1.0, nr1 = 3, nr2 = 6, parent = None, DEBug = debug_mode)
+			defc, ampcont, subpw, baseline, envelope, istart, istop = defocusgett_vpp(rooc, wn, voltage = voltage, Pixel_size = pixel_size, Cs = Cs, f_start = f_start, f_stop = f_stop, nr1 = 3, nr2 = 6, parent = None, DEBug = debug_mode)
 			if debug_mode or True:
 				print "  RESULT 1 %s" % (img_name), defc, ampcont, istart, istop, (time()-at)/60.
-
+				'''
 				freq = range(len(subpw))
 				for i in xrange(len(freq)):  freq[i] = float(i) / wn / pixel_size
 #				write_text_file([freq, subpw.tolist(), ctf2, envelope.tolist(), baseline.tolist()], "%s/ravg%05d.txt" % (output_directory, ifi))
 				#fou = os.path.join(outravg, "%s_ravg_%02d.txt" % (img_basename_root, nboot))
 				fou = os.path.join(".", "%s_ravg_%02d.txt" % (img_basename_root, nboot))
 				write_text_file([freq, subpw.tolist(), ctf2, envelope.tolist(), baseline.tolist()], fou)
+				'''
 			#mpi_barrier(MPI_COMM_WORLD)
 			
 			#exit()
@@ -5078,40 +5075,29 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 						dr = r - ir
 						bckg.set_value_at(i, j, (1. - dr) * bg[ir] + dr * bg[ir + 1] )
 						envl.set_value_at(i, j, (1. - dr) * en[ir] + dr * en[ir + 1] )
-			
+
 			#qa.write_image("rs1.hdf")
 			
-			mask = model_circle(istop - 1, wn, wn) * (model_blank(wn, wn, 1, 1.0) - model_circle(istart, wn, wn))
 			qse = threshold((qa - bckg))#*envl
-			(qse*mask).write_image("rs2.hdf")
-			qse.write_image("rs3.hdf")
+			#(qse*mask).write_image("rs2.hdf")
+			#qse.write_image("rs3.hdf")
 			##  SIMULATION
 			#bang = 0.7
 			#qse = ctf2_rimg(wn, generate_ctf([defc,Cs,voltage,pixel_size,0.0,wgh, bang, 37.0]) )
 			#qse.write_image("rs3.hdf")
 			
-			cnx = wn // 2 + 1
-			cny = cnx
-			mode = "H"
-			istop = min(wn // 2 - 2, istop)    #2-26-2015@ming
-			numr = Numrinit(istart, istop, 1, mode)
-			wr = ringwe(numr, mode)
-
-			crefim = Util.Polar2Dm(qse*mask, cnx, cny, numr, mode)
-			Util.Frngs(crefim, numr)
-			Util.Applyws(crefim, numr, wr)
-
-			defc, ampcont, subpw, ctf2, baseline, envelope, istart, istop = defocusgett_vpp2(qse, rooc, wn, defc, ampcont, voltage = voltage, Pixel_size = pixel_size, Cs = Cs, f_start = f_start, f_stop = f_stop, round_off = 1.0, nr1 = 3, nr2 = 6, parent = None, DEBug = debug_mode)
+			at = time()
+			defc, ampcont, astamp, astang, score =  defocusgett_vpp2(qse, envl, wn, defc, ampcont, voltage = voltage, Pixel_size = pixel_size, Cs = Cs, i_start=istart, i_stop=istop, parent = None, DEBug = debug_mode)
 			if debug_mode or True:
-				print "  RESULT 2 %s" % (img_name), defc, ampcont, istart, istop,(time()-at)/60.
-				
+				print "  RESULT 2 %s" % (img_name), defc, ampcont, astamp, astang, score, (time()-at)/60.
+				'''
 				freq = range(len(subpw))
 				for i in xrange(len(freq)):  freq[i] = float(i) / wn / pixel_size
 #				write_text_file([freq, subpw.tolist(), ctf2, envelope.tolist(), baseline.tolist()], "%s/ravg%05d.txt" % (output_directory, ifi))
 				#fou = os.path.join(outravg, "%s_ravg_%02d.txt" % (img_basename_root, nboot))
 				fou = os.path.join(".", "%s_ravg22_%02d.txt" % (img_basename_root, nboot))
 				write_text_file([freq, subpw.tolist(), ctf2, envelope.tolist(), baseline.tolist()], fou)
-			
+				'''
 			#pc = ctf2_rimg(wn,generate_ctf([defc,Cs,voltage,pixel_size,0.0,wgh]))
 			#print ccc(pc*envl, subpw, mask)
 			exit()  #  TO HERE
@@ -5514,16 +5500,16 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 # functions used by cter_vpp
 ########################################
 
-def defocusgett_vpp(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_start=-1.0, f_stop=-1.0, round_off=1.0, nr1=3, nr2=6, parent=None, DEBug=False):
+def defocusgett_vpp(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_start=-1.0, f_stop=-1.0, nr1 = 3, nr2 = 6, parent=None, DEBug=False):
 	"""
 		1. Estimate envelope function and baseline noise using constrained simplex method
 		   so as to extract CTF imprints from 1D power spectrum
 		2. Based one extracted ctf imprints, perform exhaustive defocus searching to get 
 		   defocus which matches the extracted CTF imprints 
 	"""
-	from utilities  import generate_ctf
+	#from utilities  import generate_ctf
 	import numpy as np
-	from morphology import ctf_2, bracket_def, defocus_baseline_fit, ctflimit, simpw1d, goldsearch_astigmatism
+	from morphology import defocus_baseline_fit, simpw1d
 
 	#print "CTF params:", voltage, Pixel_size, Cs, wgh, f_start, f_stop, round_off, nr1, nr2, parent
 
@@ -5558,61 +5544,6 @@ def defocusgett_vpp(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_start=-1.0
 	defocus = 0.0
 	ampcont = 0.0
 	data = [subpw[i_start:i_stop], envelope[i_start:i_stop], nx, defocus, Cs, voltage, Pixel_size, ampcont, i_start, i_stop]
-
-	'''
-	#for i in xrange(nroo):
-	#	print  i,"   ",roo[i],"   ",baseline[i],"   ",subpw[i],"   ",envelope[i]
-	h = 0.1
-	#def1, def2 = bracket(simpw1d, data, h)
-	#if DEBug:  print "first bracket ",def1, def2,simpw1d(def1, data),simpw1d(def2, data)
-	#def1=0.1
-	ndefs = 18
-	defound = []
-	for  idef in xrange(ndefs):
-		def1 = (idef+1)*0.5
-		def1, def2 = bracket_def(simpw1d, data, def1, h)
-		if DEBug:  print "second bracket ",idef,def1, def2,simpw1d(def1, data),simpw1d(def2, data),h
-		def1, val2 = goldsearch_astigmatism(simpw1d, data, def1, def2, tol=1.0e-3)
-		if DEBug:  print "golden ",idef,def1, val2,simpw1d(def1, data)
-		if def1>0.0:  defound.append([val2,def1])
-	defound.sort()
-	del defound[3:]
-	def1 = defound[0][1]
-	if adjust_fstop:
-		from morphology import ctflimit
-		newstop, fnewstop = ctflimit(nx, def1, Cs, voltage, Pixel_size)
-		if DEBug:  print  "newstop  ", int(newstop*0.7), fnewstop*0.7, i_stop, newstop
-		if( newstop != i_stop and (newstop-i_start)>min(10,(i_stop-i_start))):
-			i_stop = newstop
-			data = [subpw[i_start:i_stop], envelope[i_start:i_stop], nx, defocus, Cs, voltage, Pixel_size, ampcont, i_start, i_stop]
-			"""
-			def1, def2 = bracket_def(simpw1d, data, def1, h)
-			if(def1 > def2):
-				temp = def1
-				def1 = def2
-				def2 = temp
-			print "adjusted bracket ",def1, def2,simpw1d(def1, data)
-			"""
-			h = 0.05
-			for idef in xrange(3):
-				def1, def2 = bracket_def(simpw1d, data, defound[idef][1], h)
-				if DEBug:  print " adjusted def ",def1,def2
-				def1, val2 = goldsearch_astigmatism(simpw1d, data, def1, def2, tol=1.0e-3)
-				if DEBug:  print "adjusted golden ",def1, val2,simpw1d(def1, data)
-				if def1>0.0:  defound[idef] = [val2,def1]
-			defound.sort()
-			def1 = defound[0][1]
-	if DEBug: print " ultimate defocus",def1,defound
-
-	#defocus = defocus_guessn(Res_roo, voltage, Cs, Pixel_size, ampcont, i_start, i_stop, 2, round_off)
-	#print simpw1d(def1, data),simpw1d(4.372, data)
-	"""
-	def1 = 0.02
-	def2 = 10.
-	def1, def2 = goldsearch_astigmatism(simpw1d, data, def1, def2, tol=1.0e-3)
-	print "golden ",def1, def2,simpw1d(def1, data)
-	"""
-	'''
 	qm = 1.e23
 	#toto = []
 	for a in xrange(5,95,5):
@@ -5633,30 +5564,90 @@ def defocusgett_vpp(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_start=-1.0
 		#def1 = defi
 	#exit()
 	'''
-	ctf2 = ctf_1d(nx, generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont]), doabs= True)
+	#ctf2 = ctf_1d(nx, generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont]), doabs= True)
 	'''
 	from utilities import write_text_file
 	foki = subpw.tolist()
 	write_text_file([foki,ctf2[:len(foki)]],"toto1.txt")
 	'''
-	return defi, ampcont, subpw, ctf2, baseline, envelope, i_start, i_stop
+	return defi, ampcont, subpw, baseline, envelope, i_start, i_stop  #, ctf2
+
+
+
+def defocusgett_vpp2(qse, envl, wn, xdefc, xampcont, voltage=300.0, Pixel_size=1.0, Cs=2.0, i_start=0, i_stop=0, parent=None, DEBug=False):
+	"""
+		1. Estimate envelope function and baseline noise using constrained simplex method
+		   so as to extract CTF imprints from 1D power spectrum
+		2. Based one extracted ctf imprints, perform exhaustive defocus searching to get
+		   defocus which matches the extracted CTF imprints
+	"""
+	#from utilities  import generate_ctf
+	#import numpy as np
+	from utilities import amoeba
+	from alignment import Numrinit, ringwe
+
+	cnx = wn // 2 + 1
+	cny = cnx
+	mode = "H"
+	numr = Numrinit(i_start, i_stop-1, 1, mode)
+	wr = ringwe(numr, mode)
+	
+	crefim = Util.Polar2Dm(qse, cnx, cny, numr, mode)
+	Util.Frngs(crefim, numr)
+	Util.Applyws(crefim, numr, wr)
+	bdef = 0.
+	baco = 0.0  	#  amplitude contrast
+	bamp = 0.0      #  initial astigmatism amplitude
+	bang = 0.0      #  initial astigmatism angle
+	astdata = [crefim, numr, wn, bdef, Cs, voltage, Pixel_size, baco, bamp, bang]
+
+	dp = 1.0e23
+	toto = []
+
+	for aa in xrange(0,20,5):
+		a = xampcont + aa - 10.
+		print "  fdasfdsfa  ",a
+		for i in xrange(0,2000,500):
+			dc = xdefc + float(i-1000)/10000.0
+			ju1 = dc # defocus
+			ju2 = float(a) # amp contrast
+			ju3 = 0.0  # astigma amp
+			dama = amoeba([ju1,ju2,ju3], [0.005, 2.0, 0.002], fupw_vpp, 1.e-4, 1.e-4, 200, astdata)
+			qma = -dama[-2]
+			print  " amoeba  %7.2f  %7.2f  %12.6g  %12.6g"%(dama[0][0],dama[0][1],dama[0][2],qma)
+			toto.append([dama[0][0],dama[0][1],dama[0][2],qma])
+			if(qma<dp):
+				dp = qma
+				dpefi = dama[0][0]
+				dpmpcont = dama[0][1]
+				dastamp = dama[0][2]
+				astdata = [crefim, numr, wn, dpefi, Cs, voltage, Pixel_size, dpmpcont, dastamp, bang]
+				junk = fastigmatism3_vpp(dama[0][2], astdata)
+				dastang = astdata[8]
+				print " FIND ANGLE",junk, qma, dpefi,dpmpcont,dastamp,dastang
+	if DEBug or True:
+		from utilities import write_text_row
+		write_text_row(toto,"toto1.txt")
+		print " repi3  ", dpefi, dpmpcont, dastamp, dastang
+
+	return dpefi, dpmpcont, dastamp, dastang, dp
 
 
 def fupw_vpp(args, data):
 	from morphology import fastigmatism3_vpp
 	#  args = [defocus, ampcontrast, astigma-amp]
-	#                                   0       1     2   3     4    5         6          7     8     9    10
-	#            (astdata) =          [crefim, numr, wn, bdef, Cs, voltage, Pixel_size, baco, bamp, bang, mask]
+	#                                   0       1     2   3     4    5         6          7     8     9 
+	#            (astdata) =          [crefim, numr, wn, bdef, Cs, voltage, Pixel_size, baco, bamp, bang]
 	#
-	#   [data[0], data[1], data[2], args[0], data[4], data[5], data[6], args[1], data[8], data[9], data[10]]
+	#   [data[0], data[1], data[2], args[0], data[4], data[5], data[6], args[1], data[8], data[9]]
 	#   [crefim,   numr,   wn, (args)defocus, Cs,   voltage, Pixel_size,(a)ampcont, (a)astamp, ang, mask]
 	#
-	print  " fuw_vpp           ",args[0],args[1],args[2]
+	#print  " fuw_vpp           ",args[0],args[1],args[2]
 	args[0] = max(min(args[0], 6.0), 0.01)
 	args[1] = max(min(args[1],99.0), 1.0)
 	args[2] = max(min(args[2], 3.0), 0.0)
 	#                        (a)astamp
-	return fastigmatism3_vpp(args[2],[data[0], data[1], data[2], args[0], data[4], data[5], data[6], args[1], data[8], data[9], data[10]])
+	return fastigmatism3_vpp(args[2],[data[0], data[1], data[2], args[0], data[4], data[5], data[6], args[1], data[8], data[9]])
 
 
 def fastigmatism3_vpp(amp, data):
@@ -5670,9 +5661,9 @@ def fastigmatism3_vpp(amp, data):
 	#  data[8] - astigmatism amplitude
 	#  data[9] - mask defining the region of interest
 	#
-	#      0        1          2       3        4       5         6         7      8        9        10
-	#   [data[0], data[1], data[2], args[0], data[4], data[5], data[6], args[1], data[8], data[9], data[10]]
-	#   [crefim,   numr,   wn, (args)defocus, Cs,   voltage, Pixel_size,(a)ampcont, (a)astamp, ang, mask]
+	#      0        1          2       3        4       5         6         7      8        9 
+	#   [data[0], data[1], data[2], args[0], data[4], data[5], data[6], args[1], data[8], data[9]]
+	#   [crefim,   numr,   wn, (args)defocus, Cs,   voltage, Pixel_size,(a)ampcont, (a)astamp, ang]
 	#
 	#  generate_ctf
 	#      0      1    2       3       4        5        6                      7
@@ -5687,11 +5678,7 @@ def fastigmatism3_vpp(amp, data):
 	#Util.mul_scalar(pc, 1.0/st)
 	ang, sxs, sys, mirror, peak = ornq_vpp(pc, data[0], [0.0,0.0], [0.0,0.0], 1, "H", data[1], cnx, cnx)
 	#print  ang, sxs, sys, mirror, peak
-	print  " fastigmatism3_vpp ",round(data[3],3),data[7], amp,round(ang,2),round(peak,3)
-	if(peak<0.0):
-		print  "why negative??  ", Util.infomask(pc,data[-1],True)
-
-	#exit()
+	#print  " fastigmatism3_vpp ",round(data[3],3), data[7], amp,round(ang,2),round(peak,3)
 	data[8] = ang
 	return  peak
 
@@ -5720,7 +5707,7 @@ def ornq_vpp(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0
 			ix = j*step
 			cimage = Util.Polar2Dm(image, cnx+ix, cny+iy, numr, mode)
 			Util.Frngs(cimage, numr)
-			#Util.Normalize_ring(cimage, numr, 0)
+			Util.Normalize_ring(cimage, numr, 0)
 			retvals = Util.Crosrng_e(crefim, cimage, numr, 0, deltapsi)
 			qn = retvals["qn"]
 			if qn >= peak:
@@ -5736,8 +5723,7 @@ def ornq_vpp(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0
 	sys = sx*so + sy*co
 	return  ang, sxs, sys, mirror, peak
 
-
-def defocusgett_vpp2(qse, roo, nx, xdefc, xampcont, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_start=-1.0, f_stop=-1.0, round_off=1.0, nr1=3, nr2=6, parent=None, DEBug=False):
+def Xdefocusgett_vpp2(qse, roo, nx, xdefc, xampcont, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_start=-1.0, f_stop=-1.0, round_off=1.0, nr1=3, nr2=6, parent=None, DEBug=False):
 	"""
 		1. Estimate envelope function and baseline noise using constrained simplex method
 		   so as to extract CTF imprints from 1D power spectrum
@@ -5893,7 +5879,7 @@ def defocusgett_vpp2(qse, roo, nx, xdefc, xampcont, voltage=300.0, Pixel_size=1.
 	return defi, ampcont, subpw, ctf2, baseline, envelope, i_start, i_stop
 
 
-def defocusgett_vpp22(qse, roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_start=-1.0, f_stop=-1.0, round_off=1.0, nr1=3, nr2=6, parent=None, DEBug=False):
+def Xdefocusgett_vpp22(qse, roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_start=-1.0, f_stop=-1.0, round_off=1.0, nr1=3, nr2=6, parent=None, DEBug=False):
 	"""
 		1. Estimate envelope function and baseline noise using constrained simplex method
 		   so as to extract CTF imprints from 1D power spectrum
