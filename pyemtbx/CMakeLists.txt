@@ -1,4 +1,4 @@
 FILE(GLOB tbxprograms "${CMAKE_CURRENT_SOURCE_DIR}/*.py")
 INSTALL(FILES ${tbxprograms}
-  DESTINATION    lib/pyemtbx
+  DESTINATION    ${EMAN_PY_INSTALL_PREFIX}/pyemtbx
 )

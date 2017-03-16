@@ -6,42 +6,38 @@ source:
     path: {{ RECIPE_DIR }}/../..
 
 requirements:
+    {% set reqs_common = [
+            "python 2.7.*",
+            "boost 1.61.*",
+            "fftw",
+            "numpy",
+            "ftgl",
+            "freetype",
+            "gsl",
+            "hdf5",
+            "jpeg",
+            "libtiff",
+            "libpng",
+            "zlib",
+    ] %}
+    
     build:
         - cmake
-        
-        - python 2.7.*
-        - boost 1.63*
-        - fftw
-        - numpy
-        - ftgl
-        - freetype
-        - gsl
-        - hdf5
-        - jpeg
-        - libtiff
-        - libpng
         - szip  # [win]
-        - zlib
+        
+        {% for req in reqs_common %}
+        - {{ req }}
+        {% endfor %}
     
     run:
-        - python 2.7.*
-        - boost 1.63*
-        - fftw
-        - numpy
-        - ftgl
-        - freetype
-        - gsl
-        - hdf5
-        - jpeg
-        - libtiff
-        - libpng
-        - szip  # [win]
-        - zlib
+        {% for req in reqs_common %}
+        - {{ req }}
+        {% endfor %}
         
+        - szip  # [win]
         - bsddb  # [not win]
         - matplotlib
         - ipython
         - pyqt 4.*
-        - pyopengl
+        - pyopengl 3.1.0
         - theano
-        - scipy
