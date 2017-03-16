@@ -26,5 +26,3 @@ before_install:
 
 script:
   - bash ci_support/${build_scrt}
-  
-  - export PYTHONPATH="${PREFIX}/lib:$PYTHONPATH"
