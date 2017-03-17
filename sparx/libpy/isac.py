@@ -47,9 +47,12 @@ def iter_isac_pap(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, F
 	from applications import within_group_refinement
 	import os
 
-	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
-	myid = mpi_comm_rank(MPI_COMM_WORLD)
-	main_node = 0
+	global Blockdata
+
+
+	number_of_proc = Blockdata["nproc"]
+	myid = Blockdata["myid"]
+	main_node = Blockdata["main_node"]
 
 	seed(myid)
 	rand1 = randint(1,1000111222)
@@ -103,6 +106,7 @@ def iter_isac_pap(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, F
 	color = myid%indep_run
 	key = myid/indep_run
 	group_comm = mpi_comm_split(MPI_COMM_WORLD, color, key)
+	print "  MPI STUFF BY YANG ",myid, indep_run, color, key
 	group_main_node = 0
 
 	# Read data on each processor, there are two ways, one is read on main_node and send them to all other nodes
@@ -755,7 +759,9 @@ def isac_MPI_pap(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, r
 	import os
 	import sys
 
-	if comm == -1: comm = MPI_COMM_WORLD		
+	global Blockdata
+
+	if comm == -1: comm = MPI_COMM_WORLD	
 
 	number_of_proc = mpi_comm_size(comm)
 	myid = mpi_comm_rank(comm)
@@ -846,7 +852,7 @@ def isac_MPI_pap(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, r
 
 	while main_iter < max_iter:
 		Iter += 1
-		if my_abs_id == main_node: print "Iteration within isac_MPI = ", Iter, "	main_iter = ", main_iter, "	len data = ", image_end-image_start, localtime()[0:5], myid
+		if my_abs_id == main_node: print "Iteration within isac_MPI = ", strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>", Iter, "	main_iter = ", main_iter, "	len data = ", image_end-image_start, localtime()[0:5], myid
 		mashi = cnx-ou-2
 		for j in xrange(numref):
 			refi[j].process_inplace("normalize.mask", {"mask":mask, "no_sigma":1}) # normalize reference images to N(0,1)
