@@ -315,6 +315,7 @@ with the same name, you should specify only the .hed files (no renaming is neces
 					cmd+=" --process filter.lowpass.gauss:cutoff_abs=.25 --process filter.highpass.gauss:cutoff_pixels=5 --process normalize --process threshold.clampminmax.nsigma:nsigma=3 "
 				cmd+=options.preprocess
 				run(cmd)
+				print "Done."
 				#shutil.copy(filename,os.path.join(tomosdir,os.path.basename(filename)))
 			if options.importation == "link":
 				os.symlink(filename,os.path.join(tomosdir,os.path.basename(filename)))

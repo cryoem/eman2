@@ -3527,7 +3527,7 @@ def generate_ctf(p):
 	amp_contrast = p[5]
 
 	if defocus > 100:  # which means it is very likely in Angstrom, therefore we are using the old convention
-		defocus *= 1e-4
+		defocus *= 1.0e-4
 
 	if amp_contrast < 1.0:
 		from math import sqrt
@@ -3539,7 +3539,7 @@ def generate_ctf(p):
 	elif(len(p) == 8):
 		ctf.from_dict({"defocus":defocus, "cs":cs, "voltage":voltage, "apix":pixel_size, "bfactor":bfactor, "ampcont":amp_contrast,'dfdiff':p[6],'dfang':p[7]})
 	else:
-		ERROR("Incorrect number of entries on a list, cennot generate CTF","generate_ctf",0)
+		ERROR("Incorrect number of entries on a list, cannot generate CTF","generate_ctf",0)
 		return None
 	return ctf
 

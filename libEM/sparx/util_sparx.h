@@ -538,7 +538,7 @@ class FakeKaiserBessel : public KaiserBessel {
 	static void  Frngs(EMData* circ, vector<int> numr);
 
 	static float polar_norm2(EMData* ring, const vector<int>& numr);
-	static void  Normalize_ring(EMData* ring, const vector<int>& numr);
+	static void  Normalize_ring(EMData* ring, const vector<int>& numr, int norm_by_square);
 
 	/** This function conducts the Single Precision Inverse Fourier Transform for a set of rings */
 	static void  Frngs_inv(EMData* circ, vector<int> numr);
@@ -1190,7 +1190,7 @@ public:
 	static float innerproductwithctf(EMData* img, EMData* img1, EMData* img2, EMData* mask);
 
 	static float local_inner_product(EMData* image1, EMData* image2, int lx, int ly, int lz, int w);
-	
+
 	static void version();
 	static EMData* move_points(EMData* img,  float qprob, int ri, int ro);
 

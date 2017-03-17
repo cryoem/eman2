@@ -215,9 +215,12 @@ def AI( fff, anger, shifter, chout = False):
 		if( shifter < Tracker["shifter"] ):		Tracker["shifter"] = shifter
 
 		inc = Tracker["currentres"]
-		if Tracker["large_at_Nyquist"]:	inc += int(0.25 * Tracker["constants"]["nnxo"]/2 +0.5)
-		else:							inc += Tracker["nxstep"]
-		tmp = min(2*inc, Tracker["constants"]["nnxo"] )  #  Cannot exceed image size
+		if Tracker["large_at_Nyquist"]:	
+			inc += int(0.25 * Tracker["constants"]["nnxo"]/2 +0.5)
+			tmp = min(max(2*inc,int(Tracker["nxinit"]*1.09)), Tracker["constants"]["nnxo"] )
+		else:
+			inc += Tracker["nxstep"]
+			tmp = min(2*inc, Tracker["constants"]["nnxo"] )  #  Cannot exceed image size
 
 		if( chout ): print("  IN AI nxstep, large at Nyq, outcoming current res, adjusted current, estimated image size",Tracker["nxstep"],Tracker["large_at_Nyquist"],Tracker["currentres"],inc,tmp)
 
@@ -2269,7 +2272,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 	for i in xrange(nang_start, nang_end, 1):  # This will take care of process on a node less than nang.  Some loops will not be executed
 		temp = prgl(volprep,[ coarse_angles[i][0], coarse_angles[i][1],0.0, 0.0,0.0], 1, True)
 		crefim = Util.Polar2Dm(temp, cnx, cnx, numr, mode)
-		Util.Normalize_ring(crefim, numr)
+		Util.Normalize_ring(crefim, numr, 0)
 		Util.Frngs(crefim, numr)
 		Util.Applyws(crefim, numr, wr)
 		bigbuffer.insert_clip(crefim,(0,i) )
@@ -5490,6 +5493,14 @@ def do_ctrefromsort3d_get_subset_data(masterdir, option_old_refinement_dir, opti
 		fout.close()
 	else: Tracker = 0
 	Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD) # balance processors
+	
+	
+	old_stack = Tracker["constants"]["stack"]
+	if old_stack[0:3] == "bdb":
+		old_stack = "bdb:" + option_old_refinement_dir+"/../"+old_stack[4:]
+		Tracker["constants"]["stack"]   = old_stack
+	else: Tracker["constants"]["stack"] = os.path.join(option_old_refinement_dir, "../", old_stack)
+	
 		
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		noiseimage        = get_im(os.path.join(old_previousoutputdir, "bckgnoise.hdf"))
@@ -5580,9 +5591,12 @@ def do_ctrefromsort3d_get_subset_data(masterdir, option_old_refinement_dir, opti
 		Tracker["previousoutputdir"]      = previousoutputdir
 		Tracker["refvol"]                 = os.path.join(iter_dir, "vol_0_%03d.hdf"%selected_iter)
 		Tracker["mainiteration"]          = selected_iter
+		
 		update_tracker(shell_line_command) # the updated could be any refinement parameters that user wish to make change
+		
 		error_angles, error_shifts        = params_changes((new_params_chunk_one + new_params_chunk_two), (new_params_chunk_one_last_iter + new_params_chunk_two_last_iter))
 		# varibles in Tracker to be updated
+		
 		if Tracker["constants"]["mask3D"]: 
 			Tracker["constants"]["mask3D"] = os.path.join(option_old_refinement_dir, "../", Tracker["constants"]["mask3D"])
 			if not os.path.exists(Tracker["constants"]["mask3D"]):  Tracker["constants"]["mask3D"] =  None
@@ -5939,6 +5953,8 @@ def ctrefromsorting_rec3d_faked_iter(masterdir, selected_iter=-1, comm = -1):
 def update_memory_estimation():
 	global Tracker, Blockdata
 	if(Blockdata["myid"] == Blockdata["main_node"]):
+		if Tracker["constants"]["memory_per_node"] ==-1.:
+			Tracker["constants"]["memory_per_node"] = Blockdata["no_of_processes_per_group"]*2.0 # reasonable approximation
 		total_stack = EMUtil.get_image_count(Tracker["constants"]["stack"])
 		image_size   = max(Tracker["nxinit"], Tracker["constants"]["nnxo"]*1./2.)
 		data_size    = total_stack*4*float(image_size**2)/float(Blockdata["no_of_groups"])/1.0e9
@@ -5979,7 +5995,7 @@ def update_tracker(shell_line_command):
 	parser_no_default.add_option("--center_method",				type="int")
 	parser_no_default.add_option("--target_radius", 			type="int")
 	parser_no_default.add_option("--mask3D",		         	type="string")
-	parser.add_option("--function",						type="string", default="do_volume_mask",  help="name of the reference preparation function (default do_volume_mask)")
+	parser_no_default.add_option("--function",					type="string")
 	parser_no_default.add_option("--ccfpercentage",		 		type="float")
 	parser_no_default.add_option("--nonorm",               		action="store_true")
 	parser_no_default.add_option("--do_final",             		type="int")# No change
@@ -5989,6 +6005,7 @@ def update_tracker(shell_line_command):
 	parser_no_default.add_option("--subset",                    type="string")
 	parser_no_default.add_option("--oldrefdir",                 type="string")
 	parser_no_default.add_option("--ctrefromiter",              type="int")
+
 		
 	(options_no_default_value, args) = parser_no_default.parse_args(shell_line_command)
 
@@ -6041,7 +6058,10 @@ def update_tracker(shell_line_command):
 	if  options_no_default_value.oldrefdir != "":
 		Tracker["constants"]["oldrefdir"] 			= options_no_default_value.oldrefdir	
 	if  options_no_default_value.ctrefromiter != -1:
-		Tracker["constants"]["ctrefromiter"] 		= options_no_default_value.ctrefromiter	
+		Tracker["constants"]["ctrefromiter"] 		= options_no_default_value.ctrefromiter
+		
+	if  options_no_default_value.function != -1:
+		Tracker["constants"]["function"] = options_no_default_value.function
 		
 	return 
 	
@@ -6061,15 +6081,15 @@ def main():
 
 	from utilities import write_text_row, drop_image, model_gauss_noise, get_im, set_params_proj, wrap_mpi_bcast, model_circle
 	import user_functions
-	from applications import MPI_start_end
-	from optparse import OptionParser
-	from global_def import SPARXVERSION
-	from EMAN2 import EMData
-	from multi_shc import multi_shc
-	from logger import Logger, BaseLogger_Files
+	from applications  import MPI_start_end
+	from optparse      import OptionParser
+	from global_def    import SPARXVERSION
+	from EMAN2         import EMData
+	from multi_shc     import multi_shc
+	from logger        import Logger, BaseLogger_Files
 	import sys
 	import os
-	from random import random, uniform
+	from random        import random, uniform
 	import socket
 
 
@@ -6083,7 +6103,7 @@ def main():
 	parser.add_option("--ts",      		       		type="float",        	default= 1.,		         	help="step size of the translation search in both directions, search is within a circle of radius xr on a grid with steps ts, (default 1), can be fractional")
 	parser.add_option("--inires",		       		type="float",	     	default=25.,		         	help="Resolution of the initial_volume volume (default 25A)")
 	parser.add_option("--mask3D",		        	type="string",	      	default=None,		          	help="3D mask file (default a sphere with radius (nx/2)-1)")
-	parser.add_option("--function",					type="string", default="do_volume_mask",  help="name of the reference preparation function (default do_volume_mask)")
+	parser.add_option("--function",					type="string",          default="do_volume_mask",       help="name of the reference preparation function (default do_volume_mask)")
 	parser.add_option("--hardmask",			   		action="store_true",	default=True,		     		help="Apply hard maks (with radius) to 2D data (False)")
 	parser.add_option("--symmetry",					type="string",        	default= 'c1',		     		help="Point-group symmetry of the refined structure")
 	parser.add_option("--skip_prealignment",		action="store_true", 	default=False,		         	help="skip 2-D pre-alignment step: to be used if images are already centered. (default False)")
@@ -6126,10 +6146,7 @@ def main():
 			elif options.do_final ==-1 and os.path.exists(masterdir):
 				update_options = True
 		else:
-			if os.path.exists(args[0]):
-				orgstack  = args[0]
-				masterdir = ""
-			else: masterdir = args[0]
+			if os.path.exists(args[0]):masterdir = args[0]
 	else:
 		if not options.ctrefromsort3d:
 			print( "usage: " + usage)

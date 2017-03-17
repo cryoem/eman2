@@ -532,6 +532,7 @@ def main(args):
 	
 		if( myid == main_node ):
 			for i in range(number_of_images_in_stack):  aligned_images[i].write_image(stack_processed_by_ali2d_base__filename,i)
+			del aligned_images
 			#  It has to be explicitly closed
 			from EMAN2db import db_open_dict
 			DB = db_open_dict(stack_processed_by_ali2d_base__filename)

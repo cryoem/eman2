@@ -305,7 +305,7 @@ def main():
 										
 		sxprocess.py vol_0_unfil.hdf vol_1_unfil.hdf  --mask=mask15.hdf --postprocess   --pixel_size=1.12     --low_pass_filter =-1  --mtf=aa.txt  --fsc_adj --output=vol_post.hdf 
 		sxprocess.py vol_0_unfil.hdf vol_1_unfil.hdf  --mask=mask15.hdf --postprocess   --pixel_size=1.12     --low_pass_filter=4.7  --mtf=aa.txt --fsc_adj
-		sxprocess.py vol_0_unfil.hdf vol_1_unfil.hdf  --do_adaptive_mask   --postprocess   --pixel_size=1.12   --mtf=aa.txt --fsc_adj
+		sxprocess.py vol_0_unfil.hdf vol_1_unfil.hdf  --do_adaptive_mask   --postprocess   --pixel_size=1.12   --mtf=aa.txt --fsc_adj --output=ribosome_postrefine.hdf
 		
 	 for 2-D images:       calculate B-factor and apply negative B-factor to 2-D images.
 		
@@ -995,12 +995,13 @@ def main():
 					log_main.add( "User provided B_factor is %f"%global_b)
 				sigma_of_inverse = sqrt(2./global_b)
 				e1 = filt_gaussinv(e1,sigma_of_inverse)
-				if options.low_pass_filter>0.0 and options.low_pass_filte<0.5:
+				if options.low_pass_filter > 0.0 and options.low_pass_filte < 0.5:
 					log_main.add("low-pass filter ff %   aa  %f"%(options.low_pass_filter, options.aa))
 					e1 =filt_tanl(e1,options.low_pass_filter, options.aa)
 				elif options.low_pass_filte>0.5:
 					e1 =filt_tanl(e1,options.low_pass_filter/option.pixel_size, options.aa)
 				e1.write_image(options.output)
+				
 		else: # 3D case
 			log_main.add("-------->>>Settings given by all options<<<-------")
 			log_main.add("pixle_size  		:"+str(options.pixel_size))
@@ -1098,7 +1099,8 @@ def main():
 				if fsc_true[0][ifreq] !=0.0:
 					resolution_in_angstrom [ifreq] = options.pixel_size/fsc_true[0][ifreq]
 				else:
-					resolution_in_angstrom [ifreq] = 0.0	
+					resolution_in_angstrom [ifreq] = 0.0
+					
 			if fsc_true[1][0]<0.0: fsc_true[1][0] =1.0  # always reset fsc of zero frequency
 			
 			fsc_out = []
@@ -1106,17 +1108,43 @@ def main():
 				fsc_out.append("%5d    %7.2f       %5.3f"%(ifreq, resolution_in_angstrom[ifreq],fsc_true[1][ifreq]))
 			write_text_file(fsc_out, "fsc.txt")
 			
-			## determine resolution by two criterion from corrected FSC
+			## determine resolution by two criterion from corrected FSC plus RH correction of FSC from masked volumes
+			resolution_FSC143_right  = 0.0
+			resolution_FSC143_left   = 0.0
+			dip_at_fsc              = False
+			nfreq0 = 1
 			
 			for ifreq in xrange(1, len(fsc_true[1])):
-				if fsc_true[1][ifreq] < 0.143:
-					resolution_FSC143 = fsc_true[0][ifreq-1]
+				if fsc_true[1][ifreq] < 0.0:
+					nfreq0  = ifreq - 1
 					break
-				
+			if nfreq0 ==1: nfreq0= len(fsc_true[1]) - 1
+			
+			nfreq05 = len(fsc_true[1])-1 		
 			for ifreq in xrange(1, len(fsc_true[1])):
 				if fsc_true[1][ifreq] < 0.5:
 					resolution_FSChalf = fsc_true[0][ifreq-1]
+					nfreq05 = ifreq-1
 					break
+			
+			resolution_FSC143_left = fsc_true[0][len(fsc_true[1])-1]
+			for ifreq in xrange(nfreq05, len(fsc_true[1])):
+				if fsc_true[1][ifreq] < 0.143:
+					resolution_FSC143_left = fsc_true[0][ifreq-1]
+					break
+					
+			resolution_FSC143_right = fsc_true[0][nfreq05]
+			for ifreq in xrange(nfreq0, nfreq05, -1):
+				if fsc_true[1][ifreq] > 0.143:
+					resolution_FSC143_right = fsc_true[0][ifreq]
+					break
+					
+			if resolution_FSC143_left != resolution_FSC143_right: 
+				log_main.add("there is a dip between 0.5 to 0.143 in FSC!")
+			else:                                           
+				log_main.add("fsc smoothly falls from 0.5 t0 0.143 !")
+			
+			resolution_FSC143 = resolution_FSC143_right	
 			###															
 			map1 = get_im(args[0]) 
 			map2 = get_im(args[1])
@@ -1159,7 +1187,7 @@ def main():
 				for ig in xrange(len(guinierline)):
 					outtext[-1].append("%10.6f"%log(guinierline[ig]))
 			
-			if options.B_enhance !=-1:#3 One specifies and then apply B-factor sharpen
+			if options.B_enhance !=-1: #3 One specifies and then apply B-factor sharpen
 				if options.B_enhance == 0.0: # auto mode
 					cutoff_by_fsc = 0
 					for ifreq in xrange(len(fsc_true[1])):
@@ -1201,6 +1229,8 @@ def main():
 						last_non_zero = log(guinierline[ig])
 					else:
 						outtext[-1].append("%10.6f"%last_non_zero)
+			else:
+				log_main.add("no B-factor sharpening is applied!")
 									
 			if options.low_pass_filter !=-1.: # User provided low-pass filter #4.
 				if options.low_pass_filter>0.5: # Input is in Angstrom 
@@ -1214,8 +1244,11 @@ def main():
 				else: # low-pass filter to resolution determined by FSC0.143
 					map1   = filt_tanl(map1,resolution_FSC143, options.aa)
 					cutoff = options.pixel_size/resolution_FSC143
-					
-			map1.write_image("vol_postprocess_nomask.hdf")
+			else:
+				log_main.add("low_pass filter is not applied to map! ")
+			
+			file_name, file_ext = os.path.splitext(options.output)
+			map1.write_image(file_name+"_nomask_"+file_ext)
 			if m: map1 *=m
 			else: log_main.add("The final map is not masked!")
 			
@@ -1223,10 +1256,11 @@ def main():
 			log_main.add("---------- >>>Summary<<<------------")
 			log_main.add("Resolution at criteria 0.143 is %7.2f Angstrom"%round((options.pixel_size/resolution_FSC143),3))
 			log_main.add("Resolution at criteria 0.5   is %7.2f Angstrom"%round((options.pixel_size/resolution_FSChalf),3))
+			if dip_at_fsc: log_main.add("There is a dip in your fsc in the region between 0.5 and 0.143, and you might consider ploting your fsc curve")
 			if options.B_enhance !=-1:  log_main.add( "B-factor is  %6.2f Angstrom^2  "%(round((-global_b),2)))
 			else:                       log_main.add( "B-factor is not applied  ")
-			log_main.add( "FSC curve is saved in fsc.txt ")
-			log_main.add( "The Final sharpened volume is "+options.output)
+			log_main.add("FSC curve is saved in fsc.txt ")
+			log_main.add("The Final volume is "+options.output)
 			log_main.add("guinierlines in logscale are saved in guinierlines.txt")
 			if options.low_pass_filter !=-1: log_main.add("Top hat low-pass filter is applied to cut off high frequencies from resolution 1./%5.2f Angstrom" %round(cutoff,2))
 			else:                            log_main.add("The final volume is not low_pass filtered. ")

@@ -102,6 +102,7 @@ Stack Mode - Process a particle stack (Not supported by SPHIRE GUI))::
 	parser.add_option("--stack_mode",		action="store_true",  default=False,  help="Use stack mode: Use a stack as the input. Please set the file path of a stack as the first argument and output directory for the second argument. This is advanced option. Not supported by sxgui. (default False)")
 	parser.add_option("--debug_mode",		action="store_true",  default=False,  help="Enable debug mode: Print out debug information. (default False)")
 	parser.add_option("--vpp",				action="store_true",  default=False,  help="Volta Phas Plate - fit smplitude contrast. (default False)")
+	parser.add_option("--pap",				action="store_true",  default=False,  help="fit smplitude contrast. (default False)")
 
 	(options, args) = parser.parse_args(sys.argv[1:])
 
@@ -117,25 +118,25 @@ Stack Mode - Process a particle stack (Not supported by SPHIRE GUI))::
 	main_mpi_proc = 0
 	if RUNNING_UNDER_MPI:
 		from mpi import mpi_init, mpi_comm_rank, mpi_comm_size, mpi_barrier, MPI_COMM_WORLD
-		
+
 		sys.argv = mpi_init(len(sys.argv), sys.argv)
 		my_mpi_proc_id = mpi_comm_rank(MPI_COMM_WORLD)
 		n_mpi_procs = mpi_comm_size(MPI_COMM_WORLD)
 	else:
 		my_mpi_proc_id = 0
 		n_mpi_procs = 1
-	
+
 	# ------------------------------------------------------------------------------------
 	# Set up SPHIRE global definitions
 	# ------------------------------------------------------------------------------------
 	if global_def.CACHE_DISABLE:
 		from utilities import disable_bdb_cache
 		disable_bdb_cache()
-	
+
 	# Change the name log file for error message
 	original_logfilename = global_def.LOGFILE
 	global_def.LOGFILE = os.path.splitext(program_name)[0] + '_' + original_logfilename + '.txt'
-	
+
 	# ------------------------------------------------------------------------------------
 	# Check error conditions of arguments and options, then prepare variables for arguments
 	# ------------------------------------------------------------------------------------
@@ -150,7 +151,6 @@ Stack Mode - Process a particle stack (Not supported by SPHIRE GUI))::
 		if len(args) != 2:
 			error_status = ("Please check usage for number of arguments.\n Usage: " + usage + "\n" + "Please run %s -h for help." % (program_name), getframeinfo(currentframe()))
 			break
-		assert (len(args) == 2)
 
 		# NOTE: 2015/11/27 Toshio Moriya
 		# Require single quotes (') or double quotes (") when input micrograph pattern is give for input_image_path
@@ -180,6 +180,9 @@ Stack Mode - Process a particle stack (Not supported by SPHIRE GUI))::
 	if options.vpp:
 		from morphology import cter_vpp
 		result = cter_vpp(input_image_path, output_directory, options.selection_list, options.wn, options.apix, options.Cs, options.voltage, options.f_start, options.f_stop, options.kboot, options.overlap_x, options.overlap_y, options.edge_x, options.edge_y, options.set_ctf_header, options.check_consistency, options.stack_mode, options.debug_mode, program_name, RUNNING_UNDER_MPI, main_mpi_proc, my_mpi_proc_id, n_mpi_procs)
+	elif options.pap:
+		from morphology import cter_pap
+		result = cter_pap(input_image_path, output_directory, options.selection_list, options.wn, options.apix, options.Cs, options.voltage, options.ac, options.f_start, options.f_stop, options.kboot, options.overlap_x, options.overlap_y, options.edge_x, options.edge_y, options.set_ctf_header, options.check_consistency, options.stack_mode, options.debug_mode, program_name, RUNNING_UNDER_MPI, main_mpi_proc, my_mpi_proc_id, n_mpi_procs)
 	else:
 		from morphology import cter_mrk
 		result = cter_mrk(input_image_path, output_directory, options.selection_list, options.wn, options.apix, options.Cs, options.voltage, options.ac, options.f_start, options.f_stop, options.kboot, options.overlap_x, options.overlap_y, options.edge_x, options.edge_y, options.set_ctf_header, options.check_consistency, options.stack_mode, options.debug_mode, program_name, RUNNING_UNDER_MPI, main_mpi_proc, my_mpi_proc_id, n_mpi_procs)
