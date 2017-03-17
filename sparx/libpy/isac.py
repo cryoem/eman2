@@ -112,6 +112,7 @@ def iter_isac_pap(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, F
 
 	# Method 1:
 	if myid == main_node:
+		print  " reading all data on main"
 		alldata = EMData.read_images(stack)
 		ndata = len(alldata)
 		# alldata_n stores the original index of the particle (i.e., the index before running Generation 1)  
@@ -143,6 +144,15 @@ def iter_isac_pap(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, F
 		alldata[im].set_attr_dict({"xform.align2d": tdummy, "ID": im})
 		data[im] = alldata[im]
 	mpi_barrier(MPI_COMM_WORLD)
+	if myid  == 0: print "  DONE READING"
+	from sys import exit
+	from time import sleep
+	for j in xrange(20):
+		for i  in xrange(1000000): q = i+float(i)**2.1234
+	if myid == 0 :  print  " will sleep"
+	#sleep(100)
+	#mpi_finalize()
+	#exit()
 	'''
 	# Method 2:
 	alldata = EMData.read_images(stack)
@@ -764,7 +774,19 @@ def isac_MPI_pap(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, r
 	nima = len(alldata)
 	#  Explicitly force all parameters to be zero on input
 	for im in xrange(nima):  set_params2D(alldata[im], [0.,0.,0.,0, 1.0])
-		
+	def delay(myid, tt):
+		from sys import exit
+		from time import sleep
+		from mpi import mpi_finalize
+
+		for j in xrange(20):
+			for i  in xrange(1000000): q = i+float(i)**2.1234
+		if myid == 0 :  print  tt
+		#sleep(100)
+		#mpi_finalize()
+ 		#exit()
+
+	delay(myid," in function")
 	
 	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
 
@@ -824,7 +846,7 @@ def isac_MPI_pap(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, r
 
 	while main_iter < max_iter:
 		Iter += 1
-		###if my_abs_id == main_node: print "Iteration within isac_MPI = ", Iter, "	main_iter = ", main_iter, "	len data = ", image_end-image_start, localtime()[0:5], myid
+		if my_abs_id == main_node: print "Iteration within isac_MPI = ", Iter, "	main_iter = ", main_iter, "	len data = ", image_end-image_start, localtime()[0:5], myid
 		mashi = cnx-ou-2
 		for j in xrange(numref):
 			refi[j].process_inplace("normalize.mask", {"mask":mask, "no_sigma":1}) # normalize reference images to N(0,1)
@@ -834,7 +856,7 @@ def isac_MPI_pap(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, r
 			Util.Frngs(cimage, numr)
 			Util.Applyws(cimage, numr, wr)
 			refi[j] = cimage.copy()
-
+		delay(myid, "after conversion of refi to polar")
 
 #		if CTF: ctf2 = [[[0.0]*lctf for k in xrange(2)] for j in xrange(numref)]
 		peak_list = [zeros(4*(image_end-image_start), dtype=float32) for i in xrange(numref)]
