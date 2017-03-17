@@ -6898,7 +6898,7 @@ def Xali3d_shc0MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs 
 						ix = j*step[N_step]
 						if inr+int(cnx+ix) <= nx-1 and -inr + int(cnx+ix) >=1:
 							cimage = Util.Polar2Dm(data[im], cnx+ix, cny+iy, numr, mode)
-							Util.Normalize_ring( cimage, numr )
+							Util.Normalize_ring( cimage, numr, 0)
 							Util.Frngs(cimage, numr)
 							ims[(i+ky)*(2*kx+1)+j+kx] = cimage
 			cimages.append(ims)

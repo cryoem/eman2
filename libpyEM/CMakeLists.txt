@@ -29,7 +29,7 @@ MACRO(ADD_PYSTE_LIB_WITH_SRC libname srcfile)
 	
 	# Windows fails without linking against freetype
 	TARGET_LINK_LIBRARIES(${libname} EM2 ${BOOST_LIBRARY} ${PYTHON_LIBRARY} ${FREETYPE_LIBRARY})
-	INSTALL(TARGETS ${libname} DESTINATION lib)
+	INSTALL(TARGETS ${libname} DESTINATION ${EMAN_PY_INSTALL_PREFIX})
 ENDMACRO(ADD_PYSTE_LIB_WITH_SRC)
 
 MACRO(ADD_PYSTE_LIB libname)
@@ -93,9 +93,9 @@ FILE(GLOB empythonlibs "${CMAKE_CURRENT_SOURCE_DIR}/*.py")
 # INSTALL(FILES ${empythonlibs} DESTINATION lib)
 
 FOREACH(f ${empythonlibs})
-	INSTALL(FILES ${f} DESTINATION lib)
+	INSTALL(FILES ${f} DESTINATION ${EMAN_PY_INSTALL_PREFIX})
 	IF(DBG MATCHES "y")
-		MESSAGE("Copied file ${f} to lib.")
+		MESSAGE("Copied file ${f} to ${EMAN_PY_INSTALL_PREFIX}.")
 	ENDIF(DBG MATCHES "y")
 ENDFOREACH(f)
 

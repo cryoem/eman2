@@ -1688,7 +1688,7 @@ def prepare_refrings( volft, kb, nz = -1, delta = 2.0, ref_a = "P", sym = "c1", 
 		for i in xrange(ref_start, ref_end):
 			prjref = prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0])
 			cimage = Util.Polar2Dm(prjref, cnx, cny, numr, mode)  # currently set to quadratic....
-			Util.Normalize_ring(cimage, numr)
+			Normalize_ring(cimage, numr, 0 )
 			Util.Frngs(cimage, numr)
 			Util.Applyws(cimage, numr, wr_four)
 			refrings[i] = cimage
@@ -1696,7 +1696,7 @@ def prepare_refrings( volft, kb, nz = -1, delta = 2.0, ref_a = "P", sym = "c1", 
 		for i in xrange(ref_start, ref_end):
 			prjref = prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0], kbx, kby)
 			cimage = Util.Polar2Dm(prjref, cnx, cny, numr, mode)  # currently set to quadratic....
-			Util.Normalize_ring(cimage, numr)
+			Normalize_ring(cimage, numr, 0 )
 			Util.Frngs(cimage, numr)
 			Util.Applyws(cimage, numr, wr_four)
 			refrings[i] = cimage
@@ -1781,7 +1781,7 @@ def prepare_refrings_projections( volft, kb, nz = -1, delta = 2.0, ref_a = "P", 
 		prjref /= st[1]
 		fftip( prjref )
 		cimage = Util.Polar2Dm(scf(prjref), cnx, cny, numr, mode)  # currently set to quadratic....
-		Util.Normalize_ring(cimage, numr)
+		Normalize_ring(cimage, numr, 0 )
 		Util.Frngs(cimage, numr)
 		Util.Applyws(cimage, numr, wr_four)
 		refrings[i] = cimage
@@ -1861,7 +1861,7 @@ def prepare_refrings2( volft, kb, nz, segmask, delta, ref_a, sym, numr, MPI=Fals
 			prjref = prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0])
 			Util.mul_img(prjref, segmask )
 			cimage = Util.Polar2Dm(prjref, cnx, cny, numr, mode)  # currently set to quadratic....
-			Util.Normalize_ring(cimage, numr)
+			Normalize_ring(cimage, numr, 0 )
 			Util.Frngs(cimage, numr)
 			Util.Applyws(cimage, numr, wr_four)
 			refrings[i] = cimage
@@ -1899,7 +1899,7 @@ def refprojs( volft, kb, ref_angles, cnx, cny, numr, mode, wr ):
 		#prjref = project(volref, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0], last_ring)
 		prjref = prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0])
 		cimage = Util.Polar2Dm(prjref, cnx, cny, numr, mode)  # currently set to quadratic....
-		Util.Normalize_ring(cimage, numr)
+		Normalize_ring(cimage, numr, 0 )
 		Util.Frngs(cimage, numr)
 		Util.Applyws(cimage, numr, wr)
 		ref_proj_rings.append(cimage)

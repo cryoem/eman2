@@ -1025,7 +1025,7 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, mpi_comm = None, log = None 
 		phi,theta,psi,tx,ty = get_params_proj(data[im])
 		prjref = prgs(volft, kb, [phi,theta,psi, 0.0, 0.0])
 		cimage = Util.Polar2Dm(prjref, cnx, cny, numr, "F")
-		Util.Normalize_ring(cimage, numr)
+		Util.Normalize_ring(cimage, numr, 0 )
 		Util.Frngs(cimage, numr)
 		Util.Applyws(cimage, numr, wr_four)
 		refrings = [cimage]
