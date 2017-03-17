@@ -62,6 +62,9 @@ try:
 	os.putenv("LC_ALL","en_US.utf8")
 except: pass
 
+if "EMAN2DIR" not in os.environ:
+	os.environ["EMAN2DIR"] = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+
 # This block attempts to open the standard EMAN2 database interface
 # if it fails, it sets db to None. Applications can then alter their
 # behavior appropriately
