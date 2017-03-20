@@ -46,3 +46,4 @@ test:
   commands:
     - e2version.py
     - e2speedtest.py
+    - e2display.py -h
