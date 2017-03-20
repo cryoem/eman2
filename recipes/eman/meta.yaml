@@ -41,3 +41,8 @@ requirements:
         - pyqt 4.*
         - pyopengl 3.1.0
         - theano
+
+test:
+  commands:
+    - e2version.py
+    - e2speedtest.py
