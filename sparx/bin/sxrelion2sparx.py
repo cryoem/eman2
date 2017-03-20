@@ -444,7 +444,7 @@ def main():
 			else:
 				if (i_sprax_particle != i_relion_particle):
 					ERROR("number of particles does not match ","is_enable_create_stack", 1)
-				if (os.path.exists(file_path_sparx_stack)):
+				if (not os.path.exists(file_path_sparx_stack)):
 					ERROR("sparx stack does not exists","is_enable_create_stack", 1)
 				if (i_sprax_particle != EMUtil.get_image_count(file_path_sparx_stack)):
 					ERROR("numbers of particles does not match ","is_enable_create_stack", 1)
