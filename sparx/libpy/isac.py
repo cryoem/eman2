@@ -1040,9 +1040,6 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 		for j in xrange(numref):
 			bcast_EMData_to_all(refi[j], myid, main_node, comm)
 
-		for j in xrange(numref):
-			bcast_EMData_to_all(refi[j], myid, main_node, comm)
-
 		###if myid == main_node:
 		###	print  "  WRITING refaligned  for color:",color
 		###	for j in xrange(numref):
