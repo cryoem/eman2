@@ -69,7 +69,6 @@ def install_fftw3_mpi():
 	chdir("fftw_mpi/fftw-3.3.5")
 	myexec("mkdir %s"%(pwd + "/fftw_mpi/installation"))
 	myexec("./configure --prefix=%s --enable-mpi --enable-shared"%(pwd + "/fftw_mpi/installation"))
-	# myexec("./configure --prefix=%s --enable-mpi --enable-shared"%(eman2))
 	myexec("make clean")
 	myexec("make")
 	myexec("make install")
@@ -123,8 +122,6 @@ def update_Makefile_src():
 	move_to_original = True
 	with open("Makefile", "r") as fp, open("Makefile___out", "w") as fp_out:
 		for line in fp:
-			# if "-g -O2" in line:
-				# line = line.replace("-g -O2", "-g -O1")
 			for key in adding_dict:
 				if line[:len(key)] == key:
 					if adding_dict[key] not in line:
@@ -199,7 +196,6 @@ except:
 
 path_to_python = eman2 + "/Python/bin/python"
 
-#pythonroot, python_version = get_pythonroot(options)
 if not get_mpiroot(options):
 	if options.force:
 		print ""
@@ -218,19 +214,6 @@ install_fftw3_mpi()
 print ""
 print "=====> Configuring the mpi python binding"
 
-# if os.path.exists(eman2 + "/Python"):
-# 	myexec("./configure --with-python=" + eman2 + "/Python/bin/python --prefix=" + eman2)
-# else:
-# 	# EMAN2 doesn't have Python - default one will be used
-# 	myexec("./configure --prefix=" + eman2)
-
-# if options.ls5:
-# 	if os.path.exists(eman2 + "/Python"):
-# 		myexec("MPILIB=$TACC_CRAY_MPT_LIB  ./configure --with-mpicc=/opt/apps/intel16/cray_mpich/7.3.0/bin/mpicc --with-python=" + eman2 + "/Python/bin/python --prefix=" + eman2)
-# 	else:
-# 		#	EMAN2 doesn't have Python - default one will be used
-# 		myexec("MPILIB=$TACC_CRAY_MPT_LIB  ./configure --with-mpicc=/opt/apps/intel16/cray_mpich/7.3.0/bin/mpicc --prefix=" + eman2)
-# else:
 if os.path.exists(eman2 + "/Python"):
 	myexec("./configure --with-python=" + eman2 + "/Python/bin/python --prefix=" + eman2)
 else:
