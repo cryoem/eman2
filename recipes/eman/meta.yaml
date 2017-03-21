@@ -24,7 +24,7 @@ requirements:
     build:
         - cmake
         - szip  # [win]
-        - openmpi
+        - openmpi 2.*  # [not win]
         
         {% for req in reqs_common %}
         - {{ req }}
@@ -42,7 +42,7 @@ requirements:
         - pyqt 4.*
         - pyopengl 3.1.0
         - theano
-        - openmpi
+        - openmpi 2.*  # [not win]
 
 test:
   commands:
