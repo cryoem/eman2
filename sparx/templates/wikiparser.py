@@ -200,10 +200,6 @@ def handle_exceptional_cases(sxcmd):
 		assert(sxcmd.token_dict["output_directory"].key_base == "output_directory")
 		assert(sxcmd.token_dict["output_directory"].type == "output")
 		sxcmd.token_dict["output_directory"].type = "output_continue"
-	elif sxcmd.name in ["sxmeridien_polar"]:
-		assert(sxcmd.token_dict["output_directory"].key_base == "output_directory")
-		assert(sxcmd.token_dict["output_directory"].type == "output")
-		sxcmd.token_dict["output_directory"].type = "output_continue"
 	elif sxcmd.name in ["sxrsort3d"]:
 		# assert(sxcmd.token_dict["wn"].key_base == "wn")
 		# assert(sxcmd.token_dict["wn"].type == "ctfwin")
@@ -1316,12 +1312,7 @@ def main():
 
 	sxcmd_role = "sxr_pipe"
 	# sxcmd_config_list.append(SXcmd_config("../doc/meridien.doku.txt", "DokuWiki", sxcmd_category, sxcmd_role))
-	# sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
-	# sxcmd_config_list.append(SXcmd_config("../doc/meridien-08-08-2016.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
-	# sxcmd_config_list.append(SXcmd_config("../doc/meridien-09-09-2016.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
-	# sxcmd_config_list.append(SXcmd_config("../doc/meridien-11-07-2016.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
-	# sxcmd_config_list.append(SXcmd_config("../doc/meridien-11-07-2016.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_meridien()))
-	sxcmd_config_list.append(SXcmd_config("../doc/meridien_polar.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_meridien()))
+	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_meridien()))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_refine3d_postprocess()))
 
 	sxcmd_role = "sxr_util"
@@ -1339,8 +1330,7 @@ def main():
 	# sxcmd_config_list.append(SXcmd_config("../doc/sort3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 	# sxcmd_config_list.append(SXcmd_config("../doc/rsort3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/rsort3d-1105.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_rsort3d()))
-	# sxcmd_config_list.append(SXcmd_config("../doc/meridien-11-07-2016.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_local()))
-	sxcmd_config_list.append(SXcmd_config("../doc/meridien_polar.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_local()))
+	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_local()))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_refine3d_postprocess()))
 
 	sxcmd_role = "sxr_alt"
@@ -1414,9 +1404,7 @@ def main():
 	sxgui_template_file_path = "sxgui_template.py"
 
 #	output_file_path = "../bin/sxgui.py" # output_file_path = "sxgui_trial.py"
-#	output_file_path = "./sxgui_jove.py"
-#	output_file_path = "./sxgui_jove_debug.py"
-	output_file_path = "./sxgui_meridien_polar.py"
+	output_file_path = "./sxgui_auto.py"
 	# remove the previous output
 	if os.path.exists(output_file_path):
 		os.remove(output_file_path)
