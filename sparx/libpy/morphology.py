@@ -3138,7 +3138,9 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 				
 				if debug_mode: print("    %s %s: Process %04d finished the processing. Estimated CTF parmaters are stored in %s." % (img_type, img_name, ifi, os.path.join(output_directory, "partres.txt")))
 				if debug_mode: print(ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, cvavad1, cvavbd1, extremum_diff_avg, ib1, ibec, ctflim)
-				totresi.append( [ img_name, ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, cvavad1, cvavbd1, extremum_diff_avg, ib1, ibec, ctflim])
+				# totresi.append( [ img_name, ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, cvavad1, cvavbd1, extremum_diff_avg, ib1, ibec, ctflim])
+				stdaved1 = 0.0 # dummy value for error of amplitude contrast estimation
+				totresi.append( [ img_name, ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdaved1, stdavbd1, cd2, cvavad1, cvavbd1, extremum_diff_avg, ib1, ibec, ctflim])
 				
 #				if stack == None:
 #					print  namics[ifi], ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, ib1, ibec
@@ -4256,7 +4258,9 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 				
 				if debug_mode: print("    %s %s: Process %04d finished the processing. Estimated CTF parmaters are stored in %s." % (img_type, img_name, ifi, os.path.join(output_directory, "partres.txt")))
 				if debug_mode: print(ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, cvavad1, cvavbd1, extremum_diff_avg, ib1, ibec, ctflim)
-				totresi.append( [ img_name, ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, cvavad1, cvavbd1, extremum_diff_avg, ib1, ibec, ctflim])
+				# totresi.append( [ img_name, ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, cvavad1, cvavbd1, extremum_diff_avg, ib1, ibec, ctflim])
+				stdaved1 = 0.0 # dummy value for error of amplitude contrast estimation
+				totresi.append( [ img_name, ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdaved1, stdavbd1, cd2, cvavad1, cvavbd1, extremum_diff_avg, ib1, ibec, ctflim])
 				
 #				if stack == None:
 #					print  namics[ifi], ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, ib1, ibec
