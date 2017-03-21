@@ -2,5 +2,5 @@
 
 import os
 
-e2real=os.getenv("EMAN2DIR")+"/bin/e2_real.py"
+e2real = os.path.join(os.path.abspath(os.path.dirname(__file__)), "e2_real.py")
 os.execlp("ipython","ipython","-i","--gui=qt",e2real)

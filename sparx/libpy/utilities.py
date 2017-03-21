@@ -4933,6 +4933,7 @@ def findall(value, L, start=0):
 		except:
 			pass
 	return positions
+
 """
 def findall(val, lo):
 	'''

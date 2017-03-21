@@ -2,5 +2,5 @@
 
 import os
 
-e2real=os.getenv("EMAN2DIR")+"/bin/sx_real.py"
+e2real = os.path.join(os.path.abspath(os.path.dirname(__file__)), "sx_real.py")
 os.execlp("ipython","ipython","-i",e2real)

@@ -856,7 +856,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			tyrng = search_range(ny, ou, syi, yrng, "ISAC")
 			tyrng = [tyrng[1],tyrng[0]]
 
-			# align current image to the reference
+			# align current image to references
 			temp = Util.multiref_polar_ali_2d_peaklist(alldata[im], refi, txrng, tyrng, step, mode, numr, cnx+sxi, cny+syi)
 			for iref in xrange(numref):
 				[alphan, sxn, syn, mn] = \
@@ -1036,9 +1036,6 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			ref_ali_params = [0.0]*(numref*4)
 		ref_ali_params = mpi_bcast(ref_ali_params, numref*4, MPI_FLOAT, main_node, comm)
 		ref_ali_params = map(float, ref_ali_params)
-
-		for j in xrange(numref):
-			bcast_EMData_to_all(refi[j], myid, main_node, comm)
 
 		for j in xrange(numref):
 			bcast_EMData_to_all(refi[j], myid, main_node, comm)

@@ -5,7 +5,7 @@ sxcter - CTF Estimation: Automated estimation of CTF parameters with error asses
 
 ''usage in command line''
 
-sxcter.py  input_image_path  output_directory  --selection_list=selection_list  --wn=CTF_WINDOW_SIZE --apix=PIXEL_SIZE  --Cs=CS  --voltage=VOLTAGE  --ac=AMP_CONTRAST  --f_start=FREA_START  --f_stop=FREQ_STOP  --kboot=KBOOT  --overlap_x=OVERLAP_X  --overlap_y=OVERLAP_Y  --edge_x=EDGE_X  --edge_y=EDGE_Y  --set_ctf_header  --check_consistency  --stack_mode  --debug_mode
+sxcter.py  input_image_path  output_directory  --selection_list=selection_list  --wn=CTF_WINDOW_SIZE --apix=PIXEL_SIZE  --Cs=CS  --voltage=VOLTAGE  --ac=AMP_CONTRAST  --f_start=FREA_START  --f_stop=FREQ_STOP  --kboot=KBOOT  --overlap_x=OVERLAP_X  --overlap_y=OVERLAP_Y  --edge_x=EDGE_X  --edge_y=EDGE_Y  --set_ctf_header  --check_consistency  --stack_mode  --debug_mode  --vpp  --pap
 
 
 === Typical usage ===
@@ -50,7 +50,8 @@ sxcter exists in for both MPI and non-MPI versions (Running MPI version does not
     check_consistency:: Check consistency of inputs: Create a text file containing the list of inconsistent Micrograph ID entries (i.e. inconsist_mic_list_file.txt). (default False)
     stack_mode:: Use stack mode: Use a stack as the input. Please set the file path of a stack as the first argument and output directory for the second argument. This is advanced option. Not supported by sxgui. (default False)
     debug_mode:: Enable debug mode: Print out debug information. (default False)
-
+    vpp:: Estimate amplitude contrast: UNDER DEVELOPMENT! Also estimate phase shift as amplitude contrast. Use this option to estimate phase shift induced by Volta Phase Plate imaging. (default False)
+    pap:: Use amplitude : UNDER DEVELOPMENT! Use amplitude for CTF parameter search instead of power spectrum. (default False)
 
 == Output ==
     output_directory:: Output directory: The CTF parameters (partres file), rotationally averaged power spectra (rotinf), and micrograph thumbnails (thumb files) will be written here. This directory will be created automatically and it must not exist previously. (default required string)
@@ -75,18 +76,19 @@ The CTF parameter file, ''partres.txt'', contains 18 columns with the following 
 || 7 || Astigmatism amplitude [um] ||
 || 8 || Astigmatism angle [degrees] ||
 || 9 || Standard deviation of defocus [um] ||
-|| 10 || Standard deviation of astigmatism amplitude [um] ||
-|| 11 || Standard deviation of astigmatism angle [degrees] ||
-|| 12 || Coefficient of variation of defocus [um] ||
-|| 13 || Coefficient of variation of astigmatism amplitude [um] ||
-|| 14 || Mean difference between the experimental rotational averages calculated with and without considering astigmatism. The subtraction is only performed at frequencies where the CTF model has a local minimum or maximum. ||
-|| 15 || Frequency at which the signal drops by 50% due to estimated error of defocus alone [1/A] ||
-|| 16 || Frequency at which the signal drops by 50% due to estimated error of defocus and astigmatism [1/A] ||
-|| 17 || Frequency at which the CTF oscillation can no longer be modelled correctly due the pixel size of the image [1/A] ||
-|| 18 || Micrograph name ||
+|| 10 || Standard deviation of amplitude contrast [%] ||
+|| 11 || Standard deviation of astigmatism amplitude [um] ||
+|| 12 || Standard deviation of astigmatism angle [degrees] ||
+|| 13 || Coefficient of variation of defocus [um] ||
+|| 14 || Coefficient of variation of astigmatism amplitude [um] ||
+|| 15 || Mean difference between the experimental rotational averages calculated with and without considering astigmatism. The subtraction is only performed at frequencies where the CTF model has a local minimum or maximum. ||
+|| 16 || Frequency at which the signal drops by 50% due to estimated error of defocus alone [1/A] ||
+|| 17 || Frequency at which the signal drops by 50% due to estimated error of defocus and astigmatism [1/A] ||
+|| 18 || Frequency at which the CTF oscillation can no longer be modelled correctly due the pixel size of the image [1/A] ||
+|| 19 || Micrograph name ||
 
 <<BR>><<BR>>
-The rotationally averaged power spectra (rotinf.txt files) will be written to the pwrot directory. These files contain 6 columns with the following information:<<BR>><<BR>>
+The rotationally averaged power spectra or amplitude (rotinf.txt files) will be written to the pwrot directory. These files contain 6 columns with the following information:<<BR>><<BR>>
 
 
 || Column || Parameter ||

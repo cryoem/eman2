@@ -230,6 +230,7 @@ class SXGuiCter(QtGui.QWidget):
 		i_enum += 1; self.idx_cter_astig_amp    = i_enum # astigmatism amplitude [um]
 		i_enum += 1; self.idx_cter_astig_ang    = i_enum # astigmatism angle [degree]
 		i_enum += 1; self.idx_cter_sd_def       = i_enum # std dev of defocus [um]
+		i_enum += 1; self.idx_cter_sd_ac        = i_enum # std dev of amplitude contrast [%]
 		i_enum += 1; self.idx_cter_sd_astig_amp = i_enum # std dev of ast amp [A]
 		i_enum += 1; self.idx_cter_sd_astig_ang = i_enum # std dev of ast angle [degree]
 		i_enum += 1; self.idx_cter_cv_def       = i_enum # coefficient of variation of defocus [%]
@@ -263,6 +264,7 @@ class SXGuiCter(QtGui.QWidget):
 		self.value_map_list[self.idx_cter_astig_amp]    = ["Astig. Amp.[um]", None]
 		self.value_map_list[self.idx_cter_astig_ang]    = ["Astig. Ang.[deg]", None]
 		self.value_map_list[self.idx_cter_sd_def]       = ["Defocus SD [um]", None]
+		self.value_map_list[self.idx_cter_sd_ac]        = ["Amp. Contrast SD [%] ", None]
 		self.value_map_list[self.idx_cter_sd_astig_amp] = ["Astig. Amp. SD [um]", None]
 		self.value_map_list[self.idx_cter_sd_astig_ang] = ["Astig. Ang. SD [deg]", None]
 		self.value_map_list[self.idx_cter_cv_def]       = ["Defocus CV [%]", None]
@@ -287,9 +289,11 @@ class SXGuiCter(QtGui.QWidget):
 		i_enum = -1
 		i_enum += 1; self.idx_sort_id           = i_enum
 		i_enum += 1; self.idx_sort_def          = i_enum
+		i_enum += 1; self.idx_sort_ac           = i_enum
 		i_enum += 1; self.idx_sort_astig_amp    = i_enum
 		i_enum += 1; self.idx_sort_astig_ang    = i_enum
 		i_enum += 1; self.idx_sort_sd_def       = i_enum
+		i_enum += 1; self.idx_sort_sd_ac        = i_enum
 		i_enum += 1; self.idx_sort_sd_astig_amp = i_enum
 		i_enum += 1; self.idx_sort_sd_astig_ang = i_enum
 		i_enum += 1; self.idx_sort_cv_def       = i_enum
@@ -310,9 +314,11 @@ class SXGuiCter(QtGui.QWidget):
 		self.sort_map_list = [None] * self.n_idx_sort
 		self.sort_map_list[self.idx_sort_id]           = [self.idx_cter_id]
 		self.sort_map_list[self.idx_sort_def]          = [self.idx_cter_def]
+		self.sort_map_list[self.idx_sort_ac]           = [self.idx_cter_ac]
 		self.sort_map_list[self.idx_sort_astig_amp]    = [self.idx_cter_astig_amp]
 		self.sort_map_list[self.idx_sort_astig_ang]    = [self.idx_cter_astig_ang]
 		self.sort_map_list[self.idx_sort_sd_def]       = [self.idx_cter_sd_def]
+		self.sort_map_list[self.idx_sort_sd_ac]        = [self.idx_cter_sd_ac]
 		self.sort_map_list[self.idx_sort_sd_astig_amp] = [self.idx_cter_sd_astig_amp]
 		self.sort_map_list[self.idx_sort_sd_astig_ang] = [self.idx_cter_sd_astig_ang]
 		self.sort_map_list[self.idx_sort_cv_def]       = [self.idx_cter_cv_def]
@@ -325,9 +331,11 @@ class SXGuiCter(QtGui.QWidget):
 		
 		i_enum = -1
 		i_enum += 1; self.idx_hist_def          = i_enum
+		i_enum += 1; self.idx_hist_ac           = i_enum
 		i_enum += 1; self.idx_hist_astig_amp    = i_enum
 		i_enum += 1; self.idx_hist_astig_ang    = i_enum
 		i_enum += 1; self.idx_hist_sd_def       = i_enum
+		i_enum += 1; self.idx_hist_sd_ac        = i_enum
 		i_enum += 1; self.idx_hist_sd_astig_amp = i_enum
 		i_enum += 1; self.idx_hist_sd_astig_ang = i_enum
 		i_enum += 1; self.idx_hist_cv_def       = i_enum
@@ -358,9 +366,11 @@ class SXGuiCter(QtGui.QWidget):
 		# Includes mapping from idx_hist to idx_cter and idx_sort
 		self.hist_map_list = [None] * self.n_idx_hist
 		self.hist_map_list[self.idx_hist_def]          = [self.idx_cter_def, self.idx_sort_def, 0, 5, 0, 5, None, None, 0, 5, None, None]
+		self.hist_map_list[self.idx_hist_ac]           = [self.idx_cter_ac, self.idx_sort_ac, 0, 100, 0, 100, None, None, 0, 100, None, None]
 		self.hist_map_list[self.idx_hist_astig_amp]    = [self.idx_cter_astig_amp, self.idx_sort_astig_amp, 0, 1, 0, 1, None, None, 0, 1, None, None]
 		self.hist_map_list[self.idx_hist_astig_ang]    = [self.idx_cter_astig_ang, self.idx_sort_astig_ang, 0, 180, 0, 180, None, None, 0, 180, None, None]
 		self.hist_map_list[self.idx_hist_sd_def]       = [self.idx_cter_sd_def, self.idx_sort_sd_def, 0, 5, 0, 5, None, None, 0, 5, None, None]
+		self.hist_map_list[self.idx_hist_sd_ac]        = [self.idx_cter_sd_ac, self.idx_sort_sd_ac, 0, 100, 0, 100, None, None, 0, 100, None, None]
 		self.hist_map_list[self.idx_hist_sd_astig_amp] = [self.idx_cter_sd_astig_amp, self.idx_sort_sd_astig_amp, 0, 1, 0, 1, None, None, 0, 1, None, None]
 		self.hist_map_list[self.idx_hist_sd_astig_ang] = [self.idx_cter_sd_astig_ang, self.idx_sort_sd_astig_ang, 0, 180, 0, 180, None, None, 0, 180, None, None]
 		self.hist_map_list[self.idx_hist_cv_def]       = [self.idx_cter_cv_def, self.idx_sort_cv_def, 0, 5, 0, 5, None, None, 0, 5, None, None]
@@ -567,8 +577,8 @@ class SXGuiCter(QtGui.QWidget):
 		self.add_value_widget(self.idx_cter_cs,0,5,grid_row,grid_col,col_span_label,col_span_edit,labelwidth=labelwidth)
 		grid_row+=1
 		
-		self.add_value_widget(self.idx_cter_ac,0,100,grid_row,grid_col,col_span_label,col_span_edit,labelwidth=labelwidth)
-		grid_row+=1
+###		self.add_value_widget(self.idx_cter_ac,0,100,grid_row,grid_col,col_span_label,col_span_edit,labelwidth=labelwidth)
+###		grid_row+=1
 		
 		self.add_value_widget(self.idx_cter_apix,0,500,grid_row,grid_col,col_span_label,col_span_edit,labelwidth=labelwidth)
 		grid_row+=1
@@ -1026,6 +1036,16 @@ class SXGuiCter(QtGui.QWidget):
 		if len(new_entry_list) == 0:
 			QtGui.QMessageBox.warning(self, "Warning", "Specified CTER CTF file (%s) does not contain any entry. Please check the file." % (file_path))
 			return
+		assert(len(new_entry_list) > 0)
+		
+		# NOTE: 2017/03/20 Toshio Moriya
+		# The following code is to support the old format of CTER. It should be removed near future
+		if len(new_entry_list[0]) == self.n_idx_cter - self.n_idx_cter_extra - 1:
+			QtGui.QMessageBox.warning(None,"Warning","The format of CTER CTF File (%s) might be old. We will stop supporting this format near future. Please consider rerun CTER." % (file_path))
+			# Continue processing for now (2017/03/20 Toshio Moriya)
+		elif len(new_entry_list[0]) != self.n_idx_cter - self.n_idx_cter_extra:
+			QtGui.QMessageBox.warning(None,"Warning","The number of columns (%d) has to be %d in %s" % (len(new_entry_list[0]), self.n_idx_cter - self.n_idx_cter_extra, file_path))
+			return
 		
 		cter_pwrot_dir = os.path.join(os.path.dirname(file_path), "pwrot")
 		if not os.path.exists(cter_pwrot_dir):
@@ -1034,13 +1054,15 @@ class SXGuiCter(QtGui.QWidget):
 		
 		# print "MRK_DEBUG: Detected %s entries in %s" % (len(new_entry_list), file_path)
 		# print "MRK_DEBUG: Num. of Columns is %d in %s" % (len(new_entry_list[0]), file_path)
-		if len(new_entry_list[0]) == self.n_idx_cter - self.n_idx_cter_extra:
-			# This CTEF file format is original one (before around 2016/01/29)
-			for cter_id in xrange(len(new_entry_list)):
+		for cter_id in xrange(len(new_entry_list)):
+			# NOTE: 2017/03/20 Toshio Moriya
+			# This CTEF file format is the latest
+			if len(new_entry_list[cter_id]) == self.n_idx_cter - self.n_idx_cter_extra:
 				# Add extra items first to make sure indices match
 				extended_entry = []
 				extended_entry = extended_entry + [cter_id]                              # self.idx_cter_id , <extra> entry id
 				extended_entry = extended_entry + [1]                                    # self.idx_cter_select  <extra> selected state
+				
 				extended_entry = extended_entry + new_entry_list[cter_id]                # original entry
 #				extended_entry = extended_entry + [""]                                   # self.idx_cter_pwrot_name, <extra> CTER power spectrum rotational average file name
 #				extended_entry = extended_entry + [0.5]                                  # self.idx_cter_error_ctf, <extra> limit frequency by CTF error 
@@ -1084,11 +1106,46 @@ class SXGuiCter(QtGui.QWidget):
 				
 				# Always set selection state to 1 (selected)
 				new_entry_list[cter_id][self.idx_cter_select] = 1
-		else: 
-			# This CTEF file format must be current (after around 2016/01/29) or output of this script
-			assert len(new_entry_list[0]) == self.n_idx_cter, "MRK_DEBUG: The number of columns (%d) have to be %d in %s" % (len(new_entry_list[0]), self.n_idx_cter, file_path)
+			# NOTE: 2017/03/20 Toshio Moriya
+			# The following code is to support the old format of CTER. It should be removed near future
+			elif len(new_entry_list[cter_id]) == self.n_idx_cter - self.n_idx_cter_extra - 1:
+				# Add extra items first to make sure indices match
+				extended_entry = []
+				extended_entry = extended_entry + [cter_id]                              # self.idx_cter_id , <extra> entry id
+				extended_entry = extended_entry + [1]                                    # self.idx_cter_select  <extra> selected state
+				
+				# original entry
+				for original_entry_id in xrange(0, self.idx_cter_sd_ac): # From self.idx_cter_def to self.idx_cter_sd_def
+					extended_entry = extended_entry + [new_entry_list[cter_id][original_entry_id]]
+				extended_entry = extended_entry + [0.0] # self.idx_cter_sd_ac
+				for original_entry_id in xrange(self.idx_cter_sd_ac, len(new_entry_list[0])): # From self.idx_cter_sd_astig_amp to self.idx_cter_mic_name 
+					extended_entry = extended_entry + [new_entry_list[cter_id][original_entry_id]]
+				
+#				extended_entry = extended_entry + [""]                                   # self.idx_cter_pwrot_name, <extra> CTER power spectrum rotational average file name
+#				extended_entry = extended_entry + [0.5]                                  # self.idx_cter_error_ctf, <extra> limit frequency by CTF error 
+				if self.is_enable_max_power == True: extended_entry = extended_entry + [0.0] # MRK_TEST: self.idx_cter_max_power, <extra> maximum power in experimental rotational average (with astigmatism)
+				
+				# Store the extended entry to entry list
+				new_entry_list[cter_id] = extended_entry
+				
+				# MRK_TEST: Set max value of pwrot related to this micrograph
+				if self.is_enable_max_power == True: # MRK_TEST: 
+					new_cter_mic_file_path = new_entry_list[cter_id][self.idx_cter_mic_name]
+#					print "MRK_DEBUG: new_cter_mic_file_path := ", new_cter_mic_file_path
+					mic_basename_root = os.path.splitext(os.path.basename(new_cter_mic_file_path))
+#					print "MRK_DEBUG: mic_basename_root := ", mic_basename_root
+					new_cter_pwrot_file_path = os.path.join(os.path.dirname(file_path), "pwrot", "%s_rotinf.txt" % (mic_basename_root))
+#					print "MRK_DEBUG: new_cter_pwrot_file_path := ", new_cter_pwrot_file_path
+					new_rotinf_table = read_text_file(new_cter_pwrot_file_path, ncol=-1) # MRK_TEST: 
+					new_entry_list[cter_id][self.idx_cter_max_power] = max(new_rotinf_table[self.idx_rotinf_exp_with_astig]) # MRK_TEST: 
+				
+				# Always set selection state to 1 (selected)
+				new_entry_list[cter_id][self.idx_cter_select] = 1
+			else: 
+				assert False, "MRK_DEBUG: Unreachable code! Found Invalid number of columns (%d) in %s" % (len(new_entry_list[0]), file_path)
 		
 		# now set the new status
+		
 		self.cter_partres_file_path = file_path
 		self.cter_entry_list = new_entry_list
 		
@@ -1424,8 +1481,10 @@ class SXGuiCter(QtGui.QWidget):
 			# self.wplotrotavgfine.set_data(([error_freq, error_freq], [global_min, global_max]),"ctf_freq_limit")
 			self.wplotrotavgfine.add_shape("%s_freq"%(error_name),EMShape(("scrlabel",0,0,0,error_scr_x-260,self.wplotrotavgfine.scrlim[1]+self.wplotrotavgfine.scrlim[3]-54,"%s %1.5g (%1.5g)"%(error_label,error_freq,1.0/error_freq),120.0,-1)))
 		
-		self.wplotrotavgcoarse.setAxisParms("frequency (1/"+ "$\AA$" +")","power spectrum")
-		self.wplotrotavgfine.setAxisParms("frequency (1/"+ "$\AA$" +")","power spectrum")
+###		self.wplotrotavgcoarse.setAxisParms("frequency (1/"+ "$\AA$" +")","power spectrum")
+###		self.wplotrotavgfine.setAxisParms("frequency (1/"+ "$\AA$" +")","power spectrum")
+		self.wplotrotavgcoarse.setAxisParms("frequency (1/"+ "$\AA$" +")","amplitude")
+		self.wplotrotavgfine.setAxisParms("frequency (1/"+ "$\AA$" +")","amplitude")
 		
 		self.updatePlotVisibility()
 	
