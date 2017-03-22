@@ -649,6 +649,7 @@ def main(args):
 				junk = cmdexecute("mkdir -p " + NAME_OF_MAIN_DIR + "%04d"%isac_generation)
 				# reference the original stack
 				list_file = os.path.join(NAME_OF_MAIN_DIR + "%04d"%(isac_generation - 1), "generation_%d_unaccounted.txt"%(isac_generation - 1))
+				delete_bdb(stack_processed_by_ali2d_base__filename__without_master_dir + "_%03d"%isac_generation)
 				junk = cmdexecute("e2bdb.py %s --makevstack=%s --list=%s"%(stack_processed_by_ali2d_base__filename__without_master_dir,\
 						stack_processed_by_ali2d_base__filename__without_master_dir + "_%03d"%isac_generation, list_file))
 			mpi_barrier(MPI_COMM_WORLD)
