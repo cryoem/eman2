@@ -1102,7 +1102,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			if True :
 				###if my_abs_id == main_node: print "Within group refinement and checking within group stability, original approach .......", check_stability, "  ",localtime()[0:5]
 				# ====================================== standard approach is used, calculations are parallelized by scatter groups (averages) among MPI processes
-				if check_stability and main_iter == max_iter-1: gpixer = []
+				if( check_stability and main_iter == max_iter ): gpixer = []
 				for j in xrange(myid, numref, number_of_proc):
 					assign = []
 					for im in xrange(nima):
@@ -1125,7 +1125,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 								ali_params[ii].extend([alpha, sx, sy, mirror])
 
 						stable_set, mirror_consistent_rate, err = multi_align_stability(ali_params, 0.0, 10000.0, thld_err, False, last_ring*2)
-						if main_iter == max_iter-1 :  gpixer.append(err)
+						if( main_iter == max_iter ):  gpixer.append(err)
 
 						###print  "Color %1d, class %4d ...... Size of the group = %4d and of the stable subset = %4d  Mirror consistent rate = %5.3f  Average pixel error prior to class pruning = %10.2f"\
 						###				%(color, j, len(class_data), len(stable_set), mirror_consistent_rate, err)
@@ -1154,7 +1154,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 						del stable_members
 					# end of stability
 					del assign
-				if check_stability and main_iter == max_iter-1:
+				if( check_stability and main_iter == max_iter ):
 					#  gather all pixers and print a histogram
 					from utilities import wrap_mpi_gatherv
 					gpixer = wrap_mpi_gatherv(gpixer, main_node, comm)
