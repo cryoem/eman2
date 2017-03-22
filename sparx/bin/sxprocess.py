@@ -1231,7 +1231,7 @@ def main():
 					else:
 						outtext[-1].append("%10.6f"%last_non_zero)
 			else:
-				log_main.add("no B-factor sharpening is applied!")
+				log_main.add("B-factor sharpening is not applied to map!")
 									
 			if options.low_pass_filter !=-1.: # User provided low-pass filter #4.
 				if options.low_pass_filter>0.5: # Input is in Angstrom 
@@ -1250,6 +1250,7 @@ def main():
 			
 			file_name, file_ext = os.path.splitext(options.output)
 			map1.write_image(file_name+"_nomask_"+file_ext)
+			log_main.add("The non-mask applied postprocessed map is saved as %s"%(file_name+"_nomask_"+file_ext)
 			if m: map1 *=m
 			else: log_main.add("The final map is not masked!")
 			
