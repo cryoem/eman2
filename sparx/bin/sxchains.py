@@ -212,20 +212,20 @@ def main():
 	Functionality:
 
 
-	4.  Order a 2-D stack of image based on pair-wise similarity (computed as a cross-correlation coefficent).
+	Order a 2-D stack of image based on pair-wise similarity (computed as a cross-correlation coefficent).
 		Options 1-3 require image stack to be aligned.  The program will apply orientation parameters if present in headers.
 	    The ways to use the program:
-	   4.1  Use option initial to specify which image will be used as an initial seed to form the chain.
-	        sxprocess.py input_stack.hdf output_stack.hdf --initial=23 --radius=25
-	   4.2  If options initial is omitted, the program will determine which image best serves as initial seed to form the chain
-	        sxprocess.py input_stack.hdf output_stack.hdf --radius=25
-	   4.3  Use option circular to form a circular chain.
-	        sxprocess.py input_stack.hdf output_stack.hdf --circular--radius=25
-	   4.4  New circular code based on pairwise alignments
-			sxprocess.py aclf.hdf chain.hdf circle.hdf --align  --radius=25 --xr=2 --pairwiseccc=lcc.txt
+	   1  Use option initial to specify which image will be used as an initial seed to form the chain.
+	        sxchains.py input_stack.hdf output_stack.hdf --initial=23 --radius=25
+	   2  If options initial is omitted, the program will determine which image best serves as initial seed to form the chain
+	        sxchains.py input_stack.hdf output_stack.hdf --radius=25
+	   3  Use option circular to form a circular chain.
+	        sxchains.py input_stack.hdf output_stack.hdf --circular--radius=25
+	   4  New circular code based on pairwise alignments
+			sxchains.py aclf.hdf chain.hdf circle.hdf --align  --radius=25 --xr=2 --pairwiseccc=lcc.txt
 
-	   4.5  Circular ordering based on pairwise alignments
-			sxprocess.py vols.hdf chain.hdf mask.hdf --dd  --radius=25
+	   5  Circular ordering based on pairwise alignments
+			sxchains.py vols.hdf chain.hdf mask.hdf --dd  --radius=25
 
 
 """
@@ -325,9 +325,9 @@ def main():
 		mask = model_circle(radius, nx, ny)
 
 		if(options.xr < 0):	xrng = 0
-		else:					xrng = options.xr
+		else:				xrng = options.xr
 		if(options.yr < 0):	yrng = xrng
-		else:					yrng = options.yr
+		else:				yrng = options.yr
 			
 		initial = max(options.initial, 0)
 
@@ -579,6 +579,7 @@ def main():
 		
 		d = EMData.read_images(stack)
 		try:
+			print "Using 2D alignment parameters from header.
 			ttt = d[0].get_attr('xform.params2d')
 			for i in xrange(len(d)):
 				alpha, sx, sy, mirror, scale = get_params2D(d[i])
@@ -618,7 +619,7 @@ def main():
 			d[0].write_image(new_stack, k)
 		else:			
 			if options.circular :
-				print "Using options.circular"
+				print "Using options.circular, no alignment"
 				#  figure the "best circular" starting image
 				maxsum = -1.023
 				for m in xrange(len(d)):
@@ -668,6 +669,7 @@ def main():
 				for m in xrange(len(d)):  d[snake[m]].write_image(new_stack, m)
 			else:
 				#  figure the "best" starting image
+				print "Straight chain, no alignment"
 				maxsum = -1.023
 				for m in xrange(len(d)):
 					indc = range(len(d) )
