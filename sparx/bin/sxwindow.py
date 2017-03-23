@@ -282,6 +282,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 	i_enum += 1; idx_cter_astig_amp    = i_enum # astigmatism amplitude [um]; index must be same as ctf object format
 	i_enum += 1; idx_cter_astig_ang    = i_enum # astigmatism angle [degree]; index must be same as ctf object format
 	i_enum += 1; idx_cter_sd_def       = i_enum # std dev of defocus [um]
+	i_enum += 1; idx_cter_sd_ac        = i_enum # std dev of amplitude contrast [%]
 	i_enum += 1; idx_cter_sd_astig_amp = i_enum # std dev of ast amp [A]
 	i_enum += 1; idx_cter_sd_astig_ang = i_enum # std dev of ast angle [degree]
 	i_enum += 1; idx_cter_cv_def       = i_enum # coefficient of variation of defocus [%]
@@ -470,8 +471,25 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 				break
 			assert (len(cter_entry_list) > 0)
 			
-			if (len(cter_entry_list[0]) != n_idx_cter):
-				error_status = ("Number of columns (%d) must be %d in %s. The format might be old. Please run sxcter.py again." % (len(cter_entry_list[0]), n_idx_cter, ctf_params_src), getframeinfo(currentframe()))
+			# NOTE: 2017/03/22 Toshio Moriya
+			# The following code is to support the old format of CTER. It should be removed near future
+			if len(cter_entry_list[0]) == n_idx_cter - 1:
+				print("    WARNING!!!: Number of columns is %d in the specified CTER CTF File %s. The format might be old because new one should contain %d colums. The file format might be old. We will stop supporting this format near future. Please consider rerun CTER.." % (len(cter_entry_list[0]), ctf_params_src, n_idx_cter), getframeinfo(currentframe()))
+				# Reassign the indices to fit the old format
+				idx_cter_sd_ac        = -1 # use invalid valid
+				idx_cter_sd_astig_amp -= 1
+				idx_cter_sd_astig_ang -= 1
+				idx_cter_cv_def       -= 1
+				idx_cter_cv_astig_amp -= 1
+				idx_cter_spectra_diff -= 1
+				idx_cter_error_def    -= 1
+				idx_cter_error_astig  -= 1
+				idx_cter_error_ctf    -= 1
+				idx_cter_mic_path     -= 1
+				n_idx_cter            -= 1
+			
+			if len(cter_entry_list[0]) != n_idx_cter:
+				error_status = ("The number of columns (%d) has to be %d in %s." % (len(cter_entry_list[0]), n_idx_cter, ctf_params_src), getframeinfo(currentframe()))
 				break
 			assert (len(cter_entry_list[0]) == n_idx_cter)
 			
@@ -563,6 +581,8 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 					dummy_cter_entry[idx_cter_astig_amp]    = 0.0
 					dummy_cter_entry[idx_cter_astig_ang]    = 0.0
 					dummy_cter_entry[idx_cter_sd_def]       = 0.0
+					if idx_cter_sd_ac != -1:
+						dummy_cter_entry[idx_cter_sd_ac]        = 0.0
 					dummy_cter_entry[idx_cter_sd_astig_amp] = 0.0
 					dummy_cter_entry[idx_cter_sd_astig_ang] = 0.0
 					dummy_cter_entry[idx_cter_cv_def]       = 0.0
