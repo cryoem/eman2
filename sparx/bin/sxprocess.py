@@ -1059,7 +1059,8 @@ def main():
 				map1 +=map2
 				map1 /=2.
 				log_main.add("Create a surface mask, let's wait...")
-				m = Util.surface_mask(map1, options.mask_threshold, options.dilation, options.consine_edge)
+				log_main.add("options.mask_threshold, options.dilation, options.consine_edge %f %5.2f %5.2f"%(options.mask_threshold, options.dilation, options.consine_edge))
+				m = Util.adaptive_mask(map1, options.mask_threshold, options.dilation, options.consine_edge)
 				m.write_image("vol_adaptive_mask.hdf")
 				map1 = get_im(args[0]) # re-read map1
 			else:
@@ -1230,7 +1231,7 @@ def main():
 					else:
 						outtext[-1].append("%10.6f"%last_non_zero)
 			else:
-				log_main.add("no B-factor sharpening is applied!")
+				log_main.add("B-factor sharpening is not applied to map!")
 									
 			if options.low_pass_filter !=-1.: # User provided low-pass filter #4.
 				if options.low_pass_filter>0.5: # Input is in Angstrom 
@@ -1249,6 +1250,7 @@ def main():
 			
 			file_name, file_ext = os.path.splitext(options.output)
 			map1.write_image(file_name+"_nomask_"+file_ext)
+			log_main.add("The non-mask applied postprocessed map is saved as %s"%(file_name+"_nomask_"+file_ext))
 			if m: map1 *=m
 			else: log_main.add("The final map is not masked!")
 			
