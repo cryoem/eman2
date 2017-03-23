@@ -101,7 +101,7 @@ def main():
 	iters=[int(i[6:9]) for i in os.listdir("initial_models") if i[:6]=="hisym_"]
 	try : newiter=max(iters)+1
 	except : newiter=0
-	results_name="initial_models/hisym_%02d"%newiter
+	results_name="initial_models/hisym_%02d.hdf"%newiter
 	cmp_name="initial_models/hisymcmp_%02d.hdf"%newiter
 
 	curmap=EMData(boxsize,boxsize,boxsize)

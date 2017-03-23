@@ -1,5 +1,5 @@
 = Name =
-sx3dvariability - 3D Variablity Estimation: Calculate 3D variability using a set of aligned projection images as an input.
+sx3dvariability - 3D Variability Estimation: Calculate 3D variability using a set of aligned projection images as an input.
 
 = Usage =
 
