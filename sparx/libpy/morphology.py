@@ -2514,11 +2514,11 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			# --------------------------------------------------------------------------------
 			print(" ")
 			print("Summary of dataset consistency check...")
-			print("  Detected  IDs          : %6d" % (len(global_entry_dict)))
-			print("  Entries in input directory       : %6d" % (len(input_mic_path_list)))
-			print("  Entries in selection list        : %6d" % (len(selected_mic_path_list)))
-			print("  Rejected by no input   : %6d" % (len(no_input_mic_id_substr_list)))
-			print("  Valid Entries                    : %6d" % (len(valid_mic_id_substr_list)))
+			print("  Detected  IDs               : %6d" % (len(global_entry_dict)))
+			print("  Entries in input directory  : %6d" % (len(input_mic_path_list)))
+			print("  Entries in selection list   : %6d" % (len(selected_mic_path_list)))
+			print("  Rejected by no input        : %6d" % (len(no_input_mic_id_substr_list)))
+			print("  Valid Entries               : %6d" % (len(valid_mic_id_substr_list)))
 			
 			# --------------------------------------------------------------------------------
 			# Check MPI error condition
@@ -2678,7 +2678,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			img_name = namics[ifi]
 			
 			if my_mpi_proc_id == main_mpi_proc:
-				print("    Processing %s ---> % 2.2f%%" % (img_name, ifi / progress_percent_step) * 100)
+				print("    Processing %s ---> %6.2f%%" % (img_name, ifi / progress_percent_step * 100))
 			
 			if not os.path.exists(img_name):
 				missing_img_names.append(img_name)
@@ -3643,11 +3643,11 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 			# --------------------------------------------------------------------------------
 			print(" ")
 			print("Summary of dataset consistency check...")
-			print("  Detected  IDs          : %6d" % (len(global_entry_dict)))
-			print("  Entries in input directory       : %6d" % (len(input_mic_path_list)))
-			print("  Entries in selection list        : %6d" % (len(selected_mic_path_list)))
-			print("  Rejected by no input   : %6d" % (len(no_input_mic_id_substr_list)))
-			print("  Valid Entries                    : %6d" % (len(valid_mic_id_substr_list)))
+			print("  Detected  IDs               : %6d" % (len(global_entry_dict)))
+			print("  Entries in input directory  : %6d" % (len(input_mic_path_list)))
+			print("  Entries in selection list   : %6d" % (len(selected_mic_path_list)))
+			print("  Rejected by no input        : %6d" % (len(no_input_mic_id_substr_list)))
+			print("  Valid Entries               : %6d" % (len(valid_mic_id_substr_list)))
 			
 			# --------------------------------------------------------------------------------
 			# Check MPI error condition
@@ -3807,7 +3807,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 			img_name = namics[ifi]
 			
 			if my_mpi_proc_id == main_mpi_proc:
-				print("    Processing %s ---> % 2.2f%%" % (img_name, ifi / progress_percent_step) * 100)
+				print("    Processing %s ---> %6.2f%%" % (img_name, ifi / progress_percent_step * 100))
 			
 			if not os.path.exists(img_name):
 				missing_img_names.append(img_name)
@@ -6059,11 +6059,11 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			# --------------------------------------------------------------------------------
 			print(" ")
 			print("Summary of dataset consistency check...")
-			print("  Detected  IDs          : %6d" % (len(global_entry_dict)))
-			print("  Entries in input directory       : %6d" % (len(input_mic_path_list)))
-			print("  Entries in selection list        : %6d" % (len(selected_mic_path_list)))
-			print("  Rejected by no input   : %6d" % (len(no_input_mic_id_substr_list)))
-			print("  Valid Entries                    : %6d" % (len(valid_mic_id_substr_list)))
+			print("  Detected  IDs               : %6d" % (len(global_entry_dict)))
+			print("  Entries in input directory  : %6d" % (len(input_mic_path_list)))
+			print("  Entries in selection list   : %6d" % (len(selected_mic_path_list)))
+			print("  Rejected by no input        : %6d" % (len(no_input_mic_id_substr_list)))
+			print("  Valid Entries               : %6d" % (len(valid_mic_id_substr_list)))
 			
 			# --------------------------------------------------------------------------------
 			# Check MPI error condition
@@ -6223,7 +6223,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			img_name = namics[ifi]
 			
 			if my_mpi_proc_id == main_mpi_proc:
-				print("    Processing %s ---> % 2.2f%%" % (img_name, ifi / progress_percent_step) * 100)
+				print("    Processing %s ---> %6.2f%%" % (img_name, ifi / progress_percent_step * 100))
 			
 			if not os.path.exists(img_name):
 				missing_img_names.append(img_name)
