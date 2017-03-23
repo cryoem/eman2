@@ -1250,7 +1250,7 @@ def main():
 			
 			file_name, file_ext = os.path.splitext(options.output)
 			map1.write_image(file_name+"_nomask_"+file_ext)
-			log_main.add("The non-mask applied postprocessed map is saved as %s"%(file_name+"_nomask_"+file_ext)
+			log_main.add("The non-mask applied postprocessed map is saved as %s"%(file_name+"_nomask_"+file_ext))
 			if m: map1 *=m
 			else: log_main.add("The final map is not masked!")
 			
