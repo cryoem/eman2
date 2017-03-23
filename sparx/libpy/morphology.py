@@ -2678,7 +2678,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			img_name = namics[ifi]
 			
 			if my_mpi_proc_id == main_mpi_proc:
-				print("    Processing %s ---> % 2.2f%%" % (img_name, ifi / progress_percent_step))
+				print("    Processing %s ---> % 2.2f%%" % (img_name, ifi / progress_percent_step) * 100)
 			
 			if not os.path.exists(img_name):
 				missing_img_names.append(img_name)
@@ -3807,7 +3807,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 			img_name = namics[ifi]
 			
 			if my_mpi_proc_id == main_mpi_proc:
-				print("    Processing %s ---> % 2.2f%%" % (img_name, ifi / progress_percent_step))
+				print("    Processing %s ---> % 2.2f%%" % (img_name, ifi / progress_percent_step) * 100)
 			
 			if not os.path.exists(img_name):
 				missing_img_names.append(img_name)
@@ -6223,7 +6223,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			img_name = namics[ifi]
 			
 			if my_mpi_proc_id == main_mpi_proc:
-				print("    Processing %s ---> % 2.2f%%" % (img_name, ifi / progress_percent_step))
+				print("    Processing %s ---> % 2.2f%%" % (img_name, ifi / progress_percent_step) * 100)
 			
 			if not os.path.exists(img_name):
 				missing_img_names.append(img_name)
