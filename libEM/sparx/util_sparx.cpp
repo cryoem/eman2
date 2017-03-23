@@ -23971,7 +23971,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 void Util::version()
 {
  cout <<"  Compile time of util_sparx.cpp  "<< __DATE__ << "  --  " << __TIME__ <<   endl;
- cout <<"  Modification time: 03/16/2017  03:51 PM " <<  endl;
+ cout <<"  Modification time: 03/23/2017  06:35 PM " <<  endl;
 }
 
 
@@ -24452,9 +24452,9 @@ EMData* Util::ctf_rimg(int nx, int ny, int nz, float dz, float ps, float voltage
 					float dzz = dz - dza/2.0f*sin(2*(atan2(oy, ox)+azz*M_PI/180.0f));
 					ctf_img1_ptr (i,j,k)   = Util::tf(dzz, ak, voltage, cs, wgh, b_factor, signa);
 				}
-				if( doabs ) ctf_img1_ptr (i,j,k) = fabs( ctf_img1_ptr (i,j,k) );
+				if( doabs ) ctf_img1_ptr(i,j,k) = fabs( ctf_img1_ptr(i,j,k) );
 				ix = nx - i - nod;
-				if(ix<nx)  ctf_img1_ptr (ix,jy,kz) = ctf_img1_ptr (i,j,k);
+				if(ix<nx)  ctf_img1_ptr(ix,jy,kz) = ctf_img1_ptr(i,j,k);
 			}
 		}
 	}
@@ -24546,17 +24546,17 @@ EMData* Util::ctf2_rimg(int nx, int ny, int nz, float dz, float ps, float voltag
 				ix = i - ns2;
 				if( dza == 0.0f) {
 					ak=pow(ix*ix*scx*scx + oy2 + oz2, 0.5f)*freq;
-					ctf_img1_ptr (i,j,k)   = pow(Util::tf(dz, ak, voltage, cs, wgh, b_factor, sign),2);
+					ctf_img1_ptr(i,j,k)   = pow(Util::tf(dz, ak, voltage, cs, wgh, b_factor, sign),2);
 				} else {
 					float ox = ix*scx;
 					ak=pow(ox*ox + oy2 + oz2, 0.5f)*freq;
 					//az = atan2(oy, ox);
 					//float dzz = dz + dza/2.0f*sin(2*(az-azz*M_PI/180.0f-pihalf));
 					float dzz = dz - dza/2.0f*sin(2*(atan2(oy, ox)+azz*M_PI/180.0f));
-					ctf_img1_ptr (i,j,k)   = pow(Util::tf(dzz, ak, voltage, cs, wgh, b_factor, sign),2);
+					ctf_img1_ptr(i,j,k)   = pow(Util::tf(dzz, ak, voltage, cs, wgh, b_factor, sign),2);
 				}
 				ix = nx - i - nod;
-				if(ix<nx)  ctf_img1_ptr (ix,jy,kz) = ctf_img1_ptr (i,j,k);
+				if(ix<nx)  ctf_img1_ptr(ix,jy,kz) = ctf_img1_ptr(i,j,k);
 			}
 		}
 	}
