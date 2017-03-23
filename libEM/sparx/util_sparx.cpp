@@ -24339,16 +24339,15 @@ EMData* Util::ctf_img(int nx, int ny, int nz, float dz,float ps,float voltage,fl
 	if(nx%2==0) ctf_img1->set_fftodd(false); else ctf_img1->set_fftodd(true);
 	return ctf_img1;
 }
-
-
+/*
 EMData* Util::ctf_rimg(int nx, int ny, int nz, float dz, float ps, float voltage, float cs, float wgh, float b_factor, float dza, float azz, float sign)
 {
-	/*
+	/
 	sign"
 	 +1  =  positive CTF
 	 -1  =  negative CTF (as per physics)
 	  0  =  absolute |CTF|
-	*/
+	/
 	int    ix, iy, iz;
 	int    i,  j, k;
 	float  ak;
@@ -24399,11 +24398,71 @@ EMData* Util::ctf_rimg(int nx, int ny, int nz, float dz, float ps, float voltage
 	}
 	ctf_img1->update();
 	return ctf_img1;
+} */
+#define ctf_img1_ptr(i,j,k)   ctf_img1_ptr[i+(j+(k*ny))*(size_t)nx]
+EMData* Util::ctf_rimg(int nx, int ny, int nz, float dz, float ps, float voltage, float cs, float wgh, float b_factor, float dza, float azz, float sign)
+{
+	/*
+	sign"
+	 +1  =  positive CTF
+	 -1  =  negative CTF (as per physics)
+	  0  =  absolute |CTF|
+	*/
+	int    ix, iy, iz;
+	int    i,  j, k;
+	float  ak;
+	float  scx, scy, scz;
+	float signa = sign;
+	bool  doabs;
+	if( sign == 0.0f ) {
+		signa = 1.0;
+		doabs = true;
+	} else doabs = false;
+	EMData* ctf_img1 = new EMData();
+	ctf_img1->set_size(nx, ny, nz);
+	ctf_img1->to_zero();
+	float *ctf_img1_ptr = ctf_img1->get_data();
+	float freq = 1.0f/(2.0f*ps);
+	scx = 2.0f/float(nx);
+	if(ny>=1) scy = 2.0f/float(ny); else scy=0.0f;
+	if(nz>=1) scz = 2.0f/float(nz); else scz=0.0f;
+	int ns2 = nx/2 ;
+	int nr2 = ny/2 ;
+	int nl2 = nz/2 ;
+	int nod = nx%2 ;
+	int nok = ny%2 ;
+	int noz = nz%2 ;
+	for ( k=0; k<nz;k++) {
+		iz = k - nl2;
+		int kz = (nz - k - noz)%nz;
+		float oz2 = iz*scz*iz*scz;
+		for ( j=0; j<ny;j++) {
+			iy = j - nr2;
+			int jy = (ny - j - nok)%ny;
+			float oy = iy*scy;
+			float oy2 = oy*oy;
+			for ( i=0; i<=ns2; i++) {
+				ix = i - ns2;
+				if( dza == 0.0f) {
+					ak=pow(ix*ix*scx*scx + oy2 + oz2, 0.5f)*freq;
+					ctf_img1_ptr (i,j,k)   = Util::tf(dz, ak, voltage, cs, wgh, b_factor, signa);
+				} else {
+					float ox = ix*scx;
+					ak=pow(ox*ox + oy2 + oz2, 0.5f)*freq;
+					float dzz = dz - dza/2.0f*sin(2*(atan2(oy, ox)+azz*M_PI/180.0f));
+					ctf_img1_ptr (i,j,k)   = Util::tf(dzz, ak, voltage, cs, wgh, b_factor, signa);
+				}
+				if( doabs ) ctf_img1_ptr (i,j,k) = fabs( ctf_img1_ptr (i,j,k) );
+				ix = nx - i - nod;
+				if(ix<nx)  ctf_img1_ptr (ix,jy,kz) = ctf_img1_ptr (i,j,k);
+			}
+		}
+	}
+	ctf_img1->update();
+	return ctf_img1;
 }
-
-
-
-
+#undef ctf_img1_ptr
+/*
 EMData* Util::ctf2_rimg(int nx, int ny, int nz, float dz, float ps, float voltage, float cs, float wgh, float b_factor, float dza, float azz, float sign)
 {
 	int    ix, iy, iz;
@@ -24451,9 +24510,63 @@ EMData* Util::ctf2_rimg(int nx, int ny, int nz, float dz, float ps, float voltag
 	}
 	ctf_img1->update();
 	return ctf_img1;
+}*/
+
+#define ctf_img1_ptr(i,j,k)   ctf_img1_ptr[i+(j+(k*ny))*(size_t)nx]
+EMData* Util::ctf2_rimg(int nx, int ny, int nz, float dz, float ps, float voltage, float cs, float wgh, float b_factor, float dza, float azz, float sign)
+{
+	int    ix, iy, iz;
+	int    i,  j, k;
+	float  ak;
+	float  scx, scy, scz;
+	EMData* ctf_img1 = new EMData();
+	ctf_img1->set_size(nx, ny, nz);
+	ctf_img1->to_zero();
+	float *ctf_img1_ptr = ctf_img1->get_data();
+	float freq = 1.0f/(2.0f*ps);
+	scx = 2.0f/float(nx);
+	if(ny>=1) scy = 2.0f/float(ny); else scy=0.0f;
+	if(nz>=1) scz = 2.0f/float(nz); else scz=0.0f;
+	int ns2 = nx/2 ;
+	int nr2 = ny/2 ;
+	int nl2 = nz/2 ;
+	int nod = nx%2 ;
+	int nok = ny%2 ;
+	int noz = nz%2 ;
+	for ( k=0; k<nz;k++) {
+		iz = k - nl2;
+		int kz = (nz - k - noz)%nz;
+		float oz2 = iz*scz*iz*scz;
+		for ( j=0; j<ny;j++) {
+			iy = j - nr2;
+			int jy = (ny - j - nok)%ny;
+			float oy = iy*scy;
+			float oy2 = oy*oy;
+			for ( i=0; i<=ns2; i++) {
+				ix = i - ns2;
+				if( dza == 0.0f) {
+					ak=pow(ix*ix*scx*scx + oy2 + oz2, 0.5f)*freq;
+					ctf_img1_ptr (i,j,k)   = pow(Util::tf(dz, ak, voltage, cs, wgh, b_factor, sign),2);
+				} else {
+					float ox = ix*scx;
+					ak=pow(ox*ox + oy2 + oz2, 0.5f)*freq;
+					//az = atan2(oy, ox);
+					//float dzz = dz + dza/2.0f*sin(2*(az-azz*M_PI/180.0f-pihalf));
+					float dzz = dz - dza/2.0f*sin(2*(atan2(oy, ox)+azz*M_PI/180.0f));
+					ctf_img1_ptr (i,j,k)   = pow(Util::tf(dzz, ak, voltage, cs, wgh, b_factor, sign),2);
+				}
+				ix = nx - i - nod;
+				if(ix<nx)  ctf_img1_ptr (ix,jy,kz) = ctf_img1_ptr (i,j,k);
+			}
+		}
+	}
+	ctf_img1->update();
+	return ctf_img1;
 }
-		
+#undef ctf_img1_ptr
+	
 #define		quadpi	 	 	3.141592653589793238462643383279502884197 
+/***
 EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg, float s)
 {  
 	ENTERFUNC;
@@ -24550,14 +24663,119 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 	cmasked->update();
 	EXITFUNC;
 	return cmasked;
+} ***/
+
+#define img_ptr(i,j,k)  img_ptr[i+(j+(k*ny))*(size_t)nx]
+#define cmasked_ptr(i,j,k) cmasked_ptr[i+(j+(k*ny))*(size_t)nx]
+#define bckg_ptr(i,j,k) bckg_ptr[i+(j+(k*ny))*(size_t)nx]
+EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg, float s)
+{  
+	ENTERFUNC;
+	int nx = img->get_xsize(), ny = img->get_ysize(), nz = img->get_zsize();
+	float *img_ptr  = img->get_data();
+	float *bckg_ptr = NULL;
+	if (bckg != NULL ) float *bckg_ptr = bckg->get_data();
+	EMData* cmasked = img->copy_head();
+	cmasked->to_zero();
+	float *cmasked_ptr  = cmasked->get_data();
+	int cz = nz/2;
+	int cy = ny/2;
+	int cx = nx/2;
+	float s1;
+
+	int img_dim = img->get_ndim();
+	if (radius<0 ) {
+		switch (img_dim) {
+			case(1):
+			radius = nx/2 - cosine_width;
+			break;
+			case(2):
+				radius = int(Util::get_min(nx,ny)/2.)-cosine_width;
+			break;
+			case(3):
+				radius = int(Util::get_min(Util::get_min(nx,ny),nz)/2.) - cosine_width;
+			break;
+		}
+	}
+	int radius_p = radius + cosine_width;
+	if (bckg != NULL )  {
+	  	for (int iz=0; iz<nz; iz++) {
+			int tz =(iz-cz)*(iz-cz);
+			for (int iy=0; iy<ny; iy++) {
+				int ty=tz+(iy-cy)*(iy-cy);				
+				for (int ix =0; ix<nx; ix++) {
+					float r = sqrt((float)(ty +(ix-cx)*(ix-cx)));
+					if (r>=radius_p)
+						cmasked_ptr(ix,iy,iz) = bckg_ptr(ix,iy,iz);
+					if (r>=radius && r<radius_p) {
+						float temp = (0.5+0.5*cos(pi*(radius_p-r)/cosine_width));
+						cmasked_ptr(ix,iy,iz) = img_ptr(ix,iy,iz)+temp*(bckg_ptr(ix,iy,iz)-img_ptr(ix,iy,iz));
+					}
+					if (r<radius) cmasked_ptr(ix,iy,iz) = img_ptr(ix,iy,iz);
+				}
+			}
+		}
+	} else 
+	{
+	  if (s==999999.)
+	  
+	  {
+		float u =0.0f;
+		s1 =0.0f;
+	  	for (int iz=0; iz<nz; iz++) {
+			int tz =(iz-cz)*(iz-cz);
+			for (int iy=0; iy<ny; iy++) {
+				int ty=tz+(iy-cy)*(iy-cy);
+				for (int ix=0; ix<nx; ix++) {
+					float r = sqrt((float)(ty +(ix-cx)*(ix-cx)));
+					if (r>=radius_p) {	
+						u +=1.0f;
+						s1 +=img_ptr(ix,iy,iz);
+					}
+					if ( r>=radius && r<radius_p) {
+						float temp = (0.5+0.5*cos(quadpi*(radius_p-r)/cosine_width));
+						u += temp;
+						s1 += img_ptr(ix,iy,iz)*temp;
+					}
+					if (r<radius) cmasked_ptr(ix,iy,iz) = img_ptr(ix,iy,iz);
+				}
+			  }
+		   }
+		 s1 /= u;
+	   }
+	else
+		s1=s;
+
+		for (int iz=0; iz<nz; iz++) {
+			int tz =(iz-cz)*(iz-cz);
+			for (int iy=0; iy<ny; iy++) {
+				int ty=tz+(iy-cy)*(iy-cy);
+				for (int ix=0; ix<nx; ix++) {
+					float r = sqrt((float)(ty +(ix-cx)*(ix-cx)));
+					if (r>=radius_p)  cmasked_ptr (ix,iy,iz) = s1;
+					if (r>=radius && r<radius_p) {
+						float temp = (0.5 + 0.5*cos(quadpi*(radius_p-r)/cosine_width));
+						cmasked_ptr(ix,iy,iz) = img_ptr(ix,iy,iz)+temp*(s1-img_ptr(ix,iy,iz)); }
+					if (r<radius) cmasked_ptr(ix,iy,iz) = img_ptr(ix,iy,iz);
+				}
+			}
+		}//iz
+	}//else
+	cmasked->update();
+	EXITFUNC;
+	return cmasked;
 }
+#undef img_ptr
+#undef cmasked_ptr
+#undef bckg_ptr
+
 #undef quadpi
 
 #define		quadpi	 3.141592653589793238462643383279502884197
 #define img_ptr(i,j,k)  img_ptr[i+(j+(k*ny))*(size_t)nx]
 #define smask_ptr(i,j,k) smask_ptr[i+(j+(k*ny))*(size_t)nx]
 #define tmpimg_ptr(i,j,k) tmpimg_ptr[i+(j+(k*ny))*(size_t)nx]
-EMData* Util::surface_mask(EMData* img, float threshold, float surface_dilation_ini, float cosine_width)
+EMData* Util::adaptive_mask(EMData* img, float threshold, float surface_dilation_ini, float cosine_width)
 {  
 	ENTERFUNC;
 
@@ -24580,23 +24798,18 @@ EMData* Util::surface_mask(EMData* img, float threshold, float surface_dilation_
 	for (int iz=0; iz<nz; iz++) {
 				for (int iy=0; iy<ny; iy++) {
 					for (int ix=0; ix<nx; ix++) {
-						if (img_ptr(ix,iy,iz) > threshold)
-						{	
+						if (img_ptr(ix,iy,iz) > threshold){	
 							smask_ptr(ix,iy,iz)=  1.0;
-							tmpimg_ptr(ix,iy,iz)= 1.0;
-						}
-						else
-							{
+							tmpimg_ptr(ix,iy,iz)= 1.0; }
+						else {
 								smask_ptr(ix,iy,iz)=  0.0;
-								tmpimg_ptr(ix,iy,iz)= 0.0;
-							 }
+								tmpimg_ptr(ix,iy,iz)= 0.0;}
 				      }
-			   }					
+			   }				
 	  }
-		
-	if (surface_dilation_ini > 0. || surface_dilation_ini < 0.)
+	if (surface_dilation_ini > 0. || surface_dilation_ini < 0.) 
 	{
-		int surface_dilation          = abs(ceil(surface_dilation_ini));
+		int surface_dilation = abs(ceil(surface_dilation_ini));
 		//std:cout<<" surface_dilation starts"<<surface_dilation<<std::endl;
 		float  surface_dilation_ini2 = surface_dilation_ini*surface_dilation_ini;
 		if (surface_dilation_ini > 0.)
@@ -24604,136 +24817,107 @@ EMData* Util::surface_mask(EMData* img, float threshold, float surface_dilation_
 			for (int iz=0; iz<nz; iz++) {
 				for (int iy=0; iy<ny; iy++) {
 					for (int ix=0; ix<nx; ix++) {
-						if (tmpimg_ptr(ix,iy,iz) < 0.001)
-							   {
+						if (tmpimg_ptr(ix,iy,iz) < 0.001) {
 									bool already_done = false;
-									for (int kp = iz - surface_dilation; kp <= iz + surface_dilation; kp++)
-									{
-										for (int ip = iy - surface_dilation; ip <= iy + surface_dilation; ip++)
-										{
-											for (int jp = ix - surface_dilation; jp <= ix + surface_dilation; jp++)
-											  {
-												if ((kp>=0 && kp <nz) && (ip>=0 && ip <ny) && (jp>=0 && jp<nx))
-													   {													  								   
-															if (tmpimg_ptr(jp,ip,kp) > 0.999)
-															{
+									for (int kp = iz - surface_dilation; kp <= iz + surface_dilation; kp++) {
+										for (int ip = iy - surface_dilation; ip <= iy + surface_dilation; ip++) {
+											for (int jp = ix - surface_dilation; jp <= ix + surface_dilation; jp++) {
+												if ((kp>=0 && kp <nz) && (ip>=0 && ip <ny) && (jp>=0 && jp<nx)){											  								   
+															if (tmpimg_ptr(jp,ip,kp) > 0.999) {
 																float r2 = (float)( (kp-iz)*(kp-iz)+(ip-iy)*(ip-iy)+(jp-ix)*(jp-ix));
-																if (r2<surface_dilation_ini2)
-																	{
+																if (r2<surface_dilation_ini2){
 																		smask_ptr(ix, iy, iz) = 1.;
-																		already_done = true;
-																	}
-															  }
+																		already_done = true; }
+															      }
 													}
 												   if (already_done) break;  
 											  }
 											   if (already_done) break;		
-										}
+										 }
 										 if (already_done) break;
 									  } // kp
 									
-								   } //if 
+								   }//if 
 								
 								 } // ix	
-						    }  //iy
+						    }//iy
 					}//iz							   
 				}
-		else
-		{
+		else {
 			for (int iz=0; iz<nz; iz++) {
 				for (int iy=0; iy<ny; iy++) {
 					for (int ix=0; ix<nx; ix++) {
-						if (tmpimg_ptr(ix,iy,iz) > 0.999)
-							{
+						if (tmpimg_ptr(ix,iy,iz) > 0.999) {
 								bool already_done = false;
-								for (int kp = iz - surface_dilation; kp <= iz + surface_dilation; kp++)
-								{
-									for (int ip = iy - surface_dilation; ip <= iy + surface_dilation; ip++)
-									{
-										for (int jp = ix - surface_dilation; jp <= ix + surface_dilation; jp++)
-										{
-											if ((kp>=0 && kp <nz) && (ip>=0 && ip <ny) && (jp>=0 && jp<nx))
-										  	{										   
-												if (tmpimg_ptr(jp,ip,kp) < 0.001)
-												{
+								for (int kp = iz - surface_dilation; kp <= iz + surface_dilation; kp++) {
+									for (int ip = iy - surface_dilation; ip <= iy + surface_dilation; ip++) {
+										for (int jp = ix - surface_dilation; jp <= ix + surface_dilation; jp++) {
+											if ((kp>=0 && kp <nz) && (ip>=0 && ip <ny) && (jp>=0 && jp<nx)) {										   
+												if (tmpimg_ptr(jp,ip,kp) < 0.001){
 													float r2 = (float)( (kp-iz)*(kp-iz) + (ip-iy)*(ip-iy)+ (jp-ix)*(jp-ix) );
-													if (r2<surface_dilation_ini2)
-														{
+													if (r2<surface_dilation_ini2) {
 															smask_ptr(ix,iy,iz) = 0.0;
 															already_done = true;
-														}
-											  	}
+														 }
+											  	    }
 											}	
 											if (already_done) break;  
 									}
 									if (already_done) break;		
-							}
+								}
 							if (already_done) break;
 							}			
-						}	
+						}//if	
 					}
-				}							   
+				}						   
 			}
 		}
 	}
-			if (cosine_width > 0.0)
-			 {
+			if (cosine_width > 0.0) {
 		       // std::cout<<" make the edge   "<<std::endl;
 				for (int iz=0; iz<nz; iz++) {
 					for (int iy=0; iy<ny; iy++) {
 						for (int ix=0; ix<nx; ix++) {
-							{	
 								tmpimg_ptr(ix,iy,iz)= smask_ptr(ix,iy,iz);
-								}
-							}
-						}					
+							} 
+						}
 					}
 			
 				int icosine_width   = abs(ceil(cosine_width));
 				float cosine_width2 = cosine_width*cosine_width;
-				//std::cout<<" make softmask  "<<icosine_width<<std::endl;
-				int nc =0;	
+				//std::cout<<" make softmask  "<<icosine_width<<std::endl;	
 				for (int iz=0; iz<nz; iz++) {
 				  //  std::cout<<"  slice "<<iz<<std::endl;
 					for (int iy=0; iy<ny; iy++) {
 						for (int ix=0; ix<nx; ix++) {
-							nc +=1;
-							if (tmpimg_ptr(ix, iy, iz) < 0.001)
-							{
+							if (tmpimg_ptr(ix, iy, iz) < 0.001) {
 								float min_r2 = 9999.;
-								for (int kp = iz - icosine_width ; kp <= iz + icosine_width ; kp++)
-								{
-									for (int ip = iy - icosine_width ; ip <= iy + icosine_width ; ip++)
-									{
-										for (int jp = ix - icosine_width ; jp <= ix + icosine_width ; jp++)
-										{
-											if ((kp>=0 && kp <nz) && (ip>=0 && ip <ny) && (jp>=0 && jp<nx))
-											{										   
-												if (tmpimg_ptr(jp,ip,kp) > 0.999)
-												{
+								for (int kp = iz - icosine_width ; kp <= iz + icosine_width ; kp++){
+									for (int ip = iy - icosine_width ; ip <= iy + icosine_width ; ip++){
+										for (int jp = ix - icosine_width ; jp <= ix + icosine_width ; jp++){
+											if ((kp>=0 && kp <nz) && (ip>=0 && ip <ny) && (jp>=0 && jp<nx)){										   
+												if (tmpimg_ptr(jp,ip,kp) > 0.999) {
 													float r2 = (float)((kp-iz)*(kp-iz) + (ip-iy)*(ip-iy)+ (jp-ix)*(jp-ix));
 													if (r2<min_r2)
 													   min_r2 = r2;
-												   }
-											   }
-										   }
-									   }
-								   }
-									if   (min_r2 < cosine_width2)
-									   {								   
+													}
+												}
+											}
+										}
+									}
+									if   (min_r2 < cosine_width2) {								   
 										 smask_ptr(ix, iy, iz) = 0.5 + 0.5 * cos(quadpi * sqrt(min_r2)/cosine_width);}									
-								       }
-							   }
-						   }
-					  }					
-				}
+									}//if
+							   }//ix
+						   }//iy
+					  }//iz					
+				}//if
 
  	delete tmpimg;
 	smask->update();
 	EXITFUNC;
 	return smask;
 }
-
 #undef quadpi
 #undef img_ptr
 #undef smask_ptr

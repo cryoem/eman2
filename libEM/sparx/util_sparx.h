@@ -1202,7 +1202,7 @@ public:
 	static EMData* ctf_rimg(int nx, int ny, int nz, float dz, float ps, float voltage,float cs,float wgh,float b_factor,float dza,float azz,float sign);
 	static EMData* ctf2_rimg(int nx, int ny, int nz, float dz, float ps, float voltage,float cs,float wgh,float b_factor,float dza,float azz,float sign);
 	static EMData* cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg, float s);
-	static EMData* surface_mask(EMData* img, float threshold, float surface_dilation_ini, float cosine_width);
+	static EMData* adaptive_mask(EMData* img, float threshold, float surface_dilation_ini, float cosine_width);
 
 	static inline int mono(int k1, int k2) {
 #ifdef _WIN32

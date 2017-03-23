@@ -1060,7 +1060,7 @@ def main():
 				map1 /=2.
 				log_main.add("Create a surface mask, let's wait...")
 				log_main.add("options.mask_threshold, options.dilation, options.consine_edge %f %5.2f %5.2f"%(options.mask_threshold, options.dilation, options.consine_edge))
-				m = Util.surface_mask(map1, options.mask_threshold, options.dilation, options.consine_edge)
+				m = Util.adaptive_mask(map1, options.mask_threshold, options.dilation, options.consine_edge)
 				m.write_image("vol_adaptive_mask.hdf")
 				map1 = get_im(args[0]) # re-read map1
 			else:
