@@ -105,6 +105,7 @@ def construct_keyword_dict():
 	keyword_dict["--do_adaptive_mask"]            = SXkeyword_map(0, "bool")           # --do_adaptive_mask (contains keyworkd 'mask' but this should be bool type)
 	keyword_dict["--skip_create_substack"]        = SXkeyword_map(0, "bool")           # --skip_create_substack (contains keyworkd 'stack' but this should be bool type)
 	keyword_dict["--no_virtual_stack"]            = SXkeyword_map(0, "bool")           # --no_virtual_stack (contains keyworkd 'stack' but this should be bool type)
+	keyword_dict["--applymask"]                   = SXkeyword_map(0, "bool")           # --applymask (contains keyworkd 'mask' but this should be bool type)
 	# Use priority 1 for output
 	keyword_dict["output"]                        = SXkeyword_map(1, "output")         # output_hdf, output_directory, outputfile, outputfile, --output=OUTPUT, output_stack, output_file
 	keyword_dict["outdir"]                        = SXkeyword_map(1, "output")         # outdir
@@ -200,10 +201,23 @@ def handle_exceptional_cases(sxcmd):
 		assert(sxcmd.token_dict["output_directory"].key_base == "output_directory")
 		assert(sxcmd.token_dict["output_directory"].type == "output")
 		sxcmd.token_dict["output_directory"].type = "output_continue"
+	elif sxcmd.name in ["sxsort3d_new"]:
+		# DESIGN_NOTE: 2017/03/24 Toshio Moriya
+		# The below should be a temporary solution until redesign sxsort3d_new command interface
+		assert(sxcmd.token_dict["refinement_method"].key_base == "refinement_method")
+		assert(sxcmd.token_dict["refinement_method"].is_required == False)
+		assert(sxcmd.token_dict["refinement_method"].is_locked == False)
+		sxcmd.token_dict["refinement_method"].is_required = True
+		sxcmd.token_dict["refinement_method"].is_locked = True
+		# sxcmd.token_dict["refinement_method"].default = "SPARX"
+		sxcmd.token_dict["refinement_method"].restore = "SPARX"
+		assert(sxcmd.token_dict["refinement_dir"].key_base == "refinement_dir")
+		assert(sxcmd.token_dict["refinement_dir"].is_required == False)
+		sxcmd.token_dict["refinement_dir"].is_required = True
+		assert(sxcmd.token_dict["masterdir"].key_base == "masterdir")
+		assert(sxcmd.token_dict["masterdir"].is_required == False)
+		sxcmd.token_dict["masterdir"].is_required = True
 	elif sxcmd.name in ["sxrsort3d"]:
-		# assert(sxcmd.token_dict["wn"].key_base == "wn")
-		# assert(sxcmd.token_dict["wn"].type == "ctfwin")
-		# sxcmd.token_dict["wn"].type = "int"
 		# DESIGN_NOTE: 2016/11/23 Toshio Moriya
 		# The below should be a temporary solution until redesign sxrsort3d command interface
 		assert(sxcmd.token_dict["refinement_method"].key_base == "refinement_method")
@@ -1173,6 +1187,13 @@ def create_exclude_list_meridien():
 
 	return exclude_list
 
+def create_exclude_list_sort3d_new():
+	exclude_list = []
+
+	exclude_list.append("instack")
+
+	return exclude_list
+
 def create_exclude_list_rsort3d():
 	exclude_list = []
 
@@ -1329,11 +1350,12 @@ def main():
 	sxcmd_config_list.append(SXcmd_config("../doc/3dvariability.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 	# sxcmd_config_list.append(SXcmd_config("../doc/sort3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 	# sxcmd_config_list.append(SXcmd_config("../doc/rsort3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
-	sxcmd_config_list.append(SXcmd_config("../doc/rsort3d-1105.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_rsort3d()))
+	sxcmd_config_list.append(SXcmd_config("../doc/sort3d_new.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_sort3d_new()))
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_local()))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_refine3d_postprocess()))
 
 	sxcmd_role = "sxr_alt"
+	sxcmd_config_list.append(SXcmd_config("../doc/rsort3d-1105.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_rsort3d()))
 	sxcmd_config_list.append(SXcmd_config("../doc/sort3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 
 	sxcmd_role = "sxr_util"
