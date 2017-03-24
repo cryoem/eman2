@@ -1,5 +1,5 @@
 = Name =
-sxrsort3d - 3D Clustering - RSORT3D: Reproducible 3D Clustering of heterogeneous dataset. Sort out 3D heterogeneity of 2D data whose 3D reconstruction parameters have been determined already.
+sxrsort3d - OLD 3D Clustering - RSORT3D: Reproducible 3D Clustering of heterogeneous dataset. Sort out 3D heterogeneity of 2D data whose 3D reconstruction parameters have been determined already.
 
 
 = Usage =
