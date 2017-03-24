@@ -45,6 +45,9 @@ requirements:
         - openmpi 2.*  # [not win]
 
 test:
+  imports:   # [not win]
+    - mpi    # [not win]
+  
   commands:
     - e2version.py
     - e2speedtest.py
