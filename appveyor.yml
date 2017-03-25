@@ -29,6 +29,7 @@ install:
 
     # Configure the VM.
     - cmd: set CPU_COUNT=2
+    - cmd: conda install --quiet --yes conda-build
     - cmd: conda config --set add_pip_as_python_dependency false
     - cmd: conda install -n root --yes --quiet vs2008_express_vc_python_patch
     - cmd: call setup_x64
