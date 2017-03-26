@@ -38,8 +38,6 @@ def geturl(url, file):
 def get_mpiroot(options):
 	import os
 	import commands
-	if options.force:
-		return False
 	print "Checking mpicc"
 		
 	r = os.system("mpicc --version")
@@ -75,35 +73,6 @@ def install_fftw3_mpi():
 
 	os.chdir(pwd)
 	return
-
-def install_openmpi(version):
-	import os
-	root = os.environ['EMAN2DIR']
-
-	pwd = os.getcwd()
-
-	file = "openmpi-%s.tar.gz"%version
-	major_version = version.split(".")
-	major_version =  major_version[0] + "." + major_version[1]
-	if macos():
-		url = " https://www.open-mpi.org/software/ompi/v%s/downloads/"%major_version  + file
-	else:
-		url = " --no-check-certificate  https://www.open-mpi.org/software/ompi/v%s/downloads/"%major_version  + file
-	
-	print ""
-	print "Installing openmpi-%s"%version
-	if not(os.path.exists("openmpi-%s"%version)) :
-		if not(os.path.exists(file)):
-			geturl(url, file)
-		myexec("tar -zxf " + file)
-		
-	chdir("openmpi-%s"%version)
-	myexec("./configure --enable-static --prefix=" + root + " --disable-dlopen")
-	myexec("make clean")
-	myexec("make")
-	myexec("make install")
-	os.chdir(pwd)
-	return root
 
 def update_Makefile_src():
 	import os
@@ -171,9 +140,7 @@ import string
 
 default_version_of_open_mpi_to_istall = "1.10.2"
 
-usage = "install_mpi.py --force --openmpi_ver=%s"%default_version_of_open_mpi_to_istall
-parser = OptionParser(usage)
-parser.add_option( "--force", action="store_true", default=False, help="forcefully install necessary packages" )
+parser = OptionParser()
 parser.add_option("--openmpi_ver", type="string",  default=default_version_of_open_mpi_to_istall, help="version of openmpi to forcefully install, default = %s"%default_version_of_open_mpi_to_istall)
 options,args = parser.parse_args()
 
@@ -197,16 +164,11 @@ except:
 path_to_python = eman2 + "/Python/bin/python"
 
 if not get_mpiroot(options):
-	if options.force:
-		print ""
-		print "=====> Install OpenMPI version %s"%options.openmpi_ver
-		install_openmpi(options.openmpi_ver)
-	else:
-		print "You need MPI environment (both runtime and developer packages) and gcc compiler to continue. "
-		print "If you work on professional HPC cluster, in all likelihood both are already installed. "
-		print "In this case read the user guide - you have to probably load appriopriate module by \"module load\" command."
-		print "You can also run this script again with the --force option - it will download and install MPI (openmpi-%s) for you."%default_version_of_open_mpi_to_istall
-		exit(-1)
+	print "You need MPI environment (both runtime and developer packages) and gcc compiler to continue. "
+	print "If you work on professional HPC cluster, in all likelihood both are already installed. "
+	print "In this case read the user guide - you have to probably load appriopriate module by \"module load\" command."
+	print "You can also run this script again with the --force option - it will download and install MPI (openmpi-%s) for you."%default_version_of_open_mpi_to_istall
+	exit(-1)
 
 ## need to install fftw3-mpi
 install_fftw3_mpi()
