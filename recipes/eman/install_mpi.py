@@ -1,8 +1,11 @@
 #!/usr/bin/env python
 
+from optparse import OptionParser
+import os
+from sys import exit
+
+
 def myexec(cmd):
-	import os
-	import sys
 	print  "	 ", cmd
 	r = os.system(cmd)
 	if r != 0:
@@ -13,13 +16,10 @@ def myexec(cmd):
 		sys.exit(-1)
 
 def chdir(dir):
-	import os
 	print  "	  cd ", dir
 	os.chdir(dir)
 
 def get_mpiroot(options):
-	import os
-	import commands
 	print "Checking mpicc"
 		
 	r = os.system("mpicc --version")
@@ -30,8 +30,6 @@ def get_mpiroot(options):
 	return True
 	
 def install_fftw3_mpi():
-	import os
-
 	pwd = os.getcwd()
 	if os.path.exists(pwd + "/fftw_mpi/installation"):
 		return
@@ -46,8 +44,6 @@ def install_fftw3_mpi():
 	return
 
 def update_Makefile_src():
-	import os
-
 	pwd = os.getcwd()
 	chdir("src")
 
@@ -84,18 +80,11 @@ def update_Makefile_src():
 	os.chdir(pwd)
 	
 
-from optparse import OptionParser
-import string
-
 default_version_of_open_mpi_to_istall = "1.10.2"
 
 parser = OptionParser()
 parser.add_option("--openmpi_ver", type="string",  default=default_version_of_open_mpi_to_istall, help="version of openmpi to forcefully install, default = %s"%default_version_of_open_mpi_to_istall)
 options,args = parser.parse_args()
-
-import os
-from sys import exit
-import commands
 
 try:
 	eman2 = os.environ['EMAN2DIR']
