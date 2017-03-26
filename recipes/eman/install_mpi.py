@@ -161,8 +161,6 @@ try:
 except:
 	pass
 
-path_to_python = eman2 + "/Python/bin/python"
-
 if not get_mpiroot(options):
 	print "You need MPI environment (both runtime and developer packages) and gcc compiler to continue. "
 	print "If you work on professional HPC cluster, in all likelihood both are already installed. "
@@ -176,11 +174,7 @@ install_fftw3_mpi()
 print ""
 print "=====> Configuring the mpi python binding"
 
-if os.path.exists(eman2 + "/Python"):
-	myexec("./configure --with-python=" + eman2 + "/Python/bin/python --prefix=" + eman2)
-else:
-	# EMAN2 doesn't have Python - default one will be used
-	myexec("./configure --prefix=" + eman2)
+myexec("./configure --prefix=" + eman2)
 
 ##  need to update the Makefile in src to include the -I and -L for fftw-mpi compilation
 eman2_source_file, bash_command_to_add = update_Makefile_src()
