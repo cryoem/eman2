@@ -8,6 +8,8 @@ export EMAN2DIR=$SP_DIR
 make clean
 make distclean
 
+RECIPE_DIR=$src_dir/recipes/eman
+
 patch Makefile.am "${RECIPE_DIR}"/patch1.diff
 patch Makefile.in "${RECIPE_DIR}"/patch2.diff
 
