@@ -154,13 +154,6 @@ except:
 	print "Error: cannot find EMAN2DIR environment variable, cannot proceed! You have to install EMAN2 first."
 	exit(-1)
 
-try:
-	# Try to fix problem with dependencies caused by EMAN2 - sometimes it is needed to make configure scripts work
-	ld_library_path = os.environ["LD_LIBRARY_PATH"]
-	os.environ["LD_LIBRARY_PATH"] = string.replace(ld_library_path, eman2 + "/lib:", "")
-except:
-	pass
-
 if not get_mpiroot(options):
 	print "You need MPI environment (both runtime and developer packages) and gcc compiler to continue. "
 	print "If you work on professional HPC cluster, in all likelihood both are already installed. "
