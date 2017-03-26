@@ -110,28 +110,8 @@ def update_Makefile_src():
 
 	os.utime("Makefile",(statbuf.st_atime,statbuf.st_mtime))
 
-	eman2_source_file = ""
-	if os.path.exists(os.environ["EMAN2DIR"] + os.sep + "eman2.bashrc"):
-		eman2_source_file = os.environ["EMAN2DIR"] + os.sep + "eman2.bashrc"
-		my_list = open(eman2_source_file).readlines()
-		if my_list.count("export LD_LIBRARY_PATH=%s:$LD_LIBRARY_PATH\n"%library_location) == 0:
-			my_list.append("export LD_LIBRARY_PATH=%s:$LD_LIBRARY_PATH\n" % library_location)
-			open(eman2_source_file, "w").writelines(my_list)
-	elif os.path.exists(os.environ["EMAN2DIR"] + os.sep + "eman2.cshrc"):
-		eman2_source_file = os.environ["EMAN2DIR"] + os.sep + "eman2.cshrc"
-		my_list = open(eman2_source_file).readlines()
-		if my_list.count("setenv LD_LIBRARY_PATH %s:${LD_LIBRARY_PATH}\n"%library_location) == 0:
-			my_list.append("setenv LD_LIBRARY_PATH %s:${LD_LIBRARY_PATH}\n" % library_location)
-			open(eman2_source_file, "w").writelines(my_list)
-	elif os.path.exists(os.environ["EMAN2DIR"] + os.sep + "eman2.zshrc"):
-		eman2_source_file = os.environ["EMAN2DIR"] + os.sep + "eman2.zshrc"
-		my_list = open(eman2_source_file).readlines()
-		if my_list.count("export LD_LIBRARY_PATH=%s:$LD_LIBRARY_PATH\n"%library_location) == 0:
-			my_list.append("export LD_LIBRARY_PATH=%s:$LD_LIBRARY_PATH\n" % library_location)
-			open(eman2_source_file, "w").writelines(my_list)
-
 	os.chdir(pwd)
-	return eman2_source_file, "export LD_LIBRARY_PATH=%s:$LD_LIBRARY_PATH\n"%library_location
+	return "", "export LD_LIBRARY_PATH=%s:$LD_LIBRARY_PATH\n"%library_location
 
 
 
