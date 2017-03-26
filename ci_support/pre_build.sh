@@ -13,8 +13,8 @@ source ${HOME}/miniconda2/bin/activate root
 conda config --set show_channel_urls true
 
 conda install --yes --quiet qt=4 pyqt=4
-conda install --yes --quiet -c conda-forge boost boost-cpp fftw openmpi
-conda install --yes --quiet -c cryoem ftgl fftw-mpi
+conda install --yes --quiet -c conda-forge boost boost-cpp fftw
+conda install --yes --quiet -c cryoem ftgl fftw-mpi openmpi
 conda install --yes --quiet bsddb freetype gsl hdf5 ipython jpeg libpng libtiff matplotlib numpy=1.11 pyopengl scikit-learn scipy theano tk cmake
 
 # Build and install eman2
