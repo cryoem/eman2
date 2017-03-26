@@ -12,28 +12,10 @@ def myexec(cmd):
 		print "Otherwise, check the log file and try to resolve it."
 		sys.exit(-1)
 
-
 def chdir(dir):
 	import os
 	print  "	  cd ", dir
 	os.chdir(dir)
-
-
-def macos():
-	import commands
-	r = commands.getoutput("uname")
-	return r=="Darwin"
-
-
-def geturl(url, file):
-	import os, sys
-	import commands
-
-	if macos():
-		myexec("curl " + url + " -o " + file)
-	else:
-		myexec("wget " + url)
-	# sys.exit(0)
 
 def get_mpiroot(options):
 	import os
@@ -47,17 +29,6 @@ def get_mpiroot(options):
 		
 	return True
 	
-
-def get_numpyroot(pythonroot):
-	try:
-		import numpy
-		return pythonroot 
-
-	except Exception, inst:
-		print "problem import numpy:", inst
-		return None
-
-
 def install_fftw3_mpi():
 	import os
 
