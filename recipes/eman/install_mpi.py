@@ -111,9 +111,7 @@ def update_Makefile_src():
 	os.utime("Makefile",(statbuf.st_atime,statbuf.st_mtime))
 
 	os.chdir(pwd)
-	return "", "export LD_LIBRARY_PATH=%s:$LD_LIBRARY_PATH\n"%library_location
-
-
+	
 
 from optparse import OptionParser
 import string
@@ -150,7 +148,7 @@ print "=====> Configuring the mpi python binding"
 myexec("./configure --prefix=" + eman2)
 
 ##  need to update the Makefile in src to include the -I and -L for fftw-mpi compilation
-eman2_source_file, bash_command_to_add = update_Makefile_src()
+update_Makefile_src()
 		
 print ""
 print "=====> Building the mpi python binding"
@@ -161,21 +159,3 @@ myexec("make all >> log.txt")
 print ""
 print "=====> Install the mpi python binding"
 myexec("make install >> log.txt")	
-
-
-if macos():
-	print
-	print "=====> Start SPARX or EMAN2 and run import mpi. If it runs without any error message the installation is complete."
-	print
-else:
-	if eman2_source_file != "":
-		print "=====> To complete installation you need to run:"
-		print "source %s"%eman2_source_file
-	else:
-		print "Unkown shell. You will need set up your enviroment variables manually:"
-		print bash_command_to_add
-
-	print
-	print "Then start SPARX or EMAN2 and run 'import mpi'. If it runs without any error message the installation is complete."
-	print
-
