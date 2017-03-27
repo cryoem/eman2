@@ -1,0 +1,27 @@
+From beb608b19a821d235f8a0be758a61de66927949a Mon Sep 17 00:00:00 2001
+From: shadow_walker <shadowwalkersb@gmail.com>
+Date: Sat, 25 Mar 2017 12:27:34 -0500
+Subject: [PATCH] install e2version into EMAN_PY_INSTALL_PREFIX, too
+
+---
+ programs/CMakeLists.txt | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/programs/CMakeLists.txt b/programs/CMakeLists.txt
+index 9d777f8..06d1f50 100755
+--- a/programs/CMakeLists.txt
++++ b/programs/CMakeLists.txt
+@@ -26,6 +26,10 @@ INSTALL(PROGRAMS ${e2programs}
+   DESTINATION    bin
+ )
+ 
++INSTALL(FILES ${CMAKE_INSTALL_PREFIX}/bin/e2version.py
++		DESTINATION ${EMAN_PY_INSTALL_PREFIX}
++)
++
+ #INSTALL(PROGRAMS    e2boxer.py 
+ #                    e2version.py 
+ #                    e2ctf.py 
+-- 
+2.8.1
+

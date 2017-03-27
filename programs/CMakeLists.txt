@@ -26,10 +26,6 @@ INSTALL(PROGRAMS ${e2programs}
   DESTINATION    bin
 )
 
-INSTALL(FILES ${CMAKE_INSTALL_PREFIX}/bin/e2version.py
-		DESTINATION ${EMAN_PY_INSTALL_PREFIX}
-)
-
 #INSTALL(PROGRAMS    e2boxer.py 
 #                    e2version.py 
 #                    e2ctf.py 
