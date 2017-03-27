@@ -241,7 +241,7 @@ def main():
 	parser.add_option("--xr",           type="int",    default=0,     		help="range for translation search in x direction, search is +/xr (0)")
 	parser.add_option("--yr",           type="int",    default=0,          	help="range for translation search in y direction, search is +/yr (0)")
 	#parser.add_option("--nomirror",     action="store_true", default=False,   help="Disable checking mirror orientations of images (default False)")
-	parser.add_option("--pairwiseccc",  type="string",	default= None,      help="Input/output pairwise ccc file")
+	parser.add_option("--pairwiseccc",  type="string",	default= " ",      help="Input/output pairwise ccc file")
 
 
  	(options, args) = parser.parse_args()
@@ -346,7 +346,7 @@ def main():
 					lccc[mono(i,j)] = [ccc(d[j], rot_shift2D(d[i], alpha, sx, sy, mir, 1.0), mask), alpha, sx, sy, mir]
 				#print "  %4d   %10.1f"%(i,time()-st)
 
-			if(not os.path.exists(options.pairwiseccc)):
+			if((not os.path.exists(options.pairwiseccc)) and (os.path.exists(options.pairwiseccc) != " ")):
 				from utilities import write_text_row
 				write_text_row([[initial,0,0,0,0]]+lccc,options.pairwiseccc)
 		elif(os.path.exists(options.pairwiseccc)):
@@ -579,7 +579,7 @@ def main():
 		
 		d = EMData.read_images(stack)
 		try:
-			print "Using 2D alignment parameters from header.
+			print "Using 2D alignment parameters from header."
 			ttt = d[0].get_attr('xform.params2d')
 			for i in xrange(len(d)):
 				alpha, sx, sy, mirror, scale = get_params2D(d[i])
