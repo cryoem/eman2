@@ -28,43 +28,6 @@ def get_mpiroot(options):
 		return False
 		
 	return True
-	
-def update_Makefile_src():
-	pwd = os.getcwd()
-	chdir("src")
-
-	prefix_location = os.environ['PREFIX']
-	adding_dict = {
-		"CFLAGS = " : ' -I%s/include -DPYDUSA_VERSION=%s'  %(prefix_location, pwd),
-		"LDFLAGS = " : " -L%s/lib -lfftw3_mpi -lfftw3 -lm "%(prefix_location)
-	}
-
-	statbuf = os.stat("Makefile")
-
-	move_to_original = True
-	with open("Makefile", "r") as fp, open("Makefile___out", "w") as fp_out:
-		for line in fp:
-			for key in adding_dict:
-				if line[:len(key)] == key:
-					if adding_dict[key] not in line:
-						fp_out.write(line[:-1])
-						fp_out.write(adding_dict[key])
-						fp_out.write("\n")
-					else:
-						fp_out.write(line)
-						move_to_original = False
-					break
-			else:
-				fp_out.write(line)
-				
-	if move_to_original:
-		myexec("mv Makefile Makefile___original")
-		myexec("mv Makefile___out Makefile")
-
-	os.utime("Makefile",(statbuf.st_atime,statbuf.st_mtime))
-
-	os.chdir(pwd)
-	
 
 default_version_of_open_mpi_to_istall = "1.10.2"
 
@@ -84,12 +47,10 @@ print "=====> Configuring the mpi python binding"
 
 myexec("./configure --prefix=%s" % os.environ['SP_DIR'])
 
-##  need to update the Makefile in src to include the -I and -L for fftw-mpi compilation
-update_Makefile_src()
-		
 print ""
 print "=====> Building the mpi python binding"
 myexec("make clean >> log.txt")	
+myexec("sed -i.bak 's/\(^LDFLAGS.*$\)/\\1 -lfftw3_mpi -lfftw3/' src/Makefile")
 myexec("make all >> log.txt")
 
 
