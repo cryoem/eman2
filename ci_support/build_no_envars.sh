@@ -38,6 +38,6 @@ make install
 export PREFIX="${HOME}"/EMAN2
 export SP_DIR="${PREFIX}"/lib
 
-export PYTHONPATH="$HOME/EMAN2/lib:$PYTHONPATH"
+export PYTHONPATH="$SP_DIR:$PYTHONPATH"
 
 source $src_dir/ci_support/post_build.sh

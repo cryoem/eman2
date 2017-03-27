@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Run tests
-export PATH="$HOME/miniconda2/bin/:$HOME/EMAN2/bin:$PATH"
+export PATH="$PREFIX/bin:$PATH"
 
 e2version.py
 e2speedtest.py
