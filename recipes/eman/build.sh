@@ -15,4 +15,4 @@ curl -v -L -O http://ncmi.bcm.edu/ncmi/software/counter_222/software_121/pydusa-
 tar xzvf pydusa-1.15es-fftmpi-6__2016_09_07.tgz
 cd pydusa-1.15es-fftmpi-6
 export EMAN2DIR=$SP_DIR
-./install_mpi.py --force
+./install_mpi.py
