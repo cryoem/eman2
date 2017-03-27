@@ -6146,7 +6146,7 @@ def main():
 			elif options.do_final ==-1 and os.path.exists(masterdir):
 				update_options = True
 		else:
-			if os.path.exists(args[0]):masterdir = args[0]
+			masterdir = args[0]
 	else:
 		if not options.ctrefromsort3d:
 			print( "usage: " + usage)
