@@ -15,10 +15,6 @@ def myexec(cmd):
 		print "Otherwise, check the log file and try to resolve it."
 		sys.exit(-1)
 
-def chdir(dir):
-	print  "	  cd ", dir
-	os.chdir(dir)
-
 def get_mpiroot(options):
 	print "Checking mpicc"
 		
