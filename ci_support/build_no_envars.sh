@@ -35,6 +35,9 @@ cmake $src_dir   -DNUMPY_INCLUDE_PATH="$sp_dir/numpy/core/include" \
 make
 make install
 
+export PREFIX="${HOME}"/EMAN2
+export SP_DIR="${PREFIX}"/lib
+
 export PYTHONPATH="$HOME/EMAN2/lib:$PYTHONPATH"
 
 source $src_dir/ci_support/post_build.sh
