@@ -2216,7 +2216,9 @@ def get_input_from_sparx_ref3d(log_main):# case one
 		Tracker["ts"]                      = Tracker_refinement["ts"]
 		Tracker["xr"]                      = Tracker_refinement["xr"]
 		Tracker["constants"]["pixel_size"] = Tracker_refinement["constants"]["pixel_size"]
-		Tracker["nxinit_refinement"]       = Tracker_refinement["nxinit"]
+		if Tracker["constants"]["nxinit"]<0: Tracker["nxinit_refinement"] = Tracker_refinement["nxinit"] # sphire window size
+		else:  Tracker["nxinit_refinement"] = Tracker["constants"]["nxinit"] # user defined window size 
+		 
 		try:     sym =  Tracker_refinement["constants"]["sym"]
 		except:  sym =  Tracker_refinement["constants"]["symmetry"]
 		Tracker["constants"]["symmetry"]                 =  sym
@@ -2692,7 +2694,9 @@ def get_input_from_datastack(log_main):# Case three
 	Tracker["fuse_freq"]= int(Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/Tracker["constants"]["fuse_freq"] +0.5)
 	
 	Tracker["directory"]	= Tracker["constants"]["masterdir"]
-	Tracker["nxinit_refinement"] = Tracker["constants"]["nnxo"]
+	
+	if Tracker["constants"]["nxinit"]<0: Tracker["nxinit_refinement"] = Tracker["constants"]["nnxo"]
+	else: Tracker["nxinit_refinement"] = Tracker["constants"]["nxinit"]
 	
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		msg  = "reconstruct 3-D volumes from two random subsets to calculate FSC"
@@ -3911,9 +3915,9 @@ def do3d_sorting_groups_rec3d(iteration, masterdir, log_main):
 	if (Blockdata["myid"] == Blockdata["main_node"]):
 		Tracker["fsc143"] = res_143
 		Tracker["fsc05"]  = res_05
-		res05  = Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/res_05
-		res143 = Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/res_143
 		for icluster in xrange(Tracker["number_of_groups"]):
+			res05  = Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/res_05[icluster]
+			res143 = Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/res_143[icluster]
 			msg = "cluster  %d   fsc143/fsc05   %d/%d, %f/%f"%(icluster, Tracker["fsc143"][icluster], Tracker["fsc05"][icluster], res143, res05)
 			print(msg)
 			log_main.add(msg)
@@ -4768,9 +4772,9 @@ def EQKmeans_by_dmatrix_orien_groups_image_size(original_data, partids, ptls_in_
 			iter_assignment = wrap_mpi_bcast(iter_assignment, Blockdata["main_node"], MPI_COMM_WORLD)
 			ratio, newindices, stable_clusters = compare_two_iterations(iter_assignment, last_iter_assignment, number_of_groups)
 			changed_nptls = 100.-ratio*100.
-			if changed_nptls < stopercnt and  image_size_update <=2:
-				stopercnt = changed_nptls/2. # reduce stop criterion to gain clustering improvement
-			stopercnt = max(stopercnt, Tracker["constants"]["stop_eqkmeans_percentage"])
+			if changed_nptls < stopercnt and image_size_update <=2:
+				stopercnt = changed_nptls/2. # reduce stop criterion to gain improvement in clustering
+			stopercnt = max(stopercnt, Tracker["constants"]["stop_eqkmeans_percentage"]) # But not exceed the specified number
 			iter       +=1
 			total_iter +=1
 			if Blockdata["myid"] == Blockdata["main_node"]:
@@ -4786,7 +4790,7 @@ def EQKmeans_by_dmatrix_orien_groups_image_size(original_data, partids, ptls_in_
 		
 	# Finalize
 	if(Blockdata["myid"] == Blockdata["main_node"]):
-		msg = "EQKmeans finishes, and now reconsturct map in refinement image size %d"%Tracker["nxinit_refinement"]
+		msg = "EQKmeans finishes, and now reconstruct map in refinement image size %d"%Tracker["nxinit_refinement"]
 		log.add(msg)
 		print(msg)
 		
@@ -5203,13 +5207,11 @@ def main():
 	parser.add_option("--refinement_dir",                  type   ="string",        default ='',                       help="3-D refinement directory, the master directory of sxmeridien")
 	parser.add_option("--masterdir",                       type   ="string",        default ='',					   help="name of the directory for sorting computing")
 	parser.add_option("--niter_for_sorting",               type   ="int",           default =-1,					   help="selected number of iteration of meridien refinement for sorting, -1 implies program uses the best iteration to initiate sorting")
-	parser.add_option("--refinement_method",               type   ="string",        default ='',					   help="refinement method used for 3-D reconstruction, [SPARX], [relion], or others, such as a given data stack")
+	parser.add_option("--nxinit",                          type   ="int",           default =-1,					   help="initial window size set by user")
 	parser.add_option("--focus",                           type   ="string",        default ='',                       help="file name, the bineary 3D mask for focused clustering ")
 	parser.add_option("--mask3D",                          type   ="string",        default ='',                       help="file name, the 3-D global mask for clustering ")
-	parser.add_option("--hardmask",                        action ="store_true",    default =False,                    help="use hardmask to particle images when sparx noise is used")
 	parser.add_option("--instack",                         type   ="string",        default ='',					   help="file name, data stack for sorting provided by user. It applies when sorting starts from a given data stack")
 	parser.add_option("--radius",                          type   ="int",           default =-1,	                   help="particle radius in pixel for rotational correlation <nx-1 (set to the radius of the particle)")
-	parser.add_option("--noctf",	                       action ="store_true",    default =False,                    help="do no ctf correction during clustring")
 	parser.add_option("--sym",                             type   ="string",        default ='c1',                     help="point group symmetry of macromolecular structure, can be inherited from refinement")
 	parser.add_option("--nindependent",                    type   ="int",           default = 3,                       help="number of independent run for EQkmeans clustering, an odd number larger than 2")
 	parser.add_option("--number_of_images_per_group",      type   ="int",           default =1000,                     help="number of images in a group")
@@ -5217,15 +5219,14 @@ def main():
 	parser.add_option("--comparison_method",               type   ="string",        default ='cross',                  help="option for comparing two images, either using cross-correlaton coefficients [cross] or using Euclidean distance [eucd] ")
 	parser.add_option("--memory_per_node",                 type   ="float",         default =-1.0,                     help="memory_per_node, the number used for evaluate the CPUs/NODE settings given by user")
 	parser.add_option("--no_final_sharpen",                action ="store_true",    default =False,                    help="not reconstruct unfiltered final maps for post refinement process")
-	parser.add_option("--applymask",                       action ="store_true",    default =False,                    help="apply mask or not")
-	parser.add_option("--applybckgnoise",                  action ="store_true",    default =False,                    help="apply backgroud noise when comaparing raw images with references")
-	parser.add_option("--angle_step",                      type   ="float",         default =15.,                      help="smapling anglular step used for EQKmeans orientation constraints")
-	parser.add_option("--tilt1",                           type   ="float",         default =0.,                       help="sampling starting theta angle used for EQKmeans orientation constraints")
-	parser.add_option("--tilt2",                           type   ="float",         default =180.,                     help="sampling end theta angle used for EQKmeans orientation constraints")
+	parser.add_option("--eqkmeans_angle_step",             type   ="float",         default =15.,                      help="smapling anglular step used for EQKmeans orientation constraints")
+	parser.add_option("--eqkmeans_tilt1",                  type   ="float",         default =0.,                       help="sampling starting theta angle used for EQKmeans orientation constraints")
+	parser.add_option("--eqkmeans_tilt2",                  type   ="float",         default =180.,                     help="sampling end theta angle used for EQKmeans orientation constraints")
 	parser.add_option("--not_make_normal_maps",            action ="store_true",    default =False,                    help="do not make non-sharpen maps, and by default it always recosntructs regularized maps")
 	parser.add_option("--post_sorting_sharpen",            action ="store_true",    default =False,                    help="make sharpen maps from sorted clusters ")
 	parser.add_option("--stop_eqkmeans_percentage",        type   ="float",         default =2.0,                      help="particle change percentage for stopping equal size Kmeans")
 	parser.add_option("--smallest_particle_number",        type   ="int",           default =20,					   help="integer number, the smallest orien group size equals number_of_groups multiplies this number")
+	
 	
 	(options, args) = parser.parse_args(sys.argv[1:])
 
@@ -5264,7 +5265,6 @@ def main():
 	Constants["masterdir"]                   = options.masterdir
 	Constants["refinement_dir"]              = options.refinement_dir
 	Constants["mask3D"]                      = options.mask3D
-	Constants["hardmask"]                    = options.hardmask
 	Constants["focus3Dmask"]                 = options.focus
 	
 	Constants["indep_runs"]                  = options.nindependent
@@ -5274,11 +5274,10 @@ def main():
 	Constants["number_of_images_per_group"]  = options.number_of_images_per_group
 	Constants["smallest_group"]      		 = options.smallest_group
 	
-	Constants["noctf"]                 		 = options.noctf
+	Constants["noctf"]                 		 = False
 	Constants["radius"]              		 = options.radius
 	Constants["symmetry"]                    = options.sym
-	#Constants["sorting_shrink"]             = options.sorting_shrink # enforced low_pass_filter
-	Constants["nxinit"]                      = -1 # set -1 always
+	Constants["nxinit"]                      = options.nxinit # retrive it under request, equals to the role of nxinit of meridien
 	Constants["seed"]                        = -1
 	Constants["upscale"]                     = 0.5 #
 	Constants["interpolation"]               = "trl"
@@ -5299,8 +5298,8 @@ def main():
 	Tracker["upscale"]						       = Tracker["constants"]["upscale"]
 	Tracker["applyctf"]						       = False  #  Should the data be premultiplied by the CTF.  Set to False for local continuous.
 	Tracker["nxinit"]						       = Tracker["constants"]["nxinit"]
-	Tracker["applybckgnoise"]                      = options.applybckgnoise
-	Tracker["applymask"]						   = options.applymask
+	#Tracker["applybckgnoise"]                      = options.applybckgnoise
+	#Tracker["applymask"]						   = options.applymask
 	
 	###<<<--options for advanced users:
 	  
@@ -5310,20 +5309,32 @@ def main():
 	Tracker["clean_volumes"]                       = True
 	Tracker["constants"]["total_sort3d_iteration"] = 2
 	### -----------
-	Tracker["angle_step"]                          = options.angle_step # orientation constrained angle step
-	Tracker["tilt1"]                               = options.tilt1
-	Tracker["tilt2"]                               = options.tilt2
+	Tracker["angle_step"]                          = options.eqkmeans_angle_step # orientation constrained angle step
+	Tracker["tilt1"]                               = options.eqkmeans_tilt1
+	Tracker["tilt2"]                               = options.eqkmeans_tilt2
 	### ------------<<< option for proteins images that have preferred orientations
 	Tracker["smallest_particle_number"]            = options.smallest_particle_number  # for orientation groups
 	
 	if Tracker["constants"]["memory_per_node"] ==-1 or Tracker["constants"]["memory_per_node"] <32.: Tracker["constants"]["small_memory"] = True
 	else:	                                                                                         Tracker["constants"]["small_memory"] = False
+	
+	## Additional check
+	
+	Tracker["constants"]["hardmask"]       =True
+	Tracker["applymask"]                   =True
+	if os.path.exists(options.refinement_dir):Tracker["constants"]["refinement_method"] ="SPARX"
+	if options.instack !='': Tracker["constants"]["refinement_method"] =''
+	if os.path.exists(options.refinement_dir) and options.instack !='': Tracker["constants"]["refinement_method"] ="SPARX"
+	if not os.path.exists(options.refinement_dir) and options.instack=='':
+		 ERROR("Incorrect refinement_dir or instack", "sxsort3d_new.py", 1, Blockdata["myid"])
+	if Tracker["constants"]["refinement_method"] =="SPARX": Tracker["applybckgnoise"] =True
+	else:   Tracker["applybckgnoise"] =False
 		
 	###--------------------------------------------------------------------------------------------
-	#    Three typical sorting scenarios  
-	# 1. given data stack and xform.projection/ctf in header; 
-	# 2. directly import from SPARX refinement;
-	# 3. directly import from relion refinement;
+	#    Two typical sorting scenarios  
+	#
+	# 1. import data and refinement parameters from meridien refinement;
+	# 2. given data stack and xform.projection/ctf in header(For simulated test data); 
 	
 	#<<<---------------------->>>imported functions<<<---------------------------------------------
 
@@ -5387,18 +5398,23 @@ def main():
 		print("Node ", Blockdata["myid"], "  waiting...", Tracker["constants"]["masterdir"])
 		sleep(1)
 	mpi_barrier(MPI_COMM_WORLD)
-	######### collect refinement information 
+	######### collect refinement information
 
-	if options.refinement_method =="SPARX": # Senario one
+	if Tracker["constants"]["refinement_method"] =="SPARX": # Senario one
 		import_from_sparx_refinement = get_input_from_sparx_ref3d(log_main)
 		
-	elif options.refinement_method =="relion":# Senario two
+	elif Tracker["constants"]["refinement_method"] =="relion":# Senario two
 		if not Tracker["constants"]["no_final_sharpen"]: Tracker["constants"]["no_final_sharpen"] = True
 		import_from_relion_refinement = get_input_from_relion_ref3d(log_main)
 		
 	else:  # Senario three, sorting from a given data stack, general cases
 		if not Tracker["constants"]["no_final_sharpen"]: Tracker["constants"]["no_final_sharpen"] = True
 		import_from_data_stack = get_input_from_datastack(log_main)
+		Tracker["constants"]["hardmask"]       = True
+		Tracker["applybckgnoise"]              = False
+		Tracker["applymask"]                   = True
+		
+		
 	###<<<------------------------checking
 	
 	if Tracker["constants"]["symmetry"] != options.sym:
@@ -5460,7 +5476,7 @@ def main():
 
 	############################################################################################
 	
-	###<<<------ Determine the image size ### reset nxinit
+	###<<<------ Determine the image size ### reset nxinit simply for calculate currentres!
 	if Tracker["constants"]["nxinit"] < 0:
 		try:     fsc143 = Tracker["constants"]["fsc143"]
 		except:  fsc143 = 0
@@ -5470,6 +5486,7 @@ def main():
 		elif fsc05   !=0: Tracker["nxinit"] = (Tracker["constants"]["fsc05"]+12)*2
 		else: ERROR("Incorrect nxinit, and check the input information", "sxsort3d.py", 1, Blockdata["myid"])
 	else:  Tracker["nxinit"] = Tracker["constants"]["nxinit"] # User defined nxinit
+	
 	Tracker["currentres"]    = float(Tracker["constants"]["fsc05"])/float(Tracker["nxinit"])
 	
 	##################---------------<<<shrinkage, current resolution, fuse_freq  <<<<<<------------------------------------------
@@ -5722,7 +5739,7 @@ def main():
 			print(line, msg)
 			cmd = "{} {}".format("mkdir",Tracker["directory"])
 			cmdexecute(cmd)
-			write_text_file(Tracker["unaccounted_list"], os.path.join(Tracker["directory"], "Unaccounted.txt"))
+			if len(Tracker["unaccounted_list"])>0: write_text_file(Tracker["unaccounted_list"], os.path.join(Tracker["directory"], "Unaccounted.txt"))
 			write_text_row(Tracker["accounted_list"], os.path.join(Tracker["directory"], "Accounted.txt"))
 		mpi_barrier(MPI_COMM_WORLD)
 			
@@ -5777,6 +5794,7 @@ def main():
 						log_main.add(msg)
 				except:
 					print("no saved unaccounted text")
+					Tracker["unaccounted_list"] = []
 				indexed_particle_list, Tracker["number_of_groups"] = merge_original_id_lists(final_sort)
 				write_text_row(indexed_particle_list, os.path.join(Tracker["constants"]["masterdir"], "rsort%d"%iter_rsort, "index_for_Kmeans.txt"))
 				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
