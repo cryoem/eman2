@@ -2,9 +2,6 @@
 
 set -e
 
-# install pydusa
-bash -e $src_dir/recipes/eman/install_pydusa.sh
-
 # Run tests
 export PATH="$PREFIX/bin:$PATH"
 
