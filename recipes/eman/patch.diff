@@ -1,13 +1,13 @@
-diff --git a/install_mpi.py b/install_mpi.py
-index 3cf7dac..9b20f20 100755
---- a/install_mpi.py
-+++ b/install_mpi.py
-@@ -235,7 +235,7 @@ if os.path.exists(eman2 + "/Python"):
- 	myexec("./configure --with-python=" + eman2 + "/Python/bin/python --prefix=" + eman2)
- else:
- 	# EMAN2 doesn't have Python - default one will be used
--	myexec("./configure --prefix=" + eman2)
-+	myexec("./configure --prefix=" + eman2 + " --libdir=" + eman2)
- 
- 
- ##  need to update the Makefile in src to include the -I and -L for fftw-mpi compilation
+diff --git a/Makefile b/Makefile
+index 12e2d10..964cb4c 100644
+--- a/Makefile
++++ b/Makefile
+@@ -156,7 +156,7 @@ htmldir = ${docdir}
+ includedir = ${prefix}/include
+ infodir = ${datarootdir}/info
+ install_sh = /Users/hvoicu/ClionProjects/pydusa07/pydusa-1.15-sparx-8/install-sh
+-libdir = ${exec_prefix}/lib
++libdir = ${exec_prefix}
+ libexecdir = ${exec_prefix}/libexec
+ localedir = ${datarootdir}/locale
+ localstatedir = ${prefix}/var

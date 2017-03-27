@@ -16,6 +16,6 @@ tar xzvf pydusa-1.15es-fftmpi-6__2016_09_07.tgz
 cd pydusa-1.15es-fftmpi-6
 export EMAN2DIR=$SP_DIR
 
-patch install_mpi.py "${RECIPE_DIR}/patch.diff"
+patch Makefile "${RECIPE_DIR}/patch.diff"
 
 ./install_mpi.py
