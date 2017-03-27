@@ -86,12 +86,6 @@ parser = OptionParser()
 parser.add_option("--openmpi_ver", type="string",  default=default_version_of_open_mpi_to_istall, help="version of openmpi to forcefully install, default = %s"%default_version_of_open_mpi_to_istall)
 options,args = parser.parse_args()
 
-try:
-	eman2 = os.environ['EMAN2DIR']
-except:
-	print "Error: cannot find EMAN2DIR environment variable, cannot proceed! You have to install EMAN2 first."
-	exit(-1)
-
 if not get_mpiroot(options):
 	print "You need MPI environment (both runtime and developer packages) and gcc compiler to continue. "
 	print "If you work on professional HPC cluster, in all likelihood both are already installed. "
@@ -105,7 +99,7 @@ install_fftw3_mpi()
 print ""
 print "=====> Configuring the mpi python binding"
 
-myexec("./configure --prefix=" + eman2)
+myexec("./configure --prefix=%s" % os.environ['SP_DIR'])
 
 ##  need to update the Makefile in src to include the -I and -L for fftw-mpi compilation
 update_Makefile_src()
