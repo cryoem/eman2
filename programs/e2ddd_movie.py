@@ -265,7 +265,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 				#im.process_inplace("filter.lowpass.gauss",{"cutoff_freq":.02})
 				mov.append(im)
 
-			display(mov)
+			display(mov,True)
 
 			#mov2=[]
 			#for i in xrange(0,len(outim)-10,2):
@@ -468,13 +468,20 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			for scale in [0.02,0.04,0.07,0.1,0.5]:
 				csum3={k:csum2[k].process("filter.lowpass.gauss",{"cutoff_abs":scale}) for k in csum2.keys()}
 
+				print options.verbose
+				if options.verbose>4:
+					i=0;
+					for k in sorted(csum3.keys()):
+						csum3[k].write_image("{}_ccf_{:02d}.hdf".format(outname[:-4],int(1.0/scale)),i)
+						i+=1
+
 				incr=[16]*len(locs)
 				incr[-1]=incr[-2]=4	# if step is zero for last 2, it gets stuck as an outlier, so we just make the starting step smaller
 				simp=Simplex(qual,locs,incr,data=csum3)
 				locs=simp.minimize(maxiters=int(100/scale),epsilon=.01)[0]
 				locs=[int(floor(i*10+.5))/10.0 for i in locs]
-				print locs
-				if options.verbose > 7:
+				if options.verbose : print locs
+				if options.verbose > 3:
 					out=file("{}_path_{:02d}.txt".format(outname[:-4],int(1.0/scale)),"w")
 					for i in xrange(0,len(locs),2): out.write("%f\t%f\n"%(locs[i],locs[i+1]))
 
@@ -497,7 +504,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 
 				#write out the unaligned average movie
 				out=qsum(outim)
-				out.write_image("{}__noali.hdf".format(outname[:-4]),0)
+				out.write_image("{}__noali.hdf".format(alioutname),0)
 
 			print("Shift images ({})".format(time()-t0))
 			t0=time()
