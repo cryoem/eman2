@@ -14,8 +14,9 @@ conda config --set show_channel_urls true
 
 conda install --yes --quiet qt=4 pyqt=4
 conda install --yes --quiet -c conda-forge boost boost-cpp fftw
-conda install --yes --quiet -c cryoem ftgl fftw-mpi openmpi
+conda install --yes --quiet -c cryoem ftgl
 conda install --yes --quiet bsddb freetype gsl hdf5 ipython jpeg libpng libtiff matplotlib numpy=1.11 pyopengl scikit-learn scipy theano tk cmake
+conda install --yes --quiet -c cryoem pydusa
 
 # Build and install eman2
 export build_dir=$HOME/build_eman
