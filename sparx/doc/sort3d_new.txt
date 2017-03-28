@@ -6,7 +6,7 @@ sxsort3d_new - NEW 3D Clustering - RSORT3D: UNDER DEVELOPMENT. Reproducible 3D C
 
 '' usage in command line''
 
-sxsort3d_new.py  --refinement_method=refinement_method  --refinement_dir=refinement_dir  --masterdir=master_dir  --niter_for_sorting=num_of_sorting_iterations  --mask3D=mask3d_file   --focus=focus3d_file  --radius=outer_radius  --sym=symmetry  --number_of_images_per_group=num_of_images_per_group  --smallest_group=smallest_group  --memory_per_node=memory_per_node  --nindependent=indenpendent_runs   --comparison_method=comparison_method  --instack=input_stack_file  --no_final_sharpen   --eqkmeans_angle_step=angle_step  --eqkmeans_tilt1=lower_tilt  --eqkmeans_tilt2=upper_tilt --not_make_normal_maps  --post_sorting_sharpen  --stop_eqkmeans_percentage=stop_eqkmeans_percentage  --smallest_particle_number=smallest_particle_number
+sxsort3d_new.py  --refinement_dir=refinement_dir  --masterdir=master_dir  --niter_for_sorting=num_of_sorting_iterations  --mask3D=mask3d_file   --focus=focus3d_file  --radius=outer_radius  --sym=symmetry  --number_of_images_per_group=num_of_images_per_group  --smallest_group=smallest_group  --memory_per_node=memory_per_node  --nindependent=indenpendent_runs   --comparison_method=comparison_method  --instack=input_stack_file  --no_final_sharpen   --eqkmeans_angle_step=angle_step  --eqkmeans_tilt1=lower_tilt  --eqkmeans_tilt2=upper_tilt --not_make_normal_maps  --post_sorting_sharpen  --stop_eqkmeans_percentage=stop_eqkmeans_percentage  --smallest_particle_number=smallest_particle_number
 
 
 === Typical usage ===
@@ -56,7 +56,6 @@ sxsort3d_new.py exists only in MPI version. There are three typical usages.
 
 
 == Input ==
-    refinement_method:: Input 3D refinement method: Valid values are 'SPARX' and 'relion'. Currently, SHPIRE GUI (sxgui) supports only 'SPARX'. (default none)
     refinement_dir:: Input 3D refinement directory: Usually the master output directory of sxmeridien. (default none)
     masterdir:: Output directory: The master output directory for sorting. (default none)
     niter_for_sorting:: 3D refinement iteration: Specify an iteration number of 3D refinement where the 3D alignment parameters should be extracted for this sorting. By default, it uses iteration achieved best resolution. (default -1)
@@ -67,16 +66,15 @@ sxsort3d_new.py exists only in MPI version. There are three typical usages.
     number_of_images_per_group:: Images per group: The number of images per a group. This value is critical for successful 3D clustering. (default 1000) 
     smallest_group:: Smallest group size: Minimum number of members for being identified as a group. This value must be smaller than the number of images per a group (number_of_images_per_group). (default 500) 
     memory_per_node:: Memory per node [GB]: User provided information about memory per node in GB (NOT per CPU). It will be used to evaluate the number of CPUs per node from user-provided MPI setting. By default, it uses 2GB * (number of CPUs per node) (default -1.0)
-	
 
     * The remaining parameters are optional and default values are given in parenthesis. There is rarely any need to modify them.
     nindependent:: Independent runs: Number of independent runs for Equal Sized K-means clustering. The value must be an odd number larger than 2. (default 3) 
     comparison_method:: Comparison method: Similarity measurement for the comparison between reprojected reference images and particle images. Valid values are 'cross' (cross-correlaton coefficients) and 'eucd' (Euclidean distance). (default cross) 
     instack:: Input images stack: File path of particle stack for sorting. This option is not currently supported by SHPIRE GUI (sxgui). (default none)
     no_final_sharpen:: Do not reconstruct final maps: Do not reconstruct unfiltered final maps for post refinement process. (default False)
-    eqkmeans_angle_step:: Angular sampling step: Sampling anglular step used for EQKmeans orientation constraints. (default 15.0)
-    eqkmeans_tilt1:: Lower tilting bound: Lower bound of sampling tilting angle (theta) used for EQKmeans orientation constraints. (default 0.0)
-    eqkmeans_tilt2:: Upper tilting bound: Upper bound of sampling tilting angle (theta) used for EQKmeans orientation constraints. (default 180.0)
+    eqkmeans_angle_step:: EQK-means Angular sampling step: Sampling anglular step used for EQKmeans orientation constraints. (default 15.0)
+    eqkmeans_tilt1:: EQK-means Lower tilting bound: Lower bound of sampling tilting angle (theta) used for EQKmeans orientation constraints. (default 0.0)
+    eqkmeans_tilt2:: EQK-meansUpper tilting bound: Upper bound of sampling tilting angle (theta) used for EQKmeans orientation constraints. (default 180.0)
     not_make_normal_maps:: Do not make non-sharpen maps: Do not make non-sharpen maps. By default, the regularised maps will be reconstructed. (default False)
     post_sorting_sharpen:: Sharpen maps of each clusters: Make sharpen maps from sorted clusters. (default False)
     stop_eqkmeans_percentage:: Stop EQK-means Percentage [%]: Particle change percentage for stopping Equal-Sized K-means. (default 2.0)
