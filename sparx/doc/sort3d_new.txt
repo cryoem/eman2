@@ -81,8 +81,7 @@ sxsort3d_new.py exists only in MPI version. There are three typical usages.
     post_sorting_sharpen:: Sharpen maps of each clusters: Make sharpen maps from sorted clusters. (default False)
     stop_eqkmeans_percentage:: Stop EQK-means Percentage [%]: Particle change percentage for stopping Equal-Sized K-means. (default 2.0)
     smallest_particle_number:: Smallest orientation group size: The smallest orientation group size wich equals number_of_groups multiplied by this number. The value have to be an integer. (default 20)
-    nxinit:: current window size for data processing: user defined window size for data processing. The value have to be an integer. (default =1)
-
+ 
 
 == Output ==
 Please use --masterdir option to specify the output directory. The results will be written here. This directory will be created automatically if it does not exist  Here, you can find a log.txt that describes the sequences of computations in the program. 

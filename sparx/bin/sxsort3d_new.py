@@ -5207,7 +5207,7 @@ def main():
 	parser.add_option("--refinement_dir",                  type   ="string",        default ='',                       help="3-D refinement directory, the master directory of sxmeridien")
 	parser.add_option("--masterdir",                       type   ="string",        default ='',					   help="name of the directory for sorting computing")
 	parser.add_option("--niter_for_sorting",               type   ="int",           default =-1,					   help="selected number of iteration of meridien refinement for sorting, -1 implies program uses the best iteration to initiate sorting")
-	parser.add_option("--nxinit",                          type   ="int",           default =-1,					   help="initial window size set by user")
+	#parser.add_option("--nxinit",                          type   ="int",           default =-1,					   help="initial window size set by user")
 	parser.add_option("--focus",                           type   ="string",        default ='',                       help="file name, the bineary 3D mask for focused clustering ")
 	parser.add_option("--mask3D",                          type   ="string",        default ='',                       help="file name, the 3-D global mask for clustering ")
 	parser.add_option("--instack",                         type   ="string",        default ='',					   help="file name, data stack for sorting provided by user. It applies when sorting starts from a given data stack")
@@ -5277,7 +5277,7 @@ def main():
 	Constants["noctf"]                 		 = False
 	Constants["radius"]              		 = options.radius
 	Constants["symmetry"]                    = options.sym
-	Constants["nxinit"]                      = options.nxinit # retrive it under request, equals to the role of nxinit of meridien
+	Constants["nxinit"]                      = -1 # retrive it under request, equals to the role of nxinit of meridien
 	Constants["seed"]                        = -1
 	Constants["upscale"]                     = 0.5 #
 	Constants["interpolation"]               = "trl"
