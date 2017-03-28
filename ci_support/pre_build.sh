@@ -13,7 +13,7 @@ source ${HOME}/miniconda2/bin/activate root
 conda config --set show_channel_urls true
 
 conda install --yes --quiet qt=4 pyqt=4
-conda install --yes --quiet -c conda-forge boost boost-cpp fftw
+conda install --yes --quiet -c conda-forge boost boost-cpp fftw openmpi
 conda install --yes --quiet -c cryoem ftgl
 conda install --yes --quiet bsddb freetype gsl hdf5 ipython jpeg libpng libtiff matplotlib numpy=1.11 pyopengl scikit-learn scipy theano tk cmake
 
@@ -26,6 +26,8 @@ if [ -e ${HOME}/eman2 ];then
 else
     export src_dir=${PWD}
 fi
+
+patch programs/CMakeLists.txt recipes/eman/patch.diff
 
 rm -rf ${build_dir}
 mkdir -p ${build_dir}
