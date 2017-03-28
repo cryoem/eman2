@@ -202,15 +202,15 @@ def handle_exceptional_cases(sxcmd):
 		assert(sxcmd.token_dict["output_directory"].type == "output")
 		sxcmd.token_dict["output_directory"].type = "output_continue"
 	elif sxcmd.name in ["sxsort3d_new"]:
-		# DESIGN_NOTE: 2017/03/24 Toshio Moriya
-		# The below should be a temporary solution until redesign sxsort3d_new command interface
-		assert(sxcmd.token_dict["refinement_method"].key_base == "refinement_method")
-		assert(sxcmd.token_dict["refinement_method"].is_required == False)
-		assert(sxcmd.token_dict["refinement_method"].is_locked == False)
-		sxcmd.token_dict["refinement_method"].is_required = True
-		sxcmd.token_dict["refinement_method"].is_locked = True
-		# sxcmd.token_dict["refinement_method"].default = "SPARX"
-		sxcmd.token_dict["refinement_method"].restore = "SPARX"
+###		# DESIGN_NOTE: 2017/03/24 Toshio Moriya
+###		# The below should be a temporary solution until redesign sxsort3d_new command interface
+###		assert(sxcmd.token_dict["refinement_method"].key_base == "refinement_method")
+###		assert(sxcmd.token_dict["refinement_method"].is_required == False)
+###		assert(sxcmd.token_dict["refinement_method"].is_locked == False)
+###		sxcmd.token_dict["refinement_method"].is_required = True
+###		sxcmd.token_dict["refinement_method"].is_locked = True
+###		# sxcmd.token_dict["refinement_method"].default = "SPARX"
+###		sxcmd.token_dict["refinement_method"].restore = "SPARX"
 		assert(sxcmd.token_dict["refinement_dir"].key_base == "refinement_dir")
 		assert(sxcmd.token_dict["refinement_dir"].is_required == False)
 		sxcmd.token_dict["refinement_dir"].is_required = True
