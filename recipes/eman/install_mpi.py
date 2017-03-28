@@ -31,11 +31,8 @@ def get_mpiroot(options):
 	
 def install_fftw3_mpi():
 	pwd = os.getcwd()
-	if os.path.exists(pwd + "/fftw_mpi/installation"):
-		return
 	chdir("fftw_mpi/fftw-3.3.5")
-	myexec("mkdir %s"%(pwd + "/fftw_mpi/installation"))
-	myexec("./configure --prefix=%s --enable-mpi --enable-shared"%(pwd + "/fftw_mpi/installation"))
+	myexec("./configure --prefix=%s --enable-mpi --enable-shared"%(os.environ['PREFIX']))
 	myexec("make clean")
 	myexec("make")
 	myexec("make install")
@@ -47,10 +44,10 @@ def update_Makefile_src():
 	pwd = os.getcwd()
 	chdir("src")
 
-	library_location = "%s/fftw_mpi/installation/lib"%pwd
+	prefix_location = os.environ['PREFIX']
 	adding_dict = {
-		"CFLAGS = " : ' -I%s/fftw_mpi/installation/include -DPYDUSA_VERSION=%s'%(pwd, pwd),
-		"LDFLAGS = " : " -L" + library_location + " -lfftw3_mpi -lfftw3 -lm "
+		"CFLAGS = " : ' -I%s/include -DPYDUSA_VERSION=%s'  %(prefix_location, pwd),
+		"LDFLAGS = " : " -L%s/lib -lfftw3_mpi -lfftw3 -lm "%(prefix_location)
 	}
 
 	statbuf = os.stat("Makefile")
