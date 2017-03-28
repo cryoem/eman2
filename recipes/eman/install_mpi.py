@@ -29,17 +29,6 @@ def get_mpiroot(options):
 		
 	return True
 	
-def install_fftw3_mpi():
-	pwd = os.getcwd()
-	chdir("fftw_mpi/fftw-3.3.5")
-	myexec("./configure --prefix=%s --enable-mpi --enable-shared"%(os.environ['PREFIX']))
-	myexec("make clean")
-	myexec("make")
-	myexec("make install")
-
-	os.chdir(pwd)
-	return
-
 def update_Makefile_src():
 	pwd = os.getcwd()
 	chdir("src")
@@ -89,9 +78,6 @@ if not get_mpiroot(options):
 	print "In this case read the user guide - you have to probably load appriopriate module by \"module load\" command."
 	print "You can also run this script again with the --force option - it will download and install MPI (openmpi-%s) for you."%default_version_of_open_mpi_to_istall
 	exit(-1)
-
-## need to install fftw3-mpi
-install_fftw3_mpi()
 
 print ""
 print "=====> Configuring the mpi python binding"
