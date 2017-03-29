@@ -4,6 +4,8 @@ package:
 
 source:
     path: {{ RECIPE_DIR }}/../..
+    patches:
+        - patch.diff
 
 requirements:
     {% set reqs_common = [
