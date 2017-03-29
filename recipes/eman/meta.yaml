@@ -55,4 +55,5 @@ test:
     - e2speedtest.py
     - e2display.py -h
     - test -f ${PREFIX}/examples/mpi_test.py                        # [not win]
+    - mpirun -n 4 $(which python) ${PREFIX}/examples/mpi_test.py    # [not win]
     - if not exist %LIBRARY_PREFIX%\\examples\\mpi_test.py  exit 1  # [win]
