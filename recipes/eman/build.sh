@@ -8,5 +8,5 @@ cd $build_dir
 
 cmake $SRC_DIR
 
-make
+make -j${CPU_COUNT}
 make install
