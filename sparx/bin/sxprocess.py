@@ -1086,15 +1086,15 @@ def main():
 				fsc_true          = [frc_without_mask[0], [None]*len(frc_without_mask[0])]
 				for i in xrange(len(fsc_true[1])):
 					if i < (int(randomize_at) + 2):# move two pixels up
-						fsc_true [1][i] = frc_masked[1][i]
+						fsc_true[1][i] = frc_masked[1][i]
 					else:
 						fsct = frc_masked[1][i]
 						fscn = frc_random_masked[1][i]
 						if (fscn > fsct): fsc_true[1][i]= 0.
-						else: fsc_true [1][i]=(fsct-fscn)/(1.-fscn)
+						else: fsc_true[1][i]=(fsct-fscn)/(1.-fscn)
 			else:
 				fsc_true = fsc(map1, map2, 1)
-			
+			del map2
 			resolution_in_angstrom = [None]*len(fsc_true[0])
 			for ifreq in xrange(len(fsc_true[0])):
 				if fsc_true[0][ifreq] !=0.0:
@@ -1102,7 +1102,11 @@ def main():
 				else:
 					resolution_in_angstrom [ifreq] = 0.0
 					
-			if fsc_true[1][0]<0.0: fsc_true[1][0] =1.0  # always reset fsc of zero frequency
+			fsc_true[1][0] =1.0  # always reset fsc of zero frequency as 1.0
+			# map fsc obtained from two halves to full maps
+			for ifreq in xrange(len(fsc_true[0])):
+				fsc_true[1][ifreq] = max(fsc_true[1][ifreq], 0.0)*2./(1.+max(fsc_true[1][ifreq], 0.0))
+			log_main.add(" FSC from two halves mapped to the full data set by transform: 2.*FSC/(FSC+1.)")
 			
 			fsc_out = []
 			for ifreq in xrange(len(fsc_true[0])):
@@ -1140,17 +1144,12 @@ def main():
 					resolution_FSC143_right = fsc_true[0][ifreq]
 					break
 					
-			if resolution_FSC143_left != resolution_FSC143_right: 
-				log_main.add("there is a dip between 0.5 to 0.143 in FSC!")
-			else:                                           
-				log_main.add("fsc smoothly falls from 0.5 t0 0.143 !")
+			if resolution_FSC143_left != resolution_FSC143_right: log_main.add("there is a dip between 0.5 to 0.143 in FSC!")
+			else:log_main.add("fsc smoothly falls from 0.5 to 0.143 !")
 			
 			resolution_FSC143 = resolution_FSC143_right	
 			###															
-			map1 = get_im(args[0]) 
-			map2 = get_im(args[1])
-			map1 +=map2
-			map1 /=2.0
+			map1 =(get_im(args[0])+get_im(args[1]))/2.0
 			outtext     = [["Squaredfreq"],[ "LogOrig"]]
 			guinierline = rot_avg_table(power(periodogram(map1),.5))
 			from math import log
@@ -1174,14 +1173,12 @@ def main():
 				for ig in xrange(len(guinierline)): outtext[-1].append("%10.6f"%log(guinierline[ig]))
 				
 			if options.fsc_adj: #2
-				log_main.add("(2*FSC)/(1+FSC) is applied to adjust power spectrum of the summed volumes")
+				log_main.add("sqrt(FSC) is applied to adjust power spectrum of the summed volumes")
 				log_main.add("Notice: FSC adjustment of powerspectrum will increase B-factor 2-3 times than not!")
 				#### FSC adjustment ((2.*fsc)/(1+fsc)) to the powerspectrum;
 				fil = len(fsc_true[1])*[None]
 				for i in xrange(len(fil)):
-					if fsc_true[1][i]>=0.0: tmp = fsc_true[1][i]
-					else:                   tmp = 0.0
-					fil[i] = sqrt(2.*tmp/(1.+tmp))
+					fil[i] = sqrt(fsc_true[1][i]) # fsc already matched to full dataset
 				map1 = filt_table(map1,fil)
 				guinierline = rot_avg_table(power(periodogram(map1),.5))
 				outtext.append(["LogFSCadj"])
