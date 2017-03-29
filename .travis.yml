@@ -11,6 +11,7 @@ env:
   matrix:
     - build_scrt="build_with_envars.sh"
     - build_scrt="build_no_envars.sh"
+    - build_scrt="build_recipe.sh"
 
 
 before_install:

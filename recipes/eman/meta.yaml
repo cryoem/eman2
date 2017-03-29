@@ -47,3 +47,5 @@ test:
     - e2version.py
     - e2speedtest.py
     - e2display.py -h
+    - test -f ${PREFIX}/examples/mpi_test.py                        # [not win]
+    - if not exist %LIBRARY_PREFIX%\\examples\\mpi_test.py  exit 1  # [win]

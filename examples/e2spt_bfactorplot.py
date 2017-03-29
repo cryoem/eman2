@@ -52,27 +52,31 @@ def main():
 			
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_argument("--apix",type=float,default=0.0,help="""Default=0.0 (not used). Use this apix value where relevant instead of whatever is in the header of the reference and the particles.""")
+	parser.add_argument("--apix",type=float,default=0.0, help="""Default=0.0 (not used). Use this apix value where relevant instead of whatever is in the header of the reference and the particles.""")
 
-	parser.add_argument("--automask",action='store_true',default=False,help="""Applies loose automask at threshold=2.0""")
+	#parser.add_argument("--automask",action='store_true',default=False,help="""Applies loose automask at threshold=2.0""")
 	
-	parser.add_argument("--averager",type=str,default="mean.tomo",help="""Default=mean.tomo. The type of averager used to produce the class average.""")
+	parser.add_argument("--averager",type=str,default="mean.tomo", help="""Default=mean.tomo. The type of averager used to produce the class average.""")
 
 	parser.add_argument("--clip",type=float,default=0,help="""Default=0 (not used). Size to clip the box to before calculating FSCs. If particle of 64 pixels in diameter are in a 128x128x128 box, it's safe to provide --clip 70 or so""")
 
-	parser.add_argument("--inputeven", type=str, default='',help="""Default=None. The name of the EVEN aligned volume stack after gold-standard SPT refinement. MUST be HDF since volume stack support is required.""")
+	parser.add_argument("--inputeven", type=str, default='', help="""Default=None. The name of the EVEN aligned volume stack after gold-standard SPT refinement. MUST be HDF since volume stack support is required.""")
 
-	parser.add_argument("--inputodd", type=str, default='',help="""Default=None. The name of the ODD aligned volume stack after gold-standard SPT refinement. MUST be HDF since volume stack support is required.""")
+	parser.add_argument("--inputodd", type=str, default='', help="""Default=None. The name of the ODD aligned volume stack after gold-standard SPT refinement. MUST be HDF since volume stack support is required.""")
 	
-	parser.add_argument("--mask",action='store_true',default=False,help="""Applies soft mask beyond the radius of the particle assumed to be 1/4 + 0.2*1/4 of the box size.""")
+	parser.add_argument("--mask1", type=str,default='', help="""Default=None. Mask processor to apply to averages before FSC computation.""")
 
-	parser.add_argument("--path",type=str,default='sptbfactor',help="""Default=spt. Directory to store results in. The default is a numbered series of directories containing the prefix 'spt'; for example, spt_02 will be the directory by default if 'spt_01' already exists.""")
+	parser.add_argument("--mask2", type=str,default='', help="""Default=None. Mask processor to apply to averages before FSC computation.""")
+
+	parser.add_argument("--maskfile",type=str,default='', help="""Default=None. Mask file to multiply the averages by before FSC computation.""")
+
+	parser.add_argument("--path",type=str,default='sptbfactor', help="""Default=spt. Directory to store results in. The default is a numbered series of directories containing the prefix 'spt'; for example, spt_02 will be the directory by default if 'spt_01' already exists.""")
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
-	parser.add_argument("--runningavg",action='store_true',default=False,help="""Computes running average of particles weighing properly, instead of computing each average (as N grows) from scratch.""")
+	parser.add_argument("--runningavg",action='store_true', default=False, help="""Computes running average of particles weighing properly, instead of computing each average (as N grows) from scratch.""")
 
-	parser.add_argument("--step",type=int,default=1,help="""Number of particles to increase from one data point to the next. For example, --step=10 will compute the B-factor averaging 10 particles from the even set and 10 from the odd set; then 20; then 40; etc.""")
+	parser.add_argument("--step", type=int, default=1, help="""Number of particles to increase from one data point to the next. For example, --step=10 will compute the B-factor averaging 10 particles from the even set and 10 from the odd set; then 20; then 40; etc.""")
 
 	parser.add_argument("--sym", type=str, default='', help="""Default=None (equivalent to c1). Symmetry to impose -choices are: c<n>, d<n>, h<n>, tet, oct, icos""")
 	
@@ -87,7 +91,14 @@ def main():
 											#(written) in the invisible file .eman2log.txt
 	
 	
-	options.averager=parsemodopt(options.averager)
+	if options.averager:
+		options.averager=parsemodopt(options.averager)
+	
+	if options.mask1:
+		options.mask1=parsemodopt(options.mask1)
+	
+	if options.mask2:
+		options.mask2=parsemodopt(options.mask2)
 	
 	from e2spt_classaverage import sptmakepath
 	options = sptmakepath(options,'sptbfactor')
@@ -110,6 +121,7 @@ def main():
 	elif no < nfinal:
 		nfinal = no
 	
+
 	fscareas = []
 	fscareasdict={}
 	
@@ -119,62 +131,138 @@ def main():
 	
 	avge = preve.copy()
 	avgo = prevo.copy()
-	
-	avge.process_inplace('normalize.edgemean')
-	avgo.process_inplace('normalize.edgemean')
-	
-	for thisn in xrange( 1, nfinal+1, options.step ):
-		
-		indx = thisn-1
-		
-		if options.runningavg:
-			if indx > 0:
-				avge = runningavg( options.inputeven, preve, options, indx )
-				avgo = runningavg( options.inputodd, prevo, options, indx )
+
+
+	if options.runningavg:
+			
+		for i in range(nfinal):
+			avgre = Averagers.get( options.averager[0], options.averager[1])
+			avgro = Averagers.get( options.averager[0], options.averager[1])
+
+			ptcle = EMData( options.inputeven, i )
+			ptclo = EMData( options.inputodd, i )
+			
+			avgre.add_image( ptcle )
+			avgro.add_image( ptclo )
+
+			if i > 0:
+				#pavge.process_inplace('normalize.edgemean')
+				#pavgo.process_inplace('normalize.edgemean')
 				
-				preve = avge.copy()
-				prevo = avge.copy()
-		else:
-			avge = averagerfunc( options.inputeven, options, thisn )
-			avgo = averagerfunc( options.inputodd, options, thisn )
-		
-		if options.mask:
-			avge.process_inplace('mask.soft',{'outer_radius':radius_expanded})
-			avgo.process_inplace('mask.soft',{'outer_radius':radius_expanded})
-		if options.automask:
-			avge.process_inplace('mask.auto3d',{'radius':1,'nmaxseed':10,'nshells':1,'nshellsgauss':10,'threshold':2.0})
-			avgo.process_inplace('mask.auto3d',{'radius':1,'nmaxseed':10,'nshells':1,'nshellsgauss':10,'threshold':2.0})
+				#pavge.mult(i)
+				#pavgo.mult(i)
+				
+				avgre.add_image( pavge )
+				avgro.add_image( pavgo )
 
-		avge_w = avge.copy()
-		avgo_w = avgo.copy()
-		if options.sym:
-			avge_w.process_inplace('xform.applysym',{'sym':options.sym})
-			avgo_w.process_inplace('xform.applysym',{'sym':options.sym})
-		
-		fscarea = calcfsc( options, avge_w, avgo_w )
+			avge = avgre.finish()
+			avgo = avgro.finish()
 
-		fscareas.append( fscarea )
-		fscareasdict.update({indx:fscarea})
-		
-		f = open( options.path +'/n_vs_fsc.txt','w' )
-		fsclines = []
-		
-		x=0
-		sortedfscareasdict = collections.OrderedDict(sorted(fscareasdict.items()))
-		
-		#for fscarea in fscareas:
-		for k in sortedfscareasdict:
-			fscareak = sortedfscareasdict[k]
-			fscline = str(x) + '\t'+ str(fscareak) + '\n'
-			fsclines.append( fscline )
-			x+=1
-	
-		f.writelines( fsclines )
-		f.close()
-		print "\ndone with fsc %d/%d" %(thisn,nfinal)
+			pavge = avgo.copy()
+			pavgo = avge.copy()
+			
+			avge_w = avge.copy()
+			avgo_w = avgo.copy()
 
-	
-	
+			if options.sym:
+				avge_w.process_inplace('xform.applysym',{'sym':options.sym})
+				avgo_w.process_inplace('xform.applysym',{'sym':options.sym})
+		
+			if options.mask1:
+				print "parsed mask1 is",options.mask1
+				avge_w.process_inplace(options.mask1[0], options.mask1[1])
+				avgo_w.process_inplace(options.mask1[0], options.mask1[1])
+			
+			if options.mask2:
+				print "parsed mask2 is",options.mask2
+				avge_w.process_inplace(options.mask2[0], options.mask2[1])
+				avgo_w.process_inplace(options.mask2[0], options.mask2[1])
+		
+			if options.maskfile:
+				mask = EMData(options.maskfile)
+				avge_w.mult(mask)
+				avgo_w.mult(mask)
+			
+			fscarea = calcfsc( options, avge_w, avgo_w )
+
+			fscareas.append( fscarea )
+			fscareasdict.update({i:fscarea})
+			
+			f = open( options.path +'/n_vs_fsc.txt','w' )
+			fsclines = []
+			
+			x=0
+			sortedfscareasdict = collections.OrderedDict(sorted(fscareasdict.items()))
+			
+			#for fscarea in fscareas:
+			for k in sortedfscareasdict:
+				fscareak = sortedfscareasdict[k]
+				fscline = str(x) + '\t'+ str(fscareak) + '\n'
+				fsclines.append( fscline )
+				x+=1
+		
+			f.writelines( fsclines )
+			f.close()
+			print "\ndone with fsc %d/%d" %(i,nfinal)
+
+	else:
+		ngroups = nfinal/options.step
+		excedent = nfinal%options.step
+		count=0
+		for thisn in xrange( 0, nfinal, options.step ):
+			
+			startindx = thisn
+			stopindx = options.step*(count+1)
+			if count == ngroups -1 :
+				stopindx = nfinal
+				
+			avge = averagerfunc( options.inputeven, options, stopindx )
+			avgo = averagerfunc( options.inputodd, options, stopindx )
+			
+			avge_w = avge.copy()
+			avgo_w = avgo.copy()
+			if options.sym:
+				avge_w.process_inplace('xform.applysym',{'sym':options.sym})
+				avgo_w.process_inplace('xform.applysym',{'sym':options.sym})	
+			
+			if options.mask1:
+				print "parsed mask1 is",options.mask1
+				avge_w.process_inplace(options.mask1[0], options.mask1[1])
+				avgo_w.process_inplace(options.mask1[0], options.mask1[1])
+			
+			if options.mask2:
+				print "parsed mask2 is",options.mask2
+				avge_w.process_inplace(options.mask2[0], options.mask2[1])
+				avgo_w.process_inplace(options.mask2[0], options.mask2[1])
+		
+			if options.maskfile:
+				mask = EMData(options.maskfile)
+				avge_w.mult(mask)
+				avgo_w.mult(mask)
+			
+			fscarea = calcfsc( options, avge_w, avgo_w )
+
+			fscareas.append( fscarea )
+			fscareasdict.update({count:fscarea})
+			
+			f = open( options.path +'/n_vs_fsc.txt','w' )
+			fsclines = []
+			
+			x=0
+			sortedfscareasdict = collections.OrderedDict(sorted(fscareasdict.items()))
+			
+			for k in sortedfscareasdict:
+				fscareak = sortedfscareasdict[k]
+				fscline = str(x) + '\t'+ str(fscareak) + '\n'
+				fsclines.append( fscline )
+				x+=1
+		
+			f.writelines( fsclines )
+			f.close()
+			print "\ndone with fsc %d/%d" %(count,ngroups)
+
+			count+=1
+		
 	
 	'''	
 	ccc
@@ -190,42 +278,47 @@ def averagerfunc(stack,options,n):
 	print "\ncomputing average %d, from file %s" %(n,stack)
 	
 	avgr = Averagers.get( options.averager[0], options.averager[1])
+	print '\navgr is',avgr
+	print "\nn is",n
+
+	for x in range(n):
+		print "\nadded ptcl %d/%d" %(x,n)
+		ptcl = EMData( stack, x )
 		
-	for i in range(n):
-		print "\nadded ptcl %d/%d" %(i,n)
-		ptcl = EMData( stack, i )
-		
-		#print "\napix is",ptcl['apix_x']
+		print "\napix is",ptcl['apix_x']
 		avgr.add_image( ptcl )
 	
 	avg = avgr.finish()
 	if avg:
-		avg.process_inplace('normalize.edgemean')
-		
+		#avg.process_inplace('normalize.edgemean')
+
 		return avg
 	else:
 		print "average failed"
+		sys.exit(1)
+
 		return
 
 
-def runningavg(stack,previousavg,options,indx):
-	print "\ncomputing running avg %d, from file %s" %(indx,stack)
+def runningavg(stack,previousavg,options,start,stop,count):
+	print "\ncomputing running avg %d, from file %s" %(count,stack)
 	
 	avgr = Averagers.get( options.averager[0], options.averager[1])
 		
-	#for i in range(n):
-	ptcl = EMData( stack, indx )
-	ptcl.process_inplace('normalize.edgemean')	
+	for i in xrange(start,stop,1):
+		ptcl = EMData( stack, i )
+		#ptcl.process_inplace('normalize.edgemean')	
 	
-	avgr.add_image( ptcl )
+		avgr.add_image( ptcl )
 	
-	previousavg.process_inplace('normalize.edgemean')
-	previousavg.mult(indx)
+	#previousavg.process_inplace('normalize.edgemean')
+	
+	previousavg.mult(count+1)
 	avgr.add_image( previousavg )
 	
 	avg = avgr.finish()
 	#if avg:
-	avg.process_inplace('normalize.edgemean')
+	#avg.process_inplace('normalize.edgemean')
 		
 	return avg
 	#else:
