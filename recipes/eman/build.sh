@@ -10,5 +10,3 @@ cmake $SRC_DIR
 
 make
 make install
-
-bash install_pydusa.sh
