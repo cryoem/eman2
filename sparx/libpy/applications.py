@@ -17782,8 +17782,6 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 			cdata = [None]*len(data)
 			for i in xrange(len(data)):
 				cdata[i] = data[i]
-				
-			
 
 		for N_step in xrange(len(xrng)):
 			for Iter in xrange(max_iter):
@@ -17807,7 +17805,7 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 				"""
 				if total_iter == len(xrng)*max_iter:
 					if CTF:
-						for i in xrange(len(data)): data[i].set_attr("xform.align2d",cdata[i].get_attr("xform.align2d))
+						for i in xrange(len(data)): data[i].set_attr("xform.align2d",cdata[i].get_attr("xform.align2d"))
 					return tavg
 				cs = [0,0]
 				#print  "  iteration  std   %03d   %7.2f    %7.2f  "%(total_iter,cs[0],cs[1])
