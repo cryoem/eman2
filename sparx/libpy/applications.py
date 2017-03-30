@@ -17626,11 +17626,12 @@ def Xwithin_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, 
 
 
 #  Version before I started messing with centering of averages  PAP 07/10/2015
-def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, step, dst, maxit, FH, FF, method = ""):
+def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, step, dst, maxit, FH, FF, method = "", CTF = False):
 
 	# Comment by Zhengfan Yang 03/11/11
-	# This is a simple version of ali2d_data (down to the bone), no output dir, no logfile, no CTF, no MPI or CUDA, no Fourvar, no auto stop, no user function
-	
+	# This is a simple version of ali2d_data (down to the bone), no output dir, no logfile, no MPI or CUDA, no Fourvar, no auto stop, no user function
+	#  Added CTF fot simple version PAP 03/30/2017
+
 	from alignment    import Numrinit, ringwe, ali2d_single_iter
 	from filter	      import filt_tanl
 	from fundamentals import fshift, fft
@@ -17652,6 +17653,7 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 			alphan, sxn, syn, mirrorn    = combine_params2(0.0, -sxi, -syi, 0, random()*360.0, 0.0, 0.0, randint(0, 1))
 			#alphan, sxn, syn, mirrorn    = combine_params2(0.0, -sxi+randint(-xrng[0],xrng[0]), -syi+randint(-xrng[0],xrng[0]), 0, random()*360.0, 0, 0, randint(0, 1))
 			set_params2D(im, [alphan, sxn, syn, mirrorn, 1.0])
+
 
 	cnx = nx/2+1
 	cny = cnx
@@ -17766,10 +17768,28 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 				#print  "tata ",total_iter-1,Util.infomask(tavg,None,True)
 				#tavg.write_image('tata.hdf',total_iter-1)
 	else:
+		if CTF:
+			from morphology   import ctf_img
+			from fundamentals import fft
+			ctf2 = EMData(nx, nx, 1, False)
+			ctt = ctf_img(nx, im.get_attr("ctf"))
+			cdata = []
+			for im in data:
+				Util.add_img2(ctf2, ctt)
+				cdata.append(fft(Util.muln_img(fft(im), ctt)))
+				#  Is the header preserved?
+		else:
+			cdata = [None]*len(data)
+			for i in xrange(len(data))):
+				cdata[i] = data[i]
+				
+			
+
 		for N_step in xrange(len(xrng)):
 			for Iter in xrange(max_iter):
 				total_iter += 1
-				tavg = ave_series(data)
+				tavg = ave_series(cdata)
+				if CTF: tavg = fft(Util.divn_img(fft(tavg), ctf2))
 				if( FH > 0.0):
 					fl = 0.1+(FH-0.1)*Iter/float(max_iter-1)
 					tavg = filt_tanl(tavg, fl, FF)
@@ -17785,12 +17805,15 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 					if( yrng[0] > 0.0 ): cs[1] = sy_sum/float(nima)
 					tavg = fshift(tavg, -cs[0], -cs[1])
 				"""
-				if total_iter == len(xrng)*max_iter:  return tavg
+				if total_iter == len(xrng)*max_iter:
+					if CTF:
+						for i in xrange(len(data))): data[i].set_attr("xform.align2d",cdata[i].get_attr("xform.align2d))
+					return tavg
 				cs = [0,0]
 				#print  "  iteration  std   %03d   %7.2f    %7.2f  "%(total_iter,cs[0],cs[1])
 				if Iter%4 != 0 or total_iter > max_iter*len(xrng)-10: delta = 0.0
 				else:                                                 delta = dst
-				sx_sum, sy_sum, nope = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
+				sx_sum, sy_sum, nope = ali2d_single_iter(cdata, numr, wr, cs, tavg, cnx, cny, \
 															xrng[N_step], yrng[N_step], step[N_step], \
 															mode=mode, CTF=False, delta=delta)
 				#for im in data:  print get_params2D(im)
