@@ -17772,12 +17772,11 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 			from morphology   import ctf_img
 			from fundamentals import fft
 			ctf2 = EMData(nx, nx, 1, False)
-			ctt = ctf_img(nx, im.get_attr("ctf"))
 			cdata = []
 			for im in data:
+				ctt = ctf_img(nx, im.get_attr("ctf"))
 				Util.add_img2(ctf2, ctt)
 				cdata.append(fft(Util.muln_img(fft(im), ctt)))
-				#  Is the header preserved?
 		else:
 			cdata = [None]*len(data)
 			for i in xrange(len(data)):
