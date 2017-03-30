@@ -6636,7 +6636,7 @@ def main():
 					print("\n\n\n\n")
 					line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 					print(line,"ITERATION  #%2d. Current state: %14s, nxinit: %3d, delta: %9.4f, xr: %9.4f, ts: %9.4f"%\
-						(Tracker["state"],Tracker["nxinit"], Tracker["delta"], Tracker["xr"], Tracker["ts"]  ))
+						(Tracker["mainiteration"], Tracker["state"],Tracker["nxinit"], Tracker["delta"], Tracker["xr"], Tracker["ts"]  ))
 				#print("RACING  A ",Blockdata["myid"])
 				li = True
 				doit2, keepchecking2 = checkstep(Tracker["directory"], li)
