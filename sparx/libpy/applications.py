@@ -17780,7 +17780,7 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 				#  Is the header preserved?
 		else:
 			cdata = [None]*len(data)
-			for i in xrange(len(data))):
+			for i in xrange(len(data)):
 				cdata[i] = data[i]
 				
 			
