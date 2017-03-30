@@ -43,8 +43,9 @@ import  os
 """
 	Traveling salesman problem solved using Simulated Annealing.
 """
-from scipy import *
+#from scipy import *
 #from pylab import *
+from numpy import *
 
 def Distance(i1, i2, lccc):
 	return max(1.0 - lccc[mono(i1,i2)][0], 0.0)
@@ -131,8 +132,8 @@ def tsp(lccc):
             
 			while True: # Will find two random cities sufficiently close by
 				# Two cities n[0] and n[1] are choosen at random
-				n[0] = int((nct)*rand())     # select one city
-				n[1] = int((nct-1)*rand())   # select another city, but not the same
+				n[0] = int((nct)*random.rand())     # select one city
+				n[1] = int((nct-1)*random.rand())   # select another city, but not the same
 				if (n[1] >= n[0]): n[1] += 1   #
 				if (n[1] < n[0]): (n[0],n[1]) = (n[1],n[0]) # swap, because it must be: n[0]<n[1]
 				nn = (n[0]+nct -n[1]-1) % nct  # number of cities not on the segment n[0]..n[1]
@@ -143,19 +144,19 @@ def tsp(lccc):
 			n[2] = (n[0]-1) % nct  # index before n0  -- see figure in the lecture notes
 			n[3] = (n[1]+1) % nct  # index after n2   -- see figure in the lecture notes
             
-			if Preverse > rand(): 
+			if Preverse > random.rand(): 
 				# Here we reverse a segment
 				# What would be the cost to reverse the path between city[n[0]]-city[n[1]]?
 				de = Distance(city[n[2]], city[n[1]], lccc) + Distance(city[n[3]], city[n[0]], lccc)\
 					 - Distance(city[n[2]], city[n[0]], lccc) - Distance(city[n[3]] ,city[n[1]], lccc)
                 
-				if de<0 or exp(-de/T)>rand(): # Metropolis
+				if de<0 or exp(-de/T)>random.rand(): # Metropolis
 					accepted += 1
 					dist += de
 					reverse(city, n)
 			else:
 				# Here we transpose a segment
-				nc = (n[1]+1+ int(rand()*(nn-1)))%nct  # Another point outside n[0],n[1] segment. See picture in lecture nodes!
+				nc = (n[1]+1+ int(random.rand()*(nn-1)))%nct  # Another point outside n[0],n[1] segment. See picture in lecture nodes!
 				n[4] = nc
 				n[5] = (nc+1) % nct
 
@@ -165,7 +166,7 @@ def tsp(lccc):
 				de += Distance( city[n[0]], city[n[4]], lccc) + Distance( city[n[1]], city[n[5]], lccc) \
 						+ Distance( city[n[2]], city[n[3]], lccc)
 
-				if de<0 or exp(-de/T)>rand(): # Metropolis
+				if de<0 or exp(-de/T)>random.rand(): # Metropolis
 					accepted += 1
 					dist += de
 					city = transpt(city, n)
@@ -241,7 +242,7 @@ def main():
 	parser.add_option("--xr",           type="int",    default=0,     		help="range for translation search in x direction, search is +/xr (0)")
 	parser.add_option("--yr",           type="int",    default=0,          	help="range for translation search in y direction, search is +/yr (0)")
 	#parser.add_option("--nomirror",     action="store_true", default=False,   help="Disable checking mirror orientations of images (default False)")
-	parser.add_option("--pairwiseccc",  type="string",	default= None,      help="Input/output pairwise ccc file")
+	parser.add_option("--pairwiseccc",  type="string",	default= " ",      help="Input/output pairwise ccc file")
 
 
  	(options, args) = parser.parse_args()
@@ -336,7 +337,7 @@ def main():
 		lccc = [None]*(lend*(lend-1)/2)
 		from utilities import read_text_row
 
-		if  options.pairwiseccc == None or not os.path.exists(options.pairwiseccc) :
+		if  options.pairwiseccc == " " or not os.path.exists(options.pairwiseccc) :
 			st = time()
 			for i in xrange(lend-1):
 				for j in xrange(i+1, lend):
@@ -346,9 +347,9 @@ def main():
 					lccc[mono(i,j)] = [ccc(d[j], rot_shift2D(d[i], alpha, sx, sy, mir, 1.0), mask), alpha, sx, sy, mir]
 				#print "  %4d   %10.1f"%(i,time()-st)
 
-			if(not os.path.exists(options.pairwiseccc)):
+			if((not os.path.exists(options.pairwiseccc)) and (options.pairwiseccc != " ")):
 				from utilities import write_text_row
-				write_text_row([[initial,0,0,0,0]]+lccc,options.pairwiseccc)
+				write_text_row([[initial,0,0,0,0]]+lccc, options.pairwiseccc)
 		elif(os.path.exists(options.pairwiseccc)):
 			lccc = read_text_row(options.pairwiseccc)
 			initial = int(lccc[0][0] + 0.1)
@@ -579,7 +580,7 @@ def main():
 		
 		d = EMData.read_images(stack)
 		try:
-			print "Using 2D alignment parameters from header.
+			print "Using 2D alignment parameters from header."
 			ttt = d[0].get_attr('xform.params2d')
 			for i in xrange(len(d)):
 				alpha, sx, sy, mirror, scale = get_params2D(d[i])

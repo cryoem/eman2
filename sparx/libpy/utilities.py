@@ -3089,6 +3089,12 @@ def bcast_number_to_all(number_to_send, source_node = 0, mpi_comm = -1):
 	elif  type(number_to_send) is types.FloatType:
 		TMP = mpi_bcast(number_to_send, 1, MPI_FLOAT, source_node, mpi_comm)
 		return float(TMP[0])
+	elif  type(number_to_send) is types.BooleanType:
+		if number_to_send: number_to_send = 1
+		else: number_to_send = 0
+		TMP = mpi_bcast(number_to_send, 1, MPI_INT, source_node, mpi_comm)
+		if TMP == 1:  return True
+		else:         return False
 	else:
 		print  " ERROR in bcast_number_to_all"
 

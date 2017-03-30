@@ -6104,21 +6104,21 @@ def main():
 	parser.add_option("--inires",		       		type="float",	     	default=25.,		         	help="Resolution of the initial_volume volume (default 25A)")
 	parser.add_option("--mask3D",		        	type="string",	      	default=None,		          	help="3D mask file (default a sphere with radius (nx/2)-1)")
 	parser.add_option("--function",					type="string",          default="do_volume_mask",       help="name of the reference preparation function (default do_volume_mask)")
-	parser.add_option("--hardmask",			   		action="store_true",	default=True,		     		help="Apply hard maks (with radius) to 2D data (False)")
-	parser.add_option("--symmetry",					type="string",        	default= 'c1',		     		help="Point-group symmetry of the refined structure")
+	parser.add_option("--hardmask",			   		action="store_true",	default=True,		     		help="Apply hard maks (with radius) to 2D data (default True)")
+	parser.add_option("--symmetry",					type="string",        	default= 'c1',		     		help="Point-group symmetry of the refined structure (default c1)")
 	parser.add_option("--skip_prealignment",		action="store_true", 	default=False,		         	help="skip 2-D pre-alignment step: to be used if images are already centered. (default False)")
-	parser.add_option("--initialshifts",         	action="store_true",  	default=False,	         		help="Use orientation parameters in the input file header to jumpstart the procedure")
+	parser.add_option("--initialshifts",         	action="store_true",  	default=False,	         		help="Use orientation parameters in the input file header to jumpstart the procedure. (default False)")
 	parser.add_option("--center_method",			type="int",			 	default=-1,			     		help="method for centering: of average during initial 2D prealignment of data (0 : no centering; -1 : average shift  method;  please see center_2D in utilities.py for methods 1-7) (default -1)")
 	parser.add_option("--target_radius", 			type="int",			 	default=29,			     		help="target particle radius for 2D prealignment. Images will be shrank/enlarged to this radius (default 29)")
 	parser.add_option("--delta",					type="float",			default=7.5,		     		help="initial angular sampling step (default 7.5)")
 	parser.add_option("--shake",	           		type="float", 	     	default=0.5,                	help="shake (0.5)")
-	parser.add_option("--small_memory",         	action="store_true",  	default= False,             	help="data will not be kept in memory if small_memory is true")
+	parser.add_option("--small_memory",         	action="store_true",  	default= False,             	help="data will not be kept in memory if small_memory is true. (default False)")
 	parser.add_option("--ref_a",   		       		type="string",        	default= 'S',		         	help="method for generating the quasi-uniformly distributed projection directions (default S)")	
-	parser.add_option("--ccfpercentage",			type="float", 	      	default=99.9,               	help="Percentage of correlation peaks to be included, 0.0 corresponds to hard matching (default 99.5%)")
-	parser.add_option("--nonorm",               	action="store_true",  	default=False,              	help="Do not apply image norm correction")
+	parser.add_option("--ccfpercentage",			type="float", 	      	default=99.9,               	help="Percentage of correlation peaks to be included, 0.0 corresponds to hard matching (default 99.9%)")
+	parser.add_option("--nonorm",               	action="store_true",  	default=False,              	help="Do not apply image norm correction. (default False)")
 	parser.add_option("--do_final",             	type="int",           	default= -1,                	help="Perform final reconstruction using orientation parameters from iteration #iter. (default use iteration of best resolution achieved)")	
 	parser.add_option("--memory_per_node",          type="float",           default= -1.0,                	help="User provided information about memory per node (NOT per CPU) [in GB] (default 2GB*(number of CPUs per node))")	
-	parser.add_option("--ctrefromsort3d",           action="store_true",    default= False,                	help="Continue local/exhaustive refinement on data subset selected by sort3d")
+	parser.add_option("--ctrefromsort3d",           action="store_true",    default= False,                	help="Continue local/exhaustive refinement on data subset selected by sort3d. (default False)")
 	parser.add_option("--subset",                   type="string",          default='',                     help="A text contains indexes of the selected data subset")
 	parser.add_option("--oldrefdir",                type="string",          default='',                     help="The old refinement directory where sort3d is initiated")
 	parser.add_option("--ctrefromiter",             type="int",             default=-1,                     help="The iteration from which refinement will be continued")
@@ -6146,7 +6146,7 @@ def main():
 			elif options.do_final ==-1 and os.path.exists(masterdir):
 				update_options = True
 		else:
-			if os.path.exists(args[0]):masterdir = args[0]
+			masterdir = args[0]
 	else:
 		if not options.ctrefromsort3d:
 			print( "usage: " + usage)

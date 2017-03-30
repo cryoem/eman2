@@ -2259,7 +2259,6 @@ def k_means_locasg2glbasg(ASG, LUT, N):
 
 	return GASG
 
-# # # horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
 # # k-means open and prepare images, only unstable objects (active = 1)
 # def k_means_list_active(stack):
 # 	from utilities     import file_type

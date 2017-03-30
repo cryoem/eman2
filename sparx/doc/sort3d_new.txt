@@ -1,0 +1,125 @@
+= Name =
+sxsort3d_new - NEW 3D Clustering - RSORT3D: UNDER DEVELOPMENT. Reproducible 3D Clustering of heterogeneous dataset. Sort out 3D heterogeneity of 2D data whose 3D reconstruction parameters have been determined already.
+
+
+= Usage =
+
+'' usage in command line''
+
+sxsort3d_new.py  --refinement_dir=refinement_dir  --masterdir=master_dir  --niter_for_sorting=num_of_sorting_iterations  --mask3D=mask3d_file   --focus=focus3d_file  --radius=outer_radius  --sym=symmetry  --number_of_images_per_group=num_of_images_per_group  --smallest_group=smallest_group  --memory_per_node=memory_per_node  --nindependent=indenpendent_runs   --comparison_method=comparison_method  --instack=input_stack_file  --no_final_sharpen   --eqkmeans_angle_step=angle_step  --eqkmeans_tilt1=lower_tilt  --eqkmeans_tilt2=upper_tilt --not_make_normal_maps  --post_sorting_sharpen  --stop_eqkmeans_percentage=stop_eqkmeans_percentage  --smallest_particle_number=smallest_particle_number
+
+
+=== Typical usage ===
+sxsort3d_new.py exists only in MPI version. There are three typical usages.
+
+
+    1. Initiate sorting from an iteration of meridien refinement:: The command line below sorts dataset imported from the 25th iteration of meridien refinement directory
+    
+    ''' mpirun -np 80  sxsort3d_new.py --masterdir='outdir_sxsort3d_new'  --nindependent=3 --sym='c5' --radius=120 --niter_for_sorting=25  --number_of_images_per_group=6000 --refinement_dir='outdir_sxmeridien' --comparison_method='eucd' --stop_eqkmeans_percentage=1.0 --eqkmeans_angle_step=10.0 --smallest_group=1500 ''' <<BR>><<BR>>
+
+    The results are saved in the directory specified as masterdir  ('outdir_sxsort3d_new' in the example above):
+    a. Cluster#.txt                : Sorting results. The number of cluster files is equal to the number of classes found. These selection files contain one column for particle indexes. Input projection EM data is assumed to be number 0 to n-1.
+    b. maps_dir                    : Directories containing group density maps reconstructed to the resolutions determined by meridien for each class.
+    c. vol_unfiltered_#_group#.hdf : Reconstructed odd/even maps to be used for postprocessing
+
+    Intermediate results directories:
+    sort3d_run0 and sort3d_run1    : contains filtered and unfilted group maps, volf*.hdf, vol*.hdf, and Cluster*.txt files
+    rsort0 and rsort1
+
+    2. Initiate sorting from a data stack:: Currently, this mode is not supported by SPHIRE GUI. The command line below sorts particle stack with 3D alignment (orientation) and CTF parameters preset in headers.
+
+    ''' mpirun -np 80 sxsort3d_new.py --masterdir='outdir_sxsort3d_new' --nindependent=3 --sym='c1' --radius=52 --comparison_method='eucd' --number_of_images_per_group=2500 --smallest_group=50 --eqkmeans_angle_step=10.0 --mask3D='mask3d.hdf' --instack=bdb:data ''' <<BR>><<BR>>
+
+    Note --instack option is require when sorting is initiated from a data stack having 3D alignment (orientation) and CTF parameters in the header. 
+
+    3. Sort particle stack with 3D alignment (orientation) and CTF parameters preset in headers using binary mask to carry out focus clustering.
+
+    ''' mpirun -np 48 sxsort3d_new.py --masterdir='outdir_sxsort3d_new' --nindependent=5 --sym='c1' --radius=30  --smallest_group=500 --comparison='cross' --focus='focus3d.hdf' --stop_eqkmeans_percentage=0.5 --number_of_images_per_group=3000 --instack=bdb:data ''' <<BR>><<BR>>
+
+    Note --focus option is require for focus clustering. The focus mask must be binary. 
+
+    4. Compute unfiltered maps after sorting. Usually this is done by the program when the sorting ends. However, by post_sorting_sharpen option, one can do it independently and reconstruct unfiltered maps using subsets specified by selection text files (i.e. Cluster#.txt).
+
+    ''' mpirun -np 80 sxsort3d_new.py --masterdir='outdir_sxsort3d_new'  --nindependent=3 —post_sorting_sharpen --sym='c5' --radius=120 --niter_for_sorting=25 --hardmask --number_of_images_per_group=6000 --refinement_dir='outdir_sxmeridien' --comparison_method='eucd' --eqkmeans_angle_step=10.0 --smallest_group=1500 ''' <<BR>><<BR>>
+
+    Note --post_sorting_sharpen is required to reconstruct unfiltered maps independent of sorting.
+
+
+    How to continue sxmeridien refinement using sorting results:: The command line below continues previous meridien run from the 25th iteration using a subset of data associated to a selected group.
+
+    ''' mpirun -np 80 sxmeridien.py 'outdir_sxmeridien_continue' --memory_per_node=64.0 --ctrefromsort3d --subset=outdir_sxsort3d_new/Cluster0.txt --oldrefdir='outdir_sxmeridien' --ctrefromiter=30 ''' <<BR>><<BR>>
+    
+    Note the output directory 'outdir_sxmeridien_continue' can be an existing one. The --ctrefromsort3d option is require for meridien continue run. Additional options for this use case are:
+    -—subset       : Specify subset of data with a selection text file (i.e. Cluster#.txt) with particle ID numbers in one column (produced by sort3d or by other means)
+    -—oldrefdir    : Specify previous meridien refinement directory
+    --ctrefromiter : Specify iteration to continue refinement from. One does not have to use final iteration. Typically earlier ones work better, at least for initial sorting.
+
+
+== Input ==
+    refinement_dir:: Input 3D refinement directory: Usually the master output directory of sxmeridien. (default none)
+    masterdir:: Output directory: The master output directory for sorting. (default none)
+    niter_for_sorting:: 3D refinement iteration: Specify an iteration number of 3D refinement where the 3D alignment parameters should be extracted for this sorting. By default, it uses iteration achieved best resolution. (default -1)
+    mask3D:: 3D mask: File path of the global 3D mask for clustering. (default none)
+    focus:: Focus 3D mask: File path of a binary 3D mask for focused clustering. (default none)
+    radius:: Outer radius for rotational correlation [Pixels]: Particle radius in pixel for rotational correlation. The value must be smaller than half the box size. (default -1)
+    sym:: Point-group symmetry: Point group symmetry of the structure. (default c1) 
+    number_of_images_per_group:: Images per group: The number of images per a group. This value is critical for successful 3D clustering. (default 1000) 
+    smallest_group:: Smallest group size: Minimum number of members for being identified as a group. This value must be smaller than the number of images per a group (number_of_images_per_group). (default 500) 
+    memory_per_node:: Memory per node [GB]: User provided information about memory per node in GB (NOT per CPU). It will be used to evaluate the number of CPUs per node from user-provided MPI setting. By default, it uses 2GB * (number of CPUs per node) (default -1.0)
+
+    * The remaining parameters are optional and default values are given in parenthesis. There is rarely any need to modify them.
+    nindependent:: Independent runs: Number of independent runs for Equal Sized K-means clustering. The value must be an odd number larger than 2. (default 3) 
+    comparison_method:: Comparison method: Similarity measurement for the comparison between reprojected reference images and particle images. Valid values are 'cross' (cross-correlaton coefficients) and 'eucd' (Euclidean distance). (default cross) 
+    instack:: Input images stack: File path of particle stack for sorting. This option is not currently supported by SHPIRE GUI (sxgui). (default none)
+    no_final_sharpen:: Do not reconstruct final maps: Do not reconstruct unfiltered final maps for post refinement process. (default False)
+    eqkmeans_angle_step:: EQK-means Angular sampling step: Sampling anglular step used for EQKmeans orientation constraints. (default 15.0)
+    eqkmeans_tilt1:: EQK-means Lower tilting bound: Lower bound of sampling tilting angle (theta) used for EQKmeans orientation constraints. (default 0.0)
+    eqkmeans_tilt2:: EQK-meansUpper tilting bound: Upper bound of sampling tilting angle (theta) used for EQKmeans orientation constraints. (default 180.0)
+    not_make_normal_maps:: Do not make non-sharpen maps: Do not make non-sharpen maps. By default, the regularised maps will be reconstructed. (default False)
+    post_sorting_sharpen:: Sharpen maps of each clusters: Make sharpen maps from sorted clusters. (default False)
+    stop_eqkmeans_percentage:: Stop EQK-means Percentage [%]: Particle change percentage for stopping Equal-Sized K-means. (default 2.0)
+    smallest_particle_number:: Smallest orientation group size: The smallest orientation group size wich equals number_of_groups multiplied by this number. The value have to be an integer. (default 20)
+ 
+
+== Output ==
+Please use --masterdir option to specify the output directory. The results will be written here. This directory will be created automatically if it does not exist  Here, you can find a log.txt that describes the sequences of computations in the program. 
+
+
+= Description =
+sxsort3d_new finds out stable members by carrying out two-way comparison of two independent sxsort3d runs.
+
+For small tested datasets (real and simulated ribosome data around 10K particles), it gives 70%-90% reproducibility. However, this rate also depends on the choice of number of images per group and number of particles in the smallest group.
+
+Note - 2017/03/24: About new version 
+The new version should be significantly faster than the previous one and it is better integrated with meridien. 
+Continuation option of sxmeridien.py allows to continue refinement of a dataset subset determined by sort3d. 
+The new sorting program can be initiated from:
+(1) meridien refinement
+(2) a data stack with all associated parameters preset in header
+
+The final results are partitioned particles IDs saved in text files. Also, unfiltered maps of each cluster are reconstructed in the way of meridien does. One can use postprocess command to merge the two halves of maps of each group.
+
+
+= Method =
+K-means, equal K-means, reproducibility, two-way comparison.
+
+= Reference =
+Not published yet.
+
+= Author / Maintainer =
+Zhong Huang
+
+= Keywords =
+    category 1:: APPLICATIONS
+
+= Files =
+sxsort3d_new.py
+
+= See also =
+[[http://sparx-em.org/sparxwiki/sxsort3d|sxsort3d]]
+
+= Maturity =
+    beta::    Under development. It has been tested, The test cases/examples are available upon request. Please let us know if there are any bugs.
+
+= Bugs =
+None so far.

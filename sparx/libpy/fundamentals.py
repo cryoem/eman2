@@ -717,7 +717,7 @@ def prep_refim_gridding(refim, wr, numr, mode = "F"):
 	#precalculate rings
 	temp,kb = prepi(refim)
 	crefim = Util.Polar2Dmi(temp, cnx, cny, numr, mode, kb)
-	Normalize_ring(cimage, numr, 0 )
+	Util.Normalize_ring(cimage, numr, 0 )
 	Util.Frngs(crefim, numr)
 	Util.Applyws(crefim, numr, wr)
 	return  crefim,kb
