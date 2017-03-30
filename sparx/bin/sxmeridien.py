@@ -6627,11 +6627,12 @@ def main():
 					if(Blockdata["myid"] == Blockdata["main_node"]): print_dict(Tracker["constants"], "Permanent settings of restart run")
 
 				if Blockdata["myid"] == Blockdata["main_node"]:
-					line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-					print(line,"Resolution achieved in ITERATION  #%2d: %3d/%3d pixels, %5.2fA/%5.2fA."%
-						(Tracker["mainiteration"]-1, \
-						Tracker["currentres"], Tracker["fsc143"], Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"]), \
-						Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"]) ) )
+					if( Tracker["mainiteration"] > 1 ):
+						line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+						print(line,"Resolution achieved in ITERATION  #%2d: %3d/%3d pixels, %5.2fA/%5.2fA."%
+							(Tracker["mainiteration"]-1, \
+							Tracker["currentres"], Tracker["fsc143"], Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"]), \
+							Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"]) ) )
 					print("\n\n\n\n")
 					line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 					print(line,"ITERATION  #%2d. Current state: %14s, nxinit: %3d, delta: %9.4f, xr: %9.4f, ts: %9.4f"%\
