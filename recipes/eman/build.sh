@@ -10,3 +10,5 @@ cmake $SRC_DIR
 
 make -j${CPU_COUNT}
 make install
+
+ln -s $PREFIX/bin/e2version.py $SP_DIR/e2version.py
