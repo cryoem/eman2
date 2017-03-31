@@ -12,6 +12,8 @@ bash $MINICONDA_FILE -b
 source ${HOME}/miniconda2/bin/activate root
 conda config --set show_channel_urls true
 
+export CPU_COUNT=2
+
 conda install conda-build -c defaults --yes --quiet
 
 conda build recipes/eman -c cryoem -c defaults -c conda-forge
