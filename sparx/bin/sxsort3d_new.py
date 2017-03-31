@@ -1888,7 +1888,7 @@ def check_mpi_settings(log):
 		image_org_size       = Tracker["constants"]["nnxo"]
 		image_in_core_size   = Tracker["nxinit"]
 		raw_data_size        = float(Tracker["constants"]["total_stack"]*image_org_size*image_org_size)*4.0/1.e9
-		data_size_per_node   =  2.0*Tracker["constants"]["total_stack"]*float(image_in_core_size**2)*4.0/float(Blockdata["nproc"])/1.e9 + raw_data_size/float(Blockdata["nproc"])
+		data_size_per_node   =  2.0*Tracker["constants"]["total_stack"]*float(image_in_core_size**2)*4.0/float(Blockdata["nproc"])/1.e9 + raw_data_size/float(Blockdata["nproc"])*Blockdata["no_of_processes_per_group"]
 		volume_size_per_node = (4.*image_org_size**3)*Blockdata["no_of_processes_per_group"]/1.e9
 	except:  current_mpi_settings_is_bad = 1
 	
@@ -1910,7 +1910,7 @@ def check_mpi_settings(log):
 		
 	if (total_memory - data_size_per_node - 1.5*volume_size_per_node) <0.0: 
 		current_mpi_settings_is_bad = 1
-		new_nproc = raw_data_size/(total_memory - 1.5*volume_size_per_node - 3.5)
+		new_nproc = raw_data_size/(total_memory - 1.5*volume_size_per_node - 3.5)*1.5
 		if( Blockdata["myid"] == Blockdata["main_node"]):
 			msg ="Suggestion: use  number of processes %d"%int(new_nproc)
 			print(msg)
