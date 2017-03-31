@@ -1881,84 +1881,57 @@ def print_dict(dict,theme, exclude = "refinement"):
 				break
 		if pt:  print("                    => ", key+spaces[len(key):],":  ",value)
 		
-def check_mpi_settings():
+def check_mpi_settings(log):
 	global Tracker, Blockdata
-	try: 
-		image_org_size     = Tracker["constants"]["nnxo"]
-		image_in_core_size = Tracker["nxinit"]
-		raw_data_size      = float(Tracker["constants"]["total_stack"]*image_org_size*image_org_size)*4.0/1.e9
-		data_size          = 2.*Tracker["constants"]["total_stack"]*float(image_in_core_size**2)*4.0/float(Blockdata["nproc"])/1.e9 + raw_data_size
-		volume_size        = (4.*image_org_size**3 + 4.*image_in_core_size**3) * Blockdata["no_of_processes_per_group"]/1.e9
-		
-		current_mpi_settings_is_bad = 0
-		if Tracker["constants"]["memory_per_node"] == -1.: 
-			total_memory =  Blockdata["no_of_processes_per_group"]*2.0 # assume each CPU has 2.0 G
-			Tracker["constants"]["memory_per_node"] = total_memory
-		else:                                              total_memory =  Tracker["constants"]["memory_per_node"]
-		
-		
-		if (total_memory - data_size - volume_size) >0.0:
-			if Blockdata["myid"] == Blockdata["main_node"]:
-				print(" Current settings can afford the sort3d computation. ")
-		else:
-			if Blockdata["myid"] == Blockdata["main_node"]: ### freeze some CPUs 
-				print(" Current settings cannot afford the sort3d computation. ")
-			current_mpi_settings_is_bad = 1
-				
-		# check current settings if abundant CPUs used
-		images_per_cpu                       = float(Tracker["constants"]["total_stack"])/float(Blockdata["nproc"])
-		images_per_cpu_for_unaccounted_data  = Tracker["constants"]["number_of_images_per_group"]*1.5/float(Blockdata["nproc"])
-		
-		if images_per_cpu < 5.0:
-			if Blockdata["myid"] == Blockdata["main_node"]:
-				print("Wrong MPI settings. Number of images on each CPU is  too few. ")
-			current_mpi_settings_is_bad = 1
+	current_mpi_settings_is_bad = 0
+	try:
+		image_org_size       = Tracker["constants"]["nnxo"]
+		image_in_core_size   = Tracker["nxinit"]
+		raw_data_size        = float(Tracker["constants"]["total_stack"]*image_org_size*image_org_size)*4.0/1.e9
+		data_size_per_node   =  2.0*Tracker["constants"]["total_stack"]*float(image_in_core_size**2)*4.0/float(Blockdata["nproc"])/1.e9 + raw_data_size/float(Blockdata["nproc"])
+		volume_size_per_node = (4.*image_org_size**3)*Blockdata["no_of_processes_per_group"]/1.e9
+	except:  current_mpi_settings_is_bad = 1
+	
+	if current_mpi_settings_is_bad == 1:
+		ERROR("insufficient information about sorting", "check_mpi_settings", 1, Blockdata["myid"])
 			
-		elif images_per_cpu_for_unaccounted_data< 5.0:
-			if Blockdata["myid"] == Blockdata["main_node"]:
-				print("Wrong MPI settings. Number of images on each CPU is  too few. Reduce total number of CPUs")
-			current_mpi_settings_is_bad = 1
+	if Tracker["constants"]["memory_per_node"] == -1.:
+		total_memory =  Blockdata["no_of_processes_per_group"]*2.0 # assume each CPU has 2.0 G
+		Tracker["constants"]["memory_per_node"] = total_memory
+	else: total_memory =  Tracker["constants"]["memory_per_node"]
+	
+	if( Blockdata["myid"] == Blockdata["main_node"]):
+		msg = "the available memory:  %f"%total_memory
+		log.add(msg)
+		print(msg)
+		msg = "total raw data (raw particles):  %f"%raw_data_size
+		log.add(msg)
+		print(msg)
 		
-		elif images_per_cpu <20.:
-			if Blockdata["myid"] == Blockdata["main_node"]:
-				print("Warning: too many CPUs for this dataset! Program continues however. ")
-		else:
-			if Blockdata["myid"] == Blockdata["main_node"]:
-				print("Current MPI settings is Okay! ")
-				
-		if Tracker["total_stack"]//Tracker["constants"]["number_of_images_per_group"] > Blockdata["no_of_groups"]:
-			if Blockdata["myid"] == Blockdata["main_node"]:
-				print(" You might increase number of nodes to improve computing efficiency")
-				
-		elif Tracker["total_stack"]//Tracker["constants"]["number_of_images_per_group"]< Blockdata["no_of_groups"]//3:
-			print("Computing resource is abused. However the program proceeds")
-			
-		if current_mpi_settings_is_bad ==1:
-			ERROR("Current mpi setting is bad", "check_mpi_settings", 1, Blockdata["myid"])
-		"""
-		else:
-			if(Blockdata["myid"] == Blockdata["main_node"]):
-				nnprocs = min( Blockdata["no_of_processes_per_group"], int(((Tracker["constants"]["memory_per_node"] - data_size*1.2)/volume_size)))
-				print("MEMORY ESTIMATION.  memory per node = %6.1fGB,  volume size = %6.2fGB, data size per node = %6.2fGB, estimated number of CPUs = %d"%(Tracker["constants"]["memory_per_node"],volume_size,data_size,nnprocs))
-				memory_per_cpu_3d = data_size/Blockdata["no_of_processes_per_group"]*1.2 + volume_size
-				print("  Estimated memory consumption per CPU in reconstruction %6.2f"%memory_per_cpu_3d)
-				if( (Tracker["constants"]["memory_per_node"] - data_size*1.2 - volume_size) < 0 or (nnprocs == 0)):  nogo = 1
-				else:  nogo = 0
-			else:
-				nnprocs = 0
-				nogo    = 0
-			nogo = bcast_number_to_all(nogo, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
-			if(nogo == 1): ERROR("Insufficient memory to continue refinement from subset","continue_from_subset", 1, Blockdata["myid"])
-			nnprocs = bcast_number_to_all(nnprocs, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
-			Blockdata["ncpuspernode"] 	= nnprocs
-			Blockdata["nsubset"] 		= Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
-			create_subgroup()
-		"""		
-	except:
-		if Blockdata["myid"] == Blockdata["main_node"]:
-			print("information is not sufficient to check  MPI settings")
+	if (total_memory - data_size_per_node - 1.5*volume_size_per_node) <0.0: 
 		current_mpi_settings_is_bad = 1
-		return current_mpi_settings_is_bad
+		new_nproc = raw_data_size/(total_memory - 1.5*volume_size_per_node - 3.5)
+		if( Blockdata["myid"] == Blockdata["main_node"]):
+			msg ="Suggestion: use  number of processes %d"%int(new_nproc)
+			print(msg)
+			log.add(msg)
+		ERROR("In sufficient memory", "check_mpi_settings", 1, Blockdata["myid"])
+		
+	images_per_cpu  = float(Tracker["constants"]["total_stack"])/float(Blockdata["nproc"])
+	images_per_cpu_for_unaccounted_data  = Tracker["constants"]["number_of_images_per_group"]*1.5/float(Blockdata["nproc"])
+	
+	if( Blockdata["myid"] == Blockdata["main_node"]):
+		msg="current images per cpu  %d"%int(images_per_cpu)
+		log.add(msg)
+		print(msg)
+		msg="Estimated images_per_cpu_for_unaccounted_data %d"%int(images_per_cpu_for_unaccounted_data)
+		log.add(msg)
+		print(msg)
+
+	if images_per_cpu < 5.0: ERROR("image per cpu less than 5", "check_mpi_settings", 1, Blockdata["myid"])	
+	if images_per_cpu_for_unaccounted_data< 5.0: ERROR("image per cpu for unaccounted less than 5", "check_mpi_settings", 1, Blockdata["myid"])
+				
+	return
 			
 # --------------------------------------------------------------------------		
 # - "Tracker" (dictionary) object
@@ -5571,15 +5544,7 @@ def main():
 
 	Tracker["nsize"] = float(Tracker["constants"]["nnxo"]*Tracker["constants"]["nnxo"])
 ### Check mpi setting
-	current_mpi_settings_is_bad = check_mpi_settings()
-	if current_mpi_settings_is_bad:
-		if(Blockdata["myid"] == Blockdata["main_node"]):
-			msg ="Improper mpi setting!"
-			print(line, msg)
-			log_main.add(msg)
-		from mpi import mpi_finalize
-		mpi_finalize()
-		exit()
+	check_mpi_settings(log_main)
 	###<<<-------sort3d starts here
 	for indep_sort3d in xrange(Tracker["total_sort3d_indepent_run"]):		
 		sorting                = {}
