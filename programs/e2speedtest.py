@@ -63,6 +63,7 @@ improved with time."""
 	parser.add_argument("--old",action="store_true",help="old rtf+refine aligner",default=False)
 	parser.add_argument("--low",action="store_true",help="low level test",default=False)
 	parser.add_argument("--size",type=int,help="Size of particles, 192 default for comparisons",default=192)
+	parser.add_argument("--simpleout",action="store_true",help="Simpler 2 column output file (appends)")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
@@ -82,6 +83,7 @@ improved with time."""
 #			 value = -3.0 * math.exp(-Util.square(math.fabs(i)+math.fabs(j)) / 10.0) + math.exp(-Util.square( (math.fabs(i)+math.fabs(j))/2.0 )/100.0) * 2.0 if abs(i)<2 else 1.0
 #			 pat.set_value_at(i+SIZE/2, j+SIZE/2, value)
 #	 pat.update()
+
 	pat=test_image(size=(SIZE,SIZE))
 	pat.process_inplace('normalize.circlemean')
 	pat.process_inplace("mask.sharp", {"outer_radius":pat.get_xsize()/2.0})
@@ -205,7 +207,10 @@ so in most cases it is not dealt with.'
 	except: cpu="unknown"
 		
 	out=file("speedtest_result.txt","a")
-	out.write("speed: {}\tsize: {}\tOS: {}\tCPU: {}\n".format(2.3/tms.mean(),SIZE,get_platform(),cpu))
+	if options.simpleout :
+		out.write("{}\t{}\n".format(SIZE,2.3/tms.mean()))
+	else:
+		out.write("speed: {}\tsize: {}\tOS: {}\tCPU: {}\n".format(2.3/tms.mean(),SIZE,get_platform(),cpu))
 #	print '\nThis represents %1.2f (RTFAlign+Refine)/sec\n' % (5.0 * (NTT - 5.0) / ti)
 
 if __name__ == "__main__":
