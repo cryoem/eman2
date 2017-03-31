@@ -1290,7 +1290,7 @@ def ssnr2d_ctf(data, mask = None, mode="", dopa=True):
 	from filter       import filt_ctf
 	from utilities    import get_params2D, pad
 	import  types
-	
+
 	if type(data) is types.StringType:
 		n = EMUtil.get_image_count(data)
 		ima = EMData()
