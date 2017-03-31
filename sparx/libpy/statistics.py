@@ -522,7 +522,7 @@ def add_oe(data):
 		else:        Util.add_img(ave2, data[i])
 	return ave1, ave2
 
-def ave_series(data, pave = True):
+def ave_series(data, pave = True, mask = None):
 	"""
 		Calculate average of a image series using current alignment parameters
 		data - real space image series
@@ -536,11 +536,12 @@ def ave_series(data, pave = True):
 	for i in xrange(n):
 	 	alpha, sx, sy, mirror, scale = get_params2D(data[i])
 		temp = rot_shift2D(data[i], alpha, sx, sy, mirror)
+		if mask: Util.mul_img(temp, mask)
 		Util.add_img(ave, temp)
 	if pave:  Util.mul_scalar(ave, 1.0/float(n))
 	return ave
 
-def ave_series_ctf(data, ctf2):
+def ave_series_ctf(data, ctf2, mask = None):
 	"""
 		Calculate average of an image series using current alignment parameters and ctf
 		data - real space image series premultiplied by the CTF
@@ -555,6 +556,7 @@ def ave_series_ctf(data, ctf2):
 	for i in xrange(n):
 	 	alpha, sx, sy, mirror, scale = get_params2D(data[i])
 		temp = rot_shift2D(data[i], alpha, sx, sy, mirror)
+		if mask: Util.mul_img(temp, mask)
 		Util.add_img(ave, temp)
 
 	return filt_table(ave, ctf2)
@@ -1290,7 +1292,7 @@ def ssnr2d_ctf(data, mask = None, mode="", dopa=True):
 	from filter       import filt_ctf
 	from utilities    import get_params2D, pad
 	import  types
-	
+
 	if type(data) is types.StringType:
 		n = EMUtil.get_image_count(data)
 		ima = EMData()

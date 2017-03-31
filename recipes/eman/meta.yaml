@@ -41,11 +41,16 @@ requirements:
         - pyqt 4.*
         - pyopengl 3.1.0
         - theano
+        - pydusa  # [not win]
 
 test:
+  imports:   # [not win]
+    - mpi    # [not win]
+  
   commands:
     - e2version.py
     - e2speedtest.py
     - e2display.py -h
     - test -f ${PREFIX}/examples/mpi_test.py                        # [not win]
+    - mpirun -n 4 $(which python) ${PREFIX}/examples/mpi_test.py    # [not win]
     - if not exist %LIBRARY_PREFIX%\\examples\\mpi_test.py  exit 1  # [win]

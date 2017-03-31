@@ -337,7 +337,7 @@ def main():
 		lccc = [None]*(lend*(lend-1)/2)
 		from utilities import read_text_row
 
-		if  options.pairwiseccc == None or not os.path.exists(options.pairwiseccc) :
+		if  options.pairwiseccc == " " or not os.path.exists(options.pairwiseccc) :
 			st = time()
 			for i in xrange(lend-1):
 				for j in xrange(i+1, lend):
@@ -347,9 +347,9 @@ def main():
 					lccc[mono(i,j)] = [ccc(d[j], rot_shift2D(d[i], alpha, sx, sy, mir, 1.0), mask), alpha, sx, sy, mir]
 				#print "  %4d   %10.1f"%(i,time()-st)
 
-			if((not os.path.exists(options.pairwiseccc)) and (os.path.exists(options.pairwiseccc) != " ")):
+			if((not os.path.exists(options.pairwiseccc)) and (options.pairwiseccc != " ")):
 				from utilities import write_text_row
-				write_text_row([[initial,0,0,0,0]]+lccc,options.pairwiseccc)
+				write_text_row([[initial,0,0,0,0]]+lccc, options.pairwiseccc)
 		elif(os.path.exists(options.pairwiseccc)):
 			lccc = read_text_row(options.pairwiseccc)
 			initial = int(lccc[0][0] + 0.1)
