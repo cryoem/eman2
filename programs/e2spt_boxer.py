@@ -1,4 +1,4 @@
-#!/usr/bin/python2.7
+#!/usr/bin/env python
 
 # LAST update: July/2016
 # Author: Steven Ludtke  2/8/2011 (rewritten)
