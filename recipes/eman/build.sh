@@ -8,5 +8,7 @@ cd $build_dir
 
 cmake $SRC_DIR
 
-make
+make -j${CPU_COUNT}
 make install
+
+ln -s $PREFIX/bin/e2version.py $SP_DIR/e2version.py
