@@ -77,7 +77,6 @@ test:
     - e2classptcl.py -h
     - e2classvsproj.py -h
     - e2cmmtomrc.py -h
-    - e2cmpxplor.py -h
     - e2ctf.py -h
     - e2ctf2eman1.py -h
     - e2ctf_auto.py -h
@@ -113,7 +112,6 @@ test:
     - e2parallel.py -h
     - e2pathwalker.py -h
     - e2pdb2mrc.py -h
-    - e2pdbviewer.py -h
     - e2plotEulers.py -h
     - e2proc2d.py -h
     - e2proc2dmulti.py -h
@@ -137,7 +135,6 @@ test:
     - e2refinemulti.py -h
     - e2refinemultinoali.py -h
     - e2refinetofrealign.py -h
-    - e2refinetorelion2d.py -h
     - e2refinetorelion3d.py -h
     - e2refinevariance.py -h
     - e2reliontoeman.py -h
