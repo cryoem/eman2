@@ -9,6 +9,22 @@ import sys
 import os
 import numpy as np
 
+rng=[80,18,10,4]
+def paircmp(im1,im2):
+	nx=im1["nx"]/256-1
+	ny=im1["ny"]/256-1
+	vals=[0,0,0]
+	for x in xrange(nx):
+		for y in xrange(ny):
+			im1a=im1.get_clip(Region(128+x*256,128+y*256,256,256))
+			im2a=im2.get_clip(Region(128+x*256,128+y*256,256,256))
+			for i in xrange(3):
+				vals[i]-=im1a.cmp("frc",im2a,{"minres":rng[i],"maxres":rng[i+1]})
+
+	for i in xrange(3): vals[i]/=nx*ny
+	
+	return vals
+
 # read MRC stack even when named ".mrc"
 print "read"
 try: os.unlink("tmp.mrcs")
@@ -20,21 +36,22 @@ ctf=info["ctf_frame"][1]
 
 # CTF amplitude filter for (hopefully better) quality assessment
 # phase flipping shouldn't actually matter, but downweighting values near zero could be important
-filter=EMData(1024*3+2,1024*3,1)
-filter.set_complex(True)
-filter["apix_x"]=1.26
-filter["apix_y"]=1.26
-filter["apix_z"]=1.26
-ctf.compute_2d_complex(filter,Ctf.CtfType.CTF_AMP)
+#filter=EMData(1024*3+2,1024*3,1)
+#filter.set_complex(True)
+#filter["apix_x"]=1.26
+#filter["apix_y"]=1.26
+#filter["apix_z"]=1.26
+#ctf.compute_2d_complex(filter,Ctf.CtfType.CTF_AMP)
 #ctf.compute_2d_complex(flipim,Ctf.CtfType.CTF_SIGN)
 
 # we work only with a 3k x 3k region from the middle of the image
 print "preprocess"
 stkf=[]
 for img in stk:
-	imgf=img.get_clip(Region(512,512,1024*3,1024*3)).process("normalize.edgemean").do_fft()
-	imgf.mult(filter)
-	stkf.append(imgf.do_ift())
+#	imgf=img.get_clip(Region(512,512,1024*3,1024*3)).process("normalize.edgemean").do_fft()
+#	imgf.mult(filter)
+#	stkf.append(imgf.do_ift())
+	stkf.append(img.get_clip(Region(512,512,1024*3,1024*3)).process("normalize.edgemean"))
 
 avg=sum(stkf)
 #display(filter)
@@ -42,22 +59,24 @@ avg=sum(stkf)
 #display(stkf,True)
 
 #rng=[.01,.06,.1,.25]
-rng=[80,18,10,4]
 
 # write the quality plot for different resolutions (80-18, 18-10 and 10-4 A)
 out=open(sys.argv[1].split("-")[0]+"_qual.txt","w")
 qlist=[]
 for i in xrange(len(stkf)):
 	im=stkf[i]
-	out.write("{}".format(i))
-	qlist.append([i])
-	for f in (0,1,2):
-#		im2=im.process("filter.lowpass.tophat",{"cutoff_freq":rng[f+1]}).process("filter.highpass.tophat",{"cutoff_freq":rng[f]})
-		c=-im.cmp("frc",avg,{"minres":rng[f],"maxres":rng[f+1]})
-		qlist[-1].append(c)
-		out.write("\t{}".format(c))
+	pc=paircmp(im,avg)
+	out.write("{}\t{}\t{}\t{}\n".format(i,pc[0],pc[1],pc[2]))
+	qlist.append([i,pc[0],pc[1],pc[2]])
 
-	out.write("\n")
+#	qlist.append([i])
+#	for f in (0,1,2):
+#		im2=im.process("filter.lowpass.tophat",{"cutoff_freq":rng[f+1]}).process("filter.highpass.tophat",{"cutoff_freq":rng[f]})
+#		c=-im.cmp("frc",avg,{"minres":rng[f],"maxres":rng[f+1]})
+#		qlist[-1].append(c)
+#		out.write("\t{}".format(c))
+
+#	out.write("\n")
 
 # extract the best frames
 stat=np.array(qlist)
@@ -79,7 +98,7 @@ av.write_image("micrographs/"+base_name(sys.argv[1].split("-")[0]+".mrc")+"__ali
 avr=Averagers.get("mean")
 avr.add_image_list(stk[2:19])
 av=avr.finish()
-av["class_ptcl_idxs"]=range(len(2,19))
+av["class_ptcl_idxs"]=range(2,19)
 av.write_image("micrographs/"+base_name(sys.argv[1].split("-")[0]+".mrc")+"__218.hdf",0)
 
 
