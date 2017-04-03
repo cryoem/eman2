@@ -1,0 +1,174 @@
+= Name =
+sxisac2 - ISAC - New 2D Clustering: Lastest improved version of Iterative Stable Alignment and Clustering (ISAC) of a 2D image stack.
+
+= Usage =
+
+
+''usage in command line''
+
+sxisac2.py stack_file output_directory --radius=particle_radius --img_per_grp=img_per_grp --CTF --xr=xr --thld_err=thld_err --stop_after_candidates --target_radius=target_radius --target_nx=target_nx --ir=ir --rs=rs --yr=yr --ts=ts --maxit=maxit --center_method=center_method --dst=dst --FL=FL --FH=FH --FF=FF --init_iter=init_iter --iter_reali=iter_reali --stab_ali=stab_ali --minimum_grp_size --rand_seed=rand_seed --new --skip_prealignment
+
+
+=== Typical usage ===
+
+sxisac2 exists only in MPI version.
+
+
+'''mpirun -np 176 sxisac2.py bdb:data fisac1 --radius=120 --CTF'''
+
+'''mpirun -np 176 sxisac2.py bdb:data fisac1 --radius=120 --CTF --stop_after_candidates'''
+
+Note ISAC will change the size of input data such that they fit into box size 76x76 by default (see Description below).
+
+
+== Input ==
+    stack_file:: Input image stack: The images must to be square (''nx''=''ny''). The stack can be either in bdb or hdf format. (default required string)
+    
+    radius:: Particle radius [Pixels]: Radius of the particle (pixels). There is no default value and so a sensible number has to be provided. (default required int)
+    img_per_grp:: Images per class: Number of images per class in an ideal situation. In practice, it defines the maximum size of the classes or the number of classes K= [total number of images]/[img_per_grp]. (default 200)
+    CTF:: Phase-flip: If set, the data will be phase-flipped using CTF information included in the image headers. (default False)
+    xr:: X search range [Pixels]: The translational search range in the x direction. Set by the program by default. (default 1)
+    thld_err:: Pixel error threshold [Pixels]: Used for checking stability. It is defined as the root mean square of distances between corresponding pixels from set of found transformations and theirs average transformation, depends linearly on square of radius (parameter ou). units - pixels. (default 0.7)
+    stop_after_candidates:: Stop after candidates step: The run stops after the 'candidate_class_averages' section is created. (default False)
+    target_radius:: Target particle radius [Pixels]: Particle radius used by isac to process the data. The images will be resized to fit this radius (default 29)
+    target_nx:: Target particle image size [Pixels]: Image size used by isac to process the data. The images will be resized according to target particle radius and then cut/padded to achieve the target image size. When xr > 0, the final image size for isac processing is 'target_nx + xr - 1'  (default 76)
+
+    * The remaining parameters are optional and default values are given in parenthesis. There is rarely any need to modify them.
+    ir:: Inner ring [Pixels]: Inner of the resampling to polar coordinates. (default 1)
+    rs:: Ring step [Pixels]: Step of the resampling to polar coordinates. (default 1)
+    yr:: Y search range [Pixels]: The translational search range in the y direction. Set as xr by default. (default -1)
+    ts:: Search step [Pixels]: Translational search step. (default 1.0)
+    maxit:: Reference-free alignment iterations: The number of iterations for reference-free alignment. (default 30)
+    center_method:: Centering method: Method to center global 2D average during the initial prealignment of the data (0 : no centering; -1 : average shift method; please see center_2D in utilities.py for methods 1-7). (default -1)
+    dst:: Discrete angle used for within-group alignment: Discrete angle used for within-group alignment. (default 90.0)
+    FL:: Lowest filter frequency [1/Pixel]: Lowest frequency used for the tangent filter. (default 0.2)
+    FH:: Highest filter frequency [1/Pixel]: Highest frequency used for the tangent filter. (default 0.45)
+    FF:: Tangent filter fall-off: The fall-off of the tangent filter. (default 0.2)
+    init_iter:: Maximum generations: Maximum number of generation iterations performed for a given subset. (default 7)
+    iter_reali:: SAC stability check interval: Defines every how many iterations the SAC stability checking is performed. (default 1)
+    stab_ali:: Number of alignments for stability check: The number of alignments when checking stability. (default 5)
+    minimum_grp_size:: Minimum size of reproducible class: Minimum size of reproducible class. (default 60)
+    rand_seed:: Seed: Random seed set before calculations. Useful for testing purposes. By default, isac sets a random seed number. (default none)
+    new:: Use new code: Use new code. (default False)
+    skip_prealignment:: Skip pre-alignment: Useful if images are already centered. The 2dalignment directory will still be generated but the parameters will be zero. (default False)
+
+
+== Output ==
+    output_directory:: Output directory: The directory will be automatically created and the results will be written here. If the directory already exists, results will be written there, possibly overwriting previous runs. (default required string)
+
+For each generation of running the program, there are two phases.  The first phase is an exploratory phase. In this phase, we set the criteria to be very loose and try to find as much candidate class averages as possible. (OBSOLETE? This phase typically should have 10 to 20 rounds). The candidate class averages are stored in '''class_averages_candidate_generation_n.hdf'''.
+
+The second phase is where the actual class averages are generated (OBSOLETE?!!, it typically have 3~9 iterations of matching). The first half of iterations are 2-way matching, the second half of iterations are 3-way matching, and the last iteration is 4-way matching. In the second phase, three files will be generated:
+
+'''class_averages_generation_n.hdf''' : class averages generated in this generation, there are two attributes associated with each class average which are important. One is '''members''', which stores the particle IDs that are assigned to this class average; the other is '''n_objects''', which stores the number of particles that are assigned to this class average.
+
+'''class_averages.hdf'''              : class averages file that contains all class averages from all generations.
+       
+'''generation_n_accounted.txt'''      : IDs of accounted particles in this generation
+
+'''generation_n_unaccounted.txt'''    : IDs of unaccounted particles in this generation
+
+
+=== Time and Memory ===
+
+Unfortunately, ISAC program is very time- and memory-consuming. (OBSLETE?!! For example, on my cluster, it takes 15 hours to process 50,000 64x64 particles on 256 processors. Therefore, before embarking on the big dataset, it is recommended to run a test dataset (about 2,000~5,000 particles) first to get a rough idea of timing.)
+
+==== Retrieval of images signed to selected group averages ====
+ 1. Open in e2display.py file class_averages.hdf located in the main directory.
+
+ 2. Delete averages whose member particles should not be included in the output. 
+
+ 3. Save the selected subset under a new name,say select1.hdf
+
+ 4. Retrieve IDs of member particles and store them in a text file ohk.txt:
+ . sxprocess.py --isacselect class_averages.hdf ok.txt
+
+ 5. Create a vritual stack containng selected particles:
+ . e2bdb.py bdb:data --makevstack:bdb:select1  --list=ohk.txt
+
+The same steps can be performed on files containing candidate class averages.
+
+==== RCT information retrieval ====
+Let us assume we would want to generate a RCT reconstruction using as a basis group number 12 from ISAC generation number 3.  We have to do the following steps:
+ 1. Retrieve original image numbers in the selected ISAC group.  The output is list3_12.txt, which will contain image numbers in the main stack (bdb:test) and thus of the tilted counterparts in the tilted stack.  First, change directory to the subdirectory of the main run that contains results of the generation 3.  Note bdb:../data is the file in the main output directory containing original (reduced size) particles.
+ .  cd generation_0003
+ .  sxprocess.py  bdb:../data class_averages_generation_3.hdf  list3_12.txt  --isacgroup=12  --params=originalid
+
+ 2. Extract the identified images from the main stack (into subdirectory RCT, has to be created):
+    e2bdb.py bdb:test  --makevstack=bdb:RCT/group3_12  --list=list3_12.txt
+
+ 3.  Extract the class average from the stack (NOTE the awkward numbering of the output file!).
+ . e2proc2d.py --split=12 --first=12 --last=12 class_averages_generation3.hdf  group3_12.hdf
+
+ 4.  Align particles using the corresponding class average from ISAC as a template (please adjust the parameters):
+ .  sxali2d.py bdb:RCT/group3_12 None --ou=28 --xr=3 --ts=1 --maxit=1  --template=group3_12.12.hdf
+
+ 5.  Extract the needed alignment parameters.  The order is phi,sx,sy,mirror.  sx and mirror are used to transfer to tilted images.
+  . sxheader.py  group3_12.12.hdf  --params=xform.align2d  --export=params_group3_12.txt
+
+= Description =
+
+The program will perform the following steps (to save computation time, in case of inadvertent termination, i.e. power failure or other causes, the program can be restarted from any saved step location, see options)  :
+
+ 1. The images in the input stacked will be phase-flipped.
+
+ 2. The data stack will be pre-aligned (output is in subdirectory 2dalignment, in particular it contains the overall 2D average aqfinal.hdf, it is advisable to confirm it is correctly centered).
+ 
+   * In case 2dalignment directory exists steps 1 and 2 are skipped. 
+
+ 3. The alignment shift parameters will be applied to the input data.
+
+ 4. '''IMPORTANT''': Input aligned images will be resized such that the original user-provided radius will be now target_radius and the box size target_nx + xr - 1.  The pixel size of the modified data is thus original_pixel_size * original_radius_size / target_radius.
+ 
+   * The pseudo-code for adjusting the size of the radius and the size of the images is as follows:
+   
+   * shrink_ratio = target_radius / original_radius_size
+   
+   * new_pixel_size = original_pixel_size * shrink_ratio
+   
+   * if shrink_ratio is different than 1: resample images using shrink_ratio
+   
+   * if new_pixel_size > target_nx : cut image to be target_nx in size
+    
+   * if new_pixel_size < target_nx : pad image to be target_nx in size
+
+   * The target_radius and target_nx options allow the user to finely adjust the image so that it contains enough background information.
+    
+
+ 5. The program will iterate through generations of ISAC by alternating two steps. The outcome of these two steps is in subdirectory generation_*** (stars replaced by the current generation number).
+
+   *  Calculation of candidate class averages.
+
+   *  Calculation of validated class averages. 
+
+ 6. The program will terminate when it cannot find any more reproducible class averages.
+ 
+ 7. If no restart option is given the program will pick-up from the last saved point.
+
+
+= Developer Notes =
+ The meaning of the following option might changed from isac to isac2.
+    init_iter:: SAC initialization iterations: Number of ab-initio-within-cluster alignment runs used for stability evaluation during SAC initialization. (default 3)
+
+= Method =
+See the reference below.
+
+= Reference =
+Yang, Z., Fang,  J., Chittuluru, F., Asturias, F. and Penczek, P. A.: Iterative Stable Alignment and Clustering of 2D Transmission Electron Microscope Images, ''Structure'' 20, 237-247, February 8, 2012.
+
+= Author / Maintainer =
+Horatiu Voicu, Zhengfan Yang, Jia Fang, Francisco Asturias, and Pawel A. Penczek
+
+= Keywords =
+    category 1:: APPLICATIONS
+
+= Files =
+sxisac2.py, sxisac.py, isac.py
+
+= See also =
+
+= Maturity =
+    alpah::     Under development.
+
+= Bugs =
+None right now.

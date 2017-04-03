@@ -1029,7 +1029,7 @@ def main(args):
 	parser.add_option("--center_method",         type="int",           default=-1,         help="method for centering: of global 2D average during initial prealignment of data (0 : no centering; -1 : average shift method; please see center_2D in utilities.py for methods 1-7) (default -1)")
 	parser.add_option("--dst",                   type="float",         default=90.0,       help="discrete angle used in within group alignment: (default 90.0)")
 	parser.add_option("--FL",                    type="float",         default=0.2,        help="lowest stopband: frequency used in the tangent filter (default 0.2)")
-	parser.add_option("--FH",                    type="float",         default=0.45,        help="highest stopband: frequency used in the tangent filter (default 0.3)")
+	parser.add_option("--FH",                    type="float",         default=0.45,        help="highest stopband: frequency used in the tangent filter (default 0.45)")
 	parser.add_option("--FF",                    type="float",         default=0.2,        help="fall-off of the tangent filter: (default 0.2)")
 	parser.add_option("--init_iter",             type="int",           default=7,          help="Maximum number of Generation iterations performed for a given subset (default 7)")
 	#parser.add_option("--main_iter",             type="int",           default=3,          help="SAC main iterations: number of runs of ab-initio within-cluster alignment for stability evaluation in SAC (default 3)")
