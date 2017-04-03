@@ -5391,10 +5391,9 @@ def main():
 	###<<<------------------------checking
 	
 	if Tracker["constants"]["symmetry"] != options.sym:
-		if(Blockdata["myid"] == Blockdata["main_node"]):
 			msg = " input symmetry %s is altered to %s after reading refinement information! "%(options.sym, Tracker["constants"]["symmetry"])
-		log_main.add(msg)
-		print(msg)
+			log_main.add(msg)
+			print(msg)
 
 	###<<<----------------------->>>>>  SORT3D MAIN PROGRAM <<<<<---------------------------------------------# For all cases
 	
