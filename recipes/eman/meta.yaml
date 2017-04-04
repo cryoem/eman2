@@ -69,6 +69,10 @@ test:
     - libpyCmp2
     - libpyBoxingTools2
   
+  source_files:
+    - tests/run_prog_tests.sh
+    - tests/programs_to_test.txt
+
   commands:
     - e2version.py
     - e2speedtest.py
@@ -76,3 +80,4 @@ test:
     - test -f ${PREFIX}/examples/mpi_test.py                        # [not win]
     - mpirun -n 4 $(which python) ${PREFIX}/examples/mpi_test.py    # [not win]
     - if not exist %LIBRARY_PREFIX%\\examples\\mpi_test.py  exit 1  # [win]
+    - bash tests/run_prog_tests.sh                                  # [not win]
