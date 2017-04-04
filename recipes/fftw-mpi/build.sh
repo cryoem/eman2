@@ -43,7 +43,6 @@ do
     $config
     ${BUILD_CMD}
     ${INSTALL_CMD}
-    ${TEST_CMD}
 done
 
 unset LIBRARY_SEARCH_VAR
