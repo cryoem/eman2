@@ -1,0 +1,30 @@
+package:
+    name: pydusa
+    version: 1.15
+
+source:
+    url: https://github.com/cryoem/pydusa/archive/master.tar.gz
+    fn: pydusa-master.tar.gz
+
+build:
+    number: 0
+    skip: True  # [win or py3k]
+
+requirements:
+    build:
+        - python
+        - numpy x.x
+        - openmpi
+        - fftw-mpi
+    run:
+        - numpy x.x
+        - openmpi
+        - fftw-mpi
+
+test:
+  imports:
+    - mpi
+
+about:
+  license: GPL-2.0
+  summary: Pydusa is a package for parallel programming using Python.
