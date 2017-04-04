@@ -1106,7 +1106,7 @@ def main():
 			# map fsc obtained from two halves to full maps
 			for ifreq in xrange(len(fsc_true[0])):
 				fsc_true[1][ifreq] = max(fsc_true[1][ifreq], 0.0)*2./(1.+max(fsc_true[1][ifreq], 0.0))
-			log_main.add(" FSC from two halves mapped to the full data set by transform: 2.*FSC/(FSC+1.)")
+			log_main.add("adjust FSC to the full dataset by: 2.*FSC/(FSC+1.)")
 			
 			fsc_out = []
 			for ifreq in xrange(len(fsc_true[0])):
@@ -1173,8 +1173,8 @@ def main():
 				for ig in xrange(len(guinierline)): outtext[-1].append("%10.6f"%log(guinierline[ig]))
 				
 			if options.fsc_adj: #2
-				log_main.add("sqrt(FSC) is applied to adjust power spectrum of the summed volumes")
-				log_main.add("Notice: FSC adjustment of powerspectrum will increase B-factor 2-3 times than not!")
+				log_main.add("sqrt(FSC) is multiplied to adjust power spectrum of the summed volumes")
+				#log_main.add("Notice: FSC adjustment of powerspectrum will increase B-factor 2-3 times than not!")
 				#### FSC adjustment ((2.*fsc)/(1+fsc)) to the powerspectrum;
 				fil = len(fsc_true[1])*[None]
 				for i in xrange(len(fil)):
