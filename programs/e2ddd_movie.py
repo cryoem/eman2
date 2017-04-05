@@ -100,7 +100,7 @@ def main():
 	(options, args) = parser.parse_args()
 
 	if len(args)<1:
-		print usage
+		print(usage)
 		parser.error("Specify input DDD stack")
 
 	try: os.mkdir("micrographs")
@@ -115,10 +115,10 @@ def main():
 			sigd=dark.copy()
 			sigd.to_zero()
 			a=Averagers.get("mean",{"sigma":sigd,"ignore0":1})
-			print "Summing dark"
+			print("Summing dark")
 			for i in xrange(0,nd):
 				if options.verbose:
-					print " {}/{}   \r".format(i+1,nd),
+					sys.stdout.write(" {}/{}   \r".format(i+1,nd))
 					sys.stdout.flush()
 				t=EMData(options.dark,i)
 				t.process_inplace("threshold.clampminmax",{"minval":0,"maxval":t["mean"]+t["sigma"]*3.5,"tozero":1})
@@ -140,7 +140,7 @@ def main():
 			sigg=gain.copy()
 			sigg.to_zero()
 			a=Averagers.get("mean",{"sigma":sigg,"ignore0":1})
-			print "Summing gain"
+			print("Summing gain")
 			for i in xrange(0,nd):
 				if options.verbose:
 					sys.stdout.write(" {}/{}   \r".format(i+1,nd))
@@ -263,7 +263,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			#im.write_image(outname,ii-first)
 
 		t1 = time()-t
-		print("{}s".format(time()-t))
+		print("{:.1f} s".format(time()-t))
 
 		nx=outim[0]["nx"]
 		ny=outim[0]["ny"]
@@ -271,7 +271,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 		# A simple average
 
 		if options.simpleavg :
-			if options.verbose : print "Simple average"
+			if options.verbose : print("Simple average")
 			avgr=Averagers.get("mean")
 			for i in xrange(len(outim)):						# only use the first second for the unweighted average
 				if options.verbose:
@@ -301,7 +301,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			for i in range(n):
 				thd = threading.Thread(target=split_fft,args=(outim[i],i,options.optbox,options.optstep,ccfs))
 				thds.append(thd)
-			sys.stdout.write("\rPrecompute FFTs:    {} threads".format(len(thds)))
+			sys.stdout.write("\rPrecompute {} FFTs".format(len(thds)))
 			t0=time()
 
 			thrtolaunch=0
@@ -331,7 +331,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 					thds.append(threading.Thread(target=calc_ccf_wrapper,args=((ima,imb),options.optbox,options.optstep,immx[ima],immx[imb],ccfs,peak_locs)))
 					i+=1
 
-			print("{:1.1f} s\nCompute ccfs: {} threads".format(time()-t0,len(thds)))
+			print("{:1.1f} s\nCompute {} ccfs".format(time()-t0,len(thds)))
 			t0=time()
 
 			# here we run the threads and save the results, no actual alignment done here
@@ -397,8 +397,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			regr.fit(A,b)
 
 			traj = regr.predict(np.tri(n))
-
-			shifts = regr.predict(np.eye(n))-options.optbox/2
+			#shifts = regr.predict(np.eye(n))-options.optbox/2
 
 			traj -= traj[0]
 
@@ -410,6 +409,8 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 					val=csum2[(i,j)].sget_value_at_interp(int(cen+locs[j*2]-locs[i*2]),int(cen+locs[j*2+1]-locs[i*2+1]))#*sqrt(float(n-fabs(i-j))/n)
 					quals[i]+=val
 					quals[j]+=val
+
+			print("{:1.1f} s\nShift images".format(time()-t0))
 
 			runtime = time()-start
 
@@ -427,15 +428,14 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 				plt.show()
 
 			if options.noali:
-				print "{:1.1f}Write unaligned".format(time()-t0)
-				t0=time()
-
+				#print("{:1.1f}\nWrite unaligned".format(time()-t0))
+				#t0=time()
 				#write out the unaligned average movie
 				out=qsum(outim)
 				out.write_image("{}__noali.hdf".format(outname[:-4]),0)
 
-			print("Shift images ({})".format(time()-t0))
-			t0=time()
+			print("Shift images")# ({})".format(time()-t0))
+			#t0=time()
 			#write individual aligned frames
 			for i,im in enumerate(outim):
 				im.translate(int(floor(locs[i*2]+.5)),int(floor(locs[i*2+1]+.5)),0)
@@ -445,8 +445,8 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 				out=qsum(outim)
 				out.write_image("{}__allali.hdf".format(alioutname),0)
 
-			print("{:1.1f}\nSubsets".format(time()-t0))
-			t0=time()
+			#print("{:1.1f}\nSubsets".format(time()-t0))
+			#t0=time()
 			# write translations and qualities
 			db=js_open_dict(info_name(fsp))
 			db["movieali_trans"]=locs
@@ -489,7 +489,8 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 				out=qsum(outim[4:14])
 				out.write_image("{}__4-14.hdf".format(alioutname),0)
 
-			print "{:1.1f}\nDone".format(time()-t0)
+			#print "{:1.1f}\nDone".format(time()-t0)
+			print("Done")
 
 # CCF calculation
 def calc_ccf_wrapper(N,box,step,dataa,datab,out,locs):
@@ -560,9 +561,9 @@ def bimodal_peak_model(ccf):
 	a2 = 20000.0
 
 	initial_guess = [x1,y1,s1,a1,s2,a2]
-	bds = [(-np.inf, -np.inf,  0.01, 0.01, 0.6,  0.01),( np.inf,  np.inf, 100.0, 20000.0, 2.5, 100000.0)]
+	bds = [(-nxx/2, -nxx/2,  0.01, 0.01, 0.6,  0.01),( nxx/2,  nxx/2, 100.0, 20000.0, 2.5, 100000.0)]
 	try:
-		popt,pcov=optimize.curve_fit(twod_bimodal,(xx,yy),ncc.ravel(),p0=initial_guess,bounds=bds)
+		popt,pcov=optimize.curve_fit(twod_bimodal,(xx,yy),ncc.ravel(),p0=initial_guess,bounds=bds,xtol=0.5)
 	except: #optimize.OptimizeWarning:
 		#print("optimization failed")
 		popt = [x1,y1,s1,a1,s2,a2]
