@@ -13,12 +13,10 @@ build:
 requirements:
     build:
         - python
-        - numpy x.x
-        - openmpi
+        - numpy
         - fftw-mpi
     run:
-        - numpy x.x
-        - openmpi
+        - numpy
         - fftw-mpi
 
 test:
