@@ -71,6 +71,7 @@ def main():
 	parser.add_argument("--timingbypath", default=False, action="store_true", help="Report on the CPU time required in each refine_xx folder")
 	parser.add_argument("--resolution", default=False, action="store_true", help="generates a resolution and convergence plot for a single refinement run.")
 	parser.add_argument("--resolution_all", default=False, action="store_true", help="generates resolution plot with the last iteration of all refine_xx directories")
+	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful",guitype='intbox', row=9, col=0, rowspan=1, colspan=1, mode='evalptcl[4]')
 	#parser.add_argument("--parmcmp",  default=False, action="store_true",help="Compare parameters used in different refinement rounds")
 	#parser.add_argument("--parmpair",default=None,type=str,help="Specify iter,iter to compare the parameters used between 2 itertions.")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -99,6 +100,12 @@ def main():
 			except:
 				print "Could not find a completed iteration in ",args[0]
 				sys.exit(1)
+		
+		if options.evalptclqual:
+			if iter==1 :
+				print "evalptclqual requires at least 2 completed iterations (3 or 4 preferred), and will use the specified --iter and the iteration preceeding it. This is not possible if --iter=1."
+				sys.exit(1)
+				
 
 	if options.anisotropy>=0 :
 		print "Anisotropy evaluation mode"
@@ -255,6 +262,7 @@ def main():
 		sys.exit(0)
 
 	if options.evalptclqual:
+		from multiprocessing import Pool
 		print "Particle quality evaluation mode"
 
 		try:
