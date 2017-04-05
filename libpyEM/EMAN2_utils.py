@@ -167,3 +167,28 @@ def make_missing_wedge(img, wedge=60):
 	img2=get_img(ft*tanx)
 	
 	return img2
+
+
+def idfft2(v,u,amp,phase,nx=256,ny=256,dtype=np.float32,usedegrees=False):
+	"""
+	Perform a vectorized, 2D discrete fourier transform. 
+	Note that this approach scales poorly with box size.
+
+	Author: Michael Bell (jmbell@bcm.edu)
+	"""
+	u = np.asarray(u).astype(dtype)
+	v = np.asarray(v).astype(dtype)
+	amp = np.asarray(amp).astype(dtype)
+	if usedegrees == True: phase = np.asarray(phase*np.pi/180.).astype(dtype)
+	else: phase = np.asarray(phase).astype(dtype)
+	uu = nx*(u-u.min())/(u.max()-u.min())-nx/2.
+	vv = ny*(v-v.min())/(v.max()-v.min())-ny/2.
+	x,y=np.indices((nx,ny))
+	xx = x-nx/2.
+	yy = y-ny/2.
+	o = np.ones((nx*ny))
+	AA = np.multiply(amp.ravel()[:,np.newaxis],o[np.newaxis,:])
+	pp = np.multiply(phase.ravel()[:,np.newaxis],o[np.newaxis,:])
+	uuxx = np.multiply(uu.ravel()[:,np.newaxis],xx.ravel()[np.newaxis,:])
+	vvyy = np.multiply(vv.ravel()[:,np.newaxis],yy.ravel()[np.newaxis,:])
+	return np.sum(np.real(AA*np.exp(2*np.pi*1j*(uuxx+vvyy)+pp)).reshape(len(u),nx,ny),axis=0)
