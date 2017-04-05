@@ -179,8 +179,8 @@ def idfft2(v,u,amp,phase,nx=256,ny=256,dtype=np.float32,usedegrees=False):
 	u = np.asarray(u).astype(dtype)
 	v = np.asarray(v).astype(dtype)
 	amp = np.asarray(amp).astype(dtype)
-	if usedegrees == True: phase = np.asarray(phase*np.pi/180.).astype(dtype)
-	else: phase = np.asarray(phase).astype(dtype)
+	phase = np.asarray(phase).astype(dtype)
+	if usedegrees: phase *= np.pi/180.
 	uu = nx*(u-u.min())/(u.max()-u.min())-nx/2.
 	vv = ny*(v-v.min())/(v.max()-v.min())-ny/2.
 	x,y=np.indices((nx,ny))
