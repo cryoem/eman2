@@ -90,7 +90,7 @@ def main():
 	parser.add_argument("--frames",action="store_true",default=False,help="Save the dark/gain corrected frames", guitype='boolbox', row=13, col=1, rowspan=1, colspan=1, mode='align')
 	#parser.add_argument("--save_aligned", action="store_true",help="Save dark/gain corrected and optionally aligned stack",default=False, guitype='boolbox', row=14, col=0, rowspan=1, colspan=1, mode='align[True]')
 	parser.add_argument("--fixbadpixels",action="store_true",default=False,help="Tries to identify bad pixels in the dark/gain reference, and fills images in with sane values instead", guitype='boolbox', row=14, col=1, rowspan=1, colspan=1, mode='align')
-	parser.add_argument("--simpleavg", action="store_true",help="Will save a simple average of the dark/gain corrected frames (no alignment or weighting)",default=False)
+	#parser.add_argument("--simpleavg", action="store_true",help="Will save a simple average of the dark/gain corrected frames (no alignment or weighting)",default=False)
 	#parser.add_argument("--avgs", action="store_true",help="Testing",default=False)
 	parser.add_argument("--align_frames", action="store_true",help="Perform whole-frame alignment of the input stacks",default=False, guitype='boolbox', row=16, col=0, rowspan=1, colspan=1, mode='align[True]')
 
@@ -268,22 +268,6 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 		nx=outim[0]["nx"]
 		ny=outim[0]["ny"]
 
-		# A simple average
-
-		if options.simpleavg :
-			if options.verbose : print("Simple average")
-			avgr=Averagers.get("mean")
-			for i in xrange(len(outim)):						# only use the first second for the unweighted average
-				if options.verbose:
-					sys.stdout.write(" {}/{}   \r".format(i+1,len(outim)))
-					sys.stdout.flush()
-				avgr.add_image(outim[i])
-			print("")
-
-			av=avgr.finish()
-			if first!=1 or flast!=-1 : av.write_image(outname[:-4]+"_{}-{}_mean.hdf".format(first,flast),0)
-			else: av.write_image(outname[:-4]+"_mean.hdf",0)
-
 		if options.align_frames :
 
 			n=len(outim)
@@ -294,6 +278,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			start = time()
 
 			ccfs=Queue.Queue(0)
+			#outim=Queue.Queue(0)
 
 			# prepare image data (outim) by clipping and FFT'ing all tiles (this is threaded as well)
 			immx=[0]*n
@@ -496,9 +481,14 @@ def calc_ccf_wrapper(N,box,step,dataa,datab,out,locs):
 		c=dataa[i].calc_ccf(datab[i],fp_flag.CIRCULANT,True)
 		try: csum.add(c)
 		except: csum=c
+
+	xx = np.linspace(0,box,box)
+	yy = np.linspace(0,box,box)
+	xx,yy = np.meshgrid(xx,yy)
+
 #	csum.process_inplace("normalize.edgemean")
 #	csum.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.15})
-	popt,ccpeakval,xx,yy = bimodal_peak_model(csum)
+	popt,ccpeakval = bimodal_peak_model(csum)
 	cc_model = correlation_peak_model((xx,yy),popt[0],popt[1],popt[2],popt[3]).reshape(box,box)
 	csum = from_numpy(cc_model)
 	locs.put((N,[popt[0],popt[1],popt[2],popt[3],popt[4],popt[5],ccpeakval,csum["maximum"]]))
@@ -540,38 +530,37 @@ def twod_bimodal((x,y),x1,y1,sig1,amp1,sig2,amp2):
 
 def bimodal_peak_model(ccf):
 	nxx = ccf["nx"]
-	#bs = nx#/2
+	bs = nxx/2
 
-	xx = np.linspace(0,nxx,nxx)
-	yy = np.linspace(0,nxx,nxx)
+	xx = np.linspace(0,bs,bs)
+	yy = np.linspace(0,bs,bs)
 	xx,yy = np.meshgrid(xx,yy)
 
 	#r = Region(nx/2-bs/2,nx/2-bs/2,bs,bs)
-	r = Region(0,0,nxx,nxx)
+	r = Region(0,0,bs,bs)
 	ccfreg = ccf.get_clip(r)
 	ncc = ccfreg.numpy().copy()
 
-	x1 = nxx/2.
-	y1 = nxx/2.
+	x1 = bs/2.
+	y1 = bs/2.
 	s1 = 10.0
 	a1 = 1500.0
 	s2 = 0.6
 	a2 = 20000.0
 
 	initial_guess = [x1,y1,s1,a1,s2,a2]
-	bds = [(-nxx/2, -nxx/2,  0.01, 0.01, 0.6,  0.01),( nxx/2,  nxx/2, 100.0, 20000.0, 2.5, 100000.0)]
+	bds = [(-bs/2, -bs/2,  0.01, 0.01, 0.6, 0.01),( bs/2, bs/2, 100.0, 20000.0, 2.5, 100000.0)]
 	try:
-		popt,pcov=optimize.curve_fit(twod_bimodal,(xx,yy),ncc.ravel(),p0=initial_guess,bounds=bds,xtol=0.5)
+		popt,pcov=optimize.curve_fit(twod_bimodal,(xx,yy),ncc.ravel(),p0=initial_guess,bounds=bds,xtol=0.1,ftol=0.0001,gtol=0.0001)
 	except: #optimize.OptimizeWarning:
-		#print("optimization failed")
 		popt = [x1,y1,s1,a1,s2,a2]
 	popt = [p for p in popt]
 
-	popt[0] = popt[0]# + nxx/2 - nxx/2
-	popt[1] = popt[1]# + nxx/2 - nxx/2
+	popt[0] = popt[0] + nxx/2 - bs/2
+	popt[1] = popt[1] + nxx/2 - bs/2
 	popt[2] = np.abs(popt[2])
 
-	return popt,ccf.sget_value_at_interp(popt[0],popt[1]),xx,yy
+	return popt,ccf.sget_value_at_interp(popt[0],popt[1])
 
 def qsum(imlist):
 	avg=Averagers.get("mean")
@@ -642,6 +631,23 @@ def calc_coherent_pws(frames,bs=2048):
 
 if __name__ == "__main__":
 	main()
+
+		# A simple average
+
+		# if options.simpleavg :
+		# 	if options.verbose : print("Simple average")
+		# 	avgr=Averagers.get("mean")
+		# 	for i in xrange(len(outim)):						# only use the first second for the unweighted average
+		# 		if options.verbose:
+		# 			sys.stdout.write(" {}/{}   \r".format(i+1,len(outim)))
+		# 			sys.stdout.flush()
+		# 		avgr.add_image(outim[i])
+		# 	print("")
+
+		# 	av=avgr.finish()
+		# 	if first!=1 or flast!=-1 : av.write_image(outname[:-4]+"_{}-{}_mean.hdf".format(first,flast),0)
+		# 	else: av.write_image(outname[:-4]+"_mean.hdf",0)
+
 
 			#out=sum(outim[5:15])	# FSC with the earlier frames instead of whole average
 			# compute fsc between each aligned frame and the average
