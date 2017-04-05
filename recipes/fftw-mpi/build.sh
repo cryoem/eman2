@@ -28,15 +28,13 @@ INSTALL_CMD="make install"
 TEST_CMD="eval cd tests && ${LIBRARY_SEARCH_VAR}=\"$PREFIX/lib\" make check-local && cd -"
 
 #
-# We build 3 different versions of fftw:
+# We build 2 different versions of fftw:
 #
 build_cases=(
     # single
     "$CONFIGURE --enable-float --enable-sse --enable-sse2 --enable-avx"
     # double
     "$CONFIGURE --enable-sse2 --enable-avx"
-    # long double (SSE2 and AVX not supported)
-    "$CONFIGURE --enable-long-double"
 )
 
 for config in "${build_cases[@]}"

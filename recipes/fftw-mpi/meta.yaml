@@ -25,10 +25,8 @@ test:
   commands:
     - exit $(test -f ${PREFIX}/lib/libfftw3f.a)          # [not win]
     - exit $(test -f ${PREFIX}/lib/libfftw3.a)           # [not win]
-    - exit $(test -f ${PREFIX}/lib/libfftw3l.a)          # [not win]
     - exit $(test -f ${PREFIX}/lib/libfftw3f_threads.a)  # [not win]
     - exit $(test -f ${PREFIX}/lib/libfftw3_threads.a)   # [not win]
-    - exit $(test -f ${PREFIX}/lib/libfftw3l_threads.a)  # [not win]
 
     # Verify headers are installed
     - test -f ${PREFIX}/include/fftw3.h                  # [not win]
@@ -40,11 +38,8 @@ test:
             "libfftw3_threads",
             "libfftw3f",
             "libfftw3f_threads",
-            "libfftw3l",
-            "libfftw3l_threads",
             "libfftw3_mpi",
             "libfftw3f_mpi",
-            "libfftw3l_mpi",
     ] %}
 
     {% for lib in fftw_libs %}
