@@ -80,7 +80,7 @@ def main():
 	parser.add_header(name="orblock3", help='Just a visual separation', title="Optional: ", row=10, col=0, rowspan=1, colspan=3, mode="align")
 	parser.add_argument("--optbox", type=int,help="Box size to use during alignment optimization. Default is 256.",default=256, guitype='intbox', row=11, col=0, rowspan=1, colspan=1, mode="align")
 	parser.add_argument("--optstep", type=int,help="Step size to use during alignment optimization. Default is 256.",default=256,  guitype='intbox', row=11, col=1, rowspan=1, colspan=1, mode="align")
-	parser.add_argument("--optalpha", type=float,help="Penalization to apply during robust regression. Default is 0.5.",default=0.5)#  guitype='intbox', row=11, col=1, rowspan=1, colspan=1, mode="align")
+	parser.add_argument("--optalpha", type=float,help="Penalization to apply during robust regression. Default is 0.5. If 0.0, unpenalized least squares will be performed.",default=0.5)#  guitype='intbox', row=11, col=1, rowspan=1, colspan=1, mode="align")
 	parser.add_argument("--step",type=str,default="0,1",help="Specify <first>,<step>,[last]. Processes only a subset of the input data. ie- 0,2 would process all even particles. Same step used for all input files. [last] is exclusive. Default= 0,1",guitype='strbox', row=12, col=0, rowspan=1, colspan=1, mode="align")
 	#parser.add_argument("--movie", type=int,help="Display an n-frame averaged 'movie' of the stack, specify number of frames to average",default=0)
 	parser.add_argument("--plot", default=False,help="Display a plot of the movie trajectory after alignment",action="store_true")
@@ -126,7 +126,7 @@ def main():
 			dark=a.finish()
 			sigd.write_image(options.dark.rsplit(".",1)[0]+"_sig.hdf")
 			if options.fixbadpixels:
-				sigd.process_inplace("threshold.binary",{"value":sigd["sigma"]/10.0})		# Theoretically a "perfect" pixel would have zero sigma, but in reality, the opposite is true
+				sigd.process_inplace("threshold.binary",{"value":sigd["sigma"]/10.0}) # Theoretically a "perfect" pixel would have zero sigma, but in reality, the opposite is true
 				dark.mult(sigd)
 			dark.write_image(options.dark.rsplit(".",1)[0]+"_sum.hdf")
 		#else: dark.mult(1.0/99.0)
@@ -152,14 +152,14 @@ def main():
 			gain=a.finish()
 			sigg.write_image(options.gain.rsplit(".",1)[0]+"_sig.hdf")
 			if options.fixbadpixels:
-				sigg.process_inplace("threshold.binary",{"value":sigg["sigma"]/10.0})		# Theoretically a "perfect" pixel would have zero sigma, but in reality, the opposite is true
+				sigg.process_inplace("threshold.binary",{"value":sigg["sigma"]/10.0}) # Theoretically a "perfect" pixel would have zero sigma, but in reality, the opposite is true
 				if dark!=None : sigg.mult(sigd)
 				gain.mult(sigg)
 			gain.write_image(options.gain.rsplit(".",1)[0]+"_sum.hdf")
 		#else: gain.mult(1.0/99.0)
 #		gain.process_inplace("threshold.clampminmax.nsigma",{"nsigma":3.0})
 
-		if dark!=None : gain.sub(dark)												# dark correct the gain-reference
+		if dark!=None : gain.sub(dark)								# dark correct the gain-reference
 		gain.mult(1.0/gain["mean"])									# normalize so gain reference on average multiplies by 1.0
 		gain.process_inplace("math.reciprocal",{"zero_to":0.0})		# setting zero values to zero helps identify bad pixels
 	elif options.gaink2 :
@@ -252,7 +252,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			if dark!=None : im.sub(dark)
 			if gain!=None : im.mult(gain)
 			im.process_inplace("threshold.clampminmax",{"minval":0,"maxval":im["mean"]+im["sigma"]*3.5,"tozero":1})
-			if options.fixbadpixels : im.process_inplace("threshold.outlier.localmean",{"sigma":3.5,"fix_zero":1})		# fixes clear outliers as well as values which were exactly zero
+			if options.fixbadpixels : im.process_inplace("threshold.outlier.localmean",{"sigma":3.5,"fix_zero":1}) # fixes clear outliers as well as values which were exactly zero
 
 			#im.process_inplace("threshold.clampminmax.nsigma",{"nsigma":3.0})
 #			im.mult(-1.0)
@@ -410,8 +410,6 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 					quals[i]+=val
 					quals[j]+=val
 
-			print("{:1.1f} s\nShift images".format(time()-t0))
-
 			runtime = time()-start
 
 			# round for integer only shifting
@@ -434,7 +432,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 				out=qsum(outim)
 				out.write_image("{}__noali.hdf".format(outname[:-4]),0)
 
-			print("Shift images")# ({})".format(time()-t0))
+			print("{:1.1f} s\nShift images".format(time()-t0))
 			#t0=time()
 			#write individual aligned frames
 			for i,im in enumerate(outim):
