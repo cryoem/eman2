@@ -11,6 +11,7 @@ requirements:
             "boost 1.61.*",
             "fftw",
             "numpy",
+            "scikit-learn",
             "ftgl",
             "freetype",
             "gsl",
