@@ -52,6 +52,58 @@ try:
 except:
 	print "Matplotlib not available, plotting options will not be available"
 
+def pqual(n,jsd,includeproj,verbose):
+	"""This computes particle quality for all particles in one class average over both iterations"""
+	# The first projection is unmasked, used for scaling
+	global classmx,nptcl,cmxtx,cmxty,cmxalpha.cmxmirror,eulers,threed,ptclmask,rings,pf,cptcl
+	proj=[t.project("standard",{"transform":eulers[i]}) for t in threed]
+	projmask=ptclmask.project("standard",eulers[i])		# projection of the 3-D mask for the reference volume to apply to particles
+
+	alt=eulers[n].get_rotation("eman")["alt"]
+	az=eulers[n].get_rotation("eman")["az"]
+
+	result={}
+	for it in xrange(2):			# note that this is 0,1 not actual iteration
+		for eo in range(2):
+			for j in xrange(nptcl[eo]):
+				if classmx[eo+2*it][0,j]!=i :
+#						if options.debug: print "XXX {}\t{}\t{}\t{}".format(i,("even","odd")[eo],j,classmx[eo][0,j])
+					continue		# only proceed if the particle is in this class
+				if verbose >= 6: print "{}\t{}\t{}".format(i,("even","odd")[eo],j,it)
+
+				truenum=j*2+eo 	# This is the particle number within the full file
+
+				# the particle itself
+				try: ptcl=EMData(cptcl[eo],j)
+				except:
+					print "Unable to read particle: {} ({})".format(cptcl[eo],j)
+					sys.exit(1)
+				try: defocus=ptcl["ctf"].defocus
+				except: defocus=-1.0
+
+				sums=[0,0]
+			
+				# Find the transform for this particle (2d) and apply it to the unmasked/masked projections
+				ptclxf=Transform({"type":"2d","alpha":cmxalpha[eo+2*it][0,j],"mirror":int(cmxmirror[eo+2*it][0,j]),"tx":cmxtx[eo+2*it][0,j],"ty":cmxty[eo+2*it][0,j]}).inverse()
+
+				projc=proj[it].process("xform",{"transform":ptclxf})	# we transform the projection, not the particle (as in the original classification)
+
+				# This is for visualization with e2display later on
+				if includeprojs and it==1: projc.write_image(pf,truenum)
+
+				projmaskc=projmask.process("xform",{"transform":ptclxf})
+				ptcl.mult(projmaskc)
+
+				# Particle vs projection FSC
+				fsc = ptcl.calc_fourier_shell_correlation(projc)
+
+				third = len(fsc)/3
+				fsc=array(fsc[third:third*2])
+#					snr=fsc/(1.0-fsc)
+				result[(truenum,it)]=[sum(fsc[rings[k]:rings[k+1]])/(rings[k+1]-rings[k]) for k in xrange(4)]+[alt,az,n,defocus]		# sum the fsc into 5 range values
+#					sums=[sum(snr[rings[k]:rings[k+1]])/(rings[k+1]-rings[k]) for k in xrange(4)]		# sum the fsc into 5 range values
+
+	jsd.put(result)
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -262,25 +314,22 @@ def main():
 		sys.exit(0)
 
 	if options.evalptclqual:
-		from multiprocessing import Pool
+#		from multiprocessing import Pool
+		import threading,Queue
 		print "Particle quality evaluation mode"
+		
+		# This is not great programming process, but greatly simplifies threading, and reduces potential memory usage
+		global classmx,nptcl,cmxtx,cmxty,cmxalpha.cmxmirror,eulers,threed,ptclmask,rings,pf,cptcl
 
 		try:
-			pathmx="{}/classmx_{:02d}_even.hdf".format(args[0],options.iter)
-			classmx=[EMData(pathmx,0)]
-			nptcl=[classmx[0]["ny"]]
-			cmxtx=[EMData(pathmx,2)]
-			cmxty=[EMData(pathmx,3)]
-			cmxalpha=[EMData(pathmx,4)]
-			cmxmirror=[EMData(pathmx,5)]
+			pathmx=["{}/classmx_{:02d}_even.hdf".format(args[0],options.iter-1),"{}/classmx_{:02d}_odd.hdf".format(args[0],options.iter-1),"{}/classmx_{:02d}_even.hdf".format(args[0],options.iter),"{}/classmx_{:02d}_odd.hdf".format(args[0],options.iter)]
+			classmx=[EMData(f,0) for f in pathmx]
+			nptcl=[classmx[i]["ny"] for i in xrange(len(pathmx))]
+			cmxtx=[EMData(f,2) for f in pathmx]
+			cmxty=[EMData(f,3) for f in pathmx]
+			cmxalpha=[EMData(f,4) for f in pathmx]
+			cmxmirror=[EMData(f,5) for f in pathmx]
 
-			pathmx="{}/classmx_{:02d}_odd.hdf".format(args[0],options.iter)
-			classmx.append(EMData(pathmx,0))
-			nptcl.append(classmx[1]["ny"])
-			cmxtx.append(EMData(pathmx,2))
-			cmxty.append(EMData(pathmx,3))
-			cmxalpha.append(EMData(pathmx,4))
-			cmxmirror.append(EMData(pathmx,5))
 		except:
 			traceback.print_exc()
 			print "====\nError reading classification matrix. Must be full classification matrix with alignments"
@@ -294,20 +343,20 @@ def main():
 		cptcl=jsparm["input"]
 		cptcl=[str(i) for i in cptcl]
 
-		# this reads all of the EMData headers from the projections, should be same for even and odd
+		# this reads all of the EMData headers from the projections, should be same for even and odd, and assume same across iterations
 		pathprj="{}/projections_{:02d}_even.hdf".format(args[0],options.iter)
 		nref=EMUtil.get_image_count(pathprj)
 		eulers=[EMData(pathprj,i,1)["xform.projection"] for i in range(nref)]
 
 		# The 3D reference volume we are using for subtraction
-		threed=EMData("{}/threed_{:02d}.hdf".format(args[0],options.iter),0)
+		threed=[EMData("{}/threed_{:02d}.hdf".format(args[0],options.iter-1),0),EMData("{}/threed_{:02d}.hdf".format(args[0],options.iter),0)]
 
-		# The mask applied to the reference volume, used for 2-D masking of particles for better power spectrum matching
+		# The mask applied to the reference volume, used for 2-D masking of particles for better power spectrum matching, we'll assume the mask doesn't change much
 		ptclmask=EMData(args[0]+"/mask.hdf",0)
 		nx=ptclmask["nx"]
 		apix=threed["apix_x"]
 
-		rings=[int(2*nx*apix/res) for res in (100,30,15,8,4)]
+		rings=[int(2*nx*apix/res) for res in (100,30,18,10,4)]
 		print("Frequency Bands: {lowest},{low},{mid},{high},{highest}".format(lowest=rings[0],low=rings[1],mid=rings[2],high=rings[3],highest=rings[4]))
 
 		# We expand the mask a bit, since we want to consider problems with "touching" particles
@@ -321,166 +370,137 @@ def main():
 #		fout=open("ptclsnr.txt".format(i),"w")
 		ptclfsc = "ptclfsc_{}.txt".format("_".join(args[0].split("_")[1:]))
 		fout=open(ptclfsc,"w")
+		out.write("# 100-30 it1; 30-18 it1; 18-10 it1; 10-4 it1; 100-30 it2; 30-18 it2; 18-10 it2; 10-4 it2; alt1; az1; cls1; alt2; az2; cls2; defocus\n")
 		# generate a projection for each particle so we can compare
 
-		pj = 0
 		pf = "ptclfsc_{}_projections.hdf".format("_".join(args[0].split("_")[1:]))
 
 		tfs = []
 
 		tlast=time()
 
-		for i in xrange(nref):
-			if options.verbose < 6:
-				sys.stdout.write("\rClass %d/%d"%(i,nref-1))
-				sys.stdout.flush()
-			else: print("--- Class %d/%d"%(i,nref-1))
+		# Create Thread objects
+		jsd=Queue.Queue(0)
+		thrds=[threading.Thread(target=pqual,args=(i,jsd,options.includeprojs,options.verbose)) for i in xrange(nref)
+		result={}
 
-			# update progress every 10s
-			if time()-tlast>10 :
-				E2progress(logid,i/float(nref))
-				tlast=time()
+		while thrtolaunch<len(thrds) or threading.active_count()>1:
+			# If we haven't launched all threads yet, then we wait for an empty slot, and launch another
+			# note that it's ok that we wait here forever, since there can't be new results if an existing
+			# thread hasn't finished.
+			if thrtolaunch<len(thrds) :
+				while (threading.active_count()==options.threads+1 ) : time.sleep(.1)
+				if options.verbose : print "Starting thread {}/{}".format(thrtolaunch,len(thrds))
+				thrds[thrtolaunch].start()
+				thrtolaunch+=1
+			else: time.sleep(1)
+		
+			while not jsd.empty():
+				rd=jsd.get()
+				result.update(rd)
 
-			# The first projection is unmasked, used for scaling
-			proj=threed.project("standard",{"transform":eulers[i]})
-			projmask=ptclmask.project("standard",eulers[i])		# projection of the 3-D mask for the reference volume to apply to particles
-
-			alt=eulers[i].get_rotation("eman")["alt"]
-			az=eulers[i].get_rotation("eman")["az"]
-
-#			fout=open("ptclfsc/f{:04d}.txt".format(i),"w")
-			for eo in range(2):
-				for j in xrange(nptcl[eo]):
-					if classmx[eo][0,j]!=i :
-#						if options.debug: print "XXX {}\t{}\t{}\t{}".format(i,("even","odd")[eo],j,classmx[eo][0,j])
-						continue		# only proceed if the particle is in this class
-					if options.verbose >= 6: print "{}\t{}\t{}".format(i,("even","odd")[eo],j)
-
-					# the particle itself
-					try: ptcl=EMData(cptcl[eo],j)
-					except:
-						print "Unable to read particle: {} ({})".format(cptcl[eo],j)
-						sys.exit(1)
-					try: defocus=ptcl["ctf"].defocus
-					except: defocus=-1.0
-
-					# Find the transform for this particle (2d) and apply it to the unmasked/masked projections
-					ptclxf=Transform({"type":"2d","alpha":cmxalpha[eo][0,j],"mirror":int(cmxmirror[eo][0,j]),"tx":cmxtx[eo][0,j],"ty":cmxty[eo][0,j]}).inverse()
-
-					tfs.append("{}".format(str(ptclxf.get_params("eman"))))
-
-					projc=proj.process("xform",{"transform":ptclxf})	# we transform the projection, not the particle (as in the original classification)
-
-					if options.includeprojs: projc.write_image(pf,pj)
-
-					projmaskc=projmask.process("xform",{"transform":ptclxf})
-					ptcl.mult(projmaskc)
-
-					#ptcl.write_image("tst.hdf",0)
-					#projc[0].write_image("tst.hdf",1)
-
-					# Particle vs projection FSC
-					fsc = ptcl.calc_fourier_shell_correlation(projc)
-
-					third = len(fsc)/3
-					fsc=array(fsc[third:third*2])
-#					snr=fsc/(1.0-fsc)
-					sums=[sum(fsc[rings[k]:rings[k+1]])/(rings[k+1]-rings[k]) for k in xrange(4)]		# sum the fsc into 5 range values
-#					sums=[sum(snr[rings[k]:rings[k+1]])/(rings[k+1]-rings[k]) for k in xrange(4)]		# sum the fsc into 5 range values
-
-					if options.includeprojs:
-						fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{};{};{}\n".format(sums[0],sums[1],sums[2],sums[3],alt,az,i,defocus,j,cptcl[eo],pj,pf))
-					else:
-						fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{}\n".format(sums[0],sums[1],sums[2],sums[3],alt,az,i,defocus,j,cptcl[eo]))
-					#xaxis = fsc[0:third]
-					#fsc = fsc[third:2*third]
-##					saxis = [x/apix for x in xaxis]
-##					Util.save_data(saxis[1],saxis[1]-saxis[0],fsc[1:-1],args[1])
-					#Util.save_data(xaxis[1],xaxis[1]-xaxis[0],fsc[1:-1],"ptclfsc/f{:04d}_{:1d}_{:06d}.txt".format(i,eo,j))
-
-					pj+=1
+		for t in thrds:
+			t.join()
+	 
+		# loop over all particles and print results
+		for j in xrange(sum(nptcl)):
+			try:
+				r=result[(j,0)]+result[(j,1)]
+				jj=j/2
+				eo=j%2
+			except:
+				print "Missing results ptcl:",j,
+				try:
+					print result[(j,0)],
+					print result[(j,1)]
+				except: print " "
+				continue
+			if options.includeprojs:
+				fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{};{};{}\n".format(r[0],r[1],r[2],r[3],r[8],r[9],r[10],r[11],r[4],r[5],r[6],r[12],r[13],r[14],r[15],jj,cptcl[eo],j,pf))
+			else:
+				fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{}\n".format(r[0],r[1],r[2],r[3],r[8],r[9],r[10],r[11],r[4],r[5],r[6],r[12],r[13],r[14],r[15],jj,cptcl[eo]))
 
 		fout.close()
 
 		bname = base_name(ptclfsc)
 
-		print("Generating new sets.")
+		#print("Generating new sets.")
 
-		nseg = 2
-		if apix>2.5 : axes=[0,1]
-		else : axes = [0,1,2]
+		#nseg = 2
+		#if apix>2.5 : axes=[0,1]
+		#else : axes = [0,1,2]
 
-		fscs = []
-		cmts = []
-		with open(ptclfsc,'r') as ptclfsc_handle:
-			for line in ptclfsc_handle:
-				if line != "":
-					fsc,cmt = line.strip().split("#")
-					fscs.append(fsc.split()[:4])
-					cmts.append(cmt.strip())
+		#fscs = []
+		#cmts = []
+		#with open(ptclfsc,'r') as ptclfsc_handle:
+			#for line in ptclfsc_handle:
+				#if line != "":
+					#fsc,cmt = line.strip().split("#")
+					#fscs.append(fsc.split()[:4])
+					#cmts.append(cmt.strip())
 
-		d = np.asarray(fscs).astype(float)
-		#d /= np.std(d,axis=0)
-		(nrow,ncol) = d.shape
+		#d = np.asarray(fscs).astype(float)
+		##d /= np.std(d,axis=0)
+		#(nrow,ncol) = d.shape
 
-		imdata = []
-		for r in range(nrow):
-			imdata.append(EMData(ncol,1,1))
-			for ax in axes:
-				imdata[r][ax]=d[r][ax]
+		#imdata = []
+		#for r in range(nrow):
+			#imdata.append(EMData(ncol,1,1))
+			#for ax in axes:
+				#imdata[r][ax]=d[r][ax]
 
-		an=Analyzers.get("kmeans")
-		an.set_params({"ncls":nseg,"minchange":nrow//100,"verbose":0,"slowseed":0,"mininclass":5})
-		an.insert_images_list(imdata)
-		centers=an.analyze()
+		#an=Analyzers.get("kmeans")
+		#an.set_params({"ncls":nseg,"minchange":nrow//100,"verbose":0,"slowseed":0,"mininclass":5})
+		#an.insert_images_list(imdata)
+		#centers=an.analyze()
 
-		results=[[[] for i in range(ncol)] for j in range(nseg)]
-		resultc=[[] for j in range(nseg)]
-		resultt=[[] for t in range(nseg)]
+		#results=[[[] for i in range(ncol)] for j in range(nseg)]
+		#resultc=[[] for j in range(nseg)]
+		#resultt=[[] for t in range(nseg)]
 
-		d1 = []
-		d2 = []
+		#d1 = []
+		#d2 = []
 
-		try: os.unlink(tfn)
-		except: pass
+		#try: os.unlink(tfn)
+		#except: pass
 
-		for r in range(nrow):
-			s=imdata[r]["class_id"]
-			if s == 0: d1.append(d[r])
-			else: d2.append(d[r])
-			for c in xrange(ncol):
-				results[s][c].append(imdata[c][r])
-			resultc[s].append(cmts[r])
-			resultt[s].append(tfs[r])
+		#for r in range(nrow):
+			#s=imdata[r]["class_id"]
+			#if s == 0: d1.append(d[r])
+			#else: d2.append(d[r])
+			#for c in xrange(ncol):
+				#results[s][c].append(imdata[c][r])
+			#resultc[s].append(cmts[r])
+			#resultt[s].append(tfs[r])
 
-		d1 = np.asarray(d1)
-		d2 = np.asarray(d2)
+		#d1 = np.asarray(d1)
+		#d2 = np.asarray(d2)
 
-		# need to *consistently* label the "best" and "worst" cluster
-		d1s = np.max(d1)
-		d2s = np.max(d2)
-		lstfs = {}
-		if d1s > d2s:
-			lstfs[0] = "{}_good.lst".format(bname)
-			lstfs[1] = "{}_bad.lst".format(bname)
-		else:
-			lstfs[0] = "{}_bad.lst".format(bname)
-			lstfs[1] = "{}_good.lst".format(bname)
+		## need to *consistently* label the "best" and "worst" cluster
+		#d1s = np.max(d1)
+		#d2s = np.max(d2)
+		#lstfs = {}
+		#if d1s > d2s:
+			#lstfs[0] = "{}_good.lst".format(bname)
+			#lstfs[1] = "{}_bad.lst".format(bname)
+		#else:
+			#lstfs[0] = "{}_bad.lst".format(bname)
+			#lstfs[1] = "{}_good.lst".format(bname)
 
-		lsx={}
-		for s in [0,1]:#range(len(results)):
-			outf = "sets/{}".format(lstfs[s])
-			try: os.unlink(outf) # try to remove file if it already exists
-			except: pass
-			out=LSXFile(outf)
-			for r,cmt in enumerate(resultc[s]):
-				imn,imf=cmt.split(";")[:2]
-				imn=int(imn)
-				if not lsx.has_key(imf):
-					lsx[imf]=LSXFile(imf,True)	# open the LSX file for reading
-				val=lsx[imf][imn]
-				#val[2] = str(resultt[s][r]) # comment is a string dictionary, required to make3d_rawptcls.
-				out[r]=[val[0],val[1],str(resultt[s][r])]
+		#lsx={}
+		#for s in [0,1]:#range(len(results)):
+			#outf = "sets/{}".format(lstfs[s])
+			#try: os.unlink(outf) # try to remove file if it already exists
+			#except: pass
+			#out=LSXFile(outf)
+			#for r,cmt in enumerate(resultc[s]):
+				#imn,imf=cmt.split(";")[:2]
+				#imn=int(imn)
+				#if not lsx.has_key(imf):
+					#lsx[imf]=LSXFile(imf,True)	# open the LSX file for reading
+				#val=lsx[imf][imn]
+				##val[2] = str(resultt[s][r]) # comment is a string dictionary, required to make3d_rawptcls.
+				#out[r]=[val[0],val[1],str(resultt[s][r])]
 
 		# OLD 'MANUAL' INFO
 		#print("Evaluation complete. Each column in the resulting text file includes information at a different resolution range. Columns 0 and 1 are almost always useful,
