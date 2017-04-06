@@ -8,3 +8,5 @@ sed -i.bak 's~\(^LDFLAGS.*$\)~\1 -L/'"${PREFIX}"'/lib -lfftw3_mpi -lfftw3~' src/
 
 make
 make install
+
+rm -rf ${SP_DIR}/mpi_examples
