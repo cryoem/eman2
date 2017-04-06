@@ -536,7 +536,7 @@ def bimodal_peak_model(ccf):
 	yy = np.linspace(0,bs,bs)
 	xx,yy = np.meshgrid(xx,yy)
 
-	r = Region(nx/2-bs/2,nx/2-bs/2,bs,bs)
+	r = Region(nxx/2-bs/2,nxx/2-bs/2,bs,bs)
 	#r = Region(0,0,bs,bs)
 	ccfreg = ccf.get_clip(r)
 	ncc = ccfreg.numpy().copy()
