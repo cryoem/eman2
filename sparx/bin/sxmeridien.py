@@ -5988,7 +5988,7 @@ def update_tracker(shell_line_command):
 	parser_no_default.add_option("--inires",		       		type="float")
 	parser_no_default.add_option("--delta",						type="float")
 	parser_no_default.add_option("--shake",	           			type="float")
-	parser_no_default.add_option("--hardmask",			   		action="store_true")
+	#parser_no_default.add_option("--hardmask",			   		action="store_true")
 	parser_no_default.add_option("--lentop",			    	type="int")
 	parser_no_default.add_option("--ref_a",   		       		type="string")
 	parser_no_default.add_option("--sym",     		       		type="string")# rare to change sym; however, keep it an option.
@@ -6028,8 +6028,8 @@ def update_tracker(shell_line_command):
 		#print(" delta is updated   %f"%options_no_default_value.delta)
 	if options_no_default_value.shake != None:
 		Tracker["constants"]["shake"] 						= options_no_default_value.shake
-	if options_no_default_value.hardmask != None:
-		Tracker["constants"]["hardmask"] 					= options_no_default_value.hardmask
+	#if options_no_default_value.hardmask != None:
+	#	Tracker["constants"]["hardmask"] 					= options_no_default_value.hardmask
 	if options_no_default_value.lentop != None:
 		Tracker["lentop"] 									= options_no_default_value.lentop
 	if options_no_default_value.ref_a != None:
@@ -6104,7 +6104,7 @@ def main():
 	parser.add_option("--inires",		       		type="float",	     	default=25.,		         	help="Resolution of the initial_volume volume (default 25A)")
 	parser.add_option("--mask3D",		        	type="string",	      	default=None,		          	help="3D mask file (default a sphere with radius (nx/2)-1)")
 	parser.add_option("--function",					type="string",          default="do_volume_mask",       help="name of the reference preparation function (default do_volume_mask)")
-	parser.add_option("--hardmask",			   		action="store_true",	default=True,		     		help="Apply hard maks (with radius) to 2D data (default True)")
+	#parser.add_option("--hardmask",			   		action="store_true",	default=True,		     		help="Apply hard maks (with radius) to 2D data (default True)")
 	parser.add_option("--symmetry",					type="string",        	default= 'c1',		     		help="Point-group symmetry of the refined structure (default c1)")
 	parser.add_option("--skip_prealignment",		action="store_true", 	default=False,		         	help="skip 2-D pre-alignment step: to be used if images are already centered. (default False)")
 	parser.add_option("--initialshifts",         	action="store_true",  	default=False,	         		help="Use orientation parameters in the input file header to jumpstart the procedure. (default False)")
@@ -6222,7 +6222,7 @@ def main():
 		Constants["limit_changes"]     			= 1  # reduce delta by half if both limits are reached simultaneously
 		Constants["states"]            			= ["INITIAL", "PRIMARY", "EXHAUSTIVE", "RESTRICTED", "LOCAL", "FINAL"]
 		Constants["user_func"]					= options.function
-		Constants["hardmask"]          			= options.hardmask
+		Constants["hardmask"]          			=  True #options.hardmask
 		Constants["ccfpercentage"]     			= options.ccfpercentage/100.
 		Constants["expthreshold"]      			= -10
 		Constants["number_of_groups"]  			= -1 # number of defocus groups, to be set by assign_particles_to_groups
