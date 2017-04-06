@@ -7278,7 +7278,7 @@ def angular_distribution(inputfile, options, output):
 			arrayVector2 = vectorCenter
 
 			arrayVector1 = arrayVector1 + \
-				options.particle_radius * arrayVectorSphere
+				options.particle_radius * arrayVectorSphere / options.pixel_size
 			arrayVector2 = arrayVector2 + \
 				(
 					options.particle_radius / options.pixel_size +
