@@ -80,7 +80,7 @@ def main():
 	parser.add_header(name="orblock3", help='Just a visual separation', title="Optional: ", row=10, col=0, rowspan=1, colspan=3, mode="align")
 	parser.add_argument("--optbox", type=int,help="Box size to use during alignment optimization. Default is 256.",default=256, guitype='intbox', row=11, col=0, rowspan=1, colspan=1, mode="align")
 	parser.add_argument("--optstep", type=int,help="Step size to use during alignment optimization. Default is 256.",default=256,  guitype='intbox', row=11, col=1, rowspan=1, colspan=1, mode="align")
-	parser.add_argument("--optalpha", type=float,help="Penalization to apply during robust regression. Default is 0.5. If 0.0, unpenalized least squares will be performed.",default=0.5)#  guitype='intbox', row=11, col=1, rowspan=1, colspan=1, mode="align")
+	parser.add_argument("--optalpha", type=float,help="Penalization to apply during robust regression. Default is 3.0. If 0.0, unpenalized least squares will be performed.",default=3.0)#  guitype='intbox', row=11, col=1, rowspan=1, colspan=1, mode="align")
 	parser.add_argument("--step",type=str,default="0,1",help="Specify <first>,<step>,[last]. Processes only a subset of the input data. ie- 0,2 would process all even particles. Same step used for all input files. [last] is exclusive. Default= 0,1",guitype='strbox', row=12, col=0, rowspan=1, colspan=1, mode="align")
 	#parser.add_argument("--movie", type=int,help="Display an n-frame averaged 'movie' of the stack, specify number of frames to average",default=0)
 	parser.add_argument("--plot", default=False,help="Display a plot of the movie trajectory after alignment",action="store_true")
@@ -286,7 +286,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			for i in range(n):
 				thd = threading.Thread(target=split_fft,args=(outim[i],i,options.optbox,options.optstep,ccfs))
 				thds.append(thd)
-			sys.stdout.write("\rPrecompute {} FFTs".format(len(thds)))
+			#sys.stdout.write("\rPrecompute  /{} FFTs".format(len(thds)))
 			t0=time()
 
 			thrtolaunch=0
@@ -294,7 +294,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 				if thrtolaunch<len(thds) :
 					while (threading.active_count()==options.threads ) : sleep(.1)
 					if options.verbose :
-						sys.stdout.write("\rPrecompute FFTs:   {}/{} threads".format(thrtolaunch,len(thds)))
+						sys.stdout.write("\rPrecompute {}/{} FFTs {}".format(thrtolaunch,len(thds),threading.active_count()))
 						#sys.stdout.flush()
 					thds[thrtolaunch].start()
 					thrtolaunch+=1
@@ -340,7 +340,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 					csum2[i]=d
 
 				if options.verbose:
-					sys.stdout.write("\r  {}/{} {}".format(thrtolaunch,len(thds),threading.active_count()))
+					sys.stdout.write("\r  {}/{} ({})".format(thrtolaunch,len(thds),threading.active_count()))
 					sys.stdout.flush()
 
 			for th in thds: th.join()
@@ -481,11 +481,9 @@ def calc_ccf_wrapper(N,box,step,dataa,datab,out,locs):
 		c=dataa[i].calc_ccf(datab[i],fp_flag.CIRCULANT,True)
 		try: csum.add(c)
 		except: csum=c
-
 	xx = np.linspace(0,box,box)
 	yy = np.linspace(0,box,box)
 	xx,yy = np.meshgrid(xx,yy)
-
 #	csum.process_inplace("normalize.edgemean")
 #	csum.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.15})
 	popt,ccpeakval = bimodal_peak_model(csum)
@@ -551,7 +549,7 @@ def bimodal_peak_model(ccf):
 	initial_guess = [x1,y1,s1,a1,s2,a2]
 	bds = [(-bs/2, -bs/2,  0.01, 0.01, 0.6, 0.01),(bs/2, bs/2, 100.0, 20000.0, 2.5, 100000.0)]
 	try:
-		popt,pcov=optimize.curve_fit(twod_bimodal,(xx,yy),ncc.ravel(),p0=initial_guess,bounds=bds,xtol=0.1,ftol=0.0001,gtol=0.0001)
+		popt,pcov=optimize.curve_fit(twod_bimodal,(xx,yy),ncc.ravel(),p0=initial_guess,bounds=bds,xtol=0.1)#,ftol=0.0001,gtol=0.0001)
 	except: #optimize.OptimizeWarning:
 		popt = [x1,y1,s1,a1,s2,a2]
 	popt = [p for p in popt]
