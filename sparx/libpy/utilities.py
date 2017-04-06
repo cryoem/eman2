@@ -7136,6 +7136,7 @@ def search_lowpass(fsc):
 def angular_distribution(inputfile, options, output):
 	import numpy
 
+	print('Loading data')
 	# Import data
 	listDType = [
 		('Phi', '<f8'),
@@ -7165,6 +7166,7 @@ def angular_distribution(inputfile, options, output):
 	listCoord = [[], []]
 
 	# Go through the list of angles
+	print('Calculate angles')
 	for linenumber in xrange(len(arrPhi)):
 
 		# Set the angles in radiant
@@ -7211,6 +7213,7 @@ def angular_distribution(inputfile, options, output):
 		listCoord[idxAlpha].append(angleAlpha)
 		listCoord[idxBeta].append(angleBeta)
 
+	print('Calculate vector length')
 	# Create array for the angles
 	dtype = [
 		('alpha', '<f8'),
@@ -7263,6 +7266,7 @@ def angular_distribution(inputfile, options, output):
 	arrayAnglesRadius['beta'] = uniqueArray['beta']
 	arrayAnglesRadius['radius'] = arrayRadius
 
+	print('Write output')
 	# Create vectors for chimera
 	with open(output, 'w') as f:
 		for vector in arrayAnglesRadius:
@@ -7297,6 +7301,7 @@ def angular_distribution(inputfile, options, output):
 					options.cylinder_width
 				)
 			)
+	print('All done! Saved output to: {0}'.format(output))
 
 #####---------------------------------------------------
 # used in new meridien
