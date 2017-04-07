@@ -110,7 +110,7 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_FH2F_overloads_2_3, EMAN::EMD
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_FH2Real_overloads_2_3, EMAN::EMData::FH2Real, 2, 3)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_calc_fourier_shell_correlation_overloads_1_2, EMAN::EMData::calc_fourier_shell_correlation, 1, 2)
+//BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_calc_fourier_shell_correlation_overloads_1_2, EMAN::EMData::calc_fourier_shell_correlation, 1, 2)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_nn_overloads_3_4, EMAN::EMData::nn, 3, 4)
 
@@ -276,6 +276,19 @@ EMData *EMData_calc_ccf_wrapper0(EMData &ths) {
 	
 	return ths.calc_ccf();
 }
+
+vector<float> EMData_calc_fourier_shell_correlation_wrapper1(EMData &ths, EMData *with) {
+	GILRelease rel;
+	
+	return ths.calc_fourier_shell_correlation(with);
+}
+
+vector<float> EMData_calc_fourier_shell_correlation_wrapper2(EMData &ths, EMData *with, int width) {
+	GILRelease rel;
+	
+	return ths.calc_fourier_shell_correlation(with,width);
+}
+
 
 vector<Dict> EMData_align_nbest_wrapper6(EMData &ths, const string & aligner_name, EMData * to_img, const Dict & params, int nsoln, const string & cmp_name, const Dict& cmp_params) {
 	vector<Dict> ret;
@@ -712,7 +725,8 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("rotavg_i", &EMAN::EMData::rotavg_i, return_value_policy< manage_new_object >(), "Create a 2-D or 3-D rotationally averaged image.\n \nreturn 2-D or 3-D rotationally-averaged image\nexception - ImageDimensionException If 'this' image is 1D.")
 	.def("mult_radial", &EMAN::EMData::mult_radial, return_value_policy< manage_new_object >(), args("radial"), "Multiply radially a 2-D or 3-D image by a 1-D image.\n \nradial - the 1-D image multiply to\n \nreturn 2-D or 3-D radially multiplied image\nexception - ImageDimensionException If 'this' image is 1D.")
 	.def("cog", &EMAN::EMData::cog, "Calculates the Center of Gravity\nand the Radius of Gyration of the image.\n \nreturns the mass and the radius as vectors.")
-	.def("calc_fourier_shell_correlation", &EMAN::EMData::calc_fourier_shell_correlation, EMAN_EMData_calc_fourier_shell_correlation_overloads_1_2(args("with", "width"), "Calculate CCF in Fourier space as a function of spatial frequency\nbetween a pair of 2-3D images (corners not included).\nThe input image 'with' must have the same size to 'this' image.\nInput images can be either real or Fourier in arbitrary combination.\n \nwith -The image used to caculate the fourier shell.\nwidth - Ring/shell width in Fourier space, default to 1.0.\n \nexception - ImageFormatException If the 2 images are not same size.\nexception - NullPointerException if the input image is null\nexception - Cannot calculate FSC for 1D images\nreturn  Vector of 3*k FSC results (frequencies, FSC values, error)\nk - length of FSC curve, depends on dimensions of the image and ring width\n1 column - normalized frequency [0,0.5]\n2 column - FSC,\n3 column - error of the FSC = 1/sqrt(n), where n is the number of Fourier coefficients within given shell."))
+	.def("calc_fourier_shell_correlation", EMData_calc_fourier_shell_correlation_wrapper1,args("with"), "Calculate CCF in Fourier space as a function of spatial frequency\nbetween a pair of 2-3D images (corners not included).\nThe input image 'with' must have the same size to 'this' image.\nInput images can be either real or Fourier in arbitrary combination.\n \nwith -The image used to caculate the fourier shell.\n\nexception - ImageFormatException If the 2 images are not same size.\nexception - NullPointerException if the input image is null\nexception - Cannot calculate FSC for 1D images\nreturn  Vector of 3*k FSC results (frequencies, FSC values, error)\nk - length of FSC curve, depends on dimensions of the image and ring width\n1 column - normalized frequency [0,0.5]\n2 column - FSC,\n3 column - error of the FSC = 1/sqrt(n), where n is the number of Fourier coefficients within given shell.")
+	.def("calc_fourier_shell_correlation", EMData_calc_fourier_shell_correlation_wrapper2,args("with", "width"), "Calculate CCF in Fourier space as a function of spatial frequency\nbetween a pair of 2-3D images (corners not included).\nThe input image 'with' must have the same size to 'this' image.\nInput images can be either real or Fourier in arbitrary combination.\n \nwith -The image used to caculate the fourier shell.\nwidth - Ring/shell width in Fourier space, default to 1.0.\n \nexception - ImageFormatException If the 2 images are not same size.\nexception - NullPointerException if the input image is null\nexception - Cannot calculate FSC for 1D images\nreturn  Vector of 3*k FSC results (frequencies, FSC values, error)\nk - length of FSC curve, depends on dimensions of the image and ring width\n1 column - normalized frequency [0,0.5]\n2 column - FSC,\n3 column - error of the FSC = 1/sqrt(n), where n is the number of Fourier coefficients within given shell.")
 	.def("scale_factors", &EMAN::EMData::scale_factors, "Calculate scale_factors in Fourier space as a function of spatial frequency\nbetween a pair of 2-3D images (corners not included).\nThe input image 'with' must have the same size to 'this' image.\nInput images can be either real or Fourier in arbitrary combination.\n \nwith -The image used to caculate the fourier shell.\beg - beginning Ring/shell in Fourier space.\end - ending Ring/shell in Fourier space.\n \nexception - ImageFormatException If the 2 images are not same size.\nexception - NullPointerException if the input image is null\nexception - Cannot calculate FSC for 1D images\nreturn  Vector of 3*k FSC results (frequencies, FSC values, error)\nk - length of FSC curve, depends on dimensions of the image and ring width\n1 column - normalized frequency [0,0.5]\n2 column - FSC,\n3 column - error of the FSC = 1/sqrt(n), where n is the number of Fourier coefficients within given shell.")
 	.def("average_circ_sub", &EMAN::EMData::average_circ_sub, return_value_policy< manage_new_object >(), "Subtract average outside of a circle\n \nreturn image with sbtracted average outside of a circle.")
 //	.def("onelinenn", &EMAN::EMData::onelinenn)
