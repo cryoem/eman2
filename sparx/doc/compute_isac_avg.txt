@@ -1,0 +1,64 @@
+= Name =
+sxcompute_isac_avg - New Beautifier: Beautify the ISAC 2D clustering result with the original pixel size.
+
+= Usage =
+
+
+''Usage in command lines'':
+
+sxcompute_isac_avg.py  --data_stack=stack_file_path  --isac_dir=isac_output_directory  --masterdir=output_directory  --radius=radius  --B_enhance  --B_start=B_start  --Bfactor=Bfactor  --low_pass_filter=cutoff_frequency  --pixel_size=pixel_size  --noctf  --xr=xr  --ts=ts  --fh=fh  --maxit=maxit  --mpw_adj  --navg=navg 
+
+=== Typical usage ===
+
+sxcompute_isac_avg.py exists only in MPI version
+
+''' mpirun  -np  48  sxcompute_isac_avg.py  --data_stack=bdb:data  --isac_dir=outdir_isac  --masterdir=outdir_beautify2d  --radius=120  --B_enhance '''
+
+''' mpirun  -np  48  sxcompute_isac_avg.py  --data_stack=bdb:data  --isac_dir=outdir_isac  --masterdir=outdir_beautify2d  --radius=120  --B_enhance  --Bfactor=40.0  --low_pass_filter=0.2 '''
+
+
+== Input ==
+    data_stack:: Original image stack: Particles required to create the full-sized class averages. (default required string)
+    isac_dir:: Isac output directory: Name of the directory where isac was run previously. (default required string)
+    masterdir:: Output directory: The directory will be automatically created and the results will be written here. (default required string)
+    radius:: Particle radius [Pixels]: There is no default radius. (default -1)
+    B_enhance:: Apply B-factor enhancement: Apply B-factor enhancement. (default False)
+    B_start:: B-factor lower limit [A]: Lower limit for B-factor estimation. (default 10.0)
+    Bfactor:: Use ad-hoc B-factor [A^2]: Skip the automatic estimation and use user-provided ad-hoc B-factor for the enhancement. (default 45.0)
+    low_pass_filter:: Low-pass filter frequency: Cutoff frequency of low-pass filter. (default -1.0)
+
+    * The remaining parameters are optional.
+    pixel_size:: Pixel size [A/Pixels]: The pixel size of images in input particle stack for isac. (default -1.0)
+    noctf:: No CTF correction: Use this option if full CTF correction should not be applied. Useful for negative stained data. By default, the program will do full CTF correction. (default False) 
+    xr:: Local X search range [Pixels]: Translational search range in the x direction for local alignment. (default -1.0)
+    ts:: Local search step [Pixels]: Translational search step for local alignment. (default 1.0)
+    fh:: High frequency search limit: High frequency search limit for local alignment. (default -1.0)
+    maxit:: Local alignment iterations: The number of iterations for local aligment. (default 5)
+    mpw_adj:: Adjust PW spectrum: Apply PW spectrum adjustment to model. (default False)
+    navg:: Number of averages: The number of averages. (default -1)
+
+== Output ==
+
+
+= Description =
+
+
+= Method =
+
+= Reference =
+Not published yet.
+
+= Author / Maintainer =
+Zhong Huang
+
+= Keywords =
+    category 1:: APPLICATIONS
+
+= Files =
+sxcompute_isac_avg.py
+
+= See also =
+[[http://sparx-em.org/sparxwiki/sxisac2|sxisac2]]
+
+= Maturity =
+ alpha:: in development

@@ -6,7 +6,7 @@ sxmeridien - 3D Refinement: Performs 3D structure refinement.
 
 ''usage in command line''
 
-sxmeridien.py  stack  output_directory  initial_volume  --radius=particle_radius  --mask3D=MASK3D  --hardmask  --symmetry=SYMMETRY  --inires=INIRES  --delta=DELTA  --do_final=DO_FINAL  --memory_per_node=MEMORY_PER_NODE  --xr=XR  --ts=TS  --skip_prealignment  --initialshifts  --center_method=CENTER_METHOD  --target_radius=TARGET_RADIUS  --shake=SHAKE  --small_memory  --ref_a=REF_A  --ccfpercentage=CCFPERCENTAGE  --nonorm  --ctrefromsort3d  --subset=subset_file_path  --oldrefdir=refine_dir_path  --ctrefromiter=restarting_iteration  --function=user_function
+sxmeridien.py  stack  output_directory  initial_volume  --radius=particle_radius  --mask3D=MASK3D  --symmetry=SYMMETRY  --inires=INIRES  --delta=DELTA  --do_final=DO_FINAL  --memory_per_node=MEMORY_PER_NODE  --xr=XR  --ts=TS  --skip_prealignment  --initialshifts  --center_method=CENTER_METHOD  --target_radius=TARGET_RADIUS  --shake=SHAKE  --small_memory  --ref_a=REF_A  --ccfpercentage=CCFPERCENTAGE  --nonorm  --ctrefromsort3d  --subset=subset_file_path  --oldrefdir=refine_dir_path  --ctrefromiter=restarting_iteration  --function=user_function
 
 
 === Typical usage ===
@@ -15,7 +15,7 @@ sxmeridien exists only in MPI version.
 
     1. Fresh run::
 
-    ''' mpirun  -np  88  sxmeridien.py  bdb:data  meridien_outdir  ref3d.hdf  --mask3D=mask3d.hdf  --radius=145  --symmetry=c5  --hardmask ''' <<BR>><<BR>>
+    ''' mpirun  -np  88  sxmeridien.py  bdb:data  meridien_outdir  ref3d.hdf  --mask3D=mask3d.hdf  --radius=145  --symmetry=c5 ''' <<BR>><<BR>>
 
     2. Continue run/simple restart::
 
@@ -44,7 +44,6 @@ sxmeridien exists only in MPI version.
 
     radius:: Particle radius [Pixels]: Outer radius [in pixels] of particles < int(nx/2)-1 (default -1) 
     mask3D:: 3D mask: Soft mask for the volume. If not given, a hard sphere of radius boxsize/2-1 will be used. (default none)
-    hardmask:: Apply hard 2D mask: Apply hard mask to 2D data with the particle radius. (default True)
     symmetry:: Point-group symmetry: Symmetry of the refined structure. Acceptable values are: cn, dn, where n is multiplicity. (default c1)
     inires:: Starting resolution [A]: Resolution used to start the refinement. (default 25.0)
     delta:: Initial angular sampling step: Initial angular sampling step. (default 7.5)
