@@ -100,6 +100,10 @@ def main():
 		#orig.process_inplace("mask.gaussian",{"outer_radius":orig["nx"]/8}) # overly stringent apodization
 		#orig.process_inplace("mask.decayedge2d",{"width":nx/4}) # simple apodization
 		orig.process_inplace("mask.gaussian",{"outer_radius":orig["nx"]/8,"exponent":3.0})
+
+		norig = orig.numpy().copy()
+		fnorig = np.fft.fftshift(np.fft.fft2(np.fft.fftshift(norig)))
+
 		img = orig.process("math.realtofft") # obtain an amplitude image
 		img.process_inplace("normalize")
 		img.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.1}) # strong lowpass
@@ -109,7 +113,7 @@ def main():
 		#img.process_inplace("threshold.notzero")
 		nimg = img.numpy().copy()
 
-		print("DETECTING SPOTS")
+		print("\nDETECTING SPOTS")
 
 		# dilation of nimg with a size*size structuring element
 		image_max = ndi.maximum_filter(nimg, size=np.min([a,b,c]).astype(int), mode='constant') # measured size of spot (rough) # 30
@@ -120,30 +124,7 @@ def main():
 			if np.abs(np.linalg.norm(c-nimg.shape[0]/2.)) <= (nx/2.):
 				coords.append(coord)
 		coords = np.asarray(coords)
-		refined_coords = refine_peaks(coords,img,options.maxshift,options.boxsize)#[:,::-1]
-
-		# fig, ax = plt.subplots(1, 3, figsize=(15, 5), sharex=True, sharey=True, subplot_kw={'adjustable':'box-forced'})
-		# ax1, ax2, ax3 = ax.ravel()
-
-		# ax1.imshow(nimg, cmap=plt.cm.Greys_r,vmin=0.,vmax=0.0003,origin="lower")
-		# ax1.axis('off')
-		# ax1.set_title('Original')
-
-		# ax2.imshow(nimg, cmap=plt.cm.Greys_r,vmin=0.,vmax=0.0003,origin="lower")
-		# ax2.axis('off')
-		# ax2.set_title('Threshold peaks')
-
-		# ax3.imshow(nimg, cmap=plt.cm.Greys_r,vmin=0.,vmax=0.0003,origin="lower")
-		# ax3.autoscale(False)
-		# ax3.scatter(coords[:, 1], coords[:, 0], c='r', s=30, marker='x')
-		# ax3.scatter(refined_coords[:, 1], refined_coords[:, 0], c='c', s=30, marker='x')
-
-		# ax3.axis('off')
-		# ax3.set_title('Local maxima')
-
-		# fig.subplots_adjust(wspace=0.02, hspace=0.02, top=0.9,bottom=0.02, left=0.02, right=0.98)
-		# #plt.savefig("localmax.png")
-		# plt.show()
+		refined_coords = refine_peaks(coords,img,options.maxshift,options.boxsize)
 
 		ds = 1/(apix*nx) # angstroms per fourier pixel
 		max_radius = np.linalg.norm(refined_coords-nx/2,axis=1).max()
@@ -159,7 +140,7 @@ def main():
 
 		hkl_ref = generate_lattice(nx,apix,max_radius,a,b,c,alpha,beta,gamma)
 
-		rot = rotate(hkl_ref,[20.1,1,5])
+		rot = rotate(hkl_ref,(np.random.random(3)*2-1)*180.)
 		close = 10.0
 		plane = rot[np.where(np.logical_and(rot[:,2] >= -1*close/2., rot[:,2] <= close/2.))]
 		within = 250.0 # furthest experimental datapoint from the origin
@@ -205,63 +186,56 @@ def main():
 		dt = time.time()-t
 
 		res1 = rngs[np.argmin(res)]
-		#print("{}\n".format(res1))
 
-		refine1 = optimize.minimize(cost,res1,args=(hkl_exper,hkl_ref,close,min_distance,options.data_weight,options.exper_weight,))
-		refine1 = refine1.x
+		refine1 = optimize.fmin(cost,res1,args=(hkl_exper,hkl_ref,close,min_distance,options.data_weight,options.exper_weight,),disp=False)
 		az,alt,phi = refine1
 		print("Az: {}\tAlt: {}\tPhi: {}\n".format(az,alt,phi))
 
-		print("REFINING PARAMETERS")
-
-		refine_apix = optimize.minimize(apix_cost,[apix],bounds=[(apix-0.1,apix+0.1)],args=(az,alt,phi,hkl_exper,hkl_ref,close,16.0,nx,max_radius,options.data_weight,options.exper_weight,a,b,c,alpha,beta,gamma,))
-		refine_apix = refine_apix.x
+		print("REFINING PARAMETERS") #xtol=0.01, ftol=0.01,maxfun=1e5
 		
-		print("REFINED APIX: {}".format(refine_apix[0]))
-		
+		refine_apix = optimize.fmin(apix_cost,[apix],args=(az,alt,phi,hkl_exper,hkl_ref,close,min_distance/4.,nx,max_radius,options.data_weight,options.exper_weight,a,b,c,alpha,beta,gamma,))#,disp=False)
 		hkl_ref = generate_lattice(nx,refine_apix[0],max_radius,a,b,c,alpha,beta,gamma)
 		ds = 1/(refine_apix[0]*nx) # angstroms per fourier pixel
+		print("APIX: {} -> {}".format(apix,refine_apix[0]))
 
-		refine_close = optimize.minimize(close_cost,[close],bounds=[(close-1.0,close+20.0)],args=(az,alt,phi,hkl_exper,hkl_ref,8.,50.,options.data_weight,options.exper_weight,))
-		refine_close = refine_close.x
-		if refine_close[0] < 2.0:
-			refine_close[0] = close
-			print("SLAB THICKNESS UNCHANGED")
-		else:
-			print("REFINED SLAB THICKNESS: {}".format(refine_close[0]))
+		refine_close = optimize.fmin(close_cost,[close],args=(az,alt,phi,hkl_exper,hkl_ref,8.,50.,options.data_weight,options.exper_weight,))#,disp=False)
+		#refine_close = refine_close.x
+		if refine_close[0] < 3.0: refine_close[0] = close
+		print("PROJECTION SLAB THICKNESS: {} -> {}".format(close,refine_close[0]))
 		
-		refine2 = optimize.fmin(cost,refine1,args=(hkl_exper,hkl_ref,refine_close[0],4.,options.data_weight,options.exper_weight,)) # re-refine orientation
-		#refine2=refine2.x
-
-		print("REFINED ORIENTATION: {}\n".format(refine2))
+		refine2 = optimize.fmin(cost,refine1,args=(hkl_exper,hkl_ref,refine_close[0],4.,options.data_weight,options.exper_weight,))#,disp=False) # re-refine orientation
+		print("ORIENTATION: {}\n".format(refine2))
+		print("Az: {}\tAlt: {}\tPhi: {}\n".format(az,alt,phi))
 		
 		pln = get_plane(refine2,hkl_ref,refine_close[0])
 		pln = pln[np.argsort(pln[:,3])] # sort by radius
 
-		# create a .sf file for this image
-		with open("{}.sf".format(fn.split(".")[0]),"w") as sf:
-			for row in pln:
-				xc,yc,zc = row[0],row[1],row[2]
-				r = np.sqrt(xc**2+yc**2+zc**2)
+		print("     xc        yc       zc          r           resol    h      k     l      raw_F     raw_p")
+		with open("{}.sf".format(fn.split(".")[0]),"w") as sf: # create a quasi.sf file for this image
+			for nrow,row in enumerate(pln):
+				yc,xc,zc,r,h,k,l = row[:7]
 				if r > 0: resol = 1/(r*ds)
 				else: resol = "inf"
-				raw_F,raw_p = get_sf(nimg,int(xc)+nx/2,int(yc)+nx/2,n=2)
-				h = row[4]
-				k = row[5]
-				l = row[6]
-				print("{},{},{}\t{}\t{}\t{}\t{}\t{}\t{:.2f}\t{:.2f}".format(xc,yc,zc,r,resol,int(h),int(k),int(l),raw_F,raw_p))
+				if nrow in range(9):
+					raw_F,raw_p = get_sf(fnorig,int(xc)+nx/2,int(yc)+nx/2,64,show=True)
+				else:
+					raw_F,raw_p = get_sf(fnorig,int(xc)+nx/2,int(yc)+nx/2,64,show=False)
+				try:
+					print("{:8.1f},{:8.1f},{:8.1f}    {:6.1f}    {:6.1f}    {:4d}    {:4d}    {:4d}    {:8.2f}    {:8.2f}".format(xc,yc,zc,r,resol,int(h),int(k),int(l),raw_F,raw_p))
+				except:
+					print("{:8.1f},{:8.1f},{:8.1f}    {:6.1f}        inf   {:4d}     {:4d}    {:4d}    {:.2f}    {:.2f}".format(xc,yc,zc,r,int(h),int(k),int(l),raw_F,raw_p))
 				sf.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(h,k,l,raw_F,raw_p,r,resol))
 
 def wrap_cost(args):
 	return cost(*args)
 
-def get_sf(fft,xc,yc,n=2):
-	reg = fft[xc-n/2:xc+n/2,yc-n/2:yc+n/2]
+def get_sf(fft,xc,yc,nn=2,show=False):
+	reg = fft[xc-nn/2:xc+nn/2+1,yc-nn/2:yc+nn/2+1]
 	amp = np.absolute(reg).max()
-	a = np.sum(np.real(reg).ravel())
-	b = np.sum(np.imag(reg).ravel())
-	phase = np.angle(a+1j*b,deg=True)
-	#iq = np.absolute(z)/np.sum(np.absolute(reg))
+	phase = np.angle(np.sum(np.real(reg).ravel()) + 1j*np.sum(np.imag(reg).ravel()),deg=True)
+	if show:
+		plt.imshow(np.real(np.absolute(reg)))
+		plt.show()
 	return amp,phase#,iq
 
 def twoD_Gaussian((x, y), xo, yo, amplitude, sigma_x, sigma_y, theta, offset=0.):
@@ -284,7 +258,7 @@ def refine_peaks(coords,img,ms,bs):#bs=64,ms=3.0):
 	ideal_msk =  np.zeros((img["nx"],img["ny"]))
 
 	refined_coords = []
-	for (yc,xc) in coords:
+	for (xc,yc) in coords:
 		r = Region(xc-bs/2,yc-bs/2,bs,bs)
 		ereg = img.get_clip(r)
 		nreg = ereg.numpy().copy()
