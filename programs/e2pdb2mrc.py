@@ -289,10 +289,10 @@ def main():
 
 		if options.center: pa.center_to_zero() # center after applying symmetry
 
-		bound = max(pa.get_bounding_box().get_size())
-		if boxsize < bound:
-			boxsize = int(bound+1)
-			print("Box size too small. Will use {} instead.".format(boxsize))
+		#bound = max(pa.get_bounding_box().get_size())
+		#if boxsize < bound:
+			#boxsize = int(bound+1)
+			#print("Box size too small. Will use {} instead.".format(boxsize))
 		
 		out = pa.pdb2mrc_by_summation(boxsize,options.apix,options.res,addpdbbfactor)
 		out.write_image(args[1])

@@ -40,7 +40,7 @@ import datetime
 from numpy import array
 import traceback
 import json
-from time import time
+from time import time,sleep
 
 try:
 	import numpy as np
@@ -52,23 +52,24 @@ try:
 except:
 	print "Matplotlib not available, plotting options will not be available"
 
-def pqual(n,jsd,includeproj,verbose):
+def pqual(n,ptclincls,jsd,includeproj,verbose):
 	"""This computes particle quality for all particles in one class average over both iterations"""
 	# The first projection is unmasked, used for scaling
-	global classmx,nptcl,cmxtx,cmxty,cmxalpha.cmxmirror,eulers,threed,ptclmask,rings,pf,cptcl
-	proj=[t.project("standard",{"transform":eulers[i]}) for t in threed]
-	projmask=ptclmask.project("standard",eulers[i])		# projection of the 3-D mask for the reference volume to apply to particles
+	global classmx,nptcl,cmxtx,cmxty,cmxalpha,cmxmirror,eulers,threed,ptclmask,rings,pf,cptcl
+	proj=[t.project("standard",{"transform":eulers[n]}) for t in threed]
+	projmask=ptclmask.project("standard",eulers[n])		# projection of the 3-D mask for the reference volume to apply to particles
 
 	alt=eulers[n].get_rotation("eman")["alt"]
 	az=eulers[n].get_rotation("eman")["az"]
 
 	result={}
-	for it in xrange(2):			# note that this is 0,1 not actual iteration
-		for eo in range(2):
-			for j in xrange(nptcl[eo]):
-				if classmx[eo+2*it][0,j]!=i :
-#						if options.debug: print "XXX {}\t{}\t{}\t{}".format(i,("even","odd")[eo],j,classmx[eo][0,j])
-					continue		# only proceed if the particle is in this class
+	for it,eo,j in ptclincls:
+	#for it in xrange(2):			# note that this is 0,1 not actual iteration
+		#for eo in range(2):
+			#for j in xrange(nptcl[eo]):
+				#if classmx[eo+2*it][0,j]!=n :
+##						if options.debug: print "XXX {}\t{}\t{}\t{}".format(i,("even","odd")[eo],j,classmx[eo][0,j])
+					#continue		# only proceed if the particle is in this class
 				if verbose >= 6: print "{}\t{}\t{}".format(i,("even","odd")[eo],j,it)
 
 				truenum=j*2+eo 	# This is the particle number within the full file
@@ -89,7 +90,7 @@ def pqual(n,jsd,includeproj,verbose):
 				projc=proj[it].process("xform",{"transform":ptclxf})	# we transform the projection, not the particle (as in the original classification)
 
 				# This is for visualization with e2display later on
-				if includeprojs and it==1: projc.write_image(pf,truenum)
+				if includeproj and it==1: projc.write_image(pf,truenum)
 
 				projmaskc=projmask.process("xform",{"transform":ptclxf})
 				ptcl.mult(projmaskc)
@@ -106,6 +107,7 @@ def pqual(n,jsd,includeproj,verbose):
 	jsd.put(result)
 
 def main():
+	global classmx,nptcl,cmxtx,cmxty,cmxalpha,cmxmirror,eulers,threed,ptclmask,rings,pf,cptcl
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options] [refine_xx]
 	Use --evalptclqual to assess particle quality. e2display.py ptclfsc_*.txt --plot """
@@ -157,7 +159,8 @@ def main():
 			if iter==1 :
 				print "evalptclqual requires at least 2 completed iterations (3 or 4 preferred), and will use the specified --iter and the iteration preceeding it. This is not possible if --iter=1."
 				sys.exit(1)
-				
+		
+		print "Using --iter=",options.iter
 
 	if options.anisotropy>=0 :
 		print "Anisotropy evaluation mode"
@@ -319,7 +322,6 @@ def main():
 		print "Particle quality evaluation mode"
 		
 		# This is not great programming process, but greatly simplifies threading, and reduces potential memory usage
-		global classmx,nptcl,cmxtx,cmxty,cmxalpha.cmxmirror,eulers,threed,ptclmask,rings,pf,cptcl
 
 		try:
 			pathmx=["{}/classmx_{:02d}_even.hdf".format(args[0],options.iter-1),"{}/classmx_{:02d}_odd.hdf".format(args[0],options.iter-1),"{}/classmx_{:02d}_even.hdf".format(args[0],options.iter),"{}/classmx_{:02d}_odd.hdf".format(args[0],options.iter)]
@@ -354,7 +356,7 @@ def main():
 		# The mask applied to the reference volume, used for 2-D masking of particles for better power spectrum matching, we'll assume the mask doesn't change much
 		ptclmask=EMData(args[0]+"/mask.hdf",0)
 		nx=ptclmask["nx"]
-		apix=threed["apix_x"]
+		apix=threed[0]["apix_x"]
 
 		rings=[int(2*nx*apix/res) for res in (100,30,18,10,4)]
 		print("Frequency Bands: {lowest},{low},{mid},{high},{highest}".format(lowest=rings[0],low=rings[1],mid=rings[2],high=rings[3],highest=rings[4]))
@@ -370,7 +372,7 @@ def main():
 #		fout=open("ptclsnr.txt".format(i),"w")
 		ptclfsc = "ptclfsc_{}.txt".format("_".join(args[0].split("_")[1:]))
 		fout=open(ptclfsc,"w")
-		out.write("# 100-30 it1; 30-18 it1; 18-10 it1; 10-4 it1; 100-30 it2; 30-18 it2; 18-10 it2; 10-4 it2; alt1; az1; cls1; alt2; az2; cls2; defocus\n")
+		fout.write("# 100-30 it1; 30-18 it1; 18-10 it1; 10-4 it1; 100-30 it2; 30-18 it2; 18-10 it2; 10-4 it2; alt1; az1; cls1; alt2; az2; cls2; defocus\n")
 		# generate a projection for each particle so we can compare
 
 		pf = "ptclfsc_{}_projections.hdf".format("_".join(args[0].split("_")[1:]))
@@ -378,22 +380,31 @@ def main():
 		tfs = []
 
 		tlast=time()
+		# Put particles in class lists
+		classptcls={}
+		for it in xrange(2):			# note that this is 0,1 not actual iteration
+			for eo in range(2):
+				for j in xrange(nptcl[eo]):
+					cls=classmx[eo+2*it][0,j]
+					try: classptcls[cls].append((it,eo,j))
+					except: classptcls[cls]=[(it,eo,j)]
 
 		# Create Thread objects
 		jsd=Queue.Queue(0)
-		thrds=[threading.Thread(target=pqual,args=(i,jsd,options.includeprojs,options.verbose)) for i in xrange(nref)
+		thrds=[threading.Thread(target=pqual,args=(i,classptcls[i],jsd,options.includeprojs,options.verbose)) for i in xrange(nref)]
 		result={}
+		thrtolaunch=0
 
 		while thrtolaunch<len(thrds) or threading.active_count()>1:
 			# If we haven't launched all threads yet, then we wait for an empty slot, and launch another
 			# note that it's ok that we wait here forever, since there can't be new results if an existing
 			# thread hasn't finished.
 			if thrtolaunch<len(thrds) :
-				while (threading.active_count()==options.threads+1 ) : time.sleep(.1)
+				while (threading.active_count()==options.threads+1 ) : sleep(.01)
 				if options.verbose : print "Starting thread {}/{}".format(thrtolaunch,len(thrds))
 				thrds[thrtolaunch].start()
 				thrtolaunch+=1
-			else: time.sleep(1)
+			else:sleep(.25)
 		
 			while not jsd.empty():
 				rd=jsd.get()
@@ -403,11 +414,9 @@ def main():
 			t.join()
 	 
 		# loop over all particles and print results
-		for j in xrange(sum(nptcl)):
+		for j in xrange(nptcl[0]+nptcl[1]):
 			try:
 				r=result[(j,0)]+result[(j,1)]
-				jj=j/2
-				eo=j%2
 			except:
 				print "Missing results ptcl:",j,
 				try:
@@ -415,6 +424,8 @@ def main():
 					print result[(j,1)]
 				except: print " "
 				continue
+			jj=j/2
+			eo=j%2
 			if options.includeprojs:
 				fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{};{};{}\n".format(r[0],r[1],r[2],r[3],r[8],r[9],r[10],r[11],r[4],r[5],r[6],r[12],r[13],r[14],r[15],jj,cptcl[eo],j,pf))
 			else:
