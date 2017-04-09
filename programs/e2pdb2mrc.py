@@ -82,6 +82,7 @@ def main():
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--quick", action="store_true", help="Use a slight approximation to the Gaussian during insertion. Does not support B-factors.",default=False)
 	parser.add_argument("--addpdbbfactor", action="store_true", help="Use the bfactor/temperature factor as the atom blurring radius, equivalent to Gaussian lowpass with 1/e width at 1/bfactor",default=False)
+	parser.add_argument("--omit", type=float, help="Randomly omit this percentage of atoms in the output map.",default=0.0)
 
 	(options, args) = parser.parse_args()
 	if len(args)<2 : parser.error("Input and output files required")
@@ -258,6 +259,19 @@ def main():
 
 		pa=PointArray()
 		pa.read_from_pdb(args[0])
+
+		if options.omit > 0.0 and options.omit < 100.0:
+			natm = pa.get_number_points()
+			nrm = int(round(natm*(options.omit/100.),0))
+			print("Randomly omitting {}% ({}/{}) of atoms from output map.".format(options.omit,nrm,natm))
+			for i in range(nrm):
+				n = np.random.randint(0,natm,dtype=int)
+				pa.delete_point(n)
+				natm -= 1
+		elif options.omit > 100.0:
+			print("Cannot remove more than 100 percent of the residues. Including all residues in output map.")
+		elif options.omit < 0.0:
+			print("Cannot remove less than 0 percent of the residues. Including all residues in output map.")
 
 		if options.full:
 			p = np.asmatrix(pa.get_points()).T
