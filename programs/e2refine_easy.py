@@ -530,7 +530,7 @@ important to use an angular step which is 90/integer.</p>")
 		if nx>=256 and (nx/4)%2==0 : shrinks1="--shrinks1 4"
 		elif nx>=96 and (nx/2)%2==0 : shrinks1="--shrinks1 2"
 		else : shrinks1=""
-	else shrinks1="--shrinks1 {}".format(options.shrinks1)
+	else: shrinks1="--shrinks1 {}".format(options.shrinks1)
 
 	if options.classaligncmp==None :
 		options.classaligncmp="ccc"
