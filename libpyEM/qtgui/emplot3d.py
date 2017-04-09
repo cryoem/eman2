@@ -1,4 +1,4 @@
-#!/home/muthu/EMAN2/python/Python-2.5.4-ucs4/bin/python
+#!/usr/bin/env python
 
 #
 # Author: David Woolford 10/26/2007 (woolford@bcm.edu)

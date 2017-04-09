@@ -1,4 +1,4 @@
-#!/usr/bin/env pyehon
+#!/usr/bin/env python
 #
 # Author: Ross Coleman (racolema@bcm.edu)
 # Author: James Michael Bell, 2016 (jmbell@bcm.edu)

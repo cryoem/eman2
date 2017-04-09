@@ -1,4 +1,4 @@
-	#!/usr/bin/env python
+#!/usr/bin/env python
 
 # Author:  David Woolford 10/26/2007 (woolford@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
