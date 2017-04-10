@@ -52,11 +52,12 @@ try:
 except:
 	print "Matplotlib not available, plotting options will not be available"
 
+#@profile
 def pqual(n,ptclincls,jsd,includeproj,verbose):
 	"""This computes particle quality for all particles in one class average over both iterations"""
 	# The first projection is unmasked, used for scaling
 	global classmx,nptcl,cmxtx,cmxty,cmxalpha,cmxmirror,eulers,threed,ptclmask,rings,pf,cptcl
-	proj=[t.project("standard",{"transform":eulers[n]}) for t in threed]
+	proj=[t.project("standard",eulers[n]) for t in threed]
 	projmask=ptclmask.project("standard",eulers[n])		# projection of the 3-D mask for the reference volume to apply to particles
 
 	alt=eulers[n].get_rotation("eman")["alt"]
@@ -371,8 +372,6 @@ def main():
 
 #		fout=open("ptclsnr.txt".format(i),"w")
 		ptclfsc = "ptclfsc_{}.txt".format("_".join(args[0].split("_")[1:]))
-		fout=open(ptclfsc,"w")
-		fout.write("# 100-30 it1; 30-18 it1; 18-10 it1; 10-4 it1; 100-30 it2; 30-18 it2; 18-10 it2; 10-4 it2; alt1; az1; cls1; alt2; az2; cls2; defocus\n")
 		# generate a projection for each particle so we can compare
 
 		pf = "ptclfsc_{}_projections.hdf".format("_".join(args[0].split("_")[1:]))
@@ -413,6 +412,8 @@ def main():
 		for t in thrds:
 			t.join()
 	 
+		fout=open(ptclfsc,"w")
+		fout.write("# 100-30 it1; 30-18 it1; 18-10 it1; 10-4 it1; 100-30 it2; 30-18 it2; 18-10 it2; 10-4 it2; it12rmsd; alt1; az1; cls1; alt2; az2; cls2; defocus\n")
 		# loop over all particles and print results
 		for j in xrange(nptcl[0]+nptcl[1]):
 			try:
@@ -426,10 +427,11 @@ def main():
 				continue
 			jj=j/2
 			eo=j%2
+			rmsd=sqrt((r[0]-r[8])**2+(r[1]-r[9])**2+(r[2]-r[10])**2+(r[3]-r[11])**2)
 			if options.includeprojs:
-				fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{};{};{}\n".format(r[0],r[1],r[2],r[3],r[8],r[9],r[10],r[11],r[4],r[5],r[6],r[12],r[13],r[14],r[15],jj,cptcl[eo],j,pf))
+				fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{};{};{}\n".format(r[0],r[1],r[2],r[3],r[8],r[9],r[10],r[11],rmsd,r[5],r[6],r[12],r[13],r[14],r[15],jj,cptcl[eo],j,pf))
 			else:
-				fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{}\n".format(r[0],r[1],r[2],r[3],r[8],r[9],r[10],r[11],r[4],r[5],r[6],r[12],r[13],r[14],r[15],jj,cptcl[eo]))
+				fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{}\n".format(r[0],r[1],r[2],r[3],r[8],r[9],r[10],r[11],rmsd,r[4],r[5],r[6],r[12],r[13],r[14],r[15],jj,cptcl[eo]))
 
 		fout.close()
 

@@ -21,6 +21,7 @@ e2classifytree.py
 e2classptcl.py
 e2classvsproj.py
 e2cmmtomrc.py
+e2cmpxplor.py
 e2ctf.py
 e2ctf2eman1.py
 e2ctf_auto.py

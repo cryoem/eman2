@@ -77,6 +77,8 @@ Blockdata["color"], Blockdata["no_of_groups"], balanced_processor_load_on_nodes 
 # end of Blockdata
 #indep_run = 0
 #print "  MPI STUFF BY PAWEL ",Blockdata["myid"], indep_run, Blockdata["color"], Blockdata["myid_on_node"]
+global_def.BATCH = True
+global_def.MPI = True
 
 
 NAME_OF_JSON_STATE_FILE = "my_state.json"
