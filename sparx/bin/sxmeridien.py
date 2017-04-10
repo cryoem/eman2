@@ -7,7 +7,7 @@
 #  11/07       Shared refvol
 #  10/28/2016 - Polar
 #  11/18/2016 change in strategy
-#  01/05/2017 - wrapping up first take.
+#  04/10/2017 - Enabled for one node
 
 
 """
@@ -64,6 +64,7 @@ from sparx 	import *
 from EMAN2  import EMNumPy
 from logger import Logger, BaseLogger_Files
 import global_def
+from global_def import *
 
 from mpi   	import  *
 from math  	import  *
@@ -96,7 +97,8 @@ masters_from_groups_vs_everything_else_comm = mpi_comm_split(MPI_COMM_WORLD, Blo
 Blockdata["color"], Blockdata["no_of_groups"], balanced_processor_load_on_nodes = get_colors_and_subsets(Blockdata["main_node"], MPI_COMM_WORLD, Blockdata["myid"], \
 		Blockdata["shared_comm"], Blockdata["myid_on_node"], masters_from_groups_vs_everything_else_comm)
 #  We need two nodes for processing of volumes
-Blockdata["node_volume"]		= [Blockdata["no_of_groups"]-2, Blockdata["no_of_groups"]-1]  # For 3D stuff take two last nodes\
+if( Blockdata["no_of_groups"] > 1 ):  Blockdata["node_volume"] = [Blockdata["no_of_groups"]-2, Blockdata["no_of_groups"]-1]  # For 3D stuff take two last nodes
+else: Blockdata["node_volume"] = [0,0]
 #  We need two CPUs for processing of volumes, they are taken to be main CPUs on each volume
 #  We have to send the two myids to all nodes so we can identify main nodes on two selected groups.
 Blockdata["main_shared_nodes"]	= [Blockdata["node_volume"][0]*Blockdata["no_of_processes_per_group"],Blockdata["node_volume"][1]*Blockdata["no_of_processes_per_group"]]
@@ -6168,7 +6170,7 @@ def main():
 	###print("  MPIINFO  ",Blockdata)
 	###  MPI SANITY CHECKES
 	if not balanced_processor_load_on_nodes: ERROR("Nodes do not have the same number of CPUs, please check configuration of the cluster.","meridien",1,Blockdata["myid"])
-	if( Blockdata["no_of_groups"] <2 ):  ERROR("To run, program requires cluster with at least two nodes.","meridien",1,Blockdata["myid"])
+	#if( Blockdata["no_of_groups"] < 2 ):  ERROR("To run, program requires cluster with at least two nodes.","meridien",1,Blockdata["myid"])
 	###
 	if Blockdata["myid"]  == Blockdata["main_node"]:
 		line = ""
@@ -6788,44 +6790,65 @@ def main():
 				del refang, rshifts
 
 				#  DRIVER RESOLUTION ASSESSMENT and RECONSTRUCTION <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-				if( Blockdata["myid"] == Blockdata["nodes"][1] ):  # It has to be 1 to avoid problem with tvol1 not closed on the disk
-					#--  memory_check(Blockdata["myid"],"first node, before stepone")
-					#  read volumes, shrink
-					tvol0 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_0_%03d.hdf"%(Tracker["mainiteration"])))
-					tweight0 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_0_%03d.hdf"%(Tracker["mainiteration"])))
-					tvol1 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_1_%03d.hdf"%(Tracker["mainiteration"])))
-					tweight1 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_1_%03d.hdf"%(Tracker["mainiteration"])))
-					Util.fuse_low_freq(tvol0, tvol1, tweight0, tweight1, 2*Tracker["constants"]["fuse_freq"])
-					tag = 7007
-					send_EMData(tvol1, Blockdata["nodes"][0], tag, MPI_COMM_WORLD)
-					send_EMData(tweight1, Blockdata["nodes"][0], tag, MPI_COMM_WORLD)
-					shrank0 	= stepone(tvol0, tweight0)
-					send_EMData(shrank0, Blockdata["nodes"][0], tag, MPI_COMM_WORLD)
-					del shrank0
-					lcfsc = 0
-					#--  memory_check(Blockdata["myid"],"first node, after stepone")
-				elif( Blockdata["myid"] == Blockdata["nodes"][0] ):
-					#--  memory_check(Blockdata["myid"],"second node, before stepone")
-					#  read volumes, shrink
-					tag = 7007
-					tvol1 		= recv_EMData(Blockdata["nodes"][1], tag, MPI_COMM_WORLD)
-					tweight1 	= recv_EMData(Blockdata["nodes"][1], tag, MPI_COMM_WORLD)
-					tvol1.set_attr_dict( {"is_complex":1, "is_fftodd":1, 'is_complex_ri': 1, 'is_fftpad': 1} )
-					shrank1 	= stepone(tvol1, tweight1)
-					#  Get shrank volume, do fsc, send it to all
-					shrank0 	= recv_EMData(Blockdata["nodes"][1], tag, MPI_COMM_WORLD)
-					#  Note shrank volumes are Fourier uncentered.
-					cfsc 		= fsc(shrank0, shrank1)[1]
-					del shrank0, shrank1
-					if(Tracker["nxinit"]<Tracker["constants"]["nnxo"]):
-						cfsc 	= cfsc[:Tracker["nxinit"]//2+1]
-						for i in xrange(len(cfsc),Tracker["constants"]["nnxo"]//2+1):  cfsc.append(0.0)
-					lcfsc = len(cfsc)
-					#--  memory_check(Blockdata["myid"],"second node, after stepone")
+				if( Blockdata["no_of_groups"] == 1 ):
+					if( Blockdata["myid"] == Blockdata["nodes"][0] ):
+						tvol0 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_0_%03d.hdf"%(Tracker["mainiteration"])))
+						tweight0 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_0_%03d.hdf"%(Tracker["mainiteration"])))
+						tvol1 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_1_%03d.hdf"%(Tracker["mainiteration"])))
+						tweight1 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_1_%03d.hdf"%(Tracker["mainiteration"])))
+						Util.fuse_low_freq(tvol0, tvol1, tweight0, tweight1, 2*Tracker["constants"]["fuse_freq"])
+						shrank0 	= stepone(tvol0, tweight0)
+						shrank1 	= stepone(tvol1, tweight1)
+						#  Note shrank volumes are Fourier uncentered.
+						cfsc 		= fsc(shrank0, shrank1)[1]
+						del shrank0, shrank1
+						if(Tracker["nxinit"]<Tracker["constants"]["nnxo"]):
+							cfsc 	= cfsc[:Tracker["nxinit"]//2+1]
+							for i in xrange(len(cfsc),Tracker["constants"]["nnxo"]//2+1):  cfsc.append(0.0)
+						lcfsc = len(cfsc)
+						#--  memory_check(Blockdata["myid"],"second node, after stepone")
+					else:
+						#  receive fsc
+						lcfsc = 0
+				
 				else:
-					#  receive fsc
-					lcfsc = 0
+					if( Blockdata["myid"] == Blockdata["nodes"][1] ):  # It has to be 1 to avoid problem with tvol1 not closed on the disk
+						#--  memory_check(Blockdata["myid"],"first node, before stepone")
+						#  read volumes, shrink
+						tvol0 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_0_%03d.hdf"%(Tracker["mainiteration"])))
+						tweight0 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_0_%03d.hdf"%(Tracker["mainiteration"])))
+						tvol1 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_1_%03d.hdf"%(Tracker["mainiteration"])))
+						tweight1 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_1_%03d.hdf"%(Tracker["mainiteration"])))
+						Util.fuse_low_freq(tvol0, tvol1, tweight0, tweight1, 2*Tracker["constants"]["fuse_freq"])
+						tag = 7007
+						send_EMData(tvol1, Blockdata["nodes"][0], tag, MPI_COMM_WORLD)
+						send_EMData(tweight1, Blockdata["nodes"][0], tag, MPI_COMM_WORLD)
+						shrank0 	= stepone(tvol0, tweight0)
+						send_EMData(shrank0, Blockdata["nodes"][0], tag, MPI_COMM_WORLD)
+						del shrank0
+						lcfsc = 0
+						#--  memory_check(Blockdata["myid"],"first node, after stepone")
+					elif( Blockdata["myid"] == Blockdata["nodes"][0] ):
+						#--  memory_check(Blockdata["myid"],"second node, before stepone")
+						#  read volumes, shrink
+						tag = 7007
+						tvol1 		= recv_EMData(Blockdata["nodes"][1], tag, MPI_COMM_WORLD)
+						tweight1 	= recv_EMData(Blockdata["nodes"][1], tag, MPI_COMM_WORLD)
+						tvol1.set_attr_dict( {"is_complex":1, "is_fftodd":1, 'is_complex_ri': 1, 'is_fftpad': 1} )
+						shrank1 	= stepone(tvol1, tweight1)
+						#  Get shrank volume, do fsc, send it to all
+						shrank0 	= recv_EMData(Blockdata["nodes"][1], tag, MPI_COMM_WORLD)
+						#  Note shrank volumes are Fourier uncentered.
+						cfsc 		= fsc(shrank0, shrank1)[1]
+						del shrank0, shrank1
+						if(Tracker["nxinit"]<Tracker["constants"]["nnxo"]):
+							cfsc 	= cfsc[:Tracker["nxinit"]//2+1]
+							for i in xrange(len(cfsc),Tracker["constants"]["nnxo"]//2+1):  cfsc.append(0.0)
+						lcfsc = len(cfsc)
+						#--  memory_check(Blockdata["myid"],"second node, after stepone")
+					else:
+						#  receive fsc
+						lcfsc = 0
 
 				mpi_barrier(MPI_COMM_WORLD)
 
@@ -6839,64 +6862,69 @@ def main():
 				
 				#  Now that we have the curve, do the reconstruction
 				Tracker["maxfrad"] = Tracker["nxinit"]//2
-				if( Blockdata["color"] == Blockdata["node_volume"][1] ):
-					#--  memory_check(Blockdata["myid"],"first node, before steptwo")
-					#  compute filtered volume
-					if( Blockdata["myid_on_node"] == 0 ):
-						treg0 = get_im(os.path.join(Tracker["directory"], "tempdir", "trol_0_%03d.hdf"%(Tracker["mainiteration"])))
-					else:
-						tvol0 = model_blank(1)
-						tweight0 = model_blank(1)
-						treg0 = model_blank(1)
-					tvol0 = steptwo_mpi(tvol0, tweight0, treg0, cfsc, True, color = Blockdata["node_volume"][1])
-					del tweight0, treg0
-					if( Blockdata["myid_on_node"] == 0 ):
-						#--  memory_check(Blockdata["myid"],"first node, before masking")
-						if( Tracker["mainiteration"] == 1 ):
-							# At a first iteration truncate resolution at the initial resolution set by the user
-							for i in xrange(len(cfsc)):
-								if(  i < Tracker["constants"]["inires"]+1 ):  cfsc[i]   = 1.0
-								if(  i == Tracker["constants"]["inires"]+1 ): cfsc[i]  	= 0.5
-								elif( i > Tracker["constants"]["inires"]+1 ): cfsc[i]  	= 0.0
-							tvol0 = filt_table(tvol0, cfsc)
-							del cfsc
+				if( Blockdata["no_of_groups"] > 1 ):  lorder = [0,0] #  Two blocks in patallrl
+				elif( Blockdata["no_of_groups"] == 1 ):  lorder = [0,1] #  One after another
+				for iorder in xrange(2):
+					if( iorder == lorder[0] ):
+						if( Blockdata["color"] == Blockdata["node_volume"][1] ):
+							#--  memory_check(Blockdata["myid"],"first node, before steptwo")
+							#  compute filtered volume
+							if( Blockdata["myid_on_node"] == 0 ):
+								treg0 = get_im(os.path.join(Tracker["directory"], "tempdir", "trol_0_%03d.hdf"%(Tracker["mainiteration"])))
+							else:
+								tvol0 = model_blank(1)
+								tweight0 = model_blank(1)
+								treg0 = model_blank(1)
+							tvol0 = steptwo_mpi(tvol0, tweight0, treg0, cfsc, True, color = Blockdata["node_volume"][1])
+							del tweight0, treg0
+							if( Blockdata["myid_on_node"] == 0 ):
+								#--  memory_check(Blockdata["myid"],"first node, before masking")
+								if( Tracker["mainiteration"] == 1 ):
+									# At a first iteration truncate resolution at the initial resolution set by the user
+									for i in xrange(len(cfsc)):
+										if(  i < Tracker["constants"]["inires"]+1 ):  cfsc[i]   = 1.0
+										if(  i == Tracker["constants"]["inires"]+1 ): cfsc[i]  	= 0.5
+										elif( i > Tracker["constants"]["inires"]+1 ): cfsc[i]  	= 0.0
+									tvol0 = filt_table(tvol0, cfsc)
+									if( Blockdata["no_of_groups"] > 1 ):  del cfsc
 
-						user_func = user_functions.factory[Tracker["constants"]["user_func"]]
-						ref_data = [tvol0, Tracker, mainiteration]
-						#--  #--  memory_check(Blockdata["myid"],"first node, after masking")
-						user_func(ref_data).write_image(os.path.join(Tracker["directory"], "vol_0_%03d.hdf"%(Tracker["mainiteration"])))
-						#--  memory_check(Blockdata["myid"],"first node, after 1 steptwo")
-					del tvol0
-					#--  memory_check(Blockdata["myid"],"first node, after 2 steptwo")
-				elif( Blockdata["color"] == Blockdata["node_volume"][0] ):
-					#--  memory_check(Blockdata["myid"],"second node, before steptwo")
-					#  compute filtered volume
-					if( Blockdata["myid_on_node"] == 0 ):
-						treg1 = get_im(os.path.join(Tracker["directory"], "tempdir", "trol_1_%03d.hdf"%(Tracker["mainiteration"])))
-					else:
-						tvol1 = model_blank(1)
-						tweight1 = model_blank(1)
-						treg1 = model_blank(1)
-					tvol1 = steptwo_mpi(tvol1, tweight1, treg1, cfsc, True,  color = Blockdata["node_volume"][0])
-					del tweight1, treg1
-					if( Blockdata["myid_on_node"] == 0 ):
-						#--  memory_check(Blockdata["myid"],"second node, before masking")
-						if( Tracker["mainiteration"] == 1 ):
-							# At a first iteration truncate resolution at the initial resolution set by the user
-							for i in xrange(len(cfsc)):
-								if(  i < Tracker["constants"]["inires"]+1 ):  cfsc[i]   = 1.0
-								if(  i == Tracker["constants"]["inires"]+1 ):  cfsc[i]  = 0.5
-								elif( i > Tracker["constants"]["inires"]+1 ):  cfsc[i]  = 0.0
-							tvol1 = filt_table(tvol1, cfsc)
-							del cfsc
-						user_func = user_functions.factory[Tracker["constants"]["user_func"]]
-						ref_data = [tvol1, Tracker, mainiteration]
-						#--  #--  memory_check(Blockdata["myid"],"first node, after masking")
-						user_func(ref_data).write_image(os.path.join(Tracker["directory"], "vol_1_%03d.hdf"%(Tracker["mainiteration"])))
-						#--  memory_check(Blockdata["myid"],"second node, after 1 steptwo")
-					del tvol1
-					#--  memory_check(Blockdata["myid"],"second node, after 2 steptwo")
-				#  Here end per node execution.
+								user_func = user_functions.factory[Tracker["constants"]["user_func"]]
+								ref_data = [tvol0, Tracker, mainiteration]
+								#--  #--  memory_check(Blockdata["myid"],"first node, after masking")
+								user_func(ref_data).write_image(os.path.join(Tracker["directory"], "vol_0_%03d.hdf"%(Tracker["mainiteration"])))
+								#--  memory_check(Blockdata["myid"],"first node, after 1 steptwo")
+							del tvol0
+							#--  memory_check(Blockdata["myid"],"first node, after 2 steptwo")
+					if( iorder == lorder[1] ):
+						if( Blockdata["color"] == Blockdata["node_volume"][0] ):
+							#--  memory_check(Blockdata["myid"],"second node, before steptwo")
+							#  compute filtered volume
+							if( Blockdata["myid_on_node"] == 0 ):
+								treg1 = get_im(os.path.join(Tracker["directory"], "tempdir", "trol_1_%03d.hdf"%(Tracker["mainiteration"])))
+							else:
+								tvol1 = model_blank(1)
+								tweight1 = model_blank(1)
+								treg1 = model_blank(1)
+							tvol1 = steptwo_mpi(tvol1, tweight1, treg1, cfsc, True,  color = Blockdata["node_volume"][0])
+							del tweight1, treg1
+							if( Blockdata["myid_on_node"] == 0 ):
+								#--  memory_check(Blockdata["myid"],"second node, before masking")
+								if( Tracker["mainiteration"] == 1 ):
+									# At a first iteration truncate resolution at the initial resolution set by the user
+									for i in xrange(len(cfsc)):
+										if(  i < Tracker["constants"]["inires"]+1 ):  cfsc[i]   = 1.0
+										if(  i == Tracker["constants"]["inires"]+1 ):  cfsc[i]  = 0.5
+										elif( i > Tracker["constants"]["inires"]+1 ):  cfsc[i]  = 0.0
+									tvol1 = filt_table(tvol1, cfsc)
+									del cfsc
+								user_func = user_functions.factory[Tracker["constants"]["user_func"]]
+								ref_data = [tvol1, Tracker, mainiteration]
+								#--  #--  memory_check(Blockdata["myid"],"first node, after masking")
+								user_func(ref_data).write_image(os.path.join(Tracker["directory"], "vol_1_%03d.hdf"%(Tracker["mainiteration"])))
+								#--  memory_check(Blockdata["myid"],"second node, after 1 steptwo")
+							del tvol1
+							#--  memory_check(Blockdata["myid"],"second node, after 2 steptwo")
+					#  Here end per node execution.
 				mpi_barrier(MPI_COMM_WORLD)
 				if( Blockdata["myid"] == Blockdata["nodes"][0] ):
 					cmd = "{} {}".format("rm -rf", os.path.join(Tracker["directory"], "tempdir"))

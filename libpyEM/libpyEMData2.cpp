@@ -283,7 +283,7 @@ vector<float> EMData_calc_fourier_shell_correlation_wrapper1(EMData &ths, EMData
 	return ths.calc_fourier_shell_correlation(with);
 }
 
-vector<float> EMData_calc_fourier_shell_correlation_wrapper2(EMData &ths, EMData *with, int width) {
+vector<float> EMData_calc_fourier_shell_correlation_wrapper2(EMData &ths, EMData *with, float width) {
 	GILRelease rel;
 	
 	return ths.calc_fourier_shell_correlation(with,width);
