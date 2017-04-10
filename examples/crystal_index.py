@@ -210,10 +210,9 @@ def main():
 			solns = [rngs[i] for i,v in enumerate(res) if v == minval]
 
 			res1 = rngs[np.argmin(res)]
-			print("ORIENTATION: {}".format(res1))
-
+			
 			refine1 = optimize.fmin(cost,res1,args=(hkl_exper,hkl_ref,close,min_distance,options.data_weight,options.exper_weight,),disp=False)
-			print("Az, Alt, Phi -> {:.2f},{:.2f},{:.2f}".format(*refine1))
+			print("ORIENTATION (Az, Alt, Phi) -> ({:.2f},{:.2f},{:.2f})".format(*refine1))
 
 			plane = get_plane(res1,hkl_ref) # rotate reference
 			plt.imshow(nimg,origin="lower",cmap=plt.cm.Greys_r)
