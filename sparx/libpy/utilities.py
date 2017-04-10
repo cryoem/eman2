@@ -5277,7 +5277,7 @@ def get_colors_and_subsets(main_node, mpi_comm, my_rank, shared_comm, sh_my_rank
 
 	balanced_processor_load_on_nodes = len(set(number_of_processes_in_each_group)) == 1 
 
-	return color, number_of_groups, balanced_processor_load_on_nodes 
+	return color, number_of_groups, balanced_processor_load_on_nodes
 
 
 def wrap_mpi_split_shared_memory(mpi_comm):
