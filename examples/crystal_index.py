@@ -60,9 +60,9 @@ def main():
 	parser.add_argument("--apix", type=float,default=False, help="Specify the Apix of your input images")
 	parser.add_argument("--params", type=str,help="Lattice parameters separated by commas, i.e. '70.3,70.3,32.0,90.0,90.0,90.0'",default="", guitype='intbox', row=11, col=0, rowspan=1, colspan=1, mode="align")
 	parser.add_argument("--maxshift", type=float, help="Specify the maximum pixel shift when optimizing peak locations. Default is 5.0 pixels.",default=5.0)
-	parser.add_argument("--boxsize", type=int, help="Specify the size of the box within which peaks will be refined. Default is 32 pixels.",default=32)
-	parser.add_argument("--data_weight", type=float, help="Weight of penalty for spots in experimental data not found in the reference lattice. Default is 10.0.",default=10.0)
-	parser.add_argument("--exper_weight", type=float, help="Weight of penalty for points in reference lattice not found in the experimental data. Default is 1.0.",default=1.0)
+	parser.add_argument("--boxsize", type=int, help="Specify the size of the box within which peaks will be refined. Default is 64 pixels.",default=64)
+	parser.add_argument("--exper_weight", type=float, help="Weight of penalty for spots in experimental data not found in the reference lattice. Default is 10.0.",default=10.0)
+	parser.add_argument("--data_weight", type=float, help="Weight of penalty for points in reference lattice not found in the experimental data. Default is 1.0.",default=1.0)
 	parser.add_argument("--threads",type=int,help="Number of cores over which parallel optimization will be performed. Default is to use all cores.",default=None)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
@@ -113,6 +113,9 @@ def main():
 		#img.process_inplace("threshold.notzero")
 		nimg = img.numpy().copy()
 
+		plt.imshow(nimg)
+		plt.show()
+
 		print("\nDETECTING SPOTS")
 
 		# dilation of nimg with a size*size structuring element
@@ -140,36 +143,37 @@ def main():
 
 		hkl_ref = generate_lattice(nx,apix,max_radius,a,b,c,alpha,beta,gamma)
 
-		rot = rotate(hkl_ref,(np.random.random(3)*2-1)*180.)
-		close = 10.0
-		plane = rot[np.where(np.logical_and(rot[:,2] >= -1*close/2., rot[:,2] <= close/2.))]
-		within = 250.0 # furthest experimental datapoint from the origin
-		ref_radii = plane[:,3] # radii of points in reference volume
-		observable = np.where(ref_radii<=within) # compare experimental spots to these quasi-coplanar points
-		test_tree_a = scipy.spatial.cKDTree(hkl_exper[:,:2])
-		dist_exper,idx_exper = test_tree_a.query([0,0],k=9)
-		test_tree_b = scipy.spatial.cKDTree(plane[:,:2])
-		dist_ref,idx_ref = test_tree_b.query([0,0],k=9)
+		#close = 10.0
+		#rot = rotate(hkl_ref,[0.,0.,0.])
+		#plane = rot[np.where(np.logical_and(rot[:,2] >= -1*close/2., rot[:,2] <= close/2.))]
+		#ref_radii = plane[:,3] # radii of points in reference volume
+		#within = plane[plane[:,3] > 0.0,3].min()
+		#print(within)
+		#within = 250.0 # furthest experimental datapoint from the origin
+		#obs = np.logical_and(ref_radii<=within,ref_radii>0.0) # compare experimental spots to these quasi-coplanar points
+		dist_exper,idx_exper = scipy.spatial.cKDTree(hkl_exper[:,:2]).query([0,0],k=9)
+		#test_tree_b = scipy.spatial.cKDTree(plane[:,:2])
+		#dist_ref,idx_ref = test_tree_b.query([0,0],k=9)
 		min_distance = np.min([dist_exper[1],dist_exper[3],dist_exper[5],dist_exper[7]])
-		nmin = 0
-		nmax = 10
-		rngs2 = (slice(nmin,nmax+1,1),slice(nmin,nmax+1,1),slice(1,nmax+1,1))
-		lc = optimize.brute(find_first_reflection,rngs2,finish=None,disp=False,full_output=True,args=(nx,apix,a,b,c,1.0,))
+		#nmin = 0
+		#nmax = 10
+		#rngs2 = (slice(nmin,nmax+1,1),slice(nmin,nmax+1,1),slice(1,nmax+1,1))
+		#lc = optimize.brute(find_first_reflection,rngs2,finish=None,disp=False,full_output=True,args=(nx,apix,a,b,c,1.0,))
 
 		close = 10.0 # initial thickness of central slab within which we expect to observe spots
 
-		a_mindeg = -72. #-180.
-		a_maxdeg = -70. #180.
+		a_mindeg = -180.
+		a_maxdeg = 180.
 		a_rng = a_maxdeg - a_mindeg
 		astep = 0.5
 
-		b_mindeg = -73.0 #-180.
-		b_maxdeg = -71.0 #180.
+		b_mindeg = -180.
+		b_maxdeg = 180.
 		b_rng = b_maxdeg - b_mindeg
 		bstep = 0.5
 
-		g_mindeg = -48.0 #-180.
-		g_maxdeg = -43.0 #180.
+		g_mindeg = -180.
+		g_maxdeg = 180.
 		g_rng = g_maxdeg - g_mindeg
 		gstep = 1.0
 
@@ -180,46 +184,72 @@ def main():
 
 		t = time.time()
 		mypool = Pool(options.threads)
-		res = [mypool.apply_async(cost,(r,hkl_exper,hkl_ref,close,min_distance,options.data_weight,options.exper_weight)) for r in rngs]
+		res = [mypool.apply_async(cost,(r,hkl_exper,hkl_ref,close,min_distance,options.exper_weight,options.data_weight,)) for r in rngs]
 		mypool.close()
 		mypool.join()
 		dt = time.time()-t
 
 		res1 = rngs[np.argmin(res)]
-
 		refine1 = optimize.fmin(cost,res1,args=(hkl_exper,hkl_ref,close,min_distance,options.data_weight,options.exper_weight,),disp=False)
 		az,alt,phi = refine1
-		print("Az: {}\tAlt: {}\tPhi: {}\n".format(az,alt,phi))
+
+		print("Az, Alt, Phi -> {:.2f},{:.2f},{:.2f}".format(az,alt,phi))
+		#print("Az: {}\tAlt: {}\tPhi: {}\n".format(az,alt,phi))
+
+		# pln = get_plane(refine1,hkl_ref,close)
+		# pln = pln[np.argsort(pln[:,3])] # sort by radius
+		# plt.imshow(nimg,cmap=plt.cm.Greys_r)
+		# plt.scatter(pln[:,1]+nx/2,pln[:,0]+nx/2)
+		# plt.show()
+
+		#sys.exit(1)
 
 		print("REFINING PARAMETERS") #xtol=0.01, ftol=0.01,maxfun=1e5
 		
-		refine_apix = optimize.fmin(apix_cost,[apix],args=(az,alt,phi,hkl_exper,hkl_ref,close,min_distance/4.,nx,max_radius,options.data_weight,options.exper_weight,a,b,c,alpha,beta,gamma,))#,disp=False)
-		hkl_ref = generate_lattice(nx,refine_apix[0],max_radius,a,b,c,alpha,beta,gamma)
-		ds = 1/(refine_apix[0]*nx) # angstroms per fourier pixel
-		print("APIX: {} -> {}".format(apix,refine_apix[0]))
+		refine_apix = optimize.fmin(apix_cost,[apix],args=(az,alt,phi,hkl_exper,hkl_ref,close,16.,nx,max_radius,options.data_weight,options.exper_weight,a,b,c,alpha,beta,gamma,))#,disp=False)
+		refine_apix = refine_apix[0] #float(refine_apix.x)
+		hkl_ref = generate_lattice(nx,refine_apix,max_radius,a,b,c,alpha,beta,gamma)
+		ds = 1/(refine_apix*nx) # angstroms per fourier pixel
+		print("APIX: {:.2f} -> {:.2f}".format(apix,refine_apix))
+
+		# pln = get_plane(refine1,hkl_ref,close)
+		# pln = pln[np.argsort(pln[:,3])] # sort by radius
+		# plt.imshow(nimg,cmap=plt.cm.Greys_r)
+		# plt.scatter(pln[:,0]+nx/2,pln[:,1]+nx/2)
+		# plt.show()
+
+		#sys.exit(1)
 
 		refine_close = optimize.fmin(close_cost,[close],args=(az,alt,phi,hkl_exper,hkl_ref,8.,50.,options.data_weight,options.exper_weight,))#,disp=False)
-		#refine_close = refine_close.x
-		if refine_close[0] < 3.0: refine_close[0] = close
-		print("PROJECTION SLAB THICKNESS: {} -> {}".format(close,refine_close[0]))
-		
-		refine2 = optimize.fmin(cost,refine1,args=(hkl_exper,hkl_ref,refine_close[0],4.,options.data_weight,options.exper_weight,))#,disp=False) # re-refine orientation
+		if refine_close[0] < 0.5: refine_close[0] = close
+		print("SLAB THICKNESS: {:.2f} -> {:.2f}".format(close,refine_close[0]))
+
+		# pln = get_plane(refine1,hkl_ref,refine_close[0])
+		# pln = pln[np.argsort(pln[:,3])] # sort by radius
+		# plt.imshow(nimg,cmap=plt.cm.Greys_r)
+		# plt.scatter(pln[:,0]+nx/2,pln[:,1]+nx/2)
+		# plt.show()		
+
+		refine2 = optimize.fmin_cg(cost,refine1,args=(hkl_exper,hkl_ref,refine_close[0],16.,options.data_weight,options.exper_weight,))#,disp=False) # re-refine orientation
 		print("ORIENTATION: {}\n".format(refine2))
-		print("Az: {}\tAlt: {}\tPhi: {}\n".format(az,alt,phi))
+		print("Az, Alt, Phi -> {:.2f},{:.2f},{:.2f}".format(az,alt,phi))
 		
-		pln = get_plane(refine2,hkl_ref,refine_close[0])
-		pln = pln[np.argsort(pln[:,3])] # sort by radius
+		# pln = get_plane(refine2,hkl_ref,refine_close[0])
+		# pln = pln[np.argsort(pln[:,3])] # sort by radius
+		# plt.imshow(nimg,cmap=plt.cm.Greys_r)
+		# plt.scatter(pln[:,1]+nx/2,pln[:,0]+nx/2)
+		# plt.show()
 
 		print("     xc        yc       zc          r           resol    h      k     l      raw_F     raw_p")
 		with open("{}.sf".format(fn.split(".")[0]),"w") as sf: # create a quasi.sf file for this image
 			for nrow,row in enumerate(pln):
-				yc,xc,zc,r,h,k,l = row[:7]
+				xc,yc,zc,r,h,k,l = row[:7]
 				if r > 0: resol = 1/(r*ds)
 				else: resol = "inf"
 				if nrow in range(9):
-					raw_F,raw_p = get_sf(fnorig,int(xc)+nx/2,int(yc)+nx/2,64,show=True)
+					raw_F,raw_p = get_sf(fnorig,int(xc)+nx/2,int(yc)+nx/2,2)#,show=True)
 				else:
-					raw_F,raw_p = get_sf(fnorig,int(xc)+nx/2,int(yc)+nx/2,64,show=False)
+					raw_F,raw_p = get_sf(fnorig,int(xc)+nx/2,int(yc)+nx/2,2)#,show=False)
 				try:
 					print("{:8.1f},{:8.1f},{:8.1f}    {:6.1f}    {:6.1f}    {:4d}    {:4d}    {:4d}    {:8.2f}    {:8.2f}".format(xc,yc,zc,r,resol,int(h),int(k),int(l),raw_F,raw_p))
 				except:
@@ -229,16 +259,13 @@ def main():
 def wrap_cost(args):
 	return cost(*args)
 
-def get_sf(fft,xc,yc,nn=2,show=False):
+def get_sf(fft,xc,yc,nn=2):
 	reg = fft[xc-nn/2:xc+nn/2+1,yc-nn/2:yc+nn/2+1]
 	amp = np.absolute(reg).max()
 	phase = np.angle(np.sum(np.real(reg).ravel()) + 1j*np.sum(np.imag(reg).ravel()),deg=True)
-	if show:
-		plt.imshow(np.real(np.absolute(reg)))
-		plt.show()
-	return amp,phase#,iq
+	return amp,phase
 
-def twoD_Gaussian((x, y), xo, yo, amplitude, sigma_x, sigma_y, theta, offset=0.):
+def twoD_Gaussian((x, y), xo, yo, amplitude, sigma_x, sigma_y, theta, offset=0.0):
 	xo = float(xo)
 	yo = float(yo)
 	a = (np.cos(theta)**2)/(2*sigma_x**2) + (np.sin(theta)**2)/(2*sigma_y**2)
@@ -247,18 +274,12 @@ def twoD_Gaussian((x, y), xo, yo, amplitude, sigma_x, sigma_y, theta, offset=0.)
 	g = offset + amplitude*np.exp( - (a*((x-xo)**2) + 2*b*(x-xo)*(y-yo) + c*((y-yo)**2)))
 	return g.ravel()
 
-def refine_peaks(coords,img,ms,bs):#bs=64,ms=3.0):
-	ones_msk = np.ones((bs,bs))
-
+def refine_peaks(coords,img,ms,bs):
 	x = np.linspace(0,bs,bs)
 	y = np.linspace(0,bs,bs)
 	x,y = np.meshgrid(x,y)
-
-	msk = np.zeros((img["nx"],img["ny"]))
-	ideal_msk =  np.zeros((img["nx"],img["ny"]))
-
 	refined_coords = []
-	for (xc,yc) in coords:
+	for (yc,xc) in coords:
 		r = Region(xc-bs/2,yc-bs/2,bs,bs)
 		ereg = img.get_clip(r)
 		nreg = ereg.numpy().copy()
@@ -269,7 +290,6 @@ def refine_peaks(coords,img,ms,bs):#bs=64,ms=3.0):
 			popt = [p for p in popt]
 		except:
 			popt = initial_guess
-		#zz = twoD_Gaussian((x,y),*popt).reshape(bs,bs)
 		popt[0] = popt[0] + xc - bs/2
 		popt[1] = popt[1] + yc - bs/2
 		refined_coords.append([popt[0],popt[1]])
@@ -284,7 +304,7 @@ def generate_lattice(nx,apix,max_radius,a,b,c,alpha,beta,gamma):
 	bstar = const/b
 	cstar = const/c
 
-	# create lattice coordinates
+	#create lattice coordinates
 	astars = np.arange(0,const+astar,astar,dtype=np.float)
 	bstars = np.arange(0,const+bstar,bstar,dtype=np.float)
 	cstars = np.arange(0,const+cstar,cstar,dtype=np.float)
@@ -298,7 +318,7 @@ def generate_lattice(nx,apix,max_radius,a,b,c,alpha,beta,gamma):
 	l_inds = cstars / cstar
 
 	hkl_ref = np.asarray(np.meshgrid(astars,bstars,cstars)).T
-	hkl_inds = np.asarray(np.meshgrid(h_inds,k_inds,l_inds)).T
+	hkl_inds = np.round(np.asarray(np.meshgrid(h_inds,k_inds,l_inds))).astype(int).T
 
 	hkl_inds = np.swapaxes(hkl_inds, 0, 1)
 	hkl_inds = np.swapaxes(hkl_inds, 1, 2)
@@ -312,21 +332,21 @@ def generate_lattice(nx,apix,max_radius,a,b,c,alpha,beta,gamma):
 	# keep only points within a ball the size of measured points in our experimental data
 	return hkl_ref[np.logical_and(radii_ref < max_radius, radii_ref > -max_radius)]
 
-def find_first_reflection(hkl,obj,nx,apix,a,b,c,thresh=1.0):
-	ds = 1/(apix*nx)
-	astar = 1/(a*ds) #50.551518297430448
-	bstar = 1/(b*ds) #50.551518297430448
-	cstar = 1/(c*ds) #104.66147232670608
-	mag = np.linalg.norm([hkl[0]*astar,hkl[1]*bstar,hkl[2]*cstar])
-	return np.abs(obj - mag)
+# def find_first_reflection(hkl,obj,nx,apix,a,b,c,thresh=1.0):
+# 	ds = 1/(apix*nx)
+# 	astar = 1/(a*ds) #50.551518297430448
+# 	bstar = 1/(b*ds) #50.551518297430448
+# 	cstar = 1/(c*ds) #104.66147232670608
+# 	mag = np.linalg.norm([hkl[0]*astar,hkl[1]*bstar,hkl[2]*cstar])
+# 	return np.abs(obj - mag)
 
 # compare projected reference against experimental data
 def compare(exper,data,min_dist,w1,w2):
 	diff = len(data)-len(exper)
-	if len(data) < len(exper)*0.9: 	# better to cover all black dots than to avoid whitespace
-		return np.inf#,np.inf,1.0,diff,1.0,0.0,None,None
+	if len(data) < len(exper)*0.9:#0.9: 	# better to cover all black dots than to avoid whitespace
+		return np.inf #,np.inf,1.0,diff,1.0,0.0,None,None
 	if len(data) > 3*len(exper):
-		return np.inf#,np.inf,1.0,diff,1.0,0.0,None,None
+		return np.inf #,np.inf,1.0,diff,1.0,0.0,None,None
 	dist = []
 	a = exper[:,:2]
 	b = data[:,:2]
@@ -338,8 +358,7 @@ def compare(exper,data,min_dist,w1,w2):
 		if m == np.inf:
 			nopair_count+=1
 			continue
-		else:
-			dist.append(m)
+		else: dist.append(m)
 		cdist[i,:] = np.inf
 		cdist[:,j] = np.inf
 	proximity = np.sum(dist)/len(dist)
@@ -352,7 +371,7 @@ def compare(exper,data,min_dist,w1,w2):
 	energy = proximity + w1 * notpaired + w2 * notpaired2
 	return energy#,proximity,w1,notpaired,w2,notpaired2,pairs,pairs2
 
-def cost(params,exper,ref,close,min_distance,w1,w2,here=False):
+def cost(params,exper,ref,close,min_distance,w1,w2):
 	plane = get_plane(params,ref) # rotate reference
 	return compare(exper,plane,min_distance,w1,w2)
 
@@ -369,7 +388,7 @@ def rotate(cloud,params):
 
 def apix_cost(params,az,alt,phi,exper,ref,close,minimum_dist,nx,max_radius,w1,w2,a,b,c,alpha,beta,gamma):
 	new = generate_lattice(nx,params[0],max_radius,a,b,c,alpha,beta,gamma)
-	return cost([az,alt,phi],exper,new,close,minimum_dist,w1,w2,here=True)
+	return cost([az,alt,phi],exper,new,close,minimum_dist,w1,w2)
 
 def close_cost(params,az,alt,phi,exper,ref,minimum_dist=8.,weight=50.,w1=10.0,w2=1.0):
 	c = cost([az,alt,phi],exper,ref,params[0],minimum_dist,w1,w2)
