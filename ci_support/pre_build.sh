@@ -28,8 +28,6 @@ else
     export src_dir=${PWD}
 fi
 
-patch programs/CMakeLists.txt recipes/eman/patch.diff
-
 rm -rf ${build_dir}
 mkdir -p ${build_dir}
 cd ${build_dir}
