@@ -101,6 +101,8 @@ Blockdata["node_volume"]		= [Blockdata["no_of_groups"]-2, Blockdata["no_of_group
 #  We have to send the two myids to all nodes so we can identify main nodes on two selected groups.
 Blockdata["main_shared_nodes"]	= [Blockdata["node_volume"][0]*Blockdata["no_of_processes_per_group"],Blockdata["node_volume"][1]*Blockdata["no_of_processes_per_group"]]
 # end of Blockdata
+global_def.BATCH = True
+global_def.MPI = True
 
 def create_subgroup():
 	# select a subset of myids to be in subdivision
@@ -6165,8 +6167,8 @@ def main():
 
 	###print("  MPIINFO  ",Blockdata)
 	###  MPI SANITY CHECKES
-	if not balanced_processor_load_on_nodes: ERROR("Nodes do not have the same number of CPUs, please check configuration of the cluster.","meridien",1,myid)
-	if( Blockdata["no_of_groups"] <2 ):  ERROR("To run, program requires a cluster with at least two nodes.","meridien",1,myid)
+	if not balanced_processor_load_on_nodes: ERROR("Nodes do not have the same number of CPUs, please check configuration of the cluster.","meridien",1,Blockdata["myid"])
+	if( Blockdata["no_of_groups"] <2 ):  ERROR("To run, program requires cluster with at least two nodes.","meridien",1,Blockdata["myid"])
 	###
 	if Blockdata["myid"]  == Blockdata["main_node"]:
 		line = ""
