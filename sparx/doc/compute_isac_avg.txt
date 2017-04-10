@@ -22,12 +22,12 @@ sxcompute_isac_avg.py exists only in MPI version
     isac_dir:: Isac output directory: Name of the directory where isac was run previously. (default required string)
     masterdir:: Output directory: The directory will be automatically created and the results will be written here. (default required string)
     radius:: Particle radius [Pixels]: There is no default radius. (default -1)
+
+    * The remaining parameters are optional.
     B_enhance:: Apply B-factor enhancement: Apply B-factor enhancement. (default False)
     B_start:: B-factor lower limit [A]: Lower limit for B-factor estimation. (default 10.0)
     Bfactor:: Use ad-hoc B-factor [A^2]: Skip the automatic estimation and use user-provided ad-hoc B-factor for the enhancement. (default 45.0)
     low_pass_filter:: Low-pass filter frequency: Cutoff frequency of low-pass filter. (default -1.0)
-
-    * The remaining parameters are optional.
     pixel_size:: Pixel size [A/Pixels]: The pixel size of images in input particle stack for isac. (default -1.0)
     noctf:: No CTF correction: Use this option if full CTF correction should not be applied. Useful for negative stained data. By default, the program will do full CTF correction. (default False) 
     xr:: Local X search range [Pixels]: Translational search range in the x direction for local alignment. (default -1.0)
