@@ -135,3 +135,4 @@ e2tomoresolution.py
 e2tomoseg_buildtrainset.py
 e2tomoseg_convnet.py
 e2tvrecon.py
+sphire
