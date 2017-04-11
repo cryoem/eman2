@@ -31,6 +31,8 @@ from   time import localtime, strftime, sleep
 
 global Tracker, Blockdata
 
+
+
 # ------------------------------------------------------------------------------------
 mpi_init(0, [])
 nproc    = mpi_comm_size(MPI_COMM_WORLD)
@@ -56,6 +58,8 @@ Blockdata["node_volume"] = [Blockdata["no_of_groups"]-3, Blockdata["no_of_groups
 Blockdata["nodes"] = [Blockdata["node_volume"][0]*Blockdata["no_of_processes_per_group"],Blockdata["node_volume"][1]*Blockdata["no_of_processes_per_group"], \
      Blockdata["node_volume"][2]*Blockdata["no_of_processes_per_group"]]
 # End of Blockdata: sorting requires at least three nodes, and the used number of nodes be integer times of three
+global_def.BATCH = True
+global_def.MPI   = True
 
 def compute_average_ctf(mlist, radius):
 	from morphology   import ctf_img
@@ -115,22 +119,27 @@ def compute_average_noctf(mlist, radius):
 	sumavg = fft(sumavg)
 	return sumavg, frc
 
-def adjust_pw_to_model(image, pixel_size):
-	c1 =-1.2
-	c2 = 2.0
+def adjust_pw_to_model(image, pixel_size, roo):
+	c1 =-4.5
+	c2 = 15.0
 	c3 = 0.2
 	c4 = -1.0
 	c5 = 1./5.
-	c6 = 0.25
+	c6 = 0.25 # six params are fitted to Yifan channel model
 	rot1 = rops_table(image)
-	pu = []
-	for ifreq in xrange(len(rot1)):
-		x = ifreq/len( rot1)/pixel_size
-		v = exp(c1+c2/(x/c3+1)**2) + exp(c4-0.5*(((x-c5)/c6**2)**2))
-		pu.append(v)
-	fil = [None]*len(rot1)
-	for ifreq in xrange(len(rot1)):
-		fil[ifreq] = sqrt(pu[ifreq]/rot1[ifreq])
+	fil  = [None]*len(rot1)
+	if roo is None: # adjusted to the analytic model, See Penczek Methods Enzymol 2010
+		pu = []
+		for ifreq in xrange(len(rot1)):
+			x = float(ifreq)/float(len(rot1))/pixel_size
+			v = exp(c1+c2/(x/c3+1)**2) + exp(c4-0.5*(((x-c5)/c6**2)**2))
+			pu.append(v)
+		s =sum(pu)
+		for ifreq in xrange(len(rot1)): fil[ifreq] = sqrt(pu[ifreq]/(rot1[ifreq]*s))
+	else: # adjusted to a given 1-d rotational averaged pw2
+		if roo[0]<0.1 or roo[0]>1.: s =sum(roo)
+		else:  s=1.0
+		for ifreq in xrange(len(rot1)):fil[ifreq] = sqrt(roo[ifreq]/(rot1[ifreq]*s))
 	return filt_table(image, fil)
 	
 def get_optimistic_res(frc):
@@ -184,7 +193,8 @@ def main():
 	parser.add_option("--ts",                    type   ="float",      default =1.0,    help= "local alignment search step")
 	parser.add_option("--fh",                    type   ="float",      default =-1.,    help= "local alignment high frequencies limit")
 	parser.add_option("--maxit",                 type   ="int",        default =5,      help= "local alignment iterations")
-	parser.add_option("--mpw_adj",               action ="store_true", default =False,  help= "pw adjustment to model")
+	parser.add_option("--nompw_adj",             action ="store_true", default =False,  help= "no pw adjustment to model powersepctrum")
+	parser.add_option("--modelpw",               type   ="string",     default ='',     help= "1-D power spectrum of PDF model or EM map sampled in given pixel_size and orignal image_size")
 	parser.add_option("--navg",                  type   ="int",        default =-1,     help= "number of aveages")
 	
 	(options, args) = parser.parse_args(sys.argv[1:])
@@ -203,16 +213,18 @@ def main():
 	Constants["B_enhance"]                    = options.B_enhance
 	Constants["B_start"]                      = options.B_start
 	Constants["Bfactor"]                      = options.Bfactor
-	Constants["mpw_adj"]                      = options.mpw_adj
+	Constants["nompw_adj"]                    = options.nompw_adj
+	Constants["modelpw"]                      = options.modelpw
 	Constants["low_pass_filter"]              = options.low_pass_filter
 	Constants["navg"]                         = options.navg
 	Constants["noctf"]                        = options.noctf
+	
 	# -------------------------------------------------------------
 	#
 	# Create and initialize Tracker dictionary with input options  # State Variables
 	
-	Tracker							               = {}
-	Tracker["constants"]			               = Constants
+	Tracker              = {}
+	Tracker["constants"] = Constants
 	#<<<---------------------->>>imported functions<<<---------------------------------------------
 
 	from statistics 	import k_means_match_clusters_asg_new,k_means_stab_bbenum
@@ -257,8 +269,7 @@ def main():
 				cmd="{} {}".format("mkdir", masterdir)
 				cmdexecute(cmd)
 		li =len(masterdir)
-	else:
-		li = 0
+	else: li = 0
 	li                                  = mpi_bcast(li,1,MPI_INT,Blockdata["main_node"],MPI_COMM_WORLD)[0]
 	masterdir							= mpi_bcast(masterdir,li,MPI_CHAR,Blockdata["main_node"],MPI_COMM_WORLD)
 	masterdir                           = string.join(masterdir,"")
@@ -288,21 +299,20 @@ def main():
 		image = get_im(Tracker["constants"]["orgstack"], 0)
 		Tracker["constants"]["nnxo"]     = image.get_xsize()
 		try:
-			ctf = image.get_attr("ctf")
-			if Tracker["constants"]["pixel_size"] ==-1:
-				Tracker["constants"]["pixel_size"] = ctf.get_attr("pixel_size")
-		except: pass
+			ctf_params = image.get_attr("ctf")
+			if Tracker["constants"]["pixel_size"] ==-1.: Tracker["constants"]["pixel_size"] = ctf_params.apix
+		except: print(" we don't get pixel size value") 
+			
 		os.path.join(Tracker["directory"], "aqfinal.hdf")
 		Tracker["ini_shrink"] = float(get_im(os.path.join(Tracker["directory"], "aqfinal.hdf"), 0).get_xsize())/Tracker["constants"]["nnxo"]
-	else:
-		Tracker["ini_shrink"] = 0
+	else: Tracker["ini_shrink"] = 0
 	Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], communicator = MPI_COMM_WORLD)
 	
+	#print(Tracker["constants"]["pixel_size"], "pixel_size")	
 	x_range = max(Tracker["constants"]["xrange"], int(1./Tracker["ini_shrink"])+1)
 	y_range =  x_range
 	
-	if(Blockdata["myid"] == Blockdata["main_node"]):
-		parameters = read_text_row(os.path.join(Tracker["constants"]["isac_dir"], "all_parameters.txt"))
+	if(Blockdata["myid"] == Blockdata["main_node"]): parameters = read_text_row(os.path.join(Tracker["constants"]["isac_dir"], "all_parameters.txt"))
 	else: parameters = 0
 	parameters = wrap_mpi_bcast(parameters, Blockdata["main_node"], communicator = MPI_COMM_WORLD)
 		
@@ -310,11 +320,8 @@ def main():
 	list_dict   = {}
 	#parepare params_dict
 	
-	if Tracker["constants"]["navg"] <0:
-		navg = EMUtil.get_image_count(os.path.join(Tracker["constants"]["isac_dir"], "class_averages.hdf"))
-	else:
-		navg = min(Tracker["constants"]["navg"], EMUtil.get_image_count(os.path.join(Tracker["constants"]["isac_dir"], "class_averages.hdf")))
-		
+	if Tracker["constants"]["navg"] <0: navg = EMUtil.get_image_count(os.path.join(Tracker["constants"]["isac_dir"], "class_averages.hdf"))
+	else: navg = min(Tracker["constants"]["navg"], EMUtil.get_image_count(os.path.join(Tracker["constants"]["isac_dir"], "class_averages.hdf")))
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		for iavg in xrange(navg):
 			params_of_this_average = []
@@ -325,16 +332,10 @@ def main():
 				abs_id =  members[im]
 				P = combine_params2( init_dict[abs_id][0], init_dict[abs_id][1], init_dict[abs_id][2], init_dict[abs_id][3], \
 				parameters[abs_id][0], parameters[abs_id][1]/Tracker["ini_shrink"], parameters[abs_id][2]/Tracker["ini_shrink"], parameters[abs_id][3])
-				"""
-				params_of_this_average.append([abs_id, parameters[abs_id][0], parameters[abs_id][1], parameters[abs_id][2], parameters[abs_id][3], \
-				    init_dict[abs_id][0], init_dict[abs_id][1], init_dict[abs_id][2], init_dict[abs_id][3]])
-				"""
-				if parameters[abs_id][3] ==-1:
-					print("wrong one")
-				#print (P)
+				if parameters[abs_id][3] ==-1: print("wrong one")
 				params_of_this_average.append([P[0], P[1], P[2], P[3], 1.0])
 			params_dict[iavg] = params_of_this_average
-			list_dict[iavg] =members
+			list_dict[iavg] = members
 			write_text_row(params_of_this_average, os.path.join(Tracker["constants"]["masterdir"], "params_avg_%03d.txt"%iavg))
 	else:  
 		params_dict = 0
@@ -351,8 +352,7 @@ def main():
 				for im in xrange(len(mlist)):
 					mlist[im]= get_im(Tracker["constants"]["orgstack"], list_dict[iavg][im])
 					set_params2D(mlist[im], params_dict[iavg][im], xform = "xform.align2d")
-				if Tracker["constants"]["noctf"]:
-					ini_avg, frc = compute_average_noctf(mlist, Tracker["constants"]["radius"])
+				if Tracker["constants"]["noctf"]: ini_avg, frc = compute_average_noctf(mlist, Tracker["constants"]["radius"])
 				else: ini_avg, frc = compute_average_ctf(mlist, Tracker["constants"]["radius"])
 				FH1 = get_optimistic_res(frc)
 				write_text_file(frc, os.path.join(Tracker["constants"]["masterdir"], "fsc%03d_before_ali.txt"%iavg))
@@ -362,20 +362,22 @@ def main():
 				new_average2 = within_group_refinement([mlist[kik] for kik in xrange(1,len(mlist),2)], maskfile= None, randomize= False, ir=1.0, \
 				ou=Tracker["constants"]["radius"], rs=1.0, xrng=[x_range], yrng=[y_range], step=[Tracker["constants"]["xstep"]], \
 				dst=0.0, maxit=Tracker["constants"]["maxit"], FH = max(Tracker["constants"]["FH"], FH1), FF=0.1)
-				if Tracker["constants"]["noctf"]:
-					new_avg, frc = compute_average_noctf(mlist, Tracker["constants"]["radius"])
+				if Tracker["constants"]["noctf"]: new_avg, frc = compute_average_noctf(mlist, Tracker["constants"]["radius"])
 				else: new_avg, frc = compute_average_ctf(mlist, Tracker["constants"]["radius"])
-				if Tracker["constants"]["mpw_adj"]: 
-					new_avg = adjust_pw_to_model(new_avg, Tracker["constants"]["pixel_size"])
-				if Tracker["constants"]["low_pass_filter"] !=-1.: 
-					new_avg = filt_tanl(new_avg, Tracker["constants"]["low_pass_filter"], 0.1)
 				FH2 = get_optimistic_res(frc)
 				write_text_file(frc, os.path.join(Tracker["constants"]["masterdir"], "fsc%03d.txt"%iavg))
-				if Tracker["constants"]["B_enhance"]: 
-					new_avg, gb = apply_enhancement(new_avg, Tracker["constants"]["B_start"], Tracker["constants"]["pixel_size"], Tracker["constants"]["Bfactor"])
-					print("Process avg  %d  %f  %f   %f"%(iavg, gb, FH1, FH2))
-				else: print("Process avg %d"%iavg)
-				
+				if not Tracker["constants"]["nompw_adj"]:
+					try: 
+						roo = read_text_file(Tracker["constants"]["modelpw"], -1)
+						roo =roo[0] # always put pw in the first column
+					except: roo = None
+					new_avg = adjust_pw_to_model(new_avg, Tracker["constants"]["pixel_size"], roo)
+					print("Process avg  %d   %f   %f"%(iavg, FH1, FH2))
+				else:
+					if Tracker["constants"]["B_enhance"]:
+						new_avg, gb = apply_enhancement(new_avg, Tracker["constants"]["B_start"], Tracker["constants"]["pixel_size"], Tracker["constants"]["Bfactor"])
+						print("Process avg  %d  %f  %f   %f"%(iavg, gb, FH1, FH2))
+				if Tracker["constants"]["low_pass_filter"] !=-1.: new_avg = filt_tanl(new_avg, Tracker["constants"]["low_pass_filter"], 0.1)
 		mpi_barrier(MPI_COMM_WORLD)
 		
 		for im in xrange(navg): # avg
@@ -424,8 +426,7 @@ def main():
 			cpu_dict = {}
 			for iproc in xrange(Blockdata["nproc"]):
 				local_image_start, local_image_end = MPI_start_end(navg, Blockdata["nproc"], iproc)
-				for im in xrange(local_image_start, local_image_end):
-					cpu_dict [im] = iproc
+				for im in xrange(local_image_start, local_image_end): cpu_dict [im] = iproc
 		else:  cpu_dict = 0
 		cpu_dict = wrap_mpi_bcast(cpu_dict, Blockdata["main_node"], communicator = MPI_COMM_WORLD)
 		
@@ -440,30 +441,33 @@ def main():
 			for im in xrange(len(mlist)):
 				mlist[im]= get_im(Tracker["constants"]["orgstack"], list_dict[iavg][im])
 				set_params2D(mlist[im], params_dict[iavg][im], xform = "xform.align2d")
-			if Tracker["constants"]["noctf"]:
-					ini_avg, frc = compute_average_noctf(mlist, Tracker["constants"]["radius"])
+			if Tracker["constants"]["noctf"]: ini_avg, frc = compute_average_noctf(mlist, Tracker["constants"]["radius"])
 			else:   ini_avg, frc = compute_average_ctf(mlist, Tracker["constants"]["radius"])
 			FH1 = get_optimistic_res(frc)
 			write_text_file(frc, os.path.join(Tracker["constants"]["masterdir"], "fsc%03d_before_ali.txt"%iavg))
 			new_average1 = within_group_refinement([mlist[kik] for kik in xrange(0,len(mlist),2)], maskfile= None, randomize= False, ir=1.0,  \
-			ou=Tracker["constants"]["radius"], rs=1.0, xrng=[x_range], yrng=[y_range], step=[Tracker["constants"]["xstep"]], \
-			dst=0.0, maxit=Tracker["constants"]["maxit"], FH=max(Tracker["constants"]["FH"], FH1), FF=0.1)
+			 ou=Tracker["constants"]["radius"], rs=1.0, xrng=[x_range], yrng=[y_range], step=[Tracker["constants"]["xstep"]], \
+			 dst=0.0, maxit=Tracker["constants"]["maxit"], FH=max(Tracker["constants"]["FH"], FH1), FF=0.1)
 			new_average2 = within_group_refinement([mlist[kik] for kik in xrange(1,len(mlist),2)], maskfile= None, randomize= False, ir=1.0, \
-			ou=Tracker["constants"]["radius"], rs=1.0, xrng=[ x_range], yrng=[y_range], step=[Tracker["constants"]["xstep"]], \
-			dst=0.0, maxit=Tracker["constants"]["maxit"], FH = max(Tracker["constants"]["FH"], FH1), FF=0.1)
-			if Tracker["constants"]["noctf"]:
-				new_avg, frc = compute_average_noctf(mlist, Tracker["constants"]["radius"])
+			 ou= Tracker["constants"]["radius"], rs=1.0, xrng=[ x_range], yrng=[y_range], step=[Tracker["constants"]["xstep"]], \
+			 dst=0.0, maxit=Tracker["constants"]["maxit"], FH = max(Tracker["constants"]["FH"], FH1), FF=0.1)
+			if Tracker["constants"]["noctf"]: new_avg, frc = compute_average_noctf(mlist, Tracker["constants"]["radius"])
 			else: new_avg, frc = compute_average_ctf(mlist, Tracker["constants"]["radius"])
-			if Tracker["constants"]["mpw_adj"]: 
-				new_avg = adjust_pw_to_model(new_avg, Tracker["constants"]["pixel_size"])
-			if Tracker["constants"]["low_pass_filter"] !=-1.: 
-				new_avg = filt_tanl(new_avg, Tracker["constants"]["low_pass_filter"], 0.1)
 			FH2 = get_optimistic_res(frc)
 			write_text_file(frc, os.path.join(Tracker["constants"]["masterdir"], "fsc%03d.txt"%iavg))
-			if Tracker["constants"]["B_enhance"]: 
-				new_avg, gb = apply_enhancement(new_avg, Tracker["constants"]["B_start"], Tracker["constants"]["pixel_size"], Tracker["constants"]["Bfactor"])
-				print("Process avg  %d  %f  %f  %f"%(iavg, gb, FH1, FH2))
-			else: print("Process avg %d"%iavg)
+			if not Tracker["constants"]["nompw_adj"]:
+				try: 
+					roo = read_text_file( Tracker["constants"]["modelpw"], -1)
+					roo = roo[0] # always on the first column
+				except: roo = None 
+				new_avg = adjust_pw_to_model(new_avg, Tracker["constants"]["pixel_size"], roo)
+				print("Process avg  %d  %f  %f"%(iavg, FH1, FH2))
+			else:
+				if Tracker["constants"]["B_enhance"]:
+					new_avg, gb = apply_enhancement(new_avg, Tracker["constants"]["B_start"], Tracker["constants"]["pixel_size"], Tracker["constants"]["Bfactor"])
+					print("Process avg  %d  %f  %f  %f"%(iavg, gb, FH1, FH2))
+				
+			if Tracker["constants"]["low_pass_filter"] !=-1.:new_avg = filt_tanl(new_avg, Tracker["constants"]["low_pass_filter"], 0.1)		
 			slist[iavg]    = new_avg
 			ini_list[iavg] = ini_avg
 			avg1_list[iavg]= new_average1
@@ -509,14 +513,14 @@ def main():
 			
 			# avg2
 			if cpu_dict[im] == Blockdata["myid"] and Blockdata["myid"] != Blockdata["main_node"]:
-				send_EMData(avg2_list[im], Blockdata["main_node"],  tag_sharpen_avg)
+				send_EMData(avg2_list[im], Blockdata["main_node"], tag_sharpen_avg)
 				
 			elif cpu_dict[im] == Blockdata["myid"] and Blockdata["myid"] == Blockdata["main_node"]:
 				avg2_list[im].write_image(os.path.join(Tracker["constants"]["masterdir"], "avg2_class_averages.hdf"), im)
 				
 			elif cpu_dict[im] != Blockdata["myid"] and Blockdata["myid"] == Blockdata["main_node"]:
 				new_avg_other_cpu = recv_EMData(cpu_dict[im], tag_sharpen_avg)
-				new_avg_other_cpu.write_image(os.path.join(Tracker["constants"]["masterdir"], "avg2_class_averages.hdf"), im)
+				new_avg_other_cpu.write_image(os.path.join(Tracker["constants"]["masterdir"],"avg2_class_averages.hdf"),im)
 			else: pass
 			
 			mpi_barrier(MPI_COMM_WORLD)
