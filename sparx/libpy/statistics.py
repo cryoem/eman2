@@ -1955,7 +1955,7 @@ def locres(vi, ui, m, nk, cutoff, step, myid, main_node, number_of_proc):
 	from utilities import model_blank, bcast_EMData_to_all, recv_EMData, send_EMData, bcast_number_to_all, info
 	from filter import filt_tophatb
 	from EMAN2 import rsconvolution
-	from morphology import square_root
+	from morphology import square_root, threshold
 	
 
 	nx = m.get_xsize()
@@ -1997,7 +1997,7 @@ def locres(vi, ui, m, nk, cutoff, step, myid, main_node, number_of_proc):
 			tmp1 = Util.muln_img(v,v)
 			tmp2 = Util.muln_img(u,u)
 			tmp3 = Util.muln_img(u,v)
-			do = Util.infomask(square_root(Util.muln_img(tmp1,tmp2)),m,True)[0]
+			do = Util.infomask(square_root(threshold(Util.muln_img(tmp1,tmp2))),m,True)[0]
 			dp = Util.infomask(tmp3,m,True)[0]
 			#print "dpdo   ",myid,dp,do
 			if do == 0.0: dis = [freq, 0.0]
@@ -2015,7 +2015,7 @@ def locres(vi, ui, m, nk, cutoff, step, myid, main_node, number_of_proc):
 
 		Util.mul_img(tmp1,tmp2)
 
-		tmp1 = square_root(tmp1)
+		tmp1 = square_root(threshold(tmp1))
 
 		Util.mul_img(tmp1,m)
 		Util.add_img(tmp1,mc)
