@@ -6,11 +6,13 @@ sxcompute_isac_avg - New Beautifier: Beautify the ISAC 2D clustering result with
 
 ''Usage in command lines'':
 
-sxcompute_isac_avg.py  --data_stack=stack_file_path  --isac_dir=isac_output_directory  --masterdir=output_directory  --radius=radius  --B_enhance  --B_start=B_start  --Bfactor=Bfactor  --low_pass_filter=cutoff_frequency  --pixel_size=pixel_size  --noctf  --xr=xr  --ts=ts  --fh=fh  --maxit=maxit  --mpw_adj  --navg=navg 
+sxcompute_isac_avg.py  --data_stack=stack_file_path  --isac_dir=isac_output_directory  --masterdir=output_directory  --radius=radius  --B_enhance  --B_start=B_start  --Bfactor=Bfactor  --low_pass_filter=cutoff_frequency  --pixel_size=pixel_size  --noctf  --xr=xr  --ts=ts  --fh=fh  --maxit=maxit  --nompw_adj --modelpw=pw2_model.txt --navg=navg 
 
 === Typical usage ===
 
 sxcompute_isac_avg.py exists only in MPI version
+
+''' mpirun  -np  48  sxcompute_isac_avg.py  --data_stack=bdb:data  --isac_dir=outdir_isac  --masterdir=outdir_beautify2d  --radius=120  '''
 
 ''' mpirun  -np  48  sxcompute_isac_avg.py  --data_stack=bdb:data  --isac_dir=outdir_isac  --masterdir=outdir_beautify2d  --radius=120  --B_enhance '''
 
@@ -34,7 +36,8 @@ sxcompute_isac_avg.py exists only in MPI version
     ts:: Local search step [Pixels]: Translational search step for local alignment. (default 1.0)
     fh:: High frequency search limit: High frequency search limit for local alignment. (default -1.0)
     maxit:: Local alignment iterations: The number of iterations for local aligment. (default 5)
-    mpw_adj:: Adjust PW spectrum: Apply PW spectrum adjustment to model. (default False)
+    nompw_adj:: Do not adjust PW spectrum to analytical model or given 1-D rotationally averaged power spectrum: Apply PW spectrum adjustment to model. (default False)
+    modelpw::  A text file contains 1-D rotational averaged power spectrum of either PDB model or EM map sampled in the given pixel_size and in original image size. (default '')
     navg:: Number of averages: The number of averages. (default -1)
 
 == Output ==
