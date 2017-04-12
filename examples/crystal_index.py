@@ -62,10 +62,10 @@ def main():
 	parser.add_argument("--apix", required=True,type=float,default=False, help="Specify the Apix of your input images")
 	parser.add_argument("--params", required=True,type=str,help="Lattice parameters separated by commas, i.e. '70.3,70.3,32.0,90.0,90.0,90.0'",default="", guitype='intbox', row=11, col=0, rowspan=1, colspan=1, mode="align")
 	parser.add_argument("--slab", type=float, help="Specify the thickness of the central slab. Default is 10.0",default=10.0)
-	parser.add_argument("--mindeg", type=float, help="Specify the minimum angle for initial orientation search. Default is 0.0",default=0.0)
+	parser.add_argument("--mindeg", type=float, help="Specify the minimum angle for initial orientation search. Default is -180.0",default=-180.0)
 	parser.add_argument("--maxdeg", type=float, help="Specify the maximum angle for initial orientation search. Default is 180.0",default=180.0)
-	parser.add_argument("--maxshift", type=float, help="Specify the maximum pixel shift when optimizing peak locations. Default is 5.0 pixels.",default=5.0)
-	parser.add_argument("--boxsize", type=int, help="Specify the size of the box within which peaks will be refined. Default is 64 pixels.",default=64)
+	parser.add_argument("--diameter", type=float, help="Specify the minimum spot diameter. Default is 5.0",default=5.0)
+	parser.add_argument("--maxshift", type=float, help="Specify the maximum pixel shift when optimizing peak locations. Default is 32.0 pixels.",default=32.0)
 	parser.add_argument("--exper_weight", type=float, help="Weight of penalty for spots in experimental data not found in the reference lattice. Default is 10.0.",default=10.0)
 	parser.add_argument("--data_weight", type=float, help="Weight of penalty for points in reference lattice not found in the experimental data. Default is 1.0.",default=1.0)
 	parser.add_argument("--plot", default=False, help="Show plot of reciprocal reference lattice points overlayed on input image and detected reflections.",action="store_true")
@@ -76,6 +76,7 @@ def main():
 	(options, args) = parser.parse_args()
 
 	apix = float(options.apix)
+	close = options.slab
 	
 	try:
 		params = [float(p) for p in options.params.split(",")]
@@ -130,18 +131,16 @@ def main():
 			if np.abs(np.linalg.norm(c-nimg.shape[0]/2.)) <= (nx/2.):
 				coords.append(coord)
 		coords = np.asarray(coords)
-		refined_coords = refine_peaks(coords,img,options.maxshift,options.boxsize)
+		refined_coords = refine_peaks(coords,img,options.maxshift,options.maxshift*2.)
 
 		ds = 1/(apix*nx) # angstroms per fourier pixel
 		exper_max_radius = np.linalg.norm(refined_coords-nx/2,axis=1).max()
 		print("Highest resolution reflection: {:.2f}A ({} pix)\n".format(1/(ds*exper_max_radius),int(round(exper_max_radius,0))))
 
 		print("DETERMINING ORIENTATION")
-
-		close = options.slab #10.0 # initial thickness of central slab within which we expect to observe spots
 		
-		radii = nx/np.arange(2.,64.,2.)[::-1]
-		#search_angles = [np.arcsin(np.sqrt(float(1/r)))*180./np.pi for r in radii]
+		resolutions = np.asarray([1000.,100.,50.,25.,20.,18.,16.,10.,8.,5.,4.,3.,2.9,2.8,2.7,2.6,2.5,2.4,2.3,2.2,2.1,2.0,1.9,1.8])
+		radii = [float(r) for r in 1/(resolutions*ds) if r <= nx/2.]
 
 		# initial search range
 		a_mindeg = options.mindeg
@@ -151,25 +150,32 @@ def main():
 		g_mindeg = options.mindeg
 		g_maxdeg = options.maxdeg
 
+		old_nrefs = 0.0
+
 		count = 0
 		for r in radii:
-			ang = np.arcsin(np.sqrt(float(1/r)))*180./np.pi 
-			max_radius = 1/np.sin(ang*np.pi/180.)**2
-			if max_radius >= exper_max_radius: continue
-			max_resol = 1/(max_radius*ds)
+			ang = np.arccos(np.sqrt((r**2-options.diameter)/r**2))*180./np.pi
+			#max_radius = r#1/np.sin(ang)**2
+			#if r > nx/2: continue
+			max_resol = 1/(r*ds)
 
 			hkl_exper = np.vstack([refined_coords[:,1],refined_coords[:,0]]).T
 			hkl_exper = (hkl_exper - np.mean(hkl_exper,axis=0))
 			all_exper_radii = np.linalg.norm(hkl_exper,axis=1)
-			hkl_exper = hkl_exper[all_exper_radii <= max_radius]
+			hkl_exper = hkl_exper[all_exper_radii <= r]
 			exper_radii = np.linalg.norm(hkl_exper,axis=1)
 			hkl_exper = np.c_[hkl_exper,exper_radii]
 
-			if len(hkl_exper) == 0: continue
+			if len(hkl_exper) < 2: continue
 
-			print("Angular step: {:.2f} degrees\tRadius: {:.2f} pixels ({:.2f} Angstroms)\t{} Reflections".format(ang,max_radius,max_resol,len(hkl_exper)))
+			if len(hkl_exper) == old_nrefs:
+				continue
+			else: 
+				old_nrefs = len(hkl_exper)
 
-			hkl_ref = generate_lattice(nx,apix,max_radius,a,b,c,alpha,beta,gamma)
+			print("\nAngular step: {:.2f} degrees\tRadius: {:.2f} pixels ({:.2f} Angstroms)\t{} Reflections".format(ang,r,max_resol,len(hkl_exper)))
+
+			hkl_ref = generate_lattice(nx,apix,r,a,b,c,alpha,beta,gamma)
 
 			dist_exper,idx_exper = scipy.spatial.cKDTree(hkl_exper[:,:2]).query([0,0],k=9)
 			min_distance = np.min([dist_exper[1],dist_exper[3],dist_exper[5],dist_exper[7]])
@@ -201,7 +207,10 @@ def main():
 			if options.verbose: sys.stdout.write("\rCreating {} threads".format(len(rngs)))
 			
 			for i in range(len(rngs)):
-				thd = threading.Thread(target=cost_async,args=(rngs[i],hkl_exper,hkl_ref,close,min_distance,options.exper_weight,options.data_weight,i,resq))
+				if options.verbose and i % 100 == 0:
+					sys.stdout.write("\rCreating {}/{} threads".format(i+1,len(rngs)))
+
+				thd = threading.Thread(target=cost_async,args=(rngs[i],hkl_exper,hkl_ref,close,min_distance/10.,options.exper_weight,options.data_weight,i,resq))
 				thds.append(thd)
 			t0=time.time()
 
@@ -213,7 +222,7 @@ def main():
 			while thrtolaunch<len(thds) or threading.active_count()>1:
 				if thrtolaunch<len(thds):
 					while (threading.active_count()==options.threads ) : time.sleep(.1)
-					if options.verbose and (thrtolaunch % 500 == 0 or len(thds)-thrtolaunch < 5):
+					if options.verbose and (thrtolaunch % 100 == 0 or len(thds)-thrtolaunch < 5):
 							sys.stdout.write("\rSearched {}/{} orientations".format(thrtolaunch+1,len(thds)))
 					thds[thrtolaunch].start()
 					thrtolaunch+=1
@@ -226,26 +235,17 @@ def main():
 
 			for th in thds: th.join()
 
+			solns = [rngs[i] for i,v in enumerate(res) if v == minval]
+
+			sys.stdout.write("\t\t\tFound {} solutions:".format(len(solns)))
+			print(solns)
+
 			sys.stdout.flush()
 
-			#if minval == np.inf:
-			#	print("\nNo solutions found. Using solutions from previous iteration.")
-				#print("\nMINVAL == INF. DID NOT CONVERGE. SEEK ASSISTANCE.")
-				#sys.exit(1)
-			#else:
-
-			for i,v in enumerate(res):
-				refine1 = optimize.fmin(cost,rngs[i],xtol=0.5,args=(hkl_exper,hkl_ref,close,min_distance,options.data_weight,options.exper_weight,),disp=False)
-				refine_cost = cost(refine1,hkl_exper,hkl_ref,close,min_distance,options.data_weight,options.exper_weight)
-				if refine_cost < minval:
-					minval = refine_cost
-
-			solns = [rngs[i] for i,v in enumerate(res) if v == minval]
-			print("\nFound {} solutions".format(len(solns)))
-
-		print("\nREFINING PARAMETERS")
+		print("\n\nREFINING PARAMETERS")
 
 		best_cost = np.inf
+		scost = best_cost
 		best_orient = None
 
 		hkl_exper = np.vstack([refined_coords[:,1],refined_coords[:,0]]).T
@@ -258,23 +258,21 @@ def main():
 		hkl_ref = generate_lattice(nx,apix,exper_max_radius,a,b,c,alpha,beta,gamma)
 
 		for ii,soln in enumerate(solns):
+			hkl_ref = generate_lattice(nx,apix,exper_max_radius,a,b,c,alpha,beta,gamma)
 
-			hkl_ref = generate_lattice(nx,apix,max_radius,a,b,c,alpha,beta,gamma)
-
-			refine1 = optimize.fmin(cost,soln,args=(hkl_exper,hkl_ref,close,min_distance,options.data_weight,options.exper_weight,),disp=False)
+			refine1 = optimize.fmin(cost,soln,args=(hkl_exper,hkl_ref,close,min_distance/10.0,options.data_weight,options.exper_weight,),disp=False)
 			az,alt,phi = refine1[0],refine1[1],refine1[2]
-			max_radius = exper_max_radius
 
-			refine_apix = optimize.fmin(apix_cost,[apix],args=(az,alt,phi,hkl_exper,hkl_ref,close,16.,nx,max_radius,options.data_weight,options.exper_weight,a,b,c,alpha,beta,gamma,),disp=False)
+			refine_apix = optimize.fmin(apix_cost,[apix],args=(az,alt,phi,hkl_exper,hkl_ref,close,16.,nx,exper_max_radius,options.data_weight,options.exper_weight,a,b,c,alpha,beta,gamma,),disp=False)
 			refine_apix = float(refine_apix[0])  #float(refine_apix.x)
-			hkl_ref = generate_lattice(nx,refine_apix,max_radius,a,b,c,alpha,beta,gamma)
+			hkl_ref = generate_lattice(nx,refine_apix,exper_max_radius,a,b,c,alpha,beta,gamma)
 			ds = 1/(refine_apix*nx) # angstroms per fourier pixel
 
-			refine_close = optimize.fmin(close_cost,[close],args=(az,alt,phi,hkl_exper,hkl_ref,8.,10.0,options.data_weight,options.exper_weight,),disp=False)
+			refine_close = optimize.fmin(close_cost,[close],args=(az,alt,phi,hkl_exper,hkl_ref,8.,5.0,options.data_weight,options.exper_weight,),disp=False)
 			refine_close = refine_close[0]
 			if refine_close <= 1.0: refine_close = close
 			
-			refine2 = optimize.fmin(cost,refine1,args=(hkl_exper,hkl_ref,refine_close,min_distance,options.data_weight,options.exper_weight,),disp=False) # re-refine orientation
+			refine2 = optimize.fmin(cost,refine1,args=(hkl_exper,hkl_ref,refine_close,min_distance/10.0,options.data_weight,options.exper_weight,),disp=False) # re-refine orientation
 
 			scost =  cost(refine2,hkl_exper,hkl_ref,refine_close,min_distance,options.data_weight,options.exper_weight) 
 			if scost < best_cost:
@@ -287,10 +285,10 @@ def main():
 		ds = 1/(best_refine_apix*nx) # angstroms per fourier pixel
 
 		print("Refined Apix: {:.2f} -> {:.2f}".format(apix,best_refine_apix))
-		print("Refined slab thickness: {:.2f} -> {:.2f}".format(close,best_refine_close))
+		print("Refined thickness: {:.2f} -> {:.2f}".format(close,best_refine_close))
 		print("Refined orientation: ({:.2f},{:.2f},{:.2f})\n".format(*best_orient))
 
-		hkl_ref = generate_lattice(nx,refine_apix,max_radius,a,b,c,alpha,beta,gamma)
+		hkl_ref = generate_lattice(nx,refine_apix,exper_max_radius,a,b,c,alpha,beta,gamma)
 		pln = get_plane(best_orient,hkl_ref,close=best_refine_close)
 		pln = pln[np.argsort(pln[:,3])] # sort by radius
 
@@ -302,7 +300,7 @@ def main():
 			plt.title("(Az, Alt, Phi) -> ({:.2f},{:.2f},{:.2f})".format(*best_orient))
 			plt.show()
 
-		print("     xc        yc       zc          r       resol    h       k     l      raw_F     raw_p")
+		print("     xc        yc       zc          r     resol      h       k       l       raw_F       raw_p")
 		with open("{}.sf".format(fn.split(".")[0]),"w") as sf: # create a quasi.sf file for this image
 			for nrow,row in enumerate(pln):
 				xc,yc,zc,r,h,k,l = row[:7]
@@ -315,7 +313,7 @@ def main():
 				try:
 					print("{:8.1f},{:8.1f},{:8.1f}    {:6.1f}    {:6.1f}    {:4d}    {:4d}    {:4d}    {:8.2f}    {:8.2f}".format(xc,yc,zc,r,resol,int(h),int(k),int(l),raw_F,raw_p))
 				except:
-					print("{:8.1f},{:8.1f},{:8.1f}    {:6.1f}        inf   {:4d}     {:4d}    {:4d}    {:.2f}    {:.2f}".format(xc,yc,zc,r,int(h),int(k),int(l),raw_F,raw_p))
+					print("{:8.1f},{:8.1f},{:8.1f}    {:6.1f}       inf    {:4d}    {:4d}    {:4d}     {:.2f}       {:.2f}".format(xc,yc,zc,r,int(h),int(k),int(l),raw_F,raw_p))
 				sf.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(h,k,l,raw_F,raw_p,r,resol))
 
 def get_sf(fft,xc,yc,nn=2):
@@ -394,10 +392,10 @@ def generate_lattice(nx,apix,max_radius,a,b,c,alpha,beta,gamma):
 # compare projected reference against experimental data
 def compare(exper,data,min_dist,w1,w2):
 	diff = len(data)-len(exper)
-	if len(data) < len(exper)*0.9:#0.9: 	# better to cover all black dots than to avoid whitespace
-		return np.inf #,np.inf,1.0,diff,1.0,0.0,None,None
-	if len(data) > 3.*len(exper):
-		return np.inf #,np.inf,1.0,diff,1.0,0.0,None,None
+	#if len(data) < len(exper)*0.9:#0.9: 	# better to cover all black dots than to avoid whitespace
+	#	return np.inf #,np.inf,1.0,diff,1.0,0.0,None,None
+	#if len(data) > 3.*len(exper):
+	#	return np.inf #,np.inf,1.0,diff,1.0,0.0,None,None
 	dist = []
 	a = exper[:,:2]
 	b = data[:,:2]
@@ -448,10 +446,14 @@ def rotate(cloud,params):
 
 def apix_cost(params,az,alt,phi,exper,ref,close,minimum_dist,nx,max_radius,w1,w2,a,b,c,alpha,beta,gamma):
 	#sys.stdout.write("\rApix: {}".format(params[0]))
+	if params[0] > 1.5:
+		return np.inf
+	elif params[0] < 0.5:
+		return np.inf
 	new = generate_lattice(nx,params[0],max_radius,a,b,c,alpha,beta,gamma)
 	return cost([az,alt,phi],exper,new,close,minimum_dist,w1,w2)
 
-def close_cost(params,az,alt,phi,exper,ref,minimum_dist=8.,weight=10.,w1=10.0,w2=1.0):
+def close_cost(params,az,alt,phi,exper,ref,minimum_dist,weight=10.,w1=10.0,w2=1.0):
 	if params[0]<1.0:
 		return np.inf
 	#sys.stdout.write("\rSlab: {}".format(params[0]))
@@ -462,10 +464,9 @@ def close_cost(params,az,alt,phi,exper,ref,minimum_dist=8.,weight=10.,w1=10.0,w2
 if __name__ == "__main__":
 	main()
 
-
-		# t = time.time()
-		# mypool = Pool(options.threads)
-		# res = [mypool.apply_async(cost,(r,hkl_exper,hkl_ref,close,min_distance,options.exper_weight,options.data_weight,)) for r in rngs]
-		# mypool.close()
-		# mypool.join()
-		# dt = time.time()-t
+# t = time.time()
+# mypool = Pool(options.threads)
+# res = [mypool.apply_async(cost,(r,hkl_exper,hkl_ref,close,min_distance,options.exper_weight,options.data_weight,)) for r in rngs]
+# mypool.close()
+# mypool.join()
+# dt = time.time()-t
