@@ -31,7 +31,7 @@
 
 from EMAN2 import *
 from emapplication import EMApp
-from emdataitem3d import EMStructureItem3D
+from emdataitem3d import EMDataItem3D
 from emscene3d import EMScene3D, EMInspector3D
 import os
 import sys
@@ -63,7 +63,7 @@ def main():
 	viewer = EMScene3D()
 	
 	if options.pdbfiles:
-		models = [EMStructureItem3D(pdb_file=pdbf) for pdbf in options.pdbfiles]
+		models = [EMDataItem3D(pdb_file=pdbf) for pdbf in options.pdbfiles]
 		viewer.addChildren(models)
 	
 	viewer.show()

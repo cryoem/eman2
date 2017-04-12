@@ -57,6 +57,7 @@ e2msa.py
 e2parallel.py
 e2pathwalker.py
 e2pdb2mrc.py
+e2pdbviewer.py
 e2plotEulers.py
 e2proc2d.py
 e2proc2dmulti.py
@@ -135,3 +136,4 @@ e2tomoresolution.py
 e2tomoseg_buildtrainset.py
 e2tomoseg_convnet.py
 e2tvrecon.py
+sphire
