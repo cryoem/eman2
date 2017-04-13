@@ -554,8 +554,7 @@ def parsesym(optstr):
 		dict["nsym"] = int(sym[1:])
 		sym = sym[0]
 
-	sym = Symmetries.get(sym, dict)
-	return sym
+	return Symmetries.get(sym, dict)
 
 parseparmobj1=re.compile("([^\(]*)\(([^\)]*)\)")	# This parses test(n=v,n2=v2) into ("test","n=v,n2=v2")
 parseparmobj2=re.compile("([^=,]*)=([^,]*)")		# This parses "n=v,n2=v2" into [("n","v"),("n2","v2")]
