@@ -4133,7 +4133,11 @@ def angles_to_normals(angles):
 	return [[temp[l*3+i] for i in xrange(3)] for l in xrange(len(angles)) ]
 
 def symmetry_related(angles, symmetry):
-	if(symmetry == "oct" ):
+	if( (symmetry[0] == "c") or (symmetry[0] == "d") ):
+		temp = Util.symmetry_related(angles, symmetry)
+		nt = len(temp)/3
+		return [[temp[l*3+i] for i in xrange(3)] for l in xrange(nt) ]
+	else:
 		from EMAN2 import Transform
 		neighbors = []
 		junk = Transform({"type":"spider","phi":angles[0],"theta":angles[1],"psi":angles[2]})
@@ -4142,10 +4146,6 @@ def symmetry_related(angles, symmetry):
 			d = p.get_params("spider")
 			neighbors.append([d["phi"],d["theta"],d["psi"]])
 		return neighbors
-	else:
-		temp = Util.symmetry_related(angles, symmetry)
-		nt = len(temp)/3
-		return [[temp[l*3+i] for i in xrange(3)] for l in xrange(nt) ]
 
 def symmetry_related_normals(angles, symmetry):
 	from EMAN2 import Transform
@@ -5277,7 +5277,7 @@ def get_colors_and_subsets(main_node, mpi_comm, my_rank, shared_comm, sh_my_rank
 
 	balanced_processor_load_on_nodes = len(set(number_of_processes_in_each_group)) == 1 
 
-	return color, number_of_groups, balanced_processor_load_on_nodes 
+	return color, number_of_groups, balanced_processor_load_on_nodes
 
 
 def wrap_mpi_split_shared_memory(mpi_comm):
@@ -7136,6 +7136,7 @@ def search_lowpass(fsc):
 def angular_distribution(inputfile, options, output):
 	import numpy
 
+	print('Loading data')
 	# Import data
 	listDType = [
 		('Phi', '<f8'),
@@ -7165,6 +7166,7 @@ def angular_distribution(inputfile, options, output):
 	listCoord = [[], []]
 
 	# Go through the list of angles
+	print('Calculate angles')
 	for linenumber in xrange(len(arrPhi)):
 
 		# Set the angles in radiant
@@ -7211,6 +7213,7 @@ def angular_distribution(inputfile, options, output):
 		listCoord[idxAlpha].append(angleAlpha)
 		listCoord[idxBeta].append(angleBeta)
 
+	print('Calculate vector length')
 	# Create array for the angles
 	dtype = [
 		('alpha', '<f8'),
@@ -7263,6 +7266,7 @@ def angular_distribution(inputfile, options, output):
 	arrayAnglesRadius['beta'] = uniqueArray['beta']
 	arrayAnglesRadius['radius'] = arrayRadius
 
+	print('Write output')
 	# Create vectors for chimera
 	with open(output, 'w') as f:
 		for vector in arrayAnglesRadius:
@@ -7278,7 +7282,7 @@ def angular_distribution(inputfile, options, output):
 			arrayVector2 = vectorCenter
 
 			arrayVector1 = arrayVector1 + \
-				options.particle_radius * arrayVectorSphere
+				options.particle_radius * arrayVectorSphere / options.pixel_size
 			arrayVector2 = arrayVector2 + \
 				(
 					options.particle_radius / options.pixel_size +
@@ -7297,6 +7301,7 @@ def angular_distribution(inputfile, options, output):
 					options.cylinder_width
 				)
 			)
+	print('All done! Saved output to: {0}'.format(output))
 
 #####---------------------------------------------------
 # used in new meridien

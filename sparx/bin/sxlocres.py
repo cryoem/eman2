@@ -30,11 +30,11 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 #
-import global_def
-from   global_def import *
-from EMAN2 import *
-from sparx import *
-from global_def import SPARX_MPI_TAG_UNIVERSAL
+import	global_def
+from	global_def import *
+from	EMAN2 import *
+from	sparx import *
+from	global_def import SPARX_MPI_TAG_UNIVERSAL
 
 def main():
 	import os
@@ -50,16 +50,16 @@ def main():
 	"""
 	parser = OptionParser(usage,version=SPARXVERSION)
 	
-	parser.add_option("--wn",		type="int",		default=7, 			help="Size of window within which local real-space FSC is computed (default 7")
+	parser.add_option("--wn",		type="int",		default=7, 			help="Size of window within which local real-space FSC is computed (default 7)")
 	parser.add_option("--step",     type="float",	default= 1.0,       help="Shell step in Fourier size in pixels (default 1.0)")   
 	parser.add_option("--cutoff",   type="float",	default= 0.5,       help="resolution cut-off for FSC (default 0.5)")
 	parser.add_option("--radius",	type="int",		default=-1, 		help="if there is no maskfile, sphere with r=radius will be used, by default the radius is nx/2-wn")
 	parser.add_option("--fsc",      type="string",	default= None,      help="overall FSC curve (might be truncated) (default no curve)")
-	parser.add_option("--res_overall",  type="float",	default= -1.0,   help="overall resolution estimated by users")
+	parser.add_option("--res_overall",  type="float",	default= -1.0,   help="overall resolution estimated by the user [abs units] (default None)")
 	parser.add_option("--MPI",      action="store_true",   	default=False,  help="use MPI version")
 
 	(options, args) = parser.parse_args(arglist[1:])
-	
+
 	if len(args) <3 or len(args) > 4:
 		print "See usage " + usage
 		sys.exit()
@@ -69,16 +69,17 @@ def main():
 		disable_bdb_cache()
 
 	res_overall = options.res_overall
-	
+
 	if options.MPI:
 		from mpi 	  	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
 		from mpi 	  	  import mpi_reduce, mpi_bcast, mpi_barrier, mpi_gatherv, mpi_send, mpi_recv
 		from mpi 	  	  import MPI_SUM, MPI_FLOAT, MPI_INT
 		sys.argv = mpi_init(len(sys.argv),sys.argv)		
-	
+
 		number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 		myid = mpi_comm_rank(MPI_COMM_WORLD)
 		main_node = 0
+		global_def.MPI = True
 		cutoff = options.cutoff
 
 		nk = int(options.wn)
@@ -95,6 +96,7 @@ def main():
 		else:
 			dis = [0,0,0,0]
 
+		global_def.BATCH = True
 
 		dis = bcast_list_to_all(dis, myid, source_node = main_node)
 
@@ -186,7 +188,7 @@ def main():
 			tmp1 = Util.muln_img(v,v)
 			tmp2 = Util.muln_img(u,u)
 
-			do = Util.infomask(square_root(Util.muln_img(tmp1,tmp2)),m,True)[0]
+			do = Util.infomask(square_root(threshold(Util.muln_img(tmp1,tmp2))),m,True)[0]
 
 
 			tmp3 = Util.muln_img(u,v)
@@ -199,7 +201,7 @@ def main():
 
 			Util.mul_img(tmp1,tmp2)
 
-			tmp1 = square_root(tmp1)
+			tmp1 = square_root(threshold(tmp1))
 
 			Util.mul_img(tmp1,m)
 			Util.add_img(tmp1,mc)

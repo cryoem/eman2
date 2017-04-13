@@ -40,7 +40,7 @@ sxsort3d_new.py exists only in MPI version. There are three typical usages.
 
     4. Compute unfiltered maps after sorting. Usually this is done by the program when the sorting ends. However, by post_sorting_sharpen option, one can do it independently and reconstruct unfiltered maps using subsets specified by selection text files (i.e. Cluster#.txt).
 
-    ''' mpirun -np 80 sxsort3d_new.py --masterdir='outdir_sxsort3d_new'  --nindependent=3 —post_sorting_sharpen --sym='c5' --radius=120 --niter_for_sorting=25 --hardmask --number_of_images_per_group=6000 --refinement_dir='outdir_sxmeridien' --comparison_method='eucd' --eqkmeans_angle_step=10.0 --smallest_group=1500 ''' <<BR>><<BR>>
+    ''' mpirun -np 80 sxsort3d_new.py --masterdir='outdir_sxsort3d_new'  --nindependent=3 —post_sorting_sharpen --sym='c5' --radius=120 --niter_for_sorting=25 --number_of_images_per_group=6000 --refinement_dir='outdir_sxmeridien' --comparison_method='eucd' --eqkmeans_angle_step=10.0 --smallest_group=1500 ''' <<BR>><<BR>>
 
     Note --post_sorting_sharpen is required to reconstruct unfiltered maps independent of sorting.
 

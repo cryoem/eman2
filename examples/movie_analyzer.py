@@ -59,7 +59,9 @@ def main():
 	# Program arguments
 	parser.add_argument("--apix", default=None, type=float, help="Apix of input ddd frames. Will search the header by default.")
 	parser.add_argument("--skipalign",action="store_true",default=False,help="If you wish to skip running alignments, specify this option.")
-        parser.add_argument("--noerase",action="store_true",default=False,help="Skip gold erasing and only process original frames.")
+	parser.add_argument("--reverse",action="store_true",default=False,help="If you wish to reverse pixels of gain image from k2 along y axis.")
+	parser.add_argument("--nopws",action="store_true",default=False,help="If you wish to skip power spectra computations, specify this option.")
+	parser.add_argument("--noerase",action="store_true",default=False,help="Skip gold erasing and only process original frames.")
 	parser.add_argument("--plot",action="store_true",default=False,help="Plot the 1D power spectra and exit.")
 	parser.add_argument("--include", type=str, help="Comma separated list of packages to include during comparison.", default="DE,EMAN2,IMOD,UCSF,UNBLUR,LMBFGS")
 	parser.add_argument("--exclude", type=str, help="Comma separated list of packages to exclude during comparison.", default="")
@@ -144,6 +146,8 @@ def main():
 				if options.gaink2:
 					gaink2 = "--gaink2 {}".format(options.gaink2)
 					ngain = EMUtil.get_image_count(options.gaink2)
+					if options.reverse:
+						gaink2 += " --reverse"
 				else: gaink2 = ""
 
 				cmd = "e2ddd_movie.py {} {} {} {} --fixbadpixels --frames -v9".format(fname,dark,gain,gaink2)
@@ -469,10 +473,12 @@ eot
 
 		print("")
 
-		# Question 4: How do alignment algorithms influence power spectral coherence?
-		print("COMPARE POWER SPECTRA")
-		# no algorithm seems to produce measurably better coherence (using calc_cips_scores).
-		hi_pws,lo_pws = calc_coherence(frames_hictrst,frames_loctrst,trans_hi,trans_lo,bdir,plot=options.plot)
+		if not options.nopws:
+			
+			# Question 4: How do alignment algorithms influence power spectral coherence?
+			print("COMPARE POWER SPECTRA")
+			# no algorithm seems to produce measurably better coherence (using calc_cips_scores).
+			hi_pws,lo_pws = calc_coherence(frames_hictrst,frames_loctrst,trans_hi,trans_lo,bdir,plot=options.plot)
 
 		#print("")
 

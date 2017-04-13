@@ -1,4 +1,4 @@
-#!/usr/bin/python2.7
+#!/usr/bin/env python
 
 #====================
 #Author: Jesus Galaz-Montoya 22/sep/2014 , Last update: sep/22/2014

@@ -171,7 +171,7 @@ def main():
 		#instack = "Clean_NORM_CTF_start_wparams.hdf"
 		#instack = "bdb:data"
 		instack = args[0]
-		sym = options.sym
+		sym = options.sym.lower()
 		if( sym == "c1" ):
 			ERROR("Thre is no need to symmetrize stack for C1 symmetry","sx3dvariability",1)
 
@@ -274,7 +274,7 @@ def main():
 			if options.sym != "c1" :
 				imgdata = get_im(stack)
 				try:
-					i = imgdata.get_attr("variabilitysymmetry")
+					i = imgdata.get_attr("variabilitysymmetry").lower()
 					if(i != options.sym):
 						ERROR("The symmetry provided does not agree with the symmetry of the input stack", "sx3dvariability", myid=myid)
 				except:

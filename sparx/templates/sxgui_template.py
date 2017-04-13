@@ -1622,7 +1622,7 @@ class SXCmdTab(QWidget):
 			else: # assert(self.sxcmdwidget.sxcmd.is_submittable == False)
 				assert(self.sxcmdwidget.sxcmd.mpi_support == False)
 				self.qsub_script_edit.setText("N/A")
-			self.qsub_script_edit.setToolTip('<FONT>'+"File name of submission script template (e.g. $EMAN2DIR/bin/msgui_qsub.sh)"+'</FONT>')
+			self.qsub_script_edit.setToolTip('<FONT>'+"File name of submission script template (e.g. $PROJECT_DIR/msgui_qsub.sh)"+'</FONT>')
 			submit_layout.addWidget(self.qsub_script_edit, grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
 
 			self.qsub_script_open_btn = QPushButton("Select Template")
@@ -2389,8 +2389,24 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 	# 	print(self.frameGeometry())
 
 # ========================================================================================
-def main(args):
-	sxapp = QApplication(args)
+
+def main():
+	from optparse import OptionParser
+	
+	progname = os.path.basename(sys.argv[0])
+	usage = progname + """ 
+	The main SPHIRE GUI application. It is designed as the command generator for the SPHIRE single particle analysis pipeline.
+	"""
+	parser = OptionParser(usage, version=SPARXVERSION)
+	# No options!!! Does not need to call parser.add_option()
+	
+	(options, args) = parser.parse_args(sys.argv[1:])
+	
+	if len(args) > 1:
+		print "see usage " + usage
+		sys.exit()
+	
+	sxapp = QApplication(sys.argv)
 	# The valid keys can be retrieved using the keys() function.
 	# Typically they include "windows", "motif", "cde", "plastique" and "cleanlooks".
 	# Depending on the platform, "windowsxp", "windowsvista" and "macintosh" may be available. Note that keys are case insensitive.
@@ -2462,7 +2478,7 @@ def main(args):
 
 # ========================================================================================
 if __name__ == "__main__":
-	main(sys.argv)
+	main()
 
 # ========================================================================================
 # END OF SCRIPT

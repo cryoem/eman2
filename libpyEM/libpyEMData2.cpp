@@ -92,7 +92,7 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_clip_inplace_overloads_1_2, E
 
 //BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_xform_align_nbest_overloads_2_6, EMAN::EMData::xform_align_nbest, 2, 6)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_project_overloads_1_2, EMAN::EMData::project, 1, 2)
+//BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_project_overloads_1_2, EMAN::EMData::project, 1, 2)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_backproject_overloads_1_2, EMAN::EMData::backproject, 1, 2)
 
@@ -110,7 +110,7 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_FH2F_overloads_2_3, EMAN::EMD
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_FH2Real_overloads_2_3, EMAN::EMData::FH2Real, 2, 3)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_calc_fourier_shell_correlation_overloads_1_2, EMAN::EMData::calc_fourier_shell_correlation, 1, 2)
+//BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_calc_fourier_shell_correlation_overloads_1_2, EMAN::EMData::calc_fourier_shell_correlation, 1, 2)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_nn_overloads_3_4, EMAN::EMData::nn, 3, 4)
 
@@ -277,6 +277,19 @@ EMData *EMData_calc_ccf_wrapper0(EMData &ths) {
 	return ths.calc_ccf();
 }
 
+vector<float> EMData_calc_fourier_shell_correlation_wrapper1(EMData &ths, EMData *with) {
+	GILRelease rel;
+	
+	return ths.calc_fourier_shell_correlation(with);
+}
+
+vector<float> EMData_calc_fourier_shell_correlation_wrapper2(EMData &ths, EMData *with, float width) {
+	GILRelease rel;
+	
+	return ths.calc_fourier_shell_correlation(with,width);
+}
+
+
 vector<Dict> EMData_align_nbest_wrapper6(EMData &ths, const string & aligner_name, EMData * to_img, const Dict & params, int nsoln, const string & cmp_name, const Dict& cmp_params) {
 	vector<Dict> ret;
 	PyThreadState *_save = PyEval_SaveThread();
@@ -383,6 +396,23 @@ EMData *EMData_align_wrapper5(EMData &ths, const string & aligner_name, EMData *
 		throw e;
 	}
 	PyEval_RestoreThread(_save);
+	return ret;
+}
+
+EMData *EMData_project_wrapperD(EMData &ths,const std::string& name, const Dict & params) {
+	PyThreadState *_save = PyEval_SaveThread();
+	EMData *ret;
+
+	try {
+		ret=ths.project(name,params);
+	}
+	catch (std::exception &e) {
+		PyEval_RestoreThread(_save);
+		cerr << e.what() << endl;
+		throw e;
+	}
+	PyEval_RestoreThread(_save);
+	
 	return ret;
 }
 
@@ -614,7 +644,8 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("align", &EMData_align_wrapper3,args("aligner_name", "to_img", "params"),return_value_policy< manage_new_object >(), "Align this image with another image and return the result image.\n \naligner_name - Alignment algorithm name.\nto_img - The image 'this' image aligns to.\nparams - Alignment algorithm parameters in a keyed dictionary, default to Null.\ncmp_name - Comparison algorithm used in alignment, default to 'dot'.\ncmp_params - Parameter dictionary for comparison algorithm, default to Null.\n \nreturn The result image.\nexception - NotExistingObjectError If the alignment algorithm doesn't exist.")
 	.def("align", &EMData_align_wrapper4,args("aligner_name", "to_img", "params", "cmp_name"),return_value_policy< manage_new_object >(), "Align this image with another image and return the result image.\n \naligner_name - Alignment algorithm name.\nto_img - The image 'this' image aligns to.\nparams - Alignment algorithm parameters in a keyed dictionary, default to Null.\ncmp_name - Comparison algorithm used in alignment, default to 'dot'.\ncmp_params - Parameter dictionary for comparison algorithm, default to Null.\n \nreturn The result image.\nexception - NotExistingObjectError If the alignment algorithm doesn't exist.")
 	.def("align", &EMData_align_wrapper5,args("aligner_name", "to_img", "params", "cmp_name", "cmp_params"),return_value_policy< manage_new_object >(), "Align this image with another image and return the result image.\n \naligner_name - Alignment algorithm name.\nto_img - The image 'this' image aligns to.\nparams - Alignment algorithm parameters in a keyed dictionary, default to Null.\ncmp_name - Comparison algorithm used in alignment, default to 'dot'.\ncmp_params - Parameter dictionary for comparison algorithm, default to Null.\n \nreturn The result image.\nexception - NotExistingObjectError If the alignment algorithm doesn't exist.")
-	.def("project", (EMAN::EMData* (EMAN::EMData::*)(const std::string&, const EMAN::Dict&) )&EMAN::EMData::project, EMAN_EMData_project_overloads_1_2(args("projector_name", "params"), "Calculate the projection of this image and return the result.\n \nprojector_name - Projection algorithm name.\nparams - Projection Algorithm parameters, default to Null.\n \nreturn The result image.\nexception - NotExistingObjectError If the projection algorithm doesn't exist.")[ return_value_policy< manage_new_object >() ])
+//	.def("project", (EMAN::EMData* (EMAN::EMData::*)(const std::string&, const EMAN::Dict&) )&EMAN::EMData::project, EMAN_EMData_project_overloads_1_2(args("projector_name", "params"), "Calculate the projection of this image and return the result.\n \nprojector_name - Projection algorithm name.\nparams - Projection Algorithm parameters, default to Null.\n \nreturn The result image.\nexception - NotExistingObjectError If the projection algorithm doesn't exist.")[ return_value_policy< manage_new_object >() ])
+	.def("project", &EMData_project_wrapperD, args("projector_name", "params"), "Calculate the projection of this image and return the result.\n \nprojector_name - Projection algorithm name.\nparams - projection options.\n \nreturn The result image.\nexception - NotExistingObjectError If the projection algorithm doesn't exist.", return_value_policy< manage_new_object >() )
 	.def("project", &EMData_project_wrapper, args("projector_name", "t3d"), "Calculate the projection of this image and return the result.\n \nprojector_name - Projection algorithm name.\nt3d - Transform object used to do projection.\n \nreturn The result image.\nexception - NotExistingObjectError If the projection algorithm doesn't exist.", return_value_policy< manage_new_object >() )
 //	.def("project", (EMAN::EMData* (EMAN::EMData::*)(const std::string&, const EMAN::Transform&) )&EMAN::EMData::project, args("projector_name", "t3d"), "Calculate the projection of this image and return the result.\n \nprojector_name - Projection algorithm name.\nt3d - Transform object used to do projection.\n \nreturn The result image.\nexception - NotExistingObjectError If the projection algorithm doesn't exist.", return_value_policy< manage_new_object >() )
 	.def("backproject", &EMAN::EMData::backproject, EMAN_EMData_backproject_overloads_1_2(args("peojector_name", "params"), "Calculate the backprojection of this image (stack) and return the result.\n \nprojector_name - Projection algorithm name. Only \"pawel\" and \"chao\" have been implemented now.\nparams - Projection Algorithm parameters, default to Null.\n \nreturn The result image.\nexception - NotExistingObjectError If the projection algorithm doesn't exist.")[ return_value_policy< manage_new_object >() ])
@@ -712,7 +743,8 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("rotavg_i", &EMAN::EMData::rotavg_i, return_value_policy< manage_new_object >(), "Create a 2-D or 3-D rotationally averaged image.\n \nreturn 2-D or 3-D rotationally-averaged image\nexception - ImageDimensionException If 'this' image is 1D.")
 	.def("mult_radial", &EMAN::EMData::mult_radial, return_value_policy< manage_new_object >(), args("radial"), "Multiply radially a 2-D or 3-D image by a 1-D image.\n \nradial - the 1-D image multiply to\n \nreturn 2-D or 3-D radially multiplied image\nexception - ImageDimensionException If 'this' image is 1D.")
 	.def("cog", &EMAN::EMData::cog, "Calculates the Center of Gravity\nand the Radius of Gyration of the image.\n \nreturns the mass and the radius as vectors.")
-	.def("calc_fourier_shell_correlation", &EMAN::EMData::calc_fourier_shell_correlation, EMAN_EMData_calc_fourier_shell_correlation_overloads_1_2(args("with", "width"), "Calculate CCF in Fourier space as a function of spatial frequency\nbetween a pair of 2-3D images (corners not included).\nThe input image 'with' must have the same size to 'this' image.\nInput images can be either real or Fourier in arbitrary combination.\n \nwith -The image used to caculate the fourier shell.\nwidth - Ring/shell width in Fourier space, default to 1.0.\n \nexception - ImageFormatException If the 2 images are not same size.\nexception - NullPointerException if the input image is null\nexception - Cannot calculate FSC for 1D images\nreturn  Vector of 3*k FSC results (frequencies, FSC values, error)\nk - length of FSC curve, depends on dimensions of the image and ring width\n1 column - normalized frequency [0,0.5]\n2 column - FSC,\n3 column - error of the FSC = 1/sqrt(n), where n is the number of Fourier coefficients within given shell."))
+	.def("calc_fourier_shell_correlation", EMData_calc_fourier_shell_correlation_wrapper1,args("with"), "Calculate CCF in Fourier space as a function of spatial frequency\nbetween a pair of 2-3D images (corners not included).\nThe input image 'with' must have the same size to 'this' image.\nInput images can be either real or Fourier in arbitrary combination.\n \nwith -The image used to caculate the fourier shell.\n\nexception - ImageFormatException If the 2 images are not same size.\nexception - NullPointerException if the input image is null\nexception - Cannot calculate FSC for 1D images\nreturn  Vector of 3*k FSC results (frequencies, FSC values, error)\nk - length of FSC curve, depends on dimensions of the image and ring width\n1 column - normalized frequency [0,0.5]\n2 column - FSC,\n3 column - error of the FSC = 1/sqrt(n), where n is the number of Fourier coefficients within given shell.")
+	.def("calc_fourier_shell_correlation", EMData_calc_fourier_shell_correlation_wrapper2,args("with", "width"), "Calculate CCF in Fourier space as a function of spatial frequency\nbetween a pair of 2-3D images (corners not included).\nThe input image 'with' must have the same size to 'this' image.\nInput images can be either real or Fourier in arbitrary combination.\n \nwith -The image used to caculate the fourier shell.\nwidth - Ring/shell width in Fourier space, default to 1.0.\n \nexception - ImageFormatException If the 2 images are not same size.\nexception - NullPointerException if the input image is null\nexception - Cannot calculate FSC for 1D images\nreturn  Vector of 3*k FSC results (frequencies, FSC values, error)\nk - length of FSC curve, depends on dimensions of the image and ring width\n1 column - normalized frequency [0,0.5]\n2 column - FSC,\n3 column - error of the FSC = 1/sqrt(n), where n is the number of Fourier coefficients within given shell.")
 	.def("scale_factors", &EMAN::EMData::scale_factors, "Calculate scale_factors in Fourier space as a function of spatial frequency\nbetween a pair of 2-3D images (corners not included).\nThe input image 'with' must have the same size to 'this' image.\nInput images can be either real or Fourier in arbitrary combination.\n \nwith -The image used to caculate the fourier shell.\beg - beginning Ring/shell in Fourier space.\end - ending Ring/shell in Fourier space.\n \nexception - ImageFormatException If the 2 images are not same size.\nexception - NullPointerException if the input image is null\nexception - Cannot calculate FSC for 1D images\nreturn  Vector of 3*k FSC results (frequencies, FSC values, error)\nk - length of FSC curve, depends on dimensions of the image and ring width\n1 column - normalized frequency [0,0.5]\n2 column - FSC,\n3 column - error of the FSC = 1/sqrt(n), where n is the number of Fourier coefficients within given shell.")
 	.def("average_circ_sub", &EMAN::EMData::average_circ_sub, return_value_policy< manage_new_object >(), "Subtract average outside of a circle\n \nreturn image with sbtracted average outside of a circle.")
 //	.def("onelinenn", &EMAN::EMData::onelinenn)

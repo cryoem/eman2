@@ -1,4 +1,4 @@
-#!/usr/bin/python2.7
+#!/usr/bin/env python
 #
 # Author: Jesus Galaz, 22/Jan/2017; last update Jan/22/2017
 # Copyright (c) 2011 Baylor College of Medicine
