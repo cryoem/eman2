@@ -6,7 +6,7 @@ sxprocess - Miscellaneous Commands: Carry out various SPARX commands on image se
 
 ''usage in command line''
 
-sxprocess.py  inputfile  outputfile  micrograph_prefix  --order  --order_lookup  --order_metropolis  --order_pca  --initial=INITIAL  --circular  --radius=RADIUS  --changesize  --ratio=RATIO  --pw  --wn=WN  --phase_flip  --makedb=param1=value1:param2=value2  --generate_projections=param1=value1:param2=value2  --isacgroup=ISACGROUP  --isacselect  --params=PARAMS  --adjpw  --rotpw=ROTPW  --transformparams=TRANSFORMPARAMS  --importctf=IMPORTCTF  --input=INPUT  --defocuserror=DEFOCUSERROR  --astigmatismerror=ASTIGMATISMERROR  --scale=SCALE  --adaptive_mask  --nsigma=NSIGMA  --threshold=THRESHOLD  --ndilation=NDILATION  --kernel_size=KERNEL_SIZE  --gauss_standard_dev=GAUSS_STANDARD_DEV  --binary_mask  --bin_threshold=BIN_THRESHOLD  --ne=NE  --nd=ND  --postprocess  --mtf=MTF_FILE_NAME  --fsc_adj  --B_enhance=B_ENHANCE  --randomphasesafter=FSC  --low_pass_filter  --aa=AA  --mask=MASK  --do_adaptive_mask  --mask_threshold=MASK_THRESHOLD  --consine_edge=CONSINE_EDGE  --dilation=DILATION  --output=OUTPUT  --pixel_size=PIXEL_SIZE  --B_start=B_START  --B_stop=B_STOP  --window_stack  --box=BOX  --angular_distribution  --round_digit=ROUND_DIGIT  --box_size=BOX_SIZE  --particle_radius=PARTICLE_RADIUS  --cylinder_width=CYLINDER_WIDTH  --cylinder_length=CYLINDER_LENGTH
+sxprocess.py  inputfile  outputfile  micrograph_prefix  --order  --order_lookup  --order_metropolis  --order_pca  --initial=INITIAL  --circular  --radius=RADIUS  --changesize  --ratio=RATIO  --pw  --wn=WN  --phase_flip  --makedb=param1=value1:param2=value2  --generate_projections=param1=value1:param2=value2  --isacgroup=ISACGROUP  --isacselect  --params=PARAMS  --adjpw  --rotpw=ROTPW  --transformparams=TRANSFORMPARAMS  --importctf=IMPORTCTF  --input=INPUT  --defocuserror=DEFOCUSERROR  --astigmatismerror=ASTIGMATISMERROR  --scale=SCALE  --adaptive_mask  --nsigma=NSIGMA  --threshold=THRESHOLD  --ndilation=NDILATION  --kernel_size=KERNEL_SIZE  --gauss_standard_dev=GAUSS_STANDARD_DEV  --binary_mask  --bin_threshold=BIN_THRESHOLD  --ne=NE  --nd=ND  --postprocess  --mtf=MTF_FILE_NAME  --fsc_adj  --B_enhance=B_ENHANCE  --low_pass_filter  --aa=AA  --mask=MASK  --do_adaptive_mask  --mask_threshold=MASK_THRESHOLD  --consine_edge=CONSINE_EDGE  --dilation=DILATION  --output=OUTPUT  --pixel_size=PIXEL_SIZE  --B_start=B_START  --B_stop=B_STOP  --window_stack  --box=BOX  --angular_distribution  --round_digit=ROUND_DIGIT  --box_size=BOX_SIZE  --particle_radius=PARTICLE_RADIUS  --cylinder_width=CYLINDER_WIDTH  --cylinder_length=CYLINDER_LENGTH
 
 
 === Typical usage ===
@@ -171,7 +171,6 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
     pixel_size:: Pixel size [A]: Pixel size of input data. (default 0.0)
     B_start:: B-factor lower limit [A]: Lower limit for B-factor estimation. (default 10.0)
     B_stop:: B-factor higher limit [A]: Higher limit for B-factor estimation. (default  0.0)
-    randomphasesafter:: Randomise phases after this FSC: Set Fourier pixels random phases after this FSC value. (default 0.8)
 
     window_stack:: Window stack images using a smaller window size: (default False)
     box:: new window size: (default 0)
@@ -202,6 +201,14 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
 == Output ==
     outputfile::  output file: required for some options. (default none)
     micrograph_prefix:: prefix for output micrographs: required for some options. (default none)
+
+
+== Development Notes ==
+- 2017/04/13 Toshio Moriya
+Before remove randomphasesafter options
+sxprocess.py  inputfile  outputfile  micrograph_prefix  --order  --order_lookup  --order_metropolis  --order_pca  --initial=INITIAL  --circular  --radius=RADIUS  --changesize  --ratio=RATIO  --pw  --wn=WN  --phase_flip  --makedb=param1=value1:param2=value2  --generate_projections=param1=value1:param2=value2  --isacgroup=ISACGROUP  --isacselect  --params=PARAMS  --adjpw  --rotpw=ROTPW  --transformparams=TRANSFORMPARAMS  --importctf=IMPORTCTF  --input=INPUT  --defocuserror=DEFOCUSERROR  --astigmatismerror=ASTIGMATISMERROR  --scale=SCALE  --adaptive_mask  --nsigma=NSIGMA  --threshold=THRESHOLD  --ndilation=NDILATION  --kernel_size=KERNEL_SIZE  --gauss_standard_dev=GAUSS_STANDARD_DEV  --binary_mask  --bin_threshold=BIN_THRESHOLD  --ne=NE  --nd=ND  --postprocess  --mtf=MTF_FILE_NAME  --fsc_adj  --B_enhance=B_ENHANCE  --randomphasesafter=FSC  --low_pass_filter  --aa=AA  --mask=MASK  --do_adaptive_mask  --mask_threshold=MASK_THRESHOLD  --consine_edge=CONSINE_EDGE  --dilation=DILATION  --output=OUTPUT  --pixel_size=PIXEL_SIZE  --B_start=B_START  --B_stop=B_STOP  --window_stack  --box=BOX  --angular_distribution  --round_digit=ROUND_DIGIT  --box_size=BOX_SIZE  --particle_radius=PARTICLE_RADIUS  --cylinder_width=CYLINDER_WIDTH  --cylinder_length=CYLINDER_LENGTH
+randomphasesafter:: Randomise phases after this FSC: Set Fourier pixels random phases after this FSC value. (default 0.8)
+
 
 = Author / Maintainer =
 Jia Fang
