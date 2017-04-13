@@ -6467,7 +6467,7 @@ See the module documentation for usage.
                 if self.marked[i][j] == 2:
                     self.marked[i][j] = 0
 
-# NEED TO BE FIX
+# NEEDS TO BE FIX
 '''
 # Hungarian algorithm between two partitions
 def Hungarian(part1, part2):
