@@ -995,7 +995,9 @@ def do_generation(main_iter, generation_iter, target_nx, target_xr, target_yr, t
 			else:
 				keepdoing_main = True
 				keepdoing_generation = True
-
+		else:
+			keepdoing_main = False
+			keepdoing_generation = False
 		#print "****************************************************************************************************",keepdoing_main,keepdoing_generation
 
 	else:
