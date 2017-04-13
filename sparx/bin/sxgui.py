@@ -1622,7 +1622,7 @@ class SXCmdTab(QWidget):
 			else: # assert(self.sxcmdwidget.sxcmd.is_submittable == False)
 				assert(self.sxcmdwidget.sxcmd.mpi_support == False)
 				self.qsub_script_edit.setText("N/A")
-			self.qsub_script_edit.setToolTip('<FONT>'+"File name of submission script template (e.g. $EMAN2DIR/bin/msgui_qsub.sh)"+'</FONT>')
+			self.qsub_script_edit.setToolTip('<FONT>'+"File name of submission script template (e.g. $PROJECT_DIR/msgui_qsub.sh)"+'</FONT>')
 			submit_layout.addWidget(self.qsub_script_edit, grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
 
 			self.qsub_script_open_btn = QPushButton("Select Template")
