@@ -4133,7 +4133,11 @@ def angles_to_normals(angles):
 	return [[temp[l*3+i] for i in xrange(3)] for l in xrange(len(angles)) ]
 
 def symmetry_related(angles, symmetry):
-	if(symmetry == "oct" ):
+	if( (symmetry[0] == "c") or (symmetry[0] == "d") ):
+		temp = Util.symmetry_related(angles, symmetry)
+		nt = len(temp)/3
+		return [[temp[l*3+i] for i in xrange(3)] for l in xrange(nt) ]
+	else:
 		from EMAN2 import Transform
 		neighbors = []
 		junk = Transform({"type":"spider","phi":angles[0],"theta":angles[1],"psi":angles[2]})
@@ -4142,10 +4146,6 @@ def symmetry_related(angles, symmetry):
 			d = p.get_params("spider")
 			neighbors.append([d["phi"],d["theta"],d["psi"]])
 		return neighbors
-	else:
-		temp = Util.symmetry_related(angles, symmetry)
-		nt = len(temp)/3
-		return [[temp[l*3+i] for i in xrange(3)] for l in xrange(nt) ]
 
 def symmetry_related_normals(angles, symmetry):
 	from EMAN2 import Transform
