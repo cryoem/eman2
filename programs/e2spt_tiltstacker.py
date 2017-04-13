@@ -517,7 +517,7 @@ def writetlt( angles, options, raworder=False ):
 	return
 
 
-def organizetilts( intilts, options ):
+def organizetilts( intilts, options, raworder=False ):
 	
 	intilts.sort()
 
