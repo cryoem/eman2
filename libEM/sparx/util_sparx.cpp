@@ -20366,7 +20366,7 @@ void Util::fuse_low_freq(EMData* img1, EMData* img2, EMData* w1, EMData* w2, int
 	img1->update();
 	img2->update();
 	w1->update();
-	w1->update();
+	w2->update();
 
 	EXITFUNC;
 }
