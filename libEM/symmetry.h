@@ -523,10 +523,10 @@ namespace EMAN {
 			return static_cast<int>(360.0/daz);
 		};*/
 
-			/** Gets the maximum cylcic symmetry exhibited by this object. This is used by OrientationGenerators, and is
+		/** Gets the maximum cylcic symmetry exhibited by this object. This is used by OrientationGenerators, and is
 		 * probably not something a general user would utilize.
 		 * @return nsym - this is the symmetry of the helix
-			 */
+		*/
 		virtual int get_max_csym() const { return (int)params["nstart"]; }	// may not be 
 
 			/// The name of this class - used to access it from factories etc. Should be "h"

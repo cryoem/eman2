@@ -1835,37 +1835,37 @@ float IcosahedralSym::get_az_alignment_offset() const { return 234.0; } // This 
 Transform IcosahedralSym::get_sym(const int n) const
 {
 	// These rotations courtesy of Phil Baldwin
-	static double  lvl0=0.; //  there is one pentagon on top; five-fold along z
-	static double  lvl1= 63.4349; // that is atan(2)  // there are 5 pentagons with centers at this height (angle)
-	static double  lvl2=116.5651; //that is 180-lvl1  // there are 5 pentagons with centers at this height (angle)
-	static double lvl3=180.0;
+	float	lvl0 = 0.0f; //  there is one pentagon on top; five-fold along z
+	float	lvl1 = EMConsts::rad2deg*atan(2.0f);// 63.4349; // that is atan(2)  // there are 5 pentagons with centers at this height (angle)
+	float	lvl2 = 180.0f - lvl1;//116.5651; //that is 180-lvl1  // there are 5 pentagons with centers at this height (angle)
+	float	lvl3 = 180.0f;
 
-	static double ICOS[180] = { // This is with a pentagon normal to z
+	float ICOS[180] = { // This is with a pentagon normal to z
 		0,lvl0,0,    0,lvl0,288,   0,lvl0,216,   0,lvl0,144,  0,lvl0,72,
-  0,lvl1,36,   0,lvl1,324,   0,lvl1,252,   0,lvl1,180,  0,lvl1,108,
-  72,lvl1,36,  72,lvl1,324,  72,lvl1,252,  72,lvl1,180,  72,lvl1,108,
-  144,lvl1,36, 144,lvl1,324, 144,lvl1,252, 144,lvl1,180, 144,lvl1,108,
-  216,lvl1,36, 216,lvl1,324, 216,lvl1,252, 216,lvl1,180, 216,lvl1,108,
-  288,lvl1,36, 288,lvl1,324, 288,lvl1,252, 288,lvl1,180, 288,lvl1,108,
-  36,lvl2,0,   36,lvl2,288,  36,lvl2,216,  36,lvl2,144,  36,lvl2,72,
-  108,lvl2,0,  108,lvl2,288, 108,lvl2,216, 108,lvl2,144, 108,lvl2,72,
-  180,lvl2,0,  180,lvl2,288, 180,lvl2,216, 180,lvl2,144, 180,lvl2,72,
-  252,lvl2,0,  252,lvl2,288, 252,lvl2,216, 252,lvl2,144, 252,lvl2,72,
-  324,lvl2,0,  324,lvl2,288, 324,lvl2,216, 324,lvl2,144, 324,lvl2,72,
-  0,lvl3,0,    0,lvl3,288,   0,lvl3,216,   0,lvl3,144,   0,lvl3,72
+		0,lvl1,36,   0,lvl1,324,   0,lvl1,252,   0,lvl1,180,  0,lvl1,108,
+		72,lvl1,36,  72,lvl1,324,  72,lvl1,252,  72,lvl1,180,  72,lvl1,108,
+		144,lvl1,36, 144,lvl1,324, 144,lvl1,252, 144,lvl1,180, 144,lvl1,108,
+		216,lvl1,36, 216,lvl1,324, 216,lvl1,252, 216,lvl1,180, 216,lvl1,108,
+		288,lvl1,36, 288,lvl1,324, 288,lvl1,252, 288,lvl1,180, 288,lvl1,108,
+		36,lvl2,0,   36,lvl2,288,  36,lvl2,216,  36,lvl2,144,  36,lvl2,72,
+		108,lvl2,0,  108,lvl2,288, 108,lvl2,216, 108,lvl2,144, 108,lvl2,72,
+		180,lvl2,0,  180,lvl2,288, 180,lvl2,216, 180,lvl2,144, 180,lvl2,72,
+		252,lvl2,0,  252,lvl2,288, 252,lvl2,216, 252,lvl2,144, 252,lvl2,72,
+		324,lvl2,0,  324,lvl2,288, 324,lvl2,216, 324,lvl2,144, 324,lvl2,72,
+		0,lvl3,0,    0,lvl3,288,   0,lvl3,216,   0,lvl3,144,   0,lvl3,72
 	};
 
 	int idx = n % 60;
 	Dict d("type","eman");
 // 	Transform3D ret;
 	if (get_az_alignment_offset() == 234.0) {
-		d["az"] =(float)ICOS[idx * 3 ]+90;
-		d["alt"] = (float)ICOS[idx * 3 + 1];
-		d["phi"] = (float)ICOS[idx * 3 + 2]-90;
+		d["az"]  = ICOS[idx * 3 ]+90;
+		d["alt"] = ICOS[idx * 3 + 1];
+		d["phi"] = ICOS[idx * 3 + 2]-90;
 // 		ret.set_rotation((float)ICOS[idx * 3 ]+90,(float)ICOS[idx * 3 + 1], (float)ICOS[idx * 3 + 2]-90);
 	}
 	else {
-		d["az"] =(float)(float)ICOS[idx * 3 ];
+		d["az"]  = (float)(float)ICOS[idx * 3 ];
 		d["alt"] = (float)ICOS[idx * 3 + 1];
 		d["phi"] = (float)ICOS[idx * 3 + 2];
 // 		ret.set_rotation((float)ICOS[idx * 3 ],(float)ICOS[idx * 3 + 1], (float)ICOS[idx * 3 + 2]);
@@ -1964,26 +1964,26 @@ Transform OctahedralSym::get_sym(const int n) const
 {
 	// These rotations courtesy of Phil Baldwin
 	// We have placed the OCT symmetry group with a face along the z-axis
-	static double lvl0=0.;
-	static double lvl1=90.;
-	static double lvl2=180.;
+	float lvl0 =   0.0f;
+	float lvl1 =  90.0f;
+	float lvl2 = 180.0f;
 
-	static double OCT[72] = {// This is with a face of a cube along z
+	float OCT[72] = {// This is with a face of a cube along z
 		0,lvl0,0,   0,lvl0,90,    0,lvl0,180,    0,lvl0,270,
-  0,lvl1,0,   0,lvl1,90,    0,lvl1,180,    0,lvl1,270,
-  90,lvl1,0,  90,lvl1,90,   90,lvl1,180,   90,lvl1,270,
-  180,lvl1,0, 180,lvl1,90,  180,lvl1,180,  180,lvl1,270,
-  270,lvl1,0, 270,lvl1,90,  270,lvl1,180,  270,lvl1,270,
-  0,lvl2,0,   0,lvl2,90,    0,lvl2,180,    0,lvl2,270
+		0,lvl1,0,   0,lvl1,90,    0,lvl1,180,    0,lvl1,270,
+		90,lvl1,0,  90,lvl1,90,   90,lvl1,180,   90,lvl1,270,
+		180,lvl1,0, 180,lvl1,90,  180,lvl1,180,  180,lvl1,270,
+		270,lvl1,0, 270,lvl1,90,  270,lvl1,180,  270,lvl1,270,
+		0,lvl2,0,   0,lvl2,90,    0,lvl2,180,    0,lvl2,270
 	};
 
 	int idx = n % 24;
 // 	Transform3D ret;
 // 	ret.set_rotation((float)OCT[idx * 3 ],(float)OCT[idx * 3 + 1], (float)OCT[idx * 3 + 2] );
 	Dict d("type","eman");
-	d["az"] = (float)OCT[idx * 3 ];
-	d["alt"] = (float)OCT[idx * 3 + 1];
-	d["phi"] = (float)OCT[idx * 3 + 2];
+	d["az"]  = OCT[idx * 3 ];
+	d["alt"] = OCT[idx * 3 + 1];
+	d["phi"] = OCT[idx * 3 + 2];
 	return Transform(d);
 
 }
@@ -2027,25 +2027,22 @@ Transform TetrahedralSym::get_sym(const int n) const
 {
 	// These rotations courtesy of Phil Baldwin
 	 // It has n=m=3; F=4, E=6=nF/2, V=4=nF/m
-	static double lvl0=0;         // There is a face along z
-	static double lvl1=109.4712;  //  that is acos(-1/3)  // There  are 3 faces at this angle
+	float lvl0 = 0.0f;   // There is a face along z
+	float lvl1 = (float)(EMConsts::rad2deg*acos(-1.0f/3.0f));  // There  are 3 faces at this angle
 
-	static double TET[36] = {// This is with the face along z
+	float TET[36] = {// This is with the face along z
 		0,lvl0,0,   0,lvl0,120,    0,lvl0,240,
-  0,lvl1,60,   0,lvl1,180,    0,lvl1,300,
-  120,lvl1,60, 120,lvl1,180,  120,lvl1,300,
-  240,lvl1,60, 240,lvl1,180,  240,lvl1,300
+		0,lvl1,60,   0,lvl1,180,    0,lvl1,300,
+		120,lvl1,60, 120,lvl1,180,  120,lvl1,300,
+		240,lvl1,60, 240,lvl1,180,  240,lvl1,300
 	};
-	//
+
 	int idx = n % 12;
-// 	Transform3D ret;
-// 	ret.set_rotation((float)TET[idx * 3 ],(float)TET[idx * 3 + 1], (float)TET[idx * 3 + 2] );
-// 	return ret;
 
 	Dict d("type","eman");
-	d["az"] = (float)TET[idx * 3 ];
-	d["alt"] = (float)TET[idx * 3 + 1];
-	d["phi"] = (float)TET[idx * 3 + 2];
+	d["az"]  = TET[idx * 3 ];
+	d["alt"] = TET[idx * 3 + 1];
+	d["phi"] = TET[idx * 3 + 2];
 	return Transform(d);
 
 }
