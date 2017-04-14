@@ -51,11 +51,12 @@ There are 3 mutually exclusive modes in this program:
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	parser.add_argument("--refinemulti",action="store_true",help="Extracts particles based on the model_id header value in each class-average, normally produced by e2refinemulti",default=False)
+	parser.add_argument("--classlist",type=str,help="Filename of a text file containing a (comma or whitespace separated) list of class average numbers to operate on. ", default=None)
+	parser.add_argument("--orientedparticles",type=str,help="Filename of the set (.lst file) with the particles used for the --orientcls file", default=None)
+	parser.add_argument("--orientcls",type=str,help="Filename of a cls_result_xx or classmx_xx file. ", default=None)
+	parser.add_argument("--orientclassn",type=str,default=None,help="Specify a comma separated list of class numbers to extract in oriented particles mode.")
 	parser.add_argument("--input_set",type=str,help="Normally the set used to create the class-averages is used as input. Use this with another version of the same set of particles, for example '__ctf_flip_proc' instead of '__ctf_flip' ", default=None)
 	parser.add_argument("--setname",type=str,help="Name of the stack to build", default=None)
-	parser.add_argument("--classlist",type=str,help="Filename of a text file containing a (comma or whitespace separated) list of class average numbers to operate on. ", default=None)
-	parser.add_argument("--orientedparticles",type=str,help="Filename of the set (.lst file) used when creating --orientcls file", default=None)
-	parser.add_argument("--orientcls",type=str,help="Filename of a cls_result_xx or classmx_xx file. ", default=None)
 	parser.add_argument("--evenoddmerge",action="store_true",help="with --orientedparticles, if cls_result_xx is specified, will include both _even and _odd particles in the output.",default=False)
 	parser.add_argument("--excludebad",action="store_true",help="Excludes the particles from the generated set(s). They are included by default.",default=False)
 	parser.add_argument("--noderef",action="store_true",help="If particle file was .lst, normally the output .lst will reference the original image file. With this option, the output will reference the .lst file instead, creating a lst pointing to another lst.",default=False)
@@ -117,10 +118,11 @@ There are 3 mutually exclusive modes in this program:
 
 		nref=int(classmx[0]["maximum"])+1
 
-		# now we loop over the classes, and subtract away a projection of the reference with the exclusion mask in
-		# each symmetry-related orientation, after careful scaling. Note that we don't have a list of which particle is in each class,
-		# but rather a list of which class each particle is in, so we do this a bit inefficiently for now
-		for i in xrange(nref):
+		if options.orientclassn==None : rng=xrange(nref)
+		else : rng=[int(i) for i in options.orientclassn.split(",")]
+
+		# now we loop over the classes
+		for i in rng:
 			if options.verbose>1 : print "--- Class %d"%i
 
 			for eo in range(len(classmx)):
@@ -131,9 +133,12 @@ There are 3 mutually exclusive modes in this program:
 					if classmx[eo][0,j]!=i : continue		# only proceed if the particle is in this class
 					if options.verbose: print "{}\t{}\t{}".format(i,("even","odd")[eo],j)
 
-					ptcl=EMData(cptcl[eo],j)
+					try: ptcl=EMData(cptcl[eo],j)
+					except:
+						print "Error reading: ",cptcl[eo],j
+						sys.exit(1)
 
-					# Find the transform for this particle (2d) and apply it to the unmasked/masked projections
+					# Find the transform for this particle (2d) and apply it
 					ptclxf=Transform({"type":"2d","alpha":cmxalpha[eo][0,j],"mirror":int(cmxmirror[eo][0,j]),"tx":cmxtx[eo][0,j],"ty":cmxty[eo][0,j]})
 					ptclx=ptcl.process("xform",{"transform":ptclxf})
 
