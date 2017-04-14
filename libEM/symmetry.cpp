@@ -1865,9 +1865,9 @@ Transform IcosahedralSym::get_sym(const int n) const
 // 		ret.set_rotation((float)ICOS[idx * 3 ]+90,(float)ICOS[idx * 3 + 1], (float)ICOS[idx * 3 + 2]-90);
 	}
 	else {
-		d["az"]  = (float)(float)ICOS[idx * 3 ];
-		d["alt"] = (float)ICOS[idx * 3 + 1];
-		d["phi"] = (float)ICOS[idx * 3 + 2];
+		d["az"]  = ICOS[idx * 3 ];
+		d["alt"] = ICOS[idx * 3 + 1];
+		d["phi"] = ICOS[idx * 3 + 2];
 // 		ret.set_rotation((float)ICOS[idx * 3 ],(float)ICOS[idx * 3 + 1], (float)ICOS[idx * 3 + 2]);
 	}
 
