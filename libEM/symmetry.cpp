@@ -1278,7 +1278,7 @@ bool CSym::is_in_asym_unit(const float& altitude, const float& azimuth, const bo
 
 	int nsym = params.set_default("nsym",0);
 	if ( nsym != 1 && azimuth < 0) return false;
-	if ( altitude <= alt_max && azimuth <= az_max ) return true;
+	if ( altitude <= alt_max && azimuth < az_max ) return true;
 	return false;
 }
 
@@ -1451,10 +1451,10 @@ bool DSym::is_in_asym_unit(const float& altitude, const float& azimuth, const bo
 	int nsym = params.set_default("nsym",0);
 
 	if ( nsym == 1 && inc_mirror ) {
-		if (altitude >= 0 && altitude <= alt_max && azimuth <= az_max ) return true;
+		if (altitude >= 0 && altitude <= alt_max && azimuth < az_max ) return true;
 	}
 	else {
-		if ( altitude >= 0 && altitude <= alt_max && azimuth <= az_max && azimuth >= 0 ) return true;
+		if ( altitude >= 0 && altitude <= alt_max && azimuth < az_max && azimuth >= 0 ) return true;
 	}
 	return false;
 }
@@ -1722,30 +1722,24 @@ bool PlatonicSym::is_in_asym_unit(const float& altitude, const float& azimuth, c
 	float alt_max = d["alt_max"];
 	float az_max = d["az_max"];
 
-	if ( altitude >= 0 &&  altitude <= alt_max && azimuth <= az_max && azimuth >= 0) {
+	if ( altitude >= 0 &&  altitude <= alt_max && azimuth < az_max && azimuth >= 0) {
 
 		// Convert azimuth to radians
 		float tmpaz = (float)(EMConsts::deg2rad * azimuth);
 
 		float cap_sig = platonic_params["az_max"];
 		float alt_max = platonic_params["alt_max"];
-		if ( tmpaz > ( cap_sig/2.0f ) )tmpaz = cap_sig - tmpaz;
-
-		float lower_alt_bound = platonic_alt_lower_bound(tmpaz, alt_max );
+		tmpaz = Util::get_min( tmpaz, cap_sig-tmpaz);
 
 		// convert altitude to radians
 		float tmpalt = (float)(EMConsts::deg2rad * altitude);
-		if ( lower_alt_bound > tmpalt ) {
-			if ( inc_mirror == false )
-			{
-				if ( cap_sig/2.0f < tmpaz ) return false;
+		if ( platonic_alt_lower_bound(tmpaz, alt_max ) > tmpalt ) return true;
+			/*if ( inc_mirror == false ) {
+				if ( tmpaz > cap_sig/2.0f) return false;  //  this if is always false so I removed it PAP
 				else return true;
-			}
-			else return true;
-		}
-		return false;
-	}
-	return false;
+			}	else return true;*/
+		else return false;
+	}	else return false;
 }
 
 float PlatonicSym::platonic_alt_lower_bound(const float& azimuth, const float& alpha) const
@@ -1996,30 +1990,25 @@ bool TetrahedralSym::is_in_asym_unit(const float& altitude, const float& azimuth
 	float alt_max = d["alt_max"];
 	float az_max = d["az_max"];
 
-	if ( altitude >= 0 &&  altitude <= alt_max && azimuth <= az_max && azimuth >= 0) {
+	if ( altitude >= 0 &&  altitude <= alt_max && azimuth < az_max && azimuth >= 0) {
 		// convert azimuth to radians
 		float tmpaz = (float)(EMConsts::deg2rad * azimuth);
 
 		float cap_sig = platonic_params["az_max"];
 		float alt_max = platonic_params["alt_max"];
-		if ( tmpaz > ( cap_sig/2.0f ) )tmpaz = cap_sig - tmpaz;
-
-		float lower_alt_bound = platonic_alt_lower_bound(tmpaz, alt_max );
+		tmpaz = Util::get_min( tmpaz, cap_sig-tmpaz);
 
 		// convert altitude to radians
 		float tmpalt = (float)(EMConsts::deg2rad * altitude);
-		if ( lower_alt_bound > tmpalt ) {
-			if ( !inc_mirror ) {
-				float upper_alt_bound = platonic_alt_lower_bound( tmpaz, alt_max/2.0f);
+		if ( platonic_alt_lower_bound(tmpaz, alt_max ) > tmpalt ) {
+			if ( inc_mirror ) return true;
+			else {
 				// you could change the "<" to a ">" here to get the other mirror part of the asym unit
-				if ( upper_alt_bound < tmpalt ) return false;
+				if ( platonic_alt_lower_bound( tmpaz, alt_max/2.0f) < tmpalt ) return false;
 				else return true;
 			}
-			else return true;
-		}
-		return false;
-	}
-	else return false;
+		} else return false;
+	} else return false;
 }
 
 
