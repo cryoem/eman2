@@ -300,7 +300,7 @@ def main():
 		--B_enhance:       =-1, B-factor is not applied; =0, program estimates B-factor from options.B_start(usually set as 10 Angstrom)to the resolution determined by FSC 0.143; =128., program use the given value 128. to enhance map.
 		--mtf:             =aa.txt, for those high resolution maps, mtf correction would significantly enhance structural features.
 		--fsc_adj:         fsc adjustment of power spectrum is inclined to increase the slope of power spectrum of the summed volume.
-		--do_adaptive_mask =True when it is restored, the program adaptively creates surface mask file using summed two volumes. This takes a couple of minutes. For map with dimension of 384*384*384, it takes 6 minutes.
+		--do_adaptive_mask =True when it is restored, the program adaptively creates adaptive mask file using summed two volumes. This takes a couple of minutes. For map with dimension of 384*384*384, it takes 6 minutes.
 		--output           output volume 
 										
 		sxprocess.py vol_0_unfil.hdf vol_1_unfil.hdf  --mask=mask15.hdf --postprocess   --pixel_size=1.12     --low_pass_filter =-1  --mtf=aa.txt  --fsc_adj --output=vol_post.hdf 
@@ -1053,7 +1053,7 @@ def main():
 			elif options.do_adaptive_mask:
 				map1 +=map2
 				map1 /=2.
-				log_main.add("Create a surface mask, let's wait...")
+				log_main.add("Create an adaptive mask, let's wait...")
 				log_main.add("options.mask_threshold, options.dilation, options.consine_edge %f %5.2f %5.2f"%(options.mask_threshold, options.dilation, options.consine_edge))
 				m = Util.adaptive_mask(map1, options.mask_threshold, options.dilation, options.consine_edge)
 				m.write_image("vol_adaptive_mask.hdf")
