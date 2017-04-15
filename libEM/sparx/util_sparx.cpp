@@ -21303,19 +21303,19 @@ vector<float> Util::symmetry_related(const vector<float>& angles, string symmetr
 
 	if( symmetry.substr(0,1) == "c" && nsym > 1)  {
 		for(int l=1; l<nsym; l++) {
-			redang[3*l]   = angles[0]+l*qt;
+			redang[3*l]   = fmod(angles[0]+l*qt,360.0f);
 			redang[3*l+1] = angles[1];
 			redang[3*l+2] = angles[2];
 		}
 
 	} else if( symmetry.substr(0,1) == "d")  {
 		for(int l=1; l<nsym; l++) {
-			redang[3*l]   = angles[0]+l*qt;
+			redang[3*l]   = fmod(angles[0]+l*qt,360.0f);
 			redang[3*l+1] = angles[1];
 			redang[3*l+2] = angles[2];
 		}
 		for(int l=nsym; l<2*nsym; l++) {
-			redang[3*l]   = 360.0f - redang[3*(l-nsym)];
+			redang[3*l]   = fmod(360.0f - redang[3*(l-nsym)],360.0);
 			redang[3*l+1] = 180.0f - angles[1];
 			redang[3*l+2] = fmod( 180.0f + angles[2], 360.0f);
 		}
