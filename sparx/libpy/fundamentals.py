@@ -1326,7 +1326,7 @@ def rotate_params(params, transf):
 		cpar[i] = [phi, theta, psi]
 	return cpar
 
-
+"""
 def rotmatrix(phi,theta,psi):
 	from math import sin,cos,radians
 	rphi   = radians(phi)
@@ -1348,14 +1348,55 @@ def rotmatrix(phi,theta,psi):
 	mat[1][2] =  sin(rpsi)*sin(rtheta)
 	mat[2][2] =            cos(rtheta)
 	return mat
+"""
+
+def rotmatrix(phi,theta,psi):
+	from math import sin,cos,radians
+	rphi   = radians(phi)
+	rtheta = radians(theta)
+	rpsi   = radians(psi)
+	cosphi = cos(rphi)
+	sinphi = sin(rphi)
+	costheta = cos(rtheta)
+	sintheta = sin(rtheta)
+	cospsi = cos(rpsi)
+	sinpsi = sin(rpsi)
+	mat = [[0.0]*3,[0.0]*3,[0.0]*3]
+
+	mat[0][0] =  cospsi*costheta*cosphi - sinpsi*sinphi
+	mat[1][0] = -sinpsi*costheta*cosphi - cospsi*sinphi
+	mat[2][0] =            sintheta*cosphi
+
+
+	mat[0][1] =  cospsi*costheta*sinphi + sinpsi*cosphi
+	mat[1][1] = -sinpsi*costheta*sinphi + cospsi*cosphi
+	mat[2][1] =            sintheta*sinphi
+
+
+	mat[0][2] = -cospsi*sintheta
+	mat[1][2] =  sinpsi*sintheta
+	mat[2][2] =            costheta
+	return mat
 
 def mulmat(m1,m2):
 	mat = [[0.0]*3,[0.0]*3,[0.0]*3]
+	"""
 	for i in xrange(3):
 		for j in xrange(3):
 			for k in xrange(3):
 				mat[i][j] += m1[i][k]*m2[k][j]
-			mat[i][j] = round(mat[i][j],8)
+			#mat[i][j] = round(mat[i][j],8)
+	"""
+	mat[0][0] = m1[0][0]*m2[0][0] + m1[0][1]*m2[1][0] + m1[0][2]*m2[2][0]
+	mat[0][1] = m1[0][0]*m2[0][1] + m1[0][1]*m2[1][1] + m1[0][2]*m2[2][1]
+	mat[0][2] = m1[0][0]*m2[0][2] + m1[0][1]*m2[1][2] + m1[0][2]*m2[2][2]
+	mat[1][0] = m1[1][0]*m2[0][0] + m1[1][1]*m2[1][0] + m1[1][2]*m2[2][0]
+	mat[1][1] = m1[1][0]*m2[0][1] + m1[1][1]*m2[1][1] + m1[1][2]*m2[2][1]
+	mat[1][2] = m1[1][0]*m2[0][2] + m1[1][1]*m2[1][2] + m1[1][2]*m2[2][2]
+	mat[2][0] = m1[2][0]*m2[0][0] + m1[2][1]*m2[1][0] + m1[2][2]*m2[2][0]
+	mat[2][1] = m1[2][0]*m2[0][1] + m1[2][1]*m2[1][1] + m1[2][2]*m2[2][1]
+	mat[2][2] = m1[2][0]*m2[0][2] + m1[2][1]*m2[1][2] + m1[2][2]*m2[2][2]
+
 	return mat
 
 def recmat(mat):
@@ -1409,11 +1450,107 @@ def recmat(mat):
 				psi = 0.5*pi
 		else:
 			psi = atan2(st*mat[1][2], -st*mat[0][2])
-	pi2 = 2*pi
-	return  degrees(round(phi,10)%pi2),degrees(round(theta,10)%pi2),degrees(round(psi,10)%pi2)
+	#pi2 = 2*pi
+	#return  degrees(round(phi%pi2,8)),degrees(round(theta%pi2,8)),degrees(round(psi%pi2,8))
 	#return  degrees(round(phi,10)%pi2)%360.0,degrees(round(theta,10)%pi2)%360.0,degrees(round(psi,10)%pi2)%360.0
-	#return  degrees(phi)%360.0,degrees(theta)%360.0,degrees(psi)%360.0
+	return  degrees(phi)%360.0,degrees(theta)%360.0,degrees(psi)%360.0
 
+
+"""
+
+def mulmat_np(m1,m2):
+	import numpy as np
+	mat1 = np.matrix(m1,dtype="f8")
+	mat2 = np.matrix(m2,dtype="f8")
+	mat1 = np.array(mat1*mat2)
+	return [list(q) for q in mat1]
+
+def rotmatrix_np(phi,theta,psi):
+	import numpy as np
+	mat = np.matrix(((0.,0.,0.),(0.,0.,0.),(0.,0.,0.)), dtype = "f8")
+	rphi   = np.radians(np.float64(phi))
+	rtheta = np.radians(np.float64(theta))
+	rpsi   = np.radians(np.float64(psi))
+	cosphi = np.cos(rphi)
+	sinphi = np.sin(rphi)
+	costheta = np.cos(rtheta)
+	sintheta = np.sin(rtheta)
+	cospsi = np.cos(rpsi)
+	sinpsi = np.sin(rpsi)
+
+	mat[0,0] =  cospsi*costheta*cosphi - sinpsi*sinphi
+	mat[1,0] = -sinpsi*costheta*cosphi - cospsi*sinphi
+	mat[2,0] =            sintheta*cosphi
+
+
+	mat[0,1] =  cospsi*costheta*sinphi + sinpsi*cosphi
+	mat[1,1] = -sinpsi*costheta*sinphi + cospsi*cosphi
+	mat[2,1] =            sintheta*sinphi
+
+
+	mat[0,2] = -cospsi*sintheta
+	mat[1,2] =  sinpsi*sintheta
+	mat[2,2] =            costheta
+	return mat
+
+
+def recmat_np(mat):
+	#from math import np.arccos,np.np.arcsin,np.arctan2,degrees,pi
+	import numpy as np
+	'''
+	def sign(x):
+		if( x >= 0.0 ): return 1
+		else:  return -1
+	mat = [[0.0]*3,[0.0]*3,[0.0]*3]
+	# limit precision
+	for i in xrange(3):
+		for j in xrange(3):
+			mat[i,j] = inmat[i,j]
+			#if(abs(inmat[i,j])<1.0e-8):  mat[i,j] = 0.0
+			#else: mat[i,j] = inmat[i,j]
+	for i in xrange(3):
+		for j in xrange(3):  print  "     %14.8f"%mat[i,j],
+		print ""
+	'''
+	if(mat[2,2] == 1.0):
+		theta = 0.0
+		psi = 0.0
+		if( mat[0,0] == 0.0 ):
+			phi = np.np.arcsin(mat[0,1])
+		else:
+			phi = np.arctan2(mat[0,1],mat[0,0])
+	elif(mat[2,2] == -1.0):
+		theta = pi
+		psi = 0.0
+		if(mat[0,0] == 0.0):
+			phi = np.np.arcsin(-mat[0,1])
+		else:
+			phi = np.arctan2(-mat[0,1],-mat[0,0])
+	else:
+		theta = np.arccos(mat[2,2])
+		st = np.sign(theta)
+		#print theta,st,mat[2,0]
+		if(mat[2,0] == 0.0):
+			if( st != np.sign(mat[2,1]) ):
+				phi = 1.5*pi
+			else:
+				phi = 0.5*pi
+		else:
+			phi = np.arctan2(st*mat[2,1], st*mat[2,0])
+
+		#print theta,st,mat[0,2],mat[1,2]
+		if(mat[0,2] == 0.0):
+			if( st != np.sign(mat[1,2]) ):
+				psi = 1.5*pi
+			else:
+				psi = 0.5*pi
+		else:
+			psi = np.arctan2(st*mat[1,2], -st*mat[0,2])
+	pi2 = 2*np.pi
+	#return  degrees(round(phi,10)%pi2),degrees(round(theta,10)%pi2),degrees(round(psi,10)%pi2)
+	#return  degrees(round(phi,10)%pi2)%360.0,degrees(round(theta,10)%pi2)%360.0,degrees(round(psi,10)%pi2)%360.0
+	return  np.degrees(np.mod(phi,pi2)),np.degrees(np.mod(theta,pi2)),np.degrees(np.mod(psi,pi2))
+"""
 
 class symclass():
 	import numpy as np
@@ -1421,6 +1558,7 @@ class symclass():
 		"""
 		  sym: cn, dn, oct, tet, icos
 		"""
+		from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
 		from utilities import get_sym, get_symt
 		self.sym = sym
 		t = Transform()
@@ -1490,10 +1628,13 @@ class symclass():
 
 		#
 		self.transform = []
+		self.symatrix = []
 		for args in self.symangles:
 			self.transform.append(Transform({"type":"spider", "phi":args[0], "theta":args[1], "psi":args[2]}))
+			self.symatrix.append(rotmatrix(args[0],args[1],args[2]))
 
 	def is_in_subunit(self, phi, theta, inc_mirror):
+		from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
 		if( (self.sym[0] == "c")  or  (self.sym[0] == "d") ):
 			if((phi>= 0.0 and phi<self.brackets[inc_mirror][0]) and (theta<=self.brackets[inc_mirror][1])):  return True
 		elif( (self.sym[:3] == "oct")  or  (self.sym[:4] == "icos") ):
@@ -1533,6 +1674,30 @@ class symclass():
 				return False
 		else:  ERROR("unknown symmetry","symclass",1)
 	
+	def reduce_angles(self, phi, theta, psi, inc_mirror):
+		from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
+		if(self.sym[0] == "c"):
+			if((phi>= 0.0 and phi<self.brackets[inc_mirror][0]) and (theta<=self.brackets[inc_mirror][1])): return phi, theta, psi
+			
+		elif(self.sym[0] == "d") ):
+			if((phi>= 0.0 and phi<self.brackets[inc_mirror][0]) and (theta<=self.brackets[inc_mirror][1])):  return phi, theta, psi
+		elif( (self.sym[:3] == "oct")  or  (self.sym[:4] == "icos") ):
+			if( phi>= 0.0 and phi<self.brackets[inc_mirror][0] and theta<=self.brackets[inc_mirror][3] ):
+				tmphi = min(phi, self.brackets[inc_mirror][2]-phi)
+				baldwin_lower_alt_bound = \
+				(sin(radians(self.brackets[inc_mirror][2]/2.0-tmphi))/tan(radians(self.brackets[inc_mirror][1])) + \
+					sin(radians(tmphi))/tan(radians(self.brackets[inc_mirror][3])))/sin(radians(self.brackets[inc_mirror][2]/2.0))
+				baldwin_lower_alt_bound = degrees(atan(1.0/baldwin_lower_alt_bound));
+				#print  "  baldwin_lower_alt_bound ",self.brackets,baldwin_lower_alt_bound,theta
+				if(baldwin_lower_alt_bound>theta): return True
+				else: return False
+			else:
+				#print "phi",self.brackets
+				return False
+		elif( self.sym[:3] == "tet" ):
+
+	def reduce_normal(self, phi, theta, psi, inc_mirror):
+		from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
 
 	def execute(self, aaa):
 		print  "Subclass must implement abstract method  "+aaa
