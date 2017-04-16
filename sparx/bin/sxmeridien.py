@@ -1095,7 +1095,7 @@ def get_shifts_neighbors(rshifts, cs):
 def shakerefangles(refangles1, refangles2, rangle, sym):
 	global Tracker, Blockdata
 	if(	sym[0] == "c" or sym[0] == "d" ):
-		from utilities import reduce_to_asymmetric_list, rotate_params
+		from utilities import reduce_to_asymmetric_list
 		return reduce_to_asymmetric_list(rotate_params(refangles1, [-rangle,-rangle,-rangle]), sym),\
 			reduce_to_asymmetric_list(rotate_params(refangles2, [-rangle,-rangle,-rangle]), sym)
 	elif( sym == "oct"):
