@@ -1679,7 +1679,7 @@ class symclass():
 		if(self.sym[0] == "c"):
 			if((phi>= 0.0 and phi<self.brackets[inc_mirror][0]) and (theta<=self.brackets[inc_mirror][1])): return phi, theta, psi
 			
-		elif(self.sym[0] == "d") ):
+		elif(self.sym[0] == "d"):
 			if((phi>= 0.0 and phi<self.brackets[inc_mirror][0]) and (theta<=self.brackets[inc_mirror][1])):  return phi, theta, psi
 		elif( (self.sym[:3] == "oct")  or  (self.sym[:4] == "icos") ):
 			if( phi>= 0.0 and phi<self.brackets[inc_mirror][0] and theta<=self.brackets[inc_mirror][3] ):
@@ -1695,6 +1695,7 @@ class symclass():
 				#print "phi",self.brackets
 				return False
 		elif( self.sym[:3] == "tet" ):
+			pass
 
 	def reduce_normal(self, phi, theta, psi, inc_mirror):
 		from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
