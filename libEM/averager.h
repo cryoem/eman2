@@ -210,6 +210,51 @@ namespace EMAN
 		int freenorm;
 	};
 
+	/** LocalWeightAverager makes an average of a set of images in Fourier space using a per-image radial weight. The provided XYData object for each inserted
+	 * image should range from x=0 - 0.5*sqrt(2), and contains the radial weights from 0 - Nyquist at the point. If the x range is insufficient, values will be
+	 * clamped at the ends of the available x-range. 2-D Images only, but will work with rectangular images.
+     *@param normimage	After finish() will contain the sum of the weights in each Fourier location. Size must be ((nx+1)/2,y)
+     */
+	class LocalWeightAverager:public Averager
+	{
+	  public:
+		LocalWeightAverager();
+
+		void add_image( EMData * image);
+		EMData * finish();
+
+		string get_name() const
+		{
+			return NAME;
+		}
+
+		string get_desc() const
+		{
+			return "Average of images weighted by local similarity to unweighted average";
+		}
+
+		static Averager *NEW()
+		{
+			return new LocalWeightAverager();
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+//			d.put("weight", EMObject::XYDATA, "Radial weight. X: 0 - 0.5*sqrt(2). Y contains weights.");
+			d.put("normimage", EMObject::EMDATA, "After finish() will contain the sum of the weights in real-space");
+			return d;
+		}
+
+		static const string NAME;
+		
+	private:
+		std::vector<EMData*> images;
+		EMData *normimage;
+		int freenorm;
+		int nimg;
+	};
+
 	/** FourierWeightAverager makes an average of a set of images in Fourier space using a per-image radial weight. The provided XYData object for each inserted
 	 * image should range from x=0 - 0.5*sqrt(2), and contains the radial weights from 0 - Nyquist at the point. If the x range is insufficient, values will be
 	 * clamped at the ends of the available x-range. 2-D Images only, but will work with rectangular images.
