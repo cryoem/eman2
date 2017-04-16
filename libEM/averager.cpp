@@ -53,6 +53,7 @@ const string CtfCAutoAverager::NAME = "ctf.auto";
 const string CtfWtAverager::NAME = "ctf.weight";
 const string CtfWtFiltAverager::NAME = "ctf.weight.autofilt";
 const string FourierWeightAverager::NAME = "weightedfourier";
+const string LocalWeightAverager::NAME = "localweight";
 
 template <> Factory < Averager >::Factory()
 {
@@ -60,6 +61,7 @@ template <> Factory < Averager >::Factory()
 	force_add<VarianceAverager>();
 	force_add<MinMaxAverager>();
 	force_add<AbsMaxMinAverager>();
+	force_add<LocalWeightAverager>();
 	force_add<IterationAverager>();
 	force_add<CtfCWautoAverager>();
 	force_add<CtfCAutoAverager>();
@@ -395,7 +397,6 @@ EMData * VarianceAverager::finish()
 	return result;
 }
 
-
 FourierWeightAverager::FourierWeightAverager()
 	: normimage(0), freenorm(0), nimg(0)
 {
@@ -481,6 +482,73 @@ EMData * FourierWeightAverager::finish()
 	nimg=0;
 
 	return ret;
+}
+
+LocalWeightAverager::LocalWeightAverager()
+	: normimage(0), freenorm(0), nimg(0)
+{
+
+}
+
+void LocalWeightAverager::add_image(EMData * image)
+{
+	if (!image) {
+		return;
+	}
+	
+	nimg++;
+
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+
+	if (nimg == 1) {
+		result = new EMData(nx,ny,nz);
+		result->to_zero();
+
+		normimage = params.set_default("normimage", (EMData*)0);
+		if (normimage==0) { normimage=new EMData(nx,ny,nz); freenorm=1; }
+		normimage->to_zero();
+		normimage->add(0.0000001f);
+	}
+
+	images.push_back(image->copy());
+}
+
+EMData * LocalWeightAverager::finish()
+{
+	if (nimg==0) return NULL;
+	
+	int nx = images.front()->get_xsize();
+	int ny = images.front()->get_ysize();
+	int nz = images.front()->get_zsize();
+	
+	EMData *ret = new EMData(nx,ny,nz);
+	EMData *stg1 = new EMData(nx,ny,nz);
+	
+	for (std::vector<EMData*>::iterator im = images.begin(); im!=images.end(); ++im) stg1->add(**im);
+	stg1->process_inplace("normalize.edgemean");
+	
+//	std::vector<EMData*> weights;
+	for (std::vector<EMData*>::iterator im = images.begin(); im!=images.end(); ++im) {
+		EMData *imc=(*im)->copy();
+		imc->mult(*stg1);
+		imc->process_inplace("filter.lowpass.gauss",Dict("cutoff_freq",0.02f));
+		imc->process_inplace("threshold.belowtozero",Dict("minval",0.0f));
+		imc->process_inplace("math.sqrt");
+		(*im)->mult(*imc);
+		result->add(**im);
+		normimage->add(*imc);
+		delete *im;
+	}
+	
+	result->div(*normimage);
+	
+	
+	if (freenorm) { delete normimage; normimage=(EMData*)0; }
+	nimg=0;
+
+	return result;
 }
 
 
