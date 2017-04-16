@@ -1593,7 +1593,7 @@ class symclass():
 			for i in xrange(0,271,90):
 				for j in xrange(0,271,90):
 					self.symangles.append([float(j),90.0,float(i)])
-			for i in xrange(0,271,90):  self.symangles.append([0.0,90.0,float(i)])
+			for i in xrange(0,271,90):  self.symangles.append([0.0,180.0,float(i)])
 
 		elif(sym[:3] == "tet"):
 			self.nsym = 12
@@ -1673,13 +1673,35 @@ class symclass():
 				#print "phi",self.brackets
 				return False
 		else:  ERROR("unknown symmetry","symclass",1)
-	
+
+	def symmetry_related(self, angles):
+		redang = [angles[:]]
+		if(self.sym[0] == "c"):
+			qt = 360.0/self.nsym
+			for l in xrange(1,self.nsym):
+				redang.append([(angles[0]+l*qt)%360.0, angles[1], angles[2]])
+		elif(self.sym[0] == "d"):
+			nsm = self.nsym/2
+			qt = 360.0/nsm
+			for l in xrange(1,nsm):
+				redang.append([(angles[0]+l*qt)%360.0, angles[1], angles[2]])
+			for l in xrange(nsm,self.nsym):
+				redang.append([(360.0-redang[l-nsm][0])%360.0, 180.0-angles[1], (180.0+angles[2])%360.0])
+		else:
+			from fundamentals import rotmatrix, recmat, mulmat
+			mat = rotmatrix(angles[0],angles[1],angles[2])
+			for l in xrange(1,self.nsym):
+				p1,p2,p3 = recmat( mulmat( mat , self.symatrix[l]) )
+				redang.append([p1,p2,p3])
+
+		return redang
+
 	def reduce_angles(self, phi, theta, psi, inc_mirror):
 		from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
 		if(self.sym[0] == "c"):
 			if((phi>= 0.0 and phi<self.brackets[inc_mirror][0]) and (theta<=self.brackets[inc_mirror][1])): return phi, theta, psi
 			
-		elif(self.sym[0] == "d") ):
+		elif(self.sym[0] == "d"):
 			if((phi>= 0.0 and phi<self.brackets[inc_mirror][0]) and (theta<=self.brackets[inc_mirror][1])):  return phi, theta, psi
 		elif( (self.sym[:3] == "oct")  or  (self.sym[:4] == "icos") ):
 			if( phi>= 0.0 and phi<self.brackets[inc_mirror][0] and theta<=self.brackets[inc_mirror][3] ):
@@ -1694,7 +1716,7 @@ class symclass():
 			else:
 				#print "phi",self.brackets
 				return False
-		elif( self.sym[:3] == "tet" ):
+		elif( self.sym[:3] == "tet" ): return
 
 	def reduce_normal(self, phi, theta, psi, inc_mirror):
 		from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
