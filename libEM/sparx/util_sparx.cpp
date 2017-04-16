@@ -21319,7 +21319,7 @@ vector<float> Util::symmetry_related(const vector<float>& angles, string symmetr
 			redang[3*l+1] = 180.0f - angles[1];
 			redang[3*l+2] = fmod( 180.0f + angles[2], 360.0f);
 		}
-	}
+	} else return angles;
 
 	return redang;
 }
