@@ -1311,3 +1311,230 @@ def goldsearch(f,a,b,tol=1.0e-9):
 	if f1 < f2: return x1,f1
 	else: return x2,f2
 
+
+#  01/06/2016 - This is my recoding of old FORTRAN code with the hope that python's double precission
+#                 will fix the problem of rotation of a 0,0,0 direction.  It does not as one neeeds psi
+#                 in this case as well.  So, the only choice is to use small theta instead of exact 0,0,0 direction
+def rotate_params(params, transf):
+	matinv = rotmatrix( -transf[2], -transf[1], -transf[0] )
+	n = len(params)
+	cpar = [None]*n
+	for i in xrange(n):
+		d = rotmatrix( params[i][0], params[i][1], params[i][2] )
+		c = mulmat(d,matinv)
+		phi, theta, psi = recmat(c)
+		cpar[i] = [phi, theta, psi]
+	return cpar
+
+
+def rotmatrix(phi,theta,psi):
+	from math import sin,cos,radians
+	rphi   = radians(phi)
+	rtheta = radians(theta)
+	rpsi   = radians(psi)
+	mat = [[0.0]*3,[0.0]*3,[0.0]*3]
+
+	mat[0][0] =  cos(rpsi)*cos(rtheta)*cos(rphi) - sin(rpsi)*sin(rphi)
+	mat[1][0] = -sin(rpsi)*cos(rtheta)*cos(rphi) - cos(rpsi)*sin(rphi)
+	mat[2][0] =            sin(rtheta)*cos(rphi)
+
+
+	mat[0][1] =  cos(rpsi)*cos(rtheta)*sin(rphi) + sin(rpsi)*cos(rphi)
+	mat[1][1] = -sin(rpsi)*cos(rtheta)*sin(rphi) + cos(rpsi)*cos(rphi)
+	mat[2][1] =            sin(rtheta)*sin(rphi)
+
+
+	mat[0][2] = -cos(rpsi)*sin(rtheta)
+	mat[1][2] =  sin(rpsi)*sin(rtheta)
+	mat[2][2] =            cos(rtheta)
+	return mat
+
+def mulmat(m1,m2):
+	mat = [[0.0]*3,[0.0]*3,[0.0]*3]
+	for i in xrange(3):
+		for j in xrange(3):
+			for k in xrange(3):
+				mat[i][j] += m1[i][k]*m2[k][j]
+			mat[i][j] = round(mat[i][j],8)
+	return mat
+
+def recmat(mat):
+	from math import acos,asin,atan2,degrees,pi
+	def sign(x):
+		if( x >= 0.0 ): return 1
+		else:  return -1
+	"""
+	mat = [[0.0]*3,[0.0]*3,[0.0]*3]
+	# limit precision
+	for i in xrange(3):
+		for j in xrange(3):
+			mat[i][j] = inmat[i][j]
+			#if(abs(inmat[i][j])<1.0e-8):  mat[i][j] = 0.0
+			#else: mat[i][j] = inmat[i][j]
+	for i in xrange(3):
+		for j in xrange(3):  print  "     %14.8f"%mat[i][j],
+		print ""
+	"""
+	if(mat[2][2] == 1.0):
+		theta = 0.0
+		psi = 0.0
+		if( mat[0][0] == 0.0 ):
+			phi = asin(mat[0][1])
+		else:
+			phi = atan2(mat[0][1],mat[0][0])
+	elif(mat[2][2] == -1.0):
+		theta = pi
+		psi = 0.0
+		if(mat[0][0] == 0.0):
+			phi = asin(-mat[0][1])
+		else:
+			phi = atan2(-mat[0][1],-mat[0][0])
+	else:
+		theta = acos(mat[2][2])
+		st = sign(theta)
+		#print theta,st,mat[2][0]
+		if(mat[2][0] == 0.0):
+			if( st != sign(mat[2][1]) ):
+				phi = 1.5*pi
+			else:
+				phi = 0.5*pi
+		else:
+			phi = atan2(st*mat[2][1], st*mat[2][0])
+
+		#print theta,st,mat[0][2],mat[1][2]
+		if(mat[0][2] == 0.0):
+			if( st != sign(mat[1][2]) ):
+				psi = 1.5*pi
+			else:
+				psi = 0.5*pi
+		else:
+			psi = atan2(st*mat[1][2], -st*mat[0][2])
+	pi2 = 2*pi
+	return  degrees(round(phi,10)%pi2),degrees(round(theta,10)%pi2),degrees(round(psi,10)%pi2)
+	#return  degrees(round(phi,10)%pi2)%360.0,degrees(round(theta,10)%pi2)%360.0,degrees(round(psi,10)%pi2)%360.0
+	#return  degrees(phi)%360.0,degrees(theta)%360.0,degrees(psi)%360.0
+
+
+class symclass():
+	import numpy as np
+	def __init__(self, sym):
+		"""
+		  sym: cn, dn, oct, tet, icos
+		"""
+		from utilities import get_sym, get_symt
+		self.sym = sym
+		t = Transform()
+		self.nsym = 0#t.get_nsym(sym)
+		self.angles = get_sym(sym)
+		self.transforms = get_symt(sym)
+		from math import cos, sin, pi
+		if(sym[0] == "c"):
+			self.nsym = int(sym[1:])
+			self.brackets = [[360./self.nsym,90.0],[360./self.nsym,180.0]]
+			self.symangles = []
+			for i in xrange(self.nsym):
+				self.symangles.append([0.0, 0.0, i*360./self.nsym])
+			
+		elif(sym[0] == "d"):
+			self.nsym = 2*int(sym[1:])
+			self.brackets = [[360./self.nsym,90.0],[360./self.nsym*2,90.0]]
+			self.symangles = []
+			for i in xrange(self.nsym/2):
+				self.symangles.append([0.0, 0.0, i*360./self.nsym*2])
+			for i in xrange(self.nsym/2):
+				self.symangles.append([0.0, 180.0, i*360./self.nsym*2])
+
+		elif(sym[:3] == "oct"):
+			self.nsym = 24
+			ncap = 4
+			cap_sig = 360.0/ncap  # also called platonic_params["az_max"]
+			alpha = degrees(acos(1.0/(sqrt(3.0)*tan(2*pi/ncap/2.0)))) # also platonic_params["alt_max"]
+			theta = degrees(0.5*acos( cos(radians(cap_sig))/(1.0-cos(radians(cap_sig))) ))  #  also platonic_params["theta_c_on_two"]
+			self.brackets = [[180./ncap,theta,cap_sig,alpha],[360./ncap,theta,cap_sig,alpha]]
+			self.symangles = [[0.0,0.0,float(i)] for i in xrange(0,271,90)]
+			for i in xrange(0,271,90):
+				for j in xrange(0,271,90):
+					self.symangles.append([float(j),90.0,float(i)])
+			for i in xrange(0,271,90):  self.symangles.append([0.0,90.0,float(i)])
+
+		elif(sym[:3] == "tet"):
+			self.nsym = 12
+			ncap = 3
+			cap_sig = 360.0/ncap  # also called platonic_params["az_max"]
+			alpha = degrees(acos(1.0/(sqrt(3.0)*tan(2*pi/ncap/2.0)))) # also platonic_params["alt_max"]
+			theta = degrees(0.5*acos( cos(radians(cap_sig))/(1.0-cos(radians(cap_sig))) ))  #  also platonic_params["theta_c_on_two"]
+			self.brackets = [[360.0/ncap,theta,cap_sig,alpha],[360.0/ncap,theta,cap_sig,alpha]]
+			lvl1 = degrees(acos(-1.0/3.0)) # There  are 3 faces at this angle
+			self.symangles = [ [0.,0.,0.], [0., 0., 120.], [0., 0., 240.]]
+			for l1 in xrange(30,271,120):
+				for l2 in xrange(30,271,120):
+					self.symangles.append([float(l1),lvl1,float(l2)])
+
+		elif(sym[:4] == "icos"):
+			self.nsym = 60
+			ncap = 5
+			cap_sig = 360.0/ncap  # also called platonic_params["az_max"]
+			alpha = degrees(acos(1.0/(sqrt(3.0)*tan(2*pi/ncap/2.0)))) # also platonic_params["alt_max"]
+			theta = degrees(0.5*acos( cos(radians(cap_sig))/(1.0-cos(radians(cap_sig))) ))  #  also platonic_params["theta_c_on_two"]
+			self.brackets = [[36.,theta,cap_sig,alpha],[72.,theta,cap_sig,alpha]]
+			lvl1= degrees(atan(2.0))  #there are 5 pentagons with centers at this height (angle)
+			lvl2 = 180.0 - lvl1      #there are 5 pentagons with centers at this height (angle)
+			self.symangles = [[0.0,0.0,float(i)] for i in xrange(0,288+1,72)]
+			for l1 in xrange(0,288+1,72):
+				for l2 in xrange(36,324+1,72):
+					self.symangles.append([float(l1),lvl1,float(l2)])
+			for l1 in xrange(36,324+1,72):
+				for l2 in xrange(0,288+1,72):
+					self.symangles.append([float(l1),lvl2,float(l2)])
+			for i in xrange(0,288+1,72):  self.symangles.append([0.0,180.0,float(i)])			
+
+		#
+		self.transform = []
+		for args in self.symangles:
+			self.transform.append(Transform({"type":"spider", "phi":args[0], "theta":args[1], "psi":args[2]}))
+
+	def is_in_subunit(self, phi, theta, inc_mirror):
+		if( (self.sym[0] == "c")  or  (self.sym[0] == "d") ):
+			if((phi>= 0.0 and phi<self.brackets[inc_mirror][0]) and (theta<=self.brackets[inc_mirror][1])):  return True
+		elif( (self.sym[:3] == "oct")  or  (self.sym[:4] == "icos") ):
+			if( phi>= 0.0 and phi<self.brackets[inc_mirror][0] and theta<=self.brackets[inc_mirror][3] ):
+				tmphi = min(phi, self.brackets[inc_mirror][2]-phi)
+				baldwin_lower_alt_bound = \
+				(sin(radians(self.brackets[inc_mirror][2]/2.0-tmphi))/tan(radians(self.brackets[inc_mirror][1])) + \
+					sin(radians(tmphi))/tan(radians(self.brackets[inc_mirror][3])))/sin(radians(self.brackets[inc_mirror][2]/2.0))
+				baldwin_lower_alt_bound = degrees(atan(1.0/baldwin_lower_alt_bound));
+				#print  "  baldwin_lower_alt_bound ",self.brackets,baldwin_lower_alt_bound,theta
+				if(baldwin_lower_alt_bound>theta): return True
+				else: return False
+			else:
+				#print "phi",self.brackets
+				return False
+		elif( self.sym[:3] == "tet" ):
+			if( phi>= 0.0 and phi<self.brackets[inc_mirror][0] and theta<=self.brackets[inc_mirror][3] ):
+				tmphi = min(phi, self.brackets[inc_mirror][2]-phi)
+				baldwin_lower_alt_bound = \
+				(sin(radians(self.brackets[inc_mirror][2]/2.0-tmphi))/tan(radians(self.brackets[inc_mirror][1])) + \
+					sin(radians(tmphi))/tan(radians(self.brackets[inc_mirror][3])))/sin(radians(self.brackets[inc_mirror][2]/2.0))
+				baldwin_lower_alt_bound = degrees(atan(1.0/baldwin_lower_alt_bound))
+				#print  "  baldwin_lower_alt_bound ",self.brackets,baldwin_lower_alt_bound,theta
+				if(baldwin_lower_alt_bound>theta): 
+					if( inc_mirror == 1 ):
+						return True
+					else:
+						baldwin_upper_alt_bound = \
+						(sin(radians(self.brackets[inc_mirror][2]/2.0-tmphi))/tan(radians(self.brackets[inc_mirror][1])) + \
+							sin(radians(tmphi))/tan(radians(self.brackets[inc_mirror][3]/2.0)))/sin(radians(self.brackets[inc_mirror][2]/2.0))
+						baldwin_upper_alt_bound = degrees(atan(1.0/baldwin_upper_alt_bound))
+						if(baldwin_upper_alt_bound<theta): return False
+						else:  return True
+				else: return False
+			else:
+				#print "phi",self.brackets
+				return False
+		else:  ERROR("unknown symmetry","symclass",1)
+	
+
+	def execute(self, aaa):
+		print  "Subclass must implement abstract method  "+aaa
+
+
