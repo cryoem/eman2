@@ -11,7 +11,6 @@ requirements:
             "boost 1.61.*",
             "fftw",
             "numpy",
-            "scikit-learn",
             "ftgl",
             "freetype",
             "gsl",
@@ -42,6 +41,7 @@ requirements:
         - pyqt 4.*
         - pyopengl 3.1.0
         - theano
+        - scikit-learn
         - pydusa  # [not win]
 
 test:
