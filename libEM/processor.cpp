@@ -6999,16 +6999,24 @@ void CTFCorrProcessor::process_inplace(EMData * image)
 	float voltage = params.set_default("voltage",300.0);
 	float apix = params.set_default("apix",image->get_attr("apix_x"));
 
-	EMAN2Ctf ctf;
 
 	int ny = image->get_ysize();
-	ctf.defocus=defocus;
-	ctf.voltage=voltage;
-	ctf.cs=4.1;				// has negligible impact, so we just use a default
+	EMAN2Ctf ctf;
+	if (image->has_attr("ctf")){
+		
+		ctf.copy_from((Ctf *)(image->get_attr("ctf")));
+	}
+	else {
+		ctf.defocus=defocus;
+		ctf.voltage=voltage;
+		ctf.cs=4.1;				// has negligible impact, so we just use a default
+		
+		ctf.ampcont=ac;
+		ctf.dfdiff=0;
+		ctf.bfactor=200.0;
+		
+	}
 	ctf.apix=apix;
-	ctf.ampcont=ac;
-	ctf.dfdiff=0;
-	ctf.bfactor=200.0;
 	ctf.dsbg=1.0/(ctf.apix*ny);
 
 	int np=(int)ceil(ny*1.73)+1;

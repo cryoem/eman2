@@ -156,7 +156,6 @@ def main():
 		
 		n=len(pks)
 		#e.write_image("tmp2.hdf")
-		print "{} boxes found..".format(n)
 		allbox=[]
 		#if options.sort:
 			#denmap=EMData(tomoname)
@@ -165,7 +164,7 @@ def main():
 			#pks=pks[np.argsort(den)]
 		for j in range(n):
 			box=pks[j]
-			if min(box[2],box[1],e["nx"]-box[2],e["ny"]-box[1], box[0], e["nz"]-box[0])<options.edge:
+			if min(box[2],box[1],e["nx"]-box[2],e["ny"]-box[1])<options.edge:
 				continue
 			#box*=2
 			box[2]*=shrinkxy
@@ -178,6 +177,7 @@ def main():
 		js=js_open_dict(jsname)
 		js["boxes"]=allbox
 		js=None
+		print "{} boxes found..".format(len(allbox))
 
 	E2end(logid)
 	
