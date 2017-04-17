@@ -663,15 +663,15 @@ vector<Transform> EvenOrientationGenerator::gen_orientations(const Symmetry3D* c
 //		bool d_odd_mirror_flag = false;
 //		get_az_max(sym,altmax, inc_mirror,alt, lt,d_odd_mirror_flag, detaz);
 
-		float az = -detaz;
+		float az = 0.0;
 		while (az<azmax) {
-			az += detaz;
 			if (sym->is_platonic_sym()) {
 				if ( sym->is_in_asym_unit(alt, az, inc_mirror)  ) add_orientation(ret,az+sym->get_az_alignment_offset(),alt);
 			} else  add_orientation(ret,az,alt);
 			if ( sym->is_h_sym() && inc_mirror && alt != altmin ) {
 				add_orientation(ret, az, 2.0f*altmin-alt);
 			}
+			az += detaz;
 		}
 	}
 
