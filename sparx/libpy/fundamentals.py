@@ -1568,14 +1568,14 @@ class symclass():
 		from math import cos, sin, pi
 		if(sym[0] == "c"):
 			self.nsym = int(sym[1:])
-			self.brackets = [[360./self.nsym,90.0],[360./self.nsym,180.0]]
+			self.brackets = [[360./self.nsym,90.0,360./self.nsym,90.0],[360./self.nsym,180.0,360./self.nsym,180.0]]
 			self.symangles = []
 			for i in xrange(self.nsym):
 				self.symangles.append([0.0, 0.0, i*360./self.nsym])
 			
 		elif(sym[0] == "d"):
 			self.nsym = 2*int(sym[1:])
-			self.brackets = [[360./self.nsym,90.0],[360./self.nsym*2,90.0]]
+			self.brackets = [[360./self.nsym,90.0,360./self.nsym,90.0],[360./self.nsym*2,90.0,360./self.nsym*2,90.0]]
 			self.symangles = []
 			for i in xrange(self.nsym/2):
 				self.symangles.append([0.0, 0.0, i*360./self.nsym*2])
@@ -1672,7 +1672,7 @@ class symclass():
 			else:
 				#print "phi",self.brackets
 				return False
-		else:  ERROR("unknown symmetry","symclass",1)
+		else:  ERROR("unknown symmetry","symclass: is_in_subunit",1)
 
 	def symmetry_related(self, angles):
 		redang = [angles[:]]
@@ -1696,32 +1696,137 @@ class symclass():
 
 		return redang
 
-	def reduce_angles(self, phi, theta, psi, inc_mirror):
+	def reduce_angles(self, phiin, thetain, psiin, inc_mirror):
 		from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
+		if( inc_mirror == 0 and thetain>90.0): phi = 360.0-phiin; theta = 180.0 - thetain; psi = (180.0 + psiin)%360.0
+		else: phi = phiin; theta = thetain; psi = psiin
 		if(self.sym[0] == "c"):
-			if((phi>= 0.0 and phi<self.brackets[inc_mirror][0]) and (theta<=self.brackets[inc_mirror][1])): return phi, theta, psi
-			
+			phi = phi%(360.0/self.nsym)
 		elif(self.sym[0] == "d"):
-			if((phi>= 0.0 and phi<self.brackets[inc_mirror][0]) and (theta<=self.brackets[inc_mirror][1])):  return phi, theta, psi
-		elif( (self.sym[:3] == "oct")  or  (self.sym[:4] == "icos") ):
-			if( phi>= 0.0 and phi<self.brackets[inc_mirror][0] and theta<=self.brackets[inc_mirror][3] ):
-				tmphi = min(phi, self.brackets[inc_mirror][2]-phi)
-				baldwin_lower_alt_bound = \
-				(sin(radians(self.brackets[inc_mirror][2]/2.0-tmphi))/tan(radians(self.brackets[inc_mirror][1])) + \
-					sin(radians(tmphi))/tan(radians(self.brackets[inc_mirror][3])))/sin(radians(self.brackets[inc_mirror][2]/2.0))
-				baldwin_lower_alt_bound = degrees(atan(1.0/baldwin_lower_alt_bound));
-				#print  "  baldwin_lower_alt_bound ",self.brackets,baldwin_lower_alt_bound,theta
-				if(baldwin_lower_alt_bound>theta): return True
-				else: return False
-			else:
-				#print "phi",self.brackets
-				return False
-		elif( self.sym[:3] == "tet" ): return
+			phi = phi%(720.0/self.nsym)
+			if( inc_mirror == 0 and phi>=self.brackets[0][0]): phi = self.brackets[1][0]-phi
+		else:
+			if(not self.is_in_subunit(phi, theta, inc_mirror)):
+				mat = rotmatrix(phi,theta,psi)
+				for l in xrange(1,self.nsym):
+					p1,p2,p3 = recmat( mulmat( mat , self.symatrix[l]) )
+					if(self.is_in_subunit(p1, p2, inc_mirror)):
+						phi=p1;theta=p2;psi=p3
+						print l
+						break
 
+		return phi, theta, psi
+
+	"""
 	def reduce_normal(self, phi, theta, psi, inc_mirror):
 		from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
+		return False
+	"""
 
-	def execute(self, aaa):
-		print  "Subclass must implement abstract method  "+aaa
 
+	def even_angles(self, delta = 15.0, theta1=-1.0, theta2=-1.0, phi1=-1.0, phi2=-1.0, \
+					method = 'S', phiEqpsi = "Zero", inc_mirror = 1):
+		"""Create a list of Euler angles suitable for projections.
+		   method is either 'S' - for Saff algorithm
+					   or   'P' - for Penczek '94 algorithm
+						 'S' assumes phi1<phi2 and phi2-phi1>> delta ;
+		   symmetry  - if this is set to point-group symmetry (cn or dn) or helical symmetry with point-group symmetry (scn or sdn), \
+						 it will yield angles from the asymmetric unit, not the specified range;
+		"""
 
+		from math      import pi, sqrt, cos, acos, tan, sin, radians, degrees
+		from utilities import even_angles_cd
+		from string    import lower,split
+		angles = []
+		symmetry = self.sym
+		symmetryLower = symmetry.lower()
+		symmetry_string = split(symmetry)[0]
+		if(phi2<phi1 or theta2<theta1 or delta <= 0.0):  ERROR("even_angles","incorrect parameters (phi1,phi2,theta1,theta2,delta): %f   %f   %f   %f   %f"%(phi1,phi2,theta,theta2,delta),1)
+		if(phi1 < 0.0):  phi1 = 0.0
+		if(phi2 < 0.0):  phi2 = self.brackets[inc_mirror][0] - 1.0e-7 # exclude right border of unit
+		if(theta1 < 0.0): theta1 = 0.0
+		if(theta2 < 0.0): theta2 = self.brackets[inc_mirror][3]
+		print " parameters (phi1,phi2,theta,theta2,delta): %f   %f   %f   %f   %f"%(phi1,phi2,theta1,theta2,delta)
+
+		#
+		if(symmetry_string[0]  != "s"):
+			"""Create a list of Euler angles suitable for projections.
+			   method is either 'S' - for Saff algorithm
+							  or   'P' - for Penczek '94 algorithm
+					  'S' assumes phi1<phi2 and phi2-phi1>> delta ;
+			   phiEqpsi  - set this to 'Minus', if you want psi=-phi;
+			"""
+			angles = []
+			is_platonic_sym = symmetry_string[0] == "o" or symmetry_string[0] == "t" or symmetry_string[0] == "i"
+			if (method == 'P'):
+				theta = theta1
+				while(theta <= theta2):
+					phi = phi1
+					if(theta==0.0 or theta==180.0): detphi = 2*phi2
+					else:  detphi = delta/sin(radians(theta))
+					while(phi<phi2):
+						if is_platonic_sym:
+							if(self.is_in_subunit(phi, ttet, inc_mirror)): 	angles.append([phi, theta, 0.0])
+						else:  	angles.append([phi, theta, 0.0])
+						phi += detphi
+					theta += delta
+			else:
+				Deltaz  = cos(radians(theta2))-cos(radians(theta1))
+				s       = delta*pi/180.0
+				NFactor = 3.6/s
+				wedgeFactor = abs(Deltaz*(phi2-phi1)/720.0)
+				NumPoints   = int(NFactor*NFactor*wedgeFactor)
+				angles.append([phi1, theta1, 0.0])
+				# initialize loop
+				phistep = phi2-phi1
+				z1 = cos(radians(theta1))
+				phi = phi1
+				for k in xrange(1, NumPoints-1):
+					z = z1 + Deltaz*k/(NumPoints-1)
+					r = sqrt(1.0-z*z)
+					phi = phi1+(phi + delta/r -phi1)%phistep
+					theta = degrees(acos(z))
+					if is_platonic_sym:
+						if(not self.is_in_subunit(phi, theta, inc_mirror)): continue
+					angles.append([phi, theta, 0.0])
+				#angles.append([p2,t2,0])  # This is incorrect, as the last angle is really the border, not the element we need. PAP 01/15/07
+			if (phiEqpsi == 'Minus'):
+				for k in xrange(len(angles)): angles[k][2] = (720.0 - angles[k][0])%360.0
+			if( (symmetry_string[0] == "c" or symmetry_string[0] == "d") and (theta2 == 180.0 or (theta2 >180. and delta == 180.0))):  angles.append( [0.0, 180.0, 0.0] )
+
+		elif(symmetry_string[0]  == "s"):
+
+			#if symetry is "s", deltphi=delta, theata intial=theta1, theta end=90, delttheta=theta2
+			# for helical, theta1 cannot be 0.0
+			if theta1 > 90.0:
+				ERROR('theta1 must be less than 90.0 for helical symmetry', 'even_angles', 1)
+			if theta1 == 0.0: theta1 =90.0
+			theta_number = int((90.0 - theta1)/theta2)
+			#for helical, symmetry = s or scn
+			cn = int(symmetry_string[2:])
+			for j in xrange(theta_number,-1, -1):
+
+				if( j == 0):
+					if (symmetry_string[1] =="c"):
+						if cn%2 == 0:
+							k=int(359.99/cn/delta)
+						else:
+							k=int(359.99/2/cn/delta)
+					elif (symmetry_string[1] =="d"):
+						if cn%2 == 0:
+							k=int(359.99/2/cn/delta)
+						else:
+							k=int(359.99/4/cn/delta)
+					else:
+						ERROR("For helical strucutre, we only support scn and sdn symmetry","even_angles",1)
+
+				else:
+					if (symmetry_string[1] =="c"):
+						k=int(359.99/cn/delta)
+					elif (symmetry_string[1] =="d"):
+						k=int(359.99/2/cn/delta)
+
+				for i in xrange(k+1):
+						angles.append([i*delta,90.0-j*theta2,90.0])
+
+		return angles
