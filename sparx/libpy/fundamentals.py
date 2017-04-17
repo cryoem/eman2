@@ -1723,7 +1723,6 @@ class symclass():
 		return False
 	"""
 
-
 	def even_angles(self, delta = 15.0, theta1=-1.0, theta2=-1.0, phi1=-1.0, phi2=-1.0, \
 					method = 'S', phiEqpsi = "Zero", inc_mirror = 1):
 		"""Create a list of Euler angles suitable for projections.
@@ -1766,7 +1765,7 @@ class symclass():
 					else:  detphi = delta/sin(radians(theta))
 					while(phi<phi2):
 						if is_platonic_sym:
-							if(self.is_in_subunit(phi, ttet, inc_mirror)): 	angles.append([phi, theta, 0.0])
+							if(self.is_in_subunit(phi, theta, inc_mirror)): 	angles.append([phi, theta, 0.0])
 						else:  	angles.append([phi, theta, 0.0])
 						phi += detphi
 					theta += delta
@@ -1784,7 +1783,7 @@ class symclass():
 				for k in xrange(1, NumPoints-1):
 					z = z1 + Deltaz*k/(NumPoints-1)
 					r = sqrt(1.0-z*z)
-					phi = phi1+(phi + delta/r -phi1)%phistep
+					phi = phi1+(phi + delta/r - phi1)%phistep
 					theta = degrees(acos(z))
 					if is_platonic_sym:
 						if(not self.is_in_subunit(phi, theta, inc_mirror)): continue
@@ -1792,7 +1791,7 @@ class symclass():
 				#angles.append([p2,t2,0])  # This is incorrect, as the last angle is really the border, not the element we need. PAP 01/15/07
 			if (phiEqpsi == 'Minus'):
 				for k in xrange(len(angles)): angles[k][2] = (720.0 - angles[k][0])%360.0
-			if( (symmetry_string[0] == "c" or symmetry_string[0] == "d") and (theta2 == 180.0 or (theta2 >180. and delta == 180.0))):  angles.append( [0.0, 180.0, 0.0] )
+			if( (symmetry_string[0] == "c" or symmetry_string[0] == "d") and (theta2 >180. and delta == 180.0))):  angles.append( [0.0, 180.0, 0.0] )
 
 		elif(symmetry_string[0]  == "s"):
 
