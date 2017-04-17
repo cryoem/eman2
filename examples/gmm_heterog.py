@@ -25,6 +25,7 @@ def main():
 	parser.add_argument("--regress", action="store_true", default=False ,help="regress particles on the motion vector")
 	parser.add_argument("--make3d", action="store_true", default=False ,help="make 3D from particles of different conformation")
 	parser.add_argument("--nframe", type=int,help="number of frames for the 3D movie", default=6)
+	parser.add_argument("--sz", type=int,help="size of box", default=-1)
 	parser.add_argument("--gausswidth", type=float,help="width of the gaussians", default=15.)
 	parser.add_argument("--threads", type=int,help="number of threads for make3d", default=12)
 	parser.add_argument("--listid", type=str, default=None ,help="list of gaussian indices to use while calculating motion. File containing int list separated by linebreak, or chimera list output.")
@@ -36,7 +37,11 @@ def main():
 	ptcl_file=args[0]
 	e=EMData(ptcl_file,0, True)
 	options.apix=e["apix_x"]
-	options.sz=e["nx"]
+	if options.sz<0:
+		options.sz=e["nx"]
+		realsz=options.sz
+	else:
+		realsz=e["nx"]
 	e=None
 	
 	#### make working directory
@@ -53,7 +58,7 @@ def main():
 		
 	elif options.initpos!=None:
 		cents=np.loadtxt(options.initpos)
-		cents=cents[:,1:]-options.sz/2
+		cents=cents[:,1:]-realsz/2
 		wts=np.zeros(len(cents))
 		model={"center":cents, "weight":wts, "boxsz":options.sz, "sym":options.sym,"width":options.gausswidth}
 		ballrec=BallsReconstruction(model)
@@ -72,6 +77,7 @@ def main():
 	
 	if options.calcgrad:
 		data,orient=load_particles(ptcl_file)
+		#data,orient=0,0
 		grad=calc_grad(ballrec, options, data, orient)
 	
 	
@@ -120,13 +126,13 @@ def main():
 
 def make3d(ptcl_file, options, allconf):
 	print "Making 3D movie..."
-	mvpath="motion_00"
+	mvpath="motion_01"
 	try: os.mkdir(os.path.join(options.path,mvpath))
 	except: pass
 	lstin=LSXFile(ptcl_file, True)
 	mvlen=np.std(allconf)
 	stepsz=mvlen/((options.nframe-1)/2.)
-	framepos=np.arange(-mvlen,mvlen+.1, stepsz)
+	framepos=np.arange(-mvlen,mvlen+.1, stepsz)+np.mean(allconf)
 	print "Motion steps : Number of particles"
 	winsz=stepsz*.6
 	lstnames=[]
@@ -194,14 +200,15 @@ def regress_particles(ballrec, options, data, orient, vec):
 		ballrec.conf.set_value(cfval)
 		cc=[cfval]
 		lr=options.learnrate
-		for ti in range(200):
-			train_conf(lr,i)
+		for ti in range(2):
+			loss=train_conf(lr,i)
 			cc.append(ballrec.conf.get_value())
 			lr*=.95
 	#		 print i, conf.get_value(), cc[-1]-cc[-2]
-			if abs(cc[-2]-cc[-1])<.01: break
+			if abs(cc[-2]-cc[-1])<.001: break
 	#	 print i, "  iter: ",ti, "conf: ", cc[-1]
-		print i, ti, cc[-1]
+		#print loss
+		print i, ti, cc[-1],loss
 		ff=open(lstout,'a')
 		ff.write("{}\t{}\t{}\n".format(i, ti, cc[-1]))
 		ff.close()
@@ -232,10 +239,11 @@ def calc_motion(ballrec, options, grad, glst=None):
 	print "Motion vector is saved to {}".format(mtsave)
 	get_map=theano.function([], ballrec.map3d)
 	ballrec.movvec.set_value(vec)
-	mvlen=5.
+	mvlen=3.
 	pp=np.arange(-mvlen,mvlen+.1, mvlen/((options.nframe-1)/2.))
+	pp=pp.astype(theano.config.floatX)
 	print "Motion steps are ",pp
-	mpsave=os.path.join(options.path,"motion_model.hdf")
+	mpsave=os.path.join(options.path,"motion_model1.hdf")
 	try: os.remove(mpsave)
 	except: pass
 
@@ -254,6 +262,7 @@ def load_particles(ptcl_file):
 	ref=[]
 	ori=[]
 	num=EMUtil.get_image_count(ptcl_file)
+	num=5000
 	lst=LSXFile(ptcl_file, True)
 	for i in range(num):
 		e=EMData(ptcl_file,i)
@@ -315,6 +324,7 @@ def save_model(ballrec,options):
 #### calculate gradient of balls from ball positions
 def calc_grad(ballrec, options, data, orient):
 	npballs=ballrec.ballzero.get_value()
+	npballs*=options.apix
 	nballs=len(npballs)
 	index = T.lscalar()
 	num=data.shape[0].eval()
@@ -326,8 +336,25 @@ def calc_grad(ballrec, options, data, orient):
 						ballrec.orientin: orient[index],
 						}
 					)
+	
+	get_2dimg_out=theano.function(inputs=[index],
+					outputs=[ballrec.out],
+					givens={ 
+						#ballrec.imgin: data[index],
+						ballrec.orientin: orient[index],
+						}
+					)
 	gd_all=[]
 	for b in range(num):
+		if b<50:
+			img=get_2dimg_out(b)[0]
+			m0= data[b].eval().reshape((options.sz,options.sz))
+			e=from_numpy(m0)
+			e.write_image(options.path+"/tmpimgcmps.hdf",b*2)
+			
+			e=from_numpy(img.copy())
+			e.write_image(options.path+"/tmpimgcmps.hdf",b*2+1)
+			#exit()
 		c,gd=get_grad_ballpos(b)
 		gd=np.array(gd)
 		print b,c,gd[0]
@@ -337,14 +364,21 @@ def calc_grad(ballrec, options, data, orient):
 	gdsave=os.path.join(options.path,"grad_balls.txt")
 	np.savetxt(gdsave,gd_all)
 	print "Gradient is saved to {}".format(gdsave)
+	#gd_all=np.loadtxt(gdsave)
 	
 	#### variance of gradient
 	nmm=np.mean(gd_all,axis=0)**2
-	#nmm=np.std(gd_all,axis=0)
 	var=np.asmatrix(np.sum(nmm.reshape(npballs.shape),axis=1)).T
 	var=var/np.max(var)*100
 	tosave=np.hstack([npballs, var])
 	varsave=os.path.join(options.path,"grad_amp.pdb")
+	print "Gradient amplitude per Gaussian is saved to {}.".format(varsave)
+	numpy2pdb(tosave, varsave)
+	nmm=np.std(gd_all,axis=0)
+	var=np.asmatrix(np.sum(nmm.reshape(npballs.shape),axis=1)).T
+	var=var/np.max(var)*100
+	tosave=np.hstack([npballs, var])
+	varsave=os.path.join(options.path,"grad_std.pdb")
 	numpy2pdb(tosave, varsave)
 	print "Gradient variance per Gaussian is saved to {}.".format(varsave)
 	
@@ -376,13 +410,13 @@ def train_3d(ballrec, options):
 						}
 					)
 	lr=options.learnrate
-	for j in range(2):
+	for j in range(5):
 		print "iter {}, train weights...".format(j)
 		for i in range(5):
 			print "err: ",train_map_w(lr)
 		print "		  train position..."
 		for i in range(5):
-			print "err: ",train_map_p(lr)
+			print "err: ",train_map_p(lr*.5)
 		lr*=.5
 	
 	
@@ -470,8 +504,15 @@ class BallsReconstruction(object):
 				#print asym[0].T.eval()
 				balls=T.concatenate(asym,axis=1).T
 				nballs*=nsym
+			ww=[wts for i in range(nsym)]
+			wtss=T.concatenate(ww,axis=0)
 		else:
 			balls=ball
+			wtss=wts
+		print balls.shape.eval()
+		print wtss.shape.eval()
+		#numpy2pdb(balls.eval(), "tmp.pdb")
+		#exit()
 
 		### get the 3d density map for initial tunning
 		ind_np=np.indices((sz,sz,sz)).astype(theano.config.floatX)
@@ -485,12 +526,12 @@ class BallsReconstruction(object):
 		
 		map_3d_all,update=theano.scan(fn=make_3d,
 				outputs_info=T.zeros((sz,sz,sz)),
-				sequences=[balls+sz/2,wts],
+				sequences=[balls+sz/2,wtss],
 				non_sequences=ind,
 				)
 		map_3d=map_3d_all[-1]
 		#map_3d=map_3d.dimshuffle([2,1,0])
-		
+
 		self.target_map=T.tensor3('tar_map')
 		self.map_err=T.sum((self.target_map-map_3d)**2)
 		map_grad_w=T.grad(self.map_err, weight)
@@ -546,7 +587,7 @@ class BallsReconstruction(object):
 		img,update=theano.scan(fn=make_img,
 			outputs_info=T.zeros((sz,sz)),
 			sequences=[iy],
-			non_sequences=[grid_x,grid_y,newpos,wts],
+			non_sequences=[grid_x,grid_y,newpos,wtss],
 			)
 		out=img[-1]#[:-1]
 		
