@@ -1791,7 +1791,7 @@ class symclass():
 				#angles.append([p2,t2,0])  # This is incorrect, as the last angle is really the border, not the element we need. PAP 01/15/07
 			if (phiEqpsi == 'Minus'):
 				for k in xrange(len(angles)): angles[k][2] = (720.0 - angles[k][0])%360.0
-			if( (symmetry_string[0] == "c" or symmetry_string[0] == "d") and (theta2 >180. and delta == 180.0))):  angles.append( [0.0, 180.0, 0.0] )
+			if( (symmetry_string[0] == "c" or symmetry_string[0] == "d") and (theta2 >180. and delta == 180.0)):  angles.append( [0.0, 180.0, 0.0] )
 
 		elif(symmetry_string[0]  == "s"):
 
