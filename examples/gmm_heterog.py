@@ -262,7 +262,7 @@ def load_particles(ptcl_file):
 	ref=[]
 	ori=[]
 	num=EMUtil.get_image_count(ptcl_file)
-	num=5000
+	#num=5000
 	lst=LSXFile(ptcl_file, True)
 	for i in range(num):
 		e=EMData(ptcl_file,i)

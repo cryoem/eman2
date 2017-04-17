@@ -141,7 +141,7 @@ def main():
 			print np.mean(c),", learning rate",learning_rate
 
 		
-		save_model(convnet, options.netout)
+		save_model(convnet, options.netout, options)
 		
 	#######################################
 	#print convnet.clslayer.W.get_value()
@@ -215,7 +215,7 @@ def run(cmd):
 	print cmd
 	launch_childprocess(cmd)
 
-def save_model(convnet, fname):
+def save_model(convnet, fname, options=None):
 	print "Saving the trained net to {}...".format(fname)
 	#fname="nnet_save.hdf"
 	sz=int(convnet.convlayers[0].W.shape[-1].eval())
@@ -225,6 +225,11 @@ def save_model(convnet, fname):
 	hdr["ksize"]=convnet.ksize
 	hdr["poolsz"]=convnet.poolsz
 	hdr["imageshape"]=convnet.image_shape
+	if options:
+		if options.trainset:
+			hdr["trainset_src"]=options.trainset
+	
+	
 	hdr.write_image(fname,0)
 
 	k=1
@@ -368,6 +373,10 @@ def apply_neuralnet(options):
 	eny=e["ny"]
 	shape=[enx,eny]
 	
+	output=EMData(enx,eny, nframe)
+	output["tomogram_src"]=options.tomograms
+	output["nnet_src"]=options.from_trained
+	
 	#####################
 	print "Loading the Neural Net..."
 	
@@ -464,18 +473,20 @@ def apply_neuralnet(options):
 	
 		while not jsd.empty():
 			idx,cout=jsd.get()
-			cout.write_image(options.output,idx)
+			cout.process_inplace("math.fft.resample", {"n":float(1./labelshrink)})
+			output.insert_clip(cout, [0,0,idx])
+			#cout.write_image(options.output,idx)
 			
-	if is3d and options.to3d:
-		to3d=" --twod2threed"
-	else:
-		to3d=""
+	#if is3d and options.to3d:
+		#to3d=" --twod2threed"
+	#else:
+		#to3d=""
 		
 		
-	fout="__tomoseg_tmp.hdf"
-	run("e2proc2d.py {} {} --process math.fft.resample:n={} {} --apix {} ".format(options.output,fout,float(1./labelshrink), to3d, apix))
-	os.rename(fout, options.output)
-	
+	#fout="__tomoseg_tmp.hdf"
+	#run("e2proc2d.py {} {} --process math.fft.resample:n={} {} --apix {} ".format(options.output,fout,float(1./labelshrink), to3d, apix))
+	##os.rename(fout, options.output)
+	output.write_image(options.output)
 	print "Done."
 	print "Total time: ", time.time()-tt0
 	
@@ -935,8 +946,8 @@ class LeNetConvPoolLayer(object):
 		
 		shp=z.shape
 		
-		xin=xin.reshape((shp[0],shp[2]*shp[3]))
-		z=z.reshape((shp[0],shp[2]*shp[3]))
+		xin=xin.reshape((shp[0],-1))
+		z=z.reshape((shp[0],-1))
 		
 		#L = T.sum(xin*z,axis=1)/T.sqrt(T.sum(xin**2,axis=1))/T.sqrt(T.sum(z**2,axis=1))
 		#cost = 1-T.mean(L)
