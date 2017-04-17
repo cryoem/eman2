@@ -376,6 +376,9 @@ def apply_neuralnet(options):
 	output=EMData(enx,eny, nframe)
 	output["tomogram_src"]=options.tomograms
 	output["nnet_src"]=options.from_trained
+	output["apix_x"]=apix
+	output["apix_y"]=apix
+	output["apix_z"]=apix
 	
 	#####################
 	print "Loading the Neural Net..."
