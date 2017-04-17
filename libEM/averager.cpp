@@ -535,7 +535,8 @@ EMData * LocalWeightAverager::finish()
 		imc->mult(*stg1);
 		imc->process_inplace("filter.lowpass.gauss",Dict("cutoff_freq",0.02f));
 		imc->process_inplace("threshold.belowtozero",Dict("minval",0.0f));
-		imc->process_inplace("math.sqrt");
+#		imc->process_inplace("math.sqrt");
+		imc->process_inplace("math.pow",{"pow":0.25});
 		(*im)->mult(*imc);
 		result->add(**im);
 		normimage->add(*imc);
