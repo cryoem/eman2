@@ -940,20 +940,17 @@ Util::even_angles(float delta, float t1, float t2, float p1, float p2)
 		float detphi;
 		int lt;
 		if ((0.0 == theta)||(180.0 == theta)) {
-			detphi = 360.0f;
-			lt = 1;
+			detphi = 2*p2;
 		} else {
 			detphi = delta/sin(theta*static_cast<float>(dgr_to_rad));
-			lt = int((p2 - p1)/detphi)-1;
-			if (lt < 1) lt = 1;
-			detphi = (p2 - p1)/lt;
 		}
-		for (int i = 0; i < lt; i++) {
-			float phi = p1 + i*detphi;
+		float phi = p1;
+		while(phi<p2) {
 			if (skip&&(90.0 == theta)&&(phi > 180.0)) continue;
 			angles.push_back(phi);
 			angles.push_back(theta);
 			angles.push_back(psi);
+			phi += detphi;
 		}
 	}
 	return angles;
