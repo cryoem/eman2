@@ -658,29 +658,19 @@ vector<Transform> EvenOrientationGenerator::gen_orientations(const Symmetry3D* c
 	for (float alt = altmin; alt <= altmax; alt += delta) {
 		float detaz;
 		int lt;
-		if ((0.0f == alt)||(180.0f == alt)) {
-			detaz = 360.0f;
-			lt = 1;
-		} else {
-			detaz = delta/(float)sin(alt*EMConsts::deg2rad);
-			lt = int(azmax/detaz)-1;
-			if (lt < 1) lt = 1;
-			detaz = azmax/(float)lt;
-		}
+		if ((0.0f == alt)||(180.0f == alt))  detaz = 360.0f;
+		else  detaz = delta/(float)sin(alt*EMConsts::deg2rad);
 //		bool d_odd_mirror_flag = false;
 //		get_az_max(sym,altmax, inc_mirror,alt, lt,d_odd_mirror_flag, detaz);
 
-		for (int i = 0; i < lt; i++) {
-			float az = (float)i*detaz;
+		float az = -detaz;
+		while (az<azmax) {
+			az += detaz;
 			if (sym->is_platonic_sym()) {
-				if ( sym->is_in_asym_unit(alt, az,inc_mirror) == false ) continue;
-				else {
-					az += sym->get_az_alignment_offset(); // Align to the symmetry axes
-				}
-			}
-			add_orientation(ret,az,alt);
+				if ( sym->is_in_asym_unit(alt, az, inc_mirror)  ) add_orientation(ret,az+sym->get_az_alignment_offset(),alt);
+			} else  add_orientation(ret,az,alt);
 			if ( sym->is_h_sym() && inc_mirror && alt != altmin ) {
-				add_orientation(ret,az,2.0f*altmin-alt);
+				add_orientation(ret, az, 2.0f*altmin-alt);
 			}
 		}
 	}
