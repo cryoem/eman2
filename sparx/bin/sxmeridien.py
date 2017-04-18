@@ -946,10 +946,10 @@ def subdict(d,u):
 
 def get_anger(angle1, angle2, sym="c1"):
 	from math import acos, pi, degrees
-	R1               = Transform({"type":"spider","phi": angle1[0], "theta": angle1[1], "psi": angle1[2]})
-	R2               = Transform({"type":"spider","phi": angle2[0], "theta": angle2[1], "psi": angle2[2]})
-	R2               = R2.get_sym_proj(sym)
-	A1 		     = R1.get_matrix()
+	R1 = Transform({"type":"spider","phi": angle1[0], "theta": angle1[1], "psi": angle1[2]})
+	R2 = Transform({"type":"spider","phi": angle2[0], "theta": angle2[1], "psi": angle2[2]})
+	R2 = R2.get_sym_proj(sym)
+	A1 = R1.get_matrix()
 	axes_dis_min     = 1.0e23
 	for isym in xrange(len(R2)):
 		A2 		     = R2[isym].get_matrix()
