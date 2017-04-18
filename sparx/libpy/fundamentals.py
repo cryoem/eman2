@@ -1558,14 +1558,14 @@ class symclass():
 		"""
 		  sym: cn, dn, oct, tet, icos
 		"""
-		from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
-		from utilities import get_sym, get_symt
-		self.sym = sym
-		t = Transform()
-		self.nsym = 0#t.get_nsym(sym)
-		self.angles = get_sym(sym)
-		self.transforms = get_symt(sym)
-		from math import cos, sin, pi
+		from math import degrees, radians, sin, cos, tan, atan, acos, sqrt, pi
+		#from utilities import get_sym, get_symt
+		from string    import lower,split
+		self.sym = sym.lower()
+		#t = Transform()
+		#self.nsym = 0#t.get_nsym(sym)
+		#self.angles = get_sym(sym)
+		#self.transforms = get_symt(sym)
 		if(sym[0] == "c"):
 			self.nsym = int(sym[1:])
 			self.brackets = [[360./self.nsym,90.0,360./self.nsym,90.0],[360./self.nsym,180.0,360./self.nsym,180.0]]
@@ -1712,7 +1712,6 @@ class symclass():
 					p1,p2,p3 = recmat( mulmat( mat , self.symatrix[l]) )
 					if(self.is_in_subunit(p1, p2, inc_mirror)):
 						phi=p1;theta=p2;psi=p3
-						print l
 						break
 
 		return phi, theta, psi
@@ -1837,17 +1836,19 @@ class symclass():
 			temp = Util.symmetry_neighbors(angles, self.sym)
 			nt = len(temp)/3
 			return [[temp[l*3+i] for i in xrange(3)] for l in xrange(nt) ]
-		elif( self.sym[0] == "o" ):
-			sang = []
-			for l in [0,1,2,3,4,6,7,11,12]:  # neighbors
-				sang.append([])
-		elif( self.sym[0] == "t" ):
-			sang = []
-			for l in [0,1,2,3,4,6,7,11,12]:  # neighbors
-				sang.append([])
-		elif( self.sym[0] == "i" ):
-			sang = []
-			for l in [0,1,2,3,4,6,7,11,12]:  # neighbors
-				sang.append([])
+		#  Note symmetry neighbors below refer to the particular order 
+		#   in which this class generates symmetry matrices
+		neighbors = {}
+		neighbors["oct"]  = [1,2,3,8,9,12,13]
+		neighbors["tet"]  = [1,2,3,4,7]
+		neighbors["icos"] = [1,2,3,4,6,7,11,12]
+		sang = [[] for l in xrange(len(angles)*(len(neighbors[self.sym])+1))]
+		sang[:len(angles)] = angles[:]
+		from fundamentals import rotmatrix, recmat, mulmat
+		for i,q in enumerate(angles):
+			mat = rotmatrix(q[0],q[1],q[2])
+			for j,l in enumerate(neighbors[self.sym]):
+				p1,p2,p3 = recmat( mulmat( mat , self.symatrix[l]) )
+				sang[i + (j+1)*len(angles)] = [p1,p2,0.0]
 		return sang
-				
+

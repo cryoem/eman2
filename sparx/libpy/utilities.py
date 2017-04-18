@@ -3950,6 +3950,11 @@ def cone_ang_f( projangles, phi, tht, ant, symmetry = 'c1'):
 	return la
 
 
+"""
+Pushed to C
+Util.cone_dirs_f(projdirs, ancordir, ant)
+Returns a list of projdirs indexes that are within ant degrees of ancordir
+ant in degrees
 def cone_dirs_f( projdirs, ancordir, ant):
 	from math import cos, pi, degrees, radians
 	#  ancordir contains a list of symmetry neighbors
@@ -3963,7 +3968,7 @@ def cone_dirs_f( projdirs, ancordir, ant):
 		if s >= cone :
 			la.append(i)
 	return la
-
+"""
 
 '''
 def cone_ang_f_with_index( projangles, phi, tht, ant ):
