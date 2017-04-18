@@ -1745,7 +1745,7 @@ class symclass():
 		if(phi2 < 0.0):  phi2 = self.brackets[inc_mirror][0] - 1.0e-7 # exclude right border of unit
 		if(theta1 < 0.0): theta1 = 0.0
 		if(theta2 < 0.0): theta2 = self.brackets[inc_mirror][3]
-		print " parameters (phi1,phi2,theta,theta2,delta): %f   %f   %f   %f   %f"%(phi1,phi2,theta1,theta2,delta)
+		#print " parameters (phi1,phi2,theta,theta2,delta): %f   %f   %f   %f   %f"%(phi1,phi2,theta1,theta2,delta)
 
 		#
 		if(symmetry_string[0]  != "s"):
@@ -1829,3 +1829,25 @@ class symclass():
 						angles.append([i*delta,90.0-j*theta2,90.0])
 
 		return angles
+
+
+	def symmetry_neighbors(self, angles):
+		#  input is a list of lists  [[phi0,theta0,psi0],[phi1,theta1,psi1],...]
+		if( self.sym[0] == "c" or self.sym == "d") ):
+			temp = Util.symmetry_neighbors(angles, self.sym)
+			nt = len(temp)/3
+			return [[temp[l*3+i] for i in xrange(3)] for l in xrange(nt) ]
+		elif( self.sym[0] == "o" ):
+			sang = []
+			for l in [0,1,2,3,4,6,7,11,12]:  # neighbors
+				sang.append([])
+		elif( self.sym[0] == "t" ):
+			sang = []
+			for l in [0,1,2,3,4,6,7,11,12]:  # neighbors
+				sang.append([])
+		elif( self.sym[0] == "i" ):
+			sang = []
+			for l in [0,1,2,3,4,6,7,11,12]:  # neighbors
+				sang.append([])
+		return sang
+				
