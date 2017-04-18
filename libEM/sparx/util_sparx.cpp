@@ -946,7 +946,7 @@ Util::even_angles(float delta, float t1, float t2, float p1, float p2)
 		}
 		float phi = p1;
 		while(phi<p2) {
-			if (skip&&(90.0 == theta)&&(phi > 180.0)) continue;
+			if (skip&&(theta == 90.0)&&(phi > 180.0)) continue;
 			angles.push_back(phi);
 			angles.push_back(theta);
 			angles.push_back(psi);
@@ -23968,7 +23968,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 void Util::version()
 {
  cout <<"  Compile time of util_sparx.cpp  "<< __DATE__ << "  --  " << __TIME__ <<   endl;
- cout <<"  Modification time: 03/23/2017  06:35 PM " <<  endl;
+ cout <<"  Modification time: 04/18/2017  08:49 AM " <<  endl;
 }
 
 
