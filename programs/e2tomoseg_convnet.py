@@ -141,7 +141,7 @@ def main():
 			print np.mean(c),", learning rate",learning_rate
 
 		
-		save_model(convnet, options.netout)
+		save_model(convnet, options.netout, options)
 		
 	#######################################
 	#print convnet.clslayer.W.get_value()
@@ -153,7 +153,7 @@ def main():
 		convnet.update_shape((nsample, shape[2], shape[0],shape[1]))
 		test_cls = theano.function(
 			inputs=[],
-			outputs=convnet.clslayer.get_image(),
+			outputs=convnet.clslayer.get_image(False),
 			givens={
 				convnet.x: train_set_x[:nsample]
 			}
@@ -166,9 +166,9 @@ def main():
 		except: pass
 		print convnet.outsize,shape
 		mid=test_cls()
-		mid_cent=mid
-		mid_mean=np.mean(mid_cent)
-		mid_std=np.std(mid_cent)
+		#mid_cent=mid
+		#mid_mean=np.mean(mid_cent)
+		#mid_std=np.std(mid_cent)
 		#print "mean:",mid_mean,"std:",mid_std
 		#print np.shape(test_imgs(0))
 
@@ -186,25 +186,28 @@ def main():
 				img=img[shape[2]/2]
 			e = from_numpy(img.astype("float32"))
 			#e.mult(-1)
-			e.process_inplace("normalize")
+			#e.write_image("tmpimgs.hdf",-1)
+			#e.process_inplace("normalize")
+			
 			e.write_image(fname,-1)
 			
 			img=lb[t].reshape(convnet.outsize,convnet.outsize)
 			e = from_numpy(img.astype("float32"))
 			#e.process_inplace("normalize")
-			e.mult(2)
+			#e.mult(2)
 			e=e.get_clip(Region((convnet.outsize-shape[0])/2,(convnet.outsize-shape[0])/2,shape[0],shape[0]))
 			e.scale(float(shape[0])/float(convnet.outsize))
 			e.write_image(fname,-1)
 			
 			img=mid[t].reshape(convnet.outsize,convnet.outsize)
-			df=(np.mean(img)-mid_mean)/mid_std
+			#df=(np.mean(img)-mid_mean)/mid_std
 			e = from_numpy(img.astype("float32"))
 			#e.process_inplace("normalize")
 			#e.div(float(mid_std))
 			
 			e=e.get_clip(Region((convnet.outsize-shape[0])/2,(convnet.outsize-shape[0])/2,shape[0],shape[0]))
 			#print float(shape[0])/float(convnet.outsize)
+			e.write_image("tmpimgs.hdf",-1)
 			e.scale(float(shape[0])/float(convnet.outsize))
 			e.write_image(fname,-1)
 		print "Writing output on training set in {}".format(fname)
@@ -215,7 +218,7 @@ def run(cmd):
 	print cmd
 	launch_childprocess(cmd)
 
-def save_model(convnet, fname):
+def save_model(convnet, fname, options=None):
 	print "Saving the trained net to {}...".format(fname)
 	#fname="nnet_save.hdf"
 	sz=int(convnet.convlayers[0].W.shape[-1].eval())
@@ -225,6 +228,11 @@ def save_model(convnet, fname):
 	hdr["ksize"]=convnet.ksize
 	hdr["poolsz"]=convnet.poolsz
 	hdr["imageshape"]=convnet.image_shape
+	if options:
+		if options.trainset:
+			hdr["trainset_src"]=options.trainset
+	
+	
 	hdr.write_image(fname,0)
 
 	k=1
@@ -368,6 +376,13 @@ def apply_neuralnet(options):
 	eny=e["ny"]
 	shape=[enx,eny]
 	
+	output=EMData(enx,eny, nframe)
+	output["tomogram_src"]=options.tomograms
+	output["nnet_src"]=options.from_trained
+	output["apix_x"]=apix
+	output["apix_y"]=apix
+	output["apix_z"]=apix
+	
 	#####################
 	print "Loading the Neural Net..."
 	
@@ -459,23 +474,31 @@ def apply_neuralnet(options):
 			 
 			while (threading.active_count()==NTHREADS ) : time.sleep(.1)
 			thrds[thrtolaunch].start()
+			print "starting: ", thrtolaunch#, e0["nx"]
 			thrtolaunch+=1
 		else: time.sleep(1)
 	
 		while not jsd.empty():
 			idx,cout=jsd.get()
-			cout.write_image(options.output,idx)
+			#print cout["maximum"],cout["nx"], cout["ny"]
+			cout=cout.get_clip(Region((cout["nx"]-enx)/2,(cout["ny"]-eny)/2 ,enx, eny))
+			cout.scale(labelshrink)
+			#print (cout["nx"]-enx)/2,eny*(1-labelshrink)/2 ,enx, eny), cout["maximum"]
 			
-	if is3d and options.to3d:
-		to3d=" --twod2threed"
-	else:
-		to3d=""
+			#cout.write_image("tmpseg_03.hdf",idx)
+			#cout.process_inplace("math.fft.resample", {"n":float(1./labelshrink)})
+			output.insert_clip(cout, [0,0,idx])
+			
+	#if is3d and options.to3d:
+		#to3d=" --twod2threed"
+	#else:
+		#to3d=""
 		
 		
-	fout="__tomoseg_tmp.hdf"
-	run("e2proc2d.py {} {} --process math.fft.resample:n={} {} --apix {} ".format(options.output,fout,float(1./labelshrink), to3d, apix))
-	os.rename(fout, options.output)
-	
+	#fout="__tomoseg_tmp.hdf"
+	#run("e2proc2d.py {} {} --process math.fft.resample:n={} {} --apix {} ".format(options.output,fout,float(1./labelshrink), to3d, apix))
+	##os.rename(fout, options.output)
+	output.write_image(options.output)
 	print "Done."
 	print "Total time: ", time.time()-tt0
 	
@@ -486,7 +509,6 @@ def do_convolve(jsd, job):
 	e0=tomo_in[idx]
 	e0.div(3.)
 	imgs=[e0]
-	print "starting: ", idx#, e0["nx"]
 	
 	#if len(rg)>4:
 		#e0=EMData(tomo, 0, False, Region(rg[0],rg[1],rg[2],rg[3],rg[4],rg[5]))
@@ -683,7 +705,7 @@ def load_particles(ptcls,labelshrink,ncopy=5):
 	
 	data=np.asarray(data,dtype=theano.config.floatX)
 	print np.std(data.flatten())
-	data/=np.std(data.flatten())*3  #np.max(np.abs(data))
+	#data/=np.std(data.flatten())*3  #np.max(np.abs(data))
 	data/=3.
 	label=np.asarray(label,dtype=theano.config.floatX)
 	label/=np.max(np.abs(label))
@@ -909,10 +931,13 @@ class LeNetConvPoolLayer(object):
 		#rectified_linear_activation = lambda x: T.maximum(0.0, x)
 		return z
 
-	def get_image(self):
+	def get_image(self, relu=True):
 		#return T.tanh(self.hidden)*2-1
 		#return T.maximum(0,(self.pooled_out + self.b.dimshuffle('x', 0, 'x', 'x')))
-		return T.minimum(1,(self.pooled_out + self.b.dimshuffle('x', 0, 'x', 'x')))
+		if relu:
+			return T.minimum(1,(self.pooled_out + self.b.dimshuffle('x', 0, 'x', 'x')))
+		else:
+			return self.pooled_out + self.b.dimshuffle('x', 0, 'x', 'x')
 	
 	def get_cost_hidden(self,  label):
 		
@@ -935,8 +960,8 @@ class LeNetConvPoolLayer(object):
 		
 		shp=z.shape
 		
-		xin=xin.reshape((shp[0],shp[2]*shp[3]))
-		z=z.reshape((shp[0],shp[2]*shp[3]))
+		xin=xin.reshape((shp[0],-1))
+		z=z.reshape((shp[0],-1))
 		
 		#L = T.sum(xin*z,axis=1)/T.sqrt(T.sum(xin**2,axis=1))/T.sqrt(T.sum(z**2,axis=1))
 		#cost = 1-T.mean(L)

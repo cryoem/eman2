@@ -110,9 +110,11 @@ def main():
 					rd=random.random()*360
 					tr.set_rotation({"type":"2d","alpha":rd})
 					e=t.process("xform",{"transform":tr})
+					e["ptcl_src"]=tomo_in
 					#e.process_inplace("normalize")
 					e.write_image(options.trainset_output,-1)
 					e=s.process("xform",{"transform":tr})
+					e["ptcl_src"]=seg_in
 					e.write_image(options.trainset_output,-1)
 		if neg_in:
 			s=EMData(neg_in,0)
@@ -127,8 +129,10 @@ def main():
 					tr.set_rotation({"type":"2d","alpha":rd})
 					e=t.process("xform",{"transform":tr})
 					#e.process_inplace("normalize")
+					e["ptcl_src"]=neg_in
 					e.write_image(options.trainset_output,-1)
 					e=s.process("xform",{"transform":tr})
+					e["ptcl_src"]=neg_in
 					e.write_image(options.trainset_output,-1)
 
 		print "Shuffling particles..."
