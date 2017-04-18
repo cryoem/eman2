@@ -20981,8 +20981,7 @@ vector<int> Util::cone_dirs_f(const vector<vector<float> >& projdirs, const vect
 	//  Returns a list of projdirs indexes that are within ant degrees of ancordir
 	int length_of_ancordir  = ancordir.size();
 	int length_of_projdirs = projdirs.size();
-	float pi180 = M_PI/180.0f;
-	float cone = cos(ant*pi180);
+	float cone = cos(ant*M_PI/180.0f);
 
 	vector<int> asg;
 
@@ -21228,10 +21227,10 @@ vector<float> Util::reduce_to_asymmetric_list(const vector<vector<float> >& angl
 	vector<float> redang(nlist*nang);
 
 	int nsym = atoi(symmetry.substr(1,1000).c_str());
+	float qt = 360.0f/nsym;
 	for(int l=0; l<nlist; l++)  for(int i=0; i<nang; i++)  redang[l*nang+i] = angles[l][i];
 
 	if( symmetry.substr(0,1) == "c")  {
-		float qt = 360.0f/nsym;
 		for(int l=0; l<nlist; l++) {
 			while(redang[l*nang] >= qt) redang[l*nang] -= qt;
 		}
@@ -21242,7 +21241,6 @@ vector<float> Util::reduce_to_asymmetric_list(const vector<vector<float> >& angl
 				redang[l*nang+1] = 180.0f - redang[l*nang+1];
 				if(nang == 3) redang[l*nang+2] = fmod(redang[l*nang+2]+180.0f, 360.0f);
 			}
-			float qt = 360.0f/nsym;
 			while(redang[l*nang] >= qt) redang[l*nang] -= qt;
 		}
 	}
