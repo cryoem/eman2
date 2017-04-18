@@ -1560,7 +1560,7 @@ class symclass():
 		"""
 		from math import degrees, radians, sin, cos, tan, atan, acos, sqrt, pi
 		#from utilities import get_sym, get_symt
-		from string    import lower,split
+		from string import lower
 		self.sym = sym.lower()
 		#t = Transform()
 		#self.nsym = 0#t.get_nsym(sym)
@@ -1633,7 +1633,7 @@ class symclass():
 			self.transform.append(Transform({"type":"spider", "phi":args[0], "theta":args[1], "psi":args[2]}))
 			self.symatrix.append(rotmatrix(args[0],args[1],args[2]))
 
-	def is_in_subunit(self, phi, theta, inc_mirror):
+	def is_in_subunit(self, phi, theta, inc_mirror=1):
 		from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
 		if( (self.sym[0] == "c")  or  (self.sym[0] == "d") ):
 			if((phi>= 0.0 and phi<self.brackets[inc_mirror][0]) and (theta<=self.brackets[inc_mirror][1])):  return True
@@ -1696,7 +1696,33 @@ class symclass():
 
 		return redang
 
-	def reduce_angles(self, phiin, thetain, psiin, inc_mirror):
+	def reduce_angles_list(self, angles, inc_mirror=1):
+		from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
+		is_platonic_sym = self.sym[0] == "o" or self.sym[0] == "t" or self.sym[0] == "i"
+		if(self.sym[0] == "c"): qs = 360.0/self.nsym
+		elif(self.sym[0] == "d"): qs = 720.0/self.nsym
+		redang = []
+		for q in angles:
+			if( inc_mirror == 0 and q[1]>90.0): phi = 360.0-q[0]; theta = 180.0 - q[1]; psi = (180.0 + q[2])%360.0
+			else: phi = q[0]; theta = q[1]; psi = q[2]
+			if is_platonic_sym:
+				if(not self.is_in_subunit(phi, theta, inc_mirror)):
+					mat = rotmatrix(phi,theta,psi)
+					for l in xrange(1,self.nsym):
+						p1,p2,p3 = recmat( mulmat( mat , self.symatrix[l]) )
+						if(self.is_in_subunit(p1, p2, inc_mirror)):
+							phi=p1; theta=p2; psi=p3
+							break
+			else:
+				phi = phi%qs
+				if(self.sym[0] == "d"):
+					if( inc_mirror == 0 and phi>=self.brackets[0][0]): phi = self.brackets[1][0]-phi
+
+			redang.append([phi, theta, psi])
+
+		return redang
+
+	def reduce_angles(self, phiin, thetain, psiin, inc_mirror=1):
 		from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
 		if( inc_mirror == 0 and thetain>90.0): phi = 360.0-phiin; theta = 180.0 - thetain; psi = (180.0 + psiin)%360.0
 		else: phi = phiin; theta = thetain; psi = psiin
@@ -1716,6 +1742,30 @@ class symclass():
 
 		return phi, theta, psi
 
+
+	def symmetry_neighbors(self, angles):
+		#  input is a list of lists  [[phi0,theta0,psi0],[phi1,theta1,psi1],...]
+		if( self.sym[0] == "c" or self.sym == "d" ):
+			temp = Util.symmetry_neighbors(angles, self.sym)
+			nt = len(temp)/3
+			return [[temp[l*3+i] for i in xrange(3)] for l in xrange(nt) ]
+		#  Note symmetry neighbors below refer to the particular order 
+		#   in which this class generates symmetry matrices
+		neighbors = {}
+		neighbors["oct"]  = [1,2,3,8,9,12,13]
+		neighbors["tet"]  = [1,2,3,4,7]
+		neighbors["icos"] = [1,2,3,4,6,7,11,12]
+		sang = [[] for l in xrange(len(angles)*(len(neighbors[self.sym])+1))]
+		sang[:len(angles)] = angles[:]
+		from fundamentals import rotmatrix, recmat, mulmat
+		for i,q in enumerate(angles):
+			mat = rotmatrix(q[0],q[1],q[2])
+			for j,l in enumerate(neighbors[self.sym]):
+				p1,p2,p3 = recmat( mulmat( mat , self.symatrix[l]) )
+				sang[i + (j+1)*len(angles)] = [p1,p2,0.0]
+		return sang
+
+
 	"""
 	def reduce_normal(self, phi, theta, psi, inc_mirror):
 		from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
@@ -1734,20 +1784,16 @@ class symclass():
 
 		from math      import pi, sqrt, cos, acos, tan, sin, radians, degrees
 		from utilities import even_angles_cd
-		from string    import lower,split
 		angles = []
-		symmetry = self.sym
-		symmetryLower = symmetry.lower()
-		symmetry_string = split(symmetry)[0]
+		self.sym = self.sym
 		if(phi2<phi1 or theta2<theta1 or delta <= 0.0):  ERROR("even_angles","incorrect parameters (phi1,phi2,theta1,theta2,delta): %f   %f   %f   %f   %f"%(phi1,phi2,theta,theta2,delta),1)
 		if(phi1 < 0.0):  phi1 = 0.0
 		if(phi2 < 0.0):  phi2 = self.brackets[inc_mirror][0] - 1.0e-7 # exclude right border of unit
 		if(theta1 < 0.0): theta1 = 0.0
 		if(theta2 < 0.0): theta2 = self.brackets[inc_mirror][3]
 		#print " parameters (phi1,phi2,theta,theta2,delta): %f   %f   %f   %f   %f"%(phi1,phi2,theta1,theta2,delta)
-
 		#
-		if(symmetry_string[0]  != "s"):
+		if(self.sym[0]  != "s"):
 			"""Create a list of Euler angles suitable for projections.
 			   method is either 'S' - for Saff algorithm
 							  or   'P' - for Penczek '94 algorithm
@@ -1755,7 +1801,7 @@ class symclass():
 			   phiEqpsi  - set this to 'Minus', if you want psi=-phi;
 			"""
 			angles = []
-			is_platonic_sym = symmetry_string[0] == "o" or symmetry_string[0] == "t" or symmetry_string[0] == "i"
+			is_platonic_sym = self.sym[0] == "o" or self.sym[0] == "t" or self.sym[0] == "i"
 			if (method == 'P'):
 				theta = theta1
 				while(theta <= theta2):
@@ -1790,9 +1836,9 @@ class symclass():
 				#angles.append([p2,t2,0])  # This is incorrect, as the last angle is really the border, not the element we need. PAP 01/15/07
 			if (phiEqpsi == 'Minus'):
 				for k in xrange(len(angles)): angles[k][2] = (720.0 - angles[k][0])%360.0
-			if( (symmetry_string[0] == "c" or symmetry_string[0] == "d") and (theta2 >180. and delta == 180.0)):  angles.append( [0.0, 180.0, 0.0] )
+			if( (self.sym[0] == "c" or self.sym[0] == "d") and ((theta2 == 180.) or (theta2 >= 180. and delta == 180.0))):  angles.append( [0.0, 180.0, 0.0] )
 
-		elif(symmetry_string[0]  == "s"):
+		elif(self.sym[0]  == "s"):
 
 			#if symetry is "s", deltphi=delta, theata intial=theta1, theta end=90, delttheta=theta2
 			# for helical, theta1 cannot be 0.0
@@ -1801,16 +1847,16 @@ class symclass():
 			if theta1 == 0.0: theta1 =90.0
 			theta_number = int((90.0 - theta1)/theta2)
 			#for helical, symmetry = s or scn
-			cn = int(symmetry_string[2:])
+			cn = int(self.sym[2:])
 			for j in xrange(theta_number,-1, -1):
 
 				if( j == 0):
-					if (symmetry_string[1] =="c"):
+					if (self.sym[1] =="c"):
 						if cn%2 == 0:
 							k=int(359.99/cn/delta)
 						else:
 							k=int(359.99/2/cn/delta)
-					elif (symmetry_string[1] =="d"):
+					elif (self.sym[1] =="d"):
 						if cn%2 == 0:
 							k=int(359.99/2/cn/delta)
 						else:
@@ -1819,36 +1865,13 @@ class symclass():
 						ERROR("For helical strucutre, we only support scn and sdn symmetry","even_angles",1)
 
 				else:
-					if (symmetry_string[1] =="c"):
+					if (self.sym[1] =="c"):
 						k=int(359.99/cn/delta)
-					elif (symmetry_string[1] =="d"):
+					elif (self.sym[1] =="d"):
 						k=int(359.99/2/cn/delta)
 
 				for i in xrange(k+1):
 						angles.append([i*delta,90.0-j*theta2,90.0])
 
 		return angles
-
-
-	def symmetry_neighbors(self, angles):
-		#  input is a list of lists  [[phi0,theta0,psi0],[phi1,theta1,psi1],...]
-		if( self.sym[0] == "c" or self.sym == "d" ):
-			temp = Util.symmetry_neighbors(angles, self.sym)
-			nt = len(temp)/3
-			return [[temp[l*3+i] for i in xrange(3)] for l in xrange(nt) ]
-		#  Note symmetry neighbors below refer to the particular order 
-		#   in which this class generates symmetry matrices
-		neighbors = {}
-		neighbors["oct"]  = [1,2,3,8,9,12,13]
-		neighbors["tet"]  = [1,2,3,4,7]
-		neighbors["icos"] = [1,2,3,4,6,7,11,12]
-		sang = [[] for l in xrange(len(angles)*(len(neighbors[self.sym])+1))]
-		sang[:len(angles)] = angles[:]
-		from fundamentals import rotmatrix, recmat, mulmat
-		for i,q in enumerate(angles):
-			mat = rotmatrix(q[0],q[1],q[2])
-			for j,l in enumerate(neighbors[self.sym]):
-				p1,p2,p3 = recmat( mulmat( mat , self.symatrix[l]) )
-				sang[i + (j+1)*len(angles)] = [p1,p2,0.0]
-		return sang
 
