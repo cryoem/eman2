@@ -4384,7 +4384,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 			elif(Tracker["constants"]["symmetry"] == "oct"):
 				t_cone_angles = Blockdata["parsesym"].gen_orientations("saff",{"delta":cone_delta,"inc_mirror":1})
 				del t_cone_angles[0]
-				cone_angles = [None]*len(a)
+				cone_angles = [None]*len(t_cone_angles)
 				conedirs = []
 				for i,q in enumerate(t_cone_angles):
 					u = q.get_sym_proj(Tracker["constants"]["symmetry"])
