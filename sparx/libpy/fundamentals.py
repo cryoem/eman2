@@ -1696,6 +1696,32 @@ class symclass():
 
 		return redang
 
+
+	def symmetry_neighbors(self, angles):
+		#  input is a list of lists  [[phi0,theta0,0],[phi1,theta1,0],...]
+		#  psi is ignored
+		#  output is [[phi0,theta0,0],[phi0,theta0,0]_SYM1,...,[phi1,theta1,],[phi1,theta1,]_SYM1,...]
+		if( self.sym[0] == "c" or self.sym == "d" ):
+			temp = Util.symmetry_neighbors(angles, self.sym)
+			nt = len(temp)/3
+			return [[temp[l*3],temp[l*3+1],0.0] for l in xrange(nt) ]
+		#  Note symmetry neighbors below refer to the particular order 
+		#   in which this class generates symmetry matrices
+		neighbors = {}
+		neighbors["oct"]  = [1,2,3,8,9,12,13]
+		neighbors["tet"]  = [1,2,3,4,7]
+		neighbors["icos"] = [1,2,3,4,6,7,11,12]
+		sang = [[] for l in xrange(len(angles)*(len(neighbors[self.sym])+1))]
+		for i,q in enumerate(angles):  sang[i*(len(neighbors[self.sym])+1)] = angles[i][:]
+		from fundamentals import rotmatrix, recmat, mulmat
+		for i,q in enumerate(angles):
+			mat = rotmatrix(q[0],q[1],q[2])
+			for j,l in enumerate(neighbors[self.sym]):
+				p1,p2,p3 = recmat( mulmat( mat , self.symatrix[l]) )
+				sang[i*(len(neighbors[self.sym])+1) + (j+1)] = [p1,p2,0.0]
+		return sang
+
+
 	def reduce_angles_list(self, angles, inc_mirror=1):
 		from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
 		is_platonic_sym = self.sym[0] == "o" or self.sym[0] == "t" or self.sym[0] == "i"
@@ -1741,30 +1767,6 @@ class symclass():
 						break
 
 		return phi, theta, psi
-
-
-	def symmetry_neighbors(self, angles):
-		#  input is a list of lists  [[phi0,theta0,psi0],[phi1,theta1,psi1],...]
-		if( self.sym[0] == "c" or self.sym == "d" ):
-			temp = Util.symmetry_neighbors(angles, self.sym)
-			nt = len(temp)/3
-			return [[temp[l*3+i] for i in xrange(3)] for l in xrange(nt) ]
-		#  Note symmetry neighbors below refer to the particular order 
-		#   in which this class generates symmetry matrices
-		neighbors = {}
-		neighbors["oct"]  = [1,2,3,8,9,12,13]
-		neighbors["tet"]  = [1,2,3,4,7]
-		neighbors["icos"] = [1,2,3,4,6,7,11,12]
-		sang = [[] for l in xrange(len(angles)*(len(neighbors[self.sym])+1))]
-		sang[:len(angles)] = angles[:]
-		from fundamentals import rotmatrix, recmat, mulmat
-		for i,q in enumerate(angles):
-			mat = rotmatrix(q[0],q[1],q[2])
-			for j,l in enumerate(neighbors[self.sym]):
-				p1,p2,p3 = recmat( mulmat( mat , self.symatrix[l]) )
-				sang[i + (j+1)*len(angles)] = [p1,p2,0.0]
-		return sang
-
 
 	"""
 	def reduce_normal(self, phi, theta, psi, inc_mirror):

@@ -4061,6 +4061,7 @@ def symmetry_related_normals(angles, symmetry):
 
 def symmetry_neighbors(angles, symmetry):
 	#  input is a list of lists  [[phi0,theta0,psi0],[phi1,theta1,psi1],...]
+	#  output is [[phi0,theta0,psi0],[phi0,theta0,psi0]_SYM1,...,[phi1,theta1,psi1],[phi1,theta1,psi1]_SYM1,...]
 	temp = Util.symmetry_neighbors(angles, symmetry)
 	nt = len(temp)/3
 	return [[temp[l*3+i] for i in xrange(3)] for l in xrange(nt) ]
