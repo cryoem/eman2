@@ -1624,6 +1624,7 @@ def prepare_refrings( volft, kb, nz = -1, delta = 2.0, ref_a = "P", sym = "c1", 
 						delta_theta = None, initial_phi = None):
 	"""
 		Generate quasi-evenly distributed reference projections converted to rings
+		ref_a can be a list of angles, in which case it is used instead of being generated
 	"""
 	from projection   import prep_vol, prgs
 	from applications import MPI_start_end
@@ -5511,8 +5512,6 @@ def shc(data, refrings, list_of_reference_angles, numr, xrng, yrng, step, an = -
 	from alignment import search_range
 	from math         import cos, sin, degrees, radians
 	from EMAN2 import Vec2f
-	#  Templates have to have psi zero, remove once tested.
-	assert(refrings[0].get_attr("psi") == 0.0)
 
 	number_of_checked_refs = 0
 
@@ -5582,20 +5581,19 @@ def shc(data, refrings, list_of_reference_angles, numr, xrng, yrng, step, an = -
 		data.set_attr("previousmax", peak)
 		#  Find the pixel error that is minimum over symmetry transformations
 		from pixel_error import max_3D_pixel_error
-		ts = t2.get_sym_proj(sym)
-		if(len(ts) > 1):
+		if(sym == "nomirror" or sym == "c1"):
+			pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
+		else:		
+			ts = t2.get_sym_proj(sym)
 			# only do it if it is not c1
 			pixel_error = +1.0e23
 			for ut in ts:
 				# we do not care which position minimizes the error
 				pixel_error = min(max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
-		else:
-			pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
 		if finfo:
 			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
 			finfo.flush()
 		return peak, pixel_error, number_of_checked_refs, iref
-
 
 
 # parameters: list of (all) projections | reference volume is optional, if provided might be shrank| ...

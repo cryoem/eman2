@@ -1321,8 +1321,7 @@ def rotate_params(params, transf):
 	cpar = [None]*n
 	for i in xrange(n):
 		d = rotmatrix( params[i][0], params[i][1], params[i][2] )
-		c = mulmat(d,matinv)
-		phi, theta, psi = recmat(c)
+		phi, theta, psi = recmat(mulmat(d,matinv))
 		cpar[i] = [phi, theta, psi]
 	return cpar
 

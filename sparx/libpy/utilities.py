@@ -4085,7 +4085,7 @@ def enable_bdb_cache():
 
 def rotation_between_anglesets(agls1, agls2):
 	"""
-	  Find an overall 3D rotation (phi theta psi) between two sets of Eulerian angles.
+	  Find an overall 3D rotation (phi theta psi) between two sets of Eulerian angles. (psi irrelevant)
 	  The two sets have to have the same number of elements and it is assumed that k'th element on the first
 	  list corresponds to the k'th element on the second list.
 	  Input: two lists [[phi1, theta1, psi1], [phi2, theta2, psi2], ...].  Second list is considered reference.
@@ -4094,11 +4094,9 @@ def rotation_between_anglesets(agls1, agls2):
 	  Note: all angles have to be in spider convention.
 	  For details see: Appendix in Penczek, P., Marko, M., Buttle, K. and Frank, J.:  Double-tilt electron tomography.  Ultramicroscopy 60:393-410, 1995.
 	"""
-	from math  import sin, cos, pi, sqrt, atan2, acos, atan
+	from math  import sin, cos, pi, sqrt, atan2, acos, atan, radians
 	from numpy import array, linalg, matrix
 	import types
-
-	deg2rad = pi/180.0
 
 	def ori2xyz(ori):
 		if(type(ori) == types.ListType):
@@ -4108,15 +4106,10 @@ def rotation_between_anglesets(agls1, agls2):
 			d = ori.get_params("spider")
 			phi   = d["phi"]
 			theta = d["theta"]
-			psi   = d["psi"]
-		"""
-		#  This makes no sense here!  PAP 09/2011
-		if theta > 90.0:
-			phi += 180.0
-			theta = 180.0-theta
-		"""
-		phi   *= deg2rad
-		theta *= deg2rad
+			#psi   = d["psi"]
+
+		phi   = radians(phi)
+		theta = radians(theta)
 		x = sin(theta) * sin(phi)
 		y = sin(theta) * cos(phi)
 		z = cos(theta)
@@ -4125,48 +4118,42 @@ def rotation_between_anglesets(agls1, agls2):
 
 	N = len(agls1)
 	if N != len(agls2):
-		print 'Both lists must have the same length'
+		ERROR('rotation_between_anglesets', 'Both lists must have the same length',1)
 		return -1
 	if N < 2:
-		print 'At least two orientations are required in each list'
+		ERROR('rotation_between_anglesets',  'At least two orientations are required in each list',1)
 		return -1
-	U1, U2 = [], []
-	for n in xrange(N):
-		p1 = ori2xyz(agls1[n])
-		p2 = ori2xyz(agls2[n])
-		U1.append(p1)
-		U2.append(p2)
+
+	U1 = [ori2xyz(q) for q in agls1]
+	U2 = [ori2xyz(q) for q in agls2]
 
 	# compute all Suv with uv = {xx, xy, xz, yx, ..., zz}
 	Suv   = [0] * 9
-	c     = 0
+
 	nbori = len(U1)
 	for i in xrange(3):
 		for j in xrange(3):
 			for s in xrange(nbori):
-				Suv[c] += (U2[s][i] * U1[s][j])
-			c += 1
+				Suv[j+3*i] += (U2[s][i] * U1[s][j])
 
-        # create matrix N
-	N = array([[Suv[0]+Suv[4]+Suv[8], Suv[5]-Suv[7],        Suv[6]-Suv[2],                 Suv[1]-Suv[3]],
+	# create matrix N
+	N = array([[Suv[0]+Suv[4]+Suv[8], Suv[5]-Suv[7],    Suv[6]-Suv[2],                 Suv[1]-Suv[3]],
 		   [Suv[5]-Suv[7],        Suv[0]-Suv[4]-Suv[8], Suv[1]+Suv[3],                 Suv[6]+Suv[2]],
 		   [Suv[6]-Suv[2],        Suv[1]+Suv[3],        -Suv[0]+Suv[4]-Suv[8],         Suv[5]+Suv[7]],
 		   [Suv[1]-Suv[3],        Suv[6]+Suv[2],        Suv[5]+Suv[7],         -Suv[0]-Suv[4]+Suv[8]]])
 
-        # eigenvector corresponding to the most positive eigenvalue
+	# eigenvector corresponding to the most positive eigenvalue
 	val, vec = linalg.eig(N)
 	q0, qx, qy, qz = vec[:, val.argmax()]
+	# create quaternion Rot matrix
+	r = [
+		[q0*q0-qx*qx+qy*qy-qz*qz,         2*(qy*qx+q0*qz),          2*(qy*qz-q0*qx)],
+		[2*(qx*qy-q0*qz),                 q0*q0+qx*qx-qy*qy-qz*qz,  2*(qx*qz+q0*qy)],
+		[2*(qz*qy+q0*qx),                 2*(qz*qx-q0*qy),          q0*q0-qx*qx-qy*qy+qz*qz],
+		]
 
-        # create quaternion Rot matrix
-	r = [q0*q0-qx*qx+qy*qy-qz*qz,         2*(qy*qx+q0*qz),          2*(qy*qz-q0*qx),          0.0,
-	     2*(qx*qy-q0*qz),                 q0*q0+qx*qx-qy*qy-qz*qz,  2*(qx*qz+q0*qy),          0.0,
-	     2*(qz*qy+q0*qx),                 2*(qz*qx-q0*qy),          q0*q0-qx*qx-qy*qy+qz*qz,  0.0]
-
-	R = Transform(r)
-	dictR = R.get_rotation('SPIDER')
-
-	return dictR['phi'], dictR['theta'], dictR['psi']
-
+	from fundamentals import recmat
+	return  recmat(r)
 
 def angle_between_projections_directions(proj1, proj2):
 	"""
