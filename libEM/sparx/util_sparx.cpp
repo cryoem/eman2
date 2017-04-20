@@ -4260,7 +4260,110 @@ c
 	return retvals;
 }
 
+static Dict Crosrng_rand(EMData* circ1p, EMData* circ2p, vector<int> numr, float previous_max)
+//  Random match with mirror for shc
+{
+	int nring = numr.size()/3;
+	//int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
+	int maxrin = numr[numr.size()-1];
+	float *circ1 = circ1p->get_data();
+	float *circ2 = circ2p->get_data();
+/*
+c
+c  checks both straight & mirrored positions
+c
+c  input - fourier transforms of rings!!
+c  circ1 already multiplied by weights!
+c
+*/
+
+	// dimension		 circ1(lcirc),circ2(lcirc)
+	double *q, p3[3];
+
+	int   jc, numr3i, numr2i, i, j, k;
+	float t1, t2, t3, t4, c1, c2, d1, d2, pos;
+
+#ifdef _WIN32
+	const int ip = -(int)(log((float)maxrin)/log(2.0f));
+#else
+	const int ip = -(int)(log2(maxrin));
+#endif	//_WIN32
+  //for (j=1; j<=maxrin;j++) cout <<"  "<<j<<"   "<<circ1(j)<<"   "<<circ2(j) <<endl;
+
+	//  c - straight  = circ1 * conjg(circ2)
+	//  zero q array
+
+	q = (double*)calloc(maxrin,sizeof(double));
+
+   //   premultiply  arrays ie( circ12 = circ1 * circ2) much slower
+	for (i=1; i<=nring; i++) {
+
+		numr3i = numr(3,i);   // Number of samples of this ring
+		numr2i = numr(2,i);   // The beginning point of this ring
+
+		q(1) += circ1(numr2i) * circ2(numr2i);
+
+		if (numr3i == maxrin)   q(2) += circ1(numr2i+1) * circ2(numr2i+1);
+		else             q(numr3i+1) += circ1(numr2i+1) * circ2(numr2i+1);
+
+		for (j=3; j<=numr3i; j += 2) {
+			jc     = j+numr2i-1;
+
+// Here, (c1+c2i)*conj(d1+d2i) = (c1*d1+c2*d2)+(-c1*d2+c2*d1)i
+//   			                  ----- -----    ----- -----
+//      			               t1     t2      t3    t4
+// Here, conj(c1+c2i)*conj(d1+d2i) = (c1*d1-c2*d2)+(-c1*d2-c2*d1)i
+//     		                          ----- -----    ----- -----
+//     			                       t1    t2       t3    t4
+
+			c1     = circ1(jc);
+			c2     = circ1(jc+1);
+			d1     = circ2(jc);
+			d2     = circ2(jc+1);
+
+			q(j)   +=  c1 * d1 + c2 * d2;
+			q(j+1) += -c1 * d2 + c2 * d1;
+		}
+	}
+	//for (j=1; j<=maxrin; j++) cout <<"  "<<j<<"   "<<q(j) <<"   "<<t(j) <<endl;
+	Util::fftr_d(q,ip);
+
+	std::vector<int> angles = shuffled_range(0,maxrin-1);
+	double qn = -1.0e20;
+	int    jtot = -1;
+	for (int pos_j=0; pos_j < maxrin; pos_j++) {   //cout <<"  "<<j<<"   "<<q(j-1) <<endl;
+		j = angles[pos_j] + 1;
+		if (q(j) > previous_max) {
+			qn  = q(j);
+			jtot = j;
+			break;
+		}
+	}
+
+	float tot = 0.0;
+	if( jtot > -1) {
+		// interpolation
+		for (k=-1; k<=1; k++) {
+			j = ((jtot+k+maxrin-1)%maxrin)+1;
+			p3[k+1] = q(j);
+		}
+
+		// interpolate
+		Util::prb3p(p3,&pos);
+		tot = (float)(jtot)+pos;
+	}
+
+	free(q);
+
+	Dict retvals;
+	retvals["qn"] = qn;
+	retvals["tot"] = tot;
+	retvals["mirror"] = 0;
+	return retvals;
+}
+
 static Dict Crosrng_rand_ms(EMData* circ1p, EMData* circ2p, vector<int> numr, float previous_max)
+//  Random match with mirror for shc
 {
 	int nring = numr.size()/3;
 	//int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
@@ -21670,10 +21773,8 @@ vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMD
 	Transform * t = image->get_attr("xform.projection");
 	int nsym = t->get_nsym(sym);
 
-	if (!cone_mode) 
-	{
-		if (crefim_len_original_only_from_asymmetric_unit != list_of_reference_angles_length/nsym/2)
-		{
+	if (!cone_mode) {
+		if (crefim_len_original_only_from_asymmetric_unit != list_of_reference_angles_length/nsym/2)  {
 			printf("\n\ncrefim_len_original_only_from_asymmetric_unit(%lu) == list_of_reference_angles_length(%lu)/nsym(%d)/2\n\n",
 			crefim_len_original_only_from_asymmetric_unit, list_of_reference_angles_length, nsym);
 			fflush(stdout);
@@ -21803,7 +21904,7 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 	int   nref = -1, mirror = 0;
 	bool  found_better = false;
 	size_t tiref = 0;
-	float an, ix, iy;
+	float  an, ix, iy;
 
 	// cout << ant <<endl;
 	if( ant > 0.0f) {  //LOCAL SEARCHES
@@ -21958,32 +22059,62 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 				cimages[i+lky][j+lkx] = cimage;
 			}
 		}
+		if( sym == "nomirror") {
+			for ( ;  (tiref < crefim_len) && (! found_better); tiref++) {
+				const int iref = listr[tiref];
+				//
+				std::vector<int> shifts = shuffled_range( 0, (lkx+rkx+1) * (lky+rky+1) - 1 );
+				for ( unsigned nodeId = 0;  nodeId < shifts.size();  ++nodeId ) {
+					const int i = ( shifts[nodeId] % (lky+rky+1) ) - lky;
+					const int j = ( shifts[nodeId] / (lky+rky+1) ) - lkx;
+					EMData* cimage = cimages[i+lky][j+lkx];
 
-		for ( ;  (tiref < crefim_len) && (! found_better); tiref++) {
-			const int iref = listr[tiref];
-			//  Here check for neighbors
-			std::vector<int> shifts = shuffled_range( 0, (lkx+rkx+1) * (lky+rky+1) - 1 );
-			for ( unsigned nodeId = 0;  nodeId < shifts.size();  ++nodeId ) {
-				const int i = ( shifts[nodeId] % (lky+rky+1) ) - lky;
-				const int j = ( shifts[nodeId] / (lky+rky+1) ) - lkx;
-				EMData* cimage = cimages[i+lky][j+lkx];
+					//  Turned off mirror PAP 04/20/2017
+					Dict retvals = Crosrng_rand(crefim[iref], cimage, numr, previousmax);
+					const float new_peak = static_cast<float>( retvals["qn"] );
+					//cout << new_peak <<endl;
+					if (new_peak > peak) {
+						iy = i * step;
+						ix = j * step;
+						sxs = -ix;
+						sys = -iy;
+						nref = iref;
+						ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
+						peak = new_peak;
+						found_better = (peak > previousmax);
+						//cout << found_better <<endl;
+						// jump out from search
+						if (found_better) break;
+					}
+				}
+			}
+		} else {
+			for ( ;  (tiref < crefim_len) && (! found_better); tiref++) {
+				const int iref = listr[tiref];
+				//
+				std::vector<int> shifts = shuffled_range( 0, (lkx+rkx+1) * (lky+rky+1) - 1 );
+				for ( unsigned nodeId = 0;  nodeId < shifts.size();  ++nodeId ) {
+					const int i = ( shifts[nodeId] % (lky+rky+1) ) - lky;
+					const int j = ( shifts[nodeId] / (lky+rky+1) ) - lkx;
+					EMData* cimage = cimages[i+lky][j+lkx];
 
-				Dict retvals = Crosrng_rand_ms(crefim[iref], cimage, numr, previousmax);
-				const float new_peak = static_cast<float>( retvals["qn"] );
-				//cout << new_peak <<endl;
-				if (new_peak > peak) {
-					iy = i * step;
-					ix = j * step;
-					sxs = -ix;
-					sys = -iy;
-					nref = iref;
-					ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
-					peak = new_peak;
-					mirror = static_cast<int>( retvals["mirror"] );
-					found_better = (peak > previousmax);
-					//cout << found_better <<endl;
-					// jump out from search
-					if (found_better) break;
+					Dict retvals = Crosrng_rand_ms(crefim[iref], cimage, numr, previousmax);
+					const float new_peak = static_cast<float>( retvals["qn"] );
+					//cout << new_peak <<endl;
+					if (new_peak > peak) {
+						iy = i * step;
+						ix = j * step;
+						sxs = -ix;
+						sys = -iy;
+						nref = iref;
+						ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
+						peak = new_peak;
+						mirror = static_cast<int>( retvals["mirror"] );
+						found_better = (peak > previousmax);
+						//cout << found_better <<endl;
+						// jump out from search
+						if (found_better) break;
+					}
 				}
 			}
 		}
@@ -23966,7 +24097,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 void Util::version()
 {
  cout <<"  Compile time of util_sparx.cpp  "<< __DATE__ << "  --  " << __TIME__ <<   endl;
- cout <<"  Modification time: 04/18/2017  08:49 AM " <<  endl;
+ cout <<"  Modification time: 04/20/2017  01:11 PM " <<  endl;
 }
 
 

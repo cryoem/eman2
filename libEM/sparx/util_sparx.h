@@ -563,6 +563,7 @@ class FakeKaiserBessel : public KaiserBessel {
 	static Dict Crosrng_rand_e(EMData* circ1, EMData* circ2, vector<int> numr, int neg, float previous_max, float an, int psi_pos);
 	static Dict Crosrng_ew(EMData* circ1, EMData* circ2, vector<int> numr, vector<float> w, int neg);
 
+	static Dict Crosrng(EMData* circ1, EMData* circ2, vector<int> numr, float delta_psi);
 	static Dict Crosrng_ms(EMData* circ1, EMData* circ2, vector<int> numr, float delta_psi);
 	static Dict Crosrng_ms_delta(EMData* circ1, EMData* circ2, vector<int> numr, float delta_start, float delta);
 
