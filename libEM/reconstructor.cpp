@@ -3573,9 +3573,15 @@ int nn4_ctfReconstructor::insert_slice(const EMData* const slice, const Transfor
 		int   ctf_applied = (int) tmp;
 
 		// Generate 2D CTF (EMData object)
-    	ctf_store_real::init( padfft->get_ysize(), padfft->get_attr( "ctf" ) );
-    	EMData* ctf2d = ctf_store_real::get_ctf_real(); //This is in 2D projection plane
-
+    	//ctf_store_real::init( padfft->get_ysize(), padfft->get_attr( "ctf" ) );
+    	//EMData* ctf2d = ctf_store_real::get_ctf_real(); //This is in 2D projection plane
+    	int winsize = padfft->get_ysize();
+		Ctf* ctf = padfft->get_attr( "ctf" );
+		Dict params = ctf->to_dict();	
+		EMData* ctf2d = Util::ctf_img_real(winsize , winsize, 1, params["defocus"], params["apix"],params["voltage"], params["cs"], \
+		params["ampcont"], params["bfactor"], params["dfdiff"], params["dfang"], 1);
+		params.clear();
+		if(ctf) {delete ctf; ctf=0;}
 		int nx=ctf2d->get_xsize(),ny=ctf2d->get_ysize(),nz=ctf2d->get_zsize();
 		float *ctf2d_ptr  = ctf2d->get_data();
 
@@ -3874,9 +3880,15 @@ int nn4_ctfwReconstructor::insert_slice(const EMData* const slice, const Transfo
 			int   ctf_applied = (int) tmp;
 
 			// Generate 2D CTF (EMData object)
-			ctf_store_real::init( padfft->get_ysize(), padfft->get_attr( "ctf" ) );
-			ctf2d = ctf_store_real::get_ctf_real(); //This is in 2D projection plane
-
+			//ctf_store_real::init( padfft->get_ysize(), padfft->get_attr( "ctf" ) );
+		   int winsize = padfft->get_ysize();
+		   Ctf* ctf = padfft->get_attr( "ctf" );
+		   Dict params = ctf->to_dict();	
+		   ctf2d = Util::ctf_img_real(winsize , winsize, 1, params["defocus"], params["apix"],params["voltage"], params["cs"], \
+			   params["ampcont"], params["bfactor"], params["dfdiff"], params["dfang"], 1);
+			params.clear();
+			if(ctf) {delete ctf; ctf=0;}
+			//ctf2d = ctf_store_real::get_ctf_real(); //This is in 2D projection plane
 			int nx=ctf2d->get_xsize(),ny=ctf2d->get_ysize(),nz=ctf2d->get_zsize();
 			float *ctf2d_ptr  = ctf2d->get_data();
 
@@ -3902,6 +3914,7 @@ int nn4_ctfwReconstructor::insert_slice(const EMData* const slice, const Transfo
 
 		checked_delete( ctf2d );
 		checked_delete( padfft );
+		bckgnoise.clear();
 
 	}
 	return 0;
