@@ -956,7 +956,7 @@ def get_anger(angle1, angle2, sym="c1"):
 		X1           = A1[0]*A2[0] + A1[1]*A2[1] + A1[2]*A2[2] 
 		X2           = A1[4]*A2[4] + A1[5]*A2[5] + A1[6]*A2[6]
 		X3           = A1[8]*A2[8] + A1[9]*A2[9] + A1[10]*A2[10] 
-		axes_dis     = (degrees(acos(max(min(X1,1.),-1.0)))+degrees(acos(max(min(X2,1.),-1.0)))+degrees(acos(max(min(X3,1.),-1.0))))/3.0
+		axes_dis     = (lacos(X1)+lacos(X2)+lacos(X3))/3.0
 		axes_dis_min = min(axes_dis_min, axes_dis)
 	return axes_dis_min
 

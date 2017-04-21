@@ -202,7 +202,7 @@ def errors_per_image_original(nn, qt, asi, avgtrans, thresherr=1.0, radius = 1.0
 			#if(d>10.):  print  "  LARGE ERROR",k,i,d,fifi[i], avgtrans[k]
 			ser3 += d
 			n1,n2,n3 = getfvec(fifi[i][0],fifi[i][1])
-			sacos += acos(min(1.0,n1*r1+n2*r2+n3*r3))
+			sacos += lacos(n1*r1+n2*r2+n3*r3)
 			sder += pixel_error_2D(fifi[i][2:], avgtrans[k][2:], r = 1.0)
 		# average deviation in radians
 		sacos /= 3.0
@@ -236,7 +236,7 @@ def errors_per_image(params, avgtrans, thresherr=1.0, radius = 1.0):
 			#if(d>10.):  print  "  LARGE ERROR",k,i,d,fifi[i], avgtrans[k]
 			ser3 += d
 			n1,n2,n3 = getfvec(params[i][k][0],params[i][k][1])
-			sacos += acos( min(1.0, n1*r1+n2*r2+n3*r3) )
+			sacos += lacos(n1*r1+n2*r2+n3*r3)
 			sder += pixel_error_2D(params[i][k][2:], avgtrans[k][2:], r = 1.0)
 		# average deviation in radians
 		sacos /= ll
