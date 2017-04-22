@@ -2222,7 +2222,7 @@ def windowmic(outstacknameall, micpath, outdir, micname, hcoordsname, pixel_size
 	#except:   iseg = 0
 	if importctf:
 		from utilities import generate_ctf
-		ctfs = generate_ctf(ctfs)
+		ctfs = generate_ctf(ctfs[:8])
 	#for h in xrange(nhelices):
 	h=0                                                           ## added by@ming
 	for coords in helices_dict:                                   ## added by@ming
