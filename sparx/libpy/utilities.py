@@ -866,7 +866,9 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, \
 			for i in xrange(k+1):
 					angles.append([i*delta,90.0-j*theta2,90.0])
 
-
+	else:
+		ERROR("even_angles","Symmetry not supported: "+symmetry_string,0)
+	'''
 	elif(symmetry_string[0]  == "o"):
 		from EMAN2 import parsesym
 		if(method.lower() == "s"):  met = "saff"
@@ -885,6 +887,7 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, \
 				q = q.get_params("spider")
 				angles.append([q["phi"], q["theta"],0.0])
 	else :
+		
 		# This is very close to the Saff even_angles routine on the asymmetric unit;
 		# the only parameters used are symmetry and delta
 		# The formulae are given in the Transform Class Paper
@@ -969,14 +972,15 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, \
 			for i in xrange(len(angles)):  angles[i][2] = (720.0-angles[i][0])%360.0
 		#print(Count,NumPoints)
 
-#		look at the distribution
-#		Count =len(angles); piOver= pi/180.0;
-#		phiVec    =  [ angles[k][0] for k in range(Count)] ;
-#		thetaVec  =  [ angles[k][1] for k in range(Count)] ;
-#		xVec = [sin(piOver * angles[k][1]) * cos(piOver * angles[k][0]) for k in range(Count) ]
-#		yVec = [sin(piOver * angles[k][1])* sin(piOver * angles[k][0]) for k in range(Count) ]
-#		zVec = [cos(piOver *  angles[k][1]) for k in range(Count) ]
-#		pylab.plot(yVec,zVec,'.'); pylab.show()
+		#		look at the distribution
+		#		Count =len(angles); piOver= pi/180.0;
+		#		phiVec    =  [ angles[k][0] for k in range(Count)] ;
+		#		thetaVec  =  [ angles[k][1] for k in range(Count)] ;
+		#		xVec = [sin(piOver * angles[k][1]) * cos(piOver * angles[k][0]) for k in range(Count) ]
+		#		yVec = [sin(piOver * angles[k][1])* sin(piOver * angles[k][0]) for k in range(Count) ]
+		#		zVec = [cos(piOver *  angles[k][1]) for k in range(Count) ]
+		#		pylab.plot(yVec,zVec,'.'); pylab.show()
+		'''
 
 
 	return angles
@@ -1278,18 +1282,6 @@ def image_decimate(img, decimation=2, fit_to_fft=1,frequency_low=0, frequency_hi
 		e1  = filt_btwl(img, frequency_low, frequency_high)
 		img = Util.decimate(e1, int(decimation), int(decimation), 1)
 	return  img
-
-def list_syms():
-	"""Create a list of available symmetries
-	"""
-	SymStringVec=[];
-	SymStringVec.append("CSYM");
-	SymStringVec.append("DSYM");
-	SymStringVec.append("TET_SYM");
-	SymStringVec.append("OCT_SYM");
-	SymStringVec.append("ICOS_SYM");
-	SymStringVec.append("ISYM");
-	return SymStringVec
 
 #### -----M--------
 def model_circle(r, nx, ny, nz=1):
@@ -3499,12 +3491,15 @@ def getang(n):
 	from math import atan2, acos, degrees
 	return degrees(atan2(n[1],n[0]))%360.0, degrees(acos(n[2]))%360.0
 
+#  The other one is better written
+"""
+getang3 = angle_between_projections_directions
 def getang3(p1,p2):
-	from utilities import getfvec
-	from math import acos, degrees
+	from utilities import getfvec, lacos
 	n1 = getfvec(p1[0],p1[1])
 	n2 = getfvec(p2[0],p2[1])
-	return degrees(acos(max(min((n1[0]*n2[0]+n1[1]*n2[1]+n1[2]*n2[2]),1.0),-1.0)))
+	return lacos(n1[0]*n2[0]+n1[1]*n2[1]+n1[2]*n2[2])
+"""
 
 def getvec( phi, tht ):
 	from math import radians,cos,sin
@@ -3590,6 +3585,7 @@ def assign_projangles_slow(projangles, refangles):
 
 def nearestk_projangles(projangles, whichone = 0, howmany = 1, sym="c1"):
 	# In both cases mirrored should be treated the same way as straight as they carry the same structural information
+	from utilities import getfvec, getvec
 	lookup = range(len(projangles))
 	if( sym == "c1"):
 		from utilities import getvec
@@ -3848,7 +3844,7 @@ def assign_projdirs_f(projdirs, refdirs, neighbors):
 
 
 def cone_ang( projangles, phi, tht, ant, symmetry = 'c1'):
-	from utilities import getvec
+	from utilities import getvec, getfvec
 	from math import cos, pi, degrees, radians
 
 	cone = cos(radians(ant))
@@ -4110,8 +4106,9 @@ def rotation_between_anglesets(agls1, agls2):
 
 		phi   = radians(phi)
 		theta = radians(theta)
-		x = sin(theta) * sin(phi)
-		y = sin(theta) * cos(phi)
+		sint = sin(theta)
+		x = sint * sin(phi)
+		y = sint * cos(phi)
 		z = cos(theta)
 
 		return [x, y, z]
@@ -4162,22 +4159,14 @@ def angle_between_projections_directions(proj1, proj2):
 	  OUTPUT: angle (in degrees)
 	"""
 	from math import sin, cos, acos, radians, degrees
-	phi1   = radians(proj1[0])
-	phi2   = radians(proj2[0])
+	from utilities import lacos
 	theta1 = radians(proj1[1])
 	theta2 = radians(proj2[1])
-	st1 = sin(theta1)
-	st2 = sin(theta2)
-	ct1 = cos(theta1)
-	ct2 = cos(theta2)
-	cp1cp2_sp1sp2 = cos(phi1 - phi2)
-	temp = st1 * st2 * cp1cp2_sp1sp2 + ct1 * ct2
-	if temp < -1.0:
-		temp = -1.0
-	if temp > 1.0:
-		temp = 1.0
-	return degrees( acos( temp ) )
+	cp1cp2_sp1sp2 = cos(radians(proj1[0]) - radians(proj2[0]))
+	temp = sin(theta1) * sin(theta2) * cp1cp2_sp1sp2 + cos(theta1) * cos(theta2)
+	return lacos( temp )
 
+getang3 = angle_between_projections_directions
 
 def angles_between_anglesets(angleset1, angleset2, indexes=None):
 	"""
@@ -4304,28 +4293,14 @@ def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, ve
 			ref_ang_list[2*i+1] = ref_ang[i][1]
 		return ref_ang_list, len(ref_ang)
 
-	def gv(phi, theta):
-		from math import pi, cos, sin
-		angle_to_rad = pi/180.0
-
-		theta *= angle_to_rad
-		phi *= angle_to_rad
-
-		x = sin(theta)*cos(phi)
-		y = sin(theta)*sin(phi)
-		z = cos(theta)
-
-		return (x, y, z)
-
 	def ang_diff(v1, v2):
 		# The first return value is the angle between two vectors
 		# The second return value is whether we need to mirror one of them (0 - no need, 1 - need)
-		from math import acos, pi, degrees
+		from utilities import lacos
 
 		v = v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2]
-		v = max(min(v,1.0),-1.0)
-		if v >= 0: return degrees(acos(v)), 0
-		else:      return degrees(acos(-v)), 1
+		if v >= 0: return lacos(v), 0
+		else:      return lacos(-v), 1
 
 	t0 = time()
 	proj_list = []
@@ -4335,13 +4310,13 @@ def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, ve
 		for i in xrange(N):
 			proj_ang[i].append(i)
 			proj_ang[i].append(True)
-			vec = gv(proj_ang[i][0], proj_ang[i][1])     # pre-calculate the vector for each projection angles
+			vec = getfvec(proj_ang[i][0], proj_ang[i][1])     # pre-calculate the vector for each projection angles
 			proj_ang[i].append(vec)
 	else:
 		for i in xrange(N):
 			proj_ang[i][3] = i
 			proj_ang[i][4] = True
-			vec = gv(proj_ang[i][0], proj_ang[i][1])     # pre-calculate the vector for each projection angles
+			vec = getfvec(proj_ang[i][0], proj_ang[i][1])     # pre-calculate the vector for each projection angles
 			proj_ang[i].append(vec)
 
 	ref_ang_list1, nref1 = get_ref_ang_list(20.0, sym = symmetry)
@@ -4494,29 +4469,14 @@ def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, ve
 def group_proj_by_phitheta(proj_ang, symmetry = "c1", img_per_grp = 100, verbose = False):
 	from math import exp, pi
 
-	def gv(phi, theta):
-		from math import pi, cos, sin
-		angle_to_rad = pi/180.0
-
-		theta *= angle_to_rad
-		phi *= angle_to_rad
-
-		x = sin(theta)*cos(phi)
-		y = sin(theta)*sin(phi)
-		z = cos(theta)
-
-		return (x, y, z)
-
 	def ang_diff(v1, v2):
 		# The first return value is the angle between two vectors
 		# The second return value is whether we need to mirror one of them (0 - no need, 1 - need)
-		from math import acos, pi
+		from utilities import lacos
 
 		v = v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2]
-		if v > 1: v = 1
-		if v < -1: v = -1
-		if v >= 0: return acos(v)*180/pi, 0
-		else:  return acos(-v)*180/pi, 1
+		if v >= 0: return lacos(v), 0
+		else:  return lacos(-v), 1
 
 
 	def get_ref_ang_list(delta, sym):
@@ -4567,7 +4527,7 @@ def group_proj_by_phitheta(proj_ang, symmetry = "c1", img_per_grp = 100, verbose
 		theta1 = proj_ang[proj_list_new[i][0]][1];
 		phi2 = proj_ang[proj_list_new[i][-1]][0];
 		theta2 = proj_ang[proj_list_new[i][-1]][1];
-		angles_list.append([phi1, theta1, ang_diff(gv(phi1, theta1), gv(phi2, theta2))[0]]);
+		angles_list.append([phi1, theta1, ang_diff(getfvec(phi1, theta1), getfvec(phi2, theta2))[0]]);
 
 	if N%img_per_grp*3 >= 2*img_per_grp:
 		proj_list_new.append([])
@@ -4579,7 +4539,7 @@ def group_proj_by_phitheta(proj_ang, symmetry = "c1", img_per_grp = 100, verbose
 		theta1 = proj_ang[proj_list_new[Ng][0]][1];
 		phi2 = proj_ang[proj_list_new[Ng][-1]][0];
 		theta2 = proj_ang[proj_list_new[Ng][-1]][1];
-		angles_list.append([phi1, theta1, ang_diff(gv(phi1, theta1), gv(phi2, theta2))[0]]);
+		angles_list.append([phi1, theta1, ang_diff(getfvec(phi1, theta1), getfvec(phi2, theta2))[0]]);
 	elif N%img_per_grp != 0:
 		for i in xrange(Ng*img_per_grp, N):
 			proj_list_new[-1].append(abs(proj_list[i]))
@@ -4587,34 +4547,29 @@ def group_proj_by_phitheta(proj_ang, symmetry = "c1", img_per_grp = 100, verbose
 
 	return proj_list_new, angles_list, mirror_list
 
+def lacos(x):
+	"""
+		compute acos(x) in degrees after enforcing -1<=x<=1
+	"""
+	from math import degrees, acos
+	return  degrees(acos(max(-1.0,min(1.0,x))))
+
 def nearest_proj(proj_ang, img_per_grp=100, List=[]):
+	from utilities import getfvec
 	from math import exp, pi
 	from sets import Set
 	from time import time
 	from random import randint
 
-	def gv(phi, theta):
-		from math import radians, cos, sin
-
-		theta = radians(theta)
-		phi   = radians(phi)
-
-		x = sin(theta)*cos(phi)
-		y = sin(theta)*sin(phi)
-		z = cos(theta)
-
-		return (x, y, z)
-
 	def ang_diff(v1, v2):
 		# The first return value is the angle between two vectors
 		# The second return value is whether we need to mirror one of them (0 - no need, 1 - need)
 		from math import acos, degrees
+		from utilities import lacos
 
 		v = v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2]
-		if v > 1: v = 1
-		if v < -1: v = -1
-		if v >= 0: return degrees(acos(v)), 0
-		else:  return degrees(acos(-v)), 1
+		if v >= 0: return lacos(v), 0
+		else:  return lacos(-v), 1
 
 	def get_ref_ang_list(delta, sym):
 		ref_ang = even_angles(delta, symmetry=sym)
@@ -4686,7 +4641,7 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 	for i in xrange(N):
 		phi = proj_ang[i][0]
 		theta = proj_ang[i][1]
-		vec[i] = gv(phi, theta)
+		vec[i] = getfvec(phi, theta)
 		if theta > 90.0:
 			theta = 180.0-theta
 			phi  += 180.0
