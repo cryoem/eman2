@@ -3488,6 +3488,9 @@ def parse_user_function(opt_string):
 		return opt_string
 
 def getang(n):
+	"""
+	get angle from a 2D normal vector
+	"""
 	from math import atan2, acos, degrees
 	return degrees(atan2(n[1],n[0]))%360.0, degrees(acos(n[2]))%360.0
 
@@ -4179,7 +4182,8 @@ def angles_between_anglesets(angleset1, angleset2, indexes=None):
 	  OUTPUT: list of floats - angles in degrees (the n-th element of the list equals the angle between n-th projections directions from the anglesets)
 	  The third parameter (indexes) is optional and may be set to list of indexes. In that case only elements from given list are taken into account.
 	"""
-	from EMAN2 import Transform
+	from fundamentals import rotate_params
+	from utilities import rotation_between_anglesets, angle_between_projections_directions
 
 	if indexes != None:
 		new_ang1 = []
@@ -4191,18 +4195,11 @@ def angles_between_anglesets(angleset1, angleset2, indexes=None):
 		angleset2 = new_ang2
 
 	rot = rotation_between_anglesets(angleset1, angleset2)
-	T2 = Transform({"type":"spider","phi":rot[0],"theta":rot[1],"psi":rot[2],"tx":0.0,"ty":0.0,"tz":0.0,"mirror":0,"scale":1.0})
-	angles = []
-	angle_errors = []
-	for i in xrange(len(angleset1)):
-		T1 = Transform({"type":"spider","phi":angleset1[i][0],"theta":angleset1[i][1],"psi":angleset1[i][2],"tx":0.0,"ty":0.0,"tz":0.0,"mirror":0,"scale":1.0})
-		T  = T1*T2
-		d  = T.get_params("spider")
-		angles.append([d["phi"], d["theta"], d["psi"]])
-		angle_errors.append( angle_between_projections_directions(angles[i], angleset2[i]) )
-	return angle_errors
+	angleset1 = rotate_params([angleset1[i] for i in xrange(len(angleset1))],[-rot[2],-rot[1],-rot[0]])
+	return [angle_between_projections_directions(angleset1[i], angleset2[i]) for i in xrange(len(angleset1))]
 
-
+"""
+Not used and possibly incorrect
 def phi_theta_to_xyz(ang):
 	from math import sin, cos, pi, radians
 	phi   = radians( ang[0] )
@@ -4242,7 +4239,7 @@ def average_angles(angles):
 	r = xyz_to_phi_theta(xyz)
 	r[2] = sum_psi / len(angles)  # TODO - correct psi calculations !!!!
 	return r
-
+"""
 
 def get_pixel_size(img):
 	"""

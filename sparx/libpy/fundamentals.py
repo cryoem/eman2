@@ -1700,7 +1700,7 @@ class symclass():
 		#  input is a list of lists  [[phi0,theta0,0],[phi1,theta1,0],...]
 		#  psi is ignored
 		#  output is [[phi0,theta0,0],[phi0,theta0,0]_SYM1,...,[phi1,theta1,],[phi1,theta1,]_SYM1,...]
-		if( self.sym[0] == "c" or self.sym == "d" ):
+		if( self.sym[0] == "c" or self.sym[0] == "d" ):
 			temp = Util.symmetry_neighbors(angles, self.sym)
 			nt = len(temp)/3
 			return [[temp[l*3],temp[l*3+1],0.0] for l in xrange(nt) ]
@@ -1721,13 +1721,20 @@ class symclass():
 		return sang
 
 
-	def reduce_angles_list(self, angles, inc_mirror=1):
+	def reduce_anglesets(self, angles, inc_mirror=1):
 		from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
+		import types
 		is_platonic_sym = self.sym[0] == "o" or self.sym[0] == "t" or self.sym[0] == "i"
 		if(self.sym[0] == "c"): qs = 360.0/self.nsym
 		elif(self.sym[0] == "d"): qs = 720.0/self.nsym
+		if( type(angles[0]) is types.ListType):
+			toprocess = angles
+			lis = True
+		else:
+			toprocess = [angles]
+			lis = False
 		redang = []
-		for q in angles:
+		for q in toprocess:
 			if( inc_mirror == 0 and q[1]>90.0): phi = 360.0-q[0]; theta = 180.0 - q[1]; psi = (180.0 + q[2])%360.0
 			else: phi = q[0]; theta = q[1]; psi = q[2]
 			if is_platonic_sym:
@@ -1745,7 +1752,8 @@ class symclass():
 
 			redang.append([phi, theta, psi])
 
-		return redang
+		if lis: return redang
+		else: return redang[0]
 
 	def reduce_angles(self, phiin, thetain, psiin, inc_mirror=1):
 		from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
@@ -1839,6 +1847,8 @@ class symclass():
 				for k in xrange(len(angles)): angles[k][2] = (720.0 - angles[k][0])%360.0
 			if( (self.sym[0] == "c" or self.sym[0] == "d") and ((theta2 == 180.) or (theta2 >= 180. and delta == 180.0))):  angles.append( [0.0, 180.0, 0.0] )
 
+		"""
+		#  Helical symmetry should not be here
 		elif(self.sym[0]  == "s"):
 
 			#if symetry is "s", deltphi=delta, theata intial=theta1, theta end=90, delttheta=theta2
@@ -1873,6 +1883,6 @@ class symclass():
 
 				for i in xrange(k+1):
 						angles.append([i*delta,90.0-j*theta2,90.0])
-
+			"""
 		return angles
 

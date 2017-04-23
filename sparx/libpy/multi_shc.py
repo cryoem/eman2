@@ -125,7 +125,7 @@ def find_common_subset(projs, target_threshold=2.0, minimal_subset_size=3, sym =
 	#
 	while(True):
 		for i in subset:
-			avg_diff_per_image[i] = -1.0
+			avg_diff_per_image[i] = 0.0
 		#  extract images in common subset
 		if( sym[0] == "d"):
 			projs2 = [0.0]*sc
@@ -1487,7 +1487,7 @@ def reduce_dsym_angles(p1, sym):
 
 def mirror_and_reduce_dsym(params, sym):
 	# For D symmetry there are two equivalen positions that agree with given Dn symmetry
-	#  The second is rotated by 360/(2n) degrees.
+	#  The second is rotated by 360/n degrees.
 	
 	from utilities import get_symt, get_sym, getfvec
 	from EMAN2 import Vec2f, Transform, EMData

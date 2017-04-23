@@ -836,7 +836,6 @@ def rotate_angleset_to_match(agls1, agls2):
 
 	return rotate_params(agls1,[-t1[2],-t1[1],-t1[0]])
 
-
 def ordersegments(infilaments, ptclcoords):
 	'''
 	Input:
