@@ -5995,7 +5995,7 @@ def update_tracker(shell_line_command):
 	#parser_no_default.add_option("--hardmask",			   		action="store_true")
 	parser_no_default.add_option("--lentop",			    	type="int")
 	parser_no_default.add_option("--ref_a",   		       		type="string")
-	parser_no_default.add_option("--sym",     		       		type="string")# rare to change sym; however, keep it an option.
+	parser_no_default.add_option("--symmetry",    	       		type="string")# rare to change sym; however, keep it an option.
 	parser_no_default.add_option("--center_method",				type="int")
 	parser_no_default.add_option("--target_radius", 			type="int")
 	parser_no_default.add_option("--mask3D",		         	type="string")
