@@ -1324,12 +1324,16 @@ def steptwo(tvol, tweight, treg, cfsc = None, regularized = True):
 	elif(nx < 2*Tracker["constants"]["nnxo"] ):
 		tvol = fpol(tvol, 2*Tracker["constants"]["nnxo"], 2*Tracker["constants"]["nnxo"], 2*Tracker["constants"]["nnxo"], RetReal = False, normalize = False)
 
-	tvol = fft(fshift(tvol,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"]))
-	tvol = Util.window(tvol, Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
-	tvol = cosinemask(tvol, Tracker["constants"]["nnxo"]//2-1,5, None)
+	tvol = fft(tvol)
+	tvol = cyclic_shift(tvol,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
+	tvol.set_attr("npad",2)
 	tvol.div_sinc(1)
+	tvol.del_attr("npad")
+	tvol = Util.window(tvol, Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
+	tvol = cosinemask(tvol,Tracker["constants"]["nnxo"]//2-1,5, None) # clean artifacts in corners
+
 	return tvol
-	
+
 def steptwo_mpi(tvol, tweight, treg, cfsc = None, regularized = True, color = 0):
 	global Tracker, Blockdata
 
@@ -1404,7 +1408,6 @@ def steptwo_mpi(tvol, tweight, treg, cfsc = None, regularized = True, color = 0)
 		tvol.div_sinc(1)
 		tvol.del_attr("npad")
 		tvol = Util.window(tvol, Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
-		#tvol = cosinemask(tvol,Tracker["constants"]["nnxo"]//2-1,5, None)
 		tvol = cosinemask(tvol,Tracker["constants"]["nnxo"]//2-1,5, None) # clean artifacts in corners
 		return tvol
 	else:  return None
