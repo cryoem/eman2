@@ -1,5 +1,5 @@
 = Name =
-sxcompute_isac_avg - New Beautifier: Beautify the ISAC 2D clustering result with the original pixel size.
+sxcompute_isac_avg - Beautifier: Beautify the ISAC 2D clustering result with the original pixel size.
 
 = Usage =
 
