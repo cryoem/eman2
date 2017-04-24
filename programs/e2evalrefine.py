@@ -429,7 +429,7 @@ def main():
 			eo=j%2
 			rmsd=sqrt((r[0]-r[8])**2+(r[1]-r[9])**2+(r[2]-r[10])**2+(r[3]-r[11])**2)
 			if options.includeprojs:
-				fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{};{};{}\n".format(r[0],r[1],r[2],r[3],r[8],r[9],r[10],r[11],rmsd,r[5],r[6],r[12],r[13],r[14],r[15],jj,cptcl[eo],j,pf))
+				fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{};{};{}\n".format(r[0],r[1],r[2],r[3],r[8],r[9],r[10],r[11],rmsd,r[4],r[5],r[6],r[12],r[13],r[14],r[15],jj,cptcl[eo],j,pf))
 			else:
 				fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{}\n".format(r[0],r[1],r[2],r[3],r[8],r[9],r[10],r[11],rmsd,r[4],r[5],r[6],r[12],r[13],r[14],r[15],jj,cptcl[eo]))
 
@@ -875,8 +875,8 @@ def main():
 				lastmap=str(jsparm["last_map"])
 				lastiter=int(lastmap.split("/")[-1].split("_")[-1][:2])
 				firstmap="{}/threed_00_even.hdf".format(d)
-				starttime=os.stat(firstmap).st_ctime
-				endtime=os.stat(lastmap).st_ctime
+				starttime=os.stat(firstmap).st_mtime
+				endtime=os.stat(lastmap).st_mtime
 				print lastmap
 				box=EMData(lastmap,0,True)["nx"]
 				targetres=jsparm["targetres"]

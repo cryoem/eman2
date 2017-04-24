@@ -503,7 +503,8 @@ void LocalWeightAverager::add_image(EMData * image)
 	int nz = image->get_zsize();
 
 	if (nimg == 1) {
-		result = new EMData(nx,ny,nz);
+		result = image->copy_head();
+		result->set_size(nx, ny, nz);
 		result->to_zero();
 
 		normimage = params.set_default("normimage", (EMData*)0);
