@@ -23,14 +23,12 @@ install:
 
     # Add our channels.
     - cmd: conda config --set show_channel_urls true
-    - cmd: conda config --add channels conda-forge
-    - cmd: conda config --add channels cryoem
 
     # Configure the VM.
     - cmd: set CPU_COUNT=2
     - cmd: conda install --quiet --yes conda-build
     - cmd: conda config --set add_pip_as_python_dependency false
-    - cmd: conda install -n root --yes --quiet vs2008_express_vc_python_patch
+    - cmd: conda install -n root --yes --quiet vs2008_express_vc_python_patch -c conda-forge
     - cmd: call setup_x64
     - cmd: conda info
     - cmd: conda config --get
@@ -47,6 +45,6 @@ test_script:
     # Install conda-build-all,
     # this may pull older version of conda,
     # but since szip is in the cache, it should skip the download during build
-    - conda install --yes --quiet conda-build-all
+    - conda install --yes --quiet conda-build-all -c conda-forge
     - conda install conda-build=2.1.4 --yes --quiet
     - conda-build-all %APPVEYOR_BUILD_FOLDER%\\recipes --matrix-conditions python 2.7.*
