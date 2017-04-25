@@ -26,10 +26,11 @@ install:
 
     # Configure the VM.
     - cmd: set CPU_COUNT=2
-    - cmd: conda install --quiet --yes conda-build
     - cmd: conda config --set add_pip_as_python_dependency false
     - cmd: conda install -n root --yes --quiet vs2008_express_vc_python_patch -c conda-forge
     - cmd: call setup_x64
+    - cmd: conda install --quiet --yes conda-build
+    - cmd: conda update --yes --quiet conda -c defaults
     - cmd: conda info
     - cmd: conda config --get
 
@@ -39,7 +40,6 @@ build: off
 
 test_script:
     # Update to latest `conda`, because earlier versions fail to download from ftp
-    - conda update --yes --quiet conda -c defaults
     # Only download szip source
     - conda build %APPVEYOR_BUILD_FOLDER%\\recipes\\szip --source --quiet
     # Install conda-build-all,
