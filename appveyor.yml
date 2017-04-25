@@ -39,11 +39,4 @@ install:
 build: off
 
 test_script:
-    # Update to latest `conda`, because earlier versions fail to download from ftp
-    # Only download szip source
-    - conda build %APPVEYOR_BUILD_FOLDER%\\recipes\\szip --source --quiet
-    # Install conda-build-all,
-    # this may pull older version of conda,
-    # but since szip is in the cache, it should skip the download during build
-    - conda install conda-build=2.1.4 --yes --quiet
     - conda build %APPVEYOR_BUILD_FOLDER%\recipes\eman -c cryoem -c defaults -c conda-forge
