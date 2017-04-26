@@ -9,3 +9,4 @@ conda build ${RECIPE_DIR}/fftw-mpi
 conda build ${RECIPE_DIR}/pydusa
 conda install pydusa --use-local --yes
 
+conda inspect linkages pydusa
