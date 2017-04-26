@@ -6042,8 +6042,8 @@ def update_tracker(shell_line_command):
 		Tracker["lentop"] 									= options_no_default_value.lentop
 	if options_no_default_value.ref_a != None:
 		Tracker["constants"]["ref_a"] 						= options_no_default_value.ref_a
-	if options_no_default_value.sym != None:  # this rarely happens. However, keep it an option.
-		sym    												= options_no_default_value.sym
+	if options_no_default_value.symmetry != None:  # this rarely happens. However, keep it an option.
+		sym    												= options_no_default_value.symmetry
 		Tracker["constants"]["symmetry"] 						= sym[0].lower() + sym[1:] 
 	if options_no_default_value.center_method != None:
 		Tracker["constants"]["center_method"] 				= options_no_default_value.center_method
