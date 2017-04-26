@@ -4,4 +4,4 @@ set -x
 
 source activate
 
-conda remove openmpi pydusa fftw-mpi --force
+conda remove openmpi --force
