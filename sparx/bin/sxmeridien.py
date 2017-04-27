@@ -7028,11 +7028,7 @@ def main():
 					fout = open(os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"],"Tracker_%03d.json"%Tracker["mainiteration"]),'w')
 					json.dump(Tracker, fout)
 					fout.close()
-				#  CHECK CONVERGENCE
-				#keepgoing = checkconvergence(keepgoing)
-				#if( keepgoing == 1 ):
 				Tracker["previousoutputdir"] = Tracker["directory"]
-				#if(Blockdata["myid"] == Blockdata["main_node"]):
 				#	print("  MOVING  ON --------------------------------------------------------------------")
 			else: # converged, do final
 				if( Blockdata["subgroup_myid"]> -1): mpi_comm_free(Blockdata["subgroup_comm"])
@@ -7041,13 +7037,13 @@ def main():
 					fout = open(os.path.join(masterdir,"main%03d"%Tracker["mainiteration"],"Tracker_%03d.json"%Tracker["mainiteration"]),'r') # AI already correctly set Tracker["mainiteration"]
 					Tracker_final_iter = convert_json_fromunicode(json.load(fout))
 					line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-					if Tracker_final_iter["bestres"] !=  Tracker["bestres"]: 
-						Tracker_final_iter["bestres"] = Tracker["bestres"] # need update
-						Tracker_final_iter["best"]    = Tracker["best"]
+					if Tracker_final_iter["bestres"] <= Tracker["bestres"]: # need an update even it is equal
+						Tracker_final_iter["bestres"] = Tracker["bestres"]  
+						Tracker_final_iter["best"]    = Tracker["mainiteration"] # replaced by current iteration, decision made outside AI
 						json.dump(Tracker_final_iter, fout)
 						print(line,"The last iteration captures the best resolution")
 					else: print(line,"The last iteration does not capture the best resolution")
-					
+					del Tracker_final_iter
 				mpi_barrier(MPI_COMM_WORLD)
 				
 				Blockdata["ncpuspernode"] 	= 2
