@@ -201,7 +201,7 @@ def handle_exceptional_cases(sxcmd):
 		assert(sxcmd.token_dict["output_directory"].key_base == "output_directory")
 		assert(sxcmd.token_dict["output_directory"].type == "output")
 		sxcmd.token_dict["output_directory"].type = "output_continue"
-	elif sxcmd.name in ["sxsort3d_new"]:
+###	elif sxcmd.name in ["sxsort3d_new"]:
 ###		# DESIGN_NOTE: 2017/03/24 Toshio Moriya
 ###		# The below should be a temporary solution until redesign sxsort3d_new command interface
 ###		assert(sxcmd.token_dict["refinement_method"].key_base == "refinement_method")
@@ -211,12 +211,12 @@ def handle_exceptional_cases(sxcmd):
 ###		sxcmd.token_dict["refinement_method"].is_locked = True
 ###		# sxcmd.token_dict["refinement_method"].default = "SPARX"
 ###		sxcmd.token_dict["refinement_method"].restore = "SPARX"
-		assert(sxcmd.token_dict["refinement_dir"].key_base == "refinement_dir")
-		assert(sxcmd.token_dict["refinement_dir"].is_required == False)
-		sxcmd.token_dict["refinement_dir"].is_required = True
-		assert(sxcmd.token_dict["masterdir"].key_base == "masterdir")
-		assert(sxcmd.token_dict["masterdir"].is_required == False)
-		sxcmd.token_dict["masterdir"].is_required = True
+###		assert(sxcmd.token_dict["refinement_dir"].key_base == "refinement_dir")
+###		assert(sxcmd.token_dict["refinement_dir"].is_required == False)
+###		sxcmd.token_dict["refinement_dir"].is_required = True
+###		assert(sxcmd.token_dict["masterdir"].key_base == "masterdir")
+###		assert(sxcmd.token_dict["masterdir"].is_required == False)
+##		sxcmd.token_dict["masterdir"].is_required = True
 	elif sxcmd.name in ["sxrsort3d"]:
 		# DESIGN_NOTE: 2016/11/23 Toshio Moriya
 		# The below should be a temporary solution until redesign sxrsort3d command interface
@@ -1351,8 +1351,8 @@ def main():
 	sxcmd_config_list.append(SXcmd_config("../doc/3dvariability.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 	# sxcmd_config_list.append(SXcmd_config("../doc/sort3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 ### 	sxcmd_config_list.append(SXcmd_config("../doc/rsort3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
-	sxcmd_config_list.append(SXcmd_config("../doc/rsort3d-1105.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_rsort3d()))
-### 	sxcmd_config_list.append(SXcmd_config("../doc/sort3d_new.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_sort3d_new()))
+### 	sxcmd_config_list.append(SXcmd_config("../doc/rsort3d-1105.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_rsort3d()))
+	sxcmd_config_list.append(SXcmd_config("../doc/sort3d_new.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_sort3d_new()))
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_local()))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_refine3d_postprocess()))
 
