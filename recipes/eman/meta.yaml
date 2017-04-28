@@ -9,7 +9,7 @@ requirements:
     {% set reqs_common = [
             "python 2.7.*",
             "boost 1.61.*",
-            "fftw",
+            "fftw-mpi",
             "numpy",
             "ftgl",
             "freetype",
@@ -24,6 +24,7 @@ requirements:
     build:
         - cmake
         - szip  # [win]
+        - msinttypes  # [win]
         
         {% for req in reqs_common %}
         - {{ req }}

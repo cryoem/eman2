@@ -6,48 +6,32 @@ environment:
       CONDA_INSTALL_LOCN: C:\\Miniconda-x64
 
 
-# We always use a 64-bit machine, but can build x86 distributions
-# with the TARGET_ARCH variable.
 platform:
     - x64
 
 install:
-    - cmd: set
+    - set
     # Cywing's git breaks conda-build. (See https://github.com/conda-forge/conda-smithy-feedstock/pull/2.)
-    - cmd: rmdir C:\cygwin /s /q
+    - rmdir C:\cygwin /s /q
 
-    # Add path, activate `conda` and update conda.
-    - cmd: call %CONDA_INSTALL_LOCN%\Scripts\activate.bat
+    - call %CONDA_INSTALL_LOCN%\Scripts\activate.bat
+    - set PYTHONUNBUFFERED=1
+    - set CPU_COUNT=2
 
-    - cmd: set PYTHONUNBUFFERED=1
+    - conda config --set show_channel_urls true
 
-    # Add our channels.
-    - cmd: conda config --set show_channel_urls true
-    - cmd: conda config --add channels conda-forge
-    - cmd: conda config --add channels gorgoncryoem/label/dependency
-    - cmd: conda config --add channels shadow_walker/label/dev
+    - conda install -n root --yes --quiet vs2008_express_vc_python_patch -c conda-forge
+    - call setup_x64
 
-    # Configure the VM.
-    - cmd: set CPU_COUNT=2
-    - cmd: conda install --quiet --yes conda-build
-    - cmd: conda config --set add_pip_as_python_dependency false
-    - cmd: conda install -n root --yes --quiet vs2008_express_vc_python_patch
-    - cmd: call setup_x64
-    - cmd: conda info
-    - cmd: conda config --get
+    - conda install --quiet --yes conda-build
+    - conda update --yes --quiet conda -c defaults
+
+    - conda info
+    - conda config --get
 
 
 # Skip .NET project specific build phase.
 build: off
 
 test_script:
-    # Update to latest `conda`, because earlier versions fail to download from ftp
-    - conda update --yes --quiet conda -c defaults
-    # Only download szip source
-    - conda build %APPVEYOR_BUILD_FOLDER%\\recipes\\szip --source --quiet
-    # Install conda-build-all,
-    # this may pull older version of conda,
-    # but since szip is in the cache, it should skip the download during build
-    - conda install --yes --quiet conda-build-all
-    - conda install conda-build=2.1.4 --yes --quiet
-    - conda-build-all %APPVEYOR_BUILD_FOLDER%\\recipes --matrix-conditions python 2.7.*
+    - conda build %APPVEYOR_BUILD_FOLDER%\recipes\eman -c cryoem -c defaults -c conda-forge
