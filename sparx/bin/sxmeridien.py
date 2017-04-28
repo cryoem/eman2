@@ -7034,13 +7034,16 @@ def main():
 				if( Blockdata["subgroup_myid"]> -1): mpi_comm_free(Blockdata["subgroup_comm"])
 				# now let check whether we need update bestres
 				if(Blockdata["myid"] == Blockdata["main_node"]):
-					fout = open(os.path.join(masterdir,"main%03d"%Tracker["mainiteration"],"Tracker_%03d.json"%Tracker["mainiteration"]),'r+') # AI already correctly set Tracker["mainiteration"]
+					fout = open(os.path.join(masterdir,"main%03d"%Tracker["mainiteration"],"Tracker_%03d.json"%Tracker["mainiteration"]),'r') # AI already correctly set Tracker["mainiteration"]
 					Tracker_final_iter = convert_json_fromunicode(json.load(fout))
+					fout.close()
 					line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 					if Tracker_final_iter["bestres"] <= Tracker["bestres"]: # need an update even it is equal
 						Tracker_final_iter["bestres"] = Tracker["bestres"]  
-						Tracker_final_iter["best"]    = Tracker["mainiteration"] # replaced by current iteration, decision made outside AI
+						Tracker_final_iter["constants"]["best"] = Tracker["mainiteration"] # replaced by current iteration, decision made outside AI
+						fout = open(os.path.join(masterdir,"main%03d"%Tracker["mainiteration"],"Tracker_%03d.json"%Tracker["mainiteration"]),'w+')
 						json.dump(Tracker_final_iter, fout)
+						fout.close()
 						print(line,"The last iteration captures the best resolution")
 					else: print(line,"The last iteration does not capture the best resolution")
 					del Tracker_final_iter
