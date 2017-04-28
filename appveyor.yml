@@ -10,24 +10,24 @@ platform:
     - x64
 
 install:
-    - cmd: set
+    - set
     # Cywing's git breaks conda-build. (See https://github.com/conda-forge/conda-smithy-feedstock/pull/2.)
-    - cmd: rmdir C:\cygwin /s /q
+    - rmdir C:\cygwin /s /q
 
-    - cmd: call %CONDA_INSTALL_LOCN%\Scripts\activate.bat
-    - cmd: set PYTHONUNBUFFERED=1
-    - cmd: set CPU_COUNT=2
+    - call %CONDA_INSTALL_LOCN%\Scripts\activate.bat
+    - set PYTHONUNBUFFERED=1
+    - set CPU_COUNT=2
 
-    - cmd: conda config --set show_channel_urls true
+    - conda config --set show_channel_urls true
 
-    - cmd: conda install -n root --yes --quiet vs2008_express_vc_python_patch -c conda-forge
-    - cmd: call setup_x64
+    - conda install -n root --yes --quiet vs2008_express_vc_python_patch -c conda-forge
+    - call setup_x64
 
-    - cmd: conda install --quiet --yes conda-build
-    - cmd: conda update --yes --quiet conda -c defaults
+    - conda install --quiet --yes conda-build
+    - conda update --yes --quiet conda -c defaults
 
-    - cmd: conda info
-    - cmd: conda config --get
+    - conda info
+    - conda config --get
 
 
 # Skip .NET project specific build phase.
