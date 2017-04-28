@@ -6,8 +6,6 @@ environment:
       CONDA_INSTALL_LOCN: C:\\Miniconda-x64
 
 
-# We always use a 64-bit machine, but can build x86 distributions
-# with the TARGET_ARCH variable.
 platform:
     - x64
 
@@ -16,20 +14,18 @@ install:
     # Cywing's git breaks conda-build. (See https://github.com/conda-forge/conda-smithy-feedstock/pull/2.)
     - cmd: rmdir C:\cygwin /s /q
 
-    # Add path, activate `conda` and update conda.
     - cmd: call %CONDA_INSTALL_LOCN%\Scripts\activate.bat
-
     - cmd: set PYTHONUNBUFFERED=1
+    - cmd: set CPU_COUNT=2
 
-    # Add our channels.
     - cmd: conda config --set show_channel_urls true
 
-    # Configure the VM.
-    - cmd: set CPU_COUNT=2
     - cmd: conda install -n root --yes --quiet vs2008_express_vc_python_patch -c conda-forge
     - cmd: call setup_x64
+
     - cmd: conda install --quiet --yes conda-build
     - cmd: conda update --yes --quiet conda -c defaults
+
     - cmd: conda info
     - cmd: conda config --get
 
