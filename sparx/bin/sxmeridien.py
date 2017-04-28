@@ -7041,7 +7041,7 @@ def main():
 					if Tracker_final_iter["bestres"] <= Tracker["bestres"]: # need an update even it is equal
 						Tracker_final_iter["bestres"] = Tracker["bestres"]  
 						Tracker_final_iter["constants"]["best"] = Tracker["mainiteration"] # replaced by current iteration, decision made outside AI
-						fout = open(os.path.join(masterdir,"main%03d"%Tracker["mainiteration"],"Tracker_%03d.json"%Tracker["mainiteration"]),'w+')
+						fout = open(os.path.join(masterdir,"main%03d"%Tracker["mainiteration"],"Tracker_%03d.json"%Tracker["mainiteration"]),'w')
 						json.dump(Tracker_final_iter, fout)
 						fout.close()
 						print(line,"The last iteration captures the best resolution")
