@@ -5823,10 +5823,9 @@ def do_ctrefromsort3d_get_maps_mpi(ctrefromsort3d_iter_dir):
 			tvol0 		= model_blank(1)
 			tweight0 	= model_blank(1)
 			treg0 		= model_blank(1)
-		if(Blockdata["fftwmpi"] and ( Blockdata["myid_on_node"] == 0 )):
-			tvol0 = steptwo(tvol0, tweight0, treg0, cfsc, True)
-		else:
-			tvol0 = steptwo_mpi(tvol0, tweight0, treg0, cfsc, True, color = Blockdata["node_volume"][1])
+		if(not Blockdata["fftwmpi"]): 
+			if( Blockdata["myid_on_node"] == 0):tvol0 = steptwo(tvol0, tweight0, treg0, cfsc, True)
+		else: tvol0 = steptwo_mpi(tvol0, tweight0, treg0, cfsc, True, color = Blockdata["node_volume"][1])
 		del tweight0, treg0
 		if( Blockdata["myid_on_node"] == 0 ):
 			tvol0.write_image(os.path.join(Tracker["directory"], "vol_0_%03d.hdf")%Tracker["mainiteration"])
@@ -5839,10 +5838,10 @@ def do_ctrefromsort3d_get_maps_mpi(ctrefromsort3d_iter_dir):
 			tvol1 		= model_blank(1)
 			tweight1 	= model_blank(1)
 			treg1 		= model_blank(1)
-		if(Blockdata["fftwmpi"] and ( Blockdata["myid_on_node"] == 0 )):
-			tvol1 = steptwo(tvol1, tweight1, treg1, cfsc, True)
-		else:
-			tvol1 = steptwo_mpi(tvol1, tweight1, treg1, cfsc, True,  color = Blockdata["node_volume"][0])
+		if(not Blockdata["fftwmpi"]): 
+			if ( Blockdata["myid_on_node"] == 0 ): tvol1 = steptwo(tvol1, tweight1, treg1, cfsc, True)
+
+		else: tvol1 = steptwo_mpi(tvol1, tweight1, treg1, cfsc, True,  color = Blockdata["node_volume"][0])
 		del tweight1, treg1
 		if( Blockdata["myid_on_node"] == 0 ):
 			tvol1.write_image(os.path.join(Tracker["directory"], "vol_1_%03d.hdf")%Tracker["mainiteration"])
@@ -6206,7 +6205,8 @@ def main():
 	create_subgroup()
 
 	Blockdata["rkeepf"] = 0.90
-	Blockdata["fftwmpi"] = options.fftwmpi
+	if options.fftwmpi: Blockdata["fftwmpi"] = True
+	else: Blockdata["fftwmpi"] = False
 
 	if not update_options: #<<<-------Fresh run
 		#  Constant settings of the project
@@ -6885,10 +6885,9 @@ def main():
 								tvol0 = model_blank(1)
 								tweight0 = model_blank(1)
 								treg0 = model_blank(1)
-							if(Blockdata["fftwmpi"] and ( Blockdata["myid_on_node"] == 0 )):
-								tvol0 = steptwo(tvol0, tweight0, treg0, cfsc, True)
-							else:
-								tvol0 = steptwo_mpi(tvol0, tweight0, treg0, cfsc, True, color = Blockdata["node_volume"][1])
+							if( not Blockdata["fftwmpi"]):
+								if ( Blockdata["myid_on_node"] == 0 ): tvol0 = steptwo(tvol0, tweight0, treg0, cfsc, True)
+							else: tvol0 = steptwo_mpi(tvol0, tweight0, treg0, cfsc, True, color = Blockdata["node_volume"][1])
 							del tweight0, treg0
 							if( Blockdata["myid_on_node"] == 0 ):
 								#--  memory_check(Blockdata["myid"],"first node, before masking")
@@ -6918,10 +6917,9 @@ def main():
 								tvol1 = model_blank(1)
 								tweight1 = model_blank(1)
 								treg1 = model_blank(1)
-							if(Blockdata["fftwmpi"] and ( Blockdata["myid_on_node"] == 0 )):
-								tvol1 = steptwo_mpi(tvol1, tweight1, treg1, cfsc, True)
-							else:
-								tvol1 = steptwo_mpi(tvol1, tweight1, treg1, cfsc, True,  color = Blockdata["node_volume"][0])
+							if(not Blockdata["fftwmpi"]): 
+								if ( Blockdata["myid_on_node"] == 0):tvol1 = steptwo(tvol1, tweight1, treg1, cfsc, True)
+							else: tvol1 = steptwo_mpi(tvol1, tweight1, treg1, cfsc, True,  color = Blockdata["node_volume"][0])
 							del tweight1, treg1
 							if( Blockdata["myid_on_node"] == 0 ):
 								#--  memory_check(Blockdata["myid"],"second node, before masking")
