@@ -5823,7 +5823,10 @@ def do_ctrefromsort3d_get_maps_mpi(ctrefromsort3d_iter_dir):
 			tvol0 		= model_blank(1)
 			tweight0 	= model_blank(1)
 			treg0 		= model_blank(1)
-		tvol0 = steptwo_mpi(tvol0, tweight0, treg0, cfsc, True, color = Blockdata["node_volume"][1])
+		if(Blockdata["fftwmpi"] and ( Blockdata["myid_on_node"] == 0 )):
+			tvol0 = steptwo(tvol0, tweight0, treg0, cfsc, True)
+		else:
+			tvol0 = steptwo_mpi(tvol0, tweight0, treg0, cfsc, True, color = Blockdata["node_volume"][1])
 		del tweight0, treg0
 		if( Blockdata["myid_on_node"] == 0 ):
 			tvol0.write_image(os.path.join(Tracker["directory"], "vol_0_%03d.hdf")%Tracker["mainiteration"])
@@ -5836,7 +5839,10 @@ def do_ctrefromsort3d_get_maps_mpi(ctrefromsort3d_iter_dir):
 			tvol1 		= model_blank(1)
 			tweight1 	= model_blank(1)
 			treg1 		= model_blank(1)
-		tvol1 = steptwo_mpi(tvol1, tweight1, treg1, cfsc, True,  color = Blockdata["node_volume"][0])
+		if(Blockdata["fftwmpi"] and ( Blockdata["myid_on_node"] == 0 )):
+			tvol1 = steptwo(tvol1, tweight1, treg1, cfsc, True)
+		else:
+			tvol1 = steptwo_mpi(tvol1, tweight1, treg1, cfsc, True,  color = Blockdata["node_volume"][0])
 		del tweight1, treg1
 		if( Blockdata["myid_on_node"] == 0 ):
 			tvol1.write_image(os.path.join(Tracker["directory"], "vol_1_%03d.hdf")%Tracker["mainiteration"])
@@ -6128,8 +6134,9 @@ def main():
 	parser.add_option("--memory_per_node",          type="float",           default= -1.0,                	help="User provided information about memory per node (NOT per CPU) [in GB] (default 2GB*(number of CPUs per node))")	
 	parser.add_option("--ctrefromsort3d",           action="store_true",    default= False,                	help="Continue local/exhaustive refinement on data subset selected by sort3d. (default False)")
 	parser.add_option("--subset",                   type="string",          default='',                     help="A text contains indexes of the selected data subset")
-	parser.add_option("--oldrefdir",                type="string",          default='',                     help="The old refinement directory where sort3d is initiated")
+	parser.add_option("--oldrefdir",                type="string",          default='',                     help="The old refinement directory from which sort3d is initiated")
 	parser.add_option("--ctrefromiter",             type="int",             default=-1,                     help="The iteration from which refinement will be continued")
+	parser.add_option("--fftwmpi",                  action="store_true",  	default=False,                  help="Use fftwmpi (default False)")
 	
 	(options, args) = parser.parse_args(sys.argv[1:])
 	update_options  = False # restart option
@@ -6146,7 +6153,7 @@ def main():
 		else:
 			orgstack    = args[0] # provided data stack
 			masterdir   = args[1]
-	elif (len(args) == 1):
+	elif(len(args) == 1):
 		if not options.ctrefromsort3d:
 			masterdir 	= args[0]
 			if ((options.do_final ==-1) and (not os.path.exists(masterdir))):
@@ -6161,10 +6168,9 @@ def main():
 			print( "Please run '" + progname + " -h' for detailed options")
 			return 1
 		else:
-			if (not os.path.exists(options.subset)): ERROR("the selected data subset text file does not exist", "meridien",1)
-			elif (not os.path.exists(options.oldrefdir)): ERROR("old refinement directory for ctrefromsort3d does net exist  ","meridien",1)
-			else:
-				masterdir =""
+			if(not os.path.exists(options.subset)): ERROR("the selected data subset text file does not exist", "meridien",1)
+			elif(not os.path.exists(options.oldrefdir)): ERROR("old refinement directory for ctrefromsort3d does net exist  ","meridien",1)
+			else:  masterdir =""
 	global Tracker, Blockdata
 	if options.ctrefromsort3d: update_options  = True
 	#print(  orgstack,masterdir,volinit )
@@ -6200,7 +6206,7 @@ def main():
 	create_subgroup()
 
 	Blockdata["rkeepf"] = 0.90
-
+	Blockdata["fftwmpi"] = options.fftwmpi
 
 	if not update_options: #<<<-------Fresh run
 		#  Constant settings of the project
@@ -6866,7 +6872,7 @@ def main():
 				
 				#  Now that we have the curve, do the reconstruction
 				Tracker["maxfrad"] = Tracker["nxinit"]//2
-				if( Blockdata["no_of_groups"] > 1 ):  lorder = [0,0] #  Two blocks in patallrl
+				if( Blockdata["no_of_groups"] > 1 ):  lorder = [0,0] #  Two blocks in parallel
 				elif( Blockdata["no_of_groups"] == 1 ):  lorder = [0,1] #  One after another
 				for iorder in xrange(2):
 					if( iorder == lorder[0] ):
@@ -6879,7 +6885,10 @@ def main():
 								tvol0 = model_blank(1)
 								tweight0 = model_blank(1)
 								treg0 = model_blank(1)
-							tvol0 = steptwo_mpi(tvol0, tweight0, treg0, cfsc, True, color = Blockdata["node_volume"][1])
+							if(Blockdata["fftwmpi"] and ( Blockdata["myid_on_node"] == 0 )):
+								tvol0 = steptwo(tvol0, tweight0, treg0, cfsc, True)
+							else:
+								tvol0 = steptwo_mpi(tvol0, tweight0, treg0, cfsc, True, color = Blockdata["node_volume"][1])
 							del tweight0, treg0
 							if( Blockdata["myid_on_node"] == 0 ):
 								#--  memory_check(Blockdata["myid"],"first node, before masking")
@@ -6909,7 +6918,10 @@ def main():
 								tvol1 = model_blank(1)
 								tweight1 = model_blank(1)
 								treg1 = model_blank(1)
-							tvol1 = steptwo_mpi(tvol1, tweight1, treg1, cfsc, True,  color = Blockdata["node_volume"][0])
+							if(Blockdata["fftwmpi"] and ( Blockdata["myid_on_node"] == 0 )):
+								tvol1 = steptwo_mpi(tvol1, tweight1, treg1, cfsc, True)
+							else:
+								tvol1 = steptwo_mpi(tvol1, tweight1, treg1, cfsc, True,  color = Blockdata["node_volume"][0])
 							del tweight1, treg1
 							if( Blockdata["myid_on_node"] == 0 ):
 								#--  memory_check(Blockdata["myid"],"second node, before masking")
