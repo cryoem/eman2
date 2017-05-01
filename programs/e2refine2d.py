@@ -171,6 +171,14 @@ def main():
 	if options.fastseed : fastseed="--fastseed"
 	else : fastseed=""
 
+	# store the input arguments forever in the refinement directory
+	db = js_open_dict(options.path+"/0_refine2d_parms.json")
+	db.update(vars(options))
+	db["commandline"]=" ".join(sys.argv)
+	db["timestamp"]=str(time.ctime())
+	db.close()
+
+
 	# if we aren't given starting class-averages, make some
 #	if not options.initial and not "classes_init" in dcts:
 	if not options.initial:
