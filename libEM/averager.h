@@ -243,6 +243,7 @@ namespace EMAN
 			TypeDict d;
 //			d.put("weight", EMObject::XYDATA, "Radial weight. X: 0 - 0.5*sqrt(2). Y contains weights.");
 			d.put("normimage", EMObject::EMDATA, "After finish() will contain the sum of the weights in real-space");
+			d.put("dampnoise", EMObject::FLOAT, "Will set a minimum mean*x for the norm image, damping regions with poor information. Default = 0.5, 0 disables. ");
 			return d;
 		}
 

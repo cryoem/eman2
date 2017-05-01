@@ -524,6 +524,8 @@ EMData * LocalWeightAverager::finish()
 	int ny = images.front()->get_ysize();
 	int nz = images.front()->get_zsize();
 	
+	float dampnoise = params.set_default("dampnoise", (float)0.5);
+	
 	EMData *ret = new EMData(nx,ny,nz);
 	EMData *stg1 = new EMData(nx,ny,nz);
 	
@@ -542,6 +544,12 @@ EMData * LocalWeightAverager::finish()
 		result->add(**im);
 		normimage->add(*imc);
 		delete *im;
+	}
+	
+	if (dampnoise>0) {
+		float mean=normimage->get_attr("mean");
+		float max=normimage->get_attr("maximum");
+		normimage->process_inplace("threshold.clampminmax",Dict("minval",mean*dampnoise,"maxval",max));
 	}
 	
 	result->div(*normimage);
