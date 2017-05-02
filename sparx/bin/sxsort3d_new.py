@@ -3098,8 +3098,14 @@ def do3d(procid, data, newparams, refang, rshifts, norm_per_particle, myid, mpi_
 
 	#  Without filtration
 	from reconstruction import recons3d_trl_struct_MPI
-
+	
 	if( mpi_comm < -1 ): mpi_comm = MPI_COMM_WORDLD
+	if Blockdata["subgroup_myid"]==Blockdata["nodes"][procid]:
+		if( procid == 0 ):
+			cmd = "{} {}".format("mkdir", os.path.join(Tracker["directory"], "tempdir") )
+			if os.path.exists(os.path.join(Tracker["directory"], "tempdir")): print("tempdir exists")
+			else: cmdexecute(cmd)
+	
 	"""
 	tvol, tweight, trol = recons3d_4nnstruct_MPI(myid = Blockdata["subgroup_myid"], main_node = Blockdata["nodes"][procid], prjlist = data, \
 											paramstructure = newparams, refang = refang, delta = Tracker["delta"], CTF = Tracker["constants"]["CTF"],\
@@ -3113,10 +3119,8 @@ def do3d(procid, data, newparams, refang, rshifts, norm_per_particle, myid, mpi_
 											target_size = (2*Tracker["nxinit"]+3), avgnorm = Tracker["avgvaradj"][procid], norm_per_particle = norm_per_particle)
 
 	if Blockdata["subgroup_myid"]==Blockdata["nodes"][procid]:
-		if( procid == 0 ):
-			cmd = "{} {}".format("mkdir", os.path.join(Tracker["directory"], "tempdir") )
-			if os.path.exists(os.path.join(Tracker["directory"], "tempdir")): print("tempdir exists")
-			else: cmdexecute(cmd)
+		while not os.path.exists(os.path.join(Tracker["directory"], "tempdir")):
+			sleep(5)
 		tvol.set_attr("is_complex",0)
 		tvol.write_image(os.path.join(Tracker["directory"], "tempdir", "tvol_%01d_%03d.hdf"%(procid,Tracker["mainiteration"])))
 		tweight.write_image(os.path.join(Tracker["directory"], "tempdir", "tweight_%01d_%03d.hdf"%(procid,Tracker["mainiteration"])))
@@ -3288,6 +3292,7 @@ def do3d_sorting_groups_rec3d(iteration, masterdir, log_main):
 				 	del tvol0, tweight0, treg0
 				else:
 					if( Blockdata["myid_on_node"] == 0):
+						treg0 = get_im(os.path.join(Clusterdir, "tempdir", "trol_0_%03d.hdf"%iteration))
 						tvol0 = steptwo(tvol0, tweight0, treg0, cfsc, False)
 						tvol0.write_image(os.path.join(masterdir, "vol_unfiltered_0_grp%03d.hdf"%index_of_group))			
 						del tvol0, tweight0, treg0
