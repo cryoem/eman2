@@ -1207,7 +1207,7 @@ def do3d_final_mpi(final_iter):
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	if Blockdata["myid"] == Blockdata["main_node"]: print(line, "do3d_final")
 	if Tracker["directory"] !=Tracker["constants"]["masterdir"]: Tracker["directory"] = Tracker["constants"]["masterdir"]
-	carryon = 1 
+	carryon = 1 	
 	if(Blockdata["myid"] == Blockdata["main_shared_nodes"][1]):
 		# post-insertion operations, done only in main_node		
 		tvol0 		= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir", "tvol_0_%03d.hdf"%Tracker["mainiteration"])))
@@ -1219,14 +1219,14 @@ def do3d_final_mpi(final_iter):
 		
 	if(Blockdata["myid"] == Blockdata["main_shared_nodes"][1]):
 		tag = 7007
-		send_EMData(tvol1, Blockdata["main_shared_nodes"][0],    tag, MPI_COMM_WORLD)
+		send_EMData(tvol1, Blockdata["main_shared_nodes"][0], tag, MPI_COMM_WORLD)
 		send_EMData(tweight1, Blockdata["main_shared_nodes"][0], tag, MPI_COMM_WORLD)
 	elif(Blockdata["myid"] == Blockdata["main_shared_nodes"][0]):
 		tag = 7007
 		tvol1    	= recv_EMData(Blockdata["main_shared_nodes"][1], tag, MPI_COMM_WORLD)
 		tweight1    = recv_EMData(Blockdata["main_shared_nodes"][1], tag, MPI_COMM_WORLD)
 		tvol1.set_attr_dict( {"is_complex":1, "is_fftodd":1, 'is_complex_ri': 1, 'is_fftpad': 1} )
-		
+	mpi_barrier(MPI_COMM_WORLD)	
 	# do steptwo
 	if( Blockdata["color"] == Blockdata["node_volume"][1]):
 		if( Blockdata["myid_on_node"] == 0 ):
@@ -1235,10 +1235,10 @@ def do3d_final_mpi(final_iter):
 			tvol0 		= model_blank(1)
 			tweight0 	= model_blank(1)
 			treg0 		= model_blank(1)
-		if Blockdata["fftwmpi"]: tvol0 = steptwo_mpi(tvol0, tweight0, treg0, None,False , color = Blockdata["node_volume"][1])
-		else: 
+		if not Blockdata["fftwmpi"]:
 			if( Blockdata["myid_on_node"] == 0 ):
 				steptwo(tvol0, tweight0, treg0, None, False)
+		else: tvol0 = steptwo_mpi(tvol0, tweight0, treg0, None,False , color = Blockdata["node_volume"][1])
 		del tweight0, treg0
 		if(Blockdata["myid_on_node"] == 0):
 			tvol0.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_0_unfil.hdf"))
@@ -1251,10 +1251,11 @@ def do3d_final_mpi(final_iter):
 			tvol1 		= model_blank(1)
 			tweight1 	= model_blank(1)
 			treg1 		= model_blank(1)
-		if Blockdata["fftwmpi"]: tvol1 = steptwo_mpi(tvol1, tweight1, treg1, None, False,  color = Blockdata["node_volume"][0])
-		else:
+		if not Blockdata["fftwmpi"]:
 			if( Blockdata["myid_on_node"] == 0):
 				tvol1 = steptwo(tvol1, tweight1, treg1, None, False)
+		else:
+			tvol1 = steptwo_mpi(tvol1, tweight1, treg1, None, False,  color = Blockdata["node_volume"][0])
 		del tweight1, treg1
 		if( Blockdata["myid_on_node"] == 0 ):
 			tvol1.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_1_unfil.hdf"))
@@ -6145,6 +6146,12 @@ def main():
 	
 	(options, args) = parser.parse_args(sys.argv[1:])
 	update_options  = False # restart option
+	
+	global Tracker, Blockdata
+	
+	if options.fftwmpi: Blockdata["fftwmpi"] = True
+	else: Blockdata["fftwmpi"] = False
+		
 	#print( "  args  ",args)
 	if( len(args) == 3):
 		volinit 	= args[2]
@@ -6176,7 +6183,7 @@ def main():
 			if(not os.path.exists(options.subset)): ERROR("the selected data subset text file does not exist", "meridien",1)
 			elif(not os.path.exists(options.oldrefdir)): ERROR("old refinement directory for ctrefromsort3d does net exist  ","meridien",1)
 			else:  masterdir =""
-	global Tracker, Blockdata
+	
 	if options.ctrefromsort3d: update_options  = True
 	#print(  orgstack,masterdir,volinit )
 	# ------------------------------------------------------------------------------------
@@ -6211,9 +6218,7 @@ def main():
 	create_subgroup()
 
 	Blockdata["rkeepf"] = 0.90
-	if options.fftwmpi: Blockdata["fftwmpi"] = True
-	else: Blockdata["fftwmpi"] = False
-
+	
 	if not update_options: #<<<-------Fresh run
 		#  Constant settings of the project
 		Constants		       			= {}
