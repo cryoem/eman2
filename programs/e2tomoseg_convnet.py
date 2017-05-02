@@ -49,11 +49,14 @@ def main():
 	(options, args) = parser.parse_args()
 	E2n=E2init(sys.argv,options.ppid)
 	
+	#### parse the options.
 	options.nkernel=[int(i) for i in options.nkernel.split(',')]
 	options.ksize=[int(i) for i in options.ksize.split(',')]
 	if options.poolsz:
 		options.poolsz=[int(i) for i in options.poolsz.split(',')]
 	
+	#### This is supposed to test the overfitting of the network by applying it on pure noise repeatly
+	#### The function is no longer maintained so it may or may not work..
 	if options.dream:
 		os.environ["THEANO_FLAGS"]="optimizer=None"
 		print "Testing on big images, Theano optimizer disabled"
@@ -86,18 +89,18 @@ def main():
 
 	labelshrink=np.prod(options.poolsz)
 	print "loading particles..."
-	particles=load_particles(options.trainset,labelshrink,options.ncopy)
+	particles=load_particles(options.trainset,labelshrink,options.ncopy, rng)
 
 	train_set_x= particles[0]
 	labels=particles[1]
 	shape=particles[2]
-	print "Number of particles: {}".format(train_set_x.shape.eval()[0])
+	ntrain=particles[3]
+	#print "Number of particles: {}".format(train_set_x.shape.eval()[0])
 	
 	# allocate symbolic variables for the data
 	index = T.lscalar()	# index to a [mini]batch
 	x = T.matrix('x')  # the data is presented as rasterized images
 	image_shape=(batch_size, shape[2], shape[0],shape[1])
-	print image_shape,shape
 	
 	if options.from_trained!=None:
 		convnet=load_model(options.from_trained)
@@ -124,24 +127,49 @@ def main():
 			
 		learning_rate=options.learnrate
 		n_train_batches = train_set_x.get_value(borrow=True).shape[0] / batch_size
+		v0=np.inf
+		nbad=0
 		for epoch in xrange(options.niter):
 		# go through the training set
-			c = []
+			
+			c = []   #### train set loss
+			v = []   #### valid set loss
 			if epoch==0:
 				print classify(0,lr=learning_rate,wd=options.weightdecay)
 			for batch_index in xrange(n_train_batches):
-				err=classify(batch_index,
-					lr=learning_rate,
-					wd=options.weightdecay)
-				c.append(err)
-				if epoch==0 and batch_index<5:
-					print err
+				if batch_index*batch_size < ntrain:
+					err=classify(batch_index,
+						lr=learning_rate,
+						wd=options.weightdecay)
+					c.append(err)
+					if epoch==0 and batch_index<5:
+						print err
+				else:
+					err=classify(batch_index,
+						lr=0,
+						wd=options.weightdecay)
+					v.append(err)
+					
+			#print len(v), len(c)
 			learning_rate*=.9
-			print 'Training epoch %d, cost ' % ( epoch),
-			print np.mean(c),", learning rate",learning_rate
+			print "Training epoch {:d}, train loss {:.3f}, learning rate {:.3f}".format(epoch, np.mean(c),  learning_rate),
+			if len(v)>0:
+				print "valid loss {:.3f}".format(np.mean(v)), 
+				if np.mean(v)>v0 and np.mean(v)>np.mean(c):
+					nbad+=1
+					print '*'
+				else:
+					nbad=0
+					print 
+				v0=np.mean(v)
+				if nbad>2:
+					print "loss increase in validation set. Overfitting. Stop."
+					break
+			else:
+				print 
 
 		
-		save_model(convnet, options.netout, options)
+		
 		
 	#######################################
 	#print convnet.clslayer.W.get_value()
@@ -164,53 +192,50 @@ def main():
 			fname="trainout_{}.hdf".format(options.netout)
 		try:os.remove(fname)
 		except: pass
-		print convnet.outsize,shape
+		#print convnet.outsize,shape
 		mid=test_cls()
-		#mid_cent=mid
-		#mid_mean=np.mean(mid_cent)
-		#mid_std=np.std(mid_cent)
-		#print "mean:",mid_mean,"std:",mid_std
-		#print np.shape(test_imgs(0))
-
+		
 		ipt= train_set_x[:nsample]
 		ipt= ipt.eval()
 		
 		lb= labels[:nsample].eval()
-		
+		amp=[]
 		for t in range(nsample):
-			#img=ipt[t].reshape(lth,lth)
+			
+			#### raw image
 			if shape[2]==1:
 				img=ipt[t].reshape(shape[0],shape[1])
 			else:
 				img=ipt[t].reshape(shape[2],shape[0],shape[1])
 				img=img[shape[2]/2]
-			e = from_numpy(img.astype("float32"))
-			#e.mult(-1)
-			#e.write_image("tmpimgs.hdf",-1)
-			#e.process_inplace("normalize")
+			e0 = from_numpy(img.astype("float32"))
+			e0.write_image(fname,-1)
 			
-			e.write_image(fname,-1)
-			
+			#### manual annotation
 			img=lb[t].reshape(convnet.outsize,convnet.outsize)
-			e = from_numpy(img.astype("float32"))
-			#e.process_inplace("normalize")
-			#e.mult(2)
-			e=e.get_clip(Region((convnet.outsize-shape[0])/2,(convnet.outsize-shape[0])/2,shape[0],shape[0]))
-			e.scale(float(shape[0])/float(convnet.outsize))
-			e.write_image(fname,-1)
+			e1 = from_numpy(img.astype("float32"))
+			e1=e1.get_clip(Region((convnet.outsize-shape[0])/2,(convnet.outsize-shape[0])/2,shape[0],shape[0]))
+			e1.scale(float(shape[0])/float(convnet.outsize))
+			e1.process_inplace("threshold.binary", {"value":.67})
+			e1.write_image(fname,-1)
 			
+			#### neural net output
 			img=mid[t].reshape(convnet.outsize,convnet.outsize)
-			#df=(np.mean(img)-mid_mean)/mid_std
-			e = from_numpy(img.astype("float32"))
-			#e.process_inplace("normalize")
-			#e.div(float(mid_std))
-			
-			e=e.get_clip(Region((convnet.outsize-shape[0])/2,(convnet.outsize-shape[0])/2,shape[0],shape[0]))
+			e2 = from_numpy(img.astype("float32"))
+			e2=e2.get_clip(Region((convnet.outsize-shape[0])/2,(convnet.outsize-shape[0])/2,shape[0],shape[0]))
 			#print float(shape[0])/float(convnet.outsize)
-			e.write_image("tmpimgs.hdf",-1)
-			e.scale(float(shape[0])/float(convnet.outsize))
-			e.write_image(fname,-1)
+			e2.scale(float(shape[0])/float(convnet.outsize))
+			e2.write_image(fname,-1)
+			
+			#### measure the amplitude of the neural network output by comparing it to the label
+			e2.mult(e1)
+			amp.append(e2["mean_nonzero"])
+		print "amplitude: ", np.mean(amp)
+		convnet.amplitude=np.mean(amp)
 		print "Writing output on training set in {}".format(fname)
+		
+	save_model(convnet, options.netout, options)
+	
 	print "Done"
 	E2end(E2n)
 
@@ -228,6 +253,7 @@ def save_model(convnet, fname, options=None):
 	hdr["ksize"]=convnet.ksize
 	hdr["poolsz"]=convnet.poolsz
 	hdr["imageshape"]=convnet.image_shape
+	hdr["amplitude"]=convnet.amplitude
 	if options:
 		if options.trainset:
 			hdr["trainset_src"]=options.trainset
@@ -295,6 +321,7 @@ def load_model(fname):
 		savenet.convlayers[i].W.set_value(allw)
 		#print w.shape, b.shape
 	
+	savenet.amplitude=hdr.get_attr_default("amplitude", 1.0)
 	return savenet
 
 def dream(convnet,options):
@@ -388,7 +415,8 @@ def apply_neuralnet(options):
 	
 	fname=options.from_trained
 	hdr=EMData(fname,0)
-		
+	amplitude=hdr.get_attr_default("amplitude", 1.0)
+	if amplitude<=0: amplitude=1.
 	ksize=hdr["ksize"]
 	poolsz=hdr["poolsz"]
 	labelshrink=np.prod(poolsz)
@@ -445,24 +473,11 @@ def apply_neuralnet(options):
 	try: os.remove(options.output)
 	except: pass
 	
-	#lyarr=Array("layers", layers)
-	#jobs=range(nframe)
 	jobs=[]
 	for nf in range(nframe):
-		#jobs.append((1,1,1,1,1))
 		jobs.append((tomo_in, nf, layers))
 		
-	#pool = Pool(options.threads)
-	#pool.map(do_convolve, jobs)
-	#pool.close()
-	#while (True):
-		#if (cout.ready()): break
-		#remaining = cout._number_left
-		#print "Waiting for", remaining, "tasks to complete..."
-		#time.sleep(2)
-	#cout=cout.get()
-	#for c in cout:
-		#c[1].write_image("options.output", c[0])
+		
 	######### threading copied from e2spt_align.py
 	jsd=Queue(0)
 	NTHREADS=max(options.threads+1,2)
@@ -480,13 +495,9 @@ def apply_neuralnet(options):
 	
 		while not jsd.empty():
 			idx,cout=jsd.get()
-			#print cout["maximum"],cout["nx"], cout["ny"]
 			cout=cout.get_clip(Region((cout["nx"]-enx)/2,(cout["ny"]-eny)/2 ,enx, eny))
 			cout.scale(labelshrink)
-			#print (cout["nx"]-enx)/2,eny*(1-labelshrink)/2 ,enx, eny), cout["maximum"]
-			
-			#cout.write_image("tmpseg_03.hdf",idx)
-			#cout.process_inplace("math.fft.resample", {"n":float(1./labelshrink)})
+			cout.div(amplitude)
 			output.insert_clip(cout, [0,0,idx])
 			
 	#if is3d and options.to3d:
@@ -668,18 +679,23 @@ def apply_neuralnet_theano(options):
 	
 	print "Total time:", time.time()-tt0
 	
-def load_particles(ptcls,labelshrink,ncopy=5):
+def load_particles(ptcls,labelshrink,ncopy=5, rng=None):
+	if rng==None:
+		rng=random
 	num=EMUtil.get_image_count(ptcls)/2
 	
 	data=[]
 	label=[]
-	for nc in range(ncopy):
-		for i in range(num):
+	ntrain=-1
+	for i in range(num):
+		for nc in range(ncopy):
 			ptl=EMData(ptcls,i*2)
+			if ntrain<0 and ptl.get_attr_default("valid_set", 0)==1:
+				ntrain=len(data)
 			#ptl.process_inplace("threshold.belowtozero")
 			if ncopy>1:
 				tr=Transform()
-				tr.set_rotation({"type":"2d","alpha":random.random()*360.0})
+				tr.set_rotation({"type":"2d","alpha":rng.random()*360.0})
 				ptl.process_inplace("xform",{"transform":tr})
 			
 			
@@ -697,14 +713,17 @@ def load_particles(ptcls,labelshrink,ncopy=5):
 			#shp=np.shape(ar)
 			label.append(ar.flatten())
 	
+	if ntrain<0: ntrain=len(data)
 	## randomize
-	rndid=range(len(data))
-	random.shuffle(rndid)	
+	rndid=range(ntrain)
+	rng.shuffle(rndid)	
+	rndid=rndid+range(ntrain, len(data))
 	data=[data[i] for i in rndid]
 	label=[label[i] for i in rndid]
 	
+	print "{:d} particles loaded, {:d} in training set, {:d} in validation set".format(len(data), ntrain, len(data)-ntrain)
 	data=np.asarray(data,dtype=theano.config.floatX)
-	print np.std(data.flatten())
+	print "Std of particles: ",np.std(data.flatten())
 	#data/=np.std(data.flatten())*3  #np.max(np.abs(data))
 	data/=3.
 	label=np.asarray(label,dtype=theano.config.floatX)
@@ -715,19 +734,19 @@ def load_particles(ptcls,labelshrink,ncopy=5):
 	shared_y = theano.shared(label,borrow=True)
 	header=EMData(ptcls,0,True)
 	shape=[header["nx"],header["ny"],header["nz"]]
-	return shared_x,shared_y,shape
+	return shared_x,shared_y,shape, ntrain
 
 class StackedConvNet(object):
 	
 	def __init__(self,rng,nkernel,ksize,poolsz,imageshape):
-		
+		self.amplitude =1.
 		self.n_kernel=nkernel
 		self.ksize=ksize
 		self.n_convlayers=len(self.ksize)
 		self.x = T.matrix(name='input')
 		self.image_shape=imageshape
 		input_shape=self.image_shape
-		print input_shape
+		print "Shape of neural networl input: ",input_shape
 		self.convlayers=[]
 		self.params=[]
 		if poolsz:
@@ -897,7 +916,7 @@ class LeNetConvPoolLayer(object):
 		if poolsize>1:
 			self.pooled_out = pool.pool_2d(
 				input=conv_out,
-				ds=self.poolsize,
+				ws=self.poolsize,
 				ignore_border=True
 			)
 		else:

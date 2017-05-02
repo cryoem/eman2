@@ -35,6 +35,7 @@ def main():
 	parser.add_argument("--ncopy",type=int,help="Number of copies for NEGATIVE samples. (number of copies of particles is calculated accordingly) ",default=10, guitype='intbox', row=5, col=0, rowspan=1, colspan=1, mode="set")
 	parser.add_argument("--trainset_output", type=str,help="output file name of the training set.Default is the input particle file name plus _trainset.hdf", default=None,guitype='strbox', row=4, col=0, rowspan=1, colspan=3, mode="set")
 	parser.add_argument("--zthick",type=int,help="Thickness in z ",default=0, guitype='intbox', row=5, col=1, rowspan=1, colspan=1, mode="set")
+	parser.add_argument("--validset",type=float,help="Propotion of particles in validation set. Default is 0.2 ",default=0.2, guitype='floatbox', row=7, col=1, rowspan=1, colspan=1, mode="set")
 
 	##################
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -98,6 +99,7 @@ def main():
 		try: os.remove(options.trainset_output)
 		except: pass
 		print "making {} copies for particles, and {} copies for negative samples".format(p_copy,options.ncopy)
+		imgs=[]
 		if tomo_in and seg_in:
 			n_ptcl=EMUtil.get_image_count(tomo_in)
 			for i in range(n_ptcl):
@@ -110,12 +112,13 @@ def main():
 					rd=random.random()*360
 					tr.set_rotation({"type":"2d","alpha":rd})
 					e=t.process("xform",{"transform":tr})
-					e["ptcl_src"]=tomo_in
 					#e.process_inplace("normalize")
-					e.write_image(options.trainset_output,-1)
+					imgs.append(e)
+					#e.write_image(options.trainset_output,-1)
 					e=s.process("xform",{"transform":tr})
-					e["ptcl_src"]=seg_in
-					e.write_image(options.trainset_output,-1)
+					#e.write_image(options.trainset_output,-1)
+					imgs.append(e)
+		ngood=len(imgs)
 		if neg_in:
 			s=EMData(neg_in,0)
 			s.to_zero()
@@ -129,25 +132,38 @@ def main():
 					tr.set_rotation({"type":"2d","alpha":rd})
 					e=t.process("xform",{"transform":tr})
 					#e.process_inplace("normalize")
-					e["ptcl_src"]=neg_in
-					e.write_image(options.trainset_output,-1)
+					#e.write_image(options.trainset_output,-1)
+					imgs.append(e)
 					e=s.process("xform",{"transform":tr})
-					e["ptcl_src"]=neg_in
-					e.write_image(options.trainset_output,-1)
+					#e.write_image(options.trainset_output,-1)
+					imgs.append(e)
 
 		print "Shuffling particles..."
 		### randomize
-		n=EMUtil.get_image_count(options.trainset_output)
-		idx=range(n/2)
+		n=len(imgs)
+		
+		#n=EMUtil.get_image_count(options.trainset_output)
+		idx=range(int((ngood/2)*(1-options.validset)))+range((ngood/2), int(n/2*(1-options.validset)))
 		random.shuffle(idx)
-		tmpfile="tmpfile_maketomotrainset.hdf"
 		for i in idx:
-			e=EMData(options.trainset_output,i*2)
+			imgs[i*2]["valid_set"]=0
+			imgs[i*2].write_image(options.trainset_output,-1)
+			imgs[i*2+1]["valid_set"]=0
+			imgs[i*2+1].write_image(options.trainset_output,-1)
+			
+		idx=range(int((ngood/2)*(1-options.validset)), ngood/2)+range( int(n/2*(1-options.validset)), n/2)
+		random.shuffle(idx)
+		for i in idx:
+			imgs[i*2]["valid_set"]=1
+			imgs[i*2].write_image(options.trainset_output,-1)
+			imgs[i*2+1]["valid_set"]=1
+			imgs[i*2+1].write_image(options.trainset_output,-1)
+			#e=EMData(options.trainset_output,i*2)
 			#e.process_inplace("normalize")
-			e.write_image(tmpfile,-1)
-			e=EMData(options.trainset_output,i*2+1)
-			e.write_image(tmpfile,-1)
-		shutil.move(tmpfile,options.trainset_output)
+			#e.write_image(tmpfile,-1)
+			#e=EMData(options.trainset_output,i*2+1)
+			#e.write_image(tmpfile,-1)
+		#shutil.move(tmpfile,options.trainset_output)
 		print "Generate a training set of {:d} samples.".format(n/2)
 		
 	print "Done"
