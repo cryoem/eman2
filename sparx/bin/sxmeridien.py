@@ -1235,9 +1235,12 @@ def do3d_final_mpi(final_iter):
 			tvol0 		= model_blank(1)
 			tweight0 	= model_blank(1)
 			treg0 		= model_blank(1)
-		tvol0 = steptwo_mpi(tvol0, tweight0, treg0, None,False , color = Blockdata["node_volume"][1])
+		if Blockdata["fftwmpi"]: tvol0 = steptwo_mpi(tvol0, tweight0, treg0, None,False , color = Blockdata["node_volume"][1])
+		else: 
+			if( Blockdata["myid_on_node"] == 0 ):
+				steptwo(tvol0, tweight0, treg0, None, False)
 		del tweight0, treg0
-		if( Blockdata["myid_on_node"] == 0 ):
+		if(Blockdata["myid_on_node"] == 0):
 			tvol0.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_0_unfil.hdf"))
 	elif( Blockdata["color"] == Blockdata["node_volume"][0]):
 		#--  #--  memory_check(Blockdata["myid"],"second node, before steptwo")
@@ -1248,7 +1251,10 @@ def do3d_final_mpi(final_iter):
 			tvol1 		= model_blank(1)
 			tweight1 	= model_blank(1)
 			treg1 		= model_blank(1)
-		tvol1 = steptwo_mpi(tvol1, tweight1, treg1, None, False,  color = Blockdata["node_volume"][0])
+		if Blockdata["fftwmpi"]: tvol1 = steptwo_mpi(tvol1, tweight1, treg1, None, False,  color = Blockdata["node_volume"][0])
+		else:
+			if( Blockdata["myid_on_node"] == 0):
+				tvol1 = steptwo(tvol1, tweight1, treg1, None, False)
 		del tweight1, treg1
 		if( Blockdata["myid_on_node"] == 0 ):
 			tvol1.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_1_unfil.hdf"))
