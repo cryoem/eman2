@@ -3353,12 +3353,12 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 		cod2 = cod2[lina]
 		cod3 = cod3[lina]
 		cod1 -= cod1[0]
-		tbckg = [tbckg[q] for q in lina]
+		tbckg = [tbckg[int(q)] for q in lina]
 		lina = np.argwhere(cod1 > Tracker["constants"]["expthreshold"])
 		cod1 = cod1[lina]
 		cod2 = cod2[lina]
 		cod3 = cod3[lina]
-		tbckg = [tbckg[q] for q in lina]
+		tbckg = [tbckg[int(q)] for q in lina]
 
 		np.exp(cod1, out=cod1)
 		cod1 /= np.sum(cod1)
@@ -6929,7 +6929,7 @@ def main():
 								tweight1 = model_blank(1)
 								treg1 = model_blank(1)
 							if(not Blockdata["fftwmpi"]): 
-								if ( Blockdata["myid_on_node"] == 0):tvol1 = steptwo(tvol1, tweight1, treg1, cfsc, True)
+								if ( Blockdata["myid_on_node"] == 0):  tvol1 = steptwo(tvol1, tweight1, treg1, cfsc, True)
 							else: tvol1 = steptwo_mpi(tvol1, tweight1, treg1, cfsc, True,  color = Blockdata["node_volume"][0])
 							del tweight1, treg1
 							if( Blockdata["myid_on_node"] == 0 ):
