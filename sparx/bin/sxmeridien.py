@@ -1237,7 +1237,7 @@ def do3d_final_mpi(final_iter):
 			treg0 		= model_blank(1)
 		if not Blockdata["fftwmpi"]:
 			if( Blockdata["myid_on_node"] == 0 ):
-				steptwo(tvol0, tweight0, treg0, None, False)
+				tvol0 = steptwo(tvol0, tweight0, treg0, None, False)
 		else: tvol0 = steptwo_mpi(tvol0, tweight0, treg0, None,False , color = Blockdata["node_volume"][1])
 		del tweight0, treg0
 		if(Blockdata["myid_on_node"] == 0):
@@ -6929,7 +6929,7 @@ def main():
 								tweight1 = model_blank(1)
 								treg1 = model_blank(1)
 							if(not Blockdata["fftwmpi"]): 
-								if ( Blockdata["myid_on_node"] == 0):  tvol1 = steptwo(tvol1, tweight1, treg1, cfsc, True)
+								if ( Blockdata["myid_on_node"] == 0):tvol1 = steptwo(tvol1, tweight1, treg1, cfsc, True)
 							else: tvol1 = steptwo_mpi(tvol1, tweight1, treg1, cfsc, True,  color = Blockdata["node_volume"][0])
 							del tweight1, treg1
 							if( Blockdata["myid_on_node"] == 0 ):
