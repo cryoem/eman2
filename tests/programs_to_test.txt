@@ -102,7 +102,6 @@ e2spt_average_multi.py
 e2spt_binarytree.py
 e2spt_boxer.py
 e2spt_classaverage.py
-e2spt_ctf.py
 e2spt_fftamp.py
 e2spt_hac.py
 e2spt_intrafsc.py
@@ -116,7 +115,6 @@ e2spt_resolutionplot.py
 e2spt_scramblestack.py
 e2spt_simulation.py
 e2spt_stat.py
-e2spt_subtilt.py
 e2spt_tiltstacker.py
 e2spt_translate.py
 e2spt_wedge.py
@@ -129,7 +127,6 @@ e2symsearch3d.py
 e2tilefile.py
 e2tileimage.py
 e2tiltvalidate.py
-e2tomo_ctf.py
 e2tomogram.py
 e2tomopreproc.py
 e2tomoresolution.py
