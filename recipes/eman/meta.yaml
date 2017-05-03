@@ -10,7 +10,7 @@ requirements:
             "python 2.7.*",
             "boost 1.61.*",
             "fftw-mpi",
-            "numpy",
+            "numpy x.x",
             "ftgl",
             "freetype",
             "gsl",
