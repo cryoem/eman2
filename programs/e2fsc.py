@@ -62,6 +62,7 @@ and this program should be regarded as experimental.
 	parser.add_argument("--localsize", type=int, help="Size in pixels of the local region to compute the resolution in",default=-1)
 	parser.add_argument("--overlap", type=int, help="Amount of oversampling to use in local resolution windows. Larger value -> larger output map",default=4)
 	parser.add_argument("--apix", type=float, help="A/pix to use for the comparison (default uses Vol1 apix)",default=0)
+	parser.add_argument("--mask",type=str,help="Mask to apply to both input images before calculation",default=None)
 	#parser.add_argument("--refs",type=str,help="Reference images from the similarity matrix (projections)",default=None)
 	#parser.add_argument("--inimgs",type=str,help="Input image file",default=None)
 	#parser.add_argument("--outimgs",type=str,help="Output image file",default="imgs.hdf")
@@ -83,6 +84,10 @@ and this program should be regarded as experimental.
 
 	v1=EMData(args[0],0)
 	v2=EMData(args[1],0)
+	if options.mask!=None:
+		mask=EMData(options.mask)
+		v1.mult(mask)
+		v2.mult(mask)
 	
 	if options.apix>0 : apix=options.apix
 	else :

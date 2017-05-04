@@ -244,6 +244,7 @@ namespace EMAN
 //			d.put("weight", EMObject::XYDATA, "Radial weight. X: 0 - 0.5*sqrt(2). Y contains weights.");
 			d.put("normimage", EMObject::EMDATA, "After finish() will contain the sum of the weights in real-space");
 			d.put("dampnoise", EMObject::FLOAT, "Will set a minimum mean*x for the norm image, damping regions with poor information. Default = 0.5, 0 disables. ");
+			d.put("fourier", EMObject::INT, "If set does local weighting in Fourier rather than real space ");
 			return d;
 		}
 
@@ -254,6 +255,7 @@ namespace EMAN
 		EMData *normimage;
 		int freenorm;
 		int nimg;
+		int fourier;
 	};
 
 	/** FourierWeightAverager makes an average of a set of images in Fourier space using a per-image radial weight. The provided XYData object for each inserted
