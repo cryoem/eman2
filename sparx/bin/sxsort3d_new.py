@@ -425,7 +425,7 @@ def create_nrandom_lists(partids):
 		Tracker["sorting_data_list"] = 0
 	Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
 	return
-	
+
 def resize_groups_from_stable_members_mpi(Accounted_on_disk, Unaccounted_on_disk):
 	global Tracker, Blockdata
 	import random
@@ -3428,12 +3428,8 @@ def get_dist1(vec1, vec2):
 	return sum_dot
 
 def get_refa_vecs(angle_step, sym, tilt1, tilt2):
-	refa          = even_angles(angle_step, symmetry = sym, theta1= tilt1,  theta2 = tilt2, method='S', phiEqpsi="Zero")
-	refa_vecs     = []
-	for i in xrange(len(refa)):
-		tmp = getvec(refa[i][0], refa[i][1])
-		refa_vecs.append(tmp)
-	return refa_vecs
+	from utilities import angles_to_normals
+	return angles_to_normals(even_angles(angle_step, symmetry = sym, theta1= tilt1,  theta2 = tilt2, method='S', phiEqpsi="Zero") )
 
 def find_neighborhood(refa_vecs, minor_groups):
 	matched_oriens  = [ [None, None] for i in xrange(len(minor_groups))]
@@ -3446,11 +3442,11 @@ def find_neighborhood(refa_vecs, minor_groups):
 					max_value = this_dis
 					matched_oriens[iproj] = [minor_groups[iproj], jproj]
 	return matched_oriens
-	
+
 def reassign_ptls_in_orien_groups(assigned_ptls_in_groups, matched_pairs):
 	tmplist = []
 	for iorien in xrange(len(matched_pairs)):
-		assigned_ptls_in_groups[matched_pairs[iorien][1]] +=assigned_ptls_in_groups[matched_pairs[iorien][0]]
+		assigned_ptls_in_groups[matched_pairs[iorien][1]] += assigned_ptls_in_groups[matched_pairs[iorien][0]]
 		tmplist.append(matched_pairs[iorien][0])
 	reassignment = []
 	for iorien in xrange(len(assigned_ptls_in_groups)):
@@ -3470,6 +3466,7 @@ def findall_dict(value, L, start=0):
 			if value == L[i]: positions.append(i) 
 		except: pass 
 	return positions
+
 def do_assignment_by_dmatrix_orien_group(peaks, orien_group_members, number_of_groups):
 	import numpy as np
 	import random
@@ -3534,7 +3531,7 @@ def do_assignment_by_dmatrix_orien_group(peaks, orien_group_members, number_of_g
 	del del_column
 	del del_row
 	return assignment
-	
+
 def get_orien_assignment_mpi(angle_step, partids, params, log_main):
 	global Tracker, Blockdata
 	if Blockdata["myid"] == Blockdata["main_node"]:
@@ -3548,9 +3545,8 @@ def get_orien_assignment_mpi(angle_step, partids, params, log_main):
 	refa = even_angles(angle_step, symmetry = Tracker["constants"]["symmetry"], \
 	     theta1 = Tracker["tilt1"], theta2 = Tracker["tilt2"], method='S', phiEqpsi="Zero")
 	refa_vecs = []
-	for i in xrange(len(refa)):
-		tmp = getvec(refa[i][0], refa[i][1])
-		refa_vecs.append(tmp)
+	for i in xrange(len(refa)): refa_vecs.append(getvec(refa[i][0], refa[i][1]))
+
 	if Blockdata["myid"] == Blockdata["main_node"]: print("step1")	
 	if Blockdata["main_node"] == Blockdata["myid"]:
 		params  = read_text_row(params)
@@ -3597,7 +3593,7 @@ def get_orien_assignment_mpi(angle_step, partids, params, log_main):
 		small_groups = []
 		all_oriens   = range(len(refa_vecs))
 		for iorien in xrange(len(refa_vecs)):
-			if len(ptls_in_orien_groups[iorien]) < Tracker["min_orien_group_size"]:small_groups.append(iorien)
+			if len(ptls_in_orien_groups[iorien]) < Tracker["min_orien_group_size"]:  small_groups.append(iorien)
 		matched_pairs = find_neighborhood(refa_vecs, small_groups)
 		ptls_in_orien_groups = reassign_ptls_in_orien_groups(ptls_in_orien_groups, matched_pairs)
 	else: ptls_in_orien_groups = 0
