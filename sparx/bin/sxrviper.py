@@ -51,7 +51,9 @@ def calculate_list_of_independent_viper_run_indices_used_for_outlier_elimination
 		if (my_rank == idx % no_of_processors):
 			list_of_viper_run_indices = list(tuple_of_projection_indices) + [no_of_viper_runs_analyzed_together - 1]
 			criterion_measure[idx] = measure_for_outlier_criterion(criterion_name, masterdir, rviper_iter, list_of_viper_run_indices)
-			plot_errors_between_any_number_of_projections(masterdir, rviper_iter, list_of_viper_run_indices, criterion_measure[idx])
+			### NOTE: 2017/05/04 Toshio moriya
+			### Temporary disabled the this function because of Anaconda Installer Issue
+			### plot_errors_between_any_number_of_projections(masterdir, rviper_iter, list_of_viper_run_indices, criterion_measure[idx])
 
 	criterion_measure = mpi_reduce(criterion_measure, number_of_additional_combinations_for_this_viper_iteration, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD)
 
@@ -145,7 +147,9 @@ def identify_outliers(myid, main_node, rviper_iter, no_of_viper_runs_analyzed_to
 
 	return no_of_viper_runs_analyzed_together_must_be_incremented
 
-
+### NOTE: 2017/05/04 Toshio moriya
+### Temporary disabled the this function because of Anaconda Installer Issue
+'''
 def plot_errors_between_any_number_of_projections(masterdir, rviper_iter, list_of_projection_indices, error_value):
 	import matplotlib.pyplot as plt
 
@@ -185,7 +189,7 @@ def plot_errors_between_any_number_of_projections(masterdir, rviper_iter, list_o
 	plt.savefig(mainoutputdir + '/sorted_errors_between_projections' + which_projections.getvalue() + '.png')
 	which_projections.close()
 	plt.close()
-
+'''
 
 def find_index_of_discontinuity_in_derivative(error_curve_func, list_of_projection_indices, mainoutputdir,
 	outlier_percentile):
