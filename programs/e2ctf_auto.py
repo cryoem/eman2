@@ -82,13 +82,13 @@ Important: This program must be run from the project directory, not from within 
 	parser.add_argument("--extrapad",action="store_true",help="If particles were boxed more tightly than EMAN requires, this will add some extra padding",default=False, guitype='boolbox', row=22, col=2, rowspan=1, colspan=1, mode='auto[False]')
 	parser.add_argument("--highdensity",action="store_true",help="If particles are very close together, this will interfere with SSNR estimation. If set uses an alternative strategy, but may over-estimate SSNR.",default=False, guitype='boolbox', row=24, col=0, rowspan=1, colspan=1, mode='auto[False]')
 	parser.add_argument("--invert",action="store_true",help="Invert the contrast of the particles in output files (default false)",default=False, guitype='boolbox', row=24, col=1, rowspan=1, colspan=1, mode='auto[False]')
-	parser.add_argument("--outputonly",action="store_true",help="Skips all of the initial steps, and just generates the final output, assuming previous steps completed successfully",default=False)
-	parser.add_argument("--defocusmin",type=float,help="Minimum defocus in autofitting",default=0.6, guitype='floatbox', row=26, col=0, rowspan=1, colspan=1, mode="autofit[0.6]")
-	parser.add_argument("--defocusmax",type=float,help="Maximum defocus in autofitting",default=4, guitype='floatbox', row=26, col=1, rowspan=1, colspan=1, mode='autofit[4.0]')
-	parser.add_argument("--constbfactor",type=float,help="Set B-factor to fixed specified value, negative value autofits",default=-1.0, guitype='floatbox', row=28, col=0, rowspan=1, colspan=1, mode='auto[-1.0]')
-	parser.add_argument("--ac",type=float,help="Amplitude contrast (percentage, default 10)",default=10, guitype='floatbox', row=28, col=1, rowspan=1, colspan=1, mode="auto[10]")
-	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on the local computer",guitype='intbox', row=30, col=0, rowspan=1, colspan=1, mode='auto[4]')
-	parser.add_argument("--minqual",type=int,help="Files with a quality value lower than specified will be skipped",default=0,guitype='intbox', row=30, col=1, mode='auto[0]')
+	parser.add_argument("--outputonly",action="store_true",help="If you want to output flipped particles only based on stored CTF info, this will skip fitting.",default=False, guitype='boolbox', row=26, col=0, rowspan=1, colspan=1, mode='auto[False]')
+	parser.add_argument("--defocusmin",type=float,help="Minimum defocus in autofitting",default=0.6, guitype='floatbox', row=28, col=0, rowspan=1, colspan=1, mode="autofit[0.6]")
+	parser.add_argument("--defocusmax",type=float,help="Maximum defocus in autofitting",default=4, guitype='floatbox', row=28, col=1, rowspan=1, colspan=1, mode='autofit[4.0]')
+	parser.add_argument("--constbfactor",type=float,help="Set B-factor to fixed specified value, negative value autofits",default=-1.0, guitype='floatbox', row=30, col=0, rowspan=1, colspan=1, mode='auto[-1.0]')
+	parser.add_argument("--ac",type=float,help="Amplitude contrast (percentage, default 10)",default=10, guitype='floatbox', row=30, col=1, rowspan=1, colspan=1, mode="auto[10]")
+	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on the local computer",guitype='intbox', row=32, col=0, rowspan=1, colspan=1, mode='auto[4]')
+	parser.add_argument("--minqual",type=int,help="Files with a quality value lower than specified will be skipped",default=0,guitype='intbox', row=32, col=1, mode='auto[0]')
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
@@ -222,65 +222,64 @@ resolution, but for high resolution work, fitting defocus/astig from frames is r
 	logid=E2init(sys.argv, options.ppid)
 	E2progress(logid,0)
 
-	if not options.outputonly :
-		###
-		# run CTF autofit
-		com="e2ctf.py --autofit --allparticles --oversamp 2 --apix {apix} --voltage {voltage} --cs {cs} --ac {ac} --defocusmin {dfmin} --defocusmax {dfmax} --threads {threads} --minqual {minqual} {highdensity} {constbfactor} {fit_options}".format(
-			apix=options.apix,voltage=options.voltage,cs=options.cs,ac=options.ac,threads=options.threads,highdensity=highdensity,constbfactor=constbfactor,fit_options=fit_options,minqual=options.minqual,dfmin=options.defocusmin,dfmax=options.defocusmax)
+	###
+	# run CTF autofit
+	com="e2ctf.py --autofit --allparticles --oversamp 2 --apix {apix} --voltage {voltage} --cs {cs} --ac {ac} --defocusmin {dfmin} --defocusmax {dfmax} --threads {threads} --minqual {minqual} {highdensity} {constbfactor} {fit_options}".format(
+		apix=options.apix,voltage=options.voltage,cs=options.cs,ac=options.ac,threads=options.threads,highdensity=highdensity,constbfactor=constbfactor,fit_options=fit_options,minqual=options.minqual,dfmin=options.defocusmin,dfmax=options.defocusmax)
+	if options.verbose: print com
+	if not options.outputonly: launch_childprocess(com)
+	E2progress(logid,0.25)
+	
+	###
+	# decide which particle files we will use for structure factor
+	dfvals=[]
+	for f in ptcls:
+		db=js_open_dict(info_name(f))
+		try:
+			ctf=db["ctf"][0]
+			qual=db["quality"]
+			if qual<options.minqual : 
+				db.close()
+				continue
+			dfvals.append((ctf.defocus,f))
+		except:
+			print "CTF seems to have failed for ",f
+		db.close()
+
+	if len(dfvals)<5 and not options.outputonly:
+		print "ERROR: This program requires good CTF fits from at least 5 micrographs to continue"
+		sys.exit(2)
+	
+	# Strip off the low and high 10% of defocuses, since this is where failures usually occur
+	dfsel=dfvals[len(dfvals)//10:-len(dfvals)//10]
+
+	# roughly 25 files should be more than enough for a structure factor
+	step=max(1,len(dfsel)//25)
+	if step>1 : dfsel=dfsel[::step]
+
+	###
+	# Structure factor computation
+	com="e2ctf.py --computesf {}".format(" ".join([i[1] for i in dfsel]))
+	if options.verbose: print com
+	if not options.outputonly: launch_childprocess(com)
+	E2progress(logid,0.5)
+
+	###
+	# run CTF autofit, now with structure factor available
+	com="e2ctf.py --autofit --allparticles --oversamp 2 --apix {apix} --voltage {voltage} --cs {cs} --ac {ac} --defocusmin {dfmin} --defocusmax {dfmax} --threads {threads} --minqual {minqual} {highdensity} {constbfactor} {fit_options}".format(
+		apix=options.apix,voltage=options.voltage,cs=options.cs,ac=options.ac,threads=options.threads,highdensity=highdensity,constbfactor=constbfactor,fit_options=fit_options,minqual=options.minqual,dfmin=options.defocusmin,dfmax=options.defocusmax)
+	if options.verbose: print com
+	if not options.outputonly: launch_childprocess(com)
+	E2progress(logid,0.65)
+
+	###
+	# refinebysnr if appropriate
+	if (options.midres or options.hires) and not options.astigmatism and not options.outputonly:
+		com="e2ctf.py --allparticles --refinebysnr"
 		if options.verbose: print com
 		launch_childprocess(com)
-		E2progress(logid,0.25)
-		
-		###
-		# decide which particle files we will use for structure factor
-		dfvals=[]
-		for f in ptcls:
-			db=js_open_dict(info_name(f))
-			try:
-				ctf=db["ctf"][0]
-				qual=db["quality"]
-				if qual<options.minqual : 
-					db.close()
-					continue
-				dfvals.append((ctf.defocus,f))
-			except:
-				print "CTF seems to have failed for ",f
-			db.close()
-
-		if len(dfvals)<5 :
-			print "ERROR: This program requires good CTF fits from at least 5 micrographs to continue"
-			sys.exit(2)
-		
-		# Strip off the low and high 10% of defocuses, since this is where failures usually occur
-		dfsel=dfvals[len(dfvals)//10:-len(dfvals)//10]
-
-		# roughly 25 files should be more than enough for a structure factor
-		step=max(1,len(dfsel)//25)
-		if step>1 : dfsel=dfsel[::step]
-
-		###
-		# Structure factor computation
-		com="e2ctf.py --computesf {}".format(" ".join([i[1] for i in dfsel]))
-		if options.verbose: print com
-		launch_childprocess(com)
-		E2progress(logid,0.5)
-
-		###
-		# run CTF autofit, now with structure factor available
-		com="e2ctf.py --autofit --allparticles --oversamp 2 --apix {apix} --voltage {voltage} --cs {cs} --ac {ac} --defocusmin {dfmin} --defocusmax {dfmax} --threads {threads} --minqual {minqual} {highdensity} {constbfactor} {fit_options}".format(
-			apix=options.apix,voltage=options.voltage,cs=options.cs,ac=options.ac,threads=options.threads,highdensity=highdensity,constbfactor=constbfactor,fit_options=fit_options,minqual=options.minqual,dfmin=options.defocusmin,dfmax=options.defocusmax)
-		if options.verbose: print com
-		launch_childprocess(com)
-		E2progress(logid,0.65)
-
-		###
-		# refinebysnr if appropriate
-		if (options.midres or options.hires) and not options.astigmatism :
-			com="e2ctf.py --allparticles --refinebysnr"
-			if options.verbose: print com
-			launch_childprocess(com)
-		E2progress(logid,0.7)
-		
+	E2progress(logid,0.7)
+	
 	###
 	# Generate output
 
