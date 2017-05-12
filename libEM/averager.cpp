@@ -504,14 +504,8 @@ void LocalWeightAverager::add_image(EMData * image)
 
 	fourier = params.set_default("fourier", (int)0);
 	if (nimg == 1) {
-		if (fourier) {
-			result = image->copy_head();
-			result->set_size(nx+2, ny, nz);
-			result->set_complex(1);
-		} else {
-			result = image->copy_head();
-			result->set_size(nx, ny, nz);
-		}
+		result = image->copy_head();
+		result->set_size(nx, ny, nz);
 		result->to_zero();
 
 		
@@ -521,8 +515,7 @@ void LocalWeightAverager::add_image(EMData * image)
 		normimage->add(0.0000001f);
 	}
 
-	if (fourier)  images.push_back(image->do_fft());
-	else images.push_back(image->copy());
+	images.push_back(image->copy());
 }
 
 EMData * LocalWeightAverager::finish()
@@ -535,40 +528,96 @@ EMData * LocalWeightAverager::finish()
 	
 	float dampnoise = params.set_default("dampnoise", (float)0.5);
 	
-	EMData *ret = new EMData(nx,ny,nz);
-	EMData *stg1 = new EMData(nx,ny,nz);
-	
-	for (std::vector<EMData*>::iterator im = images.begin(); im!=images.end(); ++im) stg1->add(**im);
-	stg1->process_inplace("normalize");
-	
-//	std::vector<EMData*> weights;
-	for (std::vector<EMData*>::iterator im = images.begin(); im!=images.end(); ++im) {
-		EMData *imc=(*im)->copy();
-		imc->mult(*stg1);
-		imc->process_inplace("filter.lowpass.gauss",Dict("cutoff_freq",0.02f));
-		imc->process_inplace("threshold.belowtozero",Dict("minval",0.0f));
-//		imc->process_inplace("math.sqrt");
-//		imc->process_inplace("math.pow",Dict("pow",0.25));
-		(*im)->mult(*imc);
-		result->add(**im);
-		normimage->add(*imc);
-		delete *im;
-	}
-	
-	if (dampnoise>0) {
-		float mean=normimage->get_attr("mean");
-		float max=normimage->get_attr("maximum");
-		normimage->process_inplace("threshold.clampminmax",Dict("minval",mean*dampnoise,"maxval",max));
-	}
-	
-	result->div(*normimage);
-	
-	result->set_attr("ptcl_repr",nimg);
-	
-	if (freenorm) { delete normimage; normimage=(EMData*)0; }
-	nimg=0;
+	// This is the standard mode where local real-space correlation with the average is used to define a local weight (like a mask)
+	// applied to each image. If fourier>=2 then the same is done, but in "gaussian bands" in Fourier space
+	if (fourier<=1) {
+		EMData *stg1 = new EMData(nx,ny,nz);
+		
+		for (std::vector<EMData*>::iterator im = images.begin(); im!=images.end(); ++im) stg1->add(**im);
+		stg1->process_inplace("normalize");
+		
+	//	std::vector<EMData*> weights;
+		for (std::vector<EMData*>::iterator im = images.begin(); im!=images.end(); ++im) {
+			EMData *imc=(*im)->copy();
+			imc->mult(*stg1);
+			imc->process_inplace("filter.lowpass.gauss",Dict("cutoff_freq",0.02f));
+			imc->process_inplace("threshold.belowtozero",Dict("minval",0.0f));
+	//		imc->process_inplace("math.sqrt");
+	//		imc->process_inplace("math.pow",Dict("pow",0.25));
+			(*im)->mult(*imc);
+			result->add(**im);
+			normimage->add(*imc);
+			delete imc;
+			delete *im;
+		}
+		
+		if (dampnoise>0) {
+			float mean=normimage->get_attr("mean");
+			float max=normimage->get_attr("maximum");
+			normimage->process_inplace("threshold.clampminmax",Dict("minval",mean*dampnoise,"maxval",max));
+		}
+		
+		result->div(*normimage);
+		
+		result->set_attr("ptcl_repr",nimg);
+		
+		if (freenorm) { delete normimage; normimage=(EMData*)0; }
+		nimg=0;
 
-	return result;
+		return result;
+	}
+	else if (fourier<=ny/2) {
+		// we do pretty much the same thing as above, but one Fourier "band" at a time
+		
+		for (int r=0;  r<fourier; r++) {
+			float cen=r/((float)fourier-1.0)*0.5;
+			float sig=(0.5/fourier)/(2.0*sqrt(log(2.0)));
+			std::vector<EMData*> filt;
+
+			EMData *stg1 = new EMData(nx,ny,nz);
+			for (std::vector<EMData*>::iterator im = images.begin(); im!=images.end(); ++im) {
+				EMData *f=(*im)->process("filter.bandpass.gauss",Dict("center",(float)cen,"sigma",sig));
+				filt.push_back(f);
+				stg1->add(*f);
+				if (r==fourier-1) delete *im;		// we don't actually need the unfiltered images again
+			}
+			stg1->process_inplace("normalize");
+			stg1->process("filter.bandpass.gauss",Dict("center",(float)cen,"sigma",sig));
+//			stg1->write_image("cmp.hdf",r);
+			
+		//	std::vector<EMData*> weights;
+			int imn=1;
+			for (std::vector<EMData*>::iterator im = filt.begin(); im!=filt.end(); ++im) {
+				EMData *imc=(*im)->copy();
+				imc->mult(*stg1);
+				imc->process_inplace("filter.lowpass.gauss",Dict("cutoff_freq",0.02f));
+				imc->process_inplace("threshold.belowtozero",Dict("minval",0.0f));
+//				imc->write_image("cmp.hdf",imn*fourier+r);
+		//		imc->process_inplace("math.sqrt");
+		//		imc->process_inplace("math.pow",Dict("pow",0.25));
+				(*im)->mult(*imc);
+				result->add(**im);
+				normimage->add(*imc);
+				delete *im;
+				delete imc;
+				imn++;
+			}
+			
+			if (dampnoise>0) {
+				float mean=normimage->get_attr("mean");
+				float max=normimage->get_attr("maximum");
+				normimage->process_inplace("threshold.clampminmax",Dict("minval",mean*dampnoise,"maxval",max));
+			}
+			
+		}
+		result->div(*normimage);
+		result->set_attr("ptcl_repr",nimg);
+		
+		if (freenorm) { delete normimage; normimage=(EMData*)0; }
+		nimg=0;
+		return result;
+	}
+	
 }
 
 

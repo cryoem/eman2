@@ -107,6 +107,14 @@ struct EMAN_Ctf_Wrapper: EMAN::Ctf
     EMAN_Ctf_Wrapper(PyObject* py_self_):
         EMAN::Ctf(), py_self(py_self_) {}
 
+	float get_phase() const {
+        return call_method< float >(py_self, "get_phase");
+	}
+
+	void set_phase(float phase) {
+        return call_method< void >(py_self, "set_phase", phase);
+	}
+
     int from_string(const std::string& p0) {
         return call_method< int >(py_self, "from_string", p0);
     }
@@ -191,7 +199,22 @@ struct EMAN_EMAN1Ctf_Wrapper: EMAN::EMAN1Ctf
         return EMAN::EMAN1Ctf::compute_1d_fromimage(p0, p1, p2);
     }
 
-    
+	float get_phase() const {
+        return call_method< float >(py_self, "get_phase");
+	}
+
+	float default_get_phase() const {
+		return EMAN::EMAN1Ctf::get_phase();
+	}
+
+	void set_phase(float phase) {
+        return call_method< void >(py_self, "set_phase", phase);
+	}
+
+	void default_set_phase(float phase) {
+		EMAN::EMAN1Ctf::set_phase(phase);
+	}
+		
     void compute_2d_real(EMAN::EMData* p0, EMAN::Ctf::CtfType p1, EMAN::XYData* p2) {
         call_method< void >(py_self, "compute_2d_real", p0, p1, p2);
     }
@@ -310,7 +333,24 @@ struct EMAN_EMAN2Ctf_Wrapper: EMAN::EMAN2Ctf
     std::vector<float,std::allocator<float> > default_compute_1d_3(int p0, float p1, EMAN::Ctf::CtfType p2, EMAN::XYData* p3) {
         return EMAN::EMAN2Ctf::compute_1d(p0, p1, p2, p3);
     }
+    
+    float get_phase() const {
+        return call_method< float >(py_self, "get_phase");
+	}
 
+	float default_get_phase() const {
+		return EMAN::EMAN2Ctf::get_phase();
+	}
+
+	void set_phase(float phase) {
+        return call_method< void >(py_self, "set_phase", phase);
+	}
+
+	void default_set_phase(float phase) {
+		EMAN::EMAN2Ctf::set_phase(phase);
+	}
+
+	
     std::vector<float,std::allocator<float> > compute_1d_fromimage(int p0, float p1, EMAN::Ctf::CtfType p2, EMAN::XYData* p3) {
         return call_method< std::vector<float,std::allocator<float> > >(py_self, "compute_1d_fromimage", p0, p1, p2, p3);
     }
@@ -489,6 +529,8 @@ BOOST_PYTHON_MODULE(libpyAligner2)
         .def("copy_from", pure_virtual(&EMAN::Ctf::copy_from))
         .def("equal", pure_virtual(&EMAN::Ctf::equal))
         .def("zero", pure_virtual(&EMAN::Ctf::zero))
+		.def("get_phase",pure_virtual(&EMAN::Ctf::get_phase))
+		.def("set_phase",pure_virtual(&EMAN::Ctf::set_phase))
     );
 
     enum_< EMAN::Ctf::CtfType >("CtfType")
@@ -509,7 +551,7 @@ BOOST_PYTHON_MODULE(libpyAligner2)
 
 //    scope().attr("CTFOS") = (int)EMAN::Ctf::CTFOS;
 
-    delete EMAN_Ctf_scope;
+     delete EMAN_Ctf_scope;
 
     class_< EMAN::EMAN1Ctf, bases< EMAN::Ctf > , EMAN_EMAN1Ctf_Wrapper >("EMAN1Ctf",
 				"EMAN1Ctf is the CTF model used in EMAN1.",
@@ -544,6 +586,8 @@ BOOST_PYTHON_MODULE(libpyAligner2)
         .def("copy_from", (void (EMAN::EMAN1Ctf::*)(const EMAN::Ctf*) )&EMAN::EMAN1Ctf::copy_from, (void (EMAN_EMAN1Ctf_Wrapper::*)(const EMAN::Ctf*))&EMAN_EMAN1Ctf_Wrapper::default_copy_from)
         .def("equal", (bool (EMAN::EMAN1Ctf::*)(const EMAN::Ctf*) const)&EMAN::EMAN1Ctf::equal, (bool (EMAN_EMAN1Ctf_Wrapper::*)(const EMAN::Ctf*) const)&EMAN_EMAN1Ctf_Wrapper::default_equal)
         .def("zero", (float (EMAN::EMAN1Ctf::*)(int) const)&EMAN::EMAN1Ctf::zero, (float (EMAN_EMAN1Ctf_Wrapper::*)(int) const)&EMAN_EMAN1Ctf_Wrapper::default_zero)
+		.def("get_phase",(float (EMAN::EMAN2Ctf::*)() const)&EMAN::EMAN2Ctf::get_phase,(float (EMAN::EMAN2Ctf::*)() const)&EMAN_EMAN2Ctf_Wrapper::default_get_phase)
+		.def("set_phase",(void (EMAN::EMAN2Ctf::*)(float) )&EMAN::EMAN2Ctf::set_phase,(void (EMAN::EMAN2Ctf::*)(float) )&EMAN_EMAN2Ctf_Wrapper::default_set_phase)
     ;
 
     class_< EMAN::EMAN2Ctf, bases< EMAN::Ctf > , EMAN_EMAN2Ctf_Wrapper >("EMAN2Ctf",
@@ -579,6 +623,8 @@ BOOST_PYTHON_MODULE(libpyAligner2)
         .def("copy_from", (void (EMAN::EMAN2Ctf::*)(const EMAN::Ctf*) )&EMAN::EMAN2Ctf::copy_from, (void (EMAN_EMAN2Ctf_Wrapper::*)(const EMAN::Ctf*))&EMAN_EMAN2Ctf_Wrapper::default_copy_from)
         .def("equal", (bool (EMAN::EMAN2Ctf::*)(const EMAN::Ctf*) const)&EMAN::EMAN2Ctf::equal, (bool (EMAN_EMAN2Ctf_Wrapper::*)(const EMAN::Ctf*) const)&EMAN_EMAN2Ctf_Wrapper::default_equal)
         .def("zero", (float (EMAN::EMAN2Ctf::*)(int) const)&EMAN::EMAN2Ctf::zero, (float (EMAN_EMAN2Ctf_Wrapper::*)(int) const)&EMAN_EMAN2Ctf_Wrapper::default_zero)
+		.def("get_phase",(float (EMAN::EMAN2Ctf::*)() const)&EMAN::EMAN2Ctf::get_phase,(float (EMAN::EMAN2Ctf::*)() const)&EMAN_EMAN2Ctf_Wrapper::default_get_phase)
+		.def("set_phase",(void (EMAN::EMAN2Ctf::*)(float) )&EMAN::EMAN2Ctf::set_phase,(void (EMAN::EMAN2Ctf::*)(float) )&EMAN_EMAN2Ctf_Wrapper::default_set_phase)
     ;
 
 }

@@ -673,6 +673,19 @@ void EMAN2Ctf::copy_from(const Ctf * new_ctf)
 	}
 }
 
+float EMAN2Ctf::get_phase() const {
+	if (ampcont>-100.0 && ampcont<=100.0) return asin(ampcont/100.0);
+	if (ampcont>100.0) return M_PI-asin(2.0f-ampcont/100.0);
+	return -M_PI-asin(-2.0-ampcont/100.0);
+}
+
+void EMAN2Ctf::set_phase(float phase) {
+	if (phase>=-M_PI/2.0f && phase<M_PI/2.0f) ampcont=sin(phase)*100.0;
+	else if (phase>=M_PI/2.0f && phase<=M_PI) ampcont=(2.0-sin(phase))*100.0;
+	else if (phase>-M_PI && phase<-M_PI/2.0f) ampcont=(-2.0-sin(phase))*100.0;
+	else printf("Phase = %0.4f deg  out of range\n",phase*180.0/M_PI);
+	
+}
 
 vector <float> EMAN2Ctf::compute_1d_fromimage(int size, float ds, EMData *image)
 {
@@ -734,7 +747,8 @@ vector <float> EMAN2Ctf::compute_1d(int size,float ds, CtfType type, XYData * sf
 	float s = 0;
 	float g1=M_PI/2.0*cs*1.0e7*pow(lambda(),3.0f);	// s^4 coefficient for gamma, cached in a variable for simplicity (maybe speed? depends on the compiler)
 	float g2=M_PI*lambda()*defocus*10000.0;			// s^2 coefficient for gamma 
-	float acac=acos(ampcont/100.0);					// instead of ac*cos(g)+sqrt(1-ac^2)*sin(g), we can use cos(g-acos(ac)) and save a trig op
+//	float acac=acos(ampcont/100.0);					// instead of ac*cos(g)+sqrt(1-ac^2)*sin(g), we can use cos(g-acos(ac)) and save a trig op
+	float acac=M_PI/2.0-get_phase();
 	switch (type) {
 	case CTF_AMP:
 		for (int i = 0; i < np; i++) {
@@ -971,7 +985,8 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 	float *d = image->get_data();
 	float g1=M_PI/2.0*cs*1.0e7*pow(lambda(),3.0f);	// s^4 coefficient for gamma, cached in a variable for simplicity (maybe speed? depends on the compiler)
 	float g2=M_PI*lambda()*10000.0;					// s^2 coefficient for gamma 
-	float acac=acos(ampcont/100.0);					// instead of ac*cos(g)+sqrt(1-ac^2)*sin(g), we can use cos(g-acos(ac)) and save a trig op
+//	float acac=acos(ampcont/100.0);					// instead of ac*cos(g)+sqrt(1-ac^2)*sin(g), we can use cos(g-acos(ac)) and save a trig op
+	float acac=M_PI/2.0-get_phase();
 
 	if (type == CTF_BACKGROUND) {
 		for (int y = -ny/2; y < ny/2; y++) {
@@ -1233,11 +1248,12 @@ bool EMAN2Ctf::equal(const Ctf * ctf1) const
 float EMAN2Ctf::zero(int n) const {
 vector <float>zeroes;
 float lam=lambda();
+float acac=M_PI/2.0-get_phase();
 
 int m=n*2;
 if (m<15) m=15;		// A bit arbitrary. I believe this will always get us the zeroes we need in any practical situation
 for (int i=-m; i<m; i++) {
-	float r1=defocus*defocus*1.0e8 + cs*lam*1.0e7 - 2.0*cs*i*lam*1.0e7 - 2*cs*1.0e7*lam*acos(ampcont/100.0)/M_PI;
+	float r1=defocus*defocus*1.0e8 + cs*lam*1.0e7 - 2.0*cs*i*lam*1.0e7 - 2*cs*1.0e7*lam*acac/M_PI;
 //	printf("%f\n",r1);
 	if (r1<0) continue;
 	float r2=defocus*1.0e4+sqrt(r1);

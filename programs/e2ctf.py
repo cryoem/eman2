@@ -2355,6 +2355,9 @@ class GUIctf(QtGui.QWidget):
 		self.sampcont=ValSlider(self,(0,100),"% AC",0,90)
 		self.vbl.addWidget(self.sampcont)
 
+		self.sphase=ValSlider(self,(0,1),"Phase/pi",0,90)
+		self.vbl.addWidget(self.sphase)
+
 #		self.sapix=ValSlider(self,(.2,10),"A/Pix:",2,90)
 #		self.vbl.addWidget(self.sapix)
 
@@ -2391,7 +2394,8 @@ class GUIctf(QtGui.QWidget):
 		QtCore.QObject.connect(self.sdfdiff, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.sdfang, QtCore.SIGNAL("valueChanged"), self.newCTF)
 #		QtCore.QObject.connect(self.sapix, QtCore.SIGNAL("valueChanged"), self.newCTF)
-		QtCore.QObject.connect(self.sampcont, QtCore.SIGNAL("valueChanged"), self.newCTF)
+		QtCore.QObject.connect(self.sampcont, QtCore.SIGNAL("valueChanged"), self.newCTFac)
+		QtCore.QObject.connect(self.sphase, QtCore.SIGNAL("valueChanged"), self.newCTFpha)
 		QtCore.QObject.connect(self.svoltage, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.scs, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.squality, QtCore.SIGNAL("valueChanged"), self.newQual)
@@ -2829,6 +2833,7 @@ class GUIctf(QtGui.QWidget):
 		self.sbfactor.setValue(self.data[val][1].bfactor,True)
 #		self.sapix.setValue(self.data[val][1].apix)
 		self.sampcont.setValue(self.data[val][1].ampcont,True)
+		self.sphase.setValue(self.data[val][1].get_phase()/pi,True)
 		self.svoltage.setValue(self.data[val][1].voltage,True)
 		self.scs.setValue(self.data[val][1].cs,True)
 		self.sdfdiff.setValue(self.data[val][1].dfdiff,True)
@@ -2891,6 +2896,17 @@ class GUIctf(QtGui.QWidget):
 		self.data[self.curset][1].voltage=self.svoltage.value
 		self.data[self.curset][1].cs=self.scs.value
 		self.update_plot()
+
+	def newCTFac(self) :
+		self.data[self.curset][1].ampcont=self.sampcont.value
+		self.sphase.setValue(self.data[self.curset][1].get_phase()/pi,True)
+		self.update_plot()
+
+	def newCTFpha(self) :
+		self.data[self.curset][1].set_phase(self.sphase.value*pi)
+		self.sampcont.setValue(self.data[self.curset][1].ampcont,True)
+		self.update_plot()
+
 
 	def newQual(self):
 		self.data[self.curset][6]=int(self.squality.value)

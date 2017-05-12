@@ -113,6 +113,8 @@ namespace EMAN
 		virtual void copy_from(const Ctf * new_ctf) = 0;
 		virtual bool equal(const Ctf * ctf1) const = 0;
 
+		virtual float get_phase() const = 0;
+		virtual void set_phase(float phase) = 0;
 	};
 
 	/** EMAN1Ctf is the CTF model used in EMAN1.
@@ -164,6 +166,10 @@ namespace EMAN
 		{
 			return bfactor;
 		}
+		
+		float get_phase() const { return 0.0; } 
+		
+		void set_phase(float phase) { }
 
 	  private:
 		inline float calc_amp1()
@@ -278,7 +284,12 @@ namespace EMAN
 			float lmb=lambda();
 			return sqrt((defocus*1.0e4f-sqrt(defocus*defocus*1.0e8f -2.0e11f*cs*s*s*(defocus-dZ)*lmb*lmb+1.0e14f*cs*cs*pow(s*lmb,4.0f)))/(1.0e7f*cs*lmb*lmb));
 		}
-	
+		
+		// phase is defined here as being zero for pure phase contrast for user convenience. 
+		// The phase shift used in the cos(gamma-phase) expression is shifted -pi/2 from this
+		float get_phase() const; 
+		
+		void set_phase(float phase);
 		private:
 
 		// Electron wavelength in A
