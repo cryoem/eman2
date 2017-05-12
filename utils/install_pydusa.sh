@@ -2,7 +2,7 @@
 
 set -xe
 
-source activate
+source activate root
 
 RECIPE_DIR="${CONDA_PREFIX}/recipes"
 conda build ${RECIPE_DIR}/pydusa
