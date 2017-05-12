@@ -2,6 +2,6 @@
 
 set -x
 
-source activate
+source activate root
 
-conda remove openmpi pydusa fftw-mpi --force
+conda remove openmpi --force
