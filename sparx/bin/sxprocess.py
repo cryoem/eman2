@@ -524,10 +524,9 @@ def main():
 
 			for i in xrange(n):
 				d = get_im(args[0], i)
-				if nargs==3:
-					d *=mask
 				st = Util.infomask(d, None, True)
 				d -= st[0]
+				if nargs==3: d *=mask
 				p += periodogram(pad(d, wn, wn, 1, 0.))
 			p /= n
 			p.write_image(args[1])

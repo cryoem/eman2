@@ -46,7 +46,8 @@ def main():
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_argument("--ncls", type=int, help="...", default=2)
+	parser.add_argument("--ncls", type=int, default=3, help ="""Default=3. Number of classes to sort the particle stack into. In theory, a minimum of 2 conformational classes and 1 'garbage' class should be used.""")
+	
 	parser.add_argument("--nbasis", type=int, help="Basis vectors to use", default=3)
 
 	parser.add_argument("--input", type=str, help="The name of the volumes stack that HAVE BEEN ALIGNED to a common reference", default=None)
@@ -63,7 +64,10 @@ def main():
 	stack_basis = stack.replace(".hdf","_basis.hdf")
 	stack_projection = stack.replace(".hdf","_projection.hdf")
 	
-	ncls = 2
+	ncls = 3
+
+	if options.ncls:
+		ncls = options.ncls
 	cmd1=''
 	cmd2=''
 	cmd3=''
@@ -74,13 +78,32 @@ def main():
 	
 	cmd3 = 'e2classifykmeans.py --ncls=' + str(options.ncls) + ' --average --original=' + stack + ' ' + stack_projection
 	
-	if cmd1 is not '':
-		print "I will execute the msaer.py on stack", stack
+	if cmd1 and cmd2 and cmd3:
+		print "Running msa on stack %s through commands cmd1=%s, cmd2=%s, cmd3=%s" %( stack, cmd1, cmd2, cmd3 )
 		cmd = cmd1 + " && " + cmd2 + " && " + cmd3
-		print "The command to execute is", cmd
-		os.system(cmd)
-		
-	return()
+		#print "The command to execute is", cmd
+		runcmd( cmd )
+	else:
+		print "\nError building command for stack=%s, cmd1=%s, cmd2=%s, cmd3=%s" %( stack, cmd1, cmd2, cmd3 )
+		sys.exit(1)
+
+	return
+
+
+def runcmd(options,cmd):
+	if options.verbose > 9:
+		print "(e2spt_classaverage)(runcmd) running command", cmd
+	
+	p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+	text=p.communicate()	
+	p.stdout.close()
+	
+	
+	print "(e2spt_refinemsa)(runcmd) done"
+
+	return 1
+	
 	
 if __name__ == "__main__":
+
     main()

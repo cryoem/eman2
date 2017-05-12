@@ -47,7 +47,7 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 	parser.add_argument("--range",type=str,help="Range of particles to use. Works only with create option. Input of 0,10,2 means range(0,10, step=2).",default=None)
 	parser.add_argument("--create",type=str,help="Input files should be image files. Specify an .lst file to create here with references to all of the images in the inputs.")
 	parser.add_argument("--mergesort",type=str,help="Specify the output name here. This will merge all of the input .lst files into a single (resorted) output",default=None)
-	parser.add_argument("--numaslist",type=str,help="Extract the particle numbers only in a list file (one number per line)",default=None)
+	parser.add_argument("--numaslist",type=str,help="Extract the particle numbers only in a text file (one number per line)",default=None)
 	parser.add_argument("--mergeeo",action="store_true", default=False, help="Merge even odd lst.")
 	parser.add_argument("--dereforig",type=str,help="Extract the source_orig_path and _n parameters from each image in the file and create a new .lst file referencing the original image(s)",default=None)
 	parser.add_argument("--retype",type=str,help="If a lst file is referencing a set of particles from particles/imgname__oldtype.hdf, this will change oldtype to the specified string in-place (modifies input files)",default=None)
@@ -58,8 +58,8 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 
 
 	(options, args) = parser.parse_args()
-	
-	if len(args)<1 : 
+
+	if len(args)<1 :
 		parser.error("At least one lst file required")
 		sys.exit(1)
 
@@ -67,7 +67,7 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 
 	if options.numaslist != None:
 		out=file(options.numaslist,"w")
-		
+
 		for f in args:
 			lst=LSXFile(f,True)
 			for i in xrange(len(lst)):
@@ -92,14 +92,14 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 			n0=EMUtil.get_image_count(args[0])
 			n1=EMUtil.get_image_count(args[1])
 			n=max(n0,n1)
-			
+
 			if args[0].endswith(".lst"):
 				lste=LSXFile(args[0],True)
 				lsto=LSXFile(args[1],True)
 				fromlst=True
 			else:
 				fromlst=False
-			
+
 			for i in range(n):
 				if fromlst:
 					if i<n0:
@@ -115,10 +115,10 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 						lst.write(-1,i,args[1])
 			lst=None
 			exit()
-		
+
 		if options.range:
 			rg=eval("range({})".format(options.range))
-			
+
 		for f in args:
 			n=EMUtil.get_image_count(f)
 			if f.endswith(".lst"):
@@ -126,7 +126,7 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 				fromlst=True
 			else:
 				fromlst=False
-			if options.verbose : 
+			if options.verbose :
 				if options.range:
 					print "Processing {} images in {}".format(len(rg),f)
 				else:
@@ -146,36 +146,36 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 						lst.write(-1,ln[0],ln[1],ln[2])
 					else:
 						lst.write(-1,i,f)
-		
+
 		sys.exit(0)
 
 	if options.retype != None:
 		if options.minlosnr>0 or options.minhisnr>0 :
 			print "ERROR: --minlosnr and --minhisnr not compatible with --retype"
 			sys.exit(1)
-		
+
 		# if the user provided the leading __ for us, we strip it off and add it back later
-		if options.retype[:2]=="__" : 
+		if options.retype[:2]=="__" :
 			options.retype=options.retype[2:]
-		
+
 		for f in args:
 			if options.verbose : print "Processing ",f
 			lst=LSXFile(f,True)
-			
+
 			a=lst.read(0)
 			if a[1][:10]!="particles/" :
 				print "To use the --retype option, the .lst file must reference image files in particles/*"
-				
-			if options.verbose>1 : 
+
+			if options.verbose>1 :
 				b=base_name(a[1])
 				print "{} -> {}".format(a[1],b+"__"+options.retype+".hdf")
-			
+
 			# loop over the images in the lst file
 			for i in xrange(len(lst)):
 				im=lst.read(i)
 				outname="particles/{}__{}.hdf".format(base_name(im[1]),options.retype)
 				lst.write(i,im[0],outname,im[2])
-		
+
 			lst.normalize()			# clean up at the end
 
 			if options.verbose>1 : print len(lst)," particles adjusted"
@@ -183,20 +183,20 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 		if options.verbose : print "Done processing {} files".format(len(args))
 
 	if options.merge!=None:
-		
+
 		if options.minlosnr>0 or options.minhisnr>0 :
 			print "ERROR: --minlosnr and --minhisnr not compatible with --merge. Please use --mergesort instead."
 			sys.exit(1)
-			
+
 		# create/update output lst
 		lsto=LSXFile(options.merge)
 		ntot=0
-		
+
 		# loop over input files
 		for f in args:
 			lst=LSXFile(f,True)
 			ntot+=len(lst)
-			
+
 			for i in xrange(len(lst)):
 				im=lst.read(i)
 				lsto.write(-1,im[0],im[1],im[2])
@@ -207,21 +207,21 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 		# create/update output lst
 		lsto=LSXFile(options.mergesort)
 		ntot=0
-		
+
 		# loop over input files
 		ptcls=[]
 		pfiles=set()
 		for f in args:
 			lst=LSXFile(f,True)
 			ntot+=len(lst)
-			
+
 			for i in xrange(len(lst)):
 				im=lst.read(i)
 				ptcls.append((im[1],im[0],im[2]))
 				pfiles.add(im[1])
-				
+
 		ptcls.sort()
-		
+
 		# remove particles in files not meeting our criteria
 		if options.minlosnr>0 or options.minhisnr>0 :
 			# the list conversion here is so we are iterating over a copy and not modifying the set while we iterate over it
@@ -238,14 +238,14 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 				if losnr<options.minlosnr or hisnr<options.minhisnr:
 					pfiles.remove(pfile)
 					if options.verbose: print pfile," removed due to SNR criteria"
-		
+
 		nwrt=0
 		for i in ptcls:
-			if i[0] in pfiles : 
+			if i[0] in pfiles :
 				lsto.write(-1,i[1],i[0],i[2])
 				nwrt+=1
 
-		if options.verbose : 
+		if options.verbose :
 			if nwrt==ntot : print "{} particles in {}".format(ntot,options.mergesort)
 			else : print "{} of {} particles written to {}".format(nwrt,ntot,options.mergesort)
 

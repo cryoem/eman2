@@ -400,123 +400,205 @@ def randomizer(options, model, tag):
 	print "--saverandstack is", options.saverandstack
 	print "#####################################\n\n\n\n\n\n\n\n\n\n\n\n\n"
 	
+	orientations = {}
+	randomangles = False	
+	randomtrans = False 
 	
-	#orientations = OrientGens.get("rand",{"n": options.nptcls, "phitoo":1,"inc_mirror":1})	
-	
-	#if options.evenorientations:
-	
-	orientations = OrientGens.get("even",{"n": options.nptcls, "phitoo":1,"inc_mirror":1})	#Generate evenly distributed orientations
-	palts=[]
-
-	if options.preferredtop and not options.preferredside:
-
-		paltstop = preferredalt( options, mu=180,sigma=45, nptlcs=options.nptcls )
-	if options.preferredside and not options.preferredtop:
-		paltsside = preferredalt( options, mu=90, sigma=45, nptlcs=options.nptcls )
-	if options.preferredside and options.preferedtop:
-		ntop = int(round(options.nptlcs*options.preferredtop))
-		nside = options.nptlcs-ntop
-		palts = preferredalt( options, mu=180,sigma=45, nptlcs=ntop ) + preferredalt( options, mu=90,sigma=45, nptlcs=nside )
-
-
-
-	transforms=[]
-	for i in range(options.nptcls):
-		if options.verbose:
-			print "generating particle #", i
-
-		b = model.copy()
+	if not options.notrandomize:
 		
-		random_transform = Transform()	
-		
-		if not options.notrandomize:
-			
-			if i > 0:
-				print "\nGenerating random orientation"
-				symorients = Symmetries.get( options.sym )
-				random_transform = orientations.gen_orientations( symorients )[i]	#get the ith orientation within the asymmetric unit only							
-				
-				if palts:
-					rots=random_transform.get_rotation()
-					az=rots['az']
-					phi=rots['phi']
-					alt=palts[i]
-					random_transform=Transform({'type':'eman','az':az,'alt':alt,'phi':phi})
+		randomangles =True
 
-				randtx = randty = randtz = 0	
+		orientations = { 0:Transform() }	#the first particle's orientation is not randomized
+		palts=[]
+
+		print "\nGenerating random orientation within asymmetric unit %s" %(options.sym)
+		sym = Symmetries.get( options.sym )
+		#orients = sym.gen_orientations("eman",{"n": options.nptcls,"phitoo";1,"inc_mirror";1})
+		orients = sym.gen_orientations("rand",{"n": options.nptcls,"phitoo":1,"inc_mirror":1})
+
+		ii=1	#start at index 1 since the first particle's orientation is not randomized
+		for o in orients:
+			orientations.update( { ii:o } )
+			ii+=1
+
+		if options.preferredtop and not options.preferredside:
+			paltstop = preferredalt( options, mu=180,sigma=45, nptcls=options.nptcls ) 
+			palts = paltstop
+		
+		if options.preferredside and not options.preferredtop:
+			paltsside = preferredalt( options, mu=90, sigma=45, nptcls=options.nptcls ) 
+			palts = paltsside
+
+		if options.preferredside and options.preferedtop:
+			ntop = int(round(options.nptcls*options.preferredtop))
+			nside = options.nptcls -ntop  	
+			palts = preferredalt( options, mu=180,sigma=45, nptcls=ntop ) + preferredalt( options, mu=90,sigma=45, nptcls=nside )
+
+
+		for i in range( options.nptcls ):
+
+			random_transform = orientations[i]
+											
+			if palts:	#reassign altitude if preferred orientation was specified
+				
+				rots=random_transform.get_rotation()
+				
+				az=rots['az']
+				phi=rots['phi']
+				alt=palts[i]
+				
+				random_transform=Transform({'type':'eman','az':az,'alt':alt,'phi':phi})
+				
+				orientations.update({ i:random_transform })
+
+	else:
+		for i in range( options.nptcls ):
+			orientations.update({ i:Transform() })
+
+	if options.trange or options.txrange or options.tyrange or options.tzrange :
+		
+		randomtrans = True
+		for i in range( options.nptcls ): 
+
+			randtx = randty = randtz = 0
+
+			if i > 0:	#if translations are also requested to be randomized, do so for all particles after the first
 				if options.trange and not options.txrange:
-					randtx = random.randrange(-1 * options.trange, options.trange)	#Generate random translations
-				elif options.txrange:
-					randtx = random.randrange(-1 * options.txrange, options.txrange)	
+					randtx = random.randrange(-1 * options.trange, options.trange+1)	#Generate random translations
+				elif options.txrange:													#add +1 so that python includes the upper limit
+					randtx = random.randrange(-1 * options.txrange, options.txrange+1)	
 				
 				if options.trange and not options.txrange:
-					randty = random.randrange(-1 * options.trange, options.trange)
+					randty = random.randrange(-1 * options.trange, options.trange+1)
 				elif options.tyrange:
-					randty = random.randrange(-1 * options.tyrange, options.tyrange)
+					randty = random.randrange(-1 * options.tyrange, options.tyrange+1)
 				
-				if options.trange and not tzrange:
-					randtz = random.randrange(-1 * options.trange, options.trange)
+				if options.trange and not options.tzrange:
+					randtz = random.randrange(-1 * options.trange, options.trange+1)
 				elif options.tzrange:
-					randtz = random.randrange(-1 * options.tzrange, options.tzrange)
-			
+					randtz = random.randrange(-1 * options.tzrange, options.tzrange+1)
+
 				if randtx or randty or randtz:
-					random_transform.translate(randtx, randty, randtz)
+					#random_transform.translate(randtx, randty, randtz)
+					print "\nbefore translation orientations[i] is",  orientations[i]
+					orientations[i].set_trans(randtx, randty, randtz)
+					print "\ntranslated orientations[i] is", orientations[i]
+					#orientations.update({ i : newt  })
+			
 			else:
-				print "\nthe orientation of the first particle is NEVER randomized"
-			
-			b.transform(random_transform)
-			transforms.append(random_transform)		
-
-		b['sptsim_randT'] = random_transform
-		b['xform.align3d'] = Transform()			#This parameter should be set to the identity transform since it can be used later to determine whether
-													#alignment programs can "undo" the random rotation in spt_randT accurately or not
-		b.process_inplace('normalize.edgemean')
-		if options.saverandstack:	
-
-			#print "The stackname to use is", stackname
-			#randstackname = options.path + '/' + stackname.split('/')[-1]
-			#print "\n\n\n\n\nI will save randstack! Using THE PATH in e2spt_simulation and stackname both of which together are", randstackname
-			#print "options path received is", options.path
-			#print "Whereas stackname is", stackname
-			#print "Therefore stackname.split('/')[-1] is", stackname.split('/')[-1]
-			
-			
-			b['origin_x'] = 0									#Make sure the origin is set to zero, to avoid display issues with Chimera
-			b['origin_y'] = 0
+				pass #first particle never randomized
 	
-			#if dimension == 3:
-			b['origin_z'] = 0
+	outtransform = Transform()
+	b = model.copy()
+	b['sptsim_randT'] = outtransform
+	b['xform.align3d'] = Transform()
+	
+	for i in range( options.nptcls ):
+		if options.verbose:
+			print "\n(e2spt_simulation.py) generating particle #%d" %( i )
+		
+		if randomangles or randomtrans:
 			
-			b.write_image(randstackname,i)
-			print "Actually, particle %d written to %s" % ( i, randstackname )
+			b = model.copy()
+
+			outtransform = orientations[i]
+
+			print "\nouttransform", outtransform
+			b.transform(outtransform)
+		
+			#transforms.append(random_transform)		
+
+			b['sptsim_randT'] = outtransform
+			b['xform.align3d'] = Transform()			#This parameter should be set to the identity transform since it can be used later to determine whether
+													#alignment programs can successfuly "undo" the random transformation stored in spt_randT
+			#b.process_inplace('normalize.edgemean')
+			if options.saverandstack:	
+
+				#print "The stackname to use is", stackname
+				#randstackname = options.path + '/' + stackname.split('/')[-1]
+				#print "\n\n\n\n\nI will save randstack! Using THE PATH in e2spt_simulation and stackname both of which together are", randstackname
+				#print "options path received is", options.path
+				#print "Whereas stackname is", stackname
+				#print "Therefore stackname.split('/')[-1] is", stackname.split('/')[-1]
+				
+				
+				b['origin_x'] = 0									#Make sure the origin is set to zero, to avoid display issues with Chimera
+				b['origin_y'] = 0
+
+				#if dimension == 3:
+				b['origin_z'] = 0
+				
+				b.write_image(randstackname,i)
+				print "\n(e2spt_simulation.py) saving random orientations stack. particle %d written to %s" % ( i, randstackname )
+
+			else:
+				pass #stack of particles in random orientations not saved
+		else:
+			pass #angles and translations were not randomized; the stack to be return will contain copies of the model (might be modified by noise/CTF later) 
 
 		randptcls.update({i:b})
 		
 		if options.verbose:
-			print "The random transform applied to it was", random_transform
-			
-	
+			print "\n(e2spt_simulation.py) applied transform", random_transform
+
+
 	azs=[]
 	alts=[]
 	phis=[]
+	xs=[]
+	ys=[]
+	zs=[]
 
-	if len(transforms) > 2:
-		for tr in transforms:
-			rots=tr.get_rotation()
-			az=rots['az']
-			azs.append(az)
-			textwriter(options,azs,'az')
-			plotangles( options, azs, 'az' )
+	#if len(transforms) > 2:
+	if len( orientations ) > 2:
+		if randomangles or randomtrans:
+			for i in orientations:
+				t = orientations[i]
+				print "\n t to get rotations and translations from is",t
+				if randomangles:
+					rots=t.get_rotation()
+					
+					az=rots['az']
+					azs.append(az)
 
-			alt=rots['alt']
-			alts.append(alt)
-			textwriter(options,alts,'alt')
-			plotangles( options, alts, 'alt' )
+					alt=rots['alt']
+					alts.append(alt)
+					
+					phi=rots['phi']
+					phis.append(phi)
+					
+				if randomtrans:
+					trans=t.get_trans()
+					
+					x=trans[0]
+					xs.append(x)
 
-			phi=rots['phi']
-			phis.append(phi)
-			textwriter(options,phis,'phi')
-			plotangles( options, phis, 'phi' )
+					y=trans[1]
+					ys.append(y)
+
+					z=trans[2]
+					zs.append(z)
+
+		if randomangles:
+			textwriter(options, azs,'az')
+			plotvals( options, azs, 'az' )
+
+			textwriter(options, alts,'alt')
+			plotvals( options, alts, 'alt' )
+
+			textwriter(options, phis,'phi')
+			plotvals( options, phis, 'phi' )
+
+		if randomtrans:
+			textwriter(options, xs,'x')
+			plotvals( options, xs, 'x' )
+
+			textwriter(options, ys,'y')
+			plotvals( options,  ys,'y' )
+
+			textwriter(options, zs,'z')
+			plotvals( options, zs,'z' )
+
 
 	return randptcls,randstackname
 
@@ -526,14 +608,14 @@ def preferredalt( options, mu=0, sigma=1, nalts=3 ):
 	return s
 
 
-def plotangles( options, angles, tag ):
+def plotvals( options, angles, tag ):
 	import matplotlib.pyplot as plt
 	count, bins, ignored = plt.hist(angles, 30, normed=True)
 	sigmaangles = numpy.std(angles)
 	meanangles = numpy.mean(angles)
 	plt.plot(bins, 1/(sigmaangles * numpy.sqrt(2 * numpy.pi)) * numpy.exp( - (bins - meanangles)**2 / (2 * sigmaangles**2) ), linewidth=2, color='r')
 
-	plt.title("Distribution of angle " + tag )
+	plt.title( tag + ' distribution' )
 	plt.ylabel("n")
 	plt.xlabel(tag)
 	

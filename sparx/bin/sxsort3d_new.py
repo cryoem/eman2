@@ -425,7 +425,7 @@ def create_nrandom_lists(partids):
 		Tracker["sorting_data_list"] = 0
 	Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
 	return
-	
+
 def resize_groups_from_stable_members_mpi(Accounted_on_disk, Unaccounted_on_disk):
 	global Tracker, Blockdata
 	import random
@@ -1606,36 +1606,29 @@ def do3d_sorting_groups(particle_ID_index, partstack):
 				Tracker = wrap_mpi_bcast(Tracker, Blockdata["no_of_processes_per_group"]-1, Blockdata["shared_comm"])
 				cfsc = wrap_mpi_bcast(cfsc, Blockdata["no_of_processes_per_group"]-1, Blockdata["shared_comm"])
 				Tracker["maxfrad"] = Tracker["nxinit"]//2
-				if( Blockdata["myid_on_node"] == 0): 
+				#--  memory_check(Blockdata["myid"],"first node, before steptwo")
+				#  compute filtered volume
+				
+				if( Blockdata["myid_on_node"] == 0):
+					tvol2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_2_%d.hdf")%index_of_group)
+					tweight2 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_2_%d.hdf")%index_of_group)
+					treg2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "trol_2_%d.hdf"%index_of_group))
+				else:
+					tvol2 		= model_blank(1)
+					tweight2 	= model_blank(1)
+					treg2		= model_blank(1)
+				tvol2 = steptwo_mpi(tvol2, tweight2, treg2, cfsc, True, color = index_of_colors)
+				del tweight2, treg2
+				if( Blockdata["myid_on_node"] == 0):
 					res_05[index_of_group]  = Tracker["fsc05"]
 					res_143[index_of_group] = Tracker["fsc143"]
-				if Blockdata["fftwmpi"]: 
-					if( Blockdata["myid_on_node"] == 0):
-						tvol2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_2_%d.hdf")%index_of_group)
-						tweight2 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_2_%d.hdf")%index_of_group)
-						treg2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "trol_2_%d.hdf"%index_of_group))
-					else:
-						tvol2 		= model_blank(1)
-						tweight2 	= model_blank(1)
-						treg2		= model_blank(1)
-					tvol2 = steptwo_mpi(tvol2, tweight2, treg2, cfsc, True, color = index_of_colors)
-					del tweight2, treg2
-					if( Blockdata["myid_on_node"] == 0): 
-						if(Tracker["mask3D"] == None):  tvol2 = cosinemask(tvol2, radius = Tracker["constants"]["radius"])
-						else:  Util.mul_img(tvol2, get_im(Tracker["mask3D"]))
-						tvol2.write_image(os.path.join(Tracker["directory"], "vol_grp%03d_iter000.hdf"%(index_of_group)))
-						del tvol2
-				else:
-					if( Blockdata["myid_on_node"] == 0):
-						tvol2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_2_%d.hdf")%index_of_group)
-						tweight2 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_2_%d.hdf")%index_of_group)
-						treg2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "trol_2_%d.hdf"%index_of_group))
-						tvol2       = steptwo(tvol2, tweight2, treg2, cfsc, True)
-						del tweight2, treg2
-						if(Tracker["mask3D"] == None): tvol2 = cosinemask(tvol2, radius = Tracker["constants"]["radius"])
-						else: Util.mul_img(tvol2, get_im(Tracker["mask3D"]))
-						tvol2.write_image(os.path.join(Tracker["directory"], "vol_grp%03d_iter000.hdf"%(index_of_group)))
-						del tvol2
+				#--  memory_check(Blockdata["myid"],"first node, before masking")
+					if(Tracker["mask3D"] == None):  tvol2 = cosinemask(tvol2, radius = Tracker["constants"]["radius"])
+					else:  Util.mul_img(tvol2, get_im(Tracker["mask3D"]))
+					#--  memory_check(Blockdata["myid"],"first node, after masking")
+					tvol2.write_image(os.path.join(Tracker["directory"], "vol_grp%03d_iter000.hdf"%(index_of_group)))
+					#--  memory_check(Blockdata["myid"],"first node, after 1 steptwo")
+					del tvol2
 				mpi_barrier(Blockdata["shared_comm"])
 			mpi_barrier(Blockdata["shared_comm"])	
 	mpi_barrier(MPI_COMM_WORLD)
@@ -1769,38 +1762,32 @@ def do3d_sorting_groups_trl_iter(data, iteration):
 					line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 					print(line, "group %d  of do3d_sorting_groups_trl_iter is done"%index_of_group)
 				Tracker = wrap_mpi_bcast(Tracker, Blockdata["no_of_processes_per_group"]-1, Blockdata["shared_comm"])
-				cfsc = wrap_mpi_bcast(cfsc, Blockdata["no_of_processes_per_group"]-1, Blockdata["shared_comm"])
+				cfsc    = wrap_mpi_bcast(cfsc, Blockdata["no_of_processes_per_group"]-1, Blockdata["shared_comm"])
 				Tracker["maxfrad"] = Tracker["nxinit"]//2
+				#--  memory_check(Blockdata["myid"],"first node, before steptwo")
+				#  compute filtered volume
+				
 				if( Blockdata["myid_on_node"] == 0):
+					tvol2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_2_%d.hdf")%index_of_group)
+					tweight2 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_2_%d.hdf")%index_of_group)
+					treg2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "trol_2_%d.hdf"%index_of_group))
+				else:
+					tvol2 		= model_blank(1)
+					tweight2 	= model_blank(1)
+					treg2		= model_blank(1)
+				tvol2 = steptwo_mpi(tvol2, tweight2, treg2, cfsc, False, color = index_of_colors) # has to be False!!!
+				del tweight2, treg2
+				if( Blockdata["myid_on_node"] == 0):
+				#--  memory_check(Blockdata["myid"],"first node, before masking")
+					if(Tracker["mask3D"] == None):  tvol2 = cosinemask(tvol2, radius = Tracker["constants"]["radius"])
+					else:  Util.mul_img(tvol2, get_im(Tracker["constants"]["mask3D"]))
+					#--  memory_check(Blockdata["myid"],"first node, after masking")
+					tvol2.write_image(os.path.join(Tracker["directory"], "vol_grp%03d_iter%03d.hdf"%(index_of_group,iteration)))
+					#--  memory_check(Blockdata["myid"],"first node, after 1 steptwo")
+					del tvol2
+					#print(Blockdata["myid"], "fsc05", Tracker["fsc05"]) 
 					res_05[index_of_group]  = Tracker["fsc05"]
 					res_143[index_of_group] = Tracker["fsc143"]
-				if Blockdata["fftwmpi"]:
-					if( Blockdata["myid_on_node"] == 0):
-						tvol2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_2_%d.hdf")%index_of_group)
-						tweight2 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_2_%d.hdf")%index_of_group)
-						treg2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "trol_2_%d.hdf"%index_of_group))
-					else:
-						tvol2 		= model_blank(1)
-						tweight2 	= model_blank(1)
-						treg2		= model_blank(1)
-					tvol2 = steptwo_mpi(tvol2, tweight2, treg2, cfsc, False, color = index_of_colors) # has to be False!!!
-					del tweight2, treg2
-					if( Blockdata["myid_on_node"] == 0):
-						if(Tracker["mask3D"] == None): tvol2 = cosinemask(tvol2, radius = Tracker["constants"]["radius"])
-						else: Util.mul_img(tvol2, get_im(Tracker["constants"]["mask3D"]))
-						tvol2.write_image(os.path.join(Tracker["directory"], "vol_grp%03d_iter%03d.hdf"%(index_of_group,iteration)))
-						del tvol2
-				else:
-					if( Blockdata["myid_on_node"] == 0):
-						tvol2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_2_%d.hdf")%index_of_group)
-						tweight2 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_2_%d.hdf")%index_of_group)
-						treg2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "trol_2_%d.hdf"%index_of_group))
-						tvol2 = steptwo(tvol2, tweight2, treg2, cfsc, False)
-						del tweight2, treg2
-						if(Tracker["mask3D"] == None):  tvol2 = cosinemask(tvol2, radius = Tracker["constants"]["radius"])
-						else:  Util.mul_img(tvol2, get_im(Tracker["constants"]["mask3D"]))
-						tvol2.write_image(os.path.join(Tracker["directory"], "vol_grp%03d_iter%03d.hdf"%(index_of_group,iteration)))
-						del tvol2
 				mpi_barrier(Blockdata["shared_comm"])
 			mpi_barrier(Blockdata["shared_comm"])
 	mpi_barrier(MPI_COMM_WORLD)
@@ -3098,14 +3085,8 @@ def do3d(procid, data, newparams, refang, rshifts, norm_per_particle, myid, mpi_
 
 	#  Without filtration
 	from reconstruction import recons3d_trl_struct_MPI
-	
+
 	if( mpi_comm < -1 ): mpi_comm = MPI_COMM_WORDLD
-	if Blockdata["subgroup_myid"]==Blockdata["nodes"][procid]:
-		if( procid == 0 ):
-			cmd = "{} {}".format("mkdir", os.path.join(Tracker["directory"], "tempdir") )
-			if os.path.exists(os.path.join(Tracker["directory"], "tempdir")): print("tempdir exists")
-			else: cmdexecute(cmd)
-	
 	"""
 	tvol, tweight, trol = recons3d_4nnstruct_MPI(myid = Blockdata["subgroup_myid"], main_node = Blockdata["nodes"][procid], prjlist = data, \
 											paramstructure = newparams, refang = refang, delta = Tracker["delta"], CTF = Tracker["constants"]["CTF"],\
@@ -3119,8 +3100,10 @@ def do3d(procid, data, newparams, refang, rshifts, norm_per_particle, myid, mpi_
 											target_size = (2*Tracker["nxinit"]+3), avgnorm = Tracker["avgvaradj"][procid], norm_per_particle = norm_per_particle)
 
 	if Blockdata["subgroup_myid"]==Blockdata["nodes"][procid]:
-		while not os.path.exists(os.path.join(Tracker["directory"], "tempdir")):
-			sleep(5)
+		if( procid == 0 ):
+			cmd = "{} {}".format("mkdir", os.path.join(Tracker["directory"], "tempdir") )
+			if os.path.exists(os.path.join(Tracker["directory"], "tempdir")): print("tempdir exists")
+			else: cmdexecute(cmd)
 		tvol.set_attr("is_complex",0)
 		tvol.write_image(os.path.join(Tracker["directory"], "tempdir", "tvol_%01d_%03d.hdf"%(procid,Tracker["mainiteration"])))
 		tweight.write_image(os.path.join(Tracker["directory"], "tempdir", "tweight_%01d_%03d.hdf"%(procid,Tracker["mainiteration"])))
@@ -3272,53 +3255,38 @@ def do3d_sorting_groups_rec3d(iteration, masterdir, log_main):
 					line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 					msg = "group %d  of FSC is done"%index_of_group
 					print(line, msg)
-					log_main.add(msg)	
+					log_main.add(msg)
+					
 				Tracker = wrap_mpi_bcast(Tracker, Blockdata["no_of_processes_per_group"]-1, Blockdata["shared_comm"])
-				cfsc = wrap_mpi_bcast(cfsc, Blockdata["no_of_processes_per_group"]-1, Blockdata["shared_comm"])
+				cfsc    = wrap_mpi_bcast(cfsc, Blockdata["no_of_processes_per_group"]-1, Blockdata["shared_comm"])
 				Tracker["maxfrad"] = Tracker["constants"]["nnxo"]//2
+				
+				if( Blockdata["myid_on_node"] == 0): treg0 = get_im(os.path.join(Clusterdir, "tempdir", "trol_0_%03d.hdf"%iteration))
+				else:
+					treg0    = model_blank(1)
+					tvol0    = model_blank(1)
+					tweight0 = model_blank(1)
+				#print("step two", Blockdata["color"], index_of_group, index_of_colors)			
+				tvol0 = steptwo_mpi(tvol0, tweight0, treg0, cfsc, False, color = index_of_colors)				
+				if(Blockdata["myid_on_node"] == 0):
+					tvol0.write_image(os.path.join(masterdir, "vol_unfiltered_0_grp%03d.hdf"%index_of_group))			
+				del tvol0, tweight0, treg0
+				if( Blockdata["myid_on_node"] == 0):# has to be main cpu
+					tvol1 		= get_im(os.path.join(Clusterdir, "tempdir", "tvol_1_%03d.hdf")%iteration)
+					tweight1 	= get_im(os.path.join(Clusterdir, "tempdir", "tweight_1_%03d.hdf")%iteration)
+					treg1 =       get_im(os.path.join(Clusterdir, "tempdir", "trol_1_%03d.hdf"%iteration))
+				else:
+					treg1    = model_blank(1)
+					tvol1    = model_blank(1)
+					tweight1 = model_blank(1)
+				tvol1 = steptwo_mpi(tvol1, tweight1, treg1, cfsc, False, color = index_of_colors)				
+				if (Blockdata["myid_on_node"] == 0):# has to be main cpu
+					tvol1.write_image(os.path.join(masterdir, "vol_unfiltered_1_grp%03d.hdf"%index_of_group))					
+				#--  memory_check(Blockdata["myid"],"first node, before steptwo")
+				del tvol1, tweight1, treg1
 				if( Blockdata["myid_on_node"] == 0):
 					res_05[index_of_group]  = Tracker["fsc05"]
 					res_143[index_of_group] = Tracker["fsc143"]
-				if Blockdata["fftwmpi"]:
-					if( Blockdata["myid_on_node"] == 0):
-						treg0 = get_im(os.path.join(Clusterdir, "tempdir", "trol_0_%03d.hdf"%iteration))
-					else:
-						treg0    = model_blank(1)
-						tvol0    = model_blank(1)
-						tweight0 = model_blank(1)
-				 	tvol0 = steptwo_mpi(tvol0, tweight0, treg0, cfsc, False, color = index_of_colors)
-				 	if( Blockdata["myid_on_node"] == 0): 
-				 		tvol0.write_image(os.path.join(masterdir, "vol_unfiltered_0_grp%03d.hdf"%index_of_group))
-				 	del tvol0, tweight0, treg0
-				else:
-					if( Blockdata["myid_on_node"] == 0):
-						treg0 = get_im(os.path.join(Clusterdir, "tempdir", "trol_0_%03d.hdf"%iteration))
-						tvol0 = steptwo(tvol0, tweight0, treg0, cfsc, False)
-						tvol0.write_image(os.path.join(masterdir, "vol_unfiltered_0_grp%03d.hdf"%index_of_group))			
-						del tvol0, tweight0, treg0
-				mpi_barrier(Blockdata["shared_comm"])
-				if Blockdata["fftwmpi"]:
-					if( Blockdata["myid_on_node"] == 0):# has to be main cpu
-						tvol1 		= get_im(os.path.join(Clusterdir, "tempdir", "tvol_1_%03d.hdf")%iteration)
-						tweight1 	= get_im(os.path.join(Clusterdir, "tempdir", "tweight_1_%03d.hdf")%iteration)
-						treg1 =       get_im(os.path.join(Clusterdir, "tempdir", "trol_1_%03d.hdf"%iteration))
-					else:
-						treg1    = model_blank(1)
-						tvol1    = model_blank(1)
-						tweight1 = model_blank(1)
-					tvol1 = steptwo_mpi(tvol1, tweight1, treg1, cfsc, False, color = index_of_colors)
-					if (Blockdata["myid_on_node"] == 0): 
-						tvol1.write_image(os.path.join(masterdir, "vol_unfiltered_1_grp%03d.hdf"%index_of_group))
-					del tvol1, tweight1, treg1
-				else:
-					if( Blockdata["myid_on_node"] ==0):
-						tvol1    = get_im(os.path.join(Clusterdir, "tempdir", "tvol_1_%03d.hdf")%iteration)
-						tweight1 = get_im(os.path.join(Clusterdir, "tempdir", "tweight_1_%03d.hdf")%iteration)
-						treg1    = get_im(os.path.join(Clusterdir, "tempdir", "trol_1_%03d.hdf"%iteration))
-						tvol1    = steptwo(tvol1, tweight1, treg1, cfsc, False)
-						tvol1.write_image(os.path.join(masterdir, "vol_unfiltered_1_grp%03d.hdf"%index_of_group))					
-						#--  memory_check(Blockdata["myid"],"first node, before steptwo")
-						del tvol1, tweight1, treg1
 				mpi_barrier(Blockdata["shared_comm"])
 			mpi_barrier(Blockdata["shared_comm"])
 	mpi_barrier(MPI_COMM_WORLD)	
@@ -3460,12 +3428,8 @@ def get_dist1(vec1, vec2):
 	return sum_dot
 
 def get_refa_vecs(angle_step, sym, tilt1, tilt2):
-	refa          = even_angles(angle_step, symmetry = sym, theta1= tilt1,  theta2 = tilt2, method='S', phiEqpsi="Zero")
-	refa_vecs     = []
-	for i in xrange(len(refa)):
-		tmp = getvec(refa[i][0], refa[i][1])
-		refa_vecs.append(tmp)
-	return refa_vecs
+	from utilities import angles_to_normals
+	return angles_to_normals(even_angles(angle_step, symmetry = sym, theta1= tilt1,  theta2 = tilt2, method='S', phiEqpsi="Zero") )
 
 def find_neighborhood(refa_vecs, minor_groups):
 	matched_oriens  = [ [None, None] for i in xrange(len(minor_groups))]
@@ -3478,11 +3442,11 @@ def find_neighborhood(refa_vecs, minor_groups):
 					max_value = this_dis
 					matched_oriens[iproj] = [minor_groups[iproj], jproj]
 	return matched_oriens
-	
+
 def reassign_ptls_in_orien_groups(assigned_ptls_in_groups, matched_pairs):
 	tmplist = []
 	for iorien in xrange(len(matched_pairs)):
-		assigned_ptls_in_groups[matched_pairs[iorien][1]] +=assigned_ptls_in_groups[matched_pairs[iorien][0]]
+		assigned_ptls_in_groups[matched_pairs[iorien][1]] += assigned_ptls_in_groups[matched_pairs[iorien][0]]
 		tmplist.append(matched_pairs[iorien][0])
 	reassignment = []
 	for iorien in xrange(len(assigned_ptls_in_groups)):
@@ -3502,6 +3466,7 @@ def findall_dict(value, L, start=0):
 			if value == L[i]: positions.append(i) 
 		except: pass 
 	return positions
+
 def do_assignment_by_dmatrix_orien_group(peaks, orien_group_members, number_of_groups):
 	import numpy as np
 	import random
@@ -3566,7 +3531,7 @@ def do_assignment_by_dmatrix_orien_group(peaks, orien_group_members, number_of_g
 	del del_column
 	del del_row
 	return assignment
-	
+
 def get_orien_assignment_mpi(angle_step, partids, params, log_main):
 	global Tracker, Blockdata
 	if Blockdata["myid"] == Blockdata["main_node"]:
@@ -3580,9 +3545,8 @@ def get_orien_assignment_mpi(angle_step, partids, params, log_main):
 	refa = even_angles(angle_step, symmetry = Tracker["constants"]["symmetry"], \
 	     theta1 = Tracker["tilt1"], theta2 = Tracker["tilt2"], method='S', phiEqpsi="Zero")
 	refa_vecs = []
-	for i in xrange(len(refa)):
-		tmp = getvec(refa[i][0], refa[i][1])
-		refa_vecs.append(tmp)
+	for i in xrange(len(refa)): refa_vecs.append(getvec(refa[i][0], refa[i][1]))
+
 	if Blockdata["myid"] == Blockdata["main_node"]: print("step1")	
 	if Blockdata["main_node"] == Blockdata["myid"]:
 		params  = read_text_row(params)
@@ -3629,7 +3593,7 @@ def get_orien_assignment_mpi(angle_step, partids, params, log_main):
 		small_groups = []
 		all_oriens   = range(len(refa_vecs))
 		for iorien in xrange(len(refa_vecs)):
-			if len(ptls_in_orien_groups[iorien]) < Tracker["min_orien_group_size"]:small_groups.append(iorien)
+			if len(ptls_in_orien_groups[iorien]) < Tracker["min_orien_group_size"]:  small_groups.append(iorien)
 		matched_pairs = find_neighborhood(refa_vecs, small_groups)
 		ptls_in_orien_groups = reassign_ptls_in_orien_groups(ptls_in_orien_groups, matched_pairs)
 	else: ptls_in_orien_groups = 0
@@ -3699,35 +3663,22 @@ def do3d_sorting_groups_nofsc_iter(data, iteration):
 				Tracker["fsc05"]  =	Tracker["nxinit"]//2
 				cfsc = [0.0 for i in xrange(Tracker["constants"]["nnxo"])]
 				if( Blockdata["myid_on_node"] == 0):
+					tvol2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_2_%d.hdf")%index_of_group)
+					tweight2 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_2_%d.hdf")%index_of_group)
+					treg2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "trol_2_%d.hdf"%index_of_group))
+				else:
+					tvol2 		= model_blank(1)
+					tweight2 	= model_blank(1)
+					treg2		= model_blank(1)
+				tvol2 = steptwo_mpi(tvol2, tweight2, treg2, cfsc, False, color = index_of_colors) # has to be False!!!
+				del tweight2, treg2
+				if( Blockdata["myid_on_node"] == 0):
+					if(Tracker["mask3D"] == None):  tvol2 = cosinemask(tvol2, radius = Tracker["constants"]["radius"])
+					else: Util.mul_img(tvol2, get_im(Tracker["constants"]["mask3D"]))
+					tvol2.write_image(os.path.join(Tracker["directory"], "vol_grp%03d_iter%03d.hdf"%(index_of_group,iteration)))
+					del tvol2
 					res_05[index_of_group]  = Tracker["fsc05"]
 					res_143[index_of_group] = Tracker["fsc143"]
-				if Blockdata["fftwmpi"]:
-					if( Blockdata["myid_on_node"] == 0):
-						tvol2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_2_%d.hdf")%index_of_group)
-						tweight2 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_2_%d.hdf")%index_of_group)
-						treg2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "trol_2_%d.hdf"%index_of_group))
-					else:
-						tvol2 		= model_blank(1)
-						tweight2 	= model_blank(1)
-						treg2		= model_blank(1)
-					tvol2 = steptwo_mpi(tvol2, tweight2, treg2, cfsc, False, color = index_of_colors) # has to be False!!!
-					del tweight2, treg2
-					if( Blockdata["myid_on_node"] == 0):
-						if(Tracker["mask3D"] == None):tvol2 = cosinemask(tvol2, radius = Tracker["constants"]["radius"])
-						else: Util.mul_img(tvol2, get_im(Tracker["constants"]["mask3D"]))
-						tvol2.write_image(os.path.join(Tracker["directory"], "vol_grp%03d_iter%03d.hdf"%(index_of_group,iteration)))
-						del tvol2
-				else:
-					if( Blockdata["myid_on_node"] == 0):
-						tvol2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_2_%d.hdf")%index_of_group)
-						tweight2 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_2_%d.hdf")%index_of_group)
-						treg2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "trol_2_%d.hdf"%index_of_group))
-						tvol2 = steptwo(tvol2, tweight2, treg2, cfsc, False)
-						del tweight2, treg2
-						if(Tracker["mask3D"] == None): tvol2 = cosinemask(tvol2, radius = Tracker["constants"]["radius"])
-						else: Util.mul_img(tvol2, get_im(Tracker["constants"]["mask3D"]))
-						tvol2.write_image(os.path.join(Tracker["directory"], "vol_grp%03d_iter%03d.hdf"%(index_of_group,iteration)))
-						del tvol2
 				mpi_barrier(Blockdata["shared_comm"])
 			mpi_barrier(Blockdata["shared_comm"])
 	mpi_barrier(MPI_COMM_WORLD)
@@ -3771,34 +3722,23 @@ def do3d_sorting_groups_nofsc_smearing_iter(data, paramstructure, norm_per_parti
 				Tracker["fsc143"] =	Tracker["nxinit"]//2
 				Tracker["fsc05"]  =	Tracker["nxinit"]//2
 				cfsc = [0.0 for i in xrange(Tracker["constants"]["nnxo"])]
-				if(Blockdata["myid_on_node"] == 0):
+				if( Blockdata["myid_on_node"] == 0):
+					tvol2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_2_%d.hdf")%index_of_group)
+					tweight2 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_2_%d.hdf")%index_of_group)
+					treg2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "trol_2_%d.hdf"%index_of_group))
+				else:
+					tvol2 		= model_blank(1)
+					tweight2 	= model_blank(1)
+					treg2		= model_blank(1)
+				tvol2 = steptwo_mpi(tvol2, tweight2, treg2, cfsc, False, color = index_of_colors) # has to be False!!!
+				del tweight2, treg2
+				if( Blockdata["myid_on_node"] == 0):
+					tvol2 = cosinemask(tvol2, radius = Tracker["constants"]["radius"])
+					tvol2.write_image(os.path.join(Tracker["directory"], "vol_grp%03d_iter%03d.hdf"%(index_of_group,iteration)))
+					del tvol2
 					res_05[index_of_group]  = Tracker["fsc05"]
 					res_143[index_of_group] = Tracker["fsc143"]
-				if Blockdata["fftwmpi"]:
-					if( Blockdata["myid_on_node"] == 0):
-						tvol2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_2_%d.hdf")%index_of_group)
-						tweight2 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_2_%d.hdf")%index_of_group)
-						treg2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "trol_2_%d.hdf"%index_of_group))
-					else:
-						tvol2 		= model_blank(1)
-						tweight2 	= model_blank(1)
-						treg2		= model_blank(1)
-					tvol2 = steptwo_mpi(tvol2, tweight2, treg2, cfsc, False, color = index_of_colors) # has to be False!!!
-					del tweight2, treg2
-					if( Blockdata["myid_on_node"] == 0):
-						tvol2 = cosinemask(tvol2, radius = Tracker["constants"]["radius"])
-						tvol2.write_image(os.path.join(Tracker["directory"], "vol_grp%03d_iter%03d.hdf"%(index_of_group,iteration)))
-					del tvol2
-				else:
-					if(Blockdata["myid_on_node"] == 0):
-						tvol2 	 = get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_2_%d.hdf")%index_of_group)
-						tweight2 = get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_2_%d.hdf")%index_of_group)
-						treg2    = get_im(os.path.join(Tracker["directory"], "tempdir", "trol_2_%d.hdf"%index_of_group))
-						tvol2    = steptwo(tvol2, tweight2, treg2, cfsc, False) # has to be False!!!
-						del tweight2, treg2
-						vol2 = cosinemask(tvol2, radius = Tracker["constants"]["radius"])
-						tvol2.write_image(os.path.join(Tracker["directory"], "vol_grp%03d_iter%03d.hdf"%(index_of_group,iteration)))
-						del tvol2
+				else: del tvol2
 				mpi_barrier(Blockdata["shared_comm"])
 			mpi_barrier(Blockdata["shared_comm"])
 	mpi_barrier(MPI_COMM_WORLD)
@@ -4852,61 +4792,6 @@ def recons3d_4nnsorting_group_fsc_MPI(myid, main_node, prjlist, fsc_half, random
 	if myid == main_node: return fftvol, weight, refvol
 	else: return None, None, None
 #####
-def steptwo(tvol, tweight, treg, cfsc = None, regularized = True):
-	global Tracker, Blockdata
-	nz = tweight.get_zsize()
-	ny = tweight.get_ysize()
-	nx = tweight.get_xsize()
-	tvol.set_attr("is_complex",1)
-	if regularized:
-		nr = len(cfsc)
-		limitres = 0
-		for i in xrange(nr):
-			cfsc[i] = min(max(cfsc[i], 0.0), 0.999)
-			#print( i,cfsc[i] )
-			if( cfsc[i] == 0.0 ):
-				limitres = i-1
-				break
-		if( limitres == 0 ): limitres = nr-2;
-		ovol = reshape_1d(cfsc, nr, 2*nr)
-		limitres = 2*min(limitres, Tracker["maxfrad"])  # 2 on account of padding, which is always on
-		maxr2 = limitres**2
-		for i in xrange(limitres+1, len(ovol), 1):   ovol[i] = 0.0
-		ovol[0] = 1.0
-		#print(" ovol  ", ovol)
-		it = model_blank(2*nr)
-		for i in xrange(2*nr):  it[i] = ovol[i]
-		del ovol
-		#  Do not regularize first four
-		for i in xrange(5):  treg[i] = 0.0
-		Util.reg_weights(tweight, treg, it)
-		del it
-	else:
-		limitres = 2*min(Tracker["constants"]["nnxo"]//2, Tracker["maxfrad"])
-		maxr2 = limitres**2
-	#  Iterative weights
-	if( Tracker["constants"]["symmetry"] != "c1" ):
-		tvol    = tvol.symfvol(Tracker["constants"]["symmetry"], limitres)
-		tweight = tweight.symfvol(Tracker["constants"]["symmetry"], limitres)
-
-	#  tvol is overwritten, meaning it is also an output
-	Util.iterefa(tvol, tweight, maxr2, Tracker["constants"]["nnxo"])
-	#  Either pad or window in F space to 2*nnxo
-	nx = tvol.get_ysize()
-	if( nx > 2*Tracker["constants"]["nnxo"] ):
-		tvol = fdecimate(tvol, 2*Tracker["constants"]["nnxo"], 2*Tracker["constants"]["nnxo"], 2*Tracker["constants"]["nnxo"], False, False)
-	elif(nx < 2*Tracker["constants"]["nnxo"] ):
-		tvol = fpol(tvol, 2*Tracker["constants"]["nnxo"], 2*Tracker["constants"]["nnxo"], 2*Tracker["constants"]["nnxo"], RetReal = False, normalize = False)
-
-	tvol = fft(tvol)
-	tvol = cyclic_shift(tvol,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
-	tvol.set_attr("npad",2)
-	tvol.div_sinc(1)
-	tvol.del_attr("npad")
-	tvol = Util.window(tvol, Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
-	tvol = cosinemask(tvol,Tracker["constants"]["nnxo"]//2-1,5, None) # clean artifacts in corners
-	return tvol
-
 def do3d_sorting_groups_trl_smearing_iter(data, paramstructure, norm_per_particle, iteration, unfiltered = False):
 	global Tracker, Blockdata
 	keepgoing = 1
@@ -4976,37 +4861,25 @@ def do3d_sorting_groups_trl_smearing_iter(data, paramstructure, norm_per_particl
 					line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 					print(line, "group %d  of do3d_sorting_groups_trl_iter is done"%index_of_group)
 				Tracker = wrap_mpi_bcast(Tracker, Blockdata["no_of_processes_per_group"]-1, Blockdata["shared_comm"])
-				cfsc = wrap_mpi_bcast(cfsc, Blockdata["no_of_processes_per_group"]-1, Blockdata["shared_comm"])
-				Tracker["maxfrad"] = Tracker["nxinit"]//2
-				res_05[index_of_group]  = Tracker["fsc05"]
-				res_143[index_of_group] = Tracker["fsc143"]
-				if Blockdata["fftwmpi"]:			
-					if( Blockdata["myid_on_node"] == 0):
-						tvol2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_2_%d.hdf")%index_of_group)
-						tweight2 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_2_%d.hdf")%index_of_group)
-						treg2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "trol_2_%d.hdf"%index_of_group))
-					else:
-						tvol2 		= model_blank(1)
-						tweight2 	= model_blank(1)
-						treg2		= model_blank(1)
-					tvol2 = steptwo_mpi(tvol2, tweight2, treg2, cfsc, unfiltered, color = index_of_colors) # has to be False!!!
-					del tweight2, treg2
-					if( Blockdata["myid_on_node"] == 0):
-						if(Tracker["mask3D"] == None):  tvol2 = cosinemask(tvol2, radius = Tracker["constants"]["radius"])
-						else: Util.mul_img(tvol2, get_im(Tracker["constants"]["mask3D"]))
-						tvol2.write_image(os.path.join(Tracker["directory"], "vol_grp%03d_iter%03d.hdf"%(index_of_group,iteration)))
-						del tvol2
+				cfsc    = wrap_mpi_bcast(cfsc, Blockdata["no_of_processes_per_group"]-1, Blockdata["shared_comm"])
+				Tracker["maxfrad"] = Tracker["nxinit"]//2				
+				if( Blockdata["myid_on_node"] == 0):
+					tvol2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_2_%d.hdf")%index_of_group)
+					tweight2 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_2_%d.hdf")%index_of_group)
+					treg2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "trol_2_%d.hdf"%index_of_group))
 				else:
-					if( Blockdata["myid_on_node"] == 0):
-						tvol2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_2_%d.hdf")%index_of_group)
-						tweight2 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_2_%d.hdf")%index_of_group)
-						treg2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "trol_2_%d.hdf"%index_of_group))
-						tvol2       = steptwo(tvol2, tweight2, treg2, cfsc, unfiltered)
-						del tweight2, treg2
-						if(Tracker["mask3D"] == None):  tvol2 = cosinemask(tvol2, radius = Tracker["constants"]["radius"])
-						else: Util.mul_img(tvol2, get_im(Tracker["constants"]["mask3D"]))
-						tvol2.write_image(os.path.join(Tracker["directory"], "vol_grp%03d_iter%03d.hdf"%(index_of_group,iteration)))
-						del tvol2
+					tvol2 		= model_blank(1)
+					tweight2 	= model_blank(1)
+					treg2		= model_blank(1)
+				tvol2 = steptwo_mpi(tvol2, tweight2, treg2, cfsc, unfiltered, color = index_of_colors) # has to be False!!!
+				del tweight2, treg2
+				if( Blockdata["myid_on_node"] == 0):
+					if(Tracker["mask3D"] == None):  tvol2 = cosinemask(tvol2, radius = Tracker["constants"]["radius"])
+					else: Util.mul_img(tvol2, get_im(Tracker["constants"]["mask3D"]))
+					tvol2.write_image(os.path.join(Tracker["directory"], "vol_grp%03d_iter%03d.hdf"%(index_of_group,iteration)))
+					del tvol2
+					res_05[index_of_group]  = Tracker["fsc05"]
+					res_143[index_of_group] = Tracker["fsc143"]
 				mpi_barrier(Blockdata["shared_comm"])
 			mpi_barrier(Blockdata["shared_comm"])
 	mpi_barrier(MPI_COMM_WORLD)	
@@ -5234,7 +5107,6 @@ def main():
 	parser.add_option("--stop_eqkmeans_percentage",        type   ="float",         default =2.0,                      help="particle change percentage for stopping equal size Kmeans")
 	parser.add_option("--minimum_ptl_number",              type   ="int",           default =20,					   help="integer number, the smallest orien group size equals number_of_groups multiplies this number")
 	parser.add_option("--notapplybckgnoise",               action ="store_true",    default =False,                    help="do not applynoise")
-	parser.add_option("--fftwmpi",                         action="store_true",  	default=False,                     help="Use fftwmpi (default False)")
 	## postprocessing options
 	parser.add_option("--mtf",                             type   ="string",        default ='',                       help="mtf file")
 	parser.add_option("--B_enhance",                       type   ="float",         default=0.0,                       help="apply Bfactor to enhance map or not")
@@ -5333,9 +5205,6 @@ def main():
 	if os.path.exists(options.refinement_dir):Tracker["constants"]["refinement_method"] ="SPARX"
 	else: ERROR("Incorrect refinement_dir ", "sxsort3d_new.py", 1, Blockdata["myid"])
 
-	if options.fftwmpi: Blockdata["fftwmpi"] = True
-	else:               Blockdata["fftwmpi"] = False
-	
 	###--------------------------------------------------------------------------------------------
 	#    Two typical sorting scenarios  
 	#

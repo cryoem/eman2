@@ -485,7 +485,7 @@ EMData * FourierWeightAverager::finish()
 }
 
 LocalWeightAverager::LocalWeightAverager()
-	: normimage(0), freenorm(0), nimg(0)
+	: normimage(0), freenorm(0), nimg(0),fourier(0)
 {
 
 }
@@ -502,18 +502,27 @@ void LocalWeightAverager::add_image(EMData * image)
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
 
+	fourier = params.set_default("fourier", (int)0);
 	if (nimg == 1) {
-		result = image->copy_head();
-		result->set_size(nx, ny, nz);
+		if (fourier) {
+			result = image->copy_head();
+			result->set_size(nx+2, ny, nz);
+			result->set_complex(1);
+		} else {
+			result = image->copy_head();
+			result->set_size(nx, ny, nz);
+		}
 		result->to_zero();
 
+		
 		normimage = params.set_default("normimage", (EMData*)0);
 		if (normimage==0) { normimage=new EMData(nx,ny,nz); freenorm=1; }
 		normimage->to_zero();
 		normimage->add(0.0000001f);
 	}
 
-	images.push_back(image->copy());
+	if (fourier)  images.push_back(image->do_fft());
+	else images.push_back(image->copy());
 }
 
 EMData * LocalWeightAverager::finish()
@@ -530,7 +539,7 @@ EMData * LocalWeightAverager::finish()
 	EMData *stg1 = new EMData(nx,ny,nz);
 	
 	for (std::vector<EMData*>::iterator im = images.begin(); im!=images.end(); ++im) stg1->add(**im);
-	stg1->process_inplace("normalize.edgemean");
+	stg1->process_inplace("normalize");
 	
 //	std::vector<EMData*> weights;
 	for (std::vector<EMData*>::iterator im = images.begin(); im!=images.end(); ++im) {
