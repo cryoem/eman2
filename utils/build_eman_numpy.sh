@@ -9,6 +9,10 @@ if [ $# -lt 1 ];then
     exit 1
 fi
 
+source activate root
+
+# unset args before using, it is set in activate script above
+unset args
 for elem in ${@};do
     regex=-*
     if [[ $elem == $regex ]];then
@@ -19,8 +23,6 @@ for elem in ${@};do
 done
 
 set -xe
-
-source activate root
 
 src_dir="${CONDA_PREFIX}/github.com/cryoem/eman2"
 if [ ! -d "${src_dir}/.git" ];then
