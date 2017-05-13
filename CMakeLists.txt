@@ -12,7 +12,9 @@ MARK_AS_ADVANCED(CLEAR CMAKE_VERBOSE_MAKEFILE)
 OPTION(CMAKE_VERBOSE_MAKEFILE "if all commands will be echoed to the console during the make" ON)
 
 if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD")
-	set(EMAN_PY_INSTALL_PREFIX $ENV{SP_DIR})
+	set(CONDA_SP_DIR $ENV{SP_DIR})
+		
+	set(EMAN_PY_INSTALL_PREFIX ${CONDA_SP_DIR})
 		
 	if(NOT WIN32)
 		SET(EMAN_INSTALL_PREFIX $ENV{PREFIX} CACHE PATH "installation prefix")
@@ -633,8 +635,8 @@ FIND_PATH(NUMPY_INCLUDE_PATH numpy/arrayobject.h
 	$ENV{HOME}/anaconda2/lib/python2.7/site-packages/numpy/core/include
 	$ENV{HOME}/EMAN2/anaconda2/lib/python2.7/site-packages/numpy/core/include
 	$ENV{PYTHON_ROOT}/lib/python2.7/site-packages/numpy/core/include
-	$ENV{SP_DIR}/numpy/core/include
-	$ENV{SP_DIR}/numpy/core/include
+	${CONDA_SP_DIR}/numpy/core/include
+	${CONDA_SP_DIR}/numpy/core/include
 	/usr/local/lib/python2.7/site-packages/numpy/core/include
 	/usr/lib64/python2.7/site-packages/numpy/core/include
 	/usr/lib/python2.7/site-packages/numpy/core/include
