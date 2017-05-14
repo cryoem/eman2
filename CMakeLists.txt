@@ -21,6 +21,16 @@ if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" OR ENABLE_CONDA)
 		else()
 			set(CONDA_PREFIX $ENV{LIBRARY_PREFIX})
 		endif()
+	elseif(ENABLE_CONDA)
+		find_path(CONDA_PREFIX conda
+					 PATHS ENV PATH
+				 )
+		get_filename_component(CONDA_PREFIX ${CONDA_PREFIX}/.. ABSOLUTE)
+
+		execute_process(COMMAND ${CONDA_PREFIX}/bin/python -c "import site; print site.getsitepackages()[0]"
+						OUTPUT_VARIABLE CONDA_SP_DIR
+						OUTPUT_STRIP_TRAILING_WHITESPACE
+					   )
 	endif()
 		
 	set(EMAN_PY_INSTALL_PREFIX ${CONDA_SP_DIR})
