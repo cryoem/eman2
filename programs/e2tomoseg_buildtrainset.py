@@ -35,7 +35,7 @@ def main():
 	parser.add_argument("--ncopy",type=int,help="Number of copies for NEGATIVE samples. (number of copies of particles is calculated accordingly) ",default=10, guitype='intbox', row=5, col=0, rowspan=1, colspan=1, mode="set")
 	parser.add_argument("--trainset_output", type=str,help="output file name of the training set.Default is the input particle file name plus _trainset.hdf", default=None,guitype='strbox', row=4, col=0, rowspan=1, colspan=3, mode="set")
 	parser.add_argument("--zthick",type=int,help="Thickness in z ",default=0, guitype='intbox', row=5, col=1, rowspan=1, colspan=1, mode="set")
-	parser.add_argument("--validset",type=float,help="Propotion of particles in validation set. Default is 0.2 ",default=0.2, guitype='floatbox', row=7, col=1, rowspan=1, colspan=1, mode="set")
+	parser.add_argument("--validset",type=float,help="Propotion of particles in validation set. Default is 0.2 ",default=0.0, guitype='floatbox', row=7, col=1, rowspan=1, colspan=1, mode="set")
 
 	##################
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
