@@ -288,7 +288,7 @@ def params_changes( params, oldparams ):
 	shifter     = 0.0
 	#  The shifter is given in the full scale displacement
 	for i in xrange(n):
-		shifter     += (params[i][3] - oldparams[i][3] )**2 + (params[i][4] - oldparams[i][4] )**2
+		shifter += (params[i][3] - oldparams[i][3] )**2 + (params[i][4] - oldparams[i][4] )**2
 		anger += get_anger(params[i][0:3], oldparams[i][0:3],Tracker["constants"]["symmetry"])
 
 	return round(anger/n,5), round(sqrt(shifter/2/n),5)
@@ -502,9 +502,8 @@ def number_of_cones_to_delta(number_of_cones, symmetry):
 					a[i] = [q["phi"], q["theta"], 0.0]
 				nren = len(a)
 				if(nren>number_of_cones): return float(i), nren
-			
 
-		print(  "  ERROR  in  number_of_cones_to_delta")
+		ERROR(  "number_of_cones_to_delta","should not be here",0)
 		return -1, 0
 
 def find_assignments_of_refangles_to_angles(normals_set, ancor_angle, an, sym):
@@ -1226,7 +1225,7 @@ def do3d_final_mpi(final_iter):
 		tvol1    	= recv_EMData(Blockdata["main_shared_nodes"][1], tag, MPI_COMM_WORLD)
 		tweight1    = recv_EMData(Blockdata["main_shared_nodes"][1], tag, MPI_COMM_WORLD)
 		tvol1.set_attr_dict( {"is_complex":1, "is_fftodd":1, 'is_complex_ri': 1, 'is_fftpad': 1} )
-	mpi_barrier(MPI_COMM_WORLD)		
+	mpi_barrier(MPI_COMM_WORLD)
 	# do steptwo
 	if( Blockdata["color"] == Blockdata["node_volume"][1]):
 		if( Blockdata["myid_on_node"] == 0 ):
@@ -1237,7 +1236,7 @@ def do3d_final_mpi(final_iter):
 			treg0 		= model_blank(1)
 		tvol0 = steptwo_mpi(tvol0, tweight0, treg0, None,False , color = Blockdata["node_volume"][1])
 		del tweight0, treg0
-		if( Blockdata["myid_on_node"] == 0):
+		if( Blockdata["myid_on_node"] == 0 ):
 			tvol0.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_0_unfil.hdf"))
 	elif( Blockdata["color"] == Blockdata["node_volume"][0]):
 		#--  #--  memory_check(Blockdata["myid"],"second node, before steptwo")
@@ -6211,7 +6210,7 @@ def main():
 		Constants["maxit"]             			= 1
 		Constants["fuse_freq"]         			= 45  # Now in A, convert to absolute before using
 		sym                            			= options.symmetry
-		Constants["symmetry"]				= sym[0].lower() + sym[1:]
+		Constants["symmetry"]					= sym[0].lower() + sym[1:]
 		Constants["npad"]              			= 1
 		Constants["center"]            			= 0
 		Constants["shake"]             			= options.shake  #  move params every iteration
@@ -6864,7 +6863,7 @@ def main():
 				
 				#  Now that we have the curve, do the reconstruction
 				Tracker["maxfrad"] = Tracker["nxinit"]//2
-				if( Blockdata["no_of_groups"] > 1 ):  lorder = [0,0] #  Two blocks in patallel
+				if( Blockdata["no_of_groups"] > 1 ):  lorder = [0,0] #  Two blocks in parallel
 				elif( Blockdata["no_of_groups"] == 1 ):  lorder = [0,1] #  One after another
 				for iorder in xrange(2):
 					if( iorder == lorder[0] ):
