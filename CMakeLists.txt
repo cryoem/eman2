@@ -13,6 +13,13 @@ OPTION(CMAKE_VERBOSE_MAKEFILE "if all commands will be echoed to the console dur
 
 OPTION(ENABLE_CONDA "enable conda-supported build" ON)
 
+# Handle build strategies, 
+#        set CONDA_PREFIX and CONDA_SP_DIR
+#        set EMAN_PY_INSTALL_PREFIX and EMAN_INSTALL_PREFIX
+#        write eman2dir relative to SP_DIR path
+# If it is conda-build build, ENABLE_CONDA is ignored
+# If it is not conda-build build, ENABLE_CONDA is checked
+# If it is not conda-build build and ENABLE_CONDA is not set, it is legacy build
 if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" OR ENABLE_CONDA)
 	if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" )
 		set(CONDA_SP_DIR $ENV{SP_DIR})
@@ -22,6 +29,7 @@ if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" OR ENABLE_CONDA)
 			set(CONDA_PREFIX $ENV{LIBRARY_PREFIX})
 		endif()
 	elseif(ENABLE_CONDA)
+		# Assuming the active conda environment is on PATH, this finds the path of bin/ in the environment
 		find_path(CONDA_PREFIX conda
 					 PATHS ENV PATH
 				 )
@@ -46,6 +54,7 @@ else()
 	set(EMAN_PY_INSTALL_PREFIX     ${EMAN_INSTALL_PREFIX}/lib)
 	file(WRITE ${EMAN_PY_INSTALL_PREFIX}/eman2dir_relative_path_to_sp_dir "../")
 endif()
+
 SET(CMAKE_INSTALL_PREFIX ${EMAN_INSTALL_PREFIX} CACHE INTERNAL "installation prefix")
 MARK_AS_ADVANCED(CLEAR EMAN_INSTALL_PREFIX)
 
