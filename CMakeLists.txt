@@ -12,13 +12,19 @@ MARK_AS_ADVANCED(CLEAR CMAKE_VERBOSE_MAKEFILE)
 OPTION(CMAKE_VERBOSE_MAKEFILE "if all commands will be echoed to the console during the make" ON)
 
 if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD")
-	set(EMAN_PY_INSTALL_PREFIX $ENV{SP_DIR})
-		
+	set(CONDA_SP_DIR $ENV{SP_DIR})
 	if(NOT WIN32)
-		SET(EMAN_INSTALL_PREFIX $ENV{PREFIX} CACHE PATH "installation prefix")
+		set(CONDA_PREFIX $ENV{PREFIX})
+	else()
+		set(CONDA_PREFIX $ENV{LIBRARY_PREFIX})
+	endif()
+		
+	set(EMAN_PY_INSTALL_PREFIX ${CONDA_SP_DIR})
+		
+	SET(EMAN_INSTALL_PREFIX ${CONDA_PREFIX} CACHE PATH "installation prefix")
+	if(NOT WIN32)
 		file(WRITE ${EMAN_PY_INSTALL_PREFIX}/eman2dir_relative_path_to_sp_dir "../../../")
 	else()
-		SET(EMAN_INSTALL_PREFIX $ENV{LIBRARY_PREFIX} CACHE PATH "installation prefix")
 		file(WRITE ${EMAN_PY_INSTALL_PREFIX}/eman2dir_relative_path_to_sp_dir "../../Library/")
 	endif()
 else()
@@ -219,13 +225,10 @@ if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD")
 		message("${var}: ${${var}}")
 	endfunction()
 
-	if(NOT WIN32)
-		set(CMAKE_PREFIX_PATH $ENV{PREFIX})
-		set(GSL_INCLUDE_DIRS $ENV{PREFIX}/include)
-	else()
-		set(CMAKE_PREFIX_PATH $ENV{LIBRARY_PREFIX})
+	set(CMAKE_PREFIX_PATH ${CONDA_PREFIX})
+	set(GSL_INCLUDE_DIRS ${CONDA_PREFIX}/include)
+	if(WIN32)
 		add_definitions(-DGSL_DLL -DFTGL_LIBRARY_STATIC)
-		set(GSL_INCLUDE_DIRS $ENV{LIBRARY_PREFIX}/include)
 	endif()
 		
 	find_package(Boost COMPONENTS python REQUIRED)
@@ -261,26 +264,19 @@ if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD")
 	set(FREETYPE_INCLUDE_PATH ${FREETYPE_INCLUDE_DIRS} CACHE PATH "")
 
 	foreach(inc PNG JPEG TIFF ZLIB GSL GSL_CBLAS)
-		if(NOT WIN32)
-			set(${inc}_INCLUDE_PATH $ENV{PREFIX}/include CACHE PATH "")
-		else()
-			set(${inc}_INCLUDE_PATH $ENV{LIBRARY_PREFIX}/include CACHE PATH "")
-		endif()
+		set(${inc}_INCLUDE_PATH ${CONDA_PREFIX}/include CACHE PATH "")
 		message("${inc}_INCLUDE_PATH: ${${inc}_INCLUDE_PATH}")
 	endforeach()
 		
-	if(NOT WIN32)
-		set(FTGL_INCLUDE_PATH $ENV{PREFIX}/include CACHE PATH "")
-		set(FFTW3_INCLUDE_PATH $ENV{PREFIX}/include CACHE PATH "")
-		set(FFTW3d_INCLUDE_PATH $ENV{PREFIX}/include CACHE PATH "")
-	else()
-		set(FTGL_INCLUDE_PATH      $ENV{LIBRARY_PREFIX}/include CACHE PATH "")
-		set(FFTW3_INCLUDE_PATH     $ENV{LIBRARY_PREFIX}/include CACHE PATH "")
-		set(FFTW3d_INCLUDE_PATH    $ENV{LIBRARY_PREFIX}/include CACHE PATH "")
-		set(FFTW3_LIBRARY     "$ENV{LIBRARY_PREFIX}/lib/libfftw3f-3.lib;$ENV{LIBRARY_PREFIX}/lib/libfftw3-3.lib" CACHE PATH "")
-		set(FFTW3d_LIBRARY    $ENV{LIBRARY_PREFIX}/lib/libfftw3f-3.lib CACHE PATH "")
-		set(SZLIB_LIBRARY          $ENV{LIBRARY_PREFIX}/lib/libszip.lib CACHE PATH "")
-		set(HDF5_LIBRARY          $ENV{LIBRARY_PREFIX}/lib/libhdf5.lib CACHE PATH "" FORCE)
+	set(FTGL_INCLUDE_PATH      ${CONDA_PREFIX}/include CACHE PATH "")
+	set(FFTW3_INCLUDE_PATH     ${CONDA_PREFIX}/include CACHE PATH "")
+	set(FFTW3d_INCLUDE_PATH    ${CONDA_PREFIX}/include CACHE PATH "")
+	
+	if(WIN32)
+		set(FFTW3_LIBRARY     "${CONDA_PREFIX}/lib/libfftw3f-3.lib;${CONDA_PREFIX}/lib/libfftw3-3.lib" CACHE PATH "")
+		set(FFTW3d_LIBRARY    ${CONDA_PREFIX}/lib/libfftw3f-3.lib CACHE PATH "")
+		set(SZLIB_LIBRARY          ${CONDA_PREFIX}/lib/libszip.lib CACHE PATH "")
+		set(HDF5_LIBRARY          ${CONDA_PREFIX}/lib/libhdf5.lib CACHE PATH "" FORCE)
 
 		set(GL_INCLUDE_PATH  "C:/Program Files/Microsoft SDKs/Windows/v7.0/Include" CACHE PATH "")
 		set(GLU_INCLUDE_PATH "C:/Program Files/Microsoft SDKs/Windows/v7.0/Include" CACHE PATH "")
@@ -633,8 +629,8 @@ FIND_PATH(NUMPY_INCLUDE_PATH numpy/arrayobject.h
 	$ENV{HOME}/anaconda2/lib/python2.7/site-packages/numpy/core/include
 	$ENV{HOME}/EMAN2/anaconda2/lib/python2.7/site-packages/numpy/core/include
 	$ENV{PYTHON_ROOT}/lib/python2.7/site-packages/numpy/core/include
-	$ENV{SP_DIR}/numpy/core/include
-	$ENV{SP_DIR}/numpy/core/include
+	${CONDA_SP_DIR}/numpy/core/include
+	${CONDA_SP_DIR}/numpy/core/include
 	/usr/local/lib/python2.7/site-packages/numpy/core/include
 	/usr/lib64/python2.7/site-packages/numpy/core/include
 	/usr/lib/python2.7/site-packages/numpy/core/include
