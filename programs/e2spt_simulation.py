@@ -413,8 +413,10 @@ def randomizer(options, model, tag):
 
 		print "\nGenerating random orientation within asymmetric unit %s" %(options.sym)
 		sym = Symmetries.get( options.sym )
-		#orients = sym.gen_orientations("eman",{"n": options.nptcls,"phitoo";1,"inc_mirror";1})
-		orients = sym.gen_orientations("rand",{"n": options.nptcls,"phitoo":1,"inc_mirror":1})
+		
+		orients = sym.gen_orientations("eman",{"n": options.nptcls,"random_phi":1,"inc_mirror":1})
+		
+		#orients = sym.gen_orientations("rand",{"n": options.nptcls,"phitoo":1,"inc_mirror":1})
 
 		ii=1	#start at index 1 since the first particle's orientation is not randomized
 		for o in orients:
@@ -440,23 +442,27 @@ def randomizer(options, model, tag):
 			palts = numpy.append( preferredalt( options, mu=180,sigma=45, nptcls=ntop ), preferredalt( options, mu=0,sigma=45, nptcls=nbottom ), preferredalt( options, mu=90,sigma=45, nptcls=nside ) )
 
 
-		for i in range( options.nptcls ):
+		palts = numpy.array(palts)
 
-			random_transform = orientations[i]
-											
-			if palts.any():	#reassign altitude if preferred orientation was specified and new altitudes were generated successfully above
-				
-				rots=random_transform.get_rotation()
-				
-				az=rots['az']
-				phi=rots['phi']
-				alt=palts[i]
-				
-				random_transform=Transform({'type':'eman','az':az,'alt':alt,'phi':phi})
-				
-				orientations.update({ i:random_transform })
+		if options.preferredtop or options.preferredside: #reassign altitude if preferred orientation was specified and new altitudes were generated successfully above
 
-	else:
+			if palts.any():	
+
+				for i in range( options.nptcls ):
+
+					random_transform = orientations[i]
+													
+					rots=random_transform.get_rotation()
+					
+					az=rots['az']
+					phi=rots['phi']
+					alt=palts[i]
+					
+					random_transform=Transform({'type':'eman','az':az,'alt':alt,'phi':phi})
+					
+					orientations.update({ i:random_transform })
+
+	elif options.notrandomize:
 		for i in range( options.nptcls ):
 			orientations.update({ i:Transform() })
 
@@ -613,7 +619,7 @@ def preferredalt( options, mu=0, sigma=1, nptcls=3 ):
 	return s
 
 
-def plotvals( options, angles, tag ):
+def plotvals( options, vals, tag ):
 	import matplotlib.pyplot as plt
 
 	sigmavals= numpy.std(vals)
