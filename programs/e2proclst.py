@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # This program performs simple processing of .LST files
 
-# Author: Steven Ludtke, 10/06/14 (sludtke@bcm.edu)
+# Author: Steven Ludtke, 10/06/14 (sludtke@bcm.edu), modified: May 15, 2017 (Jesus GalazMontoya)
 # Copyright (c) 2014- Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -43,18 +43,33 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	####################
 #	parser.add_argument("--average", action="store_true", help="Averages all input images (without alignment) and writes a single output image")
-	parser.add_argument("--merge",type=str,help="Specify the output name here. This will concatenate all of the input .lst files into a single output",default=None)
-	parser.add_argument("--range",type=str,help="Range of particles to use. Works only with create option. Input of 0,10,2 means range(0,10, step=2).",default=None)
-	parser.add_argument("--create",type=str,help="Input files should be image files. Specify an .lst file to create here with references to all of the images in the inputs.")
-	parser.add_argument("--mergesort",type=str,help="Specify the output name here. This will merge all of the input .lst files into a single (resorted) output",default=None)
-	parser.add_argument("--numaslist",type=str,help="Extract the particle numbers only in a text file (one number per line)",default=None)
-	parser.add_argument("--mergeeo",action="store_true", default=False, help="Merge even odd lst.")
-	parser.add_argument("--dereforig",type=str,help="Extract the source_orig_path and _n parameters from each image in the file and create a new .lst file referencing the original image(s)",default=None)
-	parser.add_argument("--retype",type=str,help="If a lst file is referencing a set of particles from particles/imgname__oldtype.hdf, this will change oldtype to the specified string in-place (modifies input files)",default=None)
-	parser.add_argument("--minlosnr",type=float,help="Integrated SNR from 1/200-1/20 1/A must be larger than this",default=0,guitype='floatbox', row=8, col=0)
-	parser.add_argument("--minhisnr",type=float,help="Integrated SNR from 1/10-1/4 1/A must be larger than this",default=0,guitype='floatbox', row=8, col=1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, help="verbose level [0-9], higner number means higher level of verboseness",default=1)
+	
+	parser.add_argument("--create", type=str, default='', help="to use this option, the input files should be image files. Specify an .lst or .lsx file to create here (e.g., --create mylst.lst) with references to all of the images in the inputs.")
+
+	parser.add_argument("--dereforig", type=str, default='', help="Extract the source_orig_path and _n parameters from each image in the file and create a new .lst file referencing the original image(s)")
+
+	parser.add_argument("--exclude", type=str, default='', help="only works if --create is supplied. comma-separated list of indexes from the input file(s) to EXCLUDE from the created .lst file.")
+
+	parser.add_argument("--include", type=str, default='', help="only works if --create is supplied. comma-separated list of indexes to take from the input file(s) to INCLUDE in the created .lst file. if you have the list of indexes to include in a .txt file, you can provide it through --list.")
+
+	parser.add_argument("--inplace", action="store_true", default=False, help="only works with --create. if the stack specified in --create already exists, this will prevent appending to it. rather, the file will be modified in place.")
+
+	parser.add_argument("--list", type=str, default='', help="only works if --create is supplied. .txt file with a list of indexes (one per line/row) to take from the input file(s) to INCLUDE in the created .lst file.")
+
+	parser.add_argument("--merge", type=str, default='', help="Specify the output name here. This will concatenate all of the input .lst files into a single output")
+	parser.add_argument("--mergesort", type=str, default='', help="Specify the output name here. This will merge all of the input .lst files into a single (resorted) output")
+	parser.add_argument("--mergeeo", action="store_true", default=False, help="Merge even odd lst.")
+	parser.add_argument("--minhisnr", type=float, help="Integrated SNR from 1/10-1/4 1/A must be larger than this",default=0,guitype='floatbox', row=8, col=1)
+	parser.add_argument("--minlosnr", type=float, help="Integrated SNR from 1/200-1/20 1/A must be larger than this",default=0,guitype='floatbox', row=8, col=0)
+	
+	parser.add_argument("--numaslist", type=str, default='', help="extract the particle indexes (numbers) only from an lst file into a text file (one number per line).")
+	
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+
+	parser.add_argument("--range", type=str, default='', help="Range of particles to use. Works only with create option. Input of 0,10,2 means range(0,10, step=2).")
+	parser.add_argument("--retype", type=str, default='', help="If a lst file is referencing a set of particles from particles/imgname__oldtype.hdf, this will change oldtype to the specified string in-place (modifies input files)")
+
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, help="verbose level [0-9], higner number means higher level of verboseness",default=1)
 
 
 	(options, args) = parser.parse_args()
@@ -65,7 +80,8 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 
 	logid=E2init(sys.argv,options.ppid)
 
-	if options.numaslist != None:
+	#if options.numaslist != None:
+	if options.numaslist:
 		out=file(options.numaslist,"w")
 
 		for f in args:
@@ -73,7 +89,7 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 			for i in xrange(len(lst)):
 				out.write("{}\n".format(lst[i][0]))
 
-	if options.dereforig :
+	if options.dereforig:
 		newlst=LSXFile(options.dereforig)
 
 		for f in args:
@@ -82,8 +98,14 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 				im=EMData(f,i,True)
 				newlst.write(-1,im["source_orig_n"],im["source_orig_path"])
 
-	if options.create != None:
+	if options.create:
+
+		if '.lst' not in options.create and '.lsx' not in options.create:
+			print "\nERROR: the extension of the output file in --create must be .lst or .lsx"
+			sys.exit(1)
+
 		lst=LSXFile(options.create,False)
+		
 		if options.mergeeo:
 			print "Merging two image stacks..."
 			if len(args)!=2:
@@ -114,40 +136,71 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 					if i<n1:
 						lst.write(-1,i,args[1])
 			lst=None
-			exit()
+			sys.exit(1)
 
-		if options.range:
-			rg=eval("range({})".format(options.range))
-
-		for f in args:
-			n=EMUtil.get_image_count(f)
-			if f.endswith(".lst"):
-				lstin=LSXFile(f,True)
-				fromlst=True
-			else:
-				fromlst=False
-			if options.verbose :
-				if options.range:
-					print "Processing {} images in {}".format(len(rg),f)
+		else:
+			for f in args:
+				n=EMUtil.get_image_count(f)
+				if f.endswith(".lst"):
+					lstin=LSXFile(f,True)
+					fromlst=True
 				else:
-					print "Processing {} images in {}".format(n,f)
-			if options.range:
-				for i in rg:
-					if i>=n: break
-					if fromlst:
-						ln=lstin.read(i)
-						lst.write(-1,ln[0],ln[1],ln[2])
+					fromlst=False
+				if options.verbose :
+					if options.range:
+						print "Processing {} images in {}".format(len(rg),f)
 					else:
-						lst.write(-1,i,f)
-			else:
-				for i in xrange(n):
+						print "Processing {} images in {}".format(n,f)
+				
+
+				indxsinclude = xrange(n) #by default, assume all particles in input file will be part of output lsx; otherwise, modify indexes to include below according to options
+
+				if options.range:
+					indxsinclude = eval("range({})".format(options.range))
+		
+				elif options.exclude:
+					indxs=set(xrange(n))
+					indxsexclude = set(options.exclude.split(','))
+					indxsinclude = [int(j) for j in indxs-indxsexclude]
+
+				elif options.include:
+					indxsinclude = [int(j) for j in options.include.split(',')]
+					
+				elif options.list:
+					ff=open(options.list)
+					lines=ff.readlines()
+					ff.close()
+					
+					indxsinclude=[]
+					k=0
+					for line in lines:
+						if line:	#check that the line is not empty
+							indxsinclude.append( int(line.replace('\n','')))
+						else:
+							print "\nWARNING, line {} in {} seems to be empty!".format(k,options.list) 
+						k+=1
+				
+				kk=0
+				for i in indxsinclude:
+				
+					if options.range and i>=n: 
+						break
+					
 					if fromlst:
-						ln=lstin.read(i)
-						lst.write(-1,ln[0],ln[1],ln[2])
+						ln = lstin.read(i)
+						if options.inplace:
+							lst.write(kk,ln[0],ln[1],ln[2])
+						else:
+							lst.write(-1,ln[0],ln[1],ln[2])
 					else:
-						lst.write(-1,i,f)
+						if options.inplace:
+							lst.write(kk,i,f)
+						else:
+							lst.write(-1,i,f)
+					kk+=1
 
 		sys.exit(0)
+
 
 	if options.retype != None:
 		if options.minlosnr>0 or options.minhisnr>0 :
@@ -250,6 +303,7 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 			else : print "{} of {} particles written to {}".format(nwrt,ntot,options.mergesort)
 
 	E2end(logid)
+
 
 if __name__ == "__main__":
 	main()
