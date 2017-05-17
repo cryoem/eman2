@@ -336,7 +336,7 @@ def main():
 				params_of_this_average.append([P[0], P[1], P[2], P[3], 1.0])
 			params_dict[iavg] = params_of_this_average
 			list_dict[iavg] = members
-			write_text_row(params_of_this_average, os.path.join(Tracker["constants"]["masterdir"], "params_avg_%03d.txt"%iavg))
+			#write_text_row(params_of_this_average, os.path.join(Tracker["constants"]["masterdir"], "params_avg_%03d.txt"%iavg))
 	else:  
 		params_dict = 0
 		list_dict   = 0
@@ -355,7 +355,7 @@ def main():
 				if Tracker["constants"]["noctf"]: ini_avg, frc = compute_average_noctf(mlist, Tracker["constants"]["radius"])
 				else: ini_avg, frc = compute_average_ctf(mlist, Tracker["constants"]["radius"])
 				FH1 = get_optimistic_res(frc)
-				write_text_file(frc, os.path.join(Tracker["constants"]["masterdir"], "fsc%03d_before_ali.txt"%iavg))
+				#write_text_file(frc, os.path.join(Tracker["constants"]["masterdir"], "fsc%03d_before_ali.txt"%iavg))
 				new_average1 = within_group_refinement([mlist[kik] for kik in xrange(0,len(mlist),2)], maskfile= None, randomize= False, ir=1.0,  \
 				ou=Tracker["constants"]["radius"], rs=1.0, xrng=[x_range], yrng=[y_range], step=[Tracker["constants"]["xstep"]], \
 				dst=0.0, maxit=Tracker["constants"]["maxit"], FH = max(Tracker["constants"]["FH"], FH1), FF=0.1)
@@ -365,7 +365,7 @@ def main():
 				if Tracker["constants"]["noctf"]: new_avg, frc = compute_average_noctf(mlist, Tracker["constants"]["radius"])
 				else: new_avg, frc = compute_average_ctf(mlist, Tracker["constants"]["radius"])
 				FH2 = get_optimistic_res(frc)
-				write_text_file(frc, os.path.join(Tracker["constants"]["masterdir"], "fsc%03d.txt"%iavg))
+				#write_text_file(frc, os.path.join(Tracker["constants"]["masterdir"], "fsc%03d.txt"%iavg))
 				if not Tracker["constants"]["nompw_adj"]:
 					try: 
 						roo = read_text_file(Tracker["constants"]["modelpw"], -1)
@@ -445,7 +445,7 @@ def main():
 			if Tracker["constants"]["noctf"]: ini_avg, frc = compute_average_noctf(mlist, Tracker["constants"]["radius"])
 			else:   ini_avg, frc = compute_average_ctf(mlist, Tracker["constants"]["radius"])
 			FH1 = get_optimistic_res(frc)
-			write_text_file(frc, os.path.join(Tracker["constants"]["masterdir"], "fsc%03d_before_ali.txt"%iavg))
+			#write_text_file(frc, os.path.join(Tracker["constants"]["masterdir"], "fsc%03d_before_ali.txt"%iavg))
 			new_average1 = within_group_refinement([mlist[kik] for kik in xrange(0,len(mlist),2)], maskfile= None, randomize= False, ir=1.0,  \
 			 ou=Tracker["constants"]["radius"], rs=1.0, xrng=[x_range], yrng=[y_range], step=[Tracker["constants"]["xstep"]], \
 			 dst=0.0, maxit=Tracker["constants"]["maxit"], FH=max(Tracker["constants"]["FH"], FH1), FF=0.1)
@@ -455,7 +455,7 @@ def main():
 			if Tracker["constants"]["noctf"]: new_avg, frc = compute_average_noctf(mlist, Tracker["constants"]["radius"])
 			else: new_avg, frc = compute_average_ctf(mlist, Tracker["constants"]["radius"])
 			FH2 = get_optimistic_res(frc)
-			write_text_file(frc, os.path.join(Tracker["constants"]["masterdir"], "fsc%03d.txt"%iavg))
+			#write_text_file(frc, os.path.join(Tracker["constants"]["masterdir"], "fsc%03d.txt"%iavg))
 			if not Tracker["constants"]["nompw_adj"]:
 				try: 
 					roo = read_text_file( Tracker["constants"]["modelpw"], -1)
