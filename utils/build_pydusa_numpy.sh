@@ -8,7 +8,12 @@ source activate root
 
 RECIPES_DIR=$(cd $(dirname $0)/../recipes && pwd -P)
 
-numpy_versions=( 5 6 7 8 9 10 11 12 )
+if [ $# -lt 1 ];then
+    numpy_versions=( 1.5 1.6 1.7 1.8 1.9 1.10 1.11 1.12 )
+else
+    numpy_versions=${@}
+fi
+
 for v in ${numpy_versions[@]};do
-    conda build "${RECIPES_DIR}/pydusa" --numpy 1.${v}
+    conda build "${RECIPES_DIR}/pydusa" --numpy ${v}
 done
