@@ -45,1155 +45,630 @@ except AttributeError:
 
 class Ui_MSMainWidget(object):
     def setupUi(self, MSMainWidget):
-        MSMainWidget.setObjectName(_fromUtf8("MSMainWidget"))
-        MSMainWidget.resize(1316, 773)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Minimum)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(MSMainWidget.sizePolicy().hasHeightForWidth())
-        MSMainWidget.setSizePolicy(sizePolicy)
-        self.layoutWidget = QtGui.QWidget(MSMainWidget)
-        self.layoutWidget.setGeometry(QtCore.QRect(-20, 0, 1367, 771))
-        self.layoutWidget.setObjectName(_fromUtf8("layoutWidget"))
-        self.verticalLayout_2 = QtGui.QVBoxLayout(self.layoutWidget)
-        self.verticalLayout_2.setMargin(0)
-        self.verticalLayout_2.setObjectName(_fromUtf8("verticalLayout_2"))
-        self.layoutCentralWidget = QtGui.QHBoxLayout()
-        self.layoutCentralWidget.setObjectName(_fromUtf8("layoutCentralWidget"))
-        self.layoutInput = QtGui.QVBoxLayout()
-        self.layoutInput.setObjectName(_fromUtf8("layoutInput"))
-        spacerItem = QtGui.QSpacerItem(20, 4, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        self.layoutInput.addItem(spacerItem)
-        self.horizontalLayout_12 = QtGui.QHBoxLayout()
-        self.horizontalLayout_12.setObjectName(_fromUtf8("horizontalLayout_12"))
-        self.label_7 = QtGui.QLabel(self.layoutWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Minimum)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_7.sizePolicy().hasHeightForWidth())
-        self.label_7.setSizePolicy(sizePolicy)
-        self.label_7.setObjectName(_fromUtf8("label_7"))
-        self.horizontalLayout_12.addWidget(self.label_7)
-        self.lePattern = QtGui.QLineEdit(self.layoutWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Minimum)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.lePattern.sizePolicy().hasHeightForWidth())
-        self.lePattern.setSizePolicy(sizePolicy)
-        self.lePattern.setText(_fromUtf8(""))
-        self.lePattern.setObjectName(_fromUtf8("lePattern"))
-        self.horizontalLayout_12.addWidget(self.lePattern)
-        self.pbSelectTxt = QtGui.QPushButton(self.layoutWidget)
-        self.pbSelectTxt.setEnabled(True)
-        self.pbSelectTxt.setCheckable(False)
-        self.pbSelectTxt.setObjectName(_fromUtf8("pbSelectTxt"))
-        self.horizontalLayout_12.addWidget(self.pbSelectTxt)
-        self.layoutInput.addLayout(self.horizontalLayout_12)
-        self.pbImportPattern = QtGui.QPushButton(self.layoutWidget)
-        self.pbImportPattern.setEnabled(True)
-        self.pbImportPattern.setCheckable(False)
-        self.pbImportPattern.setObjectName(_fromUtf8("pbImportPattern"))
-        self.layoutInput.addWidget(self.pbImportPattern)
-        self.pbImportList = QtGui.QPushButton(self.layoutWidget)
-        self.pbImportList.setEnabled(True)
-        self.pbImportList.setCheckable(False)
-        self.pbImportList.setObjectName(_fromUtf8("pbImportList"))
-        self.layoutInput.addWidget(self.pbImportList)
-        self.lsFiles = QtGui.QListWidget(self.layoutWidget)
+        widget = QtGui.QWidget(self)
+        MSMainWidget.setCentralWidget(widget)
+
+        self.global_layout = QtGui.QVBoxLayout(widget)
+        self.h_layout = QtGui.QHBoxLayout()
+        self.v_layout_1 = QtGui.QVBoxLayout()
+        self.v_layout_2 = QtGui.QVBoxLayout()
+        self.v_layout_3 = QtGui.QVBoxLayout()
+
+        self.global_layout.addLayout(self.h_layout, stretch=1)
+        self.h_layout.addLayout(self.v_layout_1, stretch=1)
+        self.h_layout.addLayout(self.v_layout_2, stretch=0)
+        self.h_layout.addLayout(self.v_layout_3, stretch=0)
+
+        self.v_layout_1.addWidget(self.load_section())
+        self.v_layout_1.addWidget(self.list_section())
+        self.v_layout_2.addWidget(self.status_section())
+        self.v_layout_2.addStretch(1)
+        self.v_layout_2.addWidget(self.sort_section())
+        self.v_layout_3.addWidget(self.plot_section())
+        self.v_layout_3.addStretch(1)
+        self.v_layout_3.addWidget(self.threshold_section())
+        self.global_layout.addWidget(self.save_section())
+
+    def load_section(self):
+        widget = QtGui.QWidget(self)
+        layout_v = QtGui.QVBoxLayout(widget)
+        layout_v.setContentsMargins(5, 5, 5, 5)
+
+        layout_h = QtGui.QHBoxLayout()
+        layout_h.setContentsMargins(0, 0, 0, 0)
+        layout_v.addLayout(layout_h)
+        
+        label = QtGui.QLabel('Pattern:', self)
+        self.lePattern = QtGui.QLineEdit(self)
+        self.pbSelectTxt = QtGui.QPushButton('Find pattern', self)
+        layout_h.addWidget(label)
+        layout_h.addWidget(self.lePattern)
+        layout_h.addWidget(self.pbSelectTxt)
+
+        self.pbImportPattern = QtGui.QPushButton('Load files by pattern', self)
+        layout_v.addWidget(self.pbImportPattern)
+        self.pbImportList = QtGui.QPushButton('Load files by list', self)
+        layout_v.addWidget(self.pbImportList)
+        return widget
+
+    def list_section(self):
+        widget = QtGui.QWidget(self)
+        layout_v = QtGui.QVBoxLayout(widget)
+        layout_v.setContentsMargins(5, 5, 5, 5)
+
+        self.lsFiles = QtGui.QListWidget(self)
         self.lsFiles.setEnabled(False)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.lsFiles.sizePolicy().hasHeightForWidth())
-        self.lsFiles.setSizePolicy(sizePolicy)
-        self.lsFiles.setMinimumSize(QtCore.QSize(200, 0))
-        self.lsFiles.setObjectName(_fromUtf8("lsFiles"))
-        self.layoutInput.addWidget(self.lsFiles)
-        self.layoutCentralWidget.addLayout(self.layoutInput)
-        self.layoutInfo = QtGui.QVBoxLayout()
-        self.layoutInfo.setObjectName(_fromUtf8("layoutInfo"))
-        self.label_6 = QtGui.QLabel(self.layoutWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_6.sizePolicy().hasHeightForWidth())
-        self.label_6.setSizePolicy(sizePolicy)
-        self.label_6.setObjectName(_fromUtf8("label_6"))
-        self.layoutInfo.addWidget(self.label_6)
-        self.horizontalLayout_4 = QtGui.QHBoxLayout()
-        self.horizontalLayout_4.setObjectName(_fromUtf8("horizontalLayout_4"))
-        self.label_4 = QtGui.QLabel(self.layoutWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_4.sizePolicy().hasHeightForWidth())
-        self.label_4.setSizePolicy(sizePolicy)
-        self.label_4.setObjectName(_fromUtf8("label_4"))
-        self.horizontalLayout_4.addWidget(self.label_4)
-        self.leCurrentMicName = QtGui.QLineEdit(self.layoutWidget)
-        self.leCurrentMicName.setEnabled(True)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(22)
-        sizePolicy.setHeightForWidth(self.leCurrentMicName.sizePolicy().hasHeightForWidth())
-        self.leCurrentMicName.setSizePolicy(sizePolicy)
-        self.leCurrentMicName.setMinimumSize(QtCore.QSize(300, 0))
-        self.leCurrentMicName.setText(_fromUtf8(""))
-        self.leCurrentMicName.setReadOnly(True)
-        self.leCurrentMicName.setObjectName(_fromUtf8("leCurrentMicName"))
-        self.horizontalLayout_4.addWidget(self.leCurrentMicName)
-        self.layoutInfo.addLayout(self.horizontalLayout_4)
-        self.horizontalLayout_3 = QtGui.QHBoxLayout()
-        self.horizontalLayout_3.setObjectName(_fromUtf8("horizontalLayout_3"))
-        self.label_3 = QtGui.QLabel(self.layoutWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_3.sizePolicy().hasHeightForWidth())
-        self.label_3.setSizePolicy(sizePolicy)
-        self.label_3.setObjectName(_fromUtf8("label_3"))
-        self.horizontalLayout_3.addWidget(self.label_3)
-        self.leCurrentOverallDrift = QtGui.QLineEdit(self.layoutWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.leCurrentOverallDrift.sizePolicy().hasHeightForWidth())
-        self.leCurrentOverallDrift.setSizePolicy(sizePolicy)
-        self.leCurrentOverallDrift.setReadOnly(True)
-        self.leCurrentOverallDrift.setObjectName(_fromUtf8("leCurrentOverallDrift"))
-        self.horizontalLayout_3.addWidget(self.leCurrentOverallDrift)
-        self.layoutInfo.addLayout(self.horizontalLayout_3)
-        self.horizontalLayout = QtGui.QHBoxLayout()
-        self.horizontalLayout.setObjectName(_fromUtf8("horizontalLayout"))
-        self.label = QtGui.QLabel(self.layoutWidget)
-        self.label.setEnabled(True)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label.sizePolicy().hasHeightForWidth())
-        self.label.setSizePolicy(sizePolicy)
-        self.label.setObjectName(_fromUtf8("label"))
-        self.horizontalLayout.addWidget(self.label)
-        self.leCurrentFrameDrift = QtGui.QLineEdit(self.layoutWidget)
-        self.leCurrentFrameDrift.setEnabled(True)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.leCurrentFrameDrift.sizePolicy().hasHeightForWidth())
-        self.leCurrentFrameDrift.setSizePolicy(sizePolicy)
-        self.leCurrentFrameDrift.setReadOnly(True)
-        self.leCurrentFrameDrift.setObjectName(_fromUtf8("leCurrentFrameDrift"))
-        self.horizontalLayout.addWidget(self.leCurrentFrameDrift)
-        self.layoutInfo.addLayout(self.horizontalLayout)
-        self.horizontalLayout_2 = QtGui.QHBoxLayout()
-        self.horizontalLayout_2.setObjectName(_fromUtf8("horizontalLayout_2"))
-        self.label_2 = QtGui.QLabel(self.layoutWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_2.sizePolicy().hasHeightForWidth())
-        self.label_2.setSizePolicy(sizePolicy)
-        self.label_2.setObjectName(_fromUtf8("label_2"))
-        self.horizontalLayout_2.addWidget(self.label_2)
-        self.leCurrentEndToEndDrift = QtGui.QLineEdit(self.layoutWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.leCurrentEndToEndDrift.sizePolicy().hasHeightForWidth())
-        self.leCurrentEndToEndDrift.setSizePolicy(sizePolicy)
-        self.leCurrentEndToEndDrift.setReadOnly(True)
-        self.leCurrentEndToEndDrift.setObjectName(_fromUtf8("leCurrentEndToEndDrift"))
-        self.horizontalLayout_2.addWidget(self.leCurrentEndToEndDrift)
-        self.layoutInfo.addLayout(self.horizontalLayout_2)
-        self.horizontalLayout_27 = QtGui.QHBoxLayout()
-        self.horizontalLayout_27.setObjectName(_fromUtf8("horizontalLayout_27"))
-        self.label_30 = QtGui.QLabel(self.layoutWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_30.sizePolicy().hasHeightForWidth())
-        self.label_30.setSizePolicy(sizePolicy)
-        self.label_30.setObjectName(_fromUtf8("label_30"))
-        self.horizontalLayout_27.addWidget(self.label_30)
-        self.leCurrentMaxDistance = QtGui.QLineEdit(self.layoutWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.leCurrentMaxDistance.sizePolicy().hasHeightForWidth())
-        self.leCurrentMaxDistance.setSizePolicy(sizePolicy)
-        self.leCurrentMaxDistance.setReadOnly(True)
-        self.leCurrentMaxDistance.setObjectName(_fromUtf8("leCurrentMaxDistance"))
-        self.horizontalLayout_27.addWidget(self.leCurrentMaxDistance)
-        self.layoutInfo.addLayout(self.horizontalLayout_27)
-        self.horizontalLayout_29 = QtGui.QHBoxLayout()
-        self.horizontalLayout_29.setObjectName(_fromUtf8("horizontalLayout_29"))
-        self.label_32 = QtGui.QLabel(self.layoutWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_32.sizePolicy().hasHeightForWidth())
-        self.label_32.setSizePolicy(sizePolicy)
-        self.label_32.setObjectName(_fromUtf8("label_32"))
-        self.horizontalLayout_29.addWidget(self.label_32)
-        self.leCurrentMaxDistanceZero = QtGui.QLineEdit(self.layoutWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.leCurrentMaxDistanceZero.sizePolicy().hasHeightForWidth())
-        self.leCurrentMaxDistanceZero.setSizePolicy(sizePolicy)
-        self.leCurrentMaxDistanceZero.setReadOnly(True)
-        self.leCurrentMaxDistanceZero.setObjectName(_fromUtf8("leCurrentMaxDistanceZero"))
-        self.horizontalLayout_29.addWidget(self.leCurrentMaxDistanceZero)
-        self.layoutInfo.addLayout(self.horizontalLayout_29)
-        self.label_8 = QtGui.QLabel(self.layoutWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_8.sizePolicy().hasHeightForWidth())
-        self.label_8.setSizePolicy(sizePolicy)
-        self.label_8.setObjectName(_fromUtf8("label_8"))
-        self.layoutInfo.addWidget(self.label_8)
-        self.horizontalLayout_11 = QtGui.QHBoxLayout()
-        self.horizontalLayout_11.setObjectName(_fromUtf8("horizontalLayout_11"))
-        self.label_13 = QtGui.QLabel(self.layoutWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_13.sizePolicy().hasHeightForWidth())
-        self.label_13.setSizePolicy(sizePolicy)
-        self.label_13.setObjectName(_fromUtf8("label_13"))
-        self.horizontalLayout_11.addWidget(self.label_13)
-        self.leAllMicNumber = QtGui.QLineEdit(self.layoutWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.leAllMicNumber.sizePolicy().hasHeightForWidth())
-        self.leAllMicNumber.setSizePolicy(sizePolicy)
-        self.leAllMicNumber.setReadOnly(True)
-        self.leAllMicNumber.setObjectName(_fromUtf8("leAllMicNumber"))
-        self.horizontalLayout_11.addWidget(self.leAllMicNumber)
-        self.layoutInfo.addLayout(self.horizontalLayout_11)
-        self.horizontalLayout_20 = QtGui.QHBoxLayout()
-        self.horizontalLayout_20.setObjectName(_fromUtf8("horizontalLayout_20"))
-        self.label_29 = QtGui.QLabel(self.layoutWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_29.sizePolicy().hasHeightForWidth())
-        self.label_29.setSizePolicy(sizePolicy)
-        self.label_29.setObjectName(_fromUtf8("label_29"))
-        self.horizontalLayout_20.addWidget(self.label_29)
-        self.leMicChecked = QtGui.QLineEdit(self.layoutWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.leMicChecked.sizePolicy().hasHeightForWidth())
-        self.leMicChecked.setSizePolicy(sizePolicy)
-        self.leMicChecked.setReadOnly(True)
-        self.leMicChecked.setObjectName(_fromUtf8("leMicChecked"))
-        self.horizontalLayout_20.addWidget(self.leMicChecked)
-        self.layoutInfo.addLayout(self.horizontalLayout_20)
-        self.horizontalLayout_7 = QtGui.QHBoxLayout()
-        self.horizontalLayout_7.setObjectName(_fromUtf8("horizontalLayout_7"))
-        self.label_9 = QtGui.QLabel(self.layoutWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_9.sizePolicy().hasHeightForWidth())
-        self.label_9.setSizePolicy(sizePolicy)
-        self.label_9.setObjectName(_fromUtf8("label_9"))
-        self.horizontalLayout_7.addWidget(self.label_9)
-        self.leAllOverallDrift = QtGui.QLineEdit(self.layoutWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.leAllOverallDrift.sizePolicy().hasHeightForWidth())
-        self.leAllOverallDrift.setSizePolicy(sizePolicy)
-        self.leAllOverallDrift.setReadOnly(True)
-        self.leAllOverallDrift.setObjectName(_fromUtf8("leAllOverallDrift"))
-        self.horizontalLayout_7.addWidget(self.leAllOverallDrift)
-        self.layoutInfo.addLayout(self.horizontalLayout_7)
-        self.horizontalLayout_10 = QtGui.QHBoxLayout()
-        self.horizontalLayout_10.setObjectName(_fromUtf8("horizontalLayout_10"))
-        self.label_12 = QtGui.QLabel(self.layoutWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_12.sizePolicy().hasHeightForWidth())
-        self.label_12.setSizePolicy(sizePolicy)
-        self.label_12.setObjectName(_fromUtf8("label_12"))
-        self.horizontalLayout_10.addWidget(self.label_12)
-        self.leAllFrameDrift = QtGui.QLineEdit(self.layoutWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.leAllFrameDrift.sizePolicy().hasHeightForWidth())
-        self.leAllFrameDrift.setSizePolicy(sizePolicy)
-        self.leAllFrameDrift.setReadOnly(True)
-        self.leAllFrameDrift.setObjectName(_fromUtf8("leAllFrameDrift"))
-        self.horizontalLayout_10.addWidget(self.leAllFrameDrift)
-        self.layoutInfo.addLayout(self.horizontalLayout_10)
-        self.horizontalLayout_8 = QtGui.QHBoxLayout()
-        self.horizontalLayout_8.setObjectName(_fromUtf8("horizontalLayout_8"))
-        self.label_10 = QtGui.QLabel(self.layoutWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_10.sizePolicy().hasHeightForWidth())
-        self.label_10.setSizePolicy(sizePolicy)
-        self.label_10.setObjectName(_fromUtf8("label_10"))
-        self.horizontalLayout_8.addWidget(self.label_10)
-        self.leAllEndToEndDrift = QtGui.QLineEdit(self.layoutWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.leAllEndToEndDrift.sizePolicy().hasHeightForWidth())
-        self.leAllEndToEndDrift.setSizePolicy(sizePolicy)
-        self.leAllEndToEndDrift.setReadOnly(True)
-        self.leAllEndToEndDrift.setObjectName(_fromUtf8("leAllEndToEndDrift"))
-        self.horizontalLayout_8.addWidget(self.leAllEndToEndDrift)
-        self.layoutInfo.addLayout(self.horizontalLayout_8)
-        self.horizontalLayout_26 = QtGui.QHBoxLayout()
-        self.horizontalLayout_26.setObjectName(_fromUtf8("horizontalLayout_26"))
-        self.label_28 = QtGui.QLabel(self.layoutWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_28.sizePolicy().hasHeightForWidth())
-        self.label_28.setSizePolicy(sizePolicy)
-        self.label_28.setObjectName(_fromUtf8("label_28"))
-        self.horizontalLayout_26.addWidget(self.label_28)
-        self.leAllMaxDistance = QtGui.QLineEdit(self.layoutWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.leAllMaxDistance.sizePolicy().hasHeightForWidth())
-        self.leAllMaxDistance.setSizePolicy(sizePolicy)
-        self.leAllMaxDistance.setReadOnly(True)
-        self.leAllMaxDistance.setObjectName(_fromUtf8("leAllMaxDistance"))
-        self.horizontalLayout_26.addWidget(self.leAllMaxDistance)
-        self.layoutInfo.addLayout(self.horizontalLayout_26)
-        self.horizontalLayout_28 = QtGui.QHBoxLayout()
-        self.horizontalLayout_28.setObjectName(_fromUtf8("horizontalLayout_28"))
-        self.label_31 = QtGui.QLabel(self.layoutWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_31.sizePolicy().hasHeightForWidth())
-        self.label_31.setSizePolicy(sizePolicy)
-        self.label_31.setObjectName(_fromUtf8("label_31"))
-        self.horizontalLayout_28.addWidget(self.label_31)
-        self.leAllMaxDistanceZero = QtGui.QLineEdit(self.layoutWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.leAllMaxDistanceZero.sizePolicy().hasHeightForWidth())
-        self.leAllMaxDistanceZero.setSizePolicy(sizePolicy)
-        self.leAllMaxDistanceZero.setReadOnly(True)
-        self.leAllMaxDistanceZero.setObjectName(_fromUtf8("leAllMaxDistanceZero"))
-        self.horizontalLayout_28.addWidget(self.leAllMaxDistanceZero)
-        self.layoutInfo.addLayout(self.horizontalLayout_28)
-        self.verticalLayout = QtGui.QVBoxLayout()
-        self.verticalLayout.setObjectName(_fromUtf8("verticalLayout"))
-        self.label_16 = QtGui.QLabel(self.layoutWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_16.sizePolicy().hasHeightForWidth())
-        self.label_16.setSizePolicy(sizePolicy)
-        self.label_16.setObjectName(_fromUtf8("label_16"))
-        self.verticalLayout.addWidget(self.label_16)
-        self.cbSort = QtGui.QComboBox(self.layoutWidget)
+        layout_v.addWidget(self.lsFiles)
+        return widget
+
+    def status_section(self):
+        widget = QtGui.QWidget(self)
+        layout_v = QtGui.QVBoxLayout(widget)
+        layout_v.setContentsMargins(5, 5, 5, 5)
+
+        label = QtGui.QLabel('Info of current entry:', self)
+        layout_v.addWidget(label)
+        label = QtGui.QLabel('', self)
+        layout_v.addWidget(label)
+
+        layout_h = QtGui.QHBoxLayout()
+        layout_h.setContentsMargins(0, 0, 0, 0)
+        label = QtGui.QLabel('Micrograph name', self)
+        layout_h.addWidget(label)
+        layout_h.addStretch(1)
+        self.leCurrentMicName = QtGui.QLineEdit(self)
+        self.leCurrentMicName.setMaximumWidth(300)
+        self.leCurrentMicName.setMinimumWidth(300)
+        self.leCurrentMicName.setEnabled(False)
+        layout_h.addWidget(self.leCurrentMicName)
+        layout_v.addLayout(layout_h)
+
+        layout_h = QtGui.QHBoxLayout()
+        layout_h.setContentsMargins(0, 0, 0, 0)
+        label = QtGui.QLabel('Overall drift [A]', self)
+        layout_h.addWidget(label)
+        layout_h.addStretch(1)
+        self.leCurrentOverallDrift = QtGui.QLineEdit(self)
+        self.leCurrentOverallDrift.setMaximumWidth(100)
+        self.leCurrentOverallDrift.setEnabled(False)
+        layout_h.addWidget(self.leCurrentOverallDrift)
+        layout_v.addLayout(layout_h)
+
+        layout_h = QtGui.QHBoxLayout()
+        layout_h.setContentsMargins(0, 0, 0, 0)
+        label = QtGui.QLabel('Drift per frame [A]', self)
+        layout_h.addWidget(label)
+        layout_h.addStretch(1)
+        self.leCurrentFrameDrift = QtGui.QLineEdit(self)
+        self.leCurrentFrameDrift.setMaximumWidth(100)
+        self.leCurrentFrameDrift.setEnabled(False)
+        layout_h.addWidget(self.leCurrentFrameDrift)
+        layout_v.addLayout(layout_h)
+
+        layout_h = QtGui.QHBoxLayout()
+        layout_h.setContentsMargins(0, 0, 0, 0)
+        label = QtGui.QLabel('End to end length [A]', self)
+        layout_h.addWidget(label)
+        layout_h.addStretch(1)
+        self.leCurrentEndToEndDrift = QtGui.QLineEdit(self)
+        self.leCurrentEndToEndDrift.setMaximumWidth(100)
+        self.leCurrentEndToEndDrift.setEnabled(False)
+        layout_h.addWidget(self.leCurrentEndToEndDrift)
+        layout_v.addLayout(layout_h)
+
+        layout_h = QtGui.QHBoxLayout()
+        layout_h.setContentsMargins(0, 0, 0, 0)
+        label = QtGui.QLabel('Maximum distance between frames [A]', self)
+        layout_h.addWidget(label)
+        layout_h.addStretch(1)
+        self.leCurrentMaxDistance = QtGui.QLineEdit(self)
+        self.leCurrentMaxDistance.setMaximumWidth(100)
+        self.leCurrentMaxDistance.setEnabled(False)
+        layout_h.addWidget(self.leCurrentMaxDistance)
+        layout_v.addLayout(layout_h)
+
+        layout_h = QtGui.QHBoxLayout()
+        layout_h.setContentsMargins(0, 0, 0, 0)
+        label = QtGui.QLabel('Maximum distance from start frame [A]', self)
+        layout_h.addWidget(label)
+        layout_h.addStretch(1)
+        self.leCurrentMaxDistanceZero = QtGui.QLineEdit(self)
+        self.leCurrentMaxDistanceZero.setMaximumWidth(100)
+        self.leCurrentMaxDistanceZero.setEnabled(False)
+        layout_h.addWidget(self.leCurrentMaxDistanceZero)
+        layout_v.addLayout(layout_h)
+
+        label = QtGui.QLabel('', self)
+        layout_v.addWidget(label)
+        label = QtGui.QLabel('Drift info for selected micrographs:', self)
+        layout_v.addWidget(label)
+        label = QtGui.QLabel('', self)
+        layout_v.addWidget(label)
+
+        layout_h = QtGui.QHBoxLayout()
+        layout_h.setContentsMargins(0, 0, 0, 0)
+        label = QtGui.QLabel('Nr. of micrographs', self)
+        layout_h.addWidget(label)
+        layout_h.addStretch(1)
+        self.leAllMicNumber = QtGui.QLineEdit(self)
+        self.leAllMicNumber.setMaximumWidth(100)
+        self.leAllMicNumber.setEnabled(False)
+        layout_h.addWidget(self.leAllMicNumber)
+        layout_v.addLayout(layout_h)
+
+        layout_h = QtGui.QHBoxLayout()
+        layout_h.setContentsMargins(0, 0, 0, 0)
+        label = QtGui.QLabel('Checked micrographs', self)
+        layout_h.addWidget(label)
+        layout_h.addStretch(1)
+        self.leMicChecked = QtGui.QLineEdit(self)
+        self.leMicChecked.setMaximumWidth(100)
+        self.leMicChecked.setEnabled(False)
+        layout_h.addWidget(self.leMicChecked)
+        layout_v.addLayout(layout_h)
+
+        layout_h = QtGui.QHBoxLayout()
+        layout_h.setContentsMargins(0, 0, 0, 0)
+        label = QtGui.QLabel('Average overall drift [A]', self)
+        layout_h.addWidget(label)
+        layout_h.addStretch(1)
+        self.leAllOverallDrift = QtGui.QLineEdit(self)
+        self.leAllOverallDrift.setMaximumWidth(100)
+        self.leAllOverallDrift.setEnabled(False)
+        layout_h.addWidget(self.leAllOverallDrift)
+        layout_v.addLayout(layout_h)
+
+        layout_h = QtGui.QHBoxLayout()
+        layout_h.setContentsMargins(0, 0, 0, 0)
+        label = QtGui.QLabel('Average drift per frame [A]', self)
+        layout_h.addWidget(label)
+        layout_h.addStretch(1)
+        self.leAllFrameDrift = QtGui.QLineEdit(self)
+        self.leAllFrameDrift.setMaximumWidth(100)
+        self.leAllFrameDrift.setEnabled(False)
+        layout_h.addWidget(self.leAllFrameDrift)
+        layout_v.addLayout(layout_h)
+
+        layout_h = QtGui.QHBoxLayout()
+        layout_h.setContentsMargins(0, 0, 0, 0)
+        label = QtGui.QLabel('Average end to end length [A]', self)
+        layout_h.addWidget(label)
+        layout_h.addStretch(1)
+        self.leAllEndToEndDrift = QtGui.QLineEdit(self)
+        self.leAllEndToEndDrift.setMaximumWidth(100)
+        self.leAllEndToEndDrift.setEnabled(False)
+        layout_h.addWidget(self.leAllEndToEndDrift)
+        layout_v.addLayout(layout_h)
+
+        layout_h = QtGui.QHBoxLayout()
+        layout_h.setContentsMargins(0, 0, 0, 0)
+        label = QtGui.QLabel('Average maximum distance between frames [A]', self)
+        layout_h.addWidget(label)
+        layout_h.addStretch(1)
+        self.leAllMaxDistance = QtGui.QLineEdit(self)
+        self.leAllMaxDistance.setMaximumWidth(100)
+        self.leAllMaxDistance.setEnabled(False)
+        layout_h.addWidget(self.leAllMaxDistance)
+        layout_v.addLayout(layout_h)
+
+        layout_h = QtGui.QHBoxLayout()
+        layout_h.setContentsMargins(0, 0, 0, 0)
+        label = QtGui.QLabel('Average maximum distance from start frame [A]', self)
+        layout_h.addWidget(label)
+        layout_h.addStretch(1)
+        self.leAllMaxDistanceZero = QtGui.QLineEdit(self)
+        self.leAllMaxDistanceZero.setMaximumWidth(100)
+        self.leAllMaxDistanceZero.setEnabled(False)
+        layout_h.addWidget(self.leAllMaxDistanceZero)
+        layout_v.addLayout(layout_h)
+        
+        return widget
+    
+    def sort_section(self):
+        widget = QtGui.QWidget(self)
+        layout_v = QtGui.QVBoxLayout(widget)
+        layout_v.setContentsMargins(5, 20, 5, 5)
+
+        label = QtGui.QLabel('Sort entries:', self)
+        layout_v.addWidget(label)
+
+        entries = [
+            'File name',
+            'Overall drift',
+            'Drift per frame',
+            'End to end length',
+            'Maximum distance between frames',
+            'Maximum distance from start frame'
+            ]
+        self.cbSort = QtGui.QComboBox(self)
         self.cbSort.setEnabled(False)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.cbSort.sizePolicy().hasHeightForWidth())
-        self.cbSort.setSizePolicy(sizePolicy)
-        self.cbSort.setObjectName(_fromUtf8("cbSort"))
-        self.cbSort.addItem(_fromUtf8(""))
-        self.cbSort.addItem(_fromUtf8(""))
-        self.cbSort.addItem(_fromUtf8(""))
-        self.cbSort.addItem(_fromUtf8(""))
-        self.cbSort.addItem(_fromUtf8(""))
-        self.cbSort.addItem(_fromUtf8(""))
-        self.verticalLayout.addWidget(self.cbSort)
-        self.horizontalLayout_21 = QtGui.QHBoxLayout()
-        self.horizontalLayout_21.setObjectName(_fromUtf8("horizontalLayout_21"))
-        self.chDescending = QtGui.QCheckBox(self.layoutWidget)
+        self.cbSort.addItems(entries)
+        layout_v.addWidget(self.cbSort)
+
+        layout_h = QtGui.QHBoxLayout()
+        layout_h.setContentsMargins(0, 0, 0, 0)
+        layout_v.addLayout(layout_h)
+        self.chDescending = QtGui.QCheckBox('Descending', self)
         self.chDescending.setEnabled(False)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.chDescending.sizePolicy().hasHeightForWidth())
-        self.chDescending.setSizePolicy(sizePolicy)
-        self.chDescending.setObjectName(_fromUtf8("chDescending"))
-        self.horizontalLayout_21.addWidget(self.chDescending)
-        self.chSortSelected = QtGui.QCheckBox(self.layoutWidget)
+        layout_h.addWidget(self.chDescending)
+        self.chSortSelected = QtGui.QCheckBox('Sort selected', self)
         self.chSortSelected.setEnabled(False)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.chSortSelected.sizePolicy().hasHeightForWidth())
-        self.chSortSelected.setSizePolicy(sizePolicy)
-        self.chSortSelected.setObjectName(_fromUtf8("chSortSelected"))
-        self.horizontalLayout_21.addWidget(self.chSortSelected)
-        self.verticalLayout.addLayout(self.horizontalLayout_21)
-        self.layoutInfo.addLayout(self.verticalLayout)
-        self.layoutCentralWidget.addLayout(self.layoutInfo)
-        self.verticalLayout_3 = QtGui.QVBoxLayout()
-        self.verticalLayout_3.setObjectName(_fromUtf8("verticalLayout_3"))
-        spacerItem1 = QtGui.QSpacerItem(20, 10, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        self.verticalLayout_3.addItem(spacerItem1)
-        self.verticalLayout_6 = QtGui.QVBoxLayout()
-        self.verticalLayout_6.setObjectName(_fromUtf8("verticalLayout_6"))
-        self.horizontalLayout_9 = QtGui.QHBoxLayout()
-        self.horizontalLayout_9.setObjectName(_fromUtf8("horizontalLayout_9"))
-        self.verticalLayout_4 = QtGui.QVBoxLayout()
-        self.verticalLayout_4.setObjectName(_fromUtf8("verticalLayout_4"))
-        self.label_14 = QtGui.QLabel(self.layoutWidget)
-        self.label_14.setEnabled(True)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_14.sizePolicy().hasHeightForWidth())
-        self.label_14.setSizePolicy(sizePolicy)
-        self.label_14.setBaseSize(QtCore.QSize(0, 0))
-        self.label_14.setObjectName(_fromUtf8("label_14"))
-        self.verticalLayout_4.addWidget(self.label_14)
-        self.chPlotDriftMic = QtGui.QCheckBox(self.layoutWidget)
+        layout_h.addWidget(self.chSortSelected)
+
+        return widget
+
+    def plot_section(self):
+        widget = QtGui.QWidget(self)
+        layout_h = QtGui.QHBoxLayout(widget)
+        layout_h.setContentsMargins(5, 5, 5, 5)
+
+        layout_v1 = QtGui.QVBoxLayout()
+        layout_v1.setContentsMargins(0, 0, 5, 0)
+        layout_v2 = QtGui.QVBoxLayout()
+        layout_v2.setContentsMargins(5, 0, 0, 0)
+        layout_h.addLayout(layout_v1)
+        layout_h.addLayout(layout_v2)
+
+        label = QtGui.QLabel('Show plots of current entry:', self)
+        layout_v1.addWidget(label)
+
+        self.chPlotDriftMic = QtGui.QCheckBox('Drift', self)
         self.chPlotDriftMic.setEnabled(False)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.chPlotDriftMic.sizePolicy().hasHeightForWidth())
-        self.chPlotDriftMic.setSizePolicy(sizePolicy)
-        self.chPlotDriftMic.setObjectName(_fromUtf8("chPlotDriftMic"))
-        self.verticalLayout_4.addWidget(self.chPlotDriftMic)
-        self.chPlotFrameMic = QtGui.QCheckBox(self.layoutWidget)
+        layout_v1.addWidget(self.chPlotDriftMic)
+
+        self.chPlotFrameMic = QtGui.QCheckBox('Drift per frame', self)
         self.chPlotFrameMic.setEnabled(False)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.chPlotFrameMic.sizePolicy().hasHeightForWidth())
-        self.chPlotFrameMic.setSizePolicy(sizePolicy)
-        self.chPlotFrameMic.setObjectName(_fromUtf8("chPlotFrameMic"))
-        self.verticalLayout_4.addWidget(self.chPlotFrameMic)
-        self.chPlotAngleMic = QtGui.QCheckBox(self.layoutWidget)
+        layout_v1.addWidget(self.chPlotFrameMic)
+
+        self.chPlotAngleMic = QtGui.QCheckBox('Angle per frame', self)
         self.chPlotAngleMic.setEnabled(False)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.chPlotAngleMic.sizePolicy().hasHeightForWidth())
-        self.chPlotAngleMic.setSizePolicy(sizePolicy)
-        self.chPlotAngleMic.setObjectName(_fromUtf8("chPlotAngleMic"))
-        self.verticalLayout_4.addWidget(self.chPlotAngleMic)
-        spacerItem2 = QtGui.QSpacerItem(20, 19, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        self.verticalLayout_4.addItem(spacerItem2)
-        self.horizontalLayout_9.addLayout(self.verticalLayout_4)
-        self.verticalLayout_5 = QtGui.QVBoxLayout()
-        self.verticalLayout_5.setObjectName(_fromUtf8("verticalLayout_5"))
-        self.label_15 = QtGui.QLabel(self.layoutWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_15.sizePolicy().hasHeightForWidth())
-        self.label_15.setSizePolicy(sizePolicy)
-        self.label_15.setObjectName(_fromUtf8("label_15"))
-        self.verticalLayout_5.addWidget(self.label_15)
-        self.chAverageDriftPerFrame = QtGui.QCheckBox(self.layoutWidget)
+        layout_v1.addWidget(self.chPlotAngleMic)
+
+        label = QtGui.QLabel('Show plots of all micrographs:', self)
+        label.setEnabled(False)
+        layout_v2.addWidget(label)
+
+        self.chAverageDriftPerFrame = QtGui.QCheckBox('Average drift per frame', self)
         self.chAverageDriftPerFrame.setEnabled(False)
-        self.chAverageDriftPerFrame.setObjectName(_fromUtf8("chAverageDriftPerFrame"))
-        self.verticalLayout_5.addWidget(self.chAverageDriftPerFrame)
-        self.chPlotDrift = QtGui.QCheckBox(self.layoutWidget)
+        layout_v2.addWidget(self.chAverageDriftPerFrame)
+
+        self.chPlotDrift = QtGui.QCheckBox('Overall drift histogram', self)
         self.chPlotDrift.setEnabled(False)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.chPlotDrift.sizePolicy().hasHeightForWidth())
-        self.chPlotDrift.setSizePolicy(sizePolicy)
-        self.chPlotDrift.setObjectName(_fromUtf8("chPlotDrift"))
-        self.verticalLayout_5.addWidget(self.chPlotDrift)
-        self.chPlotFrame = QtGui.QCheckBox(self.layoutWidget)
+        layout_v2.addWidget(self.chPlotDrift)
+
+        self.chPlotFrame = QtGui.QCheckBox('Drift per frame histogram', self)
         self.chPlotFrame.setEnabled(False)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.chPlotFrame.sizePolicy().hasHeightForWidth())
-        self.chPlotFrame.setSizePolicy(sizePolicy)
-        self.chPlotFrame.setObjectName(_fromUtf8("chPlotFrame"))
-        self.verticalLayout_5.addWidget(self.chPlotFrame)
-        self.chPlotAngle = QtGui.QCheckBox(self.layoutWidget)
+        layout_v2.addWidget(self.chPlotFrame)
+
+        self.chPlotAngle = QtGui.QCheckBox('Angle per frame histogram', self)
         self.chPlotAngle.setEnabled(False)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.chPlotAngle.sizePolicy().hasHeightForWidth())
-        self.chPlotAngle.setSizePolicy(sizePolicy)
-        self.chPlotAngle.setObjectName(_fromUtf8("chPlotAngle"))
-        self.verticalLayout_5.addWidget(self.chPlotAngle)
-        self.chPlotPerMic = QtGui.QCheckBox(self.layoutWidget)
+        layout_v2.addWidget(self.chPlotAngle)
+
+        self.chPlotPerMic = QtGui.QCheckBox('Overall drift per micrograph', self)
         self.chPlotPerMic.setEnabled(False)
-        self.chPlotPerMic.setObjectName(_fromUtf8("chPlotPerMic"))
-        self.verticalLayout_5.addWidget(self.chPlotPerMic)
-        self.horizontalLayout_9.addLayout(self.verticalLayout_5)
-        self.verticalLayout_6.addLayout(self.horizontalLayout_9)
-        self.horizontalLayout_32 = QtGui.QHBoxLayout()
-        self.horizontalLayout_32.setObjectName(_fromUtf8("horizontalLayout_32"))
-        self.label_5 = QtGui.QLabel(self.layoutWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_5.sizePolicy().hasHeightForWidth())
-        self.label_5.setSizePolicy(sizePolicy)
-        self.label_5.setObjectName(_fromUtf8("label_5"))
-        self.horizontalLayout_32.addWidget(self.label_5)
-        self.leFrameStart = QtGui.QLineEdit(self.layoutWidget)
+        layout_v2.addWidget(self.chPlotPerMic)
+
+        layout_v1.addStretch(1)
+        layout_v2.addStretch(1)
+
+        return widget
+
+    def threshold_section(self):
+        widget = QtGui.QWidget(self)
+        layout_v = QtGui.QVBoxLayout(widget)
+        layout_v.setContentsMargins(5, 20, 5, 5)
+        
+        layout_h = QtGui.QHBoxLayout()
+        layout_h.setContentsMargins(0, 5, 0, 5)
+        label = QtGui.QLabel('Start frame:', self)
+        layout_h.addWidget(label)
+        self.leFrameStart = QtGui.QLineEdit(self)
         self.leFrameStart.setEnabled(False)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.leFrameStart.sizePolicy().hasHeightForWidth())
-        self.leFrameStart.setSizePolicy(sizePolicy)
-        self.leFrameStart.setObjectName(_fromUtf8("leFrameStart"))
-        self.horizontalLayout_32.addWidget(self.leFrameStart)
-        self.label_11 = QtGui.QLabel(self.layoutWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_11.sizePolicy().hasHeightForWidth())
-        self.label_11.setSizePolicy(sizePolicy)
-        self.label_11.setObjectName(_fromUtf8("label_11"))
-        self.horizontalLayout_32.addWidget(self.label_11)
-        self.leFrameStop = QtGui.QLineEdit(self.layoutWidget)
+        self.leFrameStart.setMaximumWidth(50)
+        layout_h.addWidget(self.leFrameStart)
+        layout_h.addStretch(1)
+        label = QtGui.QLabel('End frame:', self)
+        layout_h.addWidget(label)
+        self.leFrameStop = QtGui.QLineEdit(self)
         self.leFrameStop.setEnabled(False)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.leFrameStop.sizePolicy().hasHeightForWidth())
-        self.leFrameStop.setSizePolicy(sizePolicy)
-        self.leFrameStop.setObjectName(_fromUtf8("leFrameStop"))
-        self.horizontalLayout_32.addWidget(self.leFrameStop)
-        self.verticalLayout_6.addLayout(self.horizontalLayout_32)
-        self.verticalLayout_3.addLayout(self.verticalLayout_6)
-        self.verticalLayout_7 = QtGui.QVBoxLayout()
-        self.verticalLayout_7.setObjectName(_fromUtf8("verticalLayout_7"))
-        self.label_21 = QtGui.QLabel(self.layoutWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_21.sizePolicy().hasHeightForWidth())
-        self.label_21.setSizePolicy(sizePolicy)
-        self.label_21.setObjectName(_fromUtf8("label_21"))
-        self.verticalLayout_7.addWidget(self.label_21)
-        self.horizontalLayout_13 = QtGui.QHBoxLayout()
-        self.horizontalLayout_13.setObjectName(_fromUtf8("horizontalLayout_13"))
-        self.verticalLayout_8 = QtGui.QVBoxLayout()
-        self.verticalLayout_8.setObjectName(_fromUtf8("verticalLayout_8"))
-        self.label_22 = QtGui.QLabel(self.layoutWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_22.sizePolicy().hasHeightForWidth())
-        self.label_22.setSizePolicy(sizePolicy)
-        self.label_22.setObjectName(_fromUtf8("label_22"))
-        self.verticalLayout_8.addWidget(self.label_22)
-        self.label_23 = QtGui.QLabel(self.layoutWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_23.sizePolicy().hasHeightForWidth())
-        self.label_23.setSizePolicy(sizePolicy)
-        self.label_23.setObjectName(_fromUtf8("label_23"))
-        self.verticalLayout_8.addWidget(self.label_23)
-        self.label_24 = QtGui.QLabel(self.layoutWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_24.sizePolicy().hasHeightForWidth())
-        self.label_24.setSizePolicy(sizePolicy)
-        self.label_24.setObjectName(_fromUtf8("label_24"))
-        self.verticalLayout_8.addWidget(self.label_24)
-        self.label_25 = QtGui.QLabel(self.layoutWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_25.sizePolicy().hasHeightForWidth())
-        self.label_25.setSizePolicy(sizePolicy)
-        self.label_25.setObjectName(_fromUtf8("label_25"))
-        self.verticalLayout_8.addWidget(self.label_25)
-        self.horizontalLayout_13.addLayout(self.verticalLayout_8)
-        self.verticalLayout_9 = QtGui.QVBoxLayout()
-        self.verticalLayout_9.setObjectName(_fromUtf8("verticalLayout_9"))
-        self.leStartOverall = QtGui.QLineEdit(self.layoutWidget)
-        self.leStartOverall.setEnabled(False)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.leStartOverall.sizePolicy().hasHeightForWidth())
-        self.leStartOverall.setSizePolicy(sizePolicy)
-        self.leStartOverall.setObjectName(_fromUtf8("leStartOverall"))
-        self.verticalLayout_9.addWidget(self.leStartOverall)
-        self.leStopOverall = QtGui.QLineEdit(self.layoutWidget)
-        self.leStopOverall.setEnabled(False)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.leStopOverall.sizePolicy().hasHeightForWidth())
-        self.leStopOverall.setSizePolicy(sizePolicy)
-        self.leStopOverall.setObjectName(_fromUtf8("leStopOverall"))
-        self.verticalLayout_9.addWidget(self.leStopOverall)
-        self.leStartSaveOverall = QtGui.QLineEdit(self.layoutWidget)
-        self.leStartSaveOverall.setEnabled(True)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.leStartSaveOverall.sizePolicy().hasHeightForWidth())
-        self.leStartSaveOverall.setSizePolicy(sizePolicy)
-        self.leStartSaveOverall.setReadOnly(True)
-        self.leStartSaveOverall.setObjectName(_fromUtf8("leStartSaveOverall"))
-        self.verticalLayout_9.addWidget(self.leStartSaveOverall)
-        self.leStopSaveOverall = QtGui.QLineEdit(self.layoutWidget)
-        self.leStopSaveOverall.setEnabled(True)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.leStopSaveOverall.sizePolicy().hasHeightForWidth())
-        self.leStopSaveOverall.setSizePolicy(sizePolicy)
-        self.leStopSaveOverall.setReadOnly(True)
-        self.leStopSaveOverall.setObjectName(_fromUtf8("leStopSaveOverall"))
-        self.verticalLayout_9.addWidget(self.leStopSaveOverall)
-        self.horizontalLayout_13.addLayout(self.verticalLayout_9)
-        self.verticalLayout_10 = QtGui.QVBoxLayout()
-        self.verticalLayout_10.setObjectName(_fromUtf8("verticalLayout_10"))
-        spacerItem3 = QtGui.QSpacerItem(20, 26, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        self.verticalLayout_10.addItem(spacerItem3)
-        self.pbSaveOverall = QtGui.QPushButton(self.layoutWidget)
-        self.pbSaveOverall.setEnabled(False)
-        self.pbSaveOverall.setObjectName(_fromUtf8("pbSaveOverall"))
-        self.verticalLayout_10.addWidget(self.pbSaveOverall)
-        self.chOverallCriterion = QtGui.QCheckBox(self.layoutWidget)
-        self.chOverallCriterion.setEnabled(False)
-        self.chOverallCriterion.setObjectName(_fromUtf8("chOverallCriterion"))
-        self.verticalLayout_10.addWidget(self.chOverallCriterion)
-        spacerItem4 = QtGui.QSpacerItem(20, 26, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        self.verticalLayout_10.addItem(spacerItem4)
-        self.horizontalLayout_13.addLayout(self.verticalLayout_10)
-        self.verticalLayout_7.addLayout(self.horizontalLayout_13)
-        self.verticalLayout_3.addLayout(self.verticalLayout_7)
-        self.tabWidget = QtGui.QTabWidget(self.layoutWidget)
-        self.tabWidget.setEnabled(True)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Preferred)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.tabWidget.sizePolicy().hasHeightForWidth())
-        self.tabWidget.setSizePolicy(sizePolicy)
-        self.tabWidget.setObjectName(_fromUtf8("tabWidget"))
-        self.tab = QtGui.QWidget()
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.tab.sizePolicy().hasHeightForWidth())
-        self.tab.setSizePolicy(sizePolicy)
-        self.tab.setObjectName(_fromUtf8("tab"))
-        self.layoutWidget_4 = QtGui.QWidget(self.tab)
-        self.layoutWidget_4.setGeometry(QtCore.QRect(0, 0, 441, 141))
-        self.layoutWidget_4.setObjectName(_fromUtf8("layoutWidget_4"))
-        self.verticalLayout_15 = QtGui.QVBoxLayout(self.layoutWidget_4)
-        self.verticalLayout_15.setMargin(0)
-        self.verticalLayout_15.setObjectName(_fromUtf8("verticalLayout_15"))
-        self.label_37 = QtGui.QLabel(self.layoutWidget_4)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_37.sizePolicy().hasHeightForWidth())
-        self.label_37.setSizePolicy(sizePolicy)
-        self.label_37.setObjectName(_fromUtf8("label_37"))
-        self.verticalLayout_15.addWidget(self.label_37)
-        self.horizontalLayout_15 = QtGui.QHBoxLayout()
-        self.horizontalLayout_15.setObjectName(_fromUtf8("horizontalLayout_15"))
-        self.verticalLayout_16 = QtGui.QVBoxLayout()
-        self.verticalLayout_16.setObjectName(_fromUtf8("verticalLayout_16"))
-        self.label_38 = QtGui.QLabel(self.layoutWidget_4)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_38.sizePolicy().hasHeightForWidth())
-        self.label_38.setSizePolicy(sizePolicy)
-        self.label_38.setObjectName(_fromUtf8("label_38"))
-        self.verticalLayout_16.addWidget(self.label_38)
-        self.label_39 = QtGui.QLabel(self.layoutWidget_4)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_39.sizePolicy().hasHeightForWidth())
-        self.label_39.setSizePolicy(sizePolicy)
-        self.label_39.setObjectName(_fromUtf8("label_39"))
-        self.verticalLayout_16.addWidget(self.label_39)
-        self.horizontalLayout_15.addLayout(self.verticalLayout_16)
-        self.verticalLayout_17 = QtGui.QVBoxLayout()
-        self.verticalLayout_17.setObjectName(_fromUtf8("verticalLayout_17"))
-        self.leStartGeneral = QtGui.QLineEdit(self.layoutWidget_4)
-        self.leStartGeneral.setEnabled(False)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.leStartGeneral.sizePolicy().hasHeightForWidth())
-        self.leStartGeneral.setSizePolicy(sizePolicy)
-        self.leStartGeneral.setStyleSheet(_fromUtf8(""))
-        self.leStartGeneral.setText(_fromUtf8(""))
-        self.leStartGeneral.setObjectName(_fromUtf8("leStartGeneral"))
-        self.verticalLayout_17.addWidget(self.leStartGeneral)
-        self.leStopGeneral = QtGui.QLineEdit(self.layoutWidget_4)
-        self.leStopGeneral.setEnabled(False)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.leStopGeneral.sizePolicy().hasHeightForWidth())
-        self.leStopGeneral.setSizePolicy(sizePolicy)
-        self.leStopGeneral.setText(_fromUtf8(""))
-        self.leStopGeneral.setObjectName(_fromUtf8("leStopGeneral"))
-        self.verticalLayout_17.addWidget(self.leStopGeneral)
-        self.horizontalLayout_15.addLayout(self.verticalLayout_17)
-        self.verticalLayout_18 = QtGui.QVBoxLayout()
-        self.verticalLayout_18.setObjectName(_fromUtf8("verticalLayout_18"))
-        self.pbSaveGeneral = QtGui.QPushButton(self.layoutWidget_4)
-        self.pbSaveGeneral.setEnabled(False)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.pbSaveGeneral.sizePolicy().hasHeightForWidth())
-        self.pbSaveGeneral.setSizePolicy(sizePolicy)
-        font = QtGui.QFont()
-        font.setBold(False)
-        font.setItalic(False)
-        font.setUnderline(False)
-        font.setWeight(50)
-        font.setStrikeOut(False)
-        self.pbSaveGeneral.setFont(font)
-        self.pbSaveGeneral.setAutoRepeat(False)
-        self.pbSaveGeneral.setObjectName(_fromUtf8("pbSaveGeneral"))
-        self.verticalLayout_18.addWidget(self.pbSaveGeneral)
-        self.chGeneralCriterion = QtGui.QCheckBox(self.layoutWidget_4)
-        self.chGeneralCriterion.setEnabled(False)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.chGeneralCriterion.sizePolicy().hasHeightForWidth())
-        self.chGeneralCriterion.setSizePolicy(sizePolicy)
-        self.chGeneralCriterion.setTristate(False)
-        self.chGeneralCriterion.setObjectName(_fromUtf8("chGeneralCriterion"))
-        self.verticalLayout_18.addWidget(self.chGeneralCriterion)
-        self.horizontalLayout_15.addLayout(self.verticalLayout_18)
-        self.verticalLayout_15.addLayout(self.horizontalLayout_15)
-        self.tabWidget.addTab(self.tab, _fromUtf8(""))
-        self.tab_2 = QtGui.QWidget()
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.tab_2.sizePolicy().hasHeightForWidth())
-        self.tab_2.setSizePolicy(sizePolicy)
-        self.tab_2.setObjectName(_fromUtf8("tab_2"))
-        self.layoutWidget_3 = QtGui.QWidget(self.tab_2)
-        self.layoutWidget_3.setGeometry(QtCore.QRect(0, 10, 441, 161))
-        self.layoutWidget_3.setObjectName(_fromUtf8("layoutWidget_3"))
-        self.verticalLayout_11 = QtGui.QVBoxLayout(self.layoutWidget_3)
-        self.verticalLayout_11.setMargin(0)
-        self.verticalLayout_11.setObjectName(_fromUtf8("verticalLayout_11"))
-        self.label_26 = QtGui.QLabel(self.layoutWidget_3)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_26.sizePolicy().hasHeightForWidth())
-        self.label_26.setSizePolicy(sizePolicy)
-        self.label_26.setObjectName(_fromUtf8("label_26"))
-        self.verticalLayout_11.addWidget(self.label_26)
-        self.horizontalLayout_14 = QtGui.QHBoxLayout()
-        self.horizontalLayout_14.setObjectName(_fromUtf8("horizontalLayout_14"))
-        self.verticalLayout_12 = QtGui.QVBoxLayout()
-        self.verticalLayout_12.setObjectName(_fromUtf8("verticalLayout_12"))
-        self.label_33 = QtGui.QLabel(self.layoutWidget_3)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_33.sizePolicy().hasHeightForWidth())
-        self.label_33.setSizePolicy(sizePolicy)
-        self.label_33.setObjectName(_fromUtf8("label_33"))
-        self.verticalLayout_12.addWidget(self.label_33)
-        self.label_34 = QtGui.QLabel(self.layoutWidget_3)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_34.sizePolicy().hasHeightForWidth())
-        self.label_34.setSizePolicy(sizePolicy)
-        self.label_34.setObjectName(_fromUtf8("label_34"))
-        self.verticalLayout_12.addWidget(self.label_34)
-        self.label_35 = QtGui.QLabel(self.layoutWidget_3)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_35.sizePolicy().hasHeightForWidth())
-        self.label_35.setSizePolicy(sizePolicy)
-        self.label_35.setObjectName(_fromUtf8("label_35"))
-        self.verticalLayout_12.addWidget(self.label_35)
-        self.label_36 = QtGui.QLabel(self.layoutWidget_3)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_36.sizePolicy().hasHeightForWidth())
-        self.label_36.setSizePolicy(sizePolicy)
-        self.label_36.setObjectName(_fromUtf8("label_36"))
-        self.verticalLayout_12.addWidget(self.label_36)
-        self.horizontalLayout_14.addLayout(self.verticalLayout_12)
-        self.verticalLayout_13 = QtGui.QVBoxLayout()
-        self.verticalLayout_13.setObjectName(_fromUtf8("verticalLayout_13"))
-        self.leStartFrame = QtGui.QLineEdit(self.layoutWidget_3)
-        self.leStartFrame.setEnabled(False)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.leStartFrame.sizePolicy().hasHeightForWidth())
-        self.leStartFrame.setSizePolicy(sizePolicy)
-        self.leStartFrame.setObjectName(_fromUtf8("leStartFrame"))
-        self.verticalLayout_13.addWidget(self.leStartFrame)
-        self.leStopFrame = QtGui.QLineEdit(self.layoutWidget_3)
-        self.leStopFrame.setEnabled(False)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.leStopFrame.sizePolicy().hasHeightForWidth())
-        self.leStopFrame.setSizePolicy(sizePolicy)
-        self.leStopFrame.setObjectName(_fromUtf8("leStopFrame"))
-        self.verticalLayout_13.addWidget(self.leStopFrame)
-        self.leStartSaveFrame = QtGui.QLineEdit(self.layoutWidget_3)
-        self.leStartSaveFrame.setEnabled(True)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.leStartSaveFrame.sizePolicy().hasHeightForWidth())
-        self.leStartSaveFrame.setSizePolicy(sizePolicy)
-        self.leStartSaveFrame.setReadOnly(True)
-        self.leStartSaveFrame.setObjectName(_fromUtf8("leStartSaveFrame"))
-        self.verticalLayout_13.addWidget(self.leStartSaveFrame)
-        self.leStopSaveFrame = QtGui.QLineEdit(self.layoutWidget_3)
-        self.leStopSaveFrame.setEnabled(True)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.leStopSaveFrame.sizePolicy().hasHeightForWidth())
-        self.leStopSaveFrame.setSizePolicy(sizePolicy)
-        self.leStopSaveFrame.setReadOnly(True)
-        self.leStopSaveFrame.setObjectName(_fromUtf8("leStopSaveFrame"))
-        self.verticalLayout_13.addWidget(self.leStopSaveFrame)
-        self.horizontalLayout_14.addLayout(self.verticalLayout_13)
-        self.verticalLayout_14 = QtGui.QVBoxLayout()
-        self.verticalLayout_14.setObjectName(_fromUtf8("verticalLayout_14"))
-        self.cbFrame = QtGui.QComboBox(self.layoutWidget_3)
-        self.cbFrame.setEnabled(False)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.cbFrame.sizePolicy().hasHeightForWidth())
-        self.cbFrame.setSizePolicy(sizePolicy)
-        self.cbFrame.setObjectName(_fromUtf8("cbFrame"))
-        self.verticalLayout_14.addWidget(self.cbFrame)
-        self.pbSaveFrame = QtGui.QPushButton(self.layoutWidget_3)
-        self.pbSaveFrame.setEnabled(False)
-        self.pbSaveFrame.setObjectName(_fromUtf8("pbSaveFrame"))
-        self.verticalLayout_14.addWidget(self.pbSaveFrame)
-        self.chFrameCriterion = QtGui.QCheckBox(self.layoutWidget_3)
-        self.chFrameCriterion.setEnabled(False)
-        self.chFrameCriterion.setObjectName(_fromUtf8("chFrameCriterion"))
-        self.verticalLayout_14.addWidget(self.chFrameCriterion)
-        spacerItem5 = QtGui.QSpacerItem(20, 27, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        self.verticalLayout_14.addItem(spacerItem5)
-        self.horizontalLayout_14.addLayout(self.verticalLayout_14)
-        self.verticalLayout_11.addLayout(self.horizontalLayout_14)
-        self.tabWidget.addTab(self.tab_2, _fromUtf8(""))
-        self.verticalLayout_3.addWidget(self.tabWidget)
-        self.verticalLayout_39 = QtGui.QVBoxLayout()
-        self.verticalLayout_39.setObjectName(_fromUtf8("verticalLayout_39"))
-        self.label_59 = QtGui.QLabel(self.layoutWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_59.sizePolicy().hasHeightForWidth())
-        self.label_59.setSizePolicy(sizePolicy)
-        self.label_59.setObjectName(_fromUtf8("label_59"))
-        self.verticalLayout_39.addWidget(self.label_59)
-        self.horizontalLayout_24 = QtGui.QHBoxLayout()
-        self.horizontalLayout_24.setObjectName(_fromUtf8("horizontalLayout_24"))
-        self.verticalLayout_40 = QtGui.QVBoxLayout()
-        self.verticalLayout_40.setObjectName(_fromUtf8("verticalLayout_40"))
-        self.label_60 = QtGui.QLabel(self.layoutWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_60.sizePolicy().hasHeightForWidth())
-        self.label_60.setSizePolicy(sizePolicy)
-        self.label_60.setObjectName(_fromUtf8("label_60"))
-        self.verticalLayout_40.addWidget(self.label_60)
-        self.label_61 = QtGui.QLabel(self.layoutWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_61.sizePolicy().hasHeightForWidth())
-        self.label_61.setSizePolicy(sizePolicy)
-        self.label_61.setObjectName(_fromUtf8("label_61"))
-        self.verticalLayout_40.addWidget(self.label_61)
-        self.label_62 = QtGui.QLabel(self.layoutWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_62.sizePolicy().hasHeightForWidth())
-        self.label_62.setSizePolicy(sizePolicy)
-        self.label_62.setObjectName(_fromUtf8("label_62"))
-        self.verticalLayout_40.addWidget(self.label_62)
-        self.label_63 = QtGui.QLabel(self.layoutWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_63.sizePolicy().hasHeightForWidth())
-        self.label_63.setSizePolicy(sizePolicy)
-        self.label_63.setObjectName(_fromUtf8("label_63"))
-        self.verticalLayout_40.addWidget(self.label_63)
-        self.horizontalLayout_24.addLayout(self.verticalLayout_40)
-        self.verticalLayout_41 = QtGui.QVBoxLayout()
-        self.verticalLayout_41.setObjectName(_fromUtf8("verticalLayout_41"))
-        self.leStartAngle = QtGui.QLineEdit(self.layoutWidget)
-        self.leStartAngle.setEnabled(False)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.leStartAngle.sizePolicy().hasHeightForWidth())
-        self.leStartAngle.setSizePolicy(sizePolicy)
-        self.leStartAngle.setObjectName(_fromUtf8("leStartAngle"))
-        self.verticalLayout_41.addWidget(self.leStartAngle)
-        self.leStopAngle = QtGui.QLineEdit(self.layoutWidget)
-        self.leStopAngle.setEnabled(False)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.leStopAngle.sizePolicy().hasHeightForWidth())
-        self.leStopAngle.setSizePolicy(sizePolicy)
-        self.leStopAngle.setObjectName(_fromUtf8("leStopAngle"))
-        self.verticalLayout_41.addWidget(self.leStopAngle)
-        self.leStartSaveAngle = QtGui.QLineEdit(self.layoutWidget)
-        self.leStartSaveAngle.setEnabled(True)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.leStartSaveAngle.sizePolicy().hasHeightForWidth())
-        self.leStartSaveAngle.setSizePolicy(sizePolicy)
-        self.leStartSaveAngle.setReadOnly(True)
-        self.leStartSaveAngle.setObjectName(_fromUtf8("leStartSaveAngle"))
-        self.verticalLayout_41.addWidget(self.leStartSaveAngle)
-        self.leStopSaveAngle = QtGui.QLineEdit(self.layoutWidget)
-        self.leStopSaveAngle.setEnabled(True)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.leStopSaveAngle.sizePolicy().hasHeightForWidth())
-        self.leStopSaveAngle.setSizePolicy(sizePolicy)
-        self.leStopSaveAngle.setReadOnly(True)
-        self.leStopSaveAngle.setObjectName(_fromUtf8("leStopSaveAngle"))
-        self.verticalLayout_41.addWidget(self.leStopSaveAngle)
-        self.horizontalLayout_24.addLayout(self.verticalLayout_41)
-        self.verticalLayout_42 = QtGui.QVBoxLayout()
-        self.verticalLayout_42.setObjectName(_fromUtf8("verticalLayout_42"))
-        self.cbAngle = QtGui.QComboBox(self.layoutWidget)
-        self.cbAngle.setEnabled(False)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.cbAngle.sizePolicy().hasHeightForWidth())
-        self.cbAngle.setSizePolicy(sizePolicy)
-        self.cbAngle.setObjectName(_fromUtf8("cbAngle"))
-        self.verticalLayout_42.addWidget(self.cbAngle)
-        self.pbSaveAngle = QtGui.QPushButton(self.layoutWidget)
-        self.pbSaveAngle.setEnabled(False)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.pbSaveAngle.sizePolicy().hasHeightForWidth())
-        self.pbSaveAngle.setSizePolicy(sizePolicy)
-        self.pbSaveAngle.setObjectName(_fromUtf8("pbSaveAngle"))
-        self.verticalLayout_42.addWidget(self.pbSaveAngle)
-        self.chAngleCriterion = QtGui.QCheckBox(self.layoutWidget)
-        self.chAngleCriterion.setEnabled(False)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.chAngleCriterion.sizePolicy().hasHeightForWidth())
-        self.chAngleCriterion.setSizePolicy(sizePolicy)
-        self.chAngleCriterion.setObjectName(_fromUtf8("chAngleCriterion"))
-        self.verticalLayout_42.addWidget(self.chAngleCriterion)
-        self.pbUncheckCriterion = QtGui.QPushButton(self.layoutWidget)
-        self.pbUncheckCriterion.setEnabled(False)
-        self.pbUncheckCriterion.setObjectName(_fromUtf8("pbUncheckCriterion"))
-        self.verticalLayout_42.addWidget(self.pbUncheckCriterion)
-        self.horizontalLayout_24.addLayout(self.verticalLayout_42)
-        self.verticalLayout_39.addLayout(self.horizontalLayout_24)
-        self.verticalLayout_3.addLayout(self.verticalLayout_39)
-        self.pbApply = QtGui.QPushButton(self.layoutWidget)
+        self.leFrameStop.setMaximumWidth(50)
+        layout_h.addWidget(self.leFrameStop)
+        layout_v.addLayout(layout_h)
+        
+        layout_v.addWidget(self.threshold_section_overall())
+        layout_v.addWidget(self.threshold_section_frame())
+        layout_v.addWidget(self.threshold_section_angle())
+
+        self.pbApply = QtGui.QPushButton('Apply settings marked as criterion', self)
         self.pbApply.setEnabled(False)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.pbApply.sizePolicy().hasHeightForWidth())
-        self.pbApply.setSizePolicy(sizePolicy)
-        self.pbApply.setMinimumSize(QtCore.QSize(450, 0))
-        self.pbApply.setObjectName(_fromUtf8("pbApply"))
-        self.verticalLayout_3.addWidget(self.pbApply)
-        self.layoutCentralWidget.addLayout(self.verticalLayout_3)
-        self.layoutCentralWidget.setStretch(2, 1)
-        self.verticalLayout_2.addLayout(self.layoutCentralWidget)
-        self.horizontalLayout_6 = QtGui.QHBoxLayout()
-        self.horizontalLayout_6.setObjectName(_fromUtf8("horizontalLayout_6"))
-        spacerItem6 = QtGui.QSpacerItem(20, 1, QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Minimum)
-        self.horizontalLayout_6.addItem(spacerItem6)
-        self.label_27 = QtGui.QLabel(self.layoutWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Preferred)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_27.sizePolicy().hasHeightForWidth())
-        self.label_27.setSizePolicy(sizePolicy)
-        self.label_27.setObjectName(_fromUtf8("label_27"))
-        self.horizontalLayout_6.addWidget(self.label_27)
-        self.leOutputName = QtGui.QLineEdit(self.layoutWidget)
+        layout_v.addWidget(self.pbApply)
+        return widget
+
+    def threshold_section_overall(self):
+        widget = QtGui.QWidget(self)
+        layout_v = QtGui.QVBoxLayout(widget)
+        layout_v.setContentsMargins(5, 5, 5, 0)
+
+        layout_h1 = QtGui.QHBoxLayout()
+        layout_v1 = QtGui.QVBoxLayout()
+        layout_v2 = QtGui.QVBoxLayout()
+
+        label = QtGui.QLabel('Threshold overall drift', self)
+        layout_v.addWidget(label)
+        
+        layout_v.addLayout(layout_h1)
+        layout_h1.addLayout(layout_v1)
+        layout_h1.addLayout(layout_v2)
+
+        layout_h = QtGui.QHBoxLayout()
+        label = QtGui.QLabel('Start [A]', self)
+        layout_h.addWidget(label)
+        layout_h.addStretch(1)
+        self.leStartOverall = QtGui.QLineEdit(self)
+        self.leStartOverall.setEnabled(False)
+        self.leStartOverall.setMaximumWidth(100)
+        layout_h.addWidget(self.leStartOverall)
+        layout_v1.addLayout(layout_h)
+
+        layout_h = QtGui.QHBoxLayout()
+        label = QtGui.QLabel('Stop [A]', self)
+        layout_h.addWidget(label)
+        layout_h.addStretch(1)
+        self.leStopOverall = QtGui.QLineEdit(self)
+        self.leStopOverall.setEnabled(False)
+        self.leStopOverall.setMaximumWidth(100)
+        layout_h.addWidget(self.leStopOverall)
+        layout_v1.addLayout(layout_h)
+
+        layout_h = QtGui.QHBoxLayout()
+        label = QtGui.QLabel('Registered start [A]', self)
+        layout_h.addWidget(label)
+        layout_h.addStretch(1)
+        self.leStartSaveOverall = QtGui.QLineEdit(self)
+        self.leStartSaveOverall.setEnabled(False)
+        self.leStartSaveOverall.setMaximumWidth(100)
+        layout_h.addWidget(self.leStartSaveOverall)
+        layout_v1.addLayout(layout_h)
+
+        layout_h = QtGui.QHBoxLayout()
+        label = QtGui.QLabel('Registered stop [A]', self)
+        layout_h.addWidget(label)
+        layout_h.addStretch(1)
+        self.leStopSaveOverall = QtGui.QLineEdit(self)
+        self.leStopSaveOverall.setEnabled(False)
+        self.leStopSaveOverall.setMaximumWidth(100)
+        layout_h.addWidget(self.leStopSaveOverall)
+        layout_v1.addLayout(layout_h)
+
+        self.pbSaveOverall = QtGui.QPushButton('Register', self)
+        self.pbSaveOverall.setEnabled(False)
+        layout_v2.addWidget(self.pbSaveOverall)
+        self.chOverallCriterion = QtGui.QCheckBox('Use as criterion', self)
+        self.chOverallCriterion.setEnabled(False)
+        layout_v2.addWidget(self.chOverallCriterion)
+        layout_v2.addStretch(1)
+
+        return widget
+
+    def threshold_section_frame(self):
+        tabWidget = QtGui.QTabWidget(self)
+        tab_1 = QtGui.QWidget(self)
+        tab_2 = QtGui.QWidget(self)
+
+        tabWidget.addTab(tab_1, 'General')
+        tabWidget.addTab(tab_2, 'Per frame')
+
+        layout_v = QtGui.QVBoxLayout(tab_1)
+        layout_v.setContentsMargins(5, 5, 5, 0)
+
+        layout_h1 = QtGui.QHBoxLayout()
+        layout_v1 = QtGui.QVBoxLayout()
+        layout_v2 = QtGui.QVBoxLayout()
+
+        label = QtGui.QLabel('Threshold for the drift of every frame', self)
+        layout_v.addWidget(label)
+        
+        layout_v.addLayout(layout_h1)
+        layout_h1.addLayout(layout_v1)
+        layout_h1.addLayout(layout_v2)
+        
+        layout_h = QtGui.QHBoxLayout()
+        label = QtGui.QLabel('Start [A]', self)
+        layout_h.addWidget(label)
+        layout_h.addStretch(1)
+        self.leStartGeneral = QtGui.QLineEdit(self)
+        self.leStartGeneral.setEnabled(False)
+        self.leStartGeneral.setMaximumWidth(100)
+        layout_h.addWidget(self.leStartGeneral)
+        layout_v1.addLayout(layout_h)
+
+        layout_h = QtGui.QHBoxLayout()
+        label = QtGui.QLabel('Stop [A]', self)
+        layout_h.addWidget(label)
+        layout_h.addStretch(1)
+        self.leStopGeneral = QtGui.QLineEdit(self)
+        self.leStopGeneral.setEnabled(False)
+        self.leStopGeneral.setMaximumWidth(100)
+        layout_h.addWidget(self.leStopGeneral)
+        layout_v1.addLayout(layout_h)
+
+        self.pbSaveGeneral = QtGui.QPushButton('Register', self)
+        self.pbSaveGeneral.setEnabled(False)
+        layout_v2.addWidget(self.pbSaveGeneral)
+        self.chGeneralCriterion = QtGui.QCheckBox('Use as criterion', self)
+        self.chGeneralCriterion.setEnabled(False)
+        layout_v2.addWidget(self.chGeneralCriterion)
+        layout_v2.addStretch(1)
+        layout_v1.addStretch(1)
+
+        layout_v = QtGui.QVBoxLayout(tab_2)
+        layout_v.setContentsMargins(5, 5, 5, 0)
+
+        layout_h1 = QtGui.QHBoxLayout()
+        layout_v1 = QtGui.QVBoxLayout()
+        layout_v2 = QtGui.QVBoxLayout()
+
+        label = QtGui.QLabel('Threshold drift per frame', self)
+        layout_v.addWidget(label)
+        
+        layout_v.addLayout(layout_h1)
+        layout_h1.addLayout(layout_v1)
+        layout_h1.addLayout(layout_v2)
+
+        layout_h = QtGui.QHBoxLayout()
+        label = QtGui.QLabel('Start [A]', self)
+        layout_h.addWidget(label)
+        layout_h.addStretch(1)
+        self.leStartFrame = QtGui.QLineEdit(self)
+        self.leStartFrame.setEnabled(False)
+        self.leStartFrame.setMaximumWidth(100)
+        layout_h.addWidget(self.leStartFrame)
+        layout_v1.addLayout(layout_h)
+
+        layout_h = QtGui.QHBoxLayout()
+        label = QtGui.QLabel('Stop [A]', self)
+        layout_h.addWidget(label)
+        layout_h.addStretch(1)
+        self.leStopFrame = QtGui.QLineEdit(self)
+        self.leStopFrame.setEnabled(False)
+        self.leStopFrame.setMaximumWidth(100)
+        layout_h.addWidget(self.leStopFrame)
+        layout_v1.addLayout(layout_h)
+
+        layout_h = QtGui.QHBoxLayout()
+        label = QtGui.QLabel('Registered start [A]', self)
+        layout_h.addWidget(label)
+        layout_h.addStretch(1)
+        self.leStartSaveFrame = QtGui.QLineEdit(self)
+        self.leStartSaveFrame.setEnabled(False)
+        self.leStartSaveFrame.setMaximumWidth(100)
+        layout_h.addWidget(self.leStartSaveFrame)
+        layout_v1.addLayout(layout_h)
+
+        layout_h = QtGui.QHBoxLayout()
+        label = QtGui.QLabel('Registered stop [A]', self)
+        layout_h.addWidget(label)
+        layout_h.addStretch(1)
+        self.leStopSaveFrame = QtGui.QLineEdit(self)
+        self.leStopSaveFrame.setEnabled(False)
+        self.leStopSaveFrame.setMaximumWidth(100)
+        layout_h.addWidget(self.leStopSaveFrame)
+        layout_v1.addLayout(layout_h)
+
+        self.cbFrame = QtGui.QComboBox(self)
+        self.cbFrame.setEnabled(False)
+        layout_v2.addWidget(self.cbFrame)
+        self.pbSaveFrame = QtGui.QPushButton('Register', self)
+        self.pbSaveFrame.setEnabled(False)
+        layout_v2.addWidget(self.pbSaveFrame)
+        self.chFrameCriterion = QtGui.QCheckBox('Use as criterion', self)
+        self.chFrameCriterion.setEnabled(False)
+        layout_v2.addWidget(self.chFrameCriterion)
+        layout_v2.addStretch(1)
+
+        return tabWidget
+
+    def threshold_section_angle(self):
+        widget = QtGui.QWidget(self)
+        layout_v = QtGui.QVBoxLayout(widget)
+        layout_v.setContentsMargins(5, 5, 5, 0)
+
+        layout_h1 = QtGui.QHBoxLayout()
+        layout_v1 = QtGui.QVBoxLayout()
+        layout_v2 = QtGui.QVBoxLayout()
+
+        label = QtGui.QLabel('Threshold angle', self)
+        layout_v.addWidget(label)
+        
+        layout_v.addLayout(layout_h1)
+        layout_h1.addLayout(layout_v1)
+        layout_h1.addLayout(layout_v2)
+
+        layout_h = QtGui.QHBoxLayout()
+        label = QtGui.QLabel('Start [Degree]', self)
+        layout_h.addWidget(label)
+        layout_h.addStretch(1)
+        self.leStartAngle = QtGui.QLineEdit(self)
+        self.leStartAngle.setEnabled(False)
+        self.leStartAngle.setMaximumWidth(100)
+        layout_h.addWidget(self.leStartAngle)
+        layout_v1.addLayout(layout_h)
+
+        layout_h = QtGui.QHBoxLayout()
+        label = QtGui.QLabel('Stop [Degree]', self)
+        layout_h.addWidget(label)
+        layout_h.addStretch(1)
+        self.leStopAngle = QtGui.QLineEdit(self)
+        self.leStopAngle.setEnabled(False)
+        self.leStopAngle.setMaximumWidth(100)
+        layout_h.addWidget(self.leStopAngle)
+        layout_v1.addLayout(layout_h)
+
+        layout_h = QtGui.QHBoxLayout()
+        label = QtGui.QLabel('Registered start [Degree]', self)
+        layout_h.addWidget(label)
+        layout_h.addStretch(1)
+        self.leStartSaveAngle = QtGui.QLineEdit(self)
+        self.leStartSaveAngle.setEnabled(False)
+        self.leStartSaveAngle.setMaximumWidth(100)
+        layout_h.addWidget(self.leStartSaveAngle)
+        layout_v1.addLayout(layout_h)
+
+        layout_h = QtGui.QHBoxLayout()
+        label = QtGui.QLabel('Registered stop [Degree]', self)
+        layout_h.addWidget(label)
+        layout_h.addStretch(1)
+        self.leStopSaveAngle = QtGui.QLineEdit(self)
+        self.leStopSaveAngle.setEnabled(False)
+        self.leStopSaveAngle.setMaximumWidth(100)
+        layout_h.addWidget(self.leStopSaveAngle)
+        layout_v1.addLayout(layout_h)
+
+        self.cbAngle = QtGui.QComboBox(self)
+        self.cbAngle.setEnabled(False)
+        layout_v2.addWidget(self.cbAngle)
+        self.pbSaveAngle = QtGui.QPushButton('Register', self)
+        self.pbSaveAngle.setEnabled(False)
+        layout_v2.addWidget(self.pbSaveAngle)
+        self.chAngleCriterion = QtGui.QCheckBox('Use as criterion', self)
+        self.chAngleCriterion.setEnabled(False)
+        layout_v2.addWidget(self.chAngleCriterion)
+        self.pbUncheckCriterion = QtGui.QPushButton('Uncheck criteria')
+        self.pbUncheckCriterion.setEnabled(False)
+        layout_v2.addWidget(self.pbUncheckCriterion)
+
+        return widget
+
+    def save_section(self):
+        widget = QtGui.QWidget(self)
+        layout_h = QtGui.QHBoxLayout(widget)
+        layout_h.setContentsMargins(5, 0, 5, 0)
+
+        label = QtGui.QLabel('Output prefix:', self)
+        layout_h.addWidget(label)
+        
+        self.leOutputName = QtGui.QLineEdit('Trial00', self)
         self.leOutputName.setEnabled(False)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.leOutputName.sizePolicy().hasHeightForWidth())
-        self.leOutputName.setSizePolicy(sizePolicy)
-        self.leOutputName.setMinimumSize(QtCore.QSize(500, 0))
-        self.leOutputName.setObjectName(_fromUtf8("leOutputName"))
-        self.horizontalLayout_6.addWidget(self.leOutputName)
-        self.pbSaveSelected = QtGui.QPushButton(self.layoutWidget)
+        self.leOutputName.setMinimumWidth(300)
+        layout_h.addWidget(self.leOutputName)
+
+        self.pbSaveSelected = QtGui.QPushButton('Select output directory and save selection', self)
         self.pbSaveSelected.setEnabled(False)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.pbSaveSelected.sizePolicy().hasHeightForWidth())
-        self.pbSaveSelected.setSizePolicy(sizePolicy)
-        self.pbSaveSelected.setObjectName(_fromUtf8("pbSaveSelected"))
-        self.horizontalLayout_6.addWidget(self.pbSaveSelected)
-        spacerItem7 = QtGui.QSpacerItem(10, 10, QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Minimum)
-        self.horizontalLayout_6.addItem(spacerItem7)
-        self.pbSaveSettings = QtGui.QPushButton(self.layoutWidget)
+        layout_h.addWidget(self.pbSaveSelected)
+
+        layout_h.addStretch(1)
+
+        self.pbSaveSettings = QtGui.QPushButton('Save settings', self)
         self.pbSaveSettings.setEnabled(False)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.pbSaveSettings.sizePolicy().hasHeightForWidth())
-        self.pbSaveSettings.setSizePolicy(sizePolicy)
-        self.pbSaveSettings.setObjectName(_fromUtf8("pbSaveSettings"))
-        self.horizontalLayout_6.addWidget(self.pbSaveSettings)
-        self.pbLoadSettings = QtGui.QPushButton(self.layoutWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.pbLoadSettings.sizePolicy().hasHeightForWidth())
-        self.pbLoadSettings.setSizePolicy(sizePolicy)
-        self.pbLoadSettings.setObjectName(_fromUtf8("pbLoadSettings"))
-        self.horizontalLayout_6.addWidget(self.pbLoadSettings)
-        spacerItem8 = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
-        self.horizontalLayout_6.addItem(spacerItem8)
-        self.pbAbout = QtGui.QPushButton(self.layoutWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.pbAbout.sizePolicy().hasHeightForWidth())
-        self.pbAbout.setSizePolicy(sizePolicy)
-        self.pbAbout.setObjectName(_fromUtf8("pbAbout"))
-        self.horizontalLayout_6.addWidget(self.pbAbout)
-        spacerItem9 = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Minimum)
-        self.horizontalLayout_6.addItem(spacerItem9)
-        self.verticalLayout_2.addLayout(self.horizontalLayout_6)
+        layout_h.addWidget(self.pbSaveSettings)
 
-        self.retranslateUi(MSMainWidget)
-        self.tabWidget.setCurrentIndex(1)
-        # QtCore.QMetaObject.connectSlotsByName(MSMainWidget)
+        self.pbLoadSettings = QtGui.QPushButton('Load settings', self)
+        layout_h.addWidget(self.pbLoadSettings)
 
-    def retranslateUi(self, MSMainWidget):
-        MSMainWidget.setWindowTitle(_translate("MSMainWidget", "sxgui_drift", None))
-        self.label_7.setText(_translate("MSMainWidget", "Pattern:", None))
-        self.pbSelectTxt.setText(_translate("MSMainWidget", "Shift Directory", None))
-        self.pbImportPattern.setText(_translate("MSMainWidget", "Load files by pattern", None))
-        self.pbImportList.setText(_translate("MSMainWidget", "Load files by list", None))
-        self.label_6.setText(_translate("MSMainWidget", "Info of Current Entry:", None))
-        self.label_4.setText(_translate("MSMainWidget", "   Micrograph Name", None))
-        self.label_3.setText(_translate("MSMainWidget", "   Overall Drift [A]", None))
-        self.label.setText(_translate("MSMainWidget", "   Drift per Frame [A]", None))
-        self.label_2.setText(_translate("MSMainWidget", "   End to End Length [A]", None))
-        self.label_30.setText(_translate("MSMainWidget", "   Maximum Distance between Frames [A]", None))
-        self.label_32.setText(_translate("MSMainWidget", "   Maximum Distance from Frame Start Frame [A]", None))
-        self.label_8.setText(_translate("MSMainWidget", "Drift Info for selected Micrographs:", None))
-        self.label_13.setText(_translate("MSMainWidget", "   Nr. of Micrographs", None))
-        self.label_29.setText(_translate("MSMainWidget", "   Checked Micrographs", None))
-        self.label_9.setText(_translate("MSMainWidget", "   Average Overall Drift [A]", None))
-        self.label_12.setText(_translate("MSMainWidget", "   Average Drift per Frame [A]", None))
-        self.label_10.setText(_translate("MSMainWidget", "   Average End to End Length [A]", None))
-        self.label_28.setText(_translate("MSMainWidget", "   Average Maximum Distance between Frames [A]", None))
-        self.label_31.setText(_translate("MSMainWidget", "   Average Maximum Distance from Start Frame [A]", None))
-        self.label_16.setText(_translate("MSMainWidget", "Sort Entries:", None))
-        self.cbSort.setItemText(0, _translate("MSMainWidget", "File Name", None))
-        self.cbSort.setItemText(1, _translate("MSMainWidget", "Overall Drift", None))
-        self.cbSort.setItemText(2, _translate("MSMainWidget", "Drift per Frame", None))
-        self.cbSort.setItemText(3, _translate("MSMainWidget", "End to End Length", None))
-        self.cbSort.setItemText(4, _translate("MSMainWidget", "Maximum Distance between Frames", None))
-        self.cbSort.setItemText(5, _translate("MSMainWidget", "Maximum Distance from Start Frame", None))
-        self.chDescending.setText(_translate("MSMainWidget", "Descending", None))
-        self.chSortSelected.setText(_translate("MSMainWidget", "Sort Selected", None))
-        self.label_14.setText(_translate("MSMainWidget", "  Show Plots of Current Entry:   ", None))
-        self.chPlotDriftMic.setText(_translate("MSMainWidget", "Drift", None))
-        self.chPlotFrameMic.setText(_translate("MSMainWidget", "Drift per Frame", None))
-        self.chPlotAngleMic.setText(_translate("MSMainWidget", "Angle per Frame", None))
-        self.label_15.setText(_translate("MSMainWidget", "  Show Plots of all Micrographs:", None))
-        self.chAverageDriftPerFrame.setText(_translate("MSMainWidget", "Average Drift per Frame", None))
-        self.chPlotDrift.setText(_translate("MSMainWidget", "Overall Drift Histogram", None))
-        self.chPlotFrame.setText(_translate("MSMainWidget", "Drift per Frame Histogram", None))
-        self.chPlotAngle.setText(_translate("MSMainWidget", "Angle per Frame Histogram", None))
-        self.chPlotPerMic.setText(_translate("MSMainWidget", "Overall Drift per Micrograph", None))
-        self.label_5.setText(_translate("MSMainWidget", "Start Frame", None))
-        self.label_11.setText(_translate("MSMainWidget", "End Frame", None))
-        self.label_21.setText(_translate("MSMainWidget", "Threshold Overall Drift", None))
-        self.label_22.setText(_translate("MSMainWidget", "Start [A]:", None))
-        self.label_23.setText(_translate("MSMainWidget", "Stop [A]:", None))
-        self.label_24.setText(_translate("MSMainWidget", "Registered Start [A]:", None))
-        self.label_25.setText(_translate("MSMainWidget", "Registered Stop [A]:", None))
-        self.pbSaveOverall.setText(_translate("MSMainWidget", "Register", None))
-        self.chOverallCriterion.setText(_translate("MSMainWidget", "Use as criterion", None))
-        self.label_37.setText(_translate("MSMainWidget", "Threshold for the drift of one Frame", None))
-        self.label_38.setText(_translate("MSMainWidget", "Start [A]:", None))
-        self.label_39.setText(_translate("MSMainWidget", "Stop [A]:", None))
-        self.pbSaveGeneral.setText(_translate("MSMainWidget", "Register", None))
-        self.chGeneralCriterion.setText(_translate("MSMainWidget", "Use as criterion", None))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), _translate("MSMainWidget", "General", None))
-        self.label_26.setText(_translate("MSMainWidget", "Threshold Drift per Frame", None))
-        self.label_33.setText(_translate("MSMainWidget", "Start [A]:", None))
-        self.label_34.setText(_translate("MSMainWidget", "Stop [A]:", None))
-        self.label_35.setText(_translate("MSMainWidget", "Registered Start [A]:", None))
-        self.label_36.setText(_translate("MSMainWidget", "Registered Stop [A]:", None))
-        self.pbSaveFrame.setText(_translate("MSMainWidget", "Register", None))
-        self.chFrameCriterion.setText(_translate("MSMainWidget", "Use as criterion", None))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), _translate("MSMainWidget", "Per Frame", None))
-        self.label_59.setText(_translate("MSMainWidget", "Threshold Angle per Frame", None))
-        self.label_60.setText(_translate("MSMainWidget", "Start [A]:", None))
-        self.label_61.setText(_translate("MSMainWidget", "Stop [A]:", None))
-        self.label_62.setText(_translate("MSMainWidget", "Registered Start [A]:", None))
-        self.label_63.setText(_translate("MSMainWidget", "Registered Stop [A]:", None))
-        self.pbSaveAngle.setText(_translate("MSMainWidget", "Register", None))
-        self.chAngleCriterion.setText(_translate("MSMainWidget", "Use as criterion", None))
-        self.pbUncheckCriterion.setText(_translate("MSMainWidget", "Uncheck Criteria", None))
-        self.pbApply.setText(_translate("MSMainWidget", "Apply registered settings marked as criterion", None))
-        self.label_27.setText(_translate("MSMainWidget", "  Output Prefix:", None))
-        self.leOutputName.setText(_translate("MSMainWidget", "Trial00", None))
-        self.pbSaveSelected.setText(_translate("MSMainWidget", "Select output directory and save selection", None))
-        self.pbSaveSettings.setText(_translate("MSMainWidget", "Save Settings", None))
-        self.pbLoadSettings.setText(_translate("MSMainWidget", "Load Settings", None))
-        self.pbAbout.setText(_translate("MSMainWidget", "About", None))
+        self.pbAbout = QtGui.QPushButton('About', self)
+        layout_h.addWidget(self.pbAbout)
+
+        return widget
 
 
 
@@ -1582,9 +1057,11 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             except IOError:
                 return None
 
-
     def _set_variables(self):
         """Set instance variables"""
+
+        # Minimized
+        self.minimized = False
 
         # Arrays
         self.arrData = None
@@ -1637,12 +1114,12 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         self.dMaxFirst = 'maxDistanceFirst'
 
         # Sort
-        self.sortFile = 'File Name'
-        self.sortOverall = 'Overall Drift'
-        self.sortFrame = 'Drift per Frame'
-        self.sortEnd = 'End to End Length'
-        self.sortMax = 'Maximum Distance between Frames'
-        self.sortMaxFirst = 'Maximum Distance from Start Frame'
+        self.sortFile = 'File name'
+        self.sortOverall = 'Overall drift'
+        self.sortFrame = 'Drift per frame'
+        self.sortEnd = 'End to end length'
+        self.sortMax = 'Maximum distance between frames'
+        self.sortMaxFirst = 'Maximum distance from start frame'
 
         # Plot Widgets
         self.msPlotDrift = SXUnblurPlot(title='Drift Plot')
@@ -1778,6 +1255,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         self.listFrames = []
         self.listAngles = []
         self.listDType = []
+        self.connectedWidgets = []
 
         # List widget flags
         self.newItemFlags = \
@@ -1785,80 +1263,111 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             Qt.ItemFlags(Qt.ItemIsEnabled) | \
             Qt.ItemFlags(Qt.ItemIsUserCheckable)
 
+    def _disconnect_events(self):
+        """disconnect the widgets to the events"""
+        for entry in self.connectedWidgets:
+            entry.disconnect()
+
     def _connect_events(self):
         """Connect the widgets to the events"""
 
         # Connect buttons
         self.pbSelectTxt.clicked.connect(self._select_txt)
+        self.connectedWidgets.append(self.pbSelectTxt.clicked)
         self.pbImportList.clicked.connect(self._load_from_list)
+        self.connectedWidgets.append(self.pbImportList.clicked)
         self.pbImportPattern.clicked.connect(self._load_from_pattern)
+        self.connectedWidgets.append(self.pbImportPattern.clicked)
         #self.pbSelectAll.clicked.connect(self._select_all)
+        #self.connectedWidgets.append(self.pbSelectAll.clicked)
         #self.pbInvert.clicked.connect(self._invert_selection)
+        #self.connectedWidgets.append(self.pbInvert.clicked)
         self.pbAbout.clicked.connect(self._show_about)
+        self.connectedWidgets.append(self.pbAbout.clicked)
         self.pbSaveSelected.clicked.connect(self._write_selection)
+        self.connectedWidgets.append(self.pbSaveSelected.clicked)
         self.pbSaveOverall.clicked.connect(
             lambda: self._save_settings(mode=self.modeOverall)
             )
+        self.connectedWidgets.append(self.pbSaveOverall.clicked)
         self.pbSaveGeneral.clicked.connect(
             lambda: self._save_settings(mode=self.modeGeneral)
             )
+        self.connectedWidgets.append(self.pbSaveGeneral.clicked)
         self.pbSaveFrame.clicked.connect(
             lambda: self._save_settings(mode=self.modeFrame)
             )
+        self.connectedWidgets.append(self.pbSaveFrame.clicked)
         self.pbSaveAngle.clicked.connect(
             lambda: self._save_settings(mode=self.modeAngle)
             )
+        self.connectedWidgets.append(self.pbSaveAngle.clicked)
         self.pbApply.clicked.connect(self._apply_setting)
+        self.connectedWidgets.append(self.pbApply.clicked)
         self.pbUncheckCriterion.clicked.connect(self._uncheck_angle_criterion)
+        self.connectedWidgets.append(self.pbUncheckCriterion.clicked)
         self.pbSaveSettings.clicked.connect(self._write_settings)
+        self.connectedWidgets.append(self.pbSaveSettings.clicked)
         self.pbLoadSettings.clicked.connect(self._load_settings)
+        self.connectedWidgets.append(self.pbLoadSettings.clicked)
 
         # Connect list widget
         self.lsFiles.itemClicked.connect(self._current_info)
+        self.connectedWidgets.append(self.lsFiles.itemClicked)
 
         # Connect entry widgets to calculation
         self.leFrameStart.returnPressed.connect(self._refresh_calculations)
+        self.connectedWidgets.append(self.leFrameStart.returnPressed)
         self.leFrameStop.returnPressed.connect(self._refresh_calculations)
-        self.leStartOverall.returnPressed.connect(
+        self.connectedWidgets.append(self.leFrameStop.returnPressed)
+        self.leStartOverall.editingFinished.connect(
             lambda: self._refresh_histogram_widget(
                 event='start', mode=self.modeOverall
                 )
             )
-        self.leStopOverall.returnPressed.connect(
+        self.connectedWidgets.append(self.leStartOverall.editingFinished)
+        self.leStopOverall.editingFinished.connect(
             lambda: self._refresh_histogram_widget(
                 event='stop', mode=self.modeOverall
                 )
             )
-        self.leStartGeneral.returnPressed.connect(
+        self.connectedWidgets.append(self.leStopOverall.editingFinished)
+        self.leStartGeneral.editingFinished.connect(
             lambda: self._refresh_histogram_widget(
                 event='start', mode=self.modeGeneral
                 )
             )
-        self.leStopGeneral.returnPressed.connect(
+        self.connectedWidgets.append(self.leStartGeneral.editingFinished)
+        self.leStopGeneral.editingFinished.connect(
             lambda: self._refresh_histogram_widget(
                 event='stop', mode=self.modeGeneral
                 )
             )
-        self.leStartFrame.returnPressed.connect(
+        self.connectedWidgets.append(self.leStopGeneral.editingFinished)
+        self.leStartFrame.editingFinished.connect(
             lambda: self._refresh_histogram_widget(
                 event='start', mode=self.modeFrame
                 )
             )
-        self.leStopFrame.returnPressed.connect(
+        self.connectedWidgets.append(self.leStartFrame.editingFinished)
+        self.leStopFrame.editingFinished.connect(
             lambda: self._refresh_histogram_widget(
                 event='stop', mode=self.modeFrame
                 )
             )
-        self.leStartAngle.returnPressed.connect(
+        self.connectedWidgets.append(self.leStopFrame.editingFinished)
+        self.leStartAngle.editingFinished.connect(
             lambda: self._refresh_histogram_widget(
                 event='start', mode=self.modeAngle
                 )
             )
-        self.leStopAngle.returnPressed.connect(
+        self.connectedWidgets.append(self.leStartAngle.editingFinished)
+        self.leStopAngle.editingFinished.connect(
             lambda: self._refresh_histogram_widget(
                 event='stop', mode=self.modeAngle
                 )
             )
+        self.connectedWidgets.append(self.leStopAngle.editingFinished)
 
         # Connect entry widgets to change color
         self.leFrameStart.textChanged.connect(
@@ -1866,141 +1375,195 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                 widget=self.leFrameStart
                 )
             )
+        self.connectedWidgets.append(self.leFrameStart.textChanged)
         self.leFrameStop.textChanged.connect(
             lambda: self._change_color(
                 widget=self.leFrameStop
                 )
             )
+        self.connectedWidgets.append(self.leFrameStop.textChanged)
         self.leStartOverall.textChanged.connect(
             lambda: self._change_color(
                 widget=self.leStartOverall
                 )
             )
+        self.connectedWidgets.append(self.leStartOverall.textChanged)
         self.leStopOverall.textChanged.connect(
             lambda: self._change_color(
                 widget=self.leStopOverall
                 )
             )
+        self.connectedWidgets.append(self.leStopOverall.textChanged)
         self.leStartGeneral.textChanged.connect(
             lambda: self._change_color(
                 widget=self.leStartGeneral
                 )
             )
+        self.connectedWidgets.append(self.leStartGeneral.textChanged)
         self.leStopGeneral.textChanged.connect(
             lambda: self._change_color(
                 widget=self.leStopGeneral
                 )
             )
+        self.connectedWidgets.append(self.leStopGeneral.textChanged)
         self.leStartFrame.textChanged.connect(
             lambda: self._change_color(
                 widget=self.leStartFrame
                 )
             )
+        self.connectedWidgets.append(self.leStartFrame.textChanged)
         self.leStopFrame.textChanged.connect(
             lambda: self._change_color(
                 widget=self.leStopFrame
                 )
             )
+        self.connectedWidgets.append(self.leStopFrame.textChanged)
         self.leStartAngle.textChanged.connect(
             lambda: self._change_color(
                 widget=self.leStartAngle
                 )
             )
+        self.connectedWidgets.append(self.leStartAngle.textChanged)
         self.leStopAngle.textChanged.connect(
             lambda: self._change_color(
                 widget=self.leStopAngle
                 )
             )
+        self.connectedWidgets.append(self.leStopAngle.textChanged)
 
         # Connect check boxes
+        self.chDescending.setChecked(False)
         self.chDescending.stateChanged.connect(self._apply_sorting)
+        self.connectedWidgets.append(self.chDescending.stateChanged)
+        self.chSortSelected.setChecked(False)
         self.chSortSelected.stateChanged.connect(self._apply_sorting)
+        self.connectedWidgets.append(self.chSortSelected.stateChanged)
+        self.chOverallCriterion.setChecked(False)
         self.chOverallCriterion.stateChanged.connect(
             lambda: self._mark_as_criterion(mode=self.modeOverall)
             )
+        self.connectedWidgets.append(self.chOverallCriterion.stateChanged)
+        self.chGeneralCriterion.setChecked(False)
         self.chGeneralCriterion.stateChanged.connect(
             lambda: self._mark_as_criterion(mode=self.modeGeneral)
             )
+        self.connectedWidgets.append(self.chGeneralCriterion.stateChanged)
+        self.chFrameCriterion.setChecked(False)
         self.chFrameCriterion.stateChanged.connect(
             lambda: self._mark_as_criterion(mode=self.modeFrame)
             )
+        self.connectedWidgets.append(self.chFrameCriterion.stateChanged)
+        self.chAngleCriterion.setChecked(False)
         self.chAngleCriterion.stateChanged.connect(
             lambda: self._mark_as_criterion(mode=self.modeAngle)
             )
+        self.connectedWidgets.append(self.chAngleCriterion.stateChanged)
+        self.chPlotDriftMic.setChecked(False)
         self.chPlotDriftMic.stateChanged.connect(
             lambda: self._show_plot(checkbox=self.chPlotDriftMic)
             )
+        self.connectedWidgets.append(self.chPlotDriftMic.stateChanged)
+        self.chPlotFrameMic.setChecked(False)
         self.chPlotFrameMic.stateChanged.connect(
             lambda: self._show_plot(checkbox=self.chPlotFrameMic)
             )
+        self.connectedWidgets.append(self.chPlotFrameMic.stateChanged)
+        self.chPlotAngleMic.setChecked(False)
         self.chPlotAngleMic.stateChanged.connect(
             lambda: self._show_plot(checkbox=self.chPlotAngleMic)
             )
+        self.connectedWidgets.append(self.chPlotAngleMic.stateChanged)
+        self.chAverageDriftPerFrame.setChecked(False)
         self.chAverageDriftPerFrame.stateChanged.connect(
             lambda: self._show_plot(checkbox=self.chAverageDriftPerFrame)
             )
+        self.connectedWidgets.append(self.chAverageDriftPerFrame.stateChanged)
+        self.chPlotDrift.setChecked(False)
         self.chPlotDrift.stateChanged.connect(
             lambda: self._show_plot(checkbox=self.chPlotDrift)
             )
+        self.connectedWidgets.append(self.chPlotDrift.stateChanged)
+        self.chPlotFrame.setChecked(False)
         self.chPlotFrame.stateChanged.connect(
             lambda: self._show_plot(checkbox=self.chPlotFrame)
             )
+        self.connectedWidgets.append(self.chPlotFrame.stateChanged)
+        self.chPlotAngle.setChecked(False)
         self.chPlotAngle.stateChanged.connect(
             lambda: self._show_plot(checkbox=self.chPlotAngle)
             )
+        self.connectedWidgets.append(self.chPlotAngle.stateChanged)
+        self.chPlotPerMic.setChecked(False)
         self.chPlotPerMic.stateChanged.connect(
             lambda: self._show_plot(checkbox=self.chPlotPerMic)
             )
+        self.connectedWidgets.append(self.chPlotPerMic.stateChanged)
 
         # Connect combo boxes
         self.cbSort.activated.connect(self._apply_sorting)
+        self.connectedWidgets.append(self.cbSort.activated)
         self.cbFrame.activated.connect(
             lambda: self._plot_threshold(mode=self.modeFrame, fill=True)
             )
+        self.connectedWidgets.append(self.cbFrame.activated)
         self.cbAngle.activated.connect(
             lambda: self._plot_threshold(mode=self.modeAngle, fill=True)
             )
+        self.connectedWidgets.append(self.cbAngle.activated)
 
         # Connect canvas close events
         self.msPlotDrift.sigClose.connect(
             lambda: self._hide_plot(msplot=self.msPlotDrift)
             )
+        self.connectedWidgets.append(self.msPlotDrift.sigClose)
         self.msPlotFrame.sigClose.connect(
             lambda: self._hide_plot(msplot=self.msPlotFrame)
             )
+        self.connectedWidgets.append(self.msPlotFrame.sigClose)
         self.msPlotAngle.sigClose.connect(
             lambda: self._hide_plot(msplot=self.msPlotAngle)
             )
+        self.connectedWidgets.append(self.msPlotAngle.sigClose)
         self.msAllPlotFrameAvg.sigClose.connect(
             lambda: self._hide_plot(msplot=self.msAllPlotFrameAvg)
             )
+        self.connectedWidgets.append(self.msAllPlotFrameAvg.sigClose)
         self.msAllPlotDrift.sigClose.connect(
             lambda: self._hide_plot(msplot=self.msAllPlotDrift)
             )
+        self.connectedWidgets.append(self.msAllPlotDrift.sigClose)
         self.msAllPlotFrame.sigClose.connect(
             lambda: self._hide_plot(msplot=self.msAllPlotFrame)
             )
+        self.connectedWidgets.append(self.msAllPlotFrame.sigClose)
         self.msAllPlotAngle.sigClose.connect(
             lambda: self._hide_plot(msplot=self.msAllPlotAngle)
             )
+        self.connectedWidgets.append(self.msAllPlotAngle.sigClose)
         self.msAllPlotPerMic.sigClose.connect(
             lambda: self._hide_plot(msplot=self.msAllPlotPerMic)
             )
+        self.connectedWidgets.append(self.msAllPlotPerMic.sigClose)
 
         # Connect canvas refresh frame event
         self.msAllPlotFrame.sigFrame.connect(self._refresh_frame)
+        self.connectedWidgets.append(self.msAllPlotFrame.sigFrame)
         self.msAllPlotAngle.sigFrame.connect(self._refresh_frame)
+        self.connectedWidgets.append(self.msAllPlotAngle.sigFrame)
 
         # Connect canvas refresh plot event
         self.msAllPlotDrift.sigRefresh.connect(
             self._refresh_histogram_mouse
             )
+        self.connectedWidgets.append(self.msAllPlotDrift.sigRefresh)
         self.msAllPlotFrame.sigRefresh.connect(
             self._refresh_histogram_mouse
             )
+        self.connectedWidgets.append(self.msAllPlotFrame.sigRefresh)
         self.msAllPlotAngle.sigRefresh.connect(
             self._refresh_histogram_mouse
             )
+        self.connectedWidgets.append(self.msAllPlotAngle.sigRefresh)
 
     def _enable_all(self):
         """Enable all widgets"""
@@ -2154,6 +1717,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         """Do the Calculations and fill the GUI"""
 
         # Reset variables
+        self._disconnect_events()
         self._set_variables()
         self._connect_events()
 
@@ -2827,10 +2391,12 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             # If the input is correct continue
             varContinue = self._calculations(oldfirst=intOldFirst, oldlast=intOldLast)
             if varContinue:
-
                 # Refresh GUI
                 self._refresh_gui()
 
+            # Refresh overall calculations
+            self._invert_selection()
+            self._invert_selection()
             # Use the GUI!
             messageBox.hide()
             print('Done')
@@ -3725,7 +3291,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
 
         # Fill all entrys
         self.leCurrentMicName.insert(
-            '{:s}'.format(arrCurrentEntry[self.dMic][0])
+            '{:s}'.format(arrCurrentEntry[self.dMic][0].split('/')[-1])
             )
         self.leCurrentOverallDrift.insert(
             '{:f}'.format(arrCurrentEntry[self.dOverall][0])
@@ -3946,6 +3512,11 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             options=QtGui.QFileDialog.DontUseNativeDialog,
             filter='Text files (*.txt)'
             ))
+        # Abort if empty
+        if self.fileName == '':
+            return None
+        else:
+            assert(self.fileName != '')
         if self._check_list_or_file(self.fileName) == 'list':
             try:
                 listOfShiftFiles = numpy.genfromtxt(self.fileName, dtype=None, unpack=True)
@@ -4012,7 +3583,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                 )
             warningBox.setDefaultButton(QtGui.QMessageBox.Yes)
             warningBox.setText(
-                    'Do you really want to save?\n' +
+                    'Do you really want to save?\n\n' +
                     '{0}\nor\n{1}\nor\n{2}\nor\n{3}\nalready exists.'.format(
                         outputSelected,
                         outputDiscarded,
@@ -4064,6 +3635,33 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                             arrCurrentEntry[self.dFileRaw][0]
                             )
                         )
+
+        # Ask the user if he really wants to continue
+        warningBox = QtGui.QMessageBox(self)
+        warningBox.setStandardButtons(
+            QtGui.QMessageBox.Yes
+            )
+        warningBox.setDefaultButton(QtGui.QMessageBox.Yes)
+        warningBox.setText(
+                'Selection saved to:\n\n' +
+                '{0}\n{1}\n{2}\n{3}\n\n'.format(
+                    outputSelected,
+                    outputDiscarded,
+                    shiftSelected,
+                    shiftDiscarded
+                    ) +
+                'You selected {0} of {1} micrographs ({2}%).\n'.format(
+                    len(self.listChecked),
+                    len(self.listChecked) + len(self.listUnchecked),
+                    100 * len(self.listChecked) / (len(self.listChecked) + len(self.listUnchecked))
+                    ) +
+                'You discarded {0} of {1} micrographs ({2}%).'.format(
+                    len(self.listUnchecked),
+                    len(self.listChecked) + len(self.listUnchecked),
+                    100 * len(self.listUnchecked) / (len(self.listChecked) + len(self.listUnchecked))
+                    )
+            )
+        warningBox.exec_()
 
     @QtCore.pyqtSlot()
     def _write_settings(self):
@@ -4146,6 +3744,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
 
     @QtCore.pyqtSlot()
     def _load_settings(self):
+        """Load settings"""
 
         # Warning box when refreshing frames
         warningBox = QtGui.QMessageBox(self)
@@ -4167,230 +3766,446 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             ))
 
         # If not cancel
-        if strLoadName != '':
+        if strLoadName == '':
+            return None
+        else:
+            assert(strLoadName != '')
 
-            separate_list = []
-            idxFrames = 0
-            idxDType = 1
-            idxArray = 2
-            idxChecked = 3
-            idxUnchecked = 4
-            idxCoordX = 5
-            idxCoordY = 6
-            idxFrame = 7
-            idxAngles = 8
-            idxTranslate = 9
-            idxThresh = 10
-            idxGeneral = 11
-            idxMicNumber = 12
-            idxEnd = 13
+        # Reset variables
+        self._set_variables()
 
-            # Check for the keywords
-            with open(strLoadName, 'r') as f:
-                # Append line of keywords
-                for linenumber, line in enumerate(f):
-                    if line == '# Frames\n' or line == '# DType\n' or \
-                            line == '# Array\n' or line == '# Checked\n' or  \
-                            line == '# Unchecked\n' or line == '# listCoordX\n' or \
-                            line == '# listCoordY\n' or line == '# listFrames\n' or \
-                            line == '# listAngles\n' or line == '# dictTranslate\n' or \
-                            line == '# dictThresh\n' or line == '# General\n' or \
-                            line == '# MicNumber\n' or line == '# End\n':
-                        separate_list.append(linenumber)
+        try:
+            arrThresh, arrGeneral = self._load_settings_new(strLoadName=strLoadName)
+        except IndexError:
+            print('Detected old settings file! Save the settings now again to convert it to the latest version.')
+            arrThresh, arrGeneral = self._load_settings_old_v1(strLoadName=strLoadName)
 
-            # Fill frame widgets
-            end = separate_list[idxEnd] - separate_list[idxDType] + 1
-            self.idxFirstFrame, self.idxLastFrame, self.intFrames = numpy.genfromtxt(
-                strLoadName,
-                skiprows=separate_list[idxFrames] + 1, skip_footer=end,
-                comments='$', dtype='<i8'
-                )
-            self.leFrameStart.setText('{:d}'.format(self.idxFirstFrame))
-            self.leFrameStop.setText('{:d}'.format(self.idxLastFrame))
+        # Refresh everything
+        setChecked = set(self.listChecked)
 
-            # Get Dtype
-            end = separate_list[idxEnd] - separate_list[idxArray] + 1
-            arrName, arrType = numpy.genfromtxt(
-                strLoadName,
-                skiprows=separate_list[idxDType] + 1,
-                skip_footer=end, comments='$',
-                dtype=None, unpack=True
-                )
-
-            self.listDType = []
-            for name, dtype in zip(arrName, arrType):
-                self.listDType.append((name, dtype))
-
-            # Load data array
-            end = separate_list[idxEnd] - separate_list[idxChecked] + 1
-            self.arrData = numpy.genfromtxt(
-                strLoadName,
-                skiprows=separate_list[idxArray] + 1,
-                skip_footer=end, comments='$',
-                dtype=self.listDType
-                )
-            self.arrData = numpy.atleast_1d(self.arrData)
-
-            # Load checked list
-            end = separate_list[idxEnd] - separate_list[idxUnchecked] + 1
-            loaded_data = numpy.genfromtxt(
-                strLoadName,
-                skiprows=separate_list[idxChecked] + 1,
-                skip_footer=end, comments='$',
-                dtype=None
-                )
-            if len(numpy.shape(loaded_data)) == 0:
-                self.listChecked = [str(loaded_data)]
+        # Fill the list widget, and return the selection
+        self.lsFiles.clear()
+        for file in self.arrData[self.dFile]:
+            newItem = QtGui.QListWidgetItem(file)
+            newItem.setFlags(self.newItemFlags)
+            if file in setChecked:
+                newItem.setCheckState(Qt.Checked)
             else:
-                self.listChecked = list(loaded_data)
+                newItem.setCheckState(Qt.Unchecked)
+            self.lsFiles.addItem(newItem)
 
-            if self.listChecked[0] == 'No':
-                self.listChecked = []
-
-            # Load unchecked list
-            end = separate_list[idxEnd] - separate_list[idxCoordX] + 1
-            loaded_data = numpy.genfromtxt(
-                strLoadName,
-                skiprows=separate_list[idxUnchecked] + 1,
-                skip_footer=end, comments='$',
-                dtype=None
-                )
-            if len(numpy.shape(loaded_data)) == 0:
-                self.listUnchecked = [str(loaded_data)]
+        for row in arrThresh:
+            listElement = []
+            for index in xrange(2, len(row)):
+                listElement.append(row[index])
+            if row[0] != self.modeOverall:
+                self.dictThresh.update({'{0} {1}'.format(row[0], row[1]): listElement})
             else:
-                self.listUnchecked = list(loaded_data)
+                self.dictThresh.update({'{0}'.format(row[0]): listElement})
 
-            if self.listUnchecked[0] == 'No':
-                self.listUnchecked = []
-
-            # Load coord x list
-            end = separate_list[idxEnd] - separate_list[idxCoordY] + 1
-            self.listCoordX = list(numpy.genfromtxt(
-                strLoadName,
-                skiprows=separate_list[idxCoordX] + 1,
-                skip_footer=end, comments='$',
-                dtype=None
-                ))
-
-            # Load coord y list
-            end = separate_list[idxEnd] - separate_list[idxFrame] + 1
-            self.listCoordY = list(numpy.genfromtxt(
-                strLoadName,
-                skiprows=separate_list[idxCoordY] + 1,
-                skip_footer=end, comments='$',
-                dtype=None
-                ))
-
-            # Load frame list
-            end = separate_list[idxEnd] - separate_list[idxAngles] + 1
-            self.listFrames = list(numpy.genfromtxt(
-                strLoadName,
-                skiprows=separate_list[idxFrame] + 1,
-                skip_footer=end, comments='$',
-                dtype=None
-                ))
-
-            # Load angle list
-            end = separate_list[idxEnd] - separate_list[idxTranslate] + 1
-            self.listAngles = list(numpy.genfromtxt(
-                strLoadName,
-                skiprows=separate_list[idxAngles] + 1,
-                skip_footer=end, comments='$',
-                dtype=None
-                ))
-
-            # Load Translate dictionary
-            end = separate_list[idxEnd] - separate_list[idxThresh] + 1
-            arrNames, arrNumber, arrTrans = list(numpy.genfromtxt(
-                strLoadName,
-                skiprows=separate_list[idxTranslate] + 1,
-                skip_footer=end, comments='$',
-                dtype=None, unpack=True
-                ))
-
-            for name, number, trans in zip(arrNames, arrNumber, arrTrans):
-                if name != self.modeOverall:
-                    self.dictTranslate.update({'{0} {1}'.format(name, number): trans})
-                else:
-                    self.dictTranslate.update({name: trans})
-
-            # Load Thresh dictionary
-            end = separate_list[idxEnd] - separate_list[idxGeneral] + 1
-            arrThresh = list(numpy.genfromtxt(
-                strLoadName,
-                skiprows=separate_list[idxThresh] + 1,
-                skip_footer=end, comments='$',
-                dtype=None
-                ))
-
-            # Load general settings
-            end = separate_list[idxEnd] - separate_list[idxMicNumber] + 1
-            arrGeneral = list(numpy.genfromtxt(
-                strLoadName,
-                skiprows=separate_list[idxGeneral] + 1,
-                skip_footer=end, comments='$',
-                dtype=None
-                ))
-
-            # Load MicNumber settings
-            end = separate_list[idxEnd] - separate_list[idxEnd] + 1
-            loaded_data = numpy.genfromtxt(
-                strLoadName,
-                skiprows=separate_list[idxMicNumber] + 1,
-                skip_footer=end, comments='$',
-                dtype=None
-                )
-            if len(numpy.shape(loaded_data)) == 0:
-                self.arrMicNumber = [str(loaded_data)]
-            else:
-                self.arrMicNumber = list(loaded_data)
-
-            # Check if there are less than 5
-            if len(self.arrMicNumber) <= 5:
-                self.varAnalyzeOne = True
-                print(
-                    '\nWarning: !!!! Only few shift files selected, ' +
-                    'so plots of all micrographs could not work as expected. !!!!\n'
-                    )
-
-            # Refresh everything
-            setChecked = set(self.listChecked)
-
-            # Fill the list widget, and return the selection
-            self.lsFiles.clear()
-            for file in self.arrData[self.dFile]:
-                newItem = QtGui.QListWidgetItem(file)
-                newItem.setFlags(self.newItemFlags)
-                if file in setChecked:
-                    newItem.setCheckState(Qt.Checked)
-                else:
-                    newItem.setCheckState(Qt.Unchecked)
-                self.lsFiles.addItem(newItem)
-
-            # Refresh calculations
-            self._refresh_calculations(goon=True)
-
-            for row in arrThresh:
-                listElement = []
-                for index in xrange(2, len(row)):
-                    listElement.append(row[index])
-                if row[0] != self.modeOverall:
-                    self.dictThresh.update({'{0} {1}'.format(row[0], row[1]): listElement})
-                else:
-                    self.dictThresh.update({'{0}'.format(row[0]): listElement})
-
-            self.leStartGeneral.setText(arrGeneral[0])
-            self.leStopGeneral.setText(arrGeneral[1])
+        # Refresh histograms
+        self._fill_widgets(mode=self.modeOverall)
+        self._refresh_histogram_widget(
+            event='start', mode=self.modeOverall
+            )
+        self._refresh_histogram_widget(
+            event='stop', mode=self.modeOverall
+            )
+        for index in range(self.cbFrame.count()):
+            self.cbFrame.setCurrentIndex(index)
             self._fill_widgets(mode=self.modeFrame)
+            self._refresh_histogram_widget(
+                event='start', mode=self.modeFrame
+                )
+            self._refresh_histogram_widget(
+                event='stop', mode=self.modeFrame
+                )
+        self.cbFrame.setCurrentIndex(0)
+        for index in range(self.cbAngle.count()):
+            self.cbAngle.setCurrentIndex(index)
             self._fill_widgets(mode=self.modeAngle)
-            self._fill_widgets(mode=self.modeOverall)
-            self._save_selection()
-            self._invert_selection()
-            self._invert_selection()
+            self._refresh_histogram_widget(
+                event='start', mode=self.modeAngle
+                )
+            self._refresh_histogram_widget(
+                event='stop', mode=self.modeAngle
+                )
+        self.cbAngle.setCurrentIndex(0)
 
-            # Enable everything and color all black
-            self._default_color()
-            self._enable_all()
+        self.leStartGeneral.setText(arrGeneral[0])
+        self.leStopGeneral.setText(arrGeneral[1])
+        self._save_selection()
+
+        # Refresh calculations
+        self._refresh_calculations(goon=True)
+
+        # Enable everything and color all black
+        self._default_color()
+        self._enable_all()
+
+
+    def _load_settings_new(self, strLoadName):
+        """Load the settings in the new way"""
+
+        separate_list = []
+        idxFrames = 0
+        idxDType = 1
+        idxArray = 2
+        idxChecked = 3
+        idxUnchecked = 4
+        idxCoordX = 5
+        idxCoordY = 6
+        idxFrame = 7
+        idxAngles = 8
+        idxTranslate = 9
+        idxThresh = 10
+        idxGeneral = 11
+        idxMicNumber = 12
+        idxEnd = 13
+        with open(strLoadName, 'r') as f:
+            # Append line of keywords
+            for linenumber, line in enumerate(f):
+                if line == '# Frames\n' or line == '# DType\n' or \
+                        line == '# Array\n' or line == '# Checked\n' or  \
+                        line == '# Unchecked\n' or line == '# listCoordX\n' or \
+                        line == '# listCoordY\n' or line == '# listFrames\n' or \
+                        line == '# listAngles\n' or line == '# dictTranslate\n' or \
+                        line == '# dictThresh\n' or line == '# General\n' or \
+                        line == '# MicNumber\n' or line == '# End\n':
+                    separate_list.append(linenumber)
+
+        # Fill frame widgets
+        end = separate_list[idxEnd] - separate_list[idxDType] + 1
+        self.idxFirstFrame, self.idxLastFrame, self.intFrames = numpy.genfromtxt(
+            strLoadName,
+            skiprows=separate_list[idxFrames] + 1, skip_footer=end,
+            comments='$', dtype='<i8'
+            )
+        self.leFrameStart.setText('{:d}'.format(self.idxFirstFrame))
+        self.leFrameStop.setText('{:d}'.format(self.idxLastFrame))
+
+        # Get Dtype
+        end = separate_list[idxEnd] - separate_list[idxArray] + 1
+        arrName, arrType = numpy.genfromtxt(
+            strLoadName,
+            skiprows=separate_list[idxDType] + 1,
+            skip_footer=end, comments='$',
+            dtype=None, unpack=True
+            )
+
+        self.listDType = []
+        for name, dtype in zip(arrName, arrType):
+            self.listDType.append((name, dtype))
+
+        # Load data array
+        end = separate_list[idxEnd] - separate_list[idxChecked] + 1
+        self.arrData = numpy.genfromtxt(
+            strLoadName,
+            skiprows=separate_list[idxArray] + 1,
+            skip_footer=end, comments='$',
+            dtype=self.listDType
+            )
+        self.arrData = numpy.atleast_1d(self.arrData)
+
+        # Load checked list
+        end = separate_list[idxEnd] - separate_list[idxUnchecked] + 1
+        loaded_data = numpy.genfromtxt(
+            strLoadName,
+            skiprows=separate_list[idxChecked] + 1,
+            skip_footer=end, comments='$',
+            dtype=None
+            )
+        if len(numpy.shape(loaded_data)) == 0:
+            self.listChecked = [str(loaded_data)]
+        else:
+            self.listChecked = list(loaded_data)
+
+        if self.listChecked[0] == 'No':
+            self.listChecked = []
+
+        # Load unchecked list
+        end = separate_list[idxEnd] - separate_list[idxCoordX] + 1
+        loaded_data = numpy.genfromtxt(
+            strLoadName,
+            skiprows=separate_list[idxUnchecked] + 1,
+            skip_footer=end, comments='$',
+            dtype=None
+            )
+        if len(numpy.shape(loaded_data)) == 0:
+            self.listUnchecked = [str(loaded_data)]
+        else:
+            self.listUnchecked = list(loaded_data)
+
+        if self.listUnchecked[0] == 'No':
+            self.listUnchecked = []
+
+        # Load coord x list
+        end = separate_list[idxEnd] - separate_list[idxCoordY] + 1
+        self.listCoordX = list(numpy.genfromtxt(
+            strLoadName,
+            skiprows=separate_list[idxCoordX] + 1,
+            skip_footer=end, comments='$',
+            dtype=None
+            ))
+
+        # Load coord y list
+        end = separate_list[idxEnd] - separate_list[idxFrame] + 1
+        self.listCoordY = list(numpy.genfromtxt(
+            strLoadName,
+            skiprows=separate_list[idxCoordY] + 1,
+            skip_footer=end, comments='$',
+            dtype=None
+            ))
+
+        # Load frame list
+        end = separate_list[idxEnd] - separate_list[idxAngles] + 1
+        self.listFrames = list(numpy.genfromtxt(
+            strLoadName,
+            skiprows=separate_list[idxFrame] + 1,
+            skip_footer=end, comments='$',
+            dtype=None
+            ))
+
+        # Load angle list
+        end = separate_list[idxEnd] - separate_list[idxTranslate] + 1
+        self.listAngles = list(numpy.genfromtxt(
+            strLoadName,
+            skiprows=separate_list[idxAngles] + 1,
+            skip_footer=end, comments='$',
+            dtype=None
+            ))
+
+        # Load Translate dictionary
+        end = separate_list[idxEnd] - separate_list[idxThresh] + 1
+        arrNames, arrNumber, arrTrans = list(numpy.genfromtxt(
+            strLoadName,
+            skiprows=separate_list[idxTranslate] + 1,
+            skip_footer=end, comments='$',
+            dtype=None, unpack=True
+            ))
+
+        for name, number, trans in zip(arrNames, arrNumber, arrTrans):
+            if name != self.modeOverall:
+                self.dictTranslate.update({'{0} {1}'.format(name, number): trans})
+            else:
+                self.dictTranslate.update({name: trans})
+
+        # Load Thresh dictionary
+        end = separate_list[idxEnd] - separate_list[idxGeneral] + 1
+        arrThresh = list(numpy.genfromtxt(
+            strLoadName,
+            skiprows=separate_list[idxThresh] + 1,
+            skip_footer=end, comments='$',
+            dtype=None
+            ))
+
+        # Load general settings
+        end = separate_list[idxEnd] - separate_list[idxMicNumber] + 1
+        arrGeneral = list(numpy.genfromtxt(
+            strLoadName,
+            skiprows=separate_list[idxGeneral] + 1,
+            skip_footer=end, comments='$',
+            dtype=None
+            ))
+
+        # Load MicNumber settings
+        end = separate_list[idxEnd] - separate_list[idxEnd] + 1
+        loaded_data = numpy.genfromtxt(
+            strLoadName,
+            skiprows=separate_list[idxMicNumber] + 1,
+            skip_footer=end, comments='$',
+            dtype=None
+            )
+        if len(numpy.shape(loaded_data)) == 0:
+            self.arrMicNumber = [str(loaded_data)]
+        else:
+            self.arrMicNumber = list(loaded_data)
+
+        # Check if there are less than 5
+        if len(self.arrMicNumber) <= 5:
+            self.varAnalyzeOne = True
+            print(
+                '\nWarning: !!!! Only few shift files selected, ' +
+                'so plots of all micrographs could not work as expected. !!!!\n'
+                )
+
+        return arrThresh, arrGeneral
+
+
+    def _load_settings_old_v1(self, strLoadName):
+        """Load the settings in the new way"""
+
+        separate_list = []
+        idxFrames = 0
+        idxDType = 1
+        idxArray = 2
+        idxChecked = 3
+        idxUnchecked = 4
+        idxCoordX = 5
+        idxCoordY = 6
+        idxFrame = 7
+        idxAngles = 8
+        idxTranslate = 9
+        idxThresh = 10
+        idxGeneral = 11
+        idxEnd = 12
+
+        # Check for the keywords
+        with open(strLoadName, 'r') as f:
+            # Append line of keywords
+            for linenumber, line in enumerate(f):
+                if line == '# Frames\n' or line == '# DType\n' or \
+                        line == '# Array\n' or line == '# Checked\n' or  \
+                        line == '# Unchecked\n' or line == '# listCoordX\n' or \
+                        line == '# listCoordY\n' or line == '# listFrames\n' or \
+                        line == '# listAngles\n' or line == '# dictTranslate\n' or \
+                        line == '# dictThresh\n' or line == '# General\n' or \
+                        line == '# End\n':
+                    separate_list.append(linenumber)
+
+        # Fill frame widgets
+        end = separate_list[idxEnd] - separate_list[idxDType] + 1
+        self.idxFirstFrame, self.idxLastFrame, self.intFrames = numpy.genfromtxt(
+            strLoadName,
+            skiprows=separate_list[idxFrames] + 1, skip_footer=end,
+            comments='$', dtype='<i8'
+            )
+        self.leFrameStart.setText('{:d}'.format(self.idxFirstFrame))
+        self.leFrameStop.setText('{:d}'.format(self.idxLastFrame))
+
+        # Get Dtype
+        end = separate_list[idxEnd] - separate_list[idxArray] + 1
+        arrName, arrType = numpy.genfromtxt(
+            strLoadName,
+            skiprows=separate_list[idxDType] + 1,
+            skip_footer=end, comments='$',
+            dtype=None, unpack=True
+            )
+
+        self.listDType = []
+        for name, dtype in zip(arrName, arrType):
+            self.listDType.append((name, dtype))
+
+        # Load data array
+        end = separate_list[idxEnd] - separate_list[idxChecked] + 1
+        self.arrData = numpy.genfromtxt(
+            strLoadName,
+            skiprows=separate_list[idxArray] + 1,
+            skip_footer=end, comments='$',
+            dtype=self.listDType
+            )
+        self.arrData = numpy.atleast_1d(self.arrData)
+
+        # Load checked list
+        end = separate_list[idxEnd] - separate_list[idxUnchecked] + 1
+        loaded_data = numpy.genfromtxt(
+            strLoadName,
+            skiprows=separate_list[idxChecked] + 1,
+            skip_footer=end, comments='$',
+            dtype=None
+            )
+        if len(numpy.shape(loaded_data)) == 0:
+            self.listChecked = [str(loaded_data)]
+        else:
+            self.listChecked = list(loaded_data)
+
+        if self.listChecked[0] == 'No':
+            self.listChecked = []
+
+        # Load unchecked list
+        end = separate_list[idxEnd] - separate_list[idxCoordX] + 1
+        loaded_data = numpy.genfromtxt(
+            strLoadName,
+            skiprows=separate_list[idxUnchecked] + 1,
+            skip_footer=end, comments='$',
+            dtype=None
+            )
+        if len(numpy.shape(loaded_data)) == 0:
+            self.listUnchecked = [str(loaded_data)]
+        else:
+            self.listUnchecked = list(loaded_data)
+
+        if self.listUnchecked[0] == 'No':
+            self.listUnchecked = []
+
+        # Load coord x list
+        end = separate_list[idxEnd] - separate_list[idxCoordY] + 1
+        self.listCoordX = list(numpy.genfromtxt(
+            strLoadName,
+            skiprows=separate_list[idxCoordX] + 1,
+            skip_footer=end, comments='$',
+            dtype=None
+            ))
+
+        # Load coord y list
+        end = separate_list[idxEnd] - separate_list[idxFrame] + 1
+        self.listCoordY = list(numpy.genfromtxt(
+            strLoadName,
+            skiprows=separate_list[idxCoordY] + 1,
+            skip_footer=end, comments='$',
+            dtype=None
+            ))
+
+        # Load frame list
+        end = separate_list[idxEnd] - separate_list[idxAngles] + 1
+        self.listFrames = list(numpy.genfromtxt(
+            strLoadName,
+            skiprows=separate_list[idxFrame] + 1,
+            skip_footer=end, comments='$',
+            dtype=None
+            ))
+
+        # Load angle list
+        end = separate_list[idxEnd] - separate_list[idxTranslate] + 1
+        self.listAngles = list(numpy.genfromtxt(
+            strLoadName,
+            skiprows=separate_list[idxAngles] + 1,
+            skip_footer=end, comments='$',
+            dtype=None
+            ))
+
+        # Load Translate dictionary
+        end = separate_list[idxEnd] - separate_list[idxThresh] + 1
+        arrNames, arrNumber, arrTrans = list(numpy.genfromtxt(
+            strLoadName,
+            skiprows=separate_list[idxTranslate] + 1,
+            skip_footer=end, comments='$',
+            dtype=None, unpack=True
+            ))
+
+        for name, number, trans in zip(arrNames, arrNumber, arrTrans):
+            if name != self.modeOverall:
+                self.dictTranslate.update({'{0} {1}'.format(name, number): trans})
+            else:
+                self.dictTranslate.update({name: trans})
+
+        # Load Thresh dictionary
+        end = separate_list[idxEnd] - separate_list[idxGeneral] + 1
+        arrThresh = list(numpy.genfromtxt(
+            strLoadName,
+            skiprows=separate_list[idxThresh] + 1,
+            skip_footer=end, comments='$',
+            dtype=None
+            ))
+
+        # Load general settings
+        end = separate_list[idxEnd] - separate_list[idxEnd] + 1
+        arrGeneral = list(numpy.genfromtxt(
+            strLoadName,
+            skiprows=separate_list[idxGeneral] + 1,
+            skip_footer=end, comments='$',
+            dtype=None
+            ))
+
+        print(
+            'Warning: Could not identify micrograph serial number due to an old settings file.\n' +
+            'X-axis of the plots do not represent' +
+            'the serial micrograph number.'
+            )
+        self.arrMicNumber = numpy.arange(len(self.arrData))
+
+        return arrThresh, arrGeneral
+
 
     def _show_about(self):
         """Show the about info"""
