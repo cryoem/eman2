@@ -41,7 +41,8 @@ sxcompute_isac_avg.py exists only in MPI version
     navg:: Number of averages: The number of averages. (default -1)
 
 == Output ==
-
+    class_averages.hdf::computed averages in original image size
+    ordered_class_averages.hdf:: images in class_averages.hdf are sorted by their similarity and re-arranged in a circle.  
 
 = Description =
 
