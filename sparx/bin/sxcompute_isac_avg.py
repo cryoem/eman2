@@ -177,17 +177,17 @@ def main():
 	from global_def import ERROR
 	       
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " --masterdir=current_run_dir  --isac_dir=masterdir_of_isac "
+	usage = progname + " --output_dir=output_dir  --isac_dir=output_dir_of_isac "
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--isac_dir",              type   ="string",     default ='',     help="ISAC run directory")
-	parser.add_option("--masterdir",             type   ="string",     default ='',     help="name of the directory for ISAC computing")
+	parser.add_option("--isac_dir",              type   ="string",     default ='',     help="ISAC run output directory, input directory for this command")
+	parser.add_option("--output_dir",            type   ="string",     default ='',     help="output directory where computed averages are saved")
 	parser.add_option("--pixel_size",            type   ="float",      default =-1.0,   help="pixel_size of raw images")
-	parser.add_option("--noctf",                 action ="store_true", default =False,  help="no ctf correction, useful for negative stained data")
+	parser.add_option("--noctf",                 action ="store_true", default =False,  help="no ctf correction, useful for negative stained data. always ctf for cryo data")
 	parser.add_option("--B_enhance",             action ="store_true", default =False,  help="apply B_factor to enhance")
 	parser.add_option("--B_start",               type   ="float",      default = 10.0,  help="start frequency (1./Angstrom) of power spectrum for B_factor estimation")
 	parser.add_option("--Bfactor",               type   ="float",      default = 45.0,  help= "User defined bactors")
-	parser.add_option("--low_pass_filter",       type   ="float",      default =-1.0,   help= "low_pass_filter")
-	parser.add_option("--data_stack",            type   ="string",     default ="",     help= "data_stack")
+	parser.add_option("--fl",                    type   ="float",      default =-1.0,   help= "low pass filter ")
+	parser.add_option("--stack",                 type   ="string",     default ="",     help= "data stack that ISAC run used")
 	parser.add_option("--radius",                type   ="int",        default =-1,     help= "radius")
 	parser.add_option("--xr",                    type   ="float",      default =-1.0,   help= "local alignment search range")
 	parser.add_option("--ts",                    type   ="float",      default =1.0,    help= "local alignment search step")
@@ -202,9 +202,9 @@ def main():
 	#--- Fill input parameters into dictionary Constants
 	Constants		                         = {}
 	Constants["isac_dir"]                     = options.isac_dir
-	Constants["masterdir"]                    = options.masterdir
+	Constants["masterdir"]                    = options.output_dir
 	Constants["pixel_size"]                   = options.pixel_size
-	Constants["orgstack"]                     = options.data_stack
+	Constants["orgstack"]                     = options.stack
 	Constants["radius"]                       = options.radius
 	Constants["xrange"]                       = options.xr
 	Constants["xstep"]                        = options.ts
@@ -215,7 +215,7 @@ def main():
 	Constants["Bfactor"]                      = options.Bfactor
 	Constants["nompw_adj"]                    = options.nompw_adj
 	Constants["modelpw"]                      = options.modelpw
-	Constants["low_pass_filter"]              = options.low_pass_filter
+	Constants["low_pass_filter"]              = options.fl
 	Constants["navg"]                         = options.navg
 	Constants["noctf"]                        = options.noctf
 	
