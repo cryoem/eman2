@@ -9,6 +9,15 @@ if [ $# -lt 1 ];then
     exit 1
 fi
 
+for elem in ${@};do
+    regex=-*
+    if [[ $elem == $regex ]];then
+        opts=( ${opts[@]} $elem )
+    else
+        args=( ${args[@]} $elem )
+    fi
+done
+
 set -xe
 
 source activate root
@@ -24,6 +33,6 @@ else
     cd -
 fi
 
-for v in ${@};do
-    conda build "${src_dir}/recipes/eman" --numpy ${v} -c cryoem -c defaults -c conda-forge
+for v in ${args[@]};do
+    conda build "${src_dir}/recipes/eman" --numpy ${v} -c cryoem -c defaults -c conda-forge ${opts[@]}
 done
