@@ -389,7 +389,7 @@ def main():
 					new_avg_other_cpu.write_image(os.path.join(Tracker["constants"]["masterdir"], "class_averages.hdf"), im)
 				else: new_avg.write_image(os.path.join(Tracker["constants"]["masterdir"], "class_averages.hdf"), im)
 		mpi_barrier(MPI_COMM_WORLD)
-		
+		"""
 		for im in xrange(navg): # ini_avg
 			if im == Blockdata["myid"] and Blockdata["myid"] != Blockdata["main_node"]:
 				send_EMData(ini_avg, Blockdata["main_node"],  tag_sharpen_avg)
@@ -419,6 +419,7 @@ def main():
 					new_avg_other_cpu.write_image(os.path.join(Tracker["constants"]["masterdir"], "ali_class_averages2.hdf"), im)
 				else: new_average2.write_image(os.path.join(Tracker["constants"]["masterdir"], "ali_class_averages2.hdf"), im)
 		mpi_barrier(MPI_COMM_WORLD)
+		"""
 		
 	else:
 		image_start,image_end = MPI_start_end(navg, Blockdata["nproc"], Blockdata["myid"])
@@ -486,7 +487,7 @@ def main():
 				new_avg_other_cpu = recv_EMData(cpu_dict[im], tag_sharpen_avg)
 				new_avg_other_cpu.write_image(os.path.join(Tracker["constants"]["masterdir"], "class_averages.hdf"), im)
 			else: pass
-			
+			"""
 			# ini
 			if cpu_dict[im] == Blockdata["myid"] and Blockdata["myid"] != Blockdata["main_node"]:
 				send_EMData(ini_list[im], Blockdata["main_node"],  tag_sharpen_avg)
@@ -522,7 +523,7 @@ def main():
 				new_avg_other_cpu = recv_EMData(cpu_dict[im], tag_sharpen_avg)
 				new_avg_other_cpu.write_image(os.path.join(Tracker["constants"]["masterdir"],"avg2_class_averages.hdf"),im)
 			else: pass
-			
+			"""
 			mpi_barrier(MPI_COMM_WORLD)
 		mpi_barrier(MPI_COMM_WORLD)
 		
