@@ -1324,21 +1324,14 @@ class EMTomoBoxer(QtGui.QMainWindow):
 	
 	def delete_set(self, name):
 		name=parse_setname(name)
-		bxid=[] ## idx to remove
+		## idx to keep
+		kpids=[i for i,b in enumerate(self.boxes) if b[5]!=int(name)]
 		
-		for i, b in enumerate(self.boxes):
-			if b[5]==int(name):
-				bxid.append(i)
-				
-				
-		self.boxes=[b for i,b in enumerate(self.boxes) if i not in bxid]
-		self.boxesimgs=[b for i,b in enumerate(self.boxesimgs) if i not in bxid]
-		self.xyview.del_shapes(bxid)
-		self.xzview.del_shapes(bxid)
-		self.zyview.del_shapes(bxid)
-		
-		
-		
+		self.boxes=[self.boxes[i] for i in kpids]
+		self.boxesimgs=[self.boxesimgs[i] for i in kpids]
+		self.xyview.shapes={i:self.xyview.shapes[k] for i,k in enumerate(kpids)}
+		self.xzview.shapes={i:self.xzview.shapes[k] for i,k in enumerate(kpids)}
+		self.zyview.shapes={i:self.zyview.shapes[k] for i,k in enumerate(kpids)}
 		if name in self.sets_visible: self.sets_visible.pop(name)
 		if name in self.sets: self.sets.pop(name)
 		if name in self.boxsize: self.boxsize.pop(name)
