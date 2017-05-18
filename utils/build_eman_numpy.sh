@@ -27,10 +27,11 @@ set -xe
 src_dir="${CONDA_PREFIX}/github.com/cryoem/eman2"
 if [ ! -d "${src_dir}/.git" ];then
     mkdir -p "${src_dir}" && cd "${src_dir}/.."
-    git clone https://github.com/cryoem/eman2.git --branch numpy
+    git clone https://github.com/cryoem/eman2.git --branch master
     cd -
 else
     cd "${src_dir}"
+    git checkout master -f
     git pull --rebase
     cd -
 fi
