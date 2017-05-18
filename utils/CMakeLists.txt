@@ -1,3 +1,3 @@
-INSTALL(PROGRAMS install_pydusa.sh uninstall_openmpi.sh build_and_install_openmpi.sh
+INSTALL(PROGRAMS uninstall_openmpi.sh build_and_install_openmpi.sh build_pydusa_numpy.sh install_pydusa_numpy.sh
     DESTINATION    utils
 )
