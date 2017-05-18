@@ -1522,7 +1522,7 @@ class EMImage2DWidget(EMGLWidget):
 		if k:
 			try:
 				for i in k:
-					del self.shapes[k]
+					del self.shapes[i]
 			except: del self.shapes[k]
 		else:
 			self.shapes={}
