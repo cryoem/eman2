@@ -11,7 +11,8 @@ def main():
 	
 	usage=" "
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--thresh", type=float,help="threshold", default=.0)
+	parser.add_argument("--thresh", type=float,help="Threshold of density value for particle extraction.", default=1.0)
+	parser.add_argument("--massthresh", type=float,help="Threshold of total mass of each continous object to be considered a particle. ", default=20.)
 	parser.add_argument("--edge", type=int,help="min distance to edge", default=0)
 	parser.add_argument("--sort", action="store_true",help="sort by density", default=False)
 	parser.add_argument("--random", type=int,help="randomly seed particles on density above threshold", default=-1)
@@ -129,16 +130,22 @@ def main():
 			if havescipy:
 				lb, nlb=ndimage.measurements.label(img)
 				pks=np.array(ndimage.maximum_position(img,lb,range(1,nlb)))
+				pksize=np.array(ndimage.measurements.sum(img,lb,range(1,nlb)))
 				n=len(pks)
 			
 			else:
 				e.process_inplace("mask.onlypeaks")
+				
 				#print np.sum(img>0)
 				pks= np.array(np.where(img>0)).T
-		
+				pksize=np.zeros(len(pks))+options.massthresh+1 
+			
+			#### filter out small peaks
+			pks=pks[pksize>options.massthresh]
+			
+			
 			pk_new=[[-100,-100,-100]]
 			for p in pks:
-				
 				nb=np.sum(np.sum(np.array(pk_new-p)**2,axis=1)<(options.boxsz/4)**2)
 				#print p, nb
 				if nb<1:
