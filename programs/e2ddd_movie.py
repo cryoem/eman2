@@ -74,7 +74,7 @@ def main():
 	parser.add_argument("--bestali", default=False, help="Average of best aligned frames.",action="store_true", guitype='boolbox', row=7, col=1, rowspan=1, colspan=1, mode='align')
 	parser.add_argument("--allali", default=False, help="Average of all aligned frames.",action="store_true", guitype='boolbox', row=7, col=2, rowspan=1, colspan=1, mode='align')
 	parser.add_argument("--noali", default=False, help="Average of non-aligned frames.",action="store_true", guitype='boolbox', row=8, col=0, rowspan=1, colspan=1, mode='align')
-	parser.add_argument("--ali4to14", default=False, help="Average of frames from 4 to 14.",action="store_true", guitype='boolbox', row=8, col=1, rowspan=1, colspan=1, mode='align')
+	parser.add_argument("--rangeali", default=False, help="Average of specified range of frames (x-y inclusive).",type=str, guitype='strbox', row=8, col=1, rowspan=1, colspan=1, mode='align')
 	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful", guitype='intbox', row=9, col=0, rowspan=1, colspan=2, mode="align")
 
 	parser.add_header(name="orblock3", help='Just a visual separation', title="Optional: ", row=10, col=0, rowspan=1, colspan=3, mode="align")
@@ -310,11 +310,11 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			# create threads
 			thds=[]
 			peak_locs=Queue.Queue(0)
-			i=0
+			i=-1
 			for ima in range(n-1):
 				for imb in range(ima+1,n):
-					thds.append(threading.Thread(target=calc_ccf_wrapper,args=((ima,imb),options.optbox,options.optstep,immx[ima],immx[imb],ccfs,peak_locs)))
-					i+=1
+					if options.verbose>3: i+=1		# if i>0 then it will write pre-processed CCF images to disk for debugging
+					thds.append(threading.Thread(target=calc_ccf_wrapper,args=((ima,imb),options.optbox,options.optstep,immx[ima],immx[imb],ccfs,peak_locs,i)))
 
 			print("{:1.1f} s\nCompute {} ccfs".format(time()-t0,len(thds)))
 			t0=time()
@@ -337,7 +337,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 
 				while not ccfs.empty():
 					i,d=ccfs.get()
-					csum2[i]=d
+					csum2[i]=d					
 
 				if options.verbose:
 					sys.stdout.write("\r  {}/{} ({})".format(thrtolaunch,len(thds),threading.active_count()))
@@ -345,6 +345,10 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 
 			for th in thds: th.join()
 			print()
+			
+			#if options.verbose>3:
+				#for i,k in enumerate(sorted(csum2.keys())):
+					#csum2[k].write_image("ccfs.hdf",i)
 
 			avgr=Averagers.get("minmax",{"max":0})
 			avgr.add_image_list(csum2.values())
@@ -467,20 +471,25 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 				print("Keeping {}/{} frames".format(len(best),len(outim)))
 				out.write_image("{}__bestali.hdf".format(alioutname),0)
 
-			if options.ali4to14:
-				# skip the first 4 frames then keep 10
-				out=qsum(outim[4:14])
-				out.write_image("{}__4-14.hdf".format(alioutname),0)
+			if len(options.rangeali)>0:
+				try: rng=[int(i) for i in options.rangeali.split("-")]
+				except:
+					print "Error: please specify --rangeali as X-Y where X and Y are inclusive starting with 0"
+					sys.exit(1)
+				out=qsum(outim[rng[0]:rng[1]+1])
+				out.write_image("{}__{}-{}.hdf".format(alioutname,rng[0],rng[1]))
 
 			#print "{:1.1f}\nDone".format(time()-t0)
 			print("Done")
 
 # CCF calculation
-def calc_ccf_wrapper(N,box,step,dataa,datab,out,locs):
+def calc_ccf_wrapper(N,box,step,dataa,datab,out,locs,ii):
 	for i in range(len(dataa)):
 		c=dataa[i].calc_ccf(datab[i],fp_flag.CIRCULANT,True)
 		try: csum.add(c)
 		except: csum=c
+
+	if ii>=0: csum.process("normalize.edgemean").write_image("ccfs.hdf",ii)
 	xx = np.linspace(0,box,box)
 	yy = np.linspace(0,box,box)
 	xx,yy = np.meshgrid(xx,yy)
@@ -981,3 +990,4 @@ if __name__ == "__main__":
 # 	if verbose>2: display(tot)
 
 # 	return (dx1+dx+guess[0])/2.0,(dy1+dy+guess[1])/2.0,zscore
+
