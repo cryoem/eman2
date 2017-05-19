@@ -626,16 +626,8 @@ IF(ENABLE_PNG)
 ENDIF(ENABLE_PNG)
 
 FIND_PATH(NUMPY_INCLUDE_PATH numpy/arrayobject.h
-	$ENV{HOME}/anaconda2/lib/python2.7/site-packages/numpy/core/include
-	$ENV{HOME}/EMAN2/anaconda2/lib/python2.7/site-packages/numpy/core/include
-	$ENV{PYTHON_ROOT}/lib/python2.7/site-packages/numpy/core/include
 	${CONDA_SP_DIR}/numpy/core/include
-	${CONDA_SP_DIR}/numpy/core/include
-	/usr/local/lib/python2.7/site-packages/numpy/core/include
-	/usr/lib64/python2.7/site-packages/numpy/core/include
-	/usr/lib/python2.7/site-packages/numpy/core/include
-    #/System/Library/Frameworks/Python.framework/Versions/2.7/Extras/lib/python/numpy/core/include
-    /usr/include NO_DEFAULT_PATH)
+    NO_DEFAULT_PATH)
 
 if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD")
 	message("NUMPY_INCLUDE_PATH: ${NUMPY_INCLUDE_PATH}")
