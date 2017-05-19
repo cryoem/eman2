@@ -842,6 +842,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 
 		self.update_xy()
 		self.update_sides()
+		self.update_boximgs()
 
 		#self.xyview.update()
 		#self.xzview.update()
@@ -860,34 +861,16 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		return rr<=bs**2
 
 	def do_deletion(self, n, delimgs=True):
-		""" Helper for del_box"""
-		if n==len(self.boxes)-1 :
-			self.boxes.pop()
-			if delimgs:
-				self.boxesimgs.pop()
-				self.update_boximgs()
-			self.xyview.del_shape(n)
-			self.xzview.del_shape(n)
-			self.zyview.del_shape(n)
-			self.curbox=-1
-			self.xyview.update()
-			self.xzview.update()
-			self.zyview.update()
-			#self.update()
-		else :
-			a=self.boxes.pop()
-			self.boxes[n]=a
-			if delimgs:
-				a=self.boxesimgs.pop()
-				self.boxesimgs[n]=a
-				self.update_boximgs()
-				self.boxesviewer.set_selected([],True)
-				self.boxesviewer.update()
-			self.xyview.del_shape(len(self.boxes))
-			self.xzview.del_shape(len(self.boxes))
-			self.zyview.del_shape(len(self.boxes))
-			self.update_box(n,True)
-#			self.update()
+		
+		kpids=[i for i,b in enumerate(self.boxes) if i!=n]
+		self.boxes=[self.boxes[i] for i in kpids]
+		self.boxesimgs=[self.boxesimgs[i] for i in kpids]
+		self.xyview.shapes={i:self.xyview.shapes[k] for i,k in enumerate(kpids)}
+		self.xzview.shapes={i:self.xzview.shapes[k] for i,k in enumerate(kpids)}
+		self.zyview.shapes={i:self.zyview.shapes[k] for i,k in enumerate(kpids)}
+		#print self.boxes, self.xyview.get_shapes()
+		self.curbox=-1
+		self.update_all()
 
 	def do_helix_deletion(self, n):
 		if n==len(self.helixboxes)-1 :
@@ -911,21 +894,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 
 		if self.boxviewer.get_data(): self.boxviewer.set_data(None)
 		self.curbox=-1
-		if self.helixboxer:
-			if n + 1 == len(self.boxes) and len(self.boxes) % 2 == 1: 	# Delete unpaired box
-				self.do_deletion(n, delimgs=False)
-			else:								# Delete box pairs
-				if n % 2:
-					self.do_helix_deletion(int(n/2))
-					self.do_deletion(n, delimgs=False)
-					self.do_deletion(n-1, delimgs=False)
-				else:
-					self.do_helix_deletion(int(n/2))
-					self.do_deletion(n+1, delimgs=False)
-					self.do_deletion(n, delimgs=False)
-				return "DELHELIX"	# If we have deleted a pair do not reset the pair toggle/counter
-		else:
-			self.do_deletion(n)
+		self.do_deletion(n)
 
 	def compute_crossAB(self, a, b):
 		c1 = a[1]*b[2] - a[2]*b[1]
@@ -1043,10 +1012,11 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				#self.boxesimgs[n]=proj
 			mm=[m for im,m in enumerate(self.boxesimgs) if self.boxes[im][5] in self.sets_visible]
 			
+		if self.initialized:
 			self.update_boximgs()
 
-		if n!=self.curbox and not self.helixboxer:
-			self.boxesviewer.set_selected((n,),True)
+			if n!=self.curbox and not self.helixboxer:
+				self.boxesviewer.set_selected((n,),True)
 
 		self.curbox=n
 		self.update_coords()
@@ -1354,15 +1324,19 @@ class EMTomoBoxer(QtGui.QMainWindow):
 	
 	def delete_set(self, name):
 		name=parse_setname(name)
-		bxs=[]
-		for i, b in enumerate(self.boxes):
-			if b[5]!=int(name):
-				bxs.append(b)
-		self.boxes=bxs
+		## idx to keep
+		kpids=[i for i,b in enumerate(self.boxes) if b[5]!=int(name)]
 		
+		self.boxes=[self.boxes[i] for i in kpids]
+		self.boxesimgs=[self.boxesimgs[i] for i in kpids]
+		self.xyview.shapes={i:self.xyview.shapes[k] for i,k in enumerate(kpids)}
+		self.xzview.shapes={i:self.xzview.shapes[k] for i,k in enumerate(kpids)}
+		self.zyview.shapes={i:self.zyview.shapes[k] for i,k in enumerate(kpids)}
 		if name in self.sets_visible: self.sets_visible.pop(name)
 		if name in self.sets: self.sets.pop(name)
+		if name in self.boxsize: self.boxsize.pop(name)
 		
+		self.curbox=-1
 		self.update_all()
 		
 		return
@@ -1407,7 +1381,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		info["boxes_3d"]=self.boxes
 		clslst={}
 		for key in self.sets.keys():
-			clslst[key]={
+			clslst[int(key)]={
 				"name":self.sets[key],
 				"boxsize":self.boxsize[key],
 				}
