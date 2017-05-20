@@ -327,6 +327,10 @@ def do_EQKmeans_nways_clustering_stable_seeds(workdir, initial_partids, params, 
 				msg ="determined image size for sorting is %d"%Tracker["nxinit"]
 				print(line, msg)
 				log_main.add(msg)
+				tmpdir = os.path.join(Tracker["directory"], "tempdir")
+				if os.path.exists(tmpdir):
+					cmd="{} {}".format("rm -rf", tmpdir)
+					cmdexecute(cmd)
 			npremature = 0
 			for indep_run_iter in xrange(0, Tracker["constants"]["indep_runs"]): # N independent runs
 				Tracker["indep_run_iter"] = indep_run_iter
