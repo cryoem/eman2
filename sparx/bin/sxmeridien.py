@@ -101,7 +101,8 @@ if( Blockdata["no_of_groups"] > 1 ):  Blockdata["node_volume"] = [Blockdata["no_
 else: Blockdata["node_volume"] = [0,0]
 #  We need two CPUs for processing of volumes, they are taken to be main CPUs on each volume
 #  We have to send the two myids to all nodes so we can identify main nodes on two selected groups.
-Blockdata["main_shared_nodes"]	= [Blockdata["node_volume"][0]*Blockdata["no_of_processes_per_group"],Blockdata["node_volume"][1]*Blockdata["no_of_processes_per_group"]]
+if( Blockdata["no_of_groups"] > 1 ): Blockdata["main_shared_nodes"]	= [Blockdata["node_volume"][0]*Blockdata["no_of_processes_per_group"],Blockdata["node_volume"][1]*Blockdata["no_of_processes_per_group"]]
+
 # end of Blockdata
 global_def.BATCH = True
 global_def.MPI = True
@@ -1207,50 +1208,72 @@ def do3d_final_mpi(final_iter):
 	if Blockdata["myid"] == Blockdata["main_node"]: print(line, "do3d_final")
 	if Tracker["directory"] !=Tracker["constants"]["masterdir"]: Tracker["directory"] = Tracker["constants"]["masterdir"]
 	carryon = 1
-	if(Blockdata["myid"] == Blockdata["main_shared_nodes"][1]):
-		# post-insertion operations, done only in main_node		
-		tvol0 		= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir", "tvol_0_%03d.hdf"%Tracker["mainiteration"])))
-		tweight0 	= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir","tweight_0_%03d.hdf"%Tracker["mainiteration"])))
-		tvol1 		= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir", "tvol_1_%03d.hdf"%Tracker["mainiteration"])))
-		tweight1 	= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir","tweight_1_%03d.hdf"%Tracker["mainiteration"])))
-		Util.fuse_low_freq(tvol0, tvol1, tweight0, tweight1, 2*Tracker["constants"]["fuse_freq"])
-	mpi_barrier(MPI_COMM_WORLD)
-		
-	if(Blockdata["myid"] == Blockdata["main_shared_nodes"][1]):
-		tag = 7007
-		send_EMData(tvol1, Blockdata["main_shared_nodes"][0], tag, MPI_COMM_WORLD)
-		send_EMData(tweight1, Blockdata["main_shared_nodes"][0], tag, MPI_COMM_WORLD)
-	elif(Blockdata["myid"] == Blockdata["main_shared_nodes"][0]):
-		tag = 7007
-		tvol1    	= recv_EMData(Blockdata["main_shared_nodes"][1], tag, MPI_COMM_WORLD)
-		tweight1    = recv_EMData(Blockdata["main_shared_nodes"][1], tag, MPI_COMM_WORLD)
-		tvol1.set_attr_dict( {"is_complex":1, "is_fftodd":1, 'is_complex_ri': 1, 'is_fftpad': 1} )
-	mpi_barrier(MPI_COMM_WORLD)
-	# do steptwo
-	if( Blockdata["color"] == Blockdata["node_volume"][1]):
-		if( Blockdata["myid_on_node"] == 0 ):
-			treg0 = get_im(os.path.join(Tracker["directory"], "tempdir", "trol_0_%03d.hdf"%(Tracker["mainiteration"])))
-		else:
-			tvol0 		= model_blank(1)
-			tweight0 	= model_blank(1)
-			treg0 		= model_blank(1)
-		tvol0 = steptwo_mpi(tvol0, tweight0, treg0, None,False , color = Blockdata["node_volume"][1])
-		del tweight0, treg0
-		if( Blockdata["myid_on_node"] == 0 ):
-			tvol0.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_0_unfil.hdf"))
-	elif( Blockdata["color"] == Blockdata["node_volume"][0]):
-		#--  #--  memory_check(Blockdata["myid"],"second node, before steptwo")
-		#  compute filtered volume
-		if( Blockdata["myid_on_node"] == 0 ):
-			treg1 = get_im(os.path.join(Tracker["directory"], "tempdir", "trol_1_%03d.hdf"%(Tracker["mainiteration"])))
-		else:
-			tvol1 		= model_blank(1)
-			tweight1 	= model_blank(1)
-			treg1 		= model_blank(1)
-		tvol1 = steptwo_mpi(tvol1, tweight1, treg1, None, False,  color = Blockdata["node_volume"][0])
-		del tweight1, treg1
-		if( Blockdata["myid_on_node"] == 0 ):
-			tvol1.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_1_unfil.hdf"))
+	if(Blockdata["no_of_groups"] >1):
+		if(Blockdata["myid"] == Blockdata["main_shared_nodes"][1]):
+			# post-insertion operations, done only in main_node		
+			tvol0 		= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir", "tvol_0_%03d.hdf"%Tracker["mainiteration"])))
+			tweight0 	= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir","tweight_0_%03d.hdf"%Tracker["mainiteration"])))
+			tvol1 		= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir", "tvol_1_%03d.hdf"%Tracker["mainiteration"])))
+			tweight1 	= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir","tweight_1_%03d.hdf"%Tracker["mainiteration"])))
+			Util.fuse_low_freq(tvol0, tvol1, tweight0, tweight1, 2*Tracker["constants"]["fuse_freq"])
+		mpi_barrier(MPI_COMM_WORLD)
+		if(Blockdata["myid"] == Blockdata["main_shared_nodes"][1]):
+			tag = 7007
+			send_EMData(tvol1, Blockdata["main_shared_nodes"][0], tag, MPI_COMM_WORLD)
+			send_EMData(tweight1, Blockdata["main_shared_nodes"][0], tag, MPI_COMM_WORLD)
+			tvol0.set_attr_dict( {"is_complex":1, "is_fftodd":1, 'is_complex_ri': 1, 'is_fftpad': 1})
+		elif(Blockdata["myid"] == Blockdata["main_shared_nodes"][0]):
+			tag = 7007
+			tvol1    	= recv_EMData(Blockdata["main_shared_nodes"][1], tag, MPI_COMM_WORLD)
+			tweight1    = recv_EMData(Blockdata["main_shared_nodes"][1], tag, MPI_COMM_WORLD)
+			tvol1.set_attr_dict( {"is_complex":1, "is_fftodd":1, 'is_complex_ri': 1, 'is_fftpad': 1})
+		mpi_barrier(MPI_COMM_WORLD)
+		if( Blockdata["color"] == Blockdata["node_volume"][1]):
+			if( Blockdata["myid"] == Blockdata["main_shared_nodes"][1] ):
+				treg0 = get_im(os.path.join(Tracker["directory"], "tempdir", "trol_0_%03d.hdf"%(Tracker["mainiteration"])))
+			else:
+				tvol0 		= model_blank(1)
+				tweight0 	= model_blank(1)
+				treg0 		= model_blank(1)
+			tvol0 = steptwo_mpi(tvol0, tweight0, treg0, None, False , color = Blockdata["node_volume"][1])
+			del tweight0, treg0
+			if( Blockdata["myid_on_node"] == 0):
+				tvol0.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_0_unfil.hdf"))	
+		elif( Blockdata["color"] == Blockdata["node_volume"][0]):
+			if( Blockdata["myid"] == Blockdata["main_shared_nodes"][0]):
+				treg1 = get_im(os.path.join(Tracker["directory"], "tempdir", "trol_1_%03d.hdf"%(Tracker["mainiteration"])))
+			else:
+				tvol1 		= model_blank(1)
+				tweight1 	= model_blank(1)
+				treg1 		= model_blank(1)
+			tvol1 = steptwo_mpi(tvol1, tweight1, treg1, None, False , color = Blockdata["node_volume"][0])
+			del tweight1, treg1
+			if( Blockdata["myid_on_node"] == 0):
+				tvol1.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_1_unfil.hdf"))
+			mpi_barrier(MPI_COMM_WORLD)
+	else:
+		for iproc in xrange(2):
+			if(Blockdata["myid_on_node"] == 0):
+				tvol0 		= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir", "tvol_0_%03d.hdf"%(Tracker["mainiteration"]))))
+				tweight0 	= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir","tweight_0_%03d.hdf"%(Tracker["mainiteration"]))))
+				tvol1 		= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir", "tvol_1_%03d.hdf"%(Tracker["mainiteration"]))))
+				tweight1 	= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir","tweight_1_%03d.hdf"%(Tracker["mainiteration"]))))
+				Util.fuse_low_freq(tvol0, tvol1, tweight0, tweight1, 2*Tracker["constants"]["fuse_freq"])
+				treg  = get_im(os.path.join(Tracker["directory"], "tempdir", "trol_%d_%03d.hdf"%((iproc, Tracker["mainiteration"]))))
+			else:
+				treg	    = model_blank(1)
+				if iproc ==0:
+					tvol0 		= model_blank(1)
+					tweight0 	= model_blank(1)
+				else:
+					tvol1 		= model_blank(1)
+					tweight1 	= model_blank(1)
+			if iproc ==0 : tvol0 = steptwo_mpi(tvol0, tweight0, treg, None, False , color = Blockdata["node_volume"][0])
+			else: tvol1 = steptwo_mpi(tvol1, tweight1, treg, None, False , color = Blockdata["node_volume"][0])
+			if( Blockdata["myid_on_node"] == 0):
+				if iproc ==0: tvol0.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_%d_unfil.hdf"%iproc))
+				else: tvol1.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_%d_unfil.hdf"%iproc))
+			mpi_barrier(MPI_COMM_WORLD)
 	mpi_barrier(MPI_COMM_WORLD) #  
 	return
 
@@ -5362,13 +5385,16 @@ def do_final_rec3d(partids, partstack, original_data, oldparams, oldparamstructu
 			Tracker["directory"]             = Tracker["constants"]["masterdir"]
 			Tracker["nxinit"]                = Tracker["constants"]["nnxo"]
 			Tracker["maxfrad"]               = Tracker["constants"]["nnxo"]//2
-			do3d(procid, projdata[procid], oldparamstructure[procid], refang, rshifts, norm_per_particle[procid], myid = Blockdata["myid"], mpi_comm = comm)
+			do3d(procid, projdata[procid], oldparamstructure[procid], refang, rshifts, norm_per_particle[procid], myid = Blockdata["subgroup_myid"], mpi_comm = comm)
 			projdata[procid]          = []
 			oldparamstructure[procid] = []
 			norm_per_particle[procid] = []
 			mpi_barrier(Blockdata["subgroup_comm"])
 		mpi_barrier(Blockdata["subgroup_comm"])
 	mpi_barrier(MPI_COMM_WORLD)
+	Blockdata["ncpuspernode"] = Blockdata["nproc"]//Blockdata["no_of_groups"]
+	Blockdata["nsubset"]  = Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
+	create_subgroup()
 	do3d_final_mpi(final_iter)
 	mpi_barrier(MPI_COMM_WORLD)
 	# also copy params to masterdir as final params
