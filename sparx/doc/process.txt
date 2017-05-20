@@ -96,16 +96,16 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
 ''' sxprocess.py  vol3d.hdf  mask3d.hdf  --binary_mask  --threshold=0.05  --ne=3  --nd==3 '''
 
 14. Postprocess two unfiltered 3D volumes produced by meridien: This command executes the following processes. (a) Calculate FSC with provided mask and adjust the FSC by random phases FSC, (b) Sum two volume, (c) Apply mask, (d) Apply MTF correction (optional), (e) Adjust power spectrum by 2*FSC/(1+FSC) (optional), (f) Estimate B-factor from 10 Angstrom (default) to the resolution (optional), (g) Apply negative B-factor to enhance the volume (optional), (h) Apply low_pass filter to the volume (optional). Options are independent of each others.
---low_pass_filter: =0.0, low_pass filter to resolution; =-1.0, no low_pass filter; =5.8 low_pass filter to 5.8 Angstrom; =0.2 low_pass filter to 0.2.
---B_enhance:       =-1, B-factor is not applied; =0, program estimates B-factor from options. B_start (usually set as 10 Angstrom) to the resolution determined by FSC 0.143; =128.0, program uses the given value 128.0 to enhance map.
+--fl: =0.0, low_pass filter to resolution; =-1.0, no low_pass filter; =5.8 low_pass filter to 5.8 Angstrom; =0.2 low_pass filter to 0.2.
+--B_enhance:       =-1, B-factor is not applied; =0, program estimates B-factor from options. B_start (set as 10 Angstrom by default) to the resolution determined by FSC 0.143; =128.0, program uses the given value 128.0 to enhance map.
 --mtf:             =mtf.txt, for those high resolution maps, mtf correction would significantly enhance structural features.
 --fsc_adj:         fsc adjustment of power spectrum is inclined to increase the slope of power spectrum of the summed volume.
 --do_adaptive_mask =True, the program adaptively creates 3d mask file using summed volumes. This takes a couple of minutes. For map with dimension of 384*384*384, it takes 6 minutes.
---output           output volume 
+--output:           name of the output volume 
 
-''' sxprocess.py  --postprocess  vol_0_unfil.hdf  vol_1_unfil.hdf  --mask=mask15.hdf  --pixel_size=1.12  --low_pass_filter=-1  --mtf=mtf.txt  --fsc_adj  --output=vol_post.hdf '''
+''' sxprocess.py  --postprocess  vol_0_unfil.hdf  vol_1_unfil.hdf  --mask=mask15.hdf  --pixel_size=1.12  --fl=-1  --mtf=mtf.txt  --fsc_adj  --output=vol_post.hdf '''
 
-''' sxprocess.py  --postprocess  vol_0_unfil.hdf  vol_1_unfil.hdf  --mask=mask15.hdf  --pixel_size=1.12  --low_pass_filter=4.7  --mtf=mtf.txt  --fsc_adj '''
+''' sxprocess.py  --postprocess  vol_0_unfil.hdf  vol_1_unfil.hdf  --mask=mask15.hdf  --pixel_size=1.12  --fl=4.7  --mtf=mtf.txt  --fsc_adj '''
 
 ''' sxprocess.py  --postprocess  vol_0_unfil.hdf  vol_1_unfil.hdf  --do_adaptive_mask  --pixel_size=1.12  --mtf=mtf.txt  --fsc_adj '''
 
