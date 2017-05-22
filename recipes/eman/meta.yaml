@@ -46,6 +46,8 @@ requirements:
         - pydusa  # [not win]
 
 test:
+  requires:
+    - openmpi              # [not win]
   imports:
     - mpi                  # [not win]
     - EMAN2
