@@ -44,7 +44,6 @@ Blockdata = {}
 Blockdata["nproc"]              = nproc
 Blockdata["myid"]               = myid
 Blockdata["main_node"]          = 0
-
 Blockdata["shared_comm"]                    = mpi_comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED,  0, MPI_INFO_NULL)
 Blockdata["myid_on_node"]                   = mpi_comm_rank(Blockdata["shared_comm"])
 Blockdata["no_of_processes_per_group"]      = mpi_comm_size(Blockdata["shared_comm"])
@@ -65,13 +64,11 @@ def compute_average_ctf(mlist, radius):
 	from morphology   import ctf_img
 	from filter       import filt_ctf, filt_table
 	from fundamentals import fft, fftip
-	
 	orig_image_size = mlist[0].get_xsize()
 	avgo       = EMData(orig_image_size, orig_image_size, 1, False) #
 	avge       = EMData(orig_image_size, orig_image_size, 1, False) # 
 	ctf_2_sumo = EMData(orig_image_size, orig_image_size, 1, False)
 	ctf_2_sume = EMData(orig_image_size, orig_image_size, 1, False)
-	
 	for im in xrange(len(mlist)):
 		ctt = ctf_img(orig_image_size, mlist[im].get_attr("ctf"))
 		alpha, sx, sy, mr, scale = get_params2D(mlist[im], xform = "xform.align2d")
@@ -193,7 +190,7 @@ def main():
 	parser.add_option("--ts",                    type   ="float",      default =1.0,    help= "local alignment search step")
 	parser.add_option("--fh",                    type   ="float",      default =-1.,    help= "local alignment high frequencies limit")
 	parser.add_option("--maxit",                 type   ="int",        default =5,      help= "local alignment iterations")
-	parser.add_option("--nompw_adj",             action ="store_true", default =False,  help= "no pw adjustment to model powersepctrum")
+	parser.add_option("--nopwadj",               action ="store_true", default =False,  help= "no pw adjustment")
 	parser.add_option("--modelpw",               type   ="string",     default ='',     help= "1-D power spectrum of PDF model or EM map sampled in given pixel_size and orignal image_size")
 	parser.add_option("--navg",                  type   ="int",        default =-1,     help= "number of aveages")
 	
@@ -213,7 +210,7 @@ def main():
 	Constants["B_enhance"]                    = options.B_enhance
 	Constants["B_start"]                      = options.B_start
 	Constants["Bfactor"]                      = options.Bfactor
-	Constants["nompw_adj"]                    = options.nompw_adj
+	Constants["nopwadj"]                      = options.nopwadj
 	Constants["modelpw"]                      = options.modelpw
 	Constants["low_pass_filter"]              = options.fl
 	Constants["navg"]                         = options.navg
@@ -314,8 +311,7 @@ def main():
 	
 	if(Blockdata["myid"] == Blockdata["main_node"]): parameters = read_text_row(os.path.join(Tracker["constants"]["isac_dir"], "all_parameters.txt"))
 	else: parameters = 0
-	parameters = wrap_mpi_bcast(parameters, Blockdata["main_node"], communicator = MPI_COMM_WORLD)
-		
+	parameters = wrap_mpi_bcast(parameters, Blockdata["main_node"], communicator = MPI_COMM_WORLD)		
 	params_dict = {}
 	list_dict   = {}
 	#parepare params_dict
@@ -336,7 +332,7 @@ def main():
 				params_of_this_average.append([P[0], P[1], P[2], P[3], 1.0])
 			params_dict[iavg] = params_of_this_average
 			list_dict[iavg] = members
-			#write_text_row(params_of_this_average, os.path.join(Tracker["constants"]["masterdir"], "params_avg_%03d.txt"%iavg))
+			write_text_row(params_of_this_average, os.path.join(Tracker["constants"]["masterdir"], "params_avg_%03d.txt"%iavg))
 	else:  
 		params_dict = 0
 		list_dict   = 0
@@ -366,20 +362,19 @@ def main():
 				else: new_avg, frc = compute_average_ctf(mlist, Tracker["constants"]["radius"])
 				FH2 = get_optimistic_res(frc)
 				#write_text_file(frc, os.path.join(Tracker["constants"]["masterdir"], "fsc%03d.txt"%iavg))
-				if not Tracker["constants"]["nompw_adj"]:
+				if Tracker["constants"]["nopwadj"]: # pw adjustment, 1. analytic model 2. PDB model 3. B-facttor enhancement
+					if Tracker["constants"]["B_enhance"]:
+					new_avg, gb = apply_enhancement(new_avg, Tracker["constants"]["B_start"], Tracker["constants"]["pixel_size"], Tracker["constants"]["Bfactor"])
+					print("Process avg  %d  %f  %f   %f"%(iavg, gb, FH1, FH2))
+				else:
 					try: 
 						roo = read_text_file(Tracker["constants"]["modelpw"], -1)
 						roo =roo[0] # always put pw in the first column
 					except: roo = None
 					new_avg = adjust_pw_to_model(new_avg, Tracker["constants"]["pixel_size"], roo)
 					print("Process avg  %d   %f   %f"%(iavg, FH1, FH2))
-				else:
-					if Tracker["constants"]["B_enhance"]:
-						new_avg, gb = apply_enhancement(new_avg, Tracker["constants"]["B_start"], Tracker["constants"]["pixel_size"], Tracker["constants"]["Bfactor"])
-						print("Process avg  %d  %f  %f   %f"%(iavg, gb, FH1, FH2))
 				if Tracker["constants"]["low_pass_filter"] !=-1.: new_avg = filt_tanl(new_avg, Tracker["constants"]["low_pass_filter"], 0.1)
 		mpi_barrier(MPI_COMM_WORLD)
-		
 		for im in xrange(navg): # avg
 			if im == Blockdata["myid"] and Blockdata["myid"] != Blockdata["main_node"]:
 				send_EMData(new_avg, Blockdata["main_node"],  tag_sharpen_avg)
@@ -420,7 +415,6 @@ def main():
 				else: new_average2.write_image(os.path.join(Tracker["constants"]["masterdir"], "ali_class_averages2.hdf"), im)
 		mpi_barrier(MPI_COMM_WORLD)
 		"""
-		
 	else:
 		image_start,image_end = MPI_start_end(navg, Blockdata["nproc"], Blockdata["myid"])
 		if Blockdata["myid"] == Blockdata["main_node"]:
@@ -456,7 +450,7 @@ def main():
 			else: new_avg, frc = compute_average_ctf(mlist, Tracker["constants"]["radius"])
 			FH2 = get_optimistic_res(frc)
 			#write_text_file(frc, os.path.join(Tracker["constants"]["masterdir"], "fsc%03d.txt"%iavg))
-			if not Tracker["constants"]["nompw_adj"]:
+			if not Tracker["constants"]["nopwadj"]:
 				try: 
 					roo = read_text_file( Tracker["constants"]["modelpw"], -1)
 					roo = roo[0] # always on the first column
@@ -473,7 +467,6 @@ def main():
 			ini_list[iavg] = ini_avg
 			avg1_list[iavg]= new_average1
 			avg2_list[iavg]= new_average2
-			
 		## send to main node to write
 		for im in xrange(navg):
 			# avg

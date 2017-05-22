@@ -27,7 +27,7 @@ sxcompute_isac_avg.py exists only in MPI version
     noctf:: No CTF correction: Use this option if full CTF correction should not be applied. Useful for negative stained data. By default, the program will do full CTF correction. (default False) 
 
     * The remaining parameters are optional.
-    nompw_adj:: Do not adjust PW spectrum: Adjust PW spectrum to neither analytical model nor given 1-D rotationally averaged power spectrum. Apply PW spectrum adjustment to model. (default False)
+    nopwadj:: Do not adjust PW spectrum. (default False). There are three ways to change powerspectrum: 1. adjust it to an analytical model; 2. adjust it to a given powerspectrum; 3. apply B-factors. Three options are exclusive.    
     modelpw::  Reference 1D PW spectrum: A text file contains 1-D rotational averaged power spectrum of either PDB model or EM map sampled in the given pixel_size and in original image size. By default, use the analytic model (See Penczek Methods Enzymol 2010) (default none)
     B_enhance:: Apply B-factor enhancement: Apply B-factor enhancement. (default False)
     B_start:: B-factor lower limit [A]: Lower limit for B-factor estimation. (default 10.0)
