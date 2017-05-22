@@ -3588,7 +3588,7 @@ def assign_projangles_slow(projangles, refangles):
 
 
 def nearest_many_full_k_projangles(reference_normals, angles, howmany = 1, sym_class=None):
-	# We assume angles can be on the list of normals
+	# 
 	from utilities import getfvec
 	from utilities import angles_to_normals
 	#refnormal = normals[:]
@@ -3601,8 +3601,6 @@ def nearest_many_full_k_projangles(reference_normals, angles, howmany = 1, sym_c
 		for i,q in enumerate(angles):
 			ancordir = angles_to_normals(sym_class.symmetry_neighbors([q]))
 			assignments[i] = Util.nearest_fang_sym(ancordir, reference_normals, len(ancordir), howmany)
-			#angles_sym_normals = angles_to_normals(symmetry_neighbors([q], sym))
-			#assignments[i] = Util.nearest_fang_sym(angles_sym_normals, reference_normals, len(angles_sym_normals), sym, howmany)
 
 	return assignments
 
