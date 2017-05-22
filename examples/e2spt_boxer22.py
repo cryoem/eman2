@@ -667,7 +667,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			img["ptcl_source_image"]=self.datafilename
 			img["ptcl_source_coord"]=(b[0]-sz[0], b[1]-sz[1], b[2]-sz[2])
 			
-			if not self.invert:
+			if self.invert:
 				img.mult(-1)
 			prj=img.project("standard", Transform())
 			
