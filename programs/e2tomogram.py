@@ -33,6 +33,7 @@ def main():
 	parser.add_argument("--writetmp", action="store_true",help="Write intermidiate files", default=False)
 	parser.add_argument("--rmgold", action="store_true",help="Remove gold fiducials.", default=False)
 	parser.add_argument("--nofiducial", action="store_true",help="Fiducial-less mode. This will change a few internal parameters to make it work.", default=False)
+	parser.add_argument("--reconmode", type=str,help="Reconstruction mode. Choose from nearest_neighbor, gauss_2, gauss_3, and gauss_5.", default="gauss_2")
 	parser.add_argument("--threads", type=int,help="Number of threads", default=12)
 	parser.add_argument("--niter", type=int,help="Number of iterations", default=3)
 	parser.add_argument("--verbose", type=int,help="Verbose", default=0)
@@ -42,11 +43,19 @@ def main():
 
 	inputname=args[0]
 	
+	dotpos=inputname.rfind('.')
+	linepos=inputname.rfind('__')
+	inputtag=inputname[linepos:dotpos]
+	bname=base_name(inputname)
+	
+	options.basename=bname
+	
 	if options.bxsz<0:
-		if options.nofiducial:
-			options.bxsz=96
-		else:
-			options.bxsz=64
+		options.bxsz=96
+		#if options.nofiducial:
+			#options.bxsz=96
+		#else:
+			#options.bxsz=64
 	
 	
 	print "Reading and pre-processing tilt stack..."
@@ -75,6 +84,7 @@ def main():
 		tlts=np.arange(num, dtype=float)*options.tltstep
 		tlts-=tlts[options.zeroid]
 	
+	tlts=tlts[:num]
 	print "tilt angle from {:.1f} to {:.1f}, step {:.1f}".format(np.min(tlts), np.max(tlts), options.tltstep)
 	options.tlt_init=tlts.copy()
 
@@ -141,6 +151,8 @@ def main():
 		if options.writetmp: 
 			np.savetxt(options.tmppath+"params_00.txt", allparams)
 	
+	
+	
 	#### Make initial tomogram
 	if options.niter>0 or  options.rmgold:
 		if options.writetmp:
@@ -154,6 +166,7 @@ def main():
 	#### Main refinement loop
 	for iti in range(1,options.niter+1):
 		ttparams, pks, miscglobal=get_params(allparams, options)
+		ttparams_init=ttparams.copy()
 		
 		#### look for landmarks in the tomogram
 		pks=locate_peaks(threed, options)
@@ -183,13 +196,39 @@ def main():
 			print "Estimated tilt axis translation: {:.1f}, {:.1f}, loss {:.1f}".format(float(resx[0]), float(resx[1]), float(loss))
 		
 		#### refine rotation and translation of the tilts
-		for rep in range(3):
+		for rep in range(2):
 			allparams = refine_trans(imgs, allparams, options, ptrg, err_tilt)
 			allparams = refine_angle(imgs, allparams, options, ptrg, err_tilt)
 		
 		#### check loss again at the end of the iteration and save parameters
+		ptrg, err_tilt0= check_loss(imgs, allparams, options)
+		
+		#### roll back to coarse alignment if the error is large..
+		ttparams, pks, miscglobal=get_params(allparams, options)
+		badtlt=err_tilt0>options.minloss*2
+		ttparams[badtlt,:]=ttparams_init[badtlt,:].copy()
+		imgrot=[]
+		for nid in range(num):
+			tpm=ttparams[nid]
+			pxf=get_xf_pos(ttparams[nid], [0,0,0],  miscglobal)
+			po=imgs[nid].copy()
+			po.translate(-pxf[0], -pxf[1],0)
+			po.rotate(-tpm[2],0,0)
+			imgrot.append(po)
+		imgs_trans1, pretrans1=calc_global_trans(imgrot, options)
+		for nid in range(num):
+			if badtlt[nid]:
+				tpm=ttparams[nid]
+				pt=pretrans1[nid]
+				pxf=get_xf_pos(ttparams[nid], [0,0,0],  miscglobal)
+				rot=Transform({"type":"2d", "alpha":tpm[2]})
+				pr=rot.transform(pt[0], pt[1])
+				for ti in [0,1]: ttparams[nid, ti]-=pr[ti]
+		
+		allparams=np.hstack([ttparams.flatten(), pks.flatten(), miscglobal])
 		ptrg, err_tilt= check_loss(imgs, allparams, options)
-		print "Iteration {:d} finished. Mean loss: {:.1f}".format(iti, np.mean(err_tilt))
+		
+		print "Iteration {:d} finished. Mean loss: {:.1f}, {:d} bad tilts".format(iti, np.mean(err_tilt), np.sum(err_tilt0>options.minloss*2))
 		if options.writetmp: 
 			np.savetxt(options.tmppath+"params_{:02d}.txt".format(iti), allparams)
 		
@@ -213,18 +252,21 @@ def main():
 		m.process_inplace("filter.highpass.gauss",{"cutoff_pixels":3})
 		m.process_inplace("normalize.edgemean")
 
-	bname=os.path.basename(inputname)
+	#######
 	try: os.mkdir("tomograms")
 	except: pass
-	outname="tomograms/"+bname[:bname.rfind('.')]+".hdf"
+	
 	
 	#### remove gold fiducials when needed
 	if options.rmgold and (not options.nofiducial):
 		imgs=remove_gold(imgs, allparams, threed, options)
-		outname=outname[:-4]+"_rmgd.hdf"
-		
-	threed=make_tomogram(imgs, allparams, options, premask=True, padr=1.6, clipz=True, errtlt=err_tilt)
-	threed.write_image(outname)
+		inputtag=inputtag+"_rmgd.hdf"
+	
+	
+	outname="tomograms/" +bname + inputtag +".hdf"
+	
+	threed=make_tomogram(imgs, allparams, options, premask=True, padr=1.6, clipz=True, errtlt=err_tilt, outname=outname)
+	#threed.write_image(outname)
 	
 	E2end(logid)
 
@@ -447,6 +489,7 @@ def make_tomogram(imgs, allparams, options, outname=None, premask=True, padr=1.2
 	num=len(imgs)
 	
 	if len(errtlt)==0:
+		errtlt=np.zeros(num)
 		nrange=range(num)
 	else:
 		nrange=np.argsort(errtlt)[:int(num*options.tltkeep)]
@@ -461,9 +504,13 @@ def make_tomogram(imgs, allparams, options, outname=None, premask=True, padr=1.2
 	if options.verbose:
 		print "\t Image size: {:d} x {:d}".format(nx, ny)
 		print "\tPadded volume to: {:d} x {:d} x {:d}".format(pad, pad, zthick)
-	recon=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,zthick]})
+	recon=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,zthick], "mode":options.reconmode})
 	recon.setup()
 	jobs=[]
+	
+	info=js_open_dict(info_name(options.basename))
+	tltinfo=[]
+	
 	for nid in range(num):
 		exclude= nid not in nrange
 
@@ -471,12 +518,14 @@ def make_tomogram(imgs, allparams, options, outname=None, premask=True, padr=1.2
 
 		pxf=get_xf_pos(ttparams[nid], [0,0,0],  miscglobal)
 
-		pxf[0]+=nx/2
-		pxf[1]+=ny/2
-		rot=Transform({"type":"xyz","ztilt":tpm[2],"ytilt":tpm[3], "xtilt":tpm[4]})
-		jobs.append([nid,imgs[nid],  recon, pad, pxf, rot, premask, exclude, options])
+		#pxf[0]+=nx/2
+		#pxf[1]+=ny/2
+		#rot=Transform({"type":"xyz","ztilt":tpm[2],"ytilt":tpm[3], "xtilt":tpm[4]})
+		xform=Transform({"type":"xyz","ztilt":tpm[2],"ytilt":tpm[3], "xtilt":tpm[4], "tx":-pxf[0], "ty":-pxf[1]})
+		tltinfo.append({"xform.projection":xform, "alignment.score":errtlt[nid]})
+		jobs.append([nid,imgs[nid],  recon, pad, xform, premask, exclude, options])
 		
-		
+	
 	thrds=[threading.Thread(target=reconstruct,args=(i)) for i in jobs]
 	thrtolaunch=0
 	while thrtolaunch<len(thrds) or threading.active_count()>1:
@@ -504,30 +553,44 @@ def make_tomogram(imgs, allparams, options, outname=None, premask=True, padr=1.2
 		if options.verbose:
 			print "Z axis center at {:d}, thickness {:d} pixels".format(zcent, zthk*2)
 		threed.clip_inplace(Region((pad-outxy)/2, (pad-outxy)/2, zcent-zthk, outxy, outxy, zthk*2))
+		
+		for nid in range(num):
+			tltinfo[nid]["xform.projection"].translate(0, 0, zthick/2-zcent)
+		
 	else:
 		
 		threed.clip_inplace(Region((pad-outxy)/2, (pad-outxy)/2, 0, outxy, outxy, zthick))
 	
+	apix=imgs[0]["apix_x"]
+	threed["apix_x"]=threed["apix_y"]=threed["apix_z"]=apix
+	
 	if outname:
 		threed.write_image(outname)
 		if options.verbose: print "Map written to {}.".format(outname)
+		
+	info["tiltseries"]=tltinfo
+	info.close()	
 	return threed
 
 #### reconstruction function for the subprocesses
-def reconstruct(nid, img, recon, pad, pxf, rot, premask, exclude, options):
-	p2=img.get_clip(Region(pxf[0]-pad/2,pxf[1]-pad/2, pad, pad))
-	if premask:
-		p2.process_inplace("mask.soft",{"outer_radius":options.minsz/2-1, "width":16})
+def reconstruct(nid, img, recon, pad, xform, premask, exclude, options):
+	
+	p2=img.get_clip(Region(img["nx"]/2-pad/2,img["ny"]/2-pad/2, pad, pad))
+	rr=xform.get_params("xyz")
 	if options.writetmp:
 		po=p2.copy()
-		rr=rot.get_params("xyz")
+		rr=xform.get_params("xyz")
 		po["exclude"]=exclude
+		po.translate(rr["tx"], rr["ty"],0)
 		po.rotate(-rr["ztilt"],0,0)
+		po.process_inplace("normalize")
 		po.write_image(options.tmppath+"tmpimg_ali.hdf", nid)
+	if premask:
+		p2.process_inplace("mask.soft",{"outer_radius":options.minsz/2-1, "width":16, "dx":rr["tx"], "dy":rr["ty"]})
 	if not exclude:
 		
-		p3=recon.preprocess_slice(p2, rot)
-		recon.insert_slice(p3,rot,1)
+		p3=recon.preprocess_slice(p2, xform)
+		recon.insert_slice(p3,xform,1)
 
 #### locate landmarks in 3D map
 def locate_peaks(threed, options, returnall=False):
