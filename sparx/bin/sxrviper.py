@@ -191,6 +191,8 @@ def plot_errors_between_any_number_of_projections(masterdir, rviper_iter, list_o
 	plt.close()
 '''
 
+### NOTE: 2017/05/22 Toshio moriya
+### Temporary disabled matplotlib.pyplot because of Anaconda Installer Issue
 def find_index_of_discontinuity_in_derivative(error_curve_func, list_of_projection_indices, mainoutputdir,
 	outlier_percentile):
 
@@ -224,20 +226,20 @@ def find_index_of_discontinuity_in_derivative(error_curve_func, list_of_projecti
 			minimum_goodness_of_fit_for_both_lines = goodness_of_fit_for_both_lines
 			optimized_split_point = split_point
 
-		import matplotlib.pyplot as plt
+###		import matplotlib.pyplot as plt
 		# split_point = optimized_split_point
-		plt.plot(range(len(error_curve_func)),error_curve_func)
+###		plt.plot(range(len(error_curve_func)),error_curve_func)
 
 		first_line_x = map(int, np.linspace(0,split_point,resolution)*data_set_length)
 		first_line_y = np.array([error_curve_func[x] for x in first_line_x])
 		first_line_z = np.poly1d( np.polyfit(first_line_x, first_line_y, degree_of_the_fitting_polynomial) )
 
-		plt.plot(first_line_x,first_line_z(first_line_x))
+###		plt.plot(first_line_x,first_line_z(first_line_x))
 
 		second_line_x = map(int, np.linspace(split_point,1, resolution)*data_set_length)
 		second_line_y = np.array([error_curve_func[x-1] for x in second_line_x])
 		second_line_z = np.poly1d( np.polyfit(second_line_x, second_line_y, degree_of_the_fitting_polynomial) )
-		plt.plot(second_line_x,second_line_z(second_line_x))
+###		plt.plot(second_line_x,second_line_z(second_line_x))
 
 		import StringIO
 		which_projections = StringIO.StringIO()
@@ -245,24 +247,24 @@ def find_index_of_discontinuity_in_derivative(error_curve_func, list_of_projecti
 		for p_i in list_of_projection_indices: which_projections.write("_" + "%03d"%p_i)
 		for p_i in list_of_projection_indices: which_projections.write("___" + "%03d"%get_already_processed_viper_runs.r_permutation[p_i])
 
-		plt.title(mainoutputdir + '/sorted_errors' + which_projections.getvalue() + '.png')
-		plt.savefig(mainoutputdir + '/sorted_errors' + which_projections.getvalue() + '.png')
-		plt.close()
+###		plt.title(mainoutputdir + '/sorted_errors' + which_projections.getvalue() + '.png')
+###		plt.savefig(mainoutputdir + '/sorted_errors' + which_projections.getvalue() + '.png')
+###		plt.close()
 
-	import matplotlib.pyplot as plt
+###	import matplotlib.pyplot as plt
 	split_point = optimized_split_point
-	plt.plot(range(len(error_curve_func)),error_curve_func)
+###	plt.plot(range(len(error_curve_func)),error_curve_func)
 
 	first_line_x = map(int, np.linspace(0,split_point,resolution)*data_set_length)
 	first_line_y = np.array([error_curve_func[x] for x in first_line_x])
 	first_line_z = np.poly1d( np.polyfit(first_line_x, first_line_y, degree_of_the_fitting_polynomial) )
 
-	plt.plot(first_line_x,first_line_z(first_line_x))
+###	plt.plot(first_line_x,first_line_z(first_line_x))
 
 	second_line_x = map(int, np.linspace(split_point,1, resolution)*data_set_length)
 	second_line_y = np.array([error_curve_func[x-1] for x in second_line_x])
 	second_line_z = np.poly1d( np.polyfit(second_line_x, second_line_y, degree_of_the_fitting_polynomial) )
-	plt.plot(second_line_x,second_line_z(second_line_x))
+###	plt.plot(second_line_x,second_line_z(second_line_x))
 
 	import StringIO
 	which_projections = StringIO.StringIO()
@@ -270,9 +272,9 @@ def find_index_of_discontinuity_in_derivative(error_curve_func, list_of_projecti
 	for p_i in list_of_projection_indices: which_projections.write("_" + "%03d"%p_i)
 	for p_i in list_of_projection_indices: which_projections.write("___" + "%03d"%get_already_processed_viper_runs.r_permutation[p_i])
 
-	plt.title(mainoutputdir + '/optimized_errors' + which_projections.getvalue() + '.png')
-	plt.savefig(mainoutputdir + '/optimized_errors' + which_projections.getvalue() + '.png')
-	plt.close()
+###	plt.title(mainoutputdir + '/optimized_errors' + which_projections.getvalue() + '.png')
+###	plt.savefig(mainoutputdir + '/optimized_errors' + which_projections.getvalue() + '.png')
+###	plt.close()
 
 	if optimized_split_point < 0:
 		return -1
