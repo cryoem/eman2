@@ -8,6 +8,7 @@
 #  10/28/2016 - Polar
 #  11/18/2016 change in strategy
 #  04/10/2017 - Enabled for one node
+#  04/18/2017 - Introduce symclass to handle angles in a unified manner
 
 
 """
@@ -289,7 +290,7 @@ def params_changes( params, oldparams ):
 	#  The shifter is given in the full scale displacement
 	for i in xrange(n):
 		shifter += (params[i][3] - oldparams[i][3] )**2 + (params[i][4] - oldparams[i][4] )**2
-		anger += get_anger(params[i][0:3], oldparams[i][0:3],Tracker["constants"]["symmetry"])
+		anger += get_anger(params[i][0:3], oldparams[i][0:3])  # Symmetry is in Blockdata
 
 	return round(anger/n,5), round(sqrt(shifter/2/n),5)
 
@@ -446,71 +447,41 @@ def assign_particles_to_groups(minimum_group_size = 10):
 
 #  CONES support functions
 
-def number_of_cones_to_delta(number_of_cones, symmetry):
+def number_of_cones_to_delta(number_of_cones):
 
-	if( not (symmetry[0] == "c" or symmetry[0] == "d" or symmetry == "oct" ) ):
-		print( " Unsuported symmetry")
-		return -1, 0
-	if( number_of_cones == 1):
-		if(symmetry[0] == "c" ):  return 181.0, 1
-		elif(symmetry[0] == "d"):  return 91.0, 1
+	if( number_of_cones == 1):  return Blockdata["symclass"][1][3] + 0.5, 1
 	else:
-		if(symmetry[0] == "c"):
-			sym = symmetry
+		if( Blockdata["symclass"].sym[0] == "c"):
 			t2 = 89.0
 			for i in xrange(92,0,-1):
-				a = even_angles(i, symmetry=sym, theta1=1.0, theta2=t2, method="S", phiEqpsi="Zero")
+				a = Blockdata["symclass"].even_angles(i, theta1=1.0, theta2=t2)
 				a += [[(q[0]+90.0)%360., 180.-q[1],0] for q in a]
 				nren = len(a)
 				if(nren>number_of_cones): return float(i), nren
 			while(True):
 				i /= 2.0
-				a = even_angles(i, symmetry=sym, theta1=1.0, theta2=t2, method="S", phiEqpsi="Zero")
+				a = Blockdata["symclass"].even_angles(i, theta1=1.0, theta2=t2)
 				a += [[(q[0]+90.0)%360., 180.-q[1],0] for q in a]
-				nren = len(a)
-				if(nren>number_of_cones): return float(i), nren
-				
-		elif(symmetry[0] == "d"):
-			sym = "c"+symmetry[1:]
-			t2 = 90.01
-			for i in xrange(92,0,-1):
-				a = even_angles(i, symmetry=sym, theta1=1.0, theta2=t2, method="S", phiEqpsi="Zero")
-				nren = len(a)
-				if(nren>number_of_cones): return float(i), nren
-			while(True):
-				i /= 2.0
-				a = even_angles(i, symmetry=sym, theta1=1.0, theta2=t2, method="S", phiEqpsi="Zero")
 				nren = len(a)
 				if(nren>number_of_cones): return float(i), nren
 
-		elif(symmetry == "oct"):
-			sym = symmetry
-			for i in xrange(92,0,-1):
-				a = Blockdata["parsesym"].gen_orientations("saff",{"delta":float(i),"inc_mirror":1})
-				del a[0]
-				for i,q in enumerate(a):
-					q = q.get_params("spider")
-					a[i] = [q["phi"], q["theta"], 0.0]
-				nren = len(a)
+		else:
+			#t2 = Blockdata["symclass"].brackets[1][3] + 0.5
+			for i in xrange(int(t2+1),0,-1):
+				nren = len(Blockdata["symclass"].even_angles(i, theta1=1.0))
 				if(nren>number_of_cones): return float(i), nren
 			while(True):
 				i /= 2.0
-				a = Blockdata["parsesym"].gen_orientations("saff",{"delta":float(i),"inc_mirror":1})
-				del a[0]
-				for i,q in enumerate(a):
-					q = q.get_params("spider")
-					a[i] = [q["phi"], q["theta"], 0.0]
-				nren = len(a)
+				nren = len(Blockdata["symclass"].even_angles(i, theta1=1.0))
 				if(nren>number_of_cones): return float(i), nren
 
 		ERROR(  "number_of_cones_to_delta","should not be here",0)
 		return -1, 0
 
-def find_assignments_of_refangles_to_angles(normals_set, ancor_angle, an, sym):
+def find_assignments_of_refangles_to_angles(normals_set, ancor_angle, an):
 	#  returns list of angles within normals_set that are within an angles from ancor_angle
 	global  Blockdata
-	if( sym[:1] == "c"):	toptheta = 180.0
-	elif( sym[:1] == "d" or sym == "oct"):	toptheta = 90.0
+
 	nang1 = len(normals_set) - 1
 	Blockdata["target_theta"] = ancor_angle[1]
 	u1,u2 = goldsearch(auxiliary_funcdef, 0, nang1, tol=1.0e-2)
@@ -521,29 +492,27 @@ def find_assignments_of_refangles_to_angles(normals_set, ancor_angle, an, sym):
 	u3 = int(u3+0.5)
 	if(u3<10):  u3 = 0
 
-	Blockdata["target_theta"] = min(toptheta, ancor_angle[1] + 1.2*an )
+	Blockdata["target_theta"] = min(Blockdata["symclass"].brackets[1][3], ancor_angle[1] + 1.2*an )
 	u5,u6 = goldsearch(auxiliary_funcdef, 0, nang1, tol=1.0e-2)
 	u5 = int(u5+0.5)
 	if(u5>nang1-10):  u5 = nang1+1
-	if( sym == "oct" ):  ancordir = symmetry_related_normals(ancor_angle, sym)
-	else:  ancordir = angles_to_normals(symmetry_neighbors([ancor_angle[:3]], sym))
+
+	ancordir = angles_to_normals(Blockdata["symclass"].symmetry_neighbors([ancor_angle[:3]]))
 	ltemp = Util.cone_dirs_f( normals_set[u3:u5], ancordir, an )
 	###ltemp = cone_dirs_f( normals_set[u3:u5], ancordir, an )#Util.cone_dirs_f( normals_set[u3:u5], ancordir, an )
 	#print(" us ",Blockdata["myid"],u1,u3,u5,m,"  ltemp ",ltemp)
 	return  [qtemp+u3 for qtemp in ltemp]
 
-def find_nearest_k_refangles_to_many_angles(normals_set, angles, delta, howmany, sym = "c1"):
+def find_nearest_k_refangles_to_many_angles(normals_set, angles, delta, howmany):
 	assignments = [-1]*len(angles)
 	for i,ancor_angle in enumerate(angles):
-		assignments[i] = find_nearest_k_refangles_to_angles(normals_set, ancor_angle, delta, howmany, sym = sym)
+		assignments[i] = find_nearest_k_refangles_to_angles(normals_set, ancor_angle, delta, howmany)
 	return assignments
 
-def find_nearest_k_refangles_to_angles(normals_set, ancor_angle, delta, howmany, sym = "c1"):
+def find_nearest_k_refangles_to_angles(normals_set, ancor_angle, delta, howmany):
 	#  returns list of angles within normals_set that are within an angles from ancor_angle
 	global  Blockdata
 	nang1 = len(normals_set) - 1
-	if( sym[:1] == "c"):	toptheta = 180.0
-	elif( sym[:1] == "d" or sym == "oct"):	toptheta = 90.0
 	qtl = 0
 	bigger = 1.0
 	while( qtl < howmany ):
@@ -557,7 +526,7 @@ def find_nearest_k_refangles_to_angles(normals_set, ancor_angle, delta, howmany,
 		u3 = int(u3+0.5)
 		if(u3<10):  u3 = 0
 
-		Blockdata["target_theta"] = min(toptheta, ancor_angle[1] + 1.1*an )
+		Blockdata["target_theta"] = min(Blockdata["symclass"].brackets[1][3], ancor_angle[1] + 1.1*an )
 		u5,u6 = goldsearch(auxiliary_funcdef, 0, nang1, tol=1.0e-2)
 		u5 = int(u5+0.5)
 		if(u5>nang1-10):  u5 = nang1+1
@@ -567,18 +536,12 @@ def find_nearest_k_refangles_to_angles(normals_set, ancor_angle, delta, howmany,
 	#ancordir = angles_to_normals(symmetry_neighbors([ancor_angle[:3]], "c1"))
 	#ltemp = Util.cone_dirs_f( normals_set[u3:u5], ancordir, an )
 	###print " us ", an, ancor_angle[:2],len(normals_set[u3:u5])," u1 ",u1,Blockdata["angle_set"][u1][:2]," u3 ",u3,Blockdata["angle_set"][u3][:2]," u5 ",u5,Blockdata["angle_set"][u5][:2]#,"  ltemp ",ltemp
-	if( sym == "c1"):
+	if( Blockdata["symclass"].sym == "c1"):
 		ancordir = getfvec(ancor_angle[0],ancor_angle[1])
 		ltemp = Util.nearest_fang_select(normals_set[u3:u5], ancordir[0], ancordir[1], ancordir[2], howmany)
-	elif( sym[:1] == "c" or  sym[:1] == "d" ):
-		ancordir = angles_to_normals(symmetry_neighbors([ancor_angle], sym))
-		ltemp = Util.nearest_fang_sym(ancordir, normals_set[u3:u5], len(ancordir), howmany)
-	elif( sym == "oct" ):
-		ancordir = symmetry_related_normals(ancor_angle, sym)
-		ltemp = Util.nearest_fang_sym(ancordir, normals_set[u3:u5], len(ancordir), howmany)
 	else:
-		ERROR("  ERROR:  symmetry not supported  "+sym,"nearest_many_full_k_projangles",1)
-		return []
+		ancordir = angles_to_normals(Blockdata["symclass"].symmetry_neighbors([ancor_angle]))
+		ltemp = Util.nearest_fang_sym(ancordir, normals_set[u3:u5], len(ancordir), howmany)
 	return  [qtemp+u3 for qtemp in ltemp]
 
 def auxiliary_funcdef(xxx):
@@ -944,20 +907,19 @@ def subdict(d,u):
 	# substitute values in dictionary d by those given by dictionary u
 	for q in u:  d[q] = u[q]
 
-def get_anger(angle1, angle2, sym="c1"):
-	from math import acos, pi, degrees
-	R1 = Transform({"type":"spider","phi": angle1[0], "theta": angle1[1], "psi": angle1[2]})
-	R2 = Transform({"type":"spider","phi": angle2[0], "theta": angle2[1], "psi": angle2[2]})
-	R2 = R2.get_sym_proj(sym)
-	A1 = R1.get_matrix()
-	axes_dis_min     = 1.0e23
-	for isym in xrange(len(R2)):
-		A2 		     = R2[isym].get_matrix()
-		X1           = A1[0]*A2[0] + A1[1]*A2[1] + A1[2]*A2[2] 
-		X2           = A1[4]*A2[4] + A1[5]*A2[5] + A1[6]*A2[6]
-		X3           = A1[8]*A2[8] + A1[9]*A2[9] + A1[10]*A2[10] 
-		axes_dis     = (lacos(X1)+lacos(X2)+lacos(X3))/3.0
-		axes_dis_min = min(axes_dis_min, axes_dis)
+def get_anger(angle1, angle2):
+	from math import acos, degrees
+	from utilities import lacos
+	from fundamentals import rotmatrix
+	A1 = rotmatrix(angle1[0],angle1[1],angle1[2])
+	ar = Blockdata["symclass"].symmetry_related(angle2)
+	axes_dis_min = 1.0e23
+	for q in ar:
+		A2 = rotmatrix(q[0],q[1],q[2])
+		axes_dis = 0.0
+		for i in xrange(3):
+			axes_dis += lacos(A1[i][0]*A2[i][0] + A1[i][1]*A2[i][1] + A1[i][2]*A2[i][2])
+		axes_dis_min = min(axes_dis_min, axes_dis/3.0)
 	return axes_dis_min
 
 def checkstep(item, keepchecking):
@@ -987,35 +949,10 @@ def out_fsc(f):
 
 def get_refangs_and_shifts():
 	global Tracker, Blockdata
-	def set_psi_to_zero(tut):
-		for i,q in enumerate(tut):
-			q = q.get_params("spider")
-			tut[i] = Transform({"type":"spider","phi":q["phi"], "theta":q["theta"]})
 
-	if(Tracker["constants"]["symmetry"][:1] == "c"):
-		refang = even_angles(Tracker["delta"], symmetry=Tracker["constants"]["symmetry"], theta2=180.0, method='S', phiEqpsi="Zero")
-		coarse = even_angles(Tracker["delta"]*2, symmetry=Tracker["constants"]["symmetry"], theta2=180.0, method='S', phiEqpsi="Zero")
-		refang = reduce_to_asymmetric_list(rotate_params(refang, [-0.5*Tracker["delta"], -0.5*Tracker["delta"], -0.5*Tracker["delta"]]), Tracker["constants"]["symmetry"])
-	elif(Tracker["constants"]["symmetry"][:1] == "d"):
-		refang = even_angles(Tracker["delta"], symmetry= ("c"+Tracker["constants"]["symmetry"][1:]), theta2=90.0+0.01*Tracker["delta"], method='S', phiEqpsi="Zero")
-		coarse = even_angles(Tracker["delta"]*2, symmetry= ("c"+Tracker["constants"]["symmetry"][1:]), theta2=90.0+0.01*Tracker["delta"]*2, method='S', phiEqpsi="Zero")
-		refang = reduce_to_asymmetric_list(rotate_params(refang, [-0.5*Tracker["delta"], -0.5*Tracker["delta"], -0.5*Tracker["delta"]]), Tracker["constants"]["symmetry"])
-	elif(Tracker["constants"]["symmetry"] == "oct"):
-		Blockdata["t_refang"] = Blockdata["parsesym"].gen_orientations("saff",{"delta":Tracker["delta"],"inc_mirror":1})
-		set_psi_to_zero(Blockdata["t_refang"])
-		Blockdata["t_coarse"] = Blockdata["parsesym"].gen_orientations("saff",{"delta":2*Tracker["delta"],"inc_mirror":1})
-		set_psi_to_zero(Blockdata["t_coarse"])
-		rota = Transform({"type":"spider","phi":0.5*Tracker["delta"], "theta":0.5*Tracker["delta"],"psi":0.5*Tracker["delta"]}) # note different sign than above
-		refang = [None]*len(Blockdata["t_refang"])
-		for i,q in enumerate(Blockdata["t_refang"]):
-			Blockdata["t_refang"][i] = Blockdata["parsesym"].reduce(q*rota, 0)
-			d = Blockdata["t_refang"][i].get_params("spider")
-			refang[i] = [d["phi"],d["theta"],d["psi"]]
-		coarse = [None]*len(Blockdata["t_coarse"])
-		for i in xrange(len(coarse)):
-			d = Blockdata["t_coarse"][i].get_params("spider")
-			coarse[i] = [d["phi"],d["theta"],d["psi"]]
-
+	refang = Blockdata["symclass"].even_angles(Tracker["delta"])
+	coarse = Blockdata["symclass"].even_angles(2*Tracker["delta"])
+	refang = Blockdata["symclass"].reduce_anglesets( rotate_params(refang, [-0.5*Tracker["delta"], -0.5*Tracker["delta"], -0.5*Tracker["delta"]]) )
 
 	"""
 	if(Tracker["delta"] == 15.0):  refang = read_text_row("refang15.txt")
@@ -1089,27 +1026,6 @@ def get_shifts_neighbors(rshifts, cs):
 	for l,q in enumerate(rshifts):
 		if(get_dist(q, cs) <= rad): shiftneighbors.append(l)
 	return 	shiftneighbors
-
-# shake functions
-
-def shakerefangles(refangles1, refangles2, rangle, sym):
-	global Tracker, Blockdata
-	if(	sym[0] == "c" or sym[0] == "d" ):
-		from utilities import reduce_to_asymmetric_list
-		return reduce_to_asymmetric_list(rotate_params(refangles1, [-rangle,-rangle,-rangle]), sym),\
-			reduce_to_asymmetric_list(rotate_params(refangles2, [-rangle,-rangle,-rangle]), sym)
-	elif( sym == "oct"):
-		rota = Transform({"type":"spider","phi":rangle, "theta":rangle,"psi":rangle}) # note different sign than above
-		for i,q in enumerate(Blockdata["t_refang"]):
-			Blockdata["t_refang"][i] = Blockdata["parsesym"].reduce(q*rota, 0)
-			d = Blockdata["t_refang"][i].get_params("spider")
-			refangles1[i] = [d["phi"],d["theta"],d["psi"]]
-		for i,q in enumerate(Blockdata["t_coarse"]):
-			Blockdata["t_coarse"][i] = Blockdata["parsesym"].reduce(q*rota, 0)
-			d = Blockdata["t_coarse"][i].get_params("spider")
-			refangles2[i] = [d["phi"],d["theta"],d["psi"]]
-		return  refangles1, refangles2
-	else:  ERROR("Incorrect symmetry","shakerefangles",1,Blockdata["myid"])
 
 def shakegrid(rshifts, qt):
 	for i in xrange(len(rshifts)):
@@ -1207,50 +1123,72 @@ def do3d_final_mpi(final_iter):
 	if Blockdata["myid"] == Blockdata["main_node"]: print(line, "do3d_final")
 	if Tracker["directory"] !=Tracker["constants"]["masterdir"]: Tracker["directory"] = Tracker["constants"]["masterdir"]
 	carryon = 1
-	if(Blockdata["myid"] == Blockdata["main_shared_nodes"][1]):
-		# post-insertion operations, done only in main_node		
-		tvol0 		= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir", "tvol_0_%03d.hdf"%Tracker["mainiteration"])))
-		tweight0 	= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir","tweight_0_%03d.hdf"%Tracker["mainiteration"])))
-		tvol1 		= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir", "tvol_1_%03d.hdf"%Tracker["mainiteration"])))
-		tweight1 	= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir","tweight_1_%03d.hdf"%Tracker["mainiteration"])))
-		Util.fuse_low_freq(tvol0, tvol1, tweight0, tweight1, 2*Tracker["constants"]["fuse_freq"])
-	mpi_barrier(MPI_COMM_WORLD)
-		
-	if(Blockdata["myid"] == Blockdata["main_shared_nodes"][1]):
-		tag = 7007
-		send_EMData(tvol1, Blockdata["main_shared_nodes"][0], tag, MPI_COMM_WORLD)
-		send_EMData(tweight1, Blockdata["main_shared_nodes"][0], tag, MPI_COMM_WORLD)
-	elif(Blockdata["myid"] == Blockdata["main_shared_nodes"][0]):
-		tag = 7007
-		tvol1    	= recv_EMData(Blockdata["main_shared_nodes"][1], tag, MPI_COMM_WORLD)
-		tweight1    = recv_EMData(Blockdata["main_shared_nodes"][1], tag, MPI_COMM_WORLD)
-		tvol1.set_attr_dict( {"is_complex":1, "is_fftodd":1, 'is_complex_ri': 1, 'is_fftpad': 1} )
-	mpi_barrier(MPI_COMM_WORLD)
-	# do steptwo
-	if( Blockdata["color"] == Blockdata["node_volume"][1]):
-		if( Blockdata["myid_on_node"] == 0 ):
-			treg0 = get_im(os.path.join(Tracker["directory"], "tempdir", "trol_0_%03d.hdf"%(Tracker["mainiteration"])))
-		else:
-			tvol0 		= model_blank(1)
-			tweight0 	= model_blank(1)
-			treg0 		= model_blank(1)
-		tvol0 = steptwo_mpi(tvol0, tweight0, treg0, None,False , color = Blockdata["node_volume"][1])
-		del tweight0, treg0
-		if( Blockdata["myid_on_node"] == 0 ):
-			tvol0.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_0_unfil.hdf"))
-	elif( Blockdata["color"] == Blockdata["node_volume"][0]):
-		#--  #--  memory_check(Blockdata["myid"],"second node, before steptwo")
-		#  compute filtered volume
-		if( Blockdata["myid_on_node"] == 0 ):
-			treg1 = get_im(os.path.join(Tracker["directory"], "tempdir", "trol_1_%03d.hdf"%(Tracker["mainiteration"])))
-		else:
-			tvol1 		= model_blank(1)
-			tweight1 	= model_blank(1)
-			treg1 		= model_blank(1)
-		tvol1 = steptwo_mpi(tvol1, tweight1, treg1, None, False,  color = Blockdata["node_volume"][0])
-		del tweight1, treg1
-		if( Blockdata["myid_on_node"] == 0 ):
-			tvol1.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_1_unfil.hdf"))
+	if(Blockdata["no_of_groups"] >1):
+		if(Blockdata["myid"] == Blockdata["main_shared_nodes"][1]):
+			# post-insertion operations, done only in main_node		
+			tvol0 		= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir", "tvol_0_%03d.hdf"%Tracker["mainiteration"])))
+			tweight0 	= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir","tweight_0_%03d.hdf"%Tracker["mainiteration"])))
+			tvol1 		= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir", "tvol_1_%03d.hdf"%Tracker["mainiteration"])))
+			tweight1 	= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir","tweight_1_%03d.hdf"%Tracker["mainiteration"])))
+			Util.fuse_low_freq(tvol0, tvol1, tweight0, tweight1, 2*Tracker["constants"]["fuse_freq"])
+		mpi_barrier(MPI_COMM_WORLD)
+		if(Blockdata["myid"] == Blockdata["main_shared_nodes"][1]):
+			tag = 7007
+			send_EMData(tvol1, Blockdata["main_shared_nodes"][0], tag, MPI_COMM_WORLD)
+			send_EMData(tweight1, Blockdata["main_shared_nodes"][0], tag, MPI_COMM_WORLD)
+			tvol0.set_attr_dict( {"is_complex":1, "is_fftodd":1, 'is_complex_ri': 1, 'is_fftpad': 1})
+		elif(Blockdata["myid"] == Blockdata["main_shared_nodes"][0]):
+			tag = 7007
+			tvol1    	= recv_EMData(Blockdata["main_shared_nodes"][1], tag, MPI_COMM_WORLD)
+			tweight1    = recv_EMData(Blockdata["main_shared_nodes"][1], tag, MPI_COMM_WORLD)
+			tvol1.set_attr_dict( {"is_complex":1, "is_fftodd":1, 'is_complex_ri': 1, 'is_fftpad': 1})
+		mpi_barrier(MPI_COMM_WORLD)
+		if( Blockdata["color"] == Blockdata["node_volume"][1]):
+			if( Blockdata["myid"] == Blockdata["main_shared_nodes"][1] ):
+				treg0 = get_im(os.path.join(Tracker["directory"], "tempdir", "trol_0_%03d.hdf"%(Tracker["mainiteration"])))
+			else:
+				tvol0 		= model_blank(1)
+				tweight0 	= model_blank(1)
+				treg0 		= model_blank(1)
+			tvol0 = steptwo_mpi(tvol0, tweight0, treg0, None, False , color = Blockdata["node_volume"][1])
+			del tweight0, treg0
+			if( Blockdata["myid_on_node"] == 0):
+				tvol0.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_0_unfil.hdf"))	
+		elif( Blockdata["color"] == Blockdata["node_volume"][0]):
+			if( Blockdata["myid"] == Blockdata["main_shared_nodes"][0]):
+				treg1 = get_im(os.path.join(Tracker["directory"], "tempdir", "trol_1_%03d.hdf"%(Tracker["mainiteration"])))
+			else:
+				tvol1 		= model_blank(1)
+				tweight1 	= model_blank(1)
+				treg1 		= model_blank(1)
+			tvol1 = steptwo_mpi(tvol1, tweight1, treg1, None, False , color = Blockdata["node_volume"][0])
+			del tweight1, treg1
+			if( Blockdata["myid_on_node"] == 0):
+				tvol1.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_1_unfil.hdf"))
+			mpi_barrier(MPI_COMM_WORLD)
+	else:
+		for iproc in xrange(2):
+			if(Blockdata["myid_on_node"] == 0):
+				tvol0 		= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir", "tvol_0_%03d.hdf"%(Tracker["mainiteration"]))))
+				tweight0 	= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir","tweight_0_%03d.hdf"%(Tracker["mainiteration"]))))
+				tvol1 		= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir", "tvol_1_%03d.hdf"%(Tracker["mainiteration"]))))
+				tweight1 	= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir","tweight_1_%03d.hdf"%(Tracker["mainiteration"]))))
+				Util.fuse_low_freq(tvol0, tvol1, tweight0, tweight1, 2*Tracker["constants"]["fuse_freq"])
+				treg  = get_im(os.path.join(Tracker["directory"], "tempdir", "trol_%d_%03d.hdf"%((iproc, Tracker["mainiteration"]))))
+			else:
+				treg	    = model_blank(1)
+				if iproc ==0:
+					tvol0 		= model_blank(1)
+					tweight0 	= model_blank(1)
+				else:
+					tvol1 		= model_blank(1)
+					tweight1 	= model_blank(1)
+			if iproc ==0 : tvol0 = steptwo_mpi(tvol0, tweight0, treg, None, False , color = Blockdata["node_volume"][0])
+			else: tvol1 = steptwo_mpi(tvol1, tweight1, treg, None, False , color = Blockdata["node_volume"][0])
+			if( Blockdata["myid_on_node"] == 0):
+				if iproc ==0: tvol0.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_%d_unfil.hdf"%iproc))
+				else: tvol1.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_%d_unfil.hdf"%iproc))
+			mpi_barrier(MPI_COMM_WORLD)
 	mpi_barrier(MPI_COMM_WORLD) #  
 	return
 
@@ -2026,8 +1964,7 @@ def XXali3D_direct_ccc(data, refang, shifts, coarse_angles, coarse_shifts, ctfs 
 	opar = []
 	Blockdata["angle_set"] = refang
 	#  Extract normals from rotation matrices
-	if( Tracker["constants"]["symmetry"] == "oct" ):  refdirs = [q.get_matrix()[8:11] for q in Blockdata["t_refang"]]
-	else:  refdirs = angles_to_normals(refang)
+	refdirs = angles_to_normals(refang)
 
 	for kl,emimage in enumerate(data):
 		hashparams = newpar[kl][2][0][0]
@@ -2036,7 +1973,7 @@ def XXali3D_direct_ccc(data, refang, shifts, coarse_angles, coarse_shifts, ctfs 
 		ipsi = ipsiandiang%100000
 		ishift = hashparams%1000
 		tshifts = get_shifts_neighbors(shifts, coarse_shifts[ishift])
-		ltabang = find_nearest_k_refangles_to_many_angles(refdirs, [coarse_angles[oldiang]], Tracker["delta"], howmany = 4, sym = Tracker["constants"]["symmetry"])
+		ltabang = find_nearest_k_refangles_to_many_angles(refdirs, [coarse_angles[oldiang]], Tracker["delta"], howmany = 4)
 		opar.append([coarse_angles[oldiang][0],coarse_angles[oldiang][1],(coarse_angles[oldiang][2]+ipsi*coarse_delta)%360.0 , coarse_shifts[ishift][0],coarse_shifts[ishift][1]])
 		for i2 in xrange(4):
 			iang = ltabang[0][i2]
@@ -2319,8 +2256,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 	#  This is for auxiliary function searches.
 	Blockdata["angle_set"] = refang
 	#  Extract normals from rotation matrices
-	if( Tracker["constants"]["symmetry"] == "oct" ):  refdirs = [q.get_matrix()[8:11] for q in Blockdata["t_refang"]]
-	else:  refdirs = angles_to_normals(refang)
+	refdirs = angles_to_normals(refang)
 
 	#if( Blockdata["myid"] == Blockdata["main_node"]):
 	#	print("  FIRST  nima, nang, npsi, nshift, n_coarse_ang, n_coarse_psi, len(list_of_coarse_shifts), lxod1 ",nima, nang,npsi,nshifts, n_coarse_ang,n_coarse_psi, len(coarse_shifts), lxod1)
@@ -2557,7 +2493,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 		#exit()
 
 		# Find neighbors, ltabang contains positions on refang list, no psis
-		ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = 4, sym = Tracker["constants"]["symmetry"])
+		ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = 4)
 
 		# ltabang has length lit, which is the same as length as firshifts.  However, original xod2 is still available,
 		#   even though it is longer than lit.
@@ -3024,8 +2960,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 	#  This is for auxiliary function searches.
 	Blockdata["angle_set"] = refang
 	#  Extract normals from rotation matrices
-	if( Tracker["constants"]["symmetry"] == "oct" ):  refdirs = [q.get_matrix()[8:11] for q in Blockdata["t_refang"]]
-	else:  refdirs = angles_to_normals(refang)
+	refdirs = angles_to_normals(refang)
 
 	#if( Blockdata["myid"] == Blockdata["main_node"]):
 	#	print("  FIRST  nima, nang, npsi, nshift, n_coarse_ang, n_coarse_psi, len(list_of_coarse_shifts), lxod1 ",nima, nang,npsi,nshifts, n_coarse_ang,n_coarse_psi, len(coarse_shifts), lxod1)
@@ -3254,7 +3189,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 			firstshifts[iln] = ishift
 
 		# Find neighbors, ltabang contains positions on refang list, no psis
-		ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = 4, sym = Tracker["constants"]["symmetry"])
+		ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = 4)
 
 		# ltabang has length lit, which is the same as length as firshifts.  However, original xod2 is still available,
 		#   even though it is longer than lit.
@@ -3719,8 +3654,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 	#  This is for auxiliary function searches.
 	Blockdata["angle_set"] = refang
 	#  Extract normals from rotation matrices
-	if( Tracker["constants"]["symmetry"] == "oct" ):  refdirs = [q.get_matrix()[8:11] for q in Blockdata["t_refang"]]
-	else:  refdirs = angles_to_normals(refang)
+	refdirs = angles_to_normals(refang)
 
 	#if( Blockdata["myid"] == Blockdata["main_node"]):
 	#	print("  FIRST  nima, nang, npsi, nshift, n_coarse_ang, n_coarse_psi, len(list_of_coarse_shifts), lxod1 ",nima, nang,npsi,nshifts, n_coarse_ang,n_coarse_psi, len(coarse_shifts), lxod1)
@@ -3952,7 +3886,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 		#exit()
 
 		# Find neighbors, ltabang contains positions on refang list, no psis
-		ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = 4, sym = Tracker["constants"]["symmetry"])
+		ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = 4)
 
 		# ltabang has length lit, which is the same as length as firshifts.  However, original xod2 is still available,
 		#   even though it is longer than lit.
@@ -4329,8 +4263,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 	numberofrefs_inmem = int(Tracker["constants"]["memory_per_node"]/4/((size_of_one_image*disp_unit)/1.0e9))
 	####if( Blockdata["myid_on_node"] == 0  ):  print( " MEMEST ", n_coarse_ang,numberofrefs_inmem)
 	#  number of references that will fit into one mode
-	if( Tracker["constants"]["symmetry"] == "oct" ):  normals_set = [q.get_matrix()[8:11] for q in Blockdata["t_coarse"]]
-	else:	normals_set = angles_to_normals(coarse_angles)
+	normals_set = angles_to_normals(coarse_angles)
 	Blockdata["angle_set"] = coarse_angles
 	if( n_coarse_ang <= numberofrefs_inmem ):
 		number_of_cones = 1
@@ -4347,7 +4280,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 			for m in q:
 				#print " m ",m,len(angles)
 
-				assignments_of_refangles_to_angles[m] = find_assignments_of_refangles_to_angles(normals_set, oldparams[m], Tracker["an"], Tracker["constants"]["symmetry"])
+				assignments_of_refangles_to_angles[m] = find_assignments_of_refangles_to_angles(normals_set, oldparams[m], Tracker["an"])
 				assignments_of_refangles_to_cones[i].extend(assignments_of_refangles_to_angles[m])
 
 			assignments_of_refangles_to_cones[i] = list(set(assignments_of_refangles_to_cones[i]))
@@ -4371,48 +4304,32 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 		cont = True
 		while  cont :
 			#  Translate number of cones to cone_delta
-			cone_delta, number_of_cones = number_of_cones_to_delta(number_of_cones, Tracker["constants"]["symmetry"])
+			cone_delta, number_of_cones = number_of_cones_to_delta(number_of_cones)
 			#  Generate cone_angles
 			##if Blockdata["myid"] == 0:  print( "  WHILE  ",number_of_cones, cone_delta)
-			if(Tracker["constants"]["symmetry"][0] == "c"):
+			if(Blockdata["symclass"].sym[0] == "c"):
 				if( number_of_cones == 1 ):
 					cone_delta  = 180.1
 					cone_angles = [[0., 1.0, 0.]]
 				else:
-					cone_angles = even_angles(cone_delta, symmetry=Tracker["constants"]["symmetry"], theta1 = 1.0, theta2=89.0, method="S", phiEqpsi="Zero")
+					cone_angles = Blockdata["symclass"].even_angles(cone_delta, theta1=1.0, theta2=89.0)
 					cone_angles += [[(q[0]+90.0)%360., 180.-q[1],0] for q in cone_angles]
-					cone_angles = reduce_to_asymmetric_list(cone_angles, Tracker["constants"]["symmetry"])
-			elif(Tracker["constants"]["symmetry"][0] == "d"):
-				cone_angles = even_angles(cone_delta, symmetry= ("c"+Tracker["constants"]["symmetry"][1:]), theta2=90.01, method="S", phiEqpsi="Zero")
-			elif(Tracker["constants"]["symmetry"] == "oct"):
-				t_cone_angles = Blockdata["parsesym"].gen_orientations("saff",{"delta":cone_delta,"inc_mirror":1})
-				del t_cone_angles[0]
-				cone_angles = [None]*len(t_cone_angles)
-				conedirs = []
-				for i,q in enumerate(t_cone_angles):
-					u = q.get_sym_proj(Tracker["constants"]["symmetry"])
-					for p in u:
-						conedirs.append(p.get_matrix()[8:11])
-					q = q.get_params("spider")
-					cone_angles[i] = [q["phi"], q["theta"], 0.0]
-				assert(number_of_cones == len(cone_angles) )
-				neighbors = len(conedirs)/len(cone_angles)  #  Symmetry related neighbors
-				assignments_to_cones = assign_projdirs_f(angledirs, conedirs, neighbors)
-				del conedirs
-				
-			if(Tracker["constants"]["symmetry"][0] == "c" or Tracker["constants"]["symmetry"][0] == "d"):
-				#if Blockdata["myid"] == 0:  print(  "  number of cones ",number_of_cones,cone_delta, len(cone_angles))
-				assert(number_of_cones == len(cone_angles) )
+					cone_angles = Blockdata["symclass"].reduce_anglesets(cone_angles)
+			else:
+				cone_angles = Blockdata["symclass"].even_angles(cone_delta, theta1=1.0)
 
-				conedirs = angles_to_normals(symmetry_neighbors(cone_angles, Tracker["constants"]["symmetry"]))
-				neighbors = len(conedirs)/len(cone_angles)  #  Symmetry related neighbors
-				#if Blockdata["myid"] == 0:  print(  "  neighbors  ",Blockdata["myid"],neighbors, cone_angles)
-				#  assign data directions to cone_angles
-				assignments_to_cones = assign_projdirs_f(angledirs, conedirs, neighbors)
-				###print(  " assignments_to_cones ",Blockdata["myid"],len(assignments_to_cones),[len(q) for q in assignments_to_cones],assignments_to_cones[0])
-				#  the above should have length of refdirs and each should have indexes of data that belong to this cone
-				del conedirs
-				#print "assignments_to_cones ",assignments_to_cones
+			#if Blockdata["myid"] == 0:  print(  "  number of cones ",number_of_cones,cone_delta, len(cone_angles))
+			assert(number_of_cones == len(cone_angles) )
+
+			conedirs = angles_to_normals(Blockdata["symclass"].symmetry_neighbors(cone_angles))
+			neighbors = len(conedirs)/len(cone_angles)  #  Symmetry related neighbors
+			#if Blockdata["myid"] == 0:  print(  "  neighbors  ",Blockdata["myid"],neighbors, cone_angles)
+			#  assign data directions to cone_angles
+			assignments_to_cones = assign_projdirs_f(angledirs, conedirs, neighbors)
+			###print(  " assignments_to_cones ",Blockdata["myid"],len(assignments_to_cones),[len(q) for q in assignments_to_cones],assignments_to_cones[0])
+			#  the above should have length of refdirs and each should have indexes of data that belong to this cone
+			del conedirs
+			#print "assignments_to_cones ",assignments_to_cones
 			#  For each cone we have to find which refangles are needed to do the matching
 			assignments_of_refangles_to_cones = [[] for i in xrange(len(assignments_to_cones))]
 			assignments_of_refangles_to_angles = [[] for i in xrange(nima)]  # for each myid separately, these are angles on this myid
@@ -4429,7 +4346,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 					for m in q:
 						#print " m ",m,len(angles)
 
-						assignments_of_refangles_to_angles[m] = find_assignments_of_refangles_to_angles(normals_set, oldparams[m], Tracker["an"], Tracker["constants"]["symmetry"])
+						assignments_of_refangles_to_angles[m] = find_assignments_of_refangles_to_angles(normals_set, oldparams[m], Tracker["an"])
 						#if Blockdata["myid"] == 0:  print( "assignments_of_refangles_to_angles[m] ", Blockdata["color"],i,m,assignments_of_refangles_to_angles[m])
 						assignments_of_refangles_to_cones[i].extend(assignments_of_refangles_to_angles[m])
 
@@ -4524,8 +4441,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 	#  This is for auxiliary function searches.
 	Blockdata["angle_set"] = refang
 	#  Extract normals from rotation matrices
-	if( Tracker["constants"]["symmetry"] == "oct" ):  refdirs = [q.get_matrix()[8:11] for q in Blockdata["t_refang"]]
-	else:  refdirs = angles_to_normals(refang)
+	refdirs = angles_to_normals(refang)
 
 
 	#  We have to make sure the number of cones is the same on all nodes, this is due to the strange MPI problem
@@ -4890,7 +4806,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 					#if(Blockdata["myid"] == Blockdata["main_node"]):  print("  GUGU ",firstshifts)
 					# Find neighbors, ltabang contains positions on refang list, no psis
 					###ltabang = nearest_many_full_k_projangles(refang, firstdirections, howmany = 5, sym=Tracker["constants"]["symmetry"])
-					ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = 4, sym = Tracker["constants"]["symmetry"])
+					ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = 4)
 					###if( Blockdata["myid"] == Blockdata["main_node"]): print("  ltabang ",ltabang)
 					##mpi_barrier(MPI_COMM_WORLD)
 					##mpi_finalize()
@@ -5586,9 +5502,9 @@ def do_ctrefromsort3d_get_subset_data(masterdir, option_old_refinement_dir, opti
 	if Blockdata["myid"] == Blockdata["main_node"]:# some numbers and path are required to be modified
 		Tracker["constants"]["masterdir"] = masterdir
 		Tracker["directory"]              = iter_dir
-		try:    sym = Tracker["constants"]["sym"] # For those generated by old version meridians
-		except: sym = Tracker["constants"]["symmetry"]
-		Tracker["constants"]["symmetry"]  = sym
+		#try:    sym = Tracker["constants"]["sym"] # For those generated by old version meridians
+		#except: sym = Tracker["constants"]["symmetry"]
+		#Tracker["constants"]["symmetry"]  = sym
 		Tracker["best"]                   = selected_iter +2 # reset the best to arbitrary iteration
 		Tracker["bestres"]                = 0
 		Tracker["no_improvement"]         = 0
@@ -5998,7 +5914,7 @@ def update_tracker(shell_line_command):
 	#parser_no_default.add_option("--hardmask",			   		action="store_true")
 	parser_no_default.add_option("--lentop",			    	type="int")
 	parser_no_default.add_option("--ref_a",   		       		type="string")
-	parser_no_default.add_option("--symmetry",    	       		type="string")# rare to change sym; however, keep it an option.
+	parser_no_default.add_option("--symmmetry",    	       		type="string")# rare to change sym; however, keep it an option.
 	parser_no_default.add_option("--center_method",				type="int")
 	parser_no_default.add_option("--target_radius", 			type="int")
 	parser_no_default.add_option("--mask3D",		         	type="string")
@@ -6043,7 +5959,7 @@ def update_tracker(shell_line_command):
 		Tracker["constants"]["ref_a"] 						= options_no_default_value.ref_a
 	if options_no_default_value.symmetry != None:  # this rarely happens. However, keep it an option.
 		sym    												= options_no_default_value.symmetry
-		Tracker["constants"]["symmetry"] 						= sym[0].lower() + sym[1:] 
+		Tracker["constants"]["symmetry"]					= sym[0].lower() + sym[1:] 
 	if options_no_default_value.center_method != None:
 		Tracker["constants"]["center_method"] 				= options_no_default_value.center_method
 	if options_no_default_value.target_radius != None:
@@ -6127,7 +6043,7 @@ def main():
 	parser.add_option("--memory_per_node",          type="float",           default= -1.0,                	help="User provided information about memory per node (NOT per CPU) [in GB] (default 2GB*(number of CPUs per node))")	
 	parser.add_option("--ctrefromsort3d",           action="store_true",    default= False,                	help="Continue local/exhaustive refinement on data subset selected by sort3d. (default False)")
 	parser.add_option("--subset",                   type="string",          default='',                     help="A text contains indexes of the selected data subset")
-	parser.add_option("--oldrefdir",                type="string",          default='',                     help="The old refinement directory from which sort3d is initiated")
+	parser.add_option("--oldrefdir",                type="string",          default='',                     help="The old refinement directory where sort3d is initiated")
 	parser.add_option("--ctrefromiter",             type="int",             default=-1,                     help="The iteration from which refinement will be continued")
 	
 	(options, args) = parser.parse_args(sys.argv[1:])
@@ -6306,6 +6222,12 @@ def main():
 			nnxo = 0
 			fq = 0
 			pixel_size = 1.0
+			
+		#  Object to handle symmetries, for now only used by oct
+		from EMAN2 import parsesym
+		#Blockdata["parsesym"] = parsesym(Tracker["constants"]["symmetry"])
+		#  Initialize symmetry
+		Blockdata["symclass"] = symclass(Tracker["constants"]["symmetry"])
 
 		nnxo = bcast_number_to_all(nnxo, source_node = Blockdata["main_node"])
 		if( nnxo < 0 ): ERROR("Incorrect image size  ", "meridien", 1, Blockdata["myid"])
@@ -6551,10 +6473,6 @@ def main():
 		Tracker["previousoutputdir"] =  os.path.join(masterdir, "main%03d"%options.ctrefromiter)
 		Tracker["mainiteration"]     =  options.ctrefromiter
 		mainiteration                =  options.ctrefromiter
-			
-	#  Object to handle symmtries, for now only used by oct
-	from EMAN2 import parsesym
-	Blockdata["parsesym"] = parsesym(Tracker["constants"]["symmetry"])
 
 	#  remove projdata, if it existed, initialize to nonsense
 	projdata = [[model_blank(1,1)], [model_blank(1,1)]]
@@ -6684,7 +6602,8 @@ def main():
 
 					rangle = shakenumber*Tracker["delta"]
 					rshift = shakenumber*Tracker["ts"]
-					refang, coarse_angles = shakerefangles(refang, coarse_angles, rangle, Tracker["constants"]["symmetry"])
+					refang = Blockdata["symclass"].reduce_anglesets( rotate_params(refang, [-rangle,-rangle,-rangle]) )
+					coarse_angles = Blockdata["symclass"].reduce_anglesets( rotate_params(coarse_angles, [-rangle,-rangle,-rangle]) )
 					shakegrid(rshifts, rshift)
 					shakegrid(coarse_shifts, rshift)
 

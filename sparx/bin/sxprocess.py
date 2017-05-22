@@ -1128,6 +1128,7 @@ def main():
 					break
 					
 			resolution_FSC143_right = fsc_true[0][nfreq05]
+			nfreq143_right = nfreq05
 			for ifreq in xrange(nfreq0, nfreq05, -1):
 				if fsc_true[1][ifreq] >= 0.143:
 					resolution_FSC143_right = fsc_true[0][ifreq]
