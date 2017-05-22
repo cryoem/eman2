@@ -7,7 +7,7 @@ import global_def
 from global_def import *
 
 def main(args):
-	from utilities import if_error_then_all_processes_exit_program, write_text_row, drop_image, model_gauss_noise, get_im, set_params_proj, wrap_mpi_bcast, model_circle
+	from utilities import if_error_then_all_processes_exit_program, write_text_row, drop_image, model_gauss_noise, get_im, set_params_proj, wrap_mpi_bcast, model_circle, bcast_number_to_all
 	from logger import Logger, BaseLogger_Files
 	from mpi import mpi_init, mpi_finalize, MPI_COMM_WORLD, mpi_comm_rank, mpi_comm_size, mpi_barrier
 	import user_functions
@@ -121,22 +121,26 @@ directory		output directory name: into which the results will be written (if it 
 		subset = None
 
 	outdir = args[1]
+	error = 0
 	if mpi_rank == 0:
 		if mpi_size % options.nruns != 0:
-			ERROR('Number of processes needs to be a multiple of total number of runs. Total runs by default are 3, you can change it by specifying --nruns option.', 'sxviper', 1)
-			mpi_finalize()
-			return
+			ERROR('Number of processes needs to be a multiple of total number of runs. Total runs by default are 3, you can change it by specifying --nruns option.', 'sxviper', 0)
+			error = 1
 
 		if os.path.exists(outdir):
-			ERROR('Output directory exists, please change the name and restart the program', "sxviper", 1)
-			mpi_finalize()
-			return
-
+			ERROR('Output directory exists, please change the name and restart the program', "sxviper", 0)
+			error = 1
 		os.mkdir(outdir)
 		import global_def
 		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
 
+
+
 	mpi_barrier(MPI_COMM_WORLD)
+	error = bcast_number_to_all(error, source_node = 0, mpi_comm = MPI_COMM_WORLD)
+	if error == 1 :
+		mpi_finalize()
+		return
 
 	if outdir[-1] != "/":
 		outdir += "/"
