@@ -2519,8 +2519,9 @@ EMData* FFTResampleProcessor::process(const EMData *const image)
 	int nny=(ny==1?1:(int)floor(ny/sample_rate+0.5f));
 	int nnz=(nz==1?1:(int)floor(nz/sample_rate+0.5f));
 
-	EMData *result=image->copy();
-	result->FourTruncate(nnx, nny, nnz, 1, 0);	// nnx,nny,nnz,returnreal,normalize
+	EMData *result;
+	// the type casting here is because FourTruncate was not defined to be const (but it is)
+	result=((EMData *)image)->FourTruncate(nnx, nny, nnz, 1, 0);	// nnx,nny,nnz,returnreal,normalize
 	result->update();
 	return result;
 
@@ -2550,12 +2551,17 @@ void FFTResampleProcessor::process_inplace(EMData * image)
 	int nny=(ny==1?1:(int)floor(ny/sample_rate+0.5f));
 	int nnz=(nz==1?1:(int)floor(nz/sample_rate+0.5f));
 
-	image->FourTruncate(nnx, nny, nnz, 1, 0);
+	EMData *result;
+	result=image->FourTruncate(nnx, nny, nnz, 1, 0);	// nnx,nny,nnz,returnreal,normalize
+
+	image->set_size(nnx,nny,nnz);
+	memcpy(image->get_data(),result->get_data(),nnx*nny*nnz*sizeof(float));
+	image->update();
+	delete result;
 
 	//fft_resample(image,image,sample_rate);
 
 	//image->scale_pixel(sample_rate);
-	image->update();
 
 }
 
