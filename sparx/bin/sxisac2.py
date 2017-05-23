@@ -973,7 +973,7 @@ def do_generation(main_iter, generation_iter, target_nx, target_xr, target_yr, t
 				leftout = sorted(list(set(range(Blockdata["total_nima"])) - set(lprocessed)))
 				write_text_file(leftout, os.path.join(Blockdata["masterdir"], "not_processed_images.txt" ))
 				# Check whether what remains can be still processed in a new main interation
-				if( (int(len(leftout)*1.2) < 2*options.img_per_grp) or ( (len(good) == 0) and (generation_iter == 1) ) ):
+				if( ( len(leftout) < 2*options.img_per_grp) or ( (len(good) == 0) and (generation_iter == 1) ) ):
 					#    if the the number of remaining all bad too low full stop
 					keepdoing_main = False
 					keepdoing_generation = False
