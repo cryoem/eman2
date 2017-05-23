@@ -842,8 +842,11 @@ class boxerConvNet(QtCore.QObject):
 			img.write_image(trainoutfile, -1)
 			
 			img=from_numpy(m)
-			img.process_inplace("math.fft.resample",{"n":.5})
-			img.mult(6)
+			nx=img["nx"]
+			img=img.get_clip(Region(-nx/2,-nx/2,nx*2,nx*2))
+			img.scale(2.)
+			#img.process_inplace("math.fft.resample",{"n":.5})
+			img.mult(5)
 			img.write_image(trainoutfile, -1)
 			
 		
