@@ -405,8 +405,6 @@ def main():
 					return
 
 				data.set_xyz_origin(originx, originy, originz)
-				print data.get_attr_dict()
-				print originx,originy,originz
 
 			elif option1 == "matchto":
 				mt=EMData(options.matchto[0])
