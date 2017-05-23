@@ -40,7 +40,7 @@ def main():
 	parser.add_argument("--training", action="store_true", default=False ,help="Doing training", guitype='boolbox', row=8, col=1, rowspan=1, colspan=1, mode='train[True]')
 	parser.add_argument("--tomograms", type=str,help="Tomograms input.", default=None,guitype='filebox',browser="EMBrowserWidget(withmodal=True)", row=1, col=0, rowspan=1, colspan=3, mode="test")
 	parser.add_argument("--applying", action="store_true", default=False ,help="Applying the neural network on tomograms", guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode='test[True]')
-	parser.add_argument("--dream", action="store_true", default=False ,help="Iterativly applying the neural network on noise", guitype='boolbox', row=5, col=0, rowspan=1, colspan=1, mode='test')
+	parser.add_argument("--dream", action="store_true", default=False ,help="Iterativly applying the neural network on noise")
 	parser.add_argument("--to3d", action="store_true", default=True ,help="convert to result to 3D.", guitype='boolbox', row=5, col=1, rowspan=1, colspan=1, mode='test')
 	parser.add_argument("--output", type=str,help="Segmentation out file name", default="tomosegresult.hdf", guitype='strbox', row=3, col=0, rowspan=1, colspan=1, mode="test")
 	parser.add_argument("--threads", type=int,help="Number of thread to use when applying neural net on test images. Not used during trainning", default=12, guitype='intbox', row=10, col=0, rowspan=1, colspan=1, mode="test")
@@ -58,13 +58,15 @@ def main():
 	#### This is supposed to test the overfitting of the network by applying it on pure noise repeatly
 	#### The function is no longer maintained so it may or may not work..
 	if options.dream:
-		os.environ["THEANO_FLAGS"]="optimizer=None"
-		print "Testing on big images, Theano optimizer disabled"
-		import_theano()
-		convnet=load_model(options.from_trained)
-		dream(convnet,options)
-		E2end(E2n)
-		exit()
+		print "This function is no longer supported.. exit."
+		return
+		#os.environ["THEANO_FLAGS"]="optimizer=None"
+		#print "Testing on big images, Theano optimizer disabled"
+		#import_theano()
+		#convnet=load_model(options.from_trained)
+		#dream(convnet,options)
+		#E2end(E2n)
+		#exit()
 		
 	
 	if options.applying:
@@ -324,63 +326,63 @@ def load_model(fname):
 	savenet.amplitude=hdr.get_attr_default("amplitude", 1.0)
 	return savenet
 
-def dream(convnet,options):
-	convz=convnet.image_shape[1]
+#def dream(convnet,options):
+	#convz=convnet.image_shape[1]
 	
-	print "Dreaming....."
-	try: 
-		os.remove(options.output)
-		print "Overwriting the output.."
-	except: pass
+	#print "Dreaming....."
+	#try: 
+		#os.remove(options.output)
+		#print "Overwriting the output.."
+	#except: pass
 	
-	sz=500
-	shape=[sz,sz,convz]
-	img=np.random.randn(shape[2],shape[0],shape[1])
-	convnet.update_shape((1, shape[2], shape[0],shape[1]))
-	e=from_numpy(img)
-	e.write_image(options.output,-1)
+	#sz=500
+	#shape=[sz,sz,convz]
+	#img=np.random.randn(shape[2],shape[0],shape[1])
+	#convnet.update_shape((1, shape[2], shape[0],shape[1]))
+	#e=from_numpy(img)
+	#e.write_image(options.output,-1)
 	
-	for it in range(50):
+	#for it in range(50):
 		
 		
-		print "Iteration {}...".format(it)
+		#print "Iteration {}...".format(it)
 		
 		
-		#### prepare inputs
-		img[np.abs(img)>1.0]=1.0
-		#print img.shape
-		#print convz,sz
-		ar=img.reshape((convz,sz*sz))
+		##### prepare inputs
+		#img[np.abs(img)>1.0]=1.0
+		##print img.shape
+		##print convz,sz
+		#ar=img.reshape((convz,sz*sz))
 		
-		data=theano.shared(np.asarray(ar,dtype=theano.config.floatX),borrow=True)
+		#data=theano.shared(np.asarray(ar,dtype=theano.config.floatX),borrow=True)
 
-		#### write input when testing...
-		#### 
-		#print np.shape(data.get_value())
-		#print "Applying the convolution net..."
-		test_imgs = theano.function(
-			inputs=[],
-			outputs=convnet.clslayer.get_image(),
-			givens={
-				convnet.x: data
-			}
-		)
+		##### write input when testing...
+		##### 
+		##print np.shape(data.get_value())
+		##print "Applying the convolution net..."
+		#test_imgs = theano.function(
+			#inputs=[],
+			#outputs=convnet.clslayer.get_image(),
+			#givens={
+				#convnet.x: data
+			#}
+		#)
 			
-		img=test_imgs()
-		#print np.shape(img)
-		img=img.reshape(convnet.outsize,convnet.outsize).T
+		#img=test_imgs()
+		##print np.shape(img)
+		#img=img.reshape(convnet.outsize,convnet.outsize).T
 		
-		e = from_numpy(img)
-		e.process_inplace("math.fft.resample",{"n":float(1./convnet.labelshrink)})
-		e.process_inplace("normalize")
-		e.write_image(options.output,-1)
-		if convz>1:
-			img=np.random.randn(shape[2],shape[0],shape[1])
-			img[convz/2]=e.numpy().copy()
-		else:
-			img=e.numpy().copy()
+		#e = from_numpy(img)
+		#e.process_inplace("math.fft.resample",{"n":float(1./convnet.labelshrink)})
+		#e.process_inplace("normalize")
+		#e.write_image(options.output,-1)
+		#if convz>1:
+			#img=np.random.randn(shape[2],shape[0],shape[1])
+			#img[convz/2]=e.numpy().copy()
+		#else:
+			#img=e.numpy().copy()
 	
-	print "Output written to {}.".format(options.output)
+	#print "Output written to {}.".format(options.output)
 	
 	
 def apply_neuralnet(options):
@@ -563,121 +565,121 @@ def do_convolve(jsd, job):
 #def do_saveimg(job):
 	#job[1].write_image(
 
-def apply_neuralnet_theano(options):
+#def apply_neuralnet_theano(options):
 	
-	tt0=time.time()
-	import_theano()
+	#tt0=time.time()
+	#import_theano()
 	
-	convnet=load_model(options.from_trained)
+	#convnet=load_model(options.from_trained)
 	
-	convz=convnet.image_shape[1]
+	#convz=convnet.image_shape[1]
 	
-	try: 
-		os.remove(options.output)
-		print "Overwriting the output.."
-	except: pass
+	#try: 
+		#os.remove(options.output)
+		#print "Overwriting the output.."
+	#except: pass
 	
 	
-	nframe=EMUtil.get_image_count(options.tomograms)
-	is3d=False
-	### deal with 3D volume or image stack
-	e=EMData(options.tomograms, 0, True)
-	if nframe==1:
-		nframe=e["nz"]
-		if nframe>1:
-			#### input data is 3D volume
-			#esz=max(e["nx"],e["ny"])
-			is3d=True
+	#nframe=EMUtil.get_image_count(options.tomograms)
+	#is3d=False
+	#### deal with 3D volume or image stack
+	#e=EMData(options.tomograms, 0, True)
+	#if nframe==1:
+		#nframe=e["nz"]
+		#if nframe>1:
+			##### input data is 3D volume
+			##esz=max(e["nx"],e["ny"])
+			#is3d=True
 			
-	esz=max(e["nx"],e["ny"])
-	enx=e["nx"]
-	eny=e["ny"]
-	shape=[esz,esz,convz]
-	convnet.update_shape((1, shape[2], shape[0],shape[1]))
-	for nf in range(nframe):
-		if is3d:
-			e=EMData(options.tomograms,0,False,Region(0,0,nf,esz,esz,convz))
-		else:
-			e=EMData(options.tomograms,nf, False, Region(0,0,esz,esz))
+	#esz=max(e["nx"],e["ny"])
+	#enx=e["nx"]
+	#eny=e["ny"]
+	#shape=[esz,esz,convz]
+	#convnet.update_shape((1, shape[2], shape[0],shape[1]))
+	#for nf in range(nframe):
+		#if is3d:
+			#e=EMData(options.tomograms,0,False,Region(0,0,nf,esz,esz,convz))
+		#else:
+			#e=EMData(options.tomograms,nf, False, Region(0,0,esz,esz))
 		
-		print "Applying the convolution net on image No {}...".format(nf)
+		#print "Applying the convolution net on image No {}...".format(nf)
 
-		#### prepare inputs
-		#e.process_inplace("normalize")
-		enp=e.numpy()
-		#print enp.shape
-		#exit()
-		enp[enp>3.0]=3.0
-		enp/=3
-		ar=enp.reshape((convz,shape[0]*shape[1]))
+		##### prepare inputs
+		##e.process_inplace("normalize")
+		#enp=e.numpy()
+		##print enp.shape
+		##exit()
+		#enp[enp>3.0]=3.0
+		#enp/=3
+		#ar=enp.reshape((convz,shape[0]*shape[1]))
 		
 		
-		data=theano.shared(np.asarray(ar,dtype=theano.config.floatX),borrow=True)
+		#data=theano.shared(np.asarray(ar,dtype=theano.config.floatX),borrow=True)
 		
 	
-		#### input is one 2D slice: just test the performance.
-		#### write input when testing...
-		if nframe==1:
-			img=data[0].eval().reshape(shape[0],shape[1]).T
-			e = EMNumPy.numpy2em(img.astype("float32"))
+		##### input is one 2D slice: just test the performance.
+		##### write input when testing...
+		#if nframe==1:
+			#img=data[0].eval().reshape(shape[0],shape[1]).T
+			#e = EMNumPy.numpy2em(img.astype("float32"))
+			##e.process_inplace("normalize")
+			#newshp=convnet.outsize
+			#scl=float(convnet.outsize)/float(esz)
+			#e.scale(scl)
+			#e.clip_inplace(Region((esz-newshp)/2,(esz-newshp)/2,enx*scl,eny*scl))
+			##e=e.get_clip(Region((shape[0]-newshp)/2,(shape[0]-newshp)/2,newshp,newshp))
 			#e.process_inplace("normalize")
-			newshp=convnet.outsize
-			scl=float(convnet.outsize)/float(esz)
-			e.scale(scl)
-			e.clip_inplace(Region((esz-newshp)/2,(esz-newshp)/2,enx*scl,eny*scl))
-			#e=e.get_clip(Region((shape[0]-newshp)/2,(shape[0]-newshp)/2,newshp,newshp))
-			e.process_inplace("normalize")
-			e.write_image(options.output,-1)
-			#print (esz-newshp)/2,enx,eny, float(convnet.outsize)/float(esz), img.shape
-		#exit()
-		#### Applying the convolution net...
-		test_imgs = theano.function(
-			inputs=[],
-			outputs=convnet.clslayer.get_image(),
-			givens={
-				convnet.x: data
-			}
-		)
+			#e.write_image(options.output,-1)
+			##print (esz-newshp)/2,enx,eny, float(convnet.outsize)/float(esz), img.shape
+		##exit()
+		##### Applying the convolution net...
+		#test_imgs = theano.function(
+			#inputs=[],
+			#outputs=convnet.clslayer.get_image(),
+			#givens={
+				#convnet.x: data
+			#}
+		#)
 		
-		img=test_imgs()
-		#print np.shape(img)
-		img=img.reshape(convnet.outsize,convnet.outsize).T
-		e = EMNumPy.numpy2em(img.astype("float32"))
-		scl=float(convnet.outsize)/float(esz)
-		e.clip_inplace(Region(0,0,enx*scl,eny*scl))
-		#print e["nx"], e["ny"], img.shape
-		if nframe==1:
-			e.process_inplace("normalize")
-		e.write_image(options.output,-1)
+		#img=test_imgs()
+		##print np.shape(img)
+		#img=img.reshape(convnet.outsize,convnet.outsize).T
+		#e = EMNumPy.numpy2em(img.astype("float32"))
+		#scl=float(convnet.outsize)/float(esz)
+		#e.clip_inplace(Region(0,0,enx*scl,eny*scl))
+		##print e["nx"], e["ny"], img.shape
+		#if nframe==1:
+			#e.process_inplace("normalize")
+		#e.write_image(options.output,-1)
 		
-		#exit()
-	if nframe>1:
-		ss=options.output
-		fout=ss[:ss.rfind('.')]+"_pp.hdf"
-		#### unbin the output and copy the header
+		##exit()
+	#if nframe>1:
+		#ss=options.output
+		#fout=ss[:ss.rfind('.')]+"_pp.hdf"
+		##### unbin the output and copy the header
 		
-		try: os.remove(fout)
-		except: pass
-		if is3d:
-			run("e2proc2d.py {} {} --process math.fft.resample:n={} --twod2threed".format(ss,fout,float(1./convnet.labelshrink)))
+		#try: os.remove(fout)
+		#except: pass
+		#if is3d:
+			#run("e2proc2d.py {} {} --process math.fft.resample:n={} --twod2threed".format(ss,fout,float(1./convnet.labelshrink)))
 			
-			e=EMData(options.tomograms,0,True)
-			e.write_image(fout)
+			#e=EMData(options.tomograms,0,True)
+			#e.write_image(fout)
 			
-		else:
-			run("e2proc2d.py {} {} --process math.fft.resample:n={}".format(ss,fout,float(1./convnet.labelshrink)))
-			for ni in range(nframe):
-				e=EMData(options.tomograms,ni,True)
-				#e.set_size(shape[0],shape[1],1)
-				a=EMData(fout,ni,True)
-				a.set_attr_dict(e.get_attr_dict())
-				a.write_image(fout,ni)
+		#else:
+			#run("e2proc2d.py {} {} --process math.fft.resample:n={}".format(ss,fout,float(1./convnet.labelshrink)))
+			#for ni in range(nframe):
+				#e=EMData(options.tomograms,ni,True)
+				##e.set_size(shape[0],shape[1],1)
+				#a=EMData(fout,ni,True)
+				#a.set_attr_dict(e.get_attr_dict())
+				#a.write_image(fout,ni)
 			
-		print "Output written to {}.".format(fout)
-	else:
-		print "Output written to {}.".format(options.output)
+		#print "Output written to {}.".format(fout)
+	#else:
+		#print "Output written to {}.".format(options.output)
 	
-	print "Total time:", time.time()-tt0
+	#print "Total time:", time.time()-tt0
 	
 def load_particles(ptcls,labelshrink,ncopy=5, rng=None):
 	if rng==None:
