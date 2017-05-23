@@ -2508,34 +2508,54 @@ EMData* FFTResampleProcessor::process(const EMData *const image)
 {
 	float sample_rate = params.set_default("n",0.0f);
 	if (sample_rate <= 0.0F	 )	{
-		throw InvalidValueException(sample_rate,	"sample rate must be >0 ");
+		throw InvalidValueException(sample_rate,	"downsampling must be >0 ");
 	}
 
-	EMData* result;
-	if (image->is_complex()) result = image->copy();
-	else result = image->do_fft();
-	fft_resample(result,image,sample_rate);
-	// The image may have been padded - we should shift it so that the phase origin is where FFTW expects it
+	int nx=image->get_xsize();
+	int ny=image->get_ysize();
+	int nz=image->get_zsize();
+
+	int nnx=(int)floor(nx/sample_rate+0.5f);
+	int nny=(ny==1?1:(int)floor(ny/sample_rate+0.5f));
+	int nnz=(nz==1?1:(int)floor(nz/sample_rate+0.5f));
+
+	EMData *result=image->copy();
+	result->FourTruncate(nnx, nny, nnz, 1, 0);	// nnx,nny,nnz,returnreal,normalize
 	result->update();
-	result->scale_pixel(sample_rate);
 	return result;
+
+//	EMData* result;
+//	if (image->is_complex()) result = image->copy();
+//	else result = image->do_fft();
+//	fft_resample(result,image,sample_rate);
+	// The image may have been padded - we should shift it so that the phase origin is where FFTW expects it
+//	result->update();
+//	result->scale_pixel(sample_rate);
+//	return result;
 }
 
 void FFTResampleProcessor::process_inplace(EMData * image)
 {
-	if (image->is_complex()) throw ImageFormatException("Error, the fft resampling processor does not work on complex images");
-
-
 	float sample_rate = params.set_default("n",0.0f);
 	if (sample_rate <= 0.0F	 )	{
 		throw InvalidValueException(sample_rate,	"sample rate (n) must be >0 ");
 	}
+	//if (image->is_complex()) throw ImageFormatException("Error, the fft resampling processor does not work on complex images");
 
-	fft_resample(image,image,sample_rate);
+	int nx=image->get_xsize();
+	int ny=image->get_ysize();
+	int nz=image->get_zsize();
 
-	image->scale_pixel(sample_rate);
+	int nnx=(int)floor(nx/sample_rate+0.5f);
+	int nny=(ny==1?1:(int)floor(ny/sample_rate+0.5f));
+	int nnz=(nz==1?1:(int)floor(nz/sample_rate+0.5f));
+
+	image->FourTruncate(nnx, nny, nnz, 1, 0);
+
+	//fft_resample(image,image,sample_rate);
+
+	//image->scale_pixel(sample_rate);
 	image->update();
-
 
 }
 
