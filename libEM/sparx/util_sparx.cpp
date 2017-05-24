@@ -21778,7 +21778,7 @@ vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMD
 			printf("\n\ncrefim_len_original_only_from_asymmetric_unit(%lu) == list_of_reference_angles_length(%lu)/nsym(%d)/2\n\n",
 			crefim_len_original_only_from_asymmetric_unit, list_of_reference_angles_length, nsym);
 			fflush(stdout);
-		}	
+		}
 		assert(crefim_len_original_only_from_asymmetric_unit == list_of_reference_angles_length/nsym/2);
 	}
 
@@ -24097,7 +24097,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 void Util::version()
 {
  cout <<"  Compile time of util_sparx.cpp  "<< __DATE__ << "  --  " << __TIME__ <<   endl;
- cout <<"  Modification time: 05/04/2017  07:25 AM " <<  endl;
+ cout <<"  Modification time: 05/24/2017  11:43 AM " <<  endl;
 }
 
 
