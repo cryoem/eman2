@@ -32,12 +32,43 @@ def make3d(aptcls, sym="c1"):
 	threed["apix_x"]=threed["apix_y"]=threed["apix_z"]=aptcls[0]["apix_x"]
 	return threed
 
-def makeprojs(threed, sym):
-	origen=parsesym(sym)
+def makeprojs(threed, options):
+	origen=parsesym(options.sym)
 	oris=origen.gen_orientations('eman',{"delta":9., "perturb":True})
+	if options.fullcov:
+		np.random.shuffle(oris)
+		oris=oris[:options.batchsize]
 	projs=[threed.project("standard",ort) for ort in oris]
 	return projs
 
+def do_ali_fullcov(ptcls, projs):
+	boxsize=ptcls[0]["nx"]
+	quals=[]
+	bss=.0
+	pts=[(p, None) for p in ptcls]
+	for i in range(len(projs)):
+		#sim=cmponetomany(pjs,ptcls[i],align=("rotate_translate_flip",{"maxshift":boxsize/5}),alicmp=("ccc",{}),ralign=("refine",{}),cmp=("frc",{"minres":80,"maxres":20}))
+		sim=cmponetomany(pts,projs[i],align=("rotate_translate_tree",{"maxshift":boxsize/5, "maxres":15}),alicmp=("ccc",{}),ralign=("refine",{}),cmp=("frc",{"minres":80,"maxres":10}))
+		bs=min(sim)
+		
+		bss+=bs[0]
+		n=sim.index(bs)
+#		 print n
+		projs[i]["match_n"]=n
+		projs[i]["match_qual"]=-bs[0]
+
+	aptcls=[]
+	#for i in range(len(ptcls)*3/4):# We used to include 3/4 of the particles
+	for i in range(len(projs)):
+		n=projs[i]["match_n"]
+		quals.append(projs[i]["match_qual"])
+		aptcls.append(ptcls[n].align("rotate_translate_tree",projs[i],{"maxshift":boxsize/5, "maxres":10},"frc",{}))
+		aptcls[-1].process_inplace("normalize.toimage",{"to":projs[i]})
+		#aptcls[-1].process_inplace("normalize")
+		aptcls[-1]["match_n"]=i
+		aptcls[-1].add(-aptcls[-1]["mean"])
+		aptcls[-1]["xform.projection"]=projs[i]["xform.projection"]# best orientation set in the original
+	return aptcls
 
 def do_ali(ptcls, projs):
 	boxsize=ptcls[0]["nx"]
@@ -85,10 +116,11 @@ def make_model(jsd,myid, options):
 	lrmult=options.lrdecay
 	path=options.path
 	
-	aptcls=[EMData(ptclname, i) for i in random_sample(num, nsample)]
+	ninit=min(32, num)
+	aptcls=[EMData(ptclname, i) for i in random_sample(num, ninit)]
 	origen=parsesym(sym)
-	oris=origen.gen_orientations('rand',{"n":nsample+1, "phitoo":1})
-	for i in range(nsample):
+	oris=origen.gen_orientations('rand',{"n":ninit+1, "phitoo":1})
+	for i in range(ninit):
 		aptcls[i]["xform.projection"]=oris[i]
 		
 	map0=make3d(aptcls,sym)
@@ -98,7 +130,7 @@ def make_model(jsd,myid, options):
 	boxsize=map0["nx"]
 	niter=options.niter
 
-	ncopy=(niter+1)*nsample/num+1
+	ncopy=(niter+1)*nsample/num+10
 	samples=np.tile(np.arange(num),(ncopy,1))
 	#print "ncopy:", ncopy
 	for i in range(len(samples)): np.random.shuffle(samples[i])
@@ -106,19 +138,22 @@ def make_model(jsd,myid, options):
 	kk=0
 	scr=[]
 	for it in range(1,niter):
-		
+		if it==niter-1:
+			#### bigger batch size in the last iteration so we can sort the initial model stably 
+			options.batchsize=max(32, options.batchsize)
 		pjs=None
 		if options.writetmp: map0.write_image("{}/model_tmp_{:02d}.hdf".format(path,myid), it-1)
-		pjs=makeprojs(map0, sym)
-			
-		if it==niter-1:
+		pjs=makeprojs(map0, options)
+		
+		
+		if options.fullcov or it==niter-1:
 			if num<32:
 				ptcls=[EMData(ptclname, i) for i in range(num)]
 			else:
 				smp=random_sample(num, 32)
 				ptcls=[EMData(ptclname, i) for i in smp]
 		else:
-			ptcls=[EMData(ptclname, i) for i in samples[kk:kk+nsample]]
+			ptcls=[EMData(ptclname, i) for i in samples[kk:kk+options.batchsize]]
 			
 		for p in ptcls:
 			if options.addnoise>0:
@@ -127,10 +162,12 @@ def make_model(jsd,myid, options):
 			p.process_inplace("normalize.edgemean")
 			
 			
-		kk+=nsample
+		kk+=options.batchsize
 	#	 print len(ptcls)
-		aptcls=do_ali(ptcls, pjs)
-		
+		if options.fullcov:
+			aptcls=do_ali_fullcov(ptcls, pjs)
+		else:
+			aptcls=do_ali(ptcls, pjs)
 		
 			
 		for i, p in enumerate(aptcls):
@@ -194,6 +231,7 @@ def main():
 	parser.add_argument("--addnoise", type=float, help="Add noise on particles at each iteration. Stablize convergence for some reason.", default=3.)
 	parser.add_argument("--ntry", type=int,help="Number of tries.", default=10)
 	parser.add_argument("--writetmp", action="store_true", default=False ,help="Write output for each iteration")
+	parser.add_argument("--fullcov", action="store_true", default=False ,help="Assume the input particles covers most of the orientation of the model. This gives better performance when the model is relatively feature-less, but is more likely to fail when there are incorrect particles in the input.")
 	parser.add_argument("--threads", type=int,help="threads", default=10)
 	parser.add_argument("--niter", type=int,help="Number of iterations", default=20)
 	parser.add_argument("--verbose", type=int,help="Verbose", default=0)
