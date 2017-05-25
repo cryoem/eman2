@@ -11,7 +11,7 @@ MARK_AS_ADVANCED(FORCE CMAKE_BACKWARDS_COMPATIBILITY)
 MARK_AS_ADVANCED(CLEAR CMAKE_VERBOSE_MAKEFILE)
 OPTION(CMAKE_VERBOSE_MAKEFILE "if all commands will be echoed to the console during the make" ON)
 
-OPTION(ENABLE_CONDA "enable conda-supported build" ON)
+OPTION(ENABLE_CONDA "enable conda-supported build" OFF)
 
 # Handle build strategies, 
 #        set CONDA_PREFIX and CONDA_SP_DIR
