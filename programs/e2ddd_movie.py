@@ -422,7 +422,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 				#t0=time()
 				#write out the unaligned average movie
 				out=qsum(outim)
-				out.write_image("{}__noali.hdf".format(outname[:-4]),0)
+				out.write_image("{}__noali.hdf".format(alioutname),0)
 
 			print("{:1.1f} s\nShift images".format(time()-t0))
 			#t0=time()
