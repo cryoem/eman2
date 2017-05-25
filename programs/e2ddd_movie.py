@@ -461,14 +461,14 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 				out.write("{}\t{}\t{}\t{}\t{}\t{}\n".format(i,dx,dy,dr,reldr,quals[i]))
 
 			if options.goodali:
-				thr=(max(quals[1:])-min(quals))*0.6+min(quals)	# max correlation cutoff for inclusion
+				thr=(max(quals[1:])-min(quals))*0.4+min(quals)	# max correlation cutoff for inclusion
 				best=[im for i,im in enumerate(outim) if quals[i]>thr]
 				out=qsum(best)
 				print("Keeping {}/{} frames".format(len(best),len(outim)))
 				out.write_image("{}__goodali.hdf".format(alioutname),0)
 
 			if options.bestali:
-				thr=(max(quals[1:])-min(quals))*0.75+min(quals)	# max correlation cutoff for inclusion
+				thr=(max(quals[1:])-min(quals))*0.6+min(quals)	# max correlation cutoff for inclusion
 				best=[im for i,im in enumerate(outim) if quals[i]>thr]
 				out=qsum(best)
 				print("Keeping {}/{} frames".format(len(best),len(outim)))
