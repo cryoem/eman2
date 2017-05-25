@@ -313,7 +313,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			# create threads
 			thds=[]
 			peak_locs=Queue.Queue(0)
-			i=0
+			i=-1
 			for ima in range(n-1):
 				for imb in range(ima+1,n):
 					if options.verbose>3: i+=1		# if i>0 then it will write pre-processed CCF images to disk for debugging
