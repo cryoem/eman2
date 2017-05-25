@@ -68,19 +68,21 @@ def main():
 	parser.add_header(name="orblock2", help='Just a visual separation', title="- OR -", row=4, col=0, rowspan=1, colspan=3, mode="align")
 	parser.add_argument("--gaink2",type=str,default=None,help="Perform gain image correction. Gatan K2 gain images are the reciprocal of DDD gain images.",guitype='filebox',browser="EMMovieDataTable(withmodal=True,multiselect=False)", row=5, col=0, rowspan=1, colspan=3, mode="align")
 	parser.add_argument("--reverse", default=False, help="Flip gain normalization image along y axis. Default is False.",action="store_true",guitype='boolbox', row=5, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--phaseplate","-pp", default=False, help="Use this flag to apply stronger high pass filter to phase plate data.",action="store_true",guitype='boolbox', row=5, col=1, rowspan=1, colspan=1)
 
 	parser.add_header(name="orblock3", help='Just a visual separation', title="Output: ", row=6, col=0, rowspan=1, colspan=3, mode="align")
 	parser.add_argument("--goodali", default=False, help="Average of good aligned frames.",action="store_true", guitype='boolbox', row=7, col=0, rowspan=1, colspan=1, mode='align[True]')
 	parser.add_argument("--bestali", default=False, help="Average of best aligned frames.",action="store_true", guitype='boolbox', row=7, col=1, rowspan=1, colspan=1, mode='align')
 	parser.add_argument("--allali", default=False, help="Average of all aligned frames.",action="store_true", guitype='boolbox', row=7, col=2, rowspan=1, colspan=1, mode='align')
 	parser.add_argument("--noali", default=False, help="Average of non-aligned frames.",action="store_true", guitype='boolbox', row=8, col=0, rowspan=1, colspan=1, mode='align')
-	parser.add_argument("--ali4to14", default=False, help="Average of frames from 4 to 14.",action="store_true", guitype='boolbox', row=8, col=1, rowspan=1, colspan=1, mode='align')
-	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful", guitype='intbox', row=9, col=0, rowspan=1, colspan=2, mode="align")
+	parser.add_argument("--ali4to14", default=False, help="Average of frames from 4 to 14.",action="store_true")
+	parser.add_argument("--rangeali", default="", help="Average frames n1-n2",type=str, guitype='strbox', row=8, col=1, rowspan=1, colspan=1, mode='align')
+	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful", guitype='intbox', row=9, col=0, rowspan=1, colspan=1, mode="align")
 
 	parser.add_header(name="orblock3", help='Just a visual separation', title="Optional: ", row=10, col=0, rowspan=1, colspan=3, mode="align")
 	parser.add_argument("--optbox", type=int,help="Box size to use during alignment optimization. Default is 256.",default=256, guitype='intbox', row=11, col=0, rowspan=1, colspan=1, mode="align")
 	parser.add_argument("--optstep", type=int,help="Step size to use during alignment optimization. Default is 256.",default=256,  guitype='intbox', row=11, col=1, rowspan=1, colspan=1, mode="align")
-	parser.add_argument("--optalpha", type=float,help="Penalization to apply during robust regression. Default is 3.0. If 0.0, unpenalized least squares will be performed.",default=3.0)#  guitype='intbox', row=11, col=1, rowspan=1, colspan=1, mode="align")
+	parser.add_argument("--optalpha", type=float,help="Penalization to apply during robust regression. Default is 3.0. If 0.0, unpenalized least squares will be performed.",default=2.5)#  guitype='intbox', row=11, col=1, rowspan=1, colspan=1, mode="align")
 	parser.add_argument("--step",type=str,default="0,1",help="Specify <first>,<step>,[last]. Processes only a subset of the input data. ie- 0,2 would process all even particles. Same step used for all input files. [last] is exclusive. Default= 0,1",guitype='strbox', row=12, col=0, rowspan=1, colspan=1, mode="align")
 	#parser.add_argument("--movie", type=int,help="Display an n-frame averaged 'movie' of the stack, specify number of frames to average",default=0)
 	parser.add_argument("--plot", default=False,help="Display a plot of the movie trajectory after alignment",action="store_true")
@@ -92,10 +94,11 @@ def main():
 	parser.add_argument("--fixbadpixels",action="store_true",default=False,help="Tries to identify bad pixels in the dark/gain reference, and fills images in with sane values instead", guitype='boolbox', row=14, col=1, rowspan=1, colspan=1, mode='align')
 	#parser.add_argument("--simpleavg", action="store_true",help="Will save a simple average of the dark/gain corrected frames (no alignment or weighting)",default=False)
 	#parser.add_argument("--avgs", action="store_true",help="Testing",default=False)
-	parser.add_argument("--align_frames", action="store_true",help="Perform whole-frame alignment of the input stacks",default=False, guitype='boolbox', row=16, col=0, rowspan=1, colspan=1, mode='align[True]')
+	parser.add_argument("--align_frames", action="store_true",help="Perform whole-frame alignment of the input stacks",default=False, guitype='boolbox', row=9, col=1, rowspan=1, colspan=1, mode='align[True]')
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--debug", default=False, action="store_true", help="run with debugging output")
 
 	(options, args) = parser.parse_args()
 
@@ -284,7 +287,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			immx=[0]*n
 			thds = []
 			for i in range(n):
-				thd = threading.Thread(target=split_fft,args=(outim[i],i,options.optbox,options.optstep,ccfs))
+				thd = threading.Thread(target=split_fft,args=(options,outim[i],i,options.optbox,options.optstep,ccfs))
 				thds.append(thd)
 			#sys.stdout.write("\rPrecompute  /{} FFTs".format(len(thds)))
 			t0=time()
@@ -310,11 +313,11 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			# create threads
 			thds=[]
 			peak_locs=Queue.Queue(0)
-			i=0
+			i=-1
 			for ima in range(n-1):
 				for imb in range(ima+1,n):
-					thds.append(threading.Thread(target=calc_ccf_wrapper,args=((ima,imb),options.optbox,options.optstep,immx[ima],immx[imb],ccfs,peak_locs)))
-					i+=1
+					if options.verbose>3: i+=1		# if i>0 then it will write pre-processed CCF images to disk for debugging
+					thds.append(threading.Thread(target=calc_ccf_wrapper,args=(options,(ima,imb),options.optbox,options.optstep,immx[ima],immx[imb],ccfs,peak_locs,i)))
 
 			print("{:1.1f} s\nCompute {} ccfs".format(time()-t0,len(thds)))
 			t0=time()
@@ -345,6 +348,10 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 
 			for th in thds: th.join()
 			print()
+			
+			# if options.verbose>3:
+			# 	for i,k in enumerate(sorted(csum2.keys())):
+			# 		csum2[k].write_image("ccfs.hdf",i)
 
 			avgr=Averagers.get("minmax",{"max":0})
 			avgr.add_image_list(csum2.values())
@@ -415,7 +422,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 				#t0=time()
 				#write out the unaligned average movie
 				out=qsum(outim)
-				out.write_image("{}__noali.hdf".format(outname[:-4]),0)
+				out.write_image("{}__noali.hdf".format(alioutname),0)
 
 			print("{:1.1f} s\nShift images".format(time()-t0))
 			#t0=time()
@@ -454,14 +461,14 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 				out.write("{}\t{}\t{}\t{}\t{}\t{}\n".format(i,dx,dy,dr,reldr,quals[i]))
 
 			if options.goodali:
-				thr=max(quals)*0.6	# max correlation cutoff for inclusion
+				thr=(max(quals[1:])-min(quals))*0.4+min(quals)	# max correlation cutoff for inclusion
 				best=[im for i,im in enumerate(outim) if quals[i]>thr]
 				out=qsum(best)
 				print("Keeping {}/{} frames".format(len(best),len(outim)))
 				out.write_image("{}__goodali.hdf".format(alioutname),0)
 
 			if options.bestali:
-				thr=max(quals)*0.75	# max correlation cutoff for inclusion
+				thr=(max(quals[1:])-min(quals))*0.6+min(quals)	# max correlation cutoff for inclusion
 				best=[im for i,im in enumerate(outim) if quals[i]>thr]
 				out=qsum(best)
 				print("Keeping {}/{} frames".format(len(best),len(outim)))
@@ -472,11 +479,19 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 				out=qsum(outim[4:14])
 				out.write_image("{}__4-14.hdf".format(alioutname),0)
 
+			if len(options.rangeali)>0:
+				try: rng=[int(i) for i in options.rangeali.split("-")]
+				except:
+					print "Error: please specify --rangeali as X-Y where X and Y are inclusive starting with 0"
+					sys.exit(1)
+				out=qsum(outim[rng[0]:rng[1]+1])
+				out.write_image("{}__{}-{}.hdf".format(alioutname,rng[0],rng[1]))
+
 			#print "{:1.1f}\nDone".format(time()-t0)
 			print("Done")
 
 # CCF calculation
-def calc_ccf_wrapper(N,box,step,dataa,datab,out,locs):
+def calc_ccf_wrapper(options,N,box,step,dataa,datab,out,locs,ii):
 	for i in range(len(dataa)):
 		c=dataa[i].calc_ccf(datab[i],fp_flag.CIRCULANT,True)
 		try: csum.add(c)
@@ -486,14 +501,15 @@ def calc_ccf_wrapper(N,box,step,dataa,datab,out,locs):
 	xx,yy = np.meshgrid(xx,yy)
 #	csum.process_inplace("normalize.edgemean")
 #	csum.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.15})
-	popt,ccpeakval = bimodal_peak_model(csum)
+	popt,ccpeakval = bimodal_peak_model(options,csum)
 	cc_model = correlation_peak_model((xx,yy),popt[0],popt[1],popt[2],popt[3]).reshape(box,box)
 	csum = from_numpy(cc_model)
+	if ii>=0: csum.process("normalize.edgemean").write_image("ccf_models.hdf",ii)
 	locs.put((N,[popt[0],popt[1],popt[2],popt[3],popt[4],popt[5],ccpeakval,csum["maximum"]]))
 	out.put((N,csum))
 
 # preprocess regions by normalizing and doing FFT
-def split_fft(img,i,box,step,out):
+def split_fft(options,img,i,box,step,out):
 	lst=[]
 	nx = img["nx"]
 	ny = img["ny"]
@@ -526,7 +542,7 @@ def twod_bimodal((x,y),x1,y1,sig1,amp1,sig2,amp2):
 	#print(correlation_peak[0]+fixedbg_peak[0])
 	return correlation_peak + fixedbg_peak # + noise
 
-def bimodal_peak_model(ccf):
+def bimodal_peak_model(options,ccf):
 	nxx = ccf["nx"]
 	bs = nxx/2
 
@@ -546,13 +562,23 @@ def bimodal_peak_model(ccf):
 	s2 = 0.6
 	a2 = 20000.0
 
-	initial_guess = [x1,y1,s1,a1,s2,a2]
-	bds = [(-bs/2, -bs/2,  0.01, 0.01, 0.6, 0.01),(bs/2, bs/2, 100.0, 20000.0, 2.5, 100000.0)]
-	try:
-		popt,pcov=optimize.curve_fit(twod_bimodal,(xx,yy),ncc.ravel(),p0=initial_guess,bounds=bds,xtol=0.1)#,ftol=0.0001,gtol=0.0001)
-	except: #optimize.OptimizeWarning:
-		popt = [x1,y1,s1,a1,s2,a2]
-	popt = [p for p in popt]
+	if options.phaseplate:
+		initial_guess = [x1,y1,s1,a1]
+		bds = [(-bs/2, -bs/2,  0.01, 0.01),(bs/2, bs/2, 100.0, 20000.0)]
+		try:
+			popt,pcov=optimize.curve_fit(correlation_peak_model,(xx,yy),ncc.ravel(),p0=initial_guess,bounds=bds,xtol=0.1)#,ftol=0.0001,gtol=0.0001)
+		except: #optimize.OptimizeWarning:
+			popt = [x1,y1,s1,a1]
+		popt = [p for p in popt]
+		popt.extend([0,0])
+	else:
+		initial_guess = [x1,y1,s1,a1,s2,a2]
+		bds = [(-bs/2, -bs/2,  0.01, 0.01, 0.6, 0.01),(bs/2, bs/2, 100.0, 20000.0, 2.5, 100000.0)]
+		try:
+			popt,pcov=optimize.curve_fit(twod_bimodal,(xx,yy),ncc.ravel(),p0=initial_guess,bounds=bds,xtol=0.1)#,ftol=0.0001,gtol=0.0001)
+		except: #optimize.OptimizeWarning:
+			popt = [x1,y1,s1,a1,s2,a2]
+		popt = [p for p in popt]
 
 	popt[0] = popt[0] + nxx/2 - bs/2
 	popt[1] = popt[1] + nxx/2 - bs/2

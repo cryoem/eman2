@@ -374,6 +374,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 	else:
 		alldata = stack
 	nx = alldata[0].get_xsize()
+	ny = alldata[0].get_ysize()
 
 	nima = len(alldata)
 	#  Explicitly force all parameters to be zero on input
@@ -462,7 +463,6 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 				set_params2D(alldata[im],[0.0,0.0,0.0,0,1.0])
 			# normalize
 			alldata[im].process_inplace("normalize.mask", {"mask":mask, "no_sigma":0}) # subtract average under the mask
-			ny = nx
 			txrng = search_range(nx, ou, sxi, xrng, "ISAC")
 			txrng = [txrng[1],txrng[0]]
 			tyrng = search_range(ny, ou, syi, yrng, "ISAC")
@@ -941,9 +941,10 @@ def do_generation(main_iter, generation_iter, target_nx, target_xr, target_yr, t
 				j += 1
 				# We have to update all parameters table
 				for l,m in enumerate(members):
-					if( all_parameters[m][-1] > -1):
-						print "  CONFLICT !!!"
-						exit()
+					#  I had to remove it as in case of restart there will be conflicts
+					#if( all_parameters[m][-1] > -1):
+					#	print "  CONFLICT !!!"
+					#	exit()
 					all_parameters[m] = all_params[local_members[l]]
 			else:
 				bad += members
@@ -972,7 +973,7 @@ def do_generation(main_iter, generation_iter, target_nx, target_xr, target_yr, t
 				leftout = sorted(list(set(range(Blockdata["total_nima"])) - set(lprocessed)))
 				write_text_file(leftout, os.path.join(Blockdata["masterdir"], "not_processed_images.txt" ))
 				# Check whether what remains can be still processed in a new main interation
-				if( (int(len(leftout)*1.2) < 2*options.img_per_grp) or ( (len(good) == 0) and (generation_iter == 1) ) ):
+				if( ( len(leftout) < 2*options.img_per_grp) or ( (len(good) == 0) and (generation_iter == 1) ) ):
 					#    if the the number of remaining all bad too low full stop
 					keepdoing_main = False
 					keepdoing_generation = False
@@ -1048,13 +1049,13 @@ def main(args):
 	#parser.add_option("--n_generations",         type="int",           default=10,         help="maximum number of generations: program stops when reaching this total number of generations: (default 10)")
 	#parser.add_option("--candidatesexist",action="store_true", default=False,   help="Candidate class averages exist use them (default False)")
 	parser.add_option("--rand_seed",             type="int",           help="random seed set before calculations: useful for testing purposes. By default, total randomness (type int)")
-	parser.add_option("--new",                   action="store_true",  default=False,      help="use new code: (default False)")
+	#parser.add_option("--new",                   action="store_true",  default=False,      help="use new code: (default False)")
 	#parser.add_option("--debug",                 action="store_true",  default=False,      help="debug info printout: (default False)")
 
 	# must be switched off in production
 	#parser.add_option("--use_latest_master_directory",action="store_true",  default=False,      help="use latest master directory: when active, the program looks for the latest directory that starts with the word 'master', so the user does not need to provide a directory name. (default False)")
 	
-	#parser.add_option("--restart_section",       type="string",        default=' ',        help="restart section: each generation (iteration) contains three sections: 'restart', 'class_averages', and 'reproducible_class_averages'. To restart from a particular step, for example, generation 4 and section 'class_averages' the following option is needed: '--restart_section=class_averages,4'. The option requires no white space before or after the comma. The default behavior is to restart execution from where it stopped intentionally or unintentionally. For default restart, it is assumed that the name of the directory is provided as argument. Alternatively, the '--use_latest_master_directory' option can be used. (default ' ')")
+	parser.add_option("--restart",       type="int",        default='-1',        help="0: restart ISAC2 after last completed main iteration (meaning there is file >finished< in it.  k: restart ISAC2 after k'th main iteration (It has to be completed, meaning there is file >finished< in it. Higer iterations will be removed.)  Default: no restart")
 
 	##### XXXXXXXXXXXXXXXXXXXXXX option does not exist in docs XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 	parser.add_option("--skip_prealignment",     action="store_true",  default=False,      help="skip pre-alignment step: to be used if images are already centered. 2dalignment directory will still be generated but the parameters will be zero. (default False)")
@@ -1073,6 +1074,7 @@ def main(args):
 		Blockdata["stack"] 	= args[0]
 		Blockdata["masterdir"] = ""
 
+	options.new = False
 	
 	if global_def.CACHE_DISABLE:
 		from utilities import disable_bdb_cache
@@ -1457,12 +1459,46 @@ def main(args):
 		if( Blockdata["myid"] == Blockdata["main_node"] ):
 			print "Skipping 2D alignment since it was already done!"
 
-
+	error = 0
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
 		if( not os.path.exists( os.path.join(Blockdata["masterdir"], "main001", "generation000") ) ):
 			#  We do not create processed_images.txt selection file as it has to be initially empty
 			#  We do create all params filled with zeroes.
 			write_text_row([[0.0,0.0,0.0,-1] for i in xrange(Blockdata["total_nima"])], os.path.join(Blockdata["masterdir"], "all_parameters.txt") )
+			if(options.restart > -1): error=1
+		else:
+			if(options.restart == 0):
+				keepdoing_main = True
+				main_iter = 0
+				while(keepdoing_main):
+					main_iter += 1
+					if( os.path.exists( os.path.join(Blockdata["masterdir"], "main%03d"%main_iter ) ) ):
+						if( not  os.path.exists( os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "finished" ) ) ):
+							cmd = "{} {}".format("rm -rf", os.path.join(Blockdata["masterdir"], "main%03d"%main_iter ))
+							junk = cmdexecute(cmd)
+							keepdoing_main = False
+					else: keepdoing_main = False
+
+			else:
+				main_iter = options.restart
+				if( not  os.path.exists( os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "finished" ) ) ):  error = 1
+				else:
+					keepdoing_main = True
+					main_iter += 1
+					while(keepdoing_main):
+						if( os.path.exists( os.path.join(Blockdata["masterdir"], "main%03d"%main_iter ) ) ):
+							cmd = "{} {}".format("rm -rf", os.path.join(Blockdata["masterdir"], "main%03d"%main_iter ))
+							junk = cmdexecute(cmd)
+							main_iter += 1
+						else: keepdoing_main = False
+			if( os.path.exists( os.path.join(Blockdata["masterdir"], "finished" ) ) ):				
+				cmd = "{} {}".format("rm -rf", os.path.join(Blockdata["masterdir"], "finished" ))
+				junk = cmdexecute(cmd)
+
+	error = bcast_number_to_all(error, source_node = Blockdata["main_node"])
+	if(error == 1):  ERROR("isac2","cannot restart from unfinished main iteration  %d"%main_iter)
+					
+
 	mpi_barrier(MPI_COMM_WORLD)
 
 	keepdoing_main = True
@@ -1482,6 +1518,16 @@ def main(args):
 					junk = cmdexecute(cmd)
 					cmd = "{} {}".format("mkdir", os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "generation%03d"%generation_iter ))
 					junk = cmdexecute(cmd)
+					if(main_iter>1):
+						#  It may be restart from unfinished main, so replace files in master
+						cmd = "{} {} {} {} {}".format("cp -Rp", \
+						os.path.join(Blockdata["masterdir"], "main%03d"%(main_iter-1), "processed_images.txt" ), \
+						os.path.join(Blockdata["masterdir"], "main%03d"%(main_iter-1), "not_processed_images.txt" ), \
+						os.path.join(Blockdata["masterdir"], "main%03d"%(main_iter-1), "class_averages.hdf" ), \
+						os.path.join(Blockdata["masterdir"]) )
+						junk = cmdexecute(cmd)
+
+
 					if( os.path.exists( os.path.join(Blockdata["masterdir"], "not_processed_images.txt") ) ):
 						cmd = "{} {} {}".format("cp -Rp", os.path.join(Blockdata["masterdir"], "not_processed_images.txt" ), \
 						os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "generation%03d"%generation_iter, "to_process_next_%03d_%03d.txt"%(main_iter,generation_iter) ))
@@ -1520,7 +1566,16 @@ def main(args):
 						#exit()
 						# DO THIS GENERATION
 						keepdoing_main, keepdoing_generation = do_generation(main_iter, generation_iter, target_nx, target_xr, target_yr, target_radius, options)
-	
+						# Preserve results obtained so far
+						if( not keepdoing_generation ):
+							if( Blockdata["myid"] == 0):
+								cmd = "{} {} {} {} {}".format("cp -Rp", \
+								os.path.join(Blockdata["masterdir"], "processed_images.txt" ), \
+								os.path.join(Blockdata["masterdir"], "not_processed_images.txt" ), \
+								os.path.join(Blockdata["masterdir"], "class_averages.hdf" ), \
+								os.path.join(Blockdata["masterdir"], "main%03d"%main_iter) )
+								junk = cmdexecute(cmd)
+
 	mpi_barrier(MPI_COMM_WORLD)
 	if( Blockdata["myid"] == 0):
 		cmd = "{} {} {} {} {} {} {} {} {} {}".format("sxchains.py", os.path.join(Blockdata["masterdir"],"class_averages.hdf"),\

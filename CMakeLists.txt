@@ -11,12 +11,34 @@ MARK_AS_ADVANCED(FORCE CMAKE_BACKWARDS_COMPATIBILITY)
 MARK_AS_ADVANCED(CLEAR CMAKE_VERBOSE_MAKEFILE)
 OPTION(CMAKE_VERBOSE_MAKEFILE "if all commands will be echoed to the console during the make" ON)
 
-if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD")
-	set(CONDA_SP_DIR $ENV{SP_DIR})
-	if(NOT WIN32)
-		set(CONDA_PREFIX $ENV{PREFIX})
-	else()
-		set(CONDA_PREFIX $ENV{LIBRARY_PREFIX})
+OPTION(ENABLE_CONDA "enable conda-supported build" OFF)
+
+# Handle build strategies, 
+#        set CONDA_PREFIX and CONDA_SP_DIR
+#        set EMAN_PY_INSTALL_PREFIX and EMAN_INSTALL_PREFIX
+#        write eman2dir relative to SP_DIR path
+# If it is conda-build build, ENABLE_CONDA is ignored
+# If it is not conda-build build, ENABLE_CONDA is checked
+# If it is not conda-build build and ENABLE_CONDA is not set, it is legacy build
+if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" OR ENABLE_CONDA)
+	if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" )
+		set(CONDA_SP_DIR $ENV{SP_DIR})
+		if(NOT WIN32)
+			set(CONDA_PREFIX $ENV{PREFIX})
+		else()
+			set(CONDA_PREFIX $ENV{LIBRARY_PREFIX})
+		endif()
+	elseif(ENABLE_CONDA)
+		# Assuming the active conda environment is on PATH, this finds the path of bin/ in the environment
+		find_path(CONDA_PREFIX conda
+					 PATHS ENV PATH
+				 )
+		get_filename_component(CONDA_PREFIX ${CONDA_PREFIX}/.. ABSOLUTE)
+
+		execute_process(COMMAND ${CONDA_PREFIX}/bin/python -c "import site; print site.getsitepackages()[0]"
+						OUTPUT_VARIABLE CONDA_SP_DIR
+						OUTPUT_STRIP_TRAILING_WHITESPACE
+					   )
 	endif()
 		
 	set(EMAN_PY_INSTALL_PREFIX ${CONDA_SP_DIR})
@@ -32,6 +54,7 @@ else()
 	set(EMAN_PY_INSTALL_PREFIX     ${EMAN_INSTALL_PREFIX}/lib)
 	file(WRITE ${EMAN_PY_INSTALL_PREFIX}/eman2dir_relative_path_to_sp_dir "../")
 endif()
+
 SET(CMAKE_INSTALL_PREFIX ${EMAN_INSTALL_PREFIX} CACHE INTERNAL "installation prefix")
 MARK_AS_ADVANCED(CLEAR EMAN_INSTALL_PREFIX)
 
@@ -220,7 +243,7 @@ ENDIF(ENABLE_IOCACHE)
 # ENDIF(ENABLE_HDFIOCACHE)
 
 
-if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD")
+if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" OR ENABLE_CONDA)
 	FUNCTION(message_debug var)
 		message("${var}: ${${var}}")
 	endfunction()
@@ -402,7 +425,7 @@ MACRO(CHECK_LIB_ONLY upper lower)
 ENDMACRO(CHECK_LIB_ONLY)
 
 MACRO(CHECK_PYTHON)
-	if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD")
+	if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" OR ENABLE_CONDA)
 		find_package(PythonInterp)
 		find_package(PythonLibs)
 
@@ -629,7 +652,7 @@ FIND_PATH(NUMPY_INCLUDE_PATH numpy/arrayobject.h
 	${CONDA_SP_DIR}/numpy/core/include
     NO_DEFAULT_PATH)
 
-if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD")
+if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" OR ENABLE_CONDA)
 	message("NUMPY_INCLUDE_PATH: ${NUMPY_INCLUDE_PATH}")
 endif()
 

@@ -365,12 +365,12 @@ def main():
 	parser.add_option("--ne",                   type="int",          default= 0,          help="number of times to erode binarized volume")
 	parser.add_option("--nd",                   type="int",          default= 0,          help="number of times to dilate binarized volume")
 
-	# Postprocess 3-D or 2-D images
+	# Postprocess 3-D  
 	parser.add_option("--postprocess",          action="store_true",                      help="postprocess unfiltered odd, even 3-D volumes",default=False)
 	parser.add_option("--mtf",                  type="string",        default= None,      help="mtf text file of camera")
 	parser.add_option("--fsc_adj",              action="store_true",                      help="adjust the power spectrum of summed volume by their FSC", default=False)
 	parser.add_option("--B_enhance",            type="float",         default=0.0,        help="apply Bfactor to enhance map or not")
-	parser.add_option("--low_pass_filter",      type="float",         default=0.0,        help="=0.0, low_pass filter to resolution limit; =some value, low_pass filter to some valume; =-1, not low_pass filter applied")
+	parser.add_option("--fl",                   type="float",         default=0.0,        help="=0.0, low_pass filter to resolution limit; =some value, low_pass filter to some valume; =-1, not low_pass filter applied")
 	parser.add_option("--aa",                   type="float",         default=.1,         help="low pass filter falloff" )
 	parser.add_option("--mask",                 type="string",        help="input mask file",  default = None)
 	parser.add_option("--output",               type="string",        help="output file name", default = "vol_postrefine_masked.hdf")
@@ -1128,6 +1128,7 @@ def main():
 					break
 					
 			resolution_FSC143_right = fsc_true[0][nfreq05]
+			nfreq143_right = nfreq05
 			for ifreq in xrange(nfreq0, nfreq05, -1):
 				if fsc_true[1][ifreq] >= 0.143:
 					resolution_FSC143_right = fsc_true[0][ifreq]

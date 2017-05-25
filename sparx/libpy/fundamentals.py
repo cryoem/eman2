@@ -1571,7 +1571,7 @@ class symclass():
 			self.symangles = []
 			for i in xrange(self.nsym):
 				self.symangles.append([0.0, 0.0, i*360./self.nsym])
-			
+
 		elif(sym[0] == "d"):
 			self.nsym = 2*int(sym[1:])
 			self.brackets = [[360./self.nsym,90.0,360./self.nsym,90.0],[360./self.nsym*2,90.0,360./self.nsym*2,90.0]]
