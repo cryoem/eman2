@@ -2,7 +2,7 @@
 
 source ci_support/pre_build.sh
 
-cmake $src_dir
+cmake $src_dir -DENABLE_CONDA=ON
 make
 make install
 
