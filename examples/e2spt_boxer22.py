@@ -184,7 +184,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		# 2-D filters
 		self.wfilt = ValSlider(rng=(0,150),label="Filt:",value=0.0)
 		self.gbl2.addWidget(self.wfilt,5,0,1,2)
-
+		
 		self.curbox=-1
 		
 		self.boxes=[]						# array of box info, each is (x,y,z,...)
@@ -218,6 +218,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		QtCore.QObject.connect(self.wfilt,QtCore.SIGNAL("valueChanged")  ,self.event_filter  )
 		QtCore.QObject.connect(self.wlocalbox,QtCore.SIGNAL("stateChanged(int)")  ,self.event_localbox  )
 
+		QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mousemove"),self.xy_move)
 		QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mousedown"),self.xy_down)
 		QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mousedrag"),self.xy_drag)
 		QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mouseup"),self.xy_up  )
@@ -322,9 +323,10 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				
 		
 		info.close()
-		self.sets_visible[self.sets.keys()[0]]=0
-		self.currentset=sorted(self.sets.keys())[0]
-		self.setspanel.update_sets()
+		if len(self.sets)>0:
+			self.sets_visible[self.sets.keys()[0]]=0
+			self.currentset=sorted(self.sets.keys())[0]
+			self.setspanel.update_sets()
 		self.e = None
 		print self.sets
 		for i in range(len(self.boxes)):
@@ -391,6 +393,9 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		if self.initialized:
 			self.update_all()
 
+	def eraser_width(self):
+		return int(self.optionviewer.eraser_radius.getValue())
+		
 	def get_cube(self,x,y,z, centerslice=False, boxsz=-1):
 		"""Returns a box-sized cube at the given center location"""
 		if boxsz<0:
@@ -860,9 +865,9 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		rr=(x>=0)*((box[0]-x)**2) + (y>=0)*((box[1]-y) **2) + (z>=0)*((box[2]-z)**2)
 		return rr<=bs**2
 
-	def do_deletion(self, n, delimgs=True):
+	def do_deletion(self, delids):
 		
-		kpids=[i for i,b in enumerate(self.boxes) if i!=n]
+		kpids=[i for i,b in enumerate(self.boxes) if i not in delids]
 		self.boxes=[self.boxes[i] for i in kpids]
 		self.boxesimgs=[self.boxesimgs[i] for i in kpids]
 		self.xyview.shapes={i:self.xyview.shapes[k] for i,k in enumerate(kpids)}
@@ -894,7 +899,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 
 		if self.boxviewer.get_data(): self.boxviewer.set_data(None)
 		self.curbox=-1
-		self.do_deletion(n)
+		self.do_deletion([n])
 
 	def compute_crossAB(self, a, b):
 		c1 = a[1]*b[2] - a[2]*b[1]
@@ -1049,6 +1054,19 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			self.helixboxes.append([xf, zf, yf, xi, zi, yi])
 		else:
 			self.helixboxes.append([xf, yf, zf, xi, yi, zi])
+	
+	def del_region_xy(self, x=-1, y=-1, z=-1, rad=-1):
+		if rad<0:
+			rad=self.eraser_width()
+		
+		delids=[]
+		for i,b in enumerate(self.boxes):
+			if b[5] not in self.sets_visible:
+				continue
+			
+			if (x>=0)*(b[0]-x)**2 + (y>=0)*(b[1]-y)**2 +(z>=0)*(b[2]-z)**2 < rad**2:
+				delids.append(i)
+		self.do_deletion(delids)
 
 	def xy_down(self,event):
 		x,y=self.xyview.scr_to_img((event.x(),event.y()))
@@ -1056,7 +1074,10 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		z=int(self.get_z())
 		self.xydown=None
 		if x<0 or y<0 : return		# no clicking outside the image (on 2 sides)
-
+		if self.optionviewer.erasercheckbox.isChecked():
+			self.del_region_xy(x,y)
+			return
+			
 		for i in range(len(self.boxes)):
 			if self.inside_box(i,x,y,z):
 				if event.modifiers()&Qt.ShiftModifier:
@@ -1088,26 +1109,21 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			self.zyview.scroll_to(box[2],None)
 
 	def xy_drag(self,event):
-		if self.xydown==None : return
-
+		
 		x,y=self.xyview.scr_to_img((event.x(),event.y()))
 		x,y=int(x),int(y)
+		if self.optionviewer.erasercheckbox.isChecked():
+			self.del_region_xy(x,y)
+			self.xyview.eraser_shape=EMShape(["circle",1,1,1,x,y,self.eraser_width(),2])
+			self.xyview.shapechange=1
+			self.xyview.update()
+			return
+		
+		if self.xydown==None : return
+
 
 		dx=x-self.xydown[1]
 		dy=y-self.xydown[2]
-		if self.helixboxer:
-			if len(self.boxes) % 2 == 0 or (self.xydown[0] != len(self.boxes)-1):	# Only update the helix boxer if it is paired, otherwise treat it as a regular box
-				hb = self.helixboxes[int(self.xydown[0]/2)]
-				if self.xydown[0] % 2 == 0:
-					hb[3] = dx+self.xydown[3]
-					hb[4] = dy+self.xydown[4]
-				else:
-					hb[0] = dx+self.xydown[3]
-					hb[1] = dy+self.xydown[4]
-				self.update_helixbox(int(self.xydown[0]/2))
-			else:
-				self.firsthbclick[0] = x
-				self.firsthbclick[1] = y
 
 		self.boxes[self.xydown[0]][0]=dx+self.xydown[3]
 		self.boxes[self.xydown[0]][1]=dy+self.xydown[4]
@@ -1140,6 +1156,16 @@ class EMTomoBoxer(QtGui.QMainWindow):
 
 		zyo=self.zyview.get_origin()
 		self.zyview.set_origin(zyo[0],newor[1],True)
+	
+	def xy_move(self,event):
+		if self.optionviewer.erasercheckbox.isChecked():
+			x,y=self.xyview.scr_to_img((event.x(),event.y()))
+			#print x,y
+			self.xyview.eraser_shape=EMShape(["circle",1,1,1,x,y,self.eraser_width(),2])
+			self.xyview.shapechange=1
+			self.xyview.update()
+		else:
+			self.xyview.eraser_shape=None
 
 	def xz_down(self,event):
 		x,z=self.xzview.scr_to_img((event.x(),event.y()))
@@ -1147,7 +1173,8 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		y=int(self.get_y())
 		self.xzdown=None
 		if x<0 or z<0 : return		# no clicking outside the image (on 2 sides)
-
+		if self.optionviewer.erasercheckbox.isChecked():
+			return
 		for i in range(len(self.boxes)):
 			if (not self.wlocalbox.isChecked() and self.inside_box(i,x,y,z)) or self.inside_box(i,x,self.cury,z) :
 				if event.modifiers()&Qt.ShiftModifier:
@@ -1325,13 +1352,9 @@ class EMTomoBoxer(QtGui.QMainWindow):
 	def delete_set(self, name):
 		name=parse_setname(name)
 		## idx to keep
-		kpids=[i for i,b in enumerate(self.boxes) if b[5]!=int(name)]
+		delids=[i for i,b in enumerate(self.boxes) if b[5]==int(name)]
+		self.do_deletion(delids)
 		
-		self.boxes=[self.boxes[i] for i in kpids]
-		self.boxesimgs=[self.boxesimgs[i] for i in kpids]
-		self.xyview.shapes={i:self.xyview.shapes[k] for i,k in enumerate(kpids)}
-		self.xzview.shapes={i:self.xzview.shapes[k] for i,k in enumerate(kpids)}
-		self.zyview.shapes={i:self.zyview.shapes[k] for i,k in enumerate(kpids)}
 		if name in self.sets_visible: self.sets_visible.pop(name)
 		if name in self.sets: self.sets.pop(name)
 		if name in self.boxsize: self.boxsize.pop(name)
@@ -1532,13 +1555,20 @@ class EMTomoBoxerOptions(QtGui.QWidget):
 		self.setWindowTitle("Options")
 		self.target=weakref.ref(target)
 		
-		self.vbl = QtGui.QVBoxLayout(self)
-		self.vbl.setMargin(2)
-		self.vbl.setSpacing(6)
-		self.vbl.setObjectName("vbl")
+		self.gbl = QtGui.QGridLayout(self)
+		#self.gbl.setMargin(2)
+		#self.gbl.setSpacing(6)
+		self.gbl.setObjectName("gbl")
+		
+		
+		self.erasercheckbox=QtGui.QCheckBox("Eraser")
+		self.gbl.addWidget(self.erasercheckbox,0,0)
+		
+		self.eraser_radius=ValBox(label="Radius:",value=64)
+		self.gbl.addWidget(self.eraser_radius,0,1)
 
 		self.tabwidget = QtGui.QTabWidget()
-		self.vbl.addWidget(self.tabwidget)
+		self.gbl.addWidget(self.tabwidget,1,0,1,2)
 		
 	def add_panel(self,widget,name):
 		self.tabwidget.addTab(widget,name)
@@ -1634,6 +1664,8 @@ class EMTomoSetsPanel(QtGui.QWidget):
 	def rename_set(self,unused=None):
 		selections = self.setlist.selectedItems()
 		sels=[str(i.text()) for i in selections]
+		if len(sels)==0:
+			return
 		name,ok=QtGui.QInputDialog.getText( self, "Set Name", "Enter a name for the new set:")
 		if not ok : return
 		name=str(name)
