@@ -75,9 +75,9 @@ def main():
 	parser.add_argument("--bestali", default=False, help="Average of best aligned frames.",action="store_true", guitype='boolbox', row=7, col=1, rowspan=1, colspan=1, mode='align')
 	parser.add_argument("--allali", default=False, help="Average of all aligned frames.",action="store_true", guitype='boolbox', row=7, col=2, rowspan=1, colspan=1, mode='align')
 	parser.add_argument("--noali", default=False, help="Average of non-aligned frames.",action="store_true", guitype='boolbox', row=8, col=0, rowspan=1, colspan=1, mode='align')
-	parser.add_argument("--ali4to14", default=False, help="Average of frames from 4 to 14.",action="store_true", guitype='boolbox', row=8, col=1, rowspan=1, colspan=1, mode='align')
-	parser.add_argument("--rangeali", default=None, help="Average frames n1-n2",type=str, guitype='strbox', row=8, col=3, rowspan=1, colspan=1, mode='align')
-	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful", guitype='intbox', row=9, col=0, rowspan=1, colspan=2, mode="align")
+	parser.add_argument("--ali4to14", default=False, help="Average of frames from 4 to 14.",action="store_true")
+	parser.add_argument("--rangeali", default="", help="Average frames n1-n2",type=str, guitype='strbox', row=8, col=1, rowspan=1, colspan=1, mode='align')
+	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful", guitype='intbox', row=9, col=0, rowspan=1, colspan=1, mode="align")
 
 	parser.add_header(name="orblock3", help='Just a visual separation', title="Optional: ", row=10, col=0, rowspan=1, colspan=3, mode="align")
 	parser.add_argument("--optbox", type=int,help="Box size to use during alignment optimization. Default is 256.",default=256, guitype='intbox', row=11, col=0, rowspan=1, colspan=1, mode="align")
@@ -94,7 +94,7 @@ def main():
 	parser.add_argument("--fixbadpixels",action="store_true",default=False,help="Tries to identify bad pixels in the dark/gain reference, and fills images in with sane values instead", guitype='boolbox', row=14, col=1, rowspan=1, colspan=1, mode='align')
 	#parser.add_argument("--simpleavg", action="store_true",help="Will save a simple average of the dark/gain corrected frames (no alignment or weighting)",default=False)
 	#parser.add_argument("--avgs", action="store_true",help="Testing",default=False)
-	parser.add_argument("--align_frames", action="store_true",help="Perform whole-frame alignment of the input stacks",default=False, guitype='boolbox', row=16, col=0, rowspan=1, colspan=1, mode='align[True]')
+	parser.add_argument("--align_frames", action="store_true",help="Perform whole-frame alignment of the input stacks",default=False, guitype='boolbox', row=9, col=1, rowspan=1, colspan=1, mode='align[True]')
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
@@ -461,14 +461,14 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 				out.write("{}\t{}\t{}\t{}\t{}\t{}\n".format(i,dx,dy,dr,reldr,quals[i]))
 
 			if options.goodali:
-				thr=max(quals)*0.6	# max correlation cutoff for inclusion
+				thr=(max(quals[1:])-min(quals))*0.6+min(quals)	# max correlation cutoff for inclusion
 				best=[im for i,im in enumerate(outim) if quals[i]>thr]
 				out=qsum(best)
 				print("Keeping {}/{} frames".format(len(best),len(outim)))
 				out.write_image("{}__goodali.hdf".format(alioutname),0)
 
 			if options.bestali:
-				thr=max(quals)*0.75	# max correlation cutoff for inclusion
+				thr=(max(quals[1:])-min(quals))*0.75+min(quals)	# max correlation cutoff for inclusion
 				best=[im for i,im in enumerate(outim) if quals[i]>thr]
 				out=qsum(best)
 				print("Keeping {}/{} frames".format(len(best),len(outim)))
@@ -478,14 +478,14 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 				# skip the first 4 frames then keep 10
 				out=qsum(outim[4:14])
 				out.write_image("{}__4-14.hdf".format(alioutname),0)
-			if options.rangeali != False:
-				if len(options.rangeali)>0:
-					try: rng=[int(i) for i in options.rangeali.split("-")]
-					except:
-						print "Error: please specify --rangeali as X-Y where X and Y are inclusive starting with 0"
-						sys.exit(1)
-					out=qsum(outim[rng[0]:rng[1]+1])
-					out.write_image("{}__{}-{}.hdf".format(alioutname,rng[0],rng[1]))
+
+			if len(options.rangeali)>0:
+				try: rng=[int(i) for i in options.rangeali.split("-")]
+				except:
+					print "Error: please specify --rangeali as X-Y where X and Y are inclusive starting with 0"
+					sys.exit(1)
+				out=qsum(outim[rng[0]:rng[1]+1])
+				out.write_image("{}__{}-{}.hdf".format(alioutname,rng[0],rng[1]))
 
 			#print "{:1.1f}\nDone".format(time()-t0)
 			print("Done")
