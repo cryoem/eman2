@@ -1165,7 +1165,7 @@ def do3d_final_mpi(final_iter):
 			del tweight1, treg1
 			if( Blockdata["myid_on_node"] == 0):
 				tvol1.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_1_unfil.hdf"))
-			mpi_barrier(MPI_COMM_WORLD)
+		mpi_barrier(MPI_COMM_WORLD)
 	else:
 		for iproc in xrange(2):
 			if(Blockdata["myid_on_node"] == 0):
@@ -5286,7 +5286,6 @@ def do_final_rec3d(partids, partstack, original_data, oldparams, oldparamstructu
 		mpi_barrier(Blockdata["subgroup_comm"])
 	mpi_barrier(MPI_COMM_WORLD)
 	do3d_final_mpi(final_iter)
-	mpi_barrier(MPI_COMM_WORLD)
 	# also copy params to masterdir as final params
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		cmd = "{} {}  {}".format("cp ", os.path.join(final_dir, "params_%03d.txt"%Tracker["mainiteration"]), os.path.join(Tracker["constants"]["masterdir"], "final_params.txt"))
@@ -6964,10 +6963,6 @@ def main():
 					else: print(line,"The last iteration does not capture the best resolution")
 					del Tracker_final_iter
 				mpi_barrier(MPI_COMM_WORLD)
-				
-				Blockdata["ncpuspernode"] 	= 2
-				Blockdata["nsubset"] 		= Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
-				create_subgroup()
 				newparamstructure 			= [[],[]]
 				projdata          			= [[model_blank(1,1)], [model_blank(1,1)]]
 				original_data     			= [None,None]
