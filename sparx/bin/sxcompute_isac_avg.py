@@ -374,6 +374,9 @@ def main():
 					new_avg = adjust_pw_to_model(new_avg, Tracker["constants"]["pixel_size"], roo)
 					print("Process avg  %d   %f   %f"%(iavg, FH1, FH2))
 				if Tracker["constants"]["low_pass_filter"] !=-1.: new_avg = filt_tanl(new_avg, Tracker["constants"]["low_pass_filter"], 0.1)
+				# write members into header:
+				new_avg.set_attr("members", list_dict[iavg])
+				new_avg.set_attr("n_objects", len(list_dict[iavg]))
 		mpi_barrier(MPI_COMM_WORLD)
 		for im in xrange(navg): # avg
 			if im == Blockdata["myid"] and Blockdata["myid"] != Blockdata["main_node"]:
@@ -463,6 +466,8 @@ def main():
 					print("Process avg  %d  %f  %f  %f"%(iavg, gb, FH1, FH2))
 				
 			if Tracker["constants"]["low_pass_filter"] !=-1.:new_avg = filt_tanl(new_avg, Tracker["constants"]["low_pass_filter"], 0.1)		
+			new_avg.set_attr("members", list_dict[iavg])
+			new_avg.set_attr("n_objects", len(list_dict[iavg]))
 			slist[iavg]    = new_avg
 			ini_list[iavg] = ini_avg
 			avg1_list[iavg]= new_average1
