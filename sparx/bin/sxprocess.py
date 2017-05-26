@@ -303,8 +303,8 @@ def main():
 		--do_adaptive_mask =True when it is restored, the program adaptively creates adaptive mask file using summed two volumes. This takes a couple of minutes. For map with dimension of 384*384*384, it takes 6 minutes.
 		--output           output volume 
 										
-		sxprocess.py vol_0_unfil.hdf vol_1_unfil.hdf  --mask=mask15.hdf --postprocess   --pixel_size=1.12     --low_pass_filter =-1  --mtf=aa.txt  --fsc_adj --output=vol_post.hdf 
-		sxprocess.py vol_0_unfil.hdf vol_1_unfil.hdf  --mask=mask15.hdf --postprocess   --pixel_size=1.12     --low_pass_filter=4.7  --mtf=aa.txt --fsc_adj
+		sxprocess.py vol_0_unfil.hdf vol_1_unfil.hdf  --mask=mask15.hdf --postprocess   --pixel_size=1.12     --fl =-1  --mtf=aa.txt  --fsc_adj --output=vol_post.hdf 
+		sxprocess.py vol_0_unfil.hdf vol_1_unfil.hdf  --mask=mask15.hdf --postprocess   --pixel_size=1.12     --fl=4.7  --mtf=aa.txt --fsc_adj
 		sxprocess.py vol_0_unfil.hdf vol_1_unfil.hdf  --do_adaptive_mask   --postprocess   --pixel_size=1.12   --mtf=aa.txt --fsc_adj --output=ribosome_postrefine.hdf
 		
 	 for 2-D images:       calculate B-factor and apply negative B-factor to 2-D images.
@@ -366,13 +366,13 @@ def main():
 	parser.add_option("--nd",                   type="int",          default= 0,          help="number of times to dilate binarized volume")
 
 	# Postprocess 3-D  
-	parser.add_option("--postprocess",          action="store_true",                      help="postprocess unfiltered odd, even 3-D volumes",default=False)
-	parser.add_option("--mtf",                  type="string",        default= None,      help="mtf text file of camera")
-	parser.add_option("--fsc_adj",              action="store_true",                      help="adjust the power spectrum of summed volume by their FSC", default=False)
-	parser.add_option("--B_enhance",            type="float",         default=0.0,        help="apply Bfactor to enhance map or not")
+	parser.add_option("--postprocess",          action="store_true",                      help="flag to turn on postprocessing unfiltered odd, even 3-D volumes",default=False)
+	parser.add_option("--mtf",                  type="string",        default= None,      help="entry for mtf text file of camera")
+	parser.add_option("--fsc_adj",              action="store_true",                      help="flag to turn on power spectrum adjustment of summed volume by their FSC", default=False)
+	parser.add_option("--B_enhance",            type="float",         default=0.0,        help="apply Bfactor (!=-1.)to enhance map or not (=-1)")
 	parser.add_option("--fl",                   type="float",         default=0.0,        help="=0.0, low_pass filter to resolution limit; =some value, low_pass filter to some valume; =-1, not low_pass filter applied")
 	parser.add_option("--aa",                   type="float",         default=.1,         help="low pass filter falloff" )
-	parser.add_option("--mask",                 type="string",        help="input mask file",  default = None)
+	parser.add_option("--mask",                 type="string",        help="path for input mask file",  default = None)
 	parser.add_option("--output",               type="string",        help="output file name", default = "vol_postrefine_masked.hdf")
 	parser.add_option("--pixel_size",           type="float",         help="pixel size of the data", default=0.0)
 	parser.add_option("--B_start",              type="float",         help="starting frequency in Angstrom for B-factor estimation", default=10.)
@@ -957,7 +957,7 @@ def main():
 			log_main.add("pixle_size  		:"+str(options.pixel_size))
 			log_main.add("mask        		:"+str(options.mask))
 			log_main.add("B_enhance   		:"+str(options.B_enhance))
-			log_main.add("low_pass_filter  	:"+str(options.low_pass_filter))
+			log_main.add("low_pass_filter  	:"+str(options.fl))
 			log_main.add("B_start  		:"+str(options.B_start))
 			log_main.add("B_stop   		:"+str(options.B_stop))
 			log_main.add("randomphasesafter    "+str(options.randomphasesafter))
@@ -994,11 +994,11 @@ def main():
 					log_main.add( "User provided B_factor is %f"%global_b)
 				sigma_of_inverse = sqrt(2./global_b)
 				e1 = filt_gaussinv(e1,sigma_of_inverse)
-				if options.low_pass_filter > 0.0 and options.low_pass_filte < 0.5:
-					log_main.add("low-pass filter ff %   aa  %f"%(options.low_pass_filter, options.aa))
-					e1 =filt_tanl(e1,options.low_pass_filter, options.aa)
+				if options.fl > 0.0 and options.low_pass_filte < 0.5:
+					log_main.add("low-pass filter ff %   aa  %f"%(options.fl, options.aa))
+					e1 =filt_tanl(e1,options.fl, options.aa)
 				elif options.low_pass_filte>0.5:
-					e1 =filt_tanl(e1,options.low_pass_filter/option.pixel_size, options.aa)
+					e1 =filt_tanl(e1,options.fl/option.pixel_size, options.aa)
 				e1.write_image(options.output)
 				
 		else: # 3D case
@@ -1007,7 +1007,7 @@ def main():
 			log_main.add("mask        		:"+str(options.mask))
 			log_main.add("fsc_adj     		:"+str(options.fsc_adj))
 			log_main.add("B_enhance   		:"+str(options.B_enhance))
-			log_main.add("low_pass_filter  	:"+str(options.low_pass_filter))
+			log_main.add("low_pass_filter  	:"+str(options.fl))
 			log_main.add("B_start  		:"+str(options.B_start))
 			log_main.add("B_stop   		:"+str(options.B_stop))
 			log_main.add("mtf     			:"+str(options.mtf))
@@ -1223,14 +1223,14 @@ def main():
 					else: outtext[-1].append("%10.6f"%last_non_zero)
 			else: log_main.add("B-factor enhancement is not applied to map!")
 									
-			if options.low_pass_filter !=-1.: # User provided low-pass filter #4.
-				if options.low_pass_filter>0.5: # Input is in Angstrom 
-					map1   = filt_tanl(map1,options.pixel_size/options.low_pass_filter, min(options.aa,.1))
-					cutoff = options.low_pass_filter
+			if options.fl !=-1.: # User provided low-pass filter #4.
+				if options.fl>0.5: # Input is in Angstrom 
+					map1   = filt_tanl(map1,options.pixel_size/options.fl, min(options.aa,.1))
+					cutoff = options.fl
 					
-				elif options.low_pass_filter>0.0 and options.low_pass_filter<0.5:  # input is in absolution frequency
-					map1   = filt_tanl(map1,options.low_pass_filter, min(options.aa,.1))
-					cutoff = options.pixel_size/options.low_pass_filter
+				elif options.fl>0.0 and options.fl<0.5:  # input is in absolution frequency
+					map1   = filt_tanl(map1,options.fl, min(options.aa,.1))
+					cutoff = options.pixel_size/options.fl
 					
 				else: # low-pass filter to resolution determined by FSC0.143
 					map1   = filt_tanl(map1,resolution_FSC143, options.aa)
@@ -1252,7 +1252,7 @@ def main():
 			log_main.add("FSC curve is saved in fsc.txt ")
 			log_main.add("The Final volume is "+options.output)
 			log_main.add("guinierlines in logscale are saved in guinierlines.txt")
-			if options.low_pass_filter !=-1: log_main.add("Top hat low-pass filter is applied to cut off high frequencies from resolution 1./%5.2f Angstrom" %round(cutoff,2))
+			if options.fl !=-1: log_main.add("Top hat low-pass filter is applied to cut off high frequencies from resolution 1./%5.2f Angstrom" %round(cutoff,2))
 			else: log_main.add("The final volume is not low_pass filtered. ")
 			write_text_file(outtext, "guinierlines.txt")
 			log_main.add("-----------------------------------")
