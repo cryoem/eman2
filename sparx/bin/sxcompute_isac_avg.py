@@ -364,8 +364,8 @@ def main():
 				#write_text_file(frc, os.path.join(Tracker["constants"]["masterdir"], "fsc%03d.txt"%iavg))
 				if Tracker["constants"]["nopwadj"]: # pw adjustment, 1. analytic model 2. PDB model 3. B-facttor enhancement
 					if Tracker["constants"]["B_enhance"]:
-					new_avg, gb = apply_enhancement(new_avg, Tracker["constants"]["B_start"], Tracker["constants"]["pixel_size"], Tracker["constants"]["Bfactor"])
-					print("Process avg  %d  %f  %f   %f"%(iavg, gb, FH1, FH2))
+						new_avg, gb = apply_enhancement(new_avg, Tracker["constants"]["B_start"], Tracker["constants"]["pixel_size"], Tracker["constants"]["Bfactor"])
+						print("Process avg  %d  %f  %f   %f"%(iavg, gb, FH1, FH2))
 				else:
 					try: 
 						roo = read_text_file(Tracker["constants"]["modelpw"], -1)
