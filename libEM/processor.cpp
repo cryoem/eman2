@@ -2506,36 +2506,90 @@ void MedianShrinkProcessor::accrue_median(EMData* to, const EMData* const from,c
 
 EMData* FFTResampleProcessor::process(const EMData *const image)
 {
+	if (image->is_complex()) throw ImageFormatException("FFTResampleProcessor does not support complex images.");
+
 	float sample_rate = params.set_default("n",0.0f);
 	if (sample_rate <= 0.0F	 )	{
-		throw InvalidValueException(sample_rate,	"sample rate must be >0 ");
+		throw InvalidValueException(sample_rate,	"downsampling must be >0 ");
 	}
 
-	EMData* result;
-	if (image->is_complex()) result = image->copy();
-	else result = image->do_fft();
-	fft_resample(result,image,sample_rate);
-	// The image may have been padded - we should shift it so that the phase origin is where FFTW expects it
+	int nx=image->get_xsize();
+	int ny=image->get_ysize();
+	int nz=image->get_zsize();
+
+	int nnx=(int)floor(nx/sample_rate+0.5f);
+	int nny=(ny==1?1:(int)floor(ny/sample_rate+0.5f));
+	int nnz=(nz==1?1:(int)floor(nz/sample_rate+0.5f));
+
+	if (nnx==nx && nny==ny && nnz==nz) return image->copy();
+
+	EMData *result;
+	//downsample
+	if (nnx<nx||nny<ny||nnz<nz) {
+		// the type casting here is because FourTruncate was not defined to be const (but it is)
+		result=((EMData *)image)->FourTruncate(nnx, nny, nnz, 1, 0);	// nnx,nny,nnz,returnreal,normalize
+	} //upscale
+	else {
+		// the type casting here is because FourTruncate was not defined to be const (but it is)
+		result=((EMData *)image)->FourInterpol(nnx, nny, nnz, 1, 0);	// nnx,nny,nnz,returnreal,normalize
+	}
+	result->set_attr("apix_x",(float)result->get_attr("apix_x")*(float)nx/(float)nnx);
+	result->set_attr("apix_y",(float)result->get_attr("apix_y")*(float)ny/(float)nny);
+	result->set_attr("apix_z",(float)result->get_attr("apix_z")*(float)nz/(float)nnz);
 	result->update();
-	result->scale_pixel(sample_rate);
 	return result;
+	
+
+//	EMData* result;
+//	if (image->is_complex()) result = image->copy();
+//	else result = image->do_fft();
+//	fft_resample(result,image,sample_rate);
+	// The image may have been padded - we should shift it so that the phase origin is where FFTW expects it
+//	result->update();
+//	result->scale_pixel(sample_rate);
+//	return result;
 }
 
 void FFTResampleProcessor::process_inplace(EMData * image)
 {
-	if (image->is_complex()) throw ImageFormatException("Error, the fft resampling processor does not work on complex images");
-
-
 	float sample_rate = params.set_default("n",0.0f);
 	if (sample_rate <= 0.0F	 )	{
 		throw InvalidValueException(sample_rate,	"sample rate (n) must be >0 ");
 	}
+	//if (image->is_complex()) throw ImageFormatException("Error, the fft resampling processor does not work on complex images");
 
-	fft_resample(image,image,sample_rate);
+	int nx=image->get_xsize();
+	int ny=image->get_ysize();
+	int nz=image->get_zsize();
 
-	image->scale_pixel(sample_rate);
+	int nnx=(int)floor(nx/sample_rate+0.5f);
+	int nny=(ny==1?1:(int)floor(ny/sample_rate+0.5f));
+	int nnz=(nz==1?1:(int)floor(nz/sample_rate+0.5f));
+
+	if (nnx==nx && nny==ny && nnz==nz) return;
+
+	EMData *result;
+	//downsample
+	if (nnx<nx||nny<ny||nnz<nz) {
+		// the type casting here is because FourTruncate was not defined to be const (but it is)
+		result=((EMData *)image)->FourTruncate(nnx, nny, nnz, 1, 0);	// nnx,nny,nnz,returnreal,normalize
+	} //upscale
+	else {
+		// the type casting here is because FourTruncate was not defined to be const (but it is)
+		result=((EMData *)image)->FourInterpol(nnx, nny, nnz, 1, 0);	// nnx,nny,nnz,returnreal,normalize
+	}
+
+	image->set_size(nnx,nny,nnz);
+	memcpy(image->get_data(),result->get_data(),nnx*nny*nnz*sizeof(float));
+	image->set_attr("apix_x",(float)image->get_attr("apix_x")*(float)nx/(float)nnx);
+	image->set_attr("apix_y",(float)image->get_attr("apix_y")*(float)ny/(float)nny);
+	image->set_attr("apix_z",(float)image->get_attr("apix_z")*(float)nz/(float)nnz);
 	image->update();
+	delete result;
 
+	//fft_resample(image,image,sample_rate);
+
+	//image->scale_pixel(sample_rate);
 
 }
 

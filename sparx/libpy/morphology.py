@@ -2248,7 +2248,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 	# --------------------------------------------------------------------------------
 	if pixel_size <= 0.0:
 		error_message_list.append("Pixel size (%f) must not be negative. Please set a pasitive value larger than 0.0 to pixel_size option." % (pixel_size))
-	
+
 	if wn <= 0.0:
 		error_message_list.append("CTF window size (%d) must not be negative. Please set a valid value larger than 0 to wn option." % (wn))
 	
@@ -2297,6 +2297,12 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			if check_consistency:
 				print(" ")
 				print("WARNING!!! --check_consistency option will be ignored in %s." % (cter_mode_name))
+			if Cs == 0.0:
+				print(" ")
+				print("WARNING!!! Cs cannot be set to zero due to numberical problems. It is reset to 0.001")
+
+	if Cs == 0.0:  Cs = 0.001
+
 		# else: 
 		# 	assert (not stack_mode)
 		# 	# No warnings
@@ -2352,7 +2358,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			print("Checking the input directory...")
 			input_mic_path_list = glob.glob(mic_pattern)
 			# Check error condition of input  file path list
-			print("Found %d microgarphs in %s." % (len(input_mic_path_list), os.path.dirname(mic_pattern)))
+			print("Found %d micrographs in %s." % (len(input_mic_path_list), os.path.dirname(mic_pattern)))
 			if len(input_mic_path_list) == 0:
 				# The result shouldn't be empty if the specified  file name pattern is invalid
 				error_status = ("There are no s whose paths match with the specified file path pattern (%s) for %s. Please check input_image_path. Run %s -h for help." % (mic_pattern, cter_mode_name, program_name), getframeinfo(currentframe()))
@@ -3127,8 +3133,8 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 						# print "MRK_DEBUG: Trough Search: extremum_i = %03d, freq[extremum_i] = %12.5g, extremum_counts = %03d, (pwrot1[extremum_i] - pwrot2[extremum_i]) = %12.5g, extremum_diff_sum = %12.5g " % (extremum_i, freq[extremum_i] , extremum_counts, (pwrot1[extremum_i] - pwrot2[extremum_i]), extremum_diff_sum)
 						is_peak_target = True
 					pre_crot2_val = cur_crot2_val
-				if extremum_counts == 0: ERROR("Logical Error: Encountered unexpected zero extremum counts. Consult with the developer." % (bd1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
-				extremum_diff_avg = extremum_diff_sum / extremum_counts
+				#if extremum_counts == 0: ERROR("Logical Error: Encountered unexpected zero extremum counts. Consult with the developer." % (bd1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
+				extremum_diff_avg = 1.1#extremum_diff_sum / extremum_counts
 				
 				# print "MRK_DEBUG: extremum_avg = %12.5g, extremum_diff_sum = %12.5g, extremum_counts = %03d," % (extremum_avg, extremum_diff_sum, extremum_counts)
 				
@@ -3379,7 +3385,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 		error_message_list.append("Pixel size (%f) must not be negative. Please set a pasitive value larger than 0.0 to pixel_size option." % (pixel_size))
 	
 	if wn <= 0.0:
-		error_message_list.append("CTF window size (%d) must not be negative. Please set a valid value larger than 0 to wn option." % (wn))
+		error_message_list.append("CTF window size (%d) must not be negative. Please set a valid value larger than 0 to wn option.")
 	
 	# --------------------------------------------------------------------------------
 	# Print all error messages and abort the process if necessary.
@@ -3426,6 +3432,11 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 			if check_consistency:
 				print(" ")
 				print("WARNING!!! --check_consistency option will be ignored in %s." % (cter_mode_name))
+			if Cs == 0.0:
+				print(" ")
+				print("WARNING!!! Cs cannot be set to zero due to numberical problems. It is reset to 0.001")
+
+	if Cs == 0.0:  Cs = 0.001
 		# else: 
 		# 	assert (not stack_mode)
 		# 	# No warnings
@@ -3481,7 +3492,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 			print("Checking the input directory...")
 			input_mic_path_list = glob.glob(mic_pattern)
 			# Check error condition of input  file path list
-			print("Found %d microgarphs in %s." % (len(input_mic_path_list), os.path.dirname(mic_pattern)))
+			print("Found %d micrographs in %s." % (len(input_mic_path_list), os.path.dirname(mic_pattern)))
 			if len(input_mic_path_list) == 0:
 				# The result shouldn't be empty if the specified  file name pattern is invalid
 				error_status = ("There are no s whose paths match with the specified file path pattern (%s) for %s. Please check input_image_path. Run %s -h for help." % (mic_pattern, cter_mode_name, program_name), getframeinfo(currentframe()))
@@ -4247,8 +4258,8 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 						# print "MRK_DEBUG: Trough Search: extremum_i = %03d, freq[extremum_i] = %12.5g, extremum_counts = %03d, (pwrot1[extremum_i] - pwrot2[extremum_i]) = %12.5g, extremum_diff_sum = %12.5g " % (extremum_i, freq[extremum_i] , extremum_counts, (pwrot1[extremum_i] - pwrot2[extremum_i]), extremum_diff_sum)
 						is_peak_target = True
 					pre_crot2_val = cur_crot2_val
-				if extremum_counts == 0: ERROR("Logical Error: Encountered unexpected zero extremum counts. Consult with the developer." % (bd1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
-				extremum_diff_avg = extremum_diff_sum / extremum_counts
+				#if extremum_counts == 0: ERROR("Logical Error: Encountered unexpected zero extremum counts. Consult with the developer." % (bd1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
+				extremum_diff_avg = 1.1#extremum_diff_sum / extremum_counts
 				
 				# print "MRK_DEBUG: extremum_avg = %12.5g, extremum_diff_sum = %12.5g, extremum_counts = %03d," % (extremum_avg, extremum_diff_sum, extremum_counts)
 				
@@ -4435,11 +4446,18 @@ def defocus_baseline_fit(roo, i_start, i_stop, nrank, iswi):
 	baseline   = np.zeros(nroo, np.float32)
 	ord = len(TMP[-1])
 	freqstep = TMP[0][1]
-	for i in xrange(len(roo)):
-		freq = freqstep*(i-i_start)
-		tmp = TMP[-1][-1]
-		for j in xrange(1,ord): tmp += TMP[-1][j-1]*freq**j
-		baseline[i] = tmp
+	if(iswi == 3):
+		for i in xrange(len(roo)):
+			freq = freqstep*(i-i_start)
+			tmp = TMP[-1][-1]
+			for j in xrange(1,ord): tmp += TMP[-1][j-1]*freq**j
+			baseline[i] = tmp
+	else:
+		for i in xrange(i_start, i_stop):
+			freq = freqstep*(i-i_start)
+			tmp = TMP[-1][-1]
+			for j in xrange(1,ord): tmp += TMP[-1][j-1]*freq**j
+			baseline[i] = tmp
 	return np.exp(baseline)
 
 def simpw1d(defocus, data):
@@ -4469,7 +4487,22 @@ def simpw1d_pap(defocus, data):
 	#ct = data[1]*np.array( ctf_1d(data[2], generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]), doabs= True)[data[8]:data[9]], np.float32)
 	ct = np.array( ctf_1d(data[2], generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]), doabs= True)[data[8]:data[9]], np.float32)
 	#print  " 1d  ",sum(data[0]*ct),np.linalg.norm(ct,2)
-	return  -sum(data[0]*ct)/np.linalg.norm(ct,2)
+	return  -sum(data[0]*ct/data[1])/np.linalg.norm(ct,2)
+
+def simpw1d_print(defocus, data):
+	import numpy as np
+	from morphology import ctf_1d
+	from utilities import generate_ctf
+	from math import sqrt
+	
+	#[defocus, cs, voltage, apix, bfactor, ampcont, astigmatism_amplitude, astigmatism_angle]
+	#  data = [subpw[i_start:i_stop], envelope[i_start:i_stop], nx, defocus, Cs, voltage, Pixel_size, ampcont, i_start, i_stop]
+	# data[1] - envelope
+	#ct = data[1]*np.array( ctf_1d(data[2], generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]), doabs= True)[data[8]:data[9]], np.float32)
+	ct = np.array( ctf_1d(data[2], generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]), doabs= True)[data[8]:data[9]], np.float32)
+	#print  " 1d  ",sum(data[0]*ct),np.linalg.norm(ct,2)
+	for i in xrange(len(data[0])):  print i,i+data[8],data[0][i],ct[i],data[1][i],data[0][i]/data[1][i]
+	return  -sum(data[0]*ct/data[1])/np.linalg.norm(ct,2)
 
 def simpw2d(defocus, data2d):
 	from utilities import generate_ctf
@@ -4542,7 +4575,6 @@ def movingaverage(data, window_size, skip = 3):
 	nc2 = window_size + window_size//2 +1
 	for i in xrange(ld):   out[i] = sum(qt[i+nc1:i+nc2])
 	return out*np.float32(1.0/window_size)
-
 
 def localvariance(data, window_size, skip = 3):
 	import numpy as np
@@ -5793,7 +5825,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 	# --------------------------------------------------------------------------------
 	if pixel_size <= 0.0:
 		error_message_list.append("Pixel size (%f) must not be negative. Please set a pasitive value larger than 0.0 to pixel_size option." % (pixel_size))
-	
+
 	if wn <= 0.0:
 		error_message_list.append("CTF window size (%d) must not be negative. Please set a valid value larger than 0 to wn option." % (wn))
 	
@@ -5842,6 +5874,11 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			if check_consistency:
 				print(" ")
 				print("WARNING!!! --check_consistency option will be ignored in %s." % (cter_mode_name))
+			if Cs == 0.0:
+				print(" ")
+				print("WARNING!!! Cs cannot be set to zero due to numberical problems. It is reset to 0.001")
+
+	if Cs == 0.0:  Cs = 0.001
 		# else: 
 		# 	assert (not stack_mode)
 		# 	# No warnings
@@ -5897,7 +5934,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			print("Checking the input directory...")
 			input_mic_path_list = glob.glob(mic_pattern)
 			# Check error condition of input  file path list
-			print("Found %d microgarphs in %s." % (len(input_mic_path_list), os.path.dirname(mic_pattern)))
+			print("Found %d micrographs in %s." % (len(input_mic_path_list), os.path.dirname(mic_pattern)))
 			if len(input_mic_path_list) == 0:
 				# The result shouldn't be empty if the specified  file name pattern is invalid
 				error_status = ("There are no s whose paths match with the specified file path pattern (%s) for %s. Please check input_image_path. Run %s -h for help." % (mic_pattern, cter_mode_name, program_name), getframeinfo(currentframe()))
@@ -6339,8 +6376,8 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			at = time()
 
 			defc, ampcont, subpw, baseline, envelope, istart, istop = defocusgett_vpp(rooc, wn, voltage = voltage, Pixel_size = pixel_size, Cs = Cs, f_start = f_start, f_stop = f_stop, nr1 = 3, nr2 = 6, parent = None, DEBug = debug_mode)
-			if debug_mode or True:
-				print "  RESULT 1 %s" % (img_name), defc, ampcont, istart, istop, (time()-at)/60.
+			if debug_mode:
+				print "  RESULT 1 %s" % (img_name), nboot, defc, ampcont, istart, istop, (time()-at)/60.
 				'''
 				freq = range(len(subpw))
 				for i in xrange(len(freq)):  freq[i] = float(i) / wn / pixel_size
@@ -6360,31 +6397,37 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 
 			from math import sqrt
 			nc = wn // 2
+			ne = istop
+			ns = istart - 1
 			bg.append(bg[-1])
 			en.append(en[-1])
 			for i in xrange(wn):
 				for j in xrange(wn):
 					r = sqrt((i - nc)**2 + (j - nc)**2)
-					ir = int(r)
-					if(ir < nc):
+					ir = int(r+0.5)
+					if( ir < nc ):
+						# This is awkward but it is needed for storing of results
 						dr = r - ir
 						bckg.set_value_at(i, j, (1. - dr) * bg[ir] + dr * bg[ir + 1] )
-						envl.set_value_at(i, j, (1. - dr) * en[ir] + dr * en[ir + 1] )
+						if(ir > ns and ir < ne):
+							dr = r - ir
+							envl.set_value_at(i, j, (1. - dr) * en[ir] + dr * en[ir + 1] )
 
-			#qa.write_image("rs1.hdf")
-			
-			qse = threshold((qa - bckg))#*envl
+			qse = threshold((qa - bckg))/envl
 			#(qse*mask).write_image("rs2.hdf")
-			#qse.write_image("rs3.hdf")
+			#bckg.write_image("bckg.hdf")
+			#envl.write_image("envl.hdf")
+			#qse.write_image("qse.hdf")
+			del envl, baseline, envelope
+			#exit()
 			##  SIMULATION
 			#bang = 0.7
 			#qse = ctf2_rimg(wn, generate_ctf([defc,Cs,voltage,pixel_size,0.0,wgh, bang, 37.0]) )
 			#qse.write_image("rs3.hdf")
-			
 			at = time()
-			defc, ampcont, astamp, astang, score =  defocusgett_vpp2(qse, envl, wn, defc, ampcont, voltage = voltage, Pixel_size = pixel_size, Cs = Cs, i_start=istart, i_stop=istop, parent = None, DEBug = debug_mode)
-			if debug_mode or True:
-				print "  RESULT 2 %s" % (img_name), defc, ampcont, astamp, astang, score, (time()-at)/60.
+			defc, ampcont, astamp, astang, score =  defocusgett_vpp2(qse, wn, defc, ampcont, voltage = voltage, Pixel_size = pixel_size, Cs = Cs, i_start=istart, i_stop=istop, parent = None, DEBug = debug_mode)
+			if debug_mode:
+				print "  RESULT 2 %s" % (img_name), nboot, defc, ampcont, astamp, astang, score, (time()-at)/60.
 				'''
 				freq = range(len(subpw))
 				for i in xrange(len(freq)):  freq[i] = float(i) / wn / pixel_size
@@ -6538,6 +6581,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 					ssubroo[i]  = sqrt(max(0.0, ssubroo[i]-kboot*asubroo[i]**2)/kboot)
 					sen[i]     /= kboot
 				"""
+				print " ad1, Cs, voltage, pixel_size, temp, ed1, bd1, cd1 ",ad1, Cs, voltage, pixel_size, temp, ed1, bd1, cd1
 				lnsb = len(subpw)
 				try:		crot2 = rotavg_ctf(ctf_rimg(wn, generate_ctf([ad1, Cs, voltage, pixel_size, temp, ed1, bd1, cd1]), sign=0), ad1, Cs, voltage, pixel_size, temp, ed1, bd1, cd1)[:lnsb]
 				except:		crot2 = [0.0] * lnsb
@@ -6584,10 +6628,11 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 						# print "MRK_DEBUG: Trough Search: extremum_i = %03d, freq[extremum_i] = %12.5g, extremum_counts = %03d, (pwrot1[extremum_i] - pwrot2[extremum_i]) = %12.5g, extremum_diff_sum = %12.5g " % (extremum_i, freq[extremum_i] , extremum_counts, (pwrot1[extremum_i] - pwrot2[extremum_i]), extremum_diff_sum)
 						is_peak_target = True
 					pre_crot2_val = cur_crot2_val
-				if extremum_counts == 0: ERROR("Logical Error: Encountered unexpected zero extremum counts. Consult with the developer." % (bd1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
-				extremum_diff_avg = extremum_diff_sum / extremum_counts
+				#if extremum_counts == 0: ERROR("Logical Error: Encountered unexpected zero extremum counts. Consult with the developer." % (bd1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
+				extremum_diff_avg = 1.1#extremum_diff_sum / extremum_counts
 				
-				# print "MRK_DEBUG: extremum_avg = %12.5g, extremum_diff_sum = %12.5g, extremum_counts = %03d," % (extremum_avg, extremum_diff_sum, extremum_counts)
+				#print "MRK_DEBUG: extremum_avg = %12.5g, extremum_diff_sum = %12.5g, extremum_counts = %03d," % (extremum_avg, extremum_diff_sum, extremum_counts)
+				#print "MRK_DEBUG: extremum_diff_avg = %12.5g, extremum_diff_sum = %12.5g, extremum_counts = %03d," % (extremum_diff_avg, extremum_diff_sum, extremum_counts)
 				
 #				if stack == None:     cmd = "echo " + "    " + namics[ifi] + "  >>  " + fou
 #				else:                 cmd = "echo " + "    " + "  >>  " + fou
@@ -6675,7 +6720,7 @@ def defocusgett_vpp(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_start=-1.0
 		2. Based one extracted ctf imprints, perform exhaustive defocus searching to get 
 		   defocus which matches the extracted CTF imprints 
 	"""
-	#from utilities  import generate_ctf
+	from utilities  import generate_ctf, write_text_file
 	import numpy as np
 	from morphology import defocus_baseline_fit, simpw1d
 
@@ -6690,22 +6735,32 @@ def defocusgett_vpp(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_start=-1.0
 		i_stop  = min(len(roo), int(Pixel_size*nx*f_stop+0.5))
 		adjust_fstop = False
 
+	i_stop = min(nx//2-2, i_stop)  #  this is for resampling into polar
+
 	nroo = len(roo)
 
 	if DEBug:  print "f_start, i_start, f_stop, i_stop:", f_start, i_start, f_stop, i_stop-1
 	#TE  = defocus_env_baseline_fit(roo, i_start, i_stop, int(nr1), 4)
 	#baseline = defocus_baseline_fit(roo, i_start, i_stop, int(nr2), 3)
-
-	baseline = defocus_baseline_fit(roo, i_start,nroo, int(nr2), 3)
+	baseline = defocus_baseline_fit(roo, i_start, nroo, int(nr2), 3)
 	subpw = np.array(roo, np.float32) - baseline
 	subpw[0] = subpw[1]
 	#write_text_file([roo,baseline,subpw],"dbg.txt")
 	#print "IN defocusgett  ",np.min(subpw),np.max(subpw)
 	for i in xrange(len(subpw)):  subpw[i] = max(subpw[i],0.0)
 	#print "IN defocusgett  ",np.min(subpw),np.max(subpw)
-	#envelope = movingaverage(  subpw   , nroo//4, 3)
-	envelope = np.array([1.0]*len(subpw), np.float32)
-	#write_text_file([roo,baseline,subpw],"dbgt.txt")
+	#envelope = movingaverage(  subpw, nroo//8, 3)
+	
+	#envelope = defocus_baseline_fit(roo, i_start, nroo, int(nr2), 2) - baseline
+	envelope = defocus_baseline_fit(roo, i_start, min(int(i_stop*1.45),nx//2-2), int(nr2), 2) - baseline
+	#  Process envelope
+	qm = np.max(envelope[5:])
+	dc = max(np.min(envelope[5:]), qm/1000.)
+	for i in xrange(len(envelope)):
+		if(envelope[i]<dc): envelope[i] = qm
+	
+	#envelope = np.array([1.0]*len(subpw), np.float32)
+	#write_text_file([roo,baseline,subpw,envelope],"dbgt.txt")
 
 	#print "IN defocusgett  ",np.min(subpw),np.max(subpw),np.min(envelope)
 	#envelope = np.ones(nroo, np.float32)
@@ -6718,20 +6773,24 @@ def defocusgett_vpp(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_start=-1.0
 		data[7] = float(a)
 		for i in xrange(1000,100000,500):
 			dc = float(i)/10000.0
-			qt = simpw1d(dc, data)
-			#toto.append([dc,qt])
+			qt = simpw1d_pap(dc, data)
+			#toto.append([a,dc,qt])
 			if(qt<qm):
 				qm=qt
 				defi = dc
 				ampcont = data[7]
-	'''
+				#print  a,dc,qt
+	#'''
 	if DEBug:
 		from utilities import write_text_row
 		write_text_row(toto,"toto1.txt")
-		print " >>>>>>>>>  ",defi,simpw1d(defi, data)#,generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont])
+		print " >>>>>>>>>  ",defi,data[7],simpw1d_print(defi, data)#,generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont])
+		#data[7]=10.
+		#defi = 4.5
+		#print " >>>>>>>>>  ",defi,data[7],simpw1d_print(defi, data)#,generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont])
 		#def1 = defi
 	#exit()
-	'''
+	#'''
 	#ctf2 = ctf_1d(nx, generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont]), doabs= True)
 	'''
 	from utilities import write_text_file
@@ -6742,7 +6801,7 @@ def defocusgett_vpp(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_start=-1.0
 
 
 
-def defocusgett_vpp2(qse, envl, wn, xdefc, xampcont, voltage=300.0, Pixel_size=1.0, Cs=2.0, i_start=0, i_stop=0, parent=None, DEBug=False):
+def defocusgett_vpp2(qse, wn, xdefc, xampcont, voltage=300.0, Pixel_size=1.0, Cs=2.0, i_start=0, i_stop=0, parent=None, DEBug=False):
 	"""
 		1. Estimate envelope function and baseline noise using constrained simplex method
 		   so as to extract CTF imprints from 1D power spectrum
@@ -6759,10 +6818,11 @@ def defocusgett_vpp2(qse, envl, wn, xdefc, xampcont, voltage=300.0, Pixel_size=1
 	mode = "H"
 	numr = Numrinit(i_start, i_stop-1, 1, mode)
 	wr = ringwe(numr, mode)
-	
+
 	crefim = Util.Polar2Dm(qse, cnx, cny, numr, mode)
 	Util.Frngs(crefim, numr)
 	Util.Applyws(crefim, numr, wr)
+
 	bdef = 0.
 	baco = 0.0  	#  amplitude contrast
 	bamp = 0.0      #  initial astigmatism amplitude
@@ -6771,7 +6831,7 @@ def defocusgett_vpp2(qse, envl, wn, xdefc, xampcont, voltage=300.0, Pixel_size=1
 	initial_ast_ang = 0.0
 	dama = amoeba([xdefc,xampcont,initial_ast_ang], [0.1, 2.0, 0.05], fupw_vpp, 1.e-4, 1.e-4, 500, astdata)
 	qma = -dama[-2]
-	print  " amoeba  %7.2f  %7.2f  %12.6g  %12.6g"%(dama[0][0],dama[0][1],dama[0][2],qma)
+	if DEBug: print  " amoeba  %7.2f  %7.2f  %12.6g  %12.6g"%(dama[0][0],dama[0][1],dama[0][2],qma)
 	dpefi = dama[0][0]
 	dpmpcont = dama[0][1]
 	dastamp = dama[0][2]
@@ -6809,7 +6869,7 @@ def defocusgett_vpp2(qse, envl, wn, xdefc, xampcont, voltage=300.0, Pixel_size=1
 		#from sys import exit
 		#exit()
 	'''
-	if DEBug or True:
+	if DEBug:
 		#from utilities import write_text_row
 		#write_text_row(toto,"toto1.txt")
 		print " repi3  ", dpefi, dpmpcont, dastamp, dastang, junk
@@ -7035,7 +7095,7 @@ def Xdefocusgett_vpp2(qse, roo, nx, xdefc, xampcont, voltage=300.0, Pixel_size=1
 				qm = qt
 				defi = dc
 				ampcont = data[7]
-	if DEBug or True:
+	if DEBug:
 		from utilities import write_text_row
 		write_text_row(toto,"toto1.txt")
 		print " repi3  ",dp,dpefi,dpmpcont
@@ -7189,7 +7249,7 @@ def Xdefocusgett_vpp22(qse, roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_st
 				qm = qt
 				defi = dc
 				ampcont = data[7]
-	if DEBug or True:
+	if DEBug:
 		from utilities import write_text_row
 		write_text_row(toto,"toto1.txt")
 		print " repi3  ",dp,dpefi,dpmpcont

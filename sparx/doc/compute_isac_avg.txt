@@ -6,33 +6,33 @@ sxcompute_isac_avg - Beautifier: Beautify the ISAC 2D clustering result with the
 
 ''Usage in command lines'':
 
-sxcompute_isac_avg.py  --data_stack=stack_file_path  --isac_dir=isac_output_directory  --masterdir=output_directory  --radius=radius  --noctf  --nompw_adj --modelpw=pw2_model_txt  --B_enhance  --B_start=B_start  --Bfactor=Bfactor  --low_pass_filter=cutoff_frequency  --pixel_size=pixel_size  --xr=xr  --ts=ts  --fh=fh  --maxit=maxit --navg=navg 
+sxcompute_isac_avg.py  --stack=stack_file_path  --isac_dir=isac_output_directory  --output_dir=output_directory  --radius=radius  --noctf  --nompw_adj --modelpw=pw2_model_txt  --B_enhance  --B_start=B_start  --Bfactor=Bfactor  --fl=cutoff_frequency  --pixel_size=pixel_size  --xr=xr  --ts=ts  --fh=fh  --maxit=maxit --navg=navg 
 
 === Typical usage ===
 
 sxcompute_isac_avg.py exists only in MPI version
 
-''' mpirun  -np  48  sxcompute_isac_avg.py  --data_stack=bdb:data  --isac_dir=outdir_isac  --masterdir=outdir_beautify2d  --radius=120  '''
+''' mpirun  -np  48  sxcompute_isac_avg.py  --stack=bdb:data  --isac_dir=outdir_isac  --output_dir=outdir_beautify2d  --radius=120  '''
 
-''' mpirun  -np  48  sxcompute_isac_avg.py  --data_stack=bdb:data  --isac_dir=outdir_isac  --masterdir=outdir_beautify2d  --radius=120  --B_enhance '''
+''' mpirun  -np  48  sxcompute_isac_avg.py  --stack=bdb:data  --isac_dir=outdir_isac  --output_dir=outdir_beautify2d  --radius=120  --B_enhance '''
 
-''' mpirun  -np  48  sxcompute_isac_avg.py  --data_stack=bdb:data  --isac_dir=outdir_isac  --masterdir=outdir_beautify2d  --radius=120  --B_enhance  --Bfactor=40.0  --low_pass_filter=0.2 '''
+''' mpirun  -np  48  sxcompute_isac_avg.py  --stack=bdb:data  --isac_dir=outdir_isac  --output_dir=outdir_beautify2d  --radius=120  --B_enhance  --Bfactor=40.0  --fl=0.2 '''
 
 
 == Input ==
-    data_stack:: Original image stack: Particles required to create the full-sized class averages. (default required string)
+    stack:: Original image stack: Particles required to create the full-sized class averages. (default required string)
     isac_dir:: Isac output directory: Name of the directory where isac was run previously. (default required string)
-    masterdir:: Output directory: The directory will be automatically created and the results will be written here. (default required string)
+    output_dir:: Output directory: The directory will be automatically created and the results will be written here. (default required string)
     radius:: Particle radius [Pixels]: There is no default radius. (default -1)
     noctf:: No CTF correction: Use this option if full CTF correction should not be applied. Useful for negative stained data. By default, the program will do full CTF correction. (default False) 
 
     * The remaining parameters are optional.
-    nompw_adj:: Do not adjust PW spectrum: Do not adjust PW spectrum to analytical model or given 1-D rotationally averaged power spectrum. Apply PW spectrum adjustment to model. (default False)
+    nopwadj:: Do not adjust PW spectrum. (default False). There are three ways to change powerspectrum: 1. adjust it to an analytical model; 2. adjust it to a given powerspectrum; 3. apply B-factors. Three options are exclusive.    
     modelpw::  Reference 1D PW spectrum: A text file contains 1-D rotational averaged power spectrum of either PDB model or EM map sampled in the given pixel_size and in original image size. By default, use the analytic model (See Penczek Methods Enzymol 2010) (default none)
     B_enhance:: Apply B-factor enhancement: Apply B-factor enhancement. (default False)
     B_start:: B-factor lower limit [A]: Lower limit for B-factor estimation. (default 10.0)
     Bfactor:: Use ad-hoc B-factor [A^2]: Skip the automatic estimation and use user-provided ad-hoc B-factor for the enhancement. (default 45.0)
-    low_pass_filter:: Low-pass filter frequency: Cutoff frequency of low-pass filter. (default -1.0)
+    fl:: Low-pass filter frequency: Cutoff frequency of low-pass filter. (default -1.0)
     pixel_size:: Pixel size [A/Pixels]: The pixel size of images in input particle stack for isac. (default -1.0)
     xr:: Local X search range [Pixels]: Translational search range in the x direction for local alignment. (default -1.0)
     ts:: Local search step [Pixels]: Translational search step for local alignment. (default 1.0)
@@ -41,7 +41,8 @@ sxcompute_isac_avg.py exists only in MPI version
     navg:: Number of averages: The number of averages. (default -1)
 
 == Output ==
-
+    class_averages.hdf::computed averages in original image size
+    ordered_class_averages.hdf:: images in class_averages.hdf are sorted by their similarity and re-arranged in a circle.  
 
 = Description =
 

@@ -148,7 +148,6 @@ def isac_substack(args):
 		except:
 			ERROR('Failure to find common relative data path for particle image #%d. Skipping this image...' % (isac_substack_particle_id), subcommand_name, action = 0) # action = 0 - non-fatal, print a warning;
 			continue
-		assert(img_header["data_path"] != None)
 		
 		# Update the image header for output
 		img_header["data_path"]    = common_relative_path
