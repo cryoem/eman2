@@ -64,6 +64,7 @@ def compute_average_ctf(mlist, radius):
 	from morphology   import ctf_img
 	from filter       import filt_ctf, filt_table
 	from fundamentals import fft, fftip
+	params_list = [None]*len(mlist)
 	orig_image_size = mlist[0].get_xsize()
 	avgo       = EMData(orig_image_size, orig_image_size, 1, False) #
 	avge       = EMData(orig_image_size, orig_image_size, 1, False) # 
@@ -73,6 +74,7 @@ def compute_average_ctf(mlist, radius):
 		ctt = ctf_img(orig_image_size, mlist[im].get_attr("ctf"))
 		alpha, sx, sy, mr, scale = get_params2D(mlist[im], xform = "xform.align2d")
 		tmp = cosinemask(rot_shift2D(mlist[im], alpha, sx, sy, mr), radius)
+		params_list[im]= [alpha, sx, sy, mr, scale]
 		tmp = fft(tmp)
 		Util.mul_img(tmp, ctt)
 		#ima_filt = filt_ctf(tmp, ctf_params, dopad=False)
@@ -94,15 +96,17 @@ def compute_average_ctf(mlist, radius):
 	sumctf2 =  Util.addn_img(ctf_2_sume, ctf_2_sumo)	
 	Util.div_img(sumavg, sumctf2)
 	sumavg = fft(sumavg)
-	return sumavg, frc
+	return sumavg, frc, params_list
 
 def compute_average_noctf(mlist, radius):
-	from fundamentals import fft   
+	from fundamentals import fft
+	params_list = [None]*len(mlist)
 	orig_image_size = mlist[0].get_xsize()
 	avgo       = EMData(orig_image_size, orig_image_size, 1, False) #
 	avge       = EMData(orig_image_size, orig_image_size, 1, False) # 
 	for im in xrange(len(mlist)):
 		alpha, sx, sy, mr, scale = get_params2D(mlist[im], xform = "xform.align2d")
+		params_list[im]= [alpha, sx, sy, mr, scale]
 		tmp = cosinemask(rot_shift2D(mlist[im], alpha, sx, sy, mr), radius)
 		tmp = fft(tmp)
 		if im%2 ==0: Util.add_img(avge, tmp)
@@ -114,7 +118,7 @@ def compute_average_noctf(mlist, radius):
 		frc[1][ifreq] = 2.*frc[1][ifreq]/(1.+frc[1][ifreq])
 	sumavg  =  Util.addn_img(avgo, avge)
 	sumavg = fft(sumavg)
-	return sumavg, frc
+	return sumavg, frc, params_list
 
 def adjust_pw_to_model(image, pixel_size, roo):
 	c1 =-4.5
@@ -321,7 +325,6 @@ def main():
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		for iavg in xrange(navg):
 			params_of_this_average = []
-			plist = []
 			image   = get_im(os.path.join(Tracker["constants"]["isac_dir"], "class_averages.hdf"), iavg)
 			members = image.get_attr("members")
 			for im in xrange(len(members)):
@@ -349,7 +352,7 @@ def main():
 					mlist[im]= get_im(Tracker["constants"]["orgstack"], list_dict[iavg][im])
 					set_params2D(mlist[im], params_dict[iavg][im], xform = "xform.align2d")
 				if Tracker["constants"]["noctf"]: ini_avg, frc = compute_average_noctf(mlist, Tracker["constants"]["radius"])
-				else: ini_avg, frc = compute_average_ctf(mlist, Tracker["constants"]["radius"])
+				else: ini_avg, frc, plist = compute_average_ctf(mlist, Tracker["constants"]["radius"])
 				FH1 = get_optimistic_res(frc)
 				#write_text_file(frc, os.path.join(Tracker["constants"]["masterdir"], "fsc%03d_before_ali.txt"%iavg))
 				new_average1 = within_group_refinement([mlist[kik] for kik in xrange(0,len(mlist),2)], maskfile= None, randomize= False, ir=1.0,  \
@@ -358,8 +361,8 @@ def main():
 				new_average2 = within_group_refinement([mlist[kik] for kik in xrange(1,len(mlist),2)], maskfile= None, randomize= False, ir=1.0, \
 				ou=Tracker["constants"]["radius"], rs=1.0, xrng=[x_range], yrng=[y_range], step=[Tracker["constants"]["xstep"]], \
 				dst=0.0, maxit=Tracker["constants"]["maxit"], FH = max(Tracker["constants"]["FH"], FH1), FF=0.1)
-				if Tracker["constants"]["noctf"]: new_avg, frc = compute_average_noctf(mlist, Tracker["constants"]["radius"])
-				else: new_avg, frc = compute_average_ctf(mlist, Tracker["constants"]["radius"])
+				if Tracker["constants"]["noctf"]: new_avg, frc, plist = compute_average_noctf(mlist, Tracker["constants"]["radius"])
+				else: new_avg, frc, plist = compute_average_ctf(mlist, Tracker["constants"]["radius"])
 				FH2 = get_optimistic_res(frc)
 				#write_text_file(frc, os.path.join(Tracker["constants"]["masterdir"], "fsc%03d.txt"%iavg))
 				if Tracker["constants"]["nopwadj"]: # pw adjustment, 1. analytic model 2. PDB model 3. B-facttor enhancement
@@ -386,6 +389,8 @@ def main():
 					new_avg_other_cpu = recv_EMData(im, tag_sharpen_avg)
 					new_avg_other_cpu.write_image(os.path.join(Tracker["constants"]["masterdir"], "class_averages.hdf"), im)
 				else: new_avg.write_image(os.path.join(Tracker["constants"]["masterdir"], "class_averages.hdf"), im)
+			if im == Blockdata["myid"]:
+				write_text_file(plist, os.path.join(Tracker["constants"]["masterdir"], "ali2d_local_params_avg_%03d.txt"%im))
 		mpi_barrier(MPI_COMM_WORLD)
 		"""
 		for im in xrange(navg): # ini_avg
@@ -432,7 +437,7 @@ def main():
 		ini_list  = [None for im in xrange(navg)]
 		avg1_list = [None for im in xrange(navg)]
 		avg2_list = [None for im in xrange(navg)]
-				
+		plist_dict ={}
 		for iavg in xrange(image_start,image_end):
 			#print("Process avg %d"%iavg)
 			mlist = [None for i in xrange(len(list_dict[iavg]))]
@@ -440,7 +445,7 @@ def main():
 				mlist[im]= get_im(Tracker["constants"]["orgstack"], list_dict[iavg][im])
 				set_params2D(mlist[im], params_dict[iavg][im], xform = "xform.align2d")
 			if Tracker["constants"]["noctf"]: ini_avg, frc = compute_average_noctf(mlist, Tracker["constants"]["radius"])
-			else:   ini_avg, frc = compute_average_ctf(mlist, Tracker["constants"]["radius"])
+			else:   ini_avg, frc, plist = compute_average_ctf(mlist, Tracker["constants"]["radius"])
 			FH1 = get_optimistic_res(frc)
 			#write_text_file(frc, os.path.join(Tracker["constants"]["masterdir"], "fsc%03d_before_ali.txt"%iavg))
 			new_average1 = within_group_refinement([mlist[kik] for kik in xrange(0,len(mlist),2)], maskfile= None, randomize= False, ir=1.0,  \
@@ -449,8 +454,9 @@ def main():
 			new_average2 = within_group_refinement([mlist[kik] for kik in xrange(1,len(mlist),2)], maskfile= None, randomize= False, ir=1.0, \
 			 ou= Tracker["constants"]["radius"], rs=1.0, xrng=[ x_range], yrng=[y_range], step=[Tracker["constants"]["xstep"]], \
 			 dst=0.0, maxit=Tracker["constants"]["maxit"], FH = max(Tracker["constants"]["FH"], FH1), FF=0.1)
-			if Tracker["constants"]["noctf"]: new_avg, frc = compute_average_noctf(mlist, Tracker["constants"]["radius"])
-			else: new_avg, frc = compute_average_ctf(mlist, Tracker["constants"]["radius"])
+			if Tracker["constants"]["noctf"]: new_avg, frc,  plist = compute_average_noctf(mlist, Tracker["constants"]["radius"])
+			else: new_avg, frc, plist = compute_average_ctf(mlist, Tracker["constants"]["radius"])
+			plist_dict[iavg] = plist
 			FH2 = get_optimistic_res(frc)
 			#write_text_file(frc, os.path.join(Tracker["constants"]["masterdir"], "fsc%03d.txt"%iavg))
 			if not Tracker["constants"]["nopwadj"]:
@@ -522,9 +528,10 @@ def main():
 				new_avg_other_cpu.write_image(os.path.join(Tracker["constants"]["masterdir"],"avg2_class_averages.hdf"),im)
 			else: pass
 			"""
+			if cpu_dict[im] == Blockdata["myid"]:
+				write_text_file(plist_dict[im], os.path.join(Tracker["constants"]["masterdir"], "ali2d_local_params_avg_%03d.txt"%im))
 			mpi_barrier(MPI_COMM_WORLD)
 		mpi_barrier(MPI_COMM_WORLD)
-		
 	target_xr =3
 	target_yr =3
 	
