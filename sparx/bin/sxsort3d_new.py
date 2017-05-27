@@ -4020,19 +4020,12 @@ def do3d(procid, data, newparams, refang, rshifts, norm_per_particle, myid, mpi_
 											target_size = (2*Tracker["nxinit"]+3), avgnorm = Tracker["avgvaradj"][procid], norm_per_particle = norm_per_particle)
 	"""
 	shrinkage = float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
-	tvol, tweight, trol = recons3d_trl_struct_MPI(myid = Blockdata["subgroup_myid"], main_node = Blockdata["nodes"][procid], prjlist = data, \
+	tvol, tweight, trol = recons3d_trl_struct_MPI(myid = Blockdata["subgroup_myid"], main_node = Blockdata["main_node"], prjlist = data, \
 											paramstructure = newparams, refang = refang, rshifts_shrank = [[q[0]*shrinkage,q[1]*shrinkage] for q in rshifts], \
 											delta = Tracker["delta"], CTF = Tracker["constants"]["CTF"], upweighted = False, mpi_comm = mpi_comm, \
 											target_size = (2*Tracker["nxinit"]+3), avgnorm = Tracker["avgvaradj"][procid], norm_per_particle = norm_per_particle)
-	if Blockdata["subgroup_myid"]==Blockdata["nodes"][procid]: tvol.set_attr("is_complex",0)
-	tag = 7007
-	if Blockdata["subgroup_myid"] == Blockdata["nodes"][procid]: send_EMData(tvol, Blockdata["main_node"], tag, mpi_comm)
-	elif Blockdata["myid"]  == Blockdata["main_node"]: tvol = recv_EMData(Blockdata["nodes"][procid], tag, mpi_comm)
-	if Blockdata["subgroup_myid"] == Blockdata["nodes"][procid]: send_EMData(tweight, Blockdata["main_node"], tag, mpi_comm)
-	elif Blockdata["myid"]  == Blockdata["main_node"]: tweight= recv_EMData(Blockdata["nodes"][procid], tag, mpi_comm)
-	if Blockdata["subgroup_myid"] == Blockdata["nodes"][procid]: send_EMData(trol, Blockdata["main_node"], tag, mpi_comm)
-	elif Blockdata["myid"]  == Blockdata["main_node"]: trol= recv_EMData(Blockdata["nodes"][procid], tag, mpi_comm)
-	if Blockdata["myid"] == Blockdata["main_node"]:
+	if Blockdata["subgroup_myid"] == Blockdata["main_node"]:
+		tvol.set_attr("is_complex",0)
 		tvol.write_image(os.path.join(Tracker["directory"], "tempdir", "tvol_%01d_%03d.hdf"%(procid,Tracker["mainiteration"])))
 		tweight.write_image(os.path.join(Tracker["directory"], "tempdir", "tweight_%01d_%03d.hdf"%(procid,Tracker["mainiteration"])))
 		trol.write_image(os.path.join(Tracker["directory"], "tempdir", "trol_%01d_%03d.hdf"%(procid,Tracker["mainiteration"])))
