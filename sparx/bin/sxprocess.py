@@ -296,12 +296,12 @@ def main():
 		g. apply negative B-factor to enhance the volume (optional);
 		h. low_pass filter the volume (optional)
 		options are independent of each others.
-		--low_pass_filter: =0.0, low_pass filter to resolution; =-1., no low_pass filter; =5.8 low_pass filter to 5.8 Angstrom; =.2 low_pass filter to 0.2  
-		--B_enhance:       =-1, B-factor is not applied; =0, program estimates B-factor from options.B_start(usually set as 10 Angstrom)to the resolution determined by FSC 0.143; =128., program use the given value 128. to enhance map.
-		--mtf:             =aa.txt, for those high resolution maps, mtf correction would significantly enhance structural features.
-		--fsc_adj:         fsc adjustment of power spectrum is inclined to increase the slope of power spectrum of the summed volume.
-		--do_adaptive_mask =True when it is restored, the program adaptively creates adaptive mask file using summed two volumes. This takes a couple of minutes. For map with dimension of 384*384*384, it takes 6 minutes.
-		--output           output volume 
+		--fl               : =0.0, low_pass filter to resolution; =-1., no low_pass filter; =5.8 low_pass filter to 5.8 Angstrom; =.2 low_pass filter to 0.2  
+		--B_enhance        : =-1, B-factor is not applied; =0, program estimates B-factor from options.B_start(usually set as 10 Angstrom)to the resolution determined by FSC 0.143; =128., program use the given value 128. to enhance map.
+		--mtf              : =aa.txt, for those high resolution maps, mtf correction would significantly enhance structural features.
+		--fsc_adj          : fsc adjustment of power spectrum is inclined to increase the slope of power spectrum of the summed volume.
+		--do_adaptive_mask : =True when it is restored, the program adaptively creates adaptive mask file using summed two volumes. This takes a couple of minutes. For map with dimension of 384*384*384, it takes 6 minutes.
+		--output           : output volume 
 										
 		sxprocess.py vol_0_unfil.hdf vol_1_unfil.hdf  --mask=mask15.hdf --postprocess   --pixel_size=1.12     --fl =-1  --mtf=aa.txt  --fsc_adj --output=vol_post.hdf 
 		sxprocess.py vol_0_unfil.hdf vol_1_unfil.hdf  --mask=mask15.hdf --postprocess   --pixel_size=1.12     --fl=4.7  --mtf=aa.txt --fsc_adj
@@ -994,10 +994,10 @@ def main():
 					log_main.add( "User provided B_factor is %f"%global_b)
 				sigma_of_inverse = sqrt(2./global_b)
 				e1 = filt_gaussinv(e1,sigma_of_inverse)
-				if options.fl > 0.0 and options.low_pass_filte < 0.5:
+				if options.fl > 0.0 and options.fl < 0.5:
 					log_main.add("low-pass filter ff %   aa  %f"%(options.fl, options.aa))
 					e1 =filt_tanl(e1,options.fl, options.aa)
-				elif options.low_pass_filte>0.5:
+				elif options.fl > 0.5:
 					e1 =filt_tanl(e1,options.fl/option.pixel_size, options.aa)
 				e1.write_image(options.output)
 				
