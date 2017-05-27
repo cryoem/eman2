@@ -390,7 +390,7 @@ def main():
 					new_avg_other_cpu.write_image(os.path.join(Tracker["constants"]["masterdir"], "class_averages.hdf"), im)
 				else: new_avg.write_image(os.path.join(Tracker["constants"]["masterdir"], "class_averages.hdf"), im)
 			if im == Blockdata["myid"]:
-				write_text_file(plist, os.path.join(Tracker["constants"]["masterdir"], "ali2d_local_params_avg_%03d.txt"%im))
+				write_text_row(plist, os.path.join(Tracker["constants"]["masterdir"], "ali2d_local_params_avg_%03d.txt"%im))
 		mpi_barrier(MPI_COMM_WORLD)
 		"""
 		for im in xrange(navg): # ini_avg
@@ -529,7 +529,7 @@ def main():
 			else: pass
 			"""
 			if cpu_dict[im] == Blockdata["myid"]:
-				write_text_file(plist_dict[im], os.path.join(Tracker["constants"]["masterdir"], "ali2d_local_params_avg_%03d.txt"%im))
+				write_text_row(plist_dict[im], os.path.join(Tracker["constants"]["masterdir"], "ali2d_local_params_avg_%03d.txt"%im))
 			mpi_barrier(MPI_COMM_WORLD)
 		mpi_barrier(MPI_COMM_WORLD)
 	target_xr =3
