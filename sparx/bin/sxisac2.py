@@ -1496,7 +1496,7 @@ def main(args):
 				junk = cmdexecute(cmd)
 
 	error = bcast_number_to_all(error, source_node = Blockdata["main_node"])
-	if(error == 1):  ERROR("isac2","cannot restart from unfinished main iteration  %d"%main_iter)
+	if(error == 1):  ERROR("cannot restart from unfinished main iteration  %d"%main_iter,"isac2",1,Blockdata["myid"])
 					
 
 	mpi_barrier(MPI_COMM_WORLD)
