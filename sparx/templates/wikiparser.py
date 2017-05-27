@@ -99,7 +99,7 @@ def construct_keyword_dict():
 	keyword_dict["--adaptive_mask"]               = SXkeyword_map(0, "")               # --adaptive_mask (contains keyworkd 'mask' but this should be bool type)
 	keyword_dict["--binary_mask"]                 = SXkeyword_map(0, "")               # --binary_mask (contains keyworkd 'mask' but this should be bool type)
 	keyword_dict["--symmetrize"]                  = SXkeyword_map(0, "")               # --symmetrize (contains keyworkd '--sym' but this should be bool type)
-	keyword_dict["isac_directory"]                = SXkeyword_map(0, "directory")      # isac_directory (contains keyworkd 'directory' but this should be directory type)
+###	keyword_dict["isac_directory"]                = SXkeyword_map(0, "directory")      # isac_directory (contains keyworkd 'directory' but this should be directory type)
 	keyword_dict["--single_stack_output"]         = SXkeyword_map(0, "bool")           # --single_stack_output (contains keyworkd 'output' but this should be bool type)
 	keyword_dict["--do_adaptive_mask"]            = SXkeyword_map(0, "bool")           # --do_adaptive_mask (contains keyworkd 'mask' but this should be bool type)
 	keyword_dict["--skip_create_substack"]        = SXkeyword_map(0, "bool")           # --skip_create_substack (contains keyworkd 'stack' but this should be bool type)
@@ -108,7 +108,7 @@ def construct_keyword_dict():
 	# Use priority 1 for output
 	keyword_dict["output"]                        = SXkeyword_map(1, "output")         # output_hdf, output_directory, outputfile, outputfile, --output=OUTPUT, output_stack, output_file
 	keyword_dict["outdir"]                        = SXkeyword_map(1, "output")         # outdir
-	keyword_dict["--masterdir"]                   = SXkeyword_map(1, "output")         # --masterdir=master_dir
+###	keyword_dict["--masterdir"]                   = SXkeyword_map(1, "output")         # --masterdir=master_dir
 	keyword_dict["locres_volume"]                 = SXkeyword_map(1, "output")         # locres_volume (this contained keyword "volume" also... This is another reason why priority is introduced...)
 	keyword_dict["directory"]                     = SXkeyword_map(1, "output")         # directory
 	keyword_dict["rotpw"]                         = SXkeyword_map(1, "output")         # rotpw
@@ -180,11 +180,12 @@ def handle_exceptional_cases(sxcmd):
 	# DESIGN_NOTE: 2016/02/05 Toshio Moriya
 	# Handle exceptional cases due to the limitation of software design
 	# In future, we should remove these exception handling by reviewing the design
-	if sxcmd.name == "sxisac_post_processing":
-		assert(sxcmd.token_dict["stack_file"].key_base == "stack_file")
-		assert(sxcmd.token_dict["stack_file"].type == "image")
-		sxcmd.token_dict["stack_file"].type = "bdb"
-	elif sxcmd.name in ["sxrviper"]:
+###	if sxcmd.name == "sxisac_post_processing":
+###		assert(sxcmd.token_dict["stack_file"].key_base == "stack_file")
+###		assert(sxcmd.token_dict["stack_file"].type == "image")
+###		sxcmd.token_dict["stack_file"].type = "bdb"
+###	elif sxcmd.name in ["sxrviper"]:
+	if sxcmd.name in ["sxrviper"]:
 		assert(sxcmd.token_dict["stack"].key_base == "stack")
 		assert(sxcmd.token_dict["stack"].type == "image")
 		sxcmd.token_dict["stack"].type = "hdf"
@@ -216,23 +217,23 @@ def handle_exceptional_cases(sxcmd):
 ###		sxcmd.token_dict["refinement_dir"].is_required = True
 ###		assert(sxcmd.token_dict["masterdir"].key_base == "masterdir")
 ###		assert(sxcmd.token_dict["masterdir"].is_required == False)
-##		sxcmd.token_dict["masterdir"].is_required = True
-	elif sxcmd.name in ["sxrsort3d"]:
-		# DESIGN_NOTE: 2016/11/23 Toshio Moriya
-		# The below should be a temporary solution until redesign sxrsort3d command interface
-		assert(sxcmd.token_dict["refinement_method"].key_base == "refinement_method")
-		assert(sxcmd.token_dict["refinement_method"].is_required == False)
-		assert(sxcmd.token_dict["refinement_method"].is_locked == False)
-		sxcmd.token_dict["refinement_method"].is_required = True
-		sxcmd.token_dict["refinement_method"].is_locked = True
-		# sxcmd.token_dict["refinement_method"].default = "SPARX"
-		sxcmd.token_dict["refinement_method"].restore = "SPARX"
-		assert(sxcmd.token_dict["refinement_dir"].key_base == "refinement_dir")
-		assert(sxcmd.token_dict["refinement_dir"].is_required == False)
-		sxcmd.token_dict["refinement_dir"].is_required = True
-		assert(sxcmd.token_dict["masterdir"].key_base == "masterdir")
-		assert(sxcmd.token_dict["masterdir"].is_required == False)
-		sxcmd.token_dict["masterdir"].is_required = True
+###		sxcmd.token_dict["masterdir"].is_required = True
+###	elif sxcmd.name in ["sxrsort3d"]:
+###		# DESIGN_NOTE: 2016/11/23 Toshio Moriya
+###		# The below should be a temporary solution until redesign sxrsort3d command interface
+###		assert(sxcmd.token_dict["refinement_method"].key_base == "refinement_method")
+###		assert(sxcmd.token_dict["refinement_method"].is_required == False)
+###		assert(sxcmd.token_dict["refinement_method"].is_locked == False)
+###		sxcmd.token_dict["refinement_method"].is_required = True
+###		sxcmd.token_dict["refinement_method"].is_locked = True
+###		# sxcmd.token_dict["refinement_method"].default = "SPARX"
+###		sxcmd.token_dict["refinement_method"].restore = "SPARX"
+###		assert(sxcmd.token_dict["refinement_dir"].key_base == "refinement_dir")
+###		assert(sxcmd.token_dict["refinement_dir"].is_required == False)
+###		sxcmd.token_dict["refinement_dir"].is_required = True
+###		assert(sxcmd.token_dict["masterdir"].key_base == "masterdir")
+###		assert(sxcmd.token_dict["masterdir"].is_required == False)
+###		sxcmd.token_dict["masterdir"].is_required = True
 	elif sxcmd.name in ["sxsort3d", "sxlocres"]:
 		assert(sxcmd.token_dict["wn"].key_base == "wn")
 		assert(sxcmd.token_dict["wn"].type == "ctfwin")
@@ -1089,7 +1090,7 @@ def create_sxcmd_subconfig_refine3d_postprocess():
 	token_edit = SXcmd_token(); token_edit.initialize_edit("mtf"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("fsc_adj"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("B_enhance"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("low_pass_filter"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("fl"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("aa"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("mask"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("output"); token_edit_list.append(token_edit)
@@ -1174,6 +1175,13 @@ def create_sxcmd_subconfig_utility_makevstack():
 
 	return sxcmd_subconfig
 
+def create_exclude_list_isac2():
+	exclude_list = []
+
+	exclude_list.append("yr")
+
+	return exclude_list
+
 def create_exclude_list_meridien():
 	exclude_list = []
 
@@ -1193,12 +1201,12 @@ def create_exclude_list_sort3d_new():
 
 	return exclude_list
 
-def create_exclude_list_rsort3d():
-	exclude_list = []
-
-	exclude_list.append("instack")
-
-	return exclude_list
+### def create_exclude_list_rsort3d():
+### 	exclude_list = []
+### 
+### 	exclude_list.append("instack")
+### 
+### 	return exclude_list
 
 def create_exclude_list_boxer():
 	exclude_list = []
@@ -1299,7 +1307,7 @@ def main():
 
 	sxcmd_role = "sxr_pipe"
 ### 	sxcmd_config_list.append(SXcmd_config("../doc/isac.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
-	sxcmd_config_list.append(SXcmd_config("../doc/isac2.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/isac2.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_isac2()))
 ### 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_isacselect()))
 ### 	sxcmd_config_list.append(SXcmd_config("../doc/e2bdb.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_isac_makevstack()))
 ### 	sxcmd_config_list.append(SXcmd_config("../doc/pipeline_isac_substack.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))

@@ -6,7 +6,7 @@ sxisac2 - ISAC - 2D Clustering: Iterative Stable Alignment and Clustering (ISAC)
 
 ''usage in command line''
 
-sxisac2.py stack_file output_directory --radius=particle_radius --img_per_grp=img_per_grp --CTF --xr=xr --thld_err=thld_err --stop_after_candidates --target_radius=target_radius --target_nx=target_nx --ir=ir --rs=rs --yr=yr --ts=ts --maxit=maxit --center_method=center_method --dst=dst --FL=FL --FH=FH --FF=FF --init_iter=init_iter --iter_reali=iter_reali --stab_ali=stab_ali --minimum_grp_size --rand_seed=rand_seed --new --skip_prealignment
+sxisac2.py stack_file output_directory --radius=particle_radius --img_per_grp=img_per_grp --CTF --xr=xr --thld_err=thld_err --target_radius=target_radius --target_nx=target_nx --ir=ir --rs=rs --yr=yr --ts=ts --maxit=maxit --center_method=center_method --dst=dst --FL=FL --FH=FH --FF=FF --init_iter=init_iter --iter_reali=iter_reali --stab_ali=stab_ali --minimum_grp_size --rand_seed=rand_seed --skip_prealignment --restart
 
 
 === Typical usage ===
@@ -15,8 +15,6 @@ sxisac2 exists only in MPI version.
 
 
 '''mpirun -np 176 sxisac2.py bdb:data fisac1 --radius=120 --CTF'''
-
-'''mpirun -np 176 sxisac2.py bdb:data fisac1 --radius=120 --CTF --stop_after_candidates'''
 
 Note ISAC will change the size of input data such that they fit into box size 76x76 by default (see Description below).
 
@@ -27,9 +25,8 @@ Note ISAC will change the size of input data such that they fit into box size 76
     radius:: Particle radius [Pixels]: Radius of the particle (pixels). There is no default value and so a sensible number has to be provided. (default required int)
     img_per_grp:: Images per class: Number of images per class in an ideal situation. In practice, it defines the maximum size of the classes or the number of classes K= [total number of images]/[img_per_grp]. (default 200)
     CTF:: Phase-flip: If set, the data will be phase-flipped using CTF information included in the image headers. (default False)
-    xr:: X search range [Pixels]: The translational search range in the x direction. Set by the program by default. (default 1)
+    xr:: Translation search range [Pixels]: The translational search range. Set by the program by default. (default 1)
     thld_err:: Pixel error threshold [Pixels]: Used for checking stability. It is defined as the root mean square of distances between corresponding pixels from set of found transformations and theirs average transformation, depends linearly on square of radius (parameter ou). units - pixels. (default 0.7)
-    stop_after_candidates:: Stop after candidates step: The run stops after the 'candidate_class_averages' section is created. (default False)
     target_radius:: Target particle radius [Pixels]: Particle radius used by isac to process the data. The images will be resized to fit this radius (default 29)
     target_nx:: Target particle image size [Pixels]: Image size used by isac to process the data. The images will be resized according to target particle radius and then cut/padded to achieve the target image size. When xr > 0, the final image size for isac processing is 'target_nx + xr - 1'  (default 76)
 
@@ -49,8 +46,8 @@ Note ISAC will change the size of input data such that they fit into box size 76
     stab_ali:: Number of alignments for stability check: The number of alignments when checking stability. (default 5)
     minimum_grp_size:: Minimum size of reproducible class: Minimum size of reproducible class. (default 60)
     rand_seed:: Seed: Random seed set before calculations. Useful for testing purposes. By default, isac sets a random seed number. (default none)
-    new:: Use new code: Use new code. (default False)
     skip_prealignment:: Skip pre-alignment: Useful if images are already centered. The 2dalignment directory will still be generated but the parameters will be zero. (default False)
+    restart:: Restart run: 0: Restart ISAC2 after the last completed main iteration (i.e. the directory must contain ''finished'' file); k: Restart ISAC2 after k-th main iteration, it has to be completed (i.e. the directory must contain ''finished'' file), and higer iterations will be removed; Default: Do not restart. (default -1)
 
 
 == Output ==
@@ -149,6 +146,9 @@ The program will perform the following steps (to save computation time, in case 
 = Developer Notes =
  The meaning of the following option might changed from isac to isac2.
     init_iter:: SAC initialization iterations: Number of ab-initio-within-cluster alignment runs used for stability evaluation during SAC initialization. (default 3)
+    
+ The removal of the following option have to be reflected to the Tutorial
+    stop_after_candidates:: Stop after candidates step: The run stops after the 'candidate_class_averages' section is created. (default False)
 
 = Method =
 See the reference below.

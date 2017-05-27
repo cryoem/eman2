@@ -6,7 +6,7 @@ sxsort3d_new - 3D Clustering - SORT3D_NEW: UNDER DEVELOPMENT. Reproducible 3D Cl
 
 '' usage in command line''
 
-sxsort3d_new.py  --refinement_dir=refinement_dir  --masterdir=master_dir  --niter_for_sorting=num_of_sorting_iterations  --mask3D=mask3d_file   --focus=focus3d_file  --radius=outer_radius  --sym=symmetry  --img_per_grp=num_of_images_per_group  --minimum_grp_size=minimum_grp_size  --memory_per_node=memory_per_node  --nindependent=indenpendent_runs   --comparison_method=comparison_method  --instack=input_stack_file  --no_final_sharpen   --eqkmeans_angle_step=angle_step  --eqkmeans_tilt1=lower_tilt  --eqkmeans_tilt2=upper_tilt --not_make_normal_maps  --post_sorting_sharpen  --stop_eqkmeans_percentage=stop_eqkmeans_percentage  --minimum_ptl_number=minimum_ptl_number  --notapplybckgnoise  --mtf=mtf_file  --B_enhance=B_enhance  --postlowpassfilter=postlowpassfilter  --aa=aa  --B_start=B_start  --B_stop=B_stop  --nofsc_adj=nofsc_adj  
+sxsort3d_new.py  --refinement_dir=refinement_dir  --output_dir=output_dir  --niter_for_sorting=num_of_sorting_iterations  --mask3D=mask3d_file   --focus=focus3d_file  --radius=outer_radius  --sym=symmetry  --img_per_grp=num_of_images_per_group  --minimum_grp_size=minimum_grp_size  --memory_per_node=memory_per_node  --nindependent=indenpendent_runs   --comparison_method=comparison_method  --instack=input_stack_file  --nofinal_sharpen   --eqkmeans_angle_step=angle_step  --eqkmeans_tilt1=lower_tilt  --eqkmeans_tilt2=upper_tilt  --post_sorting_sharpen  --stop_eqkmeans_percentage=stop_eqkmeans_percentage  --minimum_ptl_number=minimum_ptl_number  --notapplybckgnoise  --mtf=mtf_file  --B_enhance=B_enhance  --fl=lpf_cutoff_freq  --aa=lpf_falloff  --B_start=B_start  --B_stop=B_stop  --nofsc_adj=nofsc_adj  
 
 
 === Typical usage ===
@@ -14,18 +14,18 @@ sxsort3d_new.py exists only in MPI version. In addition, it does not support sin
 
     1. 3D sorting with focus mask
 
-    ''' mpirun -np 48 sxsort3d_new.py --masterdir='outdir_sxsort3d_new' —focus='focus3d.hdf' --nindependent=3 --sym='c1' --radius=52 --img_per_grp=2000 --refinement_dir='outdir_sxmeridien'  --comparison_method='cross' --stop_eqkmeans_percentage=2.0 --minimum_grp_size=50 ''' <<BR>><<BR>>
+    ''' mpirun -np 48 sxsort3d_new.py --output_dir='outdir_sxsort3d_new' —focus='focus3d.hdf' --nindependent=3 --sym='c1' --radius=52 --img_per_grp=2000 --refinement_dir='outdir_sxmeridien'  --comparison_method='cross' --stop_eqkmeans_percentage=2.0 --minimum_grp_size=50 ''' <<BR>><<BR>>
 
     Note --focus option is require for focus clustering. The focus mask must be binary. 
 
     2. 3D sorting without focus mask
 
-    ''' mpirun -np 48 sxsort3d_new.py --masterdir='outdir_sxsort3d_new' --nindependent=3 --sym='c5' --radius=120 --minimum_grp_size=200 --refinement_dir='outdir_sxmeridien' --comparison_method='cross' --stop_eqkmeans_percentage=3.0 --img_per_grp=1500 ''' <<BR>><<BR>>
+    ''' mpirun -np 48 sxsort3d_new.py --output_dir='outdir_sxsort3d_new' --nindependent=3 --sym='c5' --radius=120 --minimum_grp_size=200 --refinement_dir='outdir_sxmeridien' --comparison_method='cross' --stop_eqkmeans_percentage=3.0 --img_per_grp=1500 ''' <<BR>><<BR>>
 
 
     3. Do unfiltered reconstructions on sorted clusters and merge them
 
-    ''' mpirun -np 48 sxsort3d_new.py --masterdir='outdir_sxsort3d_new' --post_sorting_sharpen —focus='focus3d.hdf' --nindependent=3 --sym='c1' --radius=52 --img_per_grp=2000 --refinement_dir='outdir_sxmeridien' --comparison_method='cross' --stop_eqkmeans_percentage=2.0 --minimum_grp_size=50 ''' <<BR>><<BR>>
+    ''' mpirun -np 48 sxsort3d_new.py --output_dir='outdir_sxsort3d_new' --post_sorting_sharpen —focus='focus3d.hdf' --nindependent=3 --sym='c1' --radius=52 --img_per_grp=2000 --refinement_dir='outdir_sxmeridien' --comparison_method='cross' --stop_eqkmeans_percentage=2.0 --minimum_grp_size=50 ''' <<BR>><<BR>>
 
     Note --post_sorting_sharpen is required to reconstruct unfiltered maps independent of sorting.
 
@@ -42,7 +42,6 @@ sxsort3d_new.py exists only in MPI version. In addition, it does not support sin
 
 == Input ==
     refinement_dir:: Input 3D refinement directory: The master output directory of sxmeridien. (default required string)
-    masterdir:: Output directory: The master output directory for sorting. (default required string)
     niter_for_sorting:: 3D refinement iteration: Specify an iteration number of 3D refinement where the 3D alignment parameters should be extracted for this sorting. By default, it uses iteration achieved best resolution. (default -1)
     mask3D:: 3D mask: File path of the global 3D mask for clustering. (default none)
     focus:: Focus 3D mask: File path of a binary 3D mask for focused clustering. (default none)
@@ -56,18 +55,17 @@ sxsort3d_new.py exists only in MPI version. In addition, it does not support sin
     nindependent:: Independent runs: Number of independent runs for Equal Sized K-means clustering. The value must be an odd number larger than 2. (default 3) 
     comparison_method:: Comparison method: Similarity measurement for the comparison between reprojected reference images and particle images. Valid values are 'cross' (cross-correlaton coefficients) and 'eucd' (Euclidean distance). (default cross) 
     instack:: Input images stack: File path of particle stack for sorting provided by user. If specified, sorting starts from a given data stack. This option is not currently supported by SHPIRE GUI (sxgui). (default none)
-    no_final_sharpen:: Do not reconstruct final maps: Do not reconstruct unfiltered final maps for post refinement process. (default False)
+    nofinal_sharpen:: Do not reconstruct final maps: Do not reconstruct unfiltered final maps for post refinement process. (default False)
     eqkmeans_angle_step:: EQK-means Angular sampling step: Sampling anglular step used for EQKmeans orientation constraints. (default 15.0)
     eqkmeans_tilt1:: EQK-means Lower tilting bound: Lower bound of sampling tilting angle (theta) used for EQKmeans orientation constraints. (default 0.0)
     eqkmeans_tilt2:: EQK-means Upper tilting bound: Upper bound of sampling tilting angle (theta) used for EQKmeans orientation constraints. (default 180.0)
-    not_make_normal_maps:: Do not make non-sharpen maps: Do not make non-sharpen maps. By default, the regularised maps will be reconstructed. (default False)
     post_sorting_sharpen:: Sharpen maps of each clusters: Sharpen maps generated from sorted clusters. (default False)
     stop_eqkmeans_percentage:: Stop EQK-means Percentage [%]: Particle change percentage for stopping Equal-Sized K-means. (default 2.0)
     minimum_ptl_number:: Smallest orientation group size: The smallest orientation group size wich equals number_of_groups multiplied by this number. The value have to be an integer. (default 20)
     notapplybckgnoise:: Do not apply noise: Do not apply background noise. (default False)
     mtf:: MTF file: File contains the MTF (modulation transfer function) of the detector used. (default none)
     B_enhance:: B-factor enhancement: -1.0: B-factor is not applied; 0.0: program estimates B-factor from options. B_start (usually 10 Angstrom) to the resolution determined by FSC143; 128.0: program use the given value 128.0 [A^2] to enhance map. (default 0.0)
-    postlowpassfilter:: Low-pass filter frequency: 0.0: low_pass filter to resolution; -1.0: no low_pass filter; 5.8: low_pass filter to 5.8 [A]; 0.2: low_pass filter to 0.2 (absolute frequency). (default 0.0)
+    fl:: Low-pass filter frequency: 0.0: low-pass filter to resolution; A value > 0.5: low-pass filter to the value in Angstrom; A value > 0.0 and < 0.5: low-pass filter to the value in absolute frequency; -1.0: no low-pass filter. (default 0.0)
     aa:: Low-pass filter fall-off: Low-pass filter fall-off. (default 0.1)
     B_start:: B-factor lower limit [A]: Lower limit for B-factor estimation. (default 10.0)
     B_stop:: B-factor higher limit [A]: Higher limit for B-factor estimation. (default  0.0)
@@ -75,7 +73,7 @@ sxsort3d_new.py exists only in MPI version. In addition, it does not support sin
 
 
 == Output ==
-Please use --masterdir option to specify the output directory. The results will be written here. This directory will be created automatically if it does not exist  Here, you can find a log.txt that describes the sequences of computations in the program. 
+    output_dir:: Output directory: The master output directory for sorting. The results will be written here. This directory will be created automatically if it does not exist. Here, you can find a log.txt that describes the sequences of computations in the program. (default required string)
 
 
 = Description =
@@ -92,7 +90,7 @@ This version does not support single workstation and the minimum requirement for
 Sorting would cost much more time than the last version. 
 
 Important Outputs:
-The results are saved in the directory specified as masterdir  ('outdir_sxsort3d_new' in the example above). The final results are partitioned particles IDs saved in text files. Also, unfiltered maps of each cluster are reconstructed in the way of meridien does. One can use postprocess command to merge the two halves of maps of each group.
+The results are saved in the directory specified as output_dir  ('outdir_sxsort3d_new' in the example above). The final results are partitioned particles IDs saved in text files. Also, unfiltered maps of each cluster are reconstructed in the way of meridien does. One can use postprocess command to merge the two halves of maps of each group.
 
 - Cluster*.txt
 Sorting results. The number of cluster files is equal to the number of classes found. These selection files contain one column for particle indexes. Input projection EM data is assumed to be number 0 to n-1.
