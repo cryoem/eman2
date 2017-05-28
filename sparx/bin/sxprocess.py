@@ -1094,7 +1094,7 @@ def main():
 			resolution_in_angstrom = [None]*len(fsc_true[0])
 			for ifreq in xrange(len(fsc_true[0])):
 				if fsc_true[0][ifreq] !=0.0: resolution_in_angstrom [ifreq] = options.pixel_size/fsc_true[0][ifreq]
-				else: resolution_in_angstrom [ifreq] = 0.0
+				else: resolution_in_angstrom [ifreq] = 9999.0
 					
 			fsc_true[1][0] =1.0  # always reset fsc of zero frequency as 1.0
 			# map fsc obtained from two halves to full maps

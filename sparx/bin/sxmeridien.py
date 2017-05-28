@@ -6038,7 +6038,7 @@ def main():
 	parser.add_option("--ref_a",   		       		type="string",        	default= 'S',		         	help="method for generating the quasi-uniformly distributed projection directions (default S)")	
 	parser.add_option("--ccfpercentage",			type="float", 	      	default=99.9,               	help="Percentage of correlation peaks to be included, 0.0 corresponds to hard matching (default 99.9%)")
 	parser.add_option("--nonorm",               	action="store_true",  	default=False,              	help="Do not apply image norm correction. (default False)")
-	parser.add_option("--do_final",             	type="int",           	default= -1,                	help="Perform final reconstruction using orientation parameters from iteration #iter. (default use iteration of best resolution achieved)")	
+	parser.add_option("--do_final",             	type="int",           	default= -1,                	help="Iteration number for final reconstruction of unfitered volumes. (default: =-1, not perform final reconstruction; =0; perform final reconstruction using iteration with the best resolution)")	
 	parser.add_option("--memory_per_node",          type="float",           default= -1.0,                	help="User provided information about memory per node (NOT per CPU) [in GB] (default 2GB*(number of CPUs per node))")	
 	parser.add_option("--ctrefromsort3d",           action="store_true",    default= False,                	help="Continue local/exhaustive refinement on data subset selected by sort3d. (default False)")
 	parser.add_option("--subset",                   type="string",          default='',                     help="A text contains indexes of the selected data subset")
@@ -6963,6 +6963,7 @@ def main():
 					else: print(line,"The last iteration does not capture the best resolution")
 					del Tracker_final_iter
 				mpi_barrier(MPI_COMM_WORLD)
+				
 				newparamstructure 			= [[],[]]
 				projdata          			= [[model_blank(1,1)], [model_blank(1,1)]]
 				original_data     			= [None,None]
