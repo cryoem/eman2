@@ -39,9 +39,10 @@ from subprocess import *
 
 EMANVERSION="EMAN 2.2"
 DATESTAMP="@EMAN_TIMESTAMP@"
+GITHASH="@EMAN_GITHASH@"
 
 def main():
-	print(EMANVERSION + ' (GITHUB: ' + DATESTAMP +')')
+	print(EMANVERSION + ' (GITHUB: ' + DATESTAMP + ' - commit: ' + GITHASH +')')
 
 	if sys.platform=='linux2':
 		print('Your EMAN2 is running on: {} {}'.format(platform.platform(), os.uname()[2], os.uname()[-1]))

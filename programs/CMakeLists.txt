@@ -50,7 +50,7 @@ IF(WIN32)
 ENDIF(WIN32)
 
 string(TIMESTAMP EMAN_TIMESTAMP "%Y-%m-%d %H:%M")
-set(EMAN_TIMESTAMP "${EMAN_TIMESTAMP} - git_hash: $ENV{GIT_FULL_HASH}")
+set(EMAN_GITHASH $ENV{GIT_FULL_HASH})
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/e2version.py.in
 				${CMAKE_INSTALL_PREFIX}/bin/e2version.py
 				)
