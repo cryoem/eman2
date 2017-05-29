@@ -311,7 +311,9 @@ def do_EQKmeans_nways_clustering_stable_seeds(workdir, initial_partids, params, 
 			create_nrandom_lists(partids)
 			
 			if Blockdata["myid"] == Blockdata["main_node"]: print("before get_orien_assignment_mpi")
-			ptls_in_orien_groups =  get_orien_assignment_mpi(angle_step, partids, params, log_main)
+			if Tracker["constants"]["symmetry"][0:1]=="c" or Tracker["constants"]["symmetry"][0:1]=="d":
+				ptls_in_orien_groups =  get_orien_assignment_mpi(angle_step, partids, params, log_main)
+			else: ptls_in_orien_groups = [range(Tracker["total_stack"])]
 			if Blockdata["myid"] == Blockdata["main_node"]:print("after get_orien_assignment_mpi")
 			Tracker["nxinit"] = Tracker["nxinit_refinement"]
 			previous_params   = Tracker["previous_parstack"]
