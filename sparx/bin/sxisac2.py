@@ -464,9 +464,9 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 				set_params2D(alldata[im],[0.0,0.0,0.0,0,1.0])
 			# normalize
 			alldata[im].process_inplace("normalize.mask", {"mask":mask, "no_sigma":0}) # subtract average under the mask
-			txrng = search_range(nx, ou, sxi, xrng, "ISAC")
+			txrng = search_range(nx, ou, sxi, xrng, "ISAC2")
 			txrng = [txrng[1],txrng[0]]
-			tyrng = search_range(ny, ou, syi, yrng, "ISAC")
+			tyrng = search_range(ny, ou, syi, yrng, "ISAC2")
 			tyrng = [tyrng[1],tyrng[0]]
 
 			# align current image to references
