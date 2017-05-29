@@ -311,7 +311,7 @@ def do_EQKmeans_nways_clustering_stable_seeds(workdir, initial_partids, params, 
 			create_nrandom_lists(partids)
 			
 			if Blockdata["myid"] == Blockdata["main_node"]: print("before get_orien_assignment_mpi")
-			ptls_in_orien_groups = get_orien_assignment_mpi(angle_step, partids, params, log_main)
+			ptls_in_orien_groups =  get_orien_assignment_mpi(angle_step, partids, params, log_main)
 			if Blockdata["myid"] == Blockdata["main_node"]:print("after get_orien_assignment_mpi")
 			Tracker["nxinit"] = Tracker["nxinit_refinement"]
 			previous_params   = Tracker["previous_parstack"]
@@ -2297,8 +2297,10 @@ def get_orien_assignment_mpi(angle_step, partids, params, log_main):
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		orien_group_assignment = [None for im in xrange(Tracker["total_stack"])]
 	else:  orien_group_assignment = 0
-	refa = even_angles(angle_step, symmetry = Tracker["constants"]["symmetry"], \
-	     theta1 = Tracker["tilt1"], theta2 = Tracker["tilt2"], method='S', phiEqpsi="Zero")
+	#refa = even_angles(angle_step, symmetry = Tracker["constants"]["symmetry"], \
+	#     theta1 = Tracker["tilt1"], theta2 = Tracker["tilt2"], method='S', phiEqpsi="Zero")
+	refa = Blockdata["symclass"].even_angles(angle_step, theta1 = Tracker["tilt1"], theta2 = Tracker["tilt2"])
+	#print(refa)
 	refa_vecs = []
 	for i in xrange(len(refa)):
 		tmp = getvec(refa[i][0], refa[i][1])
@@ -2357,7 +2359,7 @@ def get_orien_assignment_mpi(angle_step, partids, params, log_main):
 	else: ptls_in_orien_groups = 0
 	zero_member_group_found = bcast_number_to_all(zero_member_group_found, Blockdata["main_node"], MPI_COMM_WORLD)
 	ptls_in_orien_groups = wrap_mpi_bcast(ptls_in_orien_groups, Blockdata["main_node"], MPI_COMM_WORLD)
-	del refa_vecs
+	del refa_vecs, refa
 	del local_orien_group_assignment
 	del data_angles
 	del orien_group_assignment
@@ -5553,6 +5555,9 @@ def main():
 	else:  ERROR("Incorrect refinement_dir ", "sxsort3d_new.py", 1, Blockdata["myid"])
 	if os.path.exists(options.refinement_dir) and options.instack !='': ERROR("contractdict refinement methods", "sxsort3d_smearing.py", 1, Blockdata["myid"])	
 	Blockdata["fftwmpi"] = True
+	
+	Blockdata["symclass"] = symclass(Tracker["constants"]["symmetry"])
+	
 	#else:  Blockdata["fftwmpi"] = False
 	Blockdata["ncpuspernode"] = Blockdata["no_of_processes_per_group"]
 	Blockdata["nsubset"] = Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
