@@ -1237,7 +1237,7 @@ def main(args):
 			del tpw
 			rpw = mpi_reduce(rpw, ntp, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 			if(myid == 0):
-				rpw = [float(Blockdata["total_nima"]/rpw[i]) for q in rpw]
+				rpw = [float(Blockdata["total_nima"]/q) for q in rpw]
 				rpw[0] = 1.0
 				write_text_file(rpw,os.path.join(Blockdata["masterdir"], "rpw.txt"))
 			else:  rpw = []
