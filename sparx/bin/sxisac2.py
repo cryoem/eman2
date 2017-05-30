@@ -431,7 +431,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 	terminate = 0
 	while( (main_iter < max_iter) and (terminate == 0) ):
 		Iter += 1
-		#if my_abs_id == main_node: print "Iteration within isac_MPI = ", strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>", Iter, "	main_iter = ", main_iter, "	len data = ", image_end-image_start, localtime()[0:5], myid
+		if my_abs_id == main_node: print "Iteration within isac_MPI Iter =>", Iter, "	main_iter = ", main_iter, "	len data = ", image_end-image_start,"   ",strftime("%a, %d %b %Y %H:%M:%S", localtime())
 		mashi = cnx-ou-2
 		for j in xrange(numref):
 			refi[j].process_inplace("normalize.mask", {"mask":mask, "no_sigma":1}) # normalize reference images to N(0,1)
@@ -452,6 +452,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 
 
 		# begin MPI section
+		##if my_abs_id == main_node: print "begin MPI section = ", strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>", Iter, "	main_iter = ", main_iter, "	len data = ", image_end-image_start, localtime()[0:5], myid
 		for im in xrange(image_start, image_end):
 			alpha, sx, sy, mirror, scale = get_params2D(alldata[im])
 			##  TEST WHETHER PARAMETERS ARE WITHIN RANGE
@@ -463,9 +464,9 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 				set_params2D(alldata[im],[0.0,0.0,0.0,0,1.0])
 			# normalize
 			alldata[im].process_inplace("normalize.mask", {"mask":mask, "no_sigma":0}) # subtract average under the mask
-			txrng = search_range(nx, ou, sxi, xrng, "ISAC")
+			txrng = search_range(nx, ou, sxi, xrng, "ISAC2")
 			txrng = [txrng[1],txrng[0]]
-			tyrng = search_range(ny, ou, syi, yrng, "ISAC")
+			tyrng = search_range(ny, ou, syi, yrng, "ISAC2")
 			tyrng = [tyrng[1],tyrng[0]]
 
 			# align current image to references
@@ -481,6 +482,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 			del temp
 
 		del refi
+		##if my_abs_id == main_node: print "REDUCTION = ", strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>", Iter, "	main_iter = ", main_iter, "	len data = ", image_end-image_start, localtime()[0:5], myid
 		#delay(myid," d REDUCTION")
 		if(Blockdata["subgroup_myid"] > -1 ):
 			# First check number of nodes, if only one, no reduction necessary.
@@ -493,13 +495,13 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 					dbuf = mpi_reduce(dbuf, nima, MPI_FLOAT, MPI_SUM, main_node, Blockdata["subgroup_comm"])  #  RETURNS numpy array
 					if( Blockdata["subgroup_myid"] == 0 ):  np.copyto(d[j*nima:(j+1)*nima],dbuf)
 				del dbuf
-				#print "  REDUCED  ",Blockdata["myid"], (time()-at)/60.
+				##print "  REDUCED  ",Blockdata["myid"], (time()-at)/60.
 			#d = mpi_reduce(d, numref*nima, MPI_FLOAT, MPI_SUM, main_node, Blockdata["subgroup_comm"])  #  RETURNS numpy array
 		#if myid != main_node:
 		#	del d
 		#mpi_barrier(comm) # to make sure that slaves freed the matrix d
 		#delay(myid," AFTER d REDUCTION")
-
+		##if my_abs_id == main_node: print "REDUCTION DONE = ", strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>", Iter, "    main_iter = ", main_iter, "     len data = ", image_end-image_start, localtime()[0:5], myid
 		if myid == main_node:
 			#  PAP 03/20/2015  added cleaning of long lists...
 			id_list_long = Util.assign_groups(str(d.__array_interface__['data'][0]), numref, nima) # string with memory address is passed as parameters
@@ -521,7 +523,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 		mpi_barrier(comm)
 		belongsto = mpi_bcast(belongsto, nima, MPI_INT, main_node, comm)
 		belongsto = map(int, belongsto)
-		#if my_abs_id == main_node: print "Completed EQ-mref within isac_MPI = ", Iter, "	main_iter = ", main_iter , localtime()[0:5], color, myid
+		##if my_abs_id == main_node: print "Completed EQ-mref within isac_MPI = ", Iter, "	main_iter = ", main_iter , localtime()[0:5], color, myid
 
 		#  Compute partial averages
 		members = [0]*numref
@@ -615,7 +617,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 
 		
 		fl += 0.05
-		#if my_abs_id == main_node: print "Increased fl .......", fl,localtime()[0:5]
+		##if my_abs_id == main_node: print "Increased fl .......", fl,localtime()[0:5]
 		if fl >= FH:
 			fl = FL
 			do_within_group = 1
@@ -626,7 +628,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 		check_stability = (stability and (main_iter%iter_reali==0))
 
 		if do_within_group == 1:
-			#if my_abs_id == main_node: print "Doing within group alignment .......", localtime()[0:5],color, main_iter
+			##if my_abs_id == main_node: print "Doing within group alignment .......", localtime()[0:5],color, main_iter
 
 			# Broadcast the alignment parameters to all nodes
 			for i in xrange(number_of_proc):
@@ -654,14 +656,14 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 			# Here we try to estimate the calculation time for both approaches.
 			stab_calc_time_method_1 = stab_ali * ((numref-1) // number_of_proc + 1)
 			stab_calc_time_method_2 = (numref * stab_ali - 1) // number_of_proc + 1
-			#if my_abs_id == main_node: print "Times estimation: ", stab_calc_time_method_1, stab_calc_time_method_2
+			##if my_abs_id == main_node: print "Times estimation: ", stab_calc_time_method_1, stab_calc_time_method_2
 
 			# When there is no stability checking or estimated calculation time of new method is greater than 80% of estimated calculation time of original method 
 			# then the original method is used. In other case. the second (new) method is used.
 			#if (not check_stability) or (stab_calc_time_method_2 > 0.80 * stab_calc_time_method_1):
 			#  For the time being only use this method as the other one is not worked out as far as parameter ranges go.
 			#if True :
-			#if my_abs_id == main_node: print "Within group refinement and checking within group stability, original approach .......", check_stability, "  ",localtime()[0:5]
+			##if my_abs_id == main_node: print "Within group refinement and checking within group stability, original approach .......", check_stability, "  ",localtime()[0:5]
 			# ====================================== standard approach is used, calculations are parallelized by scatter groups (averages) among MPI processes
 			gpixer = []
 			for j in xrange(myid, numref, number_of_proc):
@@ -767,7 +769,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 					j = agreement - previous_agreement
 					if( (agreement>0.5) and (j > 0.0) and (j < 0.05) ): terminate = 1
 					previous_agreement = agreement
-					print  "  Assignment agreement with previous iteration  %5.1f"%(agreement*100),"   ",strftime("%a, %d %b %Y %H:%M:%S", localtime())
+					print  ">>>  Assignment agreement with previous iteration  %5.1f"%(agreement*100),"   ",strftime("%a, %d %b %Y %H:%M:%S", localtime())
 				terminate = bcast_number_to_all(terminate, source_node = main_node)
 
 
@@ -1024,6 +1026,7 @@ def main(args):
 	parser.add_option("--img_per_grp",           type="int",           default=200,        help="number of images per class (maximum group size, also defines number of classes K=(total number of images)/img_per_grp (default 200)")
 	parser.add_option("--minimum_grp_size",      type="int",           default=60,         help="minimum size of class (default 60)")
 	parser.add_option("--CTF",                   action="store_true",  default=False,      help="apply phase-flip for CTF correction: if set the data will be phase-flipped using CTF information included in image headers (default False)")
+	parser.add_option("--VPP",                   action="store_true",  default=False,      help="Phase Plate data (default False)")
 	parser.add_option("--ir",                    type="int",           default=1,          help="inner ring: of the resampling to polar coordinates. units - pixels (default 1)")
 	parser.add_option("--rs",                    type="int",           default=1,          help="ring step: of the resampling to polar coordinates. units - pixels (default 1)")
 	parser.add_option("--xr",                    type="int",           default=1,          help="x range: of translational search. By default, set by the program. (default 1)")
@@ -1124,7 +1127,7 @@ def main(args):
 		print '*            Alignment and Clustering of 2D Transmission Electron Microscope Images",              *' 
 		print '*            Structure 20, 237-247, February 8, 2012.                                              *'
 		print "*                                                                                                  *"
-		print "* Last updated: 03/23/2017 PAP                                                                     *"
+		print "* Last updated: 05/30/2017 PAP                                                                     *"
 		print "****************************************************************************************************"
 		Util.version()
 		print "****************************************************************************************************"
@@ -1147,6 +1150,11 @@ def main(args):
 			print "Please run '" + progname + " -h' for detailed options"
 			return 1
 
+
+	create_zero_group()
+
+	if options.CTF and options.VPP: ERROR("Options CTF and VPP cannot be used together", "isac2", 1, myid)
+
 	#  former options
 	indep_run = 0
 	match_first = 0
@@ -1166,8 +1174,6 @@ def main(args):
 	#Blockdata["Ykey"]	= Blockdata["myid"]%(Blockdata["nproc"]/options.indep_run)
 	#Blockdata["Ygroup_comm"] = mpi_comm_split(MPI_COMM_WORLD, Blockdata["Ycolor"], Blockdata["Ykey"])
 	#Blockdata["nnodes_per_subgroup"] = Blockdata["nproc"]/(options.indep_run*Blockdata["no_of_processes_per_group"])
-
-	create_zero_group()
 
 	#print "  MPI STUFF BY_YANG ",Blockdata["myid"], options.indep_run, Blockdata["Ycolor"], Blockdata["Ykey"]#, Blockdata["Ymyid_on_node"]
 
@@ -1221,10 +1227,31 @@ def main(args):
 
 		image_start, image_end = MPI_start_end(Blockdata["total_nima"], nproc, myid)
 
+		original_images = EMData.read_images(Blockdata["stack"], range(image_start,image_end))
+		if options.VPP:
+			ntp = len(rops_table(original_images[0]))
+			rpw = [0.0]*ntp
+			for q in original_images:
+				tpw = rops_table(q)
+				for i in xrange(ntp):  rpw[i] += sqrt(tpw[i])
+			del tpw
+			rpw = mpi_reduce(rpw, ntp, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
+			if(myid == 0):
+				rpw = [float(Blockdata["total_nima"]/q) for q in rpw]
+				rpw[0] = 1.0
+				write_text_file(rpw,os.path.join(Blockdata["masterdir"], "rpw.txt"))
+			else:  rpw = []
+			rpw = bcast_list_to_all(rpw, myid, source_node = main_node, mpi_comm = MPI_COMM_WORLD)
+			for i in xrange(len(original_images)):  original_images[i] = filt_table(original_images[i], rpw)
+			del rpw
+		else:
+			if(myid == 0):
+				ntp = len(rops_table(original_images[0]))
+				write_text_file([0.0]*ntp,os.path.join(Blockdata["masterdir"], "rpw.txt"))
+
 		if options.skip_prealignment:
 			params2d = [[0.0,0.0,0.0,0] for i in xrange(image_start, image_end)]
 		else:
-			original_images = EMData.read_images(Blockdata["stack"], range(image_start,image_end))
 			#  We assume the target radius will be 29, and xr = 1.
 			shrink_ratio = float(target_radius)/float(radi)
 
@@ -1301,12 +1328,18 @@ def main(args):
 
 
 		msk = model_circle(radi, nx, nx)
+		if options.VPP:
+			if myid == 0:  rpw = read_text_file(os.path.join(Blockdata["masterdir"], "rpw.txt"))
+			else:  rpw = [0.0]
+			rpw = bcast_list_to_all(rpw, myid, source_node = main_node, mpi_comm = MPI_COMM_WORLD)
 		for im in xrange(nima):
 			st = Util.infomask(aligned_images[im], msk, False)
 			aligned_images[im] -= st[0]
 			if options.CTF:
 				aligned_images[im] = filt_ctf(aligned_images[im], aligned_images[im].get_attr("ctf"), binary = True)
-	
+			elif options.VPP:
+				aligned_images[im] = fft(filt_table(filt_ctf(fft(aligned_images[im]), aligned_images[im].get_attr("ctf"), binary = True), rpw))
+		if options.VPP: del rpw
 		if(shrink_ratio < 1.0):
 			if    newx > target_nx  :
 				msk = model_circle(target_radius, target_nx, target_nx)
@@ -1496,7 +1529,7 @@ def main(args):
 				junk = cmdexecute(cmd)
 
 	error = bcast_number_to_all(error, source_node = Blockdata["main_node"])
-	if(error == 1):  ERROR("cannot restart from unfinished main iteration  %d"%main_iter,"isac2",1,Blockdata["myid"])
+	if(error == 1):  ERROR("isac2","cannot restart from unfinished main iteration  %d"%main_iter)
 					
 
 	mpi_barrier(MPI_COMM_WORLD)
