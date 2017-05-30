@@ -431,7 +431,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 	terminate = 0
 	while( (main_iter < max_iter) and (terminate == 0) ):
 		Iter += 1
-		if my_abs_id == main_node: print "Iteration within isac_MPI = ", strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>", Iter, "	main_iter = ", main_iter, "	len data = ", image_end-image_start, localtime()[0:5], myid
+		if my_abs_id == main_node: print "Iteration within isac_MPI Iter =>", Iter, "	main_iter = ", main_iter, "	len data = ", image_end-image_start,"   ",strftime("%a, %d %b %Y %H:%M:%S", localtime())
 		mashi = cnx-ou-2
 		for j in xrange(numref):
 			refi[j].process_inplace("normalize.mask", {"mask":mask, "no_sigma":1}) # normalize reference images to N(0,1)
@@ -452,7 +452,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 
 
 		# begin MPI section
-		if my_abs_id == main_node: print "begin MPI section = ", strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>", Iter, "	main_iter = ", main_iter, "	len data = ", image_end-image_start, localtime()[0:5], myid
+		##if my_abs_id == main_node: print "begin MPI section = ", strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>", Iter, "	main_iter = ", main_iter, "	len data = ", image_end-image_start, localtime()[0:5], myid
 		for im in xrange(image_start, image_end):
 			alpha, sx, sy, mirror, scale = get_params2D(alldata[im])
 			##  TEST WHETHER PARAMETERS ARE WITHIN RANGE
@@ -482,7 +482,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 			del temp
 
 		del refi
-		if my_abs_id == main_node: print "REDUCTION = ", strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>", Iter, "	main_iter = ", main_iter, "	len data = ", image_end-image_start, localtime()[0:5], myid
+		##if my_abs_id == main_node: print "REDUCTION = ", strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>", Iter, "	main_iter = ", main_iter, "	len data = ", image_end-image_start, localtime()[0:5], myid
 		#delay(myid," d REDUCTION")
 		if(Blockdata["subgroup_myid"] > -1 ):
 			# First check number of nodes, if only one, no reduction necessary.
@@ -495,13 +495,13 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 					dbuf = mpi_reduce(dbuf, nima, MPI_FLOAT, MPI_SUM, main_node, Blockdata["subgroup_comm"])  #  RETURNS numpy array
 					if( Blockdata["subgroup_myid"] == 0 ):  np.copyto(d[j*nima:(j+1)*nima],dbuf)
 				del dbuf
-				#print "  REDUCED  ",Blockdata["myid"], (time()-at)/60.
+				##print "  REDUCED  ",Blockdata["myid"], (time()-at)/60.
 			#d = mpi_reduce(d, numref*nima, MPI_FLOAT, MPI_SUM, main_node, Blockdata["subgroup_comm"])  #  RETURNS numpy array
 		#if myid != main_node:
 		#	del d
 		#mpi_barrier(comm) # to make sure that slaves freed the matrix d
 		#delay(myid," AFTER d REDUCTION")
-		if my_abs_id == main_node: print "REDUCTION DONE = ", strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>", Iter, "    main_iter = ", main_iter, "     len data = ", image_end-image_start, localtime()[0:5], myid
+		##if my_abs_id == main_node: print "REDUCTION DONE = ", strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>", Iter, "    main_iter = ", main_iter, "     len data = ", image_end-image_start, localtime()[0:5], myid
 		if myid == main_node:
 			#  PAP 03/20/2015  added cleaning of long lists...
 			id_list_long = Util.assign_groups(str(d.__array_interface__['data'][0]), numref, nima) # string with memory address is passed as parameters
@@ -523,7 +523,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 		mpi_barrier(comm)
 		belongsto = mpi_bcast(belongsto, nima, MPI_INT, main_node, comm)
 		belongsto = map(int, belongsto)
-		if my_abs_id == main_node: print "Completed EQ-mref within isac_MPI = ", Iter, "	main_iter = ", main_iter , localtime()[0:5], color, myid
+		##if my_abs_id == main_node: print "Completed EQ-mref within isac_MPI = ", Iter, "	main_iter = ", main_iter , localtime()[0:5], color, myid
 
 		#  Compute partial averages
 		members = [0]*numref
@@ -617,7 +617,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 
 		
 		fl += 0.05
-		if my_abs_id == main_node: print "Increased fl .......", fl,localtime()[0:5]
+		##if my_abs_id == main_node: print "Increased fl .......", fl,localtime()[0:5]
 		if fl >= FH:
 			fl = FL
 			do_within_group = 1
@@ -628,7 +628,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 		check_stability = (stability and (main_iter%iter_reali==0))
 
 		if do_within_group == 1:
-			if my_abs_id == main_node: print "Doing within group alignment .......", localtime()[0:5],color, main_iter
+			##if my_abs_id == main_node: print "Doing within group alignment .......", localtime()[0:5],color, main_iter
 
 			# Broadcast the alignment parameters to all nodes
 			for i in xrange(number_of_proc):
@@ -656,14 +656,14 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 			# Here we try to estimate the calculation time for both approaches.
 			stab_calc_time_method_1 = stab_ali * ((numref-1) // number_of_proc + 1)
 			stab_calc_time_method_2 = (numref * stab_ali - 1) // number_of_proc + 1
-			#if my_abs_id == main_node: print "Times estimation: ", stab_calc_time_method_1, stab_calc_time_method_2
+			##if my_abs_id == main_node: print "Times estimation: ", stab_calc_time_method_1, stab_calc_time_method_2
 
 			# When there is no stability checking or estimated calculation time of new method is greater than 80% of estimated calculation time of original method 
 			# then the original method is used. In other case. the second (new) method is used.
 			#if (not check_stability) or (stab_calc_time_method_2 > 0.80 * stab_calc_time_method_1):
 			#  For the time being only use this method as the other one is not worked out as far as parameter ranges go.
 			#if True :
-			if my_abs_id == main_node: print "Within group refinement and checking within group stability, original approach .......", check_stability, "  ",localtime()[0:5]
+			##if my_abs_id == main_node: print "Within group refinement and checking within group stability, original approach .......", check_stability, "  ",localtime()[0:5]
 			# ====================================== standard approach is used, calculations are parallelized by scatter groups (averages) among MPI processes
 			gpixer = []
 			for j in xrange(myid, numref, number_of_proc):
@@ -769,7 +769,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 					j = agreement - previous_agreement
 					if( (agreement>0.5) and (j > 0.0) and (j < 0.05) ): terminate = 1
 					previous_agreement = agreement
-					print  "  Assignment agreement with previous iteration  %5.1f"%(agreement*100),"   ",strftime("%a, %d %b %Y %H:%M:%S", localtime())
+					print  ">>>  Assignment agreement with previous iteration  %5.1f"%(agreement*100),"   ",strftime("%a, %d %b %Y %H:%M:%S", localtime())
 				terminate = bcast_number_to_all(terminate, source_node = main_node)
 
 
@@ -1127,7 +1127,7 @@ def main(args):
 		print '*            Alignment and Clustering of 2D Transmission Electron Microscope Images",              *' 
 		print '*            Structure 20, 237-247, February 8, 2012.                                              *'
 		print "*                                                                                                  *"
-		print "* Last updated: 03/23/2017 PAP                                                                     *"
+		print "* Last updated: 05/30/2017 PAP                                                                     *"
 		print "****************************************************************************************************"
 		Util.version()
 		print "****************************************************************************************************"
