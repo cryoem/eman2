@@ -376,7 +376,7 @@ def main():
 
 		pf = "ptclfsc_{}_projections.hdf".format("_".join(args[0].split("_")[1:]))
 
-		tfs = []
+		#tfs = []
 
 		tlast=time()
 		# Put particles in class lists
@@ -435,85 +435,89 @@ def main():
 
 		fout.close()
 
+		# TODO: This is Michael's code, not mine, I just uncommented it again after fixing some of the above
+		# a bit silly that it re-reads the data we already have in RAM. Should be rewritten --steve
 		bname = base_name(ptclfsc)
 
-		#print("Generating new sets.")
+		print("Generating new sets.")
 
-		#nseg = 2
-		#if apix>2.5 : axes=[0,1]
-		#else : axes = [0,1,2]
+		nseg = 2
+		if apix>2.5 : axes=[0,4,5]
+		else : axes = [0,4,5,6]
 
-		#fscs = []
-		#cmts = []
-		#with open(ptclfsc,'r') as ptclfsc_handle:
-			#for line in ptclfsc_handle:
-				#if line != "":
-					#fsc,cmt = line.strip().split("#")
-					#fscs.append(fsc.split()[:4])
-					#cmts.append(cmt.strip())
+		fscs = []
+		cmts = []
+		with open(ptclfsc,'r') as ptclfsc_handle:
+			for line in ptclfsc_handle:
+				if line[0]=="#": continue
+				if line != "":
+					fsc,cmt = line.strip().split("#")
+					fscs.append(fsc.split())
+					cmts.append(cmt.strip())
 
-		#d = np.asarray(fscs).astype(float)
-		##d /= np.std(d,axis=0)
-		#(nrow,ncol) = d.shape
+		d = np.asarray(fscs).astype(float)
+		#d /= np.std(d,axis=0)
+		(nrow,ncol) = d.shape
 
-		#imdata = []
-		#for r in range(nrow):
-			#imdata.append(EMData(ncol,1,1))
-			#for ax in axes:
-				#imdata[r][ax]=d[r][ax]
+		imdata = []
+		for r in range(nrow):
+			imdata.append(EMData(ncol,1,1))
+			for ax in axes:
+				imdata[r][ax]=d[r][ax]
 
-		#an=Analyzers.get("kmeans")
-		#an.set_params({"ncls":nseg,"minchange":nrow//100,"verbose":0,"slowseed":0,"mininclass":5})
-		#an.insert_images_list(imdata)
-		#centers=an.analyze()
+		an=Analyzers.get("kmeans")
+		an.set_params({"ncls":nseg,"minchange":nrow//100,"verbose":0,"slowseed":0,"mininclass":5})
+		an.insert_images_list(imdata)
+		centers=an.analyze()
 
-		#results=[[[] for i in range(ncol)] for j in range(nseg)]
-		#resultc=[[] for j in range(nseg)]
+		results=[[[] for i in range(ncol)] for j in range(nseg)]
+		resultc=[[] for j in range(nseg)]
 		#resultt=[[] for t in range(nseg)]
 
-		#d1 = []
-		#d2 = []
+		d1 = []
+		d2 = []
 
-		#try: os.unlink(tfn)
-		#except: pass
+		try: os.unlink(tfn)
+		except: pass
 
-		#for r in range(nrow):
-			#s=imdata[r]["class_id"]
-			#if s == 0: d1.append(d[r])
-			#else: d2.append(d[r])
-			#for c in xrange(ncol):
-				#results[s][c].append(imdata[c][r])
-			#resultc[s].append(cmts[r])
+		for r in range(nrow):
+			s=imdata[r]["class_id"]
+			if s == 0: d1.append(d[r])
+			else: d2.append(d[r])
+			for c in xrange(ncol):
+				results[s][c].append(imdata[c][r])
+			resultc[s].append(cmts[r])
 			#resultt[s].append(tfs[r])
 
-		#d1 = np.asarray(d1)
-		#d2 = np.asarray(d2)
+		d1 = np.asarray(d1)
+		d2 = np.asarray(d2)
 
-		## need to *consistently* label the "best" and "worst" cluster
-		#d1s = np.max(d1)
-		#d2s = np.max(d2)
-		#lstfs = {}
-		#if d1s > d2s:
-			#lstfs[0] = "{}_good.lst".format(bname)
-			#lstfs[1] = "{}_bad.lst".format(bname)
-		#else:
-			#lstfs[0] = "{}_bad.lst".format(bname)
-			#lstfs[1] = "{}_good.lst".format(bname)
+		# need to *consistently* label the "best" and "worst" cluster
+		d1s = np.max(d1)
+		d2s = np.max(d2)
+		lstfs = {}
+		if d1s > d2s:
+			lstfs[0] = "{}_good.lst".format(bname)
+			lstfs[1] = "{}_bad.lst".format(bname)
+		else:
+			lstfs[0] = "{}_bad.lst".format(bname)
+			lstfs[1] = "{}_good.lst".format(bname)
 
-		#lsx={}
-		#for s in [0,1]:#range(len(results)):
-			#outf = "sets/{}".format(lstfs[s])
-			#try: os.unlink(outf) # try to remove file if it already exists
-			#except: pass
-			#out=LSXFile(outf)
-			#for r,cmt in enumerate(resultc[s]):
-				#imn,imf=cmt.split(";")[:2]
-				#imn=int(imn)
-				#if not lsx.has_key(imf):
-					#lsx[imf]=LSXFile(imf,True)	# open the LSX file for reading
-				#val=lsx[imf][imn]
-				##val[2] = str(resultt[s][r]) # comment is a string dictionary, required to make3d_rawptcls.
+		lsx={}
+		for s in [0,1]:#range(len(results)):
+			outf = "sets/{}".format(lstfs[s])
+			try: os.unlink(outf) # try to remove file if it already exists
+			except: pass
+			out=LSXFile(outf)
+			for r,cmt in enumerate(resultc[s]):
+				imn,imf=cmt.split(";")[:2]
+				imn=int(imn)
+				if not lsx.has_key(imf):
+					lsx[imf]=LSXFile(imf,True)	# open the LSX file for reading
+				val=lsx[imf][imn]
+				#val[2] = str(resultt[s][r]) # comment is a string dictionary, required to make3d_rawptcls.
 				#out[r]=[val[0],val[1],str(resultt[s][r])]
+				out[r]=[val[0],val[1]]
 
 		# OLD 'MANUAL' INFO
 		#print("Evaluation complete. Each column in the resulting text file includes information at a different resolution range. Columns 0 and 1 are almost always useful,
@@ -522,7 +526,7 @@ def main():
 		#mouse-over specific data points to see the particle each represents. See one of the single particle analysis tutorials for more details.".format(args[0][-2:]))
 
 		# NEW AUTOMATED INFO
-		print("Evaluation complete.\nParticles best resembling results from {ref} have been saved in 'sets/{bn}_good.lst' and can be used in further refinements.".format(ref=args[0],bn=bname))
+		print("Evaluation complete.\nParticles best resembling results from {ref} at low/intermediate resolution have been saved in 'sets/{bn}_good.lst' and can be used in further refinements.\nHowever, please note that some additional columns have been added to the data ".format(ref=args[0],bn=bname))
 
 		E2end(logid)
 		sys.exit(0)
