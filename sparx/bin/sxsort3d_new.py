@@ -1215,11 +1215,7 @@ def copy_oldparamstructure_from_meridien_MPI(selected_iteration, log):
 	old_refinement_previous_iter_directory = os.path.join(Tracker["constants"]["refinement_dir"], "main%03d"%(selected_iteration-1))
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	if( Blockdata["myid"] == Blockdata["main_node"]):
-		if os.path.exists(Tracker["paramstructure_dir"]):
-			msg = "%s does exist!"%Tracker["paramstructure_dir"]
-			print(line, msg)
-			log.add(msg)
-		else:
+		if not os.path.exists(Tracker["paramstructure_dir"]):
 			os.mkdir(os.path.join(Tracker["constants"]["masterdir"], "main%03d"%selected_iteration))
 			os.mkdir(Tracker["paramstructure_dir"])
 	Tracker["refang"] = read_text_row(os.path.join(old_refinement_iter_directory, "refang.txt"))
@@ -3656,12 +3652,6 @@ def ctrefromsorting_rec3d_faked_iter(masterdir, selected_iter=-1, rec3d_image_si
 		Blockdata["accumulatepw"] = [[],[]]
 		if selected_iter ==-1: ERROR("Iteration number has to be determined in advance.","ctrefromsorting_rec3d_faked_iter",1, Blockdata["subgroup_myid"])  
 		carryon = 1
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		if(Blockdata["subgroup_myid"] == Blockdata["main_node"]):
-			print(line, "ctrefromsorting_rec3d_faked_iter")
-			print(line, "Reconstruction uses solution from  %d iteration"%selected_iter)
-			print(line, "Reconstruction image size is:  %d"%(Tracker["nxinit"]))
-			print(line, "Reconstruction directory is %s"%(Tracker["directory"]))
 		if(Blockdata["subgroup_myid"] == Blockdata["main_node"]):
 			try:
 				refang  = read_text_row( os.path.join(Tracker["directory"], "refang.txt"))
@@ -4102,26 +4092,23 @@ def do3d_sorting_groups_rec3d(iteration, masterdir, log_main):
 				mpi_barrier(Blockdata["shared_comm"])
 			mpi_barrier(Blockdata["shared_comm"])
 	mpi_barrier(MPI_COMM_WORLD)	
-	res_05         = mpi_reduce(res_05,  Tracker["number_of_groups"], MPI_INT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
-	res_143        = mpi_reduce(res_143, Tracker["number_of_groups"], MPI_INT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
-	res_05         = map(int, res_05)
-	res_143        = map(int, res_143)	
+	res_05   = mpi_reduce(res_05,  Tracker["number_of_groups"], MPI_INT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
+	res_143  = mpi_reduce(res_143, Tracker["number_of_groups"], MPI_INT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
+	res_05   = map(int, res_05)
+	res_143  = map(int, res_143)	
 	if (Blockdata["myid"] == Blockdata["main_node"]):
 		Tracker["fsc143"] = res_143
 		Tracker["fsc05"]  = res_05
 		for icluster in xrange(Tracker["number_of_groups"]):
 			res05  = Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/res_05[icluster]
 			res143 = Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/res_143[icluster]
-			msg = "cluster  %d   fsc143/fsc05   %d/%d, %f/%f"%(icluster, Tracker["fsc143"][icluster], Tracker["fsc05"][icluster], res143, res05)
+			msg = "cluster  %d   fsc05/fsc143   %d/%d, %f/%f"%(icluster, Tracker["fsc05"][icluster], Tracker["fsc143"][icluster], res143, res05)
 			print(msg)
 			log_main.add(msg)
 	keepgoing = bcast_number_to_all(keepgoing, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD) # always check	
 	Tracker   = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
 	if (Blockdata["myid"] == Blockdata["main_node"]):
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		msg = " trl_iter do volumes end"
-		#print(line, msg)
-		log_main.add(msg)
 		msg = "command for sharpening maps: sxprocess.py map0.hdf map1.hdf --postprocess  --mask=%s --fsc_adj pixel_size=%f"%(Tracker["constants"]["mask3D"], Tracker["constants"]["pixel_size"])
 		print(line, msg)
 		log_main.add(msg)
@@ -4988,17 +4975,16 @@ def do_final_maps(number_of_groups, minimum_size, selected_iter, refinement_dir,
 	global Tracker, Blockdata
 	import shutil
 	from shutil import copyfile
-	# estimate memory
-	line    = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-	if( Blockdata["myid"] == Blockdata["main_node"]):
-		msg = "------->>>>>>>Check memory for do final maps<<<<----------"
-		log_main.add(msg)
-		print(line, msg)
 	for icluster  in xrange(number_of_groups):
 		clusterdir = os.path.join(masterdir, "Cluster%d"%icluster)
 		if os.path.exists(clusterdir):
 			if Blockdata["myid"] == icluster: shutil.rmtree(clusterdir)
 	mpi_barrier(MPI_COMM_WORLD)
+	line    = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	if( Blockdata["myid"] == Blockdata["main_node"]):
+		msg = "------->>>>>>>Check memory <<<<----------"
+		log_main.add(msg)
+		print(line, msg)
 	basic_memory_per_cpu = 1.0
 	total_data_in_mem = Tracker["constants"]["nnxo"]*Tracker["constants"]["nnxo"]*Tracker["constants"]["total_stack"]*4./1.e9
 	one_volume_in_mem = Tracker["constants"]["nnxo"]*Tracker["constants"]["nnxo"]*Tracker["constants"]["nnxo"]*4.*8./1.e9
@@ -5014,7 +5000,7 @@ def do_final_maps(number_of_groups, minimum_size, selected_iter, refinement_dir,
 	ncpu_per_node = min(minimum_size//5//Blockdata["no_of_groups"]//2, nproc_do_final_per_node)
 	ncpu_per_node = max(ncpu_per_node, 2)
 	if( Blockdata["myid"] == Blockdata["main_node"]):
-		msg = "determined CPU used per node: %d"%ncpu_per_node
+		msg = "CPUs to be used per node: %d"%ncpu_per_node
 		log_main.add(msg)
 		print(line, msg)
 	Blockdata["ncpuspernode"] = ncpu_per_node
@@ -5050,6 +5036,7 @@ def do_final_maps(number_of_groups, minimum_size, selected_iter, refinement_dir,
 				os.path.join(Tracker["constants"]["masterdir"], "vol_unfiltered_0_grp%03d.hdf"%icluster))
 				copyfile(os.path.join(Tracker["directory"], "vol_unfiltered_1_grp%03d_iter000.hdf"%icluster), \
 				os.path.join(Tracker["constants"]["masterdir"], "vol_unfiltered_1_grp%03d.hdf"%icluster))
+			shutil.rmtree(map_dir)
 		mpi_barrier(MPI_COMM_WORLD)
 	else:
 		for icluster in xrange(Tracker["number_of_groups"]):
@@ -5111,7 +5098,7 @@ def merge_two_unfiltered_maps(map1_file, map2_file, cluster_ID):
 		else: resolution_in_angstrom [ifreq] = 0.0
 	fsc_true[1][0] =1.0  # always reset fsc of zero frequency as 1.0
 	for ifreq in xrange(len(fsc_true[0])): 
-		fsc_true[1][ifreq] = max(fsc_true[1][ifreq], 0.0)*2./(1.+max(fsc_true[1][ifreq], 0.0))
+		fsc_true[1][ifreq] = fsc_true[1][ifreq]*2./(1.+fsc_true[1][ifreq])
 	resolution_FSC143_right  = 0.0
 	resolution_FSC143_left   = 0.0
 	dip_at_fsc = False
@@ -5139,6 +5126,9 @@ def merge_two_unfiltered_maps(map1_file, map2_file, cluster_ID):
 	#print(nfreq0, nfreq05, "check")
 	nfreq143_right = nfreq0
 	resolution_FSC143_right = fsc_true[0][nfreq05]
+	
+	
+	for ifreq in xrange(len(fsc_true[0])):fsc_true[1][ifreq] = marx(fsc_true[1][ifreq], 0.0)
 	for ifreq in xrange(nfreq0, nfreq05, -1):
 		if fsc_true[1][ifreq] >= 0.143:
 			resolution_FSC143_right = fsc_true[0][ifreq]
@@ -5147,12 +5137,13 @@ def merge_two_unfiltered_maps(map1_file, map2_file, cluster_ID):
 	resolution_FSC143 = resolution_FSC143_right
 	nfreq143 = nfreq143_right
 	## smooth FSC after FSC143 and set other values to zero
+	
 	for ifreq in xrange(nfreq143+1, len(fsc_true[1])):
 		if ifreq ==nfreq143+1: fsc_true[1][ifreq] = (fsc_true[1][nfreq143-2] + fsc_true[1][nfreq143-1])/5.
 		elif ifreq ==nfreq143+2: fsc_true[1][ifreq] = (fsc_true[1][nfreq143-1])/5.
 		else: fsc_true[1][ifreq] = 0.0
 	fsc_out = []
-	for ifreq in xrange(len(fsc_true[0])): fsc_out.append("%5d   %7.2f   %5.3f"%(ifreq, resolution_in_angstrom[ifreq],fsc_true[1][ifreq]))
+	for ifreq in xrange(len(fsc_true[0])): fsc_out.append("%5d   %7.2f   %7.3f"%(ifreq, resolution_in_angstrom[ifreq],fsc_true[1][ifreq]))
 	write_text_file(fsc_out, "fsc_%d.txt"%cluster_ID)														
 	map1 +=map2 #(get_im(args[0])+get_im(args[1]))/2.0
 	map1 /=2.0
@@ -5205,7 +5196,6 @@ def merge_two_unfiltered_maps(map1_file, map2_file, cluster_ID):
 		else: # User provided value
 			sigma_of_inverse = sqrt(2./((abs(Tracker["constants"]["B_enhance"]))/Tracker["constants"]["pixel_size"]**2))
 			global_b = Tracker["constants"]["B_enhance"]
-		print("B_factor", global_b, "Cluster ", cluster_ID)
 		map1 = filt_gaussinv(map1, sigma_of_inverse)
 		guinierline = rot_avg_table(power(periodogram(map1),.5))
 		last_non_zero = -999.0
@@ -5221,10 +5211,10 @@ def merge_two_unfiltered_maps(map1_file, map2_file, cluster_ID):
 			map1 = filt_tanl(map1,Tracker["constants"]["postlowpassfilter"], min(Tracker["constants"]["aa"],.1))
 	else: 
 		map1 = filt_tanl(map1,resolution_FSC143, Tracker["constants"]["aa"])
-		print("low_pass_filter_to", resolution_FSC143, "Cluster ", cluster_ID)
-	map1.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_final_nomask_cluster%d.hdf"%cluster_ID))
+		print("applied B_factor", global_b, "applied low_pass_filter_to", resolution_FSC143, "Cluster ", cluster_ID)
+	map1.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_final_nomask_cluster%03dd.hdf"%cluster_ID))
 	if mask3D: map1 *=mask3D
-	map1.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_final_cluster%d.hdf"%cluster_ID))
+	map1.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_final_cluster%03dd.hdf"%cluster_ID))
 	if mask3D: del mask3D
 	del map1
 	return
@@ -5543,7 +5533,7 @@ def main():
 				class_in = read_text_file(os.path.join(Tracker["constants"]["masterdir"], "Cluster%d.txt"%number_of_groups))
 				minimum_size = min(len(class_in), minimum_size)
 				number_of_groups +=1
-			print(" % clusters are found  "%number_of_groups)
+			print(" %d clusters are found  "%number_of_groups)
 		number_of_groups = bcast_number_to_all(number_of_groups, Blockdata["main_node"], MPI_COMM_WORLD)
 		if number_of_groups == 0:ERROR("No cluster is found, and the program terminates. ", "option post_sorting_sharpen ", 1, Blockdata["myid"])
 		minimum_size = bcast_number_to_all(minimum_size, Blockdata["main_node"], MPI_COMM_WORLD)
