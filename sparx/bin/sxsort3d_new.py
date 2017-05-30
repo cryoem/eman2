@@ -3391,7 +3391,6 @@ def do_ctrefromsort3d_get_subset_data(masterdir, option_old_refinement_dir, opti
 		else: Tracker = 0
 		Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], comm) # balance processors
 		Tracker["constants"]["orgstack"] = orgstack
-		print("myid", Blockdata["subgroup_myid"], Blockdata["myid"])
 		
 		if Blockdata["subgroup_myid"] == Blockdata["main_node"]:
 			noiseimage        = get_im(os.path.join(old_previousoutputdir, "bckgnoise.hdf"))
@@ -3678,8 +3677,7 @@ def ctrefromsorting_rec3d_faked_iter(masterdir, selected_iter=-1, rec3d_image_si
 		rshifts = wrap_mpi_bcast(rshifts, Blockdata["main_node"], comm)
 		partids =[None, None]
 		if(Blockdata["subgroup_myid"] == Blockdata["main_node"]):
-			cmd = "{} {} ".format("mkdir ",os.path.join(Tracker["directory"], "tempdir"))
-			if not os.path.exists(os.path.join(Tracker["directory"], "tempdir")): cmdexecute(cmd)
+			if not os.path.exists(os.path.join(Tracker["directory"], "tempdir")): os.mkdir (os.path.join(Tracker["directory"], "tempdir"))
 			l = 0
 			for procid in xrange(2):
 				partids[procid] = os.path.join(Tracker["directory"],"chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]))
@@ -3740,8 +3738,6 @@ def ctrefromsorting_rec3d_faked_iter(masterdir, selected_iter=-1, rec3d_image_si
 			for ipar in xrange(len(oldparams[procid])):norm_per_particle[procid].append(oldparams[procid][ipar][7])
 			oldparams[procid] = []
 			original_data[procid] = None
-			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			if(Blockdata["subgroup_myid"] == Blockdata["nodes"][procid]): print(line, "3-D reconstruction of group %d"%procid)
 			Tracker["maxfrad"] = Tracker["nxinit"] //2
 			do3d(procid, projdata[procid], oldparamstructure[procid], refang, rshifts, norm_per_particle[procid], myid = Blockdata["subgroup_myid"], mpi_comm = comm)
 			projdata[procid]          = []
@@ -3918,14 +3914,7 @@ def do3d(procid, data, newparams, refang, rshifts, norm_per_particle, myid, mpi_
 	if( mpi_comm < -1 ): mpi_comm = MPI_COMM_WORDLD
 	if Blockdata["subgroup_myid"]== Blockdata["main_node"]:
 		if( procid == 0 ):
-			if os.path.exists(os.path.join(Tracker["directory"], "tempdir")): os.mkdir(os.path.join(Tracker["directory"], "tempdir"))
-		
-	"""
-	tvol, tweight, trol = recons3d_4nnstruct_MPI(myid = Blockdata["subgroup_myid"], main_node = Blockdata["nodes"][procid], prjlist = data, \
-											paramstructure = newparams, refang = refang, delta = Tracker["delta"], CTF = Tracker["constants"]["CTF"],\
-											upweighted = False, mpi_comm = mpi_comm, \
-											target_size = (2*Tracker["nxinit"]+3), avgnorm = Tracker["avgvaradj"][procid], norm_per_particle = norm_per_particle)
-	"""
+			if not os.path.exists(os.path.join(Tracker["directory"], "tempdir")): os.mkdir(os.path.join(Tracker["directory"], "tempdir"))
 	shrinkage = float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
 	tvol, tweight, trol = recons3d_trl_struct_MPI(myid = Blockdata["subgroup_myid"], main_node = Blockdata["main_node"], prjlist = data, \
 											paramstructure = newparams, refang = refang, rshifts_shrank = [[q[0]*shrinkage,q[1]*shrinkage] for q in rshifts], \
@@ -3936,8 +3925,6 @@ def do3d(procid, data, newparams, refang, rshifts, norm_per_particle, myid, mpi_
 		tvol.write_image(os.path.join(Tracker["directory"], "tempdir", "tvol_%01d_%03d.hdf"%(procid,Tracker["mainiteration"])))
 		tweight.write_image(os.path.join(Tracker["directory"], "tempdir", "tweight_%01d_%03d.hdf"%(procid,Tracker["mainiteration"])))
 		trol.write_image(os.path.join(Tracker["directory"], "tempdir", "trol_%01d_%03d.hdf"%(procid,Tracker["mainiteration"])))
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		#print(line,"Executed successfully backprojection for group ",procid)
 	mpi_barrier(mpi_comm)
 	return
 ##
@@ -5269,9 +5256,7 @@ def main():
 	parser.add_option("--memory_per_node",                 type   ="float",         default =-1.0,                     help="memory_per_node, the number used for evaluate the CPUs/NODE settings given by user")
 	parser.add_option("--nofinal_sharpen",                 action ="store_true",    default =False,                    help="not reconstruct unfiltered final maps for post refinement process")
 	parser.add_option("--eqkmeans_angle_step",             type   ="float",         default =15.,                      help="smapling anglular step used for EQKmeans orientation constraints")
-	parser.add_option("--eqkmeans_tilt1",                  type   ="float",         default =0.,                       help="sampling starting theta angle used for EQKmeans orientation constraints")
-	parser.add_option("--eqkmeans_tilt2",                  type   ="float",         default =180.,                     help="sampling end theta angle used for EQKmeans orientation constraints")
-	parser.add_option("--post_sorting_sharpen",            action ="store_true",    default =False,                    help="make sharpen maps from sorted clusters ")
+	parser.add_option("--post_sorting_sharpen",            action ="store_true",    default =False,                    help="make odd and even unfiltered maps per cluster")
 	parser.add_option("--stop_eqkmeans_percentage",        type   ="float",         default =2.0,                      help="particle change percentage for stopping equal size Kmeans")
 	parser.add_option("--minimum_ptl_number",              type   ="int",           default =20,					   help="integer number, the smallest orien group size equals number_of_groups multiplies this number")
 	parser.add_option("--notapplybckgnoise",               action ="store_true",    default =False,                    help="do not applynoise")
@@ -5354,8 +5339,8 @@ def main():
 	Tracker["constants"]["total_sort3d_iteration"] = 2
 	### -----------orientation constraints
 	Tracker["angle_step"]            = options.eqkmeans_angle_step # orientation constrained angle step
-	Tracker["tilt1"]                 = options.eqkmeans_tilt1
-	Tracker["tilt2"]                 = options.eqkmeans_tilt2
+	Tracker["tilt1"]                 = 0.0
+	Tracker["tilt2"]                 = 180.0
 	### ------------<<< option for proteins images that have preferred orientations
 	Tracker["minimum_ptl_number"] = options.minimum_ptl_number  # for orientation groups	
 	if Tracker["constants"]["memory_per_node"] ==-1 or Tracker["constants"]["memory_per_node"] <32.: Tracker["constants"]["small_memory"] = True
