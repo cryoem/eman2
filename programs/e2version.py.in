@@ -37,7 +37,7 @@ import platform
 from subprocess import *
 
 
-EMANVERSION="EMAN2 2.2"
+EMANVERSION="EMAN 2.2"
 DATESTAMP="@EMAN_TIMESTAMP@"
 GITHASH="@EMAN_GITHASH@"
 
