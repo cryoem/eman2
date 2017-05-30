@@ -1165,7 +1165,7 @@ def do3d_final_mpi(final_iter):
 			del tweight1, treg1
 			if( Blockdata["myid_on_node"] == 0):
 				tvol1.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_1_unfil.hdf"))
-			mpi_barrier(MPI_COMM_WORLD)
+		mpi_barrier(MPI_COMM_WORLD)
 	else:
 		for iproc in xrange(2):
 			if(Blockdata["myid_on_node"] == 0):
@@ -5286,7 +5286,6 @@ def do_final_rec3d(partids, partstack, original_data, oldparams, oldparamstructu
 		mpi_barrier(Blockdata["subgroup_comm"])
 	mpi_barrier(MPI_COMM_WORLD)
 	do3d_final_mpi(final_iter)
-	mpi_barrier(MPI_COMM_WORLD)
 	# also copy params to masterdir as final params
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		cmd = "{} {}  {}".format("cp ", os.path.join(final_dir, "params_%03d.txt"%Tracker["mainiteration"]), os.path.join(Tracker["constants"]["masterdir"], "final_params.txt"))
@@ -5409,6 +5408,9 @@ def do_ctrefromsort3d_get_subset_data(masterdir, option_old_refinement_dir, opti
 	else:   nproc_old_ref3d    = 0
 	nproc_old_ref3d = bcast_number_to_all(nproc_old_ref3d, Blockdata["main_node"], MPI_COMM_WORLD)
 	
+	if nproc_old_ref3d < Blockdata["nproc"]:
+		ERROR( "ERROR!! Continue-from-subset uses more Cpus than the initial run", "do_ctrefromsort3d_get_subset_data",1, Blockdata["myid"])
+	
 	# read old refinement Tracker
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		fout = open(os.path.join(old_refinement_iter_dir, "Tracker_%03d.json"%selected_iter),"r")
@@ -5484,7 +5486,8 @@ def do_ctrefromsort3d_get_subset_data(masterdir, option_old_refinement_dir, opti
 	new_params_chunk_two_last_iter = []	
 	
 	Tracker["avgvaradj"] = [0.0, 0.0]
-		
+	try: Blockdata["symclass"] = symclass(Tracker["constants"]["symmetry"])#
+	except:ERROR( "ERROR!! symmetry info is absent", "ctrefromsort3d_get_subset_data",1, Blockdata["myid"])
 	for index_of_particle in xrange(len(cluster)): 
 		if chunk_dict[cluster[index_of_particle]] == 0:  
 			new_chunk_one.append(cluster[index_of_particle])
@@ -5543,7 +5546,7 @@ def do_ctrefromsort3d_get_subset_data(masterdir, option_old_refinement_dir, opti
 		fout = open(os.path.join(iter_dir, "Tracker_%03d.json"%selected_iter),"w")
 		json.dump(Tracker, fout)
 		fout.close()
-			
+		
 		# now partition new indexes into new oldparamstructure
 		
 		nproc_dict = {}
@@ -5590,7 +5593,11 @@ def do_ctrefromsort3d_get_subset_data(masterdir, option_old_refinement_dir, opti
 		fout.close()
 	else: Tracker = 0
 	Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD) # balance processors
-	
+	try: 
+		memory_per_node = Tracker["constants"]["memory_per_node"]
+		if memory_per_node == -1.:
+			Tracker["constants"]["memory_per_node"] = 2.*Blockdata["no_of_processes_per_group"]
+	except: Tracker["constants"]["memory_per_node"]=2.*Blockdata["no_of_processes_per_group"]
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		if not os.path.exists(iter_dir):
 			cmd         = "{} {}".format("mkdir", iter_dir)
@@ -5670,7 +5677,6 @@ def do_ctrefromsort3d_get_subset_data(masterdir, option_old_refinement_dir, opti
 		write_text_file(new_particle_group_one, os.path.join(iter_dir, "particle_groups_0.txt"))
 		write_text_file(new_particle_group_two, os.path.join(iter_dir, "particle_groups_1.txt"))
 	Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD) # balance processors
-	
 	if Blockdata["myid"] == Blockdata["main_node"]:# some numbers and path are required to be modified
 		fout = open(os.path.join(iter_dir, "Tracker_%03d.json"%selected_iter),"w")
 		json.dump(Tracker, fout)
@@ -5688,74 +5694,113 @@ def do_ctrefromsort3d_get_maps_mpi(ctrefromsort3d_iter_dir):
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	if Blockdata["myid"] == Blockdata["main_node"]: print(line, "do3d_ctrefromsort3d_get_maps_mpi")
 	#if Tracker["directory"] !=Tracker["constants"]["masterdir"]: Tracker["directory"] = Tracker["constants"]["masterdir"]
-	carryon = 1 
-	if( Blockdata["myid"] == Blockdata["nodes"][1] ): 
-		# post-insertion operations, done only in main_node	
-	
-		tvol0 		= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir", "tvol_0_%03d.hdf"%Tracker["mainiteration"])))
-		tweight0 	= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir","tweight_0_%03d.hdf"%Tracker["mainiteration"])))
-		tvol1 		= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir", "tvol_1_%03d.hdf"%Tracker["mainiteration"])))
-		tweight1 	= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir","tweight_1_%03d.hdf"%Tracker["mainiteration"])))
-		Util.fuse_low_freq(tvol0, tvol1, tweight0, tweight1, 2*Tracker["constants"]["fuse_freq"])
-		shrank0 	= stepone(tvol0, tweight0)
-		tag = 7007
-		send_EMData(tvol1, Blockdata["nodes"][0], tag, MPI_COMM_WORLD)
-		send_EMData(tweight1, Blockdata["nodes"][0], tag, MPI_COMM_WORLD)
-		send_EMData(shrank0, Blockdata["nodes"][0], tag, MPI_COMM_WORLD)
-		lcfsc = 0
+	carryon = 1
+	if(Blockdata["no_of_groups"] >1):
+		if( Blockdata["myid"] == Blockdata["nodes"][1] ): 
+			# post-insertion operations, done only in main_node	
+			tvol0 		= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir", "tvol_0_%03d.hdf"%Tracker["mainiteration"])))
+			tweight0 	= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir","tweight_0_%03d.hdf"%Tracker["mainiteration"])))
+			tvol1 		= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir", "tvol_1_%03d.hdf"%Tracker["mainiteration"])))
+			tweight1 	= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir","tweight_1_%03d.hdf"%Tracker["mainiteration"])))
+			Util.fuse_low_freq(tvol0, tvol1, tweight0, tweight1, 2*Tracker["constants"]["fuse_freq"])
+			shrank0 	= stepone(tvol0, tweight0)
+			tag = 7007
+			send_EMData(tvol1, Blockdata["nodes"][0], tag, MPI_COMM_WORLD)
+			send_EMData(tweight1, Blockdata["nodes"][0], tag, MPI_COMM_WORLD)
+			send_EMData(shrank0, Blockdata["nodes"][0], tag, MPI_COMM_WORLD)
+			lcfsc = 0
 		
-	elif(Blockdata["myid"] == Blockdata["nodes"][0]):
-		tag = 7007
-		tvol1    	= recv_EMData(Blockdata["nodes"][1], tag, MPI_COMM_WORLD)
-		tweight1    = recv_EMData(Blockdata["nodes"][1], tag, MPI_COMM_WORLD)
-		shrank0     = recv_EMData(Blockdata["nodes"][1], tag, MPI_COMM_WORLD)
-		tvol1.set_attr_dict( {"is_complex":1, "is_fftodd":1, 'is_complex_ri': 1, 'is_fftpad': 1} )
-		shrank1 	= stepone(tvol1, tweight1)
-		cfsc 		= fsc(shrank0, shrank1)[1]
-		del shrank0, shrank1
-		if(Tracker["nxinit"]<Tracker["constants"]["nnxo"]):
-			cfsc 	= cfsc[:Tracker["nxinit"]]
-		for i in xrange(len(cfsc),Tracker["constants"]["nnxo"]//2+1):  cfsc.append(0.0)
-		lcfsc = len(cfsc)
-		#--  #--  memory_check(Blockdata["myid"],"second node, after stepone")
-	else:
-		#  receive fsc
-		lcfsc = 0
-	mpi_barrier(MPI_COMM_WORLD)
+		elif(Blockdata["myid"] == Blockdata["nodes"][0]):
+			tag = 7007
+			tvol1    	= recv_EMData(Blockdata["nodes"][1], tag, MPI_COMM_WORLD)
+			tweight1    = recv_EMData(Blockdata["nodes"][1], tag, MPI_COMM_WORLD)
+			shrank0     = recv_EMData(Blockdata["nodes"][1], tag, MPI_COMM_WORLD)
+			tvol1.set_attr_dict( {"is_complex":1, "is_fftodd":1, 'is_complex_ri': 1, 'is_fftpad': 1} )
+			shrank1 	= stepone(tvol1, tweight1)
+			cfsc 		= fsc(shrank0, shrank1)[1]
+			del shrank0, shrank1
+			if(Tracker["nxinit"]<Tracker["constants"]["nnxo"]):
+				cfsc 	= cfsc[:Tracker["nxinit"]]
+			for i in xrange(len(cfsc),Tracker["constants"]["nnxo"]//2+1):  cfsc.append(0.0)
+			lcfsc = len(cfsc)
+			#--  #--  memory_check(Blockdata["myid"],"second node, after stepone")
+		else:
+			#  receive fsc
+			lcfsc = 0
+		mpi_barrier(MPI_COMM_WORLD)
 
-	from time import sleep
-	lcfsc = bcast_number_to_all(lcfsc)
-	if( Blockdata["myid"] != Blockdata["nodes"][0]  ): cfsc = [0.0]*lcfsc
-	cfsc = bcast_list_to_all(cfsc, Blockdata["myid"], Blockdata["nodes"][0] )
-	if( Blockdata["myid"] == Blockdata["main_node"]):
-		write_text_file(cfsc, os.path.join(Tracker["directory"] ,"driver_%03d.txt"%(Tracker["mainiteration"])))
-		out_fsc(cfsc)
-	# do steptwo
-	if( Blockdata["color"] == Blockdata["node_volume"][1]):
-		if( Blockdata["myid_on_node"] == 0 ):
-			treg0 = get_im(os.path.join(Tracker["directory"], "tempdir", "trol_0_%03d.hdf"%(Tracker["mainiteration"])))
-		else:
-			tvol0 		= model_blank(1)
-			tweight0 	= model_blank(1)
-			treg0 		= model_blank(1)
-		tvol0 = steptwo_mpi(tvol0, tweight0, treg0, cfsc, True, color = Blockdata["node_volume"][1])
-		del tweight0, treg0
-		if( Blockdata["myid_on_node"] == 0 ):
-			tvol0.write_image(os.path.join(Tracker["directory"], "vol_0_%03d.hdf")%Tracker["mainiteration"])
-	elif( Blockdata["color"] == Blockdata["node_volume"][0]):
-		#--  #--  memory_check(Blockdata["myid"],"second node, before steptwo")
-		#  compute filtered volume
-		if( Blockdata["myid_on_node"] == 0 ):
-			treg1 = get_im(os.path.join(Tracker["directory"], "tempdir", "trol_1_%03d.hdf"%(Tracker["mainiteration"])))
-		else:
-			tvol1 		= model_blank(1)
-			tweight1 	= model_blank(1)
-			treg1 		= model_blank(1)
-		tvol1 = steptwo_mpi(tvol1, tweight1, treg1, cfsc, True,  color = Blockdata["node_volume"][0])
-		del tweight1, treg1
-		if( Blockdata["myid_on_node"] == 0 ):
-			tvol1.write_image(os.path.join(Tracker["directory"], "vol_1_%03d.hdf")%Tracker["mainiteration"])
-	mpi_barrier(MPI_COMM_WORLD) #  
+		from time import sleep
+		lcfsc = bcast_number_to_all(lcfsc)
+		if( Blockdata["myid"] != Blockdata["nodes"][0]  ): cfsc = [0.0]*lcfsc
+		cfsc = bcast_list_to_all(cfsc, Blockdata["myid"], Blockdata["nodes"][0] )
+		if( Blockdata["myid"] == Blockdata["main_node"]):
+			write_text_file(cfsc, os.path.join(Tracker["directory"] ,"driver_%03d.txt"%(Tracker["mainiteration"])))
+			out_fsc(cfsc)
+		# do steptwo
+		if( Blockdata["color"] == Blockdata["node_volume"][1]):
+			if( Blockdata["myid_on_node"] == 0 ):
+				treg0 = get_im(os.path.join(Tracker["directory"], "tempdir", "trol_0_%03d.hdf"%(Tracker["mainiteration"])))
+			else:
+				tvol0 		= model_blank(1)
+				tweight0 	= model_blank(1)
+				treg0 		= model_blank(1)
+			tvol0 = steptwo_mpi(tvol0, tweight0, treg0, cfsc, True, color = Blockdata["node_volume"][1])
+			del tweight0, treg0
+			if( Blockdata["myid_on_node"] == 0 ):
+				tvol0.write_image(os.path.join(Tracker["directory"], "vol_0_%03d.hdf")%Tracker["mainiteration"])
+		elif( Blockdata["color"] == Blockdata["node_volume"][0]):
+			#--  #--  memory_check(Blockdata["myid"],"second node, before steptwo")
+			#  compute filtered volume
+			if( Blockdata["myid_on_node"] == 0 ):
+				treg1 = get_im(os.path.join(Tracker["directory"], "tempdir", "trol_1_%03d.hdf"%(Tracker["mainiteration"])))
+			else:
+				tvol1 		= model_blank(1)
+				tweight1 	= model_blank(1)
+				treg1 		= model_blank(1)
+			tvol1 = steptwo_mpi(tvol1, tweight1, treg1, cfsc, True,  color = Blockdata["node_volume"][0])
+			del tweight1, treg1
+			if( Blockdata["myid_on_node"] == 0 ):
+				tvol1.write_image(os.path.join(Tracker["directory"], "vol_1_%03d.hdf")%Tracker["mainiteration"])
+		mpi_barrier(MPI_COMM_WORLD) # 
+	else:
+		for iproc in xrange(2):
+			if(Blockdata["myid_on_node"] == 0):
+				tvol0 		= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir", "tvol_0_%03d.hdf"%(Tracker["mainiteration"]))))
+				tweight0 	= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir","tweight_0_%03d.hdf"%(Tracker["mainiteration"]))))
+				tvol1 		= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir", "tvol_1_%03d.hdf"%(Tracker["mainiteration"]))))
+				tweight1 	= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir","tweight_1_%03d.hdf"%(Tracker["mainiteration"]))))
+				Util.fuse_low_freq(tvol0, tvol1, tweight0, tweight1, 2*Tracker["constants"]["fuse_freq"])
+				if iproc ==0:
+					shrank0 	= stepone(tvol0, tweight0)
+					shrank1 	= stepone(tvol1, tweight1)
+					cfsc 		= fsc(shrank0, shrank1)[1]
+					del tvol1, tweight1
+					del shrank0, shrank1
+				else:del tvol0, tweight0
+				if(Tracker["nxinit"]<Tracker["constants"]["nnxo"]):cfsc = cfsc[:Tracker["nxinit"]]
+				for i in xrange(len(cfsc),Tracker["constants"]["nnxo"]//2+1):  cfsc.append(0.0)
+				lcfsc = len(cfsc)
+				treg  = get_im(os.path.join(Tracker["directory"], "tempdir", "trol_%d_%03d.hdf"%((iproc, Tracker["mainiteration"]))))
+			else:
+				if iproc ==0:cfsc = 0
+				treg = model_blank(1)
+				if iproc ==0:
+					tvol0 		= model_blank(1)
+					tweight0 	= model_blank(1)
+				else:
+					tvol1 		= model_blank(1)
+					tweight1 	= model_blank(1)
+			if iproc == 0 :
+				cfsc = bcast_list_to_all(cfsc, Blockdata["myid"], Blockdata["nodes"][0] )
+				if(Blockdata["myid_on_node"] == 0):
+					write_text_file(cfsc, os.path.join(Tracker["directory"] ,"driver_%03d.txt"%(Tracker["mainiteration"])))
+					out_fsc(cfsc)
+				tvol0 = steptwo_mpi(tvol0, tweight0, treg, cfsc, True , color = Blockdata["node_volume"][0])
+			else: tvol1 = steptwo_mpi(tvol1, tweight1, treg, cfsc, True , color = Blockdata["node_volume"][0])
+			if( Blockdata["myid_on_node"] == 0):
+				if iproc ==0: tvol0.write_image(os.path.join(Tracker["directory"], "vol_0_%03d.hdf")%Tracker["mainiteration"])
+				else: tvol1.write_image(os.path.join(Tracker["directory"], "vol_1_%03d.hdf")%Tracker["mainiteration"])
+			mpi_barrier(MPI_COMM_WORLD)
 	return
 
 def ctrefromsorting_rec3d_faked_iter(masterdir, selected_iter=-1, comm = -1):
@@ -5821,6 +5866,9 @@ def ctrefromsorting_rec3d_faked_iter(masterdir, selected_iter=-1, comm = -1):
 	l  = bcast_number_to_all(l, source_node = Blockdata["main_node"], mpi_comm = comm)
 	
 	norm_per_particle = [[],[]]
+	if Blockdata["myid"] == Blockdata["main_node"]:
+		if not os.path.exists(os.path.join(Tracker["directory"], "tempdir")):
+			os.mkdir(os.path.join(Tracker["directory"], "tempdir"))
 	for procid in xrange(2):
 		if procid ==0: original_data[1] = None	
 		partids[procid]   = os.path.join(Tracker["directory"],"chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]))
@@ -5878,11 +5926,14 @@ def update_memory_estimation():
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		if Tracker["constants"]["memory_per_node"] ==-1.:
 			Tracker["constants"]["memory_per_node"] = Blockdata["no_of_processes_per_group"]*2.0 # reasonable approximation
-		total_stack = EMUtil.get_image_count(Tracker["constants"]["stack"])
+		try: total_stack = EMUtil.get_image_count(Tracker["constants"]["stack"])
+		except: print(Tracker["constants"]["stack"], "does not exist")
 		image_size   = max(Tracker["nxinit"], Tracker["constants"]["nnxo"]*1./2.)
 		data_size    = total_stack*4*float(image_size**2)/float(Blockdata["no_of_groups"])/1.0e9
 		volume_size  = (1.5*4*(2.0*image_size+3.0)**3)/1.e9
-		nnprocs      = min( Blockdata["no_of_processes_per_group"], int(((Tracker["constants"]["memory_per_node"] - data_size*1.2)/volume_size)))
+		#nnprocs = Blockdata["no_of_processes_per_group"]
+		print(Tracker["constants"]["memory_per_node"])
+		nnprocs = min(Blockdata["no_of_processes_per_group"], int(((Tracker["constants"]["memory_per_node"] - data_size*1.2)/volume_size)))
 		print("  MEMORY ESTIMATION.  memory per node = %6.1fGB,  volume size = %6.2fGB, data size per node = %6.2fGB, estimated number of CPUs = %d"%(Tracker["constants"]["memory_per_node"],volume_size,data_size,nnprocs))
 		memory_per_cpu_3d = data_size/Blockdata["no_of_processes_per_group"]*1.2 + volume_size
 		print("  Estimated memory consumption per CPU in reconstruction %6.2f"%memory_per_cpu_3d)
@@ -5940,7 +5991,7 @@ def update_tracker(shell_line_command):
 		Tracker["xr"] 										= options_no_default_value.xr
 	if options_no_default_value.ts != None:
 		Tracker["ts"] 										= options_no_default_value.ts
-		
+			
 	if options_no_default_value.inires != None:
 		Tracker["constants"]["inires"] 						= options_no_default_value.inires
 		Tracker["constants"]["inires"]= int(Tracker["constants"]["nnxo"]*Tracker["constants"]["pixel_size"]/Tracker["constants"]["inires"] + 0.5)
@@ -5972,16 +6023,16 @@ def update_tracker(shell_line_command):
 		Tracker["constants"]["nonorm"] 						= options_no_default_value.nonorm
 	if options_no_default_value.small_memory != None:
 		Tracker["constants"]["small_memory"] 				= options_no_default_value.small_memory
-	if options_no_default_value.memory_per_node != -1.:
-		Tracker["constants"]["memory_per_node"] 			= options_no_default_value.memory_per_node
+	if options_no_default_value.memory_per_node != None:
+		Tracker["constants"]["memory_per_node"] = options_no_default_value.memory_per_node
 	if  options_no_default_value.ctrefromsort3d != False:
-		Tracker["constants"]["ctrefromsort3d"] 			    = options_no_default_value.ctrefromsort3d
-	if  options_no_default_value.subset != "":
-		Tracker["constants"]["subset"] 			    = options_no_default_value.subset	
-	if  options_no_default_value.oldrefdir != "":
-		Tracker["constants"]["oldrefdir"] 			= options_no_default_value.oldrefdir	
-	if  options_no_default_value.ctrefromiter != -1:
-		Tracker["constants"]["ctrefromiter"] 		= options_no_default_value.ctrefromiter
+		Tracker["constants"]["ctrefromsort3d"] = options_no_default_value.ctrefromsort3d
+	if  options_no_default_value.subset != None:
+		Tracker["constants"]["subset"] 	= options_no_default_value.subset	
+	if  options_no_default_value.oldrefdir != None:
+		Tracker["constants"]["oldrefdir"] = options_no_default_value.oldrefdir	
+	if  options_no_default_value.ctrefromiter != None:
+		Tracker["constants"]["ctrefromiter"] = options_no_default_value.ctrefromiter
 		
 	if  options_no_default_value.function != -1:
 		Tracker["constants"]["function"] = options_no_default_value.function
@@ -6315,6 +6366,7 @@ def main():
 			Tracker 	= wrap_mpi_bcast(Tracker, Blockdata["main_node"])
 			if(Blockdata["myid"] == Blockdata["main_node"]):
 				print_dict(Tracker["constants"], "Permanent settings of previous run")
+			Blockdata["symclass"] = symclass(Tracker["constants"]["symmetry"])
 	if not options.ctrefromsort3d:
 		# Create first fake directory main000 with parameters filled with zeroes or copied from headers.  Copy initial volume in.
 		doit, keepchecking = checkstep(initdir, keepchecking)
@@ -6479,7 +6531,7 @@ def main():
 	original_data = [None,None]
 	oldparams = [[],[]]
 	currentparams = [[],[]]
-	keepgoing 		= 1
+	keepgoing = 1
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
 		fout = open(os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"],"Tracker_%03d.json"%Tracker["mainiteration"]),'w')
 		json.dump(Tracker, fout)
@@ -6965,9 +7017,6 @@ def main():
 					del Tracker_final_iter
 				mpi_barrier(MPI_COMM_WORLD)
 				
-				Blockdata["ncpuspernode"] 	= 2
-				Blockdata["nsubset"] 		= Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
-				create_subgroup()
 				newparamstructure 			= [[],[]]
 				projdata          			= [[model_blank(1,1)], [model_blank(1,1)]]
 				original_data     			= [None,None]

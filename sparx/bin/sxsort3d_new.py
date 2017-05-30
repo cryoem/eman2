@@ -311,7 +311,9 @@ def do_EQKmeans_nways_clustering_stable_seeds(workdir, initial_partids, params, 
 			create_nrandom_lists(partids)
 			
 			if Blockdata["myid"] == Blockdata["main_node"]: print("before get_orien_assignment_mpi")
-			ptls_in_orien_groups = get_orien_assignment_mpi(angle_step, partids, params, log_main)
+			if Tracker["constants"]["symmetry"][0:1]=="c" or Tracker["constants"]["symmetry"][0:1]=="d":
+				ptls_in_orien_groups =  get_orien_assignment_mpi(angle_step, partids, params, log_main)
+			else: ptls_in_orien_groups = [range(Tracker["total_stack"])]
 			if Blockdata["myid"] == Blockdata["main_node"]:print("after get_orien_assignment_mpi")
 			Tracker["nxinit"] = Tracker["nxinit_refinement"]
 			previous_params   = Tracker["previous_parstack"]
@@ -2297,8 +2299,10 @@ def get_orien_assignment_mpi(angle_step, partids, params, log_main):
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		orien_group_assignment = [None for im in xrange(Tracker["total_stack"])]
 	else:  orien_group_assignment = 0
-	refa = even_angles(angle_step, symmetry = Tracker["constants"]["symmetry"], \
-	     theta1 = Tracker["tilt1"], theta2 = Tracker["tilt2"], method='S', phiEqpsi="Zero")
+	#refa = even_angles(angle_step, symmetry = Tracker["constants"]["symmetry"], \
+	#     theta1 = Tracker["tilt1"], theta2 = Tracker["tilt2"], method='S', phiEqpsi="Zero")
+	refa = Blockdata["symclass"].even_angles(angle_step, theta1 = Tracker["tilt1"], theta2 = Tracker["tilt2"])
+	#print(refa)
 	refa_vecs = []
 	for i in xrange(len(refa)):
 		tmp = getvec(refa[i][0], refa[i][1])
@@ -2357,7 +2361,7 @@ def get_orien_assignment_mpi(angle_step, partids, params, log_main):
 	else: ptls_in_orien_groups = 0
 	zero_member_group_found = bcast_number_to_all(zero_member_group_found, Blockdata["main_node"], MPI_COMM_WORLD)
 	ptls_in_orien_groups = wrap_mpi_bcast(ptls_in_orien_groups, Blockdata["main_node"], MPI_COMM_WORLD)
-	del refa_vecs
+	del refa_vecs, refa
 	del local_orien_group_assignment
 	del data_angles
 	del orien_group_assignment
@@ -4020,19 +4024,12 @@ def do3d(procid, data, newparams, refang, rshifts, norm_per_particle, myid, mpi_
 											target_size = (2*Tracker["nxinit"]+3), avgnorm = Tracker["avgvaradj"][procid], norm_per_particle = norm_per_particle)
 	"""
 	shrinkage = float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
-	tvol, tweight, trol = recons3d_trl_struct_MPI(myid = Blockdata["subgroup_myid"], main_node = Blockdata["nodes"][procid], prjlist = data, \
+	tvol, tweight, trol = recons3d_trl_struct_MPI(myid = Blockdata["subgroup_myid"], main_node = Blockdata["main_node"], prjlist = data, \
 											paramstructure = newparams, refang = refang, rshifts_shrank = [[q[0]*shrinkage,q[1]*shrinkage] for q in rshifts], \
 											delta = Tracker["delta"], CTF = Tracker["constants"]["CTF"], upweighted = False, mpi_comm = mpi_comm, \
 											target_size = (2*Tracker["nxinit"]+3), avgnorm = Tracker["avgvaradj"][procid], norm_per_particle = norm_per_particle)
-	if Blockdata["subgroup_myid"]==Blockdata["nodes"][procid]: tvol.set_attr("is_complex",0)
-	tag = 7007
-	if Blockdata["subgroup_myid"] == Blockdata["nodes"][procid]: send_EMData(tvol, Blockdata["main_node"], tag, mpi_comm)
-	elif Blockdata["myid"]  == Blockdata["main_node"]: tvol = recv_EMData(Blockdata["nodes"][procid], tag, mpi_comm)
-	if Blockdata["subgroup_myid"] == Blockdata["nodes"][procid]: send_EMData(tweight, Blockdata["main_node"], tag, mpi_comm)
-	elif Blockdata["myid"]  == Blockdata["main_node"]: tweight= recv_EMData(Blockdata["nodes"][procid], tag, mpi_comm)
-	if Blockdata["subgroup_myid"] == Blockdata["nodes"][procid]: send_EMData(trol, Blockdata["main_node"], tag, mpi_comm)
-	elif Blockdata["myid"]  == Blockdata["main_node"]: trol= recv_EMData(Blockdata["nodes"][procid], tag, mpi_comm)
-	if Blockdata["myid"] == Blockdata["main_node"]:
+	if Blockdata["subgroup_myid"] == Blockdata["main_node"]:
+		tvol.set_attr("is_complex",0)
 		tvol.write_image(os.path.join(Tracker["directory"], "tempdir", "tvol_%01d_%03d.hdf"%(procid,Tracker["mainiteration"])))
 		tweight.write_image(os.path.join(Tracker["directory"], "tempdir", "tweight_%01d_%03d.hdf"%(procid,Tracker["mainiteration"])))
 		trol.write_image(os.path.join(Tracker["directory"], "tempdir", "trol_%01d_%03d.hdf"%(procid,Tracker["mainiteration"])))
@@ -4385,6 +4382,7 @@ def do3d_sorting_groups_nofsc_smearing_iter(srdata, partial_rec3d, iteration):
 						tvol2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_2_%d.hdf")%index_of_group)
 						tweight2 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_2_%d.hdf")%index_of_group)
 						treg2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "trol_2_%d.hdf"%index_of_group))
+						tvol2.set_attr_dict( {"is_complex":1, "is_fftodd":1, 'is_complex_ri': 1, 'is_fftpad': 1})
 					else:
 						tvol2 		= model_blank(1)
 						tweight2 	= model_blank(1)
@@ -4401,6 +4399,7 @@ def do3d_sorting_groups_nofsc_smearing_iter(srdata, partial_rec3d, iteration):
 						tvol2 	 = get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_2_%d.hdf")%index_of_group)
 						tweight2 = get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_2_%d.hdf")%index_of_group)
 						treg2 	 = get_im(os.path.join(Tracker["directory"], "tempdir", "trol_2_%d.hdf"%index_of_group))
+						tvol2.set_attr_dict( {"is_complex":1, "is_fftodd":1, 'is_complex_ri': 1, 'is_fftpad': 1})
 						tvol2    = steptwo(tvol2, tweight2, treg2, cfsc, False)
 						del tweight2, treg2
 						if(Tracker["mask3D"] == None):tvol2 = cosinemask(tvol2, radius = Tracker["constants"]["radius"])
@@ -5558,6 +5557,9 @@ def main():
 	else:  ERROR("Incorrect refinement_dir ", "sxsort3d_new.py", 1, Blockdata["myid"])
 	if os.path.exists(options.refinement_dir) and options.instack !='': ERROR("contractdict refinement methods", "sxsort3d_smearing.py", 1, Blockdata["myid"])	
 	Blockdata["fftwmpi"] = True
+	
+	Blockdata["symclass"] = symclass(Tracker["constants"]["symmetry"])
+	
 	#else:  Blockdata["fftwmpi"] = False
 	Blockdata["ncpuspernode"] = Blockdata["no_of_processes_per_group"]
 	Blockdata["nsubset"] = Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]

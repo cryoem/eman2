@@ -6,7 +6,7 @@ sxcompute_isac_avg - Beautifier: Beautify the ISAC 2D clustering result with the
 
 ''Usage in command lines'':
 
-sxcompute_isac_avg.py  --stack=stack_file_path  --isac_dir=isac_output_directory  --output_dir=output_directory  --radius=radius  --noctf  --nompw_adj --modelpw=pw2_model_txt  --B_enhance  --B_start=B_start  --Bfactor=Bfactor  --fl=cutoff_frequency  --pixel_size=pixel_size  --xr=xr  --ts=ts  --fh=fh  --maxit=maxit --navg=navg 
+sxcompute_isac_avg.py  --stack=stack_file_path  --isac_dir=isac_output_directory  --output_dir=output_directory  --radius=radius  --noctf  --nopwadj --modelpw=pw2_model_txt  --B_enhance  --B_start=B_start  --Bfactor=Bfactor  --fl=cutoff_frequency  --pixel_size=pixel_size  --xr=xr  --ts=ts  --fh=fh  --maxit=maxit --navg=navg 
 
 === Typical usage ===
 
@@ -20,15 +20,14 @@ sxcompute_isac_avg.py exists only in MPI version
 
 
 == Input ==
-    stack:: Original image stack: Particles required to create the full-sized class averages. (default required string)
-    isac_dir:: Isac output directory: Name of the directory where isac was run previously. (default required string)
-    output_dir:: Output directory: The directory will be automatically created and the results will be written here. (default required string)
+    stack:: Original image stack: Data stack that ISAC run used. Particles required to create the full-sized class averages. (default required string)
+    isac_dir:: Isac output directory: Path to ISAC run output directory. This is input directory for this command. (default required string)
     radius:: Particle radius [Pixels]: There is no default radius. (default -1)
-    noctf:: No CTF correction: Use this option if full CTF correction should not be applied. Useful for negative stained data. By default, the program will do full CTF correction. (default False) 
+    noctf:: No CTF correction: Use this option if full CTF correction should not be applied. Useful for negative stained data. Always use the CTF correction for cryo data. By default, the program will do full CTF correction. (default False) 
 
     * The remaining parameters are optional.
-    nopwadj:: Do not adjust PW spectrum. (default False). There are three ways to change powerspectrum: 1. adjust it to an analytical model; 2. adjust it to a given powerspectrum; 3. apply B-factors. Three options are exclusive.    
-    modelpw::  Reference 1D PW spectrum: A text file contains 1-D rotational averaged power spectrum of either PDB model or EM map sampled in the given pixel_size and in original image size. By default, use the analytic model (See Penczek Methods Enzymol 2010) (default none)
+    nopwadj:: Do not adjust PW spectrum: Do not adjust PW spectrum to analytical model or given 1-D rotationally averaged power spectrum. By default, the program applies PW spectrum adjustment to model. (default False)
+    modelpw:: Reference 1D PW spectrum: A text file contains 1-D rotational averaged power spectrum of either PDB model or EM map sampled in the given pixel_size and in original image size. By default, use the analytic model (See Penczek Methods Enzymol 2010) (default none)
     B_enhance:: Apply B-factor enhancement: Apply B-factor enhancement. (default False)
     B_start:: B-factor lower limit [A]: Lower limit for B-factor estimation. (default 10.0)
     Bfactor:: Use ad-hoc B-factor [A^2]: Skip the automatic estimation and use user-provided ad-hoc B-factor for the enhancement. (default 45.0)
@@ -41,10 +40,21 @@ sxcompute_isac_avg.py exists only in MPI version
     navg:: Number of averages: The number of averages. (default -1)
 
 == Output ==
-    class_averages.hdf::computed averages in original image size
-    ordered_class_averages.hdf:: images in class_averages.hdf are sorted by their similarity and re-arranged in a circle.  
+    output_dir:: Output directory: The directory will be automatically created and the results will be written here. (default required string)
+    
+Important output files are:
+'''class_averages.hdf'''         : Computed averages in original image size. Each average has attributes "members" and "n_objects" in the image header.
+'''ordered_class_averages.hdf''' : Sorted version of class_averages.hdf. Averaged images are sorted by their similarity and re-arranged in a cyclic manner.
+'''params_avg_*.txt'''           : 2D alignment parameters computed by ISAC.
+'''ali2d_local_params_avg_*.txt  : 2D alignment parameters computed by local alignment of this program.
 
 = Description =
+There are three ways to change power spectrum:
+1. adjust it to an analytical model.
+2. adjust it to a given powerspectrum.
+3. apply B-factors. 
+
+Note these three options are exclusive. 
 
 
 = Method =
