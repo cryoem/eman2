@@ -1098,8 +1098,13 @@ def main():
 					
 			fsc_true[1][0] =1.0  # always reset fsc of zero frequency as 1.0
 			# map fsc obtained from two halves to full maps
-			for ifreq in xrange(len(fsc_true[0])): fsc_true[1][ifreq] = max(fsc_true[1][ifreq], 0.0)*2./(1.+max(fsc_true[1][ifreq], 0.0))
+			for ifreq in xrange(len(fsc_true[0])): fsc_true[1][ifreq] = fsc_true[1][ifreq]*2./(1.+fsc_true[1][ifreq])
 			log_main.add("adjust FSC to the full dataset by: 2.*FSC/(FSC+1.)")
+			fsc_out = []
+			for ifreq in xrange(len(fsc_true[0])): fsc_out.append("%5d   %7.2f   %7.3f"%(ifreq, resolution_in_angstrom[ifreq],fsc_true[1][ifreq]))
+			write_text_file(fsc_out, "fsc.txt")
+			
+			
 				
 			## Determine 05/143 resolution from corrected FSC, RH correction of FSC from masked volumes
 			resolution_FSC143_right  = 0.0
@@ -1134,22 +1139,19 @@ def main():
 					resolution_FSC143_right = fsc_true[0][ifreq]
 					nfreq143_right = ifreq
 					break
-					
+			## output resolution		
 			if resolution_FSC143_left != resolution_FSC143_right: log_main.add("there is a dip between 0.5 to 0.143 in FSC!")
 			else:log_main.add("fsc smoothly falls from 0.5 to 0.143 !")
 			
 			resolution_FSC143 = resolution_FSC143_right
 			nfreq143 = nfreq143_right
 			
+			for ifreq in xrange(len(fsc_true[0])): fsc_true[1][ifreq] = max(fsc_true[1][ifreq], 0.0)
 			## smooth FSC after FSC143 and set other values to zero
 			for ifreq in xrange(nfreq143+1, len(fsc_true[1])):
 				if ifreq ==nfreq143+1: fsc_true[1][ifreq] = (fsc_true[1][nfreq143-2] + fsc_true[1][nfreq143-1])/5.
 				elif ifreq ==nfreq143+2: fsc_true[1][ifreq] = (fsc_true[1][nfreq143-1])/5.
 				else:  fsc_true[1][ifreq] = 0.0
-			fsc_out = []
-			for ifreq in xrange(len(fsc_true[0])): fsc_out.append("%5d   %7.2f   %5.3f"%(ifreq, resolution_in_angstrom[ifreq],fsc_true[1][ifreq]))
-			write_text_file(fsc_out, "fsc.txt")
-			
 			###															
 			map1 +=map2 #(get_im(args[0])+get_im(args[1]))/2.0
 			map1 /=2.0
