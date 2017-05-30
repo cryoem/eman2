@@ -71,7 +71,7 @@ def pqual(n,ptclincls,jsd,includeproj,verbose):
 				#if classmx[eo+2*it][0,j]!=n :
 ##						if options.debug: print "XXX {}\t{}\t{}\t{}".format(i,("even","odd")[eo],j,classmx[eo][0,j])
 					#continue		# only proceed if the particle is in this class
-				if verbose >= 6: print "{}\t{}\t{}".format(i,("even","odd")[eo],j,it)
+				if verbose >= 6: print "{}\t{}\t{}".format(cptcl[eo],("even","odd")[eo],j,it)
 
 				truenum=j*2+eo 	# This is the particle number within the full file
 
@@ -102,7 +102,7 @@ def pqual(n,ptclincls,jsd,includeproj,verbose):
 				third = len(fsc)/3
 				fsc=array(fsc[third:third*2])
 #					snr=fsc/(1.0-fsc)
-				result[(truenum,it)]=[sum(fsc[rings[k]:rings[k+1]])/(rings[k+1]-rings[k]) for k in xrange(4)]+[alt,az,n,defocus]		# sum the fsc into 5 range values
+				result[(truenum,it)]=[sum(fsc[rings[k]:rings[k+1]])/(rings[k+1]-rings[k]) for k in xrange(4)]+[alt,az,n,defocus,ptcl["data_source"],ptcl["data_n"]]		# sum the fsc into 5 range values
 #					sums=[sum(snr[rings[k]:rings[k+1]])/(rings[k+1]-rings[k]) for k in xrange(4)]		# sum the fsc into 5 range values
 
 	jsd.put(result)
@@ -400,7 +400,9 @@ def main():
 			# thread hasn't finished.
 			if thrtolaunch<len(thrds) :
 				while (threading.active_count()==options.threads+1 ) : sleep(.01)
-				if options.verbose : print "Starting thread {}/{}".format(thrtolaunch,len(thrds))
+				if options.verbose : 
+					print " Starting thread {}/{}      \r".format(thrtolaunch,len(thrds)),
+					sys.stdout.flush()
 				thrds[thrtolaunch].start()
 				thrtolaunch+=1
 			else:sleep(.25)
@@ -408,6 +410,7 @@ def main():
 			while not jsd.empty():
 				rd=jsd.get()
 				result.update(rd)
+		if options.verbose: print "Threads complete             "
 
 		for t in thrds:
 			t.join()
@@ -415,9 +418,10 @@ def main():
 		fout=open(ptclfsc,"w")
 		fout.write("# 100-30 it1; 30-18 it1; 18-10 it1; 10-4 it1; 100-30 it2; 30-18 it2; 18-10 it2; 10-4 it2; it12rmsd; alt1; az1; cls1; alt2; az2; cls2; defocus\n")
 		# loop over all particles and print results
+		rmsds=[]
 		for j in xrange(nptcl[0]+nptcl[1]):
 			try:
-				r=result[(j,0)]+result[(j,1)]
+				r=result[(j,0)][:8]+result[(j,1)]		# we strip out the filename and number from the first result
 			except:
 				print "Missing results ptcl:",j,
 				try:
@@ -428,6 +432,7 @@ def main():
 			jj=j/2
 			eo=j%2
 			rmsd=sqrt((r[0]-r[8])**2+(r[1]-r[9])**2+(r[2]-r[10])**2+(r[3]-r[11])**2)
+			rmsds.append(rmsd)
 			if options.includeprojs:
 				fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{};{};{}\n".format(r[0],r[1],r[2],r[3],r[8],r[9],r[10],r[11],rmsd,r[4],r[5],r[6],r[12],r[13],r[14],r[15],jj,cptcl[eo],j,pf))
 			else:
@@ -435,89 +440,133 @@ def main():
 
 		fout.close()
 
+		####  Done writing results to text file, now we generate new sets
+		print("Generating new sets")
+		an=Analyzers.get("kmeans")
+		an.set_params({"ncls":3,"minchange":len(rmsds)//100,"verbose":0,"slowseed":0,"mininclass":5})
+		quals=[]
+		for j in xrange(nptcl[0]+nptcl[1]):
+			d=EMData(3,1,1)
+			# We use the first 3 resolution bands, taking the max value from the 2 iterations, and upweight the second by 2x, since higher res info
+			# is important, and very low res is impacted by defocus
+			d[0]=max(result[(j,0)][0],result[(j,1)][0])
+			d[1]=max(result[(j,0)][1],result[(j,1)][1])*2.0
+			d[2]=max(result[(j,0)][2],result[(j,1)][2])
+			quals.append(d)
+		an.insert_images_list(quals)
+
+		centers=an.analyze()
+		print "Centers: {}({:1.3f},{:1.3f},{:1.3f}), {}({:1.3f},{:1.3f},{:1.3f}), {}({:1.3f},{:1.3f},{:1.3f})".format(
+			centers[0]["ptcl_repr"],centers[0][0],centers[0][1],centers[0][2],
+			centers[1]["ptcl_repr"],centers[1][0],centers[1][1],centers[1][2],
+			centers[2]["ptcl_repr"],centers[2][0],centers[2][1],centers[2][2] )
+		
+		badcls=min([(centers[i]["mean"],i) for i in (0,1,2)])[1]	# this confusing expression finds the number of the class with the smallest summed vector
+		
+		rmsds=array(rmsds)
+		rmsdthresh=rmsds.std()*2.0
+		print "Within thr {:0.4f}: {}/{}".format(rmsdthresh,len(rmsds[rmsds<rmsdthresh]),len(rmsds))
+
+		bname = base_name(ptclfsc)
+		try: os.unlink("sets/{}_bad.lst".format(bname))
+		except: pass
+		try: os.unlink("sets/{}_good.lst".format(bname))
+		except: pass
+		outb=LSXFile("sets/{}_bad.lst".format(bname))
+		outg=LSXFile("sets/{}_good.lst".format(bname))
+		for i,q in enumerate(quals):
+			r=result[(i,0)]
+			if q["class_id"]==badcls or rmsds[i]>rmsdthresh: outb.write(-1,r[-1],r[-2],"{:6.4f},{:6.4f},{:6.4f},{:6.4f}".format(quals[i][0],quals[i][1],quals[i][2],rmsds[i]))
+			else: outg.write(-1,r[-1],r[-2],"{:6.4f},{:6.4f},{:6.4f},{:6.4f}".format(quals[i][0],quals[i][1],quals[i][2],rmsds[i]))
+
+		print("Evaluation complete.\nParticles best resembling results from {ref} at low/intermediate resolution have been saved in 'sets/{bn}_good.lst' and can be used in further refinements.\nNote that it is possible to do your own classification on these results instead, as described in the tutorial.".format(ref=args[0],bn=bname))
+
+		E2end(logid)
+		sys.exit(0)
+
 		# TODO: This is Michael's code, not mine, I just uncommented it again after fixing some of the above
 		# a bit silly that it re-reads the data we already have in RAM. Should be rewritten --steve
-		bname = base_name(ptclfsc)
+		#bname = base_name(ptclfsc)
 
-		print("Generating new sets.")
+		#print("Generating new sets.")
 
-		nseg = 2
-		if apix>2.5 : axes=[0,4,5]
-		else : axes = [0,4,5,6]
+		#nseg = 2
+		#if apix>2.5 : axes=[0,4,5]
+		#else : axes = [0,4,5,6]
 
-		fscs = []
-		cmts = []
-		with open(ptclfsc,'r') as ptclfsc_handle:
-			for line in ptclfsc_handle:
-				if line[0]=="#": continue
-				if line != "":
-					fsc,cmt = line.strip().split("#")
-					fscs.append(fsc.split())
-					cmts.append(cmt.strip())
+		#fscs = []
+		#cmts = []
+		#with open(ptclfsc,'r') as ptclfsc_handle:
+			#for line in ptclfsc_handle:
+				#if line[0]=="#": continue
+				#if line != "":
+					#fsc,cmt = line.strip().split("#")
+					#fscs.append(fsc.split())
+					#cmts.append(cmt.strip())
 
-		d = np.asarray(fscs).astype(float)
-		#d /= np.std(d,axis=0)
-		(nrow,ncol) = d.shape
+		#d = np.asarray(fscs).astype(float)
+		##d /= np.std(d,axis=0)
+		#(nrow,ncol) = d.shape
 
-		imdata = []
-		for r in range(nrow):
-			imdata.append(EMData(ncol,1,1))
-			for ax in axes:
-				imdata[r][ax]=d[r][ax]
+		#imdata = []
+		#for r in range(nrow):
+			#imdata.append(EMData(ncol,1,1))
+			#for ax in axes:
+				#imdata[r][ax]=d[r][ax]
 
-		an=Analyzers.get("kmeans")
-		an.set_params({"ncls":nseg,"minchange":nrow//100,"verbose":0,"slowseed":0,"mininclass":5})
-		an.insert_images_list(imdata)
-		centers=an.analyze()
+		#an=Analyzers.get("kmeans")
+		#an.set_params({"ncls":nseg,"minchange":nrow//100,"verbose":0,"slowseed":0,"mininclass":5})
+		#an.insert_images_list(imdata)
+		#centers=an.analyze()
 
-		results=[[[] for i in range(ncol)] for j in range(nseg)]
-		resultc=[[] for j in range(nseg)]
-		#resultt=[[] for t in range(nseg)]
+		#results=[[[] for i in range(ncol)] for j in range(nseg)]
+		#resultc=[[] for j in range(nseg)]
+		##resultt=[[] for t in range(nseg)]
 
-		d1 = []
-		d2 = []
+		#d1 = []
+		#d2 = []
 
-		try: os.unlink(tfn)
-		except: pass
+		#try: os.unlink(tfn)
+		#except: pass
 
-		for r in range(nrow):
-			s=imdata[r]["class_id"]
-			if s == 0: d1.append(d[r])
-			else: d2.append(d[r])
-			for c in xrange(ncol):
-				results[s][c].append(imdata[c][r])
-			resultc[s].append(cmts[r])
-			#resultt[s].append(tfs[r])
+		#for r in range(nrow):
+			#s=imdata[r]["class_id"]
+			#if s == 0: d1.append(d[r])
+			#else: d2.append(d[r])
+			#for c in xrange(ncol):
+				#results[s][c].append(imdata[c][r])
+			#resultc[s].append(cmts[r])
+			##resultt[s].append(tfs[r])
 
-		d1 = np.asarray(d1)
-		d2 = np.asarray(d2)
+		#d1 = np.asarray(d1)
+		#d2 = np.asarray(d2)
 
-		# need to *consistently* label the "best" and "worst" cluster
-		d1s = np.max(d1)
-		d2s = np.max(d2)
-		lstfs = {}
-		if d1s > d2s:
-			lstfs[0] = "{}_good.lst".format(bname)
-			lstfs[1] = "{}_bad.lst".format(bname)
-		else:
-			lstfs[0] = "{}_bad.lst".format(bname)
-			lstfs[1] = "{}_good.lst".format(bname)
+		## need to *consistently* label the "best" and "worst" cluster
+		#d1s = np.max(d1)
+		#d2s = np.max(d2)
+		#lstfs = {}
+		#if d1s > d2s:
+			#lstfs[0] = "{}_good.lst".format(bname)
+			#lstfs[1] = "{}_bad.lst".format(bname)
+		#else:
+			#lstfs[0] = "{}_bad.lst".format(bname)
+			#lstfs[1] = "{}_good.lst".format(bname)
 
-		lsx={}
-		for s in [0,1]:#range(len(results)):
-			outf = "sets/{}".format(lstfs[s])
-			try: os.unlink(outf) # try to remove file if it already exists
-			except: pass
-			out=LSXFile(outf)
-			for r,cmt in enumerate(resultc[s]):
-				imn,imf=cmt.split(";")[:2]
-				imn=int(imn)
-				if not lsx.has_key(imf):
-					lsx[imf]=LSXFile(imf,True)	# open the LSX file for reading
-				val=lsx[imf][imn]
-				#val[2] = str(resultt[s][r]) # comment is a string dictionary, required to make3d_rawptcls.
-				#out[r]=[val[0],val[1],str(resultt[s][r])]
-				out[r]=[val[0],val[1]]
+		#lsx={}
+		#for s in [0,1]:#range(len(results)):
+			#outf = "sets/{}".format(lstfs[s])
+			#try: os.unlink(outf) # try to remove file if it already exists
+			#except: pass
+			#out=LSXFile(outf)
+			#for r,cmt in enumerate(resultc[s]):
+				#imn,imf=cmt.split(";")[:2]
+				#imn=int(imn)
+				#if not lsx.has_key(imf):
+					#lsx[imf]=LSXFile(imf,True)	# open the LSX file for reading
+				#val=lsx[imf][imn]
+				##val[2] = str(resultt[s][r]) # comment is a string dictionary, required to make3d_rawptcls.
+				##out[r]=[val[0],val[1],str(resultt[s][r])]
+				#out[r]=[val[0],val[1]]
 
 		# OLD 'MANUAL' INFO
 		#print("Evaluation complete. Each column in the resulting text file includes information at a different resolution range. Columns 0 and 1 are almost always useful,
@@ -526,10 +575,10 @@ def main():
 		#mouse-over specific data points to see the particle each represents. See one of the single particle analysis tutorials for more details.".format(args[0][-2:]))
 
 		# NEW AUTOMATED INFO
-		print("Evaluation complete.\nParticles best resembling results from {ref} at low/intermediate resolution have been saved in 'sets/{bn}_good.lst' and can be used in further refinements.\nHowever, please note that some additional columns have been added to the data ".format(ref=args[0],bn=bname))
+		#print("Evaluation complete.\nParticles best resembling results from {ref} at low/intermediate resolution have been saved in 'sets/{bn}_good.lst' and can be used in further refinements.\nHowever, please note that some additional columns have been added to the data ".format(ref=args[0],bn=bname))
 
-		E2end(logid)
-		sys.exit(0)
+		#E2end(logid)
+		#sys.exit(0)
 
 	if options.evalclassqual:
 		print "Class quality evaluation mode"
