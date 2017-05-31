@@ -443,7 +443,7 @@ def main():
 		####  Done writing results to text file, now we generate new sets
 		print("Generating new sets")
 		an=Analyzers.get("kmeans")
-		an.set_params({"ncls":3,"minchange":len(rmsds)//100,"verbose":0,"slowseed":0,"mininclass":5})
+		an.set_params({"ncls":3,"seedmode":1,"minchange":len(rmsds)//100,"verbose":0,"slowseed":0,"mininclass":5})
 		quals=[]
 		for j in xrange(nptcl[0]+nptcl[1]):
 			d=EMData(3,1,1)
@@ -462,6 +462,7 @@ def main():
 			centers[2]["ptcl_repr"],centers[2][0],centers[2][1],centers[2][2] )
 		
 		badcls=min([(centers[i]["mean"],i) for i in (0,1,2)])[1]	# this confusing expression finds the number of the class with the smallest summed vector
+		print "Class {} is the bad class".format(badcls)
 		
 		rmsds=array(rmsds)
 		rmsdthresh=rmsds.std()*2.0
