@@ -50,10 +50,12 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 
 	parser.add_argument("--exclude", type=str, default='', help="only works if --create is supplied. comma-separated list of indexes from the input file(s) to EXCLUDE from the created .lst file.")
 
-	parser.add_argument("--include", type=str, default='', help="only works if --create is supplied. comma-separated list of indexes to take from the input file(s) to INCLUDE in the created .lst file. if you have the list of indexes to include in a .txt file, you can provide it through --list.")
+	#parser.add_argument("--first", type=int, default=0, help="Default=0 (first image index in input(s)). This will be the first particle index in the input images to put in the output lsx/lst file.")
 
+	parser.add_argument("--include", type=str, default='', help="only works if --create is supplied. comma-separated list of indexes to take from the input file(s) to INCLUDE in the created .lst file. if you have the list of indexes to include in a .txt file, you can provide it through --list.")
 	parser.add_argument("--inplace", action="store_true", default=False, help="only works with --create. if the stack specified in --create already exists, this will prevent appending to it. rather, the file will be modified in place.")
 
+	#parser.add_argument("--last", type=str, default=-1, help="Default=-1 (last image index in input (s)). This will be the first particle index in the input images to put in the output lsx/lst file.")
 	parser.add_argument("--list", type=str, default='', help="only works if --create is supplied. .txt file with a list of indexes (one per line/row) to take from the input file(s) to INCLUDE in the created .lst file.")
 
 	parser.add_argument("--merge", type=str, default='', help="Specify the output name here. This will concatenate all of the input .lst files into a single output")
@@ -66,7 +68,7 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 	
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
-	parser.add_argument("--range", type=str, default='', help="Range of particles to use. Works only with create option. Input of 0,10,2 means range(0,10, step=2).")
+	parser.add_argument("--range", type=str, default='', help="Range of particles to use. Works only with --create option. Input of 0,10,2 means range(0,10, step=2).")
 	parser.add_argument("--retype", type=str, default='', help="If a lst file is referencing a set of particles from particles/imgname__oldtype.hdf, this will change oldtype to the specified string in-place (modifies input files)")
 
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, help="verbose level [0-9], higner number means higher level of verboseness",default=1)
@@ -146,14 +148,10 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 					fromlst=True
 				else:
 					fromlst=False
-				if options.verbose :
-					if options.range:
-						print "Processing {} images in {}".format(len(rg),f)
-					else:
-						print "Processing {} images in {}".format(n,f)
+				
 				
 
-				indxsinclude = xrange(n) #by default, assume all particles in input file will be part of output lsx; otherwise, modify indexes to include below according to options
+				indxsinclude = xrange(n) #by default, assume all particles in input file will be part of output lsx; otherwise, modify indexes to include according to options
 
 				if options.range:
 					indxsinclude = eval("range({})".format(options.range))
@@ -180,6 +178,10 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 							print "\nWARNING, line {} in {} seems to be empty!".format(k,options.list) 
 						k+=1
 				
+				if options.verbose :
+					print "Processing {} images in {}".format(len(indxsinclude),f)
+					
+
 				kk=0
 				for i in indxsinclude:
 				
