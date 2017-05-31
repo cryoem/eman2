@@ -6723,7 +6723,8 @@ def defocusgett_vpp(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_start=-1.0
 	from utilities  import generate_ctf, write_text_file
 	import numpy as np
 	from morphology import defocus_baseline_fit, simpw1d
-
+	from math import radians, sqrt, tan
+	from sys import exit
 	#print "CTF params:", voltage, Pixel_size, Cs, wgh, f_start, f_stop, round_off, nr1, nr2, parent
 
 	if f_start == 0 : 	    i_start = 0
@@ -6769,26 +6770,30 @@ def defocusgett_vpp(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_start=-1.0
 	data = [subpw[i_start:i_stop], envelope[i_start:i_stop], nx, defocus, Cs, voltage, Pixel_size, ampcont, i_start, i_stop]
 	qm = 1.e23
 	#toto = []
-	for a in xrange(5,95,5):
-		data[7] = float(a)
+	for q in xrange(-85,85,5):
+		data[7] = tan(radians(q))/sqrt(1.+tan(radians(q))**2)*100.0
 		for i in xrange(1000,100000,500):
 			dc = float(i)/10000.0
 			qt = simpw1d_pap(dc, data)
 			#toto.append([a,dc,qt])
 			if(qt<qm):
-				qm=qt
+				qm = qt
 				defi = dc
 				ampcont = data[7]
-				#print  a,dc,qt
+				#print  " FUFI  ",q,data[7],dc,qt
+	#print "DONE"
 	#'''
 	if DEBug:
 		from utilities import write_text_row
-		write_text_row(toto,"toto1.txt")
+		#write_text_row(toto,"toto1.txt")
 		print " >>>>>>>>>  ",defi,data[7],simpw1d_print(defi, data)#,generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont])
-		#data[7]=10.
-		#defi = 4.5
-		#print " >>>>>>>>>  ",defi,data[7],simpw1d_print(defi, data)#,generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont])
+
+		print  "SECOND"
+		data[7]= -71.6
+		defi =  0.5134
+		print " >>>>>>>>>  ",defi,data[7],simpw1d_print(defi, data)#,generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont])
 		#def1 = defi
+	#print "ALLDONE"
 	#exit()
 	#'''
 	#ctf2 = ctf_1d(nx, generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont]), doabs= True)
