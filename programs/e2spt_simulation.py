@@ -414,9 +414,9 @@ def randomizer(options, model, tag):
 		print "\nGenerating random orientation within asymmetric unit %s" %(options.sym)
 		sym = Symmetries.get( options.sym )
 		
-		orients = sym.gen_orientations("eman",{"n": options.nptcls,"random_phi":1,"inc_mirror":1})
+		#orients = sym.gen_orientations("eman",{"n": options.nptcls,"random_phi":1,"inc_mirror":1})
 		
-		#orients = sym.gen_orientations("rand",{"n": options.nptcls,"phitoo":1,"inc_mirror":1})
+		orients = sym.gen_orientations("rand",{"n": options.nptcls,"phitoo":1,"inc_mirror":1})
 
 		ii=1	#start at index 1 since the first particle's orientation is not randomized
 		for o in orients:
