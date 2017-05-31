@@ -1002,10 +1002,9 @@ def get_shrink_data_final(nxinit, procid, original_data = None, oldparams = None
 	from applications import MPI_start_end
 	from math         import sqrt
 	
-	if( Blockdata["myid"] == Blockdata["main_node"] ):
-		print( "  " )
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(  line, "Processing data  onx: %3d, nx: %3d, CTF: %s, applymask: %s, preshift: %s."%(Tracker["constants"]["nnxo"], nxinit, Tracker["constants"]["CTF"], apply_mask, preshift) )
+	#print( "  " )
+	#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	#print(  line, "Processing data  onx: %3d, nx: %3d, CTF: %s, applymask: %s, preshift: %s."%(Tracker["constants"]["nnxo"], nxinit, Tracker["constants"]["CTF"], apply_mask, preshift) )
 	#  Preprocess the data
 	mask2D  	= model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 	nima 		= len(original_data)
@@ -5128,7 +5127,7 @@ def merge_two_unfiltered_maps(map1_file, map2_file, cluster_ID):
 	resolution_FSC143_right = fsc_true[0][nfreq05]
 	
 	
-	for ifreq in xrange(len(fsc_true[0])):fsc_true[1][ifreq] = marx(fsc_true[1][ifreq], 0.0)
+	for ifreq in xrange(len(fsc_true[0])):fsc_true[1][ifreq] = max(fsc_true[1][ifreq], 0.0)
 	for ifreq in xrange(nfreq0, nfreq05, -1):
 		if fsc_true[1][ifreq] >= 0.143:
 			resolution_FSC143_right = fsc_true[0][ifreq]
@@ -5204,20 +5203,27 @@ def merge_two_unfiltered_maps(map1_file, map2_file, cluster_ID):
 				outtext[-1].append("%10.6f"%log(guinierline[ig]))
 				last_non_zero = log(guinierline[ig])
 			else: outtext[-1].append("%10.6f"%last_non_zero)
+	lowpassfilter = 0.0
 	if Tracker["constants"]["postlowpassfilter"] != 0.0: # User provided low-pass filter #4.
 		if Tracker["constants"]["postlowpassfilter"] > 0.5: # Input is in Angstrom 
 			map1 = filt_tanl(map1,Tracker["constants"]["pixel_size"]/Tracker["constants"]["postlowpassfilter"], min(Tracker["constants"]["aa"],.1))
+			lowpassfilter = Tracker["constants"]["pixel_size"]/Tracker["constants"]["postlowpassfilter"]
 		elif Tracker["constants"]["postlowpassfilter"]>0.0 and Tracker["constants"]["postlowpassfilter"]<0.5:  # input is in absolution frequency
 			map1 = filt_tanl(map1,Tracker["constants"]["postlowpassfilter"], min(Tracker["constants"]["aa"],.1))
+			lowpassfilter = Tracker["constants"]["postlowpassfilter"]
 	else: 
 		map1 = filt_tanl(map1,resolution_FSC143, Tracker["constants"]["aa"])
-		print("applied B_factor", global_b, "applied low_pass_filter_to", resolution_FSC143, "Cluster ", cluster_ID)
+		lowpassfilter = resolution_FSC143
+	msg = "Cluster %3d  applied B_factor %10.6f  applied low_pass_filter_to  %10.6f "%(cluster_ID, global_b,  Tracker["constants"]["pixel_size"]/lowpassfilter)
+	msg +="  FSC05/FSC143  %5d/%5d   %6.3f/%6.3f"%(nfreq05, nfreq143, Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(nfreq05), \
+	    Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(nfreq143))
+	print(msg)
 	map1.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_final_nomask_cluster%03dd.hdf"%cluster_ID))
 	if mask3D: map1 *=mask3D
 	map1.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_final_cluster%03dd.hdf"%cluster_ID))
 	if mask3D: del mask3D
 	del map1
-	return
+	return msg
 	
 def main():
 	from optparse   import OptionParser
@@ -5515,6 +5521,7 @@ def main():
 	Tracker["full_list"] = wrap_mpi_bcast(Tracker["full_list"], Blockdata["main_node"], MPI_COMM_WORLD)
 	Tracker["shrinkage"] = float(Tracker["nxinit"])/Tracker["constants"]["nnxo"]
 	if(Blockdata["myid"] == Blockdata["main_node"]): print_dict(Tracker,"Current sorting settings")
+	Tracker["ratio"]  = 0
 ### Check mpi setting
 	check_mpi_settings(log_main)
 	if options.post_sorting_sharpen: # post sorting option!
@@ -5528,12 +5535,23 @@ def main():
 		number_of_groups = 0
 		minimum_size = Tracker["constants"]["img_per_grp"]
 		if(Blockdata["myid"] == Blockdata["main_node"]):
-			print(" reconstruct maps for sharpening ")
+			final_accounted_ptl = 0
+			output =[]
+			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+			msg = "---->>> Summaries of final results <<<-----"
+			print(line, msg)
+			output.append(msg)
 			while os.path.exists(os.path.join(Tracker["constants"]["masterdir"], "Cluster%d.txt"%number_of_groups)):
 				class_in = read_text_file(os.path.join(Tracker["constants"]["masterdir"], "Cluster%d.txt"%number_of_groups))
 				minimum_size = min(len(class_in), minimum_size)
-				number_of_groups +=1
-			print(" %d clusters are found  "%number_of_groups)
+				msg = " %10d clusters  %10d   group size "%(number_of_groups, len(class_in))
+				print(line, msg)
+				output.append(msg)
+				number_of_groups    +=1
+				final_accounted_ptl +=len(class_in)
+			msg = "total number of particle images:  %10d; accounted:   %10d ;  number_of_groups:   %5d"%(Tracker["constants"]["total_stack"], final_accounted_ptl, number_of_groups)
+			print(line, msg)
+			output.append(msg)
 		number_of_groups = bcast_number_to_all(number_of_groups, Blockdata["main_node"], MPI_COMM_WORLD)
 		if number_of_groups == 0:ERROR("No cluster is found, and the program terminates. ", "option post_sorting_sharpen ", 1, Blockdata["myid"])
 		minimum_size = bcast_number_to_all(minimum_size, Blockdata["main_node"], MPI_COMM_WORLD)
@@ -5542,8 +5560,10 @@ def main():
 		   Tracker["constants"]["masterdir"], Tracker["constants"]["nnxo"], log_main)
 		if(Blockdata["myid"] == Blockdata["main_node"]):
 			for iproc in xrange(number_of_groups):
-				merge_two_unfiltered_maps(os.path.join(Tracker["constants"]["masterdir"], "vol_unfiltered_0_grp%03d.hdf"%iproc), \
+				msg = merge_two_unfiltered_maps(os.path.join(Tracker["constants"]["masterdir"], "vol_unfiltered_0_grp%03d.hdf"%iproc), \
 				os.path.join(Tracker["constants"]["masterdir"], "vol_unfiltered_1_grp%03d.hdf"%iproc), iproc)
+				output.append(msg)
+			write_text_file(output, os.path.join(Tracker["constants"]["masterdir"], "final.txt"))
 		mpi_barrier(MPI_COMM_WORLD)
 		from mpi import mpi_finalize
 		mpi_finalize()
@@ -5775,11 +5795,22 @@ def main():
 		minimum_size = Tracker["constants"]["img_per_grp"]
 		number_of_groups = 0
 		if(Blockdata["myid"] == Blockdata["main_node"]):
+			final_accounted_ptl = 0
+			output =[]
+			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+			msg = "---->>> Summaries of final results <<<-----"
+			print(line, msg)
 			while os.path.exists(os.path.join(Tracker["constants"]["masterdir"], "Cluster%d.txt"%number_of_groups)):
 				class_in = read_text_file(os.path.join(Tracker["constants"]["masterdir"], "Cluster%d.txt"%number_of_groups))
 				minimum_size = min(len(class_in), minimum_size)
+				msg = " %10d clusters  %10d   group size "%(number_of_groups, len(class_in))
+				print(line, msg)
+				output.append(msg)
 				number_of_groups +=1
 				del class_in
+			msg = "total number of particle images:  %10d; accounted:   %10d ;  number_of_groups:   %5d"%(Tracker["constants"]["total_stack"], final_accounted_ptl, number_of_groups)
+			print(line, msg)
+			output.append(msg)
 		number_of_groups = bcast_number_to_all(number_of_groups, Blockdata["main_node"], MPI_COMM_WORLD)
 		if number_of_groups == 0:ERROR("No cluster is found, and the program terminates.", "do_final_maps", 1, Blockdata["myid"])
 		minimum_size = bcast_number_to_all(minimum_size, Blockdata["main_node"], MPI_COMM_WORLD)
@@ -5789,8 +5820,10 @@ def main():
 	mpi_barrier(MPI_COMM_WORLD)
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		for iproc in xrange(number_of_groups):
-			merge_two_unfiltered_maps(os.path.join(Tracker["constants"]["masterdir"], "vol_unfiltered_0_grp%03d.hdf"%iproc), \
+			msg = merge_two_unfiltered_maps(os.path.join(Tracker["constants"]["masterdir"], "vol_unfiltered_0_grp%03d.hdf"%iproc), \
 			  os.path.join(Tracker["constants"]["masterdir"], "vol_unfiltered_1_grp%03d.hdf"%iproc), iproc)
+			output.append(msg)
+		write_text_file(output, os.path.join(Tracker["constants"]["masterdir"], "final.txt"))
 	mpi_barrier(MPI_COMM_WORLD)
 	from mpi import mpi_finalize
 	mpi_finalize()
