@@ -20,8 +20,6 @@ requirements:
         - fftw-mpi
 
 test:
-  requires:
-    - openmpi
   imports:
     - mpi
 
