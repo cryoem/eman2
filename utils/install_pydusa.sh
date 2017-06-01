@@ -2,12 +2,12 @@
 
 set -xe
 
-source activate
+source activate root
 
-RECIPE_DIR="${CONDA_PREFIX}/recipes"
-conda build ${RECIPE_DIR}/fftw-mpi
-conda build ${RECIPE_DIR}/pydusa
+RECIPES_DIR=$(cd $(dirname $0)/../recipes && pwd -P)
+conda build ${RECIPES_DIR}/pydusa
+conda remove fftw-mpi --force --yes
 conda install pydusa --use-local --yes
+conda install fftw-mpi --use-local --yes
 
-# Cleanup
-conda build purge
+conda inspect linkages pydusa
