@@ -341,27 +341,28 @@ def do_EQKmeans_nways_clustering_stable_seeds(workdir, initial_partids, params, 
 					if not os.path.exists(os.path.join(Tracker["directory"], "tempdir")): os.mkdir(os.path.join(Tracker["directory"], "tempdir"))
 				Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
 				tmp_final_list, premature = EQKmeans_by_dmatrix_orien_groups(original_data, index_file, ptls_in_orien_groups, parameterstructure, norm_per_particle, clean_volumes= True)
-				Tracker["directory"] =  os.path.join(workdir, "generation%03d"%generation)
+				Tracker["directory"] = os.path.join(workdir, "generation%03d"%generation)
 				if Blockdata["myid"] == Blockdata["main_node"]: Tracker["partition_list"].append(Tracker["partition"])
 				if premature ==1: npremature +=1
 			Tracker["partition_list"] = wrap_mpi_bcast(Tracker["partition_list"], Blockdata["main_node"], MPI_COMM_WORLD)
 			do_two_way_comparison_over_nindepruns(log_main)
-			Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)		
+			Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
 			if Blockdata["myid"] == Blockdata["main_node"]:
 				Tracker["directory"] =  os.path.join(workdir, "generation%03d"%generation, "Reassign_from_EQKmeans")
 				os.mkdir(Tracker["directory"])
 				msg = "accounted ratio  %f  for  %d independent EQKmeans "%((len(Tracker["accounted_list"])/float(Tracker["total_stack"])*100.), Tracker["constants"]["indep_runs"])
 				log_main.add(msg)
-				print(msg)				
+				print(msg)
 				if npremature !=0: msg = " premature runs %d  out of %d independent runs"%(npremature, Tracker["constants"]["indep_runs"])
 				else: msg =" %d EQKmeans runs all end up with mature stop"%Tracker["constants"]["indep_runs"]
 				log_main.add(msg)
 				print(msg)
+				Tracker["output"].append("Generation %3d  accounted ratio  %5.3f "%(generation, len(Tracker["accounted_list"])/float(Tracker["total_stack"])*100.))
 				if len(Tracker["accounted_list"])/float(Tracker["total_stack"]) < 1./float(Tracker["number_of_groups"]): less_than_random_assignment =1
 			less_than_random_assignment = bcast_number_to_all(less_than_random_assignment, Blockdata["main_node"], MPI_COMM_WORLD)
 			if less_than_random_assignment ==1: ERROR("accounted ratio less than accounted ratio of random assignment ", "sxsort3d.py", 1, Blockdata["myid"])
 			tmp_list   = []
-			npremature = 0
+			npremature =  0
 			for riter in xrange(2): # Set it to two for the time being
 				assign_list = resize_groups_from_stable_members_mpi(Tracker["Accounted_on_disk"], Tracker["Unaccounted_on_disk"])
 				Tracker["directory"] = os.path.join(workdir,"generation%03d"%generation,"Reassign_from_EQKmeans", "EQKmeans_random%d"%riter)
@@ -401,6 +402,7 @@ def do_EQKmeans_nways_clustering_stable_seeds(workdir, initial_partids, params, 
 				plist, qlist, ulist = clusters_to_plist(clusters, pall[1])
 				sort_res.append(qlist)
 				msg = "the reproducible ratio after re-assignment  %f"%(ratio*100.)
+				Tracker["output"].append("Generation %3d  accounted ratio after reassignment %5.3f "%(generation, ratio*100.))
 				print(line, msg)
 				log_main.add(msg)
 				write_text_file( plist, os.path.join(Tracker["directory"], "plist.txt"))
@@ -436,7 +438,7 @@ def do_EQKmeans_nways_clustering_stable_seeds(workdir, initial_partids, params, 
 			msg ="The total number of particles is less than number_of_particles_per_group"
 			print(line, msg)
 			log_main.add(msg)
-			if os.path.exsists(os.path.join(Tracker["directory"], "tempdir")): cmd = "{} {}".format("rm -rf", os.path.join(Tracker["directory"], "tempdir"))
+			if os.path.exsists(os.path.join(Tracker["directory"], "tempdir")): shutil.rmtree(os.path.join(Tracker["directory"], "tempdir"))
 		else:  final_list = 0
 		final_list  = wrap_mpi_bcast(final_list, Blockdata["main_node"], MPI_COMM_WORLD)
 		del original_data
@@ -642,8 +644,7 @@ def EQKmeans_by_dmatrix_orien_groups(original_data, partids, ptls_in_orien_group
 		shutil.rmtree(os.path.join(Tracker["directory"], "tempdir"))
 		if clean_volumes:
 			for jter in xrange(total_iter):
-				for igroup in xrange(Tracker["number_of_groups"]):
-					os.remove(os.path.join(Tracker["directory"], "vol_grp%03d_iter%03d.hdf"%(igroup,jter)))
+				for igroup in xrange(Tracker["number_of_groups"]): os.remove(os.path.join(Tracker["directory"], "vol_grp%03d_iter%03d.hdf"%(igroup,jter)))
 	else:Tracker["partition"] = 0
 	Tracker["partition"] = wrap_mpi_bcast(Tracker["partition"], Blockdata["main_node"])
 	premature  = wrap_mpi_bcast(premature, Blockdata["main_node"])
@@ -4108,7 +4109,7 @@ def do3d_sorting_groups_rec3d(iteration, masterdir, log_main):
 	Tracker   = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
 	if (Blockdata["myid"] == Blockdata["main_node"]):
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		msg = "command for sharpening maps: sxprocess.py map0.hdf map1.hdf --postprocess  --mask=%s --fsc_adj pixel_size=%f"%(Tracker["constants"]["mask3D"], Tracker["constants"]["pixel_size"])
+		msg = "command for sharpening maps: sxprocess.py map0.hdf map1.hdf --postprocess  --mask=%s --fsc_adj --pixel_size=%f"%(Tracker["constants"]["mask3D"], Tracker["constants"]["pixel_size"])
 		print(line, msg)
 		log_main.add(msg)
 	if not keepgoing: ERROR("do3d_sorting_groups_trl_iter  %s"%os.path.join(Tracker["directory"], "tempdir"),"do3d_sorting_groups_trl_iter", 1, Blockdata["myid"]) 
@@ -5326,7 +5327,7 @@ def main():
 	Tracker["applyctf"]						       = False  #  Should the data be premultiplied by the CTF.  Set to False for local continuous.
 	Tracker["nxinit"]						       = Tracker["constants"]["nxinit"]
 	if options.notapplybckgnoise: Tracker["applybckgnoise"] = False
-	else: Tracker["applybckgnoise"] = True 	
+	else: Tracker["applybckgnoise"] = True
 	###<<<--options for advanced users:
 	Tracker["total_sort3d_indepent_run"]	       = 2
 	Tracker["total_number_of_iterations"] 	       = 25
@@ -5335,10 +5336,10 @@ def main():
 	Tracker["constants"]["total_sort3d_iteration"] = 2
 	### -----------orientation constraints
 	Tracker["angle_step"]            = options.eqkmeans_angle_step # orientation constrained angle step
-	Tracker["tilt1"]                 = 0.0
+	Tracker["tilt1"]                 =  0.0
 	Tracker["tilt2"]                 = 180.0
 	### ------------<<< option for proteins images that have preferred orientations
-	Tracker["minimum_ptl_number"] = options.minimum_ptl_number  # for orientation groups	
+	Tracker["minimum_ptl_number"] = options.minimum_ptl_number  # for orientation groups
 	if Tracker["constants"]["memory_per_node"] ==-1 or Tracker["constants"]["memory_per_node"] <32.: Tracker["constants"]["small_memory"] = True
 	else: Tracker["constants"]["small_memory"] = False
 	## Additional check
@@ -5356,16 +5357,14 @@ def main():
 		Tracker["rshifts"]                        = None
 		Tracker["paramstructure_dict"]            = None
 		Tracker["constants"]["selected_iter"]     = -1
-	else:  ERROR("Incorrect refinement_dir ", "sxsort3d_new.py", 1, Blockdata["myid"])
-	if os.path.exists(options.refinement_dir) and options.instack !='': ERROR("contractdict refinement methods", "sxsort3d_smearing.py", 1, Blockdata["myid"])	
+	else: ERROR("Incorrect refinement_dir ", "sxsort3d_new.py", 1, Blockdata["myid"])
+	if os.path.exists(options.refinement_dir) and options.instack !='': ERROR("contractdict refinement methods", "sxsort3d_smearing.py", 1, Blockdata["myid"])
 	Blockdata["fftwmpi"] = True
-	
 	Blockdata["symclass"] = symclass(Tracker["constants"]["symmetry"])
-	
-	#else:  Blockdata["fftwmpi"] = False
 	Blockdata["ncpuspernode"] = Blockdata["no_of_processes_per_group"]
 	Blockdata["nsubset"] = Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
 	create_subgroup()
+	Tracker["output"] = ["---->>> Summaries of sort3d <<<-----"]
 	###--------------------------------------------------------------------------------------------
 	#    Two typical sorting scenarios  
 	#
@@ -5521,7 +5520,7 @@ def main():
 	Tracker["full_list"] = wrap_mpi_bcast(Tracker["full_list"], Blockdata["main_node"], MPI_COMM_WORLD)
 	Tracker["shrinkage"] = float(Tracker["nxinit"])/Tracker["constants"]["nnxo"]
 	if(Blockdata["myid"] == Blockdata["main_node"]): print_dict(Tracker,"Current sorting settings")
-	Tracker["ratio"]  = 0
+	Tracker["ratio"] = 0
 ### Check mpi setting
 	check_mpi_settings(log_main)
 	if options.post_sorting_sharpen: # post sorting option!
@@ -5532,26 +5531,33 @@ def main():
 		Tracker["constants"]["refinement_ts"]     = 0.0
 		Tracker["constants"]["refinement_xr"]     = 0.0
 		Tracker["constants"]["refinement_an"]     = 0.0
+		if(Blockdata["myid"] == Blockdata["main_node"]):
+			fout = open(os.path.join(Tracker["constants"]["masterdir"], "Tracker.json"),'r')
+			Tracker = convert_json_fromunicode(json.load(fout))
+			fout.close()
+			try:    output = Tracker["output"]
+			except: Tracker["output"] = []
+		else: Tracker = []
+		Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
 		number_of_groups = 0
 		minimum_size = Tracker["constants"]["img_per_grp"]
 		if(Blockdata["myid"] == Blockdata["main_node"]):
 			final_accounted_ptl = 0
-			output =[]
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 			msg = "---->>> Summaries of final results <<<-----"
 			print(line, msg)
-			output.append(msg)
+			Tracker["output"].append(msg)
 			while os.path.exists(os.path.join(Tracker["constants"]["masterdir"], "Cluster%d.txt"%number_of_groups)):
 				class_in = read_text_file(os.path.join(Tracker["constants"]["masterdir"], "Cluster%d.txt"%number_of_groups))
 				minimum_size = min(len(class_in), minimum_size)
 				msg = " %10d clusters  %10d   group size "%(number_of_groups, len(class_in))
 				print(line, msg)
-				output.append(msg)
+				Tracker["output"].append(msg)
 				number_of_groups    +=1
 				final_accounted_ptl +=len(class_in)
 			msg = "total number of particle images:  %10d; accounted:   %10d ;  number_of_groups:   %5d"%(Tracker["constants"]["total_stack"], final_accounted_ptl, number_of_groups)
 			print(line, msg)
-			output.append(msg)
+			Tracker["output"].append(msg)
 		number_of_groups = bcast_number_to_all(number_of_groups, Blockdata["main_node"], MPI_COMM_WORLD)
 		if number_of_groups == 0:ERROR("No cluster is found, and the program terminates. ", "option post_sorting_sharpen ", 1, Blockdata["myid"])
 		minimum_size = bcast_number_to_all(minimum_size, Blockdata["main_node"], MPI_COMM_WORLD)
@@ -5562,8 +5568,8 @@ def main():
 			for iproc in xrange(number_of_groups):
 				msg = merge_two_unfiltered_maps(os.path.join(Tracker["constants"]["masterdir"], "vol_unfiltered_0_grp%03d.hdf"%iproc), \
 				os.path.join(Tracker["constants"]["masterdir"], "vol_unfiltered_1_grp%03d.hdf"%iproc), iproc)
-				output.append(msg)
-			write_text_file(output, os.path.join(Tracker["constants"]["masterdir"], "final.txt"))
+				Tracker["output"].append(msg)
+			write_text_file(Tracker["output"], os.path.join(Tracker["constants"]["masterdir"], "final.txt"))
 		mpi_barrier(MPI_COMM_WORLD)
 		from mpi import mpi_finalize
 		mpi_finalize()
@@ -5581,6 +5587,7 @@ def main():
 			if not os.path.exists(Tracker["indep_sort3d_dir"]): os.mkdir(Tracker["indep_sort3d_dir"])
 			msg = "---------->>> Independent sort3d  %d<<<----------- "%indep_sort3d
 			print(line, msg)
+			Tracker["output"].append("SORT3D  %d"%indep_sort3d)
 			log_main.add(msg)
 			log_main.add("nnxo : %d"%Tracker["constants"]["nnxo"])
 			log_main.add("Current resolution: %f  absolute unit(maximum is 0.5) 1./%7.2f Angstrom "%(Tracker["currentres"]*Tracker["shrinkage"],\
@@ -5588,7 +5595,7 @@ def main():
 			if Tracker["mask3D"]:
 				msg = "User provided 3-D mask:  %s"%Tracker["constants"]["mask3D"]
 				log_main.add(msg)
-				print(line, msg)	
+				print(line, msg)
 			if import_from_sparx_refinement ==1:
 				msg = "Sorting is initiated from meridien refinement"
 				print(line, msg)
@@ -5631,7 +5638,7 @@ def main():
 		data, norm_per_particle = get_shrink_data_sorting_smearing(os.path.join(Tracker["indep_sort3d_dir"], "sort3d_partition.txt"), \
 		os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt"), \
 		return_real = False, preshift = True, apply_mask = False)
-		if Tracker["nosmearing"]: parameterstructure  = None	
+		if Tracker["nosmearing"]: parameterstructure  = None
 		else: parameterstructure = read_paramstructure_for_sorting(os.path.join(Tracker["indep_sort3d_dir"], "sort3d_partition.txt"),\
 		   Tracker["paramstructure_dict"], Tracker["paramstructure_dir"])
 		Tracker["directory"] = Tracker["indep_sort3d_dir"]
@@ -5651,10 +5658,11 @@ def main():
 				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 				cfsc          = read_text_file(os.path.join(Tracker["indep_sort3d_dir"],"fsc_driver_grp%03d_iter000.txt"%icluster), -1)
 				res05, res143 = get_res(cfsc[0])    
-				msg = "group %3d   number of images: %8d     FSC05    %f     FSC143   %f"%(icluster, len(sort3d_clusters[icluster]), \
+				msg = "group %3d   size : %8d     FSC05    %f     FSC143   %f"%(icluster, len(sort3d_clusters[icluster]), \
 				float(res05)/float(Tracker["nxinit"]), float(res143)/float(Tracker["nxinit"]))
 				print(line, msg)
 				log_main.add(msg)
+				Tracker["output"].append(msg)
 		mpi_barrier(MPI_COMM_WORLD)
 	#########################################################<<<---rsort
 	iter_rsort = 0
@@ -5685,6 +5693,7 @@ def main():
 		for index in xrange(len(accounted_list)): Tracker["accounted_list"].append([new_index[index][0], res_sort3d["total"][new_index[index][1]]]) # always check
 		Tracker["directory"] = os.path.join(Tracker["constants"]["masterdir"], "rsort%d"%iter_rsort)	
 		if Blockdata["myid"] == Blockdata["main_node"]:
+			Tracker["output"].append("RSORT  %d"%iter_rsort)
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 			msg = "------------->>>rsort%d<<<----------- "%iter_rsort
 			log_main.add(msg)
@@ -5692,11 +5701,12 @@ def main():
 			msg = "Summary of two sort3d runs"
 			log_main.add(msg)
 			print(line, msg)
+			Tracker["output"].append(msg)
 			msg = "Accounted:    %d    Unaccounted:    %d"%(len(Tracker["accounted_list"]), len(Tracker["unaccounted_list"]))
 			log_main.add(msg)
 			print(line, msg)
-			cmd = "{} {}".format("mkdir",Tracker["directory"])
-			cmdexecute(cmd)
+			Tracker["output"].append(msg)
+			os.mkdir(Tracker["directory"])
 			if len(Tracker["unaccounted_list"])>0: write_text_file(Tracker["unaccounted_list"], os.path.join(Tracker["directory"], "Unaccounted.txt"))
 			write_text_row(Tracker["accounted_list"], os.path.join(Tracker["directory"], "Accounted.txt"))
 		mpi_barrier(MPI_COMM_WORLD)
@@ -5758,9 +5768,9 @@ def main():
 	# rsort final comparison
 	mpi_barrier(MPI_COMM_WORLD)
 	if(Blockdata["myid"] == Blockdata["main_node"]):
-		line    = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		tlist   = read_text_file(os.path.join(Tracker["constants"]["masterdir"],"indexes.txt"))
-		ptp     = []
+		line   = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		tlist  = read_text_file(os.path.join(Tracker["constants"]["masterdir"],"indexes.txt"))
+		ptp    = []
 		for irsort in xrange(Tracker["total_iter_rsort"]):
 			r1 = read_text_row(os.path.join(Tracker["constants"]["masterdir"], "rsort%d"%irsort, "index_for_Kmeans.txt"))
 			merged_classes = split_partition_into_clusters([r1])
@@ -5768,9 +5778,10 @@ def main():
 			ptp.append(sptp)
 		accounted_list, unaccounted_list, new_index = do_two_way_comparison_single(ptp[0], ptp[1], len(tlist))
 		# export_sorting_results(clusters)
-		msg  = " total number of accounted for two rsort:  %d percentage:  %5.2f "%(len(accounted_list), float(len(accounted_list))/float(len(tlist))*100.0)
+		msg = " total number of accounted for two rsort:  %d percentage:  %5.2f "%(len(accounted_list), float(len(accounted_list))/float(len(tlist))*100.0)
 		print(line, msg)
 		log_main.add(msg)
+		Tracker["output"].append(msg)
 		Tracker["accounted_list"] = []
 		for index in xrange(len(accounted_list)): Tracker["accounted_list"].append([new_index[index][0], tlist[new_index[index][1]]]) # always check
 		rsort_clusters, new_partition = split_partition_into_ordered_clusters(Tracker["accounted_list"])
@@ -5796,21 +5807,22 @@ def main():
 		number_of_groups = 0
 		if(Blockdata["myid"] == Blockdata["main_node"]):
 			final_accounted_ptl = 0
-			output =[]
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 			msg = "---->>> Summaries of final results <<<-----"
 			print(line, msg)
+			Tracker["output"].append(msg)
 			while os.path.exists(os.path.join(Tracker["constants"]["masterdir"], "Cluster%d.txt"%number_of_groups)):
 				class_in = read_text_file(os.path.join(Tracker["constants"]["masterdir"], "Cluster%d.txt"%number_of_groups))
 				minimum_size = min(len(class_in), minimum_size)
 				msg = " %10d clusters  %10d   group size "%(number_of_groups, len(class_in))
 				print(line, msg)
-				output.append(msg)
+				Tracker["output"].append(msg)
 				number_of_groups +=1
+				final_accounted_ptl +=len(class_in)
 				del class_in
-			msg = "total number of particle images:  %10d; accounted:   %10d ;  number_of_groups:   %5d"%(Tracker["constants"]["total_stack"], final_accounted_ptl, number_of_groups)
+			msg = "total number of particle images:  %10d;  accounted:   %10d ;  number_of_groups:   %5d"%(Tracker["constants"]["total_stack"], final_accounted_ptl, number_of_groups)
 			print(line, msg)
-			output.append(msg)
+			Tracker["output"].append(msg)
 		number_of_groups = bcast_number_to_all(number_of_groups, Blockdata["main_node"], MPI_COMM_WORLD)
 		if number_of_groups == 0:ERROR("No cluster is found, and the program terminates.", "do_final_maps", 1, Blockdata["myid"])
 		minimum_size = bcast_number_to_all(minimum_size, Blockdata["main_node"], MPI_COMM_WORLD)
@@ -5822,8 +5834,8 @@ def main():
 		for iproc in xrange(number_of_groups):
 			msg = merge_two_unfiltered_maps(os.path.join(Tracker["constants"]["masterdir"], "vol_unfiltered_0_grp%03d.hdf"%iproc), \
 			  os.path.join(Tracker["constants"]["masterdir"], "vol_unfiltered_1_grp%03d.hdf"%iproc), iproc)
-			output.append(msg)
-		write_text_file(output, os.path.join(Tracker["constants"]["masterdir"], "final.txt"))
+			Tracker["output"].append(msg)
+		write_text_file(Tracker["output"], os.path.join(Tracker["constants"]["masterdir"], "final.txt"))
 	mpi_barrier(MPI_COMM_WORLD)
 	from mpi import mpi_finalize
 	mpi_finalize()
