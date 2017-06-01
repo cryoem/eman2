@@ -188,6 +188,8 @@ if (calcsigmamean) centers.resize(nclstot*2);
 else centers.resize(nclstot);
 if (mininclass<1) mininclass=1;
 
+int seedmode=params.set_default("seedmode",(int)0);
+
 for (int i=0; i<nptcl; i++) images[i]->set_attr("is_ok_center",(int)5);  // if an image becomes part of too small a set, it will (eventually) be marked as a bad center
 
 if (slowseed) {
@@ -196,11 +198,36 @@ if (slowseed) {
 //	ncls=2;
 }
 
-for (int i=0; i<ncls; i++) {
-	// Fixed by d.woolford, Util.get_irand is inclusive (added a -1)
-	centers[i]=images[Util::get_irand(0,nptcl-1)]->copy();
-
+if (seedmode==0) {
+	for (int i=0; i<ncls; i++) {
+		// Fixed by d.woolford, Util.get_irand is inclusive (added a -1)
+		centers[i]=images[Util::get_irand(0,nptcl-1)]->copy();
+	}
 }
+else if (seedmode==1) {
+	// find the images with the largest and smallest sum
+	EMData *max;
+	float maxv=-1.0e27;
+	EMData *min;
+	float minv=1.0e27;
+	for (int i=0; i<nptcl; i++) {
+		float m = images[i]->get_attr("mean");
+		if (m<minv) { minv=m; min=images[i]; }
+		if (m>maxv) { maxv=m; max=images[i]; }
+	}
+	centers[0]=min->copy();
+	centers[ncls-1]=max->copy();
+	
+	// now fill in linear interpolates in between
+	for (int i=1; i<ncls-1; i++) {
+		centers[i]=centers[0]->copy();
+		centers[i]->mult((ncls-i-1.0f)/(ncls-1.0f));
+		EMData *tmp=max->copy();
+		tmp->mult(i/(ncls-1.0f));
+		centers[i]->add(*tmp);
+		delete tmp;
+	}
+}	
 
 if (calcsigmamean) {
 	for (int i=nclstot; i<nclstot*2; i++) centers[i]=new EMData(images[0]->get_xsize(),images[0]->get_ysize(),images[0]->get_zsize());

@@ -269,6 +269,7 @@ namespace EMAN
 		{
 			TypeDict d;
 			d.put("verbose", EMObject::INT, "Display progress if set, more detail with larger numbers (9 max)");
+			d.put("seedmode",EMObject::INT, "How to generate initial seeds. 0 - default, random element, 1 - max sum, min sum, linear");
 			d.put("ncls", EMObject::INT, "number of desired classes");
 			d.put("maxiter", EMObject::INT, "maximum number of iterations");
 			d.put("minchange", EMObject::INT, "Terminate if fewer than minchange members move in an iteration");
