@@ -323,10 +323,12 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				
 		
 		info.close()
-		if len(self.sets)>0:
-			self.sets_visible[self.sets.keys()[0]]=0
-			self.currentset=sorted(self.sets.keys())[0]
-			self.setspanel.update_sets()
+		if len(self.sets)==0:
+			self.new_set("particles_00")
+		self.sets_visible[self.sets.keys()[0]]=0
+		self.currentset=sorted(self.sets.keys())[0]
+		self.setspanel.update_sets()
+	
 		self.e = None
 		print self.sets
 		for i in range(len(self.boxes)):
@@ -508,10 +510,13 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.boxsize[self.currentset]=int(self.wboxsize.getValue())
 		
 		cb=self.curbox
+		self.initialized=False
 		for i in range(len(self.boxes)):
 			if self.boxes[i][5]==self.currentset:
 				self.update_box(i)
 		self.update_box(cb)
+		self.initialized=True
+		self.update_all()
 
 	def event_projmode(self,state):
 		"""Projection mode can be simple average (state=False) or maximum projection (state=True)"""
@@ -587,23 +592,13 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		fsp=str(QtGui.QFileDialog.getOpenFileName(self, "Select output text file"))
 
 		f=file(fsp,"r")
-		if self.helixboxer:
-			for b in f:
-				b2=[int(float(i))/self.shrink for i in b.split()[:6]]
-				self.boxes.append(self.load_box_yshort(b2[3:6]))
-				self.update_box(len(self.boxes)-1)
-				self.helixboxes.append(b2)
-				self.update_helixbox(len(self.helixboxes)-1)
-				self.boxes.append(self.load_box_yshort(b2[0:3]))
-				self.update_box(len(self.boxes)-1)
-		else:
-			for b in f:
-				b2=[int(float(i))/self.shrink for i in b.split()[:3]]
-				bdf=[0,0,0,"manual",0.0, 0]
-				for j in range(len(b2)):
-					bdf[j]=b2[j]
-				self.boxes.append(bdf)
-				self.update_box(len(self.boxes)-1)
+		for b in f:
+			b2=[int(float(i))/self.shrink for i in b.split()[:3]]
+			bdf=[0,0,0,"manual",0.0, self.currentset]
+			for j in range(len(b2)):
+				bdf[j]=b2[j]
+			self.boxes.append(bdf)
+			self.update_box(len(self.boxes)-1)
 		f.close()
 
 	def menu_file_save_boxloc(self):
