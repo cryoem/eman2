@@ -1159,14 +1159,14 @@ def imf_params_cl1(pw, n=2, iswi=3, Pixel_size=1):
 		k    = 2*len(pw)+i
 		parm.append(t[k])
 	return [feq, cur, pw, parm]
-
+'''
 def imf_get_1dpw_list(fstr):
 	pw   = []
 	data = read_spider_doc(fstr)
 	for i in xrange(len(data)):
 		pw.append(data[i][0])
 	return pw
-
+'''
 def imf_B_factor_get(res_N, x, ctf_params):
 	from scipy.optimize import fmin
 	nx    = len(res_N)*2
@@ -4487,7 +4487,8 @@ def simpw1d_pap(defocus, data):
 	#ct = data[1]*np.array( ctf_1d(data[2], generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]), doabs= True)[data[8]:data[9]], np.float32)
 	ct = np.array( ctf_1d(data[2], generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]), doabs= True)[data[8]:data[9]], np.float32)
 	#print  " 1d  ",sum(data[0]*ct),np.linalg.norm(ct,2)
-	return  -sum(data[0]*ct/data[1])/np.linalg.norm(ct,2)
+	###return  -sum(data[0]*ct/data[1])/np.linalg.norm(ct,2)
+	return  -np.corrcoef(data[0]/data[1],ct)[0,1]
 
 def simpw1d_print(defocus, data):
 	import numpy as np
@@ -4502,7 +4503,8 @@ def simpw1d_print(defocus, data):
 	ct = np.array( ctf_1d(data[2], generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]), doabs= True)[data[8]:data[9]], np.float32)
 	#print  " 1d  ",sum(data[0]*ct),np.linalg.norm(ct,2)
 	for i in xrange(len(data[0])):  print i,i+data[8],data[0][i],ct[i],data[1][i],data[0][i]/data[1][i]
-	return  -sum(data[0]*ct/data[1])/np.linalg.norm(ct,2)
+	###return  -sum(data[0]*ct/data[1])/np.linalg.norm(ct,2)
+	return  -np.corrcoef(data[0]/data[1],ct)[0,1]
 
 def simpw2d(defocus, data2d):
 	from utilities import generate_ctf
@@ -6745,13 +6747,17 @@ def defocusgett_vpp(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_start=-1.0
 	#baseline = defocus_baseline_fit(roo, i_start, i_stop, int(nr2), 3)
 	baseline = defocus_baseline_fit(roo, i_start, nroo, int(nr2), 3)
 	subpw = np.array(roo, np.float32) - baseline
+	###subpw = np.log(np.array(roo, np.float32)) - np.log(baseline)
 	subpw[0] = subpw[1]
-	#write_text_file([roo,baseline,subpw],"dbg.txt")
+	write_text_file([roo,baseline,subpw,np.array(roo, np.float32)-baseline],"dbg.txt")
+	#exit()
 	#print "IN defocusgett  ",np.min(subpw),np.max(subpw)
+
 	for i in xrange(len(subpw)):  subpw[i] = max(subpw[i],0.0)
+
 	#print "IN defocusgett  ",np.min(subpw),np.max(subpw)
 	#envelope = movingaverage(  subpw, nroo//8, 3)
-	
+
 	#envelope = defocus_baseline_fit(roo, i_start, nroo, int(nr2), 2) - baseline
 	envelope = defocus_baseline_fit(roo, i_start, min(int(i_stop*1.45),nx//2-2), int(nr2), 2) - baseline
 	#  Process envelope
@@ -6759,8 +6765,9 @@ def defocusgett_vpp(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_start=-1.0
 	dc = max(np.min(envelope[5:]), qm/1000.)
 	for i in xrange(len(envelope)):
 		if(envelope[i]<dc): envelope[i] = qm
-	
-	#envelope = np.array([1.0]*len(subpw), np.float32)
+	'''
+	envelope = np.array([1.0]*len(subpw), np.float32)
+	'''
 	#write_text_file([roo,baseline,subpw,envelope],"dbgt.txt")
 
 	#print "IN defocusgett  ",np.min(subpw),np.max(subpw),np.min(envelope)
@@ -6768,33 +6775,46 @@ def defocusgett_vpp(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_start=-1.0
 	defocus = 0.0
 	ampcont = 0.0
 	data = [subpw[i_start:i_stop], envelope[i_start:i_stop], nx, defocus, Cs, voltage, Pixel_size, ampcont, i_start, i_stop]
+	data = [subpw[i_start:i_stop], [1.0 for i in xrange(i_start,i_stop)], nx, defocus, Cs, voltage, Pixel_size, ampcont, i_start, i_stop]
 	qm = 1.e23
-	#toto = []
-	for q in xrange(-85,85,5):
+	toto = []
+	for q in xrange(-88,88,1):
 		data[7] = tan(radians(q))/sqrt(1.+tan(radians(q))**2)*100.0
-		for i in xrange(1000,100000,500):
+		#for i in xrange(1000,100000,500):
+		for i in xrange(1500,10000,100):
 			dc = float(i)/10000.0
 			qt = simpw1d_pap(dc, data)
-			#toto.append([a,dc,qt])
+			toto.append([dc,data[7],qt])
 			if(qt<qm):
 				qm = qt
 				defi = dc
 				ampcont = data[7]
-				#print  " FUFI  ",q,data[7],dc,qt
+				print  " FUFI  ",dc,data[7],q,qt
 	#print "DONE"
 	#'''
-	if DEBug:
+	if DEBug or True:
 		from utilities import write_text_row
-		#write_text_row(toto,"toto1.txt")
+		write_text_row(toto,"toto1.txt")
+		data[7] = ampcont
+		#defi = 0.69  ;    data[7] = 20.79 # 1
 		print " >>>>>>>>>  ",defi,data[7],simpw1d_print(defi, data)#,generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont])
 
 		print  "SECOND"
-		data[7]= -71.6
-		defi =  0.5134
+		#defi = 0.67318;    data[7] =  52.81 # 1
+		#defi = 0.6953;     data[7] = 67.085
+		#defi = 0.72084;    data[7] = 72.395
+		#defi = 0.47062;    data[7] = -80.345
+		#defi = 0.673;  data[7] = -51.
+		#defi = 0.673;  data[7] = -51.
+		#defi = 0.673;  data[7] = -51.
+		#defi = 0.673;  data[7] = -51.
+		#defi = 0.673;  data[7] = -51.
+		defi = 0.57131; data[7] = -99.929  #16
+		defi = 0.51342; data[7] = -71.61 # 18
 		print " >>>>>>>>>  ",defi,data[7],simpw1d_print(defi, data)#,generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont])
 		#def1 = defi
-	#print "ALLDONE"
-	#exit()
+	print "ALLDONE"
+	exit()
 	#'''
 	#ctf2 = ctf_1d(nx, generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont]), doabs= True)
 	'''
