@@ -766,14 +766,18 @@ def main():
 				firstmap="{}/threed_00_even.hdf".format(d)
 				starttime=os.stat(firstmap).st_mtime
 				endtime=os.stat(lastmap).st_mtime
-				print lastmap
+				#print lastmap
 				box=EMData(lastmap,0,True)["nx"]
 				targetres=jsparm["targetres"]
+				speed=jsparm["speed"]
+				nptcl=EMUtil.get_image_count(str(jsparm["input"][0]))+EMUtil.get_image_count(str(jsparm["input"][1]))
 
-				print "{path}\t{niter} iterations\t{cores} cores\t{h:02d}:{m:02d} walltime\t{cpuh:1.1f} CPU-h\t{cpuhpi:1.2f} CPU-h/it\t{bs} box\t{targ:1.1f} targetres".format(
+				print "{path}\t{nptcl} ptcls\t{niter} iter\t{cores} cores\t{h:02d}:{m:02d} walltime\t{cpuh:1.1f} CPU-h\t{cpuhpi:1.2f} CPU-h/it\t{bs} box\t{targ:1.1f} targetres\tspd={speed}".format(
 					path=d,niter=lastiter,cores=cores,h=int((endtime-starttime)//3600),m=int(((endtime-starttime)%3600)//60),
-					cpuh=cores*(endtime-starttime)/3600,cpuhpi=cores*(endtime-starttime)/(3600*lastiter),bs=box,targ=targetres)
-			except: print "No timing for ",d
+					cpuh=cores*(endtime-starttime)/3600,cpuhpi=cores*(endtime-starttime)/(3600*lastiter),bs=box,targ=targetres,speed=speed,nptcl=nptcl)
+			except: 
+				if options.verbose: traceback.print_exc()
+				print "No timing for ",d
 
 		print "\nWarning: scaling with number of CPUs can be very nonlinear, particularly with small jobs. The larger the number of particles the larger the number of cores which will produce near-linear speedup."
 

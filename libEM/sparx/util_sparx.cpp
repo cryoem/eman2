@@ -7661,12 +7661,13 @@ float Util::tf(float dzz, float ak, float voltage, float cs, float wgh, float b_
 	wgh /= 100.0;
 	float phase;
 	if(wgh > 0.0f) {
-		if(wgh >= 1.0f)  phase = 90.0;
+		if(wgh >= 1.0f)  phase = M_PI/2.0;
 		else phase = atan(wgh/sqrt(1.0f-wgh*wgh));
 	} else {
-		if(wgh <= -1.0f)  phase = 180.0;
-		else phase = 180.0f + atan(wgh/sqrt(1.0f-wgh*wgh));
+		if(wgh <= -1.0f)  phase = M_PI;
+		else phase = M_PI + atan(wgh/sqrt(1.0f-wgh*wgh));
 	}
+
 	float lambda=12.398f/sqrt(voltage*(1022.0f+voltage));
 	float ak2 = ak*ak;
 	float g1 = dzz*1.0e4f*lambda*ak2;
@@ -24104,7 +24105,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 void Util::version()
 {
  cout <<"  Compile time of util_sparx.cpp  "<< __DATE__ << "  --  " << __TIME__ <<   endl;
- cout <<"  Modification time: 05/31/2017  2:43 PM " <<  endl;
+ cout <<"  Modification time: 06/02/2017  7:03 AM " <<  endl;
 }
 
 
