@@ -3424,10 +3424,6 @@ def generate_ctf(p):
 	if defocus > 100:  # which means it is very likely in Angstrom, therefore we are using the old convention
 		defocus *= 1.0e-4
 
-	if amp_contrast < 1.0:
-		from math import sqrt
-		amp_contrast = amp_contrast*100/sqrt(2*amp_contrast**2-2*amp_contrast+1)
-
 	ctf = EMAN2Ctf()
 	if(len(p) == 6):
 		ctf.from_dict({"defocus":defocus, "cs":cs, "voltage":voltage, "apix":pixel_size, "bfactor":bfactor, "ampcont":amp_contrast})
