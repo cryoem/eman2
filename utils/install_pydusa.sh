@@ -1,13 +1,10 @@
 #!/usr/bin/env bash
 
+# Builds and installs Pydusa against NumPy v1.8
+
 set -xe
 
-source activate
+MYDIR=$(cd $(dirname $0) && pwd -P)
 
-RECIPE_DIR="${CONDA_PREFIX}/recipes"
-conda build ${RECIPE_DIR}/fftw-mpi
-conda build ${RECIPE_DIR}/pydusa
-conda install pydusa --use-local --yes
-
-# Cleanup
-conda build purge
+bash "${MYDIR}/build_pydusa_numpy.sh"   1.8
+bash "${MYDIR}/install_pydusa_numpy.sh" 1.8
