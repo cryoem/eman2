@@ -1240,7 +1240,8 @@ def main():
 			else: log_main.add("low_pass filter is not applied to map! ")
 			
 			file_name, file_ext = os.path.splitext(options.output)
-			map1.write_image(file_name+"_nomask_"+file_ext)
+			if file_ext !='': map1.write_image(file_name+"_nomask"+file_ext)
+			else: map1.write_image(file_name+"_nomask.hdf")
 			log_main.add("The non-mask applied postprocessed map is saved as %s"%(file_name+"_nomask_"+file_ext))
 			if m: map1 *=m
 			else: log_main.add("The final map is not masked!")

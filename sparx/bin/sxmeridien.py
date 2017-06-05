@@ -2652,7 +2652,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 		sava = float(sava)/snum
 		svar = sqrt(max(0.0,(float(svar) - snum*sava**2)/(snum -1)))
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(line, "Smear stat  (number of images, ave, sumsq, min max)):  %7d    %12.3g   %12.3g  %7d  %7d"%(snum,sava,svar,smin,smax))
+		print(line, "Smear stat  (number of images, ave, sumsq, min, max)):  %7d    %12.3g   %12.3g  %7d  %7d"%(snum,sava,svar,smin,smax))
 	"""
 	at = time()
 	mpi_barrier(Blockdata["shared_comm"])
@@ -3364,7 +3364,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 		sava = float(sava)/snum
 		svar = sqrt(max(0.0,(float(svar) - snum*sava**2)/(snum -1)))
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(line, "Smear stat  (number of images, ave, sumsq, min max)):  %7d    %12.3g   %12.3g  %7d  %7d"%(snum,sava,svar,smin,smax))
+		print(line, "Smear stat  (number of images, ave, sumsq, min, max)):  %7d    %12.3g   %12.3g  %7d  %7d"%(snum,sava,svar,smin,smax))
 
 	at = time()
 	mpi_barrier(MPI_COMM_WORLD)
@@ -4046,7 +4046,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 		sava = float(sava)/snum
 		svar = sqrt(max(0.0,(float(svar) - snum*sava**2)/(snum -1)))
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(line, "Smear stat  (number of images, ave, sumsq, min max)):  %7d    %12.3g   %12.3g  %7d  %7d"%(snum,sava,svar,smin,smax))
+		print(line, "Smear stat  (number of images, ave, sumsq, min, max)):  %7d    %12.3g   %12.3g  %7d  %7d"%(snum,sava,svar,smin,smax))
 
 	at = time()
 	mpi_barrier(Blockdata["shared_comm"])
@@ -5024,7 +5024,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 		sava = float(sava)/snum
 		svar = sqrt(max(0.0,(float(svar) - snum*sava**2)/(snum -1)))
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(line, "Smear stat  (number of images, ave, sumsq, min max)):  %7d    %12.3g   %12.3g  %7d  %7d"%(snum,sava,svar,smin,smax))
+		print(line, "Smear stat  (number of images, ave, sumsq, min, max)):  %7d    %12.3g   %12.3g  %7d  %7d"%(snum,sava,svar,smin,smax))
 
 	at = time()
 	mpi_barrier(Blockdata["shared_comm"])
