@@ -2,7 +2,7 @@
 
 #
 # Author: Jesus Galaz-Montoya  November/21/2013
-# Last modification: 6/Jun/2016
+# Last modification: 1/Jun/2017
 # Copyright (c) 2011- Baylor College of Medicine
 
 #
@@ -881,16 +881,17 @@ def main():
 		#print "ABCDEFG 2 test!"
 		#sys.exit()
 
-		for it in range( options.iter+1 ):
+		#for it in range( options.iter+1 ):
+		for it in range( options.iter ):
 			print "\n\nrefining all references in iteration", it
 			print "\n\n"
 					#The program goes into --path to execute the alignment command; therefore, --input will be one level furtherback
-	
-			if it > 0:
+
+			if options.iter >1 and it > 0:
 			
-				if it == options.iter:
-					break
-			
+				#if it == options.iter:
+				#	break
+		
 				newreffiles = {}				
 				#avgsName =  'classAvgs.hdf'
 				#if options.savesteps and int( options.iter ) > 1 :
@@ -946,12 +947,12 @@ def main():
 					print "\n(e2spt_refinemulti.py, line 268) all particles preferred one average and therefore multirefine has failed/converged."
 					print "reffilesrefine is", reffilesrefine
 					#sys.exit()
-				
+					
 
 
 			reftags = []
 			masterInfo = {}
-		
+			
 			if options.syms and it == 0:
 				options.syms = options.syms.split(',')
 		
@@ -1264,7 +1265,7 @@ def main():
 			for klass in classes_sorted:
 				#print "\n\nThe particles and their aliparams, for this class", klass
 				#print "are:", classes[ klass ]
-				print "\nklass is", klass
+				#print "\nklass is", klass
 				#klassIndx = int( klass.replace('ref','') )
 			
 				klassIndx = int( klass[0] )
@@ -1286,7 +1287,7 @@ def main():
 						thisclass = klass[1]
 						ptclsinthisclass = []
 				
-						print "\nthisclass is", thisclass
+						#print "\nthisclass is", thisclass
 						for p in thisclass:
 							ptclsinthisclass.append( p[0] )
 					
@@ -1326,8 +1327,9 @@ def main():
 					#ret = makeAverage( options, classes[klass], klassIndx, klassesLen, it, finalize, originalCompletePath)
 					ret = makeAverage( options, klass[1], klassIndx, klassesLen, it, finalize, originalCompletePath)
 					#ret = makeAverage(options, ic,results,it)
-				
-					if not finalize:
+					print "\nRRRR ret is {}".format(ret)
+					print "\nFFFF finalize is {}".format(finalize)
+					if not finalize :
 						ref = ret[0]
 						weights = ret[1]
 				
@@ -1340,11 +1342,12 @@ def main():
 							ref.write_image(avgsName,kkk)
 				
 						#print "\nappending ref",ref
-						print "appending ref %d to avgs as klass %s" % ( int(klassIndx), klass )
+						print "\nAAAAA appending ref {} to avgs of the klass, with these many particles {} in iteration {} ".format( int(klassIndx), len(klass), it )
 						##avgs.update({ klass : ref })
 						avgs.update({ klassIndx : ref })
+						print "avgs are".format(avgs)
 
-				else:
+				elif len(klass[1]) < 1:
 					print "\nthe klass %d was empty (no particles were assgined to it). You might have too many classes." % ( klassIndx )	
 					#dummyClassAvg=EMData(boxsize,boxsize,boxsize)
 					#dummyClassAvg.to_zero()
@@ -1353,6 +1356,7 @@ def main():
 					weights = None
 			
 					avgs.update({ klassIndx : ref })
+					print "avgs are".format(avgs)
 					##avgs.update({ klass : ref })
 		
 				kkk+=1
@@ -1361,21 +1365,25 @@ def main():
 		
 		
 			previous_classes = classes
-		
+			
+
 			f.close()
 		
 			nonNulls=0
 			for avg in avgs:
+				print "\navgindx is {}, avg is {}, and its type is {}".format(avg,avgs[avg],type(avgs[avg]))
 				if avgs[ avg ] and avgs[ avg ] != None:
 					nonNulls +=1
 
-				print "\n(e2spt_refinemulti)(main) generated this average %s in iter %d" %(avg,it)
-				print "computed average of size", avgs[avg]['nx'],avgs[avg]['ny'],avgs[avg]['nz']
-			sys.exit()
+					print "\n(e2spt_refinemulti)(main) generated this average {} in iter {}".format(avg,it)
+					print "computed average of size {}, {}, {}".format( avgs[avg]['nx'], avgs[avg]['ny'], avgs[avg]['nz'] )
+				else:
+					print "\n(e2spt_refinemulti)(main) average at index {} in iter {} is EMPTY".format(avg,it)
+
 		
 			if nonNulls < 2:
-				print "e2spt_refinemulti.py has allocated all particles to one average and therefore has failed/converged. EXITING."
-				sys.exit()
+				print "e2spt_refinemulti.py has allocated all particles to one average and therefore has failed or converged. EXITING."
+				sys.exit(1)
 			
 			
 		
@@ -1439,7 +1447,7 @@ def makeAverage(options, klass, klassIndx, klassesLen, iterNum, finalize, origin
 		if options.saveali:
 			writeali = 1		#This saves the aligned particles across ALL iterations for HAC -probably shouldn't be done.
 	'''
-	thresh=0
+	thresh=0.0
 	if not finalize:		
 		if options.keepsig:
 			# inefficient memory-wise
@@ -1452,7 +1460,7 @@ def makeAverage(options, klass, klassIndx, klassesLen, iterNum, finalize, origin
 			if options.verbose: 
 				print "Keep threshold : %f (mean=%f  sigma=%f)"%(thresh,mean,sig)
 
-		if options.keep:
+		if options.keep and options.keep < 1.0:
 			#print "Len of align_parms is", len(klass)
 		
 			for score in klass:
@@ -1466,11 +1474,13 @@ def makeAverage(options, klass, klassIndx, klassesLen, iterNum, finalize, origin
 		
 			val = [ score[-1] for score in klass]
 			val.sort()
-			print "The len of val is", len(val)
-			print "these are the vals", val
-			print "Which shuld be the same as len(klass) see", len(klass)
-			print "The clossest position to threshold value based on keep", options.keep
+			print "\nthe len of val is {}".format(len(val))
+			#print "these are the vals", val
+			print "which shuld be the same as len(klass), see {}".format(len(klass))
+			print "The closest position to threshold value based on keep", options.keep
 			threshIndx =  int (options.keep * len(klass) ) - 1 
+			#threshIndx =  int (options.keep * len(klass) )
+
 			print "is", threshIndx
 		
 			thresh = val[ threshIndx ]
@@ -1515,52 +1525,52 @@ def makeAverage(options, klass, klassIndx, klassesLen, iterNum, finalize, origin
 			#print "I've applied the transform"
 			#print "I have applied this transform before averaging", ptcl_parms[0]["xform.align3d"]			
 			
-			if not finalize:
+			#if not finalize:
 			
-				if k[-1] <= thresh: 
+			if k[-1] <= thresh: 
+		
+				if options.weighbytiltaxis:
+					px = x = int(ptcl['ptcl_source_coord'][0])
 			
-					if options.weighbytiltaxis:
-						px = x = int(ptcl['ptcl_source_coord'][0])
-				
-						tiltaxis = int( options.weighbytiltaxis.split(',')[0] )
-						minweight = float( options.weighbytiltaxis.split(',')[1] )
-				
-						if px > tiltaxis:
-							px = -1 *( px - 2*tiltaxis )	#This puts te particle at the same distance from te tilt axis, but to the left of it.
-						
-						X = tiltaxis				#This models a line in 'weight space' (x, w), that passes through (0, minweight) and ( tiltaxis, maxweight ) 
-						W = 1.0 - minweight
-						slope = W/X
-												#Having the slope of the line and its y-axis (or w-axis in this case) crossing we predict the weight of any particle depending on its dx distance to the tiltaxis
-						print "Tiltaxis is", X
-						print "W is", W
-						print "Therefore slope is", slope
-				
-						dx = tiltaxis - px 
-						#if px > tiltaxis:
-						#	dx = px - tiltaxis
-						
-						taweight = slope * px + minweight 
-						weight = weight * ( taweight )
-						print "tiltaxis weight was %f because it's distance from the tilt axis is %d, because it's x coordinate was %d" % (taweight, dx, x)
+					tiltaxis = int( options.weighbytiltaxis.split(',')[0] )
+					minweight = float( options.weighbytiltaxis.split(',')[1] )
+			
+					if px > tiltaxis:
+						px = -1 *( px - 2*tiltaxis )	#This puts te particle at the same distance from te tilt axis, but to the left of it.
+					
+					X = tiltaxis				#This models a line in 'weight space' (x, w), that passes through (0, minweight) and ( tiltaxis, maxweight ) 
+					W = 1.0 - minweight
+					slope = W/X
+											#Having the slope of the line and its y-axis (or w-axis in this case) crossing we predict the weight of any particle depending on its dx distance to the tiltaxis
+					print "Tiltaxis is", X
+					print "W is", W
+					print "Therefore slope is", slope
+			
+					dx = tiltaxis - px 
+					#if px > tiltaxis:
+					#	dx = px - tiltaxis
+					
+					taweight = slope * px + minweight 
+					weight = weight * ( taweight )
+					print "tiltaxis weight was %f because it's distance from the tilt axis is %d, because it's x coordinate was %d" % (taweight, dx, x)
 
-					if options.weighbyscore:
-						scoreweight = score / maxscore
-						print "the score weight is %f because score was %f and the best score was %f" % (scoreweight, score, maxscore )
-						weight = weight * scoreweight
+				if options.weighbyscore:
+					scoreweight = score / maxscore
+					print "the score weight is %f because score was %f and the best score was %f" % (scoreweight, score, maxscore )
+					weight = weight * scoreweight
+		
+				weights.update( {ptclindx:weight} )
 			
-					weights.update( {ptclindx:weight} )
-				
-					print "therefore the final weight for particle %d is %f" %(ptclindx, weight )
-				
-					ptcl.mult( weight )
+				print "therefore the final weight for particle %d is %f" %( ptclindx, weight )
 			
-			
-			
-			
-					avgr.add_image(ptcl)
-					included.append(k[0])
-					ptclsAdded += 1
+				ptcl.mult( weight )
+		
+		
+		
+		
+				avgr.add_image(ptcl)
+				included.append(k[0])
+				ptclsAdded += 1
 
 			#js["tomo_%04d"%i] = ptcl_parms[0]['xform.align3d']
 		
@@ -1580,7 +1590,8 @@ def makeAverage(options, klass, klassIndx, klassesLen, iterNum, finalize, origin
 				#ptcl['spt_ali_param'] = ptcl_parms[0]['xform.align3d']
 				ptcl['xform.align3d'] = ptclTransform
 			
-				print "\n\nFinal iteration, and options.saveali on, so saving class_ptcls\n\n"
+				if options.verbose > 9:
+					print "\n\nFinal iteration, and options.saveali on, so saving class_ptcls\n\n"
 				
 				tmp = 1
 				
@@ -1596,63 +1607,61 @@ def makeAverage(options, klass, klassIndx, klassesLen, iterNum, finalize, origin
 	
 	#js.close()
 	
-	if not finalize:
-		if options.verbose: 
-			print "Kept %d / %d particles in average"%(len(included),len(klass))
+	#if not finalize:
+	if options.verbose: 
+		print "\nkept %d / %d particles in average"%(len(included),len(klass))
 
-		avg=avgr.finish()
-		#if options.symmetry and not options.breaksym:
-		#	avg=avg.process('xform.applysym',{'sym':options.symmetry})
-	
-		avg["class_ptcl_idxs"] = included
-		avg["class_ptcl_src"] = ptcl_file
-		avg["spt_multiplicity"] = len(included)
-		avg['spt_ptcl_indxs']=included
-	
-		#if options.averager[0] == 'mean' and variance:
-		#	variance.write_image(path+"/class_varmap.hdf",it)
-				
-		if options.autocenter:
-			print "\n\n\n\nYou have selected to autocenter!\n", options.autocenter
-		
-			avgac = avg.copy()
-			if options.autocentermask:
-				avgac.process_inplace( options.autocentermask[0],options.autocentermask[1] )
+	avg=avgr.finish()
+	#if options.symmetry and not options.breaksym:
+	#	avg=avg.process('xform.applysym',{'sym':options.symmetry})
+
+	avg["class_ptcl_idxs"] = included
+	avg["class_ptcl_src"] = ptcl_file
+	avg["spt_multiplicity"] = len(included)
+	avg['spt_ptcl_indxs']=included
+
+	#if options.averager[0] == 'mean' and variance:
+	#	variance.write_image(path+"/class_varmap.hdf",it)
 			
-			if options.autocenterpreprocess:
-				apix = avgc['apix_x']
-				halfnyquist = apix*4
-				highpassf = apix*a['nx']/2.0
-			
-				avgac.process_inplace( 'filter.highpass.gauss',{'cutoff_freq':highpassf,'apix':apix})
-				avgac.process_inplace( 'filter.lowpass.gauss',{'cutoff_freq':halfnyquist,'apix':apix})
-				avgac.process_inplace( 'math.meanshrink',{'n':2})
-			
-			avgac.process_inplace(options.autocenter[0],options.autocenter[1])
-		
-			tcenter = avgac['xform.align3d']
-			print "Thus the average HAS BEEN be translated like this", tcenter
-			avg.transform(tcenter)
-
-		avg['origin_x']=0
-		avg['origin_y']=0
-		avg['origin_z']=0
+	if options.autocenter:
+		print "\n\n\n\nYou have selected to autocenter!\n", options.autocenter
 	
-		#print "\n(e2spt_refinemulti)(makeAverag) used this ptcl_file, options.raw", ptcl_file, options.raw
-		#print "computed average of size", avg['nx'],avg['ny'],avg['nz']
-		#sys.exit()
+		avgac = avg.copy()
+		if options.autocentermask:
+			avgac.process_inplace( options.autocentermask[0],options.autocentermask[1] )
 		
-		if ptclsAdded > 0:
-			#avg.write_image(avgsName,klassIndx)
+		if options.autocenterpreprocess:
+			apix = avgc['apix_x']
+			halfnyquist = apix*4
+			highpassf = apix*a['nx']/2.0
 		
-			return [avg,weights]
-		else:
-			return None,None
+			avgac.process_inplace( 'filter.highpass.gauss',{'cutoff_pixels':4,'apix':apix})
+			avgac.process_inplace( 'filter.lowpass.tanh',{'cutoff_freq':halfnyquist,'apix':apix})
+			avgac.process_inplace( 'math.meanshrink',{'n':2})
 		
+		avgac.process_inplace(options.autocenter[0],options.autocenter[1])
+	
+		tcenter = avgac['xform.align3d']
+		print "Thus the average HAS BEEN be translated like this", tcenter
+		avg.transform(tcenter)
 
+	avg['origin_x']=0
+	avg['origin_y']=0
+	avg['origin_z']=0
 
+	#print "\n(e2spt_refinemulti)(makeAverag) used this ptcl_file, options.raw", ptcl_file, options.raw
+	#print "computed average of size", avg['nx'],avg['ny'],avg['nz']
+	#sys.exit()
+	
+	if ptclsAdded > 0:
+		#avg.write_image(avgsName,klassIndx)
+	
+		return [avg,weights]
 	else:
 		return None,None
+
+	#else:
+	#	return None,None
 
 
 	

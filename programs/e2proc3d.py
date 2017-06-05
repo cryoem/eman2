@@ -282,6 +282,7 @@ def main():
 	if options.alignref : alignref=EMData(options.alignref,0)
 	else : alignref=None
 
+
 	if options.calcradial>=0 :
 		print "Computing radial real-space distribution. All other options ignored!"
 		curves=[]
@@ -299,10 +300,12 @@ def main():
 
 		sys.exit(0)
 
+
 	if options.average:
 		print "Averaging particles from %d to %d stepping by %d. All other options ignored !"%(n0,n1,n2)
 		avg_dict=parsemodopt(options.averager)
 		avgr = Averagers.get(avg_dict[0],avg_dict[1])
+		
 		for i in range(n0,n1+1,n2):
 			avgr.add_image( EMData(infile,i) )
 			if options.verbose:
@@ -336,6 +339,7 @@ def main():
 	for append_option in append_options:
 		index_d[append_option] = 0
 
+
 	if(n0 < 0 or n0 > nimg):
 		print "Your first index is out of range, changed to zero"
 		n0 = 0
@@ -348,7 +352,10 @@ def main():
 
 	# Steve:  why are all of the images being read at once !?!?. This is nuts
 	# modified so for multiple volumes, returns header-only
-	datlst = parse_infile(infile, n0, n1,n2)
+	
+	datlst = parse_infile(infile, n0, n1, n2)
+	
+	#datlst = parse_infile(infile, indxs)
 
 	logid=E2init(sys.argv,options.ppid)
 
@@ -363,6 +370,10 @@ def main():
 	nx = x
 	ny = y
 	nz = z
+
+	origin_x = 0
+	origin_y = 0
+	origin_z = 0
 
 	#print_iminfo(datlst[0], "Original")
 
@@ -751,8 +762,9 @@ def main():
 	E2end(logid)
 
 
-#parse_file() wil read the input image file and return a list of EMData() object
+#parse_file() will read the input image file and return a list of EMData() object
 def parse_infile(infile, first, last, step):
+	#def parse_infile(infile, indxs):
 	if infile[0]==":" :
 		parm=infile.split(":")
 		if len(parm)==4 : parm.append(0)
@@ -786,6 +798,7 @@ def parse_infile(infile, first, last, step):
 		else:
 			print "the image is a 3D stack - I will process images from %d to %d" % (first, last)
 			data = []
+			
 			for i in xrange(first, last+1, step):
 				d = EMData(infile,i,True)	# header only
 
