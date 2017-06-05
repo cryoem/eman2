@@ -118,17 +118,30 @@ To run this program, you would normally specify only the following options:
                          the number of cores that can be used on a single machine.
 
   Optional:
-  --apix=<A/pix>         The value will normally come from the particle data if present. You can override if necessary.
-  --sep=<classes/ptcl>   each particle will be put into N classes. Improves contrast at cost of rotational blur.
-  --classkeep=<frac>     fraction of particles to use in final average. Default 90%%. Should be >50%%
-  --m3dkeep=<frac>       fraction of class-averages to use in 3-D map. Default=auto
-  --classautomask        applies an automask when aligning particles for improved alignment
-  --m3dpostprocess       <name>:<parm>=<value>:...  An arbitrary processor
-                         (e2help.py processors -v2) to apply to the 3-D map after each
-                         iteration. Default=none
-  --path=<path>          Normally the new directory will be named automatically. If you prefer your own convention
-                         you can override, but it may cause minor GUI problems if you break the standard naming
-                         convention.
+  --tophat=<local,global>  Some other packages (Relion) apply a tophat filter to the final map which helps exaggerate
+                           the apperance of sidechains at near atomic resolution, but can also cause some artifacts.
+                           'local' will produce a similar effect in the final map (but probably should be limited to
+                           subnanometer resolution.
+                           'global' uses a local resolution computation to locally filter the map. This can actually
+                           lead to better resolution (in the good domains). While new, this may be a good idea to
+                           use in pretty much all refinements.
+                           To disable tophat, don't specify it, or specify "none".
+  --nogoldfinal            Normally used in conjunction with tophat=local. During a refinement, the even/odd maps may
+                           diverge slightly if there is any structural variability in the maps. This will disable 
+                           gold-standard refinement mode in the final iteration to produce a more accurate filter.
+                           This may cause the FSC curve to be somewhat exxagerated as well, though.
+  --apix=<A/pix>           The value will normally come from the particle data if present (set to -1). You can 
+                           override if necessary.
+  --sep=<classes/ptcl>     each particle will be put into N classes. Improves contrast at cost of rotational blur.
+  --classkeep=<frac>       fraction of particles to use in final average. Default 90%%. Should be >50%%
+  --m3dkeep=<frac>         fraction of class-averages to use in 3-D map. Default=auto
+  --classautomask          applies an automask when aligning particles for improved alignment
+  --m3dpostprocess         <name>:<parm>=<value>:...  An arbitrary processor
+                           (e2help.py processors -v2) to apply to the 3-D map after each
+                           iteration. Default=none
+  --path=<path>            Normally the new directory will be named automatically. If you prefer your own convention
+                           you can override, but it may cause minor GUI problems if you break the standard naming
+                           convention.
 
 Since many parameters are now selected automatically, if you are curious exactly what the differences are between any
 two refinements, on Linux/Mac, you can run, for example, diff refine_01/0_refine_parms.json refine_02/0_refine_parms.json
@@ -156,6 +169,7 @@ not need to specify any of the following other than the ones already listed abov
 	parser.add_argument("--sym", dest = "sym", default="c1",help = "Specify symmetry - choices are: c<n>, d<n>, tet, oct, icos.", guitype='strbox', row=10, col=1, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--breaksym", action="store_true", default=False,help = "If selected, reconstruction will be asymmetric with sym= specifying a known pseudosymmetry, not an imposed symmetry.", guitype='boolbox', row=11, col=1, rowspan=1, colspan=1, mode="refinement[False]")
 	parser.add_argument("--tophat", type=str, default=None,help = "'local' or 'global'. Instead of imposing a final Wiener filter, use a tophat filter (global similar to Relion). local determines local resolution and filters. danger of feature exaggeration", guitype='strbox', row=11, col=0, rowspan=1, colspan=1, mode="refinement['None']")
+	parser.add_argument("--nogoldfinal", action="store_true", default=False,help = "If selected, the final iteration will turn off gold-standard behavior and both halves will be refined from the same model. Normally used with --tophat=local.")
 	parser.add_argument("--treeclassify",default=False, action="store_true", help="Classify using a binary tree.")
 	parser.add_argument("--m3dold", action="store_true", default=False,help = "Use the traditional e2make3d program instead of the new e2make3dpar program",guitype='boolbox', row=11, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--iter", dest = "iter", type = int, default=6, help = "The total number of refinement iterations to perform. Default=auto", guitype='intbox', row=10, col=2, rowspan=1, colspan=1, mode="refinement")
@@ -710,6 +724,16 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 				elif initclassiter==1 : classiter=0
 			append_html("<p>*** Changing classiter from {} to {} ***</p>".format(initclassiter,classiter),True)
 
+		### nogoldfinal
+		# averages even and odd maps together to disable gold-standard in last iteration
+		if options.nogoldfinal and it==options.iter :
+			mdl1=EMData("{path}/threed_{itrm1:02d}_even.hdf".format(path=options.path,itrm1=it-1),0)
+			mdl2=EMData("{path}/threed_{itrm1:02d}_odd.hdf".format(path=options.path,itrm1=it-1),0)
+			mdl1.add(mdl2)
+			mdl1.write_image("{path}/threed_{itrm1:02d}_even.hdf".format(path=options.path,itrm1=it-1),0)
+			mdl1.write_image("{path}/threed_{itrm1:02d}_odd.hdf".format(path=options.path,itrm1=it-1),0)
+			mdl1=None
+			mdl2=None
 
 		### 3-D Projections
 		# Note that projections are generated on a single node only as specified by --threads
