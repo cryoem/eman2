@@ -62,6 +62,7 @@ e2plotEulers.py
 e2proc2d.py
 e2proc2dmulti.py
 e2proc3d.py
+e2procheader.py
 e2proclst.py
 e2procpdb.py
 e2proctxt.py
