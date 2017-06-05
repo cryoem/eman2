@@ -1,6 +1,16 @@
+The code developed as part of the EMAN2 GitHub repository is distributed under 
+the GPLv2 license, and may optionally be used under the more liberal BSD 3-clause
+license. A few of EMAN2's dependencies are GPL distributed, not LGPL distributed,
+FFTW is the most critical of these. So, if you opt to use EMAN2 code under the
+BSD license, you are required to deal with any any licensing issues in the 
+dependencies. That is, you are free to use OUR code under the BSD license, but
+you may be required to meet other conditions to use certain parts of the package.
+
+
+
 BSD 3-Clause License
 
-Copyright (c) 2000-, Baylor College of Medicine
+Copyright (c) 2000-, Steven Ludtke, Baylor College of Medicine
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
