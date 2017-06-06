@@ -2680,7 +2680,7 @@ vector<Dict> RT2DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	for (int sexp=5; sexp<10; sexp++) {
 		int ss=pow(2.0,sexp);
 		float rescale=2.0;
-		if (ss>ny) {
+		if (ss>=ny) {
 			rescale=(float)ny/pow(2.0,sexp-1);
 			ss=ny;
 		}
@@ -2701,7 +2701,8 @@ vector<Dict> RT2DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 
 		// This is a solid estimate for very complete searching
 		float astep = 360.0/int(M_PI/atan(1.25/ss));		// Decent angular step in degrees
-
+		if (ss==ny) astep/=2.0;		// final iteration we take a smaller step
+		
 		// This insures we make at least one real effort at each level
 		for (int i=0; i<nsoln; i++) {
 			s_score[i]=-1.0e24;	// reset the scores since the different scales will not match
@@ -2794,7 +2795,9 @@ vector<Dict> RT2DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 				aap["tx"]=(float)aap["tx"]*rescale;	// compensate for scaling steps, usually 2, but not in the last step
 				aap["ty"]=(float)aap["ty"]*rescale;
 				float alpha=aap["alpha"];
-				for (float a=alpha-astep; a<=alpha+astep; a+=astep) {
+				float nstep=1.0f;
+				if (ss==ny) nstep=2.0f;
+				for (float a=alpha-astep*nstep; a<=alpha+astep*nstep; a+=astep) {
 					Transform t=Transform(Dict("type","2d","alpha",a,"mirror",aap["mirror"]));
 					EMData *stt=small_this->process("xform",Dict("transform",EMObject(&t),"zerocorners",1));
 					EMData *ccf=small_to->calc_ccf(stt);
