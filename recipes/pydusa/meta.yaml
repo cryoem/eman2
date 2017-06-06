@@ -13,15 +13,13 @@ build:
 requirements:
     build:
         - python
-        - numpy
+        - numpy x.x
         - fftw-mpi
     run:
-        - numpy
+        - numpy x.x
         - fftw-mpi
 
 test:
-  requires:
-    - openmpi
   imports:
     - mpi
 

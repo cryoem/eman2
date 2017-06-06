@@ -443,7 +443,7 @@ def main():
 		####  Done writing results to text file, now we generate new sets
 		print("Generating new sets")
 		an=Analyzers.get("kmeans")
-		an.set_params({"ncls":3,"seedmode":1,"minchange":len(rmsds)//100,"verbose":0,"slowseed":0,"mininclass":5})
+		an.set_params({"ncls":4,"seedmode":1,"minchange":len(rmsds)//100,"verbose":0,"slowseed":0,"mininclass":5})
 		quals=[]
 		for j in xrange(nptcl[0]+nptcl[1]):
 			d=EMData(3,1,1)
@@ -456,17 +456,18 @@ def main():
 		an.insert_images_list(quals)
 
 		centers=an.analyze()
-		print "Centers: {}({:1.3f},{:1.3f},{:1.3f}), {}({:1.3f},{:1.3f},{:1.3f}), {}({:1.3f},{:1.3f},{:1.3f})".format(
+		print "Centers: {}({:1.3f},{:1.3f},{:1.3f}), {}({:1.3f},{:1.3f},{:1.3f}), {}({:1.3f},{:1.3f},{:1.3f}, {}({:1.3f},{:1.3f},{:1.3f})".format(
 			centers[0]["ptcl_repr"],centers[0][0],centers[0][1],centers[0][2],
 			centers[1]["ptcl_repr"],centers[1][0],centers[1][1],centers[1][2],
-			centers[2]["ptcl_repr"],centers[2][0],centers[2][1],centers[2][2] )
+			centers[2]["ptcl_repr"],centers[2][0],centers[2][1],centers[2][2],
+			centers[3]["ptcl_repr"],centers[3][0],centers[3][1],centers[3][2] )
 		
-		badcls=min([(centers[i]["mean"],i) for i in (0,1,2)])[1]	# this confusing expression finds the number of the class with the smallest summed vector
+		badcls=min([(centers[i]["mean"],i) for i in (0,1,2,3)])[1]	# this confusing expression finds the number of the class with the smallest summed vector
 		print "Class {} is the bad class".format(badcls)
 		
 		rmsds=array(rmsds)
-		rmsdthresh=rmsds.std()*2.0
-		print "Within thr {:0.4f}: {}/{}".format(rmsdthresh,len(rmsds[rmsds<rmsdthresh]),len(rmsds))
+		rmsdthresh=rmsds.std()*2.5
+		print "Within consistency thr {:0.4f}: {}/{}".format(rmsdthresh,len(rmsds[rmsds<rmsdthresh]),len(rmsds))
 
 		bname = base_name(ptclfsc)
 		try: os.unlink("sets/{}_bad.lst".format(bname))
@@ -475,12 +476,17 @@ def main():
 		except: pass
 		outb=LSXFile("sets/{}_bad.lst".format(bname))
 		outg=LSXFile("sets/{}_good.lst".format(bname))
+		ngood=0
 		for i,q in enumerate(quals):
 			r=result[(i,0)]
 			if q["class_id"]==badcls or rmsds[i]>rmsdthresh: outb.write(-1,r[-1],r[-2],"{:6.4f},{:6.4f},{:6.4f},{:6.4f}".format(quals[i][0],quals[i][1],quals[i][2],rmsds[i]))
-			else: outg.write(-1,r[-1],r[-2],"{:6.4f},{:6.4f},{:6.4f},{:6.4f}".format(quals[i][0],quals[i][1],quals[i][2],rmsds[i]))
+			else: 
+				outg.write(-1,r[-1],r[-2],"{:6.4f},{:6.4f},{:6.4f},{:6.4f}".format(quals[i][0],quals[i][1],quals[i][2],rmsds[i]))
+				ngood+=1
 
-		print("Evaluation complete.\nParticles best resembling results from {ref} at low/intermediate resolution have been saved in 'sets/{bn}_good.lst' and can be used in further refinements.\nNote that it is possible to do your own classification on these results instead, as described in the tutorial.".format(ref=args[0],bn=bname))
+		print "{}/{} kept as good".format(ngood,len(quals))
+
+		print "Evaluation complete.\nParticles best resembling results from {ref} at low/intermediate resolution have been saved in 'sets/{bn}_good.lst' and can be used in further refinements.\nNote that this method will identify the worst particles as bad, regardless of whether they actually are (bad), and that it may be wise to do your own classification on these results instead, as described in the tutorial.".format(ref=args[0],bn=bname)
 
 		E2end(logid)
 		sys.exit(0)

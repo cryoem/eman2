@@ -1653,7 +1653,13 @@ def prepare_refrings( volft, kb, nz = -1, delta = 2.0, ref_a = "P", sym = "c1", 
 			ref_angles = even_angles(delta, theta1 = initial_theta, phi1 = initial_phi, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
 		else:
 			if initial_theta is None:
-				ref_angles = even_angles(delta, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
+				if(sym[:1] == "c" or sym[:1] == "d"):
+					ref_angles = even_angles(delta, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
+				else:
+					from fundamentals import symclass
+					psp = symclass(sym)
+					ref_angles = psp.even_angles(delta)
+					del psp
 			else:
 				if delta_theta is None: delta_theta = 1.0
 				ref_angles = even_angles(delta, theta1 = initial_theta, theta2 = delta_theta, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)

@@ -7,10 +7,14 @@ source:
 
 requirements:
     {% set reqs_common = [
+            "cmake",
+            "szip",        # [win]
+            "msinttypes",  # [win]
             "python 2.7.*",
             "boost 1.61.*",
             "fftw-mpi",
-            "numpy",
+            "numpy x.x",  # [linux]
+            "numpy",      # [not linux]
             "ftgl",
             "freetype",
             "gsl",
@@ -19,13 +23,17 @@ requirements:
             "libtiff",
             "libpng",
             "zlib",
+            "matplotlib",
+            "ipython",
+            "pyqt 4.*",
+            "pyopengl 3.1.0",
+            "theano",
+            "scikit-learn",
+            "bsddb",       # [not win]
+            "pydusa",      # [not win]
     ] %}
     
     build:
-        - cmake
-        - szip  # [win]
-        - msinttypes  # [win]
-        
         {% for req in reqs_common %}
         - {{ req }}
         {% endfor %}
@@ -34,18 +42,10 @@ requirements:
         {% for req in reqs_common %}
         - {{ req }}
         {% endfor %}
-        
-        - szip  # [win]
-        - bsddb  # [not win]
-        - matplotlib
-        - ipython
-        - pyqt 4.*
-        - pyopengl 3.1.0
-        - theano
-        - scikit-learn
-        - pydusa  # [not win]
 
 test:
+  requires:
+    - openmpi              # [not win]
   imports:
     - mpi                  # [not win]
     - EMAN2

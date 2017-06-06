@@ -2,7 +2,7 @@
 
 '''
 ====================
-Author: Jesus Galaz - 2011, Last update: Oct/2016
+Author: Jesus Galaz - 2011, Last update: May/2017
 ====================
 
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -63,7 +63,7 @@ def main():
 	parser.add_argument("--parallel",type=str,default='thread:1',help="""Default=thread:1. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel""")
 	parser.add_argument("--ppid", type=int, default=-1, help="Set the PID of the parent process, used for cross platform PPID")
 	parser.add_argument("--preferredside",action='store_true',default=False,help='''Default=False. If supplied, this option will cause the distribution of orientations to be biased towards alt=90. Works in conjuction with --preferredtop, in which case half of the particles will be biased towards 'top' view orientations and half towards 'side' view orientations.''')
-	parser.add_argument("--preferredtop",action='store_true',default=False,help='''Default=False. If supplied, this option will cause the distribution of orientations to be biased towards alt=180. Works in conjuction with --preferredside, in which case half of the particles will be biased towards 'top' view orientations and half towards 'side' view orientations.''')
+	parser.add_argument("--preferredtop",action='store_true',default=False,help='''Default=False. If supplied, this option will cause the distribution of orientations to be biased towards alt=180 and alt=0. Works in conjuction with --preferredside, in which case half of the particles will be biased towards 'top' view orientations and half towards 'side' view orientations.''')
 
 	parser.add_argument("--randstack",type=str,default='',help="If you already have a stack of particles (presumably in random orientations) you can supply it here.")
 	parser.add_argument("--reconstructor", type=str,default="fourier",help="""The reconstructor to use to reconstruct the tilt series into a tomogram. Type 'e2help.py reconstructors' at the command line to see all options and parameters available. To specify the interpolation scheme for the fourier reconstruction, specify 'mode'. Options are 'nearest_neighbor', 'gauss_2', 'gauss_3', 'gauss_5', 'gauss_5_slow', 'gypergeom_5', 'experimental'. For example --reconstructor=fourier:mode=gauss_5 """)																				
@@ -413,7 +413,9 @@ def randomizer(options, model, tag):
 
 		print "\nGenerating random orientation within asymmetric unit %s" %(options.sym)
 		sym = Symmetries.get( options.sym )
-		#orients = sym.gen_orientations("eman",{"n": options.nptcls,"phitoo";1,"inc_mirror";1})
+		
+		#orients = sym.gen_orientations("eman",{"n": options.nptcls,"random_phi":1,"inc_mirror":1})
+		
 		orients = sym.gen_orientations("rand",{"n": options.nptcls,"phitoo":1,"inc_mirror":1})
 
 		ii=1	#start at index 1 since the first particle's orientation is not randomized
@@ -422,36 +424,45 @@ def randomizer(options, model, tag):
 			ii+=1
 
 		if options.preferredtop and not options.preferredside:
-			paltstop = preferredalt( options, mu=180,sigma=45, nptcls=options.nptcls ) 
-			palts = paltstop
+			#paltstop = preferredalt( options, mu=180,sigma=45, nptcls=options.nptcls )
+			ntop = int(round(options.nptcls/2.0))
+			nbottom = options.nptcls -ntop 
+			#palts = paltstop
+			palts = numpy.append( preferredalt( options, mu=180,sigma=45, nptcls=ntop ), preferredalt( options, mu=0,sigma=45, nptcls=nbottom ) )
+			print "\nreturned palts",palts
 		
 		if options.preferredside and not options.preferredtop:
-			paltsside = preferredalt( options, mu=90, sigma=45, nptcls=options.nptcls ) 
+			paltsside = preferredalt( options, mu=90, sigma=22.5, nptcls=options.nptcls ) 
 			palts = paltsside
 
 		if options.preferredside and options.preferedtop:
-			ntop = int(round(options.nptcls*options.preferredtop))
-			nside = options.nptcls -ntop  	
-			palts = preferredalt( options, mu=180,sigma=45, nptcls=ntop ) + preferredalt( options, mu=90,sigma=45, nptcls=nside )
+			ntop = int(round(options.nptcls/4.0))
+			nbottom = ntop
+			nside = options.nptcls -ntop -nbottom  	
+			palts = numpy.append( preferredalt( options, mu=180,sigma=45, nptcls=ntop ), preferredalt( options, mu=0,sigma=45, nptcls=nbottom ), preferredalt( options, mu=90,sigma=45, nptcls=nside ) )
 
 
-		for i in range( options.nptcls ):
+		palts = numpy.array(palts)
 
-			random_transform = orientations[i]
-											
-			if palts:	#reassign altitude if preferred orientation was specified
-				
-				rots=random_transform.get_rotation()
-				
-				az=rots['az']
-				phi=rots['phi']
-				alt=palts[i]
-				
-				random_transform=Transform({'type':'eman','az':az,'alt':alt,'phi':phi})
-				
-				orientations.update({ i:random_transform })
+		if options.preferredtop or options.preferredside: #reassign altitude if preferred orientation was specified and new altitudes were generated successfully above
 
-	else:
+			if palts.any():	
+
+				for i in range( options.nptcls ):
+
+					random_transform = orientations[i]
+													
+					rots=random_transform.get_rotation()
+					
+					az=rots['az']
+					phi=rots['phi']
+					alt=palts[i]
+					
+					random_transform=Transform({'type':'eman','az':az,'alt':alt,'phi':phi})
+					
+					orientations.update({ i:random_transform })
+
+	elif options.notrandomize:
 		for i in range( options.nptcls ):
 			orientations.update({ i:Transform() })
 
@@ -603,17 +614,43 @@ def randomizer(options, model, tag):
 	return randptcls,randstackname
 
 
-def preferredalt( options, mu=0, sigma=1, nalts=3 ):
-	s = numpy.random.normal(mu, sigma, nalts)
+def preferredalt( options, mu=0, sigma=1, nptcls=3 ):
+	s = numpy.random.normal(mu, sigma, nptcls)
 	return s
 
 
-def plotvals( options, angles, tag ):
+def plotvals( options, vals, tag ):
 	import matplotlib.pyplot as plt
-	count, bins, ignored = plt.hist(angles, 30, normed=True)
-	sigmaangles = numpy.std(angles)
-	meanangles = numpy.mean(angles)
-	plt.plot(bins, 1/(sigmaangles * numpy.sqrt(2 * numpy.pi)) * numpy.exp( - (bins - meanangles)**2 / (2 * sigmaangles**2) ), linewidth=2, color='r')
+
+	sigmavals= numpy.std(vals)
+	meanvals = numpy.mean(vals)
+
+	cuberoot = numpy.power(len(vals),1.0/3.0)
+	width = (3.5*sigmavals)/cuberoot
+	
+	#print "Therefore, according to Scott's normal reference rule, width = (3.5*std)/cuberoot(n), the width of the histogram bins will be", width
+	
+	minvals = min(vals)
+	maxvals = max(vals)
+	
+	#if options.bins:
+	#	calcbins = options.bins
+
+	if 'az' in tag or 'phi' in tag:
+		minvals = 0
+		maxvals = 360
+	elif 'alt' in tag:
+		minvals = 0
+		maxvals = 180
+	elif 'x' in tag or 'y' in tag or 'z' in tag:
+		pass
+
+	calcbins = round( (maxvals - minvals ) / width )
+
+	#count, bins, ignored = plt.hist(vals, 30, normed=True)
+	ignored = plt.hist(vals, calcbins)
+		
+	#plt.plot(bins, 1/(sigmavals * numpy.sqrt(2 * numpy.pi)) * numpy.exp( - (calcbins - meanvals)**2 / (2 * sigmavals**2) ), linewidth=2, color='r')
 
 	plt.title( tag + ' distribution' )
 	plt.ylabel("n")
@@ -621,6 +658,7 @@ def plotvals( options, angles, tag ):
 	
 	plt.savefig(options.path + '/' + tag + '.png')
 	plt.clf()
+
 	return
 
 
