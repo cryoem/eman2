@@ -2387,7 +2387,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 			lina = np.argwhere(xod1 == z)[0]
 			#if( Blockdata["myid"] == 0 ):  
 			#print("  STARTING ",Blockdata["myid"],z,lina)
-			keepf = lina[0]
+			keepf = int(lina[0]) + 1 # if position of the highest is on lina[0] it means we have to keep lina[0] + 1 elements
 			xod1 = xod1[lina]
 			xod2 = xod2[lina]
 
@@ -3084,7 +3084,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 			lina = np.argwhere(xod1 > Tracker["constants"]["expthreshold"])
 			#if( Blockdata["myid"] == 0 ):  print("  STARTING ",np.max(xod1),np.min(xod1),len(lina),lina[-1])
 			lina = lina.reshape(lina.size)
-			keepf = lina[-1]
+			keepf = int(lina[-1]) + 1
 
 			xod1 = xod1[lina]
 			xod2 = xod2[lina]
@@ -3780,7 +3780,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 			#if( Blockdata["myid"] == 0 ):  
 			#print("  STARTING ",Blockdata["myid"],np.max(xod1),np.min(xod1),len(lina),lina[-1])
 			lina = lina.reshape(lina.size)
-			keepf = int(lina[-1])
+			keepf = int(lina[-1]) + 1
 
 			xod1 = xod1[lina]
 			xod2 = xod2[lina]
@@ -4646,7 +4646,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 
 
 						lina = lina.reshape(lina.size)
-						keepf = int(lina[-1])
+						keepf = int(lina[-1]) + 1
 
 						xod1 = xod1[lina]
 						xod2 = xod2[lina]
@@ -6299,7 +6299,8 @@ def main():
 		if( Tracker["constants"]["mask3D"] and (not os.path.exists(Tracker["constants"]["mask3D"]))): ERROR("mask3D file does  not exists ","meridien",1,Blockdata["myid"])
 		if( options.xr/options.ts<1.0 ): ERROR("Incorrect translational searching settings, search range cannot be smaller than translation step ","meridien",1,Blockdata["myid"])
 		if( 2*(Tracker["currentres"] + Tracker["nxstep"]) > Tracker["constants"]["nnxo"] ):
-			ERROR("Image size less than what would follow from the initial resolution provided $d"%Tracker["nxinit"],"sxmeridien",1, Blockdata["myid"])
+			ERROR("Image size less than what would follow from the initial resolution provided %d  %d  %d"%(Tracker["currentres"], Tracker["nxstep"],\
+			 2*(Tracker["currentres"] + Tracker["nxstep"])),"sxmeridien",1, Blockdata["myid"])
 
 		if(Tracker["constants"]["radius"]  < 1):
 			Tracker["constants"]["radius"]  = Tracker["constants"]["nnxo"]//2-2
