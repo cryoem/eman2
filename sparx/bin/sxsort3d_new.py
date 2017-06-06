@@ -15,10 +15,9 @@ from    sparx      import *
 from    EMAN2      import *
 from    numpy      import array
 from    logger     import Logger, BaseLogger_Files
-
 from mpi   	import  *
 from math  	import  *
-from random import *
+from random import  *
 
 import os
 import sys
@@ -272,10 +271,12 @@ def do_EQKmeans_nways_clustering_stable_seeds(workdir, initial_partids, params, 
 	from utilities import read_text_file, wrap_mpi_bcast, write_text_file
 	import copy
 	import shutil
+	from math import sqrt
 	less_than_random_assignment = 0
 	# Iteratively using EQKmeans to split a dataset into clusters of equal size till the number of 
 	# the unaccounted is less than the minimum size of a cluster
 	# input:  initial_partids
+	keepgoing = 1
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		msg = "----->>>do_EQKmeans_nways_clustering<<<------"
@@ -294,10 +295,8 @@ def do_EQKmeans_nways_clustering_stable_seeds(workdir, initial_partids, params, 
 	if Tracker["number_of_groups"]>1: # In case the number of the input particles is small
 		while Tracker["number_of_groups"] >1:
 			Tracker["min_orien_group_size"] = Tracker["number_of_groups"]*Tracker["minimum_ptl_number"]
-			if Blockdata["myid"] == Blockdata["main_node"]: Tracker["partition_list"] = []
-			#else: Tracker["partition_list"] =  0
-			
-			if Blockdata["myid"] == Blockdata["main_node"]:
+			if Blockdata["myid"] == Blockdata["main_node"]: 
+				Tracker["partition_list"] = []
 				Tracker["directory"]  = os.path.join(workdir, "generation%03d"%generation)
 				#cmd="{} {}".format("mkdir",Tracker["directory"])
 				os.mkdir(Tracker["directory"])
@@ -306,27 +305,38 @@ def do_EQKmeans_nways_clustering_stable_seeds(workdir, initial_partids, params, 
 				log_main.add("-------->>> generation       %5d"%generation)
 				log_main.add("number of images per group:  %d"%Tracker["img_per_grp"])
 				log_main.add("the initial number of groups:  %d  number of independent runs:  %d"%(Tracker["number_of_groups"], Tracker["constants"]["indep_runs"]))
-			#else:  Tracker["directory"] = 0
 			else: Tracker = 0
 			Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
 			create_nrandom_lists(partids)
-			if Tracker["constants"]["symmetry"][0:1]=="c" or Tracker["constants"]["symmetry"][0:1]=="d":
-				ptls_in_orien_groups =  get_orien_assignment_mpi(angle_step, partids, params, log_main)
-			else: ptls_in_orien_groups = [range(Tracker["total_stack"])]
+			ptls_in_orien_groups = get_orien_assignment_mpi(angle_step, partids, params, log_main)
 			Tracker["nxinit"] = Tracker["nxinit_refinement"]
-			previous_params   = Tracker["previous_parstack"]
+			previous_params = Tracker["previous_parstack"]
 			partition_score_dict = compute_pairwise_agreement_ratio(Tracker["random_assignment"], Tracker["number_of_groups"])
 			if Blockdata["myid"] == Blockdata["main_node"]:
-				Tracker["output"].append("--->>>ratio of intitial random assignment<<<-----")
-				nscore = 0
+				Tracker["output"].append("--->>>agreement ratio among the %d intitial random assignments<<<-----"%len(Tracker["random_assignment"]))
+				nscore   = 0
+				tmp_sum  = 0.0
+				tmp_sum2 = 0.0
 				for iptp in xrange(len(Tracker["random_assignment"])-1):
 					for jptp in xrange(iptp+1, len(Tracker["random_assignment"])):
 						msg = " %d   %d  % 5.2f"%(partition_score_dict[nscore][0], partition_score_dict[nscore][1], partition_score_dict[nscore][2])
 						Tracker["output"].append(msg)
+						tmp_sum  +=partition_score_dict[nscore][2]
+						tmp_sum2 +=partition_score_dict[nscore][2]*partition_score_dict[nscore][2]
 						nscore +=1
-			#else: Tracker["output"] = 0
-			Tracker = 0
-			#Tracker["output"] = wrap_mpi_bcast(Tracker["output"], Blockdata["main_node"], MPI_COMM_WORLD)
+					tmp_sigma = sqrt(tmp_sum2 - tmp_sum*tmp_sum/(nscore+1.))
+				Tracker["output"].append("---> the theoretial agreement ratio at current conditions: %5.2f "%(1./float(Tracker["number_of_groups"])*100.))
+				nscore = 0
+				for iptp in xrange(len(Tracker["random_assignment"])-1):
+					for jptp in xrange(iptp+1, len(Tracker["random_assignment"])):
+						if abs(partition_score_dict[nscore][2]-1./float(Tracker["number_of_groups"])*100.)> 3.*tmp_sigma:
+							Tracker["output"].append("agreement of random assignment %d and %d is too large, quit"%(iptp, jptp))
+							nscore +=1
+							keepgoing = 0
+				if keepgoing ==1:Tracker["output"].append("------>initial assignments are all reasonably random")
+			else: Tracker = 0
+			keepgoing = bcast_number_to_all(keepgoing, Blockdata["main_node"], MPI_COMM_WORLD)
+			if keepgoing ==0: ERROR("agreement ratio between two initial assignments is out of 3.0 sigma of the theoretial value %f"%(1./float(Tracker["number_of_groups"])*100.), "check_mpi_settings", 1, Blockdata["myid"])
 			Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
 			original_data, norm_per_particle  = read_data_for_sorting(partids, params, previous_params)
 			if Tracker["nosmearing"]:
@@ -478,6 +488,8 @@ def EQKmeans_by_dmatrix_orien_groups(original_data, partids, ptls_in_orien_group
 	total_iter              = 0
 	require_check_setting   = False
 	partial_rec3d           = False
+	best_score              = 100.0
+	best_assignment         = []
 	if Tracker["mask3D"]:
 		mask3D = get_im(Tracker["mask3D"])
 		if mask3D.get_xsize() != Tracker["nxinit"]: mask3D = fdecimate(mask3D, Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"], True, False)
@@ -486,45 +498,11 @@ def EQKmeans_by_dmatrix_orien_groups(original_data, partids, ptls_in_orien_group
 		mask3D = fdecimate(mask3D, Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"], True, False)
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	if( Blockdata["myid"] == Blockdata["main_node"]):
-		msg = "------>>>>EQKmeans_by_dmatrix_orien_groups starts<<<<--------"
+		msg = "------>>>>EQKmeans_by_dmatrix_orien_groups <<<<--------"
 		log.add(msg)
-		msg = "total_stack:  %d"%Tracker["total_stack"]
-		log.add(msg)
-		print(line, msg)
-		msg = "number_of_groups:  %d"%Tracker["number_of_groups"]
-		log.add(msg)
-		print(line, msg)
-		msg = "ctf:  %s"%Tracker["constants"]["CTF"]
-		log.add(msg)
-		print(line, msg)
-		msg = "Currrent directory:  %s"%Tracker["directory"]
-		log.add(msg)
-		print(line, msg)
-		msg = "nxinit:   %d"%Tracker["nxinit"]
-		log.add(msg)
-		print(line, msg)
-		msg = "Symmetry group:  %s"%Tracker["constants"]["symmetry"] 
-		log.add(msg)
-		print(line, msg)
-		msg = "The total number of iterations:  %d"%iter_max
-		log.add(msg)
-		print(line, msg)
-		msg = "The stop criterion:  %f"%stopercnt
-		log.add(msg)
-		print(line, msg)
-		msg = "Number of orien groups:  %d"%len(ptls_in_orien_groups)
-		log.add(msg)
-		print(line, msg)
-		msg = "3-D mask:  %s"%Tracker["mask3D"]
-		log.add(msg)
-		print(line, msg)
-		msg = "focus:  %s"%Tracker["focus3D"]
-		log.add(msg)
-		print(line, msg)
-		msg = "Rec3d interpolation: %s"%Tracker["constants"]["interpolation"]
-		log.add(msg)
-		print(line, msg)
-		msg = "Comparison method: %s"%Tracker["constants"]["comparison_method"]
+		msg = "total_stack:  %d number_of_groups: %d  nxinit: %d  CTF:  %s  Symmetry group:  %s iter_max: %d stop percentage: %f  3-D mask: %s focus mask: %s  Comparison method: %s"% \
+		   (Tracker["total_stack"], Tracker["number_of_groups"], Tracker["nxinit"],  Tracker["constants"]["CTF"], \
+		    Tracker["constants"]["symmetry"], iter_max, stopercnt, Tracker["mask3D"], Tracker["focus3D"], Tracker["constants"]["comparison_method"])
 		log.add(msg)
 		print(line, msg)
 		lpartids = read_text_file(partids, -1)
@@ -547,11 +525,7 @@ def EQKmeans_by_dmatrix_orien_groups(original_data, partids, ptls_in_orien_group
 		iter = 0
 		while iter <iter_max:
 			if(Blockdata["myid"] == Blockdata["main_node"]):
-				msg = "Iteration   %d"%total_iter
-				log.add(msg)
-				msg = "particles changes assignment  %f, and current stop criterion is  %f, current image size %d"%(changed_nptls, stopercnt, Tracker["nxinit"])
-				log.add(msg)
-				msg = "assignment length  %d"%len(iter_assignment)
+				msg = "Iteration %d particles changes assignment  %f, and current stop criterion is  %f, current image size %d"%(total_iter, changed_nptls, stopercnt, Tracker["nxinit"])
 				log.add(msg)
 				write_text_file(iter_assignment, os.path.join(Tracker["directory"], "assignment%03d.txt"%total_iter))
 			if changed_nptls<50.0: partial_rec3d = True
@@ -620,37 +594,33 @@ def EQKmeans_by_dmatrix_orien_groups(original_data, partids, ptls_in_orien_group
 			iter_assignment = wrap_mpi_bcast(iter_assignment, Blockdata["main_node"], MPI_COMM_WORLD)
 			ratio, newindices, stable_clusters = compare_two_iterations(iter_assignment, last_iter_assignment, number_of_groups)
 			changed_nptls = 100.-ratio*100.
+			if best_score >= changed_nptls:
+				best_score = changed_nptls
+				best_assignment = copy.copy(iter_assignment)
 			if changed_nptls < stopercnt and total_iter <=10:stopercnt = changed_nptls/2. # reduce stop criterion to gain improvement in clustering
 			stopercnt = max(stopercnt, Tracker["constants"]["stop_eqkmeans_percentage"]) # But not exceed the specified number
 			iter +=1
 			total_iter +=1
-			if Blockdata["myid"] == Blockdata["main_node"]:
-				msg ="compared to the last iteration"
-				log.add(msg)
-				for igrp in xrange(len(newindices)):
-					msg= "iter  %d  group  %d  matches iter %d  group %d "%(total_iter, \
-					newindices[igrp][0], total_iter-1, newindices[igrp][1])
-					log.add(msg)
-			mpi_barrier(MPI_COMM_WORLD)
 			if changed_nptls < stopercnt: break
 		if changed_nptls<stopercnt: break
 	#Finalize
-	update_data_assignment(cdata, srdata, iter_assignment, proc_list, Tracker["nosmearing"], Blockdata["myid"])
+	update_data_assignment(cdata, srdata, best_assignment, proc_list, Tracker["nosmearing"], Blockdata["myid"])
 	res_sort3d = get_sorting_all_params(cdata)
 	del cdata
 	del srdata
 	del iter_assignment
 	del peaks
 	del last_iter_assignment
+	del best_assignment
 	if mask3D: del mask3D
-	if changed_nptls > 15.0: require_check_setting = True
+	if best_score > 15.0: require_check_setting = True
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		if changed_nptls > Tracker["constants"]["stop_eqkmeans_percentage"]: 
-			msg ="EQKmeans premature stop with changed particles ratio %f and image size %d"%(changed_nptls,Tracker["nxinit"])
+		if best_score > Tracker["constants"]["stop_eqkmeans_percentage"]: 
+			msg ="EQKmeans premature stop with changed particles ratio %f and image size %d"%(best_score,Tracker["nxinit"])
 			premature  = 1
 		else: msg = "EQKmeans mature stop with changed particles ratio %f within %d iterations and actually used stop percentage is %f"%(\
-		        changed_nptls, total_iter, stopercnt)
+		        best_score, total_iter, stopercnt)
 		print(line, msg)
 		log.add(msg)
 		Tracker["partition"], ali3d_params_list = parsing_sorting_params(partids, res_sort3d)
@@ -1145,7 +1115,7 @@ def read_data_for_sorting(partids, partstack, previous_partstack):
 		groupids   = 0
 	lpartids = wrap_mpi_bcast(lpartids, Blockdata["main_node"])
 	groupids = wrap_mpi_bcast(groupids, Blockdata["main_node"])
-	Tracker["total_stack"]  = len(lpartids)
+	Tracker["total_stack"] = len(lpartids)
 	if(Blockdata["myid"] == Blockdata["main_node"]): partstack = read_text_row(partstack)
 	else:  partstack = 0
 	partstack = wrap_mpi_bcast(partstack, Blockdata["main_node"])
@@ -1674,16 +1644,19 @@ def create_nrandom_lists(partids):
 def compute_pairwise_agreement_ratio(plist, number_of_groups):
 	lnum = len(plist)
 	ptp  = []
-	for ip in xrange(lnum): 
-		ptp.append(convertasi(plist[ip], number_of_groups))
+	for ip in xrange(lnum):
+		tmp_asi = []
+		for ia in xrange(len(plist[ip])):tmp_asi.append(plist[ip][ia][0])
+		ptp.append(convertasi(tmp_asi, number_of_groups))
 	res_dict = {}
-	nc       = 0
+	nc = 0
 	for ip in xrange(lnum - 1):
 		for jp in xrange(ip + 1, lnum):
-			newindeces, list_stable, nb_tot_objs, patch_elements = patch_to_do_k_means_match_clusters_asg_new(ptp[ip], ptp[jp])
+			newindeces, list_stable, nb_tot_objs = k_means_match_clusters_asg_new(ptp[ip], ptp[jp])
 			tt = 0.0
-			for a in list_stable:tt +=len(a)
-			ratio_accounted = tt/float(len(plist[ip]))*100.
+			for km in xrange(len(list_stable)):
+				tt +=len(list_stable[km])
+			ratio_accounted = float(tt)/float(len(plist[ip]))*100.
 			res_dict[nc] = [ip, jp, ratio_accounted]
 			nc+=1
 	return res_dict
@@ -2168,15 +2141,6 @@ def get_dist1(vec1, vec2):
 	for icomp in xrange(len(vec1)): sum_dot +=vec1[icomp]*vec2[icomp]
 	return sum_dot
 
-def get_refa_vecs(angle_step, sym, tilt1, tilt2):
-	from utilities import even_angles, getvec
-	refa          = even_angles(angle_step, symmetry = sym, theta1= tilt1,  theta2 = tilt2, method='S', phiEqpsi="Zero")
-	refa_vecs     = []
-	for i in xrange(len(refa)):
-		tmp = getvec(refa[i][0], refa[i][1])
-		refa_vecs.append(tmp)
-	return refa_vecs
-
 def find_neighborhood(refa_vecs, minor_groups):
 	matched_oriens  = [ [None, None] for i in xrange(len(minor_groups))]
 	for iproj in xrange(len(minor_groups)):
@@ -2282,6 +2246,7 @@ def get_orien_assignment_mpi(angle_step, partids, params, log_main):
 	global Tracker, Blockdata
 	from applications import MPI_start_end
 	from utilities    import even_angles, wrap_mpi_recv, wrap_mpi_bcast, wrap_mpi_send, read_text_row, read_text_file, getvec
+	sym_class = Blockdata["symclass"]
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		msg = " Generate sampling orientations for EQKmeans with step %f   theta1  %f  theta2  %f"%(Tracker["angle_step"], Tracker["tilt1"], Tracker["tilt2"])
 		log_main.add(msg)
@@ -2292,7 +2257,7 @@ def get_orien_assignment_mpi(angle_step, partids, params, log_main):
 	else:  orien_group_assignment = 0
 	#refa = even_angles(angle_step, symmetry = Tracker["constants"]["symmetry"], \
 	#     theta1 = Tracker["tilt1"], theta2 = Tracker["tilt2"], method='S', phiEqpsi="Zero")
-	refa = Blockdata["symclass"].even_angles(angle_step, theta1 = Tracker["tilt1"], theta2 = Tracker["tilt2"])
+	refa = sym_class.even_angles(angle_step, theta1 = Tracker["tilt1"], theta2 = Tracker["tilt2"])
 	#print(refa)
 	refa_vecs = []
 	for i in xrange(len(refa)):
@@ -2351,8 +2316,28 @@ def get_orien_assignment_mpi(angle_step, partids, params, log_main):
 	del local_orien_group_assignment
 	del data_angles
 	del orien_group_assignment
+	del sym_class
 	return ptls_in_orien_groups
-
+###
+def get_angle_step_from_number_of_orien_groups():
+	global Tracker, Blockdata
+	from string import atof
+	sym_class = Blockdata["symclass"]
+	if Tracker["constants"]["symmetry"][0:1]=="c" or Tracker["constants"]["symmetry"][0:1]=="d": angle_step = 360./atof(Tracker["constants"]["symmetry"][1:])/float(Tracker["orien_groups"])
+	else: angle_step = 15.
+	a    = sym_class.even_angles(angle_step)
+	nc   = 1
+	step = 1
+	while abs(len(a) - Tracker["orien_groups"]) >step:
+		if len(a)>Tracker["orien_groups"]: angle_step +=1.
+		else: angle_step -=1
+		a = sym_class.even_angles(angle_step)
+		nc +=1
+		if nc > 360 and nc%360 ==0: step +=1
+	Tracker["angle_step"] = angle_step
+	del sym_class
+	return
+	
 def compare_two_iterations(assignment1, assignment2, number_of_groups):
 	# compare two assignments during clustering, either iteratively or independently
 	import numpy as np
@@ -3211,9 +3196,9 @@ def get_input_from_sparx_ref3d(log_main):# case one
 	for index_of_element in xrange(len(chunk_two)): 
 		chunk_dict[chunk_two[index_of_element]] = 1
 		group_dict[chunk_two[index_of_element]] = chunk_two_group[index_of_element] 			
-	Tracker["chunk_dict"] 	= chunk_dict
-	Tracker["P_chunk_0"]   	= len(chunk_one)/float(total_stack)
-	Tracker["P_chunk_1"]   	= len(chunk_two)/float(total_stack)
+	Tracker["chunk_dict"] = chunk_dict
+	Tracker["P_chunk_0"]  = len(chunk_one)/float(total_stack)
+	Tracker["P_chunk_1"]  = len(chunk_two)/float(total_stack)
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		chunk_ids = []
 		group_ids = []
@@ -5276,7 +5261,7 @@ def main():
 	parser.add_option("--comparison_method",               type   ="string",        default ='cross',                  help="option for comparing two images, either using cross-correlaton coefficients [cross] or using Euclidean distance [eucd] ")
 	parser.add_option("--memory_per_node",                 type   ="float",         default =-1.0,                     help="memory_per_node, the number used for evaluate the CPUs/NODE settings given by user")
 	parser.add_option("--nofinal_sharpen",                 action ="store_true",    default =False,                    help="not reconstruct unfiltered final maps for post refinement process")
-	parser.add_option("--eqkmeans_angle_step",             type   ="float",         default =15.,                      help="smapling anglular step used for EQKmeans orientation constraints")
+	parser.add_option("--orien_groups",                    type   ="int",           default =50.,                      help="number of sampling angular groups used for EQKmeans orientation constraints")
 	parser.add_option("--post_sorting_sharpen",            action ="store_true",    default =False,                    help="make odd and even unfiltered maps per cluster")
 	parser.add_option("--stop_eqkmeans_percentage",        type   ="float",         default =2.0,                      help="particle change percentage for stopping equal size Kmeans")
 	parser.add_option("--minimum_ptl_number",              type   ="int",           default =20,					   help="integer number, the smallest orien group size equals number_of_groups multiplies this number")
@@ -5300,7 +5285,7 @@ def main():
 		if not os.path.exists(options.focus): ERROR("The specified focus mask file does not exist", "sort3d", 1, Blockdata["myid"])
 	if options.mask3D !='':
 		if not os.path.exists(options.mask3D): ERROR("The specified mask3D file does not exist", "sort3d", 1, Blockdata["myid"])
-	if options.img_per_grp <= options.minimum_grp_size:ERROR("img_per_grp should be way larger than minimum_grp_size", "sort3d", 1, Blockdata["myid"])
+	if options.img_per_grp <= options.minimum_grp_size: ERROR("img_per_grp should be way larger than minimum_grp_size", "sort3d", 1, Blockdata["myid"])
 	
 	#--- Fill input parameters into dictionary Constants
 	Constants		                         = {}
@@ -5342,33 +5327,34 @@ def main():
 	# -------------------------------------------------------------
 	#
 	# Create and initialize Tracker dictionary with input options  # State Variables	
-	Tracker							               = {}
-	Tracker["constants"]			               = Constants
-	if Tracker["constants"]["mask3D"]:	           Tracker["mask3D"] = Tracker["constants"]["mask3D"]
-	else:								           Tracker["mask3D"] = None
-	Tracker["radius"]						       = Tracker["constants"]["radius"]
-	Tracker["upscale"]						       = Tracker["constants"]["upscale"]
-	Tracker["applyctf"]						       = False  #  Should the data be premultiplied by the CTF.  Set to False for local continuous.
-	Tracker["nxinit"]						       = Tracker["constants"]["nxinit"]
+	Tracker							           = {}
+	Tracker["constants"]			           = Constants
+	if Tracker["constants"]["mask3D"]: Tracker["mask3D"] = Tracker["constants"]["mask3D"]
+	else:							   Tracker["mask3D"] = None
+	Tracker["radius"]						   = Tracker["constants"]["radius"]
+	Tracker["upscale"]						   = Tracker["constants"]["upscale"]
+	Tracker["applyctf"]						   = False  #  Should the data be premultiplied by the CTF.  Set to False for local continuous.
+	Tracker["nxinit"]						   = Tracker["constants"]["nxinit"]
 	if options.notapplybckgnoise: Tracker["applybckgnoise"] = False
 	else: Tracker["applybckgnoise"] = True
 	###<<<--options for advanced users:
 	Tracker["total_sort3d_indepent_run"]	       = 2
-	Tracker["total_number_of_iterations"] 	       = 25
+	Tracker["total_number_of_iterations"] 	       = 36
 	Tracker["total_iter_rsort"]                    = 2
 	Tracker["clean_volumes"]                       = True
 	Tracker["constants"]["total_sort3d_iteration"] = 2
 	### -----------orientation constraints
-	Tracker["angle_step"]            = options.eqkmeans_angle_step # orientation constrained angle step
+	Tracker["orien_groups"]          = options.orien_groups # orientation constrained angle step
 	Tracker["tilt1"]                 =  0.0
 	Tracker["tilt2"]                 = 180.0
+	
 	### ------------<<< option for proteins images that have preferred orientations
 	Tracker["minimum_ptl_number"] = options.minimum_ptl_number  # for orientation groups
 	if Tracker["constants"]["memory_per_node"] ==-1 or Tracker["constants"]["memory_per_node"] <32.: Tracker["constants"]["small_memory"] = True
 	else: Tracker["constants"]["small_memory"] = False
 	## Additional check
-	Tracker["constants"]["hardmask"] =True
-	Tracker["applymask"]             =True
+	Tracker["constants"]["hardmask"] = True
+	Tracker["applymask"]             = True
 	if os.path.exists(options.refinement_dir):
 		Tracker["constants"]["refinement_method"] ="SPARX"
 		Tracker["nosmearing"]                     = False
@@ -5385,10 +5371,11 @@ def main():
 	if os.path.exists(options.refinement_dir) and options.instack !='': ERROR("contractdict refinement methods", "sxsort3d_smearing.py", 1, Blockdata["myid"])
 	Blockdata["fftwmpi"] = True
 	Blockdata["symclass"] = symclass(Tracker["constants"]["symmetry"])
+	get_angle_step_from_number_of_orien_groups()
 	Blockdata["ncpuspernode"] = Blockdata["no_of_processes_per_group"]
 	Blockdata["nsubset"] = Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
 	create_subgroup()
-	Tracker["output"] = ["---->>> Summaries of sort3d <<<-----"]
+	Tracker["output"] = ["---->>> SORT3D <<<-----"]
 	###--------------------------------------------------------------------------------------------
 	#    Two typical sorting scenarios  
 	#
@@ -5733,7 +5720,7 @@ def main():
 			msg = "Summary of two sort3d runs"
 			log_main.add(msg)
 			print(line, msg)
-			msg = "Accounted:    %d    Unaccounted:    %d"%(len(Tracker["accounted_list"]), len(Tracker["unaccounted_list"]))
+			msg = "total data for RSORT:   %d"%(len(Tracker["unaccounted_list"]))
 			log_main.add(msg)
 			print(line, msg)
 			Tracker["output"].append(msg)
@@ -5799,7 +5786,7 @@ def main():
 	# rsort final comparison
 	mpi_barrier(MPI_COMM_WORLD)
 	if(Blockdata["myid"] == Blockdata["main_node"]):
-		Tracker["output"].append("----->>>>Final results<<<<-------")
+		Tracker["output"].append("----->>>>reproducible ratio of two RSORTS<<<<-------")
 		line   = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		tlist  = read_text_file(os.path.join(Tracker["constants"]["masterdir"],"indexes.txt"))
 		ptp    = []
@@ -5828,7 +5815,7 @@ def main():
 			Tracker["number_of_groups"] = len(rsort_clusters)
 	else:   Tracker["number_of_groups"] = 0
 	Tracker["number_of_groups"] = bcast_number_to_all(Tracker["number_of_groups"], Blockdata["main_node"], MPI_COMM_WORLD)
-	### Final Rec3D unfiltered two halves, valid only in case of sorting initiated from sphire refinement 
+	### Final Rec3D unfiltered two halves, valid only in case of sorting initiated from sphire refinement
 	if Tracker["constants"]["final_sharpen"]:
 		Tracker["constants"]["orgres"]				= 0.0
 		Tracker["constants"]["refinement_delta"]	= 0.0
@@ -5840,7 +5827,7 @@ def main():
 		if(Blockdata["myid"] == Blockdata["main_node"]):
 			final_accounted_ptl = 0
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			msg = "---->>> Summaries of final results <<<-----"
+			msg = "---->>> Summaries of the final results <<<-----"
 			print(line, msg)
 			Tracker["output"].append(msg)
 			while os.path.exists(os.path.join(Tracker["constants"]["masterdir"], "Cluster%d.txt"%number_of_groups)):
@@ -5849,13 +5836,15 @@ def main():
 				msg = " %10d clusters  %10d   group size "%(number_of_groups, len(class_in))
 				print(line, msg)
 				Tracker["output"].append(msg)
-				number_of_groups +=1
+				number_of_groups += 1
 				final_accounted_ptl +=len(class_in)
 				del class_in
 			msg = "total number of particle images:  %10d;  accounted:   %10d ;  number_of_groups:   %5d"%(Tracker["constants"]["total_stack"], final_accounted_ptl, number_of_groups)
 			print(line, msg)
 			Tracker["output"].append(msg)
+		else: Tracker["output"] = 0
 		number_of_groups = bcast_number_to_all(number_of_groups, Blockdata["main_node"], MPI_COMM_WORLD)
+		Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
 		if number_of_groups == 0:ERROR("No cluster is found, and the program terminates.", "do_final_maps", 1, Blockdata["myid"])
 		minimum_size = bcast_number_to_all(minimum_size, Blockdata["main_node"], MPI_COMM_WORLD)
 		compute_noise(Tracker["constants"]["nnxo"])
