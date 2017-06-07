@@ -916,11 +916,19 @@ class LeNetConvPoolLayer(object):
 		
 		# downsample each feature map individually, using maxpooling
 		if poolsize>1:
-			self.pooled_out = pool.pool_2d(
-				input=conv_out,
-				ws=self.poolsize,
-				ignore_border=True
-			)
+			try:
+				self.pooled_out = pool.pool_2d(
+					input=conv_out,
+					ws=self.poolsize,
+					ignore_border=True
+				)
+			except:
+				
+				self.pooled_out = pool.pool_2d(
+					input=conv_out,
+					ds=self.poolsize,
+					ignore_border=True
+				)
 		else:
 			self.pooled_out=conv_out
 		

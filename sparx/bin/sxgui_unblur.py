@@ -20,9 +20,11 @@ from PyQt4.QtCore import Qt
 from matplotlib import pylab
 try:
     from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvasQTAgg
-    from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as NavigationToolbar2QTAgg
 except ImportError:
     from matplotlib.backends.backend_qt4agg import FigureCanvasQT as FigureCanvasQTAgg
+try:
+    from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as NavigationToolbar2QTAgg
+except ImportError:
     from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar2QTAgg
 import os
 import sys
@@ -2551,7 +2553,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                 if self.varAnalyzeOne:
                     intBins = 3
                 else:
-                    intBins = self.lsFiles.count() / 3
+                    intBins = int(self.lsFiles.count() / 3)
                 arrBins = numpy.linspace(
                     numpy.min(self.arrData[strName]),
                     numpy.max(self.arrData[strName]) + 0.0001,
@@ -2608,7 +2610,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         if self.varAnalyzeOne:
             intBins = 3
         else:
-            intBins = self.lsFiles.count() / 3
+            intBins = int(self.lsFiles.count() / 3)
 
         # Special case, if there is no angle available
         if self.idxFirstFrame == self.idxLastFrame - 1 and \
@@ -2983,7 +2985,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
 
         # Set the file names for faster search and select this files
         setFileNames = set(arrBetweenThres[self.dFile])
-        for index in xrange(self.lsFiles.count()):
+        for index in xrange(int(self.lsFiles.count())):
             if str(self.lsFiles.item(index).text()) in setFileNames:
                 self.lsFiles.item(index).setCheckState(Qt.Checked)
             else:
@@ -3264,7 +3266,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         """Invert Selection"""
 
         # Invert the selection and save the current selection state
-        for index in xrange(self.lsFiles.count()):
+        for index in xrange(int(self.lsFiles.count())):
             if self.lsFiles.item(index).checkState() == Qt.Checked:
                 self.lsFiles.item(index).setCheckState(Qt.Unchecked)
             else:
@@ -3330,9 +3332,9 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             arrX = numpy.linspace(1, self.intFrames - 1, self.intFrames - 1)
             arrY = numpy.zeros(self.intFrames - 1)
             for number in arrX:
-                arrY[number - 1] = \
+                arrY[int(number - 1)] = \
                     numpy.sum(self.arrData['frame{:d}'.format(int(number))]) / \
-                    self.lsFiles.count()
+                    int(self.lsFiles.count())
             strTitle = r'Average drift per Frame'
             strXLabel = r'Frame'
             strYLabel = r'Average Drift / Angstrom'
@@ -3432,7 +3434,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         # Fill the lists with current entrys
         listChecked = []
         listUnchecked = []
-        for index in xrange(self.lsFiles.count()):
+        for index in xrange(int(self.lsFiles.count())):
             if self.lsFiles.item(index).checkState() == Qt.Checked:
                 listChecked.append(str(self.lsFiles.item(index).text()))
             else:
@@ -3611,7 +3613,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                         )
                     f.write(
                         '{:s}\n'.format(
-                            arrCurrentEntry[self.dFileRaw][0]
+                            os.path.relpath(arrCurrentEntry[self.dFileRaw][0])
                             )
                         )
 
@@ -3632,7 +3634,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                         )
                     f.write(
                         '{:s}\n'.format(
-                            arrCurrentEntry[self.dFileRaw][0]
+                            os.path.relpath(arrCurrentEntry[self.dFileRaw][0])
                             )
                         )
 
@@ -3772,10 +3774,14 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             assert(strLoadName != '')
 
         # Reset variables
+        self._disconnect_events()
         self._set_variables()
+        self._connect_events()
 
         try:
             arrThresh, arrGeneral = self._load_settings_new(strLoadName=strLoadName)
+        except TypeError:
+            arrThresh, arrGeneral = self._load_settings_old_v2(strLoadName=strLoadName)
         except IndexError:
             print('Detected old settings file! Save the settings now again to convert it to the latest version.')
             arrThresh, arrGeneral = self._load_settings_old_v1(strLoadName=strLoadName)
@@ -3793,6 +3799,9 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             else:
                 newItem.setCheckState(Qt.Unchecked)
             self.lsFiles.addItem(newItem)
+
+        # Refresh GUI representation
+        self._refresh_calculations(goon=True)
 
         for row in arrThresh:
             listElement = []
@@ -3836,15 +3845,200 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         self.leStopGeneral.setText(arrGeneral[1])
         self._save_selection()
 
-        # Refresh calculations
-        self._refresh_calculations(goon=True)
-
         # Enable everything and color all black
         self._default_color()
         self._enable_all()
 
 
     def _load_settings_new(self, strLoadName):
+        """Load the settings in the new way"""
+
+        separate_list = []
+        idxFrames = 0
+        idxDType = 1
+        idxArray = 2
+        idxChecked = 3
+        idxUnchecked = 4
+        idxCoordX = 5
+        idxCoordY = 6
+        idxFrame = 7
+        idxAngles = 8
+        idxTranslate = 9
+        idxThresh = 10
+        idxGeneral = 11
+        idxMicNumber = 12
+        idxEnd = 13
+        with open(strLoadName, 'r') as f:
+            # Append line of keywords
+            for linenumber, line in enumerate(f):
+                if line == '# Frames\n' or line == '# DType\n' or \
+                        line == '# Array\n' or line == '# Checked\n' or  \
+                        line == '# Unchecked\n' or line == '# listCoordX\n' or \
+                        line == '# listCoordY\n' or line == '# listFrames\n' or \
+                        line == '# listAngles\n' or line == '# dictTranslate\n' or \
+                        line == '# dictThresh\n' or line == '# General\n' or \
+                        line == '# MicNumber\n' or line == '# End\n':
+                    separate_list.append(linenumber)
+
+        # Fill frame widgets
+        end = separate_list[idxEnd] - separate_list[idxDType] + 1
+        self.idxFirstFrame, self.idxLastFrame, self.intFrames = numpy.genfromtxt(
+            strLoadName,
+            skip_header=separate_list[idxFrames] + 1, skip_footer=end,
+            comments='$', dtype='<i8'
+            )
+        self.leFrameStart.setText('{:d}'.format(self.idxFirstFrame))
+        self.leFrameStop.setText('{:d}'.format(self.idxLastFrame))
+
+        # Get Dtype
+        end = separate_list[idxEnd] - separate_list[idxArray] + 1
+        arrName, arrType = numpy.genfromtxt(
+            strLoadName,
+            skip_header=separate_list[idxDType] + 1,
+            skip_footer=end, comments='$',
+            dtype=None, unpack=True
+            )
+
+        self.listDType = []
+        for name, dtype in zip(arrName, arrType):
+            self.listDType.append((name, dtype))
+
+        # Load data array
+        end = separate_list[idxEnd] - separate_list[idxChecked] + 1
+        self.arrData = numpy.genfromtxt(
+            strLoadName,
+            skip_header=separate_list[idxArray] + 1,
+            skip_footer=end, comments='$',
+            dtype=self.listDType
+            )
+        self.arrData = numpy.atleast_1d(self.arrData)
+
+        # Load checked list
+        end = separate_list[idxEnd] - separate_list[idxUnchecked] + 1
+        loaded_data = numpy.genfromtxt(
+            strLoadName,
+            skip_header=separate_list[idxChecked] + 1,
+            skip_footer=end, comments='$',
+            dtype=None
+            )
+        if len(numpy.shape(loaded_data)) == 0:
+            self.listChecked = [str(loaded_data)]
+        else:
+            self.listChecked = list(loaded_data)
+
+        if self.listChecked[0] == 'No':
+            self.listChecked = []
+
+        # Load unchecked list
+        end = separate_list[idxEnd] - separate_list[idxCoordX] + 1
+        loaded_data = numpy.genfromtxt(
+            strLoadName,
+            skip_header=separate_list[idxUnchecked] + 1,
+            skip_footer=end, comments='$',
+            dtype=None
+            )
+        if len(numpy.shape(loaded_data)) == 0:
+            self.listUnchecked = [str(loaded_data)]
+        else:
+            self.listUnchecked = list(loaded_data)
+
+        if self.listUnchecked[0] == 'No':
+            self.listUnchecked = []
+
+        # Load coord x list
+        end = separate_list[idxEnd] - separate_list[idxCoordY] + 1
+        self.listCoordX = list(numpy.genfromtxt(
+            strLoadName,
+            skip_header=separate_list[idxCoordX] + 1,
+            skip_footer=end, comments='$',
+            dtype=None
+            ))
+
+        # Load coord y list
+        end = separate_list[idxEnd] - separate_list[idxFrame] + 1
+        self.listCoordY = list(numpy.genfromtxt(
+            strLoadName,
+            skip_header=separate_list[idxCoordY] + 1,
+            skip_footer=end, comments='$',
+            dtype=None
+            ))
+
+        # Load frame list
+        end = separate_list[idxEnd] - separate_list[idxAngles] + 1
+        self.listFrames = list(numpy.genfromtxt(
+            strLoadName,
+            skip_header=separate_list[idxFrame] + 1,
+            skip_footer=end, comments='$',
+            dtype=None
+            ))
+
+        # Load angle list
+        end = separate_list[idxEnd] - separate_list[idxTranslate] + 1
+        self.listAngles = list(numpy.genfromtxt(
+            strLoadName,
+            skip_header=separate_list[idxAngles] + 1,
+            skip_footer=end, comments='$',
+            dtype=None
+            ))
+
+        # Load Translate dictionary
+        end = separate_list[idxEnd] - separate_list[idxThresh] + 1
+        arrNames, arrNumber, arrTrans = list(numpy.genfromtxt(
+            strLoadName,
+            skip_header=separate_list[idxTranslate] + 1,
+            skip_footer=end, comments='$',
+            dtype=None, unpack=True
+            ))
+
+        for name, number, trans in zip(arrNames, arrNumber, arrTrans):
+            if name != self.modeOverall:
+                self.dictTranslate.update({'{0} {1}'.format(name, number): trans})
+            else:
+                self.dictTranslate.update({name: trans})
+
+        # Load Thresh dictionary
+        end = separate_list[idxEnd] - separate_list[idxGeneral] + 1
+        arrThresh = list(numpy.genfromtxt(
+            strLoadName,
+            skip_header=separate_list[idxThresh] + 1,
+            skip_footer=end, comments='$',
+            dtype=None
+            ))
+
+        # Load general settings
+        end = separate_list[idxEnd] - separate_list[idxMicNumber] + 1
+        arrGeneral = list(numpy.genfromtxt(
+            strLoadName,
+            skip_header=separate_list[idxGeneral] + 1,
+            skip_footer=end, comments='$',
+            dtype=None
+            ))
+
+        # Load MicNumber settings
+        end = separate_list[idxEnd] - separate_list[idxEnd] + 1
+        loaded_data = numpy.genfromtxt(
+            strLoadName,
+            skip_header=separate_list[idxMicNumber] + 1,
+            skip_footer=end, comments='$',
+            dtype=None
+            )
+        if len(numpy.shape(loaded_data)) == 0:
+            self.arrMicNumber = [str(loaded_data)]
+        else:
+            self.arrMicNumber = list(loaded_data)
+
+        # Check if there are less than 5
+        if len(self.arrMicNumber) <= 5:
+            self.varAnalyzeOne = True
+            print(
+                '\nWarning: !!!! Only few shift files selected, ' +
+                'so plots of all micrographs could not work as expected. !!!!\n'
+                )
+
+        return arrThresh, arrGeneral
+
+
+    def _load_settings_old_v2(self, strLoadName):
         """Load the settings in the new way"""
 
         separate_list = []
