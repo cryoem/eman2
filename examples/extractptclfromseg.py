@@ -54,7 +54,14 @@ def main():
 			pks=[]
 			for i in range(nn):
 				e=EMData(tomoname, i, True)
-				pks.append(e["box"])
+				try:
+					if e.has_attr("ptcl_source_coord"):
+						pks.append(e["ptcl_source_coord"])
+					elif e.has_attr("box"):
+						pks.append(e["box"])
+					else:
+						print "Cannot find coordinates from header.. exit."
+						return
 			pks=np.array(pks)*shrink
 			
 		else:
