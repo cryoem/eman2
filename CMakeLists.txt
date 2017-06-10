@@ -33,6 +33,10 @@ if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" OR ENABLE_CONDA)
 		find_path(CONDA_PREFIX conda
 					 PATHS ENV PATH
 				 )
+		if(NOT CONDA_PREFIX)
+			message(FATAL_ERROR "\nNo conda environment found in PATH!\nPATH=$ENV{PATH}")
+		endif()
+
 		get_filename_component(CONDA_PREFIX ${CONDA_PREFIX}/.. ABSOLUTE)
 
 		execute_process(COMMAND ${CONDA_PREFIX}/bin/python -c "import site; print site.getsitepackages()[0]"
