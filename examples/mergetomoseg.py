@@ -53,8 +53,8 @@ def main():
 	
 	e=from_numpy(mm.copy())
 	e["apix_x"]=e["apix_y"]=e["apix_z"]=apix
-	print lbs
-	e["labels"]=[1,2,3]
+	
+	e["labels"]=lbs
 	
 	e.write_image(options.output)
 
