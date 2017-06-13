@@ -25,16 +25,25 @@ def main():
 	
 	imgs=[]
 	shp=[]
-	for a in args:
+	lbs=[]
+	apix=1
+	for ii,a in enumerate(args):
 		e=EMData(a)
+		
 		m=e.numpy().copy()
 		if len(shp)==0:
 			shp=m.shape
+			apix=e["apix_x"]
 		else:
 			if shp!=m.shape:
 				print "Error: Shape of the input files does not match ({} and {}). Exit.".format(shp, m.shape)
 				return
 		imgs.append(m)
+		try:
+			lbs.append(e["nnet_src"])
+			print "{} : {}".format(ii+1, e["nnet_src"])
+		except: 
+			lbs.append(a)
 		
 	
 	m0=np.zeros_like(imgs[0])+options.thr
@@ -43,6 +52,10 @@ def main():
 	mm=np.argmax(np.array(imgs), 0)
 	
 	e=from_numpy(mm.copy())
+	e["apix_x"]=e["apix_y"]=e["apix_z"]=apix
+	print lbs
+	e["labels"]=[1,2,3]
+	
 	e.write_image(options.output)
 
 	E2end(logid)

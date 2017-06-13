@@ -11,10 +11,10 @@ import shutil
 
 def main():
 	
-	usage="Generate training set for tomogram segmentation. This program is still experimental. Please consult the developers before using. "
-	print usage
+	usage="Generate training set for tomogram segmentation. Please run this program from the GUI in e2projectmanager.py."
+	#print usage
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_header(name="tmpheader", help='temp label', title="### This program is NOT avaliable yet... ###", row=0, col=0, rowspan=1, colspan=2, mode="box,seg,set")
+	#parser.add_header(name="tmpheader", help='temp label', title="### This program is NOT avaliable yet... ###", row=0, col=0, rowspan=1, colspan=2, mode="box,seg,set")
 	#### boxing ####
 	parser.add_argument("--boxing",action="store_true",help="Boxing particles.",default=False, guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode='box[True]')
 	parser.add_pos_argument(name="micrographs",help="List the file to process with e2boxer here.", default="", guitype='filebox', browser="EMRawDataTable(withmodal=True,startpath=\"rawtomograms\")",  row=1, col=0,rowspan=1, colspan=3, mode="box")
