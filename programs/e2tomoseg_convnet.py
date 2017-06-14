@@ -20,10 +20,10 @@ def import_theano():
 
 def main():
 
-	usage="""Segment a tomograph using convolutional neural network. This program is still experimental. Please consult the developers before using."""
-	print usage
+	usage="""Segment a tomograph using convolutional neural network. Please run this program from the GUI in e2projectmanager.py."""
+	#print usage
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_header(name="tmpheader", help='temp label', title="### This program is NOT avaliable yet... ###", row=0, col=0, rowspan=1, colspan=2, mode="train,test")
+	#parser.add_header(name="tmpheader", help='temp label', title="### This program is NOT avaliable yet... ###", row=0, col=0, rowspan=1, colspan=2, mode="train,test")
 	parser.add_argument("--trainset",help="Training set.", default=None, guitype='filebox', browser="EMParticlesTable(withmodal=True)",  row=1, col=0,rowspan=1, colspan=3, mode="train")
 	parser.add_argument("--from_trained", type=str,help="Start from pre-trained neural network", default=None,guitype='filebox',browser="EMBrowserWidget(withmodal=True)", row=2, col=0, rowspan=1, colspan=3, mode="train,test")
 	parser.add_argument("--netout", type=str,help="Output neural net file name", default="nnet_save.hdf",guitype='strbox', row=3, col=0, rowspan=1, colspan=3, mode="train")

@@ -19,6 +19,7 @@ def main():
 	parser.add_argument("--random", type=int,help="randomly seed particles on density above threshold", default=-1)
 	parser.add_argument("--genptcls", type=str,help="generate particles", default=None)
 	parser.add_argument("--genmask", type=str,help="generate mask", default=None)
+	parser.add_argument("--bxcoord", type=str,help="box coordinate file input", default=None)
 	parser.add_argument("--boxsz", type=int,help="box size", default=48)
 	parser.add_argument("--shrink", type=float,help="shrink factor", default=0)
 	parser.add_argument("--zthick", type=int,help="make projection of this thickness", default=-1)
@@ -45,12 +46,22 @@ def main():
 			
 			
 		nn=EMUtil.get_image_count(tomoname)
-		if nn>1:
+		if options.bxcoord:
+			pks=np.loadtxt(options.bxcoord, dtype=float)
+			pks*=shrink
+		elif nn>1:
 			print "Particle stack? getting coordinates from header.."
 			pks=[]
 			for i in range(nn):
 				e=EMData(tomoname, i, True)
-				pks.append(e["box"])
+				try:
+					if e.has_attr("ptcl_source_coord"):
+						pks.append(e["ptcl_source_coord"])
+					elif e.has_attr("box"):
+						pks.append(e["box"])
+					else:
+						print "Cannot find coordinates from header.. exit."
+						return
 			pks=np.array(pks)*shrink
 			
 		else:

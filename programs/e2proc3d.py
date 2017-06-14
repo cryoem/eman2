@@ -213,8 +213,9 @@ def main():
 				tmp.process_inplace("math.meanshrink",{"n":shrink})
 				out.insert_clip(tmp,(0,y/shrink,z/shrink))
 
-		try: stype=tmp["datatype"]
-		except: stype=EM_FLOAT
+		#try: stype=tmp["datatype"]
+		#except: stype=EM_FLOAT
+		stype=EM_FLOAT
 		print "  %d/%d"%(nz,nz),
 		print "\nWriting in data mode ",file_mode_imap[int(stype)]
 
