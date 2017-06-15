@@ -600,7 +600,6 @@ IF (ENABLE_FTGL)
 		$ENV{HOME}/anaconda2/include/freetype2 
 		/usr/include/freetype2 
 		/usr/include 
-#		$ENV{${upper}DIR}/include
 		${INCLUDE_DIRS}
 		NO_DEFAULT_PATH
 	)
