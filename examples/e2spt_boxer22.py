@@ -963,8 +963,9 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		if box[0]>self.datasize[0]-bs2 : box[0]=self.datasize[0]-bs2
 		if box[1]<bs2 : box[1]=bs2
 		if box[1]>self.datasize[1]-bs2 : box[1]=self.datasize[1]-bs2
-		if box[2]<bs2 : box[2]=bs2
-		if box[2]>self.datasize[2]-bs2 : box[2]=self.datasize[2]-bs2
+		#box[2]=bs2
+		#if box[2]<bs2 : box[2]=bs2
+		#if box[2]>self.datasize[2]-bs2 : box[2]=self.datasize[2]-bs2
 #		print self.boxes
 
 		
