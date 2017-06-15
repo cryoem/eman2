@@ -686,8 +686,6 @@ INCLUDE_DIRECTORIES(.
 	    ${PYTHON_INCLUDE_PATH}
 	    ${FREETYPE_INCLUDE_PATH}
             )
-#            /usr/include/freetype2
-#            /usr/local/include/freetype2
 
 #---------------------------------------------------------------------------------------
 if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD")
