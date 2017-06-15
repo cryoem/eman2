@@ -54,7 +54,7 @@ class EMDrawWindow(QtGui.QMainWindow):
 		self.shape_index = 0
 		self.imgview.shapes = {}
 
-		print("x,y,major,minor,angle")
+		print("imgnum,x,y,major,minor,angle")
 		
 		QtCore.QObject.connect(self.imgview,QtCore.SIGNAL("mouseup"),self.mouseup  )
 		QtCore.QObject.connect(self.imgview,QtCore.SIGNAL("mousemove"),self.mousemv)
@@ -65,7 +65,7 @@ class EMDrawWindow(QtGui.QMainWindow):
 		for i,s in enumerate(self.all_shapes):
 			shp=["ellipse",1,0,0]+s[1:]+[2]+[s[0]]
 			shps[i]=EMShape(shp)
-			
+		
 		shps[len(self.all_shapes)]=EMShape(["ellipse",1,0,0]+self.shape[1:]+[2]+[self.shape[0]])
 		self.imgview.shapes=shps
 		self.imgview.shapechange=1
@@ -82,14 +82,12 @@ class EMDrawWindow(QtGui.QMainWindow):
 		else:
 			a = max(self.shape[3],self.shape[4])
 			b = min(self.shape[3],self.shape[4])
-			print("{},{},{},{},{}".format(self.shape[1],self.shape[2],a,b,self.shape[5]))
+			print("{},{},{},{},{},{}".format(self.imgview.list_idx,self.shape[1],self.shape[2],a,b,self.shape[5]))
 			#self.shape_index += 1
 			if self.options.noupdate:
 				self.all_shapes.append(self.shape)
 			self.state=0
-			#print self.shape
 
-		
 		self.update_view()
 		
 		
