@@ -1298,8 +1298,13 @@ class EMImage2DWidget(EMGLWidget):
 		glPointSize(2)
 		for k,s in self.shapes.items():
 			### handle boxes for 3D images
-			if self.list_data!=None and len(s.shape)==10:
-				z_idx=s[9]
+			if s.shape[0] == "ellipse":
+				mxlen=11
+			else:
+				mxlen=10
+			
+			if self.list_data!=None and len(s.shape)==mxlen:
+				z_idx=s[mxlen-1]
 				if z_idx!=self.list_idx:
 					continue
 			
