@@ -117,12 +117,6 @@ ELSE()
 ENDIF()
 
 
-#MESSAGE (FATAL_ERROR ${CMAKE_SYSTEM} )
-# IF (ENABLE_LEOPARD)
-# 	SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-dylib_file,/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib:/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib")
-# 	SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-dylib_file,/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib:/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib")
-# ENDIF (ENABLE_LEOPARD)
-
 IF (ENABLE_OPTIMIZE_OSX)
 	SET(GL_LIBRARY /System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib)
 	SET(GLU_LIBRARY /System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGLU.dylib)
