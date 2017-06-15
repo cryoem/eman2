@@ -750,6 +750,15 @@ ADD_SUBDIRECTORY(doc)
 ADD_SUBDIRECTORY(images)
 ADD_SUBDIRECTORY(recipes)
 
+if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" OR ENABLE_CONDA)
+	install(CODE "execute_process(
+					COMMAND ${CMAKE_COMMAND} -E create_symlink ${CONDA_PREFIX}/bin/e2version.py ${CONDA_SP_DIR}/e2version.py
+					COMMAND ${CMAKE_COMMAND} -E create_symlink ${CONDA_PREFIX}/bin/sxgui.py     ${CONDA_PREFIX}/bin/sphire
+					COMMAND ${CMAKE_COMMAND} -E create_symlink ${CONDA_PREFIX}/bin/sx.py        ${CONDA_PREFIX}/bin/sparx
+				 )"
+			)
+endif()
+
 ADD_CUSTOM_TARGET( unittest
 	DEPENDS	${TEST_RESULTS}
 )
