@@ -566,12 +566,11 @@ INCLUDE_DIRECTORIES(${NUMPY_INCLUDE_PATH})
 
 CHECK_PYTHON(2.7)
 
-IF(PYTHON_INCLUDE_PATH)
-    # Check the most generic name first (used by cctbx).
-    CHECK_REQUIRED_LIB(BOOST boost_python boost/python.hpp)
-ELSE(PYTHON_INCLUDE_PATH)
-    MESSAGE("ERROR: Python.h not found")
-ENDIF(PYTHON_INCLUDE_PATH)
+# Find Boost
+CHECK_REQUIRED_LIB(BOOST boost_python boost/python.hpp)
+
+message("BOOST_LIBRARY:      ${BOOST_LIBRARY}")
+message("BOOST_INCLUDE_PATH: ${BOOST_INCLUDE_PATH}")
 
 # IF(ENABLE_HDFIOCACHE)
 #    IF(APPLE)
