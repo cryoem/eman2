@@ -15,6 +15,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	#parser.add_argument("--path", type=str,help="path", default="het_3d")
 	parser.add_argument("--noupdate", action="store_true",help="do not erase shapes", default=False)
+	parser.add_argument("--fromedge", action="store_true",help="draw from edge", default=False)
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	img = EMData(args[0])
@@ -52,6 +53,7 @@ class EMDrawWindow(QtGui.QMainWindow):
 		self.all_shapes=[]
 		self.state=0
 		self.shape_index = 0
+		self.origin=[0,0]
 		self.imgview.shapes = {}
 
 		print("imgnum,x,y,major,minor,angle")
@@ -76,6 +78,7 @@ class EMDrawWindow(QtGui.QMainWindow):
 		#x,y=int(x),int(y)
 		if self.state==0:
 			self.shape=[self.imgview.list_idx, x,y,3,3,0]
+			self.origin=[x,y]
 			self.state=1
 		elif self.state==1:
 			self.state=2
@@ -95,9 +98,17 @@ class EMDrawWindow(QtGui.QMainWindow):
 		x,y=self.imgview.scr_to_img((event.x(),event.y()))
 		#x,y=int(x),int(y)
 		if self.state==1:
-			x0=self.shape[1]
-			y0=self.shape[2]
-			r=np.sqrt((x-x0)**2+(y-y0)**2)
+			if self.options.fromedge:
+				dx=x-self.origin[0]
+				dy=y-self.origin[1]
+				r=np.sqrt((dx)**2+(dy)**2)/2.
+				x0=x-dx/2.
+				y0=y-dy/2.
+			else:
+				x0=self.shape[1]
+				y0=self.shape[2]
+				r=np.sqrt((x-x0)**2+(y-y0)**2)
+			
 			ang=np.arctan2((y-y0), (x-x0)) *180./np.pi
 			
 			self.shape=[self.imgview.list_idx, x0,y0,r,3,ang]
