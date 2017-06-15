@@ -5313,7 +5313,7 @@ def do_final_rec3d(partids, partstack, original_data, oldparams, oldparamstructu
 	do3d_final_mpi(final_iter)
 	# also copy params to masterdir as final params
 	if(Blockdata["myid"] == Blockdata["main_node"]):
-		copyfile(os.path.join(Tracker["constants"]["masterdir"], "main%03d"%Tracker["constants"]["best"], "params_%03d.txt"%Tracker["constants"]["best"]), os.path.join(Tracker["constants"]["masterdir"], "final_params.txt"))
+		copyfile(os.path.join(Tracker["constants"]["masterdir"], "main%03d"%Tracker["mainiteration"], "params_%03d.txt"%Tracker["mainiteration"]), os.path.join(Tracker["constants"]["masterdir"], "final_params_%03d.txt"%Tracker["mainiteration"]))
 		shutil.rmtree(os.path.join(Tracker["constants"]["masterdir"], "tempdir"))
 	mpi_barrier(MPI_COMM_WORLD)
 	return
@@ -8926,7 +8926,7 @@ def main():
 				Tracker["ts"]			                = options.ts
 				Tracker["delta"]		                = options.delta  # How to decide it
 				if Tracker["delta"] ==-1.: Tracker["delta"] = 15./4.
-				if options.ctref_an ==-1.: Tracker["an"] = 3.*Tracker["delta"]
+				if options.ctref_an ==-1.: Tracker["an"] = 2.*Tracker["delta"]
 				else:                      Tracker["an"] = options.ctref_an
 			original_data = do_ctref_from_orgstack(masterdir, options.ctref_orgstack, options.ctref_oldrefdir, options.ctref_subset, options.ctref_initvol, options.ctref_iter, options.ctref_smearing, sys.argv[1:], mpi_comm = Blockdata["subgroup_comm"])
 			mainiteration  +=1
@@ -8958,6 +8958,9 @@ def main():
 				if(Blockdata["myid"] == Blockdata["main_node"]): 
 					if not os.path.exists(Tracker["directory"]): os.mkdir(Tracker["directory"])
 					if not os.path.exists(os.path.join(Tracker["directory"], "tempdir")): os.mkdir(os.path.join(Tracker["directory"], "tempdir"))
+				Tracker["xr"] = 1.0
+				Tracker["yr"] = 1.0
+				Tracker["ts"] = 0.5
 				refang, rshifts, coarse_angles, coarse_shifts = get_refangs_and_shifts() # no shake
 				if(Blockdata["myid"] == Blockdata["main_node"]):
 					write_text_row( refang, os.path.join(Tracker["directory"] ,"refang.txt") )
@@ -8990,6 +8993,7 @@ def main():
 						line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 						print(line,"ali3D_local_polar_ccc")
 						print_dict(Tracker,"Current state variables")
+					Tracker["keepfirst"] = 100
 					if mainiteration==1: newparamstructure[procid], norm_per_particle[procid] = ali3D_local_polar_ccc(refang, rshifts, coarse_angles, coarse_shifts, procid, original_data[procid], oldparams[procid], \
 					   preshift = True, apply_mask = True, nonorm = False, applyctf = True)
 					else: newparamstructure[procid], norm_per_particle[procid] = ali3D_local_primary_polar(refang, rshifts, coarse_angles, coarse_shifts, procid, original_data[procid], oldparams[procid], \
