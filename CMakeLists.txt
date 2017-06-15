@@ -243,11 +243,9 @@ SET(INCLUDE_DIRS
 	/usr/include
 	/sw/include
 	/usr/include/freetype2
-	/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/System/Library/Frameworks/OpenGL.framework/Headers
 	)
 
 SET(LIB_DIRS
-	/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries
 	$ENV{EMANDIR}/lib
 	$ENV{HOME}/EMAN2/anaconda2/lib
 	$ENV{HOME}/anaconda2/lib
