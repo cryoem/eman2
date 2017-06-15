@@ -279,23 +279,6 @@ ENDIF(ENABLE_IOCACHE)
 #     ADD_DEFINITIONS(-DHDFIO_CACHE)
 # ENDIF(ENABLE_HDFIOCACHE)
 
-SET(LIB_DIRS
-	${EMAN_PREFIX_LIB}
-	$ENV{EMANDIR}/lib
-	$ENV{HOME}/EMAN2/anaconda2/lib
-	$ENV{HOME}/anaconda2/lib
-	$ENV{HOME}/lib
-	${PLATFORMLIB}
-	$ENV{FFTWDIR}/lib
-	$ENV{GSLDIR}/lib
-	/usr/local/lib
-	/usr/local/cuda/lib
-	/usr/lib64
-	/usr/lib
-	/sw/lib
-	)
-
-
 MACRO(CHECK_REQUIRED_LIB2 upper lower header lower2 header2)
 	if(ENABLE_CONDA)
 		message("\n### BEGIN ### CHECK_REQUIRED_LIB2 upper lower header lower2 header2")
@@ -312,8 +295,8 @@ MACRO(CHECK_REQUIRED_LIB2 upper lower header lower2 header2)
     ENDIF()
 
     IF(${upper}_INCLUDE_PATH)
-		FIND_LIBRARY(${upper}_LIBRARY NAMES ${lower} ${lower2} PATHS $ENV{${upper}DIR}/lib ${LIB_DIRS})
-		message("FIND_LIBRARY: ${upper}_LIBRARY NAMES ${lower} ${lower2} PATHS $ENV{${upper}DIR}/lib ${LIB_DIRS}")
+		FIND_LIBRARY(${upper}_LIBRARY NAMES ${lower} ${lower2} PATHS $ENV{${upper}DIR}/lib ${EMAN_PREFIX_LIB})
+		message("FIND_LIBRARY: ${upper}_LIBRARY NAMES ${lower} ${lower2} PATHS $ENV{${upper}DIR}/lib ${EMAN_PREFIX_LIB}")
     ENDIF()
 		
 	IF(NOT ${upper}_INCLUDE_PATH OR NOT ${upper}_LIBRARY)
@@ -335,7 +318,7 @@ MACRO(CHECK_OPTIONAL_LIB upper lower header)
     FIND_PATH(${upper}_INCLUDE_PATH ${header} $ENV{${upper}DIR}/include ${EMAN_PREFIX_INC} NO_DEFAULT_PATH)
 
     IF(${upper}_INCLUDE_PATH)
-        FIND_LIBRARY(${upper}_LIBRARY NAMES ${lower} PATHS $ENV{${upper}DIR}/lib ${LIB_DIRS})
+        FIND_LIBRARY(${upper}_LIBRARY NAMES ${lower} PATHS $ENV{${upper}DIR}/lib ${EMAN_PREFIX_LIB})
 
         IF(${upper}_LIBRARY)
 			ADD_DEFINITIONS(-DEM_${upper})
@@ -352,7 +335,7 @@ MACRO(CHECK_OPTIONAL_LIB upper lower header)
 ENDMACRO(CHECK_OPTIONAL_LIB)
 
 MACRO(CHECK_LIB_ONLY upper lower)
-    FIND_LIBRARY(${upper}_LIBRARY NAMES ${lower} PATHS $ENV{${upper}DIR}/lib ${LIB_DIRS} NO_DEFAULT_PATH)
+    FIND_LIBRARY(${upper}_LIBRARY NAMES ${lower} PATHS $ENV{${upper}DIR}/lib ${EMAN_PREFIX_LIB} NO_DEFAULT_PATH)
 	message(STATUS "CHECK_LIB_ONLY upper lower")
 	message_var(${upper}_LIBRARY)
 ENDMACRO(CHECK_LIB_ONLY)
