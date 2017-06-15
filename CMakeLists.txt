@@ -279,21 +279,6 @@ ENDIF(ENABLE_IOCACHE)
 #     ADD_DEFINITIONS(-DHDFIO_CACHE)
 # ENDIF(ENABLE_HDFIOCACHE)
 
-SET(INCLUDE_DIRS
-	${EMAN_PREFIX_INC}
-	${EMAN_SOURCE_DIR}/libEM
-	$ENV{HOME}/EMAN2/anaconda2/include
-	$ENV{HOME}/anaconda2/include
-	$ENV{HOME}/include
-	$ENV{FFTWDIR}/include
-	$ENV{GSLDIR}/include
-	/usr/local/include
-	/usr/local/cuda/include
-	/usr/include
-	/sw/include
-	/usr/include/freetype2
-	)
-
 SET(LIB_DIRS
 	${EMAN_PREFIX_LIB}
 	$ENV{EMANDIR}/lib
@@ -321,7 +306,7 @@ MACRO(CHECK_REQUIRED_LIB2 upper lower header lower2 header2)
 	IF(NOT ${upper}_INCLUDE_PATH)
 		FIND_PATH(${upper}_INCLUDE_PATH 
 				NAMES ${header} ${header2}
-				PATHS $ENV{${upper}DIR}/include ${INCLUDE_DIRS}
+				PATHS $ENV{${upper}DIR}/include ${EMAN_PREFIX_INC}
 				NO_DEFAULT_PATH
 				)
     ENDIF()
@@ -347,7 +332,7 @@ MACRO(CHECK_REQUIRED_LIB upper lower header)
 ENDMACRO(CHECK_REQUIRED_LIB)
 
 MACRO(CHECK_OPTIONAL_LIB upper lower header)
-    FIND_PATH(${upper}_INCLUDE_PATH ${header} $ENV{${upper}DIR}/include ${INCLUDE_DIRS} NO_DEFAULT_PATH)
+    FIND_PATH(${upper}_INCLUDE_PATH ${header} $ENV{${upper}DIR}/include ${EMAN_PREFIX_INC} NO_DEFAULT_PATH)
 
     IF(${upper}_INCLUDE_PATH)
         FIND_LIBRARY(${upper}_LIBRARY NAMES ${lower} PATHS $ENV{${upper}DIR}/lib ${LIB_DIRS})
