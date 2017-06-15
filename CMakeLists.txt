@@ -9,6 +9,8 @@ ENDIF(COMMAND cmake_policy)
 MARK_AS_ADVANCED(CLEAR CMAKE_VERBOSE_MAKEFILE)
 OPTION(CMAKE_VERBOSE_MAKEFILE "if all commands will be echoed to the console during the make" ON)
 
+SET(CMAKE_MACOSX_RPATH ON)
+
 OPTION(ENABLE_CONDA "enable conda-supported build" OFF)
 
 # Handle build strategies, 
@@ -122,7 +124,6 @@ ENDIF()
 # ENDIF (ENABLE_LEOPARD)
 
 IF (ENABLE_OPTIMIZE_OSX)
-	SET(CMAKE_MACOSX_RPATH ON)
 	SET(GL_LIBRARY /System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib)
 	SET(GLU_LIBRARY /System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGLU.dylib)
 	SET(GL_INCLUDE_PATH /usr/include)
