@@ -50,6 +50,8 @@ class EMDrawWindow(QtGui.QMainWindow):
 		
 		self.shape=["hidden",1,0,0,0,0,2,2]
 		self.state=0
+		self.shape_index = 0
+		self.imgview.shapes = {}
 
 		print("x,y,major,minor,angle")
 		
@@ -57,7 +59,10 @@ class EMDrawWindow(QtGui.QMainWindow):
 		QtCore.QObject.connect(self.imgview,QtCore.SIGNAL("mousemove"),self.mousemv)
 		
 	def update_view(self):
-		self.imgview.shapes={0:EMShape(self.shape)}
+		if self.options.noupdate:
+			self.imgview.shapes[self.shape_index] = EMShape(self.shape)
+		else:
+			self.imgview.shapes={0:EMShape(self.shape)}
 		self.imgview.shapechange=1
 		self.imgview.updateGL()
 		
@@ -73,7 +78,9 @@ class EMDrawWindow(QtGui.QMainWindow):
 			a = max(self.shape[6],self.shape[7])
 			b = min(self.shape[6],self.shape[7])
 			print("{},{},{},{},{}".format(self.shape[4],self.shape[5],a,b,self.shape[8]))
+			self.shape_index += 1
 			self.state=0
+
 		
 		self.update_view()
 		
