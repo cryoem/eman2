@@ -18,7 +18,7 @@ from    logger     import Logger, BaseLogger_Files
 from mpi   	import  *
 from math  	import  *
 from random import  *
-
+import shutil
 import os
 import sys
 import subprocess
@@ -987,10 +987,6 @@ def get_shrink_data_final(nxinit, procid, original_data = None, oldparams = None
 	from applications import MPI_start_end
 	from math         import sqrt
 	
-	#print( "  " )
-	#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-	#print(  line, "Processing data  onx: %3d, nx: %3d, CTF: %s, applymask: %s, preshift: %s."%(Tracker["constants"]["nnxo"], nxinit, Tracker["constants"]["CTF"], apply_mask, preshift) )
-	#  Preprocess the data
 	mask2D  	= model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 	nima 		= len(original_data)
 	shrinkage 	= nxinit/float(Tracker["constants"]["nnxo"])
@@ -1013,11 +1009,7 @@ def get_shrink_data_final(nxinit, procid, original_data = None, oldparams = None
 	Blockdata["accumulatepw"][procid] = [None]*nima
 	data = [None]*nima
 	for im in xrange(nima):
-
-		if Tracker["mainiteration"] ==1:
-			phi, theta, psi, sx, sy, = oldparams[im][0], oldparams[im][1], oldparams[im][2], oldparams[im][3], oldparams[im][4]
-			wnorm  = 1.0 
-		else: phi, theta, psi, sx, sy, wnorm = oldparams[im][0], oldparams[im][1], oldparams[im][2], oldparams[im][3], oldparams[im][4], oldparams[im][7]
+		phi, theta, psi, sx, sy, wnorm = oldparams[im][0], oldparams[im][1], oldparams[im][2], oldparams[im][3], oldparams[im][4], oldparams[im][7]
 		if preshift:
 			sx = int(round(sx))
 			sy = int(round(sy))
@@ -1571,9 +1563,9 @@ def compare_two_images_cross(data, ref_vol):
 		if data[im].get_attr("is_complex") ==1: data[im].set_attr("is_complex",0)
 		if not Tracker["focus3D"]:
 			if Tracker["applybckgnoise"]:  peak = Util.innerproduct(ref, data[im], Blockdata["unrolldata"][data[im].get_attr("particle_group")])
-			else: peak = Util.innerproduct(ref, data[im], None)
+			else:                          peak = Util.innerproduct(ref, data[im], None)
 			peaks[im] = peak/nrmref
-		else:  peaks[im] = Util.innerproduct(ref, data[im], None)/nrmref
+		else: peaks[im] = Util.innerproduct(ref, data[im], None)/nrmref
 	return peaks
 ###<<<---various utilities
 def clusters_to_plist(clusters, pall):
@@ -2323,17 +2315,12 @@ def get_angle_step_from_number_of_orien_groups():
 	global Tracker, Blockdata
 	from string import atof
 	sym_class = Blockdata["symclass"]
-	if Tracker["constants"]["symmetry"][0:1]=="c" or Tracker["constants"]["symmetry"][0:1]=="d": angle_step = 360./atof(Tracker["constants"]["symmetry"][1:])/float(Tracker["orien_groups"])
-	else: angle_step = 15.
-	a    = sym_class.even_angles(angle_step)
-	nc   = 1
-	step = 1
-	while abs(len(a) - Tracker["orien_groups"]) >step:
-		if len(a)>Tracker["orien_groups"]: angle_step +=1.
-		else: angle_step -=1
-		a = sym_class.even_angles(angle_step)
-		nc +=1
-		if nc > 360 and nc%360 ==0: step +=1
+	N = Tracker["orien_groups"]
+	angle_step = 180.
+	while len(sym_class.even_angles(angle_step))< N:
+		angle_step /=2.
+	while len(sym_class.even_angles(angle_step))> N:
+		angle_step +=0.1
 	Tracker["angle_step"] = angle_step
 	del sym_class
 	return
@@ -5086,9 +5073,9 @@ def merge_two_unfiltered_maps(map1_file, map2_file, cluster_ID):
 	# single processor only
 	from math import sqrt, log
 	try: map1 = get_im(map1_file)
-	except: ERROR("Sphire postprocess fails to read the first map "+map1_file, "--postprocess option for 3-D", 1, Blockdata["myid"])
+	except: ERROR("Sphire postprocess fails to read the first map " + map1_file, "--postprocess option for 3-D", 1, Blockdata["myid"])
 	try: map2 = get_im(map2_file)
-	except: ERROR("Sphire postprocess fails to read the second map "+map2_file, "--postprocess option for 3-D", 1, Blockdata["myid"])
+	except: ERROR("Sphire postprocess fails to read the second map " + map2_file, "--postprocess option for 3-D", 1, Blockdata["myid"])
 	if (map2.get_xsize() != map1.get_xsize()) or (map2.get_ysize() != map1.get_ysize()) or (map2.get_zsize() != map1.get_zsize()):
 		ERROR(" Two input maps have different image size", "--postprocess option for 3-D", 1, Blockdata["myid"])
 	if Tracker["mask3D"]: 
@@ -5228,9 +5215,9 @@ def merge_two_unfiltered_maps(map1_file, map2_file, cluster_ID):
 	msg +="  FSC05/FSC143  %5d/%5d   %6.3f/%6.3f"%(nfreq05, nfreq143, Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(nfreq05), \
 	    Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(nfreq143))
 	print(msg)
-	map1.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_final_nomask_cluster%03dd.hdf"%cluster_ID))
+	map1.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_final_nomask_cluster%03d.hdf"%cluster_ID))
 	if mask3D: map1 *=mask3D
-	map1.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_final_cluster%03dd.hdf"%cluster_ID))
+	map1.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_final_cluster%03d.hdf"%cluster_ID))
 	if mask3D: del mask3D
 	del map1
 	return msg
@@ -5240,9 +5227,9 @@ def main():
 	from global_def import SPARXVERSION
 	from EMAN2      import EMData
 	from logger     import Logger, BaseLogger_Files
-	from global_def import ERROR  
+	from global_def import ERROR
 	import sys, os, time, shutil
-	global Tracker, Blockdata 
+	global Tracker, Blockdata
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " stack  outdir --refinement_dir=masterdir_of_sxmeridien --mask3D=mask.hdf --focus=binarymask.hdf  --radius=outer_radius " +\
 	"  --sym=c1  --nindependent=indenpendent_runs  --img_per_grp=img_per_grp  "
@@ -5255,18 +5242,18 @@ def main():
 	parser.add_option("--instack",                         type   ="string",        default ='',					   help="file name, data stack for sorting provided by user. It applies when sorting starts from a given data stack")
 	parser.add_option("--radius",                          type   ="int",           default =-1,	                   help="particle radius in pixel for rotational correlation <nx-1 (set to the radius of the particle)")
 	parser.add_option("--sym",                             type   ="string",        default ='c1',                     help="point group symmetry of macromolecular structure, can be inherited from refinement")
-	parser.add_option("--nindependent",                    type   ="int",           default = 3,                       help="number of independent run for EQkmeans clustering, an odd number larger than 2")
+	parser.add_option("--nindependent",                    type   ="int",           default =3,                        help="number of independent run for EQkmeans clustering, an odd number larger than 2")
 	parser.add_option("--img_per_grp",                     type   ="int",           default =1000,                     help="number of images in a group")
 	parser.add_option("--minimum_grp_size",				   type   ="int",           default =500,					   help="minimum number of members for being identified as a group")
 	parser.add_option("--comparison_method",               type   ="string",        default ='cross',                  help="option for comparing two images, either using cross-correlaton coefficients [cross] or using Euclidean distance [eucd] ")
 	parser.add_option("--memory_per_node",                 type   ="float",         default =-1.0,                     help="memory_per_node, the number used for evaluate the CPUs/NODE settings given by user")
 	parser.add_option("--nofinal_sharpen",                 action ="store_true",    default =False,                    help="not reconstruct unfiltered final maps for post refinement process")
-	parser.add_option("--orien_groups",                    type   ="int",           default =50.,                      help="number of sampling angular groups used for EQKmeans orientation constraints")
+	parser.add_option("--orien_groups",                    type   ="int",           default =150,                      help="number of sampling angular groups used for EQKmeans orientation constraints")
 	parser.add_option("--post_sorting_sharpen",            action ="store_true",    default =False,                    help="make odd and even unfiltered maps per cluster")
 	parser.add_option("--stop_eqkmeans_percentage",        type   ="float",         default =2.0,                      help="particle change percentage for stopping equal size Kmeans")
 	parser.add_option("--minimum_ptl_number",              type   ="int",           default =20,					   help="integer number, the smallest orien group size equals number_of_groups multiplies this number")
 	parser.add_option("--notapplybckgnoise",               action ="store_true",    default =False,                    help="do not applynoise")
-	#parser.add_option("--nofftwmpi",                       action ="store_true",    default =False,                    help="Use fftwmpi (default False)")
+	#parser.add_option("--nofftwmpi",                      action ="store_true",    default =False,                    help="Use fftwmpi (default False)")
 	# postprocessing options
 	parser.add_option("--mtf",                             type   ="string",        default ='',                       help="mtf file")
 	parser.add_option("--B_enhance",                       type   ="float",         default=0.0,                       help="apply Bfactor to enhance map or not")
@@ -5274,7 +5261,7 @@ def main():
 	parser.add_option("--aa",                              type   ="float",         default=.1,                        help="low pass filter falloff")
 	parser.add_option("--B_start",                         type   ="float",         default=10.,                       help="starting frequency in Angstrom for B-factor estimation")
 	parser.add_option("--B_stop",                          type   ="float",         default=0.0,                       help="cutoff frequency in Angstrom for B-factor estimation, cutoff is set to the frequency where fsc < 0.0")
-	parser.add_option("--nofsc_adj",                       action ="store_true",    default =False,                    help="do not multiply sqrt(fsc)")
+	parser.add_option("--nofsc_adj",                       action ="store_true",    default=False,                     help="do not multiply sqrt(fsc)")
 	(options, args) = parser.parse_args(sys.argv[1:])
 	from utilities import bcast_number_to_all
 	### Sanity check
@@ -5314,7 +5301,7 @@ def main():
 	Constants["comparison_method"]           = options.comparison_method # either cross or eucd
 	### postprocessing
 	if options.mtf =='':   Constants["mtf"]  = None
-	else:                  Constants["mtf"]  = options.mtf
+	else: Constants["mtf"]  = options.mtf
 	Constants["B_enhance"]                   = options.B_enhance
 	Constants["B_start"]                     = options.B_start
 	Constants["B_stop"]                      = options.B_stop
@@ -5327,14 +5314,14 @@ def main():
 	# -------------------------------------------------------------
 	#
 	# Create and initialize Tracker dictionary with input options  # State Variables	
-	Tracker							           = {}
-	Tracker["constants"]			           = Constants
+	Tracker                     = {}
+	Tracker["constants"]	    = Constants
 	if Tracker["constants"]["mask3D"]: Tracker["mask3D"] = Tracker["constants"]["mask3D"]
-	else:							   Tracker["mask3D"] = None
-	Tracker["radius"]						   = Tracker["constants"]["radius"]
-	Tracker["upscale"]						   = Tracker["constants"]["upscale"]
-	Tracker["applyctf"]						   = False  #  Should the data be premultiplied by the CTF.  Set to False for local continuous.
-	Tracker["nxinit"]						   = Tracker["constants"]["nxinit"]
+	else:                              Tracker["mask3D"] = None
+	Tracker["radius"]           = Tracker["constants"]["radius"]
+	Tracker["upscale"]          = Tracker["constants"]["upscale"]
+	Tracker["applyctf"]         = False  #  Should the data be premultiplied by the CTF.  Set to False for local continuous.
+	Tracker["nxinit"]           = Tracker["constants"]["nxinit"]
 	if options.notapplybckgnoise: Tracker["applybckgnoise"] = False
 	else: Tracker["applybckgnoise"] = True
 	###<<<--options for advanced users:
@@ -5343,10 +5330,10 @@ def main():
 	Tracker["total_iter_rsort"]                    = 2
 	Tracker["clean_volumes"]                       = True
 	Tracker["constants"]["total_sort3d_iteration"] = 2
-	### -----------orientation constraints
-	Tracker["orien_groups"]          = options.orien_groups # orientation constrained angle step
-	Tracker["tilt1"]                 =  0.0
-	Tracker["tilt2"]                 = 180.0
+	### -----------Orientation constraints
+	Tracker["orien_groups"]  = options.orien_groups # orientation constrained angle step
+	Tracker["tilt1"]         =  0.0
+	Tracker["tilt2"]         = 180.0
 	
 	### ------------<<< option for proteins images that have preferred orientations
 	Tracker["minimum_ptl_number"] = options.minimum_ptl_number  # for orientation groups
@@ -5524,7 +5511,7 @@ def main():
 			print(line, msg)
 			log_main.add(msg)
 		Tracker["full_list"] = read_text_file(os.path.join(Tracker["constants"]["masterdir"],"indexes.txt"), -1) # could have one or two columns
-		if len(Tracker["full_list"]) == 2: Tracker["full_list"] = Tracker["full_list"][1] # take just one column
+		if   len(Tracker["full_list"]) == 2: Tracker["full_list"] = Tracker["full_list"][1] # First column should be always group assignment
 		elif len(Tracker["full_list"]) == 1: Tracker["full_list"] = Tracker["full_list"][0]
 		else: ERROR("The original particle ID for sorting has wrong format", "sxsort3d.py", 1, Blockdata["main_node"])
 	else: Tracker["full_list"] = 0
@@ -5546,7 +5533,7 @@ def main():
 			fout = open(os.path.join(Tracker["constants"]["masterdir"], "Tracker.json"),'r')
 			Tracker = convert_json_fromunicode(json.load(fout))
 			fout.close()
-			try:    output = Tracker["output"]
+			try:  output = Tracker["output"]
 			except: Tracker["output"] = []
 		else: Tracker = []
 		Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
@@ -5665,7 +5652,7 @@ def main():
 			del norm_per_particle
 		### Summary of results given by sort3d 
 		if(Blockdata["myid"] == Blockdata["main_node"]):
-			if not os.path.exists(os.path.join(Tracker["directory"], "tempdir")): shutil.rmtree(os.path.join(Tracker["directory"], "tempdir"))
+			if os.path.exists(os.path.join(Tracker["directory"], "tempdir")): shutil.rmtree(os.path.join(Tracker["directory"], "tempdir"))
 			line    = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 			msg = "--->>>Summary of indepenent sort3d run %d<<<----"%indep_sort3d
 			print(line, msg)
