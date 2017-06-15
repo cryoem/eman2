@@ -13,7 +13,8 @@ def main():
 	
 	usage=" "
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--path", type=str,help="path", default="het_3d")
+	#parser.add_argument("--path", type=str,help="path", default="het_3d")
+	parser.add_argument("--noupdate", action="store_true",help="do not erase shapes", default=False)
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	img = EMData(args[0])
@@ -49,6 +50,8 @@ class EMDrawWindow(QtGui.QMainWindow):
 		
 		self.shape=["hidden",1,0,0,0,0,2,2]
 		self.state=0
+
+		print("x,y,major,minor,angle")
 		
 		QtCore.QObject.connect(self.imgview,QtCore.SIGNAL("mouseup"),self.mouseup  )
 		QtCore.QObject.connect(self.imgview,QtCore.SIGNAL("mousemove"),self.mousemv)
@@ -60,15 +63,16 @@ class EMDrawWindow(QtGui.QMainWindow):
 		
 	def mouseup(self, event):
 		x,y=self.imgview.scr_to_img((event.x(),event.y()))
-		x,y=int(x),int(y)
-		#print x,y
+		#x,y=int(x),int(y)
 		if self.state==0:
 			self.shape=["ellipse",1,0,0,x,y,3,3, 0,2]
 			self.state=1
 		elif self.state==1:
 			self.state=2
 		else:
-			print self.shape[4:9]
+			a = max(self.shape[6],self.shape[7])
+			b = min(self.shape[6],self.shape[7])
+			print("{},{},{},{},{}".format(self.shape[4],self.shape[5],a,b,self.shape[8]))
 			self.state=0
 		
 		self.update_view()
@@ -76,14 +80,14 @@ class EMDrawWindow(QtGui.QMainWindow):
 		
 	def mousemv(self, event):
 		x,y=self.imgview.scr_to_img((event.x(),event.y()))
-		x,y=int(x),int(y)
+		#x,y=int(x),int(y)
 		if self.state==1:
 			x0=self.shape[4]
 			y0=self.shape[5]
 			r=np.sqrt((x-x0)**2+(y-y0)**2)
 			ang=np.arctan2((y-y0), (x-x0)) *180./np.pi
 			
-			self.shape=["ellipse",1,0,0,x0,y0,r,3, ang,2]
+			self.shape=["ellipse",1,0,0,x0,y0,r,3,ang,2]
 			
 			self.update_view()
 		elif self.state==2:
@@ -93,7 +97,7 @@ class EMDrawWindow(QtGui.QMainWindow):
 			ang=self.shape[8]
 			r=np.sqrt((x-x0)**2+(y-y0)**2)
 			
-			self.shape=["ellipse",1,0,0,x0,y0,r0,r, ang,2]
+			self.shape=["ellipse",1,0,0,x0,y0,r0,r,ang,2]
 			
 			self.update_view()
 	
