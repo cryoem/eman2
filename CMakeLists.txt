@@ -108,11 +108,11 @@ OPTION(ENABLE_OPTIMIZE_MACHINE "Optimize code for this specific computer (typ 5-
 OPTION(ENABLE_OPTIMIZE_PHI "Optimize code for the Intel compiler on the PHI" OFF)
 OPTION(ENABLE_OPTIMIZE_WINDOWS_VC "Windows visual c++ specific optimization" OFF)
 
-IF(CMAKE_SYSTEM MATCHES "Darwin-12*")
-	OPTION(ENABLE_OPTIMIZE_OSX "enable OSX 10.8/9 support" ON)
-ELSE(CMAKE_SYSTEM MATCHES "Darwin-12*")
-	OPTION(ENABLE_OPTIMIZE_OSX "enable OSX 10.8/9 support" OFF)
-ENDIF(CMAKE_SYSTEM MATCHES "Darwin-12*")
+IF(CMAKE_SYSTEM_NAME MATCHES "Darwin")
+	OPTION(ENABLE_OPTIMIZE_OSX "enable OSX support" ON)
+ELSE()
+	OPTION(ENABLE_OPTIMIZE_OSX "enable OSX support" OFF)
+ENDIF()
 
 
 #MESSAGE (FATAL_ERROR ${CMAKE_SYSTEM} )
