@@ -8488,10 +8488,10 @@ def main():
 			print( "Please run '" + progname + " -h' for detailed options")
 			return 1
 		else:
-			if (options.ctref_orgstack =='') and (not os.path.exists(options.oldrefdir)):ERROR("both old refinement directory and BDB data stack do not exist", "meridien", 1, Blockdata["myid"])
-			if(not os.path.exists(options.subset)) and options.ctref_orgstack =='': ERROR("both data subset text file and BDB data stack do not exist", "meridien", 1, Blockdata["myid"])
-			if options.oldrefdir !='':
-				if not os.path.exists(options.oldrefdir): ERROR("specified old refinement directory does not exists", "meridien", 1, Blockdata["myid"])
+			if (options.ctref_orgstack =='') and (not os.path.exists(options.ctref_oldrefdir)):ERROR("both old refinement directory and BDB data stack do not exist", "meridien", 1, Blockdata["myid"])
+			if(not os.path.exists(options.ctref_subset)) and options.ctref_orgstack =='': ERROR("both data subset text file and BDB data stack do not exist", "meridien", 1, Blockdata["myid"])
+			if options.ctref_oldrefdir !='':
+				if not os.path.exists(options.ctref_oldrefdir): ERROR("specified old refinement directory does not exists", "meridien", 1, Blockdata["myid"])
 			masterdir =""
 	if options.ctref: update_options  = True
 	#print(  orgstack,masterdir,volinit )
