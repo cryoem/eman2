@@ -148,7 +148,6 @@ OPTION(ENABLE_BOUNDS_CHECKING "enable bounds checking support" OFF)
 OPTION(ENABLE_RT "enable RT support" ON)
 
 OPTION(ENABLE_IOCACHE "enable ImageIO caching" OFF)
-# OPTION(ENABLE_HDFIOCACHE "enable HDF5 file caching" OFF)
 
 #flags for optimization level. You can only turn one of following option to ON, or leave all of them to OFF.
 OPTION(ENABLE_DEBUG "enable debug support" OFF)
@@ -269,10 +268,6 @@ EMAN_CHECK_FUNCTION(ftello HAVE_FTELLO)
 IF(ENABLE_IOCACHE)
 	ADD_DEFINITIONS(-DIMAGEIO_CACHE)
 ENDIF(ENABLE_IOCACHE)
-
-# IF(ENABLE_HDFIOCACHE)
-#     ADD_DEFINITIONS(-DHDFIO_CACHE)
-# ENDIF(ENABLE_HDFIOCACHE)
 
 MACRO(CHECK_REQUIRED_LIB2 upper lower header lower2 header2)
 	if(ENABLE_CONDA)
@@ -504,18 +499,6 @@ find_package(Boost COMPONENTS python REQUIRED)
 
 message("Boost_LIBRARIES:   ${Boost_LIBRARIES}")
 message("Boost_INCLUDE_DIR: ${Boost_INCLUDE_DIR}")
-
-# IF(ENABLE_HDFIOCACHE)
-#    IF(APPLE)
-#        CHECK_OPTIONAL_LIB(BOOST_THREAD boost_thread boost/thread.hpp)
-#        CHECK_OPTIONAL_LIB(BOOST_FILESYSTEM boost_filesystem boost/filesystem.hpp)
-#        CHECK_OPTIONAL_LIB(BOOST_SYSTEM boost_system boost/filesystem.hpp)
-#    ELSE(APPLE)
-#        CHECK_OPTIONAL_LIB(BOOST_THREAD boost_thread-mt boost/thread.hpp)
-#        CHECK_OPTIONAL_LIB(BOOST_FILESYSTEM boost_filesystem-mt boost/filesystem.hpp)
-#        CHECK_OPTIONAL_LIB(BOOST_SYSTEM boost_system-mt boost/filesystem.hpp)
-#    ENDIF(APPLE)
-# ENDIF(ENABLE_HDFIOCACHE)
 
 INCLUDE_DIRECTORIES(.
 	    ${EMAN_SOURCE_DIR}
