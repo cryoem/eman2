@@ -661,7 +661,8 @@ class EMTomoBoxer(QtGui.QMainWindow):
 					print "Inconsistant box size in the particles to save.. Using {:d}..".format(boxsz)
 					bs=boxsz
 			
-			sz=[s/2 for s in self.datasize]
+			sz=[0,0,0]
+			#sz=[s/2 for s in self.datasize]
 			img=self.get_cube(b[0], b[1], b[2], boxsz=bs)
 			img.process_inplace('normalize')
 			
