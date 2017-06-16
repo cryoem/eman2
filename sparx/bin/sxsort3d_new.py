@@ -599,7 +599,7 @@ def EQKmeans_by_dmatrix_orien_groups(original_data, partids, ptls_in_orien_group
 				best_assignment = copy.copy(iter_assignment)
 			if changed_nptls < stopercnt and total_iter <=10:stopercnt = changed_nptls/2. # reduce stop criterion to gain improvement in clustering
 			stopercnt = max(stopercnt, Tracker["constants"]["stop_eqkmeans_percentage"]) # But not exceed the specified number
-			iter +=1
+			iter       +=1
 			total_iter +=1
 			if changed_nptls < stopercnt: break
 		if changed_nptls<stopercnt: break
@@ -5428,9 +5428,10 @@ def main():
 		Tracker["smearing"]              = False
 	###<<<------------------------>>>>>>checks<<<<<-------------
 	if Tracker["constants"]["symmetry"] != options.sym:
-		msg = "input symmetry %s is altered to %s after reading refinement information! "%(options.sym, Tracker["constants"]["symmetry"])
-		log_main.add(msg)
-		print(msg)
+		if(Blockdata["myid"] == Blockdata["main_node"]):
+			msg = "input symmetry %s is altered to %s after reading refinement information! "%(options.sym, Tracker["constants"]["symmetry"])
+			log_main.add(msg)
+			print(msg)
 	###<<<----------------------->>>>>  SORT3D MAIN PROGRAM <<<<<---------------------------------------------# For all cases
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	if(Blockdata["myid"] == Blockdata["main_node"]):
@@ -5777,7 +5778,7 @@ def main():
 		line   = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		tlist  = read_text_file(os.path.join(Tracker["constants"]["masterdir"],"indexes.txt"))
 		ptp    = []
-		for irsort in xrange(Tracker["total_iter_rsort"]):
+		for irsort in xrange(2):
 			r1 = read_text_row(os.path.join(Tracker["constants"]["masterdir"], "rsort%d"%irsort, "index_for_Kmeans.txt"))
 			merged_classes = split_partition_into_clusters([r1])
 			sptp = prep_ptp_single(merged_classes, tlist)
@@ -5788,9 +5789,9 @@ def main():
 		print(line, msg)
 		log_main.add(msg)
 		Tracker["output"].append(msg)
-		Tracker["accounted_list"] = []
-		for index in xrange(len(accounted_list)): Tracker["accounted_list"].append([new_index[index][0], tlist[new_index[index][1]]]) # always check
-		rsort_clusters, new_partition = split_partition_into_ordered_clusters(Tracker["accounted_list"])
+		new_accounted_list = []
+		for index in xrange(len(accounted_list)): new_accounted_list.append([new_index[index][0], tlist[new_index[index][1]]]) # always check
+		rsort_clusters, new_partition = split_partition_into_ordered_clusters(new_accounted_list)
 		Tracker["accounted_list"] = new_partition
 		write_text_row(Tracker["accounted_list"], os.path.join(Tracker["constants"]["masterdir"], "final_partition.txt"))
 	else:  rsort_clusters = 0
