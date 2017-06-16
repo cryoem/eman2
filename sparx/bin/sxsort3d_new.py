@@ -5830,7 +5830,7 @@ def main():
 			msg = "total number of particle images:  %10d;  accounted:   %10d ;  number_of_groups:   %5d"%(Tracker["constants"]["total_stack"], final_accounted_ptl, number_of_groups)
 			print(line, msg)
 			Tracker["output"].append(msg)
-		else: Tracker["output"] = 0
+		else: Tracker= 0
 		number_of_groups = bcast_number_to_all(number_of_groups, Blockdata["main_node"], MPI_COMM_WORLD)
 		Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
 		if number_of_groups == 0:ERROR("No cluster is found, and the program terminates.", "do_final_maps", 1, Blockdata["myid"])
