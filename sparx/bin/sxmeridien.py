@@ -8958,9 +8958,6 @@ def main():
 				if(Blockdata["myid"] == Blockdata["main_node"]): 
 					if not os.path.exists(Tracker["directory"]): os.mkdir(Tracker["directory"])
 					if not os.path.exists(os.path.join(Tracker["directory"], "tempdir")): os.mkdir(os.path.join(Tracker["directory"], "tempdir"))
-				Tracker["xr"] = 1.0
-				Tracker["yr"] = 1.0
-				Tracker["ts"] = 0.5
 				refang, rshifts, coarse_angles, coarse_shifts = get_refangs_and_shifts() # no shake
 				if(Blockdata["myid"] == Blockdata["main_node"]):
 					write_text_row( refang, os.path.join(Tracker["directory"] ,"refang.txt") )
