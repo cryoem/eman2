@@ -4098,7 +4098,7 @@ def do3d_sorting_groups_rec3d(iteration, masterdir, log_main):
 		for icluster in xrange(Tracker["number_of_groups"]):
 			res05  = Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/res_05[icluster]
 			res143 = Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/res_143[icluster]
-			msg = "cluster  %d   fsc05/fsc143   %d/%d, %f/%f"%(icluster, Tracker["fsc05"][icluster], Tracker["fsc143"][icluster], res143, res05)
+			msg = "cluster  %d   fsc05/fsc143   %d/%d, %5.2f/%5.2f"%(icluster, Tracker["fsc05"][icluster], Tracker["fsc143"][icluster], res05, res143)
 			print(msg)
 			log_main.add(msg)
 	keepgoing = bcast_number_to_all(keepgoing, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD) # always check	
@@ -5535,7 +5535,7 @@ def main():
 			Tracker = convert_json_fromunicode(json.load(fout))
 			fout.close()
 			try:  output = Tracker["output"]
-			except: Tracker["output"] = []
+			except: Tracker["output"]   = []
 		else: Tracker = []
 		Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
 		number_of_groups = 0
@@ -5801,8 +5801,11 @@ def main():
 		for icluster in xrange(len(rsort_clusters)):
 			write_text_file(rsort_clusters[icluster], os.path.join(Tracker["constants"]["masterdir"],"Cluster%d.txt"%icluster))
 			Tracker["number_of_groups"] = len(rsort_clusters)
-	else:   Tracker["number_of_groups"] = 0
-	Tracker["number_of_groups"] = bcast_number_to_all(Tracker["number_of_groups"], Blockdata["main_node"], MPI_COMM_WORLD)
+		fout = open(os.path.join(Tracker["constants"]["masterdir"], "Tracker.json"),"w")
+		json.dump(Tracker, fout)
+		fout.close()
+	else: Tracker = 0
+	Tracker = bcast_number_to_all(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
 	### Final Rec3D unfiltered two halves, valid only in case of sorting initiated from sphire refinement
 	if Tracker["constants"]["final_sharpen"]:
 		Tracker["constants"]["orgres"]				= 0.0
