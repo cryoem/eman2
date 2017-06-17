@@ -511,6 +511,7 @@ IF (ENABLE_FTGL)
 	ENDIF(EXISTS ${FTGL_INCLUDE_PATH}/FTGL/FTGL.h AND COMMAND IF)
 	ADD_SUBDIRECTORY(fonts)
     	FIND_PATH(FREETYPE_INCLUDE_PATH ft2build.h 
+		${CONDA_PREFIX_INC}/freetype2
 		$ENV{HOME}/EMAN2/anaconda2/include/freetype2 
 		$ENV{HOME}/anaconda2/include/freetype2 
 		/usr/include/freetype2 
