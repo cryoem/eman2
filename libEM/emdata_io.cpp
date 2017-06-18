@@ -177,7 +177,7 @@ void EMData::read_binedimage(const string & filename, int img_index, int binfact
 			float percent = 0.1f;
 			for(int k = 0; k < ori_nz; k+=binfactor){
 				if(k > ori_nz*percent){
-					printf("%1.0f % Done\n",100.0*float(k)/float(ori_nz));
+					printf("%1.0f %% Done\n",100.0*float(k)/float(ori_nz));
 					percent+=0.1f;
 				}
 				// read in a slice region
