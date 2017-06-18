@@ -4024,9 +4024,9 @@ float frm_2d_Align(EMData *this_img, EMData *to, float *frm2dhhat, EMData* selfp
 	delete[] gnr2;
 	delete[] maxcor;
 	delete[] result;
-	delete cr;
+	delete[] cr;
 	cr=0;
-	delete ci;
+	delete[] ci;
 	ci=0;
 	delete data_in; // ming add
 	dx = -Tx;		// the Rota & Trans value (Tx,Ty, ang_keep) are for the projection image,
