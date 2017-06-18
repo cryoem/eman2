@@ -7,14 +7,6 @@ LIST(REMOVE_ITEM e2programs ${exclusion_list})
 
 # MESSAGE("cut back pgm list: ${e2programs}")
 
-SET(DBG $ENV{DEBUG})
-
-FOREACH(f ${e2programs})
-	IF(DBG MATCHES "y")
-		MESSAGE("Copied file ${f} to bin.")
-	ENDIF(DBG MATCHES "y")
-ENDFOREACH(f)
-
 INSTALL(PROGRAMS ${e2programs}
   DESTINATION    bin
 )
