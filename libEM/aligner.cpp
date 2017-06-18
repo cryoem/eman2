@@ -2934,7 +2934,7 @@ vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * 
 
 
 //	float dstep[3] = {7.5,7.5,7.5};		// we take  steps for each of the 3 angles, may be positive or negative
-	char *axname[] = {"az","alt","phi"};
+	string axname[] = {"az","alt","phi"};
 
 	// We start with 32^3, 64^3 ...
 	for (int sexp=4; sexp<10; sexp++) {
@@ -3293,7 +3293,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 
 
 //	float dstep[3] = {7.5,7.5,7.5};		// we take  steps for each of the 3 angles, may be positive or negative
-	char *axname[] = {"az","alt","phi"};
+	string axname[] = {"az","alt","phi"};
 
 	// We start with 32^3, 64^3 ...
 	for (int sexp=4; sexp<10; sexp++) {
