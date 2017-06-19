@@ -35,6 +35,7 @@
 # This program will provide a variety of EMAN2 help
 
 from EMAN2 import *
+import e2version
 from math import *
 import os
 import sys
@@ -134,7 +135,7 @@ act as a filter on the names of the algorithms."""
 		"quaternion":["Standard 4 component quaternion (e0,e1,e2,e3)","e0","FLOAT","e0","e1","FLOAT","e1","e2","FLOAT","e2","e3","FLOAT","e3"]}
 
 	elif args[0] in ("version"):
-	   print EMANVERSION + ' (CVS' + DATESTAMP +')'
+		e2version.main()
 	else:
 		print helpstring
 		print "unknown option:",args[0]
