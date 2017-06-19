@@ -12890,8 +12890,8 @@ EMData* CircularAverageBinarizeProcessor::process(const EMData* const image)  //
 			}
 		}
 	}
-	delete dx;
-	delete dy;
+	delete[] dx;
+	delete[] dy;
 	return bwmap;
 
 
@@ -13492,8 +13492,8 @@ void GrowSkeletonProcessor::process_inplace(EMData * image){
 	}
 	image->update();
 
-	delete xlist;
-	delete ylist;
+	delete[] xlist;
+	delete[] ylist;
 
 }
 

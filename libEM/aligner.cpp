@@ -2717,7 +2717,7 @@ vector<Dict> RT2DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 				transforms.push_back(Transform(Dict("type","2d","alpha",a,"mirror",0)));
 				transforms.push_back(Transform(Dict("type","2d","alpha",a,"mirror",1)));
 			}
-			if (verbose>0) printf("%d orientations to test\n",transforms.size());
+			if (verbose>0) printf("%lu orientations to test\n",transforms.size());
 
 			// We iterate over all orientations
 			for (unsigned int it=0; it<transforms.size(); it++) {
@@ -2934,7 +2934,7 @@ vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * 
 
 
 //	float dstep[3] = {7.5,7.5,7.5};		// we take  steps for each of the 3 angles, may be positive or negative
-	char *axname[] = {"az","alt","phi"};
+	string axname[] = {"az","alt","phi"};
 
 	// We start with 32^3, 64^3 ...
 	for (int sexp=4; sexp<10; sexp++) {
@@ -2999,7 +2999,7 @@ vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * 
 			Symmetry3D* sym = Factory<Symmetry3D>::get((string)params.set_default("sym","c1"));
 			// We don't generate for phi, since this can produce a very large number of orientations
 			vector<Transform> transforms = sym->gen_orientations((string)params.set_default("orientgen","eman"),d);
-			if (verbose>0) printf("%d orientations to test (%d)\n",(int)(transforms.size()*(360.0/astep)),transforms.size());
+			if (verbose>0) printf("%d orientations to test (%lu)\n",(int)(transforms.size()*(360.0/astep)),transforms.size());
 			if (transforms.size()<30) continue; // for very high symmetries we will go up to 32 instead of 24
 
 			// We iterate over all orientations in an asym triangle (alt & az) then deal with phi ourselves
@@ -3007,7 +3007,7 @@ vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * 
 			for (unsigned int it=0; it<transforms.size(); it++) {
 				Transform t = transforms[it];
 				if (verbose>2) {
-					printf("  %d/%d \r",it,transforms.size());
+					printf("  %d/%lu \r",it,transforms.size());
 					fflush(stdout);
 				}
 				for (float phi=0; phi<360.0; phi+=astep) {
@@ -3116,7 +3116,7 @@ vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * 
 					}
 
 					if (!changed) {
-						for (int j=0; j<3; j++) s_step[i*3+j]*-0.75;
+//						for (int j=0; j<3; j++) s_step[i*3+j]*-0.75;
 						changed=1;
 					}
 					if (fabs(s_step[i*3])<astep/4 && fabs(s_step[i*3+1])<astep/4 && fabs(s_step[i*3+2])<astep/4) changed=0;
@@ -3293,7 +3293,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 
 
 //	float dstep[3] = {7.5,7.5,7.5};		// we take  steps for each of the 3 angles, may be positive or negative
-	char *axname[] = {"az","alt","phi"};
+	string axname[] = {"az","alt","phi"};
 
 	// We start with 32^3, 64^3 ...
 	for (int sexp=4; sexp<10; sexp++) {
@@ -3358,7 +3358,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 			Symmetry3D* sym = Factory<Symmetry3D>::get((string)params.set_default("sym","c1"));
 			// We don't generate for phi, since this can produce a very large number of orientations
 			vector<Transform> transforms = sym->gen_orientations((string)params.set_default("orientgen","eman"),d);
-			if (verbose>0) printf("%d orientations to test (%d)\n",(int)(transforms.size()*(360.0/astep)),transforms.size());
+			if (verbose>0) printf("%d orientations to test (%lu)\n",(int)(transforms.size()*(360.0/astep)),transforms.size());
 			if (transforms.size()<30) continue; // for very high symmetries we will go up to 32 instead of 24
 
 			// We iterate over all orientations in an asym triangle (alt & az) then deal with phi ourselves
@@ -3366,7 +3366,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 			for (unsigned int it=0; it<transforms.size(); it++) {
 				Transform t = transforms[it];
 				if (verbose>2) {
-					printf("  %d/%d \r",it,transforms.size());
+					printf("  %d/%lu \r",it,transforms.size());
 					fflush(stdout);
 				}
 				for (float phi=0; phi<360.0; phi+=astep) {
@@ -3475,7 +3475,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 					}
 
 					if (!changed) {
-						for (int j=0; j<3; j++) s_step[i*3+j]*-0.75;
+//						for (int j=0; j<3; j++) s_step[i*3+j]*-0.75;
 						changed=1;
 					}
 					if (fabs(s_step[i*3])<astep/4 && fabs(s_step[i*3+1])<astep/4 && fabs(s_step[i*3+2])<astep/4) changed=0;
@@ -4024,9 +4024,9 @@ float frm_2d_Align(EMData *this_img, EMData *to, float *frm2dhhat, EMData* selfp
 	delete[] gnr2;
 	delete[] maxcor;
 	delete[] result;
-	delete cr;
+	delete[] cr;
 	cr=0;
-	delete ci;
+	delete[] ci;
 	ci=0;
 	delete data_in; // ming add
 	dx = -Tx;		// the Rota & Trans value (Tx,Ty, ang_keep) are for the projection image,

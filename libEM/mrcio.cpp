@@ -275,7 +275,7 @@ void MrcIO::check_swap(const int * data, const char * filnam, bool show_errors,
 
 	bool debug = (getenv("DEBUG_MRC_SANITY") != NULL);
 
-	char * errmsg;
+	string errmsg;
 
 	have_err = false;
 
@@ -342,7 +342,7 @@ void MrcIO::check_swap(const int * data, const char * filnam, bool show_errors,
 		printf ("nx, ny, nz, mode swapped = %d %d %d %d\n", nxw,   nyw,   nzw,  modew);
 		printf ("mapc, mapr, maps         = %d %d %d\n",    mapc,  mapr,  maps);
 		printf ("mapc, mapr, maps swapped = %d %d %d\n",    mapcw, maprw, mapsw);
-		printf ("%s\n", errmsg);
+		printf ("%s\n", errmsg.c_str());
 	}
 }
 
