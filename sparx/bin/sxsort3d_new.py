@@ -5781,7 +5781,7 @@ def main():
 				sptp = prep_ptp_single(merged_classes, tlist)
 				ptp.append(sptp)
 			accounted_list, unaccounted_list, new_index, rsort_clusters = do_two_way_comparison_classes(ptp[0], ptp[1], len(tlist))
-			msg = " total number of accounted for two rsort:  %d percentage:  %5.2f "%(len(accounted_list), float(len(accounted_list))/float(total_rsort)*100.0)
+			msg = " The final selected particles by two rsorts:  %d percentage:  %5.2f "%(len(accounted_list), float(len(accounted_list))/float(total_rsort)*100.0)
 			print(line, msg)
 			log_main.add(msg)
 			Tracker["output"].append(msg)
@@ -5802,6 +5802,9 @@ def main():
 			number_of_groups +=1
 		final_partition, tmp_index = merge_classes_into_partition_list(clusters_list)
 		write_text_row(tmp_index, os.path.join(Tracker["constants"]["masterdir"], "final_partition.txt"))
+		fout = open(os.path.join(Tracker["constants"]["masterdir"], "Tracker.json"),'w')
+		json.dump(Tracker, fout)
+		fout.close()
 	mpi_barrier(MPI_COMM_WORLD)
 	### Final Rec3D unfiltered two halves, valid only in case of sorting initiated from sphire refinement
 	if Tracker["constants"]["final_sharpen"]:
@@ -5840,13 +5843,16 @@ def main():
 		  Tracker["constants"]["masterdir"], Tracker["constants"]["nnxo"], log_main)
 	mpi_barrier(MPI_COMM_WORLD)
 	if(Blockdata["myid"] == Blockdata["main_node"]):
+		fout = open(os.path.join(Tracker["constants"]["masterdir"], "Tracker.json"),'r')
+		Tracker = convert_json_fromunicode(json.load(fout))
+		fout.close()
 		for iproc in xrange(number_of_groups):
 			msg = merge_two_unfiltered_maps(os.path.join(Tracker["constants"]["masterdir"], "vol_unfiltered_0_grp%03d.hdf"%iproc), \
 			  os.path.join(Tracker["constants"]["masterdir"], "vol_unfiltered_1_grp%03d.hdf"%iproc), iproc)
 			Tracker["output"].append(msg)
 		write_text_file(Tracker["output"], os.path.join(Tracker["constants"]["masterdir"], "final.txt"))
 		fout = open(os.path.join(Tracker["constants"]["masterdir"], "Tracker.json"),'w')
-		json.dump(sorting, fout)
+		json.dump(Tracker, fout)
 		fout.close()
 	mpi_barrier(MPI_COMM_WORLD)
 	from mpi import mpi_finalize
