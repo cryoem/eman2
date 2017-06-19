@@ -3116,6 +3116,7 @@ vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * 
 					}
 
 					if (!changed) {
+//						for (int j=0; j<3; j++) s_step[i*3+j]*-0.75;
 						changed=1;
 					}
 					if (fabs(s_step[i*3])<astep/4 && fabs(s_step[i*3+1])<astep/4 && fabs(s_step[i*3+2])<astep/4) changed=0;
