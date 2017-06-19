@@ -54,7 +54,7 @@ from emapplication import EMApp
 import os, json, re, glob, signal
 import subprocess
 
-helpstring+="\n\nYou are currently running %s (%s)"%(EMANVERSION,DATESTAMP[6:-2])
+helpstring+="\n\nYou are currently running %s (%s)"%(EMANVERSION,DATESTAMP)
 
 try:
 	if os.getenv("DISPLAY")==None : raise Exception
