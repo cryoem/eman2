@@ -502,6 +502,14 @@ ENDIF(ENABLE_PNG)
 
 FIND_PATH(NUMPY_INCLUDE_PATH numpy/arrayobject.h
 	${CONDA_SP_DIR}/numpy/core/include
+	$ENV{HOME}/anaconda2/lib/python2.7/site-packages/numpy/core/include
+	$ENV{HOME}/EMAN2/anaconda2/lib/python2.7/site-packages/numpy/core/include
+	$ENV{PYTHON_ROOT}/lib/python2.7/site-packages/numpy/core/include
+	/usr/local/lib/python2.7/site-packages/numpy/core/include
+	/usr/lib64/python2.7/site-packages/numpy/core/include
+	/usr/lib/python2.7/site-packages/numpy/core/include
+    #/System/Library/Frameworks/Python.framework/Versions/2.7/Extras/lib/python/numpy/core/include
+    /usr/include 
     NO_DEFAULT_PATH)
 
 message("NUMPY_INCLUDE_PATH: ${NUMPY_INCLUDE_PATH}")
