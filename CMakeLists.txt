@@ -373,10 +373,9 @@ MACRO(CHECK_REQUIRED_LIB2 upper lower header lower2 header2)
 
     IF(${upper}_INCLUDE_PATH)
 		FIND_LIBRARY(${upper}_LIBRARY NAMES ${lower} ${lower2} PATHS $ENV{${upper}DIR}/lib ${LIB_DIRS})
-		IF(NOT ${upper}_LIBRARY)
-			MESSAGE(SEND_ERROR "ERROR: ${upper} not found. please install ${upper} first!")
-		ENDIF()
-    ELSE()
+    ENDIF()
+		
+	IF(NOT ${upper}_INCLUDE_PATH OR NOT ${upper}_LIBRARY)
 		MESSAGE(SEND_ERROR "ERROR: ${upper} not found. please install ${upper} first!")
     ENDIF()
 
