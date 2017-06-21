@@ -364,8 +364,11 @@ MACRO(CHECK_REQUIRED_LIB2 upper lower header lower2 header2)
 	endif()
 		
 	IF(NOT ${upper}_INCLUDE_PATH)
-		FIND_PATH(${upper}_INCLUDE_PATH ${header} $ENV{${upper}DIR}/include ${INCLUDE_DIRS} NO_DEFAULT_PATH)
-		FIND_PATH(${upper}_INCLUDE_PATH ${header2} $ENV{${upper}DIR}/include ${INCLUDE_DIRS} NO_DEFAULT_PATH)
+		FIND_PATH(${upper}_INCLUDE_PATH 
+				NAMES ${header} ${header2}
+				PATHS $ENV{${upper}DIR}/include ${INCLUDE_DIRS}
+				NO_DEFAULT_PATH
+				)
     ENDIF()
 
     IF(${upper}_INCLUDE_PATH)
