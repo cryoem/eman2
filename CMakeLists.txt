@@ -500,8 +500,15 @@ IF(ENABLE_PNG)
 	ADD_DEFINITIONS(-DEM_PNG)
 ENDIF(ENABLE_PNG)
 
+CHECK_PYTHON()
+
+execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "import numpy; print numpy.get_include()"
+		OUTPUT_VARIABLE numpy_include_path
+		OUTPUT_STRIP_TRAILING_WHITESPACE
+		)
+
 FIND_PATH(NUMPY_INCLUDE_PATH numpy/arrayobject.h
-	${CONDA_SP_DIR}/numpy/core/include
+	${numpy_include_path}
 	$ENV{HOME}/anaconda2/lib/python2.7/site-packages/numpy/core/include
 	$ENV{HOME}/EMAN2/anaconda2/lib/python2.7/site-packages/numpy/core/include
 	$ENV{PYTHON_ROOT}/lib/python2.7/site-packages/numpy/core/include
@@ -515,7 +522,6 @@ message("NUMPY_INCLUDE_PATH: ${NUMPY_INCLUDE_PATH}")
 
 INCLUDE_DIRECTORIES(${NUMPY_INCLUDE_PATH})
 
-CHECK_PYTHON()
 
 # Find Boost
 find_package(Boost COMPONENTS python REQUIRED)
