@@ -7657,7 +7657,6 @@ void Util::WTM(EMData *PROJ,vector<float>SS, int DIAMETER,int NUMP)
 float Util::tf(float dzz, float ak, float voltage, float cs, float wgh, float b_factor, float sign)
 {
 	float cst  = cs*1.0e7f;
-
 	wgh /= 100.0;
 	float phase;
 	if(wgh > 0.0f) {
@@ -7666,7 +7665,7 @@ float Util::tf(float dzz, float ak, float voltage, float cs, float wgh, float b_
 	} else {
 		if(wgh <= -1.0f)  phase = M_PI;
 		else phase = M_PI + atan(wgh/sqrt(1.0f-wgh*wgh));
-	}
+	} 
 	float lambda=12.398f/sqrt(voltage*(1022.0f+voltage));
 	float ak2 = ak*ak;
 	float g1 = dzz*1.0e4f*lambda*ak2;

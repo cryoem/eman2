@@ -36,7 +36,8 @@ sx3dvariability exists only in MPI version.
     no_var2D_save:: Do not save 2D variances: (default False)
     VAR:: Stack on input consists of 2D variances: (default False)
     SND:: Squared normalized differences: If set to true, it computes the squared normalised differences. (default False)
-    VERBOSE:: Verbose: Useful for debugging. (default False) 
+    VERBOSE:: Verbose: Useful for debugging. (default False)
+    decimate::a number for changing image size, <1. reduce image size; >1. increase image size; (default 1.0)
 
 
 == Output ==
