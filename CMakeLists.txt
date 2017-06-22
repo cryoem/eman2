@@ -83,6 +83,9 @@ if(ENABLE_CONDA)
 	endif()
 endif()
 
+set(CMAKE_PREFIX_PATH ${EMAN_PREFIX} ${EMAN_PREFIX}/..)
+message_var(CMAKE_PREFIX_PATH)
+
 CHECK_PYTHON()
 if(NOT WIN32)
 	set(py_sp_dir_command "import site; print site.getsitepackages()[0]")
