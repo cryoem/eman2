@@ -108,6 +108,10 @@ def construct_keyword_dict():
 	# Use priority 1 for output
 	keyword_dict["output"]                        = SXkeyword_map(1, "output")         # output_hdf, output_directory, outputfile, outputfile, --output=OUTPUT, output_stack, output_file
 	keyword_dict["outdir"]                        = SXkeyword_map(1, "output")         # outdir
+	keyword_dict["--ave3D"]                       = SXkeyword_map(1, "output")         # --ave3D
+	keyword_dict["--var3D"]                       = SXkeyword_map(1, "output")         # --var3D
+	keyword_dict["--ave2D"]                       = SXkeyword_map(1, "output")         # --ave2D
+	keyword_dict["--var2D"]                       = SXkeyword_map(1, "output")         # --var2D
 ###	keyword_dict["--masterdir"]                   = SXkeyword_map(1, "output")         # --masterdir=master_dir
 	keyword_dict["locres_volume"]                 = SXkeyword_map(1, "output")         # locres_volume (this contained keyword "volume" also... This is another reason why priority is introduced...)
 	keyword_dict["directory"]                     = SXkeyword_map(1, "output")         # directory
@@ -1107,15 +1111,15 @@ def create_sxcmd_subconfig_refine3d_postprocess():
 
 	return sxcmd_subconfig
 
-### def create_sxcmd_subconfig_variability_preprocess():
-### 	token_edit_list = []
-### 	token_edit = SXcmd_token(); token_edit.initialize_edit("symmetrize"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
-### 	token_edit = SXcmd_token(); token_edit.initialize_edit("prj_stack"); token_edit.key_prefix = ""; token_edit.label = "Input image stack"; token_edit.help = "The images must containt the 3D orientation parameters in the header and optionally CTF information. The output image stack is bdb:sdata. Please use it as an input image stack of sx3dvariability."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit)
-### 	token_edit = SXcmd_token(); token_edit.initialize_edit("sym"); token_edit_list.append(token_edit)
-### 	sxsubcmd_mpi_support = False
-### 	sxcmd_subconfig = SXsubcmd_config("3D Variability Preprocess", token_edit_list, sxsubcmd_mpi_support)
-### 
-### 	return sxcmd_subconfig
+def create_sxcmd_subconfig_variability_preprocess():
+	token_edit_list = []
+	token_edit = SXcmd_token(); token_edit.initialize_edit("symmetrize"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("prj_stack"); token_edit.key_prefix = ""; token_edit.label = "Input image stack"; token_edit.help = "The images must containt the 3D orientation parameters in the header and optionally CTF information. The output image stack is bdb:sdata. Please use it as an input image stack of sx3dvariability."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("sym"); token_edit_list.append(token_edit)
+	sxsubcmd_mpi_support = False
+	sxcmd_subconfig = SXsubcmd_config("3D Variability Preprocess", token_edit_list, sxsubcmd_mpi_support)
+
+	return sxcmd_subconfig
 
 def create_sxcmd_subconfig_meridien_local():
 	token_edit_list = []
@@ -1354,9 +1358,9 @@ def main():
 	sxcmd_category = "sxc_sort3d"
 
 	sxcmd_role = "sxr_pipe"
-### 	sxcmd_config_list.append(SXcmd_config("../doc/3dvariability.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_variability_preprocess()))
-### 	sxcmd_config_list.append(SXcmd_config("../doc/3dvariability.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list=["symmetrize"]))
-	sxcmd_config_list.append(SXcmd_config("../doc/3dvariability.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/3dvariability.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_variability_preprocess()))
+	sxcmd_config_list.append(SXcmd_config("../doc/3dvariability.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list=["symmetrize"]))
+	# sxcmd_config_list.append(SXcmd_config("../doc/3dvariability.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 	# sxcmd_config_list.append(SXcmd_config("../doc/sort3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 ### 	sxcmd_config_list.append(SXcmd_config("../doc/rsort3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 ### 	sxcmd_config_list.append(SXcmd_config("../doc/rsort3d-1105.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_rsort3d()))
