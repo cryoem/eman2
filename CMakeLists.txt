@@ -26,12 +26,13 @@ OPTION(ENABLE_CONDA "enable conda-supported build" OFF)
 # If it is not conda-build build and ENABLE_CONDA is not set, it is legacy build
 if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" OR ENABLE_CONDA)
 	if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" )
-		set(CONDA_SP_DIR $ENV{SP_DIR})
 		if(NOT WIN32)
 			set(CONDA_PREFIX $ENV{PREFIX})
 		else()
 			set(CONDA_PREFIX $ENV{LIBRARY_PREFIX})
 		endif()
+		
+		set(CONDA_SP_DIR $ENV{SP_DIR})
 	elseif(ENABLE_CONDA)
 		# Assuming the active conda environment is on PATH, this finds the path of bin/ in the environment
 		find_path(CONDA_PREFIX conda
