@@ -510,16 +510,11 @@ IF (ENABLE_FTGL)
 		ADD_DEFINITIONS(-DOLD_FTGL)
 	ENDIF(EXISTS ${FTGL_INCLUDE_PATH}/FTGL/FTGL.h AND COMMAND IF)
 	ADD_SUBDIRECTORY(fonts)
-    	FIND_PATH(FREETYPE_INCLUDE_PATH ft2build.h 
-		${CONDA_PREFIX_INC}/freetype2
-		$ENV{HOME}/EMAN2/anaconda2/include/freetype2 
-		$ENV{HOME}/anaconda2/include/freetype2 
-		/usr/include/freetype2 
-		/usr/include 
-		${INCLUDE_DIRS}
-		NO_DEFAULT_PATH
-	)
-	CHECK_REQUIRED_LIB(FREETYPE freetype config/ftheader.h )
+	find_package(Freetype REQUIRED)
+
+	set(FREETYPE_LIBRARY ${FREETYPE_LIBRARIES} CACHE PATH "")
+	set(FREETYPE_INCLUDE_PATH ${FREETYPE_INCLUDE_DIRS} CACHE PATH "")
+		
 	IF (ENABLE_STATIC_FTGL)
 		IF(WIN32)
 			CHECK_REQUIRED_LIB(FREETYPE freetype ft2build.h)
