@@ -6,7 +6,7 @@ sx3dvariability - 3D Variability Estimation: Calculate 3D variability using a se
 
 ''usage in command line''
 
-sx3dvariability.py  prj_stack  --ave3D=ave3D  --var3D=var3D  --img_per_grp=img_per_grp  --sym=symmetry  --CTF  --fl=fl  --aa=aa  --symmetrize  --no_norm  --radius=radius  --npad=npad  --VAR  --decimate  --window  --nvec  --VERBOSE  --ave2D=ave2D  --var2D=var2D  
+sx3dvariability.py  prj_stack  --ave3D=ave3D  --var3D=var3D  --img_per_grp=img_per_grp  --sym=symmetry  --CTF  --fl=fl  --aa=aa  --symmetrize  --no_norm  --npad=npad  --VAR  --decimate  --window  --nvec  --VERBOSE  --ave2D=ave2D  --var2D=var2D  
 
 
 === Typical usage ===
@@ -39,7 +39,6 @@ For structures that have symmetries:
 
     * The remaining parameters are optional.
     no_norm:: Skip normalization: (default False)
-    radius:: Radius for 3D variability [Pixels]: Normally, use the particle radius. (default -1)
     npad:: Image padding factor: The images are padded to achieve the original size times this option. (default 2)
     VAR:: Stack on input consists of 2D variances: (default False)
     decimate:: Image decimate factor: Reduce images by this factor and change the pixel size. Specify a value large than 1.0 to expand images, and less than 1.0 to shrink them. By default, it does not change size of images(default 1.0)
