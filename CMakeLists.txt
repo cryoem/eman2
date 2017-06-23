@@ -288,6 +288,7 @@ MACRO(CHECK_REQUIRED_LIB2 upper lower header lower2 header2)
 
     IF(${upper}_INCLUDE_PATH)
 		FIND_LIBRARY(${upper}_LIBRARY NAMES ${lower} ${lower2} PATHS $ENV{${upper}DIR}/lib ${LIB_DIRS})
+		message("FIND_LIBRARY: ${upper}_LIBRARY NAMES ${lower} ${lower2} PATHS $ENV{${upper}DIR}/lib ${LIB_DIRS}")
     ENDIF()
 		
 	IF(NOT ${upper}_INCLUDE_PATH OR NOT ${upper}_LIBRARY)
