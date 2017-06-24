@@ -57,7 +57,8 @@ if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" OR ENABLE_CONDA)
 		endif()
 
 		get_filename_component(CONDA_PREFIX ${CONDA_PREFIX}/.. ABSOLUTE)
-
+			
+		CHECK_PYTHON()
 		if(NOT WIN32)
 			set(py_sp_dir_command "import site; print site.getsitepackages()[0]")
 		else()
@@ -505,8 +506,6 @@ IF(ENABLE_PNG)
 	message("PNG_LIBRARIES: ${PNG_LIBRARIES}")
 	ADD_DEFINITIONS(-DEM_PNG)
 ENDIF(ENABLE_PNG)
-
-CHECK_PYTHON()
 
 execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "import numpy; print numpy.get_include()"
 		OUTPUT_VARIABLE numpy_include_path
