@@ -58,10 +58,15 @@ if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" OR ENABLE_CONDA)
 
 		get_filename_component(CONDA_PREFIX ${CONDA_PREFIX}/.. ABSOLUTE)
 
-		execute_process(COMMAND ${CONDA_PREFIX}/bin/python -c "import site; print site.getsitepackages()[0]"
-						OUTPUT_VARIABLE CONDA_SP_DIR
-						OUTPUT_STRIP_TRAILING_WHITESPACE
-					   )
+		if(NOT WIN32)
+			set(py_sp_dir_command "import site; print site.getsitepackages()[0]")
+		else()
+			set(py_sp_dir_command "import site; print site.getsitepackages()[1]")
+		endif()
+		execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "${py_sp_dir_command}"
+				OUTPUT_VARIABLE CONDA_SP_DIR
+				OUTPUT_STRIP_TRAILING_WHITESPACE
+				)
 	endif()
 		
 	SET(EMAN_INSTALL_PREFIX    ${CONDA_PREFIX} CACHE PATH "installation prefix")
