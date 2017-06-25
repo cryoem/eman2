@@ -6,6 +6,10 @@ IF(COMMAND cmake_policy)
        cmake_policy(SET CMP0002 OLD)
 ENDIF(COMMAND cmake_policy)
 
+FUNCTION(message_var var)
+	message("${var}: ${${var}}")
+endfunction()
+
 MARK_AS_ADVANCED(CLEAR CMAKE_VERBOSE_MAKEFILE)
 OPTION(CMAKE_VERBOSE_MAKEFILE "if all commands will be echoed to the console during the make" ON)
 
@@ -236,10 +240,6 @@ ENDIF(ENABLE_IOCACHE)
 # ENDIF(ENABLE_HDFIOCACHE)
 
 if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" OR ENABLE_CONDA)
-	FUNCTION(message_debug var)
-		message("${var}: ${${var}}")
-	endfunction()
-
 	set(CMAKE_PREFIX_PATH ${CONDA_PREFIX})
 	set(GSL_INCLUDE_DIRS ${CONDA_PREFIX}/include)
 	if(WIN32)
@@ -359,8 +359,8 @@ SET(LIB_DIRS
 MACRO(CHECK_REQUIRED_LIB2 upper lower header lower2 header2)
 	if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD")
 		message("\n### BEGIN ### CHECK_REQUIRED_LIB2 upper lower header lower2 header2")
-		message_debug(${upper}_INCLUDE_PATH)
-		message_debug(${upper}_LIBRARY)
+		message_var(${upper}_INCLUDE_PATH)
+		message_var(${upper}_LIBRARY)
 	endif()
 		
 	IF(NOT ${upper}_INCLUDE_PATH)
@@ -381,8 +381,8 @@ MACRO(CHECK_REQUIRED_LIB2 upper lower header lower2 header2)
 
 	if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD")
 		message("### END ### CHECK_REQUIRED_LIB2 upper lower header lower2 header2")
-		message_debug(${upper}_INCLUDE_PATH)
-		message_debug(${upper}_LIBRARY)
+		message_var(${upper}_INCLUDE_PATH)
+		message_var(${upper}_LIBRARY)
 	endif()
 ENDMACRO(CHECK_REQUIRED_LIB2)
 
