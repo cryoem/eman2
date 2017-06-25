@@ -512,8 +512,8 @@ IF (ENABLE_FTGL)
 	ADD_SUBDIRECTORY(fonts)
 	find_package(Freetype REQUIRED)
 
-	set(FREETYPE_LIBRARY      ${FREETYPE_LIBRARIES})
-	set(FREETYPE_INCLUDE_PATH ${FREETYPE_INCLUDE_DIRS})
+	message("FREETYPE_LIBRARIES:    ${FREETYPE_LIBRARIES}")
+	message("FREETYPE_INCLUDE_DIRS: ${FREETYPE_INCLUDE_DIRS}")
 		
 	IF (ENABLE_STATIC_FTGL)
 		IF(WIN32)
@@ -591,7 +591,7 @@ INCLUDE_DIRECTORIES(.
 	    ${ACML_INCLUDE_PATH}
 	    ${Boost_INCLUDE_DIR}
 	    ${PYTHON_INCLUDE_PATH}
-	    ${FREETYPE_INCLUDE_PATH}
+	    ${FREETYPE_INCLUDE_DIRS}
             )
 
 #---------------------------------------------------------------------------------------
