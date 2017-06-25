@@ -754,16 +754,7 @@ if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" OR ENABLE_CONDA)
 			)
 endif()
 
-ADD_CUSTOM_TARGET( unittest
-	DEPENDS	${TEST_RESULTS}
-)
-
-ADD_CUSTOM_COMMAND(
-	TARGET unittest
-	POST_BUILD
-	COMMAND python
-	ARGS ${EMAN_INSTALL_PREFIX}/test/rt/rt.py
-)
+enable_testing()
 
 #set the list of unit test to run
 #
