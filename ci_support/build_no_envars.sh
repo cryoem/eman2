@@ -7,8 +7,8 @@ sp_dir=$prefix/lib/python2.7/site-packages
 
 cmake $src_dir   -DENABLE_CONDA=OFF \
                     -DNUMPY_INCLUDE_PATH="$sp_dir/numpy/core/include" \
-                    -DBOOST_INCLUDE_PATH="$prefix/include" \
-                    -DBOOST_LIBRARY="$prefix/lib/libboost_python.${suffix}" \
+                    -DBoost_INCLUDE_DIR="$prefix/include" \
+                    -DBoost_LIBRARIES="$prefix/lib/libboost_python.${suffix}" \
                     -DFFTW3_INCLUDE_PATH="$prefix/include" \
                     -DFFTW3_LIBRARY="$prefix/lib/libfftw3f.${suffix}" \
                     -DFFTW3d_INCLUDE_PATH="$prefix/include" \
