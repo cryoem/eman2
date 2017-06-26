@@ -35,7 +35,6 @@ cmake $src_dir   -DENABLE_CONDA=OFF \
 
 make
 make install
-make test-verbose
 
 export PREFIX="${HOME}"/EMAN2
 export SP_DIR="${PREFIX}"/lib
@@ -45,5 +44,7 @@ export PYTHONPATH="$SP_DIR:$PYTHONPATH"
 ln -s $PREFIX/bin/e2version.py $SP_DIR/e2version.py
 ln -s $PREFIX/bin/sxgui.py     $PREFIX/bin/sphire
 ln -s $PREFIX/bin/sx.py        $PREFIX/bin/sparx
+
+make test-verbose
 
 source $src_dir/ci_support/post_build.sh
