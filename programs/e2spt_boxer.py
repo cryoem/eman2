@@ -69,7 +69,7 @@ def main():
 	2) extract particles from a tomogram using a coordinates file WITHOUT opening the GUI. This is useful when re-exctracting particles from a tomogram, when extracting only a subset of particles, when extracting particles on a remote machine without needing the -X server, when extracting particles multiple times from tomograms reconstructed using diferent algorithms, parameters, or filters, or when the sampling size of the coordinates file does not match the sampling size of the raw tomogram. 
 	In this case, you woukld run a command similar to:
 	
-		e2spt_boxer22.py tomo_raw.rec --coords coords_bin4.txt --cshrink 4 --output ptcls_sirt12.hdf --path sptboxer_sirt12 --normproc normalize.edgemean --invert --boxsize 256 --bruteaverage
+		e2spt_boxer.py tomo_raw.rec --coords coords_bin4.txt --cshrink 4 --output ptcls_sirt12.hdf --path sptboxer_sirt12 --normproc normalize.edgemean --invert --boxsize 256 --bruteaverage
 	
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
