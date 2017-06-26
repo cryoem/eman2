@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
-progs_file="tests/programs_to_test.txt"
-progs=$(cat ${progs_file})
+MYDIR=$(cd $(dirname $0); pwd -P)
+progs_file=${MYDIR}/programs_to_test.txt
+progs=$(cat "${progs_file}")
 if [ $? -ne 0 ];then
     exit 1
 fi
