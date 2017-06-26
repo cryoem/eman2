@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 
+set -e
+
 MYDIR=$(cd $(dirname $0); pwd -P)
 progs_file=${MYDIR}/programs_to_test.txt
 progs=$(cat "${progs_file}")
-if [ $? -ne 0 ];then
-    exit 1
-fi
+
+set +e
 
 failed_progs=()
 for prog in ${progs[@]};do
