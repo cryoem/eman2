@@ -35,6 +35,7 @@ cmake $src_dir   -DENABLE_CONDA=OFF \
 
 make
 make install
+make test-verbose
 
 export PREFIX="${HOME}"/EMAN2
 export SP_DIR="${PREFIX}"/lib
