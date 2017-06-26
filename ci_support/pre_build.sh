@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -x
+set -xe
 
 # Download and install Miniconda
 export MINICONDA_URL="https://repo.continuum.io/miniconda"
