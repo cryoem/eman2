@@ -17,6 +17,7 @@ for prog in ${progs[@]};do
     fi
 done
 
+echo
 echo "Total failed programs: ${#failed_progs[@]}"
 for prog in ${failed_progs[@]};do
     echo ${prog}
