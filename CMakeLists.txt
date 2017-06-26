@@ -756,6 +756,16 @@ endif()
 
 enable_testing()
 
+add_custom_target(test-verbose
+		COMMAND ${CMAKE_COMMAND} -P cmake_install.cmake
+		COMMAND ${CMAKE_CTEST_COMMAND} -V -C Release
+		)
+
+#add_custom_target(test-verbose
+#		COMMAND ${CMAKE_CTEST_COMMAND} -V -C Release
+#		DEPENDS Tests
+#		)
+# --------------------------------------------------------------------
 #set the list of unit test to run
 #
 SET (TESTS
