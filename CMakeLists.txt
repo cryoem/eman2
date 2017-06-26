@@ -772,10 +772,16 @@ function(add_test_wrapper name)
 			)
 endfunction()
 
-add_test_wrapper(TestHdfIO.test_read_image)
-add_test_wrapper(TestHdfIO.test_write_image)
-add_test_wrapper(TestHdfIO.test_read_write_hdf)
-add_test_wrapper(TestPNGIO.test_write_png)
+set(test_methods
+		TestHdfIO.test_read_image
+		TestHdfIO.test_write_image
+		TestHdfIO.test_read_write_hdf
+		TestPNGIO.test_write_png
+		)
+
+foreach(t ${test_methods})
+	add_test_wrapper(${t})
+endforeach()
 # --------------------------------------------------------------------
 #set the list of unit test to run
 #
