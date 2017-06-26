@@ -765,6 +765,17 @@ add_custom_target(test-verbose
 #		COMMAND ${CMAKE_CTEST_COMMAND} -V -C Release
 #		DEPENDS Tests
 #		)
+
+function(add_test_wrapper name)
+	add_test(NAME ${name}
+			COMMAND nosetests ${EMAN_INSTALL_PREFIX}/test/rt/pyem/test_imageio.py:${name}
+			)
+endfunction()
+
+add_test_wrapper(TestHdfIO.test_read_image)
+add_test_wrapper(TestHdfIO.test_write_image)
+add_test_wrapper(TestHdfIO.test_read_write_hdf)
+add_test_wrapper(TestPNGIO.test_write_png)
 # --------------------------------------------------------------------
 #set the list of unit test to run
 #
