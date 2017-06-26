@@ -9,7 +9,7 @@ fi
 failed_progs=()
 for prog in ${progs[@]};do
     echo "Running: $prog -h"
-    $prog -h
+    $prog -h > /dev/null
     if [ $? -ne 0 ];then
         failed_progs+=($prog)
     fi
