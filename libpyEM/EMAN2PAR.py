@@ -64,7 +64,7 @@ from e2spt_hac import Align3DTaskAVSA
 from e2spt_simulation import SubtomoSimTask
 from e2tomopreproc import TomoPreproc2DTask
 from e2symsearch3d import SymAlignTask
-from e2spt_boxer import TomoBoxer3DTask
+#from e2spt_boxer import TomoBoxer3DTask
 
 from e2erasefiducials import EraseGold2DTask
 
