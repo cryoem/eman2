@@ -770,7 +770,7 @@ add_custom_target(test-verbose
 
 function(add_test_wrapper name)
 	add_test(NAME ${name}
-			COMMAND nosetests ${EMAN_INSTALL_PREFIX}/test/rt/pyem/test_imageio.py:${name}
+			COMMAND nosetests ${EMAN_INSTALL_PREFIX}/test/rt/pyem/${name}
 			)
 endfunction()
 
