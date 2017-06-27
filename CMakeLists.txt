@@ -775,10 +775,10 @@ function(add_test_wrapper name)
 endfunction()
 
 set(test_methods
-		TestHdfIO.test_read_image
-		TestHdfIO.test_write_image
-		TestHdfIO.test_read_write_hdf
-		TestPNGIO.test_write_png
+		test_imageio.py:TestHdfIO.test_read_image
+		test_imageio.py:TestHdfIO.test_write_image
+		test_imageio.py:TestHdfIO.test_read_write_hdf
+		test_imageio.py:TestPNGIO.test_write_png
 		)
 
 foreach(t ${test_methods})
