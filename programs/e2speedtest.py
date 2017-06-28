@@ -60,6 +60,7 @@ improved with time."""
 
 	parser.add_argument("--slow",action="store_true",help="rtf_slow alignment",default=False)
 	parser.add_argument("--best",action="store_true",help="rtf_best alignment",default=False)
+	parser.add_argument("--short",action="store_true",help="Fewer iterations, mainly for profiling",default=False)
 	parser.add_argument("--old",action="store_true",help="old rtf+refine aligner",default=False)
 	parser.add_argument("--low",action="store_true",help="low level test",default=False)
 	parser.add_argument("--size",type=int,help="Size of particles, 192 default for comparisons",default=192)
@@ -165,7 +166,11 @@ so in most cases it is not dealt with.'
 
 	tms=[]
 	t1 = time.clock()
-	for i in xrange(8):
+	if options.short:
+		NTT=NTT/2
+		rng=1
+	else: rng=8
+	for i in xrange(rng):
 		t11 = time.clock()
 		for j in xrange(5, NTT):
 			if options.best:
