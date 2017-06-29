@@ -479,6 +479,9 @@ ENDIF(ENABLE_OPTPP)
 
 CHECK_REQUIRED_LIB(GSL gsl gsl/gsl_linalg.h)
 CHECK_REQUIRED_LIB(GSL_CBLAS gslcblas gsl/gsl_linalg.h)
+if(WIN32)
+	add_definitions(-DGSL_DLL -DFTGL_LIBRARY_STATIC)
+endif()
 
 IF (ENABLE_OPENGL)
 	find_package(OpenGL REQUIRED)
