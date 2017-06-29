@@ -194,7 +194,7 @@ so in most cases it is not dealt with.'
 
 	ti = t2 - t1
 
-	if SIZE==256:
+	if SIZE==256 and not options.short:
 		print 'For comparison (Values approximate. Repeated runs will give some variation.)'
 		print 'A 2011 MacBook Pro (2.2ghz core-i7) -----------------------------'
 		print 'An Intel Xeon E5645 2.4Ghz SF -----------------------------------'
@@ -203,7 +203,7 @@ so in most cases it is not dealt with.'
 		print 'An Intel Xeon X5675 3.07Ghz SF ----------------------------------'
 		print 'An Intel Core i7-3960X 3.3Ghz SF --------------------------------'
 
-	print '\nYour machines speed factor = %1.4f +- %1.4f (%1.4f +- %1.5f sec)\n' % (2.3/tms.mean(),2.3/tms.mean()-2.3/(tms.mean()+tms.std()),tms.mean()/(NTT-5.0),tms.std()/(NTT-5.0))
+	if not options.short: print '\nYour machines speed factor = %1.4f +- %1.4f (%1.4f +- %1.5f sec)\n' % (2.3/tms.mean(),2.3/tms.mean()-2.3/(tms.mean()+tms.std()),tms.mean()/(NTT-5.0),tms.std()/(NTT-5.0))
 	
 	try:
 		for l in file("/proc/cpuinfo","r"):
