@@ -743,26 +743,46 @@ ADD_SUBDIRECTORY(doc)
 ADD_SUBDIRECTORY(images)
 ADD_SUBDIRECTORY(recipes)
 
-if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" OR ENABLE_CONDA)
-	install(CODE "execute_process(
-					COMMAND ${CMAKE_COMMAND} -E create_symlink ${CONDA_PREFIX}/bin/e2version.py ${CONDA_SP_DIR}/e2version.py
-					COMMAND ${CMAKE_COMMAND} -E create_symlink ${CONDA_PREFIX}/bin/sxgui.py     ${CONDA_PREFIX}/bin/sphire
-					COMMAND ${CMAKE_COMMAND} -E create_symlink ${CONDA_PREFIX}/bin/sx.py        ${CONDA_PREFIX}/bin/sparx
-				 )"
-			)
+if(NOT WIN32)
+	if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" OR ENABLE_CONDA)
+		install(CODE "execute_process(
+						COMMAND ${CMAKE_COMMAND} -E create_symlink ${CONDA_PREFIX}/bin/e2version.py ${CONDA_SP_DIR}/e2version.py
+						COMMAND ${CMAKE_COMMAND} -E create_symlink ${CONDA_PREFIX}/bin/sxgui.py     ${CONDA_PREFIX}/bin/sphire
+						COMMAND ${CMAKE_COMMAND} -E create_symlink ${CONDA_PREFIX}/bin/sx.py        ${CONDA_PREFIX}/bin/sparx
+					 )"
+				)
+	endif()
 endif()
 
-ADD_CUSTOM_TARGET( unittest
-	DEPENDS	${TEST_RESULTS}
-)
+enable_testing()
 
-ADD_CUSTOM_COMMAND(
-	TARGET unittest
-	POST_BUILD
-	COMMAND python
-	ARGS ${EMAN_INSTALL_PREFIX}/test/rt/rt.py
-)
+add_custom_target(test-verbose
+		COMMAND ${CMAKE_COMMAND} -P cmake_install.cmake
+		COMMAND ${CMAKE_CTEST_COMMAND} -V -C Release
+		)
 
+#add_custom_target(test-verbose
+#		COMMAND ${CMAKE_CTEST_COMMAND} -V -C Release
+#		DEPENDS Tests
+#		)
+
+function(add_test_wrapper name)
+	add_test(NAME ${name}
+			COMMAND nosetests ${EMAN_INSTALL_PREFIX}/test/rt/pyem/${name}
+			)
+endfunction()
+
+set(test_methods
+		test_imageio.py:TestHdfIO.test_read_image
+		test_imageio.py:TestHdfIO.test_write_image
+		test_imageio.py:TestHdfIO.test_read_write_hdf
+		test_imageio.py:TestPNGIO.test_write_png
+		)
+
+foreach(t ${test_methods})
+	add_test_wrapper(${t})
+endforeach()
+# --------------------------------------------------------------------
 #set the list of unit test to run
 #
 SET (TESTS

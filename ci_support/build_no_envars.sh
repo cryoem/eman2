@@ -45,4 +45,6 @@ ln -s $PREFIX/bin/e2version.py $SP_DIR/e2version.py
 ln -s $PREFIX/bin/sxgui.py     $PREFIX/bin/sphire
 ln -s $PREFIX/bin/sx.py        $PREFIX/bin/sparx
 
+make test-verbose
+
 source $src_dir/ci_support/post_build.sh
