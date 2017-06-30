@@ -116,7 +116,6 @@ ELSE()
 	OPTION(ENABLE_OPTIMIZE_OSX "enable OSX support" OFF)
 ENDIF()
 
-
 IF (ENABLE_OPTIMIZE_OSX)
 	SET(GL_LIBRARY /System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib)
 	SET(GLU_LIBRARY /System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGLU.dylib)
@@ -169,7 +168,6 @@ ELSE()
     ENDIF(WIN32)
 ENDIF()
 #MESSAGE("OPT_FLAGS = " ${OPT_FLAGS})
-
 
 IF(CMAKE_SYSTEM MATCHES "IRIX.*")
 	SET(PLATFORMLIB "/usr/lib32" CACHE INTERNAL "IRIX lib32")
@@ -236,7 +234,6 @@ ENDIF(ENABLE_IOCACHE)
 # IF(ENABLE_HDFIOCACHE)
 #     ADD_DEFINITIONS(-DHDFIO_CACHE)
 # ENDIF(ENABLE_HDFIOCACHE)
-
 
 if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" OR ENABLE_CONDA)
 	FUNCTION(message_debug var)
@@ -367,22 +364,20 @@ MACRO(CHECK_REQUIRED_LIB2 upper lower header lower2 header2)
 	endif()
 		
 	IF(NOT ${upper}_INCLUDE_PATH)
-		FIND_PATH(${upper}_INCLUDE_PATH ${header} $ENV{${upper}DIR}/include ${INCLUDE_DIRS} NO_DEFAULT_PATH)
-	endif()
-    IF(${upper}_INCLUDE_PATH)
-    ELSE (${upper}_INCLUDE_PATH)
-		FIND_PATH(${upper}_INCLUDE_PATH ${header2} $ENV{${upper}DIR}/include ${INCLUDE_DIRS} NO_DEFAULT_PATH)
-    ENDIF(${upper}_INCLUDE_PATH)
+		FIND_PATH(${upper}_INCLUDE_PATH 
+				NAMES ${header} ${header2}
+				PATHS $ENV{${upper}DIR}/include ${INCLUDE_DIRS}
+				NO_DEFAULT_PATH
+				)
+    ENDIF()
 
     IF(${upper}_INCLUDE_PATH)
 		FIND_LIBRARY(${upper}_LIBRARY NAMES ${lower} ${lower2} PATHS $ENV{${upper}DIR}/lib ${LIB_DIRS})
-		IF(${upper}_LIBRARY)
-		ELSE(${upper}_LIBRARY)
-			MESSAGE(SEND_ERROR "ERROR: ${upper} not found. please install ${upper} first!")
-		ENDIF(${upper}_LIBRARY)
-    ELSE(${upper}_INCLUDE_PATH)
+    ENDIF()
+		
+	IF(NOT ${upper}_INCLUDE_PATH OR NOT ${upper}_LIBRARY)
 		MESSAGE(SEND_ERROR "ERROR: ${upper} not found. please install ${upper} first!")
-    ENDIF(${upper}_INCLUDE_PATH)
+    ENDIF()
 
 	if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD")
 		message("### END ### CHECK_REQUIRED_LIB2 upper lower header lower2 header2")
@@ -404,15 +399,15 @@ MACRO(CHECK_OPTIONAL_LIB upper lower header)
         IF(${upper}_LIBRARY)
 			ADD_DEFINITIONS(-DEM_${upper})
 			INCLUDE_DIRECTORIES(${${upper}_INCLUDE_PATH})
-        ELSE(${upper}_LIBRARY)
+        ELSE()
 			#MESSAGE("WARNING: ${upper} not found, ENABLE_${upper} is set back to OFF")
 			OPTION(ENABLE_${upper} "if enable ${upper} support" OFF)
-        ENDIF(${upper}_LIBRARY)
+        ENDIF()
 
-    ELSE(${upper}_INCLUDE_PATH)
+    ELSE()
 		#MESSAGE("WARNING: ${upper} not found, ENABLE_${upper} is set back to OFF")
         OPTION(ENABLE_${upper} "if enable ${upper} support" OFF)
-    ENDIF(${upper}_INCLUDE_PATH)
+    ENDIF()
 ENDMACRO(CHECK_OPTIONAL_LIB)
 
 MACRO(CHECK_LIB_ONLY upper lower)
@@ -582,6 +577,7 @@ ENDIF(ENABLE_OPTPP)
 
 CHECK_REQUIRED_LIB(GSL gsl gsl/gsl_linalg.h)
 CHECK_REQUIRED_LIB(GSL_CBLAS gslcblas gsl/gsl_linalg.h)
+
 IF (ENABLE_OPENGL)
 	CHECK_REQUIRED_LIB(GL GL GL/gl.h)
 	CHECK_REQUIRED_LIB(GLU GLU GL/glu.h)
@@ -610,7 +606,6 @@ IF (ENABLE_FTGL)
 		ENDIF(WIN32)
 	ENDIF (ENABLE_STATIC_FTGL)
 ENDIF (ENABLE_FTGL)
-
 
 IF(ENABLE_TIFF)
     CHECK_OPTIONAL_LIB(TIFF tiff tiffio.h)
@@ -814,4 +809,3 @@ FOREACH (TEST ${TESTS})
 	)
 
 ENDFOREACH (TEST)
-
