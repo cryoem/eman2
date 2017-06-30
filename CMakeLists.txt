@@ -334,46 +334,6 @@ MACRO(CHECK_PYTHON)
 		message("PYTHON_INCLUDE_DIRS: ${PYTHON_INCLUDE_DIRS}")
 		message("PYTHON_INCLUDE_PATH: ${PYTHON_INCLUDE_PATH}")
 		message("PYTHON_INCLUDE_DIR: ${PYTHON_INCLUDE_DIR}")
-	else()
-        SET(PYTHON_FOUND FALSE)
-
-        FOREACH(PYVER ${ARGV})
-                IF(NOT PYTHON_FOUND)
-                        IF (WIN32)
-                                FIND_PATH(PYTHON_INCLUDE_PATH Python.h
-                                        $ENV{PYTHON_ROOT}/include C:/Python${PYVER}/include NO_DEFAULT_PATH)
-
-                                FIND_LIBRARY(PYTHON_LIBRARY NAMES python${PYVER} PATHS
-                                        $ENV{PYTHON_ROOT}/libs C:/Python${PYVER}/libs)
-
-                        ELSE (WIN32)
-                                FIND_PATH(PYTHON_INCLUDE_PATH Python.h
-					$ENV{HOME}/EMAN2/anaconda2/include/python2.7
-					$ENV{HOME}/anaconda2/include/python2.7
-                                        $ENV{PYTHON_ROOT}/include/python${PYVER}
-                                        /usr/local/include/python${PYVER}
-                                        /usr/include/python${PYVER} NO_DEFAULT_PATH)
-
-                                FIND_LIBRARY(PYTHON_LIBRARY NAMES python${PYVER} PATHS
-					$ENV{HOME}/EMAN2/anaconda2/lib
-					$ENV{HOME}/anaconda2/lib
-                                        $ENV{PYTHON_ROOT}/lib/python${PYVER}
-                                        /usr/local/lib/python${PYVER}
-                                        /usr/lib/python${PYVER}
-                                        /usr/lib64/python${PYVER}
-                                        $ENV{PYTHON_ROOT}/lib /usr/local/lib /usr/lib NO_DEFAULT_PATH)
-
-                        ENDIF (WIN32)
-
-                        IF(PYTHON_INCLUDE_PATH)
-                                IF(PYTHON_LIBRARY)
-                                        SET(PYTHON_FOUND TRUE)
-					SET(PYTHON_INCLUDE_DIR PYTHON_INCLUDE_PATH)
-                                ENDIF(PYTHON_LIBRARY)
-                        ENDIF(PYTHON_INCLUDE_PATH)
-
-                ENDIF(NOT PYTHON_FOUND)
-    ENDFOREACH(PYVER)
 	endif()
 ENDMACRO(CHECK_PYTHON)
 
