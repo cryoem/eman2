@@ -290,7 +290,7 @@ SET(LIB_DIRS
 
 
 MACRO(CHECK_REQUIRED_LIB2 upper lower header lower2 header2)
-	if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD")
+	if(ENABLE_CONDA)
 		message("\n### BEGIN ### CHECK_REQUIRED_LIB2 upper lower header lower2 header2")
 		message_var(${upper}_INCLUDE_PATH)
 		message_var(${upper}_LIBRARY)
@@ -313,7 +313,7 @@ MACRO(CHECK_REQUIRED_LIB2 upper lower header lower2 header2)
 		MESSAGE(SEND_ERROR "ERROR: ${upper} not found. please install ${upper} first!")
     ENDIF()
 
-	if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD")
+	if(ENABLE_CONDA)
 		message("### END ### CHECK_REQUIRED_LIB2 upper lower header lower2 header2")
 		message_var(${upper}_INCLUDE_PATH)
 		message_var(${upper}_LIBRARY)
@@ -388,7 +388,7 @@ IF(ENABLE_FFTW3)
     SET(FFTW_LIBRARIES ${FFTW3_LIBRARY} ${FFTW3d_LIBRARY})
     SET(FFTW_INCLUDE_PATH ${FFTW3_INCLUDE_PATH})
 
-	if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD")
+	if(ENABLE_CONDA)
 		message("FFTW_LIBRARIES: ${FFTW_LIBRARIES}")
 		message("FFTW_INCLUDE_PATH: ${FFTW_INCLUDE_PATH}")
 	endif()
@@ -569,7 +569,7 @@ INCLUDE_DIRECTORIES(.
             )
 
 #---------------------------------------------------------------------------------------
-if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD")
+if(ENABLE_CONDA)
 	message("\nINCLUDE_DIRECTORIES---START")
 	get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
 	
@@ -617,7 +617,7 @@ ADD_SUBDIRECTORY(images)
 ADD_SUBDIRECTORY(recipes)
 
 if(NOT WIN32)
-	if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" OR ENABLE_CONDA)
+	if(ENABLE_CONDA)
 		install(CODE "execute_process(
 						COMMAND ${CMAKE_COMMAND} -E create_symlink ${CONDA_PREFIX}/bin/e2version.py ${SP_DIR}/e2version.py
 						COMMAND ${CMAKE_COMMAND} -E create_symlink ${CONDA_PREFIX}/bin/sxgui.py     ${CONDA_PREFIX}/bin/sphire
