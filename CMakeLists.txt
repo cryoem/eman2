@@ -6,6 +6,10 @@ IF(COMMAND cmake_policy)
        cmake_policy(SET CMP0002 OLD)
 ENDIF(COMMAND cmake_policy)
 
+FUNCTION(message_var var)
+	message("${var}: ${${var}}")
+endfunction()
+
 MARK_AS_ADVANCED(CLEAR CMAKE_VERBOSE_MAKEFILE)
 OPTION(CMAKE_VERBOSE_MAKEFILE "if all commands will be echoed to the console during the make" ON)
 
@@ -236,10 +240,6 @@ ENDIF(ENABLE_IOCACHE)
 # ENDIF(ENABLE_HDFIOCACHE)
 
 if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" OR ENABLE_CONDA)
-	FUNCTION(message_debug var)
-		message("${var}: ${${var}}")
-	endfunction()
-
 	set(CMAKE_PREFIX_PATH ${CONDA_PREFIX})
 	set(GSL_INCLUDE_DIRS ${CONDA_PREFIX}/include)
 	if(WIN32)
@@ -359,8 +359,8 @@ SET(LIB_DIRS
 MACRO(CHECK_REQUIRED_LIB2 upper lower header lower2 header2)
 	if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD")
 		message("\n### BEGIN ### CHECK_REQUIRED_LIB2 upper lower header lower2 header2")
-		message_debug(${upper}_INCLUDE_PATH)
-		message_debug(${upper}_LIBRARY)
+		message_var(${upper}_INCLUDE_PATH)
+		message_var(${upper}_LIBRARY)
 	endif()
 		
 	IF(NOT ${upper}_INCLUDE_PATH)
@@ -381,8 +381,8 @@ MACRO(CHECK_REQUIRED_LIB2 upper lower header lower2 header2)
 
 	if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD")
 		message("### END ### CHECK_REQUIRED_LIB2 upper lower header lower2 header2")
-		message_debug(${upper}_INCLUDE_PATH)
-		message_debug(${upper}_LIBRARY)
+		message_var(${upper}_INCLUDE_PATH)
+		message_var(${upper}_LIBRARY)
 	endif()
 ENDMACRO(CHECK_REQUIRED_LIB2)
 
@@ -502,8 +502,8 @@ IF(ENABLE_FFTW3)
     OPTION(ENABLE_NATIVE_FFT "enable native fft support" OFF)
     OPTION(ENABLE_ACML_FFT "enable AMD Core Math Library fft support" OFF)
 
-    CHECK_REQUIRED_LIB(FFTW3 fftw3f fftw3.h)
-    CHECK_REQUIRED_LIB(FFTW3d fftw3 fftw3.h)
+    CHECK_REQUIRED_LIB2(FFTW3 fftw3f fftw3.h libfftw3f-3 "")
+    CHECK_REQUIRED_LIB2(FFTW3d fftw3 fftw3.h libfftw3-3  "")
     ADD_DEFINITIONS(-DFFTW3)
     SET(FFTW_LIBRARIES ${FFTW3_LIBRARY} ${FFTW3d_LIBRARY})
     SET(FFTW_INCLUDE_PATH ${FFTW3_INCLUDE_PATH})
@@ -641,9 +641,7 @@ FIND_PATH(NUMPY_INCLUDE_PATH numpy/arrayobject.h
 	${CONDA_SP_DIR}/numpy/core/include
     NO_DEFAULT_PATH)
 
-if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" OR ENABLE_CONDA)
-	message("NUMPY_INCLUDE_PATH: ${NUMPY_INCLUDE_PATH}")
-endif()
+message("NUMPY_INCLUDE_PATH: ${NUMPY_INCLUDE_PATH}")
 
 INCLUDE_DIRECTORIES(${NUMPY_INCLUDE_PATH})
 
