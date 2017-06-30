@@ -9,6 +9,8 @@ ENDIF(COMMAND cmake_policy)
 MARK_AS_ADVANCED(CLEAR CMAKE_VERBOSE_MAKEFILE)
 OPTION(CMAKE_VERBOSE_MAKEFILE "if all commands will be echoed to the console during the make" ON)
 
+SET(CMAKE_MACOSX_RPATH ON)
+
 OPTION(ENABLE_CONDA "enable conda-supported build" OFF)
 
 # Handle build strategies, 
@@ -108,28 +110,21 @@ OPTION(ENABLE_OPTIMIZE_MACHINE "Optimize code for this specific computer (typ 5-
 OPTION(ENABLE_OPTIMIZE_PHI "Optimize code for the Intel compiler on the PHI" OFF)
 OPTION(ENABLE_OPTIMIZE_WINDOWS_VC "Windows visual c++ specific optimization" OFF)
 
-IF(CMAKE_SYSTEM MATCHES "Darwin-12*")
-	OPTION(ENABLE_OPTIMIZE_MOUNTAIN_LION "enable OSX 10.8/9 support" ON)
-ELSE(CMAKE_SYSTEM MATCHES "Darwin-12*")
-	OPTION(ENABLE_OPTIMIZE_MOUNTAIN_LION "enable OSX 10.8/9 support" OFF)
-ENDIF(CMAKE_SYSTEM MATCHES "Darwin-12*")
+IF(CMAKE_SYSTEM_NAME MATCHES "Darwin")
+	OPTION(ENABLE_OPTIMIZE_OSX "enable OSX support" ON)
+ELSE()
+	OPTION(ENABLE_OPTIMIZE_OSX "enable OSX support" OFF)
+ENDIF()
 
 
-#MESSAGE (FATAL_ERROR ${CMAKE_SYSTEM} )
-# IF (ENABLE_LEOPARD)
-# 	SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-dylib_file,/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib:/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib")
-# 	SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-dylib_file,/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib:/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib")
-# ENDIF (ENABLE_LEOPARD)
-
-IF (ENABLE_OPTIMIZE_MOUNTAIN_LION)
-	SET(CMAKE_MACOSX_RPATH ON)
+IF (ENABLE_OPTIMIZE_OSX)
 	SET(GL_LIBRARY /System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib)
 	SET(GLU_LIBRARY /System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGLU.dylib)
 	SET(GL_INCLUDE_PATH /usr/include)
 	SET(GLU_INCLUDE_PATH /usr/include)
 #	SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-dylib_file,/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib:/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGLU.dylib")
 #	SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-dylib_file,/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib:/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGLU.dylib")
-ENDIF (ENABLE_OPTIMIZE_MOUNTAIN_LION)
+ENDIF (ENABLE_OPTIMIZE_OSX)
 
 IF (ENABLE_MEMDEBUG)
 	ADD_DEFINITIONS(-DMEMDEBUG -W -Wall)
@@ -152,7 +147,7 @@ IF (ENABLE_DEBUG)
 ELSEIF(ENABLE_PROFILE)
     SET (OPT_FLAGS "-O2 -ansi -march=native -m64 -ffast-math -pipe")
     OPTION(ENABLE_DEBUG "enable debug support" OFF)
-ELSEIF (ENABLE_OPTIMIZE_MOUNTAIN_LION)
+ELSEIF (ENABLE_OPTIMIZE_OSX)
 #    SET (OPT_FLAGS "-O3 -ffast-math")
     SET (OPT_FLAGS "-O3")
 #    SET (OPT_FLAGS "-Os -ffast-math")
