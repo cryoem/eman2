@@ -600,7 +600,6 @@ IF (ENABLE_FTGL)
 		$ENV{HOME}/anaconda2/include/freetype2 
 		/usr/include/freetype2 
 		/usr/include 
-#		$ENV{${upper}DIR}/include
 		${INCLUDE_DIRS}
 		NO_DEFAULT_PATH
 	)
@@ -687,8 +686,6 @@ INCLUDE_DIRECTORIES(.
 	    ${PYTHON_INCLUDE_PATH}
 	    ${FREETYPE_INCLUDE_PATH}
             )
-#            /usr/include/freetype2
-#            /usr/local/include/freetype2
 
 #---------------------------------------------------------------------------------------
 if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD")
