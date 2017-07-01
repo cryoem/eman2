@@ -15,7 +15,7 @@ OPTION(CMAKE_VERBOSE_MAKEFILE "if all commands will be echoed to the console dur
 
 SET(CMAKE_MACOSX_RPATH ON)
 
-OPTION(ENABLE_CONDA "enable conda-supported build" OFF)
+OPTION(ENABLE_CONDA "enable conda-supported build" ON)
 
 MACRO(CHECK_PYTHON)
 	find_package(PythonInterp REQUIRED)
@@ -38,10 +38,6 @@ ENDMACRO(CHECK_PYTHON)
 # If it is conda-build build, ENABLE_CONDA is ignored
 # If it is not conda-build build, ENABLE_CONDA is checked
 # If it is not conda-build build and ENABLE_CONDA is not set, it is legacy build
-if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD")
-	set(ENABLE_CONDA ON)
-endif()
-
 if(ENABLE_CONDA)
 	if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" )
 		if(NOT WIN32)
