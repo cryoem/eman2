@@ -322,8 +322,8 @@ MACRO(CHECK_LIB_ONLY upper lower)
 ENDMACRO(CHECK_LIB_ONLY)
 
 MACRO(CHECK_PYTHON)
-	find_package(PythonInterp)
-	find_package(PythonLibs)
+	find_package(PythonInterp REQUIRED)
+	find_package(PythonLibs   REQUIRED)
 
 	set(PYTHON_INCLUDE_PATH ${PYTHON_INCLUDE_DIRS} CACHE PATH "")
 	set(PYTHON_LIBRARY ${PYTHON_LIBRARIES} CACHE PATH "")
