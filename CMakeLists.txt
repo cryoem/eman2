@@ -49,11 +49,11 @@ if(ENABLE_CONDA)
 		set(SP_DIR $ENV{SP_DIR})
 	else()
 		# Assuming the active conda environment is on PATH, this finds the path of bin/ in the environment
-		find_path(CONDA_PREFIX conda
+		find_program(CONDA_EXECUTABLE conda
 					 PATHS ENV PATH
 				 )
-		if(NOT CONDA_PREFIX)
-			message(FATAL_ERROR "\nNo conda environment found in PATH!\nPATH=$ENV{PATH}")
+		if(NOT CONDA_EXECUTABLE)
+			message(FATAL_ERROR "\nConda NOT found in PATH!\nPATH=$ENV{PATH}")
 		endif()
 
 		get_filename_component(CONDA_PREFIX ${CONDA_PREFIX}/.. ABSOLUTE)
