@@ -32,7 +32,7 @@ MACRO(CHECK_PYTHON)
 ENDMACRO(CHECK_PYTHON)
 
 # Handle build strategies, 
-#        set CONDA_PREFIX and CONDA_SP_DIR
+#        set CONDA_PREFIX and SP_DIR
 #        set EMAN_PY_INSTALL_PREFIX and EMAN_INSTALL_PREFIX
 #        write eman2dir relative to SP_DIR path
 # If it is conda-build build, ENABLE_CONDA is ignored
@@ -46,7 +46,7 @@ if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" OR ENABLE_CONDA)
 			set(CONDA_PREFIX $ENV{LIBRARY_PREFIX})
 		endif()
 		
-		set(CONDA_SP_DIR $ENV{SP_DIR})
+		set(SP_DIR $ENV{SP_DIR})
 	elseif(ENABLE_CONDA)
 		# Assuming the active conda environment is on PATH, this finds the path of bin/ in the environment
 		find_path(CONDA_PREFIX conda
@@ -64,14 +64,14 @@ if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" OR ENABLE_CONDA)
 			set(py_sp_dir_command "import site; print site.getsitepackages()[1]")
 		endif()
 		execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "${py_sp_dir_command}"
-				OUTPUT_VARIABLE CONDA_SP_DIR
+				OUTPUT_VARIABLE SP_DIR
 				OUTPUT_STRIP_TRAILING_WHITESPACE
 				)
-		message("Python site-packages: ${CONDA_SP_DIR}")
+		message("Python site-packages: ${SP_DIR}")
 	endif()
 		
 	SET(EMAN_INSTALL_PREFIX    ${CONDA_PREFIX} CACHE PATH "installation prefix")
-	set(EMAN_PY_INSTALL_PREFIX ${CONDA_SP_DIR})
+	set(EMAN_PY_INSTALL_PREFIX ${SP_DIR})
 		
 	if(NOT WIN32)
 		file(WRITE ${EMAN_PY_INSTALL_PREFIX}/eman2dir_relative_path_to_sp_dir "../../../")
@@ -612,7 +612,7 @@ ADD_SUBDIRECTORY(recipes)
 if(NOT WIN32)
 	if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" OR ENABLE_CONDA)
 		install(CODE "execute_process(
-						COMMAND ${CMAKE_COMMAND} -E create_symlink ${CONDA_PREFIX}/bin/e2version.py ${CONDA_SP_DIR}/e2version.py
+						COMMAND ${CMAKE_COMMAND} -E create_symlink ${CONDA_PREFIX}/bin/e2version.py ${SP_DIR}/e2version.py
 						COMMAND ${CMAKE_COMMAND} -E create_symlink ${CONDA_PREFIX}/bin/sxgui.py     ${CONDA_PREFIX}/bin/sphire
 						COMMAND ${CMAKE_COMMAND} -E create_symlink ${CONDA_PREFIX}/bin/sx.py        ${CONDA_PREFIX}/bin/sparx
 					 )"
