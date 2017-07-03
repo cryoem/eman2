@@ -61,6 +61,10 @@ if(ENABLE_CONDA)
 					)
 			if(out_var)
 				set(CONDA_ROOT ${out_var}            CACHE PATH "")
+				message("Found conda: ${CONDA_EXECUTABLE}")
+				execute_process(COMMAND ${CONDA_EXECUTABLE} info --envs
+						)
+				message("Set CONDA_ROOT to one of the conda environment paths listed above.\n")
 			endif()
 		endif()
 			
