@@ -41,9 +41,9 @@ ENDMACRO(CHECK_PYTHON)
 if(ENABLE_CONDA)
 	if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" )
 		if(NOT WIN32)
-			set(CONDA_PREFIX $ENV{PREFIX})
+			set(EMAN_PREFIX $ENV{PREFIX})
 		else()
-			set(CONDA_PREFIX $ENV{LIBRARY_PREFIX})
+			set(EMAN_PREFIX $ENV{LIBRARY_PREFIX})
 		endif()
 		
 		set(SP_DIR $ENV{SP_DIR})
@@ -71,7 +71,7 @@ if(ENABLE_CONDA)
 		message("Python site-packages: ${SP_DIR}")
 	endif()
 		
-	SET(EMAN_INSTALL_PREFIX    ${CONDA_PREFIX} CACHE PATH "installation prefix")
+	SET(EMAN_INSTALL_PREFIX    ${EMAN_PREFIX} CACHE PATH "installation prefix")
 	set(EMAN_PY_INSTALL_PREFIX ${SP_DIR})
 		
 	if(NOT WIN32)
@@ -615,9 +615,9 @@ ADD_SUBDIRECTORY(recipes)
 if(NOT WIN32)
 	if(ENABLE_CONDA)
 		install(CODE "execute_process(
-						COMMAND ${CMAKE_COMMAND} -E create_symlink ${CONDA_PREFIX}/bin/e2version.py ${SP_DIR}/e2version.py
-						COMMAND ${CMAKE_COMMAND} -E create_symlink ${CONDA_PREFIX}/bin/sxgui.py     ${CONDA_PREFIX}/bin/sphire
-						COMMAND ${CMAKE_COMMAND} -E create_symlink ${CONDA_PREFIX}/bin/sx.py        ${CONDA_PREFIX}/bin/sparx
+						COMMAND ${CMAKE_COMMAND} -E create_symlink ${EMAN_PREFIX}/bin/e2version.py ${SP_DIR}/e2version.py
+						COMMAND ${CMAKE_COMMAND} -E create_symlink ${EMAN_PREFIX}/bin/sxgui.py     ${EMAN_PREFIX}/bin/sphire
+						COMMAND ${CMAKE_COMMAND} -E create_symlink ${EMAN_PREFIX}/bin/sx.py        ${EMAN_PREFIX}/bin/sparx
 					 )"
 				)
 	endif()
