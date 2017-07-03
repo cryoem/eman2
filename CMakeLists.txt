@@ -50,7 +50,7 @@ if(ENABLE_CONDA)
 	else()
 		# Assuming the active conda environment is on PATH, this finds the path of bin/ in the environment
 		find_program(CONDA_EXECUTABLE conda
-					 PATHS ENV PATH
+					 PATHS ${CONDA_ROOT}/bin ${CONDA_ROOT}/Scripts ENV PATH
 				 )
 		if(NOT CONDA_EXECUTABLE)
 			message(FATAL_ERROR "\nConda NOT found in PATH!\nPATH=$ENV{PATH}")
