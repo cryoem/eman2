@@ -47,6 +47,8 @@ if(ENABLE_CONDA)
 		endif()
 		
 		set(SP_DIR $ENV{SP_DIR})
+	elseif(DEFINED ENV{CONDA_PREFIX})
+		set(EMAN_PREFIX $ENV{CONDA_PREFIX} CACHE PATH "")
 	else()
 		# Assuming the active conda environment is on PATH, this finds the path of bin/ in the environment
 		find_program(CONDA_EXECUTABLE conda
