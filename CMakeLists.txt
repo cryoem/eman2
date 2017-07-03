@@ -85,6 +85,10 @@ else()
 	set(eman2dir_relative_path "../")
 endif()
 
+if(EMAN_PY_INSTALL_PREFIX)
+	file(WRITE ${EMAN_PY_INSTALL_PREFIX}/eman2dir_relative_path_to_sp_dir ${eman2dir_relative_path})
+endif()
+
 SET(CMAKE_INSTALL_PREFIX ${EMAN_INSTALL_PREFIX} CACHE INTERNAL "installation prefix")
 MARK_AS_ADVANCED(CLEAR EMAN_INSTALL_PREFIX)
 
