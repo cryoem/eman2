@@ -73,19 +73,20 @@ if(ENABLE_CONDA)
 				set(EMAN_PREFIX ${CONDA_ROOT} CACHE PATH "")
 			endif()
 		endif()
-			
-		CHECK_PYTHON()
-		if(NOT WIN32)
-			set(py_sp_dir_command "import site; print site.getsitepackages()[0]")
-		else()
-			set(py_sp_dir_command "import site; print site.getsitepackages()[1]")
-		endif()
-		execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "${py_sp_dir_command}"
-				OUTPUT_VARIABLE SP_DIR
-				OUTPUT_STRIP_TRAILING_WHITESPACE
-				)
-		message("Python site-packages: ${SP_DIR}")
 	endif()
+endif()
+
+CHECK_PYTHON()
+if(NOT WIN32)
+	set(py_sp_dir_command "import site; print site.getsitepackages()[0]")
+else()
+	set(py_sp_dir_command "import site; print site.getsitepackages()[1]")
+endif()
+execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "${py_sp_dir_command}"
+		OUTPUT_VARIABLE SP_DIR
+		OUTPUT_STRIP_TRAILING_WHITESPACE
+		)
+message("Python site-packages: ${SP_DIR}")
 		
 	SET(EMAN_INSTALL_PREFIX    ${EMAN_PREFIX} CACHE PATH "installation prefix")
 	set(EMAN_PY_INSTALL_PREFIX ${SP_DIR})
@@ -95,7 +96,8 @@ if(ENABLE_CONDA)
 	else()
 		set(eman2dir_relative_path "../../Library/")
 	endif()
-else()
+
+if(NOT ENABLE_CONDA)
 	SET(EMAN_INSTALL_PREFIX    $ENV{HOME}/EMAN2 CACHE PATH "installation prefix")
 	set(EMAN_PY_INSTALL_PREFIX ${EMAN_INSTALL_PREFIX}/lib)
 	set(eman2dir_relative_path "../")
