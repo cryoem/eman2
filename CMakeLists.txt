@@ -77,6 +77,9 @@ if(ENABLE_CONDA)
 		else()
 			set(CONDA_ROOT CONDA_ROOT-NOTFOUND   CACHE PATH "")
 		endif()
+			
+		include(FindPackageHandleStandardArgs)
+		FIND_PACKAGE_HANDLE_STANDARD_ARGS(Conda DEFAULT_MSG CONDA_ROOT)
 	endif()
 endif()
 
