@@ -71,6 +71,7 @@ const string SNREvalProcessor::NAME = "eval.maskedsnr";
 const string AmpweightFourierProcessor::NAME = "filter.ampweight";
 const string Axis0FourierProcessor::NAME = "filter.xyaxes0";
 const string ConvolutionProcessor::NAME = "math.convolution";
+const string BispecSliceProcessor::NAME = "math.bispectrum.slice";
 const string XGradientProcessor::NAME = "math.edge.xgradient";
 const string YGradientProcessor::NAME = "math.edge.ygradient";
 const string ZGradientProcessor::NAME = "math.edge.zgradient";
@@ -424,6 +425,7 @@ template <> Factory < Processor >::Factory()
 	force_add<BilateralProcessor>();
 
 	force_add<ConvolutionProcessor>();
+	force_add<BispecSliceProcessor>();
 
 	force_add<NormalizeStdProcessor>();
 	force_add<NormalizeUnitProcessor>();
@@ -12540,6 +12542,41 @@ void BinarySkeletonizerProcessor::process_inplace(EMData * image)
 	em_skel = NULL;
 	return;
 }
+
+EMData* BispecSliceProcessor::process(const EMData * const image) {
+	if (image->get_zsize()!=1) throw ImageDimensionException("Only 2-D images supported");
+
+	const EMData *cimage = (EMData* const)image;
+	if (!image->is_complex()) cimage = image->do_fft();
+	int nkx=cimage->get_xsize()/2;
+	int nky=cimage->get_ysize()/2;
+	EMData* ret=cimage->copy_head();
+	ret->to_zero();
+	
+	// angular integrate mode
+	if (params.has_key("k")) {
+		float k=(float)params["k"];
+	}
+	// normal slice mode
+	else {
+		int kx=(int)params.set_default("kx",0);
+		int ky=(int)params.set_default("ky",0);
+		
+		for (int jy=-nky; jy<nky; jy++) {
+			for (int jx=0; jx<nkx; jx++) {
+				complex<double> v1 = (complex<double>)image->get_complex_at(jx,jy);
+				complex<double> v2 = (complex<double>)image->get_complex_at(kx,ky);
+				complex<double> v3 = (complex<double>)image->get_complex_at(jx+jy,kx+ky);
+				ret->set_complex_at(jx,jy,(complex<float>)(v1*v2*std::conj(v3)));
+			}
+		}
+	}
+	
+	if (image!=cimage) delete cimage;
+	
+	return(ret);
+}
+	
 
 EMData* ConvolutionKernelProcessor::process(const EMData* const image)
 {
