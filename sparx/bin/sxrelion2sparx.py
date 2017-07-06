@@ -272,7 +272,7 @@ def main():
 					for category_key in relion_category_dict.keys():
 						if relion_category_dict[category_key][idx_is_category_found] == False:
 							print '# '
-							print '# WARNING!!! %s can not be extracted!!!' % (relion_category_dict[category_key][idx_relion_process])
+							print '# WARNING!!! %s cannot be extracted!!!' % (relion_category_dict[category_key][idx_relion_process])
 					print '# '
 				
 				if i_relion_particle % 1000 == 0:
