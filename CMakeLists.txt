@@ -17,20 +17,6 @@ OPTION(ENABLE_CONDA "enable conda-supported build" ON)
 
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
-MACRO(CHECK_PYTHON)
-	find_package(PythonInterp REQUIRED)
-	find_package(PythonLibs   REQUIRED)
-	
-	set(PYTHON_INCLUDE_PATH ${PYTHON_INCLUDE_DIRS} CACHE PATH "")
-	set(PYTHON_LIBRARY      ${PYTHON_LIBRARIES}    CACHE PATH "")
-	
-	message("PYTHON_EXECUTABLE:   ${PYTHON_EXECUTABLE}")
-	message("PYTHON_LIBRARIES:    ${PYTHON_LIBRARIES}")
-	message("PYTHON_INCLUDE_DIRS: ${PYTHON_INCLUDE_DIRS}")
-	message("PYTHON_INCLUDE_PATH: ${PYTHON_INCLUDE_PATH}")
-	message("PYTHON_INCLUDE_DIR:  ${PYTHON_INCLUDE_DIR}")
-ENDMACRO(CHECK_PYTHON)
-
 if(ENABLE_CONDA)
 	if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" )
 		if(NOT WIN32)
@@ -60,7 +46,8 @@ if(ENABLE_CONDA)
 	message_var(CMAKE_PREFIX_PATH)
 endif()
 
-CHECK_PYTHON()
+find_package(Python REQUIRED)
+
 if(NOT WIN32)
 	set(py_sp_dir_command "import site; print site.getsitepackages()[0]")
 else()
