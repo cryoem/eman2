@@ -1220,7 +1220,7 @@ def welch_pw2_tilt_band(img,theta,num_bnd=-1,overlp_y=50,edge_x=0,edge_y=0,win_s
 
 def tilemic(img, win_size=512, overlp_x=50, overlp_y=50, edge_x=0, edge_y=0):
 	""" 
-		Calculate the power spectrum using Welch periodograms (overlapped periodogram)
+		Calculate set of tiled power spectra
 	"""
 	from fundamentals import window2d, ramp
 	from EMAN2 import periodogram
