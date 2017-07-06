@@ -14,3 +14,12 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(Python
 		REQUIRED_VARS PYTHON_EXECUTABLE PYTHON_LIBRARIES PYTHON_INCLUDE_DIR
 		)
+
+if(Python_FOUND AND NOT TARGET Python::Python)
+	add_library(Python::Python INTERFACE IMPORTED)
+	set_target_properties(Python::Python
+			PROPERTIES
+			INTERFACE_INCLUDE_DIRECTORIES ${PYTHON_INCLUDE_DIRS}
+			INTERFACE_LINK_LIBRARIES      ${PYTHON_LIBRARIES}
+			)
+endif()
