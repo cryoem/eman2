@@ -12556,18 +12556,23 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 	// angular integrate mode
 	if (params.has_key("k")) {
 		float k=(float)params["k"];
+//		printf("K %f\n",k);
 	}
 	// normal slice mode
 	else {
 		int kx=(int)params.set_default("kx",0);
 		int ky=(int)params.set_default("ky",0);
 		
+//		printf("KXY %d %d %d %d\n",kx,ky,nkx,nky);
+		
 		for (int jy=-nky; jy<nky; jy++) {
-			for (int jx=0; jx<nkx; jx++) {
-				complex<double> v1 = (complex<double>)image->get_complex_at(jx,jy);
-				complex<double> v2 = (complex<double>)image->get_complex_at(kx,ky);
-				complex<double> v3 = (complex<double>)image->get_complex_at(jx+jy,kx+ky);
+			for (int jx=0; jx<nkx+1; jx++) {
+				if (jx+kx>nkx || abs(jy+ky)>nky || jx+kx<0) continue;
+				complex<double> v1 = (complex<double>)cimage->get_complex_at(jx,jy);
+				complex<double> v2 = (complex<double>)cimage->get_complex_at(kx,ky);
+				complex<double> v3 = (complex<double>)cimage->get_complex_at(jx+kx,jy+ky);
 				ret->set_complex_at(jx,jy,(complex<float>)(v1*v2*std::conj(v3)));
+//				ret->set_complex_at(jx,jy,(complex<float>)(v1));
 			}
 		}
 	}
