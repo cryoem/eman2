@@ -17,6 +17,20 @@ SET(CMAKE_MACOSX_RPATH ON)
 
 OPTION(ENABLE_CONDA "enable conda-supported build" OFF)
 
+MACRO(CHECK_PYTHON)
+	find_package(PythonInterp REQUIRED)
+	find_package(PythonLibs   REQUIRED)
+	
+	set(PYTHON_INCLUDE_PATH ${PYTHON_INCLUDE_DIRS} CACHE PATH "")
+	set(PYTHON_LIBRARY      ${PYTHON_LIBRARIES}    CACHE PATH "")
+	
+	message("PYTHON_EXECUTABLE:   ${PYTHON_EXECUTABLE}")
+	message("PYTHON_LIBRARIES:    ${PYTHON_LIBRARIES}")
+	message("PYTHON_INCLUDE_DIRS: ${PYTHON_INCLUDE_DIRS}")
+	message("PYTHON_INCLUDE_PATH: ${PYTHON_INCLUDE_PATH}")
+	message("PYTHON_INCLUDE_DIR:  ${PYTHON_INCLUDE_DIR}")
+ENDMACRO(CHECK_PYTHON)
+
 # Handle build strategies, 
 #        set CONDA_PREFIX and CONDA_SP_DIR
 #        set EMAN_PY_INSTALL_PREFIX and EMAN_INSTALL_PREFIX
@@ -321,62 +335,6 @@ MACRO(CHECK_LIB_ONLY upper lower)
 	message_var(${upper}_LIBRARY)
 ENDMACRO(CHECK_LIB_ONLY)
 
-MACRO(CHECK_PYTHON)
-	if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" OR ENABLE_CONDA)
-		find_package(PythonInterp)
-		find_package(PythonLibs)
-
-		set(PYTHON_INCLUDE_PATH ${PYTHON_INCLUDE_DIRS} CACHE PATH "")
-		set(PYTHON_LIBRARY ${PYTHON_LIBRARIES} CACHE PATH "")
-
-		message("PYTHON_EXECUTABLE: ${PYTHON_EXECUTABLE}")
-		message("PYTHON_LIBRARIES: ${PYTHON_LIBRARIES}")
-		message("PYTHON_INCLUDE_DIRS: ${PYTHON_INCLUDE_DIRS}")
-		message("PYTHON_INCLUDE_PATH: ${PYTHON_INCLUDE_PATH}")
-		message("PYTHON_INCLUDE_DIR: ${PYTHON_INCLUDE_DIR}")
-	else()
-        SET(PYTHON_FOUND FALSE)
-
-        FOREACH(PYVER ${ARGV})
-                IF(NOT PYTHON_FOUND)
-                        IF (WIN32)
-                                FIND_PATH(PYTHON_INCLUDE_PATH Python.h
-                                        $ENV{PYTHON_ROOT}/include C:/Python${PYVER}/include NO_DEFAULT_PATH)
-
-                                FIND_LIBRARY(PYTHON_LIBRARY NAMES python${PYVER} PATHS
-                                        $ENV{PYTHON_ROOT}/libs C:/Python${PYVER}/libs)
-
-                        ELSE (WIN32)
-                                FIND_PATH(PYTHON_INCLUDE_PATH Python.h
-					$ENV{HOME}/EMAN2/anaconda2/include/python2.7
-					$ENV{HOME}/anaconda2/include/python2.7
-                                        $ENV{PYTHON_ROOT}/include/python${PYVER}
-                                        /usr/local/include/python${PYVER}
-                                        /usr/include/python${PYVER} NO_DEFAULT_PATH)
-
-                                FIND_LIBRARY(PYTHON_LIBRARY NAMES python${PYVER} PATHS
-					$ENV{HOME}/EMAN2/anaconda2/lib
-					$ENV{HOME}/anaconda2/lib
-                                        $ENV{PYTHON_ROOT}/lib/python${PYVER}
-                                        /usr/local/lib/python${PYVER}
-                                        /usr/lib/python${PYVER}
-                                        /usr/lib64/python${PYVER}
-                                        $ENV{PYTHON_ROOT}/lib /usr/local/lib /usr/lib NO_DEFAULT_PATH)
-
-                        ENDIF (WIN32)
-
-                        IF(PYTHON_INCLUDE_PATH)
-                                IF(PYTHON_LIBRARY)
-                                        SET(PYTHON_FOUND TRUE)
-					SET(PYTHON_INCLUDE_DIR PYTHON_INCLUDE_PATH)
-                                ENDIF(PYTHON_LIBRARY)
-                        ENDIF(PYTHON_INCLUDE_PATH)
-
-                ENDIF(NOT PYTHON_FOUND)
-    ENDFOREACH(PYVER)
-	endif()
-ENDMACRO(CHECK_PYTHON)
-
 IF(ENABLE_FFTW2)
     OPTION(ENABLE_NFFT "enable nfft support" OFF)
     OPTION(ENABLE_FFTW3 "enable fftw 3 support" OFF)
@@ -550,7 +508,7 @@ message("NUMPY_INCLUDE_PATH: ${NUMPY_INCLUDE_PATH}")
 
 INCLUDE_DIRECTORIES(${NUMPY_INCLUDE_PATH})
 
-CHECK_PYTHON(2.7)
+CHECK_PYTHON()
 
 # Find Boost
 find_package(Boost COMPONENTS python REQUIRED)
