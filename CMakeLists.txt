@@ -15,7 +15,7 @@ OPTION(CMAKE_VERBOSE_MAKEFILE "if all commands will be echoed to the console dur
 
 SET(CMAKE_MACOSX_RPATH ON)
 
-OPTION(ENABLE_CONDA "enable conda-supported build" OFF)
+OPTION(ENABLE_CONDA "enable conda-supported build" ON)
 
 MACRO(CHECK_PYTHON)
 	find_package(PythonInterp REQUIRED)
@@ -31,58 +31,86 @@ MACRO(CHECK_PYTHON)
 	message("PYTHON_INCLUDE_DIR:  ${PYTHON_INCLUDE_DIR}")
 ENDMACRO(CHECK_PYTHON)
 
-# Handle build strategies, 
-#        set CONDA_PREFIX and SP_DIR
-#        set EMAN_PY_INSTALL_PREFIX and EMAN_INSTALL_PREFIX
-#        write eman2dir relative to SP_DIR path
-# If it is conda-build build, ENABLE_CONDA is ignored
-# If it is not conda-build build, ENABLE_CONDA is checked
-# If it is not conda-build build and ENABLE_CONDA is not set, it is legacy build
-if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" OR ENABLE_CONDA)
+if(ENABLE_CONDA)
 	if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" )
 		if(NOT WIN32)
-			set(CONDA_PREFIX $ENV{PREFIX})
+			set(EMAN_PREFIX $ENV{PREFIX})
 		else()
-			set(CONDA_PREFIX $ENV{LIBRARY_PREFIX})
+			set(EMAN_PREFIX $ENV{LIBRARY_PREFIX})
 		endif()
 		
 		set(SP_DIR $ENV{SP_DIR})
-	elseif(ENABLE_CONDA)
-		# Assuming the active conda environment is on PATH, this finds the path of bin/ in the environment
-		find_path(CONDA_PREFIX conda
-					 PATHS ENV PATH
-				 )
-		if(NOT CONDA_PREFIX)
-			message(FATAL_ERROR "\nNo conda environment found in PATH!\nPATH=$ENV{PATH}")
-		endif()
-
-		get_filename_component(CONDA_PREFIX ${CONDA_PREFIX}/.. ABSOLUTE)
-			
-		CHECK_PYTHON()
-		if(NOT WIN32)
-			set(py_sp_dir_command "import site; print site.getsitepackages()[0]")
-		else()
-			set(py_sp_dir_command "import site; print site.getsitepackages()[1]")
-		endif()
-		execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "${py_sp_dir_command}"
-				OUTPUT_VARIABLE SP_DIR
-				OUTPUT_STRIP_TRAILING_WHITESPACE
-				)
-		message("Python site-packages: ${SP_DIR}")
-	endif()
-		
-	SET(EMAN_INSTALL_PREFIX    ${CONDA_PREFIX} CACHE PATH "installation prefix")
-	set(EMAN_PY_INSTALL_PREFIX ${SP_DIR})
-		
-	if(NOT WIN32)
-		file(WRITE ${EMAN_PY_INSTALL_PREFIX}/eman2dir_relative_path_to_sp_dir "../../../")
+	elseif(DEFINED ENV{CONDA_PREFIX})
+		set(EMAN_PREFIX $ENV{CONDA_PREFIX} CACHE PATH "")
 	else()
-		file(WRITE ${EMAN_PY_INSTALL_PREFIX}/eman2dir_relative_path_to_sp_dir "../../Library/")
+		# Assuming the active conda environment is on PATH, this finds the path of bin/ in the environment
+		find_program(CONDA_EXECUTABLE conda
+					 PATHS ${CONDA_ROOT}/bin ${CONDA_ROOT}/Scripts ENV PATH
+				 )
+		if(CONDA_EXECUTABLE)
+			execute_process(COMMAND ${CONDA_EXECUTABLE} info --root
+					OUTPUT_VARIABLE out_var
+					OUTPUT_STRIP_TRAILING_WHITESPACE
+					)
+			if(out_var)
+				set(CONDA_ROOT ${out_var}            CACHE PATH "")
+				message("Found conda: ${CONDA_EXECUTABLE}")
+				execute_process(COMMAND ${CONDA_EXECUTABLE} info --envs
+						)
+				message("Set CONDA_ROOT to one of the conda environment paths listed above.\n")
+			endif()
+		endif()
+			
+		if(CONDA_ROOT)
+			if(WIN32)
+				set(EMAN_PREFIX ${CONDA_ROOT}/Library CACHE PATH "")
+			else()
+				set(EMAN_PREFIX ${CONDA_ROOT} CACHE PATH "")
+			endif()
+		else()
+			set(CONDA_ROOT CONDA_ROOT-NOTFOUND   CACHE PATH "")
+		endif()
+			
+		include(FindPackageHandleStandardArgs)
+		FIND_PACKAGE_HANDLE_STANDARD_ARGS(Conda DEFAULT_MSG CONDA_ROOT)
 	endif()
+endif()
+
+set(CMAKE_PREFIX_PATH ${EMAN_PREFIX} ${EMAN_PREFIX}/..)
+message_var(CMAKE_PREFIX_PATH)
+
+CHECK_PYTHON()
+if(NOT WIN32)
+	set(py_sp_dir_command "import site; print site.getsitepackages()[0]")
 else()
+	set(py_sp_dir_command "import site; print site.getsitepackages()[1]")
+endif()
+execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "${py_sp_dir_command}"
+		OUTPUT_VARIABLE SP_DIR
+		OUTPUT_STRIP_TRAILING_WHITESPACE
+		)
+message("Python site-packages: ${SP_DIR}")
+
+SET(EMAN_INSTALL_PREFIX    ${EMAN_PREFIX} CACHE PATH "installation prefix")
+set(EMAN_PY_INSTALL_PREFIX ${SP_DIR})
+
+set(EMAN_PREFIX_INC ${EMAN_PREFIX}/include)
+set(EMAN_PREFIX_LIB ${EMAN_PREFIX}/lib)
+
+if(NOT WIN32)
+	set(eman2dir_relative_path "../../../")
+else()
+	set(eman2dir_relative_path "../../Library/")
+endif()
+
+if(NOT ENABLE_CONDA)
 	SET(EMAN_INSTALL_PREFIX    $ENV{HOME}/EMAN2 CACHE PATH "installation prefix")
 	set(EMAN_PY_INSTALL_PREFIX ${EMAN_INSTALL_PREFIX}/lib)
-	file(WRITE ${EMAN_PY_INSTALL_PREFIX}/eman2dir_relative_path_to_sp_dir "../")
+	set(eman2dir_relative_path "../")
+endif()
+
+if(EMAN_PY_INSTALL_PREFIX)
+	file(WRITE ${EMAN_PY_INSTALL_PREFIX}/eman2dir_relative_path_to_sp_dir ${eman2dir_relative_path})
 endif()
 
 SET(CMAKE_INSTALL_PREFIX ${EMAN_INSTALL_PREFIX} CACHE INTERNAL "installation prefix")
@@ -252,6 +280,7 @@ ENDIF(ENABLE_IOCACHE)
 # ENDIF(ENABLE_HDFIOCACHE)
 
 SET(INCLUDE_DIRS
+	${EMAN_PREFIX_INC}
 	${EMAN_SOURCE_DIR}/libEM
 	$ENV{HOME}/EMAN2/anaconda2/include
 	$ENV{HOME}/anaconda2/include
@@ -266,6 +295,7 @@ SET(INCLUDE_DIRS
 	)
 
 SET(LIB_DIRS
+	${EMAN_PREFIX_LIB}
 	$ENV{EMANDIR}/lib
 	$ENV{HOME}/EMAN2/anaconda2/lib
 	$ENV{HOME}/anaconda2/lib
@@ -282,7 +312,7 @@ SET(LIB_DIRS
 
 
 MACRO(CHECK_REQUIRED_LIB2 upper lower header lower2 header2)
-	if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD")
+	if(ENABLE_CONDA)
 		message("\n### BEGIN ### CHECK_REQUIRED_LIB2 upper lower header lower2 header2")
 		message_var(${upper}_INCLUDE_PATH)
 		message_var(${upper}_LIBRARY)
@@ -305,7 +335,7 @@ MACRO(CHECK_REQUIRED_LIB2 upper lower header lower2 header2)
 		MESSAGE(SEND_ERROR "ERROR: ${upper} not found. please install ${upper} first!")
     ENDIF()
 
-	if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD")
+	if(ENABLE_CONDA)
 		message("### END ### CHECK_REQUIRED_LIB2 upper lower header lower2 header2")
 		message_var(${upper}_INCLUDE_PATH)
 		message_var(${upper}_LIBRARY)
@@ -380,7 +410,7 @@ IF(ENABLE_FFTW3)
     SET(FFTW_LIBRARIES ${FFTW3_LIBRARY} ${FFTW3d_LIBRARY})
     SET(FFTW_INCLUDE_PATH ${FFTW3_INCLUDE_PATH})
 
-	if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD")
+	if(ENABLE_CONDA)
 		message("FFTW_LIBRARIES: ${FFTW_LIBRARIES}")
 		message("FFTW_INCLUDE_PATH: ${FFTW_INCLUDE_PATH}")
 	endif()
@@ -561,7 +591,7 @@ INCLUDE_DIRECTORIES(.
             )
 
 #---------------------------------------------------------------------------------------
-if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD")
+if(ENABLE_CONDA)
 	message("\nINCLUDE_DIRECTORIES---START")
 	get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
 	
@@ -609,11 +639,11 @@ ADD_SUBDIRECTORY(images)
 ADD_SUBDIRECTORY(recipes)
 
 if(NOT WIN32)
-	if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" OR ENABLE_CONDA)
+	if(ENABLE_CONDA)
 		install(CODE "execute_process(
-						COMMAND ${CMAKE_COMMAND} -E create_symlink ${CONDA_PREFIX}/bin/e2version.py ${SP_DIR}/e2version.py
-						COMMAND ${CMAKE_COMMAND} -E create_symlink ${CONDA_PREFIX}/bin/sxgui.py     ${CONDA_PREFIX}/bin/sphire
-						COMMAND ${CMAKE_COMMAND} -E create_symlink ${CONDA_PREFIX}/bin/sx.py        ${CONDA_PREFIX}/bin/sparx
+						COMMAND ${CMAKE_COMMAND} -E create_symlink ${EMAN_PREFIX}/bin/e2version.py ${SP_DIR}/e2version.py
+						COMMAND ${CMAKE_COMMAND} -E create_symlink ${EMAN_PREFIX}/bin/sxgui.py     ${EMAN_PREFIX}/bin/sphire
+						COMMAND ${CMAKE_COMMAND} -E create_symlink ${EMAN_PREFIX}/bin/sx.py        ${EMAN_PREFIX}/bin/sparx
 					 )"
 				)
 	endif()
