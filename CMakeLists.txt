@@ -31,13 +31,6 @@ MACRO(CHECK_PYTHON)
 	message("PYTHON_INCLUDE_DIR:  ${PYTHON_INCLUDE_DIR}")
 ENDMACRO(CHECK_PYTHON)
 
-# Handle build strategies, 
-#        set CONDA_PREFIX and SP_DIR
-#        set EMAN_PY_INSTALL_PREFIX and EMAN_INSTALL_PREFIX
-#        write eman2dir relative to SP_DIR path
-# If it is conda-build build, ENABLE_CONDA is ignored
-# If it is not conda-build build, ENABLE_CONDA is checked
-# If it is not conda-build build and ENABLE_CONDA is not set, it is legacy build
 if(ENABLE_CONDA)
 	if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" )
 		if(NOT WIN32)
