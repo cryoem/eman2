@@ -4,7 +4,6 @@ ADD_DEFINITIONS(-DBOOST_PYTHON_NO_PY_SIGNATURES)
 INCLUDE_DIRECTORIES(
 			${EMAN_SOURCE_DIR}/libEM
 			${EMAN_SOURCE_DIR}/libpyEM 
-			${Boost_INCLUDE_DIR} 
 			)
 
 IF(CMAKE_SYSTEM MATCHES "IRIX.*")
@@ -27,7 +26,7 @@ MACRO(ADD_PYSTE_LIB_WITH_SRC libname srcfile)
 			)
 	
 	# Windows fails without linking against freetype
-	TARGET_LINK_LIBRARIES(${libname} EM2 ${Boost_LIBRARIES} Python::Python ${FREETYPE_LIBRARIES})
+	TARGET_LINK_LIBRARIES(${libname} EM2 Boost::python Python::Python ${FREETYPE_LIBRARIES})
 	INSTALL(TARGETS ${libname} DESTINATION ${EMAN_PY_INSTALL_PREFIX})
 ENDMACRO()
 
