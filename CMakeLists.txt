@@ -479,6 +479,9 @@ ENDIF(ENABLE_OPTPP)
 
 CHECK_REQUIRED_LIB(GSL gsl gsl/gsl_linalg.h)
 CHECK_REQUIRED_LIB(GSL_CBLAS gslcblas gsl/gsl_linalg.h)
+if(WIN32)
+	add_definitions(-DGSL_DLL -DFTGL_LIBRARY_STATIC)
+endif()
 
 IF (ENABLE_OPENGL)
 	find_package(OpenGL REQUIRED)
@@ -524,6 +527,10 @@ ENDIF(ENABLE_TIFF)
 IF(ENABLE_JPEG)
     CHECK_OPTIONAL_LIB(JPEG jpeg jpeglib.h)
 ENDIF(ENABLE_JPEG)
+
+if(WIN32)
+	set(HDF5_LIBRARY ${EMAN_PREFIX_LIB}/libhdf5.lib CACHE PATH "")
+endif()
 
 CHECK_OPTIONAL_LIB(HDF5 hdf5 hdf5.h)
 CHECK_LIB_ONLY(ZLIB z)
