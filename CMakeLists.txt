@@ -91,19 +91,19 @@ execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "${py_sp_dir_command}"
 		)
 message("Python site-packages: ${SP_DIR}")
 
-SET(EMAN_INSTALL_PREFIX    ${EMAN_PREFIX} CACHE PATH "installation prefix")
-set(EMAN_PY_INSTALL_PREFIX ${SP_DIR})
-
-set(EMAN_PREFIX_INC ${EMAN_PREFIX}/include)
-set(EMAN_PREFIX_LIB ${EMAN_PREFIX}/lib)
-
-if(NOT WIN32)
-	set(eman2dir_relative_path "../../../")
+if(ENABLE_CONDA)
+	SET(EMAN_INSTALL_PREFIX    ${EMAN_PREFIX} CACHE PATH "installation prefix")
+	set(EMAN_PY_INSTALL_PREFIX ${SP_DIR})
+	
+	set(EMAN_PREFIX_INC ${EMAN_PREFIX}/include)
+	set(EMAN_PREFIX_LIB ${EMAN_PREFIX}/lib)
+	
+	if(NOT WIN32)
+		set(eman2dir_relative_path "../../../")
+	else()
+		set(eman2dir_relative_path "../../Library/")
+	endif()
 else()
-	set(eman2dir_relative_path "../../Library/")
-endif()
-
-if(NOT ENABLE_CONDA)
 	SET(EMAN_INSTALL_PREFIX    $ENV{HOME}/EMAN2 CACHE PATH "installation prefix")
 	set(EMAN_PY_INSTALL_PREFIX ${EMAN_INSTALL_PREFIX}/lib)
 	set(eman2dir_relative_path "../")
