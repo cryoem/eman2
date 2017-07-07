@@ -86,7 +86,6 @@ OPTION(ENABLE_TAO "enable TAO support" OFF)
 MARK_AS_ADVANCED(ENABLE_TAO)
 
 OPTION(ENABLE_TIFF "enable TIFF support" ON)
-OPTION(ENABLE_HDF5 "enable HDF5 support" ON)
 OPTION(ENABLE_V4L2 "enable V4L2 framegrabbing support" OFF)
 OPTION(ENABLE_PNG "enable PNG support" ON)
 OPTION(ENABLE_JPEG "enable JPEG support" ON)
@@ -120,15 +119,6 @@ IF(CMAKE_SYSTEM_NAME MATCHES "Darwin")
 ELSE()
 	OPTION(ENABLE_OPTIMIZE_OSX "enable OSX support" OFF)
 ENDIF()
-
-IF (ENABLE_OPTIMIZE_OSX)
-	SET(GL_LIBRARY /System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib)
-	SET(GLU_LIBRARY /System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGLU.dylib)
-	SET(GL_INCLUDE_PATH /usr/include)
-	SET(GLU_INCLUDE_PATH /usr/include)
-#	SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-dylib_file,/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib:/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGLU.dylib")
-#	SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-dylib_file,/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib:/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGLU.dylib")
-ENDIF (ENABLE_OPTIMIZE_OSX)
 
 IF (ENABLE_MEMDEBUG)
 	ADD_DEFINITIONS(-DMEMDEBUG -W -Wall)
@@ -252,11 +242,9 @@ SET(INCLUDE_DIRS
 	/usr/include
 	/sw/include
 	/usr/include/freetype2
-	/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/System/Library/Frameworks/OpenGL.framework/Headers
 	)
 
 SET(LIB_DIRS
-	/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries
 	$ENV{EMANDIR}/lib
 	$ENV{HOME}/EMAN2/anaconda2/lib
 	$ENV{HOME}/anaconda2/lib
@@ -498,8 +486,19 @@ CHECK_REQUIRED_LIB(GSL gsl gsl/gsl_linalg.h)
 CHECK_REQUIRED_LIB(GSL_CBLAS gslcblas gsl/gsl_linalg.h)
 
 IF (ENABLE_OPENGL)
-	CHECK_REQUIRED_LIB(GL GL GL/gl.h)
-	CHECK_REQUIRED_LIB(GLU GLU GL/glu.h)
+	find_package(OpenGL REQUIRED)
+	set(GL_LIBRARY       ${OPENGL_gl_LIBRARY} CACHE PATH "")
+	set(GLU_LIBRARY      ${OPENGL_LIBRARIES}  CACHE PATH "")
+	set(GL_INCLUDE_PATH  ${OPENGL_INCLUDE_DIR})
+	set(GLU_INCLUDE_PATH ${OPENGL_INCLUDE_DIR})
+
+	message("OPENGL_LIBRARY:     ${OPENGL_LIBRARY}")
+	message("GL_LIBRARY:         ${GL_LIBRARY}")
+	message("GLU_LIBRARY:        ${GLU_LIBRARY}")
+	message("OPENGL_INCLUDE_DIR: ${OPENGL_INCLUDE_DIR}")
+	message("GL_INCLUDE_PATH:    ${GL_INCLUDE_PATH}")
+	message("GLU_INCLUDE_PATH:   ${GLU_INCLUDE_PATH}")
+
 	ADD_DEFINITIONS(-DEMAN2_USING_OPENGL)
 ENDIF (ENABLE_OPENGL)
 
@@ -510,15 +509,11 @@ IF (ENABLE_FTGL)
 		ADD_DEFINITIONS(-DOLD_FTGL)
 	ENDIF(EXISTS ${FTGL_INCLUDE_PATH}/FTGL/FTGL.h AND COMMAND IF)
 	ADD_SUBDIRECTORY(fonts)
-    	FIND_PATH(FREETYPE_INCLUDE_PATH ft2build.h 
-		$ENV{HOME}/EMAN2/anaconda2/include/freetype2 
-		$ENV{HOME}/anaconda2/include/freetype2 
-		/usr/include/freetype2 
-		/usr/include 
-		${INCLUDE_DIRS}
-		NO_DEFAULT_PATH
-	)
-	CHECK_REQUIRED_LIB(FREETYPE freetype config/ftheader.h )
+	find_package(Freetype REQUIRED)
+
+	message("FREETYPE_LIBRARIES:    ${FREETYPE_LIBRARIES}")
+	message("FREETYPE_INCLUDE_DIRS: ${FREETYPE_INCLUDE_DIRS}")
+		
 	IF (ENABLE_STATIC_FTGL)
 		IF(WIN32)
 			CHECK_REQUIRED_LIB(FREETYPE freetype ft2build.h)
@@ -535,25 +530,16 @@ IF(ENABLE_JPEG)
     CHECK_OPTIONAL_LIB(JPEG jpeg jpeglib.h)
 ENDIF(ENABLE_JPEG)
 
-IF(ENABLE_HDF5)
-    IF (WIN32)
-		CHECK_OPTIONAL_LIB(HDF5 hdf5dll hdf5.h)
-		CHECK_LIB_ONLY(SZLIB szlibdll)
-		CHECK_LIB_ONLY(ZLIB zlib1d)
-		ADD_DEFINITIONS(-D_HDF5USEDLL_)
-    ELSE (WIN32)
-		CHECK_OPTIONAL_LIB(HDF5 hdf5 hdf5.h)
-		CHECK_LIB_ONLY(ZLIB z)
-    ENDIF (WIN32)
-ENDIF(ENABLE_HDF5)
+CHECK_OPTIONAL_LIB(HDF5 hdf5 hdf5.h)
+CHECK_LIB_ONLY(ZLIB z)
+IF (WIN32)
+	CHECK_LIB_ONLY(SZLIB libszip)
+ENDIF (WIN32)
 
 IF(ENABLE_PNG)
-    IF (WIN32)
-        CHECK_OPTIONAL_LIB(PNG libpng13d png.h)
-        CHECK_LIB_ONLY(ZLIB zlib1d)
-    ELSE (WIN32)
-        CHECK_OPTIONAL_LIB(PNG png png.h)
-    ENDIF (WIN32)
+	find_package(PNG REQUIRED)
+	message("PNG_LIBRARIES: ${PNG_LIBRARIES}")
+	ADD_DEFINITIONS(-DEM_PNG)
 ENDIF(ENABLE_PNG)
 
 FIND_PATH(NUMPY_INCLUDE_PATH numpy/arrayobject.h
@@ -566,12 +552,11 @@ INCLUDE_DIRECTORIES(${NUMPY_INCLUDE_PATH})
 
 CHECK_PYTHON(2.7)
 
-IF(PYTHON_INCLUDE_PATH)
-    # Check the most generic name first (used by cctbx).
-    CHECK_REQUIRED_LIB(BOOST boost_python boost/python.hpp)
-ELSE(PYTHON_INCLUDE_PATH)
-    MESSAGE("ERROR: Python.h not found")
-ENDIF(PYTHON_INCLUDE_PATH)
+# Find Boost
+find_package(Boost COMPONENTS python REQUIRED)
+
+message("Boost_LIBRARIES:   ${Boost_LIBRARIES}")
+message("Boost_INCLUDE_DIR: ${Boost_INCLUDE_DIR}")
 
 # IF(ENABLE_HDFIOCACHE)
 #    IF(APPLE)
@@ -594,9 +579,9 @@ INCLUDE_DIRECTORIES(.
 	    ${FFTW_INCLUDE_PATH}
 	    ${DJBFFT_INCLUDE_PATH}
 	    ${ACML_INCLUDE_PATH}
-	    ${BOOST_INCLUDE_PATH}
+	    ${Boost_INCLUDE_DIR}
 	    ${PYTHON_INCLUDE_PATH}
-	    ${FREETYPE_INCLUDE_PATH}
+	    ${FREETYPE_INCLUDE_DIRS}
             )
 
 #---------------------------------------------------------------------------------------
