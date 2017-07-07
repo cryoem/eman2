@@ -74,10 +74,10 @@ if(ENABLE_CONDA)
 		include(FindPackageHandleStandardArgs)
 		FIND_PACKAGE_HANDLE_STANDARD_ARGS(Conda DEFAULT_MSG CONDA_ROOT)
 	endif()
-endif()
 
-set(CMAKE_PREFIX_PATH ${EMAN_PREFIX} ${EMAN_PREFIX}/..)
-message_var(CMAKE_PREFIX_PATH)
+	set(CMAKE_PREFIX_PATH ${EMAN_PREFIX} ${EMAN_PREFIX}/..)
+	message_var(CMAKE_PREFIX_PATH)
+endif()
 
 CHECK_PYTHON()
 if(NOT WIN32)
