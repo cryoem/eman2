@@ -599,7 +599,7 @@ def EQKmeans_by_dmatrix_orien_groups(original_data, partids, ptls_in_orien_group
 				best_assignment = copy.copy(iter_assignment)
 			if changed_nptls < stopercnt and total_iter <=10:stopercnt = changed_nptls/2. # reduce stop criterion to gain improvement in clustering
 			stopercnt = max(stopercnt, Tracker["constants"]["stop_eqkmeans_percentage"]) # But not exceed the specified number
-			iter +=1
+			iter       +=1
 			total_iter +=1
 			if changed_nptls < stopercnt: break
 		if changed_nptls<stopercnt: break
@@ -1847,9 +1847,24 @@ def do_two_way_comparison_single(ptp1, ptp2, total_stack):
 	accounted_list, new_index = merge_classes_into_partition_list(new_list)
 	a = set(range(total_stack))
 	b = set(accounted_list)
-	unaccounted_list = list(a.difference(b))
-	unaccounted_list = sorted(unaccounted_list)
-	return  accounted_list, unaccounted_list, new_index	
+	unaccounted_list = sorted(list(a.difference(b)))
+	return  accounted_list, unaccounted_list, new_index
+	
+def do_two_way_comparison_classes(ptp1, ptp2, total_stack):
+	newindeces, list_stable, nb_tot_objs, patch_elements = patch_to_do_k_means_match_clusters_asg_new(ptp1, ptp2)
+	tt = 0.0
+	for m in xrange(len(list_stable)): tt +=len(list_stable[m])
+	ratio_unaccounted  = 100.-tt/total_stack*100.
+	ratio_accounted    = tt/total_stack*100.
+	new_list           = []
+	for any in list_stable:
+		any.tolist()
+		if len(any)>0:new_list.append(sorted(any))
+	accounted_list, new_index = merge_classes_into_partition_list(new_list)
+	a = set(range(total_stack))
+	b = set(accounted_list)
+	unaccounted_list = sorted(list(a.difference(b)))
+	return  accounted_list, unaccounted_list, new_index, new_list
 #####
 def patch_to_do_k_means_match_clusters_asg_new(ptp1, ptp2):
 	from statistics import k_means_match_clusters_asg_new
@@ -2393,7 +2408,7 @@ def print_dict(dict,theme, exclude = "refinement"):
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	print(line,theme)
 	spaces = "                    "
-	if exclude =="refinement": exclude = ["constants", "nodes", "yr", "shared_comm", "bckgnoise", "myid", "myid_on_node", "accumulatepw", "chunk_dict", "PW_dict", "full_list", "rshifts", "refang"]
+	if exclude =="refinement": exclude = ["constants", "nodes", "yr", "output", "shared_comm", "bckgnoise", "myid", "myid_on_node", "accumulatepw", "chunk_dict", "PW_dict", "full_list", "rshifts", "refang"]
 	else: exclude = ["constants", "chunk_dict", "PW_dict", "full_list", "rshifts", "refang"]
 	for key, value in sorted( dict.items() ):
 		pt = True
@@ -4098,7 +4113,7 @@ def do3d_sorting_groups_rec3d(iteration, masterdir, log_main):
 		for icluster in xrange(Tracker["number_of_groups"]):
 			res05  = Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/res_05[icluster]
 			res143 = Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/res_143[icluster]
-			msg = "cluster  %d   fsc05/fsc143   %d/%d, %f/%f"%(icluster, Tracker["fsc05"][icluster], Tracker["fsc143"][icluster], res143, res05)
+			msg = "cluster  %d   fsc05/fsc143   %d/%d, %5.2f/%5.2f"%(icluster, Tracker["fsc05"][icluster], Tracker["fsc143"][icluster], res05, res143)
 			print(msg)
 			log_main.add(msg)
 	keepgoing = bcast_number_to_all(keepgoing, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD) # always check	
@@ -4966,6 +4981,7 @@ def memory_check(s="check_memory"):
 	print(s +"  memory ",  memory()/1.e9)
 	print(s +" resident  ", resident()/1.e9)
 	print(s +" stacksize ", stacksize()/1.e9)
+	
 ####<<<----do final maps ---->>>
 def do_final_maps(number_of_groups, minimum_size, selected_iter, refinement_dir, masterdir, rec3d_image_size, log_main):
 	global Tracker, Blockdata
@@ -5041,7 +5057,7 @@ def do_final_maps(number_of_groups, minimum_size, selected_iter, refinement_dir,
 				if not os.path.exists(cluster_masterdir): os.mkdir(cluster_masterdir)
 			mpi_barrier(MPI_COMM_WORLD)
 			do_ctrefromsort3d_get_subset_data(cluster_masterdir, refinement_dir, \
-			  os.path.join(masterdir,"Cluster%d.txt"%icluster), selected_iter, None, Blockdata["subgroup_comm"])
+			  os.path.join(masterdir,"Cluster_%03d.txt"%icluster), selected_iter, None, Blockdata["subgroup_comm"])
 			Tracker["constants"]["small_memory"] = False
 			ctrefromsorting_rec3d_faked_iter(cluster_masterdir, selected_iter, rec3d_image_size, Blockdata["subgroup_comm"])
 			mpi_barrier(MPI_COMM_WORLD)
@@ -5380,7 +5396,8 @@ def main():
 	import json
 	import user_functions
 	####--------------------------------------------------------------
-	keepgoing 	= 1
+	main_keepgoing 	        = 1
+	main_number_of_clusters = 0 
 	# 	Create Master directory
 	line      = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	masterdir = Tracker["constants"]["masterdir"]
@@ -5428,9 +5445,10 @@ def main():
 		Tracker["smearing"]              = False
 	###<<<------------------------>>>>>>checks<<<<<-------------
 	if Tracker["constants"]["symmetry"] != options.sym:
-		msg = "input symmetry %s is altered to %s after reading refinement information! "%(options.sym, Tracker["constants"]["symmetry"])
-		log_main.add(msg)
-		print(msg)
+		if(Blockdata["myid"] == Blockdata["main_node"]):
+			msg = "input symmetry %s is altered to %s after reading refinement information! "%(options.sym, Tracker["constants"]["symmetry"])
+			log_main.add(msg)
+			print(msg)
 	###<<<----------------------->>>>>  SORT3D MAIN PROGRAM <<<<<---------------------------------------------# For all cases
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	if(Blockdata["myid"] == Blockdata["main_node"]):
@@ -5534,7 +5552,7 @@ def main():
 			Tracker = convert_json_fromunicode(json.load(fout))
 			fout.close()
 			try:  output = Tracker["output"]
-			except: Tracker["output"] = []
+			except: Tracker["output"]   = []
 		else: Tracker = []
 		Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
 		number_of_groups = 0
@@ -5545,8 +5563,8 @@ def main():
 			msg = "---->>> Summaries of final results <<<-----"
 			print(line, msg)
 			Tracker["output"].append(msg)
-			while os.path.exists(os.path.join(Tracker["constants"]["masterdir"], "Cluster%d.txt"%number_of_groups)):
-				class_in = read_text_file(os.path.join(Tracker["constants"]["masterdir"], "Cluster%d.txt"%number_of_groups))
+			while os.path.exists(os.path.join(Tracker["constants"]["masterdir"], "Cluster_%03d.txt"%number_of_groups)):
+				class_in = read_text_file(os.path.join(Tracker["constants"]["masterdir"], "Cluster_%03d.txt"%number_of_groups))
 				minimum_size = min(len(class_in), minimum_size)
 				msg = " %10d clusters  %10d   group size "%(number_of_groups, len(class_in))
 				print(line, msg)
@@ -5572,7 +5590,8 @@ def main():
 		from mpi import mpi_finalize
 		mpi_finalize()
 		exit()
-	###<<<-------sort3d starts here
+	mpi_barrier(MPI_COMM_WORLD)
+	###<<<------- ++++++++++ sort3d starts here +++++++++++ ----------
 	for indep_sort3d in xrange(Tracker["total_sort3d_indepent_run"]):		
 		sorting                = {}
 		sorting["Unaccounted"] = None
@@ -5583,9 +5602,9 @@ def main():
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 			if not os.path.exists(Tracker["indep_sort3d_dir"]): os.mkdir(Tracker["indep_sort3d_dir"])
-			msg = "---------->>> Independent sort3d  %d<<<----------- "%indep_sort3d
+			msg = "---------->>> Independent sort3d  %d <<<----------- "%indep_sort3d
 			print(line, msg)
-			Tracker["output"].append("SORT3D  %d"%indep_sort3d)
+			Tracker["output"].append("++++ SORT3D  %d"%indep_sort3d)
 			log_main.add(msg)
 			log_main.add("nnxo : %d"%Tracker["constants"]["nnxo"])
 			log_main.add("Current resolution: %f  absolute unit(maximum is 0.5) 1./%7.2f Angstrom "%(Tracker["currentres"]*Tracker["shrinkage"],\
@@ -5607,10 +5626,9 @@ def main():
 			if len(sorting["total"])>1: sorting["total"] = sorting["total"][1]
 			else: sorting["total"] = sorting["total"][0]
 		else: 
-			sorting["total"]  = 0
-			Tracker = 0
+			sorting["total"] = 0
+			Tracker          = 0
 		sorting["total"] = wrap_mpi_bcast(sorting["total"], Blockdata["main_node"]) # total number of records in indexes.txt file
-		#Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			Tracker["img_per_grp"] = Tracker["constants"]["img_per_grp"]
 			Tracker["total_stack"] = len(sorting["total"]) # start from beginning
@@ -5624,7 +5642,6 @@ def main():
 		os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt"), sorting["Accounted"], log_main)
 		sorting["Unaccounted"] = Tracker["unaccounted_list"]
 		if Blockdata["myid"] == Blockdata["main_node"]:
-			# sorting.json contains [Accounted] lists and one Unaccounted list
 			fout = open(os.path.join(Tracker["indep_sort3d_dir"], "sorting.json"),'w')
 			json.dump(sorting, fout)
 			fout.close()
@@ -5634,7 +5651,6 @@ def main():
 			Tracker["number_of_groups"] = len(sort3d_clusters)
 			for icluster in xrange(len(sort3d_clusters)): write_text_file(sort3d_clusters[icluster], os.path.join(Tracker["indep_sort3d_dir"],"Cluster%d.txt"%icluster))
 		else: Tracker = 0
-		#Tracker["number_of_groups"] = bcast_number_to_all(Tracker["number_of_groups"], Blockdata["main_node"], MPI_COMM_WORLD)
 		Tracker = wrap_mpi_bcast(Tracker,  Blockdata["main_node"], MPI_COMM_WORLD)
 		###>>>>>--------->>>>rec3D<<<---------
 		Tracker["nxinit"] = Tracker["nxinit_refinement"] # report resolution and structure in refinement image size
@@ -5650,7 +5666,7 @@ def main():
 		if not Tracker["nosmearing"]:
 			del parameterstructure
 			del norm_per_particle
-		### Summary of results given by sort3d 
+		###---->>>>>> Summary of results given by sort3d  <<<<---------
 		if(Blockdata["myid"] == Blockdata["main_node"]):
 			if os.path.exists(os.path.join(Tracker["directory"], "tempdir")): shutil.rmtree(os.path.join(Tracker["directory"], "tempdir"))
 			line    = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
@@ -5659,7 +5675,7 @@ def main():
 			log_main.add(msg)
 			for icluster in xrange(Tracker["number_of_groups"]):
 				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-				cfsc          = read_text_file(os.path.join(Tracker["indep_sort3d_dir"],"fsc_driver_grp%03d_iter000.txt"%icluster), -1)
+				cfsc = read_text_file(os.path.join(Tracker["indep_sort3d_dir"],"fsc_driver_grp%03d_iter000.txt"%icluster), -1)
 				res05, res143 = get_res(cfsc[0])    
 				msg = "group %3d   size : %8d     FSC05    %f     FSC143   %f"%(icluster, len(sort3d_clusters[icluster]), \
 				float(res05)/float(Tracker["nxinit"]), float(res143)/float(Tracker["nxinit"]))
@@ -5669,139 +5685,127 @@ def main():
 		else: Tracker["output"] = 0
 		Tracker["output"] = wrap_mpi_bcast(Tracker["output"], Blockdata["main_node"])
 		mpi_barrier(MPI_COMM_WORLD)
-	#########################################################<<<---rsort
-	if Blockdata["myid"] == Blockdata["main_node"]:Tracker["output"].append("----->>>RSORT<<<-------")
-	iter_rsort = 0
-	while iter_rsort< Tracker["total_iter_rsort"]:
+	if(Blockdata["myid"] == Blockdata["main_node"]):
+		Tracker["output"].append("----->>>Summaries of SORT3D <<<-------")
 		ptp = []
 		for indep_sort3d in xrange(Tracker["total_sort3d_indepent_run"]):
 			indep_sort3d_dir = os.path.join(Tracker["constants"]["masterdir"], "sort3d_run%d"%indep_sort3d)
-			if os.path.exists(os.path.join(indep_sort3d_dir, "sorting.json")):				
-				if(Blockdata["myid"] == Blockdata["main_node"]):
-					fout = open(os.path.join(indep_sort3d_dir, "sorting.json"), "r")
-					res_sort3d = convert_json_fromunicode(json.load(fout))
-					fout.close()
-					merged_classes = split_partition_into_clusters(res_sort3d["Accounted"])
-					if len(res_sort3d["Unaccounted"]) > 0: merged_classes.append(res_sort3d["Unaccounted"])
-				else:
-					res_sort3d = 0
-					merged_classes = 0
-				res_sort3d     = wrap_mpi_bcast(res_sort3d,  Blockdata["main_node"], MPI_COMM_WORLD)
-				merged_classes = wrap_mpi_bcast(merged_classes, Blockdata["main_node"], MPI_COMM_WORLD)
-				sptp           = prep_ptp_single(merged_classes, res_sort3d["total"])
+			if os.path.exists(os.path.join(indep_sort3d_dir, "sorting.json")):
+				fout = open(os.path.join(indep_sort3d_dir, "sorting.json"), "r")
+				res_sort3d = convert_json_fromunicode(json.load(fout))
+				fout.close()
+				merged_classes = split_partition_into_clusters(res_sort3d["Accounted"])
+				sptp = prep_ptp_single(merged_classes, res_sort3d["total"])
 				ptp.append(sptp)
-			else: ERROR("sorting results do not exist", "rsort", 1, Blockdata["myid"])
+			else: ERROR("sorting results do not exist", "sort3d", 1, Blockdata["myid"])
+		accounted_list, unaccounted_list, new_index, sort3d_clusters = do_two_way_comparison_classes(ptp[0], ptp[1], len(res_sort3d["total"]))
+		Tracker["output"].append("Accounted  %d  Unaccounted   %d"%(len(accounted_list), len(unaccounted_list)))
+		for ic in xrange(len(sort3d_clusters)):
+			Tracker["output"].append("Cluster %d   members   %d"%(ic, len(sort3d_clusters[ic])))
+			write_text_file(sort3d_clusters[ic], os.path.join(Tracker["constants"]["masterdir"], "Cluster_%03d.txt"%ic))
+			main_number_of_clusters +=1
+		if get_number_of_groups(len(unaccounted_list),Tracker["img_per_grp"])<=1:
+			Tracker["output"].append("Cluster %d   members   %d"%(main_number_of_clusters, len(unaccounted_list)))
+			main_keepgoing = 0
+			write_text_file(unaccounted_list, os.path.join(Tracker["constants"]["masterdir"], "Cluster_%03d.txt"%len(sort3d_clusters)))
+			Tracker["output"].append("----->>>>> SORT3D finishes with the unaccounted particles are treated as one cluster <<<<<--------")
+		else: Tracker["output"].append("----->>>>> RSORT  <<<<<--------")
+		total_rsort = len(unaccounted_list)
+	else: Tracker = 0
+	Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
+	main_keepgoing          = bcast_number_to_all(main_keepgoing, Blockdata["main_node"], MPI_COMM_WORLD)
+	main_number_of_clusters = bcast_number_to_all(main_number_of_clusters, Blockdata["main_node"], MPI_COMM_WORLD)
+	if main_keepgoing == 0:
+		if(Blockdata["myid"] == Blockdata["main_node"]):
+			write_text_file(Tracker["output"], os.path.join(Tracker["constants"]["masterdir"], "final.txt"))
+			fout = open(os.path.join(Tracker["constants"]["masterdir"], "Tracker.json"),'w')
+			json.dump(sorting, fout)
+			fout.close()
 		mpi_barrier(MPI_COMM_WORLD)
-		accounted_list, unaccounted_list, new_index = do_two_way_comparison_single(ptp[0], ptp[1], len(res_sort3d["total"]))
-		Tracker["unaccounted_list"] = []
-		for index in xrange(len(unaccounted_list)): Tracker["unaccounted_list"].append(res_sort3d["total"][unaccounted_list[index]]) # always check
-		Tracker["accounted_list"] = []
-		for index in xrange(len(accounted_list)): Tracker["accounted_list"].append([new_index[index][0], res_sort3d["total"][new_index[index][1]]]) # always check
-		Tracker["directory"] = os.path.join(Tracker["constants"]["masterdir"], "rsort%d"%iter_rsort)	
-		if Blockdata["myid"] == Blockdata["main_node"]:
-			Tracker["output"].append("RSORT  %d"%iter_rsort)
-			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			msg = "------------>>>RSORT %d<<<-----------"%iter_rsort
-			log_main.add(msg)
+	else:
+		########  RSORT #######
+		iter_rsort = 0
+		while iter_rsort< Tracker["total_iter_rsort"]:
+			Tracker["directory"] = os.path.join(Tracker["constants"]["masterdir"], "rsort%d"%iter_rsort)
+			if Blockdata["myid"] == Blockdata["main_node"]:
+				if not os.path.exists(Tracker["directory"]): os.mkdir(Tracker["directory"])
+				Tracker["output"].append("RSORT  %d"%iter_rsort)
+				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+				msg = "------------>>>RSORT %d<<<-----------"%iter_rsort
+				log_main.add(msg)
+				print(line, msg)
+				write_text_file(unaccounted_list, os.path.join(Tracker["directory"], "Unaccounted.txt"))
+				Tracker["total_stack"] = len(unaccounted_list)
+			else: Tracker = 0
+			Tracker  = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
+			partid_file                 = os.path.join(os.path.join(Tracker["directory"], "Unaccounted.txt"))
+			Tracker["unaccounted_list"] = []
+			Tracker["accounted_list"]   = []
+			Tracker["number_of_groups"] = get_number_of_groups(Tracker["total_stack"],Tracker["img_per_grp"])
+			if Tracker["number_of_groups"]>1: #continue N-ways_clustering on unaccounted particles
+				sorting                = {}
+				sorting["Accounted"]   = [Tracker["accounted_list"]] # keep the accounted
+				final_sort             = []
+				final_list = do_EQKmeans_nways_clustering_stable_seeds(os.path.join(Tracker["constants"]["masterdir"], "rsort%d"%iter_rsort), partid_file,\
+				os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt"), sorting["Accounted"], log_main)
+				for a in sorting["Accounted"]: final_sort.append(a)
+				if (Blockdata["myid"] == Blockdata["main_node"]):
+					try: 
+						Tracker["unaccounted_list"] = read_text_file(Tracker["Unaccounted_on_disk"]) # defined in do_two_way_comparison_over_nindepruns
+						if len(Tracker["unaccounted_list"])> Tracker["constants"]["img_per_grp"]//2:
+							for iparticle in xrange(len(Tracker["unaccounted_list"])):
+								Tracker["unaccounted_list"][iparticle] = [0, Tracker["unaccounted_list"][iparticle]]
+							final_sort.append(Tracker["unaccounted_list"])
+						else:
+							msg = "unaccounted_list size is too small"
+							print(line, msg)
+							log_main.add(msg)
+							write_text_file(Tracker["unaccounted_list"], os.path.join(Tracker["constants"]["masterdir"], "rsort%d"%iter_rsort, "rsort_unaccounted.txt"))
+					except: print("no saved unaccounted text")						
+					indexed_particle_list, Tracker["number_of_groups"] = merge_original_id_lists(final_sort)
+					write_text_row(indexed_particle_list, os.path.join(Tracker["constants"]["masterdir"], "rsort%d"%iter_rsort, "index_for_Kmeans.txt"))
+					line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+					msg  = "Include %d unaccounted as one cluster  "%len(Tracker["unaccounted_list"])
+					print(line, msg)
+					log_main.add(msg)
+			iter_rsort +=1
+			mpi_barrier(MPI_COMM_WORLD)
+		if(Blockdata["myid"] == Blockdata["main_node"]):
+			Tracker["output"].append("----->>>>reproducible ratio of two RSORTS<<<<-------")
+			line   = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+			tlist  = read_text_file(os.path.join(Tracker["constants"]["masterdir"],"indexes.txt"))
+			ptp    = []
+			for irsort in xrange(2):
+				r1 = read_text_row(os.path.join(Tracker["constants"]["masterdir"], "rsort%d"%irsort, "index_for_Kmeans.txt"))
+				merged_classes = split_partition_into_clusters([r1])
+				sptp = prep_ptp_single(merged_classes, tlist)
+				ptp.append(sptp)
+			accounted_list, unaccounted_list, new_index, rsort_clusters = do_two_way_comparison_classes(ptp[0], ptp[1], len(tlist))
+			msg = " The final selected particles by two rsorts:  %d percentage:  %5.2f "%(len(accounted_list), float(len(accounted_list))/float(total_rsort)*100.0)
 			print(line, msg)
-			msg = "Summary of two sort3d runs"
 			log_main.add(msg)
-			print(line, msg)
-			msg = "total data for RSORT:   %d"%(len(Tracker["unaccounted_list"]))
-			log_main.add(msg)
-			print(line, msg)
 			Tracker["output"].append(msg)
-			os.mkdir(Tracker["directory"])
-			if len(Tracker["unaccounted_list"])>0: write_text_file(Tracker["unaccounted_list"], os.path.join(Tracker["directory"], "Unaccounted.txt"))
-			write_text_row(Tracker["accounted_list"], os.path.join(Tracker["directory"], "Accounted.txt"))
+			for icluster in xrange(main_number_of_clusters, len(rsort_clusters) + main_number_of_clusters):
+				Tracker["output"].append("Cluster %d   members   %d"%(icluster, len(rsort_clusters[icluster - main_number_of_clusters])))
+				write_text_file(rsort_clusters[icluster - main_number_of_clusters], os.path.join(Tracker["constants"]["masterdir"],"Cluster_%03d.txt"%icluster))
+				Tracker["number_of_groups"] = len(rsort_clusters)
+			Tracker["output"].append("----->>>>> RSORT  is done<<<<<--------")
+			write_text_file(Tracker["output"], os.path.join(Tracker["constants"]["masterdir"], "final.txt"))
+		else:Tracker = 0
+		Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
 		mpi_barrier(MPI_COMM_WORLD)
-		partid_file                 = os.path.join(os.path.join(Tracker["directory"], "Unaccounted.txt"))
-		Tracker["total_stack"]	    = len(Tracker["unaccounted_list"])
-		Tracker["number_of_groups"] = get_number_of_groups(Tracker["total_stack"],Tracker["img_per_grp"])
-		if Tracker["number_of_groups"]>1: #continue N-ways_clustering on unaccounted particles
-			sorting                = {}
-			sorting["Accounted"]   = [Tracker["accounted_list"]] # keep the accounted
-			final_sort             = []
-			final_list = do_EQKmeans_nways_clustering_stable_seeds(os.path.join(Tracker["constants"]["masterdir"], "rsort%d"%iter_rsort), partid_file,\
-			os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt"), sorting["Accounted"], log_main)
-			for a in sorting["Accounted"]: final_sort.append(a)
-			if (Blockdata["myid"] == Blockdata["main_node"]):
-				try: 
-					Tracker["unaccounted_list"] = read_text_file(Tracker["Unaccounted_on_disk"])
-					if len(Tracker["unaccounted_list"])> 0:
-						for iparticle in xrange(len(Tracker["unaccounted_list"])):
-							Tracker["unaccounted_list"][iparticle] = [0, Tracker["unaccounted_list"][iparticle]]
-						final_sort.append(Tracker["unaccounted_list"])
-					else:
-						msg = "Empty unaccounted_list is found"
-						print(line, msg)
-						log_main.add(msg)
-				except: print("no saved unaccounted text")								
-				indexed_particle_list, Tracker["number_of_groups"] = merge_original_id_lists(final_sort)
-				write_text_row(indexed_particle_list, os.path.join(Tracker["constants"]["masterdir"], "rsort%d"%iter_rsort, "index_for_Kmeans.txt"))
-				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-				msg  = "Include %d unaccounted as one cluster  "%len(Tracker["unaccounted_list"])
-				print(line, msg)
-				log_main.add(msg)
-		else: 
-			if (Blockdata["myid"] == Blockdata["main_node"]):
-				final_sort  = []
-				final_sort.append(Tracker["accounted_list"])
-				# group-index unaccounted_list
-				try: 
-					Tracker["unaccounted_list"] = read_text_file(Tracker["Unaccounted_on_disk"])
-					if len(Tracker["unaccounted_list"])> 0:
-						for iparticle in xrange(len(Tracker["unaccounted_list"])):
-							Tracker["unaccounted_list"][iparticle] = [0, Tracker["unaccounted_list"][iparticle]]
-						final_sort.append(Tracker["unaccounted_list"])
-					else:
-						msg = "Empty unaccounted_list is found"
-						print(line, msg)
-						log_main.add(msg)
-				except:
-					print("no saved unaccounted text")
-					Tracker["unaccounted_list"] = []
-				indexed_particle_list, Tracker["number_of_groups"] = merge_original_id_lists(final_sort)
-				write_text_row(indexed_particle_list, os.path.join(Tracker["constants"]["masterdir"], "rsort%d"%iter_rsort, "index_for_Kmeans.txt"))
-				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-				msg = "include %d unaccounted particles as one cluster to do two-way comparison "%len(Tracker["unaccounted_list"])
-				print(line, msg)
-				log_main.add(msg)
-		Tracker["number_of_groups"] = bcast_number_to_all(Tracker["number_of_groups"], Blockdata["main_node"], MPI_COMM_WORLD)	
-		Tracker["directory"] = os.path.join(Tracker["constants"]["masterdir"],"rsort%d"%iter_rsort,"Kmeans")
-		iter_rsort  +=1	
-	# rsort final comparison
-	mpi_barrier(MPI_COMM_WORLD)
 	if(Blockdata["myid"] == Blockdata["main_node"]):
-		Tracker["output"].append("----->>>>reproducible ratio of two RSORTS<<<<-------")
-		line   = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		tlist  = read_text_file(os.path.join(Tracker["constants"]["masterdir"],"indexes.txt"))
-		ptp    = []
-		for irsort in xrange(Tracker["total_iter_rsort"]):
-			r1 = read_text_row(os.path.join(Tracker["constants"]["masterdir"], "rsort%d"%irsort, "index_for_Kmeans.txt"))
-			merged_classes = split_partition_into_clusters([r1])
-			sptp = prep_ptp_single(merged_classes, tlist)
-			ptp.append(sptp)
-		accounted_list, unaccounted_list, new_index = do_two_way_comparison_single(ptp[0], ptp[1], len(tlist))
-		# export_sorting_results(clusters)
-		msg = " total number of accounted for two rsort:  %d percentage:  %5.2f "%(len(accounted_list), float(len(accounted_list))/float(len(tlist))*100.0)
-		print(line, msg)
-		log_main.add(msg)
-		Tracker["output"].append(msg)
-		Tracker["accounted_list"] = []
-		for index in xrange(len(accounted_list)): Tracker["accounted_list"].append([new_index[index][0], tlist[new_index[index][1]]]) # always check
-		rsort_clusters, new_partition = split_partition_into_ordered_clusters(Tracker["accounted_list"])
-		Tracker["accounted_list"] = new_partition
-		write_text_row(Tracker["accounted_list"], os.path.join(Tracker["constants"]["masterdir"], "final_partition.txt"))
-	else:  rsort_clusters = 0
-	rsort_clusters = wrap_mpi_bcast(rsort_clusters, Blockdata["main_node"], MPI_COMM_WORLD)
-	# save res
-	if(Blockdata["myid"] == Blockdata["main_node"]):# save clusters with respect to the initial indexes
-		for icluster in xrange(len(rsort_clusters)):
-			write_text_file(rsort_clusters[icluster], os.path.join(Tracker["constants"]["masterdir"],"Cluster%d.txt"%icluster))
-			Tracker["number_of_groups"] = len(rsort_clusters)
-	else:   Tracker["number_of_groups"] = 0
-	Tracker["number_of_groups"] = bcast_number_to_all(Tracker["number_of_groups"], Blockdata["main_node"], MPI_COMM_WORLD)
+		clusters_list    = []
+		number_of_groups = 0
+		while os.path.exists(os.path.join(Tracker["constants"]["masterdir"], "Cluster_%03d.txt"%number_of_groups)):
+			clusters_list.append(read_text_file(os.path.join(Tracker["constants"]["masterdir"], "Cluster_%03d.txt"%number_of_groups)))
+			number_of_groups +=1
+		final_partition, tmp_index = merge_classes_into_partition_list(clusters_list)
+		write_text_row(tmp_index, os.path.join(Tracker["constants"]["masterdir"], "final_partition.txt"))
+		fout = open(os.path.join(Tracker["constants"]["masterdir"], "Tracker.json"),'w')
+		json.dump(Tracker, fout)
+		fout.close()
+	mpi_barrier(MPI_COMM_WORLD)
 	### Final Rec3D unfiltered two halves, valid only in case of sorting initiated from sphire refinement
 	if Tracker["constants"]["final_sharpen"]:
 		Tracker["constants"]["orgres"]				= 0.0
@@ -5809,7 +5813,7 @@ def main():
 		Tracker["constants"]["refinement_ts"]		= 0.0
 		Tracker["constants"]["refinement_xr"]		= 0.0
 		Tracker["constants"]["refinement_an"]		= 0.0
-		minimum_size = Tracker["constants"]["img_per_grp"]
+		minimum_size     = Tracker["constants"]["img_per_grp"]
 		number_of_groups = 0
 		if(Blockdata["myid"] == Blockdata["main_node"]):
 			final_accounted_ptl = 0
@@ -5817,8 +5821,8 @@ def main():
 			msg = "---->>> Summaries of the final results <<<-----"
 			print(line, msg)
 			Tracker["output"].append(msg)
-			while os.path.exists(os.path.join(Tracker["constants"]["masterdir"], "Cluster%d.txt"%number_of_groups)):
-				class_in = read_text_file(os.path.join(Tracker["constants"]["masterdir"], "Cluster%d.txt"%number_of_groups))
+			while os.path.exists(os.path.join(Tracker["constants"]["masterdir"], "Cluster_%03d.txt"%number_of_groups)):
+				class_in = read_text_file(os.path.join(Tracker["constants"]["masterdir"], "Cluster_%03d.txt"%number_of_groups))
 				minimum_size = min(len(class_in), minimum_size)
 				msg = " %10d clusters  %10d   group size "%(number_of_groups, len(class_in))
 				print(line, msg)
@@ -5829,7 +5833,7 @@ def main():
 			msg = "total number of particle images:  %10d;  accounted:   %10d ;  number_of_groups:   %5d"%(Tracker["constants"]["total_stack"], final_accounted_ptl, number_of_groups)
 			print(line, msg)
 			Tracker["output"].append(msg)
-		else: Tracker["output"] = 0
+		else: Tracker = 0
 		number_of_groups = bcast_number_to_all(number_of_groups, Blockdata["main_node"], MPI_COMM_WORLD)
 		Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
 		if number_of_groups == 0:ERROR("No cluster is found, and the program terminates.", "do_final_maps", 1, Blockdata["myid"])
@@ -5839,11 +5843,17 @@ def main():
 		  Tracker["constants"]["masterdir"], Tracker["constants"]["nnxo"], log_main)
 	mpi_barrier(MPI_COMM_WORLD)
 	if(Blockdata["myid"] == Blockdata["main_node"]):
+		fout = open(os.path.join(Tracker["constants"]["masterdir"], "Tracker.json"),'r')
+		Tracker = convert_json_fromunicode(json.load(fout))
+		fout.close()
 		for iproc in xrange(number_of_groups):
 			msg = merge_two_unfiltered_maps(os.path.join(Tracker["constants"]["masterdir"], "vol_unfiltered_0_grp%03d.hdf"%iproc), \
 			  os.path.join(Tracker["constants"]["masterdir"], "vol_unfiltered_1_grp%03d.hdf"%iproc), iproc)
 			Tracker["output"].append(msg)
 		write_text_file(Tracker["output"], os.path.join(Tracker["constants"]["masterdir"], "final.txt"))
+		fout = open(os.path.join(Tracker["constants"]["masterdir"], "Tracker.json"),'w')
+		json.dump(Tracker, fout)
+		fout.close()
 	mpi_barrier(MPI_COMM_WORLD)
 	from mpi import mpi_finalize
 	mpi_finalize()

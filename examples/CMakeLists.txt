@@ -4,3 +4,4 @@ INSTALL(PROGRAMS ${example_programs}
 )
 
 INSTALL(FILES 00README DESTINATION examples)
+

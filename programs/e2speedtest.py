@@ -60,6 +60,7 @@ improved with time."""
 
 	parser.add_argument("--slow",action="store_true",help="rtf_slow alignment",default=False)
 	parser.add_argument("--best",action="store_true",help="rtf_best alignment",default=False)
+	parser.add_argument("--short",action="store_true",help="Fewer iterations, mainly for profiling",default=False)
 	parser.add_argument("--old",action="store_true",help="old rtf+refine aligner",default=False)
 	parser.add_argument("--low",action="store_true",help="low level test",default=False)
 	parser.add_argument("--size",type=int,help="Size of particles, 192 default for comparisons",default=192)
@@ -165,7 +166,11 @@ so in most cases it is not dealt with.'
 
 	tms=[]
 	t1 = time.clock()
-	for i in xrange(8):
+	if options.short:
+		NTT=NTT/2
+		rng=1
+	else: rng=8
+	for i in xrange(rng):
 		t11 = time.clock()
 		for j in xrange(5, NTT):
 			if options.best:
@@ -189,7 +194,7 @@ so in most cases it is not dealt with.'
 
 	ti = t2 - t1
 
-	if SIZE==256:
+	if SIZE==256 and not options.short:
 		print 'For comparison (Values approximate. Repeated runs will give some variation.)'
 		print 'A 2011 MacBook Pro (2.2ghz core-i7) -----------------------------'
 		print 'An Intel Xeon E5645 2.4Ghz SF -----------------------------------'
@@ -198,7 +203,7 @@ so in most cases it is not dealt with.'
 		print 'An Intel Xeon X5675 3.07Ghz SF ----------------------------------'
 		print 'An Intel Core i7-3960X 3.3Ghz SF --------------------------------'
 
-	print '\nYour machines speed factor = %1.4f +- %1.4f (%1.4f +- %1.5f sec)\n' % (2.3/tms.mean(),2.3/tms.mean()-2.3/(tms.mean()+tms.std()),tms.mean()/(NTT-5.0),tms.std()/(NTT-5.0))
+	if not options.short: print '\nYour machines speed factor = %1.4f +- %1.4f (%1.4f +- %1.5f sec)\n' % (2.3/tms.mean(),2.3/tms.mean()-2.3/(tms.mean()+tms.std()),tms.mean()/(NTT-5.0),tms.std()/(NTT-5.0))
 	
 	try:
 		for l in file("/proc/cpuinfo","r"):

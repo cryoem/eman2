@@ -29,13 +29,9 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 #
-
-
 from EMAN2 import *
 from sparx import *
 from global_def import SPARX_MPI_TAG_UNIVERSAL
-
-
 import	global_def
 from	global_def 	import *
 from	optparse 	import OptionParser
@@ -43,48 +39,51 @@ from	EMAN2 		import EMUtil
 import	os
 import	sys
 from 	time		import	time
-
-def image_decimate_window_xform_ctf(img,decimation=2,window_size=0,CTF=False):
-        """
-                Window 2D image to FFT-friendly size, apply Butterworth low pass filter,
-                and decimate image by integer factor
-        """
-        from filter       import filt_btwl
-        from fundamentals import smallprime,window2d
-        from utilities    import get_image,get_params_proj,set_params_proj,get_ctf, set_ctf
-        if decimation ==1:
-        	if window_size ==0:
-        		return img
-        	else:
-        		[phi,theta,psi,tx,ty]=get_params_proj(img)
-        		if CTF:[defocus,cs,voltage,pixel_size,bfactor,ampconst,dfdiff,dfang] = get_ctf(img)
-        		new_params =[phi, theta, psi, tx/decimation,ty/decimation]
-        		img = Util.window(img,window_size,window_size,1, 0, 0, 0)
-        		set_params_proj(img,new_params)
-        		if CTF:
-					ctf_params=[defocus,cs,voltage,pixel_size*decimation,bfactor,ampconst,dfdiff,dfang]
-					set_ctf(img,ctf_params)
-        		return img
-        else:
-        	nz= img.get_zsize()
-        	if( nz > 1):                    ERROR("This command works only for 2-D images", "image_decimate", 1)
-        	if decimation    <= 1  :        ERROR("Improper decimation ratio", "image_decimate", 1)
-        	[phi,theta,psi,tx,ty]=get_params_proj(img)
-        	new_params =[phi,theta,psi,tx/decimation,ty/decimation]
-        	if CTF:[defocus,cs,voltage,pixel_size,bfactor,ampconst,dfdiff,dfang] = get_ctf(img)
-        	frequency_low     = 0.5/decimation-0.02
-        	if frequency_low <= 0 : ERROR("Butterworth passband frequency is too low","image_decimation",1)
-        	frequency_high    = min(0.5/decimation + 0.02, 0.499)
-        	if window_size >0:
-        		img = Util.window(img, window_size, window_size,1, 0, 0, 0)
-        	e = filt_btwl(img,frequency_low,frequency_high)
-        	decimated_image = Util.decimate(e,int(decimation),int(decimation), 1)
-        	set_params_proj(decimated_image,new_params)
-        	if CTF:
-        		ctf_params = [defocus,cs,voltage,pixel_size*decimation,bfactor,ampconst,dfdiff,dfang]
-        		set_ctf(decimated_image,ctf_params)
-        	return decimated_image
-
+def image_decimate_window_xform_ctf(img, decimation = 0.5, window_size = 0, CTF = False):
+	from filter       import filt_btwl
+	from fundamentals import smallprime,window2d
+	from utilities    import get_image,get_params_proj,set_params_proj,get_ctf, set_ctf
+	nx = img.get_xsize()
+	ny = img.get_ysize()
+	nz = img.get_zsize()
+	if( nz > 1): ERROR("This command works only for 2-D images", "image_decimate", 1)
+	if nx < window_size or ny < window_size: ERROR("Image size is less than window size", "image_decimate_window_xform_ctf", 1)
+	if CTF:
+		[defocus,cs,voltage,pixel_size,bfactor,ampconst,dfdiff,dfang] = get_ctf(img)
+		ctf_params =[defocus,cs,voltage,pixel_size*decimation,bfactor,ampconst,dfdiff,dfang]
+	[phi,theta, psi, tx, ty] = get_params_proj(img)
+	new_params = [phi, theta, psi, tx*decimation,ty*decimation]
+	if decimation ==1:
+		if window_size ==0: return img
+		else:
+			img = Util.window(img, window_size, window_size,1, 0, 0, 0)
+			if CTF: set_ctf(img,ctf_params)
+			set_params_proj(img,new_params)
+			return img
+	elif decimation < 1: # reduce image size 
+		frequency_low     = 0.5*decimation-0.02
+		if frequency_low <= 0 : ERROR("Butterworth passband frequency is too low","image_decimation",1)
+		frequency_high    = min(0.5*decimation + 0.02, 0.499)
+		if window_size >0: 
+			img = Util.window(img, window_size, window_size, 1, 0, 0, 0)
+			e = filt_btwl(img, frequency_low, frequency_high)
+			decimated_image = Util.decimate(e, int(1./decimation), int(1./decimation), 1)
+	else: #increase image size
+		if window_size ==0:
+			new_nx = int(nx*decimation+0.5)
+			new_ny = int(ny*decimation+0.5)
+			e, kb  = prepi(Util.pad(img, new_nx, new_ny, 1, 0, 0, 0, "circumference"))
+			decimated_image = e.rot_scale_conv_new(0.0, 0.0, 0.0, kb, decimation)
+		else:
+			img = Util.window(img, window_size, window_size,1, 0, 0, 0)
+			new_nx = int(window_size*decimation+0.5)
+			new_ny = int(window_size*decimation+0.5)
+			e, kb = prepi(Util.pad(img, new_nx, new_ny, 1, 0, 0, 0, "circumference"))
+			decimated_image = e.rot_scale_conv_new(0.0, 0.0, 0.0, kb, decimation)
+	set_params_proj(decimated_image,new_params)
+	if CTF: set_ctf(decimated_image,ctf_params)
+	return decimated_image
+	
 def main():
 
 	def params_3D_2D_NEW(phi, theta, psi, s2x, s2y, mirror):
@@ -106,7 +105,7 @@ def main():
 	parser.add_option("--var3D",		type="string"	   ,	default=False,				help="compute 3D variability (time consuming!)")
 	parser.add_option("--img_per_grp",	type="int"         ,	default=10   ,				help="number of neighbouring projections")
 	parser.add_option("--no_norm",		action="store_true",	default=False,				help="do not use normalization")
-	parser.add_option("--radius", 	    type="int"         ,	default=-1   ,				help="radius for 3D variability" )
+	#parser.add_option("--radius", 	    type="int"         ,	default=-1   ,				help="radius for 3D variability" )
 	parser.add_option("--npad",			type="int"         ,	default=2    ,				help="number of time to pad the original images")
 	parser.add_option("--sym" , 		type="string"      ,	default="c1" ,				help="symmetry")
 	parser.add_option("--fl",			type="float"       ,	default=0.0  ,				help="stop-band frequency (Default - no filtration)")
@@ -119,7 +118,7 @@ def main():
 	#parser.add_option("--abs", 		type="float"   ,        default=0.0  ,				help="minimum average absolute change of voxels' values (stop criterion of reconstruction process)" )
 	#parser.add_option("--squ", 		type="float"   ,	    default=0.0  ,				help="minimum average squared change of voxels' values (stop criterion of reconstruction process)" )
 	parser.add_option("--VAR" , 		action="store_true",	default=False,				help="stack on input consists of 2D variances (Default False)")
-	parser.add_option("--decimate",     type="float",           default=1.0,                help="image decimate rate, a number large than 1. default is 1")
+	parser.add_option("--decimate",     type="float",           default= 1.0,               help="image decimate rate, a number larger (expand image) or less (shrink image) than 1. default is 1")
 	parser.add_option("--window",       type="int",             default=0,                  help="reduce images to a small image size without changing pixel_size. Default value is zero.")
 	#parser.add_option("--SND",			action="store_true",	default=False,				help="compute squared normalized differences (Default False)")
 	parser.add_option("--nvec",			type="int"         ,	default=0    ,				help="number of eigenvectors, default = 0 meaning no PCA calculated")
@@ -300,10 +299,10 @@ def main():
 				ny = options.window
 		else:
 			if options.window ==0:
-				nx = int(nx/options.decimate)
-				ny = int(ny/options.decimate)
+				nx = int(nx*options.decimate)
+				ny = int(ny*options.decimate)
 			else:
-				nx = int(options.window/options.decimate)
+				nx = int(options.window*options.decimate)
 				ny = nx
 		Tracker["nx"]  = nx
 		Tracker["ny"]  = ny
@@ -353,7 +352,7 @@ def main():
 			this_image = EMData()
 			for index_of_particle in xrange(img_begin,img_end):
 				this_image.read_image(stack,index_of_particle)
-				varList.append(image_decimate_window_xform_ctf(this_image,options.decimate,options.window,options.CTF))
+				varList.append(image_decimate_window_xform_ctf(this_image, options.decimate, options.window,options.CTF))
 		else:
 			from utilities		import bcast_number_to_all, bcast_list_to_all, send_EMData, recv_EMData
 			from utilities		import set_params_proj, get_params_proj, params_3D_2D, get_params2D, set_params2D, compose_transform2
@@ -439,7 +438,7 @@ def main():
 			for index_of_proj in xrange(len(all_proj)):
 				img     = EMData()
 				img.read_image(stack, all_proj[index_of_proj])
-				dmg = image_decimate_window_xform_ctf(img,options.decimate,options.window,options.CTF)
+				dmg = image_decimate_window_xform_ctf(img, options.decimate, options.window, options.CTF)
 				#print dmg.get_xsize(), "init"
 				imgdata.append(dmg)
 			if options.VERBOSE:
@@ -706,8 +705,8 @@ def main():
 				print "Reconstructing 3D variability volume"
 
 			t6 = time()
-			radiusvar = options.radius
-			if( radiusvar < 0 ):  radiusvar = nx//2 -3
+			# radiusvar = options.radius
+			# if( radiusvar < 0 ):  radiusvar = nx//2 -3
 			res = recons3d_4nn_MPI(myid, varList, symmetry=options.sym, npad=options.npad)
 			#res = recons3d_em_MPI(varList, vol_stack, options.iter, radiusvar, options.abs, True, options.sym, options.squ)
 			if myid == main_node:

@@ -3883,7 +3883,7 @@ void EMData::common_lines(EMData * image1, EMData * image2,
 
 	if( im2 )
 	{
-		delete im2;
+		delete[] im2;
 		im2 = 0;
 	}
 

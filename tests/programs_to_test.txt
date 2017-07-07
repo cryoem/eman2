@@ -95,7 +95,6 @@ e2simmx2stage.py
 e2simmxxplor.py
 e2skelpath.py
 e2sparxtoeman.py
-e2speedtest.py
 e2spt_align.py
 e2spt_autoboxer.py
 e2spt_average.py

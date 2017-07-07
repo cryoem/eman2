@@ -40,7 +40,82 @@ import os
 import sys
 import time
 from numpy import *
+import Queue
 
+def procthread(jsd,vals,lnx,thresh1,thresh2,apix,v1,v2,cenmask,avgmask,options,ttl):
+	for ox,x,oy,y,oz,z in vals:
+		if options.verbose>2 : print "%d, %d, %d :"%(x,y,z),
+		elif options.verbose>3:
+			if time.time()-t>.5 :
+				print "  %3d,%3d,%3d / %d,%d,%d\r"%(ox,oy,oz,len(xr),len(yr),len(zr)),
+				sys.stdout.flush()
+				t=time.time()
+				
+		v1m=v1.get_clip(Region(x,y,z,lnx,lnx,lnx))
+		v1m.mult(cenmask)
+		
+		v2m=v2.get_clip(Region(x,y,z,lnx,lnx,lnx))
+		v2m.mult(cenmask)
+		
+		
+		## make a copy of the mask centered at the current position
+		#mask=cenmask.process("xform.translate.int",{"trans":(x-nx/2,y-ny/2,z-nz/2)})		
+
+		#v1m=v1*mask
+		#v2m=v2*mask
+
+		if options.verbose>3 : print v1m["sigma_nonzero"], v2m["sigma_nonzero"],
+		if v1m["maximum"]<thresh1 or v2m["maximum"]<thresh2 :
+			if options.verbose>3 : print " "
+			jsd.put((0,0,[],ox,x,oy,y,oz,z,0,None,None))
+			continue
+		
+		if options.verbose>3 : print " ***"
+	#				display(v1m)
+		
+		fsc=v1m.calc_fourier_shell_correlation(v2m)
+		fx=array(fsc[1:len(fsc)/3])/apix
+		fy=fsc[len(fsc)/3+1:len(fsc)*2/3]
+		
+		# 0.5 resolution
+		if fy[0]<0.5 and fy[1]<0.5 : i,xx,res=1,fx[1],fx[1]
+		else:
+			for i,xx in enumerate(fx[:-1]):
+				if fy[i]>0.5 and fy[i+1]<0.5 : break
+			res=(0.5-fy[i])*(fx[i+1]-fx[i])/(fy[i+1]-fy[i])+fx[i]
+		if res<0 : res=0.0
+		if res>fx[-1]: 
+			res=fx[-1]		# This makes the resolution at Nyquist, which is not a good thing
+	#		funny.append(len(fys))
+	#				if res>0 and res<0.04 : funny.append(len(fys))
+		
+		if isnan(fy[0]): print "NAN",x,y,z
+
+		# 0.143 resolution
+		if fy[0]<0.143 and fy[1]<0.143 : si,xx,res143=1,fx[1],fx[1]
+		else:
+			for si,xx in enumerate(fx[:-1]):
+				if fy[si]>0.143 and fy[si+1]<0.143 : break
+			res143=(0.143-fy[si])*(fx[si+1]-fx[si])/(fy[si+1]-fy[si])+fx[si]
+		if res143<0 : res143=0.0
+		if res143>fx[-1]: 
+			res143=fx[-1]		# This makes the resolution at Nyquist, which is not a good thing
+	#				if res>0 and res<0.04 : funny.append(len(fys))
+
+		# now we build the locally filtered volume
+		v1m=v1.get_clip(Region(x,y,z,lnx,lnx,lnx))
+		v2m=v2.get_clip(Region(x,y,z,lnx,lnx,lnx))
+	#				if res143>.23 : v1m.write_image("zones.hdf",-1)
+		v1m.process_inplace("filter.lowpass.tophat",{"cutoff_pixels":si+1})	# sharp low-pass at 0.143 cutoff
+		v2m.process_inplace("filter.lowpass.tophat",{"cutoff_pixels":si+1})	# sharp low-pass at 0.143 cutoff
+	#				if res143>.23 : v1m.write_image("zones.hdf",-1)
+		v1m.mult(avgmask)
+		v2m.mult(avgmask)
+
+	#				if res143>.2 : print x,y,z,si,lnx,fx[si],res143
+
+		jsd.put((res,res143,fy,ox,x,oy,y,oz,z,si,v1m,v2m))
+	jsd.put(ttl)		# joins the thread
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -71,8 +146,8 @@ and this program should be regarded as experimental.
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbosity [0-9]. Larger values produce more output.")
 
-	print "WARNING: This program is considered highly experimental, and there are mathematical \narguments that local estimation techniques will not produce reliable values.\n"
-	print "Having said that, the fsc.txt file is a normal FSC between the two volumes, and IS \nreliable, though e2proc3d.py could compute it far more easily"
+	#print "WARNING: This program is considered highly experimental, and there are mathematical \narguments that local estimation techniques will not produce reliable values.\n"
+	#print "Having said that, the fsc.txt file is a normal FSC between the two volumes, and IS \nreliable, though e2proc3d.py could compute it far more easily"
 
 	(options, args) = parser.parse_args()
 		
@@ -118,6 +193,7 @@ and this program should be regarded as experimental.
 	thresh2=v2["mean"]+v2["sigma"]
 	print "Thresholds : ",thresh1,thresh2
 	
+	if options.verbose: print "Computing overall FSC"
 	# overall fsc
 	fsc=v1.calc_fourier_shell_correlation(v2)
 	fx=array(fsc[0:len(fsc)/3])/apix
@@ -128,6 +204,7 @@ and this program should be regarded as experimental.
 		out.write("%1.5f\t%1.4f\n"%(x,fy[i]))
 	out.close()
 	
+	if options.verbose: print "Preparing for local calculation"
 	# Create a centered Gaussian mask with a size ~1/10th of the box size
 	cenmask=EMData(lnx,lnx,lnx)
 	cenmask.to_one()
@@ -170,82 +247,51 @@ and this program should be regarded as experimental.
 		volfilto.to_zero()
 	
 	# now do all of the tiled calculations
-	# TODO - parallelize this
 	fys=[]
 	funny=[]		# list of funny curves
 	t=time.time()
+	jsd=Queue.Queue(0)
+	thrds=[]
 	for oz,z in enumerate(zr):
 		for oy,y in enumerate(yr):
+			thrd=[]
 			for ox,x in enumerate(xr):
-				if options.verbose>1 : print "%d, %d, %d :"%(x,y,z),
-				elif options.verbose:
-					if time.time()-t>.5 :
-						print "  %3d,%3d,%3d / %d,%d,%d\r"%(ox,oy,oz,len(xr),len(yr),len(zr)),
-						sys.stdout.flush()
-						t=time.time()
-						
-				v1m=v1.get_clip(Region(x,y,z,lnx,lnx,lnx))
-				v1m.mult(cenmask)
-				
-				v2m=v2.get_clip(Region(x,y,z,lnx,lnx,lnx))
-				v2m.mult(cenmask)
-				
-				
-				## make a copy of the mask centered at the current position
-				#mask=cenmask.process("xform.translate.int",{"trans":(x-nx/2,y-ny/2,z-nz/2)})		
+				thrd.append((ox,x,oy,y,oz,z))		# this is different from the normal parallelism pattern. We make the actual Threads on demand
+			thrds.append(thrd)						# one row of x values per thread
+	
+	if options.verbose: print len(thrds)," threads"
+	
+	thrtolaunch=0
+	while thrtolaunch<len(thrds) or threading.active_count()>1:
+		# If we haven't launched all threads yet, then we wait for an empty slot, and launch another
+		# note that it's ok that we wait here forever, since there can't be new results if an existing
+		# thread hasn't finished.
+		if thrtolaunch<len(thrds) :
+			while (threading.active_count()==options.threads ) : time.sleep(.1)
+			if options.verbose>1 : 
+				print "\rStarting thread {}/{}                                                  ".format(thrtolaunch,len(thrds)),
+				sys.stdout.flush()
+			vals=thrds[thrtolaunch]
+			thr=threading.Thread(target=procthread,args=(jsd,vals,lnx,thresh1,thresh2,apix,v1,v2,cenmask,avgmask,options,thrtolaunch))
+			thrds[thrtolaunch]=thr		# replace the values with the actual thread
+			thr.start()
+			thrtolaunch+=1
+		else: time.sleep(1)
+#		if options.verbose>1: print "{}% complete".format(100.0*frac),
+	
+		while not jsd.empty():
+			vals=jsd.get()
+			if isinstance(vals,int) : 
+				thrds[vals].join()
+				thrds[vals]=None
+			else :
+				res,res143,fy,ox,x,oy,y,oz,z,si,v1m,v2m=vals
 
-				#v1m=v1*mask
-				#v2m=v2*mask
-
-				if options.verbose>1 : print v1m["sigma_nonzero"], v2m["sigma_nonzero"],
-				if v1m["maximum"]<thresh1 or v2m["maximum"]<thresh2 :
-					if options.verbose>1 : print " "
-					resvol[ox,oy,oz]=0.0
-					continue
-				if options.verbose>1 : print " ***"
-#				display(v1m)
-				
-				fsc=v1m.calc_fourier_shell_correlation(v2m)
-				fx=array(fsc[1:len(fsc)/3])/apix
-				fy=fsc[len(fsc)/3+1:len(fsc)*2/3]
-				
-				# 0.5 resolution
-				for i,xx in enumerate(fx[:-1]):
-					if fy[i]>0.5 and fy[i+1]<0.5 : break
-				res=(0.5-fy[i])*(fx[i+1]-fx[i])/(fy[i+1]-fy[i])+fx[i]
-				if res<0 : res=0.0
-				if res>fx[-1]: 
-					res=fx[-1]		# This makes the resolution at Nyquist, which is not a good thing
-					funny.append(len(fys))
-#				if res>0 and res<0.04 : funny.append(len(fys))
 				resvol[ox,oy,oz]=res
-				
-				fys.append(fy)
-				if isnan(fy[0]): print "NAN"
-
-				# 0.143 resolution
-				for si,xx in enumerate(fx[:-1]):
-					if fy[si]>0.143 and fy[si+1]<0.143 : break
-				res143=(0.143-fy[si])*(fx[si+1]-fx[si])/(fy[si+1]-fy[si])+fx[si]
-				if res143<0 : res143=0.0
-				if res143>fx[-1]: 
-					res143=fx[-1]		# This makes the resolution at Nyquist, which is not a good thing
-#				if res>0 and res<0.04 : funny.append(len(fys))
 				resvol143[ox,oy,oz]=res143
-				
 				fys.append(fy)
+				if res==0 : continue
 
-				# now we build the locally filtered volume
-				v1m=v1.get_clip(Region(x,y,z,lnx,lnx,lnx))
-				v2m=v2.get_clip(Region(x,y,z,lnx,lnx,lnx))
-#				if res143>.23 : v1m.write_image("zones.hdf",-1)
-				v1m.process_inplace("filter.lowpass.tophat",{"cutoff_pixels":si+1})	# sharp low-pass at 0.143 cutoff
-				v2m.process_inplace("filter.lowpass.tophat",{"cutoff_pixels":si+1})	# sharp low-pass at 0.143 cutoff
-#				if res143>.23 : v1m.write_image("zones.hdf",-1)
-				v1m.mult(avgmask)
-				v2m.mult(avgmask)
-
-#				if res143>.2 : print x,y,z,si,lnx,fx[si],res143
 
 				volfilt.insert_scaled_sum(v1m,(x+lnx/2,y+lnx/2,z+lnx/2))
 				volfilt.insert_scaled_sum(v2m,(x+lnx/2,y+lnx/2,z+lnx/2))
@@ -255,6 +301,8 @@ and this program should be regarded as experimental.
 					volfilto.insert_scaled_sum(v2m,(x+lnx/2,y+lnx/2,z+lnx/2))
 					
 				volnorm.insert_scaled_sum(avgmask,(x+lnx/2,y+lnx/2,z+lnx/2))
+			
+	if options.verbose>1: print "\nAll threads complete"
 
 	# while the size of avgmask was selected to produce a nearly normalized image without further work
 	# there were minor artifacts. The normalization deals with this.
@@ -282,21 +330,21 @@ and this program should be regarded as experimental.
 		step=1
 		print "Saving all curves to fsc.curves.txt"
 	
-	for i,x in enumerate(fx):
-		out.write( "%f\t"%x)
-		for j in range(0,len(fys),step):
-			out.write( "%f\t"%fys[j][i])
+	#for i,x in enumerate(fx):
+		#out.write( "%f\t"%x)
+		#for j in range(0,len(fys),step):
+			#out.write( "%f\t"%fys[j][i])
 		
-		# Also save any particularly low resolution curves
-		for j in funny:
-			out.write( "%f\t"%fys[j][i])
+		## Also save any particularly low resolution curves
+		#for j in funny:
+			#out.write( "%f\t"%fys[j][i])
 			
 		out.write("\n")
 		
-	if len(funny)>1 :
-		print "WARNING: %d/%d curves were evaluated as being >0.5 AT Nyquist. While these values have been set to \
-		Nyquist (the maximum resolution for your sampling), these values are not meaningful, and could imply \
-		insufficient sampling, or bias in the underlying reconstructions."%(len(funny),len(fys))
+	#if len(funny)>1 :
+		#print "WARNING: %d/%d curves were evaluated as being >0.5 AT Nyquist. While these values have been set to \
+		#Nyquist (the maximum resolution for your sampling), these values are not meaningful, and could imply \
+		#insufficient sampling, or bias in the underlying reconstructions."%(len(funny),len(fys))
 
 	E2end(logid)
 

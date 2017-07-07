@@ -194,7 +194,7 @@ int JpegIO::write_data(float *data, int image_index, const Region* area,
 	unsigned char *cdata = (unsigned char *)malloc(nx+1);
 
 	/* Flip the image vertically, since EMAN use top-left corner as image origin
-	/* But PNG use bottom-left corner as image origin */
+	   But PNG use bottom-left corner as image origin */
 	// convert and write the data 1 scanline at a time
 
 	JSAMPROW rp[1];

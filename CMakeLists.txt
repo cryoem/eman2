@@ -1,13 +1,11 @@
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8.12)
 PROJECT(EMAN)
-CMAKE_MINIMUM_REQUIRED(VERSION 2.4.4)
-SET(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS true)
 
 IF(COMMAND cmake_policy)
        cmake_policy(SET CMP0003 NEW)
        cmake_policy(SET CMP0002 OLD)
 ENDIF(COMMAND cmake_policy)
 
-MARK_AS_ADVANCED(FORCE CMAKE_BACKWARDS_COMPATIBILITY)
 MARK_AS_ADVANCED(CLEAR CMAKE_VERBOSE_MAKEFILE)
 OPTION(CMAKE_VERBOSE_MAKEFILE "if all commands will be echoed to the console during the make" ON)
 
@@ -33,6 +31,10 @@ if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" OR ENABLE_CONDA)
 		find_path(CONDA_PREFIX conda
 					 PATHS ENV PATH
 				 )
+		if(NOT CONDA_PREFIX)
+			message(FATAL_ERROR "\nNo conda environment found in PATH!\nPATH=$ENV{PATH}")
+		endif()
+
 		get_filename_component(CONDA_PREFIX ${CONDA_PREFIX}/.. ABSOLUTE)
 
 		execute_process(COMMAND ${CONDA_PREFIX}/bin/python -c "import site; print site.getsitepackages()[0]"
@@ -173,11 +175,6 @@ ELSE()
 ENDIF()
 #MESSAGE("OPT_FLAGS = " ${OPT_FLAGS})
 
-IF (ENABLE_OPENGL)
-# 	FIND_PATH(GL_INCLUDE_DIR gl.h /usr/include/GL)
-# 	FIND_PATH(GLU_INCLUDE_DIR glu.h /usr/include/GL)
-ENDIF (ENABLE_OPENGL)
-
 
 IF(CMAKE_SYSTEM MATCHES "IRIX.*")
 	SET(PLATFORMLIB "/usr/lib32" CACHE INTERNAL "IRIX lib32")
@@ -203,6 +200,9 @@ IF(CMAKE_COMPILER_IS_GNUCXX)
     	SET(EMAN_CXX_FLAGS "-Wall" CACHE INTERNAL "EMAN CXX FLAGS")
     ENDIF (ENABLE_DEBUG)
     SET(PLATFORMLIB "/usr/lib64" CACHE INTERNAL "lib64")
+	if(ENABLE_CONDA)
+		SET(EMAN_CXX_FLAGS "${EMAN_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0" CACHE INTERNAL "EMAN CXX FLAGS")
+	endif()
 ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 
 SET(CMAKE_C_COMPILER ${CMAKE_CXX_COMPILER})
@@ -679,8 +679,6 @@ ENDIF(PYTHON_INCLUDE_PATH)
 #    ENDIF(APPLE)
 # ENDIF(ENABLE_HDFIOCACHE)
 
-MARK_AS_ADVANCED(FORCE CMAKE_BACKWARDS_COMPATIBILITY)
-
 INCLUDE_DIRECTORIES(.
 	    ${EMAN_SOURCE_DIR}
 	    ${EMAN_SOURCE_DIR}/libEM
@@ -745,17 +743,46 @@ ADD_SUBDIRECTORY(doc)
 ADD_SUBDIRECTORY(images)
 ADD_SUBDIRECTORY(recipes)
 
-ADD_CUSTOM_TARGET( unittest
-	DEPENDS	${TEST_RESULTS}
-)
+if(NOT WIN32)
+	if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" OR ENABLE_CONDA)
+		install(CODE "execute_process(
+						COMMAND ${CMAKE_COMMAND} -E create_symlink ${CONDA_PREFIX}/bin/e2version.py ${CONDA_SP_DIR}/e2version.py
+						COMMAND ${CMAKE_COMMAND} -E create_symlink ${CONDA_PREFIX}/bin/sxgui.py     ${CONDA_PREFIX}/bin/sphire
+						COMMAND ${CMAKE_COMMAND} -E create_symlink ${CONDA_PREFIX}/bin/sx.py        ${CONDA_PREFIX}/bin/sparx
+					 )"
+				)
+	endif()
+endif()
 
-ADD_CUSTOM_COMMAND(
-	TARGET unittest
-	POST_BUILD
-	COMMAND python
-	ARGS ${EMAN_INSTALL_PREFIX}/test/rt/rt.py
-)
+enable_testing()
 
+add_custom_target(test-verbose
+		COMMAND ${CMAKE_COMMAND} -P cmake_install.cmake
+		COMMAND ${CMAKE_CTEST_COMMAND} -V -C Release
+		)
+
+#add_custom_target(test-verbose
+#		COMMAND ${CMAKE_CTEST_COMMAND} -V -C Release
+#		DEPENDS Tests
+#		)
+
+function(add_test_wrapper name)
+	add_test(NAME ${name}
+			COMMAND nosetests ${EMAN_INSTALL_PREFIX}/test/rt/pyem/${name}
+			)
+endfunction()
+
+set(test_methods
+		test_imageio.py:TestHdfIO.test_read_image
+		test_imageio.py:TestHdfIO.test_write_image
+		test_imageio.py:TestHdfIO.test_read_write_hdf
+		test_imageio.py:TestPNGIO.test_write_png
+		)
+
+foreach(t ${test_methods})
+	add_test_wrapper(${t})
+endforeach()
+# --------------------------------------------------------------------
 #set the list of unit test to run
 #
 SET (TESTS

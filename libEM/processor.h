@@ -669,6 +669,50 @@ The basic design of EMAN Processors: <br>\
 			static const string NAME;
 	};
 
+	/**
+	 * This processor performs fast convolution in Fourier space
+	 *@author Steve Ludtke
+	 *@date 2017/07/04
+	 *@param kx Complex x coordinate of the slice
+	 *@param ky Complex y coordinate of the slice
+	 *@param k Complex radial coordinate of the slice, integrates over angle at this radius
+	 */
+	class BispecSliceProcessor : public Processor
+	{
+		public:
+			BispecSliceProcessor() {}
+
+			string get_name() const
+			{
+				return NAME;
+			}
+
+			void process_inplace(EMData *image) { throw InvalidCallException("inplace not supported"); }
+			
+			virtual EMData* process(const EMData* const image);
+			
+			static Processor *NEW()
+			{
+				return new BispecSliceProcessor();
+			}
+
+			string get_desc() const
+			{
+				return "Computes a 2-D slice of the 4-D bispectrum of a 2-D image. Returns zero outside of source image.  Input may be real or complex, but output is always complex.";
+			}
+
+			TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("kx", EMObject::INT, "Kx location of the slice in Fourier pixels");
+				d.put("ky", EMObject::INT, "Ky location of the slice in Fourier pixels");
+				d.put("k", EMObject::FLOAT, "Radius of slice in Fourier pixels, integrates over angle. alternative to kx,ky.");
+				return d;
+			}
+
+			static const string NAME;
+	};
+
 	/** Determines the partial derivatives in the x direction
 	 * Does this by constructing edge kernels in real space but convoluting in Fourier space
 	 *
