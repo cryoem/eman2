@@ -39,8 +39,8 @@
 #include <cstring>
 #include <cstdio>
 
-#include  "gsl_sf_result.h"
-#include  "gsl_sf_bessel.h"
+#include  "gsl/gsl_sf_result.h"
+#include  "gsl/gsl_sf_bessel.h"
 #include <iostream>
 #include <algorithm>
 #include <vector>
