@@ -42,12 +42,16 @@ def main():
 	parser.add_argument("--trans", "-TR", type=str, help="transform, (0,0,0)",default='0,0,0')
 	parser.add_argument("--include", type=str,help="savetype", default=["helix","sheet","other"])
 	parser.add_argument("--mirror",type=bool, help="mirror",default='False')
+#matrix
+	parser.add_argument("--matrix", "-matrix", type=str, help="transform matrix.", default='0,0,0,0,0,0,0,0,0,0,0,0')
+	parser.add_argument("--rot",type=str,metavar="az,alt,phi or convention:par=val:...",help="Rotate map. Specify az,alt,phi or convention:par=val:par=val:...  eg - mrc:psi=22:theta=15:omega=7", action="append",default=None)
 	parser.add_argument("--type", "-T", type=str, help="convention type", default='eman')
-	#eman input, default setting
+
+#eman input, default setting
 	parser.add_argument("--az", "-az", type=float, help="az in eman convention.", default=0)
 	parser.add_argument("--alt", "-alt", type=float, help="alt in eman convention.", default=0)
 	parser.add_argument("--phi", "-phi", type=float, help="phi.", default=0)
-	#imagic
+#imagic
 	parser.add_argument("--alpha", "-alpha", type=float, help="alpha in imagic convention.", default=0)
 	parser.add_argument("--beta", "-beta", type=float, help="beta in imagic convention.", default=0)
 	parser.add_argument("--gamma", "-gamma", type=float, help="gamma in imagic convention.", default=0)
@@ -71,9 +75,6 @@ def main():
 	parser.add_argument("--n3", "-n3", type=float, help="n3.", default=0)
 #sigrot
 	parser.add_argument("--q", "-q", type=float, help="q in sgirot convention.", default=0)
-#matrix
-	parser.add_argument("--matrix", "-matrix", type=str, help="transform matrix.", default='0,0,0,0,0,0,0,0,0,0,0,0')
-	parser.add_argument("--rot",type=str,metavar="az,alt,phi or convention:par=val:...",help="Rotate map. Specify az,alt,phi or convention:par=val:par=val:...  eg - mrc:psi=22:theta=15:omega=7", action="append",default=None)
 
 	(options, args) = parser.parse_args()
 	
