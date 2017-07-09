@@ -6,26 +6,7 @@ IF(COMMAND cmake_policy)
        cmake_policy(SET CMP0002 OLD)
 ENDIF(COMMAND cmake_policy)
 
-FUNCTION(message_var var)
-	message("${var}: ${${var}}")
-endfunction()
-
-function(set_cache_var var val)
-	if(val AND NOT ${var})
-		set(${var} ${val} CACHE PATH "" FORCE)
-	else()
-		set(${var} ${var}-NOTFOUND CACHE PATH "")
-	endif ()
-endfunction()
-
-function(set_cache_var_to_var var val)
-	
-	if(${val} AND NOT ${var})
-		set(${var} ${${val}} CACHE PATH "" FORCE)
-	else()
-		set(${var} ${var}-NOTFOUND CACHE PATH "")
-	endif ()
-endfunction()
+include(cmake/functions.cmake)
 
 MARK_AS_ADVANCED(CLEAR CMAKE_VERBOSE_MAKEFILE)
 OPTION(CMAKE_VERBOSE_MAKEFILE "if all commands will be echoed to the console during the make" ON)
