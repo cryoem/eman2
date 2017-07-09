@@ -9,6 +9,8 @@ if(CONDA_EXECUTABLE)
 			)
 	execute_process(COMMAND ${CONDA_EXECUTABLE} info --envs
 			)
+else()
+	message("\nNo conda environment found in PATH!\nPATH=$ENV{PATH}\n")
 endif()
 
 set_cache_var_to_var(CONDA_ROOT out_var)
