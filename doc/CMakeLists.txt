@@ -2,7 +2,7 @@ IF (ENABLE_AUTODOC)
     ADD_SUBDIRECTORY(latex)
     ADD_SUBDIRECTORY(modular_class_html)
     ADD_SUBDIRECTORY(doxygen)
-ENDIF (ENABLE_AUTODOC)
+ENDIF ()
 
 FILE(GLOB static_html "${CMAKE_CURRENT_SOURCE_DIR}/*.html")
 INSTALL(FILES ${static_html}
