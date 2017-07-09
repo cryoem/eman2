@@ -15,6 +15,8 @@ SET(CMAKE_MACOSX_RPATH ON)
 
 OPTION(ENABLE_CONDA "enable conda-supported build" ON)
 
+set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+
 MACRO(CHECK_PYTHON)
 	find_package(PythonInterp REQUIRED)
 	find_package(PythonLibs   REQUIRED)
@@ -41,23 +43,7 @@ if(ENABLE_CONDA)
 	elseif(DEFINED ENV{CONDA_PREFIX})
 		set(EMAN_PREFIX $ENV{CONDA_PREFIX} CACHE PATH "")
 	else()
-		# Assuming the active conda environment is on PATH, this finds the path of bin/ in the environment
-		find_program(CONDA_EXECUTABLE conda
-					 PATHS ${CONDA_ROOT}/bin ${CONDA_ROOT}/Scripts ENV PATH
-				 )
-		if(CONDA_EXECUTABLE)
-			execute_process(COMMAND ${CONDA_EXECUTABLE} info --root
-					OUTPUT_VARIABLE out_var
-					OUTPUT_STRIP_TRAILING_WHITESPACE
-					)
-			if(out_var)
-				set(CONDA_ROOT ${out_var}            CACHE PATH "")
-				message("Found conda: ${CONDA_EXECUTABLE}")
-				execute_process(COMMAND ${CONDA_EXECUTABLE} info --envs
-						)
-				message("Set CONDA_ROOT to one of the conda environment paths listed above.\n")
-			endif()
-		endif()
+		find_package(Conda REQUIRED)
 			
 		if(CONDA_ROOT)
 			if(WIN32)
@@ -68,9 +54,6 @@ if(ENABLE_CONDA)
 		else()
 			set(CONDA_ROOT CONDA_ROOT-NOTFOUND   CACHE PATH "")
 		endif()
-			
-		include(FindPackageHandleStandardArgs)
-		FIND_PACKAGE_HANDLE_STANDARD_ARGS(Conda DEFAULT_MSG CONDA_ROOT)
 	endif()
 
 	set(CMAKE_PREFIX_PATH ${EMAN_PREFIX} ${EMAN_PREFIX}/..)
