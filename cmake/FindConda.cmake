@@ -7,14 +7,11 @@ if(CONDA_EXECUTABLE)
 			OUTPUT_VARIABLE out_var
 			OUTPUT_STRIP_TRAILING_WHITESPACE
 			)
-	if(out_var)
-		set(CONDA_ROOT ${out_var}            CACHE PATH "")
-		message("Found conda: ${CONDA_EXECUTABLE}")
-		execute_process(COMMAND ${CONDA_EXECUTABLE} info --envs
-				)
-		message("Set CONDA_ROOT to one of the conda environment paths listed above.\n")
-	endif()
+	execute_process(COMMAND ${CONDA_EXECUTABLE} info --envs
+			)
 endif()
+
+set_cache_var_to_var(CONDA_ROOT out_var)
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(Conda
