@@ -10,7 +10,7 @@ IF(CMAKE_SYSTEM MATCHES "IRIX.*")
     INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIR}/boost/compatibility/cpp_c_headers)
 ENDIF()
 
-MACRO(ADD_PYSTE_LIB_WITH_SRC libname srcfile)
+function(ADD_PYSTE_LIB_WITH_SRC libname srcfile)
 	ADD_LIBRARY(${libname} SHARED lib${libname}.cpp ${srcfile})
 	
 	if(WIN32)
@@ -28,11 +28,11 @@ MACRO(ADD_PYSTE_LIB_WITH_SRC libname srcfile)
 	# Windows fails without linking against freetype
 	TARGET_LINK_LIBRARIES(${libname} EM2 Boost::python Python::Python ${FREETYPE_LIBRARIES})
 	INSTALL(TARGETS ${libname} DESTINATION ${EMAN_PY_INSTALL_PREFIX})
-ENDMACRO()
+endfunction()
 
-MACRO(ADD_PYSTE_LIB libname)
+function(ADD_PYSTE_LIB libname)
 	ADD_PYSTE_LIB_WITH_SRC(${libname} "")
-ENDMACRO()
+endfunction()
 
 ADD_PYSTE_LIB(pyAligner2)
 ADD_PYSTE_LIB(pyAverager2)
