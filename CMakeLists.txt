@@ -8,16 +8,16 @@ ENDIF(COMMAND cmake_policy)
 
 include(cmake/functions.cmake)
 
-MARK_AS_ADVANCED(CLEAR CMAKE_VERBOSE_MAKEFILE)
-OPTION(CMAKE_VERBOSE_MAKEFILE "if all commands will be echoed to the console during the make" ON)
+set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
 SET(CMAKE_MACOSX_RPATH ON)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_INCLUDE_CURRENT_DIR_IN_INTERFACE ON)
 
-OPTION(ENABLE_CONDA "enable conda-supported build" ON)
+MARK_AS_ADVANCED(CLEAR CMAKE_VERBOSE_MAKEFILE)
+OPTION(CMAKE_VERBOSE_MAKEFILE "if all commands will be echoed to the console during the make" ON)
 
-set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+OPTION(ENABLE_CONDA "enable conda-supported build" ON)
 
 if(ENABLE_CONDA)
 	if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" )
