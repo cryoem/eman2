@@ -60,8 +60,6 @@ namespace EMAN
 #define EMFFTW3_CACHE_SIZE 32
 		static const int EMAN2_REAL_2_COMPLEX;
 		static const int EMAN2_COMPLEX_2_REAL;
-		static const int EMAN2_FFTW2_INPLACE;
-		static const int EMAN2_FFTW2_OUT_OF_PLACE;
 		/** EMfftw3_cache
 		 * An ecapsulation of FFTW3 plan caching. Keeps an array of plans and records of important details.
 		 * Main interface is get_plan(...)
