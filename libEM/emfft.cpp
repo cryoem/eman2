@@ -80,10 +80,6 @@ pthread_mutex_t fft_mutex=PTHREAD_MUTEX_INITIALIZER;
 const int EMfft::EMAN2_REAL_2_COMPLEX = 1;
 const int EMfft::EMAN2_COMPLEX_2_REAL = 2;
 
-// It is important that these constants are 1 and 0, exactly as they are here
-const int EMfft::EMAN2_FFTW2_INPLACE = 1;
-const int EMfft::EMAN2_FFTW2_OUT_OF_PLACE=0;
-
 
 #ifdef FFTW3
 EMfft::EMfftw3_cache::EMfftw3_cache() :
