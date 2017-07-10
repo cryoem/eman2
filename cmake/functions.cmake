@@ -54,7 +54,7 @@ function(CHECK_OPTIONAL_LIB upper lower header)
 	CHECK_REQUIRED_LIB(${upper} ${lower} ${header} "" "")
 		
 	IF(${upper}_LIBRARY)
-		ADD_DEFINITIONS(-DEM_${upper})
+		ADD_DEFINITIONS(-DUSE_${upper})
 		INCLUDE_DIRECTORIES(${${upper}_INCLUDE_PATH})
 	ENDIF()
 endfunction()
