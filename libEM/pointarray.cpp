@@ -2999,7 +2999,7 @@ EMData *PointArray::projection_by_nfft(int , float , float )
 #endif
 }
 
-#ifdef OPTPP
+#ifdef USE_OPTPP
 #include "NLF.h"
 #include "BoundConstraint.h"
 #include "OptCG.h"
@@ -3054,7 +3054,7 @@ if (mode & NLPGradient) {
 #endif
 
 void PointArray::opt_from_proj(const vector<EMData*> & proj,float pixres) {
-#ifdef OPTPP
+#ifdef USE_OPTPP
 	optdata=proj;
 	optobj=this;
 	optpixres=pixres;
