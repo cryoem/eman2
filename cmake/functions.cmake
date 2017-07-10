@@ -30,13 +30,11 @@ function(CHECK_REQUIRED_LIB upper lower header lower2 header2)
 	message_var(${upper}_INCLUDE_PATH)
 	message_var(${upper}_LIBRARY)
 	
-	IF(NOT ${upper}_INCLUDE_PATH)
-		FIND_PATH(${upper}_INCLUDE_PATH
-				NAMES ${header} ${header2}
-				PATHS $ENV{${upper}DIR}/include ${EMAN_PREFIX_INC}
-				NO_DEFAULT_PATH
-				)
-	ENDIF()
+	FIND_PATH(${upper}_INCLUDE_PATH
+			NAMES ${header} ${header2}
+			PATHS $ENV{${upper}DIR}/include ${EMAN_PREFIX_INC}
+			NO_DEFAULT_PATH
+			)
 	
 	IF(${upper}_INCLUDE_PATH)
 		FIND_LIBRARY(${upper}_LIBRARY NAMES ${lower} ${lower2} PATHS $ENV{${upper}DIR}/lib ${EMAN_PREFIX_LIB})
