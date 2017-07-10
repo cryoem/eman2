@@ -40,9 +40,9 @@
 
 #include "mrcio.h"
 
-#ifdef EM_PNG
+#ifdef USE_PNG
 	#include "pngio.h"
-#endif	//EM_PNG
+#endif	//USE_PNG
 
 #ifdef USE_JPEG
 	#include "jpegio.h"

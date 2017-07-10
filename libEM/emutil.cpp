@@ -304,7 +304,7 @@ EMUtil::ImageType EMUtil::fast_get_image_type(const string & filename,
 			return IMAGE_PIF;
 		}
 		break;
-#ifdef EM_PNG
+#ifdef USE_PNG
 	case IMAGE_PNG:
 		if (PngIO::is_valid(first_block)) {
 			return IMAGE_PNG;
@@ -466,7 +466,7 @@ EMUtil::ImageType EMUtil::get_image_type(const string & in_filename)
 	else if (PifIO::is_valid(first_block)) {
 		image_type = IMAGE_PIF;
 	}
-#ifdef EM_PNG
+#ifdef USE_PNG
 	else if (PngIO::is_valid(first_block)) {
 		image_type = IMAGE_PNG;
 	}
@@ -650,7 +650,7 @@ ImageIO *EMUtil::get_imageio(const string & filename, int rw,
 	case IMAGE_ICOS:
 		imageio = new IcosIO(filename, rw_mode);
 		break;
-#ifdef EM_PNG
+#ifdef USE_PNG
 	case IMAGE_PNG:
 		imageio = new PngIO(filename, rw_mode);
 		break;
