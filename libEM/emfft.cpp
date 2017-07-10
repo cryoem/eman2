@@ -81,7 +81,7 @@ const int EMfft::EMAN2_REAL_2_COMPLEX = 1;
 const int EMfft::EMAN2_COMPLEX_2_REAL = 2;
 
 
-#ifdef FFTW3
+#ifdef USE_FFTW3
 EMfft::EMfftw3_cache::EMfftw3_cache() :
 		num_plans(0)
 {
@@ -202,7 +202,7 @@ fftwf_plan EMfft::EMfftw3_cache::get_plan(const int rank_in, const int x, const 
 // Static init
 EMfft::EMfftw3_cache EMfft::plan_cache;
 
-#endif // FFTW3
+#endif // USE_FFTW3
 
 #endif // FFTW_PLAN_CACHING
 
@@ -229,7 +229,7 @@ EMfft::EMfftw3_cache EMfft::plan_cache;
 
 //#endif
 
-#ifdef FFTW3
+#ifdef USE_FFTW3
 
 int EMfft::real_to_complex_1d(float *real_data, float *complex_data, int n)
 {//cout<<"doing fftw3"<<endl;
@@ -425,7 +425,7 @@ int EMfft::complex_to_real_nd(float *complex_data, float *real_data, int nx, int
 	return 0;
 }
 
-#endif	//FFTW3
+#endif	//USE_FFTW3
 
 #ifdef NATIVE_FFT
 #include "sparx/native_fft.h"
