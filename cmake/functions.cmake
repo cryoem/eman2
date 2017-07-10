@@ -52,10 +52,6 @@ function(CHECK_REQUIRED_LIB2 upper lower header lower2 header2)
 	message_var(${upper}_LIBRARY)
 endfunction()
 
-function(CHECK_REQUIRED_LIB upper lower header)
-	CHECK_REQUIRED_LIB2(${upper} ${lower} ${header} "" "")
-endfunction()
-
 function(CHECK_OPTIONAL_LIB upper lower header)
 	FIND_PATH(${upper}_INCLUDE_PATH ${header} $ENV{${upper}DIR}/include ${EMAN_PREFIX_INC} NO_DEFAULT_PATH)
 	
