@@ -581,12 +581,6 @@ add_custom_target(test-verbose
 #		DEPENDS Tests
 #		)
 
-function(add_test_wrapper name)
-	add_test(NAME ${name}
-			COMMAND nosetests ${EMAN_INSTALL_PREFIX}/test/rt/pyem/${name}
-			)
-endfunction()
-
 set(test_methods
 		test_imageio.py:TestHdfIO.test_read_image
 		test_imageio.py:TestHdfIO.test_write_image
@@ -595,7 +589,9 @@ set(test_methods
 		)
 
 foreach(t ${test_methods})
-	add_test_wrapper(${t})
+	add_test(NAME ${t}
+			COMMAND nosetests ${EMAN_INSTALL_PREFIX}/test/rt/pyem/${t}
+			)
 endforeach()
 # --------------------------------------------------------------------
 #set the list of unit test to run
