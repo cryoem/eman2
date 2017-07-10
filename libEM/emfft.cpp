@@ -654,7 +654,7 @@ int EMfft::complex_to_real_nd(float *complex_data, float *real_data, int nx, int
 }
 #endif	//NATIVE_FFT
 
-#ifdef 	ACML
+#ifdef 	USE_ACML
 #include <iostream>
 using std::cout;
 using std::endl;
@@ -884,4 +884,4 @@ int EMfft::complex_to_real_nd(float *complex_data, float *real_data, int nx, int
 }
 
 
-#endif	//ACML
+#endif	//USE_ACML

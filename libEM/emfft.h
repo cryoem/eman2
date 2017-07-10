@@ -153,7 +153,7 @@ namespace EMAN
 }
 #endif	//NATIVE_FFT
 
-#ifdef	ACML
+#ifdef	USE_ACML
 #include <acml.h>
 #include <functional>
 
@@ -195,6 +195,6 @@ namespace EMAN
 		};
 	};
 }	
-#endif	//ACML
+#endif	//USE_ACML
 
 #endif	//eman_emfft_h__
