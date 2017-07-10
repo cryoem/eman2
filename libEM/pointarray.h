@@ -39,7 +39,7 @@
 #include "emdata.h"
 #include "transform.h"
 
-#if defined NFFT || NFFT2
+#if defined NFFT2
 extern "C"
 {
 	#include "nfft.h"
