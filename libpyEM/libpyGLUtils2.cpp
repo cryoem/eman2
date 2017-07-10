@@ -42,9 +42,9 @@
 #include "emdata.h"
 #include "marchingcubes.h"
 
-#ifdef EMAN2_USING_FTGL
+#ifdef USE_FTGL
 #include "emftgl.h"
-#endif	//EMAN2_USING_FTGL
+#endif	//USE_FTGL
 
 // Using =======================================================================
 using namespace boost::python;
@@ -95,7 +95,7 @@ BOOST_PYTHON_MODULE(libpyGLUtils2)
 
 	delete EMAN_GLUtil_scope;
 
-#ifdef EMAN2_USING_FTGL
+#ifdef USE_FTGL
 	scope* EMAN_FTGL_scope = new scope(
 	class_<EMAN::EMFTGL>("EMFTGL",
 			"EMFTGL is an interface for rendering fonts in EMAN2 using FTGL\n"
@@ -139,7 +139,7 @@ BOOST_PYTHON_MODULE(libpyGLUtils2)
 		.value("OUTLINE", EMAN::EMFTGL::OUTLINE)
 		.value("POLYGON", EMAN::EMFTGL::POLYGON)
 	;
-#endif	//EMAN2_USING_FTGL
+#endif	//USE_FTGL
 }
 
 #endif //USE_OPENGL

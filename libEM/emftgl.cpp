@@ -32,7 +32,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  * 
  * */
-#ifdef EMAN2_USING_FTGL
+#ifdef USE_FTGL
 
 #include "emftgl.h"
 using namespace EMAN;
@@ -169,4 +169,4 @@ bool EMFTGL::EMFTGLFontInstance::params_match(EMFTGL::FontMode mode, const strin
 
 
 
-#endif //EMAN2_USING_FTGL
+#endif //USE_FTGL
