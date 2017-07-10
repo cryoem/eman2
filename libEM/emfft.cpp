@@ -48,11 +48,11 @@ using std::endl;
 #include "cuda/cuda_emfft.h"
 #endif 
 
-#ifdef DJBFFT
+#ifdef USE_DJBFFT
 extern "C" {
 	#include <fftr4.h>
 }
-#endif	//DJBFFT
+#endif	//USE_DJBFFT
 
 using namespace EMAN;
 
