@@ -338,7 +338,6 @@ message("Boost_INCLUDE_DIR: ${Boost_INCLUDE_DIR}")
 INCLUDE_DIRECTORIES(.
 	    ${EMAN_SOURCE_DIR}
 	    ${EMAN_SOURCE_DIR}/libEM
-	    ${ACML_INCLUDE_PATH}
             )
 
 #---------------------------------------------------------------------------------------
