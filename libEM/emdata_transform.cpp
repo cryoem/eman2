@@ -311,12 +311,12 @@ void EMData::do_ift_inplace_cuda()
 	} else if (ndim == 3) {
 		cuda_dd_fft_complex_to_real_nd(cudarwdata,cudarwdata, nz,ny,nx-offset,1);
 	} else throw ImageDimensionException("No cuda FFT support of images with dimensions exceeding 3");
-#if defined	FFTW2 || defined FFTW3 //native fft and ACML already done normalization
+#if defined FFTW3 //native fft and ACML already done normalization
 	// SCALE the inverse FFT
 	int nxo = nx - offset;
 	float scale = 1.0f / (nxo * ny * nz);
 	mult(scale); //if we are just doing a CCF, this is a waste!
-#endif //FFTW2 || FFTW3
+#endif //FFTW3
 
 	set_fftpad(true);
 	set_complex(false);
@@ -371,11 +371,11 @@ EMData *EMData::do_ift()
 	}
 
 	dat->set_size(nx - offset, ny, nz);	//remove the padding
-#if defined	FFTW2 || defined FFTW3 //native fft and ACML already done normalization
+#if defined FFTW3 //native fft and ACML already done normalization
 	// SCALE the inverse FFT
 	float scale = 1.0f / ((nx - offset) * ny * nz);
 	dat->mult(scale);
-#endif	//FFTW2 || FFTW3
+#endif	//FFTW3
 	dat->set_fftodd(false);
 	dat->set_fftpad(false);
 	dat->set_complex(false);
@@ -411,12 +411,12 @@ void EMData::do_ift_inplace()
 	float* data = get_data();
 	EMfft::complex_to_real_nd(data, data, nx - offset, ny, nz);
 
-#if defined	FFTW2 || defined FFTW3 	//native fft and ACML already done normalization
+#if defined FFTW3 	//native fft and ACML already done normalization
 	// SCALE the inverse FFT
 	int nxo = nx - offset;
 	float scale = 1.0f / ((size_t)nxo * ny * nz);
 	mult(scale);
-#endif //FFTW2 || FFTW3
+#endif //FFTW3
 
 	set_fftpad(true);
 	set_complex(false);
