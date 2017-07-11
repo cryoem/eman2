@@ -2174,7 +2174,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			numFM = EMUtil.get_image_count(img_name)
 			if db_check_dict(img_name) == False:
 				img_basename_root = os.path.splitext(os.path.basename(img_name))[0]
-			else
+			else:
 				path, dictname, keys = db_parse_path(img_name)
 				img_basename_root = dictname
 			pw2 = [None]*numFM
