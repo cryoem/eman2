@@ -7657,15 +7657,18 @@ void Util::WTM(EMData *PROJ,vector<float>SS, int DIAMETER,int NUMP)
 float Util::tf(float dzz, float ak, float voltage, float cs, float wgh, float b_factor, float sign)
 {
 	float cst  = cs*1.0e7f;
+
 	wgh /= 100.0;
 	float phase;
-	if(wgh > 0.0f) {
+	if(wgh == 0.0) phase = 0.0;
+	else if(wgh > 0.0f) {
 		if(wgh >= 1.0f)  phase = M_PI/2.0;
 		else phase = atan(wgh/sqrt(1.0f-wgh*wgh));
 	} else {
-		if(wgh <= -1.0f)  phase = M_PI;
+		if(wgh <= -1.0f)  phase = M_PI/2.0;
 		else phase = M_PI + atan(wgh/sqrt(1.0f-wgh*wgh));
-	} 
+	}
+
 	float lambda=12.398f/sqrt(voltage*(1022.0f+voltage));
 	float ak2 = ak*ak;
 	float g1 = dzz*1.0e4f*lambda*ak2;
@@ -7674,6 +7677,28 @@ float Util::tf(float dzz, float ak, float voltage, float cs, float wgh, float b_
 	float ctfv = static_cast<float>( sin(M_PI*(g1-g2)+phase)*sign );
 	if(b_factor != 0.0f)  ctfv *= exp(-b_factor*ak2/4.0f);
 	return ctfv;
+}
+
+
+inline float tfast(float dzz, float ak, float lambda, float cs, float wgh)
+{
+
+	float phase;
+	if(wgh == 0.0) phase = 0.0;
+	else if(wgh > 0.0f) {
+		if(wgh >= 100.0f)  phase = M_PI/2.0;
+		else phase = atan(wgh/sqrt(10000.0f-wgh*wgh));
+	} else {
+		if(wgh <= -100.0f)  phase = M_PI/2.0;
+		else phase = M_PI + atan(wgh/sqrt(10000.0f-wgh*wgh));
+	}
+
+	float ak2 = ak*ak;
+
+	float ctfv = static_cast<float>( sin(M_PI*(dzz*1.0e4f*lambda*ak2-cs*1.0e7*lambda*lambda*lambda*ak2*ak2/2.0f)+phase) );
+	//if(b_factor != 0.0f)  ctfv *= exp(-b_factor*ak2/4.0f);
+	return ctfv;
+	
 }
 
 EMData* Util::compress_image_mask(EMData* image, EMData* mask)
@@ -24103,7 +24128,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 void Util::version()
 {
  cout <<"  Compile time of util_sparx.cpp  "<< __DATE__ << "  --  " << __TIME__ <<   endl;
- cout <<"  Modification time: 06/02/2017  7:03 AM " <<  endl;
+ cout <<"  Modification time: 07/11/2017  11:33 PM " <<  endl;
 }
 
 
@@ -24550,6 +24575,7 @@ EMData* Util::ctf_rimg(int nx, int ny, int nz, float dz, float ps, float voltage
 		signa = 1.0;
 		doabs = true;
 	} else doabs = false;
+	float lambda=12.398f/sqrt(voltage*(1022.0f+voltage));
 	EMData* ctf_img1 = new EMData();
 	ctf_img1->set_size(nx, ny, nz);
 	ctf_img1->to_zero();
@@ -24577,12 +24603,14 @@ EMData* Util::ctf_rimg(int nx, int ny, int nz, float dz, float ps, float voltage
 				ix = i - ns2;
 				if( dza == 0.0f) {
 					ak=pow(ix*ix*scx*scx + oy2 + oz2, 0.5f)*freq;
-					ctf_img1_ptr (i,j,k)   = Util::tf(dz, ak, voltage, cs, wgh, b_factor, signa);
+					//ctf_img1_ptr (i,j,k)   = Util::tf(dz, ak, voltage, cs, wgh, b_factor, signa);
+					ctf_img1_ptr (i,j,k)   = tfast(dz, ak, lambda, cs, wgh);
 				} else {
 					float ox = ix*scx;
 					ak=pow(ox*ox + oy2 + oz2, 0.5f)*freq;
 					float dzz = dz - dza/2.0f*sin(2*(atan2(oy, ox)+azz*M_PI/180.0f));
-					ctf_img1_ptr (i,j,k)   = Util::tf(dzz, ak, voltage, cs, wgh, b_factor, signa);
+					//ctf_img1_ptr (i,j,k)   = Util::tf(dzz, ak, voltage, cs, wgh, b_factor, signa);
+					ctf_img1_ptr (i,j,k)   = tfast(dzz, ak, lambda, cs, wgh);
 				}
 				if( doabs ) ctf_img1_ptr(i,j,k) = fabs( ctf_img1_ptr(i,j,k) );
 				ix = nx - i - nod;
