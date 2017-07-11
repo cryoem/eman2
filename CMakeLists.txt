@@ -74,10 +74,10 @@ if(ENABLE_CONDA)
 		include(FindPackageHandleStandardArgs)
 		FIND_PACKAGE_HANDLE_STANDARD_ARGS(Conda DEFAULT_MSG CONDA_ROOT)
 	endif()
-endif()
 
-set(CMAKE_PREFIX_PATH ${EMAN_PREFIX} ${EMAN_PREFIX}/..)
-message_var(CMAKE_PREFIX_PATH)
+	set(CMAKE_PREFIX_PATH ${EMAN_PREFIX} ${EMAN_PREFIX}/..)
+	message_var(CMAKE_PREFIX_PATH)
+endif()
 
 CHECK_PYTHON()
 if(NOT WIN32)
@@ -91,19 +91,19 @@ execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "${py_sp_dir_command}"
 		)
 message("Python site-packages: ${SP_DIR}")
 
-SET(EMAN_INSTALL_PREFIX    ${EMAN_PREFIX} CACHE PATH "installation prefix")
-set(EMAN_PY_INSTALL_PREFIX ${SP_DIR})
-
-set(EMAN_PREFIX_INC ${EMAN_PREFIX}/include)
-set(EMAN_PREFIX_LIB ${EMAN_PREFIX}/lib)
-
-if(NOT WIN32)
-	set(eman2dir_relative_path "../../../")
+if(ENABLE_CONDA)
+	SET(EMAN_INSTALL_PREFIX    ${EMAN_PREFIX} CACHE PATH "installation prefix")
+	set(EMAN_PY_INSTALL_PREFIX ${SP_DIR})
+	
+	set(EMAN_PREFIX_INC ${EMAN_PREFIX}/include)
+	set(EMAN_PREFIX_LIB ${EMAN_PREFIX}/lib)
+	
+	if(NOT WIN32)
+		set(eman2dir_relative_path "../../../")
+	else()
+		set(eman2dir_relative_path "../../Library/")
+	endif()
 else()
-	set(eman2dir_relative_path "../../Library/")
-endif()
-
-if(NOT ENABLE_CONDA)
 	SET(EMAN_INSTALL_PREFIX    $ENV{HOME}/EMAN2 CACHE PATH "installation prefix")
 	set(EMAN_PY_INSTALL_PREFIX ${EMAN_INSTALL_PREFIX}/lib)
 	set(eman2dir_relative_path "../")
@@ -279,38 +279,6 @@ ENDIF(ENABLE_IOCACHE)
 #     ADD_DEFINITIONS(-DHDFIO_CACHE)
 # ENDIF(ENABLE_HDFIOCACHE)
 
-SET(INCLUDE_DIRS
-	${EMAN_PREFIX_INC}
-	${EMAN_SOURCE_DIR}/libEM
-	$ENV{HOME}/EMAN2/anaconda2/include
-	$ENV{HOME}/anaconda2/include
-	$ENV{HOME}/include
-	$ENV{FFTWDIR}/include
-	$ENV{GSLDIR}/include
-	/usr/local/include
-	/usr/local/cuda/include
-	/usr/include
-	/sw/include
-	/usr/include/freetype2
-	)
-
-SET(LIB_DIRS
-	${EMAN_PREFIX_LIB}
-	$ENV{EMANDIR}/lib
-	$ENV{HOME}/EMAN2/anaconda2/lib
-	$ENV{HOME}/anaconda2/lib
-	$ENV{HOME}/lib
-	${PLATFORMLIB}
-	$ENV{FFTWDIR}/lib
-	$ENV{GSLDIR}/lib
-	/usr/local/lib
-	/usr/local/cuda/lib
-	/usr/lib64
-	/usr/lib
-	/sw/lib
-	)
-
-
 MACRO(CHECK_REQUIRED_LIB2 upper lower header lower2 header2)
 	if(ENABLE_CONDA)
 		message("\n### BEGIN ### CHECK_REQUIRED_LIB2 upper lower header lower2 header2")
@@ -321,14 +289,14 @@ MACRO(CHECK_REQUIRED_LIB2 upper lower header lower2 header2)
 	IF(NOT ${upper}_INCLUDE_PATH)
 		FIND_PATH(${upper}_INCLUDE_PATH 
 				NAMES ${header} ${header2}
-				PATHS $ENV{${upper}DIR}/include ${INCLUDE_DIRS}
+				PATHS $ENV{${upper}DIR}/include ${EMAN_PREFIX_INC}
 				NO_DEFAULT_PATH
 				)
     ENDIF()
 
     IF(${upper}_INCLUDE_PATH)
-		FIND_LIBRARY(${upper}_LIBRARY NAMES ${lower} ${lower2} PATHS $ENV{${upper}DIR}/lib ${LIB_DIRS})
-		message("FIND_LIBRARY: ${upper}_LIBRARY NAMES ${lower} ${lower2} PATHS $ENV{${upper}DIR}/lib ${LIB_DIRS}")
+		FIND_LIBRARY(${upper}_LIBRARY NAMES ${lower} ${lower2} PATHS $ENV{${upper}DIR}/lib ${EMAN_PREFIX_LIB})
+		message("FIND_LIBRARY: ${upper}_LIBRARY NAMES ${lower} ${lower2} PATHS $ENV{${upper}DIR}/lib ${EMAN_PREFIX_LIB}")
     ENDIF()
 		
 	IF(NOT ${upper}_INCLUDE_PATH OR NOT ${upper}_LIBRARY)
@@ -347,10 +315,10 @@ MACRO(CHECK_REQUIRED_LIB upper lower header)
 ENDMACRO(CHECK_REQUIRED_LIB)
 
 MACRO(CHECK_OPTIONAL_LIB upper lower header)
-    FIND_PATH(${upper}_INCLUDE_PATH ${header} $ENV{${upper}DIR}/include ${INCLUDE_DIRS} NO_DEFAULT_PATH)
+    FIND_PATH(${upper}_INCLUDE_PATH ${header} $ENV{${upper}DIR}/include ${EMAN_PREFIX_INC} NO_DEFAULT_PATH)
 
     IF(${upper}_INCLUDE_PATH)
-        FIND_LIBRARY(${upper}_LIBRARY NAMES ${lower} PATHS $ENV{${upper}DIR}/lib ${LIB_DIRS})
+        FIND_LIBRARY(${upper}_LIBRARY NAMES ${lower} PATHS $ENV{${upper}DIR}/lib ${EMAN_PREFIX_LIB})
 
         IF(${upper}_LIBRARY)
 			ADD_DEFINITIONS(-DEM_${upper})
@@ -367,7 +335,7 @@ MACRO(CHECK_OPTIONAL_LIB upper lower header)
 ENDMACRO(CHECK_OPTIONAL_LIB)
 
 MACRO(CHECK_LIB_ONLY upper lower)
-    FIND_LIBRARY(${upper}_LIBRARY NAMES ${lower} PATHS $ENV{${upper}DIR}/lib ${LIB_DIRS} NO_DEFAULT_PATH)
+    FIND_LIBRARY(${upper}_LIBRARY NAMES ${lower} PATHS $ENV{${upper}DIR}/lib ${EMAN_PREFIX_LIB} NO_DEFAULT_PATH)
 	message(STATUS "CHECK_LIB_ONLY upper lower")
 	message_var(${upper}_LIBRARY)
 ENDMACRO(CHECK_LIB_ONLY)
