@@ -15,52 +15,102 @@ OPTION(CMAKE_VERBOSE_MAKEFILE "if all commands will be echoed to the console dur
 
 SET(CMAKE_MACOSX_RPATH ON)
 
-OPTION(ENABLE_CONDA "enable conda-supported build" OFF)
+OPTION(ENABLE_CONDA "enable conda-supported build" ON)
 
-# Handle build strategies, 
-#        set CONDA_PREFIX and CONDA_SP_DIR
-#        set EMAN_PY_INSTALL_PREFIX and EMAN_INSTALL_PREFIX
-#        write eman2dir relative to SP_DIR path
-# If it is conda-build build, ENABLE_CONDA is ignored
-# If it is not conda-build build, ENABLE_CONDA is checked
-# If it is not conda-build build and ENABLE_CONDA is not set, it is legacy build
-if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" OR ENABLE_CONDA)
+MACRO(CHECK_PYTHON)
+	find_package(PythonInterp REQUIRED)
+	find_package(PythonLibs   REQUIRED)
+	
+	set(PYTHON_INCLUDE_PATH ${PYTHON_INCLUDE_DIRS} CACHE PATH "")
+	set(PYTHON_LIBRARY      ${PYTHON_LIBRARIES}    CACHE PATH "")
+	
+	message("PYTHON_EXECUTABLE:   ${PYTHON_EXECUTABLE}")
+	message("PYTHON_LIBRARIES:    ${PYTHON_LIBRARIES}")
+	message("PYTHON_INCLUDE_DIRS: ${PYTHON_INCLUDE_DIRS}")
+	message("PYTHON_INCLUDE_PATH: ${PYTHON_INCLUDE_PATH}")
+	message("PYTHON_INCLUDE_DIR:  ${PYTHON_INCLUDE_DIR}")
+ENDMACRO(CHECK_PYTHON)
+
+if(ENABLE_CONDA)
 	if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" )
-		set(CONDA_SP_DIR $ENV{SP_DIR})
 		if(NOT WIN32)
-			set(CONDA_PREFIX $ENV{PREFIX})
+			set(EMAN_PREFIX $ENV{PREFIX})
 		else()
-			set(CONDA_PREFIX $ENV{LIBRARY_PREFIX})
+			set(EMAN_PREFIX $ENV{LIBRARY_PREFIX})
 		endif()
-	elseif(ENABLE_CONDA)
-		# Assuming the active conda environment is on PATH, this finds the path of bin/ in the environment
-		find_path(CONDA_PREFIX conda
-					 PATHS ENV PATH
-				 )
-		if(NOT CONDA_PREFIX)
-			message(FATAL_ERROR "\nNo conda environment found in PATH!\nPATH=$ENV{PATH}")
-		endif()
-
-		get_filename_component(CONDA_PREFIX ${CONDA_PREFIX}/.. ABSOLUTE)
-
-		execute_process(COMMAND ${CONDA_PREFIX}/bin/python -c "import site; print site.getsitepackages()[0]"
-						OUTPUT_VARIABLE CONDA_SP_DIR
-						OUTPUT_STRIP_TRAILING_WHITESPACE
-					   )
-	endif()
 		
-	set(EMAN_PY_INSTALL_PREFIX ${CONDA_SP_DIR})
-		
-	SET(EMAN_INSTALL_PREFIX ${CONDA_PREFIX} CACHE PATH "installation prefix")
-	if(NOT WIN32)
-		file(WRITE ${EMAN_PY_INSTALL_PREFIX}/eman2dir_relative_path_to_sp_dir "../../../")
+		set(SP_DIR $ENV{SP_DIR})
+	elseif(DEFINED ENV{CONDA_PREFIX})
+		set(EMAN_PREFIX $ENV{CONDA_PREFIX} CACHE PATH "")
 	else()
-		file(WRITE ${EMAN_PY_INSTALL_PREFIX}/eman2dir_relative_path_to_sp_dir "../../Library/")
+		# Assuming the active conda environment is on PATH, this finds the path of bin/ in the environment
+		find_program(CONDA_EXECUTABLE conda
+					 PATHS ${CONDA_ROOT}/bin ${CONDA_ROOT}/Scripts ENV PATH
+				 )
+		if(CONDA_EXECUTABLE)
+			execute_process(COMMAND ${CONDA_EXECUTABLE} info --root
+					OUTPUT_VARIABLE out_var
+					OUTPUT_STRIP_TRAILING_WHITESPACE
+					)
+			if(out_var)
+				set(CONDA_ROOT ${out_var}            CACHE PATH "")
+				message("Found conda: ${CONDA_EXECUTABLE}")
+				execute_process(COMMAND ${CONDA_EXECUTABLE} info --envs
+						)
+				message("Set CONDA_ROOT to one of the conda environment paths listed above.\n")
+			endif()
+		endif()
+			
+		if(CONDA_ROOT)
+			if(WIN32)
+				set(EMAN_PREFIX ${CONDA_ROOT}/Library CACHE PATH "")
+			else()
+				set(EMAN_PREFIX ${CONDA_ROOT} CACHE PATH "")
+			endif()
+		else()
+			set(CONDA_ROOT CONDA_ROOT-NOTFOUND   CACHE PATH "")
+		endif()
+			
+		include(FindPackageHandleStandardArgs)
+		FIND_PACKAGE_HANDLE_STANDARD_ARGS(Conda DEFAULT_MSG CONDA_ROOT)
+	endif()
+
+	set(CMAKE_PREFIX_PATH ${EMAN_PREFIX} ${EMAN_PREFIX}/..)
+	message_var(CMAKE_PREFIX_PATH)
+endif()
+
+CHECK_PYTHON()
+if(NOT WIN32)
+	set(py_sp_dir_command "import site; print site.getsitepackages()[0]")
+else()
+	set(py_sp_dir_command "import site; print site.getsitepackages()[1]")
+endif()
+execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "${py_sp_dir_command}"
+		OUTPUT_VARIABLE SP_DIR
+		OUTPUT_STRIP_TRAILING_WHITESPACE
+		)
+message("Python site-packages: ${SP_DIR}")
+
+if(ENABLE_CONDA)
+	SET(EMAN_INSTALL_PREFIX    ${EMAN_PREFIX} CACHE PATH "installation prefix")
+	set(EMAN_PY_INSTALL_PREFIX ${SP_DIR})
+	
+	set(EMAN_PREFIX_INC ${EMAN_PREFIX}/include)
+	set(EMAN_PREFIX_LIB ${EMAN_PREFIX}/lib)
+	
+	if(NOT WIN32)
+		set(eman2dir_relative_path "../../../")
+	else()
+		set(eman2dir_relative_path "../../Library/")
 	endif()
 else()
-	SET(EMAN_INSTALL_PREFIX $ENV{HOME}/EMAN2 CACHE PATH "installation prefix")
-	set(EMAN_PY_INSTALL_PREFIX     ${EMAN_INSTALL_PREFIX}/lib)
-	file(WRITE ${EMAN_PY_INSTALL_PREFIX}/eman2dir_relative_path_to_sp_dir "../")
+	SET(EMAN_INSTALL_PREFIX    $ENV{HOME}/EMAN2 CACHE PATH "installation prefix")
+	set(EMAN_PY_INSTALL_PREFIX ${EMAN_INSTALL_PREFIX}/lib)
+	set(eman2dir_relative_path "../")
+endif()
+
+if(EMAN_PY_INSTALL_PREFIX)
+	file(WRITE ${EMAN_PY_INSTALL_PREFIX}/eman2dir_relative_path_to_sp_dir ${eman2dir_relative_path})
 endif()
 
 SET(CMAKE_INSTALL_PREFIX ${EMAN_INSTALL_PREFIX} CACHE INTERNAL "installation prefix")
@@ -85,7 +135,6 @@ OPTION(ENABLE_TAO "enable TAO support" OFF)
 MARK_AS_ADVANCED(ENABLE_TAO)
 
 OPTION(ENABLE_TIFF "enable TIFF support" ON)
-OPTION(ENABLE_HDF5 "enable HDF5 support" ON)
 OPTION(ENABLE_V4L2 "enable V4L2 framegrabbing support" OFF)
 OPTION(ENABLE_PNG "enable PNG support" ON)
 OPTION(ENABLE_JPEG "enable JPEG support" ON)
@@ -119,15 +168,6 @@ IF(CMAKE_SYSTEM_NAME MATCHES "Darwin")
 ELSE()
 	OPTION(ENABLE_OPTIMIZE_OSX "enable OSX support" OFF)
 ENDIF()
-
-IF (ENABLE_OPTIMIZE_OSX)
-	SET(GL_LIBRARY /System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib)
-	SET(GLU_LIBRARY /System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGLU.dylib)
-	SET(GL_INCLUDE_PATH /usr/include)
-	SET(GLU_INCLUDE_PATH /usr/include)
-#	SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-dylib_file,/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib:/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGLU.dylib")
-#	SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-dylib_file,/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib:/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGLU.dylib")
-ENDIF (ENABLE_OPTIMIZE_OSX)
 
 IF (ENABLE_MEMDEBUG)
 	ADD_DEFINITIONS(-DMEMDEBUG -W -Wall)
@@ -239,125 +279,8 @@ ENDIF(ENABLE_IOCACHE)
 #     ADD_DEFINITIONS(-DHDFIO_CACHE)
 # ENDIF(ENABLE_HDFIOCACHE)
 
-if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" OR ENABLE_CONDA)
-	set(CMAKE_PREFIX_PATH ${CONDA_PREFIX})
-	set(GSL_INCLUDE_DIRS ${CONDA_PREFIX}/include)
-	if(WIN32)
-		add_definitions(-DGSL_DLL -DFTGL_LIBRARY_STATIC)
-	endif()
-		
-	find_package(Boost COMPONENTS python REQUIRED)
-	find_package(OpenGL REQUIRED)
-	find_package(HDF5 REQUIRED)
-	find_package(PNG REQUIRED)
-	find_package(JPEG REQUIRED)
-	find_package(ZLIB REQUIRED)
-	find_package(Freetype REQUIRED)
-
-#		Set expected vars to values just found
-	set(BOOST_LIBRARY ${Boost_LIBRARIES} CACHE PATH "")
-	set(BOOST_INCLUDE_PATH ${Boost_INCLUDE_DIR} CACHE PATH "")
-		
-	set(OPENGL_LIBRARY ${OPENGL_gl_LIBRARY} CACHE PATH "")
-	set(GL_LIBRARY ${OPENGL_gl_LIBRARY}     CACHE PATH "")
-	set(GLU_LIBRARY ${OPENGL_LIBRARIES} CACHE PATH "")
-	set(GL_INCLUDE_PATH ${OPENGL_INCLUDE_DIR})
-	set(GLU_INCLUDE_PATH ${OPENGL_INCLUDE_DIR})
-
-	set(HDF5_LIBRARY ${HDF5_C_LIBRARY_hdf5} CACHE PATH "")
-	set(HDF5_INCLUDE_PATH ${HDF5_INCLUDE_DIRS} CACHE PATH "")
-	set(PNG_LIBRARY ${PNG_LIBRARIES} CACHE PATH "")
-	set(JPEG_LIBRARY ${JPEG_LIBRARIES} CACHE PATH "")
-	set(ZLIB_LIBRARY ${ZLIB_LIBRARIES} CACHE PATH "")
-
-	set(GSL_LIBRARY ${GSL_LIBRARIES})
-	set(GSL_INCLUDE_PATH ${GSL_INCLUDE_DIRS})
-	set(GSL_CBLAS_LIBRARY ${GSL_CLBAS_LIBRARY})
-	set(GSL_CBLAS_INCLUDE_PATH ${GSL_INCLUDE_DIRS})
-		
-	set(FREETYPE_LIBRARY ${FREETYPE_LIBRARIES} CACHE PATH "")
-	set(FREETYPE_INCLUDE_PATH ${FREETYPE_INCLUDE_DIRS} CACHE PATH "")
-
-	foreach(inc PNG JPEG TIFF ZLIB GSL GSL_CBLAS)
-		set(${inc}_INCLUDE_PATH ${CONDA_PREFIX}/include CACHE PATH "")
-		message("${inc}_INCLUDE_PATH: ${${inc}_INCLUDE_PATH}")
-	endforeach()
-		
-	set(FTGL_INCLUDE_PATH      ${CONDA_PREFIX}/include CACHE PATH "")
-	set(FFTW3_INCLUDE_PATH     ${CONDA_PREFIX}/include CACHE PATH "")
-	set(FFTW3d_INCLUDE_PATH    ${CONDA_PREFIX}/include CACHE PATH "")
-	
-	if(WIN32)
-		set(FFTW3_LIBRARY     "${CONDA_PREFIX}/lib/libfftw3f-3.lib;${CONDA_PREFIX}/lib/libfftw3-3.lib" CACHE PATH "")
-		set(FFTW3d_LIBRARY    ${CONDA_PREFIX}/lib/libfftw3f-3.lib CACHE PATH "")
-		set(SZLIB_LIBRARY          ${CONDA_PREFIX}/lib/libszip.lib CACHE PATH "")
-		set(HDF5_LIBRARY          ${CONDA_PREFIX}/lib/libhdf5.lib CACHE PATH "" FORCE)
-
-		set(GL_INCLUDE_PATH  "C:/Program Files/Microsoft SDKs/Windows/v7.0/Include" CACHE PATH "")
-		set(GLU_INCLUDE_PATH "C:/Program Files/Microsoft SDKs/Windows/v7.0/Include" CACHE PATH "")
-	endif()
-
-#		Print vars
-	message("BOOST_LIBRARY: ${BOOST_LIBRARY}")
-	message("BOOST_INCLUDE_PATH: ${BOOST_INCLUDE_PATH}")
-	message("OPENGL_LIBRARY: ${OPENGL_LIBRARY}")
-	message("GL_LIBRARY: ${GL_LIBRARY}")
-	message("GLU_LIBRARY: ${GLU_LIBRARY}")
-	message("OPENGL_INCLUDE_DIR: ${OPENGL_INCLUDE_DIR}")
-	message("GL_INCLUDE_PATH: ${GL_INCLUDE_PATH}")
-	message("GLU_INCLUDE_PATH: ${GLU_INCLUDE_PATH}")
-	message("HDF5_LIBRARY: ${HDF5_LIBRARY}")
-	message("PNG_LIBRARY: ${PNG_LIBRARY}")
-	message("JPEG_LIBRARY: ${JPEG_LIBRARY}")
-	message("ZLIB_LIBRARY: ${ZLIB_LIBRARY}")
-	message("GSL_LIBRARY: ${GSL_LIBRARY}")
-	message("GSL_INCLUDE_PATH: ${GSL_INCLUDE_PATH}")
-	message("GSL_CBLAS_LIBRARY: ${GSL_CBLAS_LIBRARY}")
-	message("GSL_CBLAS_INCLUDE_PATH: ${GSL_CBLAS_INCLUDE_PATH}")
-	message("FREETYPE_LIBRARIES: ${FREETYPE_LIBRARIES}")
-	message("FREETYPE_INCLUDE_DIRS: ${FREETYPE_INCLUDE_DIRS}")
-	message("FREETYPE_INCLUDE_DIR_ft2build: ${FREETYPE_INCLUDE_DIR_ft2build}")
-	message("FREETYPE_INCLUDE_DIR_freetype2: ${FREETYPE_INCLUDE_DIR_freetype2}")
-	message("FTGL_INCLUDE_PATH: ${FTGL_INCLUDE_PATH}")
-	message("FFTW3_INCLUDE_PATH: ${FFTW3_INCLUDE_PATH}")
-	message("FFTW3d_INCLUDE_PATH: ${FFTW3d_INCLUDE_PATH}")
-	message("SZLIB_LIBRARY: ${SZLIB_LIBRARY}")
-endif()
-
-SET(INCLUDE_DIRS
-	${EMAN_SOURCE_DIR}/libEM
-	$ENV{HOME}/EMAN2/anaconda2/include
-	$ENV{HOME}/anaconda2/include
-	$ENV{HOME}/include
-	$ENV{FFTWDIR}/include
-	$ENV{GSLDIR}/include
-	/usr/local/include
-	/usr/local/cuda/include
-	/usr/include
-	/sw/include
-	/usr/include/freetype2
-	/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/System/Library/Frameworks/OpenGL.framework/Headers
-	)
-
-SET(LIB_DIRS
-	/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries
-	$ENV{EMANDIR}/lib
-	$ENV{HOME}/EMAN2/anaconda2/lib
-	$ENV{HOME}/anaconda2/lib
-	$ENV{HOME}/lib
-	${PLATFORMLIB}
-	$ENV{FFTWDIR}/lib
-	$ENV{GSLDIR}/lib
-	/usr/local/lib
-	/usr/local/cuda/lib
-	/usr/lib64
-	/usr/lib
-	/sw/lib
-	)
-
-
 MACRO(CHECK_REQUIRED_LIB2 upper lower header lower2 header2)
-	if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD")
+	if(ENABLE_CONDA)
 		message("\n### BEGIN ### CHECK_REQUIRED_LIB2 upper lower header lower2 header2")
 		message_var(${upper}_INCLUDE_PATH)
 		message_var(${upper}_LIBRARY)
@@ -366,20 +289,21 @@ MACRO(CHECK_REQUIRED_LIB2 upper lower header lower2 header2)
 	IF(NOT ${upper}_INCLUDE_PATH)
 		FIND_PATH(${upper}_INCLUDE_PATH 
 				NAMES ${header} ${header2}
-				PATHS $ENV{${upper}DIR}/include ${INCLUDE_DIRS}
+				PATHS $ENV{${upper}DIR}/include ${EMAN_PREFIX_INC}
 				NO_DEFAULT_PATH
 				)
     ENDIF()
 
     IF(${upper}_INCLUDE_PATH)
-		FIND_LIBRARY(${upper}_LIBRARY NAMES ${lower} ${lower2} PATHS $ENV{${upper}DIR}/lib ${LIB_DIRS})
+		FIND_LIBRARY(${upper}_LIBRARY NAMES ${lower} ${lower2} PATHS $ENV{${upper}DIR}/lib ${EMAN_PREFIX_LIB})
+		message("FIND_LIBRARY: ${upper}_LIBRARY NAMES ${lower} ${lower2} PATHS $ENV{${upper}DIR}/lib ${EMAN_PREFIX_LIB}")
     ENDIF()
 		
 	IF(NOT ${upper}_INCLUDE_PATH OR NOT ${upper}_LIBRARY)
 		MESSAGE(SEND_ERROR "ERROR: ${upper} not found. please install ${upper} first!")
     ENDIF()
 
-	if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD")
+	if(ENABLE_CONDA)
 		message("### END ### CHECK_REQUIRED_LIB2 upper lower header lower2 header2")
 		message_var(${upper}_INCLUDE_PATH)
 		message_var(${upper}_LIBRARY)
@@ -391,10 +315,10 @@ MACRO(CHECK_REQUIRED_LIB upper lower header)
 ENDMACRO(CHECK_REQUIRED_LIB)
 
 MACRO(CHECK_OPTIONAL_LIB upper lower header)
-    FIND_PATH(${upper}_INCLUDE_PATH ${header} $ENV{${upper}DIR}/include ${INCLUDE_DIRS} NO_DEFAULT_PATH)
+    FIND_PATH(${upper}_INCLUDE_PATH ${header} $ENV{${upper}DIR}/include ${EMAN_PREFIX_INC} NO_DEFAULT_PATH)
 
     IF(${upper}_INCLUDE_PATH)
-        FIND_LIBRARY(${upper}_LIBRARY NAMES ${lower} PATHS $ENV{${upper}DIR}/lib ${LIB_DIRS})
+        FIND_LIBRARY(${upper}_LIBRARY NAMES ${lower} PATHS $ENV{${upper}DIR}/lib ${EMAN_PREFIX_LIB})
 
         IF(${upper}_LIBRARY)
 			ADD_DEFINITIONS(-DEM_${upper})
@@ -411,64 +335,10 @@ MACRO(CHECK_OPTIONAL_LIB upper lower header)
 ENDMACRO(CHECK_OPTIONAL_LIB)
 
 MACRO(CHECK_LIB_ONLY upper lower)
-    FIND_LIBRARY(${upper}_LIBRARY NAMES ${lower} PATHS $ENV{${upper}DIR}/lib ${LIB_DIRS} NO_DEFAULT_PATH)
+    FIND_LIBRARY(${upper}_LIBRARY NAMES ${lower} PATHS $ENV{${upper}DIR}/lib ${EMAN_PREFIX_LIB} NO_DEFAULT_PATH)
+	message(STATUS "CHECK_LIB_ONLY upper lower")
+	message_var(${upper}_LIBRARY)
 ENDMACRO(CHECK_LIB_ONLY)
-
-MACRO(CHECK_PYTHON)
-	if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" OR ENABLE_CONDA)
-		find_package(PythonInterp)
-		find_package(PythonLibs)
-
-		set(PYTHON_INCLUDE_PATH ${PYTHON_INCLUDE_DIRS} CACHE PATH "")
-		set(PYTHON_LIBRARY ${PYTHON_LIBRARIES} CACHE PATH "")
-
-		message("PYTHON_EXECUTABLE: ${PYTHON_EXECUTABLE}")
-		message("PYTHON_LIBRARIES: ${PYTHON_LIBRARIES}")
-		message("PYTHON_INCLUDE_DIRS: ${PYTHON_INCLUDE_DIRS}")
-		message("PYTHON_INCLUDE_PATH: ${PYTHON_INCLUDE_PATH}")
-		message("PYTHON_INCLUDE_DIR: ${PYTHON_INCLUDE_DIR}")
-	else()
-        SET(PYTHON_FOUND FALSE)
-
-        FOREACH(PYVER ${ARGV})
-                IF(NOT PYTHON_FOUND)
-                        IF (WIN32)
-                                FIND_PATH(PYTHON_INCLUDE_PATH Python.h
-                                        $ENV{PYTHON_ROOT}/include C:/Python${PYVER}/include NO_DEFAULT_PATH)
-
-                                FIND_LIBRARY(PYTHON_LIBRARY NAMES python${PYVER} PATHS
-                                        $ENV{PYTHON_ROOT}/libs C:/Python${PYVER}/libs)
-
-                        ELSE (WIN32)
-                                FIND_PATH(PYTHON_INCLUDE_PATH Python.h
-					$ENV{HOME}/EMAN2/anaconda2/include/python2.7
-					$ENV{HOME}/anaconda2/include/python2.7
-                                        $ENV{PYTHON_ROOT}/include/python${PYVER}
-                                        /usr/local/include/python${PYVER}
-                                        /usr/include/python${PYVER} NO_DEFAULT_PATH)
-
-                                FIND_LIBRARY(PYTHON_LIBRARY NAMES python${PYVER} PATHS
-					$ENV{HOME}/EMAN2/anaconda2/lib
-					$ENV{HOME}/anaconda2/lib
-                                        $ENV{PYTHON_ROOT}/lib/python${PYVER}
-                                        /usr/local/lib/python${PYVER}
-                                        /usr/lib/python${PYVER}
-                                        /usr/lib64/python${PYVER}
-                                        $ENV{PYTHON_ROOT}/lib /usr/local/lib /usr/lib NO_DEFAULT_PATH)
-
-                        ENDIF (WIN32)
-
-                        IF(PYTHON_INCLUDE_PATH)
-                                IF(PYTHON_LIBRARY)
-                                        SET(PYTHON_FOUND TRUE)
-					SET(PYTHON_INCLUDE_DIR PYTHON_INCLUDE_PATH)
-                                ENDIF(PYTHON_LIBRARY)
-                        ENDIF(PYTHON_INCLUDE_PATH)
-
-                ENDIF(NOT PYTHON_FOUND)
-    ENDFOREACH(PYVER)
-	endif()
-ENDMACRO(CHECK_PYTHON)
 
 IF(ENABLE_FFTW2)
     OPTION(ENABLE_NFFT "enable nfft support" OFF)
@@ -508,8 +378,8 @@ IF(ENABLE_FFTW3)
     SET(FFTW_LIBRARIES ${FFTW3_LIBRARY} ${FFTW3d_LIBRARY})
     SET(FFTW_INCLUDE_PATH ${FFTW3_INCLUDE_PATH})
 
-	if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD")
-		message("FFTW3F_LIBRARIES: ${FFTW3F_LIBRARIES}")
+	if(ENABLE_CONDA)
+		message("FFTW_LIBRARIES: ${FFTW_LIBRARIES}")
 		message("FFTW_INCLUDE_PATH: ${FFTW_INCLUDE_PATH}")
 	endif()
 		
@@ -577,10 +447,24 @@ ENDIF(ENABLE_OPTPP)
 
 CHECK_REQUIRED_LIB(GSL gsl gsl/gsl_linalg.h)
 CHECK_REQUIRED_LIB(GSL_CBLAS gslcblas gsl/gsl_linalg.h)
+if(WIN32)
+	add_definitions(-DGSL_DLL -DFTGL_LIBRARY_STATIC)
+endif()
 
 IF (ENABLE_OPENGL)
-	CHECK_REQUIRED_LIB(GL GL GL/gl.h)
-	CHECK_REQUIRED_LIB(GLU GLU GL/glu.h)
+	find_package(OpenGL REQUIRED)
+	set(GL_LIBRARY       ${OPENGL_gl_LIBRARY} CACHE PATH "")
+	set(GLU_LIBRARY      ${OPENGL_LIBRARIES}  CACHE PATH "")
+	set(GL_INCLUDE_PATH  ${OPENGL_INCLUDE_DIR})
+	set(GLU_INCLUDE_PATH ${OPENGL_INCLUDE_DIR})
+
+	message("OPENGL_LIBRARY:     ${OPENGL_LIBRARY}")
+	message("GL_LIBRARY:         ${GL_LIBRARY}")
+	message("GLU_LIBRARY:        ${GLU_LIBRARY}")
+	message("OPENGL_INCLUDE_DIR: ${OPENGL_INCLUDE_DIR}")
+	message("GL_INCLUDE_PATH:    ${GL_INCLUDE_PATH}")
+	message("GLU_INCLUDE_PATH:   ${GLU_INCLUDE_PATH}")
+
 	ADD_DEFINITIONS(-DEMAN2_USING_OPENGL)
 ENDIF (ENABLE_OPENGL)
 
@@ -591,15 +475,11 @@ IF (ENABLE_FTGL)
 		ADD_DEFINITIONS(-DOLD_FTGL)
 	ENDIF(EXISTS ${FTGL_INCLUDE_PATH}/FTGL/FTGL.h AND COMMAND IF)
 	ADD_SUBDIRECTORY(fonts)
-    	FIND_PATH(FREETYPE_INCLUDE_PATH ft2build.h 
-		$ENV{HOME}/EMAN2/anaconda2/include/freetype2 
-		$ENV{HOME}/anaconda2/include/freetype2 
-		/usr/include/freetype2 
-		/usr/include 
-		${INCLUDE_DIRS}
-		NO_DEFAULT_PATH
-	)
-	CHECK_REQUIRED_LIB(FREETYPE freetype config/ftheader.h )
+	find_package(Freetype REQUIRED)
+
+	message("FREETYPE_LIBRARIES:    ${FREETYPE_LIBRARIES}")
+	message("FREETYPE_INCLUDE_DIRS: ${FREETYPE_INCLUDE_DIRS}")
+		
 	IF (ENABLE_STATIC_FTGL)
 		IF(WIN32)
 			CHECK_REQUIRED_LIB(FREETYPE freetype ft2build.h)
@@ -616,43 +496,48 @@ IF(ENABLE_JPEG)
     CHECK_OPTIONAL_LIB(JPEG jpeg jpeglib.h)
 ENDIF(ENABLE_JPEG)
 
-IF(ENABLE_HDF5)
-    IF (WIN32)
-		CHECK_OPTIONAL_LIB(HDF5 hdf5dll hdf5.h)
-		CHECK_LIB_ONLY(SZLIB szlibdll)
-		CHECK_LIB_ONLY(ZLIB zlib1d)
-		ADD_DEFINITIONS(-D_HDF5USEDLL_)
-    ELSE (WIN32)
-		CHECK_OPTIONAL_LIB(HDF5 hdf5 hdf5.h)
-		CHECK_LIB_ONLY(ZLIB z)
-    ENDIF (WIN32)
-ENDIF(ENABLE_HDF5)
+if(WIN32)
+	set(HDF5_LIBRARY ${EMAN_PREFIX_LIB}/libhdf5.lib CACHE PATH "")
+endif()
+
+CHECK_OPTIONAL_LIB(HDF5 hdf5 hdf5.h)
+CHECK_LIB_ONLY(ZLIB z)
+IF (WIN32)
+	CHECK_LIB_ONLY(SZLIB libszip)
+ENDIF (WIN32)
 
 IF(ENABLE_PNG)
-    IF (WIN32)
-        CHECK_OPTIONAL_LIB(PNG libpng13d png.h)
-        CHECK_LIB_ONLY(ZLIB zlib1d)
-    ELSE (WIN32)
-        CHECK_OPTIONAL_LIB(PNG png png.h)
-    ENDIF (WIN32)
+	find_package(PNG REQUIRED)
+	message("PNG_LIBRARIES: ${PNG_LIBRARIES}")
+	ADD_DEFINITIONS(-DEM_PNG)
 ENDIF(ENABLE_PNG)
 
+execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "import numpy; print numpy.get_include()"
+		OUTPUT_VARIABLE numpy_include_path
+		OUTPUT_STRIP_TRAILING_WHITESPACE
+		)
+
 FIND_PATH(NUMPY_INCLUDE_PATH numpy/arrayobject.h
-	${CONDA_SP_DIR}/numpy/core/include
+	${numpy_include_path}
+	$ENV{HOME}/anaconda2/lib/python2.7/site-packages/numpy/core/include
+	$ENV{HOME}/EMAN2/anaconda2/lib/python2.7/site-packages/numpy/core/include
+	$ENV{PYTHON_ROOT}/lib/python2.7/site-packages/numpy/core/include
+	/usr/local/lib/python2.7/site-packages/numpy/core/include
+	/usr/lib64/python2.7/site-packages/numpy/core/include
+	/usr/lib/python2.7/site-packages/numpy/core/include
+    /usr/include 
     NO_DEFAULT_PATH)
 
 message("NUMPY_INCLUDE_PATH: ${NUMPY_INCLUDE_PATH}")
 
 INCLUDE_DIRECTORIES(${NUMPY_INCLUDE_PATH})
 
-CHECK_PYTHON(2.7)
 
-IF(PYTHON_INCLUDE_PATH)
-    # Check the most generic name first (used by cctbx).
-    CHECK_REQUIRED_LIB(BOOST boost_python boost/python.hpp)
-ELSE(PYTHON_INCLUDE_PATH)
-    MESSAGE("ERROR: Python.h not found")
-ENDIF(PYTHON_INCLUDE_PATH)
+# Find Boost
+find_package(Boost COMPONENTS python REQUIRED)
+
+message("Boost_LIBRARIES:   ${Boost_LIBRARIES}")
+message("Boost_INCLUDE_DIR: ${Boost_INCLUDE_DIR}")
 
 # IF(ENABLE_HDFIOCACHE)
 #    IF(APPLE)
@@ -675,13 +560,13 @@ INCLUDE_DIRECTORIES(.
 	    ${FFTW_INCLUDE_PATH}
 	    ${DJBFFT_INCLUDE_PATH}
 	    ${ACML_INCLUDE_PATH}
-	    ${BOOST_INCLUDE_PATH}
+	    ${Boost_INCLUDE_DIR}
 	    ${PYTHON_INCLUDE_PATH}
-	    ${FREETYPE_INCLUDE_PATH}
+	    ${FREETYPE_INCLUDE_DIRS}
             )
 
 #---------------------------------------------------------------------------------------
-if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD")
+if(ENABLE_CONDA)
 	message("\nINCLUDE_DIRECTORIES---START")
 	get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
 	
@@ -729,11 +614,11 @@ ADD_SUBDIRECTORY(images)
 ADD_SUBDIRECTORY(recipes)
 
 if(NOT WIN32)
-	if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" OR ENABLE_CONDA)
+	if(ENABLE_CONDA)
 		install(CODE "execute_process(
-						COMMAND ${CMAKE_COMMAND} -E create_symlink ${CONDA_PREFIX}/bin/e2version.py ${CONDA_SP_DIR}/e2version.py
-						COMMAND ${CMAKE_COMMAND} -E create_symlink ${CONDA_PREFIX}/bin/sxgui.py     ${CONDA_PREFIX}/bin/sphire
-						COMMAND ${CMAKE_COMMAND} -E create_symlink ${CONDA_PREFIX}/bin/sx.py        ${CONDA_PREFIX}/bin/sparx
+						COMMAND ${CMAKE_COMMAND} -E create_symlink ${EMAN_PREFIX}/bin/e2version.py ${SP_DIR}/e2version.py
+						COMMAND ${CMAKE_COMMAND} -E create_symlink ${EMAN_PREFIX}/bin/sxgui.py     ${EMAN_PREFIX}/bin/sphire
+						COMMAND ${CMAKE_COMMAND} -E create_symlink ${EMAN_PREFIX}/bin/sx.py        ${EMAN_PREFIX}/bin/sparx
 					 )"
 				)
 	endif()
