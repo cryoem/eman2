@@ -239,16 +239,7 @@ IF(ENABLE_FFTW3)
     OPTION(ENABLE_NATIVE_FFT "enable native fft support" OFF)
     OPTION(ENABLE_ACML_FFT "enable AMD Core Math Library fft support" OFF)
 
-    CHECK_REQUIRED_LIB(FFTW3F fftw3f fftw3.h libfftw3f-3 "")
-    CHECK_REQUIRED_LIB(FFTW3D fftw3 fftw3.h libfftw3-3  "")
-    ADD_DEFINITIONS(-DUSE_FFTW3)
-    SET(FFTW_LIBRARIES ${FFTW3F_LIBRARY} ${FFTW3D_LIBRARY})
-    SET(FFTW_INCLUDE_PATH ${FFTW3_INCLUDE_PATH})
-
-	if(ENABLE_CONDA)
-		message("FFTW_LIBRARIES: ${FFTW_LIBRARIES}")
-		message("FFTW_INCLUDE_PATH: ${FFTW_INCLUDE_PATH}")
-	endif()
+	find_package(FFTW3 REQUIRED)
 		
     IF(ENABLE_NFFT2)
     	CHECK_REQUIRED_LIB(FFTW3D fftw3 fftw3.h "" "")
