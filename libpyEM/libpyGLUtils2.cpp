@@ -28,7 +28,7 @@
  *
  * */
 
-#ifdef EMAN2_USING_OPENGL
+#ifdef USE_OPENGL
 
 #ifdef _WIN32
 	#include <windows.h>
@@ -142,5 +142,5 @@ BOOST_PYTHON_MODULE(libpyGLUtils2)
 #endif	//EMAN2_USING_FTGL
 }
 
-#endif //EMAN2_USING_OPENGL
+#endif //USE_OPENGL
 
