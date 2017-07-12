@@ -31,6 +31,7 @@
 #
 #
 
+import EMAN2
 from EMAN2 import *
 import os
 import sys
@@ -167,8 +168,8 @@ def main():
 	logger = E2init(sys.argv, options.ppid)
 	
 		
-	from e2spt_classaverage import sptmakepath
-	options = sptmakepath(options,'rotplot')
+	from EMAN2_utils import makepath
+	options = makepath(options,'rotplot')
 	
 	
 	if not options.plotonly:

@@ -43,42 +43,30 @@ def main():
 			
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)	
 	
-	parser.add_argument("--path",type=str,default=None,help="""Directory to store results in. 
-		The default is a numbered series of directories containing the prefix 'cylmask';
-		for example, cylmask_02 will be the directory by default if 'cylmask_01' 
-		already exists.""")
+	parser.add_argument("--axes",type=str,default='z',help="""Axes along which the mask will be oriented. Default=z. You can supply more than one, separated with commas. For example: --axes=x,y,z.""")
 
-	parser.add_argument("--verbose", "-v", help="""verbose level [0-9], higner number means 
-		higher level of verboseness. Default=0.""",dest="verbose", action="store", metavar="n",type=int, default=0)
-
-	parser.add_argument("--ppid", type=int, help="""Set the PID of the parent process, 
-		used for cross platform PPID""",default=-1)
-
+	parser.add_argument("--boxsize", type=int, default=0,help="""Size of the boxsize where the cylindrical mask will live.""")
+			
 	parser.add_argument("--height", type=int, default=0,help="""Height of the cylindrical mask.""")
-	parser.add_argument("--heightinner", type=int, default=0,help="""Height for the inner boundary
-		if creating a cylindrical shell mask.""")
 
-	parser.add_argument("--radius",type=int,default=0,help="""Radius of the cylindrical mask.
-		Default=boxsize/2.""")
-	parser.add_argument("--radiusinner",type=int,default=0,help="""Radius for the inner boundary 
-		if creating a cylindrical shell mask.
-		Default=boxsize/2.""")
+	parser.add_argument("--heightinner", type=int, default=0,help="""Height for the inner boundary if creating a cylindrical shell mask.""")
 
-	parser.add_argument("--boxsize", type=int, default=0,help="""Size of the boxsize where the
-		cylindrical mask will live.""")
+	parser.add_argument("--path",type=str,default=None,help="""Directory to store results in. The default is a numbered series of directories containing the prefix 'cylmask'; for example, cylmask_02 will be the directory by default if 'cylmask_01' already exists.""")
+
+	parser.add_argument("--ppid", type=int, help="""Set the PID of the parent process, used for cross platform PPID""",default=-1)
+
+	parser.add_argument("--radius",type=int,default=0,help="""Radius of the cylindrical mask. Default=boxsize/2.""")
 	
-	parser.add_argument("--axes",type=str,default='z',help="""Axes along which the mask will be
-		oriented. Default=z. You can supply more than one, separated with commas. For example:
-		--axes=x,y,z.""")
-		
-	parser.add_argument("--rotation",type=str,default='',help="""Three comma separated Euler angles
-		 az,alt,phi, to rotate the masks by before writing them out.""")
-		
-	parser.add_argument("--translation",type=str,default='',help="""Three comma separated coordinates
-		x,y,z, to translate the masks by before writing them out.""")
-		
+	parser.add_argument("--radiusinner",type=int,default=0,help="""Radius for the inner boundary if creating a cylindrical shell mask. Default=boxsize/2.""")
+
+	parser.add_argument("--rotation",type=str,default='',help="""Three comma separated Euler angles az,alt,phi, to rotate the masks by before writing them out.""")
+	
 	parser.add_argument("--rotavg",action='store_true',default=False,help="""This will compute the rotational average of the mask(s) in addition to writing the cylindrical mask itself out.""")
 	
+	parser.add_argument("--translation",type=str,default='',help="""Three comma separated coordinates x,y,z, to translate the masks by before writing them out.""")
+	
+	parser.add_argument("--verbose", "-v", help="""verbose level [0-9], higner number means higher level of verboseness. Default=0.""",dest="verbose", action="store", metavar="n",type=int, default=0)
+
 	(options, args) = parser.parse_args()	
 	
 	
@@ -96,14 +84,14 @@ def main():
 		print "If specifying --radiusinner, you must also specify --heightinner."
 		sys.exit(1)	
 	
-	from e2spt_classaverage import sptmakepath
-	options = sptmakepath( options, 'cylmask')
+	from EMAN2_utils import makepath
+	options = makepath( options, 'cylmask')
 	
 	logger = E2init(sys.argv, options.ppid)
 	
 	axes = options.axes.split(',')
 	
-	print "After splitting, axes=", axes
+	print "\n(e2cylinder)(main) after splitting, axes=", axes
 	
 	#axisdict ={}
 	#for axis in axes:
@@ -146,7 +134,10 @@ def main():
 			ts.update({'y':ty})
 			print "added y transform"
 	
-	masknamebase = options.path + '/cylmask.hdf'
+	masknamebase ='cylmask.hdf'
+
+	if options.path:
+		masknamebase = options.path + '/cylmask.hdf'
 	
 	for a in ts:
 		maskt = mask.copy()
