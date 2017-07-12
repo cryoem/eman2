@@ -6049,10 +6049,10 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_scores_local(EMData* dataima
 
 	vector<int> qout(nouto*4);
 	for (i=0; i<nouto; i++) {
-		qout[3*i] = ccfs[i].ib;
-		qout[3*i+1] = ccfs[i].ic;
-		qout[3*i+2] = ccfs[i].ipsi;
-		qout[3*i+3] = ccfs[i].score;
+		qout[4*i] = ccfs[i].ib;
+		qout[4*i+1] = ccfs[i].ic;
+		qout[4*i+2] = ccfs[i].ipsi;
+		qout[4*i+3] = ccfs[i].score;
 	}
 	return qout;
 }
