@@ -48,8 +48,6 @@ import colorsys
 
 from operator import itemgetter
 
-from EMAN2 import *
-
 
 def main():
 
@@ -97,10 +95,13 @@ def main():
 
 	logger = E2init(sys.argv, options.ppid)
 
-	try:
-		os.mkdir( options.path )
-	except:
-		pass
+	#try:
+	#	os.mkdir( options.path )
+	#except:
+	#	pass
+
+	from EMAN2_utils import makepath
+	options = makepath(options)
 
 	print "apix is", options.apix
 	print "name is", options.outputtag	
