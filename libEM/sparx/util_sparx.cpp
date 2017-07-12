@@ -6062,6 +6062,7 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_scores_local(EMData* dataima
 		qout[4*i+1] = ccfs[i].ic;
 		qout[4*i+2] = ccfs[i].ipsi;
 		qout[4*i+3] = (int)(INT_MAX*(ccfs[i].score - score_min)/c1);
+		cout<<"  ZIGA   "<<counter<<"  "<<i<<"  "<<ccfs[i].score<<"   "<<qout[4*i+3]<<"  "<<score_min<<"  "<<"  "<<c1<<"  "<<INT_MAX<<endl;
 	}
 	return qout;
 }
