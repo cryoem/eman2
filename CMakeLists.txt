@@ -47,6 +47,7 @@ if(ENABLE_CONDA)
 endif()
 
 find_package(Python REQUIRED)
+find_package(NumPy  REQUIRED)
 
 if(NOT WIN32)
 	set(py_sp_dir_command "import site; print site.getsitepackages()[0]")
@@ -442,27 +443,6 @@ IF(ENABLE_PNG)
 	message("PNG_LIBRARIES: ${PNG_LIBRARIES}")
 	ADD_DEFINITIONS(-DEM_PNG)
 ENDIF()
-
-execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "import numpy; print numpy.get_include()"
-		OUTPUT_VARIABLE numpy_include_path
-		OUTPUT_STRIP_TRAILING_WHITESPACE
-		)
-
-FIND_PATH(NUMPY_INCLUDE_PATH numpy/arrayobject.h
-	${numpy_include_path}
-	$ENV{HOME}/anaconda2/lib/python2.7/site-packages/numpy/core/include
-	$ENV{HOME}/EMAN2/anaconda2/lib/python2.7/site-packages/numpy/core/include
-	$ENV{PYTHON_ROOT}/lib/python2.7/site-packages/numpy/core/include
-	/usr/local/lib/python2.7/site-packages/numpy/core/include
-	/usr/lib64/python2.7/site-packages/numpy/core/include
-	/usr/lib/python2.7/site-packages/numpy/core/include
-    /usr/include 
-    NO_DEFAULT_PATH)
-
-message("NUMPY_INCLUDE_PATH: ${NUMPY_INCLUDE_PATH}")
-
-INCLUDE_DIRECTORIES(${NUMPY_INCLUDE_PATH})
-
 
 # Find Boost
 set(Boost_USE_MULTITHREADED ON)
