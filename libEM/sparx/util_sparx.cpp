@@ -5912,6 +5912,152 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_local(EMData* dataimage, EMD
 }
 
 
+
+vector<int> Util::multiref_Crosrng_msg_stack_stepsi_scores_local(EMData* dataimage, EMData* circ2, \
+				const vector< vector<float> >& coarse_shifts_shrank,\
+				vector<int> assignments_of_refangles_to_angles, vector<int> assignments_of_refangles_to_cones,
+				vector<int> numr, vector<float> startpsi, float oldpsi, int cpsi, \
+				float delta, float cnx, int nouto) {
+
+	size_t n_coarse_shifts = coarse_shifts_shrank.size();
+	int lencrefim = circ2->get_xsize();
+	int n_coarse_ang = circ2->get_ysize();
+	int npsi = (int)(360.0f/delta + 0.01);
+	int n_assignments_of_refangles_to_angles = assignments_of_refangles_to_angles.size();
+	int n_assignments_of_refangles_to_cones  = assignments_of_refangles_to_cones.size();
+	
+
+	vector<float> vpsi(npsi);
+
+	string mode = "F";
+
+	int   ip, jc, numr3i, numr2i, i, j;
+	float c1, c2, d1, d2;
+
+	int nring = numr.size()/3;
+	int maxrin = numr[numr.size()-1];
+
+	float* circ2b = circ2->get_data();
+
+	double *q;
+
+	q = (double*)calloc(maxrin,sizeof(double));
+
+#ifdef _WIN32
+	ip = -(int)(log((float)maxrin)/log(2.0f));
+#else
+	ip = -(int)(log2(maxrin));
+#endif	//_WIN32
+
+	 //  q - straight  = circ1 * conjg(circ2)
+	int ndata = n_coarse_shifts*n_coarse_ang*(2*cpsi);
+
+	//vector<float> qout(ndata);
+
+    vector<MultiScores> ccfs(ndata);
+
+	//cout<<" n_coarse_shifts "<<n_coarse_shifts<<"  "<<n_coarse_ang<<"  "<<npsi<<"  "<<lencrefim<<endl;
+	int counter = 0;
+	for (int ib = 0; ib < n_coarse_shifts; ib++) {
+	//cout<<" coarse_shifts "<<ib<<"  "<<coarse_shifts_shrank[ib][0]<<"  "<<coarse_shifts_shrank[ib][1]<<"  "<<endl;
+		EMData* cimage = Polar2Dm(dataimage, cnx-coarse_shifts_shrank[ib][0], cnx-coarse_shifts_shrank[ib][1], numr, mode);
+		Frngs(cimage, numr);
+		float* circ1b = cimage->get_data();
+		//or (int ic = 0; ic < 6; ic++)  cout<<"  "<<circ1b[ic];
+		//cout<<endl;
+		for (int iqc = 0; iqc < n_assignments_of_refangles_to_angles; iqc++) {
+			int ic = assignments_of_refangles_to_angles[iqc];
+			int lixi = -1;
+			for (int k = 0; k< n_assignments_of_refangles_to_cones; k++) {
+				if(assignments_of_refangles_to_cones[k] == ic) {
+					lixi = k;
+					break;
+				}
+			}
+			//if(lixi < 0)  cout<<"   PROBLEM"<<endl; 
+			int offset = lencrefim*lixi;
+	//cout<<" offset "<<ic<<"  "<<offset<<"  "<<startpsi[ic]<<endl;
+			for (i=0; i<maxrin; i++)  q[i] = 0.0f;
+
+			 //  q - straight  = circ1 * conjg(circ2)
+
+			for (i=1;i<=nring;i++) {
+
+				numr3i = numr(3,i);
+				numr2i = numr(2,i);
+
+				q(1) += circ1b(numr2i) * circ2b(numr2i+offset);
+
+				if (numr3i == maxrin)   q(2) += circ1b(numr2i+1) * circ2b(numr2i+1+offset);
+				else             q(numr3i+1) += circ1b(numr2i+1) * circ2b(numr2i+1+offset);
+
+				for (j=3;j<=numr3i;j=j+2) {
+					jc     = j+numr2i-1;
+
+					c1     = circ1b(jc);
+					c2     = circ1b(jc+1);
+					d1     = circ2b(jc+offset);
+					d2     = circ2b(jc+1+offset);
+
+					q(j)   +=  c1 * d1 + c2 * d2;
+					q(j+1) += -c1 * d2 + c2 * d1;
+				}
+			}
+
+			// straight
+			fftr_d(q,ip);
+
+			float qdm = 1.0e23;
+			int bpsi;
+			float oldpsi_inc = oldpsi + 0.5*delta;
+			for ( i=0; i<npsi; i++) {
+				float psi = startpsi[ic] + i*delta;
+				while( psi >= 360.0f )  psi -= 360.0f;
+				float ipsi = psi/360.0f*maxrin;
+				int ip1 = (int)(ipsi);
+				float dpsi = ipsi-ip1;
+				vpsi[i]=static_cast<float>(q[ip1] + dpsi*(q[(ip1+1)%maxrin]-q[ip1]));
+				//  find closest to old psi
+				float dummy = fabs(psi - oldpsi_inc); // We have to add half delta to accomodate even number of psi neighbors.
+				dummy = Util::get_min(dummy, 360.0f-dummy);
+				if( dummy < qdm ) {
+					qdm = dummy;
+					bpsi = i;
+				}
+			}
+			//int iang = ic*100000000 + ib;
+			for ( j=bpsi-cpsi; j<bpsi+cpsi; j++) {
+				int ipip = j;
+				if( ipip < 0 ) ipip += npsi;
+				else if( ipip >= npsi ) ipip -= npsi;
+				ccfs[counter].score = vpsi[ipip];
+				//dout[j-bpsi+cpsi] = vpsi[ip];
+				///dout[j-bpsi+cpsi + lout] = 2000*ip;// This is 2*1000, 1000 is to get on coarse psi
+				//dout[j-bpsi+cpsi + lout] = 1000*ip;// This is 1000 is to get on fine psi
+				ccfs[counter].ib = ib;
+				ccfs[counter].ic = ic;
+				ccfs[counter].ipsi = ipip;
+				//cout<<"  ZIGA   "<<counter<<"  "<<ccfs[counter].ib<<"  "<<ccfs[counter].ic<<"   "<<lixi<<"  "<<j<<"  "<<ccfs[counter].ipsi<<"      "<<ccfs[counter].score<<endl;
+				counter++;
+			}
+
+		}  delete cimage; cimage = 0;
+	}
+	free(q);
+
+	sort(ccfs.begin(), ccfs.end(), sortBymultiscore);
+
+	vector<int> qout(nouto*4);
+	for (i=0; i<nouto; i++) {
+		qout[3*i] = ccfs[i].ib;
+		qout[3*i+1] = ccfs[i].ic;
+		qout[3*i+2] = ccfs[i].ipsi;
+		qout[3*i+3] = ccfs[i].score;
+	}
+	return qout;
+}
+
+
 #undef circ1b
 #undef circ2b
 #undef dout

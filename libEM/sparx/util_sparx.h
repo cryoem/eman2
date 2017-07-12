@@ -646,6 +646,11 @@ class FakeKaiserBessel : public KaiserBessel {
 				vector<int> assignments_of_refangles_to_angles, vector<int> assignments_of_refangles_to_cones,
 				vector<int> numr, vector<float> startpsi, float oldpsi, int cpsi, float delta, float cnx, int nouto);
 
+	static vector<int> multiref_Crosrng_msg_stack_stepsi_scores_local(EMData* dataimage, EMData* circ2, \
+				const vector< vector<float> >& coarse_shifts_shrank,\
+				vector<int> assignments_of_refangles_to_angles, vector<int> assignments_of_refangles_to_cones,
+				vector<int> numr, vector<float> startpsi, float oldpsi, int cpsi, float delta, float cnx, int nouto);
+
 	static vector<float> Crosrng_msg_vec_p(EMData* circ1, EMData* circ2, vector<int> numr );
 
 	static void  prb3p(double *b, float *pos);
