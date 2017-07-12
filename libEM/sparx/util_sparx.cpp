@@ -63,6 +63,8 @@ using namespace EMAN;
 #include <gsl/gsl_sf_bessel.h>
 #include <cmath>
 #include <fftw3.h>
+#include <limits.h>
+#include <float.h>
 //#include <omp.h>
 using namespace std;
 using std::complex;
@@ -6046,13 +6048,20 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_scores_local(EMData* dataima
 	free(q);
 
 	sort(ccfs.begin(), ccfs.end(), sortBymultiscore);
+	float score_max = FLT_MIN;
+	float score_min = FLT_MAX;
+	for (i=0; i<nouto; i++) {
+		score_max = Util::get_max(score_max,ccfs[i].score);
+		score_min = Util::get_max(score_min,ccfs[i].score);
+	}
+	c1 = score_max - score_min;
 
 	vector<int> qout(nouto*4);
 	for (i=0; i<nouto; i++) {
 		qout[4*i] = ccfs[i].ib;
 		qout[4*i+1] = ccfs[i].ic;
 		qout[4*i+2] = ccfs[i].ipsi;
-		qout[4*i+3] = ccfs[i].score;
+		qout[4*i+3] = (int)(INT_MAX*(ccfs[i].score - score_min)/c1);
 	}
 	return qout;
 }
