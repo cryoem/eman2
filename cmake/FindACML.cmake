@@ -1,0 +1,8 @@
+CHECK_OPTIONAL_LIB(ACML acml acml.h)
+FIND_LIBRARY(G2C_LIBRARY NAMES g2c PATHS
+			 /usr/lib64
+			 /usr/lib
+			 /usr/local/lib
+			 $ENV{HOME}/lib )
+SET(ACML_LIBRARIES ${ACML_LIBRARY})
+SET(ACML_INCLUDE_PATH ${ACML_INCLUDE_PATH})
