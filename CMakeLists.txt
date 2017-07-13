@@ -337,9 +337,7 @@ IF(WIN32)
 ENDIF()
 
 IF(ENABLE_PNG)
-	find_package(PNG REQUIRED)
-	message("PNG_LIBRARIES: ${PNG_LIBRARIES}")
-	ADD_DEFINITIONS(-DUSE_PNG)
+	include(cmake/PNG.cmake)
 ENDIF()
 
 # Find Boost
