@@ -706,7 +706,9 @@ The basic design of EMAN Processors: <br>\
 				TypeDict d;
 				d.put("kx", EMObject::INT, "Kx location of the slice in Fourier pixels");
 				d.put("ky", EMObject::INT, "Ky location of the slice in Fourier pixels");
-				d.put("k", EMObject::FLOAT, "Radius of slice in Fourier pixels, integrates over angle. alternative to kx,ky.");
+				d.put("jkx", EMObject::INT, "Jx+Kx location of the slice in Fourier pixels");
+				d.put("jky", EMObject::INT, "Jy+Ky location of the slice in Fourier pixels");
+				d.put("k", EMObject::FLOAT, "Radius of slice in Fourier pixels, integrates over angle.");
 				return d;
 			}
 
