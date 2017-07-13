@@ -318,8 +318,7 @@ IF(ENABLE_FTGL)
 ENDIF()
 
 IF(ENABLE_TIFF)
-    CHECK_OPTIONAL_LIB(TIFF tiff tiffio.h)
-    CHECK_LIB_ONLY(JPEG jpeg)
+	include(cmake/TIFF.cmake)
 ENDIF()
 
 IF(ENABLE_JPEG)

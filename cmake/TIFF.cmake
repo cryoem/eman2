@@ -1,0 +1,2 @@
+CHECK_OPTIONAL_LIB(TIFF tiff tiffio.h)
+CHECK_LIB_ONLY(JPEG jpeg)
