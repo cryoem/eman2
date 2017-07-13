@@ -4,5 +4,13 @@ FIND_LIBRARY(G2C_LIBRARY NAMES g2c PATHS
 			 /usr/lib
 			 /usr/local/lib
 			 $ENV{HOME}/lib )
-SET(ACML_LIBRARIES ${ACML_LIBRARY})
-SET(ACML_INCLUDE_PATH ${ACML_INCLUDE_PATH})
+
+message_var(ACML_INCLUDE_PATH)
+message_var(ACML_LIBRARY)
+
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(ACML
+								  REQUIRED_VARS
+								  ACML_INCLUDE_PATH
+								  ACML_LIBRARY
+								  )
