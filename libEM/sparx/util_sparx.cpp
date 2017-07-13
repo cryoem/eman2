@@ -6058,9 +6058,14 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_scores_local(EMData* dataima
 		score_max = Util::get_max(score_max,ccfs[i].score);
 		score_min = Util::get_min(score_min,ccfs[i].score);
 	}
-//cout<<"  WIGA2   "<<score_max<<"  "<<score_min<<endl;
+        //cout<<"  WIGA1   "<<score_max<<"  "<<score_min<<endl;
+	for (i=0; i<nouto; i++) {
+		score_max = Util::get_max(score_max,ccfs[i].score);
+		score_min = Util::get_min(score_min,ccfs[i].score);
+	}
+	//cout<<"  WIGA2   "<<score_max<<"  "<<score_min<<endl;
 	c1 = (static_cast<float>(ima)-static_cast<float>(imi))/(score_max - score_min);
-//cout<<"  WIGA3   "<<c1<<"   "<<ima<<"  "<<imi<<endl;
+	//cout<<"  WIGA3   "<<c1<<"   "<<ima<<"  "<<imi<<endl;
 	vector<int> qout(nouto*4);
 	for (i=0; i<nouto; i++) {
 		qout[4*i] = ccfs[i].ib;
