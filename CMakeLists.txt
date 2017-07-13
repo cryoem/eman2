@@ -362,7 +362,6 @@ INCLUDE_DIRECTORIES(.
 	    ${EMAN_SOURCE_DIR}/libEM
 	    ${DJBFFT_INCLUDE_PATH}
 	    ${ACML_INCLUDE_PATH}
-	    ${FREETYPE_INCLUDE_DIRS}
             )
 
 #---------------------------------------------------------------------------------------

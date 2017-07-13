@@ -26,7 +26,7 @@ function(ADD_PYSTE_LIB_WITH_SRC libname srcfile)
 			)
 	
 	# Windows fails without linking against freetype
-	TARGET_LINK_LIBRARIES(${libname} EM2 Boost::python Python::Python ${FREETYPE_LIBRARIES})
+	TARGET_LINK_LIBRARIES(${libname} EM2 Boost::python Python::Python Freetype::Freetype)
 	INSTALL(TARGETS ${libname} DESTINATION ${EMAN_PY_INSTALL_PREFIX})
 endfunction()
 
@@ -68,7 +68,7 @@ IF(ENABLE_OPENGL)
 		INCLUDE_DIRECTORIES(${FTGL_INCLUDE_PATH})
 		TARGET_LINK_LIBRARIES(pyGLUtils2 ${FTGL_LIBRARY})
 		IF(ENABLE_STATIC_FTGL)
-			TARGET_LINK_LIBRARIES(pyGLUtils2 ${FREETYPE_LIBRARIES})
+			TARGET_LINK_LIBRARIES(pyGLUtils2 Freetype::Freetype)
 		ENDIF()
 	ENDIF()
 ENDIF()
