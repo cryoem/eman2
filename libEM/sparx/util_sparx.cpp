@@ -20076,9 +20076,9 @@ vector<float> Util::sqed_test( EMData* img, EMData* proj, EMData* ctfs, EMData* 
 			float p1 = data[lol]   - dctfs[i]*dproj[lol];
 			float p2 = data[lol+1] - dctfs[i]*dproj[lol+1];
 			edis += (p1*p1 + p2*p2)*pbckgnoise[i];
-			part1 += data[lol]*data[lol]+ data[lol+1]*data[lol+1];
-			part2 += dctfs[i]*dctfs[i]*(dproj[lol]*dproj[lol]+dproj[lol+1]*dproj[lol+1]);
-			part3 += -dctfs[i]*(data[lol]*dproj[lol] + data[lol+1]*dproj[lol+1]);
+			part1 += (data[lol]*data[lol]+ data[lol+1]*data[lol+1])*pbckgnoise[i];
+			part2 += dctfs[i]*dctfs[i]*(dproj[lol]*dproj[lol]+dproj[lol+1]*dproj[lol+1])*pbckgnoise[i];
+			part3 += -dctfs[i]*(data[lol]*dproj[lol] + data[lol+1]*dproj[lol+1])*pbckgnoise[i];
 		}
 	}
 	edis *= 0.5f;
