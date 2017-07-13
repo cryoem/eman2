@@ -1,11 +1,6 @@
 #this definition is for boost.python > 1.35.0 
 ADD_DEFINITIONS(-DBOOST_PYTHON_NO_PY_SIGNATURES)
 
-INCLUDE_DIRECTORIES(
-			${EMAN_SOURCE_DIR}/libEM
-			${EMAN_SOURCE_DIR}/libpyEM 
-			)
-
 IF(CMAKE_SYSTEM MATCHES "IRIX.*")
     INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIR}/boost/compatibility/cpp_c_headers)
 ENDIF()

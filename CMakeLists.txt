@@ -322,23 +322,6 @@ find_package(Boost COMPONENTS python REQUIRED)
 message("Boost_LIBRARIES:   ${Boost_LIBRARIES}")
 message("Boost_INCLUDE_DIR: ${Boost_INCLUDE_DIR}")
 
-INCLUDE_DIRECTORIES(.
-	    ${EMAN_SOURCE_DIR}
-	    ${EMAN_SOURCE_DIR}/libEM
-            )
-
-#---------------------------------------------------------------------------------------
-if(ENABLE_CONDA)
-	message("\nINCLUDE_DIRECTORIES---START")
-	get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
-	
-	foreach(dir ${dirs})
-		message(STATUS "INCLUDE_DIR='${dir}'")
-	endforeach()
-	message("\nINCLUDE_DIRECTORIES---END")
-endif()
-#---------------------------------------------------------------------------------------
-
 IF(ENABLE_RT)
     ADD_SUBDIRECTORY(rt)
 ENDIF()
