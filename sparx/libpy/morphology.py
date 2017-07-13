@@ -2565,19 +2565,17 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 					sen[i]     /= kboot
 				"""
 				lnsb = len(subpw)
-				try:		crot2 = rotavg_ctf(ctf2_rimg(wn, generate_ctf([ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1]), sign=0), ad1, Cs, voltage, pixel_size, bd1, cd1)[:lnsb]
-				except:		crot2 = [0.0] * lnsb
-				try:		pwrot2 = rotavg_ctf(threshold(qa - bckg), ad1, Cs, voltage, pixel_size, bd1, cd1)[:lnsb]
-				except:		pwrot2 = [0.0] * lnsb
-				try:		crot1 = rotavg_ctf(ctf2_rimg(wn, generate_ctf([ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1]), sign=0), ad1, Cs, voltage, pixel_size, 0.0, 0.0)[:lnsb]
+				try:		crot1 = rotavg_ctf(ctf_rimg(wn, generate_ctf([ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1]), sign=0), ad1, Cs, voltage, pixel_size, 0.0, 0.0)[:lnsb]
 				except:		crot1 = [0.0] * lnsb
 				try:		pwrot1 = rotavg_ctf(threshold(qa - bckg), ad1, Cs, voltage, pixel_size, 0.0, 0.0)[:lnsb]
 				except:		pwrot1 = [0.0] * lnsb
-				freq = range(lnsb)
-				for i in xrange(len(freq)):  freq[i] = float(i) / wn / pixel_size
-				fou = os.path.join(outpwrot, "%s_rotinf.txt" % (img_basename_root))
+				try:		crot2 = rotavg_ctf(ctf_rimg(wn, generate_ctf([ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1]), sign=0), ad1, Cs, voltage, pixel_size, bd1, cd1)[:lnsb]
+				except:		crot2 = [0.0] * lnsb
+				try:		pwrot2 = rotavg_ctf(threshold(qa - bckg), ad1, Cs, voltage, pixel_size, bd1, cd1)[:lnsb]
+				except:		pwrot2 = [0.0] * lnsb
 				#  #1 - rotational averages without astigmatism, #2 - with astigmatism
-				write_text_file([range(len(crot1)), freq, pwrot1, crot1, pwrot2, crot2], fou)
+				lnsb = min(len(crot2),len(pwrot1),len(crot2),len(pwrot2))
+				write_text_file([range(lnsb), [float(i)/wn/pixel_size for i in xrange(lnsb)], pwrot1, crot1, pwrot2, crot2], os.path.join(outpwrot, "%s_rotinf.txt"%(img_basename_root)))
 				
 				#
 				# NOTE: 2016/03/23 Toshio Moriya
@@ -3610,20 +3608,17 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 					sen[i]     /= kboot
 				"""
 				lnsb = len(subpw)
-				try:		crot2 = rotavg_ctf(ctf2_rimg(wn, generate_ctf([ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1])), ad1, Cs, voltage, pixel_size, bd1, cd1)[:lnsb]
-				except:		crot2 = [0.0] * lnsb
-				try:		pwrot2 = rotavg_ctf(threshold(qa - bckg), ad1, Cs, voltage, pixel_size, bd1, cd1)[:lnsb]
-				except:		pwrot2 = [0.0] * lnsb
-				try:		crot1 = rotavg_ctf(ctf2_rimg(wn, generate_ctf([ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1])), ad1, Cs, voltage, pixel_size, 0.0, 0.0)[:lnsb]
+				try:		crot1 = rotavg_ctf(ctf_rimg(wn, generate_ctf([ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1]), sign=0), ad1, Cs, voltage, pixel_size, 0.0, 0.0)[:lnsb]
 				except:		crot1 = [0.0] * lnsb
 				try:		pwrot1 = rotavg_ctf(threshold(qa - bckg), ad1, Cs, voltage, pixel_size, 0.0, 0.0)[:lnsb]
 				except:		pwrot1 = [0.0] * lnsb
-				freq = range(lnsb)
-				for i in xrange(len(freq)):  freq[i] = float(i) / wn / pixel_size
-				fou = os.path.join(outpwrot, "%s_rotinf.txt" % (img_basename_root))
+				try:		crot2 = rotavg_ctf(ctf_rimg(wn, generate_ctf([ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1]), sign=0), ad1, Cs, voltage, pixel_size, bd1, cd1)[:lnsb]
+				except:		crot2 = [0.0] * lnsb
+				try:		pwrot2 = rotavg_ctf(threshold(qa - bckg), ad1, Cs, voltage, pixel_size, bd1, cd1)[:lnsb]
+				except:		pwrot2 = [0.0] * lnsb
 				#  #1 - rotational averages without astigmatism, #2 - with astigmatism
-				write_text_file([range(len(crot1)), freq, pwrot1, crot1, pwrot2, crot2], fou)
-				
+				lnsb = min(lnsb,len(crot2),len(pwrot1),len(crot2),len(pwrot2))
+				write_text_file([range(lnsb), [float(i)/wn/pixel_size for i in xrange(lnsb)], pwrot1[:lnsb], crot1[:lnsb], pwrot2[:lnsb], crot2[:lnsb]], os.path.join(outpwrot, "%s_rotinf.txt"%(img_basename_root)))
 				#
 				# NOTE: 2016/03/23 Toshio Moriya
 				# Compute mean of extrema differences (differences at peak & trough) between 
@@ -5850,7 +5845,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 				#print  "  uuu1 ",(time()-at)/60.
 				#  NOW WE SWITCH PHASE SHIFT TO AMPLITUDE CONTRAST
 				ed2 = angle2ampcont(ed2)
-				if(ed2>0.0): ed2 += 100.0 - ed2
+				if(ed2<0.0): ed2 = 180.0 - ed2
 
 				from morphology import ctf_1d
 				ct = generate_ctf([ad1, Cs, voltage, pixel_size, temp, ed1, 0.0, 0.0])
@@ -5909,19 +5904,17 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 				#print  " error est2  ",(time()-at)/60.0
 				#print " ad1, Cs, voltage, pixel_size, temp, ed1, bd1, cd1 ",ad1, Cs, voltage, pixel_size, temp, ed1, bd1, cd1
 				lnsb = len(subpw)
-				try:		crot2 = rotavg_ctf(ctf_rimg(wn, generate_ctf([ad1, Cs, voltage, pixel_size, temp, ed1, bd1, cd1]), sign=0), ad1, Cs, voltage, pixel_size, bd1, cd1)[:lnsb]
-				except:		crot2 = [0.0] * lnsb
-				try:		pwrot2 = rotavg_ctf(threshold(qa - bckg), ad1, Cs, voltage, pixel_size, bd1, cd1)[:lnsb]
-				except:		pwrot2 = [0.0] * lnsb
 				try:		crot1 = rotavg_ctf(ctf_rimg(wn, generate_ctf([ad1, Cs, voltage, pixel_size, temp, ed1, bd1, cd1]), sign=0), ad1, Cs, voltage, pixel_size, 0.0, 0.0)[:lnsb]
 				except:		crot1 = [0.0] * lnsb
 				try:		pwrot1 = rotavg_ctf(threshold(qa - bckg), ad1, Cs, voltage, pixel_size, 0.0, 0.0)[:lnsb]
 				except:		pwrot1 = [0.0] * lnsb
-				freq = range(lnsb)
-				for i in xrange(len(freq)):  freq[i] = float(i) / wn / pixel_size
-				fou = os.path.join(outpwrot, "%s_rotinf.txt" % (img_basename_root))
+				try:		crot2 = rotavg_ctf(ctf_rimg(wn, generate_ctf([ad1, Cs, voltage, pixel_size, temp, ed1, bd1, cd1]), sign=0), ad1, Cs, voltage, pixel_size, bd1, cd1)[:lnsb]
+				except:		crot2 = [0.0] * lnsb
+				try:		pwrot2 = rotavg_ctf(threshold(qa - bckg), ad1, Cs, voltage, pixel_size, bd1, cd1)[:lnsb]
+				except:		pwrot2 = [0.0] * lnsb
 				#  #1 - rotational averages without astigmatism, #2 - with astigmatism
-				write_text_file([range(len(crot1)), freq, pwrot1, crot1, pwrot2, crot2], fou)
+				lnsb = min(lnsb,len(crot2),len(pwrot1),len(crot2),len(pwrot2))
+				write_text_file([range(lnsb), [float(i)/wn/pixel_size for i in xrange(lnsb)], pwrot1[:lnsb], crot1[:lnsb], pwrot2[:lnsb], crot2[:lnsb]], os.path.join(outpwrot, "%s_rotinf.txt"%(img_basename_root)))
 
 				#
 				#print  " error est3  ",(time()-at)/60.0
@@ -6083,14 +6076,14 @@ def defocusgett_vpp(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_start=-1.0
 	#toto = []
 	#  vpp_options = [defocus_min,  defocus_max,  defocus_step,  phase_min,  phase_max,  phase_step]
 	#  This is in degrees
-	if( vpp_options[3] < vpp_options[4] ): vpp_options[4] += 180.0
+	if( vpp_options[4] < vpp_options[3] ): vpp_options[4] += 180.0
 	a = vpp_options[3]
 	while( a<=vpp_options[4] ):
 		data[7] = angle2ampcont(a%180.0)
-		dz = vpp_options[0]
+		dc = vpp_options[0]
 		while( dc <= vpp_options[1] ):
 			qt = simpw1d_pap(dc, data)
-			#toto.append([a,dc,qt])
+			#toto.append([a,data[7],dc,qt])
 			if(qt<qm):
 				qm = qt
 				defi = dc
@@ -6193,7 +6186,7 @@ def defocusgett_vpp2(qse, wn, xdefc, xampcont, voltage=300.0, Pixel_size=1.0, Cs
 	if DEBug:
 		#from utilities import write_text_row
 		#write_text_row(toto,"toto1.txt")
-		print " repi3  ", dpefi, dphsift, dastamp, dastang, junk
+		print " repi3  ", dpefi, dphshift, dastamp, dastang, junk
 
 	return dpefi, angle2ampcont(dphshift), dastamp, dastang, qma#dp
 
