@@ -911,6 +911,7 @@ costlist, int* curbranch);
 	static vector<float> rotavg_fourier(EMData* img);
 
 	static float sqed(EMData* img,  EMData* proj, EMData* ctfs, EMData* bckgnoise);
+	static vector<float> sqed_test(EMData* img,  EMData* proj, EMData* ctfs, EMData* bckgnoise);
 	static float sqedac(EMData* img,  EMData* proj, EMData* ctfsbckgnoise);
 	//static vector<float> sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise,  EMData* normas, float prob);
 	static void sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* mask, EMData* bckgnoise, float prob);

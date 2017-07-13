@@ -20043,12 +20043,57 @@ float Util::sqed( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise )
 			float p1 = data[lol]   - dctfs[i]*dproj[lol];
 			float p2 = data[lol+1] - dctfs[i]*dproj[lol+1];
 			edis += (p1*p1 + p2*p2)*pbckgnoise[i];
+			// data[lol]*data[lol]+ data[lol+1]*data[lol+1]
+			// dctfs[i]*dctfs[i]*(dproj[lol]*dproj[lol]+dproj[lol+1]*dproj[lol+1])
+			// -2*dctfs[i]*(data[lol]*dproj[lol] + data[lol+1]*dproj[lol+1])
 		}
 	}
 	edis *= 0.5f;
     return edis;
 	EXITFUNC;
 }
+
+//  This is linear version
+vector<float> Util::sqed_test( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise )
+{
+	ENTERFUNC;
+
+	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	size_t size = (size_t)nx*ny*nz;
+    float* data = img->get_data();
+    float* dproj = proj->get_data();
+    float* dctfs = ctfs->get_data();
+	float *pbckgnoise = bckgnoise->get_data();
+
+	float edis = 0.0f;
+	float part1 = 0.0f;
+	float part2 = 0.0f;
+	float part3 = 0.0f;
+
+	for (size_t i=0;i<size/2;++i) {
+		if( pbckgnoise[i] > 0.0f ) {
+			int lol = i*2;
+			float p1 = data[lol]   - dctfs[i]*dproj[lol];
+			float p2 = data[lol+1] - dctfs[i]*dproj[lol+1];
+			edis += (p1*p1 + p2*p2)*pbckgnoise[i];
+			part1 += data[lol]*data[lol]+ data[lol+1]*data[lol+1];
+			part2 += dctfs[i]*dctfs[i]*(dproj[lol]*dproj[lol]+dproj[lol+1]*dproj[lol+1]);
+			part3 += -dctfs[i]*(data[lol]*dproj[lol] + data[lol+1]*dproj[lol+1]);
+		}
+	}
+	edis *= 0.5f;
+	part2 *= 0.5f;
+	part3 *= 0.5f;
+	vector<float> output(4);
+	output[0] = edis;
+	output[1] = part1;
+	output[2] = part2;
+	output[3] = part3;
+
+    return output;
+	EXITFUNC;
+}
+
 
 //  This version is for alignment accuracy estimation
 float Util::sqedac( EMData* img, EMData* proj, EMData* ctfsbckgnoise )
