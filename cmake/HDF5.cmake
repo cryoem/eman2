@@ -1,0 +1,5 @@
+if(WIN32)
+	set(HDF5_LIBRARY ${EMAN_PREFIX_LIB}/libhdf5.lib CACHE PATH "")
+endif()
+
+CHECK_OPTIONAL_LIB(HDF5 hdf5 hdf5.h)

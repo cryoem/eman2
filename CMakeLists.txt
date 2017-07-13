@@ -325,11 +325,7 @@ IF(ENABLE_JPEG)
     include(cmake/JPEG.cmake)
 ENDIF()
 
-if(WIN32)
-	set(HDF5_LIBRARY ${EMAN_PREFIX_LIB}/libhdf5.lib CACHE PATH "")
-endif()
-
-CHECK_OPTIONAL_LIB(HDF5 hdf5 hdf5.h)
+include(cmake/HDF5.cmake)
 CHECK_LIB_ONLY(ZLIB z)
 IF(WIN32)
 	CHECK_LIB_ONLY(SZLIB libszip)
