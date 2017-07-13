@@ -6039,7 +6039,7 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_scores_local(EMData* dataima
 				ccfs[counter].ib = ib;
 				ccfs[counter].ic = ic;
 				ccfs[counter].ipsi = ipip;
-				//cout<<"  ZIGA   "<<counter<<"  "<<ccfs[counter].ib<<"  "<<ccfs[counter].ic<<"   "<<lixi<<"  "<<j<<"  "<<ccfs[counter].ipsi<<"      "<<ccfs[counter].score<<endl;
+				//cout<<"  VIGA   "<<counter<<"  "<<ccfs[counter].ib<<"  "<<ccfs[counter].ic<<"   "<<lixi<<"  "<<j<<"  "<<ccfs[counter].ipsi<<"      "<<ccfs[counter].score<<endl;
 				counter++;
 			}
 
@@ -6050,19 +6050,26 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_scores_local(EMData* dataima
 	sort(ccfs.begin(), ccfs.end(), sortBymultiscore);
 	float score_max = FLT_MIN;
 	float score_min = FLT_MAX;
+	int ima = INT_MAX-10;
+	int imi = INT_MIN+10;
+
+	//cout<<"  WIGA1   "<<score_max<<"  "<<score_min<<endl;
 	for (i=0; i<nouto; i++) {
 		score_max = Util::get_max(score_max,ccfs[i].score);
-		score_min = Util::get_max(score_min,ccfs[i].score);
+		score_min = Util::get_min(score_min,ccfs[i].score);
 	}
-	c1 = score_max - score_min;
-
+//cout<<"  WIGA2   "<<score_max<<"  "<<score_min<<endl;
+	c1 = (static_cast<float>(ima)-static_cast<float>(imi))/(score_max - score_min);
+//cout<<"  WIGA3   "<<c1<<"   "<<ima<<"  "<<imi<<endl;
 	vector<int> qout(nouto*4);
 	for (i=0; i<nouto; i++) {
 		qout[4*i] = ccfs[i].ib;
 		qout[4*i+1] = ccfs[i].ic;
 		qout[4*i+2] = ccfs[i].ipsi;
-		qout[4*i+3] = (int)(INT_MAX*(ccfs[i].score - score_min)/c1);
-		cout<<"  ZIGA   "<<counter<<"  "<<i<<"  "<<ccfs[i].score<<"   "<<qout[4*i+3]<<"  "<<score_min<<"  "<<"  "<<c1<<"  "<<INT_MAX<<endl;
+		float qt = c1*Util::get_min(0.0f,ccfs[i].score - score_max);
+		if( qt <static_cast<float>(imi) ) qout[4*i+3] = (int)(qt+ima);
+		else qout[4*i+3] = (int)(qt) + ima;
+		//cout<<"  ZIGA   "<<counter<<"  "<<i<<"  "<<ccfs[i].score<<"   "<<qout[4*i+3]<<"  "<<Util::get_min(0.0f,ccfs[i].score - score_max)<<"  "<<c1*Util::get_min(0.0f,ccfs[i].score - score_max)<<"   "<<(int)(c1*Util::get_min(0.0f,ccfs[i].score - score_max))<<endl;
 	}
 	return qout;
 }
