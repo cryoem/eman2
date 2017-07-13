@@ -322,7 +322,7 @@ IF(ENABLE_TIFF)
 ENDIF()
 
 IF(ENABLE_JPEG)
-    CHECK_OPTIONAL_LIB(JPEG jpeg jpeglib.h)
+    include(cmake/JPEG.cmake)
 ENDIF()
 
 if(WIN32)
