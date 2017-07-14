@@ -2685,7 +2685,87 @@ void PointArray::replace_by_summation(EMData *proj, int ind, Vec3f vec, float am
 
 EMData *PointArray::pdb2mrc_by_nfft(int , float , float )
 {
-#if defined NFFT2
+#if defined NFFT
+	nfft_3D_plan my_plan;		// plan for the nfft
+
+	/** init an 3 dimensional plan */
+	nfft_3D_init(&my_plan, map_size, get_number_points());
+
+	/** init atom positions to the non-uniform nodes */
+	for (int j = 0, i = 0; j < my_plan.M; j++, i += 4) {
+		// FFTW and nfft use row major array layout, EMAN uses column major
+		my_plan.v[3 * j + 2] = (fftw_real) (points[i] / (apix * map_size));
+		my_plan.v[3 * j + 1] = (fftw_real) (points[i + 1] / (apix * map_size));
+		my_plan.v[3 * j] = (fftw_real) (points[i + 2] / (apix * map_size));
+		my_plan.f[j].re = (fftw_real) (points[i + 3]);
+		my_plan.f[j].im = 0.0;
+	}
+
+	/** precompute psi, the entries of the matrix B */
+	if (my_plan.nfft_flags & PRE_PSI) {
+		nfft_3D_precompute_psi(&my_plan);
+	}
+
+	// compute the uniform Fourier transform
+	nfft_3D_transpose(&my_plan);
+
+	// copy the Fourier transform to EMData data array
+	EMData *fft = new EMData();
+	fft->set_size(map_size + 2, map_size, map_size);
+	fft->set_complex(true);
+	fft->set_ri(true);
+	fft->to_zero();
+	float *data = fft->get_data();
+	double norm = 1.0 / (map_size * map_size * map_size);
+	for (int k = 0; k < map_size; k++) {
+		for (int j = 0; j < map_size; j++) {
+			for (int i = 0; i < map_size / 2; i++) {
+				data[k * map_size * (map_size + 2) + j * (map_size + 2) + 2 * i] =
+					(float) (my_plan.
+							 f_hat[k * map_size * map_size + j * map_size + i +
+								   map_size / 2].re) * norm;
+				data[k * map_size * (map_size + 2) + j * (map_size + 2) + 2 * i + 1] =
+					(float) (my_plan.
+							 f_hat[k * map_size * map_size + j * map_size + i +
+								   map_size / 2].im) * norm * (-1.0);
+			}
+		}
+	}
+	/** finalise the nfft plan */
+	nfft_3D_finalize(&my_plan);
+
+	// low pass processor
+	double sigma2 = (map_size * apix / res) * (map_size * apix / res);
+	int index = 0;
+	for (int k = 0; k < map_size; k++) {
+		double RZ2 = (k - map_size / 2) * (k - map_size / 2);
+		for (int j = 0; j < map_size; j++) {
+			double RY2 = (j - map_size / 2) * (j - map_size / 2);
+			for (int i = 0; i < map_size / 2 + 1; i++, index += 2) {
+				float val = exp(-(i * i + RY2 + RZ2) / sigma2);
+				data[index] *= val;
+				data[index + 1] *= val;
+			}
+		}
+	}
+	fft->update();
+	//fft->process_inplace("filter.lowpass.gauss",Dict("cutoff_abs", map_size*apix/res));
+
+	fft->process_inplace("xform.phaseorigin.tocorner");	// move phase origin to center of image map_size, instead of at corner
+	EMData *map = fft->do_ift();
+	map->set_attr("apix_x", apix);
+	map->set_attr("apix_y", apix);
+	map->set_attr("apix_z", apix);
+	map->set_attr("origin_x", -map_size/2*apix);
+	map->set_attr("origin_y", -map_size/2*apix);
+	map->set_attr("origin_z", -map_size/2*apix);
+	if( fft )
+	{
+		delete fft;
+		fft = 0;
+	}
+	return map;
+#elif defined NFFT2
 	nfft_plan my_plan;			// plan for the nfft
 
 	/** init an 3 dimensional plan */
@@ -2775,7 +2855,75 @@ EMData *PointArray::pdb2mrc_by_nfft(int , float , float )
 
 EMData *PointArray::projection_by_nfft(int , float , float )
 {
-#if defined NFFT2
+#if defined NFFT
+	nfft_2D_plan my_plan;		// plan for the nfft
+	int N[2], n[2];
+	N[0] = image_size;
+	n[0] = next_power_of_2(2 * image_size);
+	N[1] = image_size;
+	n[1] = next_power_of_2(2 * image_size);
+
+	/** init an 2 dimensional plan */
+	nfft_2D_init(&my_plan, image_size, get_number_points());
+	//nfft_2D_init_specific(&my_plan, N, get_number_points(), n, 3,
+	//                 PRE_PHI_HUT | PRE_PSI,
+	//                 FFTW_ESTIMATE | FFTW_OUT_OF_PLACE);
+	/** init atom positions to the non-uniform nodes */
+	for (int j = 0, i = 0; j < my_plan.M; j++, i += 4) {
+		// FFTW and nfft use row major array layout, EMAN uses column major
+		my_plan.v[2 * j + 1] = (fftw_real) (points[i] / (apix * image_size));
+		my_plan.v[2 * j] = (fftw_real) (points[i + 1] / (apix * image_size));
+		my_plan.f[j].re = (fftw_real) points[i + 3];
+		my_plan.f[j].im = 0.0;
+	}
+
+	/** precompute psi, the entries of the matrix B */
+	if (my_plan.nfft_flags & PRE_PSI) {
+		nfft_2D_precompute_psi(&my_plan);
+	}
+
+	// compute the uniform Fourier transform
+	nfft_2D_transpose(&my_plan);
+
+	// copy the Fourier transform to EMData data array
+	EMData *fft = new EMData();
+	fft->set_size(image_size + 2, image_size, 1);
+	fft->set_complex(true);
+	fft->set_ri(true);
+	fft->to_zero();
+	float *data = fft->get_data();
+	double norm = 1.0 / (image_size * image_size);
+	for (int j = 0; j < image_size; j++) {
+		for (int i = 0; i < image_size / 2; i++) {
+			data[j * (image_size + 2) + 2 * i] =
+				(float) (my_plan.f_hat[j * image_size + i + image_size / 2].re) * norm;
+			data[j * (image_size + 2) + 2 * i + 1] =
+				(float) (my_plan.f_hat[j * image_size + i + image_size / 2].im) * norm * (-1.0);
+		}
+	}
+	/** finalise the nfft plan */
+	nfft_2D_finalize(&my_plan);
+
+	if (res > 0) {
+		// Gaussian low pass processor
+		double sigma2 = (image_size * apix / res) * (image_size * apix / res);
+		int index = 0;
+		for (int j = 0; j < image_size; j++) {
+			double RY2 = (j - image_size / 2) * (j - image_size / 2);
+			for (int i = 0; i < image_size / 2 + 1; i++, index += 2) {
+				double val = exp(-(i * i + RY2) / sigma2);
+				data[index] *= val;
+				data[index + 1] *= val;
+			}
+		}
+	}
+	fft->update();
+	//fft->process_inplace("filter.lowpass.gauss",Dict("cutoff_abs", box*apix/res));
+
+	fft->process_inplace("xform.phaseorigin.tocenter");	// move phase origin to center of image box, instead of at corner
+
+	return fft;
+#elif defined NFFT2
 	nfft_plan my_plan;			// plan for the nfft
 	int N[2], n[2];
 	N[0] = image_size;
