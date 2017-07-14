@@ -5964,6 +5964,8 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_scores_local(EMData* dataima
 	//cout<<" coarse_shifts "<<ib<<"  "<<coarse_shifts_shrank[ib][0]<<"  "<<coarse_shifts_shrank[ib][1]<<"  "<<endl;
 		EMData* cimage = dataimage->copy();
 		cimage->process_inplace("filter.shift", Dict("x_shift", coarse_shifts_shrank[ib][0], "y_shift", coarse_shifts_shrank[ib][1], "z_shift", 0.0f));
+		cimage->do_ift_inplace();
+		cimage->depad();
 		cimage = Polar2Dm(cimage, cnx-coarse_shifts_shrank[ib][0], cnx-coarse_shifts_shrank[ib][1], numr, mode);
 		//EMData* cimage = Polar2Dm(dataimage, cnx-coarse_shifts_shrank[ib][0], cnx-coarse_shifts_shrank[ib][1], numr, mode);
 		Frngs(cimage, numr);
