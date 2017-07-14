@@ -20082,8 +20082,8 @@ vector<float> Util::sqed_test( EMData* img, EMData* proj, EMData* ctfs, EMData* 
 		}
 	}
 	edis *= 0.5f;
+	part1 *= 0.5f;
 	part2 *= 0.5f;
-	part3 *= 0.5f;
 	vector<float> output(4);
 	output[0] = edis;
 	output[1] = part1;
