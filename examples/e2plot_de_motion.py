@@ -56,7 +56,7 @@ def main():
 		
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_argument("--apix", type=float, default=1.0, help="""default=1.0. apix of data""")
+	parser.add_argument("--apix", type=float, default=0.0, help="""default=0.0. apix of data""")
 	
 	parser.add_argument("--bidirectionalfrom",type=str,default='',help="""Default=None (not used). Used for tiltseries data. Initial angle for the first half of the tiltseries. For example, a tiltseries from 0 to -55, then 5 to 55, --bidrectionalfrom should be set to 0.""")
 
@@ -74,37 +74,54 @@ def main():
 	
 	parser.add_argument("--outputtag",type=str,default='deplot',help="""default=deplot. string common to all automatically generated output files""")
 
-	parser.add_argument("--path", type=str,default='de_plots',help="""Defaault=de_plots. Name of the directory where to store the output results.""")
+	parser.add_argument("--path", type=str,default='de_plots',help="""Default=de_plots. Name of the directory where to store the output results.""")
 	parser.add_argument("--ppid", type=int, default=-1,help="Default=-1. Set the PID of the parent process, used for cross platform PPID")
 
-	parser.add_argument("--savetxts", action='store_true', default=False, help="""default=False. save user-friendly txt files easyily plotable with other software.""")
+	parser.add_argument("--savetxts", action='store_true', default=False, help="""Default=False. save user-friendly txt files easyily plotable with other software.""")
 
 	parser.add_argument("--tiltstep", type=int, default=0, help="Default=None. Angular step size between images in the tiltseries.")
+	parser.add_argument("--tltfile", type=str,default='',help="""Default=None. Name of .tlt or .rawtlt file (typically from IMOD or serialEM) with the tilt angles.""")
 
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness.")
 
 	(options, args) = parser.parse_args()	
 	
-	
-	if not options.tiltstep:
-		print "\nERROR: must provide --tiltstep"
-		sys.exit(1)
-
-	options.lowestangle = int(options.lowestangle)
-	options.highestangle = int(options.highestangle)
-
 	logger = E2init(sys.argv, options.ppid)
 
-	#try:
-	#	os.mkdir( options.path )
-	#except:
-	#	pass
+	if not options.apix:
+		print "\n(e2plot_de_motion)(main) ERROR: --apix required to accurately plot motion in Angstroms."
+		sys.exit(1)
+
+	anglesin = []
+	if not options.tltfile:
+		if not options.tiltstep or not options.lowestangle or not options.highestangle:
+			print "\n(e2plot_de_motion)(main)ERROR: must provide --tiltstep, --lowestangle, and --highestangle in the absence of --tltfile"
+			sys.exit(1)
+
+		options.lowestangle = int(options.lowestangle)
+		options.highestangle = int(options.highestangle)
+		options.tiltstep = int(options.tiltstep)
+
+	elif options.tltfile:
+		if options.highestangle or options.lowestangle or options.tiltstep:
+			print "\n(e2plot_de_motion)(main) WARNING: --tltfile was provided; therefore, --highestangle,--lowestangle, and --tiltstep will be ignored."
+		
+		with open( options.tltfile ,'r' ) as tltfile: 
+			lines = tltfile.readlines()
+			anglesin = [ int(round(float( line.replace('\n','') ))) for line in lines]
+			if anglesin[0] < 0:
+				options.lowestangle = anglesin[0]
+				options.highestangle = anglesin[-1]
+			elif anglesin[0] > 0:
+				options.lowestangle = anglesin[-1]
+				options.highestangle = anglesin[0]
+			options.tiltstep = int(round( ( math.fabs(anglesin[0]) + math.fabs(anglesin[-1]) )/len(anglesin) ))
 
 	from EMAN2_utils import makepath
 	options = makepath(options)
 
-	print "apix is", options.apix
-	print "name is", options.outputtag	
+	#print "apix is", options.apix
+	#print "name is", options.outputtag	
 
 	if options.path not in options.outputtag:
 		options.outputtag = options.path + '/' + options.outputtag
@@ -129,43 +146,60 @@ def main():
 	lowestangle = options.lowestangle
 	highestangle = options.highestangle
 
-	startangle = lowestangle
-	
 	print "\nlowestangle {} type={}".format(lowestangle, type(lowestangle))
-
 	print "\nhighestangle {} type={}".format(highestangle, type(highestangle))
-	
-	print "\nstartangle {} type={}".format(startangle, type(startangle))
-
-	if options.bidirectionalfrom:
-		startangle = int(options.bidirectionalfrom)
+	#print "\nstartangle {} type={}".format(startangle, type(startangle))		
 	
 	step = options.tiltstep
 	
 	datadict = {}
-	kk=0
+	
 	lastangle = highestangle
-	for angle in range(startangle,highestangle+1,step):
-		datadict.update({kk:[angle]})
-		lastangle = angle
-		kk+=1
 
-	for angle in range(startangle-step,lowestangle-1,-step):
-		datadict.update({kk:[angle]})
-		lastangle=angle
-		kk+=1
+	#if not options.tltfile:
+	kk=0
+	if options.bidirectionalfrom:
+		startangle = int(options.bidirectionalfrom)
+		print "\nstartangle {} type={}".format(startangle, type(startangle))
+		if options.negativetiltseries:
+			for angle in range(startangle,lowestangle-1,-step):
+				datadict.update({kk:[angle]})
+				lastangle=angle
+				kk+=1
 
-	if options.negativetiltseries:
-		kk=0
-		for angle in range(startangle,lowestangle-1,-step):
-			datadict.update({kk:[angle]})
-			lastangle=angle
-			kk+=1
+			for angle in range(startangle+step,highestangle+1,step):
+				datadict.update({kk:[angle]})
+				lastangle=angle
+				kk+=1
 
-		for angle in range(startangle+step,highestangle+1,step):
-			datadict.update({kk:[angle]})
-			lastangle=angle
-			kk+=1
+		elif not options.negativetiltseries:
+			for angle in range(startangle,highestangle+1,step):
+				datadict.update({kk:[angle]})
+				lastangle = angle
+				kk+=1
+
+			for angle in range(startangle-step,lowestangle-1,-step):
+				datadict.update({kk:[angle]})
+				lastangle=angle
+				kk+=1
+
+	elif not options.bidirectionalfrom:
+		if options.negativetiltseries:
+			startangle = highestangle
+			print "\nstartangle {} type={}".format(startangle, type(startangle))
+			for angle in range(startangle,lowestangle-1,-step):
+				datadict.update({kk:[angle]})
+				lastangle=angle
+				kk+=1
+		elif not options.negativetiltseries:
+			startangle = lowestangle
+			print "\nstartangle {} type={}".format(startangle, type(startangle))
+			for angle in range(startangle,highestangle+1,step):
+				datadict.update({kk:[angle]})
+				lastangle = angle
+				kk+=1
+
+	#elif options.tltfile:
 
 	if len(datadict) != len(ids):
 		dif = len(datadict) - len(ids)
@@ -210,12 +244,15 @@ def main():
 	avgslist = []
 	
 	xavgs = []
+	xtotals = []
 	xerrors = []
 
 	yavgs = []
+	ytotals = []
 	yerrors = []
 
 	ravgs = []
+	rtotals = []
 	rerrors = []
 
 	angles = []
@@ -237,20 +274,29 @@ def main():
 
 		figx_values_angstroms = getvaluesfromfile(options, id, 'x')[0]
 		figx_vals.update( {k:[id,angletoplot,figx_values_angstroms,'x']} )
+		
+		figx_values_angstroms_abs = [math.fabs(x) for x in figx_values_angstroms]
 		#xavg = sum( [math.fabs(x) for x in figx_values_angstroms] )/len(figx_values_angstroms)
-		xavg = np.mean(figx_values_angstroms)
-		xerror = np.std(figx_values_angstroms)
+	
+		xavg = np.mean(figx_values_angstroms_abs)
+		xerror = np.std(figx_values_angstroms_abs)
+		xtotal = sum(figx_values_angstroms_abs)
 		xavgs.append( xavg )
 		xerrors.append( xerror )
+		xtotals.append(xtotal)
 
 		figy_values_angstroms = getvaluesfromfile(options, id, 'y')[0]
-		figy_vals.update( {k:[id,angletoplot,figy_values_angstroms,'y']})	
+		figy_vals.update( {k:[id,angletoplot,figy_values_angstroms,'y']})
+
+		figy_values_angstroms_abs = [math.fabs(y) for y in figy_values_angstroms]	
 		#yavg = sum([math.fabs(x) for y in figy_values_angstroms])/len(figy_values_angstroms)
-		yavg = np.mean(figy_values_angstroms)
-		yerror = np.std(figy_values_angstroms)
+		
+		yavg = np.mean(figy_values_angstroms_abs)
+		yerror = np.std(figy_values_angstroms_abs)
+		ytotal = sum(figy_values_angstroms_abs)
 		yavgs.append( yavg )
 		yerrors.append( yerror )
-
+		ytotals.append(ytotal)
 
 		#c: write out x and y values as a single column txt file for easier plotting with other programs, compared to the original format of files from DE
 		if options.savetxts:
@@ -283,9 +329,10 @@ def main():
 		#compute average |r| and error(s)
 		ravg = np.mean( rs )
 		rerror = np.std( rs )
-		
+		rtotal = sum(rs)
 		ravgs.append( ravg )
 		rerrors.append( rerror )
+		rtotals.append(rtotal)
 
 		avgslist.append( [ angletoplot, ravg, rerror ] )
 
@@ -302,18 +349,72 @@ def main():
 		with open( options.path + '/' + id + "_y_avgs.txt", 'w' ) as outyavgfile: outyavgfile.writelines( [ str(y) +'\n' for y in yavgs ] )	
 		with open( options.path + '/' + id + "_r_avgs.txt", 'w' ) as outravgfile: outravgfile.writelines( [ str(r) +'\n' for r in ravgs ] )
 
+		with open( options.path + '/' + id + "_x_total.txt", 'w' ) as outxtotalfile: outxtotalfile.writelines( [ str(x) +'\n' for x in xtotals ] )
+		with open( options.path + '/' + id + "_y_total.txt", 'w' ) as outytotalfile: outytotalfile.writelines( [ str(y) +'\n' for y in ytotals ] )	
+		with open( options.path + '/' + id + "_r_total.txt", 'w' ) as outrtotalfile: outrtotalfile.writelines( [ str(r) +'\n' for r in rtotals ] )
+
 	plotdata(options, figx_vals, tag='x', title='Motion in X', xlabel='Frame number', ylabel="Translation in X (" + u"\u212B" + ")")
 	plotdata(options, figy_vals, tag='y', title='Motion in Y', xlabel='Frame number', ylabel="Translation in Y (" + u"\u212B" + ")")
-	plotdata(options, figr_vals, tag='r', title='Total motion |r|', xlabel='Frame number', ylabel="Translation |r| (" + u"\u212B" + ")")
+	plotdata(options, figr_vals, tag='r', title='Motion |r|', xlabel='Frame number', ylabel="Translation |r| (" + u"\u212B" + ")")
 	plotdata(options, figy_vals, tag='x_vs_y', title='Motion in X vs Y', xlabel="Translation in X (" + u"\u212B" + ")", ylabel="Translation in Y (" + u"\u212B" + ")", altxaxisdata=figx_vals)
 
-	plotavgdata(options, xavgs, angles, xerrors, tag='x_avgs', title='Average X movement per image', xlabel='Tilt angle (degrees)', ylabel="Average translation(" + u"\u212B" + ")", figsize=(10,6))
-	plotavgdata(options, yavgs, angles, yerrors, tag='y_avgs', title='Average Y movement per image', xlabel='Tilt angle (degrees)', ylabel="Average translation(" + u"\u212B" + ")", figsize=(10,6))
-	plotavgdata(options, ravgs, angles, rerrors, tag='r_avgs', title='Average |r| movement per image', xlabel='Tilt angle (degrees)', ylabel="Average translation(" + u"\u212B" + ")", figsize=(10,6))
+	fig,ax=resetplot()
+
+	plotavgdata(options, xavgs, angles, xerrors, tag='x_avgs', title='Average X motion per image', xlabel='Tilt angle (degrees)', ylabel="Average translation(" + u"\u212B" + ")", figsize=(10,6))
+	plotavgdata(options, yavgs, angles, yerrors, tag='y_avgs', title='Average Y motion per image', xlabel='Tilt angle (degrees)', ylabel="Average translation(" + u"\u212B" + ")", figsize=(10,6))
+	plotavgdata(options, ravgs, angles, rerrors, tag='r_avgs', title='Average |r| motion per image', xlabel='Tilt angle (degrees)', ylabel="Average translation(" + u"\u212B" + ")", figsize=(10,6))
 	
+	plotavgdata(options, xtotals, angles, xerrors, tag='x_total', title='Total X motion per image', xlabel='Tilt angle (degrees)', ylabel="Average translation(" + u"\u212B" + ")", figsize=(10,6))
+	plotavgdata(options, ytotals, angles, yerrors, tag='y_total', title='Total Y motion per image', xlabel='Tilt angle (degrees)', ylabel="Average translation(" + u"\u212B" + ")", figsize=(10,6))
+	plotavgdata(options, rtotals, angles, rerrors, tag='r_total', title='Total |r| motion per image', xlabel='Tilt angle (degrees)', ylabel="Average translation(" + u"\u212B" + ")", figsize=(10,6))
+
 	E2end(logger)
 	
 	return
+
+
+def getangles( options, raworder=False ):
+	
+	angles = []
+	if options.tltfile:
+		f = open( options.tltfile, 'r' )
+		lines = f.readlines()
+		f.close()
+		#print "lines in tlt file are", lines
+		for line in lines:
+			line = line.replace('\t','').replace('\n','')
+		
+			if line:
+				angle = float(line)
+				angles.append( angle )
+				print "appending angle", angle
+
+		#angles = [a for a in xrange( options.lowesttilt, options.highesttilt, options.tiltstep )]
+	else:	
+		
+		print "There was no .tlt file so I'll generate the angles using lowesttilt=%f, highesttilt=%f, tiltstep=%f" % (options.lowesttilt, options.highesttilt, options.tiltstep)
+		generate = floatrange( options.lowesttilt, options.highesttilt, options.tiltstep )
+		angles=[ float(x) for x in generate ]
+	
+	print "BEFORE sorting, angles are", angles
+	
+	print "negativetiltseries is", options.negativetiltseries
+	print "not negativetiltseries", not options.negativetiltseries
+	print "raworder", raworder
+	print "not raworder", not raworder
+	print "not options.negativetiltseries and not raworder", not options.negativetiltseries and not raworder
+
+
+	if options.negativetiltseries:
+		angles.sort()
+		print "\n(e2spt_tiltstacker.py)(getangles) AFTER sorting, angles are", angles
+	
+	elif not raworder:
+		angles.sort()
+		angles.reverse()
+		print "\n(e2spt_tiltstacker.py)(getangles) AFTER REVERSING (ordered from largest to smallest), angles are", angles
+	
+	return angles
 
 
 def resetplot(figsize=None):
@@ -453,12 +554,12 @@ def plotfig(options, fig, ax, values, cpick, kplot, colorbar, colorstart, colors
 	if colorstart and colorstep:
 		colorthis = cpick.to_rgba( colorstart + kplot*colorstep)
 	
-	ax.plot( xaxis, values, linewidth=2,marker='o',markersize=5,alpha=0.75,color=colorthis,label='Tilt angle')
-
 	if errors:
 		lines = {'linestyle': 'None'}
 		plt.rc('lines', **lines)
-		plt.errorbar(xaxis,values,errors,markersize=8,linewidth=1,fmt='',marker='o',color='k',markerfacecolor=None,markeredgecolor='k',capsize=5, capthick=1)
+		plt.errorbar(xaxis, values, errors, markersize=8, linewidth=2, fmt='', marker='o', color='k', markerfacecolor=None, markeredgecolor='k', capsize=5, capthick=1)
+
+	ax.plot( xaxis, values, linewidth=2, marker='o', markersize=5, alpha=0.75, color=colorthis, label='Tilt angle')
 
 	ax.set_title(title, fontsize=16, fontweight='bold')
 	ax.set_ylabel(ylabel, fontsize=16, fontweight='bold')
