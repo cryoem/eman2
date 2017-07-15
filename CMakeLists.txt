@@ -378,10 +378,16 @@ IF(ENABLE_OPTPP)
 ENDIF()
 
 if(WIN32)
-	add_definitions(-DGSL_DLL -DFTGL_LIBRARY_STATIC)
+	add_definitions(-DFTGL_LIBRARY_STATIC)
 endif()
 
 find_package(GSL REQUIRED)
+if(WIN32)
+	set_target_properties(GSL::gsl
+						  PROPERTIES
+						  INTERFACE_COMPILE_DEFINITIONS GSL_DLL
+						  )
+endif()
 
 IF(ENABLE_OPENGL)
 	find_package(OpenGL REQUIRED)
