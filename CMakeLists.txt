@@ -298,10 +298,6 @@ IF(ENABLE_OPTPP)
     INCLUDE_DIRECTORIES(${OPTPP_INCLUDE_PATH} ${NEWMAT_INCLUDE_PATH})
 ENDIF()
 
-if(WIN32)
-	add_definitions(-DFTGL_LIBRARY_STATIC)
-endif()
-
 find_package(GSL REQUIRED)
 if(WIN32)
 	set_target_properties(GSL::gsl
