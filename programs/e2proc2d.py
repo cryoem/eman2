@@ -189,6 +189,7 @@ def main():
 	parser.add_argument("--last", metavar="n", type=int, default=-1, help="the last image in the input to process")
 	parser.add_argument("--list", metavar="listfile", type=str, help="Works only on the image numbers in LIST file")
 	parser.add_argument("--select", metavar="selectname", type=str, help="Works only on the images in named selection set from bdb:select")
+	parser.add_argument("--randomn", metavar="n", type=int, default=0, help="Selects a random subset of N particles from the file to operate on.")
 	parser.add_argument("--inplace", action="store_true", help="Output overwrites input, USE SAME FILENAME, DO NOT 'clip' images.")
 	parser.add_argument("--interlv", metavar="interleave-file", type=str, help="Specifies a 2nd input file. Output will be 2 files interleaved.")
 	parser.add_argument("--extractboxes",default=False, action="store_true",help="Extracts box locations from the image header to produce a set of .box files for only the particles in the .lst files")
@@ -499,8 +500,18 @@ def main():
 				db = db_open_dict("bdb:.#select",ro=True)
 
 				for i in db[options.select]: imagelist[i] = 1
-		else:
-			imagelist = [1]*nimg
+		elif options.randomn>0:
+			imagelist = [0]*nimg
+			if options.randomn>=nimg :
+				imagelist = [1]*nimg
+			else:
+				nk=0
+				while nk<options.randomn:
+					i=random.randrange(nimg)
+					if imagelist[i] : continue
+					imagelist[i]=1
+					nk+=1
+		else: imagelist = [1]*nimg
 
 		if options.exclude :
 			for i in read_number_file(options.exclude) : imagelist[i] = 0

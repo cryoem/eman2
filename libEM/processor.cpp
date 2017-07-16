@@ -10871,7 +10871,7 @@ void TransformProcessor::assert_valid_aspect(const EMData* const image) const {
 	int ndim = image->get_ndim();
 	if (ndim != 2 && ndim != 3) throw ImageDimensionException("Transforming an EMData only works if it's 2D or 3D");
 
-	if (! params.has_key("transform") ) throw InvalidParameterException("You must specify a Transform in order to perform this operation");
+//	if (! params.has_key("transform") ) throw InvalidParameterException("You must specify a Transform in order to perform this operation");
 }
 
 //void TransformProcessor::update_emdata_attributes(EMData* const p, const Dict& attr_dict, const float& scale) const {
@@ -10911,7 +10911,20 @@ EMData* TransformProcessor::process(const EMData* const image) {
 
 	assert_valid_aspect(image);
 
-	Transform* t = params["transform"];
+	Transform t;
+	if (params.has_key("transform")) t=*(Transform *)params["transform"];
+	else {
+		if (params.has_key("alpha")) params["phi"]=params["alpha"];
+		float az=params.set_default("az",0.0f);
+		float alt=params.set_default("alt",0.0f);
+		float phi=params.set_default("phi",0.0f);
+		float tx=params.set_default("tx",0.0f);
+		float ty=params.set_default("ty",0.0f);
+		float tz=params.set_default("tz",0.0f);
+		
+		t.set_rotation(Dict("type","eman","az",az,"alt",alt,"phi",phi));
+		t.set_trans(tx,ty,tz);
+	}
 
 	EMData* p  = 0;
 #ifdef EMAN2_USING_CUDA
@@ -10919,7 +10932,7 @@ EMData* TransformProcessor::process(const EMData* const image) {
 			//cout << "using CUDA xform" << endl;
 		p = new EMData(0,0,image->get_xsize(),image->get_ysize(),image->get_zsize(),image->get_attr_dict());
 		float * m = new float[12];
-		Transform inv = t->inverse();
+		Transform inv = t.inverse();
 		inv.copy_matrix_into_array(m);
 		image->bindcudaarrayA(true);
 		p->runcuda(emdata_transform_cuda(m,image->get_xsize(),image->get_ysize(),image->get_zsize()));
@@ -10930,19 +10943,18 @@ EMData* TransformProcessor::process(const EMData* const image) {
 #endif
 
 	if ( p == 0 ) {
-		float* des_data = transform(image,*t);
+		float* des_data = transform(image,t);
 		p = new EMData(des_data,image->get_xsize(),image->get_ysize(),image->get_zsize(),image->get_attr_dict());
 	}
 
 	//	all_translation += transform.get_trans();
 
-	float scale = t->get_scale();
+	float scale = t.get_scale();
 	if (scale != 1.0) {
 		p->scale_pixel(1.0f/scale);
 //		update_emdata_attributes(p,image->get_attr_dict(),scale);
 	}
 
-	if(t) {delete t; t=0;}
 	EXITFUNC;
 	return p;
 }
@@ -10952,7 +10964,20 @@ void TransformProcessor::process_inplace(EMData* image) {
 
 	assert_valid_aspect(image);
 
-	Transform* t = params["transform"];
+	Transform t;
+	if (params.has_key("transform")) t=*(Transform *)params["transform"];
+	else {
+		if (params.has_key("alpha")) params["phi"]=params["alpha"];
+		float az=params.set_default("az",0.0f);
+		float alt=params.set_default("alt",0.0f);
+		float phi=params.set_default("phi",0.0f);
+		float tx=params.set_default("tx",0.0f);
+		float ty=params.set_default("ty",0.0f);
+		float tz=params.set_default("tz",0.0f);
+		
+		t.set_rotation(Dict("type","eman","az",az,"alt",alt,"phi",phi));
+		t.set_trans(tx,ty,tz);
+	}
 
 	//	all_translation += transform.get_trans();
 	bool use_cpu = true;
@@ -10962,7 +10987,7 @@ void TransformProcessor::process_inplace(EMData* image) {
 		//cout << "CUDA xform inplace" << endl;
 		image->bindcudaarrayA(false);
 		float * m = new float[12];
-		Transform inv = t->inverse();
+		Transform inv = t.inverse();
 		inv.copy_matrix_into_array(m);
 		image->runcuda(emdata_transform_cuda(m,image->get_xsize(),image->get_ysize(),image->get_zsize()));
 		image->unbindcudaarryA();
@@ -10972,17 +10997,15 @@ void TransformProcessor::process_inplace(EMData* image) {
 	}
 #endif
 	if ( use_cpu ) {
-		float* des_data = transform(image,*t);
+		float* des_data = transform(image,t);
 		image->set_data(des_data,image->get_xsize(),image->get_ysize(),image->get_zsize());
 		image->update();
 	}
-	float scale = t->get_scale();
+	float scale = t.get_scale();
 	if (scale != 1.0f) {
 		image->scale_pixel(1.0f/scale);
 //		update_emdata_attributes(image,image->get_attr_dict(),scale);
 	}
-
-	if(t) {delete t; t=0;}
 
 	EXITFUNC;
 }
@@ -12546,17 +12569,40 @@ void BinarySkeletonizerProcessor::process_inplace(EMData * image)
 EMData* BispecSliceProcessor::process(const EMData * const image) {
 	if (image->get_zsize()!=1) throw ImageDimensionException("Only 2-D images supported");
 
-	const EMData *cimage = (EMData* const)image;
-	if (!image->is_complex()) cimage = image->do_fft();
-	int nkx=cimage->get_xsize()/4;
-	int nky=cimage->get_ysize()/4+1;
+	EMData *cimage = NULL;
+	if (image->is_complex()) cimage = image->copy();
+	else cimage = image->do_fft();
+	int nkx=cimage->get_xsize()/4+1;
+	int nky=cimage->get_ysize()/4;
 	EMData* ret=new EMData(nkx*2,nky*2,1);
 	ret->set_complex(1);
+	ret->to_zero();
 	
-	// angular integrate mode
+	// angular integrate mode, produces the simplest rotational invariant, ignoring rotational correlations
 	if (params.has_key("k")) {
-		float k=(float)params["k"];
-//		printf("K %f\n",k);
+		int k=(int)params.set_default("k",1);
+		int jkx=k;
+		int jky=0;
+		
+		cimage->process_inplace("xform.phaseorigin.tocorner");
+//		for (float ang=0; ang<360.0; ang+=360.0/(nky*M_PI) ) {
+		for (float ang=0; ang<360.0; ang+=360.0/(nky) ) {
+			EMData *cimage2=cimage->process("xform",Dict("alpha",ang));
+			
+			for (int jy=-nky/2; jy<nky/2; jy++) {
+				for (int jx=0; jx<nky+1; jx++) {
+					int kx=jkx-jx;
+					int ky=jky-jy;
+					
+					if (abs(kx)>nkx || abs(ky)>nky) continue;
+					complex<double> v1 = (complex<double>)cimage->get_complex_at(jx,jy);
+					complex<double> v2 = (complex<double>)cimage->get_complex_at(kx,ky);
+					complex<double> v3 = (complex<double>)cimage->get_complex_at(jkx,jky);
+					ret->add_complex_at(jx,jy,0,(complex<float>)(v1*v2*std::conj(v3)));
+				}
+			}
+			delete cimage2;
+		}
 	}
 	else if (params.has_key("jkx") && params.has_key("jky")) {
 		int jkx=(int)params.set_default("jkx",0);
@@ -12595,7 +12641,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 		}
 	}
 	
-	if (image!=cimage) delete cimage;
+	delete cimage;
 	
 	return(ret);
 }
