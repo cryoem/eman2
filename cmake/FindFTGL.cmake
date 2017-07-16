@@ -1,9 +1,5 @@
 CHECK_REQUIRED_LIB(FTGL ftgl FTGL/FTGL.h ftgl FTGL/ftgl.h)
 
-if(WIN32)
-	add_definitions(-DFTGL_LIBRARY_STATIC)
-endif()
-
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(FTGL
 								  REQUIRED_VARS
@@ -20,4 +16,11 @@ if(FTGL_FOUND AND NOT TARGET FTGL)
 						  INTERFACE_LINK_LIBRARIES      "${FTGL_LIBRARY}"
 						  INTERFACE_COMPILE_DEFINITIONS  USE_FTGL
 						  )
+	if(WIN32)
+		if(ENABLE_STATIC_FTGL)
+			target_compile_definitions(FTGL INTERFACE FTGL_LIBRARY_STATIC)
+		else()
+			target_compile_definitions(FTGL INTERFACE FTGL_LIBRARY)
+		endif()
+	endif()
 endif()
