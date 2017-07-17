@@ -1933,13 +1933,13 @@ if the lst file does not exist."""
 
 		self.path=path
 
-		try: self.ptr=file(path,"r+")		# file exists
+		try: self.ptr=file(path,"rb+")		# file exists
 		except:
 			if ifexists: raise Exception,"Error: lst file {} does not exist".format(path)
 
 			try: os.makedirs(os.path.dirname(path))
 			except: pass
-			self.ptr=file(path,"w+")	# file doesn't exist
+			self.ptr=file(path,"wb+")	# file doesn't exist
 			self.ptr.write("#LSX\n# This file is in fast LST format. All lines after the next line have exactly the number of characters shown on the next line. This MUST be preserved if editing.\n# 20\n")
 
 		self.ptr.seek(0)
@@ -1948,7 +1948,7 @@ if the lst file does not exist."""
 			if l=="#LST\n" :
 				#### This is very similar to rewrite(), but is used to convert LST files to LSX files
 				self.seekbase=self.ptr.tell()
-				tmpfile=file(self.path+".tmp","w")
+				tmpfile=file(self.path+".tmp","wb")
 				tmpfile.write("#LSX\n# This file is in fast LST format. All lines after the next line have exactly the number of characters shown on the next line. This MUST be preserved if editing.\n")
 
 				# we read the entire file, checking the length of each line
@@ -1978,7 +1978,7 @@ if the lst file does not exist."""
 				# rename the temporary file over the original
 				os.unlink(self.path)
 				os.rename(self.path+".tmp",self.path)
-				self.ptr=file(self.path,"r+")
+				self.ptr=file(self.path,"rb+")
 				self.ptr.readline()
 
 			else: raise Exception,"ERROR: The file {} is not in #LSX format".format(self.path)

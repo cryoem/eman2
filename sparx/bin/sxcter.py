@@ -34,14 +34,17 @@ import os
 import sys
 from optparse import OptionParser
 
-import global_def
-from global_def import *
-from inspect import currentframe, getframeinfo
-from utilities import if_error_then_all_processes_exit_program
+import   global_def
+from     global_def import *
+from     inspect    import currentframe, getframeinfo
+from     utilities  import if_error_then_all_processes_exit_program
+
+global_def.BATCH = True
+
 
 def main():
 	program_name = os.path.basename(sys.argv[0])
-	usage = program_name + """  input_image_path  output_directory  --selection_list=selection_list  --wn=CTF_WINDOW_SIZE --apix=PIXEL_SIZE  --Cs=CS  --voltage=VOLTAGE  --ac=AMP_CONTRAST  --f_start=FREA_START  --f_stop=FREQ_STOP  --vpp  --kboot=KBOOT  --overlap_x=OVERLAP_X  --overlap_y=OVERLAP_Y  --edge_x=EDGE_X  --edge_y=EDGE_Y  --set_ctf_header  --check_consistency  --stack_mode  --debug_mode
+	usage = program_name + """  input_image_path  output_directory  --selection_list=selection_list  --wn=CTF_WINDOW_SIZE --apix=PIXEL_SIZE  --Cs=CS  --voltage=VOLTAGE  --ac=AMP_CONTRAST  --f_start=FREA_START  --f_stop=FREQ_STOP  --vpp  --kboot=KBOOT  --overlap_x=OVERLAP_X  --overlap_y=OVERLAP_Y  --edge_x=EDGE_X  --edge_y=EDGE_Y  --check_consistency  --stack_mode  --debug_mode
 
 Automated estimation of CTF parameters with error assessment.
 
@@ -97,12 +100,17 @@ Stack Mode - Process a particle stack (Not supported by SPHIRE GUI))::
 	parser.add_option("--overlap_y",		type="int",           default=50,     help="Y overlap [%]: Overlap between the windows in the y direction. This will be ignored in Stack Mode. (default 50)")
 	parser.add_option("--edge_x",			type="int",           default=0,      help="Edge x [pixels]: Defines the edge of the tiling area in the x direction. Normally it does not need to be modified. This will be ignored in Stack Mode. (default 0)")
 	parser.add_option("--edge_y",			type="int",           default=0,      help="Edge y [pixels]: Defines the edge of the tiling area in the y direction. Normally it does not need to be modified. This will be ignored in Stack Mode. (default 0)")
-	parser.add_option("--set_ctf_header",	action="store_true",  default=False,  help="Export CTF parameters to header: Exports the estimated CTF parameters to the image header. (default False)")
 	parser.add_option("--check_consistency",action="store_true",  default=False,  help="Check consistency of inputs: Create a text file containing the list of inconsistent Micrograph ID entries (i.e. inconsist_mic_list_file.txt). (default False)")
 	parser.add_option("--stack_mode",		action="store_true",  default=False,  help="Use stack mode: Use a stack as the input. Please set the file path of a stack as the first argument and output directory for the second argument. This is advanced option. Not supported by sxgui. (default False)")
 	parser.add_option("--debug_mode",		action="store_true",  default=False,  help="Enable debug mode: Print out debug information. (default False)")
-	parser.add_option("--vpp",				action="store_true",  default=False,  help="Volta Phas Plate - fit smplitude contrast. (default False)")
-	parser.add_option("--pap",				action="store_true",  default=False,  help="fit smplitude contrast. (default False)")
+	parser.add_option("--vpp",				action="store_true",  default=False,  help="Volta Phase Plate - fit smplitude contrast. (default False)")
+	parser.add_option("--defocus_min",		type="float",         default=0.3,    help="Minimum defocus search [um] (default 0.3)")
+	parser.add_option("--defocus_max",		type="float",         default=9.0,    help="Maximum defocus search [um] (default 9.0)")
+	parser.add_option("--defocus_step",		type="float",         default=0.1,    help="Step defocus search [um] (default 0.1)")
+	parser.add_option("--phase_min",		type="float",         default=5.0,    help="Minimum phase search [degrees] (default 5.0)")
+	parser.add_option("--phase_max",		type="float",         default=175.0,  help="Maximum phase search [degrees] (default 175.0)")
+	parser.add_option("--phase_step",		type="float",         default=5.0,    help="Step phase search [degrees] (default 5.0)")
+	parser.add_option("--pap",				action="store_true",  default=False,  help="Use power spectrum for fitting. (default False)")
 
 	(options, args) = parser.parse_args(sys.argv[1:])
 
@@ -122,6 +130,8 @@ Stack Mode - Process a particle stack (Not supported by SPHIRE GUI))::
 		sys.argv = mpi_init(len(sys.argv), sys.argv)
 		my_mpi_proc_id = mpi_comm_rank(MPI_COMM_WORLD)
 		n_mpi_procs = mpi_comm_size(MPI_COMM_WORLD)
+		global_def.MPI = True
+
 	else:
 		my_mpi_proc_id = 0
 		n_mpi_procs = 1
@@ -166,10 +176,22 @@ Stack Mode - Process a particle stack (Not supported by SPHIRE GUI))::
 
 		break
 	if_error_then_all_processes_exit_program(error_status)
-	assert (input_image_path != None)
-	assert (output_directory != None)
+	#  Toshio, please see how to make it informative
+	assert input_image_path != None, " directory  missing  input_image_path"
+	assert output_directory != None, " directory  missing  output_directory"
 
-	if my_mpi_proc_id == main_mpi_proc:
+	if options.vpp == False :
+		wrong_params = False
+		import string as str
+		vpp_options = ["--defocus_min","--defocus_max","--defocus_step","--phase_min","--phase_max","--phase_step"]
+		for command_token in sys.argv:
+			for vppo in vpp_options:
+				if str.find(command_token, vppo) > -1 : wrong_params = True
+				if wrong_params: break
+			if wrong_params: break
+		if wrong_params:  ERROR("Some options are valid only for Volta Phase Plate command  %s"%command_token,"sxcter",1,my_mpi_proc_id)
+
+	if my_mpi_proc_id == main_mpi_proc or True:
 		command_line = ""
 		for command_token in sys.argv:
 			command_line += command_token + "  "
@@ -178,14 +200,15 @@ Stack Mode - Process a particle stack (Not supported by SPHIRE GUI))::
 		print(command_line)
 
 	if options.vpp:
+		vpp_options = [options.defocus_min,  options.defocus_max,  options.defocus_step,  options.phase_min,  options.phase_max,  options.phase_step]
 		from morphology import cter_vpp
-		result = cter_vpp(input_image_path, output_directory, options.selection_list, options.wn, options.apix, options.Cs, options.voltage, options.f_start, options.f_stop, options.kboot, options.overlap_x, options.overlap_y, options.edge_x, options.edge_y, options.set_ctf_header, options.check_consistency, options.stack_mode, options.debug_mode, program_name, RUNNING_UNDER_MPI, main_mpi_proc, my_mpi_proc_id, n_mpi_procs)
+		result = cter_vpp(input_image_path, output_directory, options.selection_list, options.wn, options.apix, options.Cs, options.voltage, options.f_start, options.f_stop, options.kboot, options.overlap_x, options.overlap_y, options.edge_x, options.edge_y, options.check_consistency, options.stack_mode, options.debug_mode, program_name, vpp_options, RUNNING_UNDER_MPI, main_mpi_proc, my_mpi_proc_id, n_mpi_procs)
 	elif options.pap:
 		from morphology import cter_pap
-		result = cter_pap(input_image_path, output_directory, options.selection_list, options.wn, options.apix, options.Cs, options.voltage, options.ac, options.f_start, options.f_stop, options.kboot, options.overlap_x, options.overlap_y, options.edge_x, options.edge_y, options.set_ctf_header, options.check_consistency, options.stack_mode, options.debug_mode, program_name, RUNNING_UNDER_MPI, main_mpi_proc, my_mpi_proc_id, n_mpi_procs)
+		result = cter_pap(input_image_path, output_directory, options.selection_list, options.wn, options.apix, options.Cs, options.voltage, options.ac, options.f_start, options.f_stop, options.kboot, options.overlap_x, options.overlap_y, options.edge_x, options.edge_y, options.check_consistency, options.stack_mode, options.debug_mode, program_name, RUNNING_UNDER_MPI, main_mpi_proc, my_mpi_proc_id, n_mpi_procs)
 	else:
 		from morphology import cter_mrk
-		result = cter_mrk(input_image_path, output_directory, options.selection_list, options.wn, options.apix, options.Cs, options.voltage, options.ac, options.f_start, options.f_stop, options.kboot, options.overlap_x, options.overlap_y, options.edge_x, options.edge_y, options.set_ctf_header, options.check_consistency, options.stack_mode, options.debug_mode, program_name, RUNNING_UNDER_MPI, main_mpi_proc, my_mpi_proc_id, n_mpi_procs)
+		result = cter_mrk(input_image_path, output_directory, options.selection_list, options.wn, options.apix, options.Cs, options.voltage, options.ac, options.f_start, options.f_stop, options.kboot, options.overlap_x, options.overlap_y, options.edge_x, options.edge_y, options.check_consistency, options.stack_mode, options.debug_mode, program_name, RUNNING_UNDER_MPI, main_mpi_proc, my_mpi_proc_id, n_mpi_procs)
 
 	if RUNNING_UNDER_MPI:
 		mpi_barrier(MPI_COMM_WORLD)

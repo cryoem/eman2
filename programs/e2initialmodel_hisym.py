@@ -46,7 +46,13 @@ def main():
 	This program will take a set of reference-free class-averages (or other projections) and generate a set of possible
 	3-D initial models. Unlike e2initialmodel.py this program relies on particles having high symmetry, and uses this
 	to generate a more direct solution. It is typically used with icosahedral symmetry, but could also work with other
-	high symmetries."""
+	high symmetries.
+
+	WARNING: this program should not be used with high resolution data without downsampling. If you do it will take an 
+	incredibly long time, and not really produce any better results. In most cases, class-averages generated 
+	from _lp20 or _lp14 particles would be appropriate. Also, normally you would only use 3-10 class-averages 
+	with this program.
+"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	parser.add_header(name="initialmodelheader", help='Options below this label are specific to e2initialmodel', title="### e2initialmodel options ###", row=1, col=0, rowspan=1, colspan=3)

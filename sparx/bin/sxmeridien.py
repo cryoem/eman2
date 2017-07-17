@@ -4637,8 +4637,9 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 						#xod1.fill(1.0)
 						xod2 = np.ndarray((keepfirst),dtype='int',order="C")
 						for iq in xrange(keepfirst):
+							ioffset = 3*iq
 							#          ishift         iang                      ipsi
-							xod2[iq] = lxod1[3*iq] + lxod1[3*iq+1]*100000000 + lxod1[3*iq+2]*1000
+							xod2[iq] = lxod1[ioffset] + lxod1[ioffset+1]*100000000 + lxod1[ioffset+2]*1000
 
 						##'''
 						#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
@@ -4731,8 +4732,9 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 						#xod1.fill(1.0)
 						xod2 = np.ndarray((Tracker["keepfirst"]),dtype='int',order="C")
 						for iq in xrange(Tracker["keepfirst"]):
+							ioffset = 3*iq
 							#          ishift         iang                      ipsi
-							xod2[iq] = lxod1[3*iq] + lxod1[3*iq+1]*100000000 + lxod1[3*iq+2]*1000
+							xod2[iq] = lxod1[ioffset] + lxod1[ioffset+1]*100000000 + lxod1[ioffset+2]*1000
 
 						##'''
 
@@ -6039,8 +6041,9 @@ def ali3D_local_primary_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 						#xod1.fill(1.0)
 						xod2 = np.ndarray((keepfirst),dtype='int',order="C")
 						for iq in xrange(keepfirst):
+							ioffset = 3*iq
 							#          ishift         iang                      ipsi
-							xod2[iq] = lxod1[3*iq] + lxod1[3*iq+1]*100000000 + lxod1[3*iq+2]*1000
+							xod2[iq] = lxod1[ioffset] + lxod1[ioffset+1]*100000000 + lxod1[ioffset+2]*1000
 
 						##'''
 						#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
@@ -6133,8 +6136,9 @@ def ali3D_local_primary_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 						#xod1.fill(1.0)
 						xod2 = np.ndarray((Tracker["keepfirst"]),dtype='int',order="C")
 						for iq in xrange(Tracker["keepfirst"]):
+							ioffset = 3*iq
 							#          ishift         iang                      ipsi
-							xod2[iq] = lxod1[3*iq] + lxod1[3*iq+1]*100000000 + lxod1[3*iq+2]*1000
+							xod2[iq] = lxod1[ioffset] + lxod1[ioffset+1]*100000000 + lxod1[ioffset+2]*1000
 
 						##'''
 
@@ -7016,8 +7020,9 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 						#xod1.fill(1.0)
 						xod2 = np.ndarray((keepfirst),dtype='int',order="C")
 						for iq in xrange(keepfirst):
+							ioffset = 3*iq
 							#          ishift         iang                      ipsi
-							xod2[iq] = lxod1[3*iq] + lxod1[3*iq+1]*100000000 + lxod1[3*iq+2]*1000
+							xod2[iq] = lxod1[ioffset] + lxod1[ioffset+1]*100000000 + lxod1[ioffset+2]*1000
 
 						##'''
 						#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
@@ -7112,8 +7117,9 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 						#xod1.fill(1.0)
 						xod2 = np.ndarray((Tracker["keepfirst"]),dtype='int',order="C")
 						for iq in xrange(Tracker["keepfirst"]):
+							ioffset = 3*iq
 							#          ishift         iang                      ipsi
-							xod2[iq] = lxod1[3*iq] + lxod1[3*iq+1]*100000000 + lxod1[3*iq+2]*1000
+							xod2[iq] = lxod1[ioffset] + lxod1[ioffset+1]*100000000 + lxod1[ioffset+2]*1000
 
 						##'''
 

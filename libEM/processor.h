@@ -706,7 +706,9 @@ The basic design of EMAN Processors: <br>\
 				TypeDict d;
 				d.put("kx", EMObject::INT, "Kx location of the slice in Fourier pixels");
 				d.put("ky", EMObject::INT, "Ky location of the slice in Fourier pixels");
-				d.put("k", EMObject::FLOAT, "Radius of slice in Fourier pixels, integrates over angle. alternative to kx,ky.");
+				d.put("jkx", EMObject::INT, "Jx+Kx location of the slice in Fourier pixels");
+				d.put("jky", EMObject::INT, "Jy+Ky location of the slice in Fourier pixels");
+				d.put("k", EMObject::FLOAT, "Radius of slice in Fourier pixels, integrates over angle.");
 				return d;
 			}
 
@@ -2530,13 +2532,20 @@ The basic design of EMAN Processors: <br>\
 			{
 				TypeDict d;
 				d.put("transform", EMObject::TRANSFORM, "The Transform object that will be applied to the image" );
+				d.put("alpha", EMObject::FLOAT, "2-D alpha angle" );
+				d.put("az", EMObject::FLOAT, "3-D Azimuth" );
+				d.put("alt", EMObject::FLOAT, "3-D Altitude" );
+				d.put("phi", EMObject::FLOAT, "3-D Phi" );
+				d.put("tx", EMObject::FLOAT, "x translation" );
+				d.put("ty", EMObject::FLOAT, "y translation" );
+				d.put("tz", EMObject::FLOAT, "y translation" );
 				d.put("zerocorners",EMObject::INT,"If set, corners (anything beyond radius/2-1) may be zeroed out in real or Fourier space. This will produce a considerable speedup in Fourier rotations. ");
 				return d;
 			}
 
 			virtual string get_desc() const
 			{
-				return "The image is transformed using Transform parameter.";
+				return "The image is transformed using transform parameter, or alternatively specific numbers alpha,tx,ty or az,alt,phi,tx,ty,tz (shortcut for convenience)";
 			}
 
 			static const string NAME;

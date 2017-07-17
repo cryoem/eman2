@@ -14,7 +14,7 @@ conda config --set show_channel_urls true
 
 export CPU_COUNT=2
 
-conda install conda-build -c defaults --yes --quiet
+conda install conda-build=2 -c defaults --yes --quiet
 
 if [ "$(uname -s)" != "Darwin" ];then
     conda build recipes/eman -c cryoem -c defaults -c conda-forge --numpy 1.8
