@@ -2,8 +2,6 @@
 
 # Builds numpy version(s), if not specified build all versions, 1.5 - 1.12
 
-source activate root
-
 # unset args before using, it is set in activate script above
 unset args
 for elem in ${@};do
