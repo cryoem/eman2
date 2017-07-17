@@ -7958,30 +7958,31 @@ void EMData::center_origin_fft()
 #define  fout(i,j,k)  fout[(i-1) + ((j-1) + (k-1)*nyn)*(size_t)lsdn]
 EMData *EMData::FourInterpol(int nxn, int nyn, int nzn, bool RetReal, bool normalize) {
 
-	int lsd, lsdn, inx, iny, inz;
+	int lsd, lsdn, inx, iny, inz, nxo;
 	int i, j, k;
 	EMData *temp_ft = new EMData();
 	if (is_complex()) {
 		temp_ft = this->copy();
 		lsd = nx;
-		nx = lsd - 2 + this->is_fftodd();
+		nxo = lsd - 2 + this->is_fftodd();
 	} else {
 		//  do out of place ft
 		temp_ft = do_fft();
 		lsd = nx + 2 - nx%2;
+		nxo = nx;;
 	}
 	lsdn = nxn + 2 - nxn%2;
-	if(nxn<nx || nyn<ny || nzn<nz)	throw ImageDimensionException("Cannot reduce the image size");
+	if(nxn<nxo || nyn<ny || nzn<nz)	throw ImageDimensionException("Cannot reduce the image size");
 	EMData *ret = this->copy_head();
 	ret->set_size(lsdn, nyn, nzn);
 	ret->to_zero();
 	float *fout = ret->get_data();
 	float *fint = temp_ft->get_data();
 	if( normalize ) {
-		float  anorm = (float) nxn* (float) nyn* (float) nzn/(float) nx/ (float) ny/ (float) nz;
+		float  anorm = (float) nxn* (float) nyn* (float) nzn/(float) nxo/ (float) ny/ (float) nz;
 		for (i = 0; i < lsd*ny*nz; i++)  fint[i] *= anorm;
 	}
-	inx = nxn-nx; iny = nyn - ny; inz = nzn - nz;
+	inx = nxn-nxo; iny = nyn - ny; inz = nzn - nz;
 	for (k=1; k<=nz/2+1; k++) for (j=1; j<=ny/2+1; j++) for (i=1; i<=lsd; i++) fout(i,j,k) = fint(i,j,k);
 	if(nyn>1) {
 	//cout << "  " <<nxn<<"  " <<nyn<<" A " <<nzn<<endl;
@@ -8007,11 +8008,11 @@ EMData *EMData::FourInterpol(int nxn, int nyn, int nzn, bool RetReal, bool norma
 //       WEIGHTING FACTOR USED FOR EVEN NSAM. REQUIRED SINCE ADDING ZERO FOR
 //       INTERPOLATION WILL INTRODUCE A COMPLEX CONJUGATE FOR NSAM/2'TH
 //       ELEMENT.
-	if(nx%2 == 0 && inx !=0) {
+	if(nxo%2 == 0 && inx !=0) {
 		for (k=1; k<=nzn; k++) {
 			for (j=1; j<=nyn; j++) {
-				fout(nx+1,j,k) *= sq2;
-				fout(nx+2,j,k) *= sq2;
+				fout(nxo+1,j,k) *= sq2;
+				fout(nxo+2,j,k) *= sq2;
 			}
 		}
 		if(nyn>1) {
