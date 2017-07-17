@@ -8500,7 +8500,7 @@ def main():
 				if not os.path.exists(options.ctref_oldrefdir): ERROR("specified old refinement directory does not exists", "meridien", 1, Blockdata["myid"])
 			masterdir =""
 	if options.ctref: update_options  = True
-	if os.path.exists(masterdir): update_options = True
+	if (os.path.exists(masterdir) and os.path.exists(os.path.join(masterdir, "main000"))): update_options = True
 	#print(  orgstack,masterdir,volinit )
 	# ------------------------------------------------------------------------------------
 	# Initialize MPI related variables
