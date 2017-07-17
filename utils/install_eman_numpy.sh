@@ -11,8 +11,6 @@ fi
 
 set -xe
 
-source activate root
-
 numpy_verison=${1//.}
 
 conda install eman2=2.2=np${numpy_verison}py27_0 --use-local

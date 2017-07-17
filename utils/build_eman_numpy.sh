@@ -9,8 +9,6 @@ if [ $# -lt 1 ];then
     exit 1
 fi
 
-source activate root
-
 # unset args before using, it is set in activate script above
 unset args
 for elem in ${@};do
