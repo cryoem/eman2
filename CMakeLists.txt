@@ -478,6 +478,8 @@ INCLUDE_DIRECTORIES(${NUMPY_INCLUDE_PATH})
 
 
 # Find Boost
+set(Boost_USE_MULTITHREADED ON)
+set(Boost_NO_BOOST_CMAKE ON)
 find_package(Boost COMPONENTS python REQUIRED)
 
 message("Boost_LIBRARIES:   ${Boost_LIBRARIES}")
