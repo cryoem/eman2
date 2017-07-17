@@ -7666,6 +7666,7 @@ float Util::tf(float dzz, float ak, float voltage, float cs, float wgh, float b_
 		if(wgh <= -1.0f)  phase = M_PI;
 		else phase = M_PI + atan(wgh/sqrt(1.0f-wgh*wgh));
 	} 
+	float phase= wgh/180.*M_PI;
 	float lambda=12.398f/sqrt(voltage*(1022.0f+voltage));
 	float ak2 = ak*ak;
 	float g1 = dzz*1.0e4f*lambda*ak2;
