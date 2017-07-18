@@ -306,7 +306,6 @@ IF(ENABLE_JPEG)
 ENDIF()
 
 include(cmake/HDF5.cmake)
-CHECK_LIB_ONLY(ZLIB z)
 IF(WIN32)
 	CHECK_LIB_ONLY(SZLIB libszip)
 ENDIF()
