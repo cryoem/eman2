@@ -8303,7 +8303,7 @@ def update_tracker(shell_line_command):
 	parser_no_default.add_option("--inires",		       		type="float")
 	parser_no_default.add_option("--delta",						type="float")
 	parser_no_default.add_option("--shake",	           			type="float")
-	parser_no_default.add_option("--initialshifts",	           action="store_true")
+	parser_no_default.add_option("--initialshifts",				action="store_true")
 	#parser_no_default.add_option("--hardmask",			   		action="store_true")
 	parser_no_default.add_option("--lentop",			    	type="int")
 	parser_no_default.add_option("--ref_a",   		       		type="string")
@@ -8325,7 +8325,6 @@ def update_tracker(shell_line_command):
 	parser_no_default.add_option("--ctref_iter",                type="int")
 	parser_no_default.add_option("--ctref_smearing",            type="int")
 	parser_no_default.add_option("--ctref_an",                  type="float")
-	
 
 	(options_no_default_value, args) = parser_no_default.parse_args(shell_line_command)
 
@@ -8740,7 +8739,6 @@ def main():
 	if not options.ctref:
 		# Create first fake directory main000 with parameters filled with zeroes or copied from headers.  Copy initial volume in.
 		doit, keepchecking = checkstep(initdir, keepchecking)
-		print("update 111", update_options)
 		if  doit:
 			if update_options:
 				update_tracker(sys.argv[1:]) # rare case!
