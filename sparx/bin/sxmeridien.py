@@ -8304,7 +8304,7 @@ def update_tracker(shell_line_command):
 	parser_no_default.add_option("--delta",						type="float")
 	parser_no_default.add_option("--shake",	           			type="float")
 	parser_no_default.add_option("--initialshifts",				action="store_true")
-	#parser_no_default.add_option("--hardmask",			   		action="store_true")
+	parser_no_default.add_option("--skip_prealignment",			action="store_true")
 	parser_no_default.add_option("--lentop",			    	type="int")
 	parser_no_default.add_option("--ref_a",   		       		type="string")
 	parser_no_default.add_option("--symmetry",    	       		type="string")# rare to change sym; however, keep it an option.
@@ -8348,7 +8348,9 @@ def update_tracker(shell_line_command):
 	if options_no_default_value.shake != None:
 		Tracker["constants"]["shake"] 						= options_no_default_value.shake
 	if options_no_default_value.initialshifts != None:
-		Tracker["constants"]["initialshifts"] 					= options_no_default_value.initialshifts
+		Tracker["constants"]["initialshifts"] 				= options_no_default_value.initialshifts
+	if options_no_default_value.skip_prealignment != None:
+		Tracker["constants"]["skip_prealignment"] 		    = options_no_default_value.skip_prealignment
 	if options_no_default_value.lentop != None:
 		Tracker["lentop"] 									= options_no_default_value.lentop
 	if options_no_default_value.ref_a != None:
