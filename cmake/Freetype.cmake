@@ -3,8 +3,12 @@ find_package(Freetype REQUIRED)
 message("FREETYPE_LIBRARIES:    ${FREETYPE_LIBRARIES}")
 message("FREETYPE_INCLUDE_DIRS: ${FREETYPE_INCLUDE_DIRS}")
 
-IF (ENABLE_STATIC_FTGL)
-	IF(WIN32)
-		CHECK_REQUIRED_LIB(FREETYPE freetype ft2build.h "" "")
-	ENDIF(WIN32)
-ENDIF (ENABLE_STATIC_FTGL)
+if(Freetype_FOUND AND NOT TARGET Freetype)
+	add_library(Freetype INTERFACE)
+	add_library(Freetype::Freetype ALIAS Freetype)
+	set_target_properties(Freetype
+						  PROPERTIES
+						  INTERFACE_INCLUDE_DIRECTORIES "${FREETYPE_INCLUDE_DIRS}"
+						  INTERFACE_LINK_LIBRARIES      "${FREETYPE_LIBRARIES}"
+						  )
+endif()
