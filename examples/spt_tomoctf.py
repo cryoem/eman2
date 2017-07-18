@@ -2,7 +2,7 @@
 # Muyuan Chen 2017-03
 import numpy as np
 from EMAN2 import *
-from cmy_utils import *
+from EMAN2_utils import *
 from time import time
 import json
 from scipy.signal import argrelextrema
