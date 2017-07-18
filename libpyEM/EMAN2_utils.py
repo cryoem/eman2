@@ -4,6 +4,7 @@
 #### 2017-03
 
 import numpy as np
+import os
 
 amino_dict= {0: 'ALA', 1: 'ARG', 2: 'ASN', 3: 'ASP', 4: 'CYS', 5: 'GLU', 6: 'GLN', 7: 'GLY', 8: 'HIS', 9: 'ILE', 10: 'LEU', 11: 'LYS', 12: 'MET', 13: 'PHE', 14: 'PRO', 15: 'SER', 16: 'THR', 17: 'TRP', 18: 'TYR', 19: 'VAL', 20: 'ASX', 21:'GLX'}
 amino_dict.update(dict((v, k) for k, v in amino_dict.iteritems()))
@@ -192,3 +193,28 @@ def idfft2(v,u,amp,phase,nx=256,ny=256,dtype=np.float32,usedegrees=False):
 	uuxx = np.multiply(uu.ravel()[:,np.newaxis],xx.ravel()[np.newaxis,:])
 	vvyy = np.multiply(vv.ravel()[:,np.newaxis],yy.ravel()[np.newaxis,:])
 	return np.sum(np.real(AA*np.exp(2*np.pi*1j*(uuxx+vvyy)+pp)).reshape(len(u),nx,ny),axis=0)
+
+
+def makepath(options, stem='e2dir'):
+	
+	if not options.path:
+		if options.verbose:
+			print "\n(EMAN2_utils)(makepath), stem is", stem
+	
+	#if options.path and ("/" in options.path or "#" in options.path):
+	#	print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
+	#	sys.exit(1)
+
+	elif options.path: 
+		stem=options.path
+	
+	i=1
+	while os.path.exists("{}_{:02d}".format(stem,i)): i+=1
+	
+	options.path="{}_{:02d}".format(stem,i)
+	try: 
+		os.mkdir(options.path)
+	except: 
+		pass
+	
+	return options

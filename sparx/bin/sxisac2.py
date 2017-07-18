@@ -969,8 +969,10 @@ def do_generation(main_iter, generation_iter, target_nx, target_xr, target_yr, t
 			
 			if( (int(len(bad)*1.2) < 2*options.img_per_grp) or ( (len(good) == 0) and (generation_iter == 1) ) ):
 				#  Insufficient number of images to keep processing bad set
-				# or Program cannot produce any good averages from what is left at the beginning of new main
-				lprocessed = read_text_file(os.path.join(Blockdata["masterdir"], "processed_images.txt" ))
+				#    or 
+				#  Program cannot produce any good averages from what is left at the beginning of new main
+				try:  lprocessed = read_text_file(os.path.join(Blockdata["masterdir"], "processed_images.txt" ))
+				except:  lprocessed = []
 				nprocessed = len(lprocessed)
 				leftout = sorted(list(set(range(Blockdata["total_nima"])) - set(lprocessed)))
 				write_text_file(leftout, os.path.join(Blockdata["masterdir"], "not_processed_images.txt" ))

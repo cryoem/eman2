@@ -1220,7 +1220,7 @@ def welch_pw2_tilt_band(img,theta,num_bnd=-1,overlp_y=50,edge_x=0,edge_y=0,win_s
 
 def tilemic(img, win_size=512, overlp_x=50, overlp_y=50, edge_x=0, edge_y=0):
 	""" 
-		Calculate set of tiled power spectra
+		Calculate set of periodograms for tiles.  Returns a list.
 	"""
 	from fundamentals import window2d, ramp
 	from EMAN2 import periodogram
@@ -1249,8 +1249,8 @@ def tilemic(img, win_size=512, overlp_x=50, overlp_y=50, edge_x=0, edge_y=0):
 
 def window2d(img, isize_x, isize_y, opt="c", ix=0, iy=0):
 	"""
-		Three ways of windowing a portion of image from a large image field:
-		1. "c" Get the central part: "c" ( used for reduce image size )
+		Three ways of windowing out a portion of an image:
+		1. "c" Get the central part: "c" ( default setting )
 		2. "l" Get clip starts from the top left corner
 		3. "a" Get clip with arbitrary point (ix, iy) as the image center point ( nx//2,ny//2 corresponds to image center )
 	"""
