@@ -345,7 +345,6 @@ message("Boost_INCLUDE_DIR: ${Boost_INCLUDE_DIR}")
 INCLUDE_DIRECTORIES(.
 	    ${EMAN_SOURCE_DIR}
 	    ${EMAN_SOURCE_DIR}/libEM
-	    ${DJBFFT_INCLUDE_PATH}
 	    ${ACML_INCLUDE_PATH}
             )
 
