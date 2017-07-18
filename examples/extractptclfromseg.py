@@ -38,7 +38,7 @@ def main():
 		if options.shrink>0:
 			shrink=options.shrink
 		else:
-			shrink=raw["nx"]/tomo["nx"]
+			shrink=tomo["apix_x"]/raw["apix_x"]
 		
 		if options.apix<=0:
 			options.apix=tomo["apix_x"]
@@ -62,6 +62,9 @@ def main():
 					print "Cannot find coordinates from header.. exit."
 					return
 			pks=np.array(pks)*shrink
+			if np.min(pks)<0:
+				pks+=np.array([raw["nx"]/2, raw["ny"]/2, raw["nz"]/2])
+			pks=pks.astype(int)
 			
 		else:
 			jsname=info_name(tomoname)
