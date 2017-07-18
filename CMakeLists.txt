@@ -377,10 +377,16 @@ IF(ENABLE_OPTPP)
     INCLUDE_DIRECTORIES(${OPTPP_INCLUDE_PATH} ${NEWMAT_INCLUDE_PATH})
 ENDIF()
 
-CHECK_REQUIRED_LIB(GSL gsl gsl/gsl_linalg.h)
-CHECK_REQUIRED_LIB(GSL_CBLAS gslcblas gsl/gsl_linalg.h)
 if(WIN32)
-	add_definitions(-DGSL_DLL -DFTGL_LIBRARY_STATIC)
+	add_definitions(-DFTGL_LIBRARY_STATIC)
+endif()
+
+find_package(GSL REQUIRED)
+if(WIN32)
+	set_target_properties(GSL::gsl
+						  PROPERTIES
+						  INTERFACE_COMPILE_DEFINITIONS GSL_DLL
+						  )
 endif()
 
 IF(ENABLE_OPENGL)
@@ -456,8 +462,6 @@ INCLUDE_DIRECTORIES(.
 	    ${EMAN_SOURCE_DIR}
 	    ${EMAN_SOURCE_DIR}/libEM
 	    ${GL_INCLUDE_PATH}
-	    ${GSL_INCLUDE_PATH}
-	    ${GSL_INCLUDE_PATH}/gsl
 	    ${FFTW_INCLUDE_PATH}
 	    ${DJBFFT_INCLUDE_PATH}
 	    ${ACML_INCLUDE_PATH}
