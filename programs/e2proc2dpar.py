@@ -43,6 +43,8 @@ import datetime
 import time
 import traceback
 from collections import Counter
+import Queue
+import threading
 
 # usage: e2proc2d.py [options] input ... input output
 
@@ -111,13 +113,13 @@ def main():
 	
 	jsd=Queue.Queue(0)
 	# these start as arguments, but get replaced with actual threads
-	thrds=[(jsd,args,options,i,i*npt,min(i+npt,N)) for i in xrange(N/npt+1)]
+	thrds=[(jsd,args,options,i,i*npt,min(i*npt+npt,N)) for i in xrange(N/npt+1)]
 	
 	thrtolaunch=0
-	while thrtolaunch<len(thrds) or threading.active.count>1:
+	while thrtolaunch<len(thrds) or threading.active_count()>1:
 		if thrtolaunch<len(thrds):
-			while (threading.active_count()==options.threads) : time.sleep(0.1)
-			if options.verbose>1 : 
+			while (threading.active_count()>=options.threads) : time.sleep(0.1)
+			if options.verbose>0 : 
 				print "\r Starting thread {}/{}      ".format(thrtolaunch,len(thrds)),
 				sys.stdout.flush()
 			thrds[thrtolaunch]=threading.Thread(target=procfn,args=thrds[thrtolaunch])		# replace args
@@ -133,8 +135,12 @@ def main():
 			
 			thrds[rd[0]].join()
 			thrds[rd[0]]=None
+			
+			if options.verbose>1:
+				print "{} done with {} ptcls. ".format(rd[0],len(rd[1])),
 
-	logid = E2end(sys.argv,options.ppid)
+
+	logid = E2end(options.ppid)
 	
 	
 def procfn(jsd,args,options,thrn,n0,n1):
@@ -147,8 +153,6 @@ def procfn(jsd,args,options,thrn,n0,n1):
 		index_d = Counter()
 
 		for option1 in optionlist:
-			if options.verbose > 1 :
-				print "option in option list =", option1
 			nx = d.get_xsize()
 			ny = d.get_ysize()
 

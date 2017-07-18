@@ -12583,7 +12583,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
                 int fp=(int)params.set_default("fp",8);
 		EMData *ret2=new EMData(nkx-1,nky*2,fp);
 		int nlay=(nkx*2-2)*nky*2*sizeof(float);
-		for (int k=3; k<3+fp; k++) {
+		for (int k=3; k<3+fp*2; k+=2) {		// even numbered k seems to produce almost featureless slices. Not sure why :^(
 			int jkx=k;
 			int jky=0;
 			ret->to_zero();
