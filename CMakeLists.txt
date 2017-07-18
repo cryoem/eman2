@@ -17,20 +17,6 @@ OPTION(ENABLE_CONDA "enable conda-supported build" ON)
 
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
-MACRO(CHECK_PYTHON)
-	find_package(PythonInterp REQUIRED)
-	find_package(PythonLibs   REQUIRED)
-	
-	set(PYTHON_INCLUDE_PATH ${PYTHON_INCLUDE_DIRS} CACHE PATH "")
-	set(PYTHON_LIBRARY      ${PYTHON_LIBRARIES}    CACHE PATH "")
-	
-	message("PYTHON_EXECUTABLE:   ${PYTHON_EXECUTABLE}")
-	message("PYTHON_LIBRARIES:    ${PYTHON_LIBRARIES}")
-	message("PYTHON_INCLUDE_DIRS: ${PYTHON_INCLUDE_DIRS}")
-	message("PYTHON_INCLUDE_PATH: ${PYTHON_INCLUDE_PATH}")
-	message("PYTHON_INCLUDE_DIR:  ${PYTHON_INCLUDE_DIR}")
-ENDMACRO(CHECK_PYTHON)
-
 if(ENABLE_CONDA)
 	if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" )
 		if(NOT WIN32)
@@ -60,7 +46,9 @@ if(ENABLE_CONDA)
 	message_var(CMAKE_PREFIX_PATH)
 endif()
 
-CHECK_PYTHON()
+find_package(Python REQUIRED)
+find_package(NumPy  REQUIRED)
+
 if(NOT WIN32)
 	set(py_sp_dir_command "import site; print site.getsitepackages()[0]")
 else()
@@ -456,27 +444,6 @@ IF(ENABLE_PNG)
 	ADD_DEFINITIONS(-DEM_PNG)
 ENDIF()
 
-execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "import numpy; print numpy.get_include()"
-		OUTPUT_VARIABLE numpy_include_path
-		OUTPUT_STRIP_TRAILING_WHITESPACE
-		)
-
-FIND_PATH(NUMPY_INCLUDE_PATH numpy/arrayobject.h
-	${numpy_include_path}
-	$ENV{HOME}/anaconda2/lib/python2.7/site-packages/numpy/core/include
-	$ENV{HOME}/EMAN2/anaconda2/lib/python2.7/site-packages/numpy/core/include
-	$ENV{PYTHON_ROOT}/lib/python2.7/site-packages/numpy/core/include
-	/usr/local/lib/python2.7/site-packages/numpy/core/include
-	/usr/lib64/python2.7/site-packages/numpy/core/include
-	/usr/lib/python2.7/site-packages/numpy/core/include
-    /usr/include 
-    NO_DEFAULT_PATH)
-
-message("NUMPY_INCLUDE_PATH: ${NUMPY_INCLUDE_PATH}")
-
-INCLUDE_DIRECTORIES(${NUMPY_INCLUDE_PATH})
-
-
 # Find Boost
 set(Boost_USE_MULTITHREADED ON)
 set(Boost_NO_BOOST_CMAKE ON)
@@ -495,7 +462,6 @@ INCLUDE_DIRECTORIES(.
 	    ${DJBFFT_INCLUDE_PATH}
 	    ${ACML_INCLUDE_PATH}
 	    ${Boost_INCLUDE_DIR}
-	    ${PYTHON_INCLUDE_PATH}
 	    ${FREETYPE_INCLUDE_DIRS}
             )
 
