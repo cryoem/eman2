@@ -350,10 +350,15 @@ class GUIctfsim(QtGui.QWidget):
 			applyf=self.apply.do_fft()
 			ctfmul=applyf.copy()
 			ctf.compute_2d_complex(ctfmul,Ctf.CtfType.CTF_AMP)
+			ctfsgn=applyf.copy()
+			ctf.compute_2d_complex(ctfsgn,Ctf.CtfType.CTF_SIGN)
 			applyf.mult(ctfmul)
 			apply2=applyf.do_ift()
 			apply2.mult(5.0)	# roughly compensate for contrast reduction so apply comparable
-			self.applyim.set_data([apply2,self.apply])
+			applyf.mult(ctfsgn)
+			apply3=applyf.do_ift()
+			apply3.mult(5.0)
+			self.applyim.set_data([apply2,apply3,self.apply])
 		
 
 	def newSet(self,val=0):

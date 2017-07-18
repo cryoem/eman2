@@ -658,7 +658,9 @@ def main():
 							except:
 								pass
 
-					d.process_inplace(processorname, param_dict)
+					if processorname in ["math.bispectrum.slice"]:
+						d=d.process(processorname, param_dict)
+					else: d.process_inplace(processorname, param_dict)
 					index_d[option1] += 1
 
                                 elif option1 == "extractboxes":
@@ -1163,7 +1165,7 @@ def main():
 	E2end(logid)
 
 def doparallel(argv,parallel,args):
-	pass
+	print "Parallelism not supported. Please use e2proc2dpar.py"
 
 if __name__ == "__main__":
 	main()
