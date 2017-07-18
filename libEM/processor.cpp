@@ -12614,7 +12614,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 			EMData *pln=ret->do_ift();
 			pln->process_inplace("xform.phaseorigin.tocenter");
 			pln->process_inplace("normalize");
-			ret2->insert_clip(pln,IntPoint(-nkx+1,0,k-3));
+			ret2->insert_clip(pln,IntPoint(-nkx+1,0,(k-3)/2));
 //			memcpy((void *)ret2->get_data()+nlay*(k-3),(void *)pln->get_data(),nlay);
 			delete pln;
 		}
