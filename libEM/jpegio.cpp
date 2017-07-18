@@ -33,7 +33,7 @@
  *
  * */
 
-#ifdef EM_JPEG
+#ifdef USE_JPEG
 
 #ifdef WIN32
 #include <windows.h>
@@ -242,4 +242,4 @@ bool JpegIO::is_image_big_endian()
 	return true;
 }
 
-#endif	//EM_JPEG
+#endif	//USE_JPEG

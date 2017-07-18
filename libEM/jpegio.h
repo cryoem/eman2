@@ -36,7 +36,7 @@
 #ifndef eman__jpegio_h__
 #define eman__jpegio_h__ 1
 
-#ifdef EM_JPEG
+#ifdef USE_JPEG
 
 #include "imageio.h"
 extern "C" {
@@ -73,6 +73,6 @@ namespace EMAN
 
 }
 
-#endif	//EM_JPEG
+#endif	//USE_JPEG
 
 #endif	//eman__jpegio_h__

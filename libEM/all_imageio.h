@@ -40,20 +40,20 @@
 
 #include "mrcio.h"
 
-#ifdef EM_PNG
+#ifdef USE_PNG
 	#include "pngio.h"
-#endif	//EM_PNG
+#endif	//USE_PNG
 
-#ifdef EM_JPEG
+#ifdef USE_JPEG
 	#include "jpegio.h"
 #endif
 
 #include "dm3io.h"
 #include "dm4io.h"
 
-#ifdef EM_TIFF
+#ifdef USE_TIFF
 	#include "tifio.h"
-#endif	//EM_TIFF
+#endif	//USE_TIFF
 
 #include "pifio.h"
 #include "vtkio.h"
@@ -63,10 +63,10 @@
 #include "lstio.h"
 #include "lstfastio.h"
 
-#ifdef EM_HDF5
+#ifdef USE_HDF5
 	#include "hdfio.h"
 	#include "hdfio2.h"
-#endif	//EM_HDF5
+#endif	//USE_HDF5
 
 #include "salio.h"
 #include "amiraio.h"

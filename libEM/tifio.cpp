@@ -33,7 +33,7 @@
  *
  * */
 
-#ifdef EM_TIFF
+#ifdef USE_TIFF
 
 #include "tifio.h"
 #include "util.h"
@@ -619,4 +619,4 @@ bool TiffIO::is_image_big_endian()
 }
 
 
-#endif	//EM_TIFF
+#endif	//USE_TIFF
