@@ -36,7 +36,7 @@
 #ifndef eman__tiffio_h__
 #define eman__tiffio_h__ 1
 
-#ifdef EM_TIFF
+#ifdef USE_TIFF
 
 #include "imageio.h"
 
@@ -84,6 +84,6 @@ namespace EMAN
 	};
 }
 
-#endif	//EM_TIFF
+#endif	//USE_TIFF
 
 #endif	//eman__tiffio_h__

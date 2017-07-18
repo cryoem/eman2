@@ -33,7 +33,7 @@
  *
  * */
 
-#ifdef EM_HDF5
+#ifdef USE_HDF5
 
 // #define DEBUGHDF	1
 
@@ -1538,4 +1538,4 @@ bool HdfIO2::is_image_big_endian()
 	return true;
 }
 
-#endif	//EM_HDF5
+#endif	//USE_HDF5
