@@ -2,8 +2,6 @@ find_package(PNG REQUIRED)
 
 message_var(PNG_LIBRARIES)
 
-ADD_DEFINITIONS(-DUSE_PNG)
-
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(PNG
 								  REQUIRED_VARS
@@ -17,5 +15,6 @@ if(PNG_FOUND AND NOT TARGET PNG)
 	set_target_properties(PNG
 						  PROPERTIES
 						  INTERFACE_LINK_LIBRARIES      "${PNG_LIBRARIES}"
+						  INTERFACE_COMPILE_DEFINITIONS USE_PNG
 						  )
 endif()
