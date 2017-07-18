@@ -7,7 +7,7 @@ source:
 
 requirements:
     {% set reqs_common = [
-            "cmake",
+            "cmake 3.7.*",
             "szip",        # [win]
             "msinttypes",  # [win]
             "python 2.7.*",
