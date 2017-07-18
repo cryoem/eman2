@@ -256,14 +256,7 @@ IF(ENABLE_ACML_FFT)
 	OPTION(ENABLE_FFTW3 "enable fftw 3 support" OFF)
 	OPTION(ENABLE_NATIVE_FFT "enable native fft support" OFF)
 
-	CHECK_OPTIONAL_LIB(ACML acml acml.h)
-	FIND_LIBRARY(G2C_LIBRARY NAMES g2c PATHS
-		/usr/lib64
-		/usr/lib
-		/usr/local/lib
-		$ENV{HOME}/lib )
-	SET(ACML_LIBRARIES ${ACML_LIBRARY})
-    SET(ACML_INCLUDE_PATH ${ACML_INCLUDE_PATH})
+	find_package(ACML REQUIRED)
 ENDIF()
 
 IF(ENABLE_FFT_CACHING)
@@ -345,7 +338,6 @@ message("Boost_INCLUDE_DIR: ${Boost_INCLUDE_DIR}")
 INCLUDE_DIRECTORIES(.
 	    ${EMAN_SOURCE_DIR}
 	    ${EMAN_SOURCE_DIR}/libEM
-	    ${ACML_INCLUDE_PATH}
             )
 
 #---------------------------------------------------------------------------------------
