@@ -1,5 +1,4 @@
 CHECK_REQUIRED_LIB(NFFT2 nfft nfft.h "" "")
-target_link_libraries(NFFT2 FFTW3D)
 
 message_var(NFFT2_INCLUDE_PATH)
 message_var(NFFT2_LIBRARY)
@@ -16,4 +15,6 @@ if(NFFT2_FOUND AND NOT TARGET NFFT2)
 						  INTERFACE_LINK_LIBRARIES      "${NFFT2_LIBRARY}"
 						  INTERFACE_COMPILE_DEFINITIONS USE_NFFT2
 						  )
+		
+	target_link_libraries(NFFT2 INTERFACE FFTW3D::FFTW3D)
 endif()
