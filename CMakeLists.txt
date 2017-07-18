@@ -223,13 +223,6 @@ INCLUDE(${CMAKE_ROOT}/Modules/CheckIncludeFiles.cmake)
 INCLUDE(${CMAKE_ROOT}/Modules/CheckFunctionExists.cmake)
 INCLUDE(${CMAKE_ROOT}/Modules/CheckTypeSize.cmake)
 
-MACRO(EMAN_CHECK_FUNCTION FUNCTION VARIABLE)
-    CHECK_FUNCTION_EXISTS(${FUNCTION} ${VARIABLE})
-    IF(${VARIABLE})
-		ADD_DEFINITIONS(-D${VARIABLE})
-    ENDIF()
-ENDMACRO()
-
 EMAN_CHECK_FUNCTION(fseek64 HAVE_FSEEK64)
 EMAN_CHECK_FUNCTION(fseeko HAVE_FSEEKO)
 EMAN_CHECK_FUNCTION(ftell64 HAVE_FTELL64)
@@ -240,70 +233,14 @@ IF(ENABLE_IOCACHE)
 	ADD_DEFINITIONS(-DIMAGEIO_CACHE)
 ENDIF()
 
-MACRO(CHECK_REQUIRED_LIB2 upper lower header lower2 header2)
-	message("\n### BEGIN ### CHECK_REQUIRED_LIB2 upper lower header lower2 header2")
-	message_var(${upper}_INCLUDE_PATH)
-	message_var(${upper}_LIBRARY)
-		
-	IF(NOT ${upper}_INCLUDE_PATH)
-		FIND_PATH(${upper}_INCLUDE_PATH 
-				NAMES ${header} ${header2}
-				PATHS $ENV{${upper}DIR}/include ${EMAN_PREFIX_INC}
-				NO_DEFAULT_PATH
-				)
-    ENDIF()
-
-    IF(${upper}_INCLUDE_PATH)
-		FIND_LIBRARY(${upper}_LIBRARY NAMES ${lower} ${lower2} PATHS $ENV{${upper}DIR}/lib ${EMAN_PREFIX_LIB})
-		message("FIND_LIBRARY: ${upper}_LIBRARY NAMES ${lower} ${lower2} PATHS $ENV{${upper}DIR}/lib ${EMAN_PREFIX_LIB}")
-    ENDIF()
-		
-	IF(NOT ${upper}_INCLUDE_PATH OR NOT ${upper}_LIBRARY)
-		MESSAGE(SEND_ERROR "ERROR: ${upper} not found. please install ${upper} first!")
-    ENDIF()
-
-	message("### END ### CHECK_REQUIRED_LIB2 upper lower header lower2 header2")
-	message_var(${upper}_INCLUDE_PATH)
-	message_var(${upper}_LIBRARY)
-ENDMACRO()
-
-MACRO(CHECK_REQUIRED_LIB upper lower header)
-    CHECK_REQUIRED_LIB2(${upper} ${lower} ${header} "" "")
-ENDMACRO()
-
-MACRO(CHECK_OPTIONAL_LIB upper lower header)
-    FIND_PATH(${upper}_INCLUDE_PATH ${header} $ENV{${upper}DIR}/include ${EMAN_PREFIX_INC} NO_DEFAULT_PATH)
-
-    IF(${upper}_INCLUDE_PATH)
-        FIND_LIBRARY(${upper}_LIBRARY NAMES ${lower} PATHS $ENV{${upper}DIR}/lib ${EMAN_PREFIX_LIB})
-
-        IF(${upper}_LIBRARY)
-			ADD_DEFINITIONS(-DEM_${upper})
-			INCLUDE_DIRECTORIES(${${upper}_INCLUDE_PATH})
-        ELSE()
-			#MESSAGE("WARNING: ${upper} not found, ENABLE_${upper} is set back to OFF")
-			OPTION(ENABLE_${upper} "if enable ${upper} support" OFF)
-        ENDIF()
-
-    ELSE()
-		#MESSAGE("WARNING: ${upper} not found, ENABLE_${upper} is set back to OFF")
-        OPTION(ENABLE_${upper} "if enable ${upper} support" OFF)
-    ENDIF()
-ENDMACRO()
-
-MACRO(CHECK_LIB_ONLY upper lower)
-    FIND_LIBRARY(${upper}_LIBRARY NAMES ${lower} PATHS $ENV{${upper}DIR}/lib ${EMAN_PREFIX_LIB} NO_DEFAULT_PATH)
-	message(STATUS "CHECK_LIB_ONLY upper lower")
-	message_var(${upper}_LIBRARY)
-ENDMACRO()
 
 IF(ENABLE_FFTW3)
     OPTION(ENABLE_NFFT2 "enable nfft2 support" OFF)
     OPTION(ENABLE_NATIVE_FFT "enable native fft support" OFF)
     OPTION(ENABLE_ACML_FFT "enable AMD Core Math Library fft support" OFF)
 
-    CHECK_REQUIRED_LIB2(FFTW3 fftw3f fftw3.h libfftw3f-3 "")
-    CHECK_REQUIRED_LIB2(FFTW3d fftw3 fftw3.h libfftw3-3  "")
+    CHECK_REQUIRED_LIB(FFTW3 fftw3f fftw3.h libfftw3f-3 "")
+    CHECK_REQUIRED_LIB(FFTW3d fftw3 fftw3.h libfftw3-3  "")
     ADD_DEFINITIONS(-DFFTW3)
     SET(FFTW_LIBRARIES ${FFTW3_LIBRARY} ${FFTW3d_LIBRARY})
     SET(FFTW_INCLUDE_PATH ${FFTW3_INCLUDE_PATH})
@@ -314,8 +251,8 @@ IF(ENABLE_FFTW3)
 	endif()
 		
     IF(ENABLE_NFFT2)
-    	CHECK_REQUIRED_LIB(FFTW3D fftw3 fftw3.h)
-    	CHECK_REQUIRED_LIB(NFFT2 nfft nfft.h)
+    	CHECK_REQUIRED_LIB(FFTW3D fftw3 fftw3.h "" "")
+    	CHECK_REQUIRED_LIB(NFFT2 nfft nfft.h "" "")
     	ADD_DEFINITIONS(-DNFFT2)
 		INCLUDE_DIRECTORIES(${NFFT2_INCLUDE_PATH})
     ENDIF()
@@ -329,7 +266,7 @@ IF(ENABLE_ACML_FFT)
 	OPTION(ENABLE_FFTW3 "enable fftw 3 support" OFF)
 	OPTION(ENABLE_NATIVE_FFT "enable native fft support" OFF)
 
-	CHECK_REQUIRED_LIB(ACML acml acml.h)
+	CHECK_REQUIRED_LIB(ACML acml acml.h "" "")
 	FIND_LIBRARY(G2C_LIBRARY NAMES g2c PATHS
 		/usr/lib64
 		/usr/lib
@@ -352,7 +289,7 @@ ENDIF()
 
 IF(ENABLE_DJBFFT)
 	OPTION(ENABLE_NFFT2 "enable nfft2 support" OFF)
-	CHECK_REQUIRED_LIB(DJBFFT fftc4.h fftr4.h)
+	CHECK_REQUIRED_LIB(DJBFFT fftc4.h fftr4.h "" "")
 	ADD_DEFINITIONS(-DDJBFFT)
 	SET(DJBFFT_LIBRARIES ${DJBFFT_LIBRARY})
 	SET(DJBFFT_INCLUDE_PATH ${DJBFFT_INCLUDE_PATH})
@@ -403,7 +340,7 @@ IF(ENABLE_OPENGL)
 ENDIF()
 
 IF(ENABLE_FTGL)
-	CHECK_REQUIRED_LIB2(FTGL ftgl FTGL/FTGL.h ftgl FTGL/ftgl.h)
+	CHECK_REQUIRED_LIB(FTGL ftgl FTGL/FTGL.h ftgl FTGL/ftgl.h)
 	ADD_DEFINITIONS(-DEMAN2_USING_FTGL)
 	IF(EXISTS ${FTGL_INCLUDE_PATH}/FTGL/FTGL.h AND COMMAND IF)
 		ADD_DEFINITIONS(-DOLD_FTGL)
@@ -416,7 +353,7 @@ IF(ENABLE_FTGL)
 		
 	IF (ENABLE_STATIC_FTGL)
 		IF(WIN32)
-			CHECK_REQUIRED_LIB(FREETYPE freetype ft2build.h)
+			CHECK_REQUIRED_LIB(FREETYPE freetype ft2build.h "" "")
 		ENDIF(WIN32)
 	ENDIF (ENABLE_STATIC_FTGL)
 ENDIF()
