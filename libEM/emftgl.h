@@ -44,13 +44,7 @@ using std::vector;
 #include <map>
 using std::map;
 
-#ifdef OLD_FTGL
-	#include <FTGL/FTGL.h>
-#else
-	#include <FTGL/ftgl.h>
-#endif
-
-
+#include <FTGL/ftgl.h>
 #include <FTGL/FTFont.h>
 namespace EMAN {
 
