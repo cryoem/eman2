@@ -9173,7 +9173,7 @@ def main():
 					update_memory_estimation()
 					update_options = False # only update once
 					if(Blockdata["myid"] == Blockdata["main_node"]): print_dict(Tracker["constants"], "Permanent settings of restart run")
-				
+
 				if Blockdata["myid"] == Blockdata["main_node"]:
 					if( Tracker["mainiteration"] > 1 ):
 						line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
@@ -9215,7 +9215,6 @@ def main():
 
 				refang, rshifts, coarse_angles, coarse_shifts = get_refangs_and_shifts()
 				if( Tracker["constants"]["shake"] > 0.0 ):
-					
 					if(Blockdata["myid"] == Blockdata["main_node"]):
 						shakenumber = uniform( -Tracker["constants"]["shake"], Tracker["constants"]["shake"])
 					else:
