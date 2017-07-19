@@ -10,8 +10,6 @@ find_package_handle_standard_args(PNG
 
 if(PNG_FOUND AND NOT TARGET PNG)
 	add_library(PNG INTERFACE)
-	add_library(PNG::PNG ALIAS PNG)
-	set_target_properties(FTGL
 	set_target_properties(PNG
 						  PROPERTIES
 						  INTERFACE_LINK_LIBRARIES      "${PNG_LIBRARIES}"
