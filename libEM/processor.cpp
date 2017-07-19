@@ -12572,36 +12572,82 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 	EMData *cimage = NULL;
 	if (image->is_complex()) cimage = image->copy();
 	else cimage = image->do_fft();
-	int nkx=cimage->get_xsize()/4+1;
-	int nky=cimage->get_ysize()/4;
+	int nkx=cimage->get_xsize()/8+1;
+	int nky=cimage->get_ysize()/8;
 	EMData* ret=new EMData(nkx*2,nky*2,1);
 	ret->set_complex(1);
 	ret->to_zero();
 	
+	// footprint mode, produces a 3-D image using n rotational invariants
+	if (params.has_key("fp")) {
+                int fp=(int)params.set_default("fp",8);
+		EMData *ret2=new EMData(nkx-1,nky*2,fp);
+		int nlay=(nkx*2-2)*nky*2*sizeof(float);
+		for (int k=3; k<3+fp*2; k+=2) {		// even numbered k seems to produce almost featureless slices. Not sure why :^(
+			int jkx=k;
+			int jky=0;
+			ret->to_zero();
+	
+			cimage->process_inplace("xform.phaseorigin.tocorner");
+			for (float ang=0; ang<360.0; ang+=360.0/(nky*M_PI) ) {
+				EMData *cimage2=cimage->process("xform",Dict("alpha",ang));
+	
+				for (int jy=-nky; jy<nky; jy++) {
+					for (int jx=0; jx<nkx; jx++) {
+						int kx=jkx-jx;
+						int ky=jky-jy;
+	
+						if (abs(kx)>nkx || abs(ky)>nky) continue;
+						complex<double> v1 = (complex<double>)cimage2->get_complex_at(jx,jy);
+						complex<double> v2 = (complex<double>)cimage2->get_complex_at(kx,ky);
+						complex<double> v3 = (complex<double>)cimage2->get_complex_at(jkx,jky);
+						ret->add_complex_at(jx,jy,0,(complex<float>)(v1*v2*std::conj(v3)));
+					}
+				}
+				delete cimage2;
+			}
+			// this fixes an issue with adding in the "special" Fourier locations
+			for (int jy=-nky; jy<nky; jy++) {
+				ret->set_complex_at(0,jy,ret->get_complex_at(0,jy)/sqrt(2.0f));
+				ret->set_complex_at(nkx-1,jy,ret->get_complex_at(nkx-1,jy)/sqrt(2.0f));
+			}
+			EMData *pln=ret->do_ift();
+			pln->process_inplace("xform.phaseorigin.tocenter");
+			pln->process_inplace("normalize");
+			ret2->insert_clip(pln,IntPoint(-nkx+1,0,(k-3)/2));
+//			memcpy((void *)ret2->get_data()+nlay*(k-3),(void *)pln->get_data(),nlay);
+			delete pln;
+		}
+		delete ret;
+		return ret2;
+        }
 	// angular integrate mode, produces the simplest rotational invariant, ignoring rotational correlations
-	if (params.has_key("k")) {
+	else if (params.has_key("k")) {
 		int k=(int)params.set_default("k",1);
 		int jkx=k;
 		int jky=0;
 		
 		cimage->process_inplace("xform.phaseorigin.tocorner");
-//		for (float ang=0; ang<360.0; ang+=360.0/(nky*M_PI) ) {
-		for (float ang=0; ang<360.0; ang+=360.0/(nky) ) {
+		for (float ang=0; ang<360.0; ang+=360.0/(nky*M_PI) ) {
 			EMData *cimage2=cimage->process("xform",Dict("alpha",ang));
 			
-			for (int jy=-nky/2; jy<nky/2; jy++) {
-				for (int jx=0; jx<nky+1; jx++) {
+			for (int jy=-nky; jy<nky; jy++) {
+				for (int jx=0; jx<nkx; jx++) {
 					int kx=jkx-jx;
 					int ky=jky-jy;
 					
 					if (abs(kx)>nkx || abs(ky)>nky) continue;
-					complex<double> v1 = (complex<double>)cimage->get_complex_at(jx,jy);
-					complex<double> v2 = (complex<double>)cimage->get_complex_at(kx,ky);
-					complex<double> v3 = (complex<double>)cimage->get_complex_at(jkx,jky);
+					complex<double> v1 = (complex<double>)cimage2->get_complex_at(jx,jy);
+					complex<double> v2 = (complex<double>)cimage2->get_complex_at(kx,ky);
+					complex<double> v3 = (complex<double>)cimage2->get_complex_at(jkx,jky);
 					ret->add_complex_at(jx,jy,0,(complex<float>)(v1*v2*std::conj(v3)));
 				}
 			}
 			delete cimage2;
+		}
+		for (int jy=-nky; jy<nky; jy++) {
+			ret->set_complex_at(0,jy,ret->get_complex_at(0,jy)/sqrt(2.0f));
+			ret->set_complex_at(nkx-1,jy,ret->get_complex_at(nkx-1,jy)/sqrt(2.0f));
 		}
 	}
 	else if (params.has_key("jkx") && params.has_key("jky")) {
