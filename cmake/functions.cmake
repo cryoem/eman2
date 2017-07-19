@@ -50,15 +50,6 @@ function(CHECK_REQUIRED_LIB upper lower header lower2 header2)
 	message_var(${upper}_LIBRARY)
 endfunction()
 
-function(CHECK_OPTIONAL_LIB upper lower header)
-	CHECK_REQUIRED_LIB(${upper} ${lower} ${header} "" "")
-		
-	IF(${upper}_LIBRARY)
-		ADD_DEFINITIONS(-DUSE_${upper})
-		INCLUDE_DIRECTORIES(${${upper}_INCLUDE_PATH})
-	ENDIF()
-endfunction()
-
 function(CHECK_LIB_ONLY upper lower)
 	FIND_LIBRARY(${upper}_LIBRARY NAMES ${lower} PATHS $ENV{${upper}DIR}/lib ${EMAN_PREFIX_LIB} NO_DEFAULT_PATH)
 	message(STATUS "CHECK_LIB_ONLY upper lower")
