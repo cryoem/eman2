@@ -2,11 +2,6 @@ find_package(JPEG REQUIRED)
 
 message_var(JPEG_LIBRARIES)
 
-include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(JPEG
-								  REQUIRED_VARS JPEG_LIBRARIES
-								  )
-
 if(JPEG_FOUND AND NOT TARGET JPEG)
 	add_library(JPEG INTERFACE)
 	add_library(JPEG::JPEG ALIAS JPEG)
