@@ -1,0 +1,1 @@
+CHECK_LIB_ONLY(SZLIB libszip)

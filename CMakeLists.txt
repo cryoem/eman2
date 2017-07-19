@@ -307,7 +307,7 @@ ENDIF()
 
 include(cmake/HDF5.cmake)
 IF(WIN32)
-	CHECK_LIB_ONLY(SZLIB libszip)
+	find_package(SZLIB REQUIRED)
 ENDIF()
 
 IF(ENABLE_PNG)
