@@ -20070,7 +20070,7 @@ vector<float> Util::sqed_test( EMData* img, EMData* proj, EMData* ctfs, EMData* 
     float* dctfs = ctfs->get_data();
 	float *pbckgnoise = bckgnoise->get_data();
 
-	float edis = 0.0f;
+	float edis  = 0.0f;
 	float part1 = 0.0f;
 	float part2 = 0.0f;
 	float part3 = 0.0f;
@@ -20083,6 +20083,7 @@ vector<float> Util::sqed_test( EMData* img, EMData* proj, EMData* ctfs, EMData* 
 			edis += (p1*p1 + p2*p2)*pbckgnoise[i];
 			part1 += (data[lol]*data[lol]+ data[lol+1]*data[lol+1])*pbckgnoise[i];
 			part2 += dctfs[i]*dctfs[i]*(dproj[lol]*dproj[lol]+dproj[lol+1]*dproj[lol+1])*pbckgnoise[i];
+			//  Inner product is 25% faster than Euc dist
 			part3 += -dctfs[i]*(data[lol]*dproj[lol] + data[lol+1]*dproj[lol+1])*pbckgnoise[i];
 		}
 	}
