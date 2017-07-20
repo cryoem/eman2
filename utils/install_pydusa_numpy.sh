@@ -11,8 +11,6 @@ fi
 
 set -xe
 
-source activate root
-
 RECIPES_DIR=$(cd $(dirname $0)/../recipes && pwd -P)
 numpy_verison=${1//.}
 
