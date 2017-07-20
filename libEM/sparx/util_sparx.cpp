@@ -5778,11 +5778,11 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_local(EMData* dataimage, EMD
 
 	size_t n_coarse_shifts = coarse_shifts_shrank.size();
 	int lencrefim = circ2->get_xsize();
-	int n_coarse_ang = circ2->get_ysize();
 	int npsi = (int)(360.0f/delta + 0.01);
 	int n_assignments_of_refangles_to_angles = assignments_of_refangles_to_angles.size();
 	int n_assignments_of_refangles_to_cones  = assignments_of_refangles_to_cones.size();
-	
+	int n_coarse_ang = n_assignments_of_refangles_to_angles;	
+
 
 	vector<float> vpsi(npsi);
 
@@ -5928,6 +5928,7 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_scores_local(EMData* dataima
 	int n_assignments_of_refangles_to_cones  = assignments_of_refangles_to_cones.size();
 	int n_coarse_ang = n_assignments_of_refangles_to_angles;	
 
+
 	vector<float> vpsi(npsi);
 
 	string mode = "F";
@@ -5957,7 +5958,7 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_scores_local(EMData* dataima
 
     vector<MultiScores> ccfs(ndata);
 
-	cout<<" n_coarse_shifts "<<n_coarse_shifts<<"  "<<n_coarse_ang<<"  "<<npsi<<"  "<<lencrefim<<"   "<<delta<<"   "<<ndata<<"  "<<cpsi<<endl;
+	//cout<<" n_coarse_shifts "<<n_coarse_shifts<<"  "<<n_coarse_ang<<"  "<<npsi<<"  "<<lencrefim<<"   "<<delta<<"   "<<ndata<<"  "<<cpsi<<endl;
 	int counter = 0;
 	for (int ib = 0; ib < n_coarse_shifts; ib++) {
 	//cout<<" coarse_shifts "<<ib<<"  "<<coarse_shifts_shrank[ib][0]<<"  "<<coarse_shifts_shrank[ib][1]<<"  "<<endl;
@@ -6044,7 +6045,7 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_scores_local(EMData* dataima
 				ccfs[counter].ib = ib;
 				ccfs[counter].ic = ic;
 				ccfs[counter].ipsi = ipip;
-				cout<<"  VIGA   "<<j<<"   "<<bpsi<<"   "<<ipip<<"   "<<counter<<"  "<<ccfs[counter].ib<<"  "<<ccfs[counter].ic<<"   "<<lixi<<"  "<<j<<"  "<<ccfs[counter].ipsi<<"      "<<ccfs[counter].score<<endl;
+				//cout<<"  VIGA   "<<j<<"   "<<bpsi<<"   "<<ipip<<"   "<<counter<<"  "<<ccfs[counter].ib<<"  "<<ccfs[counter].ic<<"   "<<lixi<<"  "<<j<<"  "<<ccfs[counter].ipsi<<"      "<<ccfs[counter].score<<endl;
 				counter++;
 			}
 
@@ -6079,7 +6080,7 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_scores_local(EMData* dataima
 		float qt = c1*Util::get_min(0.0f,ccfs[i].score - score_max);
 		if( qt <static_cast<float>(imi) ) qout[4*i+3] = (int)(qt+ima);
 		else qout[4*i+3] = (int)(qt) + ima;
-		cout<<"  ZIGA   "<<i<<"  "<<ccfs[i].score<<"   "<<qout[4*i+3]<<"  "<<Util::get_min(0.0f,ccfs[i].score - score_max)<<"  "<<c1*Util::get_min(0.0f,ccfs[i].score - score_max)<<"   "<<(int)(c1*Util::get_min(0.0f,ccfs[i].score - score_max))<<endl;
+		//cout<<"  ZIGA   "<<i<<"  "<<ccfs[i].score<<"   "<<qout[4*i+3]<<"  "<<Util::get_min(0.0f,ccfs[i].score - score_max)<<"  "<<c1*Util::get_min(0.0f,ccfs[i].score - score_max)<<"   "<<(int)(c1*Util::get_min(0.0f,ccfs[i].score - score_max))<<endl;
 	}
 	return qout;
 }
