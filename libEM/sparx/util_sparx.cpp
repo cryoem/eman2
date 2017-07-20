@@ -6027,7 +6027,7 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_scores_local(EMData* dataima
 				//  find closest to old psi
 				float dummy = fabs(psi - oldpsi_inc); // We have to add half delta to accomodate even number of psi neighbors.
 				dummy = Util::get_min(dummy, 360.0f-dummy);
-			cout<<" FOKA1  "<<i<<"  "<<psi<<"   "<<ipsi<<"   "<<ip1<<"   "<<maxrin<<"   "<<dummy<<"   "<<qdm<<endl;
+			//cout<<" FOKA1  "<<i<<"  "<<psi<<"   "<<ipsi<<"   "<<ip1<<"   "<<maxrin<<"   "<<dummy<<"   "<<qdm<<endl;
 				if( dummy < qdm ) {
 					qdm = dummy;
 					bpsi = i;
