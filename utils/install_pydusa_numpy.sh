@@ -15,7 +15,7 @@ RECIPES_DIR=$(cd $(dirname $0)/../recipes && pwd -P)
 numpy_verison=${1//.}
 
 conda remove fftw-mpi --force --yes
-conda install pydusa=1.15=np${numpy_verison}_0 --use-local --yes
+conda install pydusa=1.15=np${numpy_verison}* --use-local --yes
 conda install fftw-mpi --use-local --yes
 
 conda inspect linkages pydusa
