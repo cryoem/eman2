@@ -192,8 +192,8 @@ def main():
 	#print "Befere options are of type", type(options)
 	#print "\n\n\nand are", options
 	
-	from e2spt_classaverage import sptmakepath
-	options = sptmakepath(options,'sptres')
+	from EMAN2_utils import makepath
+	options = makepath(options,'sptres')
 
 	print '\n\nafter making path, options.path is', options.path
 	
