@@ -791,66 +791,38 @@ class EMPlotFileType(EMFileType) :
 		target.raise_()
 
 	def plot3dApp(self, brws) :
-		"""Append self to current 3-D plot"""
+		"""Append self to current plot"""
+		
 		brws.busy()
-		import numpy as np
-		pts=np.loadtxt(self.path)
-		if pts.shape[1]!=3:
-			print "Must use 3D data."
-			return
-		p=PointArray()
-		wt=np.ones((len(pts),1))
-		pts=np.column_stack((pts, wt)).astype(float).flatten()
-		pts=pts.tolist()
-		p.set_from(pts)
-		tmpfile=self.path+"__tmp.pdb"
-		p.save_to_pdb(tmpfile)
-		pdb_model = EMPDBItem3D(tmpfile)
-		try: target = brws.view3d[-1]
-		except:
-			target = emscene3d.EMScene3D()
-			brws.view3d.append(target)
-		target.insertNewNode(self.path.split("/")[-1].split("#")[-1],pdb_model, parentnode = target)
-		modeltype = EMBallStickModel(tmpfile)#parent=pdb_model)
-		target.insertNewNode(modeltype.representation, modeltype, parentnode = pdb_model)
-		target.initialViewportDims(pdb_model.getBoundingBoxDimensions()[0])	# Scale viewport to object size
-		target.setCurrentSelection(modeltype)	# Set style to display upon inspector loading
-		#target.updateSG()	# this is needed because this might just be an addition to the SG rather than initialization
-		target.setWindowTitle(pdb_model.getName())
-		try: os.remove(tmpfile)
-		except: pass
+
+		try :
+			target = brws.viewplot3d[-1]
+			target.set_data_from_file(self.path)
+			#target.set_data(data, remove_directories_from_name(self.path, 1))
+		except :
+			target = EMPlot3DWidget()
+			brws.viewplot3d.append(target)
+			target.set_data_from_file(self.path)
+
+		target.qt_parent.setWindowTitle(self.path.split('/')[-1])
+
 		brws.notbusy()
 		target.show()
 		target.raise_()
 
 	def plot3dNew(self, brws) :
-		"""Make a new 3-D plot"""
-		### simple hack. convert it to a pdb and display as pdb...
+		"""Make a new plot"""
+
 		brws.busy()
-		import numpy as np
-		pts=np.loadtxt(self.path)
-		if pts.shape[1]!=3:
-			print "Must use 3D data."
-			return
-		p=PointArray()
-		wt=np.ones((len(pts),1))
-		pts=np.column_stack((pts, wt)).astype(float).flatten()
-		pts=pts.tolist()
-		p.set_from(pts)
-		tmpfile=self.path+"__tmp.pdb"
-		p.save_to_pdb(tmpfile)
-		pdb_model = EMPDBItem3D(tmpfile)
-		target = emscene3d.EMScene3D()
-		brws.view3d.append(target)
-		target.insertNewNode(self.path.split("/")[-1].split("#")[-1],pdb_model)
-		modeltype = EMBallStickModel(tmpfile) #parent=pdb_model)
-		target.insertNewNode(modeltype.representation, modeltype, parentnode = pdb_model)
-		target.initialViewportDims(pdb_model.getBoundingBoxDimensions()[0])	# Scale viewport to object size
-		target.setCurrentSelection(modeltype)	# Set style to display upon inspector loading
-		try: os.remove(tmpfile)
-		except: pass
+
+		target = EMPlot3DWidget()
+		brws.viewplot3d.append(target)
+		target.set_data_from_file(self.path)
+		#target.set_data(data, remove_directories_from_name(self.path, 1))
+
+		target.qt_parent.setWindowTitle(self.path.split('/')[-1])
+
 		brws.notbusy()
-		target.setWindowTitle(pdb_model.getName())
 		target.show()
 		target.raise_()
 

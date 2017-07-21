@@ -4716,12 +4716,11 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 		void accrue_median(EMData* to, const EMData* const from,const int shrink_factor);
 	};
 
-
 	/** FFTResampleProcessor resamples an image by clipping the Fourier Transform
 	 * This is the same as multipyling the FT by a box window, in real space this is a convolution that will induce rippling.
 	 * Hence it should probably be combined with a damping function near the edge
 	 * Works for even/odd, 1D, 2D and 3D images (completely robust, tested)
-	 *@author David Woolford
+	 *@author David Woolford (fixed by Pawel Penczek, 2017)
 	 *@date June 2009
 	 *@param n sampe_rate
 	 */

@@ -552,7 +552,7 @@ template <> Factory < Processor >::Factory()
 	force_add<SHIFTProcessor>();
 
 //	force_add<WaveletProcessor>();
-//	force_add<FFTProcessor>();
+	force_add<FFTProcessor>();
 	force_add<RadialProcessor>();
 
 	force_add<DirectionalSumProcessor>();
@@ -9704,7 +9704,7 @@ void WaveletProcessor::process_inplace(EMData *image)
 void FFTProcessor::process_inplace(EMData* image)
 {
 	if( params.has_key("dir") ) {
-		if ((int)params["dir"]==-1) {
+		if ((int)params["dir"]==-1||(image->is_complex() && (int)params["dir"]==0)) {
 			image->do_ift_inplace();
 		}
 		else {
@@ -12572,6 +12572,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 	EMData *cimage = NULL;
 	if (image->is_complex()) cimage = image->copy();
 	else cimage = image->do_fft();
+	cimage->process_inplace("xform.phaseorigin.tocorner");
 	int nkx=cimage->get_xsize()/8+1;
 	int nky=cimage->get_ysize()/8;
 	EMData* ret=new EMData(nkx*2,nky*2,1);
@@ -12583,21 +12584,25 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
                 int fp=(int)params.set_default("fp",8);
 		EMData *ret2=new EMData(nkx-1,nky*2,fp);
 		int nlay=(nkx*2-2)*nky*2*sizeof(float);
-		for (int k=3; k<3+fp*2; k+=2) {		// even numbered k seems to produce almost featureless slices. Not sure why :^(
-			int jkx=k;
-			int jky=0;
+		for (int k=3; k<3+fp; k++) {
+// 			int jkx=k;
+// 			int jky=0;
+			int kx=k;
+			int ky=0;
 			ret->to_zero();
 	
-			cimage->process_inplace("xform.phaseorigin.tocorner");
 			for (float ang=0; ang<360.0; ang+=360.0/(nky*M_PI) ) {
 				EMData *cimage2=cimage->process("xform",Dict("alpha",ang));
 	
 				for (int jy=-nky; jy<nky; jy++) {
 					for (int jx=0; jx<nkx; jx++) {
-						int kx=jkx-jx;
-						int ky=jky-jy;
+// 						int kx=jkx-jx;
+// 						int ky=jky-jy;
+						int jkx=jx+kx;
+						int jky=jy+ky;
 	
-						if (abs(kx)>nkx || abs(ky)>nky) continue;
+						// removed this test because we are using only the central 1/4 of Fourier space
+//						if (abs(kx)>nkx || abs(ky)>nky) continue;
 						complex<double> v1 = (complex<double>)cimage2->get_complex_at(jx,jy);
 						complex<double> v2 = (complex<double>)cimage2->get_complex_at(kx,ky);
 						complex<double> v3 = (complex<double>)cimage2->get_complex_at(jkx,jky);
@@ -12614,7 +12619,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 			EMData *pln=ret->do_ift();
 			pln->process_inplace("xform.phaseorigin.tocenter");
 			pln->process_inplace("normalize");
-			ret2->insert_clip(pln,IntPoint(-nkx+1,0,(k-3)/2));
+			ret2->insert_clip(pln,IntPoint(-nkx+2,0,k-3));
 //			memcpy((void *)ret2->get_data()+nlay*(k-3),(void *)pln->get_data(),nlay);
 			delete pln;
 		}
@@ -12624,19 +12629,22 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 	// angular integrate mode, produces the simplest rotational invariant, ignoring rotational correlations
 	else if (params.has_key("k")) {
 		int k=(int)params.set_default("k",1);
-		int jkx=k;
-		int jky=0;
+// 		int jkx=k;
+// 		int jky=0;
+		int kx=k;
+		int ky=0;
 		
-		cimage->process_inplace("xform.phaseorigin.tocorner");
 		for (float ang=0; ang<360.0; ang+=360.0/(nky*M_PI) ) {
 			EMData *cimage2=cimage->process("xform",Dict("alpha",ang));
 			
 			for (int jy=-nky; jy<nky; jy++) {
 				for (int jx=0; jx<nkx; jx++) {
-					int kx=jkx-jx;
-					int ky=jky-jy;
+// 					int kx=jkx-jx;
+// 					int ky=jky-jy;
+					int jkx=jx+kx;
+					int jky=jy+ky;
 					
-					if (abs(kx)>nkx || abs(ky)>nky) continue;
+//					if (abs(kx)>nkx || abs(ky)>nky) continue;
 					complex<double> v1 = (complex<double>)cimage2->get_complex_at(jx,jy);
 					complex<double> v2 = (complex<double>)cimage2->get_complex_at(kx,ky);
 					complex<double> v3 = (complex<double>)cimage2->get_complex_at(jkx,jky);
@@ -12645,21 +12653,17 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 			}
 			delete cimage2;
 		}
-		for (int jy=-nky; jy<nky; jy++) {
-			ret->set_complex_at(0,jy,ret->get_complex_at(0,jy)/sqrt(2.0f));
-			ret->set_complex_at(nkx-1,jy,ret->get_complex_at(nkx-1,jy)/sqrt(2.0f));
-		}
 	}
 	else if (params.has_key("jkx") && params.has_key("jky")) {
 		int jkx=(int)params.set_default("jkx",0);
 		int jky=(int)params.set_default("jky",0);
 		
-		for (int jy=-nky/2; jy<nky/2; jy++) {
-			for (int jx=0; jx<nky+1; jx++) {
+		for (int jy=-nky; jy<nky; jy++) {
+			for (int jx=0; jx<nkx; jx++) {
 				int kx=jkx-jx;
 				int ky=jky-jy;
 				
-				if (abs(kx)>nkx || abs(ky)>nky) continue;
+//				if (abs(kx)>nkx || abs(ky)>nky) continue;
 				complex<double> v1 = (complex<double>)cimage->get_complex_at(jx,jy);
 				complex<double> v2 = (complex<double>)cimage->get_complex_at(kx,ky);
 				complex<double> v3 = (complex<double>)cimage->get_complex_at(jkx,jky);
@@ -12675,9 +12679,9 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 		
 //		printf("KXY %d %d %d %d\n",kx,ky,nkx,nky);
 		
-		for (int jy=-nky/2; jy<nky/2; jy++) {
-			for (int jx=0; jx<nky+1; jx++) {
-				if (jx+kx>nkx || abs(jy+ky)>nky || jx+kx<0) continue;
+		for (int jy=-nky; jy<nky; jy++) {
+			for (int jx=0; jx<nkx; jx++) {
+//				if (jx+kx>nkx || abs(jy+ky)>nky || jx+kx<0) continue;
 				complex<double> v1 = (complex<double>)cimage->get_complex_at(jx,jy);
 				complex<double> v2 = (complex<double>)cimage->get_complex_at(kx,ky);
 				complex<double> v3 = (complex<double>)cimage->get_complex_at(jx+kx,jy+ky);
@@ -12685,6 +12689,11 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 //				ret->set_complex_at(jx,jy,(complex<float>)(v1));
 			}
 		}
+	}
+	
+	for (int jy=-nky; jy<nky; jy++) {
+		ret->set_complex_at(0,jy,ret->get_complex_at(0,jy)/sqrt(2.0f));
+		ret->set_complex_at(nkx-1,jy,ret->get_complex_at(nkx-1,jy)/sqrt(2.0f));
 	}
 	
 	delete cimage;
