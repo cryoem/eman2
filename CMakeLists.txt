@@ -794,6 +794,11 @@ foreach(i ${py_imports_list})
 			 COMMAND ${PYTHON_EXECUTABLE} -c "${i}"
 			 )
 endforeach()
+
+add_test(NAME import-inners
+		 COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/test_imports_inner.py
+		 )
+
 # --------------------------------------------------------------------
 #set the list of unit test to run
 #
