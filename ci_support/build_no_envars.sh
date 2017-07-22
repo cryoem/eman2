@@ -27,6 +27,7 @@ cmake $src_dir   -DENABLE_CONDA=OFF \
                     -DJPEG_LIBRARY="$prefix/lib/libjpeg.${suffix}" \
                     -DPNG_INCLUDE_PATH="$prefix/include" \
                     -DPNG_LIBRARY="$prefix/lib/libpng.${suffix}" \
+                    -DPYTHON_EXECUTABLE="$prefix/bin/python" \
                     -DPYTHON_INCLUDE_PATH="$prefix/include/python2.7" \
                     -DPYTHON_LIBRARY="$prefix/lib/libpython2.7.${suffix}" \
                     -DTIFF_INCLUDE_PATH="$prefix/include" \
