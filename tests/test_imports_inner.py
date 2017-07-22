@@ -1,17 +1,32 @@
-from libpyAligner2 import CtfType
-from libpyBoxingTools2 import CmpMode
-from libpyCmp2 import LogLevel
-from libpyCmp2 import Pair
-from libpyEMData2 import FFTPLACE
-from libpyEMData2 import WINDOWPLACE
-from libpyPointArray2 import Density2PointsArrayAlgorithm
-from libpyProcessor2 import fourier_filter_types
-from libpyUtils2 import EMDataType
-from libpyUtils2 import FakeKaiserBessel
-from libpyUtils2 import Gaussian
-from libpyUtils2 import ImageType
-from libpyUtils2 import KaiserBessel
-from libpyUtils2 import kbi0_win
-from libpyUtils2 import kbsinh_win
-from libpyUtils2 import sincBlackman
-from libpyUtils2 import tmpstruct
+import EMAN2
+EMAN2.Util.FakeKaiserBessel
+EMAN2.Util.KaiserBessel
+EMAN2.Util.KaiserBessel.kbi0_win
+EMAN2.Util.KaiserBessel.kbsinh_win
+EMAN2.Util.sincBlackman
+
+import libpyUtils2
+libpyUtils2.EMUtil.EMDataType
+libpyUtils2.EMUtil.ImageType
+libpyUtils2.Util.Gaussian
+libpyUtils2.Util.tmpstruct
+
+import libpyAligner2
+libpyAligner2.Ctf.CtfType
+
+import libpyBoxingTools2
+libpyBoxingTools2.BoxingTools.CmpMode
+
+import libpyCmp2
+libpyCmp2.Log.LogLevel
+libpyCmp2.XYData.Pair
+
+import libpyEMData2
+libpyEMData2.EMData.FFTPLACE
+libpyEMData2.EMData.WINDOWPLACE
+
+import libpyPointArray2
+libpyPointArray2.PointArray.Density2PointsArrayAlgorithm
+
+import libpyProcessor2
+libpyProcessor2.Processor.fourier_filter_types
