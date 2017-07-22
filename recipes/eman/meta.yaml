@@ -46,30 +46,6 @@ requirements:
 test:
   requires:
     - openmpi              # [not win]
-  imports:
-    - mpi                  # [not win]
-    - EMAN2
-    - libpyPDBReader2
-    - libpyProjector2
-    - libpyAnalyzer2
-    - libpyPolarData2
-    - libpyEMObject2
-    - libpyTomoSeg2        # [not win]
-    - libpyReconstructor2
-    - libpyAverager2
-    - libpyFundamentals2
-    - libpyAligner2
-    - libpyTransform2
-    - libpyEMData2
-    - libpyProcessor2
-    - libpyMarchingCubes2  # [not win]
-    - libpyGLUtils2
-    - libpyGeometry2
-    - libpyTypeConverter2
-    - libpyPointArray2
-    - libpyUtils2
-    - libpyCmp2
-    - libpyBoxingTools2
   
   source_files:
     - tests/run_prog_tests.sh
