@@ -790,9 +790,11 @@ foreach(i ${py_imports_list})
 	separate_arguments(import_statement)
 	list(GET import_statement 1 item1)
 	list(GET import_statement 3 item2)
-	add_test(NAME import-${item1}.${item2}
-			 COMMAND ${PYTHON_EXECUTABLE} -c "${i}"
-			 )
+	if(NOT WIN32 OR NOT "${item1}" STREQUAL "libpyTomoSeg2")
+		add_test(NAME import-${item1}.${item2}
+				 COMMAND ${PYTHON_EXECUTABLE} -c "${i}"
+				 )
+	endif()
 endforeach()
 
 add_test(NAME import-inners
