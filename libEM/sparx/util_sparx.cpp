@@ -2650,7 +2650,7 @@ EMData* Util::Polar2Dm(EMData* image, float cnx2, float cny2, vector<int> numr, 
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	
-	int limit = nx*ny - 2; // As required by bilinear function
+	int limit = nx*ny - 2; // As required by bilinear_inline function
 
 	int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
 	float xold, yold, xnew, ynew;
@@ -2687,20 +2687,20 @@ EMData* Util::Polar2Dm(EMData* image, float cnx2, float cny2, vector<int> numr, 
 
 		xold  = 0.0f+cnx2;
 		yold  = inr+cny2;
-		circ(kcirc) = bilinear(xold,yold,nx,limit,xim);    // Sampling on 90 degree
+		circ(kcirc) = bilinear_inline(xold,yold,nx,xim);    // Sampling on 90 degree
 
 		xold  = inr+cnx2;
 		yold  = 0.0f+cny2;
-		circ(iRef+kcirc) = bilinear(xold,yold,nx,limit,xim);  // Sampling on 0 degree
+		circ(iRef+kcirc) = bilinear_inline(xold,yold,nx,xim);  // Sampling on 0 degree
 
 		if (mode == 'F') {
 			xold = 0.0f+cnx2;
 			yold = -inr+cny2;
-			circ(2*iRef+kcirc) = bilinear(xold,yold,nx,limit,xim);  // Sampling on 270 degree
+			circ(2*iRef+kcirc) = bilinear_inline(xold,yold,nx,xim);  // Sampling on 270 degree
 
 			xold = -inr+cnx2;
 			yold = 0.0f+cny2;
-			circ(3*iRef+kcirc) = bilinear(xold,yold,nx,limit,xim); // Sampling on 180 degree
+			circ(3*iRef+kcirc) = bilinear_inline(xold,yold,nx,xim); // Sampling on 180 degree
 		}
 		int nPoints = iRef-1;
 		int mult = (maxPoints+1)/(nPoints+1);
@@ -2712,22 +2712,22 @@ EMData* Util::Polar2Dm(EMData* image, float cnx2, float cny2, vector<int> numr, 
 
 			xold = xnew+cnx2;
 			yold = ynew+cny2;
-			circ(jt+kcirc) = bilinear(xold,yold,nx,limit,xim);      // Sampling on the first quadrant
+			circ(jt+kcirc) = bilinear_inline(xold,yold,nx,xim);      // Sampling on the first quadrant
 
 			xold = ynew+cnx2;
 			yold = -xnew+cny2;
-			circ(jt+iRef+kcirc) = bilinear(xold,yold,nx,limit,xim);	// Sampling on the fourth quadrant
+			circ(jt+iRef+kcirc) = bilinear_inline(xold,yold,nx,xim);	// Sampling on the fourth quadrant
 
 			if (mode == 'F') {
 				xold = -xnew+cnx2;
 				yold = -ynew+cny2;
 
-				circ(jt+2*iRef+kcirc) = bilinear(xold,yold,nx,limit,xim); // Sampling on the third quadrant
+				circ(jt+2*iRef+kcirc) = bilinear_inline(xold,yold,nx,xim); // Sampling on the third quadrant
 
 				xold = -ynew+cnx2;
 				yold = xnew+cny2;
 
-				circ(jt+3*iRef+kcirc) = bilinear(xold,yold,nx,limit,xim);  // Sampling on the second quadrant
+				circ(jt+3*iRef+kcirc) = bilinear_inline(xold,yold,nx,xim);  // Sampling on the second quadrant
 			}
 		}
 	}

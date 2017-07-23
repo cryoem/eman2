@@ -486,6 +486,66 @@ class FakeKaiserBessel : public KaiserBessel {
 		static float bilinear(float xold, float yold, int nsam, int nrow, float* xim);
 
 
+
+		static inline float bilinear_inline(float xold, float yold, int nsam, float* xim)
+		{
+		/*
+		c  purpose: linear interpolation
+		  Optimized for speed, circular closer removed, checking of ranges removed
+		  limit should be set to nsam*nrow-2.
+		*/
+			float bilinear;
+			int   ixold, iyold;
+
+		/*
+			float xdif, ydif, xrem, yrem;
+			ixold   = (int) floor(xold);
+			iyold   = (int) floor(yold);
+			ydif = yold - iyold;
+			yrem = 1.0f - ydif;
+			xdif = xold - ixold;
+			xrem = 1.0f- xdif;
+		//                 RBUF(K) = YDIF*(BUF(NADDR+NSAM)*XREM
+		//     &                    +BUF(NADDR+NSAM+1)*XDIF)
+		//     &                    +YREM*(BUF(NADDR)*XREM + BUF(NADDR+1)*XDIF)
+			bilinear = ydif*(xim(ixold,iyold+1)*xrem + xim(ixold+1,iyold+1)*xdif) +
+							yrem*(xim(ixold,iyold)*xrem+xim(ixold+1,iyold)*xdif);
+
+			return bilinear;
+		}
+		*/
+			float xdif, ydif;
+			ixold   = (int) xold;
+			iyold   = (int) yold;
+			ydif = yold - iyold;
+			xdif = xold - ixold;
+			//if( ixold < 1 || ixold > 64 || iyold < 1 || iyold > 64)  printf(" OUT OF RANGE  %3d  %3d \n",ixold,iyold);
+			// xim[(j-1)*nsam + i-1]
+			/*
+			bilinear = xim(ixold, iyold) + ydif* (xim(ixold, iyold+1) - xim(ixold, iyold)) +
+					   xdif* (xim(ixold+1, iyold) - xim(ixold, iyold) +
+					   ydif* (xim(ixold+1, iyold+1) - xim(ixold+1, iyold) - xim(ixold, iyold+1) + xim(ixold, iyold)) );
+			//printf("location and output %d  %d  %f \n", ixold, iyold, bilinear);
+			return bilinear;
+			*/
+			int ind1 = (iyold-1)*nsam + ixold-1;
+			int ind2 = ind1 + 1;
+			int ind3 = ind1 + nsam;
+			int ind4 = ind3 + 1;
+			/*
+			//  Boundary checks  
+			//  This is not exactly accurate, but optimized for speed. The min/max adds 50% time
+			int ind1 = min(max((iyold-1)*nsam + ixold-1,0),limit);
+			int ind2 = ind1 + 1;
+			int ind3 = min(ind1 + nsam,limit);
+			int ind4 = ind3 + 1;
+			*/
+			return xim[ind1] + ydif* (xim[ind3] - xim[ind1]) +
+					   xdif* (xim[ind2] - xim[ind1] +
+					   ydif* (xim[ind4] - xim[ind2] - xim[ind3] + xim[ind1]) );
+		}
+
+
 		/** Quadratic interpolation (3D)
 		 * @param r
 		 * @param s
