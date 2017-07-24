@@ -298,7 +298,6 @@ IF(ENABLE_JPEG)
     include(cmake/JPEG.cmake)
 ENDIF()
 
-include(cmake/HDF5.cmake)
 IF(WIN32)
 	find_package(SZLIB REQUIRED)
 ENDIF()
