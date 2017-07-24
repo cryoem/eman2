@@ -92,8 +92,6 @@ SET(LIB_GLEM_SOURCE
 		emftgl.cpp)
 
 IF(ENABLE_FFTW3)
-	OPTION(ENABLE_NFFT2 "enable nfft2 support" OFF)
-	
 	find_package(FFTW3 REQUIRED)
 	
 	IF(ENABLE_NFFT2)
