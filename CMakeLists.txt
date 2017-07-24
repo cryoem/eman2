@@ -127,7 +127,6 @@ OPTION(ENABLE_DJBFFT "enable djbfft support" OFF)
 MARK_AS_ADVANCED(ENABLE_DJBFFT)
 
 OPTION(ENABLE_V4L2 "enable V4L2 framegrabbing support" OFF)
-OPTION(ENABLE_JPEG "enable JPEG support" ON)
 
 OPTION(ENABLE_OPENGL "enable EMAN2 OpenGL usage" ON)
 OPTION(ENABLE_SPARX_CUDA "enable SPARX CUDA usage" OFF)
@@ -292,10 +291,6 @@ IF(ENABLE_FTGL)
 
 	ADD_SUBDIRECTORY(fonts)
 	include(cmake/Freetype.cmake)
-ENDIF()
-
-IF(ENABLE_JPEG)
-    include(cmake/JPEG.cmake)
 ENDIF()
 
 IF(ENABLE_RT)
