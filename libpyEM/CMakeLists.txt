@@ -65,8 +65,8 @@ if(NOT WIN32)
 endif()
 
 if(ENABLE_OPENGL)
-    ADD_PYSTE_LIB(pyGLUtils2) 
-    ADD_PYSTE_LIB(pyMarchingCubes2)   
+    ADD_PYSTE_LIB(pyGLUtils2)
+    ADD_PYSTE_LIB(pyMarchingCubes2)
     target_link_libraries(pyGLUtils2 GLEM2)
     target_link_libraries(pyMarchingCubes2 GLEM2)
 	
