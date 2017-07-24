@@ -127,7 +127,6 @@ OPTION(ENABLE_DJBFFT "enable djbfft support" OFF)
 MARK_AS_ADVANCED(ENABLE_DJBFFT)
 
 OPTION(ENABLE_V4L2 "enable V4L2 framegrabbing support" OFF)
-OPTION(ENABLE_PNG "enable PNG support" ON)
 OPTION(ENABLE_JPEG "enable JPEG support" ON)
 
 OPTION(ENABLE_OPENGL "enable EMAN2 OpenGL usage" ON)
@@ -302,10 +301,6 @@ ENDIF()
 include(cmake/HDF5.cmake)
 IF(WIN32)
 	find_package(SZLIB REQUIRED)
-ENDIF()
-
-IF(ENABLE_PNG)
-	include(cmake/PNG.cmake)
 ENDIF()
 
 IF(ENABLE_RT)
