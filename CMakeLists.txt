@@ -298,10 +298,6 @@ IF(ENABLE_JPEG)
     include(cmake/JPEG.cmake)
 ENDIF()
 
-IF(WIN32)
-	find_package(SZLIB REQUIRED)
-ENDIF()
-
 IF(ENABLE_RT)
     ADD_SUBDIRECTORY(rt)
 ENDIF()
