@@ -106,6 +106,14 @@ ELSE()
 	TARGET_LINK_LIBRARIES(EM2 m)
 ENDIF()
 
+find_package(GSL REQUIRED)
+if(WIN32)
+	set_target_properties(GSL::gsl
+						  PROPERTIES
+						  INTERFACE_COMPILE_DEFINITIONS GSL_DLL
+						  )
+endif()
+
 TARGET_LINK_LIBRARIES(EM2 GSL::gsl GSL::gslcblas Freetype::Freetype)
 TARGET_LINK_LIBRARIES(GLEM2 EM2)
 
