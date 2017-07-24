@@ -117,7 +117,9 @@ endif()
 TARGET_LINK_LIBRARIES(EM2 GSL::gsl GSL::gslcblas Freetype::Freetype)
 TARGET_LINK_LIBRARIES(GLEM2 EM2)
 
+OPTION(ENABLE_OPENGL "enable EMAN2 OpenGL usage" ON)
 IF(ENABLE_OPENGL)
+	include(${CMAKE_SOURCE_DIR}/cmake/OpenGL.cmake)
 	target_link_libraries(EM2 OpenGL::OpenGL)
 ENDIF()
 
