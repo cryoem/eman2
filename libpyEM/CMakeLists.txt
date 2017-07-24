@@ -17,7 +17,7 @@ IF(CMAKE_SYSTEM MATCHES "IRIX.*")
 ENDIF()
 
 function(ADD_PYSTE_LIB_WITH_SRC libname srcfile)
-	ADD_LIBRARY(${libname} SHARED lib${libname}.cpp ${srcfile})
+	add_library(${libname} SHARED lib${libname}.cpp ${srcfile})
 	
 	if(WIN32)
 		set(suffix .pyd)
@@ -32,8 +32,8 @@ function(ADD_PYSTE_LIB_WITH_SRC libname srcfile)
 			)
 	
 	# Windows fails without linking against freetype
-	TARGET_LINK_LIBRARIES(${libname} EM2 Boost::python Python::Python Freetype::Freetype)
-	INSTALL(TARGETS ${libname} DESTINATION ${EMAN_PY_INSTALL_PREFIX})
+	target_link_libraries(${libname} EM2 Boost::python Python::Python Freetype::Freetype)
+	install(TARGETS ${libname} DESTINATION ${EMAN_PY_INSTALL_PREFIX})
 endfunction()
 
 function(ADD_PYSTE_LIB libname)
@@ -60,25 +60,25 @@ ADD_PYSTE_LIB(pyPolarData2)
 ADD_PYSTE_LIB(pyAnalyzer2)
 ADD_PYSTE_LIB(pyPDBReader2)
 
-IF(NOT WIN32)
+if(NOT WIN32)
 	ADD_PYSTE_LIB(pyTomoSeg2)
-ENDIF()
+endif()
 
-IF(ENABLE_OPENGL)
+if(ENABLE_OPENGL)
     ADD_PYSTE_LIB(pyGLUtils2) 
     ADD_PYSTE_LIB(pyMarchingCubes2)   
-    TARGET_LINK_LIBRARIES(pyGLUtils2 GLEM2)
-    TARGET_LINK_LIBRARIES(pyMarchingCubes2 GLEM2)
+    target_link_libraries(pyGLUtils2 GLEM2)
+    target_link_libraries(pyMarchingCubes2 GLEM2)
 	
-	IF(ENABLE_FTGL)
-		TARGET_LINK_LIBRARIES(pyGLUtils2 FTGL::FTGL)
-	ENDIF()
-ENDIF()
+	if(ENABLE_FTGL)
+		target_link_libraries(pyGLUtils2 FTGL::FTGL)
+	endif()
+endif()
 
-FILE(GLOB empythonlibs "${CMAKE_CURRENT_SOURCE_DIR}/*.py")
-INSTALL(FILES ${empythonlibs} DESTINATION ${EMAN_PY_INSTALL_PREFIX})
+file(GLOB empythonlibs "${CMAKE_CURRENT_SOURCE_DIR}/*.py")
+install(FILES ${empythonlibs} DESTINATION ${EMAN_PY_INSTALL_PREFIX})
 
-ADD_SUBDIRECTORY(qtgui)
+add_subdirectory(qtgui)
 
 target_link_libraries(pyUtils2         NumPy)
 target_link_libraries(pyTypeConverter2 NumPy)

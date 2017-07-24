@@ -1,6 +1,6 @@
-ADD_SUBDIRECTORY(pmconfig)
+add_subdirectory(pmconfig)
 
-SET(LIB_EM_SOURCE byteorder.cpp
+set(LIB_EM_SOURCE byteorder.cpp
     boxingtools.cpp
     emobject.cpp
     emfft.cpp
@@ -70,33 +70,33 @@ SET(LIB_EM_SOURCE byteorder.cpp
     tomoseg.cpp
     )
 
-SET(LIB_GLEM_SOURCE 
+set(LIB_GLEM_SOURCE 
 		glutil.cpp
 		marchingcubes.cpp
 		emftgl.cpp)
 
-IF(ENABLE_FFTW3)
+if(ENABLE_FFTW3)
 	find_package(FFTW3 REQUIRED)
 	
-	IF(ENABLE_NFFT2)
+	if(ENABLE_NFFT2)
 		find_package(NFFT2 REQUIRED)
 		target_link_libraries(NFFT2 FFTW3D::FFTW3D)
-	ENDIF()
-ENDIF()
+	endif()
+endif()
 
-IF(WIN32)
-    ADD_LIBRARY(EM2   STATIC "")
-    ADD_LIBRARY(GLEM2 STATIC "")
-    TARGET_LINK_LIBRARIES(EM2 FFTW3::FFTW3)
+if(WIN32)
+    add_library(EM2   STATIC "")
+    add_library(GLEM2 STATIC "")
+    target_link_libraries(EM2 FFTW3::FFTW3)
 	target_compile_definitions(EM2 PUBLIC _CRT_SECURE_NO_WARNINGS _SCL_SECURE_NO_WARNINGS)
-ELSE()
-    ADD_LIBRARY(EM2   SHARED "")
-    ADD_LIBRARY(GLEM2 SHARED "")
-    IF(ENABLE_FFTW3)
-    	TARGET_LINK_LIBRARIES(EM2 FFTW3::FFTW3)
-    ENDIF()
-	TARGET_LINK_LIBRARIES(EM2 m)
-ENDIF()
+else()
+    add_library(EM2   SHARED "")
+    add_library(GLEM2 SHARED "")
+    if(ENABLE_FFTW3)
+    	target_link_libraries(EM2 FFTW3::FFTW3)
+    endif()
+	target_link_libraries(EM2 m)
+endif()
 
 target_sources(EM2   PRIVATE ${LIB_EM_SOURCE})
 target_sources(GLEM2 PRIVATE ${LIB_GLEM_SOURCE})
@@ -112,82 +112,82 @@ if(WIN32)
 						  )
 endif()
 
-TARGET_LINK_LIBRARIES(EM2 GSL::gsl GSL::gslcblas Freetype::Freetype)
-TARGET_LINK_LIBRARIES(GLEM2 EM2)
+target_link_libraries(EM2 GSL::gsl GSL::gslcblas Freetype::Freetype)
+target_link_libraries(GLEM2 EM2)
 
-OPTION(ENABLE_OPENGL "enable EMAN2 OpenGL usage" ON)
-IF(ENABLE_OPENGL)
+option(ENABLE_OPENGL "enable EMAN2 OpenGL usage" ON)
+if(ENABLE_OPENGL)
 	include(${CMAKE_SOURCE_DIR}/cmake/OpenGL.cmake)
 	target_link_libraries(EM2 OpenGL::OpenGL)
-ENDIF()
+endif()
 
 IF(ENABLE_FTGL)
 	TARGET_LINK_LIBRARIES(GLEM2 FTGL::FTGL)
 ENDIF()
 
-OPTION(ENABLE_TIFF "enable TIFF support" ON)
-IF(ENABLE_TIFF)
+option(ENABLE_TIFF "enable TIFF support" ON)
+if(ENABLE_TIFF)
 	include(${CMAKE_SOURCE_DIR}/cmake/TIFF.cmake)
-    TARGET_LINK_LIBRARIES(EM2 TIFF::TIFF JPEG::JPEG)
-ENDIF()
+    target_link_libraries(EM2 TIFF::TIFF JPEG::JPEG)
+endif()
 
-OPTION(ENABLE_JPEG "enable JPEG support" ON)
-IF(ENABLE_JPEG)
+option(ENABLE_JPEG "enable JPEG support" ON)
+if(ENABLE_JPEG)
 	include(${CMAKE_SOURCE_DIR}/cmake/JPEG.cmake)
-    TARGET_LINK_LIBRARIES(EM2 JPEG::JPEG)
-ENDIF()
+    target_link_libraries(EM2 JPEG::JPEG)
+endif()
 
 include(${CMAKE_SOURCE_DIR}/cmake/HDF5.cmake)
-TARGET_LINK_LIBRARIES(EM2 HDF5::HDF5)
-IF(WIN32)
+target_link_libraries(EM2 HDF5::HDF5)
+if(WIN32)
 	find_package(SZLIB REQUIRED)
-	TARGET_LINK_LIBRARIES(EM2 SZLIB::SZLIB)
-ENDIF()
+	target_link_libraries(EM2 SZLIB::SZLIB)
+endif()
 
-OPTION(ENABLE_PNG "enable PNG support" ON)
-IF(ENABLE_PNG)
+option(ENABLE_PNG "enable PNG support" ON)
+if(ENABLE_PNG)
 	include(${CMAKE_SOURCE_DIR}/cmake/PNG.cmake)
-    TARGET_LINK_LIBRARIES(EM2 PNG::PNG)
-ENDIF()
+    target_link_libraries(EM2 PNG::PNG)
+endif()
 
-IF(ENABLE_SPARX_CUDA)
-    TARGET_LINK_LIBRARIES(EM2 EM2SparxCuda FFTW3::FFTW3)
-ENDIF()
+if(ENABLE_SPARX_CUDA)
+    target_link_libraries(EM2 EM2SparxCuda FFTW3::FFTW3)
+endif()
 
-IF(ENABLE_EMAN_CUDA)
-    TARGET_LINK_LIBRARIES(EM2 EM2Cuda FFTW3::FFTW3)
-ENDIF()
+if(ENABLE_EMAN_CUDA)
+    target_link_libraries(EM2 EM2Cuda FFTW3::FFTW3)
+endif()
 
-IF(ENABLE_NFFT2)
-	SET(LIB_EM_SOURCE ${LIB_EM_SOURCE} pointarray.cpp)
-	TARGET_LINK_LIBRARIES(EM2 NFFT2::NFFT2 FFTW3D::FFTW3D)
-ENDIF()
+if(ENABLE_NFFT2)
+	set(LIB_EM_SOURCE ${LIB_EM_SOURCE} pointarray.cpp)
+	target_link_libraries(EM2 NFFT2::NFFT2 FFTW3D::FFTW3D)
+endif()
 
-OPTION(ENABLE_DJBFFT "enable djbfft support" OFF)
-MARK_AS_ADVANCED(ENABLE_DJBFFT)
-IF(ENABLE_DJBFFT)
-	OPTION(ENABLE_NFFT2 "enable nfft2 support" OFF)
+option(ENABLE_DJBFFT "enable djbfft support" OFF)
+mark_as_advanced(ENABLE_DJBFFT)
+if(ENABLE_DJBFFT)
+	option(ENABLE_NFFT2 "enable nfft2 support" OFF)
 	
 	find_package(DJBFFT REQUIRED)
-	TARGET_LINK_LIBRARIES(EM2 DJBFFT::DJBFFT)
-ENDIF()
+	target_link_libraries(EM2 DJBFFT::DJBFFT)
+endif()
 
-OPTION(ENABLE_OPTPP "enable Opt++ support" OFF)
-IF(ENABLE_OPTPP)
+option(ENABLE_OPTPP "enable Opt++ support" OFF)
+if(ENABLE_OPTPP)
 	find_package(OPTPP REQUIRED)
-	TARGET_LINK_LIBRARIES(EM2 OPTPP::OPTPP)
-ENDIF()
+	target_link_libraries(EM2 OPTPP::OPTPP)
+endif()
 
-IF(ENABLE_ACML_FFT)
+if(ENABLE_ACML_FFT)
 	find_package(ACML REQUIRED)
-	TARGET_LINK_LIBRARIES(EM2 ACML::ACML)
-ENDIF()
+	target_link_libraries(EM2 ACML::ACML)
+endif()
 
-IF(ENABLE_OPENGL)
-    INSTALL(TARGETS GLEM2
+if(ENABLE_OPENGL)
+    install(TARGETS GLEM2
         DESTINATION ${EMAN_PY_INSTALL_PREFIX})
-ENDIF()
+endif()
 
-INSTALL(TARGETS EM2
+install(TARGETS EM2
 		DESTINATION ${EMAN_PY_INSTALL_PREFIX})
 
