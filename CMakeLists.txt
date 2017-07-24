@@ -126,8 +126,6 @@ MARK_AS_ADVANCED(ENABLE_ACML_FFT)
 OPTION(ENABLE_DJBFFT "enable djbfft support" OFF)
 MARK_AS_ADVANCED(ENABLE_DJBFFT)
 
-OPTION(ENABLE_OPTPP "enable Opt++ support" OFF)
-
 OPTION(ENABLE_TIFF "enable TIFF support" ON)
 OPTION(ENABLE_V4L2 "enable V4L2 framegrabbing support" OFF)
 OPTION(ENABLE_PNG "enable PNG support" ON)
@@ -285,10 +283,6 @@ IF(ENABLE_DJBFFT)
 	OPTION(ENABLE_NFFT2 "enable nfft2 support" OFF)
 		
 	find_package(DJBFFT REQUIRED)
-ENDIF()
-
-IF(ENABLE_OPTPP)
-	find_package(OPTPP REQUIRED)
 ENDIF()
 
 IF(ENABLE_OPENGL)
