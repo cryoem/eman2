@@ -159,7 +159,7 @@ if(ENABLE_EMAN_CUDA)
 endif()
 
 if(ENABLE_NFFT2)
-	set(LIB_EM_SOURCE ${LIB_EM_SOURCE} pointarray.cpp)
+	target_sources(EM2 PRIVATE pointarray.cpp)
 	target_link_libraries(EM2 NFFT2::NFFT2 FFTW3D::FFTW3D)
 endif()
 
