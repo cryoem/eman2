@@ -327,14 +327,6 @@ IF(ENABLE_PNG)
 	include(cmake/PNG.cmake)
 ENDIF()
 
-# Find Boost
-set(Boost_USE_MULTITHREADED ON)
-set(Boost_NO_BOOST_CMAKE ON)
-find_package(Boost COMPONENTS python REQUIRED)
-
-message("Boost_LIBRARIES:   ${Boost_LIBRARIES}")
-message("Boost_INCLUDE_DIR: ${Boost_INCLUDE_DIR}")
-
 IF(ENABLE_RT)
     ADD_SUBDIRECTORY(rt)
 ENDIF()
