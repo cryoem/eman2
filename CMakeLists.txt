@@ -126,7 +126,6 @@ MARK_AS_ADVANCED(ENABLE_ACML_FFT)
 OPTION(ENABLE_DJBFFT "enable djbfft support" OFF)
 MARK_AS_ADVANCED(ENABLE_DJBFFT)
 
-OPTION(ENABLE_TIFF "enable TIFF support" ON)
 OPTION(ENABLE_V4L2 "enable V4L2 framegrabbing support" OFF)
 OPTION(ENABLE_PNG "enable PNG support" ON)
 OPTION(ENABLE_JPEG "enable JPEG support" ON)
@@ -294,10 +293,6 @@ IF(ENABLE_FTGL)
 
 	ADD_SUBDIRECTORY(fonts)
 	include(cmake/Freetype.cmake)
-ENDIF()
-
-IF(ENABLE_TIFF)
-	include(cmake/TIFF.cmake)
 ENDIF()
 
 IF(ENABLE_JPEG)
