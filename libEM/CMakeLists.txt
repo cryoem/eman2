@@ -29,7 +29,6 @@ SET(LIB_EM_SOURCE byteorder.cpp
     emdata_modular.cpp
     emdata_metadata.cpp
     emdata_transform.cpp
-    sparx/emdata_sparx.cpp
     pifio.cpp
     v4l2io.cpp
     vtkio.cpp
@@ -67,22 +66,7 @@ SET(LIB_EM_SOURCE byteorder.cpp
     analyzer.cpp
     randnum.cpp
     hdf_filecache.cpp
-    sparx/fundamentals.cpp
-    sparx/fourierfilter.cpp
-    sparx/rsconvolution.cpp
     polardata.cpp
-    sparx/native_fft.cpp
-    sparx/util_sparx.cpp
-    sparx/lapackblas.cpp
-    sparx/pca.cpp
-    sparx/varimax.cpp
-    sparx/lbfgsb.cpp
-    sparx/steepest.cpp
-    gorgon/grid_queue.cpp
-    gorgon/grid_queue2.cpp
-    gorgon/volume_data.cpp
-    gorgon/volume.cpp
-    gorgon/skeletonizer.cpp
     tomoseg.cpp
     )
 
@@ -116,6 +100,9 @@ ENDIF()
 
 target_sources(EM2   PRIVATE ${LIB_EM_SOURCE})
 target_sources(GLEM2 PRIVATE ${LIB_GLEM_SOURCE})
+
+add_subdirectory(gorgon)
+add_subdirectory(sparx)
 
 find_package(GSL REQUIRED)
 if(WIN32)
