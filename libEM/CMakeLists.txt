@@ -94,8 +94,6 @@ SET(LIB_GLEM_SOURCE
 OPTION(ENABLE_FFTW3 "enable fftw 3 support (USE THIS)" ON)
 IF(ENABLE_FFTW3)
 	OPTION(ENABLE_NFFT2 "enable nfft2 support" OFF)
-	OPTION(ENABLE_NATIVE_FFT "enable native fft support" OFF)
-	OPTION(ENABLE_ACML_FFT "enable AMD Core Math Library fft support" OFF)
 	
 	find_package(FFTW3 REQUIRED)
 	
@@ -197,9 +195,6 @@ ENDIF()
 OPTION(ENABLE_ACML_FFT "enable AMD Core Math Library fft support" OFF)
 MARK_AS_ADVANCED(ENABLE_ACML_FFT)
 IF(ENABLE_ACML_FFT)
-	OPTION(ENABLE_FFTW3 "enable fftw 3 support" OFF)
-	OPTION(ENABLE_NATIVE_FFT "enable native fft support" OFF)
-	
 	find_package(ACML REQUIRED)
 	TARGET_LINK_LIBRARIES(EM2 ACML::ACML)
 ENDIF()
