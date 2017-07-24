@@ -123,8 +123,6 @@ OPTION(ENABLE_NATIVE_FFT "enable native fft support (for non-GPL use)" OFF)
 OPTION(ENABLE_ACML_FFT "enable AMD Core Math Library fft support" OFF)
 OPTION(ENABLE_FFT_CACHING "enable FFT Caching" OFF)
 MARK_AS_ADVANCED(ENABLE_ACML_FFT)
-OPTION(ENABLE_DJBFFT "enable djbfft support" OFF)
-MARK_AS_ADVANCED(ENABLE_DJBFFT)
 
 OPTION(ENABLE_V4L2 "enable V4L2 framegrabbing support" OFF)
 
@@ -274,12 +272,6 @@ IF(ENABLE_NATIVE_FFT)
 	ADD_DEFINITIONS(-DNATIVE_FFT)
 	OPTION(ENABLE_FFTW3 "enable fftw 3 support" OFF)
 	OPTION(ENABLE_ACML_FFT "enable AMD Core Math Library fft support" OFF)
-ENDIF()
-
-IF(ENABLE_DJBFFT)
-	OPTION(ENABLE_NFFT2 "enable nfft2 support" OFF)
-		
-	find_package(DJBFFT REQUIRED)
 ENDIF()
 
 IF(ENABLE_OPENGL)
