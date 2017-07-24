@@ -91,6 +91,20 @@ SET(LIB_GLEM_SOURCE
 		marchingcubes.cpp
 		emftgl.cpp)
 
+OPTION(ENABLE_FFTW3 "enable fftw 3 support (USE THIS)" ON)
+IF(ENABLE_FFTW3)
+	OPTION(ENABLE_NFFT2 "enable nfft2 support" OFF)
+	OPTION(ENABLE_NATIVE_FFT "enable native fft support" OFF)
+	OPTION(ENABLE_ACML_FFT "enable AMD Core Math Library fft support" OFF)
+	
+	find_package(FFTW3 REQUIRED)
+	
+	IF(ENABLE_NFFT2)
+		find_package(NFFT2 REQUIRED)
+		target_link_libraries(NFFT2 FFTW3D::FFTW3D)
+	ENDIF()
+ENDIF()
+
 IF(WIN32)
     ADD_LIBRARY(EM2 STATIC ${LIB_EM_SOURCE})
     ADD_LIBRARY(GLEM2 STATIC ${LIB_GLEM_SOURCE})

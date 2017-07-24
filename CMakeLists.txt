@@ -117,7 +117,6 @@ set(CMAKE_INSTALL_RPATH ${EMAN_PY_INSTALL_PREFIX})
 
 OPTION(ENABLE_AUTODOC "enable latex/doxygen document generation and etc. " OFF)
 
-OPTION(ENABLE_FFTW3 "enable fftw 3 support (USE THIS)" ON)
 OPTION(ENABLE_FFTW_PLAN_CACHING "enable fftw caching" ON)
 OPTION(ENABLE_NATIVE_FFT "enable native fft support (for non-GPL use)" OFF)
 OPTION(ENABLE_FFT_CACHING "enable FFT Caching" OFF)
@@ -236,19 +235,6 @@ IF(ENABLE_IOCACHE)
 	ADD_DEFINITIONS(-DIMAGEIO_CACHE)
 ENDIF()
 
-
-IF(ENABLE_FFTW3)
-    OPTION(ENABLE_NFFT2 "enable nfft2 support" OFF)
-    OPTION(ENABLE_NATIVE_FFT "enable native fft support" OFF)
-    OPTION(ENABLE_ACML_FFT "enable AMD Core Math Library fft support" OFF)
-
-	find_package(FFTW3 REQUIRED)
-		
-    IF(ENABLE_NFFT2)
-		find_package(NFFT2 REQUIRED)
-		target_link_libraries(NFFT2 FFTW3D::FFTW3D)
-	ENDIF()
-ENDIF()
 
 IF(ENABLE_FFTW_PLAN_CACHING)
 	ADD_DEFINITIONS(-DFFTW_PLAN_CACHING)
