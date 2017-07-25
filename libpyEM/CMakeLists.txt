@@ -7,7 +7,10 @@ message("Boost_LIBRARIES:   ${Boost_LIBRARIES}")
 message("Boost_INCLUDE_DIR: ${Boost_INCLUDE_DIR}")
 
 #this definition is for boost.python > 1.35.0 
-ADD_DEFINITIONS(-DBOOST_PYTHON_NO_PY_SIGNATURES)
+set_target_properties(Boost::python
+					  PROPERTIES
+					  INTERFACE_COMPILE_DEFINITIONS BOOST_PYTHON_NO_PY_SIGNATURES
+					  )
 if(WIN32)
 	ADD_DEFINITIONS(-DBOOST_DISABLE_ASSERTS)
 endif()
