@@ -606,6 +606,12 @@ class FakeKaiserBessel : public KaiserBessel {
 	/** This is a copy of Applyws routine from alignment.py */
 	static void  Applyws(EMData* circ, vector<int> numr, vector<float> wr);
 
+
+	static EMData* rotate_rings(EMData* circ1, float alpha, vector<int> numr);
+
+	static float ccc_rings(EMData* circ1, EMData* circ2, float alpha, vector<float> wr, vector<int> numr);
+
+
 	/*
 	  	A little note about different Crosrng:
 		Basically, they all do cross-correlation function to two images in polar coordinates

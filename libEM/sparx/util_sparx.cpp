@@ -5062,9 +5062,6 @@ vector<float> Util::Crosrng_msg_vec_p(EMData* circ1, EMData* circ2, vector<int> 
         return r;
 }
 
-#define  dout(i,j)        dout[i+maxrin*j]
-#define  circ1b(i)        circ1b[i-1]
-#define  circ2b(i)        circ2b[i-1]
 
 void Util::Crosrng_msg_vec(EMData* circ1, EMData* circ2, vector<int> numr, float *q, float *t) {
 
@@ -5962,12 +5959,12 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_scores_local(EMData* dataima
 	int counter = 0;
 	for (int ib = 0; ib < n_coarse_shifts; ib++) {
 	//cout<<" coarse_shifts "<<ib<<"  "<<coarse_shifts_shrank[ib][0]<<"  "<<coarse_shifts_shrank[ib][1]<<"  "<<endl;
-		EMData* cimage = dataimage->copy();
+		/*EMData* cimage = dataimage->copy();
 		cimage->process_inplace("filter.shift", Dict("x_shift", coarse_shifts_shrank[ib][0], "y_shift", coarse_shifts_shrank[ib][1], "z_shift", 0.0f));
 		cimage->do_ift_inplace();
 		cimage->depad();
-		cimage = Polar2Dm(cimage, cnx, cnx, numr, mode);
-		//EMData* cimage = Polar2Dm(dataimage, cnx-coarse_shifts_shrank[ib][0], cnx-coarse_shifts_shrank[ib][1], numr, mode);
+		cimage = Polar2Dm(cimage, cnx, cnx, numr, mode);*/
+		EMData* cimage = Polar2Dm(dataimage, cnx-coarse_shifts_shrank[ib][0], cnx-coarse_shifts_shrank[ib][1], numr, mode);
 		Frngs(cimage, numr);
 		float* circ1b = cimage->get_data();
 		//or (int ic = 0; ic < 6; ic++)  cout<<"  "<<circ1b[ic];
@@ -6198,8 +6195,8 @@ void Util::update_fav(EMData* avep, EMData* datp, float tot, int mirror, vector<
 			}
 		}
 	}
-	avep->update();
 	EXITFUNC;
+	avep->update();
 }
 
 void Util::sub_fav(EMData* avep, EMData* datp, float tot, int mirror, vector<int> numr) {
@@ -6240,10 +6237,96 @@ void Util::sub_fav(EMData* avep, EMData* datp, float tot, int mirror, vector<int
 			}
 		}
 	}
-	avep->update();
 	EXITFUNC;
+	avep->update();
 }
 
+
+
+EMData* Util::rotate_rings(EMData* circ1, float alpha, vector<int> numr)
+{
+
+	int   ip, jc, numr3i, numr2i, i, j, ialpha;
+	float dq, eq;
+
+	float talpha = -alpha;
+	while( talpha < 0.0f ) talpha += 360.0f;
+
+	int nring = numr.size()/3;
+
+	EMData *circ2 = circ1->copy_head();
+
+	float* circ1b = circ1->get_data();
+	float* circ2b = circ2->get_data();
+
+	float qalpha = -1.0;
+	for (i=0; i<nring; i++) {
+
+		numr2i = numr[i*3 + 1] - 1;
+		numr3i = numr[i*3 + 2];
+
+		float nalpha = talpha/(360.0f/numr3i);
+		if( nalpha != qalpha )  {
+			qalpha = nalpha;
+			ialpha = int(qalpha);
+			dq = qalpha - ialpha;
+			eq = 1.0 - dq;
+		}
+
+		for (j=0; j<numr3i; j++) {
+			int jd0 = (j+numr3i+ialpha)%numr3i + numr2i;
+			int jd1 = (j+numr3i+1+ialpha)%numr3i + numr2i;
+			circ2b[j+numr2i] = eq*circ1b[jd0] + dq*circ1b[jd1];
+		}
+	}
+	circ2->update();
+	EXITFUNC;
+	return circ2;
+
+}
+
+
+float Util::ccc_rings(EMData* circ1, EMData* circ2, float alpha, vector<float> wr, vector<int> numr)
+{
+
+	int   ip, jc, numr3i, numr2i, i, j, ialpha;
+	float dq, eq;
+
+	float talpha = -alpha;
+	while( talpha < 0.0f ) talpha += 360.0f;
+
+	int nring = numr.size()/3;
+
+	float* circ1b = circ1->get_data();
+	float* circ2b = circ2->get_data();
+
+	float qalpha = -1.0;
+	double t = 0.0;
+	for (i=0; i<nring; i++) {
+
+		double w = wr[i];
+
+		numr2i = numr[i*3 + 1] - 1;
+		numr3i = numr[i*3 + 2];
+
+		float nalpha = talpha/(360.0f/numr3i);
+		if( nalpha != qalpha )  {
+			qalpha = nalpha;
+			ialpha = int(qalpha);
+			dq = qalpha - ialpha;
+			eq = 1.0 - dq;
+		}
+
+		for (j=0; j<numr3i; j++) {
+			int jd0 = (j+numr3i+ialpha)%numr3i + numr2i;
+			int jd1 = (j+numr3i+1+ialpha)%numr3i + numr2i;
+			t += (eq*circ1b[jd0] + dq*circ1b[jd1])*circ2b[j+numr2i]*w;
+		}
+	}
+	EXITFUNC;
+	return static_cast<float>(t);
+
+}
 
 #undef    QUADPI
 #undef    PI2
@@ -20055,8 +20138,8 @@ float Util::sqed( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise )
 		}
 	}
 	edis *= 0.5f;
-    return edis;
 	EXITFUNC;
+    return edis;
 }
 
 //  This is linear version
@@ -20097,8 +20180,8 @@ vector<float> Util::sqed_test( EMData* img, EMData* proj, EMData* ctfs, EMData* 
 	output[2] = part2;
 	output[3] = part3;
 
-    return output;
 	EXITFUNC;
+    return output;
 }
 
 
@@ -20125,8 +20208,8 @@ float Util::sqedac( EMData* img, EMData* proj, EMData* ctfsbckgnoise )
 		}
 	}
 	edis *= 0.5f;
-    return edis;
 	EXITFUNC;
+    return edis;
 }
 
 void Util::sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* mask, EMData* bckgnoise, float prob)
@@ -20243,8 +20326,8 @@ vector<float> Util::sqednormbckg( EMData* img, EMData* proj, EMData* ctfs, EMDat
 
 	rotav[nx]   = edis*0.5f;
 	rotav[nx+1] = wdis;
-	return rotav;
 	EXITFUNC;
+	return rotav;
 }
 
 
@@ -20329,8 +20412,8 @@ vector<float> Util::sqednorm( EMData* img, EMData* proj, EMData* ctfs, EMData* b
 	vector<float> retvals;
 	retvals.push_back(edis*0.5f);
 	retvals.push_back(wdis);
-    return retvals;
 	EXITFUNC;
+    return retvals;
 }
 
 
@@ -20356,8 +20439,8 @@ void Util::set_freq(EMData* freqvol, EMData* temp, EMData* mask, float cutoff, f
 		}
 	}
 
-	freqvol->update();
 	EXITFUNC;
+	freqvol->update();
 }
 using namespace std;
 #include <string>
@@ -27327,6 +27410,7 @@ std::vector<int> Util::max_clique(std::vector<int> edges)
 float Util::innerproduct(EMData* img, EMData* img1, EMData* mask)
 {
 	ENTERFUNC;
+	// ONLY FOR COMPLEX DATA
 
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	size_t size = (size_t)nx*ny*nz;
