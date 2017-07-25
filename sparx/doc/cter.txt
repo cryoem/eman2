@@ -5,12 +5,14 @@ sxcter - CTF Estimation: Automated estimation of CTF parameters with error asses
 
 ''usage in command line''
 
-sxcter.py  input_image_path  output_directory  --selection_list=selection_list  --wn=CTF_WINDOW_SIZE --apix=PIXEL_SIZE  --Cs=CS  --voltage=VOLTAGE  --ac=AMP_CONTRAST  --f_start=FREA_START  --f_stop=FREQ_STOP  --kboot=KBOOT  --overlap_x=OVERLAP_X  --overlap_y=OVERLAP_Y  --edge_x=EDGE_X  --edge_y=EDGE_Y  --set_ctf_header  --check_consistency  --stack_mode  --debug_mode  --vpp  --pap
+sxcter.py  input_image_path  output_directory  --selection_list=selection_list  --wn=CTF_WINDOW_SIZE --apix=PIXEL_SIZE  --Cs=CS  --voltage=VOLTAGE  --ac=AMP_CONTRAST  --f_start=FREA_START  --f_stop=FREQ_STOP  --kboot=KBOOT  --overlap_x=OVERLAP_X  --overlap_y=OVERLAP_Y  --edge_x=EDGE_X  --edge_y=EDGE_Y  --check_consistency  --stack_mode  --debug_mode  --vpp  --defocus_min=DEFOCUS_MIN  --defocus_max=DEFOCUS_MAX  --defocus_step=DEFOCUS_STEP  --phase_min=PHASE_MIN    --phase_max=PHASE_MAX  --phase_step==PHASE_STEP  --pap
 
 
 === Typical usage ===
 
 sxcter exists in for both MPI and non-MPI versions (Running MPI version does not require --MPI flag). 
+The program supports the phase shift estimation which induced by phase plate (e.g. Volta Phase Plate) with --vpp option. Please note that cter stores the estimated phase shift as amplitude contrast.
+By default, amplitude is used for the CTF model fitting but user can select power spectrum with --papa option (traditional method).
 
     All Micrographs Mode - Process all micrographs in a directory:: Specify a list of input micrographs using a wild card (*), called here input micrographs path pattern. Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). Running from the command line requires enclosing the string by single quotes (') or double quotes ("). sxgui.py will automatically adds single quotes to the string. BDB files can not be selected as input micrographs. Then, specify output directory where all outputs should be saved. In this mode, all micrographs matching the path pattern will be processed.
 
@@ -27,6 +29,14 @@ sxcter exists in for both MPI and non-MPI versions (Running MPI version does not
     Stack Mode - Process a particle stack (Not supported by SPHIRE GUI)):: Use --stack_mode option, then specify the path of particle stack file (without wild card "*") and output directory as arguments. This mode ignores --selection_list, --wn --overlap_x, --overlap_y, --edge_x, and --edge_y options. Use single processor for this mode. Not supported by SPHIRE GUI (sxgui.py). 
 
     ''' sxcter.py bdb:stack outdir_cter --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --stack_mode ''' <<BR>><<BR>>
+
+    All Micrographs Mode with Phase-Shift Estimation - defocus_min, defocus_max, defocus_step, phase_min, phase_max, and phase_step options are only applicable with --vpp option.
+ 
+    ''' mpirun -np 16 sxcter.py './mic*.hdf' outdir_cter --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --vpp --defocus_min=0.3 --defocus_max=9.0 --defocus_step=0.1 --phase_min=5.0 --phase_max=175.0 --phase_step=5 ''' <<BR>><<BR>>
+
+    All Micrographs Mode with the CTF model fitting to power spectrum
+ 
+    ''' mpirun -np 16 sxcter.py './mic*.hdf' outdir_cter --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --pap ''' <<BR>><<BR>>
 
 == Input ==
     input_image_path:: Input micrograph path pattern: Specify input micrographs path pattern with a wild card (*) for any of Micrograph Modes. Images of BDB format can not be used as input micrographs. As an advanced option, a particle stack file path can also be supplied here when using --stack_mode. However, Stack Mode is not supported by sxgui. (default required string)
@@ -46,11 +56,16 @@ sxcter exists in for both MPI and non-MPI versions (Running MPI version does not
     overlap_y:: Y overlap [%]: Overlap between the windows in the y direction. This will be ignored in Stack Mode. (default 50)
     edge_x:: Edge x [pixels]: Defines the edge of the tiling area in the x direction. Normally it does not need to be modified. This will be ignored in Stack Mode. (default 0)
     edge_y:: Edge y [pixels]: Defines the edge of the tiling area in the y direction. Normally it does not need to be modified. This will be ignored in Stack Mode. (default 0)
-    set_ctf_header:: Export CTF parameters to header: Exports the estimated CTF parameters to the image header. (default False)
     check_consistency:: Check consistency of inputs: Create a text file containing the list of inconsistent Micrograph ID entries (i.e. inconsist_mic_list_file.txt). (default False)
     stack_mode:: Use stack mode: Use a stack as the input. Please set the file path of a stack as the first argument and output directory for the second argument. This is advanced option. Not supported by sxgui. (default False)
     debug_mode:: Enable debug mode: Print out debug information. (default False)
     vpp:: Estimate amplitude contrast: UNDER DEVELOPMENT! Also estimate phase shift as amplitude contrast. Use this option to estimate phase shift induced by Volta Phase Plate imaging. (default False)
+    defocus_min:: Minimum defocus search [um]: UNDER DEVELOPMENT! This is applicable only with --vpp option. (default 0.3)
+    defocus_max:: Maximum defocus search [um]: UNDER DEVELOPMENT! This is applicable only with --vpp option. (default 9.0)
+    defocus_step:: Step defocus search [um]: UNDER DEVELOPMENT! This is applicable only with --vpp option. (default 0.1)
+    phase_min:: Minimum phase search [degrees]: UNDER DEVELOPMENT! This is applicable only with --vpp option. (default 5.0)
+    phase_max:: Maximum phase search [degrees]: UNDER DEVELOPMENT! This is applicable only with --vpp option. (default 175.0)
+    phase_step:: Step phase search [degrees]: UNDER DEVELOPMENT! This is applicable only with --vpp option. (default 5.0)
     pap:: Use amplitude : UNDER DEVELOPMENT! Use amplitude for CTF parameter search instead of power spectrum. (default False)
 
 == Output ==
@@ -102,7 +117,7 @@ The rotationally averaged power spectra or amplitude (rotinf.txt files) will be 
 
 == Description ==
 
-''''This is work in progress since 11/30/2013''''
+''''The phase shift estimation is in progress now''''
 
 
 == Author / Maintainer ==
@@ -124,7 +139,7 @@ sparx/bin/sxcter.py
 [[http://sparx-em.org/sparxwiki/sxgui_cter|sxgui_cter]], [[http://sparx-em.org/sparxwiki/sxwindow|sxwindow]]
 
 === Maturity ===
-    beta::     works for author, often works for others.
+    alpah:: The phase shift estimation is under development.
 
 === Bugs ===
-Fixed most of the bugs thus far.
+We have not reached to testing phase yet.
