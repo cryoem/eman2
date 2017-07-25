@@ -34,8 +34,7 @@ function(ADD_PYSTE_LIB libname)
 			SUFFIX ${suffix}
 			)
 	
-	# Windows fails without linking against freetype
-	target_link_libraries(${libname} EM2 Boost::python Python::Python Freetype::Freetype)
+	target_link_libraries(${libname} EM2 Boost::python Python::Python)
 	install(TARGETS ${libname} DESTINATION ${EMAN_PY_INSTALL_PREFIX})
 endfunction()
 

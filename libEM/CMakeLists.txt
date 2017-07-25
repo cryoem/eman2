@@ -114,7 +114,7 @@ if(WIN32)
 						  )
 endif()
 
-target_link_libraries(EM2 GSL::gsl GSL::gslcblas Freetype::Freetype)
+target_link_libraries(EM2 GSL::gsl GSL::gslcblas)
 
 option(ENABLE_TIFF "enable TIFF support" ON)
 if(ENABLE_TIFF)
