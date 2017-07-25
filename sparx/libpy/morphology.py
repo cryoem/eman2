@@ -257,11 +257,12 @@ def linchange(a, fct):
 	reinterpolate a line given as a list by a factor of fct.
 	Useful for adjusting 1D power spectra, uses linear interplation
 	"""
+	fctf = float(fct)
 	n = len(a)
-	m = int(n*fct+0.5)
+	m = int(n*fctf+0.5)
 	o = [0.0]*m
 	for i in xrange(m):
-		x = i/fct
+		x = i/fctf
 		j = min(int(x), n-2)
 		dx = x-j
 		o[i] = (1.0-dx)*a[j] + dx*a[j+1]
