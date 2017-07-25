@@ -1668,7 +1668,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 	from   global_def   import ERROR
 	import global_def
 	from   time import time
-	from   mpi import MPI_COMM_WORLD
+	from   mpi import MPI_COMM_WORLD, mpi_barrier
 
 	# ====================================================================================
 	# Prepare processing
@@ -2158,26 +2158,26 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 
 			mic = get_im(img_name)
 			pw2 = tilemic(mic, win_size = wn, overlp_x = overlap_x, overlp_y = overlap_y, edge_x = edge_x, edge_y = edge_y)
-			if stack == None:
-				# create  thumbnail
-				nx = mic.get_xsize()
-				if nx > 512:
-					img_micthumb = resample(mic, 512.0/nx)
-				else:
-					img_micthumb = mic
-				img_micthumb.write_image(os.path.join(outmicthumb, "%s_thumb.hdf" % (img_basename_root)))
-				del img_micthumb
+			# # NOTE: 2017/07/24 Toshio Moriya 
+			# # Writing thumbnail at this timing causes exception with MPI processing for some micrographs
+			# # RuntimeError:     FileAccessException at EMAN2_SRC_DIR/eman2/libEM/hdfio2.cpp:517: 
+			# # error with 'CTER_OUTDIR/micthumb/MIC_BASENAME_ROOT.hdf': 'cannot access file 'CTER_OUTDIR/micthumb/MIC_BASENAME_ROOT.hdf'' caught
+			# 
+			# if stack == None:
+			# 	# create  thumbnail
+			# 	nx = mic.get_xsize()
+			# 	if nx > 512:
+			# 		img_micthumb = resample(mic, 512.0/nx)
+			# 	else:
+			# 		img_micthumb = mic
+			# 	img_micthumb.write_image(os.path.join(outmicthumb, "%s_thumb.hdf" % (img_basename_root)))
+			# 	del img_micthumb
 			del mic
 		else:
 			img_type = "Stack"
 			img_name = stack
 			
 			numFM = EMUtil.get_image_count(img_name)
-			if db_check_dict(img_name) == False:
-				img_basename_root = os.path.splitext(os.path.basename(img_name))[0]
-			else:
-				path, dictname, keys = db_parse_path(img_name)
-				img_basename_root = dictname
 			pw2 = [None]*numFM
 			for i in xrange(numFM):
 				pw2.append(periodogram(get_im(img_name,i)))
@@ -2185,6 +2185,13 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 		for i in xrange(len(pw2)):
 			pw2[i] = square_root(pw2[i])
 		if debug_mode: print  "    %s %s: Process %04d started the processing. Detected %d image(s) in this %s file." % (img_type, img_name, ifi, numFM, img_type.lower())
+
+		if db_check_dict(img_name) == False:
+			img_basename_root = os.path.splitext(os.path.basename(img_name))[0]
+		else:
+			path, dictname, keys = db_parse_path(img_name)
+			img_basename_root = dictname
+
 		
 		nimi = len(pw2)
 		adefocus = [0.0] * kboot
@@ -2634,6 +2641,17 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 #					totresi.append( [ 0, ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, ib1, ibec])
 #				#if ifi == 4 : break
 
+		if stack == None:
+			img_mic = get_im(namics[ifi])
+			# create  thumbnail
+			nx = img_mic.get_xsize()
+			if nx > 512:
+				img_micthumb = resample(img_mic, 512.0/nx)
+			else:
+				img_micthumb = img_mic
+			fou = os.path.join(outmicthumb, "%s_thumb.hdf" % (img_basename_root))
+			img_micthumb.write_image(fou)
+
 	if RUNNING_UNDER_MPI:
 		from utilities import wrap_mpi_gatherv
 		totresi = wrap_mpi_gatherv(totresi, 0, MPI_COMM_WORLD)
@@ -2721,7 +2739,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 	from   global_def   import ERROR
 	import global_def
 	from   time import time
-	from   mpi import MPI_COMM_WORLD
+	from   mpi import MPI_COMM_WORLD, mpi_barrier
 
 	# ====================================================================================
 	# Prepare processing
@@ -3211,32 +3229,38 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 
 			mic = get_im(img_name)
 			pw2 = tilemic(mic, win_size = wn, overlp_x = overlap_x, overlp_y = overlap_y, edge_x = edge_x, edge_y = edge_y)
-			if stack == None:
-				# create  thumbnail
-				nx = mic.get_xsize()
-				if nx > 512:
-					img_micthumb = resample(mic, 512.0/nx)
-				else:
-					img_micthumb = mic
-				img_micthumb.write_image(os.path.join(outmicthumb, "%s_thumb.hdf" % (img_basename_root)))
-				del img_micthumb
+			# # NOTE: 2017/07/24 Toshio Moriya 
+			# # Writing thumbnail at this timing causes exception with MPI processing for some micrographs
+			# # RuntimeError:     FileAccessException at EMAN2_SRC_DIR/eman2/libEM/hdfio2.cpp:517: 
+			# # error with 'CTER_OUTDIR/micthumb/MIC_BASENAME_ROOT.hdf': 'cannot access file 'CTER_OUTDIR/micthumb/MIC_BASENAME_ROOT.hdf'' caught
+			# 
+			# if stack == None:
+			# 	# create  thumbnail
+			# 	nx = mic.get_xsize()
+			# 	if nx > 512:
+			# 		img_micthumb = resample(mic, 512.0/nx)
+			# 	else:
+			# 		img_micthumb = mic
+			# 	img_micthumb.write_image(os.path.join(outmicthumb, "%s_thumb.hdf" % (img_basename_root)))
+			# 	del img_micthumb
 			del mic
 		else:
 			img_type = "Stack"
 			img_name = stack
 			
 			numFM = EMUtil.get_image_count(img_name)
-			if db_check_dict(img_name) == False:
-				img_basename_root = os.path.splitext(os.path.basename(img_name))[0]
-			else:
-				path, dictname, keys = db_parse_path(img_name)
-				img_basename_root = dictname
 			pw2 = [None]*numFM
 			for i in xrange(numFM):
 				pw2.append(periodogram(get_im(img_name,i)))
 
 		if debug_mode: print  "    %s %s: Process %04d started the processing. Detected %d image(s) in this %s file." % (img_type, img_name, ifi, numFM, img_type.lower())
 		
+		if db_check_dict(img_name) == False:
+			img_basename_root = os.path.splitext(os.path.basename(img_name))[0]
+		else:
+			path, dictname, keys = db_parse_path(img_name)
+			img_basename_root = dictname
+
 		nimi = len(pw2)
 		adefocus = [0.0] * kboot
 		aamplitu = [0.0] * kboot
@@ -3675,6 +3699,17 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 #				else:
 #					totresi.append( [ 0, ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, ib1, ibec])
 #				#if ifi == 4 : break
+
+		if stack == None:
+			img_mic = get_im(namics[ifi])
+			# create  thumbnail
+			nx = img_mic.get_xsize()
+			if nx > 512:
+				img_micthumb = resample(img_mic, 512.0/nx)
+			else:
+				img_micthumb = img_mic
+			fou = os.path.join(outmicthumb, "%s_thumb.hdf" % (img_basename_root))
+			img_micthumb.write_image(fou)
 
 	if RUNNING_UNDER_MPI:
 		from utilities import wrap_mpi_gatherv
@@ -5101,7 +5136,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 	import glob
 	from   time import time
 	from   inspect      import currentframe, getframeinfo
-	from   mpi import MPI_COMM_WORLD
+	from   mpi import MPI_COMM_WORLD, mpi_barrier
 
 	# ====================================================================================
 	# Prepare processing
@@ -5587,15 +5622,20 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 				continue
 			mic = get_im(img_name)
 			pw2 = tilemic(mic, win_size = wn, overlp_x = overlap_x, overlp_y = overlap_y, edge_x = edge_x, edge_y = edge_y)
-			if stack == None:
-				# create  thumbnail
-				nx = mic.get_xsize()
-				if nx > 512:
-					img_micthumb = resample(mic, 512.0/nx)
-				else:
-					img_micthumb = mic
-				img_micthumb.write_image(os.path.join(outmicthumb, "%s_thumb.hdf" % (img_basename_root)))
-				del img_micthumb
+			# # NOTE: 2017/07/24 Toshio Moriya 
+			# # Writing thumbnail at this timing causes exception with MPI processing for some micrographs
+			# # RuntimeError:     FileAccessException at EMAN2_SRC_DIR/eman2/libEM/hdfio2.cpp:517: 
+			# # error with 'CTER_OUTDIR/micthumb/MIC_BASENAME_ROOT.hdf': 'cannot access file 'CTER_OUTDIR/micthumb/MIC_BASENAME_ROOT.hdf'' caught
+			# 
+			# if stack == None:
+			# 	# create  thumbnail
+			# 	nx = mic.get_xsize()
+			# 	if nx > 512:
+			# 		img_micthumb = resample(mic, 512.0/nx)
+			# 	else:
+			# 		img_micthumb = mic
+			# 	img_micthumb.write_image(os.path.join(outmicthumb, "%s_thumb.hdf" % (img_basename_root)))
+			# 	del img_micthumb
 			del mic
 
 		else:
@@ -5603,11 +5643,6 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			img_name = stack
 
 			numFM = EMUtil.get_image_count(img_name)
-			if db_check_dict(img_name) == False:
-				img_basename_root = os.path.splitext(os.path.basename(img_name))[0]
-			else:
-				path, dictname, keys = db_parse_path(img_name)
-				img_basename_root = dictname
 			pw2 = [None]*numFM
 			for i in xrange(numFM):
 				pw2[i] = periodogram(get_im(img_name,i))
@@ -5616,6 +5651,13 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			pw2[i] = square_root(pw2[i])
 
 		if debug_mode: print  "    %s %s: Process %04d started the processing. Detected %d image(s) in this %s file." % (img_type, img_name, ifi, img_type.lower())
+
+		if db_check_dict(img_name) == False:
+			img_basename_root = os.path.splitext(os.path.basename(img_name))[0]
+		else:
+			path, dictname, keys = db_parse_path(img_name)
+			img_basename_root = dictname
+
 		#  VPP code starts here  03/08/2017
 		nimi = len(pw2)
 		adefocus = [0.0] * kboot
@@ -5975,6 +6017,18 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 #					totresi.append( [ 0, ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, ib1, ibec])
 #				#if ifi == 4 : break
 				#print  " error est4  ",(time()-at)/60.0
+
+		if stack == None:
+			img_mic = get_im(namics[ifi])
+			# create  thumbnail
+			nx = img_mic.get_xsize()
+			if nx > 512:
+				img_micthumb = resample(img_mic, 512.0/nx)
+			else:
+				img_micthumb = img_mic
+			img_basename_root = os.path.splitext(os.path.basename(img_name))[0]
+			fou = os.path.join(outmicthumb, "%s_thumb.hdf" % (img_basename_root))
+			img_micthumb.write_image(fou)
 
 	if RUNNING_UNDER_MPI:
 		from utilities import wrap_mpi_gatherv
