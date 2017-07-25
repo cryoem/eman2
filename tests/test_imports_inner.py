@@ -1,11 +1,9 @@
-import EMAN2
-EMAN2.Util.FakeKaiserBessel
-EMAN2.Util.KaiserBessel
-EMAN2.Util.KaiserBessel.kbi0_win
-EMAN2.Util.KaiserBessel.kbsinh_win
-EMAN2.Util.sincBlackman
-
 import libpyUtils2
+libpyUtils2.Util.FakeKaiserBessel
+libpyUtils2.Util.KaiserBessel
+libpyUtils2.Util.KaiserBessel.kbi0_win
+libpyUtils2.Util.KaiserBessel.kbsinh_win
+libpyUtils2.Util.sincBlackman
 libpyUtils2.EMUtil.EMDataType
 libpyUtils2.EMUtil.ImageType
 libpyUtils2.Util.Gaussian
