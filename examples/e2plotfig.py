@@ -309,7 +309,12 @@ def plotdata( options, data ):
 			print "color is {}".format(color)
 			print "marker is {}".format(marker)
 		
-		plotfig( options, fig, ax, data[k][0], data[k][1], color, marker )		
+		plotfig( options, fig, ax, data[k][0], data[k][1], k, color, marker )
+		
+		areay = round(sum(data[k][1]),2)	
+		with open(options.path + '/' + options.outputtag + '_areas.txt','a') as areasfile:
+			areasfile.write( str(k)+ ' ' + str(areay) + '\n')
+		 
 
 	filetosave = options.path + '/' + options.outputtag + '.png'
 	fig.savefig( filetosave, dpi=resolution, bbox_inches='tight')# transparent=True) #, bbox_extra_artists=(lgd,), bbox_inches='tight'
@@ -322,15 +327,15 @@ def plotdata( options, data ):
 			#colorbar=False
 			fig,ax = resetplot()
 			print "\n(e2plotfig)(plotdata) plotting individual plot for dataset n = {}".format(k)
-			plotfig( options, fig, ax, data[k][0], data[k][1], k )	
+			plotfig( options, fig, ax, data[k][0], data[k][1], k, color, marker )	
 			filetosave = options.path + '/' + options.outputtag + str( k ).zfill( len(str(ndata)))+'.png'
-			fig.savefig( filetosave, dpi=resolution, bbox_inches='tight')
+			fig.savefig( filetosave, dpi=resolution, bbox_inches='tight', format='png')
 			plt.close('fig')
 
 	return
 
 
-def plotfig( options, fig, ax, datax, datay, colorthis='k', markerthis='' )	:
+def plotfig( options, fig, ax, datax, datay, count, colorthis='k', markerthis='' )	:
 	
 	ax.get_xaxis().tick_bottom()
 	ax.get_yaxis().tick_left()
@@ -356,9 +361,26 @@ def plotfig( options, fig, ax, datax, datay, colorthis='k', markerthis='' )	:
 	#colorthis = 'k'
 	#if colorstart and colorstep:
 	#	colorthis = cpick.to_rgba( colorstart + kplot*colorstep)
+	label=str(count)
+	if markerthis:
+		label=markerthis
+		
+	#ax.legend()
+	ax.plot( datax, datay, linewidth=2, marker=markerthis, markersize=5, color=colorthis, label=label) #, alpha=0.75)
 	
-	ax.plot( datax, datay, linewidth=2, marker=markerthis, markersize=5, color=colorthis, label='') #, alpha=0.75)
-
+	handles, labels = ax.get_legend_handles_labels()
+	
+	#ax.legend(handles, labels, loc='center right', bbox_to_anchor=(1.3, 0.5))
+	
+	
+	#plt.legend()
+	plt.legend(frameon=False, bbox_to_anchor=(1.05,1), loc="upper left", borderaxespad=0)
+	
+	
+	
+	
+	
+		
 	#if errors:
 	#	lines = {'linestyle': 'None'}
 	#	plt.rc('lines', **lines)
@@ -368,6 +390,7 @@ def plotfig( options, fig, ax, datax, datay, colorthis='k', markerthis='' )	:
 	ax.set_xlabel(options.labelxaxis + ' ' + options.unitsx, fontsize=16, fontweight='bold')
 	ax.set_ylabel(options.labelyaxis + ' ' + options.unitsy, fontsize=16, fontweight='bold')
 
+	
 	
 	#if colorbar:
 	#	cbr=plt.colorbar(cpick)
