@@ -3172,45 +3172,9 @@ def sptmakepath(options, stem='spt'):
 	options.path="{}_{:02d}".format(stem,i)
 	try: os.mkdir(options.path)
 	except: pass
-
-	#files=os.listdir(os.getcwd())
-
-	#if not options.path:		
-		##options.path = stem + '_01'
-		#options.path = stem
-		#if options.verbose:
-			#print """\n(e2spt_classaverage)(sptmakepath)--path was not specified, 
-			#therefore it will have the default value""", options.path 	
-
-	#while options.path in files:
-		#if '_' not in options.path:
-			#options.path = options.path + '_00'
-		#else:
-			#jobtag=''
-			#components=options.path.split('_')
-			#if components[-1].isdigit():
-				#components[-1] = str(int(components[-1])+1).zfill(2)
-			#else:
-				#components.append('00')
-						
-			#options.path = '_'.join(components)
-			##options.path = path
-	
-	#print "The new options.path is", options.path
-
-	#if options.path not in files:
-		#if options.verbose:
-			#print "I will make THIS path", options.path
-		
-		##os.system('mkdir ' + options.path)
-		#os.mkdir( options.path )
 	
 	return options
 
-
-
-
-	
 
 def makeAverage(options,ic,results,it=0):
 	
