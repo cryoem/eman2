@@ -117,23 +117,12 @@ set(CMAKE_INSTALL_RPATH ${EMAN_PY_INSTALL_PREFIX})
 
 OPTION(ENABLE_AUTODOC "enable latex/doxygen document generation and etc. " OFF)
 
-OPTION(ENABLE_FFTW3 "enable fftw 3 support (USE THIS)" ON)
 OPTION(ENABLE_FFTW_PLAN_CACHING "enable fftw caching" ON)
 OPTION(ENABLE_NATIVE_FFT "enable native fft support (for non-GPL use)" OFF)
-OPTION(ENABLE_ACML_FFT "enable AMD Core Math Library fft support" OFF)
 OPTION(ENABLE_FFT_CACHING "enable FFT Caching" OFF)
-MARK_AS_ADVANCED(ENABLE_ACML_FFT)
-OPTION(ENABLE_DJBFFT "enable djbfft support" OFF)
-MARK_AS_ADVANCED(ENABLE_DJBFFT)
 
-OPTION(ENABLE_OPTPP "enable Opt++ support" OFF)
-
-OPTION(ENABLE_TIFF "enable TIFF support" ON)
 OPTION(ENABLE_V4L2 "enable V4L2 framegrabbing support" OFF)
-OPTION(ENABLE_PNG "enable PNG support" ON)
-OPTION(ENABLE_JPEG "enable JPEG support" ON)
 
-OPTION(ENABLE_OPENGL "enable EMAN2 OpenGL usage" ON)
 OPTION(ENABLE_SPARX_CUDA "enable SPARX CUDA usage" OFF)
 OPTION(ENABLE_EMAN_CUDA "enable EMAN2 CUDA usage" OFF)
 OPTION(ENABLE_FTGL "enable EMAN2 FTGL (3D fonts) usage" ON)
@@ -247,28 +236,8 @@ IF(ENABLE_IOCACHE)
 ENDIF()
 
 
-IF(ENABLE_FFTW3)
-    OPTION(ENABLE_NFFT2 "enable nfft2 support" OFF)
-    OPTION(ENABLE_NATIVE_FFT "enable native fft support" OFF)
-    OPTION(ENABLE_ACML_FFT "enable AMD Core Math Library fft support" OFF)
-
-	find_package(FFTW3 REQUIRED)
-		
-    IF(ENABLE_NFFT2)
-		find_package(NFFT2 REQUIRED)
-		target_link_libraries(NFFT2 FFTW3D::FFTW3D)
-	ENDIF()
-ENDIF()
-
 IF(ENABLE_FFTW_PLAN_CACHING)
 	ADD_DEFINITIONS(-DFFTW_PLAN_CACHING)
-ENDIF()
-
-IF(ENABLE_ACML_FFT)
-	OPTION(ENABLE_FFTW3 "enable fftw 3 support" OFF)
-	OPTION(ENABLE_NATIVE_FFT "enable native fft support" OFF)
-
-	find_package(ACML REQUIRED)
 ENDIF()
 
 IF(ENABLE_FFT_CACHING)
@@ -281,59 +250,12 @@ IF(ENABLE_NATIVE_FFT)
 	OPTION(ENABLE_ACML_FFT "enable AMD Core Math Library fft support" OFF)
 ENDIF()
 
-IF(ENABLE_DJBFFT)
-	OPTION(ENABLE_NFFT2 "enable nfft2 support" OFF)
-		
-	find_package(DJBFFT REQUIRED)
-ENDIF()
-
-IF(ENABLE_OPTPP)
-	find_package(OPTPP REQUIRED)
-ENDIF()
-
-find_package(GSL REQUIRED)
-if(WIN32)
-	set_target_properties(GSL::gsl
-						  PROPERTIES
-						  INTERFACE_COMPILE_DEFINITIONS GSL_DLL
-						  )
-endif()
-
-IF(ENABLE_OPENGL)
-	include(cmake/OpenGL.cmake)
-ENDIF()
-
 IF(ENABLE_FTGL)
 	find_package(FTGL REQUIRED)
 
 	ADD_SUBDIRECTORY(fonts)
 	include(cmake/Freetype.cmake)
 ENDIF()
-
-IF(ENABLE_TIFF)
-	include(cmake/TIFF.cmake)
-ENDIF()
-
-IF(ENABLE_JPEG)
-    include(cmake/JPEG.cmake)
-ENDIF()
-
-include(cmake/HDF5.cmake)
-IF(WIN32)
-	find_package(SZLIB REQUIRED)
-ENDIF()
-
-IF(ENABLE_PNG)
-	include(cmake/PNG.cmake)
-ENDIF()
-
-# Find Boost
-set(Boost_USE_MULTITHREADED ON)
-set(Boost_NO_BOOST_CMAKE ON)
-find_package(Boost COMPONENTS python REQUIRED)
-
-message("Boost_LIBRARIES:   ${Boost_LIBRARIES}")
-message("Boost_INCLUDE_DIR: ${Boost_INCLUDE_DIR}")
 
 IF(ENABLE_RT)
     ADD_SUBDIRECTORY(rt)
