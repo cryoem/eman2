@@ -236,10 +236,21 @@ def normalize(data):
 def resetplot(figsize=None):
 	plt.clf()
 
+	matplotlib.rc('xtick', labelsize=14) 
+	matplotlib.rc('ytick', labelsize=14) 
+	#matplotlib.rc('text', usetex=True) 
+	font = {'weight':'bold','size':14}
+	matplotlib.rc('font', **font)
+	#matplotlib.rc('font', weight='bold') 
+
 	fig = plt.figure()
 	if figsize:
 		fig = plt.figure(figsize=(10, 6))
   	ax = fig.add_subplot(1,1,1)
+
+	ax.get_xaxis().tick_bottom()
+	ax.get_yaxis().tick_left()
+	ax.tick_params(axis='both', reset=False, which='both', length=8, width=3)
 
   	plt.rcParams.update({'figure.max_open_warning': 0})
 
@@ -337,16 +348,6 @@ def plotdata( options, data ):
 
 def plotfig( options, fig, ax, datax, datay, count, colorthis='k', markerthis='' )	:
 	
-	ax.get_xaxis().tick_bottom()
-	ax.get_yaxis().tick_left()
-	ax.tick_params(axis='both', reset=False, which='both', length=8, width=3)
-
-	matplotlib.rc('xtick', labelsize=16) 
-	matplotlib.rc('ytick', labelsize=16) 
-	font = {'weight':'bold','size':16}
-	matplotlib.rc('font', **font)
-	#matplotlib.rc('font', weight='bold') 
-
 	#if options.miny and options.maxy:
 	#	ax.set_ylim(options.miny,options.maxy)
 	#	maxr = int(round(math.sqrt(options.maxy*options.maxy + options.miny*options.miny)))	
