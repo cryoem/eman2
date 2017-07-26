@@ -475,7 +475,7 @@ hyb -- y- mesh spacing above f0\nhya -- y- mesh spacing below f0\n \nInterpolant
 		.def("rotate_rings", &EMAN::Util::rotate_rings, return_value_policy< manage_new_object >(), args("circ1", "alpha", "numr"), "Rotate real space ring representation of an image, alpha in degrees")
 		.def("update_fav", &EMAN::Util::update_fav, args("ave", "dat", "tot", "mirror", "numr"), "")
 		.def("sub_fav", &EMAN::Util::sub_fav, args("ave", "dat", "tot", "mirror", "numr"), "")
-		.def("ccc_rings", &EMAN::Util::ccc_rings, args("circ1", "circ2", "alpha", "wr", "numr"), "")
+		.def("ccc_rings", &EMAN::Util::ccc_rings, args("circ1", "circ2", "alpha", "numr", "wr"), "")
 		.def("ener", &EMAN::Util::ener, args("ave", "numr"))
 		.def("ener_tot", &EMAN::Util::ener_tot, args("data", "numr", "tot"), "")
 		.def("min_dist_real", &EMAN::Util::min_dist_real, args("image", "data"), "k-means helper")
