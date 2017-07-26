@@ -117,9 +117,12 @@ set(CMAKE_INSTALL_RPATH ${EMAN_PY_INSTALL_PREFIX})
 
 OPTION(ENABLE_AUTODOC "enable latex/doxygen document generation and etc. " OFF)
 
+OPTION(ENABLE_FFTW3 "enable fftw 3 support (USE THIS)" ON)
 OPTION(ENABLE_FFTW_PLAN_CACHING "enable fftw caching" ON)
 OPTION(ENABLE_NATIVE_FFT "enable native fft support (for non-GPL use)" OFF)
+OPTION(ENABLE_ACML_FFT "enable AMD Core Math Library fft support" OFF)
 OPTION(ENABLE_FFT_CACHING "enable FFT Caching" OFF)
+MARK_AS_ADVANCED(ENABLE_ACML_FFT)
 
 OPTION(ENABLE_V4L2 "enable V4L2 framegrabbing support" OFF)
 
