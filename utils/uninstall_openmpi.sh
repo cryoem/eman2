@@ -2,6 +2,4 @@
 
 set -x
 
-source activate root
-
 conda remove openmpi --force
