@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #====================
-#Author: Jesus Galaz-Montoya 2/20/2013 , Last update: January/15/2016
+#Author: Jesus Galaz-Montoya 2/20/2013 , Last update: July/17/2017
 #====================
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
@@ -58,106 +58,44 @@ def main():
 			
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)	
 	
-	parser.add_argument("--path",type=str,default='',help="""Directory to store results in. 
-		The default is a numbered series of directories containing the prefix 'sptstacker';
-		for example, sptstacker_02 will be the directory by default if 'sptstacker_01' 
-		already exists.""")
+	parser.add_argument("--anglesindxinfilename",type=int,default=None,help="""Default=None. The filename of the images will be split at any occurence of the following delimiters: '_','-',',',' ' (the last one is a blank space). Provide the index (position) of the angle in the split filename. For example, if the filename of an image is "my_specimen-oct-10-2015_-50_deg-from_k2 camera.mrc", it will be split into ['my','specimen','oct','10','2015','','50','deg','from','k2','camera','mrc']. The angle '-50', is at position 6 (starting from 0). Therefore, you would provide --anglesindxinfilename=6, assuming all images to be stacked/processed are similarly named. No worries about the minus sign disappearing. The program will look at whether there's a minus sign immediately preceeding the position where the angle info is.""")
+	parser.add_argument("--apix",type=float,default=0.0,help="""True apix of images to be written on final stack.""")
 
-	parser.add_argument("--stem2stack", type=str, default='', help="""String common to all 
-		the files to put into an .st stack, which is in .MRC format; for example, --stem2stack=.hdf 
-		will process all .hdf files in the current directory.
-		If not specified, all valid EM imagefiles in the current directory will be put into 
-		an .st stack.""")
-	
-	parser.add_argument("--anglesindxinfilename",type=int,default=None,help="""Default=None. The filename of the images will be split at any occurence of 
-		the following delimiters: '_','-',',',' ' (the last one is a blank space). Provide the index (position) of the angle in the split filename.
-		For example, if the filename of an image is "my_specimen-oct-10-2015_-50_deg-from_k2 camera.mrc", it will be split
-		into ['my','specimen','oct','10','2015','','50','deg','from','k2','camera','mrc']. The angle '-50', is at position 6 (starting from 0). Therefore,
-		you would provide --anglesindxinfilename=6, assuming all images to be stacked/processed are similarly named. No worries about the minus sign 
-		disappearing. The program will look at whether there's a minus sign immediately preceeding the position where the angle info is.""")
+	parser.add_argument("--bidirectional",action='store_true',default=False,help="""This will assume the first image is at 0 degrees and will stack images from --lowerend through 0, and then will stack the rest from 0+tiltstep throgh --upperend. If --negativetiltseries is supplied, images will be stacked from --upperend through 0, then from 0-tiltstep through --lowerend.""")
 
-	parser.add_argument("--tltfile",type=str,default='',help="""".tlt file IF unstacking an
-		aligned tilt series with --unstack=<stackfile> or restacking a tiltseries with
-		--restack=<stackfile>""")
-		
-	parser.add_argument("--invert",action="store_true",default=False,help=""""This 
-		will multiply the pixel values by -1.""")
-	
-	parser.add_argument("--stackregardless",action="store_true",default=False,help=""""Stack
-		images found with the common string provided through --stem2stack, even if the
-		number of images does not match the predicted number of tilt angles.""")
-	
-	parser.add_argument("--outmode", type=str, default="float", help="""All EMAN2 programs 
-		write images with 4-byte floating point values when possible by default. This allows 
-		specifying an alternate format when supported: float, int8, int16, int32, uint8, 
-		uint16, uint32. Values are rescaled to fill MIN-MAX range.""")
-	
-	parser.add_argument("--normalizeimod",action='store_true',default=False,help="""Default=False. This will apply 'newstack -float 2' to the input stack. Requires IMOD. Does not apply to --unstack or --restack.""")
+	parser.add_argument("--clip",type=str,default='',help="""Resize the 2-D images in the tilt series. If one number is provided, then x and y dimensions will be made the same. To specify both dimensions, supply two numbers, --clip=x,y. Clipping will be about the center of the image.""")
 
-	parser.add_argument("--bidirectional",action='store_true',default=False,help="""This will
-		assume the first image is at 0 degrees and will stack images from --lowerend through 0, 
-		and then will stack the rest from 0+tiltstep throgh --upperend. 
-		If --negativetiltseries is supplied, images will be stacked from --upperend through 0, then 
-		from 0-tiltstep through --lowerend.""")
-	
-	parser.add_argument("--lowesttilt",type=float,default=0.0,help="""Lowest tilt angle.
-		If not supplied, it will be assumed to be -1* --tiltrange.""")
-	
-	parser.add_argument("--highesttilt",type=float,default=0.0,help="""Highest tilt angle.
-		If not supplied, it will be assumed to be 1* --tiltrange.""")
-	
-	parser.add_argument("--tiltrange",type=float,default=0.0,help="""If provided, this
-		will make --lowesttilt=-1*tiltrange and --highesttilt=tiltrage.
-		If the range is asymmetric, supply --lowesttilt and --highesttilt directly.""")
-	
-	parser.add_argument("--tiltstep",type=float,default=0.0,help="""Step between tilts.
-		Required if using --stem2stack.""")
-	
-	parser.add_argument("--clip",type=str,default='',help="""Resize the 2-D images in the
-		tilt series. If one number is provided, then x and y dimensions will be made the same.
-		To specify both dimensions, supply two numbers, --clip=x,y. Clipping will be about
-		the center of the image.""")
-			
-	parser.add_argument("--apix",type=float,default=0.0,help="""True apix of images to be 
-		written on final stack.""")
-	
-	parser.add_argument("--unstack",type=str,default='',help=""".hdf, or 3D .st, .mrc, 
-		.ali, or .mrcs stack file to unstack.
-		This option can be used with --include or --exclude to unstack only specific images.
-		Recall that the FIRST image INDEX is 0 (but unstacked image will be numbered from 1). 
-		--exclude=1,5-7,10,12,15-19 will exclude images 1,5,6,7,10,12,15,16,17,18,19""""")
-	
-	parser.add_argument("--restack",type=str,default='',help=""".hdf, or 3D .st, .mrc, 
-		.ali, or .mrcs stack file to restack.
-		This option can be used with --include or --exclude to unstack only specific images.
-		Recall that the FIRST image INDEX is 0 (but unstacked image will be numbered from 1). 
-		--exclude=1,5-7,10,12,15-19 will exclude images 1,5,6,7,10,12,15,16,17,18,19""""")
-	
-	parser.add_argument("--mirroraxis",type=str,default='',help="""Options are x or y, and the
-		mirrored copy of the 2-D images will be generated before being put into the tilt series.""")
-	
-	parser.add_argument("--exclude",type=str,default='',help="""Comma separated list of numbers
-		corresponding to images to exclude. --unstack or --restack must be supplied. 
-		You can also exclude by ranges. For example:
-		Recall that the FIRST image INDEX is 0. 
-		--exclude=1,5-7,10,12,15-19 will exclude images 1,5,6,7,10,12,15,16,17,18,19""")
-		
-	parser.add_argument("--include",type=str,default='',help="""Comma separated list of numbers
-		corresponding to images to include (all others will be excluded). 
-		--unstack or --restack must be supplied. 
-		Recall that the FIRST image INDEX is 0. 
-		--include=1,5-7,10,12,15-19 will include images 1,5,6,7,10,12,15,16,17,18,19""")
+	parser.add_argument("--exclude",type=str,default='',help="""Comma separated list of numbers corresponding to images to exclude. --unstack or --restack must be supplied. You can also exclude by ranges. For example: Recall that the FIRST image INDEX is 0. --exclude=1,5-7,10,12,15-19 will exclude images 1,5,6,7,10,12,15,16,17,18,19""")
 
+	parser.add_argument("--highesttilt",type=float,default=0.0,help="""Highest tilt angle. If not supplied, it will be assumed to be 1* --tiltrange.""")
 
-	#parser.add_argument("--negativetiltseries",action='store_true',default=False,help="""This indicates that the tilt series goes from -tiltrange to +tiltrange, or 0 to -tiltrange, then +tiltstep to +tiltrange if --bidirectional is specified.""")
+	parser.add_argument("--include",type=str,default='',help="""Comma separated list of numbers corresponding to images to include (all others will be excluded). --unstack or --restack must be supplied. Recall that the FIRST image INDEX is 0. --include=1,5-7,10,12,15-19 will include images 1,5,6,7,10,12,15,16,17,18,19""")
+	parser.add_argument("--invert",action="store_true",default=False,help=""""This will multiply the pixel values by -1.""")
+
+	parser.add_argument("--lowesttilt",type=float,default=0.0,help="""Lowest tilt angle. If not supplied, it will be assumed to be -1* --tiltrange.""")
 	
-	#parser.add_argument("--negative",action='store_true',default=False,help="""This indicates that the tilt series goes from -tiltrange to +tiltrange, or 0 to -tiltrange, then +tiltstep to +tiltrange if --bidirectional is specified.""")
+	parser.add_argument("--mirroraxis",type=str,default='',help="""Options are x or y, and the mirrored copy of the 2-D images will be generated before being put into the tilt series.""")
 	
 	parser.add_argument("--negativetiltseries",action='store_true',default=False,help="""This indicates that the tilt series goes from -tiltrange to +tiltrange, or 0 to -tiltrange, then +tiltstep to +tiltrange if --bidirectional is specified.""")
+	parser.add_argument("--normalizeimod",action='store_true',default=False,help="""Default=False. This will apply 'newstack -float 2' to the input stack. Requires IMOD. Does not apply to --unstack or --restack.""")
+
+	parser.add_argument("--outmode", type=str, default="float", help="""All EMAN2 programs write images with 4-byte floating point values when possible by default. This allows specifying an alternate format when supported: float, int8, int16, int32, uint8, uint16, uint32. Values are rescaled to fill MIN-MAX range.""")
+	
+	parser.add_argument("--path",type=str,default='sptstacker',help="""Directory to store results in. The default is a numbered series of directories containing the prefix 'sptstacker'; for example, sptstacker_02 will be the directory by default if 'sptstacker_01' already exists.""")
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	
+	parser.add_argument("--restack",type=str,default='',help=""".hdf, or 3D .st, .mrc, .ali, or .mrcs stack file to restack. This option can be used with --include or --exclude to unstack only specific images. Recall that the FIRST image INDEX is 0 (but unstacked image will be numbered from 1). --exclude=1,5-7,10,12,15-19 will exclude images 1,5,6,7,10,12,15,16,17,18,19""""")
+
+	parser.add_argument("--stackregardless",action="store_true",default=False,help=""""Stack images found with the common string provided through --stem2stack, even if the number of images does not match the predicted number of tilt angles.""")
+	parser.add_argument("--stem2stack", type=str, default='', help="""String common to all the files to put into an .st stack, which is in .MRC format; for example, --stem2stack=.hdf will process all .hdf files in the current directory. If not specified, all valid EM imagefiles in the current directory will be put into an .st stack.""")
+
+	parser.add_argument("--tltfile",type=str,default='',help="""".tlt file IF unstacking an aligned tilt series with --unstack=<stackfile> or restacking a tiltseries with --restack=<stackfile>""")
+	parser.add_argument("--tiltrange",type=float,default=0.0,help="""If provided, this will make --lowesttilt=-1*tiltrange and --highesttilt=tiltrage. If the range is asymmetric, supply --lowesttilt and --highesttilt directly.""")
+	parser.add_argument("--tiltstep",type=float,default=0.0,help="""Step between tilts. Required if using --stem2stack.""")
+	
+	parser.add_argument("--unstack",type=str,default='',help=""".hdf, or 3D .st, .mrc, .ali, or .mrcs stack file to unstack. This option can be used with --include or --exclude to unstack only specific images. Recall that the FIRST image INDEX is 0 (but unstacked image will be numbered from 1). --exclude=1,5-7,10,12,15-19 will exclude images 1,5,6,7,10,12,15,16,17,18,19""""")
 
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness.")
-
-	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()	
 	
@@ -171,16 +109,15 @@ def main():
 	print "\nLogging"
 	logger = E2init(sys.argv, options.ppid)
 	
-	
-	from e2spt_classaverage import sptmakepath
-	options = sptmakepath( options, 'sptstacker')
+	from EMAN2_utils import makepath
+	options = makepath( options, 'sptstacker')
 
 	options.path = os.getcwd() + '/' + options.path
 	
 	tiltstoexclude = options.exclude.split(',')	
 	
 	if options.stem2stack:
-		if not options.anglesindxinfilename: 
+		if not options.anglesindxinfilename and not options.tltfile: 
 			if not options.tiltstep:
 				print "ERROR: --tiltstep required when using --stem2stack, unless --anglesindxinfilename is provided"
 				sys.exit()
@@ -479,8 +416,6 @@ def getangles( options, raworder=False ):
 		angles.reverse()
 		print "\n(e2spt_tiltstacker.py)(getangles) AFTER REVERSING (ordered from largest to smallest), angles are", angles
 	
-	
-
 	return angles
 
 
