@@ -6286,7 +6286,7 @@ EMData* Util::rotate_rings(EMData* circ1, float alpha, vector<int> numr)
 }
 
 
-float Util::ccc_rings(EMData* circ1, EMData* circ2, float alpha, vector<float> wr, vector<int> numr)
+float Util::ccc_rings(EMData* circ1, EMData* circ2, float alpha, vector<int> numr, vector<float> wr)
 {
 
 	int   ip, jc, numr3i, numr2i, i, j, ialpha;
@@ -6302,27 +6302,50 @@ float Util::ccc_rings(EMData* circ1, EMData* circ2, float alpha, vector<float> w
 
 	float qalpha = -1.0;
 	double t = 0.0;
-	for (i=0; i<nring; i++) {
+	if( wr[0] == -1.0f ) {
+		for (i=0; i<nring; i++) {
 
-		double w = wr[i];
+			numr2i = numr[i*3 + 1] - 1;
+			numr3i = numr[i*3 + 2];
 
-		numr2i = numr[i*3 + 1] - 1;
-		numr3i = numr[i*3 + 2];
+			float nalpha = talpha/(360.0f/numr3i);
+			if( nalpha != qalpha )  {
+				qalpha = nalpha;
+				ialpha = int(qalpha);
+				dq = qalpha - ialpha;
+				eq = 1.0 - dq;
+			}
 
-		float nalpha = talpha/(360.0f/numr3i);
-		if( nalpha != qalpha )  {
-			qalpha = nalpha;
-			ialpha = int(qalpha);
-			dq = qalpha - ialpha;
-			eq = 1.0 - dq;
+			for (j=0; j<numr3i; j++) {
+				int jd0 = (j+numr3i+ialpha)%numr3i + numr2i;
+				int jd1 = (j+numr3i+1+ialpha)%numr3i + numr2i;
+				t += (eq*circ1b[jd0] + dq*circ1b[jd1])*circ2b[j+numr2i];
+			}
 		}
+	}  else  {
+		for (i=0; i<nring; i++) {
 
-		for (j=0; j<numr3i; j++) {
-			int jd0 = (j+numr3i+ialpha)%numr3i + numr2i;
-			int jd1 = (j+numr3i+1+ialpha)%numr3i + numr2i;
-			t += (eq*circ1b[jd0] + dq*circ1b[jd1])*circ2b[j+numr2i]*w;
+			double w = wr[i];
+
+			numr2i = numr[i*3 + 1] - 1;
+			numr3i = numr[i*3 + 2];
+
+			float nalpha = talpha/(360.0f/numr3i);
+			if( nalpha != qalpha )  {
+				qalpha = nalpha;
+				ialpha = int(qalpha);
+				dq = qalpha - ialpha;
+				eq = 1.0 - dq;
+			}
+
+			for (j=0; j<numr3i; j++) {
+				int jd0 = (j+numr3i+ialpha)%numr3i + numr2i;
+				int jd1 = (j+numr3i+1+ialpha)%numr3i + numr2i;
+				t += (eq*circ1b[jd0] + dq*circ1b[jd1])*circ2b[j+numr2i]*w;
+			}
 		}
 	}
+
 	EXITFUNC;
 	return static_cast<float>(t);
 

@@ -609,7 +609,7 @@ class FakeKaiserBessel : public KaiserBessel {
 
 	static EMData* rotate_rings(EMData* circ1, float alpha, vector<int> numr);
 
-	static float ccc_rings(EMData* circ1, EMData* circ2, float alpha, vector<float> wr, vector<int> numr);
+	static float ccc_rings(EMData* circ1, EMData* circ2, float alpha, vector<int> numr, vector<float> wr);
 
 
 	/*
