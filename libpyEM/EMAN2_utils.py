@@ -218,3 +218,87 @@ def makepath(options, stem='e2dir'):
 		pass
 	
 	return options
+
+def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ralign=None, alircmp=("dot",{}),shrink=None,mask=None,subset=None,prefilt=False,verbose=0):
+	"""Compares one image (target) to a list of many images (reflist). Returns """
+
+	ret=[None for i in reflist]
+#	target.write_image("dbug.hdf",-1)
+	for i,r in enumerate(reflist):
+		#print i,r
+		if r[0]["sigma"]==0 : continue				# bad reference
+		if subset!=None and i not in subset :
+			ret[i]=None
+			continue
+		if prefilt :
+			msk=r.process("threshold.notzero")					# mask from the projection
+			r[0]=r[0].process("filter.matchto",{"to":target})
+			r[0].mult(msk)											# remask after filtering
+
+#		print "Final: ",target["source_n"],",",r[0]["source_n"]
+
+		if align[0] :
+			r[0].del_attr("xform.align2d")
+			ta=r[0].align(align[0],target,align[1],alicmp[0],alicmp[1])
+			if verbose>3: print ta.get_attr("xform.align2d")
+			#ta.debug_print_params()
+
+			if ralign and ralign[0]:
+				if r[1]!=None :
+					#print "(single) using mask, and ",mask
+					ralign[1]["xform.align2d"] = ta.get_attr("xform.align2d").inverse()
+					r[0].del_attr("xform.align2d")
+					ralign[1]["mask"]=r[1]
+					alip = target.align(ralign[0],r[0],ralign[1],alircmp[0],alircmp[1])
+					ta=r[0].copy()
+					ta.transform(alip["xform.align2d"].inverse())
+					ta["xform.align2d"]=alip["xform.align2d"].inverse()
+				else:
+					ralign[1]["xform.align2d"] = ta.get_attr("xform.align2d")
+					r[0].del_attr("xform.align2d")
+					ta = r[0].align(ralign[0],target,ralign[1],alircmp[0],alircmp[1])
+
+				if verbose>3: print ta.get_attr("xform.align2d")
+
+
+			t =  ta.get_attr("xform.align2d")
+			t.invert()
+			p = t.get_params("2d")
+
+			scale_correction = 1.0
+			if shrink != None: scale_correction = float(shrink)
+
+			if mask!=None :
+				ta.mult(mask)
+				ptcl2=target.copy()
+				ptcl2.mult(mask)
+				ret[i]=(ptcl2.cmp(cmp[0],ta,cmp[1]),scale_correction*p["tx"],scale_correction*p["ty"],p["alpha"],p["mirror"],p["scale"])
+			else:
+				try:
+					ret[i]=(target.cmp(cmp[0],ta,cmp[1]),scale_correction*p["tx"],scale_correction*p["ty"],p["alpha"],p["mirror"],p["scale"])
+				except:
+					print "ERROR: CMP FAILURE. See err.hdf"
+					print cmp
+					target.write_image("err.hdf",0)
+					ta.write_image("err.hdf",1)
+					sys.exit(1)
+					
+#			ta.write_image("dbug.hdf",-1)
+
+#				print ta["source_n"],target["source_n"]
+				#psub=target.process("math.sub.optimal",{"ref":ta})
+				#nout=ta["source_n"]*3
+				#ta.write_image("dbug_%d.hdf"%target["source_n"],nout)
+				#target.write_image("dbug_%d.hdf"%target["source_n"],nout+1)
+				#psub.write_image("dbug_%d.hdf"%target["source_n"],nout+2)
+
+
+		else :
+			ret[i]=(target.cmp(cmp[0],r[0],cmp[1]),0,0,0,1.0,False)
+
+		if verbose==3 : print ret[i][0],
+
+	if verbose==3 : print ""
+	if verbose==2 :
+		print "Best: ",sorted([(ret[i][0],i) for i in range(len(ret))])[0]
+	return ret

@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # Muyuan Chen 2017-03
 import numpy as np
-from e2simmx import cmponetomany
 from EMAN2 import *
+from EMAN2_utils import cmponetomany
 import time
 import threading
 import Queue

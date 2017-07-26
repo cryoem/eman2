@@ -109,7 +109,7 @@ def main():
 		sys.exit(1)
 	
 	N=EMUtil.get_image_count(args[0])
-	npt=max(min(100,N/options.threads),1)
+	npt=max(min(100,N/(options.threads-2)),1)
 	
 	jsd=Queue.Queue(0)
 	# these start as arguments, but get replaced with actual threads

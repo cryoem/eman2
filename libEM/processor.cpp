@@ -12579,12 +12579,58 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 	ret->set_complex(1);
 	ret->to_zero();
 	
+	// Fourier footprint mode, produces a 3-D image using n rotational invariants, real values from Fourier space
+	if (params.has_key("ffp")) {
+		int ffp=(int)params.set_default("ffp",6);
+		EMData *ret2=new EMData(nkx,nky*2,ffp);
+		int nlay=(nkx*2-2)*nky*2*sizeof(float);
+		for (int k=2; k<2+ffp; k++) {
+// 			int jkx=k;
+// 			int jky=0;
+			int kx=k;
+			int ky=0;
+			ret->to_zero();
+	
+			for (float ang=0; ang<360.0; ang+=360.0/(nky*M_PI) ) {
+				EMData *cimage2=cimage->process("xform",Dict("alpha",ang));
+	
+				for (int jy=-nky; jy<nky; jy++) {
+					for (int jx=0; jx<nkx; jx++) {
+// 						int kx=jkx-jx;
+// 						int ky=jky-jy;
+						int jkx=jx+kx;
+						int jky=jy+ky;
+	
+						// removed this test because we are using only the central 1/4 of Fourier space
+//						if (abs(kx)>nkx || abs(ky)>nky) continue;
+						complex<double> v1 = (complex<double>)cimage2->get_complex_at(jx,jy);
+						complex<double> v2 = (complex<double>)cimage2->get_complex_at(kx,ky);
+						complex<double> v3 = (complex<double>)cimage2->get_complex_at(jkx,jky);
+						ret->add_complex_at(jx,jy,0,(complex<float>)(v1*v2*std::conj(v3)));
+					}
+				}
+				delete cimage2;
+			}
+			// this fixes an issue with adding in the "special" Fourier locations
+			for (int jy=-nky; jy<nky; jy++) {
+				ret->set_complex_at(0,jy,ret->get_complex_at(0,jy)/sqrt(2.0f));
+				ret->set_complex_at(nkx-1,jy,ret->get_complex_at(nkx-1,jy)/sqrt(2.0f));
+			}
+			for (int jy=-nky; jy<nky; jy++) {
+				for (int jx=0; jx<nkx; jx++) {
+					ret2->set_value_at(jx,jy+nky,k-2,cbrt((float)(ret->get_complex_at(jx,jy).real())));
+				}
+			}
+		}
+		delete ret;
+		return ret2;
+	}
 	// footprint mode, produces a 3-D image using n rotational invariants
-	if (params.has_key("fp")) {
+	else if (params.has_key("fp")) {
                 int fp=(int)params.set_default("fp",8);
 		EMData *ret2=new EMData(nkx-1,nky*2,fp);
 		int nlay=(nkx*2-2)*nky*2*sizeof(float);
-		for (int k=3; k<3+fp; k++) {
+		for (int k=2; k<2+fp; k++) {
 // 			int jkx=k;
 // 			int jky=0;
 			int kx=k;
@@ -12619,8 +12665,8 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 			EMData *pln=ret->do_ift();
 			pln->process_inplace("xform.phaseorigin.tocenter");
 			pln->process_inplace("normalize");
-			ret2->insert_clip(pln,IntPoint(-nkx+2,0,k-3));
-//			memcpy((void *)ret2->get_data()+nlay*(k-3),(void *)pln->get_data(),nlay);
+			ret2->insert_clip(pln,IntPoint(-nkx+2,0,k-2));
+//			memcpy((void *)ret2->get_data()+nlay*(k-2),(void *)pln->get_data(),nlay);
 			delete pln;
 		}
 		delete ret;

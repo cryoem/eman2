@@ -698,7 +698,7 @@ The basic design of EMAN Processors: <br>\
 
 			string get_desc() const
 			{
-				return "Computes a 2-D slice of the 4-D bispectrum of a 2-D image. Returns zero outside of source image.  Input may be real or complex, but output is always complex. kx,ky OR jkx,jky OR k OR fp";
+				return "Computes a 2-D slice of the 4-D bispectrum of a 2-D image. Returns zero outside of source image.  Input may be real or complex, but output is always complex. kx,ky OR jkx,jky OR k OR fp OR ffp";
 			}
 
 			TypeDict get_param_types() const
@@ -710,6 +710,7 @@ The basic design of EMAN Processors: <br>\
 				d.put("jky", EMObject::INT, "Jy+Ky location of the slice in Fourier pixels");
 				d.put("k", EMObject::FLOAT, "Radius of slice in Fourier pixels, integrates over angle.");
 				d.put("fp", EMObject::INT, "Returns a 3-D volume containing n rotationally integrated planes. R&T invariant.");
+				d.put("ffp", EMObject::INT, "Returns a 3-D volume containing n rotationally integrated planes. R&T invariant. Fourier real component.");
 				return d;
 			}
 
