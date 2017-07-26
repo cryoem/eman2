@@ -5911,7 +5911,6 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_local(EMData* dataimage, EMD
 }
 
 
-
 vector<int> Util::multiref_Crosrng_msg_stack_stepsi_scores_local(EMData* dataimage, EMData* circ2, \
 				const vector< vector<float> >& coarse_shifts_shrank,\
 				vector<int> assignments_of_refangles_to_angles, vector<int> assignments_of_refangles_to_cones,
@@ -6081,6 +6080,7 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_scores_local(EMData* dataima
 	}
 	return qout;
 }
+
 
 
 #undef circ1b
