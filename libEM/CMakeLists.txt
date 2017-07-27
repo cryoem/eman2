@@ -1,5 +1,13 @@
 add_subdirectory(pmconfig)
 
+if(WIN32)
+	add_library(EM2   STATIC "")
+	add_library(GLEM2 STATIC "")
+else()
+	add_library(EM2   SHARED "")
+	add_library(GLEM2 SHARED "")
+endif()
+
 if(ENABLE_FFTW3)
 	find_package(FFTW3 REQUIRED)
 	
@@ -10,13 +18,9 @@ if(ENABLE_FFTW3)
 endif()
 
 if(WIN32)
-    add_library(EM2   STATIC "")
-    add_library(GLEM2 STATIC "")
     target_link_libraries(EM2 FFTW3::FFTW3)
 	target_compile_definitions(EM2 PUBLIC _CRT_SECURE_NO_WARNINGS _SCL_SECURE_NO_WARNINGS)
 else()
-    add_library(EM2   SHARED "")
-    add_library(GLEM2 SHARED "")
     if(ENABLE_FFTW3)
     	target_link_libraries(EM2 FFTW3::FFTW3)
     endif()
