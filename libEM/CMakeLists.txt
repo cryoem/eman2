@@ -124,12 +124,6 @@ endif()
 
 target_link_libraries(EM2 GSL::gsl GSL::gslcblas Freetype::Freetype)
 
-option(ENABLE_OPENGL "enable EMAN2 OpenGL usage" ON)
-if(ENABLE_OPENGL)
-	include(${CMAKE_SOURCE_DIR}/cmake/OpenGL.cmake)
-	target_link_libraries(EM2 OpenGL::OpenGL)
-endif()
-
 option(ENABLE_TIFF "enable TIFF support" ON)
 if(ENABLE_TIFF)
 	include(${CMAKE_SOURCE_DIR}/cmake/TIFF.cmake)
@@ -186,6 +180,12 @@ endif()
 if(ENABLE_ACML_FFT)
 	find_package(ACML REQUIRED)
 	target_link_libraries(EM2 ACML::ACML)
+endif()
+
+option(ENABLE_OPENGL "enable EMAN2 OpenGL usage" ON)
+if(ENABLE_OPENGL)
+	include(${CMAKE_SOURCE_DIR}/cmake/OpenGL.cmake)
+	target_link_libraries(EM2 OpenGL::OpenGL)
 endif()
 
 if(ENABLE_OPENGL)
