@@ -88,6 +88,10 @@ target_sources(GLEM2 PRIVATE
 add_subdirectory(gorgon)
 add_subdirectory(sparx)
 
+if(WIN32)
+	target_compile_definitions(EM2 PUBLIC _CRT_SECURE_NO_WARNINGS _SCL_SECURE_NO_WARNINGS)
+endif()
+
 if(ENABLE_FFTW3)
 	find_package(FFTW3 REQUIRED)
 	
@@ -99,7 +103,6 @@ endif()
 
 if(WIN32)
     target_link_libraries(EM2 FFTW3::FFTW3)
-	target_compile_definitions(EM2 PUBLIC _CRT_SECURE_NO_WARNINGS _SCL_SECURE_NO_WARNINGS)
 else()
     if(ENABLE_FFTW3)
     	target_link_libraries(EM2 FFTW3::FFTW3)
