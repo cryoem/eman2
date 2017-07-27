@@ -188,17 +188,17 @@ if(ENABLE_ACML_FFT)
 	target_link_libraries(EM2 ACML::ACML)
 endif()
 
-target_link_libraries(GLEM2 EM2)
-option(ENABLE_STATIC_FTGL "If build EMAN with libftgl.a" OFF)
-mark_as_advanced(ENABLE_STATIC_FTGL)
 if(ENABLE_OPENGL)
+	option(ENABLE_STATIC_FTGL "If build EMAN with libftgl.a" OFF)
+	mark_as_advanced(ENABLE_STATIC_FTGL)
+	
 	find_package(FTGL REQUIRED)
 	include(${CMAKE_SOURCE_DIR}/cmake/Freetype.cmake)
-	target_link_libraries(GLEM2 FTGL::FTGL)
+	
+	target_link_libraries(GLEM2 EM2 FTGL::FTGL)
+	
 	add_subdirectory(fonts)
-endif()
 
-if(ENABLE_OPENGL)
     install(TARGETS GLEM2
         DESTINATION ${EMAN_PY_INSTALL_PREFIX})
 endif()
