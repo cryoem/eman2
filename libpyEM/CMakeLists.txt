@@ -70,7 +70,7 @@ if(ENABLE_OPENGL)
 	target_link_libraries(pyGLUtils2 GLEM2)
 	target_link_libraries(pyMarchingCubes2 GLEM2)
 	
-	if(ENABLE_FTGL)
+	if(ENABLE_OPENGL)
 		target_link_libraries(pyGLUtils2 FTGL::FTGL)
 	endif()
 endif()
