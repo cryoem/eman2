@@ -1,80 +1,5 @@
 add_subdirectory(pmconfig)
 
-set(LIB_EM_SOURCE byteorder.cpp
-    boxingtools.cpp
-    emobject.cpp
-    emfft.cpp
-    log.cpp
-    imageio.cpp
-    util.cpp
-    emutil.cpp
-    interp.cpp
-    quaternion.cpp
-    transform.cpp
-    symmetry.cpp
-    geometry.cpp
-    pointarray.cpp
-    pdbreader.cpp
-    mrcio.cpp
-    dm3io.cpp
-    dm4io.cpp
-    tifio.cpp
-    hdfio.cpp
-    hdfio2.cpp
-    jpegio.cpp
-    emdata.cpp
-    emdata_io.cpp
-    emdata_core.cpp
-    emdata_cuda.cpp
-    emdata_modular.cpp
-    emdata_metadata.cpp
-    emdata_transform.cpp
-    pifio.cpp
-    v4l2io.cpp
-    vtkio.cpp
-    spiderio.cpp
-    sspiderio.cpp
-    pgmio.cpp
-    fitsio.cpp
-    icosio.cpp
-    lstio.cpp
-    lstfastio.cpp
-    pngio.cpp
-    salio.cpp
-    amiraio.cpp
-    xplorio.cpp
-    gatan2io.cpp
-    emio.cpp
-    imagicio.cpp
-    imagicio2.cpp
-    df3io.cpp
-    omapio.cpp
-    situsio.cpp
-    serio.cpp
-    emcache.cpp
-    ctf.cpp
-    xydata.cpp
-    processor.cpp
-    aligner.cpp
-    projector.cpp
-    cmp.cpp
-    averager.cpp
-    reconstructor.cpp
-    reconstructor_tools.cpp
-    exception.cpp
-    testutil.cpp
-    analyzer.cpp
-    randnum.cpp
-    hdf_filecache.cpp
-    polardata.cpp
-    tomoseg.cpp
-    )
-
-set(LIB_GLEM_SOURCE 
-		glutil.cpp
-		marchingcubes.cpp
-		emftgl.cpp)
-
 if(ENABLE_FFTW3)
 	find_package(FFTW3 REQUIRED)
 	
@@ -98,8 +23,82 @@ else()
 	target_link_libraries(EM2 m)
 endif()
 
-target_sources(EM2   PRIVATE ${LIB_EM_SOURCE})
-target_sources(GLEM2 PRIVATE ${LIB_GLEM_SOURCE})
+target_sources(EM2 PRIVATE
+			   byteorder.cpp
+			   boxingtools.cpp
+			   emobject.cpp
+			   emfft.cpp
+			   log.cpp
+			   imageio.cpp
+			   util.cpp
+			   emutil.cpp
+			   interp.cpp
+			   quaternion.cpp
+			   transform.cpp
+			   symmetry.cpp
+			   geometry.cpp
+			   pointarray.cpp
+			   pdbreader.cpp
+			   mrcio.cpp
+			   dm3io.cpp
+			   dm4io.cpp
+			   tifio.cpp
+			   hdfio.cpp
+			   hdfio2.cpp
+			   jpegio.cpp
+			   emdata.cpp
+			   emdata_io.cpp
+			   emdata_core.cpp
+			   emdata_cuda.cpp
+			   emdata_modular.cpp
+			   emdata_metadata.cpp
+			   emdata_transform.cpp
+			   pifio.cpp
+			   v4l2io.cpp
+			   vtkio.cpp
+			   spiderio.cpp
+			   sspiderio.cpp
+			   pgmio.cpp
+			   fitsio.cpp
+			   icosio.cpp
+			   lstio.cpp
+			   lstfastio.cpp
+			   pngio.cpp
+			   salio.cpp
+			   amiraio.cpp
+			   xplorio.cpp
+			   gatan2io.cpp
+			   emio.cpp
+			   imagicio.cpp
+			   imagicio2.cpp
+			   df3io.cpp
+			   omapio.cpp
+			   situsio.cpp
+			   serio.cpp
+			   emcache.cpp
+			   ctf.cpp
+			   xydata.cpp
+			   processor.cpp
+			   aligner.cpp
+			   projector.cpp
+			   cmp.cpp
+			   averager.cpp
+			   reconstructor.cpp
+			   reconstructor_tools.cpp
+			   exception.cpp
+			   testutil.cpp
+			   analyzer.cpp
+			   randnum.cpp
+			   hdf_filecache.cpp
+			   polardata.cpp
+			   tomoseg.cpp
+			   )
+
+target_sources(GLEM2 PRIVATE
+			   glutil.cpp
+			   marchingcubes.cpp
+			   emftgl.cpp
+			   )
 
 add_subdirectory(gorgon)
 add_subdirectory(sparx)
