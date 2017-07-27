@@ -186,9 +186,7 @@ option(ENABLE_OPENGL "enable EMAN2 OpenGL usage" ON)
 if(ENABLE_OPENGL)
 	include(${CMAKE_SOURCE_DIR}/cmake/OpenGL.cmake)
 	target_link_libraries(EM2 OpenGL::OpenGL)
-endif()
 
-if(ENABLE_OPENGL)
 	option(ENABLE_STATIC_FTGL "If build EMAN with libftgl.a" OFF)
 	mark_as_advanced(ENABLE_STATIC_FTGL)
 	
