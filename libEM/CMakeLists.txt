@@ -2,10 +2,8 @@ add_subdirectory(pmconfig)
 
 if(WIN32)
 	add_library(EM2   STATIC "")
-	add_library(GLEM2 STATIC "")
 else()
 	add_library(EM2   SHARED "")
-	add_library(GLEM2 SHARED "")
 endif()
 
 target_sources(EM2 PRIVATE
@@ -77,12 +75,6 @@ target_sources(EM2 PRIVATE
 			   hdf_filecache.cpp
 			   polardata.cpp
 			   tomoseg.cpp
-			   )
-
-target_sources(GLEM2 PRIVATE
-			   glutil.cpp
-			   marchingcubes.cpp
-			   emftgl.cpp
 			   )
 
 add_subdirectory(gorgon)
@@ -192,6 +184,18 @@ if(ENABLE_OPENGL)
 	
 	find_package(FTGL REQUIRED)
 	include(${CMAKE_SOURCE_DIR}/cmake/Freetype.cmake)
+	
+	if(WIN32)
+		add_library(GLEM2 STATIC "")
+	else()
+		add_library(GLEM2 SHARED "")
+	endif()
+	
+	target_sources(GLEM2 PRIVATE
+				   glutil.cpp
+				   marchingcubes.cpp
+				   emftgl.cpp
+				   )
 	
 	target_link_libraries(GLEM2 EM2 FTGL::FTGL)
 	
