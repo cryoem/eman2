@@ -54,7 +54,7 @@ sxunblur.py  unblur_path  input_micrograph_pattern  output_directory  --summovie
     input_micrograph_pattern:: Input micrograph path pattern: Specify path pattern of input micrographs with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (') or double quotes ("). (Note: sxgui.py automatically adds single quotes (')). bdb files can not be selected as input micrographs. (This argument is specific to SPHIRE, and not directly used by unblur and summovie executables.) (default required string)
 
     summovie_path:: summovie executable path: Specify the file path of summovie executable. (This option is specific to SPHIRE, and not directly used by unblur and summovie executables.) (default none)
-    selection_list:: Micrograph selecting list: Specify a name of micrograph selection list text file. The file extension must be '.txt'. If this is not provided, all files matched with the micrograph name pattern will be processed. (This option is specific to SPHIRE, and not directly used by unblur and summovie executables.) (default none)
+    selection_list:: File containing selection list of Micrographs: Specify a name of micrograph selection list text file. The file extension must be '.txt'. If this is not provided, all files matched with the micrograph name pattern will be processed. (This option is specific to SPHIRE, and not directly used by unblur and summovie executables.) (default none)
     nr_frames:: Number of movie frames: The number of movie frames in each input micrograph. (default 3)
     pixel_size:: Pixel size [A]: The pixel size of input micrographs. (default required float)
     voltage:: Microscope voltage [kV]: The acceleration voltage of microscope used for imaging. Will be ignored when skip_dose_filter option is used. (default 300.0)
@@ -64,7 +64,7 @@ sxunblur.py  unblur_path  input_micrograph_pattern  output_directory  --summovie
 
     * The remaining parameters are optional.
     save_frames:: Save aligned movie frames: Save aligned movie frames. This option slows down the process. (default False)
-    skip_dose_filter:: Skip dose filter step: With this option, voltage, exposure per frame, and pre exposure will be ignored. (default False)
+    skip_dose_filter:: Apply dose filter: Indicate if dose filter should be applied or not. With this option, voltage, exposure per frame, and pre exposure will be ignored. By default, apply dose filter. (default False question reversed in GUI)
     expert_mode:: Use expert mode: Requires initial shift, shift radius, b-factor, fourier_vertical, fourier_horizontal, shift threshold, iterations, restore noise, and verbosity options. (default False)
     shift_initial:: Minimum shift for initial search [A]: Effective only when expert_mode option is used. (default 2.0)
     shift_radius:: Outer radius shift limit [A]: Effective only when expert_mode option is used. (default 200.0)
@@ -73,7 +73,7 @@ sxunblur.py  unblur_path  input_micrograph_pattern  output_directory  --summovie
     fourier_horizontal:: Horizontal Fourier central mask size: The half-width of central horizontal line of Fourier mask. Effective only when expert_mode option is used. (default 1)
     shift_threshold:: Termination shift threshold: Effective only when expert_mode option is used. (default 0.1)
     iterations:: Maximum iterations: Effective only when expert_mode option is used. (default 10)
-    dont_restore_noise:: Do not restore noise power: Effective only when expert_mode option is used. (default False)
+    dont_restore_noise:: Restore noise power: Indicate if noise power should be restored or not. By default, restore noise power. Effective only when expert_mode option is used. (default False question reversed in GUI)
     verbose:: Verbose: Effective only when expert_mode option is used. (default False)
 
 

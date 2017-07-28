@@ -24,7 +24,7 @@ Note ISAC will change the size of input data such that they fit into box size 76
     
     radius:: Particle radius [Pixels]: Radius of the particle (pixels). There is no default value and so a sensible number has to be provided. (default required int)
     img_per_grp:: Images per class: Number of images per class in an ideal situation. In practice, it defines the maximum size of the classes or the number of classes K= [total number of images]/[img_per_grp]. (default 200)
-    CTF:: Phase-flip: If set, the data will be phase-flipped using CTF information included in the image headers. (default False)
+    CTF:: CTF phase flipping: If set, the data will be phase-flipped using CTF information included in the image headers. (default False)
     xr:: Translation search range [Pixels]: The translational search range. Set by the program by default. (default 1)
     thld_err:: Pixel error threshold [Pixels]: Used for checking stability. It is defined as the root mean square of distances between corresponding pixels from set of found transformations and theirs average transformation, depends linearly on square of radius (parameter ou). units - pixels. (default 0.7)
     target_radius:: Target particle radius [Pixels]: Particle radius used by isac to process the data. The images will be resized to fit this radius (default 29)
@@ -46,7 +46,7 @@ Note ISAC will change the size of input data such that they fit into box size 76
     stab_ali:: Number of alignments for stability check: The number of alignments when checking stability. (default 5)
     minimum_grp_size:: Minimum size of reproducible class: Minimum size of reproducible class. (default 60)
     rand_seed:: Seed: Random seed set before calculations. Useful for testing purposes. By default, isac sets a random seed number. (default none)
-    skip_prealignment:: Skip pre-alignment: Useful if images are already centered. The 2dalignment directory will still be generated but the parameters will be zero. (default False)
+    skip_prealignment:: Do pre-alignment: Indicate if pre-alignment should be used or not. Do not use pre-alignment if images are already centered. The 2dalignment directory will still be generated but the parameters will be zero. By default, do pre-alignment. (default False question reversed in GUI)
     restart:: Restart run: 0: Restart ISAC2 after the last completed main iteration (i.e. the directory must contain ''finished'' file); k: Restart ISAC2 after k-th main iteration, it has to be completed (i.e. the directory must contain ''finished'' file), and higer iterations will be removed; Default: Do not restart. (default -1)
 
 

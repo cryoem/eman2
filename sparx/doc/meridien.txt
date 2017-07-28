@@ -57,15 +57,15 @@ sxmeridien exists only in MPI version.
     * The remaining parameters are optional.
     xr:: Search range [Pixels]: Range for translation search in both directions. Search is +/-xr. It can be fractional (default 5.0) 
     ts:: Search step size [Pixels]: Step size of translation search in both directions. Search is within a circle of radius xr on a grid with steps ts. It can be fractional. (default 1.0)
-    skip_prealignment:: Skip 2D pre-alignment step: Use this option if images are already centered. (default False)
+    skip_prealignment:: Do 2D pre-alignment: Indicate if pre-alignment should be used or not. Do not use 2D pre-alignment if images are already centered. By default, do 2D pre-alignment. (default False question reversed in GUI)
     initialshifts:: Read shifts from header: Start with the shift parameters stored in the image headers. Useful to jumpstart the procedure. (default False)
     center_method:: Centering method: Method for centering averages during initial 2D prealignment of data (0: no centering; -1: average shift method; For 1-7, see center_2D in utilities.py) (default -1)
     target_radius:: Target particle radius [Pixels]: For 2D prealignment, images will be shrank/enlarged to this radius. (default 29)
     shake:: Shake: Shake (default 0.5)
-    small_memory:: Do not keep data in memory: Data will not be kept in memory if small_memory is true (default False)
-    ref_a::Projection generation method: Method for generating the quasi-uniformly distributed projection directions. S- Saff algorithm, or P - Penczek 1994 algorithm. (default S)
-    ccfpercentage::Correlation peaks to be included [%]: Percentage of correlation peaks to be included. 0.0 corresponds to hard matching. (default 99.9)
-    nonorm::Skip image norm correction: Do not apply image norm correction. (default False)
+    small_memory:: Keep data in memory: Indicate if data should be kept in memory or not. By default, data will be kept in memory. (default False question reversed in GUI)
+    ref_a:: Projection generation method: Method for generating the quasi-uniformly distributed projection directions. S- Saff algorithm, or P - Penczek 1994 algorithm. (default S)
+    ccfpercentage:: Correlation peaks to be included [%]: Percentage of correlation peaks to be included. 0.0 corresponds to hard matching. (default 99.9)
+    nonorm:: Apply image norm correction: Indicate if image norm correction should be applied or not. By default, apply image norm correction. (default False question reversed in GUI)
     function:: Reference preparation function: Function used to prepare the reference volume after each iteration. (default do_volume_mask)
 
 

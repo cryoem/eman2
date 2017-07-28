@@ -471,6 +471,16 @@ def construct_token_list_from_MoinMoinWiki(sxcmd_config):
 								# Type is still empty, meaning no special type is assigned
 								# Extract the data type (the rest of line)
 								token.type = default_value.replace("required", "").strip()
+						elif default_value.find("question reversed in GUI") != -1:
+							token.is_required = False
+							token.default = default_value.replace("question reversed in GUI", "").strip()
+							token.type = "bool"
+							if token.default == "True":
+								token.default = False # convert the default value to opposite boolean
+							elif token.default == "False":
+								token.default = True # convert the default value to opposite boolean
+							else:
+								assert(False)
 						else:
 							# This is not required command token and should have default value
 							token.is_required = False

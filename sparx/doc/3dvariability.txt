@@ -38,7 +38,7 @@ For structures that have symmetries:
     symmetrize:: Symmetrise input stack: Please skip this preparation step if the structure is asymmetrical (i.e. c1), since it is required only when the structure has internal symmetry. (default False)
 
     * The remaining parameters are optional.
-    no_norm:: Skip normalization: (default False)
+    no_norm:: Apply normalization: Indicate if normalization should be applied or not. By default, apply normalization. (default False question reversed in GUI)
     npad:: Image padding factor: The images are padded to achieve the original size times this option. (default 2)
     VAR:: Stack on input consists of 2D variances: (default False)
     decimate:: Image decimate factor: Reduce images by this factor and change the pixel size. Specify a value large than 1.0 to expand images, and less than 1.0 to shrink them. By default, it does not change size of images(default 1.0)

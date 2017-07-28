@@ -30,7 +30,7 @@ e2display exists in non-MPI version.
     singleimage:: Single image view: Displays a stack in a single image view: (default False)
     plot::Plot 2D: Data file(s) should be plotted rather than displayed in 2D. (default False)
     plot3::Plot 3D: Data file(s) should be plotted rather than displayed in 3D. (default False)
-    fullrange:: Skip auto-contrast: Disables the auto contrast for the display of particles stacks and 2D images. (default False)
+    fullrange:: Use full range of pixel values: Instead of default auto-contrast, use full range of pixel values for the display of particles stacks and 2D images, (default False)
     newwidget:: Use new 3D widget: Highly recommended. (default False)
     ppid::Set PPID: Set PPID of the process. (default -2) 
     verbose:: Verbose: Accepted values 0-9. (default 0)

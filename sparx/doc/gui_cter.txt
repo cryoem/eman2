@@ -18,7 +18,7 @@ sxgui_cter GUI tool can be run as a stand-alone program or run from sxgui.py.
 
 
 == Input ==
-    cter_ctf_file:: File with CTF parameters: This file is produced by sxcter and normally called partres.txt (default none)
+    cter_ctf_file:: File containing CTF parameters: This file is produced by sxcter and normally called partres.txt (default none)
 
 
 == Output ==

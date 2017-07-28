@@ -23,10 +23,10 @@ sxcompute_isac_avg.py exists only in MPI version
     stack:: Original image stack: Data stack that ISAC run used. Particles required to create the full-sized class averages. (default required string)
     isac_dir:: Isac output directory: Path to ISAC run output directory. This is input directory for this command. (default required string)
     radius:: Particle radius [Pixels]: There is no default radius. (default -1)
-    noctf:: No CTF correction: Use this option if full CTF correction should not be applied. Useful for negative stained data. Always use the CTF correction for cryo data. By default, the program will do full CTF correction. (default False) 
+    noctf:: CTF correction: Indicate if full CTF correction should be applied or not. Always use the CTF correction for cryo data, but not for negative stained data. By default, do full CTF correction. (default False question reversed in GUI) 
 
     * The remaining parameters are optional.
-    nopwadj:: Do not adjust PW spectrum: Do not adjust PW spectrum to analytical model or given 1-D rotationally averaged power spectrum. By default, the program applies PW spectrum adjustment to model. (default False)
+    nopwadj:: Adjust PW spectrum: Indicate if PW spectrum should be adjusted or not. The program adjust PW spectrum to analytical model or given 1-D rotationally averaged power spectrum. By default, apply PW spectrum adjustment to model. (default False question reversed in GUI)
     modelpw:: Reference 1D PW spectrum: A text file contains 1-D rotational averaged power spectrum of either PDB model or EM map sampled in the given pixel_size and in original image size. By default, use the analytic model (See Penczek Methods Enzymol 2010) (default none)
     B_enhance:: Apply B-factor enhancement: Apply B-factor enhancement. (default False)
     B_start:: B-factor lower limit [A]: Lower limit for B-factor estimation. (default 10.0)

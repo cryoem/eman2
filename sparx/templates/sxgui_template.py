@@ -1681,9 +1681,9 @@ class SXCmdTab(QWidget):
 			sxcmd_token.widget[widget_index].setText("%s" % sxcmd_token.restore[widget_index])
 		else:
 			if sxcmd_token.type == "bool":
-				if sxcmd_token.restore == "YES":
+				if sxcmd_token.restore:
 					sxcmd_token.widget.setChecked(Qt.Checked)
-				else: # sxcmd_token.restore == "NO"
+				else: # sxcmd_token.restore == False
 					sxcmd_token.widget.setChecked(Qt.Unchecked)
 			else:
 				sxcmd_token.widget.setText("%s" % sxcmd_token.restore)
