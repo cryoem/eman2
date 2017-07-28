@@ -318,9 +318,10 @@ set(test_methods
 		test_imageio.py:TestPNGIO.test_write_png
 		)
 
+find_package(Nosetests)
 foreach(t ${test_methods})
 	add_test(NAME ${t}
-			COMMAND nosetests ${EMAN_INSTALL_PREFIX}/test/rt/pyem/${t}
+			COMMAND ${NOSETESTS_EXECUTABLE} ${EMAN_INSTALL_PREFIX}/test/rt/pyem/${t}
 			)
 endforeach()
 
