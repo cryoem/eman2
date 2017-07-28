@@ -1,9 +1,9 @@
 add_subdirectory(pmconfig)
 
 if(WIN32)
-	add_library(EM2   STATIC "")
+	add_library(EM2 STATIC "")
 else()
-	add_library(EM2   SHARED "")
+	add_library(EM2 SHARED "")
 endif()
 
 target_sources(EM2 PRIVATE
