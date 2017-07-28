@@ -1,5 +1,5 @@
 = Name =
-sxgui_cter - CTF Assessment: GUI tool to assess and sort micrographs based on their estimated CTF by sxcter.
+sxgui_cter - CTF Assessment: GUI tool to assess and sort micrographs using sxcter results.
 
 
 = Usage =
@@ -18,7 +18,7 @@ sxgui_cter GUI tool can be run as a stand-alone program or run from sxgui.py.
 
 
 == Input ==
-    cter_ctf_file:: CTF parameter file: This file is produced by sxcter and normally called partres.txt (default none)
+    cter_ctf_file:: File with CTF parameters: This file is produced by sxcter and normally called partres.txt (default none)
 
 
 == Output ==

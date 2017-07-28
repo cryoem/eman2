@@ -17,7 +17,7 @@ sxpdb2em.py  tRNA.pdb  tRNA.hdf  --apix=2.26  --box=150  --center=c  --O  --quie
 == Input ==
     input_pdb:: Input PDB file: Starting atomic coordinates: (default required string)
     
-    apix:: Pixel size of the output map [A]: (default 1.0)
+    apix:: Pixel size of output map [A]: (default 1.0)
     box:: Output box size [Voxels]: If not given, the program will find the minimum box size fitting the structure. Be aware that this will most likely result in a rectangular box. (default required int)
     het:: Include hetero atoms: Otherwise the HETATM entries in the PDB file are ignored. (default False)
     center:: Center model at the origin:: Specifies whether the atomic model should be moved to the origin before generating density map.  Available options are: c - Use the geometrical center of atoms; a - Use the center of mass (recommended); x,y,z - Vector to be subtracted for the coordinates. Default: no centering, in which case (0,0,0) in the PDB space will map to the center of the EM volume. (default n)

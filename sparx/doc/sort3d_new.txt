@@ -65,10 +65,10 @@ sxsort3d_new.py exists only in MPI version. In addition, it does not support sin
     notapplybckgnoise:: Do not apply noise: Do not apply background noise. (default False)
     mtf:: MTF file: File contains the MTF (modulation transfer function) of the detector used. (default none)
     B_enhance:: B-factor enhancement: -1.0: B-factor is not applied; 0.0: program estimates B-factor from options. B_start (usually 10 Angstrom) to the resolution determined by FSC143; 128.0: program use the given value 128.0 [A^2] to enhance map. (default 0.0)
-    fl:: Low-pass filter frequency: 0.0: low-pass filter to resolution; A value > 0.5: low-pass filter to the value in Angstrom; A value > 0.0 and < 0.5: low-pass filter to the value in absolute frequency; -1.0: no low-pass filter. (default 0.0)
-    aa:: Low-pass filter fall-off: Low-pass filter fall-off. (default 0.1)
-    B_start:: B-factor lower limit [A]: Lower limit for B-factor estimation. (default 10.0)
-    B_stop:: B-factor higher limit [A]: Higher limit for B-factor estimation. (default  0.0)
+    fl:: Low-pass filter frequency [1/Pixels]: 0.0: low-pass filter to resolution; A value > 0.5: low-pass filter to the value in Angstrom; A value > 0.0 and < 0.5: low-pass filter to the value in absolute frequency; -1.0: no low-pass filter. (default 0.0)
+    aa:: Low-pass filter fall-off [1/Pixels]: Low-pass filter fall-off. (default 0.1)
+    B_start:: B-factor lower limit [A]: Lower bound of frequency range for B-factor estimation. (default 10.0)
+    B_stop:: B-factor higher limit [A]: Higher bound of frequency range for B-factor estimation. (default  0.0)
     nofsc_adj:: Do not apply FSC-based low-pass filter: Do not apply an FSC-based low-pass filter (square root of FSC) to the merged volume before the B-factor estimation. (default False)
 
 

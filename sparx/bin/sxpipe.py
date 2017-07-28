@@ -120,9 +120,10 @@ def isac_substack(args):
 	
 	# Loop through all ISAC validated particles
 	n_img_processed = 0
+	n_img_of_10_percent = n_img_detected // 10
 	for i_img_detected, isac_substack_particle_id in enumerate(isac_substack_particle_id_list):
 		# Print progress
-		if i_img_detected % 1000 == 0:
+		if i_img_detected % n_img_of_10_percent == 0:
 			try:
 				print_progress("Progress %5.2f%%: Processing %6dth entry (Particle ID %6d)."%(float(i_img_detected)/n_img_detected*100.0, i_img_detected, isac_substack_particle_id))
 				sys.stdout.flush()

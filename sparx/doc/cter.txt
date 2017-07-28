@@ -42,8 +42,8 @@ By default, amplitude is used for the CTF model fitting but user can select powe
     input_image_path:: Input micrograph path pattern: Specify input micrographs path pattern with a wild card (*) for any of Micrograph Modes. Images of BDB format can not be used as input micrographs. As an advanced option, a particle stack file path can also be supplied here when using --stack_mode. However, Stack Mode is not supported by sxgui. (default required string)
 
     selection_list:: Micrograph selecting list: Specify path of a micrograph selection list text file for Selected Micrographs Mode. The file extension must be '.txt'. Alternatively, the file name of a single micrograph can be specified for Single Micrograph Mode. (default none)
-    wn:: CTF window size [pixels]: The size should be slightly larger than particle box size. This will be ignored in Stack Mode. (default 512)
-    apix:: Pixel size [A/Pixels]: The pixel size of input micrograph(s) or images in input particle stack. (default -1.0)
+    wn:: CTF window size [Pixels]: The size should be slightly larger than particle box size. This will be ignored in Stack Mode. (default 512)
+    apix:: Pixel size [A]: The pixel size of input micrograph(s) or images in input particle stack. (default -1.0)
     Cs:: Microscope spherical aberration (Cs) [mm]: The spherical aberration (Cs) of microscope used for imaging. (default 2.0)
     voltage:: Microscope voltage [kV]: The acceleration voltage of microscope used for imaging. (default 300.0)
     ac:: Amplitude contrast [%]: The typical amplitude contrast is in the range of 7% - 14%. The value mainly depends on the thickness of the ice embedding the particles. (default 10.0)

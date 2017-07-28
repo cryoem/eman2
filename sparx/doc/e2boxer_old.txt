@@ -1,5 +1,5 @@
 = Name =
-e2boxer_old - Particle Picking: Manual and automatic particle picking.
+e2boxer_old - Particle Coordinates: Generate files containing particle coordinates for all input micrographs by picking particles manual and/or automatically.
 
 = Usage =
 

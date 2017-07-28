@@ -1,5 +1,5 @@
 = Name =
-sxpipe isac_substack - Create Stack Subset: Create virtual subset stack consisting from ISAC accounted particles by retrieving particle numbers associated with the class averages. The command also saves a list text file containing the retrieved original image numbers.
+sxpipe isac_substack - Create Stack Subset: Create virtual subset stack consisting of ISAC accounted particles by retrieving particle numbers associated with the class averages. The command also saves a list text file containing the retrieved original image numbers.
 
 
 = Usage =

@@ -17,7 +17,7 @@ sxprocess does not support MPI.
 
 ''' sxprocess.py  input_stack.hdf  output_stack.hdf  --phase_flip '''
 
- 2. Resample (decimate or interpolate up) images (2D or 3D) in a stack to change the pixel size. The window size will change accordingly.
+ 2. Change size of image or volume (resample, decimation or interpolation up). The process also changes the pixel size and window size accordingly.
 
 ''' sxprocess  input.hdf  output.hdf  --changesize  --ratio=0.5 '''
 
@@ -117,7 +117,7 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
 == Input ==
     inputfile:: input file: required for some options. (default none)
 
-    changesize:: Resample 2D or 3D images: Resample (decimate or interpolate up) images (2D or 3D) in a stack to change the pixel size. (default False)
+    changesize:: Change size of image or volume: Change size of image or volume (resample, decimation or interpolation up). The process also changes the pixel size and window size accordingly. (default False)
     ratio:: Ratio of new to old image size: if < 1, the pixel size will increase and image size decrease. if > 1, the other way round. (default 1.0)
 
     pw:: Compute average power spectrum of a 2D image stack: with optional padding (option wn) with zeroes. (default False)
@@ -144,14 +144,14 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
 
     scale:: Divide shifts in input 3D orientation parameters text file by this scale factor: (default -1.0)
 
-    adaptive_mask:: Create soft-edged 3D mask from reference volume: (default False)
+    adaptive_mask:: Create soft-edged 3D mask: Create soft-edged 3D mask from reference volume. (default False)
     nsigma:: Density standard deviations threshold: Defines the threshold used to find the main volume within the data. All voxels with density <= mean + nsigma standard deviations will be included into the main volume. This option will not be used if the option threshold is larger than -9999.0. (default 1.0)
     threshold:: Binarization threshold: Below this value the data is assumed to not belong to the main volume. With the value lower than the default, the option will be ignored and the mask will be set according to nsigma. (default -9999.0)
     ndilation:: Mask extension cycles: The initial mask will be extended this number of cycles. To keep the size of the main volume, set this to kernel_size/2 (default 3)
-    kernel_size:: Gaussian kernel size: Size of the gaussian kernel used to smooth the binary mask. (default 11)
-    gauss_standard_dev:: Kernel standard deviation : Standard deviation used in the construction of the gaussian smoothing of the mask. (default 9)
+    kernel_size:: Gaussian kernel size [Pixels]: Size of the gaussian kernel used to smooth the binary mask. (default 11)
+    gauss_standard_dev:: Kernel standard deviation [Pixels]: Standard deviation used in the construction of the gaussian smoothing of the mask. (default 9)
 
-    binary_mask:: Create binary 3D mask from reference volume: (default False)
+    binary_mask:: Create binary 3D mask: Create binary 3D mask from reference volume. (default False)
     bin_threshold:: Binarization threshold: Below this value the data is assumed to not belong to the main volume. (default 0.0)
     ne:: Erosion cycles: After initial binarization the volume is eroded to remove fragmented pieces of the volume. (default 0)
     nd:: Dilation cycles: After erosing the binary volume is dilated back to smooth the surface and match the original size. (default 0)
@@ -160,8 +160,8 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
     mtf:: MTF file: File contains the MTF (modulation transfer function) of the detector used. (default none)
     fsc_adj:: Apply FSC-based low-pass filter: Applies an FSC-based low-pass filter to the merged volume before the B-factor estimation. (default False)
     B_enhance:: B-factor enhancement: -1.0: B-factor is not applied; 0.0: program estimates B-factor from options. B_start (usually 10 Angstrom) to the resolution determined by FSC143; 128.0: program use the given value 128.0 [A^2] to enhance map. (default 0.0)
-    fl:: Low-pass filter frequency: 0.0: low-pass filter to resolution; A value > 0.5: low-pass filter to the value in Angstrom; A value > 0.0 and < 0.5: low-pass filter to the value in absolute frequency; -1.0: no low-pass filter. (default 0.0)
-    aa:: Low-pass filter fall-off: Low-pass filter fall-off. (default 0.1)
+    fl:: Low-pass filter frequency [1/Pixels]: 0.0: low-pass filter to resolution; A value > 0.5: low-pass filter to the value in Angstrom; A value > 0.0 and < 0.5: low-pass filter to the value in absolute frequency; -1.0: no low-pass filter. (default 0.0)
+    aa:: Low-pass filter fall-off [1/Pixels]: Low-pass filter fall-off. (default 0.1)
     mask:: User-provided mask: Path to user-provided mask. (default none)
     do_adaptive_mask:: Apply adaptive mask: Program creates mask adaptively with given density threshold. (default False)
     mask_threshold:: Adaptive mask threshold: Density threshold for creating adaptive surface mask. (default 0.02)
@@ -175,7 +175,7 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
     window_stack:: Window stack images using a smaller window size: (default False)
     box:: new window size: (default 0)
 
-    angular_distribution:: Create angular distribution file: The file will contain a 3D representation of the given angular distribution, which can be viewed with UCFS Chimera (default False)
+    angular_distribution:: Create angular distribution file: Create angular distribution file containing a 3D representation of the given angular distribution. It can be viewed with UCFS Chimera. (default False)
     pixel_size:: Pixel size [A]: Pixel size in A. (default 1.0)
     round_digit:: Number precision: Decimal numbers will be rounded to this number of decimal points. (default 5)
     box_size:: Box size [Pixels]: Box size in pixel used for calculating the center of the particle. (default 500)
@@ -204,10 +204,6 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
 
 
 == Development Notes ==
-- 2017/04/13 Toshio Moriya
-Before remove randomphasesafter options
-sxprocess.py  inputfile  outputfile  micrograph_prefix  --order  --order_lookup  --order_metropolis  --order_pca  --initial=INITIAL  --circular  --radius=RADIUS  --changesize  --ratio=RATIO  --pw  --wn=WN  --phase_flip  --makedb=param1=value1:param2=value2  --generate_projections=param1=value1:param2=value2  --isacgroup=ISACGROUP  --isacselect  --params=PARAMS  --adjpw  --rotpw=ROTPW  --transformparams=TRANSFORMPARAMS  --importctf=IMPORTCTF  --input=INPUT  --defocuserror=DEFOCUSERROR  --astigmatismerror=ASTIGMATISMERROR  --scale=SCALE  --adaptive_mask  --nsigma=NSIGMA  --threshold=THRESHOLD  --ndilation=NDILATION  --kernel_size=KERNEL_SIZE  --gauss_standard_dev=GAUSS_STANDARD_DEV  --binary_mask  --bin_threshold=BIN_THRESHOLD  --ne=NE  --nd=ND  --postprocess  --mtf=MTF_FILE_NAME  --fsc_adj  --B_enhance=B_ENHANCE  --randomphasesafter=FSC  --fl  --aa=AA  --mask=MASK  --do_adaptive_mask  --mask_threshold=MASK_THRESHOLD  --consine_edge=CONSINE_EDGE  --dilation=DILATION  --output=OUTPUT  --pixel_size=PIXEL_SIZE  --B_start=B_START  --B_stop=B_STOP  --window_stack  --box=BOX  --angular_distribution  --round_digit=ROUND_DIGIT  --box_size=BOX_SIZE  --particle_radius=PARTICLE_RADIUS  --cylinder_width=CYLINDER_WIDTH  --cylinder_length=CYLINDER_LENGTH
-randomphasesafter:: Randomise phases after this FSC: Set Fourier pixels random phases after this FSC value. (default 0.8)
 
 
 = Author / Maintainer =

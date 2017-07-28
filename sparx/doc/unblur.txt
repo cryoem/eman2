@@ -1,5 +1,5 @@
 = Name =
-sxunblur - Micrograph movie alignment: Align frames of micrograph movies with Unblur.
+sxunblur - Micrograph Movie Alignment: Align frames of micrograph movies with Unblur.
 
 
 = Usage =

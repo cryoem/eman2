@@ -1,5 +1,5 @@
 = Name =
-sxsummovie - Micrograph movie summation: Sum micrograph movies with SumMovie.
+sxsummovie - Micrograph Movie Summation: Sum micrograph movies with SumMovie.
 
 
 = Usage =
