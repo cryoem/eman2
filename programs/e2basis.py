@@ -194,7 +194,7 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 					tout.write("\t".join(tl))
 					tout.write("\n")
 				else : proj.write_image(args[3],i)
-
+		if options.verbose>1 : print "projections complete"
 
 	
 	# Project rotated images into a basis subspace

@@ -145,6 +145,7 @@ void HdfIO::init()
 		return;
 	}
 
+	H5dont_atexit();
 	initialized = true;
 
 	FILE *tmp_file = sfopen(filename, rw_mode, &is_new_file);

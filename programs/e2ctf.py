@@ -189,7 +189,7 @@ NOTE: This program should be run from the project directory, not from within the
 	global sfcurve,sfcurve2
 	init_sfcurve(options.sf)
 
-	logid=E2init(sys.argv, options.ppid)
+	if not options.chunk: logid=E2init(sys.argv, options.ppid)
 
  #	if options.oversamp>1 : options.apix/=float(options.oversamp)
 
@@ -232,6 +232,8 @@ NOTE: This program should be run from the project directory, not from within the
 		for t in threads: t.start()
 		for t in threads: t.join()
 		print "Parallel fitting complete"
+		E2end(logid)
+		sys.exit(0)
 	else:
 		img_sets=None
 		if options.autofit:
@@ -251,7 +253,7 @@ NOTE: This program should be run from the project directory, not from within the
 			img_sets.sort(key=get_df)
 
 		if len(img_sets) == 0:
-			E2end(logid)
+			if not options.chunk: E2end(logid)
 			exit(1)
 		from emapplication import EMApp
 		app=EMApp()
@@ -287,7 +289,7 @@ NOTE: This program should be run from the project directory, not from within the
 		out.close()
 
 
-	E2end(logid)
+	if not options.chunk: E2end(logid)
 
 def init_sfcurve(opt):
 
@@ -864,7 +866,8 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=N
 				out2["apix_z"] = ctf.apix
 				# we take a sequence of processor option 2-tuples
 				for op in phaseproc[1:]:
-					out2.process_inplace(op[0],op[1])
+					if op[0] in outplaceprocs: out2=out2.process(op[0],op[1])
+					else: out2.process_inplace(op[0],op[1])
 #				out2.clip_inplace(Region(int(ys2*(oversamp-1)/2.0),int(ys2*(oversamp-1)/2.0),ys2,ys2))
 
 #				print fft2.get_ysize(),len(hpfilt)

@@ -624,19 +624,19 @@ class EMFilterTool(QtGui.QMainWindow):
 #			print pp
 
 			errflag=False
-			for im in self.procdata:
-				try: proc.process_inplace(im)
-				except: 
-					errflag=True
-					break
-				
-			if errflag:
+			if pp[0] in outplaceprocs:
 				errflag=False
 				try:
 					self.procdata=[proc.process(im) for im in self.procdata]
 				except:
 					errflag=True
-
+			else:
+				for im in self.procdata:
+					try: proc.process_inplace(im)
+					except: 
+						errflag=True
+						break
+				
 			if errflag: errors.append(str(pp))
 			needredisp=1					# if all processors are disabled, we don't want a redisplay
 			self.lastredisp=1

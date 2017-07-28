@@ -55,6 +55,9 @@ import threading
 
 HOMEDB=None
 
+# These are processors which don't support in-place operation
+outplaceprocs=["math.bispectrum.slice"]
+
 # Without this, in many countries Qt will set things so "," is used as a decimal
 # separator by sscanf and other functions, which breaks CTF reading and some other things
 try:
@@ -230,6 +233,7 @@ This function is called to log the end of the current job. n is returned by E2in
 #	hist.flush()
 	hist.close()
 
+	print "ENDED"
 	return n
 
 def E2saveappwin(app,key,win):

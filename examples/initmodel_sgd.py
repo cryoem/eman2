@@ -234,7 +234,7 @@ def main():
 	parser.add_argument("--fullcov", action="store_true", default=False ,help="Assume the input particles covers most of the orientation of the model. This gives better performance when the model is relatively feature-less, but is more likely to fail when there are incorrect particles in the input.")
 	parser.add_argument("--threads", type=int,help="threads", default=10)
 	parser.add_argument("--niter", type=int,help="Number of iterations", default=20)
-	parser.add_argument("--verbose", type=int,help="Verbose", default=0)
+	parser.add_argument("--verbose", "-v", type=int,help="Verbose", default=0)
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 

@@ -189,7 +189,7 @@ def procfn(jsd,args,options,thrn,n0,n1):
 							pass
 
 				# these processors don't work _inplace
-				if processorname in ["math.bispectrum.slice"]:
+				if processorname in outplaceprocs:
 					d=d.process(processorname, param_dict)
 				else: d.process_inplace(processorname, param_dict)
 				index_d[option1] += 1

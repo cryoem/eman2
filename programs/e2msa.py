@@ -72,6 +72,7 @@ handled this way."""
 	parser.add_argument("--scratchfile",type=str,help="Specify an explicit scratch file to avoid multi-process conflicts",default="msa_scratch")
 	parser.add_argument("--normalize",action="store_true",help="Perform a careful normalization of input images before MSA. Otherwise normalization is not modified until after mean subtraction.",default=False)
 	parser.add_argument("--gsl",action="store_true",help="Use gsl SVD algorithm",default=False)
+	parser.add_argument("--step",type=str,default="0,1",help="Specify <init>,<step>. Processes only a subset of the input data. For example, 0,2 would process only the even numbered particles")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
@@ -90,6 +91,11 @@ handled this way."""
 	#elif options.lowmem : mode="pca_large"
 	#else : mode="pca"
 
+	try : options.step = int(options.step.split(",")[0]),int(options.step.split(",")[1])	# convert strings to tuple
+	except:
+		print "Invalid --step specification"
+		sys.exit(1)
+
 	if options.mask>-2 :
 		mask=EMData(args[0],0)
 		ny=mask.get_ysize()
@@ -105,8 +111,8 @@ handled this way."""
 			mask=EMData(args[0],0)
 			mask.to_one()
 	
-	if options.simmx : out=msa_simmx(args[0],options.simmx,mask,options.nbasis,options.varimax,mode,options.normalize,options.scratchfile)
-	else : out=msa(args[0],mask,options.nbasis,options.varimax,mode,options.normalize,options.scratchfile)
+	if options.simmx : out=msa_simmx(args[0],options.simmx,mask,options.nbasis,options.varimax,mode,options.normalize,options.scratchfile,options.step)
+	else : out=msa(args[0],mask,options.nbasis,options.varimax,mode,options.normalize,options.scratchfile,options.step)
 	
 	if options.verbose>0 : print "MSA complete"
 	for j,i in enumerate(out):
@@ -117,7 +123,7 @@ handled this way."""
 		
 	E2end(logid)
 
-def msa_simmx(images,simmxpath,mask,nbasis,varimax,mode,normalize=True,scratchfile="msa_scratch"):
+def msa_simmx(images,simmxpath,mask,nbasis,varimax,mode,normalize=True,scratchfile="msa_scratch",step=(0,1)):
 	"""Perform principle component analysis (in this context similar to Multivariate Statistical Analysis (MSA) or
 Singular Value Decomposition (SVD). 'images' is a filename containing a stack of images to analyze which is coordinated
 with simmx. 'simmx' contains the result of an all-vs-all alignment which will be used to transform the orientation
@@ -130,13 +136,13 @@ pca,pca_large or svd_gsl"""
 	simmx=[EMData(simmxpath,i) for i in range(5)]
 
 
-	n=EMUtil.get_image_count(images)
+	n=(EMUtil.get_image_count(images)-step[0])/step[1]
 	if mode=="svd_gsl" : pca=Analyzers.get(mode,{"mask":mask,"nvec":nbasis,"nimg":n})
 	else : pca=Analyzers.get(mode,{"mask":mask,"nvec":nbasis,"tmpfile":scratchfile})
 
 	mean=EMData(images,0)
 	for i in range(1,n):
-		im=EMData(images,i)
+		im=EMData(images,i*step[1]+step[0])
 		xf=get_xform(i,simmx)
 		im.transform(xf)
 #		im*=mask
@@ -147,7 +153,7 @@ pca,pca_large or svd_gsl"""
 #	mean.mult(mask)
 	
 	for i in range(n):
-		im=EMData(images,i)
+		im=EMData(images,i*step[1]+step[0])
 		xf=get_xform(i,simmx)
 		im.transform(xf)		
 		if normalize: im.process_inplace("normalize.toimage",{"to":mean})
@@ -191,7 +197,7 @@ def get_xform(n,simmx):
 	
 	return ret.inverse()
 
-def msa(images,mask,nbasis,varimax,mode,normalize=True,scratchfile="msa_scratch"):
+def msa(images,mask,nbasis,varimax,mode,normalize=True,scratchfile="msa_scratch",step=(0,1)):
 	"""Perform principal component analysis (in this context similar to Multivariate Statistical Analysis (MSA) or
 Singular Value Decomposition (SVD). 'images' is either a list of EMData or a filename containing a stack of images
 to analyze. 'mask' is an EMImage with a binary mask defining the region to analyze (must be the same size as the input
@@ -202,14 +208,14 @@ pca,pca_large or svd_gsl"""
 	
 	
 	if isinstance(images,str) :
-		n=EMUtil.get_image_count(images)
+		n=(EMUtil.get_image_count(images)-step[0])/step[1]
 		if mode=="svd_gsl" : pca=Analyzers.get(mode,{"mask":mask,"nvec":nbasis,"nimg":n})
 		else : pca=Analyzers.get(mode,{"mask":mask,"nvec":nbasis,"tmpfile":scratchfile})
 
 		mean=EMData(images,0)
 		mean.to_zero()
 		for i in range(n):
-			im=EMData(images,i)
+			im=EMData(images,i*step[1]+step[0])
 #			im*=mask
 			if normalize : im.process_inplace("normalize.unitlen")
 			mean+=im
@@ -217,13 +223,16 @@ pca,pca_large or svd_gsl"""
 #		mean.mult(mask)
 		
 		for i in range(n):
-			im=EMData(images,i)
+			im=EMData(images,i*step[1]+step[0])
 			if normalize: im.process_inplace("normalize.toimage",{"to":mean})
 			im-=mean
 			im*=mask
 			im.process_inplace("normalize.unitlen")
 			pca.insert_image(im)
 	else:
+		if step[0]!=0 or step[1]!=1:
+			print "ERROR: step not supported with image list in e2msa.py"
+			sys.exit(1)
 		n = len(images)
 		if mode=="svd_gsl" : pca=Analyzers.get(mode,{"mask":mask,"nvec":nbasis,"nimg":n})
 		else : pca=Analyzers.get(mode,{"mask":mask,"nvec":nbasis})

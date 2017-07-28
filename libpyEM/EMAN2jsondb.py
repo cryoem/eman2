@@ -30,7 +30,6 @@
 #
 #
 
-import atexit
 import weakref
 import json
 import cPickle

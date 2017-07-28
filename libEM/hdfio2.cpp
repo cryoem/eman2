@@ -79,6 +79,7 @@ HdfIO2::HdfIO2(const string & hdf_filename, IOMode rw)
 	file(-1), group(-1), filename(hdf_filename),
 	rw_mode(rw), initialized(false), rendermin(0.0), rendermax(0.0)
 {
+	H5dont_atexit();
 	accprop=H5Pcreate(H5P_FILE_ACCESS);
 
 	//STDIO file driver has 2G size limit on 32 bit Linux system

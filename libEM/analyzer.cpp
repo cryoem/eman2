@@ -340,17 +340,30 @@ for (i=0; i<ncls; i++) {
 
 }
 
+// a quick MSD between two images, MUCH faster than using sqeuclidean for small images
+float qsqcmp(EMData *a,EMData *b) {
+	size_t n = a->get_size();
+	float *d1=a->get_data();
+	float *d2=b->get_data();
+
+	double ret=0;
+	for (size_t i; i<n; i++) ret+=pow(d1[i]-d2[i],2);
+	
+	return (float)ret;
+}
+
 // Tries to generate a reasonable similarity path through the centers to put more similar centers closer to each other
 void KMeansAnalyzer::resort() {
 
-	Cmp *c = Factory < Cmp >::get("sqeuclidean");
+//	Cmp *c = Factory < Cmp >::get("sqeuclidean");
 	
 	// The first center remains first, we proceed from that starting point
 	// simple shells sort to an out-of-place reference
 	for (int i=1; i<ncls; i++) {
 		float bst=1.0e22;
 		for (int j=i; j<ncls; j++) {
-			float d=c->cmp(centers[i-1],centers[j]);
+//			float d=c->cmp(centers[i-1],centers[j]);
+			float d=qsqcmp(centers[i-1],centers[j]);
 			if (d<bst) {
 				bst=d;
 				if (j!=i) {
@@ -362,27 +375,26 @@ void KMeansAnalyzer::resort() {
 		}
 	}
 
-	delete c;
+//	delete c;
 }
-
-
+	
 void KMeansAnalyzer::reclassify() {
 int nptcl=images.size();
 
-Cmp *c = Factory < Cmp >::get("sqeuclidean");
+//Cmp *c = Factory < Cmp >::get("sqeuclidean");
 for (int i=0; i<nptcl; i++) {
 	float best=1.0e38f;
 	int bestn=0;
 	for (int j=0; j<ncls; j++) {
-		float d=c->cmp(images[i],centers[j]);
-//images[i]->cmp("sqeuclidean",centers[j]);
+//		float d=c->cmp(images[i],centers[j]);
+		float d=qsqcmp(images[i],centers[j]);
 		if (d<best) { best=d; bestn=j; }
 	}
 	int oldn=images[i]->get_attr_default("class_id",0);
 	if (oldn!=bestn) nchanged++;
 	images[i]->set_attr("class_id",bestn);
 }
-delete c;
+//delete c;
 }
 
 #define covmat(i,j) covmat[ ((j)-1)*nx + (i)-1 ]
