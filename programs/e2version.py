@@ -37,12 +37,10 @@ import platform
 import EMAN2_meta
 
 
-EMANVERSION = EMAN2_meta.EMANVERSION
-DATESTAMP   = EMAN2_meta.DATESTAMP
-GITHASH     = EMAN2_meta.GITHASH
+FULLVERSIONSTRING = EMAN2_meta.FULLVERSIONSTRING
 
 def main():
-	print(EMANVERSION + ' (GITHUB: ' + DATESTAMP + ' - commit: ' + GITHASH +')')
+	print(FULLVERSIONSTRING)
 
 	if sys.platform=='linux2':
 		print('Your EMAN2 is running on: {} {}'.format(platform.platform(), os.uname()[2], os.uname()[-1]))
