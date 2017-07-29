@@ -34,12 +34,12 @@
 import os
 import sys
 import platform
-from subprocess import *
+import EMAN2_meta
 
 
-EMANVERSION="EMAN @EMAN_VERSION@"
-DATESTAMP="@EMAN_TIMESTAMP@"
-GITHASH="@EMAN_GITHASH@"
+EMANVERSION = EMAN2_meta.EMANVERSION
+DATESTAMP   = EMAN2_meta.DATESTAMP
+GITHASH     = EMAN2_meta.GITHASH
 
 def main():
 	print(EMANVERSION + ' (GITHUB: ' + DATESTAMP + ' - commit: ' + GITHASH +')')
