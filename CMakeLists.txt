@@ -294,8 +294,8 @@ ADD_SUBDIRECTORY(recipes)
 if(NOT WIN32)
 	if(ENABLE_CONDA)
 		install(CODE "execute_process(
-						COMMAND ${CMAKE_COMMAND} -E create_symlink ${EMAN_PREFIX}/bin/sxgui.py     ${EMAN_PREFIX}/bin/sphire
-						COMMAND ${CMAKE_COMMAND} -E create_symlink ${EMAN_PREFIX}/bin/sx.py        ${EMAN_PREFIX}/bin/sparx
+						COMMAND ${CMAKE_COMMAND} -E create_symlink ${EMAN_PREFIX}/bin/sxgui.py ${EMAN_PREFIX}/bin/sphire
+						COMMAND ${CMAKE_COMMAND} -E create_symlink ${EMAN_PREFIX}/bin/sx.py    ${EMAN_PREFIX}/bin/sparx
 					 )"
 				)
 	endif()
