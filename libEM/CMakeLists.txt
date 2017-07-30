@@ -184,22 +184,5 @@ if(ENABLE_OPENGL)
 	find_package(FTGL REQUIRED)
 	include(${CMAKE_SOURCE_DIR}/cmake/Freetype.cmake)
 	
-	if(WIN32)
-		add_library(GLEM2 STATIC "")
-	else()
-		add_library(GLEM2 SHARED "")
-	endif()
-	
-	target_sources(GLEM2 PRIVATE
-				   glutil.cpp
-				   marchingcubes.cpp
-				   emftgl.cpp
-				   )
-	
-	target_link_libraries(GLEM2 EM2 FTGL::FTGL)
-	
 	add_subdirectory(fonts)
-
-    install(TARGETS GLEM2
-        DESTINATION ${EMAN_PY_INSTALL_PREFIX})
 endif()
