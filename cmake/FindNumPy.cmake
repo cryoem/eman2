@@ -19,5 +19,4 @@ if(NumPy_FOUND AND NOT TARGET NumPy)
 			INTERFACE_INCLUDE_DIRECTORIES ${NUMPY_INCLUDE_DIR}
 			)
 	
-	target_link_libraries(NumPy INTERFACE Python::Python)
 endif()

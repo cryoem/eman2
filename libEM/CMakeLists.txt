@@ -114,7 +114,7 @@ if(WIN32)
 						  )
 endif()
 
-target_link_libraries(EM2 GSL::gsl GSL::gslcblas Freetype::Freetype)
+target_link_libraries(EM2 GSL::gsl GSL::gslcblas)
 
 option(ENABLE_TIFF "enable TIFF support" ON)
 if(ENABLE_TIFF)
@@ -177,7 +177,6 @@ endif()
 option(ENABLE_OPENGL "enable EMAN2 OpenGL usage" ON)
 if(ENABLE_OPENGL)
 	include(${CMAKE_SOURCE_DIR}/cmake/OpenGL.cmake)
-	target_link_libraries(EM2 OpenGL::OpenGL)
 
 	option(ENABLE_STATIC_FTGL "If build EMAN with libftgl.a" OFF)
 	mark_as_advanced(ENABLE_STATIC_FTGL)

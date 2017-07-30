@@ -10,6 +10,7 @@ message("Boost_INCLUDE_DIR: ${Boost_INCLUDE_DIR}")
 set_target_properties(Boost::python
 					  PROPERTIES
 					  INTERFACE_COMPILE_DEFINITIONS BOOST_PYTHON_NO_PY_SIGNATURES
+					  INTERFACE_LINK_LIBRARIES Python::Python
 					  )
 if(WIN32)
 	ADD_DEFINITIONS(-DBOOST_DISABLE_ASSERTS)
@@ -34,8 +35,7 @@ function(ADD_PYSTE_LIB libname)
 			SUFFIX ${suffix}
 			)
 	
-	# Windows fails without linking against freetype
-	target_link_libraries(${libname} EM2 Boost::python Python::Python Freetype::Freetype)
+	target_link_libraries(${libname} EM2 Boost::python)
 	install(TARGETS ${libname} DESTINATION ${EMAN_PY_INSTALL_PREFIX})
 endfunction()
 
@@ -67,7 +67,7 @@ endif()
 if(ENABLE_OPENGL)
 	ADD_PYSTE_LIB(pyGLUtils2)
 	ADD_PYSTE_LIB(pyMarchingCubes2)
-	target_link_libraries(pyGLUtils2 GLEM2 FTGL::FTGL)
+	target_link_libraries(pyGLUtils2 GLEM2)
 	target_link_libraries(pyMarchingCubes2 GLEM2)
 endif()
 

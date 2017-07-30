@@ -23,4 +23,7 @@ if(FTGL_FOUND AND NOT TARGET FTGL)
 			target_compile_definitions(FTGL INTERFACE FTGL_LIBRARY)
 		endif()
 	endif()
+	
+	include(${CMAKE_SOURCE_DIR}/cmake/Freetype.cmake)
+	target_link_libraries(FTGL INTERFACE Freetype::Freetype)
 endif()
