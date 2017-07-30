@@ -128,9 +128,6 @@ OPTION(ENABLE_V4L2 "enable V4L2 framegrabbing support" OFF)
 
 OPTION(ENABLE_SPARX_CUDA "enable SPARX CUDA usage" OFF)
 OPTION(ENABLE_EMAN_CUDA "enable EMAN2 CUDA usage" OFF)
-OPTION(ENABLE_FTGL "enable EMAN2 FTGL (3D fonts) usage" ON)
-OPTION(ENABLE_STATIC_FTGL "If build EMAN with libftgl.a" OFF)
-MARK_AS_ADVANCED(ENABLE_STATIC_FTGL)
 
 #flags used for debugging and testing
 OPTION(ENABLE_MEMDEBUG "enable memory debug support of objects" OFF)
@@ -257,13 +254,6 @@ endif()
 
 IF(ENABLE_NATIVE_FFT)
 	ADD_DEFINITIONS(-DNATIVE_FFT)
-ENDIF()
-
-IF(ENABLE_FTGL)
-	find_package(FTGL REQUIRED)
-
-	ADD_SUBDIRECTORY(fonts)
-	include(cmake/Freetype.cmake)
 ENDIF()
 
 IF(ENABLE_RT)

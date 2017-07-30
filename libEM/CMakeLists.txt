@@ -1,79 +1,92 @@
 add_subdirectory(pmconfig)
 
-set(LIB_EM_SOURCE byteorder.cpp
-    boxingtools.cpp
-    emobject.cpp
-    emfft.cpp
-    log.cpp
-    imageio.cpp
-    util.cpp
-    emutil.cpp
-    interp.cpp
-    quaternion.cpp
-    transform.cpp
-    symmetry.cpp
-    geometry.cpp
-    pointarray.cpp
-    pdbreader.cpp
-    mrcio.cpp
-    dm3io.cpp
-    dm4io.cpp
-    tifio.cpp
-    hdfio.cpp
-    hdfio2.cpp
-    jpegio.cpp
-    emdata.cpp
-    emdata_io.cpp
-    emdata_core.cpp
-    emdata_cuda.cpp
-    emdata_modular.cpp
-    emdata_metadata.cpp
-    emdata_transform.cpp
-    pifio.cpp
-    v4l2io.cpp
-    vtkio.cpp
-    spiderio.cpp
-    sspiderio.cpp
-    pgmio.cpp
-    fitsio.cpp
-    icosio.cpp
-    lstio.cpp
-    lstfastio.cpp
-    pngio.cpp
-    salio.cpp
-    amiraio.cpp
-    xplorio.cpp
-    gatan2io.cpp
-    emio.cpp
-    imagicio.cpp
-    imagicio2.cpp
-    df3io.cpp
-    omapio.cpp
-    situsio.cpp
-    serio.cpp
-    emcache.cpp
-    ctf.cpp
-    xydata.cpp
-    processor.cpp
-    aligner.cpp
-    projector.cpp
-    cmp.cpp
-    averager.cpp
-    reconstructor.cpp
-    reconstructor_tools.cpp
-    exception.cpp
-    testutil.cpp
-    analyzer.cpp
-    randnum.cpp
-    hdf_filecache.cpp
-    polardata.cpp
-    tomoseg.cpp
-    )
+if(WIN32)
+	add_library(EM2 STATIC "")
+else()
+	add_library(EM2 SHARED "")
+endif()
 
-set(LIB_GLEM_SOURCE 
-		glutil.cpp
-		marchingcubes.cpp
-		emftgl.cpp)
+target_sources(EM2 PRIVATE
+			   byteorder.cpp
+			   boxingtools.cpp
+			   emobject.cpp
+			   emfft.cpp
+			   log.cpp
+			   imageio.cpp
+			   util.cpp
+			   emutil.cpp
+			   interp.cpp
+			   quaternion.cpp
+			   transform.cpp
+			   symmetry.cpp
+			   geometry.cpp
+			   pointarray.cpp
+			   pdbreader.cpp
+			   mrcio.cpp
+			   dm3io.cpp
+			   dm4io.cpp
+			   tifio.cpp
+			   hdfio.cpp
+			   hdfio2.cpp
+			   jpegio.cpp
+			   emdata.cpp
+			   emdata_io.cpp
+			   emdata_core.cpp
+			   emdata_cuda.cpp
+			   emdata_modular.cpp
+			   emdata_metadata.cpp
+			   emdata_transform.cpp
+			   pifio.cpp
+			   v4l2io.cpp
+			   vtkio.cpp
+			   spiderio.cpp
+			   sspiderio.cpp
+			   pgmio.cpp
+			   fitsio.cpp
+			   icosio.cpp
+			   lstio.cpp
+			   lstfastio.cpp
+			   pngio.cpp
+			   salio.cpp
+			   amiraio.cpp
+			   xplorio.cpp
+			   gatan2io.cpp
+			   emio.cpp
+			   imagicio.cpp
+			   imagicio2.cpp
+			   df3io.cpp
+			   omapio.cpp
+			   situsio.cpp
+			   serio.cpp
+			   emcache.cpp
+			   ctf.cpp
+			   xydata.cpp
+			   processor.cpp
+			   aligner.cpp
+			   projector.cpp
+			   cmp.cpp
+			   averager.cpp
+			   reconstructor.cpp
+			   reconstructor_tools.cpp
+			   exception.cpp
+			   testutil.cpp
+			   analyzer.cpp
+			   randnum.cpp
+			   hdf_filecache.cpp
+			   polardata.cpp
+			   tomoseg.cpp
+			   )
+
+add_subdirectory(gorgon)
+add_subdirectory(sparx)
+
+if(WIN32)
+	target_compile_definitions(EM2 PUBLIC _CRT_SECURE_NO_WARNINGS _SCL_SECURE_NO_WARNINGS)
+endif()
+
+install(TARGETS EM2
+		DESTINATION ${EMAN_PY_INSTALL_PREFIX}
+		)
 
 if(ENABLE_FFTW3)
 	find_package(FFTW3 REQUIRED)
@@ -85,24 +98,13 @@ if(ENABLE_FFTW3)
 endif()
 
 if(WIN32)
-    add_library(EM2   STATIC "")
-    add_library(GLEM2 STATIC "")
     target_link_libraries(EM2 FFTW3::FFTW3)
-	target_compile_definitions(EM2 PUBLIC _CRT_SECURE_NO_WARNINGS _SCL_SECURE_NO_WARNINGS)
 else()
-    add_library(EM2   SHARED "")
-    add_library(GLEM2 SHARED "")
     if(ENABLE_FFTW3)
     	target_link_libraries(EM2 FFTW3::FFTW3)
     endif()
 	target_link_libraries(EM2 m)
 endif()
-
-target_sources(EM2   PRIVATE ${LIB_EM_SOURCE})
-target_sources(GLEM2 PRIVATE ${LIB_GLEM_SOURCE})
-
-add_subdirectory(gorgon)
-add_subdirectory(sparx)
 
 find_package(GSL REQUIRED)
 if(WIN32)
@@ -113,17 +115,6 @@ if(WIN32)
 endif()
 
 target_link_libraries(EM2 GSL::gsl GSL::gslcblas Freetype::Freetype)
-target_link_libraries(GLEM2 EM2)
-
-option(ENABLE_OPENGL "enable EMAN2 OpenGL usage" ON)
-if(ENABLE_OPENGL)
-	include(${CMAKE_SOURCE_DIR}/cmake/OpenGL.cmake)
-	target_link_libraries(EM2 OpenGL::OpenGL)
-endif()
-
-IF(ENABLE_FTGL)
-	TARGET_LINK_LIBRARIES(GLEM2 FTGL::FTGL)
-ENDIF()
 
 option(ENABLE_TIFF "enable TIFF support" ON)
 if(ENABLE_TIFF)
@@ -183,11 +174,33 @@ if(ENABLE_ACML_FFT)
 	target_link_libraries(EM2 ACML::ACML)
 endif()
 
+option(ENABLE_OPENGL "enable EMAN2 OpenGL usage" ON)
 if(ENABLE_OPENGL)
+	include(${CMAKE_SOURCE_DIR}/cmake/OpenGL.cmake)
+	target_link_libraries(EM2 OpenGL::OpenGL)
+
+	option(ENABLE_STATIC_FTGL "If build EMAN with libftgl.a" OFF)
+	mark_as_advanced(ENABLE_STATIC_FTGL)
+	
+	find_package(FTGL REQUIRED)
+	include(${CMAKE_SOURCE_DIR}/cmake/Freetype.cmake)
+	
+	if(WIN32)
+		add_library(GLEM2 STATIC "")
+	else()
+		add_library(GLEM2 SHARED "")
+	endif()
+	
+	target_sources(GLEM2 PRIVATE
+				   glutil.cpp
+				   marchingcubes.cpp
+				   emftgl.cpp
+				   )
+	
+	target_link_libraries(GLEM2 EM2 FTGL::FTGL)
+	
+	add_subdirectory(fonts)
+
     install(TARGETS GLEM2
         DESTINATION ${EMAN_PY_INSTALL_PREFIX})
 endif()
-
-install(TARGETS EM2
-		DESTINATION ${EMAN_PY_INSTALL_PREFIX})
-
