@@ -2835,7 +2835,7 @@ c  purpose: linear interpolation
   Optimized for speed, circular closer removed, checking of ranges removed
   limit should be set to nsam*nrow-2.
 */
-    float bilinear;
+    //float bilinear;
     int   ixold, iyold;
 
 /*
