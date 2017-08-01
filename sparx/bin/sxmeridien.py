@@ -2355,9 +2355,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 			ctf_params = dataimage.get_attr("ctf")
 			ctf_params.apix = ctf_params.apix/(float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))
 			ctfa = ctf_img_real(Tracker["nxinit"], ctf_params)
-			#  Here we set astigmatism to zero
-			ctf_params.dfdiff = 0.0
-			ctfs = ctf_img_real(Tracker["nxinit"], ctf_params)
+			ctfs = ctfa
 		dataml = fdecimate(dataimage, Tracker["nxinit"], Tracker["nxinit"], 1, False, False)
 		data = []
 		for iq in coarse_shifts:
@@ -3056,9 +3054,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 			ctf_params = dataimage.get_attr("ctf")
 			ctf_params.apix = ctf_params.apix/(float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))
 			ctfa = ctf_img_real(Tracker["nxinit"], ctf_params)
-			#  Here we set astigmatism to zero
-			ctf_params.dfdiff = 0.0
-			ctfs = ctf_img_real(Tracker["nxinit"], ctf_params)
+			ctfs = ctfa
 		dataml = fdecimate(dataimage, Tracker["nxinit"], Tracker["nxinit"], 1, False, False)
 		data = []
 		for iq in coarse_shifts:
@@ -3751,9 +3747,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 			ctf_params = dataimage.get_attr("ctf")
 			ctf_params.apix = ctf_params.apix/(float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))
 			ctfa = ctf_img_real(Tracker["nxinit"], ctf_params)
-			#  Here we set astigmatism to zero
-			ctf_params.dfdiff = 0.0
-			ctfs = ctf_img_real(Tracker["nxinit"], ctf_params)
+			ctfs = ctfa
 		dataml = fdecimate(dataimage, Tracker["nxinit"], Tracker["nxinit"], 1, False, False)
 		data = []
 		for iq in coarse_shifts:
@@ -4387,7 +4381,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 					assignments_of_refangles_to_cones[i] = list(set(assignments_of_refangles_to_cones[i])-set([-1]))
 					###if( Blockdata["myid_on_node"] == 0 ):  print(  " assignments_of_refangles_to_cones on zero ",i,len(assignments_of_refangles_to_cones[i]))
 					#  POSSIBLE PROBLEM - IT IS POSSIBLE FOR A GIVEN CONE TO HAVE NO REFANGLES AND THUS BE EMPTY
-					if( len(assignments_of_refangles_to_cones[i]) > numberofrefs_inmem  and False):
+					if( len(assignments_of_refangles_to_cones[i]) > numberofrefs_inmem ):
 						number_of_cones = int(number_of_cones*1.25)
 						#print(  " increased number_of_cones ",i,number_of_cones )
 						doit = 0
@@ -4587,9 +4581,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 						ctf_params = dataimage.get_attr("ctf")
 						ctf_params.apix = ctf_params.apix/(float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))
 						ctfa = ctf_img_real(Tracker["nxinit"], ctf_params)
-						#  Here we set astigmatism to zero
-						ctf_params.dfdiff = 0.0
-						ctfs = ctf_img_real(Tracker["nxinit"], ctf_params)
+						ctfs = ctfa
 					##if( ( Blockdata["myid"] == Blockdata["main_node"])   and firsti ):
 					##	dataimage.set_attr("is_complex",0)
 					##	dataimage.write_image("dataimagefft.hdf")
@@ -4646,7 +4638,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 
 						#  Second step - find which coarse ones are significant
 
-						# order by angular directions to save time on reprojections.
+						# DO NOT order by angular directions to save time on reprojections.
 
 						pre_ipsiandiang = -1
 						for iln in xrange(keepfirst):
@@ -5791,7 +5783,7 @@ def ali3D_local_primary_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 					assignments_of_refangles_to_cones[i] = list(set(assignments_of_refangles_to_cones[i])-set([-1]))
 					###if( Blockdata["myid_on_node"] == 0 ):  print(  " assignments_of_refangles_to_cones on zero ",i,len(assignments_of_refangles_to_cones[i]))
 					#  POSSIBLE PROBLEM - IT IS POSSIBLE FOR A GIVEN CONE TO HAVE NO REFANGLES AND THUS BE EMPTY
-					if( len(assignments_of_refangles_to_cones[i]) > numberofrefs_inmem  and False):
+					if( len(assignments_of_refangles_to_cones[i]) > numberofrefs_inmem ):
 						number_of_cones = int(number_of_cones*1.25)
 						#print(  " increased number_of_cones ",i,number_of_cones )
 						doit = 0
@@ -5991,9 +5983,7 @@ def ali3D_local_primary_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 						ctf_params = dataimage.get_attr("ctf")
 						ctf_params.apix = ctf_params.apix/(float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))
 						ctfa = ctf_img_real(Tracker["nxinit"], ctf_params)
-						#  Here we set astigmatism to zero
-						ctf_params.dfdiff = 0.0
-						ctfs = ctf_img_real(Tracker["nxinit"], ctf_params)
+						ctfs = ctfa
 					##if( ( Blockdata["myid"] == Blockdata["main_node"])   and firsti ):
 					##	dataimage.set_attr("is_complex",0)
 					##	dataimage.write_image("dataimagefft.hdf")
@@ -6770,7 +6760,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 					assignments_of_refangles_to_cones[i] = list(set(assignments_of_refangles_to_cones[i])-set([-1]))
 					###if( Blockdata["myid_on_node"] == 0 ):  print(  " assignments_of_refangles_to_cones on zero ",i,len(assignments_of_refangles_to_cones[i]))
 					#  POSSIBLE PROBLEM - IT IS POSSIBLE FOR A GIVEN CONE TO HAVE NO REFANGLES AND THUS BE EMPTY
-					if( len(assignments_of_refangles_to_cones[i]) > numberofrefs_inmem  and False):
+					if( len(assignments_of_refangles_to_cones[i]) > numberofrefs_inmem ):
 						number_of_cones = int(number_of_cones*1.25)
 						#print(  " increased number_of_cones ",i,number_of_cones )
 						doit = 0
@@ -6970,9 +6960,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 						ctf_params = dataimage.get_attr("ctf")
 						ctf_params.apix = ctf_params.apix/(float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))
 						ctfa = ctf_img_real(Tracker["nxinit"], ctf_params)
-						#  Here we set astigmatism to zero
-						ctf_params.dfdiff = 0.0
-						ctfs = ctf_img_real(Tracker["nxinit"], ctf_params)
+						ctfs = ctfa
 					##if( ( Blockdata["myid"] == Blockdata["main_node"])   and firsti ):
 					##	dataimage.set_attr("is_complex",0)
 					##	dataimage.write_image("dataimagefft.hdf")
