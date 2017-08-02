@@ -6050,6 +6050,16 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_scores_local(EMData* dataima
 	free(q);
 
 	sort(ccfs.begin(), ccfs.end(), sortBymultiscore);
+	vector<int> qout(nouto*5);
+	for (i=0; i<nouto; i++) {
+		qout[4*i] = ccfs[i].ib;
+		qout[4*i+1] = ccfs[i].ic;
+		qout[4*i+2] = ccfs[i].ipsi;
+		qout[4*i+3] = (int)log10(fabs(ccfs[i].score));
+		qout[4*i+4] = (int)((1000000.0f/pow(10.0f,qout[4*i+3]))*ccfs[i].score);
+	}
+	return qout;
+	/*
 	float score_max = FLT_MIN;
 	float score_min = FLT_MAX;
 	int ima = INT_MAX-10;
@@ -6078,7 +6088,7 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_scores_local(EMData* dataima
 		else qout[4*i+3] = (int)(qt) + ima;
 		//cout<<"  ZIGA   "<<i<<"  "<<ccfs[i].score<<"   "<<qout[4*i+3]<<"  "<<Util::get_min(0.0f,ccfs[i].score - score_max)<<"  "<<c1*Util::get_min(0.0f,ccfs[i].score - score_max)<<"   "<<(int)(c1*Util::get_min(0.0f,ccfs[i].score - score_max))<<endl;
 	}
-	return qout;
+	*/
 }
 
 
@@ -24454,7 +24464,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 void Util::version()
 {
  cout <<"  Compile time of util_sparx.cpp  "<< __DATE__ << "  --  " << __TIME__ <<   endl;
- cout <<"  Modification time: 07/11/2017  11:33 PM " <<  endl;
+ cout <<"  Source modification date: 08/02/2017  11:33 AM " <<  endl;
 }
 
 
