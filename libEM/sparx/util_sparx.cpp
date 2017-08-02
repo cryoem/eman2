@@ -5921,7 +5921,7 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_scores_local(EMData* dataima
 	int lencrefim = circ2->get_xsize();
 	int npsi = (int)(360.0f/delta + 0.01);
 	int n_assignments_of_refangles_to_angles = assignments_of_refangles_to_angles.size();
-	int n_assignments_of_refangles_to_cones  = assignments_of_refangles_to_cones.size();
+	//int n_assignments_of_refangles_to_cones  = assignments_of_refangles_to_cones.size();
 	int n_coarse_ang = n_assignments_of_refangles_to_angles;	
 
 
@@ -5964,6 +5964,187 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_scores_local(EMData* dataima
 		cimage->depad();
 		cimage = Polar2Dm(cimage, cnx, cnx, numr, mode);*/
 		EMData* cimage = Polar2Dm(dataimage, cnx-coarse_shifts_shrank[ib][0], cnx-coarse_shifts_shrank[ib][1], numr, mode);
+		Frngs(cimage, numr);
+		float* circ1b = cimage->get_data();
+		//or (int ic = 0; ic < 6; ic++)  cout<<"  "<<circ1b[ic];
+		//cout<<endl;
+			/*
+		for (int iqc = 0; iqc < n_assignments_of_refangles_to_angles; iqc++) {
+			int ic = assignments_of_refangles_to_angles[iqc];
+			int lixi = -1;
+			for (int k = 0; k< n_assignments_of_refangles_to_cones; k++) {
+				if(assignments_of_refangles_to_cones[k] == ic) {
+					lixi = k;
+					break;
+				}
+			}*/
+			//if(lixi < 0)  cout<<"   PROBLEM"<<endl; 
+		for (int ic = 0; ic < n_assignments_of_refangles_to_angles; ic++) {
+			int lixi = assignments_of_refangles_to_angles[ic];
+			int offset = lencrefim*lixi;
+	//cout<<" offset "<<ic<<"  "<<offset<<"  "<<startpsi[ic]<<endl;
+			for (i=0; i<maxrin; i++)  q[i] = 0.0f;
+
+			 //  q - straight  = circ1 * conjg(circ2)
+
+			for (i=1;i<=nring;i++) {
+
+				numr3i = numr(3,i);
+				numr2i = numr(2,i);
+
+				q(1) += circ1b(numr2i) * circ2b(numr2i+offset);
+
+				if (numr3i == maxrin)   q(2) += circ1b(numr2i+1) * circ2b(numr2i+1+offset);
+				else             q(numr3i+1) += circ1b(numr2i+1) * circ2b(numr2i+1+offset);
+
+				for (j=3;j<=numr3i;j=j+2) {
+					jc     = j+numr2i-1;
+
+					c1     = circ1b(jc);
+					c2     = circ1b(jc+1);
+					d1     = circ2b(jc+offset);
+					d2     = circ2b(jc+1+offset);
+
+					q(j)   +=  c1 * d1 + c2 * d2;
+					q(j+1) += -c1 * d2 + c2 * d1;
+				}
+			}
+
+			// straight
+			fftr_d(q,ip);
+
+			float qdm = 1.0e23;
+			int bpsi;
+			float oldpsi_inc = oldpsi + 0.5*delta;
+			for ( i=0; i<npsi; i++) {
+				float psi = startpsi[ic] + i*delta;
+				while( psi >= 360.0f )  psi -= 360.0f;
+				float ipsi = psi/360.0f*maxrin;
+				int ip1 = (int)(ipsi);
+				float dpsi = ipsi-ip1;
+				vpsi[i]=static_cast<float>(q[ip1] + dpsi*(q[(ip1+1)%maxrin]-q[ip1]));
+				//  find closest to old psi
+				float dummy = fabs(psi - oldpsi_inc); // We have to add half delta to accomodate even number of psi neighbors.
+				dummy = Util::get_min(dummy, 360.0f-dummy);
+			//cout<<" FOKA1  "<<i<<"  "<<psi<<"   "<<ipsi<<"   "<<ip1<<"   "<<maxrin<<"   "<<dummy<<"   "<<qdm<<endl;
+				if( dummy < qdm ) {
+					qdm = dummy;
+					bpsi = i;
+				}
+			}
+			//int iang = ic*100000000 + ib;
+			for ( j=bpsi-cpsi; j<bpsi+cpsi; j++) {
+				int ipip = j;
+				if( ipip < 0 ) ipip += npsi;
+				else if( ipip >= npsi ) ipip -= npsi;
+				ccfs[counter].score = vpsi[ipip];
+				ccfs[counter].ib = ib;
+				ccfs[counter].ic = ic;
+				ccfs[counter].ipsi = ipip;
+				//cout<<"  VIGA   "<<j<<"   "<<bpsi<<"   "<<ipip<<"   "<<counter<<"  "<<ccfs[counter].ib<<"  "<<ccfs[counter].ic<<"   "<<lixi<<"  "<<j<<"  "<<ccfs[counter].ipsi<<"      "<<ccfs[counter].score<<endl;
+				counter++;
+			}
+
+		}  delete cimage; cimage = 0;
+	}
+	free(q);
+
+	sort(ccfs.begin(), ccfs.end(), sortBymultiscore);
+	vector<int> qout(nouto*5);
+	for (i=0; i<nouto; i++) {
+		qout[4*i] = ccfs[i].ib;
+		qout[4*i+1] = ccfs[i].ic;
+		qout[4*i+2] = ccfs[i].ipsi;
+		qout[4*i+3] = (int)log10(fabs(ccfs[i].score));
+		qout[4*i+4] = (int)((1000000.0f/pow(10.0f,qout[4*i+3]))*ccfs[i].score);
+	}
+	return qout;
+	/*
+	float score_max = FLT_MIN;
+	float score_min = FLT_MAX;
+	int ima = INT_MAX-10;
+	int imi = INT_MIN+10;
+
+	//cout<<"  WIGA1   "<<score_max<<"  "<<score_min<<endl;
+	for (i=0; i<nouto; i++) {
+		score_max = Util::get_max(score_max,ccfs[i].score);
+		score_min = Util::get_min(score_min,ccfs[i].score);
+	}
+        //cout<<"  WIGA1   "<<score_max<<"  "<<score_min<<endl;
+	for (i=0; i<nouto; i++) {
+		score_max = Util::get_max(score_max,ccfs[i].score);
+		score_min = Util::get_min(score_min,ccfs[i].score);
+	}
+	//cout<<"  WIGA2   "<<score_max<<"  "<<score_min<<endl;
+	c1 = (static_cast<float>(ima)-static_cast<float>(imi))/(score_max - score_min);
+	//cout<<"  WIGA3   "<<c1<<"   "<<ima<<"  "<<imi<<endl;
+	vector<int> qout(nouto*4);
+	for (i=0; i<nouto; i++) {
+		qout[4*i] = ccfs[i].ib;
+		qout[4*i+1] = ccfs[i].ic;
+		qout[4*i+2] = ccfs[i].ipsi;
+		float qt = c1*Util::get_min(0.0f,ccfs[i].score - score_max);
+		if( qt <static_cast<float>(imi) ) qout[4*i+3] = (int)(qt+ima);
+		else qout[4*i+3] = (int)(qt) + ima;
+		//cout<<"  ZIGA   "<<i<<"  "<<ccfs[i].score<<"   "<<qout[4*i+3]<<"  "<<Util::get_min(0.0f,ccfs[i].score - score_max)<<"  "<<c1*Util::get_min(0.0f,ccfs[i].score - score_max)<<"   "<<(int)(c1*Util::get_min(0.0f,ccfs[i].score - score_max))<<endl;
+	}
+	*/
+}
+
+/*
+vector<int> Util::multiref_Crosrng_msg_stack_stepsi_scores_local(EMData* dataimage, EMData* circ2, \
+				const vector< vector<float> >& coarse_shifts_shrank,\
+				vector<int> assignments_of_refangles_to_angles, vector<int> assignments_of_refangles_to_cones,
+				vector<int> numr, vector<float> startpsi, float oldpsi, int cpsi, \
+				float delta, float cnx, int nouto) {
+
+	size_t n_coarse_shifts = coarse_shifts_shrank.size();
+	int lencrefim = circ2->get_xsize();
+	int npsi = (int)(360.0f/delta + 0.01);
+	int n_assignments_of_refangles_to_angles = assignments_of_refangles_to_angles.size();
+	int n_assignments_of_refangles_to_cones  = assignments_of_refangles_to_cones.size();
+	int n_coarse_ang = n_assignments_of_refangles_to_angles;	
+
+
+	vector<float> vpsi(npsi);
+
+	string mode = "F";
+
+	int   ip, jc, numr3i, numr2i, i, j;
+	float c1, c2, d1, d2;
+
+	int nring = numr.size()/3;
+	int maxrin = numr[numr.size()-1];
+
+	float* circ2b = circ2->get_data();
+
+	double *q;
+
+	q = (double*)calloc(maxrin,sizeof(double));
+
+#ifdef _WIN32
+	ip = -(int)(log((float)maxrin)/log(2.0f));
+#else
+	ip = -(int)(log2(maxrin));
+#endif	//_WIN32
+
+	 //  q - straight  = circ1 * conjg(circ2)
+	int ndata = n_coarse_shifts*n_coarse_ang*(2*cpsi);
+
+	//vector<float> qout(ndata);
+
+    vector<MultiScores> ccfs(ndata);
+
+	//cout<<" n_coarse_shifts "<<n_coarse_shifts<<"  "<<n_coarse_ang<<"  "<<npsi<<"  "<<lencrefim<<"   "<<delta<<"   "<<ndata<<"  "<<cpsi<<endl;
+	int counter = 0;
+	for (int ib = 0; ib < n_coarse_shifts; ib++) {
+	//cout<<" coarse_shifts "<<ib<<"  "<<coarse_shifts_shrank[ib][0]<<"  "<<coarse_shifts_shrank[ib][1]<<"  "<<endl;
+		/*EMData* cimage = dataimage->copy();
+		cimage->process_inplace("filter.shift", Dict("x_shift", coarse_shifts_shrank[ib][0], "y_shift", coarse_shifts_shrank[ib][1], "z_shift", 0.0f));
+		cimage->do_ift_inplace();
+		cimage->depad();
+		cimage = Polar2Dm(cimage, cnx, cnx, numr, mode);*/
+/*		EMData* cimage = Polar2Dm(dataimage, cnx-coarse_shifts_shrank[ib][0], cnx-coarse_shifts_shrank[ib][1], numr, mode);
 		Frngs(cimage, numr);
 		float* circ1b = cimage->get_data();
 		//or (int ic = 0; ic < 6; ic++)  cout<<"  "<<circ1b[ic];
@@ -6035,9 +6216,6 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_scores_local(EMData* dataima
 				if( ipip < 0 ) ipip += npsi;
 				else if( ipip >= npsi ) ipip -= npsi;
 				ccfs[counter].score = vpsi[ipip];
-				//dout[j-bpsi+cpsi] = vpsi[ip];
-				///dout[j-bpsi+cpsi + lout] = 2000*ip;// This is 2*1000, 1000 is to get on coarse psi
-				//dout[j-bpsi+cpsi + lout] = 1000*ip;// This is 1000 is to get on fine psi
 				ccfs[counter].ib = ib;
 				ccfs[counter].ic = ic;
 				ccfs[counter].ipsi = ipip;
@@ -6089,7 +6267,7 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_scores_local(EMData* dataima
 		//cout<<"  ZIGA   "<<i<<"  "<<ccfs[i].score<<"   "<<qout[4*i+3]<<"  "<<Util::get_min(0.0f,ccfs[i].score - score_max)<<"  "<<c1*Util::get_min(0.0f,ccfs[i].score - score_max)<<"   "<<(int)(c1*Util::get_min(0.0f,ccfs[i].score - score_max))<<endl;
 	}
 	*/
-}
+//}
 
 
 
