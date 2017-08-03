@@ -120,6 +120,7 @@ def construct_keyword_dict():
 	keyword_dict["output_mask3D"]                 = SXkeyword_map(1, "output")         # output_mask3D
 	keyword_dict["--makevstack"]                  = SXkeyword_map(1, "output")         # --makevstack
 	keyword_dict["input_micrograph_list"]         = SXkeyword_map(1, "any_image_list") # input_micrograph_list (contains keyworkd 'input_micrograph' but this should be image_list type)
+	keyword_dict["--ctref_orgstack"]              = SXkeyword_map(1, "bdb")            # --ctref_orgstack=stack_for_continuation
 	# Use priority 2 for the others
 	keyword_dict["stack"]                         = SXkeyword_map(2, "image")          # stack, prj_stack, input_stack, --instack=input_stack_file
 	keyword_dict["volume"]                        = SXkeyword_map(2, "image")          # initial_volume, firstvolume, secondvolume, input_volume
@@ -128,6 +129,7 @@ def construct_keyword_dict():
 	keyword_dict["--input"]                       = SXkeyword_map(2, "image")          # --input=INPUT
 	keyword_dict["class_file_name_no_dir_info"]   = SXkeyword_map(2, "image")          # class_file_name_no_dir_info
 	keyword_dict["isac_averages"]                 = SXkeyword_map(2, "image")          # isac_averages
+	keyword_dict["--ctref_initvol"]               = SXkeyword_map(2, "image")          # --ctref_initvol=restarting_initial_volume
 	keyword_dict["input_isac_class_avgs_path"]    = SXkeyword_map(2, "image")          # input_isac_class_avgs_path
 	keyword_dict["input_image_path"]              = SXkeyword_map(2, "any_image")      # input_image_path
 	keyword_dict["input_micrograph"]              = SXkeyword_map(2, "any_image")      # input_micrograph_pattern
@@ -142,7 +144,8 @@ def construct_keyword_dict():
 	keyword_dict["--mtf"]                         = SXkeyword_map(2, "parameters")     # --mtf=MTF_FILE_NAME
 	keyword_dict["--chunk"]                       = SXkeyword_map(2, "parameters")     # --chunk0=CHUNK0_FILE_NAME, --chunk1=CHUNK1_FILE_NAME
 	keyword_dict["--list"]                        = SXkeyword_map(2, "parameters")     # --list
-	keyword_dict["--subset"]                      = SXkeyword_map(2, "parameters")     # --subset=subset_file_path
+###	keyword_dict["--subset"]                      = SXkeyword_map(2, "parameters")     # --subset=subset_file_path
+	keyword_dict["--ctref_subset"]                = SXkeyword_map(2, "parameters")     # --ctref_subset=selection_file_path
 	keyword_dict["inputfile"]                     = SXkeyword_map(2, "any_file")       # inputfile
 	keyword_dict["unblur_path"]                   = SXkeyword_map(2, "exe")            # unblur_path
 	keyword_dict["summovie_path"]                 = SXkeyword_map(2, "exe")            # summovie_path
@@ -156,7 +159,8 @@ def construct_keyword_dict():
 	keyword_dict["input_data_list"]               = SXkeyword_map(2, "any_file_list")  # input_data_list
 	keyword_dict["--function"]                    = SXkeyword_map(2, "function")       # --function=user_function
 	keyword_dict["--isac_dir"]                    = SXkeyword_map(2, "directory")      # --isac_dir (contains keyworkd 'directory' but this should be directory type)
-	keyword_dict["--oldrefdir"]                   = SXkeyword_map(2, "directory")      # --oldrefdir=refine_dir_path
+###	keyword_dict["--oldrefdir"]                   = SXkeyword_map(2, "directory")      # --oldrefdir=refine_dir_path
+	keyword_dict["--ctref_oldrefdir"]             = SXkeyword_map(2, "directory")      # --ctref_oldrefdir=refine_dir_path
 	keyword_dict["--refinement_dir"]              = SXkeyword_map(2, "directory")      # --refinement_dir=refinemen_out_dir
 ###	keyword_dict["--previous_run"]                = SXkeyword_map(2, "directory")      # --previous_run1=run1_directory, --previous_run2=run2_directory
 	keyword_dict["input_bdb_stack_pattern"]       = SXkeyword_map(2, "any_directory")  # input_bdb_stack_pattern
@@ -1139,12 +1143,20 @@ def create_sxcmd_subconfig_variability_preprocess():
 def create_sxcmd_subconfig_meridien_local():
 	token_edit_list = []
 	# token_edit = SXcmd_token(); token_edit.initialize_edit("continue_from_subset"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("ctrefromsort3d"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
+	# token_edit = SXcmd_token(); token_edit.initialize_edit("ctrefromsort3d"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("ctref"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("output_directory"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("subset"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("oldrefdir"); token_edit_list.append(token_edit)
+	# token_edit = SXcmd_token(); token_edit.initialize_edit("subset"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("ctref_subset"); token_edit_list.append(token_edit)
+	# token_edit = SXcmd_token(); token_edit.initialize_edit("oldrefdir"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("ctref_oldrefdir"); token_edit_list.append(token_edit)
 	# token_edit = SXcmd_token(); token_edit.initialize_edit("continue_from_iter"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("ctrefromiter"); token_edit_list.append(token_edit)
+	# token_edit = SXcmd_token(); token_edit.initialize_edit("ctrefromiter"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("ctref_iter"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("ctref_initvol"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("ctref_orgstack"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("ctref_smearing"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("ctref_an"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("memory_per_node"); token_edit_list.append(token_edit)
 	
 	token_edit = SXcmd_token(); token_edit.initialize_edit("radius"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
@@ -1229,11 +1241,19 @@ def create_exclude_list_meridien():
 	exclude_list = []
 
 	# exclude_list.append("continue_from_subset")
-	exclude_list.append("ctrefromsort3d")
-	exclude_list.append("subset")
-	exclude_list.append("oldrefdir")
+	# exclude_list.append("ctrefromsort3d")
+	exclude_list.append("ctref")
+	# exclude_list.append("subset")
+	exclude_list.append("ctref_subset")
+	# exclude_list.append("oldrefdir")
+	exclude_list.append("ctref_oldrefdir")
 	# exclude_list.append("continue_from_iter")
-	exclude_list.append("ctrefromiter")
+	# exclude_list.append("ctrefromiter")
+	exclude_list.append("ctref_iter")
+	exclude_list.append("ctref_initvol")
+	exclude_list.append("ctref_orgstack")
+	exclude_list.append("ctref_smearing")
+	exclude_list.append("ctref_an")
 
 	return exclude_list
 

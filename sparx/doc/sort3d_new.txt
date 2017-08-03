@@ -32,12 +32,12 @@ sxsort3d_new.py exists only in MPI version. In addition, it does not support sin
 
     How to continue sxmeridien refinement using sorting results:: The command line below continues previous meridien run from the 25th iteration using a subset of data associated to a selected group.
 
-    ''' mpirun -np 80 sxmeridien.py 'outdir_sxmeridien_continue' --memory_per_node=64.0 --ctrefromsort3d --subset=outdir_sxsort3d_new/Cluster0.txt --oldrefdir='outdir_sxmeridien' --ctrefromiter=30 ''' <<BR>><<BR>>
+    ''' mpirun -np 80 sxmeridien.py 'outdir_sxmeridien_continue' --memory_per_node=64.0 --ctref --ctref_subset=outdir_sxsort3d_new/Cluster0.txt --ctref_oldrefdir='outdir_sxmeridien' --ctref_iter=30 ''' <<BR>><<BR>>
     
-    Note the output directory 'outdir_sxmeridien_continue' can be an existing one. The --ctrefromsort3d option is require for meridien continue run. Additional options for this use case are:
-    -—subset       : Specify subset of data with a selection text file (i.e. Cluster#.txt) with particle ID numbers in one column (produced by sort3d or by other means)
-    -—oldrefdir    : Specify previous meridien refinement directory
-    --ctrefromiter : Specify iteration to continue refinement from. One does not have to use final iteration. Typically earlier ones work better, at least for initial sorting.
+    Note the output directory 'outdir_sxmeridien_continue' can be an existing one. The --ctref option is require for meridien continue run. Additional options for this use case are:
+    -—ctref_subset       : Specify subset of data with a selection text file (i.e. Cluster#.txt) with particle ID numbers in one column (produced by sort3d or by other means)
+    -—ctref_oldrefdir    : Specify previous meridien refinement directory
+    --ctref_iter         : Specify iteration to continue refinement from. One does not have to use final iteration. Typically earlier ones work better, at least for initial sorting.
 
 
 == Input ==
