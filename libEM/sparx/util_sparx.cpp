@@ -5821,13 +5821,9 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_local(EMData* dataimage, EMD
 		//cout<<endl;
 		for (int iqc = 0; iqc < n_assignments_of_refangles_to_angles; iqc++) {
 			int ic = assignments_of_refangles_to_angles[iqc];
-			int lixi = -1;
-			for (int k = 0; k< n_assignments_of_refangles_to_cones; k++) {
-				if(assignments_of_refangles_to_cones[k] == ic) {
-					lixi = k;
-					break;
-				}
-			}
+			vector<int>::iterator it = std::find(assignments_of_refangles_to_cones.begin(), assignments_of_refangles_to_cones.end(), ic);
+			int lixi = std::distance(assignments_of_refangles_to_cones.begin(), it);
+
 			//if(lixi < 0)  cout<<"   PROBLEM"<<endl; 
 			int offset = lencrefim*lixi;
 	//cout<<" offset "<<ic<<"  "<<offset<<"  "<<startpsi[ic]<<endl;
@@ -5910,6 +5906,16 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_local(EMData* dataimage, EMD
 	return qout;
 }
 
+
+vector<int> Util::mindex(vector<int> assignments_of_refangles_to_angles, vector<int> assignments_of_refangles_to_cones) {
+	int n_assignments_of_refangles_to_angles = assignments_of_refangles_to_angles.size();
+	vector<int> sas(n_assignments_of_refangles_to_angles);
+	for (int iqc = 0; iqc < n_assignments_of_refangles_to_angles; iqc++)  {
+		vector<int>::iterator it = std::find(assignments_of_refangles_to_cones.begin(), assignments_of_refangles_to_cones.end(), assignments_of_refangles_to_angles[iqc]);
+		sas[iqc] = std::distance(assignments_of_refangles_to_cones.begin(), it);
+	}
+	return sas;
+}
 
 vector<int> Util::multiref_Crosrng_msg_stack_stepsi_scores_local(EMData* dataimage, EMData* circ2, \
 				const vector< vector<float> >& coarse_shifts_shrank,\
