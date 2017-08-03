@@ -50,6 +50,10 @@ execute_process(COMMAND ${GIT_EXECUTABLE} describe --always --dirty
 				OUTPUT_VARIABLE EMAN_GITHASH
 				OUTPUT_STRIP_TRAILING_WHITESPACE
 				)
+string(REGEX REPLACE
+	   "^.*-.*-g" ""
+	   EMAN_GITHASH ${EMAN_GITHASH}
+	   )
 
 string(TIMESTAMP EMAN_TIMESTAMP "%Y-%m-%d %H:%M")
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/e2version.py.in
