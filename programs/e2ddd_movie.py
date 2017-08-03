@@ -529,15 +529,22 @@ def calc_ccf_wrapper(options,N,box,step,dataa,datab,out,locs,ii,fsp):
 
 	if fsp[-5:] == ".mrcs":
 		fff = "{}-ccf_models.hdf".format(fsp.replace(".mrcs",""))
+		ggg = "{}-ccf_imgs.hdf".format(fsp.replace(".mrcs",""))
 	elif fsp[-4:] == ".hdf":
 		fff = "{}-ccf_models.hdf".format(fsp.replace(".hdf",""))
+		ggg = "{}-ccf_imgs.hdf".format(fsp.replace(".hdf",""))
 	elif fsp[:-4] == ".mrc":
 		fff = "{}-ccf_models.hdf".format(fsp.replace(".mrc",""))
+		ggg = "{}-ccf_imgs.hdf".format(fsp.replace(".mrc",""))
 	
 	for i in range(len(dataa)):
 		c=dataa[i].calc_ccf(datab[i],fp_flag.CIRCULANT,True)
 		try: csum.add(c)
 		except: csum=c
+
+	if options.debug: 
+		csum.process("normalize.edgemean").write_image(ggg,ii)
+
 	xx = np.linspace(0,box,box)
 	yy = np.linspace(0,box,box)
 	xx,yy = np.meshgrid(xx,yy)
@@ -555,7 +562,11 @@ def calc_ccf_wrapper(options,N,box,step,dataa,datab,out,locs,ii,fsp):
 		#if ii>=0: csum.process("normalize.edgemean").write_image("ccf_models.hdf",ii)
 		locs.put((N,[popt[0],popt[1],popt[2],popt[3],popt[4],popt[5],ccpeakval,csum["maximum"]]))
 		out.put((N,csum))
-	if ii>=0: csum.process("normalize.edgemean").write_image(fff,ii)
+	if ii>=0: 
+		if options.debug: 
+			csum.process("normalize.edgemean").write_image(fff,ii)
+
+
 
 # preprocess regions by normalizing and doing FFT
 def split_fft(options,img,i,box,step,out):
