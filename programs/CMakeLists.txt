@@ -44,7 +44,8 @@ IF(WIN32)
 		)
 ENDIF(WIN32)
 
-execute_process(COMMAND git describe --always --dirty
+find_program(GIT_EXECUTABLE git)
+execute_process(COMMAND ${GIT_EXECUTABLE} describe --always --dirty
 				WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 				OUTPUT_VARIABLE EMAN_GITHASH
 				OUTPUT_STRIP_TRAILING_WHITESPACE
