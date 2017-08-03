@@ -51,7 +51,7 @@ execute_process(COMMAND ${GIT_EXECUTABLE} describe --always --dirty
 				OUTPUT_STRIP_TRAILING_WHITESPACE
 				)
 string(REGEX REPLACE
-	   "^.*-.*-g" ""
+	   "^.*-.*-g" ""   # git-describe output: <tag>-<num-of-commits-since-tag>-g<hash>
 	   EMAN_GITHASH ${EMAN_GITHASH}
 	   )
 
