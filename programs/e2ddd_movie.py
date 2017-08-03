@@ -71,6 +71,7 @@ def main():
 	parser.add_argument("--reverse", default=False, help="Flip gain normalization image along y axis. Default is False.",action="store_true",guitype='boolbox', row=5, col=0, rowspan=1, colspan=1)
 	#parser.add_argument("--rotate", default=False, help="Rotate dark reference by -90 degrees. This is useful when dark correcting DE detector data.",action="store_true",guitype='boolbox', row=5, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--phaseplate","-pp", default=False, help="Use this flag to apply stronger high pass filter to phase plate data.",action="store_true",guitype='boolbox', row=5, col=1, rowspan=1, colspan=1)
+	#parser.add_argument("--falcon", default=False, help="Use this flag to optimize alignment for falcon detector data.",action="store_true",guitype='boolbox', row=5, col=1, rowspan=1, colspan=1)
 	#parser.add_argument("--binning", type=int,help="Bin images by this factor by resampling in Fourier space. Default (-1) will choose based on input box size.",default=-1)
 
 	parser.add_header(name="orblock3", help='Just a visual separation', title="Output: ", row=6, col=0, rowspan=1, colspan=3, mode="align")
@@ -82,13 +83,12 @@ def main():
 	parser.add_argument("--rangeali", default="", help="Average frames n1-n2",type=str, guitype='strbox', row=8, col=1, rowspan=1, colspan=1, mode='align')
 	
 	parser.add_header(name="orblock3", help='Just a visual separation', title="Optional: ", row=10, col=0, rowspan=1, colspan=3, mode="align")
-	parser.add_argument("--optbox", type=int,help="Box size to use during alignment optimization. Default is 512.",default=512, guitype='intbox', row=11, col=0, rowspan=1, colspan=1, mode="align")
-	parser.add_argument("--optstep", type=int,help="Step size to use during alignment optimization. Default is 384, i.e. 1.5x oversampling.",default=384,  guitype='intbox', row=11, col=1, rowspan=1, colspan=1, mode="align")
+	parser.add_argument("--optbox", type=int,help="Box size to use during alignment optimization. By default, this number will be determined based on the input image size (-1).",default=-1, guitype='intbox', row=11, col=0, rowspan=1, colspan=1, mode="align")
+	parser.add_argument("--optstep", type=int,help="Step size to use during alignment optimization. By default, this number will be determined based on the input image size (-1).",default=-1,  guitype='intbox', row=11, col=1, rowspan=1, colspan=1, mode="align")
 	parser.add_argument("--optalpha", type=float,help="Penalization to apply during robust regression. Default is 1.0. If 0.0, unpenalized least squares will be performed (i.e., no trajectory smoothing).",default=1.0)
 	parser.add_argument("--step",type=str,default="0,1",help="Specify <first>,<step>,[last]. Processes only a subset of the input data. ie- 0,2 would process all even particles. Same step used for all input files. [last] is exclusive. Default= 0,1",guitype='strbox', row=12, col=0, rowspan=1, colspan=1, mode="align")
 	#parser.add_argument("--movie", type=int,help="Display an n-frame averaged 'movie' of the stack, specify number of frames to average",default=0)
 	parser.add_argument("--plot", default=False,help="Display a plot of the movie trajectory after alignment",action="store_true")
-
 	#parser.add_argument("--normalize",action="store_true",default=False,help="Apply edgenormalization to input images after dark/gain", guitype='boolbox', row=13, col=0, rowspan=1, colspan=1, mode='align')
 	#parser.add_argument("--optfsc", default=False, help="Specify whether to compute FSC during alignment optimization. Default is False.",action="store_true")
 	parser.add_argument("--frames",action="store_true",default=False,help="Save the dark/gain corrected frames", guitype='boolbox', row=13, col=1, rowspan=1, colspan=1, mode='align')
@@ -273,6 +273,17 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 
 		nx=outim[0]["nx"]
 		ny=outim[0]["ny"]
+
+		md = min(nx,ny)
+		if md > 6000:
+			if options.optbox == -1: options.optbox = 512
+			if options.optstep == -1: options.optstep = 384
+		else:# md > 3000:
+			if options.optbox == -1: options.optbox = 128
+			if options.optstep == -1: options.optstep = 92
+		# elif md > 1500:
+		# 	if options.optbox == -1: options.optbox = 128
+		# 	if options.optstep == -1: options.optstep = 92
 
 		if options.align_frames :
 
@@ -526,16 +537,6 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 
 # CCF calculation
 def calc_ccf_wrapper(options,N,box,step,dataa,datab,out,locs,ii,fsp):
-
-	if fsp[-5:] == ".mrcs":
-		fff = "{}-ccf_models.hdf".format(fsp.replace(".mrcs",""))
-		ggg = "{}-ccf_imgs.hdf".format(fsp.replace(".mrcs",""))
-	elif fsp[-4:] == ".hdf":
-		fff = "{}-ccf_models.hdf".format(fsp.replace(".hdf",""))
-		ggg = "{}-ccf_imgs.hdf".format(fsp.replace(".hdf",""))
-	elif fsp[:-4] == ".mrc":
-		fff = "{}-ccf_models.hdf".format(fsp.replace(".mrc",""))
-		ggg = "{}-ccf_imgs.hdf".format(fsp.replace(".mrc",""))
 	
 	for i in range(len(dataa)):
 		c=dataa[i].calc_ccf(datab[i],fp_flag.CIRCULANT,True)
@@ -543,11 +544,18 @@ def calc_ccf_wrapper(options,N,box,step,dataa,datab,out,locs,ii,fsp):
 		except: csum=c
 
 	if options.debug: 
+		if fsp[-5:] == ".mrcs":
+			ggg = "{}-ccf_imgs.hdf".format(fsp.replace(".mrcs",""))
+		elif fsp[-4:] == ".hdf":
+			ggg = "{}-ccf_imgs.hdf".format(fsp.replace(".hdf",""))
+		elif fsp[:-4] == ".mrc":
+			ggg = "{}-ccf_imgs.hdf".format(fsp.replace(".mrc",""))
 		csum.process("normalize.edgemean").write_image(ggg,ii)
 
 	xx = np.linspace(0,box,box)
 	yy = np.linspace(0,box,box)
 	xx,yy = np.meshgrid(xx,yy)
+
 #	csum.process_inplace("normalize.edgemean")
 	popt,ccpeakval = bimodal_peak_model(options,csum)
 	if popt == None:
@@ -562,11 +570,14 @@ def calc_ccf_wrapper(options,N,box,step,dataa,datab,out,locs,ii,fsp):
 		#if ii>=0: csum.process("normalize.edgemean").write_image("ccf_models.hdf",ii)
 		locs.put((N,[popt[0],popt[1],popt[2],popt[3],popt[4],popt[5],ccpeakval,csum["maximum"]]))
 		out.put((N,csum))
-	if ii>=0: 
-		if options.debug: 
-			csum.process("normalize.edgemean").write_image(fff,ii)
-
-
+	if ii>=0 and options.debug: 
+		if fsp[-5:] == ".mrcs":
+			fff = "{}-ccf_models.hdf".format(fsp.replace(".mrcs",""))
+		elif fsp[-4:] == ".hdf":
+			fff = "{}-ccf_models.hdf".format(fsp.replace(".hdf",""))
+		elif fsp[:-4] == ".mrc":
+			fff = "{}-ccf_models.hdf".format(fsp.replace(".mrc",""))
+		csum.process("normalize.edgemean").write_image(fff,ii)
 
 # preprocess regions by normalizing and doing FFT
 def split_fft(options,img,i,box,step,out):
@@ -633,10 +644,10 @@ def bimodal_peak_model(options,ccf):
 
 	x1 = bs/2.
 	y1 = bs/2.
-	s1 = 10.0
 	a1 = 1000.0
-	s2 = 0.6
+	s1 = 10.0
 	a2 = 20000.0
+	s2 = 0.6
 
 	if options.phaseplate:
 		initial_guess = [x1,y1,s1,a1]
