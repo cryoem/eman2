@@ -1,7 +1,5 @@
 FILE(GLOB e2programs "${CMAKE_CURRENT_SOURCE_DIR}/*.py")
 
-# MESSAGE("original pgm list: ${e2programs}")
-
 FILE(GLOB exclusion_list
 			e2plotFSC.py
 			e2refine_evenodd.py
@@ -30,9 +28,6 @@ FILE(GLOB exclusion_list
 			e2tomosim.py
 		)
 LIST(REMOVE_ITEM e2programs ${exclusion_list})
-
-# MESSAGE("cut back pgm list: ${e2programs}")
-
 INSTALL(PROGRAMS ${e2programs}
   DESTINATION    bin
 )
@@ -50,6 +45,7 @@ IF(WIN32)
 ENDIF(WIN32)
 
 string(TIMESTAMP EMAN_TIMESTAMP "%Y-%m-%d %H:%M")
+string(SUBSTRING "$ENV{GIT_FULL_HASH}" 0 7 EMAN_GITHASH)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/e2version.py.in
 				${CMAKE_INSTALL_PREFIX}/bin/e2version.py
 				)
