@@ -276,14 +276,11 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 
 		md = min(nx,ny)
 		if md > 6000:
-			if options.optbox == -1: options.optbox = 512
+			if options.optbox == -1: options.optbox = 448
 			if options.optstep == -1: options.optstep = 384
-		else:# md > 3000:
+		else:
 			if options.optbox == -1: options.optbox = 128
 			if options.optstep == -1: options.optstep = 92
-		# elif md > 1500:
-		# 	if options.optbox == -1: options.optbox = 128
-		# 	if options.optstep == -1: options.optstep = 92
 
 		if options.align_frames :
 
@@ -292,6 +289,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			n=len(outim)
 			nx=outim[0]["nx"]
 			ny=outim[0]["ny"]
+			
 			print("{} frames read {} x {}".format(n,nx,ny))
 
 			ccfs=Queue.Queue(0)
@@ -478,7 +476,11 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 
 			if options.allali:
 				out=qsum(outim)
-				out.write_image("{}__allali.hdf".format(alioutname),0)
+				if options.debug:
+					if options.integer: out.write_image("{}__allali_int.hdf".format(alioutname),0)
+					else: out.write_image("{}__allali_float.hdf".format(alioutname),0)
+				else:
+					out.write_image("{}__allali.hdf".format(alioutname),0)
 
 			#print("{:1.1f}\nSubsets".format(time()-t0))
 			#t0=time()
