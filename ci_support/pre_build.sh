@@ -16,7 +16,7 @@ conda install --yes --quiet qt=4 pyqt=4
 conda install --yes --quiet -c conda-forge boost=1.63.* boost-cpp=1.63.* fftw cmake>=3.8
 conda install --yes --quiet -c cryoem ftgl
 conda install --yes --quiet bsddb freetype gsl hdf5 ipython jpeg libpng libtiff matplotlib numpy=1.11 pyopengl scikit-learn scipy theano tk
-conda install --yes --quiet -c cryoem pydusa
+conda install --yes --quiet -c cryoem pydusa="*"="*_7"
 
 # Build and install eman2
 export build_dir=$HOME/build_eman
