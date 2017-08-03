@@ -33,7 +33,7 @@
  *
  * */
 
-#ifdef EM_HDF5
+#ifdef USE_HDF5
 
 #ifndef _WIN32
 	#include <sys/param.h>
@@ -1337,4 +1337,4 @@ int HdfIO::get_num_dataset()
 }
 
 
-#endif	//EM_HDF5
+#endif	//USE_HDF5

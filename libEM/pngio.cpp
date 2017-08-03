@@ -33,7 +33,7 @@
  *
  * */
 
-#ifdef EM_PNG
+#ifdef USE_PNG
 
 #include <climits>
 #include "pngio.h"
@@ -449,4 +449,4 @@ bool PngIO::is_image_big_endian()
 	return true;
 }
 
-#endif	//EM_PNG
+#endif	//USE_PNG

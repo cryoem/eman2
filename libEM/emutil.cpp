@@ -265,7 +265,7 @@ EMUtil::ImageType EMUtil::fast_get_image_type(const string & filename,
 			return IMAGE_DM4;
 		}
 		break;
-#ifdef EM_HDF5
+#ifdef USE_HDF5
 	case IMAGE_HDF:
 		if (HdfIO2::is_valid(first_block)) {
 			return IMAGE_HDF;
@@ -282,7 +282,7 @@ EMUtil::ImageType EMUtil::fast_get_image_type(const string & filename,
 			return IMAGE_LSTFAST;
 		}
 		break;
-#ifdef EM_TIFF
+#ifdef USE_TIFF
 	case IMAGE_TIFF:
 		if (TiffIO::is_valid(first_block)) {
 			return IMAGE_TIFF;
@@ -304,7 +304,7 @@ EMUtil::ImageType EMUtil::fast_get_image_type(const string & filename,
 			return IMAGE_PIF;
 		}
 		break;
-#ifdef EM_PNG
+#ifdef USE_PNG
 	case IMAGE_PNG:
 		if (PngIO::is_valid(first_block)) {
 			return IMAGE_PNG;
@@ -447,7 +447,7 @@ EMUtil::ImageType EMUtil::get_image_type(const string & in_filename)
 	else if (DM4IO::is_valid(first_block)) {
 		image_type = IMAGE_DM4;
 	}
-#ifdef EM_HDF5
+#ifdef USE_HDF5
 	else if (HdfIO2::is_valid(first_block)) {
 		image_type = IMAGE_HDF;
 	}
@@ -458,7 +458,7 @@ EMUtil::ImageType EMUtil::get_image_type(const string & in_filename)
 	else if (LstFastIO::is_valid(first_block)) {
 		image_type = IMAGE_LSTFAST;
 	}
-#ifdef EM_TIFF
+#ifdef USE_TIFF
 	else if (TiffIO::is_valid(first_block)) {
 		image_type = IMAGE_TIFF;
 	}
@@ -466,7 +466,7 @@ EMUtil::ImageType EMUtil::get_image_type(const string & in_filename)
 	else if (PifIO::is_valid(first_block)) {
 		image_type = IMAGE_PIF;
 	}
-#ifdef EM_PNG
+#ifdef USE_PNG
 	else if (PngIO::is_valid(first_block)) {
 		image_type = IMAGE_PNG;
 	}
@@ -603,12 +603,12 @@ ImageIO *EMUtil::get_imageio(const string & filename, int rw,
 	case IMAGE_DM4:
 		imageio = new DM4IO(filename, rw_mode);
 		break;
-#ifdef EM_TIFF
+#ifdef USE_TIFF
 	case IMAGE_TIFF:
 		imageio = new TiffIO(filename, rw_mode);
 		break;
 #endif
-#ifdef EM_HDF5
+#ifdef USE_HDF5
 	case IMAGE_HDF:
         persist = 30;
         if (rw_mode != ImageIO::READ_ONLY) {
@@ -620,7 +620,7 @@ ImageIO *EMUtil::get_imageio(const string & filename, int rw,
 			imageio = new HdfIO(filename, rw_mode);
 		}
 		break;
-#endif	//EM_HDF5
+#endif	//USE_HDF5
 	case IMAGE_LST:
 		imageio = new LstIO(filename, rw_mode);
 		break;
@@ -642,7 +642,7 @@ ImageIO *EMUtil::get_imageio(const string & filename, int rw,
 	case IMAGE_PGM:
 		imageio = new PgmIO(filename, rw_mode);
 		break;
-#ifdef EM_JPEG
+#ifdef USE_JPEG
 	case IMAGE_JPEG:
 		imageio = new JpegIO(filename,rw_mode);
 		break;
@@ -650,7 +650,7 @@ ImageIO *EMUtil::get_imageio(const string & filename, int rw,
 	case IMAGE_ICOS:
 		imageio = new IcosIO(filename, rw_mode);
 		break;
-#ifdef EM_PNG
+#ifdef USE_PNG
 	case IMAGE_PNG:
 		imageio = new PngIO(filename, rw_mode);
 		break;
@@ -1896,7 +1896,7 @@ void EMUtil::getRenderMinMax(float * data, const int nx, const int ny,
 	}
 }
 
-#ifdef EM_HDF5
+#ifdef USE_HDF5
 EMObject EMUtil::read_hdf_attribute(const string & filename, const string & key, int image_index)
 {
 	ImageType image_type = get_image_type(filename);
@@ -2001,4 +2001,4 @@ int EMUtil::delete_hdf_attribute(const string & filename, const string & key, in
 	if (ret >= 0) return 0;
 	else return -1;
 }
-#endif	//EM_HDF5
+#endif	//USE_HDF5

@@ -33,7 +33,7 @@
  *
  * */
 
-#ifdef EMAN2_USING_OPENGL
+#ifdef USE_OPENGL
 
 //#include "emdata.h"
 //
@@ -138,4 +138,4 @@
 //#undef GL_GLEXT_PROTOTYPES
 //#endif
 
-#endif // EMAN2_USING_OPENGL
+#endif // USE_OPENGL

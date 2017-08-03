@@ -36,7 +36,7 @@
 #ifndef eman_emfft_h__
 #define eman_emfft_h__
 
-#ifdef FFTW3
+#ifdef USE_FFTW3
 
 #include <fftw3.h>
  
@@ -114,7 +114,7 @@ namespace EMAN
 #endif 
 	};
 }
-#endif	//FFTW3
+#endif	//USE_FFTW3
 
 //#ifdef CUDA_FFT
 //class EMfft
@@ -153,7 +153,7 @@ namespace EMAN
 }
 #endif	//NATIVE_FFT
 
-#ifdef	ACML
+#ifdef	USE_ACML
 #include <acml.h>
 #include <functional>
 
@@ -195,6 +195,6 @@ namespace EMAN
 		};
 	};
 }	
-#endif	//ACML
+#endif	//USE_ACML
 
 #endif	//eman_emfft_h__
