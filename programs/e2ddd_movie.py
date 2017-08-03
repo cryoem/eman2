@@ -65,10 +65,13 @@ def main():
 	parser.add_header(name="orblock1", help='Just a visual separation', title="- CHOOSE FROM -", row=1, col=0, rowspan=1, colspan=3, mode="align")
 	parser.add_argument("--dark",type=str,default=None,help="Perform dark image correction using the specified image file",guitype='filebox',browser="EMMovieDataTable(withmodal=True,multiselect=False)", row=2, col=0, rowspan=1, colspan=3, mode="align")
 	parser.add_argument("--gain",type=str,default=None,help="Perform gain image correction using the specified image file",guitype='filebox',browser="EMMovieDataTable(withmodal=True,multiselect=False)", row=3, col=0, rowspan=1, colspan=3, mode="align")
+	
 	parser.add_header(name="orblock2", help='Just a visual separation', title="- OR -", row=4, col=0, rowspan=1, colspan=3, mode="align")
 	parser.add_argument("--gaink2",type=str,default=None,help="Perform gain image correction. Gatan K2 gain images are the reciprocal of DDD gain images.",guitype='filebox',browser="EMMovieDataTable(withmodal=True,multiselect=False)", row=5, col=0, rowspan=1, colspan=3, mode="align")
 	parser.add_argument("--reverse", default=False, help="Flip gain normalization image along y axis. Default is False.",action="store_true",guitype='boolbox', row=5, col=0, rowspan=1, colspan=1)
+	#parser.add_argument("--rotate", default=False, help="Rotate dark reference by -90 degrees. This is useful when dark correcting DE detector data.",action="store_true",guitype='boolbox', row=5, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--phaseplate","-pp", default=False, help="Use this flag to apply stronger high pass filter to phase plate data.",action="store_true",guitype='boolbox', row=5, col=1, rowspan=1, colspan=1)
+	parser.add_argument("--binning", type=int,help="Bin images by this factor by resampling in Fourier space. Default (-1) will choose based on input box size.",default=-1)
 
 	parser.add_header(name="orblock3", help='Just a visual separation', title="Output: ", row=6, col=0, rowspan=1, colspan=3, mode="align")
 	parser.add_argument("--goodali", default=False, help="Average of good aligned frames.",action="store_true", guitype='boolbox', row=7, col=0, rowspan=1, colspan=1, mode='align[True]')
@@ -77,12 +80,11 @@ def main():
 	parser.add_argument("--noali", default=False, help="Average of non-aligned frames.",action="store_true", guitype='boolbox', row=8, col=0, rowspan=1, colspan=1, mode='align')
 	parser.add_argument("--ali4to14", default=False, help="Average of frames from 4 to 14.",action="store_true")
 	parser.add_argument("--rangeali", default="", help="Average frames n1-n2",type=str, guitype='strbox', row=8, col=1, rowspan=1, colspan=1, mode='align')
-	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful", guitype='intbox', row=9, col=0, rowspan=1, colspan=1, mode="align")
-
+	
 	parser.add_header(name="orblock3", help='Just a visual separation', title="Optional: ", row=10, col=0, rowspan=1, colspan=3, mode="align")
-	parser.add_argument("--optbox", type=int,help="Box size to use during alignment optimization. Default is 256.",default=256, guitype='intbox', row=11, col=0, rowspan=1, colspan=1, mode="align")
-	parser.add_argument("--optstep", type=int,help="Step size to use during alignment optimization. Default is 256.",default=256,  guitype='intbox', row=11, col=1, rowspan=1, colspan=1, mode="align")
-	parser.add_argument("--optalpha", type=float,help="Penalization to apply during robust regression. Default is 3.0. If 0.0, unpenalized least squares will be performed.",default=2.5)#  guitype='intbox', row=11, col=1, rowspan=1, colspan=1, mode="align")
+	parser.add_argument("--optbox", type=int,help="Box size to use during alignment optimization. Default is 512.",default=512, guitype='intbox', row=11, col=0, rowspan=1, colspan=1, mode="align")
+	parser.add_argument("--optstep", type=int,help="Step size to use during alignment optimization. Default is 384, i.e. 1.5x oversampling.",default=384,  guitype='intbox', row=11, col=1, rowspan=1, colspan=1, mode="align")
+	parser.add_argument("--optalpha", type=float,help="Penalization to apply during robust regression. Default is 1.25. If 0.0, unpenalized least squares will be performed (i.e., no trajectory smoothing).",default=1.25)
 	parser.add_argument("--step",type=str,default="0,1",help="Specify <first>,<step>,[last]. Processes only a subset of the input data. ie- 0,2 would process all even particles. Same step used for all input files. [last] is exclusive. Default= 0,1",guitype='strbox', row=12, col=0, rowspan=1, colspan=1, mode="align")
 	#parser.add_argument("--movie", type=int,help="Display an n-frame averaged 'movie' of the stack, specify number of frames to average",default=0)
 	parser.add_argument("--plot", default=False,help="Display a plot of the movie trajectory after alignment",action="store_true")
@@ -95,7 +97,9 @@ def main():
 	#parser.add_argument("--simpleavg", action="store_true",help="Will save a simple average of the dark/gain corrected frames (no alignment or weighting)",default=False)
 	#parser.add_argument("--avgs", action="store_true",help="Testing",default=False)
 	parser.add_argument("--align_frames", action="store_true",help="Perform whole-frame alignment of the input stacks",default=False, guitype='boolbox', row=9, col=1, rowspan=1, colspan=1, mode='align[True]')
+	parser.add_argument("--integer", action="store_true",help="Shift images by integer numbers of pixels only. Do not accept subpixel shifts.",default=False)
 
+	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful", guitype='intbox', row=9, col=0, rowspan=1, colspan=1, mode="align")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--debug", default=False, action="store_true", help="run with debugging output")
@@ -171,10 +175,16 @@ def main():
 
 	if options.reverse: gain.process_inplace("xform.reverse",{"axis":"y"})
 
+	# if options.rotate :
+	# 	tf = Transform({"type":"2d","alpha":90.0})
+	# 	if dark != None: dark.process_inplace("xform",{"transform":tf})
+	# 	if gain != None: gain.process_inplace("xform",{"transform":tf})
+
 	#try: display((dark,gain,sigd,sigg))
 	#except: display((dark,gain))
 	try: os.mkdir("movies")
 	except: pass
+
 	if gain:
 		gainname="movies/e2ddd_gainref.hdf"
 		gain.write_image(gainname,-1)
@@ -191,10 +201,8 @@ def main():
 
 	step = options.step.split(",")
 
-	if len(step) == 3 :
-		last = int(step[2])
-	else :
-		last = -1
+	if len(step) == 3 : last = int(step[2])
+	else :	last = -1
 
 	first = int(step[0])
 	step  = int(step[1])
@@ -217,13 +225,10 @@ def main():
 
 			n = hdr["nz"]
 
-		if last <= 0 :
-			flast = n
-		else :
-			flast = last
+		if last <= 0 : flast = n
+		else : flast = last
 
-		if flast > n :
-			flast = n
+		if flast > n : flast = n
 
 		process_movie(fsp, dark, gain, first, flast, step, options)
 
@@ -233,12 +238,11 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 		outname=fsp.rsplit(".",1)[0]+"_proc.hdf"		# always output to an HDF file. Output contents vary with options
 		alioutname="micrographs/"+base_name(fsp)
 
-		if fsp[-4:].lower() in (".mrc") :
+		if fsp[-4:].lower() in (".mrc"):
 			hdr=EMData(fsp,0,True)			# read header
 			nx,ny=hdr["nx"],hdr["ny"]
 
 		# bgsub and gain correct the stack
-
 		outim=[]
 		nfs = 0
 		t = time()
@@ -255,11 +259,11 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			if dark!=None : im.sub(dark)
 			if gain!=None : im.mult(gain)
 			im.process_inplace("threshold.clampminmax",{"minval":0,"maxval":im["mean"]+im["sigma"]*3.5,"tozero":1})
-			if options.fixbadpixels : im.process_inplace("threshold.outlier.localmean",{"sigma":3.5,"fix_zero":1}) # fixes clear outliers as well as values which were exactly zero
+			#if options.fixbadpixels : im.process_inplace("threshold.outlier.localmean",{"sigma":3.5,"fix_zero":1}) # fixes clear outliers as well as values which were exactly zero
 
 			#im.process_inplace("threshold.clampminmax.nsigma",{"nsigma":3.0})
 #			im.mult(-1.0)
-			if options.normalize : im.process_inplace("normalize.edgemean")
+			im.process_inplace("normalize.edgemean")
 
 			if options.frames : im.write_image(outname[:-4]+"_corr.hdf",ii-first)
 			outim.append(im)
@@ -273,12 +277,12 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 
 		if options.align_frames :
 
+			start = time()
+
 			n=len(outim)
 			nx=outim[0]["nx"]
 			ny=outim[0]["ny"]
 			print("{} frames read {} x {}".format(n,nx,ny))
-			
-			start = time()
 
 			ccfs=Queue.Queue(0)
 			#outim=Queue.Queue(0)
@@ -295,7 +299,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			thrtolaunch=0
 			while thrtolaunch<len(thds) or threading.active_count()>1:
 				if thrtolaunch<len(thds) :
-					while (threading.active_count()==options.threads ) : sleep(.1)
+					while (threading.active_count()==options.threads ) : sleep(.01)
 					if options.verbose :
 						sys.stdout.write("\rPrecompute {}/{} FFTs {}".format(thrtolaunch,len(thds),threading.active_count()))
 						#sys.stdout.flush()
@@ -317,7 +321,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			for ima in range(n-1):
 				for imb in range(ima+1,n):
 					if options.verbose>3: i+=1		# if i>0 then it will write pre-processed CCF images to disk for debugging
-					thds.append(threading.Thread(target=calc_ccf_wrapper,args=(options,(ima,imb),options.optbox,options.optstep,immx[ima],immx[imb],ccfs,peak_locs,i)))
+					thds.append(threading.Thread(target=calc_ccf_wrapper,args=(options,(ima,imb),options.optbox,options.optstep,immx[ima],immx[imb],ccfs,peak_locs,i,fsp)))
 
 			print("{:1.1f} s\nCompute {} ccfs".format(time()-t0,len(thds)))
 			t0=time()
@@ -331,7 +335,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 				# note that it's ok that we wait here forever, since there can't be new results if an existing
 				# thread hasn't finished.
 				if thrtolaunch<len(thds) :
-					while (threading.active_count()==options.threads ) : sleep(.1)
+					while (threading.active_count()==options.threads ) : sleep(.01)
 					#if options.verbose : print "Starting thread {}/{}".format(thrtolaunch,len(thds))
 					thds[thrtolaunch].start()
 					thrtolaunch+=1
@@ -364,7 +368,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			# array of x,y locations of each frame, all relative to the last frame in the series, which will always have 0,0 shift
 			locs=[0]*(n*2) # we store the value for the last frame as well as a conveience
 
-			print("{:1.1f} s\nAlignment optimization".format(time()-t0))
+			print("{:1.1f} s\nAlign {} frames".format(time()-t0,n))
 			t0=time()
 
 			# from IPython import embed
@@ -372,18 +376,30 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 
 			peak_locs = {p[0]:p[1] for p in peak_locs.queue}
 
+			if options.debug and options.verbose == 9: 
+				print("PEAK LOCATIONS:")
+				print(peak_locs)
+
 			m = n*(n-1)/2
 			bx = np.ones(m)
 			by = np.ones(m)
 			A = np.zeros([m,n]) # coefficient matrix
 			for ima,(i,j) in enumerate(sorted(peak_locs.keys())):
 				for imb in range(i,j):
-					A[ima,imb] = 1
-				bx[ima] = peak_locs[(i,j)][0]
-				by[ima] = peak_locs[(i,j)][1]
+					try:
+						bx[ima] = peak_locs[(i,j)][0]
+						by[ima] = peak_locs[(i,j)][1]
+						A[ima,imb] = 1
+					except:
+						pass
 			b = np.c_[bx,by]
 			A = np.asmatrix(A)
 			b = np.asmatrix(b)
+
+			# remove all zero rows from A and corresponding entries in b
+			z = np.argwhere(np.all(A==0,axis=1))
+			A = np.delete(A,z,axis=0)
+			b = np.delete(b,z,axis=0)
 
 			regr = linear_model.Ridge(alpha=options.optalpha,normalize=True,fit_intercept=True)
 			regr.fit(A,b)
@@ -392,6 +408,9 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			#shifts = regr.predict(np.eye(n))-options.optbox/2
 
 			traj -= traj[0]
+
+			if options.integer:
+				traj = np.round(traj,0)#.astype(np.int8)
 
 			locs = traj.ravel()
 			quals=[0]*n # quality of each frame based on its correlation peak summed over all images
@@ -402,19 +421,35 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 					quals[i]+=val
 					quals[j]+=val
 
+			print("{:1.1f} s".format(time()-t0,n))
+			
 			runtime = time()-start
+			print("Runtime: {:.1f} s".format(runtime))
 
 			# round for integer only shifting
 			#locs=[int(floor(i+.5)) for i in locs]
 
 			if options.plot:
 				import matplotlib.pyplot as plt
-				fig,ax = plt.subplots(1,2,figsize=(12,3))
+				fig,ax = plt.subplots(1,3,figsize=(12,3))
 				ax[0].plot(traj[:,0],traj[:,1],c='b',alpha=0.5)
 				ax[0].scatter(traj[:,0],traj[:,1],c='b',alpha=0.5)
 				ax[0].set_title("Trajectory (x/y pixels)")
 				ax[1].set_title("Quality (cumulative pairwise ccf value)")
 				ax[1].plot(quals,'k')
+				for k in peak_locs.keys():
+					try:
+						p = peak_locs[k]
+						ax[2].scatter(p[0],p[1])
+					except: pass
+				ax[2].set_title("CCF Peak Coordinates")
+
+				if options.debug:
+					fig2,ax2 = plt.subplots(1,3,figsize=(12,36))
+					ax2[0].imshow(A)
+					ax2[1].plot(bx)
+					ax2[2].plot(by)
+				
 				plt.show()
 
 			if options.noali:
@@ -491,7 +526,15 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			print("Done")
 
 # CCF calculation
-def calc_ccf_wrapper(options,N,box,step,dataa,datab,out,locs,ii):
+def calc_ccf_wrapper(options,N,box,step,dataa,datab,out,locs,ii,fsp):
+
+	if fsp[-5:] == ".mrcs":
+		fff = "{}-ccf_models.hdf".format(fsp.replace(".mrcs",""))
+	elif fsp[-4:] == ".hdf":
+		fff = "{}-ccf_models.hdf".format(fsp.replace(".hdf",""))
+	elif fsp[:-4] == ".mrc":
+		fff = "{}-ccf_models.hdf".format(fsp.replace(".mrc",""))
+	
 	for i in range(len(dataa)):
 		c=dataa[i].calc_ccf(datab[i],fp_flag.CIRCULANT,True)
 		try: csum.add(c)
@@ -500,27 +543,48 @@ def calc_ccf_wrapper(options,N,box,step,dataa,datab,out,locs,ii):
 	yy = np.linspace(0,box,box)
 	xx,yy = np.meshgrid(xx,yy)
 #	csum.process_inplace("normalize.edgemean")
-#	csum.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.15})
 	popt,ccpeakval = bimodal_peak_model(options,csum)
-	cc_model = correlation_peak_model((xx,yy),popt[0],popt[1],popt[2],popt[3]).reshape(box,box)
-	csum = from_numpy(cc_model)
-	if ii>=0: csum.process("normalize.edgemean").write_image("ccf_models.hdf",ii)
-	locs.put((N,[popt[0],popt[1],popt[2],popt[3],popt[4],popt[5],ccpeakval,csum["maximum"]]))
-	out.put((N,csum))
+	if popt == None:
+		#if options.debug: print("Optimal parameters not found")
+		#cc_model = correlation_peak_model((xx,yy),popt[0],popt[1],popt[2],popt[3]).reshape(box,box)
+		csum = from_numpy(np.zeros((box,box))).process("normalize.edgemean")
+		locs.put((N,[]))
+		out.put((N,csum))
+	else:
+		cc_model = correlation_peak_model((xx,yy),popt[0],popt[1],popt[2],popt[3]).reshape(box,box)
+		csum = from_numpy(cc_model)
+		#if ii>=0: csum.process("normalize.edgemean").write_image("ccf_models.hdf",ii)
+		locs.put((N,[popt[0],popt[1],popt[2],popt[3],popt[4],popt[5],ccpeakval,csum["maximum"]]))
+		out.put((N,csum))
+	if ii>=0: csum.process("normalize.edgemean").write_image(fff,ii)
 
 # preprocess regions by normalizing and doing FFT
 def split_fft(options,img,i,box,step,out):
 	lst=[]
+	# if min(img["nx"],img["ny"]) > 6000:
+	# 	img.process_inplace("math.fft.resample",{"n":1.5})
 	nx = img["nx"]
 	ny = img["ny"]
 	#proc = img.process("filter.highpass.gauss",{"cutoff_pixels":2})
+	# if options.binning == -1:
+	# 	if img["nx"] < 5000: pass
+	# 	else:
+	# 		#if options.debug: print("FFT resample by 6")
+	# 		img.process_inplace("math.fft.resample",{"n":4})
+	# elif options.binning >= 0:
+	# 	#if options.debug: print("FFT resample by {}".format(options.binning))
+	# 	img.process_inplace("math.fft.resample",{"n":options.binning})
+	#img.process_inplace("filter.highpass.gauss",{"cutoff_pixels":2})
+	#img.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.4})
 	#proc.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.3})
 	for dx in range(box/2,nx-box,step):
 		for dy in range(box/2,ny-box,step):
 			clp = img.get_clip(Region(dx,dy,box,box))
-			clp.process_inplace("normalize.edgemean")
-			clp.process_inplace("filter.highpass.gauss",{"cutoff_pixels":2})
-			clp.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.3})
+			if options.normalize: clp.process_inplace("normalize.edgemean")
+			if box >= 512:
+				clp.process_inplace("filter.highpass.gauss",{"cutoff_abs":0.01})
+				#clp.process_inplace("math.fft.resample",{"n":1.})
+				#clp.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.4})
 			lst.append(clp.do_fft())
 	out.put((i,lst))
 
@@ -537,53 +601,50 @@ def fixedbg_peak_model((x, y), sigma, amp):
 	return g.ravel()
 
 def twod_bimodal((x,y),x1,y1,sig1,amp1,sig2,amp2):
-	correlation_peak = correlation_peak_model((x,y),x1,y1,sig1,amp1)
-	fixedbg_peak = fixedbg_peak_model((x,y),sig2,amp2)
-	#print(correlation_peak[0]+fixedbg_peak[0])
-	return correlation_peak + fixedbg_peak # + noise
+	#correlation_peak = correlation_peak_model((x,y),x1,y1,sig1,amp1)
+	cp = amp1*np.exp(-(((x-x1)**2+(y-y1)**2))/(2*sig1**2)).ravel()
+	#fixedbg_peak = fixedbg_peak_model((x,y),sig2,amp2)
+	fp = amp2*np.exp(-(((x-float(len(x)/2))**2+(y-float(len(y)/2))**2))/(2*sig2**2)).ravel()
+	return cp + fp # + noise
 
 def bimodal_peak_model(options,ccf):
 	nxx = ccf["nx"]
-	bs = nxx/2
+	bs = nxx/4
 
 	xx = np.linspace(0,bs,bs)
 	yy = np.linspace(0,bs,bs)
 	xx,yy = np.meshgrid(xx,yy)
 
 	r = Region(nxx/2-bs/2,nxx/2-bs/2,bs,bs)
-	#r = Region(0,0,bs,bs)
+
 	ccfreg = ccf.get_clip(r)
 	ncc = ccfreg.numpy().copy()
 
 	x1 = bs/2.
 	y1 = bs/2.
 	s1 = 10.0
-	a1 = 1500.0
+	a1 = 1000.0
 	s2 = 0.6
 	a2 = 20000.0
 
 	if options.phaseplate:
 		initial_guess = [x1,y1,s1,a1]
-		bds = [(-bs/2, -bs/2,  0.01, 0.01),(bs/2, bs/2, 100.0, 20000.0)]
-		try:
-			popt,pcov=optimize.curve_fit(correlation_peak_model,(xx,yy),ncc.ravel(),p0=initial_guess,bounds=bds,xtol=0.1)#,ftol=0.0001,gtol=0.0001)
-		except: #optimize.OptimizeWarning:
-			popt = [x1,y1,s1,a1]
-		popt = [p for p in popt]
-		popt.extend([0,0])
+		bds = [(-bs/2, -bs/2,  0.1, 0.1),(bs/2, bs/2, 100.0, 20000.0)]
+		try: 
+			popt,pcov=optimize.curve_fit(correlation_peak_model,(xx,yy),ncc.ravel(),p0=initial_guess,bounds=bds,method='dogbox',max_nfev=50)#,xtol=0.1)#,ftol=0.0001,gtol=0.0001)
+		except:
+			return None,-1
 	else:
 		initial_guess = [x1,y1,s1,a1,s2,a2]
 		bds = [(-bs/2, -bs/2,  0.01, 0.01, 0.6, 0.01),(bs/2, bs/2, 100.0, 20000.0, 2.5, 100000.0)]
-		try:
-			popt,pcov=optimize.curve_fit(twod_bimodal,(xx,yy),ncc.ravel(),p0=initial_guess,bounds=bds,xtol=0.1)#,ftol=0.0001,gtol=0.0001)
-		except: #optimize.OptimizeWarning:
-			popt = [x1,y1,s1,a1,s2,a2]
-		popt = [p for p in popt]
-
+		try: 
+			popt,pcov=optimize.curve_fit(twod_bimodal,(xx,yy),ncc.ravel(),p0=initial_guess,bounds=bds,method='dogbox',max_nfev=50) #,xtol=0.05)#,ftol=0.0001,gtol=0.0001)
+		except: 
+			return None,-1
+	popt = [p for p in popt]
 	popt[0] = popt[0] + nxx/2 - bs/2
 	popt[1] = popt[1] + nxx/2 - bs/2
 	popt[2] = np.abs(popt[2])
-
 	return popt,ccf.sget_value_at_interp(popt[0],popt[1])
 
 def qsum(imlist):
@@ -605,56 +666,57 @@ def qual(locs,ccfs):
 			nrg-=ccfs[(i,j)].sget_value_at_interp(locx,locy)*penalty
 	return nrg
 
-def calc_incoherent_pws(frames,bs=2048):
-	mx = np.arange(bs+50,frames[0]['nx']-bs+50,bs)
-	my = np.arange(bs+50,frames[1]['ny']-bs+50,bs)
-	regions = {}
-	for i in xrange(len(frames)): regions[i] = [[x,y] for y in my for x in mx]
-	ips = Averagers.get('mean')
-	for i in xrange(len(frames)):
-		img = frames[i].copy()
-		frame_avg = Averagers.get('mean')
-		for r in regions[i]:
-			reg = frames[i].get_clip(Region(r[0],r[1],bs,bs))
-			reg.process_inplace("normalize.unitlen")
-			reg.do_fft_inplace()
-			reg.ri2inten()
-			frame_avg.add_image(reg)
-		ips.add_image(frame_avg.finish())
-	ips = ips.finish()
-	ips.process_inplace("math.sqrt")
-	ips.process_inplace('normalize.edgemean')
-	ips_ra = ips.process('math.rotationalaverage')
-	#ips = ips-ips_ra
-	#ips.process_inplace("math.rotationalaverage")
-	return ips
-
-def calc_coherent_pws(frames,bs=2048):
-	mx = np.arange(bs+50,frames[0]['nx']-bs+50,bs)
-	my = np.arange(bs+50,frames[1]['ny']-bs+50,bs)
-	regions = {}
-	for i in xrange(len(frames)):
-		regions[i] = [[x,y] for y in my for x in mx]
-	stacks = {}
-	for ir in xrange(len(regions[0])):
-		stacks[ir] = [regions[i][ir] for i in xrange(len(frames))]
-	cps = Averagers.get('mean')
-	for s in xrange(len(stacks)):
-		stack_avg = Averagers.get('mean')
-		for i,r in enumerate(stacks[s]):
-			stack_avg.add_image(frames[i].copy().get_clip(Region(r[0],r[1],bs,bs)))
-		avg = stack_avg.finish()
-		avg.process_inplace('normalize.unitlen')
-		avg.do_fft_inplace()
-		avg.ri2inten()
-		cps.add_image(avg)
-	cps = cps.finish()
-	cps.process_inplace('math.sqrt')
-	cps.process_inplace('normalize.edgemean')
-	return cps
-
 if __name__ == "__main__":
 	main()
+
+# def calc_incoherent_pws(frames,bs=2048):
+# 	mx = np.arange(bs+50,frames[0]['nx']-bs+50,bs)
+# 	my = np.arange(bs+50,frames[1]['ny']-bs+50,bs)
+# 	regions = {}
+# 	for i in xrange(len(frames)): regions[i] = [[x,y] for y in my for x in mx]
+# 	ips = Averagers.get('mean')
+# 	for i in xrange(len(frames)):
+# 		img = frames[i].copy()
+# 		frame_avg = Averagers.get('mean')
+# 		for r in regions[i]:
+# 			reg = frames[i].get_clip(Region(r[0],r[1],bs,bs))
+# 			reg.process_inplace("normalize.unitlen")
+# 			reg.do_fft_inplace()
+# 			reg.ri2inten()
+# 			frame_avg.add_image(reg)
+# 		ips.add_image(frame_avg.finish())
+# 	ips = ips.finish()
+# 	ips.process_inplace("math.sqrt")
+# 	ips.process_inplace('normalize.edgemean')
+# 	ips_ra = ips.process('math.rotationalaverage')
+# 	#ips = ips-ips_ra
+# 	#ips.process_inplace("math.rotationalaverage")
+# 	return ips
+
+# def calc_coherent_pws(frames,bs=2048):
+# 	mx = np.arange(bs+50,frames[0]['nx']-bs+50,bs)
+# 	my = np.arange(bs+50,frames[1]['ny']-bs+50,bs)
+# 	regions = {}
+# 	for i in xrange(len(frames)):
+# 		regions[i] = [[x,y] for y in my for x in mx]
+# 	stacks = {}
+# 	for ir in xrange(len(regions[0])):
+# 		stacks[ir] = [regions[i][ir] for i in xrange(len(frames))]
+# 	cps = Averagers.get('mean')
+# 	for s in xrange(len(stacks)):
+# 		stack_avg = Averagers.get('mean')
+# 		for i,r in enumerate(stacks[s]):
+# 			stack_avg.add_image(frames[i].copy().get_clip(Region(r[0],r[1],bs,bs)))
+# 		avg = stack_avg.finish()
+# 		avg.process_inplace('normalize.unitlen')
+# 		avg.do_fft_inplace()
+# 		avg.ri2inten()
+# 		cps.add_image(avg)
+# 	cps = cps.finish()
+# 	cps.process_inplace('math.sqrt')
+# 	cps.process_inplace('normalize.edgemean')
+# 	return cps
+
 
 		# A simple average
 
