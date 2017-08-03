@@ -1,5 +1,8 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8.12)
-PROJECT(EMAN)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.7)
+PROJECT(EMAN
+		VERSION 2.2
+		LANGUAGES CXX
+		)
 
 IF(COMMAND cmake_policy)
        cmake_policy(SET CMP0003 NEW)
@@ -8,28 +11,42 @@ ENDIF(COMMAND cmake_policy)
 
 include(cmake/functions.cmake)
 
-MARK_AS_ADVANCED(CLEAR CMAKE_VERBOSE_MAKEFILE)
-OPTION(CMAKE_VERBOSE_MAKEFILE "if all commands will be echoed to the console during the make" ON)
+OPTION(DEBUG_CMAKE_TARGETS "enable debug output for cmake target properties" OFF)
+if(DEBUG_CMAKE_TARGETS)
+	set(CMAKE_DEBUG_TARGET_PROPERTIES
+		INCLUDE_DIRECTORIES
+		COMPILE_DEFINITIONS
+		POSITION_INDEPENDENT_CODE
+		CONTAINER_SIZE_REQUIRED
+		LIB_VERSION
+		)
+endif()
 
-SET(CMAKE_MACOSX_RPATH ON)
+# for 64-bit large file support
+ADD_DEFINITIONS(-D_LARGEFILE_SOURCE)
+ADD_DEFINITIONS(-D_FILE_OFFSET_BITS=64)
+ADD_DEFINITIONS(-D_LARGE_FILES)
 
-OPTION(ENABLE_CONDA "enable conda-supported build" ON)
+INCLUDE(${CMAKE_ROOT}/Modules/CheckIncludeFiles.cmake)
+INCLUDE(${CMAKE_ROOT}/Modules/CheckFunctionExists.cmake)
+INCLUDE(${CMAKE_ROOT}/Modules/CheckTypeSize.cmake)
+
+EMAN_CHECK_FUNCTION(fseek64 HAVE_FSEEK64)
+EMAN_CHECK_FUNCTION(fseeko HAVE_FSEEKO)
+EMAN_CHECK_FUNCTION(ftell64 HAVE_FTELL64)
+EMAN_CHECK_FUNCTION(ftello HAVE_FTELLO)
+# end for 64-bit large file support
 
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
-MACRO(CHECK_PYTHON)
-	find_package(PythonInterp REQUIRED)
-	find_package(PythonLibs   REQUIRED)
-	
-	set(PYTHON_INCLUDE_PATH ${PYTHON_INCLUDE_DIRS} CACHE PATH "")
-	set(PYTHON_LIBRARY      ${PYTHON_LIBRARIES}    CACHE PATH "")
-	
-	message("PYTHON_EXECUTABLE:   ${PYTHON_EXECUTABLE}")
-	message("PYTHON_LIBRARIES:    ${PYTHON_LIBRARIES}")
-	message("PYTHON_INCLUDE_DIRS: ${PYTHON_INCLUDE_DIRS}")
-	message("PYTHON_INCLUDE_PATH: ${PYTHON_INCLUDE_PATH}")
-	message("PYTHON_INCLUDE_DIR:  ${PYTHON_INCLUDE_DIR}")
-ENDMACRO(CHECK_PYTHON)
+SET(CMAKE_MACOSX_RPATH ON)
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+set(CMAKE_INCLUDE_CURRENT_DIR_IN_INTERFACE ON)
+
+MARK_AS_ADVANCED(CLEAR CMAKE_VERBOSE_MAKEFILE)
+OPTION(CMAKE_VERBOSE_MAKEFILE "if all commands will be echoed to the console during the make" ON)
+
+OPTION(ENABLE_CONDA "enable conda-supported build" ON)
 
 if(ENABLE_CONDA)
 	if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" )
@@ -60,7 +77,9 @@ if(ENABLE_CONDA)
 	message_var(CMAKE_PREFIX_PATH)
 endif()
 
-CHECK_PYTHON()
+find_package(Python REQUIRED)
+find_package(NumPy  REQUIRED)
+
 if(NOT WIN32)
 	set(py_sp_dir_command "import site; print site.getsitepackages()[0]")
 else()
@@ -107,22 +126,11 @@ OPTION(ENABLE_NATIVE_FFT "enable native fft support (for non-GPL use)" OFF)
 OPTION(ENABLE_ACML_FFT "enable AMD Core Math Library fft support" OFF)
 OPTION(ENABLE_FFT_CACHING "enable FFT Caching" OFF)
 MARK_AS_ADVANCED(ENABLE_ACML_FFT)
-OPTION(ENABLE_DJBFFT "enable djbfft support" OFF)
-MARK_AS_ADVANCED(ENABLE_DJBFFT)
 
-OPTION(ENABLE_OPTPP "enable Opt++ support" OFF)
-
-OPTION(ENABLE_TIFF "enable TIFF support" ON)
 OPTION(ENABLE_V4L2 "enable V4L2 framegrabbing support" OFF)
-OPTION(ENABLE_PNG "enable PNG support" ON)
-OPTION(ENABLE_JPEG "enable JPEG support" ON)
 
-OPTION(ENABLE_OPENGL "enable EMAN2 OpenGL usage" ON)
 OPTION(ENABLE_SPARX_CUDA "enable SPARX CUDA usage" OFF)
 OPTION(ENABLE_EMAN_CUDA "enable EMAN2 CUDA usage" OFF)
-OPTION(ENABLE_FTGL "enable EMAN2 FTGL (3D fonts) usage" ON)
-OPTION(ENABLE_STATIC_FTGL "If build EMAN with libftgl.a" OFF)
-MARK_AS_ADVANCED(ENABLE_STATIC_FTGL)
 
 #flags used for debugging and testing
 OPTION(ENABLE_MEMDEBUG "enable memory debug support of objects" OFF)
@@ -226,290 +234,30 @@ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${EMAN_CXX_FLAGS} ${OPT_FLAGS}")
 MARK_AS_ADVANCED(CMAKE_C_FLAGS)
 MARK_AS_ADVANCED(CMAKE_CXX_FLAGS)
 
-# for 64-bit large file support
-ADD_DEFINITIONS(-D_LARGEFILE_SOURCE)
-ADD_DEFINITIONS(-D_FILE_OFFSET_BITS=64)
-ADD_DEFINITIONS(-D_LARGE_FILES)
-
-INCLUDE(${CMAKE_ROOT}/Modules/CheckIncludeFiles.cmake)
-INCLUDE(${CMAKE_ROOT}/Modules/CheckFunctionExists.cmake)
-INCLUDE(${CMAKE_ROOT}/Modules/CheckTypeSize.cmake)
-
-MACRO(EMAN_CHECK_FUNCTION FUNCTION VARIABLE)
-    CHECK_FUNCTION_EXISTS(${FUNCTION} ${VARIABLE})
-    IF(${VARIABLE})
-		ADD_DEFINITIONS(-D${VARIABLE})
-    ENDIF()
-ENDMACRO()
-
-EMAN_CHECK_FUNCTION(fseek64 HAVE_FSEEK64)
-EMAN_CHECK_FUNCTION(fseeko HAVE_FSEEKO)
-EMAN_CHECK_FUNCTION(ftell64 HAVE_FTELL64)
-EMAN_CHECK_FUNCTION(ftello HAVE_FTELLO)
-# end for 64-bit large file support
-
 IF(ENABLE_IOCACHE)
 	ADD_DEFINITIONS(-DIMAGEIO_CACHE)
 ENDIF()
 
-MACRO(CHECK_REQUIRED_LIB2 upper lower header lower2 header2)
-	if(ENABLE_CONDA)
-		message("\n### BEGIN ### CHECK_REQUIRED_LIB2 upper lower header lower2 header2")
-		message_var(${upper}_INCLUDE_PATH)
-		message_var(${upper}_LIBRARY)
-	endif()
-		
-	IF(NOT ${upper}_INCLUDE_PATH)
-		FIND_PATH(${upper}_INCLUDE_PATH 
-				NAMES ${header} ${header2}
-				PATHS $ENV{${upper}DIR}/include ${EMAN_PREFIX_INC}
-				NO_DEFAULT_PATH
-				)
-    ENDIF()
-
-    IF(${upper}_INCLUDE_PATH)
-		FIND_LIBRARY(${upper}_LIBRARY NAMES ${lower} ${lower2} PATHS $ENV{${upper}DIR}/lib ${EMAN_PREFIX_LIB})
-		message("FIND_LIBRARY: ${upper}_LIBRARY NAMES ${lower} ${lower2} PATHS $ENV{${upper}DIR}/lib ${EMAN_PREFIX_LIB}")
-    ENDIF()
-		
-	IF(NOT ${upper}_INCLUDE_PATH OR NOT ${upper}_LIBRARY)
-		MESSAGE(SEND_ERROR "ERROR: ${upper} not found. please install ${upper} first!")
-    ENDIF()
-
-	if(ENABLE_CONDA)
-		message("### END ### CHECK_REQUIRED_LIB2 upper lower header lower2 header2")
-		message_var(${upper}_INCLUDE_PATH)
-		message_var(${upper}_LIBRARY)
-	endif()
-ENDMACRO()
-
-MACRO(CHECK_REQUIRED_LIB upper lower header)
-    CHECK_REQUIRED_LIB2(${upper} ${lower} ${header} "" "")
-ENDMACRO()
-
-MACRO(CHECK_OPTIONAL_LIB upper lower header)
-    FIND_PATH(${upper}_INCLUDE_PATH ${header} $ENV{${upper}DIR}/include ${EMAN_PREFIX_INC} NO_DEFAULT_PATH)
-
-    IF(${upper}_INCLUDE_PATH)
-        FIND_LIBRARY(${upper}_LIBRARY NAMES ${lower} PATHS $ENV{${upper}DIR}/lib ${EMAN_PREFIX_LIB})
-
-        IF(${upper}_LIBRARY)
-			ADD_DEFINITIONS(-DEM_${upper})
-			INCLUDE_DIRECTORIES(${${upper}_INCLUDE_PATH})
-        ELSE()
-			#MESSAGE("WARNING: ${upper} not found, ENABLE_${upper} is set back to OFF")
-			OPTION(ENABLE_${upper} "if enable ${upper} support" OFF)
-        ENDIF()
-
-    ELSE()
-		#MESSAGE("WARNING: ${upper} not found, ENABLE_${upper} is set back to OFF")
-        OPTION(ENABLE_${upper} "if enable ${upper} support" OFF)
-    ENDIF()
-ENDMACRO()
-
-MACRO(CHECK_LIB_ONLY upper lower)
-    FIND_LIBRARY(${upper}_LIBRARY NAMES ${lower} PATHS $ENV{${upper}DIR}/lib ${EMAN_PREFIX_LIB} NO_DEFAULT_PATH)
-	message(STATUS "CHECK_LIB_ONLY upper lower")
-	message_var(${upper}_LIBRARY)
-ENDMACRO()
-
-IF(ENABLE_FFTW3)
-    OPTION(ENABLE_NFFT2 "enable nfft2 support" OFF)
-    OPTION(ENABLE_NATIVE_FFT "enable native fft support" OFF)
-    OPTION(ENABLE_ACML_FFT "enable AMD Core Math Library fft support" OFF)
-
-    CHECK_REQUIRED_LIB2(FFTW3 fftw3f fftw3.h libfftw3f-3 "")
-    CHECK_REQUIRED_LIB2(FFTW3d fftw3 fftw3.h libfftw3-3  "")
-    ADD_DEFINITIONS(-DFFTW3)
-    SET(FFTW_LIBRARIES ${FFTW3_LIBRARY} ${FFTW3d_LIBRARY})
-    SET(FFTW_INCLUDE_PATH ${FFTW3_INCLUDE_PATH})
-
-	if(ENABLE_CONDA)
-		message("FFTW_LIBRARIES: ${FFTW_LIBRARIES}")
-		message("FFTW_INCLUDE_PATH: ${FFTW_INCLUDE_PATH}")
-	endif()
-		
-    IF(ENABLE_NFFT2)
-    	CHECK_REQUIRED_LIB(FFTW3D fftw3 fftw3.h)
-    	CHECK_REQUIRED_LIB(NFFT2 nfft nfft.h)
-    	ADD_DEFINITIONS(-DNFFT2)
-		INCLUDE_DIRECTORIES(${NFFT2_INCLUDE_PATH})
-    ENDIF()
-ENDIF()
 
 IF(ENABLE_FFTW_PLAN_CACHING)
 	ADD_DEFINITIONS(-DFFTW_PLAN_CACHING)
-ENDIF()
-
-IF(ENABLE_ACML_FFT)
-	OPTION(ENABLE_FFTW3 "enable fftw 3 support" OFF)
-	OPTION(ENABLE_NATIVE_FFT "enable native fft support" OFF)
-
-	CHECK_REQUIRED_LIB(ACML acml acml.h)
-	FIND_LIBRARY(G2C_LIBRARY NAMES g2c PATHS
-		/usr/lib64
-		/usr/lib
-		/usr/local/lib
-		$ENV{HOME}/lib )
-	ADD_DEFINITIONS(-DACML)
-	SET(ACML_LIBRARIES ${ACML_LIBRARY})
-    SET(ACML_INCLUDE_PATH ${ACML_INCLUDE_PATH})
 ENDIF()
 
 IF(ENABLE_FFT_CACHING)
 	ADD_DEFINITIONS(-DFFT_CACHING)
 ENDIF()
 
+if(NOT(    (    ENABLE_FFTW3 AND NOT ENABLE_NATIVE_FFT AND NOT ENABLE_ACML_FFT)
+   		OR (NOT ENABLE_FFTW3 AND     ENABLE_NATIVE_FFT AND NOT ENABLE_ACML_FFT)
+   		OR (NOT ENABLE_FFTW3 AND NOT ENABLE_NATIVE_FFT AND     ENABLE_ACML_FFT)
+   		)
+   )
+	message(FATAL_ERROR "Exactly one of the below has to be ON:\nENABLE_FFTW3= ${ENABLE_FFTW3}\nENABLE_NATIVE_FFT= ${ENABLE_NATIVE_FFT}\nENABLE_ACML_FFT= ${ENABLE_ACML_FFT}\n")
+endif()
+
 IF(ENABLE_NATIVE_FFT)
 	ADD_DEFINITIONS(-DNATIVE_FFT)
-	OPTION(ENABLE_FFTW3 "enable fftw 3 support" OFF)
-	OPTION(ENABLE_ACML_FFT "enable AMD Core Math Library fft support" OFF)
 ENDIF()
-
-IF(ENABLE_DJBFFT)
-	OPTION(ENABLE_NFFT2 "enable nfft2 support" OFF)
-	CHECK_REQUIRED_LIB(DJBFFT fftc4.h fftr4.h)
-	ADD_DEFINITIONS(-DDJBFFT)
-	SET(DJBFFT_LIBRARIES ${DJBFFT_LIBRARY})
-	SET(DJBFFT_INCLUDE_PATH ${DJBFFT_INCLUDE_PATH})
-ENDIF()
-
-IF(ENABLE_OPTPP)
-    FIND_PATH(OPTPP_INCLUDE_PATH Opt.h /usr/include /usr/include/opt++
-              /usr/local/include /usr/local/include/opt++ $ENV{HOME}/include
-             $ENV{HOME}/include/opt++ NO_DEFAULT_PATH)
-    FIND_PATH(NEWMAT_INCLUDE_PATH newmat.h /usr/include /usr/include/opt++
-              /usr/include/newmat /usr/local/include/newmat
-              /usr/local/include /usr/local/include/opt++ $ENV{HOME}/include
-             $ENV{HOME}/include/opt++ NO_DEFAULT_PATH)
-    FIND_LIBRARY(OPTPP_LIBRARY NAMES opt-linux PATHS /usr/lib /usr/local/lib)
-    FIND_LIBRARY(NEWMAT_LIBRARY NAMES newmat-linux PATHS /usr/lib /usr/local/lib)
-
-    ADD_DEFINITIONS(-DOPTPP)
-    INCLUDE_DIRECTORIES(${OPTPP_INCLUDE_PATH} ${NEWMAT_INCLUDE_PATH})
-ENDIF()
-
-CHECK_REQUIRED_LIB(GSL gsl gsl/gsl_linalg.h)
-CHECK_REQUIRED_LIB(GSL_CBLAS gslcblas gsl/gsl_linalg.h)
-if(WIN32)
-	add_definitions(-DGSL_DLL -DFTGL_LIBRARY_STATIC)
-endif()
-
-IF(ENABLE_OPENGL)
-	find_package(OpenGL REQUIRED)
-	set(GL_LIBRARY       ${OPENGL_gl_LIBRARY} CACHE PATH "")
-	set(GLU_LIBRARY      ${OPENGL_LIBRARIES}  CACHE PATH "")
-	set(GL_INCLUDE_PATH  ${OPENGL_INCLUDE_DIR})
-	set(GLU_INCLUDE_PATH ${OPENGL_INCLUDE_DIR})
-
-	message("OPENGL_LIBRARY:     ${OPENGL_LIBRARY}")
-	message("GL_LIBRARY:         ${GL_LIBRARY}")
-	message("GLU_LIBRARY:        ${GLU_LIBRARY}")
-	message("OPENGL_INCLUDE_DIR: ${OPENGL_INCLUDE_DIR}")
-	message("GL_INCLUDE_PATH:    ${GL_INCLUDE_PATH}")
-	message("GLU_INCLUDE_PATH:   ${GLU_INCLUDE_PATH}")
-		
-	ADD_DEFINITIONS(-DEMAN2_USING_OPENGL)
-ENDIF()
-
-IF(ENABLE_FTGL)
-	CHECK_REQUIRED_LIB2(FTGL ftgl FTGL/FTGL.h ftgl FTGL/ftgl.h)
-	ADD_DEFINITIONS(-DEMAN2_USING_FTGL)
-	IF(EXISTS ${FTGL_INCLUDE_PATH}/FTGL/FTGL.h AND COMMAND IF)
-		ADD_DEFINITIONS(-DOLD_FTGL)
-	ENDIF()
-	ADD_SUBDIRECTORY(fonts)
-	find_package(Freetype REQUIRED)
-
-	message("FREETYPE_LIBRARIES:    ${FREETYPE_LIBRARIES}")
-	message("FREETYPE_INCLUDE_DIRS: ${FREETYPE_INCLUDE_DIRS}")
-		
-	IF (ENABLE_STATIC_FTGL)
-		IF(WIN32)
-			CHECK_REQUIRED_LIB(FREETYPE freetype ft2build.h)
-		ENDIF(WIN32)
-	ENDIF (ENABLE_STATIC_FTGL)
-ENDIF()
-
-IF(ENABLE_TIFF)
-    CHECK_OPTIONAL_LIB(TIFF tiff tiffio.h)
-    CHECK_LIB_ONLY(JPEG jpeg)
-ENDIF()
-
-IF(ENABLE_JPEG)
-    CHECK_OPTIONAL_LIB(JPEG jpeg jpeglib.h)
-ENDIF()
-
-if(WIN32)
-	set(HDF5_LIBRARY ${EMAN_PREFIX_LIB}/libhdf5.lib CACHE PATH "")
-endif()
-
-CHECK_OPTIONAL_LIB(HDF5 hdf5 hdf5.h)
-CHECK_LIB_ONLY(ZLIB z)
-IF(WIN32)
-	CHECK_LIB_ONLY(SZLIB libszip)
-ENDIF()
-
-IF(ENABLE_PNG)
-	find_package(PNG REQUIRED)
-	message("PNG_LIBRARIES: ${PNG_LIBRARIES}")
-	ADD_DEFINITIONS(-DEM_PNG)
-ENDIF()
-
-execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "import numpy; print numpy.get_include()"
-		OUTPUT_VARIABLE numpy_include_path
-		OUTPUT_STRIP_TRAILING_WHITESPACE
-		)
-
-FIND_PATH(NUMPY_INCLUDE_PATH numpy/arrayobject.h
-	${numpy_include_path}
-	$ENV{HOME}/anaconda2/lib/python2.7/site-packages/numpy/core/include
-	$ENV{HOME}/EMAN2/anaconda2/lib/python2.7/site-packages/numpy/core/include
-	$ENV{PYTHON_ROOT}/lib/python2.7/site-packages/numpy/core/include
-	/usr/local/lib/python2.7/site-packages/numpy/core/include
-	/usr/lib64/python2.7/site-packages/numpy/core/include
-	/usr/lib/python2.7/site-packages/numpy/core/include
-    /usr/include 
-    NO_DEFAULT_PATH)
-
-message("NUMPY_INCLUDE_PATH: ${NUMPY_INCLUDE_PATH}")
-
-INCLUDE_DIRECTORIES(${NUMPY_INCLUDE_PATH})
-
-
-# Find Boost
-set(Boost_USE_MULTITHREADED ON)
-set(Boost_NO_BOOST_CMAKE ON)
-find_package(Boost COMPONENTS python REQUIRED)
-
-message("Boost_LIBRARIES:   ${Boost_LIBRARIES}")
-message("Boost_INCLUDE_DIR: ${Boost_INCLUDE_DIR}")
-
-INCLUDE_DIRECTORIES(.
-	    ${EMAN_SOURCE_DIR}
-	    ${EMAN_SOURCE_DIR}/libEM
-	    ${GL_INCLUDE_PATH}
-	    ${GSL_INCLUDE_PATH}
-	    ${GSL_INCLUDE_PATH}/gsl
-	    ${FFTW_INCLUDE_PATH}
-	    ${DJBFFT_INCLUDE_PATH}
-	    ${ACML_INCLUDE_PATH}
-	    ${Boost_INCLUDE_DIR}
-	    ${PYTHON_INCLUDE_PATH}
-	    ${FREETYPE_INCLUDE_DIRS}
-            )
-
-#---------------------------------------------------------------------------------------
-if(ENABLE_CONDA)
-	message("\nINCLUDE_DIRECTORIES---START")
-	get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
-	
-	foreach(dir ${dirs})
-		message(STATUS "INCLUDE_DIR='${dir}'")
-	endforeach()
-	message("\nINCLUDE_DIRECTORIES---END")
-endif()
-#---------------------------------------------------------------------------------------
 
 IF(ENABLE_RT)
     ADD_SUBDIRECTORY(rt)
@@ -573,9 +321,10 @@ set(test_methods
 		test_imageio.py:TestPNGIO.test_write_png
 		)
 
+find_package(Nosetests)
 foreach(t ${test_methods})
 	add_test(NAME ${t}
-			COMMAND nosetests ${EMAN_INSTALL_PREFIX}/test/rt/pyem/${t}
+			COMMAND ${NOSETESTS_EXECUTABLE} ${EMAN_INSTALL_PREFIX}/test/rt/pyem/${t}
 			)
 endforeach()
 

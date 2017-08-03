@@ -2685,7 +2685,7 @@ void PointArray::replace_by_summation(EMData *proj, int ind, Vec3f vec, float am
 
 EMData *PointArray::pdb2mrc_by_nfft(int , float , float )
 {
-#if defined NFFT
+#if defined USE_NFFT
 	nfft_3D_plan my_plan;		// plan for the nfft
 
 	/** init an 3 dimensional plan */
@@ -2855,7 +2855,7 @@ EMData *PointArray::pdb2mrc_by_nfft(int , float , float )
 
 EMData *PointArray::projection_by_nfft(int , float , float )
 {
-#if defined NFFT
+#if defined USE_NFFT
 	nfft_2D_plan my_plan;		// plan for the nfft
 	int N[2], n[2];
 	N[0] = image_size;
@@ -2999,7 +2999,7 @@ EMData *PointArray::projection_by_nfft(int , float , float )
 #endif
 }
 
-#ifdef OPTPP
+#ifdef USE_OPTPP
 #include "NLF.h"
 #include "BoundConstraint.h"
 #include "OptCG.h"
@@ -3054,7 +3054,7 @@ if (mode & NLPGradient) {
 #endif
 
 void PointArray::opt_from_proj(const vector<EMData*> & proj,float pixres) {
-#ifdef OPTPP
+#ifdef USE_OPTPP
 	optdata=proj;
 	optobj=this;
 	optpixres=pixres;

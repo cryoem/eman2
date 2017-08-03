@@ -40,7 +40,7 @@
 #include "transform.h"
 #include "pointarray.h"
 
-#if defined NFFT || NFFT2
+#if defined USE_NFFT || USE_NFFT2
 extern "C"
 {
 	#include "nfft.h"

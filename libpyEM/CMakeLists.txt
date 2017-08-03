@@ -1,19 +1,27 @@
-#this definition is for boost.python > 1.35.0 
-ADD_DEFINITIONS(-DBOOST_PYTHON_NO_PY_SIGNATURES)
+# Find Boost
+set(Boost_USE_MULTITHREADED ON)
+set(Boost_NO_BOOST_CMAKE ON)
+find_package(Boost COMPONENTS python REQUIRED)
 
-INCLUDE_DIRECTORIES(
-			${EMAN_SOURCE_DIR}/libEM
-			${EMAN_SOURCE_DIR}/libpyEM 
-			${Boost_INCLUDE_DIR} 
-			${PYTHON_INCLUDE_PATH}
-			)
+message("Boost_LIBRARIES:   ${Boost_LIBRARIES}")
+message("Boost_INCLUDE_DIR: ${Boost_INCLUDE_DIR}")
+
+#this definition is for boost.python > 1.35.0 
+set_target_properties(Boost::python
+					  PROPERTIES
+					  INTERFACE_COMPILE_DEFINITIONS BOOST_PYTHON_NO_PY_SIGNATURES
+					  INTERFACE_LINK_LIBRARIES Python::Python
+					  )
+if(WIN32)
+	ADD_DEFINITIONS(-DBOOST_DISABLE_ASSERTS)
+endif()
 
 IF(CMAKE_SYSTEM MATCHES "IRIX.*")
     INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIR}/boost/compatibility/cpp_c_headers)
 ENDIF()
 
-MACRO(ADD_PYSTE_LIB_WITH_SRC libname srcfile)
-	ADD_LIBRARY(${libname} SHARED lib${libname}.cpp ${srcfile})
+function(ADD_PYSTE_LIB libname)
+	add_library(${libname} SHARED lib${libname}.cpp)
 	
 	if(WIN32)
 		set(suffix .pyd)
@@ -27,14 +35,9 @@ MACRO(ADD_PYSTE_LIB_WITH_SRC libname srcfile)
 			SUFFIX ${suffix}
 			)
 	
-	# Windows fails without linking against freetype
-	TARGET_LINK_LIBRARIES(${libname} EM2 ${Boost_LIBRARIES} ${PYTHON_LIBRARY} ${FREETYPE_LIBRARIES})
-	INSTALL(TARGETS ${libname} DESTINATION ${EMAN_PY_INSTALL_PREFIX})
-ENDMACRO()
-
-MACRO(ADD_PYSTE_LIB libname)
-	ADD_PYSTE_LIB_WITH_SRC(${libname} "")
-ENDMACRO()
+	target_link_libraries(${libname} EM2 Boost::python)
+	install(TARGETS ${libname} DESTINATION ${EMAN_PY_INSTALL_PREFIX})
+endfunction()
 
 ADD_PYSTE_LIB(pyAligner2)
 ADD_PYSTE_LIB(pyAverager2)
@@ -43,39 +46,47 @@ ADD_PYSTE_LIB(pyProcessor2)
 ADD_PYSTE_LIB(pyReconstructor2) 
 ADD_PYSTE_LIB(pyProjector2)
 ADD_PYSTE_LIB(pyEMObject2) 
-ADD_PYSTE_LIB_WITH_SRC(pyEMData2 emdata_wrapitems.cpp)
+ADD_PYSTE_LIB(pyEMData2)
+target_sources(pyEMData2 PRIVATE emdata_wrapitems.cpp)
 ADD_PYSTE_LIB(pyGeometry2)
 ADD_PYSTE_LIB(pyTransform2)
 ADD_PYSTE_LIB(pyPointArray2)
-#ADD_PYSTE_LIB_WITH_SRC(pyUtils2 sparx_apmq)
 ADD_PYSTE_LIB(pyUtils2)
 ADD_PYSTE_LIB(pyBoxingTools2)
 ADD_PYSTE_LIB(pyFundamentals2)
-ADD_PYSTE_LIB_WITH_SRC(pyTypeConverter2 typeconverter.cpp)
+ADD_PYSTE_LIB(pyTypeConverter2)
+target_sources(pyTypeConverter2 PRIVATE typeconverter.cpp)
 ADD_PYSTE_LIB(pyPolarData2)
 ADD_PYSTE_LIB(pyAnalyzer2)
 ADD_PYSTE_LIB(pyPDBReader2)
 
-IF(NOT WIN32)
+if(NOT WIN32)
 	ADD_PYSTE_LIB(pyTomoSeg2)
-ENDIF()
+endif()
 
-IF(ENABLE_OPENGL)
-    ADD_PYSTE_LIB(pyGLUtils2) 
-    ADD_PYSTE_LIB(pyMarchingCubes2)   
-    TARGET_LINK_LIBRARIES(pyGLUtils2 GLEM2)
-    TARGET_LINK_LIBRARIES(pyMarchingCubes2 GLEM2)
+if(ENABLE_OPENGL)
+	ADD_PYSTE_LIB(pyGLUtils2)
+	ADD_PYSTE_LIB(pyMarchingCubes2)
 	
-	IF(ENABLE_FTGL)
-		INCLUDE_DIRECTORIES(${FTGL_INCLUDE_PATH})
-		TARGET_LINK_LIBRARIES(pyGLUtils2 ${FTGL_LIBRARY})
-		IF(ENABLE_STATIC_FTGL)
-			TARGET_LINK_LIBRARIES(pyGLUtils2 ${FREETYPE_LIBRARIES})
-		ENDIF()
-	ENDIF()
-ENDIF()
+	target_sources(pyMarchingCubes2 PRIVATE
+				   ${CMAKE_SOURCE_DIR}/libEM/marchingcubes.cpp
+				   )
+	target_sources(pyGLUtils2 PRIVATE
+				   ${CMAKE_SOURCE_DIR}/libEM/emftgl.cpp
+				   ${CMAKE_SOURCE_DIR}/libEM/glutil.cpp
+				   ${CMAKE_SOURCE_DIR}/libEM/marchingcubes.cpp
+				   )
+	target_link_libraries(pyGLUtils2       OpenGL::OpenGL FTGL::FTGL)
+	target_link_libraries(pyMarchingCubes2 OpenGL::OpenGL)
+endif()
 
-FILE(GLOB empythonlibs "${CMAKE_CURRENT_SOURCE_DIR}/*.py")
-INSTALL(FILES ${empythonlibs} DESTINATION ${EMAN_PY_INSTALL_PREFIX})
+file(GLOB empythonlibs "${CMAKE_CURRENT_SOURCE_DIR}/*.py")
+install(FILES ${empythonlibs} DESTINATION ${EMAN_PY_INSTALL_PREFIX})
 
-ADD_SUBDIRECTORY(qtgui)
+add_subdirectory(qtgui)
+
+target_link_libraries(pyUtils2         NumPy)
+target_link_libraries(pyTypeConverter2 NumPy)
+target_link_libraries(pyTransform2     NumPy)
+target_link_libraries(pyAligner2       NumPy)
+target_link_libraries(pyEMData2        NumPy)

@@ -36,7 +36,7 @@
 #ifndef eman__hdfio2_h__
 #define eman__hdfio2_h__ 1
 
-#ifdef EM_HDF5
+#ifdef USE_HDF5
 
 #define H5_USE_16_API
 

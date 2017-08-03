@@ -321,7 +321,7 @@ namespace EMAN
 		 * */
 		static void getRenderMinMax(float * data, const int nx, const int ny, float & rendermin, float & rendermax, const int nz = 1);
 		
-#ifdef EM_HDF5
+#ifdef USE_HDF5
 		/** Retrive a single attribute value from a HDF5 image file.
 		 *
 		 * @param filename HDF5 image's file name
@@ -349,7 +349,7 @@ namespace EMAN
 		 * @return 0 for success
 		 * */
 		static int delete_hdf_attribute(const string & filename, const string & key, int image_index=0);
-#endif	//EM_HDF5
+#endif	//USE_HDF5
 
 		static bool cuda_available() {
 //#ifdef EMAN2_USING_CUDA

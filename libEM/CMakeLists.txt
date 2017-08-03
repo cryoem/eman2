@@ -1,174 +1,188 @@
-ADD_SUBDIRECTORY(pmconfig)
+add_subdirectory(pmconfig)
 
-SET(LIB_EM_SOURCE byteorder.cpp
-    boxingtools.cpp
-    emobject.cpp
-    emfft.cpp
-    log.cpp
-    imageio.cpp
-    util.cpp
-    emutil.cpp
-    interp.cpp
-    quaternion.cpp
-    transform.cpp
-    symmetry.cpp
-    geometry.cpp
-    pointarray.cpp
-    pdbreader.cpp
-    mrcio.cpp
-    dm3io.cpp
-    dm4io.cpp
-    tifio.cpp
-    hdfio.cpp
-    hdfio2.cpp
-    jpegio.cpp
-    emdata.cpp
-    emdata_io.cpp
-    emdata_core.cpp
-    emdata_cuda.cpp
-    emdata_modular.cpp
-    emdata_metadata.cpp
-    emdata_transform.cpp
-    sparx/emdata_sparx.cpp
-    pifio.cpp
-    v4l2io.cpp
-    vtkio.cpp
-    spiderio.cpp
-    sspiderio.cpp
-    pgmio.cpp
-    fitsio.cpp
-    icosio.cpp
-    lstio.cpp
-    lstfastio.cpp
-    pngio.cpp
-    salio.cpp
-    amiraio.cpp
-    xplorio.cpp
-    gatan2io.cpp
-    emio.cpp
-    imagicio.cpp
-    imagicio2.cpp
-    df3io.cpp
-    omapio.cpp
-    situsio.cpp
-    serio.cpp
-    emcache.cpp
-    ctf.cpp
-    xydata.cpp
-    processor.cpp
-    aligner.cpp
-    projector.cpp
-    cmp.cpp
-    averager.cpp
-    reconstructor.cpp
-    reconstructor_tools.cpp
-    exception.cpp
-    testutil.cpp
-    analyzer.cpp
-    randnum.cpp
-    hdf_filecache.cpp
-    sparx/fundamentals.cpp
-    sparx/fourierfilter.cpp
-    sparx/rsconvolution.cpp
-    polardata.cpp
-    sparx/native_fft.cpp
-    sparx/util_sparx.cpp
-    sparx/lapackblas.cpp
-    sparx/pca.cpp
-    sparx/varimax.cpp
-    sparx/lbfgsb.cpp
-    sparx/steepest.cpp
-    gorgon/grid_queue.cpp
-    gorgon/grid_queue2.cpp
-    gorgon/volume_data.cpp
-    gorgon/volume.cpp
-    gorgon/skeletonizer.cpp
-    tomoseg.cpp
-    )
+if(WIN32)
+	add_library(EM2 STATIC "")
+else()
+	add_library(EM2 SHARED "")
+endif()
 
-SET(LIB_GLEM_SOURCE 
-		glutil.cpp
-		marchingcubes.cpp
-		emftgl.cpp)
+target_sources(EM2 PRIVATE
+			   byteorder.cpp
+			   boxingtools.cpp
+			   emobject.cpp
+			   emfft.cpp
+			   log.cpp
+			   imageio.cpp
+			   util.cpp
+			   emutil.cpp
+			   interp.cpp
+			   quaternion.cpp
+			   transform.cpp
+			   symmetry.cpp
+			   geometry.cpp
+			   pointarray.cpp
+			   pdbreader.cpp
+			   mrcio.cpp
+			   dm3io.cpp
+			   dm4io.cpp
+			   tifio.cpp
+			   hdfio.cpp
+			   hdfio2.cpp
+			   jpegio.cpp
+			   emdata.cpp
+			   emdata_io.cpp
+			   emdata_core.cpp
+			   emdata_cuda.cpp
+			   emdata_modular.cpp
+			   emdata_metadata.cpp
+			   emdata_transform.cpp
+			   pifio.cpp
+			   v4l2io.cpp
+			   vtkio.cpp
+			   spiderio.cpp
+			   sspiderio.cpp
+			   pgmio.cpp
+			   fitsio.cpp
+			   icosio.cpp
+			   lstio.cpp
+			   lstfastio.cpp
+			   pngio.cpp
+			   salio.cpp
+			   amiraio.cpp
+			   xplorio.cpp
+			   gatan2io.cpp
+			   emio.cpp
+			   imagicio.cpp
+			   imagicio2.cpp
+			   df3io.cpp
+			   omapio.cpp
+			   situsio.cpp
+			   serio.cpp
+			   emcache.cpp
+			   ctf.cpp
+			   xydata.cpp
+			   processor.cpp
+			   aligner.cpp
+			   projector.cpp
+			   cmp.cpp
+			   averager.cpp
+			   reconstructor.cpp
+			   reconstructor_tools.cpp
+			   exception.cpp
+			   testutil.cpp
+			   analyzer.cpp
+			   randnum.cpp
+			   hdf_filecache.cpp
+			   polardata.cpp
+			   tomoseg.cpp
+			   )
 
-IF(WIN32)
-    ADD_LIBRARY(EM2 STATIC ${LIB_EM_SOURCE})
-    ADD_LIBRARY(GLEM2 STATIC ${LIB_GLEM_SOURCE})
-    TARGET_LINK_LIBRARIES(EM2 ${FFTW_LIBRARIES})
-    ADD_DEFINITIONS(-DBOOST_DISABLE_ASSERTS)
-    ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS)
-    ADD_DEFINITIONS(-D_SCL_SECURE_NO_WARNINGS)
-ELSE()
-    ADD_LIBRARY(EM2 SHARED ${LIB_EM_SOURCE})
-    ADD_LIBRARY(GLEM2 SHARED ${LIB_GLEM_SOURCE})
-    IF(ENABLE_FFTW3)
-    	TARGET_LINK_LIBRARIES(EM2 ${FFTW_LIBRARIES})
-    ENDIF()
-	TARGET_LINK_LIBRARIES(EM2 m)
-ENDIF()
+add_subdirectory(gorgon)
+add_subdirectory(sparx)
 
-TARGET_LINK_LIBRARIES(EM2 ${GSL_LIBRARY} ${GSL_CBLAS_LIBRARY})
-TARGET_LINK_LIBRARIES(GLEM2 EM2)
+if(WIN32)
+	target_compile_definitions(EM2 PUBLIC _CRT_SECURE_NO_WARNINGS _SCL_SECURE_NO_WARNINGS)
+endif()
 
-IF(ENABLE_OPENGL)
-	TARGET_LINK_LIBRARIES(GLEM2 ${GL_LIBRARY} ${GLU_LIBRARY} )
-ENDIF()
+install(TARGETS EM2
+		DESTINATION ${EMAN_PY_INSTALL_PREFIX}
+		)
 
-IF(ENABLE_FTGL)
-	INCLUDE_DIRECTORIES(${FTGL_INCLUDE_PATH})
-	TARGET_LINK_LIBRARIES(GLEM2 ${FTGL_LIBRARY})
-	IF(ENABLE_STATIC_FTGL)
-		TARGET_LINK_LIBRARIES(GLEM2 $(FREETYPE_LIBRARIES))
-	ENDIF()
-ENDIF()
+if(ENABLE_FFTW3)
+	find_package(FFTW3 REQUIRED)
+	
+	if(ENABLE_NFFT2)
+		find_package(NFFT2 REQUIRED)
+		target_link_libraries(NFFT2 FFTW3D::FFTW3D)
+	endif()
+endif()
 
-IF(ENABLE_TIFF)
-    TARGET_LINK_LIBRARIES(EM2 ${TIFF_LIBRARY} ${JPEG_LIBRARY})
-ENDIF()
+if(WIN32)
+    target_link_libraries(EM2 FFTW3::FFTW3)
+else()
+    if(ENABLE_FFTW3)
+    	target_link_libraries(EM2 FFTW3::FFTW3)
+    endif()
+	target_link_libraries(EM2 m)
+endif()
 
-IF(ENABLE_JPEG)
-    TARGET_LINK_LIBRARIES(EM2 ${JPEG_LIBRARY})
-ENDIF()
+find_package(GSL REQUIRED)
+if(WIN32)
+	set_target_properties(GSL::gsl
+						  PROPERTIES
+						  INTERFACE_COMPILE_DEFINITIONS GSL_DLL
+						  )
+endif()
 
-TARGET_LINK_LIBRARIES(EM2 ${HDF5_LIBRARY} ${ZLIB_LIBRARY})
-IF(WIN32)
-	TARGET_LINK_LIBRARIES(EM2 ${SZLIB_LIBRARY})
-ENDIF()
+target_link_libraries(EM2 GSL::gsl GSL::gslcblas)
 
-IF(ENABLE_PNG)
-    TARGET_LINK_LIBRARIES(EM2 ${PNG_LIBRARIES} ${ZLIB_LIBRARY})
-ENDIF()
+option(ENABLE_TIFF "enable TIFF support" ON)
+if(ENABLE_TIFF)
+	include(${CMAKE_SOURCE_DIR}/cmake/TIFF.cmake)
+    target_link_libraries(EM2 TIFF::TIFF JPEG::JPEG)
+endif()
 
-IF(ENABLE_SPARX_CUDA)
-    TARGET_LINK_LIBRARIES(EM2 EM2SparxCuda ${FFTW_LIBRARIES})
-ENDIF()
+option(ENABLE_JPEG "enable JPEG support" ON)
+if(ENABLE_JPEG)
+	include(${CMAKE_SOURCE_DIR}/cmake/JPEG.cmake)
+    target_link_libraries(EM2 JPEG::JPEG)
+endif()
 
-IF(ENABLE_EMAN_CUDA)
-    TARGET_LINK_LIBRARIES(EM2 EM2Cuda ${FFTW_LIBRARIES})
-ENDIF()
+include(${CMAKE_SOURCE_DIR}/cmake/HDF5.cmake)
+target_link_libraries(EM2 HDF5::HDF5)
+if(WIN32)
+	find_package(SZLIB REQUIRED)
+	target_link_libraries(EM2 SZLIB::SZLIB)
+endif()
 
-IF(ENABLE_NFFT2)
-	SET(LIB_EM_SOURCE ${LIB_EM_SOURCE} pointarray.cpp)
-	TARGET_LINK_LIBRARIES(EM2 ${NFFT2_LIBRARY} ${FFTW3D_LIBRARY})
-ENDIF()
+option(ENABLE_PNG "enable PNG support" ON)
+if(ENABLE_PNG)
+	include(${CMAKE_SOURCE_DIR}/cmake/PNG.cmake)
+    target_link_libraries(EM2 PNG::PNG)
+endif()
 
-IF(ENABLE_DJBFFT)
-	TARGET_LINK_LIBRARIES(EM2 ${DJBFFT_LIBRARY})
-ENDIF()
+if(ENABLE_SPARX_CUDA)
+    target_link_libraries(EM2 EM2SparxCuda FFTW3::FFTW3)
+endif()
 
-IF(ENABLE_OPTPP)
-	TARGET_LINK_LIBRARIES(EM2 ${OPTPP_LIBRARY} ${NEWMAT_LIBRARY})
-ENDIF()
+if(ENABLE_EMAN_CUDA)
+    target_link_libraries(EM2 EM2Cuda FFTW3::FFTW3)
+endif()
 
-IF(ENABLE_ACML_FFT)
-	TARGET_LINK_LIBRARIES(EM2 ${ACML_LIBRARY} ${G2C_LIBRARY})
-ENDIF()
+if(ENABLE_NFFT2)
+	target_sources(EM2 PRIVATE pointarray.cpp)
+	target_link_libraries(EM2 NFFT2::NFFT2 FFTW3D::FFTW3D)
+endif()
 
-IF(ENABLE_OPENGL)
-    INSTALL(TARGETS GLEM2
-        DESTINATION ${EMAN_PY_INSTALL_PREFIX})
-ENDIF()
+option(ENABLE_DJBFFT "enable djbfft support" OFF)
+mark_as_advanced(ENABLE_DJBFFT)
+if(ENABLE_DJBFFT)
+	option(ENABLE_NFFT2 "enable nfft2 support" OFF)
+	
+	find_package(DJBFFT REQUIRED)
+	target_link_libraries(EM2 DJBFFT::DJBFFT)
+endif()
 
-INSTALL(TARGETS EM2
-		DESTINATION ${EMAN_PY_INSTALL_PREFIX})
+option(ENABLE_OPTPP "enable Opt++ support" OFF)
+if(ENABLE_OPTPP)
+	find_package(OPTPP REQUIRED)
+	target_link_libraries(EM2 OPTPP::OPTPP)
+endif()
 
+if(ENABLE_ACML_FFT)
+	find_package(ACML REQUIRED)
+	target_link_libraries(EM2 ACML::ACML)
+endif()
+
+option(ENABLE_OPENGL "enable EMAN2 OpenGL usage" ON)
+if(ENABLE_OPENGL)
+	include(${CMAKE_SOURCE_DIR}/cmake/OpenGL.cmake)
+
+	option(ENABLE_STATIC_FTGL "If build EMAN with libftgl.a" OFF)
+	mark_as_advanced(ENABLE_STATIC_FTGL)
+	
+	find_package(FTGL REQUIRED)
+	include(${CMAKE_SOURCE_DIR}/cmake/Freetype.cmake)
+	
+	add_subdirectory(fonts)
+endif()

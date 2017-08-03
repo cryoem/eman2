@@ -242,13 +242,13 @@ struct EMAN_Util_FakeKaiserBessel_Wrapper: EMAN::Util::FakeKaiserBessel
 
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMUtil_get_imageio_overloads_2_3, EMAN::EMUtil::get_imageio, 2, 3)
 
-#ifdef EM_HDF5
+#ifdef USE_HDF5
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMUtil_read_hdf_attribute_2_3, EMAN::EMUtil::read_hdf_attribute, 2, 3)
 
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMUtil_write_hdf_attribute_3_4, EMAN::EMUtil::write_hdf_attribute, 3, 4)
 
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMUtil_delete_hdf_attribute_2_3, EMAN::EMUtil::delete_hdf_attribute, 2, 3)
-#endif	//EM_HDF5
+#endif	//USE_HDF5
 
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_TestUtil_check_image_overloads_1_2, EMAN::TestUtil::check_image, 1, 2)
 
@@ -1159,11 +1159,11 @@ hyb -- y- mesh spacing above f0\nhya -- y- mesh spacing below f0\n \nInterpolant
         .def("get_euler_names", &EMAN::EMUtil::get_euler_names, args("euler_type"), "")
         .def("get_all_attributes", &EMAN::EMUtil::get_all_attributes, args("file_name", "attr_name"), "Get an attribute from a stack of image, returned as a vector\n \nfile_name - the image file name\nattr_name - The header attribute name.\n \nreturn the vector of attribute value\n \nexception - NotExistingObjectException when access an non-existing attribute\nexception - InvalidCallException when call this function for a non-stack image")
 		.def("cuda_available", &EMAN::EMUtil::cuda_available)
-#ifdef EM_HDF5
+#ifdef USE_HDF5
 		.def("read_hdf_attribute", &EMAN::EMUtil::read_hdf_attribute, EMAN_EMUtil_read_hdf_attribute_2_3(args("filename", "key", "image_index"), "Retrive a single attribute value from a HDF5 image file.\n \nfilename - HDF5 image's file name\nkey - the attribute's key name\nimage_index - the image index, default=0\n \nreturn the attribute value for the given key"))
 		.def("write_hdf_attribute", &EMAN::EMUtil::write_hdf_attribute, EMAN_EMUtil_write_hdf_attribute_3_4(args("filename", "key", "value", "image_index"), "Write a single attribute value from a HDF5 image file.\n \nfilename - HDF5 image's file name\nkey - the attribute's key name\nvalue - the attribute's value\nimage_index - the image index, default=0\n \nreturn 0 for success"))
 		.def("delete_hdf_attribute", &EMAN::EMUtil::delete_hdf_attribute, EMAN_EMUtil_delete_hdf_attribute_2_3(args("filename", "key", "image_index"), "Delete a single attribute from a HDF5 image file.\n \nfilename - HDF5 image's file name\nkey - the attribute's key name\nimage_index - the image index, default=0\n \nreturn 0 for success, -1 for failure."))
-#endif	//EM_HDF5
+#endif	//USE_HDF5
         .staticmethod("cuda_available")
         .staticmethod("read_raw_emdata")
         .staticmethod("vertical_acf")
@@ -1183,11 +1183,11 @@ hyb -- y- mesh spacing above f0\nhya -- y- mesh spacing below f0\n \nInterpolant
         .staticmethod("get_image_ext_type")
         .staticmethod("process_ascii_region_io")
         .staticmethod("is_complex_type")
-#ifdef EM_HDF5
+#ifdef USE_HDF5
         .staticmethod("read_hdf_attribute")
         .staticmethod("write_hdf_attribute")
         .staticmethod("delete_hdf_attribute")
-#endif	//EM_HDF5
+#endif	//USE_HDF5
     );
 
     enum_< EMAN::EMUtil::EMDataType >("EMDataType")
