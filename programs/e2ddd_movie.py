@@ -94,6 +94,8 @@ def main():
 	parser.add_argument("--frames",action="store_true",default=False,help="Save the dark/gain corrected frames", guitype='boolbox', row=13, col=1, rowspan=1, colspan=1, mode='align')
 	#parser.add_argument("--save_aligned", action="store_true",help="Save dark/gain corrected and optionally aligned stack",default=False, guitype='boolbox', row=14, col=0, rowspan=1, colspan=1, mode='align[True]')
 	parser.add_argument("--fixbadpixels",action="store_true",default=False,help="Tries to identify bad pixels in the dark/gain reference, and fills images in with sane values instead", guitype='boolbox', row=14, col=1, rowspan=1, colspan=1, mode='align')
+	parser.add_argument("--normaxes",action="store_true",default=False,help="Tries to erase vertical/horizontal line artifacts in Fourier space by replacing them with the mean of their neighboring values.")
+
 	#parser.add_argument("--simpleavg", action="store_true",help="Will save a simple average of the dark/gain corrected frames (no alignment or weighting)",default=False)
 	#parser.add_argument("--avgs", action="store_true",help="Testing",default=False)
 	parser.add_argument("--align_frames", action="store_true",help="Perform whole-frame alignment of the input stacks",default=False, guitype='boolbox', row=9, col=1, rowspan=1, colspan=1, mode='align[True]')
@@ -289,7 +291,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			n=len(outim)
 			nx=outim[0]["nx"]
 			ny=outim[0]["ny"]
-			
+
 			print("{} frames read {} x {}".format(n,nx,ny))
 
 			ccfs=Queue.Queue(0)
@@ -473,6 +475,9 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			for i,im in enumerate(outim):
 				im.translate(int(floor(locs[i*2]+.5)),int(floor(locs[i*2+1]+.5)),0)
 			#	im.write_image("a_all_ali.hdf",i)
+
+			if options.normaxes:
+				for f in outim: f.process_inplace("filter.xyaxes0",{"neighbor":1})
 
 			if options.allali:
 				out=qsum(outim)
