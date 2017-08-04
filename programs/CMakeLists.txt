@@ -45,15 +45,17 @@ IF(WIN32)
 ENDIF(WIN32)
 
 find_program(GIT_EXECUTABLE git)
-execute_process(COMMAND ${GIT_EXECUTABLE} describe --always --dirty
-				WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-				OUTPUT_VARIABLE EMAN_GITHASH
-				OUTPUT_STRIP_TRAILING_WHITESPACE
-				)
-string(REGEX REPLACE
-	   "^.*-.*-g" ""   # git-describe output: <tag>-<num-of-commits-since-tag>-g<hash>
-	   EMAN_GITHASH ${EMAN_GITHASH}
-	   )
+if(GIT_EXECUTABLE)
+	execute_process(COMMAND ${GIT_EXECUTABLE} describe --always --dirty
+					WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+					OUTPUT_VARIABLE EMAN_GITHASH
+					OUTPUT_STRIP_TRAILING_WHITESPACE
+					)
+	string(REGEX REPLACE
+		   "^.*-.*-g" ""   # git-describe output: <tag>-<num-of-commits-since-tag>-g<hash>
+		   EMAN_GITHASH ${EMAN_GITHASH}
+		   )
+endif()
 
 string(TIMESTAMP EMAN_TIMESTAMP "%Y-%m-%d %H:%M")
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/e2version.py.in
