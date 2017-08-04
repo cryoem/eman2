@@ -12,11 +12,13 @@ bash $MINICONDA_FILE -b
 source ${HOME}/miniconda2/bin/activate root
 conda config --set show_channel_urls true
 
-conda install --yes --quiet qt=4 pyqt=4
-conda install --yes --quiet -c conda-forge boost=1.63.* boost-cpp=1.63.* fftw cmake>=3.8
-conda install --yes --quiet -c cryoem ftgl
-conda install --yes --quiet bsddb freetype gsl hdf5 ipython jpeg libpng libtiff matplotlib numpy=1.11 pyopengl scikit-learn scipy theano tk
-conda install --yes --quiet -c cryoem pydusa
+# Following Wiki instructions at
+# http://blake.bcm.edu/emanwiki/EMAN2/COMPILE_EMAN2_ANACONDA
+if [ "$(uname -s)" != "Darwin" ];then
+    conda install --yes --quiet eman-deps="*"="np18*" -c cryoem -c defaults -c conda-forge
+else
+    conda install --yes --quiet eman-deps -c cryoem -c defaults -c conda-forge
+fi
 
 # Build and install eman2
 export build_dir=$HOME/build_eman
