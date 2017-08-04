@@ -40,7 +40,8 @@ make test-verbose
 # Run tests
 e2version.py
 e2speedtest.py
-mpirun -n 4 $(which python) ${src_dir}/examples/mpi_test.py
+
 cd ${src_dir}
+mpirun -n 4 $(which python) examples/mpi_test.py
 bash tests/run_prog_tests.sh
 python tests/test_EMAN2DIR.py
