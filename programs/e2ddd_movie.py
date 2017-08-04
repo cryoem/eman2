@@ -85,7 +85,7 @@ def main():
 	parser.add_header(name="orblock3", help='Just a visual separation', title="Optional: ", row=10, col=0, rowspan=1, colspan=3, mode="align")
 	parser.add_argument("--optbox", type=int,help="Box size to use during alignment optimization. By default, this number will be determined based on the input image size (-1).",default=-1, guitype='intbox', row=11, col=0, rowspan=1, colspan=1, mode="align")
 	parser.add_argument("--optstep", type=int,help="Step size to use during alignment optimization. By default, this number will be determined based on the input image size (-1).",default=-1,  guitype='intbox', row=11, col=1, rowspan=1, colspan=1, mode="align")
-	parser.add_argument("--optalpha", type=float,help="Penalization to apply during robust regression. Default is 1.0. If 0.0, unpenalized least squares will be performed (i.e., no trajectory smoothing).",default=1.0)
+	parser.add_argument("--optalpha", type=float,help="Penalization to apply during robust regression. Default is 2.0. If 0.0, unpenalized least squares will be performed (i.e., no trajectory smoothing).",default=2.0)
 	parser.add_argument("--step",type=str,default="0,1",help="Specify <first>,<step>,[last]. Processes only a subset of the input data. ie- 0,2 would process all even particles. Same step used for all input files. [last] is exclusive. Default= 0,1",guitype='strbox', row=12, col=0, rowspan=1, colspan=1, mode="align")
 	#parser.add_argument("--movie", type=int,help="Display an n-frame averaged 'movie' of the stack, specify number of frames to average",default=0)
 	parser.add_argument("--plot", default=False,help="Display a plot of the movie trajectory after alignment",action="store_true")
@@ -99,7 +99,9 @@ def main():
 	#parser.add_argument("--simpleavg", action="store_true",help="Will save a simple average of the dark/gain corrected frames (no alignment or weighting)",default=False)
 	#parser.add_argument("--avgs", action="store_true",help="Testing",default=False)
 	parser.add_argument("--align_frames", action="store_true",help="Perform whole-frame alignment of the input stacks",default=False, guitype='boolbox', row=9, col=1, rowspan=1, colspan=1, mode='align[True]')
-	parser.add_argument("--integer", action="store_true",help="Shift images by integer numbers of pixels only. Do not accept subpixel shifts.",default=False)
+	parser.add_argument("--round", choices=["float","int","halfint"],help="If float (default), apply subpixel shifts. If int, use integer shifts. If halfint, round shifts to nearest half integer values.",default="float")
+
+	#parser.add_argument("--ccweight", action="store_true",help="Supply coefficient matrix with cross correlation peak values rather than 1s.",default=False)
 
 	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful", guitype='intbox', row=9, col=0, rowspan=1, colspan=1, mode="align")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
@@ -381,14 +383,26 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			print("{:1.1f} s\nAlign {} frames".format(time()-t0,n))
 			t0=time()
 
-			# from IPython import embed
-			# embed()
+			#from IPython import embed
+			#embed()
 
 			peak_locs = {p[0]:p[1] for p in peak_locs.queue}
 
 			if options.debug and options.verbose == 9: 
 				print("PEAK LOCATIONS:")
 				print(peak_locs)
+
+			# if options.ccweight:
+			# 	# normalize ccpeak values
+			# 	vals = []
+			# 	for ima,(i,j) in enumerate(sorted(peak_locs.keys())):
+			# 		for imb in range(i,j):
+			# 			try:
+			# 				vals.append(peak_locs[(i,j)][-1])
+			# 			except:
+			# 				pass
+			# 	ccmean = np.mean(vals)
+			# 	ccstd = np.std(vals)
 
 			m = n*(n-1)/2
 			bx = np.ones(m)
@@ -399,7 +413,16 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 					try:
 						bx[ima] = peak_locs[(i,j)][0]
 						by[ima] = peak_locs[(i,j)][1]
+						# if options.ccweight:
+						# 	try:
+						# 		A[ima,imb] = (peak_locs[(i,j)][-1]-ccmean)#/ccstd
+						# 	except:
+						# 		A[ima,imb] = 0.
+						# else:
+						#A[ima,imb] = 1
 						A[ima,imb] = 1
+						#A[ima,imb] = np.exp(1-peak_locs[(i,j)][3])
+						#A[ima,imb] = sqrt(float(n-fabs(i-j))/n)
 					except:
 						pass
 			b = np.c_[bx,by]
@@ -419,15 +442,15 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 
 			traj -= traj[0]
 
-			if options.integer:
-				traj = np.round(traj,0)#.astype(np.int8)
+			if options.round == "int": traj = np.round(traj,0)#.astype(np.int8)
+			elif options.round == "halfint": traj = np.round(traj*2)/2
 
 			locs = traj.ravel()
 			quals=[0]*n # quality of each frame based on its correlation peak summed over all images
 			cen=options.optbox/2#csum2[(0,1)]["nx"]/2
 			for i in xrange(n-1):
 				for j in xrange(i+1,n):
-					val=csum2[(i,j)].sget_value_at_interp(int(cen+locs[j*2]-locs[i*2]),int(cen+locs[j*2+1]-locs[i*2+1]))#*sqrt(float(n-fabs(i-j))/n)
+					val=csum2[(i,j)].sget_value_at_interp(int(cen+locs[j*2]-locs[i*2]),int(cen+locs[j*2+1]-locs[i*2+1]))*sqrt(float(n-fabs(i-j))/n)
 					quals[i]+=val
 					quals[j]+=val
 
@@ -456,7 +479,8 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 
 				if options.debug:
 					fig2,ax2 = plt.subplots(1,3,figsize=(12,36))
-					ax2[0].imshow(A)
+					a = ax2[0].imshow(A)
+					plt.colorbar(a)
 					ax2[1].plot(bx)
 					ax2[2].plot(by)
 				
@@ -481,11 +505,8 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 
 			if options.allali:
 				out=qsum(outim)
-				if options.debug:
-					if options.integer: out.write_image("{}__allali_int.hdf".format(alioutname),0)
-					else: out.write_image("{}__allali_float.hdf".format(alioutname),0)
-				else:
-					out.write_image("{}__allali.hdf".format(alioutname),0)
+				if options.debug: fn = "{}__allali_{}.hdf".format(alioutname,options.round)
+				else: out.write_image("{}__allali.hdf".format(alioutname),0)
 
 			#print("{:1.1f}\nSubsets".format(time()-t0))
 			#t0=time()
@@ -517,19 +538,22 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 				best=[im for i,im in enumerate(outim) if quals[i]>thr]
 				out=qsum(best)
 				print("Keeping {}/{} frames".format(len(best),len(outim)))
-				out.write_image("{}__goodali.hdf".format(alioutname),0)
+				if options.debug: out.write_image("{}__goodali_{}.hdf".format(alioutname,options.round),0)
+				else: out.write_image("{}__goodali.hdf".format(alioutname),0)
 
 			if options.bestali:
 				thr=(max(quals[1:])-min(quals))*0.6+min(quals)	# max correlation cutoff for inclusion
 				best=[im for i,im in enumerate(outim) if quals[i]>thr]
 				out=qsum(best)
 				print("Keeping {}/{} frames".format(len(best),len(outim)))
-				out.write_image("{}__bestali.hdf".format(alioutname),0)
+				if options.debug: out.write_image("{}__bestali_{}.hdf".format(alioutname,options.round),0)
+				else: out.write_image("{}__bestali.hdf".format(alioutname),0)
 
 			if options.ali4to14:
 				# skip the first 4 frames then keep 10
 				out=qsum(outim[4:14])
-				out.write_image("{}__4-14.hdf".format(alioutname),0)
+				if options.debug: out.write_image("{}__4-14_{}.hdf".format(alioutname,options.round),0)
+				else: out.write_image("{}__4-14.hdf".format(alioutname),0)
 
 			if len(options.rangeali)>0:
 				try: rng=[int(i) for i in options.rangeali.split("-")]
@@ -537,7 +561,8 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 					print "Error: please specify --rangeali as X-Y where X and Y are inclusive starting with 0"
 					sys.exit(1)
 				out=qsum(outim[rng[0]:rng[1]+1])
-				out.write_image("{}__{}-{}.hdf".format(alioutname,rng[0],rng[1]))
+				if options.debug: out.write_image("{}__{}-{}_{}.hdf".format(alioutname,rng[0],rng[1],options.round),0)
+				else: out.write_image("{}__{}-{}.hdf".format(alioutname,rng[0],rng[1]),0)
 
 			#print "{:1.1f}\nDone".format(time()-t0)
 			print("Done")
