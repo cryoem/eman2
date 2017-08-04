@@ -51,8 +51,9 @@ if(GIT_EXECUTABLE)
 					OUTPUT_VARIABLE EMAN_GITHASH
 					OUTPUT_STRIP_TRAILING_WHITESPACE
 					)
+	# git-describe output: <tag>-<num-of-commits-since-tag>-g<hash>
 	string(REGEX REPLACE
-		   "^.*-.*-g" ""   # git-describe output: <tag>-<num-of-commits-since-tag>-g<hash>
+		   "^.*-.*-g" ""
 		   EMAN_GITHASH ${EMAN_GITHASH}
 		   )
 endif()
