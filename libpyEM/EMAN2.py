@@ -2077,7 +2077,7 @@ line length. Used when a line must be added in the middle of the file."""
 
 		self.ptr.seek(0)
 
-		tmpfile=file(self.path+".tmp","w")
+		tmpfile=file(self.path+".tmp","wb")
 		# copy the header lines
 		tmpfile.write(self.ptr.readline())
 		tmpfile.write(self.ptr.readline())
@@ -2110,7 +2110,7 @@ line length. Used when a line must be added in the middle of the file."""
 		# rename the temporary file over the original
 		os.unlink(self.path)
 		os.rename(self.path+".tmp",self.path)
-		self.ptr=file(self.path,"r+")
+		self.ptr=file(self.path,"rb+")
 
 #		print "rewrite ",self.linelen
 
