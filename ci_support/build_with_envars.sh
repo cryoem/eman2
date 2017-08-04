@@ -22,10 +22,10 @@ conda install --yes --quiet -c cryoem pydusa
 export build_dir=$HOME/build_eman
 
 if [ -e ${HOME}/eman2 ];then
-    export src_dir=$HOME/eman2_src
+    export src_dir=$HOME/eman2_src  # CircleCI
     mv -v $HOME/eman2 $src_dir
 else
-    export src_dir=${PWD}
+    export src_dir=${PWD}  # TravisCI
 fi
 
 rm -rf ${build_dir}
