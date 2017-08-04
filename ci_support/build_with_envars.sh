@@ -37,17 +37,12 @@ make
 make install
 make test-verbose
 
-export PREFIX=$CONDA_PREFIX
-export SP_DIR=$(python -c "import site; print site.getsitepackages()[0]")
-
 set -e
 
 # Run tests
-export PATH="$PREFIX/bin:$PATH"
-
 e2version.py
 e2speedtest.py
-mpirun -n 4 $(which python) ${PREFIX}/examples/mpi_test.py
+mpirun -n 4 $(which python) ${src_dir}/examples/mpi_test.py
 cd ${src_dir}
 bash tests/run_prog_tests.sh
 python tests/test_EMAN2DIR.py
