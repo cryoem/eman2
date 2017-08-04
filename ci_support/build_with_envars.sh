@@ -21,18 +21,11 @@ conda install --yes --quiet -c cryoem pydusa
 # Build and install eman2
 export build_dir=$HOME/build_eman
 
-if [ -e ${HOME}/eman2 ];then
-    export src_dir=$HOME/eman2_src  # CircleCI
-    mv -v $HOME/eman2 $src_dir
-else
-    export src_dir=${PWD}  # TravisCI
-fi
-
 rm -rf ${build_dir}
 mkdir -p ${build_dir}
 cd ${build_dir}
 
-cmake $src_dir
+cmake "${OLDPWD}"
 make
 make install
 make test-verbose
@@ -41,7 +34,7 @@ make test-verbose
 e2version.py
 e2speedtest.py
 
-cd ${src_dir}
+cd -
 mpirun -n 4 $(which python) examples/mpi_test.py
 bash tests/run_prog_tests.sh
 python tests/test_EMAN2DIR.py
