@@ -23,7 +23,7 @@ install:
     - conda install -n root --yes --quiet vs2008_express_vc_python_patch -c conda-forge
     - call setup_x64
 
-    - conda install --quiet --yes conda-build
+    - conda install --quiet --yes conda-build=2
     - conda update --yes --quiet conda -c defaults
 
     - conda info
