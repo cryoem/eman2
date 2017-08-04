@@ -1,16 +1,6 @@
 #!/usr/bin/env bash
 
-set -xe
-
-# Download and install Miniconda
-export MINICONDA_URL="https://repo.continuum.io/miniconda"
-
-curl -L -O "${MINICONDA_URL}/${MINICONDA_FILE}"
-bash $MINICONDA_FILE -b
-
-# Conda-install packages
-source ${HOME}/miniconda2/bin/activate root
-conda config --set show_channel_urls true
+source ci_support/setup_conda.sh
 
 # Following Wiki instructions at
 # http://blake.bcm.edu/emanwiki/EMAN2/COMPILE_EMAN2_ANACONDA
