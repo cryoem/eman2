@@ -32,12 +32,10 @@ rm -rf ${build_dir}
 mkdir -p ${build_dir}
 cd ${build_dir}
 
-cmake $src_dir -DENABLE_CONDA=ON
+cmake $src_dir
 make
 make install
 make test-verbose
-
-set -e
 
 # Run tests
 e2version.py
