@@ -59,6 +59,6 @@ if(GIT_EXECUTABLE)
 endif()
 
 string(TIMESTAMP EMAN_TIMESTAMP "%Y-%m-%d %H:%M")
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/e2version.py.in
-				${CMAKE_INSTALL_PREFIX}/bin/e2version.py
+configure_file(${CMAKE_SOURCE_DIR}/libpyEM/EMAN2_meta.py.in
+				${EMAN_PY_INSTALL_PREFIX}/EMAN2_meta.py
 				)
