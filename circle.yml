@@ -8,5 +8,5 @@ test:
     - bash:
         parallel: true
         files:
-            - ci_support/build_with_envars.sh
+            - ci_support/build_no_recipe.sh
             - ci_support/build_recipe.sh
