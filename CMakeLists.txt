@@ -58,8 +58,6 @@ else()
 	find_package(Conda REQUIRED)
 		
 	if(DEFINED ENV{CONDA_PREFIX})
-		message("ENV{CONDA_PREFIX}: $ENV{CONDA_PREFIX}")
-		
 		set(CONDA_PREFIX $ENV{CONDA_PREFIX} CACHE PATH "")
 		set(EMAN_PREFIX ${CONDA_PREFIX})
 
@@ -69,8 +67,6 @@ else()
 			set(EMAN_PREFIX ${CONDA_PREFIX}/Library CACHE PATH "")
 		endif()
 	else()
-		message("Finding Conda...")
-			
 		if(CONDA_PREFIX)
 			if(NOT WIN32)
 				set(EMAN_PREFIX ${CONDA_PREFIX} CACHE PATH "")
