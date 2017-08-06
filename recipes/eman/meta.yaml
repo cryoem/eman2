@@ -7,8 +7,6 @@ source:
 
 requirements:
     {% set reqs_common = [
-            "cmake 3.8.*",    # [not linux]
-            "cmake 3.7.*",    # [linux]
             "szip",        # [win]
             "msinttypes",  # [win]
             "python 2.7.*",

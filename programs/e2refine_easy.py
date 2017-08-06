@@ -903,9 +903,9 @@ Note that the next iteration is seeded with the individual even/odd maps, not th
 		oddfile="{path}/threed_{itr:02d}_odd.hdf".format(path=options.path,itr=it)
 		combfile="{path}/threed_{itr:02d}.hdf".format(path=options.path,itr=it)
 		run("e2refine_postprocess.py --even {path}/threed_{it:02d}_even.hdf --odd {path}/threed_{it:02d}_odd.hdf --output {path}/threed_{it:02d}.hdf --automaskexpand {amaskxp} \
---align --mass {mass} --iter {it} {amask3d} {amask3d2} {m3dpostproc} {setsf} {tophat} --sym={sym} --restarget={restarget} --underfilter --ampcorrect={ampcorrect}".format(\
+--align --mass {mass} --iter {it} {amask3d} {amask3d2} {m3dpostproc} {setsf} {tophat} --sym {sym} --restarget {restarget} --underfilter --ampcorrect {ampcorrect} --threads {threads}".format(\
 path=options.path, it=it, mass=options.mass, amask3d=amask3d, sym=m3dsym, amask3d2=amask3d2, m3dpostproc=m3dpostproc, setsf=m3dsetsf, restarget=options.targetres, amaskxp=options.automaskexpand,\
-ampcorrect=ampcorrect,tophat=tophat))
+ampcorrect=ampcorrect,tophat=tophat,threads=options.threads))
 
 		db.update({"last_map":combfile,"last_even":evenfile,"last_odd":oddfile})
 

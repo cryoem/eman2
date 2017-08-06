@@ -7,10 +7,9 @@ env:
   global:
     - CONDA_PY=27
     - MINICONDA_FILE="Miniconda2-latest-MacOSX-x86_64.sh"
-    - suffix=dylib
   matrix:
     - build_scrt="build_recipe.sh"
-    - build_scrt="build_with_envars.sh"
+    - build_scrt="build_no_recipe.sh"
 
 
 before_install:

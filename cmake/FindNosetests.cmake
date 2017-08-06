@@ -1,5 +1,5 @@
 find_program(NOSETESTS_EXECUTABLE nosetests
-		PATHS ${CONDA_ROOT}/bin ${CONDA_ROOT}/Scripts ENV PATH
+		PATHS ${CONDA_PREFIX}/bin ${CONDA_PREFIX}/Scripts ENV PATH
 		)
 
 include(FindPackageHandleStandardArgs)

@@ -5958,7 +5958,7 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_scores_local(EMData* dataima
 
 	//vector<float> qout(ndata);
 
-    vector<MultiScores> ccfs(ndata);
+	vector<MultiScores> ccfs(ndata);
 
 	//cout<<" n_coarse_shifts "<<n_coarse_shifts<<"  "<<n_coarse_ang<<"  "<<npsi<<"  "<<lencrefim<<"   "<<delta<<"   "<<ndata<<"  "<<cpsi<<endl;
 	int counter = 0;
@@ -6058,11 +6058,12 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_scores_local(EMData* dataima
 	sort(ccfs.begin(), ccfs.end(), sortBymultiscore);
 	vector<int> qout(nouto*5);
 	for (i=0; i<nouto; i++) {
-		qout[4*i] = ccfs[i].ib;
-		qout[4*i+1] = ccfs[i].ic;
-		qout[4*i+2] = ccfs[i].ipsi;
-		qout[4*i+3] = (int)log10(fabs(ccfs[i].score));
-		qout[4*i+4] = (int)((1000000.0f/pow(10.0f,qout[4*i+3]))*ccfs[i].score);
+		j = 5*i;
+		qout[j] = ccfs[i].ib;
+		qout[j+1] = ccfs[i].ic;
+		qout[j+2] = ccfs[i].ipsi;
+		qout[j+3] = (int)log10(fabs(ccfs[i].score));
+		qout[j+4] = (int)((1000000.0f/pow(10.0f,qout[j+3]))*ccfs[i].score);
 	}
 	return qout;
 	/*

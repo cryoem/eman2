@@ -67,6 +67,7 @@ def main():
 	parser.add_argument("--automask3d2", default=None, type=str,help="Default=None. Specify as a processor. This will be applied to the mask produced by the first automask." )
 	parser.add_argument("--underfilter",action="store_true",default=False,help="This will shift the computed Wiener filter to be about 10%% more resolution than has been achieved.")
 	parser.add_argument("--sym", dest="sym", type=str,default="c1", help="Symmetry so we can decide how to align the particle.")
+	parser.add_argument("--threads", default=2,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful")
 
 	(options, args) = parser.parse_args()
 
@@ -359,7 +360,7 @@ def main():
 				combfile=combfile,path=path,itr=options.iter,mass=options.mass,ampcorrect=ampcorrect,postproc=m3dpostproc,symopt=symopt,underfilter=underfilter,maxfreq=1.0/options.restarget,noisecutoff=noisecutoff))
 		elif options.tophat=="local":
 			# compute local resolution and locally filter averaged volume
-			cmd="e2fsc.py {path}threed_even_unmasked.hdf {path}threed_odd_unmasked.hdf --output {path}fscvol_{itr:02d}.hdf --outfilt {path}threed_{itr:02d}.hdf --outfilte {path}threed_{itr:02d}_even.hdf --outfilto {path}threed_{itr:02d}_odd.hdf --mask {path}mask.hdf -v 1".format(path=path,itr=options.iter)
+			cmd="e2fsc.py {path}threed_even_unmasked.hdf {path}threed_odd_unmasked.hdf --output {path}fscvol_{itr:02d}.hdf --outfilt {path}threed_{itr:02d}.hdf --outfilte {path}threed_{itr:02d}_even.hdf --outfilto {path}threed_{itr:02d}_odd.hdf --mask {path}mask.hdf --threads {threads} -v 1".format(path=path,itr=options.iter,threads=options.threads)
 			run(cmd)
 
 			# we impose the symmetry in real-space, since this is what people expect

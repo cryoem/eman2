@@ -36,7 +36,7 @@ function(ADD_PYSTE_LIB libname)
 			)
 	
 	target_link_libraries(${libname} EM2 Boost::python)
-	install(TARGETS ${libname} DESTINATION ${EMAN_PY_INSTALL_PREFIX})
+	install(TARGETS ${libname} DESTINATION ${SP_DIR})
 endfunction()
 
 ADD_PYSTE_LIB(pyAligner2)
@@ -81,7 +81,7 @@ if(ENABLE_OPENGL)
 endif()
 
 file(GLOB empythonlibs "${CMAKE_CURRENT_SOURCE_DIR}/*.py")
-install(FILES ${empythonlibs} DESTINATION ${EMAN_PY_INSTALL_PREFIX})
+install(FILES ${empythonlibs} DESTINATION ${SP_DIR})
 
 add_subdirectory(qtgui)
 

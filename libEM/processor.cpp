@@ -12637,10 +12637,10 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 		delete ret;
 		return ret2;
 	}
-	// footprint mode, produces a 3-D image using n rotational invariants
+	// footprint mode, produces a 2-D image containing n veritcally arranged rotational invariants
 	else if (params.has_key("fp")) {
                 int fp=(int)params.set_default("fp",8);
-		EMData *ret2=new EMData(nkx-1,nky*2,fp);
+		EMData *ret2=new EMData(nkx-1,nky*2*fp,1);
 		int nlay=(nkx*2-2)*nky*2*sizeof(float);
 		for (int k=2; k<2+fp; k++) {
 // 			int jkx=k;
@@ -12677,8 +12677,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 			EMData *pln=ret->do_ift();
 			pln->process_inplace("xform.phaseorigin.tocenter");
 			pln->process_inplace("normalize");
-			ret2->insert_clip(pln,IntPoint(-nkx+2,0,k-2));
-//			memcpy((void *)ret2->get_data()+nlay*(k-2),(void *)pln->get_data(),nlay);
+			ret2->insert_clip(pln,IntPoint(-nkx+2,(k-2)*nky*2,0));
 			delete pln;
 		}
 		delete ret;
