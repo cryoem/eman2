@@ -67,8 +67,7 @@ def main():
 	parser.add_argument("--automask3d2", default=None, type=str,help="Default=None. Specify as a processor. This will be applied to the mask produced by the first automask." )
 	parser.add_argument("--underfilter",action="store_true",default=False,help="This will shift the computed Wiener filter to be about 10%% more resolution than has been achieved.")
 	parser.add_argument("--sym", dest="sym", type=str,default="c1", help="Symmetry so we can decide how to align the particle.")
-	parser.add_argument("--threads", default=2,type=int,help="Number of threads to run in parallel on a single computer when multi-computer 
-parallelism isn't useful", guitype='intbox', row=30, col=2, rowspan=1, colspan=1, mode="refinement[4]")
+	parser.add_argument("--threads", default=2,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful")
 
 	(options, args) = parser.parse_args()
 
