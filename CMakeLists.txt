@@ -46,6 +46,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR_IN_INTERFACE ON)
 MARK_AS_ADVANCED(CLEAR CMAKE_VERBOSE_MAKEFILE)
 OPTION(CMAKE_VERBOSE_MAKEFILE "if all commands will be echoed to the console during the make" ON)
 
+# Set EMAN_PREFIX
 if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" )
 	message("ENV{CONDA_BUILD_STATE}: $ENV{CONDA_BUILD_STATE}")
 	if(NOT WIN32)
@@ -83,6 +84,7 @@ message_var(CMAKE_PREFIX_PATH)
 find_package(Python REQUIRED)
 find_package(NumPy  REQUIRED)
 
+# Set SP_DIR
 if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" )
 	set(SP_DIR $ENV{SP_DIR})
 else()
@@ -103,6 +105,7 @@ SET(CMAKE_INSTALL_PREFIX   ${EMAN_PREFIX} CACHE PATH "installation prefix")
 set(EMAN_PREFIX_INC ${EMAN_PREFIX}/include)
 set(EMAN_PREFIX_LIB ${EMAN_PREFIX}/lib)
 
+# Write relative path that will be used to compute EMAN2DIR in libpyEM/EMAN2.py
 if(NOT WIN32)
 	set(eman2dir_relative_path "../../../")
 else()
