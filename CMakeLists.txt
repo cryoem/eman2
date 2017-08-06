@@ -95,7 +95,6 @@ execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "${py_sp_dir_command}"
 message("Python site-packages: ${SP_DIR}")
 
 SET(CMAKE_INSTALL_PREFIX   ${EMAN_PREFIX} CACHE PATH "installation prefix")
-set(EMAN_PY_INSTALL_PREFIX ${SP_DIR})
 
 set(EMAN_PREFIX_INC ${EMAN_PREFIX}/include)
 set(EMAN_PREFIX_LIB ${EMAN_PREFIX}/lib)
@@ -106,11 +105,11 @@ else()
 	set(eman2dir_relative_path "../../Library/")
 endif()
 
-if(EMAN_PY_INSTALL_PREFIX)
-	file(WRITE ${EMAN_PY_INSTALL_PREFIX}/eman2dir_relative_path_to_sp_dir ${eman2dir_relative_path})
+if(SP_DIR)
+	file(WRITE ${SP_DIR}/eman2dir_relative_path_to_sp_dir ${eman2dir_relative_path})
 endif()
 
-set(CMAKE_INSTALL_RPATH ${EMAN_PY_INSTALL_PREFIX})
+set(CMAKE_INSTALL_RPATH ${SP_DIR})
 
 OPTION(ENABLE_AUTODOC "enable latex/doxygen document generation and etc. " OFF)
 
