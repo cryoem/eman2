@@ -68,7 +68,7 @@ endif()
 
 set(EMAN_PREFIX_INC      ${EMAN_PREFIX}/include)
 set(EMAN_PREFIX_LIB      ${EMAN_PREFIX}/lib)
-set(CMAKE_INSTALL_PREFIX ${EMAN_PREFIX} CACHE PATH "installation prefix")
+set(CMAKE_INSTALL_PREFIX ${EMAN_PREFIX} CACHE PATH "installation prefix" FORCE)
 set(CMAKE_PREFIX_PATH    ${EMAN_PREFIX} ${EMAN_PREFIX}/..)
 message_var(CMAKE_PREFIX_PATH)
 
