@@ -50,6 +50,7 @@ OPTION(ENABLE_CONDA "enable conda-supported build" ON)
 
 if(ENABLE_CONDA)
 	if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" )
+		message("ENV{CONDA_BUILD_STATE}: $ENV{CONDA_BUILD_STATE}")
 		if(NOT WIN32)
 			set(EMAN_PREFIX $ENV{PREFIX})
 		else()
@@ -58,8 +59,10 @@ if(ENABLE_CONDA)
 		
 		set(SP_DIR $ENV{SP_DIR})
 	elseif(DEFINED ENV{CONDA_PREFIX})
+		message("ENV{CONDA_PREFIX}: $ENV{CONDA_PREFIX}")
 		set(EMAN_PREFIX $ENV{CONDA_PREFIX} CACHE PATH "")
 	else()
+		message("Finding Conda...")
 		find_package(Conda REQUIRED)
 			
 		if(CONDA_ROOT)
