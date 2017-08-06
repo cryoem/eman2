@@ -55,6 +55,8 @@ if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" )
 		set(EMAN_PREFIX $ENV{LIBRARY_PREFIX})
 	endif()
 else()
+	find_package(Conda REQUIRED)
+		
 	if(DEFINED ENV{CONDA_PREFIX})
 		message("ENV{CONDA_PREFIX}: $ENV{CONDA_PREFIX}")
 		
@@ -68,7 +70,6 @@ else()
 		endif()
 	else()
 		message("Finding Conda...")
-		find_package(Conda REQUIRED)
 			
 		if(CONDA_PREFIX)
 			if(NOT WIN32)
