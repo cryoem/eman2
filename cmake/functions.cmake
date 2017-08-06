@@ -26,10 +26,11 @@ function(EMAN_CHECK_FUNCTION FUNCTION VARIABLE)
 endfunction()
 
 function(CHECK_REQUIRED_LIB upper lower header lower2 header2)
-	message("\n### BEGIN ### CHECK_REQUIRED_LIB upper lower header lower2 header2")
+	message("\n### BEGIN ### CHECK_REQUIRED_LIB ${upper} ${lower} ${header} ${lower2} ${header2}")
 	message_var(${upper}_INCLUDE_PATH)
 	message_var(${upper}_LIBRARY)
 	
+	message("Searching in ${EMAN_PREFIX_INC} for ${header} and ${header2} ...")
 	FIND_PATH(${upper}_INCLUDE_PATH
 			NAMES ${header} ${header2}
 			PATHS $ENV{${upper}DIR}/include ${EMAN_PREFIX_INC}
@@ -45,7 +46,7 @@ function(CHECK_REQUIRED_LIB upper lower header lower2 header2)
 		MESSAGE(SEND_ERROR "ERROR: ${upper} not found. please install ${upper} first!")
 	ENDIF()
 	
-	message("### END ### CHECK_REQUIRED_LIB upper lower header lower2 header2")
+	message("### END ### CHECK_REQUIRED_LIB ${upper} ${lower} ${header} ${lower2} ${header2}")
 	message_var(${upper}_INCLUDE_PATH)
 	message_var(${upper}_LIBRARY)
 endfunction()
