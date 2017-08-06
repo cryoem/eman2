@@ -94,7 +94,7 @@ execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "${py_sp_dir_command}"
 		)
 message("Python site-packages: ${SP_DIR}")
 
-SET(EMAN_INSTALL_PREFIX    ${EMAN_PREFIX} CACHE PATH "installation prefix")
+SET(CMAKE_INSTALL_PREFIX   ${EMAN_PREFIX} CACHE PATH "installation prefix")
 set(EMAN_PY_INSTALL_PREFIX ${SP_DIR})
 
 set(EMAN_PREFIX_INC ${EMAN_PREFIX}/include)
@@ -109,9 +109,6 @@ endif()
 if(EMAN_PY_INSTALL_PREFIX)
 	file(WRITE ${EMAN_PY_INSTALL_PREFIX}/eman2dir_relative_path_to_sp_dir ${eman2dir_relative_path})
 endif()
-
-SET(CMAKE_INSTALL_PREFIX ${EMAN_INSTALL_PREFIX} CACHE INTERNAL "installation prefix")
-MARK_AS_ADVANCED(CLEAR EMAN_INSTALL_PREFIX)
 
 set(CMAKE_INSTALL_RPATH ${EMAN_PY_INSTALL_PREFIX})
 
@@ -316,7 +313,7 @@ set(test_methods
 find_package(Nosetests)
 foreach(t ${test_methods})
 	add_test(NAME ${t}
-			COMMAND ${NOSETESTS_EXECUTABLE} ${EMAN_INSTALL_PREFIX}/test/rt/pyem/${t}
+			COMMAND ${NOSETESTS_EXECUTABLE} ${CMAKE_INSTALL_PREFIX}/test/rt/pyem/${t}
 			)
 endforeach()
 
@@ -368,7 +365,7 @@ FOREACH(TEST ${TESTS})
 	#
 	ADD_CUSTOM_COMMAND(
         OUTPUT ${TEST}.DoUnitTest
-		COMMAND ${CMAKE_COMMAND} ARGS -E time ${EMAN_INSTALL_PREFIX}/test/rt/${TEST}.py
+		COMMAND ${CMAKE_COMMAND} ARGS -E time ${CMAKE_INSTALL_PREFIX}/test/rt/${TEST}.py
 		DEPENDS	${TEST}.PRINT_SPACE
 	)
 
