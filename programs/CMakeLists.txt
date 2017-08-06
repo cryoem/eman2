@@ -60,5 +60,5 @@ endif()
 
 string(TIMESTAMP EMAN_TIMESTAMP "%Y-%m-%d %H:%M")
 configure_file(${CMAKE_SOURCE_DIR}/libpyEM/EMAN2_meta.py.in
-				${EMAN_PY_INSTALL_PREFIX}/EMAN2_meta.py
+				${SP_DIR}/EMAN2_meta.py
 				)

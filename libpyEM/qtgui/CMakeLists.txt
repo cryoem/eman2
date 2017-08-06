@@ -7,4 +7,4 @@ LIST(REMOVE_ITEM qtguifiles ${exclusionlist})
 
 # MESSAGE("reduced gui files: ${qtguifiles}")
 
-INSTALL(FILES ${qtguifiles} DESTINATION  ${EMAN_PY_INSTALL_PREFIX})
+INSTALL(FILES ${qtguifiles} DESTINATION  ${SP_DIR})

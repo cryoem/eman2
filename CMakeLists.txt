@@ -46,77 +46,63 @@ set(CMAKE_INCLUDE_CURRENT_DIR_IN_INTERFACE ON)
 MARK_AS_ADVANCED(CLEAR CMAKE_VERBOSE_MAKEFILE)
 OPTION(CMAKE_VERBOSE_MAKEFILE "if all commands will be echoed to the console during the make" ON)
 
-OPTION(ENABLE_CONDA "enable conda-supported build" ON)
-
-if(ENABLE_CONDA)
-	if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" )
-		if(NOT WIN32)
-			set(EMAN_PREFIX $ENV{PREFIX})
-		else()
-			set(EMAN_PREFIX $ENV{LIBRARY_PREFIX})
-		endif()
-		
-		set(SP_DIR $ENV{SP_DIR})
-	elseif(DEFINED ENV{CONDA_PREFIX})
-		set(EMAN_PREFIX $ENV{CONDA_PREFIX} CACHE PATH "")
+# Set EMAN_PREFIX
+if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" )
+	message("ENV{CONDA_BUILD_STATE}: $ENV{CONDA_BUILD_STATE}")
+	if(NOT WIN32)
+		set(EMAN_PREFIX $ENV{PREFIX})
 	else()
-		find_package(Conda REQUIRED)
-			
-		if(CONDA_ROOT)
-			if(WIN32)
-				set(EMAN_PREFIX ${CONDA_ROOT}/Library CACHE PATH "")
-			else()
-				set(EMAN_PREFIX ${CONDA_ROOT} CACHE PATH "")
-			endif()
+		set(EMAN_PREFIX $ENV{LIBRARY_PREFIX})
+	endif()
+else()
+	find_package(Conda REQUIRED)
+		
+	if(CONDA_PREFIX)
+		if(NOT WIN32)
+			set(EMAN_PREFIX ${CONDA_PREFIX})
 		else()
-			set(CONDA_ROOT CONDA_ROOT-NOTFOUND   CACHE PATH "")
+			set(EMAN_PREFIX ${CONDA_PREFIX}/Library)
 		endif()
 	endif()
-
-	set(CMAKE_PREFIX_PATH ${EMAN_PREFIX} ${EMAN_PREFIX}/..)
-	message_var(CMAKE_PREFIX_PATH)
 endif()
+
+set(EMAN_PREFIX_INC      ${EMAN_PREFIX}/include)
+set(EMAN_PREFIX_LIB      ${EMAN_PREFIX}/lib)
+set(CMAKE_INSTALL_PREFIX ${EMAN_PREFIX} CACHE PATH "installation prefix" FORCE)
+set(CMAKE_PREFIX_PATH    ${EMAN_PREFIX} ${EMAN_PREFIX}/..)
+message_var(CMAKE_PREFIX_PATH)
 
 find_package(Python REQUIRED)
 find_package(NumPy  REQUIRED)
 
-if(NOT WIN32)
-	set(py_sp_dir_command "import site; print site.getsitepackages()[0]")
+# Set SP_DIR
+if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" )
+	set(SP_DIR $ENV{SP_DIR})
 else()
-	set(py_sp_dir_command "import site; print site.getsitepackages()[1]")
-endif()
-execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "${py_sp_dir_command}"
-		OUTPUT_VARIABLE SP_DIR
-		OUTPUT_STRIP_TRAILING_WHITESPACE
-		)
-message("Python site-packages: ${SP_DIR}")
-
-if(ENABLE_CONDA)
-	SET(EMAN_INSTALL_PREFIX    ${EMAN_PREFIX} CACHE PATH "installation prefix")
-	set(EMAN_PY_INSTALL_PREFIX ${SP_DIR})
-	
-	set(EMAN_PREFIX_INC ${EMAN_PREFIX}/include)
-	set(EMAN_PREFIX_LIB ${EMAN_PREFIX}/lib)
-	
 	if(NOT WIN32)
-		set(eman2dir_relative_path "../../../")
+		set(py_sp_dir_command "import site; print site.getsitepackages()[0]")
 	else()
-		set(eman2dir_relative_path "../../Library/")
+		set(py_sp_dir_command "import site; print site.getsitepackages()[1]")
 	endif()
+	execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "${py_sp_dir_command}"
+			OUTPUT_VARIABLE SP_DIR
+			OUTPUT_STRIP_TRAILING_WHITESPACE
+			)
+	message("Python site-packages: ${SP_DIR}")
+endif()
+
+# Write relative path that will be used to compute EMAN2DIR in libpyEM/EMAN2.py
+if(NOT WIN32)
+	set(eman2dir_relative_path "../../../")
 else()
-	SET(EMAN_INSTALL_PREFIX    $ENV{HOME}/EMAN2 CACHE PATH "installation prefix")
-	set(EMAN_PY_INSTALL_PREFIX ${EMAN_INSTALL_PREFIX}/lib)
-	set(eman2dir_relative_path "../")
+	set(eman2dir_relative_path "../../Library/")
 endif()
 
-if(EMAN_PY_INSTALL_PREFIX)
-	file(WRITE ${EMAN_PY_INSTALL_PREFIX}/eman2dir_relative_path_to_sp_dir ${eman2dir_relative_path})
+if(SP_DIR)
+	file(WRITE ${SP_DIR}/eman2dir_relative_path_to_sp_dir ${eman2dir_relative_path})
 endif()
 
-SET(CMAKE_INSTALL_PREFIX ${EMAN_INSTALL_PREFIX} CACHE INTERNAL "installation prefix")
-MARK_AS_ADVANCED(CLEAR EMAN_INSTALL_PREFIX)
-
-set(CMAKE_INSTALL_RPATH ${EMAN_PY_INSTALL_PREFIX})
+set(CMAKE_INSTALL_RPATH ${SP_DIR})
 
 OPTION(ENABLE_AUTODOC "enable latex/doxygen document generation and etc. " OFF)
 
@@ -222,9 +208,7 @@ IF(CMAKE_COMPILER_IS_GNUCXX)
     	SET(EMAN_CXX_FLAGS "-Wall" CACHE INTERNAL "EMAN CXX FLAGS")
     ENDIF()
     SET(PLATFORMLIB "/usr/lib64" CACHE INTERNAL "lib64")
-	if(ENABLE_CONDA)
-		SET(EMAN_CXX_FLAGS "${EMAN_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0" CACHE INTERNAL "EMAN CXX FLAGS")
-	endif()
+	SET(EMAN_CXX_FLAGS "${EMAN_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0" CACHE INTERNAL "EMAN CXX FLAGS")
 ENDIF()
 
 SET(CMAKE_C_COMPILER ${CMAKE_CXX_COMPILER})
@@ -292,13 +276,11 @@ ADD_SUBDIRECTORY(images)
 ADD_SUBDIRECTORY(recipes)
 
 if(NOT WIN32)
-	if(ENABLE_CONDA)
-		install(CODE "execute_process(
-						COMMAND ${CMAKE_COMMAND} -E create_symlink ${EMAN_PREFIX}/bin/sxgui.py ${EMAN_PREFIX}/bin/sphire
-						COMMAND ${CMAKE_COMMAND} -E create_symlink ${EMAN_PREFIX}/bin/sx.py    ${EMAN_PREFIX}/bin/sparx
-					 )"
-				)
-	endif()
+	install(CODE "execute_process(
+					COMMAND ${CMAKE_COMMAND} -E create_symlink ${EMAN_PREFIX}/bin/sxgui.py ${EMAN_PREFIX}/bin/sphire
+					COMMAND ${CMAKE_COMMAND} -E create_symlink ${EMAN_PREFIX}/bin/sx.py    ${EMAN_PREFIX}/bin/sparx
+				 )"
+			)
 endif()
 
 enable_testing()
@@ -323,7 +305,7 @@ set(test_methods
 find_package(Nosetests)
 foreach(t ${test_methods})
 	add_test(NAME ${t}
-			COMMAND ${NOSETESTS_EXECUTABLE} ${EMAN_INSTALL_PREFIX}/test/rt/pyem/${t}
+			COMMAND ${NOSETESTS_EXECUTABLE} ${CMAKE_INSTALL_PREFIX}/test/rt/pyem/${t}
 			)
 endforeach()
 
@@ -375,7 +357,7 @@ FOREACH(TEST ${TESTS})
 	#
 	ADD_CUSTOM_COMMAND(
         OUTPUT ${TEST}.DoUnitTest
-		COMMAND ${CMAKE_COMMAND} ARGS -E time ${EMAN_INSTALL_PREFIX}/test/rt/${TEST}.py
+		COMMAND ${CMAKE_COMMAND} ARGS -E time ${CMAKE_INSTALL_PREFIX}/test/rt/${TEST}.py
 		DEPENDS	${TEST}.PRINT_SPACE
 	)
 
