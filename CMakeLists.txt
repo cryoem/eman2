@@ -46,9 +46,6 @@ set(CMAKE_INCLUDE_CURRENT_DIR_IN_INTERFACE ON)
 MARK_AS_ADVANCED(CLEAR CMAKE_VERBOSE_MAKEFILE)
 OPTION(CMAKE_VERBOSE_MAKEFILE "if all commands will be echoed to the console during the make" ON)
 
-OPTION(ENABLE_CONDA "enable conda-supported build" ON)
-
-if(ENABLE_CONDA)
 	if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" )
 		message("ENV{CONDA_BUILD_STATE}: $ENV{CONDA_BUILD_STATE}")
 		if(NOT WIN32)
@@ -78,7 +75,6 @@ if(ENABLE_CONDA)
 
 	set(CMAKE_PREFIX_PATH ${EMAN_PREFIX} ${EMAN_PREFIX}/..)
 	message_var(CMAKE_PREFIX_PATH)
-endif()
 
 find_package(Python REQUIRED)
 find_package(NumPy  REQUIRED)
@@ -94,7 +90,6 @@ execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "${py_sp_dir_command}"
 		)
 message("Python site-packages: ${SP_DIR}")
 
-if(ENABLE_CONDA)
 	SET(EMAN_INSTALL_PREFIX    ${EMAN_PREFIX} CACHE PATH "installation prefix")
 	set(EMAN_PY_INSTALL_PREFIX ${SP_DIR})
 	
@@ -106,11 +101,6 @@ if(ENABLE_CONDA)
 	else()
 		set(eman2dir_relative_path "../../Library/")
 	endif()
-else()
-	SET(EMAN_INSTALL_PREFIX    $ENV{HOME}/EMAN2 CACHE PATH "installation prefix")
-	set(EMAN_PY_INSTALL_PREFIX ${EMAN_INSTALL_PREFIX}/lib)
-	set(eman2dir_relative_path "../")
-endif()
 
 if(EMAN_PY_INSTALL_PREFIX)
 	file(WRITE ${EMAN_PY_INSTALL_PREFIX}/eman2dir_relative_path_to_sp_dir ${eman2dir_relative_path})
@@ -225,9 +215,7 @@ IF(CMAKE_COMPILER_IS_GNUCXX)
     	SET(EMAN_CXX_FLAGS "-Wall" CACHE INTERNAL "EMAN CXX FLAGS")
     ENDIF()
     SET(PLATFORMLIB "/usr/lib64" CACHE INTERNAL "lib64")
-	if(ENABLE_CONDA)
 		SET(EMAN_CXX_FLAGS "${EMAN_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0" CACHE INTERNAL "EMAN CXX FLAGS")
-	endif()
 ENDIF()
 
 SET(CMAKE_C_COMPILER ${CMAKE_CXX_COMPILER})
@@ -295,13 +283,11 @@ ADD_SUBDIRECTORY(images)
 ADD_SUBDIRECTORY(recipes)
 
 if(NOT WIN32)
-	if(ENABLE_CONDA)
 		install(CODE "execute_process(
 						COMMAND ${CMAKE_COMMAND} -E create_symlink ${EMAN_PREFIX}/bin/sxgui.py ${EMAN_PREFIX}/bin/sphire
 						COMMAND ${CMAKE_COMMAND} -E create_symlink ${EMAN_PREFIX}/bin/sx.py    ${EMAN_PREFIX}/bin/sparx
 					 )"
 				)
-	endif()
 endif()
 
 enable_testing()
