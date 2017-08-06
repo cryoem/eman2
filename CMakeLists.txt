@@ -53,8 +53,6 @@ if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" )
 	else()
 		set(EMAN_PREFIX $ENV{LIBRARY_PREFIX})
 	endif()
-	
-	set(SP_DIR $ENV{SP_DIR})
 else()
 	if(DEFINED ENV{CONDA_PREFIX})
 		message("ENV{CONDA_PREFIX}: $ENV{CONDA_PREFIX}")
@@ -85,6 +83,9 @@ message_var(CMAKE_PREFIX_PATH)
 find_package(Python REQUIRED)
 find_package(NumPy  REQUIRED)
 
+if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" )
+	set(SP_DIR $ENV{SP_DIR})
+else()
 if(NOT WIN32)
 	set(py_sp_dir_command "import site; print site.getsitepackages()[0]")
 else()
@@ -95,6 +96,7 @@ execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "${py_sp_dir_command}"
 		OUTPUT_STRIP_TRAILING_WHITESPACE
 		)
 message("Python site-packages: ${SP_DIR}")
+endif()
 
 SET(CMAKE_INSTALL_PREFIX   ${EMAN_PREFIX} CACHE PATH "installation prefix")
 
