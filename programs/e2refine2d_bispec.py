@@ -155,10 +155,17 @@ def main():
 	# make footprint images (rotational/translational invariants)
 	fpfile=options.input.split("__")[0]+"__ctf_flip_bispec.lst"
 	if not os.path.exists(fpfile):
-		print "WARNING: ",fpfile," not found. Computing bispectra. e2ctf_auto.py should be computing these automatically. "
-		sys.exit(1)
-		fpfile=options.path+"/"+options.input.rsplit(".",1)[0]+"_bispec.hdf"
-		run("e2proc2dpar.py {} {} --process math.bispectrum.slice:fp=6 --threads {}".format(options.input,fpfile,options.threads))
+		print "WARNING: ",fpfile," not found. Computing bispectra. This will slow processing. "
+		fpfile=options.path+"/input_bispec.hdf"
+		run("e2proc2dpar.py {} {} --process filter.highpass.gauss:cutoff_freq=0.015 --process math.bispectrum.slice:fp=6 --threads {}".format(options.input,fpfile,options.threads))
+	else:
+		tmp1=EMData(fpfile,0)
+		tmp2=EMData(options.input,0)
+		tmp2=tmp2.process("math.bispectrum.slice",{"fp":6})
+		if tmp1["nx"]!=tmp2["nx"] or tmp1["ny"]!=tmp2["ny"] : 
+			print "WARNING: images in ",fpfile," have the wrong dimensions. Recomputing bispectra. This will slow processing."
+			fpfile=options.path+"/input_bispec.hdf"
+			run("e2proc2dpar.py {} {} --process filter.highpass.gauss:cutoff_freq=0.015 --process math.bispectrum.slice:fp=6 --threads {}".format(options.input,fpfile,options.threads))
 
 	# MSA on the footprints
 	fpbasis=options.path+"/basis_00.hdf"
@@ -196,7 +203,7 @@ def main():
 		run("e2stacksort.py %s/allrefs_%02d.hdf %s/allrefs_%02d.hdf --simcmp=sqeuclidean:normto=1 --simalign=rotate_translate_tree:maxres=10 --useali --iterative"%(options.path,it,options.path,it))
 
 		# bispectra of class-averages
-		run("e2proc2dpar.py {}/allrefs_{:02d}.hdf {}/allrefs_fp_{:02d}.hdf --process math.bispectrum.slice:fp=6 --threads {}".format(options.path,it,options.path,it,options.threads))
+		run("e2proc2dpar.py {}/allrefs_{:02d}.hdf {}/allrefs_fp_{:02d}.hdf --process filter.highpass.gauss:cutoff_freq=0.015 --process math.bispectrum.slice:fp=6 --threads {}".format(options.path,it,options.path,it,options.threads))
 
 		# MSA on class-average bispectra
 		run("e2msa.py %s/allrefs_fp_%02d.hdf %s/basis_%02d.hdf  --normalize --nbasis=%0d --scratchfile=%s/msa_scratch.bin"%(options.path,it,options.path,it,options.nbasisfp,options.path))

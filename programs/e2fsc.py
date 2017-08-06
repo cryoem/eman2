@@ -142,7 +142,7 @@ and this program should be regarded as experimental.
 	#parser.add_argument("--inimgs",type=str,help="Input image file",default=None)
 	#parser.add_argument("--outimgs",type=str,help="Output image file",default="imgs.hdf")
 	#parser.add_argument("--filtimgs",type=str,help="A python expression using Z[n], Q[n] and N[n] for selecting specific particles to output. n is the 0 indexed number of the input file",default=None)
-	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on the local computer")
+	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel on the local computer")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbosity [0-9]. Larger values produce more output.")
 
@@ -156,6 +156,8 @@ and this program should be regarded as experimental.
 		sys.exit(1)
 
 	logid=E2init(sys.argv,options.ppid)
+
+	if options.threads<2 : options.threads=2
 
 	v1=EMData(args[0],0)
 	v2=EMData(args[1],0)
@@ -259,6 +261,7 @@ and this program should be regarded as experimental.
 				thrd.append((ox,x,oy,y,oz,z))		# this is different from the normal parallelism pattern. We make the actual Threads on demand
 			thrds.append(thrd)						# one row of x values per thread
 	
+
 	if options.verbose: print len(thrds)," threads"
 	
 	thrtolaunch=0
