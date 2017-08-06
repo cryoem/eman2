@@ -46,35 +46,35 @@ set(CMAKE_INCLUDE_CURRENT_DIR_IN_INTERFACE ON)
 MARK_AS_ADVANCED(CLEAR CMAKE_VERBOSE_MAKEFILE)
 OPTION(CMAKE_VERBOSE_MAKEFILE "if all commands will be echoed to the console during the make" ON)
 
-	if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" )
-		message("ENV{CONDA_BUILD_STATE}: $ENV{CONDA_BUILD_STATE}")
-		if(NOT WIN32)
-			set(EMAN_PREFIX $ENV{PREFIX})
-		else()
-			set(EMAN_PREFIX $ENV{LIBRARY_PREFIX})
-		endif()
-		
-		set(SP_DIR $ENV{SP_DIR})
-	elseif(DEFINED ENV{CONDA_PREFIX})
-		message("ENV{CONDA_PREFIX}: $ENV{CONDA_PREFIX}")
-		set(EMAN_PREFIX $ENV{CONDA_PREFIX} CACHE PATH "")
+if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" )
+	message("ENV{CONDA_BUILD_STATE}: $ENV{CONDA_BUILD_STATE}")
+	if(NOT WIN32)
+		set(EMAN_PREFIX $ENV{PREFIX})
 	else()
-		message("Finding Conda...")
-		find_package(Conda REQUIRED)
-			
-		if(CONDA_ROOT)
-			if(WIN32)
-				set(EMAN_PREFIX ${CONDA_ROOT}/Library CACHE PATH "")
-			else()
-				set(EMAN_PREFIX ${CONDA_ROOT} CACHE PATH "")
-			endif()
-		else()
-			set(CONDA_ROOT CONDA_ROOT-NOTFOUND   CACHE PATH "")
-		endif()
+		set(EMAN_PREFIX $ENV{LIBRARY_PREFIX})
 	endif()
+	
+	set(SP_DIR $ENV{SP_DIR})
+elseif(DEFINED ENV{CONDA_PREFIX})
+	message("ENV{CONDA_PREFIX}: $ENV{CONDA_PREFIX}")
+	set(EMAN_PREFIX $ENV{CONDA_PREFIX} CACHE PATH "")
+else()
+	message("Finding Conda...")
+	find_package(Conda REQUIRED)
+		
+	if(CONDA_ROOT)
+		if(WIN32)
+			set(EMAN_PREFIX ${CONDA_ROOT}/Library CACHE PATH "")
+		else()
+			set(EMAN_PREFIX ${CONDA_ROOT} CACHE PATH "")
+		endif()
+	else()
+		set(CONDA_ROOT CONDA_ROOT-NOTFOUND   CACHE PATH "")
+	endif()
+endif()
 
-	set(CMAKE_PREFIX_PATH ${EMAN_PREFIX} ${EMAN_PREFIX}/..)
-	message_var(CMAKE_PREFIX_PATH)
+set(CMAKE_PREFIX_PATH ${EMAN_PREFIX} ${EMAN_PREFIX}/..)
+message_var(CMAKE_PREFIX_PATH)
 
 find_package(Python REQUIRED)
 find_package(NumPy  REQUIRED)
@@ -90,17 +90,17 @@ execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "${py_sp_dir_command}"
 		)
 message("Python site-packages: ${SP_DIR}")
 
-	SET(EMAN_INSTALL_PREFIX    ${EMAN_PREFIX} CACHE PATH "installation prefix")
-	set(EMAN_PY_INSTALL_PREFIX ${SP_DIR})
-	
-	set(EMAN_PREFIX_INC ${EMAN_PREFIX}/include)
-	set(EMAN_PREFIX_LIB ${EMAN_PREFIX}/lib)
-	
-	if(NOT WIN32)
-		set(eman2dir_relative_path "../../../")
-	else()
-		set(eman2dir_relative_path "../../Library/")
-	endif()
+SET(EMAN_INSTALL_PREFIX    ${EMAN_PREFIX} CACHE PATH "installation prefix")
+set(EMAN_PY_INSTALL_PREFIX ${SP_DIR})
+
+set(EMAN_PREFIX_INC ${EMAN_PREFIX}/include)
+set(EMAN_PREFIX_LIB ${EMAN_PREFIX}/lib)
+
+if(NOT WIN32)
+	set(eman2dir_relative_path "../../../")
+else()
+	set(eman2dir_relative_path "../../Library/")
+endif()
 
 if(EMAN_PY_INSTALL_PREFIX)
 	file(WRITE ${EMAN_PY_INSTALL_PREFIX}/eman2dir_relative_path_to_sp_dir ${eman2dir_relative_path})
@@ -215,7 +215,7 @@ IF(CMAKE_COMPILER_IS_GNUCXX)
     	SET(EMAN_CXX_FLAGS "-Wall" CACHE INTERNAL "EMAN CXX FLAGS")
     ENDIF()
     SET(PLATFORMLIB "/usr/lib64" CACHE INTERNAL "lib64")
-		SET(EMAN_CXX_FLAGS "${EMAN_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0" CACHE INTERNAL "EMAN CXX FLAGS")
+	SET(EMAN_CXX_FLAGS "${EMAN_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0" CACHE INTERNAL "EMAN CXX FLAGS")
 ENDIF()
 
 SET(CMAKE_C_COMPILER ${CMAKE_CXX_COMPILER})
@@ -283,11 +283,11 @@ ADD_SUBDIRECTORY(images)
 ADD_SUBDIRECTORY(recipes)
 
 if(NOT WIN32)
-		install(CODE "execute_process(
-						COMMAND ${CMAKE_COMMAND} -E create_symlink ${EMAN_PREFIX}/bin/sxgui.py ${EMAN_PREFIX}/bin/sphire
-						COMMAND ${CMAKE_COMMAND} -E create_symlink ${EMAN_PREFIX}/bin/sx.py    ${EMAN_PREFIX}/bin/sparx
-					 )"
-				)
+	install(CODE "execute_process(
+					COMMAND ${CMAKE_COMMAND} -E create_symlink ${EMAN_PREFIX}/bin/sxgui.py ${EMAN_PREFIX}/bin/sphire
+					COMMAND ${CMAKE_COMMAND} -E create_symlink ${EMAN_PREFIX}/bin/sx.py    ${EMAN_PREFIX}/bin/sparx
+				 )"
+			)
 endif()
 
 enable_testing()
