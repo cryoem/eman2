@@ -234,6 +234,14 @@
         "CHILDREN": []
       },
       {
+        "ICON": "web",
+        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2refine2d_bispec",
+        "MODE": "spr",
+        "PROGRAM": "e2refine2d_bispec.py",
+        "NAME": "Bispectrum-based Class Averaging (e2refine2d_bispec)",
+        "CHILDREN": []
+      },
+      {
 	"ICON": "single_image",
 	"PROGRAM":"e2evalparticles.py",
 	"WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2evalparticles",
@@ -376,7 +384,7 @@
             "NAME": "Convert from FreAlign to EMAN2",
             "CHILDREN": []
            }
-        ] 
+        ]
       }
     ]
   },
