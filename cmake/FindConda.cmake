@@ -1,3 +1,6 @@
+if(DEFINED ENV{CONDA_PREFIX})
+	set(CONDA_PREFIX $ENV{CONDA_PREFIX} CACHE PATH "")
+else()
 # Assuming the active conda environment is on PATH, this finds the path of bin/ in the environment
 find_program(CONDA_EXECUTABLE conda
 		PATHS ${CONDA_PREFIX}/bin ${CONDA_PREFIX}/Scripts ENV PATH
@@ -14,6 +17,7 @@ else()
 endif()
 
 set_cache_var_to_var(CONDA_PREFIX out_var)
+endif()
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(Conda
