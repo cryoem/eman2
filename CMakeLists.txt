@@ -78,6 +78,11 @@ else()
 	endif()
 endif()
 
+set(EMAN_PREFIX_INC ${EMAN_PREFIX}/include)
+set(EMAN_PREFIX_LIB ${EMAN_PREFIX}/lib)
+
+SET(CMAKE_INSTALL_PREFIX   ${EMAN_PREFIX} CACHE PATH "installation prefix")
+
 set(CMAKE_PREFIX_PATH ${EMAN_PREFIX} ${EMAN_PREFIX}/..)
 message_var(CMAKE_PREFIX_PATH)
 
@@ -99,11 +104,6 @@ else()
 			)
 	message("Python site-packages: ${SP_DIR}")
 endif()
-
-SET(CMAKE_INSTALL_PREFIX   ${EMAN_PREFIX} CACHE PATH "installation prefix")
-
-set(EMAN_PREFIX_INC ${EMAN_PREFIX}/include)
-set(EMAN_PREFIX_LIB ${EMAN_PREFIX}/lib)
 
 # Write relative path that will be used to compute EMAN2DIR in libpyEM/EMAN2.py
 if(NOT WIN32)
