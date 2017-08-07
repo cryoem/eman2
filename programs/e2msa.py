@@ -32,7 +32,7 @@
 #Beginning MSA
 # e2msa.py  01/20/2008  Steven Ludtke
 # Rewritten version which just does PCA, no classification
-# uses Chao Yang's new PCA implementation in Analyzer 
+# uses Chao Yang's new PCA implementation in Analyzer
 
 from EMAN2 import *
 from math import *
@@ -79,12 +79,12 @@ handled this way."""
 	#parser.add_argument("--gui",action="store_true",help="Start the GUI for interactive boxing",default=False)
 	#parser.add_argument("--boxsize","-B",type=int,help="Box size in pixels",default=-1)
 	#parser.add_argument("--dbin","-D",type=str,help="Filename to read an existing box database from",default=None)
-	
+
 	(options, args) = parser.parse_args()
 	if len(args)<2 : parser.error("Input and output filenames required")
 
 	logid=E2init(sys.argv,options.ppid)
-	
+
 	if options.verbose>0 : print "Beginning MSA"
 	if options.gsl : mode="svd_gsl"
 	else : mode="pca_large"
@@ -110,17 +110,17 @@ handled this way."""
 			# default mask is to use all pixels
 			mask=EMData(args[0],0)
 			mask.to_one()
-	
+
 	if options.simmx : out=msa_simmx(args[0],options.simmx,mask,options.nbasis,options.varimax,mode,options.normalize,options.scratchfile,options.step)
 	else : out=msa(args[0],mask,options.nbasis,options.varimax,mode,options.normalize,options.scratchfile,options.step)
-	
+
 	if options.verbose>0 : print "MSA complete"
 	for j,i in enumerate(out):
-		try : 
+		try :
 			if options.verbose>0 : print "Eigenvalue: ",i.get_attr("eigval")
 		except: pass
 		i.write_image(args[1],j)
-		
+
 	E2end(logid)
 
 def msa_simmx(images,simmxpath,mask,nbasis,varimax,mode,normalize=True,scratchfile="msa_scratch",step=(0,1)):
@@ -151,27 +151,27 @@ pca,pca_large or svd_gsl"""
 		mean+=im
 	mean.mult(1.0/float(n))
 #	mean.mult(mask)
-	
+
 	for i in range(n):
 		im=EMData(images,i*step[1]+step[0])
 		xf=get_xform(i,simmx)
-		im.transform(xf)		
+		im.transform(xf)
 		if normalize: im.process_inplace("normalize.toimage",{"to":mean})
 		im-=mean
 		im*=mask
 		im.process_inplace("normalize.unitlen")
 		pca.insert_image(im)
-			
+
 	mean*=mask
 	results=pca.analyze()
 	for im in results: im.mult(mask)
-	
+
 	if varimax:
 		pca=Analyzers.get("varimax",{"mask":mask})
-		
+
 		for im in results:
 			pca.insert_image(im)
-		
+
 		results=pca.analyze()
 		for im in results: im.mult(mask)
 
@@ -181,20 +181,20 @@ pca,pca_large or svd_gsl"""
 	mean["eigval"]=0
 	mean.process_inplace("normalize.unitlen")
 	results.insert(0,mean)
-	return results 
+	return results
 
 def get_xform(n,simmx):
 	"""Will produce a Transform representing the best alignment from a similarity matrix for particle n
 	simmx is a list with the 5 images from the simmx file"""
-	
+
 	# find the best orienteation from the similarity matrix, and apply the transformation
 	best=(1.0e23,0,0,0,0)
-	
-	for j in range(simmx[0].get_xsize()): 
+
+	for j in range(simmx[0].get_xsize()):
 		if simmx[0].get(j,n)<best[0] : best=(simmx[0].get(j,n),simmx[1].get(j,n),simmx[2].get(j,n),simmx[3].get(j,n),simmx[4].get(j,n))
-	
+
 	ret=Transform({"type":"2d","alpha":best[3],"tx":best[1],"ty":best[2],"mirror":int(best[4])})
-	
+
 	return ret.inverse()
 
 def msa(images,mask,nbasis,varimax,mode,normalize=True,scratchfile="msa_scratch",step=(0,1)):
@@ -205,8 +205,8 @@ images. input images will be masked and normalized in-place. The mean value is s
 calling the PCA routine. The first returned image is the mean value, and not an Eigenvector. It will have an
 'eigval' of 0.  If 'varimax' is set, the final basis set will be 'rotated' to produce a varimax basis. Mode must be one of
 pca,pca_large or svd_gsl"""
-	
-	
+
+
 	if isinstance(images,str) :
 		n=(EMUtil.get_image_count(images)-step[0])/step[1]
 		if mode=="svd_gsl" : pca=Analyzers.get(mode,{"mask":mask,"nvec":nbasis,"nimg":n})
@@ -221,10 +221,10 @@ pca,pca_large or svd_gsl"""
 			mean+=im
 		mean.mult(1.0/float(n))
 #		mean.mult(mask)
-		
+
 		for i in range(n):
 			im=EMData(images,i*step[1]+step[0])
-			if normalize: im.process_inplace("normalize.toimage",{"to":mean})
+#			if normalize: im.process_inplace("normalize.toimage",{"to":mean})
 			im-=mean
 			im*=mask
 			im.process_inplace("normalize.unitlen")
@@ -236,31 +236,31 @@ pca,pca_large or svd_gsl"""
 		n = len(images)
 		if mode=="svd_gsl" : pca=Analyzers.get(mode,{"mask":mask,"nvec":nbasis,"nimg":n})
 		else : pca=Analyzers.get(mode,{"mask":mask,"nvec":nbasis})
-		
+
 		mean=images[0]
 		mean.to_zero()
 		for im in images:
 #			im*=mask
 			if normalize : im.process_inplace("normalize.unitlen")
 			mean+=im
-		mean/=float(n)		
-		
+		mean/=float(n)
+
 		for im in images:
-			if normalize: im.process_inplace("normalize.toimage",{"to":mean})
+#			if normalize: im.process_inplace("normalize.toimage",{"to":mean})
 			im-=mean
 			im*=mask
 			im.process_inplace("normalize.unitlen")
 			pca.insert_image(im)
-			
+
 	results=pca.analyze()
 	for im in results: im.mult(mask)
-	
+
 	if varimax:
 		pca=Analyzers.get("varimax",{"mask":mask})
-		
+
 		for im in results:
 			pca.insert_image(im)
-		
+
 		results=pca.analyze()
 		for im in results: im.mult(mask)
 
@@ -271,8 +271,8 @@ pca,pca_large or svd_gsl"""
 	mean*=mask
 	mean.process_inplace("normalize.unitlen")
 	results.insert(0,mean)
-	return results 
+	return results
 
 if __name__== "__main__":
 	main()
-	
+
