@@ -48,7 +48,7 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 
 	usage = """prog [options]
-This program automates the CTF fitting and structure factor generation process, which normally involves a 
+This program automates the CTF fitting and structure factor generation process, which normally involves a
 sequence of at least 4 different steps. For most projects, this will work correctly with no human intervention.
 We strongly recommend running the GUI after it completes to double-check the fitting of a few of the closest
 and a few of the furthest from focus images by hand.
@@ -58,7 +58,7 @@ then rerun this program (without --fromscratch) and the problem should be fixed.
 
 For defocus with astigmatism fitting, whole frame fitting as implemented in e2rawdata.py and
 e2evalimage.py generally produce superior fits. If you have run this whole-frame fitting, e2ctf_auto will
-take this into account, and only fit the other required parameters. 
+take this into account, and only fit the other required parameters.
 
 Important: This program must be run from the project directory, not from within the particles directory
 """
@@ -111,13 +111,13 @@ Important: This program must be run from the project directory, not from within 
 	else:
 		constbfactor="--constbfactor {:02f}".format(options.constbfactor)
 
-	# Check to see what we're dealing with. If we have frame-based parameters, we take that into account. 
+	# Check to see what we're dealing with. If we have frame-based parameters, we take that into account.
 	# If the frame parameters have astigmatism, then we don't adjust the defocus or astigmatism. We only check the first 10 frames
 	# After this, frame_ctf true if this info available, and frame_stig true if any of the first 10 frames had non-zero astigmatism
 	db=js_open_dict(info_name(ptcls[0]))
 	frame_stig=False
 	frame_ctf=False
-	if db.has_key("ctf_frame") : 
+	if db.has_key("ctf_frame") :
 		frame_ctf=True
 		for f in ptcls[:10]:
 			db.close()
@@ -127,55 +127,55 @@ Important: This program must be run from the project directory, not from within 
 				frame_ctf=False
 				break
 			if fc.dfdiff!=0: frame_stig=True
-			
+
 		if options.voltage==0 : options.voltage=fc.voltage
 		if options.cs==0 : options.cs=max(fc.cs,0.01)			# CTF model doesn't work well with Cs exactly 0
 		if options.apix==0 : options.apix=fc.apix
-		
+
 		if options.voltage!=fc.voltage or fabs(options.cs-fc.cs)>0.02 or fabs(options.apix-fc.apix)>0.1 or options.ac!=fc.ampcont :
 			print """Warning: Disagreement in specified voltage, Cs, A/pix or %AC between frames and options. This requires refitting without frame-based parameters.
 Strongly suggest refitting CTF from frames with e2rawdata.py with revised parameters before running this program"""
 			frame_ctf=False
-	
+
 	# fill in missing parameters from project if possible
 	project=js_open_dict("info/project.json")
-	if options.voltage==0 : 
+	if options.voltage==0 :
 		try:
 			options.voltage=float(project["global.microscope_voltage"])
 			print "Using project voltage = ",options.voltage
 		except:
 			print "Error, no voltage found"
 			sys.exit(1)
-	
-	if options.cs==0 : 
+
+	if options.cs==0 :
 		try:
 			options.cs=float(project["global.microscope_cs"])
 			print "Using project Cs = ",options.cs
 		except:
 			print "Error, no Cs found"
 			sys.exit(1)
-	
-	if options.apix==0 : 
+
+	if options.apix==0 :
 		try:
 			options.apix=float(project["global.apix"])
 			print "Using project A/pix = ",options.apix
 		except:
 			print "Error, no A/pix found"
 			sys.exit(1)
-	
+
 	try:
 		tmp=EMData(ptcls[0],0)
 		boxsize=tmp["nx"]
 	except:
 		print "ERROR: Couldn't read first particle from ",ptcls[0]
 		sys.exit(3)
-	
+
 	###
 	# This is the logic governing how we handle automatic fitting based on existing information
 	if options.fromscratch :
 		print "--fromscratch specified, so fitting will ignore existing values"
 		if options.astigmatism :
-			print """Astigmatism fitting from particles requested. This may be fine for strong astigmatism through midres 
+			print """Astigmatism fitting from particles requested. This may be fine for strong astigmatism through midres
 resolution, but for high resolution work, fitting defocus/astig from frames is recommended"""
 			fit_options="--astigmatism"
 		else:
@@ -183,42 +183,42 @@ resolution, but for high resolution work, fitting defocus/astig from frames is r
 	elif options.curdefocusfix:
 		print "Using existing particle based parameters, by user request"
 		if options.astigmatism :
-			print """Astigmatism requested""" 
+			print """Astigmatism requested"""
 			fit_options="--curdefocusfix --astigmatism"
 		else:
 			fit_options="--curdefocusfix"
 	else:
-		if frame_ctf : 
+		if frame_ctf :
 			print "Frame based CTF parameters found"
-			if frame_stig : 
-				if options.astigmatism : 
+			if frame_stig :
+				if options.astigmatism :
 					print "Astigmatism present in in frame parameters. Will use defocus/astig unchanged from frames"
 					fit_options="--curdefocusfix --astigmatism --useframedf"
 				else :
-					print """Astigmatism present in frame parameters, but not specified here. 
+					print """Astigmatism present in frame parameters, but not specified here.
 	No astigmatism will be used, and defocuses will be refined from particles.
 	Astigmatism info will be preserved in frame parameters, so this program may be re-run later to take astigmatism into account"""
 					fit_options="--curdefocushint"
 			else :
 				if options.astigmatism :
 					print "Frame parameters present, but without astigmatism. Will refine frame-based defocus from particle data."
-					print """Astigmatism fitting from particles requested.""" 
-					if options.hires : print """This may be fine for strong astigmatism through midres 
+					print """Astigmatism fitting from particles requested."""
+					if options.hires : print """This may be fine for strong astigmatism through midres
 resolution, but for high resolution work, fitting defocus/astig from frames is recommended"""
 					fit_options="--curdefocushint --astigmatism --useframedf"
 				else :
 					print "Frame parameters present without astigmatism. Slightly refining frame defocus values from particles."
 					fit_options="--curdefocusfix --useframedf"	# "slightly refining" refers to refinebysnr
-		else: 
+		else:
 			print "No frame-based CTF parameters found. Fitting from particles."
 			if options.astigmatism :
-				print """Astigmatism fitting from particles requested.""" 
-				if options.hires : print """This may be fine for strong astigmatism through midres 
+				print """Astigmatism fitting from particles requested."""
+				if options.hires : print """This may be fine for strong astigmatism through midres
 resolution, but for high resolution work, fitting defocus/astig from frames is recommended"""
 				fit_options="--curdefocushint --astigmatism"
 			else:
 				fit_options="--curdefocushint"
-			
+
 	logid=E2init(sys.argv, options.ppid)
 	E2progress(logid,0)
 
@@ -230,7 +230,7 @@ resolution, but for high resolution work, fitting defocus/astig from frames is r
 		if options.verbose: print com
 		launch_childprocess(com)
 		E2progress(logid,0.25)
-		
+
 		###
 		# decide which particle files we will use for structure factor
 		dfvals=[]
@@ -239,7 +239,7 @@ resolution, but for high resolution work, fitting defocus/astig from frames is r
 			try:
 				ctf=db["ctf"][0]
 				qual=db["quality"]
-				if qual<options.minqual : 
+				if qual<options.minqual :
 					db.close()
 					continue
 				dfvals.append((ctf.defocus,f))
@@ -250,7 +250,7 @@ resolution, but for high resolution work, fitting defocus/astig from frames is r
 		if len(dfvals)<5 :
 			print "ERROR: This program requires good CTF fits from at least 5 micrographs to continue"
 			sys.exit(2)
-		
+
 		# Strip off the low and high 10% of defocuses, since this is where failures usually occur
 		dfsel=dfvals[len(dfvals)//10:-len(dfvals)//10]
 
@@ -280,7 +280,7 @@ resolution, but for high resolution work, fitting defocus/astig from frames is r
 			if options.verbose: print com
 			launch_childprocess(com)
 		E2progress(logid,0.7)
-		
+
 	###
 	# Generate output
 
@@ -344,9 +344,9 @@ resolution, but for high resolution work, fitting defocus/astig from frames is r
 			maskrad=maskrad3,maskwid=maskwid3,resamp=resample3,invert=invert,minqual=options.minqual,extrapad=extrapad)
 		if options.verbose: print com
 		launch_childprocess(com)
-		
+
 		print "Phase-flipped output files:\n__ctf_flip_lp20 - masked, downsampled, filtered to 20 A resolution\n__ctf_flip_lp7 - masked, downsampled, filtered to 7 A resolution"
-		
+
 	elif options.midres:
 		com="e2ctf.py --allparticles {invert} --minqual={minqual} --proctag lp20 --phaseflipproc filter.highpass.gauss:cutoff_pixels=3 --phaseflipproc2 filter.lowpass.gauss:cutoff_freq=0.05 --phaseflipproc3 normalize.circlemean:radius={maskrad} --phaseflipproc4 mask.soft:outer_radius={maskrad}:width={maskwid} --phaseflipproc5 math.fft.resample:n={resamp} {extrapad}".format(
 			maskrad=maskrad1,maskwid=maskwid1,resamp=resample1,invert=invert,minqual=options.minqual,extrapad=extrapad)
@@ -365,7 +365,7 @@ resolution, but for high resolution work, fitting defocus/astig from frames is r
 		if options.verbose: print com
 		launch_childprocess(com)
 		print "Phase-flipped output files:\n__ctf_flip_lp20 - masked, downsampled, filtered to 20 A resolution\n__ctf_flip_lp7 - masked, downsampled, filtered to 7 A resolution\n__ctf_flip_fullres - masked, full sampling"
-		
+
 	else :
 		com="e2ctf.py --allparticles {invert} --minqual={minqual} --proctag lp14 --phaseflipproc filter.highpass.gauss:cutoff_pixels=3 --phaseflipproc2 filter.lowpass.gauss:cutoff_freq=0.07 --phaseflipproc3 normalize.circlemean:radius={maskrad} --phaseflipproc4 mask.soft:outer_radius={maskrad}:width={maskwid} --phaseflipproc5 math.fft.resample:n={resamp} {extrapad}".format(
 			maskrad=maskrad1,maskwid=maskwid1,resamp=resample3,invert=invert,minqual=options.minqual,extrapad=extrapad)
@@ -385,14 +385,20 @@ resolution, but for high resolution work, fitting defocus/astig from frames is r
 		launch_childprocess(com)
 		print "Phase-flipped output files:\n__ctf_flip_lp14 - masked, downsampled, filtered to 14 A resolution\n__ctf_flip_lp5 - masked, downsampled, filtered to 5 A resolution\n__ctf_flip_fullres - masked, full sampling"
 
+	com="e2ctf.py --allparticles {invert} --minqual={minqual} --proctag bispec --phaseflipproc filter.highpass.gauss:cutoff_freq=0.015 --phaseflipproc2 normalize.circlemean:radius={maskrad} --phaseflipproc3 math.bispectrum.slice:fp=6 {extrapad} --threads {threads}".format(
+		maskrad=maskrad4,maskwid=maskwid4,invert=invert,minqual=options.minqual,extrapad=extrapad,threads=options.threads)
+	if options.verbose: print com
+	launch_childprocess(com)
+	print "Phase-flipped output files:\n__ctf_flip_bispec - bispectra footprints computed from high pass filtered normalized particles"
+
 	print "Building default set with all particles for convenience"
 	com="e2buildsets.py --setname=all --excludebad --allparticles"
 	if options.verbose: print com
 	launch_childprocess(com)
-	
+
 	E2end(logid)
 	print """
-The length of your particle on its longest axis should be <= {}. If your particle is larger than this, 
+The length of your particle on its longest axis should be <= {}. If your particle is larger than this,
 you either need a larger box-size, or you will need to proceed with CTF fitting manually (and will likely achieve
 suboptimal results). See http://www.eman2.org/emanwiki/EMAN2/BoxSize""".format(maskrad3*options.apix)
 

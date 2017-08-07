@@ -148,7 +148,7 @@ vector<EMData *> ShapeAnalyzer::analyze() {
 				mx->set_value_at(0,0,mx->get_value_at(0,0)+v*(xx*xx));
 				mx->set_value_at(1,0,mx->get_value_at(1,0)+v*(yy*yy));
 				mx->set_value_at(2,0,mx->get_value_at(2,0)+v*(zz*zz));
-				mx->set_value_at(3,0,mx->get_value_at(3,0)+v*(xx*xx+yy*yy+zz*zz)); 
+				mx->set_value_at(3,0,mx->get_value_at(3,0)+v*(xx*xx+yy*yy+zz*zz));
 				// sum(m*r^2), in which r is the distance to the center. Used for minicircle classification
 				mx->set_value_at(0,1,mx->get_value_at(0,0)+v*abs(xx));
 				mx->set_value_at(1,1,mx->get_value_at(1,0)+v*abs(yy));
@@ -217,7 +217,7 @@ else if (seedmode==1) {
 	}
 	centers[0]=min->copy();
 	centers[ncls-1]=max->copy();
-	
+
 	// now fill in linear interpolates in between
 	for (int i=1; i<ncls-1; i++) {
 		centers[i]=centers[0]->copy();
@@ -227,7 +227,7 @@ else if (seedmode==1) {
 		centers[i]->add(*tmp);
 		delete tmp;
 	}
-}	
+}
 
 if (calcsigmamean) {
 	for (int i=nclstot; i<nclstot*2; i++) centers[i]=new EMData(images[0]->get_xsize(),images[0]->get_ysize(),images[0]->get_zsize());
@@ -346,9 +346,9 @@ float qsqcmp(EMData *a,EMData *b) {
 	float *d1=a->get_data();
 	float *d2=b->get_data();
 
-	double ret=0;
-	for (size_t i; i<n; i++) ret+=pow(d1[i]-d2[i],2);
-	
+	double ret=0.0;
+	for (size_t i=0; i<n; i++) ret+=pow(d1[i]-d2[i],2);
+
 	return (float)ret;
 }
 
@@ -356,7 +356,7 @@ float qsqcmp(EMData *a,EMData *b) {
 void KMeansAnalyzer::resort() {
 
 //	Cmp *c = Factory < Cmp >::get("sqeuclidean");
-	
+
 	// The first center remains first, we proceed from that starting point
 	// simple shells sort to an out-of-place reference
 	for (int i=1; i<ncls; i++) {
@@ -377,7 +377,7 @@ void KMeansAnalyzer::resort() {
 
 //	delete c;
 }
-	
+
 void KMeansAnalyzer::reclassify() {
 int nptcl=images.size();
 
@@ -982,16 +982,16 @@ map<string, vector<string> > EMAN::dump_analyzers_list()
 vector<EMData *> CircularAverageAnalyzer::analyze() {
 // 	for (int i=0; i<10; i++)
 // 		avg->set_value_at(i,0,i);
-	
+
 	if (images.size()!=1) throw ImageDimensionException("Only takes a single image as input");
 	int nx=images[0]->get_xsize();
 	int ny=images[0]->get_ysize();
 	int nz=images[0]->get_zsize();
-	if (nz>1)	
+	if (nz>1)
 		throw ImageDimensionException("Only takes 2D images.");
 	int maxr=params.set_default("maxr",nx/2-1);
 	int step=params.set_default("step",2);
-	
+
 	EMData *avg = new EMData(maxr/step+1,1);
 
 	int ix,iy,it,count;
@@ -1004,17 +1004,17 @@ vector<EMData *> CircularAverageAnalyzer::analyze() {
 				if (d2>=it*it && d2<(it+step)*(it+step)){
 					count++;
 					mn+=images[0]->sget_value_at(ix+nx/2,iy+ny/2);
-					
+
 				}
 			}
 		}
-		
+
 		mn/=count;
 		if(verbose>0) printf("%d,%d,%f\n",it,count,mn);
 		avg->set_value_at(it/step,0,mn);
 	}
-	
-	
+
+
 	ret.push_back(avg);
 	return ret;
 }
