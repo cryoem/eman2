@@ -588,7 +588,7 @@ class EMFilterTool(QtGui.QMainWindow):
 					elif isinstance(v,EMImage2DWidget):
 						if self.procdata[0]["nz"]>1 :
 							v.set_data(self.procdata[0])
-						else : v.set_data(self.procdata)
+						else : v.set_data(self.procdata[0])
 					elif isinstance(v,EMScene3D):
 						self.sgdata.setData(self.procdata[0])
 						v.updateSG()
