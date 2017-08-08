@@ -186,27 +186,23 @@ def main():
 
 	proc_tally += 1.0
 	if logid : E2progress(logid,proc_tally/total_procs)
-	# make class-averages
 
 	# Make class averages
 	cls_cmd = "e2classaverage.py --input=%s --classmx=%s/classmx_00.hdf --output=%s/classes_00.hdf --iter=5 --force --bootstrap --center=%s" %(options.input,options.path,options.path,options.center)
 	cls_cmd += get_classaverage_extras(options)
-
 	run (cls_cmd)
+
+	class_postproc(options,0)
+
 	proc_tally += 1.0
 	if logid : E2progress(logid,proc_tally/total_procs)
 
 	# this is the main refinement loop
 	for it in range(1,options.iter+1) :
 		# first we sort and align the class-averages from the last step
-		run("e2proc2d.py %s/classes_%02d.hdf %s/allrefs_%02d.hdf --inplace --calccont --process=filter.highpass.gauss:cutoff_pixels=5 --process=normalize.circlemean:radius=-5"%(options.path,it-1,options.path,it))
-		run("e2stacksort.py %s/allrefs_%02d.hdf %s/allrefs_%02d.hdf --simcmp=sqeuclidean:normto=1 --simalign=rotate_translate_tree:maxres=10 --useali --iterative"%(options.path,it,options.path,it))
-
-		# bispectra of class-averages
-		run("e2proc2dpar.py {}/allrefs_{:02d}.hdf {}/allrefs_fp_{:02d}.hdf --process filter.highpass.gauss:cutoff_freq=0.015 --process math.bispectrum.slice:fp=6 --threads {}".format(options.path,it,options.path,it,options.threads))
 
 		# MSA on class-average bispectra
-		run("e2msa.py %s/allrefs_fp_%02d.hdf %s/basis_%02d.hdf  --normalize --nbasis=%0d --scratchfile=%s/msa_scratch.bin"%(options.path,it,options.path,it,options.nbasisfp,options.path))
+		run("e2msa.py %s/classes_fp_%02d.hdf %s/basis_%02d.hdf  --normalize --nbasis=%0d --scratchfile=%s/msa_scratch.bin"%(options.path,it,options.path,it,options.nbasisfp,options.path))
 
 		# now project original image bispectra into class-average basis space
 		run("e2basis.py project %s/basis_%02d.hdf %s %s/basis_proj_%02d.hdf --oneout --mean1 --verbose=%d"%(options.path,it,fpfile,options.path,it,subverbose))
@@ -218,12 +214,22 @@ def main():
 		# Make class averages
 		cls_cmd = "e2classaverage.py --input=%s --classmx=%s/classmx_%02d.hdf --output=%s/classes_%02d.hdf --iter=5 --force --bootstrap --center=%s" %(options.input,options.path,it,options.path,it,options.center)
 		cls_cmd += get_classaverage_extras(options)
-
 		run (cls_cmd)
 
+		class_postproc(options,it)
 
 	print "e2refine2d.py complete"
 	E2end(logid)
+
+def class_postproc(options,it):
+
+	# bispectra of class-averages
+
+	run("e2proc2d.py %s/classes_%02d.hdf %s/classes_%02d.hdf --inplace --calccont --process=filter.highpass.gauss:cutoff_freq=0.015 --process=normalize.circlemean:radius=-5"%(options.path,it,options.path,it))
+
+	run("e2proc2dpar.py {}/classes_{:02d}.hdf {}/classes_fp_{:02d}.hdf --process math.bispectrum.slice:fp=6 --threads {}".format(options.path,it,options.path,it,options.threads))
+
+	run("e2stacksort.py %s/classes_fp_%02d.hdf %s/classes_fp_%02d.hdf %s/classes_%02d.hdf %s/classes_%02d.hdf --simcmp=ccc --seqali"%(options.path,it,options.path,it,options.path,it,options.path,it))
 
 
 def get_classaverage_extras(options):

@@ -44,13 +44,15 @@ import random
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """prog [options] <input_stack> <output_stack>
-	
-	This program will sort a stack of images based on some similarity criterion. Note that byptcl, iterative and reverse are mutually exclusive. 
+	usage = """prog [options] <input_stack> <output_stack> <input #2> <output #2>
+
+	This program will sort a stack of images based on some similarity criterion. Note that byptcl, iterative and reverse are mutually exclusive.
 
 	It can handle file sequences rather than a single stack file as well, in a limited form. If you have files named var3d_000.mrc, var3d_001.mrc, ...
 	you can specify input (and output) files as (for example) var3d_03d.mrc. The '3' indicates the number of digits in the value, the '0'
 	means there should be leading zeroes in the name, and the 'd' means it is a decimal number.
+
+	If specified input#2 and output#2 will be sorted in the same order as input_stack. Input #2 must have the same number of images as input_stack.
 
 	Note that there is no low-memory option for this command, and all images in the sequence are read in, so make sure you have enough RAM."""
 
@@ -63,8 +65,9 @@ def main():
 	parser.add_argument("--byptcl",action="store_true",default=False,help="Sort in order of number of particles represented in each class-average. No alignment, shrinking, etc. is performed")
 	parser.add_argument("--bykurtosis",action="store_true",default=False,help="Sort by image Kurtosis. No alignment, shrinking, etc. is performed")
 	parser.add_argument("--byheader",type=str, help="Uses the named header parameter to sort the images",default=None)
-	parser.add_argument("--iterative",action="store_true",default=False,help="Iterative approach for achieving a good 'consensus alignment' among the set of particles") 
+	parser.add_argument("--iterative",action="store_true",default=False,help="Iterative approach for achieving a good 'consensus alignment' among the set of particles")
 	parser.add_argument("--useali",action="store_true",default=False,help="Save aligned particles to the output file, note that if used with shrink= this will store the reduced aligned particles")
+	parser.add_argument("--seqali",action="store_true",default=False,help="Align each particle to the previous particle before saving with rotate_translate_tree. No flip in alignment. Aligns stack #2 instead if specified.")
 	parser.add_argument("--center",action="store_true",default=False,help="After alignment, particles are centered via center of mass before comparison")
 	parser.add_argument("--nsort",type=int,help="Number of output particles to generate (mainly for reverse mode)",default=0)
 	parser.add_argument("--ninput",type=int,help="Number of input particles to read (first n in the file)",default=0)
@@ -74,10 +77,10 @@ def main():
 #	parser.add_argument("--tilt", "-T", type=float, help="Angular spacing between tilts (fixed)",default=0.0)
 #	parser.add_argument("--maxshift","-M", type=int, help="Maximum translational error between images (pixels), default=64",default=64.0)
 #	parser.add_argument("--mode",type=str,help="centering mode 'modeshift', 'censym' or 'region,<x>,<y>,<clipsize>,<alisize>",default="censym")
-	
+
 	(options, args) = parser.parse_args()
-	if len(args)<2 : parser.error("Input and output files required")
-	
+	if len(args) not in (2,4) : parser.error("Specify input and output or input output input2 output2.")
+
 	if options.iterative+options.byptcl+options.reverse>1 :
 		parser.error("byptcl, iterative and reverse are mututally exclusive")
 
@@ -87,14 +90,13 @@ def main():
 	if options.simalign : options.simalign=parsemodopt(options.simalign)
 	else: options.simalign=[None,None]
 	if options.simcmp : options.simcmp=parsemodopt(options.simcmp)
-	
+
 	if options.simmask!=None : options.simmask=EMData(options.simmask,0)
-	
-	
+
+
 	# read all images
-	if "%" not in args[0] :
-		a=EMData.read_images(args[0])
-	else :
+	if "%" in args[0] and len(args)==2 :
+		a2=None
 		a=[]
 		i=0
 		while 1:
@@ -102,12 +104,17 @@ def main():
 			except: break
 			a.append(im)
 			i+=1
-	
+	else :
+		a=EMData.read_images(args[0])
+		if len(args)==4 : a2=EMData.read_images(args[2])
+		else: a2=None
+
 	# technically we read them all then truncate the list. inefficient...
 	if options.ninput>0 : a=a[:options.ninput]
-			
+
+	b2=None
 	if options.nsort<1 : options.nsort=len(a)
-	if options.byptcl : 
+	if options.byptcl :
 		b=sortstackptcl(a,options.nsort)
 		if options.reverse : b.reverse()
 	elif options.bykurtosis:
@@ -118,12 +125,23 @@ def main():
 		if options.reverse : b.reverse()
 	elif options.iterative: b=sortstackiter(a,options.simcmp[0],options.simcmp[1],options.simalign[0],options.simalign[1],options.nsort,options.shrink,options.useali,options.center,options.simmask)
 	elif options.reverse: b=sortstackrev(a,options.simcmp[0],options.simcmp[1],options.simalign[0],options.simalign[1],options.nsort,options.shrink,options.useali,options.center,options.simmask)
-	else : b=sortstack(a,options.simcmp[0],options.simcmp[1],options.simalign[0],options.simalign[1],options.nsort,options.shrink,options.useali,options.center,options.simmask)
-	
+	else : b,b2=sortstack(a,a2,options.simcmp[0],options.simcmp[1],options.simalign[0],options.simalign[1],options.nsort,options.shrink,options.useali,options.center,options.simmask)
+
+	if options.seqali:
+		if b2!=None:
+			for i in xrange(1,len(b2)):
+				b2[i]=b2[i].align("rotate_translate_tree",b2[i-1])
+		else:
+			for i in xrange(1,len(b)):
+				b[i]=b[i].align("rotate_translate_tree",b[i-1])
+
 	if "%" not in args[1] :
 		for i,im in enumerate(b): im.write_image(args[1],i)
 	else :
 		for i,im in enumerate(b): im.write_image(args[1]%i,0)
+
+	if b2!=None:
+		for i,im in enumerate(b2): im.write_image(args[3],i)
 
 	E2end(E2n)
 
@@ -136,18 +154,18 @@ def sortstackiter(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali,cent
 	if (shrink>1) :
 		for i in stackshrink: i.process_inplace("math.meanshrink",{"n":shrink})
 
-	if center : 
+	if center :
 		for i in stackshrink: i.process_inplace("xform.centerofmass")
 
 	# initialize the connectivity with a random linear chain
-	for i,im in enumerate(stack): 
+	for i,im in enumerate(stack):
 		im.set_attr("align_target",(i+1)%len(stack))
 		ima=stackshrink[i].align(align,stackshrink[(i+1)%len(stack)],alignopts)
 		if mask!=None : ima.mult(mask)
 		c=stackshrink[i].cmp(cmptype,ima,cmpopts)
 		im.set_attr("align_qual",c)
 		im.set_attr("aligned",0)
-		
+
 	# now we iterate to improve the similarity of each particle to the reference its being aligned to
 	changes=1
 	while (changes) :
@@ -164,7 +182,7 @@ def sortstackiter(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali,cent
 					im.set_attr("align_qual",c)
 					im.set_attr("align_target",at)
 					changes+=1
-				
+
 			# then we also try a random particle from the list
 			at=i
 			while at==i or at==im.get_attr("align_target") : at=random.randint(0,len(stack)-1)
@@ -176,7 +194,7 @@ def sortstackiter(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali,cent
 				im.set_attr("align_qual",c)
 				im.set_attr("align_target",at)
 				changes+=1
-				
+
 		print changes, "changed"
 
 	# a list for each particle of particles aligning to this particle
@@ -190,7 +208,7 @@ def sortstackiter(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali,cent
 
 	# a single particle can stay in its original orientation. We will use the most referenced particle for this
 	stack[bn[0][1]].set_attr("aligned",1)
-	if center : 
+	if center :
 		stack[bn[0][1]].process_inplace("xform.centerofmass")
 
 
@@ -210,7 +228,7 @@ def sortstackiter(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali,cent
 
 	# sort in order of the number of particles aligned to this one
 	return ret
-	
+
 
 def recursealign(stack,src,align,alignopts,ret):
 	"""This is used to align one particle in stack to another, specified by the "align_target" attribute.
@@ -221,7 +239,7 @@ def recursealign(stack,src,align,alignopts,ret):
 
 	trg=stack[src].get_attr("align_target")
 	if not stack[trg].get_attr("aligned") : recursealign(stack,trg,align,alignopts,ret)
-	
+
 	stack[src]=stack[src].align(align,stack[trg],alignopts)
 	stack[src].set_attr("aligned",1)
 #	print "aligned", src
@@ -229,11 +247,11 @@ def recursealign(stack,src,align,alignopts,ret):
 
 def sortstackrev(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali,center,mask):
 	"""Sorts a list of images in order of LEAST similarity"""
-	
+
 	stackshrink=[i.copy() for i in stack]
 	if (shrink>1) :
 		for i in stackshrink: i.process_inplace("math.meanshrink",{"n":shrink})
-	
+
 	ret=[stack[0]]
 	rets=[stackshrink[0]]
 	if stack[0].get_attr_default("ptcl_repr",0)>0 : check_rep=1    # if the images have ptcl_repr, then we want to ignore those with 0 images represented
@@ -257,10 +275,10 @@ def sortstackrev(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali,cente
 				if cc<c : c,cj,ci=cc,j,ims
 #			print "\t%d. %1.3g (%d)"%(i,c,cj)
 			if c>best[0] or best[1]<0 : best=(c,i,ims)
-		if useali : 
+		if useali :
 			ret.append(best[2])
 			rets.append(best[2])
-		else : 
+		else :
 			ret.append(stack[best[1]])
 			rets.append(stackshrink[best[1]])
 		del stack[best[1]]
@@ -269,15 +287,17 @@ def sortstackrev(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali,cente
 
 	return ret
 
-def sortstack(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali,center,mask):
+def sortstack(stack,stack2,cmptype,cmpopts,align,alignopts,nsort,shrink,useali,center,mask):
 	"""Sorts a list of images based on a standard 'cmp' metric. cmptype is the name
 	of a valid cmp type. cmpopts is a dictionary. Returns a new (sorted) stack.
 	The original stack is destroyed."""
-	
+
 	stackshrink=[i.copy() for i in stack]
 	if (shrink>1) :
 		for i in stackshrink: i.process_inplace("math.meanshrink",{"n":shrink})
 	ret=[stack[0]]
+	if stack2: ret2=[stack2[0]]
+	else: ret2=None
 	rets=[stackshrink[0]]
 	del stack[0]
 	del stackshrink[0]
@@ -290,17 +310,20 @@ def sortstack(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali,center,m
 			if mask!=None: ims.mult(mask)
 			c=rets[-1].cmp(cmptype,ims,cmpopts)+ims.cmp(cmptype,rets[-1],cmpopts)	# symmetrize results
 			if c<best[0] or best[1]<0 : best=(c,i,ims)
-		if useali : 
+		if useali :
 			ret.append(best[2])
 			rets.append(best[2])
-		else : 
+		else :
 			ret.append(stack[best[1]])
 			rets.append(stackshrink[best[1]])
+		if stack2:
+			ret2.append(stack2[best[1]])
+			del stack2[best[1]]
 		del stack[best[1]]
 		del stackshrink[best[1]]
 		print "%d.\t%d  (%1.4f)"%(len(ret)-1,best[1],best[0])
 
-	return ret
+	return ret,ret2
 
 def sortstackkurt(stack,nsort):
 	"""Sorts a list of images based on the number of particles each image represents"""
@@ -323,6 +346,6 @@ def sortstackptcl(stack,nsort):
 	stack.sort(key=lambda B:B.get_attr("ptcl_repr"),reverse=True)
 
 	return stack[:nsort]
-	
+
 if __name__ == "__main__":
     main()
