@@ -80,8 +80,15 @@ if(ENABLE_OPENGL)
 	target_link_libraries(pyMarchingCubes2 OpenGL::OpenGL)
 endif()
 
+add_custom_target(EMPyLibs
+				  COMMAND ${CMAKE_COMMAND} -DCOMPONENT=EMPyLibs -P cmake_install.cmake
+				  )
+
 file(GLOB empythonlibs "${CMAKE_CURRENT_SOURCE_DIR}/*.py")
-install(FILES ${empythonlibs} DESTINATION ${SP_DIR})
+install(FILES ${empythonlibs}
+		DESTINATION ${SP_DIR}
+		COMPONENT EMPyLibs
+		)
 
 add_subdirectory(qtgui)
 
