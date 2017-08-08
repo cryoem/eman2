@@ -83,7 +83,7 @@ class EMImage2DWidget(EMGLWidget):
 		self.setFocusPolicy(Qt.StrongFocus)
 		self.setMouseTracking(True)
 		self.initimageflag = True
-		
+
 		self.fftorigincenter = E2getappval("emimage2d","origincenter")
 		if self.fftorigincenter == None : self.fftorigincenter=False
 
@@ -471,7 +471,7 @@ class EMImage2DWidget(EMGLWidget):
 				xys=QtGui.QApplication.desktop().availableGeometry()
 				mx=xys.width()*2/3
 				my=xys.height()*2/3
-				
+
 				self.resize(min(x,mx),min(y,my))
 		except: pass
 
@@ -773,7 +773,7 @@ class EMImage2DWidget(EMGLWidget):
 				try:
 					if self.list_fft_data[self.list_idx] == None:
 						self.list_fft_data[self.list_idx] = self.list_data[self.list_idx].do_fft()
-						if self.fftorigincenter : 
+						if self.fftorigincenter :
 							self.list_fft_data[self.list_idx].process_inplace("xform.phaseorigin.tocorner")
 					fft = self.list_fft_data[self.list_idx]
 					if val==1 :
@@ -916,7 +916,7 @@ class EMImage2DWidget(EMGLWidget):
 
 		x0  = 1 + int(self.origin[0] / self.scale)
 		y0  = 1 + int(self.origin[1] / self.scale)
-	
+
 #		print "--------------------------------------------------------------"
 #		print "invert, curfft, histogram:", \
 #				 self.invert, self.curfft, self.histogram
@@ -974,7 +974,9 @@ class EMImage2DWidget(EMGLWidget):
 		return a
 
 	def render(self):
-		if not self.data and not self.fft : return
+		if self.curfft and not self.display_fft : return
+		if not self.curfft and not self.data : return
+
 		if not self.isVisible():
 			return
 
@@ -1302,14 +1304,14 @@ class EMImage2DWidget(EMGLWidget):
 				mxlen=11
 			else:
 				mxlen=10
-			
+
 			if self.list_data!=None and len(s.shape)==mxlen:
 				z_idx=s[mxlen-1]
 				if z_idx!=self.list_idx:
 					continue
-			
+
 			if k == self.active[0]:
-				if not isinstance(s,EMShape) : 
+				if not isinstance(s,EMShape) :
 					print "Invalid shape in EMImage : ",s
 					continue
 				vals = s.shape[1:8]
@@ -1830,7 +1832,7 @@ class EMImage2DWidget(EMGLWidget):
 					self.__set_display_image(self.curfft)
 					self.setup_shapes()
 					self.force_display_update()
-					
+
 			elif delta < 0:
 				if (self.list_idx > 0):
 					self.list_idx -= 1
@@ -1838,7 +1840,7 @@ class EMImage2DWidget(EMGLWidget):
 					self.__set_display_image(self.curfft)
 					self.setup_shapes()
 					self.force_display_update()
-					
+
 
 	def image_range_changed(self,val):
 		l_val = val-1
@@ -1976,9 +1978,9 @@ class EMImageInspector2D(QtGui.QWidget):
 
 		self.proclbl1=QtGui.QLabel("Image unchanged, display only!")
 		self.ftlay.addWidget(self.proclbl1,12,0)
-		
+
 		self.mmtab.addTab(self.filttab,"Filt")
-		
+
 		self.procbox1.connect(self.procbox1,QtCore.SIGNAL("enableChanged"),self.do_filters)
 		self.procbox1.connect(self.procbox1,QtCore.SIGNAL("textChanged"),self.do_filters)
 		self.procbox2.connect(self.procbox2,QtCore.SIGNAL("enableChanged"),self.do_filters)
@@ -1993,7 +1995,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.ptareasize= ValBox(label="Probe Size:",value=32)
 		self.ptareasize.setIntonly(True)
 		self.ptlay.addWidget(self.ptareasize,0,0,1,2)
-		
+
 		self.ptpointval= QtGui.QLabel("Point Value (ctr pix): ")
 		self.ptlay.addWidget(self.ptpointval,1,0,1,2,Qt.AlignLeft)
 
@@ -2005,7 +2007,7 @@ class EMImageInspector2D(QtGui.QWidget):
 
 		self.ptareasig= QtGui.QLabel("Area Sig: ")
 		self.ptlay.addWidget(self.ptareasig,3,0,Qt.AlignLeft)
-		
+
 		self.ptareasignz= QtGui.QLabel("Area Sig (!=0): ")
 		self.ptlay.addWidget(self.ptareasignz,3,1,Qt.AlignLeft)
 
@@ -2014,13 +2016,13 @@ class EMImageInspector2D(QtGui.QWidget):
 
 		self.ptcoord= QtGui.QLabel("Center Coord: ")
 		self.ptlay.addWidget(self.ptcoord,4,1,Qt.AlignLeft)
-		
+
 		self.ptareakurt= QtGui.QLabel("Kurtosis: ")
 		self.ptlay.addWidget(self.ptareakurt,5,0,Qt.AlignLeft)
 
 		self.ptcoord2= QtGui.QLabel("( ) ")
 		self.ptlay.addWidget(self.ptcoord2,5,1,Qt.AlignLeft)
-		
+
 		# not really necessary since the pointbox accurately labels the pixel when zoomed in
 		#self.ptpixels= QtGui.QWidget()
 		#self.ptlay.addWidget(self.ptpixels,0,2)
@@ -2102,13 +2104,13 @@ class EMImageInspector2D(QtGui.QWidget):
 		# PSpec tab
 		self.pstab = QtGui.QWidget()
 		self.pstlay = QtGui.QGridLayout(self.pstab)
-		
+
 		self.psbsing = QtGui.QPushButton("Single")
 		self.pstlay.addWidget(self.psbsing,0,0)
-		
+
 		self.psbstack = QtGui.QPushButton("Stack")
 		self.pstlay.addWidget(self.psbstack,0,1)
-		
+
 		self.mmtab.addTab(self.pstab,"PSpec")
 		self.pspecwins=[]
 
@@ -2263,14 +2265,14 @@ class EMImageInspector2D(QtGui.QWidget):
 		pspec=fft.calc_radial_dist(fft["ny"]/2,0.0,1.0,1)
 		ds=1.0/(fft["ny"]*data["apix_x"])
 		s=[ds*i for i in xrange(fft["ny"]/2)]
-		
+
 		from emplot2d import EMDataFnPlotter
-		
+
 		dfp=EMDataFnPlotter(data=(s,pspec))
 		dfp.show()
 		self.pspecwins.append(dfp)
-		
-	def do_pspec_stack(self,ign): 
+
+	def do_pspec_stack(self,ign):
 		"""compute average 1D power spectrum of all images and plot"""
 		from emplot2d import EMDataFnPlotter
 
@@ -2280,14 +2282,14 @@ class EMImageInspector2D(QtGui.QWidget):
 			fft.ri2inten()
 			try: fftsum.add(fft)
 			except: fftsum=fft
-			
+
 		fftsum.mult(1.0/len(self.target().list_data))
 		pspec=fftsum.calc_radial_dist(fft["ny"]/2,0.0,1.0,1)	# note that this method knows about is_inten() image flag
 		ds=1.0/(fft["ny"]*self.target().get_data()["apix_x"])
 		s=[ds*i for i in xrange(fft["ny"]/2)]
-		
+
 		from emplot2d import EMDataFnPlotter
-		
+
 		dfp=EMDataFnPlotter(data=(s,pspec))
 		dfp.show()
 		self.pspecwins.append(dfp)
@@ -2300,21 +2302,21 @@ class EMImageInspector2D(QtGui.QWidget):
 				ret.append(Processors.get(nm,op))
 			except:
 				print "Error with processor: ",self.procbox1.getValue()
-		
+
 		if self.procbox2.getEnabled():
 			try:
 				nm,op=parsemodopt(self.procbox2.getValue())
 				ret.append(Processors.get(nm,op))
 			except:
 				print "Error with processor2: ",self.procbox2.getValue()
-		
+
 		if self.procbox3.getEnabled():
 			try:
 				nm,op=parsemodopt(self.procbox3.getValue())
 				ret.append(Processors.get(nm,op))
 			except:
 				print "Error with processor: ",self.procbox3.getValue()
-		
+
 		self.target().set_disp_proc(ret)
 
 	def do_snapshot(self,du) :
