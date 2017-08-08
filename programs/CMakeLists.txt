@@ -27,9 +27,15 @@ FILE(GLOB exclusion_list
 			e2remoted.py
 			e2tomosim.py
 		)
+
+add_custom_target(Programs
+				  COMMAND ${CMAKE_COMMAND} -DCOMPONENT=Programs -P cmake_install.cmake
+				  )
+
 LIST(REMOVE_ITEM e2programs ${exclusion_list})
 INSTALL(PROGRAMS ${e2programs}
-  DESTINATION    bin
+		DESTINATION    bin 
+		COMPONENT Programs
 )
 
 IF(WIN32)
