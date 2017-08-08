@@ -275,6 +275,11 @@ ADD_SUBDIRECTORY(doc)
 ADD_SUBDIRECTORY(images)
 ADD_SUBDIRECTORY(recipes)
 
+add_custom_target(PythonFiles
+				  COMMAND ${CMAKE_COMMAND} -DCOMPONENT=PythonFiles -P cmake_install.cmake
+				  DEPENDS Programs EMPyLibs QtGuiFiles
+				  )
+
 if(NOT WIN32)
 	install(CODE "execute_process(
 					COMMAND ${CMAKE_COMMAND} -E create_symlink ${EMAN_PREFIX}/bin/sxgui.py ${EMAN_PREFIX}/bin/sphire
