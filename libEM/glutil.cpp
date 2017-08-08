@@ -142,6 +142,7 @@ unsigned int GLUtil::render_amp8_gl_texture(EMData* emdata,
 		 int mingray, int maxgray, float render_min, float render_max,
 		 float gamma, int flags)
 {
+	if (emdata==NULL) return 9999999;
 	string pixels = render_amp8(emdata, x0, y0, ixsize,iysize, bpl, scale,
 		 mingray, maxgray, render_min, render_max, gamma, flags);
 
@@ -271,6 +272,7 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 //	printf("%d %d %d %d %d %f %d %d %f %f %f %d\n",x0,y0,ixsize,iysize,bpl,
 // scale,min_gray,max_gray,render_min,render_max,gamma,flags);
 
+	if (emdata==NULL) return std::string();
 	bool invert = (min_gray > max_gray);
 	int mingray, maxgray;
 
