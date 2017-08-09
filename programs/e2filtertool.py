@@ -494,7 +494,7 @@ class EMFilterTool(QtGui.QMainWindow):
 
 	def menu_add_2dwin(self):
 		if self.viewer==None: return
-		self.viewer.append(EMImage2DWidget())
+		self.viewer.append(EMImage2DWidget(self.origdata))
 		self.viewer[-1].show()
 		self.needupdate=1
 	
