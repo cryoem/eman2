@@ -229,7 +229,7 @@ def class_postproc(options,it):
 
 	run("e2proc2dpar.py {}/classes_{:02d}.hdf {}/classes_fp_{:02d}.hdf --process math.bispectrum.slice:fp=6 --threads {}".format(options.path,it,options.path,it,options.threads))
 
-	run("e2stacksort.py %s/classes_fp_%02d.hdf %s/classes_fp_%02d.hdf %s/classes_%02d.hdf %s/classes_%02d.hdf --simcmp=ccc --seqali"%(options.path,it,options.path,it,options.path,it,options.path,it))
+	run("e2stacksort.py %s/classes_fp_%02d.hdf %s/classes_fp_%02d.hdf %s/classes_%02d.hdf %s/classes_%02d.hdf --simcmp=ccc --seqalicen"%(options.path,it,options.path,it,options.path,it,options.path,it))
 
 
 def get_classaverage_extras(options):

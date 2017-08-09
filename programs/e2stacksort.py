@@ -68,6 +68,7 @@ def main():
 	parser.add_argument("--iterative",action="store_true",default=False,help="Iterative approach for achieving a good 'consensus alignment' among the set of particles")
 	parser.add_argument("--useali",action="store_true",default=False,help="Save aligned particles to the output file, note that if used with shrink= this will store the reduced aligned particles")
 	parser.add_argument("--seqali",action="store_true",default=False,help="Align each particle to the previous particle before saving with rotate_translate_tree. No flip in alignment. Aligns stack #2 instead if specified.")
+	parser.add_argument("--seqalicen",action="store_true",default=False,help="Align each particle to the previous particle before saving, with a postalignment recentering. No flip in alignment. Aligns stack #2 instead if specified.")
 	parser.add_argument("--center",action="store_true",default=False,help="After alignment, particles are centered via center of mass before comparison")
 	parser.add_argument("--nsort",type=int,help="Number of output particles to generate (mainly for reverse mode)",default=0)
 	parser.add_argument("--ninput",type=int,help="Number of input particles to read (first n in the file)",default=0)
@@ -127,13 +128,15 @@ def main():
 	elif options.reverse: b=sortstackrev(a,options.simcmp[0],options.simcmp[1],options.simalign[0],options.simalign[1],options.nsort,options.shrink,options.useali,options.center,options.simmask)
 	else : b,b2=sortstack(a,a2,options.simcmp[0],options.simcmp[1],options.simalign[0],options.simalign[1],options.nsort,options.shrink,options.useali,options.center,options.simmask)
 
-	if options.seqali:
+	if options.seqali or options.seqalicen:
 		if b2!=None:
 			for i in xrange(1,len(b2)):
 				b2[i]=b2[i].align("rotate_translate_tree",b2[i-1])
+				if options.seqalicen: b2[i].process_inplace("xform.centerofmass")
 		else:
 			for i in xrange(1,len(b)):
 				b[i]=b[i].align("rotate_translate_tree",b[i-1])
+				if options.seqalicen: b2[i].process_inplace("xform.centerofmass")
 
 	if "%" not in args[1] :
 		for i,im in enumerate(b): im.write_image(args[1],i)
