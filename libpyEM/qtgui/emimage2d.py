@@ -981,7 +981,7 @@ class EMImage2DWidget(EMGLWidget):
 			return
 
 		try:
-			self.image_change_count = data["changecount"] # this is important when the user has more than one display instance of the same image, for instance in e2.py if
+			self.image_change_count = self.data["changecount"] # this is important when the user has more than one display instance of the same image, for instance in e2.py if
 		except: pass # probably looking at an FFT image
 
 
