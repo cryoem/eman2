@@ -866,6 +866,9 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=N
 				out2["apix_z"] = ctf.apix
 				# we take a sequence of processor option 2-tuples
 				for op in phaseproc[1:]:
+					if op[0]=="math.bispectrum.slice" and extrapad:
+						pad=good_size(out2["ny"]*1.25)
+						out2.clip_inplace(Region(-(pad-out2["nx"])/2,-(pad-out2["ny"])/2,pad,pad))
 					if op[0] in outplaceprocs: out2=out2.process(op[0],op[1])
 					else: out2.process_inplace(op[0],op[1])
 #				out2.clip_inplace(Region(int(ys2*(oversamp-1)/2.0),int(ys2*(oversamp-1)/2.0),ys2,ys2))
@@ -873,7 +876,7 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=N
 #				print fft2.get_ysize(),len(hpfilt)
 
 				if edgenorm: out2.process_inplace("normalize.edgemean")
-				if extrapad:
+				if extrapad and out2["nx"]==out2["ny"]:
 					pad=good_size(out2["ny"]*1.25)
 					out2.clip_inplace(Region(-(pad-out2["nx"])/2,-(pad-out2["ny"])/2,pad,pad))
 				out2.write_image(phaseproc[0],i)

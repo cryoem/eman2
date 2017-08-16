@@ -168,9 +168,6 @@ def main():
 	if rootpath not in options.path:
 		options.path = rootpath + '/' + options.path
 		
-	if options.parallel:
-		from EMAN2PAR import EMTaskCustomer
-
 	options = sptOptionsParser( options )
 	
 	avgr = Averagers.get( options.averager[0], options.averager[1 ])
@@ -344,6 +341,7 @@ def main():
 			print "\nDone preprocessing on ptcl",i
 		
 		if options.parallel :
+			from EMAN2PAR import EMTaskCustomer
 			etc=EMTaskCustomer(options.parallel)
 		
 		symalgorithm = SymALignStrategy( preprocvol, options.sym, options.steps, options.cmp, etc)

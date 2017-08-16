@@ -12585,8 +12585,11 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 	if (image->is_complex()) cimage = image->copy();
 	else cimage = image->do_fft();
 	cimage->process_inplace("xform.phaseorigin.tocorner");
-	int nkx=cimage->get_xsize()/8+1;
-	int nky=cimage->get_ysize()/8;
+	int nky=params.set_default("size",0)/2;
+	int nkx=nky+1;
+	if (nky<4 || nky>=cimage->get_ysize()/2) nky=cimage->get_ysize()/8;
+	if (nkx<5 || nky>=cimage->get_xsize()/2) nkx=cimage->get_xsize()/8+1;
+
 	EMData* ret=new EMData(nkx*2,nky*2,1);
 	ret->set_complex(1);
 	ret->to_zero();

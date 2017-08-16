@@ -711,6 +711,7 @@ The basic design of EMAN Processors: <br>\
 				d.put("k", EMObject::FLOAT, "Radius of slice in Fourier pixels, integrates over angle.");
 				d.put("fp", EMObject::INT, "Returns a 3-D volume containing n rotationally integrated planes. R&T invariant.");
 				d.put("ffp", EMObject::INT, "Returns a 3-D volume containing n rotationally integrated planes. R&T invariant. Fourier real component.");
+				d.put("size", EMObject::INT, "If specified, will determine the size (x/y) of the real-space bispectrum image. If not set, a size is selected automatically");
 				return d;
 			}
 
