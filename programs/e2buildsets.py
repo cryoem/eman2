@@ -120,7 +120,7 @@ def main():
 	if options.withflipped :
 		print "Insuring that files have phase flipped particles"
 		ptcls=[i for i in os.listdir("particles") if i[0]!="."]
-		args=[i for i in args if i+"__ctf_flip_hp.hdf"in ptcls or i+"__ctf_flip.hdf" in ptcls]	# Not super-efficient, but functional
+		args=[i for i in args if i+"__ctf_flip_fullres.hdf" in ptcls]	# Not super-efficient, but functional
 
 	if options.withbispec :
 		print "Insuring that files have bispectrum particles"

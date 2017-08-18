@@ -12585,6 +12585,8 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 	if (image->is_complex()) cimage = image->copy();
 	else cimage = image->do_fft();
 	cimage->process_inplace("xform.phaseorigin.tocorner");
+	
+	// Decide how large the bispectrum will be
 	int nky=params.set_default("size",0)/2;
 	int nkx=nky+1;
 	if (nky<4 || nky>=cimage->get_ysize()/2) nky=cimage->get_ysize()/8;
@@ -12662,8 +12664,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 						int jkx=jx+kx;
 						int jky=jy+ky;
 	
-						// removed this test because we are using only the central 1/4 of Fourier space
-//						if (abs(kx)>nkx || abs(ky)>nky) continue;
+						if (abs(kx)>nkx || abs(ky)>nky) continue;
 						complex<double> v1 = (complex<double>)cimage2->get_complex_at(jx,jy);
 						complex<double> v2 = (complex<double>)cimage2->get_complex_at(kx,ky);
 						complex<double> v3 = (complex<double>)cimage2->get_complex_at(jkx,jky);
@@ -12672,10 +12673,16 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 				}
 				delete cimage2;
 			}
-			// this fixes an issue with adding in the "special" Fourier locations
+			// this fixes an issue with adding in the "special" Fourier locations ... sort of
 			for (int jy=-nky; jy<nky; jy++) {
 				ret->set_complex_at(0,jy,ret->get_complex_at(0,jy)/sqrt(2.0f));
 				ret->set_complex_at(nkx-1,jy,ret->get_complex_at(nkx-1,jy)/sqrt(2.0f));
+			}
+			// simple fixed low-pass filter to get rid of gradient effects
+			for (int jy=-2; jy<=2; jy++) {
+				for (int jx=0; jx<=2; jx++) {
+					ret->set_complex_at(jx,jy,0.0f);
+				}
 			}
 			EMData *pln=ret->do_ift();
 			pln->process_inplace("xform.phaseorigin.tocenter");

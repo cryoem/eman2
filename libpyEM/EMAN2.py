@@ -233,7 +233,6 @@ This function is called to log the end of the current job. n is returned by E2in
 #	hist.flush()
 	hist.close()
 
-	print "ENDED"
 	return n
 
 def E2saveappwin(app,key,win):
