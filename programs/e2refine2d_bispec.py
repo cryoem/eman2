@@ -160,7 +160,7 @@ def main():
 	if not os.path.exists(fpfile):
 		print "WARNING: ",fpfile," not found. Computing bispectra. This will slow processing. "
 		fpfile=options.path+"/input_bispec.hdf"
-		run("e2proc2dpar.py {} {} --process filter.highpass.gauss:cutoff_freq=0.015 --process math.bispectrum.slice:fp=6:size=32 --threads {}".format(options.input,fpfile,options.threads))
+		run("e2proc2dpar.py {} {} --process filter.highpass.gauss:cutoff_pixels=2 --process math.bispectrum.slice:fp=6:size=32 --threads {}".format(options.input,fpfile,options.threads))
 	else:
 		tmp1=EMData(fpfile,0)
 		tmp2=EMData(options.input,0)
@@ -168,7 +168,7 @@ def main():
 		if tmp1["nx"]!=tmp2["nx"] or tmp1["ny"]!=tmp2["ny"] :
 			print "WARNING: images in ",fpfile," have the wrong dimensions. Recomputing bispectra. This will slow processing."
 			fpfile=options.path+"/input_bispec.hdf"
-			run("e2proc2dpar.py {} {} --process filter.highpass.gauss:cutoff_freq=0.015 --process math.bispectrum.slice:fp=6:size=32 --threads {}".format(options.input,fpfile,options.threads))
+			run("e2proc2dpar.py {} {} --process filter.highpass.gauss:cutoff_pixels=2 --process math.bispectrum.slice:fp=6:size=32 --threads {}".format(options.input,fpfile,options.threads))
 
 	# MSA on the footprints
 	fpbasis=options.path+"/basis_00.hdf"
@@ -228,7 +228,7 @@ def class_postproc(options,it):
 
 	# bispectra of class-averages
 
-	run("e2proc2d.py %s/classes_%02d.hdf %s/classes_%02d.hdf --inplace --calccont --process=filter.highpass.gauss:cutoff_freq=0.015 --process=normalize.circlemean:radius=-5"%(options.path,it,options.path,it))
+	run("e2proc2d.py %s/classes_%02d.hdf %s/classes_%02d.hdf --inplace --calccont --process=filter.highpass.gauss:cutoff_pixels=2 --process=normalize.circlemean:radius=-5"%(options.path,it,options.path,it))
 
 	run("e2proc2dpar.py {}/classes_{:02d}.hdf {}/classes_fp_{:02d}.hdf --process math.bispectrum.slice:fp=6:size=32 --threads {}".format(options.path,it,options.path,it,options.threads))
 
