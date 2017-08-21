@@ -36,6 +36,7 @@ import os
 import sys
 from EMAN2db import db_check_dict
 from EMAN2 import *
+import Queue
 
 def main():
 	
@@ -44,31 +45,34 @@ def main():
 	
 	*** THIS PROGRAM IS NOT YET FUNCTIONAL ***
 
-	This program classifies a set of particles based on a set of references (usually projections). Historically this
-	was done in two steps, first by e2simmx.py or e2simmx2stage.py then by e2classify. However, this approach produced
-	very large intermediate files (simmx file), and was inefficient in a number of other ways. While the similartiy matrix
-	can sometimes be useful for other purposes, this is not true in the vast majority of situtations.
+	This program classifies a set of particles based on a set of references (usually projections). This program makes use of
+	bispectral rotational/translational invariants which, aside from computing the invariants, makes the process extremely fast.
 	
-	This program performs multi-stage classification, all within this single program. It first classifies the references
-	themselves against one another. This produces first-stage references, each of which is associated with several
-	(similar) individual references. Each particle is first classified against the first stage references, then a different
-	algorithm is used to discriminate among the more similar subset of references.
-
 	"""
 	
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--sep", type=int, help="The number of classes a particle can contribute towards (default is 1)", default=1)
-	parser.add_argument("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists")
+	parser.add_argument("--align",type=str,help="specify an aligner to use after classification. Default rotate_translate_tree", default="rotate_translate_tree")
+	parser.add_argument("--aligncmp",type=str,help="Similarity metric for the aligner",default="ccc")
+	parser.add_argument("--ralign",type=str,help="specify a refine aligner to use after the coarse alignment", default=None)
+	parser.add_argument("--raligncmp",type=str,help="Similarity metric for the refine aligner",default="ccc")
+	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel on the local computer")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
 	
-	if options.nofilecheck: options.check = True
-
 	if (len(args)<3 ): parser.error("Please specify <references> <particles> <classmx file>")
 	
+	options.align=parsemodopt(options.align)
+	options.aligncmp=parsemodopt(options.aligncmp)
+	options.ralign=parsemodopt(options.ralign)
+	options.raligncmp=parsemodopt(options.raligncmp)
+
+	
 	E2n=E2init(sys.argv, options.ppid)
+	
+	options.threads+=1		# one extra thread for storing results
 
 	if os.path.exists(args[2]):
 		remove_file(args[2])
@@ -76,36 +80,128 @@ def main():
 	nref=EMUtil.get_image_count(args[0])
 	nptcl=EMUtil.get_image_count(args[1])
 
-	tmp=EMData(args[0],0,True)
-	nx,ny=tmp["nx"],tmp["ny"]
+	# get refs and bispectra
+	refs=EMData.read_images(args[0])
+	refsbsfs=args[0].rsplit(".")[0]+"_bispec.hdf"
+	try:
+		nrefbs=EMUtil.get_image_count(refsbsfs)
+		if nrefbs!=len(refs) : raise Exception
+	except:
+		print "No good bispecta found for refs. Building"
+		com="e2proc2dpar.py {} {} --process filter.highpass.gauss:cutoff_freq=0.01 --process normalize.edgemean --process math.bispectrum.slice:size=32:fp=6".format(args[0],refsbsfs)
+		run(com)
+	
+	refsbs=EMData.read_images(refsbsfs)
+	#refsbs=[i.process("filter.highpass.gauss",{"cutoff_freq":0.01}).process("normalize.edgemean").process("math.bispectrum.slice:size=32:fp=6") for i in refs]
+	
+	# Find particle bispectra
+	if "__ctf_flip" in args[1]:
+		if "even" in args[1]: bsfs=args[1].split("__ctf_flip")[0]+"__ctf_flip_bispec_even.lst"
+		elif "odd" in args[1]: bsfs=args[1].split("__ctf_flip")[0]+"__ctf_flip_bispec_odd.lst"
+		else:
+			bsfs=args[1].split("__ctf_flip")[0]+"__ctf_flip_bispec.lst"
+		nptclbs=EMUtil.get_image_count(bsfs)
+		if nptclbs!=nptcl : 
+			print nptclbs,nptcl
+			raise Exception
+		
+	# initialize output matrices
+	# class, weight, dx,dy,dalpha,flip
+	clsmx=[EMData(options.sep,nptcl,1) for i in xrange(6)]
+	
+	# Actual threads doing the processing
+	N=nptcl
+	npt=max(min(100,N/(options.threads-2)),1)
+	
+	jsd=Queue.Queue(0)
+	# these start as arguments, but get replaced with actual threads
+	thrds=[(jsd,refs,refsbs,args[1],bsfs,options,i,i*npt,min(i*npt+npt,N)) for i in xrange(N/npt+1)]
+	
+	thrtolaunch=0
+	while thrtolaunch<len(thrds) or threading.active_count()>1:
+		if thrtolaunch<len(thrds):
+			while (threading.active_count()>=options.threads) : time.sleep(0.1)
+			if options.verbose>0 : 
+				print "\r Starting thread {}/{}      ".format(thrtolaunch,len(thrds)),
+				sys.stdout.flush()
+			thrds[thrtolaunch]=threading.Thread(target=clsfn,args=thrds[thrtolaunch])		# replace args
+			thrds[thrtolaunch].start()
+			thrtolaunch+=1
+		else: time.sleep(0.1)
+		
+		# return is [N,dict] a dict of image# keyed processed images
+		while not jsd.empty():
+			rd=jsd.get()
+			r=rd[0]
+			pt=r[0]
+			for i,a in enumerate(r[1:]):
+				clsmx[0][i,pt]=a[1]
+				clsmx[1][i,pt]=1.0
+				clsmx[2][i,pt]=a[2]
+				clsmx[3][i,pt]=a[3]
+				clsmx[4][i,pt]=a[4]
+				clsmx[5][i,pt]=a[5]
+			
+			if rd[2] :
+				thrds[rd[1]].join()
+				thrds[rd[1]]=None
+			
+				if options.verbose>1:
+					print "{} done. ".format(rd[1]),
 
+	for i,m in enumerate(clsmx):
+		m.write_image(args[2],i)
+	
 
 	E2end(E2n)
 
 	print "Classification complete, writing classmx"
-	clsmx[0].write_image(args[1],0)
-	clsmx[1].write_image(args[1],1)
-	if num_sim>=5 :
-		clsmx[2].write_image(args[1],2)
-		clsmx[3].write_image(args[1],3)
-		clsmx[4].write_image(args[1],4)
-		clsmx[5].write_image(args[1],5)
-		if num_sim>5 : clsmx[6].write_image(args[1],6)
-		
-	
 
-def footprint(image):
-	"""Computes a "footprint" for an image. Note that it normalizes the input as a side-effect !"""
-	image.process_inplace("normalize.edgemean")
-	fp=image.window_center(image["nx"]*2)
-	fp=fp.calc_ccf(fp)
-	fp.process_inplace("xform.phaseorigin.tocenter")
-	fp.process_inplace("math.rotationalsubtract")
-	fp=fp.unwrap(4,image["nx"]/2)
-	fp=fp.do_fft()
-	fp.ri2inten()
-#	return fp.calc_ccfx(fp,0,fp["ny"],1)
+def clsfn(jsd,refs,refsbs,ptclfs,ptclbsfs,options,grp,n0,n1):
+	from bisect import insort
 	
+	for i in xrange(n0,n1):
+		ptcl=EMData(ptclfs,i)
+		ptclbs=EMData(ptclbsfs,i)
+		
+		# we make a list with the number of total element we want
+		best=[(1e30,-1)]*options.sep
+		for j,refbs in enumerate(refsbs):
+			insort(best,(ptclbs.cmp("ccc",refbs),j))		# insert this comparison in sorted order
+			best.pop()								# remove the worst element
+		
+		ret=[i]
+		for b in best:
+#			print i,b[0],b[1],options.align,refs[b[1]]["nx"],ptcl["nx"]
+			aligned=refs[b[1]].align(options.align[0],ptcl,options.align[1],options.aligncmp[0],options.aligncmp[1])
+
+			if options.ralign!=None: # potentially employ refine alignment
+				refine_parms=options.ralign[1]
+				refine_parms["xform.align2d"] = aligned.get_attr("xform.align2d")
+				refs[b[1]].del_attr("xform.align2d")
+				aligned = refs[b[1]].align(options.ralign[0],ptcl,refine_parms,options.raligncmp[0],options.raligncmp[1])
+		
+			t=aligned["xform.align2d"].inverse()
+			prm = t.get_params("2d")
+			ret.append((b[0],b[1],prm["tx"],prm["ty"],prm["alpha"],prm["mirror"]))		# bs-sim,cls,tx,ty,alpha,mirror
+		
+		jsd.put(ret,grp,i==n1-1)	# third value indicates whether this is the final result from this thread
+			
+
+def run(command):
+	"Mostly here for debugging, allows you to control how commands are executed"
+
+	print "{}: {}".format(time.ctime(time.time()),command)
+
+	ret=launch_childprocess(command)
+
+	# We put the exit here since this is what we'd do in every case anyway. Saves replication of error detection code above.
+	if ret !=0 :
+		print "Error running: ",command
+		sys.exit(1)
+
+	return
+
 
 if __name__ == "__main__":
     main()

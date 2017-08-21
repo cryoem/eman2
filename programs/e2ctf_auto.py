@@ -382,10 +382,13 @@ resolution, but for high resolution work, fitting defocus/astig from frames is r
 		com="e2ctf.py --allparticles {invert} --minqual={minqual} --proctag fullres --phaseflipproc filter.highpass.gauss:cutoff_pixels=3 --phaseflipproc2 normalize.circlemean:radius={maskrad} --phaseflipproc3 mask.soft:outer_radius={maskrad}:width={maskwid} {extrapad} --threads {threads}".format(
 			maskrad=maskrad4,maskwid=maskwid4,invert=invert,minqual=options.minqual,extrapad=extrapad,threads=options.threads)
 		if options.verbose: print com
+		
+		
+		
 		launch_childprocess(com)
 		print "Phase-flipped output files:\n__ctf_flip_lp14 - masked, downsampled, filtered to 14 A resolution\n__ctf_flip_lp5 - masked, downsampled, filtered to 5 A resolution\n__ctf_flip_fullres - masked, full sampling"
 
-	com="e2ctf.py --allparticles {invert} --minqual={minqual} --proctag bispec --phaseflipproc filter.highpass.gauss:cutoff_freq=0.015 --phaseflipproc2 normalize.circlemean:radius={maskrad} --phaseflipproc3 math.bispectrum.slice:fp=6 {extrapad} --threads {threads} ".format(
+	com="e2ctf.py --allparticles {invert} --minqual={minqual} --proctag bispec --phaseflipproc filter.highpass.gauss:cutoff_freq=0.01 --phaseflipproc2 normalize.circlemean:radius={maskrad} --phaseflipproc3 math.bispectrum.slice:size=32:fp=6 {extrapad} --threads {threads} ".format(
 		maskrad=maskrad4,maskwid=maskwid4,invert=invert,minqual=options.minqual,extrapad=extrapad,threads=options.threads)
 	if options.verbose: print com
 	launch_childprocess(com)

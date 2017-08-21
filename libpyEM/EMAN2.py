@@ -61,8 +61,8 @@ outplaceprocs=["math.bispectrum.slice"]
 # Without this, in many countries Qt will set things so "," is used as a decimal
 # separator by sscanf and other functions, which breaks CTF reading and some other things
 try:
-	os.putenv("LC_CTYPE","en_US.utf8")
-	os.putenv("LC_ALL","en_US.utf8")
+	os.putenv("LC_CTYPE","en_US.UTF-8")
+	os.putenv("LC_ALL","en_US.UTF-8")
 except: pass
 
 # Read relative path written by CMake and use that to get EMAN2DIR

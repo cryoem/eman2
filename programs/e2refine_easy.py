@@ -175,6 +175,7 @@ not need to specify any of the following other than the ones already listed abov
 	parser.add_argument("--iter", dest = "iter", type = int, default=6, help = "The total number of refinement iterations to perform. Default=auto", guitype='intbox', row=10, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--mass", default=0, type=float,help="The ~mass of the particle in kilodaltons, used to run normalize.bymass. Due to resolution effects, not always the true mass.", guitype='floatbox', row=12, col=0, rowspan=1, colspan=1, mode="refinement['self.pm().getMass()']")
 	parser.add_header(name="optional", help='Just a visual separation', title="Optional:", row=14, col=0, rowspan=1, colspan=3, mode="refinement")
+	parser.add_argument("--bispec",default=False, action="store_true", help="Will use bispectra for orientation determination (EXPERIMENTAL).",guitype='boolbox', row=18, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--apix", default=0, type=float,help="The angstrom per pixel of the input particles. Normally set to 0, which will read the value from the header of the input file", guitype='floatbox', row=16, col=0, rowspan=1, colspan=1, mode="refinement[0]")
 	parser.add_argument("--sep", type=int, help="The number of classes each particle can contribute towards (normally 1). Increasing will improve SNR, but produce rotational blurring.", default=-1)
 	parser.add_argument("--classkeep",type=float,help="The fraction of particles to keep in each class, based on the similarity score. (default=0.9 -> 90%%)", default=0.9, guitype='floatbox', row=18, col=0, rowspan=1, colspan=1, mode="refinement")
@@ -360,6 +361,9 @@ gold standard resolution assessment is not valid, and you need to re-refine, sta
 <p>Input particles are from <i>{infile}</i></p>""".format(model=options.model,infile=options.input,res=randomres,resb=randomres*0.9))
 			options.input=image_eosplit(options.input)
 			if options.inputavg!=None : options.inputavg=image_eosplit(options.inputavg)
+			if options.bispec: 
+				try: image_eosplit(options.input.split("__ctf_flip")[0]+"__ctf_flip_bispec.lst")
+				except: pass
 		except:
 			traceback.print_exc()
 			print "Error: Unable to prepare input files"
@@ -453,13 +457,17 @@ to achieve the specified resolution, then a certain amount of rotational 'smeari
 the actual map quality. This can achieve maximum liklihood-like effects without the substantial compuations this can entail. If you are concerned by this, or have many more particles than \
 are really required to achieve the targeted resolution, you may consider manually specifiying --sep 1, which will override this automatic behavior.</p>".format(sep=options.sep))
 
+	# in bispectrum mode, we make classes for both the full sphere
+	if options.bispec: incmir=1
+	else: incmir=0
+	
 	if options.orientgen==None :
 		# target resolution worse than 1/2 Nyquist
 		if options.targetres>apix*4 :
 			effbox=nx*apix*2/options.targetres
 #			astep=89.999/ceil(90.0/sqrt(4300/effbox))		# This rounds to the best angular step divisible by 90 degrees. Old way without speed
 			astep=89.99/ceil(90.0*9.0/((options.speed+3.0)*sqrt(4300/effbox)))		# This rounds to the best angular step divisible by 90 degrees
-			options.orientgen="eman:delta={:1.5f}:inc_mirror=0:perturb=0".format(astep)
+			options.orientgen="eman:delta={:1.5f}:inc_mirror={}:perturb=0".format(astep,incmir)
 			if options.classiter<0 :
 				if options.targetres>12.0 :
 					classiter=3
@@ -483,7 +491,7 @@ even lead to worse structures. Based on your requested resolution and box-size, 
 		# target resolution between 1/2 and 3/4 Nyquist
 		elif options.targetres>apix*8.0/3.0 :
 			astep=89.99/ceil(90.0*9.0/((options.speed+3.0)*sqrt(4300/nx)))		# This rounds to the best angular step divisible by 90 degrees
-			options.orientgen="eman:delta={:1.5f}:inc_mirror=0:perturb=0".format(astep)
+			options.orientgen="eman:delta={:1.5f}:inc_mirror={}:perturb=0".format(astep,incmir)
 			append_html("<p>Based on your requested resolution and box-size, modified by --speed,  I will use an angular sampling of {:1.2f} deg. For details, please see \
 <a href=http://blake.bcm.edu/emanwiki/EMAN2/AngStep>http://blake.bcm.edu/emanwiki/EMAN2/AngStep</a></p>".format(astep))
 			if options.classiter<0 :
@@ -498,7 +506,7 @@ will help avoid noise bias in early rounds, but it may be reduced to zero if con
 				append_html("<p>Your desired resolution is beyond 3/4 Nyquist. Regardless, we will set --classiter to 1 initially. Leaving this above 0 \
 will help avoid noise bias, but it may be reduced to zero if convergence seems to have been achieved.</p>")
 			astep=89.99/ceil(90.0*9.0/((options.speed+3.0)*sqrt(4300/nx)))		# This rounds to the best angular step divisible by 90 degrees
-			options.orientgen="eman:delta={:1.5f}:inc_mirror=0:perturb=0".format(astep)
+			options.orientgen="eman:delta={:1.5f}:inc_mirror={}:perturb=0".format(astep,incmir)
 			append_html("<p>The resolution you are requesting is beyond 2/3 Nyquist. This is normally not recommended, as it represents insufficient sampling to give a good representation of your \
 reconstructed map, and resolution can be difficult to accurately assess. The reconstruction will proceed, but generally speaking your A/pix should be less than 1/3 the targeted resolution. \
 Based on your requested resolution and box-size, modified by --speed, I will use an angular sampling of {:1.2f} deg. For details, please see \
@@ -773,8 +781,21 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 			run(cmd)
 			progress += 1.0
 			E2progress(logid,progress/total_procs)
+		elif options.bispec:
+			append_html("<p>* Computing similarity of each particle to the set of projections using bispectra. This avoids alignment, and permits classification in a single step.</p>",True)
+			cmd = "e2classesbyref.py {path}/projections_{itr:02d}_even.hdf {inputfile} {path}/classmx_{itr:02d}_even.hdf --align {simalign} --aligncmp {simaligncmp} {simralign} {verbose} --threads {threads}".format(
+				path=options.path,itr=it,inputfile=options.input[0],simcmp=options.simcmp,simalign=options.simalign,simaligncmp=options.simaligncmp,simralign=simralign,
+				verbose=verbose,threads=options.threads)
+			run(cmd)
+			progress += 1.0
+			cmd = "e2classesbyref.py {path}/projections_{itr:02d}_odd.hdf {inputfile} {path}/classmx_{itr:02d}_odd.hdf --align {simalign} --aligncmp {simaligncmp} {simralign} {verbose} --threads {threads}".format(
+				path=options.path,itr=it,inputfile=options.input[1],simcmp=options.simcmp,simalign=options.simalign,simaligncmp=options.simaligncmp,simralign=simralign,
+				verbose=verbose,threads=options.threads)
+			run(cmd)
+			progress += 1.0
+			
+			
 		else:
-
 			### Simmx
 			#FIXME - Need to combine simmx with classification !!!
 

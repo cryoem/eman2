@@ -10,7 +10,6 @@ FILE(GLOB exclusion_list
 			e2markbadparticles.py
 			e22.py
 			e2boxer21.py
-			e2classesbyref.py
 			e2ali2img.py
 			e2avg_ffts.py
 			e2fileinfo.py
