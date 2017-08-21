@@ -359,11 +359,16 @@ used, browse to the 0_refine_parms.json file in the refinement directory. You ca
 			append_html("""<p>Randomizing the Fourier phases of <i>{model}</i> at resolutions higher than {res:1.1f} &Aring;. If the final achieved resolution is not at least ~{resb:1.1f} &Aring;, then the
 gold standard resolution assessment is not valid, and you need to re-refine, starting with a lower resolution target.</p>
 <p>Input particles are from <i>{infile}</i></p>""".format(model=options.model,infile=options.input,res=randomres,resb=randomres*0.9))
+			# input gets modified below, we need to do this first
+			if options.bispec: 
+				try: 
+#					print "eosplit ",options.input.split("__ctf_flip")[0]+"__ctf_flip_bispec.lst","\n\n"
+					bsinput=image_eosplit(options.input.split("__ctf_flip")[0]+"__ctf_flip_bispec.lst")
+				except: 
+					pass
+			# even/odd split of input data as .lst file
 			options.input=image_eosplit(options.input)
 			if options.inputavg!=None : options.inputavg=image_eosplit(options.inputavg)
-			if options.bispec: 
-				try: image_eosplit(options.input.split("__ctf_flip")[0]+"__ctf_flip_bispec.lst")
-				except: pass
 		except:
 			traceback.print_exc()
 			print "Error: Unable to prepare input files"
@@ -783,13 +788,13 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 			E2progress(logid,progress/total_procs)
 		elif options.bispec:
 			append_html("<p>* Computing similarity of each particle to the set of projections using bispectra. This avoids alignment, and permits classification in a single step.</p>",True)
-			cmd = "e2classesbyref.py {path}/projections_{itr:02d}_even.hdf {inputfile} {path}/classmx_{itr:02d}_even.hdf --align {simalign} --aligncmp {simaligncmp} {simralign} {verbose} --threads {threads}".format(
-				path=options.path,itr=it,inputfile=options.input[0],simcmp=options.simcmp,simalign=options.simalign,simaligncmp=options.simaligncmp,simralign=simralign,
+			cmd = "e2classesbyref.py {path}/projections_{itr:02d}_even.hdf {inputfile} {path}/classmx_{itr:02d}_even.hdf --align {simalign} --aligncmp {simaligncmp} {simralign} {verbose} --sep {sep} --threads {threads}".format(
+				path=options.path,itr=it,inputfile=options.input[0],simcmp=options.simcmp,simalign=options.simalign,simaligncmp=options.simaligncmp,simralign=simralign,sep=options.sep,
 				verbose=verbose,threads=options.threads)
 			run(cmd)
 			progress += 1.0
-			cmd = "e2classesbyref.py {path}/projections_{itr:02d}_odd.hdf {inputfile} {path}/classmx_{itr:02d}_odd.hdf --align {simalign} --aligncmp {simaligncmp} {simralign} {verbose} --threads {threads}".format(
-				path=options.path,itr=it,inputfile=options.input[1],simcmp=options.simcmp,simalign=options.simalign,simaligncmp=options.simaligncmp,simralign=simralign,
+			cmd = "e2classesbyref.py {path}/projections_{itr:02d}_odd.hdf {inputfile} {path}/classmx_{itr:02d}_odd.hdf --align {simalign} --aligncmp {simaligncmp} {simralign} {verbose} --sep {sep} --threads {threads}".format(
+				path=options.path,itr=it,inputfile=options.input[1],simcmp=options.simcmp,simalign=options.simalign,simaligncmp=options.simaligncmp,simralign=simralign,sep=options.sep,
 				verbose=verbose,threads=options.threads)
 			run(cmd)
 			progress += 1.0

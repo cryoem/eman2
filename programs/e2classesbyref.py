@@ -52,7 +52,7 @@ def main():
 	
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--sep", type=int, help="The number of classes a particle can contribute towards (default is 1)", default=1)
-	parser.add_argument("--align",type=str,help="specify an aligner to use after classification. Default rotate_translate_tree", default="rotate_translate_tree")
+	parser.add_argument("--align",type=str,help="specify an aligner to use after classification. Default rotate_translate_tree", default="rotate_translate_tree:flip=0")
 	parser.add_argument("--aligncmp",type=str,help="Similarity metric for the aligner",default="ccc")
 	parser.add_argument("--ralign",type=str,help="specify a refine aligner to use after the coarse alignment", default=None)
 	parser.add_argument("--raligncmp",type=str,help="Similarity metric for the refine aligner",default="ccc")
@@ -88,7 +88,7 @@ def main():
 		if nrefbs!=len(refs) : raise Exception
 	except:
 		print "No good bispecta found for refs. Building"
-		com="e2proc2dpar.py {} {} --process filter.highpass.gauss:cutoff_freq=0.01 --process normalize.edgemean --process math.bispectrum.slice:size=32:fp=6".format(args[0],refsbsfs)
+		com="e2proc2dpar.py {} {} --process filter.highpass.gauss:cutoff_freq=0.01 --process normalize.edgemean --process math.bispectrum.slice:size=32:fp=6 --threads {}".format(args[0],refsbsfs,options.threads)
 		run(com)
 	
 	refsbs=EMData.read_images(refsbsfs)
@@ -182,10 +182,11 @@ def clsfn(jsd,refs,refsbs,ptclfs,ptclbsfs,options,grp,n0,n1):
 				aligned = refs[b[1]].align(options.ralign[0],ptcl,refine_parms,options.raligncmp[0],options.raligncmp[1])
 		
 			t=aligned["xform.align2d"].inverse()
+#			t=aligned["xform.align2d"]
 			prm = t.get_params("2d")
 			ret.append((b[0],b[1],prm["tx"],prm["ty"],prm["alpha"],prm["mirror"]))		# bs-sim,cls,tx,ty,alpha,mirror
 		
-		jsd.put(ret,grp,i==n1-1)	# third value indicates whether this is the final result from this thread
+		jsd.put((ret,grp,i==n1-1))	# third value indicates whether this is the final result from this thread
 			
 
 def run(command):
