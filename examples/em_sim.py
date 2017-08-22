@@ -31,8 +31,8 @@ class Microscope(QtOpenGL.QGLWidget):
 			[0.1, -1], ### f==-1 : specimen stage
 			
 			[0., .1],
-			[-0.5, .1],
-			[-0.7, .1],
+			[-0.29, .14],
+			[-0.57, .1],
 			[-.9, -2] ### f==-2 : detector
 			]
 		
@@ -40,6 +40,7 @@ class Microscope(QtOpenGL.QGLWidget):
 		self.drag_lens=-1
 		self.hold_shift=False
 		self.beam_dist=0
+		self.defocus=0
 		self.beam_lastxy=[0,0]
 
 	def initializeGL(self):
@@ -276,7 +277,8 @@ class Microscope(QtOpenGL.QGLWidget):
 			diverge=newv
 			if l[1]>=0:
 				scatter=False
-		print ", ".join(["{:.2f}".format(d) for d in dist]), abs(dist[0]*2-dist[1]-dist[2])
+		#print ", ".join(["{:.2f}".format(d) for d in dist]), abs(dist[0]*2-dist[1]-dist[2])
+		self.defocus=dist[0]*2-dist[1]-dist[2]
 		
 	
 	def draw_lens(self, y=0, focal=.1, scale=1.2):
@@ -421,7 +423,8 @@ class Microscope(QtOpenGL.QGLWidget):
 	def mouseReleaseEvent(self, QMouseEvent):
 		if self.drag_lens>=0:
 			l=self.lens[self.drag_lens]
-			print "{:d}: py={:.2f}, f={:.2f}".format(self.drag_lens, l[0], l[1])
+			print "lens {:d}: py={:.2f}, f={:.2f}, def={:.2f}".format(
+				self.drag_lens, l[0], l[1], self.defocus)
 			self.drag_lens=-1
 
 
