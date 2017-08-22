@@ -439,7 +439,7 @@ def binaryTreeRef(options,nptclForRef,nseed,etc):
 	if options.mask or options.maskfile or options.normproc or options.threshold or options.clip or (options.shrink > 1) or options.lowpass or options.highpass or options.preprocess:		
 		
 		print "\noptions.mask", options.mask
-		print "\noptions.maskfile", options.mamaskfilesk
+		print "\noptions.maskfile", options.maskfile
 		print "\noptions.normproc", options.normproc
 		print "\noptions.threshold", options.threshold
 		print "\noptions.clip", options.clip
