@@ -2655,7 +2655,7 @@ vector<Dict> RT2DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 
 	int verbose = params.set_default("verbose",0);
 	int maxshift = params.set_default("maxshift",-1);
-	int doflip = params.set_default("doflip",1);
+	int flip = params.set_default("flip",1);
 	float maxres = params.set_default("maxres",-1.0f);
 	if (maxres<0.1) maxres=0.1;
 
@@ -2715,7 +2715,7 @@ vector<Dict> RT2DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 			vector<Transform> transforms;
 			for (float a=astep/2.0; a<359.9; a+=astep) {
 				transforms.push_back(Transform(Dict("type","2d","alpha",a,"mirror",0)));
-				transforms.push_back(Transform(Dict("type","2d","alpha",a,"mirror",1)));
+				if (flip) transforms.push_back(Transform(Dict("type","2d","alpha",a,"mirror",1)));
 			}
 			if (verbose>0) printf("%lu orientations to test\n",transforms.size());
 

@@ -43,8 +43,8 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog <references> <particles> <classmx> [options]
 	
-	*** THIS PROGRAM IS NOT YET FUNCTIONAL ***
-
+	** EXPERIMENTAL **
+	
 	This program classifies a set of particles based on a set of references (usually projections). This program makes use of
 	bispectral rotational/translational invariants which, aside from computing the invariants, makes the process extremely fast.
 	
@@ -56,6 +56,8 @@ def main():
 	parser.add_argument("--aligncmp",type=str,help="Similarity metric for the aligner",default="ccc")
 	parser.add_argument("--ralign",type=str,help="specify a refine aligner to use after the coarse alignment", default=None)
 	parser.add_argument("--raligncmp",type=str,help="Similarity metric for the refine aligner",default="ccc")
+	parser.add_argument("--average", action="store_true", help="Even if a class-average fails, write to the output. Forces 1->1 numbering in output",default=False)
+	
 	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel on the local computer")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
