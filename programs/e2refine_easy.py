@@ -787,13 +787,14 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 			progress += 1.0
 			E2progress(logid,progress/total_procs)
 		elif options.bispec:
+			### FIXME - hard-coded rotate_translate aligner here due to odd irreproducible memory related crashes with rotate_translate_tree:flip=0   8/22/17
 			append_html("<p>* Computing similarity of each particle to the set of projections using bispectra. This avoids alignment, and permits classification in a single step.</p>",True)
-			cmd = "e2classesbyref.py {path}/projections_{itr:02d}_even.hdf {inputfile} {path}/classmx_{itr:02d}_even.hdf --align {simalign} --aligncmp {simaligncmp} {simralign} {verbose} --sep {sep} --threads {threads}".format(
+			cmd = "e2classesbyref.py {path}/projections_{itr:02d}_even.hdf {inputfile} --classmx {path}/classmx_{itr:02d}_even.hdf --classinfo {path}/classinfo_{itr:02d}_even.json --classes {path}/classes_{itr:02}_even.hdf --align rotate_translate --aligncmp {simaligncmp} {simralign} {verbose} --sep {sep} --threads {threads}".format(
 				path=options.path,itr=it,inputfile=options.input[0],simcmp=options.simcmp,simalign=options.simalign,simaligncmp=options.simaligncmp,simralign=simralign,sep=options.sep,
 				verbose=verbose,threads=options.threads)
 			run(cmd)
 			progress += 1.0
-			cmd = "e2classesbyref.py {path}/projections_{itr:02d}_odd.hdf {inputfile} {path}/classmx_{itr:02d}_odd.hdf --align {simalign} --aligncmp {simaligncmp} {simralign} {verbose} --sep {sep} --threads {threads}".format(
+			cmd = "e2classesbyref.py {path}/projections_{itr:02d}_odd.hdf {inputfile} --classmx {path}/classmx_{itr:02d}_odd.hdf --classinfo {path}/classinfo_{itr:02d}_odd.json --classes {path}/classes_{itr:02}_odd.hdf --align rotate_translate --aligncmp {simaligncmp} {simralign} {verbose} --sep {sep} --threads {threads}".format(
 				path=options.path,itr=it,inputfile=options.input[1],simcmp=options.simcmp,simalign=options.simalign,simaligncmp=options.simaligncmp,simralign=simralign,sep=options.sep,
 				verbose=verbose,threads=options.threads)
 			run(cmd)
@@ -847,21 +848,22 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 			print "Warning: Not using structure factor amplitude correction, so disabling classrefsf option"
 			append_html("<p>Warning: classrefsf option requires 'strucfac' amplitude correction. Since this is not being used either by intent or due to the high resolution of the map, 'classrefsf' has been disabled.</p>")
 
-		append_html("<p>* Iteratively align and average all of the particles within each class, discarding the worst fraction</p>",True)
-		cmd="e2classaverage.py {inputfile} --classmx {path}/classmx_{itr:02d}_even.hdf --decayedge --storebad --output {path}/classes_{itr:02d}_even.hdf --ref {path}/projections_{itr:02d}_even.hdf --iter {classiter} \
--f --resultmx {path}/cls_result_{itr:02d}_even.hdf --normproc {normproc} --averager {averager} {classrefsf} {classautomask} --keep {classkeep} {classkeepsig} --cmp {classcmp} \
---align {classalign} --aligncmp {classaligncmp} {classralign} {prefilt} {verbose} {parallel}".format(
-			inputfile=cainput[0], path=options.path, itr=it, classiter=classiter, normproc=options.classnormproc, averager=options.classaverager, classrefsf=classrefsf,
-			classautomask=classautomask,classkeep=options.classkeep, classkeepsig=classkeepsig, classcmp=options.classcmp, classalign=options.classalign, classaligncmp=options.classaligncmp,
-			classralign=classralign, prefilt=prefilt, verbose=verbose, parallel=parallel)
-		run(cmd)
-		cmd="e2classaverage.py {inputfile} --classmx {path}/classmx_{itr:02d}_odd.hdf --decayedge --storebad --output {path}/classes_{itr:02d}_odd.hdf --ref {path}/projections_{itr:02d}_odd.hdf --iter {classiter} \
--f --resultmx {path}/cls_result_{itr:02d}_odd.hdf --normproc {normproc} --averager {averager} {classrefsf} {classautomask} --keep {classkeep} {classkeepsig} --cmp {classcmp} \
---align {classalign} --aligncmp {classaligncmp} {classralign} {prefilt} {verbose} {parallel}".format(
-			inputfile=cainput[1], path=options.path, itr=it, classiter=classiter, normproc=options.classnormproc, averager=options.classaverager, classrefsf=classrefsf,
-			classautomask=classautomask,classkeep=options.classkeep, classkeepsig=classkeepsig, classcmp=options.classcmp, classalign=options.classalign, classaligncmp=options.classaligncmp,
-			classralign=classralign, prefilt=prefilt, verbose=verbose, parallel=parallel)
-		run(cmd)
+		if not options.bispec or classiter!=0 :
+			append_html("<p>* Iteratively align and average all of the particles within each class, discarding the worst fraction</p>",True)
+			cmd="e2classaverage.py {inputfile} --classmx {path}/classmx_{itr:02d}_even.hdf --decayedge --storebad --output {path}/classes_{itr:02d}_even.hdf --ref {path}/projections_{itr:02d}_even.hdf --iter {classiter} \
+	-f --resultmx {path}/cls_result_{itr:02d}_even.hdf --normproc {normproc} --averager {averager} {classrefsf} {classautomask} --keep {classkeep} {classkeepsig} --cmp {classcmp} \
+	--align {classalign} --aligncmp {classaligncmp} {classralign} {prefilt} {verbose} {parallel}".format(
+				inputfile=cainput[0], path=options.path, itr=it, classiter=classiter, normproc=options.classnormproc, averager=options.classaverager, classrefsf=classrefsf,
+				classautomask=classautomask,classkeep=options.classkeep, classkeepsig=classkeepsig, classcmp=options.classcmp, classalign=options.classalign, classaligncmp=options.classaligncmp,
+				classralign=classralign, prefilt=prefilt, verbose=verbose, parallel=parallel)
+			run(cmd)
+			cmd="e2classaverage.py {inputfile} --classmx {path}/classmx_{itr:02d}_odd.hdf --decayedge --storebad --output {path}/classes_{itr:02d}_odd.hdf --ref {path}/projections_{itr:02d}_odd.hdf --iter {classiter} \
+	-f --resultmx {path}/cls_result_{itr:02d}_odd.hdf --normproc {normproc} --averager {averager} {classrefsf} {classautomask} --keep {classkeep} {classkeepsig} --cmp {classcmp} \
+	--align {classalign} --aligncmp {classaligncmp} {classralign} {prefilt} {verbose} {parallel}".format(
+				inputfile=cainput[1], path=options.path, itr=it, classiter=classiter, normproc=options.classnormproc, averager=options.classaverager, classrefsf=classrefsf,
+				classautomask=classautomask,classkeep=options.classkeep, classkeepsig=classkeepsig, classcmp=options.classcmp, classalign=options.classalign, classaligncmp=options.classaligncmp,
+				classralign=classralign, prefilt=prefilt, verbose=verbose, parallel=parallel)
+			run(cmd)
 		progress += 1.0
 		E2progress(logid,progress/total_procs)
 

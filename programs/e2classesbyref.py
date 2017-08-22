@@ -37,6 +37,7 @@ import sys
 from EMAN2db import db_check_dict
 from EMAN2 import *
 import Queue
+from numpy import array
 
 def main():
 	
@@ -56,15 +57,17 @@ def main():
 	parser.add_argument("--aligncmp",type=str,help="Similarity metric for the aligner",default="ccc")
 	parser.add_argument("--ralign",type=str,help="specify a refine aligner to use after the coarse alignment", default=None)
 	parser.add_argument("--raligncmp",type=str,help="Similarity metric for the refine aligner",default="ccc")
-	parser.add_argument("--average", action="store_true", help="Even if a class-average fails, write to the output. Forces 1->1 numbering in output",default=False)
-	
+	parser.add_argument("--classmx",type=str,help="Store results in a classmx_xx.hdf style file",default=None)
+	parser.add_argument("--classinfo",type=str,help="Store results in a classinfo_xx.json style file",default=None)
+	parser.add_argument("--classes",type=str,help="Generate class-averages directly. No bad particle exclusion or iteration. Specify filename.",default=None)
+	parser.add_argument("--averager",type=str,help="Averager to use for class-averages",default="ctf.weight")	
 	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel on the local computer")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
 	
-	if (len(args)<3 ): parser.error("Please specify <references> <particles> <classmx file>")
+	if (len(args)<2 ): parser.error("Please specify <references> <particles>")
 	
 	options.align=parsemodopt(options.align)
 	options.aligncmp=parsemodopt(options.aligncmp)
@@ -76,9 +79,6 @@ def main():
 	
 	options.threads+=1		# one extra thread for storing results
 
-	if os.path.exists(args[2]):
-		remove_file(args[2])
-
 	nref=EMUtil.get_image_count(args[0])
 	nptcl=EMUtil.get_image_count(args[1])
 
@@ -87,7 +87,9 @@ def main():
 	refsbsfs=args[0].rsplit(".")[0]+"_bispec.hdf"
 	try:
 		nrefbs=EMUtil.get_image_count(refsbsfs)
-		if nrefbs!=len(refs) : raise Exception
+		if nrefbs!=len(refs) :
+			print "Reference bispectrum file too short :",nrefbs,len(refs)
+			raise Exception
 	except:
 		print "No good bispecta found for refs. Building"
 		com="e2proc2dpar.py {} {} --process filter.highpass.gauss:cutoff_freq=0.01 --process normalize.edgemean --process math.bispectrum.slice:size=32:fp=6 --threads {}".format(args[0],refsbsfs,options.threads)
@@ -107,9 +109,18 @@ def main():
 			print nptclbs,nptcl
 			raise Exception
 		
-	# initialize output matrices
+	### initialize output files
+	
 	# class, weight, dx,dy,dalpha,flip
 	clsmx=[EMData(options.sep,nptcl,1) for i in xrange(6)]
+	
+	# JSON style output, classes keyed by class number
+	clsinfo={}
+	
+	# avgs
+	if options.classes!=None: 
+		options.averager=parsemodopt(options.averager)
+		avgrs=[Averagers.get(options.averager[0],options.averager[1]) for i in xrange(nref)]
 	
 	# Actual threads doing the processing
 	N=nptcl
@@ -137,12 +148,19 @@ def main():
 			r=rd[0]
 			pt=r[0]
 			for i,a in enumerate(r[1:]):
-				clsmx[0][i,pt]=a[1]
+				clsmx[0][i,pt]=a[0]
 				clsmx[1][i,pt]=1.0
 				clsmx[2][i,pt]=a[2]
 				clsmx[3][i,pt]=a[3]
 				clsmx[4][i,pt]=a[4]
 				clsmx[5][i,pt]=a[5]
+				
+				if options.classinfo!=None:
+					try: clsinfo[a[0]].append((pt,a[1],a[2],a[3],a[4],a[5]))
+					except: clsinfo[a[0]]=[(pt,a[1],a[2],a[3],a[4],a[5])]
+						
+				if options.classes!=None:
+					avgrs[a[0]].add_image(a[6])
 			
 			if rd[2] :
 				thrds[rd[1]].join()
@@ -151,9 +169,44 @@ def main():
 				if options.verbose>1:
 					print "{} done. ".format(rd[1]),
 
-	for i,m in enumerate(clsmx):
-		m.write_image(args[2],i)
+	### Write output files
+	if options.classmx!=None:
+		if os.path.exists(options.classmx): remove_file(options.classmx)
+		for i,m in enumerate(clsmx):
+			m.write_image(options.classmx,i)
 	
+	if options.classinfo!=None:
+		if os.path.exists(options.classinfo): remove_file(options.classinfo)
+		db=js_open_dict(options.classinfo)
+		db["input"]=args[1]
+		db["inputbs"]=bsfs
+		db["refs"]=args[0]
+		db["refsbs"]=refsbsfs
+		db["classes"]=clsinfo
+
+	if options.classes!=None:
+		if os.path.exists(options.classes): remove_file(options.classes)
+		empty=EMData(refs[0]["nx"],refs[0]["ny"],1)
+		empty.to_zero()
+		empty["ptcl_repr"]=0
+		for i,avgr in enumerate(avgrs):
+			if clsinfo.has_key(i):
+				avg=avgr.finish()
+				avg.process_inplace("normalize.toimage",{"to":refs[i]})
+				avg["class_ptcl_idxs"]=[p[0] for p in clsinfo[i]]		# particle indices
+				quals=array([p[1] for p in clsinfo[i]])
+				avg["class_ptcl_qual"]=quals.mean()
+				avg["class_ptcl_qual_sigma"]=quals.std()
+				avg["class_qual"]=avg.cmp("frc",refs[i],{"maxres":8})
+				avg["class_ptcl_src"]=args[1]
+				avg["projection_image"]=args[0]
+				avg["projection_image_idx"]=i
+				try: avg["xform.projection"]=refs[i]["xform.projection"]
+				except: pass
+				avg.write_image(options.classes,i)
+			else:
+				empty.write_image(options.classes,i)
+		
 
 	E2end(E2n)
 
@@ -161,6 +214,8 @@ def main():
 
 def clsfn(jsd,refs,refsbs,ptclfs,ptclbsfs,options,grp,n0,n1):
 	from bisect import insort
+	
+	retali=(options.classes!=None)
 	
 	for i in xrange(n0,n1):
 		ptcl=EMData(ptclfs,i)
@@ -177,7 +232,7 @@ def clsfn(jsd,refs,refsbs,ptclfs,ptclbsfs,options,grp,n0,n1):
 #			print i,b[0],b[1],options.align,refs[b[1]]["nx"],ptcl["nx"]
 			aligned=refs[b[1]].align(options.align[0],ptcl,options.align[1],options.aligncmp[0],options.aligncmp[1])
 
-			if options.ralign!=None: # potentially employ refine alignment
+			if options.ralign!=None and options.ralign[0]!=None: # potentially employ refine alignment
 				refine_parms=options.ralign[1]
 				refine_parms["xform.align2d"] = aligned.get_attr("xform.align2d")
 				refs[b[1]].del_attr("xform.align2d")
@@ -186,7 +241,8 @@ def clsfn(jsd,refs,refsbs,ptclfs,ptclbsfs,options,grp,n0,n1):
 			t=aligned["xform.align2d"].inverse()
 #			t=aligned["xform.align2d"]
 			prm = t.get_params("2d")
-			ret.append((b[0],b[1],prm["tx"],prm["ty"],prm["alpha"],prm["mirror"]))		# bs-sim,cls,tx,ty,alpha,mirror
+			if retali: ret.append((b[1],b[0],prm["tx"],prm["ty"],prm["alpha"],prm["mirror"],ptcl.process("xform",{"transform":t})))		# cls,bs_sim,tx,ty,alpha,mirror,ptcl
+			else: ret.append((b[1],b[0],prm["tx"],prm["ty"],prm["alpha"],prm["mirror"]))		# cls,bs_sim,cls,tx,ty,alpha,mirror
 		
 		jsd.put((ret,grp,i==n1-1))	# third value indicates whether this is the final result from this thread
 			
