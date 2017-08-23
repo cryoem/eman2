@@ -53,7 +53,7 @@ def main():
 	
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--sep", type=int, help="The number of classes a particle can contribute towards (default is 1)", default=1)
-	parser.add_argument("--align",type=str,help="specify an aligner to use after classification. Default rotate_translate_tree", default="rotate_translate_tree:flip=0")
+	parser.add_argument("--align",type=str,help="specify an aligner to use after classification. Default rotate_translate_tree", default="rotate_translate_tree")
 	parser.add_argument("--aligncmp",type=str,help="Similarity metric for the aligner",default="ccc")
 	parser.add_argument("--ralign",type=str,help="specify a refine aligner to use after the coarse alignment", default=None)
 	parser.add_argument("--raligncmp",type=str,help="Similarity metric for the refine aligner",default="ccc")
@@ -192,7 +192,7 @@ def main():
 		for i,avgr in enumerate(avgrs):
 			if clsinfo.has_key(i):
 				avg=avgr.finish()
-				avg.process_inplace("normalize.toimage",{"to":refs[i]})
+#				avg.process_inplace("normalize.toimage",{"to":refs[i]})
 				avg["class_ptcl_idxs"]=[p[0] for p in clsinfo[i]]		# particle indices
 				quals=array([p[1] for p in clsinfo[i]])
 				avg["class_ptcl_qual"]=quals.mean()

@@ -789,12 +789,12 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 		elif options.bispec:
 			### FIXME - hard-coded rotate_translate aligner here due to odd irreproducible memory related crashes with rotate_translate_tree:flip=0   8/22/17
 			append_html("<p>* Computing similarity of each particle to the set of projections using bispectra. This avoids alignment, and permits classification in a single step.</p>",True)
-			cmd = "e2classesbyref.py {path}/projections_{itr:02d}_even.hdf {inputfile} --classmx {path}/classmx_{itr:02d}_even.hdf --classinfo {path}/classinfo_{itr:02d}_even.json --classes {path}/classes_{itr:02}_even.hdf --align rotate_translate --aligncmp {simaligncmp} {simralign} {verbose} --sep {sep} --threads {threads}".format(
+			cmd = "e2classesbyref.py {path}/projections_{itr:02d}_even.hdf {inputfile} --classmx {path}/classmx_{itr:02d}_even.hdf --classinfo {path}/classinfo_{itr:02d}_even.json --classes {path}/classes_{itr:02}_even.hdf --align rotate_translate_flip --aligncmp {simaligncmp} {simralign} {verbose} --sep {sep} --threads {threads}".format(
 				path=options.path,itr=it,inputfile=options.input[0],simcmp=options.simcmp,simalign=options.simalign,simaligncmp=options.simaligncmp,simralign=simralign,sep=options.sep,
 				verbose=verbose,threads=options.threads)
 			run(cmd)
 			progress += 1.0
-			cmd = "e2classesbyref.py {path}/projections_{itr:02d}_odd.hdf {inputfile} --classmx {path}/classmx_{itr:02d}_odd.hdf --classinfo {path}/classinfo_{itr:02d}_odd.json --classes {path}/classes_{itr:02}_odd.hdf --align rotate_translate --aligncmp {simaligncmp} {simralign} {verbose} --sep {sep} --threads {threads}".format(
+			cmd = "e2classesbyref.py {path}/projections_{itr:02d}_odd.hdf {inputfile} --classmx {path}/classmx_{itr:02d}_odd.hdf --classinfo {path}/classinfo_{itr:02d}_odd.json --classes {path}/classes_{itr:02}_odd.hdf --align rotate_translate_flip --aligncmp {simaligncmp} {simralign} {verbose} --sep {sep} --threads {threads}".format(
 				path=options.path,itr=it,inputfile=options.input[1],simcmp=options.simcmp,simalign=options.simalign,simaligncmp=options.simaligncmp,simralign=simralign,sep=options.sep,
 				verbose=verbose,threads=options.threads)
 			run(cmd)
