@@ -6,14 +6,18 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 from PyQt4 import QtGui, QtCore, QtOpenGL
 from PyQt4.QtCore import Qt
+from emimage2d import EMImage2DWidget
+from EMAN2 import *
+from emapplication import EMApp
 
 
 class Microscope(QtOpenGL.QGLWidget):
 	
-	def __init__(self, parent=None):
+	def __init__(self, parent=None, imgwindow=None):
 		QtOpenGL.QGLWidget.__init__(self, parent)
 		self.win_size=[500,1000]
 		self.setMinimumSize(self.win_size[0], self.win_size[1])
+		self.imgwindow=imgwindow
 		
 		#### set up the first two lens
 		self.source=s=.9
@@ -30,9 +34,9 @@ class Microscope(QtOpenGL.QGLWidget):
 			
 			[0.1, -1], ### f==-1 : specimen stage
 			
-			[0., .1],
-			[-0.29, .14],
-			[-0.57, .1],
+			[-0.03, .07],
+			[-0.3, .07],
+			[-0.56, .07],
 			[-.9, -2] ### f==-2 : detector
 			]
 		
@@ -42,6 +46,11 @@ class Microscope(QtOpenGL.QGLWidget):
 		self.beam_dist=0
 		self.defocus=0
 		self.beam_lastxy=[0,0]
+		
+		if imgwindow:
+			imgwindow.show()
+			img=self.draw_wave()
+			self.imgwindow.set_data(from_numpy(img))
 
 	def initializeGL(self):
 		glClearColor(1.0, 1.0, 1.0, 1.0)
@@ -85,9 +94,65 @@ class Microscope(QtOpenGL.QGLWidget):
 		#glEnd()
 		
 		self.draw_path()
-		
 		glFlush()
+		
+	def draw_wave(self):
+		sz=256
+		raw=np.zeros(sz)
+		wid=2
+		w2=4
+		raw[sz/2-wid-w2:sz/2+wid-w2]=1
+		raw[sz/2-wid+w2:sz/2+wid+w2]=1
 
+		wavelen=2.
+		
+		
+		mult=400
+#		pln=np.round(.13*mult)
+#		lens=np.round(np.array([[.27,.07], [.26, .09], [.34, .07]])*mult)
+#		print pln, lens
+		l=np.array(self.lens)[3:]
+		pln=np.round((self.lens[2][0]-l[0,0])*mult)
+		lens=np.round(mult*np.array([[l[i,0]-l[i+1,0], l[i,1]] for i in range(len(l)-1)]))
+#		print pln,lens
+		
+		imgs=[]
+
+		ix=np.arange(sz)
+		iz=np.arange(1,pln)[:,None,None]
+
+		dst=np.sqrt((ix-ix[:,None])**2 +iz**2)
+		cpx=raw[:,None]*np.exp(-1j*2*np.pi*dst/wavelen)*(1/dst**2)
+		img=np.sum(cpx, axis=1)
+		imgs.append(img)
+		for il,ln in enumerate(lens):
+			f=ln[1]
+			ps=((ix-sz/2)**2)/(f*2)*(2*np.pi/wavelen)
+			proj=imgs[-1][-1]
+			proj_ps=proj*np.exp(-1j*(np.pi-ps))
+
+			img0=[]
+			zmax=ln[0]
+			iz=np.arange(1,zmax)[:,None,None]
+
+			dst=np.sqrt((ix-ix[:,None])**2 +iz**2)
+			cpx1=proj_ps[:,None]*np.exp(-1j*2*np.pi*dst/wavelen)*(1/dst**2)
+
+			img=np.sum(cpx1, axis=1)
+
+			imgs.append(img)
+		
+		final=np.vstack(imgs)
+		final/=np.sum(abs(final),axis=1)[:,None]
+		return abs(final)[::-1,:].copy()
+
+
+
+
+
+
+
+	
 	#### draw vertex and keep track of the distance
 	def draw_vertex(self, x, y):
 		glVertex(x, y, 0)
@@ -163,6 +228,7 @@ class Microscope(QtOpenGL.QGLWidget):
 					## beam cannot be scattered at the first stage.
 					x0=s-self.lens[il-1][0]
 					s0=self.lens[il-1][0]
+					#print si, x0, s0, d0
 				
 				ym=s-d0/abs(w)
 				xm=1
@@ -174,7 +240,8 @@ class Microscope(QtOpenGL.QGLWidget):
 				glBegin(GL_LINES)
 				if d1>0: ### output beam converge to next focal point
 					
-					if d0>0 and dvg==False: #### lens below last focal point, draw input beam
+					if (scatter and abs(x0)<bign) or (d0>0 and dvg==False): 
+						#### lens below last focal point, draw input beam
 						
 						if abs(w)>maxwidth:
 							#### input beam miss this lens. stop the beam
@@ -278,7 +345,7 @@ class Microscope(QtOpenGL.QGLWidget):
 			if l[1]>=0:
 				scatter=False
 		#print ", ".join(["{:.2f}".format(d) for d in dist]), abs(dist[0]*2-dist[1]-dist[2])
-		self.defocus=dist[0]*2-dist[1]-dist[2]
+		#self.defocus=dist[0]*2-dist[1]-dist[2]
 		
 	
 	def draw_lens(self, y=0, focal=.1, scale=1.2):
@@ -423,9 +490,13 @@ class Microscope(QtOpenGL.QGLWidget):
 	def mouseReleaseEvent(self, QMouseEvent):
 		if self.drag_lens>=0:
 			l=self.lens[self.drag_lens]
-			print "lens {:d}: py={:.2f}, f={:.2f}, def={:.2f}".format(
-				self.drag_lens, l[0], l[1], self.defocus)
+			print "lens {:d}: py={:.2f}, f={:.2f}".format(
+				self.drag_lens, l[0], l[1])
 			self.drag_lens=-1
+			
+			if self.imgwindow:
+				img=self.draw_wave()
+				self.imgwindow.set_data(from_numpy(img))
 
 
 
@@ -433,17 +504,25 @@ class MainWindow(QtGui.QMainWindow):
 	
 	def __init__(self):
 		QtGui.QMainWindow.__init__(self)
-		widget = Microscope(self)    
+		
+		self.imgview = EMImage2DWidget()
+		img=np.random.rand(512,512)
+		self.imgview.set_data(from_numpy(img))
+		
+		widget = Microscope(self, self.imgview)    
 		self.setCentralWidget(widget)
 
+		
+		
 
 def main():
-	app=QtGui.QApplication([""])
+	app = EMApp()
+#	app=QtGui.QApplication([""])
 	
 	window = MainWindow()
 	window.show()
 	
-	app.exec_()
+	app.execute()
 	
 	
 	
