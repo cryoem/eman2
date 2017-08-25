@@ -55,6 +55,9 @@ import threading
 
 HOMEDB=None
 
+# When generating bispectral invariants, we need 2 parameters, which must be used consistently throughout the system
+bispec_invar_parm=(32,10)
+
 # These are processors which don't support in-place operation
 outplaceprocs=["math.bispectrum.slice"]
 

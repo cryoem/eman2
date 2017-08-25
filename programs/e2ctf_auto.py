@@ -388,8 +388,8 @@ resolution, but for high resolution work, fitting defocus/astig from frames is r
 		launch_childprocess(com)
 		print "Phase-flipped output files:\n__ctf_flip_lp14 - masked, downsampled, filtered to 14 A resolution\n__ctf_flip_lp5 - masked, downsampled, filtered to 5 A resolution\n__ctf_flip_fullres - masked, full sampling"
 
-	com="e2ctf.py --allparticles {invert} --minqual={minqual} --proctag bispec --phaseflipproc filter.highpass.gauss:cutoff_freq=0.01 --phaseflipproc2 normalize.circlemean:radius={maskrad} --phaseflipproc3 math.bispectrum.slice:size=32:fp=6 {extrapad} --threads {threads} ".format(
-		maskrad=maskrad4,maskwid=maskwid4,invert=invert,minqual=options.minqual,extrapad=extrapad,threads=options.threads)
+	com="e2ctf.py --allparticles {invert} --minqual={minqual} --proctag bispec --phaseflipproc filter.highpass.gauss:cutoff_freq=0.01 --phaseflipproc2 normalize.circlemean:radius={maskrad} --phaseflipproc3 math.bispectrum.slice:size={bssz}:fp={bsfp} {extrapad} --threads {threads} ".format(
+		maskrad=maskrad4,maskwid=maskwid4,invert=invert,minqual=options.minqual,extrapad=extrapad,threads=options.threads,bssz=bispec_invar_parm[0],bsfp=bispec_invar_parm[1])
 	if options.verbose: print com
 	launch_childprocess(com)
 	print "Phase-flipped output files:\n__ctf_flip_bispec - bispectra footprints computed from high pass filtered normalized particles"

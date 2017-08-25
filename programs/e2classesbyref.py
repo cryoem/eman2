@@ -57,6 +57,7 @@ def main():
 	parser.add_argument("--aligncmp",type=str,help="Similarity metric for the aligner",default="ccc")
 	parser.add_argument("--ralign",type=str,help="specify a refine aligner to use after the coarse alignment", default=None)
 	parser.add_argument("--raligncmp",type=str,help="Similarity metric for the refine aligner",default="ccc")
+	parser.add_argument("--cmp",type=str,help="Default=auto. The name of a 'cmp' to be used in assessing the aligned images", default="ccc")
 	parser.add_argument("--classmx",type=str,help="Store results in a classmx_xx.hdf style file",default=None)
 	parser.add_argument("--classinfo",type=str,help="Store results in a classinfo_xx.json style file",default=None)
 	parser.add_argument("--classes",type=str,help="Generate class-averages directly. No bad particle exclusion or iteration. Specify filename.",default=None)
@@ -73,6 +74,7 @@ def main():
 	options.aligncmp=parsemodopt(options.aligncmp)
 	options.ralign=parsemodopt(options.ralign)
 	options.raligncmp=parsemodopt(options.raligncmp)
+	options.cmp=parsemodopt(options.cmp)
 
 	
 	E2n=E2init(sys.argv, options.ppid)
@@ -92,7 +94,7 @@ def main():
 			raise Exception
 	except:
 		print "No good bispecta found for refs. Building"
-		com="e2proc2dpar.py {} {} --process filter.highpass.gauss:cutoff_freq=0.01 --process normalize.edgemean --process math.bispectrum.slice:size=32:fp=6 --threads {}".format(args[0],refsbsfs,options.threads)
+		com="e2proc2dpar.py {} {} --process filter.highpass.gauss:cutoff_freq=0.01 --process normalize.edgemean --process math.bispectrum.slice:size={}:fp={} --threads {}".format(args[0],refsbsfs,bispec_invar_parm[0],bispec_invar_parm[1],options.threads)
 		run(com)
 	
 	refsbs=EMData.read_images(refsbsfs)
@@ -108,6 +110,9 @@ def main():
 		if nptclbs!=nptcl : 
 			print nptclbs,nptcl
 			raise Exception
+	else:
+		if "even" in args[1]: bsfs=args[1].split("_even")[0]+"_bispec_even.lst"
+		elif "odd" in args[1]: bsfs=args[1].split("_odd")[0]+"_bispec_odd.lst"
 		
 	### initialize output files
 	
@@ -148,19 +153,19 @@ def main():
 			r=rd[0]
 			pt=r[0]
 			for i,a in enumerate(r[1:]):
-				clsmx[0][i,pt]=a[0]
+				clsmx[0][i,pt]=a[1]
 				clsmx[1][i,pt]=1.0
-				clsmx[2][i,pt]=a[2]
-				clsmx[3][i,pt]=a[3]
-				clsmx[4][i,pt]=a[4]
-				clsmx[5][i,pt]=a[5]
+				clsmx[2][i,pt]=a[3]
+				clsmx[3][i,pt]=a[4]
+				clsmx[4][i,pt]=a[5]
+				clsmx[5][i,pt]=a[6]
 				
 				if options.classinfo!=None:
-					try: clsinfo[a[0]].append((pt,a[1],a[2],a[3],a[4],a[5]))
-					except: clsinfo[a[0]]=[(pt,a[1],a[2],a[3],a[4],a[5])]
+					try: clsinfo[a[1]].append((pt,a[0],a[2],a[3],a[4],a[5],a[6]))
+					except: clsinfo[a[1]]=[(pt,a[0],a[2],a[3],a[4],a[5],a[6])]
 						
 				if options.classes!=None:
-					avgrs[a[0]].add_image(a[6])
+					avgrs[a[1]].add_image(a[7])
 			
 			if rd[2] :
 				thrds[rd[1]].join()
@@ -192,7 +197,9 @@ def main():
 		for i,avgr in enumerate(avgrs):
 			if clsinfo.has_key(i):
 				avg=avgr.finish()
-#				avg.process_inplace("normalize.toimage",{"to":refs[i]})
+				avg.process_inplace("normalize.circlemean",{"radius":avg["ny"]/2-4})
+				avg.process_inplace("mask.soft",{"outer_radius":avg["ny"]/2-4,"width":3})
+				avg.process_inplace("normalize.toimage",{"to":refs[i],"ignore_lowsig":0.75})
 				avg["class_ptcl_idxs"]=[p[0] for p in clsinfo[i]]		# particle indices
 				quals=array([p[1] for p in clsinfo[i]])
 				avg["class_ptcl_qual"]=quals.mean()
@@ -222,12 +229,13 @@ def clsfn(jsd,refs,refsbs,ptclfs,ptclbsfs,options,grp,n0,n1):
 		ptclbs=EMData(ptclbsfs,i)
 		
 		# we make a list with the number of total element we want
-		best=[(1e30,-1)]*options.sep
+		best=[(1e30,-1)]*(options.sep*3)		# we keep 3 possible classifications for each desired final output, the pare this down to the best nsep in the next stage
 		for j,refbs in enumerate(refsbs):
 			insort(best,(ptclbs.cmp("ccc",refbs),j))		# insert this comparison in sorted order
 			best.pop()								# remove the worst element
 		
 		ret=[i]
+		newbest=[]
 		for b in best:
 #			print i,b[0],b[1],options.align,refs[b[1]]["nx"],ptcl["nx"]
 			aligned=refs[b[1]].align(options.align[0],ptcl,options.align[1],options.aligncmp[0],options.aligncmp[1])
@@ -238,12 +246,15 @@ def clsfn(jsd,refs,refsbs,ptclfs,ptclbsfs,options,grp,n0,n1):
 				refs[b[1]].del_attr("xform.align2d")
 				aligned = refs[b[1]].align(options.ralign[0],ptcl,refine_parms,options.raligncmp[0],options.raligncmp[1])
 		
+			c=aligned.cmp(options.cmp[0],ptcl,options.cmp[1])
 			t=aligned["xform.align2d"].inverse()
 #			t=aligned["xform.align2d"]
 			prm = t.get_params("2d")
-			if retali: ret.append((b[1],b[0],prm["tx"],prm["ty"],prm["alpha"],prm["mirror"],ptcl.process("xform",{"transform":t})))		# cls,bs_sim,tx,ty,alpha,mirror,ptcl
-			else: ret.append((b[1],b[0],prm["tx"],prm["ty"],prm["alpha"],prm["mirror"]))		# cls,bs_sim,cls,tx,ty,alpha,mirror
+			if retali: insort(newbest,(c,b[1],b[0],prm["tx"],prm["ty"],prm["alpha"],prm["mirror"],ptcl.process("xform",{"transform":t})))		# cls,bs_sim,tx,ty,alpha,mirror,ptcl
+			else: insort(newbest,(c,b[1],b[0],prm["tx"],prm["ty"],prm["alpha"],prm["mirror"]))		# cls,bs_sim,cls,tx,ty,alpha,mirror
 		
+		for j in xrange(options.sep):
+			ret.append(newbest[j])
 		jsd.put((ret,grp,i==n1-1))	# third value indicates whether this is the final result from this thread
 			
 
