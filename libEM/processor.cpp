@@ -12644,9 +12644,22 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 	}
 	// footprint mode, produces a 2-D image containing n veritcally arranged rotational invariants
 	else if (params.has_key("fp")) {
-                int fp=(int)params.set_default("fp",8);
+		int fp=(int)params.set_default("fp",8);
 		EMData *ret2=new EMData(nkx-1,nky*2*fp,1);
 		int nlay=(nkx*2-2)*nky*2*sizeof(float);
+		
+		// We are doing a lot of rotations, so we make the image as small as possible first
+		EMData *tmp=cimage;
+		cimage=new EMData((nkx+fp+2)*2,(nky+fp+2)*2,1);
+		cimage->set_complex(1);
+		for (int k=0; k<cimage->get_ysize(); k++) {
+			for (int j=0; j<cimage->get_xsize()/2; j++) {
+				cimage->set_complex_at(j,k,tmp->get_complex_at(j,k));
+			}
+		}
+		delete tmp;
+		
+		// now we compute the actual rotationally integrated "footprint"
 		for (int k=2; k<2+fp; k++) {
 // 			int jkx=k;
 // 			int jky=0;
