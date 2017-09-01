@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Builds numpy version(s), if not specified build all versions, 1.5 - 1.12
+# Builds user-specified numpy version from optionally-specified branch
 
 function print_usage(){
     printf "\e\033[35m\n  Usage: $(basename ${0}) %s %s %s\n\n\033[0m" "{1.5|...|1.12}" "[branch-to-checkout]" "[--conda-build-arg1] [--conda-build-arg2] ..." >&2
