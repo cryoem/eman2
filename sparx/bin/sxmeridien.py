@@ -5198,8 +5198,7 @@ def cerrs(params, ctfs, particle_groups):
 
 def do_final_rec3d(partids, partstack, original_data, oldparams, oldparamstructure, projdata, final_iter=-1, comm = -1 ):
 	global Tracker, Blockdata
-	import shutil
-	from shutil import copyfile
+	from shutil import copy
 	#from mpi import mpi_barrier, MPI_COMM_WORLD
 
 	if( Blockdata["subgroup_myid"] > -1 ):
@@ -5308,7 +5307,7 @@ def do_final_rec3d(partids, partstack, original_data, oldparams, oldparamstructu
 	do3d_final_mpi(final_iter)
 	# also copy params to masterdir as final params
 	if(Blockdata["myid"] == Blockdata["main_node"]):
-		copyfile(os.path.join(Tracker["constants"]["masterdir"], "main%03d"%Tracker["mainiteration"], "params_%03d.txt"%Tracker["mainiteration"]), os.path.join(Tracker["constants"]["masterdir"], "final_params_%03d.txt"%Tracker["mainiteration"]))
+		copy(os.path.join(Tracker["constants"]["masterdir"], "main%03d"%Tracker["mainiteration"], "params_%03d.txt"%Tracker["mainiteration"]), os.path.join(Tracker["constants"]["masterdir"], "final_params_%03d.txt"%Tracker["mainiteration"]))
 		shutil.rmtree(os.path.join(Tracker["constants"]["masterdir"], "tempdir"))
 	mpi_barrier(MPI_COMM_WORLD)
 	return
@@ -8421,7 +8420,7 @@ def main():
 	from random        import random, uniform
 	import socket
 	import shutil
-	from shutil import copyfile
+	from shutil import copy
 	# ------------------------------------------------------------------------------------
 	# PARSE COMMAND OPTIONS
 	progname = os.path.basename(sys.argv[0])
@@ -8961,9 +8960,9 @@ def main():
 				mpi_barrier(MPI_COMM_WORLD)
 				for procid in xrange(2):
 					if(Blockdata["myid"] == Blockdata["main_node"]):
-						copyfile(os.path.join(Tracker["previousoutputdir"], "particle_groups_%d.txt"%procid), os.path.join(Tracker["directory"], "particle_groups_%d.txt"%procid))
-						copyfile(os.path.join(Tracker["previousoutputdir"], "chunk_%d_%03d.txt"%(procid, mainiteration-1)), os.path.join(Tracker["directory"], "chunk_%d_%03d.txt"%(procid, mainiteration)))
-						copyfile(os.path.join(Tracker["previousoutputdir"], "groupids.txt"), os.path.join(Tracker["directory"], "groupids.txt"))
+						copy(os.path.join(Tracker["previousoutputdir"], "particle_groups_%d.txt"%procid), os.path.join(Tracker["directory"], "particle_groups_%d.txt"%procid))
+						copy(os.path.join(Tracker["previousoutputdir"], "chunk_%d_%03d.txt"%(procid, mainiteration-1)), os.path.join(Tracker["directory"], "chunk_%d_%03d.txt"%(procid, mainiteration)))
+						copy(os.path.join(Tracker["previousoutputdir"], "groupids.txt"), os.path.join(Tracker["directory"], "groupids.txt"))
 					Tracker["refvol"] = os.path.join(Tracker["previousoutputdir"],"vol_%01d_%03d.hdf"%(procid,Tracker["mainiteration"]-1))
 					Tracker["nxpolar"]= Tracker["nxinit"] #min( 3*Tracker["nxinit"], Tracker["constants"]["nnxo"] )
 					partids[procid]   = os.path.join(Tracker["directory"],"chunk_%01d_%03d.txt"%(procid, Tracker["mainiteration"]))
@@ -9037,7 +9036,7 @@ def main():
 					mpi_barrier(MPI_COMM_WORLD)
 				do_ctref_get_maps_mpi(Tracker["directory"])
 				if(Blockdata["myid"] == Blockdata["main_node"]):
-					copyfile(os.path.join(Tracker["directory"],"tempdir", "bckgnoise.hdf"), os.path.join(Tracker["directory"],  "bckgnoise.hdf"))
+					copy(os.path.join(Tracker["directory"],"tempdir", "bckgnoise.hdf"), os.path.join(Tracker["directory"],  "bckgnoise.hdf"))
 					ncc = compare_bckgnoise(get_im(os.path.join(Tracker["directory"],"bckgnoise.hdf")), get_im(os.path.join(Tracker["previousoutputdir"], "bckgnoise.hdf")))
 					print("NCC is %7.4f"%ncc)
 					shutil.rmtree(os.path.join(Tracker["directory"],"tempdir"))
