@@ -9,6 +9,8 @@ source:
 build:
     number: 0
     skip: True  # [win or py3k]
+    script_env:
+        - GIT_PYDUSA_BRANCH
 
 requirements:
     build:
