@@ -44,7 +44,7 @@ NOTE: Please remember to adjust box_size also when setting resample_ratio < 0.1.
     * The remaining parameters are optional.
     limit_ctf:: Use CTF limit filter: Frequencies where CTF oscillations can not be properly modeled with the resampled pixel size will be discarded in the images with the appropriate low-pass filter. This has no effects when the CTER CTF File is not specified by the CTF paramters source argument. (default False)
     astigmatism_error:: Astigmatism error limit [Degrees]: Set astigmatism to zero for all micrographs where the angular error computed by sxcter is larger than the desired value. This has no effects when the CTER CTF File is not specified by the CTF paramters source argument. (default 360.0)
-    resample_ratio:: Ratio between new and original pixel size: Use a value between 0.0 and 1.0 (excluding 0.0). The new pixel size will be automatically recalculated and stored in CTF paramers when resample_ratio < 1.0 is used. (default 1.0)
+    resample_ratio:: Image size reduction factor (<1): Use a value between 0.0 and 1.0 (excluding 0.0). The new pixel size will be automatically recalculated and stored in CTF paramers when resample_ratio < 1.0 is used. (default 1.0)
     check_consistency:: Check consistency of inputs: Create a text file containing the list of inconsistent Micrograph ID entries (i.e. inconsist_mic_list_file.txt). (default False)
 
 
