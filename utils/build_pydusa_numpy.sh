@@ -20,17 +20,15 @@ set -xe
 
 RECIPES_DIR=$(cd $(dirname $0)/../recipes && pwd -P)
 
-case ${#args} in
+case ${#args[@]} in
     1|2) numpy_versions=${args[0]}
         
-        export GIT_PYDUSA_VERSION=${2:-"master"}
+        export GIT_PYDUSA_BRANCH=${2:-"v20170831"}
         ;;
 
     0) print_usage
        ;;
 esac
-
-
 
 for v in ${numpy_versions[@]};do
     conda build "${RECIPES_DIR}/pydusa" --numpy ${v} ${opts[@]}
