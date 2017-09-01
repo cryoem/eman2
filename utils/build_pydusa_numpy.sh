@@ -26,7 +26,7 @@ case ${#args[@]} in
         export GIT_PYDUSA_BRANCH=${2:-"v20170831"}
         ;;
 
-    0) print_usage
+    *) print_usage
        ;;
 esac
 
