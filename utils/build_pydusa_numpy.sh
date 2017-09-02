@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 
-# Builds numpy version(s), if not specified build all versions, 1.5 - 1.12
+# Builds user-specified numpy version from optionally-specified branch
 
-# unset args before using, it is set in activate script above
-unset args
+function print_usage(){
+    printf "\e\033[35m\n  Usage: $(basename ${0}) %s %s %s\n\n\033[0m" "{1.5|...|1.12}" "[branch-to-checkout]" "[--conda-build-opt1] [--conda-build-opt2] ..." >&2
+    exit 64
+}
+
 for elem in ${@};do
     regex=-*
     if [[ $elem == $regex ]];then
@@ -17,11 +20,15 @@ set -xe
 
 RECIPES_DIR=$(cd $(dirname $0)/../recipes && pwd -P)
 
-if [ ${#args} -lt 1 ];then
-    numpy_versions=( 1.5 1.6 1.7 1.8 1.9 1.10 1.11 1.12 )
-else
-    numpy_versions=${args[@]}
-fi
+case ${#args[@]} in
+    1|2) numpy_versions=${args[0]}
+        
+        export GIT_PYDUSA_BRANCH=${2:-"v20170831"}
+        ;;
+
+    *) print_usage
+       ;;
+esac
 
 for v in ${numpy_versions[@]};do
     conda build "${RECIPES_DIR}/pydusa" --numpy ${v} ${opts[@]}
