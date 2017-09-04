@@ -2710,6 +2710,10 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
+		sxcmd = SXcmd(); sxcmd.name = "sxgui_meridien"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.label = "3D Refinement Assessment"; sxcmd.short_info = "GUI tool to assess 3D Refinement based on outputs of sxmeridien."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_meridien"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = False
+
+		sxcmd_list.append(sxcmd)
+
 		sxcmd = SXcmd(); sxcmd.name = "e2display"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.label = "Display Data"; sxcmd.short_info = "Displays images, volumes, or 1D plots."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_meridien"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = False
 		token = SXcmd_token(); token.key_base = "input_data_list"; token.key_prefix = ""; token.label = "Input files"; token.help = "List of input images, volumes, plots. Wild cards (e.g *) can be used to select a list of files. Not recommended when the list is too large. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.default = "none"; token.restore = "none"; token.type = "any_file_list"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "singleimage"; token.key_prefix = "--"; token.label = "Single image view"; token.help = "Displays a stack in a single image view: "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)

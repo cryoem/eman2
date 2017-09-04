@@ -1,0 +1,51 @@
+= Name =
+sxgui_meridien - 3D Refinement Assessment: GUI tool to assess 3D Refinement based on outputs of sxmeridien.
+
+
+= Usage =
+
+
+''usage in command line''
+
+sxgui_meridien.py
+
+
+=== Typical usage ===
+
+sxgui_meridien GUI tool can be run as a stand-alone program or run from sxgui.py.
+
+''' sxgui_unblur.py ''' 
+
+
+
+== Input ==
+
+
+== Output ==
+
+
+== Description ==
+
+''''This is in progress 09/04/2016''''
+
+
+= Method =
+
+= Reference =
+
+== Author / Maintainer ==
+Thorsten Wagner
+
+=== Attachments ===
+
+== Keywords ==
+    category 1:: APPLICATIONS
+
+== Files ==
+sparx/bin/sxgui_meridien.py
+
+=== See also ===
+
+
+=== Maturity ===
+ alpha:: in development
