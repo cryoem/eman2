@@ -6,7 +6,7 @@ sxlocres - Local Resolution: Compute local resolution of a map.
 
 ''Usage in command lines'':
 
-sxlocres.py  firstvolume  secondvolume  maskfile  outputfile  --wn=window_size  --step=shell_step_size  --cutoff=res_cutoff --res_overall=overall_resolution --radius=radius  --fsc=output_file_name  --MPI
+sxlocres.py  firstvolume  secondvolume  maskfile  outputfile  --fsc=output_file_name  --wn=window_size  --step=shell_step_size  --cutoff=res_cutoff  --radius=radius  --res_overall=overall_resolution  --out_ang_res=output_angstrom_resolution  --apix=pixel_size  --MPI
 
 === Typical usage ===
 
@@ -27,6 +27,8 @@ sxlocres exists in for both MPI and non-MPI versions.
     res_overall:: Overall resolution [1/Pixels]: Set an absolute frequency between 0 to 0.5 for calibration of the average local resolution. See Description section in the wiki page for details. (default -1.0)
     
     * The remaining parameters are optional.
+    out_ang_res:: Save Angstrom local resolution: Additionally creates a local resolution file in Angstroms. (default False)
+    apix:: Pixel size of half-volumes [A]: Effective only with --out_ang_res options. (default 1.0)
     MPI:: Use MPI: (default False)
 
 
