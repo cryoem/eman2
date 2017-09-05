@@ -62,21 +62,21 @@ def main():
         for arg in sys.argv:
         	arglist.append( arg )
 	progname = os.path.basename(arglist[0])
-	usage = progname + """ firstvolume  secondvolume maskfile outputfile --wn --step --cutoff  --radius  --fsc  --res_overall --apix --out_ang_res --MPI
+	usage = progname + """ firstvolume  secondvolume  maskfile  outputfile  --wn  --step  --cutoff  --radius  --fsc  --res_overall  --out_ang_res  --apix  --MPI
 
 	Compute local resolution in real space within area outlined by the maskfile and within regions wn x wn x wn
 	"""
 	parser = OptionParser(usage,version=SPARXVERSION)
 	
-	parser.add_option("--wn",		type="int",		default=7, 			help="Size of window within which local real-space FSC is computed (default 7)")
-	parser.add_option("--step",     type="float",	default= 1.0,       help="Shell step in Fourier size in pixels (default 1.0)")   
-	parser.add_option("--cutoff",   type="float",	default= 0.5,       help="resolution cut-off for FSC (default 0.5)")
-	parser.add_option("--radius",	type="int",		default=-1, 		help="if there is no maskfile, sphere with r=radius will be used, by default the radius is nx/2-wn")
-	parser.add_option("--fsc",      type="string",	default= None,      help="overall FSC curve (might be truncated) (default no curve)")
-	parser.add_option("--res_overall",  type="float",	default= -1.0,   help="overall resolution estimated by the user [abs units] (default None)")
-	parser.add_option("--apix",  type="float",	default= 1.0,   help="Pixel size in Angstrom")
-	parser.add_option("--out_ang_res",  action="store_true", 	default=False,   help="Additionally creates a local resolution file in Angstroms")
-	parser.add_option("--MPI",      action="store_true",   	default=False,  help="use MPI version")
+	parser.add_option("--wn",           type="int",           default=7,      help="Size of window within which local real-space FSC is computed. (default 7)")
+	parser.add_option("--step",         type="float",         default= 1.0,   help="Shell step in Fourier size in pixels. (default 1.0)")   
+	parser.add_option("--cutoff",       type="float",         default= 0.5,   help="Resolution cut-off for FSC. (default 0.5)")
+	parser.add_option("--radius",       type="int",           default=-1,     help="If there is no maskfile, sphere with r=radius will be used. By default, the radius is nx/2-wn (default -1)")
+	parser.add_option("--fsc",          type="string",        default= None,  help="Save overall FSC curve (might be truncated). By default, the program does not save the FSC curve. (default none)")
+	parser.add_option("--res_overall",  type="float",         default= -1.0,  help="Overall resolution estimated by the user [abs units]. (default None)")
+	parser.add_option("--out_ang_res",  action="store_true",  default=False,  help="Additionally creates a local resolution file in Angstroms. (default False)")
+	parser.add_option("--apix",         type="float",         default= 1.0,   help="Pixel size in Angstrom. Effective only with --out_ang_res options. (default 1.0)")
+	parser.add_option("--MPI",          action="store_true",  default=False,  help="Use MPI version.")
 
 	(options, args) = parser.parse_args(arglist[1:])
 
