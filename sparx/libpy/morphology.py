@@ -1446,7 +1446,7 @@ def get_shrink_3dmask(nxinit, mask_file_name):
 		return mask3d
 	else:
 		shrinkage = float(nx2)/nx1
-		mask3d    = binarize(resample(mask3d,shrinkage))
+		mask3d    = binarize(resample(mask3d,shrinkage),0.5) #added 0.5 here to fix binarization problem
 		return mask3d
 
 
