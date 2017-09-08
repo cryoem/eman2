@@ -32,7 +32,7 @@ sxrsort3d.py exists only in MPI version.
 
 == Input ==
     refinement_method:: Input 3D refinement method: Valid values are 'SPARX' and 'relion'. Currently, SHPIRE GUI (sxgui) supports only 'SPARX'. (default none)
-    refinement_dir:: Input 3D refinement directory: Usually the master output directory of sxmeridien. (default none)
+    refinement_dir:: Input 3D refinement directory: Usually the master output directory of sxmeridien. (default required string)
     masterdir:: Output directory: The master output directory for sorting. (default none)
     niter_for_sorting:: 3D refinement iteration: Specify an iteration number of 3D refinement where the 3D alignment parameters should be extracted for this sorting. By default, it uses iteration achieved best resolution. (default -1)
     mask3D:: 3D mask: File path of the global 3D mask for clustering. (default none)
@@ -47,7 +47,7 @@ sxrsort3d.py exists only in MPI version.
     low_pass_filter:: Low-pass filter frequency [1/Pixel]: Absolute frequency cutoff of the low-pass filter used on the original image size for the 3D sorting. (default -1.0)
     Kmeans_lpf:: Low-pass filter method for K-means: Low-pass filter method for K-means clustering. Valid values are 'adaptive', 'max', 'min', 'adhoc', and 'avg'. (default adaptive)
     nindependent:: Independent runs: Number of independent runs for Equal Sized K-means clustering. The value must be an odd number larger than 2. (default 3) 
-    noctf:: No CTF correction: Use this option if full CTF correction should not be applied during the 3D clustering. By default, the program will do full CTF correction. (default False) 
+    noctf:: Apply full CTF correction: Use this option if full CTF correction should not be applied during the 3D clustering. By default, the program will do full CTF correction. (default False question reversed in GUI) 
     PWadjustment:: Reference power spectrum file path: Path of text file containing 1D reference power spectrum of a PDB structure or EM map. The power spectrum will be used as reference to adjust the power spectra of clustered volumes. (default none) 
     interpolation:: 3D reconstruction interpolation method: Interpolation method for 3D reconstruction. Valid values are 'trl' and '4nn'. (default 4nn) 
     comparison_method:: Comparison method: Similarity measurement for the comparison between reprojected reference images and particle images. Valid values are 'cross' (cross-correlaton coefficients) and 'eucd' (Euclidean distance). (default cross) 

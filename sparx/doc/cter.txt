@@ -66,7 +66,7 @@ By default, amplitude is used for the CTF model fitting but user can select powe
     phase_min:: Minimum phase search [degrees]: UNDER DEVELOPMENT! This is applicable only with --vpp option. (default 5.0)
     phase_max:: Maximum phase search [degrees]: UNDER DEVELOPMENT! This is applicable only with --vpp option. (default 175.0)
     phase_step:: Phase search step [degrees]: UNDER DEVELOPMENT! This is applicable only with --vpp option. (default 5.0)
-    pap:: Use amplitude : UNDER DEVELOPMENT! Use amplitude for CTF parameter search instead of power spectrum. (default False)
+    pap:: Use PW spectrum: UNDER DEVELOPMENT! Use power spectrum for CTF parameter search instead of amplitude. (default False)
 
 == Output ==
     output_directory:: Output directory: The CTF parameters (partres file), rotationally averaged power spectra (rotinf), and micrograph thumbnails (thumb files) will be written here. This directory will be created automatically and it must not exist previously. (default required string)

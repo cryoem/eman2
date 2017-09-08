@@ -3,8 +3,8 @@ package:
     version: 1.15
 
 source:
-    url: https://github.com/cryoem/pydusa/archive/master.tar.gz
-    fn: pydusa-master.tar.gz
+    url: https://github.com/cryoem/pydusa/archive/{{GIT_PYDUSA_BRANCH}}.tar.gz
+    fn: pydusa-{{GIT_PYDUSA_BRANCH}}.tar.gz
 
 build:
     number: 0

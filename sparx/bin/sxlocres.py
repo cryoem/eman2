@@ -36,6 +36,24 @@ from	EMAN2 import *
 from	sparx import *
 from	global_def import SPARX_MPI_TAG_UNIVERSAL
 
+#Transforms the local resolution file from frequency units to angstroms.
+def makeAngRes(freqvol, nx, ny, nz, pxSize):
+	if (pxSize == 1.0):
+		print "Using a value of 1 for the pixel size. Are you sure this is correct?"
+
+	outAngResVol = EMData()
+	outAngResVol.set_size(nx,ny,nz)
+	for x in range(nx):
+		for y in range(ny):
+			for z in range(nz):
+				#All voxels to apix/ absolute Resolution. If 0 then leave as it is.
+				if (freqvol[x,y,z] == 0):
+					outAngResVol[x,y,z] = 0
+				else:
+					outAngResVol[x,y,z] = pxSize / freqvol[x,y,z]
+
+	return outAngResVol
+
 def main():
 	import os
 	import sys
@@ -44,19 +62,21 @@ def main():
         for arg in sys.argv:
         	arglist.append( arg )
 	progname = os.path.basename(arglist[0])
-	usage = progname + """ firstvolume  secondvolume maskfile outputfile --wn --step --cutoff  --radius  --fsc  --res_overall  --MPI
+	usage = progname + """ firstvolume  secondvolume  maskfile  outputfile  --wn  --step  --cutoff  --radius  --fsc  --res_overall  --out_ang_res  --apix  --MPI
 
 	Compute local resolution in real space within area outlined by the maskfile and within regions wn x wn x wn
 	"""
 	parser = OptionParser(usage,version=SPARXVERSION)
 	
-	parser.add_option("--wn",		type="int",		default=7, 			help="Size of window within which local real-space FSC is computed (default 7)")
-	parser.add_option("--step",     type="float",	default= 1.0,       help="Shell step in Fourier size in pixels (default 1.0)")   
-	parser.add_option("--cutoff",   type="float",	default= 0.5,       help="resolution cut-off for FSC (default 0.5)")
-	parser.add_option("--radius",	type="int",		default=-1, 		help="if there is no maskfile, sphere with r=radius will be used, by default the radius is nx/2-wn")
-	parser.add_option("--fsc",      type="string",	default= None,      help="overall FSC curve (might be truncated) (default no curve)")
-	parser.add_option("--res_overall",  type="float",	default= -1.0,   help="overall resolution estimated by the user [abs units] (default None)")
-	parser.add_option("--MPI",      action="store_true",   	default=False,  help="use MPI version")
+	parser.add_option("--wn",           type="int",           default=7,      help="Size of window within which local real-space FSC is computed. (default 7)")
+	parser.add_option("--step",         type="float",         default= 1.0,   help="Shell step in Fourier size in pixels. (default 1.0)")   
+	parser.add_option("--cutoff",       type="float",         default= 0.5,   help="Resolution cut-off for FSC. (default 0.5)")
+	parser.add_option("--radius",       type="int",           default=-1,     help="If there is no maskfile, sphere with r=radius will be used. By default, the radius is nx/2-wn (default -1)")
+	parser.add_option("--fsc",          type="string",        default= None,  help="Save overall FSC curve (might be truncated). By default, the program does not save the FSC curve. (default none)")
+	parser.add_option("--res_overall",  type="float",         default= -1.0,  help="Overall resolution estimated by the user [abs units]. (default None)")
+	parser.add_option("--out_ang_res",  action="store_true",  default=False,  help="Additionally creates a local resolution file in Angstroms. (default False)")
+	parser.add_option("--apix",         type="float",         default= 1.0,   help="Pixel size in Angstrom. Effective only with --out_ang_res options. (default 1.0)")
+	parser.add_option("--MPI",          action="store_true",  default=False,  help="Use MPI version.")
 
 	(options, args) = parser.parse_args(arglist[1:])
 
@@ -142,6 +162,12 @@ def main():
 				for jfreq in xrange(ifreq, len(resolut)):
 					resolut[jfreq][1] = 0.0	
 			freqvol.write_image(outvol)
+			
+			if(options.out_ang_res):
+				outAngResVolName = os.path.splitext(outvol)[0] + "_ang.hdf"
+				outAngResVol = makeAngRes(freqvol, nx, ny, nz, options.apix)
+				outAngResVol.write_image(outAngResVolName)
+
 			if(options.fsc != None): write_text_row(resolut, options.fsc)
 		from mpi import mpi_finalize
 		mpi_finalize()
@@ -234,6 +260,12 @@ def main():
 			for jfreq in xrange(ifreq, len(resolut)):
 				resolut[jfreq][2] = 0.0	
 		freqvol.write_image(outvol)
+		
+		if(options.out_ang_res):			
+			outAngResVolName = os.path.splitext(outvol)[0] + "_ang.hdf"
+			outAngResVol = makeAngRes(freqvol, nn, nn, nn, options.apix)
+			outAngResVol.write_image(outAngResVolName)
+
 		if(options.fsc != None): write_text_row(resolut, options.fsc)
 
 if __name__ == "__main__":
