@@ -240,10 +240,10 @@ class EMApp(QtGui.QApplication):
 		
 		QtGui.QApplication.__init__(self, sys.argv)
 		
-		style=QtGui.QStyleFactory.create("Cleanlooks")
+		style=QtGui.QStyleFactory.create("Plastique")
 		
 		if style==None:
-			print "Note: standard Cleanlooks style not available, controls may be distorted. Using ",
+			print "Note: standard Plastique style not available, controls may be distorted. Using ",
 			
 			# the first one should work, but we have the loop, just in case
 			for s in list(QtGui.QStyleFactory.keys()):
@@ -252,7 +252,7 @@ class EMApp(QtGui.QApplication):
 					print s
 					break
 
-		if style!=None: self.setStyle(style)
+		if style!=None and get_platform()!="Darwin": self.setStyle(style)
 		
 		if em_app_instance.get_instance() == None:
 			em_app_instance.set_instance(self)

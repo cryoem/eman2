@@ -120,7 +120,7 @@ def main():
 
 	if options.parallel :
 		parstr="--parallel="+options.parallel
-		if options.parallel[:6]=="thread" : 
+		if options.parallel[:6]=="thread" :
 			options.threads=int(options.parallel.split(":")[-1])
 			print "--threads set to match --parallel"
 	else : parstr=""
@@ -191,7 +191,7 @@ def main():
 	if logid : E2progress(logid,proc_tally/total_procs)
 
 	# Make class averages
-	cls_cmd = "e2classaverage.py --input=%s --classmx=%s/classmx_00.hdf --output=%s/classes_00.hdf --iter=5 --force --bootstrap --center=%s" %(options.input,options.path,options.path,options.center)
+	cls_cmd = "e2classaverage.py --input=%s --classmx=%s/classmx_00.hdf --output=%s/classes_00.hdf --iter=3 --force --bootstrap --center=%s" %(options.input,options.path,options.path,options.center)
 	cls_cmd += get_classaverage_extras(options)
 	run (cls_cmd)
 

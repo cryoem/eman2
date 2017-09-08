@@ -602,7 +602,7 @@ def parse_transform(optstr):
 
 def unparsemodopt(tupl):
 	"""This takes a 2-tuple of the form returned by parsemodopt and returns a corresponding string representation"""
-	
+
 	try:
 		if tupl[0]==None : return ""
 		if tupl[1]==None or len(tupl[1])==0 : return str(tupl[0])
