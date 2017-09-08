@@ -111,7 +111,7 @@ def compute_average_noctf(mlist, radius):
 		tmp = fft(tmp)
 		if im%2 ==0: Util.add_img(avge, tmp)
 		else:        Util.add_img(avgo, tmp)
-	frc = fsc(fft(sumavg), fft(sumctf2))
+	frc = fsc(fft(avge), fft(avgo))
 	frc[1][0] = 1.0
 	for ifreq in xrange(1, len(frc[0])):
 		frc[1][ifreq] = max(0.0, frc[1][ifreq])
