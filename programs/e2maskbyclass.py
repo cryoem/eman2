@@ -48,7 +48,7 @@ def maskfile(jsd,n,fsp,classes,masks,clsmap,options):
 			alip=classes[clsmap[i]].align("rotate_translate_tree",ptcl)
 
 			# mask in the same orientation
-			alim=masks[i].process("xform",{"transform":alip["xform.align2d"]})
+			alim=masks[clsmap[i]].process("xform",{"transform":alip["xform.align2d"]})
 			ptcl.mult(alim)
 
 		ptcl.write_image(fspout,i)
