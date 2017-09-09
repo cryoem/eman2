@@ -5446,7 +5446,7 @@ def ali3D_local_primary_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 	from filter       import filt_ctf, filt_table
 	from applications import MPI_start_end
 	from math         import sqrt
-
+	Tracker["keepfirst"] = -1
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		print_dict(Tracker,"PROJECTION MATCHING parameters of buffered exhaustive polar")
 
@@ -6111,6 +6111,7 @@ def ali3D_local_primary_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 
 				else:
 					if(lenass>0):
+						Tracker["keepfirst"] = lang*m_coarse_psi*n_coarse_shifts
 						###print("   DICONE icnm,im in enumerateassignments_to_cones[icone]  ",Blockdata["myid"],icone,icnm,im,lang)#,assignments_to_cones)
 						###if( Blockdata["myid"] == 18 and lima<5):  print(" START   nlocal_angles* m_coarse_psi*len(coarse_shifts_shrank",nlocal_angles,coarse_delta,len(coarse_shifts_shrank),Tracker["keepfirst"])
 						#if( Blockdata["myid"] == Blockdata["main_node"] ):  
@@ -8921,7 +8922,7 @@ def main():
 				Tracker["ts"]			                = options.ts
 				Tracker["delta"]		                = options.delta  # How to decide it
 				if Tracker["delta"] ==-1.: Tracker["delta"] = 15./4.
-				if options.ctref_an ==-1.: Tracker["an"] = 2.*Tracker["delta"]
+				if options.ctref_an ==-1.: Tracker["an"] = 3.*Tracker["delta"]
 				else:                      Tracker["an"] = options.ctref_an
 			original_data = do_ctref_from_orgstack(masterdir, options.ctref_orgstack, options.ctref_oldrefdir, options.ctref_subset, options.ctref_initvol, options.ctref_iter, options.ctref_smearing, sys.argv[1:], mpi_comm = Blockdata["subgroup_comm"])
 			mainiteration  +=1
@@ -8934,6 +8935,7 @@ def main():
 				oldparams        = [None, None]
 				partids          = [None, None]
 				partstack        = [None, None]
+				Tracker["keepfirst"] = -1
 				Tracker["state"] = "CONTINUATION_PRIMARY"		
 				Tracker["maxfrad"] = Tracker["nxinit"]//2
 				Tracker["nxpolar"] = Tracker["nxinit"]
@@ -8985,7 +8987,6 @@ def main():
 						line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 						print(line,"ali3D_local_polar_ccc")
 						print_dict(Tracker,"Current state variables")
-					Tracker["keepfirst"] = 100
 					if mainiteration==1: newparamstructure[procid], norm_per_particle[procid] = ali3D_local_polar_ccc(refang, rshifts, coarse_angles, coarse_shifts, procid, original_data[procid], oldparams[procid], \
 					   preshift = True, apply_mask = True, nonorm = False, applyctf = True)
 					else: newparamstructure[procid], norm_per_particle[procid] = ali3D_local_primary_polar(refang, rshifts, coarse_angles, coarse_shifts, procid, original_data[procid], oldparams[procid], \
