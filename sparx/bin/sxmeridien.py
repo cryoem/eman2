@@ -5305,6 +5305,7 @@ def do_final_rec3d(partids, partstack, original_data, oldparams, oldparamstructu
 		mpi_barrier(Blockdata["subgroup_comm"])
 	mpi_barrier(MPI_COMM_WORLD)
 	do3d_final_mpi(final_iter)
+	import shutil
 	# also copy params to masterdir as final params
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		copy(os.path.join(Tracker["constants"]["masterdir"], "main%03d"%Tracker["mainiteration"], "params_%03d.txt"%Tracker["mainiteration"]), os.path.join(Tracker["constants"]["masterdir"], "final_params_%03d.txt"%Tracker["mainiteration"]))
