@@ -35,7 +35,7 @@ sxmeridien exists only in MPI version.
 
     6. Continuation refinement from sorting results:: Please use --ctref option, then specify the directory where you wish to continue the refinement to --ctref_oldrefdir option and a subset of data to —-ctref_subset option. The command will load the refinement information from the directory and continue refinement. Optionally, you can specify the iteration number for continuing refinement using -—ctref_iter option, which is not necessarily be the same iteration where you used for the 3D sorting. Also, one can modify refinement parameters of the selected iteration through the other options. 
 
-    ''' mpirun  -np  88  sxmeridien.py  --ctref  --ctref_oldrefdir=meridien_outdir  --ctref_iter=20  --ctref_subset=Clusters3.txt ''' <<BR>><<BR>>
+    ''' mpirun  -np  88  sxmeridien.py refine_subset3 --ctref  --ctref_oldrefdir=meridien_outdir  --ctref_iter=20  --ctref_subset=Clusters3.txt ''' <<BR>><<BR>>
 
 
 == Input ==

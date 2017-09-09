@@ -8464,7 +8464,7 @@ def main():
 	parser.add_option("--ctref_iter",               type="int",             default=-1,                     help="The iteration where continuation refinement starts")
 	parser.add_option("--ctref_initvol",            type="string",          default='',                     help="user provided reference for continuation run")
 	parser.add_option("--ctref_orgstack",           type="string",          default='',                     help="BDB stack for continuation run with xform.projection parameters written in the headers")
-	parser.add_option("--ctref_smearing",           type="int",             default=-1,                     help=" ==-1: intitial rec3d using optimal xform.projection parameters only and norm = 1.0 ; ==0: using all smearings; >1: intitial rec3d using option specified number of smearings", )
+	parser.add_option("--ctref_smearing",           type="int",             default=-1,                     help=" Use -1 value only ")
 	parser.add_option("--ctref_an",	           		type="float", 	     	default=-1.,                	help="angular neighborhood for local search")
 	(options, args) = parser.parse_args(sys.argv[1:])
 	update_options  = False # restart option
