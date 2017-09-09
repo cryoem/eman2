@@ -7510,7 +7510,9 @@ def do_ctref_from_orgstack(masterdir, option_orgstack, option_old_refinement_dir
 	if mpi_comm == -1: mpi_comm = MPI_COMM_WORLD
 	import shutil
 	# preparations
+	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	if Blockdata["myid"] == Blockdata["main_node"]:
+		print(line, "do_ctref_from_orgstack")
 		if option_smearing !=-1: print("Warning: the number of smearings is ignored for intitial reconstruction! ")
 		if not os.path.exists(masterdir): os.mkdir(masterdir)
 	# set state varibles for continuation run
@@ -7669,6 +7671,10 @@ def do_ctref_from_orgstack(masterdir, option_orgstack, option_old_refinement_dir
 		  return_real = False, preshift = True, apply_mask = False, nonorm = True, nosmearing = True)
 		mpi_barrier(mpi_comm)
 	compute_sigma(original_data[0]+original_data[1],oldparams[0]+oldparams[1], len(oldparams[0]), False, Blockdata["subgroup_myid"], mpi_comm = mpi_comm)
+	# Estimate initial resolution/image size
+	if(Blockdata["myid"] == Blockdata["main_node"]):
+		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		print(line,  "Reconstruct volumes as initial reference")
 	for procid in xrange(2):
 		#original_data[procid]    = None
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
@@ -7705,13 +7711,17 @@ def do_ctref_from_orgstack(masterdir, option_orgstack, option_old_refinement_dir
 	Tracker["fsc143"]     = nfsc_143
 	Tracker["currentres"] = nfsc_half
 	Tracker["constants"]["inires"] = nfsc_143
-	if(Blockdata["myid"] == Blockdata["main_node"]):		
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		if option_initvol !='': # copy references
+	if option_initvol !='':# continue refinement using the given reference 
+		from shutil import copy
+		if(Blockdata["myid"] == Blockdata["main_node"]):
+			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 			print(line, "meridien uses user provided %s as the intitial references"%option_initvol)
-			get_im(option_initvol).write_image(os.path.join(Tracker["directory"], "vol_0_000.hdf"))
-			get_im(option_initvol).write_image(os.path.join(Tracker["directory"], "vol_1_000.hdf"))
-		else: print(line, "Initial references are reconstructed using optimal orienmation parameters only")
+			copy(option_initvol, os.path.join(Tracker["directory"], "vol_0_000.hdf"))
+			copy(option_initvol, os.path.join(Tracker["directory"], "vol_1_000.hdf"))
+		for iproc in xrange(Blockdata["nproc"]):
+			while (not os.path.exists(os.path.join(Tracker["directory"], "vol_0_000.hdf"))) or  (not os.path.exists(os.path.join(Tracker["directory"], "vol_0_000.hdf"))):
+				continue
+		mpi_barrier(MPI_COMM_WORLD)
 	##
 	Tracker["maxit"]		        = Tracker["constants"]["maxit"]
 	Tracker["radius"]		        = Tracker["constants"]["radius"]
