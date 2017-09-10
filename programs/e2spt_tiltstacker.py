@@ -86,11 +86,12 @@ def main():
 	
 	parser.add_argument("--restack",type=str,default='',help=""".hdf, or 3D .st, .mrc, .ali, or .mrcs stack file to restack. This option can be used with --include or --exclude to unstack only specific images. Recall that the FIRST image INDEX is 0 (but unstacked image will be numbered from 1). --exclude=1,5-7,10,12,15-19 will exclude images 1,5,6,7,10,12,15,16,17,18,19""""")
 
+	parser.add_argument("--shrink",type=float,default=0.0,help="""Default=0.0 (not used). Shrinking factor to do Fourier cropping of the images in a titlseries; can be a fractional number (for example, 1.5)""")
 	parser.add_argument("--stackregardless",action="store_true",default=False,help=""""Stack images found with the common string provided through --stem2stack, even if the number of images does not match the predicted number of tilt angles.""")
 	parser.add_argument("--stem2stack", type=str, default='', help="""String common to all the files to put into an .st stack, which is in .MRC format; for example, --stem2stack=.hdf will process all .hdf files in the current directory. If not specified, all valid EM imagefiles in the current directory will be put into an .st stack.""")
 
 	parser.add_argument("--tltfile",type=str,default='',help="""".tlt file IF unstacking an aligned tilt series with --unstack=<stackfile> or restacking a tiltseries with --restack=<stackfile>""")
-	parser.add_argument("--tiltrange",type=float,default=0.0,help="""If provided, this will make --lowesttilt=-1*tiltrange and --highesttilt=tiltrage. If the range is asymmetric, supply --lowesttilt and --highesttilt directly.""")
+	parser.add_argument("--tiltrange",type=float,default=0.0,help="""If provided, this will make --lowesttilt=-1*tiltrange and --highesttilt=tiltrange. If the range is asymmetric, supply --lowesttilt and --highesttilt directly.""")
 	parser.add_argument("--tiltstep",type=float,default=0.0,help="""Step between tilts. Required if using --stem2stack.""")
 	
 	parser.add_argument("--unstack",type=str,default='',help=""".hdf, or 3D .st, .mrc, .ali, or .mrcs stack file to unstack. This option can be used with --include or --exclude to unstack only specific images. Recall that the FIRST image INDEX is 0 (but unstacked image will be numbered from 1). --exclude=1,5-7,10,12,15-19 will exclude images 1,5,6,7,10,12,15,16,17,18,19""""")
@@ -123,10 +124,10 @@ def main():
 				sys.exit()
 	
 	if options.lowesttilt == 0.0 and options.tiltrange:
-		options.lowesttilt = -1 * options.tiltrange
+		options.lowesttilt = -1 * round(float(options.tiltrange),2)
 		
 	if options.highesttilt == 0.0 and options.tiltrange:
-		options.highesttilt = options.tiltrange
+		options.highesttilt = round(float(options.tiltrange),2)
 
 	if options.unstack:
 		if options.tltfile:
@@ -138,7 +139,7 @@ def main():
 	elif options.restack:
 		if options.tltfile:
 			restacker( options )
-			angles = getangles( options, True )			#Second parameter enforces to keep the 'raw order' of the input file. Otherwise, this function returns angles from -tiltrange to +tiltrange if --negativetiltseries is supplied; from +tiltrange to -tiltrange otherwise
+			angles = getangles( options, 0, True )			#Second parameter enforces to keep the 'raw order' of the input file. Otherwise, this function returns angles from -tiltrange to +tiltrange if --negativetiltseries is supplied; from +tiltrange to -tiltrange otherwise
 
 			#finalangles = list(angles)
 			#anglestoexclude = []
@@ -171,7 +172,7 @@ def main():
 		intilts = findtiltimgfiles( options )
 		
 		print "\nWill organize tilt imgs found"
-		intiltsdict = organizetilts( intilts, options )		#Get a dictionary in the form { indexintiltseries:[ tiltfile, tiltangle, damageRank ]},
+		intiltsdict = organizetilts( options, intilts )		#Get a dictionary in the form { indexintiltseries:[ tiltfile, tiltangle, damageRank ]},
 		print "\nDone organizing tilt imgs"					#where damageRank tells you the order in which the images where acquired
 															#regardless of wether the tilt series goes from -tiltrange to +tiltrange, 
 															#or 0 to -tiltrange then +tiltstep to +tiltrange, or the opposite of these 
@@ -216,6 +217,9 @@ def main():
 				intiltimg.write_image( outstackhdf, -1 )
 				print "\nWrote image index", index
 		
+		
+		tmp = options.path + '/tmp.hdf'
+
 		if options.clip:
 			clip = options.clip.split(',')
 			
@@ -234,7 +238,7 @@ def main():
 				shiftx = clip[2]
 				shifty = clip[3]
 			
-			tmp = options.path + '/tmp.hdf'
+			
 			cmdClip = 'e2proc2d.py ' + outstackhdf + ' ' + tmp + ' --clip=' + clipx + ',' + clipy
 			
 			if shiftx:
@@ -255,10 +259,23 @@ def main():
 				print "\nFeedback from cmdClip:"
 				print text
 			
+		
+		if options.shrink and options.shrink > 1.0:
 			
+			cmdBin = 'e2proc2d.py ' + outstackhdf + ' ' + tmp + ' --process=math.fft.resample:n=' + str(options.shrink) + ' && rm ' + outstackhdf + ' && mv ' + tmp + ' ' + outstackhdf
+			
+			print "\n(e2spt_tiltstacker.py)(main) cmdBin is", cmdClip
+			p = subprocess.Popen( cmdBin , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+			text = p.communicate()	
+			p.stdout.close()
+
+
 		outtilthdr = EMData(outstackhdf,0,True)
 		currentapix = outtilthdr['apix_x']
 		if float(options.apix) and float(options.apix) != float(currentapix):
+			if options.shrink:
+				options.apix *= options.shrink
+
 			print "\nFixing apix"
 			cmdapix = 'e2fixheaderparam.py --input=' + outstackhdf + ' --stem=apix --valtype=float --stemval=' + str( options.apix )
 			
@@ -281,7 +298,7 @@ def main():
 			stcmd += ' --apix=' + str(options.apix)
 			stcmd += ' && e2fixheaderparam.py --input=' + outstackst + ' --stem=apix --valtype=float --stemval=' + str( options.apix ) + ' --output=' + outstackst.replace('.st','.mrc') + " && mv " +  outstackst.replace('.st','.mrc') + ' ' + outstackst
 			
-		stcmd += ' && rm ' + outstackhdf
+		stcmd += ' && rm *~* ' + outstackhdf
 		
 		print "\n(e2spt_tiltstacker.py)(main) stcmd is", stcmd	
 		p = subprocess.Popen( stcmd , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -375,7 +392,7 @@ def findtiltimgfiles( options ):
 	return intilts
 
 
-def getangles( options, raworder=False ):
+def getangles( options, ntilts, raworder=False ):
 	
 	angles = []
 	if options.tltfile:
@@ -396,7 +413,18 @@ def getangles( options, raworder=False ):
 		
 		print "There was no .tlt file so I'll generate the angles using lowesttilt=%f, highesttilt=%f, tiltstep=%f" % (options.lowesttilt, options.highesttilt, options.tiltstep)
 		generate = floatrange( options.lowesttilt, options.highesttilt, options.tiltstep )
-		angles=[ float(x) for x in generate ]
+		angles=[ round(float(x),2) for x in generate ]
+	
+		if ntilts:
+			nangles=len(angles)
+			dif=int(math.fabs( ntilts - nangles))
+			if nangles < ntilts:
+				supplementstart = angles[-1]+options.tiltstep
+				supplementend = angles[-1] + dif*options.tiltstep
+				angles += [ round(float(x),2) for x in floatrange( supplementstart, supplementend,  options.tiltstep ) ]
+			elif nangles > ntilts:
+				angles = angles[:-1*dif] #cut the angles list by however many exceeding elements there are, as indicated by dif
+				
 	
 	print "BEFORE sorting, angles are", angles
 	
@@ -452,7 +480,7 @@ def writetlt( angles, options, raworder=False ):
 	return
 
 
-def organizetilts( intilts, options, raworder=False ):
+def organizetilts( options, intilts, raworder=False ):
 	
 	intilts.sort()
 
@@ -512,7 +540,7 @@ def organizetilts( intilts, options, raworder=False ):
 		angles=list(finalangles)
 
 	else:
-		angles = getangles( options )			#This returns angles from -tiltrange to +tiltrange if --negativetiltseries is supplied; from +tiltrange to -tiltrange otherwise
+		angles = getangles( options, len(intilts) )			#This returns angles from -tiltrange to +tiltrange if --negativetiltseries is supplied; from +tiltrange to -tiltrange otherwise
 	
 		orderedangles = list( angles )
 		
@@ -620,15 +648,17 @@ def organizetilts( intilts, options, raworder=False ):
 			
 			
 		for k in range(len(intilts)):
-			
+			print "\nk={}, ntiltangles={}, ncollectionindexes={}, ntilts={}".format(k,len(indexesintiltseries),len(collectionindexes),len(intilts))
 			try:
 				tiltangle = orderedangles[k]
 				#indexintiltseries = angles.index( orderedangles[k] )
 			
 				indexintiltseries = indexesintiltseries[k]
 				collectionindex = collectionindexes[k]
+				print "\nnormal"
 			except:
 				if options.stackregardless:
+					print "\nexception triggered"
 					tiltangle = orderedangles[k-1] + orderedangles[k-1] - orderedangles[k-2]
 					indexintiltseries = indexesintiltseries[k-1] + indexesintiltseries[k-1] - indexesintiltseries[k-2]
 					collectionindex = collectionindexes[k-1] + collectionindexes[k-1] - collectionindexes[k-2]
