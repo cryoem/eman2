@@ -277,7 +277,7 @@ def main():
 				options.apix *= options.shrink
 
 			print "\nFixing apix"
-			cmdapix = 'e2fixheaderparam.py --input=' + outstackhdf + ' --stem=apix --valtype=float --stemval=' + str( options.apix )
+			cmdapix = 'e2procheader.py --input=' + outstackhdf + ' --stem=apix --valtype=float --stemval=' + str( options.apix )
 			
 			print "\n(e2spt_tiltstacker.py)(main) cmdapix is", cmdapix
 			p = subprocess.Popen( cmdapix , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -294,14 +294,19 @@ def main():
 		if options.outmode != 'float':
 			stcmd += ' --outmode=' + options.outmode + ' --fixintscaling=sane'
 			
-		if options.apix:
-			stcmd += ' --apix=' + str(options.apix)
-			stcmd += ' && e2fixheaderparam.py --input=' + outstackst + ' --stem=apix --valtype=float --stemval=' + str( options.apix ) + ' --output=' + outstackst.replace('.st','.mrc') + " && mv " +  outstackst.replace('.st','.mrc') + ' ' + outstackst
-			
-		stcmd += ' && rm *~* ' + outstackhdf
+		#if options.apix:
+		#	stcmd += ' --apix=' + str(options.apix)
+			#stcmd += ' && e2procheader.py --input=' + outstackst + ' --stem=apix --valtype=float --stemval=' + str( options.apix ) + ' --output=' + outstackst.replace('.st','.mrc') + " && mv " +  outstackst.replace('.st','.mrc') + ' ' + outstackst
 		
 		print "\n(e2spt_tiltstacker.py)(main) stcmd is", stcmd	
 		p = subprocess.Popen( stcmd , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		text = p.communicate()	
+		p.stdout.close()
+
+		cmdClean = ' && rm ' + options.path + '/*~* ' + outstackhdf
+		
+		print "\n(e2spt_tiltstacker.py)(main) cmdClean is", cmdClean	
+		p = subprocess.Popen( cmdClean , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		text = p.communicate()	
 		p.stdout.close()
 
@@ -585,10 +590,12 @@ def organizetilts( options, intilts, raworder=False ):
 				print "\n(organizetilts) Because firsthalf is", firsthalf
 				print "\n(organizetilts) and secondhalf is", secondhalf
 				
-				writetlt( orderedangles, options )
+				#writetlt( orderedangles, options )
 		
-		else:
-			writetlt( angles, options )
+			#else:
+			#	writetlt( angles, options )
+		#else:
+		#	writetlt( angles, options )
 	
 		angles.sort()
 		if not options.negativetiltseries and not raworder:			#Change angles to go from +tiltrange to -tiltrange if that's the order of the images
@@ -603,7 +610,7 @@ def organizetilts( options, intilts, raworder=False ):
 			#print "However, after reversal, they are", orderedangles
 			#print "and angles are", angles
 				
-		
+		writetlt( angles, options )
 			
 		if len( intilts ) != len( orderedangles ):
 			
