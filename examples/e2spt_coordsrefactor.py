@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Author: Jesus Galaz, 06/05/2012 - Modifid 27/Feb/2013
+# Author: Jesus Galaz, 06/05/2012 - Modifid 08/Jun/2017
 # Copyright (c) 2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -41,28 +41,21 @@ def main():
 		
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_argument("--input", type=str, help="""Text file containing the coordinates for SPT subvolumes of a tomogram, in a sane format X, Y, Z or X, Z, Y, 
-													with ONE set of coordinates per line, and NO EXTRA CHARACTERS, except blank spaces (a tab is fine too) in between coordinates.""", default='')
+	parser.add_argument("--input", type=str, help="""Default=None. Text file containing the coordinates for SPT subvolumes of a tomogram, in a sane format X, Y, Z, or X, Z, Y, with ONE set of X, Y, Z coordinates per line, and NO EXTRA CHARACTERS, except blank spaces (a tab is fine too) in between coordinates.""")
 	
+	parser.add_argument("--mult", type=float,default=1.0,help="""Default=1.0. Factor to multiply the coordinates by. This can allow to expand or shrink the coordinates, but note that the resulting number will be rounded to the nearest integer.""")	
 
-	parser.add_argument("--output", type=str, help="Output name for the refactored coordinates file.", default='')
-	parser.add_argument("--swapyz", action="store_true", help="This will swap the Y and Z coordinates.", default=False)
-	parser.add_argument("--rotx", action="store_true", help="""Will produce the effects of rotating the coordinates about the x axis. 
-															--tomothickness needs to be supplied if --rotx is on.""", default=False)
-	parser.add_argument("--tomothickness", type=int, help="""Lentgth of the 'short' direction in the tomogram whence the cooridates came from. 
-															Must be in the same scale as the coordinates file supplied through --cords. 
-															This parameter is required if --rotx is used.""", default=0)
+	parser.add_argument("--output", type=str, default='', help="Default=None. Output name for the refactored coordinates file.")
+	
+	parser.add_argument("--randomize", action="store_true",default=False, help="Default=false. Randomizes the coordinates so that they are in no preferential order.")
+	parser.add_argument("--rotx", action="store_true", default=False, help="""Default=false. Will produce the effects of rotating the coordinates about the x axis. --tomothickness needs to be supplied if --rotx is on.""")
 
-	parser.add_argument("--mult", type=float,default=1.0,help="""Factor to multiply the coordinates by. This can allow to expand or shrink the coordinates, 
-																but note that the resulting number will be rounded to the nearest integer.""")	
+	parser.add_argument("--sort", type=int, default=0,help="""Will sort the coordinates in the file, by the order provided; it can sort by 1 coordinate, or 2, or 3); for example, 'z' will sort by z only, so that all the coordinates in the same 'slice' z-height, will be together in the file [assuming 'z' is the shortest dimension]; 'zx' would leave y unsorted; zxy will sort by z, and then at each z height, it will sort by x, then by y. You can provide ANY combination of sorting: xyz, xy, xz, yx, yzx... etc.""")
 	parser.add_argument("--subset", type=int,default=0,help="--subset=n will select a subset of coordinate lines, from 1 to n, to write into the refactored file.")
-	parser.add_argument("--randomize", action="store_true",default=False,help="Randomizes the coordinates so that they are in no preferential order.")
-	
-	parser.add_argument("--sort", type=int, default=0,help="""Will sort the coordinates in the file, by the order provided; it can sort onbly by 1 coordinate, 
-																or 2, or 3); for example, 'z' will sort by z only, so that all the coordinates in the same 'slice', 
-																or at the same z height, will be together in the file [assuming 'z' is the shortest dimension]; 
-																'zx' would leave y unsorted; zxy will sort by z, and then at each z height, it will sort by x, then by y. 
-																You can provide ANY combination of of sorting: xyz, xy, xz, yx, yzx... etc""")
+	parser.add_argument("--subtract", type=str, default='', help="Default=None. Name of a coordinates .txt file to subtract from the --input coordinates file. Any coordinates found in --subtract that are also present in --input will be subtracted from --input.")
+	parser.add_argument("--swapyz", action="store_true", help="This will swap the Y and Z coordinates.")
+
+	parser.add_argument("--tomothickness", type=int, help="""Lentgth of the 'short' direction in the tomogram whence the cooridates came from. Must be in the same scale as the coordinates file supplied through --coords. This parameter is required if --rotx is used.""", default=0)
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
@@ -97,40 +90,30 @@ def main():
 	if options.randomize and options.sort:
 		print "ERROR: Cannot randomize and sort at the same time; the functions are contradictory. Chooe one, please."
 	
-	f = open(cfile,'r')
-	clines =f.readlines()
-	f.close()
+
+	sanelines = loadlines(cfile)
+	sanelines = fixlines(sanelines)
 	
-	sanelines = []
-	for line in clines:
-		print "The len of this line is", len(line)
-		if len(line)<5 or len(line) > 30:
-			print "This line is insane and therefore will be removed", line
-		else:
-			sanelines.append(line)
+	if options.subtract:
+		subtractlines = loadlines(options.subtract)
+		subtractlines = fixlines(subtractlines)
+		finalsetlines = [ line for line in sanelines if line not in subtractlines ]
+		sanelines = finalsetlines
 	
 	n=len(sanelines)
-	print "You have these many potentially sane lines in your coordinates file", n
+	print "\nyou have these many potentially sane lines in your coordinates file {} ".format(n)
 	
 	if options.subset and not options.randomize and not options.sort:
 		n = options.subset
+
 	#newlines = ['']*n
 	newlines = []
 
 	'''Some people might manually make ABERRANT coordinates files with commas, tabs, or more than once space in between coordinates'''
 	for i in range(n):                             
-		sanelines[i] = sanelines[i].replace(", ",' ')	
-		sanelines[i] = sanelines[i].replace(",",' ')
-		sanelines[i] = sanelines[i].replace("x",'')
-		sanelines[i] = sanelines[i].replace("y",'')
-		sanelines[i] = sanelines[i].replace("z",'')
-		sanelines[i] = sanelines[i].replace("=",'')
-		sanelines[i] = sanelines[i].replace("_",' ')
-		sanelines[i] = sanelines[i].replace("\n",' ')
-		sanelines[i] = sanelines[i].replace("\t",' ')
-		sanelines[i] = sanelines[i].replace("  ",' ')
-		sanelines[i] = sanelines[i].split()		
-		
+				
+		sanelines[i] = sanelines[i].split()
+
 		x = str(round( float(sanelines[i][0]) ))
 		y = str(round( float(sanelines[i][1]) ))
 		z = str(round( float(sanelines[i][2]) ))
@@ -170,7 +153,45 @@ def main():
 	if options.sort and not options.randomze:
 		pass
 		
-	return()
+	return
+
+
+def fixlines(inlines):
+	n=len(inlines)
+	newlines=[]
+	for i in xrange(0,n):
+		inlines[i] = inlines[i].replace(", ",' ')	
+		inlines[i] = inlines[i].replace(",",' ')
+		inlines[i] = inlines[i].replace("x",'')
+		inlines[i] = inlines[i].replace("y",'')
+		inlines[i] = inlines[i].replace("z",'')
+		inlines[i] = inlines[i].replace("=",'')
+		inlines[i] = inlines[i].replace("_",' ')
+		inlines[i] = inlines[i].replace("\n",'')
+		inlines[i] = inlines[i].replace("\t",' ')
+		inlines[i] = inlines[i].replace("  ",' ')
+
+		if inlines[i]:
+			newlines.append(inlines[i])
+
+	return newlines
+
+
+def loadlines(infile):
+	f = open(infile,'r')
+	lines =f.readlines()
+	f.close()
+	
+	outlines = []
+	for line in lines:
+		#print "The len of this line is", len(line)
+		if len(line)<5 or len(line) > 30:
+			print "This line is insane and therefore will be removed", line
+		else:
+			outlines.append(line)
+
+	return outlines
+
 
 if '__main__' == __name__:
 	main()
