@@ -3241,6 +3241,8 @@ EMData* RT3DTreeAligner::align(EMData * this_img, EMData *to, const string & cmp
  	t["transform"] = tr;
  	EMData* soln = this_img->process("xform",t);
  	soln->set_attr("xform.align3d",tr);
+	soln->set_attr("score",alis[0]["score"]);
+	soln->set_attr("coverage",alis[0]["coverage"]);
 
 	return soln;
 
