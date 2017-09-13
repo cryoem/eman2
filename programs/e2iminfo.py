@@ -72,6 +72,7 @@ def main():
 	parser.add_argument("-s", "--stat", action="store_true",help="Show statistical information about the image(s).",default=False)
 	parser.add_argument("-E", "--euler", action="store_true",help="Show Euler angles from header",default=False)
 	parser.add_argument("-a", "--all", action="store_true",help="Show info for all images in file",default=False)
+	parser.add_argument("-C", "--check", action="store_true",help="Checks to make sure all image numbers are populated with images, and that all images have valid CTF parameters",default=False)
 	parser.add_argument("-c", "--count", action="store_true",help="Just show a count of the number of particles in each file",default=False)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
@@ -130,7 +131,7 @@ def main():
 			if d["nz"]==1 : print "%s\t %d images in BDB format\t%d x %d"%(imagefile,len(dct),d["nx"],d["ny"])
 			else : print "%s\t %d images in BDB format\t%d x %d x %d"%(imagefile,len(dct),d["nx"],d["ny"],d["nz"])
 
-		if options.all:
+		if options.all or options.check:
 			imgn = xrange(nimg)
 		elif options.number >= 0:
 			imgn = [options.number]
@@ -144,13 +145,22 @@ def main():
 		d=EMData()
 		for i in imgn:
 			if options.stat : d.read_image(imagefile,i)
-			else : d.read_image(imagefile,i,True) #Jesus
-			print "%d. "%i,
-			try:
-				print "%d ptcl\t"%d["ptcl_repr"],
-				nptcl+=d["ptcl_repr"]
-			except:
-				print "\t"
+			else : 
+				try: d.read_image(imagefile,i,True) #Jesus
+				except: print "Error reading image ",imagefile,i
+			if options.check:
+				try: 
+					ctf=d["ctf"]	
+					snr=ctf.snr[0]
+				except:
+					print "Error with CTF on ",imagefile,i
+			else:
+				print "%d. "%i,
+				try:
+					print "%d ptcl\t"%d["ptcl_repr"],
+					nptcl+=d["ptcl_repr"]
+				except:
+					print "\t"
 			
 			if options.stat :
 				print "apix=%1.2f\tmin=%1.4g\tmax=%1.4g\tmean=%1.4g\tsigma=%1.4g\tskewness=%1.4g \tkurtosis=%1.4g"%(d["apix_x"],d["minimum"],d["maximum"],d["mean"],d["sigma"],d["skewness"],d["kurtosis"]),
