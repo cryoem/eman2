@@ -166,13 +166,13 @@ def main():
 				print "apix=%1.2f\tmin=%1.4g\tmax=%1.4g\tmean=%1.4g\tsigma=%1.4g\tskewness=%1.4g \tkurtosis=%1.4g"%(d["apix_x"],d["minimum"],d["maximum"],d["mean"],d["sigma"],d["skewness"],d["kurtosis"]),
 				try:
 					c=d["ctf"]
-					print "\tdefocus=%1.2f\tB=%1.0f"%(c.defocus,c.bfactor),
+					print "\tdefocus=%1.2f\tB=%1.0f"%(c.defocus,c.bfactor)
 				except:
 					print " "
 						
 			if options.euler:
 #				d=EMData(imagefile,i,True) #Jesus
-				try: print "%s"%(str(d["xform.projection"])),
+				try: print "%s"%(str(d["xform.projection"]))
 				except : print "No transform information",
 
 			if options.header :
@@ -184,7 +184,6 @@ def main():
 					print "\t%s: %s"%(k,str(d[k]))
 				print "======================"
 			
-			print ""
 	
 	if nimgs>1 : print "%d total images"%nimgs
 	try : print "representing %d particles"%nptcl
