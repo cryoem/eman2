@@ -99,7 +99,7 @@ def main():
 	
 	parser.add_argument("--outputtag",type=str,default='plotfig',help="""Default=plotfig. String common to all automatically generated output files. For example, --outputtag=myplot will generate myplot1.png, myplot2.png, ..., myplotN.png""")
 
-	parser.add_argument("--path", type=str,default='plotfig',help="""Defaault=de_plots. Name of the directory where to store the output results.""")
+	parser.add_argument("--path", type=str,default='plotfig',help="""Default=de_plots. Name of the directory where to store the output results.""")
 	parser.add_argument("--ppid", type=int, default=-1,help="Default=-1. Set the PID of the parent process, used for cross platform PPID")
 
 	parser.add_argument("--scaleaxes", action='store_true', default=False, help="""Default=False. This will force the axes to be on the same scale.""") 
