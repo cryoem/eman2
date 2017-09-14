@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 '''
 ====================
-Author: Jesus Galaz-Montoya - 2017, Last update: 11/Sep/2017
+Author: Jesus Galaz-Montoya - 2017, Last update: 12/Sep/2017
 ====================
 
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -82,13 +82,18 @@ def main():
 	parser.add_argument("--labelxaxis", type=str,default='x',help="""Default=x. Label for x axis (specify units through --unitsx.""")
 	parser.add_argument("--labelyaxis", type=str,default='y',help="""Default=y. Label for y axis (specify units through --unitsy.""")
 	parser.add_argument("--labeltitle", type=str,default='',help="""Default=None. Title for figure.""")
-
+	parser.add_argument("--legend",type=str,default='',help=""""Default=None. If you are plotting only 1 curve, or --individualplots is on, and you desire a specific legend for the data series in each plot, supply it here as a string with no spaces. You can provide any string without spaces; if you need spaces, add an underscore instead and the program will replace the underscore with a space; for exampe 'ribosome_80s' will appear as 'ribosome 80s'.""")
+	parser.add_argument("--linesoff", action='store_true', default=False, help="""Default=False. This requires --markerson and will get rid of the line uniting data points (the plot will be like a scatter plot).""")
+	
+	parser.add_argument("--markerson", action='store_true', default=False, help="""Default=False. This will enforce markers in the plot for each data point (like a scatter plot, but the points will still be united by a line).""")
+	parser.add_argument("--marker",type=str,default='',help=""""Default=None. If you are plotting only 1 curve, or --individualplots is on, and you desire a specific marker, supply it here (for example o, or *, or x.""")
+	
 	parser.add_argument("--maxx",type=float,default=None,help="""Default=None. Maximum value to plot in X. Automatically set to the maximum value in the data, per image, if not explicitly set.""")
 	parser.add_argument("--maxy",type=float,default=None,help="""Default=None. Maximum value to plot in Y. Automatically set to the maximum value in the data, per image, if not explicitly set.""")
 	parser.add_argument("--minx",type=float,default=None,help="""Default=None. Minimum value to plot in X. Automatically set to the maximum value in the data, per image, if not explicitly set.""")
 	parser.add_argument("--miny",type=float,default=None,help="""Default=None. Minimum value to plot in Y. Automatically set to the maximum value in the data, per image, if not explicitly set.""")
 	
-	parser.add_argument("--nocolor", action='store_true', default=False, help="""Default=False. Plots are colored, by default; don't be cheap; clear communication and representation pays off; or consider publishing in online open source journals.""")
+	parser.add_argument("--nocolor", action='store_true', default=False, help="""Default=False. Plots are colored, by default; don't be cheap; clear communication and representation pays off; or consider publishing in online open source journals that don't charge extra for color figures.""")
 
 	parser.add_argument("--normalize", action='store_true', default=False, help="""Default=False. This option will normalize all plots to be scaled between 0 and 1.""") 
 	
@@ -99,8 +104,8 @@ def main():
 
 	parser.add_argument("--scaleaxes", action='store_true', default=False, help="""Default=False. This will force the axes to be on the same scale.""") 
 
-	parser.add_argument("--unitsx", type=str,default='AU',help="""Default=AU (arbitrary units). Units for the x axis.'microns' or 'mu' and 'angstroms' or 'A' (and '1/angstroms' or '1/A') will be replaced by the appropriate symbol.""")
-	parser.add_argument("--unitsy", type=str,default='AU',help="""Default=AU (arbitrary units). Units for the y axis.'microns' or 'mu' and 'angstroms' or 'A' (and '1/angstroms' or '1/A')  will be replaced by the appropriate symbol.""")
+	parser.add_argument("--unitsx", type=str,default='AU',help="""Default=AU (arbitrary units). Units for the x axis.'microns' or 'mu' and 'angstroms' or 'A' (and '1/angstroms' or '1/A') will be replaced by the appropriate symbol. You can provide any string without spaces; if you need spaces, add an underscore instead and the program will replace the underscore with a space; for exampe 'GPU_h' will appear as 'GPU h'.""")
+	parser.add_argument("--unitsy", type=str,default='AU',help="""Default=AU (arbitrary units). Units for the y axis.'microns' or 'mu' and 'angstroms' or 'A' (and '1/angstroms' or '1/A')  will be replaced by the appropriate symbol. You can provide any string without spaces; if you need spaces, add an underscore instead and the program will replace the underscore with a space; for exampe 'GPU_h' will appear as 'GPU h'.""")
 	
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness.")
 
@@ -147,6 +152,10 @@ def main():
 		datafiles = options.data.split(',')
 		k=0
 		
+
+		if len(datafiles) < 2:
+			options.individualplots = True
+
 		for f in datafiles:
 			
 			xaxis=[]
@@ -180,6 +189,9 @@ def main():
 	elif not options.data:
 		if options.datax:
 			dataxfiles=options.datax.split(',')
+
+			if len(dataxfiles) < 2:
+				options.individualplots = True
 
 			if options.datay:
 				datayfiles=options.datay.split(',')
@@ -311,18 +323,6 @@ def resetcolorbar(cbminval,cbmaxval):
 
 def plotdata( options, data ):
 
-	N = len(data)
-	HSV_tuples = [(x*1.0/N, 0.5, 0.5) for x in range(N)]
-	RGB_tuples = map(lambda x: colorsys.hsv_to_rgb(*x), HSV_tuples)
-
-	import string
-	markers=string.printable
-	marker=''
-
-	#markers=["*","o","x",">","<","|","z","m",]
-
-	#mark = ''
-	
 	resolution=150
 	if options.highresolution:
 		resolution=300
@@ -337,34 +337,51 @@ def plotdata( options, data ):
 	#colorstart = options.lowestangle
 	#colorstep = options.tiltstep
 
-	for k in data:
-		#if count==ndata-1:
-		#	colorbar=True
-		color = RGB_tuples[k]
-		if options.nocolor:
-			color = 'k'
-			marker=markers[k]
-			#try:
-			#	mark = markers[k]
-			#except:
-			#	mark = markers[-1]
-		
-		if options.verbose > 9:
-			print "\n(e2plotfig)(plotdata) plotting dataset n = {}".format(k)
-			print "color is {}".format(color)
-			print "marker is {}".format(marker)
-		
-		plotfig( options, fig, ax, data[k][0], data[k][1], k, color, marker )
-		
-		areay = round(sum(data[k][1]),2)	
-		with open(options.path + '/' + options.outputtag + '_areas.txt','a') as areasfile:
-			areasfile.write( str(k)+ ' ' + str(areay) + '\n')
-		 
+	if not options.individualplots:
+		N = len(data)
+		HSV_tuples = [(x*1.0/N, 0.5, 0.5) for x in range(N)]
+		RGB_tuples = map(lambda x: colorsys.hsv_to_rgb(*x), HSV_tuples)
 
-	filetosave = options.path + '/' + options.outputtag + '.png'
-	fig.savefig( filetosave, dpi=resolution, bbox_inches='tight')# transparent=True) #, bbox_extra_artists=(lgd,), bbox_inches='tight'
-	plt.close('fig')
-	print "\n(e2plotfig)(plotdata) saving figure {}".format(filetosave)
+		#import string
+		#markers=string.printable
+		markers = matplotlib.markers.MarkerStyle.markers.keys()
+		marker=''
+
+		
+		#markers=["*","o","x",">","<","|","z","m",]
+
+		#mark = ''
+
+		for k in data:
+			#if count==ndata-1:
+			#	colorbar=True
+			color = RGB_tuples[k]
+			if options.nocolor or options.markerson and not marker:
+				marker = markers[k]
+				if options.nocolor:
+					color = 'k'
+				
+				#try:
+				#	mark = markers[k]
+				#except:
+				#	mark = markers[-1]
+			
+			if options.verbose > 9:
+				print "\n(e2plotfig)(plotdata) plotting dataset n = {}".format(k)
+				print "color is {}".format(color)
+				print "marker is {}".format(marker)
+			
+			plotfig( options, fig, ax, data[k][0], data[k][1], k, color, marker )
+			
+			areay = round(sum(data[k][1]),2)	
+			with open(options.path + '/' + options.outputtag + '_areas.txt','a') as areasfile:
+				areasfile.write( str(k)+ ' ' + str(areay) + '\n')
+			 
+
+		filetosave = options.path + '/' + options.outputtag + '.png'
+		fig.savefig( filetosave, dpi=resolution, bbox_inches='tight')# transparent=True) #, bbox_extra_artists=(lgd,), bbox_inches='tight'
+		plt.close('fig')
+		print "\n(e2plotfig)(plotdata) saving figure {}".format(filetosave)
 
 	if options.individualplots:
 		#colorstep=0
@@ -372,8 +389,12 @@ def plotdata( options, data ):
 			#colorbar=False
 			fig,ax = resetplot()
 			print "\n(e2plotfig)(plotdata) plotting individual plot for dataset n = {}".format(k)
-			plotfig( options, fig, ax, data[k][0], data[k][1], k, color, marker )	
-			filetosave = options.path + '/' + options.outputtag + str( k ).zfill( len(str(ndata)))+'.png'
+			plotfig( options, fig, ax, data[k][0], data[k][1], k )
+			
+			filetosave = options.path + '/' + options.outputtag +'.png'
+			if len(data) > 1:	
+				filetosave = options.path + '/' + options.outputtag + str( k ).zfill( len(str(ndata)))+'.png'
+			
 			fig.savefig( filetosave, dpi=resolution, bbox_inches='tight', format='png')
 			plt.close('fig')
 
@@ -394,11 +415,24 @@ def plotfig( options, fig, ax, datax, datay, count, colorthis='k', markerthis=''
 	#if colorstart and colorstep:
 	#	colorthis = cpick.to_rgba( colorstart + kplot*colorstep)
 	label=str(count)
-	if markerthis:
-		label=markerthis
+
+	if options.individualplots:
+		if options.marker:
+			markerthis = options.marker
+	
+		if options.legend:
+			label = options.legend.replace('_',' ')
+
+	elif markerthis:
+		label=str(markerthis)
 		
 	#ax.legend()
-	ax.plot( datax, datay, linewidth=2, marker=markerthis, markersize=5, color=colorthis, label=label) #, alpha=0.75)
+	linestyle='-'
+	linewidth=2
+	if options.linesoff:
+		linestyle=''
+		linewidth=0
+	ax.plot( datax, datay, linestyle=linestyle, linewidth=linewidth, marker=markerthis, markersize=5, color=colorthis, label=label) #, alpha=0.75)
 	
 	print "\noptions.miny is {}".format(options.miny)
 	if options.miny != None or options.maxy != None:
@@ -444,12 +478,12 @@ def plotfig( options, fig, ax, datax, datay, count, colorthis='k', markerthis=''
 
 	ax.set_title(options.labeltitle, fontsize=16, fontweight='bold')
 	if options.unitsx:
-		ax.set_xlabel(options.labelxaxis + ' (' + options.unitsx + ')', fontsize=16, fontweight='bold')
+		ax.set_xlabel(options.labelxaxis + ' (' + options.unitsx.replace('_',' ') + ')', fontsize=16, fontweight='bold')
 	else:
 		ax.set_xlabel(options.labelxaxis, fontsize=16, fontweight='bold')
 
 	if options.unitsy:
-		ax.set_ylabel(options.labelyaxis + ' (' + options.unitsy + ')', fontsize=16, fontweight='bold')
+		ax.set_ylabel(options.labelyaxis + ' (' + options.unitsy.replace('_',' ') + ')', fontsize=16, fontweight='bold')
 	else:
 		ax.set_ylabel(options.labelyaxis, fontsize=16, fontweight='bold')
 
