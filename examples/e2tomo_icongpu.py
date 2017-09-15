@@ -30,31 +30,24 @@ Author: Jesus Galaz-Montoya - 2017, Last update: 12/Sep/2017
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 '''
 
-#import matplotlib
-#matplotlib.use('Agg',warn=False)
-
-#import matplotlib.pyplot as plt
-#import pylab
-
-#import matplotlib.colors as mcol
-#import matplotlib.cm as cm
-
-#import colorsys
-
 import sys, os
 
 from EMAN2 import *
+
+import shutil
 
 
 def main():
 
 	progname = os.path.basename(sys.argv[0])
-	usage = """Wrapper to run ICOn reconstructions using fewer parameters. The program automatically crops the tiltseries into a square, runs tests alignments
-	to make sure a good XY size is picked (some sizes make ICON crash), and picks the correct iteration numbers.
+	usage = """This program requires ICON-GPU and IMOD. Wrapper to run ICON-GPU reconstructions using fewer parameters. The program automatically crops the tiltseries into a square, runs test alignments
+	to make sure a good XY size is picked (some sizes make ICON crash), and picks the correct iteration numbers. 
+	The reconstructed tomogram is also automatically rotated around x so that z is the shortest size using IMOD's clip rotx function, and can be optionally binned if --shrink is provided.
 
-	Preprocessing and reconstruction need to happen in separate runs since preprocessing acts on the raw (or ideally, X-ray corrected) tiltseries, the .st file from IMOD after X-ray correction.
-	On the other hand, the reconstruction should be performed with the preprocessed tiltseries AFTER it has been aligned with IMOD, that is, the .ali file, and AFTER gold fiducials have been deleted.
-	This program automatically backs up the .st and .ali IMOD files while replacing them with the ICONPreProcessed files (gold deletion needs to proceed in IMOD's pipeline) prior to
+	Preprocessing and reconstruction normally happen in separate runs since preprocessing acts on the raw (or ideally, X-ray corrected) tiltseries, the .st file from IMOD after X-ray correction.
+	On the other hand, the reconstruction should be performed with the preprocessed tiltseries AFTER it has been aligned with IMOD (the .ali file) and AFTER gold fiducials have been deleted.
+	This program automatically backs up the .st and .ali IMOD files while replacing them with the ICONPreProcessed files (gold deletion needs to proceed in IMOD's pipeline) prior to reconstruction.
+	An option is provided through --skipgolderasing to streamline the entire pipeline with a single run of this program if the sample has no gold fiducials or the user doesn't want to delete them.
 
 	To preprocess the raw tiltseries, run:
 
@@ -80,16 +73,18 @@ def main():
 	
 	parser.add_argument("--gpus", type=str, default="-1", help="""default=-1 (all available GPUs will be used). To select specific GPUs to use, provide them as a comma-separated list of integers.""")
 	
-	parser.add_argument("--iconpreproc", action='store_true', default=False, help="""default=False. If on, this will trigger a call to ICONPreProcess on the .st file supplied through --tiltseries. This""")
+	parser.add_argument("--iconpreproc", action='store_true', default=False, help="""default=False. If on, this will trigger a call to ICONPreProcess on the .st file supplied through --tiltseries.""")
 		
-	parser.add_argument("--path", type=str, default='plotfig', help="""Default=icongpu. Name of the directory where to store the output results. Only works when reconstructing the .ali file (preprocessing of the .st file will output the preprocessed tiltseries to the current directory). A numbered series of 'icongpu' directories will be created (i.e., if the program is run more than once, results will be stored in iconpu_01, icongpu_02, etc., directories, to avoid overwriting data).""")
+	parser.add_argument("--path", type=str, default='icongpu', help="""Default=icongpu. Name of the directory where to store the output results. Only works when reconstructing the .ali file (preprocessing of the .st file will output the preprocessed tiltseries to the current directory). A numbered series of 'icongpu' directories will be created (i.e., if the program is run more than once, results will be stored in iconpu_01, icongpu_02, etc., directories, to avoid overwriting data).""")
 	parser.add_argument("--ppid", type=int, default=-1, help="Default=-1. Set the PID of the parent process, used for cross platform PPID")
 
-	parser.add_argument("--sizez",type=int, default=0, help="""Default=0. Output size in Z for the reconstructed tomogram. This should be the same as the --thickness value provided during tiltseries preprocessing, or larger (it's good to make sure the entire reconstruction will fit in the reconstruction volume without being too tight). If running a reconstruction of the .ali file and both --thickness and --sizez are provided, the latter will supersede the former.""")
+	parser.add_argument("--shrink",type=int, default=0, help="""Default=0 (not used). Shrink factor to provide IMOD's binvol program with to bin/shrink the output tomogram after rotation about the x axis.""")
+	parser.add_argument("--sizez",type=int, default=0, help="""Default=0 (not used). Output size in Z for the reconstructed tomogram. This should be the same as the --thickness value provided during tiltseries preprocessing, or larger (it's good to make sure the entire reconstruction will fit in the reconstruction volume without being too tight). If running a reconstruction of the .ali file and both --thickness and --sizez are provided, the latter will supersede the former.""")
+	parser.add_argument("--skipgolderasing", action='store_true', default=False, help="""default=False. If on, this will call IMOD to generate a new aligned tiltseries after ICONPreProcess, and then ICON-GPU will be automatically called to perform the reconstruction. Typically, one would NOT use this option as it is useful to delete the gold fiducials prior to reconstruction.""")
 
 	parser.add_argument("--thickness", type=int, default=0, help="""default=0. Thickness of the specimen as seen in a preliminary weighted back projection reconstruction from IMOD (through how many slices in Z are there specimen densities?).""")
-	parser.add_argument("--tiltseries", type=str, default='', help="""default=None. .st file from IMOD if --iconpreproc is turned on. Otherwise, supply the .ali file from IMOD *after* X-ray correction, iconpreprocessing, and alignment with IMOD.""")
-	parser.add_argument("--tltfile", type=str, default='', help="""default=None. .tlt file from IMOD.""")
+	parser.add_argument("--tiltseries", type=str, default=None, help="""default=None. .st file from IMOD if --iconpreproc is turned on. Otherwise, supply the .ali file from IMOD *after* X-ray correction, iconpreprocessing, and alignment with IMOD.""")
+	parser.add_argument("--tltfile", type=str, default=None, help="""default=None. .tlt file from IMOD.""")
 
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness.")
 
@@ -112,20 +107,27 @@ def main():
 		print "\nERROR: the aligned tiltseries must be in the same directory, and should match the name of the raw .st tiltseries, except that the extension should be .ali instead of .st; the expected file is {}".format(alifile)
 		sys.exit(1)
 
+	if options.verbose:
+		print "\n(e2tomo_icongpu)(icongpufunc) making directory {} to store reconstruction results".format(options.path)
+	
+	from EMAN2_utils import makepath
+	options = makepath(options)
+
+	cmdsfilepath = options.path + '/cmds.txt'
+
 	if options.iconpreproc:
 
 		if '.st' not in extension:
 			print "\nERROR: the extension of the --tiltseries is {} instead of .st; make sure this is the correct tiltseries, and change the extension to .st".format(extension)
+			shutil.rmtree(options.path)
 			sys.exit(1)
 		
 		if not options.thickness:
 			print "\nERROR: --thickness required for ICONPreProcess."
+			shutil.rmtree(options.path)
 			sys.exit(1)
 
-		if options.skipgolderasing:
-			if not options.tltfile:
-
-		iconpreprocfunc(options,alifile)
+		iconpreprocfunc(options,alifile,extension,cmdsfilepath)
 	
 	elif not options.iconpreproc or options.skipgolderasing:
 		
@@ -149,7 +151,7 @@ def main():
 		if not options.iconpreproc:
 			alifile = options.tiltseries
 
-		icongpufunc(options,alifile,extension)
+		icongpufunc(options,alifile,cmdsfilepath)
 
 	E2end(logger)
 
@@ -157,42 +159,48 @@ def main():
 	return
 
 
-def iconpreprocfunc(options,alifile):
+def iconpreprocfunc(options,alifile,extension,cmdsfilepath):
+
+	#from shutil import copyfile
 	
 	outfile = options.tiltseries.replace(extension,'_iconpreproc_th' + str(options.thickness) + '.st')
 	backupst = 'backup.' + options.tiltseries
 	backupali = 'backup.' + alifile
 
-	cmd1 = "ICONPreProcess -input " + options.tiltseries + " -tiltfile " + options.tltfile + " -thickness " + str(options.thickness) + " -output " + outfile
-	runcmd(options,cmd1)
 	if options.verbose:
 		print "\n(e2tomo_icongpu)(iconpreprocfunc) running ICONPreProcess"
+	cmd1 = "ICONPreProcess -input " + options.tiltseries + " -tiltfile " + options.tltfile + " -thickness " + str(options.thickness) + " -output " + outfile
+	runcmd(options,cmd1,cmdsfilepath)
 	
-	cmd2 = "cp " + options.tiltseries + " " + backupst
-	runcmd(options,cmd2)
 	if options.verbose:
 		print "\n(e2tomo_icongpu)(iconpreprocfunc) backing up raw (x-ray corrected) tiltseries {} to file {}".format(options.tiltseries,backupst)
+	shutil.copyfile(options.tiltseries, backupst)
+	#cmd2 = "cp " + options.tiltseries + " " + backupst
+	#runcmd(options,cmd2,cmdsfilepath)
 
-	cmd3 = "cp " + alifile + " " + backupali
-	runcmd(options,cmd3)
 	if options.verbose:
 		print "\n(e2tomo_icongpu)(iconpreprocfunc) backing up aligned tiltseries {} to file {}".format(alifile,backupali)
+	shutil.copyfile(alifile, backupali)
+	#cmd3 = "cp " + alifile + " " + backupali
+	#runcmd(options,cmd3,cmdsfilepath)
+	
+	if options.verbose:
+		print "\n(e2tomo_icongpu)(iconpreprocfunc) copying the preprocessed tiltseries {} to the original tiltseries file {}".format(outfile,options.tiltseries)
+	shutil.copyfile(outfile, options.tiltseries)
+	#cmd4 = "cp " + outfile + " " + options.tiltseries
+	#runcmd(options,cmd4,cmdsfilepath)
 
-	cmd4 = "subm newst"
-	runcmd(options,cmd4)
 	if options.verbose:
 		print "\n(e2tomo_icongpu)(iconpreprocfunc) generating new .ali file after ICONPreProcess"
+	cmd2 = "subm newst"
+	runcmd(options,cmd2,cmdsfilepath)
 
 	return
 
 
-def icongpufunc(options,alifile,extension):
+def icongpufunc(options,alifile,cmdsfilepath):
 	
-	if options.verbose:
-		print "\n(e2tomo_icongpu)(icongpufunc) making directory {} to store reconstruction results".format(options.path)
-	
-	from EMAN2_utils import makepath
-	options = makepath(options) 
+	alifilename, aliextension = os.path.splitext(alifile)
 
 	hdr = EMData(alifile,0,True)
 	nx = hdr['nx']
@@ -208,22 +216,69 @@ def icongpufunc(options,alifile,extension):
 		if outsize % 2:
 			outsize -= 1
 	
-		alifile = cropper(options,alifile,extension,nx,ny,outsize)
+		alifile = cropper(options,alifile,aliextension,outsize,cmdsfilepath)
 
+	alifile,outsize,iterationsstring = icontest(options,alifile,outsize,cmdsfilepath,aliextension)
+
+	icondir = options.path
+
+	thickness = outsize/4
+	if options.thickness:
+		thickness = options.thickness
+	if options.sizez:
+		thickness=options.thickness
+
+	outtomogram = alifile.replace(aliextension,'_icongpu.mrc')
+ 	
+ 	if options.verbose:
+ 		print "\n(e2tomo_icongpu)(icongpufunc) calling ICON-GPU."
+	cmdicon1 = 'ICON-GPU -input ' + alifile + ' -tiltfile ' + options.tltfile + ' -outputPath ' + icondir + ' -slice 0,' + str(outsize-1) + ' -ICONIteration '+ iterationsstring + ' -dataType 1 -threshold 0 -gpu ' + options.gpus 
+	runcmd(options,cmdicon1,cmdsfilepath)
+
+	if options.verbose:
+		print "\n(e2tomo_icongpu)(icongpufunc) calling ICONMask2."
+	cmdicon2 = 'ICONMask2 -inputPath ' + icondir + '/reconstruction -tiltfile ' + options.tltfile + ' -output ' + outtomogram + ' -slice 0,' + str(outsize-1) + ' -thickness ' + str(thickness) + '-crossVfrc ' + icondir + '/crossValidation/crossV.frc -fullRecfrc ' + icondir + '/crossValidation/fullRec.frc' 
+	runcmd(options,cmdicon2,cmdsfilepath)
+
+	outtomogramzshort = outtomogram.replace('.mrc','_ZSHORT.mrc') 
+	if options.verbose:
+		print "\n(e2tomo_icongpu)(icongpufunc) calling IMOD to rotate the reconstructed volume around x and shrink it if --shrink > 1 was specified."
+	cmdimod1 = 'clip rotx ' + outtomogram + ' ' + outtomogramzshort
+	runcmd(options,cmdimod1,cmdsfilepath)
+
+	outtomogramzshortbinned = outtomogramzshort.replace('.mrc','_bin'+str(options.shrink)+'.mrc') 
+	if options.shrink and int(options.shrink) > 1:
+		cmdimod2 = 'binvol ' + outtomogramzshort + ' ' +  + ' --binning ' + str(options.shrink) + ' --antialias'
+		runcmd(options,cmdimod2,cmdsfilepath)
+
+	os.remvoe(outtomogram)
+	os.rename(outtomogramzshort, options.path + '/' + outtomogramzshort)
+	os.rename(outtomogramzshortbinned, options.path + '/' + outtomogramzshortbinned)
+
+	return
+
+
+def icontest(options,alifile,outsize,cmdsfilepath,aliextension):
 	
 	passtest = False
 
 	while not passtest and outsize > 63:
 			
-		it1,i2,i3 = calciterations(outsize)
+		it1,it2,it3 = calciterations(outsize)
 		
 		iterationsstring = str(it1)+','+str(it2)+','+str(it3)
-	
+		print "iterationsstring is {} of type {} ".format(iterationsstring,type(iterationsstring))
+
 		tmpdir = "tmpicontest"
 		
-		cmdicon = "mkdir " + tmpdir + " ; ICON-GPU -input " + alifile + " -tiltfile " + options.tltfile + " -outputPath " + tmpdir + " -slice 0,1 -ICONIteration " + iterationsstring + " -dataType 1 -threshold 0 -gpu " + options.gpus
+		print "options.gpus={}, type={}".format(options.gpus,type(options.gpus))
+		print "tmpdir={}, type={}".format(tmpdir,type(tmpdir))
+		print "alifile={}, type={}".format(alifile,type(alifile))
+		print "options.tltfile={}, type={}".format(options.tltfile,type(options.tltfile))
 
-		runcmd(cmdicon)
+		cmdicontest = "mkdir " + tmpdir + " ; ICON-GPU -input " + alifile + " -tiltfile " + options.tltfile + " -outputPath " + tmpdir + " -slice 0,1 -ICONIteration " + iterationsstring + " -dataType 1 -threshold 0 -gpu " + options.gpus
+
+		runcmd(options,cmdicontest,cmdsfilepath)
 
 		findirtest = os.listdir(tmpdir+'/reconstruction/')
 		
@@ -232,22 +287,19 @@ def icongpufunc(options,alifile,extension):
 				imgpath = tmpdir+'/reconstruction/'+f
 				img = EMData(imgpath,0)
 				sigma = img['sigma']
-				sigmanonzero = hdrtest['sigma_nonzero']
+				sigmanonzero = img['sigma_nonzero']
 
 				if sigma and sigmanonzero:
 					passtest = True
+					print "\nthe test passed; the tiltseries has a good size now nx={}, ny={}".format(img['nx'],img['ny'])
+					return alifile,outsize,iterationsstring
 				else:
 					passtest = False
 					outsize -= 2
 					print "\nICON-GPU failed becase the image size was bad; cropping the images in the tiltseries to this new size, nx={}, nx={}".format(outsize,outsize)
-					alifile = cropper(options,alifile,extension,nx,ny,outsize)
-					os.remove(tmpdir)
+					alifile = cropper(options,alifile,aliextension,outsize,cmdsfilepath)
+					shutil.rmtree(tmpdir)
 					break
-
-	if passtest:
-		icondir = options.path
-
-
 	return
 
 
@@ -261,32 +313,36 @@ def calciterations(outsize):
 	it1 = 10
 
 	if outsize < 513:
-		it1,it2 = scaleiterations(outsize,512,100,60)
+		it2,it3 = scaleiterations(outsize,512,100,60)
 	
 	elif outsize > 512 and outsize < 1025:
-		it1,it2 = scaleiterations(outsize,1024,140,80)
+		it2,it3 = scaleiterations(outsize,1024,140,80)
 
 	elif outsize > 1024 and outsize < 2049:
-		it1,it2 = scaleiterations(outsize,2048,190,110)
+		it2,it3 = scaleiterations(outsize,2048,190,110)
 
 	elif outsize > 2048 and outsize < 4097:
-		it1,it2 = scaleiterations(outsize,4096,260,150)
+		it2,it3 = scaleiterations(outsize,4096,260,150)
 	
 	elif outsize > 4096:
-		it1,it2 = scaleiterations(outsize,8192,350,200)
+		it2,it3 = scaleiterations(outsize,8192,350,200)
 
 	return it1,it2,it3
 
 
 def scaleiterations(outsize,upperlimit,it2base,it3base):
-	sizefactor = outsize/upperlimit
+	sizefactor = float(outsize)/float(upperlimit)
 	it2 = int(ceil(it2base * sizefactor))
 	it3 = int(ceil(it3base * sizefactor))
 
 	return it2,it3
 
 
-def cropper(options,alifile,extension,nx,ny,outsize):
+def cropper(options,alifile,extension,outsize,cmdsfilepath):
+	
+	hdr = EMData(alifile,0,True)
+	nx=hdr['nx']
+	ny=hdr['ny']
 
 	if options.verbose:
 		print "\nWARNING: the tiltseries will be resized since its images are not squares. The original size is nx={}, ny={}, and will be cropped to nx={}, ny={}".format(nx,ny,outsize,outsize)
@@ -294,12 +350,12 @@ def cropper(options,alifile,extension,nx,ny,outsize):
 	outcrop = alifile.replace(extension,'_clip' + str(outsize) + extension)
 	cmdcrop = "e2proc2d.py " + alifile + ' ' + outcrop + ' --clip ' + str(outsize) + ',' + str(outsize)
 	
-	runcmd(options,cmdcrop)
+	runcmd(options,cmdcrop,cmdsfilepath)
 
-	return outcrop,outsize
+	return outcrop
 
 
-def runcmd(options,cmd):
+def runcmd(options,cmd,cmdsfilepath):
 	if options.verbose > 9:
 		print "(e2tomo_icongpu)(runcmd) running command", cmd
 	
@@ -310,6 +366,8 @@ def runcmd(options,cmd):
 	if options.verbose > 8:
 		print "(e2segmask)(runcmd) done"
 	
+	with open(cmdsfilepath,'a') as cmdfile: cmdfile.write( cmd + '\n')
+
 	return 1
 
 
