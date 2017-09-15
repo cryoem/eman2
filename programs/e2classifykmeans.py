@@ -218,8 +218,8 @@ together."""
 			out.write("#LST\n")
 			for i in range(len(classes[j])):
 				out.write("%d\t%s\n"%(filen[classes[j][i]],stackname))
-				im=EMData(stackname,filen[classes[j][i]])
-				im.write_image("cls%04d.hdf"%j,-1)
+				#im=EMData(stackname,filen[classes[j][i]])
+				#im.write_image("cls%04d.hdf"%j,-1)
 			out.close()
 	
 	# Write an EMAN2 standard classification matrix. Particles run along y

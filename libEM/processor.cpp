@@ -12652,7 +12652,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 		EMData *tmp=cimage;
 		cimage=new EMData((nkx+fp+2)*2,(nky+fp+2)*2,1);
 		cimage->set_complex(1);
-		for (int k=0; k<cimage->get_ysize(); k++) {
+		for (int k=-cimage->get_ysize()/2; k<cimage->get_ysize()/2; k++) {
 			for (int j=0; j<cimage->get_xsize()/2; j++) {
 				cimage->set_complex_at(j,k,tmp->get_complex_at(j,k));
 			}

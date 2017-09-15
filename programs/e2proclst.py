@@ -44,32 +44,32 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 	####################
 #	parser.add_argument("--average", action="store_true", help="Averages all input images (without alignment) and writes a single output image")
 	
-	parser.add_argument("--create", type=str, default='', help="to use this option, the input files should be image files. Specify an .lst or .lsx file to create here (e.g., --create mylst.lst) with references to all of the images in the inputs.")
+	parser.add_argument("--create", type=str, default=None, help="to use this option, the input files should be image files. Specify an .lst or .lsx file to create here (e.g., --create mylst.lst) with references to all of the images in the inputs.")
 
-	parser.add_argument("--dereforig", type=str, default='', help="Extract the source_orig_path and _n parameters from each image in the file and create a new .lst file referencing the original image(s)")
+	parser.add_argument("--dereforig", type=str, default=None, help="Extract the data_source and data_n parameters from each image in the file and create a new .lst file referencing the original image(s)")
 
-	parser.add_argument("--exclude", type=str, default='', help="only works if --create is supplied. comma-separated list of indexes from the input file(s) to EXCLUDE from the created .lst file.")
+	parser.add_argument("--exclude", type=str, default=None, help="only works if --create is supplied. comma-separated list of indexes from the input file(s) to EXCLUDE from the created .lst file.")
 
 	#parser.add_argument("--first", type=int, default=0, help="Default=0 (first image index in input(s)). This will be the first particle index in the input images to put in the output lsx/lst file.")
 
-	parser.add_argument("--include", type=str, default='', help="only works if --create is supplied. comma-separated list of indexes to take from the input file(s) to INCLUDE in the created .lst file. if you have the list of indexes to include in a .txt file, you can provide it through --list.")
+	parser.add_argument("--include", type=str, default=None, help="only works if --create is supplied. comma-separated list of indexes to take from the input file(s) to INCLUDE in the created .lst file. if you have the list of indexes to include in a .txt file, you can provide it through --list.")
 	parser.add_argument("--inplace", action="store_true", default=False, help="only works with --create. if the stack specified in --create already exists, this will prevent appending to it. rather, the file will be modified in place.")
 
 	#parser.add_argument("--last", type=str, default=-1, help="Default=-1 (last image index in input (s)). This will be the first particle index in the input images to put in the output lsx/lst file.")
-	parser.add_argument("--list", type=str, default='', help="only works if --create is supplied. .txt file with a list of indexes (one per line/row) to take from the input file(s) to INCLUDE in the created .lst file.")
+	parser.add_argument("--list", type=str, default=None, help="only works if --create is supplied. .txt file with a list of indexes (one per line/row) to take from the input file(s) to INCLUDE in the created .lst file.")
 
-	parser.add_argument("--merge", type=str, default='', help="Specify the output name here. This will concatenate all of the input .lst files into a single output")
-	parser.add_argument("--mergesort", type=str, default='', help="Specify the output name here. This will merge all of the input .lst files into a single (resorted) output")
+	parser.add_argument("--merge", type=str, default=None, help="Specify the output name here. This will concatenate all of the input .lst files into a single output")
+	parser.add_argument("--mergesort", type=str, default=None, help="Specify the output name here. This will merge all of the input .lst files into a single (resorted) output")
 	parser.add_argument("--mergeeo", action="store_true", default=False, help="Merge even odd lst.")
 	parser.add_argument("--minhisnr", type=float, help="Integrated SNR from 1/10-1/4 1/A must be larger than this",default=0,guitype='floatbox', row=8, col=1)
 	parser.add_argument("--minlosnr", type=float, help="Integrated SNR from 1/200-1/20 1/A must be larger than this",default=0,guitype='floatbox', row=8, col=0)
 	
-	parser.add_argument("--numaslist", type=str, default='', help="extract the particle indexes (numbers) only from an lst file into a text file (one number per line).")
+	parser.add_argument("--numaslist", type=str, default=None, help="extract the particle indexes (numbers) only from an lst file into a text file (one number per line).")
 	
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
-	parser.add_argument("--range", type=str, default='', help="Range of particles to use. Works only with --create option. Input of 0,10,2 means range(0,10, step=2).")
-	parser.add_argument("--retype", type=str, default='', help="If a lst file is referencing a set of particles from particles/imgname__oldtype.hdf, this will change oldtype to the specified string in-place (modifies input files)")
+	parser.add_argument("--range", type=str, default=None, help="Range of particles to use. Works only with --create option. Input of 0,10,2 means range(0,10, step=2).")
+	parser.add_argument("--retype", type=str, default=None, help="If a lst file is referencing a set of particles from particles/imgname__oldtype.hdf, this will change oldtype to the specified string in-place (modifies input files)")
 
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, help="verbose level [0-9], higner number means higher level of verboseness",default=1)
 
@@ -98,7 +98,7 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 			n=EMUtil.get_image_count(f)
 			for i in xrange(n):
 				im=EMData(f,i,True)
-				newlst.write(-1,im["source_orig_n"],im["source_orig_path"])
+				newlst.write(-1,im["data_n"],im["data_source"])
 
 	if options.create:
 
