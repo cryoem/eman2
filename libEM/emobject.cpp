@@ -98,7 +98,7 @@ map< EMObject::ObjectType, string> EMObject::init()
 		mymap[INTARRAY] = "INTARRAY";
 		mymap[FLOATARRAY] = "FLOATARRAY";
 		mymap[STRINGARRAY] = "STRINGARRAY";
-		mymap[TRANSFORM] = "TRANFORM";
+		mymap[TRANSFORM] = "TRANSFORM";
 		mymap[CTF] = "CTF";
 		mymap[FLOAT_POINTER] = "FLOAT_POINTER";
 		mymap[INT_POINTER] = "INT_POINTER";
