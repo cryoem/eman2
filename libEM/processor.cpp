@@ -12640,6 +12640,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 			}
 		}
 		delete ret;
+		delete cimage;
 		return ret2;
 	}
 	// footprint mode, produces a 2-D image containing n veritcally arranged rotational invariants
@@ -12704,6 +12705,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 			delete pln;
 		}
 		delete ret;
+		delete cimage;
 		return ret2;
         }
 	// angular integrate mode, produces the simplest rotational invariant, ignoring rotational correlations
