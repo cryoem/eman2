@@ -184,7 +184,7 @@ NOTE: This program should be run from the project directory, not from within the
 		if options.verbose: print "{} stacks after onlynew filter".format(len(args))
 
 
-	if len(args)<1 : parser.error("Input image required")
+#	if len(args)<1 : parser.error("Input image required")
 	if options.autofit:
 		if options.voltage==0 : parser.error("Please specify voltage")
 		if options.cs==0 : parser.error("Please specify Cs")
