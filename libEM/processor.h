@@ -1633,6 +1633,7 @@ The basic design of EMAN Processors: <br>\
 			d.put("voltage", EMObject::FLOAT, "Microscope voltage in KV");
 			d.put("cs", EMObject::FLOAT, "Cs of microscope in mm");
 			d.put("apix", EMObject::FLOAT, "A/pix of data");
+			d.put("phaseflip", EMObject::INT, "If not true, applies fabs(CTF). default true");
 			return d;
 		}
 

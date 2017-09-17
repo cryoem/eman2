@@ -613,11 +613,13 @@ class EMFilterTool(QtGui.QMainWindow):
 		#else: return
 	
 		self.needupdate=0		# we set this immediately so we reprocess again if an update happens while we're processing
-		self.procdata=[im.copy() for im in self.origdata]
+		# we fully process before putting it back into self.procdata
+		tmp=[im.copy() for im in self.origdata]
 
-		needredisp=0
+		needred=0
 		errors=[]
 		for p in self.processorlist:
+			if self.needupdate : return		# abort if another update is triggered
 			pp=p.processorParms()				# processor parameters
 			if pp==None: continue				# disabled processor
 			proc=Processors.get(pp[0],pp[1])	# the actual processor object
@@ -627,26 +629,28 @@ class EMFilterTool(QtGui.QMainWindow):
 			if pp[0] in outplaceprocs:
 				errflag=False
 				try:
-					self.procdata=[proc.process(im) for im in self.procdata]
+					tmp=[proc.process(im) for im in tmp]
 				except:
 					errflag=True
 			else:
-				for im in self.procdata:
+				for im in tmp:
+					if self.needupdate : return		# abort if another update is triggered
 					try: proc.process_inplace(im)
 					except: 
 						errflag=True
 						break
 				
 			if errflag: errors.append(str(pp))
-			needredisp=1					# if all processors are disabled, we don't want a redisplay
+			needred=1					# if all processors are disabled, we don't want a redisplay
 			self.lastredisp=1
 
 		if len(errors)>0 :
 			self.errors=errors
+		else: self.procdata=tmp
 
+		self.needredisp=max(needred,self.lastredisp)
+		self.lastredisp=needred
 		self.procthread=None					# This is a reference to ourselves (the thread doing the processing). we reset it ourselves before returning
-		self.needredisp=max(needredisp,self.lastredisp)
-		self.lastredisp=needredisp
 
 	def setData(self,data):
 		if data==None :

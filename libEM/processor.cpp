@@ -6314,12 +6314,16 @@ EMData* CtfSimProcessor::process(const EMData * const image) {
 	ctf.cs=params.set_default("cs",2.0);
 	ctf.apix=params.set_default("apix",image->get_attr_default("apix_x",1.0));
 	ctf.dsbg=1.0/(ctf.apix*fft->get_ysize()*4.0);		//4x oversampling
+	int doflip=(int)params.set_default("phaseflip",1);		// whether to use the CTF or abs(CTF)
 
 	float noiseamp=params.set_default("noiseamp",0.0f);
 	float noiseampwhite=params.set_default("noiseampwhite",0.0f);
 
 	// compute and apply the CTF
 	vector <float> ctfc = ctf.compute_1d(fft->get_ysize()*6,ctf.dsbg,ctf.CTF_AMP,NULL); // *6 goes to corner, remember you provide 2x the number of points you need
+	if (!doflip) {
+		for (vector<float>::iterator it=ctfc.begin(); it!=ctfc.end(); ++it) *it=fabs(*it);
+	}
 
 //	printf("%1.3f\t%1.3f\t%1.3f\t%1.3f\t%1.3f\t%d\n",ctf.defocus,ctf.bfactor,ctf.ampcont,ctf.dsbg,ctf.apix,fft->get_ysize());
 //	FILE *out=fopen("x.txt","w");
