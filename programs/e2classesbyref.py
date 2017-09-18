@@ -86,19 +86,50 @@ def main():
 
 	# get refs and bispectra
 	refs=EMData.read_images(args[0])
-	refsbsfs=args[0].rsplit(".")[0]+"_bispec.hdf"
-	try:
-		nrefbs=EMUtil.get_image_count(refsbsfs)
-		if nrefbs!=len(refs) :
-			print "Reference bispectrum file too short :",nrefbs,len(refs)
-			raise Exception
-	except:
-		print "No good bispecta found for refs. Building"
-		com="e2proc2dpar.py {} {} --process filter.highpass.gauss:cutoff_freq=0.01 --process normalize.edgemean --process math.bispectrum.slice:size={}:fp={} --threads {}".format(args[0],refsbsfs,bispec_invar_parm[0],bispec_invar_parm[1],options.threads)
-		run(com)
 	
-	refsbs=EMData.read_images(refsbsfs)
+	### This is the old bispectrum code, but realized that CTF has to be dealt with, so
+	### we need to compute a bunch of different bispectra instead
+	#refsbsfs=args[0].rsplit(".")[0]+"_bispec.hdf"
+	#try:
+		#nrefbs=EMUtil.get_image_count(refsbsfs)
+		#if nrefbs!=len(refs) :
+			#print "Reference bispectrum file too short :",nrefbs,len(refs)
+			#raise Exception
+	#except:
+		#print "No good bispecta found for refs. Building"
+		#com="e2proc2dpar.py {} {} --process filter.highpass.gauss:cutoff_freq=0.01 --process normalize.edgemean --process math.bispectrum.slice:size={}:fp={} --threads {}".format(args[0],refsbsfs,bispec_invar_parm[0],bispec_invar_parm[1],options.threads)
+		#run(com)
+	
+	#refsbs=EMData.read_images(refsbsfs)
 	#refsbs=[i.process("filter.highpass.gauss",{"cutoff_freq":0.01}).process("normalize.edgemean").process("math.bispectrum.slice:size=32:fp=6") for i in refs]
+	
+	# CTF has an impact on bispectra, while relatively small defocus changes produce minimal bispectra changes
+	# the absence of CTF in the references can cause significant mis-classification, so we make categorized CTF modified bispectra
+	# Enumerate particle defocus values
+	dfs={}
+	if args[1][-4:].lower()==".lst" :
+		if options.verbose: print "LSX file detected, looking for defocus in first particle of each image stack"
+
+		# find all referenced particle files
+		fsps=set()
+		lsx=LSXFile(args[1])
+		for i in xrange(len(lsx)):
+			fsps.add(lsx[i][1])
+		lsx=None
+		
+		# get the defocus of each particle stack from the first image in the file
+		# while we could use info files, this is less error prone
+		for fsp in fsps:
+			tmp=EMData(fsp,0,True)		# image header
+			dfs[tmp["ctf"].defocus]=0
+		
+	else:
+		if options.verbose: print "Reading from image stack, this is VERY slow. Please consider using .lst file for particle input."
+		
+		for i in xrange(nptcl):
+			tmp=EMData(args[1],i,True)
+			dfs[tmp["ctf"].defocus]=0
+			
 	
 	# Find particle bispectra
 	if "__ctf_flip" in args[1]:
