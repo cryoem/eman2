@@ -499,7 +499,7 @@ def get_params_for_analysis(orgstack, ali3d_params, smearing_file):
 	##
 	return vecs_list, defo_list, smearing_list, norm_list
 	
-def orien_analysis(veclist, cluster_id):
+def orien_analysis(veclist, cluster_id, log):
 	mean_vec = [0.0, 0.0, 0.0]
 	for im in xrange(len(veclist)):
 		for jm in xrange(len(mean_vec)):
@@ -516,9 +516,10 @@ def orien_analysis(veclist, cluster_id):
 	   "%5s  %f   %f  %f  "%\
 	   (" ", mean_vec[0]/max_value, mean_vec[1]/max_value, mean_vec[2]/max_value)
 	print(msg)
+	log.add(msg)
 	return mean_vec
 
-def do_one_way_anova_full(clusters, value_list, name_of_variable="variable"):
+def do_one_way_anova_full(clusters, value_list, name_of_variable="variable", log = None):
 	import copy
 	from random import shuffle
 	from math   import sqrt
@@ -569,14 +570,18 @@ def do_one_way_anova_full(clusters, value_list, name_of_variable="variable"):
 	     "Total  %10d    %12.3f    %12.3f"%(nsamples-1, sst, mst)+"\n"+\
 	     "SSA: %12.3f    SSE:  %12.3f  SST:  %12.3f"%(ssa, sse, sst)+"\n"
 	print(msg)
-	print("----->>>global %s mean of all clusters: "%name_of_variable, global_mean/(float(nsamples)))
+	log.add(msg)
+	msg = "----->>>global %s mean of all clusters: "%name_of_variable, global_mean/(float(nsamples))
+	print(msg)
+	log.add(msg)
 	msg = "----->>>Means per group<<<-----\n"+\
 	"Factor     N      Mean          Std  \n"
-	for i in xrange(K):
-		msg +="%5d   %5d   %12.5f   %12.5f"%(i+1, len(replicas[i]), avgs[i], std_list[i])+"\n"
+	for i in xrange(K): msg +="%5d   %5d   %12.5f   %12.5f"%(i+1, len(replicas[i]), avgs[i], std_list[i])+"\n"
 	print(msg)
+	log.add(msg)
 	msg = "---->>>END OF %s ANOVA"%name_of_variable
 	print(msg)
+	log.add(msg)
 	return
 
 def AI(to_be_decided, log = None, list_stable = None, score_list = None, initial_id_file = None):
@@ -720,16 +725,17 @@ def AI(to_be_decided, log = None, list_stable = None, score_list = None, initial
 					b =  set(accounted)
 					unaccounted = list(a.difference(b))
 					unaccounted.sort()
-					write_text_file(unaccounted, os.path.join(Tracker["constants"]["masterdir"], "Cluster_%03d.txt"%final_number_of_clusters))
-					final_number_of_clusters +=1
-					clusters.append(unaccounted)
-					msg ="include the final %d unaccounted images as the last cluster %d"%(len(unaccounted), final_number_of_clusters)
+					if len(unaccounted) >= Tracker["img_per_grp"]:
+						write_text_file(unaccounted, os.path.join(Tracker["constants"]["masterdir"], "Cluster_%03d.txt"%final_number_of_clusters))
+						final_number_of_clusters +=1
+						clusters.append(unaccounted)
+						msg ="include the final %d unaccounted images as the last cluster %d"%(len(unaccounted), final_number_of_clusters)
+					else: msg ="number of unaccounted images is too few"
 					log.add(msg)
 					print(line, msg)
 				dlist, nindex = merge_classes_into_partition_list(clusters) # 
 				write_text_row(nindex, os.path.join(Tracker["constants"]["masterdir"], "final_partition.txt"))
-			else:
-				clusters = 0
+			else: clusters = 0
 			clusters = wrap_mpi_bcast(clusters, Blockdata["main_node"], MPI_COMM_WORLD)
 			# analysis
 			if Blockdata["myid"] == Blockdata["main_node"]:
@@ -737,26 +743,28 @@ def AI(to_be_decided, log = None, list_stable = None, score_list = None, initial
 				os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt"),\
 				 os.path.join(Tracker["constants"]["masterdir"], "all_smearing.txt"))
 			 
-				do_one_way_anova_full(clusters, ds, name_of_variable="defocus")
+				do_one_way_anova_full(clusters, ds, name_of_variable="defocus", log = log)
 				msg = "---->>>Orientations per group analysis<<<----- \n"+\
 					"%10s %10s %10s  "%("X", "Y", "Z")
 				print(msg)
-			
+				log.add(msg)
 				if ss:
-					do_one_way_anova_full(clusters, ss, name_of_variable="smearing")
+					do_one_way_anova_full(clusters, ss, name_of_variable="smearing", log = log)
 					msg = "---->>>Orientations per group analysis<<<----- \n"+\
 						"%10s %10s %10s  "%("X", "Y", "Z")
 					print(msg)
+					log.add(msg)
 			
-				do_one_way_anova_full(clusters, norms, name_of_variable="norm")
+				do_one_way_anova_full(clusters, norms, name_of_variable="norm", log = log)
 				msg = "---->>>Orientations per group analysis<<<----- \n"+\
 					"%10s %10s %10s  "%("X", "Y", "Z")
 				print(msg)
-			
+				log.add(msg)
 				for i in xrange(len(clusters)):
 					oriens = []
 					for j in xrange(len(clusters[i])):
 						oriens.append(vs[clusters[i][j]])
+					orien_analysis(oriens, i, log)
 			mpi_barrier(MPI_COMM_WORLD)
 		else:
 			Tracker["number_of_runs"] +=1
@@ -774,6 +782,7 @@ def AI(to_be_decided, log = None, list_stable = None, score_list = None, initial
 	elif  to_be_decided == "post_sorting_sharpen":
 		if Tracker["constants"]["post_sorting_sharpen"]:
 			post_sorting_rec3d(log)
+			
 			from mpi import mpi_finalize
 			mpi_finalize()
 			exit()
@@ -998,7 +1007,8 @@ def Kmeans_minimum_group_size_orien_groups(original_data, partids, params, param
 	compute_noise(Tracker["nxinit"])
 	cdata, rdata = downsize_data_for_sorting(original_data, preshift = True, npad = 1)# pay attentions to shifts!
 	srdata = precalculate_shifted_data_for_recons3D(rdata, paramstructure, Tracker["refang"], \
-	   Tracker["rshifts"], Tracker["delta"], Tracker["avgnorm"], Tracker["nxinit"], Tracker["constants"]["nnxo"], Tracker["nosmearing"], norm_per_particle)
+	   Tracker["rshifts"], Tracker["delta"], Tracker["avgnorm"], Tracker["nxinit"], \
+	     Tracker["constants"]["nnxo"], Tracker["nosmearing"], norm_per_particle, Tracker["constants"]["nsmear"])
 	del rdata
 	last_iter_assignment = copy.copy(iter_assignment)
 	iter       = 0
@@ -1183,7 +1193,8 @@ def Kmeans_minimum_group_size_relaxing_orien_groups(original_data, partids, para
 	compute_noise(Tracker["nxinit"])
 	cdata, rdata = downsize_data_for_sorting(original_data, preshift = True, npad = 1)# pay attentions to shifts!
 	srdata = precalculate_shifted_data_for_recons3D(rdata, paramstructure, Tracker["refang"], \
-	   Tracker["rshifts"], Tracker["delta"], Tracker["avgnorm"], Tracker["nxinit"], Tracker["constants"]["nnxo"], Tracker["nosmearing"], norm_per_particle)
+	   Tracker["rshifts"], Tracker["delta"], Tracker["avgnorm"], Tracker["nxinit"], \
+	     Tracker["constants"]["nnxo"], Tracker["nosmearing"], norm_per_particle,  Tracker["constants"]["nsmear"])
 	del rdata
 	last_iter_assignment = copy.copy(iter_assignment)
 	iter       = 0
@@ -1389,7 +1400,8 @@ def Kmeans_adaptive_minimum_group_size(original_data, partids, params, paramstru
 	compute_noise(Tracker["nxinit"])
 	cdata, rdata = downsize_data_for_sorting(original_data, preshift = True, npad = 1)# pay attentions to shifts!
 	srdata = precalculate_shifted_data_for_recons3D(rdata, paramstructure, Tracker["refang"], \
-	   Tracker["rshifts"], Tracker["delta"], Tracker["avgnorm"], Tracker["nxinit"], Tracker["constants"]["nnxo"], Tracker["nosmearing"], norm_per_particle)
+	   Tracker["rshifts"], Tracker["delta"], Tracker["avgnorm"], Tracker["nxinit"], \
+	    Tracker["constants"]["nnxo"], Tracker["nosmearing"], norm_per_particle,  Tracker["constants"]["nsmear"])
 	del rdata
 	last_iter_assignment = copy.copy(iter_assignment)
 	iter       = 0
@@ -2246,7 +2258,10 @@ def copy_oldparamstructure_from_meridien_MPI(selected_iteration, log):
 		tchunk.sort()
 		all_smearing = [None]*len(tchunk)
 		for im in xrange(len(tchunk)): all_smearing[im] = smearing_dict[tchunk[im]]
-		write_text_file(all_smearing, os.path.join(Tracker["constants"]["masterdir"], "all_smearing.txt"))	
+		write_text_file(all_smearing, os.path.join(Tracker["constants"]["masterdir"], "all_smearing.txt"))
+		msg =" averaged smearing:  %f"%(sum(all_smearing)/float(len(all_smearing)))
+		print(msg)
+		log.add(msg)
 		full_dict_list = [ None for im in xrange(Tracker["constants"]["total_stack"])]
 		for key, value in local_dict.iteritems():full_dict_list[key] = value
 	mpi_barrier(MPI_COMM_WORLD)
@@ -2263,7 +2278,7 @@ def copy_oldparamstructure_from_meridien_MPI(selected_iteration, log):
 	return
 	
 ### 8
-def precalculate_shifted_data_for_recons3D(prjlist, paramstructure, refang, rshifts, delta, avgnorms, nxinit, nnxo, nosmearing, norm_per_particle = None, upweighted=False):
+def precalculate_shifted_data_for_recons3D(prjlist, paramstructure, refang, rshifts, delta, avgnorms, nxinit, nnxo, nosmearing, norm_per_particle = None, upweighted=False, nsmear =-1):
 	from utilities    import random_string, get_im, findall, info, model_blank
 	from filter	      import filt_table
 	from fundamentals import fshift
@@ -2294,7 +2309,10 @@ def precalculate_shifted_data_for_recons3D(prjlist, paramstructure, refang, rshi
 			set_params_proj(prjlist[im],[ phi, theta, psi, 0.0, 0.0], xform = "xform.projection")
 		else:
 			avgnorm = avgnorms[prjlist[im].get_attr("chunk_id")]
-			numbor      = len(paramstructure[im][2])
+			if nsmear <=0.0: numbor = len(paramstructure[im][2])
+			else:           
+				if nsmear>1.0: numbor = min(int(nsmear), len(paramstructure[im][2]))
+				else:  numbor = int(len(paramstructure[im][2])*nsmear)+1
 			ipsiandiang = [ paramstructure[im][2][i][0]/1000  for i in xrange(numbor) ]
 			allshifts   = [ paramstructure[im][2][i][0]%1000  for i in xrange(numbor) ]
 			probs       = [ paramstructure[im][2][i][1] for i in xrange(numbor) ]
@@ -3820,7 +3838,7 @@ def get_input_from_sparx_ref3d(log_main):# case one
 	global Tracker, Blockdata
 	import json
 	from shutil import copyfile
-	from   string import split, atoi
+	from  string import split, atoi
 	import_from_sparx_refinement = 1
 	selected_iter      = 0
 	Tracker_refinement = 0
@@ -5329,7 +5347,11 @@ def recons3d_trl_struct_group_MPI(myid, main_node, prjlist, random_subset, group
 					[phi, theta, psi, s2x, s2y] = get_params_proj(prjlist[im], xform = "xform.projection")
 					r.insert_slice(prjlist[im], Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi}), 1.0)
 				else:
-					numbor = len(paramstructure[im][2])
+					if Tracker["constants"]["nsmear"]<=0.0: numbor = len(paramstructure[im][2])
+					else:  
+						if Tracker["constants"]["nsmear"] >=1.: numbor = min(int(Tracker["constants"]["nsmear"]),  len(paramstructure[im][2]))
+						else: numbor = int(len(paramstructure[im][2])*Tracker["constants"]["nsmear"])+1 # ratio
+						
 					ipsiandiang = [ paramstructure[im][2][i][0]/1000  for i in xrange(numbor) ]
 					allshifts   = [ paramstructure[im][2][i][0]%1000  for i in xrange(numbor) ]
 					probs       = [ paramstructure[im][2][i][1] for i in xrange(numbor) ]
@@ -5370,7 +5392,10 @@ def recons3d_trl_struct_group_MPI(myid, main_node, prjlist, random_subset, group
 						[phi, theta, psi, s2x, s2y] = get_params_proj(prjlist[im], xform = "xform.projection")
 						r.insert_slice(prjlist[im], Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi}), 1.0)
 					else:
-						numbor = len(paramstructure[im][2])
+						if Tracker["constants"]["nsmear"]<=0.0: numbor = len(paramstructure[im][2])
+						else: 
+							if Tracker["constants"]["nsmear"]>=1.: numbor = min(int(Tracker["constants"]["nsmear"]), len(paramstructure[im][2]))
+							else: numbor = int(Tracker["constants"]["nsmear"]*len(paramstructure[im][2]))+1
 						ipsiandiang = [ paramstructure[im][2][i][0]/1000  for i in xrange(numbor) ]
 						allshifts   = [ paramstructure[im][2][i][0]%1000  for i in xrange(numbor) ]
 						probs       = [ paramstructure[im][2][i][1] for i in xrange(numbor) ]
@@ -5606,7 +5631,11 @@ def recons3d_4nnsorting_group_fsc_MPI(myid, main_node, prjlist, fsc_half, random
 					phi,theta,psi,s2x,s2y = get_params_proj(prjlist[im], xform = "xform.projection")
 					r.insert_slice(prjlist[im], Transform({"type":"spider","phi":phi, "theta":theta, "psi":psi}), 1.0)
 				else:
-					numbor = len(paramstructure[im][2])
+					if Tracker["constants"]["nsmear"]<=0.0: numbor = len(paramstructure[im][2])
+					else:
+						if Tracker["constants"]["nsmear"]>1.0: numbor = min(Tracker["constants"]["nsmear"], len(paramstructure[im][2]))
+						else:  numbor = int(Tracker["constants"]["nsmear"]*len(paramstructure[im][2]))+1
+						
 					ipsiandiang = [paramstructure[im][2][i][0]/1000  for i in xrange(numbor)]
 					allshifts   = [paramstructure[im][2][i][0]%1000  for i in xrange(numbor)]
 					probs       = [paramstructure[im][2][i][1] for i in xrange(numbor)]
@@ -6090,13 +6119,14 @@ def merge_two_unfiltered_maps(map1_file, map2_file, cluster_ID):
 
 def post_sorting_rec3d(log_main):
 	global Tracker, Blockdata
-	try: nxinit = Tracker["nxinit"] 
-	except: Tracker["nxinit"]                 = -1
+	try: nxinit = Tracker["nxinit"]
+	except: Tracker["nxinit"]  = -1
 	Tracker["constants"]["orgres"]            = 0.0
 	Tracker["constants"]["refinement_delta"]  = 0.0
 	Tracker["constants"]["refinement_ts"]     = 0.0
 	Tracker["constants"]["refinement_xr"]     = 0.0
 	Tracker["constants"]["refinement_an"]     = 0.0
+	
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		fout = open(os.path.join(Tracker["constants"]["masterdir"], "Tracker.json"),'r')
 		Tracker = convert_json_fromunicode(json.load(fout))
@@ -6106,6 +6136,7 @@ def post_sorting_rec3d(log_main):
 	number_of_groups = 0
 	minimum_size = Tracker["constants"]["img_per_grp"]
 	if(Blockdata["myid"] == Blockdata["main_node"]):
+		clusters = []
 		final_accounted_ptl = 0
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		msg = "---->>> Summaries of final results <<<-----"
@@ -6117,8 +6148,37 @@ def post_sorting_rec3d(log_main):
 			print(line, msg)
 			number_of_groups +=1
 			final_accounted_ptl +=len(class_in)
+			clusters.append(class_in)
 		msg = "total number of particle images:  %10d; accounted:   %10d ;  number_of_groups:   %5d"%(Tracker["constants"]["total_stack"], final_accounted_ptl, number_of_groups)
 		print(line, msg)
+		# analysis
+		vs, ds, ss, norms = get_params_for_analysis(Tracker["constants"]["orgstack"], \
+		os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt"),\
+		 os.path.join(Tracker["constants"]["masterdir"], "all_smearing.txt"))
+	 
+		do_one_way_anova_full(clusters, ds, name_of_variable="defocus", log = log_main)
+		msg = "---->>>Orientations per group analysis<<<----- \n"+\
+			"%10s %10s %10s  "%("X", "Y", "Z")
+		print(msg)
+		log.add(msg)
+		if ss:
+			do_one_way_anova_full(clusters, ss, name_of_variable="smearing", log = log_main)
+			msg = "---->>>Orientations per group analysis<<<----- \n"+\
+				"%10s %10s %10s  "%("X", "Y", "Z")
+			print(msg)
+			log.add(msg)
+	
+		do_one_way_anova_full(clusters, norms, name_of_variable="norm", log = log_main)
+		msg = "---->>>Orientations per group analysis<<<----- \n"+\
+			"%10s %10s %10s  "%("X", "Y", "Z")
+		print(msg)
+		log.add(msg)
+		for i in xrange(len(clusters)):
+			oriens = []
+			for j in xrange(len(clusters[i])):
+				oriens.append(vs[clusters[i][j]])
+			orien_analysis(oriens, i, log)
+		
 	number_of_groups = bcast_number_to_all(number_of_groups, Blockdata["main_node"], MPI_COMM_WORLD)
 	if number_of_groups == 0:ERROR("No cluster is found, and the program terminates. ", "option post_sorting_sharpen ", 1, Blockdata["myid"])
 	minimum_size = bcast_number_to_all(minimum_size, Blockdata["main_node"], MPI_COMM_WORLD)
@@ -6183,7 +6243,7 @@ def shake_assignment(assignment, randomness_rate = 1.0):
 	import random
 	number_of_group = max(assignment)
 	for im in xrange(len(assignment)):
-			if (random.uniform(0.0, 1.0) > randomness_rate): assignment[im] = random.randint(0, number_of_group)
+		if (random.uniform(0.0, 1.0) > randomness_rate): assignment[im] = random.randint(0, number_of_group)
 	return assignment
         
 def main():
@@ -6207,7 +6267,8 @@ def main():
 	parser.add_option("--radius",                          type   ="int",           default =-1,	                   help="particle radius in pixel for rotational correlation <nx-1 (set to the radius of the particle)")
 	parser.add_option("--sym",                             type   ="string",        default ='c1',                     help="point group symmetry of macromolecular structure, can be inherited from refinement")
 	parser.add_option("--img_per_grp",                     type   ="int",           default =1000,                     help="number of images in a group")
-	parser.add_option("--nxinit",                          type   ="int",           default =-1,                       help="image size")
+	parser.add_option("--nxinit",                          type   ="int",           default =-1,                       help="user provided image size")
+	parser.add_option("--nsmear",                          type   ="float",         default =-1.,                      help="User provided smearing number for rec3d")
 	parser.add_option("--final_MGSK",                      type   ="int",           default =-1,                       help="minimum group size for final MGSKmeans")
 	parser.add_option("--minimum_grp_size",				   type   ="int",           default =-1,					   help="minimum number of members for being identified as a group")
 	parser.add_option("--order_of_depth",				   type   ="int",           default =2,					       help="order of depth that determines number of independent MGSKmeans runs(2^order_of_depth)")
@@ -6246,7 +6307,7 @@ def main():
 	Constants		                         = {}
 	Constants["stop_eqkmeans_percentage"]    = options.stop_eqkmeans_percentage
 	if options.nofinal_sharpen: Constants["final_sharpen"] = False
-	else:  Constants["final_sharpen"] = True
+	else:                       Constants["final_sharpen"] = True
 	Constants["niter_for_sorting"]           = options.niter_for_sorting
 	Constants["memory_per_node"]             = options.memory_per_node
 	Constants["orgstack"]                    = options.instack
@@ -6260,15 +6321,15 @@ def main():
 	Constants["CTF"]                		 = True
 	Constants["radius"]              		 = options.radius
 	Constants["sym"]                         = options.sym
-	Constants["symmetry"]                         = options.sym
-	Constants["nxinit"]                      = -1 # retrive it under request, equals to the role of nxinit of meridien
+	Constants["symmetry"]                    = Constants["sym"]
+	Constants["nxinit"]                      = options.nxinit
+	Constants["nsmear"]                      = options.nsmear
 	Constants["seed"]                        = -1
 	Constants["upscale"]                     = 0.5 #
 	Constants["interpolation"]               = "trl"
 	Constants["final_MGSK"]                  = options.final_MGSK
 	Constants["comparison_method"]           = options.comparison_method # either cross or eucd
 	Constants["do_not_include_final_unaccounted"] = options.do_not_include_final_unaccounted # either cross or eucd
-	Constants["nxinit"]                     = options.nxinit
 	Constants["post_sorting_sharpen"]       = options.post_sorting_sharpen
 	Constants["final_adaptive"]             = options.final_adaptive
 	Constants["eqk_shake"]                  = options.eqk_shake
@@ -6291,10 +6352,10 @@ def main():
 	Tracker                     = {}
 	Tracker["constants"]	    = Constants
 	if Tracker["constants"]["mask3D"]: Tracker["mask3D"] = Tracker["constants"]["mask3D"]
-	else:                              Tracker["mask3D"] = None
+	else: Tracker["mask3D"] = None
 	Tracker["radius"]           = Tracker["constants"]["radius"]
 	Tracker["upscale"]          = Tracker["constants"]["upscale"]
-	Tracker["applyctf"]         = False  #  Should the data be premultiplied by the CTF.  Set to False for local continuous.
+	Tracker["applyctf"]         = False  # Should the data be premultiplied by the CTF.  Set to False for local continuous.
 	Tracker["nxinit"]           = Tracker["constants"]["nxinit"]
 	if options.notapplybckgnoise: Tracker["applybckgnoise"] = False
 	else: Tracker["applybckgnoise"] = True
@@ -6316,7 +6377,7 @@ def main():
 	
 	if os.path.exists(options.refinement_dir):
 		Tracker["constants"]["refinement_method"] ="SPARX"
-		Tracker["nosmearing"]                     = False
+		Tracker["nosmearing"]  = False
 		
 	elif options.instack !='':
 		Tracker["constants"]["refinement_method"] ="stack"
@@ -6330,7 +6391,7 @@ def main():
 		
 	else: ERROR("Incorrect refinement_dir ", "sxsort3d_new.py", 1, Blockdata["myid"])
 	if os.path.exists(options.refinement_dir) and options.instack !='': ERROR("contractdict refinement methods", "sxsort3d_smearing.py", 1, Blockdata["myid"])
-	Blockdata["fftwmpi"] = True
+	Blockdata["fftwmpi"]  = True
 	Blockdata["symclass"] = symclass(Tracker["constants"]["symmetry"])
 	get_angle_step_from_number_of_orien_groups(Tracker["constants"]["orien_groups"])
 	Blockdata["ncpuspernode"] = Blockdata["no_of_processes_per_group"]
