@@ -6,17 +6,24 @@ sxisac2 - ISAC - 2D Clustering: Iterative Stable Alignment and Clustering (ISAC)
 
 ''usage in command line''
 
-sxisac2.py stack_file output_directory --radius=particle_radius --img_per_grp=img_per_grp --CTF --xr=xr --thld_err=thld_err --target_radius=target_radius --target_nx=target_nx --ir=ir --rs=rs --yr=yr --ts=ts --maxit=maxit --center_method=center_method --dst=dst --FL=FL --FH=FH --FF=FF --init_iter=init_iter --iter_reali=iter_reali --stab_ali=stab_ali --minimum_grp_size --rand_seed=rand_seed --skip_prealignment --restart
+sxisac2.py stack_file output_directory --radius=particle_radius --img_per_grp=img_per_grp --CTF --xr=xr --thld_err=thld_err --target_radius=target_radius --target_nx=target_nx --VPP --ir=ir --rs=rs --yr=yr --ts=ts --maxit=maxit --center_method=center_method --dst=dst --FL=FL --FH=FH --FF=FF --init_iter=init_iter --iter_reali=iter_reali --stab_ali=stab_ali --minimum_grp_size --rand_seed=rand_seed --skip_prealignment --restart
 
 
 === Typical usage ===
 
 sxisac2 exists only in MPI version.
 
+    1. Conventional TEM dataset
 
-'''mpirun -np 176 sxisac2.py bdb:data fisac1 --radius=120 --CTF'''
+    '''mpirun -np 96 sxisac2.py bdb:stack isac2_outdir --radius=120 --CTF'''
 
-Note ISAC will change the size of input data such that they fit into box size 76x76 by default (see Description below).
+    Note ISAC will change the size of input data such that they fit into box size 76x76 by default (see Description below).
+
+    2. Phase Plate TEM dataset
+
+    '''mpirun -np 96 sxisac2.py bdb:stack isac2_outdir --radius=120 --VPP'''
+
+    Note CTF and VPP options cannot be used together.
 
 
 == Input ==
@@ -31,6 +38,7 @@ Note ISAC will change the size of input data such that they fit into box size 76
     target_nx:: Target particle image size [Pixels]: Image size used by isac to process the data. The images will be resized according to target particle radius and then cut/padded to achieve the target image size. When xr > 0, the final image size for isac processing is 'target_nx + xr - 1'  (default 76)
 
     * The remaining parameters are optional and default values are given in parenthesis. There is rarely any need to modify them.
+    VPP:: Phase Plate data: Please use this option if the dataset is taken with Phase Plate. (default False)
     ir:: Inner ring [Pixels]: Inner of the resampling to polar coordinates. (default 1)
     rs:: Ring step [Pixels]: Step of the resampling to polar coordinates. (default 1)
     yr:: Y search range [Pixels]: The translational search range in the y direction. Set as xr by default. (default -1)
