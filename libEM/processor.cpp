@@ -6315,9 +6315,9 @@ EMData* CtfSimProcessor::process(const EMData * const image) {
 	ctf.apix=params.set_default("apix",image->get_attr_default("apix_x",1.0));
 	ctf.dsbg=1.0/(ctf.apix*fft->get_ysize()*4.0);		//4x oversampling
 	int doflip=(int)params.set_default("phaseflip",1);		// whether to use the CTF or abs(CTF)
-
 	float noiseamp=params.set_default("noiseamp",0.0f);
 	float noiseampwhite=params.set_default("noiseampwhite",0.0f);
+	int bsfp=(int)params.set_default("bispectrumfp",0);		// special mode for bispectrum processing
 
 	// compute and apply the CTF
 	vector <float> ctfc = ctf.compute_1d(fft->get_ysize()*6,ctf.dsbg,ctf.CTF_AMP,NULL); // *6 goes to corner, remember you provide 2x the number of points you need
@@ -12602,15 +12602,28 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 	
 	// Fourier footprint mode, produces a 3-D image using n rotational invariants, real values from Fourier space
 	if (params.has_key("ffp")) {
-		int ffp=(int)params.set_default("ffp",6);
-		EMData *ret2=new EMData(nkx,nky*2,ffp);
-		int nlay=(nkx*2-2)*nky*2*sizeof(float);
-		for (int k=2; k<2+ffp; k++) {
+		int fp=(int)params.set_default("ffp",8);
+		EMData *ret2=new EMData(nkx*2,nky*2,fp);
+		ret2->to_zero();
+		ret2->set_complex(1);
+		
+		// We are doing a lot of rotations, so we make the image as small as possible first
+		EMData *tmp=cimage;
+		cimage=new EMData((nkx+fp+2)*2,(nky+fp+2)*2,1);
+		cimage->set_complex(1);
+		for (int k=-cimage->get_ysize()/2; k<cimage->get_ysize()/2; k++) {
+			for (int j=0; j<cimage->get_xsize()/2; j++) {
+				cimage->set_complex_at(j,k,tmp->get_complex_at(j,k));
+			}
+		}
+		delete tmp;
+		
+		// now we compute the actual rotationally integrated "footprint"
+		for (int k=2; k<2+fp; k++) {
 // 			int jkx=k;
 // 			int jky=0;
 			int kx=k;
 			int ky=0;
-			ret->to_zero();
 	
 			for (float ang=0; ang<360.0; ang+=360.0/(nky*M_PI) ) {
 				EMData *cimage2=cimage->process("xform",Dict("alpha",ang));
@@ -12622,24 +12635,24 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 						int jkx=jx+kx;
 						int jky=jy+ky;
 	
-						// removed this test because we are using only the central 1/4 of Fourier space
-//						if (abs(kx)>nkx || abs(ky)>nky) continue;
+						if (abs(kx)>nkx || abs(ky)>nky) continue;
 						complex<double> v1 = (complex<double>)cimage2->get_complex_at(jx,jy);
 						complex<double> v2 = (complex<double>)cimage2->get_complex_at(kx,ky);
 						complex<double> v3 = (complex<double>)cimage2->get_complex_at(jkx,jky);
-						ret->add_complex_at(jx,jy,0,(complex<float>)(v1*v2*std::conj(v3)));
+						ret2->add_complex_at(jx,jy,k-2,(complex<float>)(v1*v2*std::conj(v3)));
 					}
 				}
 				delete cimage2;
 			}
-			// this fixes an issue with adding in the "special" Fourier locations
+			// this fixes an issue with adding in the "special" Fourier locations ... sort of
 			for (int jy=-nky; jy<nky; jy++) {
-				ret->set_complex_at(0,jy,ret->get_complex_at(0,jy)/sqrt(2.0f));
-				ret->set_complex_at(nkx-1,jy,ret->get_complex_at(nkx-1,jy)/sqrt(2.0f));
+				ret2->set_complex_at(0,jy,k-2,ret2->get_complex_at(0,jy,k-2)/sqrt(2.0f));
+				ret2->set_complex_at(nkx-1,jy,k-2,ret2->get_complex_at(nkx-1,jy,k-2)/sqrt(2.0f));
 			}
-			for (int jy=-nky; jy<nky; jy++) {
-				for (int jx=0; jx<nkx; jx++) {
-					ret2->set_value_at(jx,jy+nky,k-2,cbrt((float)(ret->get_complex_at(jx,jy).real())));
+			// simple fixed high-pass filter to get rid of gradient effects
+			for (int jy=-2; jy<=2; jy++) {
+				for (int jx=0; jx<=2; jx++) {
+					ret2->set_complex_at(jx,jy,k-2,0.0f);
 				}
 			}
 		}
@@ -12696,7 +12709,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 				ret->set_complex_at(0,jy,ret->get_complex_at(0,jy)/sqrt(2.0f));
 				ret->set_complex_at(nkx-1,jy,ret->get_complex_at(nkx-1,jy)/sqrt(2.0f));
 			}
-			// simple fixed low-pass filter to get rid of gradient effects
+			// simple fixed high-pass filter to get rid of gradient effects
 			for (int jy=-2; jy<=2; jy++) {
 				for (int jx=0; jx<=2; jx++) {
 					ret->set_complex_at(jx,jy,0.0f);
