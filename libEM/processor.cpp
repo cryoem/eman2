@@ -12611,6 +12611,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 		EMData *tmp=cimage;
 		cimage=new EMData((nkx+fp+2)*2,(nky+fp+2)*2,1);
 		cimage->set_complex(1);
+
 		for (int k=-cimage->get_ysize()/2; k<cimage->get_ysize()/2; k++) {
 			for (int j=0; j<cimage->get_xsize()/2; j++) {
 				cimage->set_complex_at(j,k,tmp->get_complex_at(j,k));
@@ -12620,6 +12621,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 		
 		// now we compute the actual rotationally integrated "footprint"
 		for (int k=2; k<2+fp; k++) {
+			int kins=(k-2)>fp/2?k-2-fp:k-2;
 // 			int jkx=k;
 // 			int jky=0;
 			int kx=k;
@@ -12635,24 +12637,24 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 						int jkx=jx+kx;
 						int jky=jy+ky;
 	
-						if (abs(kx)>nkx || abs(ky)>nky) continue;
+						if (abs(jkx)>nkx || abs(jky)>nky) continue;
 						complex<double> v1 = (complex<double>)cimage2->get_complex_at(jx,jy);
 						complex<double> v2 = (complex<double>)cimage2->get_complex_at(kx,ky);
 						complex<double> v3 = (complex<double>)cimage2->get_complex_at(jkx,jky);
-						ret2->add_complex_at(jx,jy,k-2,(complex<float>)(v1*v2*std::conj(v3)));
+						ret2->add_complex_at(jx,jy,kins,(complex<float>)(v1*v2*std::conj(v3)));
 					}
 				}
 				delete cimage2;
 			}
 			// this fixes an issue with adding in the "special" Fourier locations ... sort of
 			for (int jy=-nky; jy<nky; jy++) {
-				ret2->set_complex_at(0,jy,k-2,ret2->get_complex_at(0,jy,k-2)/sqrt(2.0f));
-				ret2->set_complex_at(nkx-1,jy,k-2,ret2->get_complex_at(nkx-1,jy,k-2)/sqrt(2.0f));
+				ret2->set_complex_at(0,jy,kins,ret2->get_complex_at(0,jy,kins)/sqrt(2.0f));
+				ret2->set_complex_at(nkx-1,jy,kins,ret2->get_complex_at(nkx-1,jy,kins)/sqrt(2.0f));
 			}
 			// simple fixed high-pass filter to get rid of gradient effects
 			for (int jy=-2; jy<=2; jy++) {
 				for (int jx=0; jx<=2; jx++) {
-					ret2->set_complex_at(jx,jy,k-2,0.0f);
+					ret2->set_complex_at(jx,jy,kins,0.0f);
 				}
 			}
 		}
