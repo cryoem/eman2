@@ -6330,7 +6330,25 @@ EMData* CtfSimProcessor::process(const EMData * const image) {
 //	for (int i=0; i<ctfc.size(); i++) fprintf(out,"%f\t%1.3g\n",0.25*i/(float)fft->get_ysize(),ctfc[i]);
 //	fclose(out);
 
-	fft->apply_radial_func(0,0.25f/fft->get_ysize(),ctfc,1);
+	if (bsfp) {
+		int fp=fft->get_zsize();
+		int nx=fft->get_xsize();
+		int ny=fft->get_ysize();
+		EMData *ret=new EMData(nx-2/2,ny*fp,1);
+		for (int k=0; k<fp; k++) {
+			EMData *plnf=fft->get_clip(Region(0,0,k,nx,ny,1));
+			plnf->apply_radial_func(0,0.25f/fft->get_ysize(),ctfc,1);
+			EMData *pln=plnf->do_ift();
+			pln->process_inplace("xform.phaseorigin.tocenter");
+			pln->process_inplace("normalize");
+			ret->insert_clip(pln,IntPoint(-nx/2-1,k*ny,0));
+			delete plnf;
+			delete pln;
+		}
+		delete fft;
+		return ret;
+	}
+	else fft->apply_radial_func(0,0.25f/fft->get_ysize(),ctfc,1);
 
 	// Add noise
 	if (noiseamp!=0 || noiseampwhite!=0) {
