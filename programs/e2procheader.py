@@ -91,7 +91,7 @@ def main():
 
 	(options, args) = parser.parse_args()
 	
-	
+	logger = E2init(sys.argv, options.ppid)
 	#if not options.input:
 	#	print "ERROR: You must supply an input image."
 	#	sys.exit()
@@ -193,7 +193,9 @@ def main():
 		print "Sending this file for fixing", fyle
 		fixer( fyle, options )
 		k+=1
-				
+	
+	E2end(logger)
+
 	return
 		
 	
