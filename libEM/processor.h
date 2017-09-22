@@ -670,12 +670,17 @@ The basic design of EMAN Processors: <br>\
 	};
 
 	/**
-	 * This processor performs fast convolution in Fourier space
+	 * This processor computes 2-D slices of the 4-D bispectrum of a 2-D image. It can also integrate over image rotation
+	 * to produce a set of rotationally/translationally invariant slices
 	 *@author Steve Ludtke
 	 *@date 2017/07/04
 	 *@param kx Complex x coordinate of the slice
 	 *@param ky Complex y coordinate of the slice
+	 *@param jkx Instead of kx,ky, specify the sum Jx+Kx for the slice
+	 *@param jky Instead of kx,ky, specify the sum Jy+Ky for the slice
+	 *@param fp Compute a set of k=n rotational invariants and pack them into a single 2-D image stacked along y
 	 *@param k Complex radial coordinate of the slice, integrates over angle at this radius
+	 *@param size specifies the x.y dimension of the bispectrum image. Works by truncating high frequencies
 	 */
 	class BispecSliceProcessor : public Processor
 	{
@@ -717,6 +722,8 @@ The basic design of EMAN Processors: <br>\
 
 			static const string NAME;
 	};
+	
+	
 
 	/** Determines the partial derivatives in the x direction
 	 * Does this by constructing edge kernels in real space but convoluting in Fourier space
@@ -1633,6 +1640,8 @@ The basic design of EMAN Processors: <br>\
 			d.put("voltage", EMObject::FLOAT, "Microscope voltage in KV");
 			d.put("cs", EMObject::FLOAT, "Cs of microscope in mm");
 			d.put("apix", EMObject::FLOAT, "A/pix of data");
+			d.put("phaseflip", EMObject::INT, "If not true, applies fabs(CTF). default true");
+			d.put("bispectrumfp", EMObject::INT, "If set, the input must be the result of math.bispectrum.slice ffp= mode. Returns something comparable to fp=mode.");
 			return d;
 		}
 

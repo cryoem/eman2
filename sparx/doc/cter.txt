@@ -79,7 +79,7 @@ After successful execution, sxcter will create in the output_directory:
  3. A collection of micrographs Thumbnails (512 x 512 pixels), written to ''micthumb/*_thumb.hdf''.<<BR>><<BR>>
 
 
-The CTF parameter file, ''partres.txt'', contains 18 columns with the following information:<<BR>><<BR>>
+The CTF parameter file, ''partres.txt'', contains 19 columns with the following information:<<BR>><<BR>>
 
 || Column || Parameter ||
 || 1 || Image defocus [um] ||

@@ -1,0 +1,136 @@
+= Name =
+sxsort3d_depth - 3D Clustering - SORT3D_DEPTH: UNDER DEVELOPMENT. Reproducible 3D Clustering of heterogeneous dataset. Sort out 3D heterogeneity of 2D data whose 3D reconstruction parameters have been determined already.
+
+
+= Usage =
+
+'' usage in command line''
+
+sxsort3d_depth.py  --refinement_dir=refinement_dir  --output_dir=output_dir  --niter_for_sorting=num_of_sorting_iterations  --mask3D=mask3d_file  --nxinit=User_provided_sorting_window_size --nsmear=number_or_ratio_of_smearing --focus=focus3d_file --order_of_depth=depth_order --radius=outer_radius  --sym=symmetry  --img_per_grp=num_of_images_per_group  --minimum_grp_size=minimum_grp_size  --memory_per_node=memory_per_node   --comparison_method=comparison_method  --instack=input_stack_file  --nofinal_sharpen   --eqkmeans_angle_step=angle_step   --post_sorting_sharpen  --stop_eqkmeans_percentage=stop_eqkmeans_percentage  --minimum_ptl_number=minimum_ptl_number  --orien_groups=number_of_orien_groups --notapplybckgnoise --final_adaptive  --do_not_include_final_unaccounted --mtf=mtf_file  --B_enhance=B_enhance  --fl=lpf_cutoff_freq  --aa=lpf_falloff  --B_start=B_start  --B_stop=B_stop  --nofsc_adj=nofsc_adj  
+
+
+=== Typical usage ===
+sxsort3d_depth.py exists only in MPI version. It surports single node workstation. 
+
+    1. 3D sorting with focus mask
+
+    ''' mpirun -np 48 sxsort3d_depth.py --output_dir='outdir_sxsort3d_depth' —focus='focus3d.hdf' --nindependent=3 --sym='c1' --radius=52 --img_per_grp=2000 --refinement_dir='outdir_sxmeridien'  --comparison_method='cross' --stop_eqkmeans_percentage=2.0 --minimum_grp_size=50 ''' <<BR>><<BR>>
+
+    Note --focus option is require for focus clustering and the focus mask must be binary. 
+
+    2. 3D sorting without focus mask
+
+    ''' mpirun -np 48 sxsort3d_depth.py --output_dir='outdir_sxsort3d_depth'  --sym='c5' --radius=120 --minimum_grp_size=200 --refinement_dir='outdir_sxmeridien' --comparison_method='cross' --stop_eqkmeans_percentage=3.0 --img_per_grp=1500 ''' <<BR>><<BR>>
+
+
+    3. Do unfiltered reconstructions on sorted clusters and merge them
+
+    ''' mpirun -np 48 sxsort3d_depth.py --output_dir='outdir_sxsort3d_depth' --post_sorting_sharpen —focus='focus3d.hdf' --nindependent=3 --sym='c1' --radius=52 --img_per_grp=2000 --refinement_dir='outdir_sxmeridien' --comparison_method='cross' --stop_eqkmeans_percentage=2.0 --minimum_grp_size=50 ''' <<BR>><<BR>>
+
+    Note --post_sorting_sharpen is required to reconstruct unfiltered maps independent of sorting.
+
+
+    How to continue sxmeridien refinement using sorting results:: The command line below continues previous meridien run from the 25th iteration using a subset of data associated to a selected group.
+
+    ''' mpirun -np 80 sxmeridien.py 'outdir_sxmeridien_continue' --memory_per_node=64.0 --ctref --ctref_subset=outdir_sxsort3d_depth/Cluster0.txt --ctref_oldrefdir='outdir_sxmeridien' --ctref_iter=30 ''' <<BR>><<BR>>
+    
+    Note the output directory 'outdir_sxmeridien_continue' can be an existing one. The --ctref option is require for meridien continue run. Additional options for this use case are:
+    -—ctref_subset       : Specify subset of data with a selection text file (i.e. Cluster#.txt) with particle ID numbers in one column (produced by sort3d or by other means)
+    -—ctref_oldrefdir    : Specify previous meridien refinement directory
+    --ctref_iter         : Specify iteration to continue refinement from. One does not have to use final iteration. Typically earlier ones work better, at least for initial sorting.
+
+
+== Input ==
+    refinement_dir:: Input 3D refinement directory: The master output directory of sxmeridien. (default required string)
+    niter_for_sorting:: 3D refinement iteration: Specify an iteration number of 3D refinement where the 3D alignment parameters should be extracted for this sorting. By default, it uses iteration achieved best resolution. (default -1)
+    mask3D:: 3D mask: File path of the global 3D mask for clustering. (default none)
+    focus:: Focus 3D mask: File path of a binary 3D mask for focused clustering. (default none)
+    radius:: Outer radius for rotational correlation [Pixels]: Particle radius in pixel for rotational correlation. Generally, use the radius of the particle. The value must be smaller than half the box size.  (default -1)
+    sym:: Point-group symmetry: Point group symmetry of the macromolecular structure. It can be inherited from refinement. (default c1) 
+    img_per_grp:: Images per group: The number of images per a group. This value is critical for successful 3D clustering. (default 1000) 
+    minimum_grp_size:: Smallest group size: Minimum number of members for being identified as a group. This value must be smaller than the number of images per a group (img_per_grp). (default -1)
+    order_of_depth:: depth order: a number defines the number of initial independent MGSKmeans runs (2^order_of_depth). (default 2)
+    orien_groups:: number of orientation groups: (default 100)
+    memory_per_node:: Memory per node [GB]: User provided information about memory per node in GB (NOT per CPU). It will be used to evaluate the number of CPUs per node from user-provided MPI setting. By default, it uses 2GB * (number of CPUs per node) (default -1.0)
+
+    * The remaining parameters are optional and default values are given in parenthesis. There is rarely any need to modify them.
+    nxinit:: User provided image size: Image size used for MGSKmeans. By default, the program determines window size. (default -1) 
+    comparison_method:: Comparison method: Similarity measurement for the comparison between reprojected reference images and particle images. Valid values are 'cross' (cross-correlaton coefficients) and 'eucd' (Euclidean distance). (default cross) 
+    instack:: Input images stack: File path of particle stack for sorting provided by user. If specified, sorting starts from a given data stack. This option is not currently supported by SHPIRE GUI (sxgui). (default none)
+    nofinal_sharpen:: Reconstruct unfiltered final maps: Indicate if unfiltered final maps for post refinement process should be reconstructed or not. By default, reconstruct unfiltered final maps. (default False question reversed in GUI)
+    post_sorting_sharpen:: Sharpen maps of each clusters: Sharpen maps generated from sorted clusters. (default False)
+    stop_eqkmeans_percentage:: Stop EQK-means Percentage [%]: Particle change percentage for stopping Equal-Sized K-means. (default 2.0)
+    minimum_ptl_number:: Smallest orientation group size: The smallest orientation group size wich equals number_of_groups multiplied by this number. The value have to be an integer. (default 20)
+    notapplybckgnoise:: Apply background noise: Indicate if background noise should be applied or not. By default, apply background noise. (default False question reversed in GUI)
+    final_adaptive:: Use adaptive sorting in final layer: Use a procedure that adaptively adjusts minimum group size in the final layer of sorting. (default False)
+    eqk_shake:: Use shake in MGSKmeans: percentage of shuffled image assignment. (default 5.)
+    do_not_include_final_unaccounted:: do not include unaccounted images in final rec3d: (default: False)
+    mtf:: MTF file: File contains the MTF (modulation transfer function) of the detector used. (default none)
+    B_enhance:: B-factor enhancement: -1.0: B-factor is not applied; 0.0: program estimates B-factor from options. B_start (usually 10 Angstrom) to the resolution determined by FSC143; 128.0: program use the given value 128.0 [A^2] to enhance map. (default 0.0)
+    fl:: Low-pass filter frequency [1/Pixels]: 0.0: low-pass filter to resolution; A value > 0.5: low-pass filter to the value in Angstrom; A value > 0.0 and < 0.5: low-pass filter to the value in absolute frequency; -1.0: no low-pass filter. (default 0.0)
+    aa:: Low-pass filter fall-off [1/Pixels]: Low-pass filter fall-off. (default 0.1)
+    B_start:: B-factor lower limit [A]: Lower bound of frequency range for B-factor estimation. (default 10.0)
+    B_stop:: B-factor higher limit [A]: Higher bound of frequency range for B-factor estimation. (default  0.0)
+    nofsc_adj:: Apply FSC-based low-pass filter: Indicate if an FSC-based low-pass filter (square root of FSC) should be applied or not. The filter will be applied to the merged volume before the B-factor estimation. By default, apply low-pass filter. (default False question reversed in GUI)
+
+
+== Output ==
+    output_dir:: Output directory: The master output directory for sorting. The results will be written here. This directory will be created automatically if it does not exist. Here, you can find a log.txt that describes the sequences of computations in the program. (default required string)
+
+
+= Description =
+sxsort3d_depth finds out stable members by carrying out two-way comparison of two independent sxsort3d runs.
+
+
+Note - 2017/09/19: About new version 
+The new version is better integrated with meridien, and supports only sorting that imports parameters from meridien refinement and the 3D reconstruction in sorting uses all the information inhered from meridien, not just the final optimal X-form parameters. The options for post processing are also included. Continuation option of sxmeridien.py allows to continue refinement of a dataset subset determined by the 3D sorting.
+
+This version supports single workstation
+
+Sorting would cost much more time than the last version. 
+
+Important Outputs:
+The results are saved in the directory specified as output_dir  ('outdir_sxsort3d_depth' in the example above). The final results are partitioned particles IDs saved in text files. Also, unfiltered maps of each cluster are reconstructed in the way of meridien does. One can use postprocess command to merge the two halves of maps of each group.
+
+- Cluster*.txt
+Sorting results. The number of cluster files is equal to the number of classes found. These selection files contain one column for particle indexes. Input projection EM data is assumed to be number 0 to n-1.
+
+- vol_unfiltered_0_group*.hdf and vol_unfiltered_1_group*.hdf
+Reconstructed halfset maps to be used for postprocessing.
+
+- vol_final_cluster*.hdf 
+
+- vol_final_nomask_cluster*.hdf  
+
+
+Some examples for timing: 
+
+
+
+
+In general, reconstruction costs more than 80% of time for each sorting. 
+
+
+= Method =
+K-means, equal K-means, reproducibility, two-way comparison.
+
+= Reference =
+Not published yet.
+
+= Author / Maintainer =
+Zhong Huang
+
+= Keywords =
+    category 1:: APPLICATIONS
+
+= Files =
+sxsort3d_depth.py
+
+= See also =
+[[http://sparx-em.org/sparxwiki/sxsort3d|sxsort3d]]
+
+= Maturity =
+    beta::    Under development. It has been tested, The test cases/examples are available upon request. Please let us know if there are any bugs.
+
+= Bugs =
+None so far.
