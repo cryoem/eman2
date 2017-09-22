@@ -203,7 +203,8 @@ def main():
 			if str(index) not in tiltstoexclude:
 				intiltimgfile =	intiltsdict[index][0]
 				
-				print "\nat index %d we have image %s, collected in this turn %d" %( index, intiltsdict[index][0], intiltsdict[index][-1] )
+				if options.verbose > 9:
+					print "\nat index {} we have image {}, collected in turn {}".format( index, intiltsdict[index][0], intiltsdict[index][-1] )
 				intiltimg = EMData( intiltimgfile, 0 )
 			
 				tiltangle = intiltsdict[index][1]
@@ -215,7 +216,7 @@ def main():
 				if options.invert:
 					intiltimg.mult(-1)
 				intiltimg.write_image( outstackhdf, -1 )
-				print "\nWrote image index", index
+				#print "\nWrote image index", index
 		
 		
 		tmp = options.path + '/tmp.hdf'
@@ -248,12 +249,17 @@ def main():
 				ycenter = int( round( ny/2.0 + float(shifty)))
 				cmdClip += ',' + str(ycenter)
 			
-			cmdClip += ' && rm ' + outstackhdf + ' && mv ' + tmp + ' ' + outstackhdf
+			runcmd(options,cmdClip)
 
-			print "\n(e2spt_tiltstacker.py)(main) cmdClip is", cmdClip
-			p = subprocess.Popen( cmdClip , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-			text = p.communicate()	
-			p.stdout.close()
+			#cmdClip += ' && rm ' + outstackhdf + ' && mv ' + tmp + ' ' + outstackhdf
+			os.remove(outstackhdf)
+			os.rename(tmp,outstackhdf)
+
+
+			#print "\n(e2spt_tiltstacker.py)(main) cmdClip is", cmdClip
+			#p = subprocess.Popen( cmdClip , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+			#text = p.communicate()	
+			#p.stdout.close()
 			
 			if options.verbose > 9:
 				print "\nFeedback from cmdClip:"
@@ -262,14 +268,24 @@ def main():
 		
 		if options.shrink and options.shrink > 1.0:
 			
-			cmdBin = 'e2proc2d.py ' + outstackhdf + ' ' + tmp + ' --process=math.fft.resample:n=' + str(options.shrink) + ' && rm ' + outstackhdf + ' && mv ' + tmp + ' ' + outstackhdf
+			cmdBin = 'e2proc2d.py ' + outstackhdf + ' ' + tmp + ' --process=math.fft.resample:n=' + str(options.shrink) 
 			
-			print "\n(e2spt_tiltstacker.py)(main) cmdBin is", cmdClip
-			p = subprocess.Popen( cmdBin , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-			text = p.communicate()	
-			p.stdout.close()
+			#cmdBin = 'newstack ' + outstackhdf + ' ' + tmp + ' -ftreduce ' +  str(options.shrink) + ' -antialias 5'
+			print "\n(e2spt_tiltstacker.py)(main) cmdBin is", cmdBin
+			
+			runcmd(options,cmdBin)
+			#+ ' && rm ' + outstackhdf + ' && mv ' + tmp + ' ' + outstackhdf
+			
+			os.remove(outstackhdf)
+			print "\nremoved {}".format(outstackhdf)
+			os.rename(tmp,outstackhdf)
+			print "\nrenamed {} to {}".format(tmp,outstackhdf)
 
+			#p = subprocess.Popen( cmdBin , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+			#text = p.communicate()	
+			#p.stdout.close()
 
+		print "\nreading outstackhdf hdr, for file {}".format(outstackhdf)
 		outtilthdr = EMData(outstackhdf,0,True)
 		currentapix = outtilthdr['apix_x']
 		if float(options.apix) and float(options.apix) != float(currentapix):
@@ -280,9 +296,12 @@ def main():
 			cmdapix = 'e2procheader.py --input=' + outstackhdf + ' --stem=apix --valtype=float --stemval=' + str( options.apix )
 			
 			print "\n(e2spt_tiltstacker.py)(main) cmdapix is", cmdapix
-			p = subprocess.Popen( cmdapix , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-			text = p.communicate()	
-			p.stdout.close()
+			
+			runcmd(options,cmdapix)
+			
+			#p = subprocess.Popen( cmdapix , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+			#text = p.communicate()	
+			#p.stdout.close()
 			
 			if options.verbose > 9:
 				print "\nFeedback from cmdapix:"
@@ -299,24 +318,33 @@ def main():
 			#stcmd += ' && e2procheader.py --input=' + outstackst + ' --stem=apix --valtype=float --stemval=' + str( options.apix ) + ' --output=' + outstackst.replace('.st','.mrc') + " && mv " +  outstackst.replace('.st','.mrc') + ' ' + outstackst
 		
 		print "\n(e2spt_tiltstacker.py)(main) stcmd is", stcmd	
-		p = subprocess.Popen( stcmd , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-		text = p.communicate()	
-		p.stdout.close()
-
-		cmdClean = ' && rm ' + options.path + '/*~* ' + outstackhdf
 		
-		print "\n(e2spt_tiltstacker.py)(main) cmdClean is", cmdClean	
-		p = subprocess.Popen( cmdClean , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-		text = p.communicate()	
-		p.stdout.close()
+		#p = subprocess.Popen( stcmd , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		#text = p.communicate()	
+		#p.stdout.close()
+
+		runcmd(options,stcmd)
+		
+		#cmdClean = ' && rm ' + options.path + '/*~* ' + outstackhdf
+		
+		#print "\n(e2spt_tiltstacker.py)(main) cmdClean is", cmdClean	
+		#p = subprocess.Popen( cmdClean , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		#text = p.communicate()	
+		#p.stdout.close()
+
+		os.remove(outstackhdf)
+
+		
 
 		if options.normalizeimod:
 			try:
 				cmd = 'newstack ' + outstackst + ' ' + outstackst + ' --float 2'
 				print "normalizeimod cmd is", cmd
-				p = subprocess.Popen( cmd , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-				text = p.communicate()	
-				p.wait()
+				runcmd(options,cmd)
+
+				#p = subprocess.Popen( cmd , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+				#text = p.communicate()	
+				#p.wait()
 			except:
 				print "\nERROR: --normalizeimod skipped. Doesn't seem like IMOD is installed on this machine"	
 
@@ -345,14 +373,22 @@ def main():
 				print "added fixheaderparam to cmdMirror!"
 			
 			print "cmdMirror is", cmdMirror
-			p = subprocess.Popen( cmdMirror , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-			text = p.communicate()	
+			runcmd(options,cmdMirror)
+
+			#p = subprocess.Popen( cmdMirror , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+			#text = p.communicate()	
 			
 			if options.verbose > 9:
 				print "\nFeedback from cmdMirror:"
 				print text
 				p.stdout.close()
-	
+		
+		findir = os.listdir(options.path)
+		for f in findir:
+			if '~' in f:
+				print "\nfile to remove",f
+				print "in path", options.path + '/' + f
+				os.remove(options.path + '/' + f)
 
 
 	E2end( logger )
@@ -378,10 +414,10 @@ def findtiltimgfiles( options ):
 			if options.stem2stack in f:
 				#print "which contains stem2stack",options.stem2stack
 				if '.txt' not in f and '.db' not in f:
-					print "potential tilt image", f
+					#print "potential tilt image", f
 					#if 'dm3' in f.split('.')[-1] or 'DM3' in f.split('.')[-1] or 'tif' in f.split('.')[-1] or 'TIF' in f.split('.')[-1] or 'MRC' in f.split('.')[-1] or 'mrc' in f.split('.')[-1] or 'hdf' in f.split('.')[-1] or 'mrcs' in f.split('.')[-1] or 'MRCS' in in f.split('.')[-1]: 
 					if f.split('.')[-1] in extensions:
-						print "\nvalid file", f
+						#print "\nvalid file", f
 						intilt = f
 						if intilt:
 							intilts.append( intilt )
@@ -624,7 +660,6 @@ def organizetilts( options, intilts, raworder=False ):
 				and tilt images is not equal. Stacking nevertheless since you provided --stackregardless""", options.stackregardless
 				print """Number of tilt angles = %d ; number of tilt images = %d """ % ( len( orderedangles ), len( intilts ) )
 				
-		
 		tiltstoexclude = options.exclude.split(',')
 		
 		indexesintiltseries = range(len(angles))
@@ -646,23 +681,21 @@ def organizetilts( options, intilts, raworder=False ):
 			
 			indexesintiltseries = []
 			indexesintiltseries = list(firstrange) + list(secondrange)
-			
-			
-			
+		
 			
 		print "collection indexes are", collectionindexes
 		print "indexes in tiltseries are", indexesintiltseries
 			
 			
 		for k in range(len(intilts)):
-			print "\nk={}, ntiltangles={}, ncollectionindexes={}, ntilts={}".format(k,len(indexesintiltseries),len(collectionindexes),len(intilts))
+			#print "\nk={}, ntiltangles={}, ncollectionindexes={}, ntilts={}".format(k,len(indexesintiltseries),len(collectionindexes),len(intilts))
 			try:
 				tiltangle = orderedangles[k]
 				#indexintiltseries = angles.index( orderedangles[k] )
 			
 				indexintiltseries = indexesintiltseries[k]
 				collectionindex = collectionindexes[k]
-				print "\nnormal"
+				#print "\nnormal"
 			except:
 				if options.stackregardless:
 					print "\nexception triggered"
@@ -674,14 +707,14 @@ def organizetilts( options, intilts, raworder=False ):
 			if indexintiltseries not in tiltstoexclude and str(indexintiltseries) not in tiltstoexclude:
 			
 				intiltsdict.update( { indexintiltseries:[ intilts[k],tiltangle,collectionindex ]} )
-				print "\nadded collectionIndex=%d, tiltangle=%f, indexintiltseries=%d" % ( collectionindex, tiltangle, indexintiltseries )
+				#print "\nadded collectionIndex=%d, tiltangle=%f, indexintiltseries=%d" % ( collectionindex, tiltangle, indexintiltseries )
  				
 	return intiltsdict
 
 
 def usntacker( options ):
 	
-	print "e2spt_tiltstacker (unstacker). options.unstack is", options.unstack
+	#print "\n(e2spt_tiltstacker)(unstacker) options.unstack is".format(options.unstack)
 	
 	outname = options.path + '/' + options.unstack.replace('.mrc','.hdf')
 	outname = options.path + '/' + options.unstack.replace('.mrcs','.hdf')
@@ -690,7 +723,7 @@ def usntacker( options ):
 	
 	outname = outname.replace('.hdf','_UNSTACKED.hdf')
 	
-	print "unstack outname is", outname
+	print "\n(e2spt_tiltstacker)(unstacker) unstack outname is {}".format(outname)
 	
 	#print "\noutname of unstacked tilt will be", outname
 	
@@ -702,10 +735,13 @@ def usntacker( options ):
 		lst = makeimglist( options.unstack, options ) 
 		cmdun += ' --list=' + lst
 	
-	print "\ncmdun is", cmdun	
-	p = subprocess.Popen( cmdun , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-	text = p.communicate()	
-	p.stdout.close()
+
+	print "\n(e2spt_tiltstacker)(unstacker) cmdun is", cmdun	
+	runcmd(options,cmdun)
+	
+	#p = subprocess.Popen( cmdun , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+	#text = p.communicate()	
+	#p.stdout.close()
 
 	return outname
 		
@@ -743,14 +779,15 @@ def restacker( options ):
 		lst = makeimglist( options.restack, options )
 		cmdre += ' --list=' + lst
 	
-	
+	runcmd(options,cmdre)
 		
-	cmdre += ' && mv ' + tmp + ' ' + outname
+	#cmdre += ' && mv ' + tmp + ' ' + outname
+	os.rename(tmp,outname)
 	
-	print "\ncmdre is", cmdre
-	p = subprocess.Popen( cmdre , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-	text = p.communicate()	
-	p.stdout.close()
+	#print "\ncmdre is", cmdre
+	#p = subprocess.Popen( cmdre , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+	#text = p.communicate()	
+	#p.stdout.close()
 	
 	return
 
@@ -848,7 +885,7 @@ def floatrange(start, stop, step):
 	kkk=0
 	while r <= stop:
 		yield r
-		print "r is", r
+		#print "r is", r
 		r += step
 		kkk+=1
 		
@@ -859,5 +896,23 @@ def floatrange(start, stop, step):
 	return
 
 
+def runcmd(options,cmd,cmdsfilepath=''):
+	if options.verbose > 9:
+		print "(e2tomo_icongpu)(runcmd) running command", cmd
+	
+	p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+	text=p.communicate()	
+	p.stdout.close()
+	
+	if options.verbose > 8:
+		print "(e2segmask)(runcmd) done"
+	
+	if cmdsfilepath:
+		with open(cmdsfilepath,'a') as cmdfile: cmdfile.write( cmd + '\n')
+
+	return 1
+
+
 if __name__ == "__main__":
+
 	main()
