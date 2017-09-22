@@ -73,8 +73,12 @@ def main():
 	
 	parser.add_argument("--gpus", type=str, default="-1", help="""default=-1 (all available GPUs will be used). To select specific GPUs to use, provide them as a comma-separated list of integers.""")
 	
+	parser.add_argument("--highpasspixels", type=int, default=4, help="""Default=4. Number of Fourier pixels to zero out during highpass filtering. Provide 'None' or '0' to disactivate.""")
+	
 	parser.add_argument("--iconpreproc", action='store_true', default=False, help="""default=False. If on, this will trigger a call to ICONPreProcess on the .st file supplied through --tiltseries.""")
-		
+
+	parser.add_argument("--lowpassresolution", type=float, default=100.0, help="""Default=100. Resolution in angstroms to lowpass filter to. Type 'None' or '0' to disactivate.""")
+
 	parser.add_argument("--path", type=str, default='icongpu', help="""Default=icongpu. Name of the directory where to store the output results. Only works when reconstructing the .ali file (preprocessing of the .st file will output the preprocessed tiltseries to the current directory). A numbered series of 'icongpu' directories will be created (i.e., if the program is run more than once, results will be stored in iconpu_01, icongpu_02, etc., directories, to avoid overwriting data).""")
 	parser.add_argument("--ppid", type=int, default=-1, help="Default=-1. Set the PID of the parent process, used for cross platform PPID")
 
@@ -136,7 +140,8 @@ def main():
 			sys.exit(1)
 		elif options.thickness and options.sizez:
 			print "\nWARNING: --thickness={} and --sizez={} were both provided; only --sizez={} will be used for reconstruction".format(options.thickness,options.sizez,options.sizez)
-		
+			options.thickness = options.sizez
+
 		if not options.tltfile:
 			print "\nWARNING: --tltfile not provided. The program will attempt to find it automatically"
 			tltfile = options.tiltseries.replace(extension,'.tlt')
@@ -171,6 +176,7 @@ def iconpreprocfunc(options,alifile,extension,cmdsfilepath):
 		print "\n(e2tomo_icongpu)(iconpreprocfunc) running ICONPreProcess"
 	cmd1 = "ICONPreProcess -input " + options.tiltseries + " -tiltfile " + options.tltfile + " -thickness " + str(options.thickness) + " -output " + outfile
 	runcmd(options,cmd1,cmdsfilepath)
+
 	
 	if options.verbose:
 		print "\n(e2tomo_icongpu)(iconpreprocfunc) backing up raw (x-ray corrected) tiltseries {} to file {}".format(options.tiltseries,backupst)
@@ -179,16 +185,16 @@ def iconpreprocfunc(options,alifile,extension,cmdsfilepath):
 	#runcmd(options,cmd2,cmdsfilepath)
 
 	if options.verbose:
-		print "\n(e2tomo_icongpu)(iconpreprocfunc) backing up aligned tiltseries {} to file {}".format(alifile,backupali)
-	shutil.copyfile(alifile, backupali)
-	#cmd3 = "cp " + alifile + " " + backupali
-	#runcmd(options,cmd3,cmdsfilepath)
-	
-	if options.verbose:
 		print "\n(e2tomo_icongpu)(iconpreprocfunc) copying the preprocessed tiltseries {} to the original tiltseries file {}".format(outfile,options.tiltseries)
 	shutil.copyfile(outfile, options.tiltseries)
 	#cmd4 = "cp " + outfile + " " + options.tiltseries
 	#runcmd(options,cmd4,cmdsfilepath)
+
+	if options.verbose:
+		print "\n(e2tomo_icongpu)(iconpreprocfunc) backing up aligned tiltseries {} to file {}".format(alifile,backupali)
+	shutil.copyfile(alifile, backupali)
+	#cmd3 = "cp " + alifile + " " + backupali
+	#runcmd(options,cmd3,cmdsfilepath)
 
 	if options.verbose:
 		print "\n(e2tomo_icongpu)(iconpreprocfunc) generating new .ali file after ICONPreProcess"
@@ -222,11 +228,17 @@ def icongpufunc(options,alifile,cmdsfilepath):
 
 	icondir = options.path
 
-	thickness = outsize/4
+	thickness = float(outsize)/4.0
+
 	if options.thickness:
-		thickness = options.thickness
+		thickness = float(options.thickness)
+		#print "\noptions.thickness has changed thickness to {}".format(thickness)
 	if options.sizez:
-		thickness=options.thickness
+		thickness=float(options.sizez)
+		#print "\noptions.sizez has changed thickness to {}".format(thickness)
+
+	thickenss=int(round(thickness))
+	print "\naaaafter options, thickness is {}".format(thickness)
 
 	outtomogram = alifile.replace(aliextension,'_icongpu.mrc')
  	
@@ -237,7 +249,7 @@ def icongpufunc(options,alifile,cmdsfilepath):
 
 	if options.verbose:
 		print "\n(e2tomo_icongpu)(icongpufunc) calling ICONMask2."
-	cmdicon2 = 'ICONMask2 -inputPath ' + icondir + '/reconstruction -tiltfile ' + options.tltfile + ' -output ' + outtomogram + ' -slice 0,' + str(outsize-1) + ' -thickness ' + str(thickness) + '-crossVfrc ' + icondir + '/crossValidation/crossV.frc -fullRecfrc ' + icondir + '/crossValidation/fullRec.frc' 
+	cmdicon2 = 'ICONMask2 -inputPath ' + icondir + '/reconstruction -tiltfile ' + options.tltfile + ' -output ' + outtomogram + ' -slice 0,' + str(outsize-1) + ' -thickness ' + str(thickness) + ' -crossVfrc ' + icondir + '/crossValidation/crossV.frc -fullRecfrc ' + icondir + '/crossValidation/fullRec.frc' 
 	runcmd(options,cmdicon2,cmdsfilepath)
 
 	outtomogramzshort = outtomogram.replace('.mrc','_ZSHORT.mrc') 
@@ -245,15 +257,38 @@ def icongpufunc(options,alifile,cmdsfilepath):
 		print "\n(e2tomo_icongpu)(icongpufunc) calling IMOD to rotate the reconstructed volume around x and shrink it if --shrink > 1 was specified."
 	cmdimod1 = 'clip rotx ' + outtomogram + ' ' + outtomogramzshort
 	runcmd(options,cmdimod1,cmdsfilepath)
+	os.remove(outtomogram)
+	sourcetomo = outtomogramzshort
 
 	outtomogramzshortbinned = outtomogramzshort.replace('.mrc','_bin'+str(options.shrink)+'.mrc') 
 	if options.shrink and int(options.shrink) > 1:
-		cmdimod2 = 'binvol ' + outtomogramzshort + ' ' +  + ' --binning ' + str(options.shrink) + ' --antialias'
+		cmdimod2 = 'binvol ' + outtomogramzshort + ' ' + outtomogramzshortbinned + ' --binning ' + str(options.shrink) + ' --antialias -1'
 		runcmd(options,cmdimod2,cmdsfilepath)
+		sourcetomo = outtomogramzshortbinned
 
-	os.remvoe(outtomogram)
+	outtomogramzshortpostproc = sourcetomo
+	if options.lowpassresolution and not options.highpasspixels:
+		outtomogramzshortpostproc = sourcetomo.replace('.mrc', '_lp' + str(options.lowpassresolution) )
+		cmdeman2 = 'e2proc3d.py ' + sourcetomo + ' ' + outtomogramzshortpostproc + ' --process filter.lowpass.tanh:cutoff_freq:' + str(1.0/options.lowpassresolution) 
+		runcmd(options,cmdeman2,cmdsfilepath)
+	
+	elif options.highpasspixels and not options.lowpassresolution:
+		outtomogramzshortpostproc = sourcetomo.replace('.mrc', '_hpp' + str(options.highpasspixels) + '.mrc')
+		cmdeman2 = 'e2proc3d.py ' + sourcetomo + ' ' + outtomogramzshortpostproc + ' --process filter.highpass.gauss:cutoff_pixels:' + str(options.highpasspixels)
+		runcmd(options,cmdeman2,cmdsfilepath)
+
+	elif options.lowpassresolution and options.highpasspixels:
+		outtomogramzshortpostproc = sourcetomo.replace('.mrc', '_lp' + str(int(round(options.lowpassresolution))) + '_hpp' + str(int(options.highpasspixels)) + '.mrc')
+		cmdeman2 = 'e2proc3d.py ' + sourcetomo + ' ' + outtomogramzshortpostproc + ' --process filter.lowpass.tanh:cutoff_freq:' + str(1.0/options.lowpassresolution) + ' --process filter.highpass.gauss:cutoff_pixels:' + str(options.highpasspixels)
+		runcmd(options,cmdeman2,cmdsfilepath)
+	
 	os.rename(outtomogramzshort, options.path + '/' + outtomogramzshort)
-	os.rename(outtomogramzshortbinned, options.path + '/' + outtomogramzshortbinned)
+	
+	if options.shrink and options.shrink > 1:
+		os.rename(outtomogramzshortbinned, options.path + '/' + outtomogramzshortbinned)
+	
+	if options.lowpassresolution or options.highpasspixels:
+		os.rename(outtomogramzshortpostproc, options.path + '/' + outtomogramzshortpostproc)
 
 	return
 
@@ -271,10 +306,10 @@ def icontest(options,alifile,outsize,cmdsfilepath,aliextension):
 
 		tmpdir = "tmpicontest"
 		
-		print "options.gpus={}, type={}".format(options.gpus,type(options.gpus))
-		print "tmpdir={}, type={}".format(tmpdir,type(tmpdir))
-		print "alifile={}, type={}".format(alifile,type(alifile))
-		print "options.tltfile={}, type={}".format(options.tltfile,type(options.tltfile))
+		#print "options.gpus={}, type={}".format(options.gpus,type(options.gpus))
+		#print "tmpdir={}, type={}".format(tmpdir,type(tmpdir))
+		#print "alifile={}, type={}".format(alifile,type(alifile))
+		#print "options.tltfile={}, type={}".format(options.tltfile,type(options.tltfile))
 
 		cmdicontest = "mkdir " + tmpdir + " ; ICON-GPU -input " + alifile + " -tiltfile " + options.tltfile + " -outputPath " + tmpdir + " -slice 0,1 -ICONIteration " + iterationsstring + " -dataType 1 -threshold 0 -gpu " + options.gpus
 
@@ -289,6 +324,7 @@ def icontest(options,alifile,outsize,cmdsfilepath,aliextension):
 				sigma = img['sigma']
 				sigmanonzero = img['sigma_nonzero']
 
+				shutil.rmtree(tmpdir)
 				if sigma and sigmanonzero:
 					passtest = True
 					print "\nthe test passed; the tiltseries has a good size now nx={}, ny={}".format(img['nx'],img['ny'])
@@ -297,9 +333,9 @@ def icontest(options,alifile,outsize,cmdsfilepath,aliextension):
 					passtest = False
 					outsize -= 2
 					print "\nICON-GPU failed becase the image size was bad; cropping the images in the tiltseries to this new size, nx={}, nx={}".format(outsize,outsize)
-					alifile = cropper(options,alifile,aliextension,outsize,cmdsfilepath)
-					shutil.rmtree(tmpdir)
+					alifile = cropper(options,alifile,aliextension,outsize,cmdsfilepath)	
 					break
+	
 	return
 
 
@@ -346,8 +382,12 @@ def cropper(options,alifile,extension,outsize,cmdsfilepath):
 
 	if options.verbose:
 		print "\nWARNING: the tiltseries will be resized since its images are not squares. The original size is nx={}, ny={}, and will be cropped to nx={}, ny={}".format(nx,ny,outsize,outsize)
-		
+	
 	outcrop = alifile.replace(extension,'_clip' + str(outsize) + extension)
+	if '_clip' in alifile:
+		outcrop = alifile.split('_clip')[0]+extension 
+		outcrop = outcrop.replace(extension,'_clip' + str(outsize) + extension)
+
 	cmdcrop = "e2proc2d.py " + alifile + ' ' + outcrop + ' --clip ' + str(outsize) + ',' + str(outsize)
 	
 	runcmd(options,cmdcrop,cmdsfilepath)
@@ -355,7 +395,7 @@ def cropper(options,alifile,extension,outsize,cmdsfilepath):
 	return outcrop
 
 
-def runcmd(options,cmd,cmdsfilepath):
+def runcmd(options,cmd,cmdsfilepath=''):
 	if options.verbose > 9:
 		print "(e2tomo_icongpu)(runcmd) running command", cmd
 	
@@ -366,7 +406,8 @@ def runcmd(options,cmd,cmdsfilepath):
 	if options.verbose > 8:
 		print "(e2segmask)(runcmd) done"
 	
-	with open(cmdsfilepath,'a') as cmdfile: cmdfile.write( cmd + '\n')
+	if cmdsfilepath:
+		with open(cmdsfilepath,'a') as cmdfile: cmdfile.write( cmd + '\n')
 
 	return 1
 
