@@ -6319,7 +6319,7 @@ EMData* CtfSimProcessor::process(const EMData * const image) {
 	float noiseampwhite=params.set_default("noiseampwhite",0.0f);
 	int bsfp=(int)params.set_default("bispectrumfp",0);		// special mode for bispectrum processing
 
-	// compute and apply the CTF
+	// compute the CTF
 	vector <float> ctfc = ctf.compute_1d(fft->get_ysize()*6,ctf.dsbg,ctf.CTF_AMP,NULL); // *6 goes to corner, remember you provide 2x the number of points you need
 	if (!doflip) {
 		for (vector<float>::iterator it=ctfc.begin(); it!=ctfc.end(); ++it) *it=fabs(*it);
@@ -6334,14 +6334,30 @@ EMData* CtfSimProcessor::process(const EMData * const image) {
 		int fp=fft->get_zsize();
 		int nx=fft->get_xsize();
 		int ny=fft->get_ysize();
-		EMData *ret=new EMData(nx-2/2,ny*fp,1);
+		EMData *ret=new EMData((nx-2)/2,ny*fp,1);
 		for (int k=0; k<fp; k++) {
 			EMData *plnf=fft->get_clip(Region(0,0,k,nx,ny,1));
-			plnf->apply_radial_func(0,0.25f/fft->get_ysize(),ctfc,1);
+			plnf->set_complex(1);
+			plnf->set_ri(1);
+			plnf->set_fftpad(1);
+//			plnf->apply_radial_func(0,0.25f/fft->get_ysize(),ctfc,1);
+			for (int jy=-ny/2; jy<ny/2; jy++) {
+				for (int jx=0; jx<nx/2; jx++) {
+					int jkx=jx+k;
+					int jky=jy;
+
+					int r1=int(Util::hypot_fast(jx*2,jy*2));
+					int r2=k*2;
+					int r3=int(Util::hypot_fast(jkx*2,jky*2));
+					float ctfmod=ctfc[r1]*ctfc[r2]*ctfc[r3];
+//					ret2->set_complex_at(jx,jy,ret2->get_complex_at(jx,jy)*ctfmod);
+//					plnf->set_complex_at(jx,jy,plnf->get_complex_at(jx,jy));
+				}
+			}
 			EMData *pln=plnf->do_ift();
 			pln->process_inplace("xform.phaseorigin.tocenter");
 			pln->process_inplace("normalize");
-			ret->insert_clip(pln,IntPoint(-nx/2-1,k*ny,0));
+			ret->insert_clip(pln,IntPoint(-nx/2,k*ny,0));
 			delete plnf;
 			delete pln;
 		}
@@ -12616,19 +12632,25 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 
 	EMData* ret=new EMData(nkx*2,nky*2,1);
 	ret->set_complex(1);
+	ret->set_fftpad(1);
 	ret->to_zero();
 	
 	// Fourier footprint mode, produces a 3-D image using n rotational invariants, real values from Fourier space
 	if (params.has_key("ffp")) {
 		int fp=(int)params.set_default("ffp",8);
 		EMData *ret2=new EMData(nkx*2,nky*2,fp);
-		ret2->to_zero();
+//		ret2->to_zero();
 		ret2->set_complex(1);
+		ret2->set_ri(1);
+		ret2->set_fftpad(1);
 		
 		// We are doing a lot of rotations, so we make the image as small as possible first
 		EMData *tmp=cimage;
+		size_t laysize=nkx*2*nky*2;
 		cimage=new EMData((nkx+fp+2)*2,(nky+fp+2)*2,1);
 		cimage->set_complex(1);
+		cimage->set_ri(1);
+		cimage->set_fftpad(1);
 
 		for (int k=-cimage->get_ysize()/2; k<cimage->get_ysize()/2; k++) {
 			for (int j=0; j<cimage->get_xsize()/2; j++) {
@@ -12639,11 +12661,12 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 		
 		// now we compute the actual rotationally integrated "footprint"
 		for (int k=2; k<2+fp; k++) {
-			int kins=(k-2)>fp/2?k-2-fp:k-2;
+//			int kins=(k-2)>fp/2?k-2-fp:k-2;
 // 			int jkx=k;
 // 			int jky=0;
 			int kx=k;
 			int ky=0;
+			ret->to_zero();
 	
 			for (float ang=0; ang<360.0; ang+=360.0/(nky*M_PI) ) {
 				EMData *cimage2=cimage->process("xform",Dict("alpha",ang));
@@ -12659,22 +12682,23 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 						complex<double> v1 = (complex<double>)cimage2->get_complex_at(jx,jy);
 						complex<double> v2 = (complex<double>)cimage2->get_complex_at(kx,ky);
 						complex<double> v3 = (complex<double>)cimage2->get_complex_at(jkx,jky);
-						ret2->add_complex_at(jx,jy,kins,(complex<float>)(v1*v2*std::conj(v3)));
+						ret->add_complex_at(jx,jy,0,(complex<float>)(v1*v2*std::conj(v3)));
 					}
 				}
 				delete cimage2;
 			}
 			// this fixes an issue with adding in the "special" Fourier locations ... sort of
 			for (int jy=-nky; jy<nky; jy++) {
-				ret2->set_complex_at(0,jy,kins,ret2->get_complex_at(0,jy,kins)/sqrt(2.0f));
-				ret2->set_complex_at(nkx-1,jy,kins,ret2->get_complex_at(nkx-1,jy,kins)/sqrt(2.0f));
+				ret->set_complex_at(0,jy,ret2->get_complex_at(0,jy)/sqrt(2.0f));
+				ret->set_complex_at(nkx-1,jy,ret2->get_complex_at(nkx-1,jy)/sqrt(2.0f));
 			}
 			// simple fixed high-pass filter to get rid of gradient effects
 			for (int jy=-2; jy<=2; jy++) {
 				for (int jx=0; jx<=2; jx++) {
-					ret2->set_complex_at(jx,jy,kins,0.0f);
+					ret->set_complex_at(jx,jy,0.0f);
 				}
 			}
+			memcpy(ret2->get_data()+laysize*(k-2),ret->get_data(),laysize*sizeof(float));
 		}
 		delete ret;
 		delete cimage;
@@ -12690,6 +12714,9 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 		EMData *tmp=cimage;
 		cimage=new EMData((nkx+fp+2)*2,(nky+fp+2)*2,1);
 		cimage->set_complex(1);
+		cimage->set_ri(1);
+		cimage->set_fftpad(1);
+		
 		for (int k=-cimage->get_ysize()/2; k<cimage->get_ysize()/2; k++) {
 			for (int j=0; j<cimage->get_xsize()/2; j++) {
 				cimage->set_complex_at(j,k,tmp->get_complex_at(j,k));
@@ -12715,7 +12742,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 						int jkx=jx+kx;
 						int jky=jy+ky;
 	
-						if (abs(kx)>nkx || abs(ky)>nky) continue;
+						if (abs(jkx)>nkx || abs(jky)>nky) continue;
 						complex<double> v1 = (complex<double>)cimage2->get_complex_at(jx,jy);
 						complex<double> v2 = (complex<double>)cimage2->get_complex_at(kx,ky);
 						complex<double> v3 = (complex<double>)cimage2->get_complex_at(jkx,jky);
@@ -12738,7 +12765,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 			EMData *pln=ret->do_ift();
 			pln->process_inplace("xform.phaseorigin.tocenter");
 			pln->process_inplace("normalize");
-			ret2->insert_clip(pln,IntPoint(-nkx+2,(k-2)*nky*2,0));
+			ret2->insert_clip(pln,IntPoint(-nkx,(k-2)*nky*2,0));
 			delete pln;
 		}
 		delete ret;
