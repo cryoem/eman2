@@ -6351,7 +6351,7 @@ EMData* CtfSimProcessor::process(const EMData * const image) {
 					int r3=int(Util::hypot_fast(jkx*2,jky*2));
 					float ctfmod=ctfc[r1]*ctfc[r2]*ctfc[r3];
 //					ret2->set_complex_at(jx,jy,ret2->get_complex_at(jx,jy)*ctfmod);
-//					plnf->set_complex_at(jx,jy,plnf->get_complex_at(jx,jy));
+					plnf->set_complex_at(jx,jy,plnf->get_complex_at(jx,jy)*ctfmod);
 				}
 			}
 			EMData *pln=plnf->do_ift();
@@ -12661,7 +12661,6 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 		
 		// now we compute the actual rotationally integrated "footprint"
 		for (int k=2; k<2+fp; k++) {
-//			int kins=(k-2)>fp/2?k-2-fp:k-2;
 // 			int jkx=k;
 // 			int jky=0;
 			int kx=k;
@@ -12687,10 +12686,11 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 				}
 				delete cimage2;
 			}
+			
 			// this fixes an issue with adding in the "special" Fourier locations ... sort of
 			for (int jy=-nky; jy<nky; jy++) {
-				ret->set_complex_at(0,jy,ret2->get_complex_at(0,jy)/sqrt(2.0f));
-				ret->set_complex_at(nkx-1,jy,ret2->get_complex_at(nkx-1,jy)/sqrt(2.0f));
+				ret->set_complex_at(0,jy,ret->get_complex_at(0,jy)/sqrt(2.0f));
+				ret->set_complex_at(nkx-1,jy,ret->get_complex_at(nkx-1,jy)/sqrt(2.0f));
 			}
 			// simple fixed high-pass filter to get rid of gradient effects
 			for (int jy=-2; jy<=2; jy++) {
@@ -12708,7 +12708,6 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 	else if (params.has_key("fp")) {
 		int fp=(int)params.set_default("fp",8);
 		EMData *ret2=new EMData(nkx-1,nky*2*fp,1);
-		int nlay=(nkx*2-2)*nky*2*sizeof(float);
 		
 		// We are doing a lot of rotations, so we make the image as small as possible first
 		EMData *tmp=cimage;
@@ -12751,6 +12750,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 				}
 				delete cimage2;
 			}
+			
 			// this fixes an issue with adding in the "special" Fourier locations ... sort of
 			for (int jy=-nky; jy<nky; jy++) {
 				ret->set_complex_at(0,jy,ret->get_complex_at(0,jy)/sqrt(2.0f));
