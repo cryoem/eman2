@@ -128,7 +128,7 @@ directory		output directory name: into which the results will be written (if it 
 			error = 1
 
 		if os.path.exists(outdir):
-			ERROR('Output directory exists, please change the name and restart the program', "sxviper", 0)
+			ERROR('Output directory %s   exists, please change the name and restart the program'%outdir, "sxviper", 0)
 			error = 1
 		import global_def
 		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
