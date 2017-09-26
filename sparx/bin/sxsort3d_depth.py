@@ -2459,7 +2459,7 @@ def downsize_data_for_sorting(original_data, return_real = False, preshift = Tru
 		cdata[im] =  cimage		
 		if Tracker["applybckgnoise"]: 
 			rdata[im].set_attr("bckgnoise", Blockdata["bckgnoise"][particle_group_id])
-			if Tracker["constants"]["comparison_method"] == "cross":Util.mulclreal(cdata[im], Blockdata["unrolldata"][particle_group_id])
+			if Tracker["constants"]["comparison_method"] == "cross":  Util.mulclreal(cdata[im], Blockdata["unrolldata"][particle_group_id])
 		else:
 			rdata[im].set_attr("bckgnoise",  Blockdata["bckgnoise"])
 			cdata[im].set_attr("bckgnoise",  Blockdata["bckgnoise"])                    
@@ -2546,7 +2546,8 @@ def compare_two_images_eucd(data, ref_vol):
 		if data[im].get_attr("is_complex") ==1: data[im].set_attr("is_complex",0)
 		if Tracker["applybckgnoise"]:
 			peaks[im] = -Util.sqed(data[im], rtemp, ctfs[im], Blockdata["unrolldata"][data[im].get_attr("particle_group")])/qt
-		else: peaks[im] = -Util.sqed(data[im], rtemp, ctfs[im], Blockdata["unrolldata"])/qt
+		else:
+			peaks[im] = -Util.sqed(data[im], rtemp, ctfs[im], Blockdata["unrolldata"])/qt
 	return peaks
 #
 def compare_two_images_cross(data, ref_vol):
@@ -2567,11 +2568,11 @@ def compare_two_images_cross(data, ref_vol):
 		ref.set_value_at(0,0,0.0)
 		nrmref = sqrt(Util.innerproduct(ref, ref, None))
 		if data[im].get_attr("is_complex") ==1: data[im].set_attr("is_complex",0)
-		if not Tracker["focus3D"]:
-			if Tracker["applybckgnoise"]:  peak = Util.innerproduct(ref, data[im], Blockdata["unrolldata"][data[im].get_attr("particle_group")])
-			else:                          peak = Util.innerproduct(ref, data[im], None)
-			peaks[im] = peak/nrmref
-		else: peaks[im] = Util.innerproduct(ref, data[im], None)/nrmref
+		if Tracker["focus3D"]: peaks[im] = Util.innerproduct(ref, data[im], None)/nrmref
+		else:
+			if Tracker["applybckgnoise"]:  peaks[im] = Util.innerproduct(ref, data[im], Blockdata["unrolldata"][data[im].get_attr("particle_group")])/nrmref
+			else:                          peaks[im] = Util.innerproduct(ref, data[im], None)/nrmref
+
 	return peaks
 ###<<<---various utilities
 def clusters_to_plist(clusters, pall):
