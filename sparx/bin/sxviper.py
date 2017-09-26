@@ -122,7 +122,7 @@ directory		output directory name: into which the results will be written (if it 
 
 	outdir = args[1]
 	error = 0
-	if mpi_rank == 0:
+	
 		if mpi_size % options.nruns != 0:
 			ERROR('Number of processes needs to be a multiple of total number of runs. Total runs by default are 3, you can change it by specifying --nruns option.', 'sxviper', 0)
 			error = 1
@@ -130,7 +130,6 @@ directory		output directory name: into which the results will be written (if it 
 		if os.path.exists(outdir):
 			ERROR('Output directory exists, please change the name and restart the program', "sxviper", 0)
 			error = 1
-		os.mkdir(outdir)
 		import global_def
 		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
 
@@ -141,6 +140,9 @@ directory		output directory name: into which the results will be written (if it 
 	if error == 1 :
 		mpi_finalize()
 		return
+
+	if mpi_rank == 0:
+		os.mkdir(outdir)
 
 	if outdir[-1] != "/":
 		outdir += "/"
