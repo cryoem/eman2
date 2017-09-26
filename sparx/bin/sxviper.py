@@ -122,7 +122,7 @@ directory		output directory name: into which the results will be written (if it 
 
 	outdir = args[1]
 	error = 0
-	
+	if mpi_rank == 0:
 		if mpi_size % options.nruns != 0:
 			ERROR('Number of processes needs to be a multiple of total number of runs. Total runs by default are 3, you can change it by specifying --nruns option.', 'sxviper', 0)
 			error = 1
