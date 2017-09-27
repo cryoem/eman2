@@ -151,15 +151,15 @@ directory		output directory name: into which the results will be written (if it 
 	# if len(args) > 2:
 	# 	ref_vol = get_im(args[2])
 	# else:
-	ref_vol = None
+	#ref_vol = None
 
 	options.user_func = user_functions.factory[options.function]
 
 	options.CTF = False
-	options.snr = 1.0
+	options.snr =  1.0
 	options.an  = -1.0
 	from multi_shc import multi_shc
-	out_params, out_vol, out_peaks = multi_shc(all_projs, subset, runs_count, options, mpi_comm=MPI_COMM_WORLD, log=log, ref_vol=ref_vol)
+	out_params, out_vol, out_peaks = multi_shc(all_projs, subset, runs_count, options, mpi_comm=MPI_COMM_WORLD, log=log)
 
 	mpi_finalize()
 
