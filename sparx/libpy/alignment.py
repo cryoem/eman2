@@ -2080,7 +2080,7 @@ def proj_ali_incore_local(data, refrings, list_of_reference_angles, numr, xrng, 
 			phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
 			theta = 180.0-refrings[iref].get_attr("theta")
 			psi   = (540.0-refrings[iref].get_attr("psi")-ang)%360.0
-		else:			
+		else:
 			phi   = refrings[iref].get_attr("phi")
 			theta = refrings[iref].get_attr("theta")
 			psi   = (360.0+refrings[iref].get_attr("psi")-ang)%360.0
@@ -2257,7 +2257,7 @@ def proj_ali_incore_delta(data, refrings, numr, xrng, yrng, step, start, delta, 
 
 	return peak, pixel_error
 
-#  This function is oboleted
+#  This function is obsoleted
 def proj_ali_incore_local_psi(data, refrings, numr, xrng, yrng, step, an, dpsi=180.0, finfo=None):
 	"""
 	  dpsi - how far psi can be from the original value.
