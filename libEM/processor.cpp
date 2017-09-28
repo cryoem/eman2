@@ -6362,15 +6362,14 @@ EMData* CtfSimProcessor::process(const EMData * const image) {
 						avgr+=ctfc[r3];
 						norm+=1.0;
 					}
-					ctfmod*=ctfc[int(avgr/norm)];
+//					ctfmod*=(avgr/norm);
 
-					plnf->set_complex_at(jx,jy,plnf->get_complex_at(jx,jy));
-//					plnf->set_complex_at(jx,jy,plnf->get_complex_at(jx,jy)*ctfmod);
+//					plnf->set_complex_at(jx,jy,plnf->get_complex_at(jx,jy));
+					plnf->set_complex_at(jx,jy,plnf->get_complex_at(jx,jy)*ctfmod);
 //					plnf->set_complex_at(jx,jy,ctfmod);
 				}
 			}
 			plnf->write_image("tst.hdf",-1);
-
 			
 			EMData *pln=plnf->do_ift();
 			pln->process_inplace("xform.phaseorigin.tocenter");
@@ -12709,10 +12708,10 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 			}
 			
 			// this fixes an issue with adding in the "special" Fourier locations ... sort of
-			for (int jy=-nky; jy<nky; jy++) {
-				ret->set_complex_at(0,jy,ret->get_complex_at(0,jy)/sqrt(2.0f));
-				ret->set_complex_at(nkx-1,jy,ret->get_complex_at(nkx-1,jy)/sqrt(2.0f));
-			}
+ 			for (int jy=-nky; jy<nky; jy++) {
+ 				ret->set_complex_at(0,jy,ret->get_complex_at(0,jy)/sqrt(2.0f));
+ 				ret->set_complex_at(nkx-1,jy,ret->get_complex_at(nkx-1,jy)/sqrt(2.0f));
+ 			}
 			// simple fixed high-pass filter to get rid of gradient effects
 			for (int jy=-2; jy<=2; jy++) {
 				for (int jx=0; jx<=2; jx++) {
