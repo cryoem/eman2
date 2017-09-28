@@ -6313,18 +6313,22 @@ EMData* CtfSimProcessor::process(const EMData * const image) {
 	ctf.voltage=params.set_default("voltage",200.0f);
 	ctf.cs=params.set_default("cs",2.0);
 	ctf.apix=params.set_default("apix",image->get_attr_default("apix_x",1.0));
-	ctf.dsbg=1.0/(ctf.apix*fft->get_ysize()*4.0);		//4x oversampling
+	if (image->has_attr("dsbg")) ctf.dsbg=image->get_attr("dsbg");
+	else ctf.dsbg=1.0/(ctf.apix*fft->get_ysize()*4.0);		//4x oversampling
 	int doflip=(int)params.set_default("phaseflip",1);		// whether to use the CTF or abs(CTF)
 	float noiseamp=params.set_default("noiseamp",0.0f);
 	float noiseampwhite=params.set_default("noiseampwhite",0.0f);
 	int bsfp=(int)params.set_default("bispectrumfp",0);		// special mode for bispectrum processing
 
 	// compute the CTF
-	vector <float> ctfc = ctf.compute_1d(fft->get_ysize()*6,ctf.dsbg,ctf.CTF_AMP,NULL); // *6 goes to corner, remember you provide 2x the number of points you need
+	vector <float> ctfc = ctf.compute_1d(fft->get_ysize()*12,ctf.dsbg,ctf.CTF_AMP,NULL); // *6 goes to corner, remember you provide 2x the number of points you need
 	if (!doflip) {
 		for (vector<float>::iterator it=ctfc.begin(); it!=ctfc.end(); ++it) *it=fabs(*it);
 	}
 
+//	for (int i=0; i<ctfc.size(); i++) printf("%d\t%f\n",i,ctfc[i]);
+//	printf("apix %f\tdsbg %f\tdef %f\tbfac %f\tvol %f\tcs %f\n",ctf.apix,ctf.dsbg,ctf.defocus,ctf.bfactor,ctf.voltage,ctf.cs);
+	
 //	printf("%1.3f\t%1.3f\t%1.3f\t%1.3f\t%1.3f\t%d\n",ctf.defocus,ctf.bfactor,ctf.ampcont,ctf.dsbg,ctf.apix,fft->get_ysize());
 //	FILE *out=fopen("x.txt","w");
 //	for (int i=0; i<ctfc.size(); i++) fprintf(out,"%f\t%1.3g\n",0.25*i/(float)fft->get_ysize(),ctfc[i]);
@@ -6343,17 +6347,31 @@ EMData* CtfSimProcessor::process(const EMData * const image) {
 //			plnf->apply_radial_func(0,0.25f/fft->get_ysize(),ctfc,1);
 			for (int jy=-ny/2; jy<ny/2; jy++) {
 				for (int jx=0; jx<nx/2; jx++) {
-					int jkx=jx+k;
-					int jky=jy;
+					int r1=Util::hypot_fast_int(jx*4,jy*4);
+					int r2=k*4;
+					float ctfmod=ctfc[r1]*ctfc[r2];
+//					printf("%d %d\t%d\t%f\n",jx,jy,r1,ctfc[r1]);
+					// To make this rotationally symmetric we have to integrate over the j+k vector
+					float avgr=0.0f;
+					float norm=0.0f;
+					for (float ang=0.0f; ang<2.0*M_PI; ang+=2.0*M_PI/float(k*8)) {
+						float jkx=jx*4+k*4.0*cos(ang);
+						float jky=jy*4+k*4.0*sin(ang);
 
-					int r1=int(Util::hypot_fast(jx*2,jy*2));
-					int r2=k*2;
-					int r3=int(Util::hypot_fast(jkx*2,jky*2));
-					float ctfmod=ctfc[r1]*ctfc[r2]*ctfc[r3];
-//					ret2->set_complex_at(jx,jy,ret2->get_complex_at(jx,jy)*ctfmod);
-					plnf->set_complex_at(jx,jy,plnf->get_complex_at(jx,jy)*ctfmod);
+						int r3=int(hypot(jkx,jky)+0.5);
+						avgr+=ctfc[r3];
+						norm+=1.0;
+					}
+					ctfmod*=ctfc[int(avgr/norm)];
+
+					plnf->set_complex_at(jx,jy,plnf->get_complex_at(jx,jy));
+//					plnf->set_complex_at(jx,jy,plnf->get_complex_at(jx,jy)*ctfmod);
+//					plnf->set_complex_at(jx,jy,ctfmod);
 				}
 			}
+			plnf->write_image("tst.hdf",-1);
+
+			
 			EMData *pln=plnf->do_ift();
 			pln->process_inplace("xform.phaseorigin.tocenter");
 			pln->process_inplace("normalize");
@@ -12634,9 +12652,12 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 	ret->set_complex(1);
 	ret->set_fftpad(1);
 	ret->to_zero();
+//	printf("apix %f\tnx %d\n",(float)image->get_attr("apix_x"),(int)image->get_xsize());
 	
 	// Fourier footprint mode, produces a 3-D image using n rotational invariants, real values from Fourier space
 	if (params.has_key("ffp")) {
+		// We need to save this so CTF can be applied accurately later on.
+		float dsbg=1.0/(float(image->get_attr("apix_x"))*image->get_xsize()*4.0);
 		int fp=(int)params.set_default("ffp",8);
 		EMData *ret2=new EMData(nkx*2,nky*2,fp);
 //		ret2->to_zero();
@@ -12702,6 +12723,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 		}
 		delete ret;
 		delete cimage;
+		ret2->set_attr("dsbg",dsbg);
 		return ret2;
 	}
 	// footprint mode, produces a 2-D image containing n veritcally arranged rotational invariants
