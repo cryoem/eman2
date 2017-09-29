@@ -525,6 +525,126 @@ def orien_analysis(veclist, cluster_id, log):
 	log.add(msg)
 	return mean_vec
 
+def do_one_way_anova_scipy(clusters, value_list, name_of_variable="variable", log = None):
+	import copy
+	from math   import sqrt
+	import scipy
+	from scipy import stats
+	K = len(clusters)
+	NMAX = 20
+	for ic in xrange(K):
+		ll = copy.deepcopy(clusters[ic])
+		ll1 = [None for i in xrange(len(ll))]
+		for ie in xrange(len(ll)): ll1[ie] = value_list[ll[ie]]
+		replicas.append(ll1)
+	x0 = replicas[0]
+	x1 = replicas[1]
+	try: x2 = replicas[2]
+	except: pass
+	try: x3 = replicas[3]
+	except: pass
+	try: x4 = replicas[4]
+	except: pass
+	try: x5 = replicas[5]
+	except: pass
+	try: x6 = replicas[6]
+	except: pass
+	try: x7 = replicas[7]
+	except: pass
+	try: x8 = replicas[8]
+	except: pass
+	try: x9 = replicas[9]
+	except: pass
+	try: x10 = replicas[10]
+	except: pass
+	try: x11 = replicas[11]
+	except: pass
+	try: x12 = replicas[12]
+	except: pass
+	try: x13 = replicas[13]
+	except: pass
+	try: x14 = replicas[14]
+	except: pass
+	try: x15 = replicas[15]
+	except: pass
+	try: x16 = replicas[16]
+	except: pass
+	try: x17 = replicas[17]
+	except: pass
+	try: x18 = replicas[18]
+	except: pass
+	try: x19 = replicas[19]
+	except: pass
+
+	if K==2: res = stats.f_oneway(x0, x1)
+	elif K==3: res = stats.f_oneway(x0, x1, x2)
+	elif K==4: res = stats.f_oneway(x0, x1, x2, x3)
+	elif K==5: res = stats.f_oneway(x0, x1, x2, x3, x4)
+	elif K==6: res = stats.f_oneway(x0, x1, x2, x3, x4, x5)
+	elif K==7: res = stats.f_oneway(x0, x1, x2, x3, x4, x5, x6)
+	elif K==8: res = stats.f_oneway(x0, x1, x2, x3, x4, x5, x6, x7)
+	elif K==9: res = stats.f_oneway(x0, x1, x2, x3, x4, x5, x6, x7, x8)
+	elif K==10: res = stats.f_oneway(x0, x1, x2, x3, x4, x5, x6, x7, x8, x9)
+	elif K==11: res = stats.f_oneway(x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10)
+	elif K==12: res = stats.f_oneway(x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11)
+	elif K==13: res = stats.f_oneway(x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12)
+	elif K==14: res = stats.f_oneway(x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13)
+	elif K==15: res = stats.f_oneway(x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14)
+	elif K==16: res = stats.f_oneway(x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15)
+	elif K==17: res = stats.f_oneway(x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, x16)
+	elif K==18: res = stats.f_oneway(x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, x16, x17)
+	elif K==19: res = stats.f_oneway(x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, x16, x17,x18)
+	elif K==20: res = stats.f_oneway(x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, x16, x17,x18, x19)
+	else:
+		print("ERROR in anova")	
+	avgs =[]
+	global_mean = 0.0
+	for ir in xrange(K): 
+		global_mean +=sum(replicas[ir])
+		avgs.append(sum(replicas[ir])/float(len(replicas[ir])))
+	
+	summed_squared_elements = 0.0
+	summed_squared_elements_within_groups = [None for i in xrange(K)]
+	std_list =[]
+	sst = 0.0
+	nsamples = 0.0
+	for i in xrange(K): nsamples +=len(replicas[i])
+	for i in xrange(K):
+		ssa_per_group = 0.0
+		std_per_group = 0.0 
+		for j in xrange(len(replicas[i])):
+			sst +=replicas[i][j]**2
+			summed_squared_elements +=replicas[i][j]*replicas[i][j]
+			ssa_per_group +=replicas[i][j]
+			std_per_group += (replicas[i][j] -avgs[i])**2
+		std_list.append(sqrt(std_per_group/float(len(replicas[i]))))
+		summed_squared_elements_within_groups[i] = ssa_per_group**2/float(len(replicas[i]))
+		
+	sst -=global_mean**2/nsamples
+	ssa = sum(summed_squared_elements_within_groups) - global_mean**2/nsamples
+	sse = sst - ssa
+	n1 = 0
+	for i in xrange(K): n1 +=len(replicas[i])-1
+	msa = ssa/(K-1.0)
+	mse = sse/float(n1)
+	mst = sst/float(n1)
+	f_ratio = msa/mse
+	msg ="---------->>>ANOVA on %s<<<--------- \n"%(name_of_variable)+\
+		"f_value:  %f  p_value:  %f"%(res[0], res[1])
+	print(msg)
+	log.add(msg)
+	print("----->>>global %s mean of all clusters: "%name_of_variable, global_mean/(float(nsamples)))
+	msg = "----->>>Means per group<<<-----\n"+\
+	"Factor     N      Mean          Std  \n"
+	for i in xrange(K):
+		msg +="%5d   %5d   %12.5f   %12.5f"%(i+1, len(replicas[i]), avgs[i], std_list[i])+"\n"
+	print(msg)
+	log.add(msg)
+	msg = "---->>>END OF %s ANOVA"%name_of_variable
+	log.add(msg)
+	print(msg)
+	return res[0], res[1]
+
 def do_one_way_anova_full(clusters, value_list, name_of_variable="variable", log = None):
 	import copy
 	from random import shuffle
@@ -589,7 +709,27 @@ def do_one_way_anova_full(clusters, value_list, name_of_variable="variable", log
 	print(msg)
 	log.add(msg)
 	return
-
+	
+def output_micrograph_number_per_cluster(orgstack, index_file, clusters, log = None):
+	# single node job
+	mic_dict = {}
+	try: mics = EMUtil.get_all_attributes(orgstack, "ptcl_source_image")
+	except: ERROR("No ptcl_source_image attribute", "output_micrograph_number_per_cluster", 1,  0)
+	pid_list =read_text_file(index_file)
+	for im in xrange(len(pid_list)): mic_dict [pid_list[im]] = mics[pid_list[im]]
+	mics_in_clusters = [None for i in xrange(len(clusters))]
+	msg = "------->>>number of micrographs in clusters<<<--------------"
+	log.add(msg)
+	print(msg)
+	for ic in xrange(len(clusters)):
+		tmp_mics_in_cluster = {}
+		for im in xrange(len(clusters[ic])): tmp_mics_in_cluster[clusters[ic][im]] = im
+		mics_in_clusters[ic] = len(clusters[ic])
+		msg = "cluster:  %d  number of micrographs:  %d"%(ic, mics_in_clusters[ic])
+		log.add(msg)
+		print(msg)
+	return mics_in_clusters
+		
 def AI(to_be_decided, log = None, list_stable = None, score_list = None, initial_id_file = None):
 	global Tracker, Blockdata
 	from utilities import get_number_of_groups
@@ -739,13 +879,18 @@ def AI(to_be_decided, log = None, list_stable = None, score_list = None, initial
 					else: msg ="number of unaccounted images is too few"
 					log.add(msg)
 					print(line, msg)
-				dlist, nindex = merge_classes_into_partition_list(clusters) # 
+				dlist, nindex = merge_classes_into_partition_list(clusters) #
 				write_text_row(nindex, os.path.join(Tracker["constants"]["masterdir"], "final_partition.txt"))
 			else: clusters = 0
 			clusters = wrap_mpi_bcast(clusters, Blockdata["main_node"], MPI_COMM_WORLD)
 			# analysis
 			if Blockdata["myid"] == Blockdata["main_node"]:
+				
+				dummy = output_micrograph_number_per_cluster(Tracker["constants"]["orgstack"], \
+				   os.path.join(Tracker["constants"]["masterdir"], "indexes.txt"), clusters, log = log)
+				
 				if not Tracker["nosmearing"]:
+				
 					vs, ds, ss, norms = get_params_for_analysis(Tracker["constants"]["orgstack"], \
 					os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt"),\
 					 os.path.join(Tracker["constants"]["masterdir"], "all_smearing.txt"), Tracker["constants"]["nsmear"])
@@ -754,10 +899,10 @@ def AI(to_be_decided, log = None, list_stable = None, score_list = None, initial
 				      os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt"),\
 				       None, None)
 			 
-				do_one_way_anova_full(clusters, ds, name_of_variable="defocus", log = log)
-				if ss: do_one_way_anova_full(clusters, ss, name_of_variable="smearing", log = log)
+				do_one_way_anova_scipy(clusters, ds, name_of_variable="defocus", log = log)
+				if ss: do_one_way_anova_scipy(clusters, ss, name_of_variable="smearing", log = log)
 			
-				if norms: do_one_way_anova_full(clusters, norms, name_of_variable="norm", log = log)
+				if norms: do_one_way_anova_scipy(clusters, norms, name_of_variable="norm", log = log)
 				
 				msg = "---->>>Orientations per group analysis<<<----- \n"+\
 					"%10s %10s %10s  "%("X", "Y", "Z")
@@ -824,7 +969,7 @@ def AI(to_be_decided, log = None, list_stable = None, score_list = None, initial
 					focusmask = get_im(Tracker["constants"]["focus3Dmask"])
 					st = Util.infomask(focusmask)
 					if ((st[2] != 0.0) or (st[3] != 1.0)):
-						focusmask = binarize(focusmask)
+						focusmask = binarize(focusmask)# binarize focus mask if it is not a binary mask
 						st = Util.infomask(focusmask)
 					if(st[0] == 0.0): bad_focus3Dmask = 1
 					else:
@@ -6139,10 +6284,10 @@ def post_sorting_rec3d(log):
 			os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt"),\
 			 None, None)
 	 
-		do_one_way_anova_full(clusters, ds, name_of_variable="defocus", log = log)
-		if ss: do_one_way_anova_full(clusters, ss, name_of_variable="smearing", log = log)
+		do_one_way_anova_scipy(clusters, ds, name_of_variable="defocus", log = log)
+		if ss: do_one_way_anova_scipy(clusters, ss, name_of_variable="smearing", log = log)
 
-		if norms: do_one_way_anova_full(clusters, norms, name_of_variable="norm", log = log)
+		if norms: do_one_way_anova_scipy(clusters, norms, name_of_variable="norm", log = log)
 		
 		msg = "---->>>Orientations per group analysis<<<----- \n"+\
 		 "%10s %10s %10s  "%("X", "Y", "Z")
