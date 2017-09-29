@@ -287,7 +287,7 @@ def Kmeans_top_layer(work_dir, num_of_indep_runs, original_data, params, paramet
 			if not os.path.exists(os.path.join(Tracker["directory"], "tempdir")): os.mkdir(os.path.join(Tracker["directory"], "tempdir"))
 		Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
 		
-		if Tracker["constants"]["minimum_grp_size"] ==-1: default value ,random ratio
+		if Tracker["constants"]["minimum_grp_size"] ==-1: #default value ,random ratio
 		
 			minimum_group_size =  Tracker["total_stack"]//Tracker["number_of_groups"]//Tracker["number_of_groups"]
 			tmp_final_list, premature = Kmeans_minimum_group_size_orien_groups(original_data, index_file, \
@@ -822,7 +822,10 @@ def AI(to_be_decided, log = None, list_stable = None, score_list = None, initial
 			if Tracker["constants"]["focus3Dmask"]:
 				try:
 					focusmask = get_im(Tracker["constants"]["focus3Dmask"])
-					st = Util.infomask(binarize(focusmask), None, True)
+					st = Util.infomask(focusmask)
+					if ((st[2] != 0.0) or (st[3] != 1.0)):
+						focusmask = binarize(focusmask)
+						st = Util.infomask(focusmask)
 					if(st[0] == 0.0): bad_focus3Dmask = 1
 					else:
 						focusmask.write_image(os.path.join(Tracker["constants"]["masterdir"], "focus3d.hdf"))
@@ -1008,7 +1011,7 @@ def Kmeans_minimum_group_size_orien_groups(original_data, partids, params, param
 		iproc_image_start, iproc_image_end = MPI_start_end(Tracker["total_stack"], Blockdata["nproc"], iproc)
 		proc_list[iproc] = [iproc_image_start, iproc_image_end]
 	compute_noise(Tracker["nxinit"])
-	cdata, rdata = downsize_data_for_sorting(original_data, preshift = True, npad = 1)# pay attentions to shifts!
+	cdata, rdata, fdata = downsize_data_for_sorting(original_data, preshift = True, npad = 1)# pay attentions to shifts!
 	srdata = precalculate_shifted_data_for_recons3D(rdata, paramstructure, Tracker["refang"], \
 	   Tracker["rshifts"], Tracker["delta"], Tracker["avgnorm"], Tracker["nxinit"], \
 	     Tracker["constants"]["nnxo"], Tracker["nosmearing"], norm_per_particle, Tracker["constants"]["nsmear"])
@@ -1048,7 +1051,7 @@ def Kmeans_minimum_group_size_orien_groups(original_data, partids, params, param
 			bcast_EMData_to_all(ref_vol, Blockdata["myid"], Blockdata["main_node"])
 			## Image comparison optimal solution is the larger one	
 			if Tracker["constants"]["comparison_method"] =="cross": ref_peaks = compare_two_images_cross(cdata, ref_vol)
-			else: ref_peaks = compare_two_images_eucd(cdata, ref_vol)
+			else: ref_peaks = compare_two_images_eucd(cdata, ref_vol, fdata)
 			for im in xrange(nima):
 				local_peaks[total_im] = ref_peaks[im]
 				total_im +=1
@@ -1194,7 +1197,7 @@ def Kmeans_minimum_group_size_relaxing_orien_groups(original_data, partids, para
 		iproc_image_start, iproc_image_end = MPI_start_end(Tracker["total_stack"], Blockdata["nproc"], iproc)
 		proc_list[iproc] = [iproc_image_start, iproc_image_end]
 	compute_noise(Tracker["nxinit"])
-	cdata, rdata = downsize_data_for_sorting(original_data, preshift = True, npad = 1)# pay attentions to shifts!
+	cdata, rdata, fdata = downsize_data_for_sorting(original_data, preshift = True, npad = 1)# pay attentions to shifts!
 	srdata = precalculate_shifted_data_for_recons3D(rdata, paramstructure, Tracker["refang"], \
 	   Tracker["rshifts"], Tracker["delta"], Tracker["avgnorm"], Tracker["nxinit"], \
 	     Tracker["constants"]["nnxo"], Tracker["nosmearing"], norm_per_particle,  Tracker["constants"]["nsmear"])
@@ -1237,7 +1240,7 @@ def Kmeans_minimum_group_size_relaxing_orien_groups(original_data, partids, para
 			bcast_EMData_to_all(ref_vol, Blockdata["myid"], Blockdata["main_node"])
 			## Image comparison optimal solution is the larger one	
 			if Tracker["constants"]["comparison_method"] =="cross": ref_peaks = compare_two_images_cross(cdata, ref_vol)
-			else: ref_peaks = compare_two_images_eucd(cdata, ref_vol)
+			else: ref_peaks = compare_two_images_eucd(cdata, ref_vol, fdata)
 			for im in xrange(nima):
 				local_peaks[total_im] = ref_peaks[im]
 				total_im +=1
@@ -1396,7 +1399,7 @@ def Kmeans_adaptive_minimum_group_size(original_data, partids, params, paramstru
 		iproc_image_start, iproc_image_end = MPI_start_end(Tracker["total_stack"], Blockdata["nproc"], iproc)
 		proc_list[iproc] = [iproc_image_start, iproc_image_end]
 	compute_noise(Tracker["nxinit"])
-	cdata, rdata = downsize_data_for_sorting(original_data, preshift = True, npad = 1)# pay attentions to shifts!
+	cdata, rdata, fdata = downsize_data_for_sorting(original_data, preshift = True, npad = 1)# pay attentions to shifts!
 	srdata = precalculate_shifted_data_for_recons3D(rdata, paramstructure, Tracker["refang"], \
 	   Tracker["rshifts"], Tracker["delta"], Tracker["avgnorm"], Tracker["nxinit"], \
 	    Tracker["constants"]["nnxo"], Tracker["nosmearing"], norm_per_particle,  Tracker["constants"]["nsmear"])
@@ -1454,7 +1457,7 @@ def Kmeans_adaptive_minimum_group_size(original_data, partids, params, paramstru
 			bcast_EMData_to_all(ref_vol, Blockdata["myid"], Blockdata["main_node"])
 			## Image comparison optimal solution is the larger one	
 			if Tracker["constants"]["comparison_method"] =="cross": ref_peaks = compare_two_images_cross(cdata, ref_vol)
-			else: ref_peaks = compare_two_images_eucd(cdata, ref_vol)
+			else: ref_peaks = compare_two_images_eucd(cdata, ref_vol, fdata)
 			for im in xrange(nima):
 				local_peaks[total_im] = ref_peaks[im]
 				total_im +=1
@@ -2378,7 +2381,8 @@ def downsize_data_for_sorting(original_data, return_real = False, preshift = Tru
 	#  Preprocess the data
 	nima   = len(original_data)
 	cdata  = [None]*nima
-	rdata  = [None]*nima	
+	rdata  = [None]*nima
+	fdata  = [None]*nima	# focusmask projections
 	for im in xrange(nima):
 		image = original_data[im].copy()
 		chunk_id = image.get_attr("chunk_id")
@@ -2457,17 +2461,18 @@ def downsize_data_for_sorting(original_data, return_real = False, preshift = Tru
 		cimage.set_attr("particle_group", particle_group_id)
 		rdata[im] =  rimage
 		cdata[im] =  cimage		
-		if Tracker["applybckgnoise"]: 
+		if Tracker["applybckgnoise"]:
 			rdata[im].set_attr("bckgnoise", Blockdata["bckgnoise"][particle_group_id])
-			if Tracker["constants"]["comparison_method"] == "cross":  Util.mulclreal(cdata[im], Blockdata["unrolldata"][particle_group_id])
 		else:
 			rdata[im].set_attr("bckgnoise",  Blockdata["bckgnoise"])
 			cdata[im].set_attr("bckgnoise",  Blockdata["bckgnoise"])                    
 		if Tracker["focus3D"]:
-			cdata[im] = fft(binarize(prgl(focus3d, [phi, theta, psi, 0.0, 0.0], 1, True), 1)*fft(cdata[im]))
+			focusmask = binarize(prgl(focus3d, [phi, theta, psi, 0.0, 0.0], 1, True), 1)
+			cdata[im] = fft(focusmask*fft(cdata[im]))
 			if Tracker["constants"]["CTF"]: cdata[im].set_attr("ctf", rdata[im].get_attr("ctf"))
+			fdata[im] = focusmask
 		cdata[im].set_attr("is_complex",0)
-	return cdata, rdata
+	return cdata, rdata, fdata
 ##<<<----for 3D----->>>>
 def downsize_data_for_rec3D(original_data, particle_size, return_real = False, npad = 1):
 	# The function will read from stack a subset of images specified in partids
@@ -2530,7 +2535,7 @@ def downsize_data_for_rec3D(original_data, particle_size, return_real = False, n
 	return rdata
 ### end of downsize
 ###<<<--- comparison	    
-def compare_two_images_eucd(data, ref_vol):
+def compare_two_images_eucd(data, ref_vol, fdata):
 	global Tracker, Blockdata
 	from filter import filt_tophatl
 	from math   import sqrt
@@ -2541,7 +2546,11 @@ def compare_two_images_eucd(data, ref_vol):
 	qt = float(Tracker["constants"]["nnxo"]*Tracker["constants"]["nnxo"])
 	for im in xrange(len(data)):
 		phi, theta, psi, s2x, s2y = get_params_proj(data[im], xform = "xform.projection")
-		rtemp = prgl(ref_vol,[phi, theta, psi, 0.0,0.0], 1, False)
+		if Tracker["focus3D"]:
+			rtemp = prgl(ref_vol,[phi, theta, psi, 0.0,0.0], 1, True)
+			rtemp = fft(rtemp*fdata[im])
+		else:
+			rtemp = prgl(ref_vol,[phi, theta, psi, 0.0,0.0], 1, False)
 		rtemp.set_attr("is_complex",0)
 		if data[im].get_attr("is_complex") ==1: data[im].set_attr("is_complex",0)
 		if Tracker["applybckgnoise"]:
@@ -2572,8 +2581,8 @@ def compare_two_images_cross(data, ref_vol):
 		else:
 			if Tracker["applybckgnoise"]:  peaks[im] = Util.innerproduct(ref, data[im], Blockdata["unrolldata"][data[im].get_attr("particle_group")])/nrmref
 			else:                          peaks[im] = Util.innerproduct(ref, data[im], None)/nrmref
-
 	return peaks
+	
 ###<<<---various utilities
 def clusters_to_plist(clusters, pall):
 	# clusters contains the original ids
@@ -6240,7 +6249,7 @@ def main():
 	parser.add_option("--comparison_method",               type   ="string",        default ='cross',                  help="option for comparing two images, either using cross-correlaton coefficients [cross] or using Euclidean distance [eucd] ")
 	parser.add_option("--memory_per_node",                 type   ="float",         default =-1.0,                     help="memory_per_node, the number used for evaluate the CPUs/NODE settings given by user")
 	parser.add_option("--nofinal_sharpen",                 action ="store_true",    default =False,                    help="not reconstruct unfiltered final maps for post refinement process")
-	parser.add_option("--orien_groups",                    type   ="int",           default =8,                        help="number of sampling angular groups used for EQKmeans orientation constraints")
+	parser.add_option("--orien_groups",                    type   ="int",           default =100,                      help="number of sampling angular groups used for EQKmeans orientation constraints")
 	parser.add_option("--post_sorting_sharpen",            action ="store_true",    default =False,                    help="reconstruct odd and even unfiltered maps per cluster after sorting")
 	parser.add_option("--stop_eqkmeans_percentage",        type   ="float",         default =2.0,                      help="particle change percentage for stopping equal size Kmeans")
 	parser.add_option("--eqk_shake",                       type   ="float",         default =5.0,                      help="randomness ratio in adaptive Kmeans")
