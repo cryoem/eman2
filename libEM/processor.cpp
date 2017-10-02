@@ -6374,7 +6374,7 @@ EMData* CtfSimProcessor::process(const EMData * const image) {
 //					plnf->set_complex_at(jx,jy,ctfmod);
 				}
 			}
-			plnf->write_image("tst.hdf",-1);
+//			plnf->write_image("tst.hdf",-1);
 			
 			EMData *pln=plnf->do_ift();
 			pln->process_inplace("xform.phaseorigin.tocenter");
@@ -12790,7 +12790,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 					ret->set_complex_at(jx,jy,0.0f);
 				}
 			}
-			ret->write_image("tst2.hdf",-1);
+//			ret->write_image("tst2.hdf",-1);
 			EMData *pln=ret->do_ift();
 			pln->process_inplace("xform.phaseorigin.tocenter");
 			pln->process_inplace("normalize");
