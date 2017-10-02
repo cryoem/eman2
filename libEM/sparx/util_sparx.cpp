@@ -22340,7 +22340,7 @@ vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMD
 	int rky = int(yrng[1]/step);
 	vector< vector<EMData*> > cimages( lky+rky+1, vector<EMData*>(lkx+rkx+1) );
 
-	
+
 	int circle = max(lkx,max(lky,max(rkx,rky)));
 	circle = circle*circle;
 
@@ -24648,7 +24648,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 
 void Util::version()
 {
- cout <<"  Source modification date: 08/16/2017  14:22 PM " <<  endl;
+ cout <<"  Source modification date: 09/29/2017  10:22 PM " <<  endl;
 }
 
 

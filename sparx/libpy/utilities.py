@@ -3595,7 +3595,7 @@ def nearest_many_full_k_projangles(reference_normals, angles, howmany = 1, sym_c
 			assignments[i] = Util.nearest_fang_select(reference_normals, ref[0],ref[1],ref[2], howmany)
 	else:
 		for i,q in enumerate(angles):
-			ancordir = angles_to_normals(sym_class.symmetry_neighbors([q]))
+			ancordir = angles_to_normals(sym_class.symmetry_neighbors([q[:3]]))
 			assignments[i] = Util.nearest_fang_sym(ancordir, reference_normals, len(ancordir), howmany)
 
 	return assignments
