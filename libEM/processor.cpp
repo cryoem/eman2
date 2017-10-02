@@ -6339,6 +6339,7 @@ EMData* CtfSimProcessor::process(const EMData * const image) {
 		int nx=fft->get_xsize();
 		int ny=fft->get_ysize();
 		EMData *ret=new EMData((nx-2)/2,ny*fp,1);
+//		for (int j=ny*2-4; j<ctfc.size(); j++) ctfc[j]*=exp(-pow(j-ny*2+4,2.0)/8.0);	// soft Gaussian falloff to CTF modification to avoid corner/edge effects
 		for (int k=0; k<fp; k++) {
 			EMData *plnf=fft->get_clip(Region(0,0,k,nx,ny,1));
 			plnf->set_complex(1);
@@ -6368,8 +6369,8 @@ EMData* CtfSimProcessor::process(const EMData * const image) {
 // 					}
 // 					ctfmod*=(avgr/norm);
 
-//					plnf->set_complex_at(jx,jy,plnf->get_complex_at(jx,jy);
 					plnf->set_complex_at(jx,jy,plnf->get_complex_at(jx,jy)*ctfmod);
+//					plnf->set_complex_at(jx,jy,plnf->get_complex_at(jx,jy);
 //					plnf->set_complex_at(jx,jy,ctfmod);
 				}
 			}
@@ -12696,7 +12697,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 	
 				for (int jy=-nky; jy<nky; jy++) {
 					for (int jx=0; jx<nkx; jx++) {
-						if (jx==0 && jy<0) continue;
+						if (jx==0 && jy<0) continue;		// this is critical!  it avoids double-computation along kx=0
 // 						int kx=jkx-jx;
 // 						int ky=jky-jy;
 						int jkx=jx+kx;
@@ -12762,7 +12763,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 	
 				for (int jy=-nky; jy<nky; jy++) {
 					for (int jx=0; jx<nkx; jx++) {
-						if (jx==0 && jy<0) continue;
+						if (jx==0 && jy<0) continue;				// this is critical!  it avoids double-computation along kx=0
 // 						int kx=jkx-jx;
 // 						int ky=jky-jy;
 						int jkx=jx+kx;
