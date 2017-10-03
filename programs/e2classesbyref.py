@@ -94,7 +94,7 @@ def main():
 			raise Exception
 	except:
 		print "No good bispecta found for refs. Building"
-		com="e2proc2dpar.py {} {} --process filter.highpass.gauss:cutoff_freq=0.01 --process normalize.edgemean --process math.bispectrum.slice:size={}:fp={} --threads {}".format(args[0],refsbsfs,bispec_invar_parm[0],bispec_invar_parm[1],options.threads)
+		com="e2proc2dpar.py {} {} --process filter.highpass.gauss:cutoff_freq=0.01 --process normalize.edgemean --process math.bispectrum.slice:size={}:ffp={} --threads {}".format(args[0],refsbsfs,bispec_invar_parm[0],bispec_invar_parm[1],options.threads)
 		run(com)
 	
 	refsbs=EMData.read_images(refsbsfs)
@@ -219,16 +219,26 @@ def main():
 
 	print "Classification complete, writing classmx"
 
-def clsfn(jsd,refs,refsbs,ptclfs,ptclbsfs,options,grp,n0,n1):
+def clsfn(jsd,refs,refsbs_org,ptclfs,ptclbsfs,options,grp,n0,n1):
 	from bisect import insort
 	
 	retali=(options.classes!=None)
+	lastdf=-999.0
+	lastdfn=-1
 	
 	for i in xrange(n0,n1):
 		ptcl=EMData(ptclfs,i)
 		ptclbs=EMData(ptclbsfs,i)
 		
-		# we make a list with the number of total element we want
+		ctf=ptcl["ctf"]
+		if fabs(ctf.defocus-lastdf)>0.1: 
+#			print "New DF {} -> {}   ( {} -> {} )".format(lastdf,ctf.defocus,lastdfn,i)
+			refsbs=[im.process("math.simulatectf",{"voltage":ctf.voltage,"cs":ctf.cs,"defocus":ctf.defocus,"bfactor":ctf.bfactor,"ampcont":ctf.ampcont,"apix":ctf.apix,"phaseflip":0,"bispectrumfp":1}) for im in refsbs_org]
+#			print "New DF done ",ctf.defocus
+			lastdf=ctf.defocus
+			lastdfn=i
+		
+		# we make a list with the number of total elements we want
 		best=[(1e30,-1)]*(options.sep*3)		# we keep 3 possible classifications for each desired final output, the pare this down to the best nsep in the next stage
 		for j,refbs in enumerate(refsbs):
 			insort(best,(ptclbs.cmp("ccc",refbs),j))		# insert this comparison in sorted order
