@@ -142,7 +142,7 @@ def calc_ctf(defocus, bxsz=256, voltage=300, cs=4.7, apix=1. ,ampcnt=0.):
     
 	b2=bxsz/2
 	ds=1.0/(apix*bxsz)
-	ns=min(int(floor(.25/ds)),bxsz/2)
+	ns=min(int(np.floor(.25/ds)),bxsz/2)
 
 	ctfout=np.zeros(b2)
 	lbda = 12.2639 / np.sqrt(voltage * 1000.0 + 0.97845 * voltage * voltage)

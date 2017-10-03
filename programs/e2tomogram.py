@@ -378,7 +378,7 @@ def calc_loss( inp, imgs, allparams, options, mode="none", iid=[], ptrans=[], ma
 			e["pid"]=pid
 		
 		
-			if doplot:
+			if doplot and options.writetmp:
 				e.write_image(options.tmppath+"tmpptcls_calcloss.hdf", nid+pid*plotn)
 			
 			if nid in zzid:

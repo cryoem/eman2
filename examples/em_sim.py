@@ -10,16 +10,18 @@ from emimage2d import EMImage2DWidget
 from EMAN2 import *
 from emapplication import EMApp
 from emshape import EMShape
+from emplot2d import EMPlot2DWidget
 
 
 
 class Microscope(QtOpenGL.QGLWidget):
 	
-	def __init__(self, parent=None, imgwindow=None):
+	def __init__(self, parent=None, imgwindow=None, pltwindow=None):
 		QtOpenGL.QGLWidget.__init__(self, parent)
 		self.win_size=[500,1000]
 		self.setMinimumSize(self.win_size[0], self.win_size[1])
 		self.imgwindow=imgwindow
+		self.pltwindow=pltwindow
 		
 		#### set up the first two lens
 		self.source=s=.9
@@ -67,9 +69,12 @@ class Microscope(QtOpenGL.QGLWidget):
 		self.defocus=0
 		self.beam_lastxy=[0,0]
 		
+		if pltwindow:
+			pltwindow.show()
 		if imgwindow:
 			imgwindow.show()
 			img=self.draw_wave()
+			
 			
 
 	def initializeGL(self):
@@ -100,18 +105,9 @@ class Microscope(QtOpenGL.QGLWidget):
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 		glLoadIdentity()
 		
-		
-		
 		for l in self.lens:
 			self.draw_lens(l[0], l[1]);
 			
-		
-		#glColor3f( 1., .5, .5 );
-		#glLineWidth(2.)
-		#glBegin(GL_LINE_STRIP)
-		#for p in self.tmp_pts:	
-			#glVertex(p[0],p[1])
-		#glEnd()
 		
 		self.draw_path()
 		glFlush()
@@ -123,70 +119,86 @@ class Microscope(QtOpenGL.QGLWidget):
 		wid=2 ### width of the slits
 		w2=4 ### position of the slits
 		raw[sz/2-wid-w2+1:sz/2+wid-w2+1]=1
-		#raw[sz/2-wid-w2:sz/2+wid-w2]=1
 		raw[sz/2-wid+w2:sz/2+wid+w2]=1
 		wavelen=2. ### wave length
-		
+		#print raw-raw[::-1]
+		#raw=raw*0+1
 		#### load lens info 
 		mult=400 ### size multiplier from GL lens diagram to wave image
 		l=np.array(self.lens)[3:]
 		### use relative distance between lens instead of absolute positions
 		lens_gl=np.array([[l[i,0]-l[i+1,0], l[i,1]] for i in range(len(l)-1)])
 		lens=np.round(mult*lens_gl)
-
-		#### start wave propagation
-		imgs=[]
 		
-		#### from scattering point to the first lens
-		pln=np.round((self.lens[2][0]-l[0,0])*mult) ### z position of the first lens
-		ix=np.arange(sz) ## indices along x direction
-		iz=np.arange(1,pln)[:,None,None] ## indices along z direction
-		
-		## pln x sz x sz matrix
-		dst=np.sqrt((ix-ix[:,None])**2 +iz**2) 
-		#print ix.shape, iz.shape, dst.shape
-		
-		cpx=raw[:,None]*np.exp(-1j*2*np.pi*dst/wavelen)*(1/dst**2)
-		img=np.sum(cpx, axis=1)
-		imgs.append(img)
-		shapes=[]
-		vz= np.sum(lens[:,0])
-		for il,ln in enumerate(lens):
+		alldata=[]
+		for parallel in [False, True]:
+			#### start wave propagation
+			imgs=[]
 			
-			f=ln[1]
-			proj=imgs[-1][-1] ### projection of wave on lens
-			if f<0: ### aperture
-				proj_ps=proj.copy()
-				ap=lens_gl[il][1]+4
-				clip=int((1-ap)*sz)/2
-				proj_ps[:clip]=0
-				proj_ps[-clip:]=0
-				#print ln, ap, clip, len(proj_ps[:clip]), len(proj_ps[-clip:])
-				#print ln, lens_gl[il][1]
-				shapes.append(EMShape(("rect",.5, .5, 1, 0, vz-2, clip, vz+2, 2)))
-				shapes.append(EMShape(("rect",.5, .5, 1, sz-clip, vz-2, sz, vz+2, 2)))
-				
-			else: ### lens
-				ps=((ix-sz/2)**2)/(f*2)*(2*np.pi/wavelen) ### phase shift
-				proj_ps=proj*np.exp(-1j*(np.pi-ps)) ### projection after phase shift
-				shapes.append(EMShape(("rect",1, .5, .5, 0, vz-2, sz, vz+2, 2)))
-
-			zmax=ln[0] 
-			iz=np.arange(1,zmax)[:,None,None] ## indices along z direction
-			dst=np.sqrt((ix-ix[:,None])**2 +iz**2)
-			cpx1=proj_ps[:,None]*np.exp(-1j*2*np.pi*dst/wavelen)*(1/dst**2)
-
-			img=np.sum(cpx1, axis=1)
+			#### from scattering point to the first lens
+			pln=np.round((self.lens[2][0]-l[0,0])*mult) ### z position of the first lens
+			ix=np.arange(sz) ## indices along x direction
+			iz=np.arange(1,pln)[:,None,None] ## indices along z direction
+			
+			## pln x sz x sz matrix
+			dst=np.sqrt((ix-ix[:,None])**2 +iz**2) 
+			#print ix.shape, iz.shape, dst.shape, raw.shape, (ix-ix[:,None]).shape
+			#pmult=1e-3
+			if parallel:
+				cpx=np.exp(-1j*2*np.pi*(iz+np.zeros((sz, sz)))/wavelen)*np.mean(raw)*(1/iz**2)
+			else:
+				cpx=raw[:,None]*np.exp(-1j*2*np.pi*dst/wavelen)*(1/dst**2)
+			
+			
+			img=np.sum(cpx, axis=1)
 			imgs.append(img)
-			vz-=zmax
-		#print [m.shape for m in imgs]
-		final=np.vstack(imgs)
-		final/=np.sum(abs(final),axis=1)[:,None]
-		img=abs(final)[::-1,:].copy()
+			shapes=[]
+			vz= np.sum(lens[:,0])-len(lens)
+			for il,ln in enumerate(lens):
+				
+				f=ln[1]
+				proj=imgs[-1][-1] ### projection of wave on lens
+				if f<0: ### aperture
+					proj_ps=proj.copy()
+					ap=lens_gl[il][1]+4
+					clip=int((1-ap)*sz)/2
+					proj_ps[:clip]=0
+					proj_ps[-clip:]=0
+					#print ln, ap, clip, len(proj_ps[:clip]), len(proj_ps[-clip:])
+					shapes.append(EMShape(("rect",.5, .5, 1, 0, vz-2, clip, vz+2, 2)))
+					shapes.append(EMShape(("rect",.5, .5, 1, sz-clip, vz-2, sz, vz+2, 2)))
+					
+				else: ### lens
+					ps=((ix-sz/2)**2)/(f*2)*(2*np.pi/wavelen) ### phase shift
+					proj_ps=proj*np.exp(-1j*(np.pi-ps)) ### projection after phase shift
+					shapes.append(EMShape(("rect",1, .5, .5, 0, vz-2, sz, vz+2, 2)))
+
+				zmax=ln[0] 
+				iz=np.arange(1,zmax)[:,None,None] ## indices along z direction
+				dst=np.sqrt((ix-ix[:,None])**2 +iz**2)
+				cpx1=proj_ps[:,None]*np.exp(-1j*2*np.pi*dst/wavelen)*(1/dst**2)
+
+				img=np.sum(cpx1, axis=1)
+				imgs.append(img)
+				vz-=zmax-1
+			#print [m.shape for m in imgs]
+			final=np.vstack(imgs)
+			#final/=np.sum(abs(final),axis=1)[:,None]
+			img=abs(final)[::-1,:].copy()
+			alldata.append(img)
 		#print img.shape
+		
+		nrm=(np.sum(alldata[0], axis=1)+np.sum(alldata[1], axis=1))/sz
+		for i in [0,1]: alldata[i]/=nrm[:,None]
+		
 		self.imgwindow.shapes={ i:shapes[i] for i in range(len(shapes)) }
 		self.imgwindow.shapechange=1
-		self.imgwindow.set_data(from_numpy(img))
+		self.imgwindow.set_data([from_numpy(d) for d in alldata])
+		
+		if self.pltwindow:
+			self.pltwindow.set_data([np.arange(sz)-sz/2, alldata[0][0,:]], "scatter", linetype=0)
+			self.pltwindow.set_data([np.arange(sz)-sz/2, alldata[1][0,:]], "parallel", linetype=0)
+			self.pltwindow.set_data([np.arange(sz)-sz/2, alldata[1][0,:]+alldata[0][0,:]], "contrast", linetype=0)
 		return img
 
 
@@ -585,7 +597,10 @@ class Microscope(QtOpenGL.QGLWidget):
 			
 			if self.imgwindow:
 				img=self.draw_wave()
-
+	
+	def closeEvent(self, event):
+		print "Exit.."
+		exit()
 
 class MainWindow(QtGui.QMainWindow):
 	
@@ -593,10 +608,12 @@ class MainWindow(QtGui.QMainWindow):
 		QtGui.QMainWindow.__init__(self)
 		
 		self.imgview = EMImage2DWidget()
+		self.pltview = EMPlot2DWidget()
 		#img=np.random.rand(512,512)
 		#self.imgview.set_data(from_numpy(img))
 		
-		widget = Microscope(self, self.imgview)    
+		widget = Microscope(self, self.imgview, self.pltview)
+		self.closeEvent=widget.closeEvent
 		self.setCentralWidget(widget)
 
 		
