@@ -9,15 +9,19 @@ from PyQt4.QtCore import Qt
 from emimage2d import EMImage2DWidget
 from EMAN2 import *
 from emapplication import EMApp
+from emshape import EMShape
+from emplot2d import EMPlot2DWidget
+
 
 
 class Microscope(QtOpenGL.QGLWidget):
 	
-	def __init__(self, parent=None, imgwindow=None):
+	def __init__(self, parent=None, imgwindow=None, pltwindow=None):
 		QtOpenGL.QGLWidget.__init__(self, parent)
 		self.win_size=[500,1000]
 		self.setMinimumSize(self.win_size[0], self.win_size[1])
 		self.imgwindow=imgwindow
+		self.pltwindow=pltwindow
 		
 		#### set up the first two lens
 		self.source=s=.9
@@ -29,15 +33,33 @@ class Microscope(QtOpenGL.QGLWidget):
 		
 		### y_pos, focal_pos
 		self.lens=[
+			### condenser lens 1
 			[s-d0, f0],
+			
+			### condenser lens 2
 			[s-d0-d1, f1],
 			
-			[0.1, -1], ### f==-1 : specimen stage
+			### f==-1 : specimen stage
+			[0.1, -1], 
 			
+			### objective lens
 			[-0.03, .07],
+			
+			### objective aperture
+			### for aperture, -4<f<-3. aperture size = f+4 (from 0 to 1)
+			[-0.17, -3.8],  
+			
+			### intermediate lens
 			[-0.3, .07],
+			
+			### intermediate aperture
+			[-0.43, -3.5],  
+			
+			### projector lens
 			[-0.56, .07],
-			[-.9, -2] ### f==-2 : detector
+			
+			### f==-2 : detector
+			[-.9, -2] 
 			]
 		
 		self.tmp_pts=[]
@@ -47,10 +69,13 @@ class Microscope(QtOpenGL.QGLWidget):
 		self.defocus=0
 		self.beam_lastxy=[0,0]
 		
+		if pltwindow:
+			pltwindow.show()
 		if imgwindow:
 			imgwindow.show()
 			img=self.draw_wave()
-			self.imgwindow.set_data(from_numpy(img))
+			
+			
 
 	def initializeGL(self):
 		glClearColor(1.0, 1.0, 1.0, 1.0)
@@ -80,76 +105,101 @@ class Microscope(QtOpenGL.QGLWidget):
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 		glLoadIdentity()
 		
-		
-		
 		for l in self.lens:
 			self.draw_lens(l[0], l[1]);
 			
-		
-		#glColor3f( 1., .5, .5 );
-		#glLineWidth(2.)
-		#glBegin(GL_LINE_STRIP)
-		#for p in self.tmp_pts:	
-			#glVertex(p[0],p[1])
-		#glEnd()
 		
 		self.draw_path()
 		glFlush()
 		
 	def draw_wave(self):
-		sz=256
-		raw=np.zeros(sz)
-		wid=2
-		w2=4
-		raw[sz/2-wid-w2:sz/2+wid-w2]=1
+		
+		sz=161 ### length of x-axis
+		raw=np.zeros(sz) ### input signal
+		wid=2 ### width of the slits
+		w2=4 ### position of the slits
+		raw[sz/2-wid-w2+1:sz/2+wid-w2+1]=1
 		raw[sz/2-wid+w2:sz/2+wid+w2]=1
-
-		wavelen=2.
-		
-		
-		mult=400
-#		pln=np.round(.13*mult)
-#		lens=np.round(np.array([[.27,.07], [.26, .09], [.34, .07]])*mult)
-#		print pln, lens
+		wavelen=2. ### wave length
+		#print raw-raw[::-1]
+		#raw=raw*0+1
+		#### load lens info 
+		mult=400 ### size multiplier from GL lens diagram to wave image
 		l=np.array(self.lens)[3:]
-		pln=np.round((self.lens[2][0]-l[0,0])*mult)
-		lens=np.round(mult*np.array([[l[i,0]-l[i+1,0], l[i,1]] for i in range(len(l)-1)]))
-#		print pln,lens
+		### use relative distance between lens instead of absolute positions
+		lens_gl=np.array([[l[i,0]-l[i+1,0], l[i,1]] for i in range(len(l)-1)])
+		lens=np.round(mult*lens_gl)
 		
-		imgs=[]
-
-		ix=np.arange(sz)
-		iz=np.arange(1,pln)[:,None,None]
-
-		dst=np.sqrt((ix-ix[:,None])**2 +iz**2)
-		cpx=raw[:,None]*np.exp(-1j*2*np.pi*dst/wavelen)*(1/dst**2)
-		img=np.sum(cpx, axis=1)
-		imgs.append(img)
-		for il,ln in enumerate(lens):
-			f=ln[1]
-			ps=((ix-sz/2)**2)/(f*2)*(2*np.pi/wavelen)
-			proj=imgs[-1][-1]
-			proj_ps=proj*np.exp(-1j*(np.pi-ps))
-
-			img0=[]
-			zmax=ln[0]
-			iz=np.arange(1,zmax)[:,None,None]
-
-			dst=np.sqrt((ix-ix[:,None])**2 +iz**2)
-			cpx1=proj_ps[:,None]*np.exp(-1j*2*np.pi*dst/wavelen)*(1/dst**2)
-
-			img=np.sum(cpx1, axis=1)
-
+		alldata=[]
+		for parallel in [False, True]:
+			#### start wave propagation
+			imgs=[]
+			
+			#### from scattering point to the first lens
+			pln=np.round((self.lens[2][0]-l[0,0])*mult) ### z position of the first lens
+			ix=np.arange(sz) ## indices along x direction
+			iz=np.arange(1,pln)[:,None,None] ## indices along z direction
+			
+			## pln x sz x sz matrix
+			dst=np.sqrt((ix-ix[:,None])**2 +iz**2) 
+			#print ix.shape, iz.shape, dst.shape, raw.shape, (ix-ix[:,None]).shape
+			#pmult=1e-3
+			if parallel:
+				cpx=np.exp(-1j*2*np.pi*(iz+np.zeros((sz, sz)))/wavelen)*np.mean(raw)*(1/iz**2)
+			else:
+				cpx=raw[:,None]*np.exp(-1j*2*np.pi*dst/wavelen)*(1/dst**2)
+			
+			
+			img=np.sum(cpx, axis=1)
 			imgs.append(img)
+			shapes=[]
+			vz= np.sum(lens[:,0])-len(lens)
+			for il,ln in enumerate(lens):
+				
+				f=ln[1]
+				proj=imgs[-1][-1] ### projection of wave on lens
+				if f<0: ### aperture
+					proj_ps=proj.copy()
+					ap=lens_gl[il][1]+4
+					clip=int((1-ap)*sz)/2
+					proj_ps[:clip]=0
+					proj_ps[-clip:]=0
+					#print ln, ap, clip, len(proj_ps[:clip]), len(proj_ps[-clip:])
+					shapes.append(EMShape(("rect",.5, .5, 1, 0, vz-2, clip, vz+2, 2)))
+					shapes.append(EMShape(("rect",.5, .5, 1, sz-clip, vz-2, sz, vz+2, 2)))
+					
+				else: ### lens
+					ps=((ix-sz/2)**2)/(f*2)*(2*np.pi/wavelen) ### phase shift
+					proj_ps=proj*np.exp(-1j*(np.pi-ps)) ### projection after phase shift
+					shapes.append(EMShape(("rect",1, .5, .5, 0, vz-2, sz, vz+2, 2)))
+
+				zmax=ln[0] 
+				iz=np.arange(1,zmax)[:,None,None] ## indices along z direction
+				dst=np.sqrt((ix-ix[:,None])**2 +iz**2)
+				cpx1=proj_ps[:,None]*np.exp(-1j*2*np.pi*dst/wavelen)*(1/dst**2)
+
+				img=np.sum(cpx1, axis=1)
+				imgs.append(img)
+				vz-=zmax-1
+			#print [m.shape for m in imgs]
+			final=np.vstack(imgs)
+			#final/=np.sum(abs(final),axis=1)[:,None]
+			img=abs(final)[::-1,:].copy()
+			alldata.append(img)
+		#print img.shape
 		
-		final=np.vstack(imgs)
-		final/=np.sum(abs(final),axis=1)[:,None]
-		return abs(final)[::-1,:].copy()
-
-
-
-
-
+		nrm=(np.sum(alldata[0], axis=1)+np.sum(alldata[1], axis=1))/sz
+		for i in [0,1]: alldata[i]/=nrm[:,None]
+		
+		self.imgwindow.shapes={ i:shapes[i] for i in range(len(shapes)) }
+		self.imgwindow.shapechange=1
+		self.imgwindow.set_data([from_numpy(d) for d in alldata])
+		
+		if self.pltwindow:
+			self.pltwindow.set_data([np.arange(sz)-sz/2, alldata[0][0,:]], "scatter", linetype=0)
+			self.pltwindow.set_data([np.arange(sz)-sz/2, alldata[1][0,:]], "parallel", linetype=0)
+			self.pltwindow.set_data([np.arange(sz)-sz/2, alldata[1][0,:]+alldata[0][0,:]], "contrast", linetype=0)
+		return img
 
 
 	
@@ -207,8 +257,12 @@ class Microscope(QtOpenGL.QGLWidget):
 				d0=s-l[0]
 			
 				#### deal with parallel beams
-				if l[1]<0 or abs(1./l[1]-1./d0)<1./bign:
+				if l[1]==-1 or l[1]==-2 or abs(1./l[1]-1./d0)<1./bign:
 					d1=bign
+					
+				elif l[1]<-3 and l[1]>-4:
+					d1=-d0
+					
 				else:
 					d1=1./(1./l[1]-1./d0)
 				
@@ -299,8 +353,14 @@ class Microscope(QtOpenGL.QGLWidget):
 						mult=abs(1./w)
 					
 					for sign in [-1,1]:
-
-						self.draw_vertex(sign*x0, s0)
+						if il>0 and s0>self.lens[il-1][0]:
+							s1=self.lens[il-1][0]
+							x1=w*((s0-s1)/(s0-l[0]))
+							self.draw_vertex(sign*x1, s1)
+							#print l, self.lens[il-1], s0, x0
+						else:
+							self.draw_vertex(sign*x0, s0)
+						
 						if abs(w)>maxwidth: ### input beam miss next lens
 							self.draw_vertex(sign*xm, ym)
 						
@@ -353,7 +413,7 @@ class Microscope(QtOpenGL.QGLWidget):
 		pts=[]
 		
 		if focal>=0: ### real lens
-			arc=(1./focal)/200.
+			arc=(1./focal)/300.
 			t=np.arange(-np.pi*arc, np.pi*arc+1e-5, np.pi*arc/20.)+np.pi/2.
 			p0=np.vstack([np.cos(t), np.sin(t)]).T
 			p0[:,1]-=p0[0,1]
@@ -416,6 +476,28 @@ class Microscope(QtOpenGL.QGLWidget):
 			glVertex(2, y, 0)
 			glEnd()
 			
+		elif focal<=-3 and focal>-4: ### aperture
+			asize=1-(focal+4)
+			
+			dx=scale/2.
+			dy=.03
+			cc=dx*(.5*asize+.25)
+			for lr in [-1, 1]:
+				pts=np.array([[dx,dy],[dx-cc,dy],[dx-cc*.9,dy/2.],
+						[dx-cc,0], [dx,0], [dx,dy]])
+				pts[:,0]*=lr
+				pts+=[0,y]
+				glColor3f( .8, .8, 1 )
+				glEnableClientState(GL_VERTEX_ARRAY)
+				glVertexPointerf(pts.tolist())
+				glDrawArrays(GL_POLYGON, 0, len(pts))
+				glColor3f( .1, .1, 1 )
+				glLineWidth(3.)
+				glEnableClientState(GL_VERTEX_ARRAY)
+				glVertexPointerf(pts.tolist())
+				glDrawArrays(GL_LINE_STRIP, 0, len(pts))
+			
+			
 			
 		return pts
 		
@@ -434,18 +516,27 @@ class Microscope(QtOpenGL.QGLWidget):
 			self.hold_shift=False
 			
 		#print p
+		self.drag_lens=-1
 		for i,l in enumerate(self.lens):
 			#print abs(p[1]-l[0])
 			if abs(p[1]-l[0])<0.05:
 				self.drag_lens=i
 				
 				break
-			
-		if self.lens[self.drag_lens][1]<=0:
+		
+		#if modifiers == QtCore.Qt.ControlModifier:
+			#if self.drag_lens>2:
+				#print "Removing lens: ", self.drag_lens
+				
+		if self.drag_lens==-1:
+			return
+		
+		l=self.lens[self.drag_lens][1]
+		if l>0 or (l<-3 and l>-4):
+			pass
+		else:
 			self.hold_shift=False
-		#self.tmp_pts.append(p.tolist())
-		#self.updateGL();
-
+		
 
 	def mouseMoveEvent(self, QMouseEvent):
 		if self.drag_lens<0:
@@ -453,10 +544,20 @@ class Microscope(QtOpenGL.QGLWidget):
 		else:
 			p=self.scr_to_img(QMouseEvent.pos())
 			if self.hold_shift:
-				dy=abs(p[1]-self.lens[self.drag_lens][0])
-				dy=min(.18, dy)
-				dy=0.01/max(.01, dy)
-				self.lens[self.drag_lens][1]=dy
+				l=self.lens[self.drag_lens][1]
+				if l>0:
+					### target is a lens
+					### adjust strength of lens
+					dy=abs(p[1]-self.lens[self.drag_lens][0])
+					dy=min(.18, dy)
+					dy=0.01/max(.01, dy)
+					self.lens[self.drag_lens][1]=dy
+					
+				elif (l<-3 and l>-4):
+					### target is an aperture
+					dy=abs(p[1]-self.lens[self.drag_lens][0])
+					dy=min(.95, max(.05, dy))
+					self.lens[self.drag_lens][1]=-3-dy
 			else:
 				err=.06
 				ypos=p[1]
@@ -496,9 +597,10 @@ class Microscope(QtOpenGL.QGLWidget):
 			
 			if self.imgwindow:
 				img=self.draw_wave()
-				self.imgwindow.set_data(from_numpy(img))
-
-
+	
+	def closeEvent(self, event):
+		print "Exit.."
+		exit()
 
 class MainWindow(QtGui.QMainWindow):
 	
@@ -506,10 +608,12 @@ class MainWindow(QtGui.QMainWindow):
 		QtGui.QMainWindow.__init__(self)
 		
 		self.imgview = EMImage2DWidget()
-		img=np.random.rand(512,512)
-		self.imgview.set_data(from_numpy(img))
+		self.pltview = EMPlot2DWidget()
+		#img=np.random.rand(512,512)
+		#self.imgview.set_data(from_numpy(img))
 		
-		widget = Microscope(self, self.imgview)    
+		widget = Microscope(self, self.imgview, self.pltview)
+		self.closeEvent=widget.closeEvent
 		self.setCentralWidget(widget)
 
 		

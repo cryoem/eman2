@@ -7,7 +7,6 @@ source:
 
 requirements:
     {% set reqs_common = [
-            "szip",        # [win]
             "msinttypes",  # [win]
             "python 2.7.*",
             "boost 1.61.*",

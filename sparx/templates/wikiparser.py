@@ -1302,7 +1302,6 @@ def main():
 	# Define command categories used in GUI
 	# --------------------------------------------------------------------------------
 	sxcmd_category_list = []
-	sxcmd_category_list.append(SXcmd_category("sxc_movie", "Movie Micrograph", "movie frame alignemnt, and drift assessment"))
 	sxcmd_category_list.append(SXcmd_category("sxc_cter", "CTF", "ctf estinatim, and ctf assessment"))
 	sxcmd_category_list.append(SXcmd_category("sxc_window", "Particle Stack", "particle picking, and particle windowing"))
 	sxcmd_category_list.append(SXcmd_category("sxc_isac", "2D Clustering", "2d clustering with isac, and post-processing"))
@@ -1310,6 +1309,7 @@ def main():
 	sxcmd_category_list.append(SXcmd_category("sxc_meridien", "3D Refinement", "3d refinement and post-processing"))
 	sxcmd_category_list.append(SXcmd_category("sxc_sort3d", "3D Clustering", "3d variability, and 3d clustering protocol I & II"))
 	sxcmd_category_list.append(SXcmd_category("sxc_localres", "Local Resolution", "local resolution, and local filter"))
+	sxcmd_category_list.append(SXcmd_category("sxc_movie", "Movie Micrograph", "movie frame alignemnt, and drift assessment"))
 	sxcmd_category_list.append(SXcmd_category("sxc_utilities", "Utilities", "miscellaneous utlitity commands"))
 
 	# --------------------------------------------------------------------------------
@@ -1317,17 +1317,6 @@ def main():
 	# and create gui generation parameter
 	# --------------------------------------------------------------------------------
 	sxcmd_config_list = []
-
-	# --------------------------------------------------------------------------------
-	sxcmd_category = "sxc_movie"
-
-	sxcmd_role = "sxr_pipe"
-	sxcmd_config_list.append(SXcmd_config("../doc/gui_unblur.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, is_submittable = False))
-
-	sxcmd_role = "sxr_util"
-	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
-	sxcmd_config_list.append(SXcmd_config("../doc/unblur.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
-	sxcmd_config_list.append(SXcmd_config("../doc/summovie.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 
 	# --------------------------------------------------------------------------------
 	sxcmd_category = "sxc_cter"
@@ -1391,8 +1380,8 @@ def main():
 	sxcmd_role = "sxr_pipe"
 	# sxcmd_config_list.append(SXcmd_config("../doc/meridien.doku.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_meridien()))
-	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_refine3d_postprocess()))
 	sxcmd_config_list.append(SXcmd_config("../doc/gui_meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, is_submittable = False))
+	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_refine3d_postprocess()))
 
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
@@ -1433,6 +1422,17 @@ def main():
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_adaptive_mask3d()))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_refine3d_angular_distribution()))
+
+	# --------------------------------------------------------------------------------
+	sxcmd_category = "sxc_movie"
+
+	sxcmd_role = "sxr_pipe"
+	sxcmd_config_list.append(SXcmd_config("../doc/unblur.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/gui_unblur.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, is_submittable = False))
+
+	sxcmd_role = "sxr_util"
+	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
+	sxcmd_config_list.append(SXcmd_config("../doc/summovie.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 
 	# --------------------------------------------------------------------------------
 	sxcmd_category = "sxc_utilities"

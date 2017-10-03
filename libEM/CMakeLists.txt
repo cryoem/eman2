@@ -130,10 +130,6 @@ endif()
 
 include(${CMAKE_SOURCE_DIR}/cmake/HDF5.cmake)
 target_link_libraries(EM2 HDF5::HDF5)
-if(WIN32)
-	find_package(SZLIB REQUIRED)
-	target_link_libraries(EM2 SZLIB::SZLIB)
-endif()
 
 option(ENABLE_PNG "enable PNG support" ON)
 if(ENABLE_PNG)

@@ -12,4 +12,4 @@ bash $MINICONDA_FILE -b
 source ${HOME}/miniconda2/bin/activate root
 conda config --set show_channel_urls true
 
-conda install cmake=3.8 -c conda-forge --yes --quiet
+conda install cmake -c anaconda --yes --quiet

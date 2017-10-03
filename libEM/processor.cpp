@@ -6339,6 +6339,7 @@ EMData* CtfSimProcessor::process(const EMData * const image) {
 		int nx=fft->get_xsize();
 		int ny=fft->get_ysize();
 		EMData *ret=new EMData((nx-2)/2,ny*fp,1);
+//		for (int j=ny*2-4; j<ctfc.size(); j++) ctfc[j]*=exp(-pow(j-ny*2+4,2.0)/8.0);	// soft Gaussian falloff to CTF modification to avoid corner/edge effects
 		for (int k=0; k<fp; k++) {
 			EMData *plnf=fft->get_clip(Region(0,0,k,nx,ny,1));
 			plnf->set_complex(1);
@@ -6347,29 +6348,33 @@ EMData* CtfSimProcessor::process(const EMData * const image) {
 //			plnf->apply_radial_func(0,0.25f/fft->get_ysize(),ctfc,1);
 			for (int jy=-ny/2; jy<ny/2; jy++) {
 				for (int jx=0; jx<nx/2; jx++) {
+					if (jx==0 && jy<0) continue;
 					int r1=Util::hypot_fast_int(jx*4,jy*4);
-					int r2=k*4;
-					float ctfmod=ctfc[r1]*ctfc[r2];
-//					printf("%d %d\t%d\t%f\n",jx,jy,r1,ctfc[r1]);
-					// To make this rotationally symmetric we have to integrate over the j+k vector
-					float avgr=0.0f;
-					float norm=0.0f;
-					for (float ang=0.0f; ang<2.0*M_PI; ang+=2.0*M_PI/float(k*8)) {
-						float jkx=jx*4+k*4.0*cos(ang);
-						float jky=jy*4+k*4.0*sin(ang);
+					int r2=(k+2)*4;
+					int r3=Util::hypot_fast_int((jx+k+2)*4,jy*4);
+					float ctfmod=ctfc[r1]*ctfc[r2]*ctfc[r3];
+//					if (jx==0|| jx==1) printf("%d %d\t%d %d %d\t%g %g %g\t%g\n",jx,jy,r1,r2,r3,ctfc[r1],ctfc[r2],ctfc[r3],ctfmod);
+					
+					// Turns out that it shouldn't BE rotationally symmetric
+// 					// To make this rotationally symmetric we have to integrate over the j+k vector
+// 					float avgr=0.0f;
+// 					float norm=0.0f;
+// 					for (float ang=0.0f; ang<2.0*M_PI; ang+=2.0*M_PI/float(k*8)) {
+// 						float jkx=jx*4+k*4.0*cos(ang);
+// 						float jky=jy*4+k*4.0*sin(ang);
+// 
+// 						int r3=int(hypot(jkx,jky)+0.5);
+// 						avgr+=ctfc[r3];
+// 						norm+=1.0;
+// 					}
+// 					ctfmod*=(avgr/norm);
 
-						int r3=int(hypot(jkx,jky)+0.5);
-						avgr+=ctfc[r3];
-						norm+=1.0;
-					}
-//					ctfmod*=(avgr/norm);
-
-//					plnf->set_complex_at(jx,jy,plnf->get_complex_at(jx,jy));
 					plnf->set_complex_at(jx,jy,plnf->get_complex_at(jx,jy)*ctfmod);
+//					plnf->set_complex_at(jx,jy,plnf->get_complex_at(jx,jy);
 //					plnf->set_complex_at(jx,jy,ctfmod);
 				}
 			}
-			plnf->write_image("tst.hdf",-1);
+//			plnf->write_image("tst.hdf",-1);
 			
 			EMData *pln=plnf->do_ift();
 			pln->process_inplace("xform.phaseorigin.tocenter");
@@ -12692,12 +12697,13 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 	
 				for (int jy=-nky; jy<nky; jy++) {
 					for (int jx=0; jx<nkx; jx++) {
+						if (jx==0 && jy<0) continue;		// this is critical!  it avoids double-computation along kx=0
 // 						int kx=jkx-jx;
 // 						int ky=jky-jy;
 						int jkx=jx+kx;
 						int jky=jy+ky;
 	
-						if (abs(jkx)>nkx || abs(jky)>nky) continue;
+//						if (abs(jkx)>nkx || abs(jky)>nky) continue;	// we go outside this range
 						complex<double> v1 = (complex<double>)cimage2->get_complex_at(jx,jy);
 						complex<double> v2 = (complex<double>)cimage2->get_complex_at(kx,ky);
 						complex<double> v3 = (complex<double>)cimage2->get_complex_at(jkx,jky);
@@ -12708,10 +12714,10 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 			}
 			
 			// this fixes an issue with adding in the "special" Fourier locations ... sort of
- 			for (int jy=-nky; jy<nky; jy++) {
- 				ret->set_complex_at(0,jy,ret->get_complex_at(0,jy)/sqrt(2.0f));
- 				ret->set_complex_at(nkx-1,jy,ret->get_complex_at(nkx-1,jy)/sqrt(2.0f));
- 			}
+//  			for (int jy=-nky; jy<nky; jy++) {
+//  				ret->set_complex_at(0,jy,ret->get_complex_at(0,jy)/sqrt(2.0f));
+//  				ret->set_complex_at(nkx-1,jy,ret->get_complex_at(nkx-1,jy)/sqrt(2.0f));
+//  			}
 			// simple fixed high-pass filter to get rid of gradient effects
 			for (int jy=-2; jy<=2; jy++) {
 				for (int jx=0; jx<=2; jx++) {
@@ -12757,12 +12763,13 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 	
 				for (int jy=-nky; jy<nky; jy++) {
 					for (int jx=0; jx<nkx; jx++) {
+						if (jx==0 && jy<0) continue;				// this is critical!  it avoids double-computation along kx=0
 // 						int kx=jkx-jx;
 // 						int ky=jky-jy;
 						int jkx=jx+kx;
 						int jky=jy+ky;
 	
-						if (abs(jkx)>nkx || abs(jky)>nky) continue;
+//						if (abs(jkx)>nkx || abs(jky)>nky) continue;
 						complex<double> v1 = (complex<double>)cimage2->get_complex_at(jx,jy);
 						complex<double> v2 = (complex<double>)cimage2->get_complex_at(kx,ky);
 						complex<double> v3 = (complex<double>)cimage2->get_complex_at(jkx,jky);
@@ -12773,16 +12780,17 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 			}
 			
 			// this fixes an issue with adding in the "special" Fourier locations ... sort of
-			for (int jy=-nky; jy<nky; jy++) {
-				ret->set_complex_at(0,jy,ret->get_complex_at(0,jy)/sqrt(2.0f));
-				ret->set_complex_at(nkx-1,jy,ret->get_complex_at(nkx-1,jy)/sqrt(2.0f));
-			}
+// 			for (int jy=-nky; jy<nky; jy++) {
+// 				ret->set_complex_at(0,jy,ret->get_complex_at(0,jy)/sqrt(2.0f));
+// 				ret->set_complex_at(nkx-1,jy,ret->get_complex_at(nkx-1,jy)/sqrt(2.0f));
+// 			}
 			// simple fixed high-pass filter to get rid of gradient effects
 			for (int jy=-2; jy<=2; jy++) {
 				for (int jx=0; jx<=2; jx++) {
 					ret->set_complex_at(jx,jy,0.0f);
 				}
 			}
+//			ret->write_image("tst2.hdf",-1);
 			EMData *pln=ret->do_ift();
 			pln->process_inplace("xform.phaseorigin.tocenter");
 			pln->process_inplace("normalize");

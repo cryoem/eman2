@@ -466,7 +466,7 @@ to achieve the specified resolution, then a certain amount of rotational 'smeari
 the actual map quality. This can achieve maximum liklihood-like effects without the substantial compuations this can entail. If you are concerned by this, or have many more particles than \
 are really required to achieve the targeted resolution, you may consider manually specifiying --sep 1, which will override this automatic behavior.</p>".format(sep=options.sep))
 
-	# in bispectrum mode, we make classes for both the full sphere
+	# in bispectrum mode, we make classes for the full sphere
 	if options.bispec: incmir=1
 	else: incmir=0
 	

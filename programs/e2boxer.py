@@ -1815,7 +1815,7 @@ class GUIBoxer(QtGui.QWidget):
 			self.setlist.setCurrentRow(i)
 #			self.__updateBoxes()
 			
-		else: prog.setValue(len(self.filename))
+		else: prog.setValue(len(self.filenames))
 		
 		self.restore_boxes()
 

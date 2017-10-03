@@ -596,10 +596,11 @@ void EMData::clip_inplace(const Region & area,const float& fill_value)
 EMData *EMData::get_clip(const Region & area, const float fill) const
 {
 	ENTERFUNC;
-	if (get_ndim() != area.get_ndim()) {
-		LOGERR("cannot get %dD clip out of %dD image", area.get_ndim(),get_ndim());
-		return 0;
-	}
+	// Steve: removed check 10/1/17. Prevented some sane operations, like a 3d clip which was actually 2d from a 2d volume
+// 	if (get_ndim() != area.get_ndim()) {
+// 		LOGERR("cannot get %dD clip out of %dD image", area.get_ndim(),get_ndim());
+// 		return 0;
+// 	}
 
 	EMData *result = new EMData();
 

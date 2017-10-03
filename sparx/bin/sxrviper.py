@@ -110,7 +110,7 @@ def identify_outliers(myid, main_node, rviper_iter, no_of_viper_runs_analyzed_to
 
 	if do_calculation:
 		list_of_independent_viper_run_indices_used_for_outlier_elimination = calculate_list_of_independent_viper_run_indices_used_for_outlier_elimination(no_of_viper_runs_analyzed_together,
-			no_of_viper_runs_analyzed_together_from_user_options, masterdir, rviper_iter, criterion_name)
+			no_of_viper_runs_analyzed_together_from_user_options, masterdir, rviper_iter, criterion_name, symc)
 
 	# only master has the actual list: list_of_independent_viper_run_indices_used_for_outlier_elimination
 	# only master has the actual list: list_of_independent_viper_run_indices_used_for_outlier_elimination
@@ -896,8 +896,8 @@ output_directory: directory name into which the output files will be written.  I
 
 			if runs_iter >= (no_of_viper_runs_analyzed_together_from_user_options - 1):
 				increment_for_current_iteration = identify_outliers(myid, main_node, rviper_iter,
-				no_of_viper_runs_analyzed_together, no_of_viper_runs_analyzed_together_from_user_options, masterdir,
-				bdb_stack_location, outlier_percentile, criterion_name, outlier_index_threshold_method, angle_threshold)
+					no_of_viper_runs_analyzed_together, no_of_viper_runs_analyzed_together_from_user_options, masterdir,
+					bdb_stack_location, outlier_percentile, criterion_name, outlier_index_threshold_method, angle_threshold, symc)
 
 				if increment_for_current_iteration == MUST_END_PROGRAM_THIS_ITERATION:
 					break

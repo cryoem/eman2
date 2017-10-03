@@ -414,12 +414,12 @@ class SXMenuItemBtnAreaWidget(QWidget):
 		# Create widgets for pipeline command category button area and miscellaneous function button area
 		sxcmd_category_btn_subarea_widget = self.create_sxmenu_item_btn_subarea_widget()
 		misc_func_btn_subarea_widget = self.create_sxmenu_item_btn_subarea_widget()
+		self.add_sxmenu_item_btn_widget(sxconst_set, sxcmd_category_btn_subarea_widget)
 		for sxcmd_category in sxcmd_category_list:
-			if sxcmd_category.name != "sxc_utilities":
+			if sxcmd_category.name != "sxc_utilities" and sxcmd_category.name != "sxc_movie":
 				self.add_sxmenu_item_btn_widget(sxcmd_category, sxcmd_category_btn_subarea_widget)
 			else: # assert(sxcmd_category.name == "sxc_utilities")
 				self.add_sxmenu_item_btn_widget(sxcmd_category, misc_func_btn_subarea_widget)
-		self.add_sxmenu_item_btn_widget(sxconst_set, misc_func_btn_subarea_widget)
 
 		global_layout = QVBoxLayout()
 		global_layout.setContentsMargins(0, 0, 0, 0)
@@ -2226,15 +2226,15 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		self.sxmenu_item_widget_stacked_layout = QStackedLayout()
 		central_layout.addLayout(self.sxmenu_item_widget_stacked_layout, stretch = 1)
 
+		# Construct and add a widget for project constants settings
+		self.sxconst_set.widget = SXConstSetWidget(self.sxconst_set, self.sxcmd_category_list)
+		self.sxmenu_item_widget_stacked_layout.addWidget(self.sxconst_set.widget)
+
 		# Construct and add widgets for sx command categories
 		for sxcmd_category in self.sxcmd_category_list:
 			# Create SXCmdCategoryWidget for this command category
 			sxcmd_category.widget = SXCmdCategoryWidget(self.sxconst_set, sxcmd_category)
 			self.sxmenu_item_widget_stacked_layout.addWidget(sxcmd_category.widget)
-
-		# Construct and add a widget for project constants settings
-		self.sxconst_set.widget = SXConstSetWidget(self.sxconst_set, self.sxcmd_category_list)
-		self.sxmenu_item_widget_stacked_layout.addWidget(self.sxconst_set.widget)
 
 		# Construct and add a widget for GUI application information
 		self.sxinfo.widget = SXInfoWidget()
