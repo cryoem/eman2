@@ -6442,7 +6442,7 @@ def main():
 	parser.add_option("--img_per_grp",                     type   ="int",           default =1000,                     help="number of images in a group")
 	parser.add_option("--nxinit",                          type   ="int",           default =-1,                       help="user provided image size")
 	parser.add_option("--nsmear",                          type   ="float",         default =-1.,                      help="=-1, all smearing are used else only the one with maximum probability is used")
-	#parser.add_option("--final_MGSK",                      type   ="int",           default =-1,                       help="minimum group size for final MGSKmeans")
+	#parser.add_option("--final_MGSK",                     type   ="int",           default =-1,                       help="minimum group size for final MGSKmeans")
 	parser.add_option("--minimum_grp_size",				   type   ="int",           default =-1,					   help="minimum number of members for being identified as a group")
 	parser.add_option("--order_of_depth",				   type   ="int",           default =2,					       help="order of depth that determines number of independent MGSKmeans runs(2^order_of_depth)")
 	parser.add_option("--comparison_method",               type   ="string",        default ='cross',                  help="option for comparing two images, either using cross-correlaton coefficients [cross] or using Euclidean distance [eucd] ")
@@ -6454,7 +6454,7 @@ def main():
 	#parser.add_option("--eqk_shake",                      type   ="float",         default =5.0,                      help="randomness ratio in adaptive Kmeans")
 	parser.add_option("--minimum_ptl_number",              type   ="int",           default =20,					   help="integer number, the smallest orien group size equals number_of_groups multiplies this number")
 	parser.add_option("--notapplybckgnoise",               action ="store_true",    default =False,                    help="do not applynoise")
-	parser.add_option("--final_adaptive",                  action ="store_true",    default =False,                    help="use adaptive MGSKmeans in the final layer")
+	#parser.add_option("--final_adaptive",                  action ="store_true",    default =False,                    help="use adaptive MGSKmeans in the final layer")
 	parser.add_option("--do_not_include_final_unaccounted",  action ="store_true",  default =False,                    help="do not include the final unaccounted images as a cluster")
 	# postprocessing options
 	parser.add_option("--mtf",                             type   ="string",        default ='',                       help="mtf file")
@@ -6468,7 +6468,7 @@ def main():
 	from utilities import bcast_number_to_all
 	### Sanity check
 	
-	if not options.post_sorting_sharpen:
+	if not options.post_sorting_sharpen: # fresh run
 		if options.refinement_dir !='':
 			if not os.path.exists(options.refinement_dir): ERROR("The specified refinement_dir does not exist", "sort3d", 1, Blockdata["myid"])
 		if options.focus !='':
@@ -6506,7 +6506,7 @@ def main():
 		Constants["comparison_method"]           = options.comparison_method # either cross or eucd
 		Constants["do_not_include_final_unaccounted"] = options.do_not_include_final_unaccounted # either cross or eucd
 		Constants["post_sorting_sharpen"]       = options.post_sorting_sharpen
-		Constants["final_adaptive"]             = options.final_adaptive
+		Constants["final_adaptive"]             = False #options.final_adaptive
 		Constants["eqk_shake"]                  = 5.0 #options.eqk_shake
 		### postprocessing
 		if options.mtf =='': Constants["mtf"]  = None
@@ -6608,7 +6608,7 @@ def main():
 		AI("dump_tracker",log_main)
 		AI("final_sharpen",log_main)
 		
-	else:
+	else: # final reconstruction only
 		from utilities import wrap_mpi_bcast
 		import json
 		masterdir = options.output_dir
@@ -6620,8 +6620,7 @@ def main():
 			Tracker = convert_json_fromunicode(json.load(fout))
 			fout.close()
 			Tracker["constants"]["post_sorting_sharpen"] = True
-			if options.niter_for_sorting !=-1: 
-				Tracker["constants"]["niter_for_sorting"] = options.niter_for_sorting
+			if options.niter_for_sorting !=-1: Tracker["constants"]["niter_for_sorting"] = options.niter_for_sorting
 			if options.memory_per_node !=-1: Tracker["constants"]["memory_per_node"] = options.memory_per_node
 		else: Tracker = 0
 		Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
