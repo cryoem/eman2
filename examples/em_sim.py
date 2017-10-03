@@ -118,11 +118,12 @@ class Microscope(QtOpenGL.QGLWidget):
 		
 	def draw_wave(self):
 		
-		sz=160 ### length of x-axis
+		sz=161 ### length of x-axis
 		raw=np.zeros(sz) ### input signal
 		wid=2 ### width of the slits
 		w2=4 ### position of the slits
-		raw[sz/2-wid-w2:sz/2+wid-w2]=1
+		raw[sz/2-wid-w2+1:sz/2+wid-w2+1]=1
+		#raw[sz/2-wid-w2:sz/2+wid-w2]=1
 		raw[sz/2-wid+w2:sz/2+wid+w2]=1
 		wavelen=2. ### wave length
 		
