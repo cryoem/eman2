@@ -474,33 +474,25 @@ def do_depth_one_run(work_dir, initial_id_file, params, previous_params, log, or
 	return os.path.join(work_dir, "Unaccounted.txt")
 	
 def get_params_for_analysis(orgstack, ali3d_params, smearing_file, smearing_number):
-	if ali3d_params:
+	if ali3d_params is not None:
 		vecs_list =[]
 		norm_list =[]
 		ali3d_params = read_text_row(ali3d_params)
 		for im in xrange(len(ali3d_params)):
 			vecs_list.append(getvec(ali3d_params[im][0], ali3d_params[im][1]))
-			norm_list.append(ali3d_params[im][7])
-	else: 
-		vecs_list = None
-		norm_list = None
+			try: norm_list.append(ali3d_params[im][7])
+			except: norm_list = None
 	##
-	if orgstack:
+	if orgstack is not None:
 		defo_list = []
 		ctfs = EMUtil.get_all_attributes(orgstack, "ctf")
 		for im in xrange(len(ctfs)):
 			defo_list.append(ctfs[im].defocus)
 	else: defo_list = None
 	##
-	if smearing_file:
+	if smearing_file is not None:
 		try: smearing_list = read_text_file(smearing_file)
 		except: smearing_list = None
-		if smearing_list:
-			for i in xrange(len(smearing_list)):
-				if smearing_number>0.0 and smearing_number<1.0:
-					smearing_list[i] = int(smearing_list[i]*smearing_number)+1
-				elif smearing_number>1.0:
-					smearing_list[i] = min(smearing_list[i], int(smearing_number))
 	else: smearing_list = None
 	##
 	return vecs_list, defo_list, smearing_list, norm_list
@@ -530,8 +522,10 @@ def do_one_way_anova_scipy(clusters, value_list, name_of_variable="variable", lo
 	from math   import sqrt
 	import scipy
 	from scipy import stats
-	K = len(clusters)
-	NMAX = 20
+	NMAX = 30
+	K = min(NMAX, len(clusters))
+	if len(clusters) > K : print("total number of clusters is larger than 30. Process only the first 30 clusters")
+	replicas = []
 	for ic in xrange(K):
 		ll = copy.deepcopy(clusters[ic])
 		ll1 = [None for i in xrange(len(ll))]
@@ -575,8 +569,28 @@ def do_one_way_anova_scipy(clusters, value_list, name_of_variable="variable", lo
 	except: pass
 	try: x19 = replicas[19]
 	except: pass
-
-	if K==2: res = stats.f_oneway(x0, x1)
+	try: x20 = replicas[20]
+	except: pass
+	try: x21 = replicas[21]
+	except: pass
+	try: x22 = replicas[22]
+	except: pass
+	try: x23 = replicas[23]
+	except: pass
+	try: x24 = replicas[24]
+	except: pass
+	try: x25 = replicas[25]
+	except: pass
+	try: x26 = replicas[26]
+	except: pass
+	try: x27 = replicas[27]
+	except: pass
+	try: x28 = replicas[28]
+	except: pass
+	try: x29 = replicas[29]
+	except: pass
+	
+	if   K==2: res = stats.f_oneway(x0, x1)
 	elif K==3: res = stats.f_oneway(x0, x1, x2)
 	elif K==4: res = stats.f_oneway(x0, x1, x2, x3)
 	elif K==5: res = stats.f_oneway(x0, x1, x2, x3, x4)
@@ -595,8 +609,19 @@ def do_one_way_anova_scipy(clusters, value_list, name_of_variable="variable", lo
 	elif K==18: res = stats.f_oneway(x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, x16, x17)
 	elif K==19: res = stats.f_oneway(x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, x16, x17,x18)
 	elif K==20: res = stats.f_oneway(x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, x16, x17,x18, x19)
+	elif K==21: res = stats.f_oneway(x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, x16, x17,x18, x19, x20)
+	elif K==22: res = stats.f_oneway(x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, x16, x17,x18, x19, x20, x21)
+	elif K==23: res = stats.f_oneway(x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, x16, x17,x18, x19, x20, x21, x22)
+	elif K==24: res = stats.f_oneway(x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, x16, x17,x18, x19, x20, x21, x22, x23)
+	elif K==25: res = stats.f_oneway(x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, x16, x17,x18, x19, x20, x21, x22, x23, x24)
+	elif K==26: res = stats.f_oneway(x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, x16, x17,x18, x19, x20, x21, x22, x23, x24, x25)
+	elif K==27: res = stats.f_oneway(x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, x16, x17,x18, x19, x20, x21, x22, x23, x24, x25, x26)
+	elif K==28: res = stats.f_oneway(x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, x16, x17,x18, x19, x20, x21, x22, x23, x24, x25, x26, x27)
+	elif K==29: res = stats.f_oneway(x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, x16, x17,x18, x19, x20, x21, x22, x23, x24, x25, x26, x27, x28)
+	elif K==30: res = stats.f_oneway(x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, x16, x17,x18, x19, x20, x21, x22, x23, x24, x25, x26, x27, x28, x29)
 	else:
-		print("ERROR in anova")	
+		print("ERROR in %s anova, and skip the rest calculation"%name_of_variable)
+		return
 	avgs =[]
 	global_mean = 0.0
 	for ir in xrange(K): 
@@ -633,99 +658,60 @@ def do_one_way_anova_scipy(clusters, value_list, name_of_variable="variable", lo
 		"f_value:  %f  p_value:  %f"%(res[0], res[1])
 	print(msg)
 	log.add(msg)
+	if res[1] <=0.00001:
+		msg = "null hpypothesis is rejected! %s in clusters are uneven"%name_of_variable
+		print(msg)
+		log.add(msg)
 	print("----->>>global %s mean of all clusters: "%name_of_variable, global_mean/(float(nsamples)))
 	msg = "----->>>Means per group<<<-----\n"+\
-	"Factor     N      Mean          Std  \n"
+	"cluster ID    N      Mean          Std  \n"
 	for i in xrange(K):
-		msg +="%5d   %5d   %12.5f   %12.5f"%(i+1, len(replicas[i]), avgs[i], std_list[i])+"\n"
+		msg +="%5d   %5d   %12.5f   %12.5f"%(i, len(replicas[i]), avgs[i], std_list[i])+"\n"
 	print(msg)
 	log.add(msg)
 	msg = "---->>>END OF %s ANOVA"%name_of_variable
 	log.add(msg)
 	print(msg)
 	return res[0], res[1]
-
-def do_one_way_anova_full(clusters, value_list, name_of_variable="variable", log = None):
-	import copy
-	from random import shuffle
-	from math   import sqrt
-	K = len(clusters)
-	replicas = []
-	for ic in xrange(K):
-		ll = copy.deepcopy(clusters[ic])
-		ll1 = [None for i in xrange(len(ll))]
-		for ie in xrange(len(ll)): ll1[ie] = value_list[ll[ie]]
-		replicas.append(ll1)
-	avgs =[]
-	global_mean = 0.0
-	for ir in xrange(K): 
-		global_mean +=sum(replicas[ir])
-		avgs.append(sum(replicas[ir])/float(len(replicas[ir])))
-	
-	summed_squared_elements = 0.0
-	summed_squared_elements_within_groups = [None for i in xrange(K)]
-	std_list =[]
-	sst = 0.0
-	nsamples = 0.0
-	for i in xrange(K): nsamples +=len(replicas[i])
-	for i in xrange(K):
-		ssa_per_group = 0.0
-		std_per_group = 0.0 
-		for j in xrange(len(replicas[i])):
-			sst +=replicas[i][j]**2
-			summed_squared_elements +=replicas[i][j]*replicas[i][j]
-			ssa_per_group +=replicas[i][j]
-			std_per_group += (replicas[i][j] -avgs[i])**2
-		std_list.append(sqrt(std_per_group/float(len(replicas[i]))))
-		summed_squared_elements_within_groups[i] = ssa_per_group**2/float(len(replicas[i]))
-		
-	sst -=global_mean**2/nsamples
-	ssa = sum(summed_squared_elements_within_groups) - global_mean**2/nsamples
-	sse = sst - ssa
-	n1 = 0
-	for i in xrange(K): n1 +=len(replicas[i])-1
-	msa = ssa/(K-1.0)
-	mse = sse/float(n1)
-	mst = sst/(nsamples - 1.0)
-	f_ratio = msa/mse
-	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-	msg ="---------->>>ANOVA on %s<<<--------- \n"%(name_of_variable)+\
-	     "Source DF(degree of freedom)  SS(A/E/T)   MS(A/E/T)     F-value(MSA/MSE)"+"\n"+\
-	     "Factor %10d    %12.3f    %12.3f   %12.2f"%(K-1, ssa, msa, f_ratio)+"\n"+\
-	     "Error  %10d    %12.3f    %12.3f"%(n1, sse, mse)+"\n"+\
-	     "Total  %10d    %12.3f    %12.3f"%(nsamples-1, sst, mst)+"\n"+\
-	     "SSA: %12.3f    SSE:  %12.3f  SST:  %12.3f"%(ssa, sse, sst)+"\n"
-	print(msg)
-	log.add(msg)
-	msg = "----->>>global %s mean of all clusters: "%name_of_variable, global_mean/(float(nsamples))
-	print(msg)
-	log.add(msg)
-	msg = "----->>>Means per group<<<-----\n"+\
-	"Factor     N      Mean          Std  \n"
-	for i in xrange(K): msg +="%5d   %5d   %12.5f   %12.5f"%(i+1, len(replicas[i]), avgs[i], std_list[i])+"\n"
-	print(msg)
-	log.add(msg)
-	msg = "---->>>END OF %s ANOVA"%name_of_variable
-	print(msg)
-	log.add(msg)
-	return
 	
 def output_micrograph_number_per_cluster(orgstack, index_file, clusters, log = None):
 	# single node job
 	mic_dict = {}
+	inverse_mic_dict = {}
 	try: mics = EMUtil.get_all_attributes(orgstack, "ptcl_source_image")
-	except: ERROR("No ptcl_source_image attribute", "output_micrograph_number_per_cluster", 1,  0)
+	except:
+		msg = "No ptcl_source_image attribute are set in data headers!"
+		print(msg)
+		log.add(msg)
+		try:
+			tmpmics = EMUtil.get_all_attributes(orgstack, "ctf")
+			mics = [None for i in xrange(len(tmpmics))]
+			for im in xrange(len(mics)): mics[im] = tmpmics[im].defocus
+		except:
+			msg = "CTF parameters are not found either, so sort3d skips counting micograph number per cluster..."
+			print(msg)
+			log.add(msg)
+			return
 	pid_list =read_text_file(index_file)
-	for im in xrange(len(pid_list)): mic_dict [pid_list[im]] = mics[pid_list[im]]
+	for im in xrange(len(pid_list)):
+		mic_dict [pid_list[im]] = mics[pid_list[im]]
+		inverse_mic_dict[mics[pid_list[im]]] =  im
 	mics_in_clusters = [None for i in xrange(len(clusters))]
 	msg = "------->>>number of micrographs in clusters<<<--------------"
 	log.add(msg)
 	print(msg)
+	msg = "total number of micrographs:  %d "%len(inverse_mic_dict)
+	log.add(msg)
+	print(msg)
+	msg ="cluster ID       number of micrographs  "
+	log.add(msg)
+	print(msg)
 	for ic in xrange(len(clusters)):
 		tmp_mics_in_cluster = {}
-		for im in xrange(len(clusters[ic])): tmp_mics_in_cluster[clusters[ic][im]] = im
-		mics_in_clusters[ic] = len(clusters[ic])
-		msg = "cluster:  %d  number of micrographs:  %d"%(ic, mics_in_clusters[ic])
+		for im in xrange(len(clusters[ic])): 
+			tmp_mics_in_cluster[mic_dict[clusters[ic][im]]] = im
+		mics_in_clusters[ic] = len(tmp_mics_in_cluster)
+		msg = " %d        %d"%(ic, mics_in_clusters[ic])
 		log.add(msg)
 		print(msg)
 	return mics_in_clusters
@@ -756,6 +742,7 @@ def AI(to_be_decided, log = None, list_stable = None, score_list = None, initial
 		Tracker["number_of_runs"]               = 0
 		Tracker["total_number_of_accounted"]    = 0
 		Tracker["determined_number_of_groups"]  = 0
+		Tracker ["cluster_score"]               = {} 
 		if Tracker["constants"]["minimum_grp_size"] ==-1: Tracker["minimum_grp_size"] = Tracker["rnd_assign_group_size"]
 		else: Tracker["minimum_grp_size"] = Tracker["constants"]["minimum_grp_size"]
 		
@@ -769,7 +756,6 @@ def AI(to_be_decided, log = None, list_stable = None, score_list = None, initial
 	elif to_be_decided =="output_clusters":
 	
 		if Blockdata["myid"] == Blockdata["main_node"]:
-			
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 			accounted_list = []
 			nclass = 0
@@ -778,7 +764,8 @@ def AI(to_be_decided, log = None, list_stable = None, score_list = None, initial
 				msg = "score1: %f  score2: %f avg: %f"%(score_list[i][0], score_list[i][1], avg_score)
 				print(line, msg)
 				log.add(msg)
-				if avg_score >5.:
+				if avg_score >15.:
+					Tracker ["cluster_score"][Tracker["determined_number_of_groups"]] = avg_score
 					accounted_list +=list_stable[i].tolist()
 					write_text_file(list_stable[i], os.path.join(Tracker["constants"]["masterdir"],\
 					 "Cluster_%03d.txt"%Tracker["determined_number_of_groups"]))
@@ -889,21 +876,20 @@ def AI(to_be_decided, log = None, list_stable = None, score_list = None, initial
 				dummy = output_micrograph_number_per_cluster(Tracker["constants"]["orgstack"], \
 				   os.path.join(Tracker["constants"]["masterdir"], "indexes.txt"), clusters, log = log)
 				
-				if not Tracker["nosmearing"]:
-				
-					vs, ds, ss, norms = get_params_for_analysis(Tracker["constants"]["orgstack"], \
-					os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt"),\
-					 os.path.join(Tracker["constants"]["masterdir"], "all_smearing.txt"), Tracker["constants"]["nsmear"])
-				else:
+				if Tracker["constants"]["refinement_method"]=="stack":
 					vs, ds, ss, norms = get_params_for_analysis(Tracker["constants"]["orgstack"], \
 				      os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt"),\
 				       None, None)
+				else:
+					vs, ds, ss, norms = get_params_for_analysis(Tracker["constants"]["orgstack"], \
+					os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt"),\
+					 os.path.join(Tracker["constants"]["masterdir"], "all_smearing.txt"), Tracker["constants"]["nsmear"])
 			 
 				do_one_way_anova_scipy(clusters, ds, name_of_variable="defocus", log = log)
 				if ss: do_one_way_anova_scipy(clusters, ss, name_of_variable="smearing", log = log)
 			
 				if norms: do_one_way_anova_scipy(clusters, norms, name_of_variable="norm", log = log)
-				
+				"""
 				msg = "---->>>Orientations per group analysis<<<----- \n"+\
 					"%10s %10s %10s  "%("X", "Y", "Z")
 				print(msg)
@@ -913,6 +899,7 @@ def AI(to_be_decided, log = None, list_stable = None, score_list = None, initial
 					for j in xrange(len(clusters[i])):
 						oriens.append(vs[clusters[i][j]])
 					orien_analysis(oriens, i, log)
+				"""
 			mpi_barrier(MPI_COMM_WORLD)
 		else:
 			Tracker["number_of_runs"] +=1
@@ -1072,6 +1059,14 @@ def AI(to_be_decided, log = None, list_stable = None, score_list = None, initial
 		mpi_barrier(MPI_COMM_WORLD)
 		return
 		
+	elif to_be_decided == "dump_tracker":
+		if(Blockdata["myid"] == Blockdata["main_node"]):
+			fout = open(os.path.join(Tracker["constants"]["masterdir"], "Tracker.json"),'w')
+			json.dump(Tracker, fout)
+			fout.close()
+		mpi_barrier(MPI_COMM_WORLD)
+		return
+		
 	elif to_be_decided =="print_command": 	
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		if(Blockdata["myid"] == Blockdata["main_node"]):
@@ -1156,7 +1151,7 @@ def Kmeans_minimum_group_size_orien_groups(original_data, partids, params, param
 		iproc_image_start, iproc_image_end = MPI_start_end(Tracker["total_stack"], Blockdata["nproc"], iproc)
 		proc_list[iproc] = [iproc_image_start, iproc_image_end]
 	compute_noise(Tracker["nxinit"])
-	cdata, rdata, fdata = downsize_data_for_sorting(original_data, preshift = True, npad = 1)# pay attentions to shifts!
+	cdata, rdata, fdata = downsize_data_for_sorting(original_data, preshift = True, npad = 1, norms =norm_per_particle)# pay attentions to shifts!
 	srdata = precalculate_shifted_data_for_recons3D(rdata, paramstructure, Tracker["refang"], \
 	   Tracker["rshifts"], Tracker["delta"], Tracker["avgnorm"], Tracker["nxinit"], \
 	     Tracker["constants"]["nnxo"], Tracker["nosmearing"], norm_per_particle, Tracker["constants"]["nsmear"])
@@ -1166,7 +1161,7 @@ def Kmeans_minimum_group_size_orien_groups(original_data, partids, params, param
 	total_iter = 0
 	while total_iter<Tracker["total_number_of_iterations"]:
 		if(Blockdata["myid"] == Blockdata["main_node"]):
-			msg = "Iteration %d particles changes assignment  %f, and current stop criterion is  %f, current image size %d"%(total_iter, changed_nptls, stopercnt, Tracker["nxinit"])
+			msg = "Iteration %d particle assignment changed ratio  %f "%(total_iter, changed_nptls)
 			log.add(msg)
 			write_text_file(iter_assignment, os.path.join(Tracker["directory"], "assignment%03d.txt"%total_iter))
 		if changed_nptls< 50.0: partial_rec3d = True
@@ -1239,8 +1234,8 @@ def Kmeans_minimum_group_size_orien_groups(original_data, partids, params, param
 		reset_assignment_to_previous_groups(iter_assignment, newindices)
 		changed_nptls = 100.-ratio*100.
 		if(Blockdata["myid"] == Blockdata["main_node"]):
-			msg = "Iteration %d particles changes assignment subject to induced randomness  %f, and current stop criterion is  %f, current image size %d"% \
-				 (total_iter, changed_nptls, changed_nptls, Tracker["nxinit"])
+			msg = "Iteration %d particle assignment changed ratio subject to induced randomness  %f "% \
+				 (total_iter, changed_nptls)
 		if best_score >= changed_nptls:
 			best_score = changed_nptls
 			best_assignment = copy.copy(iter_assignment)
@@ -1342,7 +1337,7 @@ def Kmeans_minimum_group_size_relaxing_orien_groups(original_data, partids, para
 		iproc_image_start, iproc_image_end = MPI_start_end(Tracker["total_stack"], Blockdata["nproc"], iproc)
 		proc_list[iproc] = [iproc_image_start, iproc_image_end]
 	compute_noise(Tracker["nxinit"])
-	cdata, rdata, fdata = downsize_data_for_sorting(original_data, preshift = True, npad = 1)# pay attentions to shifts!
+	cdata, rdata, fdata = downsize_data_for_sorting(original_data, preshift = True, npad = 1, norms =norm_per_particle)# pay attentions to shifts!
 	srdata = precalculate_shifted_data_for_recons3D(rdata, paramstructure, Tracker["refang"], \
 	   Tracker["rshifts"], Tracker["delta"], Tracker["avgnorm"], Tracker["nxinit"], \
 	     Tracker["constants"]["nnxo"], Tracker["nosmearing"], norm_per_particle,  Tracker["constants"]["nsmear"])
@@ -1354,8 +1349,8 @@ def Kmeans_minimum_group_size_relaxing_orien_groups(original_data, partids, para
 	nreduce_min_grp_size = 0
 	while total_iter<Tracker["total_number_of_iterations"]:
 		if(Blockdata["myid"] == Blockdata["main_node"]):
-			msg = "Iteration %d particles changes assignment  %f, and current stop criterion is  %f, current image size %d: orien relax: %r: norien_groups:  %d"\
-			  %(total_iter, changed_nptls, stopercnt, Tracker["nxinit"], orien_group_relaxation, len(ptls_in_orien_groups))
+			msg = "Iteration %d particle assignment changed ratio  %f, orien relax: %r: norien_groups:  %d"\
+			  %(total_iter, changed_nptls, orien_group_relaxation, len(ptls_in_orien_groups))
 			log.add(msg)
 			write_text_file(iter_assignment, os.path.join(Tracker["directory"], "assignment%03d.txt"%total_iter))
 		if changed_nptls< 50.0: partial_rec3d = True
@@ -1428,8 +1423,8 @@ def Kmeans_minimum_group_size_relaxing_orien_groups(original_data, partids, para
 		reset_assignment_to_previous_groups(iter_assignment, newindices)
 		changed_nptls = 100.-ratio*100.
 		if(Blockdata["myid"] == Blockdata["main_node"]):
-			msg = "Iteration %d particles changes assignment subject to induced randomness  %f, and current stop criterion is  %f, current image size %d"% \
-				 (total_iter, changed_nptls, changed_nptls, Tracker["nxinit"])
+			msg = "Iteration %d particle assignment changed ratio subject to induced randomness  %f "% \
+				 (total_iter, changed_nptls )
 		if best_score >= changed_nptls:
 			best_score = changed_nptls
 			best_assignment = copy.copy(iter_assignment)
@@ -1544,7 +1539,7 @@ def Kmeans_adaptive_minimum_group_size(original_data, partids, params, paramstru
 		iproc_image_start, iproc_image_end = MPI_start_end(Tracker["total_stack"], Blockdata["nproc"], iproc)
 		proc_list[iproc] = [iproc_image_start, iproc_image_end]
 	compute_noise(Tracker["nxinit"])
-	cdata, rdata, fdata = downsize_data_for_sorting(original_data, preshift = True, npad = 1)# pay attentions to shifts!
+	cdata, rdata, fdata = downsize_data_for_sorting(original_data, preshift = True, npad = 1, norms = norm_per_particle)# pay attentions to shifts!
 	srdata = precalculate_shifted_data_for_recons3D(rdata, paramstructure, Tracker["refang"], \
 	   Tracker["rshifts"], Tracker["delta"], Tracker["avgnorm"], Tracker["nxinit"], \
 	    Tracker["constants"]["nnxo"], Tracker["nosmearing"], norm_per_particle,  Tracker["constants"]["nsmear"])
@@ -1559,7 +1554,7 @@ def Kmeans_adaptive_minimum_group_size(original_data, partids, params, paramstru
 	assign_shake       = Tracker["constants"]["eqk_shake"]
 	while total_iter<Tracker["total_number_of_iterations"] and norien >4: # 
 		if(Blockdata["myid"] == Blockdata["main_node"]):
-			msg = "Iteration %d particles changes assignment:  %f current stop criterion:  %f current image size: %d  minimum_group_size:  %d  No of orien groups: %d"%(total_iter, \
+			msg = "Iteration %d particle assignment changed ratio:  %f current stop criterion:  %f current image size: %d  minimum_group_size:  %d  No of orien groups: %d"%(total_iter, \
 			  changed_nptls, stopercnt, Tracker["nxinit"], minimum_group_size, len(ptls_in_orien_groups))
 			log.add(msg)
 			write_text_file(iter_assignment, os.path.join(Tracker["directory"], "assignment%03d.txt"%total_iter))
@@ -1647,7 +1642,7 @@ def Kmeans_adaptive_minimum_group_size(original_data, partids, params, paramstru
 		last_changed_nptls = changed_nptls
 		changed_nptls = 100.-ratio*100.
 		if(Blockdata["myid"] == Blockdata["main_node"]):
-			msg = "Iteration %d particles changes assignment subject to induced randomness  %f, and current stop criterion is %f, current image size %d  minimum_group_size %d  norien %d"% \
+			msg = "Iteration %d particle assignment changed ratio subject to induced randomness  %f, and current stop criterion is %f, current image size %d  minimum_group_size %d  norien %d"% \
 				 (total_iter, changed_nptls, changed_nptls, Tracker["nxinit"], minimum_group_size, len(ptls_in_orien_groups))
 		if best_score >= changed_nptls:
 			best_score = changed_nptls
@@ -2450,9 +2445,7 @@ def precalculate_shifted_data_for_recons3D(prjlist, paramstructure, refang, rshi
 		else:
 			avgnorm = avgnorms[prjlist[im].get_attr("chunk_id")]
 			if nsmear <=0.0: numbor = len(paramstructure[im][2])
-			else:           
-				if nsmear>1.0: numbor = min(int(nsmear), len(paramstructure[im][2]))
-				else:  numbor = int(len(paramstructure[im][2])*nsmear)+1
+			else:         numbor = 1
 			ipsiandiang = [ paramstructure[im][2][i][0]/1000  for i in xrange(numbor) ]
 			allshifts   = [ paramstructure[im][2][i][0]%1000  for i in xrange(numbor) ]
 			probs       = [ paramstructure[im][2][i][1] for i in xrange(numbor) ]
@@ -2486,7 +2479,7 @@ def precalculate_shifted_data_for_recons3D(prjlist, paramstructure, refang, rshi
 		return recdata_list
 ##### read data/paramstructure ends
 ###<<<----downsize data---->>>>
-def downsize_data_for_sorting(original_data, return_real = False, preshift = True, npad = 1):
+def downsize_data_for_sorting(original_data, return_real = False, preshift = True, npad = 1, norms = None):
 	# The function will read from stack a subset of images specified in partids
 	#   and assign to them parameters from partstack with optional CTF application and shifting of the data.
 	# So, the lengths of partids and partstack are the same.
@@ -2531,7 +2524,7 @@ def downsize_data_for_sorting(original_data, return_real = False, preshift = Tru
 	for im in xrange(nima):
 		image = original_data[im].copy()
 		chunk_id = image.get_attr("chunk_id")
-		try:    group_id = image.set_attr("group", groupids[im])
+		try: group_id = image.set_attr("group", groupids[im])
 		except: pass
 		particle_group_id = image.get_attr("particle_group")
 		phi,theta,psi,s2x,s2y = get_params_proj(image, xform = "xform.projection")
@@ -2545,6 +2538,9 @@ def downsize_data_for_sorting(original_data, return_real = False, preshift = Tru
 		st = Util.infomask(cimage, mask2D, False)
 		cimage -= st[0]
 		cimage /= st[1]
+		
+		if not Tracker["nosmearing"] and norms: cimage *= Tracker["avgnorm"][chunk_id]/norms[im] #norm correction
+		
 		if Tracker["applybckgnoise"]:
 			if Tracker["applymask"]:
 				if Tracker["constants"]["hardmask"]: cimage = cosinemask(cimage, radius = Tracker["constants"]["radius"])
@@ -2682,8 +2678,6 @@ def downsize_data_for_rec3D(original_data, particle_size, return_real = False, n
 ###<<<--- comparison	    
 def compare_two_images_eucd(data, ref_vol, fdata):
 	global Tracker, Blockdata
-	from filter import filt_tophatl
-	from math   import sqrt
 	peaks   = len(data)*[None]
 	ny      = data[0].get_ysize()
 	ref_vol = prep_vol(ref_vol, npad = 2, interpolation_method = 1)
@@ -2698,6 +2692,7 @@ def compare_two_images_eucd(data, ref_vol, fdata):
 			rtemp = prgl(ref_vol,[phi, theta, psi, 0.0,0.0], 1, False)
 		rtemp.set_attr("is_complex",0)
 		if data[im].get_attr("is_complex") ==1: data[im].set_attr("is_complex",0)
+		
 		if Tracker["applybckgnoise"]:
 			peaks[im] = -Util.sqed(data[im], rtemp, ctfs[im], Blockdata["unrolldata"][data[im].get_attr("particle_group")])/qt
 		else:
@@ -2706,11 +2701,9 @@ def compare_two_images_eucd(data, ref_vol, fdata):
 #
 def compare_two_images_cross(data, ref_vol):
 	global Tracker, Blockdata
-	from filter import filt_tophatl
-	from math   import sqrt
 	ny = data[0].get_ysize()
-	peaks   = len(data)*[None]
-	volft   = prep_vol(ref_vol, 2, 1)
+	peaks = len(data)*[None]
+	volft = prep_vol(ref_vol, 2, 1)
 	ctfs  = [None for im in xrange(len(data))]
 	for im in xrange(len(data)): ctfs[im]  = ctf_img_real(ny, data[im].get_attr('ctf'))
 	#  Ref is in reciprocal space
@@ -3084,7 +3077,15 @@ def merge_classes_into_partition_list(classes_list):
 	for index_of_particle in xrange(len(data_list)):new_index.append([group_dict[data_list[index_of_particle]], data_list[index_of_particle]])
 	del group_dict
 	return data_list, new_index
-		
+
+def adjust_fsc_to_full_data_set(fsc_to_be_adjusted, n1, n):
+	q = float(n1)/float(n)
+	fsc_sub = [None for i in xrange(len(fsc_to_be_adjusted))]
+	for i in xrange(len(fsc_to_be_adjusted)):
+		y = fsc_to_be_adjusted[i]
+		fsc_sub[i] = y/(y*(1.-q)+q)
+	return fsc_sub
+	
 def get_sorting_all_params(data):
 	global Tracker, Blockdata
 	from utilities    import wrap_mpi_bcast
@@ -4992,7 +4993,7 @@ def do3d_sorting_groups_rec3d(iteration, masterdir, log_main):
 		if Blockdata["color"] == index_of_colors:  # It has to be 1 to avoid problem with tvol1 not closed on the disk
 			for index_of_group in xrange(group_start, group_end):
 				Clusterdir = os.path.join(Tracker["directory"], "Cluster%d"%index_of_group, "main%03d"%iteration)
-				cfsc       = 0
+				cfsc = 0
 				if Blockdata["myid_on_node"] == 0:					
 					tvol0 		= get_im(os.path.join(Clusterdir, "tempdir", "tvol_0_%03d.hdf")%iteration)
 					tweight0 	= get_im(os.path.join(Clusterdir, "tempdir", "tweight_0_%03d.hdf")%iteration)
@@ -5100,9 +5101,9 @@ def do3d_sorting_groups_rec3d(iteration, masterdir, log_main):
 		for icluster in xrange(Tracker["number_of_groups"]):
 			res05  = Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/res_05[icluster]
 			res143 = Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/res_143[icluster]
-			msg = "cluster  %d   fsc05/fsc143   %d/%d, %5.2f/%5.2f"%(icluster, Tracker["fsc05"][icluster], Tracker["fsc143"][icluster], res05, res143)
-			print(msg)
-			log_main.add(msg)
+			#msg = "cluster  %d   fsc05/fsc143   %d/%d, %5.2f/%5.2f"%(icluster, Tracker["fsc05"][icluster], Tracker["fsc143"][icluster], res05, res143)
+			#print(msg)
+			#log_main.add(msg)
 	keepgoing = bcast_number_to_all(keepgoing, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD) # always check	
 	Tracker   = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
 	if (Blockdata["myid"] == Blockdata["main_node"]):
@@ -5471,10 +5472,7 @@ def recons3d_trl_struct_group_MPI(myid, main_node, prjlist, random_subset, group
 					r.insert_slice(prjlist[im], Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi}), 1.0)
 				else:
 					if Tracker["constants"]["nsmear"]<=0.0: numbor = len(paramstructure[im][2])
-					else:  
-						if Tracker["constants"]["nsmear"] >=1.: numbor = min(int(Tracker["constants"]["nsmear"]),  len(paramstructure[im][2]))
-						else: numbor = int(len(paramstructure[im][2])*Tracker["constants"]["nsmear"])+1 # ratio
-						
+					else:   numbor = 1
 					ipsiandiang = [ paramstructure[im][2][i][0]/1000  for i in xrange(numbor) ]
 					allshifts   = [ paramstructure[im][2][i][0]%1000  for i in xrange(numbor) ]
 					probs       = [ paramstructure[im][2][i][1] for i in xrange(numbor) ]
@@ -5516,9 +5514,7 @@ def recons3d_trl_struct_group_MPI(myid, main_node, prjlist, random_subset, group
 						r.insert_slice(prjlist[im], Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi}), 1.0)
 					else:
 						if Tracker["constants"]["nsmear"]<=0.0: numbor = len(paramstructure[im][2])
-						else: 
-							if Tracker["constants"]["nsmear"]>=1.: numbor = min(int(Tracker["constants"]["nsmear"]), len(paramstructure[im][2]))
-							else: numbor = int(Tracker["constants"]["nsmear"]*len(paramstructure[im][2]))+1
+						else:  numbor = 1
 						ipsiandiang = [ paramstructure[im][2][i][0]/1000  for i in xrange(numbor) ]
 						allshifts   = [ paramstructure[im][2][i][0]%1000  for i in xrange(numbor) ]
 						probs       = [ paramstructure[im][2][i][1] for i in xrange(numbor) ]
@@ -5755,10 +5751,7 @@ def recons3d_4nnsorting_group_fsc_MPI(myid, main_node, prjlist, fsc_half, random
 					r.insert_slice(prjlist[im], Transform({"type":"spider","phi":phi, "theta":theta, "psi":psi}), 1.0)
 				else:
 					if Tracker["constants"]["nsmear"]<=0.0: numbor = len(paramstructure[im][2])
-					else:
-						if Tracker["constants"]["nsmear"]>1.0: numbor = min(Tracker["constants"]["nsmear"], len(paramstructure[im][2]))
-						else:  numbor = int(Tracker["constants"]["nsmear"]*len(paramstructure[im][2]))+1
-						
+					else:  numbor =1
 					ipsiandiang = [paramstructure[im][2][i][0]/1000  for i in xrange(numbor)]
 					allshifts   = [paramstructure[im][2][i][0]%1000  for i in xrange(numbor)]
 					probs       = [paramstructure[im][2][i][1] for i in xrange(numbor)]
@@ -6025,11 +6018,13 @@ def do_final_maps(number_of_groups, minimum_size, selected_iter, refinement_dir,
 	aa        = Tracker["constants"]["aa"]
 	postlowpassfilter = Tracker["constants"]["postlowpassfilter"]
 	B_enhance = Tracker["constants"]["B_enhance"]
+	memory_per_node  = Tracker["constants"]["memory_per_node"]
+	Blockdata["fftwmpi"]  = True
 	Tracker["number_of_groups"] = number_of_groups
 	if Tracker["nosmearing"]:
 		if(Blockdata["myid"] == Blockdata["main_node"]):
 			map_dir = os.path.join(masterdir, "maps_dir")
-			os.mkdir(map_dir)
+			if not os.path.exists(map_dir): os.mkdir(map_dir)
 		else:map_dir = 0
 		map_dir = wrap_mpi_bcast(map_dir, Blockdata["main_node"], MPI_COMM_WORLD)
 		Tracker["directory"] = map_dir
@@ -6071,6 +6066,7 @@ def do_final_maps(number_of_groups, minimum_size, selected_iter, refinement_dir,
 		Tracker["nxinit"]              = rec3d_image_size 
 		Tracker["number_of_groups"]    = number_of_groups
 		Tracker["fuse_freq"]           = fuse_freq # reset
+		Tracker["constants"]["memory_per_node"] = memory_per_node
 		# Using all CPUS to do step two
 		Blockdata["ncpuspernode"] = Blockdata["nproc"]//Blockdata["no_of_groups"]
 		Blockdata["nsubset"]  = Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
@@ -6133,10 +6129,8 @@ def merge_two_unfiltered_maps(map1_file, map2_file, cluster_ID):
 			nfreq143 = ifreq - 1
 			break
 	
-	#print(nfreq0, nfreq05, "check")
 	nfreq143_right = nfreq0
 	resolution_FSC143_right = fsc_true[0][nfreq05]
-	
 	
 	for ifreq in xrange(len(fsc_true[0])):fsc_true[1][ifreq] = max(fsc_true[1][ifreq], 0.0)
 	for ifreq in xrange(nfreq0, nfreq05, -1):
@@ -6146,18 +6140,55 @@ def merge_two_unfiltered_maps(map1_file, map2_file, cluster_ID):
 			break
 	resolution_FSC143 = resolution_FSC143_right
 	nfreq143 = nfreq143_right
-	## smooth FSC after FSC143 and set other values to zero
-	
-	for ifreq in xrange(nfreq143+1, len(fsc_true[1])):
-		if ifreq ==nfreq143+1: fsc_true[1][ifreq] = (fsc_true[1][nfreq143-2] + fsc_true[1][nfreq143-1])/5.
-		elif ifreq ==nfreq143+2: fsc_true[1][ifreq] = (fsc_true[1][nfreq143-1])/5.
-		else: fsc_true[1][ifreq] = 0.0
 	fsc_out = []
 	for ifreq in xrange(len(fsc_true[0])): fsc_out.append("%5d   %7.2f   %7.3f"%(ifreq, resolution_in_angstrom[ifreq],fsc_true[1][ifreq]))
-	write_text_file(fsc_out, os.path.join(Tracker["constants"]["masterdir"],"fsc_%d.txt"%cluster_ID))														
+	write_text_file(fsc_out, os.path.join(Tracker["constants"]["masterdir"],"fsc_%d.txt"%cluster_ID))													
 	map1 +=map2 #(get_im(args[0])+get_im(args[1]))/2.0
 	map1 /=2.0
 	del map2
+	### compute adjusted FSC
+	n1 = len(read_text_file(os.path.join(Tracker["constants"]["masterdir"],"Cluster_%03d.txt"%cluster_ID)))
+	fsc_adj = adjust_fsc_to_full_data_set(fsc_true[1], n1, Tracker["constants"]["total_stack"])
+	### get resolution of adjusted FSC
+	adj_resolution_FSC143_right  = 0.0
+	adj_resolution_FSC143_left   = 0.0
+	dip_at_fsc = False
+	adj_nfreq0 = 1
+	for ifreq in xrange(1, len(fsc_adj)):
+		if fsc_adj[ifreq] < 0.0:
+			adj_nfreq0  = ifreq - 1
+			break
+	if adj_nfreq0 ==1: adj_nfreq0= len(fsc_adj) - 1
+
+	adj_nfreq05 = len(fsc_adj)-1 		
+	for ifreq in xrange(1, len(fsc_adj)):
+		if fsc_adj[ifreq] < 0.5:
+			resolution_FSChalf = fsc_adj[ifreq-1]
+			adj_nfreq05 = ifreq-1
+			break
+
+	resolution_FSC143_left = fsc_adj[len(fsc_adj)-1]
+	for ifreq in xrange(adj_nfreq05, len(fsc_adj)):
+		if fsc_adj[ifreq] < 0.143:
+			resolution_FSC143_left = fsc_adj[ifreq-1]
+			adj_nfreq143 = ifreq - 1
+			break
+	nfreq143_right = nfreq0
+	resolution_FSC143_right = fsc_adj[adj_nfreq05]
+	
+	for ifreq in xrange(len(fsc_adj)):fsc_adj[ifreq] = max(fsc_adj[ifreq], 0.0)
+	for ifreq in xrange(adj_nfreq0, adj_nfreq05, -1):
+		if fsc_adj[ifreq] >= 0.143:
+			resolution_FSC143_right = fsc_adj[ifreq]
+			nfreq143_right = ifreq
+			break
+	adj_resolution_FSC143 = resolution_FSC143_right
+	adj_nfreq143 = nfreq143_right
+	fsc_out = []
+	for ifreq in xrange(len(fsc_adj)): fsc_out.append("%5d   %7.2f   %7.3f"%(ifreq, resolution_in_angstrom[ifreq],fsc_adj[ifreq]))
+	write_text_file(fsc_out, os.path.join(Tracker["constants"]["masterdir"],"fsc_%d_adj.txt"%cluster_ID))
+	
+	###
 	outtext = [["Squaredfreq"],[ "LogOrig"]]
 	guinierline = rot_avg_table(power(periodogram(map1),.5))
 	
@@ -6178,6 +6209,12 @@ def merge_two_unfiltered_maps(map1_file, map2_file, cluster_ID):
 		
 	if Tracker["constants"]["fsc_adj"]: #2
 		#### FSC adjustment ((2.*fsc)/(1+fsc)) to the powerspectrum;
+		## smooth FSC after FSC143 and set other values to zero
+		for ifreq in xrange(nfreq143+1, len(fsc_true[1])):
+			if ifreq ==nfreq143+1: fsc_true[1][ifreq] = (fsc_true[1][nfreq143-2] + fsc_true[1][nfreq143-1])/5.
+			elif ifreq ==nfreq143+2: fsc_true[1][ifreq] = (fsc_true[1][nfreq143-1])/5.
+			else: fsc_true[1][ifreq] = 0.0
+			
 		fil = len(fsc_true[1])*[None]
 		for i in xrange(len(fil)): fil[i] = sqrt(fsc_true[1][i]) # fsc already matched to full dataset
 		map1 = filt_table(map1,fil)
@@ -6204,7 +6241,7 @@ def merge_two_unfiltered_maps(map1_file, map2_file, cluster_ID):
 				print("Your B_start is too high!")
 				freq_min = 1./(B_stop + 8.)
 			b, junk, ifreqmin, ifreqmax = compute_bfactor(guinierline, freq_min, freq_max, Tracker["constants"]["pixel_size"])
-			global_b = min(4.*b, 400.) # B-factor should not be too large
+			global_b = min(4.*b, 400.) # B-factor should always not be too large...
 			cc = pearson(junk[1],logguinierline)
 			sigma_of_inverse = sqrt(2./(global_b/Tracker["constants"]["pixel_size"]**2))		
 		else: # User provided value
@@ -6229,10 +6266,12 @@ def merge_two_unfiltered_maps(map1_file, map2_file, cluster_ID):
 	else: 
 		map1 = filt_tanl(map1,resolution_FSC143, Tracker["constants"]["aa"])
 		lowpassfilter = resolution_FSC143
-	msg = "Cluster %3d  applied B_factor %10.6f  applied low_pass_filter_to  %10.6f "%(cluster_ID, global_b,  Tracker["constants"]["pixel_size"]/lowpassfilter)
-	msg +="  FSC05/FSC143  %5d/%5d   %6.3f/%6.3f"%(nfreq05, nfreq143, Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(nfreq05), \
-	    Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(nfreq143))
-	print(msg)
+	msg = " %3d   %10.6f   %10.6f "%(cluster_ID, global_b,  Tracker["constants"]["pixel_size"]/lowpassfilter)
+	msg +="  %5d/%-5d  %6.3f/%-6.3f"      "%5d/%-5d  %6.3f/%-6.3f "%(nfreq05, nfreq143, Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(nfreq05), \
+	    Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(nfreq143), \
+	    adj_nfreq05, adj_nfreq143, Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(adj_nfreq05), \
+	    Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(adj_nfreq143))
+	    
 	map1.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_final_nomask_cluster%03d.hdf"%cluster_ID))
 	if mask3D: map1 *=mask3D
 	map1.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_final_cluster%03d.hdf"%cluster_ID))
@@ -6250,12 +6289,6 @@ def post_sorting_rec3d(log):
 	Tracker["constants"]["refinement_xr"]     = 0.0
 	Tracker["constants"]["refinement_an"]     = 0.0
 	
-	if(Blockdata["myid"] == Blockdata["main_node"]):
-		fout = open(os.path.join(Tracker["constants"]["masterdir"], "Tracker.json"),'r')
-		Tracker = convert_json_fromunicode(json.load(fout))
-		fout.close()
-	else: Tracker = []
-	Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
 	number_of_groups = 0
 	minimum_size = Tracker["constants"]["img_per_grp"]
 	if(Blockdata["myid"] == Blockdata["main_node"]):
@@ -6267,7 +6300,7 @@ def post_sorting_rec3d(log):
 		while os.path.exists(os.path.join(Tracker["constants"]["masterdir"], "Cluster_%03d.txt"%number_of_groups)):
 			class_in = read_text_file(os.path.join(Tracker["constants"]["masterdir"], "Cluster_%03d.txt"%number_of_groups))
 			minimum_size = min(len(class_in), minimum_size)
-			msg = " %10d clusters  %10d   group size "%(number_of_groups, len(class_in))
+			msg = " cluster ID: %10d  number of images:  %10d  "%(number_of_groups, len(class_in))
 			print(line, msg)
 			number_of_groups +=1
 			final_accounted_ptl +=len(class_in)
@@ -6275,6 +6308,9 @@ def post_sorting_rec3d(log):
 		msg = "total number of particle images:  %10d; accounted:   %10d ;  number_of_groups:   %5d"%(Tracker["constants"]["total_stack"], final_accounted_ptl, number_of_groups)
 		print(line, msg)
 		# analysis
+		dummy = output_micrograph_number_per_cluster(Tracker["constants"]["orgstack"], \
+			os.path.join(Tracker["constants"]["masterdir"], "indexes.txt"), clusters, log = log)
+				   
 		if not Tracker["nosmearing"]:
 			vs, ds, ss, norms = get_params_for_analysis(Tracker["constants"]["orgstack"], \
 			os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt"),\
@@ -6283,12 +6319,14 @@ def post_sorting_rec3d(log):
 			vs, ds, ss, norms = get_params_for_analysis(Tracker["constants"]["orgstack"], \
 			os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt"),\
 			 None, None)
-	 
+			 
 		do_one_way_anova_scipy(clusters, ds, name_of_variable="defocus", log = log)
-		if ss: do_one_way_anova_scipy(clusters, ss, name_of_variable="smearing", log = log)
+		
+		if ss is not None: do_one_way_anova_scipy(clusters, ss, name_of_variable="smearing", log = log)
 
 		if norms: do_one_way_anova_scipy(clusters, norms, name_of_variable="norm", log = log)
 		
+		"""
 		msg = "---->>>Orientations per group analysis<<<----- \n"+\
 		 "%10s %10s %10s  "%("X", "Y", "Z")
 		print(msg)
@@ -6297,7 +6335,7 @@ def post_sorting_rec3d(log):
 			oriens = []
 			for j in xrange(len(clusters[i])): oriens.append(vs[clusters[i][j]])
 			orien_analysis(oriens, i, log)
-			
+		"""
 	number_of_groups = bcast_number_to_all(number_of_groups, Blockdata["main_node"], MPI_COMM_WORLD)
 	if number_of_groups == 0:ERROR("No cluster is found, and the program terminates. ", "option post_sorting_sharpen ", 1, Blockdata["myid"])
 	minimum_size = bcast_number_to_all(minimum_size, Blockdata["main_node"], MPI_COMM_WORLD)
@@ -6305,19 +6343,24 @@ def post_sorting_rec3d(log):
 	do_final_maps(number_of_groups, minimum_size, Tracker["constants"]["selected_iter"], Tracker["constants"]["refinement_dir"], \
 	   Tracker["constants"]["masterdir"], Tracker["constants"]["nnxo"], log)
 	if(Blockdata["myid"] == Blockdata["main_node"]):
+		msg = " Cluster ID  B-factor  Low-pass-filter(Angstrom)  FSC05/FSC0143  in Fourier pixels  in Angstrom   Adjusted to full set FSC05/FSC143  in Fourier pixels  in Angstrom "
+		log.add(msg)
+		print(msg)
 		for iproc in xrange(number_of_groups):
 			msg = merge_two_unfiltered_maps(os.path.join(Tracker["constants"]["masterdir"], "vol_unfiltered_0_grp%03d.hdf"%iproc), \
 			os.path.join(Tracker["constants"]["masterdir"], "vol_unfiltered_1_grp%03d.hdf"%iproc), iproc)
+			log.add(msg)
+			print(msg)
 	mpi_barrier(MPI_COMM_WORLD)
 	return
 
 def sharpen_map(log):
 	global Tracker, Blockdata
-	Tracker["constants"]["orgres"]				= 0.0
-	Tracker["constants"]["refinement_delta"]	= 0.0
-	Tracker["constants"]["refinement_ts"]		= 0.0
-	Tracker["constants"]["refinement_xr"]		= 0.0
-	Tracker["constants"]["refinement_an"]		= 0.0
+	Tracker["constants"]["orgres"]			 = 0.0
+	Tracker["constants"]["refinement_delta"] = 0.0
+	Tracker["constants"]["refinement_ts"]	 = 0.0
+	Tracker["constants"]["refinement_xr"]	 = 0.0
+	Tracker["constants"]["refinement_an"]	 = 0.0
 	minimum_size = Tracker["constants"]["img_per_grp"]
 	number_of_groups = 0
 	if(Blockdata["myid"] == Blockdata["main_node"]):
@@ -6326,11 +6369,17 @@ def sharpen_map(log):
 		msg = "---->>> Summaries of the final results <<<-----"
 		print(line, msg)
 		log.add(msg)
+		msg = " cluster ID  cluster size  sorting score"
+		print(line, msg)
+		log.add(msg)
 		while os.path.exists(os.path.join(Tracker["constants"]["masterdir"], "Cluster_%03d.txt"%number_of_groups)):
 			class_in = read_text_file(os.path.join(Tracker["constants"]["masterdir"], "Cluster_%03d.txt"%number_of_groups))
 			minimum_size = min(len(class_in), minimum_size)
-			msg = " %10d clusters  %10d   group size "%(number_of_groups, len(class_in))
+			try: score =  Tracker["cluster_score"][number_of_groups]
+			except:  score = 0.0 # unaccounted members
+			msg = " %10d    %10d    %f"%(number_of_groups, len(class_in), score)
 			print(line, msg)
+			log.add(msg)
 			number_of_groups += 1
 			final_accounted_ptl +=len(class_in)
 			del class_in
@@ -6339,7 +6388,7 @@ def sharpen_map(log):
 	else: Tracker = 0
 	number_of_groups = bcast_number_to_all(number_of_groups, Blockdata["main_node"], MPI_COMM_WORLD)
 	Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
-	if number_of_groups == 0:ERROR("No cluster is found, and the program terminates.", "do_final_maps", 1, Blockdata["myid"])
+	if number_of_groups == 0: ERROR("No cluster is found, and the program terminates.", "do_final_maps", 1, Blockdata["myid"])
 	minimum_size = bcast_number_to_all(minimum_size, Blockdata["main_node"], MPI_COMM_WORLD)
 	compute_noise(Tracker["constants"]["nnxo"])
 	do_final_maps(number_of_groups, minimum_size, Tracker["constants"]["selected_iter"], Tracker["constants"]["refinement_dir"], \
@@ -6349,9 +6398,14 @@ def sharpen_map(log):
 		fout = open(os.path.join(Tracker["constants"]["masterdir"], "Tracker.json"),'r')
 		Tracker = convert_json_fromunicode(json.load(fout))
 		fout.close()
+		msg = " Cluster ID  B-factor  Low-pass-filter(Angstrom)  FSC05/FSC0143  (in Fourier pixels)  (in Angstrom) adjusted to full set FSC05/FSC143  (in Fourier pixels)  (in Angstrom) "
+		log.add(msg)
+		print(msg)
 		for iproc in xrange(number_of_groups):
 			msg = merge_two_unfiltered_maps(os.path.join(Tracker["constants"]["masterdir"], "vol_unfiltered_0_grp%03d.hdf"%iproc), \
 			  os.path.join(Tracker["constants"]["masterdir"], "vol_unfiltered_1_grp%03d.hdf"%iproc), iproc)
+			print(msg)
+			log.add(msg)
 		fout = open(os.path.join(Tracker["constants"]["masterdir"], "Tracker.json"),'w')
 		json.dump(Tracker, fout)
 		fout.close()
@@ -6387,8 +6441,8 @@ def main():
 	parser.add_option("--sym",                             type   ="string",        default ='c1',                     help="point group symmetry of macromolecular structure, can be inherited from refinement")
 	parser.add_option("--img_per_grp",                     type   ="int",           default =1000,                     help="number of images in a group")
 	parser.add_option("--nxinit",                          type   ="int",           default =-1,                       help="user provided image size")
-	parser.add_option("--nsmear",                          type   ="float",         default =-1.,                      help="User provided smearing number for rec3d")
-	parser.add_option("--final_MGSK",                      type   ="int",           default =-1,                       help="minimum group size for final MGSKmeans")
+	parser.add_option("--nsmear",                          type   ="float",         default =-1.,                      help="=-1, all smearing are used else only the one with maximum probability is used")
+	#parser.add_option("--final_MGSK",                      type   ="int",           default =-1,                       help="minimum group size for final MGSKmeans")
 	parser.add_option("--minimum_grp_size",				   type   ="int",           default =-1,					   help="minimum number of members for being identified as a group")
 	parser.add_option("--order_of_depth",				   type   ="int",           default =2,					       help="order of depth that determines number of independent MGSKmeans runs(2^order_of_depth)")
 	parser.add_option("--comparison_method",               type   ="string",        default ='cross',                  help="option for comparing two images, either using cross-correlaton coefficients [cross] or using Euclidean distance [eucd] ")
@@ -6397,7 +6451,7 @@ def main():
 	parser.add_option("--orien_groups",                    type   ="int",           default =100,                      help="number of sampling angular groups used for EQKmeans orientation constraints")
 	parser.add_option("--post_sorting_sharpen",            action ="store_true",    default =False,                    help="reconstruct odd and even unfiltered maps per cluster after sorting")
 	parser.add_option("--stop_eqkmeans_percentage",        type   ="float",         default =2.0,                      help="particle change percentage for stopping equal size Kmeans")
-	parser.add_option("--eqk_shake",                       type   ="float",         default =5.0,                      help="randomness ratio in adaptive Kmeans")
+	#parser.add_option("--eqk_shake",                      type   ="float",         default =5.0,                      help="randomness ratio in adaptive Kmeans")
 	parser.add_option("--minimum_ptl_number",              type   ="int",           default =20,					   help="integer number, the smallest orien group size equals number_of_groups multiplies this number")
 	parser.add_option("--notapplybckgnoise",               action ="store_true",    default =False,                    help="do not applynoise")
 	parser.add_option("--final_adaptive",                  action ="store_true",    default =False,                    help="use adaptive MGSKmeans in the final layer")
@@ -6414,148 +6468,166 @@ def main():
 	from utilities import bcast_number_to_all
 	### Sanity check
 	
-	if options.refinement_dir !='':
-		if not os.path.exists(options.refinement_dir): ERROR("The specified refinement_dir does not exist", "sort3d", 1, Blockdata["myid"])
-	if options.focus !='':
-		if not os.path.exists(options.focus): ERROR("The specified focus mask file does not exist", "sort3d", 1, Blockdata["myid"])
-	if options.mask3D !='':
-		if not os.path.exists(options.mask3D): ERROR("The specified mask3D file does not exist", "sort3d", 1, Blockdata["myid"])
-	if options.img_per_grp <= options.minimum_grp_size: ERROR("img_per_grp should be way larger than minimum_grp_size", "sort3d", 1, Blockdata["myid"])
+	if not options.post_sorting_sharpen:
+		if options.refinement_dir !='':
+			if not os.path.exists(options.refinement_dir): ERROR("The specified refinement_dir does not exist", "sort3d", 1, Blockdata["myid"])
+		if options.focus !='':
+			if not os.path.exists(options.focus): ERROR("The specified focus mask file does not exist", "sort3d", 1, Blockdata["myid"])
+		if options.mask3D !='':
+			if not os.path.exists(options.mask3D): ERROR("The specified mask3D file does not exist", "sort3d", 1, Blockdata["myid"])
+		if options.img_per_grp <= options.minimum_grp_size: ERROR("img_per_grp should be way larger than minimum_grp_size", "sort3d", 1, Blockdata["myid"])
 	
-	#--- Fill input parameters into dictionary Constants
-	Constants		                         = {}
-	Constants["stop_eqkmeans_percentage"]    = options.stop_eqkmeans_percentage
-	if options.nofinal_sharpen: Constants["final_sharpen"] = False
-	else:                       Constants["final_sharpen"] = True
-	Constants["niter_for_sorting"]           = options.niter_for_sorting
-	Constants["memory_per_node"]             = options.memory_per_node
-	Constants["orgstack"]                    = options.instack
-	Constants["masterdir"]                   = options.output_dir
-	Constants["refinement_dir"]              = options.refinement_dir
-	Constants["mask3D"]                      = options.mask3D
-	Constants["focus3Dmask"]                 = options.focus	
-	Constants["order_of_depth"]              = options.order_of_depth
-	Constants["img_per_grp"]  = options.img_per_grp
-	Constants["minimum_grp_size"]      		 = options.minimum_grp_size
-	Constants["CTF"]                		 = True
-	Constants["radius"]              		 = options.radius
-	Constants["sym"]                         = options.sym
-	Constants["symmetry"]                    = Constants["sym"]
-	Constants["nxinit"]                      = options.nxinit
-	Constants["nsmear"]                      = options.nsmear
-	Constants["seed"]                        = -1
-	Constants["upscale"]                     = 0.5 #
-	Constants["interpolation"]               = "trl"
-	Constants["final_MGSK"]                  = options.final_MGSK
-	Constants["comparison_method"]           = options.comparison_method # either cross or eucd
-	Constants["do_not_include_final_unaccounted"] = options.do_not_include_final_unaccounted # either cross or eucd
-	Constants["post_sorting_sharpen"]       = options.post_sorting_sharpen
-	Constants["final_adaptive"]             = options.final_adaptive
-	Constants["eqk_shake"]                  = options.eqk_shake
-	### postprocessing
-	if options.mtf =='': Constants["mtf"]  = None
-	else: Constants["mtf"] = options.mtf
-	Constants["B_enhance"]                   = options.B_enhance
-	Constants["B_start"]                     = options.B_start
-	Constants["B_stop"]                      = options.B_stop
-	Constants["postlowpassfilter"]           = options.fl
-	Constants["aa"]                          = options.aa
-	if options.nofsc_adj: Constants["fsc_adj"] = False
-	else:   Constants["fsc_adj"] = True	
-	if options.focus:  Constants["comparison_method"] = "cross" # in case of focus3D, cross is used.
-	Constants["fuse_freq"] = 45.  # Now in A, convert to pixels before being used
-	Constants["orien_groups"]  = options.orien_groups # orientation constrained angle step
-	# -------------------------------------------------------------
-	#
-	# Create and initialize Tracker dictionary with input options  # State Variables	
-	Tracker                     = {}
-	Tracker["constants"]	    = Constants
-	if Tracker["constants"]["mask3D"]: Tracker["mask3D"] = Tracker["constants"]["mask3D"]
-	else: Tracker["mask3D"] = None
-	Tracker["radius"]           = Tracker["constants"]["radius"]
-	Tracker["upscale"]          = Tracker["constants"]["upscale"]
-	Tracker["applyctf"]         = False  # Should the data be premultiplied by the CTF.  Set to False for local continuous.
-	Tracker["nxinit"]           = Tracker["constants"]["nxinit"]
-	if options.notapplybckgnoise: Tracker["applybckgnoise"] = False
-	else: Tracker["applybckgnoise"] = True
-	###<<<--options for advanced users:
-	Tracker["total_number_of_iterations"] = 35
-	Tracker["clean_volumes"]  = True
-	### -----------Orientation constraints
-	Tracker["tilt1"]                =  0.0
-	Tracker["tilt2"]                = 180.0
-	Tracker["grp_size_relx_ratio"]  = 0.98
+		#--- Fill input parameters into dictionary Constants
 	
-	### ------------<<< option for proteins images that have preferred orientations
-	Tracker["minimum_ptl_number"] = options.minimum_ptl_number  # for orientation groups
-	if Tracker["constants"]["memory_per_node"] ==-1 or Tracker["constants"]["memory_per_node"] <32.: Tracker["constants"]["small_memory"] = True
-	else: Tracker["constants"]["small_memory"] = False
-	## Additional check
-	Tracker["constants"]["hardmask"] = True
-	Tracker["applymask"]             = True
+		Constants		                         = {}
+		Constants["stop_eqkmeans_percentage"]    = options.stop_eqkmeans_percentage
+		if options.nofinal_sharpen: Constants["final_sharpen"] = False
+		else:                       Constants["final_sharpen"] = True
+		Constants["niter_for_sorting"]           = options.niter_for_sorting
+		Constants["memory_per_node"]             = options.memory_per_node
+		Constants["orgstack"]                    = options.instack
+		Constants["masterdir"]                   = options.output_dir
+		Constants["refinement_dir"]              = options.refinement_dir
+		Constants["mask3D"]                      = options.mask3D
+		Constants["focus3Dmask"]                 = options.focus	
+		Constants["order_of_depth"]              = options.order_of_depth
+		Constants["img_per_grp"]                 = options.img_per_grp
+		Constants["minimum_grp_size"]      		 = options.minimum_grp_size
+		Constants["CTF"]                		 = True
+		Constants["radius"]              		 = options.radius
+		Constants["sym"]                         = options.sym
+		Constants["symmetry"]                    = Constants["sym"]
+		Constants["nxinit"]                      = options.nxinit
+		Constants["nsmear"]                      = options.nsmear
+		Constants["seed"]                        = -1
+		Constants["upscale"]                     = 0.5 #
+		Constants["interpolation"]               = "trl"
+		Constants["final_MGSK"]                  = -1 #options.final_MGSK
+		Constants["comparison_method"]           = options.comparison_method # either cross or eucd
+		Constants["do_not_include_final_unaccounted"] = options.do_not_include_final_unaccounted # either cross or eucd
+		Constants["post_sorting_sharpen"]       = options.post_sorting_sharpen
+		Constants["final_adaptive"]             = options.final_adaptive
+		Constants["eqk_shake"]                  = 5.0 #options.eqk_shake
+		### postprocessing
+		if options.mtf =='': Constants["mtf"]  = None
+		else: Constants["mtf"] = options.mtf
+		Constants["B_enhance"]                   = options.B_enhance
+		Constants["B_start"]                     = options.B_start
+		Constants["B_stop"]                      = options.B_stop
+		Constants["postlowpassfilter"]           = options.fl
+		Constants["aa"]                          = options.aa
+		if options.nofsc_adj: Constants["fsc_adj"] = False
+		else:   Constants["fsc_adj"] = True	
+		if options.focus:  Constants["comparison_method"] = "cross" # in case of focus3D, cross is used.
+		Constants["fuse_freq"] = 45.  # Now in A, convert to pixels before being used
+		Constants["orien_groups"]  = options.orien_groups # orientation constrained angle step
+		# -------------------------------------------------------------
+		#
+		# Create and initialize Tracker dictionary with input options  # State Variables	
+		Tracker                     = {}
+		Tracker["constants"]	    = Constants
+		if Tracker["constants"]["mask3D"]: Tracker["mask3D"] = Tracker["constants"]["mask3D"]
+		else: Tracker["mask3D"] = None
+		Tracker["radius"]           = Tracker["constants"]["radius"]
+		Tracker["upscale"]          = Tracker["constants"]["upscale"]
+		Tracker["applyctf"]         = False  # Should the data be premultiplied by the CTF.  Set to False for local continuous.
+		Tracker["nxinit"]           = Tracker["constants"]["nxinit"]
+		if options.notapplybckgnoise: Tracker["applybckgnoise"] = False
+		else: Tracker["applybckgnoise"] = True
+		###<<<--options for advanced users:
+		Tracker["total_number_of_iterations"] = 35
+		Tracker["clean_volumes"]  = True
+		### -----------Orientation constraints
+		Tracker["tilt1"]                =  0.0
+		Tracker["tilt2"]                = 180.0
+		Tracker["grp_size_relx_ratio"]  = 0.98
 	
-	if os.path.exists(options.refinement_dir):
-		Tracker["constants"]["refinement_method"] ="SPARX"
-		Tracker["nosmearing"]  = False
+		### ------------<<< option for proteins images that have preferred orientations
+		Tracker["minimum_ptl_number"] = options.minimum_ptl_number  # for orientation groups
+		if Tracker["constants"]["memory_per_node"] == -1 or Tracker["constants"]["memory_per_node"] <32.: Tracker["constants"]["small_memory"] = True
+		else: Tracker["constants"]["small_memory"] = False
+		## Additional check
+		Tracker["constants"]["hardmask"] = True
+		Tracker["applymask"]             = True
+	
+		Tracker["nosmearing"]  = True
+		if os.path.exists(options.refinement_dir):
+			Tracker["constants"]["refinement_method"] ="SPARX"
+			Tracker["nosmearing"]  = False
 		
-	elif options.instack !='':
-		Tracker["constants"]["refinement_method"] ="stack"
-		Tracker["nosmearing"]                     = True
-		Tracker["constants"]["refinement_dir"]    = None
-		Tracker["paramstructure_dir"]             = None
-		Tracker["refang"]                         = None
-		Tracker["rshifts"]                        = None
-		Tracker["paramstructure_dict"]            = None
-		Tracker["constants"]["selected_iter"]     = -1
+		elif options.instack !='':
+			Tracker["constants"]["refinement_method"] ="stack"
+			Tracker["constants"]["refinement_dir"]    = None
+			Tracker["paramstructure_dir"]             = None
+			Tracker["refang"]                         = None
+			Tracker["rshifts"]                        = None
+			Tracker["paramstructure_dict"]            = None
+			Tracker["constants"]["selected_iter"]     = -1
 		
-	else: ERROR("Incorrect refinement_dir ", "sxsort3d_new.py", 1, Blockdata["myid"])
-	if os.path.exists(options.refinement_dir) and options.instack !='': ERROR("contractdict refinement methods", "sxsort3d_smearing.py", 1, Blockdata["myid"])
-	Blockdata["fftwmpi"]  = True
-	Blockdata["symclass"] = symclass(Tracker["constants"]["symmetry"])
-	get_angle_step_from_number_of_orien_groups(Tracker["constants"]["orien_groups"])
-	Blockdata["ncpuspernode"] = Blockdata["no_of_processes_per_group"]
-	Blockdata["nsubset"] = Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
-	create_subgroup()
-	#<<<---------------------->>>imported functions<<<---------------------------------------------
-	from statistics 	import k_means_match_clusters_asg_new,k_means_stab_bbenum
-	from utilities 		import get_im,bcast_number_to_all,cmdexecute,write_text_file,read_text_file,wrap_mpi_bcast, get_params_proj, write_text_row
-	from utilities 		import get_number_of_groups
-	from filter			import filt_tanl
-	from time           import sleep
-	from logger         import Logger,BaseLogger_Files
-	import string
-	from string         import split, atoi, atof
-	import json
-	import user_functions
-	####--------------------------------------------------------------
-	# sorting starts...
-	AI("create_masterdir", None)
-	log_main = Logger(BaseLogger_Files())
-	log_main.prefix = Tracker["constants"]["masterdir"]+"/"
-	
-	AI("import_data", log_main)
-	AI("print_command", log_main)
-	AI("check_mask3d", log_main)
-	AI("check_mpi_settings", log_main)
-	AI("post_sorting_sharpen", log_main)
-	
-	Tracker["order_of_depth"] = Tracker["constants"]["order_of_depth"]
-	
-	AI("initialization", log_main)
-	
-	my_pids = os.path.join(Tracker["constants"]["masterdir"], "indexes.txt")
-	while not Tracker["stop_sorting"]:
-		current_run_work_dir = os.path.join(Tracker["constants"]["masterdir"], "RUN%d"%Tracker["number_of_runs"])
-		if(Blockdata["myid"] == Blockdata["main_node"]):
-			if not os.path.exists(current_run_work_dir): os.mkdir(current_run_work_dir)
-		my_pids  = do_depth_one_run(current_run_work_dir, my_pids, \
-			os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt"), \
-			  Tracker["previous_parstack"], log_main, Tracker["order_of_depth"])
-		AI("update", log_main)
+		else: ERROR("Incorrect refinement_dir ", "sxsort3d_new.py", 1, Blockdata["myid"])
+		if os.path.exists(options.refinement_dir) and options.instack !='': ERROR("contractdict refinement methods", "sxsort3d_smearing.py", 1, Blockdata["myid"])
+		Blockdata["fftwmpi"]  = True
+		Blockdata["symclass"] = symclass(Tracker["constants"]["symmetry"])
+		get_angle_step_from_number_of_orien_groups(Tracker["constants"]["orien_groups"])
+		Blockdata["ncpuspernode"] = Blockdata["no_of_processes_per_group"]
+		Blockdata["nsubset"] = Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
+		create_subgroup()
+		#<<<---------------------->>>imported functions<<<---------------------------------------------
+		from statistics 	import k_means_match_clusters_asg_new,k_means_stab_bbenum
+		from utilities 		import get_im,bcast_number_to_all,cmdexecute,write_text_file,read_text_file,wrap_mpi_bcast, get_params_proj, write_text_row
+		from utilities 		import get_number_of_groups
+		from filter			import filt_tanl
+		from time           import sleep
+		from logger         import Logger,BaseLogger_Files
+		import string
+		from string         import split, atoi, atof
+		import json
+		import user_functions
+		####--------------------------------------------------------------
+		# sorting starts...
+		AI("create_masterdir", None)
+		log_main = Logger(BaseLogger_Files())
+		log_main.prefix = Tracker["constants"]["masterdir"]+"/"			 
+		AI("import_data", log_main)
+		AI("print_command", log_main)
+		AI("check_mask3d", log_main)
+		AI("check_mpi_settings", log_main)
+		Tracker["order_of_depth"] = Tracker["constants"]["order_of_depth"]
+		AI("initialization", log_main)
+		my_pids = os.path.join(Tracker["constants"]["masterdir"], "indexes.txt")
+		while not Tracker["stop_sorting"]:
+			current_run_work_dir = os.path.join(Tracker["constants"]["masterdir"], "RUN%d"%Tracker["number_of_runs"])
+			if(Blockdata["myid"] == Blockdata["main_node"]):
+				if not os.path.exists(current_run_work_dir): os.mkdir(current_run_work_dir)
+			my_pids  = do_depth_one_run(current_run_work_dir, my_pids, \
+				os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt"), \
+				  Tracker["previous_parstack"], log_main, Tracker["order_of_depth"])
+			AI("update", log_main)
 		mpi_barrier(MPI_COMM_WORLD)
-	
-	### Final Rec3D unfiltered two halves, valid only in case of sorting initiated from sphire refinement
-	AI("final_sharpen",log_main)
+		### Final Rec3D unfiltered two halves, valid only in case of sorting initiated from sphire refinement
+		AI("dump_tracker",log_main)
+		AI("final_sharpen",log_main)
+		
+	else:
+		from utilities import wrap_mpi_bcast
+		import json
+		masterdir = options.output_dir
+		if not os.path.exists(masterdir):ERROR("masterdir does not exist", "post_sorting_sharpen", 1, Blockdata["myid"])
+		log_main = Logger(BaseLogger_Files())
+		log_main.prefix = masterdir+"/"	
+		if Blockdata["myid"] == Blockdata["main_node"]:
+			fout = open(os.path.join(options.output_dir,"Tracker.json"),'r')
+			Tracker = convert_json_fromunicode(json.load(fout))
+			fout.close()
+			Tracker["constants"]["post_sorting_sharpen"] = True
+			if options.niter_for_sorting !=-1: 
+				Tracker["constants"]["niter_for_sorting"] = options.niter_for_sorting
+			if options.memory_per_node !=-1: Tracker["constants"]["memory_per_node"] = options.memory_per_node
+		else: Tracker = 0
+		Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
+		AI("print_command", log_main)
+		AI("post_sorting_sharpen", log_main)
+		
 	from mpi import mpi_finalize
 	mpi_finalize()
 	exit()
