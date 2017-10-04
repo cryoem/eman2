@@ -5058,7 +5058,7 @@ def rearrange_ranks_of_processors(mode):
 
 	procs_belonging_to_one_node = map(int, sorted([ a[-4:] for a in host_names_with_rank  if hostname in a]))
 	local_rank = procs_belonging_to_one_node.index(my_rank)
-	
+
 	local_size = host_names.count(hostname)
 	
 	no_of_processes_per_group = local_size
