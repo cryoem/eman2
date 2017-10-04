@@ -9,7 +9,7 @@ requirements:
     {% set reqs_common = [
             "msinttypes",  # [win]
             "python 2.7.*",
-            "boost 1.61.*",
+            "boost 1.63.*",
             "fftw-mpi",
             "numpy x.x",  # [linux]
             "numpy",      # [not linux]
