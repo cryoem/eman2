@@ -301,7 +301,6 @@ def main():
 		from statistics import ccc
 		from time import time
 		from alignment import align2d, align2d_scf
-		from multi_shc import mult_transform 
 		
 		stack = args[0]
 		new_stack = args[1]
@@ -573,7 +572,6 @@ def main():
 		from statistics import ccc
 		from time import time
 		from alignment import align2d
-		from multi_shc import mult_transform 
 		
 		stack = args[0]
 		new_stack = args[1]
