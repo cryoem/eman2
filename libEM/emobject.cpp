@@ -724,7 +724,7 @@ string EMObject::to_str(ObjectType argtype) const
 		else if (argtype == FLOAT_POINTER) {
 			sprintf(tmp_str, "FLOAT_POINTER");
 		}
-		else if (argtype == INT) {
+		else if (argtype == INT_POINTER) {
 			sprintf(tmp_str, "INT_POINTER");
 		}
 		else if (argtype == VOID_POINTER) {
