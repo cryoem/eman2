@@ -1349,7 +1349,7 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 	error = 0
 	projections = []
 	if mpi_rank == 0:
-		prms = symmetry_class.even_angles(float(ali3d_options.delta[0]))
+		prms = symmetry_class.even_angles(float(ali3d_options.delta))
 		if(len(prms) < len(subset)): error = 1
 		else:
 			from random import shuffle

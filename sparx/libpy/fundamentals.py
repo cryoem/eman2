@@ -1802,7 +1802,7 @@ class symclass():
 		if(theta2 < 0.0): theta2 = self.brackets[inc_mirror][3]
 		#print " parameters (phi1,phi2,theta,theta2,delta): %f   %f   %f   %f   %f"%(phi1,phi2,theta1,theta2,delta)
 		#
-		if(self.sym[0]  != "s"):
+		if(self.sym[0] != "s"):
 			"""Create a list of Euler angles suitable for projections.
 			   method is either 'S' - for Saff algorithm
 							  or   'P' - for Penczek '94 algorithm
