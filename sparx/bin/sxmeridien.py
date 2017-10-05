@@ -1112,6 +1112,7 @@ def do3d(procid, data, newparams, refang, rshifts, norm_per_particle, myid, mpi_
 	#  Without filtration
 	from reconstruction import recons3d_trl_struct_MPI
 	import os
+	from time           import sleep
 	if (mpi_comm == -1): mpi_comm = MPI_COMM_WORLD
 	
 	if(Blockdata["no_of_groups"] >1):
@@ -1140,7 +1141,7 @@ def do3d(procid, data, newparams, refang, rshifts, norm_per_particle, myid, mpi_
 	if(Blockdata["no_of_groups"] >1):
 		if myid == Blockdata["nodes"][procid]:
 			while not os.path.exists(os.path.join(Tracker["directory"],"tempdir")):
-				continue
+				sleep(1)
 			tvol.set_attr("is_complex",0)
 			tvol.write_image(os.path.join(Tracker["directory"], "tempdir", "tvol_%01d_%03d.hdf"%(procid,Tracker["mainiteration"])))
 			tweight.write_image(os.path.join(Tracker["directory"], "tempdir", "tweight_%01d_%03d.hdf"%(procid,Tracker["mainiteration"])))
@@ -7599,6 +7600,7 @@ def do_ctref_from_orgstack(masterdir, option_orgstack, option_old_refinement_dir
 		if( nnxo < 0 ): ERROR("Incorrect image size  ", "meridien", 1, Blockdata["myid"])
 		pixel_size = bcast_number_to_all(pixel_size, source_node = Blockdata["main_node"])
 		fq         = bcast_number_to_all(fq, source_node = Blockdata["main_node"])
+		Tracker["nxinit"]  = nnxo
 		Tracker["constants"]["nnxo"]         = nnxo
 		Tracker["constants"]["pixel_size"]   = pixel_size
 		Tracker["constants"]["fuse_freq"]    = fq
