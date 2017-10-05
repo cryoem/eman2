@@ -1140,8 +1140,7 @@ def do3d(procid, data, newparams, refang, rshifts, norm_per_particle, myid, mpi_
 
 	if(Blockdata["no_of_groups"] >1):
 		if myid == Blockdata["nodes"][procid]:
-			while not os.path.exists(os.path.join(Tracker["directory"],"tempdir")):
-				sleep(1)
+			while not os.path.exists(os.path.join(Tracker["directory"],"tempdir")): sleep(1)
 			tvol.set_attr("is_complex",0)
 			tvol.write_image(os.path.join(Tracker["directory"], "tempdir", "tvol_%01d_%03d.hdf"%(procid,Tracker["mainiteration"])))
 			tweight.write_image(os.path.join(Tracker["directory"], "tempdir", "tweight_%01d_%03d.hdf"%(procid,Tracker["mainiteration"])))
@@ -7466,6 +7465,7 @@ def do3d_nosmearing(procid, data, params, mpi_comm = -1):
 	#  Without filtration
 	from reconstruction import recons3d_trl_struct_MPI
 	if( mpi_comm < -1 ): mpi_comm = MPI_COMM_WORLD
+	from time import sleep
 	if Blockdata["myid"]== Blockdata["nodes"][procid]:
 		if( procid == 0 ):
 			cmd = "{} {}".format("mkdir", os.path.join(Tracker["directory"], "tempdir") )
@@ -7484,7 +7484,7 @@ def do3d_nosmearing(procid, data, params, mpi_comm = -1):
 											parameters = params, CTF = Tracker["constants"]["CTF"], upweighted = False, mpi_comm = mpi_comm, \
 											target_size = (2*Tracker["nxinit"]+3))
 	if Blockdata["myid"]== Blockdata["nodes"][procid]:
-		while not os.path.exists(os.path.join(Tracker["directory"], "tempdir")):continue
+		while not os.path.exists(os.path.join(Tracker["directory"], "tempdir")):sleep(1)
 		tvol.set_attr("is_complex",0)
 		tvol.write_image(os.path.join(Tracker["directory"], "tempdir", "tvol_%01d_%03d.hdf"%(procid,Tracker["mainiteration"])))
 		tweight.write_image(os.path.join(Tracker["directory"], "tempdir", "tweight_%01d_%03d.hdf"%(procid,Tracker["mainiteration"])))
@@ -7539,6 +7539,7 @@ def recons3d_trl_struct_MPI_nosmearing(myid, main_node, prjlist, parameters, CTF
 
 def do_ctref_from_orgstack(masterdir, option_orgstack, option_old_refinement_dir, option_subset, option_initvol, option_selected_iter, option_smearing, shell_line_command, mpi_comm=-1):
 	global Tracker, Blockdata
+	from time import sleep
 	if mpi_comm == -1: mpi_comm = MPI_COMM_WORLD
 	import shutil
 	# preparations
@@ -7623,8 +7624,7 @@ def do_ctref_from_orgstack(masterdir, option_orgstack, option_old_refinement_dir
 	for procid in xrange(2): partstack[procid] = os.path.join(Tracker["directory"],"params-chunk_%01d_000.txt"%procid)
 	
 	if(Blockdata["myid"] == Blockdata["main_node"]):
-		while not os.path.exists(Tracker["directory"]):
-			continue
+		while not os.path.exists(Tracker["directory"]):sleep(1)
 		if option_subset: l1, l2 = assign_particles_to_groups(minimum_group_size = 10, asubset = read_text_file(option_subset))
 		else: l1, l2 = assign_particles_to_groups(minimum_group_size = 10)
 		write_text_file(l1,partids[0])
