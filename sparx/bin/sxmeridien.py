@@ -7754,6 +7754,13 @@ def do_ctref_from_orgstack(masterdir, option_orgstack, option_old_refinement_dir
 	Tracker["constants"]["inires"] = nfsc_143
 	import user_functions
 	Tracker["constants"]["user_func"] = "do_volume_mask"
+	Tracker["maxit"]		        = Tracker["constants"]["maxit"]
+	Tracker["radius"]		        = Tracker["constants"]["radius"]
+	#  Resolution in pixels at 0.5 cutoff
+	###<<<----state 
+	Blockdata["accumulatepw"]       = [[],[]]
+	###
+	Tracker["constants"]["inires"] = int(Tracker["constants"]["nnxo"]*Tracker["constants"]["pixel_size"]/Tracker["constants"]["inires"] + 0.5)
 	if option_initvol !='':# continue refinement using the given reference 
 		from shutil import copy
 		if(Blockdata["myid"] == Blockdata["nodes"][0]):
@@ -7763,18 +7770,15 @@ def do_ctref_from_orgstack(masterdir, option_orgstack, option_old_refinement_dir
 			copy(option_initvol, os.path.join(Tracker["directory"], "vol_1_000.hdf"))
 		mpi_barrier(MPI_COMM_WORLD)
 	
+	if(Blockdata["myid"] == Blockdata["main_node"]):
+		fout = open(os.path.join(masterdir,"main%03d"%Tracker["mainiteration"],"Tracker_%03d.json"%Tracker["mainiteration"]),'w')
+		json.dump(Tracker, fout)
+		fout.close()
+	from time import sleep
 	for iproc in xrange(Blockdata["nproc"]):
 		while (not os.path.exists(os.path.join(Tracker["directory"], "vol_1_000.hdf"))) or  (not os.path.exists(os.path.join(Tracker["directory"], "vol_0_000.hdf"))):
-			continue
+			sleep(1)
 	mpi_barrier(MPI_COMM_WORLD)
-	##
-	Tracker["maxit"]		        = Tracker["constants"]["maxit"]
-	Tracker["radius"]		        = Tracker["constants"]["radius"]
-	#  Resolution in pixels at 0.5 cutoff
-	###<<<----state 
-	Blockdata["accumulatepw"]       = [[],[]]
-	###
-	Tracker["constants"]["inires"] = int(Tracker["constants"]["nnxo"]*Tracker["constants"]["pixel_size"]/Tracker["constants"]["inires"] + 0.5)
 	return original_data
 	
 def do_ctref_get_subset_data(masterdir, option_old_refinement_dir, option_selected_cluster, option_selected_iter, shell_line_command):
