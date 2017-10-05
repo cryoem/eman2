@@ -1613,12 +1613,15 @@ def main(args):
 
 	mpi_barrier(MPI_COMM_WORLD)
 	if( Blockdata["myid"] == 0):
-		cmd = "{} {} {} {} {} {} {} {} {} {}".format("sxchains.py", os.path.join(Blockdata["masterdir"],"class_averages.hdf"),\
-		os.path.join(Blockdata["masterdir"],"junk.hdf"),os.path.join(Blockdata["masterdir"],"ordered_class_averages.hdf"),\
-		"--circular","--radius=%d"%target_radius , "--xr=%d"%(target_xr+1),"--yr=%d"%(target_yr+1),"--align", ">/dev/null")
-		junk = cmdexecute(cmd)
-		cmd = "{} {}".format("rm -rf", os.path.join(Blockdata["masterdir"], "junk.hdf") )
-		junk = cmdexecute(cmd)
+		if(os.path.exists(os.path.join(Blockdata["masterdir"],"class_averages.hdf"))):
+			cmd = "{} {} {} {} {} {} {} {} {} {}".format("sxchains.py", os.path.join(Blockdata["masterdir"],"class_averages.hdf"),\
+			os.path.join(Blockdata["masterdir"],"junk.hdf"),os.path.join(Blockdata["masterdir"],"ordered_class_averages.hdf"),\
+			"--circular","--radius=%d"%target_radius , "--xr=%d"%(target_xr+1),"--yr=%d"%(target_yr+1),"--align", ">/dev/null")
+			junk = cmdexecute(cmd)
+			cmd = "{} {}".format("rm -rf", os.path.join(Blockdata["masterdir"], "junk.hdf") )
+			junk = cmdexecute(cmd)
+		else:
+			print " ISAC could not find any stable class averaging, terminating..."
 
 	mpi_finalize()
 	exit()

@@ -119,9 +119,10 @@ def find_common_subset(projs, target_threshold=2.0, minimal_subset_size=3, symme
 				for l in xrange(k+1,sc):
 					neisym = symmetry_class.symmetry_neighbors([outp[l][i][:3]])
 					dmin = 180.0
-					for q in neisym: dmin = min(dmin, getang3(q,outp[k][i]))
+					for q in neisym: dmin = min(dmin, getang3(q, outp[k][i]))
 					qt += dmin
 			avg_diff_per_image[i] = (qt/sc/(sc-1)/2.0)
+
 
 	#  Start from the entire set and the slowly decrease it by rejecting worst data one by one.
 	#  It will stop either when the subset reaches the minimum subset size 
@@ -208,7 +209,7 @@ def find_common_subset(projs, target_threshold=2.0, minimal_subset_size=3, symme
 		#print  "the_worst_proj",the_worst_proj
 	#  End of pruning loop
 
-	return outp
+	return subset, avg_diff_per_image, outp
 
 
 """
@@ -581,8 +582,10 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 					#  Minimal length of the subset is set to 1/3 of the number of parameters
 					#  Error threshold is set somewhat arbitrarily to 1.5 angular step of reference projections
 					#  params gets overwritten by rotated parameters,  subset is a list of indexes common
-					params = find_common_subset([params_0, params], delta[N_step]*1.5, len(params)/3, symmetry_class)
+					subset, avg_diff_per_image, params = find_common_subset([params_0, params], delta[N_step]*1.5, len(params)/3, symmetry_class)
 					params = params[1]
+					#   neither is needed
+					del subset, avg_diff_per_image
 					# if myid == 2:  print  " params before orient  ",myid,params[:4],params[-4:]
 					#write_text_row(params_0,"bparamszero%04d%04d.txt"%(myid,total_iter))
 					#write_text_row(params,"bparams%04d%04d.txt"%(myid,total_iter))
@@ -1346,7 +1349,7 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 	error = 0
 	projections = []
 	if mpi_rank == 0:
-		prms = symmetry_class.even_angles(float(ali3d_options.delta[0]))
+		prms = symmetry_class.even_angles(float(ali3d_options.delta))
 		if(len(prms) < len(subset)): error = 1
 		else:
 			from random import shuffle

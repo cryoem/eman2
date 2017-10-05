@@ -5058,7 +5058,7 @@ def rearrange_ranks_of_processors(mode):
 
 	procs_belonging_to_one_node = map(int, sorted([ a[-4:] for a in host_names_with_rank  if hostname in a]))
 	local_rank = procs_belonging_to_one_node.index(my_rank)
-	
+
 	local_size = host_names.count(hostname)
 	
 	no_of_processes_per_group = local_size
@@ -5855,7 +5855,7 @@ def convert_json_fromunicode(data):
 	else:
 		return data
 
-
+"""
 def debug_mpi_barrier(comm):
 	from mpi import mpi_barrier, mpi_comm_rank, mpi_bcast
 	from traceback import extract_stack
@@ -5885,6 +5885,7 @@ def debug_mpi_bcast(newv, s, t, m, comm):
 
 	# return mpi_bcast(newv, s, t, m, comm)
 	return rrr
+"""
 
 def print_from_process(process_rank, message):
 	from mpi import MPI_COMM_WORLD, mpi_comm_rank, mpi_comm_size, mpi_barrier
