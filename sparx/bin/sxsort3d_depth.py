@@ -1132,7 +1132,7 @@ def Kmeans_minimum_group_size_orien_groups(original_data, partids, params, param
 	image_start, image_end  = MPI_start_end(Tracker["total_stack"], Blockdata["nproc"], Blockdata["myid"])
 	
 	Tracker["min_orien_group_size"] = Tracker["number_of_groups"]*Tracker["minimum_ptl_number"]
-	angle_step  = get_angle_step_from_number_of_orien_groups(Tracker["constants"]["orien_groups"])
+	angle_step  = get_angle_step_from_number_of_orien_groups(Tracker["constants"]["orientation_groups"])
 	ptls_in_orien_groups = get_orien_assignment_mpi(angle_step, partids, params, log)
 		
 	### printed info
@@ -1316,7 +1316,7 @@ def Kmeans_minimum_group_size_relaxing_orien_groups(original_data, partids, para
 	nima                    = len(original_data)
 	image_start, image_end  = MPI_start_end(Tracker["total_stack"], Blockdata["nproc"], Blockdata["myid"])
 	
-	norien_groups = Tracker["constants"]["orien_groups"]
+	norien_groups = Tracker["constants"]["orientation_groups"]
 	Tracker["min_orien_group_size"] = Tracker["number_of_groups"]*Tracker["minimum_ptl_number"]
 	angle_step = get_angle_step_from_number_of_orien_groups(norien_groups)
 	ptls_in_orien_groups = get_orien_assignment_mpi(angle_step, partids, params, log)
@@ -1494,7 +1494,7 @@ def Kmeans_adaptive_minimum_group_size(original_data, partids, params, paramstru
 	best_score              = 100.0
 	best_assignment         = []
 	###<<<<<<------------
-	norien = Tracker["constants"]["orien_groups"]
+	norien = Tracker["constants"]["orientation_groups"]
 	#else: norien = 20
 	Tracker["min_orien_group_size"] = Tracker["number_of_groups"]*Tracker["minimum_ptl_number"]
 	angle_step = get_angle_step_from_number_of_orien_groups(norien)
@@ -6448,7 +6448,7 @@ def main():
 	parser.add_option("--comparison_method",               type   ="string",        default ='cross',                  help="option for comparing two images, either using cross-correlaton coefficients [cross] or using Euclidean distance [eucd] ")
 	parser.add_option("--memory_per_node",                 type   ="float",         default =-1.0,                     help="memory_per_node, the number used for evaluate the CPUs/NODE settings given by user")
 	parser.add_option("--nofinal_sharpen",                 action ="store_true",    default =False,                    help="not reconstruct unfiltered final maps for post refinement process")
-	parser.add_option("--orien_groups",                    type   ="int",           default =100,                      help="number of sampling angular groups used for EQKmeans orientation constraints")
+	parser.add_option("--orientation_groups",              type   ="int",           default =100,                      help="number of sampling angular groups used for EQKmeans orientation constraints")
 	parser.add_option("--post_sorting_sharpen",            action ="store_true",    default =False,                    help="reconstruct odd and even unfiltered maps per cluster after sorting")
 	parser.add_option("--stop_eqkmeans_percentage",        type   ="float",         default =2.0,                      help="particle change percentage for stopping equal size Kmeans")
 	#parser.add_option("--eqk_shake",                      type   ="float",         default =5.0,                      help="randomness ratio in adaptive Kmeans")
@@ -6520,7 +6520,7 @@ def main():
 		else:   Constants["fsc_adj"] = True	
 		if options.focus:  Constants["comparison_method"] = "cross" # in case of focus3D, cross is used.
 		Constants["fuse_freq"] = 45.  # Now in A, convert to pixels before being used
-		Constants["orien_groups"]  = options.orien_groups # orientation constrained angle step
+		Constants["orientation_groups"]  = options.orientation_groups # orientation constrained angle step
 		# -------------------------------------------------------------
 		#
 		# Create and initialize Tracker dictionary with input options  # State Variables	
@@ -6568,7 +6568,7 @@ def main():
 		if os.path.exists(options.refinement_dir) and options.instack !='': ERROR("contractdict refinement methods", "sxsort3d_smearing.py", 1, Blockdata["myid"])
 		Blockdata["fftwmpi"]  = True
 		Blockdata["symclass"] = symclass(Tracker["constants"]["symmetry"])
-		get_angle_step_from_number_of_orien_groups(Tracker["constants"]["orien_groups"])
+		get_angle_step_from_number_of_orien_groups(Tracker["constants"]["orientation_groups"])
 		Blockdata["ncpuspernode"] = Blockdata["no_of_processes_per_group"]
 		Blockdata["nsubset"] = Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
 		create_subgroup()
