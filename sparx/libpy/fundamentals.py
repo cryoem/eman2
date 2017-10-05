@@ -1795,7 +1795,7 @@ class symclass():
 		from utilities import even_angles_cd
 		angles = []
 		self.sym = self.sym
-		if(phi2<phi1 or theta2<theta1 or delta <= 0.0):  ERROR("even_angles","incorrect parameters (phi1,phi2,theta1,theta2,delta): %f   %f   %f   %f   %f"%(phi1,phi2,theta,theta2,delta),1)
+		if(phi2<phi1 or theta2<theta1 or delta <= 0.0):  ERROR("even_angles","incorrect parameters (phi1,phi2,theta1,theta2,delta): %f   %f   %f   %f   %f"%(phi1,phi2,theta1,theta2,delta),1)
 		if(phi1 < 0.0):  phi1 = 0.0
 		if(phi2 < 0.0):  phi2 = self.brackets[inc_mirror][0] - 1.0e-7 # exclude right border of unit
 		if(theta1 < 0.0): theta1 = 0.0
