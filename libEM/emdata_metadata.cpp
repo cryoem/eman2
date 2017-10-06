@@ -952,7 +952,7 @@ MArray2D EMData::get_2dview() const
 	if (get_ndim() != ndims) {
 		throw ImageDimensionException("2D only");
 	}
-	boost::array<std::size_t,ndims> dims = {{nx, ny}};
+	boost::array<std::size_t,ndims> dims = {{(size_t)nx, (size_t)ny}};
 	MArray2D marray(get_data(), dims, boost::fortran_storage_order());
 	return marray;
 }
@@ -961,7 +961,7 @@ MArray2D EMData::get_2dview() const
 MArray3D EMData::get_3dview() const
 {
 	const int ndims = 3;
-	boost::array<std::size_t,ndims> dims = {{nx, ny, nz}};
+	boost::array<std::size_t,ndims> dims = {{(size_t)nx, (size_t)ny, (size_t)nz}};
 	MArray3D marray(get_data(), dims, boost::fortran_storage_order());
 	return marray;
 }
@@ -973,7 +973,7 @@ MCArray2D EMData::get_2dcview() const
 	if (get_ndim() != ndims) {
 		throw ImageDimensionException("2D only");
 	}
-	boost::array<std::size_t,ndims> dims = {{nx/2, ny}};
+	boost::array<std::size_t,ndims> dims = {{(size_t)nx/2, (size_t)ny}};
 	std::complex<float>* cdata = reinterpret_cast<std::complex<float>*>(get_data());
 	MCArray2D marray(cdata, dims, boost::fortran_storage_order());
 	return marray;
@@ -983,7 +983,7 @@ MCArray2D EMData::get_2dcview() const
 MCArray3D EMData::get_3dcview() const
 {
 	const int ndims = 3;
-	boost::array<std::size_t,ndims> dims = {{nx/2, ny, nz}};
+	boost::array<std::size_t,ndims> dims = {{(size_t)nx/2, (size_t)ny, (size_t)nz}};
 	std::complex<float>* cdata = reinterpret_cast<std::complex<float>*>(get_data());
 	MCArray3D marray(cdata, dims, boost::fortran_storage_order());
 	return marray;
@@ -993,7 +993,7 @@ MCArray3D EMData::get_3dcview() const
 MCArray3D* EMData::get_3dcviewptr() const
 {
 	const int ndims = 3;
-	boost::array<std::size_t,ndims> dims = {{nx/2, ny, nz}};
+	boost::array<std::size_t,ndims> dims = {{(size_t)nx/2, (size_t)ny, (size_t)nz}};
 	std::complex<float>* cdata = reinterpret_cast<std::complex<float>*>(get_data());
 	MCArray3D* marray = new MCArray3D(cdata, dims,
 									  boost::fortran_storage_order());
@@ -1007,9 +1007,9 @@ MArray2D EMData::get_2dview(int x0, int y0) const
 	if (get_ndim() != ndims) {
 		throw ImageDimensionException("2D only");
 	}
-	boost::array<std::size_t,ndims> dims = {{nx, ny}};
+	boost::array<std::size_t,ndims> dims = {{(size_t)nx, (size_t)ny}};
 	MArray2D marray(get_data(), dims, boost::fortran_storage_order());
-	boost::array<std::size_t,ndims> bases={{x0, y0}};
+	boost::array<std::size_t,ndims> bases={{(size_t)x0, (size_t)y0}};
 	marray.reindex(bases);
 	return marray;
 }
@@ -1018,9 +1018,9 @@ MArray2D EMData::get_2dview(int x0, int y0) const
 MArray3D EMData::get_3dview(int x0, int y0, int z0) const
 {
 	const int ndims = 3;
-	boost::array<std::size_t,ndims> dims = {{nx, ny, nz}};
+	boost::array<std::size_t,ndims> dims = {{(size_t)nx, (size_t)ny, (size_t)nz}};
 	MArray3D marray(get_data(), dims, boost::fortran_storage_order());
-	boost::array<std::size_t,ndims> bases={{x0, y0, z0}};
+	boost::array<std::size_t,ndims> bases={{(size_t)x0, (size_t)y0, (size_t)z0}};
 	marray.reindex(bases);
 	return marray;
 }
@@ -1032,10 +1032,10 @@ MCArray2D EMData::get_2dcview(int x0, int y0) const
 	if (get_ndim() != ndims) {
 		throw ImageDimensionException("2D only");
 	}
-	boost::array<std::size_t,ndims> dims = {{nx/2, ny}};
+	boost::array<std::size_t,ndims> dims = {{(size_t)nx/2, (size_t)ny}};
 	std::complex<float>* cdata = reinterpret_cast<std::complex<float>*>(get_data());
 	MCArray2D marray(cdata, dims, boost::fortran_storage_order());
-	boost::array<std::size_t,ndims> bases={{x0, y0}};
+	boost::array<std::size_t,ndims> bases={{(size_t)x0, (size_t)y0}};
 	marray.reindex(bases);
 	return marray;
 }
@@ -1044,10 +1044,10 @@ MCArray2D EMData::get_2dcview(int x0, int y0) const
 MCArray3D EMData::get_3dcview(int x0, int y0, int z0) const
 {
 	const int ndims = 3;
-	boost::array<std::size_t,ndims> dims = {{nx/2, ny, nz}};
+	boost::array<std::size_t,ndims> dims = {{(size_t)nx/2, (size_t)ny, (size_t)nz}};
 	std::complex<float>* cdata = reinterpret_cast<std::complex<float>*>(get_data());
 	MCArray3D marray(cdata, dims, boost::fortran_storage_order());
-	boost::array<std::size_t,ndims> bases={{x0, y0, z0}};
+	boost::array<std::size_t,ndims> bases={{(size_t)x0, (size_t)y0, (size_t)z0}};
 	marray.reindex(bases);
 	return marray;
 }

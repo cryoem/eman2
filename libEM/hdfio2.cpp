@@ -602,7 +602,7 @@ bool HdfIO2::is_valid(const void *first_block)
 	ENTERFUNC;
 
 	if (first_block) {
-		char signature[8] = { 137,72,68,70,13,10,26,10 };
+		char signature[8] = { char(137),char(72),char(68),char(70),char(13),char(10),char(26), char(10) };
 		if (strncmp((const char *)first_block,signature,8)==0) return true;
 
 		// const char* f=(const char *)first_block;
