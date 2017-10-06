@@ -64,7 +64,7 @@ struct EMData_pickle_suite : boost::python::pickle_suite
 		using namespace boost::python;
 		EMAN::EMData const& em = extract<EMAN::EMData const&>(em_obj)();
 		
-		return make_tuple(em_obj.attr("__dict__"),
+		return boost::python::make_tuple(em_obj.attr("__dict__"),
 							em.get_flags(), 
 							em.get_changecount(),
 							em.get_xsize(), 
@@ -157,7 +157,7 @@ struct Transform_pickle_suite : boost::python::pickle_suite
 	getinitargs(const EMAN::Transform& t)
 	{
 		using namespace boost::python;
-		return make_tuple(t.get_matrix());
+		return boost::python::make_tuple(t.get_matrix());
 	}
 };
 
@@ -168,7 +168,7 @@ struct EMAN1Ctf_pickle_suite : boost::python::pickle_suite
 		getinitargs(const EMAN::EMAN1Ctf& ctf)
 		{
 			using namespace boost::python;
-			return make_tuple(ctf.to_vector());
+			return boost::python::make_tuple(ctf.to_vector());
 		}
 };
 
@@ -179,7 +179,7 @@ struct EMAN2Ctf_pickle_suite : boost::python::pickle_suite
 		getinitargs(const EMAN::EMAN2Ctf& ctf)
 		{
 			using namespace boost::python;
-			return make_tuple(ctf.to_vector());
+			return boost::python::make_tuple(ctf.to_vector());
 		}
 };
 
