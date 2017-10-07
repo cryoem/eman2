@@ -87,7 +87,7 @@ def main():
 	parser.add_argument("--sym", dest="sym", default="c1", help="Set the symmetry; if no value is given then the model is assumed to have no symmetry.\nChoices are: i, c, d, tet, icos, or oct.")
 
 	parser.add_argument("--fillangle", type=float, dest="fillangle", help="An angular range used for both alt & az over which the projection should be averaged. Generally the angular step used when making projections.",default=0)
-	parser.add_argument("--pad", metavar="x or x,y", default=None,type=str, help="Will zero-pad images to the specifed size (x,y) or (x,x) prior to reconstruction. If not specified no padding occurs.")
+	parser.add_argument("--pad", metavar="x or x,y", default=None,type=str, help="Will zero-pad images to the specifed size (x,y) or (x,x) prior to reconstruction. If not specified or 0 no padding occurs. If a negative value is specified automatic padding is performed. ")
 	parser.add_argument("--padvol", metavar="x or x,y,z", default=None,type=str, help="Defines the dimensions (x,y,z) or (x,x,x) of the reconstructed volume. If ommitted, implied value based on padded 2D images is used.")
 	parser.add_argument("--outsize", metavar="x or x,y,z", default=None, type=str, help="Defines the dimensions (x,y,z) or (x,x,x) of the final volume written to disk, if ommitted, size will be based on unpadded input size")
 	parser.add_argument("--savenorm", default=None, type=str, help="If set, will save the normalization volume showing Fourier space filling to the specified file")
@@ -154,12 +154,16 @@ def main():
 	if options.apix!=None : apix=options.apix
 	else : apix=tmp["apix_x"]
 
-
 	if options.verbose>0: print "Image dimensions %d x %d"%(nx,ny)
 
 	# parse the padding options, to make sure we have a 2 or 3 tuple for each
 	try :
-		if options.pad==None : options.pad=(max(nx,ny),max(nx,ny))
+		if options.pad==None or options.pad==0: options.pad=(max(nx,ny),max(nx,ny))
+		elif options.pad[0]=='-':
+			sz=max(nx,ny)
+			sz=good_size(sz*1.25)
+			options.pad=(sz,sz)
+			print "padding to {}x{}".format(sz,sz)
 		elif "," in options.pad :
 			s=options.pad.split(",")
 			options.pad=(int(s[0]),int(s[1]))
@@ -233,11 +237,11 @@ def main():
 		seed.clip_inplace(Region((nx-padvol[0])/2,(ny-padvol[1])/2,(nslice-padvol[2])/2,padvol[0],padvol[1],padvol[2]))
 		seed.do_fft_inplace()
 		if options.seedweightmap==None:  recon.setup_seed(seed,options.seedweight)
-		else: 
+		else:
 			seedweightmap=EMData(seedweightmap,0)
 			recon.setup_seedandweights(seed,seedweightmap)
 	else : recon.setup()
-	
+
 	for i,t in enumerate(threads):
 		if options.verbose>1: print "started thread ",i
 		t.start()
@@ -393,7 +397,7 @@ def initialize_data(inputfile,inputmodel,tltfile,pad,no_weights,preprocess):
 
 			if no_weights==1: elem["weight"]=1.0
 			else :
-				try: 
+				try:
 					elem["weight"]=float(tmp["ptcl_repr"])
 					if no_weights==2 : elem["weight"]=sqrt(elem["weight"])
 				except: elem["weight"]=1.0

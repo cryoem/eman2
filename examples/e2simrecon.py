@@ -63,8 +63,8 @@ Simulates the effects of a 3D reconstruction by including noise and rotational u
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_argument("--apix", "-A", type=float, help="A/voxel", default=1.0)
-	parser.add_argument("--res", "-R", type=float, help="Resolution in A. This is not a filter, this is a target resolution to achieve a 0.143 FSC with noise present",default=2.8)
+	parser.add_argument("--apix", "-A", type=float, help="A/voxel", default=0.0)
+	parser.add_argument("--fsc", type=str, help="A text file containing a FSC curve to simulate",default=None)
 	parser.add_argument("--anglesigma", type=float, help="Uncertainty in orientation determination in degrees")
 	parser.add_argument("--sym", dest = "sym", default="c1",help = "Specify symmetry - choices are: c<n>, d<n>, tet, oct, icos.")
 	parser.add_argument("--threads", default=4 ,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful")
@@ -74,20 +74,31 @@ Simulates the effects of a 3D reconstruction by including noise and rotational u
 	(options, args) = parser.parse_args()
 	if len(args)<2 : parser.error("Input and output files required")
 
+	if options.fsc==None:
+		print "ERROR: must specify FSC curve"
+		sys.exit(1)
+	fsc=XYData()
+	fsc.read_file(options.fsc)
+
 	vol=EMData(args[0],0,True)
+	if options.apix<=0 : options.apix=vol["apix_x"]
+
 	nz=vol["nz"]
 	if nz==1 :
 		print "Input must be a volume"
 		sys.exit(1)
-		
-	da=360.0/nz
-	
-	com="e2project3d.py {} --outfile simproj.hdf -f --orientgen eman:delta={}:inc_mirror=0:random_phi=1 --sym {} --parallel thread:{}".format(args[0],da,options.sym,options.threads)
+
+	logger=E2init(sys.argv,options.ppid)
+
+
+#	da=2*360.0/nz
+
+	com="e2project3d.py {} --outfile simproj.hdf -f --orientgen rand:phitoo=1:n={} --sym {} --parallel thread:{}".format(args[0],nz*3,options.sym,options.threads)
 	run(com)
-	
+
 	n=EMUtil.get_image_count("simproj.hdf")
 	for i in xrange(n):
-		h=EMData(args[0],i,True)
+		h=EMData("simproj.hdf",i,True)
 		xf=h["xform.projection"]
 		k=xf.get_rotation("eman")
 		k["alt"]+=random.gauss(0,options.anglesigma)
@@ -95,5 +106,43 @@ Simulates the effects of a 3D reconstruction by including noise and rotational u
 		k["phi"]+=random.gauss(0,options.anglesigma)
 		xf.set_rotation(k)
 		h["xform.projection"]=xf
-		h.write_image(args[0],i,IMAGE_UNKNOWN,True)
-	
+		h["ptcl_repr"]=1
+		h.write_image("simproj.hdf",i,IMAGE_UNKNOWN,True)
+
+	com="e2make3dpar.py --input simproj.hdf --sym {} --output nonoise.hdf --keep 1 --pad -1 --mode gauss_var --threads {}".format(options.sym,options.threads)
+	run(com)
+
+	recon=EMData("nonoise.hdf")
+	reconf=recon.do_fft()
+
+	ds=1.0/(options.apix*nz)
+	pspec=reconf.calc_radial_dist(int(nz*1.8),0,1,1)
+#	pspec=reconf.calc_radial_dist(len(fsc),fsc.get_x(0)/ds,(fsc.get_x(1)-fsc.get_x(0))/ds,1)
+#	print pspec
+	fscl=[min(max(fsc.get_yatx(i*ds),.001),0.9999) for i in xrange(len(pspec))]
+#	print fscl
+	noise=[sqrt(pspec[i]*(1.0-fscl[i])/(fscl[i]))/(4000.0) for i in xrange(len(pspec))]
+	print noise
+
+	noisemap=EMData(nz,nz,nz)
+	noisemap.process_inplace("testimage.noise.gauss")
+	noisemap.process_inplace("filter.radialtable",{"table":noise})
+
+	reconc=recon.copy()
+	reconc.add(noisemap)
+	reconc.write_image("{}_even.hdf".format(args[1].rsplit(".",1)[0]),0)
+
+	noisemap=EMData(nz,nz,nz)
+	noisemap.process_inplace("testimage.noise.gauss")
+	noisemap.process_inplace("filter.radialtable",{"table":noise})
+
+	reconc=recon.copy()
+	reconc.add(noisemap)
+	reconc.write_image("{}_odd.hdf".format(args[1].rsplit(".",1)[0]),0)
+
+
+	E2end(logger)
+
+
+if __name__=="__main__":
+	main()
