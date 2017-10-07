@@ -8934,7 +8934,7 @@ def main():
 		mainiteration 	= 0
 		Tracker["mainiteration"] = mainiteration
 		
-	else: # ctref
+	else: # ctref   ################################################################
 		if(Blockdata["myid"] == Blockdata["main_node"]):
 			if( masterdir == ""):
 				timestring = strftime("_%d_%b_%Y_%H_%M_%S", localtime())
@@ -9038,6 +9038,35 @@ def main():
 					if not os.path.exists(Tracker["directory"]): os.mkdir(Tracker["directory"])
 					if not os.path.exists(os.path.join(Tracker["directory"], "tempdir")): os.mkdir(os.path.join(Tracker["directory"], "tempdir"))
 				refang, rshifts, coarse_angles, coarse_shifts = get_refangs_and_shifts() # no shake
+				
+				
+				if( Tracker["constants"]["shake"] > 0.0 ):
+					if(Blockdata["myid"] == Blockdata["main_node"]):
+						shakenumber = uniform( -Tracker["constants"]["shake"], Tracker["constants"]["shake"])
+					else:
+						shakenumber = 0.0
+					shakenumber = bcast_number_to_all(shakenumber, source_node = Blockdata["main_node"])
+					# it has to be rounded as the number written to the disk is rounded,
+					#  so if there is discrepancy one cannot reproduce iteration.
+					shakenumber  = round(shakenumber,5)
+
+					rangle = shakenumber*Tracker["delta"]
+					rshift = shakenumber*Tracker["ts"]
+					refang = Blockdata["symclass"].reduce_anglesets( rotate_params(refang, [-rangle,-rangle,-rangle]) )
+					coarse_angles = Blockdata["symclass"].reduce_anglesets( rotate_params(coarse_angles, [-rangle,-rangle,-rangle]) )
+					shakegrid(rshifts, rshift)
+					shakegrid(coarse_shifts, rshift)
+
+					if(Blockdata["myid"] == Blockdata["main_node"]):
+						write_text_row([[shakenumber, rangle, rshift]], os.path.join(Tracker["directory"] ,"randomize_search.txt") )
+				else:
+					rangle = 0.0
+					rshift = 0.0
+
+				if(Blockdata["myid"] == Blockdata["main_node"]):
+					write_text_row( refang, os.path.join(Tracker["directory"] ,"refang.txt") )
+					write_text_row( rshifts, os.path.join(Tracker["directory"] ,"rshifts.txt") )
+				mpi_barrier(MPI_COMM_WORLD)
 				
 				if(Blockdata["myid"] == Blockdata["main_node"]):
 					write_text_row( refang, os.path.join(Tracker["directory"] ,"refang.txt") )
@@ -9182,7 +9211,7 @@ def main():
 			mainiteration = options.ctref_iter
 		Tracker["state"]  = "RESTRICTED"
 		Tracker["keepfirst"] = -1
-		
+		############################################<<<<<<<<<<<<<
 	# remove projdata, if it existed, initialize to nonsense
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		if not os.path.exists(os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"],"Tracker_%03d.json"%Tracker["mainiteration"])):
