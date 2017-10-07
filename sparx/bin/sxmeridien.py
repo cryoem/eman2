@@ -7614,7 +7614,7 @@ def ctref_init(masterdir, option_orgstack, option_old_refinement_dir, option_sub
 		Tracker["constants"]["fuse_freq"]    = fq
 		del fq, nnxo, pixel_size
 		# Resolution is always in full size image pixel units.
-	
+	init_Tracker_mpi(option_initvol)
 	Tracker["constants"]["masterdir"] = masterdir
 	Tracker["directory"] = os.path.join(masterdir, "main000")
 	Blockdata["symclass"] = symclass(Tracker["constants"]["symmetry"])
@@ -7670,8 +7670,6 @@ def ctref_init(masterdir, option_orgstack, option_old_refinement_dir, option_sub
 	l = bcast_number_to_all(l, source_node = Blockdata["main_node"], mpi_comm = mpi_comm)
 	Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], mpi_comm)
 	
-	init_Tracker_mpi(option_initvol)
-	
 	original_data                   = [None, None]
 	oldparams                       = [None, None]
 	projdata                        = [None, None]
@@ -7685,7 +7683,7 @@ def ctref_init(masterdir, option_orgstack, option_old_refinement_dir, option_sub
 		original_data[procid], oldparams[procid] = getindexdata(partids[procid], partstack[procid], \
 			os.path.join(Tracker["constants"]["masterdir"],"main000", "particle_groups_%01d.txt"%procid), \
 			original_data[procid], small_memory = Tracker["constants"]["small_memory"], \
-			nproc = Blockdata["subgroup_size"], myid = Blockdata["subgroup_myid"], mpi_comm = mpi_comm)												
+			nproc = Blockdata["subgroup_size"], myid = Blockdata["myid"], mpi_comm = mpi_comm)												
 		temp = Tracker["directory"]
 		Tracker["directory"] = os.path.join(Tracker["directory"], "tempdir")
 		mpi_barrier(mpi_comm)
@@ -7694,7 +7692,7 @@ def ctref_init(masterdir, option_orgstack, option_old_refinement_dir, option_sub
 		projdata[procid] = get_shrink_data(Tracker["nxinit"], procid, original_data[procid], oldparams[procid],\
 		  return_real = False, preshift = True, apply_mask = False, nonorm = True, nosmearing = True)
 		mpi_barrier(mpi_comm)
-	compute_sigma(original_data[0]+original_data[1],oldparams[0]+oldparams[1], len(oldparams[0]), False, Blockdata["subgroup_myid"], mpi_comm = mpi_comm)
+	compute_sigma(original_data[0]+original_data[1],oldparams[0]+oldparams[1], len(oldparams[0]), False, Blockdata["myid"], mpi_comm = mpi_comm)
 	# Estimate initial resolution/image size
 	if(Blockdata["myid"] == Blockdata["nodes"][0]):
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
@@ -7702,7 +7700,7 @@ def ctref_init(masterdir, option_orgstack, option_old_refinement_dir, option_sub
 	for procid in xrange(2):
 		#original_data[procid]    = None
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		if(Blockdata["subgroup_myid"] == Blockdata["nodes"][procid]): print(line, "3-D reconstruction of group %d"%procid)
+		if(Blockdata["myid"] == Blockdata["nodes"][procid]): print(line, "3-D reconstruction of group %d"%procid)
 		do3d_nosmearing(procid, projdata[procid], oldparams[procid], mpi_comm = mpi_comm)
 		projdata[procid] = []
 		mpi_barrier(mpi_comm)
@@ -7797,6 +7795,10 @@ def init_Tracker_mpi(option_initvol = None):
 	Tracker["constants"]["best"]    = 0
 	Tracker["keepfirst"]            = -1
 	Tracker["bestres"]          	= -1
+	Tracker["directory"]         	= ""
+	Tracker["previousoutputdir"] 	= ""
+	Tracker["mainiteration"]     	= 0
+	Tracker["nima_per_chunk"]    	= [0,0]
 	try:  user_func = Tracker["constants"]["user_func"]
 	except: Tracker["constants"]["user_func"] = "do_volume_mask"
 	return
@@ -8393,7 +8395,7 @@ def update_tracker(shell_line_command):
 	parser_no_default.add_option("--ctref_oldrefdir",           type="string")
 	parser_no_default.add_option("--ctref_iter",                type="int")
 	parser_no_default.add_option("--ctref_smearing",            type="int")
-	parser_no_default.add_option("--ctref_an",                  type="float")
+	parser_no_default.add_option("--an",                  type="float")
 
 	(options_no_default_value, args) = parser_no_default.parse_args(shell_line_command)
 
@@ -8458,8 +8460,8 @@ def update_tracker(shell_line_command):
 		Tracker["constants"]["function"] = options_no_default_value.function
 	if  options_no_default_value.ctref_smearing != None:
 		Tracker["constants"]["ctref_smearing"] = options_no_default_value.ctref_smearing
-	if  options_no_default_value.ctref_an!= None:
-		Tracker["constants"]["ctref_an"] = options_no_default_value.ctref_an
+	if  options_no_default_value.an!= None:
+		Tracker["constants"]["an"] = options_no_default_value.an
 	return 
 
 def compare_bckgnoise(bckgnoise1, bckgnoise2):
@@ -8534,7 +8536,7 @@ def main():
 	parser.add_option("--ctref_initvol",            type="string",          default='',                     help="user provided reference for continuation run")
 	parser.add_option("--ctref_orgstack",           type="string",          default='',                     help="BDB stack for continuation run with xform.projection parameters written in the headers")
 	parser.add_option("--ctref_smearing",           type="int",             default=-1,                     help=" Use -1 value only ")
-	parser.add_option("--ctref_an",	           		type="float", 	     	default=-1.,                	help="angular neighborhood for local search")
+	parser.add_option("--an",	           		    type="float", 	     	default=-1.,                	help="angular neighborhood for local search")
 	(options, args) = parser.parse_args(sys.argv[1:])
 	update_options  = False # restart option
 	global Tracker, Blockdata
@@ -8646,6 +8648,7 @@ def main():
 		Constants["ctref_oldrefdir"]            = options.ctref_oldrefdir
 		Constants["ctref_iter"]                 = options.ctref_iter
 		Constants["ctref_initvol"]              = options.ctref_initvol
+		Constants["ctref_smearing"]             = options.ctref_smearing
 		
 
 		#
@@ -8961,6 +8964,7 @@ def main():
 			if (options.ctref_orgstack !=''): # start from datastack
 				Constants["stack"]             			= options.ctref_orgstack
 				Constants["rs"]                			= 1
+				Constants["an"]                			= "-1"
 				Constants["radius"]            			= options.radius
 				Constants["maxit"]             			= 1
 				Constants["fuse_freq"]         			= 45  # Now in A, convert to absolute before using
@@ -8979,7 +8983,7 @@ def main():
 				Constants["best"]              			= 0
 				Constants["limit_improvement"] 			= 1
 				Constants["limit_changes"]     			= 1  # reduce delta by half if both limits are reached simultaneously
-				Constants["states"]            			= None #["INITIAL", "PRIMARY", "EXHAUSTIVE", "RESTRICTED", "LOCAL", "FINAL"]
+				Constants["states"]            			=  ["INITIAL", "PRIMARY", "EXHAUSTIVE", "RESTRICTED", "LOCAL", "FINAL", "CONTINUATION_INITIAL", "CONTINUATION_PRIMARY"]
 				Constants["user_func"]					=  options.function
 				Constants["hardmask"]          			=  True #options.hardmask
 				Constants["ccfpercentage"]     			= options.ccfpercentage/100.
@@ -8996,6 +9000,7 @@ def main():
 				Constants["ctref_smearing"]             = options.ctref_smearing
 				Constants["delta"]                      = options.delta
 				Tracker["constants"]		            = Constants
+				Constants["ctref_initvol"]              = options.ctref_initvol
 				update_tracker(sys.argv[1:])
 				Tracker["xr"]			                = options.xr
 				Tracker["yr"]			                = options.xr # Do not change!  I do not think it is used anywhere
@@ -9003,8 +9008,9 @@ def main():
 				Tracker["delta"]		                = options.delta  # How to decide it
 				if Tracker["delta"] ==-1.: Tracker["delta"] = 15./4.
 				if options.ctref_an ==-1.: Tracker["an"] = 6.*Tracker["delta"]
-				else:                      Tracker["an"] = options.ctref_an
+				else:                      Tracker["an"] = options.an
 				Tracker["constants"]   = Constants
+				if options.radius == -1: ERROR("radius is not provided ", "ctref_init", 1, Blockdata["myid"])
 			original_data = ctref_init(masterdir, options.ctref_orgstack, options.ctref_oldrefdir, options.ctref_subset, options.ctref_initvol, options.ctref_iter, options.ctref_smearing, sys.argv[1:], mpi_comm = MPI_COMM_WORLD)
 			mainiteration  +=1
 			Tracker["mainiteration"] = mainiteration
