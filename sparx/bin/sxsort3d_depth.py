@@ -390,7 +390,7 @@ def Kmeans_bottom_layer(input_dir, work_dir, num_of_runs, init_minimum_group_siz
 		
 			if Tracker["constants"]["final_MGSK"]==-1:
 				if Tracker["constants"]["minimum_grp_size"] > 0: minimum_group_size = Tracker["constants"]["minimum_grp_size"]
-				else: minimum_group_size = init_minimum_group_size
+				else:  minimum_group_size = max(init_minimum_group_size, Tracker["total_stack"]//(Tracker["number_of_groups"]*Tracker["number_of_groups"]))
 			else:  minimum_group_size = Tracker["constants"]["final_MGSK"]
 		
 			if not Tracker["constants"]["final_adaptive"]:
