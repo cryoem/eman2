@@ -364,60 +364,73 @@ def Kmeans_middle_layer(input_dir, work_dir, num_of_runs, minimum_group_size, or
 def Kmeans_bottom_layer(input_dir, work_dir, num_of_runs, init_minimum_group_size, original_data, \
        params, parameterstructure, norm_per_particle, log_main):
 	global Tracker, Blockdata
-	from utilities import read_text_file, wrap_mpi_bcast, write_text_file, write_text_row
+	from   utilities import read_text_file, wrap_mpi_bcast, write_text_file, write_text_row
 	import copy
 	import shutil
+	from shutil import copyfile
 	from math import sqrt
-	for indep_run_iter in xrange(num_of_runs):
-		if Blockdata["myid"] == Blockdata["main_node"]:
-			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			msg =  "indep_run_iter %d"%indep_run_iter
-			print(line, msg)
-			log_main.add(msg)
-			Tracker["directory"]  = os.path.join(work_dir, "EQKmeans_%03d"%indep_run_iter)
-			if not os.path.exists(Tracker["directory"]):os.mkdir(Tracker["directory"])
-			if not os.path.exists(os.path.join(Tracker["directory"], "tempdir")): os.mkdir(os.path.join(Tracker["directory"], "tempdir"))
-		else: Tracker = 0
-		Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
-		assign_list = resize_groups_from_stable_members_mpi(os.path.join(input_dir, "Accounted_%03d.txt"%indep_run_iter), \
-			os.path.join(input_dir, "Unaccounted_%03d.txt"%indep_run_iter))
-		if Blockdata["myid"] == Blockdata["main_node"]:
-			write_text_file(assign_list, os.path.join(work_dir, "random_assignment_%03d.txt"%indep_run_iter))
+	if not Tracker["terminate"]:
+		for indep_run_iter in xrange(num_of_runs):
+			if Blockdata["myid"] == Blockdata["main_node"]:
+				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+				msg =  "indep_run_iter %d"%indep_run_iter
+				print(line, msg)
+				log_main.add(msg)
+				Tracker["directory"]  = os.path.join(work_dir, "EQKmeans_%03d"%indep_run_iter)
+				if not os.path.exists(Tracker["directory"]):os.mkdir(Tracker["directory"])
+				if not os.path.exists(os.path.join(Tracker["directory"], "tempdir")): os.mkdir(os.path.join(Tracker["directory"], "tempdir"))
+			else: Tracker = 0
+			Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
+			assign_list = resize_groups_from_stable_members_mpi(os.path.join(input_dir, "Accounted_%03d.txt"%indep_run_iter), \
+				os.path.join(input_dir, "Unaccounted_%03d.txt"%indep_run_iter))
+			if Blockdata["myid"] == Blockdata["main_node"]:
+				write_text_file(assign_list, os.path.join(work_dir, "random_assignment_%03d.txt"%indep_run_iter))
 			
-		index_file = os.path.join(work_dir, "random_assignment_%03d.txt"%indep_run_iter)
+			index_file = os.path.join(work_dir, "random_assignment_%03d.txt"%indep_run_iter)
 		
-		if Tracker["constants"]["final_MGSK"]==-1: minimum_group_size = init_minimum_group_size
-		else:  minimum_group_size = Tracker["constants"]["final_MGSK"]
+			if Tracker["constants"]["final_MGSK"]==-1:
+				if Tracker["constants"]["minimum_grp_size"] > 0: minimum_group_size = Tracker["constants"]["minimum_grp_size"]
+				else: minimum_group_size = init_minimum_group_size
+			else:  minimum_group_size = Tracker["constants"]["final_MGSK"]
 		
-		if not Tracker["constants"]["final_adaptive"]:
-			tmp_final_list, premature = Kmeans_minimum_group_size_relaxing_orien_groups(original_data, index_file, \
-				params, parameterstructure, norm_per_particle, minimum_group_size, clean_volumes= True)
-		else:
-		     tmp_final_list, premature = Kmeans_adaptive_minimum_group_size(original_data, index_file, \
-				params, parameterstructure, norm_per_particle, minimum_group_size, clean_volumes= True)
+			if not Tracker["constants"]["final_adaptive"]:
+				tmp_final_list, premature = Kmeans_minimum_group_size_relaxing_orien_groups(original_data, index_file, \
+					params, parameterstructure, norm_per_particle, minimum_group_size, clean_volumes= True)
+			else:
+				 tmp_final_list, premature = Kmeans_adaptive_minimum_group_size(original_data, index_file, \
+					params, parameterstructure, norm_per_particle, minimum_group_size, clean_volumes= True)
 				
-		if Blockdata["myid"] == Blockdata["main_node"]:
-			write_text_row(tmp_final_list, os.path.join(work_dir, "partition_%03d.txt"%indep_run_iter))
+			if Blockdata["myid"] == Blockdata["main_node"]:
+				write_text_row(tmp_final_list, os.path.join(work_dir, "partition_%03d.txt"%indep_run_iter))
 			
-		mpi_barrier(MPI_COMM_WORLD)
-	if Blockdata["myid"] == Blockdata["main_node"]: 
-		avg_min_size, avg_max_size, newindeces, list_stable, score_list = \
-			do_final_two_way_comparison(work_dir, log_main)
-	else:
-		avg_min_size = 0
-		avg_max_size = 0
-		newindeces   = 0
-		list_stable  = 0
-		score_list   = 0
+			mpi_barrier(MPI_COMM_WORLD)
+		if Blockdata["myid"] == Blockdata["main_node"]: 
+			avg_min_size, avg_max_size, newindeces, list_stable, score_list = \
+				do_final_two_way_comparison(work_dir, log_main)
+		else:
+			avg_min_size = 0
+			avg_max_size = 0
+			newindeces   = 0
+			list_stable  = 0
+			score_list   = 0
 		
-	avg_min_size = bcast_number_to_all(avg_min_size, Blockdata["main_node"], MPI_COMM_WORLD)
-	avg_max_size = bcast_number_to_all(avg_max_size, Blockdata["main_node"], MPI_COMM_WORLD)
-	newindeces   = wrap_mpi_bcast(newindeces, Blockdata["main_node"])
-	list_stable  = wrap_mpi_bcast(list_stable, Blockdata["main_node"])
-	score_list   = wrap_mpi_bcast(score_list, Blockdata["main_node"])
-	return avg_min_size, avg_max_size, newindeces, list_stable, score_list
-
-def do_depth_one_run(work_dir, initial_id_file, params, previous_params, log, order_of_depth = 3):
+		avg_min_size = bcast_number_to_all(avg_min_size, Blockdata["main_node"], MPI_COMM_WORLD)
+		avg_max_size = bcast_number_to_all(avg_max_size, Blockdata["main_node"], MPI_COMM_WORLD)
+		newindeces   = wrap_mpi_bcast(newindeces, Blockdata["main_node"])
+		list_stable  = wrap_mpi_bcast(list_stable, Blockdata["main_node"])
+		score_list   = wrap_mpi_bcast(score_list, Blockdata["main_node"])
+		return avg_min_size, avg_max_size, newindeces, list_stable, score_list
+	else:# directly copy the first result as output
+		if Blockdata["myid"] == Blockdata["main_node"]:
+			npair = 0
+			copyfile(os.path.join(input_dir, "Accounted_%03d.txt"%npair),  os.path.join(work_dir, "Accounted_%03d.txt"%npair))
+			copyfile(os.path.join(input_dir, "Unaccounted_%03d.txt"%npair), os.path.join(work_dir, "Unaccounted_%03d.txt"%npair))
+			copyfile(os.path.join(input_dir, "Accounted_%03d.txt"%npair),  os.path.join(work_dir, "../","Accounted.txt"))
+			copyfile(os.path.join(input_dir, "Unaccounted_%03d.txt"%npair), os.path.join(work_dir, "../","Unaccounted.txt"))
+		mpi_barrier(MPI_COMM_WORLD)
+		return None, None, None, None
+		
+def do_depth_one_run(work_dir, initial_id_file, params, previous_params, log, initial_seeds_file = None, random_members = None, order_of_depth = 3):
 	global Tracker, Blockdata
 	
 	original_data, norm_per_particle  = read_data_for_sorting(initial_id_file, params, previous_params)
@@ -428,19 +441,22 @@ def do_depth_one_run(work_dir, initial_id_file, params, previous_params, log, or
 	else: parameterstructure = read_paramstructure_for_sorting(initial_id_file, Tracker["paramstructure_dict"], Tracker["paramstructure_dir"])
 	
 	Tracker["directory"] = 	work_dir
-	if Tracker["constants"]["nxinit"] ==-1:
-		Tracker["nxinit"] = get_sorting_image_size(original_data, initial_id_file, parameterstructure, norm_per_particle, log)
-	elif Tracker["constants"]["nxinit"] >0: Tracker["nxinit"] = Tracker["constants"]["nxinit"]
-	else: ERROR("wroing initial image size", "do_depth_one_run", 1, Blockdata["myid"])
+	if Tracker["iter"] == 0:
+		if Tracker["constants"]["nxinit"] ==-1:
+			Tracker["nxinit"] = get_sorting_image_size(original_data, initial_id_file, parameterstructure, norm_per_particle, log)
+		elif Tracker["constants"]["nxinit"] >0: Tracker["nxinit"] = Tracker["constants"]["nxinit"]
+		else: ERROR("wroing initial image size", "do_depth_one_run", 1, Blockdata["myid"])
 		
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		msg ="image size for sorting determined by get_sorting_image_size is %d"%Tracker["nxinit"]
+		msg ="run iter%d image size for sorting determined by get_sorting_image_size is %d"%(Tracker["iter"], Tracker["nxinit"])
 		print(line, msg)
 		log.add(msg)
 		if os.path.exists(os.path.join(Tracker["directory"], "tempdir")): shutil.rmtree(os.path.join(Tracker["directory"], "tempdir"))
 	current_order_of_depth = 0
-	while current_order_of_depth<order_of_depth:
+
+	while current_order_of_depth < order_of_depth:
+	
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		current_work_dir = os.path.join(work_dir, "layer%d"%current_order_of_depth)
 		if Blockdata["myid"] == Blockdata["main_node"]:
@@ -453,11 +469,12 @@ def do_depth_one_run(work_dir, initial_id_file, params, previous_params, log, or
 		
 		if current_order_of_depth == 0:
 			Tracker["directory"] = current_work_dir
-			create_nrandom_lists(initial_id_file, 2**order_of_depth)
+			if Tracker["iter"] == 0: create_nrandom_lists(initial_id_file, 2**order_of_depth)
+			else: reassign_nrandom_lists(initial_seeds_file, random_members, 2**order_of_depth)
 			minimum_group_size, maximum_group_size = Kmeans_top_layer(current_work_dir, num_of_indep_runs, \
 			 original_data, params, parameterstructure, norm_per_particle, log)
 			input_dir = current_work_dir
-		elif current_order_of_depth>0 and current_order_of_depth< order_of_depth -1:
+		elif current_order_of_depth >0 and current_order_of_depth< order_of_depth -1:
 		
 			#minimum_group_size = 0
 			minimum_group_size, maximum_group_size = Kmeans_middle_layer(input_dir, current_work_dir, \
@@ -468,10 +485,23 @@ def do_depth_one_run(work_dir, initial_id_file, params, previous_params, log, or
 			avg_min_size, avg_max_size, newindeces, list_stable, score_list = Kmeans_bottom_layer(input_dir,\
 			   current_work_dir, num_of_indep_runs, minimum_group_size, original_data,
 			    params, parameterstructure, norm_per_particle, log)
+			if Tracker["terminate"]: break
 		current_order_of_depth +=1
-	Tracker["directory"] = 	work_dir
-	AI("output_clusters", log, list_stable, score_list, initial_id_file)
-	return os.path.join(work_dir, "Unaccounted.txt")
+		
+	if not Tracker["terminate"]:
+		if Blockdata["myid"] == Blockdata["main_node"]: Tracker["directory"] = 	work_dir
+		else:  Tracker = 0
+		Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
+		keepgoing = AI("iter_update", log)
+		if not keepgoing: AI("output_clusters", log, list_stable, score_list, initial_id_file)
+		else: AI("save_iter_results", log, list_stable, score_list, initial_id_file)
+		mpi_barrier(MPI_COMM_WORLD)
+		print(keepgoing)
+		if keepgoing: return initial_id_file, os.path.join(work_dir, "Accounted.txt"), os.path.join(work_dir, "Unaccounted.txt"), keepgoing
+		else: return os.path.join(work_dir, "Unaccounted.txt"), None, None, keepgoing
+	else: # Force to stop because of early mature
+		clusters, new_partition = AI("output_clusters_dueto_terminate", log, os.path.join(work_dir, "Accounted.txt"), None, None)
+		return None, None, None, keepgoing
 	
 def get_params_for_analysis(orgstack, ali3d_params, smearing_file, smearing_number):
 	if ali3d_params is not None:
@@ -733,7 +763,8 @@ def AI(to_be_decided, log = None, list_stable = None, score_list = None, initial
 	if to_be_decided == "initialization":
 		Tracker["expected_number_of_groups"] = \
 		 get_number_of_groups(Tracker["constants"]["total_stack"], Tracker["constants"]["img_per_grp"])
-		 
+		
+		Tracker["terminate"]                    = False 
 		Tracker["determined_number_of_groups"]	= 0
 		Tracker["img_per_grp"]                  = Tracker["constants"]["img_per_grp"]
 		Tracker["number_of_groups"]             = Tracker["expected_number_of_groups"]
@@ -752,19 +783,60 @@ def AI(to_be_decided, log = None, list_stable = None, score_list = None, initial
 			log.add(msg)
 			print_dict(Tracker, to_be_decided)
 		return
+	
+			
+	elif to_be_decided == "iter_init":
+	
+		Tracker["iter"] = 0
+		Tracker["last_iter_ratio"]    = 0.0
+		Tracker["current_iter_ratio"] = 0.0
+		Tracker["iter_hist"] = {}
+		return
+		
+	elif to_be_decided == "iter_update": 
+		if Tracker["current_iter_ratio"]>95.:return False # stop iteration when ratio above 95
+		else:
+			Tracker["iter_hist"] [Tracker["iter"]] = Tracker["current_iter_ratio"]
+			if Tracker["current_iter_ratio"] - Tracker["last_iter_ratio"] >=Tracker["constants"]["iter_minimum_increment"]:
+				Tracker["iter"] += 1
+				Tracker["last_iter_ratio"] = Tracker["current_iter_ratio"]
+				return True # keepgoing iterations
+			else:
+				if Blockdata["myid"] == Blockdata["main_node"]:
+					msg = " ratios within %d RUN "%(Tracker["number_of_runs"])
+					print(msg)
+					log.add(msg)
+					for niter, ratio in Tracker["iter_hist"].iteritems():
+						msg = "iter: %5d  ratio:  %f "%(niter, ratio)
+						print(msg)
+						log.add(msg)
+				return False # stop iterations
+	
+	elif to_be_decided =="output_clusters_dueto_terminate":
+		if Blockdata["myid"] == Blockdata["main_node"]:
+			partition = read_text_row(list_stable) # accounted members, put in this postion.
+			nclasses, npart = split_partition_into_ordered_clusters(partition)
+			for ic in xrange(len(nclasses)):
+				write_text_file(nclasses[ic], os.path.join(Tracker["constants"]["masterdir"],\
+					 "Cluster_%03d.txt"%ic))
+		return nclasses, npart
 		
 	elif to_be_decided =="output_clusters":
-	
+		
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 			accounted_list = []
 			nclass = 0
+			msg = "output clusters sorted in %d th RUN"%Tracker["number_of_runs"]
+			log.add(msg)
+			msg = "cluster ID score group size"
+			log.add(msg)
 			for i in xrange(len(list_stable)):
 				avg_score = (score_list[i][0]+score_list[i][1])/2.
-				msg = "score1: %f  score2: %f avg: %f"%(score_list[i][0], score_list[i][1], avg_score)
+				msg = " %d     %f    %d"%(i, avg_score, len(list_stable[i]))
 				print(line, msg)
 				log.add(msg)
-				if avg_score >15.:
+				if avg_score >0.:
 					Tracker ["cluster_score"][Tracker["determined_number_of_groups"]] = avg_score
 					accounted_list +=list_stable[i].tolist()
 					write_text_file(list_stable[i], os.path.join(Tracker["constants"]["masterdir"],\
@@ -775,17 +847,49 @@ def AI(to_be_decided, log = None, list_stable = None, score_list = None, initial
 			a =  set(pids)
 			b =  set(accounted_list)
 			unaccounted_list = list(a.difference(b))
+			accounted_list.sort()
 			write_text_file(accounted_list, os.path.join(Tracker["directory"], "Accounted.txt"))
-			unaccounted_list.sort()
+			if len(unaccounted_list)>1: unaccounted_list.sort()
 			write_text_file(unaccounted_list, os.path.join(Tracker["directory"], "Unaccounted.txt"))
-			#accounted_list.sort()
 			Tracker["nclass"] =  nclass
 			Tracker["accounted_of_this_run"] = len(accounted_list)
 		else:
 			Tracker = 0
 		Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
 		return
-			
+		
+	elif to_be_decided =="save_iter_results": # always after iter update
+		if Blockdata["myid"] == Blockdata["main_node"]:
+			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+			accounted_list = []
+			nclass = 0
+			group_dict = {}
+			msg = "AI save results of iter %d"%(Tracker["iter"]-1)
+			log.add(msg)
+			msg = " cluster ID  score1  score2   averaged score  group size"
+			print(msg)
+			log.add(msg)
+			for i in xrange(len(list_stable)):
+				avg_score = (score_list[i][0]+score_list[i][1])/2.
+				msg = "%5d     %5.2f     %5.2f     %5.2f   %8d"%(i, score_list[i][0], score_list[i][1], avg_score, len(list_stable[i]))
+				print(line, msg)
+				log.add(msg)
+				for element in list_stable[i]: group_dict[element] = nclass
+				accounted_list +=list_stable[i].tolist()
+				nclass +=1
+				pids = read_text_file(initial_id_file)
+			a =  set(pids)
+			b =  set(accounted_list)
+			unaccounted_list = list(a.difference(b))
+			accounted_list.sort()
+			write_text_row([[group_dict[accounted_list[im]], accounted_list[im]] for im in xrange(len(accounted_list))], \
+			    os.path.join(Tracker["directory"], "Accounted.txt"))
+			if len(unaccounted_list)>1: unaccounted_list.sort()
+			write_text_file(unaccounted_list, os.path.join(Tracker["directory"], "Unaccounted.txt"))
+		else: Tracker = 0
+		Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
+		return
+	
 	elif to_be_decided == "update":
 		if Blockdata["myid"] == Blockdata["main_node"]: print_dict(Tracker, " before " + to_be_decided)
 		Tracker["total_number_of_accounted"] +=Tracker["accounted_of_this_run"]
@@ -2785,6 +2889,54 @@ def create_nrandom_lists(partids, number_of_runs):
 	Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
 	return
 	
+def	reassign_nrandom_lists(Accounted_on_disk, Unaccounted_on_disk, nrandom_trials):
+	global Tracker, Blockdata
+	import random
+	if Blockdata["myid"] == Blockdata["main_node"]:
+		ptl_dict = {}
+		accounted = read_text_file(Accounted_on_disk, -1)
+		number_of_groups = max(accounted[0]) + 1
+		try: assert(number_of_groups == Tracker["number_of_groups"])
+		except:  ERROR("number of groups in Tracker disagree with the one in accounted list", \
+		      "reassign_nrandom_lists", 1, Blockdata["myid"])
+		groups = [[] for igrp in xrange(number_of_groups)]
+		unaccounted = read_text_file(Unaccounted_on_disk, -1)
+		for im in xrange(len(accounted[0])):
+			groups[accounted[0][im]].append(accounted[1][im])
+			ptl_dict[accounted[1][im]] = accounted[0][im]
+		accounted_members = sorted(accounted[1])
+		unaccounted = sorted(unaccounted[0])
+		full_list = (accounted_members + unaccounted)
+		full_list.sort()	
+		total_stack = len(full_list)
+		group_size = total_stack//number_of_groups
+	else:
+		number_of_groups = 0
+		total_stack      = 0
+	number_of_groups = bcast_number_to_all(number_of_groups, Blockdata["main_node"], MPI_COMM_WORLD)
+	total_stack = bcast_number_to_all(total_stack, Blockdata["main_node"], MPI_COMM_WORLD)
+	###-----
+	if Blockdata["myid"] == Blockdata["main_node"]:
+		assignment_list = [ None for i in xrange(nrandom_trials)]
+		for indep in xrange(nrandom_trials):
+			#print("after iter %d"%indep)
+			unaccounted_members = copy.deepcopy(unaccounted)
+			new_groups = copy.deepcopy(groups)
+			for im in xrange(len(unaccounted_members)):
+				igroup = random.randrange(0, number_of_groups)	
+				new_groups[igroup].append(unaccounted_members[im])
+				ptl_dict[unaccounted_members[im]] = igroup
+			assignment = [None for iptl in xrange(len(full_list))]
+			for im in xrange(len(full_list)): assignment[im] = ptl_dict[full_list[im]]
+			assignment_list[indep] = [assignment, full_list]
+			write_text_file(assignment_list[indep], os.path.join(Tracker["directory"],"independent_index_%03d.txt"%indep))
+			del unaccounted_members
+	else: assignment_list = 0
+	mpi_barrier(MPI_COMM_WORLD)
+	assignment_list = wrap_mpi_bcast(assignment_list, Blockdata["main_node"], MPI_COMM_WORLD)
+	if Blockdata["myid"] == Blockdata["main_node"]: del ptl_dict
+	return
+	
 def resize_groups_from_stable_members_mpi(Accounted_on_disk, Unaccounted_on_disk):
 	global Tracker, Blockdata
 	import random
@@ -2925,7 +3077,10 @@ def do_multiple_two_way_comparisons(partition_dir, num_of_runs, log_main):
 		accounted_list, new_index = merge_classes_into_partition_list(new_list)
 		a = set(full_list)
 		b = set(accounted_list)
-		unaccounted_list = sorted(list(a.difference(b)))
+		if len(list(a.difference(b)))>Tracker["number_of_groups"]*2: unaccounted_list = sorted(list(a.difference(b)))
+		else:
+			unaccounted_list = list(a.difference(b))
+			Tracker["terminate"] = True
 		write_text_row(new_index, os.path.join(partition_dir, "Accounted_%03d.txt"%ipair))
 		write_text_file(unaccounted_list, os.path.join(partition_dir, "Unaccounted_%03d.txt"%ipair))
 		min_list[ipair] = minimum_group_size
@@ -2933,7 +3088,7 @@ def do_multiple_two_way_comparisons(partition_dir, num_of_runs, log_main):
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	avg_min_size = sum(min_list)//num_of_pairs
 	avg_max_size = sum(max_list)//num_of_pairs
-	msg ="minimum group size: %d maximum group size: %d"%(avg_min_size, avg_max_size)
+	msg ="current smallest group size: %d largest group size: %d"%(avg_min_size, avg_max_size)
 	print(line, msg)
 	log_main.add(msg)
 	return avg_min_size, avg_max_size
@@ -2945,6 +3100,10 @@ def do_final_two_way_comparison(partition_dir, log_main):
 	ptp1, tmp1 = split_partition_into_ordered_clusters( core1)
 	core2 = read_text_row(os.path.join(partition_dir, "partition_%03d.txt"%(2*ipair+1)))
 	ptp2, tmp2 = split_partition_into_ordered_clusters( core2)
+	try: 
+		assert(len(core1) ==len(core2))
+		current_random_group_size = len(core1)//Tracker["number_of_groups"]**2
+	except: ERROR("two partitions have unequal size", "do_final_two_way_comparison", 1, 0)
 	full_list  = []
 	for a in core1: full_list.append(a[1])
 	full_list.sort()
@@ -2957,6 +3116,7 @@ def do_final_two_way_comparison(partition_dir, log_main):
 	new_list           = []
 	nclass = 0
 	msg ="P%d   P%d  percentage accounted:  %f "%(2*ipair, 2*ipair+1, ratio_accounted)
+	Tracker["current_iter_ratio"] = ratio_accounted
 	log_main.add(msg)
 	print(line, msg)
 	score_list = [None for i in xrange(len(list_stable))]
@@ -2974,6 +3134,16 @@ def do_final_two_way_comparison(partition_dir, log_main):
 		msg ="Group number: %d   size: %d   score1: %f score2: %f"%(nclass, len(any), score1, score2)
 		log_main.add(msg)
 		print(line, msg)
+		"""
+		if len(any) >= current_random_group_size:
+			minimum_group_size = min(minimum_group_size, len(any))
+			maximum_group_size = max(maximum_group_size, len(any))
+			new_list.append(any)
+			nclass +=1
+			msg ="Group number: %d   size: %d   score1: %f score2: %f"%(nclass, len(any), score1, score2)
+			log_main.add(msg)
+			print(line, msg)
+		"""
 	accounted_list, new_index = merge_classes_into_partition_list(new_list)
 	a = set(full_list)
 	b = set(accounted_list)
@@ -6489,7 +6659,7 @@ def main():
 		Constants["masterdir"]                   = options.output_dir
 		Constants["refinement_dir"]              = options.refinement_dir
 		Constants["mask3D"]                      = options.mask3D
-		Constants["focus3Dmask"]                 = options.focus	
+		Constants["focus3Dmask"]                 = options.focus
 		Constants["order_of_depth"]              = options.order_of_depth
 		Constants["img_per_grp"]                 = options.img_per_grp
 		Constants["minimum_grp_size"]      		 = options.minimum_grp_size
@@ -6521,6 +6691,7 @@ def main():
 		if options.focus:  Constants["comparison_method"] = "cross" # in case of focus3D, cross is used.
 		Constants["fuse_freq"] = 45.  # Now in A, convert to pixels before being used
 		Constants["orientation_groups"]  = options.orientation_groups # orientation constrained angle step
+		Constants["iter_minimum_increment"] = 1.0 # expert option, increasing it would reduce iterations within one run 
 		# -------------------------------------------------------------
 		#
 		# Create and initialize Tracker dictionary with input options  # State Variables	
@@ -6596,13 +6767,30 @@ def main():
 		AI("initialization", log_main)
 		my_pids = os.path.join(Tracker["constants"]["masterdir"], "indexes.txt")
 		while not Tracker["stop_sorting"]:
-			current_run_work_dir = os.path.join(Tracker["constants"]["masterdir"], "RUN%d"%Tracker["number_of_runs"])
+			rundir = os.path.join(Tracker["constants"]["masterdir"], "RUN%d"%Tracker["number_of_runs"])
 			if(Blockdata["myid"] == Blockdata["main_node"]):
-				if not os.path.exists(current_run_work_dir): os.mkdir(current_run_work_dir)
-			my_pids  = do_depth_one_run(current_run_work_dir, my_pids, \
-				os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt"), \
-				  Tracker["previous_parstack"], log_main, Tracker["order_of_depth"])
-			AI("update", log_main)
+				if not os.path.exists(rundir): 
+					os.mkdir(rundir)
+					AI("iter_init", log_main)
+			else: Tracker = 0
+			Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
+			keepgoing = True
+			my_seeds  = None
+			my_random_members = None
+			while keepgoing:		
+				current_run_work_dir =  os.path.join(Tracker["constants"]["masterdir"], "RUN%d"%Tracker["number_of_runs"], "iter%d"%Tracker["iter"])
+				if(Blockdata["myid"] == Blockdata["main_node"]):
+					if not os.path.exists(current_run_work_dir): os.mkdir(current_run_work_dir)
+					msg = "run %d  iter %d"%(Tracker["number_of_runs"], Tracker["iter"])
+					log_main.add(msg)
+				my_pids, my_seeds, my_random_members, keepgoing = do_depth_one_run(current_run_work_dir, my_pids, \
+					os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt"), \
+					  Tracker["previous_parstack"], log_main, my_seeds, my_random_members, Tracker["order_of_depth"])
+				mpi_barrier(MPI_COMM_WORLD)
+			if not Tracker["terminate"]: AI("update", log_main)
+			else: # early mature
+				Tracker["stop_sorting"] = True
+				break
 		mpi_barrier(MPI_COMM_WORLD)
 		### Final Rec3D unfiltered two halves, valid only in case of sorting initiated from sphire refinement
 		AI("dump_tracker",log_main)
