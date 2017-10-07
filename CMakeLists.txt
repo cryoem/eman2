@@ -80,9 +80,9 @@ if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" )
 	set(SP_DIR $ENV{SP_DIR})
 else()
 	if(NOT WIN32)
-		set(py_sp_dir_command "import site; print site.getsitepackages()[0]")
+		set(py_sp_dir_command "import site; print(site.getsitepackages()[0])")
 	else()
-		set(py_sp_dir_command "import site; print site.getsitepackages()[1]")
+		set(py_sp_dir_command "import site; print(site.getsitepackages()[1])")
 	endif()
 	execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "${py_sp_dir_command}"
 			OUTPUT_VARIABLE SP_DIR
