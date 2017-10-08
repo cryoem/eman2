@@ -7683,7 +7683,7 @@ def ctref_init(masterdir, option_orgstack, option_old_refinement_dir, option_sub
 		original_data[procid], oldparams[procid] = getindexdata(partids[procid], partstack[procid], \
 			os.path.join(Tracker["constants"]["masterdir"],"main000", "particle_groups_%01d.txt"%procid), \
 			original_data[procid], small_memory = Tracker["constants"]["small_memory"], \
-			nproc = Blockdata["subgroup_size"], myid = Blockdata["myid"], mpi_comm = mpi_comm)												
+			nproc = Blockdata["nproc"], myid = Blockdata["myid"], mpi_comm = mpi_comm)												
 		temp = Tracker["directory"]
 		Tracker["directory"] = os.path.join(Tracker["directory"], "tempdir")
 		mpi_barrier(mpi_comm)
@@ -7739,9 +7739,7 @@ def ctref_init(masterdir, option_orgstack, option_old_refinement_dir, option_sub
 	Tracker["maxit"]	 = Tracker["constants"]["maxit"]
 	Tracker["radius"]	 = Tracker["constants"]["radius"]
 	#  Resolution in pixels at 0.5 cutoff
-	###<<<----state 
 	Blockdata["accumulatepw"]       = [[],[]]
-	###
 	Tracker["constants"]["inires"] = int(Tracker["constants"]["nnxo"]*Tracker["constants"]["pixel_size"]/Tracker["constants"]["inires"] + 0.5)
 	if option_initvol !='':# continue refinement using the given reference 
 		from shutil import copyfile
@@ -8395,7 +8393,7 @@ def update_tracker(shell_line_command):
 	parser_no_default.add_option("--ctref_oldrefdir",           type="string")
 	parser_no_default.add_option("--ctref_iter",                type="int")
 	parser_no_default.add_option("--ctref_smearing",            type="int")
-	parser_no_default.add_option("--an",                  type="float")
+	parser_no_default.add_option("--an",                        type="float")
 
 	(options_no_default_value, args) = parser_no_default.parse_args(shell_line_command)
 
@@ -8964,7 +8962,6 @@ def main():
 			if (options.ctref_orgstack !=''): # start from datastack
 				Constants["stack"]             			= options.ctref_orgstack
 				Constants["rs"]                			= 1
-				Constants["an"]                			= "-1"
 				Constants["radius"]            			= options.radius
 				Constants["maxit"]             			= 1
 				Constants["fuse_freq"]         			= 45  # Now in A, convert to absolute before using
@@ -8999,19 +8996,24 @@ def main():
 				Constants["ctref_iter"]                 = options.ctref_iter
 				Constants["ctref_smearing"]             = options.ctref_smearing
 				Constants["delta"]                      = options.delta
+				Constants["an"]                			= options.an
 				Tracker["constants"]		            = Constants
 				Constants["ctref_initvol"]              = options.ctref_initvol
-				update_tracker(sys.argv[1:])
-				Tracker["xr"]			                = options.xr
-				Tracker["yr"]			                = options.xr # Do not change!  I do not think it is used anywhere
-				Tracker["ts"]			                = options.ts
-				Tracker["delta"]		                = options.delta  # How to decide it
-				if Tracker["delta"] ==-1.: Tracker["delta"] = 15./4.
-				if options.ctref_an ==-1.: Tracker["an"] = 6.*Tracker["delta"]
-				else:                      Tracker["an"] = options.an
 				Tracker["constants"]   = Constants
+				
+				update_tracker(sys.argv[1:])
+				
+				Tracker["xr"]			                = options.xr
+				Tracker["yr"]			                = options.xr # Do not change! Used in ctref option
+				Tracker["ts"]			                = options.ts
+				Tracker["delta"]		                = Tracker["constants"]["delta"]
+				Tracker["an"]                           = Tracker["constants"]["an"]
+				if Tracker["delta"] ==-1.: Tracker["delta"] = 15./4.
+				if Tracker["an"] ==-1.: Tracker["an"] = 6.*Tracker["delta"]
+				
 				if options.radius == -1: ERROR("radius is not provided ", "ctref_init", 1, Blockdata["myid"])
-			original_data = ctref_init(masterdir, options.ctref_orgstack, options.ctref_oldrefdir, options.ctref_subset, options.ctref_initvol, options.ctref_iter, options.ctref_smearing, sys.argv[1:], mpi_comm = MPI_COMM_WORLD)
+			original_data = ctref_init(masterdir, options.ctref_orgstack, options.ctref_oldrefdir, options.ctref_subset, options.ctref_initvol, \
+			        options.ctref_iter, options.ctref_smearing, sys.argv[1:], mpi_comm = MPI_COMM_WORLD)
 			mainiteration  +=1
 			Tracker["mainiteration"] = mainiteration
 			Tracker["previousoutputdir"] =  os.path.join(masterdir, "main%03d"%(Tracker["mainiteration"]-1))
