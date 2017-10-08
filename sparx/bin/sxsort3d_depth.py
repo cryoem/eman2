@@ -1206,7 +1206,7 @@ def Kmeans_minimum_group_size_orien_groups(original_data, partids, params, param
 	premature               = 0
 	changed_nptls           = 100.0
 	number_of_groups        = Tracker["number_of_groups"]
-	stopercnt               = 3.0
+	stopercnt               = Tracker["constants"]["stop_eqkmeans_percentage"]
 	total_iter              = 0
 	require_check_setting   = False
 	partial_rec3d           = False
