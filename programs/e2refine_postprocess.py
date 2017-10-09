@@ -236,7 +236,7 @@ def main():
 		vol.process_inplace("mask.sharp",{"outer_radius":rmax})
 
 		# automask
-		mask=vol.process("mask.auto3d",{"threshold":vmax*.2,"radius":0,"nshells":int(nx*0.05+0.5+options.restarget*0.75/apix)+options.automaskexpand,"nmaxseed":24,"return_mask":1})
+		mask=vol.process("mask.auto3d",{"threshold":vmax*.15,"radius":0,"nshells":int(nx*0.05+0.5+options.restarget*0.75/apix)+options.automaskexpand,"nmaxseed":24,"return_mask":1})
 		#mask=vol.process("mask.auto3d",{"threshold":vmax*.2,"radius":0,"nshells":int(nx*0.05+.5+options.automaskexpand),"nshellsgauss":int(options.restarget*1.5/apix),"nmaxseed":24,"return_mask":1})
 
 		## check the largest extent of the mask
