@@ -2,7 +2,7 @@
 
 set -e
 
-MYDIR=$(cd $(dirname $0); pwd -P)
+MYDIR="$(cd "$(dirname "$0")"; pwd -P)"
 progs_file=${MYDIR}/programs_to_test.txt
 progs=$(cat "${progs_file}")
 
