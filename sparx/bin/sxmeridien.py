@@ -1167,8 +1167,9 @@ def do3d_final_mpi(final_iter):
 	# steptwo of final reconstruction
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	if Blockdata["myid"] == Blockdata["main_node"]: print(line, "do3d_final")
+	try: assert(Tracker["mainiteration"] == final_iter)
+	except: ERROR("final_iter does not equal to the current value of mainiteration in Tracker", "do3d_final_mpi",1, Blockdata["myid"])
 	if Tracker["directory"] !=Tracker["constants"]["masterdir"]: Tracker["directory"] = Tracker["constants"]["masterdir"]
-	carryon = 1
 	if(Blockdata["no_of_groups"] >1):
 		if(Blockdata["myid"] == Blockdata["main_shared_nodes"][1]):
 			# post-insertion operations, done only in main_node		
@@ -1199,7 +1200,7 @@ def do3d_final_mpi(final_iter):
 			tvol0 = steptwo_mpi(tvol0, tweight0, treg0, None, False , color = Blockdata["node_volume"][1])
 			del tweight0, treg0
 			if( Blockdata["myid_on_node"] == 0):
-				tvol0.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_0_unfil.hdf"))	
+				tvol0.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_0_unfil_%03d.hdf"%final_iter))	
 		elif( Blockdata["color"] == Blockdata["node_volume"][0]):
 			if( Blockdata["myid"] == Blockdata["main_shared_nodes"][0]):
 				treg1 = get_im(os.path.join(Tracker["directory"], "tempdir", "trol_1_%03d.hdf"%(Tracker["mainiteration"])))
@@ -1210,7 +1211,7 @@ def do3d_final_mpi(final_iter):
 			tvol1 = steptwo_mpi(tvol1, tweight1, treg1, None, False , color = Blockdata["node_volume"][0])
 			del tweight1, treg1
 			if( Blockdata["myid_on_node"] == 0):
-				tvol1.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_1_unfil.hdf"))
+				tvol1.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_1_unfil_%03d.hdf"%final_iter))
 		mpi_barrier(MPI_COMM_WORLD)
 	else:
 		for iproc in xrange(2):
@@ -1232,8 +1233,8 @@ def do3d_final_mpi(final_iter):
 			if iproc ==0 : tvol0 = steptwo_mpi(tvol0, tweight0, treg, None, False , color = Blockdata["node_volume"][0])
 			else: tvol1 = steptwo_mpi(tvol1, tweight1, treg, None, False , color = Blockdata["node_volume"][0])
 			if( Blockdata["myid_on_node"] == 0):
-				if iproc ==0: tvol0.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_%d_unfil.hdf"%iproc))
-				else: tvol1.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_%d_unfil.hdf"%iproc))
+				if iproc ==0: tvol0.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_%d_unfil_%3d.hdf"%(iproc, final_iter)))
+				else: tvol1.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_%d_unfil_%03d.hdf"%(iproc, final_iter)))
 			mpi_barrier(MPI_COMM_WORLD)
 	mpi_barrier(MPI_COMM_WORLD) #  
 	return
