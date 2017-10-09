@@ -340,7 +340,7 @@ def init_sfcurve(opt):
 
 def get_gui_arg_img_sets(filenames):
 	'''
-	returns the img_sets list required to intialized the GUI correctly. Each set has
+	returns the img_sets list required to intialize the GUI correctly. Each set has
 	filename,EMAN2CTF,im_1d,bg_1d,im_2d,bg_2d,qual,bg_1d_low
 	'''
 
@@ -594,6 +594,7 @@ def pspec_and_ctf_fit(options,debug=False):
 				try:
 					if options.useframedf : raise Exception		# a bit of a hack...
 					ctf=js_parms["ctf"][0]
+					ctf.apix=apix
 					curdf=ctf.defocus
 					curdfdiff=ctf.dfdiff
 					curdfang=ctf.dfang
@@ -603,6 +604,7 @@ def pspec_and_ctf_fit(options,debug=False):
 				except :
 					try:
 						ctf=js_parms["ctf_frame"][1]
+						ctf.apix=apix
 						curdf=ctf.defocus
 						curdfdiff=ctf.dfdiff
 						curdfang=ctf.dfang
