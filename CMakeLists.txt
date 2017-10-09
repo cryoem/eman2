@@ -383,3 +383,12 @@ endforeach()
 add_test(NAME import-inners
 		 COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/test_imports_inner.py
 		 )
+
+add_custom_target(test-progs
+				  COMMAND ${CMAKE_COMMAND} -P cmake_install.cmake
+				  COMMAND ${CMAKE_CTEST_COMMAND} -V -C Release -R progs
+				  )
+
+add_test(NAME progs
+		 COMMAND bash ${CMAKE_SOURCE_DIR}/tests/run_prog_tests.sh
+		 )
