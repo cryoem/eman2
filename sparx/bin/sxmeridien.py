@@ -1233,7 +1233,7 @@ def do3d_final_mpi(final_iter):
 			if iproc ==0 : tvol0 = steptwo_mpi(tvol0, tweight0, treg, None, False , color = Blockdata["node_volume"][0])
 			else: tvol1 = steptwo_mpi(tvol1, tweight1, treg, None, False , color = Blockdata["node_volume"][0])
 			if( Blockdata["myid_on_node"] == 0):
-				if iproc ==0: tvol0.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_%d_unfil_%3d.hdf"%(iproc, final_iter)))
+				if iproc ==0: tvol0.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_%d_unfil_%03d.hdf"%(iproc, final_iter)))
 				else: tvol1.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_%d_unfil_%03d.hdf"%(iproc, final_iter)))
 			mpi_barrier(MPI_COMM_WORLD)
 	mpi_barrier(MPI_COMM_WORLD) #  
