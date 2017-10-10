@@ -106,7 +106,10 @@ def main():
 		elif "odd" in args[1]: bsfs=args[1].split("__ctf_flip")[0]+"__ctf_flip_bispec_odd.lst"
 		else:
 			bsfs=args[1].split("__ctf_flip")[0]+"__ctf_flip_bispec.lst"
-		nptclbs=EMUtil.get_image_count(bsfs)
+		try: nptclbs=EMUtil.get_image_count(bsfs)
+		except:
+			print "Could not get particle count on ",bsfs
+			sys.exit(1)
 		if nptclbs!=nptcl : 
 			print nptclbs,nptcl
 			raise Exception
@@ -241,7 +244,11 @@ def clsfn(jsd,refs,refsbs_org,ptclfs,ptclbsfs,options,grp,n0,n1):
 		# we make a list with the number of total elements we want
 		best=[(1e30,-1)]*(options.sep*3)		# we keep 3 possible classifications for each desired final output, the pare this down to the best nsep in the next stage
 		for j,refbs in enumerate(refsbs):
-			insort(best,(ptclbs.cmp("ccc",refbs),j))		# insert this comparison in sorted order
+			try: insort(best,(ptclbs.cmp("ccc",refbs),j))		# insert this comparison in sorted order
+			except:
+				ptclbs.write_image("debug.hdf",-1)
+				refbs.write_image("debug.hdf",-1)
+				sys.exit(1)
 			best.pop()								# remove the worst element
 		
 		ret=[i]

@@ -87,6 +87,8 @@ from EMAN2jsondb import JSDict,js_open_dict,js_close_dict,js_remove_dict,js_list
 
 Vec3f.__str__=lambda x:"Vec3f"+str(x.as_list())
 
+XYData.__len__=XYData.get_size
+
 # Who is using this? Transform3D is deprecated use the Transform insteand
 #Transform3D.__str__=lambda x:"Transform3D(\t%7.4g\t%7.4g\t%7.4g\n\t\t%7.4g\t%7.4g\t%7.4g\n\t\t%7.4g\t%7.4g\t%7.4g)\nPretrans:%s\nPosttrans:%s"%(x.at(0,0),x.at(0,1),x.at(0,2),x.at(1,0),x.at(1,1),x.at(1,2),x.at(2,0),x.at(2,1),x.at(2,2),str(x.get_pretrans()),str(x.get_posttrans()))
 

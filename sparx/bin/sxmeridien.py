@@ -1115,16 +1115,19 @@ def do3d(procid, data, newparams, refang, rshifts, norm_per_particle, myid, mpi_
 	from time           import sleep
 	if (mpi_comm == -1): mpi_comm = MPI_COMM_WORLD
 	
-	if(Blockdata["no_of_groups"] >1):
-		if myid == Blockdata["nodes"][0] and procid == 0:
-			if os.path.exists(os.path.join(Tracker["directory"], "tempdir")): print("tempdir exists")
-			else: os.mkdir(os.path.join(Tracker["directory"], "tempdir"))
-	else:
-		if myid == Blockdata["main_node"] and procid == 0:
-			if not os.path.exists(os.path.join(Tracker["directory"],"tempdir")): 
-				try: os.mkdir(os.path.join(Tracker["directory"], "tempdir"))
-				except: print("tempdir exists")
-			else: print("tempdir exists")
+	if procid == 0:
+		if(Blockdata["no_of_groups"] >1):
+			if myid == Blockdata["nodes"][0] :
+				if os.path.exists(os.path.join(Tracker["directory"], "tempdir")): print("tempdir exists")
+				else: 
+					try: os.mkdir(os.path.join(Tracker["directory"], "tempdir"))
+					except:  print("tempdir exists")
+		else:
+			if myid == Blockdata["main_node"]:
+				if not os.path.exists(os.path.join(Tracker["directory"],"tempdir")): 
+					try: os.mkdir(os.path.join(Tracker["directory"], "tempdir"))
+					except: print("tempdir exists")
+				else: print("tempdir exists")
 	mpi_barrier(mpi_comm)
 	"""
 	tvol, tweight, trol = recons3d_4nnstruct_MPI(myid = Blockdata["subgroup_myid"], main_node = Blockdata["nodes"][procid], prjlist = data, \
@@ -1164,8 +1167,9 @@ def do3d_final_mpi(final_iter):
 	# steptwo of final reconstruction
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	if Blockdata["myid"] == Blockdata["main_node"]: print(line, "do3d_final")
+	try: assert(Tracker["mainiteration"] == final_iter)
+	except: ERROR("final_iter does not equal to the current value of mainiteration in Tracker", "do3d_final_mpi",1, Blockdata["myid"])
 	if Tracker["directory"] !=Tracker["constants"]["masterdir"]: Tracker["directory"] = Tracker["constants"]["masterdir"]
-	carryon = 1
 	if(Blockdata["no_of_groups"] >1):
 		if(Blockdata["myid"] == Blockdata["main_shared_nodes"][1]):
 			# post-insertion operations, done only in main_node		
@@ -1196,7 +1200,7 @@ def do3d_final_mpi(final_iter):
 			tvol0 = steptwo_mpi(tvol0, tweight0, treg0, None, False , color = Blockdata["node_volume"][1])
 			del tweight0, treg0
 			if( Blockdata["myid_on_node"] == 0):
-				tvol0.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_0_unfil.hdf"))	
+				tvol0.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_0_unfil_%03d.hdf"%final_iter))	
 		elif( Blockdata["color"] == Blockdata["node_volume"][0]):
 			if( Blockdata["myid"] == Blockdata["main_shared_nodes"][0]):
 				treg1 = get_im(os.path.join(Tracker["directory"], "tempdir", "trol_1_%03d.hdf"%(Tracker["mainiteration"])))
@@ -1207,7 +1211,7 @@ def do3d_final_mpi(final_iter):
 			tvol1 = steptwo_mpi(tvol1, tweight1, treg1, None, False , color = Blockdata["node_volume"][0])
 			del tweight1, treg1
 			if( Blockdata["myid_on_node"] == 0):
-				tvol1.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_1_unfil.hdf"))
+				tvol1.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_1_unfil_%03d.hdf"%final_iter))
 		mpi_barrier(MPI_COMM_WORLD)
 	else:
 		for iproc in xrange(2):
@@ -1229,8 +1233,8 @@ def do3d_final_mpi(final_iter):
 			if iproc ==0 : tvol0 = steptwo_mpi(tvol0, tweight0, treg, None, False , color = Blockdata["node_volume"][0])
 			else: tvol1 = steptwo_mpi(tvol1, tweight1, treg, None, False , color = Blockdata["node_volume"][0])
 			if( Blockdata["myid_on_node"] == 0):
-				if iproc ==0: tvol0.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_%d_unfil.hdf"%iproc))
-				else: tvol1.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_%d_unfil.hdf"%iproc))
+				if iproc ==0: tvol0.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_%d_unfil_%03d.hdf"%(iproc, final_iter)))
+				else: tvol1.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_%d_unfil_%03d.hdf"%(iproc, final_iter)))
 			mpi_barrier(MPI_COMM_WORLD)
 	mpi_barrier(MPI_COMM_WORLD) #  
 	return
@@ -7537,7 +7541,7 @@ def recons3d_trl_struct_MPI_nosmearing(myid, main_node, prjlist, parameters, CTF
 	if myid == main_node: return fftvol, weight, refvol
 	else: return None, None, None
 
-def do_ctref_from_orgstack(masterdir, option_orgstack, option_old_refinement_dir, option_subset, option_initvol, option_selected_iter, option_smearing, shell_line_command, mpi_comm=-1):
+def ctref_init(masterdir, option_orgstack, option_old_refinement_dir, option_subset, option_initvol, option_selected_iter, option_smearing, shell_line_command, mpi_comm=-1):
 	global Tracker, Blockdata
 	from time import sleep
 	if mpi_comm == -1: mpi_comm = MPI_COMM_WORLD
@@ -7545,7 +7549,7 @@ def do_ctref_from_orgstack(masterdir, option_orgstack, option_old_refinement_dir
 	# preparations
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	if Blockdata["myid"] == Blockdata["nodes"][0]:
-		print(line, "do_ctref_from_orgstack")
+		print(line, "ctref_init")
 		if option_smearing !=-1: print("Warning: the number of smearings is ignored for intitial reconstruction! ")
 		if not os.path.exists(masterdir): os.mkdir(masterdir)
 	# set state varibles for continuation run
@@ -7573,15 +7577,19 @@ def do_ctref_from_orgstack(masterdir, option_orgstack, option_old_refinement_dir
 				fout     = open(os.path.join(old_refinement_iter_dir, "Tracker_%03d.json"%selected_iter),"r")
 				Tracker  = convert_json_fromunicode(json.load(fout))
 				fout.close()
+			# corrections only applicable for importing info from the previous run
+			Tracker["constants"]["stack"] = os.path.join("bdb:"+option_old_refinement_dir, "../", Tracker["constants"]["stack"][4:])
+			if Tracker["constants"]["mask3D"]:
+				Tracker["constants"]["mask3D"] = os.path.join(option_old_refinement_dir, "../", Tracker["constants"]["mask3D"])
+			update_tracker(shell_line_command)
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			print(line, "do_ctref_from_orgstack imports parameters from iteration %d of %s"%(selected_iter, option_old_refinement_dir))
+			print(line, "ctref: continuation starts from %d of %s"%(selected_iter, option_old_refinement_dir))
 		else: Tracker = 0
 		Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], mpi_comm) # balance processors
-		update_tracker(shell_line_command)
 	else:
 		if(Blockdata["myid"] == Blockdata["main_node"]):
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			print(line,  "do_ctref_from_orgstack from xform.projection parameters stored in headers of %s "%option_orgstack)
+			print(line,  "ctref: continuation starts from  %s "%option_orgstack)
 			a = get_im(option_orgstack)
 			nnxo = a.get_xsize()
 			if Tracker["constants"]["CTF"]:
@@ -7601,23 +7609,27 @@ def do_ctref_from_orgstack(masterdir, option_orgstack, option_old_refinement_dir
 		if( nnxo < 0 ): ERROR("Incorrect image size  ", "meridien", 1, Blockdata["myid"])
 		pixel_size = bcast_number_to_all(pixel_size, source_node = Blockdata["main_node"])
 		fq         = bcast_number_to_all(fq, source_node = Blockdata["main_node"])
-		Tracker["nxinit"]  = nnxo
+		Tracker["nxinit"]  = nnxo # 
 		Tracker["constants"]["nnxo"]         = nnxo
 		Tracker["constants"]["pixel_size"]   = pixel_size
 		Tracker["constants"]["fuse_freq"]    = fq
 		del fq, nnxo, pixel_size
 		# Resolution is always in full size image pixel units.
-		
+	init_Tracker_mpi(option_initvol)
 	Tracker["constants"]["masterdir"] = masterdir
 	Tracker["directory"] = os.path.join(masterdir, "main000")
 	Blockdata["symclass"] = symclass(Tracker["constants"]["symmetry"])
 	## update information
-	if(Blockdata["myid"] == Blockdata["nodes"][0]):
+	if(Blockdata["myid"] ==Blockdata["main_node"]):
 		if not os.path.exists(Tracker["directory"]): os.mkdir(Tracker["directory"])
 		if option_subset: total_stack = len(read_text_file(option_subset))
 		else: total_stack = EMUtil.get_image_count(Tracker["constants"]["stack"])
 	else: total_stack = 0
 	total_stack = bcast_number_to_all(total_stack, source_node = Blockdata["nodes"][0])
+	from time import sleep
+	for iproc in xrange(Blockdata["nproc"]):
+		while not os.path.exists(Tracker["directory"]):sleep(1)
+	mpi_barrier(MPI_COMM_WORLD)
 	partids = [None]*2
 	for procid in xrange(2): partids[procid] = os.path.join(Tracker["directory"],"chunk_%01d_000.txt"%procid)
 	partstack = [None]*2
@@ -7659,37 +7671,9 @@ def do_ctref_from_orgstack(masterdir, option_orgstack, option_old_refinement_dir
 	l = bcast_number_to_all(l, source_node = Blockdata["main_node"], mpi_comm = mpi_comm)
 	Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], mpi_comm)
 	
-	# reset
-	Tracker["mainiteration"]        = 0
-	## nosmearing rec3d and evaluate resolution
 	original_data                   = [None, None]
 	oldparams                       = [None, None]
-	Tracker["previousoutputdir"]    =  None
-	Blockdata["accumulatepw"]       = [None, None]
-	Blockdata["bckgnoise"]          =  None
 	projdata                        = [None, None]
-	Tracker["currentres"]		    = -1
-	Tracker["fsc143"]			    = -1
-	Tracker["maxfrad"]           	= -1
-	Tracker["no_improvement"]    	= 0
-	Tracker["no_params_changes"] 	= 0
-	Tracker["large_at_Nyquist"]  	= False
-	Tracker["anger"]             	= 1.e23
-	Tracker["shifter"]           	= 1.e23
-	Tracker["pixercutoff"]       	= 2.0
-	Tracker["acc_rot"]           	= 0.0
-	Tracker["acc_trans"]			= 0.0
-	Tracker["avgvaradj"]			= [1.0,1.0]  # This has to be initialized to 1.0 !!
-	Tracker["mainiteration"]     	= 0
-	Tracker["lentop"]				= 2000
-	Tracker["nxstep"]		        = 0
-	#Tracker["nxinit"]               = Tracker["constants"]["nnxo"]
-	Tracker["maxfrad"]              = Tracker["nxinit"]//2 #Tracker["constants"]["nnxo"]//2
-	Tracker["refvol"]               = option_initvol
-	Tracker["state"]                = "CONTINUATION_INITIAL"
-	Tracker["constants"]["best"]    = 0
-	Tracker["keepfirst"]            = -1
-	Tracker["bestres"]          	= -1
 	
 	if(Blockdata["myid"] == Blockdata["nodes"][0]):
 		print_dict(Tracker["constants"], "Permanent settings of meridien")
@@ -7700,7 +7684,7 @@ def do_ctref_from_orgstack(masterdir, option_orgstack, option_old_refinement_dir
 		original_data[procid], oldparams[procid] = getindexdata(partids[procid], partstack[procid], \
 			os.path.join(Tracker["constants"]["masterdir"],"main000", "particle_groups_%01d.txt"%procid), \
 			original_data[procid], small_memory = Tracker["constants"]["small_memory"], \
-			nproc = Blockdata["subgroup_size"], myid = Blockdata["subgroup_myid"], mpi_comm = mpi_comm)												
+			nproc = Blockdata["nproc"], myid = Blockdata["myid"], mpi_comm = mpi_comm)												
 		temp = Tracker["directory"]
 		Tracker["directory"] = os.path.join(Tracker["directory"], "tempdir")
 		mpi_barrier(mpi_comm)
@@ -7709,20 +7693,20 @@ def do_ctref_from_orgstack(masterdir, option_orgstack, option_old_refinement_dir
 		projdata[procid] = get_shrink_data(Tracker["nxinit"], procid, original_data[procid], oldparams[procid],\
 		  return_real = False, preshift = True, apply_mask = False, nonorm = True, nosmearing = True)
 		mpi_barrier(mpi_comm)
-	compute_sigma(original_data[0]+original_data[1],oldparams[0]+oldparams[1], len(oldparams[0]), False, Blockdata["subgroup_myid"], mpi_comm = mpi_comm)
+	compute_sigma(original_data[0]+original_data[1],oldparams[0]+oldparams[1], len(oldparams[0]), False, Blockdata["myid"], mpi_comm = mpi_comm)
 	# Estimate initial resolution/image size
 	if(Blockdata["myid"] == Blockdata["nodes"][0]):
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(line,  "Reconstruct volumes as initial reference")
+		print(line,  "ctref: reconstruct initial reference")
 	for procid in xrange(2):
 		#original_data[procid]    = None
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		if(Blockdata["subgroup_myid"] == Blockdata["nodes"][procid]): print(line, "3-D reconstruction of group %d"%procid)
+		if(Blockdata["myid"] == Blockdata["nodes"][procid]): print(line, "3-D reconstruction of group %d"%procid)
 		do3d_nosmearing(procid, projdata[procid], oldparams[procid], mpi_comm = mpi_comm)
 		projdata[procid] = []
 		mpi_barrier(mpi_comm)
 	mpi_barrier(MPI_COMM_WORLD)
-	do_ctref_get_maps_mpi(Tracker["directory"])
+	ctref_do_maps_mpi(Tracker["directory"])
 	
 	if(Blockdata["myid"] == Blockdata["nodes"][0]):
 		if os.path.exists(os.path.join(Tracker["directory"], "tempdir")): shutil.rmtree(os.path.join(Tracker["directory"], "tempdir"))
@@ -7748,26 +7732,23 @@ def do_ctref_from_orgstack(masterdir, option_orgstack, option_old_refinement_dir
 		nfsc_half = 0
 	nfsc_143 = bcast_number_to_all(nfsc_143, Blockdata["nodes"][0], MPI_COMM_WORLD)
 	nfsc_half = bcast_number_to_all(nfsc_half, Blockdata["nodes"][0], MPI_COMM_WORLD)
+	### AI jobs:
 	Tracker["nxinit"]     = nfsc_143*2+30  # will be figured in first AI.
 	Tracker["fsc143"]     = nfsc_143
 	Tracker["currentres"] = nfsc_half
 	Tracker["constants"]["inires"] = nfsc_143
-	import user_functions
-	Tracker["constants"]["user_func"] = "do_volume_mask"
-	Tracker["maxit"]		        = Tracker["constants"]["maxit"]
-	Tracker["radius"]		        = Tracker["constants"]["radius"]
+	Tracker["maxit"]	 = Tracker["constants"]["maxit"]
+	Tracker["radius"]	 = Tracker["constants"]["radius"]
 	#  Resolution in pixels at 0.5 cutoff
-	###<<<----state 
 	Blockdata["accumulatepw"]       = [[],[]]
-	###
 	Tracker["constants"]["inires"] = int(Tracker["constants"]["nnxo"]*Tracker["constants"]["pixel_size"]/Tracker["constants"]["inires"] + 0.5)
 	if option_initvol !='':# continue refinement using the given reference 
-		from shutil import copy
+		from shutil import copyfile
 		if(Blockdata["myid"] == Blockdata["nodes"][0]):
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			print(line, "meridien uses user provided %s as the intitial references"%option_initvol)
-			copy(option_initvol, os.path.join(Tracker["directory"], "vol_0_000.hdf"))
-			copy(option_initvol, os.path.join(Tracker["directory"], "vol_1_000.hdf"))
+			print(line, "ctref: continuation uses user provided %s as the intitial references"%option_initvol)
+			copyfile(option_initvol, os.path.join(Tracker["directory"], "vol_0_000.hdf"))
+			copyfile(option_initvol, os.path.join(Tracker["directory"], "vol_1_000.hdf"))
 		mpi_barrier(MPI_COMM_WORLD)
 	
 	if(Blockdata["myid"] == Blockdata["main_node"]):
@@ -7781,7 +7762,47 @@ def do_ctref_from_orgstack(masterdir, option_orgstack, option_old_refinement_dir
 	mpi_barrier(MPI_COMM_WORLD)
 	return original_data
 	
-def do_ctref_get_subset_data(masterdir, option_old_refinement_dir, option_selected_cluster, option_selected_iter, shell_line_command):
+def init_Tracker_mpi(option_initvol = None):
+	global Tracker, Blockdata
+	# reset
+	Tracker["mainiteration"]        = 0
+	## nosmearing rec3d and evaluate resolution
+
+	Tracker["previousoutputdir"]    =  None
+	Blockdata["accumulatepw"]       = [None, None]
+	Blockdata["bckgnoise"]          =  None
+	Tracker["currentres"]		    = -1
+	Tracker["fsc143"]			    = -1
+	Tracker["maxfrad"]           	= -1
+	Tracker["no_improvement"]    	= 0
+	Tracker["no_params_changes"] 	= 0
+	Tracker["large_at_Nyquist"]  	= False
+	Tracker["anger"]             	= 1.e23
+	Tracker["shifter"]           	= 1.e23
+	Tracker["pixercutoff"]       	= 2.0
+	Tracker["acc_rot"]           	= 0.0
+	Tracker["acc_trans"]			= 0.0
+	Tracker["avgvaradj"]			= [1.0,1.0]  # This has to be initialized to 1.0 !!
+	Tracker["mainiteration"]     	= 0
+	Tracker["lentop"]				= 2000
+	Tracker["nxstep"]		        = 0
+	try:  nxinit = Tracker["nxinit"]
+	except: Tracker["nxinit"] = Tracker["constants"]["nnxo"]
+	Tracker["maxfrad"]              = Tracker["nxinit"]//2 #Tracker["constants"]["nnxo"]//2
+	Tracker["refvol"]               = option_initvol
+	Tracker["state"]                = "CONTINUATION_INITIAL"
+	Tracker["constants"]["best"]    = 0
+	Tracker["keepfirst"]            = -1
+	Tracker["bestres"]          	= -1
+	Tracker["directory"]         	= ""
+	Tracker["previousoutputdir"] 	= ""
+	Tracker["mainiteration"]     	= 0
+	Tracker["nima_per_chunk"]    	= [0,0]
+	try:  user_func = Tracker["constants"]["user_func"]
+	except: Tracker["constants"]["user_func"] = "do_volume_mask"
+	return
+
+def ctref_read_subset_data(masterdir, option_old_refinement_dir, option_selected_cluster, option_selected_iter, shell_line_command):
 	global Tracker, Blockdata
 	#case 1
 	selected_iter = option_selected_iter	
@@ -7797,7 +7818,7 @@ def do_ctref_get_subset_data(masterdir, option_old_refinement_dir, option_select
 	nproc_old_ref3d = bcast_number_to_all(nproc_old_ref3d, Blockdata["main_node"], MPI_COMM_WORLD)
 	
 	if nproc_old_ref3d < Blockdata["nproc"]:
-		ERROR( "ERROR!! Continue-from-subset uses more Cpus than the initial run", "do_ctref_get_subset_data", 1, Blockdata["myid"])
+		ERROR( "ERROR!! ctref uses more Cpus than the initial run", "ctref_read_subset_data", 1, Blockdata["myid"])
 	
 	# read old refinement Tracker
 	if Blockdata["myid"] == Blockdata["main_node"]:
@@ -8063,7 +8084,7 @@ def do_ctref_get_subset_data(masterdir, option_old_refinement_dir, option_select
 	mpi_barrier(MPI_COMM_WORLD)
 	return
 
-def do_ctref_get_maps_mpi(ctrefromsort3d_iter_dir):
+def ctref_do_maps_mpi(ctrefromsort3d_iter_dir):
 	global Tracker, Blockdata
 	from mpi import MPI_COMM_WORLD, mpi_barrier
 	
@@ -8289,7 +8310,7 @@ def ctref_rec3d_faked_iter(masterdir, selected_iter=-1, comm = -1):
 		oldparamstructure[procid] = []
 		norm_per_particle[procid] = []
 		mpi_barrier(MPI_COMM_WORLD)
-	do_ctref_get_maps_mpi(Tracker["directory"])
+	ctref_do_maps_mpi(Tracker["directory"])
 	Tracker["maxit"]		        = Tracker["constants"]["maxit"]
 	Tracker["radius"]		        = Tracker["constants"]["radius"]
 	Tracker["nxstep"]		        = 0
@@ -8373,7 +8394,7 @@ def update_tracker(shell_line_command):
 	parser_no_default.add_option("--ctref_oldrefdir",           type="string")
 	parser_no_default.add_option("--ctref_iter",                type="int")
 	parser_no_default.add_option("--ctref_smearing",            type="int")
-	parser_no_default.add_option("--ctref_an",                  type="float")
+	parser_no_default.add_option("--an",                        type="float")
 
 	(options_no_default_value, args) = parser_no_default.parse_args(shell_line_command)
 
@@ -8438,8 +8459,8 @@ def update_tracker(shell_line_command):
 		Tracker["constants"]["function"] = options_no_default_value.function
 	if  options_no_default_value.ctref_smearing != None:
 		Tracker["constants"]["ctref_smearing"] = options_no_default_value.ctref_smearing
-	if  options_no_default_value.ctref_an!= None:
-		Tracker["constants"]["ctref_an"] = options_no_default_value.ctref_an
+	if  options_no_default_value.an!= None:
+		Tracker["constants"]["an"] = options_no_default_value.an
 	return 
 
 def compare_bckgnoise(bckgnoise1, bckgnoise2):
@@ -8514,7 +8535,7 @@ def main():
 	parser.add_option("--ctref_initvol",            type="string",          default='',                     help="user provided reference for continuation run")
 	parser.add_option("--ctref_orgstack",           type="string",          default='',                     help="BDB stack for continuation run with xform.projection parameters written in the headers")
 	parser.add_option("--ctref_smearing",           type="int",             default=-1,                     help=" Use -1 value only ")
-	parser.add_option("--ctref_an",	           		type="float", 	     	default=-1.,                	help="angular neighborhood for local search")
+	parser.add_option("--an",	           		    type="float", 	     	default=-1.,                	help="angular neighborhood for local search")
 	(options, args) = parser.parse_args(sys.argv[1:])
 	update_options  = False # restart option
 	global Tracker, Blockdata
@@ -8626,6 +8647,7 @@ def main():
 		Constants["ctref_oldrefdir"]            = options.ctref_oldrefdir
 		Constants["ctref_iter"]                 = options.ctref_iter
 		Constants["ctref_initvol"]              = options.ctref_initvol
+		Constants["ctref_smearing"]             = options.ctref_smearing
 		
 
 		#
@@ -8730,8 +8752,7 @@ def main():
 			ERROR("Particle radius set too large!","sxmeridien",1,Blockdata["myid"])
 		###<-----end of sanity check <----------------------
 		###<<<----------------------------- parse program
-
-
+		
 	# ------------------------------------------------------------------------------------
 		#  MASTER DIRECTORY
 		if(Blockdata["myid"] == Blockdata["main_node"]):
@@ -8915,7 +8936,7 @@ def main():
 		mainiteration 	= 0
 		Tracker["mainiteration"] = mainiteration
 		
-	else: # ctref
+	else: # ctref   ################################################################
 		if(Blockdata["myid"] == Blockdata["main_node"]):
 			if( masterdir == ""):
 				timestring = strftime("_%d_%b_%Y_%H_%M_%S", localtime())
@@ -8960,8 +8981,8 @@ def main():
 				Constants["best"]              			= 0
 				Constants["limit_improvement"] 			= 1
 				Constants["limit_changes"]     			= 1  # reduce delta by half if both limits are reached simultaneously
-				Constants["states"]            			= None #["INITIAL", "PRIMARY", "EXHAUSTIVE", "RESTRICTED", "LOCAL", "FINAL"]
-				Constants["user_func"]					= options.function
+				Constants["states"]            			=  ["INITIAL", "PRIMARY", "EXHAUSTIVE", "RESTRICTED", "LOCAL", "FINAL", "CONTINUATION_INITIAL", "CONTINUATION_PRIMARY"]
+				Constants["user_func"]					=  options.function
 				Constants["hardmask"]          			=  True #options.hardmask
 				Constants["ccfpercentage"]     			= options.ccfpercentage/100.
 				Constants["expthreshold"]      			= -10
@@ -8976,31 +8997,39 @@ def main():
 				Constants["ctref_iter"]                 = options.ctref_iter
 				Constants["ctref_smearing"]             = options.ctref_smearing
 				Constants["delta"]                      = options.delta
+				Constants["an"]                			= options.an
 				Tracker["constants"]		            = Constants
-				update_tracker(sys.argv[1:])
-				Tracker["xr"]			                = options.xr
-				Tracker["yr"]			                = options.xr # Do not change!  I do not think it is used anywhere
-				Tracker["ts"]			                = options.ts
-				Tracker["delta"]		                = options.delta  # How to decide it
-				if Tracker["delta"] ==-1.: Tracker["delta"] = 15./4.
-				if options.ctref_an ==-1.: Tracker["an"] = 6.*Tracker["delta"]
-				else:                      Tracker["an"] = options.ctref_an
+				Constants["ctref_initvol"]              = options.ctref_initvol
 				Tracker["constants"]   = Constants
-			original_data = do_ctref_from_orgstack(masterdir, options.ctref_orgstack, options.ctref_oldrefdir, options.ctref_subset, options.ctref_initvol, options.ctref_iter, options.ctref_smearing, sys.argv[1:], mpi_comm = MPI_COMM_WORLD)
+				
+				update_tracker(sys.argv[1:])
+				
+				Tracker["xr"]			                = options.xr
+				Tracker["yr"]			                = options.xr # Do not change! Used in ctref option
+				Tracker["ts"]			                = options.ts
+				Tracker["delta"]		                = Tracker["constants"]["delta"]
+				Tracker["an"]                           = Tracker["constants"]["an"]
+				if Tracker["delta"] ==-1.: Tracker["delta"] = 15./4.
+				if Tracker["an"] ==-1.: Tracker["an"] = 6.*Tracker["delta"]
+				
+				if options.radius == -1: ERROR("radius is not provided ", "ctref_init", 1, Blockdata["myid"])
+			original_data = ctref_init(masterdir, options.ctref_orgstack, options.ctref_oldrefdir, options.ctref_subset, options.ctref_initvol, \
+			        options.ctref_iter, options.ctref_smearing, sys.argv[1:], mpi_comm = MPI_COMM_WORLD)
 			mainiteration  +=1
 			Tracker["mainiteration"] = mainiteration
 			Tracker["previousoutputdir"] =  os.path.join(masterdir, "main%03d"%(Tracker["mainiteration"]-1))
 			Tracker["directory"] = os.path.join(Tracker["constants"]["masterdir"], "main%03d"%Tracker["mainiteration"])
 			mpi_barrier(MPI_COMM_WORLD)
 			### local CCC 
+			from shutil import copyfile
 			while mainiteration<=2:
 				oldparams        = [None, None]
 				partids          = [None, None]
 				partstack        = [None, None]
-				Tracker["keepfirst"] = -1
-				Tracker["state"] = "CONTINUATION_PRIMARY"		
+				Tracker["keepfirst"] = -1	
 				Tracker["maxfrad"] = Tracker["nxinit"]//2
 				Tracker["nxpolar"] = Tracker["nxinit"]
+				if mainiteration<2:  Tracker["state"] = "CONTINUATION_PRIMARY"	
 				if mainiteration==2: Tracker["state"]  = "RESTRICTED"
 				###
 				if Blockdata["myid"] == Blockdata["main_node"]:
@@ -9019,16 +9048,44 @@ def main():
 					if not os.path.exists(os.path.join(Tracker["directory"], "tempdir")): os.mkdir(os.path.join(Tracker["directory"], "tempdir"))
 				refang, rshifts, coarse_angles, coarse_shifts = get_refangs_and_shifts() # no shake
 				
+				
+				if( Tracker["constants"]["shake"] > 0.0 ):
+					if(Blockdata["myid"] == Blockdata["main_node"]):
+						shakenumber = uniform( -Tracker["constants"]["shake"], Tracker["constants"]["shake"])
+					else:
+						shakenumber = 0.0
+					shakenumber = bcast_number_to_all(shakenumber, source_node = Blockdata["main_node"])
+					# it has to be rounded as the number written to the disk is rounded,
+					#  so if there is discrepancy one cannot reproduce iteration.
+					shakenumber  = round(shakenumber,5)
+
+					rangle = shakenumber*Tracker["delta"]
+					rshift = shakenumber*Tracker["ts"]
+					refang = Blockdata["symclass"].reduce_anglesets( rotate_params(refang, [-rangle,-rangle,-rangle]) )
+					coarse_angles = Blockdata["symclass"].reduce_anglesets( rotate_params(coarse_angles, [-rangle,-rangle,-rangle]) )
+					shakegrid(rshifts, rshift)
+					shakegrid(coarse_shifts, rshift)
+
+					if(Blockdata["myid"] == Blockdata["main_node"]):
+						write_text_row([[shakenumber, rangle, rshift]], os.path.join(Tracker["directory"] ,"randomize_search.txt") )
+				else:
+					rangle = 0.0
+					rshift = 0.0
+
 				if(Blockdata["myid"] == Blockdata["main_node"]):
 					write_text_row( refang, os.path.join(Tracker["directory"] ,"refang.txt") )
 					write_text_row( rshifts, os.path.join(Tracker["directory"] ,"rshifts.txt") )
 				mpi_barrier(MPI_COMM_WORLD)
-				#Tracker["nxpolar"]= Tracker["nxinit"]
+				
+				if(Blockdata["myid"] == Blockdata["main_node"]):
+					write_text_row( refang, os.path.join(Tracker["directory"] ,"refang.txt") )
+					write_text_row( rshifts, os.path.join(Tracker["directory"] ,"rshifts.txt") )
+				mpi_barrier(MPI_COMM_WORLD)
 				for procid in xrange(2):
 					if(Blockdata["myid"] == Blockdata["main_node"]):
-						copy(os.path.join(Tracker["previousoutputdir"], "particle_groups_%d.txt"%procid), os.path.join(Tracker["directory"], "particle_groups_%d.txt"%procid))
-						copy(os.path.join(Tracker["previousoutputdir"], "chunk_%d_%03d.txt"%(procid, mainiteration-1)), os.path.join(Tracker["directory"], "chunk_%d_%03d.txt"%(procid, mainiteration)))
-						copy(os.path.join(Tracker["previousoutputdir"], "groupids.txt"), os.path.join(Tracker["directory"], "groupids.txt"))
+						copyfile(os.path.join(Tracker["previousoutputdir"], "particle_groups_%d.txt"%procid), os.path.join(Tracker["directory"], "particle_groups_%d.txt"%procid))
+						copyfile(os.path.join(Tracker["previousoutputdir"], "chunk_%d_%03d.txt"%(procid, mainiteration-1)), os.path.join(Tracker["directory"], "chunk_%d_%03d.txt"%(procid, mainiteration)))
+						copyfile(os.path.join(Tracker["previousoutputdir"], "groupids.txt"), os.path.join(Tracker["directory"], "groupids.txt"))
 					#min( 3*Tracker["nxinit"], Tracker["constants"]["nnxo"] )
 					partids[procid]   = os.path.join(Tracker["directory"],"chunk_%01d_%03d.txt"%(procid, Tracker["mainiteration"]))
 					partstack[procid] = os.path.join(Tracker["constants"]["masterdir"],"main%03d"%(Tracker["mainiteration"]-1),"params-chunk_%01d_%03d.txt"%(procid, (Tracker["mainiteration"]-1)))
@@ -9045,6 +9102,7 @@ def main():
 				norm_per_particle    = [None, None]
 				newparamstructure    = [None, None]
 				projdata             = [None, None]
+				mpi_barrier(MPI_COMM_WORLD)
 				for procid in xrange(2):
 					Tracker["refvol"] = os.path.join(Tracker["previousoutputdir"],"vol_%01d_%03d.hdf"%(procid,Tracker["mainiteration"]-1))
 					if(Blockdata["myid"] == Blockdata["main_node"]):
@@ -9053,7 +9111,7 @@ def main():
 						print_dict(Tracker,"Current state variables")
 						
 					if mainiteration==1: newparamstructure[procid], norm_per_particle[procid] = ali3D_local_polar_ccc(refang, rshifts, coarse_angles, coarse_shifts, procid, original_data[procid], oldparams[procid], \
-					   preshift = True, apply_mask = True, nonorm = True, applyctf = True)
+					   preshift = True, apply_mask = True, nonorm = False, applyctf = True)
 					   
 					else: newparamstructure[procid], norm_per_particle[procid] = ali3D_local_primary_polar(refang, rshifts, coarse_angles, coarse_shifts, procid, original_data[procid], oldparams[procid], \
 					   preshift = True, apply_mask = True, nonorm = False, applyctf = True)
@@ -9101,7 +9159,7 @@ def main():
 					newparamstructure[procid] = []
 					partstack[procid] = os.path.join(Tracker["constants"]["masterdir"],"main%03d"%(Tracker["mainiteration"]),"params-chunk_%01d_%03d.txt"%(procid, (Tracker["mainiteration"])))
 					mpi_barrier(MPI_COMM_WORLD)
-				do_ctref_get_maps_mpi(Tracker["directory"])
+				ctref_do_maps_mpi(Tracker["directory"])
 				if(Blockdata["myid"] == Blockdata["main_node"]):
 					copy(os.path.join(Tracker["directory"],"tempdir", "bckgnoise.hdf"), os.path.join(Tracker["directory"],  "bckgnoise.hdf"))
 					ncc = compare_bckgnoise(get_im(os.path.join(Tracker["directory"],"bckgnoise.hdf")), get_im(os.path.join(Tracker["previousoutputdir"], "bckgnoise.hdf")))
@@ -9157,12 +9215,12 @@ def main():
 			Tracker["previousoutputdir"] =  os.path.join(masterdir, "main%03d"%(Tracker["mainiteration"]-1))
 			Tracker["directory"] = os.path.join(Tracker["constants"]["masterdir"], "main%03d"%Tracker["mainiteration"])
 		else:# previous continue run
-			do_ctref_get_subset_data(masterdir, options.ctref_oldrefdir, options.ctref_subset, options.ctref_iter, sys.argv[1:])
+			ctref_read_subset_data(masterdir, options.ctref_oldrefdir, options.ctref_subset, options.ctref_iter, sys.argv[1:])
 			original_data = ctref_rec3d_faked_iter(masterdir, options.ctref_iter, MPI_COMM_WORLD)
 			mainiteration = options.ctref_iter
 		Tracker["state"]  = "RESTRICTED"
 		Tracker["keepfirst"] = -1
-		
+		############################################<<<<<<<<<<<<<
 	# remove projdata, if it existed, initialize to nonsense
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		if not os.path.exists(os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"],"Tracker_%03d.json"%Tracker["mainiteration"])):
