@@ -1802,7 +1802,7 @@ class EMAbstractFactory:
 		_args = [constructor]
 		_args.extend(args)
 #		setattr(self, methodName,Functor(_args, kargs))
- 		setattr(self, methodName, EMFunctor(*_args, **kargs))
+		setattr(self, methodName, EMFunctor(*_args, **kargs))
 
 	def unregister(self, methodName):
 		"""unregister a constructor"""
