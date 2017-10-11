@@ -1185,8 +1185,8 @@ def get_textimage(fname):
 		and val is the floating point value of that point.  All points
 		not explicitly listed are set to zero.
 	"""
-    	from string import atoi,atof
-    	infile = open(fname)
+	from string import atoi,atof
+	infile = open(fname)
 	lines = infile.readlines()
 	infile.close()
 	data = lines[0].split()
