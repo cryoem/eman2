@@ -43,22 +43,22 @@ import sys
 
 
 def main():
-        progname = os.path.basename(sys.argv[0])
-        usage = """%prog <file1> <N1> <file2> <N2> <outfile> [options]
+	progname = os.path.basename(sys.argv[0])
+	usage = """%prog <file1> <N1> <file2> <N2> <outfile> [options]
 	
 	Using the selected comparator this program will rotate/translate an image exhaustively over a range
 	and write the similarity value to an output volume. (technically it writes the similarity * -1.0)
 
         """
 
-        parser = OptionParser(usage=usage,version=EMANVERSION)
+	parser = OptionParser(usage=usage,version=EMANVERSION)
 
-        parser.add_option("--xy0",type="float",help="How far to shift x/y from 0,0. Default = 20.0",default=20.0)
-        parser.add_option("--dxy",type="float",help="Step (in pixels) for x/y translation. Default 1.0",default=1.0)
+	parser.add_option("--xy0",type="float",help="How far to shift x/y from 0,0. Default = 20.0",default=20.0)
+	parser.add_option("--dxy",type="float",help="Step (in pixels) for x/y translation. Default 1.0",default=1.0)
 	parser.add_option("--dalpha",type="float",help="Angular step (in degrees). Default=3.0",default=5.0)
 	parser.add_option("--cmp",type="string",help="Comparator to use. Default=ccc",default="ccc")
 
-        (options, args) = parser.parse_args()
+	(options, args) = parser.parse_args()
 
 	cmpopt=parsemodopt(options.cmp)
 	nxy=int(options.xy0/options.dxy)*2+1

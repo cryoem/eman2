@@ -292,13 +292,13 @@ def resetplot(figsize=None):
 	fig = plt.figure()
 	if figsize:
 		fig = plt.figure(figsize=(10, 6))
-  	ax = fig.add_subplot(1,1,1)
+	ax = fig.add_subplot(1,1,1)
 
 	ax.get_xaxis().tick_bottom()
 	ax.get_yaxis().tick_left()
 	ax.tick_params(axis='both', reset=False, which='both', length=8, width=3)
 
-  	plt.rcParams.update({'figure.max_open_warning': 0})
+	plt.rcParams.update({'figure.max_open_warning': 0})
 
 	return fig,ax
 

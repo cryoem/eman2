@@ -36,8 +36,8 @@ from EMAN2 import *
 from numpy import *
 
 def main():
-        progname = os.path.basename(sys.argv[0])
-        usage = """e2simmxptclqual.py [options] <simmx file in> 
+	progname = os.path.basename(sys.argv[0])
+	usage = """e2simmxptclqual.py [options] <simmx file in> 
 	Computes the average simmx score vector for each orientation, normalizes it, then uses it to compute per-particle projections which are hopefully representative of particle quality.
 
 	output is ptcl#,Npeak,cccpeak,peakval,Nbestvec,cccbestvec,bestvecval
@@ -48,14 +48,14 @@ def main():
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-#       parser.add_option("--input",type=str,help="Similarity matrix to analyze",default=None)
-#        parser.add_argument("--refine",type=str,default=None,help="Automatically get parameters for a refine directory")
-        #parser.add_argument("--output",type=str,help="Output text file",default="zvssim.txt")
-        #parser.add_argument("--refs",type=str,help="Reference images from the similarity matrix (projections)",default=None)
-        parser.add_argument("--inset",type=str,help="Input image set",default=None)
-        #parser.add_argument("--outimgs",type=str,help="Output image file",default="imgs.hdf")
-        #parser.add_argument("--filtimgs",type=str,help="A python expression using Z[n], Q[n] and N[n] for selecting specific particles to output. n is the 0 indexed number of the input file",default=None)
-        parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	#       parser.add_option("--input",type=str,help="Similarity matrix to analyze",default=None)
+	#        parser.add_argument("--refine",type=str,default=None,help="Automatically get parameters for a refine directory")
+	#parser.add_argument("--output",type=str,help="Output text file",default="zvssim.txt")
+	#parser.add_argument("--refs",type=str,help="Reference images from the similarity matrix (projections)",default=None)
+	parser.add_argument("--inset",type=str,help="Input image set",default=None)
+	#parser.add_argument("--outimgs",type=str,help="Output image file",default="imgs.hdf")
+	#parser.add_argument("--filtimgs",type=str,help="A python expression using Z[n], Q[n] and N[n] for selecting specific particles to output. n is the 0 indexed number of the input file",default=None)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--refs",type=str,help="Reference images from the similarity matrix (projections)",default=None)
 	parser.add_argument("--sym",type=str,help="Symmetry operator to include in best orientation distance search",default="c1")
 	parser.add_argument("--maxang",type=float,help="Maximum deviation angle for inclusion in good set (degrees)",default=-1.0)

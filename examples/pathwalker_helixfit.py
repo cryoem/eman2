@@ -29,14 +29,14 @@ def read_fixed(edgefile):
 	return fixededges
 
 def read_pdb(filename):
-    
-    atomnumber=np.array([])
-    pdbfile = open(filename, "r")
-    lines = pdbfile.readlines()
-    pdbfile.close()
 
-    count = 0
-    for line in (i for i in lines if i.startswith("ATOM  ")):
+	atomnumber=np.array([])
+	pdbfile = open(filename, "r")
+	lines = pdbfile.readlines()
+	pdbfile.close()
+
+	count = 0
+	for line in (i for i in lines if i.startswith("ATOM  ")):
 		atomnumber=np.append(atomnumber,int(line[22:27]))
 		
     return atomnumber

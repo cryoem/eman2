@@ -506,15 +506,15 @@ def plotter(options,azs,values,title,ts,loop,absMIN,absMAX):
 			#		tick.label1.set_fontsize(16)
 			#		tick.label1.set_fontweight('bold')
 			#	for tick in ax.yaxis.get_major_ticks():
-  			#		tick.label1.set_fontsize(16)
- 			#		tick.label1.set_fontweight('bold')
+			#		tick.label1.set_fontsize(16)
+			#		tick.label1.set_fontweight('bold')
   		 	
-  		 	import matplotlib
+			import matplotlib
   		 	
-  		 	matplotlib.rc('xtick', labelsize=16) 
+			matplotlib.rc('xtick', labelsize=16) 
 			matplotlib.rc('ytick', labelsize=16) 
   		 	
-  		 	font = {'weight':'bold','size':16}
+			font = {'weight':'bold','size':16}
 			matplotlib.rc('font', **font)
   		 	
 			
@@ -522,7 +522,7 @@ def plotter(options,azs,values,title,ts,loop,absMIN,absMAX):
 			pylab.rc("axes", linewidth=2.0)
 		
 			pylab.xlabel('X Axis', fontsize=16, fontweight='bold')
-  			pylab.ylabel('Y Axis', fontsize=16, fontweight='bold')
+			pylab.ylabel('Y Axis', fontsize=16, fontweight='bold')
 			
 			mins.append( min( values[ele] ) )
 			maxs.append( max( values[ele] ) )

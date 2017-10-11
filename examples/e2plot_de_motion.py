@@ -423,9 +423,9 @@ def resetplot(figsize=None):
 	fig = plt.figure()
 	if figsize:
 		fig = plt.figure(figsize=(10, 6))
-  	ax = fig.add_subplot(1,1,1)
+	ax = fig.add_subplot(1,1,1)
 
-  	plt.rcParams.update({'figure.max_open_warning': 0})
+	plt.rcParams.update({'figure.max_open_warning': 0})
 
 	return fig,ax
 

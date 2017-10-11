@@ -30,7 +30,7 @@ def myfn(*args,**kargs):
 lines=[i for i in file(sys.argv[1],"r")]
 
 for j,i in enumerate(lines): 
- 	if "parser.add_argument" in i or "parser.add_option" in i:
+	if "parser.add_argument" in i or "parser.add_option" in i:
 		try : op=parse(i.strip())
 		except:
 			try: op=parse((i+lines[j+1]).strip())

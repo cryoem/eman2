@@ -196,12 +196,12 @@ def main():
 			print(locallc)
 			times = run("e2proc2d.py hictrst_proc.hdf {}".format(locallc),shell=True,cwd=bdir)
 
-                if options.noerase:
-                    frames_loctrst = []
-                else:
-                    frames_loctrst = load_frames(lcname)
-                    loctrst_avg = average_frames(frames_loctrst)
-                    loctrst_avg.write_image("{}/loctrst_avg_noali.hdf".format(bdir))
+			if options.noerase:
+				frames_loctrst = []
+			else:
+				frames_loctrst = load_frames(lcname)
+				loctrst_avg = average_frames(frames_loctrst)
+				loctrst_avg.write_image("{}/loctrst_avg_noali.hdf".format(bdir))
 
 		cwd = os.getcwd()
 

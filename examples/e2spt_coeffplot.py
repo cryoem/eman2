@@ -260,25 +260,25 @@ def main():
 	plottitle = os.path.basename( options.alistack ).replace('.hdf','') + ' CC scores distribution histogram'
 	plt.title( plottitle )
 
-  	matplotlib.rc('xtick', labelsize=16) 
+	matplotlib.rc('xtick', labelsize=16) 
 	matplotlib.rc('ytick', labelsize=16) 
   		 	
-  	font = {'weight':'bold','size':16}
+	font = {'weight':'bold','size':16}
 	matplotlib.rc('font', **font)
   		 	
 	pylab.rc("axes", linewidth=2.0)
 		
 	pylab.xlabel('CC score (au)', fontsize=16, fontweight='bold')
-  	pylab.ylabel('Number of particles', fontsize=16, fontweight='bold')
+	pylab.ylabel('Number of particles', fontsize=16, fontweight='bold')
   	
-  	plt.savefig( options.path + '/scores_histogram.png' )
-  	plt.clf()
+	plt.savefig( options.path + '/scores_histogram.png' )
+	plt.clf()
   	
   	
-  	'''
+	'''
   	c:plot decay in ranked correlation scores
   	'''
-  	x = [i for i in range(len(scores))]
+	x = [i for i in range(len(scores))]
   	
 	plt.plot(x, scores, color='k', linewidth=3)
 	plottitle = os.path.basename( options.alistack ).replace('.hdf','') + ' CC scores decay' 
@@ -289,7 +289,7 @@ def main():
 	matplotlib.rc('font', **font)
 
 	pylab.xlabel('Particle index', fontsize=16, fontweight='bold')
-  	pylab.ylabel('CC score (au)', fontsize=16, fontweight='bold')
+	pylab.ylabel('CC score (au)', fontsize=16, fontweight='bold')
 
 	plt.savefig( options.path + '/scores_decay.png')
 	plt.clf()
@@ -310,7 +310,7 @@ def main():
 	matplotlib.rc('font', **font)
 	
 	pylab.xlabel('Particle index', fontsize=16, fontweight='bold')
-  	pylab.ylabel('Distance from mean (sigmas)', fontsize=16, fontweight='bold')
+	pylab.ylabel('Distance from mean (sigmas)', fontsize=16, fontweight='bold')
 	
 	plt.savefig( options.path + '/scores_distance2mean.png')
 	plt.clf()
@@ -332,7 +332,7 @@ def main():
 	matplotlib.rc('font', **font)
 	
 	pylab.xlabel('Particle index', fontsize=16, fontweight='bold')
-  	pylab.ylabel('Distance from max (sigmas)', fontsize=16, fontweight='bold')
+	pylab.ylabel('Distance from max (sigmas)', fontsize=16, fontweight='bold')
 	
 	plt.savefig( options.path + '/scores_distance2max.png')
 	plt.clf()

@@ -198,7 +198,7 @@ class MorphBoxingTool(EMBoxingTool):
 		else:
 			box = self.target().get_box(box_num)
 			if box.type == MorphBoxingTool.BOX_TYPE:
-		 		if event.modifiers()&Qt.ShiftModifier :
+				if event.modifiers()&Qt.ShiftModifier :
 					self.target().remove_box(box_num)
 				else:
 					self.moving=[m,box_num]
