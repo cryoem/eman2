@@ -87,11 +87,11 @@ process a single volume in a single file in-place.
 
 
 	if options.mediansubtract!=None :
-		
+		pass  # Added this to make python happy
 		
 
 def findmode(img) :
-	"""This computes something akin to the mode
+	"""This computes something akin to the mode"""
 
 
 if __name__ == "__main__":
