@@ -70,28 +70,28 @@ def main():
 def run_daemon(options,args):
 	import sys, os 
 
-    # UNIX double-fork magic
-    try: 
-        pid = os.fork() 
-        if pid > 0: sys.exit(0) # exit parent once
-    except OSError, e: 
-        print "Daemon error" 
-        sys.exit(1)
+	# UNIX double-fork magic
+	try: 
+		pid = os.fork() 
+		if pid > 0: sys.exit(0) # exit parent once
+	except OSError, e: 
+		print "Daemon error" 
+		sys.exit(1)
 
-    try: 
+	try: 
 		os.setsid() 
 		os.umask(0) 	# do we really want this
 		os.chdir("/") 	# or this ?
 	except:
 		pass
 
-    # do second fork
-    try: 
-        pid = os.fork() 
-        if pid > 0: sys.exit(0) 	# exit the second time
-    except OSError, e: 
-        print "Daemon error 2" 
-        sys.exit(1) 
+	# do second fork
+	try: 
+		pid = os.fork() 
+		if pid > 0: sys.exit(0) 	# exit the second time
+	except OSError, e: 
+		print "Daemon error 2" 
+		sys.exit(1) 
 
 	# ok, we got here, so we should be running in a parentless daemon now
     

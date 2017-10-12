@@ -39,7 +39,7 @@ def read_pdb(filename):
 	for line in (i for i in lines if i.startswith("ATOM  ")):
 		atomnumber=np.append(atomnumber,int(line[22:27]))
 		
-    return atomnumber
+	return atomnumber
 
 def main():
 	
