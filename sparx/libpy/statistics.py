@@ -534,7 +534,7 @@ def ave_series(data, pave = True, mask = None):
 	ny = data[0].get_ysize()
 	ave = model_blank(nx, ny)
 	for i in xrange(n):
-	 	alpha, sx, sy, mirror, scale = get_params2D(data[i])
+		alpha, sx, sy, mirror, scale = get_params2D(data[i])
 		temp = rot_shift2D(data[i], alpha, sx, sy, mirror)
 		if mask: Util.mul_img(temp, mask)
 		Util.add_img(ave, temp)
@@ -554,7 +554,7 @@ def ave_series_ctf(data, ctf2, mask = None):
 	ny = data[0].get_ysize()
 	ave = model_blank(nx,ny)
 	for i in xrange(n):
-	 	alpha, sx, sy, mirror, scale = get_params2D(data[i])
+		alpha, sx, sy, mirror, scale = get_params2D(data[i])
 		temp = rot_shift2D(data[i], alpha, sx, sy, mirror)
 		if mask: Util.mul_img(temp, mask)
 		Util.add_img(ave, temp)
@@ -646,7 +646,7 @@ def ave_oe_series_d(data):
 	ave2 = data[1].copy()
 	for i in xrange(2,n):
 		if i%2 == 0: Util.add_img(ave1, data[i])
- 		else:        Util.add_img(ave2, data[i])
+		else:        Util.add_img(ave2, data[i])
 	return ave1/(n//2+(n%2)), ave2/(n//2)
 
 
@@ -722,7 +722,7 @@ def ave_oe_series_indexed(stack, idx_ref):
 		if idx_ref == ima.get_attr('ref_num'):
 			ntot+=1
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
-		 	temp = rot_shift2D(ima, alpha, sx, sy, mirror)
+			temp = rot_shift2D(ima, alpha, sx, sy, mirror)
 			if i%2 == 0: Util.add_img(ave1, temp)
 			else:        Util.add_img(ave2, temp)
 	if ntot >= 0:	return ave1/(ntot/2+(ntot%2)), ave2/(ntot/2), ntot
@@ -993,7 +993,7 @@ def aves(stack, mode="a", i1 = 0, i2 = 0):
 			ima = get_im(stack, i)
 		if mode=="a":
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
- 			out = rot_shift2D(ima, alpha, sx, sy, mirror)
+			out = rot_shift2D(ima, alpha, sx, sy, mirror)
 			Util.add_img(ave, out)
 			Util.add_img2(var, out)
 		else: 
@@ -1127,8 +1127,8 @@ def aves_wiener(input_stack, mode="a", SNR=1.0):
 		ima = get_im(input_stack, i)
 		ctf_params = ima.get_attr("ctf")
 		if mode == "a":
-	 		alpha, sx, sy, mirror, scale = get_params2D(ima)
-		 	ima = rot_shift2D(ima, alpha, sx, sy, mirror)
+			alpha, sx, sy, mirror, scale = get_params2D(ima)
+			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
 		oc = filt_ctf(fft(pad(ima, nx2, ny2, background = 0.0)), ctf_params, dopad=False)
 		Util.mul_scalar(oc, SNR)
 		Util.add_img(ave, oc)
@@ -1143,7 +1143,7 @@ def aves_wiener(input_stack, mode="a", SNR=1.0):
 		ctf_params = ima.get_attr("ctf")
 		if mode == "a":
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
- 			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
+			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
 		oc = filt_ctf(ave, ctf_params, dopad=False)
 		Util.sub_img(ima, Util.window(fft(oc),nx,ny,1,0,0,0))
 		Util.add_img2(var, ima)
@@ -1186,8 +1186,8 @@ def aves_adw(input_stack, mode="a", SNR=1.0, Ng = -1):
 		Util.add_img2(ctf_2_sum, ctfimg)
 		Util.add_img_abs(ctf_abs_sum, ctfimg)
 		if mode == "a":
-	 		alpha, sx, sy, mirror, scale = get_params2D(ima)
-		 	ima = rot_shift2D(ima, alpha, sx, sy, mirror)
+			alpha, sx, sy, mirror, scale = get_params2D(ima)
+			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
 		oc = filt_ctf(fft(ima), ctf_params, dopad=False)
 		Util.add_img(Ave, oc)
 
@@ -1211,7 +1211,7 @@ def aves_adw(input_stack, mode="a", SNR=1.0, Ng = -1):
 		ctf_params = ima.get_attr("ctf")
 		if mode == "a":
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
- 			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
+			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
 		oc = filt_ctf(ave, ctf_params, dopad=False)
 		Util.sub_img(ima, oc)
 		Util.add_img2(var, ima)
@@ -1250,14 +1250,14 @@ def ssnr2d(data, mask = None, mode=""):
 			ima = EMData()
 			ima.read_image(data, i)
 			if(mode == "a"):
- 				alpha, sx, sy, mirror, scale = get_params2D(ima)
-	 			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
+				alpha, sx, sy, mirror, scale = get_params2D(ima)
+				ima = rot_shift2D(ima, alpha, sx, sy, mirror)
 			if(mask):  Util.mul_img(ima, mask)
 			fim = fft(ima)
 		else:
 			if(mode == "a"):
- 				alpha, sx, sy, mirror, scale = get_params2D(data[i])
-	 			ima = rot_shift2D(data[i], alpha, sx, sy, mirror)
+				alpha, sx, sy, mirror, scale = get_params2D(data[i])
+				ima = rot_shift2D(data[i], alpha, sx, sy, mirror)
 				if(mask):  fim = fft(Util.muln_img(ima, mask))
 				else    :  fim = fft(ima)
 			else:
@@ -1325,7 +1325,7 @@ def ssnr2d_ctf(data, mask = None, mode="", dopa=True):
 		ctf_params = ima.get_attr('ctf')
 		if mode == "a":
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
- 			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
+			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
 		if mask:  Util.mul_img(ima, mask)
 		if  dopa:  ima = pad(ima, nx2, ny2, 1, background = "circumference")
 		fftip(ima)
@@ -1345,7 +1345,7 @@ def ssnr2d_ctf(data, mask = None, mode="", dopa=True):
 		ctf_params = ima.get_attr('ctf')
 		if mode == "a":
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
- 			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
+			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
 		if mask:  Util.mul_img(ima, mask)
 		if dopa:  ima = pad(ima, nx2, ny2, 1, background = "circumference")
 		fftip(ima)
@@ -1454,7 +1454,7 @@ def ssnr2d_ctf_OLD(data, mask = None, mode=""):
 		ctf_params = ima.get_attr('ctf')
 		if mode == "a":
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
- 			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
+			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
 		if mask:  Util.mul_img(ima, mask)
 		fftip(ima)
 		oc = filt_ctf(ima, ctf_params)
@@ -1511,8 +1511,8 @@ def varf(data, mask = None, mode="a"):
 		else:
 			ima = data[i].copy()
 		if(mode == "a"):
-		 	alpha, sx, sy, mirror, scale = get_params2D(ima)
-	 		ima = rot_shift2D(ima, alpha, sx, sy, mirror)
+			alpha, sx, sy, mirror, scale = get_params2D(ima)
+			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
 		if(mask):  Util.mul_img(ima, mask)
 		fftip(ima)
 		Util.add_img(sumsq, ima)
@@ -1578,7 +1578,7 @@ def varfctf(data, mask = None, mode="a", dopad = True):
 		ctf_params = ima.get_attr("ctf")
 		if(mode == "a"):
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
- 			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
+			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
 		if(mask): Util.mul_img(ima, mask)
 		if dopad:  ima = pad(ima, nx2, ny2, nz2, background = "circumference")
 		fftip(ima)
@@ -1633,7 +1633,7 @@ def varf2d(data, ave, mask = None, mode="a"):
 		ctf = ima.get_attr("ctf")
 		if(mode == "a"):
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
- 			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
+			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
 		if(mask): Util.mul_img(ima, mask)
 		if(defocus != ctf.defocus):
 			oc = filt_ctf(ave, ctf, dopad=True)
@@ -1674,13 +1674,13 @@ def varf2d_MPI(myid, data, ave, mask = None, mode = "a", CTF = False, main_node 
 		from filter       import filt_ctf
 		from morphology   import ctf_img
 		if data[0].get_attr_default('ctf_applied', 1) == 1:
-	 		ERROR("data cannot be ctf-applied", "add_ave_varf_MPI", 1)
+			ERROR("data cannot be ctf-applied", "add_ave_varf_MPI", 1)
 		defocus = -1.0
-	 	for i in xrange(n):
+		for i in xrange(n):
 			ctf = data[i].get_attr("ctf")
 			if(mode == "a"):
 				alpha, sx, sy, mirror, scale = get_params2D(data[i])
- 				ima = rot_shift2D(data[i], alpha, sx, sy, mirror)
+				ima = rot_shift2D(data[i], alpha, sx, sy, mirror)
 			else:
 				ima = data[i].copy()
 			if(mask): Util.mul_img(ima, mask)
@@ -2091,11 +2091,11 @@ def get_refstack(imgstack,params,nref,refstack,cs,mask,center,Iter):
 	"""
 	from filter import fshift
 			 	
- 	refimg=EMData()
+	refimg=EMData()
 	refimgo=EMData()
 	refimge=EMData()
- 	nima = EMUtil.get_image_count(imgstack)
- 	ima = EMData()
+	nima = EMUtil.get_image_count(imgstack)
+	ima = EMData()
 	tc=[]
 	print(len(params))
 	for ir in xrange(nref):
