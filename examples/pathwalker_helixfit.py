@@ -58,11 +58,11 @@ def main():
 	(options, args) = parser.parse_args()
 	
 	eg=[]
-	if options.edgefile<>None:
+	if options.edgefile!=None:
 		edge=read_fixed(options.edgefile)
 		eg.append(edge[0][0])
 		for i in range(1,len(edge)):
-			if edge[i][0]<>edge[i-1][1]:
+			if edge[i][0]!=edge[i-1][1]:
 				eg.append(edge[i-1][1])
 				eg.append(edge[i][0])
 		eg.append(edge[len(edge)-1][1])
@@ -90,7 +90,7 @@ def main():
 	
 	atoms.save_pdb_with_helix(options.output,hlx)
 	#atoms.save_to_pdb(options.output)
-	if options.mapwohelix<>None:
+	if options.mapwohelix!=None:
 		atoms.remove_helix_from_map(mrc,hlx)
 		mrc.write_image(options.mapwohelix)
 
