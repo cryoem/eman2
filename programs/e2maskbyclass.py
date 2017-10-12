@@ -54,7 +54,7 @@ def maskfile(jsd,n,fsp,classes,masks,clsmap,options):
 		ptcl.write_image(fspout,i)
 
 		if options.redobispec:
-			bspec=ptcl.process("math.bispectrum.slice",{"fp":10,"size":32})
+			bspec=ptcl.process("math.bispectrum.slice",{"fp":bispec_invar_parm[1],"size":bispec_invar_parm[0]})
 			bspec.write_image(fspbout,i)
 
 	# signal that we're done
@@ -96,7 +96,8 @@ once complete, bispectra can be recomputed based on the masked particles, or the
 	nx=classes[0]["nx"]
 
 	# Make a mask for each class-average
-	masks=[i.process("mask.auto2d",{"nmaxseed":8,"nshells":nx/12,"nshellsgauss":4,"radius":4,"return_mask":1,"sigma":0.5}) for i in classes]
+	masks=[i.process("mask.auto2d",{"nmaxseed":8,"nshells":nx/16,"radius":4,"return_mask":1,"sigma":0.5}) for i in classes]
+	for i in masks: i.process_inplace("filter.lowpass.gauss",{"cutoff_freq":0.03})
 
 	# Find all of the particles
 	ptcls={}

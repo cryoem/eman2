@@ -18,7 +18,6 @@ FILE(GLOB exclusion_list
 			e2helical_recons.py
 			e2modeleval.py
 			e2preferences.py
-			e2proc3d_huge.py
 			e2scp.py
 			e2tomoallvall.py
 			e2tomoaverage.py
