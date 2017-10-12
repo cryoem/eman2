@@ -212,67 +212,67 @@ class TestEMData(unittest.TestCase):
 
 
     def test_clip_inplace(self):
-		"""test clip_inplace() function ....................."""
+        """test clip_inplace() function ....................."""
 		
-		# tests each possible scenario fairly rigorously
-		# by comparing the clip_inplace result against the get_clip result 
-		# pixel by pixel
-		size = 8
-		
-		
-		e = EMData()
-		e.set_size(size,size)
-		e.process_inplace("testimage.noise.uniform.rand")
-		
-		for i in range(-1,2):
-			for j in range(-1,2):
-					for l in range(-1,2):
-						for m in range(-1,2):
-							region = Region(i,j,size+l,size+m)
-							f = e.copy()
-							g = e.get_clip(region)
-							f.clip_inplace(region)
-							self.assertEqual(g.equal(f),True)
-		
-		e = EMData()
-		e.set_size(size,size,size)
-		e.to_zero()
-		e.process_inplace("testimage.noise.uniform.rand")
+        # tests each possible scenario fairly rigorously
+        # by comparing the clip_inplace result against the get_clip result 
+        # pixel by pixel
+        size = 8
 		
 		
-		for i in range(-1,2):
-			for j in range(-1,2):
-				for k in range(-1,2):
-					for l in range(-1,2):
-						for m in range(-1,2):
-							for n in range(-1,2):
-								region = Region(i,j,k,size+l,size+m,size+n)
-								f = e.copy()
-								g = e.get_clip(region)
-								f.clip_inplace(region)
-								self.assertEqual(g.equal(f),True)
+        e = EMData()
+        e.set_size(size,size)
+        e.process_inplace("testimage.noise.uniform.rand")
 		
-		if(IS_TEST_EXCEPTION):
-			region = Region(0,0,0,-1,1,1)
-			f = e.copy()
-			try:
-				f.clip_inplace(region)
-			except RuntimeError, runtime_err:
-				self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
-				
-			region = Region(0,0,0,1,-1,1)
-			f = e.copy()
-			try:
-				f.clip_inplace(region)
-			except RuntimeError, runtime_err:
-				self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
-				
-			region = Region(0,0,0,1,1,-1)
-			f = e.copy()
-			try:
-				f.clip_inplace(region)
-			except RuntimeError, runtime_err:
-				self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+        for i in range(-1,2):
+            for j in range(-1,2):
+                for l in range(-1,2):
+                    for m in range(-1,2):
+                        region = Region(i,j,size+l,size+m)
+                        f = e.copy()
+                        g = e.get_clip(region)
+                        f.clip_inplace(region)
+                        self.assertEqual(g.equal(f),True)
+		
+        e = EMData()
+        e.set_size(size,size,size)
+        e.to_zero()
+        e.process_inplace("testimage.noise.uniform.rand")
+		
+		
+        for i in range(-1,2):
+            for j in range(-1,2):
+                for k in range(-1,2):
+                    for l in range(-1,2):
+                        for m in range(-1,2):
+                            for n in range(-1,2):
+                                region = Region(i,j,k,size+l,size+m,size+n)
+                                f = e.copy()
+                                g = e.get_clip(region)
+                                f.clip_inplace(region)
+                                self.assertEqual(g.equal(f),True)
+		
+        if(IS_TEST_EXCEPTION):
+            region = Region(0,0,0,-1,1,1)
+            f = e.copy()
+            try:
+                f.clip_inplace(region)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+                
+            region = Region(0,0,0,1,-1,1)
+            f = e.copy()
+            try:
+                f.clip_inplace(region)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+                
+            region = Region(0,0,0,1,1,-1)
+            f = e.copy()
+            try:
+                f.clip_inplace(region)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
 
     def test_insert_clip(self):
         """test insert_clip() function ......................"""
@@ -1026,65 +1026,65 @@ class TestEMData(unittest.TestCase):
         """test ift inplace (fft inplace)...................."""
         n = 16
         
-		# iterate through dimension sets in all combinations of even and oddness
+        # iterate through dimension sets in all combinations of even and oddness
         for i in range(0,2):
-			for j in range(0,2):
-				for k in range(0,2):
-					e = EMData()
-					e.set_size(n+i,n+j,n+k)
-					# if you use something like e.to_one, you make yourself vulnerable to erroneous results, because if the real space image is uniform
-					# then the Fourier image has only a DC component. Hence use noise images for FFT tests.
-					e.process_inplace("testimage.noise.uniform.rand")
-					
-					d = e.copy()
-					
-					e.do_fft_inplace()
-					#e.process_inplace("xform.fourierorigin")
-					#e.process_inplace("xform.fourierorigin")
-					e.do_ift_inplace()
-					
-					# This is infact incorrect or behavior that has still not been resolved, the x dimension should probably be smaller
-					# note that currently the correct way to deal with this extra memory problem is to call EMData::postift_depad_corner_inplace()
-					self.assertEqual(e.get_xsize(), d.get_xsize()+(2-d.get_xsize()%2))
-					self.assertEqual(e.get_ysize(), d.get_ysize())
-					self.assertEqual(e.get_zsize(), d.get_zsize())
-					
-					for k in range(d.get_xsize()):
-						for j in range(d.get_ysize()):
-							for i in range(d.get_zsize()):
-								self.assertAlmostEqual(e.get_3dview()[i][j][k], d.get_3dview()[i][j][k], 3)
+            for j in range(0,2):
+                for k in range(0,2):
+                    e = EMData()
+                    e.set_size(n+i,n+j,n+k)
+                    # if you use something like e.to_one, you make yourself vulnerable to erroneous results, because if the real space image is uniform
+                    # then the Fourier image has only a DC component. Hence use noise images for FFT tests.
+                    e.process_inplace("testimage.noise.uniform.rand")
+                    
+                    d = e.copy()
+                    
+                    e.do_fft_inplace()
+                    #e.process_inplace("xform.fourierorigin")
+                    #e.process_inplace("xform.fourierorigin")
+                    e.do_ift_inplace()
+                    
+                    # This is infact incorrect or behavior that has still not been resolved, the x dimension should probably be smaller
+                    # note that currently the correct way to deal with this extra memory problem is to call EMData::postift_depad_corner_inplace()
+                    self.assertEqual(e.get_xsize(), d.get_xsize()+(2-d.get_xsize()%2))
+                    self.assertEqual(e.get_ysize(), d.get_ysize())
+                    self.assertEqual(e.get_zsize(), d.get_zsize())
+                    
+                    for k in range(d.get_xsize()):
+                        for j in range(d.get_ysize()):
+                            for i in range(d.get_zsize()):
+                                    self.assertAlmostEqual(e.get_3dview()[i][j][k], d.get_3dview()[i][j][k], 3)
                     
     def test_ift_inplace2(self):
         """test ift inplace (fft out of place) .............."""
         n = 16
         # iterate through dimension sets in all combinations of even and oddness
         for ii in range(0,2):
-			for jj in range(0,2):
-				for kk in range(0,2):
-					e = EMData()
-					e.set_size(n+ii,n+jj,n+kk)
-					# if you use something like e.to_one, you make yourself vulnerable to erroneous results, because if the real space image is uniform
-					# then the Fourier image has only a DC component. Hence use noise images for FFT tests.
-					e.process_inplace("testimage.noise.uniform.rand")
-					
-					d = e.copy()
-			
-					#e.process_inplace("xform.phaseorigin")
-					e = e.do_fft()
-					#e.process_inplace("xform.fourierorigin")
-					#e.process_inplace("xform.fourierorigin")
-					e.do_ift_inplace()
-					#e.process_inplace("xform.phaseorigin")
-					# This is infact incorrect or behavior that has still not been resolved, the x dimension should probably be smaller
-					# note that currently the correct way to deal with this extra memory problem is to call EMData::postift_depad_corner_inplace()
-					self.assertEqual(e.get_xsize(), d.get_xsize()+(2-d.get_xsize()%2))
-					self.assertEqual(e.get_ysize(), d.get_ysize())
-					self.assertEqual(e.get_zsize(), d.get_zsize())
-					
-					for k in range(d.get_xsize()):
-						for j in range(d.get_ysize()):
-							for i in range(d.get_zsize()):
-								self.assertAlmostEqual(e.get_3dview()[i][j][k], d.get_3dview()[i][j][k], 3)  
+            for jj in range(0,2):
+                for kk in range(0,2):
+                    e = EMData()
+                    e.set_size(n+ii,n+jj,n+kk)
+                    # if you use something like e.to_one, you make yourself vulnerable to erroneous results, because if the real space image is uniform
+                    # then the Fourier image has only a DC component. Hence use noise images for FFT tests.
+                    e.process_inplace("testimage.noise.uniform.rand")
+                    
+                    d = e.copy()
+            
+                    #e.process_inplace("xform.phaseorigin")
+                    e = e.do_fft()
+                    #e.process_inplace("xform.fourierorigin")
+                    #e.process_inplace("xform.fourierorigin")
+                    e.do_ift_inplace()
+                    #e.process_inplace("xform.phaseorigin")
+                    # This is infact incorrect or behavior that has still not been resolved, the x dimension should probably be smaller
+                    # note that currently the correct way to deal with this extra memory problem is to call EMData::postift_depad_corner_inplace()
+                    self.assertEqual(e.get_xsize(), d.get_xsize()+(2-d.get_xsize()%2))
+                    self.assertEqual(e.get_ysize(), d.get_ysize())
+                    self.assertEqual(e.get_zsize(), d.get_zsize())
+                    
+                    for k in range(d.get_xsize()):
+                        for j in range(d.get_ysize()):
+                            for i in range(d.get_zsize()):
+                                    self.assertAlmostEqual(e.get_3dview()[i][j][k], d.get_3dview()[i][j][k], 3)  
     def test_ift(self):
         """test ift (fft inplace) ..........................."""
         e = EMData()
@@ -1538,26 +1538,26 @@ class TestEMData(unittest.TestCase):
         #e.translate((1.1,2.1,3.1))     #problem here, Vec3f not reconized from flaot tuple 3
 
     def test_transform(self):
-		"""test transform ..................................."""
-		infile = "test_rotate_translate.mrc"
-		TestUtil.make_image_file(infile, IMAGE_MRC, EM_FLOAT, 16,16,16)
-		
-		x=EMData()
-		x.read_image(infile)
-		
-		alt = 1.0329837512591338
-		az = 3.7260642381912579
-		phi = 5.7671541529246966
-		t = Transform({"type":"eman","az":az,"alt":alt,"phi":phi})
-		
-		x.transform(t)
-		testlib.check_emdata(x, sys.argv[0])
-		
-		t.set_trans(6,6,6)
-		x.transform(t)
-		testlib.check_emdata(x, sys.argv[0])
-		
-		testlib.safe_unlink(infile)
+        """test transform ..................................."""
+        infile = "test_rotate_translate.mrc"
+        TestUtil.make_image_file(infile, IMAGE_MRC, EM_FLOAT, 16,16,16)
+
+        x=EMData()
+        x.read_image(infile)
+
+        alt = 1.0329837512591338
+        az = 3.7260642381912579
+        phi = 5.7671541529246966
+        t = Transform({"type":"eman","az":az,"alt":alt,"phi":phi})
+
+        x.transform(t)
+        testlib.check_emdata(x, sys.argv[0])
+
+        t.set_trans(6,6,6)
+        x.transform(t)
+        testlib.check_emdata(x, sys.argv[0])
+
+        testlib.safe_unlink(infile)
                 
     def test_rotate_2d(self):
         """test rotate_2d ..................................."""
@@ -1826,47 +1826,47 @@ class TestEMData(unittest.TestCase):
                 self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
                 
     def no_test_calc_ccf_dsaw(self):
-		"""test calc_ccf function expected behavior.........."""
-		n = 16
-		
-		# this function tests that correlation peak generated by calc_ccf is 
-		# precisely where it is expected to be, by comparing translated copies
-		# to the original image - the location of the correlation peak
-		# should correspond directly to the amount of translation that occured
-		# FIXME: Add tests for the cases nz =1, ny = 1, nx = etc
-		for i in range(n,n+2):
-			for j in range(n,n+2):
-				for k in [n-1,n]:
-					e = EMData()
-					e.set_size(i,j,k);
-					e.process_inplace("testimage.axes")
-					
-					for dx in [-1,0,1]:
-						for dy in [-1,0,1]:
-							for dz in [-1,0,1]:
-								f = e.copy()
-								f.translate(dx,dy,dz)
-								
-								g = e.calc_ccf(f)
-								
-								cord = g.calc_max_location()
-									
-								ax = cord[0]
-								ay = cord[1]
-								az = cord[2]
-								
-								if ( dx < 0 ): ax = -ax
-								if ( dx > 0 ): ax = i - ax
-								
-								if ( dy < 0 ): ay = -ay
-								if ( dy > 0 ): ay = j - ay
-								
-								if ( dz < 0 ): az = -az
-								if ( dz > 0 ): az = k - az
-								
-								assert ((dx-ax) == 0)
-								assert ((dy-ay) == 0)
-								assert ((dz-az) == 0)
+        """test calc_ccf function expected behavior.........."""
+        n = 16
+        
+        # this function tests that correlation peak generated by calc_ccf is 
+        # precisely where it is expected to be, by comparing translated copies
+        # to the original image - the location of the correlation peak
+        # should correspond directly to the amount of translation that occured
+        # FIXME: Add tests for the cases nz =1, ny = 1, nx = etc
+        for i in range(n,n+2):
+            for j in range(n,n+2):
+                for k in [n-1,n]:
+                    e = EMData()
+                    e.set_size(i,j,k);
+                    e.process_inplace("testimage.axes")
+                    
+                    for dx in [-1,0,1]:
+                        for dy in [-1,0,1]:
+                            for dz in [-1,0,1]:
+                                f = e.copy()
+                                f.translate(dx,dy,dz)
+                                
+                                g = e.calc_ccf(f)
+                                
+                                cord = g.calc_max_location()
+                                    
+                                ax = cord[0]
+                                ay = cord[1]
+                                az = cord[2]
+                                
+                                if ( dx < 0 ): ax = -ax
+                                if ( dx > 0 ): ax = i - ax
+                                
+                                if ( dy < 0 ): ay = -ay
+                                if ( dy > 0 ): ay = j - ay
+                                
+                                if ( dz < 0 ): az = -az
+                                if ( dz > 0 ): az = k - az
+                                
+                                assert ((dx-ax) == 0)
+                                assert ((dy-ay) == 0)
+                                assert ((dz-az) == 0)
 
     def test_calc_mutual_correlation(self):
         """test calc_mutual_correlation() function .........."""
@@ -2143,12 +2143,12 @@ class TestEMData(unittest.TestCase):
         e.cut_slice(e2, t, False)
         
         if(IS_TEST_EXCEPTION):
-    		e3 = None
-    		self.assertRaises( RuntimeError, e.cut_slice, e3, t)
-    		try:
-    			e.cut_slice(e3, t)
-    		except RuntimeError, runtime_err:
-    			self.assertEqual(exception_type(runtime_err), "NullPointerException")
+            e3 = None
+            self.assertRaises( RuntimeError, e.cut_slice, e3, t)
+            try:
+                e.cut_slice(e3, t)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "NullPointerException")
             
     def test_uncut_slice(self):
         """test uncut_slice() function ......................"""
@@ -2207,21 +2207,21 @@ class TestEMData(unittest.TestCase):
         cm = e.get_circle_mean()
     
     def test_project(self):
-		"""test image projection ............................"""
-		n = 20
-		infile = "test_project.mrc"
-		TestUtil.make_image_file(infile, IMAGE_MRC, EM_FLOAT, n, n, n)
-		volume = EMData()
-		volume.read_image(infile)
-		pi = math.pi
-		t3d = Transform({"type":"eman", "az":pi/3, "alt":pi/5, "phi":1})
-		proj = volume.project("standard", { "transform" : t3d})
-		proj = volume.project("standard", t3d)
-		self.assertEqual(proj.get_xsize(), n)
-		self.assertEqual(proj.get_ysize(), n)
-		self.assertEqual(proj.get_zsize(), 1)
-		testlib.check_emdata(proj, sys.argv[0])
-		testlib.safe_unlink(infile)
+        """test image projection ............................"""
+        n = 20
+        infile = "test_project.mrc"
+        TestUtil.make_image_file(infile, IMAGE_MRC, EM_FLOAT, n, n, n)
+        volume = EMData()
+        volume.read_image(infile)
+        pi = math.pi
+        t3d = Transform({"type":"eman", "az":pi/3, "alt":pi/5, "phi":1})
+        proj = volume.project("standard", { "transform" : t3d})
+        proj = volume.project("standard", t3d)
+        self.assertEqual(proj.get_xsize(), n)
+        self.assertEqual(proj.get_ysize(), n)
+        self.assertEqual(proj.get_zsize(), 1)
+        testlib.check_emdata(proj, sys.argv[0])
+        testlib.safe_unlink(infile)
 
     def test_calc_highest_locations(self):
         """test calculation of highest location ............."""
