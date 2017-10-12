@@ -437,17 +437,17 @@ def sum_oe(data, mode = "a", CTF = False, ctf_2_sum = None):
 		if ctf_2_sum:  get_ctf2 = False
 		else:          get_ctf2 = True
 		if get_ctf2: ctf_2_sum = EMData(nx, ny, 1, False)
-	 	for i in xrange(n):
-	 		ctf_params = data[i].get_attr("ctf")
-	 		if mode == "a":
+		for i in xrange(n):
+			ctf_params = data[i].get_attr("ctf")
+			if mode == "a":
 				alpha, sx, sy, mirror, scale = get_params2D(data[i])
 				ima = rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
 			else:
 				ima = data[i]
-	 		ima_filt = filt_ctf(ima, ctf_params, dopad=True)
+			ima_filt = filt_ctf(ima, ctf_params, dopad=True)
 			if i%2 == 0:	Util.add_img(ave1, ima_filt)
 			else:	        Util.add_img(ave2, ima_filt)
-	 		if get_ctf2: Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
+			if get_ctf2: Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
 	else:
 		for i in xrange(n):
 			if mode == "a":

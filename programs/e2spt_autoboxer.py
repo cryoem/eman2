@@ -1894,7 +1894,7 @@ def pruner(data,tag,mean_maxs,sigma_maxs,mean_mins,sigma_mins):
 				data.remove(d)
 				#print "particle REMOVED based on GOLD PRUNING!"
 		elif tag == 'background':
-			 if max < (mean_maxs + sigma_maxs):
+			if max < (mean_maxs + sigma_maxs):
 				data.remove(d)
 				#print "particle REMOVED based on BACKGROUND PRUNING!"
 		elif tag == 'carbon':

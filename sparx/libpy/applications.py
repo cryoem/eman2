@@ -405,7 +405,7 @@ def ali2d_data(data, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 			print_msg("Mirror consistent rate = %6.4f%%\n"%(float(mirror_consistent)/nima*100))
 			if mirror_consistent != 0:
 				print_msg("Among the mirror consistent images, average pixel error is %0.4f, their distribution is:\n"%(float(pixel_error)/float(mirror_consistent)))
- 				region, hist = hist_list(pixel_error_list, 20)	
+				region, hist = hist_list(pixel_error_list, 20)	
 				for p in xrange(20):
 					print_msg("      %8.4f: %5d\n"%(region[p], hist[p]))
 			print_msg("\n\n\n")

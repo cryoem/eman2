@@ -1854,7 +1854,7 @@ class Boxable:
 			if verbose:	print("writing",self.num_boxes(),"boxed images to", image_name)
 			
 
-		  	invshrink = 1.0/self.get_subsample_rate()
+			invshrink = 1.0/self.get_subsample_rate()
 			exclusionimage = self.get_exclusion_image()
 						
 			for box in self.boxes:
