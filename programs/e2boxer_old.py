@@ -1720,8 +1720,8 @@ class SwarmBoxer:
 		@param box_size the size of the box used to center
 		Returns the dx and dy parameters, i.e. does not actually alter the box
 		'''
-	  	global BigImageCache
-	  	image = BigImageCache.get_image_directly(image_name)
+		global BigImageCache
+		image = BigImageCache.get_image_directly(image_name)
 
 		xc = box[0]-box_size/2
 		yc = box[1]-box_size/2

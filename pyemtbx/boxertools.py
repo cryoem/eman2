@@ -1762,7 +1762,7 @@ class Boxable:
 			if verbose: print("writing",self.num_boxes(),"box coordinates to file",boxname)
 			
 			
-		  	invshrink = 1.0/self.get_subsample_rate()
+			invshrink = 1.0/self.get_subsample_rate()
 			exclusionimage = self.get_exclusion_image()
 			
 			

@@ -353,12 +353,12 @@ def add_ave_varf_MPI(myid, data, mask = None, mode = "a", CTF = False, ctf_2_sum
 		from filter       import filt_ctf
 		from morphology   import ctf_img
 		if data[0].get_attr_default('ctf_applied', 1) == 1:
-	 		ERROR("data cannot be ctf-applied", "add_ave_varf_MPI", 1)
+			ERROR("data cannot be ctf-applied", "add_ave_varf_MPI", 1)
 		if ctf_2_sum:  get_ctf2 = False
 		else:          get_ctf2 = True
 		if get_ctf2: ctf_2_sum = EMData(nx, ny, 1, False)
-	 	for i in xrange(n):
-	 		if mode == "a":
+		for i in xrange(n):
+			if mode == "a":
 				alpha, sx, sy, mirror, scale = get_params2D(data[i], ali_params)
 				ima = rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
 				if mask:  Util.mul_img(ima, mask)
@@ -366,12 +366,12 @@ def add_ave_varf_MPI(myid, data, mask = None, mode = "a", CTF = False, ctf_2_sum
 			else:
 				if  mask:   ima = fft(Util.muln_img(data[i], mask))
 				else:       ima = fft(data[i])
-	 		ctf_params = data[i].get_attr("ctf")
-	 		ima_filt = filt_ctf(ima, ctf_params, dopad=False)
+			ctf_params = data[i].get_attr("ctf")
+			ima_filt = filt_ctf(ima, ctf_params, dopad=False)
 			if(i%2 == 0):   Util.add_img(ave1, ima_filt)
 			else:           Util.add_img(ave2, ima_filt)
- 			Util.add_img2(var, ima)
-	 		if get_ctf2: Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
+			Util.add_img2(var, ima)
+			if get_ctf2: Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
 	else:
 		get_ctf2 = False
 		for i in xrange(n):

@@ -269,7 +269,7 @@ def ali2d_data(data, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 
 	# startup
 	numr = Numrinit(first_ring, last_ring, rstep, mode) 	#precalculate rings
- 	wr = ringwe(numr, mode)
+	wr = ringwe(numr, mode)
 
 	ref_data = [mask, center, None, None]
 	sx_sum = 0.0

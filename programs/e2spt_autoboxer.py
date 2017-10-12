@@ -1698,16 +1698,16 @@ def plothistogram(  options, scores ):
 	plottitle = 'CC scores distribution histogram'
 	plt.title( plottitle )
 
-  	matplotlib.rc('xtick', labelsize=16) 
+	matplotlib.rc('xtick', labelsize=16) 
 	matplotlib.rc('ytick', labelsize=16) 
   		 	
-  	font = {'weight':'bold','size':16}
+	font = {'weight':'bold','size':16}
 	matplotlib.rc('font', **font)
   		 	
 	pylab.rc("axes", linewidth=2.0)
 		
 	pylab.xlabel('CC score (au)', fontsize=16, fontweight='bold')
-  	pylab.ylabel('Number of particles', fontsize=16, fontweight='bold')
+	pylab.ylabel('Number of particles', fontsize=16, fontweight='bold')
 	
 	plt.savefig(options.path + '/histogram.png')
 	plt.clf()

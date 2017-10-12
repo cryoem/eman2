@@ -677,8 +677,8 @@ def defocus_get_Eudis(fnam_roo, volt=300, Pixel_size=1, Cs=2, wgh=.1, f_start=0,
 	else:
 		skip = ";"
 		TMP_roo = read_text_row(fnam_roo, "s", skip)
- 		for i in xrange(len(TMP_roo)): # remove first record
-	 		roo.append(TMP_roo[i][2])
+		for i in xrange(len(TMP_roo)): # remove first record
+			roo.append(TMP_roo[i][2])
 	Res_roo = []
 	Res_TE  = []	
 	if f_start == 0 : 	i_start=0
