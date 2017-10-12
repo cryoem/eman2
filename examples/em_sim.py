@@ -63,12 +63,13 @@ class Microscope(QtOpenGL.QGLWidget):
 			
 				
 	
-	def __init__(self, parent=None, imgwindow=None, pltwindow=None, mode=0, cs=0):
+	def __init__(self, parent=None, imgwindow=None, pltwindow=None, twodwindow=None, mode=0, cs=0):
 		QtOpenGL.QGLWidget.__init__(self, parent)
 		self.win_size=[500,1000]
 		self.setMinimumSize(self.win_size[0], self.win_size[1])
 		self.imgwindow=imgwindow
 		self.pltwindow=pltwindow
+		self.twodwindow=twodwindow
 		self.mag=1
 		self.lens_sets(mode)
 		self.mode=mode
@@ -105,6 +106,9 @@ class Microscope(QtOpenGL.QGLWidget):
 			self.draw_path()
 			imgwindow.show()
 			img=self.draw_wave()
+		if twodwindow:
+			twodwindow.show()
+			img = self.draw_wave_twod()
 			
 			
 
@@ -334,7 +338,91 @@ class Microscope(QtOpenGL.QGLWidget):
 			#self.pltwindow.set_data([np.arange(sz)-sz/2, contrast], "phase_contrast", linetype=0)
 		return img
 
+	def draw_wave_twod(self):
+		
+		sz=64 ### length of x-axis
+		xydivz=0.06#2e-3 ### xy/z scale ratio
+		#mpix=3e-8 ### pixel to meter
+		wavelen=4e-2 #2e-12/mpix ### wave length
+		mult=400 ### size multiplier from GL lens diagram to wave image
 
+		### input signal
+		raw=np.ones((sz,sz))
+
+		### input signal
+		raw=np.zeros((sz,sz))
+
+		### specimen
+		yap,xap = np.ogrid[-sz/2:sz/2, -sz/2:sz/2]
+		r = sz/2
+		hard_aperature = xap*xap+yap*yap<r*r
+		hard_aperature = hard_aperature.astype(float)
+		hard_aperature /= np.sum(hard_aperature)
+
+		raw0 = np.exp(-(xap**2/r+yap**2/r))
+		raw0 = raw0.astype(float)
+		raw0 /= np.max(raw0)
+		raw0 *= hard_aperature
+
+		raw1 = np.zeros_like(raw0)
+		coords = [[0,0,1,sz/20.,sz/20.], # x0,y0,scale,sigma_x,sigma_y
+				[10,10,1,sz/20.,sz/20.],
+				[-10,-10,1,sz/20.,sz/20.],
+				[-10,10,1,sz/20.,sz/20.],
+				[10,-10,1,sz/20.,sz/20.]]
+		for x0,y0,s,sigx,sigy in coords:
+			x0 = float(x0)
+			y0 = float(y0)
+			s = float(s)
+			sigx = float(sigx)
+			sigy = float(sigy)
+			raw1 += s*np.exp(-((xap-x0)**2/sigx+(yap-y0)**2/sigy))
+		raw1 = raw1.astype(float)
+		raw1 /= np.max(raw1)
+
+		#raw=raw1*np.exp(-2*np.pi*1j*raw1) # amplitude + phase object?
+		raw=np.exp(-2*np.pi*1j*raw1) # phase object
+		
+		#### load lens info
+		l=np.array(self.lens)[3:]
+		lens_gl=np.array([[l[i,0]-l[i+1,0], l[i,1]] for i in range(len(l)-1)]) ### use relative distance between lens instead of absolute positions
+		lens=np.round(mult*lens_gl)
+
+		alldata=[]
+		#### start wave propagation
+		imgs=[]
+		#### from scattering point to the first lens
+		iz=np.round((self.lens[2][0]-l[0,0])*mult) ### z position of the first lens
+		ix2d, iy2d=(np.array(np.indices((sz,sz)), dtype=np.float32)-sz/2)*xydivz
+		rr=ix2d**2+iy2d**2
+		ixy = (ix2d[:,:,None,None]-ix2d[None,None,:])**2+ (iy2d[:,:,None,None]-iy2d[None,None,:])**2
+		dst = np.sqrt(ixy+iz**2)
+		cpx=raw[:,:,None,None]*np.exp(-1j*2.*np.pi*dst/wavelen)
+		img = np.sum(cpx, axis=(1,0))
+		img/=np.max(abs(img))
+		imgs.append(img)
+		vz= np.sum(lens[:,0])-len(lens)
+		for il,ln in enumerate(lens):
+			zmax=ln[0]
+			f=ln[1]
+			proj=imgs[-1] ### projection of wave on lens
+			if f<0: ### aperture
+				proj_ps=proj.copy()
+				ap=lens_gl[il][1]+4
+				clip=int((1-ap)*sz)/2
+				aperature = xap*xap + yap*yap <= clip**2
+				proj_ps *= aperature
+			else: ### lens
+				ps=rr/(f*2)*(2*np.pi/wavelen)  ### phase shift
+				proj_ps=proj*np.exp(-1j*(-ps)) ### projection after phase shift
+			dst = np.sqrt(ixy+zmax**2)
+			cpx1=proj_ps[:,:,None,None]*np.exp(-1j*2*np.pi*dst/wavelen)
+			img=np.sum(cpx1,axis=(1,0))
+			img/=np.max(abs(img))
+			imgs.append(img)
+			vz -= zmax-1
+		self.twodwindow.set_data([from_numpy(np.abs(d).copy()) for d in imgs])
+		return imgs[-1]
 	
 	#### draw vertex and keep track of the distance
 	def draw_vertex(self, x, y):
@@ -748,6 +836,8 @@ class Microscope(QtOpenGL.QGLWidget):
 			l=self.lens[self.drag_lens]
 			if self.imgwindow:
 				img=self.draw_wave()
+			if self.twodwindow:
+				img=self.draw_wave_twod()
 			print "lens {:d}: py={:.3f}, f={:.3f}".format(
 				self.drag_lens, l[0], l[1])
 			self.drag_lens=-1
@@ -760,15 +850,21 @@ class Microscope(QtOpenGL.QGLWidget):
 
 class MainWindow(QtGui.QMainWindow):
 	
-	def __init__(self, mode=0, cs=0.):
+	def __init__(self, mode=0, cs=0., twod=False):
 		QtGui.QMainWindow.__init__(self)
 		
-		self.imgview = EMImage2DWidget()
-		self.pltview = EMPlot2DWidget()
+		if twod:
+			self.twodview = EMImage2DWidget()
+			widget = Microscope(self, None, None, self.twodview, mode, cs)
+		else:
+			self.imgview = EMImage2DWidget()
+			self.pltview = EMPlot2DWidget()
+			widget = Microscope(self, self.imgview, self.pltview, None, mode, cs)
+
 		#img=np.random.rand(512,512)
 		#self.imgview.set_data(from_numpy(img))
 		
-		widget = Microscope(self, self.imgview, self.pltview, mode, cs)
+		
 		#widget = Microscope(self, None, None)
 		self.closeEvent=widget.closeEvent
 		self.setCentralWidget(widget)
@@ -783,6 +879,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--mode", type=int,help="operating mode. 0: imaging mode with all lens; 1:diffraction mode with all lens; 2: imaging mode with one lens.", default=0)
 	parser.add_argument("--cs", type=float,help="Cs of microscope.", default=0.0)
+	parser.add_argument("--twod", action="store_true", help="Show twod image instead of 1D plot and beam propagation in the microscope.", default=False)
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 
@@ -790,7 +887,7 @@ def main():
 	app = EMApp()
 #	app=QtGui.QApplication([""])
 	
-	window = MainWindow(options.mode, options.cs)
+	window = MainWindow(options.mode, options.cs, options.twod)
 	window.show()
 	
 	app.execute()
