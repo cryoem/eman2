@@ -1685,16 +1685,16 @@ class EMParticleImportTask(ParticleWorkFlowTask):
 				#continue
 			
 			cmd = "e2proc2d.py"
- 			cmd += " "+infile
- 			cmd += " "+output
- 			success = (os.system(cmd) in (0,12))
- 			if not success or progress.wasCanceled():
- 				progress.close()
- 				return False,cmd
- 			else:
- 				i += 1
- 				progress.setValue(i)
- 				get_application().processEvents()
+			cmd += " "+infile
+			cmd += " "+output
+			success = (os.system(cmd) in (0,12))
+			if not success or progress.wasCanceled():
+				progress.close()
+				return False,cmd
+			else:
+				i += 1
+				progress.setValue(i)
+				get_application().processEvents()
 		
 		progress.close()
 		
@@ -3622,11 +3622,11 @@ class E2MakeSetTask(E2ParticleExamineTask):
 		params = E2ParticleExamineTask.get_params(self)
 		
 		db = db_open_dict(self.form_db_name) # see eman wiki for a list of what args are kept in this db
-	   	pstack_name = ParamDef(name="stack_name",vartype="string",desc_short="Set Name",desc_long="What you want to call this stack. Leave out file types (such as hdf,bdb etc). Names for any linked particle sets will be generated automatically.",property=None,defaultunits=db.get("stack_name",dfl="set"),choices=None)
+		pstack_name = ParamDef(name="stack_name",vartype="string",desc_short="Set Name",desc_long="What you want to call this stack. Leave out file types (such as hdf,bdb etc). Names for any linked particle sets will be generated automatically.",property=None,defaultunits=db.get("stack_name",dfl="set"),choices=None)
 		pexclude_bad = ParamDef(name="exclude_bad",vartype="boolean",desc_short="Exclude Bad Particles",desc_long="Exclude bad particles from generated stack(s)",property=None,defaultunits=db.get("exclude_bad",dfl=True),choices=None)
  	
- 		params.append(pstack_name)
- 		params.append(pexclude_bad)
+		params.append(pstack_name)
+		params.append(pexclude_bad)
 		return params
 	
 	def check_params(self,params):
@@ -3685,8 +3685,8 @@ class E2MakeSetTask(E2ParticleExamineTask):
 				return False
 			
 		stacks_map = {}
-	 	progress = QtGui.QProgressDialog("Making virtual stacks...", "Abort import", 0, 1000,None)
-	 	progress.setWindowIcon(QtGui.QIcon(get_image_directory() + "/eman.png"))
+		progress = QtGui.QProgressDialog("Making virtual stacks...", "Abort import", 0, 1000,None)
+		progress.setWindowIcon(QtGui.QIcon(get_image_directory() + "/eman.png"))
 		progress.show()
 		n=-1
 		print output_stacks
@@ -3775,15 +3775,15 @@ class E2MakeSetTask(E2ParticleExamineTask):
 
 		for i,name in enumerate(filenames):
 			cmd = "e2proc2d.py"
- 			cmd += " "+name
- 			cmd += " "+path+out_name
- 			success = (os.system(cmd) in (0,12))
- 			if not success:
- 				progress.close()
- 				return False,cmd
- 			else:
- 				progress.setValue(i+1)
- 				get_application().processEvents()
+			cmd += " "+name
+			cmd += " "+path+out_name
+			success = (os.system(cmd) in (0,12))
+			if not success:
+				progress.close()
+				return False,cmd
+			else:
+				progress.setValue(i+1)
+				get_application().processEvents()
 		
 		progress.close()
 		
@@ -4039,9 +4039,9 @@ class EMClassificationTools(ParticleWorkFlowTask):
 				else:
 					if not check_eman2_type(arg,Aligners,"Aligner",False): error_message.append("There is problem with the " +v[0]+ " aligner argument in the "+page+" page.")
   	
-  		return error_message
+		return error_message
   	
-  	def add_classaverage_args(self,options,string_args,bool_args,additional_args,include_sep=True):
+	def add_classaverage_args(self,options,string_args,bool_args,additional_args,include_sep=True):
 		
 		optionals = ["classcmp","classalign","classaligncmp","classralign","classraligncmp"]
 		for opt in optionals:
@@ -4167,56 +4167,56 @@ class E2Refine2DTask(EMClassificationTools):
 			options.parallel = params["parallel"]
 		
 		if options.initial != None and len(options.initial) > 0:
-	 		if not file_exists(options.initial):
-	 			error_message.append("The initial class averages file you specified (%s) does not exist." %(options.initial))
+			if not file_exists(options.initial):
+				error_message.append("The initial class averages file you specified (%s) does not exist." %(options.initial))
 	 		
-	 	if options.iter < 0: error_message.append("The number of e2refine2d iterations must be atleast 0.")
+		if options.iter < 0: error_message.append("The number of e2refine2d iterations must be atleast 0.")
 		if options.naliref < 1:	error_message.append("The number alignment references must be atleast 1.")
-	  	if options.nbasisfp < 1: error_message.append("The number of MSA basis vectors must be atleast 1.")
-	  	if options.ncls < 2: error_message.append("The number of classes must be atleast 2.")
-	  	#if options.parallel < 1: error_message.append("The number CPUs availables must be atleast 1.")
+		if options.nbasisfp < 1: error_message.append("The number of MSA basis vectors must be atleast 1.")
+		if options.ncls < 2: error_message.append("The number of classes must be atleast 2.")
+		#if options.parallel < 1: error_message.append("The number CPUs availables must be atleast 1.")
   		
-  		if len(error_message) != 0:
- 			return error_message
+		if len(error_message) != 0:
+			return error_message
 	 	
-	 	# if we make it here we are almost definitely good to go, the only thing that can fail is the e2bdb or e2proc2d commands
-	 	options.path = numbered_path("r2d",True)
-	 	if len(options.filenames) > 0 and options.filenames[0][:4] == "bdb:": 
-	 		if len(options.filenames) > 1:
-	 			bdb_success, bdb_cmd = self.make_v_stack(options)
-	 			input = "bdb:"+options.path+"#all"
-	 		else:
-	 			input = options.filenames[0]
-	 			bdb_success = True
+		# if we make it here we are almost definitely good to go, the only thing that can fail is the e2bdb or e2proc2d commands
+		options.path = numbered_path("r2d",True)
+		if len(options.filenames) > 0 and options.filenames[0][:4] == "bdb:": 
+			if len(options.filenames) > 1:
+				bdb_success, bdb_cmd = self.make_v_stack(options)
+				input = "bdb:"+options.path+"#all"
+			else:
+				input = options.filenames[0]
+				bdb_success = True
 	 			
-		 	if bdb_success:
-		 		if options.shrink > 1:
-		 			cmd = "e2proc2d.py"
-		 			cmd += " " + input
-		 			options.input =  "bdb:"+options.path+"#all"+str(options.shrink)
-		 			cmd += " "+options.input
-		 			cmd += " --process=math.meanshrink:n="+str(options.shrink)
+			if bdb_success:
+				if options.shrink > 1:
+					cmd = "e2proc2d.py"
+					cmd += " " + input
+					options.input =  "bdb:"+options.path+"#all"+str(options.shrink)
+					cmd += " "+options.input
+					cmd += " --process=math.meanshrink:n="+str(options.shrink)
 		 			
-		 			get_application().setOverrideCursor(Qt.BusyCursor)
-		 			success = (os.system(cmd) in (0,12))
-		 			get_application().setOverrideCursor(Qt.ArrowCursor)
+					get_application().setOverrideCursor(Qt.BusyCursor)
+					success = (os.system(cmd) in (0,12))
+					get_application().setOverrideCursor(Qt.ArrowCursor)
 		 			
-		 			if not success:
-		 				return ["e2proc2d.py shrinking command failed. This command was\n" + cmd +"\nTry again please. If the failure occurs a second time please contact developers."]
+					if not success:
+						return ["e2proc2d.py shrinking command failed. This command was\n" + cmd +"\nTry again please. If the failure occurs a second time please contact developers."]
 
-		 		else: options.input = input
+				else: options.input = input
 		 		
-		 		options.filenames = [] # this is so spawn_task doesn't supply args to e2refine2d.py
-		 		return [] # THIS IS IT, THE POINT OF SUCCESS - returning this means e2refine2d.py is good to go using the given parameters
-		 	else:
-		 		return ["e2bdb.py command failed. The command was\n" + bdb_cmd +"\nTry again please. If the failure occurs a second time please contact developers"]
+				options.filenames = [] # this is so spawn_task doesn't supply args to e2refine2d.py
+				return [] # THIS IS IT, THE POINT OF SUCCESS - returning this means e2refine2d.py is good to go using the given parameters
+			else:
+				return ["e2bdb.py command failed. The command was\n" + bdb_cmd +"\nTry again please. If the failure occurs a second time please contact developers"]
 		else:
 			return self.process_specified_files(options,params)
   		
-  		return error_message
+		return error_message
   	
-  	def add_main_args(self,options,string_args,bool_args,additional_args,):
-  		string_args.extend( ["iter","naliref","nbasisfp","path","input","ncls"] ) # May 2009, took "parallel" out
+	def add_main_args(self,options,string_args,bool_args,additional_args,):
+		string_args.extend( ["iter","naliref","nbasisfp","path","input","ncls"] ) # May 2009, took "parallel" out
 		bool_args.append("normproj")
 		optionals = ["initial","parallel"]
 		for opt in optionals:
@@ -4225,19 +4225,19 @@ class E2Refine2DTask(EMClassificationTools):
 	 		  
 	def make_v_stack(self,options):
 	 	
-	 	cmd = "e2bdb.py"
+		cmd = "e2bdb.py"
 
-	 	for name in options.filenames:
-	 		cmd += " "+name
+		for name in options.filenames:
+			cmd += " "+name
 	 	
-	 	cmd += " --makevstack=bdb:"+options.path+"#all"
+		cmd += " --makevstack=bdb:"+options.path+"#all"
 	 	
-	 	get_application().setOverrideCursor(Qt.BusyCursor)
-	 	success = os.system(cmd)
+		get_application().setOverrideCursor(Qt.BusyCursor)
+		success = os.system(cmd)
 		print "mvs ",success
 		success = (success in (0,12))
-	 	get_application().setOverrideCursor(Qt.ArrowCursor)
-	 	return success,cmd
+		get_application().setOverrideCursor(Qt.ArrowCursor)
+		return success,cmd
 
 	def process_specified_files(self,options,params):
 		error_message = []
@@ -4296,35 +4296,35 @@ class E2Refine2DTask(EMClassificationTools):
 				
 				if options.input == None: options.input = out_name
 	 			
-	 			cmd += " %s" %out_name # the output name
+				cmd += " %s" %out_name # the output name
 	 			
-	 			if options.shrink > 1: 
-	 				cmd += " --process=math.meanshrink:n="+str(options.shrink)
+				if options.shrink > 1: 
+					cmd += " --process=math.meanshrink:n="+str(options.shrink)
 	 			
-	 			get_application().setOverrideCursor(Qt.BusyCursor)
-	 			success = (os.system(cmd) in (0,12))
-	 			get_application().setOverrideCursor(Qt.ArrowCursor)
-	 			if not success:
-	 				return ["Command %s failed" %cmd]
+				get_application().setOverrideCursor(Qt.BusyCursor)
+				success = (os.system(cmd) in (0,12))
+				get_application().setOverrideCursor(Qt.ArrowCursor)
+				if not success:
+					return ["Command %s failed" %cmd]
 	 			
 	 			
-	 			progress.setValue(i+1)
-	 			get_application().processEvents()
-	 			if progress.wasCanceled():
-	 				db_remove_dict(options.input)
-	 				progress.close()
-	 				return ["Processing was cancelled"]
+				progress.setValue(i+1)
+				get_application().processEvents()
+				if progress.wasCanceled():
+					db_remove_dict(options.input)
+					progress.close()
+					return ["Processing was cancelled"]
 	 			
-	 		try: db_close_dict(out_name)
-	 		except:
-	 			print "db close dict failed",out_name
+			try: db_close_dict(out_name)
+			except:
+				print("db close dict failed",out_name)
 	 			
-	 		progress.close()
+			progress.close()
 	 		
-	 	else:
-	 		options.input = params["filenames"][0]
+		else:
+			options.input = params["filenames"][0]
 	 	
-	 	return []
+		return []
 
 class EMSetsOptions(EMPartSetOptions):
 	''' 
@@ -4469,7 +4469,7 @@ documentation for other details. Don't forget the other tabs !\
 		QtCore.QObject.connect(self.form,QtCore.SIGNAL("display_file"),self.on_display_file)
 		
 	def get_params(self):
-	 	params = []
+		params = []
 		
 		params.append(self.get_main_params())
 		params.append(self.get_simmx_page())
@@ -4486,7 +4486,7 @@ documentation for other details. Don't forget the other tabs !\
 #			p = ParamDef(name="filenames",vartype="url",desc_short="Input file name(s)",desc_long="The names of the particle files you want to use as in the input data for e2refine2d.py",property=None,defaultunits=[],choices=[])
 #			n = 1 # just to fool the next bit, that's all
 #
-	   	p,n = self.get_particle_selection_table(self.particles,None,self.single_selection,enable_ctf=False)
+		p,n = self.get_particle_selection_table(self.particles,None,self.single_selection,enable_ctf=False)
 #		if n == 0:
 #			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2Refine2DRunTask.documentation_string+E2Refine2DRunTask.warning_string,choices=None))
 #		else:
@@ -4949,12 +4949,12 @@ class E2RefineParticlesTaskBase(EMClassificationTools, E2Make3DTools):
 		self.ptcls = ptcls_list
 		self.usefilt_ptcls = usefilt_ptcls_list
 		self.imt = None # will eventually become an E2IntialModelsTool
-	 	EMClassificationTools.__init__(self)
-	 	E2Make3DTools.__init__(self)
+		EMClassificationTools.__init__(self)
+		E2Make3DTools.__init__(self)
 	 	
-	 	self.window_title = "Run e2refine"
-	 	self.form_db_name = "bdb:emform.e2refine"
-	 	self.single_selection = False
+		self.window_title = "Run e2refine"
+		self.form_db_name = "bdb:emform.e2refine"
+		self.single_selection = False
 
 	class UsefiltColumn:
 		def __init__(self,ptcls,usefilt_ptcls):
@@ -4979,7 +4979,7 @@ class E2RefineParticlesTaskBase(EMClassificationTools, E2Make3DTools):
 		QtCore.QObject.connect(self.form,QtCore.SIGNAL("display_file"),self.on_display_file)
 		
 	def get_params(self):
-	 	params = []
+		params = []
 		
 	#	params.append(self.get_intro_params())
 		params.append(self.get_main_params())
@@ -5016,7 +5016,7 @@ class E2RefineParticlesTaskBase(EMClassificationTools, E2Make3DTools):
 		additional_args = []
 		
 		for get_args in [self.add_general_args,self.add_project3d_args,self.add_simmx_args,self.add_classaverage_args,self.add_make3d_args]:
-		  	error = get_args(options,string_args,bool_args,additional_args)
+			error = get_args(options,string_args,bool_args,additional_args)
 		
 			if error != None: # not too fast, something still could have gone wrong
 				self.display_errors([error])
@@ -5085,7 +5085,7 @@ class E2RefineParticlesTaskBase(EMClassificationTools, E2Make3DTools):
 		
 		params.append(p)
 		
-	   	pmass = ParamDef(name="global.particle_mass",vartype="float",desc_short="Particle mass (kda)",desc_long="The mass of the particle in kilodaltons. Leave blank if unknown",property=None,defaultunits=project_db.get("global.particle_mass",dfl=800),choices=None)
+		pmass = ParamDef(name="global.particle_mass",vartype="float",desc_short="Particle mass (kda)",desc_long="The mass of the particle in kilodaltons. Leave blank if unknown",property=None,defaultunits=project_db.get("global.particle_mass",dfl=800),choices=None)
 		papix = ParamDef(name="global.apix",vartype="float",desc_short="Angtsrom per pixel",desc_long="The physical distance represented by the pixel spacing",property=None,defaultunits=project_db.get("global.apix",dfl=1.1),choices=None)
 		
 		params.append([papix,pmass])
@@ -5093,9 +5093,9 @@ class E2RefineParticlesTaskBase(EMClassificationTools, E2Make3DTools):
 		piter = ParamDef(name="iter",vartype="int",desc_short="Refinement iterations",desc_long="The number of times 3D refinement should be iterated",property=None,defaultunits=db.get("iter",dfl=3),choices=[])
 		plowmem = ParamDef(name="lowmem",vartype="boolean",desc_short="Low mem",desc_long="Causes various programs to restrict memory usage but results in increased CPU time.",property=None,defaultunits=db.get("lowmem",dfl=False),choices=None)
 
-	   	params.append([piter,plowmem])
+		params.append([piter,plowmem])
 	   	
-	   	pparallel = ParamDef(name="parallel",vartype="string",desc_short="Parallel",desc_long="Parallel arguments (advanced). Leave blank if unsure",property=None,defaultunits=db.get("parallel",dfl=""),choices=None)
+		pparallel = ParamDef(name="parallel",vartype="string",desc_short="Parallel",desc_long="Parallel arguments (advanced). Leave blank if unsure",property=None,defaultunits=db.get("parallel",dfl=""),choices=None)
 		
 		params.append(pparallel)
 	
@@ -5234,8 +5234,8 @@ class E2RefineParticlesTaskBase(EMClassificationTools, E2Make3DTools):
 				
 			image.write_image(new_model,0) # db got opened here
 
-		 	options.model = new_model
-		 	db_close_dict(new_model) # force synchronization so e2refine.py will definetely run -
+			options.model = new_model
+			db_close_dict(new_model) # force synchronization so e2refine.py will definetely run -
 		else:
 			options.model = model # all good
 			
@@ -5262,19 +5262,19 @@ class E2RefineParticlesTaskBase(EMClassificationTools, E2Make3DTools):
 				progress = QtGui.QProgressDialog("Importing files into database...", "Abort import", 0, len(filenames),None)
 				progress.show()
 	
-		  	   	i = 0
-		  	   	setattr(options,attr, "bdb:"+options.path+"#"+out_name)
+				i = 0
+				setattr(options,attr, "bdb:"+options.path+"#"+out_name)
 				for i,name in enumerate(filenames):
 					cmd = "e2proc2d.py"
-		 			cmd += " "+name
-		 			cmd += " "+getattr(options,attr)
-		 			success = (os.system(cmd) in (0,12))
-		 			if not success:
-		 				progress.close()
-		 				return False,cmd
-		 			else:
-		 				progress.setValue(i+1)
-		 				get_application().processEvents()
+					cmd += " "+name
+					cmd += " "+getattr(options,attr)
+					success = (os.system(cmd) in (0,12))
+					if not success:
+						progress.close()
+						return False,cmd
+					else:
+						progress.setValue(i+1)
+						get_application().processEvents()
 				
 				progress.close()
 				
@@ -5584,7 +5584,7 @@ post-process - This is an optional filter to apply to the model as a final step,
 		additional_args = []
 		
 		for get_args in [self.add_general_args,self.add_project3d_args,self.add_simmx_args,self.add_classaverage_args,self.add_make3d_args]:
-		  	error = get_args(options,string_args,bool_args,additional_args)
+			error = get_args(options,string_args,bool_args,additional_args)
 		
 			if error != None: # not too fast, something still could have gone wrong
 				self.display_errors([error])
@@ -5721,8 +5721,8 @@ class E2EvaluateSetTask(WorkFlowTask):
 		WorkFlowTask.__init__(self)
 		
 	def get_params(self):
-	 	params = []
-	 	params.append(ParamDef(name="blurb",vartype="text",desc_short="Select directories for FreAlign",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
+		params = []
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="Select directories for FreAlign",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
 
 		return params
 		
@@ -5757,10 +5757,10 @@ class E2RefineFromFreAlign(WorkFlowTask):
 		return table,len(init_model_names)
 		
 	def get_params(self):
-	 	params = []
+		params = []
 	 	
-	 	r,rn = self.get_ref_table()
-	 	params.append(ParamDef(name="blurb",vartype="text",desc_short="Select directories for FreAlign",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
+		r,rn = self.get_ref_table()
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="Select directories for FreAlign",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
 		params.append(r)
 		return params
 		
@@ -5809,10 +5809,10 @@ class E2RunFreAlign(WorkFlowTask):
 		return table,len(init_model_names)
 		
 	def get_params(self):
-	 	params = []
+		params = []
 	 	
-	 	r,rn = self.get_ref_table()
-	 	params.append(ParamDef(name="blurb",vartype="text",desc_short="Select directories for FreAlign",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
+		r,rn = self.get_ref_table()
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="Select directories for FreAlign",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
 		params.append(r)
 		#piter = ParamDef(name="iter",vartype="int",desc_short="iterations", desc_long="number of FreAlign iterations",property=None,defaultunits=5,choices=None)
 		#params.append(piter)
@@ -5878,11 +5878,11 @@ thresh: Phase residual cutoff. Any particles with a higher phase residual will n
 		return table,len(init_model_names)
 		
 	def get_params(self):
-	 	params = []
-	 	db = db_open_dict(self.form_db_name)
+		params = []
+		db = db_open_dict(self.form_db_name)
 	 	
-	 	r,rn = self.get_ref_table()
-	 	params.append(ParamDef(name="blurb",vartype="text",desc_short="Interactive use of tomohunter",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
+		r,rn = self.get_ref_table()
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="Interactive use of tomohunter",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
 		params.append(r)
 		pfbeaut = ParamDef(name="fbeaut",vartype="boolean",desc_short="fbeaut",desc_long="FreeAlign fbeaut",property=None,defaultunits=db.get("fbeaut",dfl=False),choices=None)
 		pfcref = ParamDef(name="fcref",vartype="boolean",desc_short="fcref",desc_long="FreeAlign cref",property=None,defaultunits=db.get("fcref",dfl=False),choices=None)
@@ -6300,7 +6300,7 @@ those used during refinement."
 		
 	
 	def get_params(self):
-	 	params = []
+		params = []
 		
 		# do this so that we have 
 		self.__set_available_iteration_data()
@@ -6474,7 +6474,7 @@ those used during refinement."
 #		
 #		self.write_db_parms(options,string_args,bool_args)
 #		
-	   	options.filenames = [] # spawn single task expects a filenames attribute
+		options.filenames = [] # spawn single task expects a filenames attribute
 		self.spawn_single_task("e2eotest.py",options,string_args,bool_args,additional_args,temp_file_name)
 		self.emit(QtCore.SIGNAL("task_idle"))
 		self.form.close()
@@ -6569,7 +6569,7 @@ class E2ResolutionTask(WorkFlowTask):
 		additional_args = [image,mask,output]
 
 		temp_file_name = "e2resolution_stdout.txt"
-	   	options.filenames = [] # spawn single task expects a filenames attribute
+		options.filenames = [] # spawn single task expects a filenames attribute
 		self.spawn_single_task("e2resolution.py",options,string_args,bool_args,additional_args,temp_file_name)
 		self.emit(QtCore.SIGNAL("task_idle"))
 		self.form.close()

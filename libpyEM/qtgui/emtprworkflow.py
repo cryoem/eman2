@@ -255,19 +255,19 @@ class E2TomoFilterParticlesTask(WorkFlowTask):
 		i = 0
 		for i,name in enumerate(params["filenames"]):
 			cmd = "e2proc3d.py"
- 			cmd += " "+name
- 			cmd += " "+outnames[i]
+			cmd += " "+name
+			cmd += " "+outnames[i]
  			if params.has_key("filter_processor"):
- 				cmd += " --process="+params["filter_processor"]
+				cmd += " --process="+params["filter_processor"]
  			if params.has_key("rotate"):
- 				cmd += " --rot="+params["rotate"]
- 			success = (os.system(cmd) in (0,12))
- 			if not success:
- 				progress.close()
- 				return False,cmd
- 			else:
- 				progress.setValue(i+1)
- 				get_application().processEvents()
+				cmd += " --rot="+params["rotate"]
+			success = (os.system(cmd) in (0,12))
+			if not success:
+				progress.close()
+				return False,cmd
+			else:
+				progress.setValue(i+1)
+				get_application().processEvents()
 		
 		progress.close()
 		

@@ -733,11 +733,11 @@ class EMPDBModel(EM3DModel):
 			print "Sorry, the file name \"" + str(self.fName) + "\" does not exist"
 			sys.exit()
 		
-   		self.a = PDBReader()
-    		self.a.read_from_pdb(self.fName)
-    		point_x = self.a.get_x()
-   		point_y = self.a.get_y()
-	        point_z = self.a.get_z()
+		self.a = PDBReader()
+		self.a.read_from_pdb(self.fName)
+		point_x = self.a.get_x()
+		point_y = self.a.get_y()
+		point_z = self.a.get_z()
 		point_atomName = self.a.get_atomName()
 		point_resName = self.a.get_resName()
 		point_resNum = self.a.get_resNum()
@@ -750,17 +750,17 @@ class EMPDBModel(EM3DModel):
 		currentRes = point_resNum[0]
 
 
-    		for i in range(0, len(point_x)):
-        		if (point_resNum[i]==currentRes):
-           			x.append(point_x[i])
-            			y.append(point_y[i])
-            			z.append(point_z[i])
+		for i in range(0, len(point_x)):
+			if (point_resNum[i]==currentRes):
+				x.append(point_x[i])
+				y.append(point_y[i])
+				z.append(point_z[i])
 				temp = point_atomName[i]
 				temp2 = temp.strip()
 				atomName.append(temp2)
-            			resName.append(point_resName[i])
-       			else:
-            			currentRes = point_resNum[i]
+				resName.append(point_resName[i])
+			else:
+				currentRes = point_resNum[i]
 				amino.append(x[:])
 				amino.append(y[:])
 				amino.append(z[:])
@@ -768,18 +768,18 @@ class EMPDBModel(EM3DModel):
 				amino.append(resName[:])
 				self.allResidues.append(amino[:])
 				del amino[:]
-            			del x[:]
-            			del y[:]
-            			del z[:]
-            			del atomName[:]
-            			del resName[:]
-           			x.append(point_x[i])
-            			y.append(point_y[i])
-            			z.append(point_z[i])
+				del x[:]
+				del y[:]
+				del z[:]
+				del atomName[:]
+				del resName[:]
+				x.append(point_x[i])
+				y.append(point_y[i])
+				z.append(point_z[i])
 				temp = point_atomName[i]
 				temp2 = temp.strip()
 				atomName.append(temp2)
-            			resName.append(point_resName[i])
+				resName.append(point_resName[i])
 			if (i == (len(point_x)-1)): 
 				amino.append(x[:])
 				amino.append(y[:])

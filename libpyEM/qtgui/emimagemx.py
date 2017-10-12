@@ -1253,7 +1253,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		c = [color[0],color[1],color[2],1.0]
 		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,c)
 		glMaterial(GL_FRONT,GL_SPECULAR,c)
-	  	glMaterial(GL_FRONT,GL_SHININESS,100.0)
+		glMaterial(GL_FRONT,GL_SHININESS,100.0)
 #		if set == 0:
 #			glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.2,.2,.8,1.0))
 #			glMaterial(GL_FRONT,GL_SPECULAR,(.2,.2,.8,1.0))
@@ -1815,12 +1815,12 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 						#print "%6d %s\n       %s"%(idx,str(xfm),str(ad["xform.align2d"]))
 					i+=1
 					progress.setValue(i)
- 					get_application().processEvents()
+					get_application().processEvents()
 
-		 			if progress.wasCanceled():
-		 				progress.close()
-		 				get_application().setOverrideCursor(Qt.ArrowCursor)
-			 			return
+					if progress.wasCanceled():
+						progress.close()
+						get_application().setOverrideCursor(Qt.ArrowCursor)
+						return
 
 				idxseim = []
 				for idx in idxse:
@@ -1831,12 +1831,12 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 					idxseim.append(i)
 					i+=1
 					progress.setValue(i)
- 					get_application().processEvents()
+					get_application().processEvents()
 
-		 			if progress.wasCanceled():
-		 				progress.close()
-		 				get_application().setOverrideCursor(Qt.ArrowCursor)
-			 			return
+					if progress.wasCanceled():
+						progress.close()
+						get_application().setOverrideCursor(Qt.ArrowCursor)
+						return
 
 
 				progress.close()

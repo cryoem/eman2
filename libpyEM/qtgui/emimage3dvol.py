@@ -147,7 +147,7 @@ class EMVolumeModel(EM3DModel):
 			print "Error, the data is empty"
 			return
 		
-	 	if (isinstance(data,EMData) and data.get_zsize()<=1) :
+		if (isinstance(data,EMData) and data.get_zsize()<=1) :
 			print "Error, the data is not 3D"
 			return
 		

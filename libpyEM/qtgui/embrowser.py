@@ -3434,14 +3434,14 @@ class EMBrowserWidget(QtGui.QWidget) :
 		qism = self.wtree.selectionModel().selectedRows()
 		self.result = [i.internalPointer().path().replace(os.getcwd(), ".") for i in qism]
 		self.updtimer.stop()
- 		self.emit(QtCore.SIGNAL("ok")) # this signal is important when e2ctf is being used by a program running its own eve
+		self.emit(QtCore.SIGNAL("ok")) # this signal is important when e2ctf is being used by a program running its own eve
 
 	def buttonCancel(self, tog) :
 		"""When the Cancel button is pressed, a signal is emitted, but getResult should not be called."""
 
 		self.result = []
 		self.updtimer.stop()
- 		self.emit(QtCore.SIGNAL("cancel")) # this signal is important when e2ctf is being used by a program running its own eve
+		self.emit(QtCore.SIGNAL("cancel")) # this signal is important when e2ctf is being used by a program running its own eve
 		self.close()
 
 	def selectAll(self) :
@@ -3621,7 +3621,7 @@ class EMBrowserWidget(QtGui.QWidget) :
 				self.curmodel = inimodel(path, dirregex = filt)
 			except :
 				self.curmodel = inimodel(path)
- 				filt = None
+				filt = None
 #				QtGui.QMessageBox.warning(None, "Error", "Filtering not allowed.")
 				print "Filtering is not implemented in this instance of the file browser."
 		else :

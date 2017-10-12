@@ -795,7 +795,7 @@ class ManualBoxingTool:
 		else:
 			box = self.target().get_box(box_num)
 			if box.type == ManualBoxingTool.BOX_TYPE or box.type==ManualBoxingTool.EXCLUDE_TYPE:
-		 		if event.modifiers()&Qt.ShiftModifier :
+				if event.modifiers()&Qt.ShiftModifier :
 					self.target().remove_box(box_num)
 				else:
 					# if we make it here than the we're moving a box
@@ -881,8 +881,8 @@ class ManualBoxingTool:
 		@param box_size the size of the box used to center
 		Returns the dx and dy parameters, i.e. does not actually alter the box
 		'''
-	  	global BigImageCache
-	  	image = BigImageCache.get_image_directly(image_name)
+		global BigImageCache
+		image = BigImageCache.get_image_directly(image_name)
 
 		xc = box[0]-box_size/2
 		yc = box[1]-box_size/2
@@ -2097,7 +2097,7 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 		if not file_exists(file_name): raise RuntimeError("The file %s does not exist" %file_name)
 
 		if self.main_2d_window != None:
-	   	   	self.__update_2d_window(file_name)
+			self.__update_2d_window(file_name)
 			if self.inspector != None:
 				#self.inspector.set_frozen(get_database_entry(file_name,"frozen",dfl=False))
 				self.inspector.set_image_quality(get_database_entry(file_name,"quality",dfl=2))
