@@ -908,7 +908,7 @@ def defocus_get_fast(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wgh=.1
 					if(defocus < dz_max): break
 			if(defocus > dz_max):
 				while(istart > istop):
-		 			nr1    =  5
+					nr1    =  5
 					nr2    =  5
 					istart -=.5
 					defocus = defocus_get(fnam_roo, volt, Pixel_size, Cs, wgh, istart, istop, docf,skip, round_off, nr1, nr2)
@@ -1029,7 +1029,7 @@ def defocus_get_fast_MPI(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wg
 				if(defocus < dz_max): break
 		if(defocus > dz_max):
 			while(istart > istop):
-		 		nr1    =  5
+				nr1    =  5
 				nr2    =  5
 				istart -=.5
 				defocus = defocus_get(fnam_roo, volt, Pixel_size, Cs, wgh, istart, istop, docf,skip, round_off, nr1, nr2)

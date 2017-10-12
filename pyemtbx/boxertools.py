@@ -3190,7 +3190,7 @@ class PawelAutoBoxer(AutoBoxer):
 		img = SincBlackmanSubsampleCache.get_image(boxable.get_image_name(),self.get_params_mediator())
 		BigImageCache.get_object(boxable.get_image_name()).register_alternate(img)
 
-                [avg,sigma,fmin,fmax] = Util.infomask( img, None, True )
+		[avg,sigma,fmin,fmax] = Util.infomask( img, None, True )
 		img -= avg
 		img /= sigma
 		#print "stat: ",avg,sigma
@@ -3984,7 +3984,7 @@ class SwarmAutoBoxer(AutoBoxer):
 			box.center(Box.CENTERPROPAGATE,template,False,update_image)
 			boxes.append(box)
 		
-	   	boxes.sort(compare_box_correlation)
+		boxes.sort(compare_box_correlation)
 		return boxes
 		
 	def get_high_res_template_image(self):

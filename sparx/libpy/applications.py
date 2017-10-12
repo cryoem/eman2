@@ -765,7 +765,7 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 					old_ali_params = all_ali_params[:]
 				else:
 					old_ali_params = []
-				        for im in xrange(len(data)):  
+					for im in xrange(len(data)):  
 						alpha, sx, sy, mirror, scale = get_params2D(data[im])
 						old_ali_params.extend([alpha, sx, sy, mirror])
 
