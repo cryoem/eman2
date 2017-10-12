@@ -59,7 +59,7 @@ def main():
 	output_stack = args[-1]
 
 	if options.nvec is None:
-		print "Error: number of components is not given"
+		print("Error: number of components is not given")
 		sys.exit(-2) 
 
 	isRoot = True

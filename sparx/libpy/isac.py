@@ -80,22 +80,22 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 	else:   alimethod = ""
 
 	if myid == main_node:
-		print "****************************************************************************************************"
-		print "*                                                                                                  *"
-		print "*                 Beginning of the ISAC program                "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"           *"
-		print "*                                                                                                  *"
-		print "* Iterative Stable Alignment and Clustering                                                        *"
-		print "* By Zhengfan Yang, Jia Fang, Francisco Asturias and Pawel A. Penczek                              *"
-		print "*                                                                                                  *"
-		print '* REFERENCE: Z. Yang, J. Fang, J. Chittuluru, F. J. Asturias and P. A. Penczek, "Iterative Stable  *'
-		print '*            Alignment and Clustering of 2D Transmission Electron Microscope Images",              *' 
-		print '*            Structure 20, 237-247, February 8, 2012.                                              *'
-		print "*                                                                                                  *"
-		print "* Last updated: 07/23/2015 PAP                                                                     *"
-		print "****************************************************************************************************"
-		print "*                                       Generation %3d                                             *"%(generation)
+		print("****************************************************************************************************")
+		print("*                                                                                                  *")
+		print("*                 Beginning of the ISAC program                "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"           *")
+		print("*                                                                                                  *")
+		print("* Iterative Stable Alignment and Clustering                                                        *")
+		print("* By Zhengfan Yang, Jia Fang, Francisco Asturias and Pawel A. Penczek                              *")
+		print("*                                                                                                  *")
+		print('* REFERENCE: Z. Yang, J. Fang, J. Chittuluru, F. J. Asturias and P. A. Penczek, "Iterative Stable  *')
+		print('*            Alignment and Clustering of 2D Transmission Electron Microscope Images",              *') 
+		print('*            Structure 20, 237-247, February 8, 2012.                                              *')
+		print("*                                                                                                  *")
+		print("* Last updated: 07/23/2015 PAP                                                                     *")
+		print("****************************************************************************************************")
+		print("*                                       Generation %3d                                             *"%(generation))
 		#print " alignment method  ",alimethod
-		print "****************************************************************************************************"
+		print("****************************************************************************************************")
 
 	color = myid%indep_run
 	key = myid/indep_run
@@ -172,14 +172,14 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 
 	if  not candidatesexist:
 		if myid == main_node:
-			print "******************************************************************************************"
-			print "*            Beginning of the first phase           "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"            *"
-			print "*                                                                                        *"
-			print "* The first phase is an exploratory phase. In this phase, we set the criteria very       *"
-			print "* loose and try to find as many candidate class averages as possible. This phase         *"
-			print "* typically should have 10 to 20 rounds (default = 20). The candidate class averages are *"
-			print "* stored in class_averages_candidate_generation_n.hdf.                                   *"
-			print "******************************************************************************************"
+			print("******************************************************************************************")
+			print("*            Beginning of the first phase           "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"            *")
+			print("*                                                                                        *")
+			print("* The first phase is an exploratory phase. In this phase, we set the criteria very       *")
+			print("* loose and try to find as many candidate class averages as possible. This phase         *")
+			print("* typically should have 10 to 20 rounds (default = 20). The candidate class averages are *")
+			print("* stored in class_averages_candidate_generation_n.hdf.                                   *")
+			print("******************************************************************************************")
 
 		# I am adding here Artificial Intelligence for stopping 
 		#  The program should stop if
@@ -190,12 +190,12 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 
 		while Iter <= max_round and couldnt_find_stable < 3 and K > 3:
 			if myid == main_node: 
-				print "################################################################################"
-				print "#           Beginning of Round %2d           "%Iter+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"          #"
-				print "################################################################################"
-				print "     Initialization of averages using EQ-mref"
-				print "********************************************************************************"
-				print "     We will process:  %d current images divided equally between %d groups"%(ndata, K)
+				print("################################################################################")
+				print("#           Beginning of Round %2d           "%Iter+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"          #")
+				print("################################################################################")
+				print("     Initialization of averages using EQ-mref")
+				print("********************************************************************************")
+				print("     We will process:  %d current images divided equally between %d groups"%(ndata, K))
 
 			# Generate random averages for each group
 			if key == group_main_node:
@@ -251,15 +251,15 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 
 			# Run ISAC
 			if myid == main_node:
-				print "**********************************************************************"
-				print "     Processing of candidate averages   "+strftime("%a, %d %b %Y %H:%M:%S", localtime())
-				print "**********************************************************************"
+				print("**********************************************************************")
+				print("     Processing of candidate averages   "+strftime("%a, %d %b %Y %H:%M:%S", localtime()))
+				print("**********************************************************************")
 	
 			for mloop in xrange(1, match_first+1):
 				if myid == main_node:
-					print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-					print "     Loop %3d for 2-way matching   "%mloop+strftime("%a, %d %b %Y %H:%M:%S", localtime())
-					print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+					print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+					print("     Loop %3d for 2-way matching   "%mloop+strftime("%a, %d %b %Y %H:%M:%S", localtime()))
+					print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 				refi = isac_MPI(data, current_refim, maskfile=None, outname=None, ir=ir, ou=ou, rs=rs, xrng=xr, yrng=yr, step=ts,
 						maxit=maxit, isac_iter=main_iter, CTF=CTF, snr=snr, rand_seed=-1, color=color, comm=group_comm,
 						stability=True, stab_ali=stab_ali, iter_reali=iter_reali, thld_err=thld_err, FL=FL, FH=FH, FF=FF, dst=dst, method = alimethod)
@@ -313,7 +313,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 					if members[i] == members[i-1]: del members[i]
 				for i in xrange(len(members)-1): assert members[i]!=members[i+1]
 				mem_len = len(members)
-				print "In Round #%d, we found %d stable and reproducible averages, accounted for %d particles.  "%(Iter, len(matched_data), mem_len)
+				print("In Round #%d, we found %d stable and reproducible averages, accounted for %d particles.  "%(Iter, len(matched_data), mem_len))
 			else:
 				mem_len = 0
 				members = []
@@ -349,30 +349,30 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		
 		if myid == main_node:
 			#  We will return after candidate averages are prepared so their calculation can be independently
-			print "******************************************************************************************"
-			print "*              End of the first phase             "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"              *"
-			print "******************************************************************************************"
+			print("******************************************************************************************")
+			print("*              End of the first phase             "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"              *")
+			print("******************************************************************************************")
 		return
 	#  If candidates exist start from here
 	refim_stack = avg_first_stage
 
 
 	if myid == main_node:
-		print ""
-		print "******************************************************************************************"
-		print "*           Beginning of the second phase         "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"             *"
-		print "*                                                                                        *"
-		print "* The second phase is where the actual class averages are generated, it typically has    *"
-		print "* 3~9 iterations (default = 5) of matching. The first half of iterations are 2-way       *"
-		print "* matchings, the second half of iterations are 3-way matchings, and the last iteration is*"
-		print "* 4-way matching. In the second phase, three files will be generated:                    *"
-		print "* class_averages_generation_n.hdf : class averages generated in this generation          *"
-		print "* generation_n_accounted.txt      : IDs of accounted particles in this generation        *"
-		print "* generation_n_unaccounted.txt    : IDs of unaccounted particles in this generation      *"
-		print "******************************************************************************************"
+		print("")
+		print("******************************************************************************************")
+		print("*           Beginning of the second phase         "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"             *")
+		print("*                                                                                        *")
+		print("* The second phase is where the actual class averages are generated, it typically has    *")
+		print("* 3~9 iterations (default = 5) of matching. The first half of iterations are 2-way       *")
+		print("* matchings, the second half of iterations are 3-way matchings, and the last iteration is*")
+		print("* 4-way matching. In the second phase, three files will be generated:                    *")
+		print("* class_averages_generation_n.hdf : class averages generated in this generation          *")
+		print("* generation_n_accounted.txt      : IDs of accounted particles in this generation        *")
+		print("* generation_n_unaccounted.txt    : IDs of unaccounted particles in this generation      *")
+		print("******************************************************************************************")
 		try:
 			refim = EMData.read_images(refim_stack)
-			print "* Using existing %4d candidate class averages                                            *"%len(refim)
+			print("* Using existing %4d candidate class averages                                            *"%len(refim))
 		except:
 			refim = []
 		nrefim = len(refim)
@@ -417,9 +417,9 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 			else:
 				wayness = indep_run
 		if myid == main_node:		
-			print "################################################################################"
-			print "#       Iteration %2d for %d-way matching       "%(mloop, wayness)+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"        #"
-			print "################################################################################"
+			print("################################################################################")
+			print("#       Iteration %2d for %d-way matching       "%(mloop, wayness)+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"        #")
+			print("################################################################################")
 
 			members = []
 			for im in refim_all:
@@ -450,10 +450,10 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		K_left = nleft/img_per_grp
 		if K_left > 0:
 			if myid == main_node: 
-				print "**********************************************************************"
-				print "        Generating initial averages for unaccounted for images        "
-				print "**********************************************************************"
-				print "   Number of images unaccounted for = %d     Number of groups = %d"%(nleft, K_left)
+				print("**********************************************************************")
+				print("        Generating initial averages for unaccounted for images        ")
+				print("**********************************************************************")
+				print("   Number of images unaccounted for = %d     Number of groups = %d"%(nleft, K_left))
 
 			# Generate random averages for each group
 			if key == group_main_node:
@@ -491,10 +491,10 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 
 		# Run ISAC
 		if myid == main_node:
-			print "**********************************************************************"
-			print "     Run the main part of ISAC program   "+strftime("%a, %d %b %Y %H:%M:%S", localtime())
-			print "**********************************************************************"
-			print "    Number of images = %d               Number of groups = %d"%(ndata, K)
+			print("**********************************************************************")
+			print("     Run the main part of ISAC program   "+strftime("%a, %d %b %Y %H:%M:%S", localtime()))
+			print("**********************************************************************")
+			print("    Number of images = %d               Number of groups = %d"%(ndata, K))
 
 		refim = isac_MPI(alldata, refim, maskfile=None, outname=None, ir=ir, ou=ou, rs=rs, xrng=xr, yrng=yr, step=ts, 
 				maxit=maxit, isac_iter=main_iter, CTF=CTF, snr=snr, rand_seed=-1, color=color, comm=group_comm, 
@@ -522,20 +522,20 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 
 		if mloop != match_second:
 			if myid == main_node:
-				print "**********************************************************************"
-				print "     Run the %d-way matching algorithm  "%wayness+strftime("%a, %d %b %Y %H:%M:%S", localtime())
-				print "**********************************************************************"
+				print("**********************************************************************")
+				print("     Run the %d-way matching algorithm  "%wayness+strftime("%a, %d %b %Y %H:%M:%S", localtime()))
+				print("**********************************************************************")
 				# In this last two-way loop, we find all unique 2-way matches and use it as the starting
 				# point of three-way match
 				if mloop == two_way_loop:
 					refim_all = match_2_way(alldata, refim, indep_run, thld_grp, FH, FF, suffix="_"+str(mloop) )
 					# If they are enough, good; otherwise, add some random images into it.
 					if len(refim_all) > K:
-						print "Since the number of unique 2-way matches is larger than the number of groups (%d), we only use the first %d of them."%(K, K)
+						print("Since the number of unique 2-way matches is larger than the number of groups (%d), we only use the first %d of them."%(K, K))
 						refim_all = refim_all[:K]
 					elif len(refim_all) < K:
 						defi = K - len(refim_all)
-						print "Since the number of unique 2-way matches is smaller than the number of groups (%d), we have to append %d random images."%(K, defi)
+						print("Since the number of unique 2-way matches is smaller than the number of groups (%d), we have to append %d random images."%(K, defi))
 						for i in xrange(defi):
 							# put some dummy avgs here
 							temp_id = randint(0, ndata-1)
@@ -568,9 +568,9 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 			os.remove(final_ali_params_filename)
 
 	if myid == main_node:
-		print "**********************************************************************"
-		print "       Run the final %d-way matching algorithm  "%indep_run+strftime("%a, %d %b %Y %H:%M:%S", localtime())
-		print "**********************************************************************"
+		print("**********************************************************************")
+		print("       Run the final %d-way matching algorithm  "%indep_run+strftime("%a, %d %b %Y %H:%M:%S", localtime()))
+		print("**********************************************************************")
 
 	# Run 4-way Matching
 	# Comment by Zhengfan Yang on 6/20/11
@@ -583,7 +583,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		STB_PART = match_independent_runs(alldata, refim, indep_run, thld_grp)
 		l_STB = len(STB_PART)
 		os.mkdir(ali_params_dir)
-		print  "  l_STB   ",l_STB
+		print("  l_STB   ",l_STB)
 	else:
 		l_STB = 0
 		from time import sleep
@@ -611,15 +611,15 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 			pix_err = mpi_recv(1, MPI_FLOAT, node_to_run, i+60000, MPI_COMM_WORLD)
 			pix_err = float(pix_err[0])
 
-			print  "Group %d ...... Mirror consistent rate = %f"%(i, mirror_consistent_rate)
-			print  "Group %d ...... Average pixel error = %f"%(i, pix_err)
-			print  "Group %d ...... Size of stable subset = %d"%(i, l_stable_members)
-			print  "Group %d ......"%i,
+			print("Group %d ...... Mirror consistent rate = %f"%(i, mirror_consistent_rate))
+			print("Group %d ...... Average pixel error = %f"%(i, pix_err))
+			print("Group %d ...... Size of stable subset = %d"%(i, l_stable_members))
+			print("Group %d ......"%i, end=' ')
 
 			if l_stable_members <= thld_grp:
-				print "Size of stable subset smaller than the threshold, discarded\n"
+				print("Size of stable subset smaller than the threshold, discarded\n")
 				continue
-			print "Size of stable subset larger than the threshold, kept\n"
+			print("Size of stable subset larger than the threshold, kept\n")
 
 			ave = recv_EMData(node_to_run, i+70000)
 			stable_members_ori = [0]*l_stable_members
@@ -640,13 +640,13 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 			members_unacc[c] = alldata_n[i]
 			c += 1
 
-		print "In the second phase, we found %d stable and reproducible averages that account for %d particles.  "%(ave_num, len(members_acc))
+		print("In the second phase, we found %d stable and reproducible averages that account for %d particles.  "%(ave_num, len(members_acc)))
 		#  The following will write a zero-length file if the list is empty
 		write_text_file(members_acc, "generation_%d_accounted.txt"%generation)
 		write_text_file(members_unacc, "generation_%d_unaccounted.txt"%generation)
-		print "******************************************************************************************"
-		print "*     End of the second phase             "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"            *"
-		print "******************************************************************************************"
+		print("******************************************************************************************")
+		print("*     End of the second phase             "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"            *")
+		print("******************************************************************************************")
 	else:
 		for i in xrange(l_STB):
 			node_to_run = i%(number_of_proc-1)+1
@@ -703,11 +703,11 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 	mpi_barrier(MPI_COMM_WORLD)
 	
 	if myid == main_node:
-		print "****************************************************************************************************"
-		print "*                                                                                                  *"
-		print "*                   End of the ISAC program                 "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"            *"
-		print "*                                                                                                  *"
-		print "****************************************************************************************************"
+		print("****************************************************************************************************")
+		print("*                                                                                                  *")
+		print("*                   End of the ISAC program                 "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"            *")
+		print("*                                                                                                  *")
+		print("****************************************************************************************************")
 	return
 
 		
@@ -1162,9 +1162,9 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 						from statistics   import hist_list
 						lhist = 12
 						region, histo = hist_list(gpixer, lhist)
-						print  "\n=== Histogram of average within-class pixel errors prior to class pruning ==="
-						for lhx in xrange(lhist):  print   "     %10.3f     %7d"%(region[lhx], histo[lhx])
-						print  "=============================================================================\n"
+						print("\n=== Histogram of average within-class pixel errors prior to class pruning ===")
+						for lhx in xrange(lhist):  print("     %10.3f     %7d"%(region[lhx], histo[lhx]))
+						print("=============================================================================\n")
 					del gpixer
 				mpi_barrier(comm)
 
@@ -1392,10 +1392,10 @@ def match_independent_runs(data, refi, n_group, T):
 		if CT_s[i] > T:
 			cost_by_match_thresh.append(CT_s[i])
 
-	print "%d-way match: total cost of matches over threshold: "%(len(Parts)), sum(cost_by_match_thresh)
-	print "%d-way match: total number of matches over threshold: "%(len(Parts)), len(cost_by_match_thresh)
-	print "%d-way match: cost by match over threshold: "%(len(Parts)), cost_by_match_thresh
-	print " "
+	print("%d-way match: total cost of matches over threshold: "%(len(Parts)), sum(cost_by_match_thresh))
+	print("%d-way match: total number of matches over threshold: "%(len(Parts)), len(cost_by_match_thresh))
+	print("%d-way match: cost by match over threshold: "%(len(Parts)), cost_by_match_thresh)
+	print(" ")
 
 	STB_PART_cleaned = []
 	for i in xrange(len(STB_PART)):
@@ -1490,10 +1490,10 @@ def match_2_way(data, refi, indep_run, thld_grp, FH, FF, find_unique=True, wayne
 	if find_unique:
 		# Here the idea is like this: in all reproducible averages, find the ones that are unique
 		reproducible_avgs_unique = get_unique_averages(reproducible_avgs, indep_run)
-		print "Found %d unique class averages through %d-way matching"%(len(reproducible_avgs_unique), wayness)
+		print("Found %d unique class averages through %d-way matching"%(len(reproducible_avgs_unique), wayness))
 		return reproducible_avgs_unique
 	else:
-		print "Found %d class averages through %d-way matching"%(len(reproducible_avgs), wayness)
+		print("Found %d class averages through %d-way matching"%(len(reproducible_avgs), wayness))
 		return reproducible_avgs
 
 
@@ -1564,7 +1564,7 @@ def get_unique_averages(data, indep_run, m_th=0.45):
 					flag[i] = 2
 					flag[j] = 2
 				else:
-					print "Impossible: Something is wrong!"
+					print("Impossible: Something is wrong!")
 		if flag[i] == 0: flag[i] = 3
 
 	data_good = []

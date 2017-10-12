@@ -114,7 +114,7 @@ class EMDataItem3D(EMItem3D):
 			else:
 				sg.setAPix(None)
 		except:
-			print "ERROR in setting APIX"
+			print("ERROR in setting APIX")
 
 	def getRenderBoundingBox(self):
 		return self.renderBoundingBox

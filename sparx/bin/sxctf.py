@@ -101,7 +101,7 @@ images far from focus."""
 	if options.auto_fit:
 		if options.voltage==0 : parser.error("Please specify voltage")
 		if options.cs==0 : parser.error("Please specify Cs")
-	if options.apix==0 : print "Using A/pix from header"
+	if options.apix==0 : print("Using A/pix from header")
 		
 	debug=options.debug
 
@@ -137,7 +137,7 @@ images far from focus."""
 			simp=Simplex(env_cmp,scales,incr)
 			scales=simp.minimize(maxiters=1000)[0]
 	#		print scales
-			print " "
+			print(" ")
 
 		# apply the final rescaling
 		envelope=[]
@@ -168,7 +168,7 @@ images far from focus."""
 		gui.show_guis()
 		app.exec_()
 
-		print "done execution"
+		print("done execution")
 
 	### Process input files
 	#if debug : print "Phase flipping / Wiener filtration"
@@ -190,7 +190,7 @@ def get_gui_arg_img_sets(filenames):
 	for file in filenames:
 		name = get_file_tag(file)
 		if not db_parms.has_key(name):
-			print "error, you must first run auto fit before running the gui - there are no parameters for",name
+			print("error, you must first run auto fit before running the gui - there are no parameters for",name)
 			return []
 		img_set = db_parms[name]
 		ctf=EMAN2Ctf()
@@ -210,7 +210,7 @@ def write_e2ctf_output(options):
 		db_parms=db_open_dict("bdb:e2ctf.parms")
 		for i,filename in enumerate(options.filenames):
 			name=get_file_tag(filename)
-			if debug: print "Processing ",filename
+			if debug: print("Processing ",filename)
 
 			if options.phaseflip: phaseout="bdb:particles#"+name+"_ctf_flip"
 			else: phaseout=None
@@ -226,9 +226,9 @@ def write_e2ctf_output(options):
 			#if options.wiener: wienerout=name+"_ctf_wiener.hed"
 			#else : wienerout=None
 			
-			if phaseout : print "Phase image out: ",phaseout,"\t",
-			if wienerout : print "Wiener image out: ",wienerout,
-			print ""
+			if phaseout : print("Phase image out: ",phaseout,"\t", end=' ')
+			if wienerout : print("Wiener image out: ",wienerout, end=' ')
+			print("")
 			ctf=EMAN2Ctf()
 			ctf.from_string(db_parms[name][0])
 			process_stack(filename,phaseout,wienerout,not options.nonorm,options.oversamp,ctf,invert=options.invert)
@@ -247,7 +247,7 @@ def pspec_and_ctf_fit(options,debug=False):
 		name=get_file_tag(filename)
 
 		# compute the power spectra
-		if debug : print "Processing ",filename
+		if debug : print("Processing ",filename)
 		apix=options.apix
 		if apix<=0 : apix=EMData(filename,0,1)["apix_x"] 
 		im_1d,bg_1d,im_2d,bg_2d=powspec_with_bg(filename,radius=options.bgmask,edgenorm=not options.nonorm,oversamp=options.oversamp)
@@ -257,7 +257,7 @@ def pspec_and_ctf_fit(options,debug=False):
 		Util.save_data(0,ds,bg_1d,"ctf.bgb4.txt")
 
 		# Fit the CTF parameters
-		if debug : print "Fit CTF"
+		if debug : print("Fit CTF")
 		ctf=ctf_fit(im_1d,bg_1d,im_2d,bg_2d,options.voltage,options.cs,options.ac,apix,bgadj=not options.nosmooth,autohp=options.autohp)
 		db_parms[name]=[ctf.to_string(),im_1d,bg_1d,im_2d,bg_2d]
 
@@ -360,10 +360,10 @@ def process_stack(stackfile,phaseflip=None,wiener=None,edgenorm=True,oversamp=1,
 			out.process("normalize.edgemean")
 			try: out.write_image(wiener,i)
 			except: 
-				print wiener,i
+				print(wiener,i)
 				try: out.write_image(wiener,i)
 				except: 
-					print "!!! ",wiener,i
+					print("!!! ",wiener,i)
 					out.write_image("error.hed",-1)
 		lctf=ctf
 
@@ -432,7 +432,7 @@ def powspec_with_bg(stackfile,radius=0,edgenorm=True,oversamp=1):
 		ratio1=mask1.get_attr("square_sum")/(ys*ys)	#/1.035
 		ratio2=mask2.get_attr("square_sum")/(ys*ys)
 		masks[(ys,radius)]=(mask1,ratio1,mask2,ratio2)
-		print  "  RATIOS  ", ratio1, ratio2,"    ",radius
+		print("  RATIOS  ", ratio1, ratio2,"    ",radius)
 		#mask1.write_image("mask1.hdf",0)
 		#mask2.write_image("mask2.hdf",0)
 	pav1 = model_blank(ys2,ys2)
@@ -746,7 +746,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 	best=(0,0)
 	s0=int(.05/ds)+1
 	s1=min(int(0.14/ds),len(bg_1d)-1)
-	print  "  FREQ RANGE",s0,s1
+	print("  FREQ RANGE",s0,s1)
 	for b in range(1,len(bfs)-1):
 		ctf.bfactor=bfs[b]
 		cc=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_AMP)
@@ -793,7 +793,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 
 		if best[0]==0 or er<best[0] :
 			best=(er,ctf.bfactor)
-			print "  BEST  ",best
+			print("  BEST  ",best)
 			#for s in xrange(s0,len(bg_1d)-1):
 			#	print  s,cc[s],im_1d[s]-bg_1d[s],sfact(ds*s)
 	#for i in xrange(3*len(cc)):
@@ -804,7 +804,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 
 	ctf.bfactor=best[1]
 
-	if 1 : print "Best DF = %1.3f   B-factor = %1.0f"%(dfbest[0],ctf.bfactor)
+	if 1 : print("Best DF = %1.3f   B-factor = %1.0f"%(dfbest[0],ctf.bfactor))
 
 
 	return ctf
@@ -829,13 +829,13 @@ try:
 	from PyQt4.QtCore import Qt
 	from valslider import ValSlider
 except:
-	print "Warning: PyQt4 must be installed to use the --gui option"
+	print("Warning: PyQt4 must be installed to use the --gui option")
 	class dummy:
 		pass
 	class QWidget:
 		"A dummy class for use when Qt not installed"
 		def __init__(self,parent):
-			print "Qt4 has not been loaded"
+			print("Qt4 has not been loaded")
 	QtGui=dummy()
 	QtGui.QWidget=QWidget
 
@@ -847,12 +847,12 @@ class GUIctf(QtGui.QWidget):
 		try:
 			from emimage2d import EMImage2DWidget
 		except:
-			print "Cannot import EMAN image GUI objects (EMImage2DWidget)"
+			print("Cannot import EMAN image GUI objects (EMImage2DWidget)")
 			sys.exit(1)
 		try: 
 			from emplot2d import EMPlot2DWidget
 		except:
-			print "Cannot import EMAN plot GUI objects (is matplotlib installed?)"
+			print("Cannot import EMAN plot GUI objects (is matplotlib installed?)")
 			sys.exit(1)
 		
 		self.app = weakref.ref(application)
@@ -986,7 +986,7 @@ class GUIctf(QtGui.QWidget):
 		
 		db_parms=db_open_dict("bdb:e2ctf.parms")
 		if not db_parms.has_key(name):
-			print "error, ctf parameters do not exist for:",name
+			print("error, ctf parameters do not exist for:",name)
 #			
 		
 		data.extend(db_parms[name])
@@ -1087,7 +1087,7 @@ class GUIctf(QtGui.QWidget):
 			self.guiplot.set_data((s,inten[:len(s)]),"single",True)
 			all=[0 for i in inten]
 			for st in self.data:
-				print st
+				print(st)
 				inten=[fabs(i) for i in st[1].compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP)]
 				for i in range(len(all)): all[i]+=inten[i]
 			self.guiplot.set_data((s,all[:len(s)]),"total")

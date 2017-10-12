@@ -72,8 +72,8 @@ def main():
 	# ------------------------------------------------------------------------------------
 	if len(args) != 1:
 		print( 'ERROR!!! Please provide path of input star file!' )
-		print( 'usage: ' + usage)
-		print( 'Please run "' + progname + ' -h" for detailed options')
+		print(( 'usage: ' + usage))
+		print(( 'Please run "' + progname + ' -h" for detailed options'))
 		return 1
 
 	# Rename arguments and options for readability
@@ -84,11 +84,11 @@ def main():
 	is_enable_create_stack   = options.create_stack
 
 	if (os.path.exists(file_path_relion_star) != True):
-		print( 'ERROR!!! Input star file (%s) is not found.' % file_path_relion_star)
+		print(( 'ERROR!!! Input star file (%s) is not found.' % file_path_relion_star))
 		sys.exit(-1)
 
 	if (os.path.exists(dir_path_work) == True):
-		print( 'ERROR!!! Output directory (%s) already exists. Please delete it or use a different output directory' % dir_path_work)
+		print(( 'ERROR!!! Output directory (%s) already exists. Please delete it or use a different output directory' % dir_path_work))
 		sys.exit(-1)
 	
 	# ------------------------------------------------------------------------------------
@@ -222,14 +222,14 @@ def main():
 		# First, find data section in star file 
 		if is_found_section == False:
 			if str_line.find(str_relion_start_section) != -1:
-				print '# Title: %s' % (str_line.rstrip('\n'))
+				print('# Title: %s' % (str_line.rstrip('\n')))
 				is_found_section = True
 		# Then, ignore loop_ in star file 
 		elif is_found_loop == False:
 			assert(is_found_section == True)
 			if str_line.find('loop_') != -1:
 				is_found_loop = True
-				print '# Extracted Column IDs:'
+				print('# Extracted Column IDs:')
 		# Process item list and data entries 
 		else:
 			#assert((is_found_section == True) & (is_found_loop == True))
@@ -248,35 +248,35 @@ def main():
 				
 				if relion_key in relion_dict.keys():
 					relion_dict[relion_key][idx_col] = int(i_relion_item_col)
-					print relion_dict[relion_key][idx_title] % (relion_dict[relion_key][idx_col], relion_key)
+					print(relion_dict[relion_key][idx_title] % (relion_dict[relion_key][idx_col], relion_key))
 			
 			# Then, read the data entries
 			elif n_tokens_line == i_relion_item_col:
 				# Check if all entries of each category were found in RELION star file
 				# Do this only once
 				if i_relion_particle == 0:
-					print '# '
-					print '# Checking RELION star file contents ...'
+					print('# ')
+					print('# Checking RELION star file contents ...')
 					for category_key in relion_category_dict.keys():
 						for key in relion_category_dict[category_key][idx_key_list]:
 							if relion_dict[key][idx_col] < 0:
-								print '#     %s entry for %s is not found' % (key, relion_category_dict[category_key][idx_relion_process])
+								print('#     %s entry for %s is not found' % (key, relion_category_dict[category_key][idx_relion_process]))
 								relion_category_dict[category_key][idx_is_category_found] = False
 					
 					if relion_category_dict['window'][idx_is_category_found] == False:
-						print '# '
-						print '# ERROR!!! Input star file must contain all entries for %s. Aborting execution ...' % (relion_category_dict['window'][idx_relion_process])
+						print('# ')
+						print('# ERROR!!! Input star file must contain all entries for %s. Aborting execution ...' % (relion_category_dict['window'][idx_relion_process]))
 						is_success = False
 						break;
 						
 					for category_key in relion_category_dict.keys():
 						if relion_category_dict[category_key][idx_is_category_found] == False:
-							print '# '
-							print '# WARNING!!! %s cannot be extracted!!!' % (relion_category_dict[category_key][idx_relion_process])
-					print '# '
+							print('# ')
+							print('# WARNING!!! %s cannot be extracted!!!' % (relion_category_dict[category_key][idx_relion_process]))
+					print('# ')
 				
 				if i_relion_particle % 1000 == 0:
-					print '# Processing RELION entries from %6d to %6d ...' % (i_relion_particle, i_relion_particle + 1000 - 1)
+					print('# Processing RELION entries from %6d to %6d ...' % (i_relion_particle, i_relion_particle + 1000 - 1))
 				
 				##### Store box coordinate related parameters #####
 				relion_coordinate_x = int(float(tokens_line[relion_dict['_rlnCoordinateX'][idx_col] - 1]))
@@ -389,7 +389,7 @@ def main():
 										
 					# assert(os.path.exists(relion_local_stack_path) == True)
 					if(not os.path.exists(relion_local_stack_path)):
-						print '# WARNING!!! Image name %s specified in star file is not found. Skipping star file entry %d!!!' % (relion_local_stack_path, i_relion_particle)
+						print('# WARNING!!! Image name %s specified in star file is not found. Skipping star file entry %d!!!' % (relion_local_stack_path, i_relion_particle))
 					else:
 						# Copy this particle image from local stack to new global stack
 						n_img_relion_local_stack = EMUtil.get_image_count(relion_local_stack_path)
@@ -417,30 +417,30 @@ def main():
 				i_relion_particle += 1
 
 			else:
-				print '# An Empty Line is detected after data entries. Breaking the loop...'
+				print('# An Empty Line is detected after data entries. Breaking the loop...')
 				break;
 	
 	if is_found_section == False:
-		print '# ERROR!!! Specified --star_section (%s) is not found!!!' % (str_relion_start_section)
-		print '#          Please check section name in star file'
+		print('# ERROR!!! Specified --star_section (%s) is not found!!!' % (str_relion_start_section))
+		print('#          Please check section name in star file')
 		is_success = False
 	elif is_found_loop == False:
-		print '# ERROR!!! loop_ line after specified --star_section (%s) is not found!!!' % (str_relion_start_section)
-		print '#          Please check if star file is not corrupted'
+		print('# ERROR!!! loop_ line after specified --star_section (%s) is not found!!!' % (str_relion_start_section))
+		print('#          Please check if star file is not corrupted')
 		is_success = False
 	
 	if is_success:
 		# Store the results of counters
-		print '# '
-		print '# Detected Column Counts      := %d ' % (i_relion_item_col)
-		print '# Detected Entry Counts       := %d ' % (i_relion_particle)
-		print '# Image counts added to stack := %d ' % (i_sprax_particle)
+		print('# ')
+		print('# Detected Column Counts      := %d ' % (i_relion_item_col))
+		print('# Detected Entry Counts       := %d ' % (i_relion_particle))
+		print('# Image counts added to stack := %d ' % (i_sprax_particle))
 			
 		# Warn user if number of particles in sparx stack is different from relion star file entries
 		if is_enable_create_stack :
 			if i_sprax_particle < i_relion_particle:
-				print '# WARNING!!! Number of particles in generated stack (%d) is different from number of entries in input RELION star file (%d)!!!' % (i_relion_particle, i_sprax_particle)
-				print '#            Please check if there are all images specified by _rlnImageName in star file'
+				print('# WARNING!!! Number of particles in generated stack (%d) is different from number of entries in input RELION star file (%d)!!!' % (i_relion_particle, i_sprax_particle))
+				print('#            Please check if there are all images specified by _rlnImageName in star file')
 			else:
 				if (i_sprax_particle != i_relion_particle):
 					ERROR("number of particles does not match ","is_enable_create_stack", 1)
@@ -502,8 +502,8 @@ def main():
 	# Restore the original current dir
 	os.chdir(dir_origin)
 
-	print '# '
-	print '# DONE!'
+	print('# ')
+	print('# DONE!')
 
 if __name__ == '__main__':
 	main()

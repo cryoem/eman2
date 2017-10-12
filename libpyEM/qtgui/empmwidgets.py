@@ -864,7 +864,7 @@ class PMFSCTableWidget(PMTableBase):
 		""" display the FSC curve. This is a callback for double clicking"""
 		if not self.tablewidget.item(row, 1):
 			msg = "Rubbish!!! No FSC curves to plot."
-			print msg
+			print(msg)
 			self.emit(QtCore.SIGNAL("pmmessage(QString)"),"Rubbish!!! No FSC curves to plot.")
 			return
 		
@@ -876,7 +876,7 @@ class PMFSCTableWidget(PMTableBase):
 		
 		# Now load the FSC curves
 		msg = "Loading FSC curves, please wait..."
-		print msg
+		print(msg)
 		self.emit(QtCore.SIGNAL("pmmessage(QString)"),msg)
 		subprocess.Popen(fsccmd, shell=True)
 

@@ -71,11 +71,11 @@ except:
 	failed=True
 
 
-print """Welcome to the interactive EMAN2 Python interface, provided by ipython
+print("""Welcome to the interactive EMAN2 Python interface, provided by ipython
 
 NOTE: that you should NOT be running this program if your intent is to run other
   EMAN2 programs. To do that, quit e2.py and just type the name of the EMAN2 program
   directly at the system command line. This interface is for people who know some
-  Python programming."""
+  Python programming.""")
   
-if failed : print "\nWarning: Failed to initialize Qt mode. Running in fallback mode with non-interactive graphics."
+if failed : print("\nWarning: Failed to initialize Qt mode. Running in fallback mode with non-interactive graphics.")

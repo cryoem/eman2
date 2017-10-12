@@ -52,8 +52,8 @@ def main():
     
 
     if len(args) < 4:
-        print "usage: " + usage
-	print "Please run '" + progname + " -h' for details"
+        print("usage: " + usage)
+	print("Please run '" + progname + " -h' for details")
     else:
         from string import atoi
         input_stack  = args[0]

@@ -899,7 +899,7 @@
 	
 # This is just for testing, of course
 if __name__ == '__main__':
-	print "emimage3dmorph.py is not currently maintained. We want its functionality to be avaialable, however the code needs a complete rewrite"
+	print("emimage3dmorph.py is not currently maintained. We want its functionality to be avaialable, however the code needs a complete rewrite")
 	#app = QtGui.QApplication(sys.argv)
 	#window = EMImageMorph3D()
 	#if len(sys.argv) != 3:

@@ -57,7 +57,7 @@ def main():
 	(options, args) = parser.parse_args(arglist[1:])
 	
 	if len(args) <3 or len(args) > 4:
-		print "See usage " + usage
+		print("See usage " + usage)
 		sys.exit()
 
 	if global_def.CACHE_DISABLE:

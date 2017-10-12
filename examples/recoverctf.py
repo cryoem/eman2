@@ -48,7 +48,7 @@ ptcls=[i for i in db_list_dicts("bdb:particles") if i[-8:]=="ctf_flip"]
 db=db_open_dict("bdb:e2ctf.parms")
 
 for i in ptcls:
-	print i[:-9]," recovered"
+	print(i[:-9]," recovered")
 	img=EMData("bdb:particles#%s"%i,0)
 	cur=db[i[:-9]]
 	cur[0]=img["ctf"].to_string()

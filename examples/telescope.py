@@ -50,7 +50,7 @@ def rawavg(noframes):
 		a=EMData()
 		a.read_image("/dev/video0",0)
 		b+=a
-		if i%10==0 : print i
+		if i%10==0 : print(i)
 	return b
 
 def aliavg(noframes):
@@ -62,7 +62,7 @@ def aliavg(noframes):
 #		ba=a.align("translational",b,{},"optvariance",{"matchfilt":1})
 		ba=a.align("translational",b,{},"dot",{})
 		b+=ba
-		print i
+		print(i)
 	return b
 
 
@@ -83,7 +83,7 @@ def rawframesdisk(noframes,outfile):
 		a=EMData()
 		a.read_image("/dev/video0",0)
 		a.write_image(outfile,-1)
-		if i%10==0: print i
+		if i%10==0: print(i)
 
 def avgframesdisk(noframes,noavg,outfile):
 	for i in range(noframes):
@@ -94,7 +94,7 @@ def avgframesdisk(noframes,noavg,outfile):
 			b.read_image("/dev/video0",0)
 			a+=b
 		a.write_image(outfile,-1)
-		if i%10==0: print i
+		if i%10==0: print(i)
 
 def write_set(lst,outfile):
 	for i in lst:

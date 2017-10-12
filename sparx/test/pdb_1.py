@@ -80,8 +80,8 @@ if 1:
     xray_struct = pdb_inp.xray_structure_simple(
         unit_cube_pseudo_crystal = True,
         enable_scattering_type_unknown = False)
-    print xray_struct.scatterers().size()
-    print xray_struct.show_summary()
+    print(xray_struct.scatterers().size())
+    print(xray_struct.show_summary())
     # could use get_cart()
 
     buffer_size = 3
@@ -97,7 +97,7 @@ if 1:
         space_group_info = xray_struct_1.space_group_info(),
         step = pixel_size,
         max_prime = 5)
-    print gridding.n_real()
+    print(gridding.n_real())
 
     direct_sampling_b_extra = 0
     direct_sampling_wing_cutoff = 0.001
@@ -134,11 +134,11 @@ ed = EMData()
 n = rmap.focus()                        
 ed.set_size(n[2],n[1],n[0])
 
-print "Entering slow loop...", # should be implemented in C++
+print("Entering slow loop...", end=' ') # should be implemented in C++
 sys.stdout.flush()
 for i in flex.nested_loop(rmap.focus()):
     ee[i[2],i[1],i[0]] = rmap[i]
-print "done."
+print("done.")
 sys.stdout.flush()
 
 # Save.
@@ -165,12 +165,12 @@ assert algorithm == "fft" or algorithm == "direct"
        
 stage_1 = pdb.interpretation.stage_1(file_name = pdb_file)
 xray_structure = stage_1.extract_xray_structure()
-print "\nInput model summary:"
+print("\nInput model summary:")
 xray_structure.show_summary()
 
 f_calc = xray_structure.structure_factors(algorithm = algorithm,
                                           d_min     = d_min).f_calc()
-print "\nStructure factors summary:"                                          
+print("\nStructure factors summary:")                                          
 f_calc.show_comprehensive_summary()
 
 f_calc_abs  = flex.abs(f_calc.data())

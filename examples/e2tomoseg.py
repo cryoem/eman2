@@ -218,7 +218,7 @@ class TomoSegSliceViewer(QtGui.QMainWindow):
 		QtCore.QObject.connect(self.zyview,QtCore.SIGNAL("origin_update"),self.zy_origin)
 
 		if datafile!=None:
-			print "\nIn ETomoBoxer, datafile is", datafile
+			print("\nIn ETomoBoxer, datafile is", datafile)
 			self.set_datafile(datafile)		# This triggers a lot of things to happen, so we do it last
 
 		if data!=None:
@@ -247,7 +247,7 @@ class TomoSegSliceViewer(QtGui.QMainWindow):
 #	def menu_win_average(self) : self.averageviewer.show()
 
 	def set_datafile(self,datafile):
-		print "\nIn set_datafile, received datafile", datafile
+		print("\nIn set_datafile, received datafile", datafile)
 		if datafile==None :
 			self.datafile=None
 			self.data=None
@@ -259,7 +259,7 @@ class TomoSegSliceViewer(QtGui.QMainWindow):
 		self.data=None
 		self.datafile=datafile
 
-		print "\nDatafile set, see!", self.datafile, type(self.datafile)
+		print("\nDatafile set, see!", self.datafile, type(self.datafile))
 
 		imgh=EMData(datafile,0,1)
 
@@ -659,8 +659,8 @@ class TomoSegSliceViewer(QtGui.QMainWindow):
 	def update_sides(self):
 		"""updates xz and yz views due to a new center location"""
 
-		print "\n\n\n\n\nIn update sides, self.datafile is", self.datafile
-		print "\n\n\n\n"
+		print("\n\n\n\n\nIn update sides, self.datafile is", self.datafile)
+		print("\n\n\n\n")
 
 		if self.datafile==None and self.data==None:
 			return
@@ -772,8 +772,8 @@ class TomoSegSliceViewer(QtGui.QMainWindow):
 	def update_xy(self):
 		"""updates xy view due to a new slice range"""
 
-		print "\n\n\n\n\nIn update_xy, self.datafile is", self.datafile
-		print "\n\n\n\n"
+		print("\n\n\n\n\nIn update_xy, self.datafile is", self.datafile)
+		print("\n\n\n\n")
 
 		if self.datafile==None and self.data==None:
 			return
@@ -824,7 +824,7 @@ class TomoSegSliceViewer(QtGui.QMainWindow):
 
 		av=avgr.finish()
 
-		print "\n\nIn update xy, av and type are", av, type(av)
+		print("\n\nIn update xy, av and type are", av, type(av))
 
 		if self.wfilt.getValue()!=0.0:
 
@@ -834,8 +834,8 @@ class TomoSegSliceViewer(QtGui.QMainWindow):
 	def update_all(self):
 		"""redisplay of all widgets"""
 
-		print "\n\n\n\n\nIn update all, self.datafile is", self.datafile
-		print "\n\n\n\n"
+		print("\n\n\n\n\nIn update all, self.datafile is", self.datafile)
+		print("\n\n\n\n")
 		if self.datafile==None and self.data==None:
 			return
 
@@ -1079,7 +1079,7 @@ class TomoSegSliceViewer(QtGui.QMainWindow):
 			self.zyview.scroll_to(box[2],None)
 
 	def add_helix_box(self, xf, yf, zf, xi, yi, zi):
-		print xf, yf, zf, xi, yi, zi
+		print(xf, yf, zf, xi, yi, zi)
 		if options.yshort:
 			self.helixboxes.append([xf, zf, yf, xi, zi, yi])
 		else:
@@ -1336,7 +1336,7 @@ class TomoSegSliceViewer(QtGui.QMainWindow):
 		#self.xzview.set_origin(xzo[0],newor[1],True)
 
 	def closeEvent(self,event):
-		print "Exiting"
+		print("Exiting")
 		self.boxviewer.close()
 		self.boxesviewer.close()
 #		self.averageviewer.close()
@@ -1958,7 +1958,7 @@ class TomoSegInspector(QtGui.QWidget):
 # 				self.scenegraph().setCurrentSelection(self.tree_widget.currentItem().item3d())
 # 			self.updateSceneGraph()
 		else:
-			print "Error cannot remove root node!!"
+			print("Error cannot remove root node!!")
 
 	def getUtilsWidget(self):
 		"""

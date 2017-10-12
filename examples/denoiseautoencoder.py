@@ -44,7 +44,7 @@ def main():
 	#### Train da with particles first.
 	
 
-	print "loading particles..."
+	print("loading particles...")
 	#particles = load_mat(args[1])
 	##print train_set_x.get_value()
 	particles = load_particles(args[0],shrink=options.shrink)
@@ -66,11 +66,11 @@ def main():
 	x = T.matrix('x')  # the data is presented as rasterized images
 	
 	
-	print "setting up model"
+	print("setting up model")
 	rng = np.random.RandomState(123)
 	
 	if options.fromlast:
-		print "loading {}...".format(options.pretrainnet)
+		print("loading {}...".format(options.pretrainnet))
 		f = file(options.pretrainnet, 'rb')
 		sda = cPickle.load(f)
 		f.close()		
@@ -90,7 +90,7 @@ def main():
 	#test_imgs = sda.pretraining_get_result(train_set_x=train_set_x,batch_size=1)
 	
 	
-	print '... pre-training the model'
+	print('... pre-training the model')
 	### Pre-train layer-wise
 	
 	if options.layer==None:
@@ -114,8 +114,8 @@ def main():
 				#print err
 			learning_rate*=.999
 			#print test_imgs[sda.n_layers-1](index=0)
-			print 'Pre-training layer %i, epoch %d, cost ' % (i, epoch),
-			print np.mean(c),", learning rate",learning_rate
+			print('Pre-training layer %i, epoch %d, cost ' % (i, epoch), end=' ')
+			print(np.mean(c),", learning rate",learning_rate)
 	if ( training_epochs>0):
 		f = file(options.pretrainnet, 'wb')
 		cPickle.dump(sda, f, protocol=cPickle.HIGHEST_PROTOCOL)
@@ -124,7 +124,7 @@ def main():
 	
 	### testing..
 	if options.sdaout:
-		print "Generating results ..."
+		print("Generating results ...")
 		
 		if options.writeall:
 			n_imgs= train_set_x.get_value(borrow=True).shape[0] 

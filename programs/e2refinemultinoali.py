@@ -64,7 +64,7 @@ def main():
 	logid=E2init(sys.argv)
 
 	if not options.model:
-		print "No model input. Exit."
+		print("No model input. Exit.")
 		exit()
 
 	inputmodel=options.model.split(',')
@@ -73,16 +73,16 @@ def main():
 		num=EMUtil.get_image_count(inputmodel[0])
 		if num>1:
 			modelstack=num
-			print "3D stack input. Perform multi-model refinement using existing alignment..."
+			print("3D stack input. Perform multi-model refinement using existing alignment...")
 			multimodel=True
 			inputmodel=inputmodel*num
 		else:
 
 			multimodel=False
-			print "One input model. Split the data by half accroding to the similarity to the input model..."
+			print("One input model. Split the data by half accroding to the similarity to the input model...")
 	else:
 		multimodel=True
-		print "Multiple input models. Perform multi-model refinement using existing alignment..."
+		print("Multiple input models. Perform multi-model refinement using existing alignment...")
 
 	### make new folder
 	if options.newpath == None:
@@ -90,10 +90,10 @@ def main():
 		if len(fls)==0 : fls=[0]
 		options.newpath = "multinoali_{:02d}".format(max(fls)+1)
 
-	print "Working directory: {}".format(options.newpath)
+	print("Working directory: {}".format(options.newpath))
 	try: os.mkdir(options.newpath)
 	except:
-		print "New path {} exist. Overwrite...".format(options.newpath)
+		print("New path {} exist. Overwrite...".format(options.newpath))
 		pass
 
 
@@ -108,7 +108,7 @@ def main():
 	if db["breaksym"]:
 		sym="c1"
 	### copy the model to the new folder
-	print "Preprocessing the input models..."
+	print("Preprocessing the input models...")
 	#if options.mask:
 		#options.mask="--multfile {}".format(options.mask)
 	#else:
@@ -161,12 +161,12 @@ def main():
 	#### deal with breaksym
 	if options.breaksym:
 		if sym=="c1":
-			print "Error: Breaksym option should be used based on a refinement with (non-c1) symmetry without breaksym. Exit."
+			print("Error: Breaksym option should be used based on a refinement with (non-c1) symmetry without breaksym. Exit.")
 			exit()
 		if not multimodel:
-			print "Breaksym does not support single model input yet...Exit."
+			print("Breaksym does not support single model input yet...Exit.")
 			exit()
-		print "Breaking symmetry..."
+		print("Breaking symmetry...")
 		#### original orientations
 		origen=str(db["orientgen"])
 		sym_object = parsesym(sym)
@@ -198,7 +198,7 @@ def main():
 						symdone[j]=i
 						break
 			eulerlst.append(elst)
-		print "Making {} projections in {} groups...".format(n, len(eulerlst))
+		print("Making {} projections in {} groups...".format(n, len(eulerlst)))
 		sym="c1"
 
 		#for i in range(len(eulerlst)):
@@ -221,8 +221,8 @@ def main():
 	
 	#### start iterations...
 	for it in range(options.iter):
-		print "Starting iteration {} ...".format(it)
-		print "Making projections..."
+		print("Starting iteration {} ...".format(it))
+		print("Making projections...")
 
 		if it==0:
 		#### first iteration. do one projection for even/odd
@@ -255,7 +255,7 @@ def main():
 
 			if it>0:
 				inputmodel=[output_3d[-2][eo][m] for m in models]
-				print inputmodel
+				print(inputmodel)
 				multimodel=True
 			#### make projections for even/odd
 				projfile=["{path}/projections_{it:02d}_{k}_{eo}.hdf".format(path=options.newpath, k=m, it=it,eo=eo) for m in models]
@@ -287,7 +287,7 @@ def main():
 			output_cls[-1][eo]=classout
 
 			#### get alignment from classmx file and calculate similarity
-			print "Calculating similarity matrix..."
+			print("Calculating similarity matrix...")
 			cmxcls=EMData(clsmx,0)
 			cmxtx=EMData(clsmx,2)
 			cmxty=EMData(clsmx,3)
@@ -336,7 +336,7 @@ def main():
 				if thrtolaunch<len(thrds) :
 					while (threading.active_count()==NTHREADS ) : time.sleep(.1)
 					if time.time()-t01>3:
-						print "Starting thread {}/{}".format(thrtolaunch,len(thrds))
+						print("Starting thread {}/{}".format(thrtolaunch,len(thrds)))
 						t01=time.time()
 					thrds[thrtolaunch].start()
 					thrtolaunch+=1
@@ -347,7 +347,7 @@ def main():
 					#print idx,ccc
 					corr[idx]=ccc
 			
-			print time.time()-t00
+			print(time.time()-t00)
 			np.savetxt("{path}/simmx_{it:02d}_{eo}.txt".format(path=options.newpath,eo=eo, it=it),corr)
 			
 			
@@ -355,7 +355,7 @@ def main():
 			#corr=[[c] for c in corr]
 
 			### classification
-			print "Classifying particles..."
+			print("Classifying particles...")
 			if options.symcopy:
 				cmxy=cmxcls["ny"]
 				cmxtmp=EMData(nsym, cmxy)
@@ -385,7 +385,7 @@ def main():
 					clso=np.argmin(corr,1)
 					cls=clso%len(models)
 					clsm=clso//len(models)
-					print eo,[float(sum(cls==k))/float(npt) for k in models]
+					print(eo,[float(sum(cls==k))/float(npt) for k in models])
 					for i in range(npt):
 						v=cmxcls[0,i]
 						if options.breaksym:
@@ -425,7 +425,7 @@ def main():
 						#print toavg
 						for i in toavg:
 							cmxout[s][0,int(i)]=int(c)
-					print c, ncls,cmxout[s]["mean_nonzero"]
+					print(c, ncls,cmxout[s]["mean_nonzero"])
 
 			
 			### write classmx
@@ -443,7 +443,7 @@ def main():
 					else:	
 						e.write_image(newclsmx[s],i)
 			#exit()
-			print "Making class average and 3d map..."
+			print("Making class average and 3d map...")
 			if len(projfile)==1: 
 				tmpprojfile=projfile*len(models)
 			else:
@@ -461,7 +461,7 @@ def main():
 				m3dpad=db["pad"],threads=options.threads, apix=db_apix))
 		#exit()
 		### post process
-		print "Post processing..."
+		print("Post processing...")
 		if os.path.exists("strucfac.txt") :
 			m3dsetsf="--setsf strucfac.txt"
 		else:
@@ -535,7 +535,7 @@ def do_compare(jsd,data):
 	return 
 
 def run(cmd):
-	print cmd
+	print(cmd)
 	launch_childprocess(cmd)
 
 

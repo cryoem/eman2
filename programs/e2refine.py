@@ -32,6 +32,6 @@
 #
 
 
-print "e2refine.py is no longer functional in EMAN2.1 and above. Please use e2refine_easy.py instead.\n\nNote: e2refine_easy does provide \
+print("e2refine.py is no longer functional in EMAN2.1 and above. Please use e2refine_easy.py instead.\n\nNote: e2refine_easy does provide \
 most of the same options as e2refine.py, but you should almost never \nspecify most of them. There are a few required and optional parameters\
- to specify. The rest are normally autoselected for you.\n"
+ to specify. The rest are normally autoselected for you.\n")

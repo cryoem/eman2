@@ -69,16 +69,16 @@ def main():
 
 	ali=im2.align("rotate_translate_flip",im1,{},cmpopt[0],cmpopt[1])
 	a2=ali["xform.align2d"]
-	print a2.inverse()
+	print(a2.inverse())
 	if a2.get_mirror():
 		im2.process_inplace("xform.flip",{"axis":"x"})
 		ali=im2.align("rotate_translate_flip",im1,{},cmpopt[0],cmpopt[1])
 		a2=ali["xform.align2d"]
-		print a2.inverse()
+		print(a2.inverse())
 	
 	ali=im2.align("refine",im1,{"xform.align2d":a2},cmpopt[0],cmpopt[1])
 	a2=ali["xform.align2d"]
-	print a2.inverse(),"\n\n"
+	print(a2.inverse(),"\n\n")
 
 	output=EMData(nxy,nxy,nz)
 	output.to_zero()
@@ -89,7 +89,7 @@ def main():
 	while alpha<360.0:
 		y=-options.xy0
 		j=0
-		print "\r alpha: ",alpha,"       ",
+		print("\r alpha: ",alpha,"       ", end=' ')
 		sys.stdout.flush()
 		while y<options.xy0:
 			x=-options.xy0
@@ -107,13 +107,13 @@ def main():
 		k+=1
 
 	output.write_image(args[4],0)
-	print "Best :",best
+	print("Best :",best)
 
 	best2=(-1.0e8,0,0,0)
 	output=EMData(41,41,41)
 	output.to_zero()
 	for k in range(-20,21):
-		print "\r alpha: ",k,"       ",
+		print("\r alpha: ",k,"       ", end=' ')
 		sys.stdout.flush()
 		for j in range(-20,21):
 			for i in range(-20,21):
@@ -124,7 +124,7 @@ def main():
 				
 				
 	output.write_image("o_"+args[4],0)
-	print "Best :",best2
+	print("Best :",best2)
 
 
 

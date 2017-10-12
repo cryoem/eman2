@@ -214,7 +214,7 @@ def DataDisplayModuleTemplate(Type,get_data_attr="get_data",data_functors=[],use
 					mod.disconnect_object()
 					return
 				
-			print "failed to close module?" # this shouldn't happen if I have managed everything correctly
+			print("failed to close module?") # this shouldn't happen if I have managed everything correctly
 		
 		def closeEvent(self,event):
 			self.module_events = [] # this should take care of complications that arise if self.module_closed is called

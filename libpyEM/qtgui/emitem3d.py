@@ -272,7 +272,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		"""
 		indent = "\t"*(level-1)
 		marker = "<-->" if self.parent else "-->"
-		print indent, marker, self.intname
+		print(indent, marker, self.intname)
 		for child in self.children:
 			child.displayTree(level+1)
 	
@@ -946,23 +946,23 @@ if __name__ == '__main__':
 	c.is_selected = True
 	cc.is_selected = True
 	
-	print "getAllSelectedNodes() test: "
-	print "\tpassed?  ", set(root.getAllSelectedNodes()) == set([a,aab,ba,bc,c,cc])
-	print "getNearbySelectedNodes() test: "
-	print "\tpassed?  ", set(root.getNearbySelectedNodes()) == set([a,ba,bc,c])
-	print "getDistantSelectedNodes() test: "
-	print "\tpassed?  ", set(root.getDistantSelectedNodes()) == set([aab,ba,bc,cc])
+	print("getAllSelectedNodes() test: ")
+	print("\tpassed?  ", set(root.getAllSelectedNodes()) == set([a,aab,ba,bc,c,cc]))
+	print("getNearbySelectedNodes() test: ")
+	print("\tpassed?  ", set(root.getNearbySelectedNodes()) == set([a,ba,bc,c]))
+	print("getDistantSelectedNodes() test: ")
+	print("\tpassed?  ", set(root.getDistantSelectedNodes()) == set([aab,ba,bc,cc]))
 	
 	root.displayTree()
-	print "\n"
+	print("\n")
 	a.removeParentReferences()
 	root.displayTree()
-	print "\n"
+	print("\n")
 	root.addParentReferences()
 	root.displayTree()
-	print "\n"
+	print("\n")
 	
-	print "removing child..."
+	print("removing child...")
 	root.removeChild(a)
 	root.displayTree()
 	del a, b, c, aa, ab, ac, ba, bb, bc, ca, cb, cc, aaa, aab, aac #Ensure instances are deleted before the class object is deleted, which is important in EMItem3D.__del__(self):

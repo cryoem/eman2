@@ -1037,7 +1037,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                     else:
                         self._fill_gui(inputlist=list(listOfShiftFiles))
             else:
-                print('Error: {0} not found! Try again'.format(inputfile))
+                print(('Error: {0} not found! Try again'.format(inputfile)))
 
     def _check_list_or_file(self, data):
         """Check if the input name is a file or a list of files"""
@@ -1756,11 +1756,11 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                 listSplit = strSuffix.split('/')[-1].split('*')
             if len(listSplit) != 2:
                 self.arrMicNumber = numpy.arange(len(self.listFile))
-                print(
+                print((
                     'Warning: Could not identify micrograph serial number.\n' +
                     'X-axis of the plots do not represent' +
                     'the serial micrograph number.'
-                    )
+                    ))
             else:
                 listMicNumber = []
                 varBreak = False
@@ -1772,11 +1772,11 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                     except:
                         self.arrMicNumber = numpy.arange(len(self.listFile))
                         varBreak = True
-                        print(
+                        print((
                             'Warning: Could not identify micrograph serial number.\n' +
                             'X-axis of the plots do not represent' +
                             'the serial micrograph number.'
-                            )
+                            ))
                         break
                     else:
                         listMicNumber.append(number)
@@ -1803,21 +1803,21 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             return None
         elif len(self.listFile) <= 5:
             self.varAnalyzeOne = True
-            print(
+            print((
                 '\nWarning: !!!! Only few shift files selected, ' +
                 'so plots of all micrographs could not work as expected. !!!!\n'
-                )
+                ))
 
         # Load and calculate data for the first time
         value = self._first_time_calculations()
 
         if len(self.arrMicNumber) != len(self.listFile):
             self.arrMicNumber = numpy.arange(len(self.listFile))
-            print(
+            print((
                 'Warning: Files were corrupt, lost track of micrograph serial number.\n' +
                 'X-axis of the plots do not represent' +
                 'the serial micrograph number.'
-                )
+                ))
 
         if value is not None:
             # Fill list widget
@@ -1985,11 +1985,11 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                     # Transpose the array
                     arrCoord = numpy.transpose(arrCoord)
             except ValueError:
-                print('Warning: File corrupt, skip:', file)
+                print(('Warning: File corrupt, skip:', file))
                 continue
 
             if len(arrCoord) != self.intFrames:
-                print('Warning: File does not have {0} Frames, skip:'.format(self.intFrames), file)
+                print(('Warning: File does not have {0} Frames, skip:'.format(self.intFrames), file))
                 continue
 
             # Get the micrograph name
@@ -2019,11 +2019,11 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                     # Transpose the array
                     arrCoord = numpy.transpose(arrCoord)
             except ValueError:
-                print('Warning: File corrupt, skip:', file)
+                print(('Warning: File corrupt, skip:', file))
                 continue
 
             if len(arrCoord) != self.intFrames:
-                print('Warning: File does not have {0} Frames, skip:'.format(self.intFrames), file)
+                print(('Warning: File does not have {0} Frames, skip:'.format(self.intFrames), file))
                 continue
 
             # Get the micrograph name
@@ -4030,10 +4030,10 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         # Check if there are less than 5
         if len(self.arrMicNumber) <= 5:
             self.varAnalyzeOne = True
-            print(
+            print((
                 '\nWarning: !!!! Only few shift files selected, ' +
                 'so plots of all micrographs could not work as expected. !!!!\n'
-                )
+                ))
 
         return arrThresh, arrGeneral
 
@@ -4218,10 +4218,10 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         # Check if there are less than 5
         if len(self.arrMicNumber) <= 5:
             self.varAnalyzeOne = True
-            print(
+            print((
                 '\nWarning: !!!! Only few shift files selected, ' +
                 'so plots of all micrographs could not work as expected. !!!!\n'
-                )
+                ))
 
         return arrThresh, arrGeneral
 
@@ -4391,11 +4391,11 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             dtype=None
             ))
 
-        print(
+        print((
             'Warning: Could not identify micrograph serial number due to an old settings file.\n' +
             'X-axis of the plots do not represent' +
             'the serial micrograph number.'
-            )
+            ))
         self.arrMicNumber = numpy.arange(len(self.arrData))
 
         return arrThresh, arrGeneral

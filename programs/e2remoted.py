@@ -75,7 +75,7 @@ def run_daemon(options,args):
 		pid = os.fork() 
 		if pid > 0: sys.exit(0) # exit parent once
 	except OSError, e: 
-		print "Daemon error" 
+		print("Daemon error") 
 		sys.exit(1)
 
 	try: 
@@ -90,7 +90,7 @@ def run_daemon(options,args):
 		pid = os.fork() 
 		if pid > 0: sys.exit(0) 	# exit the second time
 	except OSError, e: 
-		print "Daemon error 2" 
+		print("Daemon error 2") 
 		sys.exit(1) 
 
 	# ok, we got here, so we should be running in a parentless daemon now
@@ -217,7 +217,7 @@ def get_dir_list_recurse(path,basepath=None):
 	"Recursively lists the contents of a directory, including BDB contents"
 	
 	if ("EMAN2DB") in path:
-		print "ERROR : EMAN2DB may not be specified as a path to copy. Use bdb: specifier instead."
+		print("ERROR : EMAN2DB may not be specified as a path to copy. Use bdb: specifier instead.")
 		return []
 	
 	if path[:4].lower()=="bdb:" :
@@ -341,19 +341,19 @@ class scp_proxy:
 			self.stdout=self.ssh.stdout		# read from this
 			self.stdin=self.ssh.stdin		# write to this
 		except:
-			print "ssh to remote machine failed : ",("ssh",host,"e2ssh.py --client")
+			print("ssh to remote machine failed : ",("ssh",host,"e2ssh.py --client"))
 			traceback.print_exc()
 			sys.exit(2)
 		
 		while 1:
 			ln=self.stdout.readline().strip()
 			if len(ln)==0 : 
-				print "Error running e2scp.py on the remote machine. EMAN2 installed ?"
+				print("Error running e2scp.py on the remote machine. EMAN2 installed ?")
 				sys.exit(3)
 			if ln=="HELO" : 
-				if self.verbose : print "Connection established"
+				if self.verbose : print("Connection established")
 				break
-			if self.verbose >1 : print "*** ",ln
+			if self.verbose >1 : print("*** ",ln)
 		
 		atexit.register(self.close)
 		

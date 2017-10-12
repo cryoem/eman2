@@ -557,7 +557,7 @@ class EMTomoBootstrapTask(WorkFlowTask):
 			e23dcalist += " --postprocess="+params["postfilter"]+spacer+params["postfilterparams"]
 		if params["parallel"]:
 			e23dcalist += " --parallel="+params["parallel"]
-		print e23dcalist
+		print(e23dcalist)
 		
 		child = subprocess.Popen(e23dcalist, shell=True)
 		
@@ -610,7 +610,7 @@ class E2TomoBoxerGuiTask(WorkFlowTask):
 		return table, n
 
 	def get_tomo_boxes_in_database(name):
-		print "checking for boxes, but this aspect of things is not working yet...."+base_name(name)+" "+name
+		print("checking for boxes, but this aspect of things is not working yet...."+base_name(name)+" "+name)
 		#from e2spt_boxer import tomo_db_name
 		#if db_check_dict(tomo_db_name):
 			#tomo_db = db_open_dict(tomo_db_name)

@@ -85,12 +85,12 @@ def main():
 
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 1 or len(args) > 5:
-		print "usage: " + usage + "\n"
-		print "Please run '" + progname + " -h' for detailed options"
+		print("usage: " + usage + "\n")
+		print("Please run '" + progname + " -h' for detailed options")
 	else:
 		# Convert input arguments in the units/format as expected by ihrsr_MPI in applications.
 		if options.apix < 0:
-			print "Please enter pixel size"
+			print("Please enter pixel size")
 			sys.exit()
 
 		rminp = int((float(options.rmin)/options.apix) + 0.5)

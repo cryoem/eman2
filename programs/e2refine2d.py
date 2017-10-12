@@ -139,10 +139,10 @@ def main():
 	else : options.normproj=""
 
 	if options.classrefsf :
-		print "Warning: classrefsf option has no effect on e2refine2d.py"
+		print("Warning: classrefsf option has no effect on e2refine2d.py")
 
 	if options.path and ("/" in options.path or "#" in options.path) :
-		print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
+		print("Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. ")
 		sys.exit(1)
 	if options.path == None:
 		fls=[int(i[-2:]) for i in os.listdir(".") if i[:4]=="r2d_" and len(i)==6]
@@ -152,7 +152,7 @@ def main():
 		except: pass
 
 	if options.centeracf : 
-		print "Warning: the --centeracf option has been removed from e2refine2d in favor of a new centering scheme. Ignoring option."
+		print("Warning: the --centeracf option has been removed from e2refine2d in favor of a new centering scheme. Ignoring option.")
 		
 	logid=E2init(sys.argv,options.ppid)
 
@@ -163,7 +163,7 @@ def main():
 
 		options.initial=options.path+"/classes_%02d.hdf"%fit
 		fit+=1
-		print "starting at iteration ",fit
+		print("starting at iteration ",fit)
 
 	total_procs = options.iter*7 + 5 # one for every run command
 	proc_tally = 0.0
@@ -182,14 +182,14 @@ def main():
 	# if we aren't given starting class-averages, make some
 #	if not options.initial and not "classes_init" in dcts:
 	if not options.initial:
-		print "Building initial averages"
+		print("Building initial averages")
 
 		# we only want to use ~2000 particles for the initial averages
 		n=EMUtil.get_image_count(options.input)
 		options.input2=options.input
 		nmax=max(2000,options.ncls*10)
 		if n>nmax:
-			print "Making subset of ~%d particles for initial averages"%nmax
+			print("Making subset of ~%d particles for initial averages"%nmax)
 			options.input=options.path+"/input_subset.hdf"
 			run("e2proc2d.py %s %s --step=0,%d"%(options.input2,options.input,int(n/nmax)))
 
@@ -235,7 +235,7 @@ def main():
 
 	if not options.initial : options.initial=options.path+"/classes_init.hdf"
 
-	print "Using references from ",options.initial
+	print("Using references from ",options.initial)
 	# this is the main refinement loop
 	for it in range(fit,options.iter+1) :
 		# first we sort and align the class-averages from the last step
@@ -308,7 +308,7 @@ def main():
 
 		options.initial=options.path+"/classes_%02d.hdf"%it
 
-	print "e2refine2d.py complete"
+	print("e2refine2d.py complete")
 	E2end(logid)
 
 
@@ -328,14 +328,14 @@ def get_classaverage_extras(options):
 def run(command):
 	"Execute a command with optional verbose output"
 	global options
-	if options.verbose>0 : print "***************",command
+	if options.verbose>0 : print("***************",command)
 	error = launch_childprocess(command)
 
 	if error==11 :
 		pass
 #	#	print "Segfault running %s\nNormal on some platforms, ignoring"%command
 	elif error :
-		print "Error running:\n%s"%command
+		print("Error running:\n%s"%command)
 		exit(1)
 
 def get_simmx_cmd(options,refs,simmx,check=False,nofilecheck=False):
@@ -371,7 +371,7 @@ def get_classaverage_cmd(options,check=False,nofilecheck=False):
 		e2cacmd += " --nofilecheck"
 
 	# We need to tell e2classaverage.py to bootstrap the original class average, because there are is no alignment
-	print 'using bootstrap'
+	print('using bootstrap')
 	e2cacmd += " --bootstrap"
 
 	return e2cacmd

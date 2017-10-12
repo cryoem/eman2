@@ -49,7 +49,7 @@ def IPY():
 	#app.initialize()
 	#app.start()
 
-	print "Exiting e22.py"
+	print("Exiting e22.py")
 	ttx=True
 
 def on_timer():

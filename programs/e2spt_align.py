@@ -42,12 +42,12 @@ def alifn(jsd,fsp,i,a,options):
 	b.process_inplace("xform.phaseorigin.tocorner")
 
 	# we align backwards due to symmetry
-	if options.verbose>2 : print "Aligning: ",fsp,i
+	if options.verbose>2 : print("Aligning: ",fsp,i)
 	c=a.xform_align_nbest("rotate_translate_3d_tree",b,{"verbose":0,"sym":options.sym,"sigmathis":0.1,"sigmato":1.0},1)
 	for cc in c : cc["xform.align3d"]=cc["xform.align3d"].inverse()
 
 	jsd.put((fsp,i,c[0]))
-	if options.verbose>1 : print "{}\t{}\t{}\t{}".format(fsp,i,time.time()-t,c[0]["score"])
+	if options.verbose>1 : print("{}\t{}\t{}\t{}".format(fsp,i,time.time()-t,c[0]["score"]))
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -93,7 +93,7 @@ This program will take an input stack of subtomograms and a reference volume, an
 			ref.append(EMData(reffile[:-4]+"_even.hdf",0))
 			ref.append(EMData(reffile[:-4]+"_odd.hdf",0))
 		except:
-			print "Error: cannot find one of reference files, eg: ",EMData(reffile[:-4]+"_even.hdf",0)
+			print("Error: cannot find one of reference files, eg: ",EMData(reffile[:-4]+"_even.hdf",0))
 	else:
 		ref=[]
 		ref.append(EMData(reffile,0))
@@ -118,7 +118,7 @@ This program will take an input stack of subtomograms and a reference volume, an
 	thrds=[threading.Thread(target=alifn,args=(jsd,args[0],i,ref[i%2],options)) for i in xrange(N)]
 
 	# here we run the threads and save the results, no actual alignment done here
-	print len(thrds)," threads"
+	print(len(thrds)," threads")
 	thrtolaunch=0
 	while thrtolaunch<len(thrds) or threading.active_count()>1:
 		# If we haven't launched all threads yet, then we wait for an empty slot, and launch another
@@ -126,7 +126,7 @@ This program will take an input stack of subtomograms and a reference volume, an
 		# thread hasn't finished.
 		if thrtolaunch<len(thrds) :
 			while (threading.active_count()==NTHREADS ) : time.sleep(.1)
-			if options.verbose : print "Starting thread {}/{}".format(thrtolaunch,len(thrds))
+			if options.verbose : print("Starting thread {}/{}".format(thrtolaunch,len(thrds)))
 			thrds[thrtolaunch].start()
 			thrtolaunch+=1
 		else: time.sleep(1)

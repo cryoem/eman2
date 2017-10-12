@@ -44,10 +44,10 @@ import Queue
 
 def procthread(jsd,vals,lnx,thresh1,thresh2,apix,v1,v2,cenmask,avgmask,options,ttl):
 	for ox,x,oy,y,oz,z in vals:
-		if options.verbose>2 : print "%d, %d, %d :"%(x,y,z),
+		if options.verbose>2 : print("%d, %d, %d :"%(x,y,z), end=' ')
 		elif options.verbose>3:
 			if time.time()-t>.5 :
-				print "  %3d,%3d,%3d / %d,%d,%d\r"%(ox,oy,oz,len(xr),len(yr),len(zr)),
+				print("  %3d,%3d,%3d / %d,%d,%d\r"%(ox,oy,oz,len(xr),len(yr),len(zr)), end=' ')
 				sys.stdout.flush()
 				t=time.time()
 				
@@ -64,13 +64,13 @@ def procthread(jsd,vals,lnx,thresh1,thresh2,apix,v1,v2,cenmask,avgmask,options,t
 		#v1m=v1*mask
 		#v2m=v2*mask
 
-		if options.verbose>3 : print v1m["sigma_nonzero"], v2m["sigma_nonzero"],
+		if options.verbose>3 : print(v1m["sigma_nonzero"], v2m["sigma_nonzero"], end=' ')
 		if v1m["maximum"]<thresh1 or v2m["maximum"]<thresh2 :
-			if options.verbose>3 : print " "
+			if options.verbose>3 : print(" ")
 			jsd.put((0,0,[],ox,x,oy,y,oz,z,0,None,None))
 			continue
 		
-		if options.verbose>3 : print " ***"
+		if options.verbose>3 : print(" ***")
 	#				display(v1m)
 		
 		fsc=v1m.calc_fourier_shell_correlation(v2m)
@@ -89,7 +89,7 @@ def procthread(jsd,vals,lnx,thresh1,thresh2,apix,v1,v2,cenmask,avgmask,options,t
 	#		funny.append(len(fys))
 	#				if res>0 and res<0.04 : funny.append(len(fys))
 		
-		if isnan(fy[0]): print "NAN",x,y,z
+		if isnan(fy[0]): print("NAN",x,y,z)
 
 		# 0.143 resolution
 		if fy[0]<0.143 and fy[1]<0.143 : si,xx,res143=1,fx[1],fx[1]
@@ -152,7 +152,7 @@ and this program should be regarded as experimental.
 	(options, args) = parser.parse_args()
 		
 	if len(args)<2 : 
-		print "Please specify 2 input files"
+		print("Please specify 2 input files")
 		sys.exit(1)
 
 	logid=E2init(sys.argv,options.ppid)
@@ -169,15 +169,15 @@ and this program should be regarded as experimental.
 	if options.apix>0 : apix=options.apix
 	else :
 		apix=v1["apix_x"]
-		print "Using %1.2f A/pix"%apix
+		print("Using %1.2f A/pix"%apix)
 	
 	nx,ny,nz=v1["nx"],v1["ny"],v1["nz"]
-	print "%d x %d x %d"%(nx,ny,nz)
-	if nx!=ny or nx!=nz : print "Warning: non-cubic volumes may produce unexpected results"
+	print("%d x %d x %d"%(nx,ny,nz))
+	if nx!=ny or nx!=nz : print("Warning: non-cubic volumes may produce unexpected results")
 	
 	overlap=options.overlap		# This is the fraction of the window size to use as a step size in sampling
 	if overlap<1:
-		print "Invalid overlap specified, using default"
+		print("Invalid overlap specified, using default")
 		overlap=6
 		
 	if options.localsize==-1 : 
@@ -186,16 +186,16 @@ and this program should be regarded as experimental.
 		lnx=(((lnx-1)//overlap)+1)*overlap
 	else: lnx=options.localsize
 	if apix*lnx/2.0<10.0 :
-		print "WARNING: Local sampling box is <10 A. Adjusting to 16 A."
+		print("WARNING: Local sampling box is <10 A. Adjusting to 16 A.")
 		lnx=int(floor(32.0/apix))
-	print "Local region is %d pixels"%lnx
+	print("Local region is %d pixels"%lnx)
 	if overlap>lnx : overlap=lnx
 	
 	thresh1=v1["mean"]+v1["sigma"]
 	thresh2=v2["mean"]+v2["sigma"]
-	print "Thresholds : ",thresh1,thresh2
+	print("Thresholds : ",thresh1,thresh2)
 	
-	if options.verbose: print "Computing overall FSC"
+	if options.verbose: print("Computing overall FSC")
 	# overall fsc
 	fsc=v1.calc_fourier_shell_correlation(v2)
 	fx=array(fsc[0:len(fsc)/3])/apix
@@ -206,12 +206,12 @@ and this program should be regarded as experimental.
 		out.write("%1.5f\t%1.4f\n"%(x,fy[i]))
 	out.close()
 	
-	if options.verbose: print "Preparing for local calculation"
+	if options.verbose: print("Preparing for local calculation")
 	# Create a centered Gaussian mask with a size ~1/10th of the box size
 	cenmask=EMData(lnx,lnx,lnx)
 	cenmask.to_one()
 	cenmask.process_inplace("mask.gaussian",{"inner_radius":lnx/6,"outer_radius":lnx/6})
-	print "Approx feature size for assessment = %1.1f A"%(apix*lnx/2.0)
+	print("Approx feature size for assessment = %1.1f A"%(apix*lnx/2.0))
 #	cenmask.write_image("cenmask.hdf")
 	#display(cenmask)
 	
@@ -232,7 +232,7 @@ and this program should be regarded as experimental.
 	resvol["apix_z"]=apix*lnx//overlap
 	resvol143=resvol.copy()
 	
-	print "Local region: ",lnx," with step ",lnx//overlap
+	print("Local region: ",lnx," with step ",lnx//overlap)
 	
 	# volfilt will contain the locally filtered version of the map
 	volfilt=v1.copy()
@@ -262,7 +262,7 @@ and this program should be regarded as experimental.
 			thrds.append(thrd)						# one row of x values per thread
 	
 
-	if options.verbose: print len(thrds)," threads"
+	if options.verbose: print(len(thrds)," threads")
 	
 	thrtolaunch=0
 	while thrtolaunch<len(thrds) or threading.active_count()>1:
@@ -272,7 +272,7 @@ and this program should be regarded as experimental.
 		if thrtolaunch<len(thrds) :
 			while (threading.active_count()==options.threads ) : time.sleep(.1)
 			if options.verbose>1 : 
-				print "\rStarting thread {}/{}                                                  ".format(thrtolaunch,len(thrds)),
+				print("\rStarting thread {}/{}                                                  ".format(thrtolaunch,len(thrds)), end=' ')
 				sys.stdout.flush()
 			vals=thrds[thrtolaunch]
 			thr=threading.Thread(target=procthread,args=(jsd,vals,lnx,thresh1,thresh2,apix,v1,v2,cenmask,avgmask,options,thrtolaunch))
@@ -305,7 +305,7 @@ and this program should be regarded as experimental.
 					
 				volnorm.insert_scaled_sum(avgmask,(x+lnx/2,y+lnx/2,z+lnx/2))
 			
-	if options.verbose>1: print "\nAll threads complete"
+	if options.verbose>1: print("\nAll threads complete")
 
 	# while the size of avgmask was selected to produce a nearly normalized image without further work
 	# there were minor artifacts. The normalization deals with this.
@@ -328,10 +328,10 @@ and this program should be regarded as experimental.
 	out.write("# This file contains individual FSC curves from e2fsc.py. Only a fraction of computed curves are included.\n")
 	if len(fys)>100 : 
 		step=len(fys)/100
-		print "Saving 1/%d of curves to fsc.curves.txt + %d"%(step,len(funny))
+		print("Saving 1/%d of curves to fsc.curves.txt + %d"%(step,len(funny)))
 	else: 
 		step=1
-		print "Saving all curves to fsc.curves.txt"
+		print("Saving all curves to fsc.curves.txt")
 	
 	#for i,x in enumerate(fx):
 		#out.write( "%f\t"%x)

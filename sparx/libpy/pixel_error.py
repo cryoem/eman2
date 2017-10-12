@@ -205,7 +205,7 @@ def align_diff_params(ali_params1, ali_params2):
 	nima = len(ali_params1)
 	nima2 = len(ali_params2)
 	if nima2 != nima:
-		print "Error: Number of images do not agree!"
+		print("Error: Number of images do not agree!")
 		return 0.0, 0.0, 0.0, 0
 	else:
 		nima/=4
@@ -276,7 +276,7 @@ def align_diff(data1, data2=None, suffix="_ideal"):
 	if data2 != None: 
 		nima2 = len(data2)
 		if nima2 != nima:
-			print "Error: Number of images don't agree!"
+			print("Error: Number of images don't agree!")
 			return 0.0, 0.0, 0.0, 0
 		else:
 			del nima2
@@ -310,7 +310,7 @@ def align_diff_textfile(textfile1, textfile2):
 	nima = len(ali1)
 	nima2 = len(ali2)
 	if nima2 != nima:
-		print "Error: Number of images don't agree!"
+		print("Error: Number of images don't agree!")
 		return 0.0, 0.0, 0.0, 0
 	else:
 		del nima2
@@ -400,7 +400,7 @@ def ave_ali_err_textfile(textfile1, textfile2, r=25):
 	nima = len(ali1)
 	nima2 = len(ali2)
 	if nima2 != nima:
-		print "Error: Number of images don't agree!"
+		print("Error: Number of images don't agree!")
 		return 0.0, 0.0, 0.0, 0, 0.0, 0.0
 	else:
 		del nima2
@@ -453,7 +453,7 @@ def multi_align_diff_params(ali_params, verbose=0):
 		for j in xrange(i+1, num_ali):
 			alpha, sx, sy, mirror, stab_mirror, pixel_error = ave_ali_err_params(ali_params[i], ali_params[j])
 			if verbose == 1:
-				print "Between trial %d and %d: mirror stability = %6.3f   pixel error = %6.3f"%(i, j, stab_mirror, pixel_error)
+				print("Between trial %d and %d: mirror stability = %6.3f   pixel error = %6.3f"%(i, j, stab_mirror, pixel_error))
 			multi_align_results.append([pixel_error, stab_mirror, i, j, alpha, sx, sy, mirror])
 	return multi_align_results
 	
@@ -759,11 +759,11 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 			if err < err_thld:
 				stable_set.append([err, i, ave_params[j]])
 				val += err
-				if print_individual:  print "Particle %4d :  pixel error = %18.4f"%(i, err)
+				if print_individual:  print("Particle %4d :  pixel error = %18.4f"%(i, err))
 			else:
-				if print_individual:  print "Particle %4d :  pixel error = %18.4f  unstable"%(i, err)
+				if print_individual:  print("Particle %4d :  pixel error = %18.4f  unstable"%(i, err))
 		else:
-			if print_individual:  print "Particle %4d :  Mirror unstable"%i
+			if print_individual:  print("Particle %4d :  Mirror unstable"%i)
 	#  return average pixel error before pruning as it is more informative
 	return stable_set, mir_stab_rate, prever# sqrt(val/len(stable_set))
 
@@ -1012,7 +1012,7 @@ def consistency_params(stack, dphi, dp, pixel_size, phithr=2.5, ythr=1.5, THR=3)
 		params[i] = [d["phi"], d["theta"], d["psi"], -d["tx"], -d["ty"] ]
 
 	N = len(filaments)
-	print "N: ", N
+	print("N: ", N)
 	totsegs    = 0
 	totpsicons = 0
 	totphicons = 0
@@ -1085,9 +1085,9 @@ def consistency_params(stack, dphi, dp, pixel_size, phithr=2.5, ythr=1.5, THR=3)
 					for j in xrange(ns):  ganger[j] = phierr[j]
 			allphier.append([[mic[0], mic[-1], flip, terr/ns], ganger])
 
-	print "number of segments belonging to filaments from which at least %i segments were windowed: "%THR, totsegs
-	print "number of segments oriented 50/50 wrt psi (and therefore could not be predicted):       ", tot_nopred
-	print "segments whose psi agreed with the majority of segments in its filament:                ", totpsicons
+	print("number of segments belonging to filaments from which at least %i segments were windowed: "%THR, totsegs)
+	print("number of segments oriented 50/50 wrt psi (and therefore could not be predicted):       ", tot_nopred)
+	print("segments whose psi agreed with the majority of segments in its filament:                ", totpsicons)
 	return  allphier
 
 def getnewhelixcoords(hcoordsname, outdir, ratio,nx,ny, newpref="resampled_", boxsize=-1):
@@ -1207,14 +1207,14 @@ def helical_params_err(params1, params2, fil_list):
 				pref.append(params2[i])
 		nima2 = len(fil_psisame)
 	else:
-		print "better agreement afer upside-down rotation"
+		print("better agreement afer upside-down rotation")
 		
 	# agls1psi and agls2psi agree in psi. 
-	print "Number of images which agree on psi between params1 and params2: ",nima2
-	print "Percentage of total number images being compared: ", nima2/float(len(params1))*100
+	print("Number of images which agree on psi between params1 and params2: ",nima2)
+	print("Percentage of total number images being compared: ", nima2/float(len(params1))*100)
 	
 	angdif = angle_diff(phi1, phi2)
-	print "angdif: ", angdif
+	print("angdif: ", angdif)
 	
 	phierr_byfil = []
 

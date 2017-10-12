@@ -49,7 +49,7 @@ def main():
 	(options, args) = parser.parse_args()
 	
 	if len(args) < 1:
-		print usage
+		print(usage)
 		parser.error("You must specify at least one input DDD movie stack.")
 		sys.exit(1)
 	
@@ -63,7 +63,7 @@ def main():
 	
 	for fname in args:
 		
-		if options.verbose and len(args) > 1: print("Processing {}".format(fname))
+		if options.verbose and len(args) > 1: print(("Processing {}".format(fname)))
 		
 		if options.gain or options.dark or options.gaink2:
 			if options.verbose: print("Correcting frames")
@@ -297,7 +297,7 @@ class MovieAligner:
 			print("Frame\tMaximum Shift Magnitude")
 			bds = np.array(bounds).reshape((self.hdr['nimg'],2,2)).astype(int)
 			for i,bd in enumerate(bds):
-				print("{}\t{}".format(i+1,round(np.sqrt(bd[0,1]**2+bd[1,1]**2),0)))
+				print(("{}\t{}".format(i+1,round(np.sqrt(bd[0,1]**2+bd[1,1]**2),0))))
 			print("")
 		
 		init_state = np.random.randint(-1,1,size=(self.hdr['nimg'],2)).flatten()
@@ -372,7 +372,7 @@ class MovieAligner:
 			a=Averagers.get("mean",{"sigma":sigd,"ignore0":1})
 			for i in xrange(0,nd):
 				if options.verbose:
-					print "Summing dark: {}/{}	\r".format(i+1,nd),
+					print("Summing dark: {}/{}	\r".format(i+1,nd), end=' ')
 					sys.stdout.flush()
 				t=EMData(options.dark,i)
 				t.process_inplace("threshold.clampminmax",{"minval":0,"maxval":t["mean"]+t["sigma"]*3.5,"tozero":1})
@@ -400,7 +400,7 @@ class MovieAligner:
 			a=Averagers.get("mean",{"sigma":sigg,"ignore0":1})
 			for i in xrange(0,nd):
 				if options.verbose:
-					print "Summing gain: {}/{}	\r".format(i+1,nd),
+					print("Summing gain: {}/{}	\r".format(i+1,nd), end=' ')
 					sys.stdout.flush()
 				t=EMData(options.gain,i)
 				t.process_inplace("threshold.clampminmax",{"minval":0,"maxval":t["mean"]+t["sigma"]*3.5,"tozero":1})
@@ -441,7 +441,7 @@ class MovieAligner:
 		if not outfile: outfile = options.path[:-4] + "_corrected.hdf"
 		for i in xrange(nd):
 			if options.verbose:
-				print "Correcting frame: {}/{}	\r".format(i+1,nd),
+				print("Correcting frame: {}/{}	\r".format(i+1,nd), end=' ')
 				sys.stdout.flush()
 			if options.path[-4:].lower() in (".mrc"):
 				r = Region(0,0,i,nx,ny,1)
@@ -494,7 +494,7 @@ class CallBack(object):
 		w = str(max(self.aligner.energies[1:]))
 		c = str(self.aligner.energies[-1])
 		if self.aligner.verbose: 
-			print("fEvals: {} CPS: {} Energy: {} Accepted: {}".format(i,n,fx,accepted))
+			print(("fEvals: {} CPS: {} Energy: {} Accepted: {}".format(i,n,fx,accepted)))
 		self.aligner.write_cps(fname="_pws_coherent_callback.hdf",n=self.counter)
 		self.counter += 1
 

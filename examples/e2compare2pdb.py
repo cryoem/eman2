@@ -54,8 +54,8 @@ def main():
 
 	############### convert
 
-	print("Converting {} to {}".format(pdb,mrc))
-	print("Filtering to {} angstroms.".format(res))
+	print(("Converting {} to {}".format(pdb,mrc)))
+	print(("Filtering to {} angstroms.".format(res)))
 	cmd = "e2pdb2mrc.py {} {} --res={} --box={} --apix={}".format(pdb,mrc,res,box,apix)
 	run(cmd)
 
@@ -70,25 +70,25 @@ def main():
 
 	############### align 
 
-	print("Aligning {} to {}".format(mrc,struct))
+	print(("Aligning {} to {}".format(mrc,struct)))
 	cmd = "e2proc3d.py {} {} --align=rotate_translate_3d_tree --align=refine_3d --alignref={} --sym {}".format(mrc,ali,struct,sym)
 	if "d" in "sym": cmd += " --alignctod"
 	run(cmd)
 
 	############### compare 
 
-	print("Computing FSC between {} and {}".format(ali,struct))
+	print(("Computing FSC between {} and {}".format(ali,struct)))
 	cmd = "e2proc3d.py {} {} --calcfsc {}".format(ali,fsc,struct)
 	run(cmd)
-	print("FSC saved as: {}".format(fsc))
+	print(("FSC saved as: {}".format(fsc)))
 
 
 def run(command):
-	print "{}: {}".format(time.ctime(time.time()),command)
+	print("{}: {}".format(time.ctime(time.time()),command))
 	append_html("<p>{}: {}</p>".format(time.ctime(time.time()),command),True)
 	ret=launch_childprocess(command)
 	if ret !=0 :
-		print "Error running: ",command
+		print("Error running: ",command)
 		sys.exit(1)
 	return
 

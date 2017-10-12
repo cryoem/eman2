@@ -25,7 +25,7 @@ Examples: e2starfiletolstfile.py <input star file> <output lst file>
 
 """
 
-print "Running e2refinetorelion3d.py"
+print("Running e2refinetorelion3d.py")
 # Required Program Options and Parameters (GUI and Command Line)
 parser = EMArgumentParser(usage, version=EMANVERSION)
 parser.add_pos_argument(name="input_star", type=str, help="The name of the input star file", default="")
@@ -59,4 +59,4 @@ for i in range(len(starf[starf.keys()[0]])):
 # normalize the length of the lines in the LST file
 lstfile.normalize() 
 
-print "e2starfiletolstfile.py complete"
+print("e2starfiletolstfile.py complete")

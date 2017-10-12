@@ -91,7 +91,7 @@ def filter1d(pts, fun):
 			else:
 				for k in range(d):
 					npt[i,k]=npt[i,k]+pts[i+nj,k]*fun[j];
-	print npt				
+	print(npt)				
 	return npt
 
 		
@@ -168,7 +168,7 @@ def main():
 		shtend=topi[maxstart]+maxnl
 
 		sht=np.array(range(shtstart,shtend))
-		print shtstart,shtend,np.average(score[sht]),np.average(score[nonsht])+np.std(score[nonsht])*options.cutoff
+		print(shtstart,shtend,np.average(score[sht]),np.average(score[nonsht])+np.std(score[nonsht])*options.cutoff)
 		
 		if maxnl<options.minlen:
 			break
@@ -221,7 +221,7 @@ def main():
 		
 		
 	
-	print sheets
+	print(sheets)
 	write_pdb(options.output,pts,score,atomnumber,sheets,header)
 			
 	E2end(logid)

@@ -163,7 +163,7 @@ def resample( prjfile, outdir, bufprefix, nbufvol, nvol, seedbase,\
 	del refa
 	vct = array([0.0]*(3*nprj),'float32')
 	if myid == 0:
-		print  " will read ",myid
+		print(" will read ",myid)
 		tr = EMUtil.get_all_attributes(prjfile,'xform.projection')
 		tetprj = [0.0]*nprj
 	        for i in xrange(nprj):
@@ -210,10 +210,10 @@ def resample( prjfile, outdir, bufprefix, nbufvol, nvol, seedbase,\
 	keep = int(am*dp +0.5)
 	mufur = keep*nrefa/(1.0 - mufur*keep/float(nrefa))
 	if myid == 0:
-		print  " Number of projections ",nprj,".  Number of reference directions ",nrefa,",  multiplicative factor for the variance ",mufur
-		print  " Minimum number of assignments ",am,"  Number of projections used per stratum ", keep," Number of projections in resampled structure ",int(am*dp +0.5)*nrefa
+		print(" Number of projections ",nprj,".  Number of reference directions ",nrefa,",  multiplicative factor for the variance ",mufur)
+		print(" Minimum number of assignments ",am,"  Number of projections used per stratum ", keep," Number of projections in resampled structure ",int(am*dp +0.5)*nrefa)
 		if am <2 or am == keep:
-			print "incorrect settings"
+			print("incorrect settings")
 			exit()  #                                         FIX
 
 	if(seedbase < 1):
@@ -290,7 +290,7 @@ def main():
 	(options, args) = parser.parse_args( arglist[1:] )
 
 	if( len(args) !=1 and len(args) != 3):
-		print "usage: " + usage
+		print("usage: " + usage)
 		return None
 
 	prjfile = args[0]

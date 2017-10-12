@@ -78,7 +78,7 @@ e2classextract.py --orientcls refine_03/cls_result_04 --orientedparticles sets/a
 	if options.orientedparticles!=None : val+=1
 
 	if val!=1:
-		print "Please specify one of --refinemulti, --classlist=<listfile> or --orientedparticles=<classmx_xx.hdf file>"
+		print("Please specify one of --refinemulti, --classlist=<listfile> or --orientedparticles=<classmx_xx.hdf file>")
 		sys.exit(1)
 
 
@@ -88,7 +88,7 @@ e2classextract.py --orientcls refine_03/cls_result_04 --orientedparticles sets/a
 	if options.orientedparticles!=None:
 		# each of these classmx variables becomes a 2 element list with even and odd particles respectively
 		if options.orientcls==None : 
-			print "--orientedparticles also requires --orientcls"
+			print("--orientedparticles also requires --orientcls")
 			sys.exit(1)
 			
 		try:
@@ -112,7 +112,7 @@ e2classextract.py --orientcls refine_03/cls_result_04 --orientedparticles sets/a
 				cmxmirror.append(EMData(pathmx,5))
 		except:
 			traceback.print_exc()
-			print "====\nError reading classification matrix. Must be full classification matrix with alignments"
+			print("====\nError reading classification matrix. Must be full classification matrix with alignments")
 			sys.exit(1)
 
 		# path to the even/odd particles used for the refinement
@@ -128,7 +128,7 @@ e2classextract.py --orientcls refine_03/cls_result_04 --orientedparticles sets/a
 
 		# now we loop over the classes
 		for i in rng:
-			if options.verbose>1 : print "--- Class %d"%i
+			if options.verbose>1 : print("--- Class %d"%i)
 
 			for eo in range(len(classmx)):
 				outname="classptcl_{:04d}.hdf".format(i)
@@ -136,11 +136,11 @@ e2classextract.py --orientcls refine_03/cls_result_04 --orientedparticles sets/a
 				
 				for j in xrange(nptcl[eo]):
 					if classmx[eo][0,j]!=i : continue		# only proceed if the particle is in this class
-					if options.verbose: print "{}\t{}\t{}".format(i,("even","odd")[eo],j)
+					if options.verbose: print("{}\t{}\t{}".format(i,("even","odd")[eo],j))
 
 					try: ptcl=EMData(cptcl[eo],j)
 					except:
-						print "Error reading: ",cptcl[eo],j
+						print("Error reading: ",cptcl[eo],j)
 						sys.exit(1)
 
 					# Find the transform for this particle (2d) and apply it
@@ -156,7 +156,7 @@ e2classextract.py --orientcls refine_03/cls_result_04 --orientedparticles sets/a
 		ncls=EMUtil.get_image_count(args[0])
 		if ncls<1 : raise Exception
 	except:
-		print "Error, no class-averages found"
+		print("Error, no class-averages found")
 		traceback.print_exc()
 		sys.exit(1)
 
@@ -175,7 +175,7 @@ e2classextract.py --orientcls refine_03/cls_result_04 --orientedparticles sets/a
 		else : inset=options.input_set
 
 		if inset.lower()[:4]=="bdb:" :
-			print "Sorry, this program only works with EMAN2.1+, and cannot deal with BDB style sets"
+			print("Sorry, this program only works with EMAN2.1+, and cannot deal with BDB style sets")
 			sys.exit(1)
 
 		# This seems a bit odd, as after this point, inset could be either a string or an LSXFile object, but it is useful later
@@ -185,7 +185,7 @@ e2classextract.py --orientcls refine_03/cls_result_04 --orientedparticles sets/a
 		for c in xrange(ncls):
 			try : h=EMData(args[0],c,True)
 			except:
-				if options.verbose>0 : print "Bad class-average: ",c
+				if options.verbose>0 : print("Bad class-average: ",c)
 				continue
 
 			# this is a list of all of the particle indices from the input set (inset).
@@ -198,13 +198,13 @@ e2classextract.py --orientcls refine_03/cls_result_04 --orientedparticles sets/a
 				except: pass
 
 			if len(ptcl)==0 :
-				if options.verbose>0 : print "No particles in class-average: ",c
+				if options.verbose>0 : print("No particles in class-average: ",c)
 				continue
 
 			# this one is fatal, since we should only have gotten here with good averages
 			try : mdl=h["model_id"]
 			except:
-				print "No model_id in class average {}. Was this classes file created with e2refinemulti.py ?".format(c)
+				print("No model_id in class average {}. Was this classes file created with e2refinemulti.py ?".format(c))
 				sys.exit(1)
 
 			if not outlst.has_key(mdl) :
@@ -233,7 +233,7 @@ e2classextract.py --orientcls refine_03/cls_result_04 --orientedparticles sets/a
 					nextf,extf,com=outlst[k].read(i)
 					ptcls.append((extf,nextf))
 				ptcls.sort()
-				if options.verbose>1: print "Sorting {} ({})".format(k,len(ptcls))
+				if options.verbose>1: print("Sorting {} ({})".format(k,len(ptcls)))
 
 				# erase and reopen LSX file
 				pth=outlst[k].path
@@ -249,15 +249,15 @@ e2classextract.py --orientcls refine_03/cls_result_04 --orientedparticles sets/a
 					j+=1
 
 		if options.verbose>0 :
-			print "Output files:"
-			for k in sorted(outlst.keys()) : print "model_id = {} : {} ({})".format(k,outlst[k].path,outlst[k].n)
+			print("Output files:")
+			for k in sorted(outlst.keys()) : print("model_id = {} : {} ({})".format(k,outlst[k].path,outlst[k].n))
 
 	elif options.classlist:
 		# Read the file containing class-average numbers
 		try:
 			clsnums=[int(i) for i in re.split("[\s,;]*",file(options.classlist,"r").read()) if len(i)>0 and i[0]!="#"]
 		except:
-			print "Error: Could not read and parse classlist file. Must be a comma/whitespace separated list of integers."
+			print("Error: Could not read and parse classlist file. Must be a comma/whitespace separated list of integers.")
 			sys.exit(1)
 
 		# find the existing set/stack containing the particle data used to make the averages
@@ -269,7 +269,7 @@ e2classextract.py --orientcls refine_03/cls_result_04 --orientedparticles sets/a
 			except : continue
 
 		if inset.lower()[:4]=="bdb:" :
-			print "Sorry, this program only works with EMAN2.1+, and cannot deal with BDB style sets"
+			print("Sorry, this program only works with EMAN2.1+, and cannot deal with BDB style sets")
 			sys.exit(1)
 
 		# This seems a bit odd, as after this point, inset could be either a string or an LSXFile object, but it is useful later
@@ -285,7 +285,7 @@ e2classextract.py --orientcls refine_03/cls_result_04 --orientedparticles sets/a
 		for c in clsnums:
 			try : h=EMData(args[0],c,True)
 			except:
-				if options.verbose>0 : print "Bad class-average: ",c
+				if options.verbose>0 : print("Bad class-average: ",c)
 				continue
 
 			# this is a list of all of the particle indices from the input set (inset).
@@ -298,7 +298,7 @@ e2classextract.py --orientcls refine_03/cls_result_04 --orientedparticles sets/a
 				except: pass
 
 			if len(ptcl)==0 :
-				if options.verbose>0 : print "No particles in class-average: ",c
+				if options.verbose>0 : print("No particles in class-average: ",c)
 				continue
 
 			#### This is where we actually generate the new sets
@@ -321,7 +321,7 @@ e2classextract.py --orientcls refine_03/cls_result_04 --orientedparticles sets/a
 
 
 	else :
-		print "Sorry, this mode is not yet complete. Please email sludtke@bcm.edu"
+		print("Sorry, this mode is not yet complete. Please email sludtke@bcm.edu")
 		sys.exit(1)
 
 	E2end(logid)

@@ -730,7 +730,7 @@ class EMPDBModel(EM3DModel):
 			f = open(self.fName)
 			f.close()
 		except IOError:	
-			print "Sorry, the file name \"" + str(self.fName) + "\" does not exist"
+			print("Sorry, the file name \"" + str(self.fName) + "\" does not exist")
 			sys.exit()
 		
 		self.a = PDBReader()
@@ -871,7 +871,7 @@ class EMPDBModel(EM3DModel):
 
 		try: glCallList(self.dl)
 		except: 
-			print "call list failed",self.dl
+			print("call list failed",self.dl)
 			glDeleteLists(self.dl,1)
 			self.dl = None
 	def init_basic_shapes(self):
@@ -1008,7 +1008,7 @@ class EMPDBInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.browse, QtCore.SIGNAL("clicked(bool)"), self.on_browse)
 	
 	def on_text_change(self,text):
-		print "Use the Browse button to update the pdb file"
+		print("Use the Browse button to update the pdb file")
 
 	def on_browse(self):
 		import os

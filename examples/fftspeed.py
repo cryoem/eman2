@@ -78,7 +78,7 @@ for dim in xrange(2,4):
 		rslt="%d\t%1.3f\t%d"%(size,10000*(t1-t0)/reps,dim)
 		out.write(rslt+"\n")
 		out.flush()
-		print rslt,"\t",reps
+		print(rslt,"\t",reps)
 
 	times.reverse()
 	times2=[times[0]]
@@ -87,8 +87,8 @@ for dim in xrange(2,4):
 	
 	times2.reverse()
 
-	for t in times2: print t[1],
-	print "\n"
+	for t in times2: print(t[1], end=' ')
+	print("\n")
 
 	out.write(str(times2)+"\n")
 

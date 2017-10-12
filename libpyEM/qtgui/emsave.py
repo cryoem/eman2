@@ -441,7 +441,7 @@ class EMStackSaveDialog(EMFileSaver):
 				try:
 					d = self.__item_list[i].get_data() # this will be case from the selector
 				except:
-					print "unknown situation" # contact David Woolford 
+					print("unknown situation") # contact David Woolford 
 					# this might be redundant now
 					#d = self.__item_list.get_item_from_emsave(i) # this will be the case from emimagemx
 					#if d == None: continue # this will be the case if the image is shown as deleted in the emimagemx interface

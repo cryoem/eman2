@@ -79,8 +79,8 @@ def main():
 	parser.add_option("--gamma",    type="float",        default= -1.0,               help="gamma")
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 3 or len(args) > 4:
-		print "usage: " + usage
-		print "Please run '" + progname + " -h' for detailed options"
+		print("usage: " + usage)
+		print("Please run '" + progname + " -h' for detailed options")
 	else:
 		if len(args) == 3 :
 			mask = None
@@ -113,7 +113,7 @@ def main():
 			global_def.BATCH = False
 		elif(options.shc):
 			if not options.MPI:
-				print "Only MPI version is implemented!!!"
+				print("Only MPI version is implemented!!!")
 			else:
 				global_def.BATCH = True
 				if(options.nsoft == 1):

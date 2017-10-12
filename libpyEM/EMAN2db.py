@@ -88,8 +88,8 @@ def DB_cleanup(signum=None,stack=None):
 		if len(DBDict.alldicts)>0 :
 			try: nopen=len([i for i in DBDict.alldicts if i.bdb!=None])
 			except: nopen=0
-			print "Program interrupted (%d), closing %d databases, please wait (%d)"%(signum,nopen,os.getpid())
-			for i in DBDict.alldicts.keys(): print i.name
+			print("Program interrupted (%d), closing %d databases, please wait (%d)"%(signum,nopen,os.getpid()))
+			for i in DBDict.alldicts.keys(): print(i.name)
 		if stack!=None : traceback.print_stack(stack)
 	for d in DBDict.alldicts.keys():
 		d.forceclose()
@@ -99,7 +99,7 @@ def DB_cleanup(signum=None,stack=None):
 		try : d.lock.release()	# This will (intentionally) allow the threads to fail, since the environment is now closed
 		except : pass
 	if signum in (2,15) :
-		print "Shutdown complete, exiting"
+		print("Shutdown complete, exiting")
 		sys.stderr.flush()
 		sys.stdout.flush()
 		#parallel_process_exit()
@@ -634,7 +634,7 @@ class EMTaskQueue:
 			task=self.active[tid]
 			if isinstance(task,int) : continue
 			if task==None :
-				print "Missing task ",tid
+				print("Missing task ",tid)
 				continue
 			if task.starttime==None:
 				task.starttime=time.time()
@@ -697,8 +697,8 @@ class EMTaskQueue:
 			try:
 				did=self.todid(k[1])
 			except:
-				print "Invalid data item %s: %s"%(str(j),str(k))
-				print str(task)
+				print("Invalid data item %s: %s"%(str(j),str(k)))
+				print(str(task))
 				os._exit(1)
 			try: k[1]=did
 			except:
@@ -707,7 +707,7 @@ class EMTaskQueue:
 
 		self.active[tid]=task		# store the task in the queue
 		try: EMTaskQueue.lock.release()
-		except: print "Warning: lock re-released in add_task. Not serious, but shouldn't happen."
+		except: print("Warning: lock re-released in add_task. Not serious, but shouldn't happen.")
 		return tid
 
 	def task_progress(self,tid,percent):
@@ -721,7 +721,7 @@ class EMTaskQueue:
 				task=self.complete[tid]
 				return False
 			except:
-				print "ERROR: Progress, No such task : ",tid,percent
+				print("ERROR: Progress, No such task : ",tid,percent)
 				return False
 		task.progtime=(time.time(),percent)
 		self.active[tid]=task
@@ -748,7 +748,7 @@ class EMTaskQueue:
 		try:
 			task=self.active[tid]
 			if task==None:
-				print "*** Warning, task %d was already complete"%tid
+				print("*** Warning, task %d was already complete"%tid)
 				EMTaskQueue.lock.release()
 				return
 		except:
@@ -779,7 +779,7 @@ class EMTaskQueue:
 				return
 
 		if task==None :
-			print "Warning: tried to requeue task ",taskid," but couldn't find it"
+			print("Warning: tried to requeue task ",taskid," but couldn't find it")
 			return
 
 		if task.failcount==MAXTASKFAIL :
@@ -794,7 +794,7 @@ class EMTaskQueue:
 		task.exechost=None
 
 		if cpl :
-			print "Completed task %d requeued (%d failures)"%(taskid,task.failcount)
+			print("Completed task %d requeued (%d failures)"%(taskid,task.failcount))
 			del self.complete[taskid]
 
 		self.active[taskid]=task
@@ -923,7 +923,7 @@ class EMAN2DB:
 			self.dbenv.set_lk_detect(db.DB_LOCK_DEFAULT)	# internal deadlock detection
 			self.dbenv.set_lk_max_locks(20000)		# if we don't do this, we can easily run out when dealing with large numbers of files
 			try: self.dbenv.set_lg_regionmax(5000000)
-			except: print "Could not alter log region size. Please run e2bdb.py -c"
+			except: print("Could not alter log region size. Please run e2bdb.py -c")
 			self.dbenv.set_lk_max_objects(20000)
 
 			try:
@@ -933,7 +933,7 @@ class EMAN2DB:
 					self.dbenv.open("/tmp/eman2db-%s"%os.getenv("USERNAME","anyone"),envopenflags)
 			except:
 				try:
-					print """Cache open failed. Retyring one time."""
+					print("""Cache open failed. Retyring one time.""")
 					# retry once
 					time.sleep(2)
 					if(sys.platform != 'win32'):
@@ -941,16 +941,16 @@ class EMAN2DB:
 					else:
 						self.dbenv.open("/tmp/eman2db-%s"%os.getenv("USERNAME","anyone"),envopenflags)
 				except:
-					print "/tmp/eman2db-%s"%os.getenv("USER","anyone")
+					print("/tmp/eman2db-%s"%os.getenv("USER","anyone"))
 					traceback.print_exc()
-					print """
+					print("""
 ========
 ERROR OPENING DATABASE CACHE      (This most often occurs if you upgrade EMAN2 without running 'e2bdb.py -c' first. It could
 also indicate that a program crashed in a bad way causing potential database corruption. You can try running 'e2bdb.py -c', and
 see if that fixes the problem, otherwise you may need to 'rm -rf /tmp/eman2db-*' (or on windows remove the corresponding folder).
 While there is a small possibility that this will prevent recovery of image files that were corrupted by the crash, it may be the
 only practical option.)
-"""
+""")
 					os._exit(1)
 
 		self.dicts={}
@@ -1059,7 +1059,7 @@ class DBDict:
 	def updateold(self,lfile,ro=False):
 		"""Called to update old 4.2 databases with funny problem"""
 		self.bdb=db.DB(self.dbenv)
-		print "Old format DB detected (%s). Do not be alarmed, this must be done 1 time for each database file. Please wait."%lfile
+		print("Old format DB detected (%s). Do not be alarmed, this must be done 1 time for each database file. Please wait."%lfile)
 		try: os.unlink(self.path+"/"+lfile.replace(".bdb",".old"))
 		except: pass
 		os.rename(self.path+"/"+lfile,self.path+"/"+lfile.replace(".bdb",".old"))
@@ -1067,19 +1067,19 @@ class DBDict:
 			tmpdb=db.DB()
 			tmpdb.open(self.path+"/"+lfile.replace(".bdb",".old"),self.name)
 		except:
-			print "Error updating %s. Please contact sludtke@bcm.edu."%lfile
+			print("Error updating %s. Please contact sludtke@bcm.edu."%lfile)
 			os._exit(1)
 		try:
 			self.bdb.open(self.path+"/"+lfile,self.name,db.DB_BTREE,db.DB_CREATE|db.DB_THREAD)
 		except:
-			print "Error 2 updating %s. Please contact sludtke@bcm.edu."%lfile
+			print("Error 2 updating %s. Please contact sludtke@bcm.edu."%lfile)
 			os._exit(1)
 
 		for k in tmpdb.keys():
 			self.bdb[k]=tmpdb[k]
 
 		tmpdb.close()
-		print "Conversion complete. (-old file retained as an emergency backup, safe to remove)"
+		print("Conversion complete. (-old file retained as an emergency backup, safe to remove)")
 
 	def realopen(self,ro=False):
 		"""This actually opens the database (unless already open), if ro is set and the database is not already
@@ -1090,16 +1090,16 @@ class DBDict:
 		global DBDEBUG
 		if DBDEBUG:
 			while not self.lock.acquire(False) :
-				print"DB %s locked. Waiting"%self.name
+				print("DB %s locked. Waiting"%self.name)
 				time.sleep(1)
 		else : self.lock.acquire()
 		self.lasttime=time.time()
 		if self.bdb!=None :
 			if ro==True or self.isro==False :
-				if DBDEBUG : print "already open",self.name
+				if DBDEBUG : print("already open",self.name)
 				self.lock.release()
 				return  		# return if the database is already open and in a compatible read-only mode
-			if DBDEBUG : print "reopening R/W ",self.name
+			if DBDEBUG : print("reopening R/W ",self.name)
 			self.lock.release()
 			self.close()	# we need to reopen read-write
 			self.lock.acquire()
@@ -1149,7 +1149,7 @@ class DBDict:
 					self.bdb=None
 					self.lock.release()
 					traceback.print_exc()
-					print "Unable to open read/write %s (%s/%s)"%(self.name,self.path,lfile)
+					print("Unable to open read/write %s (%s/%s)"%(self.name,self.path,lfile))
 					return
 			#except:
 				## try one more time... this shouldn't be necessary...
@@ -1167,7 +1167,7 @@ class DBDict:
 		global MAXOPEN
 		if DBDict.nopen>MAXOPEN : self.close_one()
 
-		if DBDEBUG : print "Opened ",self.name
+		if DBDEBUG : print("Opened ",self.name)
 
 #		print "%d open"%DBDict.nopen
 #		print "opened ",self.name,ro
@@ -1190,13 +1190,13 @@ class DBDict:
 #			print "%d dbs open, autoclose disabled"%len(l)
 #			for j,i in enumerate(l): print j,i[2].name,i[0]-time.time(),i[1]
 		if len(l)>MAXOPEN :
-			if DBDEBUG: print "DB autoclosing %d/%d "%(len(l)-MAXOPEN,len(l))
+			if DBDEBUG: print("DB autoclosing %d/%d "%(len(l)-MAXOPEN,len(l)))
 			for i in range(len(l)-MAXOPEN):
-				if DBDEBUG: print "CLOSE:",l[i][2].name
+				if DBDEBUG: print("CLOSE:",l[i][2].name)
 				if (l[i][2]!=self) :
 					l[i][2].close()
 				else :
-					print "Warning: attempt to autoclose the DB we just opened, please report this"
+					print("Warning: attempt to autoclose the DB we just opened, please report this")
 
 		DBDict.closelock.release()
 
@@ -1219,14 +1219,14 @@ class DBDict:
 		self.bdb=None
 		DBDict.nopen-=1
 		self.lock.release()
-		if DBDEBUG : print "Closed ",self.name
+		if DBDEBUG : print("Closed ",self.name)
 
 
 	def close(self):
 		global DBDEBUG
 		n=0
 		while not self.lock.acquire(False) and n<3:
-			print "Sleep on close ",self.name
+			print("Sleep on close ",self.name)
 			time.sleep(.2)
 			n+=1
 		if n>=4 : return	# failed too many times, just return and let things fail where they may...
@@ -1239,7 +1239,7 @@ class DBDict:
 		self.bdb=None
 		DBDict.nopen-=1
 		self.lock.release()
-		if DBDEBUG : print "Closed ",self.name
+		if DBDEBUG : print("Closed ",self.name)
 
 	def sync(self):
 		if self.bdb!=None : self.bdb.sync()
@@ -1308,7 +1308,7 @@ of these occasional errors"""
 				break
 			except:
 				if n in (0,9) : traceback.print_exc()
-				print "********** Warning: problem writing ",key," to ",self.name,". Retrying (%d/10)"%n
+				print("********** Warning: problem writing ",key," to ",self.name,". Retrying (%d/10)"%n)
 				time.sleep(5)
 				n+=1
 
@@ -1415,7 +1415,7 @@ of these occasional errors"""
 		try: return [loads(x) for x in self.bdb.keys() if x[0]=='\x80']
 		except:
 			traceback.print_exc()
-			print "This is a serious error, which should never occur during normal usage.\n Please report it (with the error text above) to sludtke@bcm.edu. Please also read the database warning page in the Wiki."
+			print("This is a serious error, which should never occur during normal usage.\n Please report it (with the error text above) to sludtke@bcm.edu. Please also read the database warning page in the Wiki.")
 			sys.exit(1)
 
 	def values(self):
@@ -1495,7 +1495,7 @@ of these occasional errors"""
 					try: ret.read_data(pkey+fkey,n*4*rnx*rny*rnz,region,rnx,rny,rnz)	# note that this uses n, NOT 'key'. Images cannot be located in the binary file based on their numerical key
 					except :
 						import socket
-						print "Data read error (%s) on %s (%d)"%(socket.gethostname(),pkey+fkey,key*4*rnx*rny*rnz)
+						print("Data read error (%s) on %s (%d)"%(socket.gethostname(),pkey+fkey,key*4*rnx*rny*rnz))
 						traceback.print_exc()
 						sys.stderr.flush()
 						sys.stdout.flush()

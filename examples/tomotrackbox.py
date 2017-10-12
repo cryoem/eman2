@@ -254,7 +254,7 @@ class TrackerControl(QtGui.QWidget):
 	def set_image(self,fsp):
 		"""Takes an ali file to process"""
 		self.imageparm=EMData(fsp,0,True).get_attr_dict()
-		print "%d slices at %d x %d"%(self.imageparm["nz"],self.imageparm["nx"],self.imageparm["ny"])
+		print("%d slices at %d x %d"%(self.imageparm["nz"],self.imageparm["nx"],self.imageparm["ny"]))
 
 		self.imagefile=fsp
 
@@ -402,7 +402,7 @@ class TrackerControl(QtGui.QWidget):
 	
 	def reconstruct_wedgefill(self,stack,angstep,mode=2):
 		"""Fills the missing wedge with the average of the slices"""
-		print "Making 3D tomofill"
+		print("Making 3D tomofill")
 		
 		taxis=float(self.btiltaxisval.text())
 		boxsize=stack[0]["nx"]
@@ -425,14 +425,14 @@ class TrackerControl(QtGui.QWidget):
 		else :
 			samp=angstep
 		
-		print "Subsampling = %1.2f"%samp
+		print("Subsampling = %1.2f"%samp)
 
 		# Now the reconstruction
 		recon=Reconstructors.get("fourier", {"sym":"c1","size":(pad,pad,pad),"mode":reconmodes[mode],"verbose":True})
 		recon.setup()
 		
 		for ri in range(5):
-			print "Iteration ",ri
+			print("Iteration ",ri)
 			for a in [i*samp for i in range(-int(90.0/samp),int(90.0/samp)+1)]:
 				for ii in range(len(stack)-1):
 					if stack[ii]["alt"]<=a and stack[ii+1]["alt"]>a : break
@@ -465,7 +465,7 @@ class TrackerControl(QtGui.QWidget):
 					recon.insert_slice(p,xf)
 		
 		ret=recon.finish()
-		print "Done"
+		print("Done")
 		ret=ret.get_clip(Region((pad-boxsize)/2,(pad-boxsize)/2,(pad-boxsize)/2,boxsize,boxsize,boxsize))
 		ret.process_inplace("normalize.edgemean")
 #		ret=ret.get_clip(Region((pad-boxsize)/2,(pad-boxsize)/2,(pad-boxsize)/2,boxsize,boxsize,boxsize))
@@ -474,7 +474,7 @@ class TrackerControl(QtGui.QWidget):
 	
 	def reconstruct_ca(self,stack,angstep,mode=2):
 		"""Cylindrically averaged tomographic model, generally used for filling empty spaces. Returned volume is padded."""
-		print "Making CA"
+		print("Making CA")
 		
 		taxis=float(self.btiltaxisval.text())
 		boxsize=stack[0]["nx"]
@@ -510,7 +510,7 @@ class TrackerControl(QtGui.QWidget):
 	
 	def reconstruct(self,stack,angstep,mode=0,initmodel=None):
 		""" Tomographic reconstruction of the current stack """
-		if initmodel!=None : print "Using initial model"
+		if initmodel!=None : print("Using initial model")
 		
 		taxis=float(self.btiltaxisval.text())
 		
@@ -529,8 +529,8 @@ class TrackerControl(QtGui.QWidget):
 			p2=p.get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))
 			p2=recon.preprocess_slice(p2,p["xform.projection"])
 			recon.insert_slice(p2,p["xform.projection"],1.0)
-			print " %d    \r"%i
-		print ""
+			print(" %d    \r"%i)
+		print("")
 
 		# after building the model once we can assess how well everything agrees
 		for p in stack:
@@ -538,8 +538,8 @@ class TrackerControl(QtGui.QWidget):
 			p2=recon.preprocess_slice(p2,p["xform.projection"])
 			recon.determine_slice_agreement(p2,p["xform.projection"],1.0,True)
 			scores.append((p2["reconstruct_absqual"],p2["reconstruct_norm"]))
-			print " %d\t%1.3f    \r"%(i,scores[-1][0])
-		print ""
+			print(" %d\t%1.3f    \r"%(i,scores[-1][0]))
+		print("")
 
 		# clear out the first reconstruction (probably no longer necessary)
 #		ret=recon.finish(True)
@@ -553,10 +553,10 @@ class TrackerControl(QtGui.QWidget):
 		# First pass to assess qualities and normalizations
 		for i,p in enumerate(stack):
 			if scores[i][0]<thr : 
-				print "%d. %1.3f *"%(i,scores[i][0])
+				print("%d. %1.3f *"%(i,scores[i][0]))
 				continue
 			
-			print "%d. %1.2f \t%1.3f\t%1.3f"%(i,p["xform.projection"].get_rotation("eman")["alt"],scores[i][0],scores[i][1])
+			print("%d. %1.2f \t%1.3f\t%1.3f"%(i,p["xform.projection"].get_rotation("eman")["alt"],scores[i][0],scores[i][1]))
 			p2=p.get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))
 			p2=recon.preprocess_slice(p2,p["xform.projection"])
 			p2.mult(scores[i][1])
@@ -591,7 +591,7 @@ class TrackerControl(QtGui.QWidget):
 			if n==ntilt : break
 			sz/=2
 			if sz<32: return
-			print "You may wish to center on a feature closer to the center of the image next time -> ",sz
+			print("You may wish to center on a feature closer to the center of the image next time -> ",sz)
 		
 		sz2=good_size(sz+128)
 		av2=av.get_clip(Region((sz-sz2)/2,(sz-sz2)/2,sz2,sz2))
@@ -635,7 +635,7 @@ class TrackerControl(QtGui.QWidget):
 			
 			aln=ref.align("translational",trg,{"intonly":1,"maxshift":self.maxshift*4/5})
 			trans=aln["xform.align2d"].get_trans()
-			print i,trans[0],trans[1]
+			print(i,trans[0],trans[1])
 			if i>len(stack)-4 : display([ref,trg,aln])
 #			if i==self.curtilt+3 : display((ref,trg,aln,ref.calc_ccf(trg)))
 
@@ -679,7 +679,7 @@ class TrackerControl(QtGui.QWidget):
 #			if i==self.curtilt+3 : display((ref,trg,aln,ref.calc_ccf(trg)))
 
 			self.tiltshapes[i]=EMShape(["rectpoint",.7,.2,0,refshape[4]+trans[0],refshape[5]+trans[1],refshape[6]+trans[0],refshape[7]+trans[1],1])
-			print i,trans[0],trans[1]
+			print(i,trans[0],trans[1])
 			
 		lref=None
 		for i in range(self.curtilt-1,-1,-1):
@@ -704,7 +704,7 @@ class TrackerControl(QtGui.QWidget):
 			if i==self.curtilt+3 : display((ref,trg,aln,ref.calc_ccf(trg)))
 
 			self.tiltshapes[i]=EMShape(["rectpoint",.7,.2,0,refshape[4]+trans[0],refshape[5]+trans[1],refshape[6]+trans[0],refshape[7]+trans[1],1])
-			print i,trans[0],trans[1]
+			print(i,trans[0],trans[1])
 		
 		self.update_stack()
 

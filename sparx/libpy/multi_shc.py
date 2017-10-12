@@ -654,7 +654,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 					noreseeding = True
 
 					if(all_L2s[0]<GA[number_of_runs-1][0]):
-						if firstcheck:  print  "  SHOULD NOT BE HERE"
+						if firstcheck:  print("  SHOULD NOT BE HERE")
 						noimprovement += 1
 						if(noimprovement == 2):  terminate = True
 						GA = GA[:number_of_runs]
@@ -1724,8 +1724,8 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, sym, finfo=None
 			while(i<peaks_count):
 				ll = findall(taken[i], taken)
 				if(len(ll) > 1):
-					print  "  PROBLEM, found the same orientation more than once !  "
-					for k in xrange(len(params)):  print  params[k]
+					print("  PROBLEM, found the same orientation more than once !  ")
+					for k in xrange(len(params)):  print(params[k])
 					ll.sort(reverse=True)
 					for k in xrange(0,len(ll)-1):
 						del params[k]
@@ -1790,7 +1790,7 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, sym, finfo=None
 				for k in xrange(1,len(taken)):
 					dod = []
 					if( taken[k] == taken[k-1] ):
-						print  "  PROBLEM 2, entries duplicated  ",taken
+						print("  PROBLEM 2, entries duplicated  ",taken)
 						dod.append(k)
 				if(len(dod) >0):
 					for k in dod:  del taken[k]
@@ -1798,10 +1798,10 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, sym, finfo=None
 			try:
 				for i in xrange(peaks_count):  del  tempref[taken[i]]
 			except:
-				print  "  failed deleting tempref "
-				print i,peaks_count,nsoft
-				print  " taken ",taken
-				print  len(tempref), len(refrings)
+				print("  failed deleting tempref ")
+				print(i,peaks_count,nsoft)
+				print(" taken ",taken)
+				print(len(tempref), len(refrings))
 				from sys import exit
 				exit()
 
@@ -2202,7 +2202,7 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 							#print  im.get_attr("xform.projection" + str(i))
 							t = get_params_proj(im,"xform.projection" + str(i))
 						except:
-							print " NO XFORM  ",myid, i,im.get_attr('ID')
+							print(" NO XFORM  ",myid, i,im.get_attr('ID'))
 							from sys import exit
 							exit()
 

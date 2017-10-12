@@ -58,7 +58,7 @@ def main():
 			#options.bxsz=64
 	
 	
-	print "Reading and pre-processing tilt stack..."
+	print("Reading and pre-processing tilt stack...")
 	imgs=EMData.read_images(inputname)
 	for m in imgs:
 	
@@ -85,7 +85,7 @@ def main():
 		tlts-=tlts[options.zeroid]
 	
 	tlts=tlts[:num]
-	print "tilt angle from {:.1f} to {:.1f}, step {:.1f}".format(np.min(tlts), np.max(tlts), options.tltstep)
+	print("tilt angle from {:.1f} to {:.1f}, step {:.1f}".format(np.min(tlts), np.max(tlts), options.tltstep))
 	options.tlt_init=tlts.copy()
 
 	nx=imgs[0]["nx"]/2
@@ -103,14 +103,14 @@ def main():
 			except:
 				continue
 		else:
-			print "Too many tomorecon folders in the project, or something odd happened....Exit."
+			print("Too many tomorecon folders in the project, or something odd happened....Exit.")
 			exit()
 			
-		print "Temporary files will be written in {}".format(options.tmppath)
+		print("Temporary files will be written in {}".format(options.tmppath))
 	
 	if options.loadparam:
 		#### load parameters from saved file
-		print "Loading parameters from {}...".format(options.loadparam)
+		print("Loading parameters from {}...".format(options.loadparam))
 		allparams=np.loadtxt(options.loadparam)
 		ttparams, pks, miscglobal=get_params(allparams, options)
 	
@@ -128,7 +128,7 @@ def main():
 			tltax=calc_tltax_rot(imgs_trans, options)
 			options.tltax=tltax
 		
-		print "Estimated tilt axis rotation: {:.1f}.".format(tltax)
+		print("Estimated tilt axis rotation: {:.1f}.".format(tltax))
 	
 		#### Now initialize parameters to refine
 	
@@ -180,7 +180,7 @@ def main():
 		
 		#### check loss at the begining of the iteration and calculate average loss for each sample and tilt
 		ptrg, err_tilt= check_loss(imgs, allparams, options)
-		print "Starting iteration {:d}, Mean loss: {:.1f}".format(iti, np.mean(err_tilt))
+		print("Starting iteration {:d}, Mean loss: {:.1f}".format(iti, np.mean(err_tilt)))
 		
 		
 		#### write projections of the sample tomograms
@@ -193,7 +193,7 @@ def main():
 		#### At the first iteration, compute the global shift once
 		if iti==1 and options.loadparam:
 			allparams, resx, loss = refine_global(imgs, allparams, options, ptrg)
-			print "Estimated tilt axis translation: {:.1f}, {:.1f}, loss {:.1f}".format(float(resx[0]), float(resx[1]), float(loss))
+			print("Estimated tilt axis translation: {:.1f}, {:.1f}, loss {:.1f}".format(float(resx[0]), float(resx[1]), float(loss)))
 		
 		#### refine rotation and translation of the tilts
 		for rep in range(2):
@@ -228,7 +228,7 @@ def main():
 		allparams=np.hstack([ttparams.flatten(), pks.flatten(), miscglobal])
 		ptrg, err_tilt= check_loss(imgs, allparams, options)
 		
-		print "Iteration {:d} finished. Mean loss: {:.1f}, {:d} bad tilts".format(iti, np.mean(err_tilt), np.sum(err_tilt0>options.minloss*2))
+		print("Iteration {:d} finished. Mean loss: {:.1f}, {:d} bad tilts".format(iti, np.mean(err_tilt), np.sum(err_tilt0>options.minloss*2)))
 		if options.writetmp: 
 			np.savetxt(options.tmppath+"params_{:02d}.txt".format(iti), allparams)
 		
@@ -278,7 +278,7 @@ def get_params(allparams, options):
 	_pks=allparams[num*5:num*5+npk*3].reshape((npk, 3)).copy()
 	_miscglobal=allparams[num*5+npk*3:].copy()
 	if len(_miscglobal)>2:
-		print "something wrong..", _miscglobal
+		print("something wrong..", _miscglobal)
 	return _ttparams, _pks, _miscglobal
 
 #### get 2D position on a tilt given 3D location
@@ -397,7 +397,7 @@ def calc_loss( inp, imgs, allparams, options, mode="none", iid=[], ptrans=[], ma
 
 #### coarse translational alignment
 def calc_global_trans(imgs, options, excludes=[]):
-	print "Doing coarse translational alignment..."
+	print("Doing coarse translational alignment...")
 	
 	num=len(imgs)
 	sz=options.minsz
@@ -437,7 +437,7 @@ def calc_global_trans(imgs, options, excludes=[]):
 			if options.writetmp:
 				e1.write_image(tmpoutname,nid)
 			ts=e1a["xform.align2d"].get_trans()
-			if options.verbose: print "\t{:d}: {:.1f}, {:.1f}".format(nid, ts[0], ts[1])
+			if options.verbose: print("\t{:d}: {:.1f}, {:.1f}".format(nid, ts[0], ts[1]))
 			pretrans[nid, 0]=ts[0]
 			pretrans[nid, 1]=ts[1]
 	return imgout,pretrans
@@ -447,7 +447,7 @@ def calc_global_trans(imgs, options, excludes=[]):
 
 #### Find tilt axis by common line
 def calc_tltax_rot(imgs, options):
-	print "Calculateing tilt axis rotation..."
+	print("Calculateing tilt axis rotation...")
 	
 	num=len(imgs)
 	sz=options.minsz
@@ -465,7 +465,7 @@ def calc_tltax_rot(imgs, options):
 	
 	sm=np.mean(imgnp, axis=0)
 	sm=np.abs(sm[:,sz/2:])
-	print np.max(sm), np.min(sm)
+	print(np.max(sm), np.min(sm))
 	rr=np.arange(min(sm.shape[1], sz*.25), dtype=float)
 	angs=np.arange(0., 180, .5)
 	vs=[]
@@ -484,7 +484,7 @@ def calc_tltax_rot(imgs, options):
 
 #### reconstruct tomogram...
 def make_tomogram(imgs, allparams, options, outname=None, premask=True, padr=1.2, clipz=False, errtlt=[]):
-	print "Making 3D volume..."
+	print("Making 3D volume...")
 	ttparams, pks, miscglobal=get_params(allparams, options)
 	num=len(imgs)
 	
@@ -502,8 +502,8 @@ def make_tomogram(imgs, allparams, options, outname=None, premask=True, padr=1.2
 	pad=good_size(outxy*padr)
 	zthick=good_size(pad/2)
 	if options.verbose:
-		print "\t Image size: {:d} x {:d}".format(nx, ny)
-		print "\tPadded volume to: {:d} x {:d} x {:d}".format(pad, pad, zthick)
+		print("\t Image size: {:d} x {:d}".format(nx, ny))
+		print("\tPadded volume to: {:d} x {:d} x {:d}".format(pad, pad, zthick))
 	recon=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,zthick], "mode":options.reconmode})
 	recon.setup()
 	jobs=[]
@@ -534,7 +534,7 @@ def make_tomogram(imgs, allparams, options, outname=None, premask=True, padr=1.2
 		# thread hasn't finished.
 		if thrtolaunch<len(thrds) :
 			while (threading.active_count()==options.threads ) : time.sleep(.1)
-			if options.verbose : print "Inserting slice {}/{}".format(thrtolaunch,len(thrds))
+			if options.verbose : print("Inserting slice {}/{}".format(thrtolaunch,len(thrds)))
 			thrds[thrtolaunch].start()
 			thrtolaunch+=1
 		else: time.sleep(1)
@@ -551,7 +551,7 @@ def make_tomogram(imgs, allparams, options, outname=None, premask=True, padr=1.2
 		zthk=int((zp[-1]-zp[0])*.6)
 		zthk=np.min([zthk, zthick-zcent, zcent])-1
 		if options.verbose:
-			print "Z axis center at {:d}, thickness {:d} pixels".format(zcent, zthk*2)
+			print("Z axis center at {:d}, thickness {:d} pixels".format(zcent, zthk*2))
 		threed.clip_inplace(Region((pad-outxy)/2, (pad-outxy)/2, zcent-zthk, outxy, outxy, zthk*2))
 		
 		for nid in range(num):
@@ -566,7 +566,7 @@ def make_tomogram(imgs, allparams, options, outname=None, premask=True, padr=1.2
 	
 	if outname:
 		threed.write_image(outname)
-		if options.verbose: print "Map written to {}.".format(outname)
+		if options.verbose: print("Map written to {}.".format(outname))
 		
 	info["tiltseries"]=tltinfo
 	info.close()	
@@ -594,7 +594,7 @@ def reconstruct(nid, img, recon, pad, xform, premask, exclude, options):
 
 #### locate landmarks in 3D map
 def locate_peaks(threed, options, returnall=False):
-	print "Looking for landmarks in tomogram..."
+	print("Looking for landmarks in tomogram...")
 	
 	mapsmall=threed.process("math.fft.resample",{"n":2})
 	mapsmall.mult(-1)
@@ -613,7 +613,7 @@ def locate_peaks(threed, options, returnall=False):
 	zthick=threed["nz"]
 	pad=threed["nx"]
 	
-	print "preprocess done.."
+	print("preprocess done..")
 	pkmap=mappks.numpy()
 	mn=-np.sort(-pkmap.flatten())[500]
 	newpks=np.where(pkmap>mn)
@@ -665,7 +665,7 @@ def locate_peaks(threed, options, returnall=False):
 	ppk=[nnpk[np.random.randint(len(nnpk))]] #### just introduce some randomness into the system..
 	for i in range(options.npk-1):
 		ii=np.argmax(np.min(scidist.cdist(ps, ppk), axis=1))
-		if options.verbose:print  ps[ii], ss[ii]
+		if options.verbose:print(ps[ii], ss[ii])
 		ppk.append(ps[ii])
 	ppk=np.array(ppk) 
 	return ppk
@@ -719,7 +719,7 @@ def make_samples(imgs, allparams, options, refinepos=False, outname=None, errtlt
 			
 			threed.translate(-com[0], -com[1], -com[2])
 			for i in range(3): pks[pid, i]+=com[i]
-			if options.verbose:print pid, com
+			if options.verbose:print(pid, com)
 			
 		
 		pj=threed.project("standard", Transform({"type":"eman", "alt":90}))
@@ -753,7 +753,7 @@ def make_samples(imgs, allparams, options, refinepos=False, outname=None, errtlt
 			pj1.mult(-1)
 			pj1.translate(-xysft[0],-xysft[1], 0)
 			
-			if options.verbose:print pid, zsft,xysft
+			if options.verbose:print(pid, zsft,xysft)
 		
 			
 		if outname:pj1.write_image(outname, pid*2)
@@ -775,7 +775,7 @@ def check_loss(imgs, allparams, options):
 
 #### calculate global pre-tilt translation
 def refine_global(imgs, allparams, options, pkrg=[]):
-	print "Refining tilt axis translation.."
+	print("Refining tilt axis translation..")
 	
 	if len(pkrg)==0:
 		pkrg=range(options.npk)
@@ -789,7 +789,7 @@ def refine_global(imgs, allparams, options, pkrg=[]):
 
 #### refine translation of each tilt
 def refine_trans(imgs, allparams, options, pkrg=[], err_tilt=[]):
-	print "Refining translation for each tilt..."
+	print("Refining translation for each tilt...")
 	
 	if len(err_tilt)==0:
 		err_tilt=np.zeros(len(imgs))+np.inf
@@ -812,7 +812,7 @@ def refine_trans(imgs, allparams, options, pkrg=[], err_tilt=[]):
 	for r in ret:
 		nid, pm, loss = r
 		if options.verbose: 
-			print "\t tlt: {:d}, trans: {:.1f}, {:.1f}, loss: {:.2f}".format(nid, pm[0],pm[1], loss)
+			print("\t tlt: {:d}, trans: {:.1f}, {:.1f}, loss: {:.2f}".format(nid, pm[0],pm[1], loss))
 		ttparams[nid,:2]=pm.copy()
 	allparams=np.hstack([ttparams.flatten(), pks.flatten(), miscglobal])
 	pl.close()
@@ -831,7 +831,7 @@ def do_refine_trans(args):
 
 #### refine angle of each tilt (including off axis and in plane tilt)
 def refine_angle(imgs, allparams, options, pkrg=[], err_tilt=[]):
-	print "Refining rotation for each tilt..."
+	print("Refining rotation for each tilt...")
 	
 	if len(err_tilt)==0:
 		err_tilt=np.zeros(len(imgs))+np.inf
@@ -855,7 +855,7 @@ def refine_angle(imgs, allparams, options, pkrg=[], err_tilt=[]):
 		nid, pm, loss = r
 		if options.verbose: 
 			
-			print "\t tlt: {:d}, angle: {:.1f}, {:.1f}, {:.1f}, loss: {:.2f}".format(nid, float(pm[0]), float(pm[1]), float(pm[2]), float(loss))
+			print("\t tlt: {:d}, angle: {:.1f}, {:.1f}, {:.1f}, loss: {:.2f}".format(nid, float(pm[0]), float(pm[1]), float(pm[2]), float(loss)))
 		ttparams[nid,2:]=pm.copy()
 		
 	allparams=np.hstack([ttparams.flatten(), pks.flatten(), miscglobal])
@@ -876,7 +876,7 @@ def do_refine_angle(args):
 
 #### remove gold fiducials
 def remove_gold(imgs, allparams, threed, options):
-	print "Starting removing gold..."
+	print("Starting removing gold...")
 	goldsize=12.
 	
 	ttparams, pks, miscglobal=get_params(allparams, options)    
@@ -886,7 +886,7 @@ def remove_gold(imgs, allparams, threed, options):
 	pks, scrs=locate_peaks(threed, options, returnall=True)
 	thr=np.mean(scrs)+np.std(scrs)
 	pks=pks[scrs>thr]
-	print "{:d} gold fiducials found.".format(len(pks))
+	print("{:d} gold fiducials found.".format(len(pks)))
 	
 	imgs_rmgd=[m.copy() for m in imgs]
 	b2=options.bxsz/4
@@ -903,7 +903,7 @@ def remove_gold(imgs, allparams, threed, options):
 		# thread hasn't finished.
 		if thrtolaunch<len(thrds) :
 			while (threading.active_count()==options.threads ) : time.sleep(.1)
-			if options.verbose : print "Starting on tilt {}/{}".format(thrtolaunch,len(thrds))
+			if options.verbose : print("Starting on tilt {}/{}".format(thrtolaunch,len(thrds)))
 			thrds[thrtolaunch].start()
 			thrtolaunch+=1
 		else: time.sleep(1)
@@ -914,7 +914,7 @@ def remove_gold(imgs, allparams, threed, options):
 			m.write_image(options.tmppath+"tmpimg_rmgd.hdf", i)
 		
 	#threed=make_tomogram(imgs_rmgd, allparams, options)
-	if options.verbose: print "Gold removal finished."
+	if options.verbose: print("Gold removal finished.")
 	return imgs_rmgd
 
 #### subprocess for gold removal
@@ -936,7 +936,7 @@ def do_rm_gold(args):
 	return
 
 def run(cmd):
-	print cmd
+	print(cmd)
 	launch_childprocess(cmd)
 	
 	

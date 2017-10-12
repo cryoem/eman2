@@ -424,7 +424,7 @@ def run_summovie(
                     current_time_h*3600 -
                     current_time_m*60
                     )
-            print(
+            print((
                 'Progress: {0:.2f}%;  Time: {1:.0f}h:{2:.0f}m:{3:.0f}s/{4:.0f}h:{5:.0f}m:{6:.0f}s;  Micrograph done:{7}'.format(
                     percent,
                     current_time_h,
@@ -435,7 +435,7 @@ def run_summovie(
                     estimated_time_s,
                     file_name
                     )
-                )
+                ))
 
 
     # Write micrograph list

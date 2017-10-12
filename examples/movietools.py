@@ -107,7 +107,7 @@ def stackaliloccor(ref,stack):
 		pk=ccf.calc_max_location()
 		dx=-(pk[0]-nx/2)
 		dy=-(pk[1]-ny/2)
-		print i,dx,dy
+		print(i,dx,dy)
 
 		try: avg.add(im.process("xform.translate.int",{"trans":(dx,dy)}))
 		except: avg=im.process("xform.translate.int",{"trans":(dx,dy)})
@@ -123,7 +123,7 @@ def stackali(ref,stack,psref,maxdx):
 	# This is the overall alignment of the average without considering psref
 	# just to help us search in the correct neighborhood
 	dx0,dy0=[int(i) for i in ali["xform.align2d"].get_trans_2d()]
-	print "overall: ",dx0,dy0
+	print("overall: ",dx0,dy0)
 
 	# to avoid a lot of gymnastics, and because the edge of the reference is "flat"
 	# we shift the ref off-center for the alignments, then compensate at the end
@@ -135,15 +135,15 @@ def stackali(ref,stack,psref,maxdx):
 		dx,dy=localali(xfref,im,psref,maxdx)
 		try: avg1.add(im.process("xform.translate.int",{"trans":(dx,dy)}))
 		except: avg1=im.process("xform.translate.int",{"trans":(dx,dy)})
-		print i,dx,dy
+		print(i,dx,dy)
 
-	print "------"
+	print("------")
 
 	# now align to the initial average under psref (in case the reference is bad?)
 	for i,im in enumerate(stack):
 		dx,dy=localali(avg1,im,psref,maxdx)
 		try: avg2.add(im.process("xform.translate.int",{"trans":(dx+dx0,dy+dy0)}))
 		except: avg2=im.process("xform.translate.int",{"trans":(dx+dx0,dy+dy0)})
-		print i,dx,dy
+		print(i,dx,dy)
 	
 	return avg1,avg2

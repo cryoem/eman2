@@ -253,7 +253,7 @@ def main():
 	if options.dd:
 		nargs = len(args)
 		if nargs != 3:
-			print "must provide name of input and two output files!"
+			print("must provide name of input and two output files!")
 			return
 		stack = args[0]
 		new_stack = args[1]
@@ -283,17 +283,17 @@ def main():
 
 		order = tsp(lccc)
 		if(len(order) != lend):
-			print  " problem with data length"
+			print(" problem with data length")
 			from sys import exit
 			exit()
-		print  "Total sum of cccs :",TotalDistance(order, lccc)
-		print "ordering :",order
+		print("Total sum of cccs :",TotalDistance(order, lccc))
+		print("ordering :",order)
 		for i in xrange(lend):  get_im(stack, order[i]).write_image( new_stack, i )
 
 	elif options.align:
 		nargs = len(args)
 		if nargs != 3:
-			print "must provide name of input and two output files!"
+			print("must provide name of input and two output files!")
 			return
 
 		from utilities import get_params2D, model_circle
@@ -389,18 +389,18 @@ def main():
 			T = lccc[mono(indc[-1], lsnake[-1][0])][1]
 			if( indc[-1] > lsnake[-1][0]):  T = T.inverse()
 			lsnake.append([indc[-1], T, lccc[mono(indc[-1], lsnake[-1][0])][0]])
-			print  " initial image and lsum  ",m,lsum
+			print(" initial image and lsum  ",m,lsum)
 			#print lsnake
 			if(lsum > maxsum):
 				maxsum = lsum
 				init = m
 				snake = [lsnake[i] for i in xrange(lend)]
-		print  "  Initial image selected : ",init,maxsum,"    ",TotalDistance([snake[m][0] for m in xrange(lend)], lccc)
+		print("  Initial image selected : ",init,maxsum,"    ",TotalDistance([snake[m][0] for m in xrange(lend)], lccc))
 		#for q in snake: print q
 
 		from copy import deepcopy
 		trans=deepcopy([snake[i][1] for i in xrange(len(snake))])
-		print  [snake[i][0] for i in xrange(len(snake))]
+		print([snake[i][0] for i in xrange(len(snake))])
 		"""
 		for m in xrange(lend):
 			prms = trans[m].get_params("2D")
@@ -419,15 +419,15 @@ def main():
 
 		order = tsp(lccc)
 		if(len(order) != lend):
-			print  " problem with data length"
+			print(" problem with data length")
 			from sys import exit
 			exit()
-		print  TotalDistance(order, lccc)
-		print order
+		print(TotalDistance(order, lccc))
+		print(order)
 		ibeg = order.index(init)
 		order = [order[(i+ibeg)%lend] for i in xrange(lend)]
-		print  TotalDistance(order, lccc)
-		print order
+		print(TotalDistance(order, lccc))
+		print(order)
 
 
 		snake = [tdummy]
@@ -564,7 +564,7 @@ def main():
 	else:
 		nargs = len(args)
 		if nargs != 2:
-			print "must provide name of input and output file!"
+			print("must provide name of input and output file!")
 			return
 		
 		from utilities import get_params2D, model_circle
@@ -578,7 +578,7 @@ def main():
 		
 		d = EMData.read_images(stack)
 		try:
-			print "Using 2D alignment parameters from header."
+			print("Using 2D alignment parameters from header.")
 			ttt = d[0].get_attr('xform.params2d')
 			for i in xrange(len(d)):
 				alpha, sx, sy, mirror, scale = get_params2D(d[i])
@@ -595,7 +595,7 @@ def main():
 		init = options.initial
 		
 		if init > -1 :
-			print "      initial image: %d" % init
+			print("      initial image: %d" % init)
 			temp = d[init].copy()
 			temp.write_image(new_stack, 0)
 			del d[init]
@@ -614,11 +614,11 @@ def main():
 				del d[qi]
 				temp.write_image(new_stack, k)
 				k += 1
-			print  lsum
+			print(lsum)
 			d[0].write_image(new_stack, k)
 		else:			
 			if options.circular :
-				print "Using options.circular, no alignment"
+				print("Using options.circular, no alignment")
 				#  figure the "best circular" starting image
 				maxsum = -1.023
 				for m in xrange(len(d)):
@@ -663,12 +663,12 @@ def main():
 						maxsum = lsum
 						init = m
 						snake = [lsnake[i] for i in xrange(len(d))]
-				print  "  Initial image selected : ",init,maxsum
-				print lsnake
+				print("  Initial image selected : ",init,maxsum)
+				print(lsnake)
 				for m in xrange(len(d)):  d[snake[m]].write_image(new_stack, m)
 			else:
 				#  figure the "best" starting image
-				print "Straight chain, no alignment"
+				print("Straight chain, no alignment")
 				maxsum = -1.023
 				for m in xrange(len(d)):
 					indc = range(len(d) )
@@ -695,8 +695,8 @@ def main():
 						maxsum = lsum
 						init = m
 						snake = [lsnake[i] for i in xrange(len(d))]
-				print  "  Initial image selected : ",init,maxsum
-				print lsnake
+				print("  Initial image selected : ",init,maxsum)
+				print(lsnake)
 				for m in xrange(len(d)):  d[snake[m]].write_image(new_stack, m)
 		
 

@@ -77,23 +77,23 @@ def ssematch2(ssehfsp,sspredfsp,options):
 	sseh=readsseh(ssehfsp)
 	sspred=readsspred(sspredfsp,options.minhelix)
 	
-	for i in sseh[0]: print "%d "%int(i/1.5),
-	print
+	for i in sseh[0]: print("%d "%int(i/1.5), end=' ')
+	print()
 	
 	skel=readconnect(options.skelpath,len(sseh[0]))
 	try:
 		skel=readconnect(options.skelpath,len(sseh[0]))
 		sseh=(sseh[0],skel)
-		print "Skeletonization results read, %d paths"%len(skel)
+		print("Skeletonization results read, %d paths"%len(skel))
 #		pprint(skel)
 	except: pass
 	
 # 	if options.lengthmatchmatrix:
 # 		lengthmatrix(sspred,sseh,options.lengthmatchmatrix)
 	
-	print "%d predicted helices    %d helices in density"%(len(sspred),len(sseh[0]))
-	for i in sspred: print "%4d "%int(i[0]/1.5),
-	print ""
+	print("%d predicted helices    %d helices in density"%(len(sspred),len(sseh[0])))
+	for i in sspred: print("%4d "%int(i[0]/1.5), end=' ')
+	print("")
 
 	
 
@@ -103,30 +103,30 @@ def ssematch(ssehfsp,sspredfsp,options):
 	sseh=readsseh(ssehfsp)
 	sspred=readsspred(sspredfsp,options.minhelix)
 	
-	for i in sseh[0]: print "%d "%int(i/1.5),
-	print
+	for i in sseh[0]: print("%d "%int(i/1.5), end=' ')
+	print()
 	
 	skel=readconnect(options.skelpath,len(sseh[0]))
 	try:
 		skel=readconnect(options.skelpath,len(sseh[0]))
 		sseh=(sseh[0],skel)
-		print "Skeletonization results read, %d paths"%len(skel)
+		print("Skeletonization results read, %d paths"%len(skel))
 #		pprint(skel)
 	except: pass
 	
 #	if options.lengthmatchmatrix:
 #		lengthmatrix(sspred,sseh,options.lengthmatchmatrix)
 	
-	print "%d predicted helices    %d helices in density"%(len(sspred),len(sseh[0]))
-	for i in sspred: print "%4d "%int(i[0]/1.5),
-	print ""
+	print("%d predicted helices    %d helices in density"%(len(sspred),len(sseh[0])))
+	for i in sspred: print("%4d "%int(i[0]/1.5), end=' ')
+	print("")
 	
 	# get lists of possible pairwise assignments and quality assessment for each
 	pairqual={}
 	for i in range(len(sspred)-1):
 		pairqual[i]=findpairs(i,sspred,sseh,options.maxpairerr)
-		print "%4d "%len(pairqual[i]),
-	print
+		print("%4d "%len(pairqual[i]), end=' ')
+	print()
 		
 	# This is where we generate all of the final answers
 	all=[]
@@ -137,9 +137,9 @@ def ssematch(ssehfsp,sspredfsp,options):
 		out.write("%f\t%s\t%s\n"%(i[0],str(i[1]),str(i[2])))
 	out.close()
 	
-	print all[0]
+	print(all[0])
 	
-	print len(all)
+	print(len(all))
 
 def recursesoln(pairqual,tot,soln,ends,all,maxbad):
 #	print soln,"\n",ends
@@ -147,7 +147,7 @@ def recursesoln(pairqual,tot,soln,ends,all,maxbad):
 	if len(soln)==0 :
 		for j,i in enumerate(pairqual[0]): 
 			recursesoln(pairqual,[i[0]],[i[1],i[2]],[i[3],i[4]],all,maxbad)
-			print "%d/%d"%(j,len(pairqual[0]))
+			print("%d/%d"%(j,len(pairqual[0])))
 		return
 		
 	# if we get here, we're done
@@ -155,11 +155,11 @@ def recursesoln(pairqual,tot,soln,ends,all,maxbad):
 		v=sum(tot)/len(tot)
 		try:
 			if v<min(all)[0]: 
-				print v,soln,"\n",ends
-				for i in tot: print "%1.2f "%i,
-				print
+				print(v,soln,"\n",ends)
+				for i in tot: print("%1.2f "%i, end=' ')
+				print()
 
-		except: print v,soln,"\n",ends
+		except: print(v,soln,"\n",ends)
 		all.append((v,soln,ends))
 		return
 	

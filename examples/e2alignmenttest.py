@@ -71,12 +71,12 @@ def main():
 	options.model = args[0]
 	
 	if not os.path.exists(options.model):
-		print "Error: 3D image %s does not exist" %options.model
+		print("Error: 3D image %s does not exist" %options.model)
 		exit(1)
 		
 	model = EMData(options.model)
 	if model.get_ndim() != 3:
-		print "error, the model you specified is not 3D"
+		print("error, the model you specified is not 3D")
 		
 	# use c1 symmetry to generate random orienations on the unit sphere
 	c1_sym = Symmetries.get("c1")
@@ -102,11 +102,11 @@ def main():
 		refine_dy_error = 0.0
 		
 	# print stuff
-	print "EULER_AZ, ALT,PHI",'\t',
-	print "AZ",'\t',"ALIGN.AZ","\t","DX","\t","ALIGN.DX","\t","DY","\t","ALIGN.DY",
+	print("EULER_AZ, ALT,PHI",'\t', end=' ')
+	print("AZ",'\t',"ALIGN.AZ","\t","DX","\t","ALIGN.DX","\t","DY","\t","ALIGN.DY", end=' ')
 	if not options.stopflip:
-		print "\t","FLIP","\t","ALIGN.FLIP"
-	else : print ''
+		print("\t","FLIP","\t","ALIGN.FLIP")
+	else : print('')
 	
 	# finally the main loop
 	for i in range(0,options.num):
@@ -145,9 +145,9 @@ def main():
 		
 		# print stuff
 		d = t3d.get_rotation("eman")
-		print "%.2f,%.2f,%.2f\t"%(d["az"],d["alt"],d["phi"]),
-		print "%.2f"%az,'\t',"%.2f"%az_solution, '\t\t', "%.2f"%dx,'\t',"%.2f"%(dx_solution),'\t\t', "%.2f"%dy,'\t',"%.2f"%(dy_solution),
-		if not options.stopflip: print '\t\t',flipped, '\t',int(alit.get_mirror()),
+		print("%.2f,%.2f,%.2f\t"%(d["az"],d["alt"],d["phi"]), end=' ')
+		print("%.2f"%az,'\t',"%.2f"%az_solution, '\t\t', "%.2f"%dx,'\t',"%.2f"%(dx_solution),'\t\t', "%.2f"%dy,'\t',"%.2f"%(dy_solution), end=' ')
+		if not options.stopflip: print('\t\t',flipped, '\t',int(alit.get_mirror()), end=' ')
 		
 	
 		# calculate the errors
@@ -157,11 +157,11 @@ def main():
 		az_error += fabs(error)
 		dx_error += fabs(dx-dx_solution)
 		dy_error += fabs(dy-dy_solution)
-		print ''
+		print('')
 		if not options.stopflip:
 			if flipped != int(alit.get_mirror()):
 				flip_errors += 1
-				print "FLIP detection FAILED"
+				print("FLIP detection FAILED")
 				continue
 		
 		# refine align if it has been specified
@@ -201,19 +201,19 @@ def main():
 			refine_dx_error += fabs(dx-dx_solution)
 			refine_dy_error += fabs(dy-dy_solution)
 			
-			print "REFINE           ",'\t',
-			print "%.2f"%az,'\t',"%.2f"%az_solution, '\t\t', "%.2f"%dx,'\t',"%.2f"%(dx_solution),'\t\t', "%.2f"%dy,'\t',"%.2f"%(dy_solution)
+			print("REFINE           ",'\t', end=' ')
+			print("%.2f"%az,'\t',"%.2f"%az_solution, '\t\t', "%.2f"%dx,'\t',"%.2f"%(dx_solution),'\t\t', "%.2f"%dy,'\t',"%.2f"%(dy_solution))
 		
 		
-	print "#### REPORT ####"
-	print "Mean az error",az_error/options.num
-	print "Mean dx error",dx_error/options.num
-	print "Mean dy error",dy_error/options.num
+	print("#### REPORT ####")
+	print("Mean az error",az_error/options.num)
+	print("Mean dx error",dx_error/options.num)
+	print("Mean dy error",dy_error/options.num)
 	if not options.stopflip:
-		print "Flip detection accuracy", float(options.num-flip_errors)/options.num*100,"%"
+		print("Flip detection accuracy", float(options.num-flip_errors)/options.num*100,"%")
 	if options.ralign:
-		print "Mean refine az error",refine_az_error/float(options.num-flip_errors)
-		print "Mean refine dx error",refine_dx_error/float(options.num-flip_errors)
-		print "Mean refine dy error",refine_dy_error/float(options.num-flip_errors)
+		print("Mean refine az error",refine_az_error/float(options.num-flip_errors))
+		print("Mean refine dx error",refine_dx_error/float(options.num-flip_errors))
+		print("Mean refine dy error",refine_dy_error/float(options.num-flip_errors))
 if __name__ == "__main__":
     main()

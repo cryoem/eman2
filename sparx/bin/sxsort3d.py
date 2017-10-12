@@ -67,8 +67,8 @@ def main():
 	parser.add_option("--interpolation",                 type   ="string",        default ="4nn",                 help="3-d reconstruction interpolation method, two options trl and 4nn")
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 1  or len(args) > 4:
-    		print "usage: " + usage
-    		print "Please run '" + progname + " -h' for detailed options"
+    		print("usage: " + usage)
+    		print("Please run '" + progname + " -h' for detailed options")
 	else:
 
 		if len(args)>2:
@@ -198,7 +198,7 @@ def main():
 		from utilities import get_shrink_data_huang
 		if(myid == main_node):
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			print(line+"Initialization of 3-D sorting")
+			print((line+"Initialization of 3-D sorting"))
 			a = get_im(orgstack)
 			nnxo = a.get_xsize()
 			if( Tracker["nxinit"] > nnxo ):
@@ -268,7 +268,7 @@ def main():
 		mpi_barrier(MPI_COMM_WORLD)
 		from time import sleep
 		while not os.path.exists(masterdir):
-				print  "Node ",myid,"  waiting..."
+				print("Node ",myid,"  waiting...")
 				sleep(5)
 		mpi_barrier(MPI_COMM_WORLD)
 		if myid == main_node:

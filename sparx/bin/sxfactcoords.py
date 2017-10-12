@@ -23,8 +23,8 @@ def main():
 	(options, args) = parser.parse_args()
 
 	if( len(args) < 4 ):
-		print "usage: " + usage
-		print "Please run '" + progname + " -h' for details"
+		print("usage: " + usage)
+		print("Please run '" + progname + " -h' for details")
 	else:
 		stacks = args[0:-3]
 		avgvol = args[-3]
@@ -32,7 +32,7 @@ def main():
 		output = args[-1]
 		
 		if options.rad < 0:
-			print "Error: mask radius is not given"
+			print("Error: mask radius is not given")
 			sys.exit(-1)
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache

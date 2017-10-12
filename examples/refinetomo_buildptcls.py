@@ -25,7 +25,7 @@ def main():
 	pjfile=options.ptclout
 	try: 
 		os.remove(pjfile)
-		print "Overwriting...."
+		print("Overwriting....")
 	except: pass
 	
 	rotmat=[]
@@ -71,13 +71,13 @@ def main():
 			pj.process_inplace("normalize")
 			pj.write_image(pjfile,-1)
 		
-		print "Processing particle # {}/{}. Number of projections: {}".format(ptid,num,len(pks))
+		print("Processing particle # {}/{}. Number of projections: {}".format(ptid,num,len(pks)))
 
 
 	E2end(logid)
 	
 def run(cmd):
-	print cmd
+	print(cmd)
 	launch_childprocess(cmd)
 	
 def get_fft(img):

@@ -100,10 +100,10 @@ def ERROR(message, where, action = 1, myid = 0):
 	global MPI
 	
 	if myid == 0:
-		if action: print  "\n  *****  ERROR in: %s"%(where)
-		else:      print  "\n  *****  WARNING in: %s"%(where)
-		print "  *****  %s"%message
-		print ""
+		if action: print("\n  *****  ERROR in: %s"%(where))
+		else:      print("\n  *****  WARNING in: %s"%(where))
+		print("  *****  %s"%message)
+		print("")
 	if action == 1 and BATCH:
 		from sys import exit
 		if  MPI:

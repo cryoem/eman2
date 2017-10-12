@@ -65,8 +65,8 @@ def main():
 	
 	(options, args) = parser.parse_args(arglist[1:])
 	if(len(args) < 3 or len(args) > 4):
-    		print "usage: " + usage
-    		print "Please run '" + progname + " -h' for detailed options"
+    		print("usage: " + usage)
+    		print("Please run '" + progname + " -h' for detailed options")
 	else:
 	
 		if(len(args) == 3):
@@ -87,7 +87,7 @@ def main():
 		if options.MPI:
 			local_ali3dm_MPI(args[0], args[1], args[2], mask, options.ou, options.delta,options.ts, options.maxit, options.nassign, options.nrefine, options.CTF, options.snr, options.sym,options.function, options.fourvar, options.npad, options.debug, options.termprec)
 		else:
-			print 'ali3d_em serial version not implemented'
+			print('ali3d_em serial version not implemented')
 
 		global_def.BATCH = False
 

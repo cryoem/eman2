@@ -81,11 +81,11 @@ def main():
 			o["phi"]=0
 			ort.set_rotation(o)
 			ORTs.append(ort)
-		print nx," projections read"
+		print(nx," projections read")
 
 	logid=E2init(sys.argv,options.ppid)
 
-	print "Computing average unit vectors"
+	print("Computing average unit vectors")
 	# compile vector sums for each class
 	for y in range(ny):
 		im=EMData(args[0],0,False,Region(0,y,nx,1))
@@ -106,7 +106,7 @@ def main():
 		except: pass
 		
 	mx.write_image("simvec.hdf",0)
-	print "Output mean quality vector per class in simvec.hdf"
+	print("Output mean quality vector per class in simvec.hdf")
 
 	syms=Symmetries.get(options.sym).get_syms()
 
@@ -116,14 +116,14 @@ def main():
 		if options.inset.lower()[:4]!="bdb:" : dbin=db_open_dict("bdb:sets#%s"%options.inset)
 		else : dbin=db_open_dict(options.inset)
 	
-	print "Particle quality file"
+	print("Particle quality file")
 	# Output particle quality file
 	out=file("simqual.txt","w")
 	t=time.time()
 	outn=0
 	for y in xrange(ny):
 		if time.time()-t>.2 :
-			print " %d\t %d\r"%(y,outn),
+			print(" %d\t %d\r"%(y,outn), end=' ')
 			sys.stdout.flush()
 			t=time.time()
 
@@ -159,7 +159,7 @@ def main():
 			dbout[outn]=im
 			outn+=1
 	
-	print "Output particle quality file simqual.txt"
+	print("Output particle quality file simqual.txt")
 	E2end(logid)
 
 if __name__ == "__main__":  main()

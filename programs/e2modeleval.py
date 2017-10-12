@@ -26,7 +26,7 @@ Evaluates density at C-alpha positions from a PDB model
 	(options, args) = parser.parse_args()
 	if len(args)!=4 : parser.error("Input MRC, Input PDB, apix and threshold required")
 
-	print args
+	print(args)
 	try : inMRC=open(args[0],"r")
 	except : parser.error("Cannot open mrc file")
 	
@@ -50,7 +50,7 @@ Evaluates density at C-alpha positions from a PDB model
 	z=[]
 	resID=[]
 
-	print "reading pdb"
+	print("reading pdb")
 	lines=[]
 	for line in inPDB:
 		if line[:4]=='ATOM':
@@ -61,9 +61,9 @@ Evaluates density at C-alpha positions from a PDB model
 				z.append((float(line[46:54].strip())-inputmrc["origin_z"])/apix)
 				resID.append(line[17:20].strip())
 	#do watershed where seeds are x,y,z
-	print "doing watershed"
+	print("doing watershed")
 	watershed = inputmrc.process("segment.watershed",{"xpoints":x,"ypoints":y,"zpoints":z,"minval":thresh})
-	print "done watershed"
+	print("done watershed")
 	watershed.write_image("watershed.mrc")
 
 	#calculate 2nd moments of density segment

@@ -85,7 +85,7 @@ Sorts a similarity matrix by classified particle to compare patterns.
 		mx2=mx.get_clip(Region(0,int(sm),mx["nx"],int(j)))
 		sm+=j
 		mx2.write_image(args[1],i)
-		print i,sm,j
+		print(i,sm,j)
 
 if __name__ == "__main__":  main()
 

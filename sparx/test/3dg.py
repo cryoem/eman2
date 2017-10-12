@@ -91,9 +91,9 @@ pwi = rops_table(proj)
 pwn = rops_table(filt_gaussl(model_gauss_noise(q*st[1], nx, ny), 0.2))
 fr = []
 ps = rot_avg_table(ssnr)
-print  len(ps),len(pwn)
+print(len(ps),len(pwn))
 ps.extend([0.0])
-print  len(ps),len(pwi)
+print(len(ps),len(pwi))
 for i in xrange(len(ps)-1):
 	fr.append(n*pwi[i]/pwn[i])
 	#print  i,ps[i]

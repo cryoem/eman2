@@ -85,7 +85,7 @@ def compares(vec,empty):
 	#print vec,pdim2
 	#print a["mean"]
 #	a=cmp_target.get_rotated_clip(Transform3D((vec[3]/float(sfac)+tdim2[0]/2,vec[4]/float(sfac)+tdim2[1]/2,vec[5]/float(sfac)+tdim2[2]/2),vec[0],vec[1],vec[2],(0,0,0)),pdim2,1.0)
-	print 100*cmp_probe.cmp("dot",a,{}),vec,a["mean"]
+	print(100*cmp_probe.cmp("dot",a,{}),vec,a["mean"])
 	#cmp_probe.write_image("p.mrc")
 	#a.write_image("a.mrc")
 	#exit()
@@ -129,7 +129,7 @@ both box sizes should be multiples of 8."""
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
-	print "WARNING: This program is currently considered experimental. Contact sludtke@bcm.edu before using it for any serious project"
+	print("WARNING: This program is currently considered experimental. Contact sludtke@bcm.edu before using it for any serious project")
 	
 	(options, args) = parser.parse_args()
 	if len(args)<2 : parser.error("Input and output files required")
@@ -152,7 +152,7 @@ both box sizes should be multiples of 8."""
 	probefilename=args[1]
 	# support pdb format
 	if args[1].endswith(".pdb"):
-		print "e2pdb2mrc.py {s} probe.mrc -R 10 --het --apix={a}>tmp.txt".format(s=args[1],a=apix)
+		print("e2pdb2mrc.py {s} probe.mrc -R 10 --het --apix={a}>tmp.txt".format(s=args[1],a=apix))
 		os.system("e2pdb2mrc.py {s} probe.mrc -R 10 --het --apix={a}>tmp.txt".format(s=args[1],a=apix))
 		tmp=open('tmp.txt')
 		lines=tmp.readlines()
@@ -177,7 +177,7 @@ both box sizes should be multiples of 8."""
 	pdim=(probe.get_xsize(),probe.get_ysize(),probe.get_zsize())
 	
 	if (pdim[0]>tdim[0] or pdim[1]>tdim[1] or pdim[2]>tdim[2]):
-		print "Probe must fit within target"
+		print("Probe must fit within target")
 		exit(1)
 	target.process_inplace("normalize.unitsum")
 	target.mult(10000)
@@ -187,7 +187,7 @@ both box sizes should be multiples of 8."""
 #	sfac=int(floor(min(pdim)/10.0))
 	if options.shrink>0 : sfac=options.shrink
 	else : sfac=int(floor(min(pdim)/12.0))
-	print "Shrink by %d"%sfac
+	print("Shrink by %d"%sfac)
 	target.process_inplace("math.meanshrink",{"n":sfac})
 	probe.process_inplace("math.meanshrink",{"n":sfac})
 	tdim2=(target.get_xsize(),target.get_ysize(),target.get_zsize())
@@ -205,9 +205,9 @@ both box sizes should be multiples of 8."""
 
 #	Log.logger().set_level(Log.LogLevel.DEBUG_LOG)
 	
-	print "Searching for candidate locations in reduced map"
+	print("Searching for candidate locations in reduced map")
 	edge=max(pdim2)/2		# technically this should be max(pdim), but generally there is some padding in the probe model, and this is relatively harmless
-	print "edge ",edge
+	print("edge ",edge)
 	best=[]
 	sum=probeclip.copy_head()
 	sum.to_zero()
@@ -237,11 +237,11 @@ both box sizes should be multiples of 8."""
 	if len(best)<1:
 		cm=target.calc_center_of_mass(0)
 		best.append([0,0,0,0,cm[0]-tdim2[0]/2,cm[1]-tdim2[1]/2,cm[2]-tdim2[2]/2,0])
-	print len(best)," possible candidates"
+	print(len(best)," possible candidates")
 
 	# this is designed to eliminate angular redundancies in peak location
-	print best[0]
-	print best[-1]
+	print(best[0])
+	print(best[-1])
 	if len(best)>10000:
 		best=best[0:10000]
 	#print best
@@ -276,18 +276,18 @@ both box sizes should be multiples of 8."""
 	best2.sort()
 	best2.reverse()
 	best2=best2[0:options.num]
-	print len(best2), " final candidates"
-	print "Qual     \talt\taz\tphi\tdx\tdy\tdz\t"
+	print(len(best2), " final candidates")
+	print("Qual     \talt\taz\tphi\tdx\tdy\tdz\t")
 	for i in best2: 
-		print "%1.5f  \t%1.3f\t%1.3f\t%1.3f\t%1.1f\t%1.1f\t%1.1f"%(-i[0],i[1],i[2],i[3],i[4],i[5],i[6])
+		print("%1.5f  \t%1.3f\t%1.3f\t%1.3f\t%1.1f\t%1.1f\t%1.1f"%(-i[0],i[1],i[2],i[3],i[4],i[5],i[6]))
 	#exit()
 	# try to improve the angles for each position
-	print "\nOptimize each candidate in the reduced map with multiple angle trials"
-	print "Qual     \talt\taz\tphi\tdx\tdy\tdz\t"
+	print("\nOptimize each candidate in the reduced map with multiple angle trials")
+	print("Qual     \talt\taz\tphi\tdx\tdy\tdz\t")
 	cmp_target=target
 	cmp_probe=probe
 	for j in range(len(best2)):
-		print j," --------"
+		print(j," --------")
 		tries=[[0,0],[0,0],[0,0],[0,0]]
 		testang=((0,0),(180.0,0),(0,180.0),(180.0,180.0))	# modify the 'best' angle a few times to try to find a better minimum
 		for k in range(4):
@@ -298,8 +298,8 @@ both box sizes should be multiples of 8."""
 			m=sm.minimize(monitor=0,epsilon=.01)
 			tries[k][0]=m[1]
 			tries[k][1]=m[0]
-			print "%1.3f  \t%1.2f\t%1.2f\t%1.2f\t%1.1f\t%1.1f\t%1.1f"%(-tries[k][0],tries[k][1][0],tries[k][1][1],tries[k][1][2],
-				tries[k][1][3],tries[k][1][4],tries[k][1][5])
+			print("%1.3f  \t%1.2f\t%1.2f\t%1.2f\t%1.1f\t%1.1f\t%1.1f"%(-tries[k][0],tries[k][1][0],tries[k][1][1],tries[k][1][2],
+				tries[k][1][3],tries[k][1][4],tries[k][1][5]))
 		best2[j][1:7]=min(tries)[1]		# best of the 4 angles we started with
 	
 	# reread the original images
@@ -316,22 +316,22 @@ both box sizes should be multiples of 8."""
 #		c.rotate_translate(*i[1:7])
 #		c.write_image("z.%02d.mrc"%best2.index(i))
 	
-	print "Final optimization of each candidate"
+	print("Final optimization of each candidate")
 	final=[]
 	for j in range(len(best2)):
 		sm=Simplex(compare,best2[j][1:7],[.5,.5,.5,2.,2.,2.])
 		bt=sm.minimize(epsilon=options.epsilon)
 		b=bt[0]
-		print "\n%1.2f\t(%5.2f  %5.2f  %5.2f    %5.1f  %5.1f  %5.1f)"%(-bt[1],b[0],b[1],b[2],b[3],b[4],b[5])
+		print("\n%1.2f\t(%5.2f  %5.2f  %5.2f    %5.1f  %5.1f  %5.1f)"%(-bt[1],b[0],b[1],b[2],b[3],b[4],b[5]))
 		final.append((bt[1],b))
 	
-	print "\n\nFinal Results"
-	print "Qual     \talt\taz\tphi\tdx\tdy\tdz\t"
+	print("\n\nFinal Results")
+	print("Qual     \talt\taz\tphi\tdx\tdy\tdz\t")
 	out=open("foldfitter.out","w")
 	final.sort()
 	for i,j in enumerate(final):
 		b=j[1]
-		print "%d. %1.3f  \t%1.2f\t%1.2f\t%1.2f\t%1.1f\t%1.1f\t%1.1f"%(i,-j[0],b[0],b[1],b[2],b[3],b[4],b[5])
+		print("%d. %1.3f  \t%1.2f\t%1.2f\t%1.2f\t%1.1f\t%1.1f\t%1.1f"%(i,-j[0],b[0],b[1],b[2],b[3],b[4],b[5]))
 		out.write("%d. %1.3f  \t%1.2f\t%1.2f\t%1.2f\t%1.1f\t%1.1f\t%1.1f\n"%(i,-j[0],b[0],b[1],b[2],b[3],b[4],b[5]))
 		
 		t=Transform()
@@ -345,7 +345,7 @@ both box sizes should be multiples of 8."""
 		t=Transform()
 		s.set_rotation({'type':'eman', 'az':b[0], 'alt':b[1], 'phi':b[2]})
 		s.set_trans((b[3],b[4],b[5]))
-		print (pdim[0]-tdim[0])/2,(pdim[1]-tdim[1])/2,(pdim[2]-tdim[2])/2
+		print((pdim[0]-tdim[0])/2,(pdim[1]-tdim[1])/2,(pdim[2]-tdim[2])/2)
 		pc=probe.get_clip(Region((pdim[0]-tdim[0])/2,(pdim[1]-tdim[1])/2,(pdim[2]-tdim[2])/2,tdim[0],tdim[1],tdim[2]))
 		pc.transform(s)
 		shx=shy=shz=0
@@ -382,7 +382,7 @@ both box sizes should be multiples of 8."""
 			pdb_transform(args[1],'final.%02d.pdb'%i,t,cent)
 
 
-	print ncmp," total comparisons"
+	print(ncmp," total comparisons")
 	out.close()
 	
 #	print compare(best2[0][1:7])

@@ -271,8 +271,8 @@ class WorkFlowTask:
 			for arg in additional_args:
 				args.append(arg)
 #			print "command is ",program
-			for i in args: print i,
-			print
+			for i in args: print(i, end=' ')
+			print()
 			
 			#print args
 			#fname = temp_fname_root +"_"+str(n)+temp_fname_end
@@ -281,7 +281,7 @@ class WorkFlowTask:
 			cmdstr = ' '.join(args)
 #			process = subprocess.Popen(args_adjusted,stdout=file,stderr=subprocess.STDOUT)
 			process = subprocess.Popen(cmdstr, shell=True)
-			print "started process",process.pid
+			print("started process",process.pid)
 			self.emit(QtCore.SIGNAL("process_started"),process.pid)
 			
 		#db_close_dict("bdb:project")
@@ -318,7 +318,7 @@ class WorkFlowTask:
 			args.append(arg)
 		
 		# this prints the full command
-		for i in args: print i,
+		for i in args: print(i, end=' ')
 #		print ""
 #		
 		#print args
@@ -327,7 +327,7 @@ class WorkFlowTask:
 		cmdstr = ' '.join(args)
 #		process = subprocess.Popen(args_adjusted,stdout=file,stderr=subprocess.STDOUT)
 		process = subprocess.Popen(cmdstr, shell=True)
-		print "started process",process.pid
+		print("started process",process.pid)
 		self.emit(QtCore.SIGNAL("process_started"),process.pid)
 		
 		#db_close_dict("bdb:project")
@@ -820,7 +820,7 @@ Note that the data cannot be filtered unless it is imported."
 		
 		data_dict = EMProjectDataDict(self.project_list)
 		self.project_data_at_init = data_dict.get_data_dict() # so if the user hits cancel this can be reset
-		print self.project_data_at_init
+		print(self.project_data_at_init)
 		project_names = data_dict.keys()
 		
 		from emform import EM2DFileTable,EMFileTable
@@ -1289,7 +1289,7 @@ project database, and gives an opportunity to apply a number of common filters t
 		return self.thumb_shrink
 			
 	def on_import_cancel(self):
-		print "canceled"
+		print("canceled")
 		
 class ParticleWorkFlowTask(WorkFlowTask):
 	'''
@@ -1645,7 +1645,7 @@ class EMParticleImportTask(ParticleWorkFlowTask):
 			s += " are already in database format: they will merely be associated with the project"
 			error(s,"Warning")
 		
-		print params["name_map"]
+		print(params["name_map"])
 	def on_form_ok(self,params):
 		
 		if  params.has_key("filenames") and len(params["filenames"]) == 0:
@@ -1660,7 +1660,7 @@ class EMParticleImportTask(ParticleWorkFlowTask):
 			return
 		else:
 			data_dict = EMProjectDataDict(spr_ptcls_dict)
-			print params["name_map"].values()
+			print(params["name_map"].values())
 			data_dict.add_names(params["name_map"].values(),use_file_tag=True)
 		
 		self.emit(QtCore.SIGNAL("task_idle"))
@@ -1838,7 +1838,7 @@ class EMParticleCoordImportTask(WorkFlowTask):
 		pdb=db_open_dict("bdb:.#project")
 		img_list=pdb.get("global.spr_raw_data_dict",dfl={}).keys()
 		if len(img_list)==0 :
-			print "No image files in project !!!"
+			print("No image files in project !!!")
 			return
 		bdb=db_open_dict("bdb:e2boxercache#boxes")
 		for ff in params["coordfiles"]:
@@ -1848,7 +1848,7 @@ class EMParticleCoordImportTask(WorkFlowTask):
 			lns=[l.split() for l in lns]
 			bxs=[[int(l[0])+int(l[2])/2,int(l[1])+int(l[3])/2,"manual"] for l in lns]
 			bdb[fsp]=bxs
-			print "imported ",f," into ",fsp
+			print("imported ",f," into ",fsp)
 								
 		self.disconnect_form()
 		self.form.close()
@@ -2368,7 +2368,7 @@ def recover_old_boxer_database():
 	#									score = box.correlation_score
 									new_boxes.append([x,y,"manual"])
 						
-						print name,len(new_boxes)
+						print(name,len(new_boxes))
 						if db.has_key(name):
 							new_boxes = new_boxes.extend(db[name])
 						
@@ -2794,7 +2794,7 @@ class E2CTFWorkFlowTask(EMParticleReportTask):
 		ret = []
 		for key,data in parms_db.items():
 			if data == None:
-				print "error?",key
+				print("error?",key)
 				continue
 			ret.append([key,data[-1]]) # parms[-1] should be the original filename
 		#db_close_dict("bdb:e2ctf.parms")
@@ -3047,7 +3047,7 @@ class E2CTFAutoFitTaskGeneral(E2CTFAutoFitTask):
 		fine,message = check_files_are_em_images(filenames)
 		
 		if not fine:
-			print message
+			print(message)
 			return None
 		
 		boxsize = None
@@ -3058,11 +3058,11 @@ class E2CTFAutoFitTaskGeneral(E2CTFAutoFitTask):
 			if boxsize == None:
 				boxsize = a.get_attr("nx") # no consideration is given for non square images
 			elif boxsize != a.get_attr("nx"): # no consideration is given for non square images
-					print "error, can't run e2ctf on images with different box sizes." # Specifically, I can not deduce the bgmask option for the group"
+					print("error, can't run e2ctf on images with different box sizes.") # Specifically, I can not deduce the bgmask option for the group"
 					return None
 		
 		if boxsize == None or boxsize < 2:
-			print "error, boxsize is less than 2"
+			print("error, boxsize is less than 2")
 			return None
 		
 		options = EmptyObject()
@@ -3337,7 +3337,7 @@ important when manually fitting before determining a structure factor."
 			db_name=name
 			db_file_names.append(db_name)
 			if not file_exists(db_name):
-				print "No project particles entry exists for",name,"aborting."
+				print("No project particles entry exists for",name,"aborting.")
 				return None
 		options.filenames = db_file_names
 #		
@@ -3664,7 +3664,7 @@ class E2MakeSetTask(E2ParticleExamineTask):
 		output_stacks[""] = []
 		stack_type_map = {}
 		
-		print params["filenames"]
+		print(params["filenames"])
 		for name in params["filenames"]:
 			root_name = self.data_name_map[name]
 			dict = project_data[root_name]
@@ -3689,11 +3689,11 @@ class E2MakeSetTask(E2ParticleExamineTask):
 		progress.setWindowIcon(QtGui.QIcon(get_image_directory() + "/eman.png"))
 		progress.show()
 		n=-1
-		print output_stacks
+		print(output_stacks)
 		for key,filenames in output_stacks.items():
 			n+=1
 			if len(filenames) == 0:
-				print "Warning, there were no files in the list"
+				print("Warning, there were no files in the list")
 				continue
 			if len(filenames[0]) > 3 and filenames[0][:4] == "bdb:":
 				success,cmd = self.make_v_stack(filenames,base_stack_root+key,"sets",params["exclude_bad"],progress,n,len(output_stacks.items()))
@@ -3742,7 +3742,7 @@ class E2MakeSetTask(E2ParticleExamineTask):
 				cmd += " "+name
 				
 			cmd += " --appendvstack=bdb:"+path+"#"+out_name
-			print cmd
+			print(cmd)
 #			print N,i,len(filenames),M
 			success = (os.system(cmd) in (0,11,12))
 			if not success:
@@ -4234,7 +4234,7 @@ class E2Refine2DTask(EMClassificationTools):
 	 	
 		get_application().setOverrideCursor(Qt.BusyCursor)
 		success = os.system(cmd)
-		print "mvs ",success
+		print("mvs ",success)
 		success = (success in (0,12))
 		get_application().setOverrideCursor(Qt.ArrowCursor)
 		return success,cmd
@@ -4317,7 +4317,7 @@ class E2Refine2DTask(EMClassificationTools):
 	 			
 			try: db_close_dict(out_name)
 			except:
-				print("db close dict failed",out_name)
+				print(("db close dict failed",out_name))
 	 			
 			progress.close()
 	 		
@@ -5292,7 +5292,7 @@ class E2RefineParticlesTaskBase(EMClassificationTools, E2Make3DTools):
 	 	
 	 	cmd += " --makevstack=bdb:"+options.path+"#"+out_name
 	 	
-	 	print "executing cmd", cmd
+	 	print("executing cmd", cmd)
 	 	
 	 	get_application().setOverrideCursor(Qt.BusyCursor)
 	 	success = os.system(cmd)
@@ -5933,7 +5933,7 @@ thresh: Phase residual cutoff. Any particles with a higher phase residual will n
 		e2falist += " --reshigh="+str(params["reshigh"])
 		e2falist += " --thresh="+str(params["thresh"])
 		
-		print e2falist
+		print(e2falist)
 		child = subprocess.Popen(e2falist, shell=True)
 		
 		self.form.close()

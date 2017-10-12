@@ -23,7 +23,7 @@ for i in xrange(20):
 for i in xrange(2000):
 	img.append(a.copy())
 
-print  "START      ",ttime()
+print("START      ",ttime())
 start = time()
 apmqs(img, refm, 1, 5, 2, 2, 1, 1, mode)
-print  "apmq   ",time() - start
+print("apmq   ",time() - start)

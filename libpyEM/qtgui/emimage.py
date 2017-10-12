@@ -100,7 +100,7 @@ class EMImageWidget(object):
 		from EMAN2 import remove_directories_from_name
 		if force_plot and force_2d:
 			# ok this sucks but it suffices for the time being
-			print "Error, the force_plot and force_2d options are mutually exclusive"
+			print("Error, the force_plot and force_2d options are mutually exclusive")
 			return None
 		
 		if force_plot or (isinstance(data,EMData) and data.get_zsize()==1 and data.get_ysize()==1):
@@ -183,7 +183,7 @@ class EMWidgetFromFile(object):
 		
 		if force_plot and force_2d:
 			# ok this sucks but it suffices for the time being
-			print "Error, the force_plot and force_2d options are mutually exclusive"
+			print("Error, the force_plot and force_2d options are mutually exclusive")
 			return None
 		
 		if force_plot:
@@ -240,7 +240,7 @@ class EMWidgetFromFile(object):
 				else: widget = EMImageMXWidget(application=application)
 				data = filename
 			else: 
-				print filename
+				print(filename)
 				raise # weirdness, this should never happen
 			widget.set_data(data,filename)
 			return widget

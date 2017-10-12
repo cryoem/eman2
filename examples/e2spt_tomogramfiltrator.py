@@ -70,28 +70,28 @@ def main():
 	x = a["nx"]
 	y = a["ny"]
 	z = a["nz"]
-	print "The dimensions of the tomogram are", x,y,z
+	print("The dimensions of the tomogram are", x,y,z)
 
 	pady = int(y*0.30)
 	padx = int(x*0.30)
 	padz = int(z*0.30)
 
-	print "I will pad this much in x,y,z", padx,pady,padz
+	print("I will pad this much in x,y,z", padx,pady,padz)
 	final_y = y + 2*pady
 	final_x = x + 2*padx
 	final_z = z + 2*padz
 
-	print "So the final size in x,y,z will b", final_x,final_y,final_z
+	print("So the final size in x,y,z will b", final_x,final_y,final_z)
 
 	r1 = Region(-padx,-pady,-padz, x + padx, y + pady, z + padz)
 	a.clip_inplace(r1)
 	test1 = a.get_value_at(0,0,y+pady)
 	test2 = a.get_value_at(0,0,pady -1)
-	print "test values are", test1, test2
+	print("test values are", test1, test2)
 	x2 = a['nx']
 	y2 = a['ny']
 	z2 = a['nz']
-	print "The new dimensions are ", x2,y2,z2
+	print("The new dimensions are ", x2,y2,z2)
 	#factor = 1.0/float(res)
 	#b=a.process("filter.lowpass.gauss",{"cutoff_freq":factor})
 
@@ -126,8 +126,8 @@ def main():
 	x3 = a['nx']
 	y3 = a['ny']
 	z3 = a['nz']
-	print "The filtered tomogram has been clipped presumably to the original size", x3,y3,z3
-	print "The name of the filtered tomogram is", outname
+	print("The filtered tomogram has been clipped presumably to the original size", x3,y3,z3)
+	print("The name of the filtered tomogram is", outname)
 	a.write_image(outname)
 
 	return()

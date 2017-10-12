@@ -122,7 +122,7 @@ def identify_outliers(myid, main_node, rviper_iter, no_of_viper_runs_analyzed_to
 		if list_of_independent_viper_run_indices_used_for_outlier_elimination[0] == EMPTY_VIPER_RUN_INDICES_LIST:
 			if no_of_viper_runs_analyzed_together > MAXIMUM_NO_OF_VIPER_RUNS_ANALYZED_TOGETHER:
 				error_status = 1
-				print "RVIPER reached maximum number of VIPER runs analyzed together without finding a core set of stable projections for the current RVIPER iteration (%d)! Finishing."%rviper_iter
+				print("RVIPER reached maximum number of VIPER runs analyzed together without finding a core set of stable projections for the current RVIPER iteration (%d)! Finishing."%rviper_iter)
 				cmd = "{} {}".format("mkdir ", masterdir + "MAXIMUM_NO_OF_VIPER_RUNS_ANALYZED_TOGETHER__Reached"); junk = cmdexecute(cmd)
 			else:
 				# No set of solutions has been found to make a selection for outlier elimination.
@@ -313,7 +313,7 @@ def measure_for_outlier_criterion(criterion_name, masterdir, rviper_iter, list_o
 				return avg_diff_per_image_diff_max_normalized
 			return 0.0
 	else:
-		print "Error, no criterion name is specified!"
+		print("Error, no criterion name is specified!")
 		mpi_finalize()
 		sys.exit()
 
@@ -334,7 +334,7 @@ def found_outliers(list_of_projection_indices, outlier_percentile, rviper_iter, 
 	else:
 		return
 
-	print "identify_outliers"
+	print("identify_outliers")
 	projs = []
 	for i1 in list_of_projection_indices:
 		projs.append(read_text_row(mainoutputdir + NAME_OF_RUN_DIR + "%03d"%(i1) + DIR_DELIM + "params.txt"))
@@ -363,7 +363,7 @@ def found_outliers(list_of_projection_indices, outlier_percentile, rviper_iter, 
 	index_outliers = [i[1] for i in error_values_and_indices[outlier_index_threshold:]]
 
 	# print "error_values_and_indices: %f"%error_values_and_indices
-	print "index_outliers: ", index_outliers
+	print("index_outliers: ", index_outliers)
 
 	import copy
 	reversed_sorted_index_outliers = copy.deepcopy(index_outliers)
@@ -392,7 +392,7 @@ def found_outliers(list_of_projection_indices, outlier_percentile, rviper_iter, 
 	write_text_file([dat[i].get_attr("original_image_index")  for i in index_outliers],mainoutputdir + "index_outliers.txt")
 	write_text_file([dat[i].get_attr("original_image_index")  for i in index_keep_images],mainoutputdir + "index_keep_images.txt")
 
-	print "index_outliers:: " + str(index_outliers)
+	print("index_outliers:: " + str(index_outliers))
 
 	# write rotated param files
 	for i1 in range(len(list_of_projection_indices)):
@@ -418,7 +418,7 @@ def calculate_volumes_after_rotation_and_save_them(ali3d_options, rviper_iter, m
 	list_of_independent_viper_run_indices_used_for_outlier_elimination  = json.load(f); f.close()
 
 	if len(list_of_independent_viper_run_indices_used_for_outlier_elimination)==0:
-		print "Error: len(list_of_independent_viper_run_indices_used_for_outlier_elimination)==0"
+		print("Error: len(list_of_independent_viper_run_indices_used_for_outlier_elimination)==0")
 		mpi_finalize()
 		sys.exit()
 
@@ -463,7 +463,7 @@ def calculate_volumes_after_rotation_and_save_them(ali3d_options, rviper_iter, m
 				if( mpi_rank == 0):
 					vol.write_image(mainoutputdir + DIR_DELIM + NAME_OF_RUN_DIR + "%03d"%(i) + DIR_DELIM + "rotated_volume.hdf")
 					line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " => "
-					print line  + "Generated rec_ref_volume_run #%01d \n"%i
+					print(line  + "Generated rec_ref_volume_run #%01d \n"%i)
 				del vol
 
 		mpi_barrier(mpi_comm)
@@ -475,7 +475,7 @@ def calculate_volumes_after_rotation_and_save_them(ali3d_options, rviper_iter, m
 			if( mpi_rank == 0):
 				vol.write_image(mainoutputdir + DIR_DELIM + NAME_OF_RUN_DIR + "%03d"%(i) + DIR_DELIM + "rotated_volume.hdf")
 				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " => "
-				print line + "Generated rec_ref_volume_run #%01d"%i
+				print(line + "Generated rec_ref_volume_run #%01d"%i)
 			del vol
 
 	if( mpi_rank == 0):
@@ -533,12 +533,12 @@ def get_already_processed_viper_runs(run_get_already_processed_viper_runs):
 			dirs = filter(lambda x:re.search('run\d\d\d$', x), dirs)
 			get_already_processed_viper_runs.r_permutation = range(len(dirs))
 			random.shuffle(get_already_processed_viper_runs.r_permutation)
-			print str(get_already_processed_viper_runs.r_permutation)
+			print(str(get_already_processed_viper_runs.r_permutation))
 		get_already_processed_viper_runs.counter += 1
-		print "get_already_processed_viper_runs.counter: " + str(get_already_processed_viper_runs.counter)
+		print("get_already_processed_viper_runs.counter: " + str(get_already_processed_viper_runs.counter))
 		# if get_already_processed_viper_runs.counter > 9:
 		if get_already_processed_viper_runs.counter > (MAXIMUM_NO_OF_VIPER_RUNS_ANALYZED_TOGETHER - 1):
-			print "get_already_processed_viper_runs.counter > 9"
+			print("get_already_processed_viper_runs.counter > 9")
 			mpi_finalize()
 			sys.exit()
 	
@@ -641,15 +641,15 @@ output_directory: directory name into which the output files will be written.  I
 	# Making sure all required options appeared.
 	for required_option in required_option_list:
 		if not options.__dict__[required_option]:
-			print "\n ==%s== mandatory option is missing.\n"%required_option
-			print "Please run '" + progname + " -h' for detailed options"
+			print("\n ==%s== mandatory option is missing.\n"%required_option)
+			print("Please run '" + progname + " -h' for detailed options")
 			return 1
 
 	mpi_barrier(MPI_COMM_WORLD)
 	if(myid == main_node):
-		print "****************************************************************"
+		print("****************************************************************")
 		Util.version()
-		print "****************************************************************"
+		print("****************************************************************")
 		sys.stdout.flush()
 	mpi_barrier(MPI_COMM_WORLD)
 
@@ -673,8 +673,8 @@ output_directory: directory name into which the output files will be written.  I
 	random.seed(my_random_seed)
 
 	if len(args) < 1 or len(args) > 3:
-		print "usage: " + usage
-		print "Please run '" + progname + " -h' for detailed options"
+		print("usage: " + usage)
+		print("Please run '" + progname + " -h' for detailed options")
 		return 1
 
 	# if len(args) > 2:
@@ -744,9 +744,9 @@ output_directory: directory name into which the output files will be written.  I
 				from applications import header
 				try:
 					header(bdb_stack_location + "_000", params='original_image_index', fprint=True)
-					print "Images were already indexed!"
+					print("Images were already indexed!")
 				except KeyError:
-					print "Indexing images"
+					print("Indexing images")
 					header(bdb_stack_location + "_000", params='original_image_index', consecutive=True)
 		else:
 			filename = os.path.basename(args[0])
@@ -758,9 +758,9 @@ output_directory: directory name into which the output files will be written.  I
 				from applications import header
 				try:
 					header(bdb_stack_location + "_000", params='original_image_index', fprint=True)
-					print "Images were already indexed!"
+					print("Images were already indexed!")
 				except KeyError:
-					print "Indexing images"
+					print("Indexing images")
 					header(bdb_stack_location + "_000", params='original_image_index', consecutive=True)
 
 	# send masterdir to all processes
@@ -811,9 +811,9 @@ output_directory: directory name into which the output files will be written.  I
 	for rviper_iter in range(iteration_start, number_of_rrr_viper_runs + 1):
 		if(myid == main_node):
 			all_projs = EMData.read_images(bdb_stack_location + "_%03d"%(rviper_iter - 1))
-			print "XXXXXXXXXXXXXXXXX"
-			print "Number of projections (in loop): " + str(len(all_projs))
-			print "XXXXXXXXXXXXXXXXX"
+			print("XXXXXXXXXXXXXXXXX")
+			print("Number of projections (in loop): " + str(len(all_projs)))
+			print("XXXXXXXXXXXXXXXXX")
 			subset = range(len(all_projs))
 		else:
 			all_projs = None
@@ -911,11 +911,11 @@ output_directory: directory name into which the output files will be written.  I
 
 		if increment_for_current_iteration == MUST_END_PROGRAM_THIS_ITERATION:
 			if (myid == main_node):
-				print "RVIPER found a core set of stable projections for the current RVIPER iteration (%d), the maximum angle difference between corresponding projections from different VIPER volumes is less than %.2f. Finishing."%(rviper_iter, ANGLE_ERROR_THRESHOLD)
+				print("RVIPER found a core set of stable projections for the current RVIPER iteration (%d), the maximum angle difference between corresponding projections from different VIPER volumes is less than %.2f. Finishing."%(rviper_iter, ANGLE_ERROR_THRESHOLD))
 			break
 	else:
 		if (myid == main_node):
-			print "After running the last iteration (%d), RVIPER did not find a set of projections with the maximum angle difference between corresponding projections from different VIPER volumes less than %.2f Finishing."%(rviper_iter, ANGLE_ERROR_THRESHOLD)
+			print("After running the last iteration (%d), RVIPER did not find a set of projections with the maximum angle difference between corresponding projections from different VIPER volumes less than %.2f Finishing."%(rviper_iter, ANGLE_ERROR_THRESHOLD))
 		
 			
 	# end of RVIPER loop

@@ -41,7 +41,7 @@ for n,i in enumerate(a):
 		icm.write_image("cmcmp.hdf",n*2)
 		rsum.write_image("cmcmp.hdf",n*2+1)
 
-print "local"
+print("local")
 
 #for x in xrange(-100,150,50):
 	#for y in xrange(-100,150,50):

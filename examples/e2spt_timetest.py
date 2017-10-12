@@ -142,23 +142,23 @@ def main():
 	
 
 	if not options.test2d and not options.test3d:
-		print "ERROR: provide at least one of --test2d and/or --test3d."
+		print("ERROR: provide at least one of --test2d and/or --test3d.")
 		sys.exit(1)
 		
 	if options.quicktest and options.extensive:
-		print "ERROR: You cannot specify --test and --extensive simultaneously"
+		print("ERROR: You cannot specify --test and --extensive simultaneously")
 		sys.exit(1)
 	
 	if options.quicktest and options.medium:
-		print "ERROR: You cannot specify --test and --medium simultaneously"
+		print("ERROR: You cannot specify --test and --medium simultaneously")
 		sys.exit(1)
 
 	if options.extensive and options.medium:
-		print "ERROR: You cannot specify --extensive and --medium simultaneously"
+		print("ERROR: You cannot specify --extensive and --medium simultaneously")
 		sys.exit(1)
 	
 	if options.profile and not options.eman2dir:
-		print "ERROR: --profile is on, yet you haven't provided the path to your EMAN2 directory."
+		print("ERROR: --profile is on, yet you haven't provided the path to your EMAN2 directory.")
 		sys.exit(1)
 	#print "options are", options
 	
@@ -172,7 +172,7 @@ def main():
 	options = makepath(options,rootpath)
 	
 	
-	print "Path will be", options.path
+	print("Path will be", options.path)
 	
 	'''
 	If options.plotonly is off (no files provided) you actually have to measure alignment time....
@@ -213,9 +213,9 @@ def main():
 		'''
 		if retcpu and retgpu:
 			if len(retcpu) == len(retgpu):
-				print "In comparing GPU and CPU, the len of each ret data is", len(retgpu), len(retcpu)
-				print "In fact, retcpu is", retcpu
-				print "In fact, retgpu is", retgpu
+				print("In comparing GPU and CPU, the len of each ret data is", len(retgpu), len(retcpu))
+				print("In fact, retcpu is", retcpu)
+				print("In fact, retgpu is", retgpu)
 				
 				corg = 'GPUvsCPU'
 				
@@ -236,9 +236,9 @@ def main():
 						preplot(options,corg,data,key)
 	
 					else:
-						print "This gpu set does not have the same number of elements as the corresponding cpu set"
+						print("This gpu set does not have the same number of elements as the corresponding cpu set")
 			else:
-				print "For some sick reason, you don't have the same number of data points for gpu and cpu, therefore, you cannot compare them, see", len(retgpu), len(retcpu)
+				print("For some sick reason, you don't have the same number of data points for gpu and cpu, therefore, you cannot compare them, see", len(retgpu), len(retcpu))
 				sys.exit(1)
 		else:
 			return()
@@ -249,10 +249,10 @@ def main():
 		'''
 		
 		files=options.plotonly.split(',')
-		print "\n\n\n\n$$$$$$$$$$$$$$$$$$Will plot these files", files
-		print "$$$$$$$$$$$$$$\n\n\n"
+		print("\n\n\n\n$$$$$$$$$$$$$$$$$$Will plot these files", files)
+		print("$$$$$$$$$$$$$$\n\n\n")
 		if options.noplot:
-			print "ERROR: You cannot speficy 'plotonly' and 'noplot' at the same time."
+			print("ERROR: You cannot speficy 'plotonly' and 'noplot' at the same time.")
 			sys.exit(1)
 		
 		mastervalues={}
@@ -263,7 +263,7 @@ def main():
 		Parse values for all files
 		'''
 		for F in files:
-			print "Reading with this file now", F
+			print("Reading with this file now", F)
 			name=os.path.basename(F).replace('.txt','.png')
 			sizes=[]
 			valuesforthisfile=[]
@@ -280,8 +280,8 @@ def main():
 			
 			mastervalues.update({F:[sizes,valuesforthisfile]})				
 		
-		print "\n\n\n\n\n\n\n@@@@@@@@@@@@@@\nThe len of mastervalues before FULL is", len(mastervalues)
-		print "@@@@@@@@@@@@@@@\n\n\n"
+		print("\n\n\n\n\n\n\n@@@@@@@@@@@@@@\nThe len of mastervalues before FULL is", len(mastervalues))
+		print("@@@@@@@@@@@@@@@\n\n\n")
 		
 		'''
 		Plot the full extension values for all files
@@ -290,20 +290,20 @@ def main():
 		k=0
 		absmax=0.0
 		for F in mastervalues:
-			print "\n\n\n\n\n\n\n\n\n\n\n\n\n !!!!!!!!!!!!!!!!!!!!! \nWorking with this file now for FULL plot", F
-			print "!!!!!!!!!!!!!!!!!!!!\n\n\n\n\n\n\n\n"
+			print("\n\n\n\n\n\n\n\n\n\n\n\n\n !!!!!!!!!!!!!!!!!!!!! \nWorking with this file now for FULL plot", F)
+			print("!!!!!!!!!!!!!!!!!!!!\n\n\n\n\n\n\n\n")
 			sizes = mastervalues[F][0]
 			valuesforthisfile = mastervalues[F][1]
 			
 			if float(max(valuesforthisfile)) > absmax:
 				absmax = float(max(valuesforthisfile))
-				print "New ABSMAX is", absmax
+				print("New ABSMAX is", absmax)
 			
 			namep = options.singleplot
 			if not options.singleplot:
 				namep = F.replace('.txt','.png')
 			
-			print "The name for these FULL plots will be", namep
+			print("The name for these FULL plots will be", namep)
 			markernum=0
 			#if options.colorlessplot:
 			#	markernum=k
@@ -316,17 +316,17 @@ def main():
 			if not options.singleplot:
 				plt.clf()
 		
-		print "\n\n\n\n\n\n\n@@@@@@@@@@@@@@\nThe len of mastervalues before SUB is", len(mastervalues)
-		print "@@@@@@@@@@@@@@@\n\n\n"
+		print("\n\n\n\n\n\n\n@@@@@@@@@@@@@@\nThe len of mastervalues before SUB is", len(mastervalues))
+		print("@@@@@@@@@@@@@@@\n\n\n")
 		k=0
 		plt.clf()
 		abssubmax=0.0	
 		if options.subset:
-			print "subset is on!"
+			print("subset is on!")
 			
 			for F in mastervalues:
-				print "\n\n\n\n\n\n\n\n\n\n\n\n\n !!!!!!!!!!!!!!!!!!!!! \nWorking with this file now for SUB plot", F
-				print "!!!!!!!!!!!!!!!!!!!!\n\n\n\n\n\n\n\n"
+				print("\n\n\n\n\n\n\n\n\n\n\n\n\n !!!!!!!!!!!!!!!!!!!!! \nWorking with this file now for SUB plot", F)
+				print("!!!!!!!!!!!!!!!!!!!!\n\n\n\n\n\n\n\n")
 				sizes = mastervalues[F][0]
 				valuesforthisfile = mastervalues[F][1]
 		
@@ -335,12 +335,12 @@ def main():
 		
 				if float(max(valuessub)) > abssubmax:
 					abssubmax = float(max(valuessub))
-					print "New ABSSUBMAX is", abssubmax
+					print("New ABSSUBMAX is", abssubmax)
 		
 				namepsub = F.replace('.txt','_sub.png')
 			
 			
-				print "The name for these SUB plots will be", namepsub
+				print("The name for these SUB plots will be", namepsub)
 
 				markernum=0
 				if options.colorlessplot:
@@ -359,15 +359,15 @@ def main():
 		Plot only the minima, either for full extension or a subset of the files' values
 		'''
 		
-		print "\n\n\n\n\n\n\n@@@@@@@@@@@@@@\nThe len of mastervalues before MIN is", len(mastervalues)
-		print "@@@@@@@@@@@@@@@\n\n\n"
+		print("\n\n\n\n\n\n\n@@@@@@@@@@@@@@\nThe len of mastervalues before MIN is", len(mastervalues))
+		print("@@@@@@@@@@@@@@@\n\n\n")
 		k=0
 		plt.clf()
 		absminmax=0.0
 		if options.plotminima:
 			for F in mastervalues:
-				print "\n\n\n\n\n\n\n\n\n\n\n\n\n !!!!!!!!!!!!!!!!!!!!! \nWorking with this file now for MIN plot", F
-				print "!!!!!!!!!!!!!!!!!!!!\n\n\n\n\n\n\n\n"	
+				print("\n\n\n\n\n\n\n\n\n\n\n\n\n !!!!!!!!!!!!!!!!!!!!! \nWorking with this file now for MIN plot", F)
+				print("!!!!!!!!!!!!!!!!!!!!\n\n\n\n\n\n\n\n")	
 				if options.colorlessplot:
 					#markn=k+1
 					pass
@@ -382,11 +382,11 @@ def main():
 		
 				if float(max(valuesmin)) > absminmax:
 					absminmax = float(max(valuesmin))
-					print "New ABSMINMAX is", absminmax
+					print("New ABSMINMAX is", absminmax)
 			
 				namepmin=F.replace('.txt','_MIN.png')
 				
-				print "The name for these MIN plots will be", namepmin
+				print("The name for these MIN plots will be", namepmin)
 
 				markernum=0
 				if options.colorlessplot:
@@ -407,12 +407,12 @@ def main():
 		k=0
 		plt.clf()
 		absminsubmax=0.0
-		print "\n\n\n\n\n\n\n@@@@@@@@@@@@@@\nThe len of mastervalues before SUBMIN is", len(mastervalues)
-		print "@@@@@@@@@@@@@@@\n\n\n"
+		print("\n\n\n\n\n\n\n@@@@@@@@@@@@@@\nThe len of mastervalues before SUBMIN is", len(mastervalues))
+		print("@@@@@@@@@@@@@@@\n\n\n")
 		if options.plotminima and options.subset:
 			for F in mastervalues:
-				print "\n\n\n\n\n\n\n\n\n\n\n\n\n !!!!!!!!!!!!!!!!!!!!! \nWorking with this file now for SUBMIN plot", F
-				print "!!!!!!!!!!!!!!!!!!!!\n\n\n\n\n\n\n\n"
+				print("\n\n\n\n\n\n\n\n\n\n\n\n\n !!!!!!!!!!!!!!!!!!!!! \nWorking with this file now for SUBMIN plot", F)
+				print("!!!!!!!!!!!!!!!!!!!!\n\n\n\n\n\n\n\n")
 				if options.colorlessplot:
 					#markn=k+1
 					pass
@@ -428,13 +428,13 @@ def main():
 				indx=0
 				for i in sizesmin:
 					if int(i) > int(options.subset):
-						print "i is larger than subset see", i, int(options.subset)
+						print("i is larger than subset see", i, int(options.subset))
 						break
 					else:
-						print "I have added 1 to indx"
+						print("I have added 1 to indx")
 						indx+=1
 					
-				print "Index is", indx
+				print("Index is", indx)
 						
 				sizesminsub = sizesmin[:indx]
 				valuesminsub = valuesmin[:indx]
@@ -442,11 +442,11 @@ def main():
 			
 				if float(max(valuesminsub)) > absminsubmax:
 					absminsubmax = float(max(valuesminsub))
-					print "New ABSMINSUBMAX is", absminsubmax
+					print("New ABSMINSUBMAX is", absminsubmax)
 			
 				namepsubmin = F.replace('.txt','_sub_MIN.png')
 				
-				print "The name for these FULL plots will be", namepsubmin
+				print("The name for these FULL plots will be", namepsubmin)
 
 		
 				markernum=0
@@ -488,18 +488,18 @@ def makepath(options,rootpath):
 
 
 def preplot( options, tipo, data, key ):
-	print "I am in PREPLOT"
+	print("I am in PREPLOT")
 	
 	name = options.path + "/" + options.ID 
 	if options.ID and key:
-		print "adding _ from options.ID or key", options.ID, key
+		print("adding _ from options.ID or key", options.ID, key)
 		name += '_'
 	
 	if key:	
 		name += key  
 	
 	if key and tipo:
-		print "adding _ from key or tipo", key, tipo
+		print("adding _ from key or tipo", key, tipo)
 		name += '_'
 	
 	if tipo:
@@ -512,14 +512,14 @@ def preplot( options, tipo, data, key ):
 	xdata = data[0]				
 	ydata = data[1]				
 	
-	print "Still in preplot"
+	print("Still in preplot")
 	if not options.noplot:
 		plotter(xdata,ydata,name,options.coarsestep,options.finestep)
 		plt.savefig(options.path + '/' + os.path.basename(name))
 		plt.clf()
-	print "Will call texwriter from preplot"
+	print("Will call texwriter from preplot")
 	textwriter(name,xdata,ydata)
-	print "In preplot, plotminima is", options.plotminima
+	print("In preplot, plotminima is", options.plotminima)
 	
 	if options.plotminima:
 		ret=minima(xdata,ydata)
@@ -527,7 +527,7 @@ def preplot( options, tipo, data, key ):
 		ydatamins=ret[1]
 		yminnonconvex=ret[2]
 		
-		print "In preplot, returned yminnonconvex is", yminnonconvex
+		print("In preplot, returned yminnonconvex is", yminnonconvex)
 		namemin=name.replace('.png','_MIN.png')
 		markernum=0
 		
@@ -542,7 +542,7 @@ def preplot( options, tipo, data, key ):
 				plotter(xdatamins,ydatamins,namemin,options.coarsestep,options.finestep,markernum,0,0,'',yminnonconvex)
 				plt.savefig(options.path + '/' + os.path.basename(namemin.replace('.png','_colorless.png')))
 				plt.clf()
-		print "Name min to send is", namemin
+		print("Name min to send is", namemin)
 		textwriter(namemin,xdatamins,ydatamins)
 
 	if options.subset:
@@ -561,16 +561,16 @@ def preplot( options, tipo, data, key ):
 				plt.savefig(options.path + '/' + os.path.basename(namesub.replace('.png','_colorless.png')))
 				plt.clf()
 				
-		print "Name sub to send is", namesub
+		print("Name sub to send is", namesub)
 		textwriter(namesub,xdatasub,ydatasub)
 
 		if options.plotminima:
-			print "From preplot, I will call minima"
+			print("From preplot, I will call minima")
 			ret=minima(xdatasub,ydatasub)
 			xdatasubmins=ret[0]
 			ydatasubmins=ret[1]
 			yminnonconvexsub=ret[2]
-			print "I finshed calling minima, and it returned this yminnonconvexsub",yminnonconvexsub 
+			print("I finshed calling minima, and it returned this yminnonconvexsub",yminnonconvexsub) 
 			namesubmin=namesub.replace('.png','_MIN.png')
 			markernum=0
 			
@@ -585,7 +585,7 @@ def preplot( options, tipo, data, key ):
 					plotter(xdatasubmins,ydatasubmins,namesubmin,options.coarsestep,options.finestep,markernum,0,0,'',yminnonconvexsub)
 					plt.savefig(options.path + '/' + os.path.basename(namesubmin.replace('.png','_colorless.png')))
 					plt.clf()
-			print "Name sub min to send is", namesubmin
+			print("Name sub min to send is", namesubmin)
 			textwriter(namesubmin,xdatasubmins,ydatasubmins)
 
 	return()
@@ -593,14 +593,14 @@ def preplot( options, tipo, data, key ):
 
 def textwriter(name,xdata,ydata):
 	if not xdata or not ydata:
-		print "ERROR: Attempting to write an empty text file!"
+		print("ERROR: Attempting to write an empty text file!")
 		sys.exit(1)
 	
-	print "name received in textwriter", name, type(name)
+	print("name received in textwriter", name, type(name))
 	
 	filename=name.replace('.png','.txt')
 	
-	print "I am in the text writer for this file", filename
+	print("I am in the text writer for this file", filename)
 	
 	f=open(filename,'w')
 	lines=[]
@@ -654,8 +654,8 @@ def doit(corg,options,originaldir):
 			lowerend = int( options.boxsizes.split('-')[0] )
 			upperend = int( options.boxsizes.split('-')[1] ) 
 			mults=[i for i in xrange( lowerend , upperend ) ]
-			print "Lower and upper ends of range are", lowerend, upperend
-			print "Therefore, boxsizes are", mults
+			print("Lower and upper ends of range are", lowerend, upperend)
+			print("Therefore, boxsizes are", mults)
 	
 		elif '.txt' in options.boxsizes:
 			f=open(options.boxsizes,'r')
@@ -666,7 +666,7 @@ def doit(corg,options,originaldir):
 					mults.append( int( float(ele) ) )
 			f.close()
 			
-			print "Boxsizes read from file are", mults
+			print("Boxsizes read from file are", mults)
 	
 		elif "," in options.boxsizes:			
 			boxes=options.boxsizes.split(',')
@@ -693,7 +693,7 @@ def doit(corg,options,originaldir):
 		finalmults = []
 		for m in mults:
 			if not m % 2:
-				print "appended even box", m
+				print("appended even box", m)
 				finalmults.append(m)
 		mults=finalmults
 		
@@ -758,11 +758,11 @@ def doit(corg,options,originaldir):
 	if options.test3d:
 		dimensions.append( 3 )
 	
-	print "dimensions are", dimensions
+	print("dimensions are", dimensions)
 	
 	for dimension in dimensions:
 		
-		print "processing dimension", dimension	
+		print("processing dimension", dimension)	
 		
 		dimensiontag = str( dimension ) + 'D'
 		
@@ -775,10 +775,10 @@ def doit(corg,options,originaldir):
 			times=[]
 			cmd=''
 			for size in mults:
-				print "\naligning size", size
-				print "for ID", finalaidee
-				print "alignment type", corg
-				print "\n"			
+				print("\naligning size", size)
+				print("for ID", finalaidee)
+				print("alignment type", corg)
+				print("\n")			
 				#t=t1=t2=t1h=t2h=t1m=t2m=t1s=t2s=t1tot=t2tot=0
 			
 				setcuda=''
@@ -788,14 +788,14 @@ def doit(corg,options,originaldir):
 					if options.setcudadevice is not None:
 						setcuda += '&& export SETCUDADEVICE=' + options.setcudadevice
 					
-					print "SETCUDA IS", setcuda	
+					print("SETCUDA IS", setcuda)	
 					
 				
 				elif corg=='cpu' or corg=='CPU':
 					setcuda = 'export NOCUDAINIT=1'
 					#print "\n\n\n !!!! I Have turned cuda OFF!!!\n\n\n"
 				else:
-					print "Something is wrong; you're supposed to select GPU or CPU. TERMINATING!"
+					print("Something is wrong; you're supposed to select GPU or CPU. TERMINATING!")
 					sys.exit(1)
 			
 		
@@ -833,8 +833,8 @@ def doit(corg,options,originaldir):
 						profilecmd1 = "python -m cProfile -s time " + options.eman2dir + "/bin/e2spt_classaverage.py"
 						profilecmd2 = "> profiled_" + corg + '_box' + str(size).zfill(3) + '.txt' 
 						parallel=''
-						print "profilecmd1 is", profilecmd1
-						print "profilecmd2 is", profilecmd2
+						print("profilecmd1 is", profilecmd1)
+						print("profilecmd2 is", profilecmd2)
 									
 					cmd = setcuda + ''' && cd ''' + abspath + ''' && ''' + profilecmd1 + ''' --input=''' + aname + ''' --ref=''' + bname + ''' --iter=1 -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=filter.lowpass.gauss:cutoff_freq=0.1:apix=1.0 --highpass=filter.highpass.gauss:cutoff_freq=0.01:apix=1.0 --preprocess=filter.lowpass.gauss:cutoff_freq=0.2:apix=1.0 --align=rotate_symmetry_3d:sym=c1 --parallel=''' + parallel + ''' --falign=None --averager=mean.tomo --aligncmp=ccc.tomo --normproc=normalize.mask --path=''' + aidee + ''' --verbose=''' + str(options.verbose) + ' ' + profilecmd2 + ' && rm -r ' + aidee
 			
@@ -858,7 +858,7 @@ def doit(corg,options,originaldir):
 						else:
 							"ERROR/WARNING: Non-zero --coarsestep needs to be provided with --fullaliwithoverhead."
 											
-					print "cmd for ID %s is %s" %( finalaidee, cmd )
+					print("cmd for ID %s is %s" %( finalaidee, cmd ))
 					ta = time()
 					os.system(cmd)
 					tb = time()
@@ -936,14 +936,14 @@ def doit(corg,options,originaldir):
 			
 			data.update({finalaidee:[mults,times]})
 		
-		print "data len is", len(data)
-		print "data is", data
+		print("data len is", len(data))
+		print("data is", data)
 		if 'onerotreal'+dimensiontag in data and 'onerotfourier'+dimensiontag in data:
 			ratiodata = calcratio( options, data['onerotreal'+dimensiontag][-1], data['onerotfourier'+dimensiontag][-1], mults, corg, 'onerotreal'+dimensiontag, 'onerotfourier'+dimensiontag )
 			ratiox = ratiodata[0]
 			ratioy = ratiodata[1]
 			ratiofilename = ratiodata[2]
-			print "for rot ratiofilename", ratiofilename
+			print("for rot ratiofilename", ratiofilename)
 			textfilename = ratiofilename.replace('.png','.txt')
 			textwriter( textfilename, ratiox, ratioy )
 		
@@ -952,7 +952,7 @@ def doit(corg,options,originaldir):
 			ratiox = ratiodata[0]
 			ratioy = ratiodata[1]
 			ratiofilename = ratiodata[2]
-			print "for ccf ratiofilename", ratiofilename
+			print("for ccf ratiofilename", ratiofilename)
 		
 			textfilename = ratiofilename.replace('.png','.txt')
 			textwriter( textfilename, ratiox, ratioy )
@@ -962,7 +962,7 @@ def doit(corg,options,originaldir):
 			ratiox = ratiodata[0]
 			ratioy = ratiodata[1]
 			ratiofilename = ratiodata[2]
-			print "for transform ratiofilename", ratiofilename
+			print("for transform ratiofilename", ratiofilename)
 		
 			textfilename = ratiofilename.replace('.png','.txt')
 			textwriter( textfilename, ratiox, ratioy )
@@ -1020,8 +1020,8 @@ def calcratio( options, x1, x2, sizes, corg, ID1, ID2 ):
 	plt.savefig( filename )
 	plt.clf()
 	
-	print "calcratio, filename to return", filename
-	print "type", type(filename)
+	print("calcratio, filename to return", filename)
+	print("type", type(filename))
 	
 	return sizes, difs, filename
 	
@@ -1037,8 +1037,8 @@ def plotter(xaxis,yaxis,name='',title='',labelY='',CS=0,FS=0,markernum=0,linenum
 		yaxis = [ math.log10(y) for y in yaxis ]	
 		yminnonconvex = [ math.log10(ym) for ym in yminnonconvex ]
 		
-	print "\n\nreceived xaxis len is", len(xaxis)
-	print "\n\nreceived yminnonconvex len is", len(yminnonconvex)
+	print("\n\nreceived xaxis len is", len(xaxis))
+	print("\n\nreceived yminnonconvex len is", len(yminnonconvex))
 	
 	if len(xaxis) != len(yminnonconvex):
 		#print "ERROR! xaxis and yminnonconvex are not equal in length, see"
@@ -1112,7 +1112,7 @@ def plotter(xaxis,yaxis,name='',title='',labelY='',CS=0,FS=0,markernum=0,linenum
 		
 		if not yminnonconvex:
 			
-			print "in colorless plot, linest is", linest
+			print("in colorless plot, linest is", linest)
 			plt.plot(xaxis, yaxis, linewidth=LW,linestyle=linest,alpha=1,color='k',zorder=0,label=idee)
 			if idee and options.legend:
 				#print "Idee is", idee
@@ -1121,26 +1121,26 @@ def plotter(xaxis,yaxis,name='',title='',labelY='',CS=0,FS=0,markernum=0,linenum
 			plt.plot(xaxis, yminnonconvex, linewidth=LW,linestyle=linest,alpha=1,color='k',zorder=0,label=idee)
 			plt.scatter(xaxis,yaxis,marker='x',edgecolor='k',alpha=1,zorder=1,s=40,facecolor='white',linewidth=2)
 			if idee and options.legend:
-				print "Idee is", idee
+				print("Idee is", idee)
 				legend(loc='upper left')
 			
 		if mark:
 			plt.scatter(xaxis,yaxis,marker=mark,edgecolor='k',alpha=1,zorder=1,s=40,facecolor='white',linewidth=2)
 	else:
 		if not yminnonconvex:
-			print "I did NOT receive yminnonxonvex"
+			print("I did NOT receive yminnonxonvex")
 			
 			plt.plot(xaxis, yaxis, linewidth=LW,linestyle=linest,alpha=1,zorder=0,label=idee)
 			
 			if idee and options.legend:
-				print "Idee is", idee
+				print("Idee is", idee)
 				legend(loc='upper left')
 		elif yminnonconvex:
-			print "I DID receive yminnonxonvex"
+			print("I DID receive yminnonxonvex")
 			plt.plot(xaxis, yminnonconvex, linewidth=LW,linestyle=linest,alpha=1,zorder=0,label=idee)
 			
 			if idee and options.legend:
-				print "Idee is", idee
+				print("Idee is", idee)
 				legend(loc='upper left')
 			plt.scatter(xaxis,yaxis,marker='x',alpha=0.5,zorder=1,s=40,linewidth=2)
 			
@@ -1194,7 +1194,7 @@ def plotter(xaxis,yaxis,name='',title='',labelY='',CS=0,FS=0,markernum=0,linenum
 FUNCTION TO DETERMINE MINIMA to be plotted later, instead of plotting ALL values in alignment time plots
 '''
 def minima(sizes,vals):
-	print "\n\nI have entered minima!!!!!!!!!!!!!!!!!!!!!\n\n"
+	print("\n\nI have entered minima!!!!!!!!!!!!!!!!!!!!!\n\n")
 	
 	
 	#finalvals = []
@@ -1255,7 +1255,7 @@ def minima(sizes,vals):
 			#print "I have appended this box, value", sizes[i], vals[i]
 
 	minnonconvex=Util.nonconvex(valsmin,0)
-	print "In minima, the yminnonconvex to return is", minnonconvex
+	print("In minima, the yminnonconvex to return is", minnonconvex)
 	return(sizesmin,valsmin,minnonconvex)
 	
 

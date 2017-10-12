@@ -69,7 +69,7 @@ act as a filter on the names of the algorithms."""
 		thehelp = TheHelp()
 		thehelp.show()
 		if args:
-			print args[0]
+			print(args[0])
 			if args[0] in ("aligner","aligners"):
 				thehelp._helpchange(0)
 			elif args[0] in ("analyzer","analyzers"):
@@ -92,39 +92,39 @@ act as a filter on the names of the algorithms."""
 		exit(0)
 
 	if len(args)<1 : 
-		print helpstring
+		print(helpstring)
 		exit(0)
 		
 	l=None
 	if args[0] in ("cmp","cmps") :
-		print "Available comparators:"
+		print("Available comparators:")
 		l=dump_cmps_list()
 	elif args[0] in ("analyzer","analyzers") :
-		print "Available analysers:"
+		print("Available analysers:")
 		l=dump_analyzers_list()
 	elif args[0] in ("averager","averagers") :
-		print "Available averagers:"
+		print("Available averagers:")
 		l=dump_averagers_list()
 	elif args[0] in ("processor","processors") :
-		print "Available processors:"
+		print("Available processors:")
 		l=dump_processors_list()
 	elif args[0] in ("projector","projectors") :
-		print "Available projectors:"
+		print("Available projectors:")
 		l=dump_projectors_list()
 	elif args[0] in ("reconstructor","reconstructors") :
-		print "Available reconstructors:"
+		print("Available reconstructors:")
 		l=dump_reconstructors_list()
 	elif args[0] in ("aligner","aligners") :
-		print "Available aligners:"
+		print("Available aligners:")
 		l=dump_aligners_list()
 	elif args[0] in ("sym","symmetry","symmetries") :
-		print "Available symmetries:"
+		print("Available symmetries:")
 		l=dump_symmetries_list()
 	elif args[0] in ("orientgen","orientationgen","orientgens","orientationgens","orientationgenerators") :
-		print "Available orientation generators:"
+		print("Available orientation generators:")
 		l=dump_orientgens_list()
 	elif args[0][:8]=="rotation" :
-		print "Available rotation conventions:"
+		print("Available rotation conventions:")
 		l={"eman":["EMAN convention, az(Z),alt(X),phi(Z') Eulers","alt","FLOAT","Altitude, X-axis","az","FLOAT","Azimuth, Z-axis","phi","FLOAT","Z' Axis. in-plane rotation in 2-D"],
 		"imagic":["IMAGIC convention","alpha","FLOAT","alpha","beta","FLOAT","beta","gamma","FLOAT","gamma"],
 		"spider":["SPIDER convention","phi","FLOAT","phi","theta","FLOAT","theta","psi","FLOAT","psi"],
@@ -137,8 +137,8 @@ act as a filter on the names of the algorithms."""
 	elif args[0] in ("version"):
 		print(FULLVERSIONSTRING) 
 	else:
-		print helpstring
-		print "unknown option:",args[0]
+		print(helpstring)
+		print("unknown option:",args[0])
 		
 	if l:
 		if options.verbose>0:
@@ -146,23 +146,23 @@ act as a filter on the names of the algorithms."""
 			else: k=l.keys()
 			k.sort()
 			for i in k:
-				print "%s : %s"%(i, l[i][0])
+				print("%s : %s"%(i, l[i][0]))
 				for j in range(1,len(l[i]),3): 
-					print "\t%s(%s) - %s"%(l[i][j],l[i][j+1],l[i][j+2])
+					print("\t%s(%s) - %s"%(l[i][j],l[i][j+1],l[i][j+2]))
 		else :
 			if len(args)>1 : k=[i for i in l.keys() if args[1] in i]
 			else: k=l.keys()
 			if len(k)==0 :
-				print "Empty list - no items met search criteria"
+				print("Empty list - no items met search criteria")
 				sys.exit(0)
 			maxk=max([len(ii) for ii in k])
 			fmt="%%-%0ds : "%maxk
 			k.sort()
 			for i in k:
-				print fmt%i,
+				print(fmt%i, end=' ')
 				for j in range(1,len(l[i]),3): 
-					print "%s(%s)  "%(l[i][j],l[i][j+1]),
-				if len(k)>1: print ""
+					print("%s(%s)  "%(l[i][j],l[i][j+1]), end=' ')
+				if len(k)>1: print("")
 
 if __name__ == "__main__":
     main()

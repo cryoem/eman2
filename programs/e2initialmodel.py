@@ -77,7 +77,7 @@ def main():
 
 	try: ptcls=EMData.read_images(options.input)
 	except:
-		print "Error: bad input file"
+		print("Error: bad input file")
 		exit(1)
 	apix=ptcls[0]["apix_x"]
 	if options.shrink>1 : apix*=options.shrink
@@ -86,11 +86,11 @@ def main():
 		ptcls[i].process_inplace("normalize.edgemean",{})
 		if options.shrink>1 :
 			ptcls[i]=ptcls[i].process("math.meanshrink",{"n":options.shrink})
-	if ptcls[0]["nx"]>160 : print "WARNING: using a large box size may be slow. Suggest trying --shrink="
+	if ptcls[0]["nx"]>160 : print("WARNING: using a large box size may be slow. Suggest trying --shrink=")
 	if not ptcls or len(ptcls)==0 : parser.error("Bad input file")
 	boxsize=ptcls[0].get_xsize()
-	if verbose>0 : print "%d particles %dx%d"%(len(ptcls),boxsize,boxsize)
-	print "Models will be %1.3f A/pix"%apix
+	if verbose>0 : print("%d particles %dx%d"%(len(ptcls),boxsize,boxsize))
+	print("Models will be %1.3f A/pix"%apix)
 
 	[og_name,og_args] = parsemodopt(options.orientgen)
 
@@ -106,7 +106,7 @@ def main():
 		mask2.to_one()
 		parms=parsemodopt(options.maskproc)
 		if parms[0]=="mask.auto3d":
-			print "Error, maskproc may not be mask.auto3d, it must be a processor that does not rely on the input map density to function"
+			print("Error, maskproc may not be mask.auto3d, it must be a processor that does not rely on the input map density to function")
 			sys.exit(1)
 		mask2.process_inplace(parms[0],parms[1])
 	else: mask2=None
@@ -152,13 +152,13 @@ def main():
 		curstat=etc.check_task(taskids)			# a list of the progress on each task
 		if options.verbose>1 :
 			if time.time()-ltime>1 :
-				print "progress: ",curstat
+				print("progress: ",curstat)
 				ltime=time.time()
 		for i,j in enumerate(curstat):
 			if j==100 :
 				rslt=etc.get_results(taskids[i])		# read the results back from a completed task as a one item dict
 				results.append(rslt[1]["result"])
-				if options.verbose==1 : print "Task {} ({}) complete".format(i,taskids[i])
+				if options.verbose==1 : print("Task {} ({}) complete".format(i,taskids[i]))
 
 		# filter out completed tasks. We can't do this until after the previous loop completes
 		taskids=[taskids[i] for i in xrange(len(taskids)) if curstat[i]!=100]
@@ -170,7 +170,7 @@ def main():
 		out_name = results_name+"_%02d.hdf"%(i+1)
 		j[1].write_image(out_name,0)
 		j[4].write_image(results_name+"_%02d_init.hdf"%(i+1),0)
-		print out_name,j[1]["quality"],j[0],j[1]["apix_x"]
+		print(out_name,j[1]["quality"],j[0],j[1]["apix_x"])
 		for k,l in enumerate(j[3]): l[0].write_image(results_name+"_%02d_proj.hdf"%(i+1),k)	# set of projection images
 		for k,l in enumerate(j[2]):
 			l.process("normalize").write_image(results_name+"_%02d_aptcl.hdf"%(i+1),k*2)						# set of aligned particles
@@ -204,11 +204,11 @@ class InitMdlTask(JSTask):
 		# This is the refinement loop
 		for it in range(options["iter"]):
 			if progress != None: progress(it*100/options["iter"])
-			if verbose>0 : print "Iteration %d"%it
+			if verbose>0 : print("Iteration %d"%it)
 #			if options.savemore : threed[it].write_image("imdl.%02d.%02d.mrc"%(t,it))
 			projs=[(threed[it].project("standard",ort),None) for ort in orts]		# projections
 			for i in projs : i[0].process_inplace("normalize.edgemean")
-			if verbose>2: print "%d projections"%len(projs)
+			if verbose>2: print("%d projections"%len(projs))
 
 			# determine particle orientation
 			bss=0.0
@@ -220,7 +220,7 @@ class InitMdlTask(JSTask):
 #				print bs[0]
 				bss+=bs[0]
 				bslst.append((bs[0],i))
-				if verbose>2 : print "align %d \t(%1.3f)\t%1.3g"%(i,bs[0],bss)
+				if verbose>2 : print("align %d \t(%1.3f)\t%1.3g"%(i,bs[0],bss))
 				n=sim.index(bs)
 				ptcls[i]["match_n"]=n
 				ptcls[i]["match_qual"]=-bs[0]
@@ -276,7 +276,7 @@ class InitMdlTask(JSTask):
 
 			#threed.append(recon.finish(True))
 
-			if verbose>1 : print "Iter %d \t %1.4g (%1.4g)"%(it,bss,qual)
+			if verbose>1 : print("Iter %d \t %1.4g (%1.4g)"%(it,bss,qual))
 
 			threed[-1].process_inplace("xform.centerofmass")
 			threed[-1]=threed[-1].get_clip(Region((pad-boxsize)/2,(pad-boxsize)/2,(pad-boxsize)/2,boxsize,boxsize,boxsize))
@@ -300,7 +300,7 @@ class InitMdlTask(JSTask):
 				#aptcls[i].write_image("x.%d.hed"%t,i*2+1)
 		#display(threed[-1])
 		#threed[-1].write_image("x.mrc")
-		if verbose>0 : print "Model %d complete. Quality = %1.4f (%1.4f)"%(options["tryid"],bss,qual)
+		if verbose>0 : print("Model %d complete. Quality = %1.4f (%1.4f)"%(options["tryid"],bss,qual))
 
 #		if progress!=None : progress(100)		# this should be done automatically when we return
 		return {"result":(bss,threed[-1],aptcls,projs,threed[0])}

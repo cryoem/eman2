@@ -144,11 +144,11 @@ class EMVolumeModel(EM3DModel):
 		
 		self.data=data
 		if data==None:
-			print "Error, the data is empty"
+			print("Error, the data is empty")
 			return
 		
 		if (isinstance(data,EMData) and data.get_zsize()<=1) :
-			print "Error, the data is not 3D"
+			print("Error, the data is not 3D")
 			return
 		
 		if not self.inspector or self.inspector ==None:
@@ -170,7 +170,7 @@ class EMVolumeModel(EM3DModel):
 		self.zsample = self.texsample*(self.data.get_zsize())
 		
 		if self.tex_name == 0:
-			print "Error, can not render 3D texture - texture name is 0"
+			print("Error, can not render 3D texture - texture name is 0")
 			return
 		
 		
@@ -313,7 +313,7 @@ class EMVolumeModel(EM3DModel):
 				angle = abs(acos(point.dot(i)))
 			except:
 				t3d.printme()
-				print 'warning, there is a bug in the volume render which may cause incorrect rendering'
+				print('warning, there is a bug in the volume render which may cause incorrect rendering')
 				return
 			if (angle < closest):
 				closest = angle
@@ -337,7 +337,7 @@ class EMVolumeModel(EM3DModel):
 		self.tex_dl = glGenLists(1)
 		
 		if self.tex_dl == 0:
-			print "Error, failed to generate display list"
+			print("Error, failed to generate display list")
 			return
 		
 		n = self.get_dimension_size()
@@ -362,7 +362,7 @@ class EMVolumeModel(EM3DModel):
 			
 		
 		if self.tex_name == 0:
-			print "Error, can not render 3D texture - texture name is 0"
+			print("Error, can not render 3D texture - texture name is 0")
 			return
 		
 		
@@ -455,7 +455,7 @@ class EMVolumeModel(EM3DModel):
 			
 		self.tex_dl = glGenLists(1)
 		if (self.tex_dl == 0 ):
-			print "error, could not generate list"
+			print("error, could not generate list")
 			return
 
 		glNewList(self.tex_dl,GL_COMPILE)
@@ -546,7 +546,7 @@ class EMVolumeModel(EM3DModel):
 		
 	def set_texture_sample(self,val):
 		if ( val < 0 ) :
-			print "Error, cannot handle texture sample less than 0"
+			print("Error, cannot handle texture sample less than 0")
 			return
 		
 		self.texsample = val

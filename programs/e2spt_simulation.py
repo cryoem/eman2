@@ -122,11 +122,11 @@ def main():
 	options = sptOptionsParser( options )
 
 	if options.input and options.randstack:
-		print """\n(e2spt_simulation)WARNING: No point in supplying --input and --randstack simultaneously.
+		print("""\n(e2spt_simulation)WARNING: No point in supplying --input and --randstack simultaneously.
 		They are mutually exclusive. If --randstack is provided, --input is ignored,
 		because --randstack becomes --input.\n
-		--input was""",options.input
-		print '--randstack was', options.randstack
+		--input was""",options.input)
+		print('--randstack was', options.randstack)
 	
 	
 	'''
@@ -155,7 +155,7 @@ def main():
 	
 	if options.randstack:
 		if options.verbose > 3:
-			print "\n\nI will not generate a randstack but will read it from", options.randstack
+			print("\n\nI will not generate a randstack but will read it from", options.randstack)
 
 		randstackbase = os.path.basename( options.randstack )
 		randstackcopy = options.path + '/' + randstackbase
@@ -169,7 +169,7 @@ def main():
 		
 		nr=EMUtil.get_image_count(randstackcopy)
 		if options.verbose > 3:
-			print "There are these many particles in the randstack", nr							#ATTENTION: Randstack might still need box size changes and padding...
+			print("There are these many particles in the randstack", nr)							#ATTENTION: Randstack might still need box size changes and padding...
 		
 		options.input = randstackcopy
 		
@@ -229,8 +229,8 @@ def main():
 			tag = ''
 	
 			if options.verbose:
-				print "These many particles will be simulated, for each of the supplied references/models", options.nptcls
-				print "There are these many references/models", nrefs
+				print("These many particles will be simulated, for each of the supplied references/models", options.nptcls)
+				print("There are these many references/models", nrefs)
 		
 			originalpath = options.path
 			kkk=0
@@ -239,7 +239,7 @@ def main():
 		
 			for i in range(nrefs):
 				if options.verbose:
-					print "\n\nGenerating simulated subtomograms for reference number", kkk
+					print("\n\nGenerating simulated subtomograms for reference number", kkk)
 					
 				if nrefs>1:
 					modelfilename = originalinput.split('/')[-1].replace('.hdf','_model' + str(i).zfill(2) + '.hdf')
@@ -250,8 +250,8 @@ def main():
 					#cmd = 'e2proc3d.py '  + options.input + ' ' + options.path + '/' + modelfilename + ' --first=' + str(i) + ' --last=' + str(i) + ' --append'
 	
 					os.system('e2proc3d.py '  + originalinput + ' ' + options.path + '/' + modelfilename + ' --first=' + str(i) + ' --last=' + str(i) + ' --append')
-					print "This is the command to create the model"
-					print 'e2proc3d.py '  + originalinput + ' ' + options.path + '/' + modelfilename + ' --first=' + str(i) + ' --last=' + str(i) + ' --append'
+					print("This is the command to create the model")
+					print('e2proc3d.py '  + originalinput + ' ' + options.path + '/' + modelfilename + ' --first=' + str(i) + ' --last=' + str(i) + ' --append')
 	
 					options.input = options.path + '/' + modelfilename
 					tag = str(i).zfill(len(str(nrefs)))
@@ -267,7 +267,7 @@ def main():
 						#modelhdr = EMData(options.input,0,True)
 						
 				elif model['nx'] != model['ny'] or model['nx'] != model['nz'] or model['ny'] != model['nz']:
-					print "\nThe image is 2D"
+					print("\nThe image is 2D")
 					model = clip2D( model, max( model['nx'], model['ny'] ) )	
 							
 				retrand = randomizer(options, model, tag)
@@ -276,8 +276,8 @@ def main():
 				
 				simptclsname = options.path + '/simptcls.hdf'
 				
-				print "\n\n\n\n\n\(e2spt_simulation) before subtomosim, simptclsname is", simptclsname
-				print "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS\n\n\n\n\n\n\n\n"
+				print("\n\n\n\n\n\(e2spt_simulation) before subtomosim, simptclsname is", simptclsname)
+				print("SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS\n\n\n\n\n\n\n\n")
 				if not options.nosim:
 					subtomosim(options,randptcls,simptclsname,dimension)		
 				else:
@@ -351,7 +351,7 @@ def clip3D( vol, size ):
 	if Rvol:
 		vol.clip_inplace( Rvol )
 	else:
-		print "ERROR!: Empty Region to clip", Rvol
+		print("ERROR!: Empty Region to clip", Rvol)
 	#vol.process_inplace('mask.sharp',{'outer_radius':-1})
 	
 	return vol
@@ -367,7 +367,7 @@ def clip2D( img, size ):
 	if Rimg:
 		img.clip_inplace( Rimg )
 	else:
-		print "ERROR!: Empty Region to clip", Rimg
+		print("ERROR!: Empty Region to clip", Rimg)
 		
 	#img.process_inplace('mask.sharp',{'outer_radius':-1})
 	
@@ -386,7 +386,7 @@ def randomizer(options, model, tag):
 	#print "I am inside the RANDOMIZER"
 	
 	if options.verbose:
-		print "You have requested to generate %d particles with random orientations and translations" %(options.nptcls)
+		print("You have requested to generate %d particles with random orientations and translations" %(options.nptcls))
 	
 	randptcls = {}
 	
@@ -396,9 +396,9 @@ def randomizer(options, model, tag):
 	
 	randstackname = options.path + '/randstack.hdf'
 	
-	print "###############\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n#################\nThe stackname inside RANDOMIZER, is", randstackname
-	print "--saverandstack is", options.saverandstack
-	print "#####################################\n\n\n\n\n\n\n\n\n\n\n\n\n"
+	print("###############\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n#################\nThe stackname inside RANDOMIZER, is", randstackname)
+	print("--saverandstack is", options.saverandstack)
+	print("#####################################\n\n\n\n\n\n\n\n\n\n\n\n\n")
 	
 	orientations = {}
 	randomangles = False	
@@ -411,7 +411,7 @@ def randomizer(options, model, tag):
 		orientations = { 0:Transform() }	#the first particle's orientation is not randomized
 		palts=[]
 
-		print "\nGenerating random orientation within asymmetric unit %s" %(options.sym)
+		print("\nGenerating random orientation within asymmetric unit %s" %(options.sym))
 		sym = Symmetries.get( options.sym )
 		
 		#orients = sym.gen_orientations("eman",{"n": options.nptcls,"random_phi":1,"inc_mirror":1})
@@ -429,7 +429,7 @@ def randomizer(options, model, tag):
 			nbottom = options.nptcls -ntop 
 			#palts = paltstop
 			palts = numpy.append( preferredalt( options, mu=180,sigma=45, nptcls=ntop ), preferredalt( options, mu=0,sigma=45, nptcls=nbottom ) )
-			print "\nreturned palts",palts
+			print("\nreturned palts",palts)
 		
 		if options.preferredside and not options.preferredtop:
 			paltsside = preferredalt( options, mu=90, sigma=22.5, nptcls=options.nptcls ) 
@@ -491,9 +491,9 @@ def randomizer(options, model, tag):
 
 				if randtx or randty or randtz:
 					#random_transform.translate(randtx, randty, randtz)
-					print "\nbefore translation orientations[i] is",  orientations[i]
+					print("\nbefore translation orientations[i] is",  orientations[i])
 					orientations[i].set_trans(randtx, randty, randtz)
-					print "\ntranslated orientations[i] is", orientations[i]
+					print("\ntranslated orientations[i] is", orientations[i])
 					#orientations.update({ i : newt  })
 			
 			else:
@@ -506,7 +506,7 @@ def randomizer(options, model, tag):
 	
 	for i in range( options.nptcls ):
 		if options.verbose:
-			print "\n(e2spt_simulation.py) generating particle #%d" %( i )
+			print("\n(e2spt_simulation.py) generating particle #%d" %( i ))
 		
 		if randomangles or randomtrans:
 			
@@ -514,7 +514,7 @@ def randomizer(options, model, tag):
 
 			outtransform = orientations[i]
 
-			print "\nouttransform", outtransform
+			print("\nouttransform", outtransform)
 			b.transform(outtransform)
 		
 			#transforms.append(random_transform)		
@@ -540,7 +540,7 @@ def randomizer(options, model, tag):
 				b['origin_z'] = 0
 				
 				b.write_image(randstackname,i)
-				print "\n(e2spt_simulation.py) saving random orientations stack. particle %d written to %s" % ( i, randstackname )
+				print("\n(e2spt_simulation.py) saving random orientations stack. particle %d written to %s" % ( i, randstackname ))
 
 			else:
 				pass #stack of particles in random orientations not saved
@@ -550,7 +550,7 @@ def randomizer(options, model, tag):
 		randptcls.update({i:b})
 		
 		if options.verbose:
-			print "\n(e2spt_simulation.py) applied transform", random_transform
+			print("\n(e2spt_simulation.py) applied transform", random_transform)
 
 
 	azs=[]
@@ -565,7 +565,7 @@ def randomizer(options, model, tag):
 		if randomangles or randomtrans:
 			for i in orientations:
 				t = orientations[i]
-				print "\n t to get rotations and translations from is",t
+				print("\n t to get rotations and translations from is",t)
 				if randomangles:
 					rots=t.get_rotation()
 					
@@ -667,7 +667,7 @@ def textwriter(options,data,tag):
 	#if options.path not in name:
 	name = options.path + '/' + tag + '.txt'
 	
-	print "I am in the text writer for this file", name
+	print("I am in the text writer for this file", name)
 	
 	f=open(name,'w')
 	lines=[]
@@ -730,22 +730,22 @@ and recounstructs a new 3D volume from the simulated tilt series.
 def subtomosim(options,ptcls,outname,dimension):
 	#print "INSIDE SUBTOMOSIM"
 	
-	print "\n\n\n\n\n(e2spt_simulation) Outname received in subtomosim", outname
-	print "OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO\n\n\n\n\n\n"	
+	print("\n\n\n\n\n(e2spt_simulation) Outname received in subtomosim", outname)
+	print("OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO\n\n\n\n\n\n")	
 	'''
 	Initialize parallelism if being used
 	'''
 	if options.parallel :
-		print "\n\n(e2spt_simulation.py) INITIALIZING PARALLELISM, for this outname (stack, or reference)", outname
-		print "\n\n"
+		print("\n\n(e2spt_simulation.py) INITIALIZING PARALLELISM, for this outname (stack, or reference)", outname)
+		print("\n\n")
 		from EMAN2PAR import EMTaskCustomer
 		etc=EMTaskCustomer(options.parallel)
 	
 	if options.verbose:
 		
-		print "(e2spt_simulation) There are these many slices to produce to simulate each subtomogram", options.nslices
+		print("(e2spt_simulation) There are these many slices to produce to simulate each subtomogram", options.nslices)
 	
-	print "\n\n\n\n\n\n\n\n\n\n\nIn subtomosim function before task, size is", ptcls[0]['nx'],ptcls[0]['ny'],ptcls[0]['nz']
+	print("\n\n\n\n\n\n\n\n\n\n\nIn subtomosim function before task, size is", ptcls[0]['nx'],ptcls[0]['ny'],ptcls[0]['nz'])
 	
 	tasks=[]
 	#>>for i in range(len(ptcls)):
@@ -784,7 +784,7 @@ def subtomosim(options,ptcls,outname,dimension):
 		#print "And its index is", pn
 		
 		if i==0:
-			print "\n\n(subtomosim) The size of the final particle is",result[key]['nx'],result[key]['ny'],result[key]['nz']
+			print("\n\n(subtomosim) The size of the final particle is",result[key]['nx'],result[key]['ny'],result[key]['nz'])
 
 		result[key]['origin_x'] = 0									#Make sure the origin is set to zero, to avoid display issues with Chimera
 		result[key]['origin_y'] = 0
@@ -859,7 +859,7 @@ def genangles( options ):
 	
 		if options.savetlt:
 			tiltfile = options.path + '/tiltangles.tlt'
-			print "\n\n\n\nPath to save angles in is", tiltfile
+			print("\n\n\n\nPath to save angles in is", tiltfile)
 		
 			f = open( tiltfile, 'w' )
 			f.writelines( lines )
@@ -898,7 +898,7 @@ class SubtomoSimTask(JSTask):
 		
 		image = self.data['image']
 		
-		print "\n\n(SubtomoSimTask) Size of the particle for simulation is", image['nx'],image['ny'],image['nz']
+		print("\n\n(SubtomoSimTask) Size of the particle for simulation is", image['nx'],image['ny'],image['nz'])
 		
 		dimension = 3
 		if int(image['nz']) < 2:
@@ -907,7 +907,7 @@ class SubtomoSimTask(JSTask):
 		outname = self.classoptions['outname']
 		
 		if options.verbose:
-			print "Generating projections for particle #", i
+			print("Generating projections for particle #", i)
 
 		#apix = ptcls[i]['apix_x']
 		apix = image['apix_x']
@@ -969,7 +969,7 @@ class SubtomoSimTask(JSTask):
 			
 		sptcoords = tuple([coordx, coordy, coordz])
 		
-		print "Spt coords are", sptcoords	
+		print("Spt coords are", sptcoords)	
 
 		alt = lower_bound
 		raw_projections = []
@@ -977,15 +977,15 @@ class SubtomoSimTask(JSTask):
 	
 		randT = image['sptsim_randT']
 	
-		print "\n\nWill process particle i", i
-		print "Which was been assigned coordinates"
-		print "Nslices are", nslices
-		print "Lower bound is", lower_bound
+		print("\n\nWill process particle i", i)
+		print("Which was been assigned coordinates")
+		print("Nslices are", nslices)
+		print("Lower bound is", lower_bound)
 	
 		finalprjsRAW = finalprjsED = ''
 
-		print "The 3d image is", image
-		print "Its size is",image['nx'],image['ny'],image['nz']
+		print("The 3d image is", image)
+		print("Its size is",image['nx'],image['ny'],image['nz'])
 			
 		#tiltangles = []
 		#for j in range( nslices ):						#Extra 'noise' slices are 0 if --fillwedge is off. Calculated above if on.
@@ -1041,18 +1041,18 @@ class SubtomoSimTask(JSTask):
 			#print "Px is", px
 			#print "And angle is", realalt
 			#print "Therefore sin(alt) is", numpy.sin(realalt)
-			print "And thus dz is", dz
+			print("And thus dz is", dz)
 			defocus = options.defocus + dz
-			print "So the final defocus to use is", defocus
+			print("So the final defocus to use is", defocus)
 			
 			
 			
 			#prj = image.process("misc.directional_sum",{"axis":"z"})
-			print "\nprojecting from",t,realalt
+			print("\nprojecting from",t,realalt)
 	
 			prj = image.project("standard",t)
 			
-			print "projection done"
+			print("projection done")
 			
 			'''
 			if options.fillwedge and j > nslices:
@@ -1144,8 +1144,8 @@ class SubtomoSimTask(JSTask):
 			ctfed_projections.append(prj_r)
 			#print "Appended ctfed prj in slice j", j
 		
-			print "options.applyctf", options.applyctf
-			print "should save edited prjs..."
+			print("options.applyctf", options.applyctf)
+			print("should save edited prjs...")
 			if options.saveprjs and (options.applyctf or options.snr):
 				finalprjsED = outname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsEDITED.hdf')
 				#if options.path + '/' in outname:
@@ -1153,7 +1153,7 @@ class SubtomoSimTask(JSTask):
 				
 				finalprjsED = finalprjsED.replace('_preproc','')
 				prj_r.write_image( finalprjsED , prjindx)	
-				print "wrote edited prj to %s, indx %d" %( finalprjsED, prjindx )
+				print("wrote edited prj to %s, indx %d" %( finalprjsED, prjindx ))
 	
 			prjindx += 1
 
@@ -1170,14 +1170,14 @@ class SubtomoSimTask(JSTask):
 				if 'mode' in options.reconstructor[-1]:
 					mode=options.reconstructor[-1]['mode']
 					
-					print "\nThe reconstructor mode has been changed from default to", mode
+					print("\nThe reconstructor mode has been changed from default to", mode)
 					#sys.exit()
 					
 		
 		r = Reconstructors.get(options.reconstructor[0],{'size':(box,box,box),'sym':'c1','verbose':True,'mode':mode})
 		
 		if dimension == 2:
-			print "Boxsize to set up 2D reconstructor is", box,box
+			print("Boxsize to set up 2D reconstructor is", box,box)
 			r = Reconstructors.get(options.reconstructor[0],{'size':(box,box,1),'sym':'c1','verbose':True,'mode':mode})
 
 		#
@@ -1199,8 +1199,8 @@ class SubtomoSimTask(JSTask):
 	
 		rec = r.finish(True)
 		
-		print "\n(e2spt_simulation) I have finished simulating particle number", i
-		print "\n"
+		print("\n(e2spt_simulation) I have finished simulating particle number", i)
+		print("\n")
 		#print "The mean of the reconstructed particle is", rec['mean']
 		#mname = parameters['model'].split('/')[-1].split('.')[0]
 		#name = 'rec_' + mname + '#' + str(i).zfill(len(str(len(particles)))) + '.hdf'
@@ -1213,7 +1213,7 @@ class SubtomoSimTask(JSTask):
 		rec['origin_y']=0
 		rec['origin_z']=0
 	
-		print "sptcoords for header are", sptcoords
+		print("sptcoords for header are", sptcoords)
 		rec['ptcl_source_coord']=sptcoords
 		
 		rec['spt_tiltangles'] = tiltangles
@@ -1221,15 +1221,15 @@ class SubtomoSimTask(JSTask):
 		
 		#print "The apix of rec is", rec['apix_x']
 		
-		print "\nThe outname to write the particle i", i 
-		print "is", outname
-		print "\n\n"
+		print("\nThe outname to write the particle i", i) 
+		print("is", outname)
+		print("\n\n")
 		
 		#finaloutname = options.path + '/' + outname
 		#finaloutname.replace('_preproc','')
 		#print "is, finaloutname", finaloutname
 
-		print "rec to return is", rec
+		print("rec to return is", rec)
 			
 		#rec.write_image(finaloutname,i)
 
@@ -1275,8 +1275,8 @@ class SubtomoSimTask(JSTask):
 		
 		#box = image.get_xsize()
 		
-		print "\n\n\n$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\nThe final boxsize of rec is", rec['nx'], rec['ny'], rec['nz'] 
-		print "and box is", box
+		print("\n\n\n$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\nThe final boxsize of rec is", rec['nx'], rec['ny'], rec['nz']) 
+		print("and box is", box)
 		return { classoptions['ptclnum']:rec }
 
 
@@ -1356,7 +1356,7 @@ def get_results(etc,tids,options):
 		
 		tidsleft=[j for i,j in enumerate(tidsleft) if proglist[i]!=100]		# remove any completed tasks from the list we ask about
 		if options.verbose:
-			print "  %d tasks, %d complete, %d waiting to start        \r"%(len(tids),ncomplete,nwait)
+			print("  %d tasks, %d complete, %d waiting to start        \r"%(len(tids),ncomplete,nwait))
 			sys.stdout.flush()
 	
 		if len(tidsleft)==0: break

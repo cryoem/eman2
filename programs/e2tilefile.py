@@ -74,16 +74,16 @@ def main():
 
 	if options.dump:
 		td=tile_list(args[0])
-		print td
+		print(td)
 		k=td.keys()
 		k.sort()
-		for i in k: print i,td[i]
+		for i in k: print(i,td[i])
 
 	if options.display!="" :
 		l,x,y=options.display.split(',')
 		try: img=get_tile(args[0],int(l),int(x),int(y))
 		except:
-			print "Tile not present in file"
+			print("Tile not present in file")
 			sys.exit(1)
 		o=file("/tmp/tile.jpg","w")
 		o.write(img)

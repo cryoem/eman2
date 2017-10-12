@@ -102,7 +102,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 		try:
 			options.step=int(options.step.split(",")[0]),int(options.step.split(",")[1])
 		except:
-			print "Invalid --step specification"
+			print("Invalid --step specification")
 			sys.exit(1)
 
 	if options.all : options.long=1
@@ -120,11 +120,11 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 	else : vstack=None
 		
 	if options.merge :
-		print "WARNING: Merge mode\nCombining contents of: ",", ".join(args[1:])
-		print "into ",args[0]
+		print("WARNING: Merge mode\nCombining contents of: ",", ".join(args[1:]))
+		print("into ",args[0])
 		
 		if raw_input("Proceed (y/n) :").lower() != "y" :
-			print "Aborting"
+			print("Aborting")
 			sys.exit(1)
 		
 		
@@ -140,7 +140,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 			for k in indb.keys():
 				outdb[k]=indb[k]
 				
-		print "Merging complete"
+		print("Merging complete")
 		sys.exit(0)
 	
 	for path in args:
@@ -150,13 +150,13 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 			else:               path=uu[0]+"#"+uu[1]
 		if path.lower()[:4]!="bdb:" : path="bdb:"+path
 		if '#' in path :
-			if len(args)>1 : print "\n",path,":"
+			if len(args)>1 : print("\n",path,":")
 			path,dbs=path.rsplit("#",1)
 			path+="#"
 			dbs=[dbs]
 		else:
 			if not '#' in path and path[-1]!='/' : path+='#'			
-			if len(args)>1 : print "\n",path[:-1],":"
+			if len(args)>1 : print("\n",path[:-1],":")
 			dbs=db_list_dicts(path)
 			
 
@@ -173,7 +173,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 		
 		if options.list :
 			if options.makevstack==None and options.appendvstack==None :
-				print "ERROR, this option is used for virtual stack creation, please add makevstack or appendvstack options, and restart"
+				print("ERROR, this option is used for virtual stack creation, please add makevstack or appendvstack options, and restart")
 				sys.exit(1)
 			vdata=open(options.list,'r').readlines()
 			n=len(vdata[0].split())
@@ -187,7 +187,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 		
 		if options.exlist :
 			if options.makevstack==None:
-				print "ERROR, this option is used for virtual stack creation, please add makevstack or appendvstack options, and restart"
+				print("ERROR, this option is used for virtual stack creation, please add makevstack or appendvstack options, and restart")
 				sys.exit(1)
 			vdata=open(options.exlist,'r').readlines()
 			n=len(vdata[0].split())
@@ -206,7 +206,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 		if options.makevstack!=None or options.appendvstack!=None :
 			
 			vspath=os.path.realpath(vstack.path)+"/"
-			if options.verbose>2 : print "vspath: ",vspath
+			if options.verbose>2 : print("vspath: ",vspath)
 			for db in dbs:
 				dct,keys=db_open_dict(path+db,ro=True,with_keys=True)
 				if dct==vstack : continue
@@ -222,39 +222,39 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 					try: d=dct.get(n,nodata=1).get_attr_dict()
 					except:
 						traceback.print_exc()
-						print "---\nerror reading ",db,n 
+						print("---\nerror reading ",db,n) 
 						continue
 					# This block converts an absolute path to the actual data to a relative path
 					try:
 						dpath=os.path.realpath(dct.get_data_path(n))
-						if options.verbose>2 : print "dpath: ",dpath
+						if options.verbose>2 : print("dpath: ",dpath)
 						if os.name == 'nt':
 							vspath=vspath.replace("\\", '/')
 							dpath=dpath.replace('\\', '/')
 						rpath=makerelpath(vspath,dpath)
-						if options.verbose>2 : print "rpath: ",rpath
+						if options.verbose>2 : print("rpath: ",rpath)
 					except:
-						print "error with data_path ",db,n
+						print("error with data_path ",db,n)
 						continue
 					d["data_path"]=rpath
 					d["data_n"]=n
 					d["data_source"]= path+db
 					if d["data_path"]==None :
-						print "error with data_path ",db,n
+						print("error with data_path ",db,n)
 						continue
 					vstack[vstackn]=d
 					vstackn+=1
 					if vstackn%100==0:
 						try:
-							print "\r  ",vstackn,"     ",
+							print("\r  ",vstackn,"     ", end=' ')
 							sys.stdout.flush()
 						except: pass	
-				print "\r  ",vstackn,"     "
+				print("\r  ",vstackn,"     ")
 				dct.close()
 
 		try: maxname=max([len(s) for s in dbs])
 		except:
-			print "Error reading ",path
+			print("Error reading ",path)
 
 		if options.restore :
 			nima = EMUtil.get_image_count(options.restore)
@@ -286,7 +286,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 
 		if options.extractplots :
 			for db in dbs:
-				print "####  Extracting plots from ",db
+				print("####  Extracting plots from ",db)
 				dct=db_open_dict(path+db,ro=True)
 				
 				#### Dump
@@ -297,7 +297,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 					try :
 						ns=[len(i) for i in v]
 						fsp=db+"-"+k+".txt"
-						print "%s  (%d columns)"%(fsp,len(ns))
+						print("%s  (%d columns)"%(fsp,len(ns)))
 						out=file(fsp,"w")
 						for i in range(ns[0]):
 							for j in range(len(ns)):
@@ -310,7 +310,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 			
 		if options.smalldump :
 			for db in dbs:
-				print "##### ",db
+				print("##### ",db)
 				dct=db_open_dict(path+db,ro=True)
 				
 				#### Dump
@@ -319,26 +319,26 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 				if len(options.step)==3 : keys=keys[:options.step[2]]
 				for k in keys[options.step[0]::options.step[1]]:
 					v=dct[k]
-					print "%s : "%k,
+					print("%s : "%k, end=' ')
 					if isinstance (v,list) or isinstance(v,tuple)  :
-						for i in v: print "\n\t%s"%str(i),
-						print ""
+						for i in v: print("\n\t%s"%str(i), end=' ')
+						print("")
 					elif isinstance(v,dict) :
 						ks2=v.keys()
 						ks2.sort()
 						kc=0
 						for i in ks2:
 							if kc>=2 :
-								print "..."
+								print("...")
 								break
-							print "\n\t%s : %s"%(i,v[i]),
+							print("\n\t%s : %s"%(i,v[i]), end=' ')
 							kc+=1
-						print ""
-					else : print str(v)
+						print("")
+					else : print(str(v))
 				dct.close()
 		if options.checkctf:
 			for db in dbs:
-				print "##### CTF -> ",db
+				print("##### CTF -> ",db)
 				dct=db_open_dict(path+db,ro=True)
 				keys=dct.keys()
 				if len(options.step)==3 : keys=keys[:options.step[2]]
@@ -348,21 +348,21 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 					try:
 						ctf=v["ctf"]
 					except:
-						if k!="maxrec" : print "CTF missing on image %s"%k
+						if k!="maxrec" : print("CTF missing on image %s"%k)
 						continue
 					
 					defocus.add(ctf.defocus)
 
 				defocus=list(defocus)
-				print "Defocuses found: ",
-				for i in defocus: print "%1.3f, "%i,
-				print "\n\nRange: %1.3f - %1.3f  (%d unique values)"%(min(defocus),max(defocus),len(defocus))
+				print("Defocuses found: ", end=' ')
+				for i in defocus: print("%1.3f, "%i, end=' ')
+				print("\n\nRange: %1.3f - %1.3f  (%d unique values)"%(min(defocus),max(defocus),len(defocus)))
 
 					
 
 		if options.dump :
 			for db in dbs:
-				print "##### ",db
+				print("##### ",db)
 				dct=db_open_dict(path+db,ro=True)
 				
 				#### Dump
@@ -371,17 +371,17 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 				keys.sort()
 				for k in keys[options.step[0]::options.step[1]]:
 					v=dct[k]
-					print "%s : "%k,
+					print("%s : "%k, end=' ')
 					if isinstance (v,list) or isinstance(v,tuple)  :
-						for i in v: print "\n\t%s"%str(i),
-						print ""
+						for i in v: print("\n\t%s"%str(i), end=' ')
+						print("")
 					elif isinstance(v,dict) :
 						ks2=v.keys()
 						ks2.sort()
 						for i in ks2:
-							print "\n\t%s : %s"%(i,v[i]),
-						print ""
-					else : print str(v)
+							print("\n\t%s : %s"%(i,v[i]), end=' ')
+						print("")
+					else : print(str(v))
 				dct.close()
 			
 		# long listing, one db per line
@@ -402,12 +402,12 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 							im=dct[i]
 							if im==None : raise Exception
 						except: continue
-						print "%d. %d x %d x %d\tA/pix=%1.2f\tM=%1.4f\tS=%1.4f\tSk=%1.4f"%(i,im["nx"],im["ny"],im["nz"],im["apix_x"],im["mean"],im["sigma"],im["skewness"]),
-						try: print "\t%s"%str(im["model_id"])
+						print("%d. %d x %d x %d\tA/pix=%1.2f\tM=%1.4f\tS=%1.4f\tSk=%1.4f"%(i,im["nx"],im["ny"],im["nz"],im["apix_x"],im["mean"],im["sigma"],im["skewness"]), end=' ')
+						try: print("\t%s"%str(im["model_id"]))
 						except: pass
 						try:
-							print "\tdf=%1.3f\tB=%1.1f"%(im["ctf"].defocus,im["ctf"].bfactor)
-						except: print " "
+							print("\tdf=%1.3f\tB=%1.1f"%(im["ctf"].defocus,im["ctf"].bfactor))
+						except: print(" ")
 
 				first=EMData()
 				try: 
@@ -415,13 +415,13 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 					size=first.get_xsize()*first.get_ysize()*first.get_zsize()*len(dct)*4;
 					total[0]+=len(dct)
 					total[1]+=size
-					print fmt%(db,len(dct),"%dx%dx%d   apix: %1.2f"%(first.get_xsize(),first.get_ysize(),first.get_zsize(),first["apix_x"]),human_size(size)),
+					print(fmt%(db,len(dct),"%dx%dx%d   apix: %1.2f"%(first.get_xsize(),first.get_ysize(),first.get_zsize(),first["apix_x"]),human_size(size)), end=' ')
 				except:
-					print fmt2%db
-				try: print "\tdf: %1.3f\tB: %1.0f"%(first["ctf"].defocus,first["ctf"].bfactor)
-				except: print ""
+					print(fmt2%db)
+				try: print("\tdf: %1.3f\tB: %1.0f"%(first["ctf"].defocus,first["ctf"].bfactor))
+				except: print("")
 				dct.close()
-			print fmt%("TOTAL",total[0],"",human_size(total[1]))
+			print(fmt%("TOTAL",total[0],"",human_size(total[1])))
 		elif options.check :
 			from cPickle import loads
 			for db in dbs:
@@ -435,20 +435,20 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 					if len(s1)>0 :				# If anything unpickled, then it is an axbxc prefix identifying the location of a binary
 						st=allkvp.setdefault(s1,set()) # set of all positions seen so far
 						v=loads(dct.bdb.get(k))	# position in binary file
-						if v in st : print "Error: value %d seen multiple times in %s (%s,%s)"%(v,db,s1,s2)
+						if v in st : print("Error: value %d seen multiple times in %s (%s,%s)"%(v,db,s1,s2))
 						st.add(v)
-				print "%s : "%db,
+				print("%s : "%db, end=' ')
 				for i in allkvp.keys(): 
-					if options.verbose>0 : print "%s %d/%d\t"%(i,len(allkvp[i]),int(max(allkvp[i]))+1),
-					if len(allkvp[i])!=int(max(allkvp[i])+1) : print "\nMismatch found in %s. Could be normal if file has been rewritten multiple times, but is unusual"%db
-				if options.verbose>0 : print ""
-				else : print " done"
+					if options.verbose>0 : print("%s %d/%d\t"%(i,len(allkvp[i]),int(max(allkvp[i]))+1), end=' ')
+					if len(allkvp[i])!=int(max(allkvp[i])+1) : print("\nMismatch found in %s. Could be normal if file has been rewritten multiple times, but is unusual"%db)
+				if options.verbose>0 : print("")
+				else : print(" done")
 				dct.close()
 
 		elif options.short :
 			for db in dbs:
-				print path+db,
-			print " "
+				print(path+db, end=' ')
+			print(" ")
 
 		elif not options.makevstack and not options.appendvstack :
 			# Nicely formatted 'ls' style display
@@ -459,17 +459,17 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 			fmt="%%-%ds"%width
 			for r in range(rows):
 				for c in range(cols):
-					try: print fmt%dbs[r+c*rows],
+					try: print(fmt%dbs[r+c*rows], end=' ')
 					except: pass
-				print " "
+				print(" ")
 
 		if options.delete :
 			if not options.force :
-				print "You are requesting to delete the following databases:"
+				print("You are requesting to delete the following databases:")
 				for db in dbs:
-					print db," ",
+					print(db," ", end=' ')
 				if raw_input("\nAre you sure (y/n) ? ")[0].lower()!='y' :
-					print "Aborted"
+					print("Aborted")
 					sys.exit(1)
 			
 			for db in dbs: db_remove_dict(path+db)
@@ -500,7 +500,7 @@ def db_cleanup(force=False):
 	if(sys.platform == 'win32'):
 		force = True
 		path="eman2db-%s"%os.getenv('USERNAME')
-		print "Database cleanup is in force mode on windows machines"
+		print("Database cleanup is in force mode on windows machines")
 	else:		
 		path="eman2db-%s"%os.getenv("USER","anyone")
 	
@@ -515,7 +515,7 @@ def db_cleanup(force=False):
 				ret=pipe.close()
 				if ret!=None: raise Exception
 		except:
-			print "Error : could not check for running EMAN2 jobs, please make sure the 'lsof' command is installed and functioning, or insure no EMAN2 commands are running and run e2bdb.py -cF"
+			print("Error : could not check for running EMAN2 jobs, please make sure the 'lsof' command is installed and functioning, or insure no EMAN2 commands are running and run e2bdb.py -cF")
 			sys.exit(1)
 		
 		# someone is still using the cache
@@ -524,18 +524,18 @@ def db_cleanup(force=False):
 			for i in op:
 				s.add(i[1])
 		
-			print "These processes are actively using the cache. Please exit them and try again :"
+			print("These processes are actively using the cache. Please exit them and try again :")
 			for i in s: 
-				try: print os.popen("ps %s"%i,"r").readlines()[-1]
-				except: print i
+				try: print(os.popen("ps %s"%i,"r").readlines()[-1])
+				except: print(i)
 			
 			reply=raw_input("Would you like me to kill all of these jobs (YES/NO) : ")
 			if reply != "YES" : 
-				print "Not killing jobs. Please exit them manually then retry."
+				print("Not killing jobs. Please exit them manually then retry.")
 				return
 
 			for i in s: os.kill(int(i),15)
-			print "Signal sent to kill job(s). Please retry e2bdb.py -c"
+			print("Signal sent to kill job(s). Please retry e2bdb.py -c")
 			return
 
 	# ok, properly close the cache and delete it
@@ -544,13 +544,13 @@ def db_cleanup(force=False):
 		d.close()		# Properly 'close' the environment before we delete it
 	except:
 		traceback.print_exc()
-		print """
+		print("""
 *******************
 
 A serious error occured in the database cache. This normally happens if you try to access a corrupt database file. Please follow the following steps to minimize the chance of data loss:
 1. run "db_recover -h %s"   (note, this may be called db4.8_recover or something similar if not using the EMAN2 binary distribution)
 2. run e2bdb.py -c again
-3. If you are aware which image file caused this error to occur in the first place, you can try accessing it again. If it triggers this same failure, repeat steps 1 and 2 then manually delete the offending image database inside the EMAN2DB directory"""%path
+3. If you are aware which image file caused this error to occur in the first place, you can try accessing it again. If it triggers this same failure, repeat steps 1 and 2 then manually delete the offending image database inside the EMAN2DB directory"""%path)
 		sys.exit(1)
 	
 	if(sys.platform == 'win32'):
@@ -559,7 +559,7 @@ A serious error occured in the database cache. This normally happens if you try 
 		shutil.rmtree('C:/tmp/'+path)
 	else:
 		os.system("rm -rf /tmp/%s"%path)
-	print "Database cache removed. Now safe to access databases from another machine or delete existing databases"
+	print("Database cache removed. Now safe to access databases from another machine or delete existing databases")
 	
 	
 

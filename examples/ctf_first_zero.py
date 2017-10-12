@@ -17,4 +17,4 @@ for d in arange(0,20.0,.1):
 	for i,s in enumerate(arange(0,0.25,.0001)):
 		if ct[i]*ct[i+1]<=0 : break	
 
-	print "%1.2f\t%1.2f"%(d,1/s)
+	print("%1.2f\t%1.2f"%(d,1/s))

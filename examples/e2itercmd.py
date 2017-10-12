@@ -20,25 +20,25 @@ for f in findir:
 	if stem in f:
 		format = f.split('.')[-1]
 		if format in imgextensions:
-			print "\nprocessing file", f
+			print("\nprocessing file", f)
 			hdr = EMData(f,0,True)
 			nz = hdr['nz']
 
 			if nz>1:
 				dimension=3
 			
-			print "dimensionality of image is",dimension
+			print("dimensionality of image is",dimension)
 
 			if format=='mrcs' or format=='MRCS':
 				dimension=2
-				print "but this is an mrcs file, so dimensionality", dimension
+				print("but this is an mrcs file, so dimensionality", dimension)
 			
 			if dimension == 3:
 				program='e2proc3d.py'
 			
 			output = f.split('.' + format)[0] + '_proc.' + format
 			cmd = program + ' ' + f + ' ' + output + ' --process ' + process
-			print "\ncmd to run is",cmd
+			print("\ncmd to run is",cmd)
 			os.popen( cmd )
 		else:
-			print "\nERROR: skipping invalid file", f
+			print("\nERROR: skipping invalid file", f)

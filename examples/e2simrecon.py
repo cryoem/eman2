@@ -43,13 +43,13 @@ import numpy as np
 def run(command):
 	"Mostly here for debugging, allows you to control how commands are executed (os.system is normal)"
 
-	print "{}: {}".format(time.ctime(time.time()),command)
+	print("{}: {}".format(time.ctime(time.time()),command))
 
 	ret=launch_childprocess(command)
 
 	# We put the exit here since this is what we'd do in every case anyway. Saves replication of error detection code above.
 	if ret !=0 :
-		print "Error running: ",command
+		print("Error running: ",command)
 		sys.exit(1)
 
 	return
@@ -75,7 +75,7 @@ Simulates the effects of a 3D reconstruction by including noise and rotational u
 	if len(args)<2 : parser.error("Input and output files required")
 
 	if options.fsc==None:
-		print "ERROR: must specify FSC curve"
+		print("ERROR: must specify FSC curve")
 		sys.exit(1)
 	fsc=XYData()
 	fsc.read_file(options.fsc)
@@ -85,7 +85,7 @@ Simulates the effects of a 3D reconstruction by including noise and rotational u
 
 	nz=vol["nz"]
 	if nz==1 :
-		print "Input must be a volume"
+		print("Input must be a volume")
 		sys.exit(1)
 
 	logger=E2init(sys.argv,options.ppid)
@@ -122,7 +122,7 @@ Simulates the effects of a 3D reconstruction by including noise and rotational u
 	fscl=[min(max(fsc.get_yatx(i*ds),.001),0.9999) for i in xrange(len(pspec))]
 #	print fscl
 	noise=[sqrt(pspec[i]*(1.0-fscl[i])/(fscl[i]))/(4000.0) for i in xrange(len(pspec))]
-	print noise
+	print(noise)
 
 	noisemap=EMData(nz,nz,nz)
 	noisemap.process_inplace("testimage.noise.gauss")

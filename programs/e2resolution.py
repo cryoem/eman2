@@ -82,9 +82,9 @@ def main():
 	
 	#options.align=parsemodopt(options.align)
 
-	print "WARNING:  e2resolution is an experimental program. It does not (yet) produce reliable resolution curves in most cases."
+	print("WARNING:  e2resolution is an experimental program. It does not (yet) produce reliable resolution curves in most cases.")
 
-	print "read models"
+	print("read models")
 	data=EMData(args[0],0)
 	mask=EMData(args[1],0)
 
@@ -104,13 +104,13 @@ def main():
 
 	data*=mask
 
-	print "compute FFT"
+	print("compute FFT")
 	dataf=data.do_fft()
 	noisef=noise.do_fft()
 
-	print "compute power 1"
+	print("compute power 1")
 	datapow=dataf.calc_radial_dist(dataf.get_ysize()/2-1,1,1,1)
-	print "compute power 2"
+	print("compute power 2")
 	noisepow=noisef.calc_radial_dist(noisef.get_ysize()/2-1,1,1,1)
 
 	x=range(1,len(datapow)+1)
@@ -127,7 +127,7 @@ def main():
 		s+=datapow[i]/noisepow[i]
 		sn+=1.0
 	if sn==0 :
-		print "Warning, strange normalization"
+		print("Warning, strange normalization")
 		s=datapow[int(len(noisepow)*.9)]/noisepow[int(len(noisepow)*.9)]
 	else: s/=sn
 

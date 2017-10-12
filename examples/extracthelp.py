@@ -34,7 +34,7 @@ for j,i in enumerate(lines):
 		try : op=parse(i.strip())
 		except:
 			try: op=parse((i+lines[j+1]).strip())
-			except: print (i+lines[j+1]).strip()
+			except: print((i+lines[j+1]).strip())
 			
 		com={"name":op[0][0][2:]}
 		com.update(op[1])
@@ -66,4 +66,4 @@ for i in options:
 		if o_type==None : raise Exception
 	except: o_type="bool"
 	
-	print "||%s||%s||%s||%s||"%(o_short,o_long,o_type,o_help)
+	print("||%s||%s||%s||%s||"%(o_short,o_long,o_type,o_help))

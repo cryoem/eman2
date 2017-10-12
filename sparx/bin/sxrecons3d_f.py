@@ -58,7 +58,7 @@ def main():
 
 
 	if len(args) != 3 and len(args) != 4:
-		print usage
+		print(usage)
 		sys.exit(-1)
 
 	prj_stack = args[0]

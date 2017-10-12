@@ -24,10 +24,10 @@ def main():
 	tstart=time.time()
 	
 	#### read orientation from projections
-	print "Reading projections..."
+	print("Reading projections...")
 	if options.pjfile:
 		if not options.simmx:
-			print "No simmx input..."
+			print("No simmx input...")
 			exit()
 			
 		projfile=options.pjfile
@@ -40,7 +40,7 @@ def main():
 		proj_oris=np.asarray(proj_oris)
 	
 	#### read info from particles
-	print "Reading partiles..."
+	print("Reading partiles...")
 	ptclfile=options.ptcl
 	npt=EMUtil.get_image_count(ptclfile)
 	#npt=1000
@@ -55,19 +55,19 @@ def main():
 	
 	#### read simmx
 	if options.simmx:
-		print "Parsing simmilarity matrix..."
+		print("Parsing simmilarity matrix...")
 		simxfile=options.simmx
 		simmxall=[]
 		for i in range(6):
 			ss=EMData(simxfile,i)
 			simmxall.append(ss.numpy().copy())
 		simmxall=np.asarray(simmxall)
-		print "simmx shape:",simmxall.shape
+		print("simmx shape:",simmxall.shape)
 		
 		simnp=simmxall[0]
 	else:
 		if not options.lstin:
-			print "Input should contain either simmx or lstin"
+			print("Input should contain either simmx or lstin")
 			exit()
 		simmxall=None
 		simnp=None
@@ -88,7 +88,7 @@ def main():
 
 	
 	#### refine orientation
-	print "Refining orientation..."
+	print("Refining orientation...")
 	allmid=np.unique(modelid)
 	jobs=[]
 	inputs=[]
@@ -146,11 +146,11 @@ def main():
 				kj+=1
 				jobs[running[i]].start()
 				#print "start: ", running[i], " on worker", i
-		print  "Waiting for", numleft, "tasks to complete..."
+		print("Waiting for", numleft, "tasks to complete...")
 		time.sleep(2)
 	
 	#### write output
-	print "Writing output to ", options.lstout
+	print("Writing output to ", options.lstout)
 	try: os.remove(options.lstout)
 	except: pass
 	
@@ -171,11 +171,11 @@ def main():
 		
 	lstfile=None
 	
-	print time.time()-tstart
+	print(time.time()-tstart)
 	E2end(logid)
 	
 def run(cmd):
-	print cmd
+	print(cmd)
 	launch_childprocess(cmd)
 	
 def get_fft(img):
@@ -293,7 +293,7 @@ def refine_align(job,ret):
 
 	olst=locs[0]
 	#gc.collect()
-	print job["modelid"], locs[1], locs[2]
+	print(job["modelid"], locs[1], locs[2])
 	ret.put(olst)
 	return olst
 

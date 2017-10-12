@@ -117,10 +117,10 @@ once complete, bispectra can be recomputed based on the masked particles, or the
 	if not options.nofullresok :
 		for fsp in ptcls:
 			if "ctf_flip_fullres" not in fsp:
-				print "ERROR: This program is meant to be used with full resolution phase flipped particles (__ctf_flip_fullres). ",fsp," does not appear to be this type of file. You can override this behavior with --nofullresok"
+				print("ERROR: This program is meant to be used with full resolution phase flipped particles (__ctf_flip_fullres). ",fsp," does not appear to be this type of file. You can override this behavior with --nofullresok")
 
 	if options.verbose:
-		print sum([i.count(-1) for i in ptcls.values()])," missing particles in classes. They will be unmasked"
+		print(sum([i.count(-1) for i in ptcls.values()])," missing particles in classes. They will be unmasked")
 
 # 	import pprint
 # 	pprint.pprint(ptcls)
@@ -131,7 +131,7 @@ once complete, bispectra can be recomputed based on the masked particles, or the
 	thrds=[(jsd,i,k,classes,masks,ptcls[k],options) for i,k in enumerate(ptcls)]
 
 	# here we run the threads and save the results, no actual alignment done here
-	print len(thrds)," threads"
+	print(len(thrds)," threads")
 	thrtolaunch=0
 	while thrtolaunch<len(thrds) or threading.active_count()>1:
 		# If we haven't launched all threads yet, then we wait for an empty slot, and launch another
@@ -139,7 +139,7 @@ once complete, bispectra can be recomputed based on the masked particles, or the
 		# thread hasn't finished.
 		if thrtolaunch<len(thrds) :
 			while (threading.active_count()==NTHREADS ) : time.sleep(.1)
-			if options.verbose : print "Starting thread {}/{}".format(thrtolaunch,len(thrds))
+			if options.verbose : print("Starting thread {}/{}".format(thrtolaunch,len(thrds)))
 			thrds[thrtolaunch]=threading.Thread(target=maskfile,args=thrds[thrtolaunch])
 			thrds[thrtolaunch].start()
 			thrtolaunch+=1
@@ -151,7 +151,7 @@ once complete, bispectra can be recomputed based on the masked particles, or the
 			thrds[n].join()
 			thrds[n]=None
 
-	if options.verbose: print "Finished processing ",len(ptcls), "particle files"
+	if options.verbose: print("Finished processing ",len(ptcls), "particle files")
 	E2end(logid)
 
 

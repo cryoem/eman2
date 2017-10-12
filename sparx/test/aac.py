@@ -48,19 +48,19 @@ for i in xrange(N):
 	elif(i%Kt == 2):  x.append(gauss(2.0e-1,1.0))
 
 
-print  ttime()
+print(ttime())
 for j in xrange(1,N):
 	for i in xrange(j):
 		d.set_value_at(mono(i,j),sqrt((x[i]-x[j])**2))
 dmin = 1.0e23
-print  ttime()
+print(ttime())
 for i in xrange(100):
 	o = Util.cluster_pairwise(d,K)
 	if(dmin > o[N+K]):
-		print  i,ttime(),o[N+K:N+K+2]
+		print(i,ttime(),o[N+K:N+K+2])
 		dmin = o[N+K]
 		best = o
-print ttime()
+print(ttime())
 #print  best[0:N]  # assignments
-print   best[N:N+K]  # objects that are centers
-print   best[N+K:N+K+2]  # criterion (should be minimized) and number of tierations)
+print(best[N:N+K])  # objects that are centers
+print(best[N+K:N+K+2])  # criterion (should be minimized) and number of tierations)

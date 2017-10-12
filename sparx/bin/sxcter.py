@@ -215,7 +215,7 @@ Stack Mode - Process a particle stack (Not supported by SPHIRE GUI))::
 
 	if main_mpi_proc == my_mpi_proc_id:
 		if options.debug_mode:
-			print "Returned value from cter_mrk() := ", result
+			print("Returned value from cter_mrk() := ", result)
 		print(" ")
 		print("DONE!!!")
 		print(" ")

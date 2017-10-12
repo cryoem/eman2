@@ -63,4 +63,4 @@ for i in range(0,400+1):
       [angs,sxs,sys,mirror,peak]=ormq(ee,o,first_ring,last_ring,1,0,0,1,"F")
       [angsi,sxsi,sysi,mirror,peak]=ormqi(ee,o,first_ring,last_ring,1,0,0,1,"F")
       [angsl,sxsl,sysl,mirror,peak]=ormql(ee,o,first_ring,last_ring,1,0,0,1,"F")
-      print  a,"  ",sx,"  ",sy,"  ",angs,"  ",sxs,"  ",sys,"  ",angsi,"  ",sxsi,"  ",sysi,"  ",angsl,"  ",sxsl,"  ",sysl
+      print(a,"  ",sx,"  ",sy,"  ",angs,"  ",sxs,"  ",sys,"  ",angsi,"  ",sxsi,"  ",sysi,"  ",angsl,"  ",sxsl,"  ",sysl)

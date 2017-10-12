@@ -148,7 +148,7 @@ class E2FoldHunterStat:
 			pdb_lines = pdb_file.readlines()
 			pdb_file.close()
 		except IOError:
-			print "The file \"" + str(pdb_file_name) + "\" does not exist"
+			print("The file \"" + str(pdb_file_name) + "\" does not exist")
 			sys.exit()
 
 		atomNumber=[]
@@ -262,7 +262,7 @@ class E2FoldHunterStat:
 			if(remainder_volume==0): excludePercent = 0.0
 			elif (MRC_volume==0): 
 				excludePercent = 1.0
-				print "Try choosing a different (smaller) isosurface threshold value. "
+				print("Try choosing a different (smaller) isosurface threshold value. ")
 			else: excludePercent = (float(remainder_volume)/MRC_volume)
 			volumePercent = 1-excludePercent
 			#####################################
@@ -330,21 +330,21 @@ class E2FoldHunterStat:
 				#s3.append(calc3[cCount])
 
 
-		print " " 
-		print " " 	
-		print "Number of transformations performed: " + str(len(calc1))
-		print "score 1 - Real space correlation: " + str(s1[0]) + " standard deviations above the mean"
-		print "score 1 - Real space correlation - Percentile Rank: " + str(s1p[0])
-		print "The average pixel value (real space correlation): " + str(score1[0])
-		print " " 
-		print "score 2 - Atom inclusion: " + str(s2[0]) + " standard deviations above the mean"
-		print "score 2 - Atom inclusion - Percentile Rank: " + str(s2p[0])
-		print "The atom inclusion percentage is: " + str(score2[0]*100) + "%"
-		print " " 
-		print "score 3 - Volume overlap: " + str(s3[0]) + " standard deviations above the mean"
-		print "score 3 - Volume overlap - Percentile Rank: " + str(s3p[0])
-		print "The volume overlap of the model and map is: " + str(score3[0]*100) + "%"
-		print " " 
+		print(" ") 
+		print(" ") 	
+		print("Number of transformations performed: " + str(len(calc1)))
+		print("score 1 - Real space correlation: " + str(s1[0]) + " standard deviations above the mean")
+		print("score 1 - Real space correlation - Percentile Rank: " + str(s1p[0]))
+		print("The average pixel value (real space correlation): " + str(score1[0]))
+		print(" ") 
+		print("score 2 - Atom inclusion: " + str(s2[0]) + " standard deviations above the mean")
+		print("score 2 - Atom inclusion - Percentile Rank: " + str(s2p[0]))
+		print("The atom inclusion percentage is: " + str(score2[0]*100) + "%")
+		print(" ") 
+		print("score 3 - Volume overlap: " + str(s3[0]) + " standard deviations above the mean")
+		print("score 3 - Volume overlap - Percentile Rank: " + str(s3p[0]))
+		print("The volume overlap of the model and map is: " + str(score3[0]*100) + "%")
+		print(" ") 
 
 
 		##### Create Dictionary
@@ -425,7 +425,7 @@ class E2FoldHunterStat:
 
 		secondReader = firstReader.copy()
 		curTime = time.time() - curTime
-		print curTime
+		print(curTime)
 		
 		return vals, rotList, secondReader, data, initPoint
 		#vals is a dictionary of all transformation information and score values
@@ -441,7 +441,7 @@ if __name__ == '__main__':
 	from emapplication import EMApp
 	em_app = EMApp()
 	window2 = E2FoldHunterStat()
-	print "This program is meant to be run in conjunction with e2validatemed.py in the programs directory"
+	print("This program is meant to be run in conjunction with e2validatemed.py in the programs directory")
 	em_app.show()
 	em_app.execute()
 

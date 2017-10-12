@@ -80,7 +80,7 @@ def main():
 
 	n = EMUtil.get_image_count( options.input )
 	orign = n
-	print "\nnumber of particles in stack %s is %d" %(options.input,n)
+	print("\nnumber of particles in stack %s is %d" %(options.input,n))
 	
 	if options.subset:
 		n = options.subset
@@ -88,8 +88,8 @@ def main():
 	if options.alistack:
 		n2 = EMUtil.get_image_count( options.alistack )
 		if n > n2:
-			print """\nERROR: there are fewer particles in --alistack, %d, than in --input, %d. 
-				Use --subset and set it to a number equal to or smaller than the number or particles in --alistack""" %(n2,n)
+			print("""\nERROR: there are fewer particles in --alistack, %d, than in --input, %d. 
+				Use --subset and set it to a number equal to or smaller than the number or particles in --alistack""" %(n2,n))
 			sys.exit(1)
 
 	if options.alifile:
@@ -103,7 +103,7 @@ def main():
 	outstack = options.path + '/' + os.path.basename(options.input).replace('.hdf','_trans.hdf')
 
 	for i in range(n):	
-		print "\nreading particle %d" %(i)	
+		print("\nreading particle %d" %(i))	
 		a=EMData( options.input, i)
 		
 		ptcl = a.copy()
@@ -122,7 +122,7 @@ def main():
 		ptcl['xform.align3d'] = Transform()
 		
 		if t:
-			print "transform is t",t
+			print("transform is t",t)
 			trans = t.get_trans()
 			rot = t.get_rotation()
 			
@@ -149,12 +149,12 @@ def main():
 			trs.append(tr)
 
 			newt = Transform({'type':'eman','tx':tx,'ty':ty,'tz':tz})
-			print "new transform is", newt
+			print("new transform is", newt)
 
 			ptcl.transform(newt)
 			ptcl['xform.align3d'] = newt
 			#if options.saveali:
-			print "\nsaving translated particle",i
+			print("\nsaving translated particle",i)
 			ptcl.write_image( outstack, i )
 		
 	

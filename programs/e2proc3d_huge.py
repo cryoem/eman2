@@ -76,13 +76,13 @@ process a single volume in a single file in-place.
 		
 	(options, args) = parser.parse_args()
 
-	print "Sorry, this program still under development. Not functional yet."
+	print("Sorry, this program still under development. Not functional yet.")
 	sys.exit(1)
 
 	try:
 		hdr=EMData(args[1],0,1)
 	except:
-		print "ERROR: Can't read input file header"
+		print("ERROR: Can't read input file header")
 		sys.exit(1)
 
 

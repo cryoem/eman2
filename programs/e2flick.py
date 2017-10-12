@@ -58,7 +58,7 @@ def main():
 	
 """
 
-	print "WARNING: This program is currently broken. We intend to ressurect it in future."
+	print("WARNING: This program is currently broken. We intend to ressurect it in future.")
 	sys.exit(1)
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)

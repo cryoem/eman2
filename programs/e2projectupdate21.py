@@ -60,22 +60,22 @@ to place the EMAN2.1 copy.
 	(options, args) = parser.parse_args()
 
 	if not os.path.exists("EMAN2DB/project.bdb") :
-		print "ERROR: This does not appear to be a valid project directory !"
+		print("ERROR: This does not appear to be a valid project directory !")
 		sys.exit(1)
 	
 	if len(args)!=1 :
-		print """ERROR: please specify a path to the folder where you want the EMAN2.1
-duplicate project to be stored"""
+		print("""ERROR: please specify a path to the folder where you want the EMAN2.1
+duplicate project to be stored""")
 		sys.exit(1)
 	
 	try:
 		if os.path.samefile(".",args[0]) :
-			print """ERROR: The specified destination is the same as the current folder. You must specify
-the name of a new folder to be created with a copy of this project."""
+			print("""ERROR: The specified destination is the same as the current folder. You must specify
+the name of a new folder to be created with a copy of this project.""")
 			sys.exit(1)
 	except: pass
 	
-	print """Warning:
+	print("""Warning:
 This tool will convert an EMAN2.0x project to be as compatible as possible with the new standards in 
 EMAN2.1. Rather than modify the project in-place, it will duplicate the entire project 
 including data, with the new project follwing the 2.1 standards. This will leave 
@@ -90,7 +90,7 @@ This program will:
 - NOTE - this program will not currently copy any other files you may have created outside the normal EMAN2 structure
 
 It is strongly suggested that you run 'e2bdb.py -c' prior to running this program.
-"""
+""")
 
 	if not options.yes :
 		a=raw_input("Are you sure you want to proceed (enter YES) ? ")
@@ -108,7 +108,7 @@ It is strongly suggested that you run 'e2bdb.py -c' prior to running this progra
 
 	# The basic 'project database'
 	try:
-		if options.verbose>0 : print "Converting project database"
+		if options.verbose>0 : print("Converting project database")
 		prj =db_open_dict("bdb:.#project",ro=True)
 		prjo=js_open_dict("{}/info/project.json".format(dest))
 		prjo.update(prj)
@@ -116,19 +116,19 @@ It is strongly suggested that you run 'e2bdb.py -c' prior to running this progra
 		prjo.close()
 	except:
 		traceback.print_exc()
-		print "Could not convert project database"
+		print("Could not convert project database")
 	
 	# CTF
 	try:
-		if options.verbose : print "Converting CTF"
+		if options.verbose : print("Converting CTF")
 		ctf=db_open_dict("bdb:.#e2ctf.parms",ro=True)
 		ctfbg=db_open_dict("bdb:.#e2ctf.bg2d",ro=True)
 		ctffg=db_open_dict("bdb:.#e2ctf.im2d",ro=True)
 		for k in ctf.keys():
 			try:
-				if options.verbose>1 : print "\t",k
+				if options.verbose>1 : print("\t",k)
 				js=js_open_dict("{}/{}".format(dest,info_name("bdb:particles#"+k)))
-				if options.verbose>2 : print "Generating {}/{}".format(dest,info_name("bdb:particles#"+k))
+				if options.verbose>2 : print("Generating {}/{}".format(dest,info_name("bdb:particles#"+k)))
 				js.setval("quality",int(ctf[k][-1]),True)
 				c=EMAN2Ctf()
 				c.from_string(ctf[k][0])
@@ -138,41 +138,41 @@ It is strongly suggested that you run 'e2bdb.py -c' prior to running this progra
 				cbg.del_attr("micrograph_id")
 				js["ctf"]=[c,ctf[k][1],ctf[k][2],cfg,cbg]
 			except:
-				print "Warning: CTF conversion failed for ",k
+				print("Warning: CTF conversion failed for ",k)
 	except:
 		traceback.print_exc()
-		print "\n\nUnable to convert projects without CTF information(%s). If this is a major problem, please contact sludtke@bcm.edu"%k
+		print("\n\nUnable to convert projects without CTF information(%s). If this is a major problem, please contact sludtke@bcm.edu"%k)
 		sys.exit(1)
 	
 	# Boxes
-	if options.verbose : print "Converting Boxes"
+	if options.verbose : print("Converting Boxes")
 	boxes=db_open_dict("bdb:e2boxercache#boxes",ro=True)
 	try:
 		for k in boxes.keys():
 			try:
-				if options.verbose>1 : print "\t",k
+				if options.verbose>1 : print("\t",k)
 				js=js_open_dict("{}/{}".format(dest,info_name(k)))
 				js["boxes"]=boxes[k]
 			except:
-				print "Warning: Error converting boxes for ",k
+				print("Warning: Error converting boxes for ",k)
 	except:
-		print "Note: No box locations found to convert"
+		print("Note: No box locations found to convert")
 	
 	dl=[i for i in os.listdir(".") if os.path.isdir(i) and i not in ("sets","e2boxercache","EMAN2DB")]
 
 	# handle sets specially
-	if options.verbose : print "Converting sets:"
+	if options.verbose : print("Converting sets:")
 	dcts=db_list_dicts("bdb:sets")
 	for dct in dcts:
 		try:
 			lst=LSXFile("{}/sets/{}.lst".format(dest,dct))
 			src=db_open_dict("bdb:sets#{}".format(dct))
-			if options.verbose>1 : print "\t",dct
+			if options.verbose>1 : print("\t",dct)
 			for i in xrange(len(src)):
 				attr=src.get_header(i)
 				lst.write(i,attr["data_n"],"particles/{}.hdf".format(attr["data_source"].split("#")[-1].replace("_ctf","__ctf")))
 		except:
-			print "Unable to convert set: ",dct
+			print("Unable to convert set: ",dct)
 
 	# This handles generic conversion of subdirectories
 	for d in dl:
@@ -183,7 +183,7 @@ It is strongly suggested that you run 'e2bdb.py -c' prior to running this progra
 		dcts=db_list_dicts("bdb:"+d)
 		for dct in dcts:
 			try:
-				if options.verbose>0 : print "Processing {}/{}".format(d,dct)
+				if options.verbose>0 : print("Processing {}/{}".format(d,dct))
 				n=EMUtil.get_image_count("bdb:{}#{}".format(d,dct))
 				tmp2=db_open_dict("bdb:{}#{}".format(d,dct),ro=True)
 				if n==0:
@@ -194,18 +194,18 @@ It is strongly suggested that you run 'e2bdb.py -c' prior to running this progra
 					else : dct2=dct
 					for k in xrange(n):
 						if options.verbose>1 : 
-							print "  {}/{}  \r".format(k,n),
+							print("  {}/{}  \r".format(k,n), end=' ')
 							sys.stdout.flush()
 						im=tmp2[k]
 						im.write_image("{}/{}/{}.hdf".format(dest,d,dct2),k)
 			except:
-				print "Error in converting ",dct," (skipping)"
+				print("Error in converting ",dct," (skipping)")
 
 		# Now we handle any regular files that may exist
 		fls=[i for i in os.listdir(d) if i!="EMAN2DB" and os.path.isfile(i)]
 		for i in fls: 
 			try: copyfile("{}/{}".format(d,i),"{}/{}/{}".format(dest,d,i))
-			except: print "Unable to copy {}/{}".format(d,i)
+			except: print("Unable to copy {}/{}".format(d,i))
 
 	# files in the project directory
 	fls=[i for i in os.listdir(".") if os.path.isfile(i)]

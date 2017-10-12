@@ -79,14 +79,14 @@ def main():
 		options.input = argv[1]
 
 	if '.hdf' not in options.input[-4:]:
-		print "\nerror. --input must be in .hdf format"
+		print("\nerror. --input must be in .hdf format")
 		sys.exit(1)
 
 	if not options.fillimage and not options.fillwithnoise:
-		print "\nERROR: you must provide either --fillimage or --fillwithnoise."
+		print("\nERROR: you must provide either --fillimage or --fillwithnoise.")
 		sys.exit(1)
 	elif options.fillimage and options.fillwithnoise:
-		print "\nERROR: you must provide only one of either --fillimage or --fillwithnoise."
+		print("\nERROR: you must provide only one of either --fillimage or --fillwithnoise.")
 		sys.exit(1)
 	else:
 
@@ -144,10 +144,10 @@ def main():
 			im.write_image( options.output, i )
 
 			if i%10==0:
-				print "  %d/%d\r"%(i+1,n),
+				print("  %d/%d\r"%(i+1,n), end=' ')
 				sys.stdout.flush()
 
-		print "\ndone\n"
+		print("\ndone\n")
 
 
 		E2end(logger)

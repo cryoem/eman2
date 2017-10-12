@@ -30,5 +30,5 @@
 #
 #
 
-print """Sorry, e2workflow.py has been formally retired with the release of EMAN2.1. You must now
-use the new e2projectmanager interface instead."""
+print("""Sorry, e2workflow.py has been formally retired with the release of EMAN2.1. You must now
+use the new e2projectmanager interface instead.""")

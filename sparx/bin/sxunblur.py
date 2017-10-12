@@ -521,7 +521,7 @@ def run_unblur(
                 # Remove temp file
                 remove(temp_name)
             else:
-                print('Error with file:\n{0}'.format(inputfile))
+                print(('Error with file:\n{0}'.format(inputfile)))
 
         # Check if SumMovie and UnBlur finished cleanly
         with open(log_name, 'r') as r:
@@ -572,7 +572,7 @@ def run_unblur(
                 current_time_h*3600 -
                 current_time_m*60
                 )
-        print(
+        print((
             'Progress: {0:.2f}%;  Time: {1:.0f}h:{2:.0f}m:{3:.0f}s/{4:.0f}h:{5:.0f}m:{6:.0f}s;  Micrograph done:{7}'.format(
                 percent,
                 current_time_h,
@@ -583,7 +583,7 @@ def run_unblur(
                 estimated_time_s,
                 file_name
                 )
-            )
+            ))
 
 
     # Write micrograph and shift list

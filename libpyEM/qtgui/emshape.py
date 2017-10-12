@@ -499,7 +499,7 @@ class EMShape:
 				self.shape[2]=g
 				self.shape[3]=b
 		except:
-			print "Invalid color set in shape ",self.shape
+			print("Invalid color set in shape ",self.shape)
 			return
 			
 	def translate(self,dx,dy):

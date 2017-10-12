@@ -105,7 +105,7 @@ def main():
 	polys=[]
 	completes=[]
 	for name in curves:
-		print "Found this curve to parse", name
+		print("Found this curve to parse", name)
 		rawaxes = curveparser(name,options)
 		logy=[]
 		
@@ -238,7 +238,7 @@ def singleplotter(data,plottype,options):
 Parse values for FILE containing curve data
 '''
 def curveparser(F,options):		
-	print "Reading this file now", F
+	print("Reading this file now", F)
 	xaxis=[]
 	yaxis=[]
 	
@@ -270,12 +270,12 @@ def curveparser(F,options):
 
 def textwriter(xdata,ydata,options,name):
 	if len(xdata) == 0 or len(ydata) ==0:
-		print "ERROR: Attempting to write an empty text file!"
+		print("ERROR: Attempting to write an empty text file!")
 		sys.exit()
 	
 	filename=options.path + '/' + name
 	
-	print "I am in the text writer for this file", filename
+	print("I am in the text writer for this file", filename)
 	
 	f=open(filename,'w')
 	lines=[]
@@ -362,7 +362,7 @@ def plotter(xaxis,yaxis,options,mode,colorless=0,legend=''):
 		#plt.scatter(xaxis,yaxis,marker='x',edgecolor='k',alpha=1,zorder=1,s=40,facecolor='white',linewidth=2)
 		
 		if idee and legend:
-			print "Idee is", idee
+			print("Idee is", idee)
 			legend(loc='upper left')
 		
 		#if mark:
@@ -387,7 +387,7 @@ def plotter(xaxis,yaxis,options,mode,colorless=0,legend=''):
 		#	plt.plot(xaxis, yaxis, linewidth=LW,linestyle=linest,alpha=1,zorder=0,label=idee)
 		
 		if idee and legend:
-			print "Idee is", idee
+			print("Idee is", idee)
 			legend(loc='upper left')
 			#plt.scatter(xaxis,yaxis,marker='x',alpha=0.5,zorder=1,s=40,linewidth=2)
 			
@@ -397,10 +397,10 @@ def plotter(xaxis,yaxis,options,mode,colorless=0,legend=''):
 	
 
 def polyfit(xaxis,yaxis,options):
-	print "I have entered polyfit"
+	print("I have entered polyfit")
 	polycoeffs = numpy.polyfit(xaxis, yaxis, options.polyfitdeg)
 	yfit = numpy.polyval(polycoeffs, xaxis)
-	print "The fitted y values are", yfit
+	print("The fitted y values are", yfit)
 
 	return[xaxis,yfit]
 
@@ -416,8 +416,8 @@ def fitmaxima(xaxis,yaxis,options):
 FUNCTION TO DETERMINE MINIMA throughout a curve, from l
 '''
 def fitminima(sizes,vals,options):
-	print "\n\nI have entered minima!!!!!!!!!!!!!!!!!!!!!\n\n"
-	print "And the last value is", vals[-1]
+	print("\n\nI have entered minima!!!!!!!!!!!!!!!!!!!!!\n\n")
+	print("And the last value is", vals[-1])
 	
 	
 	#finalvals = []
@@ -469,13 +469,13 @@ def fitminima(sizes,vals,options):
 					valsmin.append(vals[i+2])
 			
 			elif vals[i] > vals[i+1]:
-				print "Third to last is bigger"
+				print("Third to last is bigger")
 				if vals[i+1] < vals[i+2]:
-					print "Second to last is smaller than last and will be appended"
+					print("Second to last is smaller than last and will be appended")
 					sizesmin.append(sizes[i+1])
 					valsmin.append(vals[i+1])
 				elif vals[i+1] > vals[1+2]:
-					print "Last is smaller than second to last and third to last; thus, last will be appended"
+					print("Last is smaller than second to last and third to last; thus, last will be appended")
 					sizesmin.append(sizes[i+2])
 					valsmin.append(vals[i+2])
 

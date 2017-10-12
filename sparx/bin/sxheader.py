@@ -62,11 +62,11 @@ def main():
 	(options,args) = parser.parse_args( arglist[1:] )
 
 	if len(args) != 1 :
-		print usage
+		print(usage)
 		sys.exit(-1)
 
 	if options.params == None:
-		print "Error: no parameters given"
+		print("Error: no parameters given")
 		exit(-1)
 
 	if global_def.CACHE_DISABLE:

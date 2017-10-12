@@ -12,7 +12,7 @@ try:
 	import matplotlib.pyplot as plt
 	pltcolors=["k","b","g","r","m","c","darkblue","darkgreen","darkred","darkmagenta","darkcyan","0.5"]
 except:
-	print "ERROR: Matplotlib not available, cannot generate histogram"
+	print("ERROR: Matplotlib not available, cannot generate histogram")
 	sys.exit(1)
 
 def main():
@@ -45,14 +45,14 @@ This program will look in an spt_XX folder at particle_parms_xx.json and show a 
 	if options.path == None:
 		fls=[int(i[-2:]) for i in os.listdir(".") if i[:4]=="m2d_" and len(i)==6 and str.isdigit(i[-2:])]
 		if len(fls)==0 : 
-			print "Error, cannot find any m2d_XX folders"
+			print("Error, cannot find any m2d_XX folders")
 			sys.exit(2)
 		options.path = "m2d_{:02d}".format(max(fls))
 
 	if options.iter<=0 :
 		fls=[int(i[15:17]) for i in os.listdir(options.path) if i[:15]=="particle_parms_" and str.isdigit(i[15:17])]
 		if len(fls)==0 : 
-			print "Cannot find a {}/particle_parms* file".format(options.path)
+			print("Cannot find a {}/particle_parms* file".format(options.path))
 			sys.exit(2)
 		options.iter=max(fls)
 		
@@ -66,7 +66,7 @@ This program will look in an spt_XX folder at particle_parms_xx.json and show a 
 			if "," in options.ref : refimg=EMData(options.ref.split(",")[0],int(options.ref.split(",")[1]))
 			else: refimg=EMData(options.ref,0)
 		except:
-			print "ERROR: Unable to read reference image required with --cmp"
+			print("ERROR: Unable to read reference image required with --cmp")
 			sys.exit(1)
 			
 		t0=time.time()
@@ -78,9 +78,9 @@ This program will look in an spt_XX folder at particle_parms_xx.json and show a 
 				frac=n/float(N)
 				try:
 					remain=int((time.time()-t0)/frac-(time.time()-t0))	# est remaining time in sec
-					print "{:6d}/{:-6d}   time remaining: {}:{:02d}     \r".format(n,N,remain//60,remain%60),
+					print("{:6d}/{:-6d}   time remaining: {}:{:02d}     \r".format(n,N,remain//60,remain%60), end=' ')
 				except:
-					print "{:6d}/{:-6d}     \r".format(n,N),
+					print("{:6d}/{:-6d}     \r".format(n,N), end=' ')
 				sys.stdout.flush()
 			itm=angs.get(i,True)
 			ort=itm["xform.align2d"]
@@ -95,7 +95,7 @@ This program will look in an spt_XX folder at particle_parms_xx.json and show a 
 			if "," in options.ref : refimg=EMData(options.ref.split(",")[0],int(options.ref.split(",")[1]))
 			else: refimg=EMData(options.ref,0)
 		except:
-			print "ERROR: Unable to read reference image required with --multicmp"
+			print("ERROR: Unable to read reference image required with --multicmp")
 			sys.exit(1)
 		
 		mcmps=[ ("frc",{"minres":80,"maxres":20}),
@@ -117,9 +117,9 @@ This program will look in an spt_XX folder at particle_parms_xx.json and show a 
 				frac=n/float(N)
 				try:
 					remain=int((time.time()-t0)/frac-(time.time()-t0))	# est remaining time in sec
-					print "{:6d}/{:-6d}   time remaining: {}:{:02d}     \r".format(n,N,remain//60,remain%60),
+					print("{:6d}/{:-6d}   time remaining: {}:{:02d}     \r".format(n,N,remain//60,remain%60), end=' ')
 				except:
-					print "{:6d}/{:-6d}     \r".format(n,N),
+					print("{:6d}/{:-6d}     \r".format(n,N), end=' ')
 				sys.stdout.flush()
 			itm=angs.get(i,True)
 			ort=itm["xform.align2d"]
@@ -166,13 +166,13 @@ This program will look in an spt_XX folder at particle_parms_xx.json and show a 
 	s=col.std()
 	col=col[abs(col-m)<s*4.0]
 	savetxt("{}/hist_score.txt".format(options.path),col)
-	print "Mean: {}\tSigma: {}".format(m,s)
+	print("Mean: {}\tSigma: {}".format(m,s))
 
 	if options.verbose:
 		lz=len(col[col<0])
 		gz=len(col[col>0])
-		print "%1.2f (%d) less than zero"%(float(lz)/(lz+gz),lz)
-		print "%1.2f (%d) less than zero"%(float(gz)/(lz+gz),gz)
+		print("%1.2f (%d) less than zero"%(float(lz)/(lz+gz),lz))
+		print("%1.2f (%d) less than zero"%(float(gz)/(lz+gz),gz))
 
 	his=histogram(col,options.bins)
 

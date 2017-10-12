@@ -673,7 +673,7 @@ class RangeSlider(QtGui.QWidget):
 		v0y=self.vtoy(self.value[0])
 		v1y=self.vtoy(self.value[1])
 		
-		print y,v0y,v1y
+		print(y,v0y,v1y)
 		
 		# outside the current range, no effect
 		if y>v0y+3 : return
@@ -836,7 +836,7 @@ class EMSpinWidget(QtGui.QWidget):
 			
 		except ValueError:
 			self.numbox.setText(str(self.value))
-			print "ERROR!!! You must enter a number"
+			print("ERROR!!! You must enter a number")
 		
 class EMQTColorWidget(QtGui.QWidget):
 	"""

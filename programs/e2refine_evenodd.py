@@ -145,7 +145,7 @@ def main():
 	except: pass
 
 	if options.path==None:
-		print "ERROR: --path=refine_xx is a required option"
+		print("ERROR: --path=refine_xx is a required option")
 		sys.exit(1)
 
 	# create the even and odd data sets
@@ -156,7 +156,7 @@ def main():
 
 	# Prepare the starting models for each run
 	# each model will have different random phases beyond the specified resolution
-	print "### Preparing initial models for refinement, phase-randomized at %1.1f A resolution"%options.randomres
+	print("### Preparing initial models for refinement, phase-randomized at %1.1f A resolution"%options.randomres)
 	launch_childprocess("e2proc3d.py %s %s_even/initial_model.hdf --process=filter.lowpass.randomphase:cutoff_freq=%1.4f"%(options.model,options.path,1.0/options.randomres))
 	launch_childprocess("e2proc3d.py %s %s_odd/initial_model.hdf --process=filter.lowpass.randomphase:cutoff_freq=%1.4f"%(options.model,options.path,1.0/options.randomres))
 	
@@ -173,7 +173,7 @@ def main():
 		if a[:9]=="--usefilt" : iuf=i
 
 	# run even refinement
-	print "### Starting even data refinement"
+	print("### Starting even data refinement")
 	argv[ipath]="--path=%s"%(options.path+"_even")
 	argv[imodel]="--model=%s_even/initial_model.hdf"%options.path
 	argv[iinp]="--input=%s"%eset
@@ -181,7 +181,7 @@ def main():
 	launch_childprocess("e2refine.py "+" ".join(argv))
 
 	# run odd refinement
-	print "### Starting odd data refinement"
+	print("### Starting odd data refinement")
 	argv[ipath]="--path=%s"%(options.path+"_odd")
 	argv[imodel]="--model=%s_odd/initial_model.hdf"%options.path
 	argv[iinp]="--input=%s"%oset
@@ -192,11 +192,11 @@ def main():
 	for i in xrange(options.startiter,options.iter):
 		# do a refine alignment of each odd map to the corresponding even map before resolution calc
 		try:
-			print "aligning iteration %d"%i
+			print("aligning iteration %d"%i)
 			launch_childprocess("e2proc3d.py %s_odd/threed_filt_%02d.hdf tmp1.hdf --alignref=%s_even/threed_filt_%02d.hdf --align=refine_3d"%(options.path,i,options.path,i))
 			launch_childprocess("e2proc3d.py %s_odd/threed_filt_%02d.hdf tmp2.hdf --process=xform.flip:axis=z --alignref=%s_even/threed_filt_%02d.hdf --align=refine_3d"%(options.path,i,options.path,i))
 		except:
-			print "Alignment failed"
+			print("Alignment failed")
 			
 		# Pick the best handedness
 		a=EMData("tmp1.hdf",0)
@@ -205,12 +205,12 @@ def main():
 		ca=c.cmp(a,"ccc")
 		cb=c.cmp(b,"ccc")
 		if ca<cb :
-			print "correct hand detected"
+			print("correct hand detected")
 			os.unlink("%s_odd/threed_filt_%02d.hdf"%(options.path,i))
 			os.rename("tmp1.hdf","%s_odd/threed_filt_%02d.hdf"%(i,options.path))
 			os.unlink("tmp2.hdf")
 		else :
-			print "handedness flip required"
+			print("handedness flip required")
 			os.unlink("%s_odd/threed_filt_%02d.hdf"%(options.path,i))
 			os.rename("tmp2.hdf","%s_odd/threed_filt_%02d.hdf"%(i,options.path))
 			os.unlink("tmp1.hdf")
@@ -218,13 +218,13 @@ def main():
 		# Compute FSC convergence plot
 		com="e2proc3d.py {path}_even/threed_filt_{iter:02d}.hdf {path}/fsc_eo_{iter:02d}.txt --apix={apix} --calcfsc={path}_odd/threed_filt_{iter:02d}.hdf".format(path=options.path,iter=i,apix=apix)
 		if ( launch_childprocess(com) != 0 ):
-			print "Failed to execute %s" %com
+			print("Failed to execute %s" %com)
 			exit_refine(1,logid)
 
 	# measure resolution curve
 	com="e2proc3d.py {path}_even/threed_filt_{iter:02d}.hdf {path}/fsc_gold.txt --apix={apix} --calcfsc={path}_odd/threed_filt_{iter:02d}.hdf".format(path=options.path,iter=options.iter-1,apix=apix)
 	if ( launch_childprocess(com) != 0 ):
-		print "Failed to execute %s" %com
+		print("Failed to execute %s" %com)
 		exit_refine(1,logid)
 
 

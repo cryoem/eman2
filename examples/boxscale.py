@@ -9,7 +9,7 @@ scale=4.0
 
 for f in sys.argv[1:]:
 	if "shrink" not in f :
-		print "filenames must contain 'shrink'"
+		print("filenames must contain 'shrink'")
 		sys.exit(1)
 	outf=file(f.replace("shrink",""),"w")
 	for l in file(f,"r"):

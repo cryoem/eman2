@@ -84,14 +84,14 @@ class Strategy2IMGMan(Strategy):
 	def pickevent(self, caller, x, y):
 		if caller == self.mediator.untilt_win:
 			if self.mediator.tilt_win.boxes.boxpopulation < self.mediator.untilt_win.boxes.boxpopulation:
-				print "Error, you need to selct an untilted partilce pair, before you select a new tilted one"
+				print("Error, you need to selct an untilted partilce pair, before you select a new tilted one")
 				return False
 		if caller == self.mediator.tilt_win:
 			if (self.mediator.tilt_win.boxes.boxpopulation == 0 and self.mediator.untilt_win.boxes.boxpopulation == 0):
-				print "Error, you first need to pick an untilted particle"
+				print("Error, you first need to pick an untilted particle")
 				return False
 			if self.mediator.untilt_win.boxes.boxpopulation < self.mediator.tilt_win.boxes.boxpopulation:
-				print "Error, you need to selct an untilted partilce pair, before you select a new tilted one"
+				print("Error, you need to selct an untilted partilce pair, before you select a new tilted one")
 				return False
 		return True
 		
@@ -170,7 +170,7 @@ class Strategy2IMGPair(Strategy):
 		#pick untilted particle
 		if caller == self.mediator.tilt_win:
 			if (self.mediator.tilt_win.boxes.boxpopulation == 0 and self.mediator.untilt_win.boxes.boxpopulation == 0):
-				print "Error, you first need to pick an untilted particle"
+				print("Error, you first need to pick an untilted particle")
 				return False
 			if self.mediator.untilt_win.boxes.boxpopulation == self.mediator.tilt_win.boxes.boxpopulation:
 				if self.mediator.tilt_win.boxes.boxpopulation >= self.minpp_for_xform:
@@ -292,7 +292,7 @@ class Strategy2IMGPair(Strategy):
 			self.mediator.tilt_win.boxes.save_tiltdata_to_db([self.tiltangle, self.dphi, self.dgamma])
 			self.mediator.untilt_win.boxes.save_tiltdata_to_db([self.tiltangle, self.dphi, self.dgamma])
 			
-			print D
+			print(D)
 			
 	def update_boxes(self):
 		for i,box in enumerate(self.mediator.untilt_win.boxes.boxlist):

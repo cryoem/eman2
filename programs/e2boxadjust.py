@@ -84,7 +84,7 @@ This is a typical workflow:
 	cmxalpha=EMData(args[1],4)
 	cmxmirror=EMData(args[1],5)
 	
-	print "Classmx has info on ",nptcl," particles"
+	print("Classmx has info on ",nptcl," particles")
 	
 	# The files containing the particle locations
 	boxfiles=[base_name(args[i],nodir=True) for i in xrange(2,len(args))]
@@ -105,7 +105,7 @@ This is a typical workflow:
 			skipfile=False
 			pfileb=base_name(pfile,nodir=True)
 			if not pfileb in boxfiles :
-				print "No box file found for: ",pfileb
+				print("No box file found for: ",pfileb)
 				lpfile=pfile
 				skipfile=True
 				continue
@@ -114,7 +114,7 @@ This is a typical workflow:
 			# This is the file containing the box locations for this range of particles
 			curboxfile=args[boxfiles.index(pfileb)+2]
 			p0=p
-			if options.verbose: print pfileb,"->",curboxfile
+			if options.verbose: print(pfileb,"->",curboxfile)
 			
 			# These are the box locations within that file
 			curboxes=[[int(j) for j in i.split()] for i in file(curboxfile,"r") if i[0]!="#"]
@@ -129,7 +129,7 @@ This is a typical workflow:
 		
 		
 		if options.verbose>1: 
-			try: print "{}) {}: {}\t {:d},{:d}".format(p,p-p0,pfileb,int(pt2d[0]),int(pt2d[1]))
+			try: print("{}) {}: {}\t {:d},{:d}".format(p,p-p0,pfileb,int(pt2d[0]),int(pt2d[1])))
 			except: pass
 	
 	if not skipfile: write_boxes(curboxfile,curboxes)
@@ -137,7 +137,7 @@ This is a typical workflow:
 	E2end(logid)
 
 def write_boxes(curboxfile,curboxes):
-	print "Writing updated boxes for: ",curboxfile
+	print("Writing updated boxes for: ",curboxfile)
 	out=file(curboxfile.split(".")[0]+"_cen.box3d","w")
 	for b in curboxes: out.write("{:d}\t{:d}\t{:d}\n".format(int(b[0]),int(b[1]),int(b[2])))
 

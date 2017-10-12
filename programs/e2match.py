@@ -99,7 +99,7 @@ def main():
 		check that --img2match has a valid format
 		'''
 		if '.mrc' not in options.img2match and '.hdf' not in options.img2match:
-			print "\nERROR: --img2match must be in .hdf or .mrc format. Use e2proc3d.py or e2pdb2mrc.py to convert the file provided, %s, to a valid image format." %( options.img2match )
+			print("\nERROR: --img2match must be in .hdf or .mrc format. Use e2proc3d.py or e2pdb2mrc.py to convert the file provided, %s, to a valid image format." %( options.img2match ))
 			sys.exit()
 		else:
 			
@@ -133,14 +133,14 @@ def main():
 					cmd ='e2proc3d.py ' + options.img2match + ' ' + options.img2match + ' --clip=' + str( options.boxsize )
 					runcmd( options, cmd )
 				else:
-					print "\nWARNING: the box side lengths of --img2match are already equal to --boxsize."
+					print("\nWARNING: the box side lengths of --img2match are already equal to --boxsize.")
 	
 			if options.apix:
 				if options.apix != img2matchapix:
 					cmd = 'e2fixheader.py --input=' + options.img2match + ' --stem=apix --stemval=' + str( options.apix ) + ' --valtype=float'
 					runcmd( options, cmd )
 				else:
-					print "\nWARNING: the apix of --img2match is already equal to --apix."
+					print("\nWARNING: the apix of --img2match is already equal to --apix.")
 		
 			'''
 			fix the origin values for --img2match
@@ -159,14 +159,14 @@ def main():
 			options.output = img2p.split('.')[0] + '_PREP.hdf'
 		
 		if options.verbose:
-			print "\n--output is", options.output
+			print("\n--output is", options.output)
 
 		if '.hdf' not in img2p and '.pdb' not in img2p and '.mrc' not in img2p:
-			print "\n(e2match) ERROR: The format of --img2process %s must be .pdb, .mrc or .hdf" %( img2p )
+			print("\n(e2match) ERROR: The format of --img2process %s must be .pdb, .mrc or .hdf" %( img2p ))
 			sys.exit()
 	
 		if '.hdf' not in options.output:
-			print "\n(e2match) ERROR: --output must be in .hdf format."
+			print("\n(e2match) ERROR: --output must be in .hdf format.")
 			sys.exit() 
 	
 		current = os.getcwd()
@@ -182,7 +182,7 @@ def main():
 		
 			img2p = hdfmodel
 			if options.verbose:
-				print "\n(e2match) I've converted the .pdb reference to .hdf"
+				print("\n(e2match) I've converted the .pdb reference to .hdf")
 	
 		elif '.mrc' in img2p:
 			mrcmodel = img2p
@@ -194,7 +194,7 @@ def main():
 			img2p = hdfmodel
 			
 			if options.verbose:
-				print "\n(e2match) I've converted the .mrc reference to .hdf"
+				print("\n(e2match) I've converted the .mrc reference to .hdf")
 		
 		if '.hdf' in img2p:
 			
@@ -209,7 +209,7 @@ def main():
 			nStack2process = EMUtil.get_image_count( img2p )
 	
 			if options.verbose:
-				print "\n(e2match) There are these many images in --img2process file %s" %( img2p )
+				print("\n(e2match) There are these many images in --img2process file %s" %( img2p ))
 	
 			'''
 			fix origin on header of --img2process current file img2p
@@ -251,19 +251,19 @@ def main():
 				if options.apix:
 					targetApix = round(float( options.apix ),4 )
 				else:
-					print """\nERROR: --apix required if img2match is not provided.
+					print("""\nERROR: --apix required if img2match is not provided.
 					If the apix of --img2process is already correct and you just want to
-					match the boxsize, use e2proc3d.py input output --clip=targetBoxSize"""
+					match the boxsize, use e2proc3d.py input output --clip=targetBoxSize""")
 					sys.exit()
 				
-			print "\n\ncalling preciseshrink function"
-			print "before, size is", img2phdr['nx']		
+			print("\n\ncalling preciseshrink function")
+			print("before, size is", img2phdr['nx'])		
 						
 			#preciseshrink( options, img2p, targetApix, targetBox)
 			
 			
 			img2processhdr = EMData( img2p, 0, True )
-			print "after preciseshrink, size is", img2processhdr['nx']
+			print("after preciseshrink, size is", img2processhdr['nx'])
 			
 			
 			
@@ -286,7 +286,7 @@ def main():
 				
 			cmd = 'e2fixheader.py --input=' + img2p + ' --stem=origin --stemval=0 && e2fixheader.py --input=' + img2p + " --params=MRC.nxstart:0,MRC.nystart:0,MRC.nzstart:0"
 			if options.verbose:
-				print "The first command to fix the header is", cmd
+				print("The first command to fix the header is", cmd)
 		
 			hdr = EMData( img2p, 0, True )
 			nx = hdr['nx']
@@ -296,7 +296,7 @@ def main():
 			cmd2 = ' && e2fixheader.py --input=' + img2p + ' --params=MRC.mx:' + str(targetBox) + ',MRC.my:' + str(targetBox) + ',MRC.mz:' + str(targetBox) + ',MRC.nx:' + str(targetBox) + ',MRC.ny:' + str(targetBox) + ',MRC.nz:' + str(targetBox)
 			cmd2 += ',MRC.xlen:' + str(targetBox) + ',MRC.ylen:' + str(targetBox) + ',MRC.zlen:' + str(targetBox) + ',MRC.nxstart:0,MRC.nystart:0,MRC.nzstart:0'	
 			if options.verbose:
-				print "The second command to fix the header is", cmd2
+				print("The second command to fix the header is", cmd2)
 		
 			cmdf = cmd + cmd2
 			runcmd( options, cmdf )
@@ -308,14 +308,14 @@ def main():
 
 def runcmd(options,cmd):
 	if options.verbose > 9:
-		print "(e2match)(runcmd) Running command", cmd
+		print("(e2match)(runcmd) Running command", cmd)
 	
 	p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	text=p.communicate()	
 	p.stdout.close()
 	
 	if options.verbose > 9:
-		print "(e2match)(runcmd) done"
+		print("(e2match)(runcmd) done")
 	return
 	
 
@@ -333,11 +333,11 @@ def preciseshrink( options, img2processEd, targetApix, targetBox ):
 	so we don't bother to iterate over the images in here.
 	'''
 	
-	print "\n(e2match)(preciseshrink)"
+	print("\n(e2match)(preciseshrink)")
 	img2processEdhdr = EMData(img2processEd,0, True )
 	img2processApix = round(float( img2processEdhdr['apix_x'] ),4)
 	if options.verbose:
-		print "\n(e2match)(preciseshrink) I've read the apix of the particles in img2process, which is", img2processApix
+		print("\n(e2match)(preciseshrink) I've read the apix of the particles in img2process, which is", img2processApix)
 
 	meanshrinkfactor = float( targetApix )/float(img2processApix)
 	#meanshrinkfactor_int = int(round(meanshrinkfactor))
@@ -345,26 +345,26 @@ def preciseshrink( options, img2processEd, targetApix, targetBox ):
 	meanshrinkfactor_int = int(round(meanshrinkfactor))
 		
 	if options.verbose:
-		print "\n(e2match)(preciseshrink) the refStack or --img2match apix is", round(EMData( options.img2match, 0, True)['apix_x'],4)
-		print "(e2match)(preciseshrink) and the target apix is", targetApix
-		print "(e2match)(preciseshrink) therefore, the meanshrink factor is", meanshrinkfactor
-		print "(e2match)(preciseshrink) which, for the first step of shrinking (using math.meanshrink), will be rounded to", meanshrinkfactor_int
+		print("\n(e2match)(preciseshrink) the refStack or --img2match apix is", round(EMData( options.img2match, 0, True)['apix_x'],4))
+		print("(e2match)(preciseshrink) and the target apix is", targetApix)
+		print("(e2match)(preciseshrink) therefore, the meanshrink factor is", meanshrinkfactor)
+		print("(e2match)(preciseshrink) which, for the first step of shrinking (using math.meanshrink), will be rounded to", meanshrinkfactor_int)
 
 	cmd = ''
 	
 	if int( meanshrinkfactor_int ) > 1:
-		print "\n\n(e2match)(preciseshrink) about to MEAN shrink becuase meanshrinkfactor_int is %.1f > 1, rounding from meanshrinkfactor %.4f" %( meanshrinkfactor_int, meanshrinkfactor )
-		print "(e2match)(preciseshrink) the type of img2process is", type( img2processEd )
+		print("\n\n(e2match)(preciseshrink) about to MEAN shrink becuase meanshrinkfactor_int is %.1f > 1, rounding from meanshrinkfactor %.4f" %( meanshrinkfactor_int, meanshrinkfactor ))
+		print("(e2match)(preciseshrink) the type of img2process is", type( img2processEd ))
 	
 		cmd = 'e2proc3d.py ' + img2processEd + ' ' + img2processEd + ' --process=math.meanshrink:n=' + str(meanshrinkfactor_int)
 		runcmd( options, cmd )
 	
 		#ref.process_inplace("math.meanshrink",{"n":meanshrinkfactor_int})
 		if options.verbose:
-			print "(e2match)(preciseshrink) the img2process was shrunk, to a first approximation, see", EMData(options.img2process,0,True)['nx']
+			print("(e2match)(preciseshrink) the img2process was shrunk, to a first approximation, see", EMData(options.img2process,0,True)['nx'])
 	
 		img2processApix = round(EMData( img2processEd, 0 , True)['apix_x'],4)
-		print "its apix is now", img2processApix
+		print("its apix is now", img2processApix)
 	
 	else:
 		#targetbox = EMData( options.img2match,0,True )['nx']
@@ -387,10 +387,10 @@ def preciseshrink( options, img2processEd, targetApix, targetBox ):
 	
 	scalefactor = round(float( img2processApix ),4)/round(float( targetApix),4)
 
-	print "\n\n\n(e2match)(preciseshrink) the finer scale factor to apply is", scalefactor
+	print("\n\n\n(e2match)(preciseshrink) the finer scale factor to apply is", scalefactor)
 	
-	print "right before, apix is", round(EMData(img2processEd,0,True)['apix_x'],4)
-	print "(e2match)(preciseshrink) the final clip box is", targetBox
+	print("right before, apix is", round(EMData(img2processEd,0,True)['apix_x'],4))
+	print("(e2match)(preciseshrink) the final clip box is", targetBox)
 
 	cmd = 'e2proc3d.py ' + img2processEd + ' ' + img2processEd + ' --process=xform.scale:scale=' + str(scalefactor) 
 	
@@ -399,36 +399,36 @@ def preciseshrink( options, img2processEd, targetApix, targetBox ):
 	'''
 	#if int(meanshrinkfactor_int) > 1:
 	
-	print "scale factor is",scalefactor
+	print("scale factor is",scalefactor)
 	if scaledown:
-		print "scaling down"
+		print("scaling down")
 		cmd += ':clip=' + str(targetBox) + ' --apix=' + str(targetApix)
 		cmd += ' && e2fixheader.py --input=' + img2processEd + ' --stem apix --valtype float --stemval ' + str(targetApix)
-		print "meanshrinkfactor_int > 1.0, it is", meanshrinkfactor_int
-		print "target apix is", targetApix
+		print("meanshrinkfactor_int > 1.0, it is", meanshrinkfactor_int)
+		print("target apix is", targetApix)
 		
 	#elif int(meanshrinkfactor_int) < 1:
 	elif scaleup:
-		print "scaling up"
+		print("scaling up")
 		cmd += ' && e2proc3d.py ' + img2processEd + ' ' + img2processEd + ' --clip=' + str(targetBox)
 		cmd += ' && e2fixheader.py --input=' + str(img2processEd) + ' --stem apix --valtype float --stemval ' + str(targetApix)
-		print "meanshrinkfactor_int < 1, it is", meanshrinkfactor_int
-		print "target apix is", targetApix
+		print("meanshrinkfactor_int < 1, it is", meanshrinkfactor_int)
+		print("target apix is", targetApix)
 		
 	else:
 		cmd += ':clip=' + str(targetBox) + ' --apix=' + str(targetApix)
 		cmd += ' && e2fixheader.py --input=' + img2processEd + ' --stem apix --valtype float --stemval ' + str(targetApix)
 
-	print "cmd is", cmd
+	print("cmd is", cmd)
 	runcmd( options, cmd )
 	
 		
-	print "right after, apix is", round(EMData(img2processEd,0,True)['apix_x'],4)
+	print("right after, apix is", round(EMData(img2processEd,0,True)['apix_x'],4))
 
 	#print "(e2match) Feedback from scale and clip is", text
 
 
-	print "\n\n!!!!!!!!!!!!\n(e2match)(preciseshrink) img2porcessEd should have been clipped by now, let's see", EMData(img2processEd,0,True)['nx']
+	print("\n\n!!!!!!!!!!!!\n(e2match)(preciseshrink) img2porcessEd should have been clipped by now, let's see", EMData(img2processEd,0,True)['nx'])
 	
 	return
 
@@ -457,7 +457,7 @@ def refpostprocessing( options, img2processEd ):
 		options.highpass=parsemodopt(options.highpass)
 
 	if options.verbose:
-		print "I have parsed the processing options."
+		print("I have parsed the processing options.")
 	
 	
 	nptcls = EMUtil.get_image_count(img2processEd)
@@ -519,8 +519,8 @@ def refpostprocessing( options, img2processEd ):
 			actual_res = float(ref_box * ref_apix) / npixels
 	
 			if options.verbose:
-				print "The sharp lowpass filter will be actually applied at this resolution", actual_res
-				print "Becuase these many pixels in Fourier space will be zeroed out", img2processBox/2 - npixels
+				print("The sharp lowpass filter will be actually applied at this resolution", actual_res)
+				print("Becuase these many pixels in Fourier space will be zeroed out", img2processBox/2 - npixels)
 	
 			ref_table = [1.0] * npixels + [0.0] * (( img2processBox/2) - npixels )
 	

@@ -55,8 +55,8 @@ def main():
 	(options,args) = parser.parse_args( arglist[1:] )
      
 	if len(args)<1 or len(args)>3:
-		print "usage: " + usage
-		print "Please run '" + progname + " -h' for detailed options"
+		print("usage: " + usage)
+		print("Please run '" + progname + " -h' for detailed options")
 		sys.exit(-1)
 
 

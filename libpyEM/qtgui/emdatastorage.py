@@ -390,7 +390,7 @@ class ParamDef(DictMixin) :
 
 		if self.property != None and str(self.property) not in valid_properties:
 			#raise ValueError,"Invalid property; not in valid_properties"
-			print "Warning: Invalid property; not in valid_properties"
+			print("Warning: Invalid property; not in valid_properties")
 
 		if self.defaultunits != None:
 			a=[]
@@ -400,7 +400,7 @@ class ParamDef(DictMixin) :
 				a.extend(q[2].keys())
 			if not str(self.defaultunits) in a and str(self.defaultunits) != '':
 				#raise ValueError,"Invalid defaultunits; not in valid_properties"
-				print "Warning: Invalid defaultunits; not in valid_properties"
+				print("Warning: Invalid defaultunits; not in valid_properties")
 			
 		if self.choices != None:
 			try:
@@ -582,7 +582,7 @@ class RecordDef(DictMixin) :
 			raise ValueError,"mainview required; must be str or unicode"
 
 		if not dict(self.views).has_key("recname"):
-			print "Warning: recname view strongly suggested"
+			print("Warning: recname view strongly suggested")
 
 		for k,v in self.views.items():
 			if not isinstance(k,str) or not isinstance(v,basestring):
@@ -744,18 +744,18 @@ class Record(DictMixin):
 		for j in self.__permissions: u|=set(j)
 		u -= set([0,-1,-2,-3])
 		if u-users:
-			print "Warning: undefined users: %s"%",".join(map(str, u-users))
+			print("Warning: undefined users: %s"%",".join(map(str, u-users)))
 			
 			
 
 	def validate_param(self, value, pd):
-		print "___ validate %s ___"%(pd.name)
+		print("___ validate %s ___"%(pd.name))
 		#print "vartype: %s"%pd.vartype
 		#print "property: %s"%pd.property
 		#print "defaultunits: %s"%pd.defaultunits
 
 		if pd.property and isinstance(value,basestring):
-			print "______ checking units __________"
+			print("______ checking units __________")
 			value,units=re.compile("([0-9.,]+)?(.*)").search(value).groups()
 			value=float(value)
 			units=units.strip()
@@ -784,7 +784,7 @@ class Record(DictMixin):
 			try:
 				# convert units
 				value = value * ( valid_properties[pd.property][1][units] / valid_properties[pd.property][1][defaultunits] )
-				print "newval: %s"%value
+				print("newval: %s"%value)
 			except:
 				raise ValueError,"Unable to convert %s = %s; skipping value"%(pd.name,value)
 
@@ -815,20 +815,20 @@ class Record(DictMixin):
 
 	def changedparams(self):
 
-		print "===== changed params ====="
+		print("===== changed params =====")
 
 		cp = set()
 		for k in self.keys():
 			if k not in (self.param_special-set(["comments"])) and self[k] != self.__oparams.get(k,None):
 
 				if k == "comments":
-					print "%s : ..."%(k)
+					print("%s : ..."%(k))
 				else:
-					print "%s : %s --> %s"%(k,self.__oparams.get(k,None),self[k])
+					print("%s : %s --> %s"%(k,self.__oparams.get(k,None),self[k]))
 					
 				cp.add(k)
 
-		print "changedparams result: %s"%cp
+		print("changedparams result: %s"%cp)
 		return cp		
 		
 	#################################		
@@ -980,14 +980,14 @@ class Record(DictMixin):
 
 	def addcomment(self, value):
 		if not isinstance(value,basestring):
-			print "Warning: invalid comment"
+			print("Warning: invalid comment")
 			return
 
 		#print "Updating comments: %s"%value
 		d=parseparmvalues(value,noempty=1)[1]
 
 		if d.has_key("comments"):
-			print "Warning: cannot set comments inside a comment"			
+			print("Warning: cannot set comments inside a comment")			
 			return
 			
 		self.__comments.append((self.__context.user,time.strftime("%Y/%m/%d %H:%M:%S"),value))	# store the comment string itself		

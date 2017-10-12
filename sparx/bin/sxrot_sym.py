@@ -52,8 +52,8 @@ def main():
 	parser.add_option("--xtol",       type='float',default=1.e-4,help=" convergence criterion on the variable values...default = 1.e-4")
 	(options, args) = parser.parse_args()    	
 	if len(args) != 2:
-		print "usage: " + usage
-		print "Please run '" + progname + " -h' for detailed options"
+		print("usage: " + usage)
+		print("Please run '" + progname + " -h' for detailed options")
 		exit(1)
 	else:
 		if global_def.CACHE_DISABLE:

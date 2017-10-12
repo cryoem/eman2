@@ -515,7 +515,7 @@ class EMViewportDepthTools2:
 		self.wview = self.matrices().get_viewport_matrix()
 	
 		t = gluProject(x,y,0.,self.wmodel,self.wproj,self.wview)
-		print t[0],t[1],t[2]
+		print(t[0],t[1],t[2])
 		
 		
 	def getMappedWidth(self):
@@ -884,7 +884,7 @@ class EMViewportDepthTools:
 		self.wview = self.matrices.get_viewport_matrix()
 	
 		t = gluProject(x,y,0.,self.wmodel,self.wproj,self.wview)
-		print t[0],t[1],t[2]
+		print(t[0],t[1],t[2])
 		
 		
 	def getMappedWidth(self):
@@ -1064,7 +1064,7 @@ class EMOpenGLFlagsAndTools:
 						self.use_mipmaps = False
 						#print "EMAN(ALPHA) message: Support for non power of two textures detected."
 				except:
-					print "error, OpenGL seems not to be initialized"
+					print("error, OpenGL seems not to be initialized")
 					return False
 			
 				self.power_of_two_init_check = False
@@ -1118,7 +1118,7 @@ class EMOpenGLFlagsAndTools:
 						self.use_blend_equation = True
 						#print "EMAN(ALPHA) message: Support for glBlendEquation detected."
 				except:
-					print "error, OpenGL seems not to be initialized"
+					print("error, OpenGL seems not to be initialized")
 					return False
 			
 				self.blend_equation_check = False
@@ -1244,19 +1244,19 @@ class Camera2:
 	def position(self,norot=False):
 		# position the camera, regualar OpenGL movement.
 		if (self.debug):
-			print "Camera translational position",self.cam_x,self.cam_y,self.cam_z
+			print("Camera translational position",self.cam_x,self.cam_y,self.cam_z)
 		glTranslate(self.cam_x, self.cam_y, self.cam_z)
 		
 		if ( self.allow_rotations and not norot):
 			rot = self.t3d_stack[len(self.t3d_stack)-1].get_rotation("eman")
 			if (self.debug):
-				print "Camera rotation ",float(rot["phi"]),float(rot["alt"]),float(rot["az"])
+				print("Camera rotation ",float(rot["phi"]),float(rot["alt"]),float(rot["az"]))
 			glRotate(float(rot["phi"]),0,0,1)
 			glRotate(float(rot["alt"]),1,0,0)
 			glRotate(float(rot["az"]),0,0,1)
 		
 		if (self.debug):
-			print "Camera scale ",self.scale
+			print("Camera scale ",self.scale)
 		# here is where zoom is applied
 		glScale(self.scale,self.scale,self.scale)
 		
@@ -1285,7 +1285,7 @@ class Camera2:
 			self.default_z = value
 			self.set_cam_z(0)
 		else:
-			print 'Error, the axis (%s) specified is unknown. No action was taken' %axis
+			print('Error, the axis (%s) specified is unknown. No action was taken' %axis)
 	
 	def set_cam_z(self,z):
 		self.cam_z = self.default_z + z
@@ -1360,7 +1360,7 @@ class Camera2:
 			p["phi"] = 180.0
 			t3d.set_params(p)
 			
-			if self.emit_events: print "Warning: no events emitted in fixed phi mode"
+			if self.emit_events: print("Warning: no events emitted in fixed phi mode")
 		
 		#if not self.allow_phi_rotations:
 			#p = t3d.get_params("eman")
@@ -1452,7 +1452,7 @@ class Camera2:
 		if (self.basicmapping == False):
 			[dx,dy] = self.parent().eye_coords_dif(prev_x,viewport_height()-prev_y,event.x(),viewport_height()-event.y())
 		else:
-			print "Camera2 (object).basicmapping==True"
+			print("Camera2 (object).basicmapping==True")
 			[dx,dy] = [event.x()-prev_x,prev_y-event.y()]
 
 		d = abs(dx) + abs(dy)
@@ -1468,7 +1468,7 @@ class Camera2:
 		if (self.basicmapping == False):
 			[dx,dy] = self.parent().eye_coords_dif(prev_x,viewport_height()-prev_y,event.x(),viewport_height()-event.y())
 		else:
-			print "Camera2 (object).basicmapping==True"
+			print("Camera2 (object).basicmapping==True")
 			[dx,dy] = [event.x()-prev_x,prev_y-event.y()]
 
 		#[wx2,wy2,wz2] = self.parent.eyeCoords(event.x(),self.parent.parentHeight()-event.y())
@@ -1566,10 +1566,10 @@ class Camera:
 		self.t3d_stack.append(t3d)
 		
 	def printme(self):
-		print "translating to",self.cam_x, self.cam_y, self.cam_z
+		print("translating to",self.cam_x, self.cam_y, self.cam_z)
 		rot = self.t3d_stack[len(self.t3d_stack)-1].get_rotation()
-		print "rotatint",rot["phi"],rot["alt"],rot["az"]
-		print "scale",self.scale
+		print("rotatint",rot["phi"],rot["alt"],rot["az"])
+		print("scale",self.scale)
 		
 	def position(self):
 		# position the camera, regular OpenGL movement.
@@ -1604,7 +1604,7 @@ class Camera:
 			self.default_z = value
 			self.set_cam_z(self.cam_z)
 		else:
-			print 'Error, the axis (%s) specified is unknown. No action was taken' %axis
+			print('Error, the axis (%s) specified is unknown. No action was taken' %axis)
 	
 	def set_cam_z(self,z):
 		self.cam_z = self.default_z + z
@@ -2214,7 +2214,7 @@ class EM3DModel(QtCore.QObject):
 		self.emit(QtCore.SIGNAL("inspector_shown")) # debug only
 		app = get_application()
 		if app == None:
-			print "can't show an inspector with having an associated application"
+			print("can't show an inspector with having an associated application")
 		
 		if not force and self.inspector==None : return
 		if not self.inspector : 

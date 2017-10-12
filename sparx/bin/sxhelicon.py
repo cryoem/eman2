@@ -74,18 +74,18 @@ def main():
 	parser.add_option("--nopsisearch",        action="store_true",   default=False,               help="Block searching for in-plane angle (default False)")
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 3 or len(args) > 4:
-		print "usage: " + usage + "\n"
-		print "Please run '" + progname + " -h' for detailed options"
+		print("usage: " + usage + "\n")
+		print("Please run '" + progname + " -h' for detailed options")
 	else:
 		
 		# Convert input arguments in the units/format as expected by ihrsr_MPI in applications.
 		if options.apix < 0:
-			print "Please enter pixel size"
+			print("Please enter pixel size")
 			sys.exit()
 		
 		if len(options.symdoc) < 1:
 			if options.dp < 0 or options.dphi < 0:
-				print "Enter helical symmetry parameters either using --symdoc or --dp and --dphi"
+				print("Enter helical symmetry parameters either using --symdoc or --dp and --dphi")
 				sys.exit()
 			
 		if options.dp < 0 or options.dphi < 0:

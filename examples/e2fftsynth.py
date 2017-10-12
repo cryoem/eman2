@@ -43,7 +43,7 @@ try:
 	from emplot2d import EMPlot2DWidget
 	from emapplication import EMApp
 except:
-	print "Unable to import Python GUI libraries, PYTHONPATH ?"
+	print("Unable to import Python GUI libraries, PYTHONPATH ?")
 	sys.exit(1)
 
 def main():

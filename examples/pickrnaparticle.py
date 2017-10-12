@@ -16,7 +16,7 @@ def main():
 	
 	
 	img=EMData(args[0])
-	print "Generating mask.."
+	print("Generating mask..")
 	if options.inv:
 		img.mult(-1)
 	img.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.01})
@@ -29,7 +29,7 @@ def main():
 	img.process_inplace("threshold.binaryrange",{"low":1e-10,"high":100})
 	img.write_image("masktmp.hdf")
 	
-	print "Balancing image.."
+	print("Balancing image..")
 	img=EMData(args[0])
 	if options.inv:
 		img.mult(-1)
@@ -46,7 +46,7 @@ def main():
 	#img.process_inplace("filter.ramp")
 	msk=img.process("filter.lowpass.gauss",{"cutoff_abs":0.005})
 	img.sub(msk)
-	print "Binarizing image.."
+	print("Binarizing image..")
 	img.process_inplace("threshold.belowtozero",{"minval":img["mean"]})
 	img.process_inplace("mask.dust3d",{"voxels":100,"threshold":img["mean_nonzero"]})
 	img.process_inplace("threshold.belowtozero",{"minval":img["mean_nonzero"]})
@@ -63,7 +63,7 @@ def main():
 	
 	#img.process_inplace("threshold.belowtozero",{"minval":img["mean"]})
 
-	print "Find centers.."
+	print("Find centers..")
 	imlabel=img.process("morph.object.label",{"write_centers":True})
 	cnts=imlabel["obj_centers"]
 	#ct=[]
@@ -72,7 +72,7 @@ def main():
 	#print ct
 	#print cnts
 	#print imlabel["obj_centers"]
-	print len(cnts)
+	print(len(cnts))
 	box=[]
 	for i in range(0,len(cnts),2):
 		box.append([cnts[i]/1,cnts[i+1]/1,"manual"])

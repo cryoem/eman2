@@ -785,15 +785,15 @@ class SXCmdWidget(QWidget):
 				# Generate command line for queue submission
 				cmd_line_in_script = cmd_line
 				cmd_line = str(self.sxcmd_tab_main.qsub_cmd_edit.text()) + " " + file_name_qsub_script
-				print "Wrote the following command line in the queue submission script: "
-				print cmd_line_in_script
-				print "Submitted a job by the following command: "
-				print cmd_line
+				print("Wrote the following command line in the queue submission script: ")
+				print(cmd_line_in_script)
+				print("Submitted a job by the following command: ")
+				print(cmd_line)
 			else:
 				# Case 2: queue submission is disabled (MPI can be supported or unsupported)
 				if self.sxcmd_tab_main.qsub_enable_checkbox.checkState() == Qt.Checked: ERROR("Logical Error: Encountered unexpected condition for sxcmd_tab_main.qsub_enable_checkbox.checkState. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
-				print "Executed the following command: "
-				print cmd_line
+				print("Executed the following command: ")
+				print(cmd_line)
 
 			# Execute the generated command line
 			process = subprocess.Popen(cmd_line, shell=True)
@@ -814,8 +814,8 @@ class SXCmdWidget(QWidget):
 		cmd_line = self.generate_cmd_line()
 		if cmd_line:
 			message_line = "Generated the following command line:"
-			print message_line
-			print cmd_line
+			print(message_line)
+			print(cmd_line)
 			QtGui.QMessageBox.information(self, "Information","%s \n\n%s" % (message_line, cmd_line))
 
 			# Save the current state of GUI settings
@@ -1828,8 +1828,8 @@ class SXCmdCategoryWidget(QWidget):
 			# os.system("python -m webbrowser %s%s" % (SPARX_DOCUMENTATION_WEBSITE, sxcmd.name))
 			# sxcmd_wiki_url = SXLookFeelConst.generate_sxcmd_wiki_url(sxcmd, wiki_type = "SPARX")
 			sxcmd_wiki_url = SXLookFeelConst.generate_sxcmd_wiki_url(sxcmd)
-			print "Opening Wiki Page ..."
-			print sxcmd_wiki_url
+			print("Opening Wiki Page ...")
+			print(sxcmd_wiki_url)
 			os.system("python -m webbrowser %s" % (sxcmd_wiki_url))
 			return
 
@@ -2359,8 +2359,8 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		modifiers = QApplication.keyboardModifiers()
 		if modifiers == Qt.ShiftModifier:
 			sxmenu_item_wiki_url = SXLookFeelConst.generate_sxmenu_item_wiki_url(sxmenu_item)
-			print "Opening Wiki Page ..."
-			print sxmenu_item_wiki_url
+			print("Opening Wiki Page ...")
+			print(sxmenu_item_wiki_url)
 			os.system("python -m webbrowser %s" % (sxmenu_item_wiki_url))
 			return
 
@@ -2403,7 +2403,7 @@ def main():
 	(options, args) = parser.parse_args(sys.argv[1:])
 	
 	if len(args) > 1:
-		print "see usage " + usage
+		print("see usage " + usage)
 		sys.exit()
 	
 	sxapp = QApplication(sys.argv)

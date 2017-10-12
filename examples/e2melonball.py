@@ -104,8 +104,8 @@ def main():
 	
 	
 	if options.savescoops and not options.boxsize:
-		print """ERROR: Specify the box size through --boxsize for the saved
-		scoops."""	
+		print("""ERROR: Specify the box size through --boxsize for the saved
+		scoops.""")	
 		sys.exit()
 
 	#If no failures up until now, initialize logger
@@ -119,7 +119,7 @@ def main():
 	
 	
 	if not options.mask and not options.maskfile:
-		print "\nERROR: You must define --mask or supply a volume through --maskfile"
+		print("\nERROR: You must define --mask or supply a volume through --maskfile")
 		sys.exit()
 	
 	mask = EMData(inputhdr['nx'],inputhdr['ny'],inputhdr['nz'])
@@ -144,15 +144,15 @@ def main():
 		r=Region( (2*maskcx - inputhdr['nx'])/2, (2*maskcx - inputhdr['ny'])/2, (2*maskcx - inputhdr['nz'])/2, inputhdr['nx'],inputhdr['ny'],inputhdr['nz'])
 		mask.clip_inplace( r )
 	
-	print "\nMask done"
+	print("\nMask done")
 	
 	if options.radius:
 		mask.translate(0,0, float(options.radius) )
-		print "\nMask translated by radius %d along z" %( options.radius )
+		print("\nMask translated by radius %d along z" %( options.radius ))
 
 	else:
 		mask.translate( options.tx, options.ty, options.tz )
-		print "\nMask translated by tx=%d, ty=%d, tz=%d,", options.tx, options.ty, options.tz
+		print("\nMask translated by tx=%d, ty=%d, tz=%d,", options.tx, options.ty, options.tz)
 	
 	symnames = ['oct','OCT','icos','ICOS','tet','TET']
 	
@@ -161,7 +161,7 @@ def main():
 	anglelines = []
 	
 	if options.sym:
-		print "\nsym found", options.sym
+		print("\nsym found", options.sym)
 	
 		symnum = 0
 		
@@ -179,8 +179,8 @@ def main():
 					symletter = symletter.replace(x,'')
 			
 			
-			print "\nThe letter for sym is", symletter
-			print "\nThe num for sym is", symnum
+			print("\nThe letter for sym is", symletter)
+			print("\nThe num for sym is", symnum)
 		
 		if options.sym == 'oct' or options.sym == 'OCT':
 			symnum = 8
@@ -196,12 +196,12 @@ def main():
 		t = Transform()
 		
 		if symnum:
-			print "\nsymnum determined",symnum
-			print "while symletter is", symletter
+			print("\nsymnum determined",symnum)
+			print("while symletter is", symletter)
 			
 			if symletter == 'd' or symletter == 'D':
 				symnum *= 2
-				print "\nsymnum corrected, because symmetry is d",symnum
+				print("\nsymnum corrected, because symmetry is d",symnum)
 				
 			#if options.save
 			
@@ -225,11 +225,11 @@ def main():
 	masks = {}
 	
 	if orientations:
-		print "\ngenerated these many orientations", len (orientations)
+		print("\ngenerated these many orientations", len (orientations))
 		if options.sym == 'icos' or options.sym == 'ICOS':
 			if options.vertices:
 
-				print "\nbut fetching vertices only"
+				print("\nbut fetching vertices only")
 			
 				#orientations = genicosvertices ( orientations )
 
@@ -258,7 +258,7 @@ def main():
 		for k in range( len(orientations) ):
 			t =  orientations[k]
 			
-			print "\nWorking with this orientation",t
+			print("\nWorking with this orientation",t)
 			
 			tmpmask = mask.copy()
 			tmpmask.transform( t )
@@ -358,7 +358,7 @@ def main():
 					scoopinplace['xform.align3d'] = t
 					
 					scoopinplace.write_image( options.path + '/' + scoopsinplacestack, key )
-					print "\nWrote this scoop 'in place' ", key
+					print("\nWrote this scoop 'in place' ", key)
 					
 				if options.savescoops:
 					
@@ -371,8 +371,8 @@ def main():
 					
 					#print "Center for region is", sx,sy,sz
 						
-					print "\nExtracting this scoop", key
-					print "With a padded box of this size", paddedbox
+					print("\nExtracting this scoop", key)
+					print("With a padded box of this size", paddedbox)
 					bigr = Region( (sx*2 - paddedbox)/2 ,  (sy*2 - paddedbox)/2 ,  (sz*2 - paddedbox)/2, paddedbox,paddedbox,paddedbox)
 					bigscoop = scoop.get_clip(bigr)
 					
@@ -382,7 +382,7 @@ def main():
 					bigscoop['origin_y'] = 0
 					bigscoop['origin_z'] = 0
 					
-					print "\nOrienting the subscoop with this transform", t
+					print("\nOrienting the subscoop with this transform", t)
 					
 					t2use = Transform()
 					rot = t.get_rotation()
@@ -398,7 +398,7 @@ def main():
 					syB = bigscoop['ny']/2
 					szB = bigscoop['nz']/2
 					
-					print "\nCenter of bigs scoops is", sxB,syB,szB
+					print("\nCenter of bigs scoops is", sxB,syB,szB)
 					
 					scoop = clip3D( bigscoop, box )
 					
@@ -407,7 +407,7 @@ def main():
 					
 					#print "\nTherefore region for small scoop is", r
 					
-					print "\nClipping the extracted and oriented scoop back to the desired boxsize", box
+					print("\nClipping the extracted and oriented scoop back to the desired boxsize", box)
 					
 					defaultmask = EMData( scoop['nx'], scoop['ny'],scoop['nz'])
 					defaultmask.to_one()

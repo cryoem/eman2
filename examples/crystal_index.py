@@ -87,10 +87,10 @@ def main():
 	for fn in args:
 
 		try:
-			print("READING {}".format(fn))
+			print(("READING {}".format(fn)))
 			orig = EMData(fn)
 		except:
-			print("Could not find {}".format(fn))
+			print(("Could not find {}".format(fn)))
 			sys.exit(1)
 
 		# PREPROCESSING
@@ -135,7 +135,7 @@ def main():
 
 		ds = 1/(apix*nx) # angstroms per fourier pixel
 		exper_max_radius = np.linalg.norm(refined_coords-nx/2,axis=1).max()
-		print("Highest resolution reflection: {:.2f}A ({} pix)\n".format(1/(ds*exper_max_radius),int(round(exper_max_radius,0))))
+		print(("Highest resolution reflection: {:.2f}A ({} pix)\n".format(1/(ds*exper_max_radius),int(round(exper_max_radius,0)))))
 
 		print("DETERMINING ORIENTATION")
 		
@@ -173,7 +173,7 @@ def main():
 			else: 
 				old_nrefs = len(hkl_exper)
 
-			print("\nAngular step: {:.2f} degrees\tRadius: {:.2f} pixels ({:.2f} Angstroms)\t{} Reflections".format(ang,r,max_resol,len(hkl_exper)))
+			print(("\nAngular step: {:.2f} degrees\tRadius: {:.2f} pixels ({:.2f} Angstroms)\t{} Reflections".format(ang,r,max_resol,len(hkl_exper))))
 
 			hkl_ref = generate_lattice(nx,apix,r,a,b,c,alpha,beta,gamma)
 
@@ -284,9 +284,9 @@ def main():
 		sys.stdout.flush()
 		ds = 1/(best_refine_apix*nx) # angstroms per fourier pixel
 
-		print("Refined Apix: {:.2f} -> {:.2f}".format(apix,best_refine_apix))
-		print("Refined thickness: {:.2f} -> {:.2f}".format(close,best_refine_close))
-		print("Refined orientation: ({:.2f},{:.2f},{:.2f})\n".format(*best_orient))
+		print(("Refined Apix: {:.2f} -> {:.2f}".format(apix,best_refine_apix)))
+		print(("Refined thickness: {:.2f} -> {:.2f}".format(close,best_refine_close)))
+		print(("Refined orientation: ({:.2f},{:.2f},{:.2f})\n".format(*best_orient)))
 
 		hkl_ref = generate_lattice(nx,refine_apix,exper_max_radius,a,b,c,alpha,beta,gamma)
 		pln = get_plane(best_orient,hkl_ref,close=best_refine_close)
@@ -311,9 +311,9 @@ def main():
 				else:
 					raw_F,raw_p = get_sf(fnorig,int(xc)+nx/2,int(yc)+nx/2,2)#,show=False)
 				try:
-					print("{:8.1f},{:8.1f},{:8.1f}    {:6.1f}    {:6.1f}    {:4d}    {:4d}    {:4d}    {:8.2f}    {:8.2f}".format(xc,yc,zc,r,resol,int(h),int(k),int(l),raw_F,raw_p))
+					print(("{:8.1f},{:8.1f},{:8.1f}    {:6.1f}    {:6.1f}    {:4d}    {:4d}    {:4d}    {:8.2f}    {:8.2f}".format(xc,yc,zc,r,resol,int(h),int(k),int(l),raw_F,raw_p)))
 				except:
-					print("{:8.1f},{:8.1f},{:8.1f}    {:6.1f}       inf    {:4d}    {:4d}    {:4d}     {:.2f}       {:.2f}".format(xc,yc,zc,r,int(h),int(k),int(l),raw_F,raw_p))
+					print(("{:8.1f},{:8.1f},{:8.1f}    {:6.1f}       inf    {:4d}    {:4d}    {:4d}     {:.2f}       {:.2f}".format(xc,yc,zc,r,int(h),int(k),int(l),raw_F,raw_p)))
 				sf.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(h,k,l,raw_F,raw_p,r,resol))
 
 def get_sf(fft,xc,yc,nn=2):

@@ -57,13 +57,13 @@ def main():
 	(options, args) = parser.parse_args()
 	
 	if not(options.MPI):
-		print "Only MPI version is currently implemented."
-		print "Please run '" + progname + " -h' for detailed options"
+		print("Only MPI version is currently implemented.")
+		print("Please run '" + progname + " -h' for detailed options")
 		return
 			
 	if len(args) < 1 or len(args) > 2:
-		print "usage: " + usage
-		print "Please run '" + progname + " -h' for detailed options"
+		print("usage: " + usage)
+		print("Please run '" + progname + " -h' for detailed options")
 	else:
 	
 		if len(args) == 1: mask = None
@@ -436,7 +436,7 @@ def helicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fou
 		k = k1
 	data = EMData.read_images(stack, list_of_particles)
 	ldata = len(data)
-	print "ldata=", ldata
+	print("ldata=", ldata)
 	nx = data[0].get_xsize()
 	ny = data[0].get_ysize()
 	if maskfile == None:

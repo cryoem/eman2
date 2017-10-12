@@ -71,17 +71,17 @@ def main():
 	
 	
 	if not options.boxsize:
-		print "You must provide --boxsize > 4"
+		print("You must provide --boxsize > 4")
 		sys.exit(1)
 	elif options.boxsize < 5:
-		print "You must provide --boxsize > 4"
+		print("You must provide --boxsize > 4")
 		sys.exit(1)		
 	
 	if options.heightinner and not options.radiusinner:
-		print "If specifying --heightinner, you must also specify --radiusinner."
+		print("If specifying --heightinner, you must also specify --radiusinner.")
 		sys.exit(1)	
 	if options.radiusinner and not options.heightinner:
-		print "If specifying --radiusinner, you must also specify --heightinner."
+		print("If specifying --radiusinner, you must also specify --heightinner.")
 		sys.exit(1)	
 	
 	from EMAN2_utils import makepath
@@ -91,7 +91,7 @@ def main():
 	
 	axes = options.axes.split(',')
 	
-	print "\n(e2cylinder)(main) after splitting, axes=", axes
+	print("\n(e2cylinder)(main) after splitting, axes=", axes)
 	
 	#axisdict ={}
 	#for axis in axes:
@@ -118,21 +118,21 @@ def main():
 		
 	
 	for axis in axes:
-		print "axis is", axis
+		print("axis is", axis)
 		if 'z' in axis or 'Z' in axis:
 			tz = Transform({'type':'eman','az':0,'alt':0,'phi':0})
-			print "added z transform"
+			print("added z transform")
 			ts.update({'z':tz})
 		if 'x' in axis or 'X' in axis:
 			
 			tx = Transform({'type':'eman','az':0,'alt':90,'phi':90})
 			ts.update({'x':tx})
-			print "added x transform"
+			print("added x transform")
 		
 		if 'y' in axis or 'Y' in axis:
 			ty = Transform({'type':'eman','az':0,'alt':90,'phi':0})
 			ts.update({'y':ty})
-			print "added y transform"
+			print("added y transform")
 	
 	masknamebase ='cylmask.hdf'
 

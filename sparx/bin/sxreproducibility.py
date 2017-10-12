@@ -79,38 +79,38 @@ def main():
 	MATCH, STB_PART, CT_s, CT_t, ST, st = k_means_stab_bbenum(Parts, T=options.T, J=options.J, max_branching=options.max_branching, stmult=0.1, branchfunc=2)
 
 	if options.verbose:
-		print MATCH
-		print STB_PART
-		print CT_s
-		print CT_t
-		print ST
-		print st
-		print " "
+		print(MATCH)
+		print(STB_PART)
+		print(CT_s)
+		print(CT_t)
+		print(ST)
+		print(st)
+		print(" ")
 
 	for i in xrange(len(MATCH)):
 		u = MATCH[i][0]  # u is the group in question in partition 1
 		assert len(STB_PART[u]) == CT_s[u]
-		print "Group ", 
+		print("Group ", end=' ') 
 		for r in xrange(R):
-			print "%3d "%(MATCH[i][r]),
-		print " matches:   group size = ",
+			print("%3d "%(MATCH[i][r]), end=' ')
+		print(" matches:   group size = ", end=' ')
 		for r in xrange(R):
-			print " %3d"%len(Parts[r][MATCH[i][r]]), 
-		print "     matched size = %3d"%(CT_s[u]),
+			print(" %3d"%len(Parts[r][MATCH[i][r]]), end=' ') 
+		print("     matched size = %3d"%(CT_s[u]), end=' ')
 		if options.verbose:
-			print "   matched group = %s"%(STB_PART[u])
-		else: print ""
+			print("   matched group = %s"%(STB_PART[u]))
+		else: print("")
 
-	print "\nNumber of averages = ",
+	print("\nNumber of averages = ", end=' ')
 	for r in xrange(R):
-		print "%3d"%(avg[r]),
-	print "\nTotal number of particles = ",
+		print("%3d"%(avg[r]), end=' ')
+	print("\nTotal number of particles = ", end=' ')
 	for r in xrange(R):
-		print "%3d"%(mem[r]), 
-	print "     number of matched particles = %5d"%(sum(CT_s))
+		print("%3d"%(mem[r]), end=' ') 
+	print("     number of matched particles = %5d"%(sum(CT_s)))
 
 	if options.timing:
-		print "Elapsed time = ", time() - time1
+		print("Elapsed time = ", time() - time1)
 
 	global_def.BATCH = False
 

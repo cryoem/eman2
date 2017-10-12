@@ -627,7 +627,7 @@ class Microscope(QtOpenGL.QGLWidget):
 				dist[si]+=self.beam_dist
 				if l[1]==-1: ### specimen stage, generate scattered and unscatterd beams
 					if passsample:
-						print "Multiple sample stage??"
+						print("Multiple sample stage??")
 					diff_f.append(abs(w))
 					news.append(s)
 					newt.append(tt)
@@ -896,14 +896,14 @@ class Microscope(QtOpenGL.QGLWidget):
 				img=self.draw_wave()
 			if self.twodwindow:
 				img=self.draw_wave_twod()
-			print "lens {:d}: py={:.3f}, f={:.3f}".format(
-				self.drag_lens, l[0], l[1])
+			print(("lens {:d}: py={:.3f}, f={:.3f}".format(
+				self.drag_lens, l[0], l[1])))
 			self.drag_lens=-1
 			
 	
 	def closeEvent(self, event):
-		print self.lens
-		print "Exit.."
+		print((self.lens))
+		print("Exit..")
 		exit()
 
 class MainWindow(QtGui.QMainWindow):

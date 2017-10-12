@@ -14,10 +14,10 @@ files = [
 ]
 
 eman2dir = os.getenv("EMAN2DIR")
-print "EMAN2DIR: %s" % eman2dir
+print("EMAN2DIR: %s" % eman2dir)
 
 for f in files:
     filepath = os.path.abspath(os.path.join(eman2dir, f))
-    print "testing for existence of file via envar EMAN2DIR: %s" % filepath
+    print("testing for existence of file via envar EMAN2DIR: %s" % filepath)
     
     assert os.path.isfile(filepath) == 1

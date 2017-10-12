@@ -64,8 +64,8 @@ def main(args):
 	(options, args) = parser.parse_args()
 
 	if len(args) != 2:
-		print "usage: " + usage
-		print "Please run '" + progname + " -h' for detailed options"
+		print("usage: " + usage)
+		print("Please run '" + progname + " -h' for detailed options")
         sys.exit(1)
 		
 	
@@ -73,14 +73,14 @@ def main(args):
 	outputfile = args[1]
 
 	if sym[0] != 'c' and sym[0] != 'C':
-		print "Error: invalid  symmetry ",  sym
+		print("Error: invalid  symmetry ",  sym)
 		sys.exit(1)
 
 	csym = int(sym[1:])
 
 	nimg = EMUtil.get_image_count(inputfile)
 	if nimg < 2:
-		print "Error: Not enough images to sort"
+		print("Error: Not enough images to sort")
 		sys.exit(1)
 
 
@@ -134,10 +134,10 @@ def main(args):
 			tmpimg.rotate_translate()
 			#scorem = -score + (2.0 - tmpimg->lcmp(d2))
 			imgsortm.set(i, scorem)
-			print i, score/(csym-1), scorem/(csym-1)
+			print(i, score/(csym-1), scorem/(csym-1))
 		else:
 			imgsort.set(i, score)
-			print i, score/(csym-1)
+			print(i, score/(csym-1))
 
 	if options.mirror:
 		imgsortm.sort()

@@ -51,8 +51,8 @@ def main():
 	
 	(options, args) = parser.parse_args()
 	if len(args) < 2 or len(args) > 3:
-		print "usage: " + usage
-		print "Please run '" + progname + " -h' for detailed options"
+		print("usage: " + usage)
+		print("Please run '" + progname + " -h' for detailed options")
 	elif options.link not in chk_link:
 		sys.stderr.write('ERROR: Kind of linkage unknown.\n\n')
 		sys.exit()

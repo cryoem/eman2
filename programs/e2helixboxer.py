@@ -48,9 +48,9 @@ try:
 	ENABLE_GUI = True
 
 except ImportError, e:
-	print "Importing GUI libraries failed!"
-	print e
-	print "GUI features are disabled."
+	print("Importing GUI libraries failed!")
+	print(e)
+	print("GUI features are disabled.")
 	ENABLE_GUI = False
 
 """
@@ -93,7 +93,7 @@ def main():
 	(options, args) = parser.parse_args()
 
 	if len(args)==0 :
-		print "ERROR: please provide a list of files to be boxed at the command line"
+		print("ERROR: please provide a list of files to be boxed at the command line")
 		sys.exit(1)
 
 	if options.helix_width < 1:
@@ -147,10 +147,10 @@ def main():
 
 			E2end(logid)
 		elif len(args) == 0:
-			print 'You must specify a micrograph file or use the "--gui" option.'
+			print('You must specify a micrograph file or use the "--gui" option.')
 			return
 		elif len(args) > 1:
-			print 'Multiple micrographs can only be specified with the "--gui" option'
+			print('Multiple micrographs can only be specified with the "--gui" option')
 			return
 
 def counterGen():

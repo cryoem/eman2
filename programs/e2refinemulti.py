@@ -214,16 +214,16 @@ not need to specify any of the following other than the ones already listed abov
 	(options, args) = parser.parse_args()
 
 	if options.model!=None and options.models!=None:
-		print "ERROR : You may specify --model with --nmodels OR --models, not both"
+		print("ERROR : You may specify --model with --nmodels OR --models, not both")
 		sys.exit(1)
 
 	if options.input==None or options.input[-4:]!=".lst":
-		print "ERROR : You must specify --input, which must be a .lst file\n"
+		print("ERROR : You must specify --input, which must be a .lst file\n")
 		sys.exit(1)
 
 	if options.speed>7 or options.speed<1 :
-		print "ERROR: --speed must be between 1 and 7. Lower numbers will make refinements take longer, but produce slightly better measured resolutions. The default value of 5 is a good balance for typical refinements. When\
-satisfied with the results with speed=5 you may consider reducing this number, though pushing for higher resolution would normally be done in the subsequent single-model refinements."
+		print("ERROR: --speed must be between 1 and 7. Lower numbers will make refinements take longer, but produce slightly better measured resolutions. The default value of 5 is a good balance for typical refinements. When\
+satisfied with the results with speed=5 you may consider reducing this number, though pushing for higher resolution would normally be done in the subsequent single-model refinements.")
 
 	
 	if options.path == None:
@@ -232,11 +232,11 @@ satisfied with the results with speed=5 you may consider reducing this number, t
 		options.path = "multi_{:02d}".format(max(fls)+1)
 
 	if options.threads<1 :
-		print "WARNING: threads set to an invalid value. Changing to 1, but you should really provide a reasonable number."
+		print("WARNING: threads set to an invalid value. Changing to 1, but you should really provide a reasonable number.")
 		options.threads=1
 
 	if options.randclassify+options.randphase+options.mapfragment>1:
-		print "ERROR: Must select only one initial model generation method. Either --mapfragment, --randclassify or --randphase."
+		print("ERROR: Must select only one initial model generation method. Either --mapfragment, --randclassify or --randphase.")
 		sys.exit(1)
 	
 	global output_path
@@ -273,7 +273,7 @@ satisfied with the results with speed=5 you may consider reducing this number, t
 			model.write_image("{}/threed_00_01.hdf".format(options.path),0)
 		
 		else:
-			print "ERROR: Must specify a initial model genenration method."
+			print("ERROR: Must specify a initial model genenration method.")
 			sys.exit(1)
 	else:
 		# or copy the specified starting models
@@ -294,7 +294,7 @@ satisfied with the results with speed=5 you may consider reducing this number, t
 	# can't finish the mass processing before we know nmodels
 	if len(options.mass)==1 : options.mass=options.mass*options.nmodels
 	if len(options.mass)!=options.nmodels :
-		print "ERROR: Must specify either a single --mass value or a list of <nmodels> comma separated masses."
+		print("ERROR: Must specify either a single --mass value or a list of <nmodels> comma separated masses.")
 		sys.exit(1)
 
 	progress = 0.0
@@ -305,7 +305,7 @@ satisfied with the results with speed=5 you may consider reducing this number, t
 	apix = EMData(options.input,0)["apix_x"]
 
 	if options.targetres<apix*2:
-		print "ERROR: Target resolution is smaller than 2*A/pix value. This is impossible."
+		print("ERROR: Target resolution is smaller than 2*A/pix value. This is impossible.")
 		sys.exit(1)
 
 	logid=E2init(sys.argv,options.ppid)
@@ -335,7 +335,7 @@ in the refinement directory. You can use Info with the browser or just read the 
 			try:
 				scale=img3["apix_x"]/apix
 			except:
-				print "A/pix unknown, assuming scale same as relative box size"
+				print("A/pix unknown, assuming scale same as relative box size")
 				scale=float(xsize)/xsize3d
 			if scale>1 : cmd="e2proc3d.py {path}/threed_00_{i:02d}.hdf {path}/threed_00_{i:02d}.hdf --clip={cl},{cl},{cl} --scale={sca:1.4f}".format(path=options.path,i=i+1,cl=xsize,sca=scale)
 			else :       cmd="e2proc3d.py {path}/threed_00_{i:02d}.hdf {path}/threed_00_{i:02d}.hdf --scale={sca:1.4f} --clip={cl},{cl},{cl}".format(path=options.path,i=i+1,cl=xsize,sca=scale)
@@ -546,7 +546,7 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 	db = js_open_dict(options.path+"/0_refine_parms.json")
 	db.update(vars(options))
 
-	print "NOTE: you can check the progress of the refinement at any time by opening this URL in your web-browser:  file://{}/index.html".format(os.path.abspath(output_path))
+	print("NOTE: you can check the progress of the refinement at any time by opening this URL in your web-browser:  file://{}/index.html".format(os.path.abspath(output_path)))
 	
 	### Actual refinement loop ###
 	for it in range(1,options.iter+1) :
@@ -569,7 +569,7 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 		if makesimmask :
 			av=Averagers.get("minmax",{"max":1})
 			nprj=EMUtil.get_image_count("{path}/projections_{itr:02d}.hdf".format(path=options.path,itr=it))
-			print "Mask from {} projections".format(nprj)
+			print("Mask from {} projections".format(nprj))
 			for i in xrange(nprj):
 				a=EMData("{path}/projections_{itr:02d}.hdf".format(path=options.path,itr=it),i)
 				av.add_image(a)
@@ -661,7 +661,7 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 		run("e2proc3d.py {path}/threed_{itr:02d}_{mdl:02d}.hdf {path}/tmp0.hdf --process=filter.lowpass.gauss:cutoff_freq=.05".format(path=options.path,itr=it,mdl=1))
 		o0=EMData("{path}/threed_{itr:02d}_{mdl:02d}.hdf".format(path=options.path,itr=it,mdl=1),0)
 		for mdl in xrange(1,options.nmodels):
-			if options.verbose>0 : print "Aligning map ",mdl+1
+			if options.verbose>0 : print("Aligning map ",mdl+1)
 			map2="{path}/threed_{itr:02d}_{mdl:02d}.hdf".format(path=options.path,itr=it,mdl=mdl+1)
 			run("e2proc3d.py {map2} {path}/tmp1.hdf --process=filter.lowpass.gauss:cutoff_freq=.05 {align}".format(path=options.path,map2=map2,align=align))
 			run("e2proc3d.py {map2} {path}/tmp1f.hdf --process=filter.lowpass.gauss:cutoff_freq=.05 --process=xform.flip:axis=z {align}".format(path=options.path,map2=map2,align=align))
@@ -677,12 +677,12 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 			if ca<cb :
 				try: ali=a["xform.align3d"]
 				except: ali=Transform()
-				if verbose>0 : print "correct hand detected ",ali
+				if verbose>0 : print("correct hand detected ",ali)
 			else :
 				try: ali=b["xform.align3d"]
 				except: ali=Transform()
 				o.process_inplace("xform.flip",{"axis":"z"})
-				if verbose>0 : print "handedness flip required",ali
+				if verbose>0 : print("handedness flip required",ali)
 			o.transform(ali)
 
 			os.unlink(map2)
@@ -728,9 +728,9 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 	# Now we split the data into sets for individual model refinements
 	run("e2classextract.py {path}/classes_{itr:02d}.hdf --refinemulti --sort --verbose=1 --setname={set}".format(path=options.path,itr=it,set=setname))
 
-	print "e2refinemulti.py completed sucessfully, but you are not yet done. The particles going into each output map have been seperated into the sets listed above. \
+	print("e2refinemulti.py completed sucessfully, but you are not yet done. The particles going into each output map have been seperated into the sets listed above. \
 You now need to run a single model e2refine_easy job for each of these output sets to produce the final maps. The maps in {} are not optimal, and no gold standard \
-resolution has been determined for them.".format(options.path)
+resolution has been determined for them.".format(options.path))
 	append_html("<p>e2refinemulti.py has now completed running, and experienced no detectable errors, but you aren't done yet. The multi-model refinement method is inherently somewhat instable, particularly if \
 the variability in your map you are trying to classify is continuous rather than discrete. What this means is, the final maps in {}, are not entirely optimal, and do not have gold standard resolutions associated \
 with them. Your next step should be to run a normal e2refine_easy run for the particles from each of the subgroups produced by this run of e2refinemulti. To facilitate that process, new particle sets have \
@@ -769,21 +769,21 @@ def get_apix_used(options):
 		#try: apix=img["ctf"].apix
 		#except: apix=img["apix_x"]
 
-	print "ERROR: Could not find a valid A/pix value anywhere. Please specify."
+	print("ERROR: Could not find a valid A/pix value anywhere. Please specify.")
 
 	sys.exit(1)
 
 def run(command):
 	"Mostly here for debugging, allows you to control how commands are executed (os.system is normal)"
 
-	print "{}: {}".format(time.ctime(time.time()),command)
+	print("{}: {}".format(time.ctime(time.time()),command))
 	append_html("<p>{}: {}</p>".format(time.ctime(time.time()),command),True)
 
 	ret=launch_childprocess(command)
 
 	# We put the exit here since this is what we'd do in every case anyway. Saves replication of error detection code above.
 	if ret !=0 :
-		print "Error running: ",command
+		print("Error running: ",command)
 		sys.exit(1)
 
 	return

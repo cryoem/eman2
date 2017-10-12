@@ -51,8 +51,8 @@ def main():
 	parser.add_option("--function", type="string", default="ref_ali2d", help="  name of the reference preparation function")
 	(options, args) = parser.parse_args()
 	if len(args) < 2 or len(args) >3:
-    		print "usage: " + usage
-    		print "Please run '" + progname + " -h' for detailed options"
+    		print("usage: " + usage)
+    		print("Please run '" + progname + " -h' for detailed options")
 	else:
 		if len(args) == 2:
 			mask = None

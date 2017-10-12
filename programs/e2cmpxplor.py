@@ -53,7 +53,7 @@ read into memory. Do not use it on large sets of particles !!!
 	(options, args) = parser.parse_args()
 	
 	if len(args)<2 :
-		print "Error, please specify projection file and particles file"
+		print("Error, please specify projection file and particles file")
 		sys.exit(1)
 	
 	logid=E2init(sys.argv,options.ppid)
@@ -257,7 +257,7 @@ class EMCmpExplorer(EM3DSymModel):
 					ropt[1]["xform.align2d"]=ali["xform.align2d"]
 					ali=p.align(ropt[0],ptcl,ropt[1],rcmp[0],rcmp[1])
 			except:
-				print traceback.print_exc()
+				print(traceback.print_exc())
 				QtGui.QMessageBox.warning(None,"Error","Problem with alignment parameters")
 				progress.close()
 				return
@@ -285,7 +285,7 @@ class EMCmpExplorer(EM3DSymModel):
 			ali.transform(p["ptcl.align2d"])
 			try : p["cmp"]=-ptcl.cmp(cmpopt[0],ali,cmpopt[1])
 			except:
-				print traceback.print_exc()
+				print(traceback.print_exc())
 				QtGui.QMessageBox.warning(None,"Error","Invalid similarity metric string, or other comparison error")
 				progress.close()
 				return

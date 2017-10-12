@@ -408,7 +408,7 @@ class EMBallStickModel(EMPDBItem3D):
 		try:
 			glCallList(self.dl)
 		except:
-			print "call list failed",self.dl
+			print("call list failed",self.dl)
 			glDeleteLists(self.dl,1)
 			self.dl = None
 	
@@ -1195,7 +1195,7 @@ class EMSphereModel(EMPDBItem3D):
 		try:
 			glCallList(self.dl)
 		except:
-			print "call list failed",self.dl
+			print("call list failed",self.dl)
 			glDeleteLists(self.dl,1)
 			self.dl = None
 

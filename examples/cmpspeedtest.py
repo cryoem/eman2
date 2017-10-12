@@ -43,5 +43,5 @@ def f(cmpname,n):
 	return time.time()-a
 
 for c,n in (("dot",100000),("sqeuclidean",100000),("frc",2000),("phase",2000),("optvariance",1000)) :
-	print "%15s\t%1.3f /sec"%(c,float(n)/f(c,n))
+	print("%15s\t%1.3f /sec"%(c,float(n)/f(c,n)))
 

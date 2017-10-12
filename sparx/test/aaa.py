@@ -68,7 +68,7 @@ for i in range(0,0+1):
 	  u = o.rot_scale_trans2D(-i*pi/180.0)
 	  u=u*mask
 	  stat=Util.infomask(u,mask)
-	  print  " STAT T",stat[0],"  ",stat[1],"  ",stat[2],"  ",stat[3]
+	  print(" STAT T",stat[0],"  ",stat[1],"  ",stat[2],"  ",stat[3])
 	  #u=(u-stat[0])/stat[1]
 	  drop_image(u,'rst3.spi')
 	  fsc(ee,u,1,"fsct")
@@ -90,7 +90,7 @@ for i in range(0,0+1):
 	  u = rtshg(o,-i,0.,0.)
 	  u=u*mask
 	  stat=Util.infomask(u,mask)
-	  print  " STAT G",stat[0],"  ",stat[1],"  ",stat[2],"  ",stat[3]
+	  print(" STAT G",stat[0],"  ",stat[1],"  ",stat[2],"  ",stat[3])
 	  #u=(u-stat[0])/stat[1]
 	  drop_image(u,'rtg3.spi')
 	  fsc(ee,u,1,"fscg")
@@ -109,7 +109,7 @@ for i in range(0,0+1):
 	  drop_image(s,'sss2.spi')
 	  s.rotate_translate(i,0,0,0,0,0,0,0,0)
 	  stat=Util.infomask(s,mask)
-	  print  " STAT L",stat[0],"  ",stat[1],"  ",stat[2],"  ",stat[3]
+	  print(" STAT L",stat[0],"  ",stat[1],"  ",stat[2],"  ",stat[3])
           #info(s)
 	  #s=(s-stat[0])/stat[1]
 	  drop_image(s,'sss3.spi')
@@ -124,7 +124,7 @@ for i in range(0,0+1):
 	  info(d,mas)
 	  drop_image(d,'sss5.spi')
 
-          print  i, cs, cg, ct, inorm, snorm, tnorm, gnorm
+          print(i, cs, cg, ct, inorm, snorm, tnorm, gnorm)
 	  if(snorm==0.0):
 	    snorm=1.0
 	  if(tnorm==0.0):

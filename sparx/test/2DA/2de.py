@@ -71,7 +71,7 @@ tave,tvar = ave_var_series_g(data,kb)
 dropImage(tave,"a1.spi")
 dropImage(tvar,"a2.spi")
 a0 = tave.cmp("dot", tave, {"negative":0,"mask":mask})
-print  "initial ",a0
+print("initial ",a0)
 # do the alignment
 # IMAGES ARE SQUARES!
 # load stuff for amoeba
@@ -83,7 +83,7 @@ stuff.insert(2,nima)
 #stuff.insert(4,data)  # current image in the gridding format
 weights = [1.75]*3  # weights define initial bracketing, so one would have to figure how to set them correctly
 for iter in xrange(20):
-	print " ITERATION #",iter,a0
+	print(" ITERATION #",iter,a0)
 	again = False
 	for im in xrange(nima):
 		# subtract current image from the average
@@ -109,7 +109,7 @@ for iter in xrange(20):
 		if  mirror: temp = temp.process("mirror",{"axis":'x'})
 		#  Subtract current image from the average
 		tave = refim + temp/nima
-		print  im,tave.cmp("dot", tave, {"negative":0,"mask":mask}),params,outparams[0],outparams[2]
+		print(im,tave.cmp("dot", tave, {"negative":0,"mask":mask}),params,outparams[0],outparams[2])
 
 	# calculate total average using current alignment parameters
 	av1,av2 = ave_oe_series_g(data,kb)

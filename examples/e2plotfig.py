@@ -116,14 +116,14 @@ def main():
 	datafiles=[]
 	if options.data:
 		if options.datax or options.datay:
-			print "\n(e2plotfig)(main) ERROR: provide --data OR --datax AND/OR --datay."
+			print("\n(e2plotfig)(main) ERROR: provide --data OR --datax AND/OR --datay.")
 			sys.exit(1)
 	elif not options.data:
 		if not options.datax and not options.datay:
 			if args:
 				datafiles=args
 			elif not args:
-				print "\n(e2plotfig)(main) ERROR: provide at least one of --data, --datax, or --datay."
+				print("\n(e2plotfig)(main) ERROR: provide at least one of --data, --datax, or --datay.")
 				sys.exit(1)
 
 
@@ -163,16 +163,16 @@ def main():
 			with open( f ) as datafile: 
 				lines=datafile.readlines()
 				if options.verbose:
-					print "\nreading file {}".format(f)
+					print("\nreading file {}".format(f))
 					if options.verbose >9:
-						print "\nlines are", lines
+						print("\nlines are", lines)
 	
 				if lines:
 					lines = fixlines(lines)
 					xaxis = [ float(line.replace('\n','').split()[0]) for line in lines ]
 					yaxis = [ float(line.replace('\n','').split()[1]) for line in lines ]
 				else:
-					print "\nERROR: source file {} seems empty; no lines read".format(f)	
+					print("\nERROR: source file {} seems empty; no lines read".format(f))	
 					sys.exit(1)
 
 				if options.normalize:
@@ -196,7 +196,7 @@ def main():
 			if options.datay:
 				datayfiles=options.datay.split(',')
 				if len(dataxfiles) != len(datayfiles):
-					print "\n(e2plotfig)(main) ERROR: --datax and --datay must contain the same number of files. Now, nx files=%d, ny files=%d".format(len(dataxfiles),len(datayfiles))
+					print("\n(e2plotfig)(main) ERROR: --datax and --datay must contain the same number of files. Now, nx files=%d, ny files=%d".format(len(dataxfiles),len(datayfiles)))
 					sys.exit(1)
 
 			k=0
@@ -267,7 +267,7 @@ def fixlines(inlines):
 		if inlines[i]:
 			newlines.append(inlines[i])
 		else:
-			print "\nartifactual line (number {}) removed".format(i)
+			print("\nartifactual line (number {}) removed".format(i))
 
 	return newlines
 
@@ -331,7 +331,7 @@ def plotdata( options, data ):
 	#cpick = resetcolorbar(options.lowestangle,options.highestangle)
 	ndata = len(data)
 
-	print "\nllllllen(data) {}".format(len(data))
+	print("\nllllllen(data) {}".format(len(data)))
 	#colorbar = False
 	#altxaxis = None
 	#colorstart = options.lowestangle
@@ -367,9 +367,9 @@ def plotdata( options, data ):
 				#	mark = markers[-1]
 			
 			if options.verbose > 9:
-				print "\n(e2plotfig)(plotdata) plotting dataset n = {}".format(k)
-				print "color is {}".format(color)
-				print "marker is {}".format(marker)
+				print("\n(e2plotfig)(plotdata) plotting dataset n = {}".format(k))
+				print("color is {}".format(color))
+				print("marker is {}".format(marker))
 			
 			plotfig( options, fig, ax, data[k][0], data[k][1], k, color, marker )
 			
@@ -381,14 +381,14 @@ def plotdata( options, data ):
 		filetosave = options.path + '/' + options.outputtag + '.png'
 		fig.savefig( filetosave, dpi=resolution, bbox_inches='tight')# transparent=True) #, bbox_extra_artists=(lgd,), bbox_inches='tight'
 		plt.close('fig')
-		print "\n(e2plotfig)(plotdata) saving figure {}".format(filetosave)
+		print("\n(e2plotfig)(plotdata) saving figure {}".format(filetosave))
 
 	if options.individualplots:
 		#colorstep=0
 		for k in data:
 			#colorbar=False
 			fig,ax = resetplot()
-			print "\n(e2plotfig)(plotdata) plotting individual plot for dataset n = {}".format(k)
+			print("\n(e2plotfig)(plotdata) plotting individual plot for dataset n = {}".format(k))
 			plotfig( options, fig, ax, data[k][0], data[k][1], k )
 			
 			filetosave = options.path + '/' + options.outputtag +'.png'
@@ -434,7 +434,7 @@ def plotfig( options, fig, ax, datax, datay, count, colorthis='k', markerthis=''
 		linewidth=0
 	ax.plot( datax, datay, linestyle=linestyle, linewidth=linewidth, marker=markerthis, markersize=5, color=colorthis, label=label) #, alpha=0.75)
 	
-	print "\noptions.miny is {}".format(options.miny)
+	print("\noptions.miny is {}".format(options.miny))
 	if options.miny != None or options.maxy != None:
 		miny=min(datay)
 		maxy=max(datay)

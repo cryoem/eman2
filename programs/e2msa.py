@@ -85,7 +85,7 @@ handled this way."""
 
 	logid=E2init(sys.argv,options.ppid)
 
-	if options.verbose>0 : print "Beginning MSA"
+	if options.verbose>0 : print("Beginning MSA")
 	if options.gsl : mode="svd_gsl"
 	else : mode="pca_large"
 	#elif options.lowmem : mode="pca_large"
@@ -93,7 +93,7 @@ handled this way."""
 
 	try : options.step = int(options.step.split(",")[0]),int(options.step.split(",")[1])	# convert strings to tuple
 	except:
-		print "Invalid --step specification"
+		print("Invalid --step specification")
 		sys.exit(1)
 
 	if options.mask>-2 :
@@ -114,10 +114,10 @@ handled this way."""
 	if options.simmx : out=msa_simmx(args[0],options.simmx,mask,options.nbasis,options.varimax,mode,options.normalize,options.scratchfile,options.step)
 	else : out=msa(args[0],mask,options.nbasis,options.varimax,mode,options.normalize,options.scratchfile,options.step)
 
-	if options.verbose>0 : print "MSA complete"
+	if options.verbose>0 : print("MSA complete")
 	for j,i in enumerate(out):
 		try :
-			if options.verbose>0 : print "Eigenvalue: ",i.get_attr("eigval")
+			if options.verbose>0 : print("Eigenvalue: ",i.get_attr("eigval"))
 		except: pass
 		i.write_image(args[1],j)
 
@@ -231,7 +231,7 @@ pca,pca_large or svd_gsl"""
 			pca.insert_image(im)
 	else:
 		if step[0]!=0 or step[1]!=1:
-			print "ERROR: step not supported with image list in e2msa.py"
+			print("ERROR: step not supported with image list in e2msa.py")
 			sys.exit(1)
 		n = len(images)
 		if mode=="svd_gsl" : pca=Analyzers.get(mode,{"mask":mask,"nvec":nbasis,"nimg":n})

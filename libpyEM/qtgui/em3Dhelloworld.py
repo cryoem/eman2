@@ -391,8 +391,8 @@ class EMHelloWorldInspector(QtGui.QWidget):
 		try:
 			rot = t3d.get_rotation(str(self.src_map[convention]))
 		except StandardError, e: #doing a quick fix
-			print e
-			print "Developers: This catches a large range of exceptions... a better way surely exists"
+			print(e)
+			print("Developers: This catches a large range of exceptions... a better way surely exists")
 			rot = t3d.get_rotation(self.src_map[convention])
 		
 		if ( self.src_map[convention] == EULER_SPIN ):

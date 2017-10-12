@@ -69,12 +69,12 @@ def main():
 	if options.allparticles:
 		args=["particles/"+i for i in os.listdir("particles") if "__" not in i and i[0]!="." and ".hed" not in i ]
 		args.sort()
-		if options.verbose : print "%d particle stacks identified"%len(args)
+		if options.verbose : print("%d particle stacks identified"%len(args))
 
 	# remove any files that don't have enough particles from the list
 	if options.minptcl>0 :
 		args=[i for i in args if imcount(i)>=options.minptcl]
-		if options.verbose: print "{} stacks after minptcl filter".format(len(args))
+		if options.verbose: print("{} stacks after minptcl filter".format(len(args)))
 
 
 	# remove files with quality too low
@@ -85,12 +85,12 @@ def main():
 				if js_open_dict(info_name(i))["quality"]>=options.minqual : outargs.append(i)
 			except:
 #				traceback.print_exc()
-				print "Unknown quality for {}, including it".format(info_name(i))
+				print("Unknown quality for {}, including it".format(info_name(i)))
 				outargs.append(i)
 
 		args=outargs
 
-		if options.verbose: print "{} stacks after quality filter".format(len(args))
+		if options.verbose: print("{} stacks after quality filter".format(len(args)))
 	#logid=E2init(sys.argv, options.ppid)
 
 	app = EMApp()

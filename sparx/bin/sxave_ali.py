@@ -55,8 +55,8 @@ def main():
 	parser.add_option("--filament"        , action = "store_true", default=False, help="Calculate stack of averages according to filament membership")
 	(options, args) = parser.parse_args()
 	if len(args) < 1 or len(args) > 2:
-		print "usage: " + usage
-		print "Please run '" + progname + " -h' for detailed options"
+		print("usage: " + usage)
+		print("Please run '" + progname + " -h' for detailed options")
 	else: 
 		if len(args) == 1: 
 			name_output = None

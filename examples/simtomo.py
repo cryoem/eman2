@@ -16,7 +16,7 @@ log=file("tomo.ort","w")
 for m in range(32):
 	
 	xf=Transform({"type":"eman","az":random.uniform(0,360.0),"phi":random.uniform(0,360.0),"alt":random.uniform(0,360.0)})
-	print "Model ",m,xf
+	print("Model ",m,xf)
 	log.write("%d\t%s\n"%(m,str(xf)))
 	ptcl=optcl.process("xform",{"transform":xf})
 

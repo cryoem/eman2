@@ -212,9 +212,9 @@ def main():
 					y=float(line[38:46])
 					z=float(line[46:54])
 				except:
-					print "PDB Parse error:\n%s\n'%s','%s','%s'  '%s','%s','%s'\n"%(
-						line,line[12:14],line[6:11],line[22:26],line[30:38],line[38:46],line[46:54])
-					print a,aseq,resol,x,y,z
+					print("PDB Parse error:\n%s\n'%s','%s','%s'  '%s','%s','%s'\n"%(
+						line,line[12:14],line[6:11],line[22:26],line[30:38],line[38:46],line[46:54]))
+					print(a,aseq,resol,x,y,z)
 
 				atoms.append((a,x,y,z))
 
@@ -236,15 +236,15 @@ def main():
 					#nelec+=atomdefs[a.upper()][0]
 					#mass+=atomdefs[a.upper()][1]
 				except:
-					print("Unknown atom %s ignored at %d"%(a,aseq))
+					print(("Unknown atom %s ignored at %d"%(a,aseq)))
 
 		infile.close()
 
-		print "%d atoms used with a total charge of %d e- and a mass of %d kDa"%(natm,nelec,mass/1000)
-		print "Atomic center at %1.1f,%1.1f,%1.1f (center of volume at 0,0,0)"%(aavg[0]/natm,aavg[1]/natm,aavg[2]/natm)
-		print "Bounding box: x: %7.2f - %7.2f"%(amin[0],amax[0])
-		print "              y: %7.2f - %7.2f"%(amin[1],amax[1])
-		print "              z: %7.2f - %7.2f"%(amin[2],amax[2])
+		print("%d atoms used with a total charge of %d e- and a mass of %d kDa"%(natm,nelec,mass/1000))
+		print("Atomic center at %1.1f,%1.1f,%1.1f (center of volume at 0,0,0)"%(aavg[0]/natm,aavg[1]/natm,aavg[2]/natm))
+		print("Bounding box: x: %7.2f - %7.2f"%(amin[0],amax[0]))
+		print("              y: %7.2f - %7.2f"%(amin[1],amax[1]))
+		print("              z: %7.2f - %7.2f"%(amin[2],amax[2]))
 		#print("Helix (%): {:.1f}".format(100*float(ihelix)/ires)) # is this accurate?
 		#print("Sheet (%): {:.1f}".format(100*float(isheet)/ires))
 
@@ -263,7 +263,7 @@ def main():
 		if options.omit > 0.0 and options.omit < 100.0:
 			natm = pa.get_number_points()
 			nrm = int(round(natm*(options.omit/100.),0))
-			print("Randomly omitting {}% ({}/{}) of atoms from output map.".format(options.omit,nrm,natm))
+			print(("Randomly omitting {}% ({}/{}) of atoms from output map.".format(options.omit,nrm,natm)))
 			for i in range(nrm):
 				n = np.random.randint(0,natm,dtype=int)
 				pa.delete_point(n)
@@ -311,12 +311,12 @@ def main():
 		out = pa.pdb2mrc_by_summation(boxsize,options.apix,options.res,addpdbbfactor)
 		out.write_image(args[1])
 
-		print 'Conversion complete'
+		print('Conversion complete')
 
 	else:
-		if options.addpdbbfactor : print "WARNING: B-factors not supported in quick mode"
+		if options.addpdbbfactor : print("WARNING: B-factors not supported in quick mode")
 		if options.full :
-			print "WARNING: --full not supported in quick mode"
+			print("WARNING: --full not supported in quick mode")
 			sys.exit(1)
 		outmap = pdb_2_mrc(args[0],options.apix,options.res,options.het,box,chains,options.model,options.center,options.quiet)
 		outmap.write_image(args[1])
@@ -339,7 +339,7 @@ def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,model=No
 	except : raise IOError("%s is an invalid file name" %file_name)
 
 
-	if res<=apix : print "Warning: res<=apix. Generally res should be 2x apix or more"
+	if res<=apix : print("Warning: res<=apix. Generally res should be 2x apix or more")
 
 	aavg=[0,0,0]	# calculate atomic center
 	amin=[1.0e20,1.0e20,1.0e20]		# coords of lower left front corner of bounding box
@@ -378,9 +378,9 @@ def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,model=No
 				y=float(line[38:46])
 				z=float(line[46:54])
 			except:
-				print "PDB Parse error:\n%s\n'%s','%s','%s'  '%s','%s','%s'\n"%(
-					line,line[12:14],line[6:11],line[22:26],line[30:38],line[38:46],line[46:54])
-				print a,aseq,resol,x,y,z
+				print("PDB Parse error:\n%s\n'%s','%s','%s'  '%s','%s','%s'\n"%(
+					line,line[12:14],line[6:11],line[22:26],line[30:38],line[38:46],line[46:54]))
+				print(a,aseq,resol,x,y,z)
 
 			atoms.append((a,x,y,z))
 
@@ -400,16 +400,16 @@ def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,model=No
 				nelec+=atomdefs[a.upper()][0]
 				mass+=atomdefs[a.upper()][1]
 			except:
-				print("Unknown atom %s ignored at %d"%(a,aseq))
+				print(("Unknown atom %s ignored at %d"%(a,aseq)))
 
 	infile.close()
 
 	if not quiet:
-		print "%d atoms used with a total charge of %d e- and a mass of %d kDa"%(natm,nelec,mass/1000)
-		print "atomic center at %1.1f,%1.1f,%1.1f (center of volume at 0,0,0)"%(aavg[0]/natm,aavg[1]/natm,aavg[2]/natm)
-		print "Bounding box: x: %7.2f - %7.2f"%(amin[0],amax[0])
-		print "              y: %7.2f - %7.2f"%(amin[1],amax[1])
-		print "              z: %7.2f - %7.2f"%(amin[2],amax[2])
+		print("%d atoms used with a total charge of %d e- and a mass of %d kDa"%(natm,nelec,mass/1000))
+		print("atomic center at %1.1f,%1.1f,%1.1f (center of volume at 0,0,0)"%(aavg[0]/natm,aavg[1]/natm,aavg[2]/natm))
+		print("Bounding box: x: %7.2f - %7.2f"%(amin[0],amax[0]))
+		print("              y: %7.2f - %7.2f"%(amin[1],amax[1]))
+		print("              z: %7.2f - %7.2f"%(amin[2],amax[2]))
 
 	# precalculate a prototypical Gaussian to resample
 	# 64^3 box with a real-space 1/2 width of 12 pixels
@@ -445,7 +445,7 @@ def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,model=No
 		outbox[1]+=outbox[1]%2
 		outbox[2]+=outbox[2]%2
 
-	if not quiet: print "Box size: %d x %d x %d"%(outbox[0],outbox[1],outbox[2])
+	if not quiet: print("Box size: %d x %d x %d"%(outbox[0],outbox[1],outbox[2]))
 
 	# initialize the final output volume
 	outmap=EMData()
@@ -458,7 +458,7 @@ def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,model=No
 	zt = outbox[2]/2 - (amax[2]-amin[2])/(2*apix)
 	for i,a in enumerate(atoms):
 		if not quiet and i%1000==0 :
-			print '\r   %d'%i,
+			print('\r   %d'%i, end=' ')
 			sys.stdout.flush()
 		try:
 			# This insertion strategy ensures the output is centered.
@@ -467,8 +467,8 @@ def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,model=No
 #			outmap.insert_scaled_sum(gaus,(a[1]/apix+xt-amin[0]/apix,a[2]/apix+yt-amin[1]/apix,a[3]/apix+zt-amin[2]/apix),res/(pi*12.0*apix),elec)
 			if center: outmap.insert_scaled_sum(gaus,((a[1]-aavg[0])/apix+outbox[0]/2,(a[2]-aavg[1])/apix+outbox[1]/2,(a[3]-aavg[2])/apix+outbox[2]/2),res/(pi*12.0*apix),elec)
 			else: outmap.insert_scaled_sum(gaus,(a[1]/apix+outbox[0]/2,a[2]/apix+outbox[1]/2,a[3]/apix+outbox[2]/2),res/(pi*12.0*apix),elec)
-		except: print "Skipping %d '%s'"%(i,a[0])
-	if not quiet: print '\r   %d\nConversion complete'%len(atoms)
+		except: print("Skipping %d '%s'"%(i,a[0]))
+	if not quiet: print('\r   %d\nConversion complete'%len(atoms))
 	outmap.set_attr("apix_x",apix)
 	outmap.set_attr("apix_y",apix)
 	outmap.set_attr("apix_z",apix)

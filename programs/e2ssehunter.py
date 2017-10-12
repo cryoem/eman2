@@ -70,13 +70,13 @@ def main():
 	sheetsize = 4
 	
 	if options.coeffwt > 1 or options.coeffwt < 0:
-		print "Helix correlation weight must be between 0 and 1"
+		print("Helix correlation weight must be between 0 and 1")
 		sys.exit()
 	if options.skeletonwt > 1 or options.skeletonwt < 0:
-		print "Skeleton weight must be between 0 and 1"
+		print("Skeleton weight must be between 0 and 1")
 		sys.exit()
 	if options.atomswt > 1 or options.atomswt < 0:
-		print "Pseudoatom weight must be between 0 and 1"
+		print("Pseudoatom weight must be between 0 and 1")
 		sys.exit() 
 	
 	try : 
@@ -93,7 +93,7 @@ def main():
 	targetMRC.read_image(target_volume_filepath)
 	(nx,ny,nz) = ( targetMRC.get_xsize(), targetMRC.get_ysize(), targetMRC.get_zsize() )
 	if not (nx == ny and ny == nz and nx % 2 == 0):
-		print "The density map must be even and cubic. Terminating SSEHunter."
+		print("The density map must be even and cubic. Terminating SSEHunter.")
 		sys.exit()	
 	
 	# getting pseudoatoms
@@ -139,7 +139,7 @@ def update_map(target, location,rangemin,rangemax):
 				target.update()
 
 def generate_pseudoatoms(target, apix, res, thr):
-	print "No psuedoatom input; generating Pseudoatoms"
+	print("No psuedoatom input; generating Pseudoatoms")
 	patoms = []
 	rangemin=-1*res/apix
 	rangemax=res/apix
@@ -160,7 +160,7 @@ def generate_pseudoatoms(target, apix, res, thr):
 	return patoms
 
 def read_pseudoatoms(pdb_filepath):
-	print "Reading pseudatoms"
+	print("Reading pseudatoms")
 	patoms=[]
 	atomNumber=[]
 	
@@ -197,7 +197,7 @@ def get_angle(patoms, origin, p1, p2):
 	return angle
 def get_distance_matrix(patoms, apix):
 	### all to all distance calculations
-	print "Calculating all atom distances"
+	print("Calculating all atom distances")
 	distance=[]
 	
 	for atom1 in patoms:
@@ -217,7 +217,7 @@ def get_distance_matrix(patoms, apix):
 
 def find_aspect_ratio(targetMRC, patoms, apix, thr):
 	### set search area
-	print "Grouping neighboring pixels"
+	print("Grouping neighboring pixels")
 	kernelwidth=int(round(5.0/apix))
 	pixels=[]
 	for atom in patoms:
@@ -236,7 +236,7 @@ def find_aspect_ratio(targetMRC, patoms, apix, thr):
 		pixels.append(pixelCoords)
 	
 	### Check 2nd moments to see if globular
-	print "Assessing neighborhood shape"
+	print("Assessing neighborhood shape")
 	axisMatrix=[]
 	for index1 in range(len(patoms)):
 		NumPoints1=numpy.array(pixels[index1],'d')
@@ -245,8 +245,8 @@ def find_aspect_ratio(targetMRC, patoms, apix, thr):
 		h = numpy.sum(map(numpy.outer,NumPoints2,NumPoints2),axis=0)
 		[u1,x1,v1]=numpy.linalg.svd(h)
 		if x1.all()==0:
-			print index1,
-			print "is bad"
+			print(index1, end=' ')
+			print("is bad")
 			xmod=x1
 		else:
 			xmod=x1/max(x1)
@@ -255,13 +255,13 @@ def find_aspect_ratio(targetMRC, patoms, apix, thr):
 			aspectratio=0
 		else:
 			aspectratio=xmod[1]/xmod[2]
-			print aspectratio
+			print(aspectratio)
 		axisMatrix.append(aspectratio)
 		
 	return axisMatrix
 
 def model_pdb_helix(length):
-	print "Generating prototypical helix %f Angstroms in length"%length
+	print("Generating prototypical helix %f Angstroms in length"%length)
 	helix=PointArray()
 	j=0
 	p=0
@@ -345,7 +345,7 @@ def model_mrc_helix(box_size, apix, res, length = 10.8, points = None, helixtype
 	return mrcHelix
 	
 def helixhunter_ccf(target, probe, da):
-	print "Running helix correlation routine"
+	print("Running helix correlation routine")
 	bestCCF= target.copy() #To get metadata
 	bestCCF.to_zero() #Clearing the volume
 	
@@ -355,7 +355,7 @@ def helixhunter_ccf(target, probe, da):
 	N = len(orients)
 	for i in range(N):
 		if i % 25 == 0:
-			print "%5.2f" % (i*100.0/N) + " %"
+			print("%5.2f" % (i*100.0/N) + " %")
 		t = orients[i]
 		probeMRC= probe.process("xform",{"transform":t}) 
 		currentCCF=target.calc_mutual_correlation(probeMRC)
@@ -372,7 +372,7 @@ def helix_correlation_scores(targetMRC, patoms, apix, res, coeff, helixlength, d
 		mrcHelix=model_mrc_helix(targetMRC.get_xsize(), apix, res, length=helixlength, points=pdbHelix, helixtype="helix_pdb")
 		if da==0.0:
 			da=2*asin(res/targetMRC.get_xsize())*(180.0/pi)
-			print "da not set; setting da to %f degrees"%da
+			print("da not set; setting da to %f degrees"%da)
 		hhMrc=helixhunter_ccf(targetMRC, mrcHelix, da)
 	
 	else:	
@@ -390,8 +390,8 @@ def helix_correlation_scores(targetMRC, patoms, apix, res, coeff, helixlength, d
 		avghhvalue=hhvalue+avghhvalue
 		coeffArray.append(hhvalue)
 	avghhvalue=avghhvalue/atomCount
-	print "Correlation threshold: %f"%(avghhvalue)
-	print "Correlation Maximum:   %f"%(maxValue)
+	print("Correlation threshold: %f"%(avghhvalue))
+	print("Correlation Maximum:   %f"%(maxValue))
 	hhMrc.write_image("hhMrc.mrc")
 	return (coeffArray, avghhvalue, maxValue)
 	
@@ -526,7 +526,7 @@ def geometry_scores(patoms, atomNumber, targetMRC, apix, thr, coeffArray, avghhv
 		#helixlist.append(helixAngle)
 		aspectratio=axisMatrix[index3]
 		pascore=0
-		print "%d: axis: %f, neighbor angle: %f, helix angle: %f, sheet angle: %f,  number of neighbors: %d"%(atomNumber[index3], aspectratio, genericAngle, helixAngle, betaAngle, len(cloud))
+		print("%d: axis: %f, neighbor angle: %f, helix angle: %f, sheet angle: %f,  number of neighbors: %d"%(atomNumber[index3], aspectratio, genericAngle, helixAngle, betaAngle, len(cloud)))
 		if aspectratio <=2:
 			pascore=pascore+1
 		if aspectratio >=3:
@@ -556,7 +556,7 @@ def geometry_scores(patoms, atomNumber, targetMRC, apix, thr, coeffArray, avghhv
 def skeleton_scores(pseudoatoms, vol, threshold, helix_size, sheet_size, skeleton):
 	"""computes skeleton scores as in EMAN1 skeleton.C"""
 	if skeleton != "none":
-		print "Add the code to read a skeleton file here!"
+		print("Add the code to read a skeleton file here!")
 	skeleton = vol.process("gorgon.binary_skel", {"threshold":threshold, "min_curve_width":helix_size, "min_surface_width":sheet_size, "mark_surfaces":True})
 	skeletonScores = [] #corresponds with pseudoatoms
 	
@@ -611,29 +611,29 @@ def write_composite_scores(target_volume_name, apix, patoms, atomNumber, coeffAr
 	for atom in atomNumber:
 		score=0
 		
-		print "Atom Number: %s   "%(atomNumber[index4])
+		print("Atom Number: %s   "%(atomNumber[index4]))
 		
-		print "Coordinates: (%.2f,%.2f,%.2f)"%(patoms[index4][0]*apix,patoms[index4][1]*apix,patoms[index4][2]*apix) #Debugging: by Ross
+		print("Coordinates: (%.2f,%.2f,%.2f)"%(patoms[index4][0]*apix,patoms[index4][1]*apix,patoms[index4][2]*apix)) #Debugging: by Ross
 		
-		print "	  Correlation:	   %s"%(coeffArray[index4]),
+		print("	  Correlation:	   %s"%(coeffArray[index4]), end=' ')
 		if coeffArray[index4] >= (0.9*avghhvalue):
 			tmpscore=(coeffArray[index4]/maxValue)
 			score=score+tmpscore*coeffwt
-			print " (+%f)"%(tmpscore)
+			print(" (+%f)"%(tmpscore))
 		else:
 			tmpscore=(coeffArray[index4]-avghhvalue)/avghhvalue
 			score=score+tmpscore*coeffwt
-			print " (%f)"%(tmpscore)	
+			print(" (%f)"%(tmpscore))	
 		
-		print "	  Skeleton:  %s"%(skeletonArray[index4])
+		print("	  Skeleton:  %s"%(skeletonArray[index4]))
 		score=score+skeletonArray[index4]*skeletonwt
 	
 		
-		print "	  Pseudoatom geometry:	  %s"%(pseudoatomArray[index4])
+		print("	  Pseudoatom geometry:	  %s"%(pseudoatomArray[index4]))
 		score=score+pseudoatomArray[index4]*atomwt
 	
 		
-		print "	Score: %f"%(score) 
+		print("	Score: %f"%(score)) 
 		line="ATOM  %5d  C   GLY %s%4d	%8.3f%8.3f%8.3f  1.00%6.2f0	  S_00  0 \n"%(atom,chain,atom,patoms[index4][0]*apix,patoms[index4][1]*apix,patoms[index4][2]*apix,score)
 		outscore.write(line)
 		#outscore.write(line[index4][:60]+"%6.2f"%(score)+line[index4][66:])

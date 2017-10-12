@@ -57,8 +57,8 @@ def main():
 	parser.add_option("--MPI",            action="store_true", default=False,     help="Use MPI version ")	
 	(options, args) = parser.parse_args()
 	if len(args) < 2 or len(args) > 3:
-		print "usage: " + usage
-		print "Please run '" + progname + " -h' for detailed options"
+		print("usage: " + usage)
+		print("Please run '" + progname + " -h' for detailed options")
 	else:
 		if len(args) == 2: mask = None
 		else:              mask = args[2]

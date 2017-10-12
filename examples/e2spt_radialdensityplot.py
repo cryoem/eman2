@@ -136,10 +136,10 @@ def main():
 		exit(0)
 	elif options.subset:
 		subsetStack = options.path + '/subset' + str( options.subset ).zfill( len( str( options.subset))) + '.hdf' 
-		print "\nSubset to be written to", subsetStack
+		print("\nSubset to be written to", subsetStack)
 		
 		subsetcmd = 'e2proc3d.py ' + options.input + ' ' + subsetStack + ' --first=0 --last=' + str(options.subset-1) 
-		print "Subset cmd is", subsetcmd
+		print("Subset cmd is", subsetcmd)
 		
 		p=subprocess.Popen( subsetcmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE )
 		text=p.communicate()	
@@ -174,7 +174,7 @@ def main():
 	for i in xrange(0,len(files)):
 		for j in range(i+1,len(files)):
 			if files[i] == files[j]:
-				print "ERROR: You have supplied a file twice, see", files[i],files[j]
+				print("ERROR: You have supplied a file twice, see", files[i],files[j])
 				sys.exit()
 	modes=options.mode.split(',')
 	
@@ -192,7 +192,7 @@ def main():
 		for i in files:	
 			n = EMUtil.get_image_count(i)
 			
-			print "The stack %s has %d images in it" % ( i, n ) 
+			print("The stack %s has %d images in it" % ( i, n )) 
 			
 			kk=0
 			stack={}
@@ -213,7 +213,7 @@ def main():
 				maxsall.update({ uniquetag:maxima })
 				minsall.update({ uniquetag:minima })	
 
-				print "For file %s img number %d the max is %f" %(i,j,max(values))
+				print("For file %s img number %d the max is %f" %(i,j,max(values)))
 				
 				if options.normalizeplot:
 					
@@ -224,7 +224,7 @@ def main():
 					maxv = max(values)
 					for v in range(len(values)):	
 						values[v] = values[v]/maxv	
-					print "Therefore, max is", max(values)
+					print("Therefore, max is", max(values))
 				
 				id=i.replace('.',suffix + '.')
 				stackvalues.append([id,values])
@@ -342,22 +342,22 @@ def classifymax( options, maxsall ):
 		#print "\nimgfile is", imgfile
 		
 		ptclindx = int(f.split('_indxtag')[-1])
-		print "ptclindx is", ptclindx
+		print("ptclindx is", ptclindx)
 		
 		maxs = maxsall[f]
-		print "\nmaxs are", maxs
+		print("\nmaxs are", maxs)
 		
 		maxsSortedScore = sorted(maxs, key=itemgetter(1)) 					#first sort by score, which is the second element in the list of lists, [[pixel,value],[pixel,value],...]
-		print "Sorted peaks are", maxsSortedScore
+		print("Sorted peaks are", maxsSortedScore)
 		
 		twoPeaks = maxsSortedScore[ -options.classifymaxpeaks:  ]			#keep n highest peaks provided through --classifymaxpeaks;
-		print "\nTherefore twoPeaks are", twoPeaks							#because they are sorted, the highest peaks are at the end
+		print("\nTherefore twoPeaks are", twoPeaks)							#because they are sorted, the highest peaks are at the end
 		
 		pixelvals = []									  #find the peak at the largest radius
 		for p in twoPeaks:
 			pixelvals.append(p[0])
 		
-		print "therefore pixelvals are", pixelvals
+		print("therefore pixelvals are", pixelvals)
 		
 		maxRadPixel = max(pixelvals)
 		if options.shrink:
@@ -367,10 +367,10 @@ def classifymax( options, maxsall ):
 		sizeClasses.add( maxRadPixel )
 		particlesByRadius.update( { f:maxRadPixel } )
 	
-	print "There are these many sizeClasses", len (sizeClasses), sizeClasses
+	print("There are these many sizeClasses", len (sizeClasses), sizeClasses)
 	for radius in sizeClasses:
 		
-		print "Analyzing class of size", radius
+		print("Analyzing class of size", radius)
 		
 		#print "radius is", radius
 		radiusTag = str( radius ).zfill( len( str( radius)))
@@ -384,8 +384,8 @@ def classifymax( options, maxsall ):
 				ptcl = EMData(ptclfile,ptclindx)
 				radiusAngs = float(radius)*float(apix)
 				#print "radiusAngs is", radiusAngs
-				print "\nFound a particle at radius in pixels %d which is %f in angstroms" % ( radius, radiusAngs )
-				print "To be extracted from file %s and index %d" %(ptclfile,ptclindx)
+				print("\nFound a particle at radius in pixels %d which is %f in angstroms" % ( radius, radiusAngs ))
+				print("To be extracted from file %s and index %d" %(ptclfile,ptclindx))
 				ptcl['spt_radialplot_radius']=radius
 				ptcl.write_image( outStack, -1 )
 	
@@ -393,7 +393,7 @@ def classifymax( options, maxsall ):
 
 
 def calcmaxima( values ):
-	print "\n(e2spt_radialdensityplot.py)(calcmaxima)"
+	print("\n(e2spt_radialdensityplot.py)(calcmaxima)")
 	valuesnp = np.asarray( values )
 	minimaBool = list( np.r_[True, valuesnp[1:] < valuesnp[:-1]] & np.r_[valuesnp[:-1] < valuesnp[1:], True] )
 	maximaBool = list( np.r_[True, valuesnp[1:] > valuesnp[:-1]] & np.r_[valuesnp[:-1] > valuesnp[1:], True] )
@@ -419,7 +419,7 @@ def calcvalues(a,options):
 	a = preprocRadPlot( a, options )
 	
 	if options.mode == 'sphere':
-		print "I will calculate the radial density"
+		print("I will calculate the radial density")
 		values = a.calc_radial_dist(a['nx']/2, 0, 1, 1)
 		return(values)
 	
@@ -495,15 +495,15 @@ def preprocRadPlot( a, options):
 		z = a['nz']
 		f = min(x,y,z)
 		if shrinkfactor > f:
-			print """You have supplied a shrinkfactor that is larger than the smallest dimensions of your image.
-				Therefore, the shrinkfactor will be changed to""", f
+			print("""You have supplied a shrinkfactor that is larger than the smallest dimensions of your image.
+				Therefore, the shrinkfactor will be changed to""", f)
 			shrinkfactor = f
 			
 		a=a.process("math.meanshrink",{"n":shrinkfactor})
 	
 	if options.sym != 'c1' and options.sym !='C1':
 		if options.verbose > 5:
-			print "\nApplying symmetry to average", options.sym
+			print("\nApplying symmetry to average", options.sym)
 		a=a.process('xform.applysym',{'sym':options.sym})
 
 	return a
@@ -559,7 +559,7 @@ def direction(a,options):
 	dimensionality = calc_dimension(a)
 	if dimensionality < 2:
 		if dimensionality == 0:
-			print "Your image is a point. There's nothing to analyze. Perhaps you over shrunk"
+			print("Your image is a point. There's nothing to analyze. Perhaps you over shrunk")
 			sys.exit()
 	x = a['nx']
 	y = a['ny']
@@ -599,7 +599,7 @@ def direction(a,options):
 			if dimensionality == 3:
 				maskslice = mask.process("mask.zeroedge3d",{'x0':0,'x1':0,'y0':0,'y1':0,'z0':i,'z1':a['nz'] -i -1})
 			else:
-				print "ERROR: It makes no sense to look for density variations across z y a 2D image"
+				print("ERROR: It makes no sense to look for density variations across z y a 2D image")
 				sys.exit()	
 		b = a.copy()
 		b.mult(maskslice)

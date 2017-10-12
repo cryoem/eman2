@@ -97,11 +97,11 @@ def main():
 	nprjs = len(coords)
 	prjs="{}_prjs.hdf".format(base)
 	if not os.path.isfile(prjs):
-		if options.verbose: print("Randomly projecting map {} times".format(nprjs))
+		if options.verbose: print(("Randomly projecting map {} times".format(nprjs)))
 		cores=multiprocessing.cpu_count()
 		os.system('e2project3d.py {} --outfile={} --orientgen=rand:n={}:phitoo=true --sym={} --projector=standard --parallel=thread:{}'.format(sname,prjs,nprjs,sym,cores))
 	else:
-		print("Using existing file of projections. If you wish to generate new (or more) projections, simply move or delete {}.".format(prjs))
+		print(("Using existing file of projections. If you wish to generate new (or more) projections, simply move or delete {}.".format(prjs)))
 
 	if options.verbose: print("Inserting projections into micrograph")
 

@@ -82,15 +82,15 @@ def main():
 	
 		if common:
 	
-			print "\nThere are these many particles common to both stacks", len( common )
-			print "Which are"
+			print("\nThere are these many particles common to both stacks", len( common ))
+			print("Which are")
 			
 			g = open('commonparticles.txt','w')
 			lines = []
 			for val in common:
 				line = str(val) + '\n'
 				lines.append( line )
-				print val
+				print(val)
 			g.writelines( lines )
 			g.close()
 	
@@ -140,9 +140,9 @@ def analyzefile( stack, stacknum ):
 	coordsset = set( coordslist )
 	
 	if len( coordsset ) != len( coordslist ):
-		print "\nThere seem to be repeated particles within stack %d" % ( stacknum )
-		print "There are these many particles", len( coordslist )
-		print "But only these many are unique", len( coordsset )
+		print("\nThere seem to be repeated particles within stack %d" % ( stacknum ))
+		print("There are these many particles", len( coordslist ))
+		print("But only these many are unique", len( coordsset ))
 	
 	#print "\n\n\n\n\n\nCoordsset type is", type(coordsset)
 	return coordsset

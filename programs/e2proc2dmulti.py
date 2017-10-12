@@ -92,10 +92,10 @@ def main():
 	if options.allparticles:
 		args=["bdb:particles#"+i for i in db_list_dicts("bdb:particles")]
 		args.sort()
-		if options.verbose : print "%d particle files identified"%len(args)
+		if options.verbose : print("%d particle files identified"%len(args))
 
 	if len(args)<1 : 
-		print "Please specify at least one input file to operate on"
+		print("Please specify at least one input file to operate on")
 		sys.exit(1)
 	
 	logid=E2init(sys.argv,options.ppid)
@@ -127,12 +127,12 @@ def main():
 				suminsig+=d1["sigma"]
 			
 			doinvert=sumin<sumout
-			if options.verbose and doinvert : print "Inverting ",infile
+			if options.verbose and doinvert : print("Inverting ",infile)
 			else : continue
 #			if (sumin<sumout and fabs(sumin-sumout)/suminsig>.01) :print infile,sumin,sumout,suminsig,sumin>sumout
 #			continue
 
-		if options.verbose: print "%s : processing %d images"%(infile,nimg)
+		if options.verbose: print("%s : processing %d images"%(infile,nimg))
 
 		lasttime=time.time()
 		for i in xrange(nimg):
@@ -147,9 +147,9 @@ def main():
 			
 			sigma = d.get_attr("sigma").__float__()
 			if sigma == 0:
-				print "Warning: sigma = 0 for image ",i
+				print("Warning: sigma = 0 for image ",i)
 				if options.writejunk == False:
-					print "Use the writejunk option to force writing this image to disk"
+					print("Use the writejunk option to force writing this image to disk")
 					continue
 
 			index_d = {}
@@ -168,7 +168,7 @@ def main():
 					d.set_attr('apix_z', apix)
 					try:
 						if i==n0 and d["ctf"].apix!=apix :
-							print "Warning: A/pix value in CTF was %1.2f, changing to %1.2f. May impact CTF parameters."%(d["ctf"].apix,apix)
+							print("Warning: A/pix value in CTF was %1.2f, changing to %1.2f. May impact CTF parameters."%(d["ctf"].apix,apix))
 						d["ctf"].apix=apix
 					except: pass
 				
@@ -291,7 +291,7 @@ def main():
 						elif sclmd == 2:
 							sc.common_lines(e, e, sclmd, scl, true)
 						else:
-							print "Error: invalid common-line mode '" + sclmd + "'"
+							print("Error: invalid common-line mode '" + sclmd + "'")
 							sys.exit(1)
 					
 				elif option1 == "radon":

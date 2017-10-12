@@ -19,14 +19,14 @@ for im in imgs:
 	except: pass
 
 for im in badimgs:
-	print im
+	print(im)
 
-print len(badimgs)," identified. Are you sure you want to delete (y/n)? ",
+print(len(badimgs)," identified. Are you sure you want to delete (y/n)? ", end=' ')
 ans=raw_input()
 
 if len(ans)==0 or ans[0].lower()=="y" :
 	for im in badimgs:
 		os.unlink(im)
-	print len(badimgs)," deleted"
+	print(len(badimgs)," deleted")
 
-else: print "aborted"
+else: print("aborted")

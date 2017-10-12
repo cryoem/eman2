@@ -60,9 +60,9 @@ def simfn(jsd,projs,fsp,i,options,verbose):
 			aptcl=ptcl.process("xform",{"transform":aligned["xform.align2d"].inverse()})
 			best=(c,aptcl,projf)
 		vals[j]=c
-		if options.verbose>2 : print i,j,c
+		if options.verbose>2 : print(i,j,c)
 	
-	if options.verbose>1: print "Class-average {} with projection {}".format(i,str(best[2]["xform.projection"]))
+	if options.verbose>1: print("Class-average {} with projection {}".format(i,str(best[2]["xform.projection"])))
 
 	# return ptcl#, best sim val, aligned ptcl, projection, {per proj sim}
 	jsd.put((i,best[0],best[1],best[2],vals))
@@ -106,10 +106,10 @@ def main():
 		mdl=projs[0]
 		projs=[]
 		if mdl["nz"]==1 : 
-			print "Error, you must provide either a stack of 2-D images or a 3-D map as the second argument"
+			print("Error, you must provide either a stack of 2-D images or a 3-D map as the second argument")
 			sys.exit(1)
 
-		print "Generating projections with an angular step of {} and symmetry {}".format(options.ang,options.sym)
+		print("Generating projections with an angular step of {} and symmetry {}".format(options.ang,options.sym))
 		
 		E2n=E2init(sys.argv, options.ppid)
 		mdl.process_inplace("normalize.edgemean")
@@ -121,7 +121,7 @@ def main():
 			p.set_attr("ptcl_repr",0)
 			p.process_inplace("normalize.edgemean")
 			projs.append(p)
-			if options.verbose : print i,euler
+			if options.verbose : print(i,euler)
 	else:
 		E2n=E2init(sys.argv, options.ppid)
 	
@@ -132,7 +132,7 @@ def main():
 	if options.savesim!=None : out=file(options.savesim,"w")
 	
 	# here we run the threads and save the results, no actual alignment done here
-	print len(thrds)," threads"
+	print(len(thrds)," threads")
 	thrtolaunch=0
 	while thrtolaunch<len(thrds) or threading.active_count()>1:
 		# If we haven't launched all threads yet, then we wait for an empty slot, and launch another
@@ -140,7 +140,7 @@ def main():
 		# thread hasn't finished.
 		if thrtolaunch<len(thrds) :
 			while (threading.active_count()==options.threads ) : time.sleep(.1)
-			if options.verbose : print "Starting thread {}/{}".format(thrtolaunch,len(thrds))
+			if options.verbose : print("Starting thread {}/{}".format(thrtolaunch,len(thrds)))
 			thrds[thrtolaunch].start()
 			thrtolaunch+=1
 		else: time.sleep(1)

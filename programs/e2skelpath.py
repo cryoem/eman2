@@ -74,7 +74,7 @@ def main():
 	mappoints+=[getNearest(i[3:],3,skeleton) for i in dejavupoints]	
 
 	for i in range(len(mappoints)/2):
-		print "Helix %d:  "%(i), mappoints[i+len(mappoints)/2], mappoints[i]
+		print("Helix %d:  "%(i), mappoints[i+len(mappoints)/2], mappoints[i])
 		erasePairs(skeleton,mappoints[i+len(mappoints)/2],((mappoints[i],()),),i+2)		
 		
 		"""startpoint=mappoints[i+len(mappoints)/2]
@@ -96,7 +96,7 @@ def main():
 #	for i in pairlist:
 #		print i[0],i[1],mappoints[i[0]],mappoints[i[1]],vecdist(mappoints[i[0]],mappoints[i[1]]),i[2]
 	
-	print "%d paths detected"%len(pairlist)
+	print("%d paths detected"%len(pairlist))
 #	skeleton.write_image("zz.mrc")
 	
 	pts=len(dejavupoints)
@@ -195,13 +195,13 @@ def erasePairs(skeleton,target,seeds,n):
 	seed must be passed as ((x,y,z),()),)"""
 	newseeds=[]
 
-	print n,len(seeds),seeds[0][0], skeleton.get_value_at(seeds[0][0][0],seeds[0][0][1],seeds[0][0][2])
+	print(n,len(seeds),seeds[0][0], skeleton.get_value_at(seeds[0][0][0],seeds[0][0][1],seeds[0][0][2]))
 	for s in seeds:
 		if s[0]==target :
-			print "trace ",len(s[1])
+			print("trace ",len(s[1]))
 			for i in s[1][5:-5]:
 #				setbox(i[0],i[1],i[2],skeleton,0,1)
-				print "I am setting this point to zero: %d, %d, %d "%(i[0],i[1],i[2])
+				print("I am setting this point to zero: %d, %d, %d "%(i[0],i[1],i[2]))
 				skeleton.set_value_at(i[0],i[1],i[2],0)
 			return
 
@@ -214,7 +214,7 @@ def erasePairs(skeleton,target,seeds,n):
 					
 					if skeleton.get_value_at(x,y,z)>0 and skeleton.get_value_at(x,y,z)!=n:
 						newseeds.append(((x,y,z),ss[1]+(ss[0],)))
-						print "Setting %d,%d,%d to %f"%(x,y,z,n)
+						print("Setting %d,%d,%d to %f"%(x,y,z,n))
 						skeleton.set_value_at(x,y,z,n)
 	if len(newseeds):
 		erasePairs(skeleton,target,newseeds,n)

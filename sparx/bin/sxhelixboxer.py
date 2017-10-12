@@ -47,9 +47,9 @@ try:
 	ENABLE_GUI = True
 	
 except ImportError, e:
-	print "Importing GUI libraries failed!"
-	print e
-	print "GUI features are disabled."
+	print("Importing GUI libraries failed!")
+	print(e)
+	print("GUI features are disabled.")
 	ENABLE_GUI = False
 
 """
@@ -123,7 +123,7 @@ def main():
 	# Window filaments 
 	if options.window:
 		if len(args) < 1:
-			print "Must specify name of output directory where intermediate files are to be deposited."
+			print("Must specify name of output directory where intermediate files are to be deposited.")
 			return
 		outdir = args[0]
 		tdir = options.topdir
@@ -188,10 +188,10 @@ def main():
 				
 			E2end(logid)
 		elif len(args) == 0:
-			print 'You must specify a micrograph file or use the "--gui" option.'
+			print('You must specify a micrograph file or use the "--gui" option.')
 			return
 		elif len(args) > 1:
-			print 'Multiple micrographs can only be specified with the "--gui" option'
+			print('Multiple micrographs can only be specified with the "--gui" option')
 			return
 
 def counterGen():
@@ -1298,7 +1298,7 @@ if ENABLE_GUI:
 			# this must mean cter is being calculated on a single micrograph!
 			from utilities import get_im
 			
-			print "starting cter"
+			print("starting cter")
 			
 			# get the current micrograph
 			image_name = self.micrograph_filepath
@@ -1316,12 +1316,12 @@ if ENABLE_GUI:
 				
 			except ValueError,extras:
 				# conversion of a value failed!
-				print "integer conversion failed."
+				print("integer conversion failed.")
 				if not(extras.args is None):
-					print extras.args[0]
+					print(extras.args[0])
 				return
 			except:
-				print "error"
+				print("error")
 				return
 			
 			fname, fext = os.path.splitext(image_name)
@@ -1329,7 +1329,7 @@ if ENABLE_GUI:
 			outpartres = 'partres_%s'%fname
 			
 			if os.path.exists(outpwrot) or os.path.exists(outpartres):
-				print "Please remove or rename %s and or %s"%(outpwrot,outpartres)
+				print("Please remove or rename %s and or %s"%(outpwrot,outpartres))
 				return
 			
 			from morphology import cter
@@ -1359,10 +1359,10 @@ if ENABLE_GUI:
 			set_ctf(img, [defocus, ctf_cs, ctf_volt, input_pixel_size, 0, ctf_ampcont, ast_amp, ast_agl])
 			# and rewrite image 
 			img.write_image(image_name)
-			print [defocus, ctf_cs, ctf_volt, input_pixel_size, 0, ctf_ampcont, ast_amp, ast_agl]
+			print([defocus, ctf_cs, ctf_volt, input_pixel_size, 0, ctf_ampcont, ast_amp, ast_agl])
 			
-			print [defocus, ctf_cs, ctf_volt, input_pixel_size, 0, ctf_ampcont, ast_amp, ast_agl]
-			print "CTF estimation using CTER done."
+			print([defocus, ctf_cs, ctf_volt, input_pixel_size, 0, ctf_ampcont, ast_amp, ast_agl])
+			print("CTF estimation using CTER done.")
 						
 		def color_boxes(self):
 			"""
@@ -1530,7 +1530,7 @@ if ENABLE_GUI:
 						from utilities import info, model_blank
 						from EMAN2 	   import Util
 						# invert contrast of micrograph so average remains unchanged
-						print "Inverting contrast of micrograph"
+						print("Inverting contrast of micrograph")
 						mnx = micrograph.get_xsize()
 						mny = micrograph.get_ysize()
 						sttt = info(micrograph)
@@ -1971,7 +1971,7 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, boxsize=256, minse
 		do_gridding = False
 		
 	if not(outstacknameall[0:4] == 'bdb:' or outstacknameall[-3:] == 'hdf'):
-		print "%s must be in bdb or hdf format"%outstacknameall
+		print("%s must be in bdb or hdf format"%outstacknameall)
 		return
 
 	if freq < 0: freq = 1.0/boxsize
@@ -1985,12 +1985,12 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, boxsize=256, minse
 	
 	# set rmax in pixels to default if user input rmax is greater than half the box size
 	if 2*rmaxp > boxsize:
-		print "ERROR...The segment size should be no less than twice rmax in pixels. Current segment size is %d and twice rmax in pixels is %d."%(boxsize, 2*rmaxp)
+		print("ERROR...The segment size should be no less than twice rmax in pixels. Current segment size is %d and twice rmax in pixels is %d."%(boxsize, 2*rmaxp))
 		return
 			
 	# Calculate distance between adjacent squares as ~1 rise in pixels if not set by user
 	if ptcl_dst < 0:
-		print "ERROR...Distance between segments (ptcl_dst) not specified."
+		print("ERROR...Distance between segments (ptcl_dst) not specified.")
 		return
 
 	if topdir == None:
@@ -2009,7 +2009,7 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, boxsize=256, minse
 		# v1 is a micrograph directory, create directory named outdir in v1
 		coutdir = os.path.join(topv1, outdir)
 		if os.path.exists(coutdir):
-			print 'Output directory %s  exists, please change the name and restart the program'%coutdir
+			print('Output directory %s  exists, please change the name and restart the program'%coutdir)
 			return
 		outdirlist.append(coutdir)
 	for coutdir in outdirlist:
@@ -2125,7 +2125,7 @@ def windowmic(outstacknameall, micpath, outdir, micname, hcoordsname, pixel_size
 				nx = False
 				break
 		if nx:
-			print "Micrograph %s"%filename,"  not listed in CTER results, skipping ...."
+			print("Micrograph %s"%filename,"  not listed in CTER results, skipping ....")
 			return
 		if(ctfs[8]/ctfs[0] > cterr[0]):
 			print_msg('Defocus error %f exceeds the threshold. Micrograph %s rejected.\n'%(ctfs[8]/ctfs[0], filename))
@@ -2194,8 +2194,8 @@ def windowmic(outstacknameall, micpath, outdir, micname, hcoordsname, pixel_size
 	db_load_helix_coords(tmpfile, hcoordsname, False, boxsize)
 	
 	micrograph_filename = os.path.join(micpath,'%s.hdf'%filename)                     ##@ming
-	print "mic file name=%s"%micrograph_filename
-	print "mic file path=%s"%micpath
+	print("mic file name=%s"%micrograph_filename)
+	print("mic file path=%s"%micpath)
 	micrograph_name = os.path.splitext( micrograph_filename )[0]        ##@ming 
 	helix_filepath = "%s_helix.hdf" % ( os.path.join(micpath, filename) )   ##@ming
 	helices_dict = win_get_helices_dict(tmpfile, boxsize)                ##@ming
@@ -2215,7 +2215,7 @@ def windowmic(outstacknameall, micpath, outdir, micname, hcoordsname, pixel_size
 
 	a = read_text_row(hcoordsname)
 	if len(a)%2 != 0:
-		print "Number of rows in helix coordinates file %s should be even!"%hcoordsname
+		print("Number of rows in helix coordinates file %s should be even!"%hcoordsname)
 		return
 	nhelices = len(a)/2
 	#try:      iseg = EMUtil.get_image_count(outstacknameall)

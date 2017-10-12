@@ -249,7 +249,7 @@ class EMHistogramWidget(EMGLWidget):
 				else : self.axes[key]=(0,)#,1,-2,-2)
 			else : self.axes[key]=(-1,)#,0,-2,-2)
 		except:
-			print "Data error:", data
+			print("Data error:", data)
 			return
 
 		self.bins[key],self.edges = np.histogram(self.data[key][self.axes[key][0]],self.nbins,range=self.xlimits,density=self.normed)
@@ -335,7 +335,7 @@ class EMHistogramWidget(EMGLWidget):
 				self.set_data(data,remove_directories_from_name(filename,1),quiet=quiet)#,comments=comments)
 			except:
 				traceback.print_exc()
-				print "couldn't read",filename
+				print("couldn't read",filename)
 				return False
 		return True
 
@@ -384,7 +384,7 @@ class EMHistogramWidget(EMGLWidget):
 				ny=len(rdata)
 				data=[[array([rdata[j][i]]) for j in range(ny)] for i in range(nx)]
 			except:
-				print "couldn't read",filename
+				print("couldn't read",filename)
 		return data
 
 	@staticmethod
@@ -511,7 +511,7 @@ class EMHistogramWidget(EMGLWidget):
 				try: # this should work for matplotlib 0.91
 					self.scrlim=(ax.get_window_extent().xmin(),ax.get_window_extent().ymin(),ax.get_window_extent().xmax()-ax.get_window_extent().xmin(),ax.get_window_extent().ymax()-ax.get_window_extent().ymin())
 				except:
-					print 'there is a problem with your matplotlib'
+					print('there is a problem with your matplotlib')
 					return
 			self.plotlim=(ax.get_xlim()[0],ax.get_ylim()[0],ax.get_xlim()[1]-ax.get_xlim()[0],ax.get_ylim()[1]-ax.get_ylim()[0])
 
@@ -1185,7 +1185,7 @@ class EMHistogramInspector(QtGui.QWidget):
 			for i in xrange(len(data[0])):
 				out.write("%g\t%g\n"%(data[0][i],data[1][i]))
 		out=None
-		print "Wrote ",name2
+		print("Wrote ",name2)
 
 	def savePlot(self):
 		"""Saves the contents of the current plot to a text file"""
@@ -1205,7 +1205,7 @@ class EMHistogramInspector(QtGui.QWidget):
 			out=file(name2,"w")
 			for i in xrange(len(data[0])):
 				out.write("%g\t%g\n"%(data[0][i],data[1][i]))
-			print "Wrote ",name2
+			print("Wrote ",name2)
 
 	def savePdf(self):
 		"""Saves the contents of the current plot to a pdf"""
@@ -1311,11 +1311,11 @@ class EMHistogramInspector(QtGui.QWidget):
 			a.setFlags(flags)
 			try: a.setTextColor(qt_color_map[colortypes[parms[j][0]]])
 			except:
-				print "Color error"
-				print list(sorted(parms.keys()))
-				print parms[j][0]
-				print colortypes[parms[j][0]]
-				print qt_color_map[colortypes[parms[j][0]]]
+				print("Color error")
+				print(list(sorted(parms.keys())))
+				print(parms[j][0])
+				print(colortypes[parms[j][0]])
+				print(qt_color_map[colortypes[parms[j][0]]])
 			if visible[j]: a.setCheckState(Qt.Checked)
 			else: a.setCheckState(Qt.Unchecked)
 			self.setlist.addItem(a)
@@ -1367,7 +1367,7 @@ class DragListWidget(QtGui.QListWidget):
 				# parses out each number from each line and puts it in our list of lists
 				for i,f in enumerate(rex.findall(s)):
 					try: data[i].append(float(f))
-					except: print "Error (%d): %s"%(i,f)
+					except: print("Error (%d): %s"%(i,f))
 			# Find an unused name for the data set
 			trgplot=self.datasource().target()
 			name="Dropped"

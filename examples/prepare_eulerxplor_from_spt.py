@@ -32,8 +32,8 @@ def main():
 		adiff=[ang_diff(t0, o) for o in oris]
 		adiffs.append(np.min(adiff))
 		cls[np.argmin(adiff)]+=1
-	print "min err: {}, max err: {}".format(np.min(adiffs), np.max(adiffs))
-	print "std of orientations: {}".format(np.std(cls))
+	print("min err: {}, max err: {}".format(np.min(adiffs), np.max(adiffs)))
+	print("std of orientations: {}".format(np.std(cls)))
 	try: os.remove(fileout)
 	except: pass
 	e=EMData(1,1)
@@ -46,7 +46,7 @@ def main():
 	E2end(logid)
 	
 def run(cmd):
-	print cmd
+	print(cmd)
 	launch_childprocess(cmd)
 	
 def ang_diff(a0,a1):

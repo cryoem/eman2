@@ -371,7 +371,7 @@ class EMProcessorWidget(QtGui.QWidget):
 			elif parms[i+1]=="XYDATA" :
 				self.parmw.append(StringBox(self,parms[i],dflt[2],100,dflt[0]))
 
-			else: print "Unknown parameter type",parms[i+1],parms
+			else: print("Unknown parameter type",parms[i+1],parms)
 
 			self.parmw[-1].setToolTip(parms[i+2])
 			self.gbl.addWidget(self.parmw[-1],self.ninput,1,1,4)
@@ -723,7 +723,7 @@ class EMFilterTool(QtGui.QMainWindow):
 		try: out=file("filtertool_%s.txt"%(name.replace(" ","_")),"w")	# overwrite the current contents
 		except:
 			traceback.print_exc()
-			print "No permission to store processorset info"
+			print("No permission to store processorset info")
 			return
 
 		out.write("# This file contains the parameters for the processor set named\n# %s\n# Each of the --process lines below is in the correct syntax for use with e2proc2d.py or e2proc3d.py.\n# Use the full set sequentially in a single command to replicate the processor set\n\n"%name)
@@ -806,7 +806,7 @@ class EMFilterTool(QtGui.QMainWindow):
 			im.write_image(str(name[0]),i)
 			progressdialog.setValue(i+1)
 			if progressdialog.wasCanceled() :
-				print "Processing Cancelled"
+				print("Processing Cancelled")
 				break
 
 		progressdialog.setValue(n)

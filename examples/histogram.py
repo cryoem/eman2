@@ -10,10 +10,10 @@ try:
 	import matplotlib.pyplot as plt
 	pltcolors=["k","b","g","r","m","c","darkblue","darkgreen","darkred","darkmagenta","darkcyan","0.5"]
 except:
-	print "Matplotlib not available, some output will not be generated"
+	print("Matplotlib not available, some output will not be generated")
 
 if len(argv)<2 :
-	print "usage:\nhistogram.py <txtfile> [col#=0] [nbins=100]"
+	print("usage:\nhistogram.py <txtfile> [col#=0] [nbins=100]")
 	sys.exit(1)
 
 data=loadtxt(argv[1])
@@ -34,9 +34,9 @@ col=col[abs(col-m)<s*4.0]
 
 lz=len(col[col<0])
 gz=len(col[col>0])
-print argv[1]
-print "%1.2f (%d) less than zero"%(float(lz)/(lz+gz),lz)
-print "%1.2f (%d) less than zero"%(float(gz)/(lz+gz),gz)
+print(argv[1])
+print("%1.2f (%d) less than zero"%(float(lz)/(lz+gz),lz))
+print("%1.2f (%d) less than zero"%(float(gz)/(lz+gz),gz))
 
 try: his=histogram(col,int(argv[3]))
 except: his=histogram(col,100)

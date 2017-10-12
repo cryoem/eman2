@@ -117,14 +117,14 @@ def main():
 		log=1
 		
 	if  not options.input and not options.angles:
-		print """ERROR. You must supply either a 3-D image stack (previously ran through 
-		e2spt_classaverage.py using --input, or two rotational orientations using --angles."""
+		print("""ERROR. You must supply either a 3-D image stack (previously ran through 
+		e2spt_classaverage.py using --input, or two rotational orientations using --angles.""")
 		sys.exit()
 	
 	if options.input:
 		nptcls = EMUtil.get_image_count(options.input)
 	
-		print "I will calculate the distance of these many particles", nptcls
+		print("I will calculate the distance of these many particles", nptcls)
 	
 		angularDistances=[]
 		translations=[]
@@ -138,11 +138,11 @@ def main():
 				tomoID = "tomo_" + str(0).zfill( len(str( tnums )) )
 				compensatoryT = js[tomoID]
 					
-				print "compensatoryT is", compensatoryT
+				print("compensatoryT is", compensatoryT)
 				
 			elif '.json' not in options.transform:
 				params = options.transform.split(',')
-				print "These are the supplied transform params", params
+				print("These are the supplied transform params", params)
 				pdict={}
 				for p in params:	
 					key = p.split(':')[0]
@@ -155,7 +155,7 @@ def main():
 																#back to the symmetry axis.
 	
 		for i in range(nptcls):
-			print "\nIn e2spt_transformdistance, I am working on ptcl number", i
+			print("\nIn e2spt_transformdistance, I am working on ptcl number", i)
 			ptcl = EMData(options.input,i, True)
 			simT = ptcl['sptsim_randT']
 			#solutionT = ptcl['spt_ali_param']	#If the solution IS an aproximate solution, its inverse should be almost equal to simT (or 'spt_randT' in particle headers), and thus
@@ -191,12 +191,12 @@ def main():
 			transZ = pow(simT.get_trans()[2] - originalSolutionTinverse.get_trans()[2],2)
 			trans = sqrt(transX + transY + transZ)
 			
-			print "The translational distance is", trans
+			print("The translational distance is", trans)
 			translations.append(trans)	
 	
 		avgA = sum(angularDistances)/len(angularDistances)
 		avgT = sum(translations)/len(translations)
-		print "The average angular and translational distances are", avgA, avgT
+		print("The average angular and translational distances are", avgA, avgT)
 		resultsfile = options.input.replace('.hdf', '_RESULTS.txt')
 		if options.output:
 			resultsfile = options.output
@@ -214,15 +214,15 @@ def main():
 		#t2i = t2.inverse()
 		aDistance = angdist(t1,t2)
 		
-		print "!!!!"
-		print "The angular distance between t1=" + str(t1) + " and t2=" + str(t2) + "is: " + str(aDistance)
-		print "sym is", options.sym
+		print("!!!!")
+		print("The angular distance between t1=" + str(t1) + " and t2=" + str(t2) + "is: " + str(aDistance))
+		print("sym is", options.sym)
 		
 		if options.sym:
 			t1sym = accountForSym( options, t1, t2 )
 			
 			aDistanceSym = angdist(t1sym,t2)
-			print "accounting for symmetry, the distance is",aDistanceSym
+			print("accounting for symmetry, the distance is",aDistanceSym)
 			
 		
 	if not options.nolog and log:
@@ -241,7 +241,7 @@ def angdist(t1,t2, num=0):
 	product_SPIN = product.get_rotation('spin')
 	angular_distance = round(float(product_SPIN["omega"]),2)
 	
-	print "For orientation %d the angular distance %f" %(num, angular_distance)
+	print("For orientation %d the angular distance %f" %(num, angular_distance))
 	
 	return(angular_distance)
 
@@ -258,7 +258,7 @@ def accountForSym( options, solutionT, simT ):
 	symnum = 1
 	
 	if options.sym:
-		print "\nsym found", options.sym
+		print("\nsym found", options.sym)
 		
 		if options.sym not in symnames:
 			
@@ -273,8 +273,8 @@ def accountForSym( options, solutionT, simT ):
 				if x.isdigit():
 					symletter = symletter.replace(x,'')
 			
-			print "\nThe letter for sym is", symletter
-			print "\nThe num for sym is", symnum
+			print("\nThe letter for sym is", symletter)
+			print("\nThe num for sym is", symnum)
 		
 		if options.sym == 'oct' or options.sym == 'OCT':
 			symnum = 8
@@ -290,7 +290,7 @@ def accountForSym( options, solutionT, simT ):
 		t = Transform()
 		
 		if symnum:
-			print "\nSymnum determined",symnum
+			print("\nSymnum determined",symnum)
 			
 			if symletter == 'd' or symletter == 'D':
 				symnum*=2
@@ -338,10 +338,10 @@ def accountForSym( options, solutionT, simT ):
 		
 	mindist = min( symDistances.keys() )	#Find the symmetry-related solution that yields the minimum distance to a symmetry-related axis
 	
-	print "\nThe minimum distance is", mindist
+	print("\nThe minimum distance is", mindist)
 	
 	bestT = symDistances[mindist]
-	print "\nTherefore the best transform is", bestT
+	print("\nTherefore the best transform is", bestT)
 	
 	return bestT
 	

@@ -18,13 +18,13 @@ wr=ringwe(numr ,mode)
 Applyws(cimage, numr, wr)
 #print "Frngs",ttime()
 
-print  ormq(b, cimage,4,4,1,mode,numr,65,65)
-print  ornq(b, cimage,4,4,1,mode,numr,65,65)
+print(ormq(b, cimage,4,4,1,mode,numr,65,65))
+print(ornq(b, cimage,4,4,1,mode,numr,65,65))
 
 a=mirror(a)
 cimage=Util.Polar2Dm(a, 65, 65, numr, mode)
 Util.Frngs(cimage, numr)
 Applyws(cimage, numr, wr)
 
-print  ormq(b, cimage,4,4,1,mode,numr,65,65)
-print  ornq(b, cimage,4,4,1,mode,numr,65,65)
+print(ormq(b, cimage,4,4,1,mode,numr,65,65))
+print(ornq(b, cimage,4,4,1,mode,numr,65,65))

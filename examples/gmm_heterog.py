@@ -50,7 +50,7 @@ def main():
 	
 	
 	####
-	print "Setting up model..."
+	print("Setting up model...")
 	
 	if options.loadfrom:
 		js=js_open_dict(options.loadfrom)
@@ -64,7 +64,7 @@ def main():
 		ballrec=BallsReconstruction(model)
 	
 	else:
-		print "No model input, exit..."
+		print("No model input, exit...")
 		return
 	
 	if options.map3d:
@@ -87,7 +87,7 @@ def main():
 			try:
 				grad=np.loadtxt(gdsave)
 			except:
-				print "Cannot find gradients from {}".format(gdsave)
+				print("Cannot find gradients from {}".format(gdsave))
 				return
 		
 		vec=calc_motion(ballrec, options, grad, options.listid)
@@ -103,9 +103,9 @@ def main():
 			try:
 				vec=np.loadtxt(vsave)
 			except:
-				print "Cannot find gradients from {}".format(vsave)
+				print("Cannot find gradients from {}".format(vsave))
 				return
-			print "Load motion from ", vsave
+			print("Load motion from ", vsave)
 		
 		allconf=regress_particles(ballrec, options, data, orient, vec)
 		
@@ -116,8 +116,8 @@ def main():
 			try:
 				allconf=np.loadtxt(cfsave)[:,2]
 			except:
-				print "Cannot load conformation from ", cfsave
-			print "Loaded conformation for {} particles".format(len(allconf))
+				print("Cannot load conformation from ", cfsave)
+			print("Loaded conformation for {} particles".format(len(allconf)))
 		
 		make3d(ptcl_file, options, allconf)
 	
@@ -125,7 +125,7 @@ def main():
 	return
 
 def make3d(ptcl_file, options, allconf):
-	print "Making 3D movie..."
+	print("Making 3D movie...")
 	mvpath="motion_01"
 	try: os.mkdir(os.path.join(options.path,mvpath))
 	except: pass
@@ -133,13 +133,13 @@ def make3d(ptcl_file, options, allconf):
 	mvlen=np.std(allconf)
 	stepsz=mvlen/((options.nframe-1)/2.)
 	framepos=np.arange(-mvlen,mvlen+.1, stepsz)+np.mean(allconf)
-	print "Motion steps : Number of particles"
+	print("Motion steps : Number of particles")
 	winsz=stepsz*.6
 	lstnames=[]
 	lstlen=[]
 	for kk,t in enumerate(framepos):
 		lstlen.append(np.sum(np.abs(allconf-t)<winsz))
-		print t,"  :  ", lstlen[-1]
+		print(t,"  :  ", lstlen[-1])
 		idx= np.where(np.abs(allconf-t)<winsz)[0]
 		fname=os.path.join(options.path, mvpath, "lst_{:02d}.lst".format(kk))
 		try: os.remove(fname)
@@ -159,7 +159,7 @@ def make3d(ptcl_file, options, allconf):
 		outname=lname.replace("lst_", "map_")
 		outname=outname[:-4]+".hdf"
 		mapnames.append(outname)
-		print "Making 3D for {}...".format(lname)
+		print("Making 3D for {}...".format(lname))
 		cmd="make3dpar_rawptcls.py --input {} --output {} --sym {} --apix {} --pad {} --mode gauss_5 --threads {}".format(lname, outname, options.sym, options.apix, pad, options.threads)
 		
 		launch_childprocess(cmd)
@@ -172,11 +172,11 @@ def make3d(ptcl_file, options, allconf):
 		e["conf_val"]=framepos[i]
 		e.write_image(fname,i)
 		
-	print "Motion movie is saved to ", fname
+	print("Motion movie is saved to ", fname)
 
 def regress_particles(ballrec, options, data, orient, vec):
 	
-	print "Regress the particles..."
+	print("Regress the particles...")
 	num=data.shape[0].eval()
 	all_conf=np.zeros(num, dtype=theano.config.floatX)
 	ballrec.movvec.set_value(vec.astype(theano.config.floatX))
@@ -208,13 +208,13 @@ def regress_particles(ballrec, options, data, orient, vec):
 			if abs(cc[-2]-cc[-1])<.001: break
 	#	 print i, "  iter: ",ti, "conf: ", cc[-1]
 		#print loss
-		print i, ti, cc[-1],loss
+		print(i, ti, cc[-1],loss)
 		ff=open(lstout,'a')
 		ff.write("{}\t{}\t{}\n".format(i, ti, cc[-1]))
 		ff.close()
 		all_conf[i]=cc[-1]
 	
-	print "Conformation of particles written to ", lstout
+	print("Conformation of particles written to ", lstout)
 	return all_conf
 
 def calc_motion(ballrec, options, grad, glst=None):
@@ -226,7 +226,7 @@ def calc_motion(ballrec, options, grad, glst=None):
 		f=open(glst,'r')
 		glst= np.array( [int(l[3:].strip("ALC .\n")) for l in f])
 		f.close()
-		print "Gaussians used for motion calculation: ", glst
+		print("Gaussians used for motion calculation: ", glst)
 		
 	gradsmall=grad.reshape((len(grad),len(npballs),3))[:,glst,:].reshape((len(grad),len(glst)*3))
 	pca=PCA(3)
@@ -236,13 +236,13 @@ def calc_motion(ballrec, options, grad, glst=None):
 	vec[glst]+=mot
 	mtsave=os.path.join(options.path,"motion_vec.txt")
 	np.savetxt(mtsave,vec)
-	print "Motion vector is saved to {}".format(mtsave)
+	print("Motion vector is saved to {}".format(mtsave))
 	get_map=theano.function([], ballrec.map3d)
 	ballrec.movvec.set_value(vec)
 	mvlen=3.
 	pp=np.arange(-mvlen,mvlen+.1, mvlen/((options.nframe-1)/2.))
 	pp=pp.astype(theano.config.floatX)
-	print "Motion steps are ",pp
+	print("Motion steps are ",pp)
 	mpsave=os.path.join(options.path,"motion_model1.hdf")
 	try: os.remove(mpsave)
 	except: pass
@@ -252,13 +252,13 @@ def calc_motion(ballrec, options, grad, glst=None):
 		mp=get_map()
 		e=from_numpy(mp)
 		e.write_image(mpsave, i)
-	print "Motion maps are saved to {}".format(mpsave)
+	print("Motion maps are saved to {}".format(mpsave))
 	return vec
 
 def load_particles(ptcl_file):
 	
 	### load particles (with orientations)
-	print "loading particles..."
+	print("loading particles...")
 	ref=[]
 	ori=[]
 	num=EMUtil.get_image_count(ptcl_file)
@@ -267,7 +267,7 @@ def load_particles(ptcl_file):
 	for i in range(num):
 		e=EMData(ptcl_file,i)
 		if e["sigma"]==0:
-			print "Warning: empty particle (#{})".format(i)
+			print("Warning: empty particle (#{})".format(i))
 			continue
 		
 		lstinfo=lst.read(i)
@@ -284,16 +284,16 @@ def load_particles(ptcl_file):
 	#print np.std(data.get_value(),axis=1)
 	data_t=theano.shared(value=data, name='imgs', borrow=True)
 	orient_t=theano.shared(value=orient, name='orients', borrow=True)
-	print "Finished reading {} particles with orientation".format(len(data))
+	print("Finished reading {} particles with orientation".format(len(data)))
 	return data_t, orient_t
 
 def numpy2pdb(data, fname):
 	if data.shape[1]==3:
 		data=np.hstack([data,np.zeros((len(data),1))])
 	if data.shape[1]!=4:
-		print "wrong dimension"
+		print("wrong dimension")
 		return
-	print data.shape
+	print(data.shape)
 	data=np.asarray(data.astype(float).flatten())
 	if len(data[0].shape)>0: data=data[0]
 	lst=data.tolist()
@@ -308,7 +308,7 @@ def save_model(ballrec,options):
 	if not (options.path in options.savefile):
 		options.savefile=os.path.join(options.path,options.savefile)
 	
-	print "saving model to {}...".format(options.savefile)
+	print("saving model to {}...".format(options.savefile))
 	cents=ballrec.ballzero.get_value()
 	wts=ballrec.weight.get_value()
 	js=js_open_dict(options.savefile)
@@ -328,7 +328,7 @@ def calc_grad(ballrec, options, data, orient):
 	nballs=len(npballs)
 	index = T.lscalar()
 	num=data.shape[0].eval()
-	print "Calculating gradient of {} particles...".format(num)
+	print("Calculating gradient of {} particles...".format(num))
 	get_grad_ballpos=theano.function(inputs=[index],
 					outputs=[ballrec.cost,ballrec.grad_ballpos],
 					givens={ 
@@ -357,13 +357,13 @@ def calc_grad(ballrec, options, data, orient):
 			#exit()
 		c,gd=get_grad_ballpos(b)
 		gd=np.array(gd)
-		print b,c,gd[0]
+		print(b,c,gd[0])
 		gd_all.append(gd)
-	print np.array(gd_all).shape
+	print(np.array(gd_all).shape)
 	gd_all=np.array(gd_all).reshape((int(num), nballs*3))	
 	gdsave=os.path.join(options.path,"grad_balls.txt")
 	np.savetxt(gdsave,gd_all)
-	print "Gradient is saved to {}".format(gdsave)
+	print("Gradient is saved to {}".format(gdsave))
 	#gd_all=np.loadtxt(gdsave)
 	
 	#### variance of gradient
@@ -372,7 +372,7 @@ def calc_grad(ballrec, options, data, orient):
 	var=var/np.max(var)*100
 	tosave=np.hstack([npballs, var])
 	varsave=os.path.join(options.path,"grad_amp.pdb")
-	print "Gradient amplitude per Gaussian is saved to {}.".format(varsave)
+	print("Gradient amplitude per Gaussian is saved to {}.".format(varsave))
 	numpy2pdb(tosave, varsave)
 	nmm=np.std(gd_all,axis=0)
 	var=np.asmatrix(np.sum(nmm.reshape(npballs.shape),axis=1)).T
@@ -380,14 +380,14 @@ def calc_grad(ballrec, options, data, orient):
 	tosave=np.hstack([npballs, var])
 	varsave=os.path.join(options.path,"grad_std.pdb")
 	numpy2pdb(tosave, varsave)
-	print "Gradient variance per Gaussian is saved to {}.".format(varsave)
+	print("Gradient variance per Gaussian is saved to {}.".format(varsave))
 	
 	return gd_all
 
 
 #### train model using 3d map input
 def train_3d(ballrec, options):
-	print "Adjusting the model using 3D density map..."
+	print("Adjusting the model using 3D density map...")
 		
 	e=EMData(options.map3d)
 	e.process_inplace("normalize")
@@ -411,31 +411,31 @@ def train_3d(ballrec, options):
 					)
 	lr=options.learnrate
 	for j in range(5):
-		print "iter {}, train weights...".format(j)
+		print("iter {}, train weights...".format(j))
 		for i in range(5):
-			print "err: ",train_map_w(lr)
-		print "		  train position..."
+			print("err: ",train_map_w(lr))
+		print("		  train position...")
 		for i in range(5):
-			print "err: ",train_map_p(lr*.5)
+			print("err: ",train_map_p(lr*.5))
 		lr*=.5
 	
 	
 #### write 3d output
 def write_3d(ballrec,options):
 	
-	print "Writing density map output..."
+	print("Writing density map output...")
 	threedout=os.path.join(options.path,"gmm_3d.hdf")
 	try: os.remove(threedout)
 	except: pass
 	get_map=theano.function([], ballrec.map3d)
 		
 	mapnp=get_map()
-	print "Map shape:  ",np.shape(mapnp), ", apix: ", options.apix
+	print("Map shape:  ",np.shape(mapnp), ", apix: ", options.apix)
 	outmap=from_numpy(mapnp)
 	outmap["apix_x"]=options.apix
 	outmap["apix_y"]=options.apix
 	outmap["apix_z"]=options.apix
-	print "Map saved to ", threedout
+	print("Map saved to ", threedout)
 	outmap.write_image(threedout)
 	
 
@@ -509,8 +509,8 @@ class BallsReconstruction(object):
 		else:
 			balls=ball
 			wtss=wts
-		print balls.shape.eval()
-		print wtss.shape.eval()
+		print(balls.shape.eval())
+		print(wtss.shape.eval())
 		#numpy2pdb(balls.eval(), "tmp.pdb")
 		#exit()
 

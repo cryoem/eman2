@@ -65,8 +65,8 @@ def main():
 
 	(options, args) = parser.parse_args()
 	if options.old == False and len(args) != 3 or options.old and len(args) != 4:
-    		print "usage: " + usage
-    		print "Please run '" + progname + " -h' for detailed options"
+    		print("usage: " + usage)
+    		print("Please run '" + progname + " -h' for detailed options")
 	else:
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache

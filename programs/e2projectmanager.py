@@ -547,10 +547,10 @@ class EMProjectManager(QtGui.QMainWindow):
 			child = EMPopen((str(cmd)+" --ppid=-2"), shell=True, cwd=self.pm_cwd, stdout=stdoutpipe, bufsize=1)
 		else:
 			if self.getProgramNoteLevel() > 0:
-				print "NOT Writing notes, ppid=-1"
+				print("NOT Writing notes, ppid=-1")
 				child = EMPopen(str(cmd), shell=True, cwd=self.pm_cwd, stdout=stdoutpipe, bufsize=1)
 			else:
-				print "NOT Writing notes, ppid=-2"
+				print("NOT Writing notes, ppid=-2")
 				child = EMPopen((str(cmd)+" --ppid=-2"), shell=True, cwd=self.pm_cwd, stdout=stdoutpipe, bufsize=1)
 		# Dump terminal stdout if desired
 		if self.dumpterminal.isChecked(): child.realTimeCommunicate(self.statusbar)
@@ -915,7 +915,7 @@ class EMPopen(subprocess.Popen):
 				break
 
 			if self.poll() !=None:
-				print "\n\nDONE\n\n"
+				print("\n\nDONE\n\n")
 				break
 
 			# A HACK to prevent broken pipes(this may be a bit buggy, but it fixes an appaernt bug in subprocess module
@@ -1492,7 +1492,7 @@ class TaskManager(QtGui.QWidget):
 					return
 
 			except:
-				print "Error, couldn't stat(.eman2log.txt)."
+				print("Error, couldn't stat(.eman2log.txt).")
 				return
 
 			# Load in the file
@@ -1547,12 +1547,12 @@ class TaskManager(QtGui.QWidget):
 				# The PID Mafia occurs below: # Kill all children and siblings
 				for task in self.tasks:
 					if item.getPPID() == task[5]:
-						print "killing self process", task[1]
+						print("killing self process", task[1])
 						os.kill(task[1],signal.SIGTERM)
 						self._recursivekill(task[1])
 				# kill parent (top level item)
 				if item.getPPID() > 0:
-					print "KIlling parent"
+					print("KIlling parent")
 					os.kill(item.getPPID(),signal.SIGTERM)
 			else:
 				# Windows kill
@@ -1561,7 +1561,7 @@ class TaskManager(QtGui.QWidget):
 	def _recursivekill(self, pid):
 		for task in self.tasks:
 			if pid == task[5]:
-				print "Killing child process", task[1]
+				print("Killing child process", task[1])
 				os.kill(task[1],signal.SIGTERM)
 				self._recursivekill(task[1])
 
@@ -2087,10 +2087,10 @@ if __name__ == "__main__":
 	import sys
 
 	if os.path.isdir("EMAN2DB") and os.path.isfile("EMAN2DB/project.bdb") :
-		print """ERROR: This appears to be an EMAN2.0x project directory. EMAN2.1 uses a number
+		print("""ERROR: This appears to be an EMAN2.0x project directory. EMAN2.1 uses a number
 of different conventions. To use e2projectmanager with an older project, you will need to
 first upgrade the project with e2projectupdate21.py. You can still use the e2display.py
-GUI directly to browse the contents of old-style projects."""
+GUI directly to browse the contents of old-style projects.""")
 		sys.exit(1)
 
 	from emapplication import EMApp

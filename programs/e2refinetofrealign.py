@@ -78,8 +78,8 @@ optionList = pyemtbx.options.get_optionlist(sys.argv[1:])
 (options, args) = parser.parse_args()
 
 if len(args) != 2:
-   print "usage:" + usage
-   print "Please run'" + progname + " -h' for detailed options"
+   print("usage:" + usage)
+   print("Please run'" + progname + " -h' for detailed options")
    sys.exit(1)
 
 
@@ -129,7 +129,7 @@ total_len = len(az_list)
 even_set_name,odd_set_name=command_dict["input"]
 all_set_name = "sets/"+base_name(even_set_name)+"_ptcls.lst"
 all_set_data = EMData.read_images(all_set_name)
-print all_set_name
+print(all_set_name)
 
 s = "e2proc2d.py " + all_set_name + " " + E2FA + "/particlestack.mrc --twod2threed --process=normalize.edgemean --mult=-1 --verbose=" + str(options.verbose)
 call(s, shell=True)
@@ -368,6 +368,6 @@ f.write(FPOI + '\n')
 
 f.close()
 
-print "e2refinetofrealign.py finished"
+print("e2refinetofrealign.py finished")
 
 E2end(E2n)

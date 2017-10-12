@@ -1697,7 +1697,7 @@ class TestProcessor(unittest.TestCase):
 		# 2D and 3D alignment test using a pixel value (val arg) offset one positive pixel from the origin in all directions
 		# process_string should be either 
 		if val == 0:
-			print  "error, you can't use 0 as the value, the function is not capable of handling it"
+			print("error, you can't use 0 as the value, the function is not capable of handling it")
 			return
 		for z in 1,8,9:
 			for y in 8,9:

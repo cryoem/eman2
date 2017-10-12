@@ -53,7 +53,7 @@ too look for issues with preferred orientation, etc.
 
 	try: db=js_open_dict(args[0])
 	except:
-		print "ERROR: could not open ",args[0]
+		print("ERROR: could not open ",args[0])
 		sys.exit(1)
 
 	logid=E2init(sys.argv,options.ppid)
@@ -72,18 +72,18 @@ too look for issues with preferred orientation, etc.
 		except: pass
 	
 
-	print "Altitude distribution:"
+	print("Altitude distribution:")
 
 	for i in xrange(18) :
-		print "%d - %d: %d"%(i*10.0,(i+1)*10.0,len(alts[i]))
+		print("%d - %d: %d"%(i*10.0,(i+1)*10.0,len(alts[i])))
 
 
-	print "See also: ",options.output
+	print("See also: ",options.output)
 	
 	if options.evendist>0 :
 		# finding the zone with the fewest particles
 		ppz=int(min([len(a) for a in alts])*options.evendist)
-		print "Using ",ppz," particles from each 10 degree zone"
+		print("Using ",ppz," particles from each 10 degree zone")
 		
 		for i in xrange(18):
 			alts[i].sort()
@@ -91,15 +91,15 @@ too look for issues with preferred orientation, etc.
 			
 	if options.average:
 		if not options.input :
-			print "Error: must specify --input with --average"
+			print("Error: must specify --input with --average")
 			sys.exit(1)
 #		avg=Averagers.get("mean.tomo",{"save_norm":1})
 		avg=Averagers.get("mean.tomo")
 		for i in xrange(18):
-			print "%d - %d"%(i*10.0,(i+1)*10.0)
+			print("%d - %d"%(i*10.0,(i+1)*10.0))
 			for p in alts[i]:
 				n=int(p[1].split("_")[1])		# extract the particle number from the name saved by e2spt_classaverage
-				print options.input,n,p
+				print(options.input,n,p)
 				img=EMData(options.input,n)
 				#xf=db[p[1]][0].inverse()		# inverse of the transform object
 				xf=db[p[1]][0]

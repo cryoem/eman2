@@ -105,7 +105,7 @@ tave,tvar = ave_var_series_g(data,kb)
 dropImage(tave,"a1.spi")
 dropImage(tvar,"a2.spi")
 a0 = tave.cmp("dot", tave, {"negative":0,"mask":mask})
-print  "initial ",a0
+print("initial ",a0)
 # do the alignment
 # IMAGES ARE SQUARES!
 #  center is in SPIDER convention
@@ -123,7 +123,7 @@ mode = "F"
 numr=Numrinit(first_ring,last_ring,rstep,mode)
 wr=ringwe(numr,mode)
 for iter in xrange(20):
-	print " ITERATION #",iter
+	print(" ITERATION #",iter)
 	again = False
 	for im in xrange(nima):
 		# subtract current image from the average
@@ -151,7 +151,7 @@ for iter in xrange(20):
 		# calculate the criterion
 		a1 = temp.cmp("dot", temp, {"negative":0,"mask":mask})
 		if(a1>a0):
-			print  im,"  ",a1,"  ",mirror,"  ",mirrort,"  ",psi,"  ",angt,"  ",sxst,"  ",syst
+			print(im,"  ",a1,"  ",mirror,"  ",mirrort,"  ",psi,"  ",angt,"  ",sxst,"  ",syst)
 			# replace the average by the improved average and set the new parameters to the image, otherwise, do nothing
 			tave = temp.copy()
 			data[im].set_attr_dict({'psi':psin, 'sx':sxn, 'sy':syn,'mirror': mn})

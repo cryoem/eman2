@@ -27,7 +27,7 @@ parser.add_argument("--ppid", type=int, help="Set the PID of the parent process,
 (options, args) = parser.parse_args()
 
 if len(args) != 1:
-   print "Please use e2runfrealign.py with only one argument - which FreAlign directory to run in"
+   print("Please use e2runfrealign.py with only one argument - which FreAlign directory to run in")
    exit(-1)
 os.chdir(str(args[0]))
 E2n=E2init(args,options.ppid)
@@ -38,15 +38,15 @@ shutil.copy('ptcl_meta_data', 'ptcl_meta_data.old')
 try:
 	retcode = call('frealign_v9.exe < card.txt', shell=True)
 	if retcode < 0:
-		print >>sys.stderr, "Child was terminated by signal", -retcode
+		print("Child was terminated by signal", -retcode, file=sys.stderr)
 	else:
-		print >>sys.stderr, "child returned", retcode
+		print("child returned", retcode, file=sys.stderr)
 except OSError, e:
-	print >>sys.stderr, "Execution Failed:", e
+	print("Execution Failed:", e, file=sys.stderr)
 
 shutil.copy('3DMapInOut.mrc', 'OutputMap.mrc')
 shutil.move('3DMapInOut.mrc.old', '3DMapInOut.mrc')
 shutil.move('ptcl_meta_data.old', 'ptcl_meta_data')
-print "e2runfrealign.py finished"
+print("e2runfrealign.py finished")
 
 E2end(E2n)

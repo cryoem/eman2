@@ -25,7 +25,7 @@ for da in angs:
 	recon.setup()
 	
 	for i,e in enumerate(eulers):
-		print i,e
+		print(i,e)
 		recon.insert_slice(ptclf,e,1.0)
 	
 	final=recon.finish(True)

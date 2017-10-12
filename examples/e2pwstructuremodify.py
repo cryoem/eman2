@@ -52,7 +52,7 @@ def read_pdb(filename):
 		count += 1
 		lchain=nchain
 	
-	print "Read ",chainnum," chains, ",count-chainnum+1," atoms."
+	print("Read ",chainnum," chains, ",count-chainnum+1," atoms.")
 	return points,count,atomnumber
     
 def write_pdb(filename,ncent,SX,SY,SZ,color,atomnumber,vx):
@@ -119,7 +119,7 @@ def get_density(mrc,posi,posb,posf):
 
 
 def read_helix(filename):
-	print "Reading helix atoms..."
+	print("Reading helix atoms...")
 	points = {}
 	count=0
 	pdbfile = open(filename, "r")
@@ -259,9 +259,9 @@ def main():
 			atomcolor[i]=mind
 			if (options.thr<0):
 				options.thr=np.mean(atomcolor)+2*np.std(atomcolor)
-				print options.thr
+				print(options.thr)
 			if (atomcolor[i]<options.thr):
-				print i, csbd[i], atomcolor[i]
+				print(i, csbd[i], atomcolor[i])
 				atomcolor[i]=options.thr
 				atomcolor[i+1]=options.thr
 				atomcolor[csbd[i]]=options.thr
@@ -289,7 +289,7 @@ def main():
 				atomcolor[i]=10
 				dellist.append(i)
 		
-		print np.hstack((atomnumber[dellist],atomcolor[dellist]))
+		print(np.hstack((atomnumber[dellist],atomcolor[dellist])))
 		ncent=np.delete(ncent,dellist,axis=0)
 		atomnumber=np.delete(atomnumber,dellist)
 		atomcolor=np.delete(atomcolor,dellist)
@@ -312,7 +312,7 @@ def main():
 			posf=ncent[i+1]
 			if (distb[i]>thr and posi[0]>0 and posf[0]>0):
 				pos=(posi+posf)/2
-				print i,k,distb[i],get_density(mrc,pos,posi,posf)
+				print(i,k,distb[i],get_density(mrc,pos,posi,posf))
 				acent=np.insert(acent,i+k,pos,axis=0)
 				atomnumber=np.insert(atomnumber,i+k,nn+1)
 				atomcolor=np.insert(atomcolor,i+k,100)
@@ -320,7 +320,7 @@ def main():
 				k+=1
 				
 		ncent=np.copy(acent)
-		print len(ncent)
+		print(len(ncent))
 		#for i in range(1,naa-1):
 			#posi=ncent[i]
 			#posb=ncent[i-1]
@@ -338,7 +338,7 @@ def main():
 
 
 		for iters in range(500):
-			print iters
+			print(iters)
 			atoms.sim_printstat()
 			atoms.sim_minstep_seq(.01)
 			#if iters%100==0:
@@ -391,7 +391,7 @@ def main():
 				break
 			
 			
-			print np.hstack((atomnumber[dellist],atomcolor[dellist]))
+			print(np.hstack((atomnumber[dellist],atomcolor[dellist])))
 			ncent=np.delete(ncent,dellist,axis=0)
 			atomnumber=np.delete(atomnumber,dellist)
 			atomcolor=np.delete(atomcolor,dellist)
@@ -401,7 +401,7 @@ def main():
 			
 	#atomcolor-=min(atomcolor)
 	#atomcolor=atomcolor/max(atomcolor)*99.9
-	print np.mean(atomcolor)+np.std(atomcolor)*2
+	print(np.mean(atomcolor)+np.std(atomcolor)*2)
 	write_pdb(options.output,ncent,0,0,0,atomcolor,atomnumber,[apix_x,apix_y,apix_z])
 
     

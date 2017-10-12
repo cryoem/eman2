@@ -35,7 +35,7 @@ def group_pts(pts, dst0, d0):
 		rid=np.unique(rid)
 		ss= np.sum(group<0)
 		nochange-=ss
-		print ss
+		print(ss)
 		if ss==0: break
 		if nochange<2: break
 	return group
@@ -51,7 +51,7 @@ def read_fasta(fname):
 		if l.startswith(">"):
 			continue
 		res.extend(l.strip())
-	print "{:d} residues read from sequence".format(len(res))
+	print("{:d} residues read from sequence".format(len(res)))
 	return [amino_dict[r] for r in res]
 	
 
@@ -172,7 +172,7 @@ def calc_shortest_path(path, pts, dst, d0, pval, gap=5, gdsz=1.5, ngray=5., grp=
 #		 print l
 		did=np.logical_and(dd0>=0, dd1>=0)
 		if np.sum(did)<1:
-			print "Density break between {} and {}".format(i0, i1)
+			print("Density break between {} and {}".format(i0, i1))
 #			 drawmap(pts, dd0, "mapcolor_tmp0.mrc")
 #			 drawmap(pts, dd1, "mapcolor_tmp1.mrc")
 			continue
@@ -220,7 +220,7 @@ def calc_shortest_path(path, pts, dst, d0, pval, gap=5, gdsz=1.5, ngray=5., grp=
 		dd[did]=-1
 		
 		if np.sum(dd>0)==0:
-			print "No connected density at {}".format(i0)
+			print("No connected density at {}".format(i0))
 			continue
 
 		dd-=np.min(dd[dd>0])
@@ -242,7 +242,7 @@ def calc_shortest_path(path, pts, dst, d0, pval, gap=5, gdsz=1.5, ngray=5., grp=
 
 
 		if connect==0:
-			print "Breaking point near residue {}".format(i0)
+			print("Breaking point near residue {}".format(i0))
 			#break
 
 	#print np.sum(shrtpath>0)
@@ -299,7 +299,7 @@ def build_path(pts, gi, oripath, pval=[],mingap=3., apix=1.):
 		ig=ii
 		if len(ii)==0:
 
-			print "Skipping residue {}".format(i)
+			print("Skipping residue {}".format(i))
 			continue
 	#	 ig=gs[ii]
 		if i>0:
@@ -342,13 +342,13 @@ def main():
 	img=e.numpy().copy()
 	apix=e["apix_x"]
 	shape=img.shape
-	print "Shape of the density map: {}. Apix is {:.2f}".format(shape, apix)
+	print("Shape of the density map: {}. Apix is {:.2f}".format(shape, apix))
 	if abs(apix-1.)>.2:
-		print "Apix maybe too big or too small. Program may not work.. ~1 A/pixel is recommended.."
+		print("Apix maybe too big or too small. Program may not work.. ~1 A/pixel is recommended..")
 	
 	if options.mapthr<0:
 		thr=np.mean(img)+np.std(img)
-		print "Set threshold to {:.2f}.".format(thr)
+		print("Set threshold to {:.2f}.".format(thr))
 	else:
 		thr=options.mapthr
 	
@@ -358,11 +358,11 @@ def main():
 	pval=img[pts[:,2], pts[:,1], pts[:,0]]
 	pts_input=pts.copy()
 	pval_input=pval.copy()
-	print "{} voxels above the threshold in the density map. Average intensity value is {:.2f}".format(len(pts), np.mean(pval))
+	print("{} voxels above the threshold in the density map. Average intensity value is {:.2f}".format(len(pts), np.mean(pval)))
 	
 	
 	path=pdb2numpy(options.pathin)
-	print "Read {} point in the input path".format(len(path))
+	print("Read {} point in the input path".format(len(path)))
 	
 	if options.nres<0:
 		options.nres=len(path)
@@ -375,9 +375,9 @@ def main():
 	
 	pathint=(path/apix).astype(int)
 	ival=np.mean(img[pathint[:,2], pathint[:,1], pathint[:,0]])
-	print "Average intensity value on the path is {:.2f}".format(ival)
+	print("Average intensity value on the path is {:.2f}".format(ival))
 	if ival<thr:
-		print "Intensity value on path lower than the map threshold. Program will not work. Make sure the path is docked in the density map correctly. Exit."
+		print("Intensity value on path lower than the map threshold. Program will not work. Make sure the path is docked in the density map correctly. Exit.")
 		exit()
 		
 	numpy2pdb(path, "{}/path_init.pdb".format(options.folder))
@@ -387,7 +387,7 @@ def main():
 	dst[np.eye(len(dst),dtype=bool)]=np.inf
 	d0=scidist.cdist(pts, pathint)
 	grp=[]
-	print "Starting refinement..."
+	print("Starting refinement...")
 	niter=options.niter
 	for itr in range(niter):
 		if options.skiprefine:
@@ -424,7 +424,7 @@ def main():
 		#     pp=build_path(spts, gi, pval[sp>0], mingap=1.0)
 		pp=interp_points(pp, len(pp))
 		numpy2pdb(pp, "{}/path_refine_{:02d}.pdb".format(options.folder, itr))
-		print "iteration {:d}, {:d} voxels on the backbone, Average C-alpha distance {:.2f}".format(itr, int(np.sum(shrtpath>0)), np.mean(np.linalg.norm(np.diff(pp, axis=0), axis=1)))
+		print("iteration {:d}, {:d} voxels on the backbone, Average C-alpha distance {:.2f}".format(itr, int(np.sum(shrtpath>0)), np.mean(np.linalg.norm(np.diff(pp, axis=0), axis=1))))
 	
 	
 		
@@ -506,12 +506,12 @@ def main():
 			sidechains[s[0]][3:]=nm
 			sidechains[s[1]]=[]
 	sidechains=[s for s in sidechains if len(s)==6]
-	print "Found {:d} sidechain residues. Average C-alpha distance {:.2f}".format(len(sidechains), np.mean(np.linalg.norm(np.diff(pp, axis=0), axis=1)))
+	print("Found {:d} sidechain residues. Average C-alpha distance {:.2f}".format(len(sidechains), np.mean(np.linalg.norm(np.diff(pp, axis=0), axis=1))))
 	numpy2pdb_sc(pp, "{}/path_refine_final.pdb".format(options.folder), bfac=scsz, sidechain=sidechains)
 	
 
 	if options.sequence==None:
-		print "Done."
+		print("Done.")
 		E2end(logid)
 		return
 	
@@ -559,8 +559,8 @@ def main():
 	inv=np.argmax([pw[i][0][2] for i in [0,1]])
 	ppw=pw[inv]
 	
-	if inv>0: print "Chain is reversed.",
-	print "Match score is {}".format(ppw[0][2]/float(len(path)))
+	if inv>0: print("Chain is reversed.", end=' ')
+	print("Match score is {}".format(ppw[0][2]/float(len(path))))
 
 	l=[[],[]]
 	for k in [0,1]:
@@ -597,7 +597,7 @@ def main():
 	
 		
 	sv=sval+1
-	print np.min(sv), np.max(sv)
+	print(np.min(sv), np.max(sv))
 	sq=np.arange(len(path))
 	sid=np.where(seq_asign>=0)[0]
 	# print [(sq[i], seq_asign[i]) for i in sid]
@@ -629,12 +629,12 @@ def main():
 		
 	numpy2pdb_sc(pp1, "{}/path_refine_seq.pdb".format(options.folder), bfac=scsz_srt, sidechain=sc, residue=seq)
 	
-	print "Done."
+	print("Done.")
 	
 	E2end(logid)
 	
 def run(cmd):
-	print cmd
+	print(cmd)
 	launch_childprocess(cmd)
 	
 	

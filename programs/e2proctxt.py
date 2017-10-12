@@ -83,7 +83,7 @@ Simple manipulations of text files conatining multi-column data, as would be use
 		# merge all of the columns into data_sets[0]
 		for i in range(len(args)-1):
 			if len(data_sets[i])!=len(data_sets[i+1]) :
-				print "Error: {} has {} rows and {} has {}".format(args[i],len(data_sets[i]),args[i+1],len(data_sets[i]))
+				print("Error: {} has {} rows and {} has {}".format(args[i],len(data_sets[i]),args[i+1],len(data_sets[i])))
 				sys.exit(1)
 			
 			for row in xrange(len(data_sets[i+1])): 

@@ -66,7 +66,7 @@ def main():
 	
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
-	print """WARNING: Experimental program, not for general use. See e2iminfo.py and e2bdb.py for general image information queries"""
+	print("""WARNING: Experimental program, not for general use. See e2iminfo.py and e2bdb.py for general image information queries""")
 
 	logid=E2init(sys.argv, options.ppid)
 
@@ -92,11 +92,11 @@ def main():
 def checkoutput(options):
 	outfile = options.outfile
 	if outfile == '':
-		print "Error, must specify the --outfile argument"
+		print("Error, must specify the --outfile argument")
 		exit(0)
 	if os.path.exists(outfile):
 		if not options.force:
-			print "Error, outfile",outfile, "already exists"
+			print("Error, outfile",outfile, "already exists")
 			exit(0)
 		else:
 			remove_file(options.outfile)
@@ -113,22 +113,22 @@ def getidx(paramstring):
 	elif (paramstring in ee_expressions ):
 		idx = 4
 	else:
-		print "error, cannot handle", paramstring
+		print("error, cannot handle", paramstring)
 		exit(0)
 
 	return idx
 def fileinfo_op(filename,info,outfile):
 	
 	if ( len(info) != 3 ):
-		print "ERROR - logical expression must be a single expression"
-		print "Could not process the following: "
-		print info
+		print("ERROR - logical expression must be a single expression")
+		print("Could not process the following: ")
+		print(info)
 		exit(1)
 		
 	if ( info[1] not in ["+=", "-=", "*=", "/=", "%="]):
-		print "ERROR: could not extract logical expression"
-		print "Must be one of", "+=", "-=", "*=", "/=", "%="
-		print info
+		print("ERROR: could not extract logical expression")
+		print("Must be one of", "+=", "-=", "*=", "/=", "%=")
+		print(info)
 		exit(1)
 	
 	checkInfoType(info[0])
@@ -144,16 +144,16 @@ def fileinfo_op(filename,info,outfile):
 		try:
 			expr = d.get_attr("IMAGIC.label")
 		except RuntimeError:
-			print "ERROR: the image has no \"IMAGIC.label\" attribute"
+			print("ERROR: the image has no \"IMAGIC.label\" attribute")
 			exit(1)
 			
 		#print expr
 		vals = re.findall("\S*[\w*]", expr)
 		
 		if ( len(vals) < 4 ):
-			print "ERROR: the CTF params were inconsistent with what was expected"
-			print "I am examining image number %d, and its ctf params are as follows:" %(i+1)
-			print vals
+			print("ERROR: the CTF params were inconsistent with what was expected")
+			print("I am examining image number %d, and its ctf params are as follows:" %(i+1))
+			print(vals)
 			exit(1)
 		
 		
@@ -196,15 +196,15 @@ def fileinfo_op(filename,info,outfile):
 def fileinfo_remove(filename, info,outfile):
 	
 	if ( len(info) != 3 ):
-		print "ERROR - logical expression must be a single expression"
-		print "Could not process the following: "
-		print info
+		print("ERROR - logical expression must be a single expression")
+		print("Could not process the following: ")
+		print(info)
 		exit(1)
 		
 	if ( info[1] not in ["==", "<=", ">=", "!=", "~=", "<", ">"] ):
-		print "ERROR: could not extract logical expression"
-		print "Must be one of \"==\", \"<=\", \">=\", \"<\", \">\" "
-		print info
+		print("ERROR: could not extract logical expression")
+		print("Must be one of \"==\", \"<=\", \">=\", \"<\", \">\" ")
+		print(info)
 		exit(1)
 		
 	checkInfoType(infotype)
@@ -224,16 +224,16 @@ def fileinfo_remove(filename, info,outfile):
 		try:
 			expr = d.get_attr("IMAGIC.label")
 		except RuntimeError:
-			print "ERROR: the image has no \"IMAGIC.label\" attribute"
+			print("ERROR: the image has no \"IMAGIC.label\" attribute")
 			exit(1)
 			
 		#print expr
 		vals = re.findall("\S*[\w*]", expr)
 		
 		if ( len(vals) < 4 ):
-			print "ERROR: the CTF params were inconsistent with what was expected"
-			print "I am examining image number %d, and its ctf params are as follows:" %(i+1)
-			print vals
+			print("ERROR: the CTF params were inconsistent with what was expected")
+			print("I am examining image number %d, and its ctf params are as follows:" %(i+1))
+			print(vals)
 			exit(1)
 			
 		if ( idx == 0 ):
@@ -275,16 +275,16 @@ def fileinfo_remove(filename, info,outfile):
 		else:
 			total_removed += 1
 	
-	print "Of a total of %d images %d were removed" %(n,total_removed)
+	print("Of a total of %d images %d were removed" %(n,total_removed))
 
 def checkInfoType(infotype):
 	if ( infotype not in defocus_expressions and infotype not in bfactor_expressions and infotype not in ac_expressions and infotype not in amp_expressions and infotype not in ee_expressions):
-		print "Error, infotype %s must be in the following sets:" %infotype
-		print bfactor_expressions
-		print defocus_expressions
-		print ac_expressions
-		print amp_expressions
-		print ee_expressions
+		print("Error, infotype %s must be in the following sets:" %infotype)
+		print(bfactor_expressions)
+		print(defocus_expressions)
+		print(ac_expressions)
+		print(amp_expressions)
+		print(ee_expressions)
 		exit(1)
 
 def fileinfo_output(filename, infotype):
@@ -305,7 +305,7 @@ def fileinfo_output(filename, infotype):
 		try:
 			expr = d.get_attr("IMAGIC.label")
 		except RuntimeError:
-			print "ERROR: the image has no \"IMAGIC.label\" attribute"
+			print("ERROR: the image has no \"IMAGIC.label\" attribute")
 			exit(1)
 			
 					#print expr
@@ -314,9 +314,9 @@ def fileinfo_output(filename, infotype):
 		if idx == 0:
 			f = re.findall("\d.*\d*", vals[0])
 			defocus = f[0]
-			print "%f" %float(defocus)
+			print("%f" %float(defocus))
 		else:
-			print "%f" %float(vals[idx])
+			print("%f" %float(vals[idx]))
 
 
 def fileinfo(filenames):
@@ -332,10 +332,10 @@ def fileinfo(filenames):
 		d.read_image(i,0,True)
 		if d.get_zsize()==1:
 			s="%%-%ds%%s\t%%d\t%%d x %%d"%(l+2)
-			print s%(i,t,n,d.get_xsize(),d.get_ysize())
+			print(s%(i,t,n,d.get_xsize(),d.get_ysize()))
 		else:
 			s="%%-%ds%%s\t%%d\t%%d x %%d x %%d"%(l+2)
-			print s%(i,t,n,d.get_xsize(),d.get_ysize(),d.get_zsize())
+			print(s%(i,t,n,d.get_xsize(),d.get_ysize(),d.get_zsize()))
 		
 # If executed as a program
 if __name__ == '__main__':

@@ -52,8 +52,8 @@ def main():
 		disable_bdb_cache()
 
 	if len(args) != 2:
-		print "usage: " + usage
-        	print "Please run '" + progname + " -h' for detailed options"
+		print("usage: " + usage)
+        	print("Please run '" + progname + " -h' for detailed options")
 		exit(1)
 	elif(options.ang_scale != None and options.shift_scale != None and options.mag_scale != None):
 		from applications  import ali_vol_scale

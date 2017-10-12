@@ -59,7 +59,7 @@ def main():
 		ntd=big[7:9]
 		
 		com="e2proc3d.py {} fsc_{}_{}.txt --calcfsc {}/{}".format(args[0],nd,ntd,d,big)
-		print com
+		print(com)
 		os.system(com)
 
 

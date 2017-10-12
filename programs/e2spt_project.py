@@ -47,28 +47,28 @@ alignment to the reference, projected along the Z axis.
 	if options.path == None:
 		fls=[int(i[-2:]) for i in os.listdir(".") if i[:4]=="spt_" and len(i)==6 and str.isdigit(i[-2:])]
 		if len(fls)==0 : 
-			print "Error, cannot find any spt_XX folders"
+			print("Error, cannot find any spt_XX folders")
 			sys.exit(2)
 		options.path = "spt_{:02d}".format(max(fls))
-		if options.verbose : print "Working in : ",options.path
+		if options.verbose : print("Working in : ",options.path)
 
 	if options.iter<=0 :
 		fls=[int(i[15:17]) for i in os.listdir(options.path) if i[:15]=="particle_parms_" and str.isdigit(i[15:17])]
 		if len(fls)==0 : 
-			print "Cannot find a {}/particle_parms* file".format(options.path)
+			print("Cannot find a {}/particle_parms* file".format(options.path))
 			sys.exit(2)
 		options.iter=max(fls)
-		if options.verbose : print "Using iteration ",options.iter
+		if options.verbose : print("Using iteration ",options.iter)
 		angs=js_open_dict("{}/particle_parms_{:02d}.json".format(options.path,options.iter))
 	else:
 		fls=[int(i[15:17]) for i in os.listdir(options.path) if i[:15]=="particle_parms_" and str.isdigit(i[15:17])]
 		if len(fls)==0 : 
-			print "Cannot find a {}/particle_parms* file".format(options.path)
+			print("Cannot find a {}/particle_parms* file".format(options.path))
 			sys.exit(2)
 		mit=max(fls)
 		if options.iter>mit : 
 			angs=js_open_dict("{}/particle_parms_{:02d}.json".format(options.path,mit))
-			print "WARNING: no particle_parms found for iter {}, using parms from {}".format(options.iter,mit)
+			print("WARNING: no particle_parms found for iter {}, using parms from {}".format(options.iter,mit))
 		else : angs=js_open_dict("{}/particle_parms_{:02d}.json".format(options.path,options.iter))
 
 	NTHREADS=max(options.threads+1,2)		# we have one thread just writing results
@@ -87,7 +87,7 @@ alignment to the reference, projected along the Z axis.
 		thrds=[threading.Thread(target=rotfn,args=(jsd,eval(k)[0],eval(k)[1],angs[k]["xform.align3d"],options.verbose)) for i,k in enumerate(angs.keys()) if angs[k]["score"]<=options.simthr and inrange(options.minalt,angs[k]["xform.align3d"].get_params("eman")["alt"],options.maxalt) ]
 
 
-	print len(thrds)," threads"
+	print(len(thrds)," threads")
 	thrtolaunch=0
 	while thrtolaunch<len(thrds) or threading.active_count()>1:
 		# If we haven't launched all threads yet, then we wait for an empty slot, and launch another
@@ -95,7 +95,7 @@ alignment to the reference, projected along the Z axis.
 		# thread hasn't finished.
 		if thrtolaunch<len(thrds) :
 			while (threading.active_count()==NTHREADS ) : time.sleep(.1)
-			if options.verbose : print "Starting thread {}/{}".format(thrtolaunch,len(thrds))
+			if options.verbose : print("Starting thread {}/{}".format(thrtolaunch,len(thrds)))
 			thrds[thrtolaunch].start()
 			thrtolaunch+=1
 		else: time.sleep(1)

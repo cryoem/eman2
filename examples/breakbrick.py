@@ -89,7 +89,7 @@ class EMBreakBrick(EMImage2DWidget):
 		self.update_bar()
 		self.update_score()
 		self.update_ball()
-		print "break bricks.."
+		print("break bricks..")
 	
 	def update_score(self):
 		self.score_label.setShape(["label", 1,1,1, -self.sx*.1, self.sy*1.1, "{:.02f}".format(self.score), 100,5])
@@ -114,7 +114,7 @@ class EMBreakBrick(EMImage2DWidget):
 		self.updateGL()
 	
 	def start_game(self):
-		print "Start~"
+		print("Start~")
 		self.ball_ori=45./180.*np.pi
 		self.ball_vec=np.array([self.ball_speed*np.cos(self.ball_ori),self.ball_speed*np.sin(self.ball_ori)])
 		
@@ -136,7 +136,7 @@ class EMBreakBrick(EMImage2DWidget):
 				self.ball_vec[1]*=-1
 		
 		elif newpos[1]<self.bar_ypos-200:
-			print "Lose..."
+			print("Lose...")
 			self.game_timer.stop()
 		
 		else:

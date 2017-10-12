@@ -313,7 +313,7 @@ def main():
 
 	for i in range(n):
 	
-		print "\nI'll look for symmetry in particle number",i
+		print("\nI'll look for symmetry in particle number",i)
 		#Load particle and make a copy to modify if preprocessing options are specified
 		volume = EMData(options.input,i)
 		preprocvol = volume.copy()
@@ -323,9 +323,9 @@ def main():
 		preprocprefftstack = options.path + '/' + os.path.basename( options.input ).replace('.hdf','_preproc.hdf')
 
 		if (options.shrink and options.shrink > 1) or options.lowpass or options.highpass or options.normproc or options.preprocess or options.threshold or options.clip:
-			print "\nHowever, I will first preprocess particle number",i
+			print("\nHowever, I will first preprocess particle number",i)
 			
-			print "\nWill call preprocessing on ptcl",i
+			print("\nWill call preprocessing on ptcl",i)
 			#preprocvol = preprocfilter(preprocvol,options,i)
 				
 			from e2spt_preproc import preprocfunc
@@ -338,7 +338,7 @@ def main():
 			#	preprocvol.write_image( preprocprefftstack, i)
 			#preprocessing(s2image,options, ptclindx, savetagp ,'no',round)
 			
-			print "\nDone preprocessing on ptcl",i
+			print("\nDone preprocessing on ptcl",i)
 		
 		if options.parallel :
 			from EMAN2PAR import EMTaskCustomer
@@ -352,18 +352,18 @@ def main():
 		
 		resultsdict.update( { score:[symxform,i] } )
 	
-		print "\nWriting output for best alignment found for particle number",i
+		print("\nWriting output for best alignment found for particle number",i)
 		
 		if options.shrink and options.shrink > 1:
 			trans = symxform.get_trans()
 			symxform.set_trans(trans[0]*options.shrink, trans[1]*options.shrink, trans[2]*options.shrink)	
 				
-		print "\nWrittng to output ptcl",i
+		print("\nWrittng to output ptcl",i)
 	
 		#Rotate volume to the best orientation found, set the orientation in the header, apply symmetry if specified and write out the aligned (and symmetrized) particle to the output stack
 		output = volume.process('xform',{'transform':symxform})
 		output.set_attr('symxform', symxform)
-		print "\nApplying this transform to particle",symxform
+		print("\nApplying this transform to particle",symxform)
 		if options.symmetrize:
 			output = output.process('xform.applysym',{'sym':options.sym})
 	
@@ -394,7 +394,7 @@ def main():
 			final_avg.write_image( options.path + '/final_avg.hdf' , 0)
 		
 			if options.avgiter > 1:
-				print """WARNING: --avgiter > 1 must be accompanied by --keepsig, or by --keep < 1.0"""
+				print("""WARNING: --avgiter > 1 must be accompanied by --keepsig, or by --keep < 1.0""")
 		
 		elif options.keep < 1.0 or options.keepsig:
 			
@@ -420,7 +420,7 @@ def main():
 def refComp( options, outputstack, ref2compare, resultsdict, mirrortag ):
 	
 	for it in range( options.avgiter ):
-		print "Averaging iteration", it
+		print("Averaging iteration", it)
 		
 		ret = calcScores( outputstack, ref2compare, resultsdict )
 		scores = ret[0]
@@ -431,7 +431,7 @@ def refComp( options, outputstack, ref2compare, resultsdict, mirrortag ):
 		meanscore = sum(scores)/len(scores)
 						
 		if it == options.avgiter -1:
-			print "Final mean score is", meanscore
+			print("Final mean score is", meanscore)
 			ref2compare.write_image( options.path + '/final_avg' + mirrortag + '.hdf', 0)
 	
 	return
@@ -442,7 +442,7 @@ def calcScores( stack, avg, resultsdict):
 	newresults = {}
 	
 	scores = []
-	print "Stack is", stack
+	print("Stack is", stack)
 	n = EMUtil.get_image_count( stack )
 	
 	i=0
@@ -473,7 +473,7 @@ def calcScores( stack, avg, resultsdict):
 def makeSsaAverage( options, scores, resultsdict, it ):
 	thresh = 1.0
 	if options.keep < 1.0 and options.average:
-		print "Len of scores is", len(scores)
+		print("Len of scores is", len(scores))
 	
 		vals=[]
 		for p in scores:
@@ -482,7 +482,7 @@ def makeSsaAverage( options, scores, resultsdict, it ):
 		vals.sort()
 		thresh = vals[ int(options.keep * len(vals) ) - 1]
 		if options.verbose: 
-			print "Keep threshold : %f (min=%f  max=%f)"%(thresh,vals[0],vals[-1])
+			print("Keep threshold : %f (min=%f  max=%f)"%(thresh,vals[0],vals[-1]))
 
 	if options.keepsig and options.average:		
 		vals=[]
@@ -498,16 +498,16 @@ def makeSsaAverage( options, scores, resultsdict, it ):
 		sig = sqrt(val2/len( scores )-mean*mean )
 		thresh = mean+sig* options.keep
 		if options.verbose: 
-			print "\nKeep threshold : %f (mean=%f  sigma=%f)"%(thresh,mean,sig)	
+			print("\nKeep threshold : %f (mean=%f  sigma=%f)"%(thresh,mean,sig))	
 
 	if thresh < 0.0 :
 		avgr = Averagers.get( options.averager[0], options.averager[1 ])
 	
-		print "Threshold is", thresh
-		print "and scores are", scores
+		print("Threshold is", thresh)
+		print("and scores are", scores)
 		for s in scores:
 			if s < thresh:
-				print "Score kept", s
+				print("Score kept", s)
 			indx =  resultsdict[ s ][-1]
 			#a = EMData( options.input, indx )
 			a = EMData( options.raw, indx )
@@ -577,19 +577,19 @@ class SymALignStrategy(Strategy):
 			
 			for i,prog in enumerate(proglist):
 				if prog==100:
-					print "Finished MC trial number", i
+					print("Finished MC trial number", i)
 					r=self.etc.get_results(tids[i])
 					solns.append(r[1]["symalign"])
 					
 			tids=[j for i,j in enumerate(tids) if proglist[i]!=100]		# remove any completed tasks from the list we ask about
 			if len(tids)==0: break
 		
-		print "\nFinished alignments...\n"
+		print("\nFinished alignments...\n")
 		# Search for the best scoring
 		bestscore = 0
 		bestxform = Transform()
 		for i,soln in enumerate(solns):
-			print "score for MC trial %d is %f"%(i,soln.get_attr('score'))
+			print("score for MC trial %d is %f"%(i,soln.get_attr('score')))
 			if soln.get_attr('score') < bestscore:
 				bestscore = soln.get_attr('score')
 				bestxform = soln.get_attr('xform.align3d')

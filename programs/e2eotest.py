@@ -35,7 +35,7 @@
 
 
 def main():
-	print """Resolution testing in EMAN2.1 is performed using 'gold standard' procedures integrated into 
+	print("""Resolution testing in EMAN2.1 is performed using 'gold standard' procedures integrated into 
 e2refine-easy. The old-style eotest result could be subject to noise bias and other problems and is
 no longer considered a valid measure of resolution. This statement also extends to EMAN1. That is,
 eotest results from EMAN1 may be rejected by reviewers as not following modern practices. Note that
@@ -48,7 +48,7 @@ this is a good thing in many different respects. The new method:
 
 After completing a run of e2refine_easy, please look at the refine_xx/report/index.html file, which
 will show a variety of resolution and convergence plots for your convenience. The raw FSC curves are
-also available as refine_xx/fsc*, and can be opened by double-clicking on them in the browser"""
+also available as refine_xx/fsc*, and can be opened by double-clicking on them in the browser""")
 
 if __name__ == "__main__":
     main()

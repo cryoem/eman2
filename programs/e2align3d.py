@@ -87,25 +87,25 @@ def main():
 	try:
 		fixed.read_image(args[0])
 	except:
-		print "Not able to read file %s" % args[0]
+		print("Not able to read file %s" % args[0])
 		exit(1)
 	    
 	try:
 		moving.read_image(args[1])
 	except:
-		print "Not able to read file %s" % args[1]
+		print("Not able to read file %s" % args[1])
 		exit(1)
 	    
 	if (fixed.get_attr('nx') != fixed.get_attr('ny') != fixed.get_a+ options.precttr('nz')):
-		print "Fixed map must have cubic dimensions!"
+		print("Fixed map must have cubic dimensions!")
 		exit(1)
 	    
 	if (moving.get_attr('nx') != moving.get_attr('ny') != moving.get_attr('nz')):
-		print "Fixed map must have cubic dimensions!"
+		print("Fixed map must have cubic dimensions!")
 		exit(1)		 
 	    
 	if (moving.get_attr('nx') != fixed.get_attr('nx')):
-		print "Fixed and model maps must have the same dimensions!"
+		print("Fixed and model maps must have the same dimensions!")
 		exit(1)
 			
 	#preprocess maps
@@ -117,7 +117,7 @@ def main():
 				fixed.process_inplace(str(processorname), param_dict)
 				moving.process_inplace(str(processorname), param_dict)
 			except:
-				print "warning - application of the pre processor",p," failed. Continuing anyway"
+				print("warning - application of the pre processor",p," failed. Continuing anyway")
 
 	#denoise recons
 	if options.famps > 0:
@@ -164,14 +164,14 @@ def main():
 		ralingdict = options.ralign[1]
 		ralingdict['xform.align3d'] = n['xform.align3d']
 		options.ralign = (options.ralign[0], ralingdict)
-		print options.ralign[0], options.ralign[1]
-		print options.rcmp[0], options.rcmp[1]
+		print(options.ralign[0], options.ralign[1])
+		print(options.rcmp[0], options.rcmp[1])
 		galignedref.append(smoving.align(options.ralign[0], sfixed, options.ralign[1], options.rcmp[0], options.rcmp[1]))
 		score = galignedref[i].get_attr('score')
 		if score < bestscore:
 			#bestscore = score
 			bestmodel = i
-		if options.verbose > 0: print "Peak Num: ", i, " Transform: ", n["xform.align3d"], " Ini Score: ", n["score"], " Final Score: ", score
+		if options.verbose > 0: print("Peak Num: ", i, " Transform: ", n["xform.align3d"], " Ini Score: ", n["score"], " Final Score: ", score)
 	if options.cuda: EMData.switchoffcuda()
 	
 	# Find out how many peaks are 'the same' and print stats to the screen
@@ -180,7 +180,7 @@ def main():
 		for m in galignedref:
 			if (m.get_attr('score') < bestscore + options.prec and m.get_attr('score') > bestscore - options.prec):
 				thesame += 1
-		print str(thesame)+" solns refined to the 'same' point within a precision of "+str(options.prec)
+		print(str(thesame)+" solns refined to the 'same' point within a precision of "+str(options.prec))
         
 	#apply the transform to the original model
 	moving.read_image(args[1])

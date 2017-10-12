@@ -13,7 +13,7 @@ try:
 	import matplotlib.pyplot as plt
 	pltcolors=["k","b","g","r","m","c","darkblue","darkgreen","darkred","darkmagenta","darkcyan","0.5"]
 except:
-	print "Matplotlib not available, some output will not be generated"
+	print("Matplotlib not available, some output will not be generated")
 
 
 #### This is a numpy version of EMAN2Ctf.compute_1d, and most code is copied from that function and converted to python. 
@@ -108,7 +108,7 @@ def calc_defocus_onetlt(args):
 				rd=np.array(cc.calc_radial_dist(bxsz/2, 0,1,0))
 				rd=np.log10(rd)
 				if np.max(rd[1:])<1: 
-					print rd
+					print(rd)
 					break
 				rd-=np.min(rd)
 				rd/=np.max(rd[1:])
@@ -176,13 +176,13 @@ def main():
 			ctf.voltage=options.voltage
 		if options.cs>=0:
 			ctf.cs=options.cs
-		print "{:d} particles, Voltage={:.1f}kV, Cs={:.1f}".format(num, ctf.voltage, ctf.cs)
+		print("{:d} particles, Voltage={:.1f}kV, Cs={:.1f}".format(num, ctf.voltage, ctf.cs))
 		
 		if options.ptclout==None:
 			fpname=options.ptclin[:options.ptclin.rfind('.')]+"__ctf_flip.hdf"
 		else:
 			fpname=options.ptclout
-		print "Saving output to {}".format(fpname)
+		print("Saving output to {}".format(fpname))
 		for i in range(num):
 			e=EMData(pname, i)
 			fft1=e.do_fft()
@@ -204,7 +204,7 @@ def main():
 		time0=time()
 		
 		tlts=np.loadtxt(options.tltfile)
-		print "Read {} tilts from {} to {}.".format(len(tlts), np.min(tlts), np.max(tlts))
+		print("Read {} tilts from {} to {}.".format(len(tlts), np.min(tlts), np.max(tlts)))
 		options.tlts=tlts
 		
 		#### Set up the parameters 
@@ -215,7 +215,7 @@ def main():
 		
 		if options.apix<0:
 			apix=rawimg["apix_x"]
-			print "Apix from .ali file header: {}".format(apix)
+			print("Apix from .ali file header: {}".format(apix))
 		else:
 			apix=options.apix
 			
@@ -229,7 +229,7 @@ def main():
 		options.allctf=calc_ctf(options.defrg, options.tilesize, voltage=options.voltage, cs=options.cs, apix=apix)
 		options.zeros=np.array(argrelextrema(options.allctf, np.less, axis=1))
 		
-		print "Start working on {} threads...".format(options.threads)
+		print("Start working on {} threads...".format(options.threads))
 
 		pl=pool.Pool(options.threads)
 		ret=pl.map_async(calc_defocus_onetlt, [(i, options) for i in range(len(tlts))])
@@ -237,15 +237,15 @@ def main():
 		pl.join()
 		
 		tltdefs=ret.get()
-		print "idx\ttilt angle\tdefocus mean\tdefocue std"
+		print("idx\ttilt angle\tdefocus mean\tdefocue std")
 		for t in tltdefs:
-			print "{}\t{:.2f}\t{:.2f}\t{:.2f}".format(t[0],t[1],t[2],t[3])
+			print("{}\t{:.2f}\t{:.2f}\t{:.2f}".format(t[0],t[1],t[2],t[3]))
 			
 			
 		info="Input file: {}\nVoltage: {:.1f}\nCs: {:.1f}\n\nidx,tilt angle,defocus mean,std".format(options.alifile,options.voltage, options.cs)
 		np.savetxt(options.output,tltdefs, fmt="%.2f", header=info)
 		
-		print "Done. Output saved to {}. Total time: {}.".format(options.output, time()-time0)
+		print("Done. Output saved to {}. Total time: {}.".format(options.output, time()-time0))
 		
 		
 		try:
@@ -260,12 +260,12 @@ def main():
 			pass
 		
 	else:
-		print "no input..."
+		print("no input...")
 	
 	E2end(logid)
 	
 def run(cmd):
-	print cmd
+	print(cmd)
 	launch_childprocess(cmd)
 	
 	

@@ -92,22 +92,22 @@ def main():
 	
 	if options.inputstack:
 		if options.inputeven or options.inputodd:
-			print "\nERROR: cannot supply --inputodd or --inputeven with --inputstack"
+			print("\nERROR: cannot supply --inputodd or --inputeven with --inputstack")
 			sys.exit(1)
 		if not options.ref:
-			print "\nERROR: --ref required with --inputstack"
+			print("\nERROR: --ref required with --inputstack")
 
 	if options.inputodd and not options.inputeven:
-		print "\nERROR: --inputodd requires --inputeven"
+		print("\nERROR: --inputodd requires --inputeven")
 
 	if options.inputeven and not options.inputodd:
-		print "\nERROR: --inputeven requires --inputodd"
+		print("\nERROR: --inputeven requires --inputodd")
 
 	if options.ref:
 		if not options.inputstack:
-			print "\nERROR: --inputstack required with --ref"
+			print("\nERROR: --inputstack required with --ref")
 		if options.inputeven or options.inputodd:
-			print "\nERROR: do not supply --inputeven nor --inputodd with --ref and --inputstack; these are mutually exclusive options."
+			print("\nERROR: do not supply --inputeven nor --inputodd with --ref and --inputstack; these are mutually exclusive options.")
 
 	if options.averager:
 		options.averager=parsemodopt(options.averager)
@@ -139,17 +139,17 @@ def main():
 
 
 def averagerfunc(stack,options,n):
-	print "\ncomputing average %d, from file %s" %(n,stack)
+	print("\ncomputing average %d, from file %s" %(n,stack))
 	
 	avgr = Averagers.get( options.averager[0], options.averager[1])
-	print '\navgr is',avgr
-	print "\nn is",n
+	print('\navgr is',avgr)
+	print("\nn is",n)
 
 	for x in range(n):
-		print "\nadded ptcl %d/%d" %(x,n)
+		print("\nadded ptcl %d/%d" %(x,n))
 		ptcl = EMData( stack, x )
 		
-		print "\napix is",ptcl['apix_x']
+		print("\napix is",ptcl['apix_x'])
 		avgr.add_image( ptcl )
 	
 	avg = avgr.finish()
@@ -158,14 +158,14 @@ def averagerfunc(stack,options,n):
 
 		return avg
 	else:
-		print "average failed"
+		print("average failed")
 		sys.exit(1)
 
 		return
 
 
 def runningavg(stack,previousavg,options,start,stop,count):
-	print "\ncomputing running avg %d, from file %s" %(count,stack)
+	print("\ncomputing running avg %d, from file %s" %(count,stack))
 	
 	avgr = Averagers.get( options.averager[0], options.averager[1])
 		
@@ -310,12 +310,12 @@ def bfactorfuncgold( options ):
 				avgo_w.process_inplace('xform.applysym',{'sym':options.sym})
 		
 			if options.mask1:
-				print "parsed mask1 is",options.mask1
+				print("parsed mask1 is",options.mask1)
 				avge_w.process_inplace(options.mask1[0], options.mask1[1])
 				avgo_w.process_inplace(options.mask1[0], options.mask1[1])
 			
 			if options.mask2:
-				print "parsed mask2 is",options.mask2
+				print("parsed mask2 is",options.mask2)
 				avge_w.process_inplace(options.mask2[0], options.mask2[1])
 				avgo_w.process_inplace(options.mask2[0], options.mask2[1])
 		
@@ -344,7 +344,7 @@ def bfactorfuncgold( options ):
 		
 			f.writelines( fsclines )
 			f.close()
-			print "\ndone with fsc %d/%d" %(i,nfinal)
+			print("\ndone with fsc %d/%d" %(i,nfinal))
 
 		g = open( options.path +'/n_vs_fsc_unsorted.txt','w' )
 		fsclines_unsorted = []
@@ -381,12 +381,12 @@ def bfactorfuncgold( options ):
 				avgo_w.process_inplace('xform.applysym',{'sym':options.sym})	
 			
 			if options.mask1:
-				print "parsed mask1 is",options.mask1
+				print("parsed mask1 is",options.mask1)
 				avge_w.process_inplace(options.mask1[0], options.mask1[1])
 				avgo_w.process_inplace(options.mask1[0], options.mask1[1])
 			
 			if options.mask2:
-				print "parsed mask2 is",options.mask2
+				print("parsed mask2 is",options.mask2)
 				avge_w.process_inplace(options.mask2[0], options.mask2[1])
 				avgo_w.process_inplace(options.mask2[0], options.mask2[1])
 		
@@ -422,7 +422,7 @@ def bfactorfuncgold( options ):
 			h.write(hline)
 
 
-			print "\ndone with fsc %d/%d" %(count,ngroups)
+			print("\ndone with fsc %d/%d" %(count,ngroups))
 
 			count+=1
 
@@ -439,7 +439,7 @@ def bfactorfuncgold( options ):
 		g.writelines( fsclines )
 		g.close()
 	
-		print "\ndone with fsc {}/{}".format(count,ngroups)
+		print("\ndone with fsc {}/{}".format(count,ngroups))
 	
 	return
 
@@ -479,11 +479,11 @@ def bfactorfunc( options ):
 				avgo_w.process_inplace('xform.applysym',{'sym':options.sym})
 		
 			if options.mask1:
-				print "parsed mask1 is",options.mask1
+				print("parsed mask1 is",options.mask1)
 				avgo_w.process_inplace(options.mask1[0], options.mask1[1])
 			
 			if options.mask2:
-				print "parsed mask2 is",options.mask2
+				print("parsed mask2 is",options.mask2)
 				avgo_w.process_inplace(options.mask2[0], options.mask2[1])
 		
 			if options.maskfile:
@@ -510,7 +510,7 @@ def bfactorfunc( options ):
 		
 			f.writelines( fsclines )
 			f.close()
-			print "\ndone with fsc %d/%d" %(i,nfinal)
+			print("\ndone with fsc %d/%d" %(i,nfinal))
 
 	else:
 		ngroups = nfinal/options.step
@@ -530,11 +530,11 @@ def bfactorfunc( options ):
 				avgo_w.process_inplace('xform.applysym',{'sym':options.sym})	
 			
 			if options.mask1:
-				print "parsed mask1 is",options.mask1
+				print("parsed mask1 is",options.mask1)
 				avgo_w.process_inplace(options.mask1[0], options.mask1[1])
 			
 			if options.mask2:
-				print "parsed mask2 is",options.mask2
+				print("parsed mask2 is",options.mask2)
 				avgo_w.process_inplace(options.mask2[0], options.mask2[1])
 		
 			if options.maskfile:
@@ -560,7 +560,7 @@ def bfactorfunc( options ):
 		
 			f.writelines( fsclines )
 			f.close()
-			print "\ndone with fsc %d/%d" %(count,ngroups)
+			print("\ndone with fsc %d/%d" %(count,ngroups))
 
 			count+=1
 

@@ -77,10 +77,10 @@ def main():
 		prj["global.microscope_cs"]=ctf.cs
 		prj["global.microscope_voltage"]=ctf.voltage
 	except:
-		print "No ctf info found. This shouldn't happen with a SPARX input file."
+		print("No ctf info found. This shouldn't happen with a SPARX input file.")
 		sys.exit(1)
 		
-	print "Processing ",args[0]
+	print("Processing ",args[0])
 
 	N=EMUtil.get_image_count(args[0])
 	olddf=0
@@ -94,11 +94,11 @@ def main():
 			jdb=js_open_dict(info_name(microname))
 			jdb["ctf_frame"]=[512,ctf,(256,256),tuple(),5,1]
 			olddf=ctf.defocus
-			if options.verbose : print "{}) ({}/{}) defocus={}".format(micronum,i,N,ctf.defocus)
+			if options.verbose : print("{}) ({}/{}) defocus={}".format(micronum,i,N,ctf.defocus))
 		img.del_attr("ctf")
 		img.write_image(microname,-1)
 
-	print micronum," micrographs found"
+	print(micronum," micrographs found")
 
 
 #	print "Defocus processing"
@@ -118,8 +118,8 @@ def main():
 
 #	launch_childprocess("e2ctf_auto.py --voltage {} --cs {} --ac {} --apix {} --allparticles --autofit {} -v {}".format(ctf.voltage,ctf.cs,ctf.ampcont,ctf.apix,dfopt,options.verbose-1))
 	
-	print "Done. Project in eman2/"
-	print "Please run e2ctf_auto.py to complete CTF parameter determination"
+	print("Done. Project in eman2/")
+	print("Please run e2ctf_auto.py to complete CTF parameter determination")
 	E2end(logid)
 
 if __name__ == "__main__":

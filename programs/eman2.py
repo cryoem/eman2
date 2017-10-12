@@ -61,7 +61,7 @@ try:
 	from PyQt4 import QtCore, QtGui
 	from PyQt4.QtCore import Qt
 except:
-	print helpstring
+	print(helpstring)
 	raw_input("Please press <enter> to exit")
 	exit()	
 

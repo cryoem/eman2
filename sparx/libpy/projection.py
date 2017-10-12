@@ -486,7 +486,7 @@ def cml_refine_agls(Prj, Ori, delta):
 		Ori[4*iprj]   = (optvec[0]+360)%360
 		Ori[4*iprj+1] = optvec[1]
 		Ori[4*iprj+2] = optvec[2]
-		print 'refine:', iprj, 'angles:', Ori[4*iprj:4*iprj+4], 'disc:', -disc
+		print('refine:', iprj, 'angles:', Ori[4*iprj:4*iprj+4], 'disc:', -disc)
 
 	return Ori
 

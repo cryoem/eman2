@@ -36,7 +36,7 @@ from EMAN2 import *
 import sys
 import math
 
-print "WARNING: This program does not currently conform to EMAN2 usage standards"
+print("WARNING: This program does not currently conform to EMAN2 usage standards")
 
 args=sys.argv
 
@@ -90,12 +90,12 @@ def avg_this_pixel (filename, imagedict, thr, i,j,k):
 imagedict={}
 
 if (len(args)<4) :
-    print "Usage:\navg_ffts.py <out> thr <in1> <in2>...\n"
-    print "All files same size (not checked), at least 2 files to average"
-    print "Produces 3 files, "
-    print "st-out, straight average, should be comparable to real space avg; "
-    print "ma-out, amps < thr ignored in number to avg; "
-    print "wt-out, finalamp= amp1*(amp1/ampsum) + amp2*(amp2/ampsum) +..."
+    print("Usage:\navg_ffts.py <out> thr <in1> <in2>...\n")
+    print("All files same size (not checked), at least 2 files to average")
+    print("Produces 3 files, ")
+    print("st-out, straight average, should be comparable to real space avg; ")
+    print("ma-out, amps < thr ignored in number to avg; ")
+    print("wt-out, finalamp= amp1*(amp1/ampsum) + amp2*(amp2/ampsum) +...")
     sys.exit()
 
 st_fft=EMData()
@@ -137,7 +137,7 @@ wt_fft.set_size(nx+2,ny,nz)
 i=0
 while i<nx:
     j=0
-    print i
+    print(i)
     while j<ny:
         k=0
 #        print i,j
@@ -154,13 +154,13 @@ while i<nx:
             k=k+1
         j=j+1
     i=i+2
-print "here"
+print("here")
 st_image=st_fft.do_ift()
 ma_image=ma_fft.do_ift()
 wt_image=wt_fft.do_ift()
-print "and here"
+print("and here")
 st_image.write_image(outst)
 ma_image.write_image(outma)
 wt_image.write_image(outwt)
-print "here too"
+print("here too")
 #print "coming out %f %f %f"%(a[0],a[1],a[2])

@@ -132,7 +132,7 @@ def list_to_emdata(l):
 def timer(fn,n=1):
 	a=time.time()
 	for i in range(n): fn()
-	print time.time()-a
+	print(time.time()-a)
 
 # This is to remove stdio buffering, only line buffering is done. This is what is done for the terminal, but this extends terminal behaviour to redirected stdio
 # try/except is to prevent errors with systems that already redirect stdio
@@ -250,7 +250,7 @@ def E2saveappwin(app,key,win):
 
 		E2setappval(app,key,geom)
 	except:
-		print "Error saving window location"
+		print("Error saving window location")
 
 def E2loadappwin(app,key,win):
 	"""restores a geometry saved with E2saveappwin"""
@@ -270,7 +270,7 @@ When settings are read, the local value is checked first, then if necessary, the
 		app.replace(".","_")
 		key.replace(".","_")
 	except:
-		print "Error with E2setappval, app and key must be strings"
+		print("Error with E2setappval, app and key must be strings")
 		return
 
 	try:
@@ -303,7 +303,7 @@ This function will get an application default by first checking the local direct
 		app.replace(".","_")
 		key.replace(".","_")
 	except:
-		print "Error with E2getappval, app and key must be strings"
+		print("Error with E2getappval, app and key must be strings")
 		return None
 
 	try:
@@ -632,8 +632,8 @@ def parsemodopt(optstr):
 	for p in op2[1:]:
 		try: k,v=p.split("=")
 		except:
-			print "ERROR: Command line parameter parsing failed on ",optstr
-			print "must have the form name:key=value:key=value"
+			print("ERROR: Command line parameter parsing failed on ",optstr)
+			print("must have the form name:key=value:key=value")
 			return(None,None)
 
 #		v=v.replace("bdb%","bdb:")
@@ -671,20 +671,20 @@ def parsemodopt_logical(optstr):
 
 	if len(p_1)==0: return (optstr,{})
 	if ( len(p_1) != 2 ):
-		print "ERROR: parsemodopt_logical currently only supports single logical expressions"
-		print "Could not handle %s" %optstr
+		print("ERROR: parsemodopt_logical currently only supports single logical expressions")
+		print("Could not handle %s" %optstr)
 		return (None,None,None)
 
 	p_2 = re.findall( parseparmobj_logical, optstr )
 
 	if ( len(p_2) != 1 ):
-		print "ERROR: could not find logical expression in %s" %optstr
+		print("ERROR: could not find logical expression in %s" %optstr)
 		return (None,None,None)
 
 
 	if ( p_2[0] not in ["==", "<=", ">=", "!=", "~=", "<", ">"] ):
-		print "ERROR: parsemodopt_logical %s could not extract logical expression" %(p_2[0])
-		print "Must be one of \"==\", \"<=\", \">=\", \"<\", \">\" \"!=\" or \~=\" "
+		print("ERROR: parsemodopt_logical %s could not extract logical expression" %(p_2[0]))
+		print("Must be one of \"==\", \"<=\", \">=\", \"<\", \">\" \"!=\" or \~=\" ")
 		return (None,None,None)
 
 	return (p_1[0], p_2[0], p_1[1])
@@ -697,19 +697,19 @@ def parsemodopt_operation(optstr):
 	if len(p_1)==0: return (optstr,{})
 
 	if ( len(p_1) != 2 ):
-		print "ERROR: parsemodopt_logical currently only supports single logical expressions"
-		print "Could not handle %s" %optstr
+		print("ERROR: parsemodopt_logical currently only supports single logical expressions")
+		print("Could not handle %s" %optstr)
 		return (None,None,None)
 
 	p_2 = re.findall( parseparmobj_op, optstr )
 	if ( len(p_2) != 1 ):
-		print "ERROR: could not find logical expression in %s" %optstr
+		print("ERROR: could not find logical expression in %s" %optstr)
 		return (None,None,None)
 
 
 	if ( p_2[0] not in ["+=", "-=", "*=", "/=", "%="]):
-		print "ERROR: parsemodopt_logical %s could not extract logical expression" %(p_2[0])
-		print "Must be one of", "+=", "-=", "*=", "/=", "%="
+		print("ERROR: parsemodopt_logical %s could not extract logical expression" %(p_2[0]))
+		print("Must be one of", "+=", "-=", "*=", "/=", "%=")
 		return (None,None,None)
 
 	return (p_1[0], p_2[0], p_1[1])
@@ -770,7 +770,7 @@ def euler_display(emdata_list):
 			module.regen_dl()
 		widget.show()
 	else:
-		print "gui mode is disabled"
+		print("gui mode is disabled")
 
 def browse():
 	if GUIMode:
@@ -796,7 +796,7 @@ class EMImage(object):
 			try: image.optimally_resize()
 			except: pass
 			return image
-		else: print "can not instantiate EMImage in non gui mode"
+		else: print("can not instantiate EMImage in non gui mode")
 
 def plot_image_similarity(im1,im2,skipzero=True,skipnearzero=False):
 	"""Will plot pixels in the first image on x vs the same pixel in the second image on y
@@ -866,10 +866,10 @@ def plot(data,data2=None,data3=None,show=1,size=(800,600),path="plot.png"):
 					if data2!=None: pylab.plot(data2)
 					if data3!=None: pylab.plot(data3)
 				except:
-					print "List, but data isn't floats"
+					print("List, but data isn't floats")
 					return
 		else :
-			print "I don't know how to plot that type (%s)"%(str(type(data)))
+			print("I don't know how to plot that type (%s)"%(str(type(data))))
 			return
 
 		pylab.savefig(path)
@@ -1029,12 +1029,12 @@ def num_cpus():
 				except:pass # mem_used is just -1
 
 		if cores < 1:
-			print "warning, the number of cpus was negative (%i), this means the MAC system command (sysctl) has been updated and EMAN2 has not accommodated for this. Returning 1 for the number of cores." %cores
+			print("warning, the number of cpus was negative (%i), this means the MAC system command (sysctl) has been updated and EMAN2 has not accommodated for this. Returning 1 for the number of cores." %cores)
 			cores = 2# just for safety, something could have gone wrong. Maybe we should raise instead
 		return cores
 
 	else:
-		print "error, in num_cpus - uknown platform string:",platform_string," - returning 2"
+		print("error, in num_cpus - uknown platform string:",platform_string," - returning 2")
 		return 2
 
 def gimme_image_dimensions2D( imagefilename ):
@@ -1139,7 +1139,7 @@ def remove_file( file_name, img_couples_too=True ):
 	elif db_check_dict(file_name):
 		db_remove_dict(file_name)
 	else:
-		print "Warning, attempt to remove file (%s) that does not exist. No action taken." %file_name
+		print("Warning, attempt to remove file (%s) that does not exist. No action taken." %file_name)
 		return False
 
 # returns the local date and time as a string
@@ -1279,13 +1279,13 @@ def strip_file_tag(file_name):
 	'''
 	FIXME - could replace with Util.remove_filename_ext()
 	'''
-	print "Using deprecated strip_file_tag function, please remove"
+	print("Using deprecated strip_file_tag function, please remove")
 
 	for i in range(len(file_name)-1,-1,-1):
 		if file_name[i] == '.':
 			break
 	else:
-		print "never found the full stop in", file_name
+		print("never found the full stop in", file_name)
 		return None
 
 	return file_name[0:i]
@@ -1294,7 +1294,7 @@ def get_file_tag(file_name):
 	"""Returns the file identifier associated with a path, ie for "/home/stevel/abc1234.mrc" would return abc1234
 or for "bdb:hello99?1,2,3" would return hello99
 	"""
-	print "Using deprecated get_file_tag function, please switch to base_name()"
+	print("Using deprecated get_file_tag function, please switch to base_name()")
 
 	if file_name[:4].lower()=="bdb:" :
 		dname=file_name.find("#")+1
@@ -1316,7 +1316,7 @@ def item_name(file_name):
 
 	see also: get_file_tag
 	"""
-	print "Using deprecated item_name function, please switch to base_name()"
+	print("Using deprecated item_name function, please switch to base_name()")
 
 
 	file_name=str(file_name)
@@ -1337,8 +1337,8 @@ def base_name( file_name,extension=False,bdb_keep_dir=False,nodir=False ):
 	wraps os.path.basename but returns something sensible for bdb syntax
 	if nodir is set, then the last path element will never be included, otherwise it is included following a set of standard rules.
 	'''
-	if extension : print "base_name() with extension. please check"
-	if bdb_keep_dir : print "base_name() with bdb_keep_dir. please check"
+	if extension : print("base_name() with extension. please check")
+	if bdb_keep_dir : print("base_name() with bdb_keep_dir. please check")
 
 	file_name=str(file_name)
 	if file_name[:4].lower()=="bdb:" :
@@ -1385,12 +1385,12 @@ def file_exists( file_name ):
 
 		if ( file_tag == 'hed' ):
 			if ( not os.path.exists(name+'img') ):
-				print "Warning - %s does not exist" %(name+'img')
+				print("Warning - %s does not exist" %(name+'img'))
 				return False
 			else: return True;
 		elif (file_tag == 'img'):
 			if (not os.path.exists(name+'hed')):
-				print "Warning - %s does not exist" %(name+'hed')
+				print("Warning - %s does not exist" %(name+'hed'))
 				return False
 			else: return True;
 		else:
@@ -1463,24 +1463,24 @@ def check_eman2_type(modoptstring, object, objectname, verbose=True):
 	'''
 	if modoptstring == None:
 		if verbose:
-			print "Error: expecting a string but got python None, was looking for a type of %s" %objectname
+			print("Error: expecting a string but got python None, was looking for a type of %s" %objectname)
 		return False
 
 	if modoptstring == "":
 		if verbose:
-			print "Error: expecting a string was not empty, was looking for a type of %s" %objectname
+			print("Error: expecting a string was not empty, was looking for a type of %s" %objectname)
 		return False
 
 	try:
 		p = parsemodopt(modoptstring)
 		if p[0] == None:
 			if verbose:
-				print "Error: Can't interpret the construction string %s" %(modoptstring)
+				print("Error: Can't interpret the construction string %s" %(modoptstring))
 			return False
 		object.get(p[0], p[1])
 	except RuntimeError:
 		if (verbose):
-			print "Error: the specified %s (%s) does not exist or cannot be constructed" %(objectname, modoptstring)
+			print("Error: the specified %s (%s) does not exist or cannot be constructed" %(objectname, modoptstring))
 		return False
 
 	return True
@@ -1526,7 +1526,7 @@ def qplot(img):
 def error_exit(s) :
 	"""A quick hack until I can figure out the logging stuff. This function
 	should still remain as a shortcut"""
-	print s
+	print(s)
 	exit(1)
 
 def write_test_refine_data(num_im=1000):
@@ -1697,11 +1697,11 @@ def test_image_3d(type=0,size=(128,128,128)):
 	size=(128,128,128) """
 	ret=EMData()
 	if len(size) != 3:
-		print "error, you can't create a 3d test image if there are not 3 dimensions in the size parameter"
+		print("error, you can't create a 3d test image if there are not 3 dimensions in the size parameter")
 		return None
 	if type != 2: ret.set_size(*size)
 	else:
-		if size!=(256,256,64) : print "Warning, size set to 256x256x64"
+		if size!=(256,256,64) : print("Warning, size set to 256x256x64")
 		ret.set_size(256,256,64)
 	if type==0 :
 		ret.process_inplace("testimage.axes")
@@ -1786,7 +1786,7 @@ def get_3d_font_renderer():
 		elif pfm == "Windows":
 			font_renderer.set_font_file_name("C:\\WINDOWS\\Fonts\\arial.ttf")
 		else:
-			print "unknown platform:",pfm
+			print("unknown platform:",pfm)
 		return font_renderer
 	except ImportError:
 		#print "Unable to import EMFTGL. The FTGL library may not be installed. Text on 3D and some 2D viewers may not work."
@@ -1894,7 +1894,7 @@ def clear_dead_cudajobs():
 		try:
 			os.kill(cpid, 0)
 		except OSError:
-			print "removing deadfile ", lock
+			print("removing deadfile ", lock)
 			os.unlink(lock)
 
 ### Very odd function, I can't find it used anywhere, so I'm commenting it out.
@@ -1995,7 +1995,7 @@ if the lst file does not exist."""
 		self.filecomment=self.ptr.readline()
 		try: self.linelen=int(self.ptr.readline()[1:])
 		except:
-			print "ERROR: invalid line length in #LSX file {}".format(self.path)
+			print("ERROR: invalid line length in #LSX file {}".format(self.path))
 			raise Exception
 		self.seekbase=self.ptr.tell()
 
@@ -2126,7 +2126,7 @@ files corresponding to even and odd numbered particles. It will return a tuple w
 corresponding to each 1/2 of the data."""
 
 	# create the even and odd data sets
-	print "### Creating virtual stacks for even/odd data"
+	print("### Creating virtual stacks for even/odd data")
 	if file(filename,"r").read(4)=="#LSX" :				# LSX (fast LST) format
 		eset=filename.rsplit(".",1)[0]
 		oset=eset+"_odd.lst"

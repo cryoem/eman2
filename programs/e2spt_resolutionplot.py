@@ -173,7 +173,7 @@ def main():
 
 	if options.cutoff and options.cutoff != 'None' and options.cutoff != 'none':
 		options.cutoff = options.cutoff.split(',')
-		print "Options.cutoff is", options.cutoff
+		print("Options.cutoff is", options.cutoff)
 	else:
 		options.cutoff = None
 
@@ -195,7 +195,7 @@ def main():
 	from EMAN2_utils import makepath
 	options = makepath(options,'sptres')
 
-	print '\n\nafter making path, options.path is', options.path
+	print('\n\nafter making path, options.path is', options.path)
 	
 	if options.input:
 		hdr = EMData(options.input,0,True)
@@ -213,19 +213,19 @@ def main():
 		
 		if not options.singleplot:
 			for curve in curves:
-				print "Found this curve to plot", curve
+				print("Found this curve to plot", curve)
 				fscplotter([curve],options,apix)
 				
 		elif options.singleplot:
 			fscplotter(curves,options,apix)
 		
-		print "Done plotting"
+		print("Done plotting")
 		sys.exit()
 		
 	else:
 		getfscs(options,apix)
 	
-		print "Done calculating FSCs and plotting them."
+		print("Done calculating FSCs and plotting them.")
 		#sys.exit()
 	
 	'''
@@ -275,8 +275,8 @@ def getfscs(options,apix):
 		sym = options.sym
 	
 	options.input
-	print "\n inside getfscs options.input is", options.input
-	print 'and the current directory is', os.getcwd()
+	print("\n inside getfscs options.input is", options.input)
+	print('and the current directory is', os.getcwd())
 	
 	fyle = options.input.split('/')[-1]
 	#if not options.fsconly:
@@ -293,8 +293,8 @@ def getfscs(options,apix):
 	#			fyle = current + '/' + fyle
 	
 	
-	print "\n\n\n\n\nThe fyle to get image count from is", fyle
-	print "Whereas current dir is", os.getcwd()
+	print("\n\n\n\n\nThe fyle to get image count from is", fyle)
+	print("Whereas current dir is", os.getcwd())
 	
 	n = EMUtil.get_image_count( fyle )
 	
@@ -411,7 +411,7 @@ def getfscs(options,apix):
 	
 		if options.mirror:
 			fscfilenamemirror = fscfilename.replace('.txt','_mirror.txt')
-			print "\nThe mirror fsc file is", fscfilenamemirror
+			print("\nThe mirror fsc file is", fscfilenamemirror)
 			
 			calcfsc(ptcl,refm,fscfilenamemirror,options)
 			
@@ -422,7 +422,7 @@ def getfscs(options,apix):
 
 			if sym:
 				fscsfilenamemirrorsym = fscfilenamemirror.replace('.txt','_'+sym+'.txt')
-				print "\nThe mirror fsc file is", fscfilename
+				print("\nThe mirror fsc file is", fscfilename)
 			
 				calcfsc(ptcl,refsymm,fscsfilenamemirrorsym,options)
 			
@@ -468,20 +468,20 @@ def fscaverager(options,curves,outname):
 	arrays=[]
 	i=0
 	for c in curves:
-		print "opening fsc file",c
+		print("opening fsc file",c)
 		f=open(c,'r')
 		lines=f.readlines()
 		f.close()
 		vals=[]
 
-		print "has these many lines",len(lines)
+		print("has these many lines",len(lines))
 		for line in lines:
 			val=float(line.split()[-1].replace('\n',''))
 			freq=float(line.split()[0])
 			vals.append(val)
 			if i==0:
 				freqs.append(freq)
-		print "these many vals and freqs",len(vals),len(freqs)
+		print("these many vals and freqs",len(vals),len(freqs))
 		valsarray=numpy.array(vals)
 		arrays.append(valsarray)
 		i+=1
@@ -652,9 +652,9 @@ def sigmoidfit(x,values):
 	xsigp = np.linspace(0, 1.1, 1500)
 	pxsigp=sigmoid(p,xsigp)
 
-	print "\n\n\nPRESUMABLY THE SMOOTH CURVE IS pxsigp, with these many elements", len(pxsigp)
-	print "Which are", pxsigp
-	print "\n\n\n"
+	print("\n\n\nPRESUMABLY THE SMOOTH CURVE IS pxsigp, with these many elements", len(pxsigp))
+	print("Which are", pxsigp)
+	print("\n\n\n")
 
 	#plt.plot(xsig, ysig, '.', xsigp, pxsigp, '-')
 	#plt.savefig(options.output)
@@ -663,8 +663,8 @@ def sigmoidfit(x,values):
 	
 
 def maxima(xaxis,yaxis,smooththresh):
-	print "\n\nI have entered maxima!!!!!!!!!!!!!!!!!!!!!\n\n"
-	print "At this point xaxis and yaxis len are", len(xaxis), len(yaxis)
+	print("\n\nI have entered maxima!!!!!!!!!!!!!!!!!!!!!\n\n")
+	print("At this point xaxis and yaxis len are", len(xaxis), len(yaxis))
 	#xaxis=list(set(xaxis))
 	#yaxis=list(set(yaxis))	
 
@@ -683,11 +683,11 @@ def maxima(xaxis,yaxis,smooththresh):
 		#print "options.smooththresh is", smooththresh
 		if val < max(yaxis[i+1:]) and 1.0/xaxis[i+1] > smooththresh:
 			val = ( val+ max(yaxis[i+1:]) )/ 2.0
-			print '\nNew max smoothing value is', val
+			print('\nNew max smoothing value is', val)
 
 		if val > min(yaxis[i+1:]) and 1.0/xaxis[i+1] < smooththresh:
 			val = val/ 2.0
-			print '\nNew min smoothing value is', val
+			print('\nNew min smoothing value is', val)
 		
 		#print "Therfore final val is", val
 			
@@ -728,10 +728,10 @@ def maxima(xaxis,yaxis,smooththresh):
 	#print "In minima, the yminnonconvex to return is", minnonconvex
 	'''
 	
-	print "\nExiting maxima, xes len is", len(xes)
-	print "Exiting maxima, ymaxes len is", len(ymaxes)
-	print "\nExiting maxima, xes are", xes
-	print "Exiting maxima, ymaxes are", ymaxes
+	print("\nExiting maxima, xes len is", len(xes))
+	print("Exiting maxima, ymaxes len is", len(ymaxes))
+	print("\nExiting maxima, xes are", xes)
+	print("Exiting maxima, ymaxes are", ymaxes)
 	
 	#x=list(set(x))
 	return(xes,ymaxes)
@@ -762,7 +762,7 @@ def fscplotter(fscs,options,apix=0.0,tag='',clearplot=False):
 	plot_name = ''
 	for fscoutputname in fscs:
 	
-		print "\nI found THIS FSC file and will thus plot it", fscoutputname
+		print("\nI found THIS FSC file and will thus plot it", fscoutputname)
 
 		f= open(fscoutputname,'r')
 		lines = f.readlines()
@@ -801,7 +801,7 @@ def fscplotter(fscs,options,apix=0.0,tag='',clearplot=False):
 		k=0		
 		for line in newlines:
 			inverse = float( line.split()[0] )
-			print "NEW inverse is", inverse
+			print("NEW inverse is", inverse)
 			#x.append(float(k))
 			
 			values.append( float( line.split()[-1] ) )
@@ -818,30 +818,30 @@ def fscplotter(fscs,options,apix=0.0,tag='',clearplot=False):
 			k+=1
 			
 	
-		print "values are", values
+		print("values are", values)
 		
 		xticks = []
 		nele=len(values)
-		print "\n\nnele is", nele
+		print("\n\nnele is", nele)
 		import math
 		factorOfTicks = int(math.ceil(nele/10.0) + 1.0)
 	
 		
 		kk=0
-		print "factorOfTicksIs", factorOfTicks
-		print "And the final number of values is", len(values)
+		print("factorOfTicksIs", factorOfTicks)
+		print("And the final number of values is", len(values))
 		for i in range(len(values)):
 			if i == 0:	
-				print "I always append the zero tick", inversefreqslabels[i]
+				print("I always append the zero tick", inversefreqslabels[i])
 				xticks.append(inversefreqslabels[i])
 			
 			if not (kk+1) % factorOfTicks:
-				print "I have appended this tick!", inversefreqslabels[i]
-				print "Because k+1 is", kk+1
-				print "And k mod factorOfTicks is", (kk+1) % factorOfTicks
+				print("I have appended this tick!", inversefreqslabels[i])
+				print("Because k+1 is", kk+1)
+				print("And k mod factorOfTicks is", (kk+1) % factorOfTicks)
 				xticks.append(inversefreqslabels[i])
 			else:
-				print "skipped this thick", inversefreqslabels[i]
+				print("skipped this thick", inversefreqslabels[i])
 				if i != len(values)-1 and i != 0:
 					xticks.append('')
 			
@@ -881,7 +881,7 @@ def fscplotter(fscs,options,apix=0.0,tag='',clearplot=False):
 		Fit polynomial to plot
 		'''
 		if options.polydegree:
-			print "\n\n\nI will do a FIT!\n\n\n"
+			print("\n\n\nI will do a FIT!\n\n\n")
 			'''
 			Sigmoidal fit
 			'''
@@ -901,7 +901,7 @@ def fscplotter(fscs,options,apix=0.0,tag='',clearplot=False):
 			yfit = numpy.polyval(polycoeffs, x)
 			
 			
-			print "After the fit, yfit are", yfit
+			print("After the fit, yfit are", yfit)
 
 			for i in range(len(yfit)):
 				dif0p5 = abs(yfit[i] - 0.5)
@@ -946,7 +946,7 @@ def fscplotter(fscs,options,apix=0.0,tag='',clearplot=False):
 				fsc0p5resolution1 = (float(apix) * float(boxsize)) / float(fsc0p5pixel)
 				fsc0p5resolution1label = "%.1f" % ( fsc0p5resolution1 )
 			else:
-				print "Method 1 for resolution calculation failed (there was a division by zero somewhere, or you forgot to provide --boxsize or --apix)"
+				print("Method 1 for resolution calculation failed (there was a division by zero somewhere, or you forgot to provide --boxsize or --apix)")
 
 
 			if fsc0p143pixel and apix and boxsize:		
@@ -954,7 +954,7 @@ def fscplotter(fscs,options,apix=0.0,tag='',clearplot=False):
 				fsc0p143resolution1label = "%.1f" % ( fsc0p143resolution1 )
 
 			elif not fsc0p5pixel:
-				print "Method 1 for resolution calculation failed (there was a division by zero somewhere)"
+				print("Method 1 for resolution calculation failed (there was a division by zero somewhere)")
 
 			fsc0p5resolution2=''
 			fsc0p5resolution2label=''
@@ -963,7 +963,7 @@ def fscplotter(fscs,options,apix=0.0,tag='',clearplot=False):
 				fsc0p5resolution2 = 1/fsc0p5freqavg
 				fsc0p5resolution2label = "%.1f" % ( fsc0p5resolution2 )
 			else:
-				print "Method 2 for resolution calculation failed (there was a division by zero somewhere)"
+				print("Method 2 for resolution calculation failed (there was a division by zero somewhere)")
 
 
 			fsc0p143resolution2=''
@@ -974,13 +974,13 @@ def fscplotter(fscs,options,apix=0.0,tag='',clearplot=False):
 				fsc0p143resolution2label = "%.1f" % ( fsc0p143resolution2 )
 
 			elif not fsc0p5resolution2:
-				print "Method 2 for resolution calculation failed (there was a division by zero somewhere)"
+				print("Method 2 for resolution calculation failed (there was a division by zero somewhere)")
 
 			if sum(values)/len(values) == 1.0:
-				print "The particles you are aligning are exactly the same; cannot compute a reasonable FSC curve for a particle with itself! (but I'll plot the straight line anyway)."
+				print("The particles you are aligning are exactly the same; cannot compute a reasonable FSC curve for a particle with itself! (but I'll plot the straight line anyway).")
 			else:
-				print "FSC0.5 resolution calculations 1 and 2 are", fsc0p5resolution1, fsc0p5resolution2
-				print "FSC0.143 resolution calculations 1 and 2 are", fsc0p143resolution1, fsc0p143resolution2
+				print("FSC0.5 resolution calculations 1 and 2 are", fsc0p5resolution1, fsc0p5resolution2)
+				print("FSC0.143 resolution calculations 1 and 2 are", fsc0p143resolution1, fsc0p143resolution2)
 		
 
 			final0p5='NA'
@@ -1008,12 +1008,12 @@ def fscplotter(fscs,options,apix=0.0,tag='',clearplot=False):
 			values=yfit
 			#x=list(set(x))
 			
-			print "THerefore, valuues are", values
-			print "x len is", len(x)
-			print "yfit len is", len(yfit)
+			print("THerefore, valuues are", values)
+			print("x len is", len(x))
+			print("yfit len is", len(yfit))
 			
-			print "x axis is", x
-			print "yfit is", yfit
+			print("x axis is", x)
+			print("yfit is", yfit)
 				
 		'''
 		Actual PLOT
@@ -1049,10 +1049,10 @@ def fscplotter(fscs,options,apix=0.0,tag='',clearplot=False):
 		pylab.ylabel('Y Axis', fontsize=16, fontweight='bold')
 
 		plt.xticks(x,inversefreqslabels)
-		print "Len of x and inversefreqslabels are", len(x), len(inversefreqslabels)
+		print("Len of x and inversefreqslabels are", len(x), len(inversefreqslabels))
 
-		print "len of ticks is", len(xticks)
-		print "ticks are", xticks
+		print("len of ticks is", len(xticks))
+		print("ticks are", xticks)
 		ax.xaxis.set_major_locator(MaxNLocator(nbins=len(xticks)))
 		pylab.setp(ax, xticklabels=xticks)
 		
@@ -1063,9 +1063,9 @@ def fscplotter(fscs,options,apix=0.0,tag='',clearplot=False):
 		
 		#print "cutoff is", type(options.cutoff), options.cutoff
 		if options.cutoff and options.cutoff != 'None' and options.cutoff != 'none':
-			print "\n\n\n\nTTTTTTTTTTTTTTTTT\nPlotting cutoff threshold"
+			print("\n\n\n\nTTTTTTTTTTTTTTTTT\nPlotting cutoff threshold")
 			for thresh in options.cutoff:
-				print "\nCurrent cutoff thresh is", thresh
+				print("\nCurrent cutoff thresh is", thresh)
 				if float(thresh) == 0.5:
 					yy1=[0.500]*len(values)	
 					pylab.plot(x, yy1, 'k--', linewidth=3)

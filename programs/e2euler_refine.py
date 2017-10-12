@@ -55,8 +55,8 @@ def get_usage():
 def print_usage():
 
 	usage = get_usage()
-	print "usage " + usage;
-	print "Please run '" + progname + " -h' for detailed options"
+	print("usage " + usage);
+	print("Please run '" + progname + " -h' for detailed options")
 
 def main():
 	parser = EMArgumentParser(usage=get_usage())
@@ -76,12 +76,12 @@ def main():
 	(options, args) = parser.parse_args()
 
 	if options.input==None or options.ref_volume==None :
-		print "Error: --input and --ref_volume are both required parameters"
+		print("Error: --input and --ref_volume are both required parameters")
 		sys.exit(1)
 
 	if options.input_model!=None : options.input_model=int(options.input_model)
 
-	print "e2euler_refine.py"
+	print("e2euler_refine.py")
 	logger=E2init(sys.argv,options.ppid)
 
 	# get basic image parameters, find the first good image
@@ -100,7 +100,7 @@ def main():
 	apix=tmp["apix_x"]
 
 
-	if options.verbose>0: print "Image dimensions %d x %d"%(nx,ny)
+	if options.verbose>0: print("Image dimensions %d x %d"%(nx,ny))
 
 	data=initialize_data(options.input,options.input_model,options.no_wt)
 
@@ -115,16 +115,16 @@ def main():
 	threads=[threading.Thread(target=reorient,args=(data[i::options.threads],refvol,options.verbose-1)) for i in xrange(options.threads)]
 
 	for i,t in enumerate(threads):
-		if options.verbose>1: print "started thread ",i
+		if options.verbose>1: print("started thread ",i)
 		t.start()
 
 	for t in threads: t.join()
 
-	if options.verbose>0 : print "Finished"
+	if options.verbose>0 : print("Finished")
 
 	E2end(logger)
 
-	print "Exiting"
+	print("Exiting")
 
 def initialize_data(inputfile,inputmodel,no_weights):
 	"""returned list will contain dictionaries containing metadata about each image, and optionally the image itself
@@ -138,7 +138,7 @@ def initialize_data(inputfile,inputmodel,no_weights):
 	n_input=EMUtil.get_image_count(inputfile)
 	nx,ny,nslice= gimme_image_dimensions3D(inputfile)
 	if n_input==1 and nslice>1 and tltfile==None : raise Exception,"Require tlt file to work with volumetric stacks"
-	print n_input," input images"
+	print(n_input," input images")
 
 	data=[]
 
@@ -176,7 +176,7 @@ def initialize_data(inputfile,inputmodel,no_weights):
 
 		data.append(elem)
 
-	print "Using %d images"%len(data)
+	print("Using %d images"%len(data))
 	return data
 
 def qual(eul,dat):
@@ -191,7 +191,7 @@ def reorient(data,refvol,verbose=0):
 
 	output=None		# deletes the results from the previous iteration if any
 
-	if verbose>0:print "Checking Slices (%d)"%len(data)
+	if verbose>0:print("Checking Slices (%d)"%len(data))
 
 	ptcl=0
 	for i,elem in enumerate(data):
@@ -200,7 +200,7 @@ def reorient(data,refvol,verbose=0):
 		if img["sigma"]==0 : continue
 
 		rd=elem["xform"].get_rotation("eman")
-		if verbose>0 : print " %d/%d\r"%(i,len(data)),
+		if verbose>0 : print(" %d/%d\r"%(i,len(data)), end=' ')
 		sys.stdout.flush()
 
 		simp=Simplex(qual,[rd["az"],rd["alt"],rd["phi"]],[5,5,5],data=[refvol,img])
@@ -212,7 +212,7 @@ def reorient(data,refvol,verbose=0):
 		img["xform.projection.old"]=img["xform.projection"]
 		img["xform.projection"]=newort
 		
-		if verbose>1 : print "\n{:1.2f} {:1.2f} {:1.2f}\t{:1.2f} {:1.2f} {:1.2f} ".format(rd["az"],rd["alt"],rd["phi"],final[0],final[1],final[2])
+		if verbose>1 : print("\n{:1.2f} {:1.2f} {:1.2f}\t{:1.2f} {:1.2f} {:1.2f} ".format(rd["az"],rd["alt"],rd["phi"],final[0],final[1],final[2]))
 		img.write_image(elem["filename"],elem["filenum"])
 
 	return

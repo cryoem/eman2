@@ -45,7 +45,7 @@ for ii in xrange(1,696+1) :
 
 	defocus = atof( split( i_ctfs.readline() )[2] )
 
-	print "Converting ", proj_in, ", defocus is ", defocus, " Number of my great particles is ",len(selected_particles)
+	print("Converting ", proj_in, ", defocus is ", defocus, " Number of my great particles is ",len(selected_particles))
 
 	for iq in xrange(len(selected_particles)):
 		i = int(selected_particles[iq][0])-1
@@ -91,5 +91,5 @@ for ii in xrange(1,696+1) :
 
 
 
-print "Total of ", total_high_proj, "  projections written"
+print("Total of ", total_high_proj, "  projections written")
 

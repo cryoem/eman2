@@ -69,8 +69,8 @@ def main():
 
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 1  or len(args) > 4:
-    		print "usage: " + usage
-    		print "Please run '" + progname + " -h' for detailed options"
+    		print("usage: " + usage)
+    		print("Please run '" + progname + " -h' for detailed options")
 	else:
 
 		if len(args)>2:
@@ -210,7 +210,7 @@ def main():
 		user_func = user_functions.factory[Tracker["constants"]["user_func"]]
 		if(myid == main_node):
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			print(line+"Initialization of 3-D sorting")
+			print((line+"Initialization of 3-D sorting"))
 			a = get_im(Tracker["orgstack"])
 			nnxo = a.get_xsize()
 			if( Tracker["nxinit"] > nnxo ):
@@ -270,7 +270,7 @@ def main():
 			print_dict(Tracker["constants"],"Permanent settings of 3-D sorting program")
 		from time import sleep
 		while not os.path.exists(masterdir):  # Be sure each proc is able to access the created dir
-				print  "Node ",myid,"  waiting..."
+				print("Node ",myid,"  waiting...")
 				sleep(5)
 		mpi_barrier(MPI_COMM_WORLD)
 		######### create a vstack from input stack to the local stack in masterdir
@@ -359,7 +359,7 @@ def main():
 		left_one_from_old_two_runs       = wrap_mpi_bcast(Tracker["this_unaccounted_list"], main_node)
 		if myid ==main_node:  
 			write_text_file(left_one_from_old_two_runs, os.path.join(masterdir,"unaccounted_from_two_previous_runs.txt"))
-			print " Extracting results of two previous runs is done!"
+			print(" Extracting results of two previous runs is done!")
 		#################################### Estimate resolution----------------------############# 
 
 		#### make chunkdir dictionary for computing margin of error
@@ -383,7 +383,7 @@ def main():
 				
 		###### Fill chunk ID into headers when calling get_shrink_data_huang
 		if myid ==main_node:
-			print " random odd and even assignment done  !"
+			print(" random odd and even assignment done  !")
 		mpi_barrier(MPI_COMM_WORLD)
 		#------------------------------------------------------------------------------
 		Tracker["chunk_dict"] = {}
@@ -443,7 +443,7 @@ def main():
 			log_main.add("equivalent to %f Angstrom resolution"%(round((Tracker["constants"]["pixel_size"]/Tracker["currentres"]/Tracker["shrinkage"]),4)))
 			filt_tanl(get_im(os.path.join(masterdir, "vol0.hdf")), Tracker["low_pass_filter"], 0.1).write_image(os.path.join(masterdir, "volf0.hdf"))			
 			filt_tanl(get_im(os.path.join(masterdir, "vol1.hdf")), Tracker["low_pass_filter"], 0.1).write_image(os.path.join(masterdir, "volf1.hdf"))
-			print " random odd and even assignment done  !"
+			print(" random odd and even assignment done  !")
 		mpi_barrier(MPI_COMM_WORLD)
 		## ---------------------------------------------------------------------------------------------########
 		## Stop program and output results when the leftover from two sort3d runs is not sufficient for a new run    		########
@@ -466,7 +466,7 @@ def main():
 				if Tracker["constants"]["CTF"]:  
 					volref, fscc = rec3D_two_chunks_MPI(data, 1.0, Tracker["constants"]["sym"], mask3d,os.path.join(masterdir,"resolution_%02d.txt"%igrp), myid, main_node, index =-1, npad=2)
 				else: 
-					print "Missing CTF flag!"
+					print("Missing CTF flag!")
 					from mpi import mpi_finalize
 					mpi_finalize()
 					exit()
@@ -508,7 +508,7 @@ def main():
 			#
 			#########################################################################################################################P2
 			if myid ==main_node:
-				print " Now continue clustering on accounted ones because they can make at least two groups!"
+				print(" Now continue clustering on accounted ones because they can make at least two groups!")
 			P2_partitions        = []
 			number_of_P2_runs    = 2  # Notice P2 start from two P1 runs
 			### input list_to_be_processed
@@ -527,7 +527,7 @@ def main():
 					os.system(cmd)
 					log_main.add("----------------P2 independent run %d--------------"%iter_P2_run)
 					log_main.add("user provided number_of_images_per_group %d"%Tracker["constants"]["number_of_images_per_group"])
-					print "----------------P2 independent run %d--------------"%iter_P2_run
+					print("----------------P2 independent run %d--------------"%iter_P2_run)
 				mpi_barrier(MPI_COMM_WORLD)
 				#
 				#Tracker["number_of_groups"] = get_number_of_groups(total_stack,Tracker["constants"]["number_of_images_per_group"])
@@ -549,7 +549,7 @@ def main():
 						log_main.add("number of images per group is set as %d"%Tracker["constants"]["number_of_images_per_group"])
 						log_main.add("the initial number of groups is  %d "%Tracker["number_of_groups"])
 						log_main.add(" the number to be processed in this generation is %d"%len(list_to_be_processed))
-						print "---- generation         %5d"%generation
+						print("---- generation         %5d"%generation)
 						#core=read_text_row(Tracker["constants"]["ali3d"],-1)
 						#write_text_row(core, os.path.join(workdir,"node%d.txt"%myid))
 					mpi_barrier(MPI_COMM_WORLD)
@@ -709,7 +709,7 @@ def main():
 				mpi_barrier(MPI_COMM_WORLD)
 				ref_vol_list = []
 				for igrp in xrange(Tracker["number_of_groups"]):
-					if myid ==main_node : print " prepare reference %d"%igrp
+					if myid ==main_node : print(" prepare reference %d"%igrp)
 					#Tracker["this_data_list_file"] = os.path.join(workdir,"final_class%d.txt"%igrp)
 					data,old_shifts                = get_shrink_data_huang(Tracker, Tracker["nxinit"],os.path.join(workdir,"final_class%d.txt"%igrp), Tracker["constants"]["partstack"], myid,main_node,nproc,preshift = True)
 					volref                         = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"], finfo = None)
@@ -754,7 +754,7 @@ def main():
 					volref, fscc = rec3D_two_chunks_MPI(data,1.0,Tracker["constants"]["sym"],mask_3d, \
 										os.path.join(masterdir,"resolution_%02d.txt"%igrp),myid,main_node,index =-1,npad =2,finfo=None)
 				else: 
-					print "Missing CTF flag!"
+					print("Missing CTF flag!")
 					from mpi import mpi_finalize
 					mpi_finalize()
 					exit()
@@ -769,7 +769,7 @@ def main():
 				except:
 					lowpass= 0.4
 					falloff= 0.1
-				print lowpass
+				print(lowpass)
 				lowpass=round(lowpass,4)
 				falloff=round(min(.1,falloff),4)
 				Tracker["lowpass"]= lowpass

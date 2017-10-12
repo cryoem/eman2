@@ -3,7 +3,7 @@ def process(x):
     try:
         istream=open(x,"r");
     except IOError:
-        print "Cannot find file "+x
+        print("Cannot find file "+x)
         return
 
     ostream=open(x+".tex","w");
@@ -40,9 +40,9 @@ def process(x):
     try:
         istream.close();
         ostream.close();
-        print "Input File: "+x+"\t\tOutput file: "+x+".tex"
+        print("Input File: "+x+"\t\tOutput file: "+x+".tex")
     except IOError:
-        print "Had trouble closing the file "+x+" or "+x+".tex"            
+        print("Had trouble closing the file "+x+" or "+x+".tex")            
 
 #------------------------------------------------
 

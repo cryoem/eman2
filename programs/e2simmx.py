@@ -56,7 +56,7 @@ def opt_rectangular_subdivision(x,y,n):
 		x >> y or y >> x, but when y ~= x it's not quite optimal. Good, but not optimal.
 		'''
 
-		print "Matrix size %d x %d into %d regions -> "%(x,y,n),
+		print("Matrix size %d x %d into %d regions -> "%(x,y,n), end=' ')
 		candidates = []
 
 		# x,ysub is the number of x,y subdivisions
@@ -76,7 +76,7 @@ def opt_rectangular_subdivision(x,y,n):
 
 		candidates.sort()
 		#print candidates
-		print " %d x %d blocks -> %d subprocesses (%d x %d each)"%(candidates[0][1][0],candidates[0][1][1],candidates[0][1][0]*candidates[0][1][1],x/candidates[0][1][0],y/candidates[0][1][1])
+		print(" %d x %d blocks -> %d subprocesses (%d x %d each)"%(candidates[0][1][0],candidates[0][1][1],candidates[0][1][0]*candidates[0][1][1],x/candidates[0][1][0],y/candidates[0][1][1]))
 
 		return candidates[0][1]
 
@@ -227,7 +227,7 @@ class EMParallelSimMX:
 				if self.options.mask!=None : data["mask"] = ("cache",self.options.mask,0,1)
 				if self.options.fillzero :
 					# for each particle check to see which portion of the matrix we need to fill
-					if (bn%10==0) : print "%d/%d     \r"%(bn,len(blocks)),
+					if (bn%10==0) : print("%d/%d     \r"%(bn,len(blocks)), end=' ')
 					sys.stdout.flush()
 					rng=[]
 					for i in range(block[2],block[3]):
@@ -262,13 +262,13 @@ class EMParallelSimMX:
 			#b-=a
 			#print b
 
-			print "%d/%d         "%(bn,len(blocks))
+			print("%d/%d         "%(bn,len(blocks)))
 			self.tids=self.etc.send_tasks(tasks)
-			print len(self.tids)," tasks submitted"
+			print(len(self.tids)," tasks submitted")
 #
 			while 1:
 				if len(self.tids) == 0: break
-				print len(self.tids),"simmx tasks left in main loop   \r",
+				print(len(self.tids),"simmx tasks left in main loop   \r", end=' ')
 				sys.stdout.flush()
 				st_vals = self.etc.check_task(self.tids)
 				for i in xrange(len(self.tids)-1,-1,-1):
@@ -282,22 +282,22 @@ class EMParallelSimMX:
 							self.__store_output_data(rslts[1])
 						except:
 							traceback.print_exc()
-							print "ERROR storing results for task %d. Rerunning."%tid
+							print("ERROR storing results for task %d. Rerunning."%tid)
 							self.etc.rerun_task(tid)
 							continue
 						if self.logger != None:
 							E2progress(self.logger,1.0-len(self.tids)/float(len(blocks)))
 							if self.options.verbose>0:
-								print "%d/%d\r"%(len(self.tids),len(blocks))
+								print("%d/%d\r"%(len(self.tids),len(blocks)))
 								sys.stdout.flush()
 
 						self.tids.pop(i)
-					print len(self.tids),"simmx tasks left in main loop   \r",
+					print(len(self.tids),"simmx tasks left in main loop   \r", end=' ')
 					sys.stdout.flush()
 
 
 				time.sleep(10)
-			print "\nAll simmx tasks complete "
+			print("\nAll simmx tasks complete ")
 
 			# if using fillzero, we must fix the -1.0e38 values placed into empty cells
 			if self.options.fillzero :
@@ -305,7 +305,7 @@ class EMParallelSimMX:
 				rlen=l["ny"]
 				clen=l["nx"]
 #				launch_childprocess("e2proc2d.py %s %s"%(self.args[2],self.args[2]+"_x"))
-				print "Filling noncomputed regions in similarity matrix (%dx%d)"%(clen,rlen)
+				print("Filling noncomputed regions in similarity matrix (%dx%d)"%(clen,rlen))
 				l=EMData()
 				for r in range(rlen):
 					l.read_image(self.args[2],0,False,Region(0,r,clen,1))
@@ -313,7 +313,7 @@ class EMParallelSimMX:
 					l.process_inplace("threshold.belowtominval",{"minval":-1.0e37,"newval":fill})
 					l.write_image(self.args[2],0,EMUtil.ImageType.IMAGE_UNKNOWN,False,Region(0,r,clen,1))
 
-				print "Filling complete"
+				print("Filling complete")
 
 
 
@@ -390,13 +390,13 @@ class EMSimTaskDC(JSTask):
 			for datareadid in range(20):
 				try: image = EMData(ref_data_name,idx)
 				except:
-					print "Failed to read %s. Wait for 5s and try again."%(str(idx))
+					print("Failed to read %s. Wait for 5s and try again."%(str(idx)))
 					time.sleep(5)
 				else:
 					datareaderror=False
 					break
 			if datareaderror:
-				print "Cannot read image. Give up."
+				print("Cannot read image. Give up.")
 				raise Exception,"Couldn't read data in init_memory"
 				
 			if shrink != None:
@@ -419,13 +419,13 @@ class EMSimTaskDC(JSTask):
 			for datareadid in range(20):
 				try: image = EMData(ptcl_data_name,idx)
 				except:
-					print "Failed to read %s in %s from range %s. Wait for 5s and try again."%(str(idx),ptcl_data_name,str(ptcl_indices))
+					print("Failed to read %s in %s from range %s. Wait for 5s and try again."%(str(idx),ptcl_data_name,str(ptcl_indices)))
 					time.sleep(5)
 				else:
 					datareaderror=False
 					break
 			if datareaderror:
-				print "Cannot read image. Give up."
+				print("Cannot read image. Give up.")
 				raise Exception,"Couldn't read data in init_memory"
 			
 			
@@ -634,9 +634,9 @@ def main():
 
 	if options.verbose>0:
 		if (error):
-			print "e2simmx.py command line arguments test.... FAILED"
+			print("e2simmx.py command line arguments test.... FAILED")
 		else:
-			print "e2simmx.py command line arguments test.... PASSED"
+			print("e2simmx.py command line arguments test.... PASSED")
 
 	if error : exit(1)
 	if options.check: exit(0)
@@ -666,7 +666,7 @@ def main():
 			excl=file(options.exclude,"r").readlines()
 			excl=[int(i) for i in excl]
 			excl=set(excl)
-		except: print "Warning: exclude file failed"		# it's ok if this fails
+		except: print("Warning: exclude file failed")		# it's ok if this fails
 
 
 	clen=EMUtil.get_image_count(args[0])
@@ -706,7 +706,7 @@ def main():
 		mxout.append(mxout[0].copy()) # alpha (angle)
 		mxout.append(mxout[0].copy()) # mirror
 		mxout.append(mxout[0].copy()) # scale
-	if options.verbose>0: print "Computing Similarities"
+	if options.verbose>0: print("Computing Similarities")
 
 	# Read all c images, then read and compare one r image at a time
 	cimgs=EMData.read_images(args[0],range(*crange))
@@ -745,7 +745,7 @@ def main():
 		if options.exclude and r in excl : continue
 
 		if options.verbose>0:
-			print "%d/%d\r"%(r,rrange[1]),
+			print("%d/%d\r"%(r,rrange[1]), end=' ')
 			sys.stdout.flush()
 
 		# With the fillzero option, we only compute values where there is a zero in the existing matrix
@@ -767,7 +767,7 @@ def main():
 
 		E2progress(E2n,float(r-rrange[0])/(rrange[1]-rrange[0]))
 		shrink = options.shrink
-		if options.verbose>1 : print "%d. "%r,
+		if options.verbose>1 : print("%d. "%r, end=' ')
 		row=cmponetomany(cimgs,rimg,options.align,options.aligncmp,options.cmp, options.ralign, options.raligncmp,options.shrink,mask,subset,options.prefilt,options.verbose)
 		for c,v in enumerate(row):
 			if v==None : mxout[0].set_value_at(c,r,0,-1.0e38)
@@ -790,7 +790,7 @@ def main():
 					mxout[4].set_value_at(c,r,0,v[4])
 					mxout[5].set_value_at(c,r,0,v[5])
 
-	if options.verbose>0 : print"\nSimilarity computation complete"
+	if options.verbose>0 : print("\nSimilarity computation complete")
 
 	# write the results into the full-sized matrix
 	if crange==[0,clen] and rrange==[0,rlen] :
@@ -802,16 +802,16 @@ def main():
 
 
 def check(options,verbose):
-	print "in check"
+	print("in check")
 	error = False
 	if ( options.nofilecheck == False ):
 		if not file_exists(options.datafile):
 			if verbose>0:
-				print "Error: the file expected to contain the particle images (%s) does not exist." %(options.datafile)
+				print("Error: the file expected to contain the particle images (%s) does not exist." %(options.datafile))
 			error = True
 		if not file_exists(options.reffile):
 			if verbose>0:
-				print "Error: the file expected to contain the projection images (%s) does not exist." %(options.reffile)
+				print("Error: the file expected to contain the projection images (%s) does not exist." %(options.reffile))
 			error = True
 
 		if ( file_exists(options.datafile) and file_exists(options.reffile) ):
@@ -819,22 +819,22 @@ def check(options,verbose):
 			(pxsize, pysize ) = gimme_image_dimensions2D(options.reffile);
 			if ( xsize != pxsize ):
 				if verbose>0:
-					print "Error - the (x) dimension of the reference images %d does not match that of the particle data %d" %(xsize,pxsize)
+					print("Error - the (x) dimension of the reference images %d does not match that of the particle data %d" %(xsize,pxsize))
 				error = True
 			elif ( ysize != pysize ):
 				if verbose>0:
-					print "Error - the (y) dimension of the reference images %d does not match that of the particle data %d" %(ysize,pysize)
+					print("Error - the (y) dimension of the reference images %d does not match that of the particle data %d" %(ysize,pysize))
 				error = True
 
 		if  file_exists(options.outfile):
 			if ( not options.force):
 				if verbose>0:
-					print "Error: File %s exists, will not write over - specify the force option" %options.outfile
+					print("Error: File %s exists, will not write over - specify the force option" %options.outfile)
 				error = True
 
 	if (options.cmp == None or options.cmp == ""):
 		if verbose>0:
-			print "Error: the --cmp argument must be specified"
+			print("Error: the --cmp argument must be specified")
 		error = True
 	else:
 		if ( check_eman2_type(options.cmp,Cmps,"Comparitor") == False ):
@@ -843,22 +843,22 @@ def check(options,verbose):
 	if (options.shrink != None):
 		if options.shrink == 1:
 			options.shrink = None # just leave it as None please
-			print "Warning, setting shrink to 1 does nothing. If you don't want shrinking to occur just forget the shrink argument"
+			print("Warning, setting shrink to 1 does nothing. If you don't want shrinking to occur just forget the shrink argument")
 
 		if options.shrink <= 1:
-			print "Error: shrink must be greater than 1 if set"
+			print("Error: shrink must be greater than 1 if set")
 			error = True
 
 		newsize=int(ysize/options.shrink)
 		if newsize!=good_size(newsize) :
 			options.shrink=ysize/float(good_size(newsize)+.1)
-			print "Shrink adjusted to {:1.3f} to produce a good size".format(options.shrink)
+			print("Shrink adjusted to {:1.3f} to produce a good size".format(options.shrink))
 
 
 	if (options.saveali):
 		if   (options.align == None or options.align == ""):
 			if verbose>0:
-				print "Error: the --align argument must be specified if --saveali is specificed"
+				print("Error: the --align argument must be specified if --saveali is specificed")
 			error = True
 		else:
 			if ( check_eman2_type(options.align, Aligners,"Aligner") == False ):
@@ -866,7 +866,7 @@ def check(options,verbose):
 
 		if ( (options.aligncmp == None or options.aligncmp == "") and options.saveali):
 			if verbose>0:
-				print "Error: the --aligncmp argument must be specified if --saveali is specificed"
+				print("Error: the --aligncmp argument must be specified if --saveali is specificed")
 			error = True
 		else:
 			if ( check_eman2_type(options.aligncmp,Cmps,"Comparitor") == False ):
@@ -880,14 +880,14 @@ def check(options,verbose):
 
 			if ( options.raligncmp == None or options.raligncmp == ""):
 				if verbose>0:
-					print "Error: the --raligncmp argument must be specified if --ralign is specificed"
+					print("Error: the --raligncmp argument must be specified if --ralign is specificed")
 			else:
 				if ( check_eman2_type(options.raligncmp,Cmps,"Comparitor") == False ):
 					error = True
 
 	if hasattr(options,"parallel") and options.parallel != None:
   		if len(options.parallel) < 2:
-  			print "The parallel option %s does not make sense" %options.parallel
+  			print("The parallel option %s does not make sense" %options.parallel)
   			error = True
 
 	return error

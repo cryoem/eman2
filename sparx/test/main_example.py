@@ -46,8 +46,8 @@ def main():
     (options, args) = parser.parse_args()
     
     if len(args) != 2:
-        print "usage: " + usage
-        print "Please run '" + progname + " -h' for detailed options"
+        print("usage: " + usage)
+        print("Please run '" + progname + " -h' for detailed options")
         sys.exit(1)
 
     filt(args[0],args[1],options.sigma)

@@ -36,7 +36,7 @@ for i in range(n):
 	# Weighted average of the 3 points around the peak. Also 'undoes' the radial weight
 	try: peak=(mx[1]+mx[2]+mx[3])/(mx[1]/mx[0]+mx[2]/(mx[0]-1)+mx[3]/(mx[0]+1));
 	except: 
-		print "error on image %d"%i
+		print("error on image %d"%i)
 		peaks.append(-1.0)
 		peakvals.append(-1.0)
 		continue

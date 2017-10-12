@@ -93,13 +93,13 @@ def main():
 			options.input = sys.argv[1]
 			EMData(options.input,0,True)
 		except:
-			print "ERROR: input file %s seems to have an invalid format" %( options.input )
+			print("ERROR: input file %s seems to have an invalid format" %( options.input ))
 			sys.exit()
 	
 	if options.transformsfile:
 		n=EMUtil.get_image_count(options.input)
 		if n>1:
-			print "ERROR: You cannot supply --transformsfile for particle stacks; it only works for individual volumes."
+			print("ERROR: You cannot supply --transformsfile for particle stacks; it only works for individual volumes.")
 			sys.exit()
 	
 	'''
@@ -108,28 +108,28 @@ def main():
 
 	if options.onlyz:
 		if options.onlyx or options.onlyy:
-			print "ERROR: You can only supply one of --onlyx, --onlyy or --onlyz at a time."
+			print("ERROR: You can only supply one of --onlyx, --onlyy or --onlyz at a time.")
 			sys.exit()
 	
 	if options.onlyx:
 		if options.onlyy or options.onlyz:
-			print "ERROR: You can only supply one of --onlyx, --onlyy or --onlyz at a time."
+			print("ERROR: You can only supply one of --onlyx, --onlyy or --onlyz at a time.")
 			sys.exit()
 			
 	if options.onlyy:
 		if options.onlyx or options.onlyz:
-			print "ERROR: You can only supply one of --onlyx, --onlyy or --onlyz at a time."
+			print("ERROR: You can only supply one of --onlyx, --onlyy or --onlyz at a time.")
 			sys.exit()
 
 
 	if options.onlyz and options.onlyx:
-		print "ERROR: Cannot supply --onlyz and --onlyx at the same time"
+		print("ERROR: Cannot supply --onlyz and --onlyx at the same time")
 		sys.exit()
 	if options.onlyz and options.onlyy:
-		print "ERROR: Cannot supply --onlyz and --onlyy at the same time"
+		print("ERROR: Cannot supply --onlyz and --onlyy at the same time")
 		sys.exit()
 	if options.onlyy and options.onlyx:
-		print "ERROR: Cannot supply --onlyy and --onlyx at the same time"
+		print("ERROR: Cannot supply --onlyy and --onlyx at the same time")
 		sys.exit()
 	
 	'''
@@ -207,7 +207,7 @@ def main():
 	Read input
 	'''
 
-	print "options.input",options.input
+	print("options.input",options.input)
 	models=options.input.split(',')
 	
 	rootpath = os.getcwd()
@@ -291,9 +291,9 @@ def main():
 			
 			kindividual=0
 			for d in projectiondirections:	
-				print "\nThis is the projection direction", d
-				print "And this the corresponding transform",projectiondirections[d]		
-				print "\n"
+				print("\nThis is the projection direction", d)
+				print("And this the corresponding transform",projectiondirections[d])		
+				print("\n")
 				prj = submodel.project("standard",projectiondirections[d])
 				prj.set_attr('xform.projection',projectiondirections[d])
 				prj['apix_x']=apix

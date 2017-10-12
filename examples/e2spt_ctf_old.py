@@ -314,19 +314,19 @@ def main():
 			apix = EMData( imgs[0], 0, True )['apix_x']
 			framexsize = EMData( imgs[0], 0, True )['nx']
 		else:
-			print "ERROR: no images found with stem", options.imagestem
+			print("ERROR: no images found with stem", options.imagestem)
 			
 	elif options.tiltseries:
 		#if not options.icethickness:
 		#	print "ERROR: provide a value for options.icethickness if processing --imagestem or --tiltseries."
 		#	sys.exit(1)
-		print "tiltseries is", options.tiltseries
-		print "test to see if '.mrcs'", '.mrcs' in options.tiltseries
+		print("tiltseries is", options.tiltseries)
+		print("test to see if '.mrcs'", '.mrcs' in options.tiltseries)
 		
 		if '.hdf' in options.tiltseries or '.mrcs' in options.tiltseries:
-			print "series is .mrcs or .hdf"
+			print("series is .mrcs or .hdf")
 			nimgs = EMUtil.get_image_count( options.tiltseries )
-			print "nimgs is therefore", nimgs
+			print("nimgs is therefore", nimgs)
 		
 		elif '.mrc' in options.tiltseries or '.st' in options.tiltseries or '.ali' in options.tiltseries:
 			
@@ -335,7 +335,7 @@ def main():
 		if options.exclude:
 			nimgsex = len(options.exclude.split(','))
 			nimgs -= nimgsex
-			print "but --exclude is %s and therefore %d images will be excluded and the final image count is %d" %( options.exclude, nimgsex, nimgs )
+			print("but --exclude is %s and therefore %d images will be excluded and the final image count is %d" %( options.exclude, nimgsex, nimgs ))
 		
 		hdr = EMData( options.tiltseries, 0, True )
 		apix = hdr['apix_x']
@@ -374,16 +374,16 @@ def main():
 			if options.radius:
 				radius = options.radius
 			elif not options.radius:
-				print "\nWARNING: --icethicknessauto requires --radius. Since it wasn't provided, half the box size of the subtiltseries willbe assumed", radius
+				print("\nWARNING: --icethicknessauto requires --radius. Since it wasn't provided, half the box size of the subtiltseries willbe assumed", radius)
 			
 			maxz = max( zs ) 
 			minz =  min( zs ) 
-			print "maxz", maxz
-			print "minz", minz
-			print "radius", radius
+			print("maxz", maxz)
+			print("minz", minz)
+			print("radius", radius)
 			autoIcethickness = maxz - minz + 2*radius
 			icethickness = autoIcethickness	
-			print "autoicethickness therefore is", autoIcethickness
+			print("autoicethickness therefore is", autoIcethickness)
 			
 			icefile = options.path+'/autoicethickness.txt'
 			f = open( icefile, 'w')
@@ -393,10 +393,10 @@ def main():
 			f.close()
 					
 		elif not options.subtiltsdir and not options.coords:
-			print "\nWARNING: --icethicknessauto requires --subtiltsdir or --coords"
+			print("\nWARNING: --icethicknessauto requires --subtiltsdir or --coords")
 			
 	elif not options.icethicknessauto:
-		print "WARNING: No icethickness provided, and --icethicknessauto is also turned off."
+		print("WARNING: No icethickness provided, and --icethicknessauto is also turned off.")
 			
 	angles = []
 	if options.tltfile:
@@ -408,7 +408,7 @@ def main():
 
 	#if nangles != nimgs-len(indxstoexclude):
 	if nangles != nimgs:
-		print "\nERROR: The number of angles %d does not coincide with number of images %d" % ( nangles, nimgs)
+		print("\nERROR: The number of angles %d does not coincide with number of images %d" % ( nangles, nimgs))
 		sys.exit(1)
 	else:
 		pass
@@ -421,7 +421,7 @@ def main():
 	#If input consists of individual image files, find them and put them into an imagefilenames dictionary
 	'''
 	if options.imagestem:
-		print """\nprocessing all images in the current directory containing the following string""", options.imagestem
+		print("""\nprocessing all images in the current directory containing the following string""", options.imagestem)
 		findir=os.listdir(os.getcwd())
 		
 		
@@ -431,17 +431,17 @@ def main():
 				imagestem = f.replace('.mrc','')
 				imagefilenames.update({imagestem:[f,angles[kk]]})
 				kk+=1
-		print "\nFound these many tilt images",len(imagefilenames)
+		print("\nFound these many tilt images",len(imagefilenames))
 	
 	'''
 	#If input is a tiltseries, unstack it, then put the individual images into an imagefilenames dictionary
 	'''
 	if options.tiltseries:
 		if '.st' in options.tiltseries or '.mrc' in options.tiltseries or '.ali' in options.tiltseries or '.hdf' in options.tiltseries:
-			print "\nI will process this tiltseries", options.tiltseries
+			print("\nI will process this tiltseries", options.tiltseries)
 			
 			nimgs = EMData(options.tiltseries,0,True)['nz']
-			print "\n(e2spt_ctf.py)(main) There are these many tilts in the tiltseries", nimgs
+			print("\n(e2spt_ctf.py)(main) There are these many tilts in the tiltseries", nimgs)
 			
 	
 			
@@ -525,8 +525,8 @@ def main():
 	
 				nfiles = len(imagefilenames)
 				if nimgs != nfiles:
-					print """\n(e2spt_ctf.py)(main) WARNING: It seems like not all the images
-					in the tilt series were properly unstacked. nimages and nfiles are""",nimgs,nfiles
+					print("""\n(e2spt_ctf.py)(main) WARNING: It seems like not all the images
+					in the tilt series were properly unstacked. nimages and nfiles are""",nimgs,nfiles)
 				
 			else:
 				f = options.tiltseries
@@ -544,7 +544,7 @@ def main():
 					imagefilenames.update({imagestem:[f,angles[0]]})
 			
 		else:
-			print "\nTilt series has to be in .st or .mrc or .ali extension"
+			print("\nTilt series has to be in .st or .mrc or .ali extension")
 			sys.exit()	
 		
 		
@@ -571,10 +571,10 @@ def main():
 	
 	
 	
-	print "ctfs len is", len(ctfs)
-	print "and ctfs are" 
+	print("ctfs len is", len(ctfs))
+	print("and ctfs are") 
 	for ctf in ctfs:
-		print ctf, ctfs[ctf]
+		print(ctf, ctfs[ctf])
 	
 	if options.tiltseries or options.imagestem:
 		'''
@@ -583,15 +583,15 @@ def main():
 		
 		if ctfs:
 			if len( ctfs ) != len( imagefilenames ):
-				print """(e2spt_ctf.py)(main) ERROR: It seems like you have fewer parameter
+				print("""(e2spt_ctf.py)(main) ERROR: It seems like you have fewer parameter
 					lines in the --ctfparamsfile than images in the tilt series.
 					You need one line of parameters per image.
 					To apply the same correction to all images, enter the parameters directly,
-					through --defocus, --apix, --ampcont, --bfactor, --cs and --voltage"""
+					through --defocus, --apix, --ampcont, --bfactor, --cs and --voltage""")
 				sys.exit(1)
 		else:
-			print """ERROR: There is no CTF information for any of the images. If you were
-				using --autofit, this means autofitting failed for all images."""
+			print("""ERROR: There is no CTF information for any of the images. If you were
+				using --autofit, this means autofitting failed for all images.""")
 			sys.exit(1)
 				
 		
@@ -600,7 +600,7 @@ def main():
 		#Once the images are organized, proceed to CTF correct them. Loop over all images.
 		'''
 		for imagestem in imagefilenames.keys():
-			print "\nWorking on image",pp,imagefilenames[imagestem]
+			print("\nWorking on image",pp,imagefilenames[imagestem])
 			ctf=None
 			
 			'''
@@ -609,10 +609,10 @@ def main():
 			#gradient results irrelevant.
 			'''
 			if options.phaseflipwhole:
-				print "\nI will phaseflip these images ignoring the defocus gradient",len(imagefilenames)
+				print("\nI will phaseflip these images ignoring the defocus gradient",len(imagefilenames))
 			
 				if ctf:
-					print "\nLoading image", imagefilenames[imagestem]
+					print("\nLoading image", imagefilenames[imagestem])
 					img = EMData( imagefilenames[imagestem] )
 					
 					originalx = img['nx']
@@ -620,31 +620,31 @@ def main():
 					
 					recrop=0
 					if img['nx'] != img['ny']:
-						print "\n\nThe image is not square and therefore will be padded so that all 4 sides are equal to its largest dimension"
+						print("\n\nThe image is not square and therefore will be padded so that all 4 sides are equal to its largest dimension")
 						size=max(img['nx'],img['ny'])
-						print "The image will be padded into a square of size", size
+						print("The image will be padded into a square of size", size)
 						img=padder(options,img,size,size)
 						img.write_image(options.path + '/' + imagefilenames[imagestem].replace('.mrc','_sq.mrc') )
 						recrop=1
 					
-					print "The returned ctf to use is", ctf
-					print "Of type", type(ctf)
+					print("The returned ctf to use is", ctf)
+					print("Of type", type(ctf))
 			
 					ret = phaseflipper(options,img,ctf)
 					flippedtilt = ret[0]
 					
 					if recrop:
-						print "The image will be recropped into its oiriginal size of", originalx,originaly
+						print("The image will be recropped into its oiriginal size of", originalx,originaly)
 						flippedtilt=padder(options,img,originalx,originaly)
 					
-					print "\nPhase-flipped image"
+					print("\nPhase-flipped image")
 		
 					outflipimg = options.path + '/' + imagefilenames[imagestem].replace('.mrc','_flip.mrc')
 			
 					flippedtilt['spt_phaseflipped']='yes'
 			
 					flippedtilt.write_image(outflipimg,0)
-					print "\nWrote flipped image to", outflipimg
+					print("\nWrote flipped image to", outflipimg)
 			
 					#cmdmrc = 'e2proc2d.py ' + outflipimg + ' ' + outflipimg.replace('.hdf','.mrc') + ' --mrc16bit'
 			
@@ -653,7 +653,7 @@ def main():
 					#p.stdout.close()
 					#print "\nCoverted to mrc"
 				else:
-					print "ERROR: CTF for this image file is blank!",imagefilenames[imagestem]
+					print("ERROR: CTF for this image file is blank!",imagefilenames[imagestem])
 					sys.exit()
 			elif options.phaseflipstrips:
 				pass
@@ -683,7 +683,7 @@ def main():
 	
 			cmdst = 'newstack ' + options.path + '/*_flip.mrc ' + outflipseries
 		
-			print "\nCreating flipped tilt series with this command", cmdst
+			print("\nCreating flipped tilt series with this command", cmdst)
 			p = subprocess.Popen( cmdst , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 			text = p.communicate()	
 			p.stdout.close()
@@ -698,7 +698,7 @@ def main():
 	if options.subtiltsdir:
 		if not options.save3d:
 			if not options.save2d:
-				print "ERROR: either --save2d or --save3d must be provided when --subtiltsdir is provided"
+				print("ERROR: either --save2d or --save3d must be provided when --subtiltsdir is provided")
 			elif options.save2d:
 				pass
 		elif options.save3d:
@@ -706,7 +706,7 @@ def main():
 			
 		if not options.save2d:
 			if not options.save3d:
-				print "ERROR: either --save2d or --save3d must be provided when --subtiltsdir is provided"
+				print("ERROR: either --save2d or --save3d must be provided when --subtiltsdir is provided")
 			elif options.save3d:
 				pass
 		elif options.save2d:
@@ -817,11 +817,11 @@ def main():
 					pass
 	
 		"""
-	print "ABCDEFG"
+	print("ABCDEFG")
 		
 	E2end(logger)
 	
-	print "ABCDEFG"
+	print("ABCDEFG")
 	
 	return
 
@@ -829,27 +829,27 @@ def main():
 def errordetector( options ):
 	
 	if options.tiltseries and options.subtiltsdir:
-		print """ERROR: You either 1) supply a tiltseries with .mrc, .st, or .ali extension (in MRC format),
+		print("""ERROR: You either 1) supply a tiltseries with .mrc, .st, or .ali extension (in MRC format),
 		or with .hdf extension (in HDF format), for an entire tomogram, 2) a stem (a 'string') common 
 		to all individual .mrc or .hdf images corresponding to a tiltseries, OR 3) a directory 
 		with subtiltseries in .hdf format for individual subtomograms. You cannot supply both
-		--tiltseries, --subtiltsdir and --imagestem at the same time. Pick one."""
+		--tiltseries, --subtiltsdir and --imagestem at the same time. Pick one.""")
 		sys.exit()
 		
 	if options.tiltseries and options.imagestem:
-		print """ERROR: You either 1) supply a tiltseries with .mrc, .st, or .ali extension (in MRC format),
+		print("""ERROR: You either 1) supply a tiltseries with .mrc, .st, or .ali extension (in MRC format),
 		or with .hdf extension (in HDF format), for an entire tomogram, 2) a stem (a 'string') common 
 		to all individual .mrc or .hdf images corresponding to a tiltseries, OR 3) a directory 
 		with subtiltseries in .hdf format for individual subtomograms. You cannot supply both
-		--tiltseries, --subtiltsdir and --imagestem at the same time. Pick one."""
+		--tiltseries, --subtiltsdir and --imagestem at the same time. Pick one.""")
 		sys.exit()
 	
 	if options.imagestem and options.subtiltsdir:
-		print """ERROR: You either 1) supply a tiltseries with .mrc, .st, or .ali extension (in MRC format),
+		print("""ERROR: You either 1) supply a tiltseries with .mrc, .st, or .ali extension (in MRC format),
 		or with .hdf extension (in HDF format), for an entire tomogram, 2) a stem (a 'string') common 
 		to all individual .mrc or .hdf images corresponding to a tiltseries, OR 3) a directory 
 		with subtiltseries in .hdf format for individual subtomograms. You cannot supply both
-		--tiltseries, --subtiltsdir and --imagestem at the same time. Pick one."""
+		--tiltseries, --subtiltsdir and --imagestem at the same time. Pick one.""")
 		sys.exit()
 	
 	
@@ -860,7 +860,7 @@ def errordetector( options ):
 def procsubtiltsdir():
 	
 	if not options.framexsize:
-		print "ERROR: provide a value for options.framexsize if processing --subtiltsdir"
+		print("ERROR: provide a value for options.framexsize if processing --subtiltsdir")
 		sys.exit(1)
 		
 	findir = os.listdir( options.subtiltsdir )
@@ -882,13 +882,13 @@ def procsubtiltsdir():
 			
 			
 			subtilts.append( stsfile )
-			print "\nFound subtiltseries", f
+			print("\nFound subtiltseries", f)
 			
 			
 			stshdr = EMData( stsfile, 0, True )
 			hdrcoords = stshdr['ptcl_source_coord']
 			ptclnx = stshdr['nx']
-			print "hdrcoords are", hdrcoords
+			print("hdrcoords are", hdrcoords)
 			x = hdrcoords[0]
 			y = hdrcoords[1]
 			z = hdrcoords[2]
@@ -919,7 +919,7 @@ def procsubtiltsdir():
 	if xs and zs:
 		generalplotter( options, xs, zs, xlabel, zlabel, plotnamexz, title, flipyaxis=False, fit=True, ptclnx=0 )
 	else:
-		print "\nERROR: cannot plot x vs z values because arrays are empty", xs, zs
+		print("\nERROR: cannot plot x vs z values because arrays are empty", xs, zs)
 	
 	
 	yzcoords = options.path + '/yz_distribution.txt'
@@ -935,7 +935,7 @@ def procsubtiltsdir():
 	if ys and zs:
 		generalplotter( options, ys, zs, ylabel, zlabel, plotnameyz, title, flipyaxis=False, fit=True )
 	else:
-		print "\nERROR: cannot plot y vs z values because arrays are empty", ys, zs
+		print("\nERROR: cannot plot y vs z values because arrays are empty", ys, zs)
 	
 	
 	nimgs = EMUtil.get_image_count( subtilts[0] )
@@ -950,14 +950,14 @@ c:function to run commands and the command line
 '''
 def runcmd( options, cmd ):
 	if options.verbose > 9:
-		print "\n(e2spt_autoboxer)(runcmd) Running command", cmd
+		print("\n(e2spt_autoboxer)(runcmd) Running command", cmd)
 	
 	p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	text=p.communicate()	
 	p.stdout.close()
 	
 	if options.verbose > 9:
-		print "\n(e2spt_autoboxer)(runcmd) Done"
+		print("\n(e2spt_autoboxer)(runcmd) Done")
 	return
 
 
@@ -980,8 +980,8 @@ def correctsubtilt( options, subtilts, angles, ctfs, apix, nangles, nimgs, frame
 		#print "imghdrnx and type are",type(imghdr['nx']),imghdr['nx']
 		
 		if icethickness and int(icethickness) < int(imghdr['nx']):
-			print """\nWARNING: the ice must usually be thick enough to contain a layer of molecules and will be set
-			to half the X and Y sides of the subtomograms. It must be >= than %d pixels.""" %( imghdr['nx'] )
+			print("""\nWARNING: the ice must usually be thick enough to contain a layer of molecules and will be set
+			to half the X and Y sides of the subtomograms. It must be >= than %d pixels.""" %( imghdr['nx'] ))
 			#sys.exit()
 			
 		coords = imghdr['ptcl_source_coord']
@@ -990,16 +990,16 @@ def correctsubtilt( options, subtilts, angles, ctfs, apix, nangles, nimgs, frame
 		nx = imghdr['nx']
 		
 		if options.verbose:
-			print "Fixing subtomogram", ii
+			print("Fixing subtomogram", ii)
 		
 		n = EMUtil.get_image_count( sts )
 		#print "\nprocessing subtiltseries %d, %s, with n=%d images in it, and will exclude %d"%(ii, sts,n,len(indxstoexclude))
 		
-		print "\nprocessing subtiltseries %d, %s, with n=%d images in it"%(ii, sts,n)
+		print("\nprocessing subtiltseries %d, %s, with n=%d images in it"%(ii, sts,n))
 
 		if n!= nangles:
-			print """WARNING: The number of angles %d does not coincide with number of images %d. 
-			However, the actual angles being used should be obtained directly from the 2d image's header""" % ( nangles,  n )
+			print("""WARNING: The number of angles %d does not coincide with number of images %d. 
+			However, the actual angles being used should be obtained directly from the 2d image's header""" % ( nangles,  n ))
 			#sys.exit(1)
 		
 		flippedsts = options.path + '/' + os.path.basename( sts ).replace('.hdf','_phflip.hdf')
@@ -1010,11 +1010,11 @@ def correctsubtilt( options, subtilts, angles, ctfs, apix, nangles, nimgs, frame
 		defocuserrors=[]
 		checkerrors = 0
 		
-		print "angles are", angles
+		print("angles are", angles)
 		
 		for m in range( n ):
 		
-			print "img number %d/%d" %(m,n)
+			print("img number %d/%d" %(m,n))
 			#if m not in indxstoexclude:
 			#	print "m=%d is NOT in indxstoexclude", m
 			img = EMData( sts, m )
@@ -1033,7 +1033,7 @@ def correctsubtilt( options, subtilts, angles, ctfs, apix, nangles, nimgs, frame
 			#,"weight":1.0}
 		
 			ctf = ctfs[ angle ]
-			print "\n\nUncorrected defocus is", ctf.defocus
+			print("\n\nUncorrected defocus is", ctf.defocus)
 		
 			'''
 			For positive tilt angles (counter clockwise) the defocus decreases (the particle is more overfocus, less defocused) for positions px right of the tilt axis
@@ -1043,22 +1043,22 @@ def correctsubtilt( options, subtilts, angles, ctfs, apix, nangles, nimgs, frame
 			'''
 			px = ( coordx - framexsize/2.0 ) * apix/10000
 			if px < 0:
-				print "\npx (in microns) is left of the tilt axis", px
+				print("\npx (in microns) is left of the tilt axis", px)
 			elif px > 0:
-				print "\npx (in microns) is right of the tilt axis", px
+				print("\npx (in microns) is right of the tilt axis", px)
 			elif px==0:
-				print "\npx (in microns) is on the tilt axis", px
+				print("\npx (in microns) is on the tilt axis", px)
 			
 			dzx = -1 * px * numpy.sin( math.radians( angle ) )		#the -1 accounts for the fact that positive tilt angles are clockwise, negative counter clockwise
 		
 			if angle < 0.0:
-				print "\ngiven a negative, CLOCKWISE tilt angle=%f, and coordx=%f pixels, px=%f microns, THEN dzx=%f microns" %( angle,coordx,px,dzx) 
+				print("\ngiven a negative, CLOCKWISE tilt angle=%f, and coordx=%f pixels, px=%f microns, THEN dzx=%f microns" %( angle,coordx,px,dzx)) 
 			if angle > 0.0:
-				print "\ngiven a positive, COUNTER CLOCKWISE tilt angle=%f, and coordx=%f pixels, px=%f microns, THEN dzx=%f microns" %( angle,coordx,px,dzx) 
+				print("\ngiven a positive, COUNTER CLOCKWISE tilt angle=%f, and coordx=%f pixels, px=%f microns, THEN dzx=%f microns" %( angle,coordx,px,dzx)) 
 
 		
 			newdefocus = ctf.defocus + dzx 
-			print "\ntherefore, for angle=%f, and defocus=%f, the first corrected defocus is NEWdefocus1=%f" % ( angle, ctf.defocus, newdefocus )
+			print("\ntherefore, for angle=%f, and defocus=%f, the first corrected defocus is NEWdefocus1=%f" % ( angle, ctf.defocus, newdefocus ))
 		
 			pz = 0
 			dzz = 0
@@ -1085,9 +1085,9 @@ def correctsubtilt( options, subtilts, angles, ctfs, apix, nangles, nimgs, frame
 				dzz = -1 * pz * numpy.cos( math.radians( angle ) )		#for negative positions pz, particles are MORE defocus due to their depth on the ice;
 				newdefocus += dzz										#or positive positions pz, particles are LESS defocused. 
 																		#at tilt angle 0, the contribution of dzz is equal to pz (in magnitude) in microns, yet opposite in sign because defocus is defined as positive.
-				print "dzz=%f applied to defocus=%f, therefore NEWdefocus2=%f" %(dzz,ctf.defocus,newdefocus)			#at tilt angle 90 (hypothetical) the contribution would be irrelevant, 0.
+				print("dzz=%f applied to defocus=%f, therefore NEWdefocus2=%f" %(dzz,ctf.defocus,newdefocus))			#at tilt angle 90 (hypothetical) the contribution would be irrelevant, 0.
 			else:
-				print "\n!!!!!!!!!\ndid NOT correct dzz", dzz
+				print("\n!!!!!!!!!\ndid NOT correct dzz", dzz)
 			
 		
 			finalctf = EMAN2Ctf()
@@ -1095,9 +1095,9 @@ def correctsubtilt( options, subtilts, angles, ctfs, apix, nangles, nimgs, frame
 		
 			try:
 				actualctf = img['ctf']
-				print "\nactual defocus is", actualctf.defocus
+				print("\nactual defocus is", actualctf.defocus)
 				defocuserror = actualctf.defocus - newdefocus
-				print "\nTherefore, defocus error is", defocuserror
+				print("\nTherefore, defocus error is", defocuserror)
 				defocuserrors.append( math.fabs(defocuserror) )			#The average error needs to sum all positive errors
 				checkerrors = 1
 			except:
@@ -1111,7 +1111,7 @@ def correctsubtilt( options, subtilts, angles, ctfs, apix, nangles, nimgs, frame
 			#print "imgflipped and type are", imgflipped, type(imgflipped)
 			#print "index to write is", m
 		
-			print "received from flipper and will write to stack", imgflipped['minimum'],imgflipped['maximum'],imgflipped['sigma'],imgflipped['mean']
+			print("received from flipper and will write to stack", imgflipped['minimum'],imgflipped['maximum'],imgflipped['sigma'],imgflipped['mean'])
 				
 			if options.save2d:
 			
@@ -1122,7 +1122,7 @@ def correctsubtilt( options, subtilts, angles, ctfs, apix, nangles, nimgs, frame
 			#else:
 			#	print "image %d being excluded because indx in indxstoexclude", m
 		
-		print "sending these many phfimgs", len(phfimgs)
+		print("sending these many phfimgs", len(phfimgs))
 		rec = reconstruct3d( options, phfimgs, apix )
 		
 		if defocuserrors:
@@ -1131,7 +1131,7 @@ def correctsubtilt( options, subtilts, angles, ctfs, apix, nangles, nimgs, frame
 			
 			globalAvgDefErrors.append(defocuserrorsAvg)
 		elif checkerrors:
-			print "Defocus errors is empty!", defocuserrors
+			print("Defocus errors is empty!", defocuserrors)
 			sys.exit()
 		
 		if options.save3d:
@@ -1166,13 +1166,13 @@ def correctsubtilt( options, subtilts, angles, ctfs, apix, nangles, nimgs, frame
 
 def reconstruct3d( options, phfimgs, apix ):
 	
-	print "phfimgs len is", len(phfimgs)
-	print "phfimgs are", phfimgs
+	print("phfimgs len is", len(phfimgs))
+	print("phfimgs are", phfimgs)
 	box = phfimgs[-1]['nx']
 	
 	originalboxsize = box
 	
-	print "in reconstruct3d"
+	print("in reconstruct3d")
 	
 	if options.pad3d:
 		if options.pad2d:
@@ -1187,38 +1187,38 @@ def reconstruct3d( options, phfimgs, apix ):
 	
 	mode='gauss_2'
 	if options.reconstructor:
-		print "--reconstructor, options.reconstructor is", options.reconstructor
-		print "its len is", len(options.reconstructor)
+		print("--reconstructor, options.reconstructor is", options.reconstructor)
+		print("its len is", len(options.reconstructor))
 		if len(options.reconstructor) > 1:
 			if 'mode' in options.reconstructor[-1]:
 				mode=options.reconstructor[-1]['mode']
 				
-				print "\nThe reconstructor mode has been changed from default to", mode
+				print("\nThe reconstructor mode has been changed from default to", mode)
 				#sys.exit()
 	
-	print "\Boxsize to reconstruct, after padding, is", box
+	print("\Boxsize to reconstruct, after padding, is", box)
 	
-	print "reconstructor is", options.reconstructor
+	print("reconstructor is", options.reconstructor)
 	box = int(box)				
 	r = Reconstructors.get(options.reconstructor[0],{'size':(box,box,box),'sym':'c1','verbose':True,'mode':mode})
 	
-	print "r is", r
+	print("r is", r)
 	
 	r.setup()
 
 	k=0
 	weight = 1.0
 	for p in phfimgs:
-		print "Adding projection k", k
-		print "Whose min and max are", p['minimum'], p['maximum']
-		print "The size of the prj to insert is", p['nx']
+		print("Adding projection k", k)
+		print("Whose min and max are", p['minimum'], p['maximum'])
+		print("The size of the prj to insert is", p['nx'])
 		
 		pc=p.copy()
 		
 		if options.pad2d:
 			pc = clip2D( pc, box )
 		
-		print "\n\n\n\nPPPPP the projection direction is", pc['xform.projection']
+		print("\n\n\n\nPPPPP the projection direction is", pc['xform.projection'])
 		
 		pm = r.preprocess_slice(pc,pc['xform.projection'])
 		r.insert_slice(pm,pm['xform.projection'],weight)
@@ -1234,7 +1234,7 @@ def reconstruct3d( options, phfimgs, apix ):
 	rec['origin_z']=0
 	
 	recfinal = clip3D( rec, originalboxsize )
-	print "recfinal, min, max, sigma, mean", rec['minimum'],rec['maximum'],rec['sigma'],rec['mean']
+	print("recfinal, min, max, sigma, mean", rec['minimum'],rec['maximum'],rec['sigma'],rec['mean'])
 
 	'''
 	Preserve SPT parameters in header
@@ -1282,8 +1282,8 @@ def genctfparamlines( options, apix, nimgs, angles, imagefilenames, icethickness
 	
 	#indxstoexclude = [int(i) for i in options.exclude.split(',')]
 	
-	print "e2spt_ctf (genctfparamlines)"
-	print "received imagefilenames", imagefilenames
+	print("e2spt_ctf (genctfparamlines)")
+	print("received imagefilenames", imagefilenames)
 	
 	ctfs={}
 	
@@ -1291,20 +1291,20 @@ def genctfparamlines( options, apix, nimgs, angles, imagefilenames, icethickness
 	#Determine where to get ctf parameters from
 	'''
 	if options.ctfparamsfile:
-		print "\nI'll parse the ctfparamsfile", options.ctfparamsfile
+		print("\nI'll parse the ctfparamsfile", options.ctfparamsfile)
 		g = open(options.ctfparamsfile,'r')
 		initiallines = g.readlines()
 		g.close()
 	
-		print "\nCTF will be derived from --ctfparamsfile",options.ctfparamsfile
+		print("\nCTF will be derived from --ctfparamsfile",options.ctfparamsfile)
 		
 		if len( initiallines ) != nimgs:
-			print """ERROR: The number of lines in the file provided through 
+			print("""ERROR: The number of lines in the file provided through 
 				--ctfparamsfile should match the number of images in the tiltseries
 				or in each subtiltseries provided.
 				To use the same parameters for all images provide them
 				explicitly through --cs, --bfactor,--voltage, --defocus, --ampcont and, optionally --apix
-				(this apix will be read from the header if not provided, so make sure it's correct). """
+				(this apix will be read from the header if not provided, so make sure it's correct). """)
 			sys.exit(1)
 		
 		kk=0
@@ -1317,7 +1317,7 @@ def genctfparamlines( options, apix, nimgs, angles, imagefilenames, icethickness
 			kk+=1
 		
 	elif options.infodir:
-		print "\nCTF will be read from info files in --infodir",options.infodir
+		print("\nCTF will be read from info files in --infodir",options.infodir)
 		
 		findirinfo = os.listdir( options.infodir )
 		
@@ -1341,38 +1341,38 @@ def genctfparamlines( options, apix, nimgs, angles, imagefilenames, icethickness
 			kk+=1
 
 		if len( ctflines ) != nimgs:
-			print """ERROR: The number of _info.json files inside the directory provided
+			print("""ERROR: The number of _info.json files inside the directory provided
 				through --infodir should match the number of images in the tiltseries
 				or in each subtiltseries provided.
 				To use the same parameters for all images provide them
 				explicitly through --cs, --bfactor,--voltage, --defocus, --ampcont and, optionally --apix
-				(this apix will be read from the header if not provided, so make sure it's correct). """
+				(this apix will be read from the header if not provided, so make sure it's correct). """)
 			sys.exit(1)
 	
 	elif options.defocilist:
-		print "\nI'll parse the defocilist %s and fill the other CTF parameters with default values" % ( options.defocilist )
+		print("\nI'll parse the defocilist %s and fill the other CTF parameters with default values" % ( options.defocilist ))
 		g = open(options.defocilist,'r')
 		defoci = g.readlines()
 		g.close()
 		#if kk not in indxstoexclude: 
 		if len( defoci ) != nimgs:
-			print """ERROR: The number lines in the file provided
+			print("""ERROR: The number lines in the file provided
 				through --defocilist should match the number of images in the tiltseries
 				or in each subtiltseries provided.
 				To use the same parameters for all images provide them
 				explicitly through --cs, --bfactor,--voltage, --defocus, --ampcont and, optionally --apix
 				(this apix will be read from the header if not provided, so make sure it's correct). 
-				"""
+				""")
 			sys.exit(1)
 		else:
-			print "same number of defoci %d as imgs %d" %(len(defoci),nimgs)
+			print("same number of defoci %d as imgs %d" %(len(defoci),nimgs))
 			if len(defoci) != len(angles):
-				print "ERROR: number of defoci %d not the same as number of angles %d" %(len(defoci),len(angles))
+				print("ERROR: number of defoci %d not the same as number of angles %d" %(len(defoci),len(angles)))
 				sys.exit()
 		
 		if options.voltage and options.cs and apix and options.bfactor and options.ampcont:
-			print """\nExplicit parameters --cs,--apix,--bfactor,--voltage and --ampcont 
-				will be used."""
+			print("""\nExplicit parameters --cs,--apix,--bfactor,--voltage and --ampcont 
+				will be used.""")
 				
 			kk=0
 			for d in defoci:
@@ -1384,38 +1384,38 @@ def genctfparamlines( options, apix, nimgs, angles, imagefilenames, icethickness
 				ctfs.update( { angle:ctf } )
 				kk+=1
 		else:
-			print """\nERROR: There's nothing to do. If you supply --defocilist, you also 
+			print("""\nERROR: There's nothing to do. If you supply --defocilist, you also 
 			have to provide the following 4 parameters:
 			--ampcont,--cs,--voltage,--bfactor (and, optionally, --apix, if the images 
-			don't have the correct apix in their headers.)"""
+			don't have the correct apix in their headers.)""")
 			sys.exit(1)
 		
 	elif options.autofit:
-		print "autofitting using voltage=%.2f, cs=%.2f, apix=%.2f, ampcont=%.2f" %( float(options.voltage), float( options.cs), float( apix), float( options.ampcont))
-		print "imagefilenames", imagefilenames
+		print("autofitting using voltage=%.2f, cs=%.2f, apix=%.2f, ampcont=%.2f" %( float(options.voltage), float( options.cs), float( apix), float( options.ampcont)))
+		print("imagefilenames", imagefilenames)
 		if options.voltage and options.cs and apix and options.ampcont:
 			ctfs = sptctffit( options, apix, imagefilenames, angles, icethickness )
 			
 	
 	else:
 		if options.voltage and options.cs and options.defocus and apix and options.bfactor and options.ampcont:
-			print """\nExplicit parameters --defocus,--cs,--apix,--bfactor,--voltage and 
-				--ampcont will be used."""
+			print("""\nExplicit parameters --defocus,--cs,--apix,--bfactor,--voltage and 
+				--ampcont will be used.""")
 			
-			print '\ndefocus to set is', options.defocus	
+			print('\ndefocus to set is', options.defocus)	
 			line = 'defocus=' + str( options.defocus ) + 'ampcont=' + str( options.ampcont ) + 'voltage=' + str( options.voltage ) + 'cs=' + str( options.cs ) + 'apix=' + str( apix ) + 'bfactor=' + str( options.bfactor )
 			ctf = ctfparamparser( line )
-			print '\nafter parsing and making ctf object, set defocus is', ctf.defocus
+			print('\nafter parsing and making ctf object, set defocus is', ctf.defocus)
 			for kk in range( len(angles) ):
 				#if kk not in indxstoexclude:
 				angle = angles[ kk ]
 				ctfs.update({ angle : ctf } )
 		
 		else:
-			print """\nERROR: There's nothing to do. If you don't provide --infodir, 
+			print("""\nERROR: There's nothing to do. If you don't provide --infodir, 
 			--ctfparamsfile or --defocilist, you have to provide the following 5 parameters:
 			--defocus, --ampcont,--cs,--voltage,--bfactor (and, optionally, --apix, if the images 
-			don't have the correct apix in their headers.)"""
+			don't have the correct apix in their headers.)""")
 			sys.exit(1)
 	
 	return ctfs
@@ -1436,7 +1436,7 @@ def getangles( options ):
 			angles.append( float(line) )
 	
 	if options.verbose > 9:
-		print "\n(e2spt_ctf.py)(getangles) angles are", angles
+		print("\n(e2spt_ctf.py)(getangles) angles are", angles)
 	
 	finalangles = list( angles )
 	if options.exclude:
@@ -1446,9 +1446,9 @@ def getangles( options ):
 		finalangles = [ angle for i, angle in enumerate( angles ) if i not in excludeindxsint ]
 		excludedangles = [ angle for i, angle in enumerate( angles ) if i in excludeindxsint ]
 		
-		print "\n %d angles were excluded" %( len(excludeindxsint) )
-		print excludedangles
-		print "\ntherefore, final included angles are", finalangles
+		print("\n %d angles were excluded" %( len(excludeindxsint) ))
+		print(excludedangles)
+		print("\ntherefore, final included angles are", finalangles)
 	
 	return finalangles
 
@@ -1458,7 +1458,7 @@ def padder(options,img,sizex,sizey):
 	xc = img['nx']/2
 	yc = img['ny']/2
 	
-	print "\nThe center of the image to pad is at", xc,yc
+	print("\nThe center of the image to pad is at", xc,yc)
 	
 	if int(sizex) % 2 != 0:
 		sizex += 1
@@ -1466,14 +1466,14 @@ def padder(options,img,sizex,sizey):
 	if int(sizey) % 2 != 0:
 		sizey += 1
 	
-	print "\nThe size to pad to is", sizex,sizey		
+	print("\nThe size to pad to is", sizex,sizey)		
 	#if side % 8 and parameters['box_mult_of_8']=='yes':
 	#	factor = int(side/8)*8 + 8
 	#	print "\nKKKKKK\nKKKKKKK\nKKKKKKK The box has been changed to the closest (and larger) power of 2, see", side
 			
 	r = Region((2*xc - sizex)/2,(2*yc - sizey)/2, sizex, sizey)
 	
-	print "Therefore,region is",r
+	print("Therefore,region is",r)
 	imgp = img.get_clip(r)
 	
 	return imgp
@@ -1489,9 +1489,9 @@ def ctfparamparser( pline ):
 	bfactor = pline.replace('\n',' ').split("bfactor=")[-1].split(' ')[-1]
 
 	params = {'ampcont':ampcont,'apix':apix,'bfactor':bfactor,'cs':cs,'defocus':defocus,'voltage':voltage}
-	print "\n(e2spt_ctf.py)(ctfparamparser) The parsed parameters are"
+	print("\n(e2spt_ctf.py)(ctfparamparser) The parsed parameters are")
 	for key in params.keys():
-		print key + '=' + params[key] 
+		print(key + '=' + params[key]) 
 	
 	ctf = EMAN2Ctf()
 	#ctf.from_dict({'defocus':params['defocus'],'bfactor':params['bfactor'],'ampcont':params['ampcont'],'apix':params['apix'],'voltage':params['voltage'],'cs':params['cs']})	
@@ -1505,7 +1505,7 @@ def phaseflipper(options,img,ctf):
 	#prj=EMData(imgfile,0)
 	prj=img.copy() 
 	
-	print "In phase flipper, PRJ min, max, sigma, mean", prj['minimum'],prj['maximum'],prj['sigma'],prj['mean']
+	print("In phase flipper, PRJ min, max, sigma, mean", prj['minimum'],prj['maximum'],prj['sigma'],prj['mean'])
 	
 	#maskradius = min(prj['nx'],prj['ny'])/2 - 200
 	
@@ -1530,8 +1530,8 @@ def phaseflipper(options,img,ctf):
 	#ctf.from_dict(params)
 
 	flipim = prj_fft.copy()	
-	print "ctf to apply is", ctf
-	print "to prj_fft min, max, sigma, mean", prj_fft['minimum'],prj_fft['maximum'],prj_fft['sigma'],prj_fft['mean']
+	print("ctf to apply is", ctf)
+	print("to prj_fft min, max, sigma, mean", prj_fft['minimum'],prj_fft['maximum'],prj_fft['sigma'],prj_fft['mean'])
 	ctf.compute_2d_complex(flipim,Ctf.CtfType.CTF_SIGN)
 
 	prj_fft.mult(flipim)
@@ -1541,7 +1541,7 @@ def phaseflipper(options,img,ctf):
 	prj_flipped=prj_fft.do_ift()
 	
 	
-	print "prj_flipped to return, min, max, sigma, mean", prj_flipped['minimum'],prj_flipped['maximum'],prj_flipped['sigma'],prj_flipped['mean']
+	print("prj_flipped to return, min, max, sigma, mean", prj_flipped['minimum'],prj_flipped['maximum'],prj_flipped['sigma'],prj_flipped['mean'])
 
 	return prj_flipped, intermediate
 	
@@ -1579,9 +1579,9 @@ def tilerfft(options, angle, imgt, currentstrip, nstrips, start, end, step, save
 	
 	#for x in range( micrographstarts[m], micrographstarts[m] + micrographwidth - options.tilesize + 1, options.stripstep ):
 	for x in range( start, end, step ): 
-		print "\nsumming over tiles along y"
+		print("\nsumming over tiles along y")
 		for y in range(0, ny - options.tilesize+1, options.tilesize):
-			print "tile at y", y
+			print("tile at y", y)
 			clipr = imgt.get_clip(Region(x,y, options.tilesize, options.tilesize))
 			
 			if clipr['sigma']:
@@ -1615,7 +1615,7 @@ def tilerfft(options, angle, imgt, currentstrip, nstrips, start, end, step, save
 					"WARNING: tile excluded because it has at least one bad corner!"
 				
 			else:
-				print "WARNING: tile excluded because sigma is zero!"
+				print("WARNING: tile excluded because sigma is zero!")
 
 	if nbx > options.mintiles:
 	
@@ -1636,10 +1636,10 @@ def tilerfft(options, angle, imgt, currentstrip, nstrips, start, end, step, save
 	
 			return fftcumulative
 		else:
-			print "\nWARNING: bad strip!"
+			print("\nWARNING: bad strip!")
 			return None
 	else:
-		print "\nWARNING: strip has too few good tiles and thus is being skipped"
+		print("\nWARNING: strip has too few good tiles and thus is being skipped")
 		return None
 
 def checkcorners( img, options ):
@@ -1709,9 +1709,9 @@ def fitdefocus( ffta, angle, apix, options, nsubmicros, currentsubmicro, defocus
 		ctf = e2ctf.ctf_fit( fft1d, bg_1d, bg_1d, ffta, fftbg, options.voltage, options.cs, options.ampcont, apix, 1,dfhint=( defocusmin, defocusmax, defocusstep ) )
 		bgAdj(ctf,fft1d)
 	except:
-		print "ctf fit failed! first try"
-		print "len fft1d is", len(fft1d)
-		print "ffta is", ffta
+		print("ctf fit failed! first try")
+		print("len fft1d is", len(fft1d))
+		print("ffta is", ffta)
 		ctf = None
 			
 	try:
@@ -1722,9 +1722,9 @@ def fitdefocus( ffta, angle, apix, options, nsubmicros, currentsubmicro, defocus
 		#if options.astigmatism: 
 		#	e2ctf.ctf_fit_stig(ffta,fftbg,ctf)
 	except:
-		print "ctf fit failed! second adjustment try"
-		print "len fft1d is", len(fft1d)
-		print "ffta is", ffta
+		print("ctf fit failed! second adjustment try")
+		print("len fft1d is", len(fft1d))
+		print("ffta is", ffta)
 		ctf = None
 		
 
@@ -1758,7 +1758,7 @@ def fitdefocus( ffta, angle, apix, options, nsubmicros, currentsubmicro, defocus
 		ctf1d = ctf.compute_1d
 		#ctfbs = ctf1d - bg_1d
 		
-		print '\n\nctf1d is', ctf1d
+		print('\n\nctf1d is', ctf1d)
 		#print '\n\nctfbs is', ctfbs
 		
 		#c = open( options.path + '/ctf.txt', 'w' )
@@ -1789,7 +1789,7 @@ def fitdefocus( ffta, angle, apix, options, nsubmicros, currentsubmicro, defocus
 	
 def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 	
-	print "e2spt_ctf (sptctffit)"
+	print("e2spt_ctf (sptctffit)")
 	
 	#if options.invert: cmd += " --mult=-1"
 	#if options.edgenorm: cmd += " --process=normalize.edgemean"
@@ -1812,7 +1812,7 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 	defocuswiggle = None	
 	
 	ctfs={}
-	print "imagefilenames", imagefilenames
+	print("imagefilenames", imagefilenames)
 	
 	#angles.sort()	#use to get image index
 	
@@ -1833,7 +1833,7 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 		angle = imagefilenames[label][1]
 		imgindx = angles.index( angle )
 		
-		print "\n\nautofitting ctf for stem %s, image %s, angle %f, apix %f, progress = %d/%d" %( label, imagefilenames[label][0],angle,apix,imgindx,len(angles))
+		print("\n\nautofitting ctf for stem %s, image %s, angle %f, apix %f, progress = %d/%d" %( label, imagefilenames[label][0],angle,apix,imgindx,len(angles)))
 		img = EMData( imagefilenames[label][0], 0 )
 		
 		nx = int( img['nx'] )
@@ -1872,18 +1872,18 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 				imgcenterstrips = img.get_clip( r )
 			
 				centerstripsnx = imgcenterstrips['nx']
-				print "centerstripsnx", centerstripsnx
+				print("centerstripsnx", centerstripsnx)
 				imgcenterstrips_nx = imgcenterstrips['nx']
 			
 				fftcenter = tilerfft( options, angle, imgcenterstrips, 0, 1, 0, imgcenterstrips_nx - options.tilesize + 1, options.tilesize, 0, 0 )
 				
 				centerdefocus = fitdefocus( fftcenter, angle, apix, options, 1, 0, defocusmin, defocusmax, defocusstep, 0)
 			
-				print "centerdefocus %f , globaldefocus %f, for angle %f" % ( centerdefocus, globaldefocus, angle )
+				print("centerdefocus %f , globaldefocus %f, for angle %f" % ( centerdefocus, globaldefocus, angle ))
 			
 			
 			if globaldefocus and not centerdefocus:
-				print "\nglobal defocus for this image is", globaldefocus
+				print("\nglobal defocus for this image is", globaldefocus)
 				defocusmin = globaldefocus - 1.5
 				defocusmax = globaldefocus + 1.5	
 				
@@ -1899,7 +1899,7 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 					#defocusmin = averagedefocus - defocuswiggle/2.0
 					#defocusmax = averagedefocus + defocuswiggle/2.0	
 					
-					print "averagedefocus",averagedefocus
+					print("averagedefocus",averagedefocus)
 					#print "defocusmin after wiggle",defocusmin
 					#print "defocusmax after wiggle",defocusmax
 					
@@ -1915,7 +1915,7 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 					allglobaldefocuses.update({ angle:globaldefocus} )
 					
 			else:
-				print "\nWARNING! global defocus fitting failed! for image", label
+				print("\nWARNING! global defocus fitting failed! for image", label)
 		
 		
 		xs = []
@@ -1971,7 +1971,7 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 				micrographwidth = options.tilesize
 				adjuststart = 1
 		
-			print "for angle %f, micrographwidth is %d" %(angle, micrographwidth)
+			print("for angle %f, micrographwidth is %d" %(angle, micrographwidth))
 		
 			#micrographsboundaries = []
 		
@@ -1991,11 +1991,11 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 			if not nmicrosint % 2:
 				nmicrosint -= 1
 		
-			print "nmicrosint is %d since (nmicrosint+2)*micrographwidth is %d while nx is %d" %( nmicrosint, (nmicrosint+2)*micrographwidth, nx )
+			print("nmicrosint is %d since (nmicrosint+2)*micrographwidth is %d while nx is %d" %( nmicrosint, (nmicrosint+2)*micrographwidth, nx ))
 		
 			excedent = nx - nmicrosint * micrographwidth
 		
-			print "excendent is", excedent
+			print("excendent is", excedent)
 		
 			#excedent = nmicros - nmicrosint
 		
@@ -2009,12 +2009,12 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 				if excedent >= options.tilesize*2 and not options.excludeedges:
 					aux = 2
 		
-			print "\nadjuststart is", adjuststart
+			print("\nadjuststart is", adjuststart)
 
 			include = 1
 			if not adjuststart:
 				for iz in range( nmicrosint + aux ):		#You'll usually have two extra micrographs to include the excedent at either side of the central region where you can fit an exact odd multiple of submicrograph widths
-					print "iz is", iz
+					print("iz is", iz)
 				
 					if aux:
 				
@@ -2028,7 +2028,7 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 					else:
 						start = (iz)*micrographwidth + excedent/2		#Don't bother with edge micrographs if aux is 0
 					
-					print "withOUT adjuststart, start to append is", start
+					print("withOUT adjuststart, start to append is", start)
 				
 				
 					#if include:
@@ -2052,7 +2052,7 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 				
 					start = ii*options.stripstep
 				
-					print "with adjuststart, start to append is", start
+					print("with adjuststart, start to append is", start)
 				
 					micrographstarts.append( int(start) )
 			
@@ -2061,8 +2061,8 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 					micrographstarts.append( start )
 				
 			micrographstarts.sort()
-			print "\nfor img %d micrographstarts are" % (imgindx) 
-			print micrographstarts	
+			print("\nfor img %d micrographstarts are" % (imgindx)) 
+			print(micrographstarts)	
 		
 			#micromids = [h+micrographwidth/2 for h in micrographstarts]
 			micromids = []
@@ -2077,9 +2077,9 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 				#The defocus is fitted per submicrograph (regions of pseudo-constant defocus); therefore, things are rest here
 				#'''
 			
-				print "m and type", m, type(m)
-				print "submicrographwidth, corresponding to a region of pseudo constant defocus is", micrographwidth
-				print "options.tilesize and type", options.tilesize, type( options.tilesize )
+				print("m and type", m, type(m))
+				print("submicrographwidth, corresponding to a region of pseudo constant defocus is", micrographwidth)
+				print("options.tilesize and type", options.tilesize, type( options.tilesize ))
 			
 			
 			
@@ -2104,23 +2104,23 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 						
 						defocuswiggle = defocuswigglex + defocuswiggley
 						
-						print "\nicethicknessm is", icethicknessm
-						print "\ndefocuswiggle is", defocuswiggle
+						print("\nicethicknessm is", icethicknessm)
+						print("\ndefocuswiggle is", defocuswiggle)
 						
 						if defocuswiggle:
 							defocusmin = globaldefocus - 2*defocuswiggle
 							defocusmax = globaldefocus + 2*defocuswiggle
 							
-							print "after wiggle, defocusmin is", defocusmin
-							print "after wiggle, defocusmax is", defocusmax
+							print("after wiggle, defocusmin is", defocusmin)
+							print("after wiggle, defocusmax is", defocusmax)
 										
 					
 					stripdefocus = fitdefocus( fftc, angle, apix, options, len(micrographstarts), m, defocusmin, defocusmax, defocusstep, micrographstarts[m])
 				
 					if stripdefocus:
-						print "defocus for strip at x %d is %.6f" %( micrographstarts[m] , stripdefocus )
+						print("defocus for strip at x %d is %.6f" %( micrographstarts[m] , stripdefocus ))
 					else:
-						print "WARNING! bad strip; defocus for strip at x %d is None" %( micrographstarts[m] )
+						print("WARNING! bad strip; defocus for strip at x %d is None" %( micrographstarts[m] ))
 
 					
 			
@@ -2132,29 +2132,29 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 					imgdefocuses.append( stripdefocus )					#defocus in micrometers
 				
 					micromids.append( micrographmiddle )	
-					print "\nappended (good) micrographmiddle is", micrographmiddle	
+					print("\nappended (good) micrographmiddle is", micrographmiddle)	
 				else:
-					print "\nappending to failed results"
+					print("\nappending to failed results")
 					faileddefs.append( (defocusmin+defocusmax)/2 )
 					failedmids.append( micrographmiddle )
 			
 			#xs = numpy.array( [i*options.stripstep + options.tilesize/2.0 for i in range(len(imgdefocuses))] )
 		
-			print "micromids are", micromids
+			print("micromids are", micromids)
 			xs =numpy.array( micromids )
 		
 			imgdefocuses = numpy.array( imgdefocuses )
 		
-			print 'xs are', xs, type(xs)
+			print('xs are', xs, type(xs))
 		
-			print "\bPLOTTING\n\n"
+			print("\bPLOTTING\n\n")
 		
 			m=0
 			b=0
 			defocuscalc = 0	
 			nxMicrometers = nx*apix/10000.00
 		else:
-			print "img being skipped for strip-based fitting"
+			print("img being skipped for strip-based fitting")
 			xs.append(micrographmiddle)
 			imgdefocuses.append(globaldefocus)
 			anglestoexclude.append(angle)
@@ -2184,15 +2184,15 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 			
 			if len(xs) < 2 and len (imgdefocuses) < 2:
 				anglecalc = angle
-				print "defocus calc is derived from middle strip only! it would have been", defocuscalc
+				print("defocus calc is derived from middle strip only! it would have been", defocuscalc)
 				defocuscalc = imgdefocuses[0]
-				print "but is", defocuscalc
+				print("but is", defocuscalc)
 				
 				
 			if angle not in anglestoexclude:
 				angerror = math.fabs( angle - anglecalc )
 				
-				print "angle, anglecalc, and angerror are", angle, anglecalc, angerror
+				print("angle, anglecalc, and angerror are", angle, anglecalc, angerror)
 				angerrors.update( { angle:angerror } )
 				
 				if angerror > 15.0:
@@ -2209,7 +2209,7 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 
 			
 		else:
-			print "\nWarning: All defocuses failed for this submicrograph. Nothing to plot."
+			print("\nWarning: All defocuses failed for this submicrograph. Nothing to plot.")
 		
 		#if xs.any() and imgdefocuses.any():
 			#pass nx in micrometers
@@ -2275,7 +2275,7 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 				allglobaldefocusesvals.append(allglobaldefocuses[angle])
 				finalangles.append(angle)
 			else:
-				print "Global defocus fit failed for image at angle", angle
+				print("Global defocus fit failed for image at angle", angle)
 		
 		f = open( options.path + '/tiltangle_vs_globaldefocus.txt', 'w' )
 		f.writelines(lines)
@@ -2292,7 +2292,7 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 		
 		generalplotter( options, finalangles, allglobaldefocusesvals, xlabel, ylabel, plotname, title )
 	else:
-		print "WARNING! All global defocuses estimations failed!"
+		print("WARNING! All global defocuses estimations failed!")
 	
 
 	return ctfs
@@ -2314,9 +2314,9 @@ def sptctfplotter( options, nx, xdata, ydata, maxangle, angle, angleindx, nangle
 	if gdefocus:
 		gdefocus *= -1
 	else:
-		print "WARNING! No global defocus gdefocus for angle", angle
+		print("WARNING! No global defocus gdefocus for angle", angle)
 	
-	print "failed data in plotter is", failedys, failedxs
+	print("failed data in plotter is", failedys, failedxs)
 	
 	#fig = plt.figure()
 
@@ -2372,7 +2372,7 @@ def sptctfplotter( options, nx, xdata, ydata, maxangle, angle, angleindx, nangle
 
 	#print "max y is", max(yaxis)
 	
-	print "ydata is", ydata
+	print("ydata is", ydata)
 	
 	'''
 	maxy = max(ydata)
@@ -2416,7 +2416,7 @@ def sptctfplotter( options, nx, xdata, ydata, maxangle, angle, angleindx, nangle
 	plt.scatter(xdata, ydata, marker='.', s=200,alpha=0.9, color='k')
 	
 	if failedxs and failedys:
-		print "plotting failed data"
+		print("plotting failed data")
 		
 		for y in range( len(failedys)):
 			failedys[y] = failedys[y] *-1
@@ -2426,19 +2426,19 @@ def sptctfplotter( options, nx, xdata, ydata, maxangle, angle, angleindx, nangle
 	if m and b:
 		plt.plot(xdata, m*xdata + b, '-', linewidth=3, alpha=0.75)
 	
-	print "\nglobal defocus and mid inside plotter are", gdefocus, gmid
+	print("\nglobal defocus and mid inside plotter are", gdefocus, gmid)
 
 	if gdefocus and gmid:	
-		print "\nplotting global fit at", gdefocus, gmid
+		print("\nplotting global fit at", gdefocus, gmid)
 		gdefs= numpy.array([gdefocus])
 		gmids= numpy.array([gmid])
-		print "\nplotting global fit at", gdefs, gmids
+		print("\nplotting global fit at", gdefs, gmids)
 		plt.scatter(gmids,gdefs,alpha=0.6,zorder=1,s=400,marker='o',facecolors='none', edgecolors='g',linewidth=3)
 		#plt.plot( gdefs, gmids )
 		#plt.show()
 		
 		imodm = math.tan( math.radians( angle ) )
-		print "\nIMOD slope is",imodm
+		print("\nIMOD slope is",imodm)
 		
 		#y = mx + b ; therefore, b = y - mx
 		b = gdefocus - imodm * gmid
@@ -2491,7 +2491,7 @@ def generalplotter( options, xaxis, yaxis, xlabel, ylabel, plotname, title, flip
 	elif sizerangey > sizerangex:
 		proportionfactor = sizerangex/sizerangey
 		sizeplotx = int( round( sizeplotx*proportionfactor ) )
-	print "\nsizerangex=%f, sizerangey=%f, proportionfactor=%f therefore sizeplotx=%d, sizeploty=%d" %(sizerangex,sizerangey,proportionfactor,sizeplotx,sizeploty)
+	print("\nsizerangex=%f, sizerangey=%f, proportionfactor=%f therefore sizeplotx=%d, sizeploty=%d" %(sizerangex,sizerangey,proportionfactor,sizeplotx,sizeploty))
 		
 	fig = plt.figure(figsize=(30, 3))
 	
@@ -2547,7 +2547,7 @@ def generalplotter( options, xaxis, yaxis, xlabel, ylabel, plotname, title, flip
 			extray = extrax = int(ptclnx/2)
 		
 			
-	print "\nmax y is", maxy
+	print("\nmax y is", maxy)
 	ylim1 = miny - extray
 	ylim2 = maxy + extray
 	
@@ -2563,13 +2563,13 @@ def generalplotter( options, xaxis, yaxis, xlabel, ylabel, plotname, title, flip
 
 	pylab.ylim([ylim1, ylim2])
 	
-	print 'yrange', ylim1,ylim2
+	print('yrange', ylim1,ylim2)
 	
-	print "\nmax x is", max(xaxis)
+	print("\nmax x is", max(xaxis))
 	
 	pylab.xlim([xlim1, xlim2])
 	
-	print 'xrange', xlim1,xlim2
+	print('xrange', xlim1,xlim2)
 	
 	
 	

@@ -256,7 +256,7 @@ def remove_MoinMoinWiki_makeup(target_text):
 				item_tokens = display_item.split(makeup_separator)
 				assert (len(item_tokens) == 2)
 				display_item = item_tokens[1] # 2nd one should be display text
-			print "### Found a wiki makeup token \"%s\". Changed to \"%s\"" % (makeup_token, display_item)
+			print("### Found a wiki makeup token \"%s\". Changed to \"%s\"" % (makeup_token, display_item))
 			target_text = target_text.replace(makeup_token, display_item, 1)
 
 		# Try to find the next
@@ -268,7 +268,7 @@ def remove_MoinMoinWiki_makeup(target_text):
 # ----------------------------------------------------------------------------------------
 def construct_token_list_from_MoinMoinWiki(sxcmd_config):
 
-	print "Start parsing MoinMoinWiki document (%s as %s %s command) " % (sxcmd_config.wiki, sxcmd_config.category, sxcmd_config.role)
+	print("Start parsing MoinMoinWiki document (%s as %s %s command) " % (sxcmd_config.wiki, sxcmd_config.category, sxcmd_config.role))
 
 	if sxcmd_config.format != "MoinMoinWiki": ERROR("Logical Error: Incorrect Wiki format %s! Check the sxcmd_config setting in this script." % (sxcmd_config.format), "%s in %s" % (__name__, os.path.basename(__file__)))
 
@@ -508,7 +508,7 @@ def construct_token_list_from_MoinMoinWiki(sxcmd_config):
 
 	handle_exceptional_cases(sxcmd)
 
-	print "Succeed to parse MoinMoinWiki document (%s as %s %s command)" % (sxcmd_config.wiki, sxcmd_config.category, sxcmd_config.role)
+	print("Succeed to parse MoinMoinWiki document (%s as %s %s command)" % (sxcmd_config.wiki, sxcmd_config.category, sxcmd_config.role))
 
 	"""
 	# For DEBUG
@@ -562,7 +562,7 @@ def remove_DokuWiki_makeup(target_text):
 				item_tokens = display_item.split(makeup_separator)
 				assert (len(item_tokens) == 2)
 				display_item = item_tokens[1] # 2nd one should be display text
-			print "### Found a wiki makeup token \"%s\". Changed to \"%s\"" % (makeup_token, display_item)
+			print("### Found a wiki makeup token \"%s\". Changed to \"%s\"" % (makeup_token, display_item))
 			target_text = target_text.replace(makeup_token, display_item, 1)
 
 		# Try to find the next
@@ -574,7 +574,7 @@ def remove_DokuWiki_makeup(target_text):
 # ----------------------------------------------------------------------------------------
 def construct_token_list_from_DokuWiki(sxcmd_config):
 
-	print "Start parsing DokuWiki document (%s as %s %s command) " % (sxcmd_config.wiki, sxcmd_config.category, sxcmd_config.role)
+	print("Start parsing DokuWiki document (%s as %s %s command) " % (sxcmd_config.wiki, sxcmd_config.category, sxcmd_config.role))
 
 	if sxcmd_config.format != "DokuWiki": ERROR("Logical Error: Incorrect Wiki format %s! Check the sxcmd_config setting in this script." % (sxcmd_config.format), "%s in %s" % (__name__, os.path.basename(__file__)))
 
@@ -802,7 +802,7 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 
 	handle_exceptional_cases(sxcmd)
 
-	print "Succeed to parse MoinMoinWiki document (%s as %s %s command)" % (sxcmd_config.wiki, sxcmd_config.category, sxcmd_config.role)
+	print("Succeed to parse MoinMoinWiki document (%s as %s %s command)" % (sxcmd_config.wiki, sxcmd_config.category, sxcmd_config.role))
 
 	"""
 	# For DEBUG

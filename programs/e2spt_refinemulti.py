@@ -247,7 +247,7 @@ def main():
 
 	if options.shrink < options.shrinkfine:
 		options.shrink = options.shrinkfine
-		print "It makes no sense for shrinkfine to be larger than shrink; therefore, shrink will be made to match shrinkfine"
+		print("It makes no sense for shrinkfine to be larger than shrink; therefore, shrink will be made to match shrinkfine")
 
 	from e2spt_classaverage import checksaneimagesize
 	checksaneimagesize( options, options.input )
@@ -265,11 +265,11 @@ def main():
 	
 	from e2spt_classaverage import sptmakepath 
 	
-	print "(e2spt_refinemulti.py) BEFORE sptmakepath, otions.path is", options.path
+	print("(e2spt_refinemulti.py) BEFORE sptmakepath, otions.path is", options.path)
 	
 	options = sptmakepath(options,'spt_refinemulti')
 
-	print "(e2spt_refinemulti.py) AFTER sptmakepath, otions.path is", options.path
+	print("(e2spt_refinemulti.py) AFTER sptmakepath, otions.path is", options.path)
 
 	rootpath = os.getcwd()
 	
@@ -326,7 +326,7 @@ def main():
 			options.input = options.path + '/' + ret
 		
 		else:
-			print "\n(e2spt_refinemulti)(main) preprocessing --input for coarse alignment failed"
+			print("\n(e2spt_refinemulti)(main) preprocessing --input for coarse alignment failed")
 	
 	else:
 		preprocdone += 1
@@ -341,7 +341,7 @@ def main():
 			if ret: 
 				preprocdone += 1
 			else:
-				print "\n(e2spt_refinemulti)(main) preprocessing --input for fine alignment failed"
+				print("\n(e2spt_refinemulti)(main) preprocessing --input for fine alignment failed")
 	
 	
 
@@ -380,7 +380,7 @@ def main():
 	
 		#setattr(options, 'goldstandardoff')
 	
-		print "options types are", type(options)
+		print("options types are", type(options))
 	
 		from e2spt_classaverage import sptRefGen 
 	
@@ -389,7 +389,7 @@ def main():
 		reffilesrefine = {}
 	
 		if options.nref == 1:
-			print "ERROR: --nref must be > 1. For single reference refinement, use e2spt_classaverage.py"""
+			print("ERROR: --nref must be > 1. For single reference refinement, use e2spt_classaverage.py""")
 			sys.exit(1)
 	
 	
@@ -405,18 +405,18 @@ def main():
 	
 			if options.nref: 
 				if options.nref != ncls:
-					print """ERROR: It makes no sense to provide both --classmx and --nref that don't 
+					print("""ERROR: It makes no sense to provide both --classmx and --nref that don't 
 					match. While --nref is %d, the number of classes specified by the classmx 
-					file is %d""" %(options.nref,ncls)
+					file is %d""" %(options.nref,ncls))
 					sys.exit()
 				
 			if options.ref:
-				print """ERROR: It makes no sense to provide both --classmx and --ref. 
+				print("""ERROR: It makes no sense to provide both --classmx and --ref. 
 				This program PRODUCES classmx files. If you provide a classmx file, it will be 
 				used to separate the data in --input into subgroups for initial model generation
 				to seed multiple model refinement. It's an alternative to --nref, available in case
 				the classmx file has useful information and it "knows" how many classes there 
-				should be (opposed to providing an arbitrary value through --nref)."""
+				should be (opposed to providing an arbitrary value through --nref).""")
 				sys.exit()
 	
 		elif options.nref:
@@ -430,21 +430,21 @@ def main():
 			reffiles = options.ref.split(',')
 			nreffiles = len(reffiles)
 		
-			print "there are %d external references" %( nreffiles )
+			print("there are %d external references" %( nreffiles ))
 		
 			if len( reffiles ) == 1:
 				if options.nref > 1:
-					print "%d copies of the single reference %s being prepared" %( options.nref, options.ref) 
+					print("%d copies of the single reference %s being prepared" %( options.nref, options.ref)) 
 					reffiles *= options.nref
 				
 					#for i in range( options.nref ):
 					#	reffiles.append( options.ref )		
 					
 				elif options.nref < 2:
-					print """ERROR: you've provided a single reference file, and specified 
+					print("""ERROR: you've provided a single reference file, and specified 
 					the number of references to refine as less than 2 through --nref.
 					For single reference iterative refinement/alignment, use
-					e2spt_classaverage.py"""
+					e2spt_classaverage.py""")
 					sys.exit()
 				
 				
@@ -455,22 +455,22 @@ def main():
 				elif len( reffiles ) > options.nref:
 				
 					if options.nref < 2:
-						print """WARNING: --nref was < 2, but you provided more than one reference
+						print("""WARNING: --nref was < 2, but you provided more than one reference
 						through --ref, therefore the number of classes to seed refinement will match the number
-						of files in --ref."""
+						of files in --ref.""")
 						ncls = len( reffiles )
 				
 					elif options.nref > 1:
-						print """WARNING: some files provided through --ref will NOT be used to 
+						print("""WARNING: some files provided through --ref will NOT be used to 
 						refine the data, since the number of files in --ref is %d but you've selected
-						to refine only %d references""" %( len( reffiles ), options.nref )
+						to refine only %d references""" %( len( reffiles ), options.nref ))
 						ncls = options.nref
 						
 				elif len( reffiles ) < options.nref:
-					print """WARNING: the number of references provided through --ref, %d, 
-					is lower than the number of references requested for refinement --nref, %d""" %( len(reffiles), options.nref )
-					print """Therefore, copies will be made from the files provided through 
-					--ref, until enough references are seeded to match --nref."""
+					print("""WARNING: the number of references provided through --ref, %d, 
+					is lower than the number of references requested for refinement --nref, %d""" %( len(reffiles), options.nref ))
+					print("""Therefore, copies will be made from the files provided through 
+					--ref, until enough references are seeded to match --nref.""")
 					ncls = options.nref
 
 					#for j in range( options.nref ):
@@ -478,8 +478,8 @@ def main():
 					reffiles = reffiles[:options.nrefs]
 				
 		
-			print "\nthere are %d references to prepare" % ( len(reffiles) )
-			print "from these files", reffiles
+			print("\nthere are %d references to prepare" % ( len(reffiles) ))
+			print("from these files", reffiles)
 		
 		
 			ptclhdr = EMData( options.input, 0, True)
@@ -490,12 +490,12 @@ def main():
 			rr=0
 			for rf in reffiles:			
 				
-				print "\n(e2spt_refinemulti)(main) preparing ref number", rr
+				print("\n(e2spt_refinemulti)(main) preparing ref number", rr)
 				ptclnumsdummy = {0:[]}
 				options.ref = rf
 				ret = sptRefGen( options, ptclnumsdummy, cmdwp, rr+1, method=options.refgenmethod ) 	#pass in the reference (or 'class') number by sending rr; #This returns a dictionary with { klass_indx:img } pairs; klass_indx is always zero in this case though, since we're retrieving one reference at a time
 				refimg = ret[0]
-				print "returned from sptRefGen", refimg
+				print("returned from sptRefGen", refimg)
 			
 				reffile = rootpath + '/' + options.path + '/ref' + str( rr ).zfill( len( str( len( reffiles)))) + '.hdf'
 			
@@ -595,7 +595,7 @@ def main():
 			try:
 				groupsize = nptcls / ncls
 			except:
-				print "in the abscence of --ref, --nref required"
+				print("in the abscence of --ref, --nref required")
 				sys.exit()
 			
 			for i in range( ncls):
@@ -607,7 +607,7 @@ def main():
 			
 				ptclnumsdict.update( { i: ptclist  } )
 		
-				print "ptclnumsdict to append is", ptclnumsdict
+				print("ptclnumsdict to append is", ptclnumsdict)
 			
 				#originalpath = options.path
 			
@@ -622,11 +622,11 @@ def main():
 			
 				#sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref=0)
 		
-			print "\nfinal ptclnumsdict to send for references generation is", ptclnumsdict
+			print("\nfinal ptclnumsdict to send for references generation is", ptclnumsdict)
 			
 			ret = sptRefGen( options, ptclnumsdict, cmdwp, 1, method=options.refgenmethod, subset4ref=options.subset4ref ) #This returns a dictionary with { klass_indx:img } pairs; klass_indx is always zero in this case though, since we're retrieving one reference at a time
 		
-			print "\n(e2spt_refmulti)(main) sptRefGen has returned", ret
+			print("\n(e2spt_refmulti)(main) sptRefGen has returned", ret)
 		
 			#options.path = originalpath
 		
@@ -774,11 +774,11 @@ def main():
 				reffilesrefine.update( {i:ref2use} )
 
 
-		print "\n(e2spt_refinemult)(main) There are these many references", len(reffilesrefine)	
+		print("\n(e2spt_refinemult)(main) There are these many references", len(reffilesrefine))	
 		#sys.exit()
 	
 		nclstest = len( reffilesrefine )
-		print "nclstest %d should match ncls %d" %(nclstest,ncls)
+		print("nclstest %d should match ncls %d" %(nclstest,ncls))
 		
 	
 		'''
@@ -818,7 +818,7 @@ def main():
 		
 		
 				for p in ptclist:				
-					print "\n(e2spt_refinemulti)(main) - Particle %d will belong to classid %d" %( p, klassid )
+					print("\n(e2spt_refinemulti)(main) - Particle %d will belong to classid %d" %( p, klassid ))
 					classmxScores.set_value_at( klassid, p, 1.0 )
 		
 			classmxWeights.to_one() 	#Particles contribute entirely and equally to the class to which they are assigned
@@ -840,7 +840,7 @@ def main():
 			classmxPhis.write_image(classmxFile,7)	
 			classmxScales.write_image(classmxFile,8)
 			
-			print "\n(e2spt_refinemulti)(main) - classmx files initialized."
+			print("\n(e2spt_refinemulti)(main) - classmx files initialized.")
 		
 	
 		'''
@@ -853,8 +853,8 @@ def main():
 				etc = ''
 	
 			else:
-				print "\n\n(e2spt_classaverage.py) INITIALIZING PARALLELISM!"
-				print "\n\n"
+				print("\n\n(e2spt_classaverage.py) INITIALIZING PARALLELISM!")
+				print("\n\n")
 
 				from EMAN2PAR import EMTaskCustomer
 				etc=EMTaskCustomer(options.parallel)
@@ -883,8 +883,8 @@ def main():
 
 		#for it in range( options.iter+1 ):
 		for it in range( options.iter ):
-			print "\n\nrefining all references in iteration", it
-			print "\n\n"
+			print("\n\nrefining all references in iteration", it)
+			print("\n\n")
 					#The program goes into --path to execute the alignment command; therefore, --input will be one level furtherback
 
 			if options.iter >1 and it > 0:
@@ -898,20 +898,20 @@ def main():
 				#	avgsName = 'classAvgs_iter' + str().zfill( len( str( options.iter ))) + '.hdf'
 			
 				newreffile = ''
-				print "\nin inter %d there are these many avgs %d" %(it, len(avgs))
+				print("\nin inter %d there are these many avgs %d" %(it, len(avgs)))
 				#for reftag in avgs:
 				#	print "\nin iter %d writing avgs from previous iter it-1 %d to this reftag %s from avgs" %(it, it-1, reftag)
 			
-				print "\navgs are", avgs
-				print "\nreffilesrefine are", reffilesrefine
+				print("\navgs are", avgs)
+				print("\nreffilesrefine are", reffilesrefine)
 				
 				for refindx in reffilesrefine:
 					#reftag = str(refindx)
 					reftag = refindx
 					if avgs[ reftag ] and avgs[reftag] != None and avgs[reftag]!='None':
 						newref = avgs[ reftag ]
-						print "\nnewref with refindx %d stats are" %(int(refindx)) 
-						print newref['mean'],newref['mean_nonzero'],newref['sigma']
+						print("\nnewref with refindx %d stats are" %(int(refindx))) 
+						print(newref['mean'],newref['mean_nonzero'],newref['sigma'])
 							
 						ref = reffilesrefine[refindx]
 						if str(reftag) in ref:
@@ -921,31 +921,31 @@ def main():
 								newreffile = ref.replace('.hdf','_iter' + str(it-1).zfill( len( str( options.iter ))) + '.hdf')
 					
 							#if options.saveiter:
-							print "\n in iter %d newreffile to write is %s" %(it, newreffile)
+							print("\n in iter %d newreffile to write is %s" %(it, newreffile))
 							newref.write_image( newreffile, 0)
 					
 							try:
 								newrefhdr = EMData(newreffile,0,True)
-								print "in iter %d reference %s written successfully" %( it, newreffile )
-								print "its header is", newrefhdr.get_attr_dict()
-								print "and files in path are", os.listdir(options.path)
+								print("in iter %d reference %s written successfully" %( it, newreffile ))
+								print("its header is", newrefhdr.get_attr_dict())
+								print("and files in path are", os.listdir(options.path))
 							except:
-								print "in iter %d writing reference %s failed! why on earth...?" %(it,newreffile)
-								print "files in path are", os.listdir(options.path)
+								print("in iter %d writing reference %s failed! why on earth...?" %(it,newreffile))
+								print("files in path are", os.listdir(options.path))
 						
 			
-						print "adding newreffile %s to newreffiles with reftag %d" %( newreffile, reftag )
+						print("adding newreffile %s to newreffiles with reftag %d" %( newreffile, reftag ))
 						newreffiles.update({ reftag: newreffile } )
 					else:
-						print "there is no avg in avgs with refindx or reftag %d " %( int(refindx) )
-						print "avgs.keys() are", avgs.keys()
+						print("there is no avg in avgs with refindx or reftag %d " %( int(refindx) ))
+						print("avgs.keys() are", avgs.keys())
 			
 				reffilesrefine = newreffiles
 			
 				if len(reffilesrefine) < 2:
 					finalize = 1
-					print "\n(e2spt_refinemulti.py, line 268) all particles preferred one average and therefore multirefine has failed/converged."
-					print "reffilesrefine is", reffilesrefine
+					print("\n(e2spt_refinemulti.py, line 268) all particles preferred one average and therefore multirefine has failed/converged.")
+					print("reffilesrefine is", reffilesrefine)
 					#sys.exit()
 					
 
@@ -971,8 +971,8 @@ def main():
 			classmxFile = options.path + '/classmx_' + str( it ).zfill( len (str (options.iter))) + '.hdf'
 		
 			ic = 0
-			print "\nthere are these many refs", len(reffilesrefine)
-			print "these are the refs", reffilesrefine
+			print("\nthere are these many refs", len(reffilesrefine))
+			print("these are the refs", reffilesrefine)
 		
 			for refindx in reffilesrefine:
 			
@@ -1049,7 +1049,7 @@ def main():
 					"""
 					
 					#print "\nusing this reffile", reffile
-					print "\nusing this ref2use", ref2use
+					print("\nusing this ref2use", ref2use)
 					'''
 					set up tasks
 					'''
@@ -1070,7 +1070,7 @@ def main():
 					if options.parallel:
 						tids = etc.send_tasks(tasks)
 						if options.verbose: 
-							print "in iteration %d number of tasks %d queued, to refine ref2use %s"%(it,len(tids),ref2use) 
+							print("in iteration %d number of tasks %d queued, to refine ref2use %s"%(it,len(tids),ref2use)) 
 
 						"""Wait for alignments to finish and get results"""
 						results = get_results(etc,tids,options.verbose, nptcls ,'refinemulti')
@@ -1094,16 +1094,16 @@ def main():
 					'''
 					scoresFile = originalCompletePath +'/sptali_rm_' + itertag + '_' + reftag + '.json'
 					jsScores = js_open_dict(scoresFile)
-					print "\for ref number %d, ref2use %s, reftag %s, nscores file will be %s" %( int(refindx),ref2use,reftag,scoresFile)			
+					print("\for ref number %d, ref2use %s, reftag %s, nscores file will be %s" %( int(refindx),ref2use,reftag,scoresFile))			
 			
 			
 					'''
 					Iterate over alignment results to write them to classmx.hdf and .json files
 					'''
-					print "len results is", len(results)
-					print "should match nptcls", nptcls
+					print("len results is", len(results))
+					print("should match nptcls", nptcls)
 		
-					print "results are", results
+					print("results are", results)
 					iii = 0
 		
 					classScoresList = [] 
@@ -1113,14 +1113,14 @@ def main():
 				
 						score = r[0][0]['score']
 						if options.verbose > 3:
-							print "for particle %d score is %.4f" %(ptclindx,score)
+							print("for particle %d score is %.4f" %(ptclindx,score))
 				
 						classScoresList.append(score)
 			
 						t = r[0][0]['xform.align3d']
 			
 						if options.verbose > 3:
-							print "and transform is",t
+							print("and transform is",t)
 		
 						ptclID = 'subtomo_' + str( ptclindx ).zfill( len( str( nptcls ) ) )			
 						aliparams = [t,score]
@@ -1128,7 +1128,7 @@ def main():
 				
 		
 						if options.verbose > 3:
-							print "wrote info to .json file"
+							print("wrote info to .json file")
 			
 			
 						#ptclID = "tomo_" + str(i).zfill( len(str( nptcls )) )
@@ -1140,10 +1140,10 @@ def main():
 						if ic==0:									#In the first iteration and for the first reference, the ptclID key does not exist; create a dummy to update below in further ic and it iterations.
 							masterInfo.update({ ptclID: [] })
 			
-						print "\n\niteration %d, reference number %d, ref2use %s, refftag %s, ptclID to update is %s" %( it,ic,ref2use,reftag,ptclID)
-						print "infolist to append is", infolist
-						print "BEFORE appending, masterInfo[ ptclID ] is", masterInfo[ ptclID ]
-						print "Of type", type(masterInfo[ ptclID ])
+						print("\n\niteration %d, reference number %d, ref2use %s, refftag %s, ptclID to update is %s" %( it,ic,ref2use,reftag,ptclID))
+						print("infolist to append is", infolist)
+						print("BEFORE appending, masterInfo[ ptclID ] is", masterInfo[ ptclID ])
+						print("Of type", type(masterInfo[ ptclID ]))
 			
 						value = masterInfo[ ptclID ]				#Retrieve results from previous alignments against previous references
 				
@@ -1156,7 +1156,7 @@ def main():
 				
 						masterInfo.update({ ptclID: value })		#Update masterInfo with expanded results. In the end, a particle key under ptclID should have a list with results for as many references as there are
 				
-						print "AFTER appending and updating, masterInfo[ ptclID ] is", masterInfo[ ptclID ]
+						print("AFTER appending and updating, masterInfo[ ptclID ] is", masterInfo[ ptclID ])
 				
 	
 		
@@ -1167,7 +1167,7 @@ def main():
 					if not options.savesteps:
 						os.remove(reffilesrefine[refindx])
 		
-			print "reftags are", reftags
+			print("reftags are", reftags)
 			
 			'''
 			Analyze all results and classify particles based on them
@@ -1175,11 +1175,11 @@ def main():
 		
 			if not finalize:					
 	
-				print "I've aligned all the particles in the data set to all the references for iter %d and will now classify them from the masterInfo dict" %(it), masterInfo
+				print("I've aligned all the particles in the data set to all the references for iter %d and will now classify them from the masterInfo dict" %(it), masterInfo)
 		
 				classes = {}			#classes dictionary to store alignment info per class, depending on which reference each particle preferred
 				for reftag in reftags:
-					print "\n\n\n\n\n\n\n\n\nRRRRRRRRRR\nreftag is", reftag
+					print("\n\n\n\n\n\n\n\n\nRRRRRRRRRR\nreftag is", reftag)
 					classes.update({ reftag : [] })
 	
 				for ele in masterInfo:
@@ -1197,7 +1197,7 @@ def main():
 			
 	
 				if previous_classes == classes:
-					print "\nAlgorithm has converged. Two consecutive iterations yielded the same classification. EXITING"
+					print("\nAlgorithm has converged. Two consecutive iterations yielded the same classification. EXITING")
 					#sys.exit()
 					finalize = 1
 				else:
@@ -1205,15 +1205,15 @@ def main():
 						classmems = {}
 						for classid in classes:
 							ptcls = []
-							print "classid",classid,type(classid)
-							print "classes[classid]",classes[classid]
+							print("classid",classid,type(classid))
+							print("classes[classid]",classes[classid])
 							for ele in classes[classid]:
 								#print "ele is", ele
 								#print "appending ele[0] to ptcls",ele[0]
 								ptcls.append(ele[0])
 					
 							ptcls.sort()	
-							print "ptcls are", ptcls
+							print("ptcls are", ptcls)
 							classmems.update( { classid:ptcls } )
 				
 						pclassmems = {}
@@ -1232,19 +1232,19 @@ def main():
 						#print "pclassmems",pclassmems
 			
 						if pclassmems == classmems:
-							print "\nAlgorithm has converged. Two consecutive iterations yielded the same classification. EXITING"
+							print("\nAlgorithm has converged. Two consecutive iterations yielded the same classification. EXITING")
 							#sys.exit()
 							finalize = 1
 						else:				
 							if options.verbose > 9:
-								print "previous_classes not equal to classes; therefore, algorithm has not yet converged" 
-								print "previous", pclassmems
-								print "current", classmems
+								print("previous_classes not equal to classes; therefore, algorithm has not yet converged") 
+								print("previous", pclassmems)
+								print("current", classmems)
 				
 				#klassIndx = 0
 				klassesLen = len(classes)
-				print "(e2spt_refinemulti.py) there are these many classes with particles",len(classes)
-				print "\n\nclasses are", classes
+				print("(e2spt_refinemulti.py) there are these many classes with particles",len(classes))
+				print("\n\nclasses are", classes)
 		
 		
 		
@@ -1260,7 +1260,7 @@ def main():
 			kkk = 0
 		
 			classes_sorted = sorted( classes.items(), key=itemgetter(0))
-			print "\n\nclasses sorted are", classes_sorted
+			print("\n\nclasses sorted are", classes_sorted)
 		
 			for klass in classes_sorted:
 				#print "\n\nThe particles and their aliparams, for this class", klass
@@ -1282,7 +1282,7 @@ def main():
 				#if classes[ klass ]:
 				if len(klass[1]) > 0 :
 					if not finalize:
-						print "\n\nsending particles in class %d to averaging" %( klassIndx ) 
+						print("\n\nsending particles in class %d to averaging" %( klassIndx )) 
 						#thisclass = classes[klass]
 						thisclass = klass[1]
 						ptclsinthisclass = []
@@ -1293,9 +1293,9 @@ def main():
 					
 				
 						line=''
-						print "\n\n\nfor class %d in iter %d" %( klassIndx,it)
+						print("\n\n\nfor class %d in iter %d" %( klassIndx,it))
 						if ptclsinthisclass:
-							print "ptclsinthisclass is and type", ptclsinthisclass, type(ptclsinthisclass)
+							print("ptclsinthisclass is and type", ptclsinthisclass, type(ptclsinthisclass))
 							ptclsinthisclass.sort()
 						
 							ptclsinpreviousclass = []
@@ -1305,8 +1305,8 @@ def main():
 								for p in previousclass:
 									ptclsinpreviousclass.append( p[0] )							
 							else:
-								print "\nprevious_classes[klassIndx] failed because previous_classes is", previous_classes
-								print "while klassIndx is", klassIndx
+								print("\nprevious_classes[klassIndx] failed because previous_classes is", previous_classes)
+								print("while klassIndx is", klassIndx)
 						
 						
 							try:
@@ -1316,24 +1316,24 @@ def main():
 									line =','.join( [str(pp) if pp in ptclsinpreviousclass else str(pp)+'*' for pp in ptclsinthisclass ] ) + '\n'
 							except:
 								line = '\n'
-								print "class might be empty, ptclsinthisclass.sort() is"		
+								print("class might be empty, ptclsinthisclass.sort() is")		
 					
 					
 						f.write( line )	
 				
 						#print classes[klass]
-						print "\n\n"
+						print("\n\n")
 
 					#ret = makeAverage( options, classes[klass], klassIndx, klassesLen, it, finalize, originalCompletePath)
 					ret = makeAverage( options, klass[1], klassIndx, klassesLen, it, finalize, originalCompletePath)
 					#ret = makeAverage(options, ic,results,it)
-					print "\nRRRR ret is {}".format(ret)
-					print "\nFFFF finalize is {}".format(finalize)
+					print("\nRRRR ret is {}".format(ret))
+					print("\nFFFF finalize is {}".format(finalize))
 					if not finalize :
 						ref = ret[0]
 						weights = ret[1]
 				
-						print "\nreturned weights are", weights
+						print("\nreturned weights are", weights)
 				
 						if ref:
 							avgsName =  originalCompletePath + '/class_avgs.hdf'
@@ -1342,13 +1342,13 @@ def main():
 							ref.write_image(avgsName,kkk)
 				
 						#print "\nappending ref",ref
-						print "\nAAAAA appending ref {} to avgs of the klass, with these many particles {} in iteration {} ".format( int(klassIndx), len(klass), it )
+						print("\nAAAAA appending ref {} to avgs of the klass, with these many particles {} in iteration {} ".format( int(klassIndx), len(klass), it ))
 						##avgs.update({ klass : ref })
 						avgs.update({ klassIndx : ref })
-						print "avgs are".format(avgs)
+						print("avgs are".format(avgs))
 
 				elif len(klass[1]) < 1:
-					print "\nthe klass %d was empty (no particles were assgined to it). You might have too many classes." % ( klassIndx )	
+					print("\nthe klass %d was empty (no particles were assgined to it). You might have too many classes." % ( klassIndx ))	
 					#dummyClassAvg=EMData(boxsize,boxsize,boxsize)
 					#dummyClassAvg.to_zero()
 					ret = None
@@ -1356,7 +1356,7 @@ def main():
 					weights = None
 			
 					avgs.update({ klassIndx : ref })
-					print "avgs are".format(avgs)
+					print("avgs are".format(avgs))
 					##avgs.update({ klass : ref })
 		
 				kkk+=1
@@ -1371,24 +1371,24 @@ def main():
 		
 			nonNulls=0
 			for avg in avgs:
-				print "\navgindx is {}, avg is {}, and its type is {}".format(avg,avgs[avg],type(avgs[avg]))
+				print("\navgindx is {}, avg is {}, and its type is {}".format(avg,avgs[avg],type(avgs[avg])))
 				if avgs[ avg ] and avgs[ avg ] != None:
 					nonNulls +=1
 
-					print "\n(e2spt_refinemulti)(main) generated this average {} in iter {}".format(avg,it)
-					print "computed average of size {}, {}, {}".format( avgs[avg]['nx'], avgs[avg]['ny'], avgs[avg]['nz'] )
+					print("\n(e2spt_refinemulti)(main) generated this average {} in iter {}".format(avg,it))
+					print("computed average of size {}, {}, {}".format( avgs[avg]['nx'], avgs[avg]['ny'], avgs[avg]['nz'] ))
 				else:
-					print "\n(e2spt_refinemulti)(main) average at index {} in iter {} is EMPTY".format(avg,it)
+					print("\n(e2spt_refinemulti)(main) average at index {} in iter {} is EMPTY".format(avg,it))
 
 		
 			if nonNulls < 2:
-				print "e2spt_refinemulti.py has allocated all particles to one average and therefore has failed or converged. EXITING."
+				print("e2spt_refinemulti.py has allocated all particles to one average and therefore has failed or converged. EXITING.")
 				sys.exit(1)
 			
 			
 		
-			print "\n\n\n(e2spt_refinemulti.py) final averages are", avgs
-			print "\n\n\n"
+			print("\n\n\n(e2spt_refinemulti.py) final averages are", avgs)
+			print("\n\n\n")
 		
 			#print "gout to set value for classmxweights at", ic, ptclindx, weights[ptclindx]
 			#classmxWeights.set_value_at(ic,ptclindx,weights[ptclindx])
@@ -1458,7 +1458,7 @@ def makeAverage(options, klass, klassIndx, klassesLen, iterNum, finalize, origin
 			sig = sqrt( val2 /len(klass) - mean*mean )
 			thresh = mean + sig*options.keep
 			if options.verbose: 
-				print "Keep threshold : %f (mean=%f  sigma=%f)"%(thresh,mean,sig)
+				print("Keep threshold : %f (mean=%f  sigma=%f)"%(thresh,mean,sig))
 
 		if options.keep and options.keep < 1.0:
 			#print "Len of align_parms is", len(klass)
@@ -1468,24 +1468,24 @@ def makeAverage(options, klass, klassIndx, klassesLen, iterNum, finalize, origin
 					pass
 					#print "\nscore!"
 				else:
-					print "\n(e2pt_refinemulti.py) (makeAverage) the score was 0, see", score[-1] 
+					print("\n(e2pt_refinemulti.py) (makeAverage) the score was 0, see", score[-1]) 
 					#print "see, p[0] is", p[0]
 					#sys.exit()
 		
 			val = [ score[-1] for score in klass]
 			val.sort()
-			print "\nthe len of val is {}".format(len(val))
+			print("\nthe len of val is {}".format(len(val)))
 			#print "these are the vals", val
-			print "which shuld be the same as len(klass), see {}".format(len(klass))
-			print "The closest position to threshold value based on keep", options.keep
+			print("which shuld be the same as len(klass), see {}".format(len(klass)))
+			print("The closest position to threshold value based on keep", options.keep)
 			threshIndx =  int (options.keep * len(klass) ) - 1 
 			#threshIndx =  int (options.keep * len(klass) )
 
-			print "is", threshIndx
+			print("is", threshIndx)
 		
 			thresh = val[ threshIndx ]
 			if options.verbose: 
-				print "Keep threshold : %f (min=%f  max=%f)"%(thresh,val[0],val[-1])
+				print("Keep threshold : %f (min=%f  max=%f)"%(thresh,val[0],val[-1]))
 
 		'''
 		# Make variance image if available
@@ -1542,9 +1542,9 @@ def makeAverage(options, klass, klassIndx, klassesLen, iterNum, finalize, origin
 					W = 1.0 - minweight
 					slope = W/X
 											#Having the slope of the line and its y-axis (or w-axis in this case) crossing we predict the weight of any particle depending on its dx distance to the tiltaxis
-					print "Tiltaxis is", X
-					print "W is", W
-					print "Therefore slope is", slope
+					print("Tiltaxis is", X)
+					print("W is", W)
+					print("Therefore slope is", slope)
 			
 					dx = tiltaxis - px 
 					#if px > tiltaxis:
@@ -1552,16 +1552,16 @@ def makeAverage(options, klass, klassIndx, klassesLen, iterNum, finalize, origin
 					
 					taweight = slope * px + minweight 
 					weight = weight * ( taweight )
-					print "tiltaxis weight was %f because it's distance from the tilt axis is %d, because it's x coordinate was %d" % (taweight, dx, x)
+					print("tiltaxis weight was %f because it's distance from the tilt axis is %d, because it's x coordinate was %d" % (taweight, dx, x))
 
 				if options.weighbyscore:
 					scoreweight = score / maxscore
-					print "the score weight is %f because score was %f and the best score was %f" % (scoreweight, score, maxscore )
+					print("the score weight is %f because score was %f and the best score was %f" % (scoreweight, score, maxscore ))
 					weight = weight * scoreweight
 		
 				weights.update( {ptclindx:weight} )
 			
-				print "therefore the final weight for particle %d is %f" %( ptclindx, weight )
+				print("therefore the final weight for particle %d is %f" %( ptclindx, weight ))
 			
 				ptcl.mult( weight )
 		
@@ -1591,7 +1591,7 @@ def makeAverage(options, klass, klassIndx, klassesLen, iterNum, finalize, origin
 				ptcl['xform.align3d'] = ptclTransform
 			
 				if options.verbose > 9:
-					print "\n\nFinal iteration, and options.saveali on, so saving class_ptcls\n\n"
+					print("\n\nFinal iteration, and options.saveali on, so saving class_ptcls\n\n")
 				
 				tmp = 1
 				
@@ -1609,7 +1609,7 @@ def makeAverage(options, klass, klassIndx, klassesLen, iterNum, finalize, origin
 	
 	#if not finalize:
 	if options.verbose: 
-		print "\nkept %d / %d particles in average"%(len(included),len(klass))
+		print("\nkept %d / %d particles in average"%(len(included),len(klass)))
 
 	avg=avgr.finish()
 	#if options.symmetry and not options.breaksym:
@@ -1624,7 +1624,7 @@ def makeAverage(options, klass, klassIndx, klassesLen, iterNum, finalize, origin
 	#	variance.write_image(path+"/class_varmap.hdf",it)
 			
 	if options.autocenter:
-		print "\n\n\n\nYou have selected to autocenter!\n", options.autocenter
+		print("\n\n\n\nYou have selected to autocenter!\n", options.autocenter)
 	
 		avgac = avg.copy()
 		if options.autocentermask:
@@ -1642,7 +1642,7 @@ def makeAverage(options, klass, klassIndx, klassesLen, iterNum, finalize, origin
 		avgac.process_inplace(options.autocenter[0],options.autocenter[1])
 	
 		tcenter = avgac['xform.align3d']
-		print "Thus the average HAS BEEN be translated like this", tcenter
+		print("Thus the average HAS BEEN be translated like this", tcenter)
 		avg.transform(tcenter)
 
 	avg['origin_x']=0

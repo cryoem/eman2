@@ -21,7 +21,7 @@ for i in range(2,30):
 		
 	resultx.append(i)
 	resulty.append(csum/n)
-	print i,csum/n
+	print(i,csum/n)
 
 
 # This is a plot of peak values vs peak location

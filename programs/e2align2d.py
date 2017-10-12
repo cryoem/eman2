@@ -64,7 +64,7 @@ def main():
 
 	if options.output==None : options.output=args[0]
 	if options.ref==None : 
-		print "Must specify reference image"
+		print("Must specify reference image")
 		sys.exit(1)
 	options.align=parsemodopt(options.align)
 	options.aligncmp=parsemodopt(options.aligncmp)
@@ -88,13 +88,13 @@ def alignstack(inp,out,ref,align,aligncmp,ralign=None,raligncmp=None,fincmp=None
 	for i in range(n):
 		im=EMData(inp,i)
 		aim=im.align(align[0],ref,align[1],aligncmp[0],aligncmp[1])
-		if verbose : print "%d. "%i,aim["xform.align2d"],
+		if verbose : print("%d. "%i,aim["xform.align2d"], end=' ')
 		if ralign!=None and ralign[0]!=None:
 			rparms=ralign[1]
 			rparms["xform.align2d"]=aim["xform.align2d"]
 			aim=im.align(ralign[0],ref,rparms,raligncmp[0],raligncmp[1])
-			if verbose : print aim["xform.align2d"],
-		elif verbose: print ""
+			if verbose : print(aim["xform.align2d"], end=' ')
+		elif verbose: print("")
 		
 		if fincmp!=None and fincmp[0]!=None :
 			aim["match_qual"]=aim.cmp(fincmp[0],ref,fincmp[1])

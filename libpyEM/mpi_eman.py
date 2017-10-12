@@ -55,7 +55,7 @@ def mpi_din(msg):
 	elif msg[0]=="Z" : return loads(decompress((msg[1:]).tostring()))
 	elif msg[0]=="O" : return loads((msg[1:]).tostring())
 	else :
-		print "ERROR: Invalid MPI message. Please contact developers. (%s)"%str(msg[:20])
+		print("ERROR: Invalid MPI message. Please contact developers. (%s)"%str(msg[:20]))
 		sys.exit(1)
 
 

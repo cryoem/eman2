@@ -7,14 +7,14 @@ import numpy as np
 def mxprint(mx):
 	for y in xrange(81):
 		for x in xrange(81):
-			print "{:3.0f}".format(float(mx[x][y])),
-		print ""
+			print("{:3.0f}".format(float(mx[x][y])), end=' ')
+		print("")
 
 def mxprintsm(mx):
 	for y in xrange(9):
 		for x in xrange(9):
-			print "{:7.2f}".format(float(mx[x,y])),
-		print ""
+			print("{:7.2f}".format(float(mx[x,y])), end=' ')
+		print("")
 
 mxl=[]
 for x in xrange(-4,5):
@@ -43,7 +43,7 @@ gau.process_inplace("mask.gaussian",{"outer_radius":1.9})		# 1/2 width of Gaussi
 gau.process_inplace("normalize.unitsum")
 mxprintsm(gau)
 
-print " "
+print(" ")
 mxprintsm(row)
 
 #display((emd,gau),True)
