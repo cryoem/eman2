@@ -152,7 +152,9 @@ def main():
 		
 	if options.sort and not options.randomze:
 		pass
-		
+	
+	E2end(logger)
+
 	return
 
 
