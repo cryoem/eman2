@@ -74,6 +74,7 @@ def main():
 	#parser.add_argument("--falcon", default=False, help="Use this flag to optimize alignment for falcon detector data.",action="store_true",guitype='boolbox', row=5, col=1, rowspan=1, colspan=1)
 	#parser.add_argument("--binning", type=int,help="Bin images by this factor by resampling in Fourier space. Default (-1) will choose based on input box size.",default=-1)
 
+
 	parser.add_header(name="orblock3", help='Just a visual separation', title="Output: ", row=6, col=0, rowspan=1, colspan=3, mode="align")
 	parser.add_argument("--goodali", default=False, help="Average of good aligned frames.",action="store_true", guitype='boolbox', row=7, col=0, rowspan=1, colspan=1, mode='align[True]')
 	parser.add_argument("--bestali", default=False, help="Average of best aligned frames.",action="store_true", guitype='boolbox', row=7, col=1, rowspan=1, colspan=1, mode='align')
@@ -96,7 +97,7 @@ def main():
 	parser.add_argument("--fixbadpixels",action="store_true",default=False,help="Tries to identify bad pixels in the dark/gain reference, and fills images in with sane values instead", guitype='boolbox', row=14, col=1, rowspan=1, colspan=1, mode='align')
 	parser.add_argument("--normaxes",action="store_true",default=False,help="Tries to erase vertical/horizontal line artifacts in Fourier space by replacing them with the mean of their neighboring values.")
 
-	#parser.add_argument("--simpleavg", action="store_true",help="Will save a simple average of the dark/gain corrected frames (no alignment or weighting)",default=False)
+	parser.add_argument("--simpleavg", action="store_true",help="Will save a simple average of the dark/gain corrected frames (no alignment or weighting)",default=False)
 	#parser.add_argument("--avgs", action="store_true",help="Testing",default=False)
 	parser.add_argument("--align_frames", action="store_true",help="Perform whole-frame alignment of the input stacks",default=False, guitype='boolbox', row=9, col=1, rowspan=1, colspan=1, mode='align[True]')
 	parser.add_argument("--round", choices=["float","int","halfint"],help="If float (default), apply subpixel shifts. If int, use integer shifts. If halfint, round shifts to nearest half integer values.",default="float")
@@ -241,6 +242,8 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 		outname=fsp.rsplit(".",1)[0]+"_proc.hdf"		# always output to an HDF file. Output contents vary with options
 		alioutname="micrographs/"+base_name(fsp)
 
+		if options.simpleavg: savgr = Averagers.get("mean")
+
 		if fsp[-4:].lower() in (".mrc"):
 			hdr=EMData(fsp,0,True)			# read header
 			nx,ny=hdr["nx"],hdr["ny"]
@@ -270,6 +273,13 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 
 			if options.frames : im.write_image(outname[:-4]+"_corr.hdf",ii-first)
 			outim.append(im)
+
+			if options.simpleavg: savgr.add_image(im)
+
+		if options.simpleavg:
+			savg = savgr.finish()
+			savg.write_image(outname[:-4]+"_simpleavg.hdf")
+
 			#im.write_image(outname,ii-first)
 
 		t1 = time()-t
