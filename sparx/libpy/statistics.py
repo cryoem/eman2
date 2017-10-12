@@ -8009,10 +8009,10 @@ def kmn(data, numr, wr, cm = 0, max_iter = 10, this_seed = 1000):
 				retvals = Util.Crosrng_ew(refim, data[im], numr, wr, 1)
 				qm  = retvals["qn"]
 				tmt = retvals["tot"]
-		   		if (qn >= qm):
+				if (qn >= qm):
 					alpha  = tot
 					mirror = 0
-		   		else:
+				else:
 					alpha  = tmt
 					mirror = 1
 			else:
@@ -8102,10 +8102,10 @@ def kmn_a(data, numr, wr, cm = 0, max_iter = 10, this_seed = 1000):
 				retvals = Util.Crosrng_ew(refim, data[im], numr, wr, 1)
 				qm  = retvals["qn"]
 				tmt = retvals["tot"]
-		   		if (qn >= qm):
+				if (qn >= qm):
 					alpha  = tot
 					mirror = 0
-		   		else:
+				else:
 					alpha  = tmt
 					mirror = 1
 			else:
@@ -8449,7 +8449,7 @@ def multi_search_func(args, data):
 	nima = len(fdata)
 
 	total_change = 0
-       	update_list = []
+	update_list = []
 	for im in xrange(nima):
 		if args[im]!=ori_alpha[im]: 
 			total_change += 1 
@@ -8558,10 +8558,10 @@ def kmn_ctf(data, ref_data, numr, wr, cm = 0, max_iter = 10, this_seed = 1000):
 				retvals = Util.Crosrng_ew(refim, data[im], numr, wr, 1)
 				qm  = retvals["qn"]
 				tmt = retvals["tot"]
-		   		if (qn >= qm):
+				if (qn >= qm):
 					alpha  = tot
 					mirror = 0
-		   		else:
+				else:
 					alpha  = tmt
 					mirror = 1
 			else:
@@ -8670,12 +8670,12 @@ def kmnr(data, assign, nima, k, numr, wr, cm = 0, max_iter = 10, this_seed = 100
 				retvals = Util.Crosrng_ew(refim, data[im], numr, wr, 1)
 				qm  = retvals["qn"]
 				tmt = retvals["tot"]
-		   		if (qn >= qm):
-				   alpha  = tot
-				   mirror = 0
-		   		else:
-				   alpha  = tmt
-				   mirror = 1
+				if (qn >= qm):
+					alpha  = tot
+					mirror = 0
+				else:
+					alpha  = tmt
+					mirror = 1
 			else:
 				retvals = Util.Crosrng_ew(refim, data[im], numr, wr, 0)
 				alpha = retvals["tot"]
@@ -9199,7 +9199,7 @@ class def_variancer:
 
 		self.imgs.append(img)
 
-        def mpi_getvar(self, myid, rootid):
+	def mpi_getvar(self, myid, rootid):
 		from utilities import reduce_EMData_to_root, bcast_EMData_to_all
 		from mpi import mpi_reduce, MPI_INT, MPI_SUM, MPI_COMM_WORLD
 		avg = self.sum1.copy()
@@ -9208,8 +9208,8 @@ class def_variancer:
 		nimg = mpi_reduce( self.nimg, 1, MPI_INT, MPI_SUM, rootid, MPI_COMM_WORLD)
 
 		if myid==rootid:
-   		    nimg = int(nimg[0])
-		    avg /= nimg
+			nimg = int(nimg[0])
+			avg /= nimg
 
 		bcast_EMData_to_all( avg, myid, rootid )
 
@@ -9227,7 +9227,7 @@ class def_variancer:
 			return None, None
 
 
-        def mpi_getavg(self, myid, rootid ):
+	def mpi_getavg(self, myid, rootid ):
 		from mpi import mpi_reduce, MPI_INT, MPI_SUM, MPI_COMM_WORLD
 		from utilities import reduce_EMData_to_root
 
@@ -9279,7 +9279,7 @@ class inc_variancer:
 		data = None
 
 
-        def mpi_getvar(self, myid, rootid):
+	def mpi_getvar(self, myid, rootid):
 		from utilities import memory_usage, get_image_data, model_blank
 		from mpi import mpi_reduce, MPI_DOUBLE, MPI_INT, MPI_SUM, MPI_COMM_WORLD
 		from numpy import reshape
@@ -9324,7 +9324,7 @@ class inc_variancer:
 		return model_blank(self.nx,self.ny,self.nz), model_blank(self.nx,self.ny,self.nz)
 
 
-        def mpi_getavg(self, myid, rootid ):
+	def mpi_getavg(self, myid, rootid ):
 		from mpi import mpi_reduce, MPI_INT, MPI_SUM, MPI_COMM_WORLD
 		import numpy
 
@@ -10484,7 +10484,7 @@ def k_means_stab_getinfo(PART, match):
 
 		asg = [0] * vd
 		for i in xrange(np):
-		    for item in PART[i][int(MATCH[k][i])]: asg[int(item) - vmin] += 1
+			for item in PART[i][int(MATCH[k][i])]: asg[int(item) - vmin] += 1
 
 		stb  = []
 		for i in xrange(vd):

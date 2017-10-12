@@ -2834,14 +2834,14 @@ class GaussBoxer:
 		self.panel_object.setgwbox=True
 		tlowtext = self.panel_object.THRNA
 		if self.thr_low != None:
-		        tlowtext = str(self.thr_low )
+			tlowtext = str(self.thr_low )
 		self.panel_object.thr_low_edit.setText(tlowtext)
 		self.panel_object.new_thr_low()
 		thitext = self.panel_object.THRNA
 		if self.thr_hgh != None:
-		        thitext = str(self.thr_hgh )
-                self.panel_object.thr_hi_edit.setText(thitext)
-                self.panel_object.new_thr_hi()
+			thitext = str(self.thr_hgh )
+			self.panel_object.thr_hi_edit.setText(thitext)
+			self.panel_object.new_thr_hi()
 
 		self.panel_object.use_variance_chk.setChecked(self.use_variance)
 		self.panel_object.use_variance_checked( self.use_variance)
