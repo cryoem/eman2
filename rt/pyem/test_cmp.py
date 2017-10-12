@@ -148,16 +148,16 @@ class TestCmp(unittest.TestCase):
         # of 2D and 3D images - the image tested against is random noise
         n = 16
         for i in range(n-1,n+1):
-			for j in range(n-1,n+1):
-				for k in [1,n-1,n]:
-					e3 = EMData()
-					e3.set_size(i,j,k)
-					#print "%d %d %d" %(i,j,k)
-					e3.process_inplace('testimage.noise.uniform.rand')
-					f = e3.copy()
-					zero  = e3.cmp('phase', f, {})
-					#print "%d %d %d %f" %(i,j,k,zero)
-					self.assertAlmostEqual(zero,0, places=2)
+            for j in range(n-1,n+1):
+                for k in [1,n-1,n]:
+                    e3 = EMData()
+                    e3.set_size(i,j,k)
+                    #print "%d %d %d" %(i,j,k)
+                    e3.process_inplace('testimage.noise.uniform.rand')
+                    f = e3.copy()
+                    zero  = e3.cmp('phase', f, {})
+                    #print "%d %d %d %f" %(i,j,k,zero)
+                    self.assertAlmostEqual(zero,0, places=2)
 
         
     def test_SqEuclideanCmp(self):
@@ -179,13 +179,13 @@ class TestCmp(unittest.TestCase):
         # of 2D and 3D images - the image tested against is random noise
         n = 16
         for i in range(n-1,n+1):
-			for j in range(n-1,n+1):
-				for k in [1,n-1,n]:
-					e3 = EMData()
-					e3.set_size(i,j,k)
-					e3.process_inplace('testimage.noise.uniform.rand')
-					zero  = e3.cmp('sqeuclidean', e3.copy(), {})
-					self.assertAlmostEqual(zero,0, places=6)
+            for j in range(n-1,n+1):
+                for k in [1,n-1,n]:
+                    e3 = EMData()
+                    e3.set_size(i,j,k)
+                    e3.process_inplace('testimage.noise.uniform.rand')
+                    zero  = e3.cmp('sqeuclidean', e3.copy(), {})
+                    self.assertAlmostEqual(zero,0, places=6)
         
     def test_DotCmp(self):
         """test DotCmp ......................................"""
@@ -205,13 +205,13 @@ class TestCmp(unittest.TestCase):
         # of 2D and 3D images - the image tested against is random noise
         n = 16
         for i in range(n-1,n+1):
-			for j in range(n-1,n+1):
-				for k in [1,n-1,n]:
-					e3 = EMData()
-					e3.set_size(i,j,k)
-					e3.process_inplace('testimage.noise.uniform.rand')
-					neg_one  = e3.cmp('dot', e3.copy(), {"normalize":1})
-					self.assertAlmostEqual(neg_one,-1, places=6)
+            for j in range(n-1,n+1):
+                for k in [1,n-1,n]:
+                    e3 = EMData()
+                    e3.set_size(i,j,k)
+                    e3.process_inplace('testimage.noise.uniform.rand')
+                    neg_one  = e3.cmp('dot', e3.copy(), {"normalize":1})
+                    self.assertAlmostEqual(neg_one,-1, places=6)
         
 
 def test_main():

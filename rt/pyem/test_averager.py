@@ -41,12 +41,12 @@ from optparse import OptionParser
 IS_TEST_EXCEPTION = False
 
 class TestAverager(unittest.TestCase):
-    """averager test"""
-	
-    #def test_ImageAverager(self):
-    #    """test ImageAverager ..............................."""
-    
-    def test_AbsMaxMinAverager(self):
+	"""averager test"""
+
+	#def test_ImageAverager(self):
+	#    """test ImageAverager ..............................."""
+
+	def test_AbsMaxMinAverager(self):
 		"""test AbsMaxMinAverager ..........................."""
 		
 		e = EMData(3,3)
