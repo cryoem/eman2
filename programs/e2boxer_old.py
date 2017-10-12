@@ -2480,8 +2480,8 @@ class GaussPanel:
 		set_ctf(altimg, [defocus, ctf_cs, ctf_volt, output_pixel_size, 0, ctf_ampcont])
 		BigImageCache.get_object(image_name).register_alternate(altimg)
 		print([defocus, ctf_cs, ctf_volt, output_pixel_size, 0, ctf_ampcont])
- 		print("CTF estimation done.")
- 		#print "Estimated defocus value: ", defocus
+		print("CTF estimation done.")
+		#print "Estimated defocus value: ", defocus
 
 		##############################################################################
 		#### save ctf estimation parameters to db for command line batch processing
@@ -2586,8 +2586,8 @@ class GaussPanel:
 		set_ctf(altimg, [defocus, ctf_cs, ctf_volt, input_pixel_size, 0, ctf_ampcont, ast_amp, ast_agl])
 		BigImageCache.get_object(image_name).register_alternate(altimg)
 		print([defocus, ctf_cs, ctf_volt, input_pixel_size, 0, ctf_ampcont, ast_amp, ast_agl])
- 		print("CTF estimation using CTER done.")
- 		#print "Estimated defocus value: ", defocus
+		print("CTF estimation using CTER done.")
+		#print "Estimated defocus value: ", defocus
 
 		##############################################################################
 		#### save ctf estimation parameters to db for command line batch processing
@@ -2626,15 +2626,15 @@ class GaussBoxer:
 
 		self.panel_object = None # maybe it doesn't exist
 
-                self.pixel_input = 1.0
-                self.pixel_output = 1.0
-                self.frequency_cutoff = 0
-                self.window_size_min = 15
-                self.gauss_width = 1.0
-                self.use_variance = True
-                self.invert = False
-                self.thr_low = None
-                self.thr_hgh = None
+		self.pixel_input = 1.0
+		self.pixel_output = 1.0
+		self.frequency_cutoff = 0
+		self.window_size_min = 15
+		self.gauss_width = 1.0
+		self.use_variance = True
+		self.invert = False
+		self.thr_low = None
+		self.thr_hgh = None
 		self.gui_mode = False # set this to False to stop any calls to Qt - such as the act of making the cursor busy...
 
 		self.mvt_cache = [] # we have to remember if any of the auto selected boxes were moved, so if the user reboxes then the movements they previously supplied will be applied
