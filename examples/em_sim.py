@@ -340,10 +340,10 @@ class Microscope(QtOpenGL.QGLWidget):
 
 	def draw_wave_twod(self):
 		
-		sz=64 ### length of x-axis
+		sz=128 ### length of x-axis
 		xydivz=0.06#2e-3 ### xy/z scale ratio
-		#mpix=3e-8 ### pixel to meter
-		wavelen=4e-2 #2e-12/mpix ### wave length
+		mpix=3e-8 ### pixel to meter
+		wavelen=2e-12/mpix ### wave length
 		mult=400 ### size multiplier from GL lens diagram to wave image
 
 		### input signal
@@ -365,11 +365,11 @@ class Microscope(QtOpenGL.QGLWidget):
 		raw0 *= hard_aperature
 
 		raw1 = np.zeros_like(raw0)
-		coords = [[0,0,1,sz/20.,sz/20.], # x0,y0,scale,sigma_x,sigma_y
-				[10,10,1,sz/20.,sz/20.],
-				[-10,-10,1,sz/20.,sz/20.],
-				[-10,10,1,sz/20.,sz/20.],
-				[10,-10,1,sz/20.,sz/20.]]
+		coords = [[0,0,1.0,sz/5.,sz/5.],#, # x0,y0,scale,sigma_x,sigma_y
+				[5,5,1,sz/20.,sz/20.],
+				[-5,-5,1,sz/20.,sz/20.],
+				[-5,5,1,sz/20.,sz/20.],
+				[5,-5,1,sz/20.,sz/20.]]
 		for x0,y0,s,sigx,sigy in coords:
 			x0 = float(x0)
 			y0 = float(y0)
@@ -381,7 +381,7 @@ class Microscope(QtOpenGL.QGLWidget):
 		raw1 /= np.max(raw1)
 
 		#raw=raw1*np.exp(-2*np.pi*1j*raw1) # amplitude + phase object?
-		raw=np.exp(-2*np.pi*1j*raw1) # phase object
+		raw=hard_aperature*np.exp(-2*np.pi*1j*raw1) # phase object
 		
 		#### load lens info
 		l=np.array(self.lens)[3:]
