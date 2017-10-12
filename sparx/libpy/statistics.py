@@ -3098,7 +3098,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 	Cls['N']   =  N
 	assign     = [0]*N
 	
-        if CTF:
+	if CTF:
 		Cls_ctf2   = {}
 		len_ctm	   = len(ctf2[0])
 
@@ -3483,7 +3483,7 @@ def k_means_SSE_combine(Cls, assign, Je, N, K, ncpu, myid, main_node):
 		je_return = [0.0]*(ncpu)
 		for n1 in xrange(ncpu):
 			if n1 != main_node: je_return[n1]	=	mpi_recv(1, MPI_FLOAT, n1, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
- 			else:               je_return[main_node]  = Je
+			else:               je_return[main_node]  = Je
 	else:
 		mpi_send(Je, 1, MPI_FLOAT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 	n_best = -1
@@ -3752,7 +3752,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 	Cls['N']   =  N
 	assign     = [0]*N
 	
-        if CTF:
+	if CTF:
 		Cls_ctf2   = {}
 		len_ctm	   = len(ctf2[0])
 
@@ -5348,7 +5348,7 @@ def k_means_groups_MPI(stack, outdir, maskname, opt_method, K1, K2, rand_seed, m
 		if myid == main_node:
 			for n1 in xrange(ncpu):
 				if n1 != main_node: mpi_send(n_best, 1, MPI_INT, n1, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD) 
- 				else:               n_best_get  = n_best
+				else:               n_best_get  = n_best
 		else: n_best_get	=	mpi_recv(1, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 		n_best_get = int(n_best_get)
 		mpi_barrier(MPI_COMM_WORLD)
@@ -6620,7 +6620,7 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0
 	else:            TXT = False
 
 	nx = 0
-        if myid == main_node:
+	if myid == main_node:
 		if os.path.exists(outdir):
 			nx = 1
 			ERROR('Output directory exists, please change the name and restart the program', " k_means_mpi", 0)
@@ -6679,7 +6679,7 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0
 		je_return = [0.0]*(ncpu)
 		for n1 in xrange(ncpu):
 			if n1 != main_node: je_return[n1]	=	mpi_recv(1, MPI_FLOAT, n1, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
- 			else:               je_return[main_node]  = Je
+			else:               je_return[main_node]  = Je
 	else:
 		mpi_send(Je, 1, MPI_FLOAT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 
@@ -6694,7 +6694,7 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0
 	if myid == main_node:
 		for n1 in xrange(ncpu):
 			if n1 != main_node: mpi_send(n_best, 1, MPI_INT, n1, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD) 
- 			else:               n_best  = n_best
+			else:               n_best  = n_best
 	else: n_best	=	mpi_recv(1, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 	n_best = int(n_best)		
 	#print "myid ==", myid, "n_best==", n_best
