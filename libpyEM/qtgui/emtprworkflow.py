@@ -257,9 +257,9 @@ class E2TomoFilterParticlesTask(WorkFlowTask):
 			cmd = "e2proc3d.py"
 			cmd += " "+name
 			cmd += " "+outnames[i]
- 			if params.has_key("filter_processor"):
+			if params.has_key("filter_processor"):
 				cmd += " --process="+params["filter_processor"]
- 			if params.has_key("rotate"):
+			if params.has_key("rotate"):
 				cmd += " --rot="+params["rotate"]
 			success = (os.system(cmd) in (0,12))
 			if not success:

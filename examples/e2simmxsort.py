@@ -35,8 +35,8 @@ from EMAN2 import *
 from numpy import *
 
 def main():
-        progname = os.path.basename(sys.argv[0])
-        usage = """e2simmxsort.py [options] <simmx file in> <simmx file out>
+	progname = os.path.basename(sys.argv[0])
+	usage = """e2simmxsort.py [options] <simmx file in> <simmx file out>
 Sorts a similarity matrix by classified particle to compare patterns.
         
 """
