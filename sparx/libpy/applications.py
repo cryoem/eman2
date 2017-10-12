@@ -578,9 +578,9 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 		mask = model_circle(last_ring, nx, nx)
 
 	cnx  = nx/2+1
- 	cny  = cnx
- 	if  random_method == "SCF":		mode = "H"
- 	else: 							mode = "F"
+	cny  = cnx
+	if  random_method == "SCF":		mode = "H"
+	else: 							mode = "F"
 	data = []
 	if CTF:
 		from filter import filt_ctf
@@ -634,7 +634,7 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 	else:  ctf_2_sum = None
 	# startup
 	numr = Numrinit(first_ring, last_ring, rstep, mode) 	#precalculate rings
- 	wr = ringwe(numr, mode)
+	wr = ringwe(numr, mode)
 	
 	if myid == main_node:
 		# initialize data for the reference preparation function

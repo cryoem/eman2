@@ -2965,43 +2965,43 @@ class PawelAutoBoxer(AutoBoxer):
 		AutoBoxer.__init__(self)
 		self.parent = parent
                 
-                self.box_size = 128
-                self.pixel_input = 1.0
-                self.pixel_output = 1.0
-                self.frequency_cutoff = 0
-                self.window_size_min = 15
-                self.gauss_width = 1.0
-                self.use_variance = True
-                self.invert = False
-                self.thr_low = None
-                self.thr_hgh = None
+		self.box_size = 128
+		self.pixel_input = 1.0
+		self.pixel_output = 1.0
+		self.frequency_cutoff = 0
+		self.window_size_min = 15
+		self.gauss_width = 1.0
+		self.use_variance = True
+		self.invert = False
+		self.thr_low = None
+		self.thr_hgh = None
                 
-                # default values for ctf:
-                self.ctf_fstart = 80
-                self.ctf_fstop = 8
-                self.ctf_window = 512
-                self.ctf_edge = 0
-                self.ctf_overlap = 50
-                self.ctf_volt = 300
-                self.ctf_ampcont = 0.1
-                self.ctf_Cs = 2.0
+		# default values for ctf:
+		self.ctf_fstart = 80
+		self.ctf_fstop = 8
+		self.ctf_window = 512
+		self.ctf_edge = 0
+		self.ctf_overlap = 50
+		self.ctf_volt = 300
+		self.ctf_ampcont = 0.1
+		self.ctf_Cs = 2.0
 
 		self.out_file = None
 		
-                if not(dict is None):
-                    # assume the dictionary uses variable names as keys, so we loop over all
-                    #    keys
-                    for key in dict.keys():
-                        try:
-                            # and set our contents according to the dict
-                            self.__dict__[key] = dict[key]
-                        except:
-                            # error. just ignore.
-                            #print "key",key,"skipped"
-                            pass
-                        else:
-                            #print "key",key,"set to ",dict[key]
-                            pass
+		if not(dict is None):
+			# assume the dictionary uses variable names as keys, so we loop over all
+			#    keys
+			for key in dict.keys():
+				try:
+					# and set our contents according to the dict
+					self.__dict__[key] = dict[key]
+				except:
+					# error. just ignore.
+					#print "key",key,"skipped"
+					pass
+				else:
+					#print "key",key,"set to ",dict[key]
+					pass
 
                     
   
