@@ -40,9 +40,9 @@ import sys
 
 
 def main():
-        arglist = []
-        for arg in sys.argv:
-        	arglist.append( arg )
+	arglist = []
+	for arg in sys.argv:
+		arglist.append( arg )
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " stack ref_vol outdir <maskfile> --ou=outer_radius --delta=angular_bracket --ts --nassign --nrefine --MPI --function --fourvar --maxit=max_iter ----termprec=percentage_to_stop --npad --debug --CTF --snr=SNR --sym=symmetry"
 	parser = OptionParser(usage,version=SPARXVERSION)

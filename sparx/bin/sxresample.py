@@ -51,24 +51,24 @@ def resample_insert( bufprefix, fftvols, wgtvols, mults, CTF, npad, info=None):
 	overall_start = time()
 
 	for iblock in xrange(nblock):
-    		if iblock==nblock - 1:
-        		pbeg = iblock*blocksize
-        		pend = nprj
-    		else:
-        		pbeg = iblock*blocksize
-        		pend = pbeg + blocksize
+		if iblock==nblock - 1:
+			pbeg = iblock*blocksize
+			pend = nprj
+		else:
+			pbeg = iblock*blocksize
+			pend = pbeg + blocksize
 
 		start_time = time()
 		ostore.read( pend - pbeg )
- 		if not(info is None):
+		if not(info is None):
 			t = time()
 			info.write("        block %d read.   \t time: %10.3f %10.3f\n" % (iblock, t-start_time, t-overall_start) )
 			info.flush()
 
 		start_time = time()
-    		for ivol in xrange(nvol):
-        		ostore.add_tovol( fftvols[ivol], wgtvols[ivol], mults[ivol], pbeg, pend )
-       		if not(info is None):
+		for ivol in xrange(nvol):
+			ostore.add_tovol( fftvols[ivol], wgtvols[ivol], mults[ivol], pbeg, pend )
+		if not(info is None):
 			t = time()
 			info.write("        block %d inserted.\t time: %10.3f %10.3f\n" % (iblock, t-start_time, t-overall_start) )
 			info.flush()
@@ -164,7 +164,7 @@ def resample( prjfile, outdir, bufprefix, nbufvol, nvol, seedbase,\
 	vct = array([0.0]*(3*nprj),'float32')
 	if myid == 0:
 		print  " will read ",myid
-	        tr = EMUtil.get_all_attributes(prjfile,'xform.projection')
+		tr = EMUtil.get_all_attributes(prjfile,'xform.projection')
 		tetprj = [0.0]*nprj
 	        for i in xrange(nprj):
 			temp = tr[i].get_params("spider")

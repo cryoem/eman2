@@ -207,7 +207,7 @@ def prgq( volft, kb, nx, delta, ref_a, sym, MPI=False):
 	ref_angles = even_angles(delta, symmetry=sym, method = ref_a, phiEqpsi = "Minus")
 	cnx = nx//2 + 1
 	cny = nx//2 + 1
-        num_ref = len(ref_angles)
+	num_ref = len(ref_angles)
 
 	if MPI:
 		from mpi import mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
@@ -221,10 +221,10 @@ def prgq( volft, kb, nx, delta, ref_a, sym, MPI=False):
 
 	prjref = []     # list of (image objects) reference projections in Fourier representation
 
-        for i in xrange(num_ref):
+	for i in xrange(num_ref):
 		prjref.append(model_blank(nx, nx))  # I am not sure why is that necessary, why not put None's??
 
-        for i in xrange(ref_start, ref_end):
+	for i in xrange(ref_start, ref_end):
 		prjref[i] = prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0])
 
 	if MPI:
@@ -355,7 +355,7 @@ def gen_rings_ctf( prjref, nx, ctf, numr):
 	  Convert set of ffts of projections to Fourier rings with additional multiplication by a ctf
 	  The command returns list of rings
 	"""
-        from math         import sin, cos, pi
+	from math         import sin, cos, pi
 	from fundamentals import fft
 	from alignment    import ringwe
 	from filter       import filt_ctf
@@ -367,7 +367,7 @@ def gen_rings_ctf( prjref, nx, ctf, numr):
 
 	refrings = []     # list of (image objects) reference projections in Fourier representation
 
-        for i in xrange( len(prjref) ):
+	for i in xrange( len(prjref) ):
 		cimage = Util.Polar2Dm(filt_ctf(prjref[i], ctf, True) , cnx, cny, numr, mode)  # currently set to quadratic....
 		Util.Normalize_ring(cimage, numr, 0 )
 

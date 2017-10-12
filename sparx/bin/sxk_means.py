@@ -56,9 +56,9 @@ def main():
 	parser.add_option('--init_method', type='string',      default='rnd',     help='Method used to initialize partition: "rnd" randomize or "d2w" for d2 weighting initialization (default is rnd)')
 
 	(options, args) = parser.parse_args()
-    	if len(args) < 2 or len(args) > 3:
-				print "usage: " + usage
-        			print "Please run '" + progname + " -h' for detailed options"
+	if len(args) < 2 or len(args) > 3:
+		print "usage: " + usage
+		print "Please run '" + progname + " -h' for detailed options"
 	elif options.trials < 1:
 			sys.stderr.write("ERROR: Number of trials should be at least 1.\n\n")
 			sys.exit()

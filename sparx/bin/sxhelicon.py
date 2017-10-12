@@ -38,9 +38,9 @@ def main():
 	from optparse import OptionParser
 	from global_def import SPARXVERSION
 	import global_def
-        arglist = []
-        for arg in sys.argv:
-        	arglist.append( arg )
+	arglist = []
+	for arg in sys.argv:
+		arglist.append( arg )
 	progname = os.path.basename(arglist[0])
 	usage = progname + " stack ref_vol outdir  <maskfile> parameters listed below"
 	

@@ -49,12 +49,12 @@ def main():
 	parser.add_option("--sca_a",      type = "float",  default=1,     help =" scanner OD converting parameter a, check manual of the scanner ")
 	parser.add_option("--sca_b",      type = "float",  default=1,     help =" scanner OD converting parameter b, check manual of the scanner ")
 	parser.add_option("--step",       type = "float",  default=63.5,  help =" scan step size of scanner or CCD camera ")
- 	parser.add_option("--mag",        type = "float",  default=40,    help =" magnification at which the images are taken ")		
+	parser.add_option("--mag",        type = "float",  default=40,    help =" magnification at which the images are taken ")		
 	parser.add_option("--MPI", action="store_true", default=False,     help="  whether using MPI version ")
 	(options, args) = parser.parse_args()    	
-    	if len(args) < 1:
-        	print "usage: "      + usage
-        	print "Please run '" + progname + " -h' for detailed options"
+	if len(args) < 1:
+		print "usage: "      + usage
+		print "Please run '" + progname + " -h' for detailed options"
 	else:
 	
 		if len(args) == 1: 

@@ -48,7 +48,7 @@ containing their distribution on a hemisphere."""
 	parser.add_option("--wnx",       type="int",  default=256,             help="plot image size (default = 256)")
 
 	(options, args) = parser.parse_args()
-    	if len(args) != 2:
+	if len(args) != 2:
 		print "usage: " + usage
 		print "Please run '" + progname + """ -h' for detailed options"""
 	else:

@@ -50,7 +50,7 @@ def main():
 	chk_dist = ['SqEuc', 'CCC']
 	
 	(options, args) = parser.parse_args()
-    	if len(args) < 2 or len(args) > 3:
+	if len(args) < 2 or len(args) > 3:
 		print "usage: " + usage
 		print "Please run '" + progname + " -h' for detailed options"
 	elif options.link not in chk_link:

@@ -45,7 +45,7 @@ def main():
 	parser.add_option("--K", type="int", default=2, help="Number of classes (default 2)")
 	
 	(options, args) = parser.parse_args()
-    	if len(args) != 3:
+	if len(args) != 3:
 		print "usage: " + usage
 		print "Please run '" + progname + " -h' for detailed options"
 	else:

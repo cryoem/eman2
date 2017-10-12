@@ -19,16 +19,16 @@ from   logger     import Logger, BaseLogger_Files
 
 def main():
 	from logger import Logger, BaseLogger_Files
-        arglist = []
-        i = 0
-        while( i < len(sys.argv) ):
-            if sys.argv[i]=='-p4pg':
-                i = i+2
-            elif sys.argv[i]=='-p4wd':
-                i = i+2
-            else:
-                arglist.append( sys.argv[i] )
-                i = i+1
+	arglist = []
+	i = 0
+	while( i < len(sys.argv) ):
+		if sys.argv[i]=='-p4pg':
+			i = i+2
+		elif sys.argv[i]=='-p4wd':
+			i = i+2
+		else:
+			arglist.append( sys.argv[i] )
+			i = i+1
 	progname = os.path.basename(arglist[0])
 	usage = progname + " stack  outdir  <mask> --focus=3Dmask --radius=outer_radius --delta=angular_step" +\
 	"--an=angular_neighborhood --maxit=max_iter  --CTF --sym=c1 --function=user_function --independent=indenpendent_runs  --number_of_images_per_group=number_of_images_per_group  --low_pass_filter=.25  --seed=random_seed"

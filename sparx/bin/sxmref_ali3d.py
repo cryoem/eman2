@@ -38,16 +38,16 @@ from global_def import *
 from optparse import OptionParser
 import sys
 def main():
-        arglist = []
-        i = 0
-        while( i < len(sys.argv) ):
-            if sys.argv[i]=='-p4pg':
-                i = i+2
-            elif sys.argv[i]=='-p4wd':
-                i = i+2
-            else:
-                arglist.append( sys.argv[i] )
-                i = i+1
+	arglist = []
+	i = 0
+	while( i < len(sys.argv) ):
+		if sys.argv[i]=='-p4pg':
+			i = i+2
+		elif sys.argv[i]=='-p4wd':
+			i = i+2
+		else:
+			arglist.append( sys.argv[i] )
+			i = i+1
 	progname = os.path.basename(arglist[0])
 	usage = progname + " stack ref_vols outdir <mask> --focus=3Dmask --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_searching_step " +\
 	" --delta=angular_step --an=angular_neighborhood --center=1 --nassign=reassignment_number --nrefine=alignment_number --maxit=max_iter --stoprnct=percentage_to_stop " + \
@@ -81,8 +81,8 @@ def main():
 	
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 3 or len(args) > 4:
-    		print "usage: " + usage
-    		print "Please run '" + progname + " -h' for detailed options"
+		print "usage: " + usage
+		print "Please run '" + progname + " -h' for detailed options"
 	else:
 
 		if len(args) == 3 :

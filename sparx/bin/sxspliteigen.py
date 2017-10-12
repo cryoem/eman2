@@ -44,8 +44,8 @@ def main():
 
 	import sys
 
-        arglist = []
-        for arg in sys.argv:
+	arglist = []
+	for arg in sys.argv:
 		arglist.append( arg )
 
 	progname = os.path.basename(arglist[0])

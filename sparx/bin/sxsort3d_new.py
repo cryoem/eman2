@@ -3085,7 +3085,7 @@ def get_input_from_sparx_ref3d(log_main):# case one
 		else:
 			import_from_sparx_refinement == 0
 			for search_iter in xrange(selected_iter-1, 0, -1):
-				 if os.path.exists(os.path.join(Tracker["constants"]["refinement_dir"], "main%03d"%search_iter, "bckgnoise.hdf")):
+				if os.path.exists(os.path.join(Tracker["constants"]["refinement_dir"], "main%03d"%search_iter, "bckgnoise.hdf")):
 					copyfile(os.path.join(Tracker["constants"]["refinement_dir"], "main%03d"%search_iter, \
 					"bckgnoise.hdf"), os.path.join(Tracker["constants"]["masterdir"], "bckgnoise.hdf"))
 					import_from_sparx_refinement = 1
@@ -4064,10 +4064,10 @@ def do3d_sorting_groups_rec3d(iteration, masterdir, log_main):
 						treg0    = model_blank(1)
 						tvol0    = model_blank(1)
 						tweight0 = model_blank(1)
-				 	tvol0 = steptwo_mpi(tvol0, tweight0, treg0, cfsc, False, color = index_of_colors)
-				 	if( Blockdata["myid_on_node"] == 0): 
-				 		tvol0.write_image(os.path.join(masterdir, "vol_unfiltered_0_grp%03d.hdf"%index_of_group))
-				 	del tvol0, tweight0, treg0
+					tvol0 = steptwo_mpi(tvol0, tweight0, treg0, cfsc, False, color = index_of_colors)
+					if( Blockdata["myid_on_node"] == 0): 
+						tvol0.write_image(os.path.join(masterdir, "vol_unfiltered_0_grp%03d.hdf"%index_of_group))
+					del tvol0, tweight0, treg0
 				else:
 					if( Blockdata["myid_on_node"] == 0):
 						treg0 = get_im(os.path.join(Clusterdir, "tempdir", "trol_0_%03d.hdf"%iteration))

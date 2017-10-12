@@ -245,7 +245,7 @@ def main():
 	parser.add_option("--pairwiseccc",  type="string",	default= " ",      help="Input/output pairwise ccc file")
 
 
- 	(options, args) = parser.parse_args()
+	(options, args) = parser.parse_args()
 
 	global_def.BATCH = True
 
