@@ -1606,7 +1606,7 @@ class SwarmBoxer:
 					self.move_ref(box_num,image_name,dx,dy,allow_template_update=False)
 
 
-	   	boxes.sort(compare_box_correlation) # sorting like this will often put large ice contaminations in a group, thanks Pawel Penczek
+		boxes.sort(compare_box_correlation) # sorting like this will often put large ice contaminations in a group, thanks Pawel Penczek
 		self.target().add_boxes(boxes, self.proximity_threshold == None)
 
 		if self.proximity_threshold != None:

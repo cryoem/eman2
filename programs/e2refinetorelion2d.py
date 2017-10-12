@@ -111,10 +111,10 @@ nx,ny,nz=header['nx'],header['ny'],header['nz']
 num_images = EMUtil.get_image_count(set_name)
 mrc = False
 if num_images > nz:
-        num_ptcl = num_images
+	num_ptcl = num_images
 else:
-        num_ptcl = nz
-        mrc = True
+	num_ptcl = nz
+	mrc = True
 project_db = js_open_dict("info/project.json")
 
 if options.apix == None:
@@ -124,13 +124,13 @@ if options.apix == None:
 		apix = header['ctf'].to_dict()['apix']
 	if header.get_attr_dict().__contains__('apix_x'):
 		apix = header['apix_x']
-        else:
-                print("An Angstrom per pixel was not found in the project database, the images themselves, and was not provided via a command line option. Please provide another input file")
-                print("Exiting e2refinetorelion2d")
-                shutil.rmtree(E2RLN)
-                exit(-1)
+	else:
+		print("An Angstrom per pixel was not found in the project database, the images themselves, and was not provided via a command line option. Please provide another input file")
+		print("Exiting e2refinetorelion2d")
+		shutil.rmtree(E2RLN)
+		exit(-1)
 else:
-        apix = options.apix
+	apix = options.apix
 
 if options.cs == None:
 	if project_db.__contains__('global.microscope_cs'):

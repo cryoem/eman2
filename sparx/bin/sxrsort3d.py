@@ -280,7 +280,7 @@ def main():
 		Tracker["constants"]["partstack"]      = Tracker["constants"]["ali3d"]
 		Tracker["constants"]["ctf_params"]     = os.path.join(masterdir, "ctf_params.txt")
 		######
-	   	if myid == main_node:
+		if myid == main_node:
 			if(Tracker["orgstack"][:4] == "bdb:"):     cmd = "{} {} {}".format("e2bdb.py", Tracker["orgstack"],"--makevstack="+Tracker["constants"]["stack"])
 			else:  cmd = "{} {} {}".format("sxcpy.py", orgstack, Tracker["constants"]["stack"])
 			cmdexecute(cmd)
@@ -292,8 +292,8 @@ def main():
 			total_stack = EMUtil.get_image_count(Tracker["orgstack"])
 		else:
 			total_stack =0
-	   	total_stack = bcast_number_to_all(total_stack, source_node = main_node)
-	   	"""
+		total_stack = bcast_number_to_all(total_stack, source_node = main_node)
+		"""
 		if myid==main_node:
 	   		from EMAN2db import db_open_dict	
 	   		OB = db_open_dict(orgstack)

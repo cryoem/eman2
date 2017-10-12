@@ -799,7 +799,7 @@ def eqprojDot(args, data):
 	s2y = data[3]
 	msk = data[4]
 	CTF = data[5]
-        ou  = data[6]
+	ou  = data[6]
 
 	tmp = img.process( "normalize.mask", {"mask":msk, "no_sigma":0} )
 	ref = project( vol, [phi,tht,psi,-s2x,-s2y], ou )

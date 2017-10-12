@@ -53,15 +53,15 @@ def main():
 
     if len(args) < 4:
         print("usage: " + usage)
-	print("Please run '" + progname + " -h' for details")
+        print("Please run '" + progname + " -h' for details")
     else:
         from string import atoi
         input_stack  = args[0]
         imgstart     = atoi( args[1] )
         imgend       = atoi( args[2] ) +1
         output_stack = args[3]
-	if(len(args) == 5):  mask = args[4]
-	else:               mask = None
+        if(len(args) == 5):  mask = args[4]
+        else:               mask = None
 
 	if global_def.CACHE_DISABLE:
 		from utilities import disable_bdb_cache

@@ -58,9 +58,9 @@ def main():
 	import os
 	import sys
 	from optparse import OptionParser
-        arglist = []
-        for arg in sys.argv:
-        	arglist.append( arg )
+	arglist = []
+	for arg in sys.argv:
+		arglist.append( arg )
 	progname = os.path.basename(arglist[0])
 	usage = progname + """ firstvolume  secondvolume  maskfile  outputfile  --wn  --step  --cutoff  --radius  --fsc  --res_overall  --out_ang_res  --apix  --MPI
 

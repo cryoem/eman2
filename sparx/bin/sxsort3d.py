@@ -294,10 +294,10 @@ def main():
 		chunk_two = wrap_mpi_bcast(chunk_two, main_node)
 		mpi_barrier(MPI_COMM_WORLD)
 		######################## Read/write bdb: data on main node ############################
-	   	if myid==main_node:
+		if myid==main_node:
 			if(orgstack[:4] == "bdb:"):	cmd = "{} {} {}".format("e2bdb.py", orgstack,"--makevstack="+Tracker["constants"]["stack"])
 			else:  cmd = "{} {} {}".format("sxcpy.py", orgstack, Tracker["constants"]["stack"])
-	   		junk = cmdexecute(cmd)
+			junk = cmdexecute(cmd)
 			cmd = "{} {} {}".format("sxheader.py  --params=xform.projection", "--export="+Tracker["constants"]["ali3d"],orgstack)
 			junk = cmdexecute(cmd)
 			cmd = "{} {} {}".format("sxheader.py  --params=ctf", "--export="+Tracker["constants"]["ctf_params"],orgstack)

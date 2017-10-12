@@ -206,7 +206,7 @@ def generate_helimic(refvol, outdir, pixel, CTF=False, Cs=2.0,voltage = 200.0, a
 		i = idef - 4
 		for k in xrange(1):
 			psi  = 90 + 10*i			
- 			proj = prgs(volfts, kbz, [angles[idef-3][0], angles[idef-3][1], psi, 0.0, 0.0], kbx, kby)
+			proj = prgs(volfts, kbz, [angles[idef-3][0], angles[idef-3][1], psi, 0.0, 0.0], kbx, kby)
 			proj = Util.window(proj, 320, nz)		
 			mic += pad(proj, 2048, 2048, 1, 0.0, 750*i, 20*i, 0)
 

@@ -64,7 +64,7 @@ def timetest():
 	print("It took %f seconds to gets the stats (in c++ style) for %d random numbers, %d times" %(dt1,n,it))
 
 def precision_test():
-        """test RotateTranslateAligner ....................."""
+	"""test RotateTranslateAligner ....................."""
 		
 	n = 32
 	err_dx = 0

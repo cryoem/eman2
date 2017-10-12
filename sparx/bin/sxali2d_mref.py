@@ -45,8 +45,8 @@ def main():
 	(options, args) = parser.parse_args()
 
 	if len(args) != 1:
-    		print("usage: " + usage)
-    		print("Please run '" + progname + " -h' for detailed options")
+		print("usage: " + usage)
+		print("Please run '" + progname + " -h' for detailed options")
 		sys.exit()
 
 	if global_def.CACHE_DISABLE:

@@ -1598,10 +1598,10 @@ def rmsdpruner( datar, options ):
 					ntoremove+=1
 					print(rmsd < diameter)
 					#however, if two particles overlap, keep the one with the highest score
-	        		elementoremove = data[e]
-	        		#if dcoeff > ecoeff:
-	        		if ecoeff > dcoeff:
-	        			elementoremove = data[d]
+					elementoremove = data[e]
+					#if dcoeff > ecoeff:
+					if ecoeff > dcoeff:
+						elementoremove = data[d]
 					print("elementoremove",elementoremove)
 					elementstoremove.add( elementoremove )
 				

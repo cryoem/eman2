@@ -242,8 +242,8 @@ def icongpufunc(options,alifile,cmdsfilepath):
 
 	outtomogram = alifile.replace(aliextension,'_icongpu.mrc')
  	
- 	if options.verbose:
- 		print("\n(e2tomo_icongpu)(icongpufunc) calling ICON-GPU.")
+	if options.verbose:
+		print("\n(e2tomo_icongpu)(icongpufunc) calling ICON-GPU.")
 	cmdicon1 = 'ICON-GPU -input ' + alifile + ' -tiltfile ' + options.tltfile + ' -outputPath ' + icondir + ' -slice 0,' + str(outsize-1) + ' -ICONIteration '+ iterationsstring + ' -dataType 1 -threshold 0 -gpu ' + options.gpus 
 	runcmd(options,cmdicon1,cmdsfilepath)
 

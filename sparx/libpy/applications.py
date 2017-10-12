@@ -219,8 +219,8 @@ def ali2d_data(data, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 		mask = model_circle(last_ring, nx, nx)
 
 	cnx = nx/2+1
- 	cny = cnx
- 	mode = "F"
+	cny = cnx
+	mode = "F"
 	if CTF:
 		if data[0].get_attr_default('ctf_applied', 0) > 0:	ERROR("data cannot be ctf-applied", "ali2d", 1)
 		from filter import filt_ctf

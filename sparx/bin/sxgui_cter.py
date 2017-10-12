@@ -959,7 +959,7 @@ class SXGuiCter(QtGui.QWidget):
 		### This section is responsible for background updates
 		self.busy=False
 #		self.needupdate=True
- 		self.needredisp=False
+		self.needredisp=False
 #		self.procthread=None
 #		self.errors=None # used to communicate errors back from the reprocessing thread
 		

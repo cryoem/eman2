@@ -595,7 +595,7 @@ def defocus_get(fnam_roo, volt=300, Pixel_size=1, Cs=2, wgh=.1, f_start=0, f_sto
 		for i in xrange(len(TMP_roo)):	roo.append(TMP_roo[i][1])
 	else:
 		TMP_roo=read_text_row(fnam_roo,"s",";")
- 		for i in xrange(len(TMP_roo)):	roo.append(TMP_roo[i][2])
+		for i in xrange(len(TMP_roo)):	roo.append(TMP_roo[i][2])
 	Res_roo = []
 	Res_TE  = []	
 	if f_start == 0 : 	i_start=0

@@ -576,11 +576,11 @@ def helicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fou
 			#print  "  settings ",nsegms,cents,dst,search_rng,maxincline,kang
 			
 			# ## C code for alignment. @ming
- 			results = [0.0]*3;
- 			results = Util.helixshiftali(ctx, pcoords, nsegms, maxincline, kang, search_rng,nxc)
+			results = [0.0]*3;
+			results = Util.helixshiftali(ctx, pcoords, nsegms, maxincline, kang, search_rng,nxc)
 			sib = int(results[0])
- 			bang = results[1]
- 			qm = results[2]
+			bang = results[1]
+			qm = results[2]
 			#print qm, sib, bang
 			
 			# qm = -1.e23	

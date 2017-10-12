@@ -922,7 +922,7 @@ class CoarsenedFlattenedImage:
 		image = BigImageCache.get_image_directly(self.image_name)
 		
 #		tmp = image.process("filter.lowpass.gauss",{"cutoff_abs":0.01})
-	   	tmp = image
+		tmp = image
 	   	
 		flattenradius = params_mediator.get_template_radius()
 		shrink =  params_mediator.get_subsample_rate()
