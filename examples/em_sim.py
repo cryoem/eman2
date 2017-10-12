@@ -21,7 +21,7 @@ class Microscope(QtOpenGL.QGLWidget):
 		
 		#### C1 and C2
 		#### ensure parallel beam from condenser lens
-		s=self.source=.8
+		s=self.source=.9
 		d0=.15
 		d1=.25
 		f0=.085
@@ -54,6 +54,13 @@ class Microscope(QtOpenGL.QGLWidget):
 				[-.824, -2], ### f==-2 : detector 
 				])
 		
+		elif mode==2:
+			self.lens.extend([
+				[-0.09, 1./15], ### objective lens
+				[-0.09-1./15, -5], #### phase plate
+				[-.347, -2], ### f==-2 : detector 
+			])
+			
 		#### imaging mode with a single lens
 		else:# mode==2:
 			self.lens.extend([
@@ -119,7 +126,7 @@ class Microscope(QtOpenGL.QGLWidget):
 
 		glMatrixMode(GL_PROJECTION)
 		glLoadIdentity()
-		gluPerspective(40.0, 1.0, 1.0, 30.0)
+		gluPerspective(30.0, 1.0, 1.0, 30.0)
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glEnable( GL_LINE_SMOOTH );
@@ -132,7 +139,7 @@ class Microscope(QtOpenGL.QGLWidget):
 		glViewport(0, 0, w, h)
 		glMatrixMode(GL_PROJECTION)
 		glLoadIdentity()
-		gluPerspective(40.0, 1.0, 1.0, 30.0)
+		gluPerspective(30.0, 1.0, 1.0, 30.0)
 		self.win_size=[w,h]
 
 	def paintGL(self):
@@ -174,7 +181,6 @@ class Microscope(QtOpenGL.QGLWidget):
 		#raw[sz/2-wid+w2:sz/2+wid+w2]=1
 		
 		#raw[sz/2-wid+1:sz/2+wid]=1
-		
 		raw0=np.exp(-(np.arange(sz, dtype=float)-sz/2+5)**2/5)
 		raw0+=np.exp(-(np.arange(sz, dtype=float)-sz/2-5)**2/5)
 		raw0+=np.exp(-(np.arange(sz, dtype=float)-sz/2-15)**2/5)
@@ -231,25 +237,28 @@ class Microscope(QtOpenGL.QGLWidget):
 				#break
 				f=ln[1]
 				proj=imgs[-1][-1] ### projection of wave on lens
-				if f<0: ### aperture
-					
-					ap=lens_gl[il][1]+4
+				fv=lens_gl[il][1]
+				
+				if (fv<-3 and fv>-4): ### aperture
+					ap=fv+4
 					clip=int((1-ap)*sz)/2
-					#proj_ps[:clip]=0
-					#proj_ps[-clip:]=0
 					msk=self.gauss_edge(sz, cl=(1-ap)/2.)
 					proj_ps=proj.copy()*msk
-					#print ln, ap, clip, len(proj_ps[:clip]), len(proj_ps[-clip:])
 					shapes.append(EMShape(("rect",.5, .5, 1, 0, vz-2, clip, vz+2, 2)))
 					shapes.append(EMShape(("rect",.5, .5, 1, sz-clip, vz-2, sz, vz+2, 2)))
+					
+				elif fv==-5: ### phase plate
+					msk=self.gauss_edge(sz, cl=.1/2.)
+					phaseplate=self.gauss_edge(sz, cl=.49, gw=.1, gs=.01)
+					phaseplate=-phaseplate*np.pi/2.
+					proj_ps=proj.copy()*msk*np.exp(-1j*phaseplate)
+					
+					shapes.append(EMShape(("rect",.8, .5, 1, 0, vz, sz, vz, 2)))
+					
 				else: ### lens
 					ps=((ix)**2)/(f*2)*(2*np.pi/wavelen) ### phase shift
 					ps+=cs*(ix**4)/4.
-					proj_ps=proj*np.exp(-1j*(-ps)) ### projection after phase shift
-					
-					#clip=int((.4*sz)/2)
-					#proj_ps[:clip]=0
-					#proj_ps[-clip:]=0
+					proj_ps=proj*np.exp(-1j*(-ps)) ### projection after phase 
 					shapes.append(EMShape(("rect",1, .5, .5, 0, vz-2, sz, vz+2, 2)))
 
 				zmax=ln[0]
@@ -331,7 +340,7 @@ class Microscope(QtOpenGL.QGLWidget):
 			#print self.mag
 			#self.pltwindow.set_data([np.arange(sz)-sz/2, aa], "scatter_msk", linetype=0)
 			#self.pltwindow.set_data([r0[c:-c], a0ft[c:-c]], "scatter_fft", linetype=0)
-			self.pltwindow.set_data([np.arange(sz)-sz/2, rawft], "raw_fft", linetype=0)
+			#self.pltwindow.set_data([np.arange(sz)-sz/2, rawft], "raw_fft", linetype=0)
 			#self.pltwindow.set_data([np.arange(sz)-sz/2, ctf], "ctf", linetype=0)
 			#contrast=np.sin(np.angle(a0+a1))
 			#contrast=(np.angle(a0)-np.angle(a1))*180/np.pi
@@ -651,7 +660,7 @@ class Microscope(QtOpenGL.QGLWidget):
 		pts=[]
 		
 		if focal>=0: ### real lens
-			arc=(1./focal)/300.
+			arc=(1./focal)/400.
 			t=np.arange(-np.pi*arc, np.pi*arc+1e-5, np.pi*arc/20.)+np.pi/2.
 			p0=np.vstack([np.cos(t), np.sin(t)]).T
 			p0[:,1]-=p0[0,1]
@@ -735,6 +744,42 @@ class Microscope(QtOpenGL.QGLWidget):
 				glVertexPointerf(pts.tolist())
 				glDrawArrays(GL_LINE_STRIP, 0, len(pts))
 			
+		
+		elif focal==-5: ### phase plate
+			
+			dx=scale/2.
+			
+			for lr in [-1, 1]:
+				dy=.01
+				cc=dx*.95
+				pts=np.array([[dx,dy/2.],[dx-cc,dy/2.],
+						[dx-cc,-dy/2.], [dx,-dy/2.], [dx,dy/2.]])
+				pts[:,0]*=lr
+				pts+=[0,y]
+				glColor3f( .9, .8, 1 )
+				glEnableClientState(GL_VERTEX_ARRAY)
+				glVertexPointerf(pts.tolist())
+				glDrawArrays(GL_POLYGON, 0, len(pts))
+				#####
+				dy=.03
+				cc=dx*.3
+				pts=np.array([[dx,dy/2.],[dx-cc,dy/2.],
+						[dx-cc,-dy/2.], [dx,-dy/2.], [dx,dy/2.]])
+				pts[:,0]*=lr
+				pts+=[0,y]
+				glColor3f( .9, .8, 1 )
+				glEnableClientState(GL_VERTEX_ARRAY)
+				glVertexPointerf(pts.tolist())
+				glDrawArrays(GL_POLYGON, 0, len(pts))
+				
+				glColor3f( .5, .1, 1 )
+				glLineWidth(3.)
+				glEnableClientState(GL_VERTEX_ARRAY)
+				glVertexPointerf(pts.tolist())
+				glDrawArrays(GL_LINE_STRIP, 0, len(pts))
+			
+		
+			
 			
 			
 		return pts
@@ -779,6 +824,7 @@ class Microscope(QtOpenGL.QGLWidget):
 
 	def mouseMoveEvent(self, QMouseEvent):
 		if self.drag_lens<0:
+			
 			return
 		else:
 			p=self.scr_to_img(QMouseEvent.pos())
@@ -860,11 +906,8 @@ class MainWindow(QtGui.QMainWindow):
 			self.imgview = EMImage2DWidget()
 			self.pltview = EMPlot2DWidget()
 			widget = Microscope(self, self.imgview, self.pltview, None, mode, cs)
+			#widget = Microscope(self, None, None, None, mode, cs)
 
-		#img=np.random.rand(512,512)
-		#self.imgview.set_data(from_numpy(img))
-		
-		
 		#widget = Microscope(self, None, None)
 		self.closeEvent=widget.closeEvent
 		self.setCentralWidget(widget)
@@ -877,7 +920,7 @@ def main():
 	
 	usage="Electron Microscope simulation"
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--mode", type=int,help="operating mode. 0: imaging mode with all lens; 1:diffraction mode with all lens; 2: imaging mode with one lens.", default=0)
+	parser.add_argument("--mode", type=int,help="operating mode. 0: imaging mode with all lens; 1:diffraction mode with all lens; 2: imaging mode with single lens and phase plate; else: imaging mode with one lens.", default=0)
 	parser.add_argument("--cs", type=float,help="Cs of microscope.", default=0.0)
 	parser.add_argument("--twod", action="store_true", help="Show twod image instead of 1D plot and beam propagation in the microscope.", default=False)
 	(options, args) = parser.parse_args()

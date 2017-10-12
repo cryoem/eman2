@@ -134,7 +134,7 @@ def main():
 		
 		if options.shrink==0:
 			tm=EMData(tomoname,0,True)
-			shrinkz=tm["nz"]/e["nz"]
+			shrinkz=float(tm["nz"])/e["nz"]
 			shrinkxy=tm["nx"]/e["nx"]
 			print "Shrink by {} in x-y plane, and shrink {} in z axis".format(shrinkxy, shrinkz)
 		else:
