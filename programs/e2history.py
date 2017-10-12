@@ -83,9 +83,9 @@ class HistoryForm:
 		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_cancel"),self.on_cancel)
 		
 		
- 	def get_history_table(self):
- 		from emdatastorage import ParamDef
- 		try:
+	def get_history_table(self):
+		from emdatastorage import ParamDef
+		try:
 			import EMAN2db
 			db=EMAN2db.EMAN2DB.open_db()
 			db.open_dict("history")
@@ -157,13 +157,13 @@ class HistoryForm:
 			params.append(p)
 	
 	
- 		return params
+		return params
  	
- 	def on_ok(self):
- 		self.form.close()
+	def on_ok(self):
+		self.form.close()
  		
- 	def on_cancel(self):
- 		self.form.close()
+	def on_cancel(self):
+		self.form.close()
  			
 	
 def local_datetime(secs):

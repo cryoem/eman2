@@ -1394,8 +1394,8 @@ class TaskManager(QtGui.QWidget):
 
 		# A timer for updates
 		self.timer = QtCore.QTimer(self);
- 		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.update_tasks)
- 		self.timer.start(2000)
+		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.update_tasks)
+		self.timer.start(2000)
 
 	def check_task(self,fin,ptsk):
 		"""Note that this modifies ptsk in-place"""

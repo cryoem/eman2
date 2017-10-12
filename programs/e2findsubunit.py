@@ -42,7 +42,7 @@ from random import random
 def main() :
 	global threshold
 	
-        usage = """prog [options] <input> <output>
+	usage = """prog [options] <input> <output>
 
 
 	This program attempts to extract one subunit from a volume by starting at

@@ -386,51 +386,51 @@ def check_e2refin2d_args(options): # this function is required by the workflow, 
 #	if len(options.filenames) == 0: # this is the specialized part - the workflow creates starting data sets from a list of filenames
 #		error_message.append("Please choose the file(s) that you want to use as as input data for e2refine2d")
 #
- 	if options.shrink < 1:
- 		error_message.append("Shrink must be atleast 1")
+	if options.shrink < 1:
+		error_message.append("Shrink must be atleast 1")
 
-  	if options.initial != None and len(options.initial) > 0:
- 		if not file_exists(options.initial):
- 			error_message.append("The initial class averages file you specified (%s) does not exist." %(options.initial))
+	if options.initial != None and len(options.initial) > 0:
+		if not file_exists(options.initial):
+			error_message.append("The initial class averages file you specified (%s) does not exist." %(options.initial))
 
- 	if options.iter < 0:
- 		error_message.append("The number of e2refine2d iterations must be atleast 0.")
+	if options.iter < 0:
+		error_message.append("The number of e2refine2d iterations must be atleast 0.")
 
- 	if options.classiter < 0:
- 		error_message.append("The number of class average iterations iteration must be atleast 0.")
+	if options.classiter < 0:
+		error_message.append("The number of class average iterations iteration must be atleast 0.")
 
-  	if options.naliref < 1:
-  		error_message.append("The number alignment references must be atleast 1.")
+	if options.naliref < 1:
+		error_message.append("The number alignment references must be atleast 1.")
 
-  	if options.nbasisfp < 1:
-  		error_message.append("The number of MSA basis vectors must be atleast 1.")
+	if options.nbasisfp < 1:
+		error_message.append("The number of MSA basis vectors must be atleast 1.")
 
-  	if options.ncls < 2:
-  		error_message.append("The number of classes must be atleast 2.")
+	if options.ncls < 2:
+		error_message.append("The number of classes must be atleast 2.")
 
-  	if options.parallel < 1:
-  		error_message.append("The number CPUs availables must be atleast 1.")
+	if options.parallel < 1:
+		error_message.append("The number CPUs availables must be atleast 1.")
 
-  	if  not check_eman2_type(options.simalign,Aligners,"Aligner",False):
-  		error_message.append("There is problem with the aligner arguments.")
+	if  not check_eman2_type(options.simalign,Aligners,"Aligner",False):
+		error_message.append("There is problem with the aligner arguments.")
 
-  	if not check_eman2_type(options.simaligncmp,Cmps,"Cmp",False):
-  		error_message.append("There is problem with main aligner comparitor arguments.")
+	if not check_eman2_type(options.simaligncmp,Cmps,"Cmp",False):
+		error_message.append("There is problem with main aligner comparitor arguments.")
 
-  	if not check_eman2_type(options.simcmp,Cmps,"Cmp",False):
-  		error_message.append("There is problem with main comparitor arguments.")
+	if not check_eman2_type(options.simcmp,Cmps,"Cmp",False):
+		error_message.append("There is problem with main comparitor arguments.")
 
-  	if options.simralign != None and not check_eman2_type(options.simralign,Aligners,"Aligner"):
-  		error_message.append("There is problem with the refine aligner arguments.")
+	if options.simralign != None and not check_eman2_type(options.simralign,Aligners,"Aligner"):
+		error_message.append("There is problem with the refine aligner arguments.")
 
-  	if options.simraligncmp != None and  not check_eman2_type(options.simraligncmp,Cmps,"Cmps"):
-  		error_message.append("There is problem with the refine aligner comparitor arguments.")
+	if options.simraligncmp != None and  not check_eman2_type(options.simraligncmp,Cmps,"Cmps"):
+		error_message.append("There is problem with the refine aligner comparitor arguments.")
 
-  	if hasattr(options,"parallel") and options.parallel != None:
-  		if len(options.parallel) < 2:
-  			error_message.append("The parallel option %s does not make sense" %options.parallel)
+	if hasattr(options,"parallel") and options.parallel != None:
+		if len(options.parallel) < 2:
+			error_message.append("The parallel option %s does not make sense" %options.parallel)
 
-  	return error_message
+	return error_message
 
 if __name__ == "__main__":
     main()

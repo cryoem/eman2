@@ -237,7 +237,7 @@ for k in range(num_ptcl):
 		call(s, shell=True)
 		if (k-i-1) == 0:
 			s = "e2proc2d.py " + E2RLN + "/" + base_name(old_src) + ".hdf " + E2RLN + "/" + base_name(old_src) + ".mrc --verbose="+str(options.verbose) + " --process=normalize.edgemean"
-                        call(s, shell=True)
+			call(s, shell=True)
 		else:
 			s = "e2proc2d.py " + E2RLN + "/" + base_name(old_src) + ".hdf " + E2RLN + "/" + base_name(old_src) + ".mrc --verbose=" + str(options.verbose) + " --process=normalize.edgemean --twod2threed"
 			call(s, shell=True)

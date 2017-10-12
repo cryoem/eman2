@@ -1042,11 +1042,11 @@ def fscplotter(fscs,options,apix=0.0,tag='',clearplot=False):
 			tick.label1.set_fontsize(16)
 			tick.label1.set_fontweight('bold')
 		for tick in ax.yaxis.get_major_ticks():
-  			tick.label1.set_fontsize(16)
-  			tick.label1.set_fontweight('bold')
-  		 
-  		pylab.xlabel('X Axis', fontsize=16, fontweight='bold')
-  		pylab.ylabel('Y Axis', fontsize=16, fontweight='bold')
+			tick.label1.set_fontsize(16)
+			tick.label1.set_fontweight('bold')
+
+		pylab.xlabel('X Axis', fontsize=16, fontweight='bold')
+		pylab.ylabel('Y Axis', fontsize=16, fontweight='bold')
 
 		plt.xticks(x,inversefreqslabels)
 		print "Len of x and inversefreqslabels are", len(x), len(inversefreqslabels)

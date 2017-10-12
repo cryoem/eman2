@@ -235,7 +235,7 @@ class GUIctfsim(QtGui.QWidget):
 		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("keypress"),self.listkey)
 		QtCore.QObject.connect(self.splotmode,QtCore.SIGNAL("currentIndexChanged(int)"),self.newPlotMode)
 
-	   	QtCore.QObject.connect(self.newbut,QtCore.SIGNAL("clicked(bool)"),self.on_new_but)
+		QtCore.QObject.connect(self.newbut,QtCore.SIGNAL("clicked(bool)"),self.on_new_but)
 
 
 		self.resize(720,380) # figured these values out by printing the width and height in resize event

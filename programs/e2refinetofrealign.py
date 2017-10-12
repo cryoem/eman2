@@ -224,30 +224,30 @@ f.close()
 
 RO = str(apix_shift*.375*(all_set_data[0]['nx']))
 for option1 in optionList:
-	if option1 == "fbeaut":
-		FBEAUT = 'T'
-	elif option1 == "ffilt":
-		FFILT = 'T'
-  	elif option1 == "rrec":
-		RREC = str(options.rrec)
-	elif option1 == "reslow":
-		RMAX1 = str(options.reslow)
-	elif option1 == "reshigh":
-		RMAX2 = str(options.reshigh)
-	elif option1 == "rclas":
-		RCLAS = str(options.rclas)
-	elif option1 == "fstat":
-		FSTAT = 'T'
-	elif option1 == "mass":
-		MASS = str(options.mass)
-	elif option1 == "interp":
-		INTERP = str(options.interp)
-	elif option1 == "mode":
-		IFLAG = str(options.mode)
-	elif option1 == "randomizemodel":
-		if float(options.randomizemodel) != 0.0:
-			s1 = "e2proc3d.py " + E2FA + "/3DMapInOut.mrc " + E2FA + "/3DMapInOut.mrc --process=filter.lowpass.randomphase:apix=" + str(apix_shift) + ":cutoff_freq=" + str(1/float(options.randomizemodel))
-			call(s1, shell=True)
+    if option1 == "fbeaut":
+        FBEAUT = 'T'
+    elif option1 == "ffilt":
+        FFILT = 'T'
+    elif option1 == "rrec":
+        RREC = str(options.rrec)
+    elif option1 == "reslow":
+        RMAX1 = str(options.reslow)
+    elif option1 == "reshigh":
+        RMAX2 = str(options.reshigh)
+    elif option1 == "rclas":
+        RCLAS = str(options.rclas)
+    elif option1 == "fstat":
+        FSTAT = 'T'
+    elif option1 == "mass":
+        MASS = str(options.mass)
+    elif option1 == "interp":
+        INTERP = str(options.interp)
+    elif option1 == "mode":
+        IFLAG = str(options.mode)
+    elif option1 == "randomizemodel":
+        if float(options.randomizemodel) != 0.0:
+            s1 = "e2proc3d.py " + E2FA + "/3DMapInOut.mrc " + E2FA + "/3DMapInOut.mrc --process=filter.lowpass.randomphase:apix=" + str(apix_shift) + ":cutoff_freq=" + str(1/float(options.randomizemodel))
+            call(s1, shell=True)
 
 OUTFILE2 = E2FA + "/card.txt"          # Cards required by FA
 f = open(OUTFILE2, 'w')      # card.txt to be placed in the E2FA subdirectory created above

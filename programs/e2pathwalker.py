@@ -663,7 +663,7 @@ class PathWalker(object):
 			r2.append(j)
 		
 		rmax = max(r2)
-	 	score_fragment = float(rmax) / float(len(r2))
+		score_fragment = float(rmax) / float(len(r2))
 
 		correctbonds = len(path)-len(breaks)
 		score_path = float(correctbonds) / len(path)

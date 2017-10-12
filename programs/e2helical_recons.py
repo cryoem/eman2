@@ -126,7 +126,7 @@ def main():
               r=sqrt((i-nx/2-0.5)*(i-nx/2-0.5)+(j-nx/2-0.5)*(j-nx/2-0.5))  # find r, the distance to the center (nx/2-0.5,nx/2-0.5)
               theta=180.0*atan((j-nx/2-0.5)/(i-nx/2-0.5))/pi # find the angle theta ranging from 0 to 360
               if i<nx/2:
-	        theta+=180.0 # this is very important, since atan(theta) range from -pi/2 to pi/2
+                theta+=180.0 # this is very important, since atan(theta) range from -pi/2 to pi/2
               #print "r=%f\t theta=%f" %(r,theta) 
               for units in xrange(-4,5): #use 8 neighboring subunits from -4 to +4: -4 -3 -2 -1 0 1 2 3 4
                 if units==0:

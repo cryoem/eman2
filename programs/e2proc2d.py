@@ -1005,7 +1005,7 @@ def main():
 						else :
 							if not min_max_set :
 								d["render_min"] = d["minimum"]
-				  				d["render_max"] = d["maximum"]
+								d["render_max"] = d["maximum"]
 
 					if not options.average:	# skip writing the input image to output file
 						# write processed image to file
