@@ -1951,7 +1951,7 @@ class GaussPanel:
 		#self.nbin = self.width()
 		# hardcode nbin to 256 for now, which is the hardcoded width of the ccf histogram widget in sxboxer...
 		self.nbin = 256
-                self.data = histogram1d( data, self.nbin, self.PRESIZE )
+		self.data = histogram1d( data, self.nbin, self.PRESIZE )
 
 		hmin = self.data[0][0]
 		hmax = self.data[0][-1]
