@@ -32,7 +32,11 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
 
-from UserDict import DictMixin
+try:
+	from UserDict import DictMixin
+except ImportError:
+	from collections import MutableMapping as DictMixin
+
 from math import *
 import time
 import re
