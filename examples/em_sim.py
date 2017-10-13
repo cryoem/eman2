@@ -385,14 +385,11 @@ class Microscope(QtOpenGL.QGLWidget):
 			phaseobj = np.exp(-1j*raw1*2*np.pi)
 
 			z = t0*scale
-			print(t0,z,t-z)
 			dst = np.sqrt(ixy+(t-z)**2)
 			cpx=phaseobj[:,:,None,None]*np.exp(-1j*2.*np.pi*dst/wavelen)*(1/dst**2)
 			img = np.sum(cpx, axis=(1,0))
 			img/=np.max(abs(img))
 			spec.append(img)
-
-		#self.twodwindow.set_data([from_numpy(np.abs(np.sum(spec,axis=0))),from_numpy(np.angle(np.sum(spec,axis=0)))])
 
 		beam_edge = (xap*xap+yap*yap<(sz/2)**2)
 		return np.sum(spec,axis=0)*beam_edge
@@ -450,7 +447,7 @@ class Microscope(QtOpenGL.QGLWidget):
 			imgs.append(img)
 			vz -= zmax-1
 
-		self.twodwindow.set_data([from_numpy(np.square(np.abs(d).copy())) for d in imgs])
+		self.twodwindow.set_data([from_numpy(np.real(d).copy()) for d in imgs])
 		return imgs[-1]
 	
 	#### draw vertex and keep track of the distance
