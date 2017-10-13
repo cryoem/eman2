@@ -348,7 +348,7 @@ class Microscope(QtOpenGL.QGLWidget):
 		return img
 
 	def specimen_propagation(self):
-		sz = 64 #self.sz
+		sz = self.sz
 		xydivz=2e-3 ### xy/z scale ratio
 		mpix=3e-8 ### pixel to meter
 		wavelen=2e-12/mpix ### wave length
@@ -360,11 +360,11 @@ class Microscope(QtOpenGL.QGLWidget):
 		spec = []
 
 		layers = []
-		layers.append( [[ -5,  -5, 0.3, 25., 25.]] ) # t = 3-0 = 3
-		layers.append( [[  0,  0,  0.6, 25., 25.]] ) # t = 3-1 = 2
-		layers.append( [[  5, 5, 0.3, 25., 25.]] ) # t = 3-2 = 1
+		layers.append( [[ -5,  -5, 0.3, 8., 8.]] ) # t = 3-0 = 3
+		layers.append( [[  0,  0,  0.3, 8., 8.]] ) # t = 3-1 = 2
+		layers.append( [[  5, 5, 0.3, 8., 8.]] ) # t = 3-2 = 1
 
-		scale = 5
+		scale = 1
 		t = len(layers)*scale # specimen thickness (in pixels)
 
 		raw1 = np.zeros((sz,sz))
@@ -391,8 +391,7 @@ class Microscope(QtOpenGL.QGLWidget):
 			img/=np.max(abs(img))
 			spec.append(img)
 
-		beam_edge = (xap*xap+yap*yap<(sz/2)**2)
-		return np.sum(spec,axis=0)*beam_edge
+		return np.sum(spec,axis=0)
 
 	def draw_wave_twod(self):
 		self.sz = 64
@@ -435,7 +434,7 @@ class Microscope(QtOpenGL.QGLWidget):
 				proj_ps=proj.copy()
 				ap=lens_gl[il][1]+4
 				clip=int((1-ap)*sz)/2
-				proj_ps *= (xap*xap + yap*yap <= clip**2)
+				proj_ps *= (xap*xap+yap*yap<clip**2)
 			else: ### lens
 				ps=rr/(f*2)*(2*np.pi/wavelen)  ### phase shift
 				ps+=self.cs*(rr**4)/4.
