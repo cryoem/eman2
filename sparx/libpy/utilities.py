@@ -6881,9 +6881,9 @@ def Kmeans_exhaustive_run(ref_vol_list,Tracker):
 				#volref = filt_tanl(volref, Tracker["low_pass_filter"],.1)
 				volref, fsc_kmref = rec3D_two_chunks_MPI(data,snr,Tracker["constants"]["sym"],mask3D,\
 			 os.path.join(outdir, "resolution_%02d_Kmref%04d"%(igrp,kmref)), myid, main_node, index=-1, npad=npad, finfo = None)
-			 	if myid !=main_node:
-			 		volref = model_blank(Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"])
-			 	bcast_EMData_to_all(volref, myid, main_node, MPI_COMM_WORLD)
+				if myid !=main_node:
+					volref = model_blank(Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"])
+				bcast_EMData_to_all(volref, myid, main_node, MPI_COMM_WORLD)
 				ref_vol_list.append(volref)
 				mpi_barrier(MPI_COMM_WORLD)
 		else:
@@ -6897,7 +6897,7 @@ def Kmeans_exhaustive_run(ref_vol_list,Tracker):
 
 def print_a_line_with_timestamp(string_to_be_printed ):
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
- 	print((line,string_to_be_printed))
+	print((line,string_to_be_printed))
 	return string_to_be_printed
 
 def split_a_group(workdir,list_of_a_group,Tracker):

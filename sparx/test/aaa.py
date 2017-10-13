@@ -73,7 +73,7 @@ for i in range(0,0+1):
 	  drop_image(u,'rst3.spi')
 	  fsc(ee,u,1,"fsct")
 	  ct= ccc(ee,u,mas)
-          d=u-ee
+	  d=u-ee
 	  info(d,mas)
 	  drop_image(d,'rst4.spi')
 	  a=Util.im_diff(u,ee,mas)
@@ -95,7 +95,7 @@ for i in range(0,0+1):
 	  drop_image(u,'rtg3.spi')
 	  fsc(ee,u,1,"fscg")
 	  cg= ccc(ee,u,mas)
-          d=u-ee
+	  d=u-ee
 	  info(d,mas)
 	  drop_image(d,'rtg4.spi')
 	  a=Util.im_diff(u,ee,mas)
@@ -115,7 +115,7 @@ for i in range(0,0+1):
 	  drop_image(s,'sss3.spi')
 	  fsc(ee,s,1,"fscs")
 	  cs= ccc(ee,s,mas)
-          d=s-ee
+	  d=s-ee
 	  drop_image(d,'sss4.spi')
 	  info(d,mas)
 	  a=Util.im_diff(s,ee,mas)
@@ -124,7 +124,7 @@ for i in range(0,0+1):
 	  info(d,mas)
 	  drop_image(d,'sss5.spi')
 
-          print(i, cs, cg, ct, inorm, snorm, tnorm, gnorm)
+	  print(i, cs, cg, ct, inorm, snorm, tnorm, gnorm)
 	  if(snorm==0.0):
 	    snorm=1.0
 	  if(tnorm==0.0):
