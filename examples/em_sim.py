@@ -360,11 +360,11 @@ class Microscope(QtOpenGL.QGLWidget):
 		spec = []
 
 		layers = []
-		layers.append( [[ -5,  -5, 0.3, 8., 8.]] ) # t = 3-0 = 3
+		layers.append( [[ -10,  -10, 0.15, 4., 8.]] ) # t = 3-0 = 3
 		layers.append( [[  0,  0,  0.3, 8., 8.]] ) # t = 3-1 = 2
-		layers.append( [[  5, 5, 0.3, 8., 8.]] ) # t = 3-2 = 1
+		layers.append( [[  10, 10, 0.45, 4., 8.]] ) # t = 3-2 = 1
 
-		scale = 1
+		scale = 5
 		t = len(layers)*scale # specimen thickness (in pixels)
 
 		raw1 = np.zeros((sz,sz))
