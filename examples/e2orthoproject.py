@@ -199,8 +199,8 @@ def main():
 	Make a directory where to store the results
 	'''
 	
-	from e2spt_classaverage import sptmakepath
-	options = sptmakepath(options,'orthoprjs')
+	from EMAN2_utils import makepath
+	options = makepath(options,'orthoprjs')
 	
 
 	'''
