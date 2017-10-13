@@ -116,8 +116,8 @@ def main():
 
 	if len( orientations ) > 2:
 
-		from e2spt_classaverage import sptmakepath
-		options = sptmakepath(options,'spttransformplot')
+		from EMAN2_utils import makepath
+		options = makepath(options,'spttransformplot')
 		
 		for i in orientations:
 			t = orientations[i]
