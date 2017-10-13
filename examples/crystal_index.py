@@ -323,7 +323,8 @@ def get_sf(fft,xc,yc,nn=2):
 	phase = np.angle(np.sum(np.real(reg).ravel()) + 1j*np.sum(np.imag(reg).ravel()),deg=True)
 	return amp,phase
 
-def twoD_Gaussian((x, y), xo, yo, amplitude, sigma_x, sigma_y, theta, offset=0.0):
+def twoD_Gaussian(x_y, xo, yo, amplitude, sigma_x, sigma_y, theta, offset=0.0):
+	x, y = x_y
 	xo = float(xo)
 	yo = float(yo)
 	a = (np.cos(theta)**2)/(2*sigma_x**2) + (np.sin(theta)**2)/(2*sigma_y**2)
