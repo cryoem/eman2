@@ -269,9 +269,9 @@ def main():
 
 	import sys
 
-        arglist = []
-        for arg in sys.argv:
-	    arglist.append( arg )
+	arglist = []
+	for arg in sys.argv:
+		arglist.append( arg )
 
 	progname = os.path.basename(arglist[0])
 	usage = progname + " prjstack outdir bufprefix --delta --d --nvol --nbufvol --seedbase --snr --npad --CTF --MPI --verbose"

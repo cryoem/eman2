@@ -578,7 +578,7 @@ def common_line_in3D(phiA,thetaA,phiB,thetaB):
 	ph2 = phiB*piOver;
 	th2 = thetaB*piOver;
 
- 	#nx = cos(thetaBR)*sin(thetaAR)*sin(phiAR) - cos(thetaAR)*sin(thetaBR)*sin(phiBR) ;
+	#nx = cos(thetaBR)*sin(thetaAR)*sin(phiAR) - cos(thetaAR)*sin(thetaBR)*sin(phiBR) ;
 	#ny = cos(thetaAR)*sin(thetaBR)*cos(phiBR) - cos(thetaBR)*sin(thetaAR)*cos(phiAR) ;
 	#nz = sin(thetaAR)*sin(thetaBR)*sin(phiAR-phiBR);
 
@@ -1947,7 +1947,7 @@ def reconstitute_mask(image_mask_applied_file, new_mask_file, save_file_on_disk 
 		nima = EMUtil.get_image_count(image_mask_applied_file)
 		if (nima > 1):
 			image_mask_applied = []
-		 	for ima in xrange(nima):
+			for ima in xrange(nima):
 				e = EMData()
 				e.read_image(image_mask_applied_file, ima)
 				image_mask_applied.append(e)
@@ -6067,7 +6067,7 @@ def print_upper_triangular_matrix(data_table_dict,N_indep,log_main):
 
 def print_a_line_with_timestamp(string_to_be_printed ):
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
- 	print((line,string_to_be_printed))
+	print((line,string_to_be_printed))
 	return string_to_be_printed
 
 def convertasi(asig,K):
@@ -6104,8 +6104,8 @@ def print_dict(dict,theme):
 				print(("                    => "+key+spaces[len(key):]+":  "+str(value)))
 
 def get_resolution_mrk01(vol, radi, nnxo, fscoutputdir, mask_option):
-        # this function is single processor
-        #  Get updated FSC curves, user can also provide a mask using radi variable
+	# this function is single processor
+	#  Get updated FSC curves, user can also provide a mask using radi variable
 	import types
 	from statistics import fsc
 	from utilities import model_circle, get_im
@@ -6127,7 +6127,7 @@ def get_resolution_mrk01(vol, radi, nnxo, fscoutputdir, mask_option):
 			#print("  Something wrong with the resolution, cannot continue")
 		currentres = nfsc[0][i-1]
 
-        """ this commented previously
+	""" this commented previously
 		lowpass = 0.5
 		ns = len(nfsc[1])
         #  This is resolution used to filter half-volumes

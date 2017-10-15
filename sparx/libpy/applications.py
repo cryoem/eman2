@@ -3351,7 +3351,7 @@ def ali2d_rotational(data2d, randomize = False, orient=True, ir = 1, ou = -1, rs
 				angle[im] = retvals["tot"]
 
 def ali2d_cross_res(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=1, maxit=0, CTF=False, snr=1.0, user_func_name="ref_ali2d"):
- 	"""
+	"""
 		Split data into odd and even data sets and align them seperately
 		Cross resolution alignment
 	"""
