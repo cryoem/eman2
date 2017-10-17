@@ -82,9 +82,9 @@ optionList = pyemtbx.options.get_optionlist(sys.argv[1:])
 
 #Check for basic usage
 if len(args) != 1:
-   print("usage:" + usage)
-   print("Please run'" + progname + " -h' for detailed options")
-   sys.exit(1)
+	print("usage:" + usage)
+	print("Please run'" + progname + " -h' for detailed options")
+	sys.exit(1)
 
 
 #E2n = E2init(sys.argv,options.ppid)
@@ -138,31 +138,31 @@ if options.cs == None:
 		cs = project_db['global.microscope_cs']		  
 	elif header.get_attr_dict().__contains__('ctf'):
 		cs = header['ctf'].to_dict()['cs']
-        elif header.get_attr_dict().__contains__('cs'):
-                cs = header['cs']
-        else:
-                print("A spherical aberration value was not found in the project database, the images themselves, and was not provided via a command line option. Please provide another input file")
-                print("Exiting e2refinetorelion2d")
-                shutil.rmtree(E2RLN)
-                exit(-1)
+	elif header.get_attr_dict().__contains__('cs'):
+			cs = header['cs']
+	else:
+			print("A spherical aberration value was not found in the project database, the images themselves, and was not provided via a command line option. Please provide another input file")
+			print("Exiting e2refinetorelion2d")
+			shutil.rmtree(E2RLN)
+			exit(-1)
 else:
         cs = options.cs
 
 if options.voltage == None:
         
-        if project_db.__contains__('global.microscope_voltage'):
-                voltage = project_db['global.microscope_voltage']
-        elif header.get_attr_dict().__contains__('ctf'):
+	if project_db.__contains__('global.microscope_voltage'):
+		voltage = project_db['global.microscope_voltage']
+	elif header.get_attr_dict().__contains__('ctf'):
 		voltage = header['ctf'].to_dict()['voltage']
 	elif header.get_attr_dict().__contains__('voltage'):
 		voltage = header['voltage']
-        else:
-                print("A microscope voltage was not found in the project database, the images themselves, and was not provided via a command line option. Please provide another input file")
-                print("Exiting e2refinetorelion2d")
-                shutil.rmtree(E2RLN)
-                exit(-1)
+	else:
+		print("A microscope voltage was not found in the project database, the images themselves, and was not provided via a command line option. Please provide another input file")
+		print("Exiting e2refinetorelion2d")
+		shutil.rmtree(E2RLN)
+		exit(-1)
 else:
-        voltage = options.voltage
+	voltage = options.voltage
 
 
 # Create the particle stack files (.mrcs files) and the .star file that RELION needs as an inputs.
@@ -170,9 +170,9 @@ set_orig = set_name
 i = 0
 old_src = EMData(set_name,0).get_attr_dict()['data_source'].replace("particles/",'')
 if mrc:
-        s =  "e2proc2d.py " + set_orig + " " + E2RLN + "/ptcl_stack.hdf --threed2twod --process=normalize.edgemean --verbose=" + str(options.verbosity)
+	s =  "e2proc2d.py " + set_orig + " " + E2RLN + "/ptcl_stack.hdf --threed2twod --process=normalize.edgemean --verbose=" + str(options.verbosity)
 else:
-        s =  "e2proc2d.py " + set_orig + " " + E2RLN + "/ptcl_stack.hdf --process=normalize.edgemean --verbose=" + str(options.verbosity)
+	s =  "e2proc2d.py " + set_orig + " " + E2RLN + "/ptcl_stack.hdf --process=normalize.edgemean --verbose=" + str(options.verbosity)
 call(s,shell=True)
 
 ctf_corr = 0

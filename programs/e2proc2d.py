@@ -664,15 +664,15 @@ def main():
 					else: d.process_inplace(processorname, param_dict)
 					index_d[option1] += 1
 
-                                elif option1 == "extractboxes":
-                                    try:
-                                        bf=base_name(d["ptcl_source_image"])
-                                        bl=d["ptcl_source_coord"]
-                                        if boxes.has_key(bf) : boxes[bf].append(bl)
-                                        else : boxes[bf]=[bl]
-                                        boxsize=d["nx"]
-                                    except:
-                                        boxesbad+=1
+				elif option1 == "extractboxes":
+					try:
+						bf=base_name(d["ptcl_source_image"])
+						bl=d["ptcl_source_coord"]
+						if boxes.has_key(bf) : boxes[bf].append(bl)
+						else : boxes[bf]=[bl]
+						boxsize=d["nx"]
+					except:
+						boxesbad+=1
 
 				elif option1 == "addfile":
 					af=EMData(options.addfile[index_d[option1]],0)
@@ -1157,11 +1157,11 @@ def main():
 		options.threed2twod   = opt3to2
 		options.twod2threed   = opt2to3
 
-        if options.extractboxes:
-            for k in boxes.keys():
-                out=file(k+".box","w")
-                for c in boxes[k]:
-                    out.write("{:1d}\t{:1d}\t{:1d}\t{:1d}\n".format(int(c[0]-boxsize/2),int(c[1]-boxsize/2),int(boxsize),int(boxsize)))
+		if options.extractboxes:
+			for k in boxes.keys():
+				out=open(k+".box","w")
+				for c in boxes[k]:
+					out.write("{:1d}\t{:1d}\t{:1d}\t{:1d}\n".format(int(c[0]-boxsize/2),int(c[1]-boxsize/2),int(boxsize),int(boxsize)))
 
 	E2end(logid)
 
