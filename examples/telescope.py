@@ -87,14 +87,14 @@ def rawframesdisk(noframes,outfile):
 
 def avgframesdisk(noframes,noavg,outfile):
 	for i in range(noframes):
-	  a=EMData()
-	  a.read_image("/dev/video0",0)
-	  for j in range(noavg-1):
-		b=EMData()
-		b.read_image("/dev/video0",0)
-		a+=b
-	  a.write_image(outfile,-1)
-	  if i%10==0: print i
+		a=EMData()
+		a.read_image("/dev/video0",0)
+		for j in range(noavg-1):
+			b=EMData()
+			b.read_image("/dev/video0",0)
+			a+=b
+		a.write_image(outfile,-1)
+		if i%10==0: print i
 
 def write_set(lst,outfile):
 	for i in lst:

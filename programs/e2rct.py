@@ -251,13 +251,13 @@ def run(command):
 		
 def processimage(image, options_to_preprocess):
 	if options_to_preprocess != None:
-	    for p in options_to_preprocess:
-	        try:
-		    (processorname, param_dict) = parsemodopt(p)
-		    if not param_dict : param_dict={}
-		    image.process_inplace(str(processorname), param_dict)
-		except:
-		    print "warning - application of the pre processor",p," failed. Continuing anyway"
+		for p in options_to_preprocess:
+			try:
+				(processorname, param_dict) = parsemodopt(p)
+				if not param_dict : param_dict={}
+				image.process_inplace(str(processorname), param_dict)
+			except:
+				print "warning - application of the pre processor",p," failed. Continuing anyway"
 	else:
 		return
 	
