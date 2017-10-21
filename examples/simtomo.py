@@ -11,7 +11,7 @@ from os import system
 import random
 
 optcl=EMData(argv[1],0)
-log=file("tomo.ort","w")
+log=open("tomo.ort","w")
 
 # 8 particles
 for m in range(32):

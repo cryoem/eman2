@@ -46,7 +46,7 @@ for da in angs:
 				if img[x,y+size/2,z+size/2]>0.5 : r1[r]+=1
 				if img[x,y+size/2,z+size/2]>1.5 : r2[r]+=1
 				
-	out=file("fill_ptrb_%04d.txt"%sl,"w")
+	out=open("fill_ptrb_%04d.txt"%sl,"w")
 	for i in xrange(size/2):
 		out.write("%d\t%1.2f\t%1.2f\n"%(i,100.0*r1[i]/n[i],100.0*r2[i]/n[i]))
 	out=None

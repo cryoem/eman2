@@ -114,7 +114,7 @@ class daemon:
 		
 		# This file should be readable by the user only, and contains
 		# "magic" string for security, port number, and PID
-		out=file(e2gethome()+"/.eman2/remoted.txt","w")
+		out=open(e2gethome()+"/.eman2/remoted.txt","w")
 		out.write("%s\n%d\n%d\n"%(self.magic,self.listen_port,os.getpid()))
 		out.close()
     
@@ -160,7 +160,7 @@ def read_chunk(stdin):
 
 def send_file(stdout,path):
 	"Sends a file to stdout as a set of chunks terminated with a 0 length chunk"
-	fin=file(path,"rb")
+	fin=open(path,"rb")
 	while 1:
 		data=fin.read(1000000)
 		if len(data)==0 :break
@@ -172,7 +172,7 @@ def recv_file(stdin,path):
 	"Receives a file into path. Reads a set of chunks terminated with a zero-length chunk"
 	try :os.makedirs(os.path.dirname(path))
 	except: pass
-	out=file(path,"w")
+	out=open(path,"w")
 	while 1:
 		chunk=read_chunk(stdin)
 		if len(chunk)==0 or chunk==None : break

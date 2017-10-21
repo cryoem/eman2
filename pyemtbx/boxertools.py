@@ -1748,17 +1748,17 @@ class Boxable:
 			boxname = self.get_coord_file_name()
 			if file_exists(boxname):
 				if not force:
-					f=file(boxname,'r')
+					f=open(boxname,'r')
 					boxname_backup =  get_file_tag(self.image_name)+str(time()) + ".box.bak"
 					print("warning, found box name",boxname,"- am renaming it to", boxname_backup, "- use force to overwrite this behavior")
-					fbak=file(boxname_backup,'w')
+					fbak=open(boxname_backup,'w')
 					fbak.writelines(f.readlines())
 					fbak.close()
 					f.close()
 				else:
 					remove_file(boxname)
 				
-			f=file(boxname,'w')
+			f=open(boxname,'w')
 			
 			if verbose: print("writing",self.num_boxes(),"box coordinates to file",boxname)
 			

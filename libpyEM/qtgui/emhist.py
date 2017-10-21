@@ -310,7 +310,7 @@ class EMHistogramWidget(EMGLWidget):
 					k = image.get_data_as_vector()
 					self.set_data([l,k],filename+":"+str(idx),quiet=quiet)
 		elif file_type == 'fp':
-			fin=file(filename)
+			fin=open(filename)
 			fph=struct.unpack("120sII",fin.read(128))
 			ny=fph[1]
 			nx=fph[2]
@@ -320,7 +320,7 @@ class EMHistogramWidget(EMGLWidget):
 			self.set_data(data,filename,quiet=quiet)
 		else:
 			try:
-				fin=file(filename)
+				fin=open(filename)
 				fin.seek(0)
 				rdata=fin.readlines()
 				if '#' in rdata[0]:
@@ -366,7 +366,7 @@ class EMHistogramWidget(EMGLWidget):
 					k = image.get_data_as_vector()
 					data = [l,k]
 		elif file_type == 'fp':
-			fin=file(filename)
+			fin=open(filename)
 			fph=struct.unpack("120sII",fin.read(128))
 			ny=fph[1]
 			nx=fph[2]
@@ -375,7 +375,7 @@ class EMHistogramWidget(EMGLWidget):
 				data.append(struct.unpack("%df"%ny,fin.read(4*ny)))
 		else:
 			try:
-				fin=file(filename)
+				fin=open(filename)
 				fin.seek(0)
 				rdata=fin.readlines()
 				rdata=[i for i in rdata if i[0]!='#']
@@ -398,7 +398,7 @@ class EMHistogramWidget(EMGLWidget):
 		any adaptations occur in future
 		'''
 		try:
-			fin=file(filename)
+			fin=open(filename)
 			fin.seek(0)
 			rdata = []
 			while (len(rdata) < 2):
@@ -1180,7 +1180,7 @@ class EMHistogramInspector(QtGui.QWidget):
 		while os.path.exists(name2):
 			name2="plt_concat_%02d.txt"%(i)
 			i+=1
-		out=file(name2,"a")
+		out=open(name2,"a")
 		for name in names :
 			data=self.target().data[name]
 			for i in xrange(len(data[0])):
@@ -1203,7 +1203,7 @@ class EMHistogramInspector(QtGui.QWidget):
 			while os.path.exists(name2):
 				name2="plt_%s_%02d.txt"%(sname,i)
 				i+=1
-			out=file(name2,"w")
+			out=open(name2,"w")
 			for i in xrange(len(data[0])):
 				out.write("%g\t%g\n"%(data[0][i],data[1][i]))
 			print("Wrote ",name2)

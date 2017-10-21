@@ -360,7 +360,7 @@ def initialize_data(inputfile,inputmodel,tltfile,pad,no_weights,preprocess):
 
 	# The TLT file will override anything stored in the image itself, implies no_weights
 	if tltfile:
-		f=file(tltfile,'r')
+		f=open(tltfile,'r')
 		lines=f.readlines()
 		for i,line in enumerate(lines):
 			elem={"xform":Transform({"type":"eman","az":90,"alt":float(line),"phi":-90}),"weight":1.0}

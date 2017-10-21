@@ -294,7 +294,7 @@ def write_boxfiles(files,boxsize):
 		if len(boxes)==0 : 
 			print("no boxes in ",info_name(m))
 			continue
-		out=file("boxfiles/{}.box".format(base_name(m)),"w")
+		out=open("boxfiles/{}.box".format(base_name(m)),"w")
 		for b in boxes:
 			out.write("{:0.0f}\t{:0.0f}\t{:0.0f}\t{:0.0f}\n".format(int(b[0]-boxsize2),int(b[1]-boxsize2),int(boxsize),int(boxsize)))
 

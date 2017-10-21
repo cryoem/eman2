@@ -107,7 +107,7 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 		else : angs=js_open_dict("{}/particle_parms_{:02d}.json".format(options.path,options.iter))
 
 	if options.listfile!=None :
-		plist=set([int(i) for i in file(options.listfile,"r")])
+		plist=set([int(i) for i in open(options.listfile,"r")])
 
 	NTHREADS=max(options.threads+1,2)		# we have one thread just writing results
 

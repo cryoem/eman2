@@ -38,7 +38,7 @@ import time
 import random
 
 
-out=file("fftspeed.txt","w")
+out=open("fftspeed.txt","w")
 # for 1-D python loop is too slow, so we have to get tricky
 #for size in xrange(20,256,2):
 #	img=EMData(size,10000,1)

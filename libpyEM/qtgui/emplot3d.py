@@ -369,7 +369,7 @@ class EMPlot3DWidget(EMGLWidget):
 					self.set_data([l,k],filename+":"+str(idx),quiet=quiet)
 
 		elif file_type == 'fp':
-			fin=file(filename)
+			fin=open(filename)
 			fph=struct.unpack("120sII",fin.read(128))
 			ny=fph[1]
 			nx=fph[2]
@@ -381,7 +381,7 @@ class EMPlot3DWidget(EMGLWidget):
 		else:
 			try:
 				# this should probably be replaced with something more flexible
-				fin=file(filename)
+				fin=open(filename)
 				fin.seek(0)
 				rdata=fin.readlines()
 				if '#' in rdata[0]:
@@ -433,7 +433,7 @@ class EMPlot3DWidget(EMGLWidget):
 					data = [l,k]
 
 		elif file_type == 'fp':
-			fin=file(filename)
+			fin=open(filename)
 			fph=struct.unpack("120sII",fin.read(128))
 			ny=fph[1]
 			nx=fph[2]
@@ -442,7 +442,7 @@ class EMPlot3DWidget(EMGLWidget):
 				data.append(struct.unpack("%df"%ny,fin.read(4*ny)))
 		else:
 			try:
-				fin=file(filename)
+				fin=open(filename)
 				fin.seek(0)
 				rdata=fin.readlines()
 				rdata=[i for i in rdata if i[0]!='#']
@@ -469,7 +469,7 @@ class EMPlot3DWidget(EMGLWidget):
 		any adaptations occur in future
 		'''
 		try:
-			fin=file(filename)
+			fin=open(filename)
 			fin.seek(0)
 			rdata = []
 			while (len(rdata) < 2):
@@ -2249,7 +2249,7 @@ class EMPlot3DInspector(QtGui.QWidget):
 		while os.path.exists(name2):
 			name2="plt_concat_%02d.txt"%(i)
 			i+=1
-		out=file(name2,"a")
+		out=open(name2,"a")
 
 		xcol=self.slidex.value()
 		ycol=self.slidey.value()
@@ -2281,7 +2281,7 @@ class EMPlot3DInspector(QtGui.QWidget):
 				name2="plt_%s_%02d.txt"%(sname,i)
 				i+=1
 
-			out=file(name2,"w")
+			out=open(name2,"w")
 			xcol=self.slidex.value()
 			ycol=self.slidey.value()
 			zcol=self.slidez.value()

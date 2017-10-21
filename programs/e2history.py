@@ -242,7 +242,7 @@ def print_to_std_out(all):
 		print("done")
 		
 	try:
-		fin=file(".eman2log.txt","r")
+		fin=open(".eman2log.txt","r")
 		print("----- .eman2log.txt")
 		for l in fin: print(l)
 		

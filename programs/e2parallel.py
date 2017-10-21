@@ -157,11 +157,11 @@ def runlocaltask(taskin,taskout):
 	from e2project3d import EMProject3DTaskDC
 #	from e2tomoaverage import EMTomoAlignTaskDC
 	
-	task=load(file(taskin,"rb"))
+	task=load(open(taskin,"rb"))
 	
-	try: dump(task.execute(progcb),file(taskout,"wb"),-1)
+	try: dump(task.execute(progcb),open(taskout,"wb"),-1)
 	except:
-		err=file("/tmp/eman2threaderr.txt","w")
+		err=open("/tmp/eman2threaderr.txt","w")
 		traceback.print_exc(30,err)
 		sys.exit(1)		# Error !
 #	print "Done %s (%s)"%(taskin,taskout)

@@ -1845,7 +1845,7 @@ class EMParticleCoordImportTask(WorkFlowTask):
 		for ff in params["coordfiles"]:
 			f=ff.rsplit("/",1)[-1]
 			fsp=best_match(f,img_list)
-			lns=file(ff,"r").readlines()
+			lns=open(ff,"r").readlines()
 			lns=[l.split() for l in lns]
 			bxs=[[int(l[0])+int(l[2])/2,int(l[1])+int(l[3])/2,"manual"] for l in lns]
 			bdb[fsp]=bxs

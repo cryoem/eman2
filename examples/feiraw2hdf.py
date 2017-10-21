@@ -18,7 +18,7 @@ if argv[-1][-4:]!=".hdf" :
 
 # iterate over input files
 for i,fi in enumerate(argv[1:-1]):
-	fin=file(fi,"rb")
+	fin=open(fi,"rb")
 
 	# check magic number and skip
 	a=fin.read(13)

@@ -7,7 +7,7 @@ from EMAN2 import *
 
 db=db_open_dict("bdb:e2ctf.parms",True)
 
-out=file("ctf_parms.txt","w")
+out=open("ctf_parms.txt","w")
 for k in db.keys():
 	ctf=EMAN2Ctf()
 	ctf.from_string(db[k][0])

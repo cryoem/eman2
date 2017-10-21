@@ -1754,7 +1754,7 @@ def varf3d(prjlist,ssnr_text_file = None, mask2D = None, reference_structure = N
 	del volft
 	[ssnr2, vol_ssnr2] = recons3d_nn_SSNR(re_prjlist, mask2D, rw, npad, sign, sym, CTF)
 
-	outf = file(ssnr_text_file, "w")
+	outf = open(ssnr_text_file, "w")
 	for i in xrange(len(ssnr2[0])):
 		datstrings = []
 		datstrings.append("  %15f" % ssnr1[0][i])    #  have to subtract 0.5 as in C code there is round.
@@ -1851,7 +1851,7 @@ def varf3d_MPI(prjlist, ssnr_text_file = None, mask2D = None, reference_structur
 	del re_prjlist
 
 	if myid == 0 and ssnr_text_file != None:
-		outf = file(ssnr_text_file, "w")
+		outf = open(ssnr_text_file, "w")
 		for i in xrange(len(ssnr2[0])):
 			datstrings = []
 			datstrings.append("  %15f" % ssnr1[0][i])    #  have to subtract 0.5 as in C code there is round.
@@ -1915,7 +1915,7 @@ def fsc(img1, img2, w = 1.0, filename=None):
 	for i in xrange(3):
 		frsc.append(result[i*size:(i+1)*size])
 	if filename:
-		outf = file(filename, "w")
+		outf = open(filename, "w")
 		for i in xrange(size):
 			datstrings = []
 			datstrings.append("  %12f" % (frsc[0][i]))

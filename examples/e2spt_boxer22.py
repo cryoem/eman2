@@ -592,7 +592,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 	def menu_file_read_boxloc(self):
 		fsp=str(QtGui.QFileDialog.getOpenFileName(self, "Select output text file"))
 
-		f=file(fsp,"r")
+		f=open(fsp,"r")
 		for b in f:
 			b2=[int(float(i))/self.shrink for i in b.split()[:3]]
 			bdf=[0,0,0,"manual",0.0, self.currentset]
@@ -607,7 +607,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 
 		fsp=str(QtGui.QFileDialog.getSaveFileName(self, "Select output text file"))
 
-		out=file(fsp,"w")
+		out=open(fsp,"w")
 		if self.helixboxer:
 			for b in self.helixboxes:
 				out.write("%d\t%d\t%d\t%d\t%d\t%d\n"%(b[0]*shrinkf,b[1]*shrinkf,b[2]*shrinkf,b[3]*shrinkf,b[4]*shrinkf,b[5]*shrinkf))

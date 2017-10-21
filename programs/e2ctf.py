@@ -292,7 +292,7 @@ NOTE: This program should be run from the project directory, not from within the
 
 		#db_close_dict("bdb:e2ctf.misc")
 
-		out=file("strucfac.txt","w")
+		out=open("strucfac.txt","w")
 		for i in envelope: out.write("%f\t%f\n"%(i[0],i[1]))
 		out.close()
 
@@ -485,7 +485,7 @@ def compute_envelope(img_sets,smax=.06):
 
 		envelope.sort()
 
-		out=file("strucfac.allpoints.txt","w")
+		out=open("strucfac.allpoints.txt","w")
 		for i in envelope: out.write("%f\t%f\n"%(i[0],i[1]))
 		out.close()
 
@@ -508,7 +508,7 @@ def compute_envelope(img_sets,smax=.06):
 #		envelope=[i for i in envelope if i[1]>0]	# filter out all negative peak values
 		# at smax we transition from the computed curve to the empirical curve, by default this is at ~16 A
 		# we find this point, and also simultaneously write the data-based portion of the structure factor to disk
-		out=file("strucfac.fromdata.txt","w")
+		out=open("strucfac.fromdata.txt","w")
 		for i,j in enumerate(envelope):
 			if j[0]>=smax :break
 			out.write("{}\t{}\n".format(j[0],j[1]))

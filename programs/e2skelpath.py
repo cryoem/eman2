@@ -103,7 +103,7 @@ def main():
 	pts=len(dejavupoints)
 	pairlist=[((i[0]%pts,i[0]/pts),(i[1]%pts,i[1]/pts),i[2],j) for i,j in pairlist]
 	
-	out=file(args[2],"w")
+	out=open(args[2],"w")
 	for i in pairlist: 
 		if i[0][0]!=i[1][0] : out.write("%d %d\t%d %d\t%1.3f\t%s\n"%(i[0][1],i[0][0],i[1][1],i[1][0],i[2]*options.apix,i[3]))
 	out.close()
@@ -117,7 +117,7 @@ def getPoints(dejavufile, apix,originX,originY,originZ):
 	pattern=re.compile(r"ALPHA\s'(?P<chain>[\w]+)'\s'(?P<startres>[\w]+)'\s'(?P<stopres>[\w]+)'\s(?P<reslength>[\d]+)\s(?P<x1>[\d.,-]+)\s(?P<y1>[\d.,-]+)\s(?P<z1>[\d.,-]+)\s(?P<x2>[\d.,-]+)\s(?P<y2>[\d.,-]+)\s(?P<z2>[\d.,-]+)")
 	endpoints=[]
 	#print "in get points"
-	for line in file(dejavufile,"r").readlines():
+	for line in open(dejavufile,"r").readlines():
 		result = pattern.search(line)
 		if result:
 			coord=[int(originX+(float(result.group('x1'))/apix)), int(originY+(float(result.group('y1'))/apix)), int(originZ+(float(result.group('z1'))/apix)), int(originX+(float(result.group('x2'))/apix)), int(originY+(float(result.group('y2'))/apix)), int(originZ+(float(result.group('z2'))/apix))]

@@ -109,7 +109,7 @@ def main():
 
 		QtCore.QObject.connect(win[0].child,QtCore.SIGNAL("mousedown"),lambda a,b:selectclass(options.classes[0],options.classes[1],a,b))
 		try:
-			out=file("selected.lst","w")
+			out=open("selected.lst","w")
 			out.write("#LST\n")
 			out.close()
 		except: pass
@@ -195,7 +195,7 @@ def selectclass(rawfsp,mxfsp,event,lc):
 
 	if event.modifiers()==Qt.ShiftModifier :
 		ptcls=getmxinfo(rawfsp,mxfsp,clsnum)
-		out=file("selected.lst","a")
+		out=open("selected.lst","a")
 		for i in ptcls: i.write("%d\t%s\n"%(i[1],i[0]))
 		out.close()
 	else:

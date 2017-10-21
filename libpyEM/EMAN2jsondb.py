@@ -272,7 +272,7 @@ class JSTaskQueue:
 		if not os.path.isdir(path) : os.makedirs(path)
 		self.path=path
 		self.active=js_open_dict("%s/tasks_active.json"%path)		# active tasks keyed by id
-		self.complete=file("%s/tasks_complete.txt"%path,"a")	# complete task log
+		self.complete=open("%s/tasks_complete.txt"%path,"a")	# complete task log
 		self.nametodid=js_open_dict("%s/tasks_name2did.json"%path)	# map local data filenames to did codes
 		self.didtoname=js_open_dict("%s/tasks_did2name.json"%path)	# map data id to local filename
 		self.precache=js_open_dict("%s/precache_files.json"%path)		# files to precache on clients, has one element "files" with a list of paths
@@ -680,11 +680,11 @@ of the path is stored as self.normpath"""
 					mt2=None
 				else :
 					# if we get here there are only 2 possibilities, A) the file doesn't exist or B) we don't have read permission on the directory. In either case, this should be the right thing to do
-					try : jfile=file(self.normpath,"w")
+					try : jfile=open(self.normpath,"w")
 					except :
 						try: os.makedirs(os.path.dirname(self.normpath))	# Can't open the file for writing, so we try to make sure the full path exists. If this fails, we let the actual Exception get raised
 						except : pass
-						try: jfile=file(self.normpath,"w")
+						try: jfile=open(self.normpath,"w")
 						except: raise Exception,"Error: Unable to open {} for writing".format(self.normpath)
 					file_lock(jfile,readonly=False)
 					json.dump({},jfile)
@@ -696,7 +696,7 @@ of the path is stored as self.normpath"""
 		### Read entire dict from file
 		# If we have unprocessed changes, or if the file has changed since last access
 		if len(self.changes)>0 or mt>self.lasttime :
-			jfile=file(self.normpath,"r")		# open the file
+			jfile=open(self.normpath,"r")		# open the file
 			file_lock(jfile,readonly=True)		# lock it for reading
 
 			try:
@@ -733,7 +733,7 @@ of the path is stored as self.normpath"""
 			jss=re.sub(listrex,denl,jss)
 
 			### We do the actual write as a rapid sequence to avoid conflicts
-			jfile=file(self.normpath,"w")
+			jfile=open(self.normpath,"w")
 			file_lock(jfile,readonly=False)
 			jfile.write(jss)
 			file_unlock(jfile)

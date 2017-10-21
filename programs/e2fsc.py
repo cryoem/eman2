@@ -202,7 +202,7 @@ and this program should be regarded as experimental.
 	fx=array(fsc[0:len(fsc)/3])/apix
 	fy=fsc[len(fsc)/3:len(fsc)*2/3]
 
-	out=file("fsc.txt","w")
+	out=open("fsc.txt","w")
 	for i,x in enumerate(fx):
 		out.write("%1.5f\t%1.4f\n"%(x,fy[i]))
 	out.close()
@@ -325,7 +325,7 @@ and this program should be regarded as experimental.
 		volfilto.mult(volnorm)
 		volfilto.write_image(options.outfilto)
 	
-	out=file("fsc.curves.txt","w")
+	out=open("fsc.curves.txt","w")
 	out.write("# This file contains individual FSC curves from e2fsc.py. Only a fraction of computed curves are included.\n")
 	if len(fys)>100 : 
 		step=len(fys)/100

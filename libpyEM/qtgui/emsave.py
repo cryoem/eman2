@@ -86,7 +86,7 @@ class EMCoordFileValidator:
 			lst = file_name
 		for f in lst:
 			try:
-				fin=file(f)
+				fin=open(f)
 				fin.seek(0)
 				rdata = []
 				while (len(rdata) < 2):

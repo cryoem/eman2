@@ -94,7 +94,7 @@ class StarFile(dict):
 		matcher=re.compile("""("[^"]+")|('[^']+')|([^\s]+)""")
 		
 		# read the entire file into a buffer, this dramatically simplifies the logic, even if it eats a chunk of RAM
-		self.lines=[i for i in file(self.filename,"r") if len(i.strip())!=0 and i[0]!="#"]
+		self.lines=[i for i in open(self.filename,"r") if len(i.strip())!=0 and i[0]!="#"]
 		self.lineptr=0
 		
 		while 1:

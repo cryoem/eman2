@@ -1573,7 +1573,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 		origname = self.get_image_file_name()
 
-		f = file(fsp,'w')
+		f = open(fsp,'w')
 		f.write('#LST\n')
 
 		progress = EMProgressDialog("Writing files", "abort", 0, len(self.data),None)

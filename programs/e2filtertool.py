@@ -721,7 +721,7 @@ class EMFilterTool(QtGui.QMainWindow):
 		"""Saves the current processor and parameters to a text file"""
 #		print "saveset ",name
 
-		try: out=file("filtertool_%s.txt"%(name.replace(" ","_")),"w")	# overwrite the current contents
+		try: out=open("filtertool_%s.txt"%(name.replace(" ","_")),"w")	# overwrite the current contents
 		except:
 			traceback.print_exc()
 			print("No permission to store processorset info")
@@ -746,7 +746,7 @@ class EMFilterTool(QtGui.QMainWindow):
 		while len(self.processorlist)>0 : self.delProcessor(0)
 
 		# Open the file
-		try: infile=file("filtertool_%s.txt"%(name.replace(" ","_")),"r")
+		try: infile=open("filtertool_%s.txt"%(name.replace(" ","_")),"r")
 		except:
 			self.addProcessor()
 			self.busy=False

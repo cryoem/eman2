@@ -118,7 +118,7 @@ This is a typical workflow:
 			if options.verbose: print(pfileb,"->",curboxfile)
 			
 			# These are the box locations within that file
-			curboxes=[[int(j) for j in i.split()] for i in file(curboxfile,"r") if i[0]!="#"]
+			curboxes=[[int(j) for j in i.split()] for i in open(curboxfile,"r") if i[0]!="#"]
 			lpfile=pfile
 		else:
 			if skipfile : continue		# we've already identified this as a file we don't have box locations for
@@ -139,7 +139,7 @@ This is a typical workflow:
 
 def write_boxes(curboxfile,curboxes):
 	print("Writing updated boxes for: ",curboxfile)
-	out=file(curboxfile.split(".")[0]+"_cen.box3d","w")
+	out=open(curboxfile.split(".")[0]+"_cen.box3d","w")
 	for b in curboxes: out.write("{:d}\t{:d}\t{:d}\n".format(int(b[0]),int(b[1]),int(b[2])))
 
 if __name__== "__main__":

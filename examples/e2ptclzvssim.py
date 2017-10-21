@@ -127,8 +127,8 @@ as not all elements are computed.
 			AZs.append(az)
 		print(nx," projections read")
 
-	out=file(options.output,"w")
-	outkey=file(options.output.rsplit(".",1)[0]+"_key.txt","w")
+	out=open(options.output,"w")
+	outkey=open(options.output.rsplit(".",1)[0]+"_key.txt","w")
 
 	colh=1
 	t0=time.time()

@@ -4229,7 +4229,7 @@ def ali3d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 		from filter         import filt_ctf
 	else: from reconstruction import recons3d_4nn
 
-	if debug:  outf = file(os.path.join(outdir, "progress"), "w")
+	if debug:  outf = open(os.path.join(outdir, "progress"), "w")
 	else:      outf = None
 
 	# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
@@ -7599,7 +7599,7 @@ def mref_ali3d(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1, ir=
 	mask2D = model_circle(last_ring,nx,nx) - model_circle(first_ring,nx,nx)
 
 
-	if debug:  finfo = file(os.path.join(outdir, "progress"), "w")
+	if debug:  finfo = open(os.path.join(outdir, "progress"), "w")
 	else:      finfo = None
 
 	# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
@@ -9799,7 +9799,7 @@ def local_ali3d(stack, outdir, maskfile = None, ou = -1,  delta = 2, ts=0.25, ce
 	mask2D = model_circle(last_ring, nx, nx)
 
 
-	if debug:  outf = file(os.path.join(outdir, "progress"), "w")
+	if debug:  outf = open(os.path.join(outdir, "progress"), "w")
 	else:      outf = None
 
 	# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
@@ -9823,7 +9823,7 @@ def local_ali3d(stack, outdir, maskfile = None, ou = -1,  delta = 2, ts=0.25, ce
 	n_of_chunks = int(1.0/chunk)
 	
 	if debug:
-		outf = file(os.path.join(outdir, "progress"), "w")
+		outf = open(os.path.join(outdir, "progress"), "w")
 		outf.write("  chunk = "+str(chunk)+"   ")
 		outf.write("\n")
 		outf.flush()
@@ -13188,7 +13188,7 @@ def dele_flist(flist):
 		delete a series files listed in a document file
 	"""
 	delist=[]
-	inf = file(flist, "r")
+	inf = open(flist, "r")
 	strg=inf.readline()
 	while (len(strg)>0):
 		sh_com="rm -f"+strg
@@ -14827,7 +14827,7 @@ def ssnr3d(stack, output_volume = None, ssnr_text_file = None, mask = None, refe
 	del volft
 	[ssnr2, vol_ssnr2] = recons3d_nn_SSNR(prjlist, mask2D, rw, npad, sign, sym, CTF, random_angles)
 	vol_ssnr2.write_image(output_volume, 1)
-	outf = file(ssnr_text_file, "w")
+	outf = open(ssnr_text_file, "w")
 	for i in xrange(len(ssnr2[0])):
 		datstrings = []
 		datstrings.append("  %15f" % ssnr1[0][i])    # have to subtract 0.5 as in C code there is round.
@@ -14945,7 +14945,7 @@ def ssnr3d_MPI(stack, output_volume = None, ssnr_text_file = None, mask = None, 
 	else:                              recons3d_nn_SSNR_MPI(myid, re_prjlist, mask2D, rw, npad, sign, sym, CTF, random_angles)
 	if myid == 0:
 		vol_ssnr2.write_image( output_volume, 1)
-		outf = file(ssnr_text_file, "w")
+		outf = open(ssnr_text_file, "w")
 		for i in xrange(len(ssnr2[0])):
 			datstrings = []
 			datstrings.append("  %15f" % ssnr1[0][i])    #  have to subtract 0.5 as in C code there is round.

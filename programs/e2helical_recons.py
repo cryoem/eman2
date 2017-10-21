@@ -146,7 +146,7 @@ def main():
         print("i,j,k=%d,%d,%d\t std=%f" %(i,j,k,mean_std))
       print("dz=%f\t d_phi=%f\t mean_deviation=%f\n" %(dz,d_phi,mean_std))
     
-      thisfile=file(least_output1,'a') # output the least square data to file
+      thisfile=open(least_output1,'a') # output the least square data to file
       print(dz,d_phi,mean_std, file=thisfile)
       thisfile.close()
       phi_array.append(d_phi)

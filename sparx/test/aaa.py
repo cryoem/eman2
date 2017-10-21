@@ -43,7 +43,7 @@ for nm in dir(sparx.libpy):
 	    
     
     
-out = file("tccc_angle", "w")
+out = open("tccc_angle", "w")
 
 
 

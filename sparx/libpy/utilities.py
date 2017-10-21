@@ -1738,7 +1738,7 @@ def read_spider_doc(fnam):
 		5   2    12     ...(when key <=99999)
 		6   2    12     ...(when key >99999)
 	"""
-	inf = file(fnam, "r")
+	inf = open(fnam, "r")
 	comment_line=inf.readline() # assume there is only one comment line
 	docf_in = []
 	data    = []
@@ -1790,7 +1790,7 @@ def read_text_row(fnam, format="", skip=";"):
  	"""
 	from string import split
 
-	inf  = file(fnam, "r")
+	inf  = open(fnam, "r")
 	strg = inf.readline()
 	x    = []
 	data = []
@@ -1869,7 +1869,7 @@ def read_text_file(file_name, ncol = 0):
 	"""
 
 	from string import split
-	inf = file(file_name, "r")
+	inf = open(file_name, "r")
 	line = inf.readline()
 	data = []
 	while len(line) > 0:

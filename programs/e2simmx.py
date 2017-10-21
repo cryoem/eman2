@@ -664,7 +664,7 @@ def main():
 
 	if options.exclude:
 		try:
-			excl=file(options.exclude,"r").readlines()
+			excl=open(options.exclude,"r").readlines()
 			excl=[int(i) for i in excl]
 			excl=set(excl)
 		except: print("Warning: exclude file failed")		# it's ok if this fails

@@ -821,7 +821,7 @@ class EMPlotTable(EMFileTable):
 		
 	def num_plot_entries(filename):
 		try:
-			f = file(filename,"r")
+			f = open(filename,"r")
 			lines = f.readlines()
 			return str(len(lines))
 		except:

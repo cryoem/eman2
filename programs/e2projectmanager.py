@@ -537,7 +537,7 @@ class EMProjectManager(QtGui.QMainWindow):
 			try : os.unlink("%s/pmfifo"%os.getcwd())
 			except : pass
 			os.mkfifo("%s/pmfifo"%os.getcwd())
-			stdoutpipe = file("%s/pmfifo"%os.getcwd(),"w+",0)
+			stdoutpipe = open("%s/pmfifo"%os.getcwd(),"w+",0)
 		else:
 			stdoutpipe = None
 
@@ -900,7 +900,7 @@ class EMPopen(subprocess.Popen):
 		subprocess.Popen.__init__(self, args, bufsize=bufsize, executable=executable, stdin=stdin, stdout=stdout, stderr=stderr, preexec_fn=preexec_fn, close_fds=close_fds, shell=shell, cwd=cwd, env=env, universal_newlines=universal_newlines, startupinfo=startupinfo, creationflags=creationflags)
 
 	def realTimeCommunicate(self, msgbox):
-		self.pmfifo = file("%s/pmfifo"%os.getcwd(),"r+")
+		self.pmfifo = open("%s/pmfifo"%os.getcwd(),"r+")
 		self.msgbox = msgbox
 		rtcom = threading.Thread(target=self.realTimeChatter)
 		rtcom.start()

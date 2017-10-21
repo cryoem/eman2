@@ -119,7 +119,7 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 		for r in refs: r.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/options.maxres})
 	
 	if options.listfile!=None :
-		plist=set([int(i) for i in file(options.listfile,"r")])
+		plist=set([int(i) for i in open(options.listfile,"r")])
 
 	NTHREADS=max(options.threads+1,2)		# we have one thread just writing results
 
@@ -155,7 +155,7 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 
 	print(len(thrds)," threads")
 	thrtolaunch=0
-	out=file("{}/avg_multi_{:02d}.txt".format(options.path,options.iter),"w")
+	out=open("{}/avg_multi_{:02d}.txt".format(options.path,options.iter),"w")
 	while thrtolaunch<len(thrds) or threading.active_count()>1:
 		# If we haven't launched all threads yet, then we wait for an empty slot, and launch another
 		# note that it's ok that we wait here forever, since there can't be new results if an existing

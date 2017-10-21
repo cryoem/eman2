@@ -125,7 +125,7 @@ e2classifyligand.py sets/myset_even.lst refine_01/classmx_04_even.hdf refine_01/
 	# now we loop over each class, and assess the masked region for each particle in terms of
 	# sigma of the image. Note that we don't have a list of which particle is in each class,
 	# but rather a list of which class each particle is in, so we do this a bit inefficiently for now
-	out=file(options.plotout,"w")
+	out=open(options.plotout,"w")
 	statall={}	# keyed by particle number, contains (statm,statr,statr2) for each particle, with Null if the right options weren't specified
 	for i in range(nref):
 		if options.tstcls>=0 and i!=options.tstcls : continue

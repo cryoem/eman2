@@ -514,7 +514,7 @@ class EMLocalTaskHandler():
 	def add_task(self,task):
 		EMLocalTaskHandler.lock.acquire()
 		if not isinstance(task,JSTask) : raise Exception,"Non-task object passed to EMLocalTaskHandler for execution"
-		dump(task,file("%s/%07d"%(self.scratchdir,self.maxid),"wb"),-1)
+		dump(task,open("%s/%07d"%(self.scratchdir,self.maxid),"wb"),-1)
 		ret=self.maxid
 		self.maxid+=1
 		EMLocalTaskHandler.lock.release()
@@ -535,8 +535,8 @@ class EMLocalTaskHandler():
 #		print "Retrieve ",taskid
 		if taskid not in self.completed : raise Exception,"Task %d not complete !!!"%taskid
 
-		task=load(file("%s/%07d"%(self.scratchdir,taskid),"rb"))
-		results=load(file("%s/%07d.out"%(self.scratchdir,taskid),"rb"))
+		task=load(open("%s/%07d"%(self.scratchdir,taskid),"rb"))
+		results=load(open("%s/%07d.out"%(self.scratchdir,taskid),"rb"))
 
 		os.unlink("%s/%07d.out"%(self.scratchdir,taskid))
 		os.unlink("%s/%07d"%(self.scratchdir,taskid))
@@ -613,8 +613,8 @@ class EMMpiClient():
 		self.cachedir=None
 
 		self.lastupdate=0		# last time we sent an update to rank 0
-		if self.rank==0 : self.logfile=file(self.scratchdir+"/rank0.log","w")
-		elif self.rank==1 : self.logfile=file(self.scratchdir+"/rank1.log","w")
+		if self.rank==0 : self.logfile=open(self.scratchdir+"/rank0.log","w")
+		elif self.rank==1 : self.logfile=open(self.scratchdir+"/rank1.log","w")
 #		elif self.rank==12 : self.logfile=file(self.scratchdir+"/rank12.log","a")
 		else: self.logfile=None
 
@@ -751,7 +751,7 @@ class EMMpiClient():
 						rank=self.rankjobs.index(-1)
 						if verbose>1 : print("Sending job %d to rank %d (%d idle)"%(self.nextjob,rank,self.rankjobs.count(-1)))
 
-						task = file("%s/%07d"%(self.queuedir,self.nextjob),"rb").read()		# we don't unpickle
+						task = open("%s/%07d"%(self.queuedir,self.nextjob),"rb").read()		# we don't unpickle
 						self.log("Sending task %d to rank %d (%s)"%(self.nextjob,rank,str(type(task))))
 						r=mpi_eman2_send("EXEC",task,rank)
 
@@ -767,7 +767,7 @@ class EMMpiClient():
 					com,data,src=mpi_eman2_recv(MPI_ANY_SOURCE)
 					if com=="DONE" :
 						taskid=self.rankjobs[src]
-						file("%s/%07d.out"%(self.queuedir,taskid),"wb").write(data)	# assume what we got back is already pickled
+						open("%s/%07d.out"%(self.queuedir,taskid),"wb").write(data)	# assume what we got back is already pickled
 						self.status[taskid]=100
 						self.rankjobs[src]=-1
 						self.log('Task %s complete on rank %d'%(taskid,src))
@@ -928,8 +928,8 @@ class EMMpiTaskHandler():
 		self.maxid=1			# Current task counter, points to the next open number
 		self.completed={}		# set of completed tasks, key is task id, value is completion status
 
-		self.mpiout=file("%s/mpiout.txt"%self.scratchdir,"w")
-		self.mpierr=file("%s/mpierr.txt"%self.scratchdir,"w")
+		self.mpiout=open("%s/mpiout.txt"%self.scratchdir,"w")
+		self.mpierr=open("%s/mpierr.txt"%self.scratchdir,"w")
 
 		# Using a UNIX domain socket due to odd problems with the named FIFO pairs deadlocking
 		try : os.unlink("%s/mpisock"%self.scratchdir)
@@ -993,7 +993,7 @@ class EMMpiTaskHandler():
 
 		task.taskid=self.maxid
 
-		dump(task,file("%s/%07d"%(self.queuedir,self.maxid),"wb"),-1)
+		dump(task,open("%s/%07d"%(self.queuedir,self.maxid),"wb"),-1)
 		ret=self.maxid
 		self.sendcom("NEWJ",self.maxid)
 		if DBUG : self.mpiout.write("{} customer NEWJ complete {}\n".format(local_datetime(),self.maxid))
@@ -1018,8 +1018,8 @@ class EMMpiTaskHandler():
 		if DBUG : self.mpiout.write("{} customer results {}\n".format(local_datetime(),taskid))
 
 		try :
-			task=load(file("%s/%07d"%(self.queuedir,taskid),"rb"))
-			results=load(file("%s/%07d.out"%(self.queuedir,taskid),"rb"))
+			task=load(open("%s/%07d"%(self.queuedir,taskid),"rb"))
+			results=load(open("%s/%07d.out"%(self.queuedir,taskid),"rb"))
 			os.unlink("%s/%07d.out"%(self.queuedir,taskid))
 			os.unlink("%s/%07d"%(self.queuedir,taskid))
 			del self.completed[taskid]
@@ -1521,7 +1521,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 
 				# then we get a sequence of key,value objects, ending with a final None key
 #				result=db_open_dict("bdb:%s#result_%d"%(self.queue.path,tid))
-				result=file("%s/results/%07d"%(self.queue.path,tid),"w")
+				result=open("%s/results/%07d"%(self.queue.path,tid),"w")
 
 				cnt=0
 				while (1) :
@@ -1710,7 +1710,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 					#sendobj(self.sockf,result[k])
 					#if self.verbose>3 : print k,result[k]
 
-				result=file("%s/results/%07d"%(self.queue.path,data),"r")
+				result=open("%s/results/%07d"%(self.queue.path,data),"r")
 				while 1:
 					try:
 						k=load(result)

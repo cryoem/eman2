@@ -293,7 +293,7 @@ def main():
 			c=img.calc_radial_dist(img["nx"]/2,0,1,options.calcradial)
 			curves.append(c)
 
-		out=file(outfile,"w")
+		out=open(outfile,"w")
 		out.write("# {} mode {}".format(infile,options.calcradial))
 		for l in xrange(len(curves[0])):
 			out.write("\n{}".format(l))

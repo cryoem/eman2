@@ -471,7 +471,7 @@ class EMTomoOutputWriter:
 		if len(all_solns) > 1:
 			target_name = base_name(files[target_idx])
 			probe_name = base_name(files[probe_idx]) 
-			out=file("log-s3-%s_VS_%s.txt"%(target_name,probe_name),"w")
+			out=open("log-s3-%s_VS_%s.txt"%(target_name,probe_name),"w")
 			peak = 0
 			for d in all_solns:
 				t = d["xform.align3d"]

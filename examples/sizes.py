@@ -14,7 +14,7 @@ n=EMUtil.get_image_count(argv[1])
 
 peaks=[]
 peakvals=[]
-out=file("%s.sizes.txt"%argv[1][:-4],"w")
+out=open("%s.sizes.txt"%argv[1][:-4],"w")
 for i in range(n):
 	# Read the image
 	im=EMData(argv[1],i)

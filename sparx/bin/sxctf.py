@@ -642,7 +642,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 	sf = sfact([i*ds for i in xrange(ys)], "ribosome","nono")
 	#print "  SF ",sf
 	
-	if debug: dfout=file("ctf.df.txt","w")
+	if debug: dfout=open("ctf.df.txt","w")
 	dfbest1=(0,-1.0e20)
 	for dfi in range(5,128):			# loop over defocus
 		ac=10
