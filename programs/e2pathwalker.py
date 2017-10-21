@@ -48,6 +48,7 @@ import json
 import tempfile
 import os
 import subprocess
+from functools import reduce
 
 
 def check_exists(outfile, overwrite=False):

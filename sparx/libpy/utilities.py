@@ -30,6 +30,7 @@ from __future__ import print_function
 #
 
 from global_def import *
+from functools import reduce
 
 def params_2D_3D(alpha, sx, sy, mirror):
 	"""
