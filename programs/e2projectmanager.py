@@ -573,7 +573,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		helpstr = ""
 		bregex = re.compile('usage\s*=\s*"""')
 		eregex = re.compile('"""')
-		for line in f.xreadlines():
+		for line in f:
 			if re.search(eregex, line) and begin:
 				line = re.sub(eregex, "", line)
 				helpstr = helpstr + line.strip()
@@ -721,7 +721,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		defaultre = re.compile("default\s*=\s*[^,]*")
 
 		# Read line and do preprocessing(set mode defaults if desired)
-		for line in f.xreadlines():
+		for line in f:
 			if mode:
 				if not re.search(moderegex, line): continue	# If we are running the program in a mode, then only eval mode lines
 				string = re.findall(modedefre, re.findall(moderegex, line)[0])
