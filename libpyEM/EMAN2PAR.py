@@ -139,7 +139,7 @@ class EMTaskCustomer:
 				else: self.cache=False
 			except: self.cache=False
 			self.handler=EMMpiTaskHandler(self.maxthreads,self.scratchdir)
-		else : raise Exception,"Only 'dc', 'thread' and 'mpi' servertypes currently supported"
+		else : raise Exception("Only 'dc', 'thread' and 'mpi' servertypes currently supported")
 
 	def __del__(self):
 		if self.servtype=="thread" :
@@ -217,7 +217,7 @@ class EMTaskCustomer:
 		"""Trigger an already submitted task to be re-executed"""
 		if self.servtype in ("thread","mpi") :
 			self.handler.stop()
-			raise Exception,"MPI/Threaded parallelism doesn't support respawning tasks"
+			raise Exception("MPI/Threaded parallelism doesn't support respawning tasks")
 
 		if self.servtype=="dc":
 			while (1):
@@ -267,7 +267,7 @@ class EMTaskCustomer:
 				signal.alarm(0)
 				return EMDCsendonecom(self.addr,"TSKS",tasks)
 
-		raise Exception,"Unknown server type"
+		raise Exception("Unknown server type")
 
 	def send_task(self,task):
 		"""Send a task to the server. Returns a taskid."""
@@ -299,7 +299,7 @@ class EMTaskCustomer:
 				signal.alarm(0)
 				return EMDCsendonecom(self.addr,"TASK",task)
 
-		raise Exception,"Unknown server type"
+		raise Exception("Unknown server type")
 
 	def check_task(self,taskid_list):
 		"""Check on the status of a list of tasks. Returns a list of ints, -1 to 100. -1 for a task
@@ -319,7 +319,7 @@ class EMTaskCustomer:
 				signal.alarm(0)
 				return EMDCsendonecom(self.addr,"STAT",taskid_list)
 		print(self.servtype)
-		raise Exception,"Unknown server type"
+		raise Exception("Unknown server type")
 
 	def get_results(self,taskid,retry=True):
 		"""Get the results for a completed task. Returns a tuple (task object,dictionary}."""
@@ -357,7 +357,7 @@ class EMTaskCustomer:
 				traceback.print_exc()
 				if not retry :
 					print("************************* Failed to retrieve results, aborting attempt")
-					raise Exception,"Unable to retrieve results for %s"%str(taskid)
+					raise Exception("Unable to retrieve results for %s"%str(taskid))
 				print("***************************  ERROR RETRIEVING RESULTS - retrying")
 				self.wait_for_server()
 				return self.get_results(taskid,False)
@@ -513,7 +513,7 @@ class EMLocalTaskHandler():
 
 	def add_task(self,task):
 		EMLocalTaskHandler.lock.acquire()
-		if not isinstance(task,JSTask) : raise Exception,"Non-task object passed to EMLocalTaskHandler for execution"
+		if not isinstance(task,JSTask) : raise Exception("Non-task object passed to EMLocalTaskHandler for execution")
 		dump(task,open("%s/%07d"%(self.scratchdir,self.maxid),"wb"),-1)
 		ret=self.maxid
 		self.maxid+=1
@@ -533,7 +533,7 @@ class EMLocalTaskHandler():
 	def get_results(self,taskid):
 		"""This returns a (task,dictionary) tuple for a task, and cleans up files"""
 #		print "Retrieve ",taskid
-		if taskid not in self.completed : raise Exception,"Task %d not complete !!!"%taskid
+		if taskid not in self.completed : raise Exception("Task %d not complete !!!"%taskid)
 
 		task=load(open("%s/%07d"%(self.scratchdir,taskid),"rb"))
 		results=load(open("%s/%07d.out"%(self.scratchdir,taskid),"rb"))
@@ -798,7 +798,7 @@ class EMMpiClient():
 					if com=="EXEC":
 						if self.logfile!=None : self.logfile.write( "EXEC\n")
 						task=loads(data)		# just for clarity
-						if not isinstance(task,JSTask) : raise Exception,"Non-task object passed to MPI for execution ! (%s)"%str(type(task))
+						if not isinstance(task,JSTask) : raise Exception("Non-task object passed to MPI for execution ! (%s)"%str(type(task)))
 						if verbose>1 : print("rank %d: I just got a task to execute (%s):"%(self.rank,socket.gethostname()),task.command,str(task.options))
 
 						self.taskfile="%s/taskexe.%d"%(self.queuedir,os.getpid())
@@ -989,7 +989,7 @@ class EMMpiTaskHandler():
 		return load(self.mpifile)
 
 	def add_task(self,task):
-		if not isinstance(task,JSTask) : raise Exception,"Non-task object passed to EMLocalTaskHandler for execution"
+		if not isinstance(task,JSTask) : raise Exception("Non-task object passed to EMLocalTaskHandler for execution")
 
 		task.taskid=self.maxid
 
@@ -1054,9 +1054,9 @@ def openEMDCsock(addr,clientid=0, retry=3):
 			time.sleep(8)
 			if i>2 : print("Retrying connect to server (%d)"%i)
 			continue
-		if xch!="EMAN" : raise Exception,"Not an EMAN server"
+		if xch!="EMAN" : raise Exception("Not an EMAN server")
 		break
-	else: raise Exception,"Exceeded max retries in opening socket to "+str(addr)
+	else: raise Exception("Exceeded max retries in opening socket to "+str(addr))
 
 	# Introduce ourselves
 	#addr=socket.inet_aton(socket.gethostbyname(socket.gethostname()))	# This often returns 127.0.0.1  :^(
@@ -1134,7 +1134,7 @@ def recvstr(sock):
 		datlen=unpack("<I",l)[0]
 	except:
 		print("Format error in unpacking (%d) '%s'"%(len(l),l))
-		raise Exception,"Network error receiving string"
+		raise Exception("Network error receiving string")
 	if datlen<=0 :return None
 	return sock.read(datlen)
 
@@ -1155,7 +1155,7 @@ def recvobj(sock):
 		datlen=unpack("<I",l)[0]
 	except:
 		print("Format error in unpacking (%d) '%s'"%(len(l),l))
-		raise Exception,"Network error receiving object"
+		raise Exception("Network error receiving object")
 	if datlen<=0 :return None
 	return loads(sock.read(datlen))
 
@@ -1343,13 +1343,13 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 		self.sockf.write("EMAN")
 		self.sockf.flush()
 		msg = self.sockf.read(4)
-		if msg!="EMAN" : raise Exception,"Non EMAN client"
+		if msg!="EMAN" : raise Exception("Non EMAN client")
 
 		ver=unpack("<I",self.sockf.read(4))[0]
 		if ver!=EMAN2PARVER :
 			self.sockf.write("BADV")
 			self.sockf.flush()
-			raise Exception,"Version mismatch in parallelism (%d!=%d)"%(ver,EMAN2PARVER)
+			raise Exception("Version mismatch in parallelism (%d!=%d)"%(ver,EMAN2PARVER))
 		self.sockf.write("ACK ")
 		self.sockf.flush()
 		client_id=unpack("<I",self.sockf.read(4))[0]
@@ -1757,7 +1757,7 @@ def DCclient_alarm(signum=None,stack=None):
 def DCclient_alarm2(signum=None,stack=None):
 	"""for the special case of precaching"""
 #		if stack!=None : traceback.print_stack(stack)
-	raise Exception,"timeout"
+	raise Exception("timeout")
 
 
 class EMDCTaskClient(EMTaskClient):

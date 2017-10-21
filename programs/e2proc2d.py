@@ -696,7 +696,7 @@ def main():
 					f = dd.do_fft()
 					#f = d.do_fft()
 
-					if d["apix_x"] <= 0 : raise Exception,"Error: 'calccont' requires an A/pix value, which is missing in the input images"
+					if d["apix_x"] <= 0 : raise Exception("Error: 'calccont' requires an A/pix value, which is missing in the input images")
 
 					lopix = int(d["nx"]*d["apix_x"]/150.0)
 					hipix = int(d["nx"]*d["apix_x"]/25.0)

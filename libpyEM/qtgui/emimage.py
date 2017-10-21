@@ -162,7 +162,7 @@ class EMImageWidget(object):
 				widget.set_data(data,remove_directories_from_name(filename),replace)
 				return widget	
 		else:
-			raise Exception,"data must be a single EMData object or a list of EMData objects"
+			raise Exception("data must be a single EMData object or a list of EMData objects")
 
 
 class EMWidgetFromFile(object):

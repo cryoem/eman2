@@ -398,7 +398,7 @@ class EMSimTaskDC(JSTask):
 					break
 			if datareaderror:
 				print("Cannot read image. Give up.")
-				raise Exception,"Couldn't read data in init_memory"
+				raise Exception("Couldn't read data in init_memory")
 				
 			if shrink != None:
 				image.process_inplace("math.fft.resample",{"n":shrink})
@@ -427,7 +427,7 @@ class EMSimTaskDC(JSTask):
 					break
 			if datareaderror:
 				print("Cannot read image. Give up.")
-				raise Exception,"Couldn't read data in init_memory"
+				raise Exception("Couldn't read data in init_memory")
 			
 			
 			if shrink != None:

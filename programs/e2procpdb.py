@@ -89,12 +89,12 @@ def main():
 	mat=options.matrix.split(',')
 	try: mat=[float(i) for i in mat]
 	except:
-		raise Exception,"Invalid Input: %s"%optstr
+		raise Exception("Invalid Input: %s"%optstr)
 		
 	trans=options.trans.split(',')
 	try: trans=[float(i) for i in trans]
 	except:
-		raise Exception,"Invalid Input: %s"%optstr				
+		raise Exception("Invalid Input: %s"%optstr)				
 
 	parms={"type":options.type}
 	parms["tx"]=trans[0]
@@ -112,35 +112,35 @@ def main():
 			parms["phi"]=options.phi
 			try: t=Transform(parms)
 			except:
-				raise Exception,"Invalid transform: %s"%parms
+				raise Exception("Invalid transform: %s"%parms)
 		elif options.type=="imagic":
 			parms["alpha"]=options.alpha
 			parms["beta"]=options.beta
 			parms["gamma"]=options.gamma
 			try: t=Transform(parms)
 			except:
-				raise Exception,"Invalid transform: %s"%parms
+				raise Exception("Invalid transform: %s"%parms)
 		elif options.type=="spider":
 			parms["phi"]=options.phi
 			parms["theta"]=options.theta
 			parms["psi"]=options.psi
 			try: t=Transform(parms)
 			except:
-				raise Exception,"Invalid transform: %s"%parms	
+				raise Exception("Invalid transform: %s"%parms)	
 		elif options.type=="xyz":
 			parms["xtilt"]=options.xtilt
 			parms["ytilt"]=options.ytilt
 			parms["ztilt"]=options.ztilt
 			try: t=Transform(parms)
 			except:
-				raise Exception,"Invalid transform: %s"%parms						
+				raise Exception("Invalid transform: %s"%parms)						
 		elif options.type=="mrc":
 			parms["phi"]=options.phi
 			parms["theta"]=options.theta
 			parms["omega"]=options.omega
 			try: t=Transform(parms)
 			except:
-				raise Exception,"Invalid transform: %s"%parms												
+				raise Exception("Invalid transform: %s"%parms)												
 		elif options.type=="quaternion":
 			parms["e0"]=options.e0
 			parms["e1"]=options.e1
@@ -148,7 +148,7 @@ def main():
 			parms["e3"]=options.e3
 			try: t=Transform(parms)
 			except:
-				raise Exception,"Invalid transform: %s"%parms												
+				raise Exception("Invalid transform: %s"%parms)												
 		elif options.type=="spin":
 			parms["omega"]=options.omega
 			parms["n1"]=options.n1
@@ -156,7 +156,7 @@ def main():
 			parms["n3"]=options.n3
 			try: t=Transform(parms)
 			except:
-				raise Exception,"Invalid transform: %s"%parms												
+				raise Exception("Invalid transform: %s"%parms)												
 		elif options.type=="sgirot":
 			parms["n1"]=options.n1
 			parms["n2"]=options.n2
@@ -164,7 +164,7 @@ def main():
 			parms["q"]=options.q
 			try: t=Transform(parms)
 			except:
-				raise Exception,"Invalid transform: %s"%parms															
+				raise Exception("Invalid transform: %s"%parms)															
 		else:		
 			print("get error, please input the right convention, example eman, imagic, spider, mrc, xyz, sgirot, quaternion, matrix")
 	else:		

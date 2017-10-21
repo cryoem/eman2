@@ -295,7 +295,7 @@ def initialize_data(inputfile,inputmodel,tltfile,pad,no_weights,lowmem,preproces
 
 	n_input=EMUtil.get_image_count(inputfile)
 	nx,ny,nslice= gimme_image_dimensions3D(inputfile)
-	if n_input==1 and nslice>1 and tltfile==None : raise Exception,"Require tlt file to work with volumetric stacks"
+	if n_input==1 and nslice>1 and tltfile==None : raise Exception("Require tlt file to work with volumetric stacks")
 	print(n_input," input images")
 
 	data=[]

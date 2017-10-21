@@ -68,7 +68,7 @@ because file pointers are not held open beyond discrete transations. While it is
 it is not recommended due to inefficiency, and making files which are difficult to read."""
 
 	if url[-5:]!=".json" :
-		raise Exception,"JSON databases must have .json extension"
+		raise Exception("JSON databases must have .json extension")
 
 	return JSDict.open_db(url)
 
@@ -76,7 +76,7 @@ def js_close_dict(url):
 	"""This will free some resources associated with the database. Not associated with closing a file pointer at present."""
 
 	if url[-5:]!=".json" :
-		raise Exception,"JSON databases must have .json extension"
+		raise Exception("JSON databases must have .json extension")
 
 	ddb=JSDict.get_db(url)
 	if ddb!=None : ddb.close()
@@ -87,7 +87,7 @@ def js_remove_dict(url):
 	"""closes and deletes a database using the same specification as db_open_dict"""
 
 	if url[-5:]!=".json" :
-		raise Exception,"JSON databases must have .json extension"
+		raise Exception("JSON databases must have .json extension")
 
 	js_close_dict(url)
 	try : os.unlink(url)
@@ -101,7 +101,7 @@ It does not check the contents of the file, just for its exsistence and permissi
 
 	if url==None : return False
 	if url[-5:]!=".json" :
-		raise Exception,"JSON databases must have .json extension"
+		raise Exception("JSON databases must have .json extension")
 
 	if readonly and os.access(url,os.R_OK) : return True
 	if os.access(url,os.W_OK|os.R_OK) : return True
@@ -346,7 +346,7 @@ class JSTaskQueue:
 		"""Adds a new task to the active queue, scheduling it for execution. If parentid is
 		specified, a doubly linked list is established. parentid MUST be the id of a task
 		currently in the active queue. parentid and wait_for may be set in the task instead"""
-		if not isinstance(task,EMTask) : raise Exception,"Invalid Task"
+		if not isinstance(task,EMTask) : raise Exception("Invalid Task")
 		#self.active["max"]+=1
 		#tid=self.active["max"]
 
@@ -550,15 +550,15 @@ JSDicts are open at one time."""
 
 		if not isinstance(path,str) :
 			cls.lock.release()
-			raise Exception,"Must specify path to open JSONDB"
+			raise Exception("Must specify path to open JSONDB")
 		if path[-5:]!=".json" :
 			cls.lock.release()
-			raise Exception,"JSON databases must have .json extension ('{}')".format(path)
+			raise Exception("JSON databases must have .json extension ('{}')".format(path))
 
 		try: normpath=os.path.abspath(path)
 		except:
 			cls.lock.release()
-			raise Exception,"Cannot find path for {}".format(path)
+			raise Exception("Cannot find path for {}".format(path))
 
 		if cls.opendicts.has_key(normpath) :
 			cls.lock.release()
@@ -569,7 +569,7 @@ JSDicts are open at one time."""
 			cls.lock.release()
 			traceback.print_exc()
 			print("===========================")
-			raise Exception,"Unable to open "+path
+			raise Exception("Unable to open "+path)
 
 		cls.lock.release()
 
@@ -583,12 +583,12 @@ JSDicts are open at one time."""
 
 		cls.lock.acquire()
 
-		if not isinstance(path,str) : raise Exception,"Must specify path to open JSONDB"
+		if not isinstance(path,str) : raise Exception("Must specify path to open JSONDB")
 		if path[-5:]!=".json" :
-			raise Exception,"JSON databases must have .json extension ('{}')".format(url)
+			raise Exception("JSON databases must have .json extension ('{}')".format(url))
 
 		try: normpath=os.path.abspath(path)
-		except: raise Exception,"Cannot find path for {}".format(path)
+		except: raise Exception("Cannot find path for {}".format(path))
 
 		ret=None
 		if cls.opendicts.has_key(normpath) :
@@ -685,7 +685,7 @@ of the path is stored as self.normpath"""
 						try: os.makedirs(os.path.dirname(self.normpath))	# Can't open the file for writing, so we try to make sure the full path exists. If this fails, we let the actual Exception get raised
 						except : pass
 						try: jfile=open(self.normpath,"w")
-						except: raise Exception,"Error: Unable to open {} for writing".format(self.normpath)
+						except: raise Exception("Error: Unable to open {} for writing".format(self.normpath))
 					file_lock(jfile,readonly=False)
 					json.dump({},jfile)
 					file_unlock(jfile)
@@ -709,7 +709,7 @@ of the path is stored as self.normpath"""
 					file_unlock(jfile)					# unlock the file
 					print("Error in file: ",self.path)
 					traceback.print_exc()
-					raise Exception,"Error reading JSON file : {}".format(self.path)
+					raise Exception("Error reading JSON file : {}".format(self.path))
 			self.filesize=jfile.tell()			# our location after reading the data from the file
 			file_unlock(jfile)					# unlock the file
 			jfile=None							# implicit close
@@ -720,7 +720,7 @@ of the path is stored as self.normpath"""
 			try:
 				os.rename(self.normpath,self.normpath[:-5]+"_tmp.json")		# we back up the original file, just in case
 			except:
-				raise Exception,"WARNING: file '{}' cannot be created, conflict in writing JSON files. You may consider reporting this if you don't know why this happened.".format(self.normpath[:-3]+"_tmp.json")
+				raise Exception("WARNING: file '{}' cannot be created, conflict in writing JSON files. You may consider reporting this if you don't know why this happened.".format(self.normpath[:-3]+"_tmp.json"))
 
 			### We do the updates and prepare the string in-ram. If someone else tries a write while we're doing this, it should raise the above exception
 			self.data.update(self.changes)		# update the internal copy of the data
@@ -818,7 +818,7 @@ performance than many individual changes."""
 
 		if noupdate:
 			if self.lasttime==0 : self.sync()		# if DB is closed, sync anyway
-			if key in self.delkeys and key not in self.changes and key not in self.data : raise KeyError,key
+			if key in self.delkeys and key not in self.changes and key not in self.data : raise KeyError(key)
 			if key in self.changes : 
 				ret=self.changes[key]
 				if isinstance(ret,EMData) :
@@ -848,7 +848,7 @@ performance than many individual changes."""
 				ret.del_attr("json_n")
 			return ret
 			
-		raise KeyError,key
+		raise KeyError(key)
 
 
 	def setval(self,key,val,deferupdate=False):

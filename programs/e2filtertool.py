@@ -258,9 +258,9 @@ class EMProcessorWidget(QtGui.QWidget):
 #		print "set"
 
 		if len(text)!=3 :
-			raise Exception,"setFromText requires 3-tuple of strings"
+			raise Exception("setFromText requires 3-tuple of strings")
 		if text[0][0]!="#" or text[1][0]!="#" or text[2][0]!="-" :
-			raise Exception,"Problem unpacking '%s' from file"%text
+			raise Exception("Problem unpacking '%s' from file"%text)
 
 		disabled=parsemodopt("X:"+text[1][1:].strip())[1]			# dictionary of disabled values
 		proc,enabled=parsemodopt(text[2].split("=",1)[1])	# dictionary of enabled values

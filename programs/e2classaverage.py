@@ -410,7 +410,7 @@ jsonclasses["ClassAvTask"]=ClassAvTask.from_jsondict
 def get_image(images,n,normproc=("normalize.edgemean",{})):
 	"""used to get an image from a descriptor as provided to class_average function. Always a copy of the actual image."""
 	if isinstance(images[0],EMData) : ret=images[n].copy()
-	elif n>len(images)-2 : raise Exception, "get_image() outside range"
+	elif n>len(images)-2 : raise Exception("get_image() outside range")
 	else: ret=EMData(images[0],images[n+1])
 
 	if normproc!=None : ret.process_inplace(normproc[0],normproc[1])
@@ -443,7 +443,7 @@ def class_average_withali(images,ptcl_info,xform,ref,averager=("mean",{}),normpr
 
 	if isinstance(images[0],EMData) : nimg=len(images)
 	elif isinstance(images[0],str) and isinstance(images[1],int) : nimg=len(images)-1
-	else : raise Exception,"Bad images list"
+	else : raise Exception("Bad images list")
 
 	incl=[]
 	excl=[]
@@ -507,7 +507,7 @@ def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),pre
 	# nimg is the number of particles we have to align/average
 	if isinstance(images[0],EMData) : nimg=len(images)
 	elif isinstance(images[0],str) and isinstance(images[1],int) : nimg=len(images)-1
-	else : raise Exception,"Bad images list (%s)"%str(images)
+	else : raise Exception("Bad images list (%s)"%str(images))
 
 	if verbose>2 : print("Average %d images"%nimg)
 
@@ -516,7 +516,7 @@ def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),pre
 
 	# If one particle and reference, align and return
 	if nimg==1:
-		if averager[0]!="mean" : raise Exception,"Cannot perform correct average of single particle"
+		if averager[0]!="mean" : raise Exception("Cannot perform correct average of single particle")
 		ali=align_one(get_image(images,0,normproc),ref,prefilt,align,aligncmp,ralign,raligncmp)
 		try: ali["model_id"]=ref["model_id"]
 		except: pass

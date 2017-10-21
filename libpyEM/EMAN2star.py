@@ -122,13 +122,13 @@ class StarFile(dict):
 						val=[line2[1:]]
 						while 1:
 							try: line2=self._nextline()
-							except: raise Exception,"StarFile: Error found parsing multi-line string value for %s"%key
+							except: raise Exception("StarFile: Error found parsing multi-line string value for %s"%key)
 							if line2[0]==';' : break
 							val.append(line2)
 						val[-1]=val[-1].rstrip()		# remove trailing whitespace on the last line
 						val="".join(val)
 						self[key]=val
-					else: raise Exception,"StarFile: Key-value pair error. Matching value for %s not found."%key
+					else: raise Exception("StarFile: Key-value pair error. Matching value for %s not found."%key)
 			elif line[:5].lower()=="data_":
 				if len(self)>0 :
 					print("WARNING: second data_ block encountered in ",self.filename,". Cannot deal with this at present. Second block ignored")

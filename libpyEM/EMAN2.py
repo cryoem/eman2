@@ -585,7 +585,7 @@ def parse_transform(optstr):
 	if len(tpl)==3 :
 		try: tpl=[float(i) for i in tpl]
 		except:
-			raise Exception,"Invalid EMAN transform: %s"%optstr
+			raise Exception("Invalid EMAN transform: %s"%optstr)
 		return Transform({"type":"eman","az":tpl[0],"alt":tpl[1],"phi":tpl[2]})
 
 	# Now we must assume that we have a type:name=val:... specification
@@ -597,11 +597,11 @@ def parse_transform(optstr):
 		s=parm.split("=")
 		try : parms[s[0]]=float(s[1])
 		except :
-			raise Exception,"Invalid transform parameter: %s"%parm
+			raise Exception("Invalid transform parameter: %s"%parm)
 
 	try: ret=Transform(parms)
 	except:
-		raise Exception,"Invalid transform: %s"%optstr
+		raise Exception("Invalid transform: %s"%optstr)
 
 	return ret
 
@@ -1946,7 +1946,7 @@ if the lst file does not exist."""
 
 		try: self.ptr=open(path,"rb+")		# file exists
 		except:
-			if ifexists: raise Exception,"Error: lst file {} does not exist".format(path)
+			if ifexists: raise Exception("Error: lst file {} does not exist".format(path))
 
 			try: os.makedirs(os.path.dirname(path))
 			except: pass
@@ -1992,7 +1992,7 @@ if the lst file does not exist."""
 				self.ptr=open(self.path,"rb+")
 				self.ptr.readline()
 
-			else: raise Exception,"ERROR: The file {} is not in #LSX format".format(self.path)
+			else: raise Exception("ERROR: The file {} is not in #LSX format".format(self.path))
 		self.filecomment=self.ptr.readline()
 		try: self.linelen=int(self.ptr.readline()[1:])
 		except:
@@ -2042,7 +2042,7 @@ comment : optional comment string"""
 	def read(self,n):
 		"""Reads the nth record in the file. Note that this does not read the referenced image, which can be
 performed with read_image either here or in the EMData class. Returns a tuple (n extfile,extfile,comment)"""
-		if n>=self.n : raise Exception,"Attempt to read record {} from #LSX {} with {} records".format(n,self.path,self.n)
+		if n>=self.n : raise Exception("Attempt to read record {} from #LSX {} with {} records".format(n,self.path,self.n))
 		self.ptr.seek(self.seekbase+self.linelen*n)
 		ln=self.ptr.readline().strip().split("\t")
 		if len(ln)==2 : ln.append(None)

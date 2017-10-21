@@ -1391,7 +1391,7 @@ def parse_spider_fname(mystr, *fieldvals):
 				return mystr[:-1]
 			else:
 				# '@' not at the end, so it's an error
-				raise ValueError, "Invalid format: misplaced '@'."
+				raise ValueError("Invalid format: misplaced '@'.")
 		else:
 			# no '@' at all
 			return mystr
@@ -1415,8 +1415,8 @@ def parse_spider_fname(mystr, *fieldvals):
 			# check validity
 			asterisks = mystr[begin+1:end]
 			if asterisks.strip("*") != "":
-			    raise ValueError, "Malformed {*...*} field: %s" % \
-				mystr[begin:end+1]
+			    raise ValueError("Malformed {*...*} field: %s" % \
+				mystr[begin:end+1])
 			fields.append(Fieldloc(begin, end))
 			loc = end
 		return fields
@@ -1428,8 +1428,8 @@ def parse_spider_fname(mystr, *fieldvals):
 	fields = find_fields(mystr)
 	if len(fields) != len(fieldvals):
 		# wrong number of fields?
-		raise ValueError, "Number of field values provided differs from" \
-			"the number of {*...*} fields."
+		raise ValueError("Number of field values provided differs from" \
+			"the number of {*...*} fields.")
 	newstrfrags = []
 	loc = 0
 	for i, field in enumerate(fields):

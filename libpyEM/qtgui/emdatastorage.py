@@ -49,7 +49,7 @@ def boolconv(x):
 	except:
 		if x[0] in ("T","t","Y","y") : return 1
 		if x[0] in ("F","f","N","n") : return 0
-		raise Exception,"Invalid boolean %s"%str(x)
+		raise Exception("Invalid boolean %s"%str(x))
 
 # validation/conversion for text, permitting unicode
 def textconv(x):
@@ -352,10 +352,10 @@ class ParamDef(DictMixin) :
 		if key in self.attr_all:
 			self.__dict__[key]=value
 		else:
-			raise KeyError,"Invalid key: %s"%key
+			raise KeyError("Invalid key: %s"%key)
 			
 	def __delitem__(self,key):
-		raise KeyError,"Key deletion not allowed"
+		raise KeyError("Key deletion not allowed")
 		
 	def keys(self):
 		return tuple(self.attr_all)
@@ -379,19 +379,19 @@ class ParamDef(DictMixin) :
 	def validate(self):
 		
 		if set(self.__dict__.keys())-self.attr_all:
-			raise AttributeError,"Invalid attributes: %s"%",".join(set(self.__dict__.keys())-self.attr_all)
+			raise AttributeError("Invalid attributes: %s"%",".join(set(self.__dict__.keys())-self.attr_all))
 		
 		if str(self.name) == "":
-			raise ValueError,"name required"
+			raise ValueError("name required")
 
 		if self.vartype != None and not str(self.vartype) in valid_vartypes:
-			raise ValueError,"Invalid vartype; not in valid_vartypes"
+			raise ValueError("Invalid vartype; not in valid_vartypes")
 			
 		if unicode(self.desc_short) == "":
-			raise ValueError,"Short description (desc_short) required"
+			raise ValueError("Short description (desc_short) required")
 
 		if unicode(self.desc_long) == "":
-			raise ValueError,"Long description (desc_long) required"
+			raise ValueError("Long description (desc_long) required")
 
 		if self.property != None and str(self.property) not in valid_properties:
 			#raise ValueError,"Invalid property; not in valid_properties"
@@ -413,7 +413,7 @@ class ParamDef(DictMixin) :
 				for i in self.choices:
 					unicode(i)
 			except:
-				raise ValueError,"choices must be a list of strings"
+				raise ValueError("choices must be a list of strings")
 			#if isinstance(self.choices,basestring):
 			# raise ValueError,"choices must be strings"
 			#for i in self.choices:
@@ -514,10 +514,10 @@ class RecordDef(DictMixin) :
 		if key in self.attr_all:
 			self.__dict__[key]=value
 		else:
-			raise AttributeError,"Invalid key: %s"%key
+			raise AttributeError("Invalid key: %s"%key)
 			
 	def __delitem__(self,key):
-		raise AttributeError,"Key deletion not allowed"
+		raise AttributeError("Key deletion not allowed")
 		
 	def keys(self):
 		return tuple(self.attr_all)
@@ -563,38 +563,38 @@ class RecordDef(DictMixin) :
 	def validate(self): 
 		
 		if set(self.__dict__.keys())-self.attr_all:
-			raise AttributeError,"Invalid attributes: %s"%",".join(set(self.__dict__.keys())-self.attr_all)
+			raise AttributeError("Invalid attributes: %s"%",".join(set(self.__dict__.keys())-self.attr_all))
 		
 		try:
 			if str(self.name) == "" or self.name==None:
 				raise Exception
 		except: 
-			raise ValueError,"name required; must be str or unicode"
+			raise ValueError("name required; must be str or unicode")
 
 		try:
 			dict(self.views)
 		except:
-			raise ValueError,"views must be dict"
+			raise ValueError("views must be dict")
 
 		try:
 			list(self.typicalchld)
 		except:
-			raise ValueError,"Invalid value for typicalchld; list of recorddefs required."
+			raise ValueError("Invalid value for typicalchld; list of recorddefs required.")
 						
 		try: 
 			if unicode(self.mainview) == "": raise Exception
 		except:
-			raise ValueError,"mainview required; must be str or unicode"
+			raise ValueError("mainview required; must be str or unicode")
 
 		if not dict(self.views).has_key("recname"):
 			print("Warning: recname view strongly suggested")
 
 		for k,v in self.views.items():
 			if not isinstance(k,str) or not isinstance(v,basestring):
-				raise ValueError,"Views names must be strings; view defs may be unicode"
+				raise ValueError("Views names must be strings; view defs may be unicode")
 
 		if self.private not in [0,1]:
-			raise ValueError,"Invalid value for private; must be 0 or 1"
+			raise ValueError("Invalid value for private; must be 0 or 1")
 
 
 class Record(DictMixin):
@@ -728,19 +728,19 @@ class Record(DictMixin):
 		try: 
 			if self.recid != None: int(self.recid)
 		except:
-			raise ValueError,"recid must be positive integer"
+			raise ValueError("recid must be positive integer")
 
 
 	def validate_rectype(self):			
 		if str(self.rectype) == "":
-			raise ValueError,"rectype must not be empty"
+			raise ValueError("rectype must not be empty")
 
 
 	def validate_permissions(self):		
 		try:
 			self.__permissions = tuple((tuple(i) for i in self.__permissions))
 		except:
-			raise ValueError,"permissions must be 4-tuple of tuples"
+			raise ValueError("permissions must be 4-tuple of tuples")
 
 
 	def validate_permissions_users(self):
@@ -784,24 +784,24 @@ class Record(DictMixin):
 				units = defaultunits
 
 			else:
-				raise ValueError,"Unknown units: %s"%units
+				raise ValueError("Unknown units: %s"%units)
 
 			try:
 				# convert units
 				value = value * ( valid_properties[pd.property][1][units] / valid_properties[pd.property][1][defaultunits] )
 				print("newval: %s"%value)
 			except:
-				raise ValueError,"Unable to convert %s = %s; skipping value"%(pd.name,value)
+				raise ValueError("Unable to convert %s = %s; skipping value"%(pd.name,value))
 
 		try:
 			if value != None:
 				value=valid_vartypes[pd.vartype][1](value)
 		except:
-			raise ValueError,"Error converting datatype: %s, %s"%(pd.name,pd.vartype)
+			raise ValueError("Error converting datatype: %s, %s"%(pd.name,pd.vartype))
 	
 		if pd.vartype=="choice" and value!=None:
 			if value.lower() not in [i.lower() for i in pd.choices]:
-				raise ValueError,"%s not in %s"%(value,pd.choices)
+				raise ValueError("%s not in %s"%(value,pd.choices))
 		
 		
 		# Save validated value
@@ -965,7 +965,7 @@ class Record(DictMixin):
 		if key not in self.param_special and self.__params.has_key(key):
 			self.__setitem__(key,None)
 		else:
-			raise KeyError,"Cannot delete key %s"%key 
+			raise KeyError("Cannot delete key %s"%key) 
 
 	def keys(self):
 		"""All retrievable keys for this record"""
