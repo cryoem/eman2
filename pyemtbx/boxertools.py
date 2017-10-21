@@ -1228,7 +1228,7 @@ class FLCFBoxImage:
 		
 		db = db_open_dict(db_name)
 		
-		if db.has_key("maxrec"):
+		if "maxrec" in db:
 			for idx in range(0,db["maxrec"]+1):
 				header = db.get_header(idx)
 				try:
@@ -2345,7 +2345,7 @@ class Boxable:
 		if not db_check_dict(database+"#"+key) and dfl==None:  return None
 		db = db_open_dict(database+"#"+key)
 	
-		if db.has_key(image_name):
+		if image_name in db:
 			return db[image_name]
 		elif dfl != None:
 			db[image_name] = dfl
@@ -2412,7 +2412,7 @@ def set_idd_image_entry(image_name,key,image,db_title="bdb:e2boxercache#"):
 	# first have to make sure it's not already there
 	db = db_open_dict(db_name)
 	
-	if db.has_key("maxrec"):
+	if "maxrec" in db:
 		for idx in range(0,db["maxrec"]+1):
 			header = db.get_header(idx)
 			try:
@@ -2439,7 +2439,7 @@ def get_idd_image_entry(image_name,key,db_title="bdb:e2boxercache#"):
 	
 	db = db_open_dict(db_name)
 	
-	if db.has_key("maxrec"):
+	if "maxrec" in db:
 		for idx in range(0,db["maxrec"]+1):
 			header = db.get_header(idx)
 			try:

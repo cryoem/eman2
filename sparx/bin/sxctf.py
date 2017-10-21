@@ -190,7 +190,7 @@ def get_gui_arg_img_sets(filenames):
 	else: return img_sets
 	for file in filenames:
 		name = get_file_tag(file)
-		if not db_parms.has_key(name):
+		if name not in db_parms:
 			print("error, you must first run auto fit before running the gui - there are no parameters for",name)
 			return []
 		img_set = db_parms[name]
@@ -986,7 +986,7 @@ class GUIctf(QtGui.QWidget):
 		name = get_file_tag(name)
 		
 		db_parms=db_open_dict("bdb:e2ctf.parms")
-		if not db_parms.has_key(name):
+		if name not in db_parms:
 			print("error, ctf parameters do not exist for:",name)
 #			
 		

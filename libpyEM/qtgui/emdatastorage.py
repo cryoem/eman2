@@ -484,7 +484,7 @@ class RecordDef(DictMixin) :
 	def __setstate__(self,dict):
 		"""restore unpickled values to defaults after unpickling"""
 		self.__dict__.update(dict)
-		if not dict.has_key("typicalchld") : self.typicalchld=[]		
+		if "typicalchld" not in dict : self.typicalchld=[]		
 
 
 	#################################		
@@ -534,7 +534,7 @@ class RecordDef(DictMixin) :
 			t2,d2=parseparmvalues(i)
 			for j in t2:
 				# ian: fix for: empty default value in a view unsets default value specified in mainview
-				if not d.has_key(j):
+				if j not in d:
 					t.append(j)
 					d[j] = d2[j]
 #			d.update(d2)
@@ -586,7 +586,7 @@ class RecordDef(DictMixin) :
 		except:
 			raise ValueError("mainview required; must be str or unicode")
 
-		if not dict(self.views).has_key("recname"):
+		if "recname" not in dict(self.views):
 			print("Warning: recname view strongly suggested")
 
 		for k,v in self.views.items():
@@ -845,7 +845,7 @@ class Record(DictMixin):
 		odict = self.__dict__.copy() # copy the dict since we change it
 		odict["_Record__oparams"]={}
 		
-		if not odict.has_key("localcpy") :
+		if "localcpy" not in odict :
 			try: del odict['_Record__ptest']
 			except: pass
 		
@@ -943,7 +943,7 @@ class Record(DictMixin):
 		except:
 			pass
 
-		if key != "comments" and not self.__oparams.has_key(key):
+		if key != "comments" and key not in self.__oparams:
 			self.__oparams[key]=self[key]
 
 		if key not in self.param_special:
@@ -962,7 +962,7 @@ class Record(DictMixin):
 		#if not self.__ptest[1] : raise SecurityError,"Permission Denied (%d)"%self.recid
 		key = str(key).strip().lower()
 
-		if key not in self.param_special and self.__params.has_key(key):
+		if key not in self.param_special and key in self.__params:
 			self.__setitem__(key,None)
 		else:
 			raise KeyError("Cannot delete key %s"%key) 
@@ -991,7 +991,7 @@ class Record(DictMixin):
 		#print "Updating comments: %s"%value
 		d=parseparmvalues(value,noempty=1)[1]
 
-		if d.has_key("comments"):
+		if "comments" in d:
 			print("Warning: cannot set comments inside a comment")			
 			return
 			
@@ -1052,7 +1052,7 @@ class Record(DictMixin):
 	# from items_dict 
 	
 	def fromdict(self,d):
-		if d.has_key("comments"):
+		if "comments" in d:
 			self.__comments=d["comments"]
 			del d["comments"]
 		for k,v in d.items():

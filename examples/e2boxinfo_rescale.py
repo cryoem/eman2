@@ -18,7 +18,7 @@ tbox=0
 tdb=0
 for i in il:
 	db=js_open_dict("info/{}".format(i))
-	if db.has_key("boxes") :
+	if "boxes" in db :
 		tdb+=1
 		boxes=db["boxes"]
 		for j in xrange(len(boxes)):

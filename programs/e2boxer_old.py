@@ -50,7 +50,7 @@ def e2boxer_check(options,args):
 		if not js_check_dict("e2boxercache/swarm.json"): error_message.append("There is no autoboxing information present in the current directory")
 		else:
 			db = js_open_dict("e2boxercache/swarm.json")
-			if not db.has_key(options.autoboxer):
+			if options.autoboxer not in db:
 				s = "There is no autoboxing information present for %s." %options.autoboxer
 				if len(db.keys()) > 0:
 					s+= ("Choose from")
@@ -227,7 +227,7 @@ def gauss_cmd_line_autobox(args,options,logid):
 		err = "There is no gausse method autoboxing information present in the current directory"
 		return err
 	gbdb = js_open_dict(gdb_name)
-	if (not gbdb.has_key(boxkey)):
+	if (boxkey not in gbdb):
 		err = "There is no autoboxing information present for %s." %boxkey
 		return err
 
@@ -333,7 +333,7 @@ def write_output(args,options,logid, database="e2boxercache"):
 							print('exiting...')
 							return
 						gbdb = js_open_dict(gdb_name)
-						if not gbdb.has_key(boxkey):
+						if boxkey not in gbdb:
 							print("no gauss mode autoboxing parameters were found in database for %s...this should not happen"%boxkey)
 							print('exiting...')
 							return
@@ -2489,7 +2489,7 @@ class GaussPanel:
 		gbdb = js_open_dict(GaussPanel.GDB_NAME)
 		ctfdict = {'pixel_input':input_pixel_size,'pixel_output':output_pixel_size,'ctf_fstart':ctf_f_start,'ctf_fstop':ctf_f_stop, 'ctf_window':ctf_window_size,'ctf_edge':ctf_edge_size,'ctf_overlap':ctf_overlap_size,'ctf_ampcont':ctf_ampcont,'ctf_volt':ctf_volt,'ctf_cs':ctf_cs}
 		#print "calc_ctf image_name: ", image_name
-		if gbdb.has_key(image_name):
+		if image_name in gbdb:
 			olddict=gbdb[image_name]
 			gbdb[image_name] = dict((olddict).items() + ctfdict.items() ) # merge the two dictionaries with conflict resolution resolved in favorr of the latest ctf parameters
 		else:
@@ -2595,7 +2595,7 @@ class GaussPanel:
 		gbdb = db_open_dict(GaussPanel.GDB_NAME)
 		ctfdict = {'pixel_input':input_pixel_size,'pixel_output':output_pixel_size,'ctf_window':ctf_window_size,'ctf_edge':ctf_edge_size,'ctf_overlap':ctf_overlap_size,'ctf_ampcont':ctf_ampcont,'ctf_volt':ctf_volt,'ctf_cs':ctf_cs, 'ctf_kboot':ctf_kboot}
 		#print "calc_ctf image_name: ", image_name
-		if gbdb.has_key(image_name):
+		if image_name in gbdb:
 			olddict=gbdb[image_name]
 			gbdb[image_name] = dict((olddict).items() + ctfdict.items() ) # merge the two dictionaries with conflict resolution resolved in favorr of the latest ctf parameters
 		else:
@@ -2808,7 +2808,7 @@ class GaussBoxer:
 
 		autoboxdict = {'boxsize':boxsize, 'pixel_input':self.pixel_input, 'pixel_output':self.pixel_output, 'invert_contrast':self.invert, 'use_variance':self.use_variance, 'gauss_width':self.gauss_width,'thr_low':self.thr_low,'thr_hi':self.thr_hgh}
 
-		if gbdb.has_key(imgname):
+		if imgname in gbdb:
 			oldautoboxdict = gbdb[imgname]
 			gbdb[imgname] = dict(oldautoboxdict.items() + autoboxdict.items()) # resolve conflicts in favor of new autoboxdict
 		else:

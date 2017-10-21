@@ -392,7 +392,7 @@ class EMBallStickModel(EMPDBItem3D):
 			for k in range(len(self.allResidues)):
 				res = self.allResidues[k]
 				key =  res[4][0]
-				if self.side_chains.has_key(key):
+				if key in self.side_chains:
 					self.renderResidues(res,self)
 					continue
 				if k !=0: #connects residues together from the nitrogen of one residue to the O of the next residue

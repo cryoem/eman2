@@ -369,7 +369,7 @@ def write_particle(source,postfix,n):
 		if glob_inls==None:
 			glob_inls=LSXFile(source)
 			
-		if not glob_outls.has_key(postfix):
+		if postfix not in glob_outls:
 			glob_outls[postfix]=LSXFile(source[:-4]+postfix+".lst")
 		
 		ent=glob_inls.read(n)

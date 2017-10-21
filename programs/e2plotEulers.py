@@ -74,7 +74,7 @@ def main():
 		
 			# Use has to count unique eulers
 			hashkey = "%3.2f %3.2f"%(eulerangles['az'],eulerangles['alt'])
-			if eulerhash.has_key(hashkey):
+			if hashkey in eulerhash:
 				eulerhash[hashkey] += 1
 			else:
 				eulerhash[hashkey] = 1

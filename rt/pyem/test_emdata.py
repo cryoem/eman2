@@ -2280,10 +2280,10 @@ class TestEMData(unittest.TestCase):
         self.assertEqual(d3['int1'], 1000)
         e.del_attr_dict(['name1', 'int1', 'is_complex'])
         d4 = e.get_attr_dict()
-        self.assertEqual(d4.has_key('name1'), False)
-        self.assertEqual(d4.has_key('int1'), False)
-        self.assertEqual(d4.has_key('is_complex'), False)
-        self.assertEqual(d4.has_key('mean'), True)
+        self.assertEqual('name1' in d4, False)
+        self.assertEqual('int1' in d4, False)
+        self.assertEqual('is_complex' in d4, False)
+        self.assertEqual('mean' in d4, True)
         
     def test_get_clip(self):
         """test get_clip() function ........................."""
@@ -2864,7 +2864,7 @@ class TestEMData(unittest.TestCase):
         
         e.del_attr('is_complex')
         d = e.get_attr_dict()
-        self.assertEqual(d.has_key('is_complex'), False)
+        self.assertEqual('is_complex' in d, False)
         
         e.set_attr('mynumber', 100)
         self.assertEqual(e.get_attr('mynumber'), 100)

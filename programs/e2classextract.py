@@ -208,7 +208,7 @@ e2classextract.py --orientcls refine_03/cls_result_04 --orientedparticles sets/a
 				print("No model_id in class average {}. Was this classes file created with e2refinemulti.py ?".format(c))
 				sys.exit(1)
 
-			if not outlst.has_key(mdl) :
+			if mdl not in outlst :
 				if options.setname!=None :
 					if options.setname[-4:]==".lst" : fsp="{}_m{}.lst".format(options.setname[:-4],mdl)
 					else: fsp="{}_m{}.lst".format(options.setname,mdl)

@@ -678,7 +678,7 @@ class EMTomoAlignTask:
 		self.align_data = data["align"]
 		self.align_cmp_data = data["aligncmp"]
 		self.cmp_data = data["cmp"]
-		if data.has_key("ralign"):
+		if "ralign" in data:
 			self.ralign_data = data["ralign"]
 			self.ralign_cmp_data = data["raligncmp"]
 		else:

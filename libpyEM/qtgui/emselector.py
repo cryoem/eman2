@@ -894,7 +894,7 @@ class EMBrowser(EMBrowserType):
 		
 		total = len(items)
 		if total == 0: return
-		if total == 1 and self.action_delegates.has_key(str(action.text())):
+		if total == 1 and str(action.text()) in self.action_delegates:
 			get_application().setOverrideCursor(Qt.BusyCursor)
 			self.action_delegates[str(action.text())].item_action(items[0],self)
 			get_application().setOverrideCursor(Qt.ArrowCursor)
@@ -1591,10 +1591,10 @@ class EM2DStackItem(EMDataListItem,EMStack2DCapableMixin):
 		ret.append(MULTI_2D_VIEWER)
 		
 		md = self.get_metadata()
-		if md.has_key("xform.projection"):
+		if "xform.projection" in md:
 			# the assumption is that they all have the xform.projection header attribute, which could be fatal
 			ret.append(EULER_VIEWER)
-		if md.has_key(PROJ_FILE_ATTR) and md.has_key(PART_FILE_ATTR): 
+		if PROJ_FILE_ATTR in md and PART_FILE_ATTR in md: 
 			ret.append(SIMMX_EULER_VIEWER)
 		return  ret
 	
@@ -1907,7 +1907,7 @@ class EMBDBDelegate(EMBrowseDelegate):
 		if len(vals) == 1:
 			for i in range(n):
 				d = db.get_header(i)
-				if d!=None and d.has_key("nz") : break
+				if d!=None and "nz" in d : break
 			if  n > 1:
 				if d["nz"] > 1: return_items = [EM3DMetaImageItem(self,str(i),url,i) for i in xrange(0,n)]
 				else: return_items = [EM2DMetaImageItem(self,str(i),url,i) for i in xrange(0,n)]
@@ -2006,7 +2006,7 @@ class EMBDBDelegate(EMBrowseDelegate):
 		db = db_open_dict(db_name,ro=True)
 		
 		try:
-			db.has_key("maxrec")
+			"maxrec" in db
 		except:
 			# sometimes when the browser is updating in real time a database file is 
 			# created, however only one of the two files exists (one is ptcl.bdb,
@@ -2016,7 +2016,7 @@ class EMBDBDelegate(EMBrowseDelegate):
 			time.sleep(1)
 			db = db_open_dict(db_name,ro=True)
 			try:
-				db.has_key("maxrec")
+				"maxrec" in db
 			except:
 #					from emapplication import EMErrorMessageDisplay
 #					EMErrorMessageDisplay.run(["Warning: the %s database might be corrupted." %db_name], "Data loss" )
@@ -2030,7 +2030,7 @@ class EMBDBDelegate(EMBrowseDelegate):
 				for i in range(n):
 					d = db.get_header(i)
 					try:
-						if d!=None and d.has_key("nz") : break
+						if d!=None and "nz" in d : break
 					except: 
 						return EMBDBItem(self,f[0],real_directory+MDS+f[0])
 				if d["nz"] == 1:

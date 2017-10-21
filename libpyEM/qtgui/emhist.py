@@ -227,7 +227,7 @@ class EMHistogramWidget(EMGLWidget):
 			if self.inspector: self.inspector.datachange()
 			if not quiet: self.updateGL()
 			return
-		if self.data.has_key(key) : oldkey=True
+		if key in self.data : oldkey=True
 		else: oldkey=False
 		if isinstance(input_data,EMData):
 			data = input_data.get_data_as_vector()
@@ -294,7 +294,7 @@ class EMHistogramWidget(EMGLWidget):
 				im = im[0]
 				l = [i for i in range(im.get_size())]
 				k = im.get_data_as_vector()
-				if self.data.has_key(filename) : filename="{}.{}".format(filename,len(self.data))
+				if filename in self.data : filename="{}.{}".format(filename,len(self.data))
 				self.set_data([l,k],filename,quiet=quiet)
 			elif im[0].get_attr_default("isvector",0):
 				all=[]
@@ -1373,7 +1373,7 @@ class DragListWidget(QtGui.QListWidget):
 			trgplot=self.datasource().target()
 			name="Dropped"
 			nn=1
-			while trgplot.data.has_key(name) :
+			while name in trgplot.data :
 				name="Dropped_%d"%nn
 				nn+=1
 			trgplot.set_data(data,name,quiet=True)

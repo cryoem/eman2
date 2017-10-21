@@ -369,17 +369,17 @@ class EMSimTaskDC(JSTask):
 #		print "init ",options
 		from EMAN2PAR import image_range
 		shrink = None
-		if options.has_key("shrink") and options["shrink"] != None and options["shrink"] > 1:
+		if "shrink" in options and options["shrink"] != None and options["shrink"] > 1:
 			shrink = options["shrink"]
 
 		ref_data_name=self.data["references"][1]
 		ref_indices = image_range(*self.data["references"][2:])
 
-		if self.data.has_key("colmasks") :
+		if "colmasks" in self.data :
 			ref_masks_name=self.data["colmasks"][1]
 		else : ref_masks_name=None
 
-		if self.data.has_key("mask") :
+		if "mask" in self.data :
 			mask=EMData(self.data["mask"][1],self.data["mask"][2])
 			if shrink != None : mask.process_inplace("math.fft.resample",{"n":shrink})
 		else : mask=None
@@ -454,7 +454,7 @@ class EMSimTaskDC(JSTask):
 				else :
 					data[ref_idx] = (-1.0e38,None)			# ref wasn't in the partial list, skip this one
 					continue
-			if options.has_key("prefilt") and options["prefilt"]:
+			if "prefilt" in options and options["prefilt"]:
 				if ref[1]==None:
 					msk=ref[0].process("threshold.notzero")					# mask from the projection
 					ref[0]=ref[0].process("filter.matchto",{"to":ptcl})	# matched filter
@@ -462,10 +462,10 @@ class EMSimTaskDC(JSTask):
 				else:
 					ref[0]=ref[0].process("filter.matchto",{"to":ptcl})	# matched filter
 					ref[0].mult(ref[1])											# remask after setsf
-			if options.has_key("align") and options["align"][0] != None:
+			if "align" in options and options["align"][0] != None:
 				aligned=ref[0].align(options["align"][0],ptcl,options["align"][1],options["aligncmp"][0],options["aligncmp"][1])
 
-				if options.has_key("ralign") and options["ralign"] != None: # potentially employ refine alignment
+				if "ralign" in options and options["ralign"] != None: # potentially employ refine alignment
 					refine_parms=options["ralign"][1]
 					if ref[1]!=None :
 						#print "using mask, and ",mask
@@ -518,7 +518,7 @@ class EMSimTaskDC(JSTask):
 			if min_ptcl_idx == None or ptcl_idx < min_ptcl_idx:
 				min_ptcl_idx = ptcl_idx
 
-			if self.data.has_key("partial") :
+			if "partial" in self.data :
 				sim_data[ptcl_idx] = self.__cmp_one_to_many(ptcls[ptcl_idx],refs,mask,[ii for ii in self.data["partial"] if ii[0]==ptcl_idx],progress_callback,i,n)
 			else : sim_data[ptcl_idx] = self.__cmp_one_to_many(ptcls[ptcl_idx],refs,mask,None,progress_callback,i,n)
 			i+=1
@@ -529,7 +529,7 @@ class EMSimTaskDC(JSTask):
 		d = {}
 #		d["sim_data"] = sim_data
 		result_data = []
-		if self.options.has_key("align") and self.options["align"][0] != None:
+		if "align" in self.options and self.options["align"][0] != None:
 			for i in range(0,6):
 				e = EMData(len(refs),len(ptcls))
 				e.to_zero()
@@ -550,7 +550,7 @@ class EMSimTaskDC(JSTask):
 				rc = c-min_ref_idx # this was a solution to a bug
 				rr = r-min_ptcl_idx # this was a solution to a bug
 				result_data[0].set(rc,rr,comp)
-				if self.options.has_key("align") and self.options["align"][0] != None:
+				if "align" in self.options and self.options["align"][0] != None:
 					tran = data[1]
 					if tran==None :
 						result_data[1].set(rc,rr,0)

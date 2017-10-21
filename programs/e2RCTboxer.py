@@ -551,7 +551,7 @@ class EMBoxList:
 	
 	def get_tiltdata_from_db(self):
 		#First check for the full path, if not present, then use the basename only
-		if self.db.has_key("tiltparams_"+self.entry):
+		if "tiltparams_"+self.entry in self.db:
 			return self.db["tiltparams_"+self.entry]
 		else:
 			return None
@@ -668,7 +668,7 @@ class EMBox:
 		@param box_color an RGB list [R,G,B] (floats)
 		@param force something you'd set to True if you want to force the overwrite of the old color (previously stored)
 		'''
-		if not force and EMBox.BOX_COLORS.has_key(box_type):
+		if not force and box_type in EMBox.BOX_COLORS:
 			# this is just to make sure there are no conflicts - if someone is resetting a color they 
 			# should know what they're doing
 			raise RuntimeError("Error, attempt to set a color key (%s) that already existed" %box_type)
@@ -696,7 +696,7 @@ class EMBox:
 		self.image = None
 		
 	def get_shape(self,shape_string,box_size):
-		if EMBox.BOX_COLORS.has_key(self.type):
+		if self.type in EMBox.BOX_COLORS:
 			r,g,b = EMBox.BOX_COLORS[self.type]
 		else:
 			r,g,b = 1.0,0.42,0.71 # hot pink, apparently ;)

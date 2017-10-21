@@ -306,7 +306,7 @@ class ControlPannel(QtGui.QWidget):
 		self.quality = QtGui.QComboBox()
 		for i in xrange(5): self.quality.addItem(str(i))
 		# check full path then check basename
-		if not self.qualitydb.has_key(self.mediator.windowlist[0].filename):
+		if self.mediator.windowlist[0].filename not in self.qualitydb:
 			self.quality.setCurrentIndex(self.qualitydb.getdefault(self.mediator.windowlist[0].filename,dfl=0))
 		else:
 			self.quality.setCurrentIndex(self.qualitydb.getdefault(os.path.basename(self.mediator.windowlist[0].filename),dfl=0))

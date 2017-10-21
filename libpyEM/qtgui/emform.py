@@ -423,7 +423,7 @@ class EMFileTable(QtGui.QTableWidget):
 		Internally caches the originally name in a dictionary so it can be recovered
 		Redefine self.convert_name to achieve your custom-desired display name
 		'''
-		if not self.name_conversions.has_key(name):
+		if name not in self.name_conversions:
 			converted = self.convert_name(name) 
 			self.name_conversions[name] = converted
 			return converted # for efficiency
@@ -869,7 +869,7 @@ class EM2DStackExamineTable(EM2DStackTable):
 		
 		self.display_module.set_data(filename,filename) #  I know this looks stupid, but c'est la vie
 		self.display_module.updateGL()
-		if self.name_map.has_key(filename):
+		if filename in self.name_map:
 			self.display_module.set_single_active_set(self.name_map[filename])
 		else:
 			self.display_module.clear_sets()
@@ -1026,7 +1026,7 @@ class EMEmanStrategyWidget(QtGui.QWidget):
 		for i in xrange(1,len(data),3):
 			vartype = data[i+1]
 			
-			if self.auto_incorporate.has_key(vartype):
+			if vartype in self.auto_incorporate:
 				name = data[i]
 				desc_long = data[i+2]
 				p = ParamDef(name=name,vartype=vartype,desc_short=name,desc_long=desc_long,defaultunits="")

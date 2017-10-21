@@ -263,7 +263,7 @@ class EMPlot3DWidget(EMGLWidget):
 			if not quiet: self.updateGL()
 			return
 
-		if self.data.has_key(key) : oldkey=True
+		if key in self.data : oldkey=True
 		else: oldkey=False
 
 		if isinstance(input_data,EMData):
@@ -350,7 +350,7 @@ class EMPlot3DWidget(EMGLWidget):
 				im = im[0]
 				l = [i for i in range(im.get_size())]
 				k = im.get_data_as_vector()
-				if self.data.has_key(filename) : filename="{}.{}".format(filename,len(self.data))
+				if filename in self.data : filename="{}.{}".format(filename,len(self.data))
 				self.set_data([l,k],filename,quiet=quiet)
 			elif im[0].get_attr_default("isvector",0):
 #				all=[i.get_data_as_vector() for i in im]
@@ -1435,7 +1435,7 @@ class EMPlot3DClassInsp(QtGui.QWidget):
 					return
 
 				imn=int(imn)
-				if not lsx.has_key(imf) : lsx[imf]=LSXFile(imf,True)	# open the LSX file for reading
+				if imf not in lsx : lsx[imf]=LSXFile(imf,True)	# open the LSX file for reading
 				val=lsx[imf][imn]
 				out[r]=val
 
@@ -1673,7 +1673,7 @@ class DragListWidget(QtGui.QListWidget):
 			trgplot=self.datasource().target()
 			name="Dropped"
 			nn=1
-			while trgplot.data.has_key(name) :
+			while name in trgplot.data :
 				name="Dropped_%d"%nn
 				nn+=1
 

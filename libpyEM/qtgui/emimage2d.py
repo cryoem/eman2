@@ -275,7 +275,7 @@ class EMImage2DWidget(EMGLWidget):
 	def set_mouse_mode(self,mode_num):
 		if self.mouse_mode == mode_num:
 			return
-		if not self.mouse_mode_dict.has_key(mode_num):
+		if mode_num not in self.mouse_mode_dict:
 			print("unknown mouse mode:",mode_num)
 			return
 		self.mouse_mode = mode_num

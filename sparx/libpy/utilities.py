@@ -3184,7 +3184,7 @@ def recv_attr_dict_bdb(main_node, stack, data, list_params, image_start, image_e
 def check_attr(ima, num, params, default_value, action="Warning"):
 	from sys import exit
 	attr_list = ima.get_attr_dict()
-	if attr_list.has_key(params) == False:
+	if (params in attr_list) == False:
 		if action=="Warning":
 			print("WARNING: In image %i, cannot find attribute \'%s\' in the header, set it to the default value" %(num, params), default_value)
 			ima.set_attr_dict({params:default_value})
@@ -4948,7 +4948,7 @@ statistics_send_recv = dict()
 def update_tag(communicator, target_rank):   # TODO - it doesn't work when communicators are destroyed and recreated
 	return 123456
 	global statistics_send_recv
-	if not statistics_send_recv.has_key(communicator):
+	if communicator not in statistics_send_recv:
 		from mpi import mpi_comm_size
 		statistics_send_recv[communicator] = [0] * mpi_comm_size(communicator)
 	statistics_send_recv[communicator][target_rank] += 1
@@ -6547,7 +6547,7 @@ def get_complementary_elements(total_list,sub_data_list):
 		complementary     = []
 		for index in xrange(len(sub_data_list)):sub_data_dict[sub_data_list[index]]=index
 		for any in total_list:
-			if sub_data_dict.has_key(any) is False:complementary.append(any)
+			if (any in sub_data_dict) is False:complementary.append(any)
 		return complementary
 
 def get_complementary_elements_total(total_stack, data_list):
@@ -6555,7 +6555,7 @@ def get_complementary_elements_total(total_stack, data_list):
 	complementary     = []
 	for index in xrange(len(data_list)):data_dict[data_list[index]]=index
 	for index in xrange(total_stack):
-		if data_dict.has_key(index) is False:complementary.append(index)
+		if (index in data_dict) is False:complementary.append(index)
 	return complementary
 
 def update_full_dict(leftover_list, Tracker):

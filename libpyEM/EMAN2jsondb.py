@@ -333,7 +333,7 @@ class JSTaskQueue:
 				raise Exception
 		except:
 			did=(fmt,random.randint(0,999999))	# since there may be multiple files with the same timestamp, we also use a random int
-			while (self.didtoname.has_key(did)):
+			while (did in self.didtoname):
 				did=(fmt,random.randint(0,999999))
 
 		self.nametodid[name]=did
@@ -560,7 +560,7 @@ JSDicts are open at one time."""
 			cls.lock.release()
 			raise Exception("Cannot find path for {}".format(path))
 
-		if cls.opendicts.has_key(normpath) :
+		if normpath in cls.opendicts :
 			cls.lock.release()
 			return cls.opendicts[normpath]
 
@@ -591,7 +591,7 @@ JSDicts are open at one time."""
 		except: raise Exception("Cannot find path for {}".format(path))
 
 		ret=None
-		if cls.opendicts.has_key(normpath) :
+		if normpath in cls.opendicts :
 			ret=cls.opendicts[normpath]
 
 		cls.lock.release()
@@ -905,10 +905,10 @@ jsonclasses = {
 def json_to_obj(jsdata):
 	"""converts a javascript object representation back to the original python object"""
 
-	if jsdata.has_key("__pickle__") :
+	if "__pickle__" in jsdata :
 		try: return cPickle.loads(str(jsdata["__pickle__"]))
 		except: return str(jsdata["__pickle__"])				# This shouldn't happen. Means a module hasn't been loaded. This is an emergency stopgap to avoid crashing
-	elif jsdata.has_key("__image__") :							# images now stored in a separate HDF file
+	elif "__image__" in jsdata :							# images now stored in a separate HDF file
 		try: 
 			# We defer actual reading of the image until it's needed
 			ret= tmpimg(str(jsdata["__image__"][0]),int(jsdata["__image__"][1]))
@@ -917,7 +917,7 @@ def json_to_obj(jsdata):
 			print("Error reading image from JSON: ",jsdata["__image__"])
 			ret= None
 		return ret
-	elif jsdata.has_key("__class__") : return jsonclasses[jsdata["__class__"]](jsdata)
+	elif "__class__" in jsdata : return jsonclasses[jsdata["__class__"]](jsdata)
 	else: return jsdata
 
 def obj_to_json(obj):

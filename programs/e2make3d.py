@@ -403,7 +403,7 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 
 		ptcl=0
 		for i,elem in enumerate(data):
-			if not elem.has_key("norm") : elem["norm"]=1.0
+			if "norm" not in elem : elem["norm"]=1.0
 
 			# If the image is below the quality cutoff, skip it
 			try:

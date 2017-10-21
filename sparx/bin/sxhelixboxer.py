@@ -1833,7 +1833,7 @@ if ENABLE_GUI:
 			"""
 	
 			if self.current_boxkey and self.edit_mode != "delete":
-				if self.helices_dict.has_key(self.initial_helix_box_data_tuple):
+				if self.initial_helix_box_data_tuple in self.helices_dict:
 					self.helices_dict.pop(self.initial_helix_box_data_tuple)
 				if self.initial_helix_box_data_tuple in self.get_db_item("helixboxes"):
 					self.remove_box_from_db(self.initial_helix_box_data_tuple)

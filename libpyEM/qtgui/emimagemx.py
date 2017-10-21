@@ -147,7 +147,7 @@ class EMMatrixPanel:
 		'''
 
 		s = str(view_width) + str(view_height)
-		if self.scale_cache.has_key(s):
+		if s in self.scale_cache:
 			return self.scale_cache[s]
 
 		n = len(view_data)
@@ -429,7 +429,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		something else causes the set object to be reallocated in the meantime, strange things
 		may occur, so modifications of the set should be done promptly."""
 
-		if not self.sets.has_key(name) : self.sets[name]=set()
+		if name not in self.sets : self.sets[name]=set()
 		return self.sets[name]
 
 
@@ -437,7 +437,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		'''
 		Called from e2eulerxplor
 		'''
-		if not self.sets.has_key(name) or force : self.sets[name]=set(lst)
+		if name not in self.sets or force : self.sets[name]=set(lst)
 		if display : self.sets_visible[name]=self.sets[name]
 		if self.current_set==None : self.current_set=name
 		self.force_display_update()
@@ -1773,7 +1773,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		if lc != None:
 			a = self.get_box_image(lc[0])
 			d = a.get_attr_dict()
-			if d.has_key("class_ptcl_src") and d.has_key("class_ptcl_idxs"):
+			if "class_ptcl_src" in d and "class_ptcl_idxs" in d:
 
 				# With shift-click we try to show rotated/translated images
 				if  event.modifiers()&Qt.ShiftModifier:			# If shift is pressed, transform the particle orientations
@@ -3351,7 +3351,7 @@ class EM3DDataListCache(EMMXDataCache):
 
 	def __getitem__(self,idx):
 
-		if not self.images.has_key(idx):
+		if idx not in self.images:
 			a = EMData()
 			if self.major_axis == "z":
 				r = Region(0,0,idx,self.nx,self.ny,1)

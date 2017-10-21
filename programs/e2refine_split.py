@@ -175,7 +175,7 @@ def main():
 				rslt=etc.get_results(taskids[i])
 				rsltd=rslt[1]
 				cls=rslt[0].options["classnum"]
-				if rsltd.has_key("failed") :
+				if "failed" in rsltd :
 					print("Bad average in ",cls)
 				else:
 					#rsltd["avg1"].write_image(classout[0],cls)

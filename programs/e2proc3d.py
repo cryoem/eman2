@@ -173,7 +173,7 @@ def main():
 		print("Deprecated option mrc8bit, please use outmode=int8")
 		options.outmode="int8"
 
-	if not file_mode_map.has_key(options.outmode) :
+	if options.outmode not in file_mode_map :
 		print("Invalid output mode, please specify one of :\n",str(file_mode_map.keys()).translate(None,'"[]'))
 		sys.exit(1)
 
@@ -580,7 +580,7 @@ def main():
 							pass
 
 				# For 'refine' aligners, we normally want to provide a starting alignment, presumably from the previous aligner. If we can't find one with start with identity matrix
-				if "refine" in alignername and not param_dict.has_key("xform.align3d"):
+				if "refine" in alignername and "xform.align3d" not in param_dict:
 					try:
 						param_dict["xform.align3d"]=data["xform.align3d"]
 						print(alignername," using xform.align3d from image")

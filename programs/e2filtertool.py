@@ -187,7 +187,7 @@ class EMProcessorWidget(QtGui.QWidget):
 	def __getstate__(self):
 		"used when pickling"
 		proc=self.processorName()
-		if not self.plist.has_key(proc) : return None		# invalid processor selection
+		if proc not in self.plist : return None		# invalid processor selection
 		if self.wenable.isChecked() : proc=(proc,True)		# disabled, so we return None
 		else: proc=(proc,False)
 
@@ -220,7 +220,7 @@ class EMProcessorWidget(QtGui.QWidget):
 		if not self.wenable.isChecked() : return ""
 
 		proc=self.processorName()
-		if not self.plist.has_key(proc) : return ""		# invalid processor selection
+		if proc not in self.plist : return ""		# invalid processor selection
 
 		enabled=[]
 		for w in self.parmw:
@@ -232,7 +232,7 @@ class EMProcessorWidget(QtGui.QWidget):
 		"Returns the currently defined processor as a 3 line string for persistence"
 
 		proc=self.processorName()
-		if not self.plist.has_key(proc) : return None		# invalid processor selection
+		if proc not in self.plist : return None		# invalid processor selection
 
 		if self.wenable.isChecked() : ret="#$ enabled\n"
 		else: ret="#$ disabled\n"
@@ -398,7 +398,7 @@ class EMProcessorWidget(QtGui.QWidget):
 		if not self.wenable.isChecked() : return None		# disabled, so we return None
 
 		proc=self.processorName()
-		if not self.plist.has_key(proc) : return None		# invalid processor selection
+		if proc not in self.plist : return None		# invalid processor selection
 
 
 		parms={}

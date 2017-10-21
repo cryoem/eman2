@@ -267,7 +267,7 @@ def main():
 		print("Deprecated option mrc8bit, please use outmode=int8|uint8")
 		options.outmode = "int8"
 
-	if not file_mode_map.has_key(options.outmode) :
+	if options.outmode not in file_mode_map :
 		print("Invalid output mode, please specify one of :\n",str(file_mode_map.keys()).translate(None,'"[]'))
 		sys.exit(1)
 
@@ -668,7 +668,7 @@ def main():
 					try:
 						bf=base_name(d["ptcl_source_image"])
 						bl=d["ptcl_source_coord"]
-						if boxes.has_key(bf) : boxes[bf].append(bl)
+						if bf in boxes : boxes[bf].append(bl)
 						else : boxes[bf]=[bl]
 						boxsize=d["nx"]
 					except:

@@ -132,7 +132,7 @@ def check(options,args):
 def get_database_entry(image_name,key,dfl=None):
 	db = js_open_dict(info_name(image_name))
 	# First check the full path, then check for basename
-	if db.has_key(key):
+	if key in db:
 		return db[key]
 	elif dfl != None:
 		db[key] = dfl
@@ -318,7 +318,7 @@ class EMBox:
 		@param box_color an RGB list [R,G,B] (floats)
 		@param force something you'd set to True if you want to force the overwrite of the old color (previously stored)
 		'''
-		if not force and EMBox.BOX_COLORS.has_key(box_type):
+		if not force and box_type in EMBox.BOX_COLORS:
 			# this is just to make sure there are no conflicts - if someone is resetting a color they
 			# should know what they're doing
 			raise RuntimeError("Error, attempt to set a color key (%s) that already existed" %box_type)
@@ -353,7 +353,7 @@ class EMBox:
 	def reset_image(self): self.image = None
 
 	def get_shape(self,shape_string,box_size):
-		if EMBox.BOX_COLORS.has_key(self.type):
+		if self.type in EMBox.BOX_COLORS:
 			r,g,b = EMBox.BOX_COLORS[self.type]
 		else:
 			r,g,b = 1.0,0.42,0.71 # hot pint, apparently ;)
@@ -935,7 +935,7 @@ class BoxEventsHandler:
 
 		name = handler.unique_name()
 		for box_type in handler.get_unique_box_types():
-			if self.box_to_tool_dict.has_key(box_type):
+			if box_type in self.box_to_tool_dict:
 				raise RuntimeError("Error - some EMBoxingTools are using the same box_type name, or the same tool has been added twice (%s)" %box_type)
 			self.box_to_tool_dict[box_type] = name
 
@@ -985,7 +985,7 @@ class Main2DWindowEventHandler(BoxEventsHandler):
 		for box in rm_boxes:
 			for name,box_types in name_box_map.items():
 				if box.type in box_types:
-					if rm_box_map.has_key(name):
+					if name in rm_box_map:
 						rm_box_map[name].append(box)
 					else:
 						rm_box_map[name] = [box]
@@ -2258,7 +2258,7 @@ class EMBoxerWriteOutputTask(WorkFlowTask):
 		return error_message
 
 	def on_form_ok(self,params):
-		if  params.has_key("filenames") and len(params["filenames"]) == 0:
+		if  "filenames" in params and len(params["filenames"]) == 0:
 			self.run_select_files_msg()
 			return
 
