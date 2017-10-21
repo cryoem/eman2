@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: Jesus Galaz, 06/05/2012 - Last change 12/17/2012
 # Copyright (c) 2011 Baylor College of Medicine

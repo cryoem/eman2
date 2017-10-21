@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 # Muyuan Chen 2015-03-24
 # pick rna particles
 from EMAN2 import *

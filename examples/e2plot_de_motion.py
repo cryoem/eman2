@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 '''
 ====================
 Author: Jesus Galaz - 2015, Last update: 12/July/2017

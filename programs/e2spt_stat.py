@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 # This is a simple example showing how to generate a histogram from a text file
 # specify the filename and column number with an optional number of bins, column number 0 indexed

@@ -1,4 +1,5 @@
 # For some reason these programs get stuck on MPI if I change the order of programs in the file.  Strange, PAP.
+from __future__ import print_function
 '''
 #  I do not know why this would make sense  PAP 04/20/2017
 def generate_uneven_projections_directions(count, half_sphere=False, output_filename=None, 

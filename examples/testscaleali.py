@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 # This simple program just makes sure that scaling works in the refine aligner
 

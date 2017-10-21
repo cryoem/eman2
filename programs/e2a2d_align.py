@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 # align all particles to reference and store alignment results
 
 from EMAN2 import *

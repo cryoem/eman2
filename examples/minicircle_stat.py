@@ -1,4 +1,5 @@
 # 12/26/2013	Steven Ludtke
+from __future__ import print_function
 # This script is designed to quantitatively analyze DNA minicircles. Could be used for any other small objects as well
 # It first filters and normalizes the data to try to isolate the particles under consideration
 # Next it aligns the particles so the longest axis is along Z, second longest, on Y, and shortest on X. It does this by computing

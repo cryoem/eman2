@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+from __future__ import print_function
 #
 # Copyright (C) 2016  Markus Stabrin (markus.stabrin@mpi-dortmund.mpg.de)
 #

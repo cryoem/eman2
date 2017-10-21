@@ -1,4 +1,5 @@
 #!/bin/env python
+from __future__ import print_function
 from sparx  import *
 from EMAN2 import *
 

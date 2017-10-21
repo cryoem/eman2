@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 # average particles together based on existing alignments
 
 from EMAN2 import *

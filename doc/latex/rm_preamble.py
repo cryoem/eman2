@@ -1,4 +1,5 @@
 #-----------------------------------------------
+from __future__ import print_function
 def process(x):
     try:
         istream=open(x,"r");

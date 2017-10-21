@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: Steve Ludtke (sludtke@bcm.edu)
 # Copyright (c) 2000-2012 Baylor College of Medicine

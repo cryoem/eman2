@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 # recoverctf.py
 # Author: Steven Ludtke, 09/16/2011 (sludtke@bcm.edu)

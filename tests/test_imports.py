@@ -1,3 +1,4 @@
+from __future__ import print_function
 from libpyAligner2 import Aligners
 from libpyAligner2 import Ctf
 from libpyAligner2 import EMAN1Ctf

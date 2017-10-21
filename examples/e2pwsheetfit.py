@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 # Muyuan Chen 12/2014
 # Fit beta sheets using pathwalker results
 

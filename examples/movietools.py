@@ -1,4 +1,5 @@
 """some utility functions for playing with movie-mode sequences"""
+from __future__ import print_function
 import EMAN2
 from math import sqrt
 

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 # Read's FEI's 'RAW' format and writes to hdf
 # feiraw2hdf.py <input> <input> ... <output> 

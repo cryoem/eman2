@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 # This computes the local energy surface for 2-D alignment of a particle vs a class-average
 

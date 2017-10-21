@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Jesus G. Galaz 9/1/2010 - Last Update July/08/2015 

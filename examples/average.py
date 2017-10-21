@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 ### This program will average a list of images or volumes passed in on the command-line
 ### average.py <vol1.mrc> <vol2.mrc> ...

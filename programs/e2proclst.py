@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 # This program performs simple processing of .LST files
 
 # Author: Steven Ludtke, 10/06/14 (sludtke@bcm.edu), modified: May 15, 2017 (Jesus GalazMontoya)
