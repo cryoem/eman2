@@ -6375,7 +6375,7 @@ See the module documentation for usage.
 
     def __find_smallest(self):
         """Find the smallest uncovered value in the matrix."""
-        minval = sys.maxint
+        minval = sys.maxsize
         for i in range(self.n):
             for j in range(self.n):
                 if (not self.row_covered[i]) and (not self.col_covered[j]):
@@ -6773,7 +6773,7 @@ def k_means_match_clusters_asg(asg1, asg2):
 
 	for i in xrange(K):
 		for j in xrange(K):
-			cost_MAT[i][j] = sys.maxint - MAT[i][j]
+			cost_MAT[i][j] = sys.maxsize - MAT[i][j]
 	m = Munkres()
 	indexes = m.compute(cost_MAT)
 	list_stable = []
@@ -6812,7 +6812,7 @@ def k_means_match_clusters_asg_new(asg1, asg2, T=0):
 				MAT[k1][k2] = 0
 	for i in xrange(K):
 		for j in xrange(K):
-			cost_MAT[i][j] = sys.maxint - MAT[i][j]
+			cost_MAT[i][j] = sys.maxsize - MAT[i][j]
 	m = Munkres()
 	indexes = m.compute(cost_MAT)
 	newindexes = []

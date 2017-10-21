@@ -76,7 +76,7 @@ def safe_int(v) :
 	try :
 		return int(v)
 	except (ValueError, TypeError) :
-		return -sys.maxint-1
+		return -sys.maxsize-1
 
 def safe_float(v) :
 	"""Performs a safe conversion from a string to a float. If a non float is presented we return the lowest possible value"""
