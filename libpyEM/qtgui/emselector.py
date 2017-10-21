@@ -393,14 +393,14 @@ def EMSelectorBaseTemplate(Type):
 						
 						if len(added) > 0:
 							for k in added:
-								new_item = (item for item in new_items if item.text() == k).next()
+								new_item = next((item for item in new_items if item.text() == k))
 								widget.addItem(new_item)
 
 						if len(removed) > 0:
 							rm = []
 							clear_flag=False
 							for k in removed:
-								old_item = (item for item in old_items if item.text() == k).next()
+								old_item = next((item for item in old_items if item.text() == k))
 								if old_item.isSelected():clear_flag = True
 								rm.append(widget.row(old_item))
 							
@@ -614,7 +614,7 @@ def EMSelectorBaseTemplate(Type):
 					self.lock = False
 					return
 			
-			idx = (i for i in range(len(self.list_widgets)) if self.list_widgets[i] == self.current_list_widget).next()
+			idx = next((i for i in range(len(self.list_widgets)) if self.list_widgets[i] == self.current_list_widget))
 			if self.__load_url_from_item(self.list_widgets[idx+1],item):
 				self.list_widget_data[idx] = item
 				self.list_widget_data[idx+1] = None

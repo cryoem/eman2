@@ -211,11 +211,11 @@ class EMBootStrappedAverages:
 			yes = True
 			# if any of the indices have already been encountered then they can not form a couple
 			try:
-				(val for val in taken if val == i ).next()
+				next((val for val in taken if val == i ))
 				yes = False
 			except: pass
 			try:
-				(val for val in taken if val == j ).next()
+				next((val for val in taken if val == j ))
 				yes = False
 			except: pass
 			
@@ -225,7 +225,7 @@ class EMBootStrappedAverages:
 			else:
 				# it can't be made into a couple so add any indices into the taken list that are not already there
 				for idx in [i,j]:
-					try:  (val for val in taken if idx == val ).next()
+					try:  next((val for val in taken if idx == val ))
 					except: taken.append(idx)
 			
 			cmp_data_copy.set(best[0],best[1],cmp_max)

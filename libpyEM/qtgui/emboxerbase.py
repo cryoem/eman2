@@ -1396,7 +1396,7 @@ class EMBoxList(object):
 		self.max_idx = len(self.boxes)
 		return self
 
-	def next(self):
+	def __next__(self):
 		'''
 		Iteration support
 		@return the next element in the iteration

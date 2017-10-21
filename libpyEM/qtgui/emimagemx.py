@@ -1157,7 +1157,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 						draw_tex = True
 						excluded = False
 						try:
-							(ii for ii in deleted_idxs if ii == i ).next()
+							next((ii for ii in deleted_idxs if ii == i ))
 							excluded = True
 						except: pass
 						if not excluded:
@@ -2372,7 +2372,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 		return button
 
 	def set_mouse_mode(self,mode):
-		b = (button for button in self.mouse_mode_but_grp.buttons() if str(button.text()) == mode ).next() # raises if it's not there, as it should
+		b = next((button for button in self.mouse_mode_but_grp.buttons() if str(button.text()) == mode )) # raises if it's not there, as it should
 		b.setChecked(True) # triggers an event telling the EMImageMXWidget to changes its mouse event handler
 
 	def set_current_tab(self,widget):
@@ -2757,7 +2757,7 @@ class EMMXDataCache:
 
 	def get_item_from_emsave(self,idx):
 		try:
-			(i for i in self.excluded_list if i == idx).next()
+			next((i for i in self.excluded_list if i == idx))
 			return None
 		except:
 			return self[idx]
@@ -3247,7 +3247,7 @@ class EMDataListCache(EMMXDataCache):
 		self.current_iter = 0
 		return self
 
-	def next(self):
+	def __next__(self):
 		''' Iteration support '''
 		if self.current_iter >= self.max_idx:
 			raise StopIteration
@@ -3377,7 +3377,7 @@ class EM3DDataListCache(EMMXDataCache):
 		self.current_iter = 0
 		return self
 
-	def next(self):
+	def __next__(self):
 		''' Iteration support '''
 		if self.current_iter > self.max_idx:
 			raise StopIteration

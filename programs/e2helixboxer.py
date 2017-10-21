@@ -1107,7 +1107,7 @@ if ENABLE_GUI:
 			creates a unique key for a new "rectline" EMShape, which is used for boxing a helix
 			@return: a string that is the key for the new "rectline" EMShape
 			"""
-			i = self.counter.next()
+			i = next(self.counter)
 			return "rectline%i" % i
 		def get_width(self):
 			"""
