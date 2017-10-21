@@ -39,7 +39,7 @@ import sparx.libpy
 # For convenience, import all functions into the top-level namespace. 
 for nm in dir(sparx.libpy):
     if nm.startswith("__"): continue
-    exec "from %s import *" % nm
+    exec("from %s import *" % nm)
 	    
     
     
