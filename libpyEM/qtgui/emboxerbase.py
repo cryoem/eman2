@@ -1000,7 +1000,7 @@ class Main2DWindowEventHandler(BoxEventsHandler):
 		'''
 		if self.mouse_handler == None: return
 		try: self.mouse_handler.mouse_down(event)
-		except EMUnknownBoxType,data:
+		except EMUnknownBoxType as data:
 			self.change_event_handler(self.box_to_tool_dict[data.type])
 			self.mouse_handler.mouse_down(event)
 
@@ -1010,7 +1010,7 @@ class Main2DWindowEventHandler(BoxEventsHandler):
 		'''
 		if self.mouse_handler == None: return
 		try: self.mouse_handler.mouse_drag(event)
-		except EMUnknownBoxType,data:
+		except EMUnknownBoxType as data:
 			self.change_event_handler(self.box_to_tool_dict[data.type])
 			self.mouse_handler.mouse_drag(event)
 
@@ -1028,7 +1028,7 @@ class Main2DWindowEventHandler(BoxEventsHandler):
 		'''
 		if self.mouse_handler == None: return
 		try: self.mouse_handler.mouse_up(event)
-		except EMUnknownBoxType,data:
+		except EMUnknownBoxType as data:
 			self.change_event_handler(self.box_to_tool_dict[data.type])
 			self.mouse_handler.mouse_up(event)
 
@@ -1045,7 +1045,7 @@ class Main2DWindowEventHandler(BoxEventsHandler):
 		'''
 		if self.mouse_handler == None: return
 		try: self.mouse_handler.mouse_wheel(event)
-		except EMUnknownBoxType,data:
+		except EMUnknownBoxType as data:
 			self.change_event_handler(self.box_to_tool_dict[data.type])
 			self.mouse_handler.mouse_wheel(event)
 
@@ -1055,7 +1055,7 @@ class Main2DWindowEventHandler(BoxEventsHandler):
 		'''
 		if self.mouse_handler == None: return
 		try: self.mouse_handler.mouse_move(event)
-		except EMUnknownBoxType,data:
+		except EMUnknownBoxType as data:
 			self.change_event_handler(self.box_to_tool_dict[data.type])
 			self.mouse_handler.mouse_move(event)
 
@@ -1096,7 +1096,7 @@ class ParticlesWindowEventHandler(BoxEventsHandler):
 		self.first_clicked = im
 
 		try: self.mouse_handler.moving_ptcl_established(im,event.x(),event.y())
-		except EMUnknownBoxType,data:
+		except EMUnknownBoxType as data:
 			self.change_event_handler(data.type)
 			self.mouse_handler.moving_ptcl_established(im,event.x(),event.y())
 		#self.target().moving_ptcl_established(im,event.x(),event.y())
@@ -1110,7 +1110,7 @@ class ParticlesWindowEventHandler(BoxEventsHandler):
 
 		if self.moving_box_data:
 			try: self.mouse_handler.move_ptcl(self.moving_box_data[2],event.x(),event.y(),scale)
-			except EMUnknownBoxType,data:
+			except EMUnknownBoxType as data:
 				self.change_event_handler(self.box_to_tool_dict[data.type])
 				self.mouse_handler.move_ptcl(self.moving_box_data[2],event.x(),event.y(),scale)
 			#self.target().move_ptcl(self.moving_box_data[2],event.x(),event.y(),scale)
@@ -1128,7 +1128,7 @@ class ParticlesWindowEventHandler(BoxEventsHandler):
 		if self.mouse_handler == None: return
 
 		try: self.mouse_handler.release_moving_ptcl(self.first_clicked,event.x(),event.y())
-		except EMUnknownBoxType,data:
+		except EMUnknownBoxType as data:
 			self.change_event_handler(self.box_to_tool_dict[data.type])
 			self.mouse_handler.move_ptcl(self.moving_box_data[2],event.x(),event.y(),scale)
 		#self.target().release_moving_ptcl(self.first_clicked,event.x(),event.y())
@@ -1144,7 +1144,7 @@ class ParticlesWindowEventHandler(BoxEventsHandler):
 
 		box_num = lc[0]
 		try: self.mouse_handler.delete_ptcl(box_num)
-		except EMUnknownBoxType,data:
+		except EMUnknownBoxType as data:
 			self.change_event_handler(self.box_to_tool_dict[data.type])
 			self.mouse_handler.delete_ptcl(box_num)
 

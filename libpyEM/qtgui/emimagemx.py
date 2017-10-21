@@ -2357,7 +2357,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 				action=self.vals.addAction(i)
 				action.setCheckable(1)
 				action.setChecked(0)
-		except Exception, inst:
+		except Exception as inst:
 			print(type(inst))	 # the exception instance
 			print(inst.args)	  # arguments stored in .args
 	

@@ -42,7 +42,7 @@ try:
 		print("Child was terminated by signal", -retcode, file=sys.stderr)
 	else:
 		print("child returned", retcode, file=sys.stderr)
-except OSError, e:
+except OSError as e:
 	print("Execution Failed:", e, file=sys.stderr)
 
 shutil.copy('3DMapInOut.mrc', 'OutputMap.mrc')

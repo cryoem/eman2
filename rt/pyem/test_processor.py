@@ -52,7 +52,7 @@ class TestProcessor(unittest.TestCase):
         if(IS_TEST_EXCEPTION):
             try:
                 f2 = Processors.get("_nosuchfilter___")
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 err_type = exception_type(runtime_err)
                 self.assertEqual(err_type, "NotExistingObjectException")
                 
@@ -81,12 +81,12 @@ class TestProcessor(unittest.TestCase):
             for e in [e1,e2]:
                 try:
                     e.process_inplace('xform.transpose')
-                except RuntimeError, runtime_err:
+                except RuntimeError as runtime_err:
                     self.assertEqual(exception_type(runtime_err), "UnexpectedBehaviorException")
                     
                 try:
                     f =  e.process('xform.transpose')
-                except RuntimeError, runtime_err:
+                except RuntimeError as runtime_err:
                     self.assertEqual(exception_type(runtime_err), "UnexpectedBehaviorException")
                     
     def test_threshold_binary_fourier(self):
@@ -101,12 +101,12 @@ class TestProcessor(unittest.TestCase):
         if(IS_TEST_EXCEPTION):
             try:
                 b = a[0].process("threshold.binary.fourier",{"value":0})
-            except RuntimeError, runtime_err: # doesn't work on real images
+            except RuntimeError as runtime_err: # doesn't work on real images
                 self.assertEqual(exception_type(runtime_err), "ImageFormatException")
                 
             try:
                 b = a[0].process("threshold.binary.fourier",{"value":-1})
-            except RuntimeError, runtime_err: # doesn't work for negative thresholds
+            except RuntimeError as runtime_err: # doesn't work for negative thresholds
                 self.assertEqual(exception_type(runtime_err), "InvalidParameterException")
 
     def test_flattenbackground(self):
@@ -124,13 +124,13 @@ class TestProcessor(unittest.TestCase):
             # an InvalidParameterException
             try:
                 e.process_inplace('filter.flattenbackground', {"radius":8,"mask":mask})
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "InvalidParameterException")
     		
             # Check to make sure that atleast one parameter is specified
             try:
                 e.process_inplace('filter.flattenbackground', {})
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "InvalidParameterException")
     			
             # make sure that we throw if the mask is to big
@@ -138,7 +138,7 @@ class TestProcessor(unittest.TestCase):
             mask.to_one()
             try:
                 e.process_inplace('filter.flattenbackground',{"mask":mask})
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
 		
     def test_filter_lowpass_tophat(self):
@@ -371,13 +371,13 @@ class TestProcessor(unittest.TestCase):
             #self.assertRaises( InvalidValueException, e.process_inplace, 'math.meanshrink', {"n":1.5} )
             try:
                e.process_inplace("math.meanshrink",{"n":1.5})
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "InvalidValueException")
                 
             #shrink factor must be >1
             try:
                 e.process_inplace("math.meanshrink",{"n":0})
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "InvalidValueException")
 
     def test_median_shrink(self):
@@ -395,13 +395,13 @@ class TestProcessor(unittest.TestCase):
             #shrink factor must be >1 
             try:
                 e.process_inplace("math.medianshrink",{"n":0})
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "InvalidValueException")
             
             #image size must be divisible by shrink factor
             try:
                 e.process_inplace("math.medianshrink",{"n":5})
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "InvalidValueException")
 
     def test_eman1_math_absvalue(self):
@@ -939,7 +939,7 @@ class TestProcessor(unittest.TestCase):
             self.assertRaises( RuntimeError, e2.process, 'eman1.filter.blockrange', {'cal_half_width':0.2, 'fill_half_width':0.3} )
             try:
                 e2.process_inplace('eman1.filter.blockrange', {'value1':0.2, 'value2':0.3})
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
         
     def no_test_eman1_filter_blockcutoff(self):
@@ -958,7 +958,7 @@ class TestProcessor(unittest.TestCase):
             self.assertRaises( RuntimeError, e2.process, 'eman1.filter.blockcutoff', {'value1':0.2, 'value2':0.3} )
             try:
                 e2.process_inplace('eman1.filter.blockcutoff', {'value1':0.2, 'value2':0.3})
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
         
     def no_test_math_lineargradientfix(self):
@@ -977,7 +977,7 @@ class TestProcessor(unittest.TestCase):
             self.assertRaises( RuntimeError, e2.process, 'math.lineargradientfix' )
             try:
                 e2.process_inplace('math.lineargradientfix')
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
         
     def test_filter_ramp(self):
@@ -996,7 +996,7 @@ class TestProcessor(unittest.TestCase):
             self.assertRaises( RuntimeError, e2.process_inplace, 'filter.ramp' )
             try:
                 e2.process_inplace('filter.ramp')
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
         
     def test_math_verticalstripefix(self):
@@ -1024,7 +1024,7 @@ class TestProcessor(unittest.TestCase):
             self.assertRaises( RuntimeError, e2.process_inplace, 'math.realtofft' )
             try:
                 e2.process_inplace('math.realtofft')
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
                 
             #apply to real image only
@@ -1035,7 +1035,7 @@ class TestProcessor(unittest.TestCase):
             self.assertRaises( RuntimeError, e3.process_inplace, 'math.realtofft' )
             try:
                 e3.process_inplace('math.realtofft')
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageFormatException")
             
     def test_mask_zeroedgefill(self):
@@ -1054,7 +1054,7 @@ class TestProcessor(unittest.TestCase):
             self.assertRaises( RuntimeError, e2.process_inplace, 'mask.zeroedgefill' )
             try:
                 e2.process_inplace('mask.zeroedgefill')
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
             
     def test_mask_beamstop(self):
@@ -1074,7 +1074,7 @@ class TestProcessor(unittest.TestCase):
                                 {'value1':-1.2, 'value2':10, 'value3':8} )
             try:
                 e2.process_inplace('mask.beamstop', {'value1':-1.2, 'value2':10, 'value3':8})
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
             
     def test_mask_dampedzeroedgefill(self):
@@ -1093,7 +1093,7 @@ class TestProcessor(unittest.TestCase):
             self.assertRaises( RuntimeError, e2.process_inplace, 'mask.dampedzeroedgefill' )
             try:
                 e2.process_inplace('mask.dampedzeroedgefill')
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
             
     def test_math_averageovery(self):
@@ -1121,7 +1121,7 @@ class TestProcessor(unittest.TestCase):
             self.assertRaises( RuntimeError, e2.process_inplace, 'mask.zeroedge2d', {'x0':1, 'y0':1, 'x1':25, 'y1':30})
             try:
                 e2.process_inplace('mask.zeroedge2d', {'x0':1, 'y0':1, 'x1':25, 'y1':30})
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
             
     def test_mask_zeroedge3d(self):
@@ -1140,7 +1140,7 @@ class TestProcessor(unittest.TestCase):
             self.assertRaises( RuntimeError, e2.process_inplace, 'mask.zeroedge3d', {'x0':2, 'y0':3, 'z0':4, 'x1':20, 'y1':22, 'z1':26})
             try:
                 e2.process_inplace('mask.zeroedge3d', {'x0':2, 'y0':3, 'z0':4, 'x1':20, 'y1':22, 'z1':26})
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
             
     def test_bilateral(self):
@@ -1216,7 +1216,7 @@ class TestProcessor(unittest.TestCase):
         if(IS_TEST_EXCEPTION):
             try:
                 e5 = e.process('normalize.mask', {'mask':e4, 'no_sigma':1})
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
         
         
@@ -1341,7 +1341,7 @@ class TestProcessor(unittest.TestCase):
             e.process_inplace('testimage.noise.uniform.rand')
             # It only currently works for 3D - if that ever changes this test should be updated
             try: e.process_inplace('testimage.noise.uniform.rand')
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
 		
     def test_xform_flip(self):
@@ -1559,7 +1559,7 @@ class TestProcessor(unittest.TestCase):
             try:
                 e2.process_inplace('math.addspectralnoise', {'n':2, 'x0':9.8, 'dx':1.2, \
                                         'y':(1.3,2.4), 'interpolation':1})
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageFormatException")
     
     def test_xform_fourierorigin(self):
@@ -1660,7 +1660,7 @@ class TestProcessor(unittest.TestCase):
                 'mask.auto2d', {'threshold':0.5, 'filter':0.1})
             try:
                 e2.process_inplace('mask.auto2d', {'threshold':0.5, 'filter':0.1})
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
     
     def no_test_mask_auto3d_thresh(self):
@@ -1873,7 +1873,7 @@ class TestProcessor(unittest.TestCase):
             self.assertRaises( RuntimeError, e2.process_inplace, 'testimage.scurve')
             try:
                 e2.process_inplace('testimage.scurve')
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
     
     def test_testimage_sinewave(self):
@@ -2023,7 +2023,7 @@ class TestProcessor(unittest.TestCase):
             self.assertRaises( RuntimeError, e2.process_inplace, 'filter.integercyclicshift2d', {'dx':10, 'dy':20})
             try:
                 e2.process_inplace('filter.integercyclicshift2d', {'dx':10, 'dy':20})
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageFormatException")
             
             e3 = EMData()
@@ -2032,7 +2032,7 @@ class TestProcessor(unittest.TestCase):
             self.assertRaises( RuntimeError, e3.process_inplace, 'filter.integercyclicshift2d', {'dx':10, 'dy':20})
             try:
                 e3.process_inplace('filter.integercyclicshift2d', {'dx':10, 'dy':20})
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageFormatException")
 
 def test_main():

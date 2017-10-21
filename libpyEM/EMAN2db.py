@@ -47,7 +47,7 @@ import traceback
 
 try:
 	from bsddb3 import db
-except ImportError, e:
+except ImportError as e:
 #	print "WARNING: Could not import bsddb3; falling back on the older bsddb. Consider installing BerkeleyDB and bsddb3:", e
 	from bsddb import db
 

@@ -48,7 +48,7 @@ try:
 
 	ENABLE_GUI = True
 
-except ImportError, e:
+except ImportError as e:
 	print("Importing GUI libraries failed!")
 	print(e)
 	print("GUI features are disabled.")
@@ -481,11 +481,11 @@ def save_particles(particles, ptcl_filepath, do_edge_norm=False, stack_file_mode
 	testfilename = ".HelixBoxerTestFile%s" % ext
 	try:
 		testdata.write_image(testfilename, 0) #Test for write support
-	except RuntimeError, e:
+	except RuntimeError as e:
 		ext = ".hdf"
 	try:
 		testdata.write_image(testfilename, 1) #Test for stack file support
-	except RuntimeError, e:
+	except RuntimeError as e:
 		stack_file_mode = "none"
 	finally:
 		if os.access(testfilename, os.F_OK):

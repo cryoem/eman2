@@ -75,7 +75,7 @@ def run_daemon(options,args):
 	try: 
 		pid = os.fork() 
 		if pid > 0: sys.exit(0) # exit parent once
-	except OSError, e: 
+	except OSError as e: 
 		print("Daemon error") 
 		sys.exit(1)
 
@@ -90,7 +90,7 @@ def run_daemon(options,args):
 	try: 
 		pid = os.fork() 
 		if pid > 0: sys.exit(0) 	# exit the second time
-	except OSError, e: 
+	except OSError as e: 
 		print("Daemon error 2") 
 		sys.exit(1) 
 

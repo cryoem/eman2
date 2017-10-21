@@ -2417,7 +2417,7 @@ class GaussPanel:
 			ctf_cs           = float(self.ctf_cs.text())
 			ctf_ampcont      = float(self.ctf_ampcont.text())
 
-		except ValueError,extras:
+		except ValueError as extras:
 			# conversion of a value failed!
 			print("integer conversion failed.")
 			if not(extras.args is None):
@@ -2536,7 +2536,7 @@ class GaussPanel:
 			ctf_ampcont      = float(self.ctf_ampcont.text())
 			ctf_kboot        = int(self.ctf_kboot.text())
 
-		except ValueError,extras:
+		except ValueError as extras:
 			# conversion of a value failed!
 			print("integer conversion failed.")
 			if not(extras.args is None):
