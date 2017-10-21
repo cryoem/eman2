@@ -387,7 +387,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 
 	if maskfile:
 		import  types
-		if type(maskfile) is types.StringType:  mask = get_image(maskfile)
+		if type(maskfile) is bytes:  mask = get_image(maskfile)
 		else: mask = maskfile
 	else : mask = model_circle(last_ring, nx, nx)
 	if type(refim) == type(""):

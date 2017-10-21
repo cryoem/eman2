@@ -473,7 +473,7 @@ def center_2D(image_to_be_centered, center_method = 1, searching_range = -1, Gau
 	from   utilities    import peak_search
 	from   fundamentals import fshift
 	import types
-	if type(image_to_be_centered) == types.StringType: image_to_be_centered = get_im(image_to_be_centered)
+	if type(image_to_be_centered) == bytes: image_to_be_centered = get_im(image_to_be_centered)
 	if    center_method == 0 :  return  image_to_be_centered,0.,0.
 	elif  center_method == 1 :
 		cs = image_to_be_centered.phase_cog()
@@ -1696,8 +1696,8 @@ def print_list_format(m, narray = 0):
 	"""
 	flist = []
 	for i in xrange(len(m)):
-		if   type(m[i])  is types.FloatType: flist.append('%10.3g'%(m[i]))
-		elif type(m[i])  is types.IntType :  flist.append(  '%10d'%(m[i]))
+		if   type(m[i])  is float: flist.append('%10.3g'%(m[i]))
+		elif type(m[i])  is int :  flist.append(  '%10d'%(m[i]))
 		else				   : flist.append(  '%10s'%(m[i]))
 	if(narray > len(m)):
 		narray = 0
@@ -1724,7 +1724,7 @@ def print_list_format(m, narray = 0):
 
 def pad(image_to_be_padded, new_nx, new_ny = 1,	new_nz = 1, background = "average", off_center_nx = 0, off_center_ny = 0, off_center_nz = 0):
 	import types
-	if type(background) != types.StringType: background = str(background)
+	if type(background) != bytes: background = str(background)
 	if   background == "average"       :     image_padded = Util.pad(image_to_be_padded, new_nx, new_ny, new_nz, off_center_nx, off_center_ny, off_center_nz, "average")
 	elif background == "circumference" :     image_padded = Util.pad(image_to_be_padded, new_nx, new_ny, new_nz, off_center_nx, off_center_ny, off_center_nz, "circumference")
 	else:                                    image_padded = Util.pad(image_to_be_padded, new_nx, new_ny, new_nz, off_center_nx, off_center_ny, off_center_nz,  background  )
@@ -1834,14 +1834,14 @@ def write_text_row(data, file_name):
 	"""
 	import types
 	outf = open(file_name, "w")
-	if (type(data[0]) == types.ListType):
+	if (type(data[0]) == list):
 		# It is a list of lists
 		for i in xrange(len(data)):
 			for j in xrange(len(data[i])):
 				tpt = data[i][j]
 				qtp = type(tpt)
-				if qtp == types.IntType:		outf.write("  %12d"%tpt)
-				elif qtp == types.FloatType:
+				if qtp == int:		outf.write("  %12d"%tpt)
+				elif qtp == float:
 					frmt = chooseformat(tpt)
 					if( frmt == "f" ):			outf.write("  %12.5f"%tpt)
 					else:						outf.write("  %12.5e"%tpt)
@@ -1852,8 +1852,8 @@ def write_text_row(data, file_name):
 		for j in xrange(len(data)):
 			tpt = data[j]
 			qtp = type(tpt)
-			if qtp == types.IntType :			outf.write("  %12d\n"%tpt)
-			elif qtp == types.FloatType:
+			if qtp == int :			outf.write("  %12d\n"%tpt)
+			elif qtp == float:
 				frmt = chooseformat(tpt)
 				if( frmt == "f" ):				outf.write("  %12.5f\n"%tpt)
 				else:							outf.write("  %12.5e\n"%tpt)
@@ -1913,14 +1913,14 @@ def write_text_file(data, file_name):
 
 	import types
 	outf = open(file_name, "w")
-	if (type(data[0]) == types.ListType):
+	if (type(data[0]) == list):
 		# It is a list of lists
 		for i in xrange(len(data[0])):
 			for j in xrange(len(data)):
 				tpt = data[j][i]
 				qtp = type(tpt)
-				if qtp == types.IntType:			outf.write("  %12d"%tpt)
-				elif qtp == types.FloatType:
+				if qtp == int:			outf.write("  %12d"%tpt)
+				elif qtp == float:
 					frmt = chooseformat(tpt)
 					if( frmt == "f" ):				outf.write("  %12.5f"%tpt)
 					else:							outf.write("  %12.5e"%tpt)
@@ -1931,8 +1931,8 @@ def write_text_file(data, file_name):
 		for j in xrange(len(data)):
 			tpt = data[j]
 			qtp = type(tpt)
-			if qtp == types.IntType :			outf.write("  %12d\n"%tpt)
-			elif qtp == types.FloatType:
+			if qtp == int :			outf.write("  %12d\n"%tpt)
+			elif qtp == float:
 				frmt = chooseformat(tpt)
 				if( frmt == "f" ):				outf.write("  %12.5f\n"%tpt)
 				else:							outf.write("  %12.5e\n"%tpt)
@@ -1944,7 +1944,7 @@ def reconstitute_mask(image_mask_applied_file, new_mask_file, save_file_on_disk 
 	"""
 		Substitute masked area value with image average
 	"""
-	if type(image_mask_applied_file) == types.StringType:
+	if type(image_mask_applied_file) == bytes:
 		nima = EMUtil.get_image_count(image_mask_applied_file)
 		if (nima > 1):
 			image_mask_applied = []
@@ -1954,12 +1954,12 @@ def reconstitute_mask(image_mask_applied_file, new_mask_file, save_file_on_disk 
 				image_mask_applied.append(e)
 		else:
 			image_mask_applied = get_im(image_mask_applied_file)
-	elif  type(image_mask_applied_file) == types.ListType:
+	elif  type(image_mask_applied_file) == list:
 		nima =  len( image_mask_applied )
 		image_mask_applied = image_mask_applied_file
-	if type(new_mask_file) == types.StringType:
+	if type(new_mask_file) == bytes:
 		new_mask = get_im( new_mask_file )
-        elif type(new_mask_file) == types.IntType or type( new_mask_file ) == types.floatType:
+        elif type(new_mask_file) == int or type( new_mask_file ) == types.floatType:
 		if nima > 1:
 			e = image_mask_applied[0]
 			nx = e.get_xsize()
@@ -2060,7 +2060,7 @@ def estimate_3D_center(data):
 	from numpy import matrix
 	from numpy import linalg
 	import types
-	if(type(data[0]) is types.ListType):
+	if(type(data[0]) is list):
 		ali_params = data
 	else:
 		ali_params = []
@@ -2973,13 +2973,13 @@ def bcast_number_to_all(number_to_send, source_node = 0, mpi_comm = -1):
 	from mpi import mpi_bcast, MPI_INT, MPI_COMM_WORLD, MPI_FLOAT
 	import types
 	if mpi_comm == -1:  mpi_comm = MPI_COMM_WORLD
-	if    type(number_to_send) is types.IntType:
+	if    type(number_to_send) is int:
 		TMP = mpi_bcast(number_to_send, 1, MPI_INT,   source_node, mpi_comm)
 		return int(TMP[0])
-	elif  type(number_to_send) is types.FloatType:
+	elif  type(number_to_send) is float:
 		TMP = mpi_bcast(number_to_send, 1, MPI_FLOAT, source_node, mpi_comm)
 		return float(TMP[0])
-	elif  type(number_to_send) is types.BooleanType:
+	elif  type(number_to_send) is bool:
 		if number_to_send: number_to_send = 1
 		else: number_to_send = 0
 		TMP = mpi_bcast(number_to_send, 1, MPI_INT, source_node, mpi_comm)
@@ -2995,8 +2995,8 @@ def bcast_list_to_all(list_to_send, myid, source_node = 0, mpi_comm = -1):
 	if(myid == source_node):
 		n = len(list_to_send)
 		# we will also assume all elements on the list are of the same type
-		if( type(list_to_send[0]) == types.IntType ): tp = 0
-		elif( type(list_to_send[0]) == types.FloatType ): tp = 1
+		if( type(list_to_send[0]) == int ): tp = 0
+		elif( type(list_to_send[0]) == float ): tp = 1
 		else: tp = 2
 	else:
 		n = 0
@@ -3031,10 +3031,10 @@ def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, 
 	ink = []
 	len_list = 0
 	for il in xrange(len(list_params)):
-		if type(value[il]) is types.IntType:
+		if type(value[il]) is int:
 			ink.append(1)
 			len_list += 1
-		elif type(value[il]) is types.FloatType:
+		elif type(value[il]) is float:
 			ink.append(0)
 			len_list += 1
 		elif type(value[il]) is TransType:
@@ -3103,8 +3103,8 @@ def send_attr_dict(main_node, data, list_params, image_start, image_end, comm = 
 	for im in xrange(image_start, image_end):
 		value = get_arb_params(data[im-image_start], list_params)
 		for il in xrange(len(value)):
-			if    type(value[il]) is types.IntType:  nvalue.append(float(value[il]))
-			elif  type(value[il]) is types.FloatType: nvalue.append(value[il])
+			if    type(value[il]) is int:  nvalue.append(float(value[il]))
+			elif  type(value[il]) is float: nvalue.append(value[il])
 			elif  type(value[il]) is TransType:
 				m = value[il].get_matrix()
 				assert (len(m)==12)
@@ -3131,10 +3131,10 @@ def recv_attr_dict_bdb(main_node, stack, data, list_params, image_start, image_e
 	ISID = -1
 	for il in xrange(len(list_params)):
 		if(list_params[il] == 'ID'):  ISID = il
-		if type(value[il]) is types.IntType:
+		if type(value[il]) is int:
 			ink.append(1)
 			len_list += 1
-		elif type(value[il]) is types.FloatType:
+		elif type(value[il]) is float:
 			ink.append(0)
 			len_list += 1
 		elif type(value[il]) is TransType:
@@ -4114,7 +4114,7 @@ def rotation_between_anglesets(agls1, agls2):
 	import types
 
 	def ori2xyz(ori):
-		if(type(ori) == types.ListType):
+		if(type(ori) == list):
 			phi, theta, psi = ori[:3]
 		else:
 			# it has to be Transformation object
@@ -5618,8 +5618,8 @@ def store_value_of_simple_vars_in_json_file(filename, local_vars, exclude_list_o
 
 	import json, types, collections
 
-	allowed_types = [types.NoneType, types.BooleanType, types.IntType, types.LongType, types.FloatType, types.ComplexType,
-					 types.UnicodeType, types.StringType]
+	allowed_types = [type(None), bool, int, int, float, complex,
+					 str, bytes]
 
 	local_vars_keys = local_vars.keys()
 
@@ -5627,7 +5627,7 @@ def store_value_of_simple_vars_in_json_file(filename, local_vars, exclude_list_o
 	for key in set(local_vars_keys) - set(exclude_list_of_vars):
 		if type(local_vars[key]) in allowed_types:
 			my_vars[key] = local_vars[key]
-		elif type(local_vars[key]) in [types.ListType, types.TupleType, type(set())]:
+		elif type(local_vars[key]) in [list, tuple, type(set())]:
 			if len({type(i) for i in local_vars[key]} - set(allowed_types)) == 0:
 				if key in vars_that_will_show_only_size:
 					my_vars[key] = "%s with length: %d"%(str(type(local_vars[key])),len(local_vars[key]))
@@ -5636,7 +5636,7 @@ def store_value_of_simple_vars_in_json_file(filename, local_vars, exclude_list_o
 						my_vars[key] = list(local_vars[key])
 					else:
 						my_vars[key] = local_vars[key]
-		elif type(local_vars[key]) == types.DictType:
+		elif type(local_vars[key]) == dict:
 			if len({type(local_vars[key][i]) for i in local_vars[key]} - set(allowed_types)) == 0:
 					my_vars[key] = local_vars[key]
 
@@ -6588,7 +6588,7 @@ def adjust_fsc_down(fsc,n1,n2):
 	# n1 total data n2 subset
 	from utilities import read_text_file
 	import types
-	if type(fsc) == types.StringType:fsc=read_text_file(fsc,-1)
+	if type(fsc) == bytes:fsc=read_text_file(fsc,-1)
 	N_bins =  len(fsc[0])
 	adjusted_fsc = N_bins*[None]
 	for index_of_cc in xrange(N_bins):
