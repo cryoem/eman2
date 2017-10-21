@@ -45,7 +45,6 @@ from emplot3d import *
 from expand_string import expand_string
 from libpyUtils2 import EMUtil
 from matching import matches_pats
-from string import lower
 from valslider import StringBox
 import os
 import re
@@ -53,7 +52,6 @@ import threading
 import time
 import traceback
 import weakref
-
 
 
 #---------------------------------------------------------------------------
