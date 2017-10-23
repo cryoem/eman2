@@ -8,6 +8,8 @@ def main():
 	procnd_par.py \"e2proc3d.py a.hdf b.hdf --process blabla...\" --threads=1024"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--threads", type=int,help="number of threads", default=10)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	
@@ -54,7 +56,7 @@ def main():
 		except: 
 			print "Cannot remove {}".format(fm)
 			pass
-	
+	print "Done"
 	E2end(logid)
 	
 def run(cmd):
