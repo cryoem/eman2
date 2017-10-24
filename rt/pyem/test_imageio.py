@@ -93,8 +93,6 @@ class ImageIOTester(unittest.TestCase):
 			finally:
 				remove_file(filename)	
 				
-	do_test_read_write.broken = True
-	
 class TestEMIO(ImageIOTester):
 	"""EM file IO test"""
 	
@@ -1170,8 +1168,6 @@ class TestImageIO(unittest.TestCase):
 		else:
 			os.unlink(readfile_2d)
 
-	region_read_test.broken = True
-	
 	def region_write_test(self, imgtype, imgfile, outtype = None):
 		"""test region writing .............................."""
 		if not outtype:
@@ -1233,15 +1229,11 @@ class TestImageIO(unittest.TestCase):
 		else:
 			os.unlink(writefile_2d)
 
-	region_write_test.broken = True
-	
 	def region_read_write_test(self, imgtype, imgfile, outtype = None):
 		"""test region read and write ......................."""
 		self.region_read_test(imgtype, imgfile, outtype)
 		self.region_write_test(imgtype, imgfile, outtype)
 		
-	region_read_write_test.broken = True
-	
 	def test_region_equiv_to_clip(self):
 		"""test read region is identical to get clip ........"""
 		

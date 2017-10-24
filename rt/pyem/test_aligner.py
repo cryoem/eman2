@@ -302,8 +302,6 @@ class TestAligner(unittest.TestCase):
 					self.failIf( result > 5 ) # 5 seems accurate enough
 					self.failIf( t.get_mirror() != mirror)
 
-	run_rtf_aligner_test.broken = True
-	
 	def test_RotateTranslateFlipAligner(self):
 		"""test RotateTranslateFlip Aligner ................."""
 		e = EMData()

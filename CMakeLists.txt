@@ -350,7 +350,7 @@ set(test_methods
 find_package(Nosetests)
 foreach(t ${test_methods})
 	add_test(NAME ${t}
-			COMMAND ${NOSETESTS_EXECUTABLE} -v -e "no_*" -a \!broken
+			COMMAND ${NOSETESTS_EXECUTABLE} -v -m "^test_*" -a \!broken
 					${CMAKE_INSTALL_PREFIX}/test/rt/pyem/${t}
 			)
 endforeach()

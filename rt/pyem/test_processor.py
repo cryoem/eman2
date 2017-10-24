@@ -1725,8 +1725,6 @@ class TestProcessor(unittest.TestCase):
 					if z != 1:
 						self.failIf(mx[2] != z/2)
 
-    centring_test.broken = True
-    
     def test_xform_centeracf(self):
 		"""test xform.centeracf processor ..................."""
 		self.centring_test("xform.centeracf",1)
