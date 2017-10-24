@@ -37,6 +37,7 @@ from pyemtbx.exceptions import *
 import unittest
 import testlib
 import sys
+import platform
 import math
 import os
 from optparse import OptionParser
@@ -3408,6 +3409,9 @@ class TestEMData(unittest.TestCase):
         t2 = img2.get_attr('xform')
         self.assertEqual(t.get_matrix(), t2.get_matrix())
         testlib.safe_unlink('mydb3')
+    
+    if platform.system() == "Windows":
+        test_transform_pickling.broken = True
         
     def test_set_xyz_origin(self):
         """test set_xyz_origin function ....................."""
