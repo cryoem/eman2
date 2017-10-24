@@ -729,6 +729,8 @@ class TestMrcIO(ImageIOTester):
 		TestUtil.make_image_file(img6, IMAGE_MRC, EM_FLOAT, 16,16,10)
 		os.unlink(img6)
 
+	test_make_image_file.broken = True
+	
 	def test_complex_image(self):
 		"""test complex mrc image file ......................"""
 		imgfile1 = "test_complex_image.mrc"
@@ -1168,6 +1170,8 @@ class TestImageIO(unittest.TestCase):
 		else:
 			os.unlink(readfile_2d)
 
+	region_read_test.broken = True
+	
 	def region_write_test(self, imgtype, imgfile, outtype = None):
 		"""test region writing .............................."""
 		if not outtype:
@@ -1229,12 +1233,15 @@ class TestImageIO(unittest.TestCase):
 		else:
 			os.unlink(writefile_2d)
 
+	region_write_test.broken = True
+	
 	def region_read_write_test(self, imgtype, imgfile, outtype = None):
 		"""test region read and write ......................."""
 		self.region_read_test(imgtype, imgfile, outtype)
 		self.region_write_test(imgtype, imgfile, outtype)
 		
-		
+	region_read_write_test.broken = True
+	
 	def test_region_equiv_to_clip(self):
 		"""test read region is identical to get clip ........"""
 		
@@ -1294,6 +1301,8 @@ class TestImageIO(unittest.TestCase):
 			finally:
 				remove_file(name)
 		
+	test_region_equiv_to_clip.broken = True
+	
 	def test_mrcio_region(self):
 		"""test mrc io region ..............................."""
 		mrc2d = "test_mrcio_region_2d.mrc"

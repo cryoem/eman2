@@ -329,9 +329,9 @@ set(test_methods
 		test_imageio.py:TestSpiderIO
 		test_imageio.py:TestDF3IO
 		test_imageio.py:TestHdfIO
-#		test_imageio.py:TestMrcIO                  # broken
+		test_imageio.py:TestMrcIO
 		test_imageio.py:TestImagicIO
-#		test_imageio.py:TestImageIO                # broken
+		test_imageio.py:TestImageIO
 		test_misc.py:TestPixel
 		test_misc.py:TestBoost
 		test_misc.py:TestException
