@@ -336,7 +336,7 @@ set(test_methods
 		test_misc.py:TestBoost
 		test_misc.py:TestException
 		test_misc.py:TestRegion
-#		test_processor.py:TestProcessor            # broken
+		test_processor.py:TestProcessor
 		test_reconstructor.py:TestReconstructor
 		test_transform.py:TestTransform
 		test_transform.py:TestSymmetry
