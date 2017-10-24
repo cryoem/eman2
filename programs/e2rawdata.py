@@ -78,12 +78,10 @@ def main():
 		if not os.access(originalsdir, os.R_OK):
 			os.mkdir("raw_micrographs")
 			
-	thrds=[(jsd,i,args[i],options) for i in xrange(len(args))]
-
 	if options.threads==1:
 		for i,arg in enumerate(args):
 			importfn(i,arg,options)
-			E2progress(logid,(thrtolaunch/float(len(args))))
+			E2progress(logid,(i/float(len(args))))
 
 		E2end(logid)
 		sys.exit(0)
@@ -91,23 +89,23 @@ def main():
 	# due to multithreading limitations, we use multiple processes when threads specified
 	
 	# rebuild command line. Better way?
-	opts="--threads 1"
-	if options.invert: opts+=" --invert"
-	if options.edgenorm: opts+=" --edgenorm"
-	if options.usefoldername: opts+=" --usefoldername"
-	if options.xraypixel: opts+=" --xraypixel"
-	if options.ctfest: opts+=" --ctfest"
-	if options.astigmatism: opts+=" --astigmatism"
-	if options.moverawdata: opts+=" --moverawdata"
-	if options.apix!=None : opts+=" --apix {}".format(options.apix)
-	if options.voltage!=None : opts+=" --voltage {}".format(options.voltage)
-	if options.cs!=None : opts+=" --cs {}".format(options.cs)
-	if options.ac!=None : opts+=" --ac {}".format(options.ac)
-	if options.defocusmin!=None : opts+=" --defocusmin {}".format(options.defocusmin)
-	if options.defocusmax!=None : opts+=" --defocusmax {}".format(options.defocusmax)
+	opts="--threads 1 "
+	if options.invert:        opts+="--invert "
+	if options.edgenorm:      opts+="--edgenorm "
+	if options.usefoldername: opts+="--usefoldername "
+	if options.xraypixel:     opts+="--xraypixel "
+	if options.ctfest:        opts+="--ctfest "
+	if options.astigmatism:   opts+="--astigmatism "
+	if options.moverawdata:   opts+="--moverawdata "
+	if options.apix!=None :   opts+="--apix {} ".format(options.apix)
+	if options.voltage!=None : opts+="--voltage {} ".format(options.voltage)
+	if options.cs!=None :     opts+="--cs {} ".format(options.cs)
+	if options.ac!=None :     opts+="--ac {} ".format(options.ac)
+	if options.defocusmin!=None : opts+="--defocusmin {} ".format(options.defocusmin)
+	if options.defocusmax!=None : opts+="--defocusmax {} ".format(options.defocusmax)
 	
 	blk=len(args)//options.threads+1
-	thrds=[threading.thread(target=launch_childprocess,args=["e2rawdata.py "+opts+" ".join(args[i*blk:(i+1)*blk])]) for i in xrange(options.threads)]
+	thrds=[threading.Thread(target=launch_childprocess,args=["e2rawdata.py "+opts+" ".join(args[i*blk:(i+1)*blk])]) for i in xrange(options.threads)]
 
 	print "Launching ",options.threads," subprocesses"
 	for t in thrds:
