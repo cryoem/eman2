@@ -32,6 +32,7 @@
 #
 import re, os
 from EMAN2 import *
+import Queue
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -59,6 +60,7 @@ def main():
 	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful",guitype='intbox', row=10, col=0, rowspan=1, colspan=1, mode='filter[4]')
 	parser.add_argument("--defocusmin",type=float,help="Minimum autofit defocus",default=0.6, guitype='floatbox', row=8, col=0, rowspan=1, colspan=1, mode="filter[0.6]")
 	parser.add_argument("--defocusmax",type=float,help="Maximum autofit defocus",default=4, guitype='floatbox', row=8, col=1, rowspan=1, colspan=1, mode='filter[4.0]')
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, help="verbosity [0-9]", default=0)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
@@ -77,7 +79,7 @@ def main():
 			os.mkdir("raw_micrographs")
 			
 	jsd=Queue.Queue(0)
-	thrds=[(jsd,i,args[i],options) for i in len(args)]
+	thrds=[(jsd,i,args[i],options) for i in xrange(len(args))]
 	
 	# standard thread execution loop
 	thrtolaunch=0
@@ -87,7 +89,8 @@ def main():
 			if options.verbose>0 : 
 				print "\r Starting thread {}/{}      ".format(thrtolaunch,len(thrds)),
 				sys.stdout.flush()
-				thrds[thrtolaunch]=threading.Thread(target=importfn,args=thrds[thrtolaunch])		# replace args
+
+			thrds[thrtolaunch]=threading.Thread(target=importfn,args=thrds[thrtolaunch])		# replace args
 			thrds[thrtolaunch].start()
 			thrtolaunch+=1
 		else: time.sleep(0.1)
@@ -95,14 +98,13 @@ def main():
 		# return is [N,dict] a dict of image# keyed processed images
 		while not jsd.empty():
 			rd=jsd.get()
-			if rd[2] :
-				thrds[rd[1]].join()
-				thrds[rd[1]]=None
+			thrds[rd].join()
+			thrds[rd]=None
 			
-				if options.verbose>1:
-					print "{} done. ".format(rd[1]),
+			if options.verbose>1:
+				print "{} done. ".format(rd[1]),
 					
-				E2progress(logid,(thrtolaunch/float(len(args))))
+			E2progress(logid,(thrtolaunch/float(len(args))))
 
 	E2end(logid)
 
