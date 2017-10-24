@@ -317,20 +317,20 @@ set(test_methods
 		test_averager.py:TestAverager
 		test_cmp.py:TestCmp
 		test_emdata.py:TestEMData
-#		test_imageio.py:ImageIOTester              # broken
-#		test_imageio.py:TestEMIO                   # broken
-#		test_imageio.py:TestPifIO                  # broken
-#		test_imageio.py:TestFitsIO                 # broken
-#		test_imageio.py:TestIcosIO                 # broken
-#		test_imageio.py:TestPNGIO                  # broken
-#		test_imageio.py:TestVTKIO                  # broken
-#		test_imageio.py:TestXPLORIO                # broken
-#		test_imageio.py:TestPGMIO                  # broken
-#		test_imageio.py:TestSpiderIO               # broken
-#		test_imageio.py:TestDF3IO                  # broken
-#		test_imageio.py:TestHdfIO                  # broken
+		test_imageio.py:ImageIOTester
+		test_imageio.py:TestEMIO
+		test_imageio.py:TestPifIO
+		test_imageio.py:TestFitsIO
+		test_imageio.py:TestIcosIO
+		test_imageio.py:TestPNGIO
+		test_imageio.py:TestVTKIO
+		test_imageio.py:TestXPLORIO
+		test_imageio.py:TestPGMIO
+		test_imageio.py:TestSpiderIO
+		test_imageio.py:TestDF3IO
+		test_imageio.py:TestHdfIO
 #		test_imageio.py:TestMrcIO                  # broken
-#		test_imageio.py:TestImagicIO               # broken
+		test_imageio.py:TestImagicIO
 #		test_imageio.py:TestImageIO                # broken
 		test_misc.py:TestPixel
 		test_misc.py:TestBoost

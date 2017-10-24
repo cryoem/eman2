@@ -93,6 +93,8 @@ class ImageIOTester(unittest.TestCase):
 			finally:
 				remove_file(filename)	
 				
+	do_test_read_write.broken = True
+	
 class TestEMIO(ImageIOTester):
 	"""EM file IO test"""
 	
@@ -746,6 +748,8 @@ class TestMrcIO(ImageIOTester):
 		os.unlink(imgfile1)
 		os.unlink(imgfile2)
    
+	test_complex_image.broken = True
+	
 	def test_mrcio_label(self):
 		"""test mrc file label .............................."""
 		pid = str(os.getpid())
