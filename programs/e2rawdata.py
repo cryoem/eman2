@@ -44,6 +44,7 @@ def main():
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
+	### WARNING: due to the way parallelism is handled, if you add an option, look below to add it in the second block
 	parser.add_pos_argument(name="micrographs",help="List the micrographs to filter here.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=True)",  row=0, col=0,rowspan=1, colspan=2, mode='filter')
 	parser.add_header(name="filterheader", help='Options below this label are specific to filtering', title="### filtering options ###", row=1, col=0, rowspan=1, colspan=2, mode='import,filter')
 	parser.add_argument("--invert",action="store_true",help="Invert contrast",default=False, guitype='boolbox', row=2, col=0, rowspan=1, colspan=1, mode='filter[True]')
@@ -71,44 +72,55 @@ def main():
 
 	logid=E2init(sys.argv,options.ppid)
 
-	options.threads+=1		# we have one thread just writing results
 	# After filtration we move micrographs to a directory 'raw_micrographs', if desired
 	if options.moverawdata:
 		originalsdir = os.path.join(".","raw_micrographs")
 		if not os.access(originalsdir, os.R_OK):
 			os.mkdir("raw_micrographs")
 			
-	jsd=Queue.Queue(0)
 	thrds=[(jsd,i,args[i],options) for i in xrange(len(args))]
-	
-	# standard thread execution loop
-	thrtolaunch=0
-	while thrtolaunch<len(thrds) or threading.active_count()>1:
-		if thrtolaunch<len(thrds):
-			while (threading.active_count()>=options.threads) : time.sleep(0.1)
-			if options.verbose>0 : 
-				print "\r Starting thread {}/{}      ".format(thrtolaunch,len(thrds)),
-				sys.stdout.flush()
 
-			thrds[thrtolaunch]=threading.Thread(target=importfn,args=thrds[thrtolaunch])		# replace args
-			thrds[thrtolaunch].start()
-			thrtolaunch+=1
-		else: time.sleep(0.1)
-		
-		# return is [N,dict] a dict of image# keyed processed images
-		while not jsd.empty():
-			rd=jsd.get()
-			thrds[rd].join()
-			thrds[rd]=None
-			
-			if options.verbose>1:
-				print "{} done. ".format(rd[1]),
-					
+	if options.threads==1:
+		for i,arg in enumerate(args):
+			importfn(i,arg,options)
 			E2progress(logid,(thrtolaunch/float(len(args))))
 
+		E2end(logid)
+		sys.exit(0)
+	
+	# due to multithreading limitations, we use multiple processes when threads specified
+	
+	# rebuild command line. Better way?
+	opts="--threads 1"
+	if options.invert: opts+=" --invert"
+	if options.edgenorm: opts+=" --edgenorm"
+	if options.usefoldername: opts+=" --usefoldername"
+	if options.xraypixel: opts+=" --xraypixel"
+	if options.ctfest: opts+=" --ctfest"
+	if options.astigmatism: opts+=" --astigmatism"
+	if options.moverawdata: opts+=" --moverawdata"
+	if options.apix!=None : opts+=" --apix {}".format(options.apix)
+	if options.voltage!=None : opts+=" --voltage {}".format(options.voltage)
+	if options.cs!=None : opts+=" --cs {}".format(options.cs)
+	if options.ac!=None : opts+=" --ac {}".format(options.ac)
+	if options.defocusmin!=None : opts+=" --defocusmin {}".format(options.defocusmin)
+	if options.defocusmax!=None : opts+=" --defocusmax {}".format(options.defocusmax)
+	
+	blk=len(args)//options.threads+1
+	thrds=[threading.thread(target=launch_childprocess,args=["e2rawdata.py "+opts+" ".join(args[i*blk:(i+1)*blk])]) for i in xrange(options.threads)]
+
+	print "Launching ",options.threads," subprocesses"
+	for t in thrds:
+		time.sleep(0.1)
+		t.start()
+	
+	for t in thrds:
+		t.join()
+
+	print "All subprocesses complete"
 	E2end(logid)
 
-def importfn(jsd,i,arg,options):
+def importfn(i,arg,options):
 	base = base_name(arg,nodir=not options.usefoldername)
 	output = os.path.join(os.path.join(".","micrographs"),base+".hdf")
 	cmd = "e2proc2d.py %s %s --inplace"%(arg,output)
@@ -176,8 +188,6 @@ def importfn(jsd,i,arg,options):
 		db.close()
 		print info_name(arg,nodir=not options.usefoldername),ctf
 	
-	jsd.put(i)
-
 
 def bgAdj(ctf,fg_1d):
 	"""Smooths the background based on the values of the foreground near the CTF zeroes and puts the
