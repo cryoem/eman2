@@ -56,6 +56,7 @@ def main():
 	parser.add_argument("--voltage",type=float,help="Microscope voltage in KV",default=None, guitype='floatbox', row=5, col=1, rowspan=1, colspan=1, mode="filter['self.pm().getVoltage()']")
 	parser.add_argument("--cs",type=float,help="Microscope Cs (spherical aberation)",default=None, guitype='floatbox', row=6, col=0, rowspan=1, colspan=1, mode="filter['self.pm().getCS()']")
 	parser.add_argument("--ac",type=float,help="Amplitude contrast (percentage, default=10)",default=10, guitype='floatbox', row=6, col=1, rowspan=1, colspan=1, mode="filter")
+	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful",guitype='intbox', row=10, col=0, rowspan=1, colspan=1, mode='filter[4]')
 	parser.add_argument("--defocusmin",type=float,help="Minimum autofit defocus",default=0.6, guitype='floatbox', row=8, col=0, rowspan=1, colspan=1, mode="filter[0.6]")
 	parser.add_argument("--defocusmax",type=float,help="Maximum autofit defocus",default=4, guitype='floatbox', row=8, col=1, rowspan=1, colspan=1, mode='filter[4.0]')
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -68,82 +69,113 @@ def main():
 
 	logid=E2init(sys.argv,options.ppid)
 
+	options.threads+=1		# we have one thread just writing results
 	# After filtration we move micrographs to a directory 'raw_micrographs', if desired
 	if options.moverawdata:
 		originalsdir = os.path.join(".","raw_micrographs")
 		if not os.access(originalsdir, os.R_OK):
 			os.mkdir("raw_micrographs")
 			
-	for i,arg in enumerate(args):
-		base = base_name(arg,nodir=not options.usefoldername)
-		output = os.path.join(os.path.join(".","micrographs"),base+".hdf")
-		cmd = "e2proc2d.py %s %s --inplace"%(arg,output)
-
-		cmdext=[]
-		if options.invert: cmdext.append(" --mult=-1")
-		if options.edgenorm: cmdext.append(" --process=normalize.edgemean")
-		if options.xraypixel: cmdext.append(" --process=threshold.clampminmax.nsigma:nsigma=4")
-		if len(cmdext)>0 or arg!=output:
-			cmd+="".join(cmdext)
-			launch_childprocess(cmd)
-
-		if options.moverawdata:
-			os.rename(arg,os.path.join(originalsdir,os.path.basename(arg)))
+	jsd=Queue.Queue(0)
+	thrds=[(jsd,i,args[i],options) for i in len(args)]
+	
+	# standard thread execution loop
+	thrtolaunch=0
+	while thrtolaunch<len(thrds) or threading.active_count()>1:
+		if thrtolaunch<len(thrds):
+			while (threading.active_count()>=options.threads) : time.sleep(0.1)
+			if options.verbose>0 : 
+				print "\r Starting thread {}/{}      ".format(thrtolaunch,len(thrds)),
+				sys.stdout.flush()
+				thrds[thrtolaunch]=threading.Thread(target=importfn,args=thrds[thrtolaunch])		# replace args
+			thrds[thrtolaunch].start()
+			thrtolaunch+=1
+		else: time.sleep(0.1)
+		
+		# return is [N,dict] a dict of image# keyed processed images
+		while not jsd.empty():
+			rd=jsd.get()
+			if rd[2] :
+				thrds[rd[1]].join()
+				thrds[rd[1]]=None
 			
-		# We estimate the defocus and B-factor (no astigmatism) from the micrograph and store it in info and the header
-		if options.ctfest :
-			d=EMData(output,0)
-			if d["nx"]<1000 or d["ny"]<1000 : 
-				print "CTF estimation will only work with images at least 1000x1000 in size"
-				sys.exit(1)
-			if d["nx"]<2000 : box=256
-			elif d["nx"]<4000 : box=512
-			elif d["nx"]<6000 : box=768
-			else : box=1024
-
-			import e2ctf
-			
-			ds=1.0/(options.apix*box)
-			ffta=None
-			nbx=0
-			for x in range(100,d["nx"]-box,box):
-				for y in range(100,d["ny"]-box,box):
-					clip=d.get_clip(Region(x,y,box,box))
-					clip.process_inplace("normalize.edgemean")
-					fft=clip.do_fft()
-					fft.ri2inten()
-					if ffta==None: ffta=fft
-					else: ffta+=fft
-					nbx+=1
-
-			ffta.mult(1.0/(nbx*box**2))
-			ffta.process_inplace("math.sqrt")
-			ffta["is_intensity"]=0				# These 2 steps are done so the 2-D display of the FFT looks better. Things would still work properly in 1-D without it
-
-			fftbg=ffta.process("math.nonconvex")
-			fft1d=ffta.calc_radial_dist(ffta.get_ysize()/2,0.0,1.0,1)	# note that this handles the ri2inten averages properly
-
-			# Compute 1-D curve and background
-			bg_1d=e2ctf.low_bg_curve(fft1d,ds)
-
-			#initial fit, background adjustment, refine fit, final background adjustment
-			ctf=e2ctf.ctf_fit(fft1d,bg_1d,bg_1d,ffta,fftbg,options.voltage,options.cs,options.ac,options.apix,1,dfhint=(options.defocusmin,options.defocusmax))
-			bgAdj(ctf,fft1d)
-			ctf=e2ctf.ctf_fit(fft1d,ctf.background,ctf.background,ffta,fftbg,options.voltage,options.cs,options.ac,options.apix,1,dfhint=(options.defocusmin,options.defocusmax))
-			bgAdj(ctf,fft1d)
-			
-			if options.astigmatism : e2ctf.ctf_fit_stig(ffta,fftbg,ctf)
-			
-			#ctf.background=bg_1d
-			#ctf.dsbg=ds
-			db=js_open_dict(info_name(arg,nodir=not options.usefoldername))
-			db["ctf_frame"]=[box,ctf,(box/2,box/2),set(),5,1]
-			db["quality"]=5
-			print info_name(arg,nodir=not options.usefoldername),ctf
-
-		E2progress(logid,(float(i)/float(len(args))))
+				if options.verbose>1:
+					print "{} done. ".format(rd[1]),
+					
+				E2progress(logid,(thrtolaunch/float(len(args))))
 
 	E2end(logid)
+
+def importfn(jsd,i,arg,options):
+	base = base_name(arg,nodir=not options.usefoldername)
+	output = os.path.join(os.path.join(".","micrographs"),base+".hdf")
+	cmd = "e2proc2d.py %s %s --inplace"%(arg,output)
+
+	cmdext=[]
+	if options.invert: cmdext.append(" --mult=-1")
+	if options.edgenorm: cmdext.append(" --process=normalize.edgemean")
+	if options.xraypixel: cmdext.append(" --process=threshold.clampminmax.nsigma:nsigma=4")
+	if len(cmdext)>0 or arg!=output:
+		cmd+="".join(cmdext)
+		launch_childprocess(cmd)
+
+	if options.moverawdata:
+		os.rename(arg,os.path.join(originalsdir,os.path.basename(arg)))
+		
+	# We estimate the defocus and B-factor (no astigmatism) from the micrograph and store it in info and the header
+	if options.ctfest :
+		d=EMData(output,0)
+		if d["nx"]<1000 or d["ny"]<1000 : 
+			print "CTF estimation will only work with images at least 1000x1000 in size"
+			sys.exit(1)
+		if d["nx"]<2000 : box=256
+		elif d["nx"]<4000 : box=512
+		elif d["nx"]<6000 : box=768
+		else : box=1024
+
+		import e2ctf
+		
+		ds=1.0/(options.apix*box)
+		ffta=None
+		nbx=0
+		for x in range(100,d["nx"]-box,box):
+			for y in range(100,d["ny"]-box,box):
+				clip=d.get_clip(Region(x,y,box,box))
+				clip.process_inplace("normalize.edgemean")
+				fft=clip.do_fft()
+				fft.ri2inten()
+				if ffta==None: ffta=fft
+				else: ffta+=fft
+				nbx+=1
+
+		ffta.mult(1.0/(nbx*box**2))
+		ffta.process_inplace("math.sqrt")
+		ffta["is_intensity"]=0				# These 2 steps are done so the 2-D display of the FFT looks better. Things would still work properly in 1-D without it
+
+		fftbg=ffta.process("math.nonconvex")
+		fft1d=ffta.calc_radial_dist(ffta.get_ysize()/2,0.0,1.0,1)	# note that this handles the ri2inten averages properly
+
+		# Compute 1-D curve and background
+		bg_1d=e2ctf.low_bg_curve(fft1d,ds)
+
+		#initial fit, background adjustment, refine fit, final background adjustment
+		ctf=e2ctf.ctf_fit(fft1d,bg_1d,bg_1d,ffta,fftbg,options.voltage,options.cs,options.ac,options.apix,1,dfhint=(options.defocusmin,options.defocusmax))
+		bgAdj(ctf,fft1d)
+		ctf=e2ctf.ctf_fit(fft1d,ctf.background,ctf.background,ffta,fftbg,options.voltage,options.cs,options.ac,options.apix,1,dfhint=(options.defocusmin,options.defocusmax))
+		bgAdj(ctf,fft1d)
+		
+		if options.astigmatism : e2ctf.ctf_fit_stig(ffta,fftbg,ctf)
+		
+		#ctf.background=bg_1d
+		#ctf.dsbg=ds
+		db=js_open_dict(info_name(arg,nodir=not options.usefoldername))
+		db["ctf_frame"]=[box,ctf,(box/2,box/2),set(),5,1]
+		db["quality"]=5
+		db.close()
+		print info_name(arg,nodir=not options.usefoldername),ctf
+	
+	jsd.put(i)
+
 
 def bgAdj(ctf,fg_1d):
 	"""Smooths the background based on the values of the foreground near the CTF zeroes and puts the
