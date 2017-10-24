@@ -4688,7 +4688,7 @@ void NormalizeToLeastSquareProcessor::process_inplace(EMData * image)
 		// sigma for thresholding
 		meani=meant=0;						// Fourier amplitude >=0, so we reference everything to this point
 		sigi=sigt=0;
-		for (size_t i=0; i<size2; i+=2) { sigi+=pow(dimage[i],2.0); sigt+=pow(dto[i],2.0); }
+		for (size_t i=0; i<size2; i+=2) { sigi+=pow(dimage[i],2.0f); sigt+=pow(dto[i],2.0f); }
 		sigi=ignore_lowsig*sqrt(sigi/(size2/2));
 		sigt=ignore_lowsig*sqrt(sigt/(size2/2));
 	} 
