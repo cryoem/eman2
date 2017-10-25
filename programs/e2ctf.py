@@ -1781,10 +1781,11 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,phaseplate,apix,bgad
 	im=im_1d
 	bg=ctf.compute_1d_fromimage(len(ctf.background)*2, ds, bg_2d)
 	
+	# why change this to degrees, and use integers ... no good reason
 	if phaseplate :
-		phaserange=(ctf.get_phase(),156)
+		phaserange=(int(ctf.get_phase()*180.0/pi),156)
 	else:
-		phaserange=(ctf.get_phase(),ctf.get_phase()+1)
+		phaserange=(int(ctf.get_phase()*180.0),int(ctf.get_phase()*180.0)+1)
 
 	for rng in (0,1):
 		# second pass is +-0.1 unless the original hint range was narrower
@@ -1794,7 +1795,7 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,phaseplate,apix,bgad
 		for phase in xrange(phaserange[0],phaserange[1],5):
 			for df in arange(dfhint[0],dfhint[1],dfhint[2]):
 				ctf.defocus=df
-				ctf.set_phase(phase)
+				ctf.set_phase(phase*pi/180.0)
 				ccurv=ctf.compute_1d(len(curve)*2,ds,Ctf.CtfType.CTF_AMP)
 				ccurv=[sfact2(ds*i)*ccurv[i]**2 for i in range(len(ccurv))]		# squared * structure factor
 
@@ -1808,7 +1809,7 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,phaseplate,apix,bgad
 	#			print df,sum(sim),qual
 
 		ctf.defocus=best[1]
-		ctf.set_phase(best[2])
+		ctf.set_phase(best[2]*pi/180)
 		print "Best defocus: {:1.03f} phase={}".format(best[1],best[2])
 
 		# determine a good B-factor now that the defocus is pretty good
