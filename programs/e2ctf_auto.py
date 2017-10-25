@@ -78,8 +78,9 @@ Important: This program must be run from the project directory, not from within 
 	parser.add_argument("--fromscratch",action="store_true",help="Force refitting of CTF from scratch, ignoring any previous fits.",default=False, guitype='boolbox', row=22, col=0, rowspan=1, colspan=1, mode='auto[False]')
 	parser.add_argument("--curdefocusfix",action="store_true",help="Recomputes everything, but maintains the current particle-based defocus/astigmatism, including any manual adjustments",default=False, guitype='boolbox', row=24, col=2, rowspan=1, colspan=1, mode='autofit[False]')
 #	parser.add_argument("--forceframe",action="store_true",help="Uses defocus/astigmatism from frames. Does not significantly modify based on particles",default=False, guitype='boolbox', row=24, col=2, rowspan=1, colspan=1, mode='auto[False]')
-	parser.add_argument("--astigmatism",action="store_true",help="Includes astigmatism in automatic fitting (use e2rawdata first)",default=False, guitype='boolbox', row=22, col=1, rowspan=1, colspan=1, mode='auto[False]')
-	parser.add_argument("--extrapad",action="store_true",help="If particles were boxed more tightly than EMAN requires, this will add some extra padding",default=False, guitype='boolbox', row=22, col=2, rowspan=1, colspan=1, mode='auto[False]')
+	parser.add_argument("--astigmatism",action="store_true",help="Includes astigmatism in automatic fitting (use e2rawdata first)",default=False, guitype='boolbox', row=25, col=0, rowspan=1, colspan=1, mode='auto[False]')
+	parser.add_argument("--phaseplate",action="store_true",help="Include phase/amplitude contrast in CTF estimation. For use with hole-less phase plates.",default=False, guitype='boolbox', row=25, col=1, rowspan=1, colspan=1, mode='auto[False]')
+	parser.add_argument("--extrapad",action="store_true",help="If particles were boxed more tightly than EMAN requires, this will add some extra padding",default=False, guitype='boolbox', row=22, col=1, rowspan=1, colspan=1, mode='auto[False]')
 	parser.add_argument("--highdensity",action="store_true",help="If particles are very close together, this will interfere with SSNR estimation. If set uses an alternative strategy, but may over-estimate SSNR.",default=False, guitype='boolbox', row=24, col=0, rowspan=1, colspan=1, mode='auto[False]')
 	parser.add_argument("--invert",action="store_true",help="Invert the contrast of the particles in output files (default false)",default=False, guitype='boolbox', row=24, col=1, rowspan=1, colspan=1, mode='auto[False]')
 	parser.add_argument("--outputonly",action="store_true",help="Skips all of the initial steps, and just generates the final output, assuming previous steps completed successfully",default=False)
@@ -174,6 +175,10 @@ Strongly suggest refitting CTF from frames with e2rawdata.py with revised parame
 	# This is the logic governing how we handle automatic fitting based on existing information
 	if options.fromscratch :
 		print "--fromscratch specified, so fitting will ignore existing values"
+		if options.phaseplate :
+			print """Phase plate option selected. Will estimate phase shift/%AC as part of fitting. Will slow fitting process. Not recommended for non phase-plate data"""
+			phaseplate="--phaseplate"
+		else: phaseplate=""
 		if options.astigmatism :
 			print """Astigmatism fitting from particles requested. This may be fine for strong astigmatism through midres
 resolution, but for high resolution work, fitting defocus/astig from frames is recommended"""
@@ -225,8 +230,8 @@ resolution, but for high resolution work, fitting defocus/astig from frames is r
 	if not options.outputonly :
 		###
 		# run CTF autofit
-		com="e2ctf.py --autofit --allparticles --oversamp 2 --apix {apix} --voltage {voltage} --cs {cs} --ac {ac} --defocusmin {dfmin} --defocusmax {dfmax} --threads {threads} --minqual {minqual} {highdensity} {constbfactor} {fit_options}".format(
-			apix=options.apix,voltage=options.voltage,cs=options.cs,ac=options.ac,threads=options.threads,highdensity=highdensity,constbfactor=constbfactor,fit_options=fit_options,minqual=options.minqual,dfmin=options.defocusmin,dfmax=options.defocusmax)
+		com="e2ctf.py --autofit --allparticles --oversamp 2 --apix {apix} --voltage {voltage} --cs {cs} --ac {ac} --defocusmin {dfmin} --defocusmax {dfmax} --threads {threads} --minqual {minqual} {highdensity} {constbfactor} {fit_options} {phaseplate}".format(
+			apix=options.apix,voltage=options.voltage,cs=options.cs,ac=options.ac,threads=options.threads,highdensity=highdensity,constbfactor=constbfactor,fit_options=fit_options,minqual=options.minqual,dfmin=options.defocusmin,dfmax=options.defocusmax,phaseplate=phaseplate)
 		if options.verbose: print com
 		launch_childprocess(com)
 		E2progress(logid,0.25)

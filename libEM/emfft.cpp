@@ -125,7 +125,7 @@ fftwf_plan EMfft::EMfftw3_cache::get_plan(const int rank_in, const int x, const 
 {
 
 	if ( rank_in > 3 || rank_in < 1 ) throw InvalidValueException(rank_in, "Error, can not get an FFTW plan using rank out of the range [1,3]");
-	if ( r2c_flag != EMAN2_REAL_2_COMPLEX && r2c_flag != EMAN2_COMPLEX_2_REAL ) throw InvalidValueException(r2c_flag, "The real two complex flag is not supported");
+	if ( r2c_flag != EMAN2_REAL_2_COMPLEX && r2c_flag != EMAN2_COMPLEX_2_REAL ) throw InvalidValueException(r2c_flag, "The selected real to complex flag is not supported");
 	
 // 	static int num_added = 0;
 // 	cout << "Was asked for " << rank_in << " " << x << " " << y << " " << z << " " << r2c_flag << endl;
@@ -135,14 +135,16 @@ fftwf_plan EMfft::EMfftw3_cache::get_plan(const int rank_in, const int x, const 
 	dims[1] = y;
 	dims[2] = x;
 	
+	int mrt = Util::MUTEX_LOCK(&fft_mutex);
+	
 	// First check to see if we already have the plan
 	int i;
 	for (i=0; i<num_plans; i++) {
-		if (plan_dims[i][0]==x && plan_dims[i][1]==y && plan_dims[i][2]==z 
-				  && rank[i]==rank_in && r2c[i]==r2c_flag && ip[i]==ip_flag) return fftwplans[i];
+		if (plan_dims[i][0]==x && plan_dims[i][1]==y && plan_dims[i][2]==z && rank[i]==rank_in && r2c[i]==r2c_flag && ip[i]==ip_flag) {
+			mrt = Util::MUTEX_UNLOCK(&fft_mutex);
+			return fftwplans[i];
+		}
 	}
-	
-	int mrt = Util::MUTEX_LOCK(&fft_mutex);
 	
 	fftwf_plan plan;
 	// Create the plan
@@ -166,9 +168,7 @@ fftwf_plan EMfft::EMfftw3_cache::get_plan(const int rank_in, const int x, const 
 		fftwf_destroy_plan(fftwplans[EMFFTW3_CACHE_SIZE-1]);
 		fftwplans[EMFFTW3_CACHE_SIZE-1] = NULL;
 	}
-	
-	mrt = Util::MUTEX_UNLOCK(&fft_mutex);
-				
+					
 	int upper_limit = num_plans;
 	if ( upper_limit == EMFFTW3_CACHE_SIZE ) upper_limit -= 1;
 	for (int i=upper_limit-1; i>0; i--)
@@ -195,6 +195,7 @@ fftwf_plan EMfft::EMfftw3_cache::get_plan(const int rank_in, const int x, const 
 // 			cout << "Created plan 0" << endl;
 // 	++num_added;
 // 	cout << "I have created " << num_added << " plans" << endl;
+	mrt = Util::MUTEX_UNLOCK(&fft_mutex);
 	return fftwplans[0];
 
 }

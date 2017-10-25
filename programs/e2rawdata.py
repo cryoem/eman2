@@ -50,16 +50,18 @@ def main():
 	parser.add_argument("--invert",action="store_true",help="Invert contrast",default=False, guitype='boolbox', row=2, col=0, rowspan=1, colspan=1, mode='filter[True]')
 	parser.add_argument("--edgenorm",action="store_true",help="Edge normalize",default=False, guitype='boolbox', row=2, col=1, rowspan=1, colspan=1, mode='filter[True]')
 	parser.add_argument("--usefoldername",action="store_true",help="If you have the same image filename in multiple folders, and need to import into the same project, this will prepend the folder name on each image name",default=False,guitype='boolbox',row=2, col=2, rowspan=1, colspan=1, mode="import[False]")
-	parser.add_argument("--xraypixel",action="store_true",help="Filter X-ray pixels",default=False, guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode='filter[True]')
-	parser.add_argument("--ctfest",action="store_true",help="Estimate defocus from whole micrograph",default=False, guitype='boolbox', row=3, col=1, rowspan=1, colspan=1, mode='filter[True]')
-	parser.add_argument("--astigmatism",action="store_true",help="Includes astigmatism in automatic fitting",default=False, guitype='boolbox', row=3, col=2, rowspan=1, colspan=1, mode='filter[False]')
+	parser.add_argument("--xraypixel",action="store_true",help="Filter X-ray pixels",default=False, guitype='boolbox', row=2, col=2, rowspan=1, colspan=1, mode='filter[True]')
+	parser.add_argument("--ctfest",action="store_true",help="Perform CTF fitting on the (tiled) frame",default=False, guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode='filter[True]')
+	parser.add_argument("--phaseplate",action="store_true",help="Include phase/amplitude contrast in CTF estimation. For use with hole-less phase plates.",default=False, guitype='boolbox', row=3, col=2, rowspan=1, colspan=1, mode='filter[False]')
+	parser.add_argument("--astigmatism",action="store_true",help="Includes astigmatism in automatic fitting",default=False, guitype='boolbox', row=3, col=1, rowspan=1, colspan=1, mode='filter[False]')
 	parser.add_argument("--moverawdata",action="store_true",help="Move raw data to directory ./raw_micrographs after filtration",default=False)
 	parser.add_argument("--apix",type=float,help="Angstroms per pixel for all images",default=None, guitype='floatbox', row=5, col=0, rowspan=1, colspan=1, mode="filter['self.pm().getAPIX()']")
 	parser.add_argument("--voltage",type=float,help="Microscope voltage in KV",default=None, guitype='floatbox', row=5, col=1, rowspan=1, colspan=1, mode="filter['self.pm().getVoltage()']")
 	parser.add_argument("--cs",type=float,help="Microscope Cs (spherical aberation)",default=None, guitype='floatbox', row=6, col=0, rowspan=1, colspan=1, mode="filter['self.pm().getCS()']")
 	parser.add_argument("--ac",type=float,help="Amplitude contrast (percentage, default=10)",default=10, guitype='floatbox', row=6, col=1, rowspan=1, colspan=1, mode="filter")
 	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful",guitype='intbox', row=10, col=0, rowspan=1, colspan=1, mode='filter[4]')
-	parser.add_argument("--defocusmin",type=float,help="Minimum autofit defocus",default=0.6, guitype='floatbox', row=8, col=0, rowspan=1, colspan=1, mode="filter[0.6]")
+	parser.add_argument("--defocusmin",type=float,help="Minimum autofit defocus",default=0.6, guitype='floatbo
+def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cx', row=8, col=0, rowspan=1, colspan=1, mode="filter[0.6]")
 	parser.add_argument("--defocusmax",type=float,help="Maximum autofit defocus",default=4, guitype='floatbox', row=8, col=1, rowspan=1, colspan=1, mode='filter[4.0]')
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, help="verbosity [0-9]", default=0)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -96,6 +98,7 @@ def main():
 	if options.xraypixel:     opts+="--xraypixel "
 	if options.ctfest:        opts+="--ctfest "
 	if options.astigmatism:   opts+="--astigmatism "
+	if options.phaseplate:    opts+="--phaseplate "
 	if options.moverawdata:   opts+="--moverawdata "
 	if options.apix!=None :   opts+="--apix {} ".format(options.apix)
 	if options.voltage!=None : opts+="--voltage {} ".format(options.voltage)
@@ -171,9 +174,9 @@ def importfn(i,arg,options):
 		bg_1d=e2ctf.low_bg_curve(fft1d,ds)
 
 		#initial fit, background adjustment, refine fit, final background adjustment
-		ctf=e2ctf.ctf_fit(fft1d,bg_1d,bg_1d,ffta,fftbg,options.voltage,options.cs,options.ac,options.apix,1,dfhint=(options.defocusmin,options.defocusmax))
+		ctf=e2ctf.ctf_fit(fft1d,bg_1d,bg_1d,ffta,fftbg,options.voltage,options.cs,options.ac,options.phaseplate,options.apix,1,dfhint=(options.defocusmin,options.defocusmax))
 		bgAdj(ctf,fft1d)
-		ctf=e2ctf.ctf_fit(fft1d,ctf.background,ctf.background,ffta,fftbg,options.voltage,options.cs,options.ac,options.apix,1,dfhint=(options.defocusmin,options.defocusmax))
+		ctf=e2ctf.ctf_fit(fft1d,ctf.background,ctf.background,ffta,fftbg,options.voltage,options.cs,options.ac,options.phaseplate,options.apix,1,dfhint=(options.defocusmin,options.defocusmax))
 		bgAdj(ctf,fft1d)
 		
 		if options.astigmatism : e2ctf.ctf_fit_stig(ffta,fftbg,ctf)
