@@ -110,7 +110,7 @@ def main():
 			os.rename('dummy_stack.hdf',newarg)
 			arg = newarg
 
-		outf = "{}_proc.hdf".format( os.path.splitext(arg)[0] )
+		outf = "{}_efd.hdf".format( os.path.splitext(arg)[0] )
 		if os.path.isfile(outf):
 			print("Results are already stored in {}. Please erase or move and try again.".format(outf))
 			sys.exit(1)
@@ -321,21 +321,22 @@ def local_noise(options,img):
 			n = EMData(bs,bs)
 			n.to_zero()
 			n.process_inplace("math.addnoise",{"noise":r["sigma_nonzero"]})
-			#fourierpixels = n["nx"]/2
-			#cutoffpixels = fourierpixels - options.goldsize/2
-			#n.process_inplace("filter.highpass.gauss",{"cutoff_pixels":cutoffpixels})
+			fourierpixels = n["nx"]/2
+			cutoffpixels = fourierpixels - options.goldsize/2
+			n.process_inplace("filter.highpass.gauss",{"cutoff_pixels":cutoffpixels})
 
-			#if options.lowpass != 1.0:
-			#apix = img['apix_x']
-			#localnoise['apix_x'] = apix
-			#localnoise['apix_y'] = apix
-			#nyquistres=apix*2.0
-			#filtres=nyquistres*options.lowpass
-			#filtfreq=1.0/filtres
-			#if options.verbose: print("Apix {}\tResolution {}\tFrequency {}".format(apix,filtres,filtfreq))
-			#n.process_inplace('filter.lowpass.tanh', {'cutoff_freq':filtfreq,'apix':apix})
+			if options.lowpass != 1.0:
+				apix = img['apix_x']
+				localnoise['apix_x'] = apix
+				localnoise['apix_y'] = apix
+				nyquistres=apix*2.0
+				filtres=nyquistres*options.lowpass
+				filtfreq=1.0/filtres
+				#if options.verbose: print("Apix {}\tResolution {}\tFrequency {}".format(apix,filtres,filtfreq))
+				n.process_inplace('filter.lowpass.tanh', {'cutoff_freq':filtfreq,'apix':apix})
 			
-			n = n.process("math.simulatectf",{"voltage":300,"cs":0.0,"defocus":0.0,"bfactor":0.0,"ampcont":0.0,"noiseamp":0.95,"noiseampwhite":0.5})
+			#n = n.process("math.simulatectf",{"voltage":300,"cs":0.0,"defocus":0.0,"bfactor":0.0,"ampcont":0.0,"noiseamp":0.5,"noiseampwhite":0.5})
+
 			try:
 				n *= r["sigma_nonzero"]/n["sigma_nonzero"]
 			except:
