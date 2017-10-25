@@ -68,9 +68,12 @@ def main():
 	
 	parser.add_header(name="orblock2", help='Just a visual separation', title="- OR -", row=4, col=0, rowspan=1, colspan=3, mode="align")
 	parser.add_argument("--gaink2",type=str,default=None,help="Perform gain image correction. Gatan K2 gain images are the reciprocal of DDD gain images.",guitype='filebox',browser="EMMovieDataTable(withmodal=True,multiselect=False)", row=5, col=0, rowspan=1, colspan=3, mode="align")
+	#parser.add_argument("--gain64",type=str,default=None,help="Perform gain image correction. DE64 gain images are the reciprocal of DDD gain images.",guitype='filebox',browser="EMMovieDataTable(withmodal=True,multiselect=False)", row=5, col=0, rowspan=1, colspan=3, mode="align")
+	
 	parser.add_argument("--reverse", default=False, help="Flip gain normalization image along y axis. Default is False.",action="store_true",guitype='boolbox', row=5, col=0, rowspan=1, colspan=1)
 	#parser.add_argument("--rotate", default=False, help="Rotate dark reference by -90 degrees. This is useful when dark correcting DE detector data.",action="store_true",guitype='boolbox', row=5, col=0, rowspan=1, colspan=1)
-	parser.add_argument("--phaseplate","-pp", default=False, help="Use this flag to apply stronger high pass filter to phase plate data.",action="store_true",guitype='boolbox', row=5, col=1, rowspan=1, colspan=1)
+	parser.add_argument("--tomo", default=False, help="Use this flag when aligning tomograms or other low magnification data.",action="store_true",guitype='boolbox', row=5, col=1, rowspan=1, colspan=1)
+	parser.add_argument("--phaseplate", default=False, help="Use this flag when aligning phase plate and other high contrast data (besides tomograms).",action="store_true",guitype='boolbox', row=5, col=1, rowspan=1, colspan=1)
 	#parser.add_argument("--falcon", default=False, help="Use this flag to optimize alignment for falcon detector data.",action="store_true",guitype='boolbox', row=5, col=1, rowspan=1, colspan=1)
 	#parser.add_argument("--binning", type=int,help="Bin images by this factor by resampling in Fourier space. Default (-1) will choose based on input box size.",default=-1)
 
@@ -86,7 +89,7 @@ def main():
 	parser.add_header(name="orblock3", help='Just a visual separation', title="Optional: ", row=10, col=0, rowspan=1, colspan=3, mode="align")
 	parser.add_argument("--optbox", type=int,help="Box size to use during alignment optimization. By default, this number will be determined based on the input image size (-1).",default=-1, guitype='intbox', row=11, col=0, rowspan=1, colspan=1, mode="align")
 	parser.add_argument("--optstep", type=int,help="Step size to use during alignment optimization. By default, this number will be determined based on the input image size (-1).",default=-1,  guitype='intbox', row=11, col=1, rowspan=1, colspan=1, mode="align")
-	parser.add_argument("--optalpha", type=float,help="Penalization to apply during robust regression. Default is 2.0. If 0.0, unpenalized least squares will be performed (i.e., no trajectory smoothing).",default=2.0)
+	parser.add_argument("--optalpha", type=float,help="Penalization to apply during robust regression. Default is 0.5. If 0.0, unpenalized least squares will be performed (i.e., no trajectory smoothing).",default=0.5)
 	parser.add_argument("--step",type=str,default="0,1",help="Specify <first>,<step>,[last]. Processes only a subset of the input data. ie- 0,2 would process all even particles. Same step used for all input files. [last] is exclusive. Default= 0,1",guitype='strbox', row=12, col=0, rowspan=1, colspan=1, mode="align")
 	#parser.add_argument("--movie", type=int,help="Display an n-frame averaged 'movie' of the stack, specify number of frames to average",default=0)
 	parser.add_argument("--plot", default=False,help="Display a plot of the movie trajectory after alignment",action="store_true")
@@ -264,7 +267,8 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 
 			if dark!=None : im.sub(dark)
 			if gain!=None : im.mult(gain)
-			im.process_inplace("threshold.clampminmax",{"minval":0,"maxval":im["mean"]+im["sigma"]*3.5,"tozero":1})
+			#im.process_inplace("threshold.clampminmax",{"minval":0,"maxval":im["mean"]+im["sigma"]*3.5,"tozero":1})
+			
 			#if options.fixbadpixels : im.process_inplace("threshold.outlier.localmean",{"sigma":3.5,"fix_zero":1}) # fixes clear outliers as well as values which were exactly zero
 
 			#im.process_inplace("threshold.clampminmax.nsigma",{"nsigma":3.0})
@@ -290,11 +294,11 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 
 		md = min(nx,ny)
 		if md > 6000:
-			if options.optbox == -1: options.optbox = 448
-			if options.optstep == -1: options.optstep = 384
+			if options.optbox == -1: options.optbox = 512
+			if options.optstep == -1: options.optstep = 448
 		else:
-			if options.optbox == -1: options.optbox = 128
-			if options.optstep == -1: options.optstep = 92
+			if options.optbox == -1: options.optbox = 256
+			if options.optstep == -1: options.optstep = 224
 
 		if options.align_frames :
 
@@ -323,7 +327,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 				if thrtolaunch<len(thds) :
 					while (threading.active_count()==options.threads ) : sleep(.01)
 					if options.verbose :
-						sys.stdout.write("\rPrecompute {}/{} FFTs {}".format(thrtolaunch,len(thds),threading.active_count()))
+						sys.stdout.write("\rPrecompute {}/{} FFTs {}".format(thrtolaunch+1,len(thds),threading.active_count()))
 						#sys.stdout.flush()
 					thds[thrtolaunch].start()
 					thrtolaunch+=1
@@ -423,26 +427,28 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 					try:
 						bx[ima] = peak_locs[(i,j)][0]
 						by[ima] = peak_locs[(i,j)][1]
-						# if options.ccweight:
-						# 	try:
-						# 		A[ima,imb] = (peak_locs[(i,j)][-1]-ccmean)#/ccstd
-						# 	except:
-						# 		A[ima,imb] = 0.
-						# else:
-						#A[ima,imb] = 1
 						A[ima,imb] = 1
+						#A[ima,imb] = float(n-np.fabs(i-j))/n
 						#A[ima,imb] = np.exp(1-peak_locs[(i,j)][3])
 						#A[ima,imb] = sqrt(float(n-fabs(i-j))/n)
 					except:
+						print(i,j,peak_locs[(i,j)],ima,imb)
 						pass
 			b = np.c_[bx,by]
 			A = np.asmatrix(A)
 			b = np.asmatrix(b)
 
+			# sys.exit(1)
+
 			# remove all zero rows from A and corresponding entries in b
 			z = np.argwhere(np.all(A==0,axis=1))
 			A = np.delete(A,z,axis=0)
 			b = np.delete(b,z,axis=0)
+
+			if options.debug:
+				import matplotlib.pyplot as plt
+				plt.imshow(A,cmap=plt.cm.viridis)
+				plt.show()
 
 			regr = linear_model.Ridge(alpha=options.optalpha,normalize=True,fit_intercept=True)
 			regr.fit(A,b)
@@ -507,7 +513,9 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			#t0=time()
 			#write individual aligned frames
 			for i,im in enumerate(outim):
-				im.translate(int(floor(locs[i*2]+.5)),int(floor(locs[i*2+1]+.5)),0)
+				dx = int(floor(locs[i*2]+.5))
+				dy = int(floor(locs[i*2+1]+.5))
+				im.translate(dx,dy,0)
 			#	im.write_image("a_all_ali.hdf",i)
 
 			if options.normaxes:
@@ -610,7 +618,10 @@ def calc_ccf_wrapper(options,N,box,step,dataa,datab,out,locs,ii,fsp):
 		cc_model = correlation_peak_model((xx,yy),popt[0],popt[1],popt[2],popt[3]).reshape(box,box)
 		csum = from_numpy(cc_model)
 		#if ii>=0: csum.process("normalize.edgemean").write_image("ccf_models.hdf",ii)
-		locs.put((N,[popt[0],popt[1],popt[2],popt[3],popt[4],popt[5],ccpeakval,csum["maximum"]]))
+		if options.phaseplate:
+			locs.put((N,[popt[0],popt[1],popt[2],popt[3],ccpeakval,csum["maximum"]]))
+		else:
+			locs.put((N,[popt[0],popt[1],popt[2],popt[3],popt[4],popt[5],ccpeakval,csum["maximum"]]))
 		out.put((N,csum))
 	if ii>=0 and options.debug: 
 		if fsp[-5:] == ".mrcs":
@@ -645,10 +656,14 @@ def split_fft(options,img,i,box,step,out):
 			clp = img.get_clip(Region(dx,dy,box,box))
 			#if options.normalize: clp.process_inplace("normalize.edgemean")
 			if box >= 512:
-				clp.process_inplace("filter.highpass.gauss",{"cutoff_abs":0.01})
+				if not options.tomo:
+					if img["apix_x"] == 1.0: # likely an image with incorrect header or simulated data
+						clp.process_inplace("filter.highpass.gauss",{"cutoff_pixels":2}) 
+					else: clp.process_inplace("filter.highpass.gauss",{"cutoff_abs":0.01})
 				#clp.process_inplace("math.fft.resample",{"n":1.})
-				#clp.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.4})
-				clp.process_inplace("normalize.edgemean")
+				#if options.tomo:
+				#	clp.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.3})
+				#clp.process_inplace("normalize")
 			lst.append(clp.do_fft())
 	out.put((i,lst))
 
@@ -673,7 +688,7 @@ def twod_bimodal((x,y),x1,y1,sig1,amp1,sig2,amp2):
 
 def bimodal_peak_model(options,ccf):
 	nxx = ccf["nx"]
-	bs = nxx/4
+	bs = nxx/2
 
 	xx = np.linspace(0,bs,bs)
 	yy = np.linspace(0,bs,bs)
@@ -686,25 +701,31 @@ def bimodal_peak_model(options,ccf):
 
 	x1 = bs/2.
 	y1 = bs/2.
-	a1 = 1000.0
+	a1 = 1500.0
 	s1 = 10.0
-	a2 = 20000.0
-	s2 = 0.6
+	a2 = 2000.0
+	s2 = 2.0
 
 	if options.phaseplate:
 		initial_guess = [x1,y1,s1,a1]
-		bds = [(-bs/2, -bs/2,  0.1, 0.1),(bs/2, bs/2, 100.0, 20000.0)]
+		bds = [(-np.inf, -np.inf,  0.01, 0.01),(np.inf, np.inf, 100.0, 100000.0)]
+		#bds = [(-bs/2, -bs/2,  0.0, 0.0),(bs/2, bs/2, 100.0, 100000.0)]
 		try: 
 			popt,pcov=optimize.curve_fit(correlation_peak_model,(xx,yy),ncc.ravel(),p0=initial_guess,bounds=bds,method='dogbox',max_nfev=50)#,xtol=0.1)#,ftol=0.0001,gtol=0.0001)
 		except:
-			return None,-1
+			return None, -1
+	elif options.tomo:
+		yc,xc = np.where(ncc==ncc.max())
+		popt = [float(xc+bs/2),float(yc+bs/2),ncc.max(),1.,0.,0.],ncc.max()
 	else:
 		initial_guess = [x1,y1,s1,a1,s2,a2]
-		bds = [(-bs/2, -bs/2,  0.01, 0.01, 0.6, 0.01),(bs/2, bs/2, 100.0, 20000.0, 2.5, 100000.0)]
+		bds = [(-np.inf, -np.inf, 0.01, 0.01, 0.6, 0.01), (np.inf, np.inf, 100.0, 20000.0,2.5,100000.0)]
+		#bds = [(-bs/2, -bs/2,  0.01, 0.01, 0.6, 0.01),(bs/2, bs/2, 100.0, 20000.0, 2.5, 100000.0)]
 		try: 
 			popt,pcov=optimize.curve_fit(twod_bimodal,(xx,yy),ncc.ravel(),p0=initial_guess,bounds=bds,method='dogbox',max_nfev=50) #,xtol=0.05)#,ftol=0.0001,gtol=0.0001)
-		except: 
-			return None,-1
+		except:
+			return None,-1#popt = initial_guess#, -1#popt = initial_guess 
+
 	popt = [p for p in popt]
 	popt[0] = popt[0] + nxx/2 - bs/2
 	popt[1] = popt[1] + nxx/2 - bs/2
@@ -732,6 +753,9 @@ def qual(locs,ccfs):
 
 if __name__ == "__main__":
 	main()
+
+
+
 
 # def calc_incoherent_pws(frames,bs=2048):
 # 	mx = np.arange(bs+50,frames[0]['nx']-bs+50,bs)
