@@ -257,7 +257,7 @@ def main():
 							lfn = fn.split("/")[-1] # local file name
 							if not os.path.isfile("{}/{}".format(pdir,lfn)):
 								shutil.copy2(fn,"{}/{}".format(pdir,lfn))
-							times=run("{} {} --align_frames --threads={} --allali --normalize".format(pkgs[pkg],lfn,options.threads),cwd=pdir,shell=True,clear=True)
+							times=run("{} {} --align_frames --threads={} --allali --fixbadpixels --normaxes".format(pkgs[pkg],lfn,options.threads),cwd=pdir,shell=True,clear=True)
 							write_runtime(bdir,pkg,dev,times,options.threads)
 					for f in os.listdir(pdir):
 						if "hictrst_proc_info.txt" in f: hi = os.path.join(pdir,f)
@@ -538,6 +538,10 @@ def parse_eman2(fn,middle):
     with open(fn) as f:
         trans = [txt.split("\t")[1:3] for txt in f.readlines()[1:]]
     xf = np.asarray(trans).astype(float)
+    new = [[0.,0.]]
+    for x in xf:
+    	new.append(x)
+    xf = np.asarray(new)
     return xf - xf[middle]
 
 ####################
@@ -545,6 +549,7 @@ def parse_eman2(fn,middle):
 ####################
 
 def plot_traj(trans,bdir,lbl,nsig=1,plot=False):
+	print([(k,trans[k].shape) for k in sorted(trans.keys())])
 	ats = np.hstack([trans[k] for k in sorted(trans.keys())])
 	np.savetxt("{}/all_trans_{}.txt".format(bdir,lbl),ats)
 	trans["ALL"] = np.dstack([trans[key] for key in trans.keys()])
