@@ -355,6 +355,10 @@ foreach(t ${test_methods})
 			)
 endforeach()
 
+add_custom_target(test-verbose-broken
+		COMMAND ${NOSETESTS_EXECUTABLE} -v -m "^test_*" -a broken ${CMAKE_INSTALL_PREFIX}/test/rt/pyem/*
+		)
+
 file(READ ${CMAKE_SOURCE_DIR}/tests/test_imports.py py_imports_list)
 STRING(REGEX REPLACE "\n" ";" py_imports_list "${py_imports_list}")
 foreach(i ${py_imports_list})
