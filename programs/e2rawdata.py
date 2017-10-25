@@ -60,8 +60,7 @@ def main():
 	parser.add_argument("--cs",type=float,help="Microscope Cs (spherical aberation)",default=None, guitype='floatbox', row=6, col=0, rowspan=1, colspan=1, mode="filter['self.pm().getCS()']")
 	parser.add_argument("--ac",type=float,help="Amplitude contrast (percentage, default=10)",default=10, guitype='floatbox', row=6, col=1, rowspan=1, colspan=1, mode="filter")
 	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful",guitype='intbox', row=10, col=0, rowspan=1, colspan=1, mode='filter[4]')
-	parser.add_argument("--defocusmin",type=float,help="Minimum autofit defocus",default=0.6, guitype='floatbo
-def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cx', row=8, col=0, rowspan=1, colspan=1, mode="filter[0.6]")
+	parser.add_argument("--defocusmin",type=float,help="Minimum autofit defocus",default=0.6, guitype='floatbox', row=8, col=0, rowspan=1, colspan=1, mode="filter[0.6]")
 	parser.add_argument("--defocusmax",type=float,help="Maximum autofit defocus",default=4, guitype='floatbox', row=8, col=1, rowspan=1, colspan=1, mode='filter[4.0]')
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, help="verbosity [0-9]", default=0)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
