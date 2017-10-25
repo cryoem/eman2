@@ -46,7 +46,8 @@ def main():
 	####################
 	
 	parser.add_argument("--allinfo", action="store_true", default=False, help="Uses all of the .json files in info/ rather than specifying a list on the command line")
-	parser.add_argument("--extractvalue", type=str, default=None, help="This will extract a single named value from each specified file. Output will be multicolumn if the referenced label is an object, such as CTF.")
+	parser.add_argument("--extractkey", type=str, default=None, help="This will extract a single named value from each specified file. Output will be multicolumn if the referenced label is an object, such as CTF.")
+	parser.add_argument("--removekey", type=str, default=None, help="DANGER! This will remove all data associated with the named key from all listed .json files.")
 	parser.add_argument("--output", type=str, default="jsoninfo.txt", help="Output filename. default = jsoninfo.txt")
 
 	
@@ -59,18 +60,22 @@ def main():
 	if options.allinfo:
 		args=["info/{}".format(i) for i in os.listdir("info") if ".json" in i]
 
+	if options.verbose>1: print len(args)," json files to process"
+
 	if len(args)<1 :
 		parser.error("At least one lst file required")
 		sys.exit(1)
 
 	logid=E2init(sys.argv,options.ppid)
 
-	out=open(options.output,"w")
-	if options.extractvalue :
+	if options.extractkey :
+		out=open(options.output,"w")
+		nf=0
 		for fsp in args:
 			js=js_open_dict(fsp)
-			if js.has_key(options.extractvalue):
-				v=js[options.extractvalue]
+			if js.has_key(options.extractkey):
+				v=js[options.extractkey]
+				nf+=1
 				if isinstance(v,list) and isinstance(v[0],EMAN2Ctf): v=v[0]
 				
 				if isinstance(v,EMAN2Ctf) :
@@ -84,7 +89,24 @@ def main():
 					out.write("{}\t# {}\n".format(v,fsp[:-5]))
 			
 			js.close()
+		if options.verbose: print "{} found in {} JSON files".format(options.extractkey,nf)
 					
+	if options.removekey:
+		jsb=js_open_dict("backup_removed.json")
+		nf=0
+		for fsp in args:
+			js=js_open_dict(fsp)
+			if js.has_key(options.removekey):
+				nf+=1
+				v=js[options.removekey]
+				jsb[fsp]=v
+				del js[options.removekey]
+			js.close()
+
+		jsb.close()
+		print "Removed {} from {} files. Backup stored in backup_removed.json".format(options.removekey,nf)
+			
+
 
 	E2end(logid)
 

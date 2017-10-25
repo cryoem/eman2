@@ -4653,63 +4653,98 @@ void NormalizeToLeastSquareProcessor::process_inplace(EMData * image)
 	EMData *to = params["to"];
 
 	bool ignore_zero = params.set_default("ignore_zero",true);
+	bool fourieramp = params.set_default("fourieramp",false);
 	float ignore_lowsig = params.set_default("ignore_lowsig",-1.0);
 	float low_threshold = params.set_default("low_threshold",-FLT_MAX);
 	float high_threshold = params.set_default("high_threshold",FLT_MAX);
-
-	float *dimage = image->get_data();
-	float *dto = to->get_data();
 
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
 	size_t size = (size_t)nx * ny * nz;
-
-	// rewrote this to just use GSL and get rid of David's old code.
-	// The two passes are just to make sure we don't eat too much RAM if we do 3D
-	if (ignore_lowsig<0) ignore_lowsig=0;
-//	FILE *dbug = fopen("dbug.txt","w");
-
-	size_t count=0;
+	size_t size2 = 0;
+	
+	EMData *fim = NULL;
+	EMData *fto = NULL;
+	float *dimage;		// unthresholded image data
+	float *dto;
+	int step=1;			// used in Fourier mode
+	
 	float meani=(float)image->get_attr("mean");
 	float meant=(float)to->get_attr("mean");
 	float sigi=(float)image->get_attr("sigma")*ignore_lowsig;
 	float sigt=(float)to->get_attr("sigma")*ignore_lowsig;
-	for (size_t i = 0; i < size; ++i) {
+	
+	if (fourieramp) {
+		fim=image->do_fft();
+		fto=to->do_fft();
+		fim->ri2ap();
+		fto->ri2ap();
+		dimage=fim->get_data();
+		dto=fto->get_data();
+		step=2;
+		size2=(size_t)(nx+2) * ny * nz;
+		
+		// sigma for thresholding
+		meani=meant=0;						// Fourier amplitude >=0, so we reference everything to this point
+		sigi=sigt=0;
+		for (size_t i=0; i<size2; i+=2) { sigi+=pow(dimage[i],2.0f); sigt+=pow(dto[i],2.0f); }
+		sigi=ignore_lowsig*sqrt(sigi/(size2/2));
+		sigt=ignore_lowsig*sqrt(sigt/(size2/2));
+	} 
+	else {
+		dimage = image->get_data();
+		dto = to->get_data();
+		size2=size;
+	}
+	
+
+	// rewrote this to just use GSL and get rid of David's old code.
+	// The two passes are just to make sure we don't eat too much RAM if we do 3D
+	if (ignore_lowsig<0) ignore_lowsig=0;
+
+	size_t count=0;
+	for (size_t i = 0; i < size2; i+=step) {
 		if (dto[i] >= low_threshold && dto[i] <= high_threshold
 			&& (dto[i]>=meant+sigt || dto[i]<=meant-sigt)
 			&& (dimage[i]>=meani+sigi || dimage[i]<=meani-sigi)
 			&& (!ignore_zero ||(dto[i] != 0.0f && dimage[i] != 0.0f))) {
 			count++;
-//			fprintf(dbug,"%f\t%f\n",dimage[i],dto[i]);
 		}
 	}
-//	fclose(dbug);
+//	printf("%ld points\n",count);
 
 	double *x=(double *)malloc(count*sizeof(double));
 	double *y=(double *)malloc(count*sizeof(double));
 	count=0;
-	for (size_t i = 0; i < size; ++i) {
+//	FILE *out=fopen("a.txt","w");
+	for (size_t i = 0; i < size2; i+=step) {
 		if (dto[i] >= low_threshold && dto[i] <= high_threshold
 			&& (dto[i]>=meant+sigt || dto[i]<=meant-sigt)
 			&& (dimage[i]>=meani+sigi || dimage[i]<=meani-sigi)
 			&& (!ignore_zero ||(dto[i] != 0.0f && dimage[i] != 0.0f))) {
 			x[count]=dimage[i];
 			y[count]=dto[i];
+//			fprintf(out,"%f\t%f\n",dto[i],dimage[i]);
 			count++;
 		}
 	}
+//	fclose(out);
 	double c0,c1;
 	double cov00,cov01,cov11,sumsq;
 	gsl_fit_linear (x, 1, y, 1, count, &c0, &c1, &cov00, &cov01, &cov11, &sumsq);
 
 	free(x);
 	free(y);
+	if (fim!=NULL) delete fim;
+	if (fto!=NULL) delete fto;
 
+	if (fourieramp) c0=0;	// c0 makes no sense in this context. Really just a measure of noise
+	dimage = image->get_data();
 	for (size_t i = 0; i < size; ++i) dimage[i]=dimage[i]*c1+c0;
+	image->update();
 	image->set_attr("norm_mult",c1);
 	image->set_attr("norm_add",c0);
-	image->update();
 }
 
 void BinarizeFourierProcessor::process_inplace(EMData* image) {

@@ -202,7 +202,7 @@ def main():
 			if clsinfo.has_key(i):
 				avg=avgr.finish()
 #				avg.process_inplace("normalize.circlemean",{"radius":avg["ny"]/2-4})
-				avg.process_inplace("normalize.toimage",{"to":refs[i]})
+				avg.process_inplace("normalize.toimage",{"to":refs[i],"fourieramp":1,"ignore_lowsig":1.5})
 				avg.process_inplace("mask.soft",{"outer_radius":avg["ny"]/2-4,"width":3})
 #				avg.process_inplace("normalize.toimage",{"to":refs[i],"ignore_lowsig":0.75})
 				avg["class_ptcl_idxs"]=[p[0] for p in clsinfo[i]]		# particle indices

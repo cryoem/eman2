@@ -5783,6 +5783,7 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 		{
 			TypeDict d;
 			d.put("to", EMObject::EMDATA, "reference image normalize to");
+			d.put("fourieramp", EMObject::INT, "If set, performs normalization using Fourier amplitudes instead of real-space image. Default = False.");
 			d.put("ignore_zero", EMObject::BOOL, "If set, ignores any pixels which are exactly zero in either image. Defaut = True.");
 			d.put("ignore_lowsig", EMObject::FLOAT, "If >0, then any pixels closer to the mean than val*sigma in either image excluded");
 			d.put("low_threshold", EMObject::FLOAT, "only take into account the reference image's pixel value between high and low threshold (zero is always ignored)");

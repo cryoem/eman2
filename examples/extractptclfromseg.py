@@ -177,7 +177,7 @@ def main():
 			np.random.shuffle(ip)
 			pts=pts[ip]
 			pks=pts[:options.random].copy()
-			pkscore=[0 for p in pks]
+			pkscore=np.array([0 for p in pks])
 			#print pks
 		
 		n=len(pks)
