@@ -11,10 +11,13 @@ from Queue import Queue
 from multiprocessing import Array
 
 def import_theano():
-	global theano,T,conv,pool
+	global theano,T,conv2d,pool
 	import theano
 	import theano.tensor as T
-	from theano.tensor.nnet import conv
+	try:
+		from theano.tensor.nnet import conv2d
+	except:
+		from theano.tensor.nnet.conv import conv2d
 	from theano.tensor.signal import pool
 
 
@@ -903,7 +906,7 @@ class LeNetConvPoolLayer(object):
 			self.x1=self.x1.repeat(int(-poolsize), axis=2).repeat(int(-poolsize), axis=3)
 
 		# convolve input feature maps with filters
-		conv_out = conv.conv2d(
+		conv_out = conv2d(
 			input=self.x1,
 			filters=self.W,
 			filter_shape=filter_shape,
@@ -942,7 +945,7 @@ class LeNetConvPoolLayer(object):
 	def get_reconstructed_input(self):
 		""" Computes the reconstructed input given the values of the hidden layer """
 
-		repeated_conv = conv.conv2d(input = self.hidden,
+		repeated_conv = conv2d(input = self.hidden,
 			      filters = self.W_prime,
 			      border_mode='full')
 		#repeated_conv=repeated_conv[:,:,1:-1,1:-1]

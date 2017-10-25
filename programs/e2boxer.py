@@ -782,9 +782,11 @@ class boxerConvNet(QtCore.QObject):
 		data=[data[i] for i in rndid]
 		lbs=[lbs[i] for i in rndid]
 		data=np.asarray(data,dtype=theano.config.floatX)
-		data/=np.std(data)
-		data[data>2.]=2.
-		data[data<-2.]=-2.
+		div=np.mean(np.std(data,axis=1))
+		data/=div#np.std(data)#*2.
+		mx=4.
+		data[data>mx]=mx
+		data[data<-mx]=-mx
 		lbs=np.asarray(lbs,dtype=int)
 		train_set_x= theano.shared(data,borrow=True)
 		
@@ -802,7 +804,7 @@ class boxerConvNet(QtCore.QObject):
 		
 		print "Now Training..."
 		classify=convnet.get_classify_func(train_set_x,labels,batch_size)
-		learning_rate=0.002
+		learning_rate=0.001
 		weightdecay=1e-5
 		n_train_batches = len(data) / batch_size
 		for epoch in xrange(20):
@@ -932,7 +934,7 @@ class boxerConvNet(QtCore.QObject):
 		fm.process_inplace("filter.highpass.gauss",{"cutoff_freq":0.005})
 		fm.process_inplace("filter.lowpass.gauss",{"cutoff_freq":0.05})
 		fm.process_inplace("normalize")
-		fm.process_inplace("threshold.clampminmax.nsigma", {"nsigma":2})
+		fm.process_inplace("threshold.clampminmax.nsigma", {"nsigma":4})
 			
 		#### apply network
 		imgs=[fm]
