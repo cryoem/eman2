@@ -38,6 +38,7 @@ from pyemtbx.exceptions import *
 import unittest
 import testlib
 import sys
+import platform
 import math
 import os
 from optparse import OptionParser
@@ -2237,6 +2238,8 @@ class TestEMData(unittest.TestCase):
 
         testlib.safe_unlink(infile)
 
+    test_calc_highest_locations.broken = True
+
     def test_get_attr_dict(self):
         """test get_attr_dict() function ...................."""
         imgfile = "tablet.mrc"
@@ -2337,6 +2340,8 @@ class TestEMData(unittest.TestCase):
         self.assertEqual(attrd["datatype"], EM_FLOAT_COMPLEX)
 
         testlib.safe_unlink(infile)        
+
+    test_complex_image.broken = True
         
     def test_set_value_at(self):
         """test set_value_at() .............................."""
@@ -3132,6 +3137,8 @@ class TestEMData(unittest.TestCase):
         #e4 = e.symvol('ICOS_SYM')    #todo problem here, need investigate
         #e5 = e.symvol('OCT_SYM')
         #e6 = e.symvol('ISYM')
+
+    test_symvol.broken = True
     
     def test_fft_shuffle_is_shuffled(self):
         """test fft_shuffle correctly sets is_shuffled......."""
@@ -3268,6 +3275,9 @@ class TestEMData(unittest.TestCase):
         e[1,0] = complex(1.,1.)
         val = e[1,0]
         self.assertEqual(val, 1+1j)
+
+    test_setitem_complex2d.broken = True
+    
     def test_setitem_complex3d(self):
         """Test __setitem__ on a complex 3-D image..........."""
         e = EMData()
@@ -3277,6 +3287,8 @@ class TestEMData(unittest.TestCase):
         val = e[1,0,0]
         self.assertEqual(val, 1+1j)
 
+    test_setitem_complex3d.broken = True
+    
     def test_log(self):
         """test log() arithmatica function for image........."""
         from math import log
@@ -3398,6 +3410,9 @@ class TestEMData(unittest.TestCase):
         t2 = img2.get_attr('xform')
         self.assertEqual(t.get_matrix(), t2.get_matrix())
         testlib.safe_unlink('mydb3')
+    
+    if platform.system() == "Windows":
+        test_transform_pickling.broken = True
         
     def test_set_xyz_origin(self):
         """test set_xyz_origin function ....................."""
