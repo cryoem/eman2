@@ -72,8 +72,8 @@ def main():
 	
 	parser.add_argument("--reverse", default=False, help="Flip gain normalization image along y axis. Default is False.",action="store_true",guitype='boolbox', row=5, col=0, rowspan=1, colspan=1)
 	#parser.add_argument("--rotate", default=False, help="Rotate dark reference by -90 degrees. This is useful when dark correcting DE detector data.",action="store_true",guitype='boolbox', row=5, col=0, rowspan=1, colspan=1)
-	parser.add_argument("--tomo", default=False, help="Use this flag when aligning tomograms or other low magnification data.",action="store_true",guitype='boolbox', row=5, col=1, rowspan=1, colspan=1)
-	parser.add_argument("--phaseplate", default=False, help="Use this flag when aligning phase plate and other high contrast data (besides tomograms).",action="store_true",guitype='boolbox', row=5, col=1, rowspan=1, colspan=1)
+	parser.add_argument("--hictrst", default=False, help="Use this flag when aligning high contrast frames.",action="store_true",guitype='boolbox', row=5, col=1, rowspan=1, colspan=1)
+	parser.add_argument("--phaseplate", default=False, help="Use this flag when aligning phase plate frames.",action="store_true",guitype='boolbox', row=5, col=1, rowspan=1, colspan=1)
 	#parser.add_argument("--falcon", default=False, help="Use this flag to optimize alignment for falcon detector data.",action="store_true",guitype='boolbox', row=5, col=1, rowspan=1, colspan=1)
 	#parser.add_argument("--binning", type=int,help="Bin images by this factor by resampling in Fourier space. Default (-1) will choose based on input box size.",default=-1)
 
@@ -297,8 +297,8 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			if options.optbox == -1: options.optbox = 512
 			if options.optstep == -1: options.optstep = 448
 		else:
-			if options.optbox == -1: options.optbox = 256
-			if options.optstep == -1: options.optstep = 224
+			if options.optbox == -1: options.optbox = 448
+			if options.optstep == -1: options.optstep = 384
 
 		if options.align_frames :
 
@@ -404,7 +404,8 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 
 			if options.debug and options.verbose == 9: 
 				print("PEAK LOCATIONS:")
-				print(peak_locs)
+				for l in peak_locs.keys():
+					print(peak_locs[l])
 
 			# if options.ccweight:
 			# 	# normalize ccpeak values
@@ -444,10 +445,10 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			A = np.delete(A,z,axis=0)
 			b = np.delete(b,z,axis=0)
 
-			if options.debug:
-				import matplotlib.pyplot as plt
-				plt.imshow(A,cmap=plt.cm.viridis)
-				plt.show()
+			# if options.debug:
+			# 	import matplotlib.pyplot as plt
+			# 	plt.imshow(A,cmap=plt.cm.viridis)
+			# 	plt.show()
 
 			regr = linear_model.Ridge(alpha=options.optalpha,normalize=True,fit_intercept=True)
 			regr.fit(A,b)
@@ -492,14 +493,13 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 					except: pass
 				ax[2].set_title("CCF Peak Coordinates")
 
-				if options.debug:
-					fig2,ax2 = plt.subplots(1,3,figsize=(12,36))
-					a = ax2[0].imshow(A)
-					plt.colorbar(a)
-					ax2[1].plot(bx)
-					ax2[2].plot(by)
-				
-				plt.show()
+				# if options.debug:
+				# 	fig2,ax2 = plt.subplots(1,3,figsize=(12,36))
+				# 	a = ax2[0].imshow(A)
+				# 	plt.colorbar(a)
+				# 	ax2[1].plot(bx)
+				# 	ax2[2].plot(by)
+				# 	plt.show()
 
 			if options.noali:
 				#print("{:1.1f}\nWrite unaligned".format(time()-t0))
@@ -522,8 +522,8 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 
 			if options.allali:
 				out=qsum(outim)
-				if options.debug: fn = "{}__allali_{}.hdf".format(alioutname,options.round)
-				else: out.write_image("{}__allali.hdf".format(alioutname),0)
+				#if options.debug: fn = "{}__allali_{}.hdf".format(alioutname,options.round)
+				out.write_image("{}__allali.hdf".format(alioutname),0)
 
 			#print("{:1.1f}\nSubsets".format(time()-t0))
 			#t0=time()
@@ -555,22 +555,22 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 				best=[im for i,im in enumerate(outim) if quals[i]>thr]
 				out=qsum(best)
 				print("Keeping {}/{} frames".format(len(best),len(outim)))
-				if options.debug: out.write_image("{}__goodali_{}.hdf".format(alioutname,options.round),0)
-				else: out.write_image("{}__goodali.hdf".format(alioutname),0)
+				#if options.debug: out.write_image("{}__goodali_{}.hdf".format(alioutname,options.round),0)
+				out.write_image("{}__goodali.hdf".format(alioutname),0)
 
 			if options.bestali:
 				thr=(max(quals[1:])-min(quals))*0.6+min(quals)	# max correlation cutoff for inclusion
 				best=[im for i,im in enumerate(outim) if quals[i]>thr]
 				out=qsum(best)
 				print("Keeping {}/{} frames".format(len(best),len(outim)))
-				if options.debug: out.write_image("{}__bestali_{}.hdf".format(alioutname,options.round),0)
-				else: out.write_image("{}__bestali.hdf".format(alioutname),0)
+				#if options.debug: out.write_image("{}__bestali_{}.hdf".format(alioutname,options.round),0)
+				out.write_image("{}__bestali.hdf".format(alioutname),0)
 
 			if options.ali4to14:
 				# skip the first 4 frames then keep 10
 				out=qsum(outim[4:14])
-				if options.debug: out.write_image("{}__4-14_{}.hdf".format(alioutname,options.round),0)
-				else: out.write_image("{}__4-14.hdf".format(alioutname),0)
+				#if options.debug: out.write_image("{}__4-14_{}.hdf".format(alioutname,options.round),0)
+				out.write_image("{}__4-14.hdf".format(alioutname),0)
 
 			if len(options.rangeali)>0:
 				try: rng=[int(i) for i in options.rangeali.split("-")]
@@ -578,8 +578,8 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 					print "Error: please specify --rangeali as X-Y where X and Y are inclusive starting with 0"
 					sys.exit(1)
 				out=qsum(outim[rng[0]:rng[1]+1])
-				if options.debug: out.write_image("{}__{}-{}_{}.hdf".format(alioutname,rng[0],rng[1],options.round),0)
-				else: out.write_image("{}__{}-{}.hdf".format(alioutname,rng[0],rng[1]),0)
+				#if options.debug: out.write_image("{}__{}-{}_{}.hdf".format(alioutname,rng[0],rng[1],options.round),0)
+				out.write_image("{}__{}-{}.hdf".format(alioutname,rng[0],rng[1]),0)
 
 			#print "{:1.1f}\nDone".format(time()-t0)
 			print("Done")
@@ -599,6 +599,8 @@ def calc_ccf_wrapper(options,N,box,step,dataa,datab,out,locs,ii,fsp):
 			ggg = "{}-ccf_imgs.hdf".format(fsp.replace(".hdf",""))
 		elif fsp[:-4] == ".mrc":
 			ggg = "{}-ccf_imgs.hdf".format(fsp.replace(".mrc",""))
+		elif fsp[-4:] == ".tif":
+			ggg = "{}-ccf_imgs.hdf".format(fsp.replace(".tif",""))
 		csum.process("normalize.edgemean").write_image(ggg,ii)
 
 	xx = np.linspace(0,box,box)
@@ -606,29 +608,36 @@ def calc_ccf_wrapper(options,N,box,step,dataa,datab,out,locs,ii,fsp):
 	xx,yy = np.meshgrid(xx,yy)
 
 #	csum.process_inplace("normalize.edgemean")
+
+	ncc = csum.numpy().copy()
+
 	popt,ccpeakval = bimodal_peak_model(options,csum)
 	if popt == None:
 		#if options.debug: print("Optimal parameters not found")
 		#cc_model = correlation_peak_model((xx,yy),popt[0],popt[1],popt[2],popt[3]).reshape(box,box)
-		csum = from_numpy(np.zeros((box,box))).process("normalize.edgemean")
+		csum = from_numpy(np.zeros((box,box)))#.process("normalize.edgemean")
 		locs.put((N,[]))
 		out.put((N,csum))
 	else:
-		cc_model = correlation_peak_model((xx,yy),popt[0],popt[1],popt[2],popt[3]).reshape(box,box)
-		csum = from_numpy(cc_model)
 		#if ii>=0: csum.process("normalize.edgemean").write_image("ccf_models.hdf",ii)
 		if options.phaseplate:
-			locs.put((N,[popt[0],popt[1],popt[2],popt[3],ccpeakval,csum["maximum"]]))
+			locs.put((N,[popt[0],popt[1]]))#,popt[2],popt[3],ccpeakval,csum["maximum"]]))
+			pcsum = neighbormean_origin(ncc)
+			out.put((N,from_numpy(pcsum)))
 		else:
+			cc_model = correlation_peak_model((xx,yy),popt[0],popt[1],popt[2],popt[3]).reshape(box,box)
+			csum = from_numpy(cc_model)
 			locs.put((N,[popt[0],popt[1],popt[2],popt[3],popt[4],popt[5],ccpeakval,csum["maximum"]]))
 		out.put((N,csum))
-	if ii>=0 and options.debug: 
+	if ii>=0 and options.debug and not options.phaseplate: 
 		if fsp[-5:] == ".mrcs":
 			fff = "{}-ccf_models.hdf".format(fsp.replace(".mrcs",""))
 		elif fsp[-4:] == ".hdf":
 			fff = "{}-ccf_models.hdf".format(fsp.replace(".hdf",""))
 		elif fsp[:-4] == ".mrc":
 			fff = "{}-ccf_models.hdf".format(fsp.replace(".mrc",""))
+		elif fsp[-4:] == ".tif":
+			fff = "{}-ccf_models.hdf".format(fsp.replace(".tif",""))
 		csum.process("normalize.edgemean").write_image(fff,ii)
 
 # preprocess regions by normalizing and doing FFT
@@ -685,6 +694,46 @@ def twod_bimodal((x,y),x1,y1,sig1,amp1,sig2,amp2):
 	fp = amp2*np.exp(-(((x-float(len(x)/2))**2+(y-float(len(y)/2))**2))/(2*sig2**2))
 	return cp.ravel() + fp.ravel() # + noise
 
+# def edgemean(a,xc,yc):
+# 	# mean of values around perimeter of image
+# 	return (np.sum(a[:,0])+np.sum(a[0,1:])+np.sum(a[1:,-1])+np.sum(a[-1,1:-1]))/(4*(a.shape[0]-1))
+
+def neighbormean_origin(a): # replace origin pixel with mean of surrounding pixels
+    proc = a.copy()
+    if a.shape[0] % 2 == 0:
+        ac = a.shape[0]/2
+        r = a[ac-2:ac+2,ac-2:ac+2].copy()
+        rc = r.shape[0]/2
+        r[rc,rc] = np.nan
+        r[rc,rc-1] = np.nan
+        r[rc-1,rc] = np.nan
+        r[rc-1,rc-1] = np.nan
+        nm = np.nanmean(r)
+        proc[ac,ac] = nm
+        proc[ac,ac-1] = nm
+        proc[ac-1,ac] = nm
+        proc[ac-1,ac-1] = nm
+    else:
+        ac = a.shape[0]/2
+        r = a[ac-2:ac+1,ac-2:ac+1].copy()
+        plt.imshow(r)
+        rc = r.shape[0]/2
+        r[rc,rc] = np.nan
+        proc[ac,ac] = np.nanmean(r)
+    return proc
+
+def find_com(ccf): # faster alternative to gaussian fitting...less robust in theory.
+    thresh = (np.ones(ccf.shape) * np.mean(ccf))+2.5*np.std(ccf)
+    m = np.greater(ccf,thresh) * 1.0
+    m = m / np.sum(m)
+    # marginal distributions
+    dx = np.sum(m, 1)
+    dy = np.sum(m, 0)
+    # expected values
+    cx = np.sum(dx * np.arange(ccf.shape[0]))
+    cy = np.sum(dy * np.arange(ccf.shape[1]))
+    return cx-ccf.shape[0]/2,cy-ccf.shape[1]/2
+
 def bimodal_peak_model(options,ccf):
 	nxx = ccf["nx"]
 	bs = nxx/2
@@ -707,15 +756,24 @@ def bimodal_peak_model(options,ccf):
 
 	if options.phaseplate:
 		initial_guess = [x1,y1,s1,a1]
-		bds = [(-np.inf, -np.inf,  0.01, 0.01),(np.inf, np.inf, 100.0, 100000.0)]
-		#bds = [(-bs/2, -bs/2,  0.0, 0.0),(bs/2, bs/2, 100.0, 100000.0)]
-		try: 
-			popt,pcov=optimize.curve_fit(correlation_peak_model,(xx,yy),ncc.ravel(),p0=initial_guess,bounds=bds,method='dogbox',max_nfev=50)#,xtol=0.1)#,ftol=0.0001,gtol=0.0001)
-		except:
-			return None, -1
-	elif options.tomo:
+		# drop the origin (replace with perimeter mean)
+		#mval = edgemean(ncc)
+		#ix,iy = ncc.shape
+		pncc = neighbormean_origin(ncc)
+		x1,y1 = find_com(pncc)
+		x1 = x1+nxx/2
+		y1 = y1+nxx/2
+		return [x1,y1],ccf.sget_value_at_interp(x1,y1)
+		# try: # run optimization
+		# 	bds = [(-np.inf, -np.inf,  0.01, 0.01),(np.inf, np.inf, 100.0, 100000.0)]
+		# 	#bds = [(-bs/2, -bs/2,  0.0, 0.0),(bs/2, bs/2, 100.0, 100000.0)]
+		# 	popt,pcov=optimize.curve_fit(correlation_peak_model,(xx,yy),ncc.ravel(),p0=initial_guess,bounds=bds,method='dogbox',max_nfev=50)#,xtol=0.1)#,ftol=0.0001,gtol=0.0001)
+		# except:
+		# 	return None, -1
+	if options.hictrst: # only useful for extremely high contrast frames
 		yc,xc = np.where(ncc==ncc.max())
-		popt = [float(xc[0]+bs/2),float(yc[0]+bs/2),ncc.max(),1.,0.,0.]
+		popt = [float(xc[0]+nxx/2),float(yc[0]+nxx/2),ncc.max(),1.,0.,0.]
+		return popt,ccf.sget_value_at_interp(popt[0],popt[1])
 	else:
 		initial_guess = [x1,y1,s1,a1,s2,a2]
 		bds = [(-np.inf, -np.inf, 0.01, 0.01, 0.6, 0.01), (np.inf, np.inf, 100.0, 20000.0,2.5,100000.0)]
@@ -725,15 +783,11 @@ def bimodal_peak_model(options,ccf):
 		except:
 			return None,-1#popt = initial_guess#, -1#popt = initial_guess 
 
-	popt = [p for p in popt]
-
-	try:
+		popt = [p for p in popt]
 		popt[0] = popt[0] + nxx/2 - bs/2
 		popt[1] = popt[1] + nxx/2 - bs/2
-	except:
-		print(popt)
-	popt[2] = np.abs(popt[2])
-	return popt,ccf.sget_value_at_interp(popt[0],popt[1])
+		popt[2] = np.abs(popt[2])
+		return popt,ccf.sget_value_at_interp(popt[0],popt[1])
 
 def qsum(imlist):
 	avg=Averagers.get("mean")
