@@ -1741,6 +1741,9 @@ def ctf_stig_cmp(parms,data):
 	#if ctf.dfdiff>ctf.defocus : penalty+=ctf.dfdiff-ctf.defocus
 	if dfmaj<0 : penalty-=dfmaj
 	if dfmin<0 : penalty-=dfmin
+	
+	# added 10/26/17 to avoid large astigmatisms cropping up in outlier cases
+	penalty+=pow(ctf.dfdiff/ctf.defocus,2.0)	# we don't want the defocus difference to be large compared to the defocus itself
 
 #	print parms,ctf.defocus,ctf.dfdiff,bgcp.cmp("dot",bgsub,{"normalize":1}),penalty
 	return bgcp.cmp("dot",bgsub,{"normalize":1})+penalty
