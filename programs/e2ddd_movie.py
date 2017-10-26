@@ -715,7 +715,7 @@ def bimodal_peak_model(options,ccf):
 			return None, -1
 	elif options.tomo:
 		yc,xc = np.where(ncc==ncc.max())
-		popt = [float(xc+bs/2),float(yc+bs/2),ncc.max(),1.,0.,0.]
+		popt = [float(xc[0]+bs/2),float(yc[0]+bs/2),ncc.max(),1.,0.,0.]
 	else:
 		initial_guess = [x1,y1,s1,a1,s2,a2]
 		bds = [(-np.inf, -np.inf, 0.01, 0.01, 0.6, 0.01), (np.inf, np.inf, 100.0, 20000.0,2.5,100000.0)]
