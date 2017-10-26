@@ -719,26 +719,26 @@ class boxerConvNet(QtCore.QObject):
 		else:
 			print("Cannot find boxer window...")
 			
-		print "Importing dependencies..."
+		print("Importing dependencies...")
 		if not hasattr(boxerConvNet,'import_done'):
 			if not boxerConvNet.do_import():
-				print "Cannot import required dependencies..Stop."
+				print("Cannot import required dependencies..Stop.")
 		
 		if len(goodrefs)<5 or len(bgrefs)<5:
-			print "Not enough references. Please box at least 5 good and 5 background reference..."
+			print("Not enough references. Please box at least 5 good and 5 background reference...")
 			return []
 		else:
 			nnet_pick=boxerConvNet.train_ptclpick_net(goodrefs, bgrefs)
 		
 		if len(badrefs)<5:
-			print "Not enough bad references. Skipping bad particle exclusion step..."
+			print("Not enough bad references. Skipping bad particle exclusion step...")
 		else:
 			nnet_classify=boxerConvNet.train_classify_net(goodrefs, badrefs)
 		
 		
 	@staticmethod			
 	def train_ptclpick_net(goodrefs, bgrefs):
-		print "Setting up network for particle picking ..."
+		print("Setting up network for particle picking ...")
 		nnet_savename="nnet_pickptcls.hdf"
 		bxsz=goodrefs[0]["nx"]
 		sz=64
@@ -771,7 +771,7 @@ class boxerConvNet(QtCore.QObject):
 		for label, refs in enumerate([bgrefs,goodrefs]):
 			nref=len(refs)
 			if nref<5:
-				print "Not enough references. Please box at least 5 good and 5 background reference..."
+				print("Not enough references. Please box at least 5 good and 5 background reference...")
 				return []
 			ncopy=nref_target/nref + 1
 			
@@ -844,7 +844,7 @@ class boxerConvNet(QtCore.QObject):
 		sz=64
 		shrinkfac=float(bxsz)/float(sz)
 		
-		print "Setting up  network for bad particle exclusion ..."
+		print("Setting up  network for bad particle exclusion ...")
 		rng = np.random.RandomState(123)
 		nkernel=[20,20,1]
 		ksize=[15,15,15]
@@ -865,7 +865,7 @@ class boxerConvNet(QtCore.QObject):
 		#convnet.sumout=T.minimum(1,convnet.sumout)
 		
 		
-		print "Pre-processing particles..."
+		print("Pre-processing particles...")
 		#### here we shrink the particles so they are 64x64
 		#### and duplicate so there are more than 500 good and 500 bad particles
 		
@@ -877,7 +877,7 @@ class boxerConvNet(QtCore.QObject):
 		for label, refs in enumerate([badrefs,goodrefs]):
 			nref=len(refs)
 			if nref<5:
-				print "Not enough references. Please box at least 5 good and 5 bad reference..."
+				print("Not enough references. Please box at least 5 good and 5 bad reference...")
 				return []
 			ncopy=nref_target/nref + 1
 			
@@ -913,7 +913,7 @@ class boxerConvNet(QtCore.QObject):
 		#### make target output
 		labels=theano.shared(lbs.astype(theano.config.floatX), borrow=True)
 		
-		print "Now Training..."
+		print("Now Training...")
 		classify=boxerConvNet.get_classify_func(convnet, train_set_x,labels,batch_size)
 		learning_rate=0.005
 		weightdecay=1e-5
@@ -928,8 +928,8 @@ class boxerConvNet(QtCore.QObject):
 				c.append(err)
 
 			learning_rate*=.96
-			print 'Training epoch %d, cost ' % ( epoch),
-			print np.mean(c),", learning rate",learning_rate
+			print('Training epoch %d, cost ' % ( epoch), end=' ')
+			print(np.mean(c),", learning rate",learning_rate)
 
 		
 		save_model(convnet, nnet_savename)
@@ -1027,7 +1027,7 @@ class boxerConvNet(QtCore.QObject):
 		else:
 			nnet_classify=None
 			
-		print "Applying neural net..."
+		print("Applying neural net...")
 		boxes=boxerConvNet.apply_network(micrograph, layers, shrinkfac, nx, ny, nnet_classify)
 		
 		print("{} particles found..".format(len(boxes)))
