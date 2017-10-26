@@ -432,8 +432,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 						#A[ima,imb] = np.exp(1-peak_locs[(i,j)][3])
 						#A[ima,imb] = sqrt(float(n-fabs(i-j))/n)
 					except:
-						print(i,j,peak_locs[(i,j)],ima,imb)
-						pass
+						pass # CCF peak could not be determined
 			b = np.c_[bx,by]
 			A = np.asmatrix(A)
 			b = np.asmatrix(b)
@@ -655,11 +654,11 @@ def split_fft(options,img,i,box,step,out):
 		for dy in range(box/2,ny-box,step):
 			clp = img.get_clip(Region(dx,dy,box,box))
 			#if options.normalize: clp.process_inplace("normalize.edgemean")
-			if box >= 512:
-				if not options.tomo:
-					if img["apix_x"] == 1.0: # likely an image with incorrect header or simulated data
-						clp.process_inplace("filter.highpass.gauss",{"cutoff_pixels":2}) 
-					else: clp.process_inplace("filter.highpass.gauss",{"cutoff_abs":0.01})
+			#if box >= 512:
+			#	if not options.tomo:
+			#		if img["apix_x"] == 1.0: # likely an image with incorrect header or simulated data
+			#			clp.process_inplace("filter.highpass.gauss",{"cutoff_pixels":2}) 
+			#		else: clp.process_inplace("filter.highpass.gauss",{"cutoff_abs":0.01})
 				#clp.process_inplace("math.fft.resample",{"n":1.})
 				#if options.tomo:
 				#	clp.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.3})
@@ -681,10 +680,10 @@ def fixedbg_peak_model((x, y), sigma, amp):
 
 def twod_bimodal((x,y),x1,y1,sig1,amp1,sig2,amp2):
 	#correlation_peak = correlation_peak_model((x,y),x1,y1,sig1,amp1)
-	cp = amp1*np.exp(-(((x-x1)**2+(y-y1)**2))/(2*sig1**2)).ravel()
+	cp = amp1*np.exp(-(((x-x1)**2+(y-y1)**2))/(2*sig1**2))
 	#fixedbg_peak = fixedbg_peak_model((x,y),sig2,amp2)
-	fp = amp2*np.exp(-(((x-float(len(x)/2))**2+(y-float(len(y)/2))**2))/(2*sig2**2)).ravel()
-	return cp + fp # + noise
+	fp = amp2*np.exp(-(((x-float(len(x)/2))**2+(y-float(len(y)/2))**2))/(2*sig2**2))
+	return cp.ravel() + fp.ravel() # + noise
 
 def bimodal_peak_model(options,ccf):
 	nxx = ccf["nx"]
@@ -716,7 +715,7 @@ def bimodal_peak_model(options,ccf):
 			return None, -1
 	elif options.tomo:
 		yc,xc = np.where(ncc==ncc.max())
-		popt = [float(xc+bs/2),float(yc+bs/2),ncc.max(),1.,0.,0.],ncc.max()
+		popt = [float(xc+bs/2),float(yc+bs/2),ncc.max(),1.,0.,0.]
 	else:
 		initial_guess = [x1,y1,s1,a1,s2,a2]
 		bds = [(-np.inf, -np.inf, 0.01, 0.01, 0.6, 0.01), (np.inf, np.inf, 100.0, 20000.0,2.5,100000.0)]
@@ -727,8 +726,12 @@ def bimodal_peak_model(options,ccf):
 			return None,-1#popt = initial_guess#, -1#popt = initial_guess 
 
 	popt = [p for p in popt]
-	popt[0] = popt[0] + nxx/2 - bs/2
-	popt[1] = popt[1] + nxx/2 - bs/2
+
+	try:
+		popt[0] = popt[0] + nxx/2 - bs/2
+		popt[1] = popt[1] + nxx/2 - bs/2
+	except:
+		print(popt)
 	popt[2] = np.abs(popt[2])
 	return popt,ccf.sget_value_at_interp(popt[0],popt[1])
 
