@@ -109,11 +109,14 @@ def main():
 		sys.exit(1)
 	
 	N=EMUtil.get_image_count(args[0])
-	npt=max(min(100,N/(options.threads-2)),1)
+	npt=max(min(100,N/(options.threads-2)+1),1)
 	
 	jsd=Queue.Queue(0)
 	# these start as arguments, but get replaced with actual threads
 	thrds=[(jsd,args,options,i,i*npt,min(i*npt+npt,N)) for i in xrange(N/npt+1)]
+
+	#import pprint
+	#pprint.pprint(thrds)
 	
 	thrtolaunch=0
 	while thrtolaunch<len(thrds) or threading.active_count()>1:
