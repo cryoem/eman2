@@ -724,19 +724,31 @@ class boxerConvNet(QtCore.QObject):
 		else:
 			print "Cannot find boxer window..."
 			
-			
+		print "Importing dependencies..."
+		if not hasattr(boxerConvNet,'import_done'):
+			if not boxerConvNet.do_import():
+				print "Cannot import required dependencies..Stop."
 		
+		if len(goodrefs)<5 or len(bgrefs)<5:
+			print "Not enough references. Please box at least 5 good and 5 background reference..."
+			return []
+		else:
+			nnet_pick=boxerConvNet.train_ptclpick_net(goodrefs, bgrefs)
+		
+		if len(badrefs)<5:
+			print "Not enough bad references. Skipping bad particle exclusion step..."
+		else:
+			nnet_classify=boxerConvNet.train_classify_net(goodrefs, badrefs)
+		
+		
+	@staticmethod			
+	def train_ptclpick_net(goodrefs, bgrefs):
+		print "Setting up network for particle picking ..."
 		nnet_savename="nnet_pickptcls.hdf"
 		bxsz=goodrefs[0]["nx"]
 		sz=64
 		shrinkfac=float(bxsz)/float(sz)
 		
-		print "Importing dependencies..."
-		if not hasattr(boxerConvNet,'import_done'):
-			if not boxerConvNet.do_import():
-				print "Cannot import required dependencies..Stop."
-				
-		print "Setting up model ..."
 		rng = np.random.RandomState(123)
 		nkernel=[20,20,1]
 		ksize=[15,15,15]
@@ -761,10 +773,10 @@ class boxerConvNet(QtCore.QObject):
 		data=[] ### particles in flattened numpy array
 		lbs=[]  ### labels in flattened numpy array
 		
-		for label, refs in enumerate([badrefs,goodrefs,bgrefs]):
+		for label, refs in enumerate([bgrefs,goodrefs]):
 			nref=len(refs)
 			if nref<5:
-				print "Not enough references. Please box at least 5 good and 5 bad reference..."
+				print "Not enough references. Please box at least 5 good and 5 background reference..."
 				return []
 			ncopy=nref_target/nref + 1
 			
@@ -828,7 +840,146 @@ class boxerConvNet(QtCore.QObject):
 
 		
 		save_model(convnet, nnet_savename)
+		boxerConvNet.check_convnet_output(convnet, train_set_x)
+		return convnet
+	
+	@staticmethod
+	def train_classify_net(goodrefs, badrefs):
 		
+		nnet_savename="nnet_classify.hdf"
+		bxsz=goodrefs[0]["nx"]
+		sz=64
+		shrinkfac=float(bxsz)/float(sz)
+		
+		print "Setting up  network for bad particle exclusion ..."
+		rng = np.random.RandomState(123)
+		nkernel=[20,20,1]
+		ksize=[15,15,15]
+		poolsz=[2,1,1]
+		batch_size=10
+		
+		image_shape=(batch_size, 1, sz, sz)
+		convnet = StackedConvNet(
+			rng,
+			nkernel=nkernel,
+			ksize=ksize,
+			poolsz=poolsz,
+			imageshape=image_shape
+		)
+		
+		convnet.sumout=T.mean(convnet.clslayer.get_image().reshape((batch_size, -1)), axis=1)
+		convnet.sumout=T.maximum(0,convnet.sumout)
+		#convnet.sumout=T.minimum(1,convnet.sumout)
+		
+		
+		print "Pre-processing particles..."
+		#### here we shrink the particles so they are 64x64
+		#### and duplicate so there are more than 500 good and 500 bad particles
+		
+		nref_target=500
+		
+		data=[] ### particles in flattened numpy array
+		lbs=[]  ### labels in flattened numpy array
+		
+		for label, refs in enumerate([badrefs,goodrefs]):
+			nref=len(refs)
+			if nref<5:
+				print "Not enough references. Please box at least 5 good and 5 bad reference..."
+				return []
+			ncopy=nref_target/nref + 1
+			
+			for pp in refs:
+				ptl=pp.process("math.fft.resample",{"n":shrinkfac})
+				ptl.clip_inplace(Region(0,0, sz, sz))
+				#ptl.process_inplace("filter.highpass.gauss",{"cutoff_freq":0.005})
+				#ptl.process_inplace("filter.lowpass.gauss",{"cutoff_freq":0.05})
+				ptl.process_inplace("filter.highpass.gauss",{"cutoff_pixels":2})
+				ptl.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.25})
+				for c in range(ncopy):
+					tr=Transform()
+					tr.set_rotation({"type":"2d","alpha":np.random.random()*360.0})
+					img=ptl.process("xform",{"transform":tr})
+					ar=img.numpy().copy()
+					data.append(ar.flatten())
+					lbs.append(label)
+		#print shrinkfac
+		rndid=range(len(data))
+		np.random.shuffle(rndid)
+		data=[data[i] for i in rndid]
+		lbs=[lbs[i] for i in rndid]
+		data=np.asarray(data,dtype=theano.config.floatX)
+		#print np.std(data), np.mean(np.std(data,axis=1))
+		div=np.mean(np.std(data,axis=1))
+		data/=div#np.std(data)#*2.
+		mx=4.
+		data[data>mx]=mx
+		data[data<-mx]=-mx
+		lbs=np.asarray(lbs,dtype=theano.config.floatX)
+		train_set_x = theano.shared(data,borrow=True)
+		
+		#### make target output
+		labels=theano.shared(lbs.astype(theano.config.floatX), borrow=True)
+		
+		print "Now Training..."
+		classify=boxerConvNet.get_classify_func(convnet, train_set_x,labels,batch_size)
+		learning_rate=0.005
+		weightdecay=1e-5
+		n_train_batches = len(data) / batch_size
+		for epoch in xrange(20):
+		# go through the training set
+			c = []
+			for batch_index in xrange(n_train_batches):
+				err=classify(batch_index,
+					lr=learning_rate,
+					wd=weightdecay)
+				c.append(err)
+
+			learning_rate*=.96
+			print 'Training epoch %d, cost ' % ( epoch),
+			print np.mean(c),", learning rate",learning_rate
+
+		
+		save_model(convnet, nnet_savename)
+		boxerConvNet.check_convnet_output(convnet, train_set_x, "trainout_nnet_classify.hdf")
+	
+	@staticmethod
+	def get_classify_func(convnet, data,lab,batch_size):
+		learning_rate = T.scalar('lr')  # learning rate to use
+		weight_decay = T.scalar('wd')  # learning rate to use
+		index = T.lscalar()	# index to a [mini]batch
+		
+		label=T.vector(name='label')
+		cost=T.mean((convnet.sumout-label)**2)
+		#cost = convnet.clslayer.get_cost_hidden(label)
+		
+		
+		for c in convnet.convlayers:
+			cost+=weight_decay*T.sum(abs(c.W))
+		gparams = T.grad(cost, convnet.params)
+		updates = [
+			(param, param - learning_rate * gparam)
+			for param, gparam in zip(convnet.params, gparams)
+		]
+		#cost, updates = self.clslayer.get_cost_updates_hidden(cls,learning_rate,weight_decay)
+		train_classify = theano.function(
+					inputs=[
+						index,
+						theano.In(learning_rate, value=0.1),
+						theano.In(weight_decay, value=1e-5)
+					],
+					outputs=cost,
+					updates=updates,
+					givens={
+						convnet.x: data[index * batch_size: (index+1) * batch_size],
+						label: lab[index * batch_size: (index+1) * batch_size]
+					}
+					)
+		return train_classify
+
+	
+	@staticmethod
+	def check_convnet_output(convnet, train_set_x, trainoutfile="trainout_nnet_pickptcl.hdf"):
+		sz=64
 		tstsz=100
 		convnet.update_shape((tstsz, 1, sz, sz))
 		test_cls = theano.function(
@@ -839,7 +990,6 @@ class boxerConvNet(QtCore.QObject):
 			}
 		)
 		tstout=test_cls()
-		trainoutfile="trainout_nnet.hdf"
 		if os.path.isfile(trainoutfile):
 			os.remove(trainoutfile)
 		
@@ -877,8 +1027,14 @@ class boxerConvNet(QtCore.QObject):
 		
 			
 		layers=boxerConvNet.load_network(nnet_savename, nx, ny)
+		nnet_savename_classify="nnet_classify.hdf"
+		if os.path.isfile(nnet_savename_classify):
+			nnet_classify=boxerConvNet.load_network(nnet_savename_classify, sz, sz)
+		else:
+			nnet_classify=None
+			
 		print "Applying neural net..."
-		boxes=boxerConvNet.apply_network(micrograph, layers, shrinkfac, nx, ny)
+		boxes=boxerConvNet.apply_network(micrograph, layers, shrinkfac, nx, ny, nnet_classify)
 		
 		print "{} particles found..".format(len(boxes))
 		return boxes
@@ -888,6 +1044,10 @@ class boxerConvNet(QtCore.QObject):
 	def load_network(fname, nx, ny):
 		print "Loading the Neural Net..."
 			
+		#if not hasattr(boxerConvNet,'import_done'):
+			#if not boxerConvNet.do_import():
+				#print "Cannot import required dependencies..Stop."
+				
 		hdr=EMData(fname,0)
 			
 		ksize=hdr["ksize"]
@@ -926,25 +1086,9 @@ class boxerConvNet(QtCore.QObject):
 		return layers
 	
 	@staticmethod
-	def apply_network(micrograph, layers, shrinkfac, nx, ny):
-		sz=64
-		#### file name or EMData input
-		if type(micrograph)==str:
-			fm=load_micrograph(micrograph)
-		else:
-			fm=micrograph.copy()
-			
-		#### preprocess..
-		fm.process_inplace("math.fft.resample",{"n":shrinkfac})
-		fm.clip_inplace(Region(0, 0, nx, ny))
-		fm.process_inplace("filter.highpass.gauss",{"cutoff_freq":0.005})
-		fm.process_inplace("filter.lowpass.gauss",{"cutoff_freq":0.05})
-		fm.process_inplace("normalize")
-		fm.process_inplace("threshold.clampminmax.nsigma", {"nsigma":4})
-			
-		#### apply network
-		imgs=[fm]
-		for layer in layers:
+	def do_convolve(imgs, layers):
+		
+		for il,layer in enumerate(layers):
 			
 			s0=imgs[0]["nx"]
 			s1=imgs[0]["ny"]
@@ -967,11 +1111,33 @@ class boxerConvNet(QtCore.QObject):
 				if poolsz>1:
 					cv=cv.process("math.maxshrink",{"n":poolsz})
 				cv.add(b[wi])
-				cv.process_inplace("threshold.belowtozero")
+				if il<len(layers)-1:
+					cv.process_inplace("threshold.belowtozero")
 				
 				imgout.append(cv)
 			
 			imgs=imgout
+		return imgs
+	
+	@staticmethod
+	def apply_network(micrograph, layers, shrinkfac, nx, ny, nnet_classify=None):
+		sz=64
+		#### file name or EMData input
+		if type(micrograph)==str:
+			fm=load_micrograph(micrograph)
+		else:
+			fm=micrograph.copy()
+			
+		#### preprocess..
+		fm.process_inplace("math.fft.resample",{"n":shrinkfac})
+		fm.clip_inplace(Region(0, 0, nx, ny))
+		fm.process_inplace("filter.highpass.gauss",{"cutoff_freq":0.005})
+		fm.process_inplace("filter.lowpass.gauss",{"cutoff_freq":0.05})
+		fm.process_inplace("normalize")
+		fm.process_inplace("threshold.clampminmax.nsigma", {"nsigma":4})
+			
+		#### apply network
+		imgs=boxerConvNet.do_convolve([fm], layers)
 			
 		#### find boxes
 		downsample=shrinkfac*2
@@ -988,19 +1154,61 @@ class boxerConvNet(QtCore.QObject):
 		threshold=final["mean"]+final["sigma"]*thrn
 		pks=final.peak_ccf(sz/4)
 		
+		if nnet_classify==None:
+			tstout=np.ones(len(pks)/3+1)
+		else:
+			coord=np.array(pks).reshape((-1,3))
+			#data=[]
+			tstout=[]
+			for i, p in enumerate(coord):
+				if p[0]<threshold:
+					break
+				#print p
+				e=fm.get_clip(Region(int(p[1]*2-sz/2),int(p[2]*2-sz/2),sz, sz))
+				mout=boxerConvNet.do_convolve([e],nnet_classify)[0]
+				mout.mult(-1)
+				mout.process_inplace("threshold.belowtominval", {"minval":-1})
+				mout.mult(-1)
+				#mout.write_image("__tmpptcls.hdf", i)
+				tstout.append(mout["mean"])
+				
+			tstout=np.array(tstout)
+				##e.write_image("__tmpptcls.hdf", i)
+				#data.append(e.numpy().copy().flatten())
+			#data=np.array(data, dtype=theano.config.floatX)
+			#testset = theano.shared(data)
+			#sn=len(data)
+			#nnet_classify.update_shape((sn, 1, sz, sz))
+			#nnet_classify.sumout=T.mean(nnet_classify.clslayer.get_image().reshape((sn, -1)), axis=1)
+			#test_cls = theano.function(
+				#inputs=[],
+				#outputs=nnet_classify.sumout,
+				#givens={
+					#nnet_classify.x: testset
+				#}
+			#)
+			#tstout=test_cls()
+		#print tstout
+		
 		for i in range(0,len(pks),3):
 			if pks[i]<threshold:
 				break
-			boxes.append([int(pks[i+1]*downsample),int(pks[i+2]*downsample),"auto_convnet"])
+			if tstout[i/3]>0.2:
+				boxes.append([int(pks[i+1]*downsample),int(pks[i+2]*downsample),"auto_convnet"])
+			else:
+				continue
+				#boxes.append([int(pks[i+1]*downsample),int(pks[i+2]*downsample),"bad"])
 		
 		return boxes
 	
 	@staticmethod
 	def do_autobox_all(filenames,goodrefs,badrefs,bgrefs,apix,nthreads,params,prog=None):
+				
 		jobs=[]
 		
 		#### get some parameters...
 		nnet_savename="nnet_pickptcls.hdf"
+		nnet_savename_classify="nnet_classify.hdf"
 		bxsz=goodrefs[0]["nx"]
 		sz=64
 		shrinkfac=float(bxsz)/float(sz)
@@ -1013,6 +1221,12 @@ class boxerConvNet(QtCore.QObject):
 		
 		#### load network...
 		layers=boxerConvNet.load_network(nnet_savename, nx, ny)
+		
+		if os.path.isfile(nnet_savename_classify):
+			nnet_classify=boxerConvNet.load_network(nnet_savename_classify, sz, sz)
+		else:
+			nnet_classify=None
+			
 		#boxes=boxerConvNet.apply_network(micrograph, layers, shrinkfac, nx, ny)
 		#### prepare the jobs..
 		for i,fspl in enumerate(filenames):
@@ -1022,7 +1236,7 @@ class boxerConvNet(QtCore.QObject):
 		#### worker function
 		def autobox_worker(que, job):
 			fname, idx, layers, shrinkfac, nx, ny = job
-			boxes=boxerConvNet.apply_network(fname, layers, shrinkfac, nx, ny)
+			boxes=boxerConvNet.apply_network(fname, layers, shrinkfac, nx, ny, nnet_classify)
 			que.put((idx, fname,  boxes))
 			return
 		
@@ -1136,7 +1350,7 @@ class GUIBoxer(QtGui.QWidget):
 		self.wbadrefs.set_mouse_mode("App")
 
 		self.wbgrefs=EMImageMXWidget()
-		self.wbgrefs.setWindowTitle("Bad Box Refs")
+		self.wbgrefs.setWindowTitle("Background Box Refs")
 		self.wbgrefs.set_mouse_mode("App")
 
 
@@ -1158,7 +1372,7 @@ class GUIBoxer(QtGui.QWidget):
 #		self.wbadrefs.connect(self.wparticles,QtCore.SIGNAL("mx_image_selected"),self.badrefmousedown)
 #		self.wbadrefs.connect(self.wparticles,QtCore.SIGNAL("mx_mousedrag"),self.badrefmousedrag)
 		self.wbadrefs.connect(self.wbadrefs,QtCore.SIGNAL("mx_mouseup")  ,self.badrefmouseup)
-		self.wbgrefs.connect(self.wbadrefs,QtCore.SIGNAL("mx_mouseup")  ,self.bgrefmouseup)
+		self.wbgrefs.connect(self.wbgrefs,QtCore.SIGNAL("mx_mouseup")  ,self.bgrefmouseup)
 
 		# This object is itself a widget we need to set up
 		self.gbl = QtGui.QGridLayout(self)
@@ -1711,7 +1925,7 @@ class GUIBoxer(QtGui.QWidget):
 		if self.bgrefchg :
 			try: os.unlink("info/boxrefsbg.hdf")
 			except: pass
-			for im in self.badrefs: im.write_image("info/boxrefsbg.hdf",-1)
+			for im in self.bgrefs: im.write_image("info/boxrefsbg.hdf",-1)
 			self.bgrefchg=False
 			
 	def restore_boxes(self):
