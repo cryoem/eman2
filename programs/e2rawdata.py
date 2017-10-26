@@ -50,9 +50,10 @@ def main():
 	parser.add_argument("--invert",action="store_true",help="Invert contrast",default=False, guitype='boolbox', row=2, col=0, rowspan=1, colspan=1, mode='filter[True]')
 	parser.add_argument("--edgenorm",action="store_true",help="Edge normalize",default=False, guitype='boolbox', row=2, col=1, rowspan=1, colspan=1, mode='filter[True]')
 	parser.add_argument("--usefoldername",action="store_true",help="If you have the same image filename in multiple folders, and need to import into the same project, this will prepend the folder name on each image name",default=False,guitype='boolbox',row=2, col=2, rowspan=1, colspan=1, mode="import[False]")
-	parser.add_argument("--xraypixel",action="store_true",help="Filter X-ray pixels",default=False, guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode='filter[True]')
-	parser.add_argument("--ctfest",action="store_true",help="Estimate defocus from whole micrograph",default=False, guitype='boolbox', row=3, col=1, rowspan=1, colspan=1, mode='filter[True]')
-	parser.add_argument("--astigmatism",action="store_true",help="Includes astigmatism in automatic fitting",default=False, guitype='boolbox', row=3, col=2, rowspan=1, colspan=1, mode='filter[False]')
+	parser.add_argument("--xraypixel",action="store_true",help="Filter X-ray pixels",default=False, guitype='boolbox', row=2, col=2, rowspan=1, colspan=1, mode='filter[True]')
+	parser.add_argument("--ctfest",action="store_true",help="Perform CTF fitting on the (tiled) frame",default=False, guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode='filter[True]')
+	parser.add_argument("--phaseplate",action="store_true",help="Include phase/amplitude contrast in CTF estimation. For use with hole-less phase plates.",default=False, guitype='boolbox', row=3, col=2, rowspan=1, colspan=1, mode='filter[False]')
+	parser.add_argument("--astigmatism",action="store_true",help="Includes astigmatism in automatic fitting",default=False, guitype='boolbox', row=3, col=1, rowspan=1, colspan=1, mode='filter[False]')
 	parser.add_argument("--moverawdata",action="store_true",help="Move raw data to directory ./raw_micrographs after filtration",default=False)
 	parser.add_argument("--apix",type=float,help="Angstroms per pixel for all images",default=None, guitype='floatbox', row=5, col=0, rowspan=1, colspan=1, mode="filter['self.pm().getAPIX()']")
 	parser.add_argument("--voltage",type=float,help="Microscope voltage in KV",default=None, guitype='floatbox', row=5, col=1, rowspan=1, colspan=1, mode="filter['self.pm().getVoltage()']")
@@ -78,12 +79,10 @@ def main():
 		if not os.access(originalsdir, os.R_OK):
 			os.mkdir("raw_micrographs")
 			
-	thrds=[(jsd,i,args[i],options) for i in xrange(len(args))]
-
 	if options.threads==1:
 		for i,arg in enumerate(args):
 			importfn(i,arg,options)
-			E2progress(logid,(thrtolaunch/float(len(args))))
+			E2progress(logid,(i/float(len(args))))
 
 		E2end(logid)
 		sys.exit(0)
@@ -91,23 +90,24 @@ def main():
 	# due to multithreading limitations, we use multiple processes when threads specified
 	
 	# rebuild command line. Better way?
-	opts="--threads 1"
-	if options.invert: opts+=" --invert"
-	if options.edgenorm: opts+=" --edgenorm"
-	if options.usefoldername: opts+=" --usefoldername"
-	if options.xraypixel: opts+=" --xraypixel"
-	if options.ctfest: opts+=" --ctfest"
-	if options.astigmatism: opts+=" --astigmatism"
-	if options.moverawdata: opts+=" --moverawdata"
-	if options.apix!=None : opts+=" --apix {}".format(options.apix)
-	if options.voltage!=None : opts+=" --voltage {}".format(options.voltage)
-	if options.cs!=None : opts+=" --cs {}".format(options.cs)
-	if options.ac!=None : opts+=" --ac {}".format(options.ac)
-	if options.defocusmin!=None : opts+=" --defocusmin {}".format(options.defocusmin)
-	if options.defocusmax!=None : opts+=" --defocusmax {}".format(options.defocusmax)
+	opts="--threads 1 "
+	if options.invert:        opts+="--invert "
+	if options.edgenorm:      opts+="--edgenorm "
+	if options.usefoldername: opts+="--usefoldername "
+	if options.xraypixel:     opts+="--xraypixel "
+	if options.ctfest:        opts+="--ctfest "
+	if options.astigmatism:   opts+="--astigmatism "
+	if options.phaseplate:    opts+="--phaseplate "
+	if options.moverawdata:   opts+="--moverawdata "
+	if options.apix!=None :   opts+="--apix {} ".format(options.apix)
+	if options.voltage!=None : opts+="--voltage {} ".format(options.voltage)
+	if options.cs!=None :     opts+="--cs {} ".format(options.cs)
+	if options.ac!=None :     opts+="--ac {} ".format(options.ac)
+	if options.defocusmin!=None : opts+="--defocusmin {} ".format(options.defocusmin)
+	if options.defocusmax!=None : opts+="--defocusmax {} ".format(options.defocusmax)
 	
 	blk=len(args)//options.threads+1
-	thrds=[threading.thread(target=launch_childprocess,args=["e2rawdata.py "+opts+" ".join(args[i*blk:(i+1)*blk])]) for i in xrange(options.threads)]
+	thrds=[threading.Thread(target=launch_childprocess,args=["e2rawdata.py "+opts+" ".join(args[i*blk:(i+1)*blk])]) for i in xrange(options.threads)]
 
 	print "Launching ",options.threads," subprocesses"
 	for t in thrds:
@@ -173,9 +173,9 @@ def importfn(i,arg,options):
 		bg_1d=e2ctf.low_bg_curve(fft1d,ds)
 
 		#initial fit, background adjustment, refine fit, final background adjustment
-		ctf=e2ctf.ctf_fit(fft1d,bg_1d,bg_1d,ffta,fftbg,options.voltage,options.cs,options.ac,options.apix,1,dfhint=(options.defocusmin,options.defocusmax))
+		ctf=e2ctf.ctf_fit(fft1d,bg_1d,bg_1d,ffta,fftbg,options.voltage,options.cs,options.ac,options.phaseplate,options.apix,1,dfhint=(options.defocusmin,options.defocusmax))
 		bgAdj(ctf,fft1d)
-		ctf=e2ctf.ctf_fit(fft1d,ctf.background,ctf.background,ffta,fftbg,options.voltage,options.cs,options.ac,options.apix,1,dfhint=(options.defocusmin,options.defocusmax))
+		ctf=e2ctf.ctf_fit(fft1d,ctf.background,ctf.background,ffta,fftbg,options.voltage,options.cs,options.ac,options.phaseplate,options.apix,1,dfhint=(options.defocusmin,options.defocusmax))
 		bgAdj(ctf,fft1d)
 		
 		if options.astigmatism : e2ctf.ctf_fit_stig(ffta,fftbg,ctf)

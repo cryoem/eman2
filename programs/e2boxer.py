@@ -231,12 +231,17 @@ def main():
 		if os.path.exists("info/boxrefsbad.hdf"):
 			badrefs=EMData.read_images("info/boxrefsbad.hdf")
 		else: badrefs=[]
+
+		if os.path.exists("info/bgrefsbad.hdf"):
+			bgrefs=EMData.read_images("info/bgrefsbad.hdf")
+		else: bgrefs=[]
+
 		
 		for i,fspi in enumerate(args):
 			fsp=fspi.split()[1]
 			micrograph=load_micrograph(fsp)
 
-			newboxes=pcl.do_autobox(micrograph,goodrefs,badrefs,options.apix,options.threads,apick[1],None)
+			newboxes=pcl.do_autobox(micrograph,goodrefs,badrefs,bgrefs,options.apix,options.threads,apick[1],None)
 			print "{}) {} boxes -> {}".format(i,len(newboxes),fsp)
 			
 			# if we got nothing, we just leave the current results alone
@@ -343,7 +348,7 @@ class boxerByRef(QtCore.QObject):
 		gridlay.addWidget(boxerByRef.threshold,0,0)
 	
 	@staticmethod
-	def do_autobox(micrograph,goodrefs,badrefs,apix,nthreads,params,prog=None):
+	def do_autobox(micrograph,goodrefs,badrefs,bgrefs,apix,nthreads,params,prog=None):
 		# If parameters are provided via params (as if used from command-line) we use those values,
 		# if that fails, we check the GUI widgets, which were presumably created in this case
 		if len(goodrefs)<1 :
@@ -511,7 +516,7 @@ class boxerLocal(QtCore.QObject):
 		gridlay.addWidget(boxerLocal.threshold,0,0)
 	
 	@staticmethod
-	def do_autobox(micrograph,goodrefs,badrefs,apix,nthreads,params,prog=None):
+	def do_autobox(micrograph,goodrefs,badrefs,bgrefs,apix,nthreads,params,prog=None):
 		# If parameters are provided via params (as if used from command-line) we use those values,
 		# if that fails, we check the GUI widgets, which were presumably created in this case
 		if len(goodrefs)<1 :
@@ -713,8 +718,9 @@ class boxerConvNet(QtCore.QObject):
 			boxer=boxerConvNet.boxerwindow
 			goodrefs=boxer.goodrefs
 			badrefs=boxer.badrefs
+			bgrefs=boxer.bgrefs
 		elif args:
-			goodrefs, badrefs=args
+			goodrefs, badrefs, bgrefs =args
 		else:
 			print "Cannot find boxer window..."
 			
@@ -755,7 +761,7 @@ class boxerConvNet(QtCore.QObject):
 		data=[] ### particles in flattened numpy array
 		lbs=[]  ### labels in flattened numpy array
 		
-		for label, refs in enumerate([badrefs,goodrefs]):
+		for label, refs in enumerate([badrefs,goodrefs,bgrefs]):
 			nref=len(refs)
 			if nref<5:
 				print "Not enough references. Please box at least 5 good and 5 bad reference..."
@@ -853,7 +859,7 @@ class boxerConvNet(QtCore.QObject):
 			
 		
 	@staticmethod
-	def do_autobox(micrograph,goodrefs,badrefs,apix,nthreads,params,prog=None):
+	def do_autobox(micrograph,goodrefs,badrefs,bgrefs,apix,nthreads,params,prog=None):
 
 		
 		nnet_savename="nnet_pickptcls.hdf"
@@ -863,7 +869,7 @@ class boxerConvNet(QtCore.QObject):
 		
 		if os.path.isfile(nnet_savename)==False:
 			print "Cannot find saved network, retrain from scratch..."
-			do_training((goodrefs, badrefs))
+			do_training((goodrefs, badrefs, bgrefs))
 			
 		#else:
 		nx=int(micrograph["nx"]/shrinkfac)
@@ -990,7 +996,7 @@ class boxerConvNet(QtCore.QObject):
 		return boxes
 	
 	@staticmethod
-	def do_autobox_all(filenames,goodrefs,badrefs,apix,nthreads,params,prog=None):
+	def do_autobox_all(filenames,goodrefs,badrefs,bgrefs,apix,nthreads,params,prog=None):
 		jobs=[]
 		
 		#### get some parameters...
@@ -1068,7 +1074,7 @@ class boxerGauss(QtCore.QObject):
 		return
 	
 	@staticmethod
-	def do_autobox(micrograph,goodrefs,badrefs,apix,nthreads,params,prog=None):
+	def do_autobox(micrograph,goodrefs,badrefs,bgrefs,apix,nthreads,params,prog=None):
 		print "ERROR: Gauss autoboxer is not yet complete. Please use another method."
 		return
 	
@@ -1076,7 +1082,7 @@ aboxmodes = [ ("Local Search","auto_local",boxerLocal),
 	     ("by Ref","auto_ref",boxerByRef), 
 #	     ("Gauss","auto_gauss",boxerGauss),
 	     ("NeuralNet", "auto_convnet", boxerConvNet)]
-boxcolors = { "selected":(0.9,0.9,0.9), "manual":(0,0,0.7), "refgood":(0,0.8,0), "refbad":(0.8,0,0), "unknown":[.4,.4,.1], "auto_local":(.3,.1,.4), "auto_ref":(.1,.1,.4), "auto_gauss":(.4,.1,.4),  "auto_convnet":(.4,.1,.1)}
+boxcolors = { "selected":(0.9,0.9,0.9), "manual":(0,0,0.7), "refgood":(0,0.8,0), "refbad":(0.8,0,0), "refbg":(0.7,0.7,0), "unknown":[.4,.4,.1], "auto_local":(.3,.1,.4), "auto_ref":(.1,.1,.4), "auto_gauss":(.4,.1,.4),  "auto_convnet":(.4,.1,.1)}
 
 class GUIBoxer(QtGui.QWidget):
 	# Dictionary of autopickers
@@ -1103,6 +1109,8 @@ class GUIBoxer(QtGui.QWidget):
 		self.goodrefchg=False				# this is used to prevent rewriting the refs many times
 		self.badrefs=[]						# "bad" box references for this project. Used to reduce false-positives
 		self.badrefchg=False
+		self.bgrefs=[]						# background box references for this project. Used to reduce false-positives
+		self.bgrefchg=False
 		self.threads=threads
 
 		self.defaultvoltage=voltage
@@ -1127,6 +1135,10 @@ class GUIBoxer(QtGui.QWidget):
 		self.wbadrefs.setWindowTitle("Bad Box Refs")
 		self.wbadrefs.set_mouse_mode("App")
 
+		self.wbgrefs=EMImageMXWidget()
+		self.wbgrefs.setWindowTitle("Bad Box Refs")
+		self.wbgrefs.set_mouse_mode("App")
+
 
 		#self.wfft=EMImage2DWidget()
 		#self.wfft.setWindowTitle("e2evalimage - 2D FFT")
@@ -1146,6 +1158,7 @@ class GUIBoxer(QtGui.QWidget):
 #		self.wbadrefs.connect(self.wparticles,QtCore.SIGNAL("mx_image_selected"),self.badrefmousedown)
 #		self.wbadrefs.connect(self.wparticles,QtCore.SIGNAL("mx_mousedrag"),self.badrefmousedrag)
 		self.wbadrefs.connect(self.wbadrefs,QtCore.SIGNAL("mx_mouseup")  ,self.badrefmouseup)
+		self.wbgrefs.connect(self.wbadrefs,QtCore.SIGNAL("mx_mouseup")  ,self.bgrefmouseup)
 
 		# This object is itself a widget we need to set up
 		self.gbl = QtGui.QGridLayout(self)
@@ -1195,15 +1208,22 @@ class GUIBoxer(QtGui.QWidget):
 		self.hbl0.addWidget(self.bmgref)
 
 		self.bmbref=QtGui.QPushButton("Bad Refs")
-		self.bmbref.setToolTip("Identify regions which should not be selected as particles.")
+		self.bmbref.setToolTip("Identify contamination which should not be selected as particles.")
 		self.bmbref.setAutoExclusive(True)
 		self.bmbref.setCheckable(True)
 		self.hbl0.addWidget(self.bmbref)
+
+		self.bmbgref=QtGui.QPushButton("Bkgnd Refs")
+		self.bmbgref.setToolTip("Identify background density which should not be selected as particles.")
+		self.bmbgref.setAutoExclusive(True)
+		self.bmbgref.setCheckable(True)
+		self.hbl0.addWidget(self.bmbgref)
 
 		QtCore.QObject.connect(self.bmmanual,QtCore.SIGNAL("clicked(bool)"),self.setMouseManual)
 		QtCore.QObject.connect(self.bmdel,QtCore.SIGNAL("clicked(bool)"),self.setMouseDel)
 		QtCore.QObject.connect(self.bmgref,QtCore.SIGNAL("clicked(bool)"),self.setMouseGoodRef)
 		QtCore.QObject.connect(self.bmbref,QtCore.SIGNAL("clicked(bool)"),self.setMouseBadRef)
+		QtCore.QObject.connect(self.bmbgref,QtCore.SIGNAL("clicked(bool)"),self.setMouseBgRef)
 
 		self.bfilter=QtGui.QPushButton("Filter Disp.")
 		self.bfilter.setToolTip("Filter micrograph (display only)")
@@ -1316,6 +1336,11 @@ class GUIBoxer(QtGui.QWidget):
 			self.badrefs=EMData.read_images("info/boxrefsbad.hdf")
 		self.wbadrefs.set_data(self.badrefs)
 		if len(self.badrefs)>0 : self.wbadrefs.show()
+
+		if os.path.exists("info/boxrefsbg.hdf"):
+			self.bgrefs=EMData.read_images("info/boxrefsbg.hdf")
+		self.wbgrefs.set_data(self.bgrefs)
+		if len(self.bgrefs)>0 : self.wbgrefs.show()
 		
 #		self.wfft.show()
 #		self.wplot.show()
@@ -1324,6 +1349,7 @@ class GUIBoxer(QtGui.QWidget):
 		E2loadappwin("e2boxer21","particles",self.wparticles.qt_parent)
 		E2loadappwin("e2boxer21","refs",self.wrefs.qt_parent)
 		E2loadappwin("e2boxer21","badrefs",self.wbadrefs.qt_parent)
+		E2loadappwin("e2boxer21","bgrefs",self.wbgrefs.qt_parent)
 
 		self.newSet(0)
 
@@ -1339,6 +1365,9 @@ class GUIBoxer(QtGui.QWidget):
 	def setMouseBadRef(self,x):
 		self.mmode="refbad"
 	
+	def setMouseBgRef(self,x):
+		self.mmode="refbg"
+
 	def reftoolLoad3D(self,x):
 		fsp=str(QtGui.QFileDialog.getOpenFileName(self, "Select 3-D Volume"))
 		if fsp==None or len(fsp)<4 : return
@@ -1438,6 +1467,10 @@ class GUIBoxer(QtGui.QWidget):
 		self.badrefchg=True
 		self.wbadrefs.set_data(self.badrefs)
 
+		self.bgrefs=[]
+		self.bgrefchg=True
+		self.wbgrefs.set_data(self.bgrefs)
+
 	def boxClear(self,x):
 		r=QtGui.QMessageBox.question(None,"Are you sure ?","WARNING: this will erase all box locations in the current micrograph. Are you sure?",QtGui.QMessageBox.Yes|QtGui.QMessageBox.Cancel)
 		if r==QtGui.QMessageBox.Cancel : return
@@ -1464,7 +1497,7 @@ class GUIBoxer(QtGui.QWidget):
 		if boxsize2<4 : return
 
 		if self.mmode=="del" : return 		# del works with drag and up
-		elif self.mmode in ("refgood","refbad") :
+		elif self.mmode in ("refgood","refbad","refbg") :
 			self.tmpbox=m
 			try: color=self.boxcolors[self.mmode]
 			except: color=self.boxcolors["unknown"]
@@ -1497,7 +1530,7 @@ class GUIBoxer(QtGui.QWidget):
 			n=len(self.boxes)
 			self.boxes=[b for b in self.boxes if abs(b[0]-m[0])>boxsize2 or abs(b[1]-m[1])>boxsize2]
 			if len(self.boxes)<n : self.__updateBoxes()
-		elif self.mmode in ("refgood","refbad"):
+		elif self.mmode in ("refgood","refbad","refbg"):
 			if m==self.lastloc : return
 			b=self.tmpbox
 			self.tmpbox=(b[0]+m[0]-self.lastloc[0],b[1]+m[1]-self.lastloc[1],self.mmode)
@@ -1526,7 +1559,7 @@ class GUIBoxer(QtGui.QWidget):
 			n=len(self.boxes)
 			self.boxes=[b for b in self.boxes if abs(b[0]-m[0])>boxsize2 or abs(b[1]-m[1])>boxsize2]
 			if len(self.boxes)<n : self.__updateBoxes()
-		elif self.mmode in ("refgood","refbad"):
+		elif self.mmode in ("refgood","refbad","refbg"):
 			b=self.tmpbox
 			self.tmpbox=(b[0]+m[0]-self.lastloc[0],b[1]+m[1]-self.lastloc[1],self.mmode)
 			self.lastloc=m
@@ -1538,11 +1571,16 @@ class GUIBoxer(QtGui.QWidget):
 				self.goodrefchg=True
 				self.wrefs.set_data(self.goodrefs)
 				self.wrefs.show()
-			else :
+			elif self.mmode == "refbad" :
 				self.badrefs.append(boxim)
 				self.badrefchg=True
 				self.wbadrefs.set_data(self.badrefs)
 				self.wbadrefs.show()
+			else :
+				self.bgrefs.append(boxim)
+				self.bgrefchg=True
+				self.wbgrefs.set_data(self.bgrefs)
+				self.wbgrefs.show()
 		elif self.mmode=="manual":
 			if m==self.lastloc : return
 			b=self.boxes[self.curbox]
@@ -1595,7 +1633,7 @@ class GUIBoxer(QtGui.QWidget):
 	def refmouseup(self,event,m) :
 		if m==None:  ### clicking empty place..
 			return
-		print "refup"
+#		print "refup"
 		if self.mmode=="del" or event.modifiers()&Qt.ShiftModifier:
 			self.goodrefs.pop(m[0])
 			self.goodrefchg=True
@@ -1605,11 +1643,21 @@ class GUIBoxer(QtGui.QWidget):
 	def badrefmouseup(self,event,m) :
 		if m==None:  ### clicking empty place..
 			return
-		print "badrefup"
+#		print "badrefup"
 		if self.mmode=="del" or event.modifiers()&Qt.ShiftModifier:
 			self.badrefs.pop(m[0])
 			self.badrefchg=True
 			self.wbadrefs.set_data(self.badrefs)
+		return
+
+	def bgrefmouseup(self,event,m) :
+		if m==None:  ### clicking empty place..
+			return
+#		print "bgrefup"
+		if self.mmode=="del" or event.modifiers()&Qt.ShiftModifier:
+			self.bgrefs.pop(m[0])
+			self.bgrefchg=True
+			self.wbgrefs.set_data(self.bgrefs)
 		return
 
 	def newSet(self,val=None):
@@ -1659,6 +1707,12 @@ class GUIBoxer(QtGui.QWidget):
 			except: pass
 			for im in self.badrefs: im.write_image("info/boxrefsbad.hdf",-1)
 			self.badrefchg=False
+			
+		if self.bgrefchg :
+			try: os.unlink("info/boxrefsbg.hdf")
+			except: pass
+			for im in self.badrefs: im.write_image("info/boxrefsbg.hdf",-1)
+			self.bgrefchg=False
 			
 	def restore_boxes(self):
 		# first we restore the list of box locations
@@ -1755,7 +1809,7 @@ class GUIBoxer(QtGui.QWidget):
 		
 		print name," called"
 
-		boxes=cls.do_autobox(self.micrograph,self.goodrefs,self.badrefs,self.vbbapix.getValue(),self.vbthreads.getValue(),{})
+		boxes=cls.do_autobox(self.micrograph,self.goodrefs,self.badrefs,self.bgrefs,self.vbbapix.getValue(),self.vbthreads.getValue(),{})
 		
 		# if we got nothing, we just leave the current results alone
 		if len(boxes)==0 : return
@@ -1780,7 +1834,7 @@ class GUIBoxer(QtGui.QWidget):
 
 		#### let the autoboxer handle the parallelism if they can...
 		if hasattr(cls, "do_autobox_all"):
-			cls.do_autobox_all(self.filenames,self.goodrefs,self.badrefs,self.vbbapix.getValue(),self.vbthreads.getValue(),{},prog)
+			cls.do_autobox_all(self.filenames,self.goodrefs,self.badrefs,self.bgrefs,self.vbbapix.getValue(),self.vbthreads.getValue(),{},prog)
 			self.restore_boxes()
 			return
 		
@@ -1794,7 +1848,7 @@ class GUIBoxer(QtGui.QWidget):
 			
 			micrograph=load_micrograph(fsp)
 
-			newboxes=cls.do_autobox(micrograph,self.goodrefs,self.badrefs,self.vbbapix.getValue(),self.vbthreads.getValue(),{},prog)
+			newboxes=cls.do_autobox(micrograph,self.goodrefs,self.badrefs,self.bgrefs,self.vbbapix.getValue(),self.vbthreads.getValue(),{},prog)
 			print "{}) {} boxes -> {}".format(i,len(newboxes),fsp)
 			
 			# if we got nothing, we just leave the current results alone
@@ -1830,6 +1884,7 @@ class GUIBoxer(QtGui.QWidget):
 		E2saveappwin("e2boxer21","particles",self.wparticles.qt_parent)
 		E2saveappwin("e2boxer21","refs",self.wrefs.qt_parent)
 		E2saveappwin("e2boxer21","badrefs",self.wbadrefs.qt_parent)
+		E2saveappwin("e2boxer21","bgrefs",self.wbgrefs.qt_parent)
 
 		#self.writeCurParm()
 		event.accept()
