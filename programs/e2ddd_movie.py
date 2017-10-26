@@ -77,7 +77,6 @@ def main():
 	#parser.add_argument("--falcon", default=False, help="Use this flag to optimize alignment for falcon detector data.",action="store_true",guitype='boolbox', row=5, col=1, rowspan=1, colspan=1)
 	#parser.add_argument("--binning", type=int,help="Bin images by this factor by resampling in Fourier space. Default (-1) will choose based on input box size.",default=-1)
 
-
 	parser.add_header(name="orblock3", help='Just a visual separation', title="Output: ", row=6, col=0, rowspan=1, colspan=3, mode="align")
 	parser.add_argument("--goodali", default=False, help="Average of good aligned frames.",action="store_true", guitype='boolbox', row=7, col=0, rowspan=1, colspan=1, mode='align[True]')
 	parser.add_argument("--bestali", default=False, help="Average of best aligned frames.",action="store_true", guitype='boolbox', row=7, col=1, rowspan=1, colspan=1, mode='align')
@@ -243,7 +242,6 @@ def main():
 
 def process_movie(fsp,dark,gain,first,flast,step,options):
 		outname=fsp.rsplit(".",1)[0]+"_proc.hdf"		# always output to an HDF file. Output contents vary with options
-		alioutname="micrographs/"+base_name(fsp)
 
 		if options.simpleavg: savgr = Averagers.get("mean")
 
@@ -438,17 +436,10 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			A = np.asmatrix(A)
 			b = np.asmatrix(b)
 
-			# sys.exit(1)
-
 			# remove all zero rows from A and corresponding entries in b
 			z = np.argwhere(np.all(A==0,axis=1))
 			A = np.delete(A,z,axis=0)
 			b = np.delete(b,z,axis=0)
-
-			# if options.debug:
-			# 	import matplotlib.pyplot as plt
-			# 	plt.imshow(A,cmap=plt.cm.viridis)
-			# 	plt.show()
 
 			regr = linear_model.Ridge(alpha=options.optalpha,normalize=True,fit_intercept=True)
 			regr.fit(A,b)
@@ -475,9 +466,6 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			runtime = time()-start
 			print("Runtime: {:.1f} s".format(runtime))
 
-			# round for integer only shifting
-			#locs=[int(floor(i+.5)) for i in locs]
-
 			if options.plot:
 				import matplotlib.pyplot as plt
 				fig,ax = plt.subplots(1,3,figsize=(12,3))
@@ -493,40 +481,33 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 					except: pass
 				ax[2].set_title("CCF Peak Coordinates")
 
-				# if options.debug:
-				# 	fig2,ax2 = plt.subplots(1,3,figsize=(12,36))
-				# 	a = ax2[0].imshow(A)
-				# 	plt.colorbar(a)
-				# 	ax2[1].plot(bx)
-				# 	ax2[2].plot(by)
-				# 	plt.show()
-
 			if options.noali:
-				#print("{:1.1f}\nWrite unaligned".format(time()-t0))
-				#t0=time()
-				#write out the unaligned average movie
+				mgdirname = "micrographs_noali"
+				try: os.mkdir(mgdirname)
+				except: pass
+				alioutname="{}/{}.hdf".format(mgdirname,base_name(fsp))
 				out=qsum(outim)
-				out.write_image("{}__noali.hdf".format(alioutname),0)
+				#write out the unaligned average movie
+				out.write_image(alioutname,0)
 
 			print("{:1.1f} s\nShift images".format(time()-t0))
-			#t0=time()
-			#write individual aligned frames
 			for i,im in enumerate(outim):
 				dx = int(floor(locs[i*2]+.5))
 				dy = int(floor(locs[i*2+1]+.5))
 				im.translate(dx,dy,0)
-			#	im.write_image("a_all_ali.hdf",i)
 
 			if options.normaxes:
-				for f in outim: f.process_inplace("filter.xyaxes0",{"neighbor":1})
+				for f in outim: 
+					f.process_inplace("filter.xyaxes0",{"neighbor":1})
 
 			if options.allali:
+				mgdirname = "micrographs_allali"
+				try: os.mkdir(mgdirname)
+				except: pass
+				alioutname="{}/{}.hdf".format(mgdirname,base_name(fsp))
 				out=qsum(outim)
-				#if options.debug: fn = "{}__allali_{}.hdf".format(alioutname,options.round)
-				out.write_image("{}__allali.hdf".format(alioutname),0)
+				out.write_image(alioutname,0)
 
-			#print("{:1.1f}\nSubsets".format(time()-t0))
-			#t0=time()
 			# write translations and qualities
 			db=js_open_dict(info_name(fsp))
 			db["movieali_trans"]=locs
@@ -551,35 +532,47 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 				out.write("{}\t{}\t{}\t{}\t{}\t{}\n".format(i,dx,dy,dr,reldr,quals[i]))
 
 			if options.goodali:
+				mgdirname = "micrographs_goodali"
+				try: os.mkdir(mgdirname)
+				except: pass
+				alioutname="{}/{}.hdf".format(mgdirname,base_name(fsp))
 				thr=(max(quals[1:])-min(quals))*0.4+min(quals)	# max correlation cutoff for inclusion
 				best=[im for i,im in enumerate(outim) if quals[i]>thr]
 				out=qsum(best)
 				print("Keeping {}/{} frames".format(len(best),len(outim)))
-				#if options.debug: out.write_image("{}__goodali_{}.hdf".format(alioutname,options.round),0)
-				out.write_image("{}__goodali.hdf".format(alioutname),0)
+				out.write_image(alioutname,0)
 
 			if options.bestali:
+				mgdirname = "micrographs_bestali"
+				try: os.mkdir(mgdirname)
+				except: pass
+				alioutname="{}/{}.hdf".format(mgdirname,base_name(fsp))
 				thr=(max(quals[1:])-min(quals))*0.6+min(quals)	# max correlation cutoff for inclusion
 				best=[im for i,im in enumerate(outim) if quals[i]>thr]
 				out=qsum(best)
 				print("Keeping {}/{} frames".format(len(best),len(outim)))
-				#if options.debug: out.write_image("{}__bestali_{}.hdf".format(alioutname,options.round),0)
-				out.write_image("{}__bestali.hdf".format(alioutname),0)
+				out.write_image(alioutname,0)
 
 			if options.ali4to14:
+				mgdirname = "micrographs_4-14"
+				try: os.mkdir(mgdirname)
+				except: pass
+				alioutname="{}/{}.hdf".format(mgdirname,base_name(fsp))
 				# skip the first 4 frames then keep 10
 				out=qsum(outim[4:14])
-				#if options.debug: out.write_image("{}__4-14_{}.hdf".format(alioutname,options.round),0)
-				out.write_image("{}__4-14.hdf".format(alioutname),0)
+				out.write_image(alioutname,0)
 
 			if len(options.rangeali)>0:
 				try: rng=[int(i) for i in options.rangeali.split("-")]
 				except:
 					print "Error: please specify --rangeali as X-Y where X and Y are inclusive starting with 0"
 					sys.exit(1)
+				mgdirname = "micrographs_{}-{}".format(rng[0],rng[1])
+				try: os.mkdir(mgdirname)
+				except: pass
+				alioutname="{}/{}.hdf".format(mgdirname,base_name(fsp))
 				out=qsum(outim[rng[0]:rng[1]+1])
-				#if options.debug: out.write_image("{}__{}-{}_{}.hdf".format(alioutname,rng[0],rng[1],options.round),0)
-				out.write_image("{}__{}-{}.hdf".format(alioutname,rng[0],rng[1]),0)
+				out.write_image(alioutname,0)
 
 			#print "{:1.1f}\nDone".format(time()-t0)
 			print("Done")
@@ -607,14 +600,8 @@ def calc_ccf_wrapper(options,N,box,step,dataa,datab,out,locs,ii,fsp):
 	yy = np.linspace(0,box,box)
 	xx,yy = np.meshgrid(xx,yy)
 
-#	csum.process_inplace("normalize.edgemean")
-
-	ncc = csum.numpy().copy()
-
 	popt,ccpeakval = bimodal_peak_model(options,csum)
 	if popt == None:
-		#if options.debug: print("Optimal parameters not found")
-		#cc_model = correlation_peak_model((xx,yy),popt[0],popt[1],popt[2],popt[3]).reshape(box,box)
 		csum = from_numpy(np.zeros((box,box)))#.process("normalize.edgemean")
 		locs.put((N,[]))
 		out.put((N,csum))
@@ -622,6 +609,7 @@ def calc_ccf_wrapper(options,N,box,step,dataa,datab,out,locs,ii,fsp):
 		#if ii>=0: csum.process("normalize.edgemean").write_image("ccf_models.hdf",ii)
 		if options.phaseplate:
 			locs.put((N,[popt[0],popt[1]]))#,popt[2],popt[3],ccpeakval,csum["maximum"]]))
+			ncc = csum.numpy().copy()
 			pcsum = neighbormean_origin(ncc)
 			out.put((N,from_numpy(pcsum)))
 		else:
