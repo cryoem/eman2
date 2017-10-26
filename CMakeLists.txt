@@ -313,6 +313,9 @@ set(test_methods
 		test_imageio.py:TestHdfIO.test_write_image
 		test_imageio.py:TestHdfIO.test_read_write_hdf
 		test_imageio.py:TestPNGIO.test_write_png
+	)
+
+set(test_methods-non-win
 		test_aligner.py:TestAligner
 		test_averager.py:TestAverager
 		test_cmp.py:TestCmp
@@ -346,6 +349,10 @@ set(test_methods
 		test_vec.py:TestVec
 		test_xydata.py:TestXYData
 		)
+
+if(NOT WIN32)
+	set(test_methods ${test_methods} ${test_methods-non-win})
+endif()
 
 find_package(Nosetests)
 foreach(t ${test_methods})
