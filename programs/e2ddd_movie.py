@@ -117,8 +117,8 @@ def main():
 		print(usage)
 		parser.error("Specify input DDD stack")
 
-	try: os.mkdir("micrographs")
-	except: pass
+	# try: os.mkdir("micrographs")
+	# except: pass
 
 	pid=E2init(sys.argv)
 
