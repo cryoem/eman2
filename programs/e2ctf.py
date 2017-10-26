@@ -616,7 +616,7 @@ def pspec_and_ctf_fit(options,debug=False):
 						dfhint=None
 						print "No existing defocus to start with"
 			else: dfhint=(options.defocusmin,options.defocusmax)
-			ctf=ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,options.voltage,max(options.cs,0.01),options.ac,apix,bgadj=not options.nosmooth,autohp=options.autohp,dfhint=dfhint,highdensity=options.highdensity,verbose=options.verbose)
+			ctf=ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,options.voltage,max(options.cs,0.01),options.ac,options.phaseplate,apix,bgadj=not options.nosmooth,autohp=options.autohp,dfhint=dfhint,highdensity=options.highdensity,verbose=options.verbose)
 			if options.astigmatism and not options.curdefocusfix : ctf_fit_stig(im_2d,bg_2d,ctf,verbose=1)
 			elif options.astigmatism:
 				ctf.dfdiff=curdfdiff
@@ -1804,7 +1804,8 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,phaseplate,apix,bgad
 				#curve=[im[i]-bg[i] for i in xrange(len(im_1d))]
 
 				sim=array(Util.windowdot(curve,ccurv,wdw,1))
-				qual=sim[int(ctf.zero(0)/ds):int(ctf.zero(5)/ds)].mean()
+				if phaseplate :qual=sim[int(ctf.zero(0)/(ds*2.0)):int(ctf.zero(8)/ds)].mean()
+				else : qual=sim[int(ctf.zero(0)/ds):int(ctf.zero(5)/ds)].mean()
 				if qual>best[0]: best=(qual,df,phase)
 	#			print df,sum(sim),qual
 
@@ -2403,6 +2404,7 @@ class GUIctf(QtGui.QWidget):
 		self.refit = QtGui.QPushButton("Refit")
 		self.show2dfit = CheckBox(label="Show 2D Sim:",value=False)
 		self.showzerorings = CheckBox(label="Show Zeroes:",value=False)
+		self.usephaseplate = CheckBox(label="Phaseplate:",value=False)
 		self.output = QtGui.QPushButton("Output")
 		self.hbl_buttons.addWidget(self.refit)
 		self.hbl_buttons.addWidget(self.saveparms)
@@ -2410,6 +2412,7 @@ class GUIctf(QtGui.QWidget):
 		self.hbl_buttons2 = QtGui.QHBoxLayout()
 		self.hbl_buttons2.addWidget(self.show2dfit)
 		self.hbl_buttons2.addWidget(self.showzerorings)
+		self.hbl_buttons2.addWidget(self.usephaseplate)
 		self.hbl_buttons2.addWidget(self.output)
 		self.vbl.addLayout(self.hbl_buttons)
 		self.vbl.addLayout(self.hbl_buttons2)
@@ -2510,7 +2513,7 @@ class GUIctf(QtGui.QWidget):
 
 		dfdiff=self.sdfdiff.value
 		dfang=self.sdfang.value
-		ctf=ctf_fit(tmp[2],tmp[3],tmp[7],tmp[4],tmp[5],tmp[1].voltage,tmp[1].cs,tmp[1].ampcont,tmp[1].apix,bgadj=not self.nosmooth,autohp=self.autohp,dfhint=self.sdefocus.value,highdensity=self.highdensity)
+		ctf=ctf_fit(tmp[2],tmp[3],tmp[7],tmp[4],tmp[5],tmp[1].voltage,tmp[1].cs,tmp[1].ampcont,int(self.usephaseplate.getValue()),tmp[1].apix,bgadj=not self.nosmooth,autohp=self.autohp,dfhint=self.sdefocus.value,highdensity=self.highdensity)
 		ctf.dfdiff=dfdiff
 		ctf.dfang=dfang
 		if ctf.dfdiff!=0 :
