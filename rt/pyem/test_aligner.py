@@ -139,6 +139,8 @@ class TestAligner(unittest.TestCase):
 					dif.process_inplace("math.absvalue")
 					self.failIf(dif["mean"] > 0.01)
 				
+	test_RotationalAligner.broken = True
+	
 	def no_test_RotatePrecenterAligner(self):
 		"""test RotatePrecenterAligner ......................"""
 
@@ -299,7 +301,7 @@ class TestAligner(unittest.TestCase):
 					if result > 360: result = result-360
 					self.failIf( result > 5 ) # 5 seems accurate enough
 					self.failIf( t.get_mirror() != mirror)
-	
+
 	def test_RotateTranslateFlipAligner(self):
 		"""test RotateTranslateFlip Aligner ................."""
 		e = EMData()

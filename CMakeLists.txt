@@ -313,14 +313,58 @@ set(test_methods
 		test_imageio.py:TestHdfIO.test_write_image
 		test_imageio.py:TestHdfIO.test_read_write_hdf
 		test_imageio.py:TestPNGIO.test_write_png
+	)
+
+set(test_methods-non-win
+		test_aligner.py:TestAligner
+		test_averager.py:TestAverager
+		test_cmp.py:TestCmp
+		test_emdata.py:TestEMData
+		test_imageio.py:ImageIOTester
+		test_imageio.py:TestEMIO
+		test_imageio.py:TestPifIO
+		test_imageio.py:TestFitsIO
+		test_imageio.py:TestIcosIO
+		test_imageio.py:TestPNGIO
+		test_imageio.py:TestVTKIO
+		test_imageio.py:TestXPLORIO
+		test_imageio.py:TestPGMIO
+		test_imageio.py:TestSpiderIO
+		test_imageio.py:TestDF3IO
+		test_imageio.py:TestHdfIO
+		test_imageio.py:TestMrcIO
+		test_imageio.py:TestImagicIO
+		test_imageio.py:TestImageIO
+		test_misc.py:TestPixel
+		test_misc.py:TestBoost
+		test_misc.py:TestException
+		test_misc.py:TestRegion
+		test_processor.py:TestProcessor
+		test_reconstructor.py:TestReconstructor
+		test_transform.py:TestTransform
+		test_transform.py:TestSymmetry
+		test_typeconverter.py:TestTypeConverter
+		test_utils.py:TestUtils
+		test_utils.py:TestEMUtils
+		test_vec.py:TestVec
+		test_xydata.py:TestXYData
 		)
+
+if(NOT WIN32)
+	set(test_methods ${test_methods} ${test_methods-non-win})
+endif()
 
 find_package(Nosetests)
 foreach(t ${test_methods})
 	add_test(NAME ${t}
-			COMMAND ${NOSETESTS_EXECUTABLE} ${CMAKE_INSTALL_PREFIX}/test/rt/pyem/${t}
+			COMMAND ${NOSETESTS_EXECUTABLE} -v -m "^test_*" -a \!broken
+					${CMAKE_INSTALL_PREFIX}/test/rt/pyem/${t}
 			)
 endforeach()
+
+add_custom_target(test-verbose-broken
+		COMMAND ${NOSETESTS_EXECUTABLE} -v -m "^test_*" -a broken ${CMAKE_INSTALL_PREFIX}/test/rt/pyem/*
+		)
 
 file(READ ${CMAKE_SOURCE_DIR}/tests/test_imports.py py_imports_list)
 STRING(REGEX REPLACE "\n" ";" py_imports_list "${py_imports_list}")
@@ -339,44 +383,3 @@ endforeach()
 add_test(NAME import-inners
 		 COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/test_imports_inner.py
 		 )
-
-# --------------------------------------------------------------------
-#set the list of unit test to run
-#
-SET (TESTS
-	test_vec
-	test_utils
-	test_typeconverter
-	test_transform
-	test_misc
-	test_imageio
-	test_emdata
-	test_processor
-	test_cmp
-	test_aligner
-	test_averager
-	)
-
-#add the custom commands for each unit test program
-#
-FOREACH(TEST ${TESTS})
-
-	ADD_CUSTOM_COMMAND(
-        OUTPUT ${TEST}.PRINT_SPACE
-        COMMAND ${CMAKE_COMMAND} ARGS -E echo ""
-	)
-
-	#this is the trick to make the target run every time, DoUnitTest suppose is a file never been built
-	#
-	ADD_CUSTOM_COMMAND(
-        OUTPUT ${TEST}.DoUnitTest
-		COMMAND ${CMAKE_COMMAND} ARGS -E time ${CMAKE_INSTALL_PREFIX}/test/rt/${TEST}.py
-		DEPENDS	${TEST}.PRINT_SPACE
-	)
-
-	#build a list of all the results
-	SET( TEST_RESULTS ${TEST_RESULTS}
-		${TEST}.DoUnitTest
-	)
-
-ENDFOREACH()
