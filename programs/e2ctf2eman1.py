@@ -136,7 +136,7 @@ models are not completely compatible."""
 			if options.debug :
 				print("  Calculating defocus...")
 			e1ctf.defocus = getdefocus( f, e1ctf, ps, -1. * options.dfmin, -1. * options.dfmax )
-		elif options.dfval <> 0. :
+		elif options.dfval != 0. :
 			if options.debug :
 				print("  Setting defocus...")
 			e1ctf.defocus = -1. * options.dfval

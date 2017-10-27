@@ -63,11 +63,11 @@ def main():
 	logid=E2init(sys.argv)
 	
 	eg=[]
-	if options.edgefile<>None:
+	if options.edgefile!=None:
 		edge=read_fixed(options.edgefile)
 		eg.append(edge[0][0])
 		for i in range(1,len(edge)):
-			if edge[i][0]<>edge[i-1][1]:
+			if edge[i][0]!=edge[i-1][1]:
 				eg.append(edge[i-1][1])
 				eg.append(edge[i][0])
 		eg.append(edge[len(edge)-1][1])
@@ -174,7 +174,7 @@ def main():
 		#hlx.extend([0,0,h[0],h[1],h[2],h[3],h[4],h[5]])
 	
 	print(hlx)
-	if options.mapwohelix<>None:
+	if options.mapwohelix!=None:
 		atoms.remove_helix_from_map(mrc,hlx)
 		mrc.write_image(options.mapwohelix)
 	E2end(logid)

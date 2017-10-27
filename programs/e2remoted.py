@@ -114,7 +114,7 @@ class daemon:
 		
 		# This file should be readable by the user only, and contains
 		# "magic" string for security, port number, and PID
-		out=file(path=e2gethome()+"/.eman2/remoted.txt","w")
+		out=file(e2gethome()+"/.eman2/remoted.txt","w")
 		out.write("%s\n%d\n%d\n"%(self.magic,self.listen_port,os.getpid()))
 		out.close()
     
