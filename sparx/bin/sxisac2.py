@@ -1476,7 +1476,7 @@ def main(args):
 			output_text = """
 			Since for processing purposes isac changes the image dimensions,
 			adjustment of pixel size needs to be made in subsequent steps, (e.g.
-			running sxviper.py). The shrink ratio for this particular isac run is
+			running sxviper.py). The shrink ratio and radius used for this particular isac run is
 			--------
 			%.5f
 			%.5f
