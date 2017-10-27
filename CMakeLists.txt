@@ -80,9 +80,9 @@ if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" )
 	set(SP_DIR $ENV{SP_DIR})
 else()
 	if(NOT WIN32)
-		set(py_sp_dir_command "import site; print site.getsitepackages()[0]")
+		set(py_sp_dir_command "import site; print(site.getsitepackages()[0])")
 	else()
-		set(py_sp_dir_command "import site; print site.getsitepackages()[1]")
+		set(py_sp_dir_command "import site; print(site.getsitepackages()[1])")
 	endif()
 	execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "${py_sp_dir_command}"
 			OUTPUT_VARIABLE SP_DIR
@@ -383,3 +383,14 @@ endforeach()
 add_test(NAME import-inners
 		 COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/test_imports_inner.py
 		 )
+
+if(NOT WIN32)
+	add_custom_target(test-progs
+					  COMMAND ${CMAKE_COMMAND} -P cmake_install.cmake
+					  COMMAND ${CMAKE_CTEST_COMMAND} -V -C Release -R progs
+					  )
+	
+	add_test(NAME progs
+			 COMMAND bash ${CMAKE_SOURCE_DIR}/tests/run_prog_tests.sh
+			 )
+endif()
