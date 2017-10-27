@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # Muyuan Chen 2017-10
+from __future__ import print_function
 from EMAN2 import *
 import numpy as np
 import threading
@@ -36,7 +37,7 @@ def main():
 	E2end(logid)
 	
 def run(cmd):
-	print cmd
+	print(cmd)
 	launch_childprocess(cmd)
 	
 def classify_on(fname):
@@ -67,7 +68,7 @@ def classify_on(fname):
 			ar=ptl.numpy().copy()
 			data.append(ar.flatten())
 		data=np.array(data, dtype=theano.config.floatX)
-		print data.shape, ib
+		print(data.shape, ib)
 	
 		div=np.mean(np.std(data,axis=1))
 		data/=div#np.std(data)#*2.
@@ -105,7 +106,7 @@ def classify_on(fname):
 		#print i, ln
 		lst.write(-1, ln[0], ln[1])
 	lst=None
-	print lname
+	print(lname)
 	lstin=None
 
 def do_training(args=None):
@@ -119,7 +120,7 @@ def do_training(args=None):
 	sz=64
 	shrinkfac=float(bxsz)/float(sz)
 	
-	print "Setting up model ..."
+	print("Setting up model ...")
 	rng = np.random.RandomState(123)
 	nkernel=[20,20,1]
 	ksize=[15,15,15]
@@ -140,7 +141,7 @@ def do_training(args=None):
 	#convnet.sumout=T.minimum(1,convnet.sumout)
 	
 	
-	print "Pre-processing particles..."
+	print("Pre-processing particles...")
 	#### here we shrink the particles so they are 64x64
 	#### and duplicate so there are more than 500 good and 500 bad particles
 	
@@ -152,7 +153,7 @@ def do_training(args=None):
 	for label, refs in enumerate([badrefs,goodrefs]):
 		nref=len(refs)
 		if nref<5:
-			print "Not enough references. Please box at least 5 good and 5 bad reference..."
+			print("Not enough references. Please box at least 5 good and 5 bad reference...")
 			return []
 		ncopy=nref_target/nref + 1
 		
@@ -198,7 +199,7 @@ def do_training(args=None):
 	#print lbs.astype(theano.config.floatX)
 	#print gaus.shape, data.shape, label_np.shape
 	
-	print "Now Training..."
+	print("Now Training...")
 	classify=get_classify_func(convnet, train_set_x,labels,batch_size)
 	learning_rate=0.005
 	weightdecay=1e-5
@@ -213,8 +214,8 @@ def do_training(args=None):
 			c.append(err)
 
 		learning_rate*=.96
-		print 'Training epoch %d, cost ' % ( epoch),
-		print np.mean(c),", learning rate",learning_rate
+		print('Training epoch %d, cost ' % ( epoch), end=' ')
+		print(np.mean(c),", learning rate",learning_rate)
 
 	
 	save_model(convnet, nnet_savename)

@@ -865,9 +865,9 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=N
 				try:
 					out.write_image(phaseflip,i)
 				except:
-					print((phaseflip,i))
+					print(phaseflip,i)
 					x = EMData(phaseflip,i,False)
-					print((x.get_attr_dict()))
+					print(x.get_attr_dict())
 					display(x)
 			if phaseproc!=None:
 				out2=out.copy()				# processor may or may not be in Fourier space
