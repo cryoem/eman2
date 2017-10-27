@@ -61,7 +61,7 @@ def main():
 	if options.allinfo:
 		args=["info/{}".format(i) for i in os.listdir("info") if ".json" in i]
 
-	if options.verbose>1: print len(args)," json files to process"
+	if options.verbose>1: print(len(args)," json files to process")
 
 	if len(args)<1 :
 		parser.error("At least one lst file required")
@@ -90,14 +90,14 @@ def main():
 					out.write("{}\t# {}\n".format(v,fsp[:-5]))
 			
 			js.close()
-		if options.verbose: print "{} found in {} JSON files".format(options.extractkey,nf)
+		if options.verbose: print("{} found in {} JSON files".format(options.extractkey,nf))
 					
 	if options.removekey:
 		jsb=js_open_dict("backup_removed.json")
 		nf=0
 		for fsp in args:
 			js=js_open_dict(fsp)
-			if js.has_key(options.removekey):
+			if options.removekey in js:
 				nf+=1
 				v=js[options.removekey]
 				jsb[fsp]=v
@@ -105,7 +105,7 @@ def main():
 			js.close()
 
 		jsb.close()
-		print "Removed {} from {} files. Backup stored in backup_removed.json".format(options.removekey,nf)
+		print("Removed {} from {} files. Backup stored in backup_removed.json".format(options.removekey,nf))
 			
 
 

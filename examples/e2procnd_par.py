@@ -57,7 +57,7 @@ def main():
 		except: 
 			print("Cannot remove {}".format(fm))
 			pass
-	print "Done"
+	print("Done")
 	E2end(logid)
 	
 def run(cmd):
