@@ -95,14 +95,15 @@ NOTE: This program should be run from the project directory, not from within the
 	parser.add_argument("--minqual",type=int,help="Files with a quality value lower than specified will be skipped",default=0,guitype='intbox', row=2, col=1, mode='autofit,tuning,genoutp,gensf')
 	parser.add_argument("--chunk",type=str,help="<chunksize>,<nchunk>. Will process files in groups of chunksize, and process the <nchunk>th group. eg - 100,3 will read files 300-399 ",default=None,guitype='strbox',row=1,col=1, mode='autofit,tuning,genoutp,gensf')
 	parser.add_argument("--gui",action="store_true",help="Start the GUI for interactive fitting",default=False, guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode="tuning[True]")
-	parser.add_argument("--autofit",action="store_true",help="Runs automated CTF fitting on the input images",default=False, guitype='boolbox', row=8, col=0, rowspan=1, colspan=1, mode='autofit[True]')
+	parser.add_argument("--autofit",action="store_true",help="Runs automated CTF fitting on the input images",default=False, guitype='boolbox', row=10, col=0, rowspan=1, colspan=1, mode='autofit[True]')
 	parser.add_argument("--wholeimage",action="store_true",help="Display an additional curve using the whole micrograph, not just particles.",default=False,guitype='boolbox',row=8,col=2, mode='autofit')
 	parser.add_argument("--highdensity",action="store_true",help="If particles are very close together, this will interfere with SSNR estimation. If set uses an alternative strategy, but may over-estimate SSNR.",default=False, guitype='boolbox', row=9, col=2, rowspan=1, colspan=1, mode='autofit[False]')
 	parser.add_argument("--zerook",action="store_true",help="Normally particles with zero value on the edge are considered to be bad. This overrides that behavior, primarily for simulated data.",default=False, guitype='boolbox', row=7, col=2, rowspan=1, colspan=1, mode='autofit')
-	parser.add_argument("--astigmatism",action="store_true",help="Includes astigmatism in automatic fitting",default=False, guitype='boolbox', row=8, col=1, rowspan=1, colspan=1, mode='autofit[False]')
+	parser.add_argument("--astigmatism",action="store_true",help="Includes astigmatism in automatic fitting",default=False, guitype='boolbox', row=10, col=1, rowspan=1, colspan=1, mode='autofit[False]')
+	parser.add_argument("--phaseplate",action="store_true",help="Include phase/amplitude contrast in CTF estimation. For use with hole-less phase plates.",default=False, guitype='boolbox', row=10, col=2, rowspan=1, colspan=1, mode='autofit[False]')
 	parser.add_argument("--curdefocushint",action="store_true",help="Rather than doing the defocus from scratch, use existing values in the project as a starting point",default=False, guitype='boolbox', row=9, col=0, rowspan=1, colspan=1, mode='autofit[True]')
 	parser.add_argument("--curdefocusfix",action="store_true",help="Fixes the defocus at the current determined value (if any) (+-.001 um), but recomputes SSNR, etc.",default=False, guitype='boolbox', row=9, col=1, rowspan=1, colspan=1, mode='autofit[False]')
-	parser.add_argument("--useframedf",action="store_true",default=False,help="Use defocus/astig from whole frame even if particle-based value is present")
+	parser.add_argument("--useframedf",action="store_true",default=False,help="Use defocus/astig from whole frame even if particle-based value is present", guitype='boolbox', row=8, col=0, rowspan=1, colspan=1, mode='autofit[False]')
 	parser.add_argument("--bgmask",type=int,help="Background is computed using a soft mask of the center/edge of each particle with the specified radius. Default radius is boxsize/2.6.",default=0)
 	parser.add_argument("--fixnegbg",action="store_true",help="Will perform a final background correction to avoid slight negative values near zeroes")
 	parser.add_argument("--computesf",action="store_true",help="Will determine the structure factor*envelope for the aggregate set of images", default=False, nosharedb=True, guitype='boolbox', row=9, col=0, rowspan=1, colspan=1, mode="gensf[True]")
@@ -134,9 +135,9 @@ NOTE: This program should be run from the project directory, not from within the
 	parser.add_argument("--storeparm",action="store_true",help="Output files will include CTF info. CTF parameters are used from the database, rather than values that may be present in the input image header. Critical to use this when generating output !",default=False,guitype='boolbox', row=3, col=2, rowspan=1, colspan=1, mode='genoutp[True]')
 	parser.add_argument("--oversamp",type=int,help="Oversampling factor",default=1, guitype='intbox', row=3, col=0, rowspan=1, colspan=2, mode='autofit[2]')
 	parser.add_argument("--classify",type=int,help="Highly experimental ! Subclassify particles (hopefully by defocus) into n groups.",default=0)
-	parser.add_argument("--sf",type=str,help="The name of a file containing a structure factor curve. Specify 'none' to use the built in generic structure factor. Default=auto",default="auto",guitype='strbox',nosharedb=True,returnNone=True,row=14,col=1,rowspan=1,colspan=1, mode='autofit,tuning')
+	parser.add_argument("--sf",type=str,help="The name of a file containing a structure factor curve. Specify 'none' to use the built in generic structure factor. Default=auto",default="auto",guitype='strbox',nosharedb=True,returnNone=True,row=16,col=1,rowspan=1,colspan=1, mode='autofit,tuning')
 	parser.add_argument("--parallel", default=None, help="parallelism argument. This program supports only thread:<n>")
-	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful",guitype='intbox', row=14, col=2, rowspan=1, colspan=1, mode='autofit[1]')
+	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful",guitype='intbox', row=16, col=2, rowspan=1, colspan=1, mode='autofit[1]')
 	parser.add_argument("--debug",action="store_true",default=False)
 	parser.add_argument("--dbds",type=str,default=None,help="Obsolete option for old e2workflow. Present only to provide warning messages.")
 	parser.add_argument("--source_image",type=str,default=None,help="Filters particles only with matching ptcl_source_image parameters in the header")
@@ -616,7 +617,7 @@ def pspec_and_ctf_fit(options,debug=False):
 						dfhint=None
 						print("No existing defocus to start with")
 			else: dfhint=(options.defocusmin,options.defocusmax)
-			ctf=ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,options.voltage,max(options.cs,0.01),options.ac,apix,bgadj=not options.nosmooth,autohp=options.autohp,dfhint=dfhint,highdensity=options.highdensity,verbose=options.verbose)
+			ctf=ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,options.voltage,max(options.cs,0.01),options.ac,options.phaseplate,apix,bgadj=not options.nosmooth,autohp=options.autohp,dfhint=dfhint,highdensity=options.highdensity,verbose=options.verbose)
 			if options.astigmatism and not options.curdefocusfix : ctf_fit_stig(im_2d,bg_2d,ctf,verbose=1)
 			elif options.astigmatism:
 				ctf.dfdiff=curdfdiff
@@ -1748,7 +1749,7 @@ def ctf_stig_cmp(parms,data):
 #	print parms,ctf.defocus,ctf.dfdiff,bgcp.cmp("dot",bgsub,{"normalize":1}),penalty
 	return bgcp.cmp("dot",bgsub,{"normalize":1})+penalty
 
-def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhint=None,highdensity=False,verbose=1):
+def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,phaseplate,apix,bgadj=0,autohp=False,dfhint=None,highdensity=False,verbose=1):
 	"""Determines CTF parameters given power spectra produced by powspec_with_bg()
 	The bgadj option will result in adjusting the bg_1d curve to better match the zeroes
 	of the CTF (in which case bg_1d is modified in place)."""
@@ -1763,7 +1764,7 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=
 
 	ys=im_2d.get_ysize()
 	ds=1.0/(apix*ys)
-	if ac<0 or ac>100 :
+	if ac<-200 or ac>200 :
 		print("Invalid %%AC, defaulting to 10")
 		ac=10.0
 
@@ -1777,34 +1778,44 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=
 	elif len(curve)<256 : wdw=8
 	else : wdw=10
 
-	best=(-1,1.0)
+	best=(-1,1.0,25.0)
 
 	# we might get better results if we readjusted the bg correction after each try, but it's reaaaaly slow
 	# so we compute an unadjusted bg one time, then do one local correction once the defocus is close
 	im=im_1d
 	bg=ctf.compute_1d_fromimage(len(ctf.background)*2, ds, bg_2d)
+	
+	# why change this to degrees, and use integers ... no good reason
+	if phaseplate :
+		phaserange=(int(ctf.get_phase()*180.0/pi),156)
+	else:
+		phaserange=(int(ctf.get_phase()*180.0),int(ctf.get_phase()*180.0)+1)
 
 	for rng in (0,1):
 		# second pass is +-0.1 unless the original hint range was narrower
 		if rng==1: dfhint=(max(dfhint[0],ctf.defocus-0.1),min(dfhint[1],ctf.defocus+0.1),min(dfhint[2]/2.0,0.005))
 
 		curve=[im[i]-bg[i] for i in xrange(len(im_1d))]
-		for df in arange(dfhint[0],dfhint[1],dfhint[2]):
-			ctf.defocus=df
-			ccurv=ctf.compute_1d(len(curve)*2,ds,Ctf.CtfType.CTF_AMP)
-			ccurv=[sfact2(ds*i)*ccurv[i]**2 for i in range(len(ccurv))]		# squared * structure factor
+		for phase in xrange(phaserange[0],phaserange[1],5):
+			for df in arange(dfhint[0],dfhint[1],dfhint[2]):
+				ctf.defocus=df
+				ctf.set_phase(phase*pi/180.0)
+				ccurv=ctf.compute_1d(len(curve)*2,ds,Ctf.CtfType.CTF_AMP)
+				ccurv=[sfact2(ds*i)*ccurv[i]**2 for i in range(len(ccurv))]		# squared * structure factor
 
-			## Recompute the background assuming the defocus is correct
-			#im,bg=calc_1dfrom2d(ctf,im_2d,bg_2d)
-			#curve=[im[i]-bg[i] for i in xrange(len(im_1d))]
+				## Recompute the background assuming the defocus is correct
+				#im,bg=calc_1dfrom2d(ctf,im_2d,bg_2d)
+				#curve=[im[i]-bg[i] for i in xrange(len(im_1d))]
 
-			sim=array(Util.windowdot(curve,ccurv,wdw,1))
-			qual=sim[int(ctf.zero(0)/ds):int(ctf.zero(5)/ds)].mean()
-			if qual>best[0]: best=(qual,df)
-#			print df,sum(sim),qual
+				sim=array(Util.windowdot(curve,ccurv,wdw,1))
+				if phaseplate :qual=sim[int(ctf.zero(0)/(ds*2.0)):int(ctf.zero(8)/ds)].mean()
+				else : qual=sim[int(ctf.zero(0)/ds):int(ctf.zero(5)/ds)].mean()
+				if qual>best[0]: best=(qual,df,phase)
+	#			print df,sum(sim),qual
 
 		ctf.defocus=best[1]
-		print("Best defocus: {:1.03f}".format(best[1]))
+		ctf.set_phase(best[2]*pi/180)
+		print("Best defocus: {:1.03f} phase={}".format(best[1],best[2]))
 
 		# determine a good B-factor now that the defocus is pretty good
 		ctf.bfactor=ctf_fit_bfactor(curve,ds,ctf)
@@ -2397,6 +2408,7 @@ class GUIctf(QtGui.QWidget):
 		self.refit = QtGui.QPushButton("Refit")
 		self.show2dfit = CheckBox(label="Show 2D Sim:",value=False)
 		self.showzerorings = CheckBox(label="Show Zeroes:",value=False)
+		self.usephaseplate = CheckBox(label="Phaseplate:",value=False)
 		self.output = QtGui.QPushButton("Output")
 		self.hbl_buttons.addWidget(self.refit)
 		self.hbl_buttons.addWidget(self.saveparms)
@@ -2404,6 +2416,7 @@ class GUIctf(QtGui.QWidget):
 		self.hbl_buttons2 = QtGui.QHBoxLayout()
 		self.hbl_buttons2.addWidget(self.show2dfit)
 		self.hbl_buttons2.addWidget(self.showzerorings)
+		self.hbl_buttons2.addWidget(self.usephaseplate)
 		self.hbl_buttons2.addWidget(self.output)
 		self.vbl.addLayout(self.hbl_buttons)
 		self.vbl.addLayout(self.hbl_buttons2)
@@ -2504,7 +2517,7 @@ class GUIctf(QtGui.QWidget):
 
 		dfdiff=self.sdfdiff.value
 		dfang=self.sdfang.value
-		ctf=ctf_fit(tmp[2],tmp[3],tmp[7],tmp[4],tmp[5],tmp[1].voltage,tmp[1].cs,tmp[1].ampcont,tmp[1].apix,bgadj=not self.nosmooth,autohp=self.autohp,dfhint=self.sdefocus.value,highdensity=self.highdensity)
+		ctf=ctf_fit(tmp[2],tmp[3],tmp[7],tmp[4],tmp[5],tmp[1].voltage,tmp[1].cs,tmp[1].ampcont,int(self.usephaseplate.getValue()),tmp[1].apix,bgadj=not self.nosmooth,autohp=self.autohp,dfhint=self.sdefocus.value,highdensity=self.highdensity)
 		ctf.dfdiff=dfdiff
 		ctf.dfang=dfang
 		if ctf.dfdiff!=0 :
