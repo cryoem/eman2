@@ -207,12 +207,12 @@ so in most cases it is not dealt with.')
 	if not options.short: print('\nYour machines speed factor = %1.4f +- %1.4f (%1.4f +- %1.5f sec)\n' % (2.3/tms.mean(),2.3/tms.mean()-2.3/(tms.mean()+tms.std()),tms.mean()/(NTT-5.0),tms.std()/(NTT-5.0)))
 	
 	try:
-		for l in file("/proc/cpuinfo","r"):
+		for l in open("/proc/cpuinfo","r"):
 			if "model name" in l: break
 		cpu=l.split(":")[1].strip()
 	except: cpu="unknown"
 		
-	out=file("speedtest_result.txt","a")
+	out=open("speedtest_result.txt","a")
 	if options.simpleout :
 		out.write("{}\t{}\n".format(SIZE,2.3/tms.mean()))
 	else:

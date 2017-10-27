@@ -47,7 +47,7 @@ try:
 	
 	ENABLE_GUI = True
 	
-except ImportError, e:
+except ImportError as e:
 	print("Importing GUI libraries failed!")
 	print(e)
 	print("GUI features are disabled.")
@@ -514,11 +514,11 @@ def save_particles(particles, ptcl_filepath, do_edge_norm=False, stack_file_mode
 	testfilename = ".HelixBoxerTestFile%s" % ext    
 	try:
 		testdata.write_image(testfilename, 0) #Test for write support
-	except RuntimeError, e:
+	except RuntimeError as e:
 		ext = ".hdf"
 	try:
 		testdata.write_image(testfilename, 1) #Test for stack file support
-	except RuntimeError, e:
+	except RuntimeError as e:
 		stack_file_mode = "none"
 	finally:
 		if os.access(testfilename, os.F_OK):
@@ -1315,7 +1315,7 @@ if ENABLE_GUI:
 				ctf_ampcont      = float(self.ctf_ampcont.text())
 				ctf_kboot        = int(self.ctf_kboot.text())
 				
-			except ValueError,extras:
+			except ValueError as extras:
 				# conversion of a value failed!
 				print("integer conversion failed.")
 				if not(extras.args is None):
@@ -1411,7 +1411,7 @@ if ENABLE_GUI:
 			creates a unique key for a new "rectline" EMShape, which is used for boxing a helix
 			@return: a string that is the key for the new "rectline" EMShape
 			"""
-			i = self.counter.next()
+			i = next(self.counter)
 			return "rectline%i" % i
 		def get_width(self):
 			"""
@@ -1833,7 +1833,7 @@ if ENABLE_GUI:
 			"""
 	
 			if self.current_boxkey and self.edit_mode != "delete":
-				if self.helices_dict.has_key(self.initial_helix_box_data_tuple):
+				if self.initial_helix_box_data_tuple in self.helices_dict:
 					self.helices_dict.pop(self.initial_helix_box_data_tuple)
 				if self.initial_helix_box_data_tuple in self.get_db_item("helixboxes"):
 					self.remove_box_from_db(self.initial_helix_box_data_tuple)

@@ -165,7 +165,7 @@ def main():
 				if os.path.exists(dest) : raise Exception
 				os.rename(src,dest)
 				if options.verbose>1: print("Renaming {} to {}".format(src,dest))
-				file(src,"w").write(file(dest,"r").read())			# copy the original data back to the source file so we don't have gaps for unaligned particles, but only if the rename worked
+				open(src,"w").write(open(dest,"r").read())			# copy the original data back to the source file so we don't have gaps for unaligned particles, but only if the rename worked
 				n+=1
 			except: 
 				if options.verbose>1: print("Failed to rename ",name)

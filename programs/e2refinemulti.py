@@ -55,7 +55,7 @@ def append_html(msg,com=False) :
 
 def write_html() :
 	global output_html,output_html_com,output_path
-	out=file(output_path+"/index.html","w")
+	out=open(output_path+"/index.html","w")
 	out.write("<html><head><title>EMAN2 Multi-model Refinement Analysis</title></head>\n<body>")
 	out.write("\n".join(output_html))
 	out.write("<h4>Detailed command log</h4>\n")

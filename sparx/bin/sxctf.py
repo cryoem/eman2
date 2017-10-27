@@ -190,7 +190,7 @@ def get_gui_arg_img_sets(filenames):
 	else: return img_sets
 	for file in filenames:
 		name = get_file_tag(file)
-		if not db_parms.has_key(name):
+		if name not in db_parms:
 			print("error, you must first run auto fit before running the gui - there are no parameters for",name)
 			return []
 		img_set = db_parms[name]
@@ -642,7 +642,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 	sf = sfact([i*ds for i in xrange(ys)], "ribosome","nono")
 	#print "  SF ",sf
 	
-	if debug: dfout=file("ctf.df.txt","w")
+	if debug: dfout=open("ctf.df.txt","w")
 	dfbest1=(0,-1.0e20)
 	for dfi in range(5,128):			# loop over defocus
 		ac=10
@@ -986,7 +986,7 @@ class GUIctf(QtGui.QWidget):
 		name = get_file_tag(name)
 		
 		db_parms=db_open_dict("bdb:e2ctf.parms")
-		if not db_parms.has_key(name):
+		if name not in db_parms:
 			print("error, ctf parameters do not exist for:",name)
 #			
 		

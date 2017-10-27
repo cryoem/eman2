@@ -214,8 +214,8 @@ It is strongly suggested that you run 'e2bdb.py -c' prior to running this progra
 
 def copyfile(a,b):
 	"""There really should be an os.copy()"""
-	fin=file(a,"rb")
-	fout=file(b,"wb")
+	fin=open(a,"rb")
+	fout=open(b,"wb")
 	while True:
 		data=fin.read(16777216)
 		if len(data)==0 : break

@@ -1077,7 +1077,7 @@ def aves_w(stack, mode="a"):
 		TE      = e.get_attr('TE')
 		snr = e.get_attr('SNR') # SNR can be either float or list
 		import types
-		if(type(snr) is types.ListType):
+		if(type(snr) is list):
 			for k in xrange(len(snr)):
 				if(ctf_mul): ctf_1[k]  =snr[k]*ctf_2[k]*TE[k]*TE[k]*TE[k]
 				else:        ctf_1[k] *= snr[k]*TE[k]
@@ -1230,7 +1230,7 @@ def ssnr2d(data, mask = None, mode=""):
 	from utilities    import get_params2D
 	from fundamentals import fft, rot_shift2D
 	import  types
-	if (type(data) is types.StringType):
+	if (type(data) is bytes):
 		n = EMUtil.get_image_count(data)
 		ima = EMData()
 		ima.read_image(data, 0, True)
@@ -1247,7 +1247,7 @@ def ssnr2d(data, mask = None, mode=""):
 	var   = EMData(nx, ny, nz, False)
 
 	for i in xrange(n):
-		if (type(data) is types.StringType):
+		if (type(data) is bytes):
 			ima = EMData()
 			ima.read_image(data, i)
 			if(mode == "a"):
@@ -1294,7 +1294,7 @@ def ssnr2d_ctf(data, mask = None, mode="", dopa=True):
 	from utilities    import get_params2D, pad
 	import  types
 
-	if type(data) is types.StringType:
+	if type(data) is bytes:
 		n = EMUtil.get_image_count(data)
 		ima = EMData()
 		ima.read_image(data, 0, True)
@@ -1318,7 +1318,7 @@ def ssnr2d_ctf(data, mask = None, mode="", dopa=True):
 	sumsq     = EMData(nx2, ny2, 1, False)
 
 	for i in xrange(n):
-		if type(data) is types.StringType:
+		if type(data) is bytes:
 			ima = EMData()
 			ima.read_image(data, i)
 		else:
@@ -1338,7 +1338,7 @@ def ssnr2d_ctf(data, mask = None, mode="", dopa=True):
 
 	var       = EMData(nx2, ny2, 1, False)
 	for i in xrange(n):
-		if type(data) is types.StringType:
+		if type(data) is bytes:
 			ima = EMData()
 			ima.read_image(data, i)
 		else:
@@ -1425,7 +1425,7 @@ def ssnr2d_ctf_OLD(data, mask = None, mode=""):
 	from utilities    import get_params2D
 	import  types
 	
-	if type(data) is types.StringType:
+	if type(data) is bytes:
 		n = EMUtil.get_image_count(data)
 		ima = EMData()
 		ima.read_image(data, 0, True)
@@ -1447,7 +1447,7 @@ def ssnr2d_ctf_OLD(data, mask = None, mode=""):
 	var       = EMData(nx, ny, nz, False)
 
 	for i in xrange(n):
-		if type(data) is types.StringType:
+		if type(data) is bytes:
 			ima = EMData()
 			ima.read_image(data, i)
 		else:
@@ -1489,7 +1489,7 @@ def varf(data, mask = None, mode="a"):
 	from fundamentals import fftip, rot_shift2D
 	from utilities    import get_params2D
 	import  types
-	if (type(data) is types.StringType):
+	if (type(data) is bytes):
 		n = EMUtil.get_image_count(data)
 		ima = EMData()
 		ima.read_image(data, 0, True)
@@ -1506,7 +1506,7 @@ def varf(data, mask = None, mode="a"):
 	var   = EMData(nx, ny, nz, False)
 
 	for i in xrange(n):
-		if (type(data) is types.StringType):
+		if (type(data) is bytes):
 			ima = EMData()
 			ima.read_image(data, i)
 		else:
@@ -1540,7 +1540,7 @@ def varfctf(data, mask = None, mode="a", dopad = True):
 	from utilities    import get_arb_params, get_params2D
 	import  types
 
-	if (type(data) is types.StringType):
+	if (type(data) is bytes):
 		n = EMUtil.get_image_count(data)
 		ima = EMData()
 		ima.read_image(data, 0, True)
@@ -1571,7 +1571,7 @@ def varfctf(data, mask = None, mode="a", dopad = True):
 	var       = EMData(nx2, ny2, nz, False)
 
 	for i in xrange(n):
-		if (type(data) is types.StringType):
+		if (type(data) is bytes):
 			ima = EMData()
 			ima.read_image(data, i)
 		else:
@@ -1614,7 +1614,7 @@ def varf2d(data, ave, mask = None, mode="a"):
 	from fundamentals import fft
 	import  types
 
-	if (type(data) is types.StringType):
+	if (type(data) is bytes):
 		n = EMUtil.get_image_count(data)
 	else:
 		n = len(data)
@@ -1754,7 +1754,7 @@ def varf3d(prjlist,ssnr_text_file = None, mask2D = None, reference_structure = N
 	del volft
 	[ssnr2, vol_ssnr2] = recons3d_nn_SSNR(re_prjlist, mask2D, rw, npad, sign, sym, CTF)
 
-	outf = file(ssnr_text_file, "w")
+	outf = open(ssnr_text_file, "w")
 	for i in xrange(len(ssnr2[0])):
 		datstrings = []
 		datstrings.append("  %15f" % ssnr1[0][i])    #  have to subtract 0.5 as in C code there is round.
@@ -1851,7 +1851,7 @@ def varf3d_MPI(prjlist, ssnr_text_file = None, mask2D = None, reference_structur
 	del re_prjlist
 
 	if myid == 0 and ssnr_text_file != None:
-		outf = file(ssnr_text_file, "w")
+		outf = open(ssnr_text_file, "w")
 		for i in xrange(len(ssnr2[0])):
 			datstrings = []
 			datstrings.append("  %15f" % ssnr1[0][i])    #  have to subtract 0.5 as in C code there is round.
@@ -1915,7 +1915,7 @@ def fsc(img1, img2, w = 1.0, filename=None):
 	for i in xrange(3):
 		frsc.append(result[i*size:(i+1)*size])
 	if filename:
-		outf = file(filename, "w")
+		outf = open(filename, "w")
 		for i in xrange(size):
 			datstrings = []
 			datstrings.append("  %12f" % (frsc[0][i]))
@@ -2172,14 +2172,14 @@ def histogram(image, mask = None, nbins = 0, hmin = 0.0, hmax = 0.0):
 def im_diff(im1, im2, mask = None):
 	import types
 	from utilities import model_circle, get_im
-	if type(im1) == types.StringType : im1 = get_im(im1)
-	if type(im2) == types.StringType : im2 = get_im(im2)
+	if type(im1) == bytes : im1 = get_im(im1)
+	if type(im2) == bytes : im2 = get_im(im2)
 	nx = im1.get_xsize()
 	ny = im1.get_ysize()
 	nz = im1.get_zsize()
 	if mask != None :
-		if   type(mask) == types.FloatType or type(mask) == types.IntType: m = model_circle(mask, nx, ny, nz)
-		elif type(mask) == types.StringType:   m = get_im(mask)
+		if   type(mask) == float or type(mask) == int: m = model_circle(mask, nx, ny, nz)
+		elif type(mask) == bytes:   m = get_im(mask)
 		else: m = mask
 	else:
 		if   im1.get_ndim() == 3: radius = min(nx,ny,nz)//2 - 1
@@ -6375,7 +6375,7 @@ See the module documentation for usage.
 
     def __find_smallest(self):
         """Find the smallest uncovered value in the matrix."""
-        minval = sys.maxint
+        minval = sys.maxsize
         for i in range(self.n):
             for j in range(self.n):
                 if (not self.row_covered[i]) and (not self.col_covered[j]):
@@ -6773,7 +6773,7 @@ def k_means_match_clusters_asg(asg1, asg2):
 
 	for i in xrange(K):
 		for j in xrange(K):
-			cost_MAT[i][j] = sys.maxint - MAT[i][j]
+			cost_MAT[i][j] = sys.maxsize - MAT[i][j]
 	m = Munkres()
 	indexes = m.compute(cost_MAT)
 	list_stable = []
@@ -6812,7 +6812,7 @@ def k_means_match_clusters_asg_new(asg1, asg2, T=0):
 				MAT[k1][k2] = 0
 	for i in xrange(K):
 		for j in xrange(K):
-			cost_MAT[i][j] = sys.maxint - MAT[i][j]
+			cost_MAT[i][j] = sys.maxsize - MAT[i][j]
 	m = Munkres()
 	indexes = m.compute(cost_MAT)
 	newindexes = []
@@ -7765,7 +7765,7 @@ class py_cluster_HierarchicalClustering(py_cluster_BaseClusterMethod):
       elif method == 'uclus':
          self.linkage = self.uclusDistance
       else:
-         raise ValueError, 'distance method must be one of single, complete, average of uclus'
+         raise ValueError('distance method must be one of single, complete, average of uclus')
 
    def uclusDistance(self, x, y):
       """

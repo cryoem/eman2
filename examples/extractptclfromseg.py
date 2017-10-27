@@ -197,7 +197,7 @@ def main():
 
 		jsname=info_name(tomoname)
 		js=js_open_dict(jsname)
-		if js.has_key("class_list"):
+		if "class_list" in js:
 			clst=[int(k) for k in js["class_list"].keys()]
 			for ii in range(100):
 				if ii not in clst:
@@ -221,14 +221,14 @@ def main():
 			allbox3d.append([box[2], box[1],int(box[0]), "tomoseg", pkscore[j], mytag])
 			allbox.append([box[2], box[1],"manual", int(box[0])])
 		
-		if js.has_key("boxes_3d"):
+		if "boxes_3d" in js:
 			b3d=js["boxes_3d"]
 			b3d.extend(allbox3d)
 		else:
 			b3d=allbox3d
 		
 		js["boxes_3d"]=b3d
-		if js.has_key("class_list"):
+		if "class_list" in js:
 			clst=js["class_list"]
 		else:
 			clst={}

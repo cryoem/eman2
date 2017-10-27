@@ -57,7 +57,7 @@ def main():
 	output_stack=args[2]
 
 	logid=E2init(sys.argv)
-	f=file(angles_filename,'r')
+	f=open(angles_filename,'r')
 	lines=f.readlines()
 	angles=[]
 	for line in lines:

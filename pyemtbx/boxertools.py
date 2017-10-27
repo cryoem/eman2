@@ -1228,7 +1228,7 @@ class FLCFBoxImage:
 		
 		db = db_open_dict(db_name)
 		
-		if db.has_key("maxrec"):
+		if "maxrec" in db:
 			for idx in range(0,db["maxrec"]+1):
 				header = db.get_header(idx)
 				try:
@@ -1748,17 +1748,17 @@ class Boxable:
 			boxname = self.get_coord_file_name()
 			if file_exists(boxname):
 				if not force:
-					f=file(boxname,'r')
+					f=open(boxname,'r')
 					boxname_backup =  get_file_tag(self.image_name)+str(time()) + ".box.bak"
 					print("warning, found box name",boxname,"- am renaming it to", boxname_backup, "- use force to overwrite this behavior")
-					fbak=file(boxname_backup,'w')
+					fbak=open(boxname_backup,'w')
 					fbak.writelines(f.readlines())
 					fbak.close()
 					f.close()
 				else:
 					remove_file(boxname)
 				
-			f=file(boxname,'w')
+			f=open(boxname,'w')
 			
 			if verbose: print("writing",self.num_boxes(),"box coordinates to file",boxname)
 			
@@ -2345,7 +2345,7 @@ class Boxable:
 		if not db_check_dict(database+"#"+key) and dfl==None:  return None
 		db = db_open_dict(database+"#"+key)
 	
-		if db.has_key(image_name):
+		if image_name in db:
 			return db[image_name]
 		elif dfl != None:
 			db[image_name] = dfl
@@ -2412,7 +2412,7 @@ def set_idd_image_entry(image_name,key,image,db_title="bdb:e2boxercache#"):
 	# first have to make sure it's not already there
 	db = db_open_dict(db_name)
 	
-	if db.has_key("maxrec"):
+	if "maxrec" in db:
 		for idx in range(0,db["maxrec"]+1):
 			header = db.get_header(idx)
 			try:
@@ -2439,7 +2439,7 @@ def get_idd_image_entry(image_name,key,db_title="bdb:e2boxercache#"):
 	
 	db = db_open_dict(db_name)
 	
-	if db.has_key("maxrec"):
+	if "maxrec" in db:
 		for idx in range(0,db["maxrec"]+1):
 			header = db.get_header(idx)
 			try:

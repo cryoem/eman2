@@ -314,7 +314,7 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 			for model in self.viewables:
 				try:
 					model.mouseMoveEvent(event)
-				except AttributeError, e:
+				except AttributeError as e:
 					pass
 		self.updateGL()
 	def mousePressEvent(self, event):
@@ -326,7 +326,7 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 			for model in self.viewables:
 				try:
 					model.mousePressEvent(event)
-				except AttributeError, e:
+				except AttributeError as e:
 					pass
 		self.updateGL()
 	def mouseReleaseEvent(self, event):
@@ -336,7 +336,7 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 			for model in self.viewables:
 				try:
 					model.mouseReleaseEvent(event)
-				except AttributeError, e:
+				except AttributeError as e:
 					pass
 		self.updateGL()
 	def paintGL(self):
@@ -590,7 +590,7 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 		for model in self.viewables:
 			try:
 				model.wheelEvent(event)
-			except AttributeError, e:
+			except AttributeError as e:
 				pass
 		self.updateGL()
 

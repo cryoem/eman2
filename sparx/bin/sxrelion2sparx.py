@@ -372,7 +372,7 @@ def main():
 						sparx_chunk_id_max = sparx_chunk_id
 				
 					sparx_chunk_key = '%1d' % sparx_chunk_id
-					if sparx_chunk_dict.has_key(sparx_chunk_key) == False:
+					if (sparx_chunk_key in sparx_chunk_dict) == False:
 						sparx_chunk_dict[sparx_chunk_key] = []
 					sparx_chunk_dict[sparx_chunk_key].append(i_relion_particle)
 				

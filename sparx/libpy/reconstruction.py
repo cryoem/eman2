@@ -113,11 +113,11 @@ def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4, snr=None, weig
 	from EMAN2 import Reconstructors
 
 	if list_proj == []:
-		if type(stack_name) == types.StringType: nima = EMUtil.get_image_count(stack_name)
+		if type(stack_name) == bytes: nima = EMUtil.get_image_count(stack_name)
 		else : nima = len(stack_name)
 		list_proj = xrange(nima) 
 	# read first image to determine the size to use
-	if type(stack_name) == types.StringType:
+	if type(stack_name) == bytes:
 		proj = EMData()
 		proj.read_image(stack_name, list_proj[0])
 	else:    proj = stack_name[list_proj[0]].copy()
@@ -167,7 +167,7 @@ def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4, snr=None, weig
 
 	r.setup()
 
-	if type(stack_name) == types.StringType:
+	if type(stack_name) == bytes:
 		for i in xrange(len(list_proj)):
 			proj.read_image(stack_name, list_proj[i])
 			# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
@@ -197,7 +197,7 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", finfo=None, snr = 1.0, npad=2
 	if mpi_comm == None:
 		mpi_comm = MPI_COMM_WORLD
 
-	if type(prjlist) == types.ListType:
+	if type(prjlist) == list:
 		prjlist = iterImagesList(prjlist)
 
 	if not prjlist.goToNext():
@@ -535,7 +535,7 @@ def recons3d_4nnw_MPI(myid, prjlist, bckgdata, snr = 1.0, sign=1, symmetry="c1",
 	if mpi_comm == None:
 		mpi_comm = MPI_COMM_WORLD
 
-	if type(prjlist) == types.ListType:
+	if type(prjlist) == list:
 		prjlist = iterImagesList(prjlist)
 	if not prjlist.goToNext():
 		ERROR("empty input list","recons3d_4nnw_MPI",1)
@@ -1613,11 +1613,11 @@ def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 1.0, sign=1, symmetry="c1
 
 	# read first image to determine the size to use
 	if list_proj == []:	
-		if type(stack_name) == types.StringType: nima = EMUtil.get_image_count(stack_name)
+		if type(stack_name) == bytes: nima = EMUtil.get_image_count(stack_name)
 		else : nima = len(stack_name)
 		list_proj = xrange(nima) 
 	# read first image to determine the size to use
-	if type(stack_name) == types.StringType:
+	if type(stack_name) == bytes:
 		proj = EMData()
 		proj.read_image(stack_name, list_proj[0])
 	else:    proj = stack_name[list_proj[0]].copy()
@@ -1660,7 +1660,7 @@ def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 1.0, sign=1, symmetry="c1
 		r = Reconstructors.get("nn4_ctf_rect", params)
 	r.setup()
 
-	if type(stack_name) == types.StringType:
+	if type(stack_name) == bytes:
 		for i in xrange(len(list_proj)):
 			proj.read_image(stack_name, list_proj[i])
 			if dopad: 
@@ -1692,7 +1692,7 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", finfo=
 	if mpi_comm == None:
 		mpi_comm = MPI_COMM_WORLD
 
-	if type(prjlist) == types.ListType:
+	if type(prjlist) == list:
 		prjlist = iterImagesList(prjlist)
 	if not prjlist.goToNext():
 		ERROR("empty input list","recons3d_4nn_ctf_MPI",1)
@@ -1812,10 +1812,10 @@ def recons3d_nn_SSNR(stack_name,  mask2D = None, ring_width=1, npad =1, sign=1, 
 	from EMAN2 import Reconstructors
 
 	# Yang add a safety on 05/22/07
-	if type(stack_name) == types.StringType: nima = EMUtil.get_image_count(stack_name)
+	if type(stack_name) == bytes: nima = EMUtil.get_image_count(stack_name)
 	else :                                   nima = len(stack_name)
 	# read first image to determine the size to use
-	if type(stack_name) == types.StringType:
+	if type(stack_name) == bytes:
 		proj = EMData()
 		proj.read_image(stack_name, 0)
 	else:    
@@ -1841,7 +1841,7 @@ def recons3d_nn_SSNR(stack_name,  mask2D = None, ring_width=1, npad =1, sign=1, 
 	r.setup()
 
 	for i in xrange(nima):
-		if type(stack_name) == types.StringType:
+		if type(stack_name) == bytes:
 			proj.read_image(stack_name, i)
 		else:
 			proj = stack_name[i]
@@ -2111,7 +2111,7 @@ def recons3d_em(projections_stack, max_iterations_count = 100, radius = -1, min_
 	import types
 	min_allowed_divisor = 0.0001
 
-	if type(projections_stack) is types.StringType:
+	if type(projections_stack) is bytes:
 		projections = EMData.read_images(projections_stack)
 	else:
 		projections = projections_stack
@@ -2216,7 +2216,7 @@ def recons3d_em_MPI(projections_stack, output_file, max_iterations_count = 100, 
 	mpi_r = mpi_comm_rank(MPI_COMM_WORLD)
 
 	# ----- read projections 
-	if type(projections_stack) is types.StringType:
+	if type(projections_stack) is bytes:
 		all_projs_count = EMUtil.get_image_count(projections_stack)
 	else:
 		all_projs_count = len(projections_stack)
@@ -2227,7 +2227,7 @@ def recons3d_em_MPI(projections_stack, output_file, max_iterations_count = 100, 
 	projs_begin = (mpi_r * all_projs_count) // mpi_n
 	projs_end = ((mpi_r+1) * all_projs_count) // mpi_n
 
-	if type(projections_stack) is types.StringType:
+	if type(projections_stack) is bytes:
 		projections = EMData.read_images(projections_stack, range(projs_begin,projs_end))
 	else:
 		#projections = projections_stack[projs_begin:projs_end]
@@ -2439,7 +2439,7 @@ def recons3d_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetr
 	import types
 	from utilities import get_im
 
-	if type(stack_name) == types.StringType:
+	if type(stack_name) == bytes:
 		B = EMData()
 		B.read_image(stack_name,list_proj[0])
 	else : B = stack_name[list_proj[0]].copy()
@@ -2458,7 +2458,7 @@ def recons3d_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetr
 	ss = [0.0]*(6*nsym*nimages)
 	symmetry_transforms = [ [None for i in xrange(nsym)] for j in xrange(nimages) ] # list of nimages lists of nsym elements
 	for iProj in xrange(nimages):
-		if type(stack_name) == types.StringType:
+		if type(stack_name) == bytes:
 			B.read_image(stack_name,list_proj[iProj], True)
 		else:
 			B = stack_name[list_proj[iProj]]
@@ -2498,7 +2498,7 @@ def recons3d_vwbp(stack_name, list_proj, method = "general", const=1.0E4, symmet
 	import types
 	from utilities import get_im
 
-	if type(stack_name) == types.StringType:
+	if type(stack_name) == bytes:
 		B = EMData()
 		B.read_image(stack_name,list_proj[0])
 	else : B = stack_name[list_proj[0]].copy()
@@ -2511,7 +2511,7 @@ def recons3d_vwbp(stack_name, list_proj, method = "general", const=1.0E4, symmet
 	ss = [0.0]*(6*nsym*nimages)
 	symmetry_transforms = [ [None for i in xrange(nsym)] for j in xrange(nimages) ] # list of nimages lists of nsym elements
 	for iProj in xrange(nimages):
-		if type(stack_name) == types.StringType:
+		if type(stack_name) == bytes:
 			B.read_image(stack_name,list_proj[iProj], True)
 		else:
 			B = stack_name[list_proj[iProj]]
@@ -2555,7 +2555,7 @@ def prepare_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetry
 	"""
 	import types
 
-	if type(stack_name) == types.StringType:
+	if type(stack_name) == bytes:
 		B = EMData()
 		B.read_image(stack_name,list_proj[0])
 	else : B = stack_name[list_proj[0]].copy()
@@ -2572,7 +2572,7 @@ def prepare_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetry
 	count = 0
 	from utilities import get_params_proj
 	for i in xrange(nimages):
-		if type(stack_name) == types.StringType:
+		if type(stack_name) == bytes:
 			B.read_image(stack_name,list_proj[i], True)
 			PHI, THETA, PSI, s2x, s2y = get_params_proj( B )
 		else:  

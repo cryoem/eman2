@@ -178,7 +178,7 @@ Finds isolated spots in the image and uses them as a basis for alignment"""
 #			pats[i].transform(xf)
 			a=pats[0].get_points()
 			b=pats[i].get_points()
-			out=file("ali.%d.txt"%i,"w")
+			out=open("ali.%d.txt"%i,"w")
 			for j,k in enumerate(m):
 				if k==-1 : continue
 				out.write("%1.2f\t%1.2f\n%1.2f\t%1.2f\n"%(a[j*3],a[j*3+1],b[k*3],b[k*3+1]))

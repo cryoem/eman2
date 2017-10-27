@@ -118,7 +118,7 @@ Important: This program must be run from the project directory, not from within 
 	db=js_open_dict(info_name(ptcls[0]))
 	frame_stig=False
 	frame_ctf=False
-	if db.has_key("ctf_frame") :
+	if "ctf_frame" in db :
 		frame_ctf=True
 		for f in ptcls[:10]:
 			db.close()

@@ -47,7 +47,7 @@ import traceback
 
 try:
 	from bsddb3 import db
-except ImportError, e:
+except ImportError as e:
 #	print "WARNING: Could not import bsddb3; falling back on the older bsddb. Consider installing BerkeleyDB and bsddb3:", e
 	from bsddb import db
 
@@ -205,7 +205,7 @@ def db_parse_path(url):
 	bdb:/path/to/dict   (also works, but # preferred)
 	"""
 
-	if url[:4].lower()!="bdb:": raise Exception,"Invalid URL, bdb: only (%s)"%url
+	if url[:4].lower()!="bdb:": raise Exception("Invalid URL, bdb: only (%s)"%url)
 	url=url.replace("~",e2gethome())
 	url=url[4:].rsplit('#',1)
 	if len(url)==1 : url=url[0].rsplit("/",1)
@@ -233,13 +233,13 @@ def db_parse_path(url):
 		if u2[0][:7].lower()=="select." :
 			ddb=EMAN2DB.open_db(".")
 			ddb.open_dict("select")
-			if not ddb.select.has_key(u2[0][7:]) : raise Exception,"Unknown selection list %s"%u2[0][7:]
+			if u2[0][7:] not in ddb.select : raise Exception("Unknown selection list %s"%u2[0][7:])
 			return (url[0],url[1],ddb.select[u2[0][7:]])		# bdb:path/to#dict?select/name
 		elif u2[0][:8].lower()=="exclude." :
 			ddb=EMAN2DB.open_db(".")
 			ddb.open_dict("select")
 			all_set = set(range(0,EMUtil.get_image_count("bdb:"+url[0]+"#"+url[1])))
-			if not ddb.select.has_key(u2[0][8:]) :
+			if u2[0][8:] not in ddb.select :
 				return (url[0],url[1],list(all_set))			# if the exclusion list is missing, we exclude nothing
 #				raise Exception,"Unknown selection list %s"%u2[0][8:]
 			exc_set = set(ddb.select[u2[0][8:]])
@@ -429,13 +429,13 @@ def db_read_image(self,fsp,*parms,**kparms):
 #			raise Exception("Could not access "+str(fsp)+" "+str(key))
 		return None
 	if len(kparms)!=0:
-		if not kparms.has_key('img_index'):
+		if 'img_index' not in kparms:
 			kparms['img_index'] = 0
-		if not kparms.has_key('header_only'):
+		if 'header_only' not in kparms:
 			kparms['header_only'] = False
-		if not kparms.has_key('region'):
+		if 'region' not in kparms:
 			kparms['region'] = None
-		if not kparms.has_key('is_3d'):
+		if 'is_3d' not in kparms:
 			kparms['is_3d'] = False
 	return self.read_image_c(fsp,*parms, **kparms)
 
@@ -484,8 +484,8 @@ def db_write_image(self,fsp,*parms):
 	if fsp[:4].lower()=="bdb:" :
 		db,keys=db_open_dict(fsp,False,True)
 		if keys :			# if the user specifies the key in fsp, we ignore parms
-			if len(keys)>1 : raise Exception,"Too many keys provided in write_image %s"%str(keys)
-			if isinstance(keys[0],int) and keys[0]<0 : raise Exception,"Negative integer keys not allowed %d"%keys[0]
+			if len(keys)>1 : raise Exception("Too many keys provided in write_image %s"%str(keys))
+			if isinstance(keys[0],int) and keys[0]<0 : raise Exception("Negative integer keys not allowed %d"%keys[0])
 			db[keys[0]]=self
 			return
 		if len(parms)==0 : parms=[0]
@@ -517,7 +517,7 @@ Takes a path or bdb: specifier and returns the number of images in the reference
 			db2=db_open_dict("bdb:%s#%s"%(path,"00image_counts"))
 
 			# If this is true, we need to update the dictionary
-			if (db2.has_key(dictname) and os.path.getmtime("%s/EMAN2DB/%s.bdb"%(path,dictname))>db2[dictname][0]) or not db2.has_key(dictname) :
+			if (dictname in db2 and os.path.getmtime("%s/EMAN2DB/%s.bdb"%(path,dictname))>db2[dictname][0]) or dictname not in db2 :
 				db=db_open_dict(fsp,True)
 				try:
 					im=db[0]
@@ -537,7 +537,7 @@ Takes a path or bdb: specifier and returns the number of images in the reference
 		ret=EMUtil.get_image_count_c(fsp)
 	except:
 #		print"Error with get_image_count on : ",fsp
-		raise Exception,fsp
+		raise Exception(fsp)
 	return ret
 
 EMUtil.get_image_count_c=staticmethod(EMUtil.get_image_count)
@@ -554,7 +554,7 @@ Takes a bdb: specifier and returns the number of images and image dimensions."""
 			db2=db_open_dict("bdb:%s#%s"%(path,"00image_counts"))
 
 			# If this is true, we need to update the dictionary
-			if (db2.has_key(dictname) and os.path.getmtime("%s/EMAN2DB/%s.bdb"%(path,dictname))>db2[dictname][0]) or not db2.has_key(dictname) or db2[dictname][2][0]==0:
+			if (dictname in db2 and os.path.getmtime("%s/EMAN2DB/%s.bdb"%(path,dictname))>db2[dictname][0]) or dictname not in db2 or db2[dictname][2][0]==0:
 #				print "update ",dictname,os.path.getmtime("%s/EMAN2DB/%s.bdb"%(path,dictname)),db2[dictname][0],db2.has_key(dictname)
 				db=db_open_dict(fsp,True)
 				try:
@@ -667,7 +667,7 @@ class EMTaskQueue:
 				raise Exception
 		except:
 			did=(fmt,random.randint(0,999999))	# since there may be multiple files with the same timestamp, we also use a random int
-			while (self.didtoname.has_key(did)):
+			while (did in self.didtoname):
 				did=(fmt,random.randint(0,999999))
 
 		self.nametodid[name]=did
@@ -680,7 +680,7 @@ class EMTaskQueue:
 		"""Adds a new task to the active queue, scheduling it for execution. If parentid is
 		specified, a doubly linked list is established. parentid MUST be the id of a task
 		currently in the active queue. parentid and wait_for may be set in the task instead"""
-		if not isinstance(task,EMTask) : raise Exception,"Invalid Task"
+		if not isinstance(task,EMTask) : raise Exception("Invalid Task")
 		#self.active["max"]+=1
 		#tid=self.active["max"]
 
@@ -871,7 +871,7 @@ class EMAN2DB:
 
 		if not path : path=e2gethome()+"/.eman2"
 		if path=="." or path=="./" : path=e2getcwd()
-		if EMAN2DB.opendbs.has_key(path) :
+		if path in EMAN2DB.opendbs :
 			EMAN2DB.lock.release()
 			return EMAN2DB.opendbs[path]
 		ret=EMAN2DB(path)
@@ -982,7 +982,7 @@ only practical option.)
 
 	def open_dict(self,name,ro=False):
 #		print "open ",name,ro
-		if self.dicts.has_key(name) : return
+		if name in self.dicts : return
 		self.dicts[name]=DBDict(name,dbenv=self.dbenv,path=self.path+"/EMAN2DB",parent=self,ro=ro)
 		self.__dict__[name]=self.dicts[name]
 
@@ -1126,7 +1126,7 @@ class DBDict:
 				self.bdb=None
 				self.lock.release()
 				if DBDEBUG : traceback.print_exc()
-				raise Exception, "Cannot open or find %s"%self.name
+				raise Exception("Cannot open or find %s"%self.name)
 
 			#except:
 				## try one more time... this shouldn't be necessary...
@@ -1329,7 +1329,7 @@ of these occasional errors"""
 			try :
 				n=loads(self.bdb.get(fkey+dumps(key,-1),txn=self.txn))
 			except:
-				if not self.has_key(fkey) : self[fkey]=0
+				if fkey not in self : self[fkey]=0
 				else: self[fkey]+=1
 				n=self[fkey]
 			self.put(fkey+dumps(key,-1),dumps(n,-1),txn=self.txn)		# a special key for the binary location
@@ -1342,7 +1342,7 @@ of these occasional errors"""
 			ad["timestamp"]="%04d/%02d/%02d %02d:%02d:%02d"%t[:6]
 			self.put(dumps(key,-1),dumps(ad,-1),txn=self.txn)
 
-			if isinstance(key,int) and (not self.has_key("maxrec") or key>self["maxrec"]) :
+			if isinstance(key,int) and ("maxrec" not in self or key>self["maxrec"]) :
 				self["maxrec"]=key
 
 				# Updates the image count cache
@@ -1364,25 +1364,25 @@ of these occasional errors"""
 
 		else :
 			self.put(dumps(key,-1),dumps(val,-1),txn=self.txn)
-			if isinstance(key,int) and (not self.has_key("maxrec") or key>self["maxrec"]) : self["maxrec"]=key
+			if isinstance(key,int) and ("maxrec" not in self or key>self["maxrec"]) : self["maxrec"]=key
 
 	def __getitem__(self,key):
 		self.realopen(self.rohint)
 		try: r=loads(self.bdb.get(dumps(key,-1),txn=self.txn))
 		except: return None
-		if isinstance(r,dict) and r.has_key("is_complex_x") :
+		if isinstance(r,dict) and "is_complex_x" in r :
 			pkey="%s/%s_"%(self.path,self.name)
 			fkey="%dx%dx%d"%(r["nx"],r["ny"],r["nz"])
 #			print "r",fkey
 			ret=EMData(r["nx"],r["ny"],r["nz"])
-			if r.has_key("data_path"):
+			if "data_path" in r:
 				p,l=r["data_path"].split("*")
 #				print "read ",os.getcwd(),self.path,p,l
 				if p[0]=='/' : ret.read_data(p,int(l))
 				else : ret.read_data(self.path+"/"+p,int(l))
 			else:
 				try: n=loads(self.bdb.get(fkey+dumps(key,-1)))	 # this is the index for this binary data item in the image-dimensions-specific binary data file
-				except: raise KeyError,"Undefined data location key for : %s"%key
+				except: raise KeyError("Undefined data location key for : %s"%key)
 				ret.read_data(pkey+fkey,n*4*r["nx"]*r["ny"]*r["nz"])
 			k=set(r.keys())
 			k-=DBDict.fixedkeys
@@ -1402,13 +1402,13 @@ of these occasional errors"""
 
 	def __contains__(self,key):
 		self.realopen(self.rohint)
-		return self.bdb.has_key(dumps(key,-1))
+		return dumps(key,-1) in self.bdb
 
 	def item_type(self,key):
 		self.realopen(self.rohint)
 		try: r=loads(self.bdb.get(dumps(key,-1),txn=self.txn))
 		except: return None
-		if isinstance(r,dict) and r.has_key("is_complex_x") : return EMData
+		if isinstance(r,dict) and "is_complex_x" in r : return EMData
 		return type(r)
 
 	def keys(self):
@@ -1429,17 +1429,17 @@ of these occasional errors"""
 
 	def has_key(self,key):
 		self.realopen(self.rohint)
-		return self.bdb.has_key(dumps(key,-1))
+		return dumps(key,-1) in self.bdb
 
 	def get_data_path(self,key):
 		"""returns the path to the binary data as "path*location". Only valid for EMData objects."""
 		self.realopen(self.rohint)
 		try: r=loads(self.bdb.get(dumps(key,-1)))
 		except: return None
-		if isinstance(r,dict) and r.has_key("is_complex_x") :
+		if isinstance(r,dict) and "is_complex_x" in r :
 			pkey="%s/%s_"%(self.path,self.name)
 			fkey="%dx%dx%d"%(r["nx"],r["ny"],r["nz"])
-			if r.has_key("data_path"):
+			if "data_path" in r:
 				if r["data_path"][0]=="/" : return r["data_path"]
 				return self.path+"/"+r["data_path"]
 			else :
@@ -1453,7 +1453,7 @@ of these occasional errors"""
 		self.realopen(self.rohint)
 		try: r=loads(self.bdb.get(dumps(key,-1),txn=txn))
 		except: return dfl
-		if isinstance(r,dict) and r.has_key("is_complex_x") :
+		if isinstance(r,dict) and "is_complex_x" in r :
 			pkey="%s/%s_"%(self.path,self.name)
 			rnx,rny,rnz = r["nx"],r["ny"],r["nz"]
 			fkey="%dx%dx%d"%(rnx,rny,rnz)
@@ -1485,14 +1485,14 @@ of these occasional errors"""
 			if not nodata:
 
 				if region != None: ret.to_zero() # this has to occur in situations where the clip region goes outside the image
-				if r.has_key("data_path"):
+				if "data_path" in r:
 					p,l=r["data_path"].split("*")
 					if p[0]=='/' or p[0]=='\\' or p[1]==':': ret.read_data(p,int(l),region,rnx,rny,rnz)		# absolute path
 					else :
 						ret.read_data(self.path+"/"+p,int(l),region,rnx,rny,rnz) 		# relative path
 				else:
 					try: n=loads(self.bdb.get(fkey+dumps(key,-1)))	 # this is the index for this binary data item in the image-dimensions-specific binary data file
-					except: raise KeyError,"Undefined data location key %s for %s"%(key,pkey+fkey)
+					except: raise KeyError("Undefined data location key %s for %s"%(key,pkey+fkey))
 					try: ret.read_data(pkey+fkey,n*4*rnx*rny*rnz,region,rnx,rny,rnz)	# note that this uses n, NOT 'key'. Images cannot be located in the binary file based on their numerical key
 					except :
 						import socket
@@ -1535,7 +1535,7 @@ of these occasional errors"""
 			try :
 				n=loads(self.bdb.get(fkey+dumps(key,-1),txn=txn))
 			except:
-				if not self.has_key(fkey) :
+				if fkey not in self :
 					self[fkey]=0
 				else: self[fkey]+=1
 				n=self[fkey]
@@ -1549,7 +1549,7 @@ of these occasional errors"""
 			ad["timestamp"]="%04d/%02d/%02d %02d:%02d:%02d"%t[:6]
 			self.put(dumps(key,-1),dumps(ad,-1),txn=txn)
 
-			if isinstance(key,int) and (not self.has_key("maxrec") or key>self["maxrec"]) :
+			if isinstance(key,int) and ("maxrec" not in self or key>self["maxrec"]) :
 				self["maxrec"]=key
 
 				# update the image count cache
@@ -1575,25 +1575,25 @@ of these occasional errors"""
 
 		else :
 			self.put(dumps(key,-1),dumps(val,-1),txn=txn)
-			if isinstance(key,int) and (not self.has_key("maxrec") or key>self["maxrec"]) : self["maxrec"]=key
+			if isinstance(key,int) and ("maxrec" not in self or key>self["maxrec"]) : self["maxrec"]=key
 
 	def set_header(self,key,val,txn=None):
 		"Alternative to x[key]=val with transaction set"
 		self.realopen()
 		# make sure the object exists and is an EMData object
 		try: r=loads(self.bdb.get(dumps(key,-1),txn=txn))
-		except: raise Exception,"set_header can only be used to update existing EMData objects"
-		if not isinstance(r,dict) or not r.has_key("is_complex_ri") :
-			raise Exception,"set_header can only be used to update existing EMData objects"
+		except: raise Exception("set_header can only be used to update existing EMData objects")
+		if not isinstance(r,dict) or "is_complex_ri" not in r :
+			raise Exception("set_header can only be used to update existing EMData objects")
 
-		if (val==None) : raise Exception,"You cannot delete an EMData object header"
+		if (val==None) : raise Exception("You cannot delete an EMData object header")
 		elif isinstance(val,EMData) :
 			# write the metadata
 			ad=val.get_attr_dict()
 			self.bdb.put(dumps(key,-1),dumps(ad,-1),txn=txn)
 		elif isinstance(val,dict) :
 			self.bdb.put(dumps(key,-1),dumps(val,-1),txn=txn)
-		else : raise Exception,"set_header is only valid for EMData objects or dictionaries"
+		else : raise Exception("set_header is only valid for EMData objects or dictionaries")
 
 
 	def update(self,dict):

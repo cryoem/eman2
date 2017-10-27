@@ -50,7 +50,7 @@ def e2boxer_check(options,args):
 		if not js_check_dict("e2boxercache/swarm.json"): error_message.append("There is no autoboxing information present in the current directory")
 		else:
 			db = js_open_dict("e2boxercache/swarm.json")
-			if not db.has_key(options.autoboxer):
+			if options.autoboxer not in db:
 				s = "There is no autoboxing information present for %s." %options.autoboxer
 				if len(db.keys()) > 0:
 					s+= ("Choose from")
@@ -227,7 +227,7 @@ def gauss_cmd_line_autobox(args,options,logid):
 		err = "There is no gausse method autoboxing information present in the current directory"
 		return err
 	gbdb = js_open_dict(gdb_name)
-	if (not gbdb.has_key(boxkey)):
+	if (boxkey not in gbdb):
 		err = "There is no autoboxing information present for %s." %boxkey
 		return err
 
@@ -333,7 +333,7 @@ def write_output(args,options,logid, database="e2boxercache"):
 							print('exiting...')
 							return
 						gbdb = js_open_dict(gdb_name)
-						if not gbdb.has_key(boxkey):
+						if boxkey not in gbdb:
 							print("no gauss mode autoboxing parameters were found in database for %s...this should not happen"%boxkey)
 							print('exiting...')
 							return
@@ -1819,7 +1819,7 @@ class SwarmTool(SwarmBoxer,EMBoxingTool):
 					self.moving=[m,box_num,box.type]
 #					self.target().moving_box_established(box_num)
 			else:
-				raise EMUnknownBoxType,box.type
+				raise EMUnknownBoxType(box.type)
 
 
 
@@ -1830,7 +1830,7 @@ class SwarmTool(SwarmBoxer,EMBoxingTool):
 			self.target().remove_box(box_num)
 			self.remove_ref(box,self.target().current_file())
 		else:
-			raise EMUnknownBoxType,box.type
+			raise EMUnknownBoxType(box.type)
 
 	def mouse_drag(self,event) :
 		m=self.get_2d_window().scr_to_img((event.x(),event.y()))
@@ -1864,7 +1864,7 @@ class SwarmTool(SwarmBoxer,EMBoxingTool):
 	def moving_ptcl_established(self,box_num,x,y):
 		box = self.target().get_box(box_num)
 		if box.type not in [SwarmBoxer.REF_NAME,SwarmBoxer.AUTO_NAME,SwarmBoxer.WEAK_REF_NAME]:
-			raise EMUnknownBoxType,box.type
+			raise EMUnknownBoxType(box.type)
 
 		self.ptcl_moving_data = [x,y,box_num]
 
@@ -1894,7 +1894,7 @@ class SwarmTool(SwarmBoxer,EMBoxingTool):
 	def delete_ptcl(self,box_num):
 		box = self.target().get_box(box_num)
 		if box.type not in [SwarmBoxer.REF_NAME,SwarmBoxer.AUTO_NAME,SwarmBoxer.WEAK_REF_NAME]:
-			raise EMUnknownBoxType,box.type
+			raise EMUnknownBoxType(box.type)
 
 		self.handle_box_delete(self.target().get_box(box_num),box_num)
 
@@ -2417,7 +2417,7 @@ class GaussPanel:
 			ctf_cs           = float(self.ctf_cs.text())
 			ctf_ampcont      = float(self.ctf_ampcont.text())
 
-		except ValueError,extras:
+		except ValueError as extras:
 			# conversion of a value failed!
 			print("integer conversion failed.")
 			if not(extras.args is None):
@@ -2489,7 +2489,7 @@ class GaussPanel:
 		gbdb = js_open_dict(GaussPanel.GDB_NAME)
 		ctfdict = {'pixel_input':input_pixel_size,'pixel_output':output_pixel_size,'ctf_fstart':ctf_f_start,'ctf_fstop':ctf_f_stop, 'ctf_window':ctf_window_size,'ctf_edge':ctf_edge_size,'ctf_overlap':ctf_overlap_size,'ctf_ampcont':ctf_ampcont,'ctf_volt':ctf_volt,'ctf_cs':ctf_cs}
 		#print "calc_ctf image_name: ", image_name
-		if gbdb.has_key(image_name):
+		if image_name in gbdb:
 			olddict=gbdb[image_name]
 			gbdb[image_name] = dict((olddict).items() + ctfdict.items() ) # merge the two dictionaries with conflict resolution resolved in favorr of the latest ctf parameters
 		else:
@@ -2536,7 +2536,7 @@ class GaussPanel:
 			ctf_ampcont      = float(self.ctf_ampcont.text())
 			ctf_kboot        = int(self.ctf_kboot.text())
 
-		except ValueError,extras:
+		except ValueError as extras:
 			# conversion of a value failed!
 			print("integer conversion failed.")
 			if not(extras.args is None):
@@ -2595,7 +2595,7 @@ class GaussPanel:
 		gbdb = db_open_dict(GaussPanel.GDB_NAME)
 		ctfdict = {'pixel_input':input_pixel_size,'pixel_output':output_pixel_size,'ctf_window':ctf_window_size,'ctf_edge':ctf_edge_size,'ctf_overlap':ctf_overlap_size,'ctf_ampcont':ctf_ampcont,'ctf_volt':ctf_volt,'ctf_cs':ctf_cs, 'ctf_kboot':ctf_kboot}
 		#print "calc_ctf image_name: ", image_name
-		if gbdb.has_key(image_name):
+		if image_name in gbdb:
 			olddict=gbdb[image_name]
 			gbdb[image_name] = dict((olddict).items() + ctfdict.items() ) # merge the two dictionaries with conflict resolution resolved in favorr of the latest ctf parameters
 		else:
@@ -2808,7 +2808,7 @@ class GaussBoxer:
 
 		autoboxdict = {'boxsize':boxsize, 'pixel_input':self.pixel_input, 'pixel_output':self.pixel_output, 'invert_contrast':self.invert, 'use_variance':self.use_variance, 'gauss_width':self.gauss_width,'thr_low':self.thr_low,'thr_hi':self.thr_hgh}
 
-		if gbdb.has_key(imgname):
+		if imgname in gbdb:
 			oldautoboxdict = gbdb[imgname]
 			gbdb[imgname] = dict(oldautoboxdict.items() + autoboxdict.items()) # resolve conflicts in favor of new autoboxdict
 		else:
@@ -3109,7 +3109,7 @@ class GaussTool(GaussBoxer,EMBoxingTool):
 			self.target().remove_box(box_num)
 			self.remove_ref(box,self.target().current_file())
 		else:
-			raise EMUnknownBoxType,box.type
+			raise EMUnknownBoxType(box.type)
 
 	def mouse_drag(self,event) :
 		m=self.get_2d_window().scr_to_img((event.x(),event.y()))
@@ -3143,7 +3143,7 @@ class GaussTool(GaussBoxer,EMBoxingTool):
 	def moving_ptcl_established(self,box_num,x,y):
 		box = self.target().get_box(box_num)
 		if box.type not in [GaussBoxer.REF_NAME,GaussBoxer.AUTO_NAME,GaussBoxer.WEAK_REF_NAME]:
-			raise EMUnknownBoxType,box.type
+			raise EMUnknownBoxType(box.type)
 
 		self.ptcl_moving_data = [x,y,box_num]
 
@@ -3173,7 +3173,7 @@ class GaussTool(GaussBoxer,EMBoxingTool):
 	def delete_ptcl(self,box_num):
 		box = self.target().get_box(box_num)
 		if box.type not in [GaussBoxer.REF_NAME,GaussBoxer.AUTO_NAME,GaussBoxer.WEAK_REF_NAME]:
-			raise EMUnknownBoxType,box.type
+			raise EMUnknownBoxType(box.type)
 
 		self.handle_box_delete(self.target().get_box(box_num),box_num)
 

@@ -86,7 +86,7 @@ def main():
 		except:
 			print("Tile not present in file")
 			sys.exit(1)
-		o=file("/tmp/tile.jpg","w")
+		o=open("/tmp/tile.jpg","w")
 		o.write(img)
 		o.close()
 		os.system("display /tmp/tile.jpg")
@@ -96,7 +96,7 @@ def tile_list(tilefile):
 	"""tile_list(tilefile)
 	Extract dictionary of tiles from a tilefile"""
 	
-	tf=file(tilefile,"r")
+	tf=open(tilefile,"r")
 	
 	td=pickle.load(tf)
 
@@ -107,7 +107,7 @@ def get_tile(tilefile,level,x,y):
 	"""get_tile(tilefile,level,x,y)
 	retrieve a tile from the file"""
 	
-	tf=file(tilefile,"r")
+	tf=open(tilefile,"r")
 	
 	td=pickle.load(tf)
 	a=td[(level,x,y)]
@@ -125,7 +125,7 @@ def build_tiles(img,tilefile,tilesize,options=[]):
 	options may include : pspec """
 	levels=ceil(log(max(img.get_xsize(),img.get_ysize())/tilesize)/log(2.0))
 	
-	tf=file(tilefile,"w")
+	tf=open(tilefile,"w")
 	
 	tile_dict={}
 	pos=0
@@ -208,7 +208,7 @@ def build_tiles(img,tilefile,tilesize,options=[]):
 		for x in range(0,xs,tilesize):
 			for y in range(0,ys,tilesize):
 				fsp="tmpimg.%d.%03d.%03d.jpg"%(l,x/tilesize,y/tilesize)
-				a=file(fsp,"r")
+				a=open(fsp,"r")
 				b=a.read()
 				a.close()
 				tf.write(b)
@@ -218,7 +218,7 @@ def build_tiles(img,tilefile,tilesize,options=[]):
 	
 	if "pspec" in options :
 		for fsp in ["tmpimg.jpg","tmpimg2.png"] :
-			a=file(fsp,"r")
+			a=open(fsp,"r")
 			b=a.read()
 			a.close()
 			tf.write(b)

@@ -154,7 +154,7 @@ def apply_rotation(angleset1, qrot):
 		angleset2 = new_ang2
 	"""
 	import types
-	if(type(qrot) == types.ListType): rot = Transform({"type":"spider","phi":qrot[0],"theta":qrot[1],"psi":qrot[2]})
+	if(type(qrot) == list): rot = Transform({"type":"spider","phi":qrot[0],"theta":qrot[1],"psi":qrot[2]})
 	else:                             rot = qrot
 	for i in xrange(len(angleset1)):
 		T1 = Transform({"type":"spider","phi":angleset1[i][0],"theta":angleset1[i][1],"psi":angleset1[i][2],"tx":0.0,"ty":0.0,"tz":0.0,"mirror":0,"scale":1.0})
@@ -166,7 +166,7 @@ def apply_rotation(angleset1, qrot):
 def apply_rotation_gaps(angleset1, qrot):
 	from EMAN2 import Transform, Vec2f
 	import types
-	if(type(qrot) == types.ListType): rot = Transform({"type":"spider","phi":qrot[0],"theta":qrot[1],"psi":qrot[2]})
+	if(type(qrot) == list): rot = Transform({"type":"spider","phi":qrot[0],"theta":qrot[1],"psi":qrot[2]})
 	else:                             rot = qrot
 	for i in xrange(len(angleset1)):
 		if(len(angleset1[i]) > 1):
@@ -427,7 +427,7 @@ def main():
 		for i in xrange(6):
 			prms = read_text_row(os.path.join(outdir,options.params+"%01d.txt"%i))
 			for q in blocks:
-				if params.has_key(q+chr(48+i)):
+				if q+chr(48+i) in params:
 					params[q+chr(48+i)] = prms[:chunklengths[q]]
 					del prms[:chunklengths[q]]
 
@@ -532,7 +532,7 @@ def main():
 			#  These parameters refer to the original X files.
 			ll = 0
 			for m in xrange(6):
-				if params.has_key(q+chr(48+m)):
+				if q+chr(48+m) in params:
 					prmsgood = []
 					prmsbad  = []
 					try:
@@ -567,7 +567,7 @@ def main():
 		for i in xrange(6):
 			prms = []
 			for q in blocks:
-				if params.has_key(q+chr(48+i)):
+				if q+chr(48+i) in params:
 					try:
 						j = lefts.index(q+chr(48+i))
 						prms += params[q+chr(48+i)]

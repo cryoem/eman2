@@ -537,7 +537,7 @@ class EMProjectManager(QtGui.QMainWindow):
 			try : os.unlink("%s/pmfifo"%os.getcwd())
 			except : pass
 			os.mkfifo("%s/pmfifo"%os.getcwd())
-			stdoutpipe = file("%s/pmfifo"%os.getcwd(),"w+",0)
+			stdoutpipe = open("%s/pmfifo"%os.getcwd(),"w+",0)
 		else:
 			stdoutpipe = None
 
@@ -573,7 +573,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		helpstr = ""
 		bregex = re.compile('usage\s*=\s*"""')
 		eregex = re.compile('"""')
-		for line in f.xreadlines():
+		for line in f:
 			if re.search(eregex, line) and begin:
 				line = re.sub(eregex, "", line)
 				helpstr = helpstr + line.strip()
@@ -721,7 +721,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		defaultre = re.compile("default\s*=\s*[^,]*")
 
 		# Read line and do preprocessing(set mode defaults if desired)
-		for line in f.xreadlines():
+		for line in f:
 			if mode:
 				if not re.search(moderegex, line): continue	# If we are running the program in a mode, then only eval mode lines
 				string = re.findall(modedefre, re.findall(moderegex, line)[0])
@@ -900,7 +900,7 @@ class EMPopen(subprocess.Popen):
 		subprocess.Popen.__init__(self, args, bufsize=bufsize, executable=executable, stdin=stdin, stdout=stdout, stderr=stderr, preexec_fn=preexec_fn, close_fds=close_fds, shell=shell, cwd=cwd, env=env, universal_newlines=universal_newlines, startupinfo=startupinfo, creationflags=creationflags)
 
 	def realTimeCommunicate(self, msgbox):
-		self.pmfifo = file("%s/pmfifo"%os.getcwd(),"r+")
+		self.pmfifo = open("%s/pmfifo"%os.getcwd(),"r+")
 		self.msgbox = msgbox
 		rtcom = threading.Thread(target=self.realTimeChatter)
 		rtcom.start()
@@ -1751,7 +1751,7 @@ class PMGUIWidget(QtGui.QScrollArea):
 		""" return the default value according to the folowing rules"""
 		# If there is a DB and its usage is desired the default will be the DB value
 		k=option['name']+self.getSharingMode(option)
-		if not nodb and self.db.has_key(k): return self.db[k]	# Return the default if it exists in the DB
+		if not nodb and k in self.db: return self.db[k]	# Return the default if it exists in the DB
 		default = ""
 		if 'default' in option: default = option['default']
 		if type(default) == str and "self.pm()" in default: default = eval(default)	# eval CS, apix, voltage, etc, a bit of a HACK, but it works
@@ -1834,7 +1834,7 @@ class PMGUIWidget(QtGui.QScrollArea):
 		#process
 		for option in options:
 			ov = option.split('=', 1)
-			if not self.widgethash.has_key(ov[0][3:]):
+			if ov[0][3:] not in self.widgethash:
 				self.pm().statusbar.setMessage("Rubbish!!! Option '%s' not found."%ov[0][3:],"color:red;")
 				continue
 			if len(ov) == 2:

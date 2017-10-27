@@ -147,15 +147,15 @@ def main():
 	# convert to FSC
 	fsc=[i/(2.0+i) for i in snr]
 
-	out=file(args[2],"w")
+	out=open(args[2],"w")
 	for i in range(len(fsc)): out.write("%f\t%f\n"%(x[i],fsc[i]))
 	out.close()
 	
-	out=file(args[2]+".dat","w")
+	out=open(args[2]+".dat","w")
 	for i in range(len(fsc)): out.write("%f\t%f\n"%(x[i],datapow[i]))
 	out.close()
 
-	out=file(args[2]+".noi","w")
+	out=open(args[2]+".noi","w")
 	for i in range(len(noisepow)): out.write("%f\t%f\n"%(x[i],noisepow[i]))
 	out.close()
 	

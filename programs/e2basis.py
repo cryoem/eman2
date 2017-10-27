@@ -117,7 +117,7 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 	
 	# Project an image stack into a basis subspace
 	if args[0]=="project" :
-		if options.txtout : tout=file(args[3],"w")
+		if options.txtout : tout=open(args[3],"w")
 		# normalize the basis vectors to unit length
 		for b in basis: b.process_inplace("normalize.unitlen")
 		

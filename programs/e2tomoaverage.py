@@ -211,11 +211,11 @@ class EMBootStrappedAverages:
 			yes = True
 			# if any of the indices have already been encountered then they can not form a couple
 			try:
-				(val for val in taken if val == i ).next()
+				next((val for val in taken if val == i ))
 				yes = False
 			except: pass
 			try:
-				(val for val in taken if val == j ).next()
+				next((val for val in taken if val == j ))
 				yes = False
 			except: pass
 			
@@ -225,7 +225,7 @@ class EMBootStrappedAverages:
 			else:
 				# it can't be made into a couple so add any indices into the taken list that are not already there
 				for idx in [i,j]:
-					try:  (val for val in taken if idx == val ).next()
+					try:  next((val for val in taken if idx == val ))
 					except: taken.append(idx)
 			
 			cmp_data_copy.set(best[0],best[1],cmp_max)
@@ -471,7 +471,7 @@ class EMTomoOutputWriter:
 		if len(all_solns) > 1:
 			target_name = base_name(files[target_idx])
 			probe_name = base_name(files[probe_idx]) 
-			out=file("log-s3-%s_VS_%s.txt"%(target_name,probe_name),"w")
+			out=open("log-s3-%s_VS_%s.txt"%(target_name,probe_name),"w")
 			peak = 0
 			for d in all_solns:
 				t = d["xform.align3d"]
@@ -678,7 +678,7 @@ class EMTomoAlignTask:
 		self.align_data = data["align"]
 		self.align_cmp_data = data["aligncmp"]
 		self.cmp_data = data["cmp"]
-		if data.has_key("ralign"):
+		if "ralign" in data:
 			self.ralign_data = data["ralign"]
 			self.ralign_cmp_data = data["raligncmp"]
 		else:

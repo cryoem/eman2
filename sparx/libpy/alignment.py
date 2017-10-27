@@ -5698,7 +5698,7 @@ def center_projections_3D(data, ref_vol = None, ali3d_options = None, onx = -1, 
 
 	#  Read	template volume if provided or reconstruct it
 	if ref_vol:
-		if type(ref_vol) is types.StringType:
+		if type(ref_vol) is bytes:
 			if myid == main_node:
 				vol = get_im(ref_vol)
 				i = vol.get_xsize()

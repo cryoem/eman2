@@ -275,7 +275,7 @@ class EMImage2DWidget(EMGLWidget):
 	def set_mouse_mode(self,mode_num):
 		if self.mouse_mode == mode_num:
 			return
-		if not self.mouse_mode_dict.has_key(mode_num):
+		if mode_num not in self.mouse_mode_dict:
 			print("unknown mouse mode:",mode_num)
 			return
 		self.mouse_mode = mode_num
@@ -2337,12 +2337,12 @@ class EMImageInspector2D(QtGui.QWidget):
 		if fsp[-4:]==".pgm" or fsp[-4:]==".ppm" : fsp=fsp[:-4]
 		(depth,w,h,bmap)=self.target().render_bitmap()
 		if depth==3 :
-			out=file(fsp+".ppm","w")
+			out=open(fsp+".ppm","w")
 			out.write("P6 %d %d 255\n"%(w,h))
 			out.write(bmap)
 			out.close()
 		elif depth==1 :
-			out=file(fsp+".pgm","w")
+			out=open(fsp+".pgm","w")
 			out.write("P5 %d %d 255\n"%(w,h))
 			print(w,h,w*h,len(bmap))
 			out.write(bmap)

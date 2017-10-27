@@ -45,9 +45,9 @@ def get_particles(pp,frameid, doinvert=-1):
 		return []
 	
 	gain=dark=None
-	if db.has_key("gain_name"):
+	if "gain_name" in db:
 		gain=EMData(str(db["gain_name"]), db["gain_id"])
-	if db.has_key("dark_name"):
+	if "dark_name" in db:
 		dark=EMData(str(db["dark_name"]), db["dark_id"])
 	
 	

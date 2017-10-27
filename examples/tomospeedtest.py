@@ -4,7 +4,7 @@ from EMAN2 import *
 import time
 import random
 
-out=file("logfile.txt","a")
+out=open("logfile.txt","a")
 
 for i in range(12,144):
 	a=test_image_3d(size=(i,i,i))

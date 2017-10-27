@@ -116,7 +116,7 @@ def main():
 			exit(1)
 	
 	if options.tlt != None:
-		fangles = np.asarray([ float( i ) for i in file( options.tlt , "r" ) ])
+		fangles = np.asarray([ float( i ) for i in open( options.tlt , "r" ) ])
 		tiltangles = fangles.tolist()
 		nslices = len( tiltangles )
 		pass

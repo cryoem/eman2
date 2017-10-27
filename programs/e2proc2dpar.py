@@ -105,7 +105,7 @@ def main():
 
 	logid = E2init(sys.argv,options.ppid)
 
-	if not file_mode_map.has_key(options.outmode) :
+	if options.outmode not in file_mode_map :
 		print("Invalid output mode, please specify one of :\n",str(file_mode_map.keys()).translate(None,'"[]'))
 		sys.exit(1)
 	

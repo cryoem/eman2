@@ -75,7 +75,7 @@ class EMTomoChooseFilteredPtclsTask(EMBaseTomoChooseFilteredPtclsTask):
 		self.form_db_name ="bdb:tomo.choose.filtered"
 
 	def on_form_ok(self,params):
-		if not params.has_key("tomo_filt_choice") or params["tomo_filt_choice"] == None:
+		if "tomo_filt_choice" not in params or params["tomo_filt_choice"] == None:
 			error("Please choose some data")
 			return
 		choice = params["tomo_filt_choice"]
@@ -181,7 +181,7 @@ class E2TomoFilterParticlesTask(WorkFlowTask):
 	def check_name_param(self,params):
 		error_message = []
 		
-		if not params.has_key("name"):
+		if "name" not in params:
 			error_message.append("You must supply a name for your filtered set")
 		else:
 			if params["name"] in self.get_previous_filtered_set_names():
@@ -190,7 +190,7 @@ class E2TomoFilterParticlesTask(WorkFlowTask):
 		return error_message
 	
 	def on_form_ok(self,params):	
-		if  params.has_key("filenames") and len(params["filenames"]) == 0:
+		if  "filenames" in params and len(params["filenames"]) == 0:
 			self.run_select_files_msg()
 			return
 		
@@ -202,7 +202,7 @@ class E2TomoFilterParticlesTask(WorkFlowTask):
 		if params["alt"] != 0 or params["az"] != 0 or params["phi"] != 0:
 			params["rotate"] = "%.2f,%.2f,%.2f" %(params["az"],params["alt"],params["phi"])
 
-		if params.has_key("rotate") or params.has_key("filter_processor"):
+		if "rotate" in params or "filter_processor" in params:
 			success,cmd = self.process_all(params)
 			if not success:
 				error("Command failed:"+cmd)
@@ -237,7 +237,7 @@ class E2TomoFilterParticlesTask(WorkFlowTask):
 		return previous_sets
 	
 	def convert_to_root(self,name):
-		if self.name_map.has_key(name): return self.name_map[name]
+		if name in self.name_map: return self.name_map[name]
 		else:return name
 	
 	def output_names(self,params):
@@ -258,9 +258,9 @@ class E2TomoFilterParticlesTask(WorkFlowTask):
 			cmd = "e2proc3d.py"
 			cmd += " "+name
 			cmd += " "+outnames[i]
-			if params.has_key("filter_processor"):
+			if "filter_processor" in params:
 				cmd += " --process="+params["filter_processor"]
-			if params.has_key("rotate"):
+			if "rotate" in params:
 				cmd += " --rot="+params["rotate"]
 			success = (os.system(cmd) in (0,12))
 			if not success:
@@ -285,7 +285,7 @@ class E2TomoFilterParticlesTask(WorkFlowTask):
 		
 		for i,name in enumerate(params["filenames"]):
 			real_name = self.convert_to_root(name)
-			if db_map.has_key(real_name):
+			if real_name in db_map:
 				d = db_map[real_name]
 				d[params["name"]] = outnames[i]
 				db_map[real_name] = d
@@ -305,7 +305,7 @@ class EMTomoChooseFilteredPtclsForFiltTask(EMBaseTomoChooseFilteredPtclsTask):
 		self.task_type = task_type
 
 	def on_form_ok(self,params):
-		if not params.has_key("tomo_filt_choice") or params["tomo_filt_choice"] == None:
+		if "tomo_filt_choice" not in params or params["tomo_filt_choice"] == None:
 			error("Please choose some data")
 			return
 		choice = params["tomo_filt_choice"]
@@ -325,7 +325,7 @@ class EMTomoBootStapChoosePtclsTask(EMBaseTomoChooseFilteredPtclsTask):
 		self.form_db_name ="bdb:tomo.choose.forbootstraptomo"
 
 	def on_form_ok(self,params):
-		if not params.has_key("tomo_filt_choice") or params["tomo_filt_choice"] == None:
+		if "tomo_filt_choice" not in params or params["tomo_filt_choice"] == None:
 			error("Please choose some data")
 			return
 		choice = params["tomo_filt_choice"]
@@ -505,10 +505,10 @@ class EMTomoBootstrapTask(WorkFlowTask):
 		
 	def on_form_ok(self,params):
 		
-		if not params.has_key("filenames"):
+		if "filenames" not in params:
 			EMErrorMessageDisplay.run(["Please select files for processing"])
 			return
-		if  params.has_key("filenames") and len(params["filenames"]) == 0:
+		if  "filenames" in params and len(params["filenames"]) == 0:
 			EMErrorMessageDisplay.run(["Please select files for processing"])
 			return
 		if len(params["refnames"]) > 1:
@@ -641,11 +641,11 @@ class E2TomoBoxerGuiTask(WorkFlowTask):
 	
 	def on_form_ok(self,params):
 		
-		if not params.has_key("filenames"):
+		if "filenames" not in params:
 			EMErrorMessageDisplay.run(["Please select files for processing"])
 			return
 		
-		if  params.has_key("filenames") and len(params["filenames"]) == 0:
+		if  "filenames" in params and len(params["filenames"]) == 0:
 			EMErrorMessageDisplay.run(["Please select files for processing"])
 			return
 

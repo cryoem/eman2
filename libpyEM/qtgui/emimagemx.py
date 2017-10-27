@@ -147,7 +147,7 @@ class EMMatrixPanel:
 		'''
 
 		s = str(view_width) + str(view_height)
-		if self.scale_cache.has_key(s):
+		if s in self.scale_cache:
 			return self.scale_cache[s]
 
 		n = len(view_data)
@@ -429,7 +429,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		something else causes the set object to be reallocated in the meantime, strange things
 		may occur, so modifications of the set should be done promptly."""
 
-		if not self.sets.has_key(name) : self.sets[name]=set()
+		if name not in self.sets : self.sets[name]=set()
 		return self.sets[name]
 
 
@@ -437,7 +437,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		'''
 		Called from e2eulerxplor
 		'''
-		if not self.sets.has_key(name) or force : self.sets[name]=set(lst)
+		if name not in self.sets or force : self.sets[name]=set(lst)
 		if display : self.sets_visible[name]=self.sets[name]
 		if self.current_set==None : self.current_set=name
 		self.force_display_update()
@@ -1157,7 +1157,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 						draw_tex = True
 						excluded = False
 						try:
-							(ii for ii in deleted_idxs if ii == i ).next()
+							next((ii for ii in deleted_idxs if ii == i ))
 							excluded = True
 						except: pass
 						if not excluded:
@@ -1573,7 +1573,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 		origname = self.get_image_file_name()
 
-		f = file(fsp,'w')
+		f = open(fsp,'w')
 		f.write('#LST\n')
 
 		progress = EMProgressDialog("Writing files", "abort", 0, len(self.data),None)
@@ -1773,7 +1773,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		if lc != None:
 			a = self.get_box_image(lc[0])
 			d = a.get_attr_dict()
-			if d.has_key("class_ptcl_src") and d.has_key("class_ptcl_idxs"):
+			if "class_ptcl_src" in d and "class_ptcl_idxs" in d:
 
 				# With shift-click we try to show rotated/translated images
 				if  event.modifiers()&Qt.ShiftModifier:			# If shift is pressed, transform the particle orientations
@@ -2357,7 +2357,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 				action=self.vals.addAction(i)
 				action.setCheckable(1)
 				action.setChecked(0)
-		except Exception, inst:
+		except Exception as inst:
 			print(type(inst))	 # the exception instance
 			print(inst.args)	  # arguments stored in .args
 	
@@ -2372,7 +2372,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 		return button
 
 	def set_mouse_mode(self,mode):
-		b = (button for button in self.mouse_mode_but_grp.buttons() if str(button.text()) == mode ).next() # raises if it's not there, as it should
+		b = next((button for button in self.mouse_mode_but_grp.buttons() if str(button.text()) == mode )) # raises if it's not there, as it should
 		b.setChecked(True) # triggers an event telling the EMImageMXWidget to changes its mouse event handler
 
 	def set_current_tab(self,widget):
@@ -2757,7 +2757,7 @@ class EMMXDataCache:
 
 	def get_item_from_emsave(self,idx):
 		try:
-			(i for i in self.excluded_list if i == idx).next()
+			next((i for i in self.excluded_list if i == idx))
 			return None
 		except:
 			return self[idx]
@@ -3247,7 +3247,7 @@ class EMDataListCache(EMMXDataCache):
 		self.current_iter = 0
 		return self
 
-	def next(self):
+	def __next__(self):
 		''' Iteration support '''
 		if self.current_iter >= self.max_idx:
 			raise StopIteration
@@ -3351,7 +3351,7 @@ class EM3DDataListCache(EMMXDataCache):
 
 	def __getitem__(self,idx):
 
-		if not self.images.has_key(idx):
+		if idx not in self.images:
 			a = EMData()
 			if self.major_axis == "z":
 				r = Region(0,0,idx,self.nx,self.ny,1)
@@ -3377,7 +3377,7 @@ class EM3DDataListCache(EMMXDataCache):
 		self.current_iter = 0
 		return self
 
-	def next(self):
+	def __next__(self):
 		''' Iteration support '''
 		if self.current_iter > self.max_idx:
 			raise StopIteration

@@ -208,7 +208,7 @@ e2classextract.py --orientcls refine_03/cls_result_04 --orientedparticles sets/a
 				print("No model_id in class average {}. Was this classes file created with e2refinemulti.py ?".format(c))
 				sys.exit(1)
 
-			if not outlst.has_key(mdl) :
+			if mdl not in outlst :
 				if options.setname!=None :
 					if options.setname[-4:]==".lst" : fsp="{}_m{}.lst".format(options.setname[:-4],mdl)
 					else: fsp="{}_m{}.lst".format(options.setname,mdl)
@@ -256,7 +256,7 @@ e2classextract.py --orientcls refine_03/cls_result_04 --orientedparticles sets/a
 	elif options.classlist:
 		# Read the file containing class-average numbers
 		try:
-			clsnums=[int(i) for i in re.split("[\s,;]*",file(options.classlist,"r").read()) if len(i)>0 and i[0]!="#"]
+			clsnums=[int(i) for i in re.split("[\s,;]*",open(options.classlist,"r").read()) if len(i)>0 and i[0]!="#"]
 		except:
 			print("Error: Could not read and parse classlist file. Must be a comma/whitespace separated list of integers.")
 			sys.exit(1)

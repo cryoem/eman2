@@ -28,7 +28,7 @@ def myfn(*args,**kargs):
 	return (args,kargs)
 
 
-lines=[i for i in file(sys.argv[1],"r")]
+lines=[i for i in open(sys.argv[1],"r")]
 
 for j,i in enumerate(lines): 
 	if "parser.add_argument" in i or "parser.add_option" in i:

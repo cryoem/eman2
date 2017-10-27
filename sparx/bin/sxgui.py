@@ -3131,7 +3131,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 				sxcmd.token_dict[sxcmd_token.key_base] = sxcmd_token
 
 			# Register this to command to command category dictionary
-			assert sxcmd_category_dict.has_key(sxcmd.category), "sxcmd.category %s" % (sxcmd.category)
+			assert sxcmd.category in sxcmd_category_dict, "sxcmd.category %s" % (sxcmd.category)
 			sxcmd_category_dict[sxcmd.category].cmd_list.append(sxcmd)
 
 		# Store the constructed lists and dictionary as a class data member

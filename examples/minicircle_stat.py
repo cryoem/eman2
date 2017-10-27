@@ -26,7 +26,7 @@ for pf in sorted(sys.argv[1:]):
 	# identify when we've started on a new directory
 	dr=pf.split("/")[0]
 	if ldr!=dr :
-		out=file("stat_%s.txt"%dr,"w")
+		out=open("stat_%s.txt"%dr,"w")
 		ldr=dr
 		drn=0
 	else: drn+=1

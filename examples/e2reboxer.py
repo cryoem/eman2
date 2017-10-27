@@ -87,7 +87,7 @@ This is normally used to change the particle box-size.
 			continue
 		
 		db=js_open_dict(info_name(m))
-		if not db.has_key("boxes") :
+		if "boxes" not in db :
 			db.close()
 			if options.verbose>0 : print("No boxes in: ",m)
 			continue

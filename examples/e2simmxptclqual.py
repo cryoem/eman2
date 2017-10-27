@@ -119,7 +119,7 @@ def main():
 	
 	print("Particle quality file")
 	# Output particle quality file
-	out=file("simqual.txt","w")
+	out=open("simqual.txt","w")
 	t=time.time()
 	outn=0
 	for y in xrange(ny):

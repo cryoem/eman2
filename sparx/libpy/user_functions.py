@@ -1005,7 +1005,7 @@ def do_volume_mrk02(ref_data):
 	except:  local_filter = False
 	#=========================================================================
 	# volume reconstruction
-	if( type(data) == types.ListType ):
+	if( type(data) == list ):
 		if Tracker["constants"]["CTF"]:
 			vol = recons3d_4nn_ctf_MPI(myid, data, Tracker["constants"]["snr"], \
 					symmetry=Tracker["constants"]["sym"], npad=Tracker["constants"]["npad"], mpi_comm=mpi_comm, smearstep = Tracker["smearstep"])
@@ -1027,7 +1027,7 @@ def do_volume_mrk02(ref_data):
 			from utilities import adaptive_mask
 			mask3D = adaptive_mask(vol)
 		else:
-			if( type(Tracker["constants"]["mask3D"]) == types.StringType ):  mask3D = get_im(Tracker["constants"]["mask3D"])
+			if( type(Tracker["constants"]["mask3D"]) == bytes ):  mask3D = get_im(Tracker["constants"]["mask3D"])
 			else:  mask3D = (Tracker["constants"]["mask3D"]).copy()
 			nxm = mask3D.get_xsize()
 			if( nx != nxm):
@@ -1060,7 +1060,7 @@ def do_volume_mrk02(ref_data):
 				# skip low-pass filtration
 				vol = fft( filt_table( vol, ro) )
 			else:
-				if( type(Tracker["lowpass"]) == types.ListType ):
+				if( type(Tracker["lowpass"]) == list ):
 					vol = fft( filt_table( filt_table(vol, Tracker["lowpass"]), ro) )
 				else:
 					vol = fft( filt_table( filt_tanl(vol, Tracker["lowpass"], Tracker["falloff"]), ro) )
@@ -1077,7 +1077,7 @@ def do_volume_mrk02(ref_data):
 				filt_table(vol, ro)
 				del ro
 			if not local_filter:
-				if( type(Tracker["lowpass"]) == types.ListType ):
+				if( type(Tracker["lowpass"]) == list ):
 					vol = filt_table(vol, Tracker["lowpass"])
 				else:
 					vol = filt_tanl(vol, Tracker["lowpass"], Tracker["falloff"])
@@ -1167,7 +1167,7 @@ def do_volume_mrk03(ref_data):
 	except:  local_filter = False
 	#=========================================================================
 	# volume reconstruction
-	if( type(data) == types.ListType ):
+	if( type(data) == list ):
 		if Tracker["constants"]["CTF"]:
 			#vol = recons3d_4nn_ctf_MPI(myid, data, Tracker["constants"]["snr"], \
 			#		symmetry=Tracker["constants"]["sym"], npad=Tracker["constants"]["npad"], mpi_comm=mpi_comm, smearstep = Tracker["smearstep"])
@@ -1191,7 +1191,7 @@ def do_volume_mrk03(ref_data):
 			from utilities import adaptive_mask
 			mask3D = adaptive_mask(vol)
 		else:
-			if( type(Tracker["constants"]["mask3D"]) == types.StringType ):  mask3D = get_im(Tracker["constants"]["mask3D"])
+			if( type(Tracker["constants"]["mask3D"]) == bytes ):  mask3D = get_im(Tracker["constants"]["mask3D"])
 			else:  mask3D = (Tracker["constants"]["mask3D"]).copy()
 			nxm = mask3D.get_xsize()
 			if( nx != nxm ):
@@ -1201,7 +1201,7 @@ def do_volume_mrk03(ref_data):
 				assert(nx == nxm)
 
 		if not local_filter:
-			if( type(Tracker["lowpass"]) == types.ListType ):
+			if( type(Tracker["lowpass"]) == list ):
 				vol = filt_table(vol, Tracker["lowpass"])
 			else:
 				vol = filt_tanl(vol, Tracker["lowpass"], Tracker["falloff"])
@@ -1292,7 +1292,7 @@ def do_volume_mrk04(ref_data):
 	except:  local_filter = False
 	#=========================================================================
 	# volume reconstruction
-	if( type(data) == types.ListType ):
+	if( type(data) == list ):
 		if Tracker["constants"]["CTF"]:
 			ERROR("should not be here","mrk04",1)
 			vol = recons3d_4nn_ctf_MPI(myid, data, Tracker["constants"]["snr"], \
@@ -1315,7 +1315,7 @@ def do_volume_mrk04(ref_data):
 			from utilities import adaptive_mask
 			mask3D = adaptive_mask(vol)
 		else:
-			if( type(Tracker["constants"]["mask3D"]) == types.StringType ):  mask3D = get_im(Tracker["constants"]["mask3D"])
+			if( type(Tracker["constants"]["mask3D"]) == bytes ):  mask3D = get_im(Tracker["constants"]["mask3D"])
 			else:  mask3D = (Tracker["constants"]["mask3D"]).copy()
 			nxm = mask3D.get_xsize()
 			if( nx != nxm):
@@ -1419,7 +1419,7 @@ def do_volume_mrk05(ref_data):
 		from utilities import adaptive_mask
 		mask3D = adaptive_mask(vol)
 	else:
-		if( type(Tracker["constants"]["mask3D"]) == types.StringType ):  mask3D = get_im(Tracker["constants"]["mask3D"])
+		if( type(Tracker["constants"]["mask3D"]) == bytes ):  mask3D = get_im(Tracker["constants"]["mask3D"])
 		else:  mask3D = (Tracker["constants"]["mask3D"]).copy()
 		nxm = mask3D.get_xsize()
 		if( nx != nxm):

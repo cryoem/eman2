@@ -299,7 +299,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 						ns=[len(i) for i in v]
 						fsp=db+"-"+k+".txt"
 						print("%s  (%d columns)"%(fsp,len(ns)))
-						out=file(fsp,"w")
+						out=open(fsp,"w")
 						for i in range(ns[0]):
 							for j in range(len(ns)):
 								out.write(str(v[j][i]))

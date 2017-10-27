@@ -94,7 +94,7 @@ def main():
 		
 	parms=js_open_dict("{}/0_a2d_parms.json".format(options.path))
 	
-	if not parms.has_key(options.iter) :
+	if options.iter not in parms :
 		try: options.iter=max([int(i) for i in parms.keys()])
 		except: options.iter=0
 		print("Iteration: ",options.iter)

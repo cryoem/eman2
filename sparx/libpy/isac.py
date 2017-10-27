@@ -768,7 +768,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 
 	if maskfile:
 		import  types
-		if type(maskfile) is types.StringType:  mask = get_image(maskfile)
+		if type(maskfile) is bytes:  mask = get_image(maskfile)
 		else: mask = maskfile
 	else : mask = model_circle(last_ring, nx, nx)
 	if type(refim) == type(""):

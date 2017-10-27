@@ -84,7 +84,7 @@ For more information on ctffind3 please see: Mindell, JA, Grigorieff N.  2003.  
 		
 		for f in fls:
 			star=StarFile("ctffind3/"+f)
-			if not star.has_key("rlnMicrographName") :
+			if "rlnMicrographName" not in star :
 				print("No rlnMicrographName in ",f)
 				continue
 			

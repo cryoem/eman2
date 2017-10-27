@@ -69,7 +69,7 @@ print("establishing baseline")
 base=catime(SIZE=32,NTT=10000)
 
 print("testing")
-out=file("profile.txt","w")
+out=open("profile.txt","w")
 for i in xrange(32,1024):
 	t=catime(i,16000/i)
 	print("%d\t%1.2f\t%1.3f"%(i,t/base,t))

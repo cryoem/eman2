@@ -1568,7 +1568,7 @@ def sptboxergui(options,args):
 		def menu_file_read_boxloc(self):
 			fsp=str(QtGui.QFileDialog.getOpenFileName(self, "Select output text file"))
 
-			f=file(fsp,"r")
+			f=open(fsp,"r")
 			if options.helixboxer:
 				for b in f:
 					b2=[int(float(i))/self.shrink for i in b.split()[:6]]
@@ -1590,7 +1590,7 @@ def sptboxergui(options,args):
 
 			fsp=str(QtGui.QFileDialog.getSaveFileName(self, "Select output text file"))
 
-			out=file(fsp,"w")
+			out=open(fsp,"w")
 			if options.helixboxer:
 				for b in self.helixboxes:
 					out.write("%d\t%d\t%d\t%d\t%d\t%d\n"%(b[0]*shrinkf,b[1]*shrinkf,b[2]*shrinkf,b[3]*shrinkf,b[4]*shrinkf,b[5]*shrinkf))

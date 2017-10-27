@@ -187,7 +187,7 @@ class EMProcessorWidget(QtGui.QWidget):
 	def __getstate__(self):
 		"used when pickling"
 		proc=self.processorName()
-		if not self.plist.has_key(proc) : return None		# invalid processor selection
+		if proc not in self.plist : return None		# invalid processor selection
 		if self.wenable.isChecked() : proc=(proc,True)		# disabled, so we return None
 		else: proc=(proc,False)
 
@@ -220,7 +220,7 @@ class EMProcessorWidget(QtGui.QWidget):
 		if not self.wenable.isChecked() : return ""
 
 		proc=self.processorName()
-		if not self.plist.has_key(proc) : return ""		# invalid processor selection
+		if proc not in self.plist : return ""		# invalid processor selection
 
 		enabled=[]
 		for w in self.parmw:
@@ -232,7 +232,7 @@ class EMProcessorWidget(QtGui.QWidget):
 		"Returns the currently defined processor as a 3 line string for persistence"
 
 		proc=self.processorName()
-		if not self.plist.has_key(proc) : return None		# invalid processor selection
+		if proc not in self.plist : return None		# invalid processor selection
 
 		if self.wenable.isChecked() : ret="#$ enabled\n"
 		else: ret="#$ disabled\n"
@@ -258,9 +258,9 @@ class EMProcessorWidget(QtGui.QWidget):
 #		print "set"
 
 		if len(text)!=3 :
-			raise Exception,"setFromText requires 3-tuple of strings"
+			raise Exception("setFromText requires 3-tuple of strings")
 		if text[0][0]!="#" or text[1][0]!="#" or text[2][0]!="-" :
-			raise Exception,"Problem unpacking '%s' from file"%text
+			raise Exception("Problem unpacking '%s' from file"%text)
 
 		disabled=parsemodopt("X:"+text[1][1:].strip())[1]			# dictionary of disabled values
 		proc,enabled=parsemodopt(text[2].split("=",1)[1])	# dictionary of enabled values
@@ -398,7 +398,7 @@ class EMProcessorWidget(QtGui.QWidget):
 		if not self.wenable.isChecked() : return None		# disabled, so we return None
 
 		proc=self.processorName()
-		if not self.plist.has_key(proc) : return None		# invalid processor selection
+		if proc not in self.plist : return None		# invalid processor selection
 
 
 		parms={}
@@ -721,7 +721,7 @@ class EMFilterTool(QtGui.QMainWindow):
 		"""Saves the current processor and parameters to a text file"""
 #		print "saveset ",name
 
-		try: out=file("filtertool_%s.txt"%(name.replace(" ","_")),"w")	# overwrite the current contents
+		try: out=open("filtertool_%s.txt"%(name.replace(" ","_")),"w")	# overwrite the current contents
 		except:
 			traceback.print_exc()
 			print("No permission to store processorset info")
@@ -746,7 +746,7 @@ class EMFilterTool(QtGui.QMainWindow):
 		while len(self.processorlist)>0 : self.delProcessor(0)
 
 		# Open the file
-		try: infile=file("filtertool_%s.txt"%(name.replace(" ","_")),"r")
+		try: infile=open("filtertool_%s.txt"%(name.replace(" ","_")),"r")
 		except:
 			self.addProcessor()
 			self.busy=False

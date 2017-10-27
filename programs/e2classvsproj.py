@@ -130,7 +130,7 @@ def main():
 	nptcl=EMUtil.get_image_count(args[0])
 	thrds=[threading.Thread(target=simfn,args=(jsd,projs,args[0],i,options,options.verbose)) for i in xrange(nptcl)]
 
-	if options.savesim!=None : out=file(options.savesim,"w")
+	if options.savesim!=None : out=open(options.savesim,"w")
 	
 	# here we run the threads and save the results, no actual alignment done here
 	print(len(thrds)," threads")

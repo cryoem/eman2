@@ -651,7 +651,7 @@ class TestEMUtils(unittest.TestCase):
         
         EMUtil.delete_hdf_attribute(file, 'count')
         d = img.get_attr_dict()
-        self.assertEqual(d.has_key('count'), False)
+        self.assertEqual('count' in d, False)
         
         testlib.safe_unlink(file)
         

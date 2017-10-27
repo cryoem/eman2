@@ -44,6 +44,7 @@ from emselector import EMSelectorDialog	# This will be replaced by something mor
 import re, os, glob
 from embrowser import EMBrowserWidget
 from empmtabwidgets import *
+from functools import reduce
 
 class PMComboBox(QtGui.QComboBox):
 	""" Reimplment the QComboBox to remove wheel widget activation """

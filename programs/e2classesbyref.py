@@ -200,7 +200,7 @@ def main():
 		empty.to_zero()
 		empty["ptcl_repr"]=0
 		for i,avgr in enumerate(avgrs):
-			if clsinfo.has_key(i):
+			if i in clsinfo:
 				avg=avgr.finish()
 #				avg.process_inplace("normalize.circlemean",{"radius":avg["ny"]/2-4})
 				avg.process_inplace("normalize.toimage",{"to":refs[i],"fourieramp":1,"ignore_lowsig":1.5})

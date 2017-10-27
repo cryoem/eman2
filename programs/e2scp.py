@@ -166,8 +166,8 @@ def read_obj(stdin):
 	size=stdin.readline()
 	try: size=int(size)
 	except:
-		if size[:4]=="!!!!" : raise Exception,size[4:]
-		raise Exception,"Unknown error : "+size
+		if size[:4]=="!!!!" : raise Exception(size[4:])
+		raise Exception("Unknown error : "+size)
 	return loads(decompress(stdin.read(size)))
 
 def write_chunk(stdout,obj):
@@ -184,14 +184,14 @@ def read_chunk(stdin):
 	size=stdin.readline()
 	try: size=int(size)
 	except:
-		if size[:4]=="!!!!" : raise Exception,size[4:]
-		raise Exception,"Unknown error : "+size
+		if size[:4]=="!!!!" : raise Exception(size[4:])
+		raise Exception("Unknown error : "+size)
 	if size==0 : return ""
 	return decompress(stdin.read(size))
 
 def send_file(stdout,path):
 	"Sends a file to stdout as a set of chunks terminated with a 0 length chunk"
-	fin=file(path,"rb")
+	fin=open(path,"rb")
 	while 1:
 		data=fin.read(1000000)
 		if len(data)==0 :break
@@ -203,7 +203,7 @@ def recv_file(stdin,path):
 	"Receives a file into path. Reads a set of chunks terminated with a zero-length chunk"
 	try :os.makedirs(os.path.dirname(path))
 	except: pass
-	out=file(path,"w")
+	out=open(path,"w")
 	while 1:
 		chunk=read_chunk(stdin)
 		if len(chunk)==0 or chunk==None : break
@@ -405,7 +405,7 @@ class scp_proxy:
 		self.stdin.write("mkdir\n%s\n"%path)
 		self.stdin.flush()
 		r=self.stdout.readline().strip()
-		if r!="OK" : raise Exception,"Error in creating remote path (%s)"%(r)
+		if r!="OK" : raise Exception("Error in creating remote path (%s)"%(r))
 
 	def listrecurse(self,path,basepath=""):
 		"""Recursively list the contents of a remote path, may be a directory or a BDB specifier. If specified

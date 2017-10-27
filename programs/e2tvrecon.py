@@ -111,7 +111,7 @@ def main():
 		sys.exit(1)
 		
 	#Parse and count tilt angles	
-	tiltangles = np.asarray([ float( i ) for i in file( options.tltfile , "r" ) ])
+	tiltangles = np.asarray([ float( i ) for i in open( options.tltfile , "r" ) ])
 	tiltangles = tiltangles.tolist()	
 	
 	nimgs = EMUtil.get_image_count( options.tiltseries )

@@ -133,7 +133,7 @@ def ssematch(ssehfsp,sspredfsp,options):
 	all=[]
 	recursesoln(pairqual,[],[],[],all,options.maxbad)
 	
-	out=file("ssematch.out","w")
+	out=open("ssematch.out","w")
 	for i in all:
 		out.write("%f\t%s\t%s\n"%(i[0],str(i[1]),str(i[2])))
 	out.close()
@@ -230,7 +230,7 @@ def readsseh(fsp):
 	matrix based on only connected h1,h2 pairs"""
 	
 	# this makes a list of all lines starting with ALPHA
-	lns=[i for i in file(fsp,"r").readlines() if i[:5]=="ALPHA"]
+	lns=[i for i in open(fsp,"r").readlines() if i[:5]=="ALPHA"]
 	
 	# this makes a vector of 6 floats (x0,y0,z0,x1,y1,z1) for each line
 	hlx=[[float(j) for j in i.split()[5:]] for i in lns]
@@ -262,7 +262,7 @@ def readconnect(fsp,nel):
 	returns the same results as the second component of readsseh(), and should replace it when possible
 	nel is the number of helices in the SSEhunter file supplied to e2skelpath"""
 	
-	lns=file(fsp,"r").readlines()
+	lns=open(fsp,"r").readlines()
 	lns=[i.split() for i in lns]
 	lns=[(int(i[1]),int(i[3]),int(i[0]),int(i[2]),float(i[4])) for i in lns]	# reorder as helixA#,helixB#,endA,endB,pathlen
 	
@@ -296,7 +296,7 @@ def readsspred(fsp,minhelix):
 	strips out extraneous whitespace. Produces an ordered list of helix lengths and the maximum distance
 	to the previous helix 
 	Probably should have a better measure of probable distance vs # residues."""
-	seq=file(fsp,"r").read()
+	seq=open(fsp,"r").read()
 	
 	# slow, but doesn't matter much here
 	seq="".join([i for i in seq if i in ("H","E","-")])

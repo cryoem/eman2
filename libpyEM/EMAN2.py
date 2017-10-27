@@ -193,10 +193,10 @@ is complete. If the process is killed, 'end' may never be set."""
 
 	# We go to the end of the file. Record the location, then write a fixed length string
 	try:
-		hist=file(".eman2log.txt","r+")
+		hist=open(".eman2log.txt","r+")
 		hist.seek(0,os.SEEK_END)
 	except:
-		try: hist=file(".eman2log.txt","w")
+		try: hist=open(".eman2log.txt","w")
 		except: return -1
 	n=hist.tell()
 	hist.write("%s\tincomplete         \t%6d/%6d\t%s\t%s\n"%(local_datetime(),os.getpid(),ppid,socket.gethostname()," ".join(argv)))
@@ -215,7 +215,7 @@ set to indicate an error exit."""
 #	if EMAN2db.BDB_CACHE_DISABLE : return		# THIS MUST REMAIN DISABLED NOW THAT THE CACHE IS DISABLED PERMANENTLY !!!
 
 	try:
-		hist=file(".eman2log.txt","r+")
+		hist=open(".eman2log.txt","r+")
 		hist.seek(n+20)
 	except:
 		return -1
@@ -231,7 +231,7 @@ This function is called to log the end of the current job. n is returned by E2in
 #	if EMAN2db.BDB_CACHE_DISABLE : return		# THIS MUST REMAIN DISABLED NOW THAT THE CACHE IS DISABLED PERMANENTLY !!!
 
 	try:
-		hist=file(".eman2log.txt","r+")
+		hist=open(".eman2log.txt","r+")
 		hist.seek(n+20)
 	except:
 		return -1
@@ -585,7 +585,7 @@ def parse_transform(optstr):
 	if len(tpl)==3 :
 		try: tpl=[float(i) for i in tpl]
 		except:
-			raise Exception,"Invalid EMAN transform: %s"%optstr
+			raise Exception("Invalid EMAN transform: %s"%optstr)
 		return Transform({"type":"eman","az":tpl[0],"alt":tpl[1],"phi":tpl[2]})
 
 	# Now we must assume that we have a type:name=val:... specification
@@ -597,11 +597,11 @@ def parse_transform(optstr):
 		s=parm.split("=")
 		try : parms[s[0]]=float(s[1])
 		except :
-			raise Exception,"Invalid transform parameter: %s"%parm
+			raise Exception("Invalid transform parameter: %s"%parm)
 
 	try: ret=Transform(parms)
 	except:
-		raise Exception,"Invalid transform: %s"%optstr
+		raise Exception("Invalid transform: %s"%optstr)
 
 	return ret
 
@@ -721,7 +721,7 @@ def read_number_file(path):
 
 	try:
 		regex = re.compile("[0-9]+")
-		return [int(i) for i in regex.findall(file(path,"r").read())]
+		return [int(i) for i in regex.findall(open(path,"r").read())]
 	except:
 		return []
 
@@ -1518,7 +1518,7 @@ def qplot(img):
 	"""This will plot a 1D image using qplot
 	Note that display(img) will automatically plot 1D images.
 	"""
-	out=file("/tmp/plt.txt","w")
+	out=open("/tmp/plt.txt","w")
 	for i in range(img.get_xsize()):
 		out.write("%d\t%f\n"%(i,img.get_value_at(i,0)))
 	out.close()
@@ -1944,13 +1944,13 @@ if the lst file does not exist."""
 
 		self.path=path
 
-		try: self.ptr=file(path,"rb+")		# file exists
+		try: self.ptr=open(path,"rb+")		# file exists
 		except:
-			if ifexists: raise Exception,"Error: lst file {} does not exist".format(path)
+			if ifexists: raise Exception("Error: lst file {} does not exist".format(path))
 
 			try: os.makedirs(os.path.dirname(path))
 			except: pass
-			self.ptr=file(path,"wb+")	# file doesn't exist
+			self.ptr=open(path,"wb+")	# file doesn't exist
 			self.ptr.write("#LSX\n# This file is in fast LST format. All lines after the next line have exactly the number of characters shown on the next line. This MUST be preserved if editing.\n# 20\n")
 
 		self.ptr.seek(0)
@@ -1959,7 +1959,7 @@ if the lst file does not exist."""
 			if l=="#LST\n" :
 				#### This is very similar to rewrite(), but is used to convert LST files to LSX files
 				self.seekbase=self.ptr.tell()
-				tmpfile=file(self.path+".tmp","wb")
+				tmpfile=open(self.path+".tmp","wb")
 				tmpfile.write("#LSX\n# This file is in fast LST format. All lines after the next line have exactly the number of characters shown on the next line. This MUST be preserved if editing.\n")
 
 				# we read the entire file, checking the length of each line
@@ -1989,10 +1989,10 @@ if the lst file does not exist."""
 				# rename the temporary file over the original
 				os.unlink(self.path)
 				os.rename(self.path+".tmp",self.path)
-				self.ptr=file(self.path,"rb+")
+				self.ptr=open(self.path,"rb+")
 				self.ptr.readline()
 
-			else: raise Exception,"ERROR: The file {} is not in #LSX format".format(self.path)
+			else: raise Exception("ERROR: The file {} is not in #LSX format".format(self.path))
 		self.filecomment=self.ptr.readline()
 		try: self.linelen=int(self.ptr.readline()[1:])
 		except:
@@ -2042,7 +2042,7 @@ comment : optional comment string"""
 	def read(self,n):
 		"""Reads the nth record in the file. Note that this does not read the referenced image, which can be
 performed with read_image either here or in the EMData class. Returns a tuple (n extfile,extfile,comment)"""
-		if n>=self.n : raise Exception,"Attempt to read record {} from #LSX {} with {} records".format(n,self.path,self.n)
+		if n>=self.n : raise Exception("Attempt to read record {} from #LSX {} with {} records".format(n,self.path,self.n))
 		self.ptr.seek(self.seekbase+self.linelen*n)
 		ln=self.ptr.readline().strip().split("\t")
 		if len(ln)==2 : ln.append(None)
@@ -2084,7 +2084,7 @@ line length. Used when a line must be added in the middle of the file."""
 
 		self.ptr.seek(0)
 
-		tmpfile=file(self.path+".tmp","wb")
+		tmpfile=open(self.path+".tmp","wb")
 		# copy the header lines
 		tmpfile.write(self.ptr.readline())
 		tmpfile.write(self.ptr.readline())
@@ -2117,7 +2117,7 @@ line length. Used when a line must be added in the middle of the file."""
 		# rename the temporary file over the original
 		os.unlink(self.path)
 		os.rename(self.path+".tmp",self.path)
-		self.ptr=file(self.path,"rb+")
+		self.ptr=open(self.path,"rb+")
 
 #		print "rewrite ",self.linelen
 
@@ -2128,13 +2128,13 @@ corresponding to each 1/2 of the data."""
 
 	# create the even and odd data sets
 	print("### Creating virtual stacks for even/odd data")
-	if file(filename,"r").read(4)=="#LSX" :				# LSX (fast LST) format
+	if open(filename,"r").read(4)=="#LSX" :				# LSX (fast LST) format
 		eset=filename.rsplit(".",1)[0]
 		oset=eset+"_odd.lst"
 		eset+="_even.lst"
-		oute=file(eset,"w")
-		outo=file(oset,"w")
-		inf=file(filename,"r")
+		oute=open(eset,"w")
+		outo=open(oset,"w")
+		inf=open(filename,"r")
 
 		# copy the first 3 lines to both files
 		for i in range(3):

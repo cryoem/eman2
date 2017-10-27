@@ -132,7 +132,7 @@ def check(options,args):
 def get_database_entry(image_name,key,dfl=None):
 	db = js_open_dict(info_name(image_name))
 	# First check the full path, then check for basename
-	if db.has_key(key):
+	if key in db:
 		return db[key]
 	elif dfl != None:
 		db[key] = dfl
@@ -318,7 +318,7 @@ class EMBox:
 		@param box_color an RGB list [R,G,B] (floats)
 		@param force something you'd set to True if you want to force the overwrite of the old color (previously stored)
 		'''
-		if not force and EMBox.BOX_COLORS.has_key(box_type):
+		if not force and box_type in EMBox.BOX_COLORS:
 			# this is just to make sure there are no conflicts - if someone is resetting a color they
 			# should know what they're doing
 			raise RuntimeError("Error, attempt to set a color key (%s) that already existed" %box_type)
@@ -353,7 +353,7 @@ class EMBox:
 	def reset_image(self): self.image = None
 
 	def get_shape(self,shape_string,box_size):
-		if EMBox.BOX_COLORS.has_key(self.type):
+		if self.type in EMBox.BOX_COLORS:
 			r,g,b = EMBox.BOX_COLORS[self.type]
 		else:
 			r,g,b = 1.0,0.42,0.71 # hot pint, apparently ;)
@@ -725,19 +725,19 @@ class EraseTool(EMBoxingTool):
 
 	def moving_ptcl_established(self,box_num,x,y):
 		box = self.target().get_box(box_num)
-		raise EMUnknownBoxType,box.type # this causes the mouse mode to be changed
+		raise EMUnknownBoxType(box.type) # this causes the mouse mode to be changed
 
 	def move_ptcl(self,box_num,x,y,scale):
 		box = self.target().get_box(box_num)
-		raise EMUnknownBoxType,box.type # this causes the mouse mode to be changed
+		raise EMUnknownBoxType(box.type) # this causes the mouse mode to be changed
 
 	def release_moving_ptcl(self,box_num,x,y):
 		box = self.target().get_box(box_num)
-		raise EMUnknownBoxType,box.type # this causes the mouse mode to be changed
+		raise EMUnknownBoxType(box.type) # this causes the mouse mode to be changed
 
 	def delete_ptcl(self,box_num):
 		box = self.target().get_box(box_num)
-		raise EMUnknownBoxType,box.type # this causes the mouse mode to be changed
+		raise EMUnknownBoxType(box.type) # this causes the mouse mode to be changed
 
 class ManualBoxingTool:
 	'''
@@ -803,7 +803,7 @@ class ManualBoxingTool:
 					self.moving=[m,box_num]
 					#self.target().moving_box_established(box_num)
 			else:
-				raise EMUnknownBoxType,box.type
+				raise EMUnknownBoxType(box.type)
 
 	def mouse_drag(self,event) :
 		m=self.get_2d_window().scr_to_img((event.x(),event.y()))
@@ -815,7 +815,7 @@ class ManualBoxingTool:
 				if box.type ==  ManualBoxingTool.BOX_TYPE:
 					self.target().remove_box(box_num)
 				else:
-					raise EMUnknownBoxType,box.type
+					raise EMUnknownBoxType(box.type)
 
 		elif self.moving != None:
 			oldm = self.moving[0]
@@ -836,7 +836,7 @@ class ManualBoxingTool:
 	def moving_ptcl_established(self,box_num,x,y):
 		box = self.target().get_box(box_num)
 		if box.type != ManualBoxingTool.BOX_TYPE:
-			raise EMUnknownBoxType,box.type
+			raise EMUnknownBoxType(box.type)
 
 		self.moving_data = [x,y,box_num]
 
@@ -856,7 +856,7 @@ class ManualBoxingTool:
 	def delete_ptcl(self,box_num):
 		box = self.target().get_box(box_num)
 		if box.type != ManualBoxingTool.BOX_TYPE:
-			raise EMUnknownBoxType,box.type
+			raise EMUnknownBoxType(box.type)
 		self.target().remove_box(box_num)
 
 	def get_unique_box_types(self):
@@ -935,7 +935,7 @@ class BoxEventsHandler:
 
 		name = handler.unique_name()
 		for box_type in handler.get_unique_box_types():
-			if self.box_to_tool_dict.has_key(box_type):
+			if box_type in self.box_to_tool_dict:
 				raise RuntimeError("Error - some EMBoxingTools are using the same box_type name, or the same tool has been added twice (%s)" %box_type)
 			self.box_to_tool_dict[box_type] = name
 
@@ -985,7 +985,7 @@ class Main2DWindowEventHandler(BoxEventsHandler):
 		for box in rm_boxes:
 			for name,box_types in name_box_map.items():
 				if box.type in box_types:
-					if rm_box_map.has_key(name):
+					if name in rm_box_map:
 						rm_box_map[name].append(box)
 					else:
 						rm_box_map[name] = [box]
@@ -1000,7 +1000,7 @@ class Main2DWindowEventHandler(BoxEventsHandler):
 		'''
 		if self.mouse_handler == None: return
 		try: self.mouse_handler.mouse_down(event)
-		except EMUnknownBoxType,data:
+		except EMUnknownBoxType as data:
 			self.change_event_handler(self.box_to_tool_dict[data.type])
 			self.mouse_handler.mouse_down(event)
 
@@ -1010,7 +1010,7 @@ class Main2DWindowEventHandler(BoxEventsHandler):
 		'''
 		if self.mouse_handler == None: return
 		try: self.mouse_handler.mouse_drag(event)
-		except EMUnknownBoxType,data:
+		except EMUnknownBoxType as data:
 			self.change_event_handler(self.box_to_tool_dict[data.type])
 			self.mouse_handler.mouse_drag(event)
 
@@ -1028,7 +1028,7 @@ class Main2DWindowEventHandler(BoxEventsHandler):
 		'''
 		if self.mouse_handler == None: return
 		try: self.mouse_handler.mouse_up(event)
-		except EMUnknownBoxType,data:
+		except EMUnknownBoxType as data:
 			self.change_event_handler(self.box_to_tool_dict[data.type])
 			self.mouse_handler.mouse_up(event)
 
@@ -1045,7 +1045,7 @@ class Main2DWindowEventHandler(BoxEventsHandler):
 		'''
 		if self.mouse_handler == None: return
 		try: self.mouse_handler.mouse_wheel(event)
-		except EMUnknownBoxType,data:
+		except EMUnknownBoxType as data:
 			self.change_event_handler(self.box_to_tool_dict[data.type])
 			self.mouse_handler.mouse_wheel(event)
 
@@ -1055,7 +1055,7 @@ class Main2DWindowEventHandler(BoxEventsHandler):
 		'''
 		if self.mouse_handler == None: return
 		try: self.mouse_handler.mouse_move(event)
-		except EMUnknownBoxType,data:
+		except EMUnknownBoxType as data:
 			self.change_event_handler(self.box_to_tool_dict[data.type])
 			self.mouse_handler.mouse_move(event)
 
@@ -1096,7 +1096,7 @@ class ParticlesWindowEventHandler(BoxEventsHandler):
 		self.first_clicked = im
 
 		try: self.mouse_handler.moving_ptcl_established(im,event.x(),event.y())
-		except EMUnknownBoxType,data:
+		except EMUnknownBoxType as data:
 			self.change_event_handler(data.type)
 			self.mouse_handler.moving_ptcl_established(im,event.x(),event.y())
 		#self.target().moving_ptcl_established(im,event.x(),event.y())
@@ -1110,7 +1110,7 @@ class ParticlesWindowEventHandler(BoxEventsHandler):
 
 		if self.moving_box_data:
 			try: self.mouse_handler.move_ptcl(self.moving_box_data[2],event.x(),event.y(),scale)
-			except EMUnknownBoxType,data:
+			except EMUnknownBoxType as data:
 				self.change_event_handler(self.box_to_tool_dict[data.type])
 				self.mouse_handler.move_ptcl(self.moving_box_data[2],event.x(),event.y(),scale)
 			#self.target().move_ptcl(self.moving_box_data[2],event.x(),event.y(),scale)
@@ -1128,7 +1128,7 @@ class ParticlesWindowEventHandler(BoxEventsHandler):
 		if self.mouse_handler == None: return
 
 		try: self.mouse_handler.release_moving_ptcl(self.first_clicked,event.x(),event.y())
-		except EMUnknownBoxType,data:
+		except EMUnknownBoxType as data:
 			self.change_event_handler(self.box_to_tool_dict[data.type])
 			self.mouse_handler.move_ptcl(self.moving_box_data[2],event.x(),event.y(),scale)
 		#self.target().release_moving_ptcl(self.first_clicked,event.x(),event.y())
@@ -1144,7 +1144,7 @@ class ParticlesWindowEventHandler(BoxEventsHandler):
 
 		box_num = lc[0]
 		try: self.mouse_handler.delete_ptcl(box_num)
-		except EMUnknownBoxType,data:
+		except EMUnknownBoxType as data:
 			self.change_event_handler(self.box_to_tool_dict[data.type])
 			self.mouse_handler.delete_ptcl(box_num)
 
@@ -1396,7 +1396,7 @@ class EMBoxList(object):
 		self.max_idx = len(self.boxes)
 		return self
 
-	def next(self):
+	def __next__(self):
 		'''
 		Iteration support
 		@return the next element in the iteration
@@ -2258,7 +2258,7 @@ class EMBoxerWriteOutputTask(WorkFlowTask):
 		return error_message
 
 	def on_form_ok(self,params):
-		if  params.has_key("filenames") and len(params["filenames"]) == 0:
+		if  "filenames" in params and len(params["filenames"]) == 0:
 			self.run_select_files_msg()
 			return
 

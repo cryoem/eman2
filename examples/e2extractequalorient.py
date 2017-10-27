@@ -28,7 +28,7 @@ counts=[even[i]["ptcl_repr"]+odd[i]["ptcl_repr"] for i in xrange(ncls)]
 
 # This allows us to restrict the ouput to specific micrographs in addition to the orientation leveling
 if len(argv)==5 :
-	files=set([base_name(i.strip()) for i in file(argv[4],"r")])
+	files=set([base_name(i.strip()) for i in open(argv[4],"r")])
 else:
 	files=None
 

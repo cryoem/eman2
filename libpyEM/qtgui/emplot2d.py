@@ -258,7 +258,7 @@ class EMPlot2DWidget(EMGLWidget):
 			if not quiet: self.updateGL()
 			return
 
-		if self.data.has_key(key) : oldkey=True
+		if key in self.data : oldkey=True
 		else: oldkey=False
 
 		if isinstance(input_data,EMData):
@@ -345,7 +345,7 @@ class EMPlot2DWidget(EMGLWidget):
 				im = im[0]
 				l = [i for i in range(im.get_size())]
 				k = im.get_data_as_vector()
-				if self.data.has_key(filename) : filename="{}.{}".format(filename,len(self.data))
+				if filename in self.data : filename="{}.{}".format(filename,len(self.data))
 				self.set_data([l,k],filename,quiet=quiet)
 			elif im[0].get_attr_default("isvector",0):
 #				all=[i.get_data_as_vector() for i in im]
@@ -364,7 +364,7 @@ class EMPlot2DWidget(EMGLWidget):
 					self.set_data([l,k],filename+":"+str(idx),quiet=quiet)
 
 		elif file_type == 'fp':
-			fin=file(filename)
+			fin=open(filename)
 			fph=struct.unpack("120sII",fin.read(128))
 			ny=fph[1]
 			nx=fph[2]
@@ -376,7 +376,7 @@ class EMPlot2DWidget(EMGLWidget):
 		else:
 			try:
 				# this should probably be replaced with something more flexible
-				fin=file(filename)
+				fin=open(filename)
 				fin.seek(0)
 				rdata=fin.readlines()
 				if '#' in rdata[0]:
@@ -428,7 +428,7 @@ class EMPlot2DWidget(EMGLWidget):
 					data = [l,k]
 
 		elif file_type == 'fp':
-			fin=file(filename)
+			fin=open(filename)
 			fph=struct.unpack("120sII",fin.read(128))
 			ny=fph[1]
 			nx=fph[2]
@@ -437,7 +437,7 @@ class EMPlot2DWidget(EMGLWidget):
 				data.append(struct.unpack("%df"%ny,fin.read(4*ny)))
 		else:
 			try:
-				fin=file(filename)
+				fin=open(filename)
 				fin.seek(0)
 				rdata=fin.readlines()
 				rdata=[i for i in rdata if i[0]!='#']
@@ -464,7 +464,7 @@ class EMPlot2DWidget(EMGLWidget):
 		any adaptations occur in future
 		'''
 		try:
-			fin=file(filename)
+			fin=open(filename)
 			fin.seek(0)
 			rdata = []
 			while (len(rdata) < 2):
@@ -1945,7 +1945,7 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 					return
 
 				imn=int(imn)
-				if not lsx.has_key(imf) : lsx[imf]=LSXFile(imf,True)	# open the LSX file for reading
+				if imf not in lsx : lsx[imf]=LSXFile(imf,True)	# open the LSX file for reading
 				val=lsx[imf][imn]
 				out[r]=val
 
@@ -2183,7 +2183,7 @@ class DragListWidget(QtGui.QListWidget):
 			trgplot=self.datasource().target()
 			name="Dropped"
 			nn=1
-			while trgplot.data.has_key(name) :
+			while name in trgplot.data :
 				name="Dropped_%d"%nn
 				nn+=1
 
@@ -2742,7 +2742,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 		while os.path.exists(name2):
 			name2="plt_concat_%02d.txt"%(i)
 			i+=1
-		out=file(name2,"a")
+		out=open(name2,"a")
 
 		xcol=self.slidex.value()
 		ycol=self.slidey.value()
@@ -2773,7 +2773,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 				name2="plt_%s_%02d.txt"%(sname,i)
 				i+=1
 
-			out=file(name2,"w")
+			out=open(name2,"w")
 			xcol=self.slidex.value()
 			ycol=self.slidey.value()
 			for i in xrange(len(data[0])):

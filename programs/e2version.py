@@ -64,7 +64,7 @@ def main():
 					(2, 6, 1): '7'
 				}
 
-		if win_version.has_key(ver_format):
+		if ver_format in win_version:
 			winsysver = 'Windows' + ' ' + win_version[ver_format]
 		else:
 			winsysver = 'Windows'

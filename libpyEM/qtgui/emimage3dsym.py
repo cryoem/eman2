@@ -746,7 +746,7 @@ class EM3DSymModel(EM3DModel,Orientations,ColumnGraphics):
 		elif self.eulers_specified:
 			eulers = self.specified_eulers
 		else:
-			f = file(str(self.eulerfilename))
+			f = open(str(self.eulerfilename))
 			lines=f.readlines()
 			angles=[]
 			eulers = []
@@ -883,7 +883,7 @@ class EM3DSymModel(EM3DModel,Orientations,ColumnGraphics):
 			
 			print("parsing file",f,self.file)
 			try:
-				ff=file(f,'r')
+				ff=open(f,'r')
 			except:
 				print('couldnt read',f) 
 				return

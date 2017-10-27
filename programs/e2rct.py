@@ -119,7 +119,7 @@ def main():
 
 	# Check to see if we need a tilt angle
 	if not options.stagetilt:
-		if not tiltimgs[0].get_attr_dict().has_key("tiltangle"):	
+		if "tiltangle" not in tiltimgs[0].get_attr_dict():	
 			print("Error, stagetilt parameter not supplied and could find tiltangle as an attribute! Crashing!")
 			exit(1)
 	

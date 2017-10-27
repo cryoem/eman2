@@ -117,12 +117,12 @@ class HistoryForm:
 				try: h=db.history[i+1]
 				except: continue
 				
-				if h != None and h.has_key("path") and h["path"]==self.wd:
+				if h != None and "path" in h and h["path"]==self.wd:
 					start.append(local_datetime(h["start"]))
-					if h.has_key("end") :
+					if "end" in h :
 						duration.append(time_diff(h["end"]-h["start"]))
 					else:
-						if h.has_key("progress"):
+						if "progress" in h:
 							try:
 								duration.append(str(int(h["progress"]*100))+"%")
 							except:
@@ -218,16 +218,16 @@ def print_to_std_out(all):
 			for k in ah.keys():
 				print("---------- ",k)
 				for i in ah[k]:
-					if i.has_key("end") : print(local_datetime(i["start"]),"\t   ",time_diff(i["end"]-i["start"]),"\t"," ".join(i["args"]))
-					elif i.has_key("progress") : print(local_datetime(i["start"]),"\t ",int(i["progress"]*100)," % done\t"," ".join(i["args"]))
+					if "end" in i : print(local_datetime(i["start"]),"\t   ",time_diff(i["end"]-i["start"]),"\t"," ".join(i["args"]))
+					elif "progress" in i : print(local_datetime(i["start"]),"\t ",int(i["progress"]*100)," % done\t"," ".join(i["args"]))
 					else: print(local_datetime(i["start"]),"\tincomplete\t"," ".join(i["args"]))
 		else:
 			for i in range(n):
 				try: h=db.history[i+1]
 				except: print("Entry ",i," missing")
-				if h != None and h.has_key("path") and h["path"]==os.getcwd():
-					if h.has_key("end") :print(local_datetime(h["start"]),"\t   ",time_diff(h["end"]-h["start"]),"\t"," ".join(h["args"]))
-					elif h.has_key("progress") :print(local_datetime(h["start"]),"\t   ",int(h["progress"]*100)," % done\t"," ".join(h["args"]))
+				if h != None and "path" in h and h["path"]==os.getcwd():
+					if "end" in h :print(local_datetime(h["start"]),"\t   ",time_diff(h["end"]-h["start"]),"\t"," ".join(h["args"]))
+					elif "progress" in h :print(local_datetime(h["start"]),"\t   ",int(h["progress"]*100)," % done\t"," ".join(h["args"]))
 					else: print(local_datetime(h["start"]),"\tincomplete\t"," ".join(h["args"]))
 	else:
 		db=shelve.open(".eman2log")
@@ -242,7 +242,7 @@ def print_to_std_out(all):
 		print("done")
 		
 	try:
-		fin=file(".eman2log.txt","r")
+		fin=open(".eman2log.txt","r")
 		print("----- .eman2log.txt")
 		for l in fin: print(l)
 		

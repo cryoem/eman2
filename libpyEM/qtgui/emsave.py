@@ -86,7 +86,7 @@ class EMCoordFileValidator:
 			lst = file_name
 		for f in lst:
 			try:
-				fin=file(f)
+				fin=open(f)
 				fin.seek(0)
 				rdata = []
 				while (len(rdata) < 2):
@@ -431,7 +431,7 @@ class EMStackSaveDialog(EMFileSaver):
 		for i in range(total_images):
 			if exc_list:
 				try:
-					(j for j in exc_list if j == i ).next() 
+					next((j for j in exc_list if j == i )) 
 					# it's in the exc_list
 					continue
 				except: pass

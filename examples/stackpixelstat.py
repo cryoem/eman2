@@ -12,7 +12,7 @@ a=EMData.read_images(sys.argv[1])
 x=int(sys.argv[2])
 y=int(sys.argv[3])
 #out=file("pixel_{:03d}_{:03d}.txt".format(x,y),"w")
-outl=file("ccp.txt","w")
+outl=open("ccp.txt","w")
 
 rsum=sum(a)
 rsum.mult(1.0/len(a))

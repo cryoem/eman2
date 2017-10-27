@@ -136,7 +136,7 @@ def main():
 	if options.helixfile!=None:
 		for h in helix:
 			centers.append(h)
-		out=file(options.edgefile,"w")
+		out=open(options.edgefile,"w")
 		for i in range(1,len(helix)):
 			d=sqrt((helix[i-1][0]-helix[i][0])**2+(helix[i-1][1]-helix[i][1])**2+(helix[i-1][2]-helix[i][2])**2)
 			if d<3.8:
@@ -168,7 +168,7 @@ def main():
 	if options.chimeraout : write_chimera_markers(options.chimeraout,centers,seg["apix_x"],seg["apix_y"],seg["apix_z"],seg["apix_x"]*3)
 	if options.pdbout : write_pdb_markers(options.pdbout,centers,seg["apix_x"],seg["apix_y"],seg["apix_z"],sx,sy,sz)
 	if options.txtout :
-		out=file(options.txtout,"w")
+		out=open(options.txtout,"w")
 		for n,i in enumerate(centers): out.write("%d\t%1.3f\t%1.3f\t%1.3f\n"%(n,i[0],i[1],i[2]))
 		out.close()
 	E2end(E2n)
@@ -176,7 +176,7 @@ def main():
 def write_chimera_markers(filename,centers,apix_x,apix_y,apix_z,marker_size=3.0) :
 	"""Writes a set of coordinates (without connectors) in Chimera marker XML format"""
 	try: 
-		out=file(filename,"w")
+		out=open(filename,"w")
 		out.write('<marker_set name="%s">\n'%filename.split(".")[0])
 		for j,c in enumerate(centers) :
 			out.write('<marker id="%d" x="%1.3f" y="%1.3f" z="%1.3f" radius="%1.3f"/>\n'%(j,c[0]*apix_x,c[1]*apix_y,c[2]*apix_z,marker_size))
@@ -191,7 +191,7 @@ def write_pdb_markers(filename,centers,apix_x,apix_y,apix_z,sx,sy,sz):
 	"""Writes a set of coordinates into a pseudo-PDB file"""
 	#print sx,sy,sz
 	try: 
-		out=file(filename,"w")
+		out=open(filename,"w")
 		for j,c in enumerate(centers) :
 			out.write("ATOM  %5d  CA  ALA  %4d    %8.3f%8.3f%8.3f  1.00%6.2f      S_00  0 \n"%(j,j,(c[0]-sx/2)*apix_x,(c[1]-sy/2)*apix_y,(c[2]-sz/2)*apix_z,1.0))
 		out.close()

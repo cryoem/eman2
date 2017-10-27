@@ -48,6 +48,7 @@ import json
 import tempfile
 import os
 import subprocess
+from functools import reduce
 
 
 def check_exists(outfile, overwrite=False):
@@ -116,7 +117,7 @@ def read_pdb(filename, atomtype=None, chain=None, noisemodel=None):
 		count += 1
 
 	if len(points) == 0:
-		raise Exception, "No atoms found in PDB file! Are chain and atomtype correct?"
+		raise Exception("No atoms found in PDB file! Are chain and atomtype correct?")
 	
 	print("Loaded %s points"%len(points))
 	

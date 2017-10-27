@@ -85,7 +85,7 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 
 	#if options.numaslist != None:
 	if options.numaslist:
-		out=file(options.numaslist,"w")
+		out=open(options.numaslist,"w")
 
 		for f in args:
 			lst=LSXFile(f,True)

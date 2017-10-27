@@ -389,7 +389,7 @@ def check(options, verbose=0):
 
 	for s in options.sym:
 		try: sym = parsesym(s)
-		except Exception, inst:
+		except Exception as inst:
 			if verbose>0:
 				print(type(inst))     # the exception instance
 				print(inst.args)      # arguments stored in .args:

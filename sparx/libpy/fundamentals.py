@@ -820,7 +820,7 @@ def rot_avg_image(image_to_be_averaged):
 	"""
 	import types
 	from utilities import get_im
-	if type(image_to_be_averaged) is types.StringType: image_to_be_averaged = get_im(image_to_be_averaged)
+	if type(image_to_be_averaged) is bytes: image_to_be_averaged = get_im(image_to_be_averaged)
 	return image_to_be_averaged.rotavg_i()
 
 def ro_textfile(e, filename, helpful_string=""):
@@ -1728,7 +1728,7 @@ class symclass():
 		is_platonic_sym = self.sym[0] == "o" or self.sym[0] == "t" or self.sym[0] == "i"
 		if(self.sym[0] == "c"): qs = 360.0/self.nsym
 		elif(self.sym[0] == "d"): qs = 720.0/self.nsym
-		if( type(angles[0]) is types.ListType):
+		if( type(angles[0]) is list):
 			toprocess = angles
 			lis = True
 		else:

@@ -440,7 +440,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 			elif xformtype == "scale":
 				self.transform.scale(params[0])
 			else:
-				raise Exception,"Invalid transformation type"
+				raise Exception("Invalid transformation type")
 		
 		# Now tell all children to update
 		# TODO: we MIGHT want to get rid of the recursive part of this algorithm
