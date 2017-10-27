@@ -310,9 +310,13 @@ def main():
 		
 	 for 2-D images:       calculate B-factor and apply negative B-factor to 2-D images.
 		
-   15. Window stack file -reduce the size of images without changing the pixel size.
+   15. Window stack file --window out central area of images.
+        sxprocess.py input.hdf output.hdf --box=new_box_size
 
-   16. Create angular distribution .build file
+   16. Pad stack file --pad images to a larger size and set surround background to request value (default 0.0).
+        sxprocess.py input.hdf output.hdf --box=new_box_size --background=3.0
+
+   17. Create angular distribution .build file
         sxprocess.py --angular_distribution  inputfile=example/path/params.txt --pixel_size=1.0  --round_digit=5  --box_size=500  --particle_radius=175  --cylinder_width=1  --cylinder_length=10000
         
 
@@ -383,9 +387,13 @@ def main():
 	parser.add_option("--consine_edge", 	    type="float",		  help="the width for cosine transition area ", default= 6.0)
 	parser.add_option("--dilation", 			type="float",		  help="the pixels for dilate or erosion of binary mask ", default= 3.0)
 	#parser.add_option("--randomphasesafter", 	type="float",		  help=" set Fourier pixels random phases after FSC value ", default= 0.8)
-	# 
+	# window
 	parser.add_option("--window_stack",         action="store_true",                      help="window stack images using a smaller window size", default=False)
 	parser.add_option("--box",                  type="int",		      default= 0,         help="the new window size ")
+	
+	# pad
+	parser.add_option("--pad",                  action="store_true",                      help="pad stack images to a larger window size and set the surrounding background (by default to 0.0)", default=False)
+	parser.add_option("--background",           type="float",		  default= 0.0,       help="value the surrounding area will be set to")
 	
 	# Options for angular distribution
 	parser.add_option('--angular_distribution',    	action="store_true",  	default=False,        	help='create an angular distribution file based on a project3d.txt')
@@ -1278,34 +1286,64 @@ def main():
 	elif options.window_stack:
 		nargs = len(args)
 		if nargs ==0:
-			print("  reduce image size of a stack")
+			print("  window images in a stack")
 			return
 		else:
 			output_stack_name = None
 			inputstack = args[0]
-			if nargs ==2:output_stack_name = args[1]
+			if nargs ==2: output_stack_name = args[1]
 			input_path,input_file_name     = os.path.split(inputstack)
 			input_file_name_root,ext       = os.path.splitext(input_file_name)
 			if input_file_name_root[0:3]=="bdb":stack_is_bdb = True
 			else:                               stack_is_bdb = False
 			if output_stack_name is None:
-				if stack_is_bdb: output_stack_name  = "bdb:reduced_"+input_file_name_root[4:]
-				else: output_stack_name = "reduced_"+input_file_name_root+".hdf" # Only hdf file is output.
+				if stack_is_bdb: output_stack_name  = "bdb:window_"+input_file_name_root[4:]
+				else: output_stack_name = "window_"+input_file_name_root+".hdf" # Only hdf file is output.
 			nimage = EMUtil.get_image_count(inputstack)
-			from fundamentals import window2d
 			from utilities import get_im
-			for i in xrange(nimage): window2d(get_im(inputstack,i),options.box,options.box).write_image(output_stack_name,i)
+			for i in xrange(nimage):
+				im = get_im(inputstack,i)
+				if( i == 0 ):
+					if( im.get_xsize() < options.box ):  ERROR( "New image size has to be smaller than the original image size", "sxprocess.py", 1)
+					newz = im.get_zsize()
+					if( newz > 1):  newz = options.box
+				im = Util.window(im, options.box,options.box, newz, 0,0,0)
+				im.write_image(output_stack_name,i)
+
+	elif options.pad:
+		nargs = len(args)
+		if nargs ==0:
+			print("  pad images in a stack")
+			return
+		else:
+			output_stack_name = None
+			inputstack = args[0]
+			if nargs ==2: output_stack_name = args[1]
+			input_path,input_file_name     = os.path.split(inputstack)
+			input_file_name_root,ext       = os.path.splitext(input_file_name)
+			if input_file_name_root[0:3]=="bdb":stack_is_bdb = True
+			else:                               stack_is_bdb = False
+			if output_stack_name is None:
+				if stack_is_bdb: output_stack_name  = "bdb:pad_"+input_file_name_root[4:]
+				else: output_stack_name = "pad_"+input_file_name_root+".hdf" # Only hdf file is output.
+			nimage = EMUtil.get_image_count(inputstack)
+			from utilities import get_im, pad
+			for i in xrange(nimage):
+				im = get_im(inputstack,i)
+				if( i == 0 ):
+					if( im.get_xsize() > options.box ):  ERROR( "New image size has to be larger than the original image size", "sxprocess.py", 1)
+					newz = im.get_zsize()
+					if( newz > 1):  newz = options.box
+				pad(im, options.box, options.box, newz, float(options.background)).write_image(output_stack_name,i)
 
 	elif options.angular_distribution:
 		from utilities import angular_distribution
 		nargs = len(args)
 		if nargs > 1:
-			print('Too many inputs are given, see usage and restart the program!')
+			ERROR('Too many inputs are given, see usage and restart the program!',"sxprocess.py",1)
 		else:
 			if not os.path.exists(args[0]):
-				ERROR(
-					'Params file does not exists! Please rename and restart the program.', 1
-					)
+				ERROR( "Params file does not exists! Please rename and restart the program.", "sxprocess.py", 1)
 			strInput = args[0]
 			strOutput = strInput[:-len(strInput.split('/')[-1])] + 'distribution.bild'
 			angular_distribution(inputfile=strInput, options=options, output=strOutput)
