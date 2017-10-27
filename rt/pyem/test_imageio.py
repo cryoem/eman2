@@ -244,6 +244,8 @@ class TestPGMIO(unittest.TestCase):
 			
 		finally:
 			testlib.safe_unlink('test_image.pgm')
+
+	test_read_write_pgm.broken = True
 	
 	def no_test_pgm_region_io(self):
 		"""test pgm region io ..............................."""
