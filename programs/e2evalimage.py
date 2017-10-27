@@ -84,6 +84,7 @@ power spectrum in various ways."""
 	parser.add_argument("--voltage",type=float,help="Microscope voltage in KV",default=None, guitype='floatbox', row=3, col=1, rowspan=1, colspan=1, mode="eval['self.pm().getVoltage()']")
 	parser.add_argument("--cs",type=float,help="Microscope Cs (spherical aberation)",default=None, guitype='floatbox', row=4, col=0, rowspan=1, colspan=1, mode="eval['self.pm().getCS()']")
 	parser.add_argument("--ac",type=float,help="Amplitude contrast (percentage, default=10)",default=10, guitype='floatbox', row=4, col=1, rowspan=1, colspan=1, mode="eval")
+	parser.add_argument("--phaseplate",action="store_true",help="Include phase/amplitude contrast in CTF estimation. For use with hole-less phase plates.",default=False, guitype='boolbox', row=3, col=2, rowspan=1, colspan=1, mode='filter[False]')
 	parser.add_argument("--astigmatism",action="store_true",help="Includes astigmatism in automatic fitting",default=False, guitype='boolbox', row=8, col=1, rowspan=1, colspan=1, mode='eval')
 	parser.add_argument("--box",type=int,help="Forced box size in grid mode. Overrides any previous setting. ",default=-1, guitype='intbox', row=5, col=0, rowspan=1, colspan=1, mode="eval")
 	parser.add_argument("--usefoldername",action="store_true",help="If you have the same image filename in multiple folders, and need to import into the same project, this will prepend the folder name on each image name",default=False,guitype='boolbox',row=5, col=1, rowspan=1, colspan=1, mode="eval")
@@ -96,7 +97,7 @@ power spectrum in various ways."""
 
 	from emapplication import EMApp
 	app=EMApp()
-	gui=GUIEvalImage(args,options.voltage,options.apix,options.cs,options.ac,options.box,options.usefoldername,options.constbfactor,options.astigmatism)
+	gui=GUIEvalImage(args,options.voltage,options.apix,options.cs,options.ac,options.box,options.usefoldername,options.constbfactor,options.astigmatism,options.phaseplate)
 	gui.show()
 
 	try:
@@ -115,7 +116,7 @@ power spectrum in various ways."""
 
 
 class GUIEvalImage(QtGui.QWidget):
-	def __init__(self,images,voltage=None,apix=None,cs=None,ac=10.0,box=512,usefoldername=False,constbfactor=-1,fitastig=False):
+	def __init__(self,images,voltage=None,apix=None,cs=None,ac=10.0,box=512,usefoldername=False,constbfactor=-1,fitastig=False,phaseplate=False):
 		"""Implements the CTF fitting dialog using various EMImage and EMPlot2D widgets
 		'data' is a list of (filename,ctf,im_1d,bg_1d,quality)
 		'parms' is [box size,ctf,box coord,set of excluded boxnums,quality,oversampling]
@@ -134,7 +135,6 @@ class GUIEvalImage(QtGui.QWidget):
 		QtGui.QWidget.__init__(self,None)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "ctf.png"))
 
-		self.fitastig=fitastig
 		self.nodir=not usefoldername
 		self.data=None
 		self.curset=0
@@ -310,6 +310,11 @@ class GUIEvalImage(QtGui.QWidget):
 		self.cbgadj=CheckBox(None,"CTF BG Adj",1)
 		self.gbl.addWidget(self.cbgadj,7,3)
 
+		self.castig=CheckBox(None,"Astig:",fitastig)
+		self.gbl.addWidget(self.castig,7,4)
+
+		self.cphasep=CheckBox(None,"Phaseplate:",phaseplate)
+		self.gbl.addWidget(self.cphasep,7,5)
 
 #		self.sapix=ValSlider(self,(.2,10),"A/Pix:",2,90)
 #		self.vbl.addWidget(self.sapix)
@@ -625,16 +630,18 @@ class GUIEvalImage(QtGui.QWidget):
 		parms=self.parms[self.curset]
 		apix=self.sapix.getValue()
 		ds=1.0/(apix*parms[0]*parms[5])
+		astig=int(self.castig.getValue())
+		phasep=int(self.cphasep.getValue())
 
 		try:
-			parms[1]=e2ctf.ctf_fit(self.fft1d,parms[1].background,parms[1].background,self.fft,self.fftbg,parms[1].voltage,parms[1].cs,parms[1].ampcont,apix,bgadj=False,autohp=True,verbose=1)
+			parms[1]=e2ctf.ctf_fit(self.fft1d,parms[1].background,parms[1].background,self.fft,self.fftbg,parms[1].voltage,parms[1].cs,parms[1].ampcont,phasep,apix,bgadj=False,autohp=True,verbose=1)
 			if self.cbgadj.getValue() :
 				self.bgAdj()
-				parms[1]=e2ctf.ctf_fit(self.fft1d,parms[1].background,parms[1].background,self.fft,self.fftbg,parms[1].voltage,parms[1].cs,parms[1].ampcont,apix,bgadj=False,autohp=True,verbose=1)
-				if self.fitastig : e2ctf.ctf_fit_stig(self.fft,self.fftbg,parms[1],verbose=1)
+				parms[1]=e2ctf.ctf_fit(self.fft1d,parms[1].background,parms[1].background,self.fft,self.fftbg,parms[1].voltage,parms[1].cs,parms[1].ampcont,phasep,apix,bgadj=False,autohp=True,verbose=1)
+				if astig : e2ctf.ctf_fit_stig(self.fft,self.fftbg,parms[1],verbose=1)
 				self.bgAdj()
 			else:
-				if self.fitastig : e2ctf.ctf_fit_stig(self.fft,self.fftbg,parms[1],verbose=1)
+				if astig : e2ctf.ctf_fit_stig(self.fft,self.fftbg,parms[1],verbose=1)
 
 		except:
 			print("CTF Autofit Failed")
@@ -645,6 +652,8 @@ class GUIEvalImage(QtGui.QWidget):
 		self.sdefocus.setValue(parms[1].defocus,True)
 		self.sbfactor.setValue(parms[1].bfactor,True)
 		self.sampcont.setValue(parms[1].ampcont,True)
+		self.sdfdiff.setValue(parms[1].dfdiff,True)
+		self.sdfang.setValue(parms[1].dfang,True)
 
 		self.update_plot()
 
