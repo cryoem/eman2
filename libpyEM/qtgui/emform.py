@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: David Woolford 11/7/2008 (woolford@bcm.edu)
@@ -855,7 +856,7 @@ class EM2DStackExamineTable(EM2DStackTable):
 		'''
 		See EMFileTable.table_item_double_clicked for comments
 		'''
-		print "X"
+		print("X")
 		if item.column() != 0: return # only can display files from the first column
 		filename = self.convert_text(str(item.text()))
 		if not file_exists(filename): return # this happens sometimes when there is filtered data but no raw data
@@ -1035,7 +1036,7 @@ class EMEmanStrategyWidget(QtGui.QWidget):
 					params.append(tmp_params)
 					tmp_params = []
 			
-			else: print "ignoring",vartype
+			else: print("ignoring",vartype)
 				
 		if len(tmp_params) != 0:
 			params.append(tmp_params)
@@ -1391,7 +1392,7 @@ class IncorpParamTable:
 				num_choices = len(param.choices)
 			else:
 				if len(param.choices) != num_choices:
-					print "error, the number of choices is not consistent in __incorporate_paramtable"
+					print("error, the number of choices is not consistent in __incorporate_paramtable")
 					return
 		
 		vbl=QtGui.QVBoxLayout()
@@ -2106,10 +2107,10 @@ def get_example_table_form_params():
 	return par
 
 def on_ok(dict):
-	print "got the ok signal, the return dictionary is",dict
+	print("got the ok signal, the return dictionary is",dict)
 	
 def on_cancel():
-	print "got the cancel signal"
+	print("got the cancel signal")
 
 
 # This is just for testing, of course

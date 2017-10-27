@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 02/12/2013 (sludtke@bcm.edu). Updated on 08/28/16.
@@ -231,11 +232,11 @@ def main():
 	first = int(step[0])
 	step  = int(step[1])
 
-	if options.verbose : print("Range = {} - {}, Step = {}".format(first, last, step))
+	if options.verbose : print(("Range = {} - {}, Step = {}".format(first, last, step)))
 
 	# the user may provide multiple movies to process at once
 	for fsp in args:
-		if options.verbose : print("Processing {}".format(fsp))
+		if options.verbose : print(("Processing {}".format(fsp)))
 
 		n = EMUtil.get_image_count(fsp)
 
@@ -243,7 +244,7 @@ def main():
 			hdr = EMData(fsp, 0, True)
 
 			if hdr["nz"] < 2 :
-				print("ERROR: {} has only {} images. Min 3 required.".format(fsp, n))
+				print(("ERROR: {} has only {} images. Min 3 required.".format(fsp, n)))
 				continue
 
 			n = hdr["nz"]
@@ -311,7 +312,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			out.write_image(alioutname,0)
 
 		t1 = time()-t
-		print("{:.1f} s".format(time()-t))
+		print(("{:.1f} s".format(time()-t)))
 
 		nx=outim[0]["nx"]
 		ny=outim[0]["ny"]
@@ -332,7 +333,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			nx=outim[0]["nx"]
 			ny=outim[0]["ny"]
 
-			print("{} frames read {} x {}".format(n,nx,ny))
+			print(("{} frames read {} x {}".format(n,nx,ny)))
 
 			ccfs=Queue.Queue(0)
 			#outim=Queue.Queue(0)
@@ -373,7 +374,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 					if options.verbose>3: i+=1		# if i>0 then it will write pre-processed CCF images to disk for debugging
 					thds.append(threading.Thread(target=calc_ccf_wrapper,args=(options,(ima,imb),options.optbox,options.optstep,immx[ima],immx[imb],ccfs,peak_locs,i,fsp)))
 
-			print("{:1.1f} s\nCompute {} ccfs".format(time()-t0,len(thds)))
+			print(("{:1.1f} s\nCompute {} ccfs".format(time()-t0,len(thds))))
 			t0=time()
 
 			# here we run the threads and save the results, no actual alignment done here
@@ -418,7 +419,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			# array of x,y locations of each frame, all relative to the last frame in the series, which will always have 0,0 shift
 			locs=[0]*(n*2) # we store the value for the last frame as well as a conveience
 
-			print("{:1.1f} s\nAlign {} frames".format(time()-t0,n))
+			print(("{:1.1f} s\nAlign {} frames".format(time()-t0,n)))
 			t0=time()
 
 			#from IPython import embed
@@ -487,10 +488,10 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 					quals[i]+=val
 					quals[j]+=val
 
-			print("{:1.1f} s".format(time()-t0,n))
+			print(("{:1.1f} s".format(time()-t0,n)))
 			
 			runtime = time()-start
-			print("Runtime: {:.1f} s".format(runtime))
+			print(("Runtime: {:.1f} s".format(runtime)))
 
 			# if options.plot:
 			# 	import matplotlib.pyplot as plt
@@ -507,7 +508,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			# 		except: pass
 			# 	ax[2].set_title("CCF Peak Coordinates")
 
-			print("{:1.1f} s\nShift images".format(time()-t0))
+			print(("{:1.1f} s\nShift images".format(time()-t0)))
 			for i,im in enumerate(outim):
 				dx = int(floor(locs[i*2]+.5))
 				dy = int(floor(locs[i*2+1]+.5))
@@ -556,7 +557,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 				thr=(max(quals[1:])-min(quals))*0.4+min(quals)	# max correlation cutoff for inclusion
 				best=[im for i,im in enumerate(outim) if quals[i]>thr]
 				out=qsum(best)
-				print("Keeping {}/{} frames".format(len(best),len(outim)))
+				print(("Keeping {}/{} frames".format(len(best),len(outim))))
 				out.write_image(alioutname,0)
 
 			if options.bestali:
@@ -567,7 +568,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 				thr=(max(quals[1:])-min(quals))*0.6+min(quals)	# max correlation cutoff for inclusion
 				best=[im for i,im in enumerate(outim) if quals[i]>thr]
 				out=qsum(best)
-				print("Keeping {}/{} frames".format(len(best),len(outim)))
+				print(("Keeping {}/{} frames".format(len(best),len(outim))))
 				out.write_image(alioutname,0)
 
 			if options.ali4to14:
@@ -582,7 +583,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			if len(options.rangeali)>0:
 				try: rng=[int(i) for i in options.rangeali.split("-")]
 				except:
-					print "Error: please specify --rangeali as X-Y where X and Y are inclusive starting with 0"
+					print("Error: please specify --rangeali as X-Y where X and Y are inclusive starting with 0")
 					sys.exit(1)
 				mgdirname = "micrographs_{}-{}".format(rng[0],rng[1])
 				try: os.mkdir(mgdirname)

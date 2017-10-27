@@ -1,4 +1,5 @@
 #!/bin/env python
+from __future__ import print_function
 from EMAN2 import *
 from sparx  import *
 from time import time
@@ -23,7 +24,7 @@ for i in xrange(20):
 for i in xrange(2000):
 	img.append(a.copy())
 
-print  "START      ",ttime()
+print("START      ",ttime())
 start = time()
 apmqs(img, refm, 1, 5, 2, 2, 1, 1, mode)
-print  "apmq   ",time() - start
+print("apmq   ",time() - start)

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: John Flanagan, 04/08/2011 (jfflanag@bcm.edu)
 # Edited by: Stephen Murray (scmurray@bcm.edu) May 2014
@@ -186,7 +187,7 @@ class ControlPannel(QtGui.QWidget):
 			
 		for window in self.mediator.windowlist:
 			fdata = window.data.process(filtertype,pardict)
-			print "filtered win"
+			print("filtered win")
 			window.reload_image(fdata, window.filename+"_filted")
 		
 	def processor_combobox_changed(self, idx):
@@ -208,7 +209,7 @@ class ControlPannel(QtGui.QWidget):
 		#filter each window
 		for window in self.mediator.windowlist:
 			fdata = window.data.process("filter.convolution.kernel",{"kernel":kt})
-			print "filtered win"
+			print("filtered win")
 			window.reload_image(fdata, window.filename+"_filted")
 
 	
@@ -374,7 +375,7 @@ class ControlPannel(QtGui.QWidget):
 		self.on_done()
 		
 	def on_write(self):
-		print "Saving Particles"
+		print("Saving Particles")
 		for window in self.mediator.windowlist:
 			splitpath = os.path.split(os.path.splitext(window.filename)[0])
 			if splitpath[0] == '':

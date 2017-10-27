@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 # extractfsc.py
 # Author: Steven Ludtke, 04/06/2011 (sludtke@bcm.edu)
@@ -36,7 +37,7 @@ from EMAN2 import *
 from EMAN2db import db_open_dict
 
 if len(sys.argv)==1 :
-	print "Please provide the name of a refine_xx directory to extract FSC curves from"
+	print("Please provide the name of a refine_xx directory to extract FSC curves from")
 	exit(1)
 
 db=db_open_dict("bdb:%s#convergence.results"%sys.argv[1],ro=True)

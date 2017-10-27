@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steve Ludtke, 03/24/2016 (sludtke@bcm.edu)
@@ -75,7 +76,7 @@ def main():
 	(options, args) = parser.parse_args()
 
 	if options.path!=None and ("/" in options.path) :
-		print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
+		print("Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. ")
 		sys.exit(1)
 	if options.path == None:
 		fls=[int(i[-2:]) for i in os.listdir(".") if i[:4]=="dnc_" and len(i)==6]

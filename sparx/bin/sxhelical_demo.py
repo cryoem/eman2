@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
@@ -102,15 +103,15 @@ def main():
 	
 	(options, args) = parser.parse_args()
 	if len(args) > 3:
-		print "usage: " + usage
-		print "Please run '" + progname + " -h' for detailed options"
+		print("usage: " + usage)
+		print("Please run '" + progname + " -h' for detailed options")
 	else:
 		if options.generate_script:
 			generate_runscript(options.filename, options.seg_ny, options.ptcl_dist, options.fract)
 
 		if options.generate_micrograph:
 			if options.apix <= 0:
-				print "Please enter pixel size."
+				print("Please enter pixel size.")
 				sys.exit()
 			generate_helimic(args[0], args[1], options.apix, options.CTF, options.Cs, options.voltage, options.ac, options.nonoise, options.rand_seed)
 
@@ -119,7 +120,7 @@ def main():
 			outvol = args[0]
 			boxdims = options.boxsize.split(',')
 			if len(boxdims) < 1 or len(boxdims) > 3:
-				print "Enter box size as string containing x , y, z dimensions (separated by comma) in pixels. E.g.: --boxsize='100,100,200'"
+				print("Enter box size as string containing x , y, z dimensions (separated by comma) in pixels. E.g.: --boxsize='100,100,200'")
 				sys.exit()
 			nx= int(boxdims[0])
 			if len(boxdims) == 1:
@@ -137,7 +138,7 @@ def main():
 			outvol = args[0]
 			maskdims = options.masksize.split(',')
 			if len(maskdims) < 1 or len(maskdims) > 2:
-				print "Enter box size as string containing x , y dimensions (separated by comma) in pixels. E.g.: --boxsize='200,200'"
+				print("Enter box size as string containing x , y dimensions (separated by comma) in pixels. E.g.: --boxsize='200,200'")
 				sys.exit()
 			nx= int(maskdims[0])
 			if len(maskdims) == 1:
@@ -206,7 +207,7 @@ def generate_helimic(refvol, outdir, pixel, CTF=False, Cs=2.0,voltage = 200.0, a
 		i = idef - 4
 		for k in xrange(1):
 			psi  = 90 + 10*i			
- 			proj = prgs(volfts, kbz, [angles[idef-3][0], angles[idef-3][1], psi, 0.0, 0.0], kbx, kby)
+			proj = prgs(volfts, kbz, [angles[idef-3][0], angles[idef-3][1], psi, 0.0, 0.0], kbx, kby)
 			proj = Util.window(proj, 320, nz)		
 			mic += pad(proj, 2048, 2048, 1, 0.0, 750*i, 20*i, 0)
 
@@ -222,16 +223,16 @@ def generate_helimic(refvol, outdir, pixel, CTF=False, Cs=2.0,voltage = 200.0, a
 def generate_runscript(filename, seg_ny, ptcl_dst, fract):
 
 	if ptcl_dst < 15:
-		print "Distance in pixels between adjacent segments should be at least one rise!"
+		print("Distance in pixels between adjacent segments should be at least one rise!")
 		sys.exit()
 	
-	print "Generating run script with the following parameters: \n"
-	print "y-dimension of segment used for refinement: %d"%seg_ny
-	print "Distance in pixels between adjacent segments: %d"%ptcl_dst
-	print "Fraction of structure used for applying helical symmetry: %.2f"%fract
+	print("Generating run script with the following parameters: \n")
+	print("y-dimension of segment used for refinement: %d"%seg_ny)
+	print("Distance in pixels between adjacent segments: %d"%ptcl_dst)
+	print("Fraction of structure used for applying helical symmetry: %.2f"%fract)
 	
 	if os.path.exists(filename):
-		print "The file %s already exists. Either remove it or rename it..."%filename
+		print("The file %s already exists. Either remove it or rename it..."%filename)
 		sys.exit()
 		
 	f = open(filename, 'w')

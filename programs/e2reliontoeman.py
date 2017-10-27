@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steve Ludtke 04/16/14 (sludtke@bcm.edu)
@@ -79,15 +80,15 @@ will be extracted from the STAR file and will be automatically processed through
 	except: pass
 	os.chdir("eman2")	# many things need to happen with the project directory as a base
 
-	if options.verbose>0 : print "Parsing STAR file"
+	if options.verbose>0 : print("Parsing STAR file")
 	star=StarFile("../"+args[0])
 
 	if options.apix<=0 :
 		try:
 			options.apix=star["rlnDetectorPixelSize"][0]/star["rlnMagnification"][0]*10000.0
-			print "Using {} A/pix from Relion file".format(options.apix)
+			print("Using {} A/pix from Relion file".format(options.apix))
 		except:
-			print "A/pix not specified and not found in STAR file"
+			print("A/pix not specified and not found in STAR file")
 			sys.exit(1)
 
 	prj=js_open_dict("info/project.json")
@@ -96,9 +97,9 @@ will be extracted from the STAR file and will be automatically processed through
 		prj["global.microscope_cs"]=star["rlnSphericalAberration"][0]
 		if prj["global.microscope_cs"]<=0.0 : prj["global.microscope_cs"]=0.001
 		prj["global.microscope_voltage"]=star["rlnVoltage"][0]
-		print "V={} Cs={}".format(prj["global.microscope_voltage"],prj["global.microscope_cs"])
+		print("V={} Cs={}".format(prj["global.microscope_voltage"],prj["global.microscope_cs"]))
 	except:
-		print "Did not find Voltage and Cs in Relion file"
+		print("Did not find Voltage and Cs in Relion file")
 		
 	oldname=""
 	olddf=-1.0
@@ -113,10 +114,10 @@ will be extracted from the STAR file and will be automatically processed through
 			nx=hdr["nx"]
 			ny=hdr["ny"]
 			oldname=name
-			if options.verbose>0 : print "Particle dimensions: {}x{}".format(nx,ny)
+			if options.verbose>0 : print("Particle dimensions: {}x{}".format(nx,ny))
 		
 		if i==0 or star["rlnDefocusU"][i-1]!=star["rlnDefocusU"][i]:
-			if micronum>0 and options.verbose>0 : print "Image {}: {} particles processed, df={}".format(micronum,fnum,ctf.defocus)
+			if micronum>0 and options.verbose>0 : print("Image {}: {} particles processed, df={}".format(micronum,fnum,ctf.defocus))
 			micronum+=1
 			fnum=0
 			microname="particles/{}_{:04d}.hdf".format(base_name(name),micronum)
@@ -138,16 +139,16 @@ will be extracted from the STAR file and will be automatically processed through
 
 	if options.refinedefocus : 
 		dfopt="--curdefocushint --refinebysnr"
-		if options.verbose>0 : print "Defocus Refit and SSNR Refinement to +-0.1 micron"
+		if options.verbose>0 : print("Defocus Refit and SSNR Refinement to +-0.1 micron")
 	elif options.refitdefocus : 
 		dfopt="--curdefocushint"
-		if options.verbose>0 : print "Defocus Refit to +-0.1 micron from Relion values"
+		if options.verbose>0 : print("Defocus Refit to +-0.1 micron from Relion values")
 	elif options.fixeddefocus: 
 		dfopt="--curdefocusfix"
-		if options.verbose>0 : print "Computing particle SNRs"
+		if options.verbose>0 : print("Computing particle SNRs")
 	else:
 		dfopt=" "
-		if options.verbose>0 : print "Full refit of CTF parameters"
+		if options.verbose>0 : print("Full refit of CTF parameters")
 
 	launch_childprocess("e2ctf.py --voltage {} --cs {} --ac {} --apix {} --allparticles --autofit {} -v {}".format(ctf.voltage,ctf.cs,ctf.ampcont,ctf.apix,dfopt,options.verbose-1))
 	

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 12/20/2011 (sludtke@bcm.edu)
@@ -46,7 +47,7 @@ ref0.translate(5,0,0)							# small shift to avoid nozero issue
 nx,ny=ref0["nx"],ref0["ny"]
 
 for i in xrange(2):
-	print "Iter ",i
+	print("Iter ",i)
 	avgr=Averagers.get("mean", {"ignore0":True})
 	ref0.write_image("seq.hdf",-1)
 	for fsp in sys.argv[1:]:
@@ -58,7 +59,7 @@ for i in xrange(2):
 		im.write_image("seq.hdf",-1)
 		ima=im.align("translational",ref0,{"nozero":1,"maxshift":ref0["nx"]/4.0},"ccc",{})
 		ima.write_image("seq.hdf",-1)
-		print fsp,ima["xform.align2d"],ima.cmp("ccc",ref0)
+		print(fsp,ima["xform.align2d"],ima.cmp("ccc",ref0))
 		ima.process_inplace("normalize.toimage",{"to":ref0,"ignore_zero":1})
 		avgr.add_image(ima)
 	

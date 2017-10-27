@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -66,8 +67,8 @@ sm=[j/len(cmps) for j in sm]
 
 # now print out each similarity measure for each pair
 for i,j in enumerate(cmps):
-	print "%d.\t"%i,
+	print("%d.\t"%i, end=' ')
 	for k,l in enumerate(j):
 #		print "%1.4f\t"%-(l-sm[k]),
-		print "%1.4f\t"%l,
-	print ""
+		print("%1.4f\t"%l, end=' ')
+	print("")

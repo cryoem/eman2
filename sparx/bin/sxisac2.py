@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
@@ -159,7 +160,7 @@ def delay(myid, tt):
 
 	for j in xrange(50):
 		for i  in xrange(1000000): q = i+float(i)**2.1234
-	if myid == 0 :  print  tt
+	if myid == 0 :  print(tt)
 	#sleep(100)
 	#mpi_finalize()
 	#exit()
@@ -247,8 +248,8 @@ def iter_isac_pap(alldata, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH,
 	K = ndata/img_per_grp
 
 	if myid == main_node:
-		print "     We will process:  %d current images divided equally between %d groups"%(ndata, K)
-		print "*************************************************************************************"
+		print("     We will process:  %d current images divided equally between %d groups"%(ndata, K))
+		print("*************************************************************************************")
 
 	# Generate random averages for each group
 	if key == group_main_node:
@@ -317,9 +318,9 @@ def iter_isac_pap(alldata, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH,
 		for i,im in enumerate(data):
 			alpha, sx, sy, mirror, scale = get_params2D(im)
 			all_ali_params[i] = [alpha, sx, sy, mirror]
-		print "****************************************************************************************************"
-		print "*         Generation finished                 "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"                            *"
-		print "****************************************************************************************************"
+		print("****************************************************************************************************")
+		print("*         Generation finished                 "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"                            *")
+		print("****************************************************************************************************")
 		return refi, all_ali_params
 	else:  return [], []
 
@@ -368,7 +369,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 
 	if type(stack) == type(""):
 		#read all data
-		print "  SHOULD NOT BE HERE"
+		print("  SHOULD NOT BE HERE")
 		sys.exit()
 		alldata = EMData.read_images(stack)
 	else:
@@ -431,7 +432,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 	terminate = 0
 	while( (main_iter < max_iter) and (terminate == 0) ):
 		Iter += 1
-		if my_abs_id == main_node: print "Iteration within isac_MPI Iter =>", Iter, "	main_iter = ", main_iter, "	len data = ", image_end-image_start,"   ",strftime("%a, %d %b %Y %H:%M:%S", localtime())
+		if my_abs_id == main_node: print("Iteration within isac_MPI Iter =>", Iter, "	main_iter = ", main_iter, "	len data = ", image_end-image_start,"   ",strftime("%a, %d %b %Y %H:%M:%S", localtime()))
 		mashi = cnx-ou-2
 		for j in xrange(numref):
 			refi[j].process_inplace("normalize.mask", {"mask":mask, "no_sigma":1}) # normalize reference images to N(0,1)
@@ -769,7 +770,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 					j = agreement - previous_agreement
 					if( (agreement>0.5) and (j > 0.0) and (j < 0.05) ): terminate = 1
 					previous_agreement = agreement
-					print  ">>>  Assignment agreement with previous iteration  %5.1f"%(agreement*100),"   ",strftime("%a, %d %b %Y %H:%M:%S", localtime())
+					print(">>>  Assignment agreement with previous iteration  %5.1f"%(agreement*100),"   ",strftime("%a, %d %b %Y %H:%M:%S", localtime()))
 				terminate = bcast_number_to_all(terminate, source_node = main_node)
 
 
@@ -781,9 +782,9 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 					from statistics   import hist_list
 					lhist = 12
 					region, histo = hist_list(gpixer, lhist)
-					print  "\n=== Histogram of average within-class pixel errors prior to class pruning ==="
-					for lhx in xrange(lhist):  print   "     %10.3f     %7d"%(region[lhx], histo[lhx])
-					print  "=============================================================================\n"
+					print("\n=== Histogram of average within-class pixel errors prior to class pruning ===")
+					for lhx in xrange(lhist):  print("     %10.3f     %7d"%(region[lhx], histo[lhx]))
+					print("=============================================================================\n")
 				del gpixer
 
 
@@ -804,9 +805,9 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 		i = [refi[j].get_attr("n_objects") for j in xrange(numref)]
 		lhist = max(12, numref/2)
 		region, histo = hist_list(i, lhist)
-		print  "\n=== Histogram of group sizes ================================================"
-		for lhx in xrange(lhist):  print   "     %10.1f     %7d"%(region[lhx], histo[lhx])
-		print  "=============================================================================\n"
+		print("\n=== Histogram of group sizes ================================================")
+		for lhx in xrange(lhist):  print("     %10.1f     %7d"%(region[lhx], histo[lhx]))
+		print("=============================================================================\n")
 	mpi_barrier(comm)
 
 	return refi
@@ -898,8 +899,8 @@ def do_generation(main_iter, generation_iter, target_nx, target_xr, target_yr, t
 	max_round = 0
 	dummy_main_iter = 0
 	if( Blockdata["myid"] == 0 ):
-		print "*************************************************************************************"
-		print "     Main iteration: %3d,  Generation: %3d. "%(main_iter,generation_iter)+"   "+strftime("%a, %d %b %Y %H:%M:%S", localtime())
+		print("*************************************************************************************")
+		print("     Main iteration: %3d,  Generation: %3d. "%(main_iter,generation_iter)+"   "+strftime("%a, %d %b %Y %H:%M:%S", localtime()))
 
 	ave, all_params = iter_isac_pap(alldata, options.ir, target_radius, options.rs, target_xr, target_yr, options.ts, options.maxit, False, 1.0,\
 		options.dst, options.FL, options.FH, options.FF, options.init_iter, dummy_main_iter, options.iter_reali, match_first, \
@@ -987,7 +988,7 @@ def do_generation(main_iter, generation_iter, target_nx, target_xr, target_yr, t
 					junk = cmdexecute(cmd)
 					cmd = "{} {}".format("touch", os.path.join(Blockdata["masterdir"], "finished"))
 					junk = cmdexecute(cmd)
-					print "*         There are no more images to form averages, program finishes     "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"     *"
+					print("*         There are no more images to form averages, program finishes     "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"     *")
 				else:
 					#  Will have to increase main, which means putting all bad left as new good, 
 					keepdoing_main = True
@@ -1069,8 +1070,8 @@ def main(args):
 	(options, args) = parser.parse_args(args)
 
 	if len(args) > 2:
-		print "usage: " + usage
-		print "Please run '" + progname + " -h' for detailed options"
+		print("usage: " + usage)
+		print("Please run '" + progname + " -h' for detailed options")
 		sys.exit()
 	elif( len(args) == 2):
 		Blockdata["stack"] 	= args[0]
@@ -1120,19 +1121,19 @@ def main(args):
 	Blockdata["stack_ali2d"] = "bdb:" + os.path.join(Blockdata["masterdir"], "stack_ali2d" )
 	
 	if(myid == main_node):
-		print "****************************************************************************************************"
-		print "*                                                                                                  *"
-		print "* ISAC (Iterative Stable Alignment and Clustering)   "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"                     *"
-		print "* By Zhengfan Yang, Jia Fang, Francisco Asturias and Pawel A. Penczek                              *"
-		print "*                                                                                                  *"
-		print '* REFERENCE: Z. Yang, J. Fang, J. Chittuluru, F. J. Asturias and P. A. Penczek, "Iterative Stable  *'
-		print '*            Alignment and Clustering of 2D Transmission Electron Microscope Images",              *' 
-		print '*            Structure 20, 237-247, February 8, 2012.                                              *'
-		print "*                                                                                                  *"
-		print "* Last updated: 05/30/2017 PAP                                                                     *"
-		print "****************************************************************************************************"
+		print("****************************************************************************************************")
+		print("*                                                                                                  *")
+		print("* ISAC (Iterative Stable Alignment and Clustering)   "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"                     *")
+		print("* By Zhengfan Yang, Jia Fang, Francisco Asturias and Pawel A. Penczek                              *")
+		print("*                                                                                                  *")
+		print('* REFERENCE: Z. Yang, J. Fang, J. Chittuluru, F. J. Asturias and P. A. Penczek, "Iterative Stable  *')
+		print('*            Alignment and Clustering of 2D Transmission Electron Microscope Images",              *') 
+		print('*            Structure 20, 237-247, February 8, 2012.                                              *')
+		print("*                                                                                                  *")
+		print("* Last updated: 05/30/2017 PAP                                                                     *")
+		print("****************************************************************************************************")
 		Util.version()
-		print "****************************************************************************************************"
+		print("****************************************************************************************************")
 		sys.stdout.flush()
 
 		i = "  "
@@ -1140,16 +1141,16 @@ def main(args):
 			i +=a+"  "
 		print("* shell line command: ")
 		print(i)
-		print "*                                                                                                  *"
-		print "* Master directory: %s"%Blockdata["masterdir"]
-		print "****************************************************************************************************"
+		print("*                                                                                                  *")
+		print("* Master directory: %s"%Blockdata["masterdir"])
+		print("****************************************************************************************************")
 	mpi_barrier(MPI_COMM_WORLD)
 
 	# Making sure all required options appeared.
 	for required_option in required_option_list:
 		if not options.__dict__[required_option]:
-			print "\n ==%s== mandatory option is missing.\n"%required_option
-			print "Please run '" + progname + " -h' for detailed options"
+			print("\n ==%s== mandatory option is missing.\n"%required_option)
+			print("Please run '" + progname + " -h' for detailed options")
 			return 1
 
 
@@ -1280,7 +1281,7 @@ def main(args):
 			
 			# section ali2d_base
 
-			if(Blockdata["myid"] == 0): print "* 2D alignment   "+strftime("%a, %d %b %Y %H:%M:%S", localtime())
+			if(Blockdata["myid"] == 0): print("* 2D alignment   "+strftime("%a, %d %b %Y %H:%M:%S", localtime()))
 			params2d = ali2d_base(original_images, init2dir, None, 1, target_radius, 1, txr, txr, tss, \
 				False, 90.0, center_method, 14, options.CTF, 1.0, False, \
 				"ref_ali2d", "", log2d, nproc, myid, main_node, MPI_COMM_WORLD, write_headers = False)
@@ -1302,9 +1303,9 @@ def main(args):
 		tmp = wrap_mpi_gatherv(tmp, main_node, MPI_COMM_WORLD)
 		if( myid == main_node ):		
 			if options.skip_prealignment:
-				print "========================================="
-				print "There is no alignment step, '%s' params are set to zero for later use."%os.path.join(init2dir, "initial2Dparams.txt")
-				print "========================================="
+				print("=========================================")
+				print("There is no alignment step, '%s' params are set to zero for later use."%os.path.join(init2dir, "initial2Dparams.txt"))
+				print("=========================================")
 			write_text_row(tmp,os.path.join(init2dir, "initial2Dparams.txt"))
 		del tmp
 		mpi_barrier(MPI_COMM_WORLD)
@@ -1485,14 +1486,14 @@ def main(args):
 			the following file: README_shrink_ratio.txt
 			"""%(shrink_ratio, radi)
 			fp.write(output_text); fp.flush() ;fp.close()
-			print output_text
+			print(output_text)
 			junk = cmdexecute("sxheader.py  --consecutive  --params=originalid   %s"%Blockdata["stack_ali2d"])
 
 
 			fp = open(os.path.join(init2dir, "Finished_initial_2d_alignment.txt"), "w"); fp.flush() ;fp.close()
 	else:
 		if( Blockdata["myid"] == Blockdata["main_node"] ):
-			print "Skipping 2D alignment since it was already done!"
+			print("Skipping 2D alignment since it was already done!")
 
 	error = 0
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
@@ -1621,7 +1622,7 @@ def main(args):
 			cmd = "{} {}".format("rm -rf", os.path.join(Blockdata["masterdir"], "junk.hdf") )
 			junk = cmdexecute(cmd)
 		else:
-			print " ISAC could not find any stable class averaging, terminating..."
+			print(" ISAC could not find any stable class averaging, terminating...")
 
 	mpi_finalize()
 	exit()

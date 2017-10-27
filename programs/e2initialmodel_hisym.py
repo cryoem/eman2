@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 2/18/15 (sludtke@bcm.edu)
@@ -72,19 +73,19 @@ def main():
 
 	try: ptcls=EMData.read_images(options.input)
 	except:
-		print "Error: bad input file"
+		print("Error: bad input file")
 		exit(1)
 
 	for i in range(len(ptcls)):
 		if options.shrink>1 :
 			ptcls[i].process_inplace("math.meanshrink",{"n":options.shrink})
 		ptcls[i].process_inplace("normalize.edgemean",{})
-	if ptcls[0]["nx"]>160 : print "WARNING: using a large box size may be slow. Suggest trying --shrink="
+	if ptcls[0]["nx"]>160 : print("WARNING: using a large box size may be slow. Suggest trying --shrink=")
 	if not ptcls or len(ptcls)==0 : parser.error("Bad input file")
 	boxsize=ptcls[0].get_xsize()
 	apix=ptcls[0]["apix_x"]
-	if verbose>0 : print "%d particles %dx%d"%(len(ptcls),boxsize,boxsize)
-	print "Models will be %1.3f A/pix"%apix
+	if verbose>0 : print("%d particles %dx%d"%(len(ptcls),boxsize,boxsize))
+	print("Models will be %1.3f A/pix"%apix)
 
 	# pad the particles with zeroes
 	padsize=good_size(boxsize*1.25)
@@ -122,10 +123,10 @@ def main():
 	for n in xrange(len(ptcls)):
 		best=(1e100,None,None,None)
 		best2=(1e100,None,None,None)
-		if options.verbose : print "Particle/average: ",n
+		if options.verbose : print("Particle/average: ",n)
 		for ort in orts:
 			for phi in arange(0,359.9,daz):
-				if options.verbose>1: print ort.get_rotation()["az"],ort.get_rotation()["alt"],phi, " : ",
+				if options.verbose>1: print(ort.get_rotation()["az"],ort.get_rotation()["alt"],phi, " : ", end=' ')
 				
 				recon.setup()
 				
@@ -154,9 +155,9 @@ def main():
 					if mapcmp(trymap,best[2])>-0.7:						# better than the current second, but not similar to the first
 						best2=(sim,ortins,trymap,trymapf,proj,ptcls[n])
 				
-				if options.verbose>1 : print sim
+				if options.verbose>1 : print(sim)
 #				out.write("{}\t{}\t# {},{}\n".format(phi,sim,ort.get_rotation()["az"],ort.get_rotation()["alt"]))
-		if options.verbose: print best[:2]
+		if options.verbose: print(best[:2])
 		
 		if (options.verbose>2) :
 			#per particle results
@@ -189,7 +190,7 @@ def main():
 
 	cursum=min(allbest)[2]			# start with the best matching map we got
 	used=[allbest.index(min(allbest))]
-	if options.verbose : print "Best map: ",used[0]
+	if options.verbose : print("Best map: ",used[0])
 	
 	# we add in 1/3 more of the best matching volumes
 	for n in xrange(len(allbest)/3):
@@ -199,11 +200,11 @@ def main():
 			if i in used : continue
 			best=min(best,(mapcmp(cursum,allbest[i][2]),allbest[i][2],i))
 		
-		if options.verbose : print "{}.  {}\t{}".format(i,best[2],best[0])
+		if options.verbose : print("{}.  {}\t{}".format(i,best[2],best[0]))
 		used.append(best[2])
 		cursum=mapsum(cursum,best[1])
 	
-	if options.verbose: print used
+	if options.verbose: print(used)
 	cursum.process_inplace("normalize.edgemean")
 	cursum["apix_x"]=apix
 	cursum["apix_y"]=apix

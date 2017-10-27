@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 # Muyuan Chen 2015-03
 from EMAN2 import *
 
@@ -36,7 +37,7 @@ def main():
 			imodfile=args[1]
 		else:
 			imodfile=args[1]+str(stk)+".imod"
-		print "Processing ",imodfile,"....."
+		print("Processing ",imodfile,".....")
 		
 		#imodinfo -a aaaa > ascii2.txt
 		
@@ -44,7 +45,7 @@ def main():
 		textchars = bytearray([7,8,9,10,12,13,27]) + bytearray(range(0x20, 0x100))
 		is_binary_string = lambda bytes: bool(bytes.translate(None, textchars))
 		if is_binary_string(open(imodfile, 'rb').read(1024)):
-			print "Binary file detected. Converting to ascii file..."
+			print("Binary file detected. Converting to ascii file...")
 			os.system("imodinfo -a {} > {}".format(imodfile,imodfile+'.txt'))
 			imodfile=imodfile+'.txt'
 		imodin=open(imodfile)
@@ -57,7 +58,7 @@ def main():
 		for ln in lines:
 			if ln.startswith("object"):
 				if ci>0 and options.byobj:
-					print "Generating map for object ",ci,"......"
+					print("Generating map for object ",ci,"......")
 					isscatter=False
 					outnm=options.output[:-4]+str(ci)+'.hdf'
 					
@@ -108,11 +109,11 @@ def main():
 	if options.byobj:
 		if options.mskfile: msknm=options.mskfile[:-4]+str(ci)+'.hdf'
 		outnm=options.output[:-4]+str(ci)+'.hdf'
-		print "Generating map for object ",ci,"......"
+		print("Generating map for object ",ci,"......")
 	else:
 		if options.mskfile: msknm=options.mskfile
 		outnm=options.output
-		print "Writing output...."
+		print("Writing output....")
 	#display(mask)
 	if options.mskfile:
 		if(os.path.isfile(msknm)): os.remove(msknm)

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: Jesus Galaz-Montoya, August 2014; last update by Jesus Galaz-Montoya on August/04/2014
 # Copyright (c) 2000-2011 Baylor College of Medicine
@@ -136,9 +137,9 @@ def main():
 				boxes.append( box )
 			boxes = set(boxes)
 			if len(boxes) >1:
-				print "ERROR: Your stacks are not all the same boxsize. There are %d many different boxsizes" %(len(boxes))
-				print "which are", boxes
-				print "all input stacks in --stacks must have the same boxsize; otherwise, specify a unique boxsize through --boxsize."
+				print("ERROR: Your stacks are not all the same boxsize. There are %d many different boxsizes" %(len(boxes)))
+				print("which are", boxes)
+				print("all input stacks in --stacks must have the same boxsize; otherwise, specify a unique boxsize through --boxsize.")
 				sys.exit()		
 	else:	
 		for f in findir:
@@ -163,7 +164,7 @@ def main():
 		n = EMUtil.get_image_count( stack )				#Determine number of particles in stack
 		avgr = Averagers.get(options.averager[0], options.averager[1])	#initialize averager
 		
-		print "\n(e2spt_recompute.py) (main) Processing stack",stack
+		print("\n(e2spt_recompute.py) (main) Processing stack",stack)
 		
 		for i in range(n):								#Loop over particles in stack
 			hdr = EMData( stack, i, True)				#Load particle header by providing 'True' flag
@@ -177,10 +178,10 @@ def main():
 			if options.usetomograms and tomograms:
 				tomogram = hdr['ptcl_source_image']			#Determine what tomogram a particle comes from
 				if tomogram not in tomogramsbases and tomogram not in tomograms:
-					print "\n(e2spt_recompute.py) (main) ERROR: Tomogram %s not found" %( tomogram )
+					print("\n(e2spt_recompute.py) (main) ERROR: Tomogram %s not found" %( tomogram ))
 					sys.exit()
 			
-				print "\n(e2spt_recompute.py) (main) Processing particle %d in stack %s which should come from tomogram %s" %(i, stack, tomogram )
+				print("\n(e2spt_recompute.py) (main) Processing particle %d in stack %s which should come from tomogram %s" %(i, stack, tomogram ))
 			
 				coords = hdr['ptcl_source_coord']			#And from what location exactly
 				x = coords[0]								#Parse coordinates
@@ -206,19 +207,19 @@ def main():
 				try:
 					t = hdr['xform.align3d']												#Rotate particle into aligned orientation
 				except:
-					print "WARNING: 'xform.align3d' not found in header of particle %d" % (i)
+					print("WARNING: 'xform.align3d' not found in header of particle %d" % (i))
 				
 				try:
 					t = hdr['sptsim_randT']
 				except:
-					print "ERROR: 'sptsim_randT also not found in header or particle %d" %(i)
+					print("ERROR: 'sptsim_randT also not found in header or particle %d" %(i))
 				
 				if t:
 					tf = t
 					if options.useinverseali:
 						tf = t.inverse()
-						print "t is", t
-						print "and its inverse is", tf
+						print("t is", t)
+						print("and its inverse is", tf)
 		
 					#print "Applied this transform",tf
 					a.transform(tf)
@@ -245,7 +246,7 @@ def main():
 			
 					avgr.add_image(a)
 				else:
-					print "skipping particle", i
+					print("skipping particle", i)
 					
 		avg = avgr.finish()
 		

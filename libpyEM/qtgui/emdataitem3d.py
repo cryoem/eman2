@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: Ross Coleman (racolema@bcm.edu)
 # Author: James Michael Bell, 2016 (jmbell@bcm.edu)
@@ -114,7 +115,7 @@ class EMDataItem3D(EMItem3D):
 			else:
 				sg.setAPix(None)
 		except:
-			print "ERROR in setting APIX"
+			print("ERROR in setting APIX")
 
 	def getRenderBoundingBox(self):
 		return self.renderBoundingBox

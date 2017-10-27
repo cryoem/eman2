@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -115,11 +116,11 @@ class EM3DSliceModel(EM3DModel):
 	
 	def update_data(self,data):
 		if data==None:
-			print "Error, the data is empty"
+			print("Error, the data is empty")
 			return
 		
 		if (isinstance(data,EMData) and data.get_zsize()<=1) :
-			print "Error, the data is not 3D"
+			print("Error, the data is not 3D")
 			return
 		
 #		self.data = data.copy()
@@ -148,11 +149,11 @@ class EM3DSliceModel(EM3DModel):
 		
 		self.busy = True
 		if data==None:
-			print "Error, the data is empty"
+			print("Error, the data is empty")
 			return
 		
 		if (isinstance(data,EMData) and data.get_zsize()<=1) :
-			print "Error, the data is not 3D"
+			print("Error, the data is not 3D")
 			self.busy = False
 			return
 		
@@ -401,7 +402,7 @@ class EM3DSliceModel(EM3DModel):
 				
 				self.loadTrackAxis()
 			else:
-				print "Error, unknown axis", self.axis, val
+				print("Error, unknown axis", self.axis, val)
 		
 		self.generate_current_display_list()
 		self.updateGL()

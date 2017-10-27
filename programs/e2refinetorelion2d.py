@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 # Author: Stephen Murray (scmurray@bcm.edu), 12/05/11
 # Copyright (c) 2000-2011 Baylor Colelge of Medicine
 
@@ -32,7 +33,7 @@ Examples:
 
 """
 
-print "Running e2refinetorelion2d.py"
+print("Running e2refinetorelion2d.py")
 # Required GUI Program Options
 parser = EMArgumentParser(usage, version=EMANVERSION)
 parser.add_header(name="relion2dheader", help="Options below this label are specific to e2refinetorelion2d", title="   ### e2refinetorelion.py Options ###", row=0, col=0, rowspan=1, colspan=3)
@@ -81,8 +82,8 @@ optionList = pyemtbx.options.get_optionlist(sys.argv[1:])
 
 #Check for basic usage
 if len(args) != 1:
-   print "usage:" + usage
-   print "Please run'" + progname + " -h' for detailed options"
+   print("usage:" + usage)
+   print("Please run'" + progname + " -h' for detailed options")
    sys.exit(1)
 
 
@@ -111,10 +112,10 @@ nx,ny,nz=header['nx'],header['ny'],header['nz']
 num_images = EMUtil.get_image_count(set_name)
 mrc = False
 if num_images > nz:
-        num_ptcl = num_images
+	num_ptcl = num_images
 else:
-        num_ptcl = nz
-        mrc = True
+	num_ptcl = nz
+	mrc = True
 project_db = js_open_dict("info/project.json")
 
 if options.apix == None:
@@ -124,13 +125,13 @@ if options.apix == None:
 		apix = header['ctf'].to_dict()['apix']
 	if header.get_attr_dict().__contains__('apix_x'):
 		apix = header['apix_x']
-        else:
-                print "An Angstrom per pixel was not found in the project database, the images themselves, and was not provided via a command line option. Please provide another input file"
-                print "Exiting e2refinetorelion2d"
-                shutil.rmtree(E2RLN)
-                exit(-1)
+	else:
+		print("An Angstrom per pixel was not found in the project database, the images themselves, and was not provided via a command line option. Please provide another input file")
+		print("Exiting e2refinetorelion2d")
+		shutil.rmtree(E2RLN)
+		exit(-1)
 else:
-        apix = options.apix
+	apix = options.apix
 
 if options.cs == None:
 	if project_db.__contains__('global.microscope_cs'):
@@ -140,8 +141,8 @@ if options.cs == None:
         elif header.get_attr_dict().__contains__('cs'):
                 cs = header['cs']
         else:
-                print "A spherical aberration value was not found in the project database, the images themselves, and was not provided via a command line option. Please provide another input file"
-                print "Exiting e2refinetorelion2d"
+                print("A spherical aberration value was not found in the project database, the images themselves, and was not provided via a command line option. Please provide another input file")
+                print("Exiting e2refinetorelion2d")
                 shutil.rmtree(E2RLN)
                 exit(-1)
 else:
@@ -156,8 +157,8 @@ if options.voltage == None:
 	elif header.get_attr_dict().__contains__('voltage'):
 		voltage = header['voltage']
         else:
-                print "A microscope voltage was not found in the project database, the images themselves, and was not provided via a command line option. Please provide another input file"
-                print "Exiting e2refinetorelion2d"
+                print("A microscope voltage was not found in the project database, the images themselves, and was not provided via a command line option. Please provide another input file")
+                print("Exiting e2refinetorelion2d")
                 shutil.rmtree(E2RLN)
                 exit(-1)
 else:
@@ -189,7 +190,7 @@ for db in dblist:
 			break
 
 if options.verbosity == 0 :
-	print "CTF information being pulled from: " + db
+	print("CTF information being pulled from: " + db)
 if ctf_corr == 1:
 	s = "echo \"data_\nloop_\n_rlnImageName\n_rlnMicrographName\n_rlnDefocusU\n_rlnDefocusV\n_rlnDefocusAngle\n_rlnVoltage\n_rlnSphericalAberration\n_rlnAmplitudeContrast\" > " + E2RLN + "/all_images.star"
 	if "defocus" in optionList:
@@ -200,8 +201,8 @@ if ctf_corr == 1:
 	elif EMData(set_name).get_attr_dict().__contains__('defocus'):
 		DEF1 = DEF2 = EMData(set_name)['defocus']
 	else:
-		print "A defocus was not found in the chosen set, the ctf_flip version of the chosen set, and was not provided via a command line option. Please provide it as a command line option"
-		print "Exiting e2refinetorelion2d"
+		print("A defocus was not found in the chosen set, the ctf_flip version of the chosen set, and was not provided via a command line option. Please provide it as a command line option")
+		print("Exiting e2refinetorelion2d")
 		shutil.rmtree(E2RLN)
 		exit(-1)
 	if "ampcont" in optionList:
@@ -211,7 +212,7 @@ if ctf_corr == 1:
 	elif EMData(set_name).get_attr_dict().__contains__('defocus'):
 		DEF1 = DEF2 = EMData(set_name)['ampcont']
 	else:
-		print "An amplitude contrast was not found in the chosen set, the ctf_flip version of the chosen set, and was not provided via a command line option. Defaulting to .1"
+		print("An amplitude contrast was not found in the chosen set, the ctf_flip version of the chosen set, and was not provided via a command line option. Defaulting to .1")
 		amplitude_contrast = .1
 
 
@@ -219,7 +220,7 @@ if ctf_corr == 1:
 else:
 	s = "echo \"data_\nloop_\n_rlnImageName\n_rlnMicrographName\n_rlnVoltage\n_rlnAmplitudeContrast\" > " + E2RLN + "/all_images.star"
 call(s,shell=True)
-print "Converting EMAN2 Files to Formats Compatible with RELION"
+print("Converting EMAN2 Files to Formats Compatible with RELION")
 temp = EMData(set_name,0)
 for k in range(num_images):
 	src = EMData(set_name,k).get_attr_dict()['data_source'].replace("particles/",'')
@@ -284,7 +285,7 @@ for k in range(num_images):
 
 s = "rm " + E2RLN + "/ptcl_stack.hdf"
 call(s,shell=True)
-print "File Conversion Complete"
+print("File Conversion Complete")
 
 # Create the run directory structure if it does not exist
 i = 1
@@ -345,24 +346,24 @@ for option1 in optionList:
 		s = s + " --offset_step " + str(options.offsetstep)
 	elif option1 == "threads":
 		s = s + " --j " + str(options.threads)
-print "Running Relion 2D Class Averaging"
-print "************** Relion Command *******************"
-print s
-print "*************************************************"
+print("Running Relion 2D Class Averaging")
+print("************** Relion Command *******************")
+print(s)
+print("*************************************************")
 if not(echo):
 	call(s,shell=True)
-	print "Relion 2D Class Averaging Complete"
+	print("Relion 2D Class Averaging Complete")
 
 
 	# Clean the Directory up
-	print "Cleaning up Directory Structure"
+	print("Cleaning up Directory Structure")
 	os.mkdir(E2RLN + "/input_files")
 	s = "mv " + E2RLN + "/*.mrcs " + E2RLN + "/input_files"
 	call(s,shell=True)
 	s1 = E2RLN + "/all_images.star"
 	s2 = E2RLN + "/input_files/all_images.star" 
 	shutil.move(s1,s2)
-	print "Directory Structure Cleaned"
+	print("Directory Structure Cleaned")
 
 
 

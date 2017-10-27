@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 # sxgui_meridien for analysing meridien outputs.
 # Copyright (C) 2017  Thorsten Wagner (thorsten.wagner@mpi-dortmund.mpg.de)
 #

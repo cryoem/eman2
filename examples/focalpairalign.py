@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 01/18/2011 (sludtke@bcm.edu), 
@@ -50,8 +51,8 @@ def get_usage():
 def print_usage():
 	
 	usage = get_usage()
-	print "usage " + usage;
-	print "Please run '" + progname + " -h' for detailed options"
+	print("usage " + usage);
+	print("Please run '" + progname + " -h' for detailed options")
 
 def main():
 	parser=OptionParser(usage=get_usage())
@@ -62,17 +63,17 @@ def main():
 	align=parsemodopt(options.align)
 
 	if len(args)<2 or len(args)%2!=0 :
-		print "Arguments must be pairs of near/far focus images"
+		print("Arguments must be pairs of near/far focus images")
 		sys.exit(1)
 	
 
 	for i in range(0,len(args),2):
-		if options.verbose : print "%s -> %s"%(args[i+1],args[i])
+		if options.verbose : print("%s -> %s"%(args[i+1],args[i]))
 		im1=EMData(args[i],0)
 		im2=EMData(args[i+1],0)
 		
 		if im1["nx"]!=im2["nx"] or im1["ny"]!=im2["ny"] :
-			print "Second image not same size as first, clipping"
+			print("Second image not same size as first, clipping")
 			im2=im2.get_clip(Region(0,0,im1["nx"],im1["ny"]))
 		
 		im1.process_inplace("normalize.edgemean")
@@ -82,7 +83,7 @@ def main():
 		
 		ali=im2.align(align[0],im1,align[1],"ccc",{})
 
-		if options.verbose>1 : print "Refineing"
+		if options.verbose>1 : print("Refineing")
 		ali=im2.align("refine",im1,{"xform.align2d":ali.get_attr("xform.align2d")},"ccc",{})
 		xform=ali["xform.align2d"]
 		ali=EMData(args[i+1],0)

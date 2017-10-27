@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 # Read's FEI's 'RAW' format and writes to hdf
 # feiraw2hdf.py <input> <input> ... <output> 
@@ -12,7 +13,7 @@ import sys,os
 from EMAN2 import *
 
 if argv[-1][-4:]!=".hdf" : 
-	print "output should be an HDF file"
+	print("output should be an HDF file")
 	sys.exit(1)
 
 # iterate over input files
@@ -22,21 +23,21 @@ for i,fi in enumerate(argv[1:-1]):
 	# check magic number and skip
 	a=fin.read(13)
 	if a[:3]!="FEI" :
-		print "Image magic number '%s', not 'FEI RawImage'"%a
+		print("Image magic number '%s', not 'FEI RawImage'"%a)
 		sys.exit(1)
 
 	# read the simple header
 	(one,nx,ny,chan,bits,encoding,offset,stridex,stridey)=unpack("9I",fin.read(36))
 
 	img=EMData(nx,ny)
-	print "%s: %d x %d  %d"%(fi,nx,ny,encoding)
+	print("%s: %d x %d  %d"%(fi,nx,ny,encoding))
 
 	fin=None			# close the file for the process_region_io below
 
 	if encoding==1 :		# signed int
 		EMUtil.read_raw_emdata(img,fi,49,1,0,2,None)
 	else :
-		print "Unknown encoding"
+		print("Unknown encoding")
 
 
 	if i==0: imga=img.copy()

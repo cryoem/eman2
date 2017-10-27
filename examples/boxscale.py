@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 # This simple script will upscale .box files
 # assumes names contain "shrink" which is stripped on output
 
@@ -9,7 +10,7 @@ scale=4.0
 
 for f in sys.argv[1:]:
 	if "shrink" not in f :
-		print "filenames must contain 'shrink'"
+		print("filenames must contain 'shrink'")
 		sys.exit(1)
 	outf=file(f.replace("shrink",""),"w")
 	for l in file(f,"r"):

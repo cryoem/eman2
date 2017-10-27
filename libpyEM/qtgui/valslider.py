@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -673,7 +674,7 @@ class RangeSlider(QtGui.QWidget):
 		v0y=self.vtoy(self.value[0])
 		v1y=self.vtoy(self.value[1])
 		
-		print y,v0y,v1y
+		print(y,v0y,v1y)
 		
 		# outside the current range, no effect
 		if y>v0y+3 : return
@@ -836,7 +837,7 @@ class EMSpinWidget(QtGui.QWidget):
 			
 		except ValueError:
 			self.numbox.setText(str(self.value))
-			print "ERROR!!! You must enter a number"
+			print("ERROR!!! You must enter a number")
 		
 class EMQTColorWidget(QtGui.QWidget):
 	"""

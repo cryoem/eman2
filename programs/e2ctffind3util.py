@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Stephen Murray, 11/5/2014 (scmurray@bcm.edu)
@@ -78,16 +79,16 @@ For more information on ctffind3 please see: Mindell, JA, Grigorieff N.  2003.  
 	if options.importrelionstar :
 		fls=[i for i in os.listdir("ctffind3") if i[-5:]==".star"]
 		if len(fls)==0:
-			print "please create a folder called 'ctffind3' and put .star files in it before running this option"
+			print("please create a folder called 'ctffind3' and put .star files in it before running this option")
 			sys.exit(1)
 		
 		for f in fls:
 			star=StarFile("ctffind3/"+f)
 			if not star.has_key("rlnMicrographName") :
-				print "No rlnMicrographName in ",f
+				print("No rlnMicrographName in ",f)
 				continue
 			
-			print f
+			print(f)
 			for i,imfsp in enumerate(star["rlnMicrographName"]):
 				im=info_name(imfsp)		# should work regardless of extension
 				jdb=js_open_dict(im)
@@ -102,21 +103,21 @@ For more information on ctffind3 please see: Mindell, JA, Grigorieff N.  2003.  
 
 		launch_childprocess("e2ctf.py --voltage {} --cs {} --ac {} --apix {} --allparticles --autofit --curdefocusfix --astigmatism".format(ctf.voltage,ctf.cs,ctf.ampcont,ctf.apix))
 		
-		print "All done"
+		print("All done")
 		sys.exit(0)
 
 
 	if options.apix<= 0 :
-		print "Angstrom per pixel (apix) must be specified!"
+		print("Angstrom per pixel (apix) must be specified!")
 		exit(-1)
 	if options.cs<= 0 :
-		print "Spherical Aberration (cs) must be specified!"
+		print("Spherical Aberration (cs) must be specified!")
 		exit(-2)
 	if options.voltage<= 0 :
-		print "Voltage must be specified!"
+		print("Voltage must be specified!")
 		exit(-3)
 	if options.ac<= 0 :
-		print "Amplitude Contrast must be specified!"
+		print("Amplitude Contrast must be specified!")
 		exit(-4)
 		
 	if options.allmicrographs:
@@ -143,12 +144,12 @@ For more information on ctffind3 please see: Mindell, JA, Grigorieff N.  2003.  
 		version = "ctffind3"
 	import_ctf(options.voltage, options.cs, options.ac, options.apix, options.verbose, version)
 
-	print "e2ctffind3util.py complete!"
+	print("e2ctffind3util.py complete!")
 	E2end(logid)
 
 def import_ctf(voltage, cs, ac, apix, verbose, version):
 	if not os.path.exists(version):
-		print "no " + version + " directory found. Please see usage instructions!"
+		print("no " + version + " directory found. Please see usage instructions!")
 		exit(-5)
 		
 	for filename in os.listdir("micrographs"):
@@ -177,7 +178,7 @@ def import_ctf(voltage, cs, ac, apix, verbose, version):
 	launch_childprocess("e2ctf.py --voltage {} --cs {} --ac {} --apix {} --allparticles --autofit --curdefocusfix --astigmatism --verbose {}".format(voltage,cs,ac,apix,verbose-1))
 
 def run_ctffind(apix, args, cs, voltage, ac, windowsize, minres, maxres, defocusmin, defocusmax, defocusstep,verbose, version):
-	print "Running " + version
+	print("Running " + version)
 	dstep = 10.0
 	mag = dstep / apix * 10000
 	
@@ -186,7 +187,7 @@ def run_ctffind(apix, args, cs, voltage, ac, windowsize, minres, maxres, defocus
 	created = False
 	for image in args:
 		if not os.path.exists(image):
-			print "Image Does not exist: " + image
+			print("Image Does not exist: " + image)
 			exit(-6)
 		card = open("card.txt",'w')
 		if image.split(".")[1] != "mrc":
@@ -194,7 +195,7 @@ def run_ctffind(apix, args, cs, voltage, ac, windowsize, minres, maxres, defocus
 			created = True
 		card.write(image.split(".")[0] + ".mrc\n" + version + "/" + base_name(image) + "_" + version + ".ctf\n" + str(cs) + "," + str(voltage) + "," + str(ac) + "," + str(mag) + "," + str(dstep) + "\n" + str(windowsize) + "," + str(minres) + "," + str(maxres) + "," + str(defocusmin) + "," + str(defocusmax) + "," + str(defocusstep))
 		card.close()
-		print "running " + version + " on: " + image
+		print("running " + version + " on: " + image)
 		if version == "ctffind3":
 			s = "`which ctffind3.exe` < card.txt >ctffind3/" + base_name(image) + "_ctffind3.log"
 		else:

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Jesus Galaz, 04/28/2012 - Last update 05/March/2013
@@ -120,39 +121,39 @@ def main():
 		if 'None' in options.mask:
 			options.mask = 'None'
 		if options.mask != 'None' and options.mask != 'none':
-			print "\noptions.mask before parsing is",  options.mask
+			print("\noptions.mask before parsing is",  options.mask)
 			options.mask = parsemodopt(options.mask)
 		else:
 			options.mask = None
-		print "\nmask after parsing is", options.mask
+		print("\nmask after parsing is", options.mask)
 	
 	if options.preprocess:
 		if options.preprocess != 'None' and options.preprocess != 'none': 
 			options.preprocess = parsemodopt(options.preprocess)
 		else:
 			options.preprocess = None
-		print "\nPreprocessor is", options.preprocess
+		print("\nPreprocessor is", options.preprocess)
 	
 	if options.lowpass: 
 		if options.lowpass != 'None' and options.lowpass != 'none': 
 			options.lowpass = parsemodopt(options.lowpass)
 		else:
 			options.lowpass = None
-		print "\nlowpass is", options.lowpass
+		print("\nlowpass is", options.lowpass)
 		
 	if options.highpass: 
 		if options.highpass != 'None' and options.highpass != 'none': 
 			options.highpass = parsemodopt(options.highpass)
 		else:
 			options.highpass = None
-		print "\nHighpass is", options.highpass
+		print("\nHighpass is", options.highpass)
 	
 	if options.normproc: 
 		if options.normproc != 'None' and options.normproc != 'none':
 			options.normproc=parsemodopt(options.normproc)
 		else:
 			options.normproc = None
-		print "\nNormproc is", options.normproc
+		print("\nNormproc is", options.normproc)
 
 	#print "plotonly is", options.plotonly
 	
@@ -161,7 +162,7 @@ def main():
 	
 	
 	if options.icosvertices and options.vols2:
-			print "ERROR: You can only use --icosvertices for volumes in --vols1. You must NOT supply --vols2."
+			print("ERROR: You can only use --icosvertices for volumes in --vols1. You must NOT supply --vols2.")
 			sys.exit()
 	
 	#print "args are", args	
@@ -186,7 +187,7 @@ def main():
 		
 			for v in vols:
 				if '.hdf' not in v and '.mrc' not in v:
-					print "ERROR: The input volumes must all be either .hdf, .mrc or .rec (which is also just a .mrc file)."
+					print("ERROR: The input volumes must all be either .hdf, .mrc or .rec (which is also just a .mrc file).")
 					sys.exit()
 					
 				rotcccplot(v,v,options)
@@ -198,14 +199,14 @@ def main():
 		else:
 			for v in vols:
 				if '.hdf' not in v and '.mrc' not in v:
-					print "ERROR: The input volumes must all be either .hdf, .mrc or .rec (which is also just a .mrc file)."
+					print("ERROR: The input volumes must all be either .hdf, .mrc or .rec (which is also just a .mrc file).")
 					sys.exit()
 	
 				rotcccplot(v,v,options)
 	else:
 
 		files=options.plotonly.split(',')
-		print "Will plot these files", files
+		print("Will plot these files", files)
 		
 		values={}
 		
@@ -224,7 +225,7 @@ def main():
 		
 		k=0
 		for F in files:
-			print "Working with this file now", F
+			print("Working with this file now", F)
 			azs=[]
 			valuesforthisfile=[]
 			
@@ -233,12 +234,12 @@ def main():
 			f.close()
 			
 			for line in lines:
-				print "Line is\n", line
+				print("Line is\n", line)
 				az=line.split()[0]
 				azs.append(int(az))
 				value=line.split()[-1].replace('\n','')
 				valuesforthisfile.append(float(value))
-				print "Thus az, value are", az, value
+				print("Thus az, value are", az, value)
 	
 			#title=F.replace('.txt','')
 			
@@ -251,7 +252,7 @@ def main():
 				maxv = float(max(valuesforthisfile))
 				if float(maxv) > float(absMAX):
 					absMAX = float(maxv)
-				print "Min and max to send are", absMIN, absMAX
+				print("Min and max to send are", absMIN, absMAX)
 		
 			
 			values.update({k:valuesforthisfile})
@@ -263,17 +264,17 @@ def main():
 		
 		
 		plotter(options,azs,values,title,None,k,absMIN,absMAX)
-		print "I have returned from the plotter"
+		print("I have returned from the plotter")
 			
 		if options.singleplot:	
-			print "And single plot is on"
+			print("And single plot is on")
 			
 			plotname = 'plot'
 			if options.output:
 				plotname = options.output.replace('.txt','')
 			
 			if not options.only2dplot:
-				print "While only 2D plot is off"
+				print("While only 2D plot is off")
 				#pylab.savefig(plotname)	
 				#pylab.title(title)
 				pylab.ylabel('Correlation')
@@ -282,7 +283,7 @@ def main():
 				#clf()
 		
 			if not options.icosvertices and options.plot2d:
-				print "I will call 2dplot"
+				print("I will call 2dplot")
 				twoD_plot(plotname,values,options)
 		if not options.singleplot:
 			clf()
@@ -295,7 +296,7 @@ def main():
 def rotcccplot(v1,v2,options):	
 	
 	nimg1 = EMUtil.get_image_count(v1)
-	print "The first file actually has this many images in it", nimg1
+	print("The first file actually has this many images in it", nimg1)
 	nimg2 = nimg1
 	
 	vol2 = EMData()
@@ -303,11 +304,11 @@ def rotcccplot(v1,v2,options):
 		nimg2 = EMUtil.get_image_count(v2)
 		if nimg2 > 1:
 			
-			print "The second file actually has this many images in it", nimg2
-			print """Error: You cannot provide a stack for both --vol1 and --vol2.
+			print("The second file actually has this many images in it", nimg2)
+			print("""Error: You cannot provide a stack for both --vol1 and --vol2.
 				 To compare multiple volumes in an all vs all fashion, supply individual files separated by a comma.
 				 You can compare multiple files in a stack against a single volume, if you provide the stack through --vol1,
-				 and the single volume through --vol2."""
+				 and the single volume through --vol2.""")
 			sys.exit()
 
 	#absMAX=-1.0
@@ -346,12 +347,12 @@ def rotcccplot(v1,v2,options):
 			loops = len(ts)
 	
 		for loop in range(loops):
-			print "looping over the stack %s; img number %d" %(v1,ni) 
+			print("looping over the stack %s; img number %d" %(v1,ni)) 
 			if ts:
 				vol2 = vol1.copy()
 				vol2.transform(ts[loop])
-				print "I have gone to vertex %d by applying this transform" %(loop)
-				print ts[loop]
+				print("I have gone to vertex %d by applying this transform" %(loop))
+				print(ts[loop])
 						
 			ret = azimuthalccc(vol1,vol2,options)
 			azs = ret[0]
@@ -362,7 +363,7 @@ def rotcccplot(v1,v2,options):
 				plotter(options,azs,values,title,ts,loop,0,0)
 				
 				
-				print "I have returned from the plotter"
+				print("I have returned from the plotter")
 			else:
 				#mastervalues.append(values)
 				for ele in values:
@@ -373,14 +374,14 @@ def rotcccplot(v1,v2,options):
 					maxv = float(max(values[ele]))
 					if float(maxv) > float(absMAX):
 						absMAX = float(maxv)
-				print "Min and max to send are", absMIN, absMAX
+				print("Min and max to send are", absMIN, absMAX)
 				plotter(options,azs,values,title,ts,loop,absMIN,absMAX)
 		
 		if options.singleplot:	
-			print "And single plot is on"
+			print("And single plot is on")
 			plotname=options.output.replace('.txt','.png')
 			if not options.only2dplot:
-				print "While only 2D plot is off"
+				print("While only 2D plot is off")
 				
 				#pylab.savefig(options.path + '/' + plotname)	
 				#pylab.title(title)
@@ -391,7 +392,7 @@ def rotcccplot(v1,v2,options):
 		
 		
 			if not options.icosvertices and options.plot2d:
-				print "I will call 2dplot"
+				print("I will call 2dplot")
 				twoD_plot(plotname,values,options)
 		
 		if not options.singleplot:
@@ -423,18 +424,18 @@ def plotter(options,azs,values,title,ts,loop,absMIN,absMAX):
 	HSV_tuples = [(x*1.0/N, 0.5, 0.5) for x in range(N)]
 	RGB_tuples = map(lambda x: colorsys.hsv_to_rgb(*x), HSV_tuples)
 	
-	print "I have acquired azs and values and will proceed to plot."
+	print("I have acquired azs and values and will proceed to plot.")
 	
 	if options.normalizeplot:
 		for ele in values:
 			#val = values[ele]
-			print "values are", values
+			print("values are", values)
 			minv1 = min(values[ele])
-			print "minval BEFORE is", minv1
+			print("minval BEFORE is", minv1)
 			if absMIN and options.singleplot and len(values) > 1:
 				minv1 = absMIN
 			
-				print "There was absmin and singleplot therefore minval is", minv1
+				print("There was absmin and singleplot therefore minval is", minv1)
 			#maxv1 = max(values[ele])
 			#print "Min max before normalization was", minv,maxv1
 			for k in range(len(values[ele])):
@@ -442,10 +443,10 @@ def plotter(options,azs,values,title,ts,loop,absMIN,absMAX):
 		
 			#minv2 = min(values[ele])
 			maxv2 = max(values[ele])
-			print "maxval BEFORE is", maxv2
+			print("maxval BEFORE is", maxv2)
 			if absMAX and options.singleplot and len(values) > 1:
 				maxv2 = absMAX - minv1
-				print "There was absmax and single plot therefore maxval is", maxv2
+				print("There was absmax and single plot therefore maxval is", maxv2)
 			#print "After subtracting min, the are", minv2,maxv
 			#print "Max before normalization was", maxv
 	
@@ -506,15 +507,15 @@ def plotter(options,azs,values,title,ts,loop,absMIN,absMAX):
 			#		tick.label1.set_fontsize(16)
 			#		tick.label1.set_fontweight('bold')
 			#	for tick in ax.yaxis.get_major_ticks():
-  			#		tick.label1.set_fontsize(16)
- 			#		tick.label1.set_fontweight('bold')
+			#		tick.label1.set_fontsize(16)
+			#		tick.label1.set_fontweight('bold')
   		 	
-  		 	import matplotlib
+			import matplotlib
   		 	
-  		 	matplotlib.rc('xtick', labelsize=16) 
+			matplotlib.rc('xtick', labelsize=16) 
 			matplotlib.rc('ytick', labelsize=16) 
   		 	
-  		 	font = {'weight':'bold','size':16}
+			font = {'weight':'bold','size':16}
 			matplotlib.rc('font', **font)
   		 	
 			
@@ -522,7 +523,7 @@ def plotter(options,azs,values,title,ts,loop,absMIN,absMAX):
 			pylab.rc("axes", linewidth=2.0)
 		
 			pylab.xlabel('X Axis', fontsize=16, fontweight='bold')
-  			pylab.ylabel('Y Axis', fontsize=16, fontweight='bold')
+			pylab.ylabel('Y Axis', fontsize=16, fontweight='bold')
 			
 			mins.append( min( values[ele] ) )
 			maxs.append( max( values[ele] ) )
@@ -530,15 +531,15 @@ def plotter(options,azs,values,title,ts,loop,absMIN,absMAX):
 			#legend()
 			
 		if options.normalizeplot:
-			print "Normalize plot is on"
+			print("Normalize plot is on")
 			ylim([0,1.5])
 			if options.icosvertices:
-				print "icosvertices is on"
+				print("icosvertices is on")
 				if options.singleplot:
-					print "Single plot is on"
+					print("Single plot is on")
 					ylim([0,6])
 				else:
-					print "Single plot is NOT on"
+					print("Single plot is NOT on")
 					ylim([0,1.5])
 						
 		#else:
@@ -553,18 +554,18 @@ def plotter(options,azs,values,title,ts,loop,absMIN,absMAX):
 			pylab.ylabel('Correlation')
 			pylab.xlabel('Azimuth')
 			pylab.savefig( options.path + '/' + plotname)
-			print "I have saved the figure"
+			print("I have saved the figure")
 			clf()	
 		kont+=1
 		
-	print "I am exiting the plotter"
+	print("I am exiting the plotter")
 	return()
 	
 	
 	
 	
 def preprocessRotPlot(vol,options):
-	print "\n\n\n\n\n\n$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\nEntering preprocessing function!!!!!!!!!!!!!!!!!!"
+	print("\n\n\n\n\n\n$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\nEntering preprocessing function!!!!!!!!!!!!!!!!!!")
 
 
 
@@ -581,7 +582,7 @@ def preprocessRotPlot(vol,options):
 		mask.process_inplace(options.mask[0],options.mask[1])
 
 	# normalize
-	print "Normalizing and masking"
+	print("Normalizing and masking")
 	if options.normproc and options.normproc != 'None' and options.normproc != 'none':
 		vol.process_inplace(options.normproc[0],options.normproc[1])
 	
@@ -596,22 +597,22 @@ def preprocessRotPlot(vol,options):
 
 	# preprocess
 	if options.preprocess != None:
-		print "Preprocessing"
+		print("Preprocessing")
 		vol.process_inplace(options.preprocess[0],options.preprocess[1])
 
 	# lowpass
 	if options.lowpass != None:
-		print "Lowpassing"
+		print("Lowpassing")
 		vol.process_inplace(options.lowpass[0],options.lowpass[1])
 
 	# highpass
 	if options.highpass != None:
-		print "Highpassing"
+		print("Highpassing")
 		vol.process_inplace(options.highpass[0],options.highpass[1])
 
 	# Shrinking both for initial alignment and reference
 	if options.shrink!=None and options.shrink > 1 :
-		print "Shrinking"
+		print("Shrinking")
 		vol=vol.process("math.meanshrink",{"n":options.shrink})
 	
 		#mask = EMData(vol["nx"],vol["ny"],vol["nz"])
@@ -627,7 +628,7 @@ def preprocessRotPlot(vol,options):
 		vol=symmetrize(vol,options)
 		
 	
-	print "Leaving preprocessing function"
+	print("Leaving preprocessing function")
 	vol.write_image(options.path +'/rotplotpreprocvols.hdf',-1)
 	
 	
@@ -635,7 +636,7 @@ def preprocessRotPlot(vol,options):
 	
 
 def azimuthalccc(vol1,vol2,options):
-	print "In azimuthalccc function"
+	print("In azimuthalccc function")
 	alt=options.alti
 	values = {}
 	azs=[]
@@ -682,7 +683,7 @@ def azimuthalccc(vol1,vol2,options):
 
 			best_value = ccf.get_value_at(loc_sub[0],loc_sub[1],loc_sub[2])
 			valuesforthisalt.append(best_value)
-			print "Done with ccc=%f for this alt=%d,az=%d" % ( best_value, alt, az)
+			print("Done with ccc=%f for this alt=%d,az=%d" % ( best_value, alt, az))
 			if k == 0:
 				azs.append(az)
 			az += options.daz
@@ -697,7 +698,7 @@ def azimuthalccc(vol1,vol2,options):
 			
 		alt = alt + options.dalt
 		#print "ALT now is!!!", alt
-	print "LEAVING azimuthalccc function"
+	print("LEAVING azimuthalccc function")
 
 	return(azs,values)
 
@@ -707,7 +708,7 @@ def color(value):
 
 
 def twoD_plot(plotname,values,options):
-	print "I am in 2d plot"
+	print("I am in 2d plot")
 	
 	azs = set([])
 	alts = set([])
@@ -715,12 +716,12 @@ def twoD_plot(plotname,values,options):
 	
 	widthy = options.dalt
 	widthx = options.daz
-	print "The step in alt is", options.dalt
-	print "The step in az is", options.daz
+	print("The step in alt is", options.dalt)
+	print("The step in az is", options.daz)
 	widths = [widthx,widthy]
 	#markerwidth = max(widths)
 	markerwidth = sum(widths)/2
-	print "marker width is the average of the two", markerwidth
+	print("marker width is the average of the two", markerwidth)
 	
 	for ele in values:
 		for k in range(len(values[ele])):

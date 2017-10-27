@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 10/21/2011 (sludtke@bcm.edu)
@@ -88,16 +89,16 @@ as not all elements are computed.
 		com=js_open_dict("{}/0_refine_parms.json".format(options.refine))
 		if len(args)<1 :
 			args.append(com["last_even"].replace("threed","simmx").encode("ascii"))
-			print ", ".join(args)
+			print(", ".join(args))
 		options.refs=com["last_even"].replace("threed","projections").encode("ascii")
-		print "refs: ",options.refs
+		print("refs: ",options.refs)
 
 		options.inimgs=com["input"][0].encode("ascii")
-		print "inimgs: ",options.inimgs
+		print("inimgs: ",options.inimgs)
 
 		
 	if len(args)<1 : 
-		print "Please specify input simmx files"
+		print("Please specify input simmx files")
 		sys.exit(1)
 
 	tmp=EMData(args[0],0,True)		# header info from first input, assume others are same
@@ -124,7 +125,7 @@ as not all elements are computed.
 			if ort["az"]>180.0 : az=ort["az"]-360.0		# we do this to reduce problems with symmetric structures with angle perturbation
 			else: az=ort["az"]
 			AZs.append(az)
-		print nx," projections read"
+		print(nx," projections read")
 
 	out=file(options.output,"w")
 	outkey=file(options.output.rsplit(".",1)[0]+"_key.txt","w")
@@ -139,7 +140,7 @@ as not all elements are computed.
 	# for a single particle
 	for y in xrange(ny):
 		if time.time()-t0>0.3 :
-			print " %d/%d\r"%(y+1,ny),
+			print(" %d/%d\r"%(y+1,ny), end=' ')
 			sys.stdout.flush()
 			t0=time.time()
 		Qs=[]		# Quality
@@ -277,10 +278,10 @@ as not all elements are computed.
 				else:
 					EMData(options.inimgs,y).write_image(options.outimgs,-1)
 
-	print " %d/%d\n"%(ny,ny),
-	print "Output in ",options.output
-	print "Key in ",options.output.rsplit(".",1)[0]+"_key.txt"
-	if nout!=0 : print "{} in filtered output: {}".format(nout,options.outimgs)
+	print(" %d/%d\n"%(ny,ny), end=' ')
+	print("Output in ",options.output)
+	print("Key in ",options.output.rsplit(".",1)[0]+"_key.txt")
+	if nout!=0 : print("{} in filtered output: {}".format(nout,options.outimgs))
 	out.close()
 	
 	# we convert the output we just generated to an image file for other potential analysis techniques
@@ -288,14 +289,14 @@ as not all elements are computed.
 	ary=numpy.loadtxt(options.output).transpose()[1:]		# load the entire text file, rotate so we can manipulate columns, and throw away the row number column
 	for i in angcols: ary[i-1]*=pi/180.0					# convert angles to radians to better match scale of other parameters
 	ary[colbfac-1]=numpy.sqrt(ary[colbfac-1])/100.0				# B-factor -> sqrt(B)/100.0
-	print ncols
-	print max(ary[ncols[0]-1])
+	print(ncols)
+	print(max(ary[ncols[0]-1]))
 	for i in ncols: ary[i-1]/=max(ary[i-1])					# class numbers -> 0-1 range
-	print max(ary[ncols[0]-1])
+	print(max(ary[ncols[0]-1]))
 	ary=ary.transpose()										# transpose again
 	
 	imgpath=options.output.rsplit(".",1)[0]+".hdf"
-	print "Image stack output in ",imgpath
+	print("Image stack output in ",imgpath)
 	for i in xrange(ary.shape[0]):							# we write the output to a stack of images
 		im=EMNumPy.numpy2em(ary[i])
 		im.write_image(imgpath,i)

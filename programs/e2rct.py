@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: John Flanagan, 24/09/2010 (jfflanag@bcm.edu)
@@ -105,11 +106,11 @@ def main():
 		options.path = options.path+"/"
 
 	if not options.tiltdata:
-		print "Error, tiltdata needed! Crashing!"
+		print("Error, tiltdata needed! Crashing!")
 		exit(1)
 	
 	if not options.classavg:
-		print "Error, classavg needed! Crashing!"
+		print("Error, classavg needed! Crashing!")
 		exit(1)	    
 		
 	# Now get azimuthal data
@@ -119,7 +120,7 @@ def main():
 	# Check to see if we need a tilt angle
 	if not options.stagetilt:
 		if not tiltimgs[0].get_attr_dict().has_key("tiltangle"):	
-			print "Error, stagetilt parameter not supplied and could find tiltangle as an attribute! Crashing!"
+			print("Error, stagetilt parameter not supplied and could find tiltangle as an attribute! Crashing!")
 			exit(1)
 	
 	#initialize some stuff
@@ -136,7 +137,7 @@ def main():
 		if a == None:
 			break # stupidly, enumerate keeps on going, even after it reachs the end of the 'list'
 		if options.careject and str(avnum) in options.careject:
-			if options.verbose>0: print "Rejecting class average %d" % avnum
+			if options.verbose>0: print("Rejecting class average %d" % avnum)
 			continue # do not use suboptimal classaverages
 		if a.get_attr('ptcl_repr') > options.minproj:
 			totalptcls = a.get_attr('ptcl_repr') + totalptcls
@@ -154,7 +155,7 @@ def main():
 					options.stagetilt = tiltimgs[i].get_attr("tiltangle")
 				if options.tiltaxis:
 					tiltcorrection = tiltimgs[i].get_attr_default("tiltaxis",0.0)
-					print p["alpha"], tiltcorrection
+					print(p["alpha"], tiltcorrection)
 				x.set_rotation({"type":"eman", "az":(p["alpha"]-tiltcorrection), "alt":options.stagetilt}) # Use supplied if available
 				tiltimgs[i].set_attr("xform.projection", x)
 				
@@ -167,7 +168,7 @@ def main():
 				for r, idx in enumerate(a.get_attr('class_ptcl_idxs')):
 					tiltimgs[idx].write_image("%s/rctclasses_%02d.hdf" % (options.path,avnum), r)
 				
-			if options.verbose>0: print "Reconstructing: %s/rctrecon_%02d.hdf" % (options.path,avnum)
+			if options.verbose>0: print("Reconstructing: %s/rctrecon_%02d.hdf" % (options.path,avnum))
 			run("e2make3d.py --input=%s/rctclasses_%02d.hdf --output=%s/rctrecon_%02d.hdf --iter=2" % (options.path,avnum,options.path,avnum))
 			
 			# Process the RCTs usually for filtering
@@ -204,19 +205,19 @@ def main():
 	E2end(logid)
 	
 def average_rcts(arlist, totalptcls):
-	if options.verbose>0: print "Making final recon using %d class average recons" % len(arlist)
+	if options.verbose>0: print("Making final recon using %d class average recons" % len(arlist))
 	avgr = Averagers.get('mean')		    
 	for recon in arlist:
 		if options.weightrecons:
 			weight = len(arlist)*recon.get_attr('ptcl_repr')/totalptcls
-			if options.verbose>0: print "Weighting recon using %f" % weight
+			if options.verbose>0: print("Weighting recon using %f" % weight)
 			recon.mult(weight)
 		avgr.add_image(recon)
 	return avgr.finish()
 		
 # I am not worried about interpoloation errors b/c the RCT resolution is very low anyways (80/20 rule....)
 def center_particles(particles, avnum, iterations):
-	if options.verbose>0: print "Centering tilted particles"
+	if options.verbose>0: print("Centering tilted particles")
 	centeredimgs = []
 	radius = particles[0].get_attr("nx")/2 # nx = ny, always.....
 	for it in xrange(iterations):
@@ -239,14 +240,14 @@ def center_particles(particles, avnum, iterations):
 def run(command):
 	"Execute a command with optional verbose output"
 	global options		    
-	print command
-	if options.verbose>0 : print "***************",command
+	print(command)
+	if options.verbose>0 : print("***************",command)
 	error = system(command)
 	if error==11 :
 		pass		    
 #		print "Segfault running %s\nNormal on some platforms, ignoring"%command
 	elif error : 
-		print "Error running:\n%s"%command		    
+		print("Error running:\n%s"%command)		    
 		exit(1)
 		
 def processimage(image, options_to_preprocess):
@@ -257,7 +258,7 @@ def processimage(image, options_to_preprocess):
 				if not param_dict : param_dict={}
 				image.process_inplace(str(processorname), param_dict)
 			except:
-				print "warning - application of the pre processor",p," failed. Continuing anyway"
+				print(("warning - application of the pre processor",p," failed. Continuing anyway"))
 	else:
 		return
 	

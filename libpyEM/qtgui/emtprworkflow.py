@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: David Woolford 11/10/08 (woolford@bcm.edu)
 # Copyright (c) 2000-2008 Baylor College of Medicine
@@ -255,19 +256,19 @@ class E2TomoFilterParticlesTask(WorkFlowTask):
 		i = 0
 		for i,name in enumerate(params["filenames"]):
 			cmd = "e2proc3d.py"
- 			cmd += " "+name
- 			cmd += " "+outnames[i]
- 			if params.has_key("filter_processor"):
- 				cmd += " --process="+params["filter_processor"]
- 			if params.has_key("rotate"):
- 				cmd += " --rot="+params["rotate"]
- 			success = (os.system(cmd) in (0,12))
- 			if not success:
- 				progress.close()
- 				return False,cmd
- 			else:
- 				progress.setValue(i+1)
- 				get_application().processEvents()
+			cmd += " "+name
+			cmd += " "+outnames[i]
+			if params.has_key("filter_processor"):
+				cmd += " --process="+params["filter_processor"]
+			if params.has_key("rotate"):
+				cmd += " --rot="+params["rotate"]
+			success = (os.system(cmd) in (0,12))
+			if not success:
+				progress.close()
+				return False,cmd
+			else:
+				progress.setValue(i+1)
+				get_application().processEvents()
 		
 		progress.close()
 		
@@ -557,7 +558,7 @@ class EMTomoBootstrapTask(WorkFlowTask):
 			e23dcalist += " --postprocess="+params["postfilter"]+spacer+params["postfilterparams"]
 		if params["parallel"]:
 			e23dcalist += " --parallel="+params["parallel"]
-		print e23dcalist
+		print(e23dcalist)
 		
 		child = subprocess.Popen(e23dcalist, shell=True)
 		
@@ -610,7 +611,7 @@ class E2TomoBoxerGuiTask(WorkFlowTask):
 		return table, n
 
 	def get_tomo_boxes_in_database(name):
-		print "checking for boxes, but this aspect of things is not working yet...."+base_name(name)+" "+name
+		print("checking for boxes, but this aspect of things is not working yet...."+base_name(name)+" "+name)
 		#from e2spt_boxer import tomo_db_name
 		#if db_check_dict(tomo_db_name):
 			#tomo_db = db_open_dict(tomo_db_name)

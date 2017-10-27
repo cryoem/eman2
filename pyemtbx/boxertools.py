@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author:  David Woolford 06/02/2008 (woolford@bcm.edu)
 # Copyright (c) 2000-2008 Baylor College of Medicine
@@ -261,11 +262,11 @@ class Box:
 				template_min = 15
 				frequency_cutoff = 0.5*subsample_rate
 				
-				print "Generating downsampled image ..."
-				print "        Filter Gauss High : ", gaussh_param
-				print "        Downsampling rate : ", subsample_rate
-				print "        Minimum Template  : ", template_min
-				print "        Frequency cut-off : ", frequency_cutoff
+				print("Generating downsampled image ...")
+				print("        Filter Gauss High : ", gaussh_param)
+				print("        Downsampling rate : ", subsample_rate)
+				print("        Minimum Template  : ", template_min)
+				print("        Frequency cut-off : ", frequency_cutoff)
 			
 				from filter import filt_gaussh
 				
@@ -330,7 +331,7 @@ class Box:
 		if self.footprint == None or shrink != self.footprintshrink:
 			self.footprintshrink = shrink
 			if self.image == None:
-				print "error, you can not make a footprint if there is no image"
+				print("error, you can not make a footprint if there is no image")
 				exit(1)
 			if shrink == 1:
 				self.footprint = self.image.make_footprint(0)
@@ -348,7 +349,7 @@ class Box:
 		The low_res argument has no effect on the CENTERPROPOGATE option
 		'''
 		if method not in Box.CENTERMETHODS:
-			print "error, you called center using an unknown method:",method
+			print("error, you called center using an unknown method:",method)
 			return 0
 		
 			
@@ -422,7 +423,7 @@ class Box:
 		self.xcorner += difx
 		self.ycorner += dify
 		
-		print "correction",difx,dify
+		print("correction",difx,dify)
 		
 		if update and (difx != 0 or dify != 0):
 			self.update_box_image()
@@ -456,7 +457,7 @@ class Box:
 #		correlation.write_image("small_correlation_image.hdf",-1)
 		
 		if correlation == None:
-			print 'error, can not update the parameters of a Box because the Boxable has no correlation image'
+			print('error, can not update the parameters of a Box because the Boxable has no correlation image')
 			return 0
 		
 		
@@ -636,7 +637,7 @@ class Cache:
 			#return image.copy()
 			return image
 		else:
-			print "there was an error getting the image, class name is",self.class_name
+			print("there was an error getting the image, class name is",self.class_name)
 			return None
 	
 	
@@ -669,7 +670,7 @@ class Cache:
 		if image != None:
 			return image
 		else:
-			print "there was an error getting the image, class name is",self.class_name
+			print("there was an error getting the image, class name is",self.class_name)
 			return None
 	
 	def get_cache(self):
@@ -820,10 +821,10 @@ class SincBlackmanSubsampledImage:
 		else:
 			self.smallimage = image.copy()
 
-		print "        Filter Gauss High : ", gaussh_param
-		print "        Downsampling rate : ", subsample_rate
-		print "        Minimum Template  : ", template_min
-		print "        Frequency cut-off : ", frequency_cutoff
+		print("        Filter Gauss High : ", gaussh_param)
+		print("        Downsampling rate : ", subsample_rate)
+		print("        Minimum Template  : ", template_min)
+		print("        Frequency cut-off : ", frequency_cutoff)
 
 		self.smallimage.set_attr("invert", invert)
 		self.smallimage.set_attr("gaussh_param", gaussh_param)
@@ -846,10 +847,10 @@ class SincBlackmanSubsampledImage:
 		Should generally use this approach to getting the image
 		'''
 		if self.smallimage is None or not self.query_params_match(params_mediator):
-			print "Generating downsampled image ... "
+			print("Generating downsampled image ... ")
 			self.__update_image(params_mediator)
 		else: 
-			print "Retrieving downsampled image from cache ..."
+			print("Retrieving downsampled image from cache ...")
 		
 		return self.get_image()
 	
@@ -922,7 +923,7 @@ class CoarsenedFlattenedImage:
 		image = BigImageCache.get_image_directly(self.image_name)
 		
 #		tmp = image.process("filter.lowpass.gauss",{"cutoff_abs":0.01})
-	   	tmp = image
+		tmp = image
 	   	
 		flattenradius = params_mediator.get_template_radius()
 		shrink =  params_mediator.get_subsample_rate()
@@ -1249,7 +1250,7 @@ class FLCFBoxImage:
 		flcf_object = FLCFImage(image_name)
 		if flcf_object.query_params_match(params_mediator):
 			image = flcf_object.get_image()
-			print "got the clip"
+			print("got the clip")
 			return image.get_clip(r)
 		
 		
@@ -1257,7 +1258,7 @@ class FLCFBoxImage:
 		
 		if idx == None: raise RuntimeError("That's not supposed to happen")
 			
-		print "going it without doing the whole image"
+		print("going it without doing the whole image")
 		image = EMData()
 		image.read_image("bdb:e2boxercache#coarse_flat_image",idx,False,r)
 		image.write_image("raw_data.hdf",-1)
@@ -1325,21 +1326,21 @@ class Boxable:
 		if debug: tt = time()
 		
 		if debug: tt1 = time()
-		if debug: print "It took this long to init the EICache", time()-tt1
+		if debug: print("It took this long to init the EICache", time()-tt1)
 		if debug: tt1 = time()
-		if debug: print tt1
+		if debug: print(tt1)
 		#print "reading exclusion image",excimage_name
 		if self.autoboxer != None: 
 			small_image = self.get_small_image()
 			self.exclusionimage = ExclusionImageCache.get_image(self.image_name,small_image.get_xsize(),small_image.get_ysize())
 		else:
 			self.exclusionimage = None
-		if debug: print "It took this long to get the image from the cache", time()-tt1
-		if debug: print time()
+		if debug: print("It took this long to get the image from the cache", time()-tt1)
+		if debug: print(time())
 		
 		#except: pass
 		
-		if debug: print "getting the exclusion image took", time()-tt
+		if debug: print("getting the exclusion image took", time()-tt)
 		
 		
 		
@@ -1389,7 +1390,7 @@ class Boxable:
 			# if you call set box size and there are boxes with this box size then you should
 			# really be calling change box size
 			if len(self.boxes) != 0:
-				print "warning, in calling set box size, change box size is being called"
+				print("warning, in calling set box size, change box size is being called")
 				self.change_box_size(box_size)
 				action = False
 	
@@ -1422,7 +1423,7 @@ class Boxable:
 		movedboxes =  get_idd_key_entry_in_memory(self.image_name,"moved_boxes")
 		if movedboxes == None: return
 		if oldxsize == None and movedboxes != None and len(movedboxes) != 0:
-			print "warning, changing box sizes, old movement information has been lost"
+			print("warning, changing box sizes, old movement information has been lost")
 			movedboxes = []
 		else:
 			self.resize_moved_box_data(movedboxes,box_size,oldxsize)
@@ -1477,11 +1478,11 @@ class Boxable:
 		elif method == Box.CENTERPROPAGATE:
 			extrasomething = self.autoboxer.get_high_res_template_image()
 		else:
-			print "error, the method you specified is unsupported in Boxable:",method
+			print("error, the method you specified is unsupported in Boxable:",method)
 		
 		for box in self.boxes:
 			if not box.center(method,extrasomething,False):
-				print "there was an error boxing"
+				print("there was an error boxing")
 				return 0
 				
 		return 1
@@ -1582,7 +1583,7 @@ class Boxable:
 		
 	def set_quality(self,quality):
 		if quality not in Boxable.QUALITY_META_DATA:
-			print "error",quality,"is not in",Boxable.QUALITY_META_DATA,"can't do anything"
+			print("error",quality,"is not in",Boxable.QUALITY_META_DATA,"can't do anything")
 			return
 		else:
 			self.__quality =  Boxable.QUALITY_META_DATA_MAP[quality]
@@ -1658,7 +1659,7 @@ class Boxable:
 		
 		for trimbox in trimboxes:
 			if trimbox.ismanual or trimbox.isref:
-				print "error, the box was manual or it was a reference"
+				print("error, the box was manual or it was a reference")
 				continue
 			
 			box = Box()
@@ -1742,14 +1743,14 @@ class Boxable:
 		
 		'''
 		if len(self.boxes) == 0:
-			print "no boxes to write, doing nothing. Image name is",self.image_name
+			print("no boxes to write, doing nothing. Image name is",self.image_name)
 		else:
 			boxname = self.get_coord_file_name()
 			if file_exists(boxname):
 				if not force:
 					f=file(boxname,'r')
 					boxname_backup =  get_file_tag(self.image_name)+str(time()) + ".box.bak"
-					print "warning, found box name",boxname,"- am renaming it to", boxname_backup, "- use force to overwrite this behavior"
+					print("warning, found box name",boxname,"- am renaming it to", boxname_backup, "- use force to overwrite this behavior")
 					fbak=file(boxname_backup,'w')
 					fbak.writelines(f.readlines())
 					fbak.close()
@@ -1759,10 +1760,10 @@ class Boxable:
 				
 			f=file(boxname,'w')
 			
-			if verbose: print "writing",self.num_boxes(),"box coordinates to file",boxname
+			if verbose: print("writing",self.num_boxes(),"box coordinates to file",boxname)
 			
 			
-		  	invshrink = 1.0/self.get_subsample_rate()
+			invshrink = 1.0/self.get_subsample_rate()
 			exclusionimage = self.get_exclusion_image()
 			
 			
@@ -1777,7 +1778,7 @@ class Boxable:
 					# FOO - this will not work if the box dimensions are not equal..
 					origbox_size = box.xsize
 					if origbox_size != box.ysize:
-						print "error, uniform box dimensions are not supported"
+						print("error, uniform box dimensions are not supported")
 						return
 					box.change_box_size(box_size)
 						
@@ -1814,14 +1815,14 @@ class Boxable:
 		
 		'''
 		if len(self.boxes) == 0:
-			print "no boxes to write, doing nothing. Image name is",self.image_name
+			print("no boxes to write, doing nothing. Image name is",self.image_name)
 		else:
 			# should check to see if the db exists or not
 			
 			if imageformat == "bdb":
 				if os.path.exists("particles"):
 					if not os.path.isdir("particles"):
-						print "error, particles exists and is not a directory. e2boxer needs to use this as a directory. Please rename the file to something else and try again"
+						print("error, particles exists and is not a directory. e2boxer needs to use this as a directory. Please rename the file to something else and try again")
 						return
 					#else: print "directory exists, particles"
 				else:
@@ -1838,7 +1839,7 @@ class Boxable:
 			if imageformat == "bdb":
 				if db_check_dict(image_name):
 					if not force:
-						print "db",image_name,"already exists, doing nothing. Use force to override this behavior"
+						print("db",image_name,"already exists, doing nothing. Use force to override this behavior")
 						return
 					else:
 						db_remove_dict(image_name)
@@ -1846,15 +1847,15 @@ class Boxable:
 			else:	
 				if file_exists(image_name):
 					if not force:
-						print "warning, file already exists - ", image_name, " doing nothing. Use force to override this behavior"
+						print("warning, file already exists - ", image_name, " doing nothing. Use force to override this behavior")
 						return
 					else:
 						remove_file(image_name)
 			
-			if verbose:	print "writing",self.num_boxes(),"boxed images to", image_name
+			if verbose:	print("writing",self.num_boxes(),"boxed images to", image_name)
 			
 
-		  	invshrink = 1.0/self.get_subsample_rate()
+			invshrink = 1.0/self.get_subsample_rate()
 			exclusionimage = self.get_exclusion_image()
 						
 			for box in self.boxes:
@@ -1869,7 +1870,7 @@ class Boxable:
 					# FOO - this will not work if the box dimensions are not equal..
 					origbox_size = box.xsize
 					if origbox_size != box.ysize:
-						print "error, uniform box dimensions are not supported"
+						print("error, uniform box dimensions are not supported")
 						return
 					box.change_box_size(box_size)
 						
@@ -1897,7 +1898,7 @@ class Boxable:
 
 	def add_box(self,box):
 		if not isinstance(box,Box):
-			print "You can not add a box to this box set if it is not of type Box"
+			print("You can not add a box to this box set if it is not of type Box")
 			return;
 
 		box.boxingobj = self
@@ -1936,7 +1937,7 @@ class Boxable:
 		manualboxes = get_idd_key_entry(self.image_name,"manual_boxes")
 		
 		if manualboxes == None or len(manualboxes) == 0:
-			print "error, you can't move a manual box if there are none!"
+			print("error, you can't move a manual box if there are none!")
 			return
 		
 		found = False
@@ -1948,7 +1949,7 @@ class Boxable:
 				break
 		
 		if not found:
-			print "error, couldn't find the manual box you tried to delete, nothing happened"
+			print("error, couldn't find the manual box you tried to delete, nothing happened")
 			return
 		
 	
@@ -1956,7 +1957,7 @@ class Boxable:
 		manualboxes = get_idd_key_entry(self.image_name,"manual_boxes")
 		
 		if manualboxes == None or len(manualboxes) == 0:
-			print "error, you can't move a manual box if there are none!"
+			print("error, you can't move a manual box if there are none!")
 			return
 		
 		found = False
@@ -1969,7 +1970,7 @@ class Boxable:
 				break
 		
 		if not found:
-			print "error, couldn't find the manual box you tried to move, nothing happened"
+			print("error, couldn't find the manual box you tried to move, nothing happened")
 			return
 		
 	
@@ -2067,7 +2068,7 @@ class Boxable:
 		if self.autoboxer != None:
 			return self.autoboxer.get_subsample_rate()
 		else:
-			print 'warning, there is no autoboxer set, am not sure how to shrink, returning 1 as the shrink factor'
+			print('warning, there is no autoboxer set, am not sure how to shrink, returning 1 as the shrink factor')
 			return 1
 		
 	def get_correlation_image(self,autoboxer):
@@ -2213,7 +2214,7 @@ class Boxable:
 		elif flag == Boxable.UNERASE:
 			val = 0
 		else:
-			print "error - unknow flag:",flag,"doing nothing"
+			print("error - unknow flag:",flag,"doing nothing")
 			return
 		
 		BoxingTools.set_region(self.get_exclusion_image(),mask,xx,yy,val)
@@ -2252,10 +2253,10 @@ class Boxable:
 		
 		QtCore.QObject.connect(self.process, QtCore.SIGNAL("finished(int)"), self.process_finished)
 		QtCore.QObject.connect(self.process, QtCore.SIGNAL("started()"), self.process_start)
-		print self.process.start(program,args)
+		print(self.process.start(program,args))
 
 	def process_start(self):
-		print "received process start signal"
+		print("received process start signal")
 		
 	def box_selected(self,event,lc):
 		#print "selected",lc[0]
@@ -2277,7 +2278,7 @@ class Boxable:
 		try:
 			from emimage import EMImage
 		except:
-			print "Cannot import EMAN image GUI objects (emimage,etc.)"
+			print("Cannot import EMAN image GUI objects (emimage,etc.)")
 			sys.exit(1)
 		
 		e = EMData().read_images("classes.init.hdf")
@@ -2308,7 +2309,7 @@ class Boxable:
 					
 		#print scores
 		
-		print "received finish signal"
+		print("received finish signal")
 	
 	##################################################################################
 	# procedures for saving boxes and particle images to database so user can start where he left off
@@ -2533,7 +2534,7 @@ class SwarmTemplate(Template):
 	
 	def become(self,trimSwarmTemplate):
 		if not isinstance(trimSwarmTemplate,TrimSwarmTemplate):
-			print "error, can't become anything other than a TrimSwarmTemplate"
+			print("error, can't become anything other than a TrimSwarmTemplate")
 			return 0
 		else:
 			
@@ -2563,7 +2564,7 @@ class SwarmTemplate(Template):
 		if isinstance(ref,Box):
 			self.refboxes.append(ref)
 		else:
-			print "error, can't append that reference, it's not of type Box"
+			print("error, can't append that reference, it's not of type Box")
 	
 	def change_box_size(self,box_size):
 		if len(self.refboxes) == 0: return
@@ -2578,7 +2579,7 @@ class SwarmTemplate(Template):
 		Returns 0 if it wasn't found
 		'''
 		if not isinstance(box,Box):
-			print "error, can't remove a reference that isn't a box"
+			print("error, can't remove a reference that isn't a box")
 			return 0
 		
 		for j,tmp in enumerate(self.refboxes):
@@ -2595,7 +2596,7 @@ class SwarmTemplate(Template):
 		'''
 		# you can only generate a template if there are references
 		if len(self.refboxes) <= 0: 
-			print 'error, cant call private function gen_template when there are no refboxes, this is an internal error'
+			print('error, cant call private function gen_template when there are no refboxes, this is an internal error')
 			return 0
 		
 		images_copy = []
@@ -2608,8 +2609,8 @@ class SwarmTemplate(Template):
 			image.process_inplace("normalize.edgemean")
 			images_copy.append(image)
 		if len(images_copy) == 0:
-			print 'error, you have probably set references that all have the dummy flag set to True, which exluded them all from the template making process'
-			print 'can not proceed without references to create template'
+			print('error, you have probably set references that all have the dummy flag set to True, which exluded them all from the template making process')
+			print('can not proceed without references to create template')
 			return 0
 			
 		ave = images_copy[0].copy()
@@ -2700,7 +2701,7 @@ class ImageProcParamsMediator:
 	'''
 	def __init__(self,parent):
 		if not isinstance(parent,AutoBoxer):
-			print "Error, the ImageProcParamsMediator can only be instantiated with an AutoBoxer as its parent"
+			print("Error, the ImageProcParamsMediator can only be instantiated with an AutoBoxer as its parent")
 			exit(1)
 		
 		self.parent = parent
@@ -2965,43 +2966,43 @@ class PawelAutoBoxer(AutoBoxer):
 		AutoBoxer.__init__(self)
 		self.parent = parent
                 
-                self.box_size = 128
-                self.pixel_input = 1.0
-                self.pixel_output = 1.0
-                self.frequency_cutoff = 0
-                self.window_size_min = 15
-                self.gauss_width = 1.0
-                self.use_variance = True
-                self.invert = False
-                self.thr_low = None
-                self.thr_hgh = None
+		self.box_size = 128
+		self.pixel_input = 1.0
+		self.pixel_output = 1.0
+		self.frequency_cutoff = 0
+		self.window_size_min = 15
+		self.gauss_width = 1.0
+		self.use_variance = True
+		self.invert = False
+		self.thr_low = None
+		self.thr_hgh = None
                 
-                # default values for ctf:
-                self.ctf_fstart = 80
-                self.ctf_fstop = 8
-                self.ctf_window = 512
-                self.ctf_edge = 0
-                self.ctf_overlap = 50
-                self.ctf_volt = 300
-                self.ctf_ampcont = 0.1
-                self.ctf_Cs = 2.0
+		# default values for ctf:
+		self.ctf_fstart = 80
+		self.ctf_fstop = 8
+		self.ctf_window = 512
+		self.ctf_edge = 0
+		self.ctf_overlap = 50
+		self.ctf_volt = 300
+		self.ctf_ampcont = 0.1
+		self.ctf_Cs = 2.0
 
 		self.out_file = None
 		
-                if not(dict is None):
-                    # assume the dictionary uses variable names as keys, so we loop over all
-                    #    keys
-                    for key in dict.keys():
-                        try:
-                            # and set our contents according to the dict
-                            self.__dict__[key] = dict[key]
-                        except:
-                            # error. just ignore.
-                            #print "key",key,"skipped"
-                            pass
-                        else:
-                            #print "key",key,"set to ",dict[key]
-                            pass
+		if not(dict is None):
+			# assume the dictionary uses variable names as keys, so we loop over all
+			#    keys
+			for key in dict.keys():
+				try:
+					# and set our contents according to the dict
+					self.__dict__[key] = dict[key]
+				except:
+					# error. just ignore.
+					#print "key",key,"skipped"
+					pass
+				else:
+					#print "key",key,"set to ",dict[key]
+					pass
 
                     
   
@@ -3042,7 +3043,7 @@ class PawelAutoBoxer(AutoBoxer):
 		pass
 	
 	def become( self, inst ):
-		print "get params from TrimPawelAutoBoxer"
+		print("get params from TrimPawelAutoBoxer")
 		self.pixel_input = inst.pixel_input
 		self.pixel_output = inst.pixel_output
 		self.box_size = inst.box_size
@@ -3156,26 +3157,26 @@ class PawelAutoBoxer(AutoBoxer):
 		ctf_tuple = [defocus,self.ctf_Cs,self.ctf_volt,self.pixel_input,0,self.ctf_ampcont]
 		set_ctf(img, ctf_tuple)
 		img.write_image(image_name, 0)
-		print "        CTF parameters for original micrograph:", ctf_tuple
+		print("        CTF parameters for original micrograph:", ctf_tuple)
 
 		ctf_tuple = [defocus,self.ctf_Cs,self.ctf_volt,self.pixel_output,0,self.ctf_ampcont]
-		print "        CTF parameters for particles:", ctf_tuple
+		print("        CTF parameters for particles:", ctf_tuple)
 
 		return generate_ctf(ctf_tuple)
             
 
 	def run(self, imgname, boxable=None):
 		from sparx import get_im, filt_gaussl, filt_gaussh
-		print "Running Gauss convolution ..."
-		print "        Input pixel size  : ", self.pixel_input
-		print "        Ouput pixel size  : ", self.pixel_output
-		print "        Gauss width       : ", self.gauss_width
-		print "        Box size          : ", self.box_size
-		print "        Image name        : ", imgname
-		print "        CCF low bound     : ", self.thr_low
-		print "        CCF high bound    : ", self.thr_hgh
-		print "        Use variance      : ", self.use_variance
-		print "        Invert constant   : ", self.invert
+		print("Running Gauss convolution ...")
+		print("        Input pixel size  : ", self.pixel_input)
+		print("        Ouput pixel size  : ", self.pixel_output)
+		print("        Gauss width       : ", self.gauss_width)
+		print("        Box size          : ", self.box_size)
+		print("        Image name        : ", imgname)
+		print("        CCF low bound     : ", self.thr_low)
+		print("        CCF high bound    : ", self.thr_hgh)
+		print("        Use variance      : ", self.use_variance)
+		print("        Invert constant   : ", self.invert)
 
 		if not(boxable is None):
 			boxable.delete_auto_boxes(True)
@@ -3190,7 +3191,7 @@ class PawelAutoBoxer(AutoBoxer):
 		img = SincBlackmanSubsampleCache.get_image(boxable.get_image_name(),self.get_params_mediator())
 		BigImageCache.get_object(boxable.get_image_name()).register_alternate(img)
 
-                [avg,sigma,fmin,fmax] = Util.infomask( img, None, True )
+		[avg,sigma,fmin,fmax] = Util.infomask( img, None, True )
 		img -= avg
 		img /= sigma
 		#print "stat: ",avg,sigma
@@ -3288,7 +3289,7 @@ class PawelAutoBoxer(AutoBoxer):
 			img.set_attr( "ctf", ctf_dict)
 			img.write_image( file_name, i+nima )
 			
-		print "Wrote", len(boxable.boxes), "particles to file", file_name
+		print("Wrote", len(boxable.boxes), "particles to file", file_name)
 
 
 
@@ -3305,7 +3306,7 @@ class PawelAutoBoxer(AutoBoxer):
 			f.write("Image %5d:     X corner = %5d     Y corner = %5d     size = %4d \n"%(i, b.xcorner, b.ycorner, b.xsize))
 		f.close()
 					
-		print "Wrote coordinates of", len(boxable.boxes), "particles to file", file_name
+		print("Wrote coordinates of", len(boxable.boxes), "particles to file", file_name)
 
 
 
@@ -3322,7 +3323,7 @@ class PawelAutoBoxer(AutoBoxer):
 		return False
 
 	def write_to_db(self, write_current=False):
-		print "Gauss autoboxer writing to database ..."
+		print("Gauss autoboxer writing to database ...")
 		trim = TrimPawelAutoBoxer(self)
 		data = {}
 		data["autoboxer_type"] = "Gauss"
@@ -3521,7 +3522,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		if mode in self.permissablemodes:
 			self.mode = mode
 		else:
-			print "error, that mode:", mode, "was not in the list of permissable modes"
+			print("error, that mode:", mode, "was not in the list of permissable modes")
 			exit(1)
 
 	def set_interactive_mode(self,real_time_auto_boxing=False):
@@ -3538,13 +3539,13 @@ class SwarmAutoBoxer(AutoBoxer):
 				if self.mode == SwarmAutoBoxer.DYNAPIX:
 					self.auto_box(self.get_boxable())
 				elif self.mode == SwarmAutoBoxer.COMMANDLINE:
-					print "warning, haven't double check SwarmAutoBoxer.COMMANDLINE scenario in set_cmp_mode"
+					print("warning, haven't double check SwarmAutoBoxer.COMMANDLINE scenario in set_cmp_mode")
 				return 1
 			else:
-				print "warning, attempted to set the cmp_mode to that which was already stored, no action taken"
+				print("warning, attempted to set the cmp_mode to that which was already stored, no action taken")
 				return 0
 		else:
-			print "the peak profile comparitor mode you specified:", cmp_mode,"was not recognized, no action was taken"
+			print("the peak profile comparitor mode you specified:", cmp_mode,"was not recognized, no action was taken")
 			return 0
 		
 	def get_mode(self):
@@ -3560,20 +3561,20 @@ class SwarmAutoBoxer(AutoBoxer):
 				if self.mode == SwarmAutoBoxer.DYNAPIX:
 					self.auto_box(self.get_boxable())
 				elif self.mode == SwarmAutoBoxer.COMMANDLINE:
-					print "warning, haven't double check SwarmAutoBoxer.COMMANDLINE scenario in set_selection_mode"
+					print("warning, haven't double check SwarmAutoBoxer.COMMANDLINE scenario in set_selection_mode")
 				return 1
 			else:
-				print "warning, attempted to set the selection_mode to that which was already stored, no action taken"
+				print("warning, attempted to set the selection_mode to that which was already stored, no action taken")
 				return 0
 		else:
-			print "the selection mode you specified:", selection_mode,"was not recognized, no action was taken"
+			print("the selection mode you specified:", selection_mode,"was not recognized, no action was taken")
 			return 0
 
 	def name(self):
 		return 'swarmautoboxer'
 
 	def add_dummy(self,box):
-		print "in add dummy"
+		print("in add dummy")
 		self.dummy_box = box
 		if not self.__full_update() : return 0
 		self.auto_box(self.get_boxable())
@@ -3598,14 +3599,14 @@ class SwarmAutoBoxer(AutoBoxer):
 		
 		if isinstance(box,Box):
 			if box.xsize != box.ysize:
-				print 'error, support for uneven box dimensions is not currently implemented'
+				print('error, support for uneven box dimensions is not currently implemented')
 				return 0
 			# store the box_size if we don't have one already
 			if self.box_size == -1:
 				self.box_size = box.xsize
 			# do a sanity check, this shouldn't happen if the program is managing everything carefully
 			elif self.box_size != box.xsize:
-				print 'error, the currently stored box size does not match the box_size of the reference that was just added'
+				print('error, the currently stored box size does not match the box_size of the reference that was just added')
 				return 0	
 			
 			if self.mode == SwarmAutoBoxer.DYNAPIX:
@@ -3616,11 +3617,11 @@ class SwarmAutoBoxer(AutoBoxer):
 				self.state_ts = -1
 				self.template_ts = -1
 			else:
-				print 'error, unknown mode in SwarmAutoBoxer'
+				print('error, unknown mode in SwarmAutoBoxer')
 				return 0
 			return 1
 		else:
-			print "error, you cannot add a reference to the AutoBoxer if it is not in the format of a Box object"
+			print("error, you cannot add a reference to the AutoBoxer if it is not in the format of a Box object")
 			return 0
 		
 	# this is just for remembering what I might do when a dummy is added or removed
@@ -3700,7 +3701,7 @@ class SwarmAutoBoxer(AutoBoxer):
 			self.write_image_specific_references_to_db(self.get_boxable().get_image_name())
 			return 0
 		else:
-			print 'error, unknown mode in SwarmAutoBoxer'
+			print('error, unknown mode in SwarmAutoBoxer')
 			return -1
 		
 	def get_template_object(self):
@@ -3712,7 +3713,7 @@ class SwarmAutoBoxer(AutoBoxer):
 			self.refupdate = False
 			
 		if self.template == None:
-			print 'error, you have either asked for the template without setting a reference, or you have added a reference and not set the refupdate flag'
+			print('error, you have either asked for the template without setting a reference, or you have added a reference and not set the refupdate flag')
 			return None
 		
 		return self.template
@@ -3722,7 +3723,7 @@ class SwarmAutoBoxer(AutoBoxer):
 	
 	def set_box_size(self,box_size,image_names):
 		if (box_size < 6 ):
-			print 'error, a hard limit of 6 for the box size is currently enforced. Email developers if this is a problem'
+			print('error, a hard limit of 6 for the box size is currently enforced. Email developers if this is a problem')
 			return
 		if self.box_size == box_size:	return
 		
@@ -3761,7 +3762,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		
 		if self.mode == SwarmAutoBoxer.DYNAPIX:
 			if not self.__full_update(): 
-				print "box size change failed, can't full update"
+				print("box size change failed, can't full update")
 				return
 			self.auto_box(self.get_boxable())
 		elif self.mode == SwarmAutoBoxer.USERDRIVEN:
@@ -3769,7 +3770,7 @@ class SwarmAutoBoxer(AutoBoxer):
 			self.state_ts = -1
 			self.template_ts = -1
 		else:
-			print 'error, unknown mode in SwarmAutoBoxer'
+			print('error, unknown mode in SwarmAutoBoxer')
 		
 	def get_search_radius(self):
 		# 0.7 is the 1 on sqrt(2) 
@@ -3780,7 +3781,7 @@ class SwarmAutoBoxer(AutoBoxer):
 	
 	def get_subsample_rate(self,force=True):	
 		if self.box_size == -1:
-			print "error - the box_size is currently -1 - I can't figure out the best value to shrink by"	
+			print("error - the box_size is currently -1 - I can't figure out the best value to shrink by")	
 			return -1
 			
 		if self.shrink == -1 or force:	
@@ -3799,13 +3800,13 @@ class SwarmAutoBoxer(AutoBoxer):
 		'''
 		# this is fine - if a boxable is excluded this is more or less a flag for the autoboxer not to autobox it..
 		if boxable.is_excluded():
-			print "Image is excluded, doing nothing"
+			print("Image is excluded, doing nothing")
 			return 0
 		
 		
 		# this is fine - if a boxable is frozen this is more or less a flag for the autoboxer not to autobox it..
 		if boxable.is_frozen():
-			print "Image is frozen, maintaining current state"
+			print("Image is frozen, maintaining current state")
 			return 0
 
 		# if there are no references than autoboxing can not occur.
@@ -3828,7 +3829,7 @@ class SwarmAutoBoxer(AutoBoxer):
 
 		correlation = boxable.get_correlation_image(self) # this is the correlation image itself. Could trigger an automatic generation
 		if not isinstance(correlation, EMData):
-			print "the correlation image was not an EMData object. This is a fatal flaw"
+			print("the correlation image was not an EMData object. This is a fatal flaw")
 			return
 
 		old_autoboxer_state_ts = boxable.get_auto_boxer_state_ts()
@@ -3943,7 +3944,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		Does the autoboxing. Returns a list of Boxes
 		'''
 		if not isinstance(correlation,EMData):
-			print 'error, cannot autobox, the correlation argument is not an EMData object'
+			print('error, cannot autobox, the correlation argument is not an EMData object')
 			return 0
 			
 			#print "using opt radius",self.radius, "which has value",tmp,"shrink was",self.shrink
@@ -3984,7 +3985,7 @@ class SwarmAutoBoxer(AutoBoxer):
 			box.center(Box.CENTERPROPAGATE,template,False,update_image)
 			boxes.append(box)
 		
-	   	boxes.sort(compare_box_correlation)
+		boxes.sort(compare_box_correlation)
 		return boxes
 		
 	def get_high_res_template_image(self):
@@ -4022,7 +4023,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		'''
 		
 		if not self.template.gen_template():
-			print 'error, couldnt generate template'
+			print('error, couldnt generate template')
 			return 0
 		
 		# First tell all references' associated boxing objects to be open to the prospect 

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steve Ludtke 06/10/2013 (sludtke@bcm.edu)
@@ -37,7 +38,7 @@ try:
 	import matplotlib.pyplot as plt
 	pltcolors=["k","b","g","r","m","c","darkblue","darkgreen","darkred","darkmagenta","darkcyan","0.5"]
 except:
-	print "Matplotlib not available, some output will not be generated"
+	print("Matplotlib not available, some output will not be generated")
 
 
 from EMAN2 import *
@@ -249,15 +250,15 @@ not need to specify any of the following other than the ones already listed abov
 	if options.threads<=1 :
 		if options.parallel!=None and options.parallel[:6]=="thread" :
 			options.threads=int(options.parallel[7:])
-			print "Note: automatically setting --threads:{}".format(options.threads)
-		else: print "WARNING: specifying --threads=<N> (where N is the number of cores to use on a single processor) is strongly recommended, even if already specifying --parallel"
+			print("Note: automatically setting --threads:{}".format(options.threads))
+		else: print("WARNING: specifying --threads=<N> (where N is the number of cores to use on a single processor) is strongly recommended, even if already specifying --parallel")
 
 	if options.input!=None and options.model!=None and options.startfrom!=None:
-		print "ERROR : You may specify --input and --model  OR  --startfrom, not both"
+		print("ERROR : You may specify --input and --model  OR  --startfrom, not both")
 		sys.exit(1)
 
 	if (options.input==None or options.model==None) and options.startfrom==None :
-		print "ERROR : You must specify --input and --model  OR  --startfrom\n"
+		print("ERROR : You must specify --input and --model  OR  --startfrom\n")
 		parser.print_help()
 		sys.exit(1)
 
@@ -290,12 +291,12 @@ not need to specify any of the following other than the ones already listed abov
 			apix3=apix1
 
 		if ( xsize3d != xsize or apix3==0 or fabs(fabs(apix1/apix3)-1.0)>.001 ) :
-			print "WARNING: the dimensions of the particles (%d @ %1.4f A/pix) do not match the dimensions of the starting model (%d @ %1.4f A/pix). I will attempt to adjust the model appropriately."%(xsize,apix1,xsize3d,apix3)
+			print("WARNING: the dimensions of the particles (%d @ %1.4f A/pix) do not match the dimensions of the starting model (%d @ %1.4f A/pix). I will attempt to adjust the model appropriately."%(xsize,apix1,xsize3d,apix3))
 			try:
 				scale=img3["apix_x"]/img1["apix_x"]
-				print "Reference is {box3} x {box3} x {box3} at {apix3:1.2f} A/pix, particles are {box2} x {box2} at {apix2:1.2f} A/pix. Scaling by {scale:1.3f}".format(box3=img3["nx"],box2=img1["nx"],apix3=img3["apix_x"],apix2=img1["apix_x"],scale=scale)
+				print("Reference is {box3} x {box3} x {box3} at {apix3:1.2f} A/pix, particles are {box2} x {box2} at {apix2:1.2f} A/pix. Scaling by {scale:1.3f}".format(box3=img3["nx"],box2=img1["nx"],apix3=img3["apix_x"],apix2=img1["apix_x"],scale=scale))
 			except:
-				print "A/pix unknown, assuming scale same as relative box size"
+				print("A/pix unknown, assuming scale same as relative box size")
 				scale=float(xsize)/xsize3d
 			if scale>1 : cmd="e2proc3d.py %s %s/scaled_model.hdf --clip=%d,%d,%d --scale=%1.5f"%(options.model,options.path,xsize,xsize,xsize,scale)
 			else :       cmd="e2proc3d.py %s %s/scaled_model.hdf --scale=%1.5f --clip=%d,%d,%d"%(options.model,options.path,scale,xsize,xsize,xsize)
@@ -304,8 +305,8 @@ not need to specify any of the following other than the ones already listed abov
 			options.model="%s/scaled_model.hdf"%options.path
 
 	if options.speed>7 or options.speed<1 :
-		print "ERROR: --speed must be between 1 and 7. Lower numbers will make refinements take longer, but produce slightly better measured resolutions. The default value of 5 is a good balance for typical refinements. When\
-satisfied with the results with speed=5 you may consider reducing this number as you try to push for optimal resolution."
+		print("ERROR: --speed must be between 1 and 7. Lower numbers will make refinements take longer, but produce slightly better measured resolutions. The default value of 5 is a good balance for typical refinements. When\
+satisfied with the results with speed=5 you may consider reducing this number as you try to push for optimal resolution.")
 
 	progress = 0.0
 	total_procs = 5*options.iter
@@ -321,7 +322,7 @@ satisfied with the results with speed=5 you may consider reducing this number as
 		else : apix=EMData(options.input,0,True)["apix_x"]
 
 	if options.targetres<apix*2:
-		print "ERROR: Target resolution is smaller than 2*A/pix value. This is impossible."
+		print("ERROR: Target resolution is smaller than 2*A/pix value. This is impossible.")
 		sys.exit(1)
 
 	logid=E2init(sys.argv,options.ppid)
@@ -346,7 +347,7 @@ used, browse to the 0_refine_parms.json file in the refinement directory. You ca
 			append_html("<p>Using {oldeven} {oldodd} as starting models without additional randomizing. Input particles are from {infile}</p>".format(oldeven=olddb["last_even"],oldodd=["last_odd"],infile=options.input))
 
 		except:
-			print "Error: Cannot find necessary files in ",options.startfrom
+			print("Error: Cannot find necessary files in ",options.startfrom)
 			sys.exit(1)
 	else:
 		try:
@@ -375,7 +376,7 @@ gold standard resolution assessment is not valid, and you need to re-refine, sta
 			if options.inputavg!=None : options.inputavg=image_eosplit(options.inputavg)
 		except:
 			traceback.print_exc()
-			print "Error: Unable to prepare input files"
+			print("Error: Unable to prepare input files")
 			sys.exit(1)
 
 	repim=EMData(options.input[0],0)		# read a representative image to get some basic info
@@ -590,16 +591,16 @@ important to use an angular step which is 90/integer.</p>")
 	if options.pad<nx :
 		options.pad=good_size(nx*1.7)
 		if options.pad>1024 :
-			print "Warning: padding for Fourier reconstruction is now {}, meaning quite a lot of memory will \
+			print("Warning: padding for Fourier reconstruction is now {}, meaning quite a lot of memory will \
 be required for reconstructions, and they may be very slow. Padding in Fourier space is largely performed to avoid high-radius \
 Fourier artifacts, and a gradual radial density falloff. If you feel this value is too large, you can manually specify a value \
-with the --pad option.".format(options.pad)
+with the --pad option.".format(options.pad))
 	else :
 		if options.pad<nx*1.4 :
-			print "Warning: the --pad value you specified is less than 1.4x the box size. We normlly recommend using a --pad \
+			print("Warning: the --pad value you specified is less than 1.4x the box size. We normlly recommend using a --pad \
 value at least 1.5x the box size to avoid Fourier artifacts in the reconstruction, particularly at high radius. If you already \
 have a box which is large compared to the particle, then a smaller value may be fine. Also, if your particle is very large and there \
-are memory concerns, using a smaller pad option may be the only reasonable alternative, though some artifacts will be inevitable."
+are memory concerns, using a smaller pad option may be the only reasonable alternative, though some artifacts will be inevitable.")
 
 	##################################
 	### prepare for the run
@@ -609,7 +610,7 @@ are memory concerns, using a smaller pad option may be the only reasonable alter
 	else: verbose=""
 
 	if options.threads<1 :
-		print "WARNING: threads set to an invalid value. Changing to 1, but you should really provide a reasonable number."
+		print("WARNING: threads set to an invalid value. Changing to 1, but you should really provide a reasonable number.")
 		options.threads=1
 
 	if options.parallel!=None : parallel="--parallel {}".format(options.parallel)
@@ -679,7 +680,7 @@ are memory concerns, using a smaller pad option may be the only reasonable alter
 	db["astep"]=astep
 	db["apix"]=apix
 
-	print "NOTE: you can check the progress of the refinement at any time by opening this URL in your web-browser:  file://{}/index.html".format(os.path.abspath(output_path))
+	print("NOTE: you can check the progress of the refinement at any time by opening this URL in your web-browser:  file://{}/index.html".format(os.path.abspath(output_path)))
 
 	append_html("""<h3>Analysis of Refinement Results</h3>""")
 
@@ -768,7 +769,7 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 		if makesimmask :
 			av=Averagers.get("minmax",{"max":1})
 			nprj=EMUtil.get_image_count("{path}/projections_{itr:02d}_odd.hdf".format(path=options.path,itr=it))
-			print "Mask from {} projections".format(nprj)
+			print("Mask from {} projections".format(nprj))
 			for i in xrange(nprj):
 				a=EMData("{path}/projections_{itr:02d}_even.hdf".format(path=options.path,itr=it),i)
 				av.add_image(a)
@@ -849,7 +850,7 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 
 		if ampcorrect!="strucfac" and classrefsf!="" :
 			classrefsf=""
-			print "Warning: Not using structure factor amplitude correction, so disabling classrefsf option"
+			print("Warning: Not using structure factor amplitude correction, so disabling classrefsf option")
 			append_html("<p>Warning: classrefsf option requires 'strucfac' amplitude correction. Since this is not being used either by intent or due to the high resolution of the map, 'classrefsf' has been disabled.</p>")
 
 		if not options.bispec or classiter!=0 :
@@ -1140,7 +1141,7 @@ sufficient resolution to validate the gold-standard approach, continuing to exte
 Since this refinement continued from an existing refinement (or something funny happened), it is impossible to tell if the gold-standard criteria have been met, but
 if they were met in the refinement this run continued, then your resolution should still be valid.""".format(1.0/lastres[0],1.0/lastres[1],options.path))
 				traceback.print_exc()
-				print "Note: the above traceback is just a warning for debugging purposes, and can be ignored"
+				print("Note: the above traceback is just a warning for debugging purposes, and can be ignored")
 			except:
 				append_html("""<p> Congratulations, your refinement is complete, but there was some difficulty in assessing the resolution. This could just mean that your data was 
 sampling-limited (meaning a smaller A/pix value would have been required to achieve data-limited resolution. If you cannot figure out what is going on, suggest asking for help
@@ -1164,25 +1165,25 @@ For the final completed iteration, the unmasked even and odd volumes are also re
 
 	E2end(logid)
 
-	print """
+	print("""
 ***********************************************************{stars}
 * REFINEMENT COMPLETE - Please look at {path}/report/index.html *
 ***********************************************************{stars}
 
-""".format(path=options.path,stars="*"*len(options.path))
+""".format(path=options.path,stars="*"*len(options.path)))
 
 
 def run(command):
 	"Mostly here for debugging, allows you to control how commands are executed (os.system is normal)"
 
-	print "{}: {}".format(time.ctime(time.time()),command)
+	print("{}: {}".format(time.ctime(time.time()),command))
 	append_html("<p>{}: {}</p>".format(time.ctime(time.time()),command),True)
 
 	ret=launch_childprocess(command)
 
 	# We put the exit here since this is what we'd do in every case anyway. Saves replication of error detection code above.
 	if ret !=0 :
-		print "Error running: ",command
+		print("Error running: ",command)
 		sys.exit(1)
 
 	return

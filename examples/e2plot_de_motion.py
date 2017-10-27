@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 '''
 ====================
 Author: Jesus Galaz - 2015, Last update: 12/July/2017
@@ -89,13 +90,13 @@ def main():
 	logger = E2init(sys.argv, options.ppid)
 
 	if not options.apix:
-		print "\n(e2plot_de_motion)(main) ERROR: --apix required to accurately plot motion in Angstroms."
+		print("\n(e2plot_de_motion)(main) ERROR: --apix required to accurately plot motion in Angstroms.")
 		sys.exit(1)
 
 	anglesin = []
 	if not options.tltfile:
 		if not options.tiltstep or not options.lowestangle or not options.highestangle:
-			print "\n(e2plot_de_motion)(main)ERROR: must provide --tiltstep, --lowestangle, and --highestangle in the absence of --tltfile"
+			print("\n(e2plot_de_motion)(main)ERROR: must provide --tiltstep, --lowestangle, and --highestangle in the absence of --tltfile")
 			sys.exit(1)
 
 		options.lowestangle = int(options.lowestangle)
@@ -104,7 +105,7 @@ def main():
 
 	elif options.tltfile:
 		if options.highestangle or options.lowestangle or options.tiltstep:
-			print "\n(e2plot_de_motion)(main) WARNING: --tltfile was provided; therefore, --highestangle,--lowestangle, and --tiltstep will be ignored."
+			print("\n(e2plot_de_motion)(main) WARNING: --tltfile was provided; therefore, --highestangle,--lowestangle, and --tiltstep will be ignored.")
 		
 		with open( options.tltfile ,'r' ) as tltfile: 
 			lines = tltfile.readlines()
@@ -135,19 +136,19 @@ def main():
 
 	for f in listdir:
 		if options.verbose:
-			print "\nfound file",f
+			print("\nfound file",f)
 		
 		if '_y.txt' in f or '_x.txt' in f:
 			stem = f.replace('y.txt','').replace('x.txt','')
 			ids.add( stem )
 			if options.verbose:
-				print "\nfound stem", stem
+				print("\nfound stem", stem)
 				
 	lowestangle = options.lowestangle
 	highestangle = options.highestangle
 
-	print "\nlowestangle {} type={}".format(lowestangle, type(lowestangle))
-	print "\nhighestangle {} type={}".format(highestangle, type(highestangle))
+	print("\nlowestangle {} type={}".format(lowestangle, type(lowestangle)))
+	print("\nhighestangle {} type={}".format(highestangle, type(highestangle)))
 	#print "\nstartangle {} type={}".format(startangle, type(startangle))		
 	
 	step = options.tiltstep
@@ -160,7 +161,7 @@ def main():
 	kk=0
 	if options.bidirectionalfrom:
 		startangle = int(options.bidirectionalfrom)
-		print "\nstartangle {} type={}".format(startangle, type(startangle))
+		print("\nstartangle {} type={}".format(startangle, type(startangle)))
 		if options.negativetiltseries:
 			for angle in range(startangle,lowestangle-1,-step):
 				datadict.update({kk:[angle]})
@@ -186,14 +187,14 @@ def main():
 	elif not options.bidirectionalfrom:
 		if options.negativetiltseries:
 			startangle = highestangle
-			print "\nstartangle {} type={}".format(startangle, type(startangle))
+			print("\nstartangle {} type={}".format(startangle, type(startangle)))
 			for angle in range(startangle,lowestangle-1,-step):
 				datadict.update({kk:[angle]})
 				lastangle=angle
 				kk+=1
 		elif not options.negativetiltseries:
 			startangle = lowestangle
-			print "\nstartangle {} type={}".format(startangle, type(startangle))
+			print("\nstartangle {} type={}".format(startangle, type(startangle)))
 			for angle in range(startangle,highestangle+1,step):
 				datadict.update({kk:[angle]})
 				lastangle = angle
@@ -203,7 +204,7 @@ def main():
 
 	if len(datadict) != len(ids):
 		dif = len(datadict) - len(ids)
-		print "\n(DE_translation_plotter)(main) WARNING: there are these many files {}, but only these many angles, {}, given input parameters (lowestangle={}, highestangle={}, and tiltstep={}). Therfore, {} additional angles will be added to assign a different angle to each file.".format(len(ids),len(datadict),lowestangle,highestangle,step,int(math.fabs(dif)))
+		print("\n(DE_translation_plotter)(main) WARNING: there are these many files {}, but only these many angles, {}, given input parameters (lowestangle={}, highestangle={}, and tiltstep={}). Therfore, {} additional angles will be added to assign a different angle to each file.".format(len(ids),len(datadict),lowestangle,highestangle,step,int(math.fabs(dif))))
 		
 		tmpangle=lastangle+step
 		for ii in xrange( int(math.fabs(dif)) ):
@@ -221,20 +222,20 @@ def main():
 
 	for iid in ids:
 		if options.verbose>9:
-			print "\n(DE_translation_plotter)(main) or kk={} iid is {}".format(kk,iid)
-			print "therefore datadict[kk]={}, type={}".format(datadict[kk],type(datadict[kk]))
+			print("\n(DE_translation_plotter)(main) or kk={} iid is {}".format(kk,iid))
+			print("therefore datadict[kk]={}, type={}".format(datadict[kk],type(datadict[kk])))
 		datadict[kk].append(iid)
 		kk+=1
 
 	if options.verbose > 9:
-		print "\n(DE_translation_plotter)(main) ids before are {} type={} ".format( ids, type(ids) )
-		print "\ndatadict is {}".format(datadict)
+		print("\n(DE_translation_plotter)(main) ids before are {} type={} ".format( ids, type(ids) ))
+		print("\ndatadict is {}".format(datadict))
 
 	datadictsorted = sorted(datadict.items(), key=lambda e: e[1][0]) 
 	
 	if options.verbose > 9:
-		print "\n(DE_translation_plotter)(main) datadictsorted is {}".format(datadictsorted)
-		print "\nTYPE {}".format(type(datadictsorted))
+		print("\n(DE_translation_plotter)(main) datadictsorted is {}".format(datadictsorted))
+		print("\nTYPE {}".format(type(datadictsorted)))
 	
 	
 	figx_vals = {}
@@ -267,7 +268,7 @@ def main():
 		angletoplot = ele[-1][0]
 		angles.append(angletoplot)
 		if options.verbose > 9:
-			print "\n igm is {} and angle is {}".format(id,angletoplot)
+			print("\n igm is {} and angle is {}".format(id,angletoplot))
 
 		if k >nimgs:
 			break
@@ -337,7 +338,7 @@ def main():
 		avgslist.append( [ angletoplot, ravg, rerror ] )
 
 		if options.verbose:
-			print "\nfor img %d xavg=%f, yavg=%f, ravg=%f" %(k,xavg,yavg,ravg)
+			print("\nfor img %d xavg=%f, yavg=%f, ravg=%f" %(k,xavg,yavg,ravg))
 		
 		filesdict.update({ id:[xavg,yavg,ravg,figx_values_angstroms,figy_values_angstroms,rs]} )		
 		
@@ -387,32 +388,32 @@ def getangles( options, raworder=False ):
 			if line:
 				angle = float(line)
 				angles.append( angle )
-				print "appending angle", angle
+				print("appending angle", angle)
 
 		#angles = [a for a in xrange( options.lowesttilt, options.highesttilt, options.tiltstep )]
 	else:	
 		
-		print "There was no .tlt file so I'll generate the angles using lowesttilt=%f, highesttilt=%f, tiltstep=%f" % (options.lowesttilt, options.highesttilt, options.tiltstep)
+		print("There was no .tlt file so I'll generate the angles using lowesttilt=%f, highesttilt=%f, tiltstep=%f" % (options.lowesttilt, options.highesttilt, options.tiltstep))
 		generate = floatrange( options.lowesttilt, options.highesttilt, options.tiltstep )
 		angles=[ float(x) for x in generate ]
 	
-	print "BEFORE sorting, angles are", angles
+	print("BEFORE sorting, angles are", angles)
 	
-	print "negativetiltseries is", options.negativetiltseries
-	print "not negativetiltseries", not options.negativetiltseries
-	print "raworder", raworder
-	print "not raworder", not raworder
-	print "not options.negativetiltseries and not raworder", not options.negativetiltseries and not raworder
+	print("negativetiltseries is", options.negativetiltseries)
+	print("not negativetiltseries", not options.negativetiltseries)
+	print("raworder", raworder)
+	print("not raworder", not raworder)
+	print("not options.negativetiltseries and not raworder", not options.negativetiltseries and not raworder)
 
 
 	if options.negativetiltseries:
 		angles.sort()
-		print "\n(e2spt_tiltstacker.py)(getangles) AFTER sorting, angles are", angles
+		print("\n(e2spt_tiltstacker.py)(getangles) AFTER sorting, angles are", angles)
 	
 	elif not raworder:
 		angles.sort()
 		angles.reverse()
-		print "\n(e2spt_tiltstacker.py)(getangles) AFTER REVERSING (ordered from largest to smallest), angles are", angles
+		print("\n(e2spt_tiltstacker.py)(getangles) AFTER REVERSING (ordered from largest to smallest), angles are", angles)
 	
 	return angles
 
@@ -423,9 +424,9 @@ def resetplot(figsize=None):
 	fig = plt.figure()
 	if figsize:
 		fig = plt.figure(figsize=(10, 6))
-  	ax = fig.add_subplot(1,1,1)
+	ax = fig.add_subplot(1,1,1)
 
-  	plt.rcParams.update({'figure.max_open_warning': 0})
+	plt.rcParams.update({'figure.max_open_warning': 0})
 
 	return fig,ax
 
@@ -470,7 +471,7 @@ def plotavgdata(options, data, angles, errors, tag='', title='', xlabel='', ylab
 		resolution=300
 
 	if options.verbose:
-		print "\n(plotavgdata) plotting avgs for fig {}".format(tag)
+		print("\n(plotavgdata) plotting avgs for fig {}".format(tag))
 
 	fig,ax = resetplot(figsize)
 	
@@ -491,7 +492,7 @@ def plotdata(options, data, tag, title, xlabel, ylabel, altxaxisdata=None):
 		resolution=300
 
 	if options.verbose:
-		print "\n(plotdata) plotting fig {}".format(tag)
+		print("\n(plotdata) plotting fig {}".format(tag))
 	fig,ax = resetplot()
 	cpick = resetcolorbar(options.lowestangle,options.highestangle)
 	ndata = len(data)
@@ -507,21 +508,21 @@ def plotdata(options, data, tag, title, xlabel, ylabel, altxaxisdata=None):
 			colorbar=True
 		
 		if options.verbose > 9:
-			print "\n(plotdata) plotting fig {}, count = {}".format(count,tag)
+			print("\n(plotdata) plotting fig {}, count = {}".format(count,tag))
 		
 		plotfig(options, fig, ax, data[count][2], cpick, count, colorbar, colorstart, colorstep, title, xlabel, ylabel, altxaxis)		
 
 	filetosave=options.outputtag + '_' + tag + '_plot.png'
 	fig.savefig( filetosave, dpi=resolution, bbox_inches='tight')# transparent=True) #, bbox_extra_artists=(lgd,), bbox_inches='tight'
 	plt.close('fig')
-	print "\n(plotdata) saving figure {}".format(filetosave)
+	print("\n(plotdata) saving figure {}".format(filetosave))
 
 	if options.individualplots:
 		colorstep=0
 		for count in data:
 			colorbar=False
 			fig,ax = resetplot()
-			print "\n(plotdata) plotting individual plot {}, data {}".format(count, tag)
+			print("\n(plotdata) plotting individual plot {}, data {}".format(count, tag))
 			plotfig(options, fig, ax, data[count][2], cpick, count, colorbar, colorstart, colorstep, title, xlabel, ylabel, altxaxis)
 			filetosave=options.outputtag + '_' + tag + '_plot' +str(count).zfill( len(str(ndata)))+'.png'
 			fig.savefig( filetosave, dpi=resolution, bbox_inches='tight')

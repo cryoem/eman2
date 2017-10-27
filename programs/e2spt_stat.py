@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 # This is a simple example showing how to generate a histogram from a text file
 # specify the filename and column number with an optional number of bins, column number 0 indexed
@@ -12,7 +13,7 @@ try:
 	import matplotlib.pyplot as plt
 	pltcolors=["k","b","g","r","m","c","darkblue","darkgreen","darkred","darkmagenta","darkcyan","0.5"]
 except:
-	print "ERROR: Matplotlib not available, cannot generate histogram"
+	print("ERROR: Matplotlib not available, cannot generate histogram")
 	sys.exit(1)
 
 def main():
@@ -42,14 +43,14 @@ This program will look in an spt_XX folder at particle_parms_xx.json and show a 
 	if options.path == None:
 		fls=[int(i[-2:]) for i in os.listdir(".") if i[:4]=="spt_" and len(i)==6 and str.isdigit(i[-2:])]
 		if len(fls)==0 : 
-			print "Error, cannot find any spt_XX folders"
+			print("Error, cannot find any spt_XX folders")
 			sys.exit(2)
 		options.path = "spt_{:02d}".format(max(fls))
 
 	if options.iter<=0 :
 		fls=[int(i[15:17]) for i in os.listdir(options.path) if i[:15]=="particle_parms_" and str.isdigit(i[15:17])]
 		if len(fls)==0 : 
-			print "Cannot find a {}/particle_parms* file".format(options.path)
+			print("Cannot find a {}/particle_parms* file".format(options.path))
 			sys.exit(2)
 		options.iter=max(fls)
 		
@@ -85,8 +86,8 @@ This program will look in an spt_XX folder at particle_parms_xx.json and show a 
 	if options.verbose:
 		lz=len(col[col<0])
 		gz=len(col[col>0])
-		print "%1.2f (%d) less than zero"%(float(lz)/(lz+gz),lz)
-		print "%1.2f (%d) less than zero"%(float(gz)/(lz+gz),gz)
+		print("%1.2f (%d) less than zero"%(float(lz)/(lz+gz),lz))
+		print("%1.2f (%d) less than zero"%(float(gz)/(lz+gz),gz))
 
 	his=histogram(col,options.bins)
 

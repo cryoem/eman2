@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: David Woolford, 10/10/2008 (woolford@bcm.edu)
@@ -63,7 +64,7 @@ class Animator:
 			self.update()
 		else:
 			if not QtCore.QObject.disconnect(self.timer, QtCore.SIGNAL("timeout()"), self.time_out):
-				print "failed to disconnect timer"
+				print("failed to disconnect timer")
 			
 			self.timer_enabled = False
 		
@@ -85,7 +86,7 @@ class Animator:
 			
 			self.timer.start(self.timer_interval)
 			self.timer_enabled = True
-		else: print "timer already enabled in Animator"
+		else: print("timer already enabled in Animator")
 		
 	def animation_done_event(self,animated): raise NotImplementedError("Inheriting classes should define this function")
 

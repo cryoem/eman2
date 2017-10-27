@@ -1,9 +1,10 @@
 
+from __future__ import print_function
 
 class BaseLogger_Print:
 	
 	def logLine(self, prefix, line):
-		print (prefix + " " + line)
+		print((prefix + " " + line))
 
 
 class BaseLogger_Files:

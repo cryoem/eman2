@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -55,7 +56,7 @@ def mpi_din(msg):
 	elif msg[0]=="Z" : return loads(decompress((msg[1:]).tostring()))
 	elif msg[0]=="O" : return loads((msg[1:]).tostring())
 	else :
-		print "ERROR: Invalid MPI message. Please contact developers. (%s)"%str(msg[:20])
+		print("ERROR: Invalid MPI message. Please contact developers. (%s)"%str(msg[:20]))
 		sys.exit(1)
 
 

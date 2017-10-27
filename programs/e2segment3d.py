@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 02/02/2010 (ludtke@bcm.edu)
@@ -69,12 +70,12 @@ def main():
 
 	
 	if options.process[:8]!="segment." :
-		print "You must specify a segment.* processor with any necessary parameters in the form segment.xxxx:parm=value:parm=value"
+		print("You must specify a segment.* processor with any necessary parameters in the form segment.xxxx:parm=value:parm=value")
 		sys.exit(1)
 
 	E2n=E2init(sys.argv,options.ppid)
 
-	if options.verbose>0: print "Reading volume"
+	if options.verbose>0: print("Reading volume")
 	volume=EMData(args[0],0)
 	
 	if options.shifttocenter:
@@ -108,18 +109,18 @@ def main():
 		nps=ps[:p1+5]+str(num-len(helix))+ps[p2:]
 		options.process=nps
 		
-		print "Existing helix length: "+ str(len(helix))
+		print("Existing helix length: "+ str(len(helix)))
 		#print helix[0]
 		
 	
-	if options.verbose>0: print "Executing segmentation"
+	if options.verbose>0: print("Executing segmentation")
 	(processorname, param_dict) = parsemodopt(options.process)
 	seg=volume.process(processorname,param_dict)
 	seg["apix_x"]=volume["apix_x"]
 	seg["apix_y"]=volume["apix_y"]
 	seg["apix_z"]=volume["apix_z"]
 
-	if options.verbose>0: print "Writing output"
+	if options.verbose>0: print("Writing output")
 	if options.output!=None : seg.write_image(options.output,0)
 	if options.segout!=None :
 		max=int(seg["maximum"])
@@ -183,7 +184,7 @@ def write_chimera_markers(filename,centers,apix_x,apix_y,apix_z,marker_size=3.0)
 		out.close()
 	except:
 		traceback.print_exc()
-		print "\n---------------\nFailed to write Chimera output file, check permissions, etc"
+		print("\n---------------\nFailed to write Chimera output file, check permissions, etc")
 		
 	
 def write_pdb_markers(filename,centers,apix_x,apix_y,apix_z,sx,sy,sz):
@@ -196,10 +197,10 @@ def write_pdb_markers(filename,centers,apix_x,apix_y,apix_z,sx,sy,sz):
 		out.close()
 	except:
 		traceback.print_exc()
-		print "\n---------------\nFailed to write PDB output file, check permissions, etc"
+		print("\n---------------\nFailed to write PDB output file, check permissions, etc")
 
 def read_helix(filename,sx,sy,sz,ax,ay,az):
-	print "Reading helix atoms from pdb file..."
+	print("Reading helix atoms from pdb file...")
 	points = []
 	pdbfile = open(filename, "r")
 	lines = pdbfile.readlines()

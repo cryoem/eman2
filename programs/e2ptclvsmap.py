@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 10/31/14 (sludtke@bcm.edu)
@@ -77,8 +78,8 @@ gold-standard refinement."""
 	if options.threads<=1 :
 		if options.parallel!=None and options.parallel[:6]=="thread" : 
 			options.threads=int(options.parallel[7:])
-			print "Note: automatically setting --threads:{}".format(options.threads)
-		else: print "WARNING: specifying --threads=<N> (where N is the number of cores to use on a single processor) is strongly recommended, even if already specifying --parallel"
+			print("Note: automatically setting --threads:{}".format(options.threads))
+		else: print("WARNING: specifying --threads=<N> (where N is the number of cores to use on a single processor) is strongly recommended, even if already specifying --parallel")
 
 	if options.path == None:
 		fls=[int(i[-2:]) for i in os.listdir(".") if i[:8]=="ptclmap_" and len(i)==10 and str.isdigit(i[-2:])]
@@ -92,14 +93,14 @@ gold-standard refinement."""
 		xsize3d=EMData(options.model,0,True)["nx"]
 		xsize=EMData(options.input,0,True)["nx"]
 		if ( xsize3d != xsize ) :
-			print "WARNING: the dimensions of the particles (%d) do not match the dimensions of the starting model (%d). I will attempt to adjust the model appropriately."%(xsize,xsize3d)
+			print("WARNING: the dimensions of the particles (%d) do not match the dimensions of the starting model (%d). I will attempt to adjust the model appropriately."%(xsize,xsize3d))
 			img1 = EMData(options.input,0,True)
 			img3 = EMData(options.model,0,True)
 			try:
 				scale=img3["apix_x"]/img1["apix_x"]
-				print "Reference is {box3} x {box3} x {box3} at {apix3:1.2f} A/pix, particles are {box2} x {box2} at {apix2:1.2f} A/pix. Scaling by {scale:1.3f}".format(box3=img3["nx"],box2=img1["nx"],apix3=img3["apix_x"],apix2=img1["apix_x"],scale=scale)
+				print("Reference is {box3} x {box3} x {box3} at {apix3:1.2f} A/pix, particles are {box2} x {box2} at {apix2:1.2f} A/pix. Scaling by {scale:1.3f}".format(box3=img3["nx"],box2=img1["nx"],apix3=img3["apix_x"],apix2=img1["apix_x"],scale=scale))
 			except:
-				print "A/pix unknown, assuming scale same as relative box size"
+				print("A/pix unknown, assuming scale same as relative box size")
 				scale=float(xsize)/xsize3d
 			if scale>1 : cmd="e2proc3d.py %s %s/scaled_model.hdf --clip=%d,%d,%d --scale=%1.5f"%(options.model,options.path,xsize,xsize,xsize,scale)
 			else :       cmd="e2proc3d.py %s %s/scaled_model.hdf --scale=%1.5f --clip=%d,%d,%d"%(options.model,options.path,scale,xsize,xsize,xsize)
@@ -145,7 +146,7 @@ gold-standard refinement."""
 	nptcl=classmx["ny"]
 
 	for iref in xrange(nref):
-		if options.verbose==1 : print "Class ",iref
+		if options.verbose==1 : print("Class ",iref)
 		outname="{}/class_{:04d}.hdf".format(options.path,iref)
 		ref=EMData("{path}/projections.hdf".format(path=options.path),iref)
 		ref.process_inplace("normalize.edgemean")
@@ -178,12 +179,12 @@ gold-standard refinement."""
 def run(command):
 	"Mostly here for debugging, allows you to control how commands are executed (os.system is normal)"
 
-	print "{}: {}".format(time.ctime(time.time()),command)
+	print("{}: {}".format(time.ctime(time.time()),command))
 
 	ret=launch_childprocess(command)
 
 	if ret !=0 :
-		print "Error running: ",command
+		print("Error running: ",command)
 		sys.exit(1)
 
 	return

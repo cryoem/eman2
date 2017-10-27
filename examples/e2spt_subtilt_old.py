@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 # Author: Jesus Galaz-Montoya, 02/Feb/2013, last update 12/Feb/2015
 # Copyright (c) 2011 Baylor College of Medicine
@@ -134,56 +135,56 @@ def main():
 	
 	if options.ntiltslow:
 		if options.ntiltslowneg:
-			print "ERROR: Cannot specify --ntiltslow and --ntiltslowneg at the same time"
+			print("ERROR: Cannot specify --ntiltslow and --ntiltslowneg at the same time")
 			sys.exit()
 		if options.ntiltslowpos:
-			print "ERROR: Cannot specify --ntiltslow and --ntiltslowpos at the same time"
+			print("ERROR: Cannot specify --ntiltslow and --ntiltslowpos at the same time")
 			sys.exit()
 		
 	if options.ntiltslowneg:
 		if options.ntiltslow:
-			print "ERROR: Cannot specify --ntiltslowneg and --ntiltslow at the same time"
+			print("ERROR: Cannot specify --ntiltslowneg and --ntiltslow at the same time")
 			sys.exit()
 		if options.ntiltslowpos:
-			print "ERROR: Cannot specify --ntiltslowneg and --ntiltslowpos at the same time"
+			print("ERROR: Cannot specify --ntiltslowneg and --ntiltslowpos at the same time")
 			sys.exit()
 	
 	if options.ntiltslowpos:
 		if options.ntiltslow:
-			print "ERROR: Cannot specify --ntiltslowpos and --ntiltslow at the same time"
+			print("ERROR: Cannot specify --ntiltslowpos and --ntiltslow at the same time")
 			sys.exit()
 		if options.ntiltslowneg:
-			print "ERROR: Cannot specify --ntiltslowpos and --ntiltslowneg at the same time"
+			print("ERROR: Cannot specify --ntiltslowpos and --ntiltslowneg at the same time")
 			sys.exit()
 		
 		
-	print "\nI've read the options"	
+	print("\nI've read the options")	
 	
 	'''
 	Check that all needed parameters are properly supplied
 	'''
 	if not options.tiltseries:  
-		print "ERROR: You must provide --tiltseries."
+		print("ERROR: You must provide --tiltseries.")
 		sys.exit()
 	
 	if not options.tiltangles:
-		print "ERROR: You must provide --tiltangles."
+		print("ERROR: You must provide --tiltangles.")
 		sys.exit()
 	
 	if not options.coords2d and not options.coords3d:
-		print "ERROR: You must provide EITHER --coords2d OR --coords3d." 
+		print("ERROR: You must provide EITHER --coords2d OR --coords3d.") 
 		sys.exit()
 	
 	if options.coords2d and options.coords3d:
-		print "ERROR: You must provide EITHER --coords2d OR --coords3d, not both." 
+		print("ERROR: You must provide EITHER --coords2d OR --coords3d, not both.") 
 		sys.exit()
 	
 	if not options.tomogram and not options.tomosides:
-		print "ERROR: You must provide EITHER --tomogram OR --tomosides." 
+		print("ERROR: You must provide EITHER --tomogram OR --tomosides.") 
 		sys.exit()
 		
 	if options.tomogram and options.tomosides:
-		print "ERROR: You must provide EITHER --tomogram OR --tomosides, not both." 
+		print("ERROR: You must provide EITHER --tomogram OR --tomosides, not both.") 
 		sys.exit()
 	
 	'''
@@ -197,9 +198,9 @@ def main():
 	
 	tiltanglesfloatabs = []
 	for line in alines:
-		print "line is", line
+		print("line is", line)
 		ang = math.fabs( float( line.replace('\n','') ) )
-		print "ang is", ang
+		print("ang is", ang)
 		tiltanglesfloatabs.append( ang )
 	#tiltanglesfloatabs = [ math.fabs( float( alines[i].replace('\n','') ) ) for i in range(len(alines)) ]
 
@@ -209,7 +210,7 @@ def main():
 	#	tiltanglesfloat = [ -1*float( alines[i].replace('\n','') ) for i in range(len(alines)) ]
 	#	print "INVERTED tiltanglesfloat", tiltanglesfloat
 	#else:
-	print "tiltanglesfloat", tiltanglesfloat
+	print("tiltanglesfloat", tiltanglesfloat)
 
 		
 	
@@ -226,9 +227,9 @@ def main():
 	nslices = serieshdr['nz']
 	
 	if int( nslices ) != int( ntiltangles ):
-		print """ERROR: The tiltangles file doesn't seem to correspond to the tiltseries provided.
+		print("""ERROR: The tiltangles file doesn't seem to correspond to the tiltseries provided.
 				The number of images in --tiltseries (z dimension of MRC stack) must be equal to the number
-				of lines in --tiltangles."""
+				of lines in --tiltangles.""")
 		sys.exit()
 	
 	'''
@@ -331,18 +332,18 @@ def main():
 				zs.append( int( line.split()[-1] ))		
 				ppp += 1
 			else:
-				print "\nBad line removed", line
+				print("\nBad line removed", line)
 	
 		elif options.coords2d:
 			if line and len(finallineelements) == 2:
 				cleanlines.append(line)
 				ppp += 1
 			else:
-				print "\nBad line removed", line
+				print("\nBad line removed", line)
 	
-	print "icethicknessauto before if is", options.icethicknessauto
+	print("icethicknessauto before if is", options.icethicknessauto)
 	if zs and options.icethicknessauto and not options.tomogram and not options.tomosides:
-		print "icethicknessauto after if is", options.icethicknessauto
+		print("icethicknessauto after if is", options.icethicknessauto)
 	
 		icethicknessfile = options.path + '/icethickness_estimate.txt'
 	
@@ -358,7 +359,7 @@ def main():
 			autoIceLine += ' , unshrunk = ' + str( autoIcethicknessUnshrunk ) + ' pixels'
 	
 		icethickness = autoIcethicknessUnshrunk
-		print "\nIce thickness has been estimated from z coordinates to be", icethickness
+		print("\nIce thickness has been estimated from z coordinates to be", icethickness)
 	
 		autoIcethicknessInApix = autoIcethicknessUnshrunk*apix
 		autoIceLine += ' , ' + str( autoIcethicknessInApix ) + ' angstroms'
@@ -374,15 +375,15 @@ def main():
 	nptcls = len(cleanlines)
 	if int( options.subset ) > 0:
 		if int( options.subset ) > len(cleanlines):
-			print """WARNING: The total amount of lines in the coordinates files is LESS 
+			print("""WARNING: The total amount of lines in the coordinates files is LESS 
 				than the --subset of particles to box you specified; therefore, ALL particles 
-				will be extracted."""
+				will be extracted.""")
 		else:
 			nptcls = int(options.subset)
-			print "\nThe SUBSET of particles to work with is", nptcls
+			print("\nThe SUBSET of particles to work with is", nptcls)
 	else:
-		print """\nBased on the number of coordinates, the size of the ENTIRE SET of 
-			subtiltseries to extract is""", nptcls
+		print("""\nBased on the number of coordinates, the size of the ENTIRE SET of 
+			subtiltseries to extract is""", nptcls)
 	
 	#print "There are these many clean lines", len(cleanlines)
 	#print "Clean lines are", cleanlines
@@ -397,7 +398,7 @@ def main():
 	
 	if options.subtractbackground:
 		maxtilt = max( tiltanglesfloat )
-		print "\n(e2spt_subtilt.py) maxtilt is", maxtilt
+		print("\n(e2spt_subtilt.py) maxtilt is", maxtilt)
 		
 		from e2spt_boxer import unbinned_extractor
 		
@@ -442,8 +443,8 @@ def main():
 	zerotiltindx = absangles.index( zerotiltangleabs )
 	zerotiltangle = tiltanglesfloat[ zerotiltindx ]
 	
-	print "\nBy middle tilt series index, and by smallest tilt angle index, zerotilt is at", middleIndx, zerotiltindx
-	print "And zerotiltangle is", zerotiltangle
+	print("\nBy middle tilt series index, and by smallest tilt angle index, zerotilt is at", middleIndx, zerotiltindx)
+	print("And zerotiltangle is", zerotiltangle)
 	
 	
 	anglesBelowZeroTilt = []
@@ -470,8 +471,8 @@ def main():
 	mostangles = max( nLangles, nUangles )
 	
 	#if not options.invertangles:
-	print "anglesBelowZeroTilt", anglesBelowZeroTilt
-	print "anglesAboveZeroTilt", anglesAboveZeroTilt
+	print("anglesBelowZeroTilt", anglesBelowZeroTilt)
+	print("anglesAboveZeroTilt", anglesAboveZeroTilt)
 	#else:
 	#print "INVERTED anglesBelowZeroTilt", anglesBelowZeroTilt
 	#print "INVERTED anglesAboveZeroTilt", anglesAboveZeroTilt
@@ -489,7 +490,7 @@ def main():
 	for line in cleanlines:
 		line = line.split()	
 		
-		print "\n\n\n\n\n+=================+\nAnalyzing particle number\n+=================+\n", ptclNum3D
+		print("\n\n\n\n\n+=================+\nAnalyzing particle number\n+=================+\n", ptclNum3D)
 		xc = 0
 		yc = 0
 		zc = 0
@@ -502,11 +503,11 @@ def main():
 			yc = float(line[1])
 			zc = 0
 		else:	
-			print "\nThere's still an aberrant line in your coordinates file, see", line
+			print("\nThere's still an aberrant line in your coordinates file, see", line)
 			sys.exit()
 		
 		if options.verbose:
-			print "\nRead these coordinates", xc,yc,zc
+			print("\nRead these coordinates", xc,yc,zc)
 	
 		if options.cshrink:
 			xc*=options.cshrink
@@ -514,10 +515,10 @@ def main():
 			zc*=options.cshrink
 			
 			if options.verbose:
-				print "\nThe real coordinates after multiplying cshrink are", xc, yc, zc
+				print("\nThe real coordinates after multiplying cshrink are", xc, yc, zc)
 		
-		print "Before entering algorithm, xc, yc, zc are", xc,yc,zc
-		print "Both conditions xc > lowerth and xc < upperth together are", int(xc) > int( xclowerthresh ) and int(xc) < int( xcupperthresh )
+		print("Before entering algorithm, xc, yc, zc are", xc,yc,zc)
+		print("Both conditions xc > lowerth and xc < upperth together are", int(xc) > int( xclowerthresh ) and int(xc) < int( xcupperthresh ))
 		
 		if int(xc) > int( xclowerthresh ) and int(xc) < int( xcupperthresh ):
 		
@@ -544,7 +545,7 @@ def main():
 			
 			ptclfile = options.path + '/subtiltPtcl_' + str(ptclNum).zfill( len( str( len (cleanlines)))) + '.hdf'
 				
-			print "Found least tilted image at index and angle ", zerotiltindx, zerotiltangle
+			print("Found least tilted image at index and angle ", zerotiltindx, zerotiltangle)
 			
 			'''
 			print "Autocentering it"
@@ -584,7 +585,7 @@ def main():
 				if options.radius:
 					radius = options.radius
 				else:
-					print """WARNING: --centerzerotilt requires --radius. Since the latter wasn't provided, it will be assumed to be 1/4 of the --boxsize"""
+					print("""WARNING: --centerzerotilt requires --radius. Since the latter wasn't provided, it will be assumed to be 1/4 of the --boxsize""")
 					
 				template = EMData( box, box )
 				template.to_one()
@@ -600,7 +601,7 @@ def main():
 			
 				midsxt = -1 * ( middleslice['nx'] /2.0 - maxccftC[0])			
 				midsyt = -1 * ( middleslice['nx'] /2.0 - maxccftC[1])
-				print "Autocentering translations for tilt 0 are", midsxt, midsyt
+				print("Autocentering translations for tilt 0 are", midsxt, midsyt)
 				#cumulativeLdx += midsxt
 				#cumulativeLdy += midsyt
 			
@@ -638,15 +639,15 @@ def main():
 				middleslice.write_image( zeroanglestackname, -1 )
 			
 			
-			print "Iteration over all tilt angles (other than the least tilted one) starting now."
+			print("Iteration over all tilt angles (other than the least tilted one) starting now.")
 			
 			refL = middleslice.copy()
 			refU = middleslice.copy()
 			
-			print "mostangles is", mostangles
-			print "nLangles is", nLangles
-			print "nUangles is", nUangles
-			print "tiltanglesfloat are", tiltanglesfloat
+			print("mostangles is", mostangles)
+			print("nLangles is", nLangles)
+			print("nUangles is", nUangles)
+			print("tiltanglesfloat are", tiltanglesfloat)
 			
 			
 			leftanglesN = len( tiltanglesfloat[ 0: zerotiltindx ] )
@@ -684,8 +685,8 @@ def main():
 					#	lowerangle *= -1
 					#	print "stacking INVERTED lowerangle", lowerangle
 					
-					print "stacking angle %f from the LEFT of lowest tiltangle in the angles list" %( lowerangle )
-					print "found at lowerindx", lowerindx
+					print("stacking angle %f from the LEFT of lowest tiltangle in the angles list" %( lowerangle ))
+					print("found at lowerindx", lowerindx)
 					
 					retL = write2D( options, lowerangle, icethickness, tomox, tomoy, xc, yc, zc, cumulativeLdx, cumulativeLdy, refL, apix, 'lower', ptclfile, maxtilt, lowerindx )
 					
@@ -728,8 +729,8 @@ def main():
 					#	upperangle *= -1
 					#	print "stacking INVERTED upperangle", upperangle
 						
-					print "stacking angle %f from the RIGHT lowest tiltangle in the angles list" %( upperangle )
-					print "found at upperindx", upperindx
+					print("stacking angle %f from the RIGHT lowest tiltangle in the angles list" %( upperangle ))
+					print("found at upperindx", upperindx)
 					retU = write2D( options, upperangle, icethickness, tomox, tomoy, xc, yc, zc, cumulativeUdx, cumulativeUdy, refU, apix, 'upper', ptclfile, maxtilt, upperindx )
 					if retU:
 						refU = retU[0]
@@ -744,12 +745,12 @@ def main():
 			ptclNum += 1	
 			
 		else:
-			print "Particle skipped because it's center in X, xc=%d, is outside the lower and upper boundaries to consider [%d,%d]; i.e., too far away from the tilt axis" % ( xc, xclowerthresh, xcupperthresh ) 
-			print "First condition, xc > lowerthresh", int(xc) > int( xclowerthresh )
-			print "First condition, xc < upperthresh", int(xc) < int( xcupperthresh )
+			print("Particle skipped because it's center in X, xc=%d, is outside the lower and upper boundaries to consider [%d,%d]; i.e., too far away from the tilt axis" % ( xc, xclowerthresh, xcupperthresh )) 
+			print("First condition, xc > lowerthresh", int(xc) > int( xclowerthresh ))
+			print("First condition, xc < upperthresh", int(xc) < int( xcupperthresh ))
 		
-			print "Both conditions", int(xc) > int( xclowerthresh ) and int(xc) < int( xcupperthresh )
-			print "IF all true you shouldn't be reading this message!"
+			print("Both conditions", int(xc) > int( xclowerthresh ) and int(xc) < int( xcupperthresh ))
+			print("IF all true you shouldn't be reading this message!")
 		
 		
 		
@@ -789,24 +790,24 @@ def checkcorners( img, options ):
 	corner4 = img.get_clip( r4 )
 	
 	if not corner1['sigma']:
-		print "\nimgsize is %d and sigma is %f" % (img['nx'], img['sigma'])
-		print "region r1 is", r1
-		print "empty sigma for corner1", corner1['sigma']
+		print("\nimgsize is %d and sigma is %f" % (img['nx'], img['sigma']))
+		print("region r1 is", r1)
+		print("empty sigma for corner1", corner1['sigma'])
 		return 0
 	elif not corner2['sigma']:
-		print "\nimgsize is %d and sigma is %f" % (img['nx'], img['sigma'])
-		print "region r2 is", r2
-		print "empty sigma for corner2", corner2['sigma']
+		print("\nimgsize is %d and sigma is %f" % (img['nx'], img['sigma']))
+		print("region r2 is", r2)
+		print("empty sigma for corner2", corner2['sigma'])
 		return 0
 	elif not corner3['sigma']:
-		print "\nimgsize is %d and sigma is %f" % (img['nx'], img['sigma'])
-		print "region r3 is", r3
-		print "empty sigma for corner3", corner3['sigma']
+		print("\nimgsize is %d and sigma is %f" % (img['nx'], img['sigma']))
+		print("region r3 is", r3)
+		print("empty sigma for corner3", corner3['sigma'])
 		return 0
 	elif not corner4['sigma']:
-		print "\nimgsize is %d and sigma is %f" % (img['nx'], img['sigma'])
-		print "region r4 is", r4
-		print "empty sigma for corner4", corner4['sigma']
+		print("\nimgsize is %d and sigma is %f" % (img['nx'], img['sigma']))
+		print("region r4 is", r4)
+		print("empty sigma for corner4", corner4['sigma'])
 		return 0
 	else:
 		return 1
@@ -833,7 +834,7 @@ def write2D( options, angle, icethickness, tomox, tomoy, xc, yc, zc, cumulatived
 	finalimg = img.copy()
 	
 	if not finalimg['sigma']:
-		print "\n(e2spt_subtilt)(write2D)ERROR: the extracted image is completely empty. Mean and sigma are", finalimg['mean'],finalimg['sigma']
+		print("\n(e2spt_subtilt)(write2D)ERROR: the extracted image is completely empty. Mean and sigma are", finalimg['mean'],finalimg['sigma'])
 		#sys.exit()
 		return None
 			
@@ -865,8 +866,8 @@ def write2D( options, angle, icethickness, tomox, tomoy, xc, yc, zc, cumulatived
 		cumulativedx += rdx
 		cumulativedy += rdy
 	
-		print "cumulativedx", cumulativedx
-		print "cumulativedy", cumulativedy
+		print("cumulativedx", cumulativedx)
+		print("cumulativedy", cumulativedy)
 
 		retf = extract2D( options, angle, icethickness, tomox, xc, yc, zc, cumulativedx, cumulativedy, sliceindx )
 		
@@ -912,7 +913,7 @@ def write2D( options, angle, icethickness, tomox, tomoy, xc, yc, zc, cumulatived
 	
 	
 		if options.subtractbackground and maxtilt:
-			print "WARNING: \nBackground subtraction not working yet!"			
+			print("WARNING: \nBackground subtraction not working yet!")			
 			#subtractBackground()	
 	
 		tmpimgfile = options.path + '/tmp.hdf'
@@ -928,18 +929,18 @@ def write2D( options, angle, icethickness, tomox, tomoy, xc, yc, zc, cumulatived
 	
 		return [finalimg, cumulativedx, cumulativedy]
 	else:
-		print "\nWARNING! Particle excluded from angle view %.2f since its center %.2f, %.2f is outside the --excludeedge limits x=[%.2f,%.2f] and y[%.2f,%.2f]" %(angle,fx,fy,threshx1,threshx2,threshy1,threshy2) 
+		print("\nWARNING! Particle excluded from angle view %.2f since its center %.2f, %.2f is outside the --excludeedge limits x=[%.2f,%.2f] and y[%.2f,%.2f]" %(angle,fx,fy,threshx1,threshx2,threshy1,threshy2)) 
 		
-		print "float( fx ) > threshx1", float( fx ) > threshx1
-		print "float(xc) > threshx1", float(xc) > threshx1  
-		print "float( fx ) < threshx2", float( fx ) < threshx2  
-		print "float (xc) < threshx2", float (xc) < threshx2
-		print "float( fy ) > threshy1", float( fy ) > threshy1
-		print "float(yc) > threshy1", float(yc) > threshy1 
-		print "float( fy ) < threshy2", float( fy ) < threshy2 
-		print "float(yc) < threshy2", float(yc) < threshy2
+		print("float( fx ) > threshx1", float( fx ) > threshx1)
+		print("float(xc) > threshx1", float(xc) > threshx1)  
+		print("float( fx ) < threshx2", float( fx ) < threshx2)  
+		print("float (xc) < threshx2", float (xc) < threshx2)
+		print("float( fy ) > threshy1", float( fy ) > threshy1)
+		print("float(yc) > threshy1", float(yc) > threshy1) 
+		print("float( fy ) < threshy2", float( fy ) < threshy2) 
+		print("float(yc) < threshy2", float(yc) < threshy2)
 		
-		print "but 'allgood' is", allgood
+		print("but 'allgood' is", allgood)
 		
 		return None
 		
@@ -947,7 +948,7 @@ def write2D( options, angle, icethickness, tomox, tomoy, xc, yc, zc, cumulatived
 def extract2D( options, angle, icethickness, tomox, xc, yc, zc, cumulativedx, cumulativedy, sliceindx ):
 	
 	
-	print "(e2spt_subtilt)(extract2D) tomox is %d icethickness is %d" %( tomox, icethickness )
+	print("(e2spt_subtilt)(extract2D) tomox is %d icethickness is %d" %( tomox, icethickness ))
 	
 	if options.invertangles:
 		angle *= -1
@@ -1024,13 +1025,13 @@ def extract2D( options, angle, icethickness, tomox, xc, yc, zc, cumulativedx, cu
 	
 	
 	#Translations in y should only occur when --track is on
-	print "\nFor original x=%d, compensated x=%d, original z=%d, compensated z=%d, angle=%f, newx=%f, newUNcompx=%f, xt=%f, dx=%f, dx2=%f, daxis=%f, costerm=%f, dmidz=%f" %(xc,oldx, zc,oldz, angle, newx,newuncompensatedx,xt,dx,dx2,daxis,cosTerm,dmidz)
+	print("\nFor original x=%d, compensated x=%d, original z=%d, compensated z=%d, angle=%f, newx=%f, newUNcompx=%f, xt=%f, dx=%f, dx2=%f, daxis=%f, costerm=%f, dmidz=%f" %(xc,oldx, zc,oldz, angle, newx,newuncompensatedx,xt,dx,dx2,daxis,cosTerm,dmidz))
 	
-	print "yt %d, yc %d" %(yt,yc)
+	print("yt %d, yc %d" %(yt,yc))
 
 	if float(xt) < 0.0:
-		print "Something went awfully wrong; you have a negative X coordinate",xt
-		print "tomox and tomox/2.0 are", tomox, tomox/2.0
+		print("Something went awfully wrong; you have a negative X coordinate",xt)
+		print("tomox and tomox/2.0 are", tomox, tomox/2.0)
 
 	#if float(yt) < 0.0:
 	#	print "Something went awfully wrong; you have a negative Y coordinate",yt
@@ -1041,9 +1042,9 @@ def extract2D( options, angle, icethickness, tomox, xc, yc, zc, cumulativedx, cu
 	#	sys.exit()
 
 	if float(xt) < float(options.boxsize)/2.0: #or float(yt) < float(options.boxsize)/2.0:
-		print "Pick a smaller boxsize; otherwise, some of your particles will contain empty regions outside the image"
-		print "Particle is centered at", xt, yc
-		print "And boxsize/2 is", options.boxsize/2.0
+		print("Pick a smaller boxsize; otherwise, some of your particles will contain empty regions outside the image")
+		print("Particle is centered at", xt, yc)
+		print("And boxsize/2 is", options.boxsize/2.0)
 		sys.exit()
 
 	xt += cumulativedx
@@ -1066,8 +1067,8 @@ def extract2D( options, angle, icethickness, tomox, xc, yc, zc, cumulativedx, cu
 	e.read_image(options.tiltseries,0,False,r)
 	e.process_inplace('normalize.edgemean')
 	
-	print "\nold way", xt, yt
-	print "new way", xc2d, yc2d
+	print("\nold way", xt, yt)
+	print("new way", xc2d, yc2d)
 	
 	##NEW
 	#return [ e, xc2d, yc2d ]
@@ -1117,13 +1118,13 @@ def align2D( options, ref, img ):
 	drecenterY = refp['ny']/2.0 - locmax[1]
 	
 	if options.shrink:
-		print "(e2spt_subtilt)(align2D) on shrunk images, translation to recenter are", drecenterX, drecenterY
+		print("(e2spt_subtilt)(align2D) on shrunk images, translation to recenter are", drecenterX, drecenterY)
 
 	if options.shrink:
 		drecenterX *= options.shrink
 		drecenterY *= options.shrink
 	if options.shrink:
-		print "(e2spt_subtilt)(align2D) on the actual images, translation to recenter are", drecenterX, drecenterY
+		print("(e2spt_subtilt)(align2D) on the actual images, translation to recenter are", drecenterX, drecenterY)
 	
 	return [drecenterX,drecenterY,kurtosis]
 
@@ -1140,8 +1141,8 @@ def preprocImg( iimg, options ):
 		try:
 			threshold=parsemodopt(options.threshold)
 		except:
-			print "Failed to parse threshold"
-		print "Parsed threshold is", threshold
+			print("Failed to parse threshold")
+		print("Parsed threshold is", threshold)
 		img.process_inplace( threshold[0], threshold[1] )
 
 	
@@ -1154,11 +1155,11 @@ def preprocImg( iimg, options ):
 		img.process_inplace( mask[0], mask[1] )
 	
 	
-	print "Raw image size", img['nx'],img['ny']
+	print("Raw image size", img['nx'],img['ny'])
 	if options.shrink and int(options.shrink) > 1:
 		img.process_inplace('math.meanshrink',{'n': options.shrink })
 	
-	print "Shrunk image size", img['nx'],img['ny']
+	print("Shrunk image size", img['nx'],img['ny'])
 	
 	if options.highpass and options.highpass != 'None' and options.highpass != 'none': 
 		highpass=''
@@ -1216,7 +1217,7 @@ def subtractBackground():
 		#img.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.5})
 		#img.process_inplace("threshold.belowtozero",{"minval":snz/100.0})
 	
-		print "(e2spt_subtilt.py) Extracted whole 3D box " + str(angle) + " and mean " + str(wholebox['mean']) + " for particle " + str(ptclNum)
+		print("(e2spt_subtilt.py) Extracted whole 3D box " + str(angle) + " and mean " + str(wholebox['mean']) + " for particle " + str(ptclNum))
 		wholebox.write_image(options.path + '/subtiltPtcl_' + str(ptclNum) + '_whole3D.hdf',0)
 
 	if wholebox:
@@ -1234,7 +1235,7 @@ def subtractBackground():
 		#t= Transform({'type':'eman','alt':angle})
 
 
-		print "\nTransform to ROTATE volume is", t
+		print("\nTransform to ROTATE volume is", t)
 	
 		wholeboxRot = wholebox.copy()
 		wholeboxRot.transform(t)
@@ -1247,13 +1248,13 @@ def subtractBackground():
 						
 		rbgprism =  Region( (wholebox['nx'] - finalbox)/2, (wholebox['ny'] - finalbox)/2, (wholebox['nz'] - finalbgbox)/2, finalbox, finalbox, finalbgbox)
 		wholeboxRot.clip_inplace( rbgprism )
-		print "\nSizes of prism are", wholeboxRot['nx'],wholeboxRot['ny'],wholeboxRot['nz']
+		print("\nSizes of prism are", wholeboxRot['nx'],wholeboxRot['ny'],wholeboxRot['nz'])
 	
 		if k == 0 :
 			wholeboxRot.write_image(options.path + '/subtiltPtcl_' + str(ptclNum) + '_whole3DROT.hdf',0)
 	
 		ptclreprj = wholeboxRot.project("standard",Transform())
-		print "\nGenerated ptclreprj with mean and XY sizes", ptclreprj['mean'],type(ptclreprj), ptclreprj['nx'],ptclreprj['ny'],ptclreprj['nz']
+		print("\nGenerated ptclreprj with mean and XY sizes", ptclreprj['mean'],type(ptclreprj), ptclreprj['nx'],ptclreprj['ny'],ptclreprj['nz'])
 	
 		ptclreprj.mult( math.cos( math.radians(angle) ) )
 	
@@ -1280,13 +1281,13 @@ def subtractBackground():
 	
 		bgbox = wholeboxRot.process('mask.sharp',{'inner_radius':maskrad})
 							
-		print "\nMasked bgbox with inner_radius, and ptclbox with outer_radius", maskrad
+		print("\nMasked bgbox with inner_radius, and ptclbox with outer_radius", maskrad)
 	
 		bgprj = bgbox.project("standard",Transform())
 	
 		bgprj.mult( math.cos( math.radians(angle) ) )
 	
-		print "\nGenerated ptclreprj with mean and XY sizes", bgprj['mean'],type(bgprj), bgprj['nx'],bgprj['ny'],bgprj['nz']
+		print("\nGenerated ptclreprj with mean and XY sizes", bgprj['mean'],type(bgprj), bgprj['nx'],bgprj['ny'],bgprj['nz'])
 	
 		bgprj.process_inplace('normalize')
 	
@@ -1297,17 +1298,17 @@ def subtractBackground():
 	
 		clean = e - bgprj
 		clean.write_image(options.path + '/subtiltPtcl_' + str(ptclNum) + '_clean.hdf',outIndx)
-		print "\nComputed clean. Max e and Max bgprj are",e['maximum'], bgprj['maximum']
+		print("\nComputed clean. Max e and Max bgprj are",e['maximum'], bgprj['maximum'])
 
 		cleanreprj = ptclreprj - bgprj
-		print "\nComputed cleanprj"
+		print("\nComputed cleanprj")
 	
 		cleanreprj.write_image(options.path + '/subtiltPtcl_' + str(ptclNum) + '_cleanreprj.hdf',outIndx)
 
 	outIndx+=1
 	
 
-	print "\n\n\n"	
+	print("\n\n\n")	
 	
 	return
 

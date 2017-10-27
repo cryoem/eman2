@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -79,7 +80,7 @@ together."""
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
 	
-	print "Classify by k-means"
+	print("Classify by k-means")
 	logid=E2init(sys.argv, options.ppid)
 	if options.onein :
 		d=EMData(args[0],0)
@@ -109,9 +110,9 @@ together."""
 			for i in excl : 
 				del data[i]
 				del filen[i]
-		except: print "Warning: exclude file failed"		# it's ok if this fails
+		except: print("Warning: exclude file failed")		# it's ok if this fails
 
-	print len(data)," images to classify."
+	print(len(data)," images to classify.")
 
 	if options.minchange<=0 : options.minchange=len(data)/(options.ncls*25)+1
 	if options.fastseed : slowseed=0
@@ -125,7 +126,7 @@ together."""
 	nrep=[i.get_attr("ptcl_repr") for i in centers[:options.ncls]]
 	maxcls=max(nrep)
 	for n,i in enumerate(nrep):
-		print "%d) %s (%d)"%(n,"#"*int(i*72/maxcls),i)
+		print("%d) %s (%d)"%(n,"#"*int(i*72/maxcls),i))
 		
 	classes=[[] for i in range(options.ncls)]
 	for n,i in enumerate(data):

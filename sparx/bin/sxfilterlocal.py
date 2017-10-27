@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: Pawel A.Penczek and Edward H. Egelman 05/27/2009 (Pawel.A.Penczek@uth.tmc.edu)
 # Copyright (c) 2000-2006 The University of Texas - Houston Medical School
@@ -40,9 +41,9 @@ def main():
 	import os
 	import sys
 	from optparse import OptionParser
-        arglist = []
-        for arg in sys.argv:
-        	arglist.append( arg )
+	arglist = []
+	for arg in sys.argv:
+		arglist.append( arg )
 	progname = os.path.basename(arglist[0])
 	usage = progname + """ inputvolume  locresvolume maskfile outputfile   --radius --falloff  --MPI
 
@@ -57,7 +58,7 @@ def main():
 	(options, args) = parser.parse_args(arglist[1:])
 	
 	if len(args) <3 or len(args) > 4:
-		print "See usage " + usage
+		print("See usage " + usage)
 		sys.exit()
 
 	if global_def.CACHE_DISABLE:

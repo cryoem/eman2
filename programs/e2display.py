@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke 11/09/2006 (sludtke@bcm.edu)
@@ -122,7 +123,7 @@ def main():
 	else:
 		for i in args:
 			if not file_exists(i):
-				print "%s doesn't exist" %i
+				print("%s doesn't exist" %i)
 				sys.exit(1)
 			display_file(i,app,options.singleimage,usescenegraph=options.newwidget)
 	
@@ -220,7 +221,7 @@ def getmxim(fsp,fsp2,clsnum):
 	da=EMData(fsp2,4)
 	imgs=[(EMData(fsp,i),dx.get(0,i),dy.get(0,i),da.get(0,i)) for i in range(mx.get_ysize()) if mx.get(0,i)==clsnum]
 	for i in imgs :
-		print i
+		print(i)
 		i[0].rotate_translate(i[3],0,0,i[1],i[2],0)
 	imgs=[i[0] for i in imgs]
 	return imgs

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -85,8 +86,8 @@ def alignstars(a,b):
 	a=l2pa(a)
 	b=l2pa(b)
 #	print a.align_trans_2d(b)
-	print a.align_2d(b)
-	print a.align_trans_2d(b,1,0,0)
+	print(a.align_2d(b))
+	print(a.align_trans_2d(b,1,0,0))
 #	print centerofstars(a),centerofstars(b)
 
 app=None
@@ -134,7 +135,7 @@ Finds isolated spots in the image and uses them as a basis for alignment"""
 		img.process_inplace("normalize.edgemean",{})
 		pats.append(l2pa(findstars(img,scale)))
 #		showstars(img,pats[-1])
-		print " %04d\r"%j,
+		print(" %04d\r"%j, end=' ')
 		sys.stdout.flush()
 	
 #	dorun()
@@ -153,7 +154,7 @@ Finds isolated spots in the image and uses them as a basis for alignment"""
 		
 	for i in range(1,len(pats)):
 		xf=pats[i].align_2d(pats[0],options.maxerr)
-		print "%d. %6.2f\t%6.2f\t"%(i,xf.get_pretrans().at(0),xf.get_pretrans().at(1)),
+		print("%d. %6.2f\t%6.2f\t"%(i,xf.get_pretrans().at(0),xf.get_pretrans().at(1)), end=' ')
 		img=EMData(args[i],0)
 		img.process_inplace("threshold.clampminmax.nsigma",{"nsigma":4.0})
 		img.process_inplace("normalize.edgemean",{})
@@ -166,9 +167,9 @@ Finds isolated spots in the image and uses them as a basis for alignment"""
 		imgn.rotate_translate(xf)
 		dot=img.cmp("dot",ref,{"normalize":1,"negative":0})
 		if dot<options.threshold : 
-			print dot," *"
+			print(dot," *")
 			continue
-		print dot
+		print(dot)
 		avg+=img
 		avgn+=imgn
 		if options.saveali : 

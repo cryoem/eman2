@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 10/27/2010 - rewritten almost from scratch
@@ -115,9 +116,9 @@ def main():
 
 	if (options.verbose>0):
 		if (error):
-			print "e2classaverage.py command line arguments test.... FAILED"
+			print("e2classaverage.py command line arguments test.... FAILED")
 		else:
-			print "e2classaverage.py command line arguments test.... PASSED"
+			print("e2classaverage.py command line arguments test.... PASSED")
 
 	# returning a different error code is currently important to e2refine.py - returning 0 tells e2refine.py that it has enough
 	# information to execute this script
@@ -125,7 +126,7 @@ def main():
 	if options.check: exit(0)
 
 	logger=E2init(sys.argv,options.ppid)
-	print "Class averaging beginning"
+	print("Class averaging beginning")
 
 	try:
 		classmx=EMData.read_images(options.classmx)		# we keep the entire classification matrix in memory, since we need to update it in most cases
@@ -133,7 +134,7 @@ def main():
 	except:
 		ncls=1
 		if options.resultmx!=None :
-			print "resultmx can only be specified in conjunction with a valid classmx input."
+			print("resultmx can only be specified in conjunction with a valid classmx input.")
 			sys.exit(1)
 
 	nptcl=EMUtil.get_image_count(options.input)
@@ -141,7 +142,7 @@ def main():
 	try: apix=EMData(options.input,0,True)["apix_x"]
 	except:
 		apix=1.0
-		print "WARNING: could not get apix from first image. Setting to 1.0. May impact results !"
+		print("WARNING: could not get apix from first image. Setting to 1.0. May impact results !")
 
 	# Initialize parallelism
 	if options.parallel :
@@ -212,7 +213,7 @@ def main():
 									if classmx[0][x,y]==rslt[1]["n"] :		# if the class number in the classmx matches the current class-average number
 										break
 								else :
-									print "Resultmx error: no match found ! (%d %d %d)"%(x,y,rslt[1]["n"])
+									print("Resultmx error: no match found ! (%d %d %d)"%(x,y,rslt[1]["n"]))
 									continue
 								xform=info[1].get_params("2d")
 								classmx[1][x,y]=info[2]					# used
@@ -236,14 +237,14 @@ def main():
 			taskids=[j for i,j in enumerate(taskids) if curstat[i]!=100]
 
 			if options.verbose and 100 in curstat :
-				print "%d/%d tasks remain"%(len(taskids),len(alltaskids))
+				print("%d/%d tasks remain"%(len(taskids),len(alltaskids)))
 			if 100 in curstat :
 				E2progress(logger,1.0-(float(len(taskids))/len(alltaskids)))
 
 			time.sleep(3)
 
 
-		if options.verbose : print "Completed all tasks"
+		if options.verbose : print("Completed all tasks")
 
 	# single thread
 	else:
@@ -264,8 +265,8 @@ def main():
 					else: rslt["average"].write_image(options.output,-1)
 				except:
 					traceback.print_exc()
-					print "Error writing class average {} to {}".format(t.options["n"],options.output)
-					print "Image attr: ",rslt["average"].get_attr_dict()
+					print("Error writing class average {} to {}".format(t.options["n"],options.output))
+					print("Image attr: ",rslt["average"].get_attr_dict())
 					display(rslt["average"])
 					sys.exit(1)
 
@@ -281,7 +282,7 @@ def main():
 							if classmx[0][x,y]==rslt["n"] :		# if the class number in the classmx matches the current class-average number
 								break
 						else :
-							print "Resultmx error: no match found ! (%d %d %d)"%(x,y,rslt[1]["n"])
+							print("Resultmx error: no match found ! (%d %d %d)"%(x,y,rslt[1]["n"]))
 							continue
 						xform=info[1].get_params("2d")
 						classmx[1][x,y]=info[2]					# used
@@ -304,10 +305,10 @@ def main():
 				blk.write_image(options.output,t.options["n"])
 
 	if options.resultmx!=None:
-		if options.verbose : print "Writing results matrix"
+		if options.verbose : print("Writing results matrix")
 		for i,j in enumerate(classmx) : j.write_image(options.resultmx,i)
 
-	print "Class averaging complete"
+	print("Class averaging complete")
 	E2end(logger)
 
 class ClassAvTask(JSTask):
@@ -329,7 +330,7 @@ class ClassAvTask(JSTask):
 		"""This does the actual class-averaging, and returns the result"""
 		options=self.options
 
-		if options["verbose"]>0 : print "Start averaging class ",options["n"]
+		if options["verbose"]>0 : print("Start averaging class ",options["n"])
 
 		try: ref=EMData(self.data["ref"][1],self.data["ref"][2])
 		except: ref=None
@@ -363,7 +364,7 @@ class ClassAvTask(JSTask):
 			ali=align_one(avg,ref,True,("rotate_translate",{}),("ccc",{}),("refine",{}),("ccc",{}))
 			fxf=ali["xform.align2d"]
 			avg1=avg
-			if options["verbose"]>0 : print "Final realign:",fxf
+			if options["verbose"]>0 : print("Final realign:",fxf)
 #			avg=class_average_withali([self.data["images"][1]]+self.data["images"][2],ptcl_info,Transform(),options["averager"],options["normproc"],options["verbose"])
 #			avg.write_image("bdb:xf",-1)
 			avg=class_average_withali([self.data["images"][1]]+self.data["images"][2],ptcl_info,fxf,ref,options["averager"],options["normproc"],options["setsfref"],options["verbose"])
@@ -388,7 +389,7 @@ class ClassAvTask(JSTask):
 				ali=avg.process(self.center)
 				fxf=ali["xform.align2d"]
 				
-			if options["verbose"]>0 : print "Final center:",fxf.get_trans_2d()
+			if options["verbose"]>0 : print("Final center:",fxf.get_trans_2d())
 			avg1=avg
 			avg=class_average_withali([self.data["images"][1]]+self.data["images"][2],ptcl_info,fxf,None,options["averager"],options["normproc"],options["setsfref"],options["verbose"])
 		try:
@@ -501,14 +502,14 @@ def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),pre
 	returns (average,((cmp,xform,used),(cmp,xform,used),...))
 	"""
 
-	if verbose>2 : print "class_average(",images,ref,niter,normproc,prefilt,align,aligncmp,ralign,raligncmp,averager,scmp,keep,keepsig,automask,verbose,callback,")"
+	if verbose>2 : print("class_average(",images,ref,niter,normproc,prefilt,align,aligncmp,ralign,raligncmp,averager,scmp,keep,keepsig,automask,verbose,callback,")")
 
 	# nimg is the number of particles we have to align/average
 	if isinstance(images[0],EMData) : nimg=len(images)
 	elif isinstance(images[0],str) and isinstance(images[1],int) : nimg=len(images)-1
 	else : raise Exception,"Bad images list (%s)"%str(images)
 
-	if verbose>2 : print "Average %d images"%nimg
+	if verbose>2 : print("Average %d images"%nimg)
 
 	# If one image and no reference, just return it
 	if nimg==1 and ref==None : return (get_image(images,0,normproc),[(0,Transform(),1)])
@@ -524,7 +525,7 @@ def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),pre
 
 	# If we don't have a reference image, we need to make one
 	if ref==None :
-		if verbose : print "Generating reference"
+		if verbose : print("Generating reference")
 #		sigs=[(get_image(i)["sigma"],i) for i in range(nimg)]		# sigma for each input image, inefficient
 #		ref=get_image(images,max(sigs)[1])
 		ref=get_image(images,0,normproc)										# just start with the first, as EMAN1
@@ -532,7 +533,7 @@ def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),pre
 		# now align and average the set to the gradually improving average
 		for i in range(1,nimg):
 			if verbose>1 :
-				print ".",
+				print(".", end=' ')
 				sys.stdout.flush()
 			ali=align_one(get_image(images,i,normproc),ref,prefilt,align,aligncmp,ralign,raligncmp)
 			ref.add(ali)
@@ -562,7 +563,7 @@ def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),pre
 		try: ref_model=ref["model_id"]
 		except: ref_model=0
 
-	if verbose>1 : print ""
+	if verbose>1 : print("")
 
 	init_ref=ref.copy()
 
@@ -571,7 +572,7 @@ def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),pre
 
 	# This is really niter+1 1/2 iterations. It gets terminated 1/2 way through the final loop
 	for it in range(niter+2):
-		if verbose : print "Starting iteration %d"%it
+		if verbose : print("Starting iteration %d"%it)
 		if callback!=None : callback(int(it*100/(niter+2)))
 
 		mean,sigma=0.0,1.0		# defaults for when similarity isn't computed
@@ -589,17 +590,17 @@ def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),pre
 			# set a threshold based on statistics and options
 			if keepsig:					# keep a relative fraction based on the standard deviation of the similarity values
 				thresh=mean+sigma*keep
-				if verbose>1 : print "mean = %f\tsigma = %f\tthresh=%f"%(mean,sigma,thresh)
+				if verbose>1 : print("mean = %f\tsigma = %f\tthresh=%f"%(mean,sigma,thresh))
 			else:						# keep an absolute fraction of the total
 				l=[i[0] for i in ptcl_info]
 				l.sort()
 				try: thresh=l[int(len(l)*keep)]
 				except:
-					if verbose: print "Keeping all particles"
+					if verbose: print("Keeping all particles")
 					thresh=l[-1]+1.0
 
 			if verbose:
-				print "Threshold = %1.4f   Quality: min=%f max=%f mean=%f sigma=%f"%(thresh,min(ptcl_info)[0],max(ptcl_info)[0],mean,sigma)
+				print("Threshold = %1.4f   Quality: min=%f max=%f mean=%f sigma=%f"%(thresh,min(ptcl_info)[0],max(ptcl_info)[0],mean,sigma))
 
 			# mark the particles to keep and exclude
 			nex=0
@@ -610,13 +611,13 @@ def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),pre
 				elif pi[2]==0:
 					ptcl_info[i]=(pi[0],pi[1],1)
 
-			if verbose : print "%d/%d particles excluded"%(nex,len(ptcl_info))
+			if verbose : print("%d/%d particles excluded"%(nex,len(ptcl_info)))
 
 			# if all of the particles were thrown out for some reason, we keep the best one
 			if nex==len(ptcl_info) :
 				best=ptcl_info.index(min(ptcl_info))
 				ptcl_info[best]=(ptcl_info[best][0],ptcl_info[best][1],1)
-				if verbose : print "Best particle reinstated"
+				if verbose : print("Best particle reinstated")
 
 		if it==niter+1 : break		# This is where the loop actually terminates. This makes sure that inclusion/exclusion is updated at the end
 
@@ -641,7 +642,7 @@ def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),pre
 				sys.stdout.flush()
 			ptcl_info[i]=(sim,ali["xform.align2d"],use)
 
-		if verbose>1 : print ""
+		if verbose>1 : print("")
 
 		ref=avgr.finish()
 		ref["class_ptcl_qual"]=mean
@@ -677,38 +678,38 @@ def check(options,verbose=0):
 	if ( options.nofilecheck == False ):
 
 		if options.output == None:
-			print "Error: you must specify the output file"
+			print("Error: you must specify the output file")
 			error = True
 		elif file_exists(options.output):
 			if not options.force:
 				error = True
 				if (verbose):
-					print "Error: output file %s exists, force not specified, will not overwrite, exiting" %options.output
+					print("Error: output file %s exists, force not specified, will not overwrite, exiting" %options.output)
 
 		if options.classmx == None:
 			options.bootstrap = True # turn on boot strapping
 		if options.classmx != None and not file_exists(options.classmx):
 			error = True
 			if (verbose):
-				print "Error: the file expected to contain the classification matrix (%s) was not found, cannot run e2classaverage.py" %(options.classmx)
+				print("Error: the file expected to contain the classification matrix (%s) was not found, cannot run e2classaverage.py" %(options.classmx))
 
 		if options.input == None:
-			print "Error: you must specify the input file"
+			print("Error: you must specify the input file")
 			error = True
 		elif not file_exists(options.input):
 			error = True
 			if (verbose):
-				print "Error:  failed to find the particle data (%s)" %options.input
+				print("Error:  failed to find the particle data (%s)" %options.input)
 		else:
 			if (options.usefilt != None):
 				if not file_exists(options.usefilt):
 					error = True
-					if verbose: print "Error: failed to find usefilt file %s" %options.usefilt
+					if verbose: print("Error: failed to find usefilt file %s" %options.usefilt)
 
 				n1 = EMUtil.get_image_count(options.usefilt)
 				n2 = EMUtil.get_image_count(options.input)
 				if n1 != n2:
-					if verbose: print "Error, the number of images in the starting particle set:",n2,"does not match the number in the usefilt set:",n1
+					if verbose: print("Error, the number of images in the starting particle set:",n2,"does not match the number in the usefilt set:",n1)
 					error = True
 
 				read_header_only=True
@@ -725,7 +726,7 @@ def check(options,verbose=0):
 
 				if nx1 != nx2 or ny1 != ny2:
 					error = True
-					if verbose: print "Error, the dimensions of particle data (%i x %i) and the usefilt data (%i x %i) do not match" %(nx1,ny1,nx2,ny2)
+					if verbose: print("Error, the dimensions of particle data (%i x %i) and the usefilt data (%i x %i) do not match" %(nx1,ny1,nx2,ny2))
 
 
 		if options.classmx != None and os.path.exists(options.classmx) and os.path.exists(options.input):
@@ -734,11 +735,11 @@ def check(options,verbose=0):
 			if ( numimg != ysize ):
 				error = True
 				if (verbose):
-					print "Error - the number of rows (%d) in the classification matrix image %s does not match the number of images (%d) in %s" %(ysize, options.classmx,numimg,options.input)
+					print("Error - the number of rows (%d) in the classification matrix image %s does not match the number of images (%d) in %s" %(ysize, options.classmx,numimg,options.input))
 
 
 		if options.ref != None and not file_exists(options.ref):
-			print "Error: the file expected to contain the reference images (%s) does not exist" %(options.ref)
+			print("Error: the file expected to contain the reference images (%s) does not exist" %(options.ref))
 			error = True
 		elif options.ref and os.path.exists(options.input):
 			(xsize, ysize ) = gimme_image_dimensions2D(options.input);
@@ -746,7 +747,7 @@ def check(options,verbose=0):
 			if ( xsize != pxsize ):
 				error = True
 				if (verbose):
-					print "Error - the dimensions of the reference and particle images do not match"
+					print("Error - the dimensions of the reference and particle images do not match")
 		elif options.classmx != None and options.ref:
 				# classes contains the classifications - row is particle number, column data contains class numbers (could be greater than 1)
 			classes = EMData()
@@ -754,14 +755,14 @@ def check(options,verbose=0):
 			class_max = int(classes["maximum"])
 			num_ref= EMUtil.get_image_count(options.ref)
 			if ( class_max > num_ref ):
-				print "Error, the classification matrix refers to a class number (%d) that is beyond the number of images (%d) in the reference image (%s)." %(class_max,num_ref,options.ref)
+				print("Error, the classification matrix refers to a class number (%d) that is beyond the number of images (%d) in the reference image (%s)." %(class_max,num_ref,options.ref))
 
 	if (options.iter > 1 or options.bootstrap) and options.align == None:
-		print "Error: you must specify the align argument"
+		print("Error: you must specify the align argument")
 		error = True
 
 	if ( options.even and options.odd ):
-		print "Error, the even and odd arguments are mutually exclusive"
+		print("Error, the even and odd arguments are mutually exclusive")
 		error = True
 	#if ( options.keep and options.keepsig ):
 		#error = True
@@ -771,16 +772,16 @@ def check(options,verbose=0):
 	if ( options.keep > 1 or options.keep <= 0) and not options.keepsig :
 		error = True
 		if (verbose):
-			print "The --keep option is a percentage expressed as a fraction - it must be between 0 and 1"
+			print("The --keep option is a percentage expressed as a fraction - it must be between 0 and 1")
 
 	if ( options.iter < 0 ):
 		error = True
 		if (verbose):
-			print "Error, --iter must be greater than or equal to 0 - you specified %d" %(options.iter)
+			print("Error, --iter must be greater than or equal to 0 - you specified %d" %(options.iter))
 
 	if ( check_eman2_type(options.averager,Averagers,"Averager") == False ):
 		if (verbose):
-			print "Unknown averager",options.averager
+			print("Unknown averager",options.averager)
 		error = True
 
 	if ( options.iter > 0 ):
@@ -789,7 +790,7 @@ def check(options,verbose=0):
 			error = True
 
 		if (options.align == None):
-			print "If --classiter is greater than zero, the -align argument must be specified"
+			print("If --classiter is greater than zero, the -align argument must be specified")
 			error = True
 
 		if ( check_eman2_type(options.align,Aligners,"Aligner") == False ):
@@ -811,7 +812,7 @@ def check(options,verbose=0):
 
 	if hasattr(options,"parallel") and options.parallel != None:
   		if len(options.parallel) < 2:
-  			print "The parallel option %s does not make sense" %options.parallel
+  			print("The parallel option %s does not make sense" %options.parallel)
   			error = True
 
 	return error

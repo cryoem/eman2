@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 # Muyuan Chen 2017-03
 from EMAN2 import *
 import numpy as np
@@ -30,7 +31,7 @@ def main():
 	E2end(logid)
 	
 def run(cmd):
-	print cmd
+	print(cmd)
 	launch_childprocess(cmd)
 	
 	
@@ -85,7 +86,7 @@ class EMDrawWindow(QtGui.QMainWindow):
 		else:
 			a = max(self.shape[3],self.shape[4])
 			b = min(self.shape[3],self.shape[4])
-			print("{},{},{},{},{},{}".format(self.imgview.list_idx,self.shape[1],self.shape[2],a,b,self.shape[5]))
+			print(("{},{},{},{},{},{}".format(self.imgview.list_idx,self.shape[1],self.shape[2],a,b,self.shape[5])))
 			#self.shape_index += 1
 			if self.options.noupdate:
 				self.all_shapes.append(self.shape)

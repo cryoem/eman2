@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: Steve Ludtke 5/7/15 (sludtke@bcm.edu)
 # Copyright (c) 2000-2015 Baylor College of Medicine
@@ -61,7 +62,7 @@ try:
 	from PyQt4 import QtCore, QtGui
 	from PyQt4.QtCore import Qt
 except:
-	print helpstring
+	print(helpstring)
 	raw_input("Please press <enter> to exit")
 	exit()	
 

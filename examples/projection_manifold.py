@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 # Muyuan Chen 2017-02
 
 import numpy as np
@@ -22,18 +23,18 @@ def main():
 		folder=[f for f in os.listdir('.') if f.startswith("refine_") and os.path.isdir(f)]
 		options.path=np.sort(folder)[-1]
 	options.path=options.path.strip("\\/")
-	print "Working on refinement {}...".format(options.path)
+	print("Working on refinement {}...".format(options.path))
 	
 	
 	pjsimx=[f for f in os.listdir(options.path) if f.startswith("proj_simmx_") and f.endswith("even.hdf")]
 	pjsimx=os.path.join(options.path, np.sort(pjsimx)[-1])
 	projname=pjsimx.replace("proj_simmx_", "projections_")
-	print "Using {}...".format(pjsimx)
+	print("Using {}...".format(pjsimx))
 	e=EMData(pjsimx)
 	simx=e.numpy().copy()
 	
 	if options.dopca:
-		print "Doing PCA..."
+		print("Doing PCA...")
 		dc=decomp.PCA(n_components=options.ncomponents)
 		dcout=dc.fit_transform(simx)
 		write_out(dcout,"pca_projs_{}.txt".format(options.path), projname)
@@ -41,10 +42,10 @@ def main():
 	mode_dict={0: "TSNE", 1: "Isomap", 2: "LocallyLinearEmbedding", 3:"SpectralEmbedding"}
 	mode=mode_dict[options.mode]
 	if options.mode==0:
-		print "Doing TSNE..."
+		print("Doing TSNE...")
 		mani=manifold.TSNE(n_components=options.ncomponents,verbose=3, perplexity=options.perplexity)
 	else:
-		print "Doing {}...".format(mode)
+		print("Doing {}...".format(mode))
 		mani=eval("manifold.{}(n_components={:d})".format(mode, options.ncomponents))
 		
 	mnout=mani.fit_transform(simx) 
@@ -69,11 +70,11 @@ def write_out(data,fname=None,projname=None):
 		if fname:
 			f.write(s)
 		else:
-			print s[:-1]
+			print(s[:-1])
 		
 	if fname:
 		f.close()
-		print "Output written to {}.".format(fname)
+		print("Output written to {}.".format(fname))
 		return
 	else:
 		return s

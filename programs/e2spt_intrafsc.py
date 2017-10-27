@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Jesus Galaz-Montoya
@@ -112,7 +113,7 @@ def main():
 		try:
 			findir = os.lisdir( options.path )
 		except:
-			print "ERROR: The path specified %s does not exist" %( options.path )
+			print("ERROR: The path specified %s does not exist" %( options.path ))
 			sys.exit()
 	
 	inputfiles = []
@@ -124,7 +125,7 @@ def main():
 		for f in findir:
 			if '.hdf' in f and options.inputstem in f:
 				if options.verbose > 8:
-					print "\nFound tiltseries!", f
+					print("\nFound tiltseries!", f)
 				inputfiles.append( f )			#C:The input files are put into a dictionary in the format {originalseriesfile:[originalseriesfile,volumefile]}
 
 	elif options.input:
@@ -219,7 +220,7 @@ def genOddAndEvenVols( options, fi, imgs ):
 				try:
 					if options.reconstructor[-1]['mode'] != 'gauss_2':
 						mode = options.reconstructor[-1]['mode']
-						print "\nThe reconstructor mode has been changed from default to", mode
+						print("\nThe reconstructor mode has been changed from default to", mode)
 					else:
 						pass
 				except:

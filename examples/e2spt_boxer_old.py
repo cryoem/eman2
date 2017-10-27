@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 # LAST update: July/2016
 # Author: Steven Ludtke  2/8/2011 (rewritten)
@@ -137,14 +138,14 @@ def main():
 
 
 	if options.yshort:
-		print "\nERROR: --yshort is not supported. Rotate your tomogram so that Z is the shortest side (e.g., using IMOD from the commandline, type 'clip rotx tomogram.rec tomogram_ZSHORT.rec'"
+		print("\nERROR: --yshort is not supported. Rotate your tomogram so that Z is the shortest side (e.g., using IMOD from the commandline, type 'clip rotx tomogram.rec tomogram_ZSHORT.rec'")
 		sys.exit()
 	else:
 		tomohdr=EMData(args[0],0,True)
 		nz=tomohdr['nz']
 		ny=tomohdr['ny']
 		if nz>ny:
-			print "\nERROR: nz=%d is larger than ny=%d in the tomgram. Rotate the tomogram so that Z is the shortest side (e.g., using IMOD from the commandline, type 'clip rotx tomogram.rec tomogram_ZSHORT.rec'" %(nz,ny)
+			print("\nERROR: nz=%d is larger than ny=%d in the tomgram. Rotate the tomogram so that Z is the shortest side (e.g., using IMOD from the commandline, type 'clip rotx tomogram.rec tomogram_ZSHORT.rec'" %(nz,ny))
 
 
 
@@ -189,12 +190,12 @@ def main():
 
 		cleanstack(options)
 
-		print "\ncomputing bruteaverage"
+		print("\ncomputing bruteaverage")
 		cmdavg = 'e2proc3d.py ' + options.output + ' ' + options.output.replace('.hdf','__bruteavg.hdf') + ' --average'
 		
 		retavg=runcmd( options, cmdavg )
 		if retavg:
-			print "done"
+			print("done")
 
 
 		E2end(logger)
@@ -338,20 +339,20 @@ Function to check whether all boxes in the extracted stack seem "healthy" and if
 def cleanstack(options):
 	n=EMUtil.get_image_count(options.output)
 	badptcls = []
-	print "\n(e2spt_boxer)(cleanstack) checking for sanity of output stack %s" %(options.output)
+	print("\n(e2spt_boxer)(cleanstack) checking for sanity of output stack %s" %(options.output))
 	for i in range(n):
 		try:
 			ptcl=EMData(options.output,i)
 			if float(ptcl['sigma']) == 0.0:
 				badptcls.append(i)
-				print "WARNING: bad particle %d will be removed from output stack %s" %(i,options.output)
+				print("WARNING: bad particle %d will be removed from output stack %s" %(i,options.output))
 
 		except:
-			print "WARNING: bad particle %d will be removed from output stack %s" %(i,options.output)
+			print("WARNING: bad particle %d will be removed from output stack %s" %(i,options.output))
 			badptcls.append(i)
 
 	if badptcls:
-		print "\n%d bad particles identified"%(len(badptcls))
+		print("\n%d bad particles identified"%(len(badptcls)))
 
 		tmpoutput = options.output.replace('.hdf','_tmp.hdf')
 		badptcls.sort()
@@ -360,7 +361,7 @@ def cleanstack(options):
 		nbad=len(badptcls)
 
 		for kl in range(len(badptcls)):
-			print "pruning bad ptcl", badptcls[kl]
+			print("pruning bad ptcl", badptcls[kl])
 
 			if kl > 0:
 				first=badptcls[kl-1]+1
@@ -377,7 +378,7 @@ def cleanstack(options):
 			if kl>0 and 'append' not in cmd:
 				cmd += ' --append'
 
-			print "cmd is", cmd
+			print("cmd is", cmd)
 			runcmd(options,cmd)
 
 			kl+=1
@@ -412,7 +413,7 @@ def unbinned_extractor(options,x,y,z,tomogram,coordindx=None):
 	#if options.verbose:
 	#	print "\n\nUnbinned extractor received this center", center
 
-	print "\n(e2spt_boxer.py)(unbinned_extractor) reading tomogram header from %s" %(tomogram)
+	print("\n(e2spt_boxer.py)(unbinned_extractor) reading tomogram header from %s" %(tomogram))
 	tomo_header=EMData(tomogram,0,True)
 	apix = tomo_header['apix_x']
 	#print "done"
@@ -451,31 +452,31 @@ def unbinned_extractor(options,x,y,z,tomogram,coordindx=None):
 		Attempt to center particles. They must be masked to ensure other particles will not cause shifts in center of mass
 		'''
 		if options.verbose:
-			print "\n\n\n\nCENTER is",center
+			print("\n\n\n\nCENTER is",center)
 
 		if center:
 			ec = e.copy()
 			ec = ec*-1
 
 			if options.autocentermask:
-				if options.verbose : print "\nMasking for autocentering"
+				if options.verbose : print("\nMasking for autocentering")
 				ec.process_inplace(options.autocentermask[0],options.autocentermask[1])
 
 			ec.process_inplace('normalize')
 
 			if options.autocentermask:
-				if options.verbose : print "\nMasking for autocentering"
+				if options.verbose : print("\nMasking for autocentering")
 				ec.process_inplace(options.autocentermask[0],options.autocentermask[1])
 
 			ec.process_inplace("threshold.belowtozero",{'minval':0.0})
 
 			if center == 'xform.centerofmass':
 				ec.process_inplace('xform.centerofmass')
-				if options.verbose : print "\nApplying center of mass"
+				if options.verbose : print("\nApplying center of mass")
 
 			elif center == 'xform.centeracf':
 				ec.process_inplace('xform.centeracf')
-				if options.verbose : print "\nApplying xform.centeracf"
+				if options.verbose : print("\nApplying xform.centeracf")
 
 
 			#rad = boxsize/2.0+1.0
@@ -488,13 +489,13 @@ def unbinned_extractor(options,x,y,z,tomogram,coordindx=None):
 			tz = trans[2]
 
 			if options.verbose : 
-				print "\nAutocentering translations are", tx,ty,tz
-				print "\n\nThe old coordinates were", x, y, z
+				print("\nAutocentering translations are", tx,ty,tz)
+				print("\n\nThe old coordinates were", x, y, z)
 
 			x = x - tx
 			y = y - ty
 			z = z - tz
-			if options.verbose : print "Thus the new ones are", x, y, z
+			if options.verbose : print("Thus the new ones are", x, y, z)
 
 			r = Region((2*x - boxsize)/2,(2*y - boxsize)/2, (2*z - boxsize)/2, boxsize, boxsize, boxsize)
 			e = EMData()
@@ -513,13 +514,13 @@ def unbinned_extractor(options,x,y,z,tomogram,coordindx=None):
 		e['xform.align3d'] = Transform({"type":'eman','az':0,'alt':0,'phi':0,'tx':0,'ty':0,'tz':0})
 		#print "done"
 		if options.verbose : 
-			print "The extracted particle has this boxsize", e['nx'],e['ny'],e['nz']
-			print "And the following mean BEFORE normalization", e['mean']
+			print("The extracted particle has this boxsize", e['nx'],e['ny'],e['nz'])
+			print("And the following mean BEFORE normalization", e['mean'])
 
 		if options.normproc:
 			#print "normalizing"
 			if options.verbose: 
-				print "WARNING! particle being normalized!"
+				print("WARNING! particle being normalized!")
 			
 			if options.normproc[0]=="normalize.mask":
 				mask=EMData(e["nx"],e["ny"],e["nz"])
@@ -530,17 +531,17 @@ def unbinned_extractor(options,x,y,z,tomogram,coordindx=None):
 
 			e.process_inplace(options.normproc[0],options.normproc[1])
 			e['spt_normalization'] = str(options.normproc[0])+' '+str(options.normproc[1])
-			if options.verbose : print "This is the mean AFTER normalization", e['mean']
+			if options.verbose : print("This is the mean AFTER normalization", e['mean'])
 			#print "done"
 		if invert:
 			#print "inverting contrast"
-			if options.verbose : print "Particle has the following mean BEFORE contrast inversion", e['mean']
-			if options.verbose : print "Inverting contrast because --invert is", invert
+			if options.verbose : print("Particle has the following mean BEFORE contrast inversion", e['mean'])
+			if options.verbose : print("Inverting contrast because --invert is", invert)
 			e=e*-1
-			if options.verbose : print "Particle has the following mean AFTER contrast inversion", e['mean']
+			if options.verbose : print("Particle has the following mean AFTER contrast inversion", e['mean'])
 			#print "done"
 		if options.thresh:
-			if options.verbose : print "The thresh to apply is", options.thresh
+			if options.verbose : print("The thresh to apply is", options.thresh)
 			e.process_inplace(options.thresh[0],options.thresh[1])
 
 		#print "projecting"
@@ -554,9 +555,9 @@ def unbinned_extractor(options,x,y,z,tomogram,coordindx=None):
 		apix = e['apix_x']
 	
 		if options.verbose : 
-			print "\nThere was a particle successfully returned, with the following box size and mean value"
-			print e['nx'],e['ny'],e['nz']
-			print e['mean']
+			print("\nThere was a particle successfully returned, with the following box size and mean value")
+			print(e['nx'],e['ny'],e['nz'])
+			print(e['mean'])
 
 		
 		e['apix_x'] = apix
@@ -581,7 +582,7 @@ def unbinned_extractor(options,x,y,z,tomogram,coordindx=None):
 
 
 			
-			print "extracted particle %d to temporary file" %(coordindx)
+			print("extracted particle %d to temporary file" %(coordindx))
 		
 		c=os.getcwd()
 		findir=os.listdir(c)
@@ -618,9 +619,9 @@ def unbinned_extractor(options,x,y,z,tomogram,coordindx=None):
 	else:
 		if not coordindx:
 			coordindx==-1
-		print """\nWARNING! particle %d at coordinates x=%d, y=%d, z=%d. was skipped (and not boxed) because it's SIGMA was ZERO (suggesting the box was empty).
+		print("""\nWARNING! particle %d at coordinates x=%d, y=%d, z=%d. was skipped (and not boxed) because it's SIGMA was ZERO (suggesting the box was empty).
 			Your coordinates file and/or the shrinking factors specified might be MESSED UP, or you might need to swap Y and Z
-			""" %(coordindx,x,y,z)
+			""" %(coordindx,x,y,z))
 		return None
 
 
@@ -632,7 +633,7 @@ It allows for extraction of smaller sub-sets too.
 def commandline_tomoboxer(tomogram,options):
 
 	if not options.boxsize:
-		print "\nERROR: --boxsize required"
+		print("\nERROR: --boxsize required")
 		sys.exit()
 		
 	clines = open(options.coords,'r').readlines()
@@ -640,11 +641,11 @@ def commandline_tomoboxer(tomogram,options):
 
 	if options.subset:
 		if options.subset > ncoords:
-			print "WARNING: The total amount of lines in the coordinates files is LESS than the subset of particles to box you specified; therefore, ALL particles will be extracted"
+			print("WARNING: The total amount of lines in the coordinates files is LESS than the subset of particles to box you specified; therefore, ALL particles will be extracted")
 		else:
 			ncoords=options.subset
 
-	print "The size of the set of sub-volumes to extract is", ncoords
+	print("The size of the set of sub-volumes to extract is", ncoords)
 
 	k=-1
 	#name = options.output
@@ -652,7 +653,7 @@ def commandline_tomoboxer(tomogram,options):
 		options.output = options.path + '/' + options.output
 
 	if ".hdf" not in options.output:
-		print "Format ERROR: Only .hdf fomart supported."
+		print("Format ERROR: Only .hdf fomart supported.")
 		sys.exit()
 	
 	#avgr=None
@@ -723,7 +724,7 @@ def commandline_tomoboxer(tomogram,options):
 		coordsdict.update({i:[x,y,z]})
 		
 		if options.verbose: 
-			print "The raw coordinates from the coordinates file provided for particle#%d are x=%d, y=%d, z=%d " % (i,x,y,z)
+			print("The raw coordinates from the coordinates file provided for particle#%d are x=%d, y=%d, z=%d " % (i,x,y,z))
 
 		#if options.swapyz:
 		#	if options.verbose : print "You indicated Y and Z are flipped in the coords file, respect to the tomogram's orientation; therefore, they will be swapped"
@@ -738,7 +739,7 @@ def commandline_tomoboxer(tomogram,options):
 
 	
 		if options.verbose:
-			print "\n(e2spt_preproc)(main) wrote dummy ptcls to %s" %( 'sptboxer_dummy' )
+			print("\n(e2spt_preproc)(main) wrote dummy ptcls to %s" %( 'sptboxer_dummy' ))
 	
 	if options.parallel:
 		dummylarge = EMData(options.boxsize,options.boxsize,options.boxsize)
@@ -751,7 +752,7 @@ def commandline_tomoboxer(tomogram,options):
 		dummylarge2D.write_image('sptboxer_dummy_prjs.hdf',0)
 
 
-		print "\n(e2spt_preproc)(main) - INITIALIZING PARALLELISM!\n"
+		print("\n(e2spt_preproc)(main) - INITIALIZING PARALLELISM!\n")
 	
 	
 		from EMAN2PAR import EMTaskCustomer
@@ -777,7 +778,7 @@ def commandline_tomoboxer(tomogram,options):
 			tasks.append(task)
 			counter+=1
 		else:
-			print "\nthe tomogram file is", tomogram
+			print("\nthe tomogram file is", tomogram)
 			results=unbinned_extractor( options, coordx, coordy, coordz, tomogram, coordindx )
 
 		
@@ -785,7 +786,7 @@ def commandline_tomoboxer(tomogram,options):
 		if tasks:
 			tids = etc.send_tasks(tasks)
 			if options.verbose: 
-				print "\n(e2spt_preproc)(main) preprocessing %d tasks queued" % (len(tids)) 
+				print("\n(e2spt_preproc)(main) preprocessing %d tasks queued" % (len(tids))) 
 
 	
 			results = get_results( etc, tids, options )
@@ -802,18 +803,18 @@ def commandline_tomoboxer(tomogram,options):
 		#if options.cshrink:
 		#	radius /= options.cshrink
 		
-		print "\nextraction to output file completed"
+		print("\nextraction to output file completed")
 
 		cmd = 'e2spt_icethicknessplot.py --plotparticleradii --fit --apix ' + str( apix ) + ' --radius ' + str( int(radius) ) + ' --files ' + options.coords
 		
 		if options.cshrink:
 			cmd += ' --cshrink ' + str( int(options.cshrink) )
 		
-		print "\nplotting particle distribution"
+		print("\nplotting particle distribution")
 
 		retice=runcmd( options, cmd )
 		if retice:
-			print "done"
+			print("done")
 		#if options.bruteaverage:
 		
 		if options.path:
@@ -832,14 +833,14 @@ def commandline_tomoboxer(tomogram,options):
 
 def runcmd(options,cmd):
 	if options.verbose > 8:
-		print "(e2spt_classaverage)(runcmd) running command", cmd
+		print("(e2spt_classaverage)(runcmd) running command", cmd)
 	
 	p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	text=p.communicate()	
 	p.stdout.close()
 	
 	if options.verbose > 8:
-		print "(e2spt_classaverage)(runcmd) done"
+		print("(e2spt_classaverage)(runcmd) done")
 	
 	#if options.verbose > 9:
 	#	print text
@@ -907,7 +908,7 @@ def get_results(etc,tids,options):
 		
 		tidsleft=[j for i,j in enumerate(tidsleft) if proglist[i]!=100]		# remove any completed tasks from the list we ask about
 		if options.verbose:
-			print ("\n%d tasks, %d complete, %d waiting to start \r" % (len(tids),ncomplete,nwait))
+			print(("\n%d tasks, %d complete, %d waiting to start \r" % (len(tids),ncomplete,nwait)))
 			sys.stdout.flush()
 	
 		if len(tidsleft)==0: break
@@ -1314,7 +1315,7 @@ def sptboxergui(options,args):
 			QtCore.QObject.connect(self.zyview,QtCore.SIGNAL("origin_update"),self.zy_origin)
 
 			if datafile!=None:
-				print "\nIn ETomoBoxer, datafile is", datafile
+				print("\nIn ETomoBoxer, datafile is", datafile)
 				self.set_datafile(datafile)		# This triggers a lot of things to happen, so we do it last
 
 			if data!=None:
@@ -1343,7 +1344,7 @@ def sptboxergui(options,args):
 	#	def menu_win_average(self) : self.averageviewer.show()
 
 		def set_datafile(self,datafile):
-			print "\nIn set_datafile, received datafile", datafile
+			print("\nIn set_datafile, received datafile", datafile)
 			if datafile==None :
 				self.datafile=None
 				self.data=None
@@ -1355,7 +1356,7 @@ def sptboxergui(options,args):
 			self.data=None
 			self.datafile=datafile
 
-			print "\nDatafile set, see!", self.datafile, type(self.datafile)
+			print("\nDatafile set, see!", self.datafile, type(self.datafile))
 
 			imgh=EMData(datafile,0,1)
 
@@ -1653,7 +1654,7 @@ def sptboxergui(options,args):
 					img = ret[0]
 					prj = ret[1]
 
-					print "extracting particle %d from coordinates x=%d, y=%d, z=%d" % (i, b[0],b[1],b[2])
+					print("extracting particle %d from coordinates x=%d, y=%d, z=%d" % (i, b[0],b[1],b[2]))
 
 					#if "." in fsp:
 						#img.write_image(os.path.join(options.path,"%s_%03d.%s"%(fsp.rsplit(".",1)[0],i,fsp.rsplit(".",1)[1])))
@@ -1692,7 +1693,7 @@ def sptboxergui(options,args):
 					if self.normalize:
 						e.process_inplace(normalize)
 					#img=img.process('normalize.edgemean')
-					print "extracting particle %d" % (i)
+					print("extracting particle %d" % (i))
 
 					img.write_image(fsp,i)
 
@@ -1717,7 +1718,7 @@ def sptboxergui(options,args):
 					#else:
 					#ret = unbinned_extractor(options,bs,b[0],b[1],b[2],shrinkf,contrast,center,args[0])
 					#print "before extraction shrinkf is", shrinkf
-					print "extracting particle %d from coordinates x=%d, y=%d, z=%d" % (i, b[0],b[1],b[2])
+					print("extracting particle %d from coordinates x=%d, y=%d, z=%d" % (i, b[0],b[1],b[2]))
 					options.boxsize=bs
 					ret = unbinned_extractor(options,b[0],b[1],b[2],args[0],i)
 					img = ret[0]
@@ -2210,7 +2211,7 @@ def sptboxergui(options,args):
 				self.zyview.scroll_to(box[2],None)
 
 		def add_helix_box(self, xf, yf, zf, xi, yi, zi):
-			print xf, yf, zf, xi, yi, zi
+			print(xf, yf, zf, xi, yi, zi)
 			if options.yshort:
 				self.helixboxes.append([xf, zf, yf, xi, zi, yi])
 			else:
@@ -2470,7 +2471,7 @@ def sptboxergui(options,args):
 			#self.xzview.set_origin(xzo[0],newor[1],True)
 
 		def closeEvent(self,event):
-			print "Exiting"
+			print("Exiting")
 			self.boxviewer.close()
 			self.boxesviewer.close()
 	#		self.averageviewer.close()
@@ -2483,7 +2484,7 @@ def sptboxergui(options,args):
 
 
 	if options.path and options.verbose:
-		print "OPTIONS.PATH IS!!!!\n\n\n", options.path
+		print("OPTIONS.PATH IS!!!!\n\n\n", options.path)
 
 	img = args[0]
 
@@ -2497,23 +2498,23 @@ def sptboxergui(options,args):
 		if options.shrink and int(options.shrink) > 1:
 
 			# The new shrinking scheme
-			print "Shrinking, please wait :)"
+			print("Shrinking, please wait :)")
 			img = EMData()
 			img.read_binedimage(args[0],0,options.shrink)
 		else:
-			print "You better have A LOT of memory (more than 8GB) if this is an un-shrunk 4k x 4k x 0.5k tomogram, because I'm loading it un-shrunk. It is wise to wait patiently."
+			print("You better have A LOT of memory (more than 8GB) if this is an un-shrunk 4k x 4k x 0.5k tomogram, because I'm loading it un-shrunk. It is wise to wait patiently.")
 			img = EMData(img,0)
 
 		if options.invert:
 			img = img*(-1)
-			print "The contrast of the tomogram has been reversed"
+			print("The contrast of the tomogram has been reversed")
 
 		if options.lowpass:
 			filt=1.0/options.lowpass
-			print "The tomogram is being low pass filtered to %d Angstroms resolution" %(options.lowpass)
+			print("The tomogram is being low pass filtered to %d Angstroms resolution" %(options.lowpass))
 			img = img.process('filter.lowpass.gauss',{'cutoff_freq':filt,"apix":img['apix_x']})
 
-		print "Done !"
+		print("Done !")
 
 		if options.apix:
 			thisapix = options.apix
@@ -2542,7 +2543,7 @@ def sptboxergui(options,args):
 			imgnew = img
 			if '_editedtemp.' not in img:
 				imgnew = img.replace('.','_editedtemp.')
-			print "Shrinking, please wait :)"
+			print("Shrinking, please wait :)")
 			imgfile = EMData()
 			imgfile.read_binedimage(img,0,options.shrink)
 			imgfile.write_image(imgnew)
@@ -2581,7 +2582,7 @@ def sptboxergui(options,args):
 		#print "The shrink factor default is", options.shrink
 
 
-		print "\nDatafile and type of datafile are", img, type(img)
+		print("\nDatafile and type of datafile are", img, type(img))
 
 
 

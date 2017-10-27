@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke  9/14/2012 
@@ -85,7 +86,7 @@ def main():
 		fls=[int(i[-2:]) for i in os.listdir(".") if i[:4]=="m2d_" and len(i)==6 and str.isdigit(i[-2:])]
 		if len(fls)==0 : fls=[1]
 		options.path = "m2d_{:02d}".format(max(fls))
-		if options.verbose : print "Using --path ",options.path
+		if options.verbose : print("Using --path ",options.path)
 		
 	if not os.path.exists(options.path) :
 		os.mkdir(options.path)
@@ -96,7 +97,7 @@ def main():
 	if not parms.has_key(options.iter) :
 		try: options.iter=max([int(i) for i in parms.keys()])
 		except: options.iter=0
-		print "Iteration: ",options.iter
+		print("Iteration: ",options.iter)
 
 	pid=E2init(argv)
 	
@@ -469,7 +470,7 @@ class EMMotion(QtGui.QMainWindow):
 		except:
 			self.particles=None
 			self.wlnptcl.setText("No Data")
-			print "Warning: no particle alignment data found for iter=",itr
+			print("Warning: no particle alignment data found for iter=",itr)
 			return
 		
 		m=0
@@ -550,7 +551,7 @@ class EMMotion(QtGui.QMainWindow):
 		#launch_childprocess(task)
 		
 		#self.initPath(self.path)
-		print "does nothing"
+		print("does nothing")
 	
 	def threadAlign(self,curlist,ref,refnomask,outstack):
 		"""This method is designed to run in a thread and perform alignments of a stack of inputs to a single reference"""
@@ -634,7 +635,7 @@ class EMMotion(QtGui.QMainWindow):
 		QtGui.qApp.processEvents()
 		nthr=int(self.wvbcores.getValue())		# number of threads to use for faster alignments
 
-		print "bs1"
+		print("bs1")
 		tree=[]
 		# launch nthr threads to do the alignments
 		thrs=[]
@@ -645,7 +646,7 @@ class EMMotion(QtGui.QMainWindow):
 		
 		self.waitThreads(thrs,tree,len(self.particles))
 		
-		print "bs2"
+		print("bs2")
 		lock=threading.Lock()
 		
 		while len(tree)>1:
@@ -677,7 +678,7 @@ class EMMotion(QtGui.QMainWindow):
 		tree[0].rotate(ml,0,0)				# put the initial reference in the preferred orientation
 		#tree[0].write_image("zzz.hdf",0)
 		
-		print "bs3"
+		print("bs3")
 		# One final alignment pass
 		self.particles_ali=[]
 		self.alisig=EMData(self.particles[0]["nx"],self.particles[0]["ny"],1)
@@ -691,7 +692,7 @@ class EMMotion(QtGui.QMainWindow):
 
 		self.waitThreads(thrs,self.particles_ali,len(self.particles))
 		
-		print "bs4"
+		print("bs4")
 		self.particles_ali.sort()
 		
 		#out=file("x.txt","w")
@@ -709,7 +710,7 @@ class EMMotion(QtGui.QMainWindow):
 		#self.aliimg.write_image("zzz.hdf",1)
 		#self.alisig.write_image("zzz.hdf",2)
 		
-		print "bs5"
+		print("bs5")
 		self.setAliRef(self.aliimg)
 		
 		self.wpbprogress.reset()
@@ -969,7 +970,7 @@ class EMMotion(QtGui.QMainWindow):
 		
 		# Make class-averages
 		fsp="{}/classes_{:02d}_{:02d}.hdf".format(self.path,self.iter,clnum)
-		print fsp
+		print(fsp)
 		for i,c in enumerate(classes): 
 			self.wpbprogress.setValue(67+20*i/len(classes))
 			c.process_inplace("normalize.edgemean")

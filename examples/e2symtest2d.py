@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 from sys import argv
 from EMAN2 import *
@@ -21,7 +22,7 @@ for i in range(2,30):
 		
 	resultx.append(i)
 	resulty.append(csum/n)
-	print i,csum/n
+	print(i,csum/n)
 
 
 # This is a plot of peak values vs peak location

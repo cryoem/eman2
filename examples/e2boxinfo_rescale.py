@@ -1,15 +1,16 @@
 #!/usr/bin/env python
+from __future__ import print_function
 from EMAN2 import *
 from sys import argv,exit
 
 if len(argv)<2 : 
-	print """Usage: e2boxinfo_rescale.py <scale factor>
+	print("""Usage: e2boxinfo_rescale.py <scale factor>
 
-WARNING: this will rescale the box locations in ALL info/*info.json files."""
+WARNING: this will rescale the box locations in ALL info/*info.json files.""")
 	sys.exit(1)
 
 sfac=float(argv[1])
-print "Rescaling by %1.2fx"%sfac
+print("Rescaling by %1.2fx"%sfac)
 
 il=js_list_dicts("info")
 
@@ -25,7 +26,7 @@ for i in il:
 			boxes[j][1]*=sfac
 		db["boxes"]=boxes
 		
-		print "{} with {} boxes".format(i,len(boxes))
+		print("{} with {} boxes".format(i,len(boxes)))
 		tbox+=len(boxes)
 
-print "Done. {} micrographs with {} total boxes scaled by {}".format(tdb,tbox,sfac)
+print("Done. {} micrographs with {} total boxes scaled by {}".format(tdb,tbox,sfac))

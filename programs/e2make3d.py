@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu),
@@ -83,8 +84,8 @@ def get_usage():
 def print_usage():
 
 	usage = get_usage()
-	print "usage " + usage;
-	print "Please run '" + progname + " -h' for detailed options"
+	print("usage " + usage);
+	print("Please run '" + progname + " -h' for detailed options")
 
 def main():
 	parser = EMArgumentParser(usage=get_usage())
@@ -133,7 +134,7 @@ def main():
 #	options.input = args[0]
 
 	if (not options.keep and not options.keepsig):
-		print "Warning, neither the keep nor the keepsig argument was specified. Setting keep=1 (keeping 100% of inserted slices)"
+		print("Warning, neither the keep nor the keepsig argument was specified. Setting keep=1 (keeping 100% of inserted slices)")
 		options.keep=1
 
 	# Checking is disabled for now. ie - check will always pass
@@ -141,7 +142,7 @@ def main():
 
 	if options.input_model!=None : options.input_model=int(options.input_model)
 
-	print "e2make3d.py"
+	print("e2make3d.py")
 	logger=E2init(sys.argv,options.ppid)
 
 	# get basic image parameters
@@ -162,7 +163,7 @@ def main():
 	else : apix=tmp["apix_x"]
 
 
-	if options.verbose>0: print "Image dimensions %d x %d"%(nx,ny)
+	if options.verbose>0: print("Image dimensions %d x %d"%(nx,ny))
 
 	# parse the padding options, to make sure we have a 2 or 3 tuple for each
 	try :
@@ -171,9 +172,9 @@ def main():
 			s=options.pad.split(",")
 			options.pad=(int(s[0]),int(s[1]))
 		else : options.pad=(int(options.pad),int(options.pad))
-		if options.verbose>0 : print "Pad to %d x %d"%(options.pad[0],options.pad[1])
+		if options.verbose>0 : print("Pad to %d x %d"%(options.pad[0],options.pad[1]))
 	except:
-		print "Couldn't parse pad option :",options.pad
+		print("Couldn't parse pad option :",options.pad)
 		exit(1)
 
 	try :
@@ -182,9 +183,9 @@ def main():
 			s=options.padvol.split(",")
 			padvol=(int(s[0]),int(s[1]),int(s[2]))
 		else : padvol=(int(options.padvol),int(options.padvol),int(options.padvol))
-		if options.verbose>0 : print "Padded volume to reconstruct %d x %d x %d"%(padvol[0],padvol[1],padvol[2])
+		if options.verbose>0 : print("Padded volume to reconstruct %d x %d x %d"%(padvol[0],padvol[1],padvol[2]))
 	except:
-		print "Couldn't parse padvol option :",options.padvol
+		print("Couldn't parse padvol option :",options.padvol)
 		exit(1)
 
 	try :
@@ -193,9 +194,9 @@ def main():
 			s=options.outsize.split(",")
 			outsize=(int(s[0]),int(s[1]),int(s[2]))
 		else : outsize=(int(options.outsize),int(options.outsize),int(options.outsize))
-		if options.verbose>0 : print "Final output volume %d x %d x %d"%(outsize[0],outsize[1],outsize[2])
+		if options.verbose>0 : print("Final output volume %d x %d x %d"%(outsize[0],outsize[1],outsize[2]))
 	except:
-		print "Couldn't parse outsize option :",options.outsize
+		print("Couldn't parse outsize option :",options.outsize)
 		exit(1)
 
 	data=initialize_data(options.input,options.input_model,options.tlt,options.pad,options.no_wt,options.lowmem,options.preprocess)
@@ -238,10 +239,10 @@ def main():
 				for i in range(sfcurve.get_size()):
 					v=sfcurve.get_y(i)
 					if v<=0 :
-						print "Warning values <=0 found in structure factor file. Please remove."
+						print("Warning values <=0 found in structure factor file. Please remove.")
 				sfcurve.update()
 			except:
-				print "ERROR: Specified structure factor ({}) not found.".format(options.setsf)
+				print("ERROR: Specified structure factor ({}) not found.".format(options.setsf))
 				sys.exit(1)
 		else:
 			try:
@@ -250,12 +251,12 @@ def main():
 				for i in range(sfcurve.get_size()):
 					v=sfcurve.get_y(i)
 					if v<=0 :
-						print "Warning values <=0 found in structure factor file. Please remove."
+						print("Warning values <=0 found in structure factor file. Please remove.")
 				sfcurve.update()
 			except : sfcurve=None
 
 		if sfcurve==None:
-			print "ERROR : Structure factor read failed. Not applying structure factor"
+			print("ERROR : Structure factor read failed. Not applying structure factor")
 		else:
 			output.process_inplace("filter.setstrucfac",{"apix":apix,"strucfac":sfcurve})
 
@@ -266,7 +267,7 @@ def main():
 				if not param_dict : param_dict={}
 				output.process_inplace(str(processorname), param_dict)
 			except:
-				print "warning - application of the post processor",p," failed. Continuing anyway"
+				print("warning - application of the post processor",p," failed. Continuing anyway")
 
 #	output.process_inplace("normalize.circlemean")
 
@@ -277,11 +278,11 @@ def main():
 	# write the reconstruction to disk
 	output.write_image(options.output,0)
 	if options.verbose>0:
-			print "Output File: "+options.output
+			print("Output File: "+options.output)
 
 	E2end(logger)
 
-	print "Exiting"
+	print("Exiting")
 
 def initialize_data(inputfile,inputmodel,tltfile,pad,no_weights,lowmem,preprocess):
 	"""returned list will contain dictionaries containing metadata about each image, and optionally the image itself
@@ -295,7 +296,7 @@ def initialize_data(inputfile,inputmodel,tltfile,pad,no_weights,lowmem,preproces
 	n_input=EMUtil.get_image_count(inputfile)
 	nx,ny,nslice= gimme_image_dimensions3D(inputfile)
 	if n_input==1 and nslice>1 and tltfile==None : raise Exception,"Require tlt file to work with volumetric stacks"
-	print n_input," input images"
+	print(n_input," input images")
 
 	data=[]
 
@@ -320,7 +321,7 @@ def initialize_data(inputfile,inputmodel,tltfile,pad,no_weights,lowmem,preproces
 			data.append(elem)
 
 		if len(data)!=n_input and len(data)!=nslice :
-			print "Error : %d images and only %d lines in .tlt file"%(n_input,len(data))
+			print("Error : %d images and only %d lines in .tlt file"%(n_input,len(data)))
 			exit(1)
 	else :
 		tmp=EMData()
@@ -354,7 +355,7 @@ def initialize_data(inputfile,inputmodel,tltfile,pad,no_weights,lowmem,preproces
 
 			data.append(elem)
 
-		print "Using %d images"%len(data)
+		print("Using %d images"%len(data))
 	return data
 
 def get_processed_image(filename,nim,nsl,preprocess,pad,nx=0,ny=0):
@@ -393,12 +394,12 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 		included=[]
 		output=None		# deletes the results from the previous iteration if any
 
-		if verbose>0: print "Initializing the reconstructor ..."
+		if verbose>0: print("Initializing the reconstructor ...")
 
 		if start : recon.setup_seed(start,startweight)
 		else : recon.setup()
 
-		if verbose>0:print "Inserting Slices (%d)"%len(data)
+		if verbose>0:print("Inserting Slices (%d)"%len(data))
 
 		ptcl=0
 		for i,elem in enumerate(data):
@@ -407,7 +408,7 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 			# If the image is below the quality cutoff, skip it
 			try:
 				if (keepabs and elem["reconstruct_absqual"]<qcutoff) or (not keepabs and elem["reconstruct_qual"]<qcutoff) or elem["weight"]==0 :
-					if verbose>0 : print i," *  (%1.3g)"%(elem["reconstruct_qual"])
+					if verbose>0 : print(i," *  (%1.3g)"%(elem["reconstruct_qual"]))
 					if it==niter-1 :
 						if elem["fileslice"]<0 : excluded.append(elem["filenum"])
 						else : excluded.append(elem["fileslice"])
@@ -437,7 +438,7 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 	#		if i==7 : display(img)
 
 			rd=elem["xform"].get_rotation("eman")
-			if verbose>0 : print " %d/%d\r"%(i,len(data)),
+			if verbose>0 : print(" %d/%d\r"%(i,len(data)), end=' ')
 			sys.stdout.flush()
 	#		print "%d.\t%6.2f  %6.2f  %6.2f    %6.2g\t%6.4g\t%6.4g"%(i,rd["az"],rd["alt"],rd["phi"],elem["weight"],img["mean"],img["sigma"])
 			ptcl+=elem["weight"]
@@ -447,12 +448,12 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 			recon.insert_slice(img,elem["xform"],elem["weight"])
 
 		if it!=niter-1:
-			if verbose>0: print "\t   az      alt    phi  \t tweight      norm     absqual    weight"
+			if verbose>0: print("\t   az      alt    phi  \t tweight      norm     absqual    weight")
 			for i,elem in enumerate(data):
 
 				try:
 					if (keepabs and elem["reconstruct_absqual"]<qcutoff) or (not keepabs and elem["reconstruct_qual"]<qcutoff) or elem["weight"]==0:
-						if verbose>0 : print i," *"
+						if verbose>0 : print(i," *")
 #						continue
 				except: pass
 
@@ -466,13 +467,13 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 					img.mult(elem["norm"])
 
 				rd=elem["xform"].get_rotation("eman")
-				if verbose>0 : print "%d.\t%6.2f  %6.2f  %6.2f\t"%(i,rd["az"],rd["alt"],rd["phi"]),
+				if verbose>0 : print("%d.\t%6.2f  %6.2f  %6.2f\t"%(i,rd["az"],rd["alt"],rd["phi"]), end=' ')
 
 				if img["sigma"]==0 :
 					elem["reconstruct_weight"]=0
 					elem["reconstruct_norm"]=0
 					elem["reconstruct_absqual"]=0
-					if verbose>0 : print ""
+					if verbose>0 : print("")
 					continue
 
 				dosub=True
@@ -485,10 +486,10 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 				# These are the parameters returned by determine_slice_agreement. Since the images may be reloaded, we cache them in the data dictionary
 				for i in ("reconstruct_weight","reconstruct_norm","reconstruct_absqual"):
 					elem[i]=img[i]
-					if verbose>0 : print "%8.3g  "%elem[i],
+					if verbose>0 : print("%8.3g  "%elem[i], end=' ')
 				elem["norm"]*=img["reconstruct_norm"]
 
-				if verbose>0 : print "%d"%int(elem["weight"])
+				if verbose>0 : print("%d"%int(elem["weight"]))
 
 			# Convert absolute qualities to relative qualities by local averaging vs classes with similar numbers of particles
 			squal=sorted([[data[i]["weight"],data[i]["reconstruct_absqual"],0,i,data[i]] for i in xrange(len(data))])
@@ -507,7 +508,7 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 					qlist.append(squal[i][1]/squal[i][2])
 				except :
 					traceback.print_exc()
-					print "##############  ",sub, squal[i], i,len(squal)
+					print("##############  ",sub, squal[i], i,len(squal))
 					squal[i][4]["reconstruct_qual"]=-1
 					qlist.append(-1)
 #			plot(qlist)
@@ -521,20 +522,20 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 			if keepabs:
 				if keepsig:
 					qcutoff=aqmean-aqsigma*keepabs
-					if verbose>0: print "Absolute Quality: mean=%1.3f sigma=%1.3f  ->  cutoff = %1.3f (%d ptcl)"%(aqmean,aqsigma,qcutoff,ptcl)
+					if verbose>0: print("Absolute Quality: mean=%1.3f sigma=%1.3f  ->  cutoff = %1.3f (%d ptcl)"%(aqmean,aqsigma,qcutoff,ptcl))
 				else:
 					qcutoff=sq[-int(keep*len(qlist))]
-					if verbose>0: print "Absolute Quality: min=%1.3f max=%1.3f  ->  cutoff = %1.3f (%d ptcl)"%(sq[0],sq[-1],qcutoff,ptcl)
+					if verbose>0: print("Absolute Quality: min=%1.3f max=%1.3f  ->  cutoff = %1.3f (%d ptcl)"%(sq[0],sq[-1],qcutoff,ptcl))
 			else:
 				if keepsig:
 					qmean=sum(qlist)/len(qlist)
 					qsigma=sqrt(sum([i*i for i in qlist])/len(qlist)-qmean**2)
 					qcutoff=qmean-qsigma*keep
-					if verbose>0: print "Quality: mean=%1.3f sigma=%1.3f  ->  cutoff = %1.3f (%d ptcl)"%(qmean,qsigma,qcutoff,ptcl)
+					if verbose>0: print("Quality: mean=%1.3f sigma=%1.3f  ->  cutoff = %1.3f (%d ptcl)"%(qmean,qsigma,qcutoff,ptcl))
 				else:
 					qlist.sort()
 					qcutoff=qlist[-int(keep*len(qlist))]
-					if verbose>0: print "Quality: min=%1.3f max=%1.3f  ->  cutoff = %1.3f (%d ptcl)"%(qlist[0],qlist[-1],qcutoff,ptcl)
+					if verbose>0: print("Quality: min=%1.3f max=%1.3f  ->  cutoff = %1.3f (%d ptcl)"%(qlist[0],qlist[-1],qcutoff,ptcl))
 
 		output = recon.finish(True)
 
@@ -544,10 +545,10 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 		if len(excluded)>0 : output.set_attr("threed_excl_ptcl_idxs",excluded)
 		output.set_attr("threed_ptcl_src",data[0]["filename"])
 	except:
-		print "Warning, error setting reconstruction attributes"
+		print("Warning, error setting reconstruction attributes")
 #	progress += 10
 #	E2progress(logid,float(progress)/total_progress)
-	if verbose>0 : print "Finished Reconstruction"
+	if verbose>0 : print("Finished Reconstruction")
 
 	return output
 

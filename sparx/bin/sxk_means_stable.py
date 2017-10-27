@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
@@ -56,9 +57,9 @@ def main():
 	#parser.add_option("--CUDA",           action="store_true", default=False,     help="CUDA version")
 	parser.add_option("--MPI",            action="store_true", default=False,     help="Use MPI version ")	
 	(options, args) = parser.parse_args()
-    	if len(args) < 2 or len(args) > 3:
-				print "usage: " + usage
-        			print "Please run '" + progname + " -h' for detailed options"
+	if len(args) < 2 or len(args) > 3:
+		print("usage: " + usage)
+		print("Please run '" + progname + " -h' for detailed options")
 	else:
 		if len(args) == 2: mask = None
 		else:              mask = args[2]

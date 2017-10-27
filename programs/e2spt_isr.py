@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: Jesus Galaz-Montoya, 2011?2012?
 # Last update 25/Feb/2015
@@ -99,20 +100,20 @@ def main():
 	
 	
 	if not options.input and not options.inputdir and not options.inputstem:
-		print "ERROR: Either of the following required: --input, --inputstemp, --inputdir"
+		print("ERROR: Either of the following required: --input, --inputstemp, --inputdir")
 		sys.exit()
 	
 	
 	if options.input and options.inputstem:
-		print "ERROR: Cannot provide --input and --inputstem simultaneously"
+		print("ERROR: Cannot provide --input and --inputstem simultaneously")
 		sys.exit()
 		
 	if options.inputstem and options.inputdir:
-		print "ERROR: Cannot provide --inputstem and --inputdir simultaneously"
+		print("ERROR: Cannot provide --inputstem and --inputdir simultaneously")
 		sys.exit()
 		
 	if options.input and options.inputdir:
-		print "ERROR: Cannot provide --input and --inputdir simultaneously"
+		print("ERROR: Cannot provide --input and --inputdir simultaneously")
 		sys.exit()
 	
 	
@@ -126,7 +127,7 @@ def main():
 	originalpath = options.path
 	
 	if options.verbose > 9:
-		print "\n(e2spt_isr.py) I've read the options"	
+		print("\n(e2spt_isr.py) I've read the options")	
 	
 	inputfiles = {}											#C:Figure out whether there's a single HDF stack to process,
 															#C:or a directory with many HDF stacks
@@ -141,14 +142,14 @@ def main():
 		for f in findir:
 			if '.hdf' in f and options.inputstem in f:
 				if options.verbose > 8:
-					print "\nFound tiltseries!", f
+					print("\nFound tiltseries!", f)
 				inputfiles.update( {f:[f,None]} )			#C:The input files are put into a dictionary in the format {originalseriesfile:[originalseriesfile,volumefile]}
 	
 	elif options.inputdir:
 		for f in findir:
 			if '.hdf' in f:
 				if options.verbose > 8:
-					print "\nFound tiltseries!", f
+					print("\nFound tiltseries!", f)
 				inputfiles.update( {f:[f,None]} )			#C:The input files are put into a dictionary in the format {originalseriesfile:[originalseriesfile,volumefile]}
 	
 	elif options.input:
@@ -160,7 +161,7 @@ def main():
 	newfiles = {}
 	firstiterdir = originalpath
 	
-	print "\n\nThere are these many iterations", options.iter
+	print("\n\nThere are these many iterations", options.iter)
 	fstats={}
 	convergedfs=[]
 	
@@ -185,8 +186,8 @@ def main():
 		itermeanfscs.update( {i:0} )
 		itermeanscores3d.update( {i:0} )
 		
-		print "***************\nStarting iteration number", i
-		print "****************"
+		print("***************\nStarting iteration number", i)
+		print("****************")
 		previouspath=''
 		if options.iter > 1:			
 			iterdir = 'iter_' + str( i+1 ).zfill( len ( str( options.iter ) ) )
@@ -202,7 +203,7 @@ def main():
 		statslines=[]
 		
 		if len( convergedfs ) == len( inputfiles ):
-			print "\nAll files have converged. Terminating. Line 193"
+			print("\nAll files have converged. Terminating. Line 193")
 			break
 		
 		
@@ -222,11 +223,11 @@ def main():
 			
 			if i == 0:
 				fstats.update({f:list([])})
-				print "fmeanfscs is", fmeanfscs
+				print("fmeanfscs is", fmeanfscs)
 				fmeanfscs[-1].update( { f:[0] } ) 	#Compute initial FSC before any iterations of correction or alignment have occurred
-				print "fmeanscores3d is", fmeanscores3d
+				print("fmeanscores3d is", fmeanscores3d)
 				fmeanscores3d[-1].update( { f:[0] } )
-				print "set initial -1 fmeanscores3d!!"
+				print("set initial -1 fmeanscores3d!!")
 	
 			if 'converged' not in fstats[f]:
 			
@@ -238,7 +239,7 @@ def main():
 			
 				stackfile = options.path + '/' + os.path.basename(f).replace('.hdf','_ISR.hdf')
 			
-				print "\nWill refine center for file", f
+				print("\nWill refine center for file", f)
 				if i ==0:
 					hdr = EMData( f, 0, True )				#See if angles are in the header of the data, for each file; if not, write them
 					#print "\nRead header and its type", hdr, type(hdr)
@@ -247,9 +248,9 @@ def main():
 				
 					aux=0
 					if 'spt_tiltangle' not in hdr.get_attr_dict():
-						print "\nspt_tiltangle not in header, therefore will write it by calling writeparamtoheader"
+						print("\nspt_tiltangle not in header, therefore will write it by calling writeparamtoheader")
 						aux = writeparamtoheader( f, originalangles, 'spt_tiltangle' )
-						print "\naux returned is", aux
+						print("\naux returned is", aux)
 					else:
 						aux = 1			 
 				
@@ -258,19 +259,19 @@ def main():
 					
 						auxx=auxy=auxr=0
 						if 'sptisrtx' not in hdr.get_attr_dict():
-							print "\nsptisrtx not in header, therefore will write it by calling writeparamtoheader"
+							print("\nsptisrtx not in header, therefore will write it by calling writeparamtoheader")
 							auxx = writeparamtoheader( f, tvals, 'sptisrtx' )
 						else:
 							auxx = 1 
 					
 						if 'sptisrty' not in hdr.get_attr_dict():
-							print "\nsptisrty not in header, therefore will write it by calling writeparamtoheader"
+							print("\nsptisrty not in header, therefore will write it by calling writeparamtoheader")
 							auxy = writeparamtoheader( f, tvals, 'sptisrty' )
 						else:
 							auxy = 1 
 						
 						if 'sptisrdr' not in hdr.get_attr_dict():
-							print "\nsptisrdr not in header, therefore will write it by calling writeparamtoheader"
+							print("\nsptisrdr not in header, therefore will write it by calling writeparamtoheader")
 							auxr = writeparamtoheader( f, tvals, 'sptisrdr' )
 						else:
 							auxr = 1 
@@ -289,8 +290,8 @@ def main():
 								angle=img['spt_tiltangle']
 								series.update({ angle:img })
 							except:
-								print "ERROR: spt_tiltangle not found in image", ii
-								print "\nHeader is", img.get_attr_dict()
+								print("ERROR: spt_tiltangle not found in image", ii)
+								print("\nHeader is", img.get_attr_dict())
 								sys.exit()
 
 						
@@ -309,9 +310,9 @@ def main():
 						fmeanscores3d[ -1 ][f].append( score3d )
 						
 						
-						print "\nVol and its type are", vol,type(vol)
+						print("\nVol and its type are", vol,type(vol))
 					else:
-						print "ERROR: Something went wrong. spt_tiltangle found in image headers, but somehow is unusuable"
+						print("ERROR: Something went wrong. spt_tiltangle found in image headers, but somehow is unusuable")
 						sys.exit()
 					
 				elif i>0:
@@ -343,7 +344,7 @@ def main():
 				#print "fscores2d received", fscores2d
 				#print "ferrors received", ferrors
 				if ferrors == fscores2d:
-					print "ERROR: errors and scores2d are the same"
+					print("ERROR: errors and scores2d are the same")
 					sys.exit() 
 				
 				fmeanscore2d = sum(fscores2d)/len(fscores2d)
@@ -574,47 +575,47 @@ def main():
 		
 		if i > 0:
 			if itermeanscores2d[i] == itermeanscores2d[i-1]:
-				print "The meanscore2d for two consecutive iterations is the same, suggesting the algorithm has converged."
+				print("The meanscore2d for two consecutive iterations is the same, suggesting the algorithm has converged.")
 				sys.exit()
 			
 			try:
 				if itermeanerrors[i] == itermeanerrors[i-1]:
-					print "The meanerror for two consecutive iterations is the same, suggesting the algorithm has converged."
+					print("The meanerror for two consecutive iterations is the same, suggesting the algorithm has converged.")
 					sys.exit()
 			except:
 				pass
 				
 			if itermeanfscs[i] == itermeanfscs[i-1]:
-				print "The fscsarea for two consecutive iterations is the same, suggesting the algorithm has converged."
+				print("The fscsarea for two consecutive iterations is the same, suggesting the algorithm has converged.")
 				sys.exit()
 				
 			if itermeanscores3d[i] == itermeanscores3d[i-1]:
-				print "The meanscore3d for two consecutive iterations is the same, suggesting the algorithm has converged."
+				print("The meanscore3d for two consecutive iterations is the same, suggesting the algorithm has converged.")
 				sys.exit()
 			
 			
 			
 			difscore = math.fabs( float( itermeanscores2d[i] ) - float(itermeanscores2d[i-1]) )
 			if float( difscore ) < 0.000001:
-				print "In iter %d/%d global score difference with previous iteration is smaller than 0.000001, see: %f \nExiting program." %( i+1, options.iter, difscore )
+				print("In iter %d/%d global score difference with previous iteration is smaller than 0.000001, see: %f \nExiting program." %( i+1, options.iter, difscore ))
 				sys.exit()
 				
 			try:
 				diferror = math.fabs( float( itermeanerrors[i] ) - float(itermeanerrors[i-1]) )
 				if float( difscore ) < 0.000001:
-					print "In iter %d/%d global error difference with previous iteration is smaller than 0.000001, see: %f \nExiting program." %( i+1, options.iter, diferror )
+					print("In iter %d/%d global error difference with previous iteration is smaller than 0.000001, see: %f \nExiting program." %( i+1, options.iter, diferror ))
 					sys.exit()
 			except:
 				pass
 								
 			diffscarea = math.fabs( float( itermeanfscs[i] ) - float(itermeanfscs[i-1]) )
 			if float( difscore ) < 0.000001:
-				print "In iter %d/%d global fscarea difference with previous iteration is smaller than 0.000001, see: %f \nExiting program." %( i+1, options.iter, diffscarea )
+				print("In iter %d/%d global fscarea difference with previous iteration is smaller than 0.000001, see: %f \nExiting program." %( i+1, options.iter, diffscarea ))
 				sys.exit()
 			
 			difscore3d = math.fabs( float( itermeanscores3d[i] ) - float(itermeanscores3d[i-1]) )
 			if float( difscore3d ) < 0.000001:
-				print "In iter %d/%d global score3dipetResult difference with previous iteration is smaller than 0.000001, see: %f \nExiting program." %( i+1, options.iter, difscore )
+				print("In iter %d/%d global score3dipetResult difference with previous iteration is smaller than 0.000001, see: %f \nExiting program." %( i+1, options.iter, difscore ))
 				sys.exit()
 			
 			
@@ -625,9 +626,9 @@ def main():
 
 def recentertilts( options, reprojections, originalseries, angles, it ):
 	
-	print "\nRecentering subtiltseries", originalseries
+	print("\nRecentering subtiltseries", originalseries)
 	n = EMUtil.get_image_count( originalseries )
-	print "Which contains these many images:", n
+	print("Which contains these many images:", n)
 	
 	hdr1 = EMData( originalseries, 1, True )
 	nx = hdr1['nx']
@@ -649,7 +650,7 @@ def recentertilts( options, reprojections, originalseries, angles, it ):
 	#print "\n\n\nIn recentertilts, tilt angles are", originaltilts
 	
 	for angle in angles:
-		print kkk, angle
+		print(kkk, angle)
 		#print "Recentering image", kkk
 		oimg = originaltilts[angle]
 		rpimg = reprojections[angle]
@@ -686,12 +687,12 @@ def recentertilts( options, reprojections, originalseries, angles, it ):
 		tys.append(ty)
 		drs.append(dr)
 		
-		print "\nIn iteration %d, for image %d, x,y translations are x=%f, y=%f" % ( it, kkk, tx, ty )
+		print("\nIn iteration %d, for image %d, x,y translations are x=%f, y=%f" % ( it, kkk, tx, ty ))
 
 		try:
-			print "whereas original images were off by tx", oimg['spt_txerror'], oimg['spt_tyerror']
+			print("whereas original images were off by tx", oimg['spt_txerror'], oimg['spt_tyerror'])
 			
-			print "\nThe header is", oimg.get_attr_dict()
+			print("\nThe header is", oimg.get_attr_dict())
 			
 			xerror = float(tx) + float(oimg['spt_txerror'])
 			yerror = float(ty) + float(oimg['spt_tyerror'])
@@ -701,7 +702,7 @@ def recentertilts( options, reprojections, originalseries, angles, it ):
 			if error:
 				errors.append(error)
 			
-			print "therfore the error is", error
+			print("therfore the error is", error)
 			
 		except:
 			pass
@@ -732,9 +733,9 @@ def recentertilts( options, reprojections, originalseries, angles, it ):
 	#print "sent scores2d are", scores2d
 	#print "sent errors are", errors
 	if scores2d == errors:
-		print "ERROR: sent scores2d and errores are the same"
+		print("ERROR: sent scores2d and errores are the same")
 		sys.exit()
-	print 
+	print() 
 	
 	return [ recenteredtilts, statsline, scores2d, errors ]
 
@@ -751,9 +752,9 @@ def calcangles( f ):
 			angle = imghdr['spt_tiltangle']
 			angles.append( angle ) 
 		except:
-			print """\n(e2spt_isr.py)(calcangles) ERROR: image %d in stack %s lacking 
+			print("""\n(e2spt_isr.py)(calcangles) ERROR: image %d in stack %s lacking 
 				spt_tiltangle parameter in header. If tilt angle information is not in the 
-				header of the data, supply it via --tltfile.""" %( i, f )
+				header of the data, supply it via --tltfile.""" %( i, f ))
 			sys.exit()	
 
 	angles.sort()
@@ -762,7 +763,7 @@ def calcangles( f ):
 
 
 def getangles( options ):
-	print "\n(e2spt_fillwedge.py)(getangles)"
+	print("\n(e2spt_fillwedge.py)(getangles)")
 	angles = []
 	
 	#print "Reading tlt file", options.tltfile
@@ -784,12 +785,12 @@ def getangles( options ):
 
 
 def writeparamtoheader( f, angs, param ):
-	print "\n(e2spt_fillwedge.py)(writeparamtoheader)"
+	print("\n(e2spt_fillwedge.py)(writeparamtoheader)")
 	n = EMUtil.get_image_count(f)
-	print "Writing parameter %s to header of file %s" % (param, f)
-	print "With these many images and angles", n, len(angs)
+	print("Writing parameter %s to header of file %s" % (param, f))
+	print("With these many images and angles", n, len(angs))
 	for i in range(n):
-		print "Working on image", i
+		print("Working on image", i)
 		imghdr = EMData( f, i, True)
 		imghdr[param]=angs[i]
 		imghdr.write_image( f, i, EMUtil.ImageType.IMAGE_HDF, True )
@@ -820,7 +821,7 @@ def calcWeight( angle, it, options ):
 		complement = 1.0 - math.fabs( math.cos( math.radians(angle) ) )
 		weight = math.fabs( (it+1) * math.cos( math.radians(angle) ) / float(options.iter) ) + (float(it)/float(options.iter)) * complement 
 
-	print "Something was weighed?!!!!" #??
+	print("Something was weighed?!!!!") #??
 	
 	return weight
 
@@ -1055,8 +1056,8 @@ def makevol( options, originalseriesfile, newseries, it, originalangles, origina
 		
 		angle = None
 		if options.verbose > 9:
-			print  "\n(e2spt_isr.py)(makevol) processing image %d in stack %s and ITERATION %d" % ( i, originalseriesfile, it )
-			print "For image %d, mean=%f, min=%f, max=%f, std=%f" % ( i, img['mean'], img['minimum'],img['maximum'],img['sigma'] )
+			print("\n(e2spt_isr.py)(makevol) processing image %d in stack %s and ITERATION %d" % ( i, originalseriesfile, it ))
+			print("For image %d, mean=%f, min=%f, max=%f, std=%f" % ( i, img['mean'], img['minimum'],img['maximum'],img['sigma'] ))
 		
 		if options.pad2d and float(options.pad2d) > 1.0:
 			box2d = img['nx'] * options.pad2d
@@ -1066,17 +1067,17 @@ def makevol( options, originalseriesfile, newseries, it, originalangles, origina
 		try:
 			angle = img['spt_tiltangle'] 
 		except:
-			print "\nWARNING: 'spt_tiltangle' parameter not found in the header of image %d in file %s" % ( i, f )
+			print("\nWARNING: 'spt_tiltangle' parameter not found in the header of image %d in file %s" % ( i, f ))
 			#sys.exit()
 			angle=tiltangle
-			print "Using this tiltangle", tiltangle
+			print("Using this tiltangle", tiltangle)
 		
 		try:
 			axis = img['spt_tiltaxis']
 		except:
 			if options.verbose > 9:
-				print """\n(e2spt_isr.py)(makevol) WARNING: 
-				No spt_tiltaxis or sptsim_tiltaxis found in header. Default used.""", options.tiltaxis, axis
+				print("""\n(e2spt_isr.py)(makevol) WARNING: 
+				No spt_tiltaxis or sptsim_tiltaxis found in header. Default used.""", options.tiltaxis, axis)
 		
 		if angle != None:
 			#angles.append( angle )
@@ -1091,8 +1092,8 @@ def makevol( options, originalseriesfile, newseries, it, originalangles, origina
 			weight = 1.0
 			
 			if options.verbose > 9:
-				print "\n(makevol) ITER=%d, tiltangle=%f, weight=%f" % ( it, angle, weight )
-				print "Inserted IMAGE with this tranform", t
+				print("\n(makevol) ITER=%d, tiltangle=%f, weight=%f" % ( it, angle, weight ))
+				print("Inserted IMAGE with this tranform", t)
 			
 			#print "transform used for WHOLE 3D", t
 			
@@ -1133,7 +1134,7 @@ def makevol( options, originalseriesfile, newseries, it, originalangles, origina
 	rec.process_inplace( 'normalize' )
 	
 	if options.verbose > 9:
-		print "\n(e2spt_isr.py)(makevol) Reconstructed volume for file", originalseriesfile
+		print("\n(e2spt_isr.py)(makevol) Reconstructed volume for file", originalseriesfile)
 	
 	volfile = ''
 	if options.savevols and writevols:
@@ -1155,9 +1156,9 @@ def makevol( options, originalseriesfile, newseries, it, originalangles, origina
 	
 	filebasetoplotfsc = originalseriesfile
 	if it == 0:
-		print "There SHOULD be intialfsc", initialfsc
+		print("There SHOULD be intialfsc", initialfsc)
 	if initialfsc:
-		print "There is intialfsc", initialfsc
+		print("There is intialfsc", initialfsc)
 		filebasetoplotfsc = originalseriesfile.replace('.hdf', '_INITIAL.hdf')
 
 	

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: Steven Ludtke, 04/17/14 (sludtke@bcm.edu)
 # Copyright (c) 2014- Baylor College of Medicine
@@ -130,7 +131,7 @@ class StarFile(dict):
 					else: raise Exception,"StarFile: Key-value pair error. Matching value for %s not found."%key
 			elif line[:5].lower()=="data_":
 				if len(self)>0 :
-					print "WARNING: second data_ block encountered in ",self.filename,". Cannot deal with this at present. Second block ignored"
+					print("WARNING: second data_ block encountered in ",self.filename,". Cannot deal with this at present. Second block ignored")
 					return
 				self.dataname=line[5:]
 			elif line[:5].lower()=="loop_":
@@ -165,23 +166,23 @@ class StarFile(dict):
 						if len(vals)<len(loop) :			# we may need to read multiple lines to get enough values
 							continue
 						if len(vals)>len(loop) : 
-							print "mismatch"
-							print line2
-							print len(loop),loop
-							print len(vals),vals
+							print("mismatch")
+							print(line2)
+							print(len(loop),loop)
+							print(len(vals),vals)
 							break
 						for i in range(len(vals)): self[loop[i]].append(vals[i])
 						vals=[]
 				self.lineptr-=1
 			else:
-				print "StarFile: Unknown content on line :",line
+				print("StarFile: Unknown content on line :",line)
 				break
 
 				
 	def writefile(self,filename=None):
 		"""Writes the contents of the current dictionary back to disk using either the existing filename, or an alternative name passed in"""
 		
-		print "Sorry, writing not implemented yet"
+		print("Sorry, writing not implemented yet")
 					
 			
 			

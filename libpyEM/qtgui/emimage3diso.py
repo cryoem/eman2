@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -227,7 +228,7 @@ class EMIsosurfaceModel(EM3DModel):
 	
 	def update_data(self,data):
 		if data==None or (isinstance(data,EMData) and data.get_zsize()<=1) :
-			print "Error, tried to set data that is invalid for EMIsosurface"
+			print("Error, tried to set data that is invalid for EMIsosurface")
 			return
 		self.data=data
 		self.isorender=MarchingCubes(data)
@@ -238,7 +239,7 @@ class EMIsosurfaceModel(EM3DModel):
 		"""Pass in a 3D EMData object"""
 		
 		if data==None:
-			print "Error, tried to set data that is invalid for EMIsosurface"
+			print("Error, tried to set data that is invalid for EMIsosurface")
 			return
 		self.data=data
 		if self.isodl != 0:
@@ -463,7 +464,7 @@ class EMIsoInspector(QtGui.QWidget):
 
 
 	def on_mrc_text_change(self,text): #if enable_browse, added by muthu
-		print "Use the Browse button to update the mrc file"
+		print("Use the Browse button to update the mrc file")
 
 	def on_mrc_browse(self): #if enable_browse, added by muthu
 		import os

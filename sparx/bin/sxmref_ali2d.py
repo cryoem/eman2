@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
@@ -37,9 +38,9 @@ from global_def import *
 from optparse import OptionParser
 import sys
 def main():
-        arglist = []
-        for arg in sys.argv:
-        	arglist.append( arg )
+	arglist = []
+	for arg in sys.argv:
+		arglist.append( arg )
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " data_stack reference_stack outdir <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translation_step --center=center_type --maxit=max_iteration --CTF --snr=SNR --function=user_function_name --rand_seed=random_seed --MPI"
 	parser = OptionParser(usage,version=SPARXVERSION)
@@ -59,8 +60,8 @@ def main():
 	parser.add_option("--EQ", action="store_true", default=False,     help="  equal version ")
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 3 or len(args) > 4:
-    		print "usage: " + usage
-    		print "Please run '" + progname + " -h' for detailed options"
+    		print("usage: " + usage)
+    		print("Please run '" + progname + " -h' for detailed options")
 	else:
 	
 		if len(args) == 3:

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 
 #
@@ -55,8 +56,8 @@ def main():
 	
 	# check length of arguments list. less than 2 is illegal
 	if (len(args) < 2):
-    		print "usage: " + usage
-    		print "Please run '" + progname + " -h' for detailed options"
+    		print("usage: " + usage)
+    		print("Please run '" + progname + " -h' for detailed options")
 	# 2 is file to file copying
 	elif (2 == len(args)):
 		#print "file to file"

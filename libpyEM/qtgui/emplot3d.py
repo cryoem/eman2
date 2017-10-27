@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 07/19/2017 (sludtke@bcm.edu)
@@ -288,7 +289,7 @@ class EMPlot3DWidget(EMGLWidget):
 				else : self.axes[key]=(0,1,2,-2,-2)
 			else : self.axes[key]=(-1,0,0-2,-2)
 		except:
-			print "Data error:", data
+			print("Data error:", data)
 			return
 
 		if oldkey:
@@ -397,7 +398,7 @@ class EMPlot3DWidget(EMGLWidget):
 				self.set_data(data,remove_directories_from_name(filename,1),quiet=quiet,comments=comments)
 			except:
 				traceback.print_exc()
-				print "couldn't read",filename
+				print("couldn't read",filename)
 				return False
 
 		return True
@@ -452,7 +453,7 @@ class EMPlot3DWidget(EMGLWidget):
 				data=[[array([rdata[j][i]]) for j in range(ny)] for i in range(nx)]
 
 			except:
-				print "couldn't read",filename
+				print("couldn't read",filename)
 
 		return data
 
@@ -578,7 +579,7 @@ class EMPlot3DWidget(EMGLWidget):
 					parm=linetypes[self.pparm[i][2]]
 					try: ax.plot(x,y,z,parm,linewidth=self.pparm[i][3],color=colortypes[self.pparm[i][0]])
 					except:
-						print "Error: Plot failed\n%d %s\n%d %s"%(len(x),x,len(y),y)
+						print("Error: Plot failed\n%d %s\n%d %s"%(len(x),x,len(y),y))
 
 
 			canvas.draw()
@@ -591,7 +592,7 @@ class EMPlot3DWidget(EMGLWidget):
 				try: # this should work for matplotlib 0.91
 					self.scrlim=(ax.get_window_extent().xmin(),ax.get_window_extent().ymin(),ax.get_window_extent().xmax()-ax.get_window_extent().xmin(),ax.get_window_extent().ymax()-ax.get_window_extent().ymin())
 				except:
-					print 'there is a problem with your matplotlib'
+					print('there is a problem with your matplotlib')
 					return
 			self.plotlim=(ax.get_xlim()[0],ax.get_ylim()[0],ax.get_xlim()[1]-ax.get_xlim()[0],ax.get_ylim()[1]-ax.get_ylim()[0])
 
@@ -1165,7 +1166,7 @@ class EMPlot3DStatsInsp(QtGui.QWidget):
 			result = np.corrcoef(x,rowvar=False) #result = ["\t".join([str(round(j,2)) for j in i]) for i in corrcoef]
 
 		else:
-			print("{} not yet implemented!".format(stat))
+			print(("{} not yet implemented!".format(stat)))
 			return
 
 		self.table.setRowCount(result.shape[0])
@@ -1281,11 +1282,11 @@ class EMPlot3DRegrInsp(QtGui.QWidget):
 		coefs, _, _, _ = np.linalg.lstsq(A, y) #coefs, residuals, rank, svals
 		coefsz, _, _, _ = np.linalg.lstsq(A, z) #coefs, residuals, rank, svals
 
-		print("Polynomial Regression (Degree {})".format(degree))
-		print("X: {}\tY: {}\tZ: {}".format(xs,ys,zs))
+		print(("Polynomial Regression (Degree {})".format(degree)))
+		print(("X: {}\tY: {}\tZ: {}".format(xs,ys,zs)))
 		print("Coefficients:")
 		for i,c in enumerate(coefs):
-			print("{}:\t{}\t{}".format(i,c,coefsz[i]))
+			print(("{}:\t{}\t{}".format(i,c,coefsz[i])))
 
 		# construct interpolated polynomial
 		xmin = np.min(x)
@@ -1465,7 +1466,7 @@ class EMPlot3DClassInsp(QtGui.QWidget):
 
 		# Sometimes one axis dominates the classification improperly, this makes each axis equally weighted
 		if axnorm:
-			print "Normalize Axes"
+			print("Normalize Axes")
 			datafix=[i.copy()/std(i) for i in data]
 		else: datafix=data
 
@@ -1594,7 +1595,7 @@ class EMPlot3DClassInsp(QtGui.QWidget):
 		try:
 			if sel==None: sel=self.target().selected
 		except:
-			print "imgSelect with no selection"
+			print("imgSelect with no selection")
 			return
 
 		try:
@@ -1666,7 +1667,7 @@ class DragListWidget(QtGui.QListWidget):
 				# parses out each number from each line and puts it in our list of lists
 				for i,f in enumerate(rex.findall(s)):
 					try: data[i].append(float(f))
-					except: print "Error (%d): %s"%(i,f)
+					except: print("Error (%d): %s"%(i,f))
 
 			# Find an unused name for the data set
 			trgplot=self.datasource().target()
@@ -2260,7 +2261,7 @@ class EMPlot3DInspector(QtGui.QWidget):
 				out.write("%g\t%g\t%g\n"%(data[xcol][i],data[ycol][i],data[zcol][i]))
 
 		out=None
-		print "Wrote ",name2
+		print("Wrote ",name2)
 
 
 	def savePlot(self):
@@ -2287,7 +2288,7 @@ class EMPlot3DInspector(QtGui.QWidget):
 			for i in xrange(len(data[0])):
 				out.write("%g\t%g\t%g\n"%(data[xcol][i],data[ycol][i],data[zcol][i]))
 
-			print "Wrote ",name2
+			print("Wrote ",name2)
 
 	def savePdf(self):
 		"""Saves the contents of the current plot to a pdf"""
@@ -2522,11 +2523,11 @@ class EMPlot3DInspector(QtGui.QWidget):
 			a.setFlags(flags)
 			try: a.setTextColor(qt_color_map[colortypes[parms[j][0]]])
 			except:
-				print "Color error"
-				print list(sorted(parms.keys()))
-				print parms[j][0]
-				print colortypes[parms[j][0]]
-				print qt_color_map[colortypes[parms[j][0]]]
+				print("Color error")
+				print(list(sorted(parms.keys())))
+				print(parms[j][0])
+				print(colortypes[parms[j][0]])
+				print(qt_color_map[colortypes[parms[j][0]]])
 			if visible[j]: a.setCheckState(Qt.Checked)
 			else: a.setCheckState(Qt.Unchecked)
 

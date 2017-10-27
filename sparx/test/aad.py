@@ -1,4 +1,5 @@
 #!/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -48,39 +49,39 @@ for i in xrange(N):
 	elif(i%Kt == 2):  x.append(gauss(20.0,1.0))
 
 #x[3]=x[0]
-print  ttime()
+print(ttime())
 for j in xrange(1,N):
 	for i in xrange(j):
 		d.set_value_at(mono(i,j),sqrt((x[i]-x[j])**2))
 		if(d.get_value_at(mono(i,j)) != d.get_value_at(mono(j,i))):
-			print i,j,d.get_value_at(mono(i,j)),d.get_value_at(mono(j,i))
-print  ttime()
+			print(i,j,d.get_value_at(mono(i,j)),d.get_value_at(mono(j,i)))
+print(ttime())
 m = N/Kt
 o = cluster_equalsize(d,m)
-print ttime()
+print(ttime())
 for k in xrange(len(o[0])):
-	print   k
-	print   o[0][k]  # assignments
-print   o[1]  # objects that are centers
-print   o[2]  # criterion (should be minimized) and number of tierations)
+	print(k)
+	print(o[0][k])  # assignments
+print(o[1])  # objects that are centers
+print(o[2])  # criterion (should be minimized) and number of tierations)
 
 
 dmin = 1.0e23
-print  ttime()
+print(ttime())
 for i in xrange(100):
 	o = Util.cluster_pairwise(d,K)
 	if(dmin > o[N+K]):
-		print  i,ttime(),o[N+K:N+K+2]
+		print(i,ttime(),o[N+K:N+K+2])
 		dmin = o[N+K]
 		best = o
-print ttime()
+print(ttime())
 for k in xrange(K):
 	g = []
 	for i in xrange(N):
 		if(best[i] == float(k)):
 			g.append(i)
-	print   k,len(g)
-	print  g
+	print(k,len(g))
+	print(g)
 #print   best[0:N]  # assignments
-print   best[N:N+K]  # objects that are centers
-print   best[N+K:N+K+2]  # criterion (should be minimized) and number of tierations)
+print(best[N:N+K])  # objects that are centers
+print(best[N+K:N+K+2])  # criterion (should be minimized) and number of tierations)

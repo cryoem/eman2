@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 06/06/2011
@@ -236,10 +237,10 @@ class EMClassPtclTool(QtGui.QWidget):
 				totbad+=len(badset)
 				newbad+=len(newset)-len(badset)
 			except:
-				print "Error setting bad particles in ",origfile
+				print("Error setting bad particles in ",origfile)
 			
 			js_close_dict(info_name(origfile))
-		print newbad, " new particles marked as bad. Total of ",totbad," in affected micrographs"
+		print(newbad, " new particles marked as bad. Total of ",totbad," in affected micrographs")
 
 	def markGoodPtcl(self,x):
 		"Mark particles from the selected class-averages as good in the set interface"
@@ -285,7 +286,7 @@ class EMClassPtclTool(QtGui.QWidget):
 			except:
 				continue
 		
-		print badbefore," bad particles before processing, now ",badafter
+		print(badbefore," bad particles before processing, now ",badafter)
 
 	def savePtclNum(self,x):
 		"Saves a list of particles from marked classes into a text file"
@@ -411,7 +412,7 @@ class EMClassPtclTool(QtGui.QWidget):
 					for i in excl:
 						yield(i)
 			except:
-				print "Problem with class %d (%s). Skipping"%(ci,self.curFile())
+				print("Problem with class %d (%s). Skipping"%(ci,self.curFile()))
 				traceback.print_exc()
 				continue
 

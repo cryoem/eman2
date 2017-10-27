@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: David Woolford 04/16/2009 (woolford@bcm.edu)
@@ -390,7 +391,7 @@ class EMBootStrappedAverages:
 			current_files = new_files
 			images = new_images
 			iter += 1
-			print couples,taken
+			print(couples,taken)
 			
 			
 		if self.logger: E2progress(self.logger,1.0)
@@ -532,7 +533,7 @@ class EMTomoAlignments:
 			if options.shrink:
 				scratch_name_1 = numbered_bdb("bdb:tomo_scratch#scratch_shrink")
 				scratch_name_2 = numbered_bdb("bdb:tomo_scratch##scratch_shrink")
-			else: print "no shrink" 
+			else: print("no shrink") 
 
 			for i,j in alignment_jobs:
 				if options.shrink or options.filter:
@@ -587,7 +588,7 @@ class EMTomoAlignments:
 				target = EMData(files[j],0)
 				
 				if options.filter:
-					print "filtered"
+					print("filtered")
 					filter_params = EMAN2.parsemodopt(options.filter)
 					probe.process_inplace(filter_params[0],filter_params[1])
 					target.process_inplace(filter_params[0],filter_params[1])
@@ -596,7 +597,7 @@ class EMTomoAlignments:
 					probe.process_inplace("math.meanshrink",{"n":options.shrink})
 					target.process_inplace("math.meanshrink",{"n":options.shrink})
 				else:
-					print "no shrink"
+					print("no shrink")
 				
 				data["target"] = target
 				data["probe"] = probe
@@ -629,7 +630,7 @@ class EMTomoAlignments:
 		n = len(task_customers)
 		while 1:
 			if len(task_customers) == 0: break
-			print len(task_customers),"tomo averaging tasks left in main loop"
+			print(len(task_customers),"tomo averaging tasks left in main loop")
 			st_vals = task_customers[0].check_task(tids)
 			for i in xrange(len(task_customers)-1,-1,-1):
 				st = st_vals[i]
@@ -708,7 +709,7 @@ class EMTomoAlignTask:
 			probe.set_gpu_rw_current()
 			probe.cuda_lock()
 		
-		print probe.get_xsize()
+		print(probe.get_xsize())
 		progress = 0.0
 		max_progress = 3
 		progress += 1.0
@@ -824,7 +825,7 @@ def main():
 
 	(options, args) = parser.parse_args()
 	
-	print options.shrink
+	print(options.shrink)
 	
 	error_messages = check_options(options,args)
 	if len(error_messages) != 0:
@@ -840,7 +841,7 @@ def main():
 		module = EMBootStrappedAverages(args,options,logger)
 		module.execute()
 	else:
-		print "boot strap only supported technique"
+		print("boot strap only supported technique")
 	E2end(logger)
 	
 	

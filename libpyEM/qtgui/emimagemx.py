@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke (sludtke@bcm.edu)
@@ -352,7 +353,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 	def set_current_set(self,name):
 		"""Makes the named set the target of any mouse interactions"""
 		if not name in self.sets :
-			print "Error: tried to make non-existent set {} current".format(name)
+			print("Error: tried to make non-existent set {} current".format(name))
 			return
 
 		self.current_set=name
@@ -366,7 +367,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 	def show_set(self,name):
 		if name in self.sets_visible : return
 		if not name in self.sets :
-			print "Trying to make set {} visible, but does not exist".format(name)
+			print("Trying to make set {} visible, but does not exist".format(name))
 			return
 		self.sets_visible[name]=self.sets[name]
 
@@ -376,7 +377,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 	def hide_set(self,name):
 		if not name in self.sets_visible : return
 		if not name in self.sets :
-			print "Trying to make set {} invisible, but does not exist".format(name)
+			print("Trying to make set {} invisible, but does not exist".format(name))
 			return
 		del self.sets_visible[name]
 
@@ -594,7 +595,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		if mode in self.mouse_modes:
 			self.mmode = mode
 		else:
-			print "unknown mode:", mode
+			print("unknown mode:", mode)
 
 	def set_file_name(self,name):
 		#print "set image file name",name
@@ -1112,7 +1113,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 						if i >= n:
 							break
 						if self.data[i]==None:
-							print "Bad image in imagemx display: ",i
+							print("Bad image in imagemx display: ",i)
 							continue
 
 						tx = int((w+self.matrix_panel.min_sep)*(col) + x)
@@ -1253,7 +1254,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		c = [color[0],color[1],color[2],1.0]
 		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,c)
 		glMaterial(GL_FRONT,GL_SPECULAR,c)
-	  	glMaterial(GL_FRONT,GL_SHININESS,100.0)
+		glMaterial(GL_FRONT,GL_SHININESS,100.0)
 #		if set == 0:
 #			glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.2,.2,.8,1.0))
 #			glMaterial(GL_FRONT,GL_SPECULAR,(.2,.2,.8,1.0))
@@ -1688,9 +1689,9 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 					# convert from clockwise to anti clockwise and convert to Xian's axis definition
 					angle = 270-angle
 					angle %= 360
-					print "Filename: ", self.get_image_file_name()
-					print "Sequence#: ",lc[0]
-					print "Angle: ", angle
+					print("Filename: ", self.get_image_file_name())
+					print("Sequence#: ",lc[0])
+					print("Angle: ", angle)
 
 	def __app_mode_mouse_double_click(self, event):
 		if event.button()==Qt.LeftButton:
@@ -1736,7 +1737,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		if event.button()==Qt.LeftButton:
 			lc= self.scr_to_img((event.x(),event.y()))
 			if lc == None:
-				print "strange lc error"
+				print("strange lc error")
 				return
 			box_image = self.get_box_image(lc[0])
 			xs=int(box_image.get_xsize())
@@ -1815,12 +1816,12 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 						#print "%6d %s\n       %s"%(idx,str(xfm),str(ad["xform.align2d"]))
 					i+=1
 					progress.setValue(i)
- 					get_application().processEvents()
+					get_application().processEvents()
 
-		 			if progress.wasCanceled():
-		 				progress.close()
-		 				get_application().setOverrideCursor(Qt.ArrowCursor)
-			 			return
+					if progress.wasCanceled():
+						progress.close()
+						get_application().setOverrideCursor(Qt.ArrowCursor)
+						return
 
 				idxseim = []
 				for idx in idxse:
@@ -1831,12 +1832,12 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 					idxseim.append(i)
 					i+=1
 					progress.setValue(i)
- 					get_application().processEvents()
+					get_application().processEvents()
 
-		 			if progress.wasCanceled():
-		 				progress.close()
-		 				get_application().setOverrideCursor(Qt.ArrowCursor)
-			 			return
+					if progress.wasCanceled():
+						progress.close()
+						get_application().setOverrideCursor(Qt.ArrowCursor)
+						return
 
 
 				progress.close()
@@ -2357,8 +2358,8 @@ class EMImageInspectorMX(QtGui.QWidget):
 				action.setCheckable(1)
 				action.setChecked(0)
 		except Exception, inst:
-			print type(inst)	 # the exception instance
-			print inst.args	  # arguments stored in .args
+			print(type(inst))	 # the exception instance
+			print(inst.args)	  # arguments stored in .args
 	
 	def add_panel(self,widget,name):
 		self.tabwidget.addTab(widget,name)
@@ -2653,7 +2654,7 @@ class EMMXSetsPanel(QtGui.QWidget):
 		if not ok : return
 		name=str(name)
 		if name in self.target().sets :
-			print "Set name exists"
+			print("Set name exists")
 			return
 
 		self.target().enable_set(name,[])
@@ -3029,7 +3030,7 @@ class EMDataListCache(EMMXDataCache):
 			#print "file mode"
 			self.mode = EMDataListCache.FILE_MODE
 			if not os.path.exists(object) and not db_check_dict(object):
-				print "error, the file you specified does not exist:",object
+				print("error, the file you specified does not exist:",object)
 				return
 			self.file_name = object
 			self.max_idx = EMUtil.get_image_count(self.file_name)
@@ -3043,7 +3044,7 @@ class EMDataListCache(EMMXDataCache):
 
 			self.__refresh_cache()
 		else:
-			print "the object used to construct the EMDataListCache is not a string (filename) or a list (of EMData objects). Can't proceed"
+			print("the object used to construct the EMDataListCache is not a string (filename) or a list (of EMData objects). Can't proceed")
 			return
 
 #		self.__init_sets()
@@ -3172,7 +3173,7 @@ class EMDataListCache(EMMXDataCache):
 			if refresh: self.__refresh_cache()
 		else:
 			if self.cache_size != self.max_idx:
-				print "error, in list mode the cache size is always equal to the max idx"
+				print("error, in list mode the cache size is always equal to the max idx")
 				return
 	def set_start_idx(self,start_idx,refresh=True):
 		''' Set the starting index of the cache, '''
@@ -3207,13 +3208,13 @@ class EMDataListCache(EMMXDataCache):
 										sets.append(set)
 								if len(sets) != 0: cache[idx].mxset = sets
 						else:
-							print "data has been lost"
+							print("data has been lost")
 							raise
-					except: print "couldn't access",idx,"the max idx was",self.max_idx,"i was",i,"start idx",self.start_idx,"cache size",self.cache_size,len(self.images)
+					except: print("couldn't access",idx,"the max idx was",self.max_idx,"i was",i,"start idx",self.start_idx,"cache size",self.cache_size,len(self.images))
 				i += 1
 			self.images = cache
 		except:
-			print "there was an error in cache regeneration. Suggest restarting"
+			print("there was an error in cache regeneration. Suggest restarting")
 
 		app.setOverrideCursor(Qt.ArrowCursor)
 
@@ -3234,7 +3235,7 @@ class EMDataListCache(EMMXDataCache):
 			try:
 				return self.images[i]
 			except:
-				print "error, couldn't get image",i,self.start_idx,self.max_idx,self.cache_size
+				print("error, couldn't get image",i,self.start_idx,self.max_idx,self.cache_size)
 				#for i in self.images:
 					#print i,
 				#print ''

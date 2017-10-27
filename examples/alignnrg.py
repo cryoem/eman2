@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 # This computes the local energy surface for 2-D alignment of a particle vs a class-average
 
@@ -8,7 +9,7 @@ from sys import argv,exit,stdout
 from numpy import *
 
 if len(argv)<2 : 
-	print "alignnrg <refine#> <it#> <ptcl#> <cmp>"
+	print("alignnrg <refine#> <it#> <ptcl#> <cmp>")
 	exit(1)
 argv1=int(argv[1])
 argv2=int(argv[2])
@@ -55,16 +56,16 @@ dac=simmx[3][projn,0]
 daf=simmx[4][projn,0]
 
 projnsim=simmx[0].calc_min_index()
-print projn,projnsim
+print(projn,projnsim)
 
 # Do a rough alignment ourselves as a 3rd test
 im1b=im1.align("rotate_translate_flip",im2)
 ali=im1b["xform.align2d"].get_params("2d")
 
-print "These 3 alignments should be roughly the same:"
-print "cls_result: %4.1f %4.1f %6.1f %d"%(dx,dy,da,df) 
-print "sim_result: %4.1f %4.1f %6.1f %d  %f"%(dxc,dyc,dac,daf,simmx[0][projn,0]) 
-print "ali_result: %4.1f %4.1f %6.1f %d"%(ali["tx"],ali["ty"],ali["alpha"],ali["mirror"]) 
+print("These 3 alignments should be roughly the same:")
+print("cls_result: %4.1f %4.1f %6.1f %d"%(dx,dy,da,df)) 
+print("sim_result: %4.1f %4.1f %6.1f %d  %f"%(dxc,dyc,dac,daf,simmx[0][projn,0])) 
+print("ali_result: %4.1f %4.1f %6.1f %d"%(ali["tx"],ali["ty"],ali["alpha"],ali["mirror"])) 
 
 ###########
 # Display the various images as a quick visual check
@@ -130,7 +131,7 @@ for tx in arange(dx-3,dx+3,0.1):
 			a+=1
 		y+=1
 	x+=1
-	print " %d/50\r"%x,
+	print(" %d/50\r"%x, end=' ')
 	sys.stdout.flush()
 
 #display(out)
@@ -144,7 +145,7 @@ n1b=im2.cmp(comp[0],im1b,comp[1])
 
 # Best alignment from exhaustive search
 x,y,a=out.calc_min_location()
-print "\n",x,y,a
+print("\n",x,y,a)
 x=dx-3+x*0.1
 y=dy-3+y*0.1
 a=da-3+a*0.1
@@ -165,11 +166,11 @@ im1c=im1.align("refine",im2,{"maxiter":50,"precision":.002,"xform.align2d":Trans
 newref3=im1c["xform.align2d"].get_params("2d")
 n1c3=im2.cmp(comp[0],im1c,comp[1])
 
-print "\n"
-print "Original: %1.2f\t%1.2f\t%1.2f  (%f)"%(dx,dy,da,n1a)
-print "    Best: %1.2f\t%1.2f\t%1.2f  (%f)"%(x,y,a,n1b)
-print "Rerefine: %1.2f\t%1.2f\t%1.2f  (%f)"%(newref["tx"],newref["ty"],newref["alpha"],n1c)
-print "Rerefine: %1.2f\t%1.2f\t%1.2f  (%f)"%(newref2["tx"],newref2["ty"],newref2["alpha"],n1c2)
-print "Rerefine: %1.2f\t%1.2f\t%1.2f  (%f)"%(newref3["tx"],newref3["ty"],newref3["alpha"],n1c3)
+print("\n")
+print("Original: %1.2f\t%1.2f\t%1.2f  (%f)"%(dx,dy,da,n1a))
+print("    Best: %1.2f\t%1.2f\t%1.2f  (%f)"%(x,y,a,n1b))
+print("Rerefine: %1.2f\t%1.2f\t%1.2f  (%f)"%(newref["tx"],newref["ty"],newref["alpha"],n1c))
+print("Rerefine: %1.2f\t%1.2f\t%1.2f  (%f)"%(newref2["tx"],newref2["ty"],newref2["alpha"],n1c2))
+print("Rerefine: %1.2f\t%1.2f\t%1.2f  (%f)"%(newref3["tx"],newref3["ty"],newref3["alpha"],n1c3))
 
 display((im2,im1b,im1a,im1c,im1))

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 07/28/2011 (sludtke@bcm.edu)
@@ -50,7 +51,7 @@ try:
 	from emshape import *
 	from valslider import *
 except:
-	print "Warning: PyQt4 must be installed"
+	print("Warning: PyQt4 must be installed")
 	sys.exit(1)
 
 from Simplex import Simplex
@@ -122,12 +123,12 @@ class GUIEvalImage(QtGui.QWidget):
 		try:
 			from emimage2d import EMImage2DWidget
 		except:
-			print "Cannot import EMAN image GUI objects (EMImage2DWidget)"
+			print("Cannot import EMAN image GUI objects (EMImage2DWidget)")
 			sys.exit(1)
 		try:
 			from emplot2d import EMPlot2DWidget
 		except:
-			print "Cannot import EMAN plot GUI objects (is matplotlib installed?)"
+			print("Cannot import EMAN plot GUI objects (is matplotlib installed?)")
 			sys.exit(1)
 
 		QtGui.QWidget.__init__(self,None)
@@ -191,7 +192,7 @@ class GUIEvalImage(QtGui.QWidget):
 				if self.defaultcs!=None : ctf.cs=self.defaultcs
 				if self.defaultapix!=None : ctf.apix=self.defaultapix
 				parms=[int(box),ctf,(256,256),set(),5,1]
-				print "Initialize new parms for: ",base_name(i)
+				print("Initialize new parms for: ",base_name(i))
 
 			if self.constbfactor>0 : parms[1].bfactor=self.constbfactor
 
@@ -496,7 +497,7 @@ class GUIEvalImage(QtGui.QWidget):
 		if self.plotmode==0:
 			try: bgsub=self.fft1d-bg1d
 			except:
-				print "Error computing bgsub on this image"
+				print("Error computing bgsub on this image")
 				return
 			self.wplot.set_data((s,bgsub),"fg-bg",quiet=True,color=0,linetype=0)
 
@@ -636,7 +637,7 @@ class GUIEvalImage(QtGui.QWidget):
 				if self.fitastig : e2ctf.ctf_fit_stig(self.fft,self.fftbg,parms[1],verbose=1)
 
 		except:
-			print "CTF Autofit Failed"
+			print("CTF Autofit Failed")
 			traceback.print_exc()
 			parms[1].defocus=1.0
 
@@ -649,14 +650,14 @@ class GUIEvalImage(QtGui.QWidget):
 
 
 	def unImport(self,val=None):
-		print "unimport ",base_name(self.setlist.item(self.curset).text(),nodir=self.nodir)
+		print("unimport ",base_name(self.setlist.item(self.curset).text(),nodir=self.nodir))
 		item=base_name(self.setlist.item(self.curset).text(),nodir=self.nodir)
 		try: os.unlink("micrographs/%s.hdf"%item)
-		except: print "Couldn't delete micrographs/%s.hdf"%item
+		except: print("Couldn't delete micrographs/%s.hdf"%item)
 
 	def doImport(self,val=None):
 		"""Imports the currently selected image into a project"""
-		print "import ",base_name(self.setlist.item(self.curset).text(),nodir=self.nodir)
+		print("import ",base_name(self.setlist.item(self.curset).text(),nodir=self.nodir))
 
 		# This is just the (presumably) unique portion of the filename
 		item=base_name(self.setlist.item(self.curset).text(),nodir=self.nodir)

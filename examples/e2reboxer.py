@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 # Author: Steven Ludtke, 06/16/14 (sludtke@bcm.edu)
 # Copyright (c) 2000- Baylor College of Medicine
@@ -52,7 +53,7 @@ This is normally used to change the particle box-size.
 	(options, args) = parser.parse_args()
 
 	if options.boxsize<10 : 
-		print "Please specify a box size"
+		print("Please specify a box size")
 		sys.exit(1)
 
 	box=options.boxsize
@@ -66,9 +67,9 @@ This is normally used to change the particle box-size.
 			options.shiftxy=options.shiftxy.split(",")
 			options.shiftxy[0]=int(options.shiftxy[0])
 			options.shiftxy[1]=int(options.shiftxy[1])
-			print "Shifting all boxes by: ",options.shiftxy
+			print("Shifting all boxes by: ",options.shiftxy)
 		except:
-			print "Invalid shiftxy option"
+			print("Invalid shiftxy option")
 			sys.exit(1)
 
 	logid=E2init(sys.argv)
@@ -82,18 +83,18 @@ This is normally used to change the particle box-size.
 		except: pass
 
 		if not os.path.exists("micrographs/{}.hdf".format(m)):
-			if options.verbose>0 : print "No micrograph for: ",m
+			if options.verbose>0 : print("No micrograph for: ",m)
 			continue
 		
 		db=js_open_dict(info_name(m))
 		if not db.has_key("boxes") :
 			db.close()
-			if options.verbose>0 : print "No boxes in: ",m
+			if options.verbose>0 : print("No boxes in: ",m)
 			continue
 		
 		microfsp="micrographs/{}.hdf".format(m)
 		micro=EMData(microfsp,0)
-		if options.verbose>0 : print "{} has {} boxes".format(microfsp,len(db["boxes"]))
+		if options.verbose>0 : print("{} has {} boxes".format(microfsp,len(db["boxes"])))
 		
 		dbb=db["boxes"]
 		for b in dbb:

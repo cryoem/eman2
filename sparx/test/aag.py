@@ -1,4 +1,5 @@
 #!/bin/env python
+from __future__ import print_function
 
 from EMAN2  import *
 from sparx  import *
@@ -23,10 +24,10 @@ for k in xrange(1000):
 		if(x>=am): am = x
 	a=sqrt((sums2-sums**2/n)/(n-1.0))
 	iq = (am-sums/n)/a
-	print  iq
+	print(iq)
 	aiq += iq
 	viq += iq*iq
 	if(iq >= miq):
 		miq = iq
 
-print  aiq/1000. ,sqrt((viq-aiq**2/1000.)/(1000.-1.0)), miq
+print(aiq/1000. ,sqrt((viq-aiq**2/1000.)/(1000.-1.0)), miq)

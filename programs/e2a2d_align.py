@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 # align all particles to reference and store alignment results
 
 from EMAN2 import *
@@ -72,7 +73,7 @@ def main():
 		options.path = "m2d_{:02d}".format(max(fls)+1)
 		try: os.mkdir(options.path)
 		except: pass
-		if options.verbose : print "Working in folder: ",options.path
+		if options.verbose : print("Working in folder: ",options.path)
 	else:
 		try: os.mkdir(options.path)
 		except: pass
@@ -81,7 +82,7 @@ def main():
 		fls=[int(i[15:17]) for i in os.listdir(options.path) if i[:15]=="particle_parms_" and str.isdigit(i[15:17])]
 		if len(fls)==0 : options.iter=1
 		else: options.iter=max(fls)+1
-		if options.verbose: print "Iteration: ",options.iter
+		if options.verbose: print("Iteration: ",options.iter)
 
 	reffile=args[1]
 	if "," in reffile:
@@ -108,7 +109,7 @@ def main():
 	thrds=[threading.Thread(target=ali2dfn,args=(jsd,args[0],xrange(i,N,NTHREADS-1),ref,options)) for i in xrange(NTHREADS-1)]
 
 	# here we run the threads and save the results, no actual alignment done here
-	if options.verbose: print len(thrds)," threads"
+	if options.verbose: print(len(thrds)," threads")
 	thrtolaunch=0
 	while thrtolaunch<len(thrds) or threading.active_count()>1:
 		# If we haven't launched all threads yet, then we wait for an empty slot, and launch another
@@ -116,11 +117,11 @@ def main():
 		# thread hasn't finished.
 		if thrtolaunch<len(thrds) :
 			while (threading.active_count()==NTHREADS ) : time.sleep(.1)
-			if options.verbose>1 : print "Starting thread {}/{}".format(thrtolaunch,len(thrds))
+			if options.verbose>1 : print("Starting thread {}/{}".format(thrtolaunch,len(thrds)))
 			thrds[thrtolaunch].start()
 			thrtolaunch+=1
 		else: time.sleep(1)
-		if options.verbose>1: print "{}% complete".format(100.0*frac)
+		if options.verbose>1: print("{}% complete".format(100.0*frac))
 	
 		while not jsd.empty():
 			fsp,nds=jsd.get()
@@ -135,12 +136,12 @@ def main():
 	for t in thrds:
 		t.join()
 
-	if options.verbose : print "Writing results"
+	if options.verbose : print("Writing results")
 
 	angsd=js_open_dict("{}/particle_parms_{:02d}.json".format(options.path,options.iter))
 	angsd.update(angs)
 
-	if options.verbose : print "Done!"
+	if options.verbose : print("Done!")
 
 	E2end(logid)
 

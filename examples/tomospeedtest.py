@@ -1,4 +1,5 @@
 
+from __future__ import print_function
 from EMAN2 import *
 import time
 import random
@@ -14,7 +15,7 @@ for i in range(12,144):
 	d=a.align("refine_3d",b,{"xform.align3d":c["xform.align3d"]})
 	t2=time.time()
 
-	print "%d\t%1.2f\t%s"%(i,t2-t,str(d["xform.align3d"]))
+	print("%d\t%1.2f\t%s"%(i,t2-t,str(d["xform.align3d"])))
 
 	out.write("%d\t%1.2f\n"%(i,t2-t))
 	out.flush()

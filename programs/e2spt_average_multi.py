@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 # average selected subset of particles
 
 from EMAN2 import *
@@ -46,8 +47,8 @@ def rotfncompete(jsd,avgs,fsp,fspn,a,sym,refs,shrinkrefs,maxtilt,wedgesigma,shri
 	
 	if best[0]<simthr2 : 
 		avgs[best[1]].add_image(d)
-		print "{} -> ref {} sym {}   {}".format(fspn,best[1],best[3],best[0])
-	else: print "** {} -> ref {} sym {}   {}".format(fspn,best[1],best[3],best[0])
+		print("{} -> ref {} sym {}   {}".format(fspn,best[1],best[3],best[0]))
+	else: print("** {} -> ref {} sym {}   {}".format(fspn,best[1],best[3],best[0]))
 	jsd.put((fspn,best[0],best[1],best[3]))
 
 
@@ -88,28 +89,28 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 	if options.path == None:
 		fls=[int(i[-2:]) for i in os.listdir(".") if i[:4]=="spt_" and len(i)==6 and str.isdigit(i[-2:])]
 		if len(fls)==0 : 
-			print "Error, cannot find any spt_XX folders"
+			print("Error, cannot find any spt_XX folders")
 			sys.exit(2)
 		options.path = "spt_{:02d}".format(max(fls))
-		if options.verbose : print "Working in : ",options.path
+		if options.verbose : print("Working in : ",options.path)
 
 	if options.iter<=0 :
 		fls=[int(i[15:17]) for i in os.listdir(options.path) if i[:15]=="particle_parms_" and str.isdigit(i[15:17])]
 		if len(fls)==0 : 
-			print "Cannot find a {}/particle_parms* file".format(options.path)
+			print("Cannot find a {}/particle_parms* file".format(options.path))
 			sys.exit(2)
 		options.iter=max(fls)
-		if options.verbose : print "Using iteration ",options.iter
+		if options.verbose : print("Using iteration ",options.iter)
 		angs=js_open_dict("{}/particle_parms_{:02d}.json".format(options.path,options.iter))
 	else:
 		fls=[int(i[15:17]) for i in os.listdir(options.path) if i[:15]=="particle_parms_" and str.isdigit(i[15:17])]
 		if len(fls)==0 : 
-			print "Cannot find a {}/particle_parms* file".format(options.path)
+			print("Cannot find a {}/particle_parms* file".format(options.path))
 			sys.exit(2)
 		mit=max(fls)
 		if options.iter>mit : 
 			angs=js_open_dict("{}/particle_parms_{:02d}.json".format(options.path,mit))
-			print "WARNING: no particle_parms found for iter {}, using parms from {}".format(options.iter,mit)
+			print("WARNING: no particle_parms found for iter {}, using parms from {}".format(options.iter,mit))
 		else : angs=js_open_dict("{}/particle_parms_{:02d}.json".format(options.path,options.iter))
 
 	n=len(args)
@@ -132,10 +133,10 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 	keys=angs.keys()
 	if options.listfile!=None :
 		keys=[i for i in keys if eval(i)[1] in plist]
-		if options.verbose : print "{}/{} particles based on list file".format(len(keys),len(angs.keys()))
+		if options.verbose : print("{}/{} particles based on list file".format(len(keys),len(angs.keys())))
 	
 	keys=[k for k in keys if angs[k]["score"]<=options.simthr and inrange(options.minalt,angs[k]["xform.align3d"].get_params("eman")["alt"],options.maxalt)]
-	if options.verbose : print "{}/{} particles after filters".format(len(keys),len(angs.keys()))
+	if options.verbose : print("{}/{} particles after filters".format(len(keys),len(angs.keys())))
 																		 
 
 	if options.shrinkcompare>1 :
@@ -152,7 +153,7 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 		thrds=[threading.Thread(target=rotfncompete,args=(jsd,avgs,eval(k)[0],eval(k)[1],angs[k]["xform.align3d"],options.sym,refs,shrinkrefs,options.maxtilt,options.wedgesigma,options.shrinkcompare,options.maxres,options.simthr2,options.verbose)) for i,k in enumerate(keys)]
 
 
-	print len(thrds)," threads"
+	print(len(thrds)," threads")
 	thrtolaunch=0
 	out=file("{}/avg_multi_{:02d}.txt".format(options.path,options.iter),"w")
 	while thrtolaunch<len(thrds) or threading.active_count()>1:
@@ -161,7 +162,7 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 		# thread hasn't finished.
 		if thrtolaunch<len(thrds) :
 			while (threading.active_count()==NTHREADS ) : time.sleep(.1)
-			if options.verbose : print "Starting thread {}/{}".format(thrtolaunch,len(thrds))
+			if options.verbose : print("Starting thread {}/{}".format(thrtolaunch,len(thrds)))
 			thrds[thrtolaunch].start()
 			thrtolaunch+=1
 		else: time.sleep(1)

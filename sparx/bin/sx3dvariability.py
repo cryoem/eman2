@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: 
 # Copyright (c) 2012 The University of Texas - Houston Medical School
@@ -218,8 +219,8 @@ def main():
 		if len(args) == 1:
 			stack = args[0]
 		else:
-			print( "usage: " + usage)
-			print( "Please run '" + progname + " -h' for detailed options")
+			print(( "usage: " + usage))
+			print(( "Please run '" + progname + " -h' for detailed options"))
 			return 1
 
 		t0 = time()	
@@ -382,8 +383,8 @@ def main():
 				print_msg("%-70s:  %d\n"%("Number of neighboring projections", img_per_grp))
 				print_msg("...... Finding neighboring projections\n")
 				if options.VERBOSE:
-					print "Number of images per group: ", img_per_grp
-					print "Now grouping projections"
+					print("Number of images per group: ", img_per_grp)
+					print("Now grouping projections")
 				proj_angles.sort()
 			proj_angles_list = [0.0]*(nima*4)
 			if myid == main_node:
@@ -406,7 +407,7 @@ def main():
 
 			all_proj = list(all_proj)
 			if options.VERBOSE:
-				print "On node %2d, number of images needed to be read = %5d"%(myid, len(all_proj))
+				print("On node %2d, number of images needed to be read = %5d"%(myid, len(all_proj)))
 
 			index = {}
 			for i in xrange(len(all_proj)): index[all_proj[i]] = i
@@ -416,14 +417,14 @@ def main():
 				print_msg("%-70s:  %.2f\n"%("Finding neighboring projections lasted [s]", time()-t2))
 				print_msg("%-70s:  %d\n"%("Number of groups processed on the main node", len(proj_list)))
 				if options.VERBOSE:
-					print "Grouping projections took: ", (time()-t2)/60	, "[min]"
-					print "Number of groups on main node: ", len(proj_list)
+					print("Grouping projections took: ", (time()-t2)/60	, "[min]")
+					print("Number of groups on main node: ", len(proj_list))
 			mpi_barrier(MPI_COMM_WORLD)
 
 			if myid == main_node:
 				print_msg("...... calculating the stack of 2D variances \n")
 				if options.VERBOSE:
-					print "Now calculating the stack of 2D variances"
+					print("Now calculating the stack of 2D variances")
 
 			proj_params = [0.0]*(nima*5)
 			aveList = []
@@ -431,7 +432,7 @@ def main():
 			if nvec > 0:
 				eigList = [[] for i in xrange(nvec)]
 
-			if options.VERBOSE: 	print "Begin to read images on processor %d"%(myid)
+			if options.VERBOSE: 	print("Begin to read images on processor %d"%(myid))
 			ttt = time()
 			#imgdata = EMData.read_images(stack, all_proj)
 			imgdata = []
@@ -442,8 +443,8 @@ def main():
 				#print dmg.get_xsize(), "init"
 				imgdata.append(dmg)
 			if options.VERBOSE:
-				print "Reading images on processor %d done, time = %.2f"%(myid, time()-ttt)
-				print "On processor %d, we got %d images"%(myid, len(imgdata))
+				print("Reading images on processor %d done, time = %.2f"%(myid, time()-ttt))
+				print("On processor %d, we got %d images"%(myid, len(imgdata)))
 			mpi_barrier(MPI_COMM_WORLD)
 
 			'''	
@@ -559,7 +560,7 @@ def main():
 				varList.append(var)
 
 				if options.VERBOSE:
-					print "%5.2f%% done on processor %d"%(i*100.0/len(proj_list), myid)
+					print("%5.2f%% done on processor %d"%(i*100.0/len(proj_list), myid))
 				if nvec > 0:
 					eig = pca(input_stacks=grp_imgdata, subavg="", mask_radius=radiuspca, nvec=nvec, incore=True, shuffle=False, genbuf=True)
 					for k in xrange(nvec):
@@ -621,7 +622,7 @@ def main():
 			if options.ave3D:
 				from fundamentals import fpol
 				if options.VERBOSE:
-					print "Reconstructing 3D average volume"
+					print("Reconstructing 3D average volume")
 				ave3D = recons3d_4nn_MPI(myid, aveList, symmetry=options.sym, npad=options.npad)
 				bcast_EMData_to_all(ave3D, myid)
 				if myid == main_node:
@@ -633,7 +634,7 @@ def main():
 			if nvec > 0:
 				for k in xrange(nvec):
 					if options.VERBOSE:
-						print "Reconstruction eigenvolumes", k
+						print("Reconstruction eigenvolumes", k)
 					cont = True
 					ITER = 0
 					mask2d = model_circle(radiuspca, nx, nx)
@@ -664,7 +665,7 @@ def main():
 
 						if myid == main_node:
 							u = int(u[0])
-							print " Eigenvector: ",k," number changed ",int(icont[0])
+							print(" Eigenvector: ",k," number changed ",int(icont[0]))
 						else: u = 0
 						u = bcast_number_to_all(u, main_node)
 						cont = bool(u)
@@ -702,7 +703,7 @@ def main():
 
 		if  options.var3D:
 			if myid == main_node and options.VERBOSE:
-				print "Reconstructing 3D variability volume"
+				print("Reconstructing 3D variability volume")
 
 			t6 = time()
 			# radiusvar = options.radius
@@ -717,12 +718,12 @@ def main():
 			if myid == main_node:
 				print_msg("%-70s:  %.2f\n"%("Reconstructing 3D variability took [s]", time()-t6))
 				if options.VERBOSE:
-					print "Reconstruction took: %.2f [min]"%((time()-t6)/60)
+					print("Reconstruction took: %.2f [min]"%((time()-t6)/60))
 
 			if myid == main_node:
 				print_msg("%-70s:  %.2f\n"%("Total time for these computations [s]", time()-t0))
 				if options.VERBOSE:
-					print "Total time for these computations: %.2f [min]"%((time()-t0)/60)
+					print("Total time for these computations: %.2f [min]"%((time()-t0)/60))
 				print_end_msg("sx3dvariability")
 
 		from mpi import mpi_finalize

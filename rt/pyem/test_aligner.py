@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Grant Tang, 09/01/2005 (gtang@bcm.edu)
@@ -166,7 +167,7 @@ class TestAligner(unittest.TestCase):
 					t =  g.get_attr("xform.align2d")
 					params = t.get_params("2d")
 					result = fabs(params["alpha"] - az)
-					print params["alpha"],az
+					print(params["alpha"],az)
 					#print g.get_attr("align.az"), az
 					if result > 180 and result < 360:
 						result = 360-result
@@ -289,8 +290,8 @@ class TestAligner(unittest.TestCase):
 					t =  g.get_attr("xform.align2d")
 					params = t.get_params("2d")
 					if debug:
-						print params
-						print az,dx,dy,mirror
+						print(params)
+						print(az,dx,dy,mirror)
 					self.failIf(fabs(params["tx"] + dx) > 2)
 					self.failIf(fabs(params["ty"] + dy) > 2)
 					

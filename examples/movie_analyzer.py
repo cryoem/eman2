@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 # Author: Michael Bell 09/2016
 
@@ -45,7 +46,7 @@ for pkg in pkgs.keys():
 	path = which(pkgs[pkg])
 	pkgs[pkg] = path # replace program name with the output of "which"
 	if path != "": found.append(pkg)
-print("Found the following alignment packages in your current environment: {}\n".format(", ".join(found)))
+print(("Found the following alignment packages in your current environment: {}\n".format(", ".join(found))))
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -84,7 +85,7 @@ def main():
 	(options, args) = parser.parse_args()
 
 	if len(args) < 1:
-		print usage
+		print(usage)
 		parser.error("You must specify a single DDD movie stack in HDF or MRC format.")
 		sys.exit(1)
 
@@ -104,7 +105,7 @@ def main():
 	nsigmas = options.nsigmas
 
 	if not options.skipalign:
-		print("Performing alignments with the following packages: {}\n".format(", ".join(options.include)))
+		print(("Performing alignments with the following packages: {}\n".format(", ".join(options.include))))
 
 	logid=E2init(sys.argv,options.ppid)
 
@@ -113,7 +114,7 @@ def main():
 		fname = arg
 		hdr = EMData(fname,0,True)
 
-		if options.verbose: print("Processing {}".format(fname))
+		if options.verbose: print(("Processing {}".format(fname)))
 
 		# PART 1: Setup alignment data
 		(basen,ext) = os.path.splitext(fname)
@@ -196,12 +197,12 @@ def main():
 			print(locallc)
 			times = run("e2proc2d.py hictrst_proc.hdf {}".format(locallc),shell=True,cwd=bdir)
 
-                if options.noerase:
-                    frames_loctrst = []
-                else:
-                    frames_loctrst = load_frames(lcname)
-                    loctrst_avg = average_frames(frames_loctrst)
-                    loctrst_avg.write_image("{}/loctrst_avg_noali.hdf".format(bdir))
+			if options.noerase:
+				frames_loctrst = []
+			else:
+				frames_loctrst = load_frames(lcname)
+				loctrst_avg = average_frames(frames_loctrst)
+				loctrst_avg.write_image("{}/loctrst_avg_noali.hdf".format(bdir))
 
 		cwd = os.getcwd()
 
@@ -219,8 +220,8 @@ def main():
 			if pkg in options.include:
 				prog = pkgs[pkg].split("/")[-1]
 
-				if not options.skipalign: print("Running {} on {}".format(prog,fname))
-				else: print("Parsing previous {} alignment results".format(prog,fname))
+				if not options.skipalign: print(("Running {} on {}".format(prog,fname)))
+				else: print(("Parsing previous {} alignment results".format(prog,fname)))
 
 				pdir = "{}/{}".format(bdir,pkg)
 				try: os.makedirs(pdir)
@@ -454,7 +455,7 @@ eot
 		# Question 1: How quickly do frame alignment alorithms run
 		print("RUNTIMES")
 		with open("{}/runtimes.txt".format(bdir),"r") as f:
-			for l in f: print(l.strip())
+			for l in f: print((l.strip()))
 
 		print("")
 
@@ -593,7 +594,7 @@ def plot_traj(trans,bdir,lbl,nsig=1,plot=False):
 		#	ax2.plot(xx,np.zeros_like(xx),"k--",label=key,alpha=1)
 		#	ax2.errorbar(xx,np.zeros_like(xx),xerr=err[:,0],yerr=err[:,1],color='k',alpha=0.6,label=siglabel)
 		#cctr+=1
-		print("{}\t{}".format(key,np.sum(np.abs(mags[key]))))
+		print(("{}\t{}".format(key,np.sum(np.abs(mags[key])))))
 	#ax2.set_xlabel("Frame Number (#)")
 	#ax2.set_ylabel("Relative shift magnitude (pixels)")
 	#ax2.set_title("Frame shift magnitude (relative to MEAN)")
@@ -650,7 +651,7 @@ def plot_differences(trans_hi,trans_lo,bdir,nsig=1,plot=False):
 			if key not in exclude:
 				ssdf = np.sum(np.square((trans_hi[key][:len(trans_lo[key])]-trans_lo[key])),axis=0)
 				ssdfs[key] = np.linalg.norm(ssdf,axis=0)
-				print("{}\t{}".format(key,ssdfs[key]))
+				print(("{}\t{}".format(key,ssdfs[key])))
 				if key != "MEAN":
 					ax1.plot(trans_hi[key][:,0],trans_hi[key][:,1],"{}-".format(colors[cctr]),label="{} high".format(key))
 					ax1.plot(trans_lo[key][:,0],trans_lo[key][:,1],"{}--".format(colors[cctr]),label="{} low".format(key))
@@ -752,7 +753,7 @@ def calc_coherence(frames_hi,frames_lo,all_trans_hi,all_trans_lo,bdir,plot=False
 	lo_oned_pws = js_open_dict('{}/loctrst_onedpws.json'.format(bdir))
 
 	bs = 784
-	print("HIGH IPS ({})".format(bs))
+	print(("HIGH IPS ({})".format(bs)))
 	
 
 	hi_twod_ips = calc_incoherent_pws(frames_hi,bs)
@@ -790,7 +791,7 @@ def calc_coherence(frames_hi,frames_lo,all_trans_hi,all_trans_lo,bdir,plot=False
 
 	for key in all_trans_hi.keys():
 		if key not in ["STD","ALL","MEAN","VAR"]:
-			print("HIGH "+key)
+			print(("HIGH "+key))
 			shifted_hi = shift_frames(frames_hi,all_trans_hi[key])
 			hi_twod_cps = calc_coherent_pws(shifted_hi, bs)
 			hi_twod_cps.write_image("{}/{}/hictrst_twod_cps.hdf".format(bdir,key))
@@ -800,7 +801,7 @@ def calc_coherence(frames_hi,frames_lo,all_trans_hi,all_trans_lo,bdir,plot=False
 			hi_oned_pws["{} (orig)".format(key)] = hi_cps
 
 			if len(all_trans_lo.keys()) != 0:
-				print("LOW "+key)
+				print(("LOW "+key))
 				shifted_lo = shift_frames(frames_lo,all_trans_lo[key])
 				lo_twod_cps = calc_coherent_pws(shifted_lo, bs)
 				lo_twod_cps.write_image("{}/{}/loctrst_twod_cps.hdf".format(bdir,key))
@@ -937,7 +938,7 @@ def average_frames(frames):
 	return avgr.finish()
 
 def failed(pkg):
-	print("ERROR: Could not find frame shifts for {} aligner.".format(pkg))
+	print(("ERROR: Could not find frame shifts for {} aligner.".format(pkg)))
 	sys.exit(1)
 
 def shift_frames(frames,trans):
@@ -959,7 +960,7 @@ def write_runtime(bdir,pkg,device,times,threads):
 			rt.write("{}\t{}\t{}\t{}\t{}\t{}\n".format(pkg,device,walltime,usrtime,systime,threads))
 
 def run(cmd,shell=False,cwd=None,exe="/bin/sh",clear=False):
-	if options.verbose: print(cmd.replace("\n"," "))
+	if options.verbose: print((cmd.replace("\n"," ")))
 	if cwd == None:
 		cwd = os.getcwd()
 	if shell == False:
@@ -979,7 +980,7 @@ def run(cmd,shell=False,cwd=None,exe="/bin/sh",clear=False):
 
 	times = [float(wt.split(" ")[-1]),float(ut.split(" ")[-1]),float(st.split(" ")[-1])]
 
-	if options.verbose: print(err.strip())
+	if options.verbose: print((err.strip()))
 
 	return times
 

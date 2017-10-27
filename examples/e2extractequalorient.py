@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 # This program will extract an ~equal number of particles over all orientations. 
 
@@ -7,7 +8,7 @@ from sys import argv
 import sys
 
 if len(argv)<4 :
-	   print """Usage: e2extractequalorient.py <refine_xx> <iter #> <output> [micrograph restrict]
+	   print("""Usage: e2extractequalorient.py <refine_xx> <iter #> <output> [micrograph restrict]
 
 Extracts particles trying to achieve a reasonably uniform orientation distribution. After launching, 
 provides some interactive statistics and asks for a limiting number. It will include at most this 
@@ -15,7 +16,7 @@ number of particles from each orientation in the refinement. <ouptut> should be 
 folder in which to put particles/. [micrograph restrict] is a text file containing the names of
 particle image files to include in the output. This is an additional restriction on top of the 
 count restriction.
-	   """
+	   """)
 	   sys.exit(1)
 
 even=EMData.read_images("{}/classes_{:02d}_even.hdf".format(argv[1],int(argv[2])),None,True)
@@ -51,7 +52,7 @@ for i in xrange(ncls):
 	ptcls[i].append(lst)
 	
 
-print "class particle counts range from {} - {} in {} classes".format(min(counts),max(counts),len(counts))
+print("class particle counts range from {} - {} in {} classes".format(min(counts),max(counts),len(counts)))
 ntk=int(raw_input("How many particles to keep per orientation (at most): "))
 
 # even and odd .lst files referencing original particles

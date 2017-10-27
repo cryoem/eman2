@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 # extracthelp.py -  Steven Ludtke  09/14/2010
 # redone for EMAN2.1 5/15/14
@@ -30,11 +31,11 @@ def myfn(*args,**kargs):
 lines=[i for i in file(sys.argv[1],"r")]
 
 for j,i in enumerate(lines): 
- 	if "parser.add_argument" in i or "parser.add_option" in i:
+	if "parser.add_argument" in i or "parser.add_option" in i:
 		try : op=parse(i.strip())
 		except:
 			try: op=parse((i+lines[j+1]).strip())
-			except: print (i+lines[j+1]).strip()
+			except: print((i+lines[j+1]).strip())
 			
 		com={"name":op[0][0][2:]}
 		com.update(op[1])
@@ -66,4 +67,4 @@ for i in options:
 		if o_type==None : raise Exception
 	except: o_type="bool"
 	
-	print "||%s||%s||%s||%s||"%(o_short,o_long,o_type,o_help)
+	print("||%s||%s||%s||%s||"%(o_short,o_long,o_type,o_help))

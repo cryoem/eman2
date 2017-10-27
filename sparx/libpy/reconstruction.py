@@ -1,4 +1,5 @@
 #
+from __future__ import print_function
 # Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
 # Copyright (c) 2000-2006 The University of Texas - Houston Medical School
 #
@@ -2007,7 +2008,7 @@ def bootstrap_nn(proj_stack, volume_stack, list_proj, niter, media="memory", npa
 
 	nimages = len(list_proj)
 	if nimages == 0 :
-		print "empty list of projections input!"
+		print("empty list of projections input!")
 		return None
 
 
@@ -2023,7 +2024,7 @@ def bootstrap_nn(proj_stack, volume_stack, list_proj, niter, media="memory", npa
 
 	size = proj.get_xsize()
 	if size != proj.get_ysize():
-		print "Image projections must be square!"
+		print("Image projections must be square!")
 		return None
 
 	overall_start = time()
@@ -2244,9 +2245,9 @@ def recons3d_em_MPI(projections_stack, output_file, max_iterations_count = 100, 
 	a = model_blank(nx, nx, nx) # normalization volume
 	e2D = model_square(nx, nx, nx)
 	if mpi_r == 0:
-		print "MPI processes: ", mpi_n
-		print "Parameters:  size=%d  radius=%d  projections_count=%d  max_iterations_count=%d min_norm_absolute_voxel_change=%f" % (
-						nx, radius, all_projs_count, max_iterations_count, min_norm_absolute_voxel_change )	
+		print("MPI processes: ", mpi_n)
+		print("Parameters:  size=%d  radius=%d  projections_count=%d  max_iterations_count=%d min_norm_absolute_voxel_change=%f" % (
+						nx, radius, all_projs_count, max_iterations_count, min_norm_absolute_voxel_change ))	
 
 	# ----- create initial solution, calculate weights and normalization image (a)
 	projections_angles = []  # list of lists of angles
@@ -2279,7 +2280,7 @@ def recons3d_em_MPI(projections_stack, output_file, max_iterations_count = 100, 
 	a = threshold_to_minval(a, min_allowed_divisor)  # make sure that voxels' values are not too small (image a is divisior)
 	Util.mul_img( solution, sphere3D )
 	Util.div_img( solution, a )
-	if mpi_r == 0: print "Projections loading COMPLETED"
+	if mpi_r == 0: print("Projections loading COMPLETED")
 	# ----- iterations
 	prev_avg_absolute_voxel_change = 999999999.0
 	time_projection = 0.0
@@ -2306,19 +2307,19 @@ def recons3d_em_MPI(projections_stack, output_file, max_iterations_count = 100, 
 		norm_absolute_voxel_change = q.cmp("lod",solution,{"mask":sphere3D,"negative":0,"normalize":0}) / q.cmp("lod",model_blank(nx,nx,nx),{"mask":sphere3D,"negative":0,"normalize":0})
 		norm_squared_voxel_change  = q.cmp("sqEuclidean",solution,{"mask":sphere3D}) / q.cmp("sqEuclidean",model_blank(nx,nx,nx),{"mask":sphere3D})
 		if norm_absolute_voxel_change > prev_avg_absolute_voxel_change:
-			if mpi_r == 0: print "Finish and return last good solution"
+			if mpi_r == 0: print("Finish and return last good solution")
 			break
 		prev_avg_absolute_voxel_change = norm_absolute_voxel_change
 		solution = q
 		solution = circumference(solution, radius-2, radius)
 		if (iter_no+1)%5 == 0 and mpi_r == 0:
 			solution.write_image(replace(output_file, ".hdf", "_%03d.hdf"%(iter_no+1)))
-		if mpi_r == 0: print "Iteration ", iter_no+1, ",  norm_abs_voxel_change=", norm_absolute_voxel_change, ",  norm_squared_voxel_change=", norm_squared_voxel_change 
+		if mpi_r == 0: print("Iteration ", iter_no+1, ",  norm_abs_voxel_change=", norm_absolute_voxel_change, ",  norm_squared_voxel_change=", norm_squared_voxel_change) 
 		if min_norm_absolute_voxel_change > norm_absolute_voxel_change or min_norm_squared_voxel_change > norm_squared_voxel_change:
 			break
 	time_iterations = clock() - time_iterations
 	# ----- return solution and exit
-	if mpi_r == 0: print "Times: iterations=", time_iterations, "  project=", time_projection, "  backproject=", time_backprojection
+	if mpi_r == 0: print("Times: iterations=", time_iterations, "  project=", time_projection, "  backproject=", time_backprojection)
 	return solution
 
 
@@ -2418,7 +2419,7 @@ def recons3d_sirt(stack_name, list_proj, radius, lam=1.0e-4, maxit=100, symmetry
 			grad  = bvol - pxvol
 
 		rnorm = sqrt(grad.cmp("dot",grad,{"mask":mask3d,"negative":0}))
-		print 'iter = %3d,  rnorm = %6.3f,  rnorm/bnorm = %6.3f' % (iter,rnorm,rnorm/bnorm)
+		print('iter = %3d,  rnorm = %6.3f,  rnorm/bnorm = %6.3f' % (iter,rnorm,rnorm/bnorm))
 		if (rnorm < tol or rnorm > old_rnorm): break
 		old_rnorm = rnorm
 		xvol = xvol + lam*grad
@@ -2525,7 +2526,7 @@ def recons3d_vwbp(stack_name, list_proj, method = "general", const=1.0E4, symmet
 		const = int(const)
 
 	for iProj in xrange(nimages):
-		if(iProj%100 == 0):  print "BPCQ  ",iProj
+		if(iProj%100 == 0):  print("BPCQ  ",iProj)
 		CUBE = EMData()
 		CUBE.set_size(ny, ny, ny)
 		CUBE.to_zero()

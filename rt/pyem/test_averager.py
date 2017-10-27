@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Grant Tang, 09/03/2005 (gtang@bcm.edu)
@@ -41,12 +42,12 @@ from optparse import OptionParser
 IS_TEST_EXCEPTION = False
 
 class TestAverager(unittest.TestCase):
-    """averager test"""
-	
-    #def test_ImageAverager(self):
-    #    """test ImageAverager ..............................."""
-    
-    def test_AbsMaxMinAverager(self):
+	"""averager test"""
+
+	#def test_ImageAverager(self):
+	#    """test ImageAverager ..............................."""
+
+	def test_AbsMaxMinAverager(self):
 		"""test AbsMaxMinAverager ..........................."""
 		
 		e = EMData(3,3)

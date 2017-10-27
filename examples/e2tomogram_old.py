@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -254,12 +255,12 @@ def main():
 			if i[1] in range(72,77) : ccf.write_image("dbug.hed",-1)
 			maxloc=ccf.calc_max_location()
 			maxloc=(maxloc[0]-im1.get_xsize()/2,maxloc[1]-im1.get_ysize()/2)
-			print maxloc
+			print(maxloc)
 			
 			out=im2.get_clip(Region(cen[0]-maxloc[0]-rgnp[2]/2+im2.get_xsize()/2,cen[1]-maxloc[1]-rgnp[2]/2+im2.get_ysize()/2,rgnp[2],rgnp[2]))
 			cen=(cen[0]-maxloc[0],cen[1]-maxloc[1])
 			out.write_image(args[1],i[1])
-			print "%d.\t%d\t%d"%(i[1],cen[0],cen[1])
+			print("%d.\t%d\t%d"%(i[1],cen[0],cen[1]))
 			continue			
 		elif options.mode=="censym" :
 			dct=matrixalign(im1,im2,options.box,options.box+options.maxshift,2)
@@ -274,7 +275,7 @@ def main():
 #					print "%d,%d\t%5.2f %5.2f\t%5.2f"%(pairs[-1][0],pairs[-1][1],pairs[-1][2],pairs[-1][3],pairs[-1][4])
 			
 			if len(pairs)==0 : 
-				print "Alignment failed on image %d (%d)"%(i[1],i[0])
+				print("Alignment failed on image %d (%d)"%(i[1],i[0]))
 				if (i[1]>nimg/2) : cmplist[ii]=(i[0]-1,i[1])
 				else : cmplist[ii]=(i[0]+1,i[1])
 				if abs(i[0]-i[1])<5 : ii-=1
@@ -299,17 +300,17 @@ def main():
 					norm+=(1.0/(1.0+p[4]))
 					best=(sum[0]/norm,sum[1]/norm)
 					
-		print "%d.\t%5.2f\t%5.2f"%(i[1],best[0],best[1])
+		print("%d.\t%5.2f\t%5.2f"%(i[1],best[0],best[1]))
 		im2.rotate_translate(0,0,0,best[0],best[1],0)
 		im2.process_inplace("normalize")
 		im2.write_image(args[1],i[1])
 	
-	print "Alignment Stage Complete"
+	print("Alignment Stage Complete")
 	
 	if options.tiltaxis!=400.0 :
 		tiltaxis=(0,options.tiltaxis)
 	else:
-		print "Begin tilt axis search"
+		print("Begin tilt axis search")
 		
 		# now we look for the common-line in the aligned images
 		im1.read_image(args[1],0)
@@ -324,7 +325,7 @@ def main():
 			b=a.do_fft()
 			b.process_inplace("complex.normpixels")
 			sum+=b
-		print "Phase average calculated"
+		print("Phase average calculated")
 			
 		sum.ri2ap()
 		curve=[]
@@ -336,7 +337,7 @@ def main():
 				curve.append((v,ang*180.0/pi))
 		tiltaxis=max(curve)
 	
-	print "Tilt axis at %1.2f degrees from x"%tiltaxis[1]
+	print("Tilt axis at %1.2f degrees from x"%tiltaxis[1])
 
 	for i in range(nimg):
 		a=EMData()

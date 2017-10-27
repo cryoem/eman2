@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 # Simple script to extract the same pixel from a stack of images. Normally this would be used, eg, with aligned particles from a class-average to look at the distribution of values contributing to the average
 
@@ -41,7 +42,7 @@ for n,i in enumerate(a):
 		icm.write_image("cmcmp.hdf",n*2)
 		rsum.write_image("cmcmp.hdf",n*2+1)
 
-print "local"
+print("local")
 
 #for x in xrange(-100,150,50):
 	#for y in xrange(-100,150,50):

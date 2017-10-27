@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 # LAST update: May/2017 by Muyuan Chen
 # Author: Steven Ludtke  2/8/2011 (rewritten)
@@ -52,7 +53,7 @@ from valslider import ValSlider, ValBox
 
 	
 def run(cmd):
-	print cmd
+	print(cmd)
 	launch_childprocess(cmd)
 	
 def main():
@@ -330,7 +331,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.setspanel.update_sets()
 	
 		self.e = None
-		print self.sets
+		print(self.sets)
 		for i in range(len(self.boxes)):
 			self.update_box(i)
 		
@@ -342,7 +343,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 #	def menu_win_average(self) : self.averageviewer.show()
 
 	def set_datafile(self,datafile):
-		print "\nIn set_datafile, received datafile", datafile
+		print("\nIn set_datafile, received datafile", datafile)
 		if datafile==None :
 			self.datafile=None
 			self.data=None
@@ -547,7 +548,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			try:
 				ret= int(self.boxsize[clsid])
 			except:
-				print "No box size saved for {}..".format(clsid)
+				print("No box size saved for {}..".format(clsid))
 				ret=32
 			return ret
 
@@ -637,10 +638,10 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		
 		fsp=os.path.join("particles3d",self.basename)+name
 		fspprjs=os.path.join("particles",self.basename)+name.replace('.hdf','_prjs.hdf')
-		print "Saving 3D particles to {},\n Saving particle projections to {}".format(fsp, fspprjs)
+		print("Saving 3D particles to {},\n Saving particle projections to {}".format(fsp, fspprjs))
 		for f in [fsp, fspprjs]:
 			if os.path.isfile(f):
-				print "{} exist. Overwritting...".format(f)
+				print("{} exist. Overwritting...".format(f))
 				os.remove(f)
 		
 		progress = QtGui.QProgressDialog("Saving", "Abort", 0, len(self.boxes),None)
@@ -658,7 +659,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				boxsz=bs
 			else:
 				if boxsz!=bs:
-					print "Inconsistant box size in the particles to save.. Using {:d}..".format(boxsz)
+					print("Inconsistant box size in the particles to save.. Using {:d}..".format(boxsz))
 					bs=boxsz
 			
 			sz=[0,0,0]
@@ -1047,7 +1048,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			self.setspanel.update_sets()
 
 	def add_helix_box(self, xf, yf, zf, xi, yi, zi):
-		print xf, yf, zf, xi, yi, zi
+		print(xf, yf, zf, xi, yi, zi)
 		if options.yshort:
 			self.helixboxes.append([xf, zf, yf, xi, zi, yi])
 		else:
@@ -1397,7 +1398,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 
 	
 	def closeEvent(self,event):
-		print "Exiting"
+		print("Exiting")
 		info=js_open_dict(self.jsonfile)
 		info["boxes_3d"]=self.boxes
 		clslst={}
@@ -1653,7 +1654,7 @@ class EMTomoSetsPanel(QtGui.QWidget):
 		if not ok : return
 		name=str(name)
 		if name in self.target().sets :
-			print "Set name exists"
+			print("Set name exists")
 			return
 
 		self.target().new_set(name)
@@ -1669,7 +1670,7 @@ class EMTomoSetsPanel(QtGui.QWidget):
 		name=str(name)
 		
 		if name in self.target().sets :
-			print "Set name exists"
+			print("Set name exists")
 			return
 		
 		self.target().rename_set(sels[0], name)

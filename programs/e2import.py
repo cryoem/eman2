@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: John Flanagan (jfflanag@bcm.edu)
 # Copyright (c) 2000-2011 Baylor College of Medicine
@@ -77,14 +78,14 @@ def main():
 		try:
 			n=EMUtil.get_image_count(args[0])
 		except:
-			print "Error, couldn't read images from: ",args[0]
+			print("Error, couldn't read images from: ",args[0])
 			sys.exit(1)
 
 		try:
 			img=EMData(args[0],0)
 			ctf=img["ctf"]
 		except:
-			print "Error, start.hed/img must be phase-flipped to import"
+			print("Error, start.hed/img must be phase-flipped to import")
 			sys.exit(1)
 
 		db=js_open_dict("info/project.json")
@@ -104,7 +105,7 @@ def main():
 			fft1=img.do_fft()
 			if ctf.defocus!=lastdf :
 				imgnum+=1
-				if options.verbose>0: print "Defocus {:4.2f} particles{:03d}".format(ctf.defocus,imgnum)
+				if options.verbose>0: print("Defocus {:4.2f} particles{:03d}".format(ctf.defocus,imgnum))
 				db=js_open_dict("info/particles{:03d}_info.json".format(imgnum))
 				ctf2=EMAN2Ctf()
 				ctf2.defocus=ctf.defocus
@@ -169,7 +170,7 @@ def main():
 				js["boxes"]=boxlist
 				js.close()
 				if not "{}.hdf".format(base_name(filename,nodir=True)) in micros:
-					print "Warning: Imported boxes for {}, but micrographs/{}.hdf does not exist".format(base_name(filename),base_name(filename,True))
+					print("Warning: Imported boxes for {}, but micrographs/{}.hdf does not exist".format(base_name(filename),base_name(filename,True)))
 
 		elif options.box_type == 'coords':
 			micros=os.listdir("micrographs")
@@ -183,7 +184,7 @@ def main():
 					boxlist.append([float(fields[0]), float(fields[1]), 'manual'])
 				js_open_dict(info_name(filename,nodir=True))["boxes"]=boxlist
 				if not "{}.hdf".format(base_name(filename,nodir=True)) in micros:
-					print "Warning: Imported boxes for {}, but micrographs/{}.hdf does not exist".format(base_name(filename),base_name(filename,True))
+					print("Warning: Imported boxes for {}, but micrographs/{}.hdf does not exist".format(base_name(filename),base_name(filename,True)))
 
 
 		elif options.box_type == 'tiltedboxes':
@@ -216,11 +217,11 @@ def main():
 				print("You must specify at least one .star file containing particle coordinates")
 				exit(1)
 			for filename in starfs:
-				print("Importing from {}.star".format(base_name(filename,nodir=True)))
+				print(("Importing from {}.star".format(base_name(filename,nodir=True))))
 				sf = StarFile(filename)
 				hdr = sf.keys()
 				if len(hdr) < 3:
-					print("Could not parse {}".format(filename))
+					print(("Could not parse {}".format(filename)))
 					continue
 				mk = "rlnMicrographName"
 				yk = "rlnCoordinateY"
@@ -231,7 +232,7 @@ def main():
 					if possible in project_micros:
 						micros = [possible]
 					else:
-						print("{} does not follow the RELION header convention for single particle data. To use this program".format(filename))
+						print(("{} does not follow the RELION header convention for single particle data. To use this program".format(filename)))
 						if mk not in hdr: print("Micrograph names should be listed under _rlnMicrographName")
 						if yk not in hdr: print("Y coordinates must be listed under _rlnCoordinateY")
 						if xk not in hdr: print("X coordinates must be listed under _rlnCoordinateX")
@@ -240,14 +241,14 @@ def main():
 				if len(micros) == 1:
 					mg = micros[0]
 					boxlist = []
-					print("Found {} boxes for {}".format(len(sf[xk]),mg))
+					print(("Found {} boxes for {}".format(len(sf[xk]),mg)))
 					for x,y in zip(sf[xk],sf[yk]):
 						xc = int(x)
 						yc = int(y)
 						boxlist.append([xc,yc,'manual']) # should probably be 'relion' or 'from_star'
 					js_open_dict(info_name(mg,nodir=True))["boxes"]=boxlist
 					if not "{}.hdf".format(base_name(mg,nodir=True)) in project_micros:
-						print "Warning: Imported boxes for {}.hdf, but micrographs/{}.hdf does not exist".format(base_name(filename),base_name(mg,nodir=True))
+						print("Warning: Imported boxes for {}.hdf, but micrographs/{}.hdf does not exist".format(base_name(filename),base_name(mg,nodir=True)))
 				elif len(micros) > 1:
 					for mg in project_micros:
 						boxlist = []
@@ -256,16 +257,16 @@ def main():
 							mgname = name.split('/')[-1].split('.')[0]
 							#print(mgname,hdf_name,mg)
 							if mg[:-4] in mgname: ptcls.append(i)
-						print("Found {} boxes for {}".format(len(ptcls),mg))
+						print(("Found {} boxes for {}".format(len(ptcls),mg)))
 						for p in ptcls:
 							xc = int(sf[xk][p])
 							yc = int(sf[yk][p])
 							boxlist.append([xc,yc,'manual'])
 						js_open_dict(info_name(mg,nodir=True))["boxes"]=boxlist
 						if not "{}.hdf".format(base_name(mg,nodir=True)) in project_micros:
-							print "Warning: Imported boxes for {}, but micrographs/{}.hdf does not exist".format(base_name(mg),base_name(mg,nodir=True))
+							print("Warning: Imported boxes for {}, but micrographs/{}.hdf does not exist".format(base_name(mg),base_name(mg,nodir=True)))
 
-		else : print "ERROR: Unknown box_type"
+		else : print("ERROR: Unknown box_type")
 
 	# Import particles
 	if options.import_particles:
@@ -274,9 +275,9 @@ def main():
 
 		fset=set([base_name(i) for i in args])
 		if len(fset)!=len(args):
-			print "ERROR: You specified multiple files to import with the same base name, eg - a10/abc123.spi and a12/abc123.spi. If you have multiple images with the same \
+			print("ERROR: You specified multiple files to import with the same base name, eg - a10/abc123.spi and a12/abc123.spi. If you have multiple images with the same \
 name, you will need to modify your naming convention (perhaps by prefixing the date) before importing. If the input files are in IMAGIC format, so you have .hed and .img files \
-with the same name, you should specify only the .hed files (no renaming is necessary)."
+with the same name, you should specify only the .hed files (no renaming is necessary).")
 			sys.exit(1)
 
 		for i,fsp in enumerate(args):
@@ -315,7 +316,7 @@ with the same name, you should specify only the .hed files (no renaming is neces
 					cmd+=" --process filter.lowpass.gauss:cutoff_abs=.25 --process filter.highpass.gauss:cutoff_pixels=5 --process normalize --process threshold.clampminmax.nsigma:nsigma=3 "
 				cmd+=options.preprocess
 				run(cmd)
-				print "Done."
+				print("Done.")
 				#shutil.copy(filename,os.path.join(tomosdir,os.path.basename(filename)))
 			if options.importation == "link":
 				os.symlink(filename,os.path.join(tomosdir,os.path.basename(filename)))
@@ -324,12 +325,12 @@ with the same name, you should specify only the .hed files (no renaming is neces
 def run(command):
 	"Mostly here for debugging, allows you to control how commands are executed (os.system is normal)"
 
-	print "{}: {}".format(time.ctime(time.time()),command)
+	print("{}: {}".format(time.ctime(time.time()),command))
 	ret=launch_childprocess(command)
 
 	# We put the exit here since this is what we'd do in every case anyway. Saves replication of error detection code above.
 	if ret !=0 :
-		print "Error running: ",command
+		print("Error running: ",command)
 		sys.exit(1)
 
 	return

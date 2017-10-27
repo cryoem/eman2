@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -49,7 +50,7 @@ def IPY():
 	#app.initialize()
 	#app.start()
 
-	print "Exiting e22.py"
+	print("Exiting e22.py")
 	ttx=True
 
 def on_timer():

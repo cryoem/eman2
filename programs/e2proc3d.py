@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -51,10 +52,10 @@ from numpy import arange
 import traceback
 
 def print_iminfo(data, label):
-	print "%s image : %dx%dx%d Mean=%1.3g Sigma=%1.3g Min=%1.3g Max=%1.3g" % \
+	print("%s image : %dx%dx%d Mean=%1.3g Sigma=%1.3g Min=%1.3g Max=%1.3g" % \
 	(label, data.get_xsize(), data.get_ysize(), data.get_zsize(),
 	data.get_attr("mean"), data.get_attr("sigma"),
-	data.get_attr("minimum"), data.get_attr("maximum"))
+	data.get_attr("minimum"), data.get_attr("maximum")))
 
 def calcsf(data):
 	dataf = data.do_fft()
@@ -157,23 +158,23 @@ def main():
 
 
 	if len(args) != 2:
-		print "usage: " + usage
-		print "Please run '" + progname + " -h' for detailed options"
+		print("usage: " + usage)
+		print("Please run '" + progname + " -h' for detailed options")
 		sys.exit(1)
 
 	if options.step and options.first:
-		print 'Invalid options. You used --first and --step. The --step option contains both a step size and the first image to step from. Please use only the --step option rather than --step and --first'
+		print('Invalid options. You used --first and --step. The --step option contains both a step size and the first image to step from. Please use only the --step option rather than --step and --first')
 		sys.exit(1)
 
 	if options.mrc16bit:
-		print "Deprecated option mrc16bit, please use outmode=int16"
+		print("Deprecated option mrc16bit, please use outmode=int16")
 		options.outmode="int16"
 	if options.mrc8bit:
-		print "Deprecated option mrc8bit, please use outmode=int8"
+		print("Deprecated option mrc8bit, please use outmode=int8")
 		options.outmode="int8"
 
 	if not file_mode_map.has_key(options.outmode) :
-		print "Invalid output mode, please specify one of :\n",str(file_mode_map.keys()).translate(None,'"[]')
+		print("Invalid output mode, please specify one of :\n",str(file_mode_map.keys()).translate(None,'"[]'))
 		sys.exit(1)
 
 	infile = args[0]
@@ -183,29 +184,29 @@ def main():
 	out_ext = os.path.splitext(outfile)[1]
 
 	if out_ext == ".lst" :
-		print "Output file extension may not be .lst: " + outfile
+		print("Output file extension may not be .lst: " + outfile)
 		sys.exit(1)
 
 	# This is a specilalized option which doesn't play nice with ANY other options in the command
 	# it will do piecewise shrinking of a map which is too large for RAM
 	if options.meanshrinkbig>0 :
-		print "Dedicated large-map shrinking mode. No other operations will be performed."
+		print("Dedicated large-map shrinking mode. No other operations will be performed.")
 		hdr=EMData(infile,0,True)
 		shrink=options.meanshrinkbig
-		if shrink>10 : print "Shrinking by >10x is not recommended"
+		if shrink>10 : print("Shrinking by >10x is not recommended")
 
 		nx,ny,nz=hdr["nx"],hdr["ny"],hdr["nz"]
 		nnx=nx/shrink
 		nny=ny/shrink
 		nnz=nz/shrink
-		print "%d x %d x %d --> %d x %d x %d    %1.1f GB of RAM required"%(nx,ny,nz,nnx,nny,nnz,(nnx*nny*nnz*4+shrink*4*ny*shrink*4)/1.0e9)
+		print("%d x %d x %d --> %d x %d x %d    %1.1f GB of RAM required"%(nx,ny,nz,nnx,nny,nnz,(nnx*nny*nnz*4+shrink*4*ny*shrink*4)/1.0e9))
 
 		out=EMData(nnx,nny,nnz)
 		out.to_zero()
 		ltime=0
 		for z in xrange(0,nz,shrink):
 			if time()-ltime>0.5 :
-				print "  %d/%d\r"%(z,nz),
+				print("  %d/%d\r"%(z,nz), end=' ')
 				sys.stdout.flush()
 				ltime=time()
 			for y in xrange(0,ny,4*shrink):
@@ -216,8 +217,8 @@ def main():
 		#try: stype=tmp["datatype"]
 		#except: stype=EM_FLOAT
 		stype=EM_FLOAT
-		print "  %d/%d"%(nz,nz),
-		print "\nWriting in data mode ",file_mode_imap[int(stype)]
+		print("  %d/%d"%(nz,nz), end=' ')
+		print("\nWriting in data mode ",file_mode_imap[int(stype)])
 
 		if stype!=EM_FLOAT:
 			out["render_min"]=file_mode_range[stype][0]
@@ -225,17 +226,17 @@ def main():
 
 		try: out.write_image(outfile,0,IMAGE_UNKNOWN,0,None,EMUtil.EMDataType(stype))
 		except:
-			print "Failed to write in file mode matching input, reverting to floating point output"
+			print("Failed to write in file mode matching input, reverting to floating point output")
 			out.write_image(outfile,0)
 
-		print "Complete !"
+		print("Complete !")
 		sys.exit(0)
 
 	if options.tomoprep>0:
-		print "Tomography processing preparation mode. No other processing will be performed."
+		print("Tomography processing preparation mode. No other processing will be performed.")
 
 		if outfile[-4:]!=".hdf" :
-			print "Preprocessed tomograms can only be in HDF format"
+			print("Preprocessed tomograms can only be in HDF format")
 			sys.exit(1)
 
 		hdr=EMData(infile,0,True)
@@ -265,7 +266,7 @@ def main():
 				slice=EMData(infile,0,False,Region(0,0,z,nx,nz,1))
 				slice.write_image(outfile,0,IMAGE_UNKNOWN,False,Region(0,0,z,nx,nz,1),EM_UCHAR)
 
-		print "Complete !"
+		print("Complete !")
 		sys.exit(0)
 
 
@@ -285,7 +286,7 @@ def main():
 
 
 	if options.calcradial>=0 :
-		print "Computing radial real-space distribution. All other options ignored!"
+		print("Computing radial real-space distribution. All other options ignored!")
 		curves=[]
 		for i in range(n0,n1+1,n2):
 			img=EMData(infile,i)
@@ -303,14 +304,14 @@ def main():
 
 
 	if options.average:
-		print "Averaging particles from %d to %d stepping by %d. All other options ignored !"%(n0,n1,n2)
+		print("Averaging particles from %d to %d stepping by %d. All other options ignored !"%(n0,n1,n2))
 		avg_dict=parsemodopt(options.averager)
 		avgr = Averagers.get(avg_dict[0],avg_dict[1])
 		
 		for i in range(n0,n1+1,n2):
 			avgr.add_image( EMData(infile,i) )
 			if options.verbose:
-				print "Added ptcl %d / %d" %( i+1, (n1-n0)/n2 + 1)
+				print("Added ptcl %d / %d" %( i+1, (n1-n0)/n2 + 1))
 		avg=avgr.finish()
 
 		try :
@@ -342,13 +343,13 @@ def main():
 
 
 	if(n0 < 0 or n0 > nimg):
-		print "Your first index is out of range, changed to zero"
+		print("Your first index is out of range, changed to zero")
 		n0 = 0
 
 	if(n1 == -1):
 		n1 = nimg-1
 	elif(n1 > nimg-1):
-		print "Your last index is out of range, changed to %d" % (nimg-1)
+		print("Your last index is out of range, changed to %d" % (nimg-1))
 		n1 = nimg-1
 
 	# Steve:  why are all of the images being read at once !?!?. This is nuts
@@ -386,7 +387,7 @@ def main():
 		optionlist.append("outtype")
 
 	if options.verbose>0:
-		print "%d images, processing %d-%d (step %d)......"%(nimg, n0, n1,n2)
+		print("%d images, processing %d-%d (step %d)......"%(nimg, n0, n1,n2))
 
 	# processors that only work out of place
 	oopprocs={"misc.directional_sum"}
@@ -413,7 +414,7 @@ def main():
 				if(len(options.origin)==3):
 					(originx, originy, originz) = options.origin
 				else:
-					print ''
+					print('')
 					return
 
 				data.set_xyz_origin(originx, originy, originz)
@@ -431,7 +432,7 @@ def main():
 				fsc = fsc[third:2*third]
 				saxis = [x/apix for x in xaxis]
 				Util.save_data(saxis[1],saxis[1]-saxis[0],fsc[1:-1],args[1])
-				print "Exiting after FSC calculation"
+				print("Exiting after FSC calculation")
 				sys.exit(0)
 
 			elif option1 == "calcsf":
@@ -441,7 +442,7 @@ def main():
 				Util.save_data(0, 1.0/(apix*ny), curve, options.calcsf);
 
 			elif option1 == "setsf":
-				if options.verbose>1 : print "setsf -> ",options.setsf
+				if options.verbose>1 : print("setsf -> ",options.setsf)
 				sf=XYData()
 				sf.read_file(options.setsf)
 				data.process_inplace("filter.setstrucfac",{"apix":apix,"strucfac":sf})
@@ -461,17 +462,17 @@ def main():
 #				plot((curve,curve2))
 			elif option1 == "filtertable":
 				tf = options.filtertable[index_d[option1]]
-				if options.verbose>1 : print "Apply filter -> ",tf
+				if options.verbose>1 : print("Apply filter -> ",tf)
 				xy = XYData()
 				xy.read_file(tf)
 				ny=data["ny"]
 				filt=[xy.get_yatx_smooth(i/(apix*ny),1) for i in xrange(int(ceil(ny*sqrt(3.0)/2)))]
-				if options.verbose>1 : print filt
+				if options.verbose>1 : print(filt)
 				data.process_inplace("filter.radialtable",{"table":filt})	
 
 			elif option1 == "process":
 				fi = index_d[option1]
-				if options.verbose>1 : print "process -> ",options.process[fi]
+				if options.verbose>1 : print("process -> ",options.process[fi])
 				(filtername, param_dict) = parsemodopt(options.process[fi])
 				if not param_dict : param_dict={}
 
@@ -489,7 +490,7 @@ def main():
 					try: data.process_inplace(filtername, param_dict)
 					except:
 						traceback.print_exc()
-						print "Error running processor: ",filtername,param_dict
+						print("Error running processor: ",filtername,param_dict)
 				index_d[option1] += 1
 
 			elif option1 == "ralignzphi":
@@ -510,12 +511,12 @@ def main():
 					for z in xrange(best[1]-dzmax,best[1]+dzmax+1):
 						zimg=dsd.process("xform",{"transform":Transform({"type":"eman","tz":z,"phi":best[2]})})
 						best=min(best,(dsr.cmp("ccc",zimg),z,best[2],zimg))
-					if options.verbose>1: print best[:3]
+					if options.verbose>1: print(best[:3])
 
 					for phi in arange(best[2]-20.0,best[2]+20.0,dang*2.0):
 						zimg=dsd.process("xform",{"transform":Transform({"type":"eman","tz":best[1],"phi":phi})})
 						best=min(best,(dsr.cmp("ccc",zimg),best[1],phi,zimg))
-					if options.verbose>1: print best[:3]
+					if options.verbose>1: print(best[:3])
 
 				# Fix best() for full sampling
 				zimg=data.process("xform",{"transform":Transform({"type":"eman","tz":best[1]*2,"phi":best[2]})})
@@ -526,15 +527,15 @@ def main():
 					for phi in arange(best[2]-dang*3.0,best[2]+dang*3.5,dang):
 						zimg=data.process("xform",{"transform":Transform({"type":"eman","tz":z,"phi":phi})})
 						best=min(best,(zalignref.cmp("ccc",zimg),z,best[2],zimg))
-				if options.verbose>1: print best[:3]
+				if options.verbose>1: print(best[:3])
 
 				data=best[3]
 				data["xform.align3d"]=Transform({"type":"eman","tz":best[1],"phi":best[2]})
-				if options.verbose>0 : print "Alignment: tz = ",best[1],"  dphi=",best[2]
+				if options.verbose>0 : print("Alignment: tz = ",best[1],"  dphi=",best[2])
 
 			elif option1 == "alignctod":
 				if options.alignctod[0][0].lower()!="d" :
-					print "Error: please specify D symmetry as alignctod"
+					print("Error: please specify D symmetry as alignctod")
 					sys.exit(1)
 				nsym=int(options.alignctod[0][1:])
 				angrange=360.0/nsym		# probably more than necessary, but we'll do it anyway...
@@ -547,7 +548,7 @@ def main():
 					datad=data.process("xform",{"transform":Transform({"type":"eman","alt":180.0,"az":az})})	# rotate 180, then about z
 					c=data.cmp("ccc",datad)
 					best=min(best,(c,az))
-					if options.verbose: print azi,az,c,best
+					if options.verbose: print(azi,az,c,best)
 
 				bcen=best[1]
 				for azi in xrange(-4,5):
@@ -555,18 +556,18 @@ def main():
 					datad=data.process("xform",{"transform":Transform({"type":"eman","alt":180.0,"az":az})})	# rotate 180, then about z
 					c=data.cmp("ccc",datad)
 					best=min(best,(c,az))
-					if options.verbose: print azi,az,c,best
+					if options.verbose: print(azi,az,c,best)
 
-				print "alignctod, rotate:",best[1]/2.0
+				print("alignctod, rotate:",best[1]/2.0)
 				data.process_inplace("xform",{"transform":Transform({"type":"eman","az":best[1]/2.0})})	# 1/2 the angle to get it on the 2-fold
 
 			elif option1 == "align":
 				if alignref==None :
-					print "Error, no alignment reference specified with --alignref"
+					print("Error, no alignment reference specified with --alignref")
 					sys.exit(1)
 
 				fi = index_d[option1]
-				if options.verbose>1 : print "align -> ",options.align[fi]
+				if options.verbose>1 : print("align -> ",options.align[fi])
 				(alignername, param_dict) = parsemodopt(options.align[fi])
 				if not param_dict : param_dict={}
 
@@ -582,14 +583,14 @@ def main():
 				if "refine" in alignername and not param_dict.has_key("xform.align3d"):
 					try:
 						param_dict["xform.align3d"]=data["xform.align3d"]
-						print alignername," using xform.align3d from image"
+						print(alignername," using xform.align3d from image")
 					except:
 						param_dict["xform.align3d"]=Transform()
-						print alignername," didn't find a starting transform, using identity matrix."
+						print(alignername," didn't find a starting transform, using identity matrix.")
 
 				# actual alignment
 				data=data.align(alignername,alignref, param_dict)
-				if options.verbose>0 : print "Final alignment:",data["xform.align3d"]
+				if options.verbose>0 : print("Final alignment:",data["xform.align3d"])
 				index_d[option1] += 1
 
 			elif option1 == "mult":
@@ -662,7 +663,7 @@ def main():
 					yc = y/2
 					zc = z/2
 				else:
-					print 'clip option takes 1, 3 or 6 arguments. --clip=x[,y,z[,xc,yc,zc]]'
+					print('clip option takes 1, 3 or 6 arguments. --clip=x[,y,z[,xc,yc,zc]]')
 					return
 
 				if not (xc>=0 and yc>=0 and zc>=0 and xc<x and yc<y and zc<z):
@@ -717,7 +718,7 @@ def main():
 				if(len(options.fftclip)==3):
 					(fnx, fny, fnz) = options.fftclip
 				else:
-					print 'fftclip option takes either 3 arguments. --fftclip=x,y,z'
+					print('fftclip option takes either 3 arguments. --fftclip=x,y,z')
 					return
 
 				fft = data.do_fft()
@@ -726,7 +727,7 @@ def main():
 				index_d[option1] += 1
 
 			elif option1 == "icos5fhalfmap":
-				print "not implemented yet"
+				print("not implemented yet")
 
 			elif option1 == "tophalf":
 				half = data.get_top_half()
@@ -746,7 +747,7 @@ def main():
 			else:
 				data["render_min"]=data["minimum"]
 				data["render_max"]=data["maximum"]
-				print "rescale output to range {} - {}".format(data["render_min"],data["render_max"])
+				print("rescale output to range {} - {}".format(data["render_min"],data["render_max"]))
 
 		if options.unstacking:	#output a series numbered single image files
 			data.write_image(outfile.split('.')[0]+'-'+str(img_index+1).zfill(len(str(nimg)))+ '.' + outfile.split('.')[-1], -1, EMUtil.ImageType.IMAGE_UNKNOWN, False, None, file_mode_map[options.outmode], not(options.swap))
@@ -770,7 +771,7 @@ def parse_infile(infile, first, last, step):
 		parm=infile.split(":")
 		if len(parm)==4 : parm.append(0)
 		if len(parm)!=5 :
-			print "Error: please specify ':X:Y:Z:fillval' to create a new volume"
+			print("Error: please specify ':X:Y:Z:fillval' to create a new volume")
 			sys.exit(1)
 
 		ret=EMData(int(parm[1]),int(parm[2]),int(parm[3]))
@@ -787,7 +788,7 @@ def parse_infile(infile, first, last, step):
 		y = d.get_ysize()
 		z = d.get_zsize()
 		if (z == 1):
-			print "the images are 2D - I will now make a 3D image out of the 2D images"
+			print("the images are 2D - I will now make a 3D image out of the 2D images")
 			data = []
 			return_data = EMData()
 			return_data.set_size(x, y, nimg)
@@ -797,7 +798,7 @@ def parse_infile(infile, first, last, step):
 			data.append(return_data)
 			return data
 		else:
-			print "the image is a 3D stack - I will process images from %d to %d" % (first, last)
+			print("the image is a 3D stack - I will process images from %d to %d" % (first, last))
 			data = []
 			
 			for i in xrange(first, last+1, step):

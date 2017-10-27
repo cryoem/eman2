@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: John Flanagan (jfflanag@bcm.edu)
 # Copyright (c) 2000-2011 Baylor College of Medicine
@@ -106,15 +107,15 @@ def main():
 		exit(0)
 		
 	if not (options.volume or options.eulerfile):
-		print "Error a volume to validate must be presented"
+		print("Error a volume to validate must be presented")
 		exit(1)
 		
 	if not (options.tiltdata or options.eulerfile):
-		print "Error a stack of tilted images must be presented"
+		print("Error a stack of tilted images must be presented")
 		exit(1)
 		
 	if not (options.untiltdata or options.eulerfile):
-		print "Error a stack of untiled images must be presented"
+		print("Error a stack of untiled images must be presented")
 		exit(1)
 	
 	logid=E2init(sys.argv,options.ppid)
@@ -174,7 +175,7 @@ def main():
 	tiltimgs = EMData.read_images(options.tiltdata)
 	untiltimgs = EMData.read_images(options.untiltdata)
 	if len(tiltimgs) != len(untiltimgs):
-		print "The untilted image stack is not the same length as the tilted stack!!!"
+		print("The untilted image stack is not the same length as the tilted stack!!!")
 		exit(1)
 	
 	# write projection command to DB. If we rerun this program no need to reproject if it was done using same pars before
@@ -423,13 +424,13 @@ jsonclasses["CompareToTiltTask"]=CompareToTiltTask.from_jsondict
 
 def run(command):
 	"Execute a command with optional verbose output"		    
-	print command
+	print(command)
 	error = launch_childprocess(command)
 	if error==11 :
 		pass		    
 #		print "Segfault running %s\nNormal on some platforms, ignoring"%command
 	elif error : 
-		print "Error running:\n%s"%command		    
+		print("Error running:\n%s"%command)		    
 		exit(1)
 
 # In some cases it is impossible to import PyQT4, particularly on clusters
@@ -445,7 +446,7 @@ except:
 	class QWidget:
 		"A dummy class for use when Qt not installed"
 		def __init__(self,parent):
-			print "Qt4 has not been loaded"
+			print("Qt4 has not been loaded")
 	QtGui=dummy()
 	QtGui.QWidget=QWidget
 
@@ -472,12 +473,12 @@ def display_validation_plots(path, radcut, planethres, plotdatalabels=False, col
 			zaxis.append(computeRGBcolor(tp[3],0,maxcolorval))
 		tpdb.close()
 	except:
-		print "Couldn't load tp from DB, not showing polar plot"
+		print("Couldn't load tp from DB, not showing polar plot")
 	data = None	
 	try:
 		data = EMData("%s/contour.hdf"%path)
 	except:
-		print "Couldn't open contour plot"
+		print("Couldn't open contour plot")
 	
 	if not data and not (theta and r): return
 	app = EMApp()

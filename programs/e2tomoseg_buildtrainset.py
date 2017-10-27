@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 # Muyuan Chen 2015-03
 from EMAN2 import *
 import numpy as np
@@ -98,7 +99,7 @@ def main():
 			p_copy=options.ncopy
 		try: os.remove(options.trainset_output)
 		except: pass
-		print "making {} copies for particles, and {} copies for negative samples".format(p_copy,options.ncopy)
+		print("making {} copies for particles, and {} copies for negative samples".format(p_copy,options.ncopy))
 		imgs=[]
 		if tomo_in and seg_in:
 			n_ptcl=EMUtil.get_image_count(tomo_in)
@@ -138,7 +139,7 @@ def main():
 					#e.write_image(options.trainset_output,-1)
 					imgs.append(e)
 
-		print "Shuffling particles..."
+		print("Shuffling particles...")
 		### randomize
 		n=len(imgs)
 		
@@ -164,13 +165,13 @@ def main():
 			#e=EMData(options.trainset_output,i*2+1)
 			#e.write_image(tmpfile,-1)
 		#shutil.move(tmpfile,options.trainset_output)
-		print "Generate a training set of {:d} samples.".format(n/2)
+		print("Generate a training set of {:d} samples.".format(n/2))
 		
-	print "Done"
+	print("Done")
 	E2end(logid)
 	
 def run(cmd):
-	print cmd
+	print(cmd)
 	launch_childprocess(cmd)
 	
 def get_box(fname, idx, nz):
@@ -190,7 +191,7 @@ def get_box(fname, idx, nz):
 		hdr=EMData(src,0,True)
 		zmax=hdr["nz"]
 		if boxz<nz*sep or boxz>zmax-nz*sep:
-			print "skipping box ",idx
+			print("skipping box ",idx)
 			return None
 		
 		c=EMData(src,0,False,Region(box[0]-sz/2,box[1]-sz/2,boxz,sz,sz,1))

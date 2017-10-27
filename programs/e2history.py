@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -83,9 +84,9 @@ class HistoryForm:
 		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_cancel"),self.on_cancel)
 		
 		
- 	def get_history_table(self):
- 		from emdatastorage import ParamDef
- 		try:
+	def get_history_table(self):
+		from emdatastorage import ParamDef
+		try:
 			import EMAN2db
 			db=EMAN2db.EMAN2DB.open_db()
 			db.open_dict("history")
@@ -157,13 +158,13 @@ class HistoryForm:
 			params.append(p)
 	
 	
- 		return params
+		return params
  	
- 	def on_ok(self):
- 		self.form.close()
+	def on_ok(self):
+		self.form.close()
  		
- 	def on_cancel(self):
- 		self.form.close()
+	def on_cancel(self):
+		self.form.close()
  			
 	
 def local_datetime(secs):
@@ -204,50 +205,50 @@ def print_to_std_out(all):
 		try:
 			n=int(db.history["count"])
 		except:
-			print "no logfile"
+			print("no logfile")
 			sys.exit(0)
 		
 		if all  :
 			ah={}
 			for i in range(n):
 				try: h=db.history[i+1]
-				except: print "Entry ",i," missing"
+				except: print("Entry ",i," missing")
 				try : ah.setdefault(h["path"],[]).append(h)
 				except: continue
 			for k in ah.keys():
-				print "---------- ",k
+				print("---------- ",k)
 				for i in ah[k]:
-					if i.has_key("end") : print local_datetime(i["start"]),"\t   ",time_diff(i["end"]-i["start"]),"\t"," ".join(i["args"])
-					elif i.has_key("progress") : print local_datetime(i["start"]),"\t ",int(i["progress"]*100)," % done\t"," ".join(i["args"])
-					else: print local_datetime(i["start"]),"\tincomplete\t"," ".join(i["args"])
+					if i.has_key("end") : print(local_datetime(i["start"]),"\t   ",time_diff(i["end"]-i["start"]),"\t"," ".join(i["args"]))
+					elif i.has_key("progress") : print(local_datetime(i["start"]),"\t ",int(i["progress"]*100)," % done\t"," ".join(i["args"]))
+					else: print(local_datetime(i["start"]),"\tincomplete\t"," ".join(i["args"]))
 		else:
 			for i in range(n):
 				try: h=db.history[i+1]
-				except: print "Entry ",i," missing"
+				except: print("Entry ",i," missing")
 				if h != None and h.has_key("path") and h["path"]==os.getcwd():
-					if h.has_key("end") :print local_datetime(h["start"]),"\t   ",time_diff(h["end"]-h["start"]),"\t"," ".join(h["args"])
-					elif h.has_key("progress") :print local_datetime(h["start"]),"\t   ",int(h["progress"]*100)," % done\t"," ".join(h["args"])
-					else: print local_datetime(h["start"]),"\tincomplete\t"," ".join(h["args"])
+					if h.has_key("end") :print(local_datetime(h["start"]),"\t   ",time_diff(h["end"]-h["start"]),"\t"," ".join(h["args"]))
+					elif h.has_key("progress") :print(local_datetime(h["start"]),"\t   ",int(h["progress"]*100)," % done\t"," ".join(h["args"]))
+					else: print(local_datetime(h["start"]),"\tincomplete\t"," ".join(h["args"]))
 	else:
 		db=shelve.open(".eman2log")
 		try:
 			n=int(db["count"])
 		except:
-			print "no logfile"
+			print("no logfile")
 			sys.exit(0)
 		
 		for i in range(n-1):
-			print " ".join(db[str(i+1)]["args"])
-		print "done"
+			print(" ".join(db[str(i+1)]["args"]))
+		print("done")
 		
 	try:
 		fin=file(".eman2log.txt","r")
-		print "----- .eman2log.txt"
-		for l in fin: print l
+		print("----- .eman2log.txt")
+		for l in fin: print(l)
 		
 	except: pass
 	
-	print "NOTICE: While e2history.py continues to function, log files are now stored in plain text in .eman2log.txt in each directory, and can just be examined directly. e2history.py is primarily useful for looking at historical logfiles."
+	print("NOTICE: While e2history.py continues to function, log files are now stored in plain text in .eman2log.txt in each directory, and can just be examined directly. e2history.py is primarily useful for looking at historical logfiles.")
 		
 if __name__ == '__main__':
 	main()

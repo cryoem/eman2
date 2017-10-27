@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 # Author: David Woolford (woolford@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -795,7 +796,7 @@ class ManualBoxingTool:
 		else:
 			box = self.target().get_box(box_num)
 			if box.type == ManualBoxingTool.BOX_TYPE or box.type==ManualBoxingTool.EXCLUDE_TYPE:
-		 		if event.modifiers()&Qt.ShiftModifier :
+				if event.modifiers()&Qt.ShiftModifier :
 					self.target().remove_box(box_num)
 				else:
 					# if we make it here than the we're moving a box
@@ -881,8 +882,8 @@ class ManualBoxingTool:
 		@param box_size the size of the box used to center
 		Returns the dx and dy parameters, i.e. does not actually alter the box
 		'''
-	  	global BigImageCache
-	  	image = BigImageCache.get_image_directly(image_name)
+		global BigImageCache
+		image = BigImageCache.get_image_directly(image_name)
 
 		xc = box[0]-box_size/2
 		yc = box[1]-box_size/2
@@ -1211,7 +1212,7 @@ class EMThumbsTools:
 			inx /= 2
 			iny /= 2
 			shrink *= 2
-		if shrink==1 : print "WARNING: input images are too small. Something is likely wrong with your file selection"
+		if shrink==1 : print("WARNING: input images are too small. Something is likely wrong with your file selection")
 
 		return shrink
 
@@ -1485,7 +1486,7 @@ class EMBoxList(object):
 				if box[0]-box_size/2<0 or box[1]-box_size/2<0 or box[0]+box_size/2>=xsize or box[1]+box_size/2>=ysize : continue
 			if doexclude:
 				if box.type=="exclude":
-					print box
+					print(box)
 					continue
 			image = box.get_image(input_file_name,box_size,norm=normproc)
 			if invert: image.mult(-1)
@@ -1544,7 +1545,7 @@ class EMBoxerModuleVitals(object):
 		self.box_list = EMBoxList(self)
 
 	def set_status_message(self, mesg, timeout=5000, process_events=False):
-		print mesg
+		print(mesg)
 
 	def load_default_status_msg(self):
 		pass
@@ -1933,7 +1934,7 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 
 	def run_output_dialog(self):
 		if self.current_tool=='Gauss':
-			print "\n\nThis operation has been deactivated for Gauss mode.\n\nPlease use sxwindow.py for windowing!\n\n"
+			print("\n\nThis operation has been deactivated for Gauss mode.\n\nPlease use sxwindow.py for windowing!\n\n")
 			error("This operation has been deactivated for Gauss mode.\n\nPlease use sxwindow.py for windowing!","Error")
 			return
 		from emsprworkflow import E2BoxerProgramOutputTask
@@ -2010,7 +2011,7 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 		if self.thumbs_window == None:
 			self.__init_thumbs_window()
 
-		print self.thumbs_window,"now"
+		print(self.thumbs_window,"now")
 		if bool:
 			get_application().show_specific(self.thumbs_window)
 		else:
@@ -2097,7 +2098,7 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 		if not file_exists(file_name): raise RuntimeError("The file %s does not exist" %file_name)
 
 		if self.main_2d_window != None:
-	   	   	self.__update_2d_window(file_name)
+			self.__update_2d_window(file_name)
 			if self.inspector != None:
 				#self.inspector.set_frozen(get_database_entry(file_name,"frozen",dfl=False))
 				self.inspector.set_image_quality(get_database_entry(file_name,"quality",dfl=2))

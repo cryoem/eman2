@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -42,7 +43,7 @@ from random import random
 def main() :
 	global threshold
 	
-        usage = """prog [options] <input> <output>
+	usage = """prog [options] <input> <output>
 
 
 	This program attempts to extract one subunit from a volume by starting at
@@ -58,7 +59,7 @@ def main() :
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
-	print """WARNING: Experimental program. Contact sludtke@bcm.edu before relying on its results."""
+	print("""WARNING: Experimental program. Contact sludtke@bcm.edu before relying on its results.""")
 	
 	(options, args) = parser.parse_args()
 	if len(args)<2 : parser.error("Input and output files required")
@@ -120,7 +121,7 @@ def main() :
 		if len(plist)==0: break
 			
 		nvox+=1
-		if nvox%100==0 : print nvox,len(plist)
+		if nvox%100==0 : print(nvox,len(plist))
 		
 	data*=-1.0
 	data.process_inplace("threshold.belowtozero",{"minval":options.thr})

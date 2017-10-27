@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: John Flanagan Oct 20th 2011 (jfflanag@bcm.edu)
 # Copyright (c) 2000-2011 Baylor College of Medicine
@@ -864,7 +865,7 @@ class PMFSCTableWidget(PMTableBase):
 		""" display the FSC curve. This is a callback for double clicking"""
 		if not self.tablewidget.item(row, 1):
 			msg = "Rubbish!!! No FSC curves to plot."
-			print msg
+			print(msg)
 			self.emit(QtCore.SIGNAL("pmmessage(QString)"),"Rubbish!!! No FSC curves to plot.")
 			return
 		
@@ -876,7 +877,7 @@ class PMFSCTableWidget(PMTableBase):
 		
 		# Now load the FSC curves
 		msg = "Loading FSC curves, please wait..."
-		print msg
+		print(msg)
 		self.emit(QtCore.SIGNAL("pmmessage(QString)"),msg)
 		subprocess.Popen(fsccmd, shell=True)
 

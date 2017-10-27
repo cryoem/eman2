@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: Toshio Moriya 10/20/2016 (toshio.moriya@mpi-dortmund.mpg.de)
 # Author: T. Durmaz 08/29/2014 (tunay.durmaz@uth.tmc.edu)

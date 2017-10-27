@@ -1,4 +1,5 @@
 #
+from __future__ import print_function
 # Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
 # Copyright (c) 2000-2006 The University of Texas - Houston Medical School
 #
@@ -889,12 +890,12 @@ def rops_dir(indir, output_dir = "1dpw2_dir"):
 	from EMAN2 import periodogram
 	import os
 	flist = os.listdir(indir)
-	print flist
+	print(flist)
 	if os.path.exists(output_dir) is False: os.mkdir(output_dir)
 	for i, v in enumerate(flist):
 		(filename, filextension) = os.path.splitext(v)
 		nima = EMUtil.get_image_count(os.path.join(indir,v))
-		print nima
+		print(nima)
 		for im in xrange(nima):
 			e = EMData()
 			file_name = os.path.join(indir,v)
@@ -1288,7 +1289,7 @@ def bracket(f,x1,h):
 		if f3 > f2: return x1,x3
 		x1 = x2; x2 = x3
 		f1 = f2; f2 = f3
-	print "Bracket did not find a mimimum"        
+	print("Bracket did not find a mimimum")        
  
 def goldsearch(f,a,b,tol=1.0e-9):
 	from math import log, ceil

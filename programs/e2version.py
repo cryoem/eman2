@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Grant Tang
@@ -43,10 +44,10 @@ def main():
 	print(FULLVERSIONSTRING)
 
 	if sys.platform=='linux2':
-		print('Your EMAN2 is running on: {} {}'.format(platform.platform(), os.uname()[2], os.uname()[-1]))
+		print(('Your EMAN2 is running on: {} {}'.format(platform.platform(), os.uname()[2], os.uname()[-1])))
 
 	elif sys.platform=='darwin':
-		print('Your EMAN2 is running on: Mac OS {} {}'.format(platform.mac_ver()[0], platform.mac_ver()[2]))
+		print(('Your EMAN2 is running on: Mac OS {} {}'.format(platform.mac_ver()[0], platform.mac_ver()[2])))
 
 	elif sys.platform=='win32':
 		ver = sys.getwindowsversion()
@@ -73,9 +74,9 @@ def main():
 		else:
 			winsystype = '32bit'
 
-		print('Your EMAN2 is running on: {} {}'.format(winsysver, winsystype))
+		print(('Your EMAN2 is running on: {} {}'.format(winsysver, winsystype)))
 
-	print('Your Python version is: {}'.format(os.sys.version.split()[0]))
+	print(('Your Python version is: {}'.format(os.sys.version.split()[0])))
 
 if __name__== "__main__":
 	main()

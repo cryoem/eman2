@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
@@ -50,9 +51,9 @@ def main():
 	chk_dist = ['SqEuc', 'CCC']
 	
 	(options, args) = parser.parse_args()
-    	if len(args) < 2 or len(args) > 3:
-		print "usage: " + usage
-		print "Please run '" + progname + " -h' for detailed options"
+	if len(args) < 2 or len(args) > 3:
+		print("usage: " + usage)
+		print("Please run '" + progname + " -h' for detailed options")
 	elif options.link not in chk_link:
 		sys.stderr.write('ERROR: Kind of linkage unknown.\n\n')
 		sys.exit()

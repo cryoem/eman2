@@ -1,4 +1,5 @@
 # proj_complete_test.py		Steven Ludtke	6/2013
+from __future__ import print_function
 # this program will generate various numbers of projections and then test completeness in Fourier space during reconstruction with a specified reconstructor
 
 from EMAN2 import *
@@ -25,7 +26,7 @@ for da in angs:
 	recon.setup()
 	
 	for i,e in enumerate(eulers):
-		print i,e
+		print(i,e)
 		recon.insert_slice(ptclf,e,1.0)
 	
 	final=recon.finish(True)

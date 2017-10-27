@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
@@ -36,7 +37,7 @@ from   sparx        import *
 import sys
 
 if len(sys.argv) != 5:
-    print 'search_alivol.py <vol_to_align.hdf> <ref_vol.hdf> <name_vol_aligned.hdf> <radius_mask>'
+    print('search_alivol.py <vol_to_align.hdf> <ref_vol.hdf> <name_vol_aligned.hdf> <radius_mask>')
     sys.exit()
 
 # vars
@@ -86,9 +87,9 @@ for n in xrange(size_agls): # another loop over Psi
     val_cc = ccc(tmp_ali, tmp_ref, mask)
 
     # to display the result
-    print '================================'
-    print 'Agls: cross correlation: %3.2f' % val_cc
-    print '================================\n'
+    print('================================')
+    print('Agls: cross correlation: %3.2f' % val_cc)
+    print('================================\n')
     
     #---- the same on the mirror struvture ---------------------------
     # set the value of phi, theta, and psi in the header of the volume
@@ -113,9 +114,9 @@ for n in xrange(size_agls): # another loop over Psi
     n_val_cc = ccc(tmp_ali, tmp_ref, mask)
 
     # to display the result
-    print '================================'
-    print 'Agls mirror: cross correlation: %3.2f' % n_val_cc
-    print '================================\n'
+    print('================================')
+    print('Agls mirror: cross correlation: %3.2f' % n_val_cc)
+    print('================================\n')
 
     #----- choose the best and store
     if n_val_cc > val_cc:
@@ -166,9 +167,9 @@ for n in psi:
     val_cc = ccc(tmp_ali, tmp_ref, mask)
 
     # to display the result
-    print '================================'
-    print 'Psi: cross correlation: %3.2f' % val_cc
-    print '================================\n'
+    print('================================')
+    print('Psi: cross correlation: %3.2f' % val_cc)
+    print('================================\n')
 
     # choose the best
     if val_cc > cc:
@@ -191,9 +192,9 @@ vol_ali = rot_shift3D(im, im.get_attr('phi'), im.get_attr('theta'), im.get_attr(
 vol_ali.write_image(name_ali)
 
 # print the end infos
-print '\n\n'
-print 'best cc value:', cc
-print '%10.3f\t%10.3f\t%10.3f' % (phi, theta, best_pos)
-if best_mir: print 'use mirror structure'
+print('\n\n')
+print('best cc value:', cc)
+print('%10.3f\t%10.3f\t%10.3f' % (phi, theta, best_pos))
+if best_mir: print('use mirror structure')
 
 

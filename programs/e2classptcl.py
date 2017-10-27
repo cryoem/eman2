@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 09/08/2009 (sludtke@bcm.edu)
@@ -63,7 +64,7 @@ Extracts particles associated with specific class-averages and combines them int
 	try :
 		options.classes=[int(i) for i in options.classes.split(",")]
 	except:
-		print "Please specify --classes with a list of comma-separated class numbers"
+		print("Please specify --classes with a list of comma-separated class numbers")
 		sys.exit(1)
 	
 	logid=E2init(sys.argv,options.ppid)
@@ -102,10 +103,10 @@ def extract_classav_vstack(inpath,classes,outpath,verbose=0):
 			vstack[outn]=d
 			outn+=1
 
-		if verbose>0 : print "Class %d: %d particles"%(avn,len(imgns))
+		if verbose>0 : print("Class %d: %d particles"%(avn,len(imgns)))
 		
 	
-	if verbose>0 : print "%d total particles written to %s"(outn,outpath)
+	if verbose>0 : print("%d total particles written to %s"(outn,outpath))
 	
 	return outn
 
@@ -130,10 +131,10 @@ def extract_classav(inpath,classes,outpath,verbose=0):
 			im.write_image(outpath,outn)
 			outn+=1
 		
-		if verbose>0 : print "Class %d: %d particles"%(avn,len(imgns))
+		if verbose>0 : print("Class %d: %d particles"%(avn,len(imgns)))
 		
 	
-	if verbose>0 : print "%d total particles written to %s"(outn,outpath)
+	if verbose>0 : print("%d total particles written to %s"(outn,outpath))
 
 
 

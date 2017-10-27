@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 # Author: Stephen Murray (scmurray@bcm.edu), 12/12/11
 # Copyright (c) 2000-2011 Baylor College of Medicine
 
@@ -33,7 +34,7 @@ Examples:
 
 """
 
-print "Running e2refinetorelion3d.py"
+print("Running e2refinetorelion3d.py")
 # Required Program Options and Parameters (GUI and Command Line)
 parser = EMArgumentParser(usage, version=EMANVERSION)
 parser.add_header(name="relionversion", help="This module is supported to work with Relion-1.3 from 6/1/14 onward", title="This module will work with Relion v1.3, 6/1/14 onward", row=0, col=0, rowspan=1, colspan=3)
@@ -98,8 +99,8 @@ optionList = pyemtbx.options.get_optionlist(sys.argv[1:])
 
 #Check for basic usage
 if len(args) != 2:
-   print "usage:" + usage
-   print "Please run'" + progname + " -h' for detailed options"
+   print("usage:" + usage)
+   print("Please run'" + progname + " -h' for detailed options")
    sys.exit(1)
 
 for option1 in optionList:
@@ -145,8 +146,8 @@ else:
 project_db = js_open_dict("info/project.json")
 
 if not header.get_attr_dict().__contains__('data_source'):
-	print "The input stack/database of particles is invalid - it does not contain information tying each particle to a micrograph. Please provide another input file"
-	print "Exiting e2refinetorelion3d"
+	print("The input stack/database of particles is invalid - it does not contain information tying each particle to a micrograph. Please provide another input file")
+	print("Exiting e2refinetorelion3d")
 	shutil.rmtree(E2RLN)
 	exit(-1)
 
@@ -154,19 +155,19 @@ if not header.get_attr_dict().__contains__('data_source'):
 if header.get_attr_dict().__contains__('apix') and header.get_attr_dict().__contains__('apix_x'):
 	if header['apix_x'] == 1:
 		apix=header['apix']
-		print """***An "apix" value was found in the header. This is an old style and apix values should be correctly stored in apix_x, apix_y, apix_z. The value in apix is """ + str(apix) + """. Be aware this may not be the value you intended***"""
+		print("""***An "apix" value was found in the header. This is an old style and apix values should be correctly stored in apix_x, apix_y, apix_z. The value in apix is """ + str(apix) + """. Be aware this may not be the value you intended***""")
 	else:
 		apix=header['apix_x']
 elif header.get_attr_dict().__contains__('apix_x'):
 	apix = header['apix_x']
 elif header.get_attr_dict().__contains__('apix'):
 	apix = header['apix']
-	print """***An "apix" value was found in the header. This is an old style and apix values should be correctly stored in apix_x, apix_y, apix_z. The value in apix is """ + str(apix) + """. Be aware this may not be the value you intended***"""
+	print("""***An "apix" value was found in the header. This is an old style and apix values should be correctly stored in apix_x, apix_y, apix_z. The value in apix is """ + str(apix) + """. Be aware this may not be the value you intended***""")
 elif project_db.__contains__('global.apix'):
 	apix = project_db['global.apix']
 else:
-	print "An Angstrom per pixel was not found in the project database nor in the images themselves. Please ensure it exists in the data header"
-	print "Exiting e2refinetorelion3d"
+	print("An Angstrom per pixel was not found in the project database nor in the images themselves. Please ensure it exists in the data header")
+	print("Exiting e2refinetorelion3d")
 	shutil.rmtree(E2RLN)
 	exit(-1)
 
@@ -175,8 +176,8 @@ if header.get_attr_dict().__contains__('cs'):
 elif project_db.__contains__('global.microscope_cs'):
 	cs = project_db['global.microscope_cs']
 else:
-	print "A spherical aberration value was not found in the project database nor in the images themselves. Please ensure it exists in the data header"
-	print "Exiting e2refinetorelion3d"
+	print("A spherical aberration value was not found in the project database nor in the images themselves. Please ensure it exists in the data header")
+	print("Exiting e2refinetorelion3d")
 	shutil.rmtree(E2RLN)
 	exit(-1)
 	
@@ -186,8 +187,8 @@ if header.get_attr_dict().__contains__('voltage'):
 elif project_db.__contains__('global.microscope_voltage'):
 	voltage = project_db['global.microscope_voltage']
 else:
-	print "A microscope voltage was not found in the project database nor in the images themselves. Please ensure it exists in the data header"
-	print "Exiting e2refinetorelion3d"
+	print("A microscope voltage was not found in the project database nor in the images themselves. Please ensure it exists in the data header")
+	print("Exiting e2refinetorelion3d")
 	shutil.rmtree(E2RLN)
 	exit(-1)
 
@@ -217,14 +218,14 @@ for db in dblist:
 			amplitude_contrast = float(db_set['ctf'].to_dict()['ampcont']) / 10				
 			#defocus = db_set['ctf'].to_dict()['defocus']*1000
 			break
-print "CTF information being pulled from: " + db
+print("CTF information being pulled from: " + db)
 if ctf_corr == 1:
 	s = """echo "data_\nloop_\n_rlnImageName\n_rlnMicrographName\n_rlnDefocusU\n_rlnDefocusV\n_rlnDefocusAngle\n_rlnVoltage\n_rlnSphericalAberration\n_rlnAmplitudeContrast" > """ + E2RLN + "/all_images.star"
 else:
 	s = """echo "data_\nloop_\n_rlnImageName\n_rlnMicrographName\n_rlnVoltage\n_rlnAmplitudeContrast" > """ + E2RLN + "/all_images.star"
 call(s,shell=True)
 
-print "Converting EMAN2 Files to Formats Compatible with RELION"
+print("Converting EMAN2 Files to Formats Compatible with RELION")
 temp = EMData(set_name,0)
 #print '# \tMicrograph \t\tDefocus \tVoltage CS \tAPIX'
 for k in range(num_ptcl):
@@ -237,7 +238,7 @@ for k in range(num_ptcl):
 		call(s, shell=True)
 		if (k-i-1) == 0:
 			s = "e2proc2d.py " + E2RLN + "/" + base_name(old_src) + ".hdf " + E2RLN + "/" + base_name(old_src) + ".mrc --verbose="+str(options.verbose) + " --process=normalize.edgemean"
-                        call(s, shell=True)
+			call(s, shell=True)
 		else:
 			s = "e2proc2d.py " + E2RLN + "/" + base_name(old_src) + ".hdf " + E2RLN + "/" + base_name(old_src) + ".mrc --verbose=" + str(options.verbose) + " --process=normalize.edgemean --twod2threed"
 			call(s, shell=True)
@@ -294,7 +295,7 @@ for k in range(num_ptcl):
 
 s = "rm " + E2RLN + "/ptcl_stack.hdf"
 call(s,shell=True)
-print "File Conversion Complete"
+print("File Conversion Complete")
 
 
 # Create the run directory structure if it does not exist
@@ -339,7 +340,7 @@ for option1 in optionList:
 		elif options.auto_healpix =='0.1':
 			s = s + " --auto_local_healpix_order 8"
 		else:
-			print "Invalid angular sampling interval (--auto_healpix). Defaulting to 1.8 degrees"
+			print("Invalid angular sampling interval (--auto_healpix). Defaulting to 1.8 degrees")
 			s = s + " --auto_local_healpix_order 4"
 #	elif option1 == "numiter":
 #		s = s + " --iter " + str(options.numiter)
@@ -425,7 +426,7 @@ for option1 in optionList:
 		elif options.healpix =='0.1':
 			s = s + " --healpix_order 8"
 		else:
-			print "Invalid angular sampling interval (--healpix). Defaulting to 7.5 degrees"
+			print("Invalid angular sampling interval (--healpix). Defaulting to 7.5 degrees")
 			s = s + " --healpix_order 2"
 
 s = s + " --sym " + str(options.symmgroup) + str(options.symmnumber) + " --ref " + E2RLN + "/3DRefMap.mrc"
@@ -435,10 +436,10 @@ if grey != 1:
 if oversample:
 	s = s + " --oversampling 1"
 
-print "Generating qsub file"
+print("Generating qsub file")
 ###### create files to make the runs ######
 qsub_file = current_dir + "/" + E2RLN + "/run01/qsub.pbs"
-print qsub_file
+print(qsub_file)
 f = open(qsub_file, 'w')
 f.write("""#!/bin/sh
 
@@ -453,9 +454,9 @@ mpiexec -bynode -n ###NumberofNodes### """ + s + """
 echo "done" """)
 
 f.close()
-print "Please note that this command does not do the Relion postprocessing step. You should do this yourself but please be careful of overmasking!"
-print "************** Relion Command *******************"
-print s
-print "*************************************************"
-print "e2refinetorelion3d.py has completed successfully"
+print("Please note that this command does not do the Relion postprocessing step. You should do this yourself but please be careful of overmasking!")
+print("************** Relion Command *******************")
+print(s)
+print("*************************************************")
+print("e2refinetorelion3d.py has completed successfully")
 
