@@ -897,13 +897,13 @@ class Microscope(QtOpenGL.QGLWidget):
 				img=self.draw_wave()
 			if self.twodwindow:
 				img=self.draw_wave_twod()
-			print(("lens {:d}: py={:.3f}, f={:.3f}".format(
-				self.drag_lens, l[0], l[1])))
+			print("lens {:d}: py={:.3f}, f={:.3f}".format(
+				self.drag_lens, l[0], l[1]))
 			self.drag_lens=-1
 			
 	
 	def closeEvent(self, event):
-		print((self.lens))
+		print(self.lens)
 		print("Exit..")
 		exit()
 

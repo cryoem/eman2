@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # Muyuan Chen 2017-10
+from __future__ import print_function
 from EMAN2 import *
 import numpy as np
 
@@ -63,12 +64,12 @@ def main():
 
 
 	
-	print "Done. Time elapse: {:.3f}s".format(float(time.time()-t0))
+	print("Done. Time elapse: {:.3f}s".format(float(time.time()-t0)))
 	
 	E2end(logid)
 	
 def run(cmd):
-	print cmd
+	print(cmd)
 	launch_childprocess(cmd)
 	
 if __name__ == '__main__':

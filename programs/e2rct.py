@@ -258,7 +258,7 @@ def processimage(image, options_to_preprocess):
 				if not param_dict : param_dict={}
 				image.process_inplace(str(processorname), param_dict)
 			except:
-				print(("warning - application of the pre processor",p," failed. Continuing anyway"))
+				print("warning - application of the pre processor",p," failed. Continuing anyway")
 	else:
 		return
 	

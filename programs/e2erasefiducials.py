@@ -50,20 +50,18 @@ def main():
 
 	#parser.add_argument("--average", default=False, action="store_true", help="Erase gold from average of input stack(s).")
 	parser.add_argument("--apix", default=None, type=float, help="Override Apix in image header.")
-	parser.add_argument("--lowpass", default=False, action="store_true", help="Also lowpass filter noise based on local properties. Useful for processing tomographic tilt series.")
+	parser.add_argument("--lowpass", default=1.11, type=float, help="Multiply lowpass filter frequency by this constant when filtering noise image. Default is 1.11.")
+	parser.add_argument("--coords",default="",type=str,required=True,help="Specify box file with x and y gold coordinates. Must follow standard box file format (x<tab>y<tab>xsize<ysize>) although box sizes are ignored.")
 	parser.add_argument("--keepdust", default=False, action="store_true", help="Do not remove 'dust' from mask (include objects smaller than gold fiducials).")
 	parser.add_argument("--goldsize", default=30, type=float, help="Diameter (in pixels) of gold fiducials to erase.")
-	#parser.add_argument("--downsample", default=1.0, type=float, help="Downsample the input stack(s). Default is 1, i.e. no downsampling.")
 	parser.add_argument("--oversample", default=4, type=int, help="Oversample noise image to smooth transitions from regions with different noise.")
 	parser.add_argument("--boxsize", default=128, type=int, help="Box size to use when computing local noise.")
 	parser.add_argument("--debug", default=False, action="store_true", help="Save noise and mask/masked image(s).")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	parser.add_argument("--parallel",type=str, default=None, help="""Default=None (not used). Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel""")
-
 	parser.add_argument("--subset", default=0, type=int, help="Default=0 (not used). Apply algorithm to only a subset of images in each stack file.")
 	parser.add_argument("--nsigmas", default=3.0,type=float, help="Default=3.0. Number of standard deviations above the mean to determine pixels to mask out (erase).")
-
 
 	(options, args) = parser.parse_args()
 
@@ -72,6 +70,13 @@ def main():
 	if options.parallel:
 		from EMAN2PAR import EMTaskCustomer
 		etc=EMTaskCustomer(options.parallel)
+
+	if options.coords:
+		try:
+			coords = np.loadtxt(options.coords)
+		except:
+			print("Failed to read coordinates. Check input box file path and contents.")
+			sys.exit(1)
 
 	for argnum,arg in enumerate(args):
 
@@ -106,7 +111,7 @@ def main():
 			os.rename('dummy_stack.hdf',newarg)
 			arg = newarg
 
-		outf = "{}_proc.hdf".format( os.path.splitext(arg)[0] )
+		outf = "{}_efd.hdf".format( os.path.splitext(arg)[0] )
 		if os.path.isfile(outf):
 			print(("Results are already stored in {}. Please erase or move and try again.".format(outf)))
 			sys.exit(1)
@@ -223,10 +228,10 @@ def fiximage(options,imgfile,imgindx,outf):
 	#sys.stdout.flush()
 
 	f = EMData(imgfile,imgindx) * -1
-
-	f.process_inplace("normalize")
+	#f.process_inplace("normalize")
 
 	sharp_msk, soft_msk = generate_masks(options,f)
+
 	mskd_sharp = sharp_msk*f
 	sub_sharp = f-mskd_sharp
 
@@ -245,7 +250,7 @@ def fiximage(options,imgfile,imgindx,outf):
 	result *= -1
 	result.write_image(outf,imgindx)
 
-	f *= -1
+	#f *= -1
 	#f.write_image("{}_compare.hdf".format( os.path.splitext(imgfile) ,imgindx)
 	#result.write_image("{}_compare.hdf".format( os.path.splitext(imgfile) ,imgindx+1)
 	#ctr+=2
@@ -254,40 +259,50 @@ def fiximage(options,imgfile,imgindx,outf):
 
 
 def generate_masks(options,img):
-	img.process_inplace("normalize")
-	# create sharp mask
-
+	
 	'''
 	random cutoff values or int multiplication factors for thresholding ('3' below) work only on few datasets
 	it's best to estimate these things based on the size of the feature to mask, and decide on a per-dataset basis
 	how harshly to threshold
 	'''
-	#msk = img.process("filter.highpass.gauss",{"cutoff_pixels":25})
-	#msk.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.1})
-	#msk.process_inplace("threshold.clampminmax",{"maxval":msk["maximum"],"minval":msk["mean"]+3*msk["sigma"],"tozero":True})
-	#msk.process_inplace("threshold.binary",{"value":msk["mean"]})]
-
-	fourierpixels = img['nx']/2
-	cutoffpixels = fourierpixels - options.goldsize/2
-
-	msk = img.process("filter.highpass.gauss",{"cutoff_pixels":cutoffpixels})
-
-	apix = img['apix_x']
-	goldsizeinangstroms = apix*options.goldsize
-	freq = 1.0/goldsizeinangstroms
-
-	msk.process_inplace("filter.lowpass.tanh",{"cutoff_freq":freq})	#c:lowpass shouldn't be arbitrary; rather, use gold size to derive it.
-	msk.process_inplace("threshold.clampminmax",{"maxval":msk["maximum"],"minval":msk["mean"]+options.nsigmas*msk["sigma"],"tozero":True}) # must be tozero
-
-	# remove dust
-	if options.keepdust: sharp_msk = msk.copy()*-1
+	if options.coords != "":
+		nx = img["nx"]
+		ny = img["ny"]
+		sharp_msk = np.zeros((nx,ny)).astype(bool)
+		r = options.goldsize/2.
+		coords = np.loadtxt(options.coords)
+		for c in coords:
+			xc = c[0] + 2*r
+			yc = c[1] + 2*r
+			x,y = np.ogrid[-xc:nx-xc, -yc:ny-yc]
+			circle = x*x + y*y <= r*r
+			sharp_msk = np.logical_or(sharp_msk,circle)
+		sharp_msk = sharp_msk.astype(int)
+		sharp_msk = from_numpy(sharp_msk.T)
+		
 	else:
-		nproc = msk.numpy().copy()
-		s = np.sqrt(options.goldsize*2).astype(int)
-		se2=np.ones((s,s))
-		nproc = ndimage.binary_closing(nproc,structure=se2).astype(int)
-		nproc = ndimage.binary_opening(nproc,structure=se2).astype(int)
-		sharp_msk = from_numpy(nproc)
+		img.process_inplace("normalize")
+
+		fourierpixels = img['nx']/2
+		cutoffpixels = fourierpixels - options.goldsize/2
+		msk = img.process("filter.highpass.gauss",{"cutoff_pixels":cutoffpixels})
+
+		apix = img['apix_x']
+		goldsizeinangstroms = apix*options.goldsize
+		freq = 1.0/goldsizeinangstroms
+
+		msk.process_inplace("filter.lowpass.tanh",{"cutoff_freq":freq})	#c:lowpass shouldn't be arbitrary; rather, use gold size to derive it.
+		msk.process_inplace("threshold.clampminmax",{"maxval":msk["maximum"],"minval":msk["mean"]+options.nsigmas*msk["sigma"],"tozero":True}) # must be tozero
+
+		# remove dust
+		if options.keepdust: sharp_msk = msk.copy()*-1
+		else:
+			nproc = msk.numpy().copy()
+			s = np.sqrt(options.goldsize*2).astype(int)
+			se2=np.ones((s,s))
+			nproc = ndimage.binary_closing(nproc,structure=se2).astype(int)
+			nproc = ndimage.binary_opening(nproc,structure=se2).astype(int)
+			sharp_msk = from_numpy(nproc)
 
 	# grow slightly and create soft mask
 	sharp_msk = sharp_msk.process("mask.addshells.gauss",{"val1":8,"val2":0})
@@ -295,42 +310,76 @@ def generate_masks(options,img):
 
 	return sharp_msk,soft_msk
 
-
 def local_noise(options,img):
 	localnoise = EMData(img["nx"],img["ny"])
 	localnoise.to_zero()
-	bs = options.boxsize
-	nbxs = len(np.arange(-bs,img['nx']+bs,bs))*options.oversample
-	nbys = len(np.arange(-bs,img['ny']+bs,bs))*options.oversample
-	mx = np.linspace(0,img["nx"],nbxs).astype(int)
-	my = np.linspace(0,img["ny"],nbys).astype(int)
-	for x in mx:
-		for y in my:
-			r = img.get_clip(Region(x-bs/2,y-bs/2,bs,bs))
+	
+	if options.coords:
+		bs = int(np.ceil(options.goldsize*4))
+		coords = np.loadtxt(options.coords)
+		for c in coords.astype(int):
+			r = img.get_clip(Region(c[0]-bs/2,c[1]-bs/2,bs,bs))
 			n = EMData(bs,bs)
 			n.to_zero()
 			n.process_inplace("math.addnoise",{"noise":r["sigma_nonzero"]})
-			#n.process_inplace("filter.highpass.gauss",{"cutoff_abs":0.01})
-			fourierpixels = n['nx']/2
+			fourierpixels = n["nx"]/2
 			cutoffpixels = fourierpixels - options.goldsize/2
 			n.process_inplace("filter.highpass.gauss",{"cutoff_pixels":cutoffpixels})
+
+			if options.lowpass != 1.0:
+				apix = img['apix_x']
+				localnoise['apix_x'] = apix
+				localnoise['apix_y'] = apix
+				nyquistres=apix*2.0
+				filtres=nyquistres*options.lowpass
+				filtfreq=1.0/filtres
+				#if options.verbose: print("Apix {}\tResolution {}\tFrequency {}".format(apix,filtres,filtfreq))
+				n.process_inplace('filter.lowpass.tanh', {'cutoff_freq':filtfreq,'apix':apix})
+			
+			#n = n.process("math.simulatectf",{"voltage":300,"cs":0.0,"defocus":0.0,"bfactor":0.0,"ampcont":0.0,"noiseamp":0.5,"noiseampwhite":0.5})
+
 			try:
 				n *= r["sigma_nonzero"]/n["sigma_nonzero"]
 			except:
 				if options.verbose > 8:
 					print(("WARNING: division by zero, from n['sigma_nonzero']={}".format(n["sigma_nonzero"])))
-			n += r["mean_nonzero"]
-			localnoise.insert_clip(n,(x-bs/2,y-bs/2))
+			n+=r["mean_nonzero"]
 
-	if options.lowpass:
+			localnoise.insert_clip(n,(c[0]-bs/2,c[1]-bs/2))
+ 	else:
+ 		bs = options.boxsize
+		nbxs = len(np.arange(-bs,img['nx']+bs,bs))*options.oversample
+		nbys = len(np.arange(-bs,img['ny']+bs,bs))*options.oversample
+		mx = np.linspace(0,img["nx"],nbxs).astype(int)
+		my = np.linspace(0,img["ny"],nbys).astype(int)
+		for x in mx:
+			for y in my:
+				r = img.get_clip(Region(x-bs/2,y-bs/2,bs,bs))
+				n = EMData(bs,bs)
+				n.to_zero()
+				n.process_inplace("math.addnoise",{"noise":r["sigma_nonzero"]})
+				#n.process_inplace("filter.highpass.gauss",{"cutoff_abs":0.01})
+				fourierpixels = n['nx']/2
+				cutoffpixels = fourierpixels - options.goldsize/2
+				n.process_inplace("filter.highpass.gauss",{"cutoff_pixels":cutoffpixels})
+				try:
+					n *= r["sigma_nonzero"]/n["sigma_nonzero"]
+				except:
+					if options.verbose > 8:
+						print(("WARNING: division by zero, from n['sigma_nonzero']={}".format(n["sigma_nonzero"])))
+				n += r["mean_nonzero"]
+				localnoise.insert_clip(n,(x-bs/2,y-bs/2))
+
+		#if options.lowpass != 1.0:
 		apix = img['apix_x']
 		localnoise['apix_x'] = apix
 		localnoise['apix_y'] = apix
 		nyquistres=apix*2.0
-		filtres=nyquistres*10.0/9.0
+		filtres=nyquistres*options.lowpass
 		filtfreq=1.0/filtres
 		#if options.verbose: print("Apix {}\tResolution {}\tFrequency {}".format(apix,filtres,filtfreq))
 		localnoise.process_inplace('filter.lowpass.tanh', {'cutoff_freq':filtfreq,'apix':apix})
+			
 	return localnoise
 
 
