@@ -583,7 +583,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			if len(options.rangeali)>0:
 				try: rng=[int(i) for i in options.rangeali.split("-")]
 				except:
-					print "Error: please specify --rangeali as X-Y where X and Y are inclusive starting with 0"
+					print("Error: please specify --rangeali as X-Y where X and Y are inclusive starting with 0")
 					sys.exit(1)
 				mgdirname = "micrographs_{}-{}".format(rng[0],rng[1])
 				try: os.mkdir(mgdirname)
