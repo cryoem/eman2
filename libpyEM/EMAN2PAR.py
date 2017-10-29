@@ -420,8 +420,12 @@ class EMTestTask(JSTask):
 #######################
 #  Here are classes for implementing xmlrpc based parallelism
 
-from xmlrpc.server import SimpleXMLRPCServer
-from xmlrpc.server import SimpleXMLRPCRequestHandler
+if sys.version_info >= (3, 0):
+	from xmlrpc.server import SimpleXMLRPCServer
+	from xmlrpc.server import SimpleXMLRPCRequestHandler
+else:
+	from SimpleXMLRPCServer import SimpleXMLRPCServer
+	from SimpleXMLRPCServer import SimpleXMLRPCRequestHandler
 
 
 def runXMLRPCServer(port,verbose):
