@@ -1787,9 +1787,9 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,phaseplate,apix,bgad
 	
 	# why change this to degrees, and use integers ... no good reason
 	if phaseplate :
-		phaserange=(int(ctf.get_phase()*180.0/pi),156)
+		phaserange=(int(ctf.get_phase()*180.0/pi),120)
 	else:
-		phaserange=(int(ctf.get_phase()*180.0),int(ctf.get_phase()*180.0)+1)
+		phaserange=(int(ctf.get_phase()*180.0/pi),int(ctf.get_phase()*180.0/pi)+1)
 
 	for rng in (0,1):
 		# second pass is +-0.1 unless the original hint range was narrower
@@ -1808,7 +1808,7 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,phaseplate,apix,bgad
 				#curve=[im[i]-bg[i] for i in xrange(len(im_1d))]
 
 				sim=array(Util.windowdot(curve,ccurv,wdw,1))
-				if phaseplate :qual=sim[int(ctf.zero(0)/(ds*2.0)):int(ctf.zero(8)/ds)].mean()
+				if phaseplate :qual=sim[int(0.9*ctf.zero(0)/ds):int(ctf.zero(8)/ds)].mean()
 				else : qual=sim[int(ctf.zero(0)/ds):int(ctf.zero(5)/ds)].mean()
 				if qual>best[0]: best=(qual,df,phase)
 	#			print df,sum(sim),qual

@@ -134,9 +134,10 @@ Important: This program must be run from the project directory, not from within 
 		if options.cs==0 : options.cs=max(fc.cs,0.01)			# CTF model doesn't work well with Cs exactly 0
 		if options.apix==0 : options.apix=fc.apix
 
-		if options.voltage!=fc.voltage or fabs(options.cs-fc.cs)>0.02 or fabs(options.apix-fc.apix)>0.1 or options.ac!=fc.ampcont :
-			print("""Warning: Disagreement in specified voltage, Cs, A/pix or %AC between frames and options. This requires refitting without frame-based parameters.
+		if options.voltage!=fc.voltage or fabs(options.cs-fc.cs)>0.02 or fabs(options.apix-fc.apix)>0.1 :
+			print("""Warning: Disagreement in specified voltage, Cs or A/pix  between frames and options. This requires refitting without frame-based parameters.
 Strongly suggest refitting CTF from frames with e2rawdata.py with revised parameters before running this program""")
+			print(options.voltage,fc.voltage,options.cs,fc.cs,options.apix,fc.apix)
 			frame_ctf=False
 
 	# fill in missing parameters from project if possible
