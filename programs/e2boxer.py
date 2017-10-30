@@ -39,6 +39,8 @@ import threading
 import Queue
 import os,sys
 
+apix=0
+
 class nothing:
 	def __init__(self,x=None,y=None,z=None,q=None):
 		return
@@ -80,6 +82,10 @@ def load_micrograph(filename):
 		img.mult(1.0/n)
 		
 	if invert_on_read : img.mult(-1.0)
+	global apix
+	img["apix_x"]=apix
+	img["apix_y"]=apix
+	img["apix_z"]=apix
 	return img
 
 def main():
@@ -211,6 +217,8 @@ def main():
 		except:
 			print("Error: Value required for A/pixel. If this is a non TEM image, suggest --apix=1 and --no_ctf.")
 			sys.exit(1)
+	global apix
+	apix=options.apix
 
 	if options.ptclsize*1.5>boxsize :
 		print("WARNING: Strongly recommend using a box size 1.5 - 2.0x the maximum dimension of the particle! This may be pushed to ~1.25x in some cases, but results may be suboptimal.")
