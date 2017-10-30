@@ -56,6 +56,9 @@ import threading
 
 HOMEDB=None
 
+# This next line is to initialize the Transform object for threadsafety. Utterly stupid approach, but a functional hack
+T=Transform({"type":"2d","alpha":0})
+
 # When generating bispectral invariants, we need 2 parameters, which must be used consistently throughout the system
 bispec_invar_parm=(32,10)
 
