@@ -346,8 +346,8 @@ def local_noise(options,img):
 			n+=r["mean_nonzero"]
 
 			localnoise.insert_clip(n,(c[0]-bs/2,c[1]-bs/2))
- 	else:
- 		bs = options.boxsize
+	else:
+		bs = options.boxsize
 		nbxs = len(np.arange(-bs,img['nx']+bs,bs))*options.oversample
 		nbys = len(np.arange(-bs,img['ny']+bs,bs))*options.oversample
 		mx = np.linspace(0,img["nx"],nbxs).astype(int)
