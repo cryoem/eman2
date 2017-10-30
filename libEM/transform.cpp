@@ -358,10 +358,18 @@ void Transform::init_permissable_keys()
 	permissable_rot_keys["matrix"] = tmp;
 }
 
+#ifdef _WIN32
+MUTEX xf_mutex;
+#else
+pthread_mutex_t xf_mutex=PTHREAD_MUTEX_INITIALIZER;
+#endif
+
 
 void Transform::detect_problem_keys(const Dict& d) {
 	if (permissable_rot_keys.size() == 0 ) {
+	        int mrt = Util::MUTEX_LOCK(&xf_mutex);
 		init_permissable_keys();
+        	mrt = Util::MUTEX_UNLOCK(&xf_mutex);
 	}
 
 	vector<string> verification;
