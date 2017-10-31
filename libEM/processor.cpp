@@ -4714,16 +4714,6 @@ void NormalizeToLeastSquareProcessor::process_inplace(EMData * image)
 		}
 	}
 
-	if (debug) {
-		FILE*out=fopen("debug.txt","w");
-		for (size_t i = 0; i < size2; i+=step) {
-		if (dto[i] >= low_threshold && dto[i] <= high_threshold
-			&& (dto[i]>=meant+sigt || dto[i]<=meant-sigt)
-			&& (dimage[i]>=meani+sigi || dimage[i]<=meani-sigi)
-			&& (!ignore_zero ||(dto[i] != 0.0f && dimage[i] != 0.0f))) fprintf(out,"%f\t%f\n",dto[i],dimage[i]);
-		}
-		fclose(out);
-	}
 
 	double *x=(double *)malloc(count*sizeof(double));
 	double *y=(double *)malloc(count*sizeof(double));
@@ -4741,6 +4731,15 @@ void NormalizeToLeastSquareProcessor::process_inplace(EMData * image)
 	double c0,c1;
 	double cov00,cov01,cov11,sumsq;
 	gsl_fit_linear (x, 1, y, 1, count, &c0, &c1, &cov00, &cov01, &cov11, &sumsq);
+
+	if (debug) {
+		FILE*out=fopen("debug.txt","w");
+		for (size_t i = 0; i < count; i++) {
+			fprintf(out,"%lf\t%lf\n",x[i],y[i]);
+		}
+		fclose(out);
+		printf("add %lf\tmul %lf\t%lf\t%lf\t%lf\t%lf\n",c0,c1,cov00,cov01,cov11,sumsq);
+	}
 
 	free(x);
 	free(y);
