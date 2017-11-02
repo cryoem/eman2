@@ -54,7 +54,7 @@ def main():
 	parser.add_argument("--output", dest="output", type=str,default=None, help="Filename for the final averaged/filtered result.")
 	parser.add_argument("--mass", default=0, type=float,help="The rough mass of the particle in kilodaltons, used to run normalize.bymass. Due to resolution effects, not always the true mass.")
 	parser.add_argument("--restarget", default=5, type=float,help="The specified target resolution to avoid underfiltering artifacts.")
-	parser.add_argument("--setsf",type=str,help="Force the structure factor to match a 'known' curve prior to postprocessing (<filename>, auto or none). default=none",default="none")
+	parser.add_argument("--setsf",type=str,help="Force the structure factor to match a 'known' curve prior to postprocessing (<filename>, none). default=none",default="none")
 	parser.add_argument("--iter", dest = "iter", type = int, default=6, help = "Iteration number to generate FSC filenames")
 	parser.add_argument("--align",action="store_true",default=False,help="Will do o to e alignment and test for handedness flips. Should not be repeated as it overwrites the odd file with the aligned result.")
 	parser.add_argument("--tophat",type=str,default=None,help="'global' or 'local'. Final Wiener filter disabled, and replaced by a tophat filter either across the map at 0.143 as Relion appears to do, or locally based on e2fsc.py results")
@@ -366,11 +366,11 @@ def main():
 			# we impose the symmetry in real-space, since this is what people expect
 			if options.sym=="c1" : symopt=""
 			else: symopt="--sym {}".format(options.sym)
-			
+
 			run("e2proc3d.py {path}threed_{itr:02d}.hdf {path}threed_{itr:02d}.hdf --multfile {path}mask.hdf --process normalize.bymass:thr=1:mass={mass} {postproc} {symopt} ".format(path=path,itr=options.iter,mass=options.mass,postproc=m3dpostproc,symopt=symopt))
 			run("e2proc3d.py {evenfile} {evenfile} --multfile {path}mask.hdf --process normalize.bymass:thr=1:mass={mass} {postproc} {symopt} ".format(evenfile=evenfile,path=path,itr=options.iter,mass=options.mass,postproc=m3dpostproc,symopt=symopt))
 			run("e2proc3d.py {oddfile} {oddfile}  --multfile {path}mask.hdf --process normalize.bymass:thr=1:mass={mass} {postproc} {symopt} ".format(oddfile=oddfile,path=path,itr=options.iter,mass=options.mass,postproc=m3dpostproc,symopt=symopt))
-						
+
 			nx,ny,nz=combined["nx"],combined["ny"],combined["nz"]
 		else:
 			print "ERROR: invalid tophat option. Must be 'global' or 'local'."
