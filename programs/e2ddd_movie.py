@@ -625,16 +625,16 @@ def calc_ccf_wrapper(options,N,box,step,dataa,datab,out,locs,ii,fsp):
 	else:
 		#if ii>=0: csum.process("normalize.edgemean").write_image("ccf_models.hdf",ii)
 		if options.phaseplate:
-			locs.put((N,[popt[0],popt[1]]))#,popt[2],popt[3],ccpeakval,csum["maximum"]]))
 			ncc = csum.numpy().copy()
 			pcsum = neighbormean_origin(ncc)
-			out.put((N,from_numpy(pcsum)))
+			csum = from_numpy(pcsum)
+			locs.put((N,[popt[0],popt[1],ccpeakval,csum["maximum"]]))
 		else:
 			cc_model = correlation_peak_model((xx,yy),popt[0],popt[1],popt[2],popt[3]).reshape(box,box)
 			csum = from_numpy(cc_model)
 			locs.put((N,[popt[0],popt[1],popt[2],popt[3],popt[4],popt[5],ccpeakval,csum["maximum"]]))
 		out.put((N,csum))
-	if ii>=0 and options.debug and not options.phaseplate: 
+	if ii>=0 and options.debug: 
 		if fsp[-5:] == ".mrcs":
 			fff = "{}-ccf_models.hdf".format(fsp.replace(".mrcs",""))
 		elif fsp[-4:] == ".hdf":
@@ -706,8 +706,8 @@ def twod_bimodal((x,y),x1,y1,sig1,amp1,sig2,amp2):
 def neighbormean_origin(a): # replace origin pixel with mean of surrounding pixels
     proc = a.copy()
     if a.shape[0] % 2 == 0:
-        ac = a.shape[0]/2
-        r = a[ac-2:ac+2,ac-2:ac+2].copy()
+        ac = proc.shape[0]/2
+        r = proc[ac-2:ac+2,ac-2:ac+2].copy()
         rc = r.shape[0]/2
         r[rc,rc] = np.nan
         r[rc,rc-1] = np.nan
@@ -719,8 +719,8 @@ def neighbormean_origin(a): # replace origin pixel with mean of surrounding pixe
         proc[ac-1,ac] = nm
         proc[ac-1,ac-1] = nm
     else:
-        ac = a.shape[0]/2
-        r = a[ac-2:ac+1,ac-2:ac+1].copy()
+        ac = proc.shape[0]/2
+        r = proc[ac-2:ac+1,ac-2:ac+1].copy()
         plt.imshow(r)
         rc = r.shape[0]/2
         r[rc,rc] = np.nan
@@ -768,6 +768,12 @@ def bimodal_peak_model(options,ccf):
 		x1,y1 = find_com(pncc)
 		x1 = x1+nxx/2
 		y1 = y1+nxx/2
+		# if options.debug:
+		# 	try:
+		# 		ii = EMUtil.get_image_count("tmp.hdf")
+		# 		from_numpy(pncc).write_image("tmp.hdf",ii)
+		# 	except:
+		# 		from_numpy(pncc).write_image("tmp.hdf",0)
 		return [x1,y1],ccf.sget_value_at_interp(x1,y1)
 		# try: # run optimization
 		# 	bds = [(-np.inf, -np.inf,  0.01, 0.01),(np.inf, np.inf, 100.0, 100000.0)]
