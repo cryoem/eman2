@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+from __future__ import print_function
 
 # Author: Jesus Galaz, 03/20112
 # Copyright (c) 2011 Baylor College of Medicine
@@ -87,7 +88,7 @@ def main():
 		for i in f:
 			if options.stack in i:
 				pfs.append(i)
-				print "I am appending this file to the stack", i
+				print("I am appending this file to the stack", i)
 		for i in range(len(pfs)):
 			a=EMData(pfs[i],0)
 			a.write_image('stack.hdf',i)
@@ -129,11 +130,11 @@ def main():
 	k=0
 	for p in ptcls:
 		variance = variance + (p-average)*(p-average)
-		print "I have added this particle to the variance",k
+		print("I have added this particle to the variance",k)
 		k+=1	
 	variance = variance/len(ptcls)
 	
-	print "I have calculated the variance"
+	print("I have calculated the variance")
 	
 	variance.process_inplace(options.normproc[0],options.normproc[1])
 	variance.process_inplace(options.mask[0],options.mask[1])

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -54,6 +55,9 @@ import threading
 #from Sparx import *
 
 HOMEDB=None
+
+# This next line is to initialize the Transform object for threadsafety. Utterly stupid approach, but a functional hack
+T=Transform({"type":"2d","alpha":0})
 
 # When generating bispectral invariants, we need 2 parameters, which must be used consistently throughout the system
 bispec_invar_parm=(32,10)
@@ -132,7 +136,7 @@ def list_to_emdata(l):
 def timer(fn,n=1):
 	a=time.time()
 	for i in range(n): fn()
-	print time.time()-a
+	print(time.time()-a)
 
 # This is to remove stdio buffering, only line buffering is done. This is what is done for the terminal, but this extends terminal behaviour to redirected stdio
 # try/except is to prevent errors with systems that already redirect stdio
@@ -192,10 +196,10 @@ is complete. If the process is killed, 'end' may never be set."""
 
 	# We go to the end of the file. Record the location, then write a fixed length string
 	try:
-		hist=file(".eman2log.txt","r+")
+		hist=open(".eman2log.txt","r+")
 		hist.seek(0,os.SEEK_END)
 	except:
-		try: hist=file(".eman2log.txt","w")
+		try: hist=open(".eman2log.txt","w")
 		except: return -1
 	n=hist.tell()
 	hist.write("%s\tincomplete         \t%6d/%6d\t%s\t%s\n"%(local_datetime(),os.getpid(),ppid,socket.gethostname()," ".join(argv)))
@@ -214,7 +218,7 @@ set to indicate an error exit."""
 #	if EMAN2db.BDB_CACHE_DISABLE : return		# THIS MUST REMAIN DISABLED NOW THAT THE CACHE IS DISABLED PERMANENTLY !!!
 
 	try:
-		hist=file(".eman2log.txt","r+")
+		hist=open(".eman2log.txt","r+")
 		hist.seek(n+20)
 	except:
 		return -1
@@ -230,7 +234,7 @@ This function is called to log the end of the current job. n is returned by E2in
 #	if EMAN2db.BDB_CACHE_DISABLE : return		# THIS MUST REMAIN DISABLED NOW THAT THE CACHE IS DISABLED PERMANENTLY !!!
 
 	try:
-		hist=file(".eman2log.txt","r+")
+		hist=open(".eman2log.txt","r+")
 		hist.seek(n+20)
 	except:
 		return -1
@@ -250,7 +254,7 @@ def E2saveappwin(app,key,win):
 
 		E2setappval(app,key,geom)
 	except:
-		print "Error saving window location"
+		print("Error saving window location")
 
 def E2loadappwin(app,key,win):
 	"""restores a geometry saved with E2saveappwin"""
@@ -270,7 +274,7 @@ When settings are read, the local value is checked first, then if necessary, the
 		app.replace(".","_")
 		key.replace(".","_")
 	except:
-		print "Error with E2setappval, app and key must be strings"
+		print("Error with E2setappval, app and key must be strings")
 		return
 
 	try:
@@ -303,7 +307,7 @@ This function will get an application default by first checking the local direct
 		app.replace(".","_")
 		key.replace(".","_")
 	except:
-		print "Error with E2getappval, app and key must be strings"
+		print("Error with E2getappval, app and key must be strings")
 		return None
 
 	try:
@@ -584,7 +588,7 @@ def parse_transform(optstr):
 	if len(tpl)==3 :
 		try: tpl=[float(i) for i in tpl]
 		except:
-			raise Exception,"Invalid EMAN transform: %s"%optstr
+			raise Exception("Invalid EMAN transform: %s"%optstr)
 		return Transform({"type":"eman","az":tpl[0],"alt":tpl[1],"phi":tpl[2]})
 
 	# Now we must assume that we have a type:name=val:... specification
@@ -596,11 +600,11 @@ def parse_transform(optstr):
 		s=parm.split("=")
 		try : parms[s[0]]=float(s[1])
 		except :
-			raise Exception,"Invalid transform parameter: %s"%parm
+			raise Exception("Invalid transform parameter: %s"%parm)
 
 	try: ret=Transform(parms)
 	except:
-		raise Exception,"Invalid transform: %s"%optstr
+		raise Exception("Invalid transform: %s"%optstr)
 
 	return ret
 
@@ -632,8 +636,8 @@ def parsemodopt(optstr):
 	for p in op2[1:]:
 		try: k,v=p.split("=")
 		except:
-			print "ERROR: Command line parameter parsing failed on ",optstr
-			print "must have the form name:key=value:key=value"
+			print("ERROR: Command line parameter parsing failed on ",optstr)
+			print("must have the form name:key=value:key=value")
 			return(None,None)
 
 #		v=v.replace("bdb%","bdb:")
@@ -671,20 +675,20 @@ def parsemodopt_logical(optstr):
 
 	if len(p_1)==0: return (optstr,{})
 	if ( len(p_1) != 2 ):
-		print "ERROR: parsemodopt_logical currently only supports single logical expressions"
-		print "Could not handle %s" %optstr
+		print("ERROR: parsemodopt_logical currently only supports single logical expressions")
+		print("Could not handle %s" %optstr)
 		return (None,None,None)
 
 	p_2 = re.findall( parseparmobj_logical, optstr )
 
 	if ( len(p_2) != 1 ):
-		print "ERROR: could not find logical expression in %s" %optstr
+		print("ERROR: could not find logical expression in %s" %optstr)
 		return (None,None,None)
 
 
 	if ( p_2[0] not in ["==", "<=", ">=", "!=", "~=", "<", ">"] ):
-		print "ERROR: parsemodopt_logical %s could not extract logical expression" %(p_2[0])
-		print "Must be one of \"==\", \"<=\", \">=\", \"<\", \">\" \"!=\" or \~=\" "
+		print("ERROR: parsemodopt_logical %s could not extract logical expression" %(p_2[0]))
+		print("Must be one of \"==\", \"<=\", \">=\", \"<\", \">\" \"!=\" or \~=\" ")
 		return (None,None,None)
 
 	return (p_1[0], p_2[0], p_1[1])
@@ -697,19 +701,19 @@ def parsemodopt_operation(optstr):
 	if len(p_1)==0: return (optstr,{})
 
 	if ( len(p_1) != 2 ):
-		print "ERROR: parsemodopt_logical currently only supports single logical expressions"
-		print "Could not handle %s" %optstr
+		print("ERROR: parsemodopt_logical currently only supports single logical expressions")
+		print("Could not handle %s" %optstr)
 		return (None,None,None)
 
 	p_2 = re.findall( parseparmobj_op, optstr )
 	if ( len(p_2) != 1 ):
-		print "ERROR: could not find logical expression in %s" %optstr
+		print("ERROR: could not find logical expression in %s" %optstr)
 		return (None,None,None)
 
 
 	if ( p_2[0] not in ["+=", "-=", "*=", "/=", "%="]):
-		print "ERROR: parsemodopt_logical %s could not extract logical expression" %(p_2[0])
-		print "Must be one of", "+=", "-=", "*=", "/=", "%="
+		print("ERROR: parsemodopt_logical %s could not extract logical expression" %(p_2[0]))
+		print("Must be one of", "+=", "-=", "*=", "/=", "%=")
 		return (None,None,None)
 
 	return (p_1[0], p_2[0], p_1[1])
@@ -720,7 +724,7 @@ def read_number_file(path):
 
 	try:
 		regex = re.compile("[0-9]+")
-		return [int(i) for i in regex.findall(file(path,"r").read())]
+		return [int(i) for i in regex.findall(open(path,"r").read())]
 	except:
 		return []
 
@@ -770,7 +774,7 @@ def euler_display(emdata_list):
 			module.regen_dl()
 		widget.show()
 	else:
-		print "gui mode is disabled"
+		print("gui mode is disabled")
 
 def browse():
 	if GUIMode:
@@ -796,7 +800,7 @@ class EMImage(object):
 			try: image.optimally_resize()
 			except: pass
 			return image
-		else: print "can not instantiate EMImage in non gui mode"
+		else: print("can not instantiate EMImage in non gui mode")
 
 def plot_image_similarity(im1,im2,skipzero=True,skipnearzero=False):
 	"""Will plot pixels in the first image on x vs the same pixel in the second image on y
@@ -866,10 +870,10 @@ def plot(data,data2=None,data3=None,show=1,size=(800,600),path="plot.png"):
 					if data2!=None: pylab.plot(data2)
 					if data3!=None: pylab.plot(data3)
 				except:
-					print "List, but data isn't floats"
+					print("List, but data isn't floats")
 					return
 		else :
-			print "I don't know how to plot that type (%s)"%(str(type(data)))
+			print("I don't know how to plot that type (%s)"%(str(type(data))))
 			return
 
 		pylab.savefig(path)
@@ -1029,12 +1033,12 @@ def num_cpus():
 				except:pass # mem_used is just -1
 
 		if cores < 1:
-			print "warning, the number of cpus was negative (%i), this means the MAC system command (sysctl) has been updated and EMAN2 has not accommodated for this. Returning 1 for the number of cores." %cores
+			print("warning, the number of cpus was negative (%i), this means the MAC system command (sysctl) has been updated and EMAN2 has not accommodated for this. Returning 1 for the number of cores." %cores)
 			cores = 2# just for safety, something could have gone wrong. Maybe we should raise instead
 		return cores
 
 	else:
-		print "error, in num_cpus - uknown platform string:",platform_string," - returning 2"
+		print("error, in num_cpus - uknown platform string:",platform_string," - returning 2")
 		return 2
 
 def gimme_image_dimensions2D( imagefilename ):
@@ -1139,7 +1143,7 @@ def remove_file( file_name, img_couples_too=True ):
 	elif db_check_dict(file_name):
 		db_remove_dict(file_name)
 	else:
-		print "Warning, attempt to remove file (%s) that does not exist. No action taken." %file_name
+		print("Warning, attempt to remove file (%s) that does not exist. No action taken." %file_name)
 		return False
 
 # returns the local date and time as a string
@@ -1279,13 +1283,13 @@ def strip_file_tag(file_name):
 	'''
 	FIXME - could replace with Util.remove_filename_ext()
 	'''
-	print "Using deprecated strip_file_tag function, please remove"
+	print("Using deprecated strip_file_tag function, please remove")
 
 	for i in range(len(file_name)-1,-1,-1):
 		if file_name[i] == '.':
 			break
 	else:
-		print "never found the full stop in", file_name
+		print("never found the full stop in", file_name)
 		return None
 
 	return file_name[0:i]
@@ -1294,7 +1298,7 @@ def get_file_tag(file_name):
 	"""Returns the file identifier associated with a path, ie for "/home/stevel/abc1234.mrc" would return abc1234
 or for "bdb:hello99?1,2,3" would return hello99
 	"""
-	print "Using deprecated get_file_tag function, please switch to base_name()"
+	print("Using deprecated get_file_tag function, please switch to base_name()")
 
 	if file_name[:4].lower()=="bdb:" :
 		dname=file_name.find("#")+1
@@ -1316,7 +1320,7 @@ def item_name(file_name):
 
 	see also: get_file_tag
 	"""
-	print "Using deprecated item_name function, please switch to base_name()"
+	print("Using deprecated item_name function, please switch to base_name()")
 
 
 	file_name=str(file_name)
@@ -1337,8 +1341,8 @@ def base_name( file_name,extension=False,bdb_keep_dir=False,nodir=False ):
 	wraps os.path.basename but returns something sensible for bdb syntax
 	if nodir is set, then the last path element will never be included, otherwise it is included following a set of standard rules.
 	'''
-	if extension : print "base_name() with extension. please check"
-	if bdb_keep_dir : print "base_name() with bdb_keep_dir. please check"
+	if extension : print("base_name() with extension. please check")
+	if bdb_keep_dir : print("base_name() with bdb_keep_dir. please check")
 
 	file_name=str(file_name)
 	if file_name[:4].lower()=="bdb:" :
@@ -1385,12 +1389,12 @@ def file_exists( file_name ):
 
 		if ( file_tag == 'hed' ):
 			if ( not os.path.exists(name+'img') ):
-				print "Warning - %s does not exist" %(name+'img')
+				print("Warning - %s does not exist" %(name+'img'))
 				return False
 			else: return True;
 		elif (file_tag == 'img'):
 			if (not os.path.exists(name+'hed')):
-				print "Warning - %s does not exist" %(name+'hed')
+				print("Warning - %s does not exist" %(name+'hed'))
 				return False
 			else: return True;
 		else:
@@ -1463,24 +1467,24 @@ def check_eman2_type(modoptstring, object, objectname, verbose=True):
 	'''
 	if modoptstring == None:
 		if verbose:
-			print "Error: expecting a string but got python None, was looking for a type of %s" %objectname
+			print("Error: expecting a string but got python None, was looking for a type of %s" %objectname)
 		return False
 
 	if modoptstring == "":
 		if verbose:
-			print "Error: expecting a string was not empty, was looking for a type of %s" %objectname
+			print("Error: expecting a string was not empty, was looking for a type of %s" %objectname)
 		return False
 
 	try:
 		p = parsemodopt(modoptstring)
 		if p[0] == None:
 			if verbose:
-				print "Error: Can't interpret the construction string %s" %(modoptstring)
+				print("Error: Can't interpret the construction string %s" %(modoptstring))
 			return False
 		object.get(p[0], p[1])
 	except RuntimeError:
 		if (verbose):
-			print "Error: the specified %s (%s) does not exist or cannot be constructed" %(objectname, modoptstring)
+			print("Error: the specified %s (%s) does not exist or cannot be constructed" %(objectname, modoptstring))
 		return False
 
 	return True
@@ -1517,7 +1521,7 @@ def qplot(img):
 	"""This will plot a 1D image using qplot
 	Note that display(img) will automatically plot 1D images.
 	"""
-	out=file("/tmp/plt.txt","w")
+	out=open("/tmp/plt.txt","w")
 	for i in range(img.get_xsize()):
 		out.write("%d\t%f\n"%(i,img.get_value_at(i,0)))
 	out.close()
@@ -1526,7 +1530,7 @@ def qplot(img):
 def error_exit(s) :
 	"""A quick hack until I can figure out the logging stuff. This function
 	should still remain as a shortcut"""
-	print s
+	print(s)
 	exit(1)
 
 def write_test_refine_data(num_im=1000):
@@ -1697,11 +1701,11 @@ def test_image_3d(type=0,size=(128,128,128)):
 	size=(128,128,128) """
 	ret=EMData()
 	if len(size) != 3:
-		print "error, you can't create a 3d test image if there are not 3 dimensions in the size parameter"
+		print("error, you can't create a 3d test image if there are not 3 dimensions in the size parameter")
 		return None
 	if type != 2: ret.set_size(*size)
 	else:
-		if size!=(256,256,64) : print "Warning, size set to 256x256x64"
+		if size!=(256,256,64) : print("Warning, size set to 256x256x64")
 		ret.set_size(256,256,64)
 	if type==0 :
 		ret.process_inplace("testimage.axes")
@@ -1786,7 +1790,7 @@ def get_3d_font_renderer():
 		elif pfm == "Windows":
 			font_renderer.set_font_file_name("C:\\WINDOWS\\Fonts\\arial.ttf")
 		else:
-			print "unknown platform:",pfm
+			print("unknown platform:",pfm)
 		return font_renderer
 	except ImportError:
 		#print "Unable to import EMFTGL. The FTGL library may not be installed. Text on 3D and some 2D viewers may not work."
@@ -1802,7 +1806,7 @@ class EMAbstractFactory:
 		_args = [constructor]
 		_args.extend(args)
 #		setattr(self, methodName,Functor(_args, kargs))
- 		setattr(self, methodName, EMFunctor(*_args, **kargs))
+		setattr(self, methodName, EMFunctor(*_args, **kargs))
 
 	def unregister(self, methodName):
 		"""unregister a constructor"""
@@ -1894,7 +1898,7 @@ def clear_dead_cudajobs():
 		try:
 			os.kill(cpid, 0)
 		except OSError:
-			print "removing deadfile ", lock
+			print("removing deadfile ", lock)
 			os.unlink(lock)
 
 ### Very odd function, I can't find it used anywhere, so I'm commenting it out.
@@ -1943,13 +1947,13 @@ if the lst file does not exist."""
 
 		self.path=path
 
-		try: self.ptr=file(path,"rb+")		# file exists
+		try: self.ptr=open(path,"rb+")		# file exists
 		except:
-			if ifexists: raise Exception,"Error: lst file {} does not exist".format(path)
+			if ifexists: raise Exception("Error: lst file {} does not exist".format(path))
 
 			try: os.makedirs(os.path.dirname(path))
 			except: pass
-			self.ptr=file(path,"wb+")	# file doesn't exist
+			self.ptr=open(path,"wb+")	# file doesn't exist
 			self.ptr.write("#LSX\n# This file is in fast LST format. All lines after the next line have exactly the number of characters shown on the next line. This MUST be preserved if editing.\n# 20\n")
 
 		self.ptr.seek(0)
@@ -1958,7 +1962,7 @@ if the lst file does not exist."""
 			if l=="#LST\n" :
 				#### This is very similar to rewrite(), but is used to convert LST files to LSX files
 				self.seekbase=self.ptr.tell()
-				tmpfile=file(self.path+".tmp","wb")
+				tmpfile=open(self.path+".tmp","wb")
 				tmpfile.write("#LSX\n# This file is in fast LST format. All lines after the next line have exactly the number of characters shown on the next line. This MUST be preserved if editing.\n")
 
 				# we read the entire file, checking the length of each line
@@ -1988,14 +1992,14 @@ if the lst file does not exist."""
 				# rename the temporary file over the original
 				os.unlink(self.path)
 				os.rename(self.path+".tmp",self.path)
-				self.ptr=file(self.path,"rb+")
+				self.ptr=open(self.path,"rb+")
 				self.ptr.readline()
 
-			else: raise Exception,"ERROR: The file {} is not in #LSX format".format(self.path)
+			else: raise Exception("ERROR: The file {} is not in #LSX format".format(self.path))
 		self.filecomment=self.ptr.readline()
 		try: self.linelen=int(self.ptr.readline()[1:])
 		except:
-			print "ERROR: invalid line length in #LSX file {}".format(self.path)
+			print("ERROR: invalid line length in #LSX file {}".format(self.path))
 			raise Exception
 		self.seekbase=self.ptr.tell()
 
@@ -2041,7 +2045,7 @@ comment : optional comment string"""
 	def read(self,n):
 		"""Reads the nth record in the file. Note that this does not read the referenced image, which can be
 performed with read_image either here or in the EMData class. Returns a tuple (n extfile,extfile,comment)"""
-		if n>=self.n : raise Exception,"Attempt to read record {} from #LSX {} with {} records".format(n,self.path,self.n)
+		if n>=self.n : raise Exception("Attempt to read record {} from #LSX {} with {} records".format(n,self.path,self.n))
 		self.ptr.seek(self.seekbase+self.linelen*n)
 		ln=self.ptr.readline().strip().split("\t")
 		if len(ln)==2 : ln.append(None)
@@ -2083,7 +2087,7 @@ line length. Used when a line must be added in the middle of the file."""
 
 		self.ptr.seek(0)
 
-		tmpfile=file(self.path+".tmp","wb")
+		tmpfile=open(self.path+".tmp","wb")
 		# copy the header lines
 		tmpfile.write(self.ptr.readline())
 		tmpfile.write(self.ptr.readline())
@@ -2116,7 +2120,7 @@ line length. Used when a line must be added in the middle of the file."""
 		# rename the temporary file over the original
 		os.unlink(self.path)
 		os.rename(self.path+".tmp",self.path)
-		self.ptr=file(self.path,"rb+")
+		self.ptr=open(self.path,"rb+")
 
 #		print "rewrite ",self.linelen
 
@@ -2126,14 +2130,14 @@ files corresponding to even and odd numbered particles. It will return a tuple w
 corresponding to each 1/2 of the data."""
 
 	# create the even and odd data sets
-	print "### Creating virtual stacks for even/odd data"
-	if file(filename,"r").read(4)=="#LSX" :				# LSX (fast LST) format
+	print("### Creating virtual stacks for even/odd data")
+	if open(filename,"r").read(4)=="#LSX" :				# LSX (fast LST) format
 		eset=filename.rsplit(".",1)[0]
 		oset=eset+"_odd.lst"
 		eset+="_even.lst"
-		oute=file(eset,"w")
-		outo=file(oset,"w")
-		inf=file(filename,"r")
+		oute=open(eset,"w")
+		outo=open(oset,"w")
+		inf=open(filename,"r")
 
 		# copy the first 3 lines to both files
 		for i in range(3):

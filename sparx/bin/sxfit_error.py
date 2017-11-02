@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
 # Copyright (c) 2000-2006 The University of Texas - Houston Medical School
@@ -202,7 +203,7 @@ def fitgamma(R,B,t,nu):
 	f = sfg(R,B,t,nu,g1)
 
 	if f*fmid>0.0:
-		print "Error: inappropriate gamma bracket."
+		print("Error: inappropriate gamma bracket.")
 		mpi_finalize()
 		exit(-1)
 
@@ -222,7 +223,7 @@ def fitgamma(R,B,t,nu):
 			#print "number of iterations for gamma:",j+1
 			return rtbis
 
-	print "Error: max number of iterations reached."
+	print("Error: max number of iterations reached.")
 	mpi_finalize()
 	exit(-2)
 
@@ -283,7 +284,7 @@ def minfind(R,B,gamma,fcr):
 		if nu2-nu1<acc:
 			return (nu1+nu2)/2.0
 
-	print "Error: max number of iterations reached."
+	print("Error: max number of iterations reached.")
 	mpi_finalize()
 	exit(-3)
 
@@ -565,8 +566,8 @@ ncpu = mpi_comm_size(MPI_COMM_WORLD)
 main_node = 0
 
 if len(args) < 2 or len(args)>3:
-	print "usage:  " + usage
-	print "Please run '" + progname + " -h' for detailed options"
+	print("usage:  " + usage)
+	print("Please run '" + progname + " -h' for detailed options")
 	mpi_finalize()
 	exit(101)
 
@@ -599,7 +600,7 @@ j1 = options.j1
 j2 = options.j2
 if fsc_rapid_fall:
 	if j1<=0 or j2<=j1:
-		print "Warning: input j1,j2 not valid. Will use default values."
+		print("Warning: input j1,j2 not valid. Will use default values.")
 		epsf = 0.1   # level under which the FSC is essentially 0
 		b1 = sqrt(4/B*log((u0*(1+R)-epsf)/R/epsf))
 		b2 = b1+0.25*(0.5-b1)
@@ -614,28 +615,28 @@ init_median = not options.init_max
 
 
 if myid == main_node:
-	print "Options in effect:"
-	print "  map_file =", largeFile
-	print "  segment_file =", segFile
+	print("Options in effect:")
+	print("  map_file =", largeFile)
+	print("  segment_file =", segFile)
 	if user_mask == True:
-		print "  FSC_mask =",maskFile
+		print("  FSC_mask =",maskFile)
 	else:
-		print "  FSC_mask = None"
-	print "  res =",resol
-	print "  R =",R
-	print "  B =",B
-	print "  u0 =",u0
-	print "  pix =",pix
-	print "  sigN =",sigNoise
-	print "  alpha =",alpha
-	print "  fsc_rapid =",fsc_rapid_fall
-	print "  j1 =",j1
-	print "  j2 =",j2
-	print "  synth =",synthetic
-	print "  no_sim_noise =", not sim_noise
-	print "  filtmap =", not filtseg
-	print "  imask =",imask
-	print "  init_max =", not init_median
+		print("  FSC_mask = None")
+	print("  res =",resol)
+	print("  R =",R)
+	print("  B =",B)
+	print("  u0 =",u0)
+	print("  pix =",pix)
+	print("  sigN =",sigNoise)
+	print("  alpha =",alpha)
+	print("  fsc_rapid =",fsc_rapid_fall)
+	print("  j1 =",j1)
+	print("  j2 =",j2)
+	print("  synth =",synthetic)
+	print("  no_sim_noise =", not sim_noise)
+	print("  filtmap =", not filtseg)
+	print("  imask =",imask)
+	print("  init_max =", not init_median)
 #-------------------------------------
 
 
@@ -733,7 +734,7 @@ if nover>1:
 	img1_orig_0 = fpol(img1_orig_0, nx0*nover, ny0*nover, nz0*nover, True)
 
 if myid == main_node:
-	print "Radius of segment =",radius,"pix"
+	print("Radius of segment =",radius,"pix")
 
 if nover>1:
 	img2_orig = fpol(img2_orig, nx0*nover, ny0*nover, nz0*nover, True)
@@ -780,7 +781,7 @@ else:
 	fmask = get_image(maskFile)
 q2 = q2norm(fmask)
 if myid == main_node:
-	print "squared L^2 norm of FSC mask =", q2
+	print("squared L^2 norm of FSC mask =", q2)
 
 
 # normalization factor so that FT(Gaussian noise) has sigma=1:
@@ -900,7 +901,7 @@ x = rot_shift3D_grid(img1_filt, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, kb, "backgrou
 bccc = compdisc(x, img2_filt, mask, discrep)
 
 if myid == main_node:
-	print  "initial",discrep,"=",bccc
+	print("initial",discrep,"=",bccc)
 bccc = -1.e10
 
 # parameters are in the "XYZ" convention
@@ -918,7 +919,7 @@ ccparlist0 = [[0.0 for j in xrange(lpar+1)] for i in xrange(nt1)]
 
 
 if myid == main_node:
-	print "                  a_x      a_y      a_z       x        y        z         dot"
+	print("                  a_x      a_y      a_z       x        y        z         dot")
 
 for i in xrange(nt1):
 	lt = i*ncpu+myid
@@ -937,8 +938,8 @@ for i in xrange(nt1):
 
 	tc = compdisc(x, img2_filt, mask, discrep)
 
-	print "     fit #%3d  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %10.6f" % \
-	(lt,params[0],params[1],params[2],params[3],params[4],params[5], tc)
+	print("     fit #%3d  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %10.6f" % \
+	(lt,params[0],params[1],params[2],params[3],params[4],params[5], tc))
 
 	if(init_median):
 		ccparlist0[i][0] = tc
@@ -985,14 +986,14 @@ if myid == main_node:
 		for j in xrange(lpar):
 			bparams[j] = ccparlist[ncpu/2][j+1]    # or (ncpu-1)/2
 		
-	print
+	print()
 	if(init_median):
-		print "BEST (median): %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %10.6f" % \
-		(bparams[0],bparams[1],bparams[2],bparams[3],bparams[4],bparams[5], bccc)
+		print("BEST (median): %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %10.6f" % \
+		(bparams[0],bparams[1],bparams[2],bparams[3],bparams[4],bparams[5], bccc))
 	else:
-		print "BEST (max):    %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %10.6f" % \
-		(bparams[0],bparams[1],bparams[2],bparams[3],bparams[4],bparams[5], bccc)
-	print
+		print("BEST (max):    %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %10.6f" % \
+		(bparams[0],bparams[1],bparams[2],bparams[3],bparams[4],bparams[5], bccc))
+	print()
 
 mpi_barrier(MPI_COMM_WORLD)
 
@@ -1130,8 +1131,8 @@ for cycle in xrange(max_cycles):
 			bccc = tc
 			for k in xrange(lpar): bparams[k] = params[k]
 
-	print "BEST fit #%3d   %6.2f   %6.2f   %6.2f   %6.2f   %6.2f   %6.2f   %10.6f" % \
-	(lt,bparams[0],bparams[1],bparams[2],bparams[3],bparams[4],bparams[5], bccc)
+	print("BEST fit #%3d   %6.2f   %6.2f   %6.2f   %6.2f   %6.2f   %6.2f   %10.6f" % \
+	(lt,bparams[0],bparams[1],bparams[2],bparams[3],bparams[4],bparams[5], bccc))
 
 	#if lt<nmatsout:
 	parfile = open(segName+str(resol)+"_params_"+str(lt)+".txt","w")
@@ -1175,13 +1176,13 @@ for cycle in xrange(max_cycles):
 			else:
 				to_break = 0
 			#test:
-			print "cycle = %2d, sigma_rot = %6.2f, sigma_x = %6.2f, sigma_y = %6.2f, sigma_z = %6.2f, change = %6.2f%%" % \
-				(cycle, bp_sigma[lpar], bp_sigma[lpar-3], bp_sigma[lpar-2], bp_sigma[lpar-1], maxdev*100.0)
+			print("cycle = %2d, sigma_rot = %6.2f, sigma_x = %6.2f, sigma_y = %6.2f, sigma_z = %6.2f, change = %6.2f%%" % \
+				(cycle, bp_sigma[lpar], bp_sigma[lpar-3], bp_sigma[lpar-2], bp_sigma[lpar-1], maxdev*100.0))
 		else:
 			to_break = 0
 			#test:
-			print "cycle = %2d, sigma_rot = %6.2f, sigma_x = %6.2f, sigma_y = %6.2f, sigma_z = %6.2f" % \
-				(cycle, bp_sigma[lpar], bp_sigma[lpar-3], bp_sigma[lpar-2], bp_sigma[lpar-1])
+			print("cycle = %2d, sigma_rot = %6.2f, sigma_x = %6.2f, sigma_y = %6.2f, sigma_z = %6.2f" % \
+				(cycle, bp_sigma[lpar], bp_sigma[lpar-3], bp_sigma[lpar-2], bp_sigma[lpar-1]))
 	else:
 		to_break = 0
 	
@@ -1263,21 +1264,21 @@ if myid == main_node:
 
 	M = count   # final number of output fits
 
-	print "          aves: %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f" % \
-		(bp_mean[0], bp_mean[1], bp_mean[2], bp_mean[3], bp_mean[4], bp_mean[5])
-	print "        sigmas: %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f" % \
-		(bp_sigma[0], bp_sigma[1], bp_sigma[2], bp_sigma[3], bp_sigma[4], bp_sigma[5])
-	print "         skews: %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f" % \
-		(bp_skew[0], bp_skew[1], bp_skew[2], bp_skew[3], bp_skew[4], bp_skew[5])
+	print("          aves: %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f" % \
+		(bp_mean[0], bp_mean[1], bp_mean[2], bp_mean[3], bp_mean[4], bp_mean[5]))
+	print("        sigmas: %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f" % \
+		(bp_sigma[0], bp_sigma[1], bp_sigma[2], bp_sigma[3], bp_sigma[4], bp_sigma[5]))
+	print("         skews: %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f" % \
+		(bp_skew[0], bp_skew[1], bp_skew[2], bp_skew[3], bp_skew[4], bp_skew[5]))
 
 	sigma_tr  = sqrt(bp_sigma[lpar-3]**2+bp_sigma[lpar-2]**2+bp_sigma[lpar-1]**2)
 	sigma_mot = sqrt(sigma_tr**2+bp_sigma[lpar]**2)
 	skew_mot  = sqrt(bp_skew[3]**2+bp_skew[4]**2+bp_skew[5]**2)
 
-	print "  sigma_noise =",sigNoise
-	print "  sigma_rot = %7.3f pix, sigma_shift = %7.3f pix, sigma_mot = %7.3f pix" % \
-		(bp_sigma[lpar], sigma_tr, sigma_mot)
-	print "   skew_mot = %7.3f" % (skew_mot)
+	print("  sigma_noise =",sigNoise)
+	print("  sigma_rot = %7.3f pix, sigma_shift = %7.3f pix, sigma_mot = %7.3f pix" % \
+		(bp_sigma[lpar], sigma_tr, sigma_mot))
+	print("   skew_mot = %7.3f" % (skew_mot))
 
 	# write out mean position:
 	tsx_mean = Transform({"type":"xyz","xtilt":float(bp_mean[0]),"ytilt":float(bp_mean[1]),"ztilt":float(bp_mean[2]),"tx":float(bp_mean[3]),"ty":float(bp_mean[4]),"tz":float(bp_mean[5])})

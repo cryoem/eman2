@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steve Ludtke, 7/5/14 
@@ -90,10 +91,10 @@ def main():
 	try:
 		nrefbs=EMUtil.get_image_count(refsbsfs)
 		if nrefbs!=len(refs) :
-			print "Reference bispectrum file too short :",nrefbs,len(refs)
+			print("Reference bispectrum file too short :",nrefbs,len(refs))
 			raise Exception
 	except:
-		print "No good bispecta found for refs. Building"
+		print("No good bispecta found for refs. Building")
 		com="e2proc2dpar.py {} {} --process filter.highpass.gauss:cutoff_freq=0.01 --process normalize.edgemean --process math.bispectrum.slice:size={}:ffp={} --threads {}".format(args[0],refsbsfs,bispec_invar_parm[0],bispec_invar_parm[1],options.threads)
 		run(com)
 	
@@ -108,10 +109,10 @@ def main():
 			bsfs=args[1].split("__ctf_flip")[0]+"__ctf_flip_bispec.lst"
 		try: nptclbs=EMUtil.get_image_count(bsfs)
 		except:
-			print "Could not get particle count on ",bsfs
+			print("Could not get particle count on ",bsfs)
 			sys.exit(1)
 		if nptclbs!=nptcl : 
-			print nptclbs,nptcl
+			print(nptclbs,nptcl)
 			raise Exception
 	else:
 		if "even" in args[1]: bsfs=args[1].split("_even")[0]+"_bispec_even.lst"
@@ -144,7 +145,7 @@ def main():
 		if thrtolaunch<len(thrds):
 			while (threading.active_count()>=options.threads) : time.sleep(0.1)
 			if options.verbose>0 : 
-				print "\r Starting thread {}/{}      ".format(thrtolaunch,len(thrds)),
+				print("\r Starting thread {}/{}      ".format(thrtolaunch,len(thrds)), end=' ')
 				sys.stdout.flush()
 			thrds[thrtolaunch]=threading.Thread(target=clsfn,args=thrds[thrtolaunch])		# replace args
 			thrds[thrtolaunch].start()
@@ -176,7 +177,7 @@ def main():
 				thrds[rd[1]]=None
 			
 				if options.verbose>1:
-					print "{} done. ".format(rd[1]),
+					print("{} done. ".format(rd[1]), end=' ')
 
 	### Write output files
 	if options.classmx!=None:
@@ -199,10 +200,10 @@ def main():
 		empty.to_zero()
 		empty["ptcl_repr"]=0
 		for i,avgr in enumerate(avgrs):
-			if clsinfo.has_key(i):
+			if i in clsinfo:
 				avg=avgr.finish()
 #				avg.process_inplace("normalize.circlemean",{"radius":avg["ny"]/2-4})
-				avg.process_inplace("normalize.toimage",{"to":refs[i],"fourieramp":1,"ignore_lowsig":1.5})
+				avg.process_inplace("normalize.toimage",{"to":refs[i],"fourieramp":1,"ignore_lowsig":0.3})
 				avg.process_inplace("mask.soft",{"outer_radius":avg["ny"]/2-4,"width":3})
 #				avg.process_inplace("normalize.toimage",{"to":refs[i],"ignore_lowsig":0.75})
 				avg["class_ptcl_idxs"]=[p[0] for p in clsinfo[i]]		# particle indices
@@ -222,7 +223,7 @@ def main():
 
 	E2end(E2n)
 
-	print "Classification complete, writing classmx"
+	print("Classification complete, writing classmx")
 
 def clsfn(jsd,refs,refsbs_org,ptclfs,ptclbsfs,options,grp,n0,n1):
 	from bisect import insort
@@ -280,13 +281,13 @@ def clsfn(jsd,refs,refsbs_org,ptclfs,ptclbsfs,options,grp,n0,n1):
 def run(command):
 	"Mostly here for debugging, allows you to control how commands are executed"
 
-	print "{}: {}".format(time.ctime(time.time()),command)
+	print("{}: {}".format(time.ctime(time.time()),command))
 
 	ret=launch_childprocess(command)
 
 	# We put the exit here since this is what we'd do in every case anyway. Saves replication of error detection code above.
 	if ret !=0 :
-		print "Error running: ",command
+		print("Error running: ",command)
 		sys.exit(1)
 
 	return

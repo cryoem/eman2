@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: David Woolford, 09/12/2007 (woolford@bcm.edu)
@@ -53,7 +54,7 @@ def timetest():
 	time2 = clock()
 	dt1 = time2 - time1
 	
-	print "It took %f seconds to gets the stats (in c style) for %d random numbers, %d times" %(dt1,n,it)
+	print("It took %f seconds to gets the stats (in c style) for %d random numbers, %d times" %(dt1,n,it))
 	
 	time1 = clock()
 	for j in range(it):
@@ -61,10 +62,10 @@ def timetest():
 	time2 = clock()
 	dt1 = time2 - time1
 	
-	print "It took %f seconds to gets the stats (in c++ style) for %d random numbers, %d times" %(dt1,n,it)
+	print("It took %f seconds to gets the stats (in c++ style) for %d random numbers, %d times" %(dt1,n,it))
 
 def precision_test():
-        """test RotateTranslateAligner ....................."""
+	"""test RotateTranslateAligner ....................."""
 		
 	n = 32
 	err_dx = 0
@@ -98,7 +99,7 @@ def precision_test():
 					if (abs(soln_az-az)%180 > err_az ): err_az = abs(soln_az-az)%180
 	
 	
-	print "RotateTranslateAlign precision is %f %f %f)" %(err_dx,err_dy,err_az)
+	print("RotateTranslateAlign precision is %f %f %f)" %(err_dx,err_dy,err_az))
 
 if __name__ == "__main__":
     main()

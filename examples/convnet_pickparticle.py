@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 # Muyuan July 2015
 import sys
 import random
@@ -54,13 +55,13 @@ def main():
 	
 	if options.rmptcls:
 		remove_ptcls(options.rmptcls)
-		print "Done"
+		print("Done")
 		exit()
 	
 	if options.classify!=None:
 		os.environ["THEANO_FLAGS"]="optimizer=fast_run"
 		#os.environ["THEANO_FLAGS"]="optimizer=None"
-		print "Testing on large amount of particles(?), Theano optimizer disabled"
+		print("Testing on large amount of particles(?), Theano optimizer disabled")
 		import_theano()
 		convnet=load_model(options.pretrainnet)
 		classify_particles(convnet,options)
@@ -68,7 +69,7 @@ def main():
 	
 	if options.teston!=None:
 		os.environ["THEANO_FLAGS"]="optimizer=None"
-		print "Testing on big images, Theano optimizer disabled"
+		print("Testing on big images, Theano optimizer disabled")
 		import_theano()
 		convnet=load_model(options.pretrainnet)
 		box_particles(convnet,options)
@@ -86,17 +87,17 @@ def main():
 	#### Train da with particles first.
 	
 	if len(args)==0:
-		print "no particle input...exit."
+		print("no particle input...exit.")
 		exit()
 	
-	print "loading particles..."
+	print("loading particles...")
 	if args[0].endswith(".pkl"):
-		f = file(args[0], 'rb')
+		f = open(args[0], 'rb')
 		particles=cPickle.load(f)
 		f.close()
 	else:
 		particles=load_particles(args[0],options)
-		f = file("data_training.pkl", 'wb')
+		f = open("data_training.pkl", 'wb')
 		cPickle.dump(particles, f, protocol=cPickle.HIGHEST_PROTOCOL)
 		f.close()
 
@@ -117,7 +118,7 @@ def main():
 		convnet=load_model(options.pretrainnet)
 	
 	else:
-		print "setting up model"
+		print("setting up model")
 		convnet = StackedConvNet(
 			rng,
 			image_shape=image_shape,
@@ -128,7 +129,7 @@ def main():
 	convnet.update_shape(image_shape)
 	
 	if (options.niter>0):	
-		print "training the convolutional network..."
+		print("training the convolutional network...")
 		
 		classify=convnet.get_classify_func(train_set_x,labels,batch_size,options.tarsize)
 			
@@ -138,20 +139,20 @@ def main():
 		# go through the training set
 			c = []
 			if epoch==0:
-				print classify(0,lr=learning_rate,wd=options.weightdecay)
+				print(classify(0,lr=learning_rate,wd=options.weightdecay))
 			for batch_index in xrange(n_train_batches):
 				err=classify(batch_index,
 					lr=learning_rate,
 					wd=options.weightdecay)
 				c.append(err)
 				if epoch==0 and batch_index<5:
-					print err
+					print(err)
 			learning_rate*=.9
-			print 'Training epoch %d, cost ' % ( epoch),
-			print np.mean(c),", learning rate",learning_rate
+			print('Training epoch %d, cost ' % ( epoch), end=' ')
+			print(np.mean(c),", learning rate",learning_rate)
 
-		print "Saving the trained net to file..."
-		f = file(options.pretrainnet, 'wb')
+		print("Saving the trained net to file...")
+		f = open(options.pretrainnet, 'wb')
 		cPickle.dump(convnet, f, protocol=cPickle.HIGHEST_PROTOCOL)
 		f.close()
 		
@@ -160,7 +161,7 @@ def main():
 	#print convnet.clslayer.b.get_value()
 			
 	if options.trainout:
-		print "Generating results ..."
+		print("Generating results ...")
 		if usegpu:
 			test_imgs = theano.function(
 				inputs=[index],
@@ -185,7 +186,7 @@ def main():
 			mid_cent=mid
 			mid_mean=np.mean(mid_cent)
 			mid_std=np.std(mid_cent)
-			print "mean:",mid_mean,"std:",mid_std
+			print("mean:",mid_mean,"std:",mid_std)
 			#print np.shape(test_imgs(0))
 
 			ipt= train_set_x[idi * batch_size: (idi + 1) * batch_size]
@@ -223,15 +224,15 @@ def main():
 				e.write_image(fname,-1)
 
 def load_model(fname):
-	print "loading model from {}...".format(fname)
-	f = file(fname, 'rb')
+	print("loading model from {}...".format(fname))
+	f = open(fname, 'rb')
 	convnet = cPickle.load(f)
 	f.close()
 	return convnet
 
 def classify_particles(convnet,options):
 	
-	print "Loading images.."
+	print("Loading images..")
 	nptcls=EMUtil.get_image_count(options.classify)
 	bigbatch=500
 	
@@ -240,7 +241,7 @@ def classify_particles(convnet,options):
 	allscr=[]
 	for nb in range(nbatch):
 		data=[]
-		print "Processing {} / {}".format(nb+1,nbatch)
+		print("Processing {} / {}".format(nb+1,nbatch))
 		for i in range(nb * bigbatch, min(nptcls,(nb+1) * bigbatch)):
 			ptl=EMData(options.classify,i)
 			ptl.process_inplace("normalize.edgemean")
@@ -271,7 +272,7 @@ def classify_particles(convnet,options):
 		shpout=clsout.shape
 		#print shpout
 		scr=np.mean(clsout.reshape(shpout[0],shpout[2]*shpout[3]),axis=1)
-		print scr, np.shape(scr)
+		print(scr, np.shape(scr))
 		allscr.extend(scr)
 			
 	allscr=np.asarray(allscr).flatten()
@@ -301,12 +302,12 @@ def box_particles(convnet,options):
 	filelist=[]
 	isfolder=False
 	if os.path.isdir(options.teston):
-		print "Check files..."
+		print("Check files...")
 		isfolder=True
 		lst=sorted(os.listdir(options.teston))
 		lst=[i for i in lst if i[0]!="."]
 		for mg in lst:
-			print "  ",mg
+			print("  ",mg)
 			filelist.append(os.path.join(options.teston,mg))
 	else:
 		filelist.append(options.teston)
@@ -318,14 +319,14 @@ def box_particles(convnet,options):
 	lastshape=-1
 	
 	for tarfile in filelist:
-		print "Boxing particles on ",tarfile
+		print("Boxing particles on ",tarfile)
 		try:
 			e=EMData(tarfile)
 		except:
-			print "Cannot read file, continue"
+			print("Cannot read file, continue")
 			continue
 		
-		print "\tPreprocessing image..."
+		print("\tPreprocessing image...")
 
 		e.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.2})
 		e.process_inplace("filter.highpass.gauss",{"cutoff_abs":.005})
@@ -368,7 +369,7 @@ def box_particles(convnet,options):
 		if not isfolder: e.write_image("testresult.hdf",-1)
 
 		
-		print "\tApplying the convolution net..."
+		print("\tApplying the convolution net...")
 		test_imgs = theano.function(
 			inputs=[],
 			outputs=convnet.clslayer.hidden,
@@ -392,7 +393,7 @@ def box_particles(convnet,options):
 		if not isfolder: e.write_image("testresult.hdf",-1)
 		
 		###########
-		print "\tBoxing particles.."
+		print("\tBoxing particles..")
 		#e=EMData("testresult.hdf",1)
 		e.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.2})
 		#shape=[e["nx"],e["ny"],e["nz"]]
@@ -409,7 +410,7 @@ def box_particles(convnet,options):
 				break
 			box.append([pks[i+1]*scale,pks[i+2]*scale,"manual"])
 		
-		print "\t{} particles.".format(i//3)
+		print("\t{} particles.".format(i//3))
 		import json
 		jn={}
 		jn["boxes"]=box

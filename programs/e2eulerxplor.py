@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: David Woolford 11/25/08 (woolford@bcm.edu
@@ -330,7 +331,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 				except: dirs.pop(i)
 
 		self.dirs = dirs
-		print dirs
+		print(dirs)
 
 		self.au_data = {}
 		for dir in self.dirs:
@@ -350,7 +351,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 			nums=[int(i[7:9]) for i in files if "threed" in i and "even" not in i and "odd" not in i]
 			maxnum=max(nums)
 		except :
-			print "Nothing in ",dir
+			print("Nothing in ",dir)
 			return {}
 
 		for i in xrange(1,maxnum+1):
@@ -464,7 +465,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 			self.average.process_inplace("normalize.toimage",{"to":self.projection})
 			try:
 				self.class_idx = self.average.get_attr("projection_image_idx")
-				print "%d (%d)"%(self.class_idx,self.average["ptcl_repr"])
+				print("%d (%d)"%(self.class_idx,self.average["ptcl_repr"]))
 			except:
 				self.class_idx = -1
 		else: return
@@ -630,7 +631,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 								index = j
 								break
 					if index == -1:
-						print "couldn't find"
+						print("couldn't find")
 						get_application().setOverrideCursor(Qt.ArrowCursor)
 						return
 
@@ -678,7 +679,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 
 	def set_events_mode(self,mode):
 		if not mode in self.events_mode_list:
-			print "error, unknown events mode", mode
+			print("error, unknown events mode", mode)
 			return
 
 		else:

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: David Woolford 08/13/08 (woolford@bcm.edu
@@ -321,7 +322,7 @@ class EMSimmxXplorInspector(EMSymInspector):
 		if self.combo == None: n = self.target().get_num_particles()
 		else:
 			dir = str(self.combo.currentText())
-			data = (d for d in self.data if d[0] == dir).next()
+			data = next((d for d in self.data if d[0] == dir))
 			n = EMUtil.get_image_count(data[1])
 
 		if n == None: n = 0
@@ -379,7 +380,7 @@ class EMSimmxXplorInspector(EMSymInspector):
 			self.__init_ptcl_slider(vbl)
 		else:
 			dir = str(self.combo.currentText())
-			data = (d for d in self.data if d[0] == dir).next()
+			data = next((d for d in self.data if d[0] == dir))
 			n = EMUtil.get_image_count(data[1])
 			if n == None: n = 0
 			else: n -= 1
@@ -392,12 +393,12 @@ class EMSimmxXplorInspector(EMSymInspector):
 			return
 
 		dir = str(self.combo.currentText())
-		data = (d for d in self.data if d[0] == dir).next()
+		data = next((d for d in self.data if d[0] == dir))
 
 		self.target().set_particle_file(data[1])
 
 		try:
-			idx = ( i for i in range(len(data[3])) if data[3][i] == simmx_file ).next()
+			idx = next(( i for i in range(len(data[3])) if data[3][i] == simmx_file ))
 		except:
 			return
 		projection_file = data[2][idx]
@@ -419,7 +420,7 @@ class EMSimmxXplorInspector(EMSymInspector):
 
 		dir = str(self.combo.currentText())
 
-		data = (d for d in self.data if d[0] == dir).next()
+		data = next((d for d in self.data if d[0] == dir))
 #
 #
 		s_text = None
@@ -469,7 +470,7 @@ def simmx_xplore_dir_data():
 			simmx+=[pfx+i for i in dl if "simmx_stg1" == i[:10] and "_even" in i]
 
 			if len(prjs)==len(simmx) : ret.append([dir,str(ptcl[0]),prjs,simmx])
-			else : print "Mismatch in :",zip(prjs,simmx)
+			else : print("Mismatch in :",zip(prjs,simmx))
 
 			prjs=[pfx+i for i in dl if "projections_" in i and i[-4:]==".hdf" and "_odd" in i]
 			simmx=[pfx+i for i in dl if "simmx_" == i[:6] and "stg1_" not in i and "_odd" in i]
@@ -478,9 +479,9 @@ def simmx_xplore_dir_data():
 			simmx+=[pfx+i for i in dl if "simmx_stg1" == i[:10] and "_odd" in i]
 
 			if len(prjs)==len(simmx) : ret.append([dir,str(ptcl[1]),prjs,simmx])
-			else : print "Mismatch in :",zip(prjs,simmx)
+			else : print("Mismatch in :",zip(prjs,simmx))
 
-	print ret
+	print(ret)
 
 	return ret
 

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: John Flanagan, 04/08/2011 (jfflanag@bcm.edu)
 # Edited by: Stephen Murray (scmurray@bcm.edu) May 2014
@@ -186,7 +187,7 @@ class ControlPannel(QtGui.QWidget):
 			
 		for window in self.mediator.windowlist:
 			fdata = window.data.process(filtertype,pardict)
-			print "filtered win"
+			print("filtered win")
 			window.reload_image(fdata, window.filename+"_filted")
 		
 	def processor_combobox_changed(self, idx):
@@ -208,7 +209,7 @@ class ControlPannel(QtGui.QWidget):
 		#filter each window
 		for window in self.mediator.windowlist:
 			fdata = window.data.process("filter.convolution.kernel",{"kernel":kt})
-			print "filtered win"
+			print("filtered win")
 			window.reload_image(fdata, window.filename+"_filted")
 
 	
@@ -305,7 +306,7 @@ class ControlPannel(QtGui.QWidget):
 		self.quality = QtGui.QComboBox()
 		for i in xrange(5): self.quality.addItem(str(i))
 		# check full path then check basename
-		if not self.qualitydb.has_key(self.mediator.windowlist[0].filename):
+		if self.mediator.windowlist[0].filename not in self.qualitydb:
 			self.quality.setCurrentIndex(self.qualitydb.getdefault(self.mediator.windowlist[0].filename,dfl=0))
 		else:
 			self.quality.setCurrentIndex(self.qualitydb.getdefault(os.path.basename(self.mediator.windowlist[0].filename),dfl=0))
@@ -374,7 +375,7 @@ class ControlPannel(QtGui.QWidget):
 		self.on_done()
 		
 	def on_write(self):
-		print "Saving Particles"
+		print("Saving Particles")
 		for window in self.mediator.windowlist:
 			splitpath = os.path.split(os.path.splitext(window.filename)[0])
 			if splitpath[0] == '':

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 1/21/2008 (sludtke@bcm.edu)
@@ -105,7 +106,7 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 		if options.nbasis>1 : del basis[-1]
 		mean=None
 
-	if options.verbose>1 : print "Using %d basis vectors"%len(basis)
+	if options.verbose>1 : print("Using %d basis vectors"%len(basis))
 	
 	if options.maskfile : maskfile=EMData("options.maskfile",0)
 	elif options.mask>0 :
@@ -116,7 +117,7 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 	
 	# Project an image stack into a basis subspace
 	if args[0]=="project" :
-		if options.txtout : tout=file(args[3],"w")
+		if options.txtout : tout=open(args[3],"w")
 		# normalize the basis vectors to unit length
 		for b in basis: b.process_inplace("normalize.unitlen")
 		
@@ -132,7 +133,7 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 					im=EMData(args[2],i)
 					if options.normalize!=None:
 						try: im.process_inplace(options.normalize)
-						except: print "Warning: Normalization failed"
+						except: print("Warning: Normalization failed")
 					mean+=im
 				mean/=float(n)
 			
@@ -141,7 +142,7 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 				if maskfile : im*=maskfile
 				if options.normalize!=None:
 					try: im.process_inplace(options.normalize)
-					except: print "Warning: Normalization failed"
+					except: print("Warning: Normalization failed")
 				if mean : im-=mean
 			
 				# inner loop over the basis images
@@ -173,7 +174,7 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 					im.process_inplace("normalize.toimage",{"to":mean,"ignore_zero":1})
 				elif options.normalize!=None:
 					try: im.process_inplace(options.normalize)
-					except: print "Warning: Normalization failed"
+					except: print("Warning: Normalization failed")
 				if mean!=None : im-=mean
 
 				proj=EMData(len(basis),1,1)
@@ -194,12 +195,12 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 					tout.write("\t".join(tl))
 					tout.write("\n")
 				else : proj.write_image(args[3],i)
-		if options.verbose>1 : print "projections complete"
+		if options.verbose>1 : print("projections complete")
 
 	
 	# Project rotated images into a basis subspace
 	elif args[0]=="projectrot" :
-		if options.verbose>1 : print "Entering projectrot routine"
+		if options.verbose>1 : print("Entering projectrot routine")
 		
 		# Just read the whole similarity matrix in, since it generally shouldn't be THAT big
 		simmx=EMData(args[3],0)
@@ -221,10 +222,10 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 
 			for i in range(n):
 				if options.verbose >1 : 
-					print "  %5d\r"%i,
+					print("  %5d\r"%i, end=' ')
 					sys.stdout.flush()
 				elif options.verbose!=0 and i%100==0:
-					print "  %5d\r"%i,
+					print("  %5d\r"%i, end=' ')
 					sys.stdout.flush()
 				im=EMData(args[2],i)
 				
@@ -242,7 +243,7 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 				if maskfile!=None : im*=maskfile
 				if options.normalize!=None:
 					try: im.process_inplace(options.normalize)
-					except: print "Warning: Normalization failed"
+					except: print("Warning: Normalization failed")
 				if mean!=None : im-=mean
 				
 				# inner loop over the basis images to generate the components of the projection vector
@@ -276,10 +277,10 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 
 			for i in range(n):
 				if options.verbose >1 : 
-					print "  %5d\r"%i,
+					print("  %5d\r"%i, end=' ')
 					sys.stdout.flush()
 				elif options.verbose and i%100==0:
-					print "  %5d\r"%i,
+					print("  %5d\r"%i, end=' ')
 					sys.stdout.flush()
 				im=EMData(args[2],i)
 				
@@ -295,7 +296,7 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 				if maskfile!=None : im*=maskfile
 				if options.normalize!=None:
 					try: im.process_inplace(options.normalize)
-					except: print "Warning: Normazation failed"
+					except: print("Warning: Normazation failed")
 				if mean!=None : im-=mean
 				
 				proj=EMData(len(basis),1,1)
@@ -316,7 +317,7 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 				proj.set_attr("ref_flip",best[4])
 				proj["isvector"]=1
 				proj.write_image(args[4],i)
-		if options.verbose>1 : print "Projectrot complete"
+		if options.verbose>1 : print("Projectrot complete")
 	
 	# Apply the varimax rotation to a set of basis vectors
 	elif args[0]=="varimax" :
@@ -329,7 +330,7 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 		
 		results=pca.analyze()
 		for im in results: im.write_image(args[2],-1)
-	else: print "Valid commands are project, varimax and projectrot"
+	else: print("Valid commands are project, varimax and projectrot")
 	
 	E2end(logid)
 

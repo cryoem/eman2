@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 02/02/2010 (ludtke@bcm.edu)
@@ -69,12 +70,12 @@ def main():
 
 	
 	if options.process[:8]!="segment." :
-		print "You must specify a segment.* processor with any necessary parameters in the form segment.xxxx:parm=value:parm=value"
+		print("You must specify a segment.* processor with any necessary parameters in the form segment.xxxx:parm=value:parm=value")
 		sys.exit(1)
 
 	E2n=E2init(sys.argv,options.ppid)
 
-	if options.verbose>0: print "Reading volume"
+	if options.verbose>0: print("Reading volume")
 	volume=EMData(args[0],0)
 	
 	if options.shifttocenter:
@@ -108,18 +109,18 @@ def main():
 		nps=ps[:p1+5]+str(num-len(helix))+ps[p2:]
 		options.process=nps
 		
-		print "Existing helix length: "+ str(len(helix))
+		print("Existing helix length: "+ str(len(helix)))
 		#print helix[0]
 		
 	
-	if options.verbose>0: print "Executing segmentation"
+	if options.verbose>0: print("Executing segmentation")
 	(processorname, param_dict) = parsemodopt(options.process)
 	seg=volume.process(processorname,param_dict)
 	seg["apix_x"]=volume["apix_x"]
 	seg["apix_y"]=volume["apix_y"]
 	seg["apix_z"]=volume["apix_z"]
 
-	if options.verbose>0: print "Writing output"
+	if options.verbose>0: print("Writing output")
 	if options.output!=None : seg.write_image(options.output,0)
 	if options.segout!=None :
 		max=int(seg["maximum"])
@@ -135,7 +136,7 @@ def main():
 	if options.helixfile!=None:
 		for h in helix:
 			centers.append(h)
-		out=file(options.edgefile,"w")
+		out=open(options.edgefile,"w")
 		for i in range(1,len(helix)):
 			d=sqrt((helix[i-1][0]-helix[i][0])**2+(helix[i-1][1]-helix[i][1])**2+(helix[i-1][2]-helix[i][2])**2)
 			if d<3.8:
@@ -167,7 +168,7 @@ def main():
 	if options.chimeraout : write_chimera_markers(options.chimeraout,centers,seg["apix_x"],seg["apix_y"],seg["apix_z"],seg["apix_x"]*3)
 	if options.pdbout : write_pdb_markers(options.pdbout,centers,seg["apix_x"],seg["apix_y"],seg["apix_z"],sx,sy,sz)
 	if options.txtout :
-		out=file(options.txtout,"w")
+		out=open(options.txtout,"w")
 		for n,i in enumerate(centers): out.write("%d\t%1.3f\t%1.3f\t%1.3f\n"%(n,i[0],i[1],i[2]))
 		out.close()
 	E2end(E2n)
@@ -175,7 +176,7 @@ def main():
 def write_chimera_markers(filename,centers,apix_x,apix_y,apix_z,marker_size=3.0) :
 	"""Writes a set of coordinates (without connectors) in Chimera marker XML format"""
 	try: 
-		out=file(filename,"w")
+		out=open(filename,"w")
 		out.write('<marker_set name="%s">\n'%filename.split(".")[0])
 		for j,c in enumerate(centers) :
 			out.write('<marker id="%d" x="%1.3f" y="%1.3f" z="%1.3f" radius="%1.3f"/>\n'%(j,c[0]*apix_x,c[1]*apix_y,c[2]*apix_z,marker_size))
@@ -183,23 +184,23 @@ def write_chimera_markers(filename,centers,apix_x,apix_y,apix_z,marker_size=3.0)
 		out.close()
 	except:
 		traceback.print_exc()
-		print "\n---------------\nFailed to write Chimera output file, check permissions, etc"
+		print("\n---------------\nFailed to write Chimera output file, check permissions, etc")
 		
 	
 def write_pdb_markers(filename,centers,apix_x,apix_y,apix_z,sx,sy,sz):
 	"""Writes a set of coordinates into a pseudo-PDB file"""
 	#print sx,sy,sz
 	try: 
-		out=file(filename,"w")
+		out=open(filename,"w")
 		for j,c in enumerate(centers) :
 			out.write("ATOM  %5d  CA  ALA  %4d    %8.3f%8.3f%8.3f  1.00%6.2f      S_00  0 \n"%(j,j,(c[0]-sx/2)*apix_x,(c[1]-sy/2)*apix_y,(c[2]-sz/2)*apix_z,1.0))
 		out.close()
 	except:
 		traceback.print_exc()
-		print "\n---------------\nFailed to write PDB output file, check permissions, etc"
+		print("\n---------------\nFailed to write PDB output file, check permissions, etc")
 
 def read_helix(filename,sx,sy,sz,ax,ay,az):
-	print "Reading helix atoms from pdb file..."
+	print("Reading helix atoms from pdb file...")
 	points = []
 	pdbfile = open(filename, "r")
 	lines = pdbfile.readlines()

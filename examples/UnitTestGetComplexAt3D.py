@@ -1,4 +1,5 @@
 
+from __future__ import print_function
 ######################################
 #  The even case, 3D:  Part 1
 ######################################
@@ -16,7 +17,7 @@ tiBFFT = tiB.do_fft();
 nx=tiBFFT.get_xsize();
 ny=tiBFFT.get_ysize();
 nz=tiBFFT.get_zsize();
-print nx,ny,nz
+print(nx,ny,nz)
 
 # the 3 values of kx are 0, 1, 2
 # the 4 values of ky  are 0, 1, 2, -1(3)
@@ -108,18 +109,18 @@ tiBFFT = tiB.do_fft();
 
 
 #  4 values
-print tiBFFT.get_complex_at(0,0);     #  gives real value
-print tiBFFT.get_complex_at(0,N/2);   #  gives real value
-print tiBFFT.get_complex_at(N/2,0);   #  gives real value
-print tiBFFT.get_complex_at(N/2,N/2); #  gives real value
+print(tiBFFT.get_complex_at(0,0));     #  gives real value
+print(tiBFFT.get_complex_at(0,N/2));   #  gives real value
+print(tiBFFT.get_complex_at(N/2,0));   #  gives real value
+print(tiBFFT.get_complex_at(N/2,N/2)); #  gives real value
 
 
 #  2(N/2 -1) 2 redundancies
 for kx in [0, N/2]:#    so 2 values
   for ky in range(1,N/2): #  (N/2-1) values
-    print tiBFFT.get_complex_at(kx,ky);
-    print tiBFFT.get_complex_at(kx,-ky);# this is the cc of above line
-    print 'Last two values should be complex conjugates';
+    print(tiBFFT.get_complex_at(kx,ky));
+    print(tiBFFT.get_complex_at(kx,-ky));# this is the cc of above line
+    print('Last two values should be complex conjugates');
 
 # so real values = complex values
 # N^2= (N+2)(N) -4   -(2)(N/2-1)(2) 
@@ -161,8 +162,8 @@ tiBFFT.get_complex_at(0,-1)#  1-2j
 for kx in [0, N/2]:#    so 2 values
   for ky in range(1,N/2):#  (N/2-1) values
     tiBFFT.set_complex_at(kx,ky,kx);
-    print kx,tiBFFT.get_complex_at(kx,-ky);# this is the cc of above line
-    print 'Last two values should be complex conjugates';
+    print(kx,tiBFFT.get_complex_at(kx,-ky));# this is the cc of above line
+    print('Last two values should be complex conjugates');
 
 
 #############################################
@@ -183,7 +184,7 @@ tiBFFT = tiB.do_fft();
 
 nx=tiBFFT.get_xsize();
 ny=tiBFFT.get_ysize();
-print nx,ny
+print(nx,ny)
 
 # the 3 values of kx are 0, 1, 2
 # the 5 values of ky  are 0, 1, 2,  -2(3), -1(4)
@@ -272,14 +273,14 @@ tiBFFT = tiB.do_fft();
 
 
 #  1 special values
-print tiBFFT.get_complex_at(0,0);     #  yields real value
+print(tiBFFT.get_complex_at(0,0));     #  yields real value
 
 
 #  (N -1)  =4 redundancies
 kx=0;
 for ky in range(1,(N+1)/2): #  (N/2-1) values
-    print tiBFFT.get_complex_at(kx, ky), tiBFFT.get_complex_at(kx,-ky);
-    print 'Last two values should be complex conjugates';
+    print(tiBFFT.get_complex_at(kx, ky), tiBFFT.get_complex_at(kx,-ky));
+    print('Last two values should be complex conjugates');
 
 # so real values = complex values
 # N^2= (N+1)(N) -1   -((N-1)/2)(2) 
@@ -324,8 +325,8 @@ kx=0
 for ky in range(1,(N+1)/2):#  (N/2-1) values
     Value =complex(1,ky);
     tiBFFT.set_complex_at(kx,ky,Value);
-    print tiBFFT.get_complex_at(kx,ky),tiBFFT.get_complex_at(kx,-ky);# this is the cc of above line
-    print 'Last two values should be complex conjugates';
+    print(tiBFFT.get_complex_at(kx,ky),tiBFFT.get_complex_at(kx,-ky));# this is the cc of above line
+    print('Last two values should be complex conjugates');
 
 
 

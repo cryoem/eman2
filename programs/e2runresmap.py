@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #********************************************************************************
 # Author: Stephen Murray (scmurray@bcm.edu), 7/1/14
 # Copyright (c) 2000-2013 Baylor College of Medicine
@@ -28,7 +29,7 @@ usage = """add stuff
 
 """
 
-print "Running e2runresmap.py"
+print("Running e2runresmap.py")
 # Required Program Options and Parameters (GUI and Command Line)
 parser = EMArgumentParser(usage, version=EMANVERSION)
 parser.add_header(name="resmap", help="Options in this GUI pertain to using ResMap", title="---ResMap Options---", row=0, col=0, rowspan=1, colspan=3)
@@ -68,11 +69,11 @@ if EMAN_EVEN in os.listdir(refine_dir) and EMAN_ODD in os.listdir(refine_dir):
 	s = "e2proc3d.py " + refine_dir + "/" + EMAN_EVEN + " " + E2RES + "/" + EMAN_EVEN.replace("hdf","mrc")
 	call(s,shell=True)
 else:
-	print "Missing one of the two halves! Make sure you are trying to run this program on a completed EMAN2 refinement"
+	print("Missing one of the two halves! Make sure you are trying to run this program on a completed EMAN2 refinement")
 	exit(-1)
 if "use_mask" in optionList:
 	if not EMAN_MASK in os.listdir(refine_dir):
-		print "Mask not present! Make sure you are trying to run this program on a completed EMAN2 refinement" 
+		print("Mask not present! Make sure you are trying to run this program on a completed EMAN2 refinement") 
 		exit(-1)
 	else:
 		s = "e2proc3d.py " + refine_dir + "/" + EMAN_MASK + " " + E2RES + "/mask.mrc"
@@ -84,14 +85,14 @@ if options.resmapexe==None:
 	for path in os.environ["PATH"].split(os.pathsep):
 		dl=[i for i in os.listdir(path) if "ResMap" in i]
 		if len(dl)>1 :
-			print "Ambiguous ResMap executables, please use --resmapexe"
+			print("Ambiguous ResMap executables, please use --resmapexe")
 			sys.exit(1)
 		if len(dl)==1 :
 			resmap=os.path.join(path,dl[0])
-			if options.verbose: print "Found: ",resmap
+			if options.verbose: print("Found: ",resmap)
 			break
 	else:
-		print "Unable to find ResMap executable in your path. Please use --resmapexe"
+		print("Unable to find ResMap executable in your path. Please use --resmapexe")
 		sys.exit(1)
 else: resmap=options.resmapexe
 	
@@ -104,7 +105,7 @@ if float(options.res_max) != 0.0:
 if mask:
 	s = s + " --maskVol=" + E2RES + "/mask.mrc"
 s = s + ">" + E2RES + "/resmap_output_text.txt"
-print s
+print(s)
 call(s,shell=True)
 
-print "e2runresmap complete"
+print("e2runresmap complete")

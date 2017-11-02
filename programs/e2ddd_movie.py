@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 02/12/2013 (sludtke@bcm.edu). Updated on 08/28/16.
@@ -582,7 +583,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			if len(options.rangeali)>0:
 				try: rng=[int(i) for i in options.rangeali.split("-")]
 				except:
-					print "Error: please specify --rangeali as X-Y where X and Y are inclusive starting with 0"
+					print("Error: please specify --rangeali as X-Y where X and Y are inclusive starting with 0")
 					sys.exit(1)
 				mgdirname = "micrographs_{}-{}".format(rng[0],rng[1])
 				try: os.mkdir(mgdirname)
@@ -680,19 +681,22 @@ def split_fft(options,img,i,box,step,out):
 			lst.append(clp.do_fft())
 	out.put((i,lst))
 
-def correlation_peak_model((x, y), xo, yo, sigma, amp):
+def correlation_peak_model(x_y, xo, yo, sigma, amp):
+	x, y = x_y
 	xo = float(xo)
 	yo = float(yo)
 	g = amp*np.exp(-(((x-xo)**2)+((y-yo)**2))/(2*sigma**2))
 	return g.ravel()
 
-def fixedbg_peak_model((x, y), sigma, amp):
+def fixedbg_peak_model(x_y, sigma, amp):
+	x, y = x_y
 	xo = float(len(x)/2)
 	yo = float(len(y)/2)
 	g = amp*np.exp(-(((x-xo)**2)+((y-yo)**2))/(2*sigma**2))
 	return g.ravel()
 
-def twod_bimodal((x,y),x1,y1,sig1,amp1,sig2,amp2):
+def twod_bimodal(x_y,x1,y1,sig1,amp1,sig2,amp2):
+	x, y = x_y
 	#correlation_peak = correlation_peak_model((x,y),x1,y1,sig1,amp1)
 	cp = amp1*np.exp(-(((x-x1)**2+(y-y1)**2))/(2*sig1**2))
 	#fixedbg_peak = fixedbg_peak_model((x,y),sig2,amp2)

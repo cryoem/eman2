@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 11/25/2011 (sludtke@bcm.edu)
@@ -70,28 +71,28 @@ def main():
 def run_daemon(options,args):
 	import sys, os 
 
-    # UNIX double-fork magic
-    try: 
-        pid = os.fork() 
-        if pid > 0: sys.exit(0) # exit parent once
-    except OSError, e: 
-        print "Daemon error" 
-        sys.exit(1)
+	# UNIX double-fork magic
+	try: 
+		pid = os.fork() 
+		if pid > 0: sys.exit(0) # exit parent once
+	except OSError as e: 
+		print("Daemon error") 
+		sys.exit(1)
 
-    try: 
+	try: 
 		os.setsid() 
 		os.umask(0) 	# do we really want this
 		os.chdir("/") 	# or this ?
 	except:
 		pass
 
-    # do second fork
-    try: 
-        pid = os.fork() 
-        if pid > 0: sys.exit(0) 	# exit the second time
-    except OSError, e: 
-        print "Daemon error 2" 
-        sys.exit(1) 
+	# do second fork
+	try: 
+		pid = os.fork() 
+		if pid > 0: sys.exit(0) 	# exit the second time
+	except OSError as e: 
+		print("Daemon error 2") 
+		sys.exit(1) 
 
 	# ok, we got here, so we should be running in a parentless daemon now
     
@@ -113,7 +114,7 @@ class daemon:
 		
 		# This file should be readable by the user only, and contains
 		# "magic" string for security, port number, and PID
-		out=file(path=e2gethome()+"/.eman2/remoted.txt","w")
+		out=open(e2gethome()+"/.eman2/remoted.txt","w")
 		out.write("%s\n%d\n%d\n"%(self.magic,self.listen_port,os.getpid()))
 		out.close()
     
@@ -134,8 +135,8 @@ def read_obj(stdin):
 	size=stdin.readline()
 	try: size=int(size)
 	except:
-		if size[:4]=="!!!!" : raise Exception,size[4:]
-		raise Exception,"Unknown error : "+size
+		if size[:4]=="!!!!" : raise Exception(size[4:])
+		raise Exception("Unknown error : "+size)
 	return loads(decompress(stdin.read(size)))
 
 def write_chunk(stdout,obj):
@@ -152,14 +153,14 @@ def read_chunk(stdin):
 	size=stdin.readline()
 	try: size=int(size)
 	except:
-		if size[:4]=="!!!!" : raise Exception,size[4:]
-		raise Exception,"Unknown error : "+size
+		if size[:4]=="!!!!" : raise Exception(size[4:])
+		raise Exception("Unknown error : "+size)
 	if size==0 : return ""
 	return decompress(stdin.read(size))
 
 def send_file(stdout,path):
 	"Sends a file to stdout as a set of chunks terminated with a 0 length chunk"
-	fin=file(path,"rb")
+	fin=open(path,"rb")
 	while 1:
 		data=fin.read(1000000)
 		if len(data)==0 :break
@@ -171,7 +172,7 @@ def recv_file(stdin,path):
 	"Receives a file into path. Reads a set of chunks terminated with a zero-length chunk"
 	try :os.makedirs(os.path.dirname(path))
 	except: pass
-	out=file(path,"w")
+	out=open(path,"w")
 	while 1:
 		chunk=read_chunk(stdin)
 		if len(chunk)==0 or chunk==None : break
@@ -217,7 +218,7 @@ def get_dir_list_recurse(path,basepath=None):
 	"Recursively lists the contents of a directory, including BDB contents"
 	
 	if ("EMAN2DB") in path:
-		print "ERROR : EMAN2DB may not be specified as a path to copy. Use bdb: specifier instead."
+		print("ERROR : EMAN2DB may not be specified as a path to copy. Use bdb: specifier instead.")
 		return []
 	
 	if path[:4].lower()=="bdb:" :
@@ -341,19 +342,19 @@ class scp_proxy:
 			self.stdout=self.ssh.stdout		# read from this
 			self.stdin=self.ssh.stdin		# write to this
 		except:
-			print "ssh to remote machine failed : ",("ssh",host,"e2ssh.py --client")
+			print("ssh to remote machine failed : ",("ssh",host,"e2ssh.py --client"))
 			traceback.print_exc()
 			sys.exit(2)
 		
 		while 1:
 			ln=self.stdout.readline().strip()
 			if len(ln)==0 : 
-				print "Error running e2scp.py on the remote machine. EMAN2 installed ?"
+				print("Error running e2scp.py on the remote machine. EMAN2 installed ?")
 				sys.exit(3)
 			if ln=="HELO" : 
-				if self.verbose : print "Connection established"
+				if self.verbose : print("Connection established")
 				break
-			if self.verbose >1 : print "*** ",ln
+			if self.verbose >1 : print("*** ",ln)
 		
 		atexit.register(self.close)
 		
@@ -373,7 +374,7 @@ class scp_proxy:
 		self.stdin.write("mkdir\n%s\n"%path)
 		self.stdin.flush()
 		r=self.stdout.readline().strip()
-		if r!="OK" : raise Exception,"Error in creating remote path (%s)"%(r)
+		if r!="OK" : raise Exception("Error in creating remote path (%s)"%(r))
 
 	def listrecurse(self,path,basepath=""):
 		"""Recursively list the contents of a remote path, may be a directory or a BDB specifier. If specified

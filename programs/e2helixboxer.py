@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Ross Coleman (racolema@gmail.com)
@@ -47,10 +48,10 @@ try:
 
 	ENABLE_GUI = True
 
-except ImportError, e:
-	print "Importing GUI libraries failed!"
-	print e
-	print "GUI features are disabled."
+except ImportError as e:
+	print("Importing GUI libraries failed!")
+	print(e)
+	print("GUI features are disabled.")
 	ENABLE_GUI = False
 
 """
@@ -93,7 +94,7 @@ def main():
 	(options, args) = parser.parse_args()
 
 	if len(args)==0 :
-		print "ERROR: please provide a list of files to be boxed at the command line"
+		print("ERROR: please provide a list of files to be boxed at the command line")
 		sys.exit(1)
 
 	if options.helix_width < 1:
@@ -147,10 +148,10 @@ def main():
 
 			E2end(logid)
 		elif len(args) == 0:
-			print 'You must specify a micrograph file or use the "--gui" option.'
+			print('You must specify a micrograph file or use the "--gui" option.')
 			return
 		elif len(args) > 1:
-			print 'Multiple micrographs can only be specified with the "--gui" option'
+			print('Multiple micrographs can only be specified with the "--gui" option')
 			return
 
 def counterGen():
@@ -480,11 +481,11 @@ def save_particles(particles, ptcl_filepath, do_edge_norm=False, stack_file_mode
 	testfilename = ".HelixBoxerTestFile%s" % ext
 	try:
 		testdata.write_image(testfilename, 0) #Test for write support
-	except RuntimeError, e:
+	except RuntimeError as e:
 		ext = ".hdf"
 	try:
 		testdata.write_image(testfilename, 1) #Test for stack file support
-	except RuntimeError, e:
+	except RuntimeError as e:
 		stack_file_mode = "none"
 	finally:
 		if os.access(testfilename, os.F_OK):
@@ -1106,7 +1107,7 @@ if ENABLE_GUI:
 			creates a unique key for a new "rectline" EMShape, which is used for boxing a helix
 			@return: a string that is the key for the new "rectline" EMShape
 			"""
-			i = self.counter.next()
+			i = next(self.counter)
 			return "rectline%i" % i
 		def get_width(self):
 			"""
@@ -1521,7 +1522,7 @@ if ENABLE_GUI:
 			"""
 
 			if self.current_boxkey and self.edit_mode != "delete":
-				if self.helices_dict.has_key(self.initial_helix_box_data_tuple):
+				if self.initial_helix_box_data_tuple in self.helices_dict:
 					self.helices_dict.pop(self.initial_helix_box_data_tuple)
 				if self.initial_helix_box_data_tuple in self.get_db_item("helixboxes"):
 					self.remove_box_from_db(self.initial_helix_box_data_tuple)

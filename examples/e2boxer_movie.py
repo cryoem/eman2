@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 # Muyuan Chen 2016-09
 from EMAN2 import *
 import numpy as np
@@ -21,11 +22,11 @@ def main():
 	frameid=[int(i) for i in options.frameid.split(',')]
 	
 	if options.newsuffix=="":
-		print "overwriting the particles..."
+		print("overwriting the particles...")
 		
 	for pp in ptcls:
 		boxes=get_particles(pp,frameid, options.invert)
-		print pp,len(boxes)
+		print(pp,len(boxes))
 		for i,b in enumerate(boxes):
 			b.write_image(pp[:-4]+options.newsuffix+".hdf",i)
 		
@@ -39,14 +40,14 @@ def get_particles(pp,frameid, doinvert=-1):
 		mvname=str(db["movie_name"])
 		
 	except:
-		print "Cannot locate movie file for {}, continue".format(pp)
+		print("Cannot locate movie file for {}, continue".format(pp))
 		db.close()
 		return []
 	
 	gain=dark=None
-	if db.has_key("gain_name"):
+	if "gain_name" in db:
 		gain=EMData(str(db["gain_name"]), db["gain_id"])
-	if db.has_key("dark_name"):
+	if "dark_name" in db:
 		dark=EMData(str(db["dark_name"]), db["dark_id"])
 	
 	
@@ -101,7 +102,7 @@ def get_particles(pp,frameid, doinvert=-1):
 				cc0= e.cmp("ccc",boxim)
 				e.mult(-1)
 				cc1= e.cmp("ccc",boxim)
-				print cc0, cc1
+				print(cc0, cc1)
 				if cc1<cc0:
 					doinvert=1
 				else:
@@ -120,7 +121,7 @@ def get_particles(pp,frameid, doinvert=-1):
 
 	
 def run(cmd):
-	print cmd
+	print(cmd)
 	launch_childprocess(cmd)
 	
 	

@@ -1,4 +1,5 @@
 #!/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -35,7 +36,7 @@ from EMAN2 import *
 from sparx  import *
 
 numr=Numrinit(5,5,1,'f')
-print  numr
+print(numr)
 wr=ringwe(numr,'f')
 #print  wr
 
@@ -77,23 +78,23 @@ Applyws(circ2, numr,wr)
 neg=0
 qn,tot,neg=Util.Crosrng_e(circ2,circ1,numr,neg)
 
-print  qn,tot,ang_n(tot,'f', numr[len(numr)-1])
+print(qn,tot,ang_n(tot,'f', numr[len(numr)-1]))
 
 retvals = Util.Crosrng_ms(circ2,circ1,numr)
 qn = retvals["qn"]
 tot = retvals["tot"]
 qm = retvals["qm"]
 tmt = retvals["tmt"]
-print  qn,tot,ang_n(tot,'f', numr[len(numr)-1])
-print  qm,tmt,ang_n(tmt,'f', numr[len(numr)-1])
+print(qn,tot,ang_n(tot,'f', numr[len(numr)-1]))
+print(qm,tmt,ang_n(tmt,'f', numr[len(numr)-1]))
 
 retvals = Util.Crosrng_msr(circ2,circ1,numr)
 qn = retvals["qn"]
 tot = retvals["tot"]
 qm = retvals["qm"]
 tmt = retvals["tmt"]
-print  qn,tot,ang_n(tot,'f', numr[len(numr)-1])
-print  qm,tmt,ang_n(tmt,'f', numr[len(numr)-1])
+print(qn,tot,ang_n(tot,'f', numr[len(numr)-1]))
+print(qm,tmt,ang_n(tmt,'f', numr[len(numr)-1]))
 
 line = Util.Crosrng_msg(circ2,circ1,numr)
 print_col(line)

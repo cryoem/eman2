@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
@@ -71,8 +72,8 @@ def main():
 	(options, args) = parser.parse_args()
 
 	if len(args) < 2 or len(args) > 3:
-		print "usage: " + usage
-		print "Please run '" + progname + " -h' for detailed options"
+		print("usage: " + usage)
+		print("Please run '" + progname + " -h' for detailed options")
 	elif(options.rotational):
 		from applications import ali2d_rotationaltop
 		global_def.BATCH = True
@@ -123,7 +124,7 @@ def main():
 				number_of_proc = number_of_proc, myid = myid, main_node = main_node, mpi_comm = MPI_COMM_WORLD,\
 				write_headers = True)
 		else:
-			print " Non-MPI is no more in use, try MPI option, please."
+			print(" Non-MPI is no more in use, try MPI option, please.")
 			"""
 			from applications import ali2d
 			ali2d(args[0], outdir, mask, options.ir, options.ou, options.rs, options.xr, options.yr, \

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: David Woolford March 2nd 2009
@@ -77,32 +78,32 @@ class TestEMDataCuda(unittest.TestCase):
 			for y in [15,16]:
 				for x in [15,16]:
 					e = EMData()
-			        e.set_size(x,y,z)
-			        e.process_inplace("testimage.noise.uniform.rand")
+					e.set_size(x,y,z)
+					e.process_inplace("testimage.noise.uniform.rand")
         
-			        # Just lose the edge pixels
-			        if z == 1:
-			        	clip_region_1 = Region(1,1,x-2,y-2)
-			        else:
-			        	clip_region_1 = Region(1,1,1,x-2,y-2,z-2)
-			        
-			        r = e.get_clip(clip_region_1)
-			        e.set_gpu_rw_current()
-			        r2 = e.get_clip(clip_region_1)
-			        self.__test_image_equality(r,r2)
-			        
-			        e = EMData()
-			        e.set_size(x,y,z)
-			        e.process_inplace("testimage.noise.uniform.rand")
-			        if z == 1:
-			        	clip_region_1 = Region(-1,-1,x+2,y+2)
-			        else:
-			        	clip_region_1 = Region(-1,-1,-1,x+2,y+2,z+2)
-			        r = e.get_clip(clip_region_1)
-			        e.set_gpu_rw_current()
-			        r2 = e.get_clip(clip_region_1)
-			        self.__test_image_equality(r,r2)
-			        
+					# Just lose the edge pixels
+					if z == 1:
+						clip_region_1 = Region(1,1,x-2,y-2)
+					else:
+						clip_region_1 = Region(1,1,1,x-2,y-2,z-2)
+					
+					r = e.get_clip(clip_region_1)
+					e.set_gpu_rw_current()
+					r2 = e.get_clip(clip_region_1)
+					self.__test_image_equality(r,r2)
+					
+					e = EMData()
+					e.set_size(x,y,z)
+					e.process_inplace("testimage.noise.uniform.rand")
+					if z == 1:
+						clip_region_1 = Region(-1,-1,x+2,y+2)
+					else:
+						clip_region_1 = Region(-1,-1,-1,x+2,y+2,z+2)
+					r = e.get_clip(clip_region_1)
+					e.set_gpu_rw_current()
+					r2 = e.get_clip(clip_region_1)
+					self.__test_image_equality(r,r2)
+					
 	def __test_image_almost_equality(self,a,b,precision):
 		for k in range(a.get_zsize()):
 			for j in range(a.get_ysize()):

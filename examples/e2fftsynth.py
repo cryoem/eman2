@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 # Author: Steven Ludtke, 10/16/2010 (sludtke@bcm.edu)
 # Copyright (c) 2000-2010 Baylor College of Medicine
@@ -43,7 +44,7 @@ try:
 	from emplot2d import EMPlot2DWidget
 	from emapplication import EMApp
 except:
-	print "Unable to import Python GUI libraries, PYTHONPATH ?"
+	print("Unable to import Python GUI libraries, PYTHONPATH ?")
 	sys.exit(1)
 
 def main():

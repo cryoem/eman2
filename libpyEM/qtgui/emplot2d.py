@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -257,7 +258,7 @@ class EMPlot2DWidget(EMGLWidget):
 			if not quiet: self.updateGL()
 			return
 
-		if self.data.has_key(key) : oldkey=True
+		if key in self.data : oldkey=True
 		else: oldkey=False
 
 		if isinstance(input_data,EMData):
@@ -283,7 +284,7 @@ class EMPlot2DWidget(EMGLWidget):
 				else : self.axes[key]=(0,1,-2,-2)
 			else : self.axes[key]=(-1,0,-2,-2)
 		except:
-			print "Data error:", data
+			print("Data error:", data)
 			return
 
 		if oldkey:
@@ -344,7 +345,7 @@ class EMPlot2DWidget(EMGLWidget):
 				im = im[0]
 				l = [i for i in range(im.get_size())]
 				k = im.get_data_as_vector()
-				if self.data.has_key(filename) : filename="{}.{}".format(filename,len(self.data))
+				if filename in self.data : filename="{}.{}".format(filename,len(self.data))
 				self.set_data([l,k],filename,quiet=quiet)
 			elif im[0].get_attr_default("isvector",0):
 #				all=[i.get_data_as_vector() for i in im]
@@ -363,7 +364,7 @@ class EMPlot2DWidget(EMGLWidget):
 					self.set_data([l,k],filename+":"+str(idx),quiet=quiet)
 
 		elif file_type == 'fp':
-			fin=file(filename)
+			fin=open(filename)
 			fph=struct.unpack("120sII",fin.read(128))
 			ny=fph[1]
 			nx=fph[2]
@@ -375,7 +376,7 @@ class EMPlot2DWidget(EMGLWidget):
 		else:
 			try:
 				# this should probably be replaced with something more flexible
-				fin=file(filename)
+				fin=open(filename)
 				fin.seek(0)
 				rdata=fin.readlines()
 				if '#' in rdata[0]:
@@ -392,7 +393,7 @@ class EMPlot2DWidget(EMGLWidget):
 				self.set_data(data,remove_directories_from_name(filename,1),quiet=quiet,comments=comments)
 			except:
 				traceback.print_exc()
-				print "couldn't read",filename
+				print("couldn't read",filename)
 				return False
 
 		return True
@@ -427,7 +428,7 @@ class EMPlot2DWidget(EMGLWidget):
 					data = [l,k]
 
 		elif file_type == 'fp':
-			fin=file(filename)
+			fin=open(filename)
 			fph=struct.unpack("120sII",fin.read(128))
 			ny=fph[1]
 			nx=fph[2]
@@ -436,7 +437,7 @@ class EMPlot2DWidget(EMGLWidget):
 				data.append(struct.unpack("%df"%ny,fin.read(4*ny)))
 		else:
 			try:
-				fin=file(filename)
+				fin=open(filename)
 				fin.seek(0)
 				rdata=fin.readlines()
 				rdata=[i for i in rdata if i[0]!='#']
@@ -447,7 +448,7 @@ class EMPlot2DWidget(EMGLWidget):
 				data=[[array([rdata[j][i]]) for j in range(ny)] for i in range(nx)]
 
 			except:
-				print "couldn't read",filename
+				print("couldn't read",filename)
 
 		return data
 
@@ -463,7 +464,7 @@ class EMPlot2DWidget(EMGLWidget):
 		any adaptations occur in future
 		'''
 		try:
-			fin=file(filename)
+			fin=open(filename)
 			fin.seek(0)
 			rdata = []
 			while (len(rdata) < 2):
@@ -566,7 +567,7 @@ class EMPlot2DWidget(EMGLWidget):
 					parm=linetypes[self.pparm[i][2]]
 					try: ax.plot(x,y,parm,linewidth=self.pparm[i][3],color=colortypes[self.pparm[i][0]])
 					except:
-						print "Error: Plot failed\n%d %s\n%d %s"%(len(x),x,len(y),y)
+						print("Error: Plot failed\n%d %s\n%d %s"%(len(x),x,len(y),y))
 
 
 			canvas.draw()
@@ -579,7 +580,7 @@ class EMPlot2DWidget(EMGLWidget):
 				try: # this should work for matplotlib 0.91
 					self.scrlim=(ax.get_window_extent().xmin(),ax.get_window_extent().ymin(),ax.get_window_extent().xmax()-ax.get_window_extent().xmin(),ax.get_window_extent().ymax()-ax.get_window_extent().ymin())
 				except:
-					print 'there is a problem with your matplotlib'
+					print('there is a problem with your matplotlib')
 					return
 			self.plotlim=(ax.get_xlim()[0],ax.get_ylim()[0],ax.get_xlim()[1]-ax.get_xlim()[0],ax.get_ylim()[1]-ax.get_ylim()[0])
 
@@ -1030,10 +1031,10 @@ class EMPolarPlot2DWidget(EMGLWidget):
 		self.yticklabels = True		# Default is to draw Y tick labels
 		self.xticklabels = True		# Default is to draw X tick labels
 
-        def set_yticklabels(self, boolvalue):
+	def set_yticklabels(self, boolvalue):
 		self.yticklabels = boolvalue
 
-        def set_xticklabels(self, boolvalue):
+	def set_xticklabels(self, boolvalue):
 		self.xticklabels = boolvalue
 
 	def initializeGL(self):
@@ -1117,7 +1118,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 		elif event.buttons()&Qt.RightButton:
 			best = self.find_image(self._computeTheta(x,y), self._computeRadius(x,y))
 			if best == -1:
-				print "No Point Selected"
+				print("No Point Selected")
 			else:
 				data = self.data["data"]
 				self.valradius=4.0
@@ -1126,7 +1127,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 				self.updateGL()
 #				self.emit(QtCore.SIGNAL("clusterStats"), [meanAngle,meanRad,rmsdAngle,rmsdRad,pcount])
 				if event.modifiers()&Qt.ShiftModifier:
-						print "Shift Clicked!"
+						print("Shift Clicked!")
 						#if self.particle_viewer == None:
 							#first = True
 							#self.particle_viewer = EMImage2DWidget(data=None, application=get_application())
@@ -1241,7 +1242,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 		else:
 			filename = "%s.%s"%(filename,format)
 			image.save(filename, format)
-		print "Saved %s to disk"%os.path.basename(str(filename))
+		print("Saved %s to disk"%os.path.basename(str(filename)))
 
 	def base_set_data(self,input_data,key="data",replace=False,quiet=False,color=-1,linewidth=1,linetype=0,symtype=-1,symsize=4):
 		"""Set a keyed data set. The key should generally be a string describing the data.
@@ -1413,7 +1414,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 				try: # this should work for matplotlib 0.91
 					self.scrlim=(ax.get_window_extent().xmin(),ax.get_window_extent().ymin(),ax.get_window_extent().xmax()-ax.get_window_extent().xmin(),ax.get_window_extent().ymax()-ax.get_window_extent().ymin())
 				except:
-					print 'there is a problem with your matplotlib'
+					print('there is a problem with your matplotlib')
 					return
 			self.plotlim=(ax.get_xlim()[0],ax.get_ylim()[0],ax.get_xlim()[1]-ax.get_xlim()[0],ax.get_ylim()[1]-ax.get_ylim()[0])
 			self.plotdims = ax.get_position()
@@ -1686,7 +1687,7 @@ class EMPlot2DStatsInsp(QtGui.QWidget):
 			result = np.corrcoef(x,rowvar=False) #result = ["\t".join([str(round(j,2)) for j in i]) for i in corrcoef]
 
 		else:
-			print("{} not yet implemented!".format(stat))
+			print(("{} not yet implemented!".format(stat)))
 			return
 
 		self.table.setRowCount(result.shape[0])
@@ -1792,11 +1793,11 @@ class EMPlot2DRegrInsp(QtGui.QWidget):
 		# perform actual regression
 		coefs, _, _, _ = np.linalg.lstsq(A, y) #coefs, residuals, rank, svals
 
-		print("Polynomial Regression (Degree {})".format(degree))
-		print("X: {}\tY: {}".format(xs,ys))
+		print(("Polynomial Regression (Degree {})".format(degree)))
+		print(("X: {}\tY: {}".format(xs,ys)))
 		print("Coefficients:")
 		for i,c in enumerate(coefs):
-			print("{}:\t{}".format(i,c))
+			print(("{}:\t{}".format(i,c)))
 
 		# construct interpolated polynomial
 		xmin = np.min(x)
@@ -1944,7 +1945,7 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 					return
 
 				imn=int(imn)
-				if not lsx.has_key(imf) : lsx[imf]=LSXFile(imf,True)	# open the LSX file for reading
+				if imf not in lsx : lsx[imf]=LSXFile(imf,True)	# open the LSX file for reading
 				val=lsx[imf][imn]
 				out[r]=val
 
@@ -1975,7 +1976,7 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 
 		# Sometimes one axis dominates the classification improperly, this makes each axis equally weighted
 		if axnorm:
-			print "Normalize Axes"
+			print("Normalize Axes")
 			datafix=[i.copy()/std(i) for i in data]
 		else: datafix=data
 
@@ -2104,7 +2105,7 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 		try:
 			if sel==None: sel=self.target().selected
 		except:
-			print "imgSelect with no selection"
+			print("imgSelect with no selection")
 			return
 
 		try:
@@ -2176,13 +2177,13 @@ class DragListWidget(QtGui.QListWidget):
 				# parses out each number from each line and puts it in our list of lists
 				for i,f in enumerate(rex.findall(s)):
 					try: data[i].append(float(f))
-					except: print "Error (%d): %s"%(i,f)
+					except: print("Error (%d): %s"%(i,f))
 
 			# Find an unused name for the data set
 			trgplot=self.datasource().target()
 			name="Dropped"
 			nn=1
-			while trgplot.data.has_key(name) :
+			while name in trgplot.data :
 				name="Dropped_%d"%nn
 				nn+=1
 
@@ -2741,7 +2742,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 		while os.path.exists(name2):
 			name2="plt_concat_%02d.txt"%(i)
 			i+=1
-		out=file(name2,"a")
+		out=open(name2,"a")
 
 		xcol=self.slidex.value()
 		ycol=self.slidey.value()
@@ -2752,7 +2753,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 				out.write("%g\t%g\n"%(data[xcol][i],data[ycol][i]))
 
 		out=None
-		print "Wrote ",name2
+		print("Wrote ",name2)
 
 
 	def savePlot(self):
@@ -2772,13 +2773,13 @@ class EMPlot2DInspector(QtGui.QWidget):
 				name2="plt_%s_%02d.txt"%(sname,i)
 				i+=1
 
-			out=file(name2,"w")
+			out=open(name2,"w")
 			xcol=self.slidex.value()
 			ycol=self.slidey.value()
 			for i in xrange(len(data[0])):
 				out.write("%g\t%g\n"%(data[xcol][i],data[ycol][i]))
 
-			print "Wrote ",name2
+			print("Wrote ",name2)
 
 	def savePdf(self):
 		"""Saves the contents of the current plot to a pdf"""
@@ -3003,11 +3004,11 @@ class EMPlot2DInspector(QtGui.QWidget):
 			a.setFlags(flags)
 			try: a.setTextColor(qt_color_map[colortypes[parms[j][0]]])
 			except:
-				print "Color error"
-				print list(sorted(parms.keys()))
-				print parms[j][0]
-				print colortypes[parms[j][0]]
-				print qt_color_map[colortypes[parms[j][0]]]
+				print("Color error")
+				print(list(sorted(parms.keys())))
+				print(parms[j][0])
+				print(colortypes[parms[j][0]])
+				print(qt_color_map[colortypes[parms[j][0]]])
 			if visible[j]: a.setCheckState(Qt.Checked)
 			else: a.setCheckState(Qt.Unchecked)
 

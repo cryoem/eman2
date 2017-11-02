@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -54,9 +55,9 @@ def main():
 
 # 	parser.add_argument("--maxbad","-M",type=int,help="Maximumum number of unassigned helices",default=2)
 # 	parser.add_argument("--minhelix","-H",type=int,help="Minimum residues in a helix",default=6)
- 	parser.add_argument("--apix","-P",type=float,help="A/Pixel",default=1.0)
- 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
- 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--apix","-P",type=float,help="A/Pixel",default=1.0)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
@@ -74,7 +75,7 @@ def main():
 	mappoints+=[getNearest(i[3:],3,skeleton) for i in dejavupoints]	
 
 	for i in range(len(mappoints)/2):
-		print "Helix %d:  "%(i), mappoints[i+len(mappoints)/2], mappoints[i]
+		print("Helix %d:  "%(i), mappoints[i+len(mappoints)/2], mappoints[i])
 		erasePairs(skeleton,mappoints[i+len(mappoints)/2],((mappoints[i],()),),i+2)		
 		
 		"""startpoint=mappoints[i+len(mappoints)/2]
@@ -96,13 +97,13 @@ def main():
 #	for i in pairlist:
 #		print i[0],i[1],mappoints[i[0]],mappoints[i[1]],vecdist(mappoints[i[0]],mappoints[i[1]]),i[2]
 	
-	print "%d paths detected"%len(pairlist)
+	print("%d paths detected"%len(pairlist))
 #	skeleton.write_image("zz.mrc")
 	
 	pts=len(dejavupoints)
 	pairlist=[((i[0]%pts,i[0]/pts),(i[1]%pts,i[1]/pts),i[2],j) for i,j in pairlist]
 	
-	out=file(args[2],"w")
+	out=open(args[2],"w")
 	for i in pairlist: 
 		if i[0][0]!=i[1][0] : out.write("%d %d\t%d %d\t%1.3f\t%s\n"%(i[0][1],i[0][0],i[1][1],i[1][0],i[2]*options.apix,i[3]))
 	out.close()
@@ -116,7 +117,7 @@ def getPoints(dejavufile, apix,originX,originY,originZ):
 	pattern=re.compile(r"ALPHA\s'(?P<chain>[\w]+)'\s'(?P<startres>[\w]+)'\s'(?P<stopres>[\w]+)'\s(?P<reslength>[\d]+)\s(?P<x1>[\d.,-]+)\s(?P<y1>[\d.,-]+)\s(?P<z1>[\d.,-]+)\s(?P<x2>[\d.,-]+)\s(?P<y2>[\d.,-]+)\s(?P<z2>[\d.,-]+)")
 	endpoints=[]
 	#print "in get points"
-	for line in file(dejavufile,"r").readlines():
+	for line in open(dejavufile,"r").readlines():
 		result = pattern.search(line)
 		if result:
 			coord=[int(originX+(float(result.group('x1'))/apix)), int(originY+(float(result.group('y1'))/apix)), int(originZ+(float(result.group('z1'))/apix)), int(originX+(float(result.group('x2'))/apix)), int(originY+(float(result.group('y2'))/apix)), int(originZ+(float(result.group('z2'))/apix))]
@@ -195,13 +196,13 @@ def erasePairs(skeleton,target,seeds,n):
 	seed must be passed as ((x,y,z),()),)"""
 	newseeds=[]
 
-	print n,len(seeds),seeds[0][0], skeleton.get_value_at(seeds[0][0][0],seeds[0][0][1],seeds[0][0][2])
+	print(n,len(seeds),seeds[0][0], skeleton.get_value_at(seeds[0][0][0],seeds[0][0][1],seeds[0][0][2]))
 	for s in seeds:
 		if s[0]==target :
-			print "trace ",len(s[1])
+			print("trace ",len(s[1]))
 			for i in s[1][5:-5]:
 #				setbox(i[0],i[1],i[2],skeleton,0,1)
-				print "I am setting this point to zero: %d, %d, %d "%(i[0],i[1],i[2])
+				print("I am setting this point to zero: %d, %d, %d "%(i[0],i[1],i[2]))
 				skeleton.set_value_at(i[0],i[1],i[2],0)
 			return
 
@@ -214,7 +215,7 @@ def erasePairs(skeleton,target,seeds,n):
 					
 					if skeleton.get_value_at(x,y,z)>0 and skeleton.get_value_at(x,y,z)!=n:
 						newseeds.append(((x,y,z),ss[1]+(ss[0],)))
-						print "Setting %d,%d,%d to %f"%(x,y,z,n)
+						print("Setting %d,%d,%d to %f"%(x,y,z,n))
 						skeleton.set_value_at(x,y,z,n)
 	if len(newseeds):
 		erasePairs(skeleton,target,newseeds,n)

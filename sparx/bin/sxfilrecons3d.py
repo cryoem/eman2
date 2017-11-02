@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
 # Copyright (c) 2000-2006 The University of Texas - Houston Medical School
@@ -56,14 +57,14 @@ def main():
 	parser.add_option("--MPI",      action="store_true", default=False,               help="use MPI version")
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) != 3:
-		print "usage: " + usage
-		print "Please run '" + progname + " -h' for detailed options"
+		print("usage: " + usage)
+		print("Please run '" + progname + " -h' for detailed options")
 	else:
 		if options.MPI:
 			from mpi import mpi_init, mpi_finalize
 			sys.argv = mpi_init(len(sys.argv), sys.argv)
 		else:
-			print "There is only MPI version of sxfilrecons3d.py. See SPARX wiki page for downloading MyMPI details."
+			print("There is only MPI version of sxfilrecons3d.py. See SPARX wiki page for downloading MyMPI details.")
 			sys.exit()
 			
 		if global_def.CACHE_DISABLE:

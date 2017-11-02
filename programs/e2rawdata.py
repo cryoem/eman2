@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: John Flanagan (jfflanag@bcm.edu)
 # Copyright (c) 2000-2011 Baylor College of Medicine
@@ -109,7 +110,7 @@ def main():
 	blk=len(args)//options.threads+1
 	thrds=[threading.Thread(target=launch_childprocess,args=["e2rawdata.py "+opts+" ".join(args[i*blk:(i+1)*blk])]) for i in xrange(options.threads)]
 
-	print "Launching ",options.threads," subprocesses"
+	print("Launching ",options.threads," subprocesses")
 	for t in thrds:
 		time.sleep(0.1)
 		t.start()
@@ -117,7 +118,7 @@ def main():
 	for t in thrds:
 		t.join()
 
-	print "All subprocesses complete"
+	print("All subprocesses complete")
 	E2end(logid)
 
 def importfn(i,arg,options):
@@ -140,7 +141,7 @@ def importfn(i,arg,options):
 	if options.ctfest :
 		d=EMData(output,0)
 		if d["nx"]<1000 or d["ny"]<1000 : 
-			print "CTF estimation will only work with images at least 1000x1000 in size"
+			print("CTF estimation will only work with images at least 1000x1000 in size")
 			sys.exit(1)
 		if d["nx"]<2000 : box=256
 		elif d["nx"]<4000 : box=512
@@ -186,7 +187,7 @@ def importfn(i,arg,options):
 		db["ctf_frame"]=[box,ctf,(box/2,box/2),set(),5,1]
 		db["quality"]=5
 		db.close()
-		print info_name(arg,nodir=not options.usefoldername),ctf
+		print(info_name(arg,nodir=not options.usefoldername),ctf)
 	
 
 def bgAdj(ctf,fg_1d):

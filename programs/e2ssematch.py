@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 08/28/2006 (sludtke@bcm.edu)
@@ -77,23 +78,23 @@ def ssematch2(ssehfsp,sspredfsp,options):
 	sseh=readsseh(ssehfsp)
 	sspred=readsspred(sspredfsp,options.minhelix)
 	
-	for i in sseh[0]: print "%d "%int(i/1.5),
-	print
+	for i in sseh[0]: print("%d "%int(i/1.5), end=' ')
+	print()
 	
 	skel=readconnect(options.skelpath,len(sseh[0]))
 	try:
 		skel=readconnect(options.skelpath,len(sseh[0]))
 		sseh=(sseh[0],skel)
-		print "Skeletonization results read, %d paths"%len(skel)
+		print("Skeletonization results read, %d paths"%len(skel))
 #		pprint(skel)
 	except: pass
 	
 # 	if options.lengthmatchmatrix:
 # 		lengthmatrix(sspred,sseh,options.lengthmatchmatrix)
 	
-	print "%d predicted helices    %d helices in density"%(len(sspred),len(sseh[0]))
-	for i in sspred: print "%4d "%int(i[0]/1.5),
-	print ""
+	print("%d predicted helices    %d helices in density"%(len(sspred),len(sseh[0])))
+	for i in sspred: print("%4d "%int(i[0]/1.5), end=' ')
+	print("")
 
 	
 
@@ -103,43 +104,43 @@ def ssematch(ssehfsp,sspredfsp,options):
 	sseh=readsseh(ssehfsp)
 	sspred=readsspred(sspredfsp,options.minhelix)
 	
-	for i in sseh[0]: print "%d "%int(i/1.5),
-	print
+	for i in sseh[0]: print("%d "%int(i/1.5), end=' ')
+	print()
 	
 	skel=readconnect(options.skelpath,len(sseh[0]))
 	try:
 		skel=readconnect(options.skelpath,len(sseh[0]))
 		sseh=(sseh[0],skel)
-		print "Skeletonization results read, %d paths"%len(skel)
+		print("Skeletonization results read, %d paths"%len(skel))
 #		pprint(skel)
 	except: pass
 	
 #	if options.lengthmatchmatrix:
 #		lengthmatrix(sspred,sseh,options.lengthmatchmatrix)
 	
-	print "%d predicted helices    %d helices in density"%(len(sspred),len(sseh[0]))
-	for i in sspred: print "%4d "%int(i[0]/1.5),
-	print ""
+	print("%d predicted helices    %d helices in density"%(len(sspred),len(sseh[0])))
+	for i in sspred: print("%4d "%int(i[0]/1.5), end=' ')
+	print("")
 	
 	# get lists of possible pairwise assignments and quality assessment for each
 	pairqual={}
 	for i in range(len(sspred)-1):
 		pairqual[i]=findpairs(i,sspred,sseh,options.maxpairerr)
-		print "%4d "%len(pairqual[i]),
-	print
+		print("%4d "%len(pairqual[i]), end=' ')
+	print()
 		
 	# This is where we generate all of the final answers
 	all=[]
 	recursesoln(pairqual,[],[],[],all,options.maxbad)
 	
-	out=file("ssematch.out","w")
+	out=open("ssematch.out","w")
 	for i in all:
 		out.write("%f\t%s\t%s\n"%(i[0],str(i[1]),str(i[2])))
 	out.close()
 	
-	print all[0]
+	print(all[0])
 	
-	print len(all)
+	print(len(all))
 
 def recursesoln(pairqual,tot,soln,ends,all,maxbad):
 #	print soln,"\n",ends
@@ -147,7 +148,7 @@ def recursesoln(pairqual,tot,soln,ends,all,maxbad):
 	if len(soln)==0 :
 		for j,i in enumerate(pairqual[0]): 
 			recursesoln(pairqual,[i[0]],[i[1],i[2]],[i[3],i[4]],all,maxbad)
-			print "%d/%d"%(j,len(pairqual[0]))
+			print("%d/%d"%(j,len(pairqual[0])))
 		return
 		
 	# if we get here, we're done
@@ -155,11 +156,11 @@ def recursesoln(pairqual,tot,soln,ends,all,maxbad):
 		v=sum(tot)/len(tot)
 		try:
 			if v<min(all)[0]: 
-				print v,soln,"\n",ends
-				for i in tot: print "%1.2f "%i,
-				print
+				print(v,soln,"\n",ends)
+				for i in tot: print("%1.2f "%i, end=' ')
+				print()
 
-		except: print v,soln,"\n",ends
+		except: print(v,soln,"\n",ends)
 		all.append((v,soln,ends))
 		return
 	
@@ -229,7 +230,7 @@ def readsseh(fsp):
 	matrix based on only connected h1,h2 pairs"""
 	
 	# this makes a list of all lines starting with ALPHA
-	lns=[i for i in file(fsp,"r").readlines() if i[:5]=="ALPHA"]
+	lns=[i for i in open(fsp,"r").readlines() if i[:5]=="ALPHA"]
 	
 	# this makes a vector of 6 floats (x0,y0,z0,x1,y1,z1) for each line
 	hlx=[[float(j) for j in i.split()[5:]] for i in lns]
@@ -261,7 +262,7 @@ def readconnect(fsp,nel):
 	returns the same results as the second component of readsseh(), and should replace it when possible
 	nel is the number of helices in the SSEhunter file supplied to e2skelpath"""
 	
-	lns=file(fsp,"r").readlines()
+	lns=open(fsp,"r").readlines()
 	lns=[i.split() for i in lns]
 	lns=[(int(i[1]),int(i[3]),int(i[0]),int(i[2]),float(i[4])) for i in lns]	# reorder as helixA#,helixB#,endA,endB,pathlen
 	
@@ -295,7 +296,7 @@ def readsspred(fsp,minhelix):
 	strips out extraneous whitespace. Produces an ordered list of helix lengths and the maximum distance
 	to the previous helix 
 	Probably should have a better measure of probable distance vs # residues."""
-	seq=file(fsp,"r").read()
+	seq=open(fsp,"r").read()
 	
 	# slow, but doesn't matter much here
 	seq="".join([i for i in seq if i in ("H","E","-")])

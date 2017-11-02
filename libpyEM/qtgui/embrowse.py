@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: David Woolford (woolford@bcm.edu)
@@ -41,11 +42,11 @@ from EMAN2 import EMData
 	
 app = None
 def on_done(string_list):
-	print "on done"
+	print("on done")
 	if len(string_list) != 0:
 		for s in string_list:
-			print s,
-		print
+			print(s, end=' ')
+		print()
 	app.quit()
 
 # This is just an example of how to make a browser. You should import the browser module from emselector

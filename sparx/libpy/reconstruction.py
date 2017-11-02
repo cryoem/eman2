@@ -1,4 +1,5 @@
 #
+from __future__ import print_function
 # Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
 # Copyright (c) 2000-2006 The University of Texas - Houston Medical School
 #
@@ -112,11 +113,11 @@ def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4, snr=None, weig
 	from EMAN2 import Reconstructors
 
 	if list_proj == []:
-		if type(stack_name) == types.StringType: nima = EMUtil.get_image_count(stack_name)
+		if type(stack_name) == bytes: nima = EMUtil.get_image_count(stack_name)
 		else : nima = len(stack_name)
 		list_proj = xrange(nima) 
 	# read first image to determine the size to use
-	if type(stack_name) == types.StringType:
+	if type(stack_name) == bytes:
 		proj = EMData()
 		proj.read_image(stack_name, list_proj[0])
 	else:    proj = stack_name[list_proj[0]].copy()
@@ -166,7 +167,7 @@ def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4, snr=None, weig
 
 	r.setup()
 
-	if type(stack_name) == types.StringType:
+	if type(stack_name) == bytes:
 		for i in xrange(len(list_proj)):
 			proj.read_image(stack_name, list_proj[i])
 			# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
@@ -196,7 +197,7 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", finfo=None, snr = 1.0, npad=2
 	if mpi_comm == None:
 		mpi_comm = MPI_COMM_WORLD
 
-	if type(prjlist) == types.ListType:
+	if type(prjlist) == list:
 		prjlist = iterImagesList(prjlist)
 
 	if not prjlist.goToNext():
@@ -534,7 +535,7 @@ def recons3d_4nnw_MPI(myid, prjlist, bckgdata, snr = 1.0, sign=1, symmetry="c1",
 	if mpi_comm == None:
 		mpi_comm = MPI_COMM_WORLD
 
-	if type(prjlist) == types.ListType:
+	if type(prjlist) == list:
 		prjlist = iterImagesList(prjlist)
 	if not prjlist.goToNext():
 		ERROR("empty input list","recons3d_4nnw_MPI",1)
@@ -1612,11 +1613,11 @@ def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 1.0, sign=1, symmetry="c1
 
 	# read first image to determine the size to use
 	if list_proj == []:	
-		if type(stack_name) == types.StringType: nima = EMUtil.get_image_count(stack_name)
+		if type(stack_name) == bytes: nima = EMUtil.get_image_count(stack_name)
 		else : nima = len(stack_name)
 		list_proj = xrange(nima) 
 	# read first image to determine the size to use
-	if type(stack_name) == types.StringType:
+	if type(stack_name) == bytes:
 		proj = EMData()
 		proj.read_image(stack_name, list_proj[0])
 	else:    proj = stack_name[list_proj[0]].copy()
@@ -1659,7 +1660,7 @@ def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 1.0, sign=1, symmetry="c1
 		r = Reconstructors.get("nn4_ctf_rect", params)
 	r.setup()
 
-	if type(stack_name) == types.StringType:
+	if type(stack_name) == bytes:
 		for i in xrange(len(list_proj)):
 			proj.read_image(stack_name, list_proj[i])
 			if dopad: 
@@ -1691,7 +1692,7 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", finfo=
 	if mpi_comm == None:
 		mpi_comm = MPI_COMM_WORLD
 
-	if type(prjlist) == types.ListType:
+	if type(prjlist) == list:
 		prjlist = iterImagesList(prjlist)
 	if not prjlist.goToNext():
 		ERROR("empty input list","recons3d_4nn_ctf_MPI",1)
@@ -1811,10 +1812,10 @@ def recons3d_nn_SSNR(stack_name,  mask2D = None, ring_width=1, npad =1, sign=1, 
 	from EMAN2 import Reconstructors
 
 	# Yang add a safety on 05/22/07
-	if type(stack_name) == types.StringType: nima = EMUtil.get_image_count(stack_name)
+	if type(stack_name) == bytes: nima = EMUtil.get_image_count(stack_name)
 	else :                                   nima = len(stack_name)
 	# read first image to determine the size to use
-	if type(stack_name) == types.StringType:
+	if type(stack_name) == bytes:
 		proj = EMData()
 		proj.read_image(stack_name, 0)
 	else:    
@@ -1840,7 +1841,7 @@ def recons3d_nn_SSNR(stack_name,  mask2D = None, ring_width=1, npad =1, sign=1, 
 	r.setup()
 
 	for i in xrange(nima):
-		if type(stack_name) == types.StringType:
+		if type(stack_name) == bytes:
 			proj.read_image(stack_name, i)
 		else:
 			proj = stack_name[i]
@@ -2007,7 +2008,7 @@ def bootstrap_nn(proj_stack, volume_stack, list_proj, niter, media="memory", npa
 
 	nimages = len(list_proj)
 	if nimages == 0 :
-		print "empty list of projections input!"
+		print("empty list of projections input!")
 		return None
 
 
@@ -2023,7 +2024,7 @@ def bootstrap_nn(proj_stack, volume_stack, list_proj, niter, media="memory", npa
 
 	size = proj.get_xsize()
 	if size != proj.get_ysize():
-		print "Image projections must be square!"
+		print("Image projections must be square!")
 		return None
 
 	overall_start = time()
@@ -2110,7 +2111,7 @@ def recons3d_em(projections_stack, max_iterations_count = 100, radius = -1, min_
 	import types
 	min_allowed_divisor = 0.0001
 
-	if type(projections_stack) is types.StringType:
+	if type(projections_stack) is bytes:
 		projections = EMData.read_images(projections_stack)
 	else:
 		projections = projections_stack
@@ -2215,7 +2216,7 @@ def recons3d_em_MPI(projections_stack, output_file, max_iterations_count = 100, 
 	mpi_r = mpi_comm_rank(MPI_COMM_WORLD)
 
 	# ----- read projections 
-	if type(projections_stack) is types.StringType:
+	if type(projections_stack) is bytes:
 		all_projs_count = EMUtil.get_image_count(projections_stack)
 	else:
 		all_projs_count = len(projections_stack)
@@ -2226,7 +2227,7 @@ def recons3d_em_MPI(projections_stack, output_file, max_iterations_count = 100, 
 	projs_begin = (mpi_r * all_projs_count) // mpi_n
 	projs_end = ((mpi_r+1) * all_projs_count) // mpi_n
 
-	if type(projections_stack) is types.StringType:
+	if type(projections_stack) is bytes:
 		projections = EMData.read_images(projections_stack, range(projs_begin,projs_end))
 	else:
 		#projections = projections_stack[projs_begin:projs_end]
@@ -2244,9 +2245,9 @@ def recons3d_em_MPI(projections_stack, output_file, max_iterations_count = 100, 
 	a = model_blank(nx, nx, nx) # normalization volume
 	e2D = model_square(nx, nx, nx)
 	if mpi_r == 0:
-		print "MPI processes: ", mpi_n
-		print "Parameters:  size=%d  radius=%d  projections_count=%d  max_iterations_count=%d min_norm_absolute_voxel_change=%f" % (
-						nx, radius, all_projs_count, max_iterations_count, min_norm_absolute_voxel_change )	
+		print("MPI processes: ", mpi_n)
+		print("Parameters:  size=%d  radius=%d  projections_count=%d  max_iterations_count=%d min_norm_absolute_voxel_change=%f" % (
+						nx, radius, all_projs_count, max_iterations_count, min_norm_absolute_voxel_change ))	
 
 	# ----- create initial solution, calculate weights and normalization image (a)
 	projections_angles = []  # list of lists of angles
@@ -2279,7 +2280,7 @@ def recons3d_em_MPI(projections_stack, output_file, max_iterations_count = 100, 
 	a = threshold_to_minval(a, min_allowed_divisor)  # make sure that voxels' values are not too small (image a is divisior)
 	Util.mul_img( solution, sphere3D )
 	Util.div_img( solution, a )
-	if mpi_r == 0: print "Projections loading COMPLETED"
+	if mpi_r == 0: print("Projections loading COMPLETED")
 	# ----- iterations
 	prev_avg_absolute_voxel_change = 999999999.0
 	time_projection = 0.0
@@ -2306,19 +2307,19 @@ def recons3d_em_MPI(projections_stack, output_file, max_iterations_count = 100, 
 		norm_absolute_voxel_change = q.cmp("lod",solution,{"mask":sphere3D,"negative":0,"normalize":0}) / q.cmp("lod",model_blank(nx,nx,nx),{"mask":sphere3D,"negative":0,"normalize":0})
 		norm_squared_voxel_change  = q.cmp("sqEuclidean",solution,{"mask":sphere3D}) / q.cmp("sqEuclidean",model_blank(nx,nx,nx),{"mask":sphere3D})
 		if norm_absolute_voxel_change > prev_avg_absolute_voxel_change:
-			if mpi_r == 0: print "Finish and return last good solution"
+			if mpi_r == 0: print("Finish and return last good solution")
 			break
 		prev_avg_absolute_voxel_change = norm_absolute_voxel_change
 		solution = q
 		solution = circumference(solution, radius-2, radius)
 		if (iter_no+1)%5 == 0 and mpi_r == 0:
 			solution.write_image(replace(output_file, ".hdf", "_%03d.hdf"%(iter_no+1)))
-		if mpi_r == 0: print "Iteration ", iter_no+1, ",  norm_abs_voxel_change=", norm_absolute_voxel_change, ",  norm_squared_voxel_change=", norm_squared_voxel_change 
+		if mpi_r == 0: print("Iteration ", iter_no+1, ",  norm_abs_voxel_change=", norm_absolute_voxel_change, ",  norm_squared_voxel_change=", norm_squared_voxel_change) 
 		if min_norm_absolute_voxel_change > norm_absolute_voxel_change or min_norm_squared_voxel_change > norm_squared_voxel_change:
 			break
 	time_iterations = clock() - time_iterations
 	# ----- return solution and exit
-	if mpi_r == 0: print "Times: iterations=", time_iterations, "  project=", time_projection, "  backproject=", time_backprojection
+	if mpi_r == 0: print("Times: iterations=", time_iterations, "  project=", time_projection, "  backproject=", time_backprojection)
 	return solution
 
 
@@ -2418,7 +2419,7 @@ def recons3d_sirt(stack_name, list_proj, radius, lam=1.0e-4, maxit=100, symmetry
 			grad  = bvol - pxvol
 
 		rnorm = sqrt(grad.cmp("dot",grad,{"mask":mask3d,"negative":0}))
-		print 'iter = %3d,  rnorm = %6.3f,  rnorm/bnorm = %6.3f' % (iter,rnorm,rnorm/bnorm)
+		print('iter = %3d,  rnorm = %6.3f,  rnorm/bnorm = %6.3f' % (iter,rnorm,rnorm/bnorm))
 		if (rnorm < tol or rnorm > old_rnorm): break
 		old_rnorm = rnorm
 		xvol = xvol + lam*grad
@@ -2438,7 +2439,7 @@ def recons3d_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetr
 	import types
 	from utilities import get_im
 
-	if type(stack_name) == types.StringType:
+	if type(stack_name) == bytes:
 		B = EMData()
 		B.read_image(stack_name,list_proj[0])
 	else : B = stack_name[list_proj[0]].copy()
@@ -2457,7 +2458,7 @@ def recons3d_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetr
 	ss = [0.0]*(6*nsym*nimages)
 	symmetry_transforms = [ [None for i in xrange(nsym)] for j in xrange(nimages) ] # list of nimages lists of nsym elements
 	for iProj in xrange(nimages):
-		if type(stack_name) == types.StringType:
+		if type(stack_name) == bytes:
 			B.read_image(stack_name,list_proj[iProj], True)
 		else:
 			B = stack_name[list_proj[iProj]]
@@ -2497,7 +2498,7 @@ def recons3d_vwbp(stack_name, list_proj, method = "general", const=1.0E4, symmet
 	import types
 	from utilities import get_im
 
-	if type(stack_name) == types.StringType:
+	if type(stack_name) == bytes:
 		B = EMData()
 		B.read_image(stack_name,list_proj[0])
 	else : B = stack_name[list_proj[0]].copy()
@@ -2510,7 +2511,7 @@ def recons3d_vwbp(stack_name, list_proj, method = "general", const=1.0E4, symmet
 	ss = [0.0]*(6*nsym*nimages)
 	symmetry_transforms = [ [None for i in xrange(nsym)] for j in xrange(nimages) ] # list of nimages lists of nsym elements
 	for iProj in xrange(nimages):
-		if type(stack_name) == types.StringType:
+		if type(stack_name) == bytes:
 			B.read_image(stack_name,list_proj[iProj], True)
 		else:
 			B = stack_name[list_proj[iProj]]
@@ -2525,7 +2526,7 @@ def recons3d_vwbp(stack_name, list_proj, method = "general", const=1.0E4, symmet
 		const = int(const)
 
 	for iProj in xrange(nimages):
-		if(iProj%100 == 0):  print "BPCQ  ",iProj
+		if(iProj%100 == 0):  print("BPCQ  ",iProj)
 		CUBE = EMData()
 		CUBE.set_size(ny, ny, ny)
 		CUBE.to_zero()
@@ -2554,7 +2555,7 @@ def prepare_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetry
 	"""
 	import types
 
-	if type(stack_name) == types.StringType:
+	if type(stack_name) == bytes:
 		B = EMData()
 		B.read_image(stack_name,list_proj[0])
 	else : B = stack_name[list_proj[0]].copy()
@@ -2571,7 +2572,7 @@ def prepare_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetry
 	count = 0
 	from utilities import get_params_proj
 	for i in xrange(nimages):
-		if type(stack_name) == types.StringType:
+		if type(stack_name) == bytes:
 			B.read_image(stack_name,list_proj[i], True)
 			PHI, THETA, PSI, s2x, s2y = get_params_proj( B )
 		else:  

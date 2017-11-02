@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 9/2015 (sludtke@bcm.edu)
@@ -67,7 +68,7 @@ def main():
 	N=0
 	clpav=[]
 	for im in xrange(n):
-		print im,"/",n
+		print(im,"/",n)
 		img=EMData(args[0],im)
 		rgn=0
 		for x in xrange(50,nx-BOXSIZE-50,BOXSIZE):
@@ -105,7 +106,7 @@ def main():
 	pws.process_inplace("math.sqrt")
 	pws["is_intensity"]=0			# These 2 steps are done so the 2-D display of the FFT looks better. Things would still work properly in 1-D without it
 	pws["is_complex_ri"]=0
-	print pws.get_attr_dict()
+	print(pws.get_attr_dict())
 #	pws.sub(pws["mean"]-pws["sigma"]/2.0)
 	pws["is_complex_ri"]=1
 	pws[0,0]=0
@@ -230,7 +231,7 @@ def fit_defocus(img):
 	a=np.argmax(ql)
 	df=dfl[a]
 	
-	print "Best defocus ",df
+	print("Best defocus ",df)
 #	plot((dfl,ql),(dfl,qls))
 #	plot((dfl,ql))
 	

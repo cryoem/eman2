@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 # Muyuan July 2015
 import sys
 import random
@@ -61,7 +62,7 @@ def main():
 	#### This is supposed to test the overfitting of the network by applying it on pure noise repeatly
 	#### The function is no longer maintained so it may or may not work..
 	if options.dream:
-		print "This function is no longer supported.. exit."
+		print("This function is no longer supported.. exit.")
 		return
 		#os.environ["THEANO_FLAGS"]="optimizer=None"
 		#print "Testing on big images, Theano optimizer disabled"
@@ -86,14 +87,14 @@ def main():
 	#### Train da with particles first.
 	
 	if options.trainset==None:
-		print "No training set input...exit."
+		print("No training set input...exit.")
 		exit()
 	
 	
 	rng = np.random.RandomState(123)
 
 	labelshrink=np.prod(options.poolsz)
-	print "loading particles..."
+	print("loading particles...")
 	particles=load_particles(options.trainset,labelshrink,options.ncopy, rng)
 
 	train_set_x= particles[0]
@@ -111,7 +112,7 @@ def main():
 		convnet=load_model(options.from_trained)
 		convnet.update_shape(image_shape)
 	else:
-		print "setting up model"
+		print("setting up model")
 		convnet = StackedConvNet(
 			rng,
 			nkernel=options.nkernel,
@@ -126,7 +127,7 @@ def main():
 	
 	
 	if (options.niter>0):	
-		print "training the convolutional network..."
+		print("training the convolutional network...")
 		
 		classify=convnet.get_classify_func(train_set_x,labels,batch_size)
 			
@@ -140,7 +141,7 @@ def main():
 			c = []   #### train set loss
 			v = []   #### valid set loss
 			if epoch==0:
-				print classify(0,lr=learning_rate,wd=options.weightdecay)
+				print(classify(0,lr=learning_rate,wd=options.weightdecay))
 			for batch_index in xrange(n_train_batches):
 				if batch_index*batch_size < ntrain:
 					err=classify(batch_index,
@@ -148,7 +149,7 @@ def main():
 						wd=options.weightdecay)
 					c.append(err)
 					if epoch==0 and batch_index<5:
-						print err
+						print(err)
 				else:
 					err=classify(batch_index,
 						lr=0,
@@ -157,21 +158,21 @@ def main():
 					
 			#print len(v), len(c)
 			learning_rate*=.9
-			print "Training epoch {:d}, train loss {:.3f}, learning rate {:.3f}".format(epoch, np.mean(c),  learning_rate),
+			print("Training epoch {:d}, train loss {:.3f}, learning rate {:.3f}".format(epoch, np.mean(c),  learning_rate), end=' ')
 			if len(v)>0:
-				print "valid loss {:.3f}".format(np.mean(v)), 
+				print("valid loss {:.3f}".format(np.mean(v)), end=' ') 
 				if np.mean(v)>v0 and np.mean(v)>np.mean(c):
 					nbad+=1
-					print '*'
+					print('*')
 				else:
 					nbad=0
-					print 
+					print() 
 				v0=np.mean(v)
 				if nbad>2:
-					print "loss increase in validation set. Overfitting. Stop."
+					print("loss increase in validation set. Overfitting. Stop.")
 					break
 			else:
-				print 
+				print() 
 
 		
 		
@@ -181,7 +182,7 @@ def main():
 	#print convnet.clslayer.b.get_value()
 			
 	if options.trainout:
-		print "Generating results ..."
+		print("Generating results ...")
 		nsample=100
 		convnet.update_shape((nsample, shape[2], shape[0],shape[1]))
 		test_cls = theano.function(
@@ -235,21 +236,21 @@ def main():
 			#### measure the amplitude of the neural network output by comparing it to the label
 			e2.mult(e1)
 			amp.append(e2["mean_nonzero"])
-		print "amplitude: ", np.mean(amp)
+		print("amplitude: ", np.mean(amp))
 		convnet.amplitude=np.mean(amp)
-		print "Writing output on training set in {}".format(fname)
+		print("Writing output on training set in {}".format(fname))
 		
 	save_model(convnet, options.netout, options)
 	
-	print "Done"
+	print("Done")
 	E2end(E2n)
 
 def run(cmd):
-	print cmd
+	print(cmd)
 	launch_childprocess(cmd)
 
 def save_model(convnet, fname, options=None):
-	print "Saving the trained net to {}...".format(fname)
+	print("Saving the trained net to {}...".format(fname))
 	#fname="nnet_save.hdf"
 	sz=int(convnet.convlayers[0].W.shape[-1].eval())
 
@@ -285,14 +286,14 @@ def save_model(convnet, fname, options=None):
 
 	
 def load_model(fname):
-	print "loading model from {}...".format(fname)
+	print("loading model from {}...".format(fname))
 	try:
-		f = file(fname, 'rb')
+		f = open(fname, 'rb')
 		convnet = cPickle.load(f)
 		f.close()
 		return convnet
 	except:
-		print "Reading weight matrix from hdf file..."
+		print("Reading weight matrix from hdf file...")
 		
 	hdr=EMData(fname,0)
 	
@@ -416,7 +417,7 @@ def apply_neuralnet(options):
 	output["apix_z"]=apix
 	
 	#####################
-	print "Loading the Neural Net..."
+	print("Loading the Neural Net...")
 	
 	fname=options.from_trained
 	hdr=EMData(fname,0)
@@ -462,7 +463,7 @@ def apply_neuralnet(options):
 	enx=e["nx"]
 	eny=e["ny"]
 	
-	print "Loading tomogram..."
+	print("Loading tomogram...")
 	#global tomo_in
 	tomo_in=[]
 	for nf in range(nframe):
@@ -473,7 +474,7 @@ def apply_neuralnet(options):
 		tomo_in.append(e0)
 	
 	#####################
-	print "Doing covolution..."
+	print("Doing covolution...")
 	
 	try: os.remove(options.output)
 	except: pass
@@ -494,7 +495,7 @@ def apply_neuralnet(options):
 			 
 			while (threading.active_count()==NTHREADS ) : time.sleep(.1)
 			thrds[thrtolaunch].start()
-			print "starting: ", thrtolaunch#, e0["nx"]
+			print("starting: ", thrtolaunch)#, e0["nx"]
 			thrtolaunch+=1
 		else: time.sleep(1)
 	
@@ -515,8 +516,8 @@ def apply_neuralnet(options):
 	#run("e2proc2d.py {} {} --process math.fft.resample:n={} {} --apix {} ".format(options.output,fout,float(1./labelshrink), to3d, apix))
 	##os.rename(fout, options.output)
 	output.write_image(options.output)
-	print "Done."
-	print "Total time: ", time.time()-tt0
+	print("Done.")
+	print("Total time: ", time.time()-tt0)
 	
 def do_convolve(jsd, job):
 	tomo_in, idx, layers= job
@@ -726,9 +727,9 @@ def load_particles(ptcls,labelshrink,ncopy=5, rng=None):
 	data=[data[i] for i in rndid]
 	label=[label[i] for i in rndid]
 	
-	print "{:d} particles loaded, {:d} in training set, {:d} in validation set".format(len(data), ntrain, len(data)-ntrain)
+	print("{:d} particles loaded, {:d} in training set, {:d} in validation set".format(len(data), ntrain, len(data)-ntrain))
 	data=np.asarray(data,dtype=theano.config.floatX)
-	print "Std of particles: ",np.std(data.flatten())
+	print("Std of particles: ",np.std(data.flatten()))
 	#data/=np.std(data.flatten())*3  #np.max(np.abs(data))
 	data/=3.
 	label=np.asarray(label,dtype=theano.config.floatX)
@@ -751,7 +752,7 @@ class StackedConvNet(object):
 		self.x = T.matrix(name='input')
 		self.image_shape=imageshape
 		input_shape=self.image_shape
-		print "Shape of neural networl input: ",input_shape
+		print("Shape of neural networl input: ",input_shape)
 		self.convlayers=[]
 		self.params=[]
 		if poolsz:

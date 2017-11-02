@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Grant Tang, 08/28/2003 (gtang@bcm.edu)
@@ -51,16 +52,18 @@ class TestProcessor(unittest.TestCase):
         if(IS_TEST_EXCEPTION):
             try:
                 f2 = Processors.get("_nosuchfilter___")
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 err_type = exception_type(runtime_err)
                 self.assertEqual(err_type, "NotExistingObjectException")
                 
+    test_get_processor_list.broken = True
+    
     def test_transpose(self):
         """test xform.transpose processor ..................."""
         
         for y in [15,16]:
-        	for x in [15,16]:
-        		e = EMData(x,y,1)
+            for x in [15,16]:
+                e = EMData(x,y,1)
                 f = e.process('xform.transpose')
                 f.process_inplace('xform.transpose')
                 self.assertEqual(f.equal(e),True)
@@ -71,40 +74,40 @@ class TestProcessor(unittest.TestCase):
                 self.assertEqual(g.equal(e),True)
                 
         if(IS_TEST_EXCEPTION):
-        	# Check to make we throw for 3D and complex images
-			e1 = EMData(2,2,2)
-			e2 = EMData(2,2)
-			e2.set_complex(True)
-			for e in [e1,e2]:
-				try:
-				    e.process_inplace('xform.transpose')
-				except RuntimeError, runtime_err:
-					self.assertEqual(exception_type(runtime_err), "UnexpectedBehaviorException")
-					
-				try:
-				    f =  e.process('xform.transpose')
-				except RuntimeError, runtime_err:
-					self.assertEqual(exception_type(runtime_err), "UnexpectedBehaviorException")
-					
+            # Check to make we throw for 3D and complex images
+            e1 = EMData(2,2,2)
+            e2 = EMData(2,2)
+            e2.set_complex(True)
+            for e in [e1,e2]:
+                try:
+                    e.process_inplace('xform.transpose')
+                except RuntimeError as runtime_err:
+                    self.assertEqual(exception_type(runtime_err), "UnexpectedBehaviorException")
+                    
+                try:
+                    f =  e.process('xform.transpose')
+                except RuntimeError as runtime_err:
+                    self.assertEqual(exception_type(runtime_err), "UnexpectedBehaviorException")
+                    
     def test_threshold_binary_fourier(self):
-		"""test threshold.binary.fourier  ..................."""
-		a = [test_image(0,(16,16)),test_image_3d(0,(16,16,16))]
-		for e in a:
-			af = e.do_fft()
-			b = af.process("threshold.binary.fourier",{"value":0.0})
-			b.ri2ap()
-			self.assertTrue(b.get_attr("minimum") > 0)
-				
-		if(IS_TEST_EXCEPTION):
-			try:
-				b = a[0].process("threshold.binary.fourier",{"value":0})
-			except RuntimeError, runtime_err: # doesn't work on real images
-				self.assertEqual(exception_type(runtime_err), "ImageFormatException")
-				
-			try:
-				b = a[0].process("threshold.binary.fourier",{"value":-1})
-			except RuntimeError, runtime_err: # doesn't work for negative thresholds
-				self.assertEqual(exception_type(runtime_err), "InvalidParameterException")
+        """test threshold.binary.fourier  ..................."""
+        a = [test_image(0,(16,16)),test_image_3d(0,(16,16,16))]
+        for e in a:
+            af = e.do_fft()
+            b = af.process("threshold.binary.fourier",{"value":0.0})
+            b.ri2ap()
+            self.assertTrue(b.get_attr("minimum") > 0)
+                
+        if(IS_TEST_EXCEPTION):
+            try:
+                b = a[0].process("threshold.binary.fourier",{"value":0})
+            except RuntimeError as runtime_err: # doesn't work on real images
+                self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+                
+            try:
+                b = a[0].process("threshold.binary.fourier",{"value":-1})
+            except RuntimeError as runtime_err: # doesn't work for negative thresholds
+                self.assertEqual(exception_type(runtime_err), "InvalidParameterException")
 
     def test_flattenbackground(self):
         """test filter.flattenbackground processor .........."""
@@ -121,22 +124,22 @@ class TestProcessor(unittest.TestCase):
             # an InvalidParameterException
             try:
                 e.process_inplace('filter.flattenbackground', {"radius":8,"mask":mask})
-            except RuntimeError, runtime_err:
-    			self.assertEqual(exception_type(runtime_err), "InvalidParameterException")
+            except RuntimeError as runtime_err:
+                self.assertEqual(exception_type(runtime_err), "InvalidParameterException")
     		
-    		# Check to make sure that atleast one parameter is specified
+            # Check to make sure that atleast one parameter is specified
             try:
-    			e.process_inplace('filter.flattenbackground', {})
-            except RuntimeError, runtime_err:
-    			self.assertEqual(exception_type(runtime_err), "InvalidParameterException")
+                e.process_inplace('filter.flattenbackground', {})
+            except RuntimeError as runtime_err:
+                self.assertEqual(exception_type(runtime_err), "InvalidParameterException")
     			
-    		# make sure that we throw if the mask is to big
+            # make sure that we throw if the mask is to big
             mask = EMData(33,32,32)
             mask.to_one()
             try:
-    			e.process_inplace('filter.flattenbackground',{"mask":mask})
-            except RuntimeError, runtime_err:
-    			self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+                e.process_inplace('filter.flattenbackground',{"mask":mask})
+            except RuntimeError as runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
 		
     def test_filter_lowpass_tophat(self):
         """test filter.lowpass.tophat processor ............."""
@@ -368,13 +371,13 @@ class TestProcessor(unittest.TestCase):
             #self.assertRaises( InvalidValueException, e.process_inplace, 'math.meanshrink', {"n":1.5} )
             try:
                e.process_inplace("math.meanshrink",{"n":1.5})
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "InvalidValueException")
                 
             #shrink factor must be >1
             try:
                 e.process_inplace("math.meanshrink",{"n":0})
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "InvalidValueException")
 
     def test_median_shrink(self):
@@ -392,13 +395,13 @@ class TestProcessor(unittest.TestCase):
             #shrink factor must be >1 
             try:
                 e.process_inplace("math.medianshrink",{"n":0})
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "InvalidValueException")
             
             #image size must be divisible by shrink factor
             try:
                 e.process_inplace("math.medianshrink",{"n":5})
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "InvalidValueException")
 
     def test_eman1_math_absvalue(self):
@@ -428,28 +431,28 @@ class TestProcessor(unittest.TestCase):
         n = 32
         
         for i in [1,n]:
-			e = EMData()
-			e.set_size(n,n,i)
-			e.process_inplace("testimage.noise.uniform.rand")
+            e = EMData()
+            e.set_size(n,n,i)
+            e.process_inplace("testimage.noise.uniform.rand")
 			
-			cmax = e.get_attr("maximum")
-			cmin = e.get_attr("minimum")
+            cmax = e.get_attr("maximum")
+            cmin = e.get_attr("minimum")
 			
-			nmax = cmax/2.0
-			nmin = cmin/2.0
+            nmax = cmax/2.0
+            nmin = cmin/2.0
 			
-			a = {}
-			a["minval"] = nmin
-			a["maxval"] = nmax
+            a = {}
+            a["minval"] = nmin
+            a["maxval"] = nmax
 			
-			e.process_inplace("threshold.clampminmax", a)
+            e.process_inplace("threshold.clampminmax", a)
 			
-			d = e.get_3dview()
-			for z in range(i):
-				for y in range(n):
-					for x in range(n):
-						assert d[z][y][x] >= nmin
-						assert d[z][y][x] <= nmax
+            d = e.get_3dview()
+            for z in range(i):
+                for y in range(n):
+                    for x in range(n):
+                        assert d[z][y][x] >= nmin
+                        assert d[z][y][x] <= nmax
 						
 		
     def test_histogram_bin(self):
@@ -457,71 +460,71 @@ class TestProcessor(unittest.TestCase):
         n = 32
         
         for i in [1,n]:
-			for nbin in [1,128,256,512]:
-				e = EMData()
-				e.set_size(n,n,i)
-				e.process_inplace("testimage.noise.uniform.rand")
-				
-				cmax = e.get_attr("mean")
-				cmin = e.get_attr("mean")
-				
-				a = {}
-				a["nbins"] = nbin
-				#a["debug"] = 1
-				e.process_inplace("histogram.bin", a)
-				
-				d = e.get_3dview()
-				
-				bins = []
-				for z in range(i):
-					for y in range(n):
-						for x in range(n):
-							streuth = False
-							val = d[z][y][x] 
-							for blah in bins:
-								if ( val == blah ):
-									streuth = True
-									break
-							
-							if ( streuth == False ):
-								bins.append(val)
-				assert len(bins) <= nbin
-						
+            for nbin in [1,128,256,512]:
+                e = EMData()
+                e.set_size(n,n,i)
+                e.process_inplace("testimage.noise.uniform.rand")
+                
+                cmax = e.get_attr("mean")
+                cmin = e.get_attr("mean")
+                
+                a = {}
+                a["nbins"] = nbin
+                #a["debug"] = 1
+                e.process_inplace("histogram.bin", a)
+                
+                d = e.get_3dview()
+                
+                bins = []
+                for z in range(i):
+                    for y in range(n):
+                        for x in range(n):
+                            streuth = False
+                            val = d[z][y][x] 
+                            for blah in bins:
+                                if ( val == blah ):
+                                    streuth = True
+                                    break
+                            
+                            if ( streuth == False ):
+                                bins.append(val)
+                assert len(bins) <= nbin
+                        
     def test_threshold_clampminmax_nsigma(self):
         """test threshold.clampminmax.nsigma processor ......"""
         n = 32
         
         for i in [1,n]:
-			for nsigma in [0.5,1,2]:
-				e = EMData()
-				e.set_size(n,n,i)
-				e.process_inplace("testimage.noise.uniform.rand")
-				
-				cmax = e.get_attr("mean") + nsigma*e.get_attr("sigma")
-				cmin = e.get_attr("mean") - nsigma*e.get_attr("sigma")
-				
-				a = {}
-				a["nsigma"] = nsigma
-				e.process_inplace("threshold.clampminmax.nsigma", a)
-				
-				d = e.get_3dview()
-				for z in range(i):
-					for y in range(n):
-						for x in range(n):
-							# the multiplication above in calculating cmax and cmin
-							# sometimes causes some floating point precision issues
-							# so the following approach overlooks cases where
-							# the clamped values are slightly beyond the intended
-							# clamping region
-							if ( d[z][y][x] < cmin ):
-								self.assertAlmostEqual(d[z][y][x] - cmin, 0, 6)
-							if ( d[z][y][x] > cmax ):
-								self.assertAlmostEqual(d[z][y][x] - cmax, 0, 6)
-							
-							# the above two if statements implicitly (in a fuzzy way) enforce
-							# these two assert statements
-							#assert d[z][y][x] >= cmin
-							#assert d[z][y][x] <= cmax
+            for nsigma in [0.5,1,2]:
+                e = EMData()
+                e.set_size(n,n,i)
+                e.process_inplace("testimage.noise.uniform.rand")
+                
+                cmax = e.get_attr("mean") + nsigma*e.get_attr("sigma")
+                cmin = e.get_attr("mean") - nsigma*e.get_attr("sigma")
+                
+                a = {}
+                a["nsigma"] = nsigma
+                e.process_inplace("threshold.clampminmax.nsigma", a)
+                
+                d = e.get_3dview()
+                for z in range(i):
+                    for y in range(n):
+                        for x in range(n):
+                            # the multiplication above in calculating cmax and cmin
+                            # sometimes causes some floating point precision issues
+                            # so the following approach overlooks cases where
+                            # the clamped values are slightly beyond the intended
+                            # clamping region
+                            if ( d[z][y][x] < cmin ):
+                                self.assertAlmostEqual(d[z][y][x] - cmin, 0, 6)
+                            if ( d[z][y][x] > cmax ):
+                                self.assertAlmostEqual(d[z][y][x] - cmax, 0, 6)
+                            
+                            # the above two if statements implicitly (in a fuzzy way) enforce
+                            # these two assert statements
+                            #assert d[z][y][x] >= cmin
+                            #assert d[z][y][x] <= cmax
 
     def test_threshold_notzero(self):
         """test threshold.notzero processor ................."""
@@ -873,6 +876,8 @@ class TestProcessor(unittest.TestCase):
                 for z in range(32):
                     self.assertAlmostEqual(d2[z][y][x], 0, 3)
                     
+    test_mask_contract.broken = True
+    
     def test_eman1_filter_median(self):
         """test eman1.filter.median processor ..............."""
         e = EMData()
@@ -934,7 +939,7 @@ class TestProcessor(unittest.TestCase):
             self.assertRaises( RuntimeError, e2.process, 'eman1.filter.blockrange', {'cal_half_width':0.2, 'fill_half_width':0.3} )
             try:
                 e2.process_inplace('eman1.filter.blockrange', {'value1':0.2, 'value2':0.3})
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
         
     def no_test_eman1_filter_blockcutoff(self):
@@ -953,7 +958,7 @@ class TestProcessor(unittest.TestCase):
             self.assertRaises( RuntimeError, e2.process, 'eman1.filter.blockcutoff', {'value1':0.2, 'value2':0.3} )
             try:
                 e2.process_inplace('eman1.filter.blockcutoff', {'value1':0.2, 'value2':0.3})
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
         
     def no_test_math_lineargradientfix(self):
@@ -972,7 +977,7 @@ class TestProcessor(unittest.TestCase):
             self.assertRaises( RuntimeError, e2.process, 'math.lineargradientfix' )
             try:
                 e2.process_inplace('math.lineargradientfix')
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
         
     def test_filter_ramp(self):
@@ -991,7 +996,7 @@ class TestProcessor(unittest.TestCase):
             self.assertRaises( RuntimeError, e2.process_inplace, 'filter.ramp' )
             try:
                 e2.process_inplace('filter.ramp')
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
         
     def test_math_verticalstripefix(self):
@@ -1019,7 +1024,7 @@ class TestProcessor(unittest.TestCase):
             self.assertRaises( RuntimeError, e2.process_inplace, 'math.realtofft' )
             try:
                 e2.process_inplace('math.realtofft')
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
                 
             #apply to real image only
@@ -1030,7 +1035,7 @@ class TestProcessor(unittest.TestCase):
             self.assertRaises( RuntimeError, e3.process_inplace, 'math.realtofft' )
             try:
                 e3.process_inplace('math.realtofft')
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageFormatException")
             
     def test_mask_zeroedgefill(self):
@@ -1049,7 +1054,7 @@ class TestProcessor(unittest.TestCase):
             self.assertRaises( RuntimeError, e2.process_inplace, 'mask.zeroedgefill' )
             try:
                 e2.process_inplace('mask.zeroedgefill')
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
             
     def test_mask_beamstop(self):
@@ -1069,7 +1074,7 @@ class TestProcessor(unittest.TestCase):
                                 {'value1':-1.2, 'value2':10, 'value3':8} )
             try:
                 e2.process_inplace('mask.beamstop', {'value1':-1.2, 'value2':10, 'value3':8})
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
             
     def test_mask_dampedzeroedgefill(self):
@@ -1088,7 +1093,7 @@ class TestProcessor(unittest.TestCase):
             self.assertRaises( RuntimeError, e2.process_inplace, 'mask.dampedzeroedgefill' )
             try:
                 e2.process_inplace('mask.dampedzeroedgefill')
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
             
     def test_math_averageovery(self):
@@ -1116,7 +1121,7 @@ class TestProcessor(unittest.TestCase):
             self.assertRaises( RuntimeError, e2.process_inplace, 'mask.zeroedge2d', {'x0':1, 'y0':1, 'x1':25, 'y1':30})
             try:
                 e2.process_inplace('mask.zeroedge2d', {'x0':1, 'y0':1, 'x1':25, 'y1':30})
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
             
     def test_mask_zeroedge3d(self):
@@ -1135,7 +1140,7 @@ class TestProcessor(unittest.TestCase):
             self.assertRaises( RuntimeError, e2.process_inplace, 'mask.zeroedge3d', {'x0':2, 'y0':3, 'z0':4, 'x1':20, 'y1':22, 'z1':26})
             try:
                 e2.process_inplace('mask.zeroedge3d', {'x0':2, 'y0':3, 'z0':4, 'x1':20, 'y1':22, 'z1':26})
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
             
     def test_bilateral(self):
@@ -1211,7 +1216,7 @@ class TestProcessor(unittest.TestCase):
         if(IS_TEST_EXCEPTION):
             try:
                 e5 = e.process('normalize.mask', {'mask':e4, 'no_sigma':1})
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
         
         
@@ -1275,53 +1280,53 @@ class TestProcessor(unittest.TestCase):
         e.process_inplace('normalize.toimage', {'to':e2, 'low_threshold':0.2, 'high_threshold':0.8})
         
     def test_math_rotationalaverage(self):
-		"""test math.rotationalaverage processor ............"""
-		e = EMData()
-		e.set_size(32,32,32)
-		e.process_inplace('testimage.noise.uniform.rand')
-		self.assertEqual(e.is_complex(), False)
-		
-		e.process_inplace('math.rotationalaverage')
-		
-		# test to make sure radial average is centered correctly for 2D
-		# the 4 pixels that are exactly one pixel away from the center should be equal...
-		# odd images
-		e = EMData(5,5)
-		e.set(2,3,1)
-		e.process_inplace("math.rotationalaverage")
-		self.assertEqual(e.get(2,3), e.get(2,1))
-		self.assertEqual(e.get(2,3), e.get(3,2))
-		self.assertEqual(e.get(2,3), e.get(1,2))
-		
-		# even images
-		e = EMData(4,4)
-		e.set(2,3,1)
-		e.process_inplace("math.rotationalaverage")
-		self.assertEqual(e.get(2,3), e.get(2,1))
-		self.assertEqual(e.get(2,3), e.get(3,2))
-		self.assertEqual(e.get(2,3), e.get(1,2))
-		
-		# test to make sure radial average is centered correctly for 3D
-		# the 6 pixels that are exactly one pixel away from the center should be equal...
-		e = EMData(5,5,5)
-		e.set(2,2,3,1)
-		e.process_inplace("math.rotationalaverage")
-		self.assertEqual(e.get(2,2,3), e.get(2,2,1))
-		self.assertEqual(e.get(2,2,3), e.get(2,3,2))
-		self.assertEqual(e.get(2,2,3), e.get(2,1,2))
-		self.assertEqual(e.get(2,2,3), e.get(3,2,2))
-		self.assertEqual(e.get(2,2,3), e.get(1,2,2))
-		
-		e = EMData(4,4,4)
-		e.set(2,2,3,1)
-		e.process_inplace("math.rotationalaverage")
-		self.assertEqual(e.get(2,2,3), e.get(2,2,1))
-		self.assertEqual(e.get(2,2,3), e.get(2,3,2))
-		self.assertEqual(e.get(2,2,3), e.get(2,1,2))
-		self.assertEqual(e.get(2,2,3), e.get(3,2,2))
-		self.assertEqual(e.get(2,2,3), e.get(1,2,2))
-		
-		
+        """test math.rotationalaverage processor ............"""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process_inplace('testimage.noise.uniform.rand')
+        self.assertEqual(e.is_complex(), False)
+        
+        e.process_inplace('math.rotationalaverage')
+        
+        # test to make sure radial average is centered correctly for 2D
+        # the 4 pixels that are exactly one pixel away from the center should be equal...
+        # odd images
+        e = EMData(5,5)
+        e.set(2,3,1)
+        e.process_inplace("math.rotationalaverage")
+        self.assertEqual(e.get(2,3), e.get(2,1))
+        self.assertEqual(e.get(2,3), e.get(3,2))
+        self.assertEqual(e.get(2,3), e.get(1,2))
+        
+        # even images
+        e = EMData(4,4)
+        e.set(2,3,1)
+        e.process_inplace("math.rotationalaverage")
+        self.assertEqual(e.get(2,3), e.get(2,1))
+        self.assertEqual(e.get(2,3), e.get(3,2))
+        self.assertEqual(e.get(2,3), e.get(1,2))
+        
+        # test to make sure radial average is centered correctly for 3D
+        # the 6 pixels that are exactly one pixel away from the center should be equal...
+        e = EMData(5,5,5)
+        e.set(2,2,3,1)
+        e.process_inplace("math.rotationalaverage")
+        self.assertEqual(e.get(2,2,3), e.get(2,2,1))
+        self.assertEqual(e.get(2,2,3), e.get(2,3,2))
+        self.assertEqual(e.get(2,2,3), e.get(2,1,2))
+        self.assertEqual(e.get(2,2,3), e.get(3,2,2))
+        self.assertEqual(e.get(2,2,3), e.get(1,2,2))
+        
+        e = EMData(4,4,4)
+        e.set(2,2,3,1)
+        e.process_inplace("math.rotationalaverage")
+        self.assertEqual(e.get(2,2,3), e.get(2,2,1))
+        self.assertEqual(e.get(2,2,3), e.get(2,3,2))
+        self.assertEqual(e.get(2,2,3), e.get(2,1,2))
+        self.assertEqual(e.get(2,2,3), e.get(3,2,2))
+        self.assertEqual(e.get(2,2,3), e.get(1,2,2))
+        
+        
     def test_math_rotationalsubtract(self):
         """test math.rotationalsubtract processor ..........."""	
         e = EMData()
@@ -1334,184 +1339,184 @@ class TestProcessor(unittest.TestCase):
         if(IS_TEST_EXCEPTION):
             e.set_size(32,32,32)
             e.process_inplace('testimage.noise.uniform.rand')
-    		# It only currently works for 3D - if that ever changes this test should be updated
+            # It only currently works for 3D - if that ever changes this test should be updated
             try: e.process_inplace('testimage.noise.uniform.rand')
-            except RuntimeError, runtime_err:
-    			self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+            except RuntimeError as runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
 		
     def test_xform_flip(self):
-		"""test xform.flip processor ........................"""
-		
-		# First test is just make sure flipped coordinates as are we expect.
-		# Strategy - make some pixels non zero, flip the image, make sure the non
-		# zero pixels end up where we expect them to be
-		# X FLIPPING
-		ims = [EMData(32,1,1),EMData(32,32,1),EMData(32,32,32),EMData(33,1,1),EMData(33,33,1),EMData(33,33,33)]
-		for a in ims:
-			
-			nx = a.get_xsize()
-			offset = nx%2==0
-			for i in xrange(0,5):
-				a.to_zero()
-				lst = [Util.get_irand(offset,nx/2-offset) for i in range(3)] # go from 1 because even dimension flip 0s the 0 pixel
-				for j in lst:
-					for y in range(a.get_ysize()):
-						for z in range(a.get_zsize()):
-							a.set(j,y,z,1)
-				a.process_inplace("xform.flip",{"axis":"x"})
-				for j in lst:
-					for y in range(a.get_ysize()):
-						for z in range(a.get_zsize()):
-							self.failIf(a.get(nx-1-j+offset,y,z) != 1)
-		# Y FLIPPING		
-		ims = [EMData(32,32,1),EMData(32,32,32),EMData(33,33,1),EMData(33,33,33)]
-		for a in ims:
-			ny = a.get_ysize()
-			offset = ny%2==0
-			for i in xrange(0,5):
-				a.to_zero()
-				lst = [Util.get_irand(offset,ny/2-offset) for i in range(3)] # go from 1 because even dimension flip 0s the 0 pixel
-				for j in lst:
-					for x in range(a.get_xsize()):
-						for z in range(a.get_zsize()):
-							a.set(x,j,z,1)
-				a.process_inplace("xform.flip",{"axis":"y"})
-				for j in lst:
-					for x in range(a.get_xsize()):
-						for z in range(a.get_zsize()):
-							self.failIf(a.get(x,ny-1-j+offset,z) != 1)
-		
-		# Z FLIPPING				
-		ims = [EMData(32,32,32),EMData(33,33,33)]
-		for a in ims:
-			nz = a.get_zsize()
-			offset = nz%2==0
-			for i in xrange(0,5):
-				a.to_zero()
-				lst = [Util.get_irand(offset,nz/2-offset) for i in range(3)] # go from 1 because even dimension flip 0s the 0 pixel
-				for j in lst:
-					for x in range(a.get_xsize()):
-						for y in range(a.get_ysize()):
-							a.set(x,y,j,1)
-				a.process_inplace("xform.flip",{"axis":"z"})
-				for j in lst:
-					for x in range(a.get_xsize()):
-						for y in range(a.get_ysize()):
-							self.failIf(a.get(x,y,nz-1-j+offset) != 1)				
-		
-		# MIRROR TRANSFORMS IS THE SAME AS HORIZONTAL FLIP
-		t = Transform()
-		t.set_mirror(1)
-		# This test should be True, It is an important part of ensuring the aligners are functioning accurately
-		for n in [8,9]:
-			a = test_image(1,size=(n,n))
-			b = a.copy()
-			a.process_inplace("xform.flip",{"axis":"x"})
-			b.process_inplace("xform",{"transform":t})
-			if n % 2 == 0:
-				r = Region(1,0,n,n)
-				aa = a.get_clip(r)
-				bb = b.get_clip(r)
-				self.assertEqual(aa.equal(bb),True)
-			self.assertEqual(a.equal(b), True)
-				
-		# The 3D test is not as important as the 2D case (above), but it being true means we're in good shape - future
-		# developers won't inadvertently make mistakes by interchanging the xform.flip and xform processors
-		for n in [8,9]:
-			a = test_image_3d(6,size=(n,n,n))
-			b = a.copy()
-			a.process_inplace("xform.flip",{"axis":"x"})
-			b.process_inplace("xform",{"transform":t})
-			if n % 2 == 0:
-				r = Region(1,0,0,n,n,n)
-				aa = a.get_clip(r)
-				bb = b.get_clip(r)
-				self.assertEqual(aa.equal(bb),True)
-			self.assertEqual(a.equal(b), True)
-	
-		# ODD INVERTIBILITY
-		a = EMData(33,1,1)
-		a.process_inplace("testimage.noise.gauss")
-		b = a.copy()
-		b.process_inplace("xform.flip",{"axis":"x"})
-		b.process_inplace("xform.flip",{"axis":"x"})
-		self.assertEqual(a.equal(b), True)
-		  
-		a = test_image(1,size=(33,33))
-		b = a.copy()
-		b.process_inplace("xform.flip",{"axis":"x"})
-		b.process_inplace("xform.flip",{"axis":"x"})
-		self.assertEqual(a.equal(b), True)
-		b.process_inplace("xform.flip",{"axis":"y"})
-		b.process_inplace("xform.flip",{"axis":"y"})
-		self.assertEqual(a.equal(b), True)
-		
-		a = test_image_3d(6,size=(33,33,33))
-		b = a.copy()
-		b.process_inplace("xform.flip",{"axis":"x"})
-		b.process_inplace("xform.flip",{"axis":"x"})
-		self.assertEqual(a.equal(b), True)
-		b.process_inplace("xform.flip",{"axis":"y"})
-		b.process_inplace("xform.flip",{"axis":"y"})
-		self.assertEqual(a.equal(b), True)
-		b.process_inplace("xform.flip",{"axis":"z"})
-		b.process_inplace("xform.flip",{"axis":"z"})
-		self.assertEqual(a.equal(b), True)
+        """test xform.flip processor ........................"""
+        
+        # First test is just make sure flipped coordinates as are we expect.
+        # Strategy - make some pixels non zero, flip the image, make sure the non
+        # zero pixels end up where we expect them to be
+        # X FLIPPING
+        ims = [EMData(32,1,1),EMData(32,32,1),EMData(32,32,32),EMData(33,1,1),EMData(33,33,1),EMData(33,33,33)]
+        for a in ims:
+            
+            nx = a.get_xsize()
+            offset = nx%2==0
+            for i in xrange(0,5):
+                a.to_zero()
+                lst = [Util.get_irand(offset,nx/2-offset) for i in range(3)] # go from 1 because even dimension flip 0s the 0 pixel
+                for j in lst:
+                    for y in range(a.get_ysize()):
+                        for z in range(a.get_zsize()):
+                            a.set(j,y,z,1)
+                a.process_inplace("xform.flip",{"axis":"x"})
+                for j in lst:
+                    for y in range(a.get_ysize()):
+                        for z in range(a.get_zsize()):
+                            self.failIf(a.get(nx-1-j+offset,y,z) != 1)
+        # Y FLIPPING		
+        ims = [EMData(32,32,1),EMData(32,32,32),EMData(33,33,1),EMData(33,33,33)]
+        for a in ims:
+            ny = a.get_ysize()
+            offset = ny%2==0
+            for i in xrange(0,5):
+                a.to_zero()
+                lst = [Util.get_irand(offset,ny/2-offset) for i in range(3)] # go from 1 because even dimension flip 0s the 0 pixel
+                for j in lst:
+                    for x in range(a.get_xsize()):
+                        for z in range(a.get_zsize()):
+                            a.set(x,j,z,1)
+                a.process_inplace("xform.flip",{"axis":"y"})
+                for j in lst:
+                    for x in range(a.get_xsize()):
+                        for z in range(a.get_zsize()):
+                            self.failIf(a.get(x,ny-1-j+offset,z) != 1)
+        
+        # Z FLIPPING				
+        ims = [EMData(32,32,32),EMData(33,33,33)]
+        for a in ims:
+            nz = a.get_zsize()
+            offset = nz%2==0
+            for i in xrange(0,5):
+                a.to_zero()
+                lst = [Util.get_irand(offset,nz/2-offset) for i in range(3)] # go from 1 because even dimension flip 0s the 0 pixel
+                for j in lst:
+                    for x in range(a.get_xsize()):
+                        for y in range(a.get_ysize()):
+                            a.set(x,y,j,1)
+                a.process_inplace("xform.flip",{"axis":"z"})
+                for j in lst:
+                    for x in range(a.get_xsize()):
+                        for y in range(a.get_ysize()):
+                            self.failIf(a.get(x,y,nz-1-j+offset) != 1)				
+        
+        # MIRROR TRANSFORMS IS THE SAME AS HORIZONTAL FLIP
+        t = Transform()
+        t.set_mirror(1)
+        # This test should be True, It is an important part of ensuring the aligners are functioning accurately
+        for n in [8,9]:
+            a = test_image(1,size=(n,n))
+            b = a.copy()
+            a.process_inplace("xform.flip",{"axis":"x"})
+            b.process_inplace("xform",{"transform":t})
+            if n % 2 == 0:
+                r = Region(1,0,n,n)
+                aa = a.get_clip(r)
+                bb = b.get_clip(r)
+                self.assertEqual(aa.equal(bb),True)
+            self.assertEqual(a.equal(b), True)
+                
+        # The 3D test is not as important as the 2D case (above), but it being true means we're in good shape - future
+        # developers won't inadvertently make mistakes by interchanging the xform.flip and xform processors
+        for n in [8,9]:
+            a = test_image_3d(6,size=(n,n,n))
+            b = a.copy()
+            a.process_inplace("xform.flip",{"axis":"x"})
+            b.process_inplace("xform",{"transform":t})
+            if n % 2 == 0:
+                r = Region(1,0,0,n,n,n)
+                aa = a.get_clip(r)
+                bb = b.get_clip(r)
+                self.assertEqual(aa.equal(bb),True)
+            self.assertEqual(a.equal(b), True)
     
-    	# EVEN INVERTIBILITY
-    	# We have to do clipping in cases where the dimension is even, because 
-    	# the equivalence of the clipped region is all we can guarantee
-		a = EMData(32,1,1)
-		a.process_inplace("testimage.noise.gauss")
-		b = a.copy()
-		b.process_inplace("xform.flip",{"axis":"x"})
-		b.process_inplace("xform.flip",{"axis":"x"})
-		r = Region(1,31)
-		aa = a.get_clip(r)
-		bb = b.get_clip(r)
-		self.assertEqual(aa.equal(bb), True)
-		
-		
-		a = test_image(1,size=(32,32))
-		b = a.copy()
-		b.process_inplace("xform.flip",{"axis":"x"})
-		b.process_inplace("xform.flip",{"axis":"x"})
-		r = Region(1,0,31,32)
-		aa = a.get_clip(r)
-		bb = b.get_clip(r)
-		self.assertEqual(aa.equal(bb), True)
-		a = test_image(1,size=(32,32))
-		b = a.copy()
-		b.process_inplace("xform.flip",{"axis":"y"})
-		b.process_inplace("xform.flip",{"axis":"y"})
-		r = Region(0,1,32,31)
-		aa = a.get_clip(r)
-		bb = b.get_clip(r)
-		self.assertEqual(aa.equal(bb), True)
-		a = test_image_3d(6,size=(32,32,32))
-		b = a.copy()
-		b.process_inplace("xform.flip",{"axis":"x"})
-		b.process_inplace("xform.flip",{"axis":"x"})
-		r = Region(1,0,0,31,32,32)
-		aa = a.get_clip(r)
-		bb = b.get_clip(r)
-		self.assertEqual(aa.equal(bb), True)
-		a = test_image_3d(6,size=(32,32,32))
-		b = a.copy()
-		b.process_inplace("xform.flip",{"axis":"y"})
-		b.process_inplace("xform.flip",{"axis":"y"})
-		r = Region(0,1,0,32,31,32)
-		aa = a.get_clip(r)
-		bb = b.get_clip(r)
-		self.assertEqual(aa.equal(bb), True)
-		a = test_image_3d(6,size=(32,32,32))
-		b = a.copy()
-		b.process_inplace("xform.flip",{"axis":"z"})
-		b.process_inplace("xform.flip",{"axis":"z"})
-		r = Region(0,0,1,32,32,31)
-		aa = a.get_clip(r)
-		bb = b.get_clip(r)
-		self.assertEqual(aa.equal(bb), True)
+        # ODD INVERTIBILITY
+        a = EMData(33,1,1)
+        a.process_inplace("testimage.noise.gauss")
+        b = a.copy()
+        b.process_inplace("xform.flip",{"axis":"x"})
+        b.process_inplace("xform.flip",{"axis":"x"})
+        self.assertEqual(a.equal(b), True)
+          
+        a = test_image(1,size=(33,33))
+        b = a.copy()
+        b.process_inplace("xform.flip",{"axis":"x"})
+        b.process_inplace("xform.flip",{"axis":"x"})
+        self.assertEqual(a.equal(b), True)
+        b.process_inplace("xform.flip",{"axis":"y"})
+        b.process_inplace("xform.flip",{"axis":"y"})
+        self.assertEqual(a.equal(b), True)
+        
+        a = test_image_3d(6,size=(33,33,33))
+        b = a.copy()
+        b.process_inplace("xform.flip",{"axis":"x"})
+        b.process_inplace("xform.flip",{"axis":"x"})
+        self.assertEqual(a.equal(b), True)
+        b.process_inplace("xform.flip",{"axis":"y"})
+        b.process_inplace("xform.flip",{"axis":"y"})
+        self.assertEqual(a.equal(b), True)
+        b.process_inplace("xform.flip",{"axis":"z"})
+        b.process_inplace("xform.flip",{"axis":"z"})
+        self.assertEqual(a.equal(b), True)
+    
+        # EVEN INVERTIBILITY
+        # We have to do clipping in cases where the dimension is even, because 
+        # the equivalence of the clipped region is all we can guarantee
+        a = EMData(32,1,1)
+        a.process_inplace("testimage.noise.gauss")
+        b = a.copy()
+        b.process_inplace("xform.flip",{"axis":"x"})
+        b.process_inplace("xform.flip",{"axis":"x"})
+        r = Region(1,31)
+        aa = a.get_clip(r)
+        bb = b.get_clip(r)
+        self.assertEqual(aa.equal(bb), True)
+        
+        
+        a = test_image(1,size=(32,32))
+        b = a.copy()
+        b.process_inplace("xform.flip",{"axis":"x"})
+        b.process_inplace("xform.flip",{"axis":"x"})
+        r = Region(1,0,31,32)
+        aa = a.get_clip(r)
+        bb = b.get_clip(r)
+        self.assertEqual(aa.equal(bb), True)
+        a = test_image(1,size=(32,32))
+        b = a.copy()
+        b.process_inplace("xform.flip",{"axis":"y"})
+        b.process_inplace("xform.flip",{"axis":"y"})
+        r = Region(0,1,32,31)
+        aa = a.get_clip(r)
+        bb = b.get_clip(r)
+        self.assertEqual(aa.equal(bb), True)
+        a = test_image_3d(6,size=(32,32,32))
+        b = a.copy()
+        b.process_inplace("xform.flip",{"axis":"x"})
+        b.process_inplace("xform.flip",{"axis":"x"})
+        r = Region(1,0,0,31,32,32)
+        aa = a.get_clip(r)
+        bb = b.get_clip(r)
+        self.assertEqual(aa.equal(bb), True)
+        a = test_image_3d(6,size=(32,32,32))
+        b = a.copy()
+        b.process_inplace("xform.flip",{"axis":"y"})
+        b.process_inplace("xform.flip",{"axis":"y"})
+        r = Region(0,1,0,32,31,32)
+        aa = a.get_clip(r)
+        bb = b.get_clip(r)
+        self.assertEqual(aa.equal(bb), True)
+        a = test_image_3d(6,size=(32,32,32))
+        b = a.copy()
+        b.process_inplace("xform.flip",{"axis":"z"})
+        b.process_inplace("xform.flip",{"axis":"z"})
+        r = Region(0,0,1,32,32,31)
+        aa = a.get_clip(r)
+        bb = b.get_clip(r)
+        self.assertEqual(aa.equal(bb), True)
     
     def test_math_addnoise(self):
         """test math.addnoise processor ....................."""
@@ -1554,87 +1559,87 @@ class TestProcessor(unittest.TestCase):
             try:
                 e2.process_inplace('math.addspectralnoise', {'n':2, 'x0':9.8, 'dx':1.2, \
                                         'y':(1.3,2.4), 'interpolation':1})
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageFormatException")
     
     def test_xform_fourierorigin(self):
-		"""test xform.fourierorigin processor ..............."""
-		e = EMData()
-		e.set_size(32,32,1)
-		e.process_inplace('testimage.noise.uniform.rand')
-		self.assertEqual(e.is_complex(), False)
-		e.do_fft_inplace()
-		self.assertEqual(e.is_complex(), True)
+        """test xform.fourierorigin processor ..............."""
+        e = EMData()
+        e.set_size(32,32,1)
+        e.process_inplace('testimage.noise.uniform.rand')
+        self.assertEqual(e.is_complex(), False)
+        e.do_fft_inplace()
+        self.assertEqual(e.is_complex(), True)
 
-		n = 16
-		# test that 2D works
-		for i in [n,n+1,n+2,n+3]:
-			for j in [n,n+1,n+2,n+3]:
-				for k in [1,n,n+1,n+2,n+3]:
-					e = EMData()
-					e.set_size(i,j,k)
-				
-					e.process_inplace("testimage.noise.uniform.rand")
-					e.do_fft_inplace()
-			
-					d = e.copy()
-	
-					e.process_inplace("xform.fourierorigin.tocenter")
-					e.process_inplace("xform.fourierorigin.tocorner")
-					for kk in range(e.get_zsize()):
-						for jj in range(e.get_ysize()):
-							for ii in range(e.get_xsize()):
-								self.assertEqual(e.get_value_at(ii,jj,kk), d.get_value_at(ii,jj,kk))
+        n = 16
+        # test that 2D works
+        for i in [n,n+1,n+2,n+3]:
+            for j in [n,n+1,n+2,n+3]:
+                for k in [1,n,n+1,n+2,n+3]:
+                    e = EMData()
+                    e.set_size(i,j,k)
+                
+                    e.process_inplace("testimage.noise.uniform.rand")
+                    e.do_fft_inplace()
+            
+                    d = e.copy()
+    
+                    e.process_inplace("xform.fourierorigin.tocenter")
+                    e.process_inplace("xform.fourierorigin.tocorner")
+                    for kk in range(e.get_zsize()):
+                        for jj in range(e.get_ysize()):
+                            for ii in range(e.get_xsize()):
+                                    self.assertEqual(e.get_value_at(ii,jj,kk), d.get_value_at(ii,jj,kk))
 
     def test_xform_phaseorigin_twostage(self):
-		"""test xform.phaseorigin processor ................."""
-		e = EMData()
-		e.set_size(32,32,32)
-		e.process_inplace('testimage.noise.uniform.rand')
-		self.assertEqual(e.is_complex(), False)
+        """test xform.phaseorigin processor ................."""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process_inplace('testimage.noise.uniform.rand')
+        self.assertEqual(e.is_complex(), False)
 
-		e.process_inplace('xform.phaseorigin.tocorner')
-		e.process_inplace('xform.phaseorigin.tocenter')
-		
-		n = 8
-		# first test that 1D works
-		for i in [n,n+1]:
-			e.set_size(i,1,1)
-			e.process_inplace('testimage.noise.uniform.rand')
-			f = e.copy()
-			e.process_inplace('xform.phaseorigin.tocorner')
-			e.process_inplace('xform.phaseorigin.tocenter')
-			
-			for ii in range(i):
-				self.assertEqual(e.get_value_at(ii), f.get_value_at(ii))
-		
-		# now test that 2D works
-		for i in [n,n+1,n+2,n+3]:
-			for j in [n,n+1,n+2,n+3]:
-				e.set_size(i,j,1)
-				e.process_inplace('testimage.noise.uniform.rand')
-				f = e.copy()
-				e.process_inplace('xform.phaseorigin.tocorner')
-				e.process_inplace('xform.phaseorigin.tocenter')
-				
-				for ii in range(i):
-					for jj in range(j):
-						self.assertEqual(e.get_value_at(ii,jj), f.get_value_at(ii,jj))
-						
-		# now test that 3D works
-		for k in [n,n+1,n+2,n+3]:
-			for j in [n,n+1,n+2,n+3]:
-				for i in [n,n+1,n+2,n+3]:
-					e.set_size(i,j,k)
-					e.process_inplace('testimage.noise.uniform.rand')
-					f = e.copy()
-					e.process_inplace('xform.phaseorigin.tocorner')
-					e.process_inplace('xform.phaseorigin.tocenter')
+        e.process_inplace('xform.phaseorigin.tocorner')
+        e.process_inplace('xform.phaseorigin.tocenter')
+        
+        n = 8
+        # first test that 1D works
+        for i in [n,n+1]:
+            e.set_size(i,1,1)
+            e.process_inplace('testimage.noise.uniform.rand')
+            f = e.copy()
+            e.process_inplace('xform.phaseorigin.tocorner')
+            e.process_inplace('xform.phaseorigin.tocenter')
+            
+            for ii in range(i):
+                self.assertEqual(e.get_value_at(ii), f.get_value_at(ii))
+        
+        # now test that 2D works
+        for i in [n,n+1,n+2,n+3]:
+            for j in [n,n+1,n+2,n+3]:
+                e.set_size(i,j,1)
+                e.process_inplace('testimage.noise.uniform.rand')
+                f = e.copy()
+                e.process_inplace('xform.phaseorigin.tocorner')
+                e.process_inplace('xform.phaseorigin.tocenter')
+                
+                for ii in range(i):
+                    for jj in range(j):
+                        self.assertEqual(e.get_value_at(ii,jj), f.get_value_at(ii,jj))
+                        
+        # now test that 3D works
+        for k in [n,n+1,n+2,n+3]:
+            for j in [n,n+1,n+2,n+3]:
+                for i in [n,n+1,n+2,n+3]:
+                    e.set_size(i,j,k)
+                    e.process_inplace('testimage.noise.uniform.rand')
+                    f = e.copy()
+                    e.process_inplace('xform.phaseorigin.tocorner')
+                    e.process_inplace('xform.phaseorigin.tocenter')
 
-					for kk in range(k):
-						for jj in range(j):
-							for ii in range(i):
-								self.assertEqual(e.get_value_at(ii,jj,kk), f.get_value_at(ii,jj,kk))
+                    for kk in range(k):
+                        for jj in range(j):
+                            for ii in range(i):
+                                self.assertEqual(e.get_value_at(ii,jj,kk), f.get_value_at(ii,jj,kk))
 
     def test_mask_auto2d(self):
         """test mask.auto2d processor ......................."""
@@ -1655,7 +1660,7 @@ class TestProcessor(unittest.TestCase):
                 'mask.auto2d', {'threshold':0.5, 'filter':0.1})
             try:
                 e2.process_inplace('mask.auto2d', {'threshold':0.5, 'filter':0.1})
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
     
     def no_test_mask_auto3d_thresh(self):
@@ -1688,43 +1693,43 @@ class TestProcessor(unittest.TestCase):
         e.process_inplace('mask.addshells', {'nshells':3})
         
     def test_xform_phasecenterofmass(self):
-		"""test xform.phasecenterofmass processor ..........."""
-		self.centring_test("xform.phasecenterofmass",1)
+        """test xform.phasecenterofmass processor ..........."""
+        self.centring_test("xform.phasecenterofmass",1)
     def test_xform_centerofmass(self):
-		"""test xform.centerofmass processor ................"""
-		self.centring_test("xform.centerofmass",1)
+        """test xform.centerofmass processor ................"""
+        self.centring_test("xform.centerofmass",1)
     def centring_test(self,processor_string,val=1):
-		# 2D and 3D alignment test using a pixel value (val arg) offset one positive pixel from the origin in all directions
-		# process_string should be either 
-		if val == 0:
-			print  "error, you can't use 0 as the value, the function is not capable of handling it"
-			return
-		for z in 1,8,9:
-			for y in 8,9:
-				for x in 8,9:
-					
-					e = EMData(x,y,z)
-					if z != 1:
-						e.set(x/2+1,y/2+1,z/2+1,val)
-					else:
-						e.set(x/2+1,y/2+1,val)
-				
-					e.process_inplace(processor_string)
-					if val > 0:
-						mx = e.calc_max_location()
-					elif val < 0:
-						mx = e.calc_min_location()
-					
-					self.failIf(mx[0] != x/2)
-					self.failIf(mx[1] != y/2)
-					
-					if z != 1:
-						self.failIf(mx[2] != z/2)
+        # 2D and 3D alignment test using a pixel value (val arg) offset one positive pixel from the origin in all directions
+        # process_string should be either 
+        if val == 0:
+            print("error, you can't use 0 as the value, the function is not capable of handling it")
+            return
+        for z in 1,8,9:
+            for y in 8,9:
+                for x in 8,9:
+                    
+                    e = EMData(x,y,z)
+                    if z != 1:
+                        e.set(x/2+1,y/2+1,z/2+1,val)
+                    else:
+                        e.set(x/2+1,y/2+1,val)
+                
+                    e.process_inplace(processor_string)
+                    if val > 0:
+                        mx = e.calc_max_location()
+                    elif val < 0:
+                        mx = e.calc_min_location()
+                    
+                    self.failIf(mx[0] != x/2)
+                    self.failIf(mx[1] != y/2)
+                    
+                    if z != 1:
+                        self.failIf(mx[2] != z/2)
 
     def test_xform_centeracf(self):
-		"""test xform.centeracf processor ..................."""
-		self.centring_test("xform.centeracf",1)
-		self.centring_test("xform.centeracf",-1)
+        """test xform.centeracf processor ..................."""
+        self.centring_test("xform.centeracf",1)
+        self.centring_test("xform.centeracf",-1)
     def no_test_eman1_filter_snr(self):
         """test eman1.filter.snr processor .................."""
         e = EMData()
@@ -1789,6 +1794,8 @@ class TestProcessor(unittest.TestCase):
         
         testlib.safe_unlink(filename)
         
+    test_mask_fromfile.broken = True
+    
     def test_mask_fromfile_sizediff(self):
         """test mask.fromfile.sizediff processor ............"""
         e = EMData()
@@ -1810,6 +1817,8 @@ class TestProcessor(unittest.TestCase):
         
         testlib.safe_unlink(filename)
         
+    test_mask_fromfile_sizediff.broken = True
+    
     def no_test_misc_setpowspec(self):
         """test misc.setpowspec processor ..................."""
         e = EMData()
@@ -1864,7 +1873,7 @@ class TestProcessor(unittest.TestCase):
             self.assertRaises( RuntimeError, e2.process_inplace, 'testimage.scurve')
             try:
                 e2.process_inplace('testimage.scurve')
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
     
     def test_testimage_sinewave(self):
@@ -1955,6 +1964,8 @@ class TestProcessor(unittest.TestCase):
         for j in range(64):
             for i in range(64):
                 self.assertAlmostEqual(d1[i][j], d3[i][j], 3)
+
+    test_basis_wavelet.broken = True
     
     def test_basis_fft(self):
         """test basis.fft processor ........................."""
@@ -2012,7 +2023,7 @@ class TestProcessor(unittest.TestCase):
             self.assertRaises( RuntimeError, e2.process_inplace, 'filter.integercyclicshift2d', {'dx':10, 'dy':20})
             try:
                 e2.process_inplace('filter.integercyclicshift2d', {'dx':10, 'dy':20})
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageFormatException")
             
             e3 = EMData()
@@ -2021,7 +2032,7 @@ class TestProcessor(unittest.TestCase):
             self.assertRaises( RuntimeError, e3.process_inplace, 'filter.integercyclicshift2d', {'dx':10, 'dy':20})
             try:
                 e3.process_inplace('filter.integercyclicshift2d', {'dx':10, 'dy':20})
-            except RuntimeError, runtime_err:
+            except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageFormatException")
 
 def test_main():

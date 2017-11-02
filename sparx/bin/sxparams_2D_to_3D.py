@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: Wei Zhang, 01/22/2007 (Wei.zhang@uth.tmc.edu)
 # Copyright (c) 2000-2006 The University of Texas - Houston Medical School
@@ -42,8 +43,8 @@ def main():
 	(options, args) = parser.parse_args(sys.argv[1:])
 
 	if len(args) != 1:
-    		print "usage: " + usage
-    		print "Please run '" + progname + " -h' for detailed options"
+    		print("usage: " + usage)
+    		print("Please run '" + progname + " -h' for detailed options")
 	else:
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 #  09/09/2016
 #  
@@ -59,7 +60,6 @@ Local with an = 12*delta
 
 
 
-from __future__ import print_function
 from EMAN2 	import *
 from sparx 	import *
 from EMAN2  import EMNumPy

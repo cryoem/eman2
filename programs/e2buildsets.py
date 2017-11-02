@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: Steve Ludtke (sludtke@bcm.edu)
 # Copyright (c) 2000-2012 Baylor College of Medicine
@@ -78,7 +79,7 @@ def main():
 	if options.allparticles:
 		args=[base_name("particles/"+i) for i in os.listdir("particles") if "__" not in i and i[0]!="." and ".hed" not in i ]
 		args.sort()
-		print "%d particle stacks identified"%len(args)
+		print("%d particle stacks identified"%len(args))
 	else :
 		# refactor the arguments in case someone gave us a full specification
 		for i in range(len(args)):
@@ -98,36 +99,36 @@ def main():
 
 	# remove any files that don't have enough particles from the list
 	if options.minptcl>0 :
-		print "Filtering by particle count"
+		print("Filtering by particle count")
 		args=[i for i in args if imcount("particles/{}{}.hdf".format(i,basetype))>=options.minptcl]
-		if options.verbose: print "{} stacks after minptcl filter".format(len(args))
+		if options.verbose: print("{} stacks after minptcl filter".format(len(args)))
 
 	# remove files with quality too low
 	if options.minqual>0 :
-		print "Filtering by quality"
+		print("Filtering by quality")
 		outargs=[]
 		for i in args:
 			try:
 				if js_one_key(info_name(i+".hdf"),"quality")>=options.minqual : outargs.append(i)
 			except:
 				traceback.print_exc()
-				print "Unknown quality for {},{}, including it".format(i,info_name(i+".hdf"))
+				print("Unknown quality for {},{}, including it".format(i,info_name(i+".hdf")))
 				outargs.append(i)
 
 		args=outargs
 
 	# remove files without phase flipped particles
 	if options.withflipped :
-		print "Insuring that files have phase flipped particles"
+		print("Insuring that files have phase flipped particles")
 		ptcls=[i for i in os.listdir("particles") if i[0]!="."]
 		args=[i for i in args if i+"__ctf_flip_fullres.hdf" in ptcls]	# Not super-efficient, but functional
 
 	if options.withbispec :
-		print "Insuring that files have bispectrum particles"
+		print("Insuring that files have bispectrum particles")
 		ptcls=[i for i in os.listdir("particles") if i[0]!="."]
 		args=[i for i in args if i+"__ctf_flip_bispec.hdf" in ptcls]	# Not super-efficient, but functional
 
-	print "Filtering by Defocus and B-factor"
+	print("Filtering by Defocus and B-factor")
 	ctfmsg=0
 	outargs=[]
 	errsets=[]
@@ -141,7 +142,7 @@ def main():
 			losnr=sum(ctf.snr[r1:r2])/(r2-r1)
 			hisnr=sum(ctf.snr[r3:r4])/(r4-r3)
 			if ctf.defocus>=options.mindf and ctf.defocus<=options.maxdf and ctf.bfactor>=options.minbfactor and ctf.bfactor<=options.maxbfactor and losnr>=options.minlosnr and hisnr>=options.minhisnr : outargs.append(i)
-			if options.verbose > 1: print "{}<{}<{}   {}<{}<{}   {}>{}   {}>{}".format(options.mindf,ctf.defocus,options.maxdf,options.minbfactor,ctf.bfactor,options.maxbfactor, losnr,options.minlosnr,hisnr,options.minhisnr)
+			if options.verbose > 1: print("{}<{}<{}   {}<{}<{}   {}>{}   {}>{}".format(options.mindf,ctf.defocus,options.maxdf,options.minbfactor,ctf.bfactor,options.maxbfactor, losnr,options.minlosnr,hisnr,options.minhisnr))
 		except:
 			if options.verbose>2 : traceback.print_exc()
 			errsets.append(i)
@@ -149,17 +150,17 @@ def main():
 			outargs.append(i)
 
 	if len(errsets)>0 : 
-		print "Warning, ",len(errsets)," images were missing CTF information, and were included irrespective of specified CTF limits."
-		if options.verbose>1 : print "Missing CTF images were: ",errsets
+		print("Warning, ",len(errsets)," images were missing CTF information, and were included irrespective of specified CTF limits.")
+		if options.verbose>1 : print("Missing CTF images were: ",errsets)
 
-	if ctfmsg: print "Included {} images with undefined CTF".format(ctfmsg)
+	if ctfmsg: print("Included {} images with undefined CTF".format(ctfmsg))
 
 	args=outargs
 	if len(args)==0 :
-		print "ERROR: No images left to include after applying filters!"
+		print("ERROR: No images left to include after applying filters!")
 		sys.exit(1)
 
-	print "%d files to include in processing after filters"%len(args)
+	print("%d files to include in processing after filters"%len(args))
 
 	logid=E2init(sys.argv)
 
@@ -173,9 +174,9 @@ def main():
 		if groups==None: groups=group
 		else: groups.intersection_update(group)
 
-	print "Making sets for the following types: ",
-	for i in groups: print "'{}' ".format(i),
-	print ""
+	print("Making sets for the following types: ", end=' ')
+	for i in groups: print("'{}' ".format(i), end=' ')
+	print("")
 
 	totptcl=0
 	totbad=0
@@ -191,10 +192,10 @@ def main():
 		if options.excludebad :
 			try : bad=set(js_one_key(info_name(f+".hdf"),"sets")["bad_particles"])
 			except :
-				if options.verbose : print "No badlist for ",f
+				if options.verbose : print("No badlist for ",f)
 				bad=set()
 		else : bad=set()
-		if options.verbose>1 : print "File: {} -> {} particles - {} bad".format(f,nimg,len(bad))
+		if options.verbose>1 : print("File: {} -> {} particles - {} bad".format(f,nimg,len(bad)))
 		totptcl+=nimg-len(bad)
 		totbad+=len(bad)
 
@@ -202,9 +203,9 @@ def main():
 			for i in xrange(nimg):
 				if i not in bad : lsx[t].write(-1,i,"particles/{}{}.hdf".format(f,t))
 
-	print "Done - {} particles included".format(totptcl),
-	if totbad>0 : print ". {} excluded as bad.".format(totbad)
-	else: print ""
+	print("Done - {} particles included".format(totptcl), end=' ')
+	if totbad>0 : print(". {} excluded as bad.".format(totbad))
+	else: print("")
 
 	E2end(logid)
 

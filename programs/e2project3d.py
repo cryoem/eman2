@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -65,11 +66,11 @@ class EMParallelProject3D:
 
 		from EMAN2PAR import EMTaskCustomer
 		self.etc=EMTaskCustomer(options.parallel)
-		print "Precache ",fsp
+		print("Precache ",fsp)
 		self.etc.precache([fsp])
 
 		self.num_cpus = self.etc.cpu_est()
-		print self.num_cpus," total CPUs available"
+		print(self.num_cpus," total CPUs available")
 		if self.num_cpus > 64: # upper limit
 			self.num_cpus = 64
 
@@ -134,11 +135,11 @@ class EMParallelProject3D:
 
 				first = last
 
-			print "Task ids are", tids
+			print("Task ids are", tids)
 
 			while 1:
 
-				print len(tids),"projection tasks left in main loop"
+				print(len(tids),"projection tasks left in main loop")
 				st_vals = self.etc.check_task(tids)
 				for i in xrange(len(tids)-1,-1,-1):
 					st = st_vals[i]
@@ -148,16 +149,16 @@ class EMParallelProject3D:
 						rslts = self.etc.get_results(tid)
 
 						if not self.__write_output_data(rslts[1]):
-							print "There was a problem with the task of id",tid
+							print("There was a problem with the task of id",tid)
 
 						if self.logger != None:
 							E2progress(self.logger,1.0-len(tids)/float(num_tasks))
 							if self.options.verbose>0:
-								print "%d/%d\r"%(num_tasks-len(tids),num_tasks)
+								print("%d/%d\r"%(num_tasks-len(tids),num_tasks))
 								sys.stdout.flush()
 
-						print "Task",tids.pop(i),"completed"
-						print "These tasks are remaining:",tids
+						print("Task",tids.pop(i),"completed")
+						print("These tasks are remaining:",tids)
 
 				if len(tids) == 0: break
 				time.sleep(5)
@@ -261,7 +262,7 @@ def main():
 
 	if ( options.check ): options.verbose = 9
 
-	print "project3d: ",str(options)
+	print("project3d: ",str(options))
 
 	if len(args) < 1:
 		parser.error("Error: No input file given")
@@ -271,7 +272,7 @@ def main():
 	options.sym=options.sym.split(",")
 	if len(options.sym)!=1:
 		if len(options.sym)!=len(args) :
-			print "sym must be either a single symmetry specifier or one specifier for each input."
+			print("sym must be either a single symmetry specifier or one specifier for each input.")
 			sys.exit(1)
 	else:
 		options.sym*=len(args)
@@ -280,10 +281,10 @@ def main():
 
 	if ( options.verbose>0 ):
 		if (error):
-			print "e2project3d.py command line arguments test.... FAILED"
+			print("e2project3d.py command line arguments test.... FAILED")
 		else:
 			if (options.verbose>0):
-				print "e2project3.py command line arguments test.... PASSED"
+				print("e2project3.py command line arguments test.... PASSED")
 
 	# returning a different error code is currently important to e2refine.py - returning 0 tells e2refine.py that it has enough
 	# information to execute this script
@@ -302,7 +303,7 @@ def main():
 		try:
 			p=options.parallel.split(":")
 			if p[0]=="mpi" and int(p[1])>64:
-				print "Modified parallelism in projection to use 64 cores"
+				print("Modified parallelism in projection to use 64 cores")
 				options.parallel="%s:64:%s"%(p[0],p[2])
 		except: pass
 
@@ -310,7 +311,7 @@ def main():
 		for i,fsp in enumerate(args) :
 			job = EMParallelProject3D(options,fsp,options.sym[i],n,i+1,logger)
 			n+=job.execute()
-			if options.verbose : print "Job %d finished. %d total projections."%(i,n)
+			if options.verbose : print("Job %d finished. %d total projections."%(i,n))
 
 		E2end(logger)
 		exit(0)
@@ -328,12 +329,12 @@ def main():
 
 		# generate and save all the projections to disk - that's it, that main job is done
 		if ( options.verbose>0 ):
-			print "Generating and saving projections for ",fsp
+			print("Generating and saving projections for ",fsp)
 		generate_and_save_projections(options, data, eulers, options.smear,i+1)
 	if options.cuda: EMData.switchoffcuda()
 
 	if ( options.verbose>0 ):
-		print "%s...done" %progname
+		print("%s...done" %progname)
 
 	E2end(logger)
 	exit(0)
@@ -368,19 +369,19 @@ def generate_and_save_projections(options, data, eulers, smear=0,modeln=0):
 					if not param_dict : param_dict={}
 					p.process_inplace(str(processorname), param_dict)
 				except:
-					print "warning - application of the post processor",p," failed. Continuing anyway"
+					print("warning - application of the post processor",p," failed. Continuing anyway")
 
 		p["model_id"]=modeln
 		try:
 			if options.append: p.write_image(options.outfile,-1)
 			else : p.write_image(options.outfile,i)
 		except:
-			print "Error: Cannot write to file %s"%options.outfile
+			print("Error: Cannot write to file %s"%options.outfile)
 			exit(1)
 
 		if (options.verbose>0):
 			d = euler.get_params("eman")
-			print "%d\t%4.2f\t%4.2f\t%4.2f" % (i, d["az"], d["alt"], d["phi"])
+			print("%d\t%4.2f\t%4.2f\t%4.2f" % (i, d["az"], d["alt"], d["phi"]))
 
 def check(options, verbose=0):
 
@@ -388,15 +389,15 @@ def check(options, verbose=0):
 
 	for s in options.sym:
 		try: sym = parsesym(s)
-		except Exception, inst:
+		except Exception as inst:
 			if verbose>0:
-				print type(inst)     # the exception instance
-				print inst.args      # arguments stored in .args:
+				print(type(inst))     # the exception instance
+				print(inst.args)      # arguments stored in .args:
 			error = True
 
 	if ( not options.orientgen ):
 		if verbose>0:
-			print "Error: you must specify the orientgen argument"
+			print("Error: you must specify the orientgen argument")
 		error = True
 	elif ( check_eman2_type(options.orientgen,OrientGens,"Orientgen") == False ):
 		error = True
@@ -407,23 +408,23 @@ def check(options, verbose=0):
 	for f in options.model:
 		if not os.path.exists(f) and not db_check_dict(f):
 			if verbose>0:
-				print "Error: 3D image %s does not exist" %f
+				print("Error: 3D image %s does not exist" %f)
 			error = True
 
 	if ( options.force and options.append):
 		if verbose>0:
-			print "Error: cannot specify both append and force"
+			print("Error: cannot specify both append and force")
 		error = True
 
 	if ( options.nofilecheck == False and os.path.exists(options.outfile )):
 		if ( not options.force and not options.append):
 			if verbose>0:
-				print "Error: output file exists, use -f to overwrite or -a to append. No action taken"
+				print("Error: output file exists, use -f to overwrite or -a to append. No action taken")
 			error = True
 
 	if hasattr(options,"parallel") and options.parallel != None:
   		if len(options.parallel) < 2:
-  			print "The parallel option %s does not make sense" %options.parallel
+  			print("The parallel option %s does not make sense" %options.parallel)
   			error = True
 
 	return error

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -37,7 +38,7 @@ from EMAN2 import *
 import sys
 
 if (len(sys.argv) != 1 and len(sys.argv) != 4):
-	print "usage: align.py [referencefile inputfile outputfile]"
+	print("usage: align.py [referencefile inputfile outputfile]")
 	sys.exit(1)
 
 if len(sys.argv) == 1:

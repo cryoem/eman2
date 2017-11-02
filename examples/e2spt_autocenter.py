@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Jesus Galaz, 12/08/2011 - Last Update 10/Feb/2014
@@ -102,7 +103,7 @@ def main():
 	ny = hdr["ny"]
 	nz = hdr["nz"]
 	if nx!=ny or ny!=nz :
-		print "ERROR, input volumes are not cubes"
+		print("ERROR, input volumes are not cubes")
 		sys.exit(1)
 	oldbox=nx
 
@@ -140,11 +141,11 @@ def main():
 	
 	for m in modes:
 		if 'autocorr' in m:
-			print "Mode is",m
-			print "Number of ptcls to autocenter is", n
-			print "In file", options.input
+			print("Mode is",m)
+			print("Number of ptcls to autocenter is", n)
+			print("In file", options.input)
 			for i in range(n):
-				print "Autocentering ptcl number", i
+				print("Autocentering ptcl number", i)
 				e = EMData( options.input, i )
 				
 				ret=autocorrcenter(e,options)						
@@ -158,7 +159,7 @@ def main():
 				
 		
 		elif 'sphere' in m:
-			print "Mode is",m
+			print("Mode is",m)
 			spherical(options)
 	
 	return
@@ -252,7 +253,7 @@ def autocorrcenter(e,options):
 	pfixside = ecent.project("standard",tside)
 	pfix = ecent.project("standard",t)
 	
-	print "Translations are", xt+xtside, yt, ztside
+	print("Translations are", xt+xtside, yt, ztside)
 	
 	
 	#mskr = -1*max( math.fabs(xt), math.fabs(yt), math.fabs(ztside) )
@@ -333,7 +334,7 @@ def autocorrcenter(e,options):
 
 	
 def spherical(options):
-	print "Inside spherical"
+	print("Inside spherical")
 	n = EMUtil.get_image_count(options.input)
 
 	'''
@@ -356,7 +357,7 @@ def spherical(options):
 	outname = options.path+'/'+options.input.replace('.hdf','_SphCentered.hdf')
 	
 	for it in range(options.iter):
-		print "Interation number", it
+		print("Interation number", it)
 				
 		if options.mask or options.shrink or options.lowpass or options.highpass or options.mask:
 			avgprep = acpreprocessing(options,avgraw)
@@ -390,7 +391,7 @@ def spherical(options):
 		
 		for k in range(n):
 			p=EMData(options.input,k)
-			print "Read particle number", k
+			print("Read particle number", k)
 			
 			ptrans=p.copy() #This will be the new centered particle
 			
@@ -402,7 +403,7 @@ def spherical(options):
 			Preprocess the particles if necessary
 			'''
 			if options.mask or options.shrink or options.lowpass or options.highpass or options.mask:
-				print "Will preprocess"
+				print("Will preprocess")
 				pprep = acpreprocessing(options,p)
 			
 			'''
@@ -424,7 +425,7 @@ def spherical(options):
 			'''
 			Apply translations found to p and pprep
 			'''
-			print "Top translation are",xt,yt
+			print("Top translation are",xt,yt)
 			
 			ptrans.translate(xt,yt,0)
 			pprep.translate(xt,yt,0)
@@ -452,20 +453,20 @@ def spherical(options):
 			ptrans.translate(xtside,0,ztside)
 			pprep.translate(xtside,0,ztside)	
 			
-			print "Side trans applied are",xtside,ztside
+			print("Side trans applied are",xtside,ztside)
 			
 			avgr.add_image( ptrans )
 			
 			if it == int(options.iter) -1:
-				print "Will write translated raw image to", outname
+				print("Will write translated raw image to", outname)
 				ptrans.write_image(outname,-1)
 				
 		avgprep=avgr.finish()
-		print "Finalized average; will normalize it"
+		print("Finalized average; will normalize it")
 		avgprep.process_inplace('normalize')
 		
 		if options.savesteps:
-			print "Will write raw average"
+			print("Will write raw average")
 			avgprep.write_image(options.path + '/avgsRaw.hdf',-1)
 	
 	

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 from EMAN2 import *
 
@@ -15,18 +16,18 @@ e.set_value_at(1,1,4.0)
 e.set_value_at(2,1,5.0)
 
 d = e.get_2dview()
-print 'data in boost array, get_2dview():'
-print d
+print('data in boost array, get_2dview():')
+print(d)
 
-print
-print 'data in numpy array:'
+print()
+print('data in numpy array:')
 a = EMNumPy.em2numpy(e)
-print "shape is: ", a.shape
-print a
+print("shape is: ", a.shape)
+print(a)
 
-print
-print 'data by get_value_at(x,y):' 
+print()
+print('data by get_value_at(x,y):') 
 for j in range(2):
     for i in range(3):
-        print e.get_value_at(i, j),
-    print
+        print(e.get_value_at(i, j), end=' ')
+    print()

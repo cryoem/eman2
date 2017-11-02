@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Liwei Peng, 01/30/2005 (sludtke@bcm.edu)
@@ -104,7 +105,7 @@ class TestEMIO(ImageIOTester):
 		e.to_zero()
 		try:
 			e.write_image(filename, -1)
-		except RuntimeError, runtime_err:
+		except RuntimeError as runtime_err:
 			err_type = exception_type(runtime_err)
 			self.assertEqual(err_type, "ImageWriteException")
 		finally:
@@ -153,7 +154,7 @@ class TestIcosIO(ImageIOTester):
 		e.to_zero()
 		try: 
 			e.write_image(filename, -1)
-		except RuntimeError, runtime_err:
+		except RuntimeError as runtime_err:
 			err_type = exception_type(runtime_err)
 			self.assertEqual(err_type, "ImageWriteException")
 		finally:
@@ -174,7 +175,7 @@ class TestPNGIO(ImageIOTester):
 		e.to_zero()
 		try:
 			e.write_image(filename, -1)	
-		except RuntimeError, runtime_err:
+		except RuntimeError as runtime_err:
 			err_type = exception_type(runtime_err)
 			self.assertEqual(err_type, "ImageWriteException")
 		finally:
@@ -195,7 +196,7 @@ class TestVTKIO(ImageIOTester):
 		e.to_zero()
 		try:
 			e.write_image(filename, -1)
-		except RuntimeError, runtime_err:
+		except RuntimeError as runtime_err:
 			err_type = exception_type(runtime_err)
 			self.assertEqual(err_type, "ImageWriteException")	
 		finally:
@@ -216,7 +217,7 @@ class TestXPLORIO(ImageIOTester):
 		e.to_zero()
 		try: 
 			e.write_image(filename, -1)
-		except RuntimeError, runtime_err:
+		except RuntimeError as runtime_err:
 			err_type = exception_type(runtime_err)
 			self.assertEqual(err_type, "ImageWriteException")
 		finally:
@@ -244,6 +245,8 @@ class TestPGMIO(unittest.TestCase):
 			
 		finally:
 			testlib.safe_unlink('test_image.pgm')
+
+	test_read_write_pgm.broken = True
 	
 	def no_test_pgm_region_io(self):
 		"""test pgm region io ..............................."""
@@ -612,7 +615,7 @@ class TestHdfIO(ImageIOTester):
 			e3.read_image(testimage)
 			try:
 				no_such_attr = e3.get_attr('Grant')
-			except RuntimeError, runtime_err:
+			except RuntimeError as runtime_err:
 				err_type = exception_type(runtime_err)
 				self.assertEqual(err_type, "NotExistingObjectException")		   
 		
@@ -663,7 +666,7 @@ class TestMrcIO(ImageIOTester):
 		e.to_zero()
 		try: 
 			e.write_image(filename, -1)
-		except RuntimeError, runtime_err:
+		except RuntimeError as runtime_err:
 				err_type = exception_type(runtime_err)
 				self.assertEqual(err_type, "ImageWriteException")	
 		finally:
@@ -727,6 +730,8 @@ class TestMrcIO(ImageIOTester):
 		TestUtil.make_image_file(img6, IMAGE_MRC, EM_FLOAT, 16,16,10)
 		os.unlink(img6)
 
+	test_make_image_file.broken = True
+	
 	def test_complex_image(self):
 		"""test complex mrc image file ......................"""
 		imgfile1 = "test_complex_image.mrc"
@@ -746,6 +751,8 @@ class TestMrcIO(ImageIOTester):
 		os.unlink(imgfile1)
 		os.unlink(imgfile2)
    
+	test_complex_image.broken = True
+	
 	def test_mrcio_label(self):
 		"""test mrc file label .............................."""
 		pid = str(os.getpid())
@@ -1230,7 +1237,6 @@ class TestImageIO(unittest.TestCase):
 		self.region_read_test(imgtype, imgfile, outtype)
 		self.region_write_test(imgtype, imgfile, outtype)
 		
-		
 	def test_region_equiv_to_clip(self):
 		"""test read region is identical to get clip ........"""
 		
@@ -1290,6 +1296,8 @@ class TestImageIO(unittest.TestCase):
 			finally:
 				remove_file(name)
 		
+	test_region_equiv_to_clip.broken = True
+	
 	def test_mrcio_region(self):
 		"""test mrc io region ..............................."""
 		mrc2d = "test_mrcio_region_2d.mrc"

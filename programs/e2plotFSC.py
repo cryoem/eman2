@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: John Flanagan (jfflanag@bcm.edu)
 # Copyright (c) 2012- Baylor College of Medicine
@@ -71,7 +72,7 @@ def main():
 		# Get data from data base
 		db_name = "bdb:"+args[0]+"#convergence.results"
 		if not db_check_dict(db_name):
-			print "Rubbish!!!, no FSC curves found!!!"
+			print("Rubbish!!!, no FSC curves found!!!")
 			return
 		db = db_open_dict(db_name,ro=True)
 		keys = db.keys()

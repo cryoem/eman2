@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 '''
 ====================
 Author: Jesus Galaz-Montoya - 2017, Last update: 12/Sep/2017
@@ -97,7 +98,7 @@ def main():
 	logger = E2init(sys.argv, options.ppid)
 
 	if not options.tiltseries:
-		print "\nERROR: --tiltseries required"
+		print("\nERROR: --tiltseries required")
 		sys.exit(1)
 
 	filename, extension = os.path.splitext(options.tiltseries)
@@ -108,11 +109,11 @@ def main():
 	findir=os.listdir(c)
 
 	if options.iconpreproc and alifile not in findir:
-		print "\nERROR: the aligned tiltseries must be in the same directory, and should match the name of the raw .st tiltseries, except that the extension should be .ali instead of .st; the expected file is {}".format(alifile)
+		print("\nERROR: the aligned tiltseries must be in the same directory, and should match the name of the raw .st tiltseries, except that the extension should be .ali instead of .st; the expected file is {}".format(alifile))
 		sys.exit(1)
 
 	if options.verbose:
-		print "\n(e2tomo_icongpu)(icongpufunc) making directory {} to store reconstruction results".format(options.path)
+		print("\n(e2tomo_icongpu)(icongpufunc) making directory {} to store reconstruction results".format(options.path))
 	
 	from EMAN2_utils import makepath
 	options = makepath(options)
@@ -122,12 +123,12 @@ def main():
 	if options.iconpreproc:
 
 		if '.st' not in extension:
-			print "\nERROR: the extension of the --tiltseries is {} instead of .st; make sure this is the correct tiltseries, and change the extension to .st".format(extension)
+			print("\nERROR: the extension of the --tiltseries is {} instead of .st; make sure this is the correct tiltseries, and change the extension to .st".format(extension))
 			shutil.rmtree(options.path)
 			sys.exit(1)
 		
 		if not options.thickness:
-			print "\nERROR: --thickness required for ICONPreProcess."
+			print("\nERROR: --thickness required for ICONPreProcess.")
 			shutil.rmtree(options.path)
 			sys.exit(1)
 
@@ -136,22 +137,22 @@ def main():
 	elif not options.iconpreproc or options.skipgolderasing:
 		
 		if not options.thickness and not options.sizez:
-			print "\nERROR: --thickness or --sizez required"
+			print("\nERROR: --thickness or --sizez required")
 			sys.exit(1)
 		elif options.thickness and options.sizez:
-			print "\nWARNING: --thickness={} and --sizez={} were both provided; only --sizez={} will be used for reconstruction".format(options.thickness,options.sizez,options.sizez)
+			print("\nWARNING: --thickness={} and --sizez={} were both provided; only --sizez={} will be used for reconstruction".format(options.thickness,options.sizez,options.sizez))
 			options.thickness = options.sizez
 
 		if not options.tltfile:
-			print "\nWARNING: --tltfile not provided. The program will attempt to find it automatically"
+			print("\nWARNING: --tltfile not provided. The program will attempt to find it automatically")
 			tltfile = options.tiltseries.replace(extension,'.tlt')
 			
 			if tltfile not in findir:
-				print "\nERROR: in the abscence of --tltfile, the .tlt file with tiltseries angles must be in the running (current) directory, and should match the name of the raw .st tiltseries, except that the extension should be .tlt instead of .st; the expected file is {}".format(alifile)
+				print("\nERROR: in the abscence of --tltfile, the .tlt file with tiltseries angles must be in the running (current) directory, and should match the name of the raw .st tiltseries, except that the extension should be .tlt instead of .st; the expected file is {}".format(alifile))
 				sys.exit(1)
 
 		if not options.iconpreproc and '.ali' not in extension:
-			print "\nWARNING: the extension of the --tiltseries is {} instead of .ali; make sure this is the correct tiltseries".format(extension)
+			print("\nWARNING: the extension of the --tiltseries is {} instead of .ali; make sure this is the correct tiltseries".format(extension))
 		
 		if not options.iconpreproc:
 			alifile = options.tiltseries
@@ -173,31 +174,31 @@ def iconpreprocfunc(options,alifile,extension,cmdsfilepath):
 	backupali = 'backup.' + alifile
 
 	if options.verbose:
-		print "\n(e2tomo_icongpu)(iconpreprocfunc) running ICONPreProcess"
+		print("\n(e2tomo_icongpu)(iconpreprocfunc) running ICONPreProcess")
 	cmd1 = "ICONPreProcess -input " + options.tiltseries + " -tiltfile " + options.tltfile + " -thickness " + str(options.thickness) + " -output " + outfile
 	runcmd(options,cmd1,cmdsfilepath)
 
 	
 	if options.verbose:
-		print "\n(e2tomo_icongpu)(iconpreprocfunc) backing up raw (x-ray corrected) tiltseries {} to file {}".format(options.tiltseries,backupst)
+		print("\n(e2tomo_icongpu)(iconpreprocfunc) backing up raw (x-ray corrected) tiltseries {} to file {}".format(options.tiltseries,backupst))
 	shutil.copyfile(options.tiltseries, backupst)
 	#cmd2 = "cp " + options.tiltseries + " " + backupst
 	#runcmd(options,cmd2,cmdsfilepath)
 
 	if options.verbose:
-		print "\n(e2tomo_icongpu)(iconpreprocfunc) copying the preprocessed tiltseries {} to the original tiltseries file {}".format(outfile,options.tiltseries)
+		print("\n(e2tomo_icongpu)(iconpreprocfunc) copying the preprocessed tiltseries {} to the original tiltseries file {}".format(outfile,options.tiltseries))
 	shutil.copyfile(outfile, options.tiltseries)
 	#cmd4 = "cp " + outfile + " " + options.tiltseries
 	#runcmd(options,cmd4,cmdsfilepath)
 
 	if options.verbose:
-		print "\n(e2tomo_icongpu)(iconpreprocfunc) backing up aligned tiltseries {} to file {}".format(alifile,backupali)
+		print("\n(e2tomo_icongpu)(iconpreprocfunc) backing up aligned tiltseries {} to file {}".format(alifile,backupali))
 	shutil.copyfile(alifile, backupali)
 	#cmd3 = "cp " + alifile + " " + backupali
 	#runcmd(options,cmd3,cmdsfilepath)
 
 	if options.verbose:
-		print "\n(e2tomo_icongpu)(iconpreprocfunc) generating new .ali file after ICONPreProcess"
+		print("\n(e2tomo_icongpu)(iconpreprocfunc) generating new .ali file after ICONPreProcess")
 	cmd2 = "subm newst"
 	runcmd(options,cmd2,cmdsfilepath)
 
@@ -238,23 +239,23 @@ def icongpufunc(options,alifile,cmdsfilepath):
 		#print "\noptions.sizez has changed thickness to {}".format(thickness)
 
 	thickenss=int(round(thickness))
-	print "\naaaafter options, thickness is {}".format(thickness)
+	print("\naaaafter options, thickness is {}".format(thickness))
 
 	outtomogram = alifile.replace(aliextension,'_icongpu.mrc')
  	
- 	if options.verbose:
- 		print "\n(e2tomo_icongpu)(icongpufunc) calling ICON-GPU."
+	if options.verbose:
+		print("\n(e2tomo_icongpu)(icongpufunc) calling ICON-GPU.")
 	cmdicon1 = 'ICON-GPU -input ' + alifile + ' -tiltfile ' + options.tltfile + ' -outputPath ' + icondir + ' -slice 0,' + str(outsize-1) + ' -ICONIteration '+ iterationsstring + ' -dataType 1 -threshold 0 -gpu ' + options.gpus 
 	runcmd(options,cmdicon1,cmdsfilepath)
 
 	if options.verbose:
-		print "\n(e2tomo_icongpu)(icongpufunc) calling ICONMask2."
+		print("\n(e2tomo_icongpu)(icongpufunc) calling ICONMask2.")
 	cmdicon2 = 'ICONMask2 -inputPath ' + icondir + '/reconstruction -tiltfile ' + options.tltfile + ' -output ' + outtomogram + ' -slice 0,' + str(outsize-1) + ' -thickness ' + str(thickness) + ' -crossVfrc ' + icondir + '/crossValidation/crossV.frc -fullRecfrc ' + icondir + '/crossValidation/fullRec.frc' 
 	runcmd(options,cmdicon2,cmdsfilepath)
 
 	outtomogramzshort = outtomogram.replace('.mrc','_ZSHORT.mrc') 
 	if options.verbose:
-		print "\n(e2tomo_icongpu)(icongpufunc) calling IMOD to rotate the reconstructed volume around x and shrink it if --shrink > 1 was specified."
+		print("\n(e2tomo_icongpu)(icongpufunc) calling IMOD to rotate the reconstructed volume around x and shrink it if --shrink > 1 was specified.")
 	cmdimod1 = 'clip rotx ' + outtomogram + ' ' + outtomogramzshort
 	runcmd(options,cmdimod1,cmdsfilepath)
 	os.remove(outtomogram)
@@ -302,7 +303,7 @@ def icontest(options,alifile,outsize,cmdsfilepath,aliextension):
 		it1,it2,it3 = calciterations(outsize)
 		
 		iterationsstring = str(it1)+','+str(it2)+','+str(it3)
-		print "iterationsstring is {} of type {} ".format(iterationsstring,type(iterationsstring))
+		print("iterationsstring is {} of type {} ".format(iterationsstring,type(iterationsstring)))
 
 		tmpdir = "tmpicontest"
 		
@@ -327,12 +328,12 @@ def icontest(options,alifile,outsize,cmdsfilepath,aliextension):
 				shutil.rmtree(tmpdir)
 				if sigma and sigmanonzero:
 					passtest = True
-					print "\nthe test passed; the tiltseries has a good size now nx={}, ny={}".format(img['nx'],img['ny'])
+					print("\nthe test passed; the tiltseries has a good size now nx={}, ny={}".format(img['nx'],img['ny']))
 					return alifile,outsize,iterationsstring
 				else:
 					passtest = False
 					outsize -= 2
-					print "\nICON-GPU failed becase the image size was bad; cropping the images in the tiltseries to this new size, nx={}, nx={}".format(outsize,outsize)
+					print("\nICON-GPU failed becase the image size was bad; cropping the images in the tiltseries to this new size, nx={}, nx={}".format(outsize,outsize))
 					alifile = cropper(options,alifile,aliextension,outsize,cmdsfilepath)	
 					break
 	
@@ -381,7 +382,7 @@ def cropper(options,alifile,extension,outsize,cmdsfilepath):
 	ny=hdr['ny']
 
 	if options.verbose:
-		print "\nWARNING: the tiltseries will be resized since its images are not squares. The original size is nx={}, ny={}, and will be cropped to nx={}, ny={}".format(nx,ny,outsize,outsize)
+		print("\nWARNING: the tiltseries will be resized since its images are not squares. The original size is nx={}, ny={}, and will be cropped to nx={}, ny={}".format(nx,ny,outsize,outsize))
 	
 	outcrop = alifile.replace(extension,'_clip' + str(outsize) + extension)
 	if '_clip' in alifile:
@@ -397,14 +398,14 @@ def cropper(options,alifile,extension,outsize,cmdsfilepath):
 
 def runcmd(options,cmd,cmdsfilepath=''):
 	if options.verbose > 9:
-		print "(e2tomo_icongpu)(runcmd) running command", cmd
+		print("(e2tomo_icongpu)(runcmd) running command", cmd)
 	
 	p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	text=p.communicate()	
 	p.stdout.close()
 	
 	if options.verbose > 8:
-		print "(e2segmask)(runcmd) done"
+		print("(e2segmask)(runcmd) done")
 	
 	if cmdsfilepath:
 		with open(cmdsfilepath,'a') as cmdfile: cmdfile.write( cmd + '\n')

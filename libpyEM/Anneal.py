@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: James Michael Bell, 07/16/2015 (jmbell@bcm.edu)
 # Copyright (c) 2015 Baylor College of Medicine
@@ -71,16 +72,16 @@ def main():
     x0 = [0 for i in range(10)]
     fx0 = testfunc(x0)
     print("ANALYTIC:")
-    print("argmin:\t{}\nminval:\t{}\n".format(x0,fx0))
+    print(("argmin:\t{}\nminval:\t{}\n".format(x0,fx0)))
 
     print("ANNEALED:")
     bounds = [(low,high) for i in x0]
     sa = SimpleAnnealer(testfunc,bounds)
     params = {'t_step':options.tstep,'nt':options.nt,'n_steps':options.nsteps,'n_limit':options.nlimit}
     x1,fx1,err1,iters1=sa.anneal(**params)
-    print("argmin:\t{}\nminval:\t{}\n".format(x1,fx1))
+    print(("argmin:\t{}\nminval:\t{}\n".format(x1,fx1)))
     error1 = np.abs(fx1 - fx0)
-    print("Iterations:\t\t{}\nEstimated Error:\t{}\nActual Error:\t\t{}\n\n".format(iters1,err1*0.01,error1))
+    print(("Iterations:\t\t{}\nEstimated Error:\t{}\nActual Error:\t\t{}\n\n".format(iters1,err1*0.01,error1)))
 
     print("Traveling Sales Person Problem:")
     example_tsp_problem()
@@ -113,9 +114,9 @@ def example_tsp_problem():
     state, e = tsps.anneal()
     while state[0] != 'New York City':
         state = state[1:] + state[:1]  # rotate NYC to start
-    print("%i mile route:" % e)
+    print(("%i mile route:" % e))
     for city in state:
-        print("\t"+city)
+        print(("\t"+city))
 
 class SimpleAnnealer:
 
@@ -232,7 +233,7 @@ class BaseAnnealer(object):
         if not fname:
             date = datetime.datetime.now().isoformat().split(".")[0]
             fname = date + "_energy_" + str(self.energy()) + ".state"
-        print("Saving state to: %s" % fname)
+        print(("Saving state to: %s" % fname))
         with open(fname, "w") as fh:
             pickle.dump(self.state, fh)
 

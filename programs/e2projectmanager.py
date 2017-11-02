@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: John Flanagan Oct 20th 2011 (jfflanag@bcm.edu)
 # Copyright (c) 2000-2011 Baylor College of Medicine
@@ -536,7 +537,7 @@ class EMProjectManager(QtGui.QMainWindow):
 			try : os.unlink("%s/pmfifo"%os.getcwd())
 			except : pass
 			os.mkfifo("%s/pmfifo"%os.getcwd())
-			stdoutpipe = file("%s/pmfifo"%os.getcwd(),"w+",0)
+			stdoutpipe = open("%s/pmfifo"%os.getcwd(),"w+",0)
 		else:
 			stdoutpipe = None
 
@@ -547,10 +548,10 @@ class EMProjectManager(QtGui.QMainWindow):
 			child = EMPopen((str(cmd)+" --ppid=-2"), shell=True, cwd=self.pm_cwd, stdout=stdoutpipe, bufsize=1)
 		else:
 			if self.getProgramNoteLevel() > 0:
-				print "NOT Writing notes, ppid=-1"
+				print("NOT Writing notes, ppid=-1")
 				child = EMPopen(str(cmd), shell=True, cwd=self.pm_cwd, stdout=stdoutpipe, bufsize=1)
 			else:
-				print "NOT Writing notes, ppid=-2"
+				print("NOT Writing notes, ppid=-2")
 				child = EMPopen((str(cmd)+" --ppid=-2"), shell=True, cwd=self.pm_cwd, stdout=stdoutpipe, bufsize=1)
 		# Dump terminal stdout if desired
 		if self.dumpterminal.isChecked(): child.realTimeCommunicate(self.statusbar)
@@ -572,7 +573,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		helpstr = ""
 		bregex = re.compile('usage\s*=\s*"""')
 		eregex = re.compile('"""')
-		for line in f.xreadlines():
+		for line in f:
 			if re.search(eregex, line) and begin:
 				line = re.sub(eregex, "", line)
 				helpstr = helpstr + line.strip()
@@ -720,7 +721,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		defaultre = re.compile("default\s*=\s*[^,]*")
 
 		# Read line and do preprocessing(set mode defaults if desired)
-		for line in f.xreadlines():
+		for line in f:
 			if mode:
 				if not re.search(moderegex, line): continue	# If we are running the program in a mode, then only eval mode lines
 				string = re.findall(modedefre, re.findall(moderegex, line)[0])
@@ -899,7 +900,7 @@ class EMPopen(subprocess.Popen):
 		subprocess.Popen.__init__(self, args, bufsize=bufsize, executable=executable, stdin=stdin, stdout=stdout, stderr=stderr, preexec_fn=preexec_fn, close_fds=close_fds, shell=shell, cwd=cwd, env=env, universal_newlines=universal_newlines, startupinfo=startupinfo, creationflags=creationflags)
 
 	def realTimeCommunicate(self, msgbox):
-		self.pmfifo = file("%s/pmfifo"%os.getcwd(),"r+")
+		self.pmfifo = open("%s/pmfifo"%os.getcwd(),"r+")
 		self.msgbox = msgbox
 		rtcom = threading.Thread(target=self.realTimeChatter)
 		rtcom.start()
@@ -915,7 +916,7 @@ class EMPopen(subprocess.Popen):
 				break
 
 			if self.poll() !=None:
-				print "\n\nDONE\n\n"
+				print("\n\nDONE\n\n")
 				break
 
 			# A HACK to prevent broken pipes(this may be a bit buggy, but it fixes an appaernt bug in subprocess module
@@ -1394,8 +1395,8 @@ class TaskManager(QtGui.QWidget):
 
 		# A timer for updates
 		self.timer = QtCore.QTimer(self);
- 		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.update_tasks)
- 		self.timer.start(2000)
+		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.update_tasks)
+		self.timer.start(2000)
 
 	def check_task(self,fin,ptsk):
 		"""Note that this modifies ptsk in-place"""
@@ -1492,7 +1493,7 @@ class TaskManager(QtGui.QWidget):
 					return
 
 			except:
-				print "Error, couldn't stat(.eman2log.txt)."
+				print("Error, couldn't stat(.eman2log.txt).")
 				return
 
 			# Load in the file
@@ -1547,12 +1548,12 @@ class TaskManager(QtGui.QWidget):
 				# The PID Mafia occurs below: # Kill all children and siblings
 				for task in self.tasks:
 					if item.getPPID() == task[5]:
-						print "killing self process", task[1]
+						print("killing self process", task[1])
 						os.kill(task[1],signal.SIGTERM)
 						self._recursivekill(task[1])
 				# kill parent (top level item)
 				if item.getPPID() > 0:
-					print "KIlling parent"
+					print("KIlling parent")
 					os.kill(item.getPPID(),signal.SIGTERM)
 			else:
 				# Windows kill
@@ -1561,7 +1562,7 @@ class TaskManager(QtGui.QWidget):
 	def _recursivekill(self, pid):
 		for task in self.tasks:
 			if pid == task[5]:
-				print "Killing child process", task[1]
+				print("Killing child process", task[1])
 				os.kill(task[1],signal.SIGTERM)
 				self._recursivekill(task[1])
 
@@ -1750,7 +1751,7 @@ class PMGUIWidget(QtGui.QScrollArea):
 		""" return the default value according to the folowing rules"""
 		# If there is a DB and its usage is desired the default will be the DB value
 		k=option['name']+self.getSharingMode(option)
-		if not nodb and self.db.has_key(k): return self.db[k]	# Return the default if it exists in the DB
+		if not nodb and k in self.db: return self.db[k]	# Return the default if it exists in the DB
 		default = ""
 		if 'default' in option: default = option['default']
 		if type(default) == str and "self.pm()" in default: default = eval(default)	# eval CS, apix, voltage, etc, a bit of a HACK, but it works
@@ -1833,7 +1834,7 @@ class PMGUIWidget(QtGui.QScrollArea):
 		#process
 		for option in options:
 			ov = option.split('=', 1)
-			if not self.widgethash.has_key(ov[0][3:]):
+			if ov[0][3:] not in self.widgethash:
 				self.pm().statusbar.setMessage("Rubbish!!! Option '%s' not found."%ov[0][3:],"color:red;")
 				continue
 			if len(ov) == 2:
@@ -2087,10 +2088,10 @@ if __name__ == "__main__":
 	import sys
 
 	if os.path.isdir("EMAN2DB") and os.path.isfile("EMAN2DB/project.bdb") :
-		print """ERROR: This appears to be an EMAN2.0x project directory. EMAN2.1 uses a number
+		print("""ERROR: This appears to be an EMAN2.0x project directory. EMAN2.1 uses a number
 of different conventions. To use e2projectmanager with an older project, you will need to
 first upgrade the project with e2projectupdate21.py. You can still use the e2display.py
-GUI directly to browse the contents of old-style projects."""
+GUI directly to browse the contents of old-style projects.""")
 		sys.exit(1)
 
 	from emapplication import EMApp

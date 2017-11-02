@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 02/15/2010 (sludtke@bcm.edu)
@@ -97,7 +98,7 @@ e2classifyligand.py sets/myset_even.lst refine_01/classmx_04_even.hdf refine_01/
 		cmxalpha=EMData(args[1],4)
 		cmxmirror=EMData(args[1],5)
 	except:
-		print "Error reading classification matrix. Must be full classification matrix with alignments"
+		print("Error reading classification matrix. Must be full classification matrix with alignments")
 		sys.exit(1)
 
 	# this reads all of the EMData headers from the projections
@@ -105,7 +106,7 @@ e2classifyligand.py sets/myset_even.lst refine_01/classmx_04_even.hdf refine_01/
 	eulers=[EMData(args[2],i,1)["xform.projection"] for i in range(nref)]
 
 	if not options.ref1 or not options.ref2:
-		print "Ref1 anf Ref2 are required arguments"
+		print("Ref1 anf Ref2 are required arguments")
 		sys.exit(1)
 
 	try:
@@ -116,7 +117,7 @@ e2classifyligand.py sets/myset_even.lst refine_01/classmx_04_even.hdf refine_01/
 		softmask.to_one()
 		softmask.process_inplace("mask.soft",{"outer_radius":ref1["nx"]/2-4,"width":3})
 	except:
-		print "Error reading ref1/ref2"
+		print("Error reading ref1/ref2")
 		sys.exit(1)
 
 	logid=E2init(sys.argv, options.ppid)
@@ -124,11 +125,11 @@ e2classifyligand.py sets/myset_even.lst refine_01/classmx_04_even.hdf refine_01/
 	# now we loop over each class, and assess the masked region for each particle in terms of
 	# sigma of the image. Note that we don't have a list of which particle is in each class,
 	# but rather a list of which class each particle is in, so we do this a bit inefficiently for now
-	out=file(options.plotout,"w")
+	out=open(options.plotout,"w")
 	statall={}	# keyed by particle number, contains (statm,statr,statr2) for each particle, with Null if the right options weren't specified
 	for i in range(nref):
 		if options.tstcls>=0 and i!=options.tstcls : continue
-		if options.verbose>1 : print "--- Class %d"%i
+		if options.verbose>1 : print("--- Class %d"%i)
 
 		proj=ref1.project("standard",{"transform":eulers[i]})
 		proj.process_inplace("normalize.circlemean")
@@ -177,7 +178,7 @@ e2classifyligand.py sets/myset_even.lst refine_01/classmx_04_even.hdf refine_01/
 
 			try: ptcl=EMData(args[0],j)
 			except: 
-				print "Cannot read particle {} from {}. This should not happen. Using correct input file?".format(j,args[0])
+				print("Cannot read particle {} from {}. This should not happen. Using correct input file?".format(j,args[0]))
 				continue
 			if options.process!=None :
 				popt=parsemodopt(options.process)
@@ -234,7 +235,7 @@ e2classifyligand.py sets/myset_even.lst refine_01/classmx_04_even.hdf refine_01/
 						try: avgim2.add(ptcl2)
 						except: avgim2=ptcl2
 
-				if options.verbose>1 : print j,cmp1+cmp2,cmp2-cmp1,cmp3,cmp5-cmp4
+				if options.verbose>1 : print(j,cmp1+cmp2,cmp2-cmp1,cmp3,cmp5-cmp4)
 				statr.append(cmp3)
 				statr2.append((cmp1+cmp2,cmp3,cmp4-cmp5))
 #				statr2.append((cmp1+cmp2,cmp2-cmp1,cmp5-cmp4)
@@ -292,17 +293,17 @@ e2classifyligand.py sets/myset_even.lst refine_01/classmx_04_even.hdf refine_01/
 
 
 		if len(statr)==0 and len(statm)==0 :
-			if options.verbose>1 : print "No particles"
+			if options.verbose>1 : print("No particles")
 			continue
 
 
 		for i,j in enumerate(statn):
-			if options.verbose>1 : print j,statr[i]
+			if options.verbose>1 : print(j,statr[i])
 			out.write("%f\t%f\t%f\t%d\n"%(statr2[i][0],statr2[i][1],statr2[i][2],j))
 			statall[j]=(None,statr[i],statr2[i])
 
 		if options.verbose==1 :
-			print "  %d/%d        \r"%(len(statall),nptcl),
+			print("  %d/%d        \r"%(len(statall),nptcl), end=' ')
 			sys.stdout.flush()
 
 
@@ -352,7 +353,7 @@ e2classifyligand.py sets/myset_even.lst refine_01/classmx_04_even.hdf refine_01/
 					#write_particle(args[0],"_high"+options.postfix,i)		# high mask density
 					#counts[7]+=1
 
-		print counts
+		print(counts)
 
 	E2end(logid)
 
@@ -368,7 +369,7 @@ def write_particle(source,postfix,n):
 		if glob_inls==None:
 			glob_inls=LSXFile(source)
 			
-		if not glob_outls.has_key(postfix):
+		if postfix not in glob_outls:
 			glob_outls[postfix]=LSXFile(source[:-4]+postfix+".lst")
 		
 		ent=glob_inls.read(n)

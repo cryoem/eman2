@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -78,7 +79,7 @@ Locates the best 'docking' locations for a small probe in a large target map."""
 	dz=0.
 	v=[0,0,0]
 	for v[2] in range(32):
-		print v[2],"/32"
+		print(v[2],"/32")
 		for v[1] in range(32):
 			for v[0] in range(32):
 				if "x" in axes: dx=(v[axes.find("x")]-16)/2.0

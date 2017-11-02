@@ -5788,6 +5788,7 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 			d.put("ignore_lowsig", EMObject::FLOAT, "If >0, then any pixels closer to the mean than val*sigma in either image excluded");
 			d.put("low_threshold", EMObject::FLOAT, "only take into account the reference image's pixel value between high and low threshold (zero is always ignored)");
 			d.put("high_threshold", EMObject::FLOAT, "only take into account the reference image's pixel value between high and low threshold (zero is always ignored)");
+			d.put("debug", EMObject::BOOL, "This is a debugging flag which will cause various diagnostic files to be written.");
 			return d;
 		}
 

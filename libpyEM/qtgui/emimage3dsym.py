@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -480,7 +481,7 @@ class EM3DSymModel(EM3DModel,Orientations,ColumnGraphics):
 			self.radius = radius
 			self.force_update = True
 		else:
-			print "Error, tried to set a zero or negative radius (",radius,")"
+			print("Error, tried to set a zero or negative radius (",radius,")")
 			exit(1)
 	
 	def trace_great_triangles(self,inc_mirror):
@@ -745,7 +746,7 @@ class EM3DSymModel(EM3DModel,Orientations,ColumnGraphics):
 		elif self.eulers_specified:
 			eulers = self.specified_eulers
 		else:
-			f = file(str(self.eulerfilename))
+			f = open(str(self.eulerfilename))
 			lines=f.readlines()
 			angles=[]
 			eulers = []
@@ -862,12 +863,12 @@ class EM3DSymModel(EM3DModel,Orientations,ColumnGraphics):
 		#print t
 		if t > 1: 
 			if t > 1.1:
-				print "error, the precision is a problem, are things normalized?"
+				print("error, the precision is a problem, are things normalized?")
 				exit(1)
 			t = 1
 		if t < -1:
 			if t < -1.1:
-				print "error, the precision is a problem, are things normalized?"
+				print("error, the precision is a problem, are things normalized?")
 				exit(1)
 			t = -1
 					
@@ -880,11 +881,11 @@ class EM3DSymModel(EM3DModel,Orientations,ColumnGraphics):
 			self.trace_file_name = None
 		if f != self.trace_file_name:
 			
-			print "parsing file",f,self.file
+			print("parsing file",f,self.file)
 			try:
-				ff=file(f,'r')
+				ff=open(f,'r')
 			except:
-				print 'couldnt read',f 
+				print('couldnt read',f) 
 				return
 			lines=ff.readlines()
 			self.tracedata = []
@@ -908,14 +909,14 @@ class EM3DSymModel(EM3DModel,Orientations,ColumnGraphics):
 			self.file = ff
 			self.trace_file_name = f
 		else:
-			print "that file is already loaded"
+			print("that file is already loaded")
 		
 		self.lr = lr
 		self.hr = hr
 		
 		
 		if self.reduce:
-			print "reducing"
+			print("reducing")
 			for k in range(lr,hr):
 				particle = self.tracedata[k]
 				for orient in particle:
@@ -1056,7 +1057,7 @@ class EM3DSymModel(EM3DModel,Orientations,ColumnGraphics):
 			self.generate_current_display_list()
 			self.force_update = False
 			if ( self.sphere_points_dl == 0 ) : 
-				print "error, you can't draw an empty list"
+				print("error, you can't draw an empty list")
 				return
 			
 		for i,t in enumerate(self.sym_object.get_syms()):
@@ -1548,7 +1549,7 @@ class SparseSymChoicesWidgets:
 			try:
 				nsym = s[1:]
 			except:
-				print "can't interpret",sym
+				print("can't interpret",sym)
 				return
 			self.sym_text.setEnabled(True)
 			if s[0] == "d":
@@ -1556,7 +1557,7 @@ class SparseSymChoicesWidgets:
 			elif s[0] == "c":
 				self.sym_combo.setCurrentIndex(4)
 			else:
-				print "can't interpret",sym
+				print("can't interpret",sym)
 				return
 			
 			self.sym_text.setText(s[1:])
@@ -1581,7 +1582,7 @@ class SparseSymChoicesWidgets:
 		# warning - do not change the name of these keys unless you know what you're doing. The workflow refine forms assumes these keys exist, as they are
 		# see EMOrientationDistDialog in emform.py
 		d["sym"] = self.get_sym()
-		print self.get_sym()
+		print(self.get_sym())
 		d["orientgen"] = str(self.strategy_label.currentText())
 		d["approach"] = str(self.angle_label.currentText())
 		d["value"] = float(self.prop_text.text())
@@ -1947,7 +1948,7 @@ if __name__ == '__main__':
 	#First demonstration
 	dialog = EMSymChoiceDialog()
 	choices_dict = dialog.exec_()
-	print choices_dict
+	print(choices_dict)
 	
 	#Second demonstration
 	window = EMSymViewerWidget()

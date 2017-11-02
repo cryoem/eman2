@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -192,13 +193,13 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 	def get_current_inspector(self):
 		if self.currentselection == -1 : return None
 		elif self.currentselection >= len(self.viewables):
-			print "error, current selection too large", self.currentselection,len(self.viewables)
+			print("error, current selection too large", self.currentselection,len(self.viewables))
 			return None
 		return self.viewables[self.currentselection].get_inspector()		
 	def get_current_name(self):
 		if self.currentselection == -1 : return ""
 		elif self.currentselection >= len(self.viewables):
-			print "error, current selection too large", self.currentselection,len(self.viewables)
+			print("error, current selection too large", self.currentselection,len(self.viewables))
 			return ""
 		return self.viewables[self.currentselection].get_name()
 	def get_current_transform(self):
@@ -313,7 +314,7 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 			for model in self.viewables:
 				try:
 					model.mouseMoveEvent(event)
-				except AttributeError, e:
+				except AttributeError as e:
 					pass
 		self.updateGL()
 	def mousePressEvent(self, event):
@@ -325,7 +326,7 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 			for model in self.viewables:
 				try:
 					model.mousePressEvent(event)
-				except AttributeError, e:
+				except AttributeError as e:
 					pass
 		self.updateGL()
 	def mouseReleaseEvent(self, event):
@@ -335,7 +336,7 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 			for model in self.viewables:
 				try:
 					model.mouseReleaseEvent(event)
-				except AttributeError, e:
+				except AttributeError as e:
 					pass
 		self.updateGL()
 	def paintGL(self):
@@ -589,7 +590,7 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 		for model in self.viewables:
 			try:
 				model.wheelEvent(event)
-			except AttributeError, e:
+			except AttributeError as e:
 				pass
 		self.updateGL()
 

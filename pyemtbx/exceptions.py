@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: Liwei Peng, 11/21/2004 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine

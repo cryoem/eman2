@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 import os
 import sys
@@ -24,7 +25,7 @@ def main():
 	
 	if os.path.exists(options.input): starf = StarFile(options.input)
 	else:
-		print("Sorry, could not locate {}".format(options.input)) 
+		print(("Sorry, could not locate {}".format(options.input))) 
 		exit(-1)
 	
 	if options.output:
@@ -32,7 +33,7 @@ def main():
 			f = options.output.split('.')
 			if len(f) > 2: bn = ".".join(f[:-2])
 			else: bn = f[-2]
-			print("Writing to {base}.box rather than {base}.{ext}".format(base=bn,ext=f[-1]))
+			print(("Writing to {base}.box rather than {base}.{ext}".format(base=bn,ext=f[-1])))
 			options.output = bn + ".box"
 		if options.prepend: options.output = options.prepend + "_" + options.output
 		if options.append: options.output = options.output.split('.')[0] + "_" + options.append + ".box"
@@ -51,7 +52,7 @@ def main():
 			print("There are multiple header labels containing the word 'Micrograph':")
 			for mk in mks:
 				print(mk)
-			print("Using {}\n".format(mks[0]))
+			print(("Using {}\n".format(mks[0])))
 		mk = mks[0]
 		mgs = list(set(starf[mk]))
 		nmgs = len(mgs)
@@ -73,7 +74,7 @@ def main():
 		for k in xk:
 			print(k)
 		xk = [i for i in xk if "Coordinate" in i][0]
-		print("Using {}\n".format(xk))
+		print(("Using {}\n".format(xk)))
 	else: # case 3: no xk
 		print("Could not find any keys containing 'X'")
 		exit(-1)
@@ -85,7 +86,7 @@ def main():
 		for k in yk:
 			print(k)
 		yk = [i for i in yk if "Coordinate" in i][0]
-		print("Using {}\n".format(yk))
+		print(("Using {}\n".format(yk)))
 	else: # case 3: no xk
 		print("Could not find any keys containing 'Y'")
 		exit(-1)

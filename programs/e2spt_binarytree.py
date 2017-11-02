@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Jesus Galaz-Montoya July/08/2015
@@ -232,7 +233,7 @@ def main():
 	
 	if options.shrink < options.shrinkfine:
 		options.shrink = options.shrinkfine
-		print "\n(e2spt_binarytree)(main) it makes no sense for shrinkfine to be larger than shrink; therefore, shrink will be made to match shrinkfine"
+		print("\n(e2spt_binarytree)(main) it makes no sense for shrinkfine to be larger than shrink; therefore, shrink will be made to match shrinkfine")
 	
 	from e2spt_classaverage import checksaneimagesize	
 	checksaneimagesize( options, options.input )
@@ -253,10 +254,10 @@ def main():
 		exit(0)
 	elif options.subset:
 		subsetStack = options.path + '/subset' + str( options.subset ).zfill( len( str( options.subset))) + '.hdf' 
-		print "\nSubset to be written to", subsetStack
+		print("\nSubset to be written to", subsetStack)
 		
 		subsetcmd = 'e2proc3d.py ' + options.input + ' ' + subsetStack + ' --first=0 --last=' + str(options.subset-1) 
-		print "Subset cmd is", subsetcmd
+		print("Subset cmd is", subsetcmd)
 		
 		p=subprocess.Popen( subsetcmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE )
 		text=p.communicate()	
@@ -292,7 +293,7 @@ def main():
 	ny = hdr["ny"]
 	nz = hdr["nz"]
 	if nx!=ny or ny!=nz :
-		print "ERROR, input volumes are not cubes"
+		print("ERROR, input volumes are not cubes")
 		sys.exit(1)
 		
 	logger = E2init(sys.argv, options.ppid)
@@ -309,8 +310,8 @@ def main():
 			etc = ''
 		
 		else:
-			print "\n\n(e2spt_classaverage.py) INITIALIZING PARALLELISM!"
-			print "\n\n"
+			print("\n\n(e2spt_classaverage.py) INITIALIZING PARALLELISM!")
+			print("\n\n")
 
 			from EMAN2PAR import EMTaskCustomer
 			etc=EMTaskCustomer(options.parallel)
@@ -344,7 +345,7 @@ def main():
 	
 	nptcl=EMUtil.get_image_count(options.input)
 	if nptcl < 1: 
-		print "ERROR : at least 2 particles required in input stack"
+		print("ERROR : at least 2 particles required in input stack")
 		sys.exit(1)
 	
 	ptclnums=range(nptcl)
@@ -359,10 +360,10 @@ def main():
 
 	binaryTreeRef(options,nptclForRef,nseed,etc)
 		
-	print "Will end logger"	
+	print("Will end logger")	
 	E2end(logger)
 	
-	print "logger ended"
+	print("logger ended")
 	sys.stdout.flush()
 	
 	return
@@ -373,7 +374,7 @@ def binaryTreeRef(options,nptclForRef,nseed,etc):
 	from e2spt_classaverage import Align3DTask,align3Dfunc,get_results
 	
 	if nptclForRef == 1: 
-		print "Error: More than 1 particle required to build a reference."
+		print("Error: More than 1 particle required to build a reference.")
 		sys.exit(1)
 			
 	# we need to make an initial reference. Due to the parallelism scheme we're using in 3-D and the slow speed of the
@@ -393,7 +394,7 @@ def binaryTreeRef(options,nptclForRef,nseed,etc):
 			nseediter=options.iterstop
 	
 	if options.verbose: 
-		print "Seedtree to produce initial reference. Using %d particles in a %d level tree"%(nseed,nseediter)
+		print("Seedtree to produce initial reference. Using %d particles in a %d level tree"%(nseed,nseediter))
 	
 	# We copy the particles for this class into bdb:seedtree_0
 	'''
@@ -424,12 +425,12 @@ def binaryTreeRef(options,nptclForRef,nseed,etc):
 	for j in range(nseed):
 		emdata = EMData(options.input,j)
 		emdata.write_image(seedfile,ii)
-		print "have taken particle %d and written it into index %d of the seedfile" %(j,ii)
+		print("have taken particle %d and written it into index %d of the seedfile" %(j,ii))
 		ii+=1
 		#if ic >= 0:
 		#	print "Creating this seed file for this class", seedfile, ic
 		
-		print "Creating this seed file for this class", seedfile
+		print("Creating this seed file for this class", seedfile)
 	
 	
 	from e2spt_classaverage import cmdpreproc
@@ -438,18 +439,18 @@ def binaryTreeRef(options,nptclForRef,nseed,etc):
 	preproc = 0
 	if options.mask or options.maskfile or options.normproc or options.threshold or options.clip or (options.shrink > 1) or options.lowpass or options.highpass or options.preprocess:		
 		
-		print "\noptions.mask", options.mask
-		print "\noptions.maskfile", options.maskfile
-		print "\noptions.normproc", options.normproc
-		print "\noptions.threshold", options.threshold
-		print "\noptions.clip", options.clip
-		print "\noptions.shrink", options.shrink
-		print "\noptions.shrinkfine", options.shrinkfine
-		print "\noptions.lowpass", options.lowpass
-		print "\noptions.highpass", options.highpass
-		print "\noptions.preprocess", options.preprocess
+		print("\noptions.mask", options.mask)
+		print("\noptions.maskfile", options.maskfile)
+		print("\noptions.normproc", options.normproc)
+		print("\noptions.threshold", options.threshold)
+		print("\noptions.clip", options.clip)
+		print("\noptions.shrink", options.shrink)
+		print("\noptions.shrinkfine", options.shrinkfine)
+		print("\noptions.lowpass", options.lowpass)
+		print("\noptions.highpass", options.highpass)
+		print("\noptions.preprocess", options.preprocess)
 		
-		print "\ntruth statement", options.mask or options.maskfile or options.normproc or options.threshold or options.clip or (options.shrink > 1) or options.lowpass or options.highpass or options.preprocess
+		print("\ntruth statement", options.mask or options.maskfile or options.normproc or options.threshold or options.clip or (options.shrink > 1) or options.lowpass or options.highpass or options.preprocess)
 		
 		cmdpreproc( seedfile, options, False )
 		
@@ -459,7 +460,7 @@ def binaryTreeRef(options,nptclForRef,nseed,etc):
 	#Outer loop covering levels in the converging binary tree
 	'''
 	
-	print "\nnseediter is", nseediter
+	print("\nnseediter is", nseediter)
 	for i in range( nseediter ):
 		#infile="%s/seedtree_%d_cl_%d.hdf"%(options.path,i,ic)
 		#if ic < 0:
@@ -470,7 +471,7 @@ def binaryTreeRef(options,nptclForRef,nseed,etc):
 		if preproc:
 			infile="%s/seedtree_%d.hdf"%(options.path,i).replace('.hdf','_preproc.hdf')
 				
-		print "\n(e2spt_binarytree)(binaryTreeRef) infile will be", infile
+		print("\n(e2spt_binarytree)(binaryTreeRef) infile will be", infile)
 		
 		#outfile="%s/seedtree_%d_cl_%d.hdf"%(options.path,i+1,ic)
 		#if ic < 0:
@@ -479,7 +480,7 @@ def binaryTreeRef(options,nptclForRef,nseed,etc):
 		if i == nseediter-1:
 			outfile = options.path + '/final_avg.hdf'
 		
-		print "\n(e2spt_binarytree)(binaryTreeRef) outfile will be", outfile
+		print("\n(e2spt_binarytree)(binaryTreeRef) outfile will be", outfile)
 	
 		tasks=[]
 		results=[]
@@ -509,7 +510,7 @@ def binaryTreeRef(options,nptclForRef,nseed,etc):
 			if options.parallel:
 				tids=etc.send_tasks(tasks)
 				if options.verbose: 
-					print "%d tasks queued in seedtree level %d"%(len(tids),i) 
+					print("%d tasks queued in seedtree level %d"%(len(tids),i)) 
 
 				"""Wait for alignments to finish and get results"""
 				results=get_results(etc,tids,options.verbose,nseed,'binarytree')
@@ -521,13 +522,13 @@ def binaryTreeRef(options,nptclForRef,nseed,etc):
 
 
 				if options.verbose>2 : 
-					print "Results:"
+					print("Results:")
 					pprint(results)
 			else:
 				#print "No parallelism specified"
 				#results=tasks
 				if options.verbose>2 : 
-					print "Results:" 
+					print("Results:") 
 					pprint(results)
 						
 			ret = makeAveragePairs(options,infile,outfile,results)
@@ -537,7 +538,7 @@ def binaryTreeRef(options,nptclForRef,nseed,etc):
 					cmdpreproc( outfile, options, False )
 		
 		else:
-			print "\nalgorithm converged since infile %s has only one particle, nimgs=%d" %(infile,nptclsinInfile)
+			print("\nalgorithm converged since infile %s has only one particle, nimgs=%d" %(infile,nptclsinInfile))
 			os.rename( rawinfile, outfile )
 		
 		
@@ -551,24 +552,24 @@ def makeAveragePairs(options, ptcl_file, outfile, results):
 	"""Will take a set of alignments and an input particle stack filename and produce a new set of class-averages over pairs"""
 	
 	current = os.getcwd()
-	print "\n(e2spt_classaverage.py) (make_average_pairs) current directory is", current
+	print("\n(e2spt_classaverage.py) (make_average_pairs) current directory is", current)
 	findir = os.listdir(current)
-	print "\noptions.path is", options.path
+	print("\noptions.path is", options.path)
 	findirpath = os.listdir(options.path)
-	print "\nThe particle file where the particles ought to be read from is", ptcl_file
-	print "\nLets see if ptcl_file is in path. Files in path are", findirpath
+	print("\nThe particle file where the particles ought to be read from is", ptcl_file)
+	print("\nLets see if ptcl_file is in path. Files in path are", findirpath)
 	
-	print "\nresults are", results
-	print "\nTheir len", len(results)
+	print("\nresults are", results)
+	print("\nTheir len", len(results))
 	
 	#for i,ptcl_parms in enumerate(align_parms):
 	ii=0
 	for r in results:
-		print "r is", r
-		print "\nr[0] is", r[0]
-		print "\nr[0][0] is", r[0][0]
-		print "\nr[0][0]['xform.align3d'] is", r[0][0]["xform.align3d"]
-		print "\nr[0][-1]", r[0][-1]
+		print("r is", r)
+		print("\nr[0] is", r[0])
+		print("\nr[0][0] is", r[0][0])
+		print("\nr[0][0]['xform.align3d'] is", r[0][0]["xform.align3d"])
+		print("\nr[0][-1]", r[0][-1])
 		
 				
 		#if ptcl_parms:
@@ -580,7 +581,7 @@ def makeAveragePairs(options, ptcl_file, outfile, results):
 		#ptcl1.process_inplace("xform",{"transform":align_parms[0]["xform.align3d"]})
 	
 		# While this is only 2 images, we still use the averager in case something clever is going on
-		print "averager is", options.averager
+		print("averager is", options.averager)
 		avgr = Averagers.get(options.averager[0], options.averager[1])
 		avgr.add_image(ptcl0)
 		avgr.add_image(ptcl1)
@@ -589,7 +590,7 @@ def makeAveragePairs(options, ptcl_file, outfile, results):
 		#postprocess(avg,optmask,optnormproc,optpostprocess)		#There should be NO postprocessing of the intermediate averages
 	
 		if options.autocenter:
-			print "\n\n\n\nYou have selected to autocenter!\n", options.autocenter
+			print("\n\n\n\nYou have selected to autocenter!\n", options.autocenter)
 			
 			avgac = avg.copy()
 			if options.autocentermask:
@@ -607,7 +608,7 @@ def makeAveragePairs(options, ptcl_file, outfile, results):
 			avgac.process_inplace(options.autocenter[0],options.autocenter[1])
 			
 			tcenter = avgac['xform.align3d']
-			print "Thus the average HAS BEEN be translated like this", tcenter
+			print("Thus the average HAS BEEN be translated like this", tcenter)
 	
 		avg['origin_x']=0
 		avg['origin_y']=0

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 # 
 # Author: James Michael Bell, 2014 (jmbell@bcm.edu)
@@ -57,8 +58,8 @@ def get_usage():
 
 def print_usage():
 	usage = get_usage()
-	print "usage " + usage;
-	print "Please run '" + progname + " -h' for detailed options"
+	print("usage " + usage);
+	print("Please run '" + progname + " -h' for detailed options")
 
 
 def main():
@@ -92,7 +93,7 @@ def main():
 		nslices = options.nslices
 		tiltrange = options.tiltrange
 	else:
-		print "ERROR: You must speficy either --testdata OR --tiltseries."
+		print("ERROR: You must speficy either --testdata OR --tiltseries.")
 		exit(1)
 	
 	if options.imgnum:
@@ -100,35 +101,35 @@ def main():
 	else: 
 		if options.testdata:
 			if EMUtil.get_image_count(options.testdata) != 1:
-				print "Using the 0th image by default."
+				print("Using the 0th image by default.")
 		imgnum = 0
 	
 	if options.norm:
 		if options.norm == 'regular':
-			print "This instance will utilize the regular (default) TV norm"
+			print("This instance will utilize the regular (default) TV norm")
 		elif options.norm == 'anisotropic':
-			print "This instance will utilize an anisotropic TV norm"
+			print("This instance will utilize an anisotropic TV norm")
 		elif options.norm == 'l0':
-			print "This instance will utilize an l0 TV norm"
+			print("This instance will utilize an l0 TV norm")
 		else:
-			print "The option --norm was specified improperly. Please specify either anisotropic, l0, or regular. Regular is specified by default."
+			print("The option --norm was specified improperly. Please specify either anisotropic, l0, or regular. Regular is specified by default.")
 			exit(1)
 	
 	if options.tlt != None:
-		fangles = np.asarray([ float( i ) for i in file( options.tlt , "r" ) ])
+		fangles = np.asarray([ float( i ) for i in open( options.tlt , "r" ) ])
 		tiltangles = fangles.tolist()
 		nslices = len( tiltangles )
 		pass
 	elif ( options.nslices and options.tiltrange ):
 		tiltrange = float(options.tiltrange)
 		nslices = int(options.nslices)
-		print "Using tiltrange from -%s, %s degrees consisting of %i slices."%(options.tiltrange, options.tiltrange, options.nslices)
+		print("Using tiltrange from -%s, %s degrees consisting of %i slices."%(options.tiltrange, options.tiltrange, options.nslices))
 	elif options.testdata:
-		print "You must specify --nslices AND --tiltrange when using --testdata."
+		print("You must specify --nslices AND --tiltrange when using --testdata.")
 		exit(1)
 		tiltangles = np.linspace(tiltrange,-1.*tiltrange,nslices).tolist()
 	else:
-		print "You must specify --tlt when using --tiltseries"
+		print("You must specify --tlt when using --tiltseries")
 		exit(1)
 	
 	
@@ -138,7 +139,7 @@ def main():
 	if options.beta:
 		beta = float(options.beta)
 		if beta < 0:
-			print "Parameter beta (--beta) must be greater than 0."
+			print("Parameter beta (--beta) must be greater than 0.")
 			exit(1)
 	
 	if options.subpix:
@@ -154,7 +155,7 @@ def main():
 	if options.output:
 		outfile = options.output
 	
-	if options.verbose > 1: print "e2tvrecon.py"
+	if options.verbose > 1: print("e2tvrecon.py")
 	logger=E2init(sys.argv,options.ppid)
 	
 	# Create new output directory for this instance
@@ -163,7 +164,7 @@ def main():
 	options.path = rootpath + "/" + options.path
 	
 	# Link original data file to output directory
-	if options.verbose > 7: print "Linking input data to instance directory..."
+	if options.verbose > 7: print("Linking input data to instance directory...")
 	
 	if options.testdata != None:
 		pathname = os.path.dirname(os.path.abspath( options.testdata ))
@@ -191,7 +192,7 @@ def main():
 	xlen = dim[0]
 	
 	# Projection operator and projections data
-	if options.verbose > 2: print "Building Projection Operator..."
+	if options.verbose > 2: print("Building Projection Operator...")
 	projection_operator = build_projection_operator( tiltangles, xlen, nslices, None, subpix, 0, None )
 	
 	if options.tiltseries:
@@ -199,30 +200,30 @@ def main():
 	else:
 		projections = projection_operator * data.ravel()[:, np.newaxis]
 	
-	if options.verbose > 9: print "Writing Projections to Disk... "
+	if options.verbose > 9: print("Writing Projections to Disk... ")
 	outpath = options.path + "/" + "projections.hdf"
 	for i in range( nslices ):
 		from_numpy(projections[i*xlen:(i+1)*xlen]).write_image( outpath, i )
 	
 	# Reconstruction
-	if options.verbose > 2: print "Starting Reconstruction..."
+	if options.verbose > 2: print("Starting Reconstruction...")
 	t1 = time.time()
 	recon, energies = fista_tv( options, tiltangles, projections, beta, niters, projection_operator )
 	t2 = time.time()
-	if options.verbose > 3: print "Reconstruction completed in %s s"%(str(t2-t1))
+	if options.verbose > 3: print("Reconstruction completed in %s s"%(str(t2-t1)))
 	
 	# Store reconstruction in instance outfile directory
 	outpath = options.path + "/" + outfile
 	from_numpy( recon[-1] ).write_image( outpath )
 	
 	if options.fsc != False:
-		if options.verbose > 3: print "Generating an FSC plot..."
+		if options.verbose > 3: print("Generating an FSC plot...")
 		fscpath = options.path + "/" + "fsc.txt"
 		datapath = options.testdata
 		os.popen("e2proc3d.py %s %s --calcfsc %s"%( outpath, fscpath, datapath ))
 	
 	E2end(logger)
-	if options.verbose > 1: print "Exiting"
+	if options.verbose > 1: print("Exiting")
 	return
 
 
@@ -230,19 +231,19 @@ def get_data( options, nslices, noisiness, imgnum=0 ):
 	"""Read an input image as a numpy array return its length in x"""
 	if options.testdata:
 		if options.verbose > 3:
-			print "Generating Projections of %s"%(options.testdata)
+			print("Generating Projections of %s"%(options.testdata))
 		testdata = EMData( options.testdata, imgnum )
 		dim = [testdata.get_xsize(), testdata.get_ysize(), testdata.get_zsize()]
 		data = testdata.numpy()
 	elif options.tiltseries:
 		if options.verbose > 3:
-			print "Reading Projections from %s"%(options.tiltseries)
+			print("Reading Projections from %s"%(options.tiltseries))
 		npstack = []
 		for i in range( nslices ):
 			img = EMData( options.tiltseries, i )
 			np_img = img.numpy().copy()
 			if (options.noise != False) and (noisiness != 0.0):	# Add Noise to Projections
-				if options.verbose > 2: print "Adding Noise to Input Data..."
+				if options.verbose > 2: print("Adding Noise to Input Data...")
 				np_img += noisiness * np.random.randn(*np_img.shape)
 				from_numpy(np_img).write_image(options.path + "noisy_img.hdf")
 			npstack.append( np_img )
@@ -454,7 +455,7 @@ def fista_tv(options, angles, y, beta, niter, H, verbose=0, mask=None):
 	t_old = 1
 	for i in range(niter):
 		if verbose:
-			print i
+			print(i)
 		eps = 1.e-4
 		err = H * x - y
 		back_proj = Ht * err
@@ -701,15 +702,15 @@ def dual_gap(im, new, gap, weight):
 
 
 def makepath(options, stem=''):
-	if options.verbose > 5: print "makepath function called"
+	if options.verbose > 5: print("makepath function called")
 	if options.path and ("/" in options.path or "#" in options.path):
-		print "Path specifier should be the name of a subdirectory to use in the current directory."
-		print "Neither '/' or '#' can be included. Please edit your --path argument accordingly."
+		print("Path specifier should be the name of a subdirectory to use in the current directory.")
+		print("Neither '/' or '#' can be included. Please edit your --path argument accordingly.")
 		sys.exit(1)
 	if not options.path:
 		options.path = stem + '_01'
 		if options.verbose > 5:
-			print "--path was not specified, therefore it will have the default value"
+			print("--path was not specified, therefore it will have the default value")
 	files=os.listdir(os.getcwd())
 	while options.path in files:
 		if '_' not in options.path:
@@ -722,10 +723,10 @@ def makepath(options, stem=''):
 			else:
 				components.append('00')
 			options.path = '_'.join(components)
-	if options.verbose > 5: print "The new options.path is", options.path
+	if options.verbose > 5: print("The new options.path is", options.path)
 	if options.path not in files:
 		if options.verbose > 5:
-			print "Creating the following path: ", options.path
+			print("Creating the following path: ", options.path)
 		os.system('mkdir ' + options.path)
 	return options
 

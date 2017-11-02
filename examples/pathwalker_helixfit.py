@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 # -*- coding: utf-8 -*-
 # Fit helixes using pathwalker results
 
@@ -29,17 +30,17 @@ def read_fixed(edgefile):
 	return fixededges
 
 def read_pdb(filename):
-    
-    atomnumber=np.array([])
-    pdbfile = open(filename, "r")
-    lines = pdbfile.readlines()
-    pdbfile.close()
 
-    count = 0
-    for line in (i for i in lines if i.startswith("ATOM  ")):
+	atomnumber=np.array([])
+	pdbfile = open(filename, "r")
+	lines = pdbfile.readlines()
+	pdbfile.close()
+
+	count = 0
+	for line in (i for i in lines if i.startswith("ATOM  ")):
 		atomnumber=np.append(atomnumber,int(line[22:27]))
 		
-    return atomnumber
+	return atomnumber
 
 def main():
 	
@@ -57,22 +58,22 @@ def main():
 	(options, args) = parser.parse_args()
 	
 	eg=[]
-	if options.edgefile<>None:
+	if options.edgefile!=None:
 		edge=read_fixed(options.edgefile)
 		eg.append(edge[0][0])
 		for i in range(1,len(edge)):
-			if edge[i][0]<>edge[i-1][1]:
+			if edge[i][0]!=edge[i-1][1]:
 				eg.append(edge[i-1][1])
 				eg.append(edge[i][0])
 		eg.append(edge[len(edge)-1][1])
 		atomnumber=read_pdb(options.pdbin)
-		print eg
+		print(eg)
 		for i in range(len(eg)):
 			for j in range(len(atomnumber)):
 				if atomnumber[j]==eg[i]:
 					eg[i]=j
 					break
-		print eg
+		print(eg)
 		#exit()
 	
 	mrc=EMData(options.mrcin)
@@ -84,12 +85,12 @@ def main():
 	hlx=atoms.fit_helix(mrc,options.lenthr,options.denthr,eg,options.dirs)
 	
 	for i in range(len(hlx)/8):
-		print hlx[i*8],hlx[i*8+1]
+		print(hlx[i*8],hlx[i*8+1])
 	
 	
 	atoms.save_pdb_with_helix(options.output,hlx)
 	#atoms.save_to_pdb(options.output)
-	if options.mapwohelix<>None:
+	if options.mapwohelix!=None:
 		atoms.remove_helix_from_map(mrc,hlx)
 		mrc.write_image(options.mapwohelix)
 

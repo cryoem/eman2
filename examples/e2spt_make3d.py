@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 # Muyuan Chen 2017-03
 from EMAN2 import *
 import numpy as np
@@ -53,13 +54,13 @@ def main():
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	
-	print "Reading data..."
+	print("Reading data...")
 	num=EMUtil.get_image_count(options.ptclin)
 	#num=1000
 	#imgs=EMData.read_images(options.ptclin)
 	imgs=[EMData(options.ptclin, i) for i in range(num)]
 	nmod=imgs[-1]["model_id"]+1
-	print "{:d} 2D particles, {:d} 3D particles output.".format(num, nmod)
+	print("{:d} 2D particles, {:d} 3D particles output.".format(num, nmod))
 	
 	if options.ptclout==None:
 		bname=os.path.basename(options.ptclin)
@@ -74,7 +75,7 @@ def main():
 		mi=imgs[i]["model_id"]
 		jobs[mi].append(imgs[i])
 	#print jobs[0]
-	print "Start working on {} threads...".format(options.threads)
+	print("Start working on {} threads...".format(options.threads))
 	
 	jsd=Queue.Queue(0)
 	options.queue=jsd
@@ -82,7 +83,7 @@ def main():
 	thrds=[threading.Thread(target=make3d,args=(i, options, j)) for i,j in enumerate(jobs)]
 
 	# here we run the threads and save the results, no actual alignment done here
-	print len(thrds)," threads"
+	print(len(thrds)," threads")
 	thrtolaunch=0
 	while thrtolaunch<len(thrds) or threading.active_count()>1:
 		# If we haven't launched all threads yet, then we wait for an empty slot, and launch another
@@ -90,7 +91,7 @@ def main():
 		# thread hasn't finished.
 		if thrtolaunch<len(thrds) :
 			while (threading.active_count()==options.threads+1 ) : time.sleep(.1)
-			print "Starting thread {}/{}".format(thrtolaunch,len(thrds))
+			print("Starting thread {}/{}".format(thrtolaunch,len(thrds)))
 			thrds[thrtolaunch].start()
 			thrtolaunch+=1
 		else: time.sleep(1)
@@ -101,7 +102,7 @@ def main():
 			#print ii,options.ptclout
 
 	
-	print "Output written to {}".format(options.ptclout)
+	print("Output written to {}".format(options.ptclout))
 	
 	#pl=pool.Pool(options.threads)
 	#ret=pl.map_async(make3d, jobs, chunksize=1)
@@ -116,7 +117,7 @@ def main():
 	E2end(logid)
 	
 def run(cmd):
-	print cmd
+	print(cmd)
 	launch_childprocess(cmd)
 	
 	

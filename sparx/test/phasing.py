@@ -1,4 +1,5 @@
 #!/bin/env python
+from __future__ import print_function
 
 from EMAN2  import *
 from sparx  import *
@@ -34,14 +35,14 @@ for trt in xrange(trials):
 		ci = cc
 		#print  trt,i,"   ",ccc(imn,im),"   ",ccc(imn,a),"   ",cc
 		im = imn.copy()
-	print  i,trt,"   ",ccc(imn,im),"   ",ccc(im,a),"   ",cc
+	print(i,trt,"   ",ccc(imn,im),"   ",ccc(im,a),"   ",cc)
 	fsc(piw,periodogram(imn),1.0,"dfsc%05d"%trt)
 	if(trt == 0): refi = im.copy()
 	else:
 		p = peak_search(ccf(im,refi))
-		print  trt,p
+		print(trt,p)
 		im = fshift(im,-p[0][4],-p[0][5])
-		print  trt," after shift  ",ccc(im,a)
+		print(trt," after shift  ",ccc(im,a))
 	av += im
 	im.write_image("o4.hdf",trt)
 	imd = im-a
@@ -50,13 +51,13 @@ for trt in xrange(trials):
 
 
 av /= trials
-print  "   ",ccc(av,a)
+print("   ",ccc(av,a))
 info(av)
 im = av.copy()
 p = peak_search(ccf(im,a))
-print  p
+print(p)
 im = fshift(im,-p[0][4],-p[0][5])
-print  " after shift  ",ccc(im,a)
+print(" after shift  ",ccc(im,a))
 f = fsc(im,a,1.0,"fsc1")
 
 im.write_image("o6.hdf",0)
@@ -68,13 +69,13 @@ for i in xrange(5000):
 	imn = im.replace_amplitudes(ac)
 	imn = threshold(imn*mask)
 
-	if(i%1000 == 0):  print  i,"   ",ccc(imn,im),"   ",ccc(imn,a)
+	if(i%1000 == 0):  print(i,"   ",ccc(imn,im),"   ",ccc(imn,a))
 	im = imn.copy()
-print  " before shift  ",ccc(im,a)
+print(" before shift  ",ccc(im,a))
 p = peak_search(ccf(im,a))
-print  p
+print(p)
 im = fshift(im,-p[0][4],-p[0][5])
-print  " after shift  ",ccc(im,a)
+print(" after shift  ",ccc(im,a))
 f = fsc(im,a,1.0,"fsc2")
 im.write_image("o6.hdf",2)
 imd = im-a

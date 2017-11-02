@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 # This program performs simple processing of XML files
 
 # Author: Stephen Murray, 10/17/14 (scmurray@bcm.edu)
@@ -54,7 +55,7 @@ def main():
 	input_file, output_file = args[0],args[1]
 
 	if options.fscxml2txt and options.fsctxt2xml != "FSC Plot":
-		print "Invalid Options: Either --fscxml2txt or --fsctxt2xml can be used but not both"
+		print("Invalid Options: Either --fscxml2txt or --fsctxt2xml can be used but not both")
 		sys.exit(-1)
 
 	if options.fsctxt2xml != "FSC Plot":

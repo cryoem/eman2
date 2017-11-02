@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steve Ludtke 06/20/2013 (sludtke@bcm.edu)
@@ -113,13 +114,13 @@ def main():
 			try: ali=a["xform.align3d"]
 			except: ali=Transform()
 			o=EMData(oddfile,0)
-			print "correct hand detected ",ali
+			print("correct hand detected ",ali)
 		else :
 			try: ali=b["xform.align3d"]
 			except: ali=Transform()
 			o=EMData(oddfile,0)
 			o.process_inplace("xform.flip",{"axis":"z"})
-			print "handedness flip required",ali
+			print("handedness flip required",ali)
 		o.transform(ali)
 
 		os.unlink(oddfile)
@@ -154,7 +155,7 @@ def main():
 		try:
 			noisecutoff=calc_noise_cutoff(unmaskedfsc, options.ncmult)
 			print("Performing amplitude correction via 'flattening'")
-			print "noise cutoff: {:1.2f}".format(1.0/noisecutoff)
+			print("noise cutoff: {:1.2f}".format(1.0/noisecutoff))
 			ampcorrect="--process=filter.lowpass.autob:cutoff_abs=1.0:noisecutoff={}:interpolate=1:bfactor=0.0".format(noisecutoff)
 		except:
 			print("Could not compute noise cutoff from the unmasked FSC.")
@@ -319,14 +320,14 @@ def main():
 	try:
 		noisecutoff=calc_noise_cutoff("{path}fsc_masked_{itr:02d}.txt".format(path=path,itr=options.iter),options.ncmult)
 	except:
-		print "WARNING: no resolution determined from FSC at 0.143, using 1/restarget for tophat cutoff"
+		print("WARNING: no resolution determined from FSC at 0.143, using 1/restarget for tophat cutoff")
 		noisecutoff=1.0/options.restarget
 
 	# readjust 'flatten' for new fsc
 	if options.ampcorrect == "flatten":
 		try:
 			ampcorrect="--process=filter.lowpass.autob:noisecutoff={}:interpolate=1:bfactor=0.0".format(noisecutoff)
-			print "new noise cutoff: {:1.2f}".format(1.0/noisecutoff)
+			print("new noise cutoff: {:1.2f}".format(1.0/noisecutoff))
 		except: pass
 
 
@@ -373,7 +374,7 @@ def main():
 
 			nx,ny,nz=combined["nx"],combined["ny"],combined["nz"]
 		else:
-			print "ERROR: invalid tophat option. Must be 'global' or 'local'."
+			print("ERROR: invalid tophat option. Must be 'global' or 'local'.")
 			sys.exit(1)
 	else:
 		# _unmasked volumes are filtered
@@ -422,14 +423,14 @@ def calc_noise_cutoff(fsc_file,mult=1.1):
 def run(command):
 	"Mostly here for debugging, allows you to control how commands are executed (os.system is normal)"
 
-	print "{}: {}".format(time.ctime(time.time()),command)
+	print("{}: {}".format(time.ctime(time.time()),command))
 #	append_html("<p>{}: {}</p>".format(time.ctime(time.time()),command))
 
 	ret=launch_childprocess(command)
 
 	# We put the exit here since this is what we'd do in every case anyway. Saves replication of error detection code above.
 	if ret !=0 :
-		print "Error running: ",command
+		print("Error running: ",command)
 		sys.exit(1)
 
 	return

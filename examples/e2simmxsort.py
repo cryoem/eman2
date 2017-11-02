@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 03/16/2012 (sludtke@bcm.edu)
@@ -35,8 +36,8 @@ from EMAN2 import *
 from numpy import *
 
 def main():
-        progname = os.path.basename(sys.argv[0])
-        usage = """e2simmxsort.py [options] <simmx file in> <simmx file out>
+	progname = os.path.basename(sys.argv[0])
+	usage = """e2simmxsort.py [options] <simmx file in> <simmx file out>
 Sorts a similarity matrix by classified particle to compare patterns.
         
 """
@@ -85,7 +86,7 @@ Sorts a similarity matrix by classified particle to compare patterns.
 		mx2=mx.get_clip(Region(0,int(sm),mx["nx"],int(j)))
 		sm+=j
 		mx2.write_image(args[1],i)
-		print i,sm,j
+		print(i,sm,j)
 
 if __name__ == "__main__":  main()
 

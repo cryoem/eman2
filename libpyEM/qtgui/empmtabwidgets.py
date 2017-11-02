@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: John Flanagan Dec 1st 2011 (jfflanag@bcm.edu)
 # Copyright (c) 2000-2011 Baylor College of Medicine
@@ -118,7 +119,7 @@ class EMModelsModel(EMFileItemModel):
 
 		data=index.internalPointer()
 		if data==None :
-			print "Error with index ",index.row(),index.column()
+			print("Error with index ",index.row(),index.column())
 			return "XXX"
 		#if index.column()==0 : print "EMFileItemModel.data(%d %d %s)=%s"%(index.row(),index.column(),index.parent(),str(data.__dict__))
 
@@ -216,7 +217,7 @@ class EMSetsModel(EMFileItemModel):
 
 		data=index.internalPointer()
 		if data==None :
-			print "Error with index ",index.row(),index.column()
+			print("Error with index ",index.row(),index.column())
 			return "XXX"
 		#if index.column()==0 : print "EMFileItemModel.data(%d %d %s)=%s"%(index.row(),index.column(),index.parent(),str(data.__dict__))
 
@@ -308,7 +309,7 @@ class EMParticlesModel(EMFileItemModel):
 
 		data=index.internalPointer()
 		if data==None :
-			print "Error with index ",index.row(),index.column()
+			print("Error with index ",index.row(),index.column())
 			return "Rubbish"
 		#if index.column()==0 : print "EMFileItemModel.data(%d %d %s)=%s"%(index.row(),index.column(),index.parent(),str(data.__dict__))
 
@@ -433,7 +434,7 @@ class EMCTFParticlesModel(EMFileItemModel):
 
 		data=index.internalPointer()
 		if data==None :
-			print "Error with index ",index.row(),index.column()
+			print("Error with index ",index.row(),index.column())
 			return "XXX"
 		#if index.column()==0 : print "EMFileItemModel.data(%d %d %s)=%s"%(index.row(),index.column(),index.parent(),str(data.__dict__))
 
@@ -511,7 +512,7 @@ class EMCTFParticlesEntry(EMDirEntry):
 				self.quality="-"
 			try:
 				self.badparticlecount=len(db["select_bad"])		# Note that this is used in a subclass, but not actually used here
-				print self.badparticlecount
+				print(self.badparticlecount)
 			except:
 				self.badparticlecount=0
 			try:
@@ -615,7 +616,7 @@ class EMParticlesEditModel(EMFileItemModel):
 
 		data=index.internalPointer()
 		if data==None :
-			print "Error with index ",index.row(),index.column()
+			print("Error with index ",index.row(),index.column())
 			return "XXX"
 		#if index.column()==0 : print "EMFileItemModel.data(%d %d %s)=%s"%(index.row(),index.column(),index.parent(),str(data.__dict__))
 
@@ -697,7 +698,7 @@ class EMBoxesModel(EMFileItemModel):
 
 		data=index.internalPointer()
 		if data==None :
-			print "Error with index ",index.row(),index.column()
+			print("Error with index ",index.row(),index.column())
 			return "XXX"
 		#if index.column()==0 : print "EMFileItemModel.data(%d %d %s)=%s"%(index.row(),index.column(),index.parent(),str(data.__dict__))
 
@@ -798,7 +799,7 @@ class EMRCTBoxesModel(EMFileItemModel):
 
 		data=index.internalPointer()
 		if data==None :
-			print "Error with index ",index.row(),index.column()
+			print("Error with index ",index.row(),index.column())
 			return "XXX"
 		#if index.column()==0 : print "EMFileItemModel.data(%d %d %s)=%s"%(index.row(),index.column(),index.parent(),str(data.__dict__))
 
@@ -906,7 +907,7 @@ class EMSubTomosModel(EMFileItemModel):
 
 		data=index.internalPointer()
 		if data==None :
-			print "Error with index ",index.row(),index.column()
+			print("Error with index ",index.row(),index.column())
 			return "XXX"
 		#if index.column()==0 : print "EMFileItemModel.data(%d %d %s)=%s"%(index.row(),index.column(),index.parent(),str(data.__dict__))
 
@@ -976,7 +977,7 @@ class EMRawDataModel(EMFileItemModel):
 
 		data=index.internalPointer()
 		if data==None :
-			print "Error with index ",index.row(),index.column()
+			print("Error with index ",index.row(),index.column())
 			return "XXX"
 		#if index.column()==0 : print "EMFileItemModel.data(%d %d %s)=%s"%(index.row(),index.column(),index.parent(),str(data.__dict__))
 
@@ -1070,7 +1071,7 @@ class EMTomoDataModel(EMFileItemModel):
 
 		data=index.internalPointer()
 		if data==None :
-			print "Error with index ",index.row(),index.column()
+			print("Error with index ",index.row(),index.column())
 			return "XXX"
 
 		col=index.column()

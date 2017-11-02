@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: Pawel A.Penczek and Edward H. Egelman 05/27/2009 (Pawel.A.Penczek@uth.tmc.edu)
 # Copyright (c) 2000-2006 The University of Texas - Houston Medical School
@@ -51,24 +52,24 @@ def resample_insert( bufprefix, fftvols, wgtvols, mults, CTF, npad, info=None):
 	overall_start = time()
 
 	for iblock in xrange(nblock):
-    		if iblock==nblock - 1:
-        		pbeg = iblock*blocksize
-        		pend = nprj
-    		else:
-        		pbeg = iblock*blocksize
-        		pend = pbeg + blocksize
+		if iblock==nblock - 1:
+			pbeg = iblock*blocksize
+			pend = nprj
+		else:
+			pbeg = iblock*blocksize
+			pend = pbeg + blocksize
 
 		start_time = time()
 		ostore.read( pend - pbeg )
- 		if not(info is None):
+		if not(info is None):
 			t = time()
 			info.write("        block %d read.   \t time: %10.3f %10.3f\n" % (iblock, t-start_time, t-overall_start) )
 			info.flush()
 
 		start_time = time()
-    		for ivol in xrange(nvol):
-        		ostore.add_tovol( fftvols[ivol], wgtvols[ivol], mults[ivol], pbeg, pend )
-       		if not(info is None):
+		for ivol in xrange(nvol):
+			ostore.add_tovol( fftvols[ivol], wgtvols[ivol], mults[ivol], pbeg, pend )
+		if not(info is None):
 			t = time()
 			info.write("        block %d inserted.\t time: %10.3f %10.3f\n" % (iblock, t-start_time, t-overall_start) )
 			info.flush()
@@ -163,8 +164,8 @@ def resample( prjfile, outdir, bufprefix, nbufvol, nvol, seedbase,\
 	del refa
 	vct = array([0.0]*(3*nprj),'float32')
 	if myid == 0:
-		print  " will read ",myid
-	        tr = EMUtil.get_all_attributes(prjfile,'xform.projection')
+		print(" will read ",myid)
+		tr = EMUtil.get_all_attributes(prjfile,'xform.projection')
 		tetprj = [0.0]*nprj
 	        for i in xrange(nprj):
 			temp = tr[i].get_params("spider")
@@ -210,10 +211,10 @@ def resample( prjfile, outdir, bufprefix, nbufvol, nvol, seedbase,\
 	keep = int(am*dp +0.5)
 	mufur = keep*nrefa/(1.0 - mufur*keep/float(nrefa))
 	if myid == 0:
-		print  " Number of projections ",nprj,".  Number of reference directions ",nrefa,",  multiplicative factor for the variance ",mufur
-		print  " Minimum number of assignments ",am,"  Number of projections used per stratum ", keep," Number of projections in resampled structure ",int(am*dp +0.5)*nrefa
+		print(" Number of projections ",nprj,".  Number of reference directions ",nrefa,",  multiplicative factor for the variance ",mufur)
+		print(" Minimum number of assignments ",am,"  Number of projections used per stratum ", keep," Number of projections in resampled structure ",int(am*dp +0.5)*nrefa)
 		if am <2 or am == keep:
-			print "incorrect settings"
+			print("incorrect settings")
 			exit()  #                                         FIX
 
 	if(seedbase < 1):
@@ -269,9 +270,9 @@ def main():
 
 	import sys
 
-        arglist = []
-        for arg in sys.argv:
-	    arglist.append( arg )
+	arglist = []
+	for arg in sys.argv:
+		arglist.append( arg )
 
 	progname = os.path.basename(arglist[0])
 	usage = progname + " prjstack outdir bufprefix --delta --d --nvol --nbufvol --seedbase --snr --npad --CTF --MPI --verbose"
@@ -290,7 +291,7 @@ def main():
 	(options, args) = parser.parse_args( arglist[1:] )
 
 	if( len(args) !=1 and len(args) != 3):
-		print "usage: " + usage
+		print("usage: " + usage)
 		return None
 
 	prjfile = args[0]

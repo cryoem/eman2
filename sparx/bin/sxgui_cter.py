@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: Toshio Moriya, 12/21/2015 (toshio.moriya@mpi-dortmund.mpg.de)
 #
@@ -46,7 +47,7 @@ try:
 	from valslider import *
 	from emplot2d import EMPlot2DWidget
 except:
-	print "Warning: PyQt4 must be installed"
+	print("Warning: PyQt4 must be installed")
 	sys.exit(1)
 
 from sparx import *
@@ -63,7 +64,7 @@ def main():
 	(options, args) = parser.parse_args(sys.argv[1:])
 	
 	if len(args) > 2:
-		print "see usage " + usage
+		print("see usage " + usage)
 		sys.exit()
 	
 	from emapplication import EMApp
@@ -147,7 +148,7 @@ class SXGuiCter(QtGui.QWidget):
 		try:
 			from emimage2d import EMImage2DWidget
 		except:
-			print "Cannot import EMAN image GUI objects (EMImage2DWidget)"
+			print("Cannot import EMAN image GUI objects (EMImage2DWidget)")
 			sys.exit(1)
 		
 # 		QtGui.QWidget.__init__(self,None)
@@ -959,7 +960,7 @@ class SXGuiCter(QtGui.QWidget):
 		### This section is responsible for background updates
 		self.busy=False
 #		self.needupdate=True
- 		self.needredisp=False
+		self.needredisp=False
 #		self.procthread=None
 #		self.errors=None # used to communicate errors back from the reprocessing thread
 		
@@ -2082,7 +2083,7 @@ class SXGuiCter(QtGui.QWidget):
 			try:
 				self.redisplay()
 			except:
-				print "Recieved unexpected exception from redisplay() in timeOut(): "
+				print("Recieved unexpected exception from redisplay() in timeOut(): ")
 				exc_type, exc_value, exc_traceback = sys.exc_info()
 				traceback.print_exception(exc_type, exc_value, exc_traceback)
 				# MRK_NOTE: 2015/12/17 Toshio Moriya

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: Pawel A.Penczek and Edward H. Egelman 05/27/2009 (Pawel.A.Penczek@uth.tmc.edu)
 # Copyright (c) 2000-2006 The University of Texas - Houston Medical School
@@ -38,9 +39,9 @@ def main():
 	from optparse import OptionParser
 	from global_def import SPARXVERSION, ERROR
 	import global_def
-        arglist = []
-        for arg in sys.argv:
-        	arglist.append( arg )
+	arglist = []
+	for arg in sys.argv:
+		arglist.append( arg )
 	progname = os.path.basename(arglist[0])
 	usage = progname + " stack ref_vol outdir  <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --ynumber=y_numbers  --txs=translational_search_stepx  --delta=angular_step --an=angular_neighborhood --maxit=max_iter --CTF --snr=1.0  --sym=c1 --datasym=symdoc"
 	
@@ -84,8 +85,8 @@ def main():
 	
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 3 or len(args) > 4:
-		print "usage: " + usage + "\n"
-		print "Please run '" + progname + " -h' for detailed options"
+		print("usage: " + usage + "\n")
+		print("Please run '" + progname + " -h' for detailed options")
 	else:
 		global_def.BATCH = True
 		# Convert input arguments in the units/format as expected by ihrsr_MPI in applications.
@@ -96,7 +97,7 @@ def main():
 		if options.an <= 0 :
 			ERROR("Angular search range (an) has to be given.  Only local searches are permitted.","sxheliconlocal",1)
 
-		print  " This code is under development, some instabilities are possible 12/28/2014"
+		print(" This code is under development, some instabilities are possible 12/28/2014")
 
 		rminp = int((float(options.rmin)/options.apix) + 0.5)
 		rmaxp = int((float(options.rmax)/options.apix) + 0.5)
