@@ -1622,4 +1622,3 @@ class EMTomoSetsPanel(QtGui.QWidget):
 
 if __name__ == '__main__':
 	main()
-

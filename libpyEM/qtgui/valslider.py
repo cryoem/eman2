@@ -34,7 +34,7 @@ from __future__ import print_function
 import sys, math, weakref
 from OpenGL.GL import *
 from OpenGL import GLU
-from PyQt4 import QtCore, QtGui, QtOpenGL 
+from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 
 leftarrow = [

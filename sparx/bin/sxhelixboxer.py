@@ -2104,7 +2104,7 @@ def windowmic(outstacknameall, micpath, outdir, micname, hcoordsname, pixel_size
 	'''
 	from utilities    import pad, model_blank, read_text_row, get_im, print_msg
 	from fundamentals import ramp, resample
-	from filter	  	  import filt_gaussh,filt_tanl 
+	from filter	  	  import filt_gaussh,filt_tanl
 	from pixel_error  import getnewhelixcoords
 	from EMAN2 	      import EMUtil, Util
 	from subprocess   import call

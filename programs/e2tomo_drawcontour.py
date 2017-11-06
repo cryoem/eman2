@@ -300,4 +300,3 @@ class EMDrawWindow(QtGui.QMainWindow):
 
 if __name__ == '__main__':
 	main()
-

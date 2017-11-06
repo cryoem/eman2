@@ -489,7 +489,7 @@ class EMFileTable(QtGui.QTableWidget):
 				item.setTextAlignment(QtCore.Qt.AlignHCenter)
 				item.setFlags(flag3)
 				if cd.lt_function: # This is how sort gets customized
-					import new 
+					import new
 					item.__lt__ = new.instancemethod(cd.lt_function,item,QtGui.QTableWidgetItem)
 				self.setItem(i, col, item)
 			col += 1
@@ -527,7 +527,7 @@ class EMFileTable(QtGui.QTableWidget):
 				item.setTextAlignment(QtCore.Qt.AlignHCenter)
 				item.setFlags(flag3)
 				if cd.lt_function: # This is how sort gets customized
-					import new 
+					import new
 					item.__lt__ = new.instancemethod(cd.lt_function,item,QtGui.QTableWidgetItem)
 				self.setItem(r+i,j+1, item)
 			
@@ -678,7 +678,7 @@ class EM2DFileTable(EMFileTable):
 		else:
 			from EMAN2 import EMData
 			import emscene3d
-			import emdataitem3d 
+			import emdataitem3d
 			
 			data=emdataitem3d.EMDataItem3D(filename)
 			self.display_module.insertNewNode(os.path.basename(filename), data, parentnode=self.display_module)

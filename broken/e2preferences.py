@@ -32,7 +32,7 @@ from __future__ import print_function
 #
 #
 import EMAN2db
-from eman2_gui.emdatastorage import ParamDef 
+from eman2_gui.emdatastorage import ParamDef
 
 from eman2_gui.emsprworkflow import WorkFlowTask
 from eman2_gui.emapplication import get_application
