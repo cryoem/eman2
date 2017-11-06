@@ -621,21 +621,21 @@ class SwarmPanel:
 			vbl.addLayout(hbl_bb)
 
 
-			QtCore.QObject.connect(self.ptcl_diam_edit,QtCore.SIGNAL("editingFinished()"),self.new_ptcl_diam)
-			QtCore.QObject.connect(self.update_template,QtCore.SIGNAL("clicked(bool)"),self.update_template_checked)
-			QtCore.QObject.connect(self.auto_update,QtCore.SIGNAL("clicked(bool)"),self.auto_update_checked)
-			QtCore.QObject.connect(self.clear, QtCore.SIGNAL("clicked(bool)"), self.clear_clicked)
-			QtCore.QObject.connect(self.view_template, QtCore.SIGNAL("clicked(bool)"), self.view_template_clicked)
-			QtCore.QObject.connect(self.autobox, QtCore.SIGNAL("clicked(bool)"), self.auto_box_clicked)
-			QtCore.QObject.connect(self.method_group,QtCore.SIGNAL("buttonClicked (QAbstractButton *)"),self.method_group_clicked)
-			QtCore.QObject.connect(self.enable_interactive_threshold, QtCore.SIGNAL("clicked(bool)"), self.interact_thresh_clicked)
-			QtCore.QObject.connect(self.thr,QtCore.SIGNAL("sliderReleased"),self.new_threshold_release)
-			QtCore.QObject.connect(self.thr,QtCore.SIGNAL("textChanged"),self.new_threshold_text_changed)
-			QtCore.QObject.connect(self.step_back, QtCore.SIGNAL("clicked(bool)"), self.step_back_clicked)
-			QtCore.QObject.connect(self.step_forward, QtCore.SIGNAL("clicked(bool)"), self.step_forward_clicked)
-			QtCore.QObject.connect(self.proximity_thr,QtCore.SIGNAL("sliderReleased"),self.proximity_threshold_release)
-			QtCore.QObject.connect(self.proximity_thr,QtCore.SIGNAL("textChanged"),self.proximity_threshold_text_changed)
-			QtCore.QObject.connect(self.enable_overlap_removal, QtCore.SIGNAL("clicked(bool)"), self.enable_overlap_removal_clicked)
+			self.ptcl_diam_edit.editingFinished.connect(self.new_ptcl_diam)
+			self.update_template.clicked[bool].connect(self.update_template_checked)
+			self.auto_update.clicked[bool].connect(self.auto_update_checked)
+			self.clear.clicked[bool].connect(self.clear_clicked)
+			self.view_template.clicked[bool].connect(self.view_template_clicked)
+			self.autobox.clicked[bool].connect(self.auto_box_clicked)
+			self.method_group.buttonClicked [QAbstractButton].connect(self.method_group_clicked)
+			self.enable_interactive_threshold.clicked[bool].connect(self.interact_thresh_clicked)
+			self.thr.sliderReleased.connect(self.new_threshold_release)
+			self.thr.textChanged.connect(self.new_threshold_text_changed)
+			self.step_back.clicked[bool].connect(self.step_back_clicked)
+			self.step_forward.clicked[bool].connect(self.step_forward_clicked)
+			self.proximity_thr.sliderReleased.connect(self.proximity_threshold_release)
+			self.proximity_thr.textChanged.connect(self.proximity_threshold_text_changed)
+			self.enable_overlap_removal.clicked[bool].connect(self.enable_overlap_removal_clicked)
 		return self.widget
 
 	def update_states(self,swarm_boxer):
@@ -1264,7 +1264,7 @@ class SwarmBoxer:
 			self.template_viewer.set_data(self.templates,soft_delete=True) # should work if self.templates is None
 			self.template_viewer.setWindowTitle("Templates")
 			from PyQt4 import QtCore
-			QtCore.QObject.connect(self.template_viewer,QtCore.SIGNAL("module_closed"),self.template_viewer_closed)
+			self.template_viewer.module_closed.connect(self.template_viewer_closed)
 
 		get_application().show_specific(self.template_viewer)
 
@@ -2219,27 +2219,27 @@ class GaussPanel:
 			#vbl.addLayout(hbl_ctf)
 
 
-			QtCore.QObject.connect(self.pixel_input_edit,QtCore.SIGNAL("editingFinished()"),self.new_pixel_input)
-			QtCore.QObject.connect(self.pixel_output_edit,QtCore.SIGNAL("editingFinished()"),self.new_pixel_output)
-			QtCore.QObject.connect(self.autobox, QtCore.SIGNAL("clicked(bool)"), self.auto_box_clicked)
-			QtCore.QObject.connect(self.clear, QtCore.SIGNAL("clicked(bool)"), self.clear_clicked)
-			QtCore.QObject.connect(self.invert_contrast_chk,QtCore.SIGNAL("clicked(bool)"),self.invert_contrast_checked)
-			QtCore.QObject.connect(self.use_variance_chk,QtCore.SIGNAL("clicked(bool)"),self.use_variance_checked)
-			QtCore.QObject.connect(self.gauss_width_slider, QtCore.SIGNAL("valueChanged(int)"), self.gauss_width_changed)
-			QtCore.QObject.connect(self.gauss_width, QtCore.SIGNAL("editingFinished()"), self.gauss_width_edited)
-			QtCore.QObject.connect(self.thr_low_edit,QtCore.SIGNAL("editingFinished()"),self.new_thr_low)
-			QtCore.QObject.connect(self.thr_hi_edit,QtCore.SIGNAL("editingFinished()"),self.new_thr_hi)
+			self.pixel_input_edit.editingFinished.connect(self.new_pixel_input)
+			self.pixel_output_edit.editingFinished.connect(self.new_pixel_output)
+			self.autobox.clicked[bool].connect(self.auto_box_clicked)
+			self.clear.clicked[bool].connect(self.clear_clicked)
+			self.invert_contrast_chk.clicked[bool].connect(self.invert_contrast_checked)
+			self.use_variance_chk.clicked[bool].connect(self.use_variance_checked)
+			self.gauss_width_slider.valueChanged[int].connect(self.gauss_width_changed)
+			self.gauss_width.editingFinished.connect(self.gauss_width_edited)
+			self.thr_low_edit.editingFinished.connect(self.new_thr_low)
+			self.thr_hi_edit.editingFinished.connect(self.new_thr_hi)
 #			QtCore.QObject.connect(self.estimate_ctf,QtCore.SIGNAL("clicked(bool)"), self.calc_ctf)
 #			QtCore.QObject.connect(self.inspect_button,QtCore.SIGNAL("clicked(bool)"), self.inspect_ctf)
-			QtCore.QObject.connect(self.ctf_window_size,QtCore.SIGNAL("editingFinished()"),self.new_ctf_window)
-			QtCore.QObject.connect(self.ctf_cs,QtCore.SIGNAL("editingFinished()"),self.new_ctf_cs)
-			QtCore.QObject.connect(self.ctf_edge_size,QtCore.SIGNAL("editingFinished()"),self.new_ctf_edge)
-			QtCore.QObject.connect(self.ctf_volt,QtCore.SIGNAL("editingFinished()"),self.new_ctf_volt)
-			QtCore.QObject.connect(self.ctf_overlap_size,QtCore.SIGNAL("editingFinished()"),self.new_ctf_overlap_size)
-			QtCore.QObject.connect(self.ctf_ampcont,QtCore.SIGNAL("editingFinished()"),self.new_ctf_ampcont)
-			QtCore.QObject.connect(self.ctf_kboot,QtCore.SIGNAL("editingFinished()"),self.new_ctf_kboot)
+			self.ctf_window_size.editingFinished.connect(self.new_ctf_window)
+			self.ctf_cs.editingFinished.connect(self.new_ctf_cs)
+			self.ctf_edge_size.editingFinished.connect(self.new_ctf_edge)
+			self.ctf_volt.editingFinished.connect(self.new_ctf_volt)
+			self.ctf_overlap_size.editingFinished.connect(self.new_ctf_overlap_size)
+			self.ctf_ampcont.editingFinished.connect(self.new_ctf_ampcont)
+			self.ctf_kboot.editingFinished.connect(self.new_ctf_kboot)
 
-			QtCore.QObject.connect(self.estimate_ctf_cter,QtCore.SIGNAL("clicked(bool)"), self.calc_ctf_cter)
+			self.estimate_ctf_cter.clicked[bool].connect(self.calc_ctf_cter)
 
 		return self.widget
 
