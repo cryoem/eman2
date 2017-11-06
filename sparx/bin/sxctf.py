@@ -868,10 +868,10 @@ class GUIctf(QtGui.QWidget):
 		self.guiim=EMImage2DWidget(application=self.app())
 		self.guiplot=EMPlot2DWidget(application=self.app())
 		
-		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousedown"),self.imgmousedown)
-		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousedrag"),self.imgmousedrag)
-		self.guiim.connect(self.guiim,QtCore.SIGNAL("mouseup")  ,self.imgmouseup)
-		self.guiplot.connect(self.guiplot,QtCore.SIGNAL("mousedown"),self.plotmousedown)
+		self.guiim.mousedown.connect(self.imgmousedown)
+		self.guiim.mousedrag.connect(self.imgmousedrag)
+		self.guiim.mouseup.connect(self.imgmouseup)
+		self.guiplot.mousedown.connect(self.plotmousedown)
 		
 		self.guiim.mmode="app"
 
@@ -935,18 +935,18 @@ class GUIctf(QtGui.QWidget):
 		self.vbl.addLayout(self.hbl_buttons)
 		self.vbl.addLayout(self.hbl_buttons2)
 		
-		QtCore.QObject.connect(self.sdefocus, QtCore.SIGNAL("valueChanged"), self.newCTF)
-		QtCore.QObject.connect(self.sbfactor, QtCore.SIGNAL("valueChanged"), self.newCTF)
+		self.sdefocus.valueChanged.connect(self.newCTF)
+		self.sbfactor.valueChanged.connect(self.newCTF)
 #		QtCore.QObject.connect(self.sapix, QtCore.SIGNAL("valueChanged"), self.newCTF)
-		QtCore.QObject.connect(self.sampcont, QtCore.SIGNAL("valueChanged"), self.newCTF)
-		QtCore.QObject.connect(self.svoltage, QtCore.SIGNAL("valueChanged"), self.newCTF)
-		QtCore.QObject.connect(self.scs, QtCore.SIGNAL("valueChanged"), self.newCTF)
-		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("currentRowChanged(int)"),self.newSet)
-		QtCore.QObject.connect(self.splotmode,QtCore.SIGNAL("currentIndexChanged(int)"),self.newPlotMode)
+		self.sampcont.valueChanged.connect(self.newCTF)
+		self.svoltage.valueChanged.connect(self.newCTF)
+		self.scs.valueChanged.connect(self.newCTF)
+		self.setlist.currentRowChanged[int].connect(self.newSet)
+		self.splotmode.currentIndexChanged[int].connect(self.newPlotMode)
 
-		QtCore.QObject.connect(self.saveparms,QtCore.SIGNAL("clicked(bool)"),self.on_save_params)
-		QtCore.QObject.connect(self.recallparms,QtCore.SIGNAL("clicked(bool)"),self.on_recall_params)
-		QtCore.QObject.connect(self.output,QtCore.SIGNAL("clicked(bool)"),self.on_output)
+		self.saveparms.clicked[bool].connect(self.on_save_params)
+		self.recallparms.clicked[bool].connect(self.on_recall_params)
+		self.output.clicked[bool].connect(self.on_output)
 		
 		self.update_data()
 		

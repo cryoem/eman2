@@ -754,12 +754,12 @@ if ENABLE_GUI:
 			self.ptcls_coords_line_edit.setText( os.path.join(self.default_dir, self.micrograph_name + "_helix_ptcl_coords.txt") )
 			self.ptcls_images_line_edit.setText( os.path.join(self.default_dir, self.micrograph_name + "_helix_ptcl."+saveext) )
 
-			self.connect(self.helices_coords_browse_button, QtCore.SIGNAL("clicked()"), self.browse_helix_coords)
-			self.connect(self.helices_images_browse_button, QtCore.SIGNAL("clicked()"), self.browse_helix_images)
-			self.connect(self.ptcls_coords_browse_button, QtCore.SIGNAL("clicked()"), self.browse_ptcl_coords)
-			self.connect(self.ptcls_images_browse_button, QtCore.SIGNAL("clicked()"), self.browse_ptcl_images)
-			self.connect(self.button_box, QtCore.SIGNAL("accepted()"), self.save)
-			self.connect(self.button_box, QtCore.SIGNAL("rejected()"), self.cancel)
+			self.helices_coords_browse_button.clicked.connect(self.browse_helix_coords)
+			self.helices_images_browse_button.clicked.connect(self.browse_helix_images)
+			self.ptcls_coords_browse_button.clicked.connect(self.browse_ptcl_coords)
+			self.ptcls_images_browse_button.clicked.connect(self.browse_ptcl_images)
+			self.button_box.accepted.connect(self.save)
+			self.button_box.rejected.connect(self.cancel)
 
 		def __create_ui(self):
 			self.helices_groupbox = QtGui.QGroupBox(self.tr("Write &Helices:"))
@@ -1075,14 +1075,14 @@ if ENABLE_GUI:
 				self.micrograph_filepath_set = set(micrograph_filepaths) # [micrograph1_filepath, micrograph2_filepath, ...]
 			self.update_micrograph_table()
 
-			self.connect(self.box_width_spinbox, QtCore.SIGNAL("valueChanged(int)"), self.width_changed)
-			self.connect( self.img_quality_combobox, QtCore.SIGNAL("currentIndexChanged(int)"), self.set_image_quality )
-			self.connect(self.load_boxes_action, QtCore.SIGNAL("triggered()"), self.load_boxes)
-			self.connect(self.load_micrograph_action, QtCore.SIGNAL("triggered()"), self.open_micrograph)
+			self.box_width_spinbox.valueChanged[int].connect(self.width_changed)
+			self.img_quality_combobox.currentIndexChanged[int].connect(self.set_image_quality)
+			self.load_boxes_action.triggered.connect(self.load_boxes)
+			self.load_micrograph_action.triggered.connect(self.open_micrograph)
 	#        self.connect(self.write_coords_action, QtCore.SIGNAL("triggered()"), self.write_coords)
-			self.connect(self.write_images_action, QtCore.SIGNAL("triggered()"), self.write_images)
-			self.connect(self.quit_action, QtCore.SIGNAL("triggered()"), self.close)
-			self.connect( self.micrograph_table, QtCore.SIGNAL("currentCellChanged (int,int,int,int)"), self.micrograph_table_selection)
+			self.write_images_action.triggered.connect(self.write_images)
+			self.quit_action.triggered.connect(self.close)
+			self.micrograph_table.currentCellChanged [int, int, int, int].connect(self.micrograph_table_selection)
 			
 			self.micrograph_table.setCurrentCell(0,0) #self.micrograph_table_selection() will display this micrograph
 			
@@ -1151,7 +1151,7 @@ if ENABLE_GUI:
 			hbl_doctf.addWidget(self.doctf_chk)
 			self.vbl.addLayout(hbl_doctf)
 			
-			QtCore.QObject.connect(self.doctf_chk,QtCore.SIGNAL("clicked(bool)"),self.doctf_checked)
+			self.doctf_chk.clicked[bool].connect(self.doctf_checked)
 
 		def doctf_checked(self,val):
 			if not(self.doctf):
@@ -1260,15 +1260,15 @@ if ENABLE_GUI:
 					hbl_ctf_cter.addWidget(self.estimate_ctf_cter)
 					self.vbl.addLayout(hbl_ctf_cter)
 					
-					QtCore.QObject.connect(self.ctf_window_size,QtCore.SIGNAL("editingFinished()"),self.new_ctf_window)
-					QtCore.QObject.connect(self.ctf_cs,QtCore.SIGNAL("editingFinished()"),self.new_ctf_cs)
-					QtCore.QObject.connect(self.ctf_edge_size,QtCore.SIGNAL("editingFinished()"),self.new_ctf_edge)
-					QtCore.QObject.connect(self.ctf_volt,QtCore.SIGNAL("editingFinished()"),self.new_ctf_volt)
-					QtCore.QObject.connect(self.ctf_overlap_size,QtCore.SIGNAL("editingFinished()"),self.new_ctf_overlap_size)
-					QtCore.QObject.connect(self.ctf_ampcont,QtCore.SIGNAL("editingFinished()"),self.new_ctf_ampcont)
-					QtCore.QObject.connect(self.ctf_kboot,QtCore.SIGNAL("editingFinished()"),self.new_ctf_kboot)
-					QtCore.QObject.connect(self.ctf_pixel,QtCore.SIGNAL("editingFinished()"),self.new_ctf_pixel)
-					QtCore.QObject.connect(self.estimate_ctf_cter,QtCore.SIGNAL("clicked(bool)"), self.calc_ctf_cter)
+					self.ctf_window_size.editingFinished.connect(self.new_ctf_window)
+					self.ctf_cs.editingFinished.connect(self.new_ctf_cs)
+					self.ctf_edge_size.editingFinished.connect(self.new_ctf_edge)
+					self.ctf_volt.editingFinished.connect(self.new_ctf_volt)
+					self.ctf_overlap_size.editingFinished.connect(self.new_ctf_overlap_size)
+					self.ctf_ampcont.editingFinished.connect(self.new_ctf_ampcont)
+					self.ctf_kboot.editingFinished.connect(self.new_ctf_kboot)
+					self.ctf_pixel.editingFinished.connect(self.new_ctf_pixel)
+					self.estimate_ctf_cter.clicked[bool].connect(self.calc_ctf_cter)
 	
 		def new_ctf_pixel(self):
 			self.pixelsize=self.ctf_pixel.text()
@@ -1391,7 +1391,7 @@ if ENABLE_GUI:
 				#self.helix_viewer.setWindowTitle("Current Helix")
 				self.helix_viewer.resize(300,800)
 				self.helix_viewer.set_scale(1)
-			QtCore.QObject.connect(self.helix_viewer, QtCore.SIGNAL("module_closed"), self.helix_viewer_closed)
+			self.helix_viewer.module_closed.connect(self.helix_viewer_closed)
 			self.helix_viewer.set_data(helix_emdata)
 			self.helix_viewer.setWindowTitle("Current Helix: %d x %d pixels" % (helix_emdata["nx"], helix_emdata["ny"]) )
 			get_application().show_specific(self.helix_viewer)
@@ -1471,10 +1471,10 @@ if ENABLE_GUI:
 			
 			if not self.main_image:
 				self.main_image = EMImage2DWidget(application=self.app)
-				QtCore.QObject.connect(self.main_image,QtCore.SIGNAL("module_closed"), self.main_image_closed)
-				QtCore.QObject.connect( self.main_image, QtCore.SIGNAL("mousedown"), self.mouse_down)
-				QtCore.QObject.connect( self.main_image, QtCore.SIGNAL("mousedrag"), self.mouse_drag)
-				QtCore.QObject.connect( self.main_image, QtCore.SIGNAL("mouseup"), self.mouse_up)
+				self.main_image.module_closed.connect(self.main_image_closed)
+				self.main_image.mousedown.connect(self.mouse_down)
+				self.main_image.mousedrag.connect(self.mouse_drag)
+				self.main_image.mouseup.connect(self.mouse_up)
 			self.main_image.set_data( micrograph_emdata, self.micrograph_filepath )
 			self.main_image.shapes = EMShapeDict()
 			self.main_image.shapechange=1
