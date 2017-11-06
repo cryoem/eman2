@@ -107,7 +107,7 @@ def main():
 		imgs=EMData.read_images(args[0])
 		display(imgs,app,args[0])
 
-		QtCore.QObject.connect(win[0].child,QtCore.SIGNAL("mousedown"),lambda a,b:selectclass(options.classes[0],options.classes[1],a,b))
+		win[0].child.mousedown.connect(lambda a,b:selectclass(options.classes[0],options.classes[1],a,b))
 		try:
 			out=open("selected.lst","w")
 			out.write("#LST\n")
