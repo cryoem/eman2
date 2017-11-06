@@ -55,8 +55,8 @@ class E2ValidateMed():
 	def __init_em_val(self): #formally creates the empdbvaltool module, waits for a signal to validate or close
 		if self.em_val == None: 
 			self.em_val = EMPDBValWidget()
-			QtCore.QObject.connect(self.em_val, QtCore.SIGNAL("run_validate"),self.on_em_validate_requested)
-			QtCore.QObject.connect(self.em_val, QtCore.SIGNAL("module_closed"),self.on_em_val_closed)
+			self.em_val.run_validate.connect(self.on_em_validate_requested)
+			self.em_val.module_closed.connect(self.on_em_val_closed)
 	
 	def on_em_val_closed(self):
 		self.em_val = None
@@ -64,8 +64,8 @@ class E2ValidateMed():
 	def __init_plot3d(self):
 		if self.plot3d == None: 
 			self.plot3d = EMPlot3DWidget()
-			QtCore.QObject.connect(self.plot3d.plot_model, QtCore.SIGNAL("view_transform"),self.on_view_transform_requested)
-			QtCore.QObject.connect(self.plot3d.plot_model, QtCore.SIGNAL("module_closed"),self.on_plot3d_closed)
+			self.plot3d.plot_model.view_transform.connect(self.on_view_transform_requested)
+			self.plot3d.plot_model.module_closed.connect(self.on_plot3d_closed)
 
 	def on_view_transform_requested(self, new_pdb_file):
 		if self.em_val == None:
