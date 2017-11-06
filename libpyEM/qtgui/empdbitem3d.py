@@ -73,7 +73,7 @@ class EMPDBItem3D(EMItem3D):
 		EMItem3D.get_transformlayout(grid, 4, attribdict)
 		pdbwidget.setLayout(grid)
 		EMPDBItem3D.attribdict = attribdict
-		QtCore.QObject.connect(browse_button, QtCore.SIGNAL('clicked()'), EMPDBItem3D._on_browse)
+		browse_button.clicked.connect(EMPDBItem3D._on_browse)
 		return pdbwidget
 	
 	@staticmethod
@@ -201,7 +201,7 @@ class EMPDBItem3DInspector(EMItem3DInspector):
 		self.file_path_label.setFont(lfont)
 		gridbox.addWidget(self.file_path_label, 3, 0)
 		self.file_browse_button.clicked.connect(self.onFileBrowse)
-		QtCore.QObject.connect(self.data_checkbox, QtCore.SIGNAL("stateChanged(int)"), self.onBBoxChange)
+		self.data_checkbox.stateChanged[int].connect(self.onBBoxChange)
 		# Set to default, but run only once and not in each base class
 		if type(self) == EMPDBItem3DInspector: self.updateItemControls()
 
