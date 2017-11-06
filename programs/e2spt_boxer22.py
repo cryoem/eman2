@@ -97,6 +97,8 @@ def main():
 
 class EMTomoBoxer(QtGui.QMainWindow):
 	"""This class represents the EMTomoBoxer application instance.  """
+	keypress = QtCore.pyqtSignal(QtGui.QKeyEvent)
+	module_closed = QtCore.pyqtSignal()
 
 	def __init__(self,application,options,datafile=None):
 		QtGui.QWidget.__init__(self)
