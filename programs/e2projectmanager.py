@@ -35,6 +35,7 @@ from EMAN2 import *
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
 from eman2_gui.pmicons import *
+from PyQt4.QtGui import QTreeWidgetItem
 import os, json, re, glob, signal
 import subprocess
 from eman2_gui.empmwidgets import *

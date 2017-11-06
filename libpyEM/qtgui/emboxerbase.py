@@ -55,6 +55,7 @@ from emsprworkflow import workflow_path
 from EMAN2 import *
 
 import os,sys,weakref,math, json
+from PyQt4 import QtCore
 
 
 TEMPLATE_MIN = 30

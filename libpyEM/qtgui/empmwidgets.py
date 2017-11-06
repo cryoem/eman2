@@ -39,7 +39,7 @@ from __future__ import print_function
 from EMAN2db import db_check_dict
 import sys, math, weakref
 from PyQt4 import QtCore, QtGui
-from PyQt4.QtCore import Qt
+from PyQt4.QtCore import Qt, QString
 from emselector import EMSelectorDialog	# This will be replaced by something more sensible in the future
 import re, os, glob
 from embrowser import EMBrowserWidget

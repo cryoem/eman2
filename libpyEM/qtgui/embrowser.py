@@ -34,7 +34,8 @@ from __future__ import print_function
 from EMAN2 import *
 from EMAN2jsondb import js_open_dict
 from PyQt4 import QtCore, QtGui
-from PyQt4.QtCore import QChar, QString, Qt
+from PyQt4.QtCore import QChar, QString, Qt, QModelIndex
+from PyQt4.QtGui import QAction
 from emapplication import EMApp
 from emimage2d import *
 from emimagemx import *
