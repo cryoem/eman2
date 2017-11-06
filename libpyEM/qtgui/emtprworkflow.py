@@ -70,6 +70,8 @@ class EMBaseTomoChooseFilteredPtclsTask(WorkFlowTask):
 
 class EMTomoChooseFilteredPtclsTask(EMBaseTomoChooseFilteredPtclsTask):
 	"""Choose the particle set you wish to filter. The available sets inlcude the raw particles, and any filtered sets you have previously generated.""" 
+	replace_task = QtCore.pyqtSignal()
+
 	def __init__(self):
 		EMBaseTomoChooseFilteredPtclsTask.__init__(self)
 		self.form_db_name ="bdb:tomo.choose.filtered"
@@ -81,7 +83,7 @@ class EMTomoChooseFilteredPtclsTask(EMBaseTomoChooseFilteredPtclsTask):
 		choice = params["tomo_filt_choice"]
 		
 		task = EMTomoGenericReportTask(self.particles_map[self.particles_name_map[choice]])
-		self.emit(QtCore.SIGNAL("replace_task"),task,"Filter Tomo Particles")
+		self.replace_task.emit(task, "Filter Tomo Particles")
 		self.form.close()
 		self.form = None
 		
@@ -92,6 +94,7 @@ class EMTomoChooseFilteredPtclsTask(EMBaseTomoChooseFilteredPtclsTask):
 class E2TomoFilterParticlesTask(WorkFlowTask):	
 	"""This task is for Fourier filtering and/or rotating your data. If you choose to perform both of these operations, the Fourier filtering is performed before the rotation."""
 	
+	task_idle = QtCore.pyqtSignal()
 	preprocessor_cache = None
 	def __init__(self,ptcls_list=[],name_map={}):
 		WorkFlowTask.__init__(self)
@@ -211,7 +214,7 @@ class E2TomoFilterParticlesTask(WorkFlowTask):
 			error("You have to supply a filter or a non zero rotation for any filtering to occur")
 			return
 		
-		self.emit(QtCore.SIGNAL("task_idle"))
+		self.task_idle.emit()
 		self.form.close()
 		self.form = None
 	
@@ -299,6 +302,8 @@ class E2TomoFilterParticlesTask(WorkFlowTask):
 
 class EMTomoChooseFilteredPtclsForFiltTask(EMBaseTomoChooseFilteredPtclsTask):
 	"""Choose the data you wish to filter""" 
+	replace_task = QtCore.pyqtSignal()
+
 	def __init__(self,task_type=E2TomoFilterParticlesTask):
 		EMBaseTomoChooseFilteredPtclsTask.__init__(self)
 		self.form_db_name ="bdb:tomo.choose.filtered.forfilt"
@@ -311,7 +316,7 @@ class EMTomoChooseFilteredPtclsForFiltTask(EMBaseTomoChooseFilteredPtclsTask):
 		choice = params["tomo_filt_choice"]
 		
 		task = self.task_type(self.particles_map[self.particles_name_map[choice]],self.name_map)
-		self.emit(QtCore.SIGNAL("replace_task"),task,"Filter Tomo Particles")
+		self.replace_task.emit(task, "Filter Tomo Particles")
 		self.form.close()
 		self.form = None
 		
@@ -319,6 +324,7 @@ class EMTomoChooseFilteredPtclsForFiltTask(EMBaseTomoChooseFilteredPtclsTask):
 
 class EMTomoBootStapChoosePtclsTask(EMBaseTomoChooseFilteredPtclsTask):
 	"""Choose the particle set you wish to use to generate the bootstrapped probe. The sets available will include the raw particles and any filtered sets you have generated.""" 
+	replace_task = QtCore.pyqtSignal()
 
 	def __init__(self):
 		EMBaseTomoChooseFilteredPtclsTask.__init__(self)
@@ -330,7 +336,7 @@ class EMTomoBootStapChoosePtclsTask(EMBaseTomoChooseFilteredPtclsTask):
 			return
 		choice = params["tomo_filt_choice"]
 		task = EMTomoBootstrapTask(self.particles_map[self.particles_name_map[choice]],self.name_map)
-		self.emit(QtCore.SIGNAL("replace_task"),task,"Filter Tomo Particles")
+		self.replace_task.emit(task, "Filter Tomo Particles")
 		self.form.close()
 		self.form = None
 		
@@ -419,10 +425,10 @@ class EMTomoBootstrapTask(WorkFlowTask):
 		self.form.resize(*self.preferred_size)
 		self.form.setWindowTitle(self.window_title)
 		get_application().show_specific(self.form)
-		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
-		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
-		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_close"),self.on_form_close)
-		QtCore.QObject.connect(self.form,QtCore.SIGNAL("display_file"),self.on_display_file)	
+		self.form.emform_ok.connect(self.on_form_ok)
+		self.form.emform_cancel.connect(self.on_form_cancel)
+		self.form.emform_close.connect(self.on_form_close)
+		self.form.display_file.connect(self.on_display_file)
 		
 	def get_params(self):
 		table_params = []
@@ -592,6 +598,9 @@ class EMTomoRawDataReportTask(EMRawDataReportTask):
 		
 class E2TomoBoxerGuiTask(WorkFlowTask):
 	"""Select the file you want to process and hit okay, this will launch e2spt_boxer. The yshort option sets the Z axis normal to the screen, and inmemory load the tomo into memory for fast access"""
+	task_idle = QtCore.pyqtSignal()
+	gui_exit = QtCore.pyqtSignal()
+
 	def __init__(self):
 		WorkFlowTask.__init__(self)
 		self.tomo_boxer_module = None
@@ -668,20 +677,20 @@ class E2TomoBoxerGuiTask(WorkFlowTask):
 	def on_form_close(self):
 		# this is to avoid a task_idle signal, which would be incorrect if e2boxer is running
 		if self.tomo_boxer_module == None:
-			self.emit(QtCore.SIGNAL("task_idle"))
+			self.task_idle.emit()
 		else: pass
 	
 	def on_boxer_closed(self): 
 		if self.tomo_boxer_module != None:
 			self.tomo_boxer_module = None
-			self.emit(QtCore.SIGNAL("gui_exit"))
+			self.gui_exit.emit()
 	
 	def on_boxer_idle(self):
 		'''
 		Presently this means boxer did stuff but never opened any guis, so it's safe just to emit the signal
 		'''
 		self.tomo_boxer_module = None
-		self.emit(QtCore.SIGNAL("gui_exit"))
+		self.gui_exit.emit()
 		
 	def on_form_cancel(self):
 		if self.report_task:
@@ -689,4 +698,4 @@ class E2TomoBoxerGuiTask(WorkFlowTask):
 		
 		self.form.close()
 		self.form = None
-		self.emit(QtCore.SIGNAL("task_idle"))
+		self.task_idle.emit()

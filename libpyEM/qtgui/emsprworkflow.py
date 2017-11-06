@@ -100,6 +100,10 @@ class EmptyObject:
 		pass
 
 class WorkFlowTask:
+	display_file = QtCore.pyqtSignal()
+	task_idle = QtCore.pyqtSignal()
+	process_started = QtCore.pyqtSignal()
+
 	def __init__(self):
 		self.window_title = "Set me please" # inheriting classes should set this
 		self.preferred_size = (480,640) # inheriting classes can change this if they choose
@@ -119,15 +123,15 @@ class WorkFlowTask:
 		self.form.resize(*self.preferred_size)
 		self.form.setWindowTitle(self.window_title)
 		get_application().show_specific(self.form)
-		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
-		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
-		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_close"),self.on_form_close)
-		QtCore.QObject.connect(self.form,QtCore.SIGNAL("display_file"),self.on_display_file)
+		self.form.emform_ok.connect(self.on_form_ok)
+		self.form.emform_cancel.connect(self.on_form_cancel)
+		self.form.emform_close.connect(self.on_form_close)
+		self.form.display_file.connect(self.on_display_file)
 	
 	def get_params(self): raise NotImplementedError
 	
 	def on_display_file(self,filename):
-		self.emit(QtCore.SIGNAL("display_file"),filename)	
+		self.display_file.emit(filename)
 		
 	def on_form_ok(self,params):
 		for k,v in params.items():
@@ -137,19 +141,19 @@ class WorkFlowTask:
 		self.form.close()
 		self.form = None
 	
-		self.emit(QtCore.SIGNAL("task_idle"))
+		self.task_idle.emit()
 		
 	def on_form_cancel(self):
 		self.disconnect_form()
 		self.form.close()
 		self.form = None
-		self.emit(QtCore.SIGNAL("task_idle"))
+		self.task_idle.emit()
 	
 	def disconnect_form(self):
-		QtCore.QObject.disconnect(self.form,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
-		QtCore.QObject.disconnect(self.form,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
-		QtCore.QObject.disconnect(self.form,QtCore.SIGNAL("emform_close"),self.on_form_close)
-		QtCore.QObject.disconnect(self.form,QtCore.SIGNAL("display_file"),self.on_display_file)
+		self.form.emform_ok.disconnect(self.on_form_ok)
+		self.form.emform_cancel.disconnect(self.on_form_cancel)
+		self.form.emform_close.disconnect(self.on_form_close)
+		self.form.display_file.disconnect(self.on_display_file)
 	
 	
 	def emit(self,*args,**kargs):
@@ -157,12 +161,12 @@ class WorkFlowTask:
 		
 	def on_form_close(self):
 		self.disconnect_form()
-		self.emit(QtCore.SIGNAL("task_idle"))
+		self.task_idle.emit()
 
 	def close(self):
 		if self.form != None: 
 			self.form.close()
-		self.emit(QtCore.SIGNAL("task_idle"))
+		self.task_idle.emit()
         
 	def closeEvent(self,event):
 		self.close()
@@ -283,7 +287,7 @@ class WorkFlowTask:
 #			process = subprocess.Popen(args_adjusted,stdout=file,stderr=subprocess.STDOUT)
 			process = subprocess.Popen(cmdstr, shell=True)
 			print("started process",process.pid)
-			self.emit(QtCore.SIGNAL("process_started"),process.pid)
+			self.process_started.emit(process.pid)
 			
 		#db_close_dict("bdb:project")
 	
@@ -329,7 +333,7 @@ class WorkFlowTask:
 #		process = subprocess.Popen(args_adjusted,stdout=file,stderr=subprocess.STDOUT)
 		process = subprocess.Popen(cmdstr, shell=True)
 		print("started process",process.pid)
-		self.emit(QtCore.SIGNAL("process_started"),process.pid)
+		self.process_started.emit(process.pid)
 		
 		#db_close_dict("bdb:project")
 		
@@ -447,9 +451,9 @@ class HistoryTask(WorkFlowTask,HistoryForm):
 		self.form.setWindowTitle(self.window_title)
 		self.form.setWindowIcon(QtGui.QIcon(get_image_directory() + "feather.png"))
 		get_application().show_specific(self.form)
-		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
-		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
-		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_close"),self.on_form_close)
+		self.form.emform_ok.connect(self.on_form_ok)
+		self.form.emform_cancel.connect(self.on_form_cancel)
+		self.form.emform_close.connect(self.on_form_close)
 		
 class ChangeDirectoryTask(WorkFlowTask):
 	def __init__(self):
@@ -927,6 +931,8 @@ Note that the data cannot be filtered unless it is imported."
 				data_dict.add_names(list_of_names)
 		
 		class AddFilesToProjectViaContext:
+			task_idle = QtCore.pyqtSignal()
+
 			def __init__(self,project_list):
 				self.project_list = project_list
 				self.validator = AddFilesToProjectValidator(self.project_list)
@@ -980,7 +986,7 @@ Note that the data cannot be filtered unless it is imported."
 		
 		self.form.close()
 		self.form = None
-		self.emit(QtCore.SIGNAL("task_idle"))
+		self.task_idle.emit()
 	
 	def recover_original_raw_data_list(self):
 		'''
@@ -1026,6 +1032,7 @@ class AddFilesToProjectValidator:
 		return 1
 
 class EMFilterRawDataTask(WorkFlowTask):	
+	task_idle = QtCore.pyqtSignal()
 	documentation_string = """This tool allows you to import micrographs/ccd frames into the project. This copies the files into the internal \
 project database, and gives an opportunity to apply a number of common filters to the data before importing:
 - Invert - EMAN2 expects particle data to be positive, ie - particles should appear white. If particles are dark, select this.
@@ -1115,7 +1122,7 @@ project database, and gives an opportunity to apply a number of common filters t
 		self.form.close()
 		self.form = None
 	
-		self.emit(QtCore.SIGNAL("task_idle"))
+		self.task_idle.emit()
 		
 		self.write_db_entries(params)
 		
@@ -1523,6 +1530,8 @@ def ptable_convert_2(text):
 
 class EMParticleReportTask(ParticleWorkFlowTask):
 	'''This tool is for displaying the particles that are currently associated with this project.'''
+	task_idle = QtCore.pyqtSignal()
+
 	def __init__(self):
 		ParticleWorkFlowTask.__init__(self)
 		self.window_title = "Project Particles"
@@ -1551,7 +1560,7 @@ class EMParticleReportTask(ParticleWorkFlowTask):
 		
 		self.form.close()
 		self.form = None
-		self.emit(QtCore.SIGNAL("task_idle"))
+		self.task_idle.emit()
 	
 	def recover_original_raw_data_list(self):
 		'''
@@ -1588,6 +1597,8 @@ class EMParticleReportTask(ParticleWorkFlowTask):
 	
 class EMParticleImportTask(ParticleWorkFlowTask):
 	'''This task is for importing particle into the project. The data will be copied into the particles directory. This is essential if you wish to use the data to generating sets'''
+	task_idle = QtCore.pyqtSignal()
+
 	def __init__(self):
 		ParticleWorkFlowTask.__init__(self)
 		self.window_title = "Import Particles"
@@ -1664,7 +1675,7 @@ class EMParticleImportTask(ParticleWorkFlowTask):
 			print(params["name_map"].values())
 			data_dict.add_names(params["name_map"].values(),use_file_tag=True)
 		
-		self.emit(QtCore.SIGNAL("task_idle"))
+		self.task_idle.emit()
 		self.form.close()
 		self.form = None
 		
@@ -1811,6 +1822,8 @@ class EMParticleImportTask(ParticleWorkFlowTask):
 
 class EMParticleCoordImportTask(WorkFlowTask):
 	"""Use this task for importing coordinate files directly into the project database. Generally you do this after you have associated raw data with the project. Coordinate files are matched with input (raw data) files according to name. For example, if your micrograph is called "321a.mrc" then your coordinate file should be called "321a.box" or "321a.data" (both will work). After you import the coordinates you can run the "Generate Output - e2boxer" task to write particle image data."""
+	task_idle = QtCore.pyqtSignal()
+
 	def __init__(self):
 		WorkFlowTask.__init__(self)
 		self.window_title = "Import Particle Coordinates"
@@ -1854,7 +1867,7 @@ class EMParticleCoordImportTask(WorkFlowTask):
 		self.disconnect_form()
 		self.form.close()
 		self.form = None
-		self.emit(QtCore.SIGNAL("task_idle"))
+		self.task_idle.emit()
 		
 from os.path import commonprefix
 def best_match(name,lst):
@@ -1894,6 +1907,8 @@ class E2BoxerTask(ParticleWorkFlowTask):
 #	get_particle_dims_project = staticmethod(get_particle_dims_project)
 	
 	class ParticleColumns:
+		task_idle = QtCore.pyqtSignal()
+
 		def __init__(self,project_dict=spr_ptcls_dict):
 			self.header_cache = {}
 			self.translation_cache = {}
@@ -2073,10 +2088,12 @@ class E2BoxerTask(ParticleWorkFlowTask):
 			self.report_task.recover_original_raw_data_list()
 		self.form.close()
 		self.form = None
-		self.emit(QtCore.SIGNAL("task_idle"))
+		self.task_idle.emit()
 
 
 class E2BoxerGenericTask(ParticleWorkFlowTask):
+	replace_task = QtCore.pyqtSignal()
+	task_idle = QtCore.pyqtSignal()
 	documentation_string = "Fill me in"
 	def __init__(self):
 		ParticleWorkFlowTask.__init__(self)
@@ -2094,21 +2111,21 @@ class E2BoxerGenericTask(ParticleWorkFlowTask):
 
 	def on_form_ok(self,params):
 		if params["running_mode"] == "Interactive boxing":
-			self.emit(QtCore.SIGNAL("replace_task"),E2BoxerGuiTaskGeneral(),"e2boxer interface launcher")
+			self.replace_task.emit(E2BoxerGuiTaskGeneral(), "e2boxer interface launcher")
 			self.form.close()
 			self.form = None
 		elif params["running_mode"] == "Autoboxing":
-			self.emit(QtCore.SIGNAL("replace_task"),E2BoxerAutoTaskGeneral(),"e2boxer automated boxing")
+			self.replace_task.emit(E2BoxerAutoTaskGeneral(), "e2boxer automated boxing")
 			self.form.close()
 			self.form = None
 		elif params["running_mode"] == "Write output":
-			self.emit(QtCore.SIGNAL("replace_task"),E2BoxerOutputTaskGeneral(),"e2boxer write output")
+			self.replace_task.emit(E2BoxerOutputTaskGeneral(), "e2boxer write output")
 			self.form.close()
 			self.form = None	
 		else:
 			self.form.close()
 			self.form = None
-			self.emit(QtCore.SIGNAL("task_idle"))
+			self.task_idle.emit()
 			return
 		
 		self.write_db_entries(params)
@@ -2121,6 +2138,8 @@ class E2BoxerAutoTask(E2BoxerTask):
 	DO NOT USE THIS !
 	'''
 	
+	task_idle = QtCore.pyqtSignal()
+
 	def __init__(self):
 		E2BoxerTask.__init__(self)
 		self.window_title = "e2boxer Autoboxing"
@@ -2239,7 +2258,7 @@ class E2BoxerAutoTask(E2BoxerTask):
 			bool_args = []
 			temp_file_name = "e2boxer_autobox_stdout.txt"
 			self.spawn_task("e2boxer.py",options,string_args,bool_args,additional_args,temp_file_name)
-			self.emit(QtCore.SIGNAL("task_idle"))
+			self.task_idle.emit()
 			self.form.close()
 			self.form = None
 
@@ -2303,9 +2322,9 @@ class OldBoxerRecoveryDialog(QtGui.QDialog):
 		self.vbl.addLayout(self.button_hbl)
 
 	
-		QtCore.QObject.connect(self.recover, QtCore.SIGNAL("clicked(bool)"), self.on_recover)
-		QtCore.QObject.connect(self.remove, QtCore.SIGNAL("clicked(bool)"), self.on_remove)
-		QtCore.QObject.connect(self.cancel, QtCore.SIGNAL("clicked(bool)"), self.on_cancel)
+		self.recover.clicked[bool].connect(self.on_recover)
+		self.remove.clicked[bool].connect(self.on_remove)
+		self.cancel.clicked[bool].connect(self.on_cancel)
 		self.ret_code = 0
 	def on_cancel(self,int):
 		self.ret_code = 0
@@ -2382,6 +2401,9 @@ def recover_old_boxer_database():
 			
 
 class E2BoxerGuiTask(E2BoxerTask):	
+	gui_running = QtCore.pyqtSignal()
+	task_idle = QtCore.pyqtSignal()
+	gui_exit = QtCore.pyqtSignal()
 	documentation_string = """Select the frames you want to select boxes from, enter your boxsize, and hit OK.
 NOTE - SELECTING A GOOD BOX SIZE IS CRITICAL. See the wiki for a list of good sizes. Make sure the box is ~2x the size of your particle. \
 Changing box size later can be very painful, and CTF correction relies on a sufficiently large box (larger than used with EMAN1.
@@ -2438,9 +2460,9 @@ Generally you don't want to work with more than ~10 at a time. To autobox, make 
 			
 #			from e2boxer import EMBoxerModule
 #			self.boxer_module = EMBoxerModule(get_application(),options)
-			self.emit(QtCore.SIGNAL("gui_running"),"Boxer",self.boxer_module) # The controlled program should intercept this signal and keep the E2BoxerTask instance in memory, else signals emitted internally in boxer won't work
+			self.gui_running.emit("Boxer", self.boxer_module) # The controlled program should intercept this signal and keep the E2BoxerTask instance in memory, else signals emitted internally in boxer won't work
 			
-			QtCore.QObject.connect(self.boxer_module, QtCore.SIGNAL("module_closed"), self.on_boxer_closed)
+			self.boxer_module.module_closed.connect(self.on_boxer_closed)
 			self.form.close()
 #			self.boxer_module.show_guis()
 			self.boxer_module.show_interfaces()
@@ -2449,13 +2471,13 @@ Generally you don't want to work with more than ~10 at a time. To autobox, make 
 	def on_form_close(self):
 		# this is to avoid a task_idle signal, which would be incorrect if e2boxer is running
 		if self.boxer_module == None:
-			self.emit(QtCore.SIGNAL("task_idle"))
+			self.task_idle.emit()
 		else: pass
 	
 	def on_boxer_closed(self):
 		if self.boxer_module != None:
 			self.boxer_module = None
-			self.emit(QtCore.SIGNAL("gui_exit"))
+			self.gui_exit.emit()
 	
 
 class E2BoxerGuiTaskGeneral(E2BoxerGuiTask):	
@@ -2478,6 +2500,8 @@ class E2BoxerOutputTask(E2BoxerTask):
 	"""This task will write the selected particles to output files. The default format is 'BDB', which should be used if you plan to continue processing using the workflow interface. HDF is the only other format which will preserve full metadata. img (IMAGIC) and spi (SPIDER) will lose metadata if used.
 	
 	Select the images you wish to generate output for, enter the box size and normalization etc, and then hit OK."""
+	task_idle = QtCore.pyqtSignal()
+
 	def __init__(self):
 		E2BoxerTask.__init__(self)
 		self.window_title = "Generate e2boxer Output"
@@ -2551,7 +2575,7 @@ class E2BoxerOutputTask(E2BoxerTask):
 			additional_args = ["--dbls=%s" %spr_ptcls_dict]
 			temp_file_name = "e2boxer_autobox_stdout.txt"
 			self.spawn_single_task("e2boxer.py",options,string_args,bool_args,additional_args,temp_file_name)
-			self.emit(QtCore.SIGNAL("task_idle"))
+			self.task_idle.emit()
 			self.form.close()
 			self.form = None
 
@@ -2627,6 +2651,7 @@ class E2BoxerProgramOutputTask(E2BoxerOutputTask):
 	'''
 	This task is called from e2boxer itself. Not from the workflow
 	'''
+	task_idle = QtCore.pyqtSignal()
 	documentation_string = "Use this form to write output file from within the e2boxer interface.\nYou can choose to write image files in a number of formats. The bdb file format is most useful if you are using EMAN2. If you plan to use your data with other programs, including EMAN1, you must choose either the hdf or img output formats.\nYou can also choose to write EMAN1 style .box files"
 	def __init__(self,application,filenames,target,exclusions=[]):
 		E2BoxerOutputTask.__init__(self)
@@ -2671,7 +2696,7 @@ class E2BoxerProgramOutputTask(E2BoxerOutputTask):
 					normproc=True
 				self.target().write_box_image_files(params["filenames"],params["output_boxsize"],params["force"],params["format"],normproc,params["norm"],params["invert"])
 				
-			self.emit(QtCore.SIGNAL("task_idle"))
+			self.task_idle.emit()
 			self.form.close()
 			self.form = None
 
@@ -2823,6 +2848,8 @@ status report on current processing."
 		pass		
 
 class E2CTFGenericTask(ParticleWorkFlowTask):
+	replace_task = QtCore.pyqtSignal()
+	task_idle = QtCore.pyqtSignal()
 	documentation_string = "Fill me in"
 	def __init__(self):
 		ParticleWorkFlowTask.__init__(self)
@@ -2841,26 +2868,27 @@ class E2CTFGenericTask(ParticleWorkFlowTask):
 
 	def on_form_ok(self,params):
 		if params["running_mode"] == "auto params":
-			self.emit(QtCore.SIGNAL("replace_task"),E2CTFAutoFitTaskGeneral(),"ctf auto fit")
+			self.replace_task.emit(E2CTFAutoFitTaskGeneral(), "ctf auto fit")
 			self.form.close()
 			self.form = None
 		elif params["running_mode"] == "interactively fine tune":
-			self.emit(QtCore.SIGNAL("replace_task"),E2CTFGuiTaskGeneral(),"fine tune ctf")
+			self.replace_task.emit(E2CTFGuiTaskGeneral(), "fine tune ctf")
 			self.form.close()
 			self.form = None
 		elif params["running_mode"] == "write output":
-			self.emit(QtCore.SIGNAL("replace_task"),E2CTFOutputTaskGeneral(),"ctf output")
+			self.replace_task.emit(E2CTFOutputTaskGeneral(), "ctf output")
 			self.form.close()
 			self.form = None	
 		else:
 			self.form.close()
 			self.form = None
-			self.emit(QtCore.SIGNAL("task_idle"))
+			self.task_idle.emit()
 			return
 		
 		self.write_db_entries(params)
 			
 class E2CTFAutoFitTask(E2CTFWorkFlowTask):	
+	task_idle = QtCore.pyqtSignal()
 	documentation_string = """Select the particles you wish to generate CTF parameters for, enter the appropriate parameters such as microscope voltage etc, and hit OK.\nThis will cause the \
 workflow to spawn processes based on the available CPUs. Once finished the automatically determined CTF parameters will be stored in the EMAN2 database. It is often worthwhile to follow \
 the following pattern:
@@ -3004,14 +3032,14 @@ the following pattern:
 			self.spawn_task("e2ctf.py",options,string_args,bool_args,additional_args,temp_file_name)
 			
 			self.form.close()
-			self.emit(QtCore.SIGNAL("task_idle"))
+			self.task_idle.emit()
 			
 		else:
 			return
 		
 	def on_form_close(self):
 		# this is to avoid a task_idle signal, which would be incorrect if e2boxer is running
-		self.emit(QtCore.SIGNAL("task_idle"))
+		self.task_idle.emit()
 			
 class E2CTFAutoFitTaskGeneral(E2CTFAutoFitTask):
 	'''
@@ -3074,6 +3102,8 @@ class E2CTFAutoFitTaskGeneral(E2CTFAutoFitTask):
 
 class E2CTFOutputTask(E2CTFWorkFlowTask):	
 	"""Select the particle data for which you wish to generate phase flipped and/or Wiener filtered output and hit OK.\nThis will cause the workflow to spawn processes based on the available CPUs that write the output into a predefined location in the EMAN2 database.\nNote that the Wiener filtered output images are also phase flipped."""
+	task_idle = QtCore.pyqtSignal()
+
 	def __init__(self):
 		E2CTFWorkFlowTask.__init__(self)
 		self.window_title = "Generate e2ctf Output"
@@ -3151,12 +3181,14 @@ class E2CTFOutputTask(E2CTFWorkFlowTask):
 			
 
 			self.form.close()
-			self.emit(QtCore.SIGNAL("task_idle"))
+			self.task_idle.emit()
 		else:
 			return
 		
 class E2CTFSFOutputTask(E2CTFWorkFlowTask):	
 	"""This task is for generating a structure factor file using e2ctf.py. Select the files you wish to use as the basis of the the structure factor approximation and hit OK. This will spawn e2ctf as a process, the output of which will be a file called 'strucfac.txt' """
+	task_idle = QtCore.pyqtSignal()
+
 	def __init__(self):
 		E2CTFWorkFlowTask.__init__(self)
 		self.window_title = "Generate e2ctf Structure Factor"
@@ -3191,13 +3223,14 @@ class E2CTFSFOutputTask(E2CTFWorkFlowTask):
 		self.spawn_single_task("e2ctf.py",options,string_args,bool_args,additional_args,temp_file_name)
 		
 		self.form.close()
-		self.emit(QtCore.SIGNAL("task_idle"))
+		self.task_idle.emit()
 		self.write_db_entries(params)
 
 
 class E2CTFOutputTaskGeneral(E2CTFOutputTask):
 	''' Use this form for generating CTF-related output. 
 	'''
+	task_idle = QtCore.pyqtSignal()
 	warning_string = "\n\n\nNOTE: There are no CTF parameters currently stored for any images in the local database. You can change this by running automated fitting with e2ctf."
 	
 	def __init__(self):
@@ -3287,18 +3320,21 @@ class E2CTFOutputTaskGeneral(E2CTFOutputTask):
 			
 
 			self.form.close()
-			self.emit(QtCore.SIGNAL("task_idle"))
+			self.task_idle.emit()
 		else:
 			self.form.close()
-			self.emit(QtCore.SIGNAL("task_idle"))
+			self.task_idle.emit()
 			
 	def on_form_cancel(self):
 		
 		self.form.close()
 		self.form = None
-		self.emit(QtCore.SIGNAL("task_idle"))
+		self.task_idle.emit()
 	
 class E2CTFGuiTask(E2CTFWorkFlowTask):	
+	gui_running = QtCore.pyqtSignal()
+	gui_exit = QtCore.pyqtSignal()
+	task_idle = QtCore.pyqtSignal()
 	documentation_string = "Autofitting tends to either work very well or get the defocus completely wrong. It is wise to at least quickly go through the data and insure that \
 defocus values are reasonable. If not, roughly adjust the defocus and press the refit button. If you manually vary parameters, press save for each set, or your changes will \
 be lost. B-factors are not as important as in EMAN1, and use the X-ray convention (4x the EMAN1 values). Try to get them in a reasonable range, at least. This is particularly \
@@ -3356,9 +3392,9 @@ important when manually fitting before determining a structure factor."
 		
 			init_sfcurve("auto")
 			self.gui=GUIctf(get_application(),img_sets)
-			self.emit(QtCore.SIGNAL("gui_running"), "CTF", self.gui) # so the desktop can prepare some space!
+			self.gui_running.emit("CTF", self.gui) # so the desktop can prepare some space!
 			self.form.close()
-			QtCore.QObject.connect(self.gui,QtCore.SIGNAL("module_closed"), self.on_ctf_closed)
+			self.gui.module_closed.connect(self.on_ctf_closed)
 			self.gui.show_guis()
 		else:
 			return
@@ -3366,12 +3402,12 @@ important when manually fitting before determining a structure factor."
 	def on_ctf_closed(self):
 		if self.gui != None:
 			self.gui = None
-			self.emit(QtCore.SIGNAL("gui_exit")) #
+			self.gui_exit.emit()
 		
 	def on_form_close(self):
 		# this is to avoid a task_idle signal, which would be incorrect if e2boxer is running
 		if self.gui == None:
-			self.emit(QtCore.SIGNAL("task_idle"))
+			self.task_idle.emit()
 		else: pass
 		
 class E2CTFGuiTaskGeneral(E2CTFGuiTask):
@@ -3478,6 +3514,7 @@ class EMParticleOptions(EMPartSetOptions):
  		 	
 class E2ParticleExamineChooseDataTask(ParticleWorkFlowTask):
 	"""Choose the particle data you wish to examine. This will pop a second form listing the particles stacks along with other relevant information"""
+	replace_task = QtCore.pyqtSignal()
 	documentation_string = "On the next screen you will have the opportunity to eliminate 'bad' particles. This page selects which type of particles you \
 want to look at for doing this. Normally Wiener filtered particles are used for this purpose. The selection here has no impact on the output generated from \
 this stage. It is used for display purposes only !" 
@@ -3515,7 +3552,7 @@ this stage. It is used for display purposes only !"
 #				else:
 #					name_map[name] = base_name(name)
 					
-			self.emit(QtCore.SIGNAL("replace_task"),E2ParticleExamineTask(particles,self.name_map),"Particle Set Examination")
+			self.replace_task.emit(E2ParticleExamineTask(particles,self.name_map), "Particle Set Examination")
 		
 		self.form.close()
 		self.form = None
@@ -3548,6 +3585,8 @@ class E2ParticleExamineTask(E2CTFWorkFlowTask):
 		return params
 	
 	class BadParticlesColumn:
+		task_idle = QtCore.pyqtSignal()
+
 		def __init__(self,name_map):
 			self.name_map = name_map
 	
@@ -3568,21 +3607,22 @@ class E2ParticleExamineTask(E2CTFWorkFlowTask):
 	def on_form_ok(self,params):
 		self.form.close()
 		self.form = None
-		self.emit(QtCore.SIGNAL("task_idle"))
+		self.task_idle.emit()
 		
 	def on_form_close(self):
 		# this is to avoid a task_idle signal, which would be incorrect if e2boxer is running
-		self.emit(QtCore.SIGNAL("task_idle"))
+		self.task_idle.emit()
 		
 	def on_form_cancel(self):
 		
 		self.form.close()
 		self.form = None
-		self.emit(QtCore.SIGNAL("task_idle"))
+		self.task_idle.emit()
 
  		 	
 class E2MakeSetChooseDataTask(E2ParticleExamineChooseDataTask):
 	"""Choose the particle data you wish to examine. This will pop a second form listing the particles stacks along with other relevant information"""
+	replace_task = QtCore.pyqtSignal()
 	documentation_string = "Choose the data for particle examination" 
 	def __init__(self):
 		E2ParticleExamineChooseDataTask.__init__(self)
@@ -3604,7 +3644,7 @@ class E2MakeSetChooseDataTask(E2ParticleExamineChooseDataTask):
 						name_map[name] = base_name(name)
 			particles = self.particles_map[self.particles_name_map[choice]]
 			
-			self.emit(QtCore.SIGNAL("replace_task"),E2MakeSetTask(particles,name_map,self.name_map),"Make Particle Sets")
+			self.replace_task.emit(E2MakeSetTask(particles,name_map,self.name_map), "Make Particle Sets")
 		
 		self.form.close()
 		self.form = None
@@ -3613,6 +3653,8 @@ class E2MakeSetChooseDataTask(E2ParticleExamineChooseDataTask):
 		
 class E2MakeSetTask(E2ParticleExamineTask):
 	'''This task is for making agglomerated particle sets which function as input for the 2D and 3D refinement tasks. Sets for any linked particle sets (such as phase flipped or Wiener filtered data) are automatically generated. You can choose to exclude any bad particles that you have defined.'''
+	task_idle = QtCore.pyqtSignal()
+
 	def __init__(self,particle_stacks=[],name_map={},data_name_map={}):
 		E2ParticleExamineTask.__init__(self,particle_stacks,data_name_map)
 		self.window_title = "Make Particle Sets"
@@ -3801,7 +3843,7 @@ class E2MakeSetTask(E2ParticleExamineTask):
 		
 		self.form.close()
 		self.form = None
-		self.emit(QtCore.SIGNAL("task_idle"))
+		self.task_idle.emit()
 	
 		self.write_db_entries(params)
 
@@ -3848,6 +3890,8 @@ class EMSetReportTask(ParticleWorkFlowTask):
 		return table
 	
 	class FilteredSetInfo:
+		task_idle = QtCore.pyqtSignal()
+
 		def __init__(self,filt):
 			self.filt = filt
 			data_dict = EMProjectDataDict(spr_sets_dict)
@@ -3865,7 +3909,7 @@ class EMSetReportTask(ParticleWorkFlowTask):
 		
 		self.form.close()
 		self.form = None
-		self.emit(QtCore.SIGNAL("task_idle"))
+		self.task_idle.emit()
 	
 	def recover_original_raw_data_list(self):
 		'''
@@ -3889,6 +3933,8 @@ class EMSetReportTask(ParticleWorkFlowTask):
 class E2Refine2DReportTask(ParticleWorkFlowTask):
 	"""This form displays reference free class averages that are associated with the project."""
 	
+	task_idle = QtCore.pyqtSignal()
+
 	def __init__(self):
 		ParticleWorkFlowTask.__init__(self)
 		self.window_title = "2D Class Averages "
@@ -3909,7 +3955,7 @@ class E2Refine2DReportTask(ParticleWorkFlowTask):
 		
 		self.form.close()
 		self.form = None
-		self.emit(QtCore.SIGNAL("task_idle"))
+		self.task_idle.emit()
 
 
 class EMClassificationTools(ParticleWorkFlowTask):
@@ -4338,6 +4384,7 @@ class EMSetsOptions(EMPartSetOptions):
 		self.image_count = False
 
 class E2Refine2DChooseParticlesTask(ParticleWorkFlowTask):
+	replace_task = QtCore.pyqtSignal()
 	documentation_string = "Select the type of particles you wish to run e2refine2d on. Typically the phase_flipped_hp particles will give the \
  best results, followed by the phase_flipped particles. Wiener filtered particles have strong contrast, but tend to produce blurry class-averages, \
  since it is the particles that are filtered, not the averages. After you hit OK, you will be prompted for specific refinement options." 
@@ -4368,9 +4415,9 @@ class E2Refine2DChooseParticlesTask(ParticleWorkFlowTask):
 		choice = params["particle_set_choice"]
 		
 		if choice == "Specify":
-			self.emit(QtCore.SIGNAL("replace_task"),E2Refine2DWithGenericTask(),"e2refine2d arguments")
+			self.replace_task.emit(E2Refine2DWithGenericTask(), "e2refine2d arguments")
 		else:
-			self.emit(QtCore.SIGNAL("replace_task"),E2Refine2DRunTask(self.particles_map[self.particles_name_map[choice]]),"e2refine2d arguments")
+			self.replace_task.emit(E2Refine2DRunTask(self.particles_map[self.particles_name_map[choice]]), "e2refine2d arguments")
 		self.form.close()
 		self.form = None
 		
@@ -4379,6 +4426,7 @@ class E2Refine2DChooseParticlesTask(ParticleWorkFlowTask):
 
 		 	
 class E2Refine2DChooseSetsTask(ParticleWorkFlowTask):
+	replace_task = QtCore.pyqtSignal()
 	documentation_string = "Choose the data you wish to use for use for running e2refine2d from the list of options below and hit OK. This will pop up a second form asking you to fill in more details.\n\nNote that usually you should have 4 options to choose from below. If you are not seeing all 4 options it means you should go back in the work flow, import particles, and generate phase flipped and Wiener filtered output." 
 	def __init__(self):
 		ParticleWorkFlowTask.__init__(self)
@@ -4407,11 +4455,11 @@ class E2Refine2DChooseSetsTask(ParticleWorkFlowTask):
 		choice = params["particle_set_choice_stack"]
 		
 		if choice == "Specify":
-			self.emit(QtCore.SIGNAL("replace_task"),E2Refine2DWithGenericTask(),"e2refine2d arguments")
+			self.replace_task.emit(E2Refine2DWithGenericTask(), "e2refine2d arguments")
 		else:
 			task = E2Refine2DRunTask(self.particles_map[self.particles_name_map[choice]])
 			task.single_selection = True
-			self.emit(QtCore.SIGNAL("replace_task"),task,"e2refine2d arguments")
+			self.replace_task.emit(task, "e2refine2d arguments")
 		self.form.close()
 		self.form = None
 		
@@ -4446,6 +4494,7 @@ class E2RefFreeClassAveTool:
 		
 
 class E2Refine2DRunTask(E2Refine2DTask):
+	task_idle = QtCore.pyqtSignal()
 	documentation_string = "Select a particle set to use for 2-D refinement.  Select how many classes you want to generate. The other options on this page will generally produce \
 reasonably good results with default settings. Normalize projection vectors can make a dramatic improvement on some data sets, but is bad for others. See the e2refine2d.py \
 documentation for other details. Don't forget the other tabs !\
@@ -4464,10 +4513,10 @@ documentation for other details. Don't forget the other tabs !\
 		self.form.resize(*self.preferred_size)
 		self.form.setWindowTitle(self.window_title)
 		get_application().show_specific(self.form)
-		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
-		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
-		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_close"),self.on_form_close)
-		QtCore.QObject.connect(self.form,QtCore.SIGNAL("display_file"),self.on_display_file)
+		self.form.emform_ok.connect(self.on_form_ok)
+		self.form.emform_cancel.connect(self.on_form_cancel)
+		self.form.emform_close.connect(self.on_form_close)
+		self.form.display_file.connect(self.on_display_file)
 		
 	def get_params(self):
 		params = []
@@ -4537,7 +4586,7 @@ documentation for other details. Don't forget the other tabs !\
 			additional_args = []
 		temp_file_name = "e2refine2d_stdout.txt"
 		self.spawn_single_task("e2refine2d.py",options,string_args,bool_args,additional_args,temp_file_name)
-		self.emit(QtCore.SIGNAL("task_idle"))
+		self.task_idle.emit()
 		self.form.close()
 		self.form = None
 
@@ -4592,6 +4641,7 @@ class E2InitialModelsTool:
 	
 class EMInitialModelReportTask(ParticleWorkFlowTask):
 	"""This form displays the initial models currently associated with the project. You can associate initial models with the project using e2makeinitialmodel or by importing them directly, see the options below."""
+	task_idle = QtCore.pyqtSignal()
 	warning_string = "\n\n\nNOTE: There are no initial models currently associated with the project."
 	def __init__(self):
 		ParticleWorkFlowTask.__init__(self)
@@ -4613,11 +4663,13 @@ class EMInitialModelReportTask(ParticleWorkFlowTask):
 		
 		self.form.close()
 		self.form = None
-		self.emit(QtCore.SIGNAL("task_idle"))
+		self.task_idle.emit()
 		
 
 class E2InitialModel(ParticleWorkFlowTask):
 	"""Use this form for creating initial model with e2initialmodel."""
+	task_idle = QtCore.pyqtSignal()
+
 	def __init__(self):
 		ParticleWorkFlowTask.__init__(self)
 		self.window_title = "Run e2initialmodel"
@@ -4654,7 +4706,7 @@ class E2InitialModel(ParticleWorkFlowTask):
 		
 		if "filenames" not in params:
 			# THERE ARE no classes to choose from and the user has hit ok
-			self.emit(QtCore.SIGNAL("task_idle"))
+			self.task_idle.emit()
 			self.form.close()
 			self.form = None
 			return
@@ -4690,7 +4742,7 @@ class E2InitialModel(ParticleWorkFlowTask):
 			additional_args = ["--dbls=%s" %spr_init_models_dict]
 			temp_file_name = "e2initialmodel_stdout.txt"
 			self.spawn_single_task("e2initialmodel.py",options,string_args,bool_args,additional_args,temp_file_name)
-			self.emit(QtCore.SIGNAL("task_idle"))
+			self.task_idle.emit()
 			self.form.close()
 			self.form = None
 	def on_form_cancel(self):
@@ -4698,7 +4750,7 @@ class E2InitialModel(ParticleWorkFlowTask):
 		
 		self.form.close()
 		self.form = None
-		self.emit(QtCore.SIGNAL("task_idle"))
+		self.task_idle.emit()
 
 class RefinementReportTask(ParticleWorkFlowTask):
 	documentation_string = "This form displays the models produced at the end of each refinement."
@@ -4958,6 +5010,8 @@ class E2RefineParticlesTaskBase(EMClassificationTools, E2Make3DTools):
 		self.single_selection = False
 
 	class UsefiltColumn:
+		task_idle = QtCore.pyqtSignal()
+
 		def __init__(self,ptcls,usefilt_ptcls):
 			if len(ptcls) != len(usefilt_ptcls):
 				raise RuntimeError("The usefilt and raw particle lists must be the same length")
@@ -4974,10 +5028,10 @@ class E2RefineParticlesTaskBase(EMClassificationTools, E2Make3DTools):
 		self.form.resize(*self.preferred_size)
 		self.form.setWindowTitle(self.window_title)
 		get_application().show_specific(self.form)
-		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
-		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
-		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_close"),self.on_form_close)
-		QtCore.QObject.connect(self.form,QtCore.SIGNAL("display_file"),self.on_display_file)
+		self.form.emform_ok.connect(self.on_form_ok)
+		self.form.emform_cancel.connect(self.on_form_cancel)
+		self.form.emform_close.connect(self.on_form_close)
+		self.form.display_file.connect(self.on_display_file)
 		
 	def get_params(self):
 		params = []
@@ -4997,7 +5051,7 @@ class E2RefineParticlesTaskBase(EMClassificationTools, E2Make3DTools):
 		
 		self.form.close()
 		self.form = None
-		self.emit(QtCore.SIGNAL("task_idle"))
+		self.task_idle.emit()
 	
 	def on_form_ok(self,params):
 		
@@ -5030,7 +5084,7 @@ class E2RefineParticlesTaskBase(EMClassificationTools, E2Make3DTools):
 
 		self.spawn_single_task("e2refine.py",options,string_args,bool_args,additional_args,temp_file_name)
 		
-		self.emit(QtCore.SIGNAL("task_idle"))
+		self.task_idle.emit()
 		self.form.close()
 		self.form = None
 
@@ -5562,6 +5616,8 @@ set SF - This will force the reconstruction to be filtered to match the structur
 post-process - This is an optional filter to apply to the model as a final step, filter.lowpass.gauss with 'cutoff_freq=<1/resolution>' is good with set SF. If set SF is not used, note that the model will already \
  be somewhat filtered even without this."""
  
+	task_idle = QtCore.pyqtSignal()
+
 	def __init__(self,ptcls_list,usefilt_ptcls_list):
 		E2RefineParticlesTaskBase.__init__(self,ptcls_list,usefilt_ptcls_list) 
 		
@@ -5623,7 +5679,7 @@ post-process - This is an optional filter to apply to the model as a final step,
 		
 		self.spawn_single_task("e2refinemulti.py",options,string_args,bool_args,additional_args,temp_file_name)
 		
-		self.emit(QtCore.SIGNAL("task_idle"))
+		self.task_idle.emit()
 		self.form.close()
 		self.form = None
 		
@@ -5642,7 +5698,7 @@ post-process - This is an optional filter to apply to the model as a final step,
 		
 		self.imt = E2InitialModelsTool()
 		p1,n1 = self.imt.get_initial_models_table(makebutton=0) # Do not add a Browse to Add button, it just created a headache
-		QtCore.QObject.connect(p1,QtCore.SIGNAL("updateform"),self.updateform)
+		p1.updateform.connect(self.updateform)
 		
 		p1.enable_multiple_selection = False
 		params.append(p1)
@@ -5943,6 +5999,7 @@ thresh: Phase residual cutoff. Any particles with a higher phase residual will n
 		
 class EMChooseTask(ParticleWorkFlowTask):
 	'''Fill me in'''
+	replace_task = QtCore.pyqtSignal()
 	documentation_string = "This selects the type of data to use for the refinement. Normally phase_flipped or phase_flipped_hp will be selected in the top \
 section. Usefilt permits you to use one set of data for alignment and classification, and the set above when actually building a model. This can provide significant \
 benefits in some cases. Normally the wiener_filtered set or None will be selected here. If you are using the 'prefilt' option in the refinement parameters, you \
@@ -6042,7 +6099,7 @@ detailed refinement options."
 			
 			task = self.task_to_use(intersection_ptcls,intersection_usefilt_ptcls)
 			task.single_selection = self.single_selection
-			self.emit(QtCore.SIGNAL("replace_task"),task,"e2refine2d arguments")
+			self.replace_task.emit(task, "e2refine2d arguments")
 			self.form.close()
 			self.form = None
 		
@@ -6294,10 +6351,10 @@ those used during refinement."
 		self.form.resize(*self.preferred_size)
 		self.form.setWindowTitle(self.window_title)
 		get_application().show_specific(self.form)
-		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
-		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
-		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_close"),self.on_form_close)
-		QtCore.QObject.connect(self.form,QtCore.SIGNAL("display_file"),self.on_display_file)
+		self.form.emform_ok.connect(self.on_form_ok)
+		self.form.emform_cancel.connect(self.on_form_cancel)
+		self.form.emform_close.connect(self.on_form_close)
+		self.form.display_file.connect(self.on_display_file)
 		
 	
 	def get_params(self):
@@ -6393,6 +6450,7 @@ those used during refinement."
 		plowmem = ParamDef(name="lowmem",vartype="boolean",desc_short="Low mem",desc_long="Causes various programs to restrict memory usage but results in increased CPU time.",property=None,defaultunits=db.get("lowmem",dfl=False),choices=None)
 		pusefilt = ParamDef(name="usefilt",vartype="boolean",desc_short="Usefilt",desc_long="Will use the 'usefilt' data for class alignment if it exists in the refinement directory",property=None,defaultunits=db.get("usefilt",dfl=False),choices=None)
 		
+		task_idle = QtCore.pyqtSignal()
 		syms = ["icos","oct","tet","d","c","h"]
 		
 		psym =  ParamDef(name="symname",vartype="string",desc_short="Symmetry",desc_long="Symmetry to be imposed during refinement",property=None,defaultunits=db.get("symname",dfl="c"),choices=syms)
@@ -6477,7 +6535,7 @@ those used during refinement."
 #		
 		options.filenames = [] # spawn single task expects a filenames attribute
 		self.spawn_single_task("e2eotest.py",options,string_args,bool_args,additional_args,temp_file_name)
-		self.emit(QtCore.SIGNAL("task_idle"))
+		self.task_idle.emit()
 		self.form.close()
 		self.form = None
 #	
@@ -6486,6 +6544,7 @@ class E2ResolutionTask(WorkFlowTask):
 
 	'''
 	 
+	task_idle = QtCore.pyqtSignal()
 	general_documentation = "These are parameters required to run an e2resolution.py."
 	warning_string = "\n\n\nThere are no refinement results available to use as the basis of running e2resolution"
 	def __init__(self):
@@ -6572,7 +6631,7 @@ class E2ResolutionTask(WorkFlowTask):
 		temp_file_name = "e2resolution_stdout.txt"
 		options.filenames = [] # spawn single task expects a filenames attribute
 		self.spawn_single_task("e2resolution.py",options,string_args,bool_args,additional_args,temp_file_name)
-		self.emit(QtCore.SIGNAL("task_idle"))
+		self.task_idle.emit()
 		self.form.close()
 		self.form = None
 #	
