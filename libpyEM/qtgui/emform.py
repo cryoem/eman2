@@ -76,7 +76,7 @@ class EMButtonDialog:
 		else: self.button = QtGui.QPushButton(self.desc_short)
 		self.button.setToolTip(self.desc_long)
 		layout.addWidget(self.button)
-		QtCore.QObject.connect(self.button, QtCore.SIGNAL("clicked(bool)"), self.on_button)
+		self.button.clicked[bool].connect(self.on_button)
 	
 	def on_button(self,unused=None): 
 		'''
@@ -244,6 +244,8 @@ class EMParamTable(list):
 			item.setSelected(True)
 
 class EMFileTable(QtGui.QTableWidget):
+	updateform = QtCore.pyqtSignal()
+
 	def __init__(self,listed_names=[],name="filenames",desc_short="File Names",desc_long="A list of file names",single_selection=False,enable_save=True):
 		'''
 		@param listed_names The names that will be listed in the first column of the table
@@ -264,7 +266,7 @@ class EMFileTable(QtGui.QTableWidget):
 		self.vartype = "file_table" # This is used by the EMFormWidget to insert this object correctly into a widget
 		self.name_conversions = {} # This is used to convert the displayed name to the real name of the file on the operating system
 		self.context_menu_data = {} # see self.get_context_menu_dict help
-		QtCore.QObject.connect(self, QtCore.SIGNAL("itemDoubleClicked(QTableWidgetItem*)"),self.table_item_double_clicked)
+		self.itemDoubleClicked[QTableWidgetItem].connect(self.table_item_double_clicked)
 
 		if enable_save: self.context_menu_data["Save As"] = EMFileTable.save_as
 		self.context_menu_refs = [] # to keep a reference to context menus related objects - somebody has to
@@ -287,7 +289,7 @@ class EMFileTable(QtGui.QTableWidget):
 	def register_animated_column(self,column_title):
 		if self.timer == None:
 			self.timer = QtCore.QTimer()
-			QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.time_out)
+			self.timer.timeout.connect(self.time_out)
 			self.timer.start(self.timer_interval)
 			
 		self.animated_columns[column_title] = -1 # -1 is a flag
@@ -550,7 +552,7 @@ class EMFileTable(QtGui.QTableWidget):
 		cmenu = self.context_menu_data
 		for k in cmenu.keys():
 			menu.addAction(k)
-		QtCore.QObject.connect(menu,QtCore.SIGNAL("triggered(QAction*)"),self.menu_action_triggered)
+		menu.triggered[QAction].connect(self.menu_action_triggered)
 		menu.exec_(event.globalPos())
 		event.accept()
 	
@@ -595,10 +597,10 @@ class EMFileTable(QtGui.QTableWidget):
 		for button_data in self.button_data:
 			button = QtGui.QPushButton(button_data.name,None)
 			layout.addWidget(button,0)
-			QtCore.QObject.connect(button,QtCore.SIGNAL("clicked(bool)"),button_data.function)
-			QtCore.QObject.connect(button,QtCore.SIGNAL("clicked(bool)"),self.sendupdate)
+			button.clicked[bool].connect(button_data.function)
+			button.clicked[bool].connect(self.sendupdate)
 	def sendupdate(self):
-		self.emit(QtCore.SIGNAL("updateform"))
+		self.updateform.emit()
 		
 	class EMColumnData:
 		'''
@@ -894,15 +896,15 @@ class EMBrowseEventHandler:
 		warnings.warn("EMBrowseEventHandler.__init__()", DeprecationWarning)
 		self.browser = None
 		self.browser_title = "Set this to be clear"
-		QtCore.QObject.connect(browse_button,QtCore.SIGNAL("clicked(bool)"),self.browse_pressed)
+		browse_button.clicked[bool].connect(self.browse_pressed)
 		
 	def browse_pressed(self,bool):
 		if self.browser == None:
 			self.browser = EMSelectorDialog(False, False)
 			self.browser.setWindowTitle(self.browser_title)
 			self.browser.exec_()
-			QtCore.QObject.connect(self.browser,QtCore.SIGNAL("ok"),self.on_browser_ok)
-			QtCore.QObject.connect(self.browser,QtCore.SIGNAL("cancel"),self.on_browser_cancel)
+			self.browser.ok.connect(self.on_browser_ok)
+			self.browser.cancel.connect(self.on_browser_cancel)
 		else:
 			self.browser.exec_()
 
@@ -986,7 +988,7 @@ class EMEmanStrategyWidget(QtGui.QWidget):
 		
 		self.vbl.addWidget(groupbox)
 		
-		QtCore.QObject.connect(self.main_combo, QtCore.SIGNAL("currentIndexChanged(QString)"), self.selection_changed)
+		self.main_combo.currentIndexChanged[QString].connect(self.selection_changed)
 		
 		if start_idx != None:
 			if start_idx != 0:
@@ -1084,6 +1086,11 @@ class EMFormWidget(QtGui.QWidget):
 	If ok is clicked the "emform_ok" signal is emitted along with a dictionary containing all of the form entries
 	If cancel is clicked the "emform_cancel" signal is emmitted. No extra information is sent in this case
 	'''
+	emform_close = QtCore.pyqtSignal()
+	emform_ok = QtCore.pyqtSignal(dict)
+	emform_cancel = QtCore.pyqtSignal()
+	display_file = QtCore.pyqtSignal(str)
+
 	def __init__(self,params=None,disable_ok_cancel=False):
 		QtGui.QWidget.__init__(self,None)
 		self.params = params
@@ -1129,7 +1136,7 @@ class EMFormWidget(QtGui.QWidget):
 		self.plot_icon = QtGui.QIcon(get_image_directory() + "/plot.png")
 	
 	def closeEvent(self, event):
-		self.emit(QtCore.SIGNAL("emform_close"))
+		self.emform_close.emit()
 		QtGui.QWidget.closeEvent(self, event)
 	
 	def incorporate_params(self,params,layout):
@@ -1318,16 +1325,16 @@ class EMFormWidget(QtGui.QWidget):
 		cancel_button = QtGui.QPushButton("Cancel")
 		hbl.addWidget(cancel_button,0)
 		layout.addLayout(hbl)
-		QtCore.QObject.connect(ok_button,QtCore.SIGNAL("clicked(bool)"),self.ok_pressed)
-		QtCore.QObject.connect(cancel_button,QtCore.SIGNAL("clicked(bool)"),self.cancel_pressed)
+		ok_button.clicked[bool].connect(self.ok_pressed)
+		cancel_button.clicked[bool].connect(self.cancel_pressed)
 		
 	def ok_pressed(self,bool):
 		ret = {}
 		for output in self.output_writers: output.write_data(ret)
-		self.emit(QtCore.SIGNAL("emform_ok"),ret)
+		self.emform_ok.emit(ret)
 		
 	def cancel_pressed(self,bool):
-		self.emit(QtCore.SIGNAL("emform_cancel"))
+		self.emform_cancel.emit()
 
 
 	def update_texture(self):
@@ -1335,7 +1342,7 @@ class EMFormWidget(QtGui.QWidget):
 
 
 	def display_file(self,filename):
-		self.emit(QtCore.SIGNAL("display_file"),filename)
+		self.display_file.emit(filename)
 
 
 class IncorpStrategy:
@@ -1855,7 +1862,7 @@ class EMParamTableEventHandler:
 		self.table_widget = table_widget
 		table_widget.contextMenuEvent = self.contextMenuEvent
 				
-		QtCore.QObject.connect(table_widget, QtCore.SIGNAL("itemDoubleClicked(QTableWidgetItem*)"),self.table_item_double_clicked)
+		table_widget.itemDoubleClicked[QTableWidgetItem].connect(self.table_item_double_clicked)
 		
 	def table_item_double_clicked(self,item):
 		if hasattr(self.table_widget,"convert_text"):
@@ -1867,7 +1874,7 @@ class EMParamTableEventHandler:
 			menu = QtGui.QMenu()
 			for k in self.table_widget.context_menu.keys():
 				menu.addAction(k)
-			QtCore.QObject.connect(menu,QtCore.SIGNAL("triggered(QAction*)"),self.menu_action_triggered)
+			menu.triggered[QAction].connect(self.menu_action_triggered)
 			menu.exec_(event.globalPos())
 	
 	def menu_action_triggered(self,action):
@@ -1908,7 +1915,7 @@ class UrlEventHandler(EMBrowseEventHandler):
 		EMBrowseEventHandler.__init__(self,browse_button)
 		self.browser_title = title
 		
-		QtCore.QObject.connect(clear_button,QtCore.SIGNAL("clicked(bool)"),self.clear_pressed)
+		clear_button.clicked[bool].connect(self.clear_pressed)
 		
 	def on_browser_ok(self,stringlist):
 		new_string = str(self.text_edit.toPlainText())
@@ -1936,7 +1943,7 @@ class DictEventHandler:
 		self.combo1 = combo1
 		self.combo2 = combo2
 		
-		QtCore.QObject.connect(self.combo1, QtCore.SIGNAL("currentIndexChanged(int)"),self.combo1_index_changed)
+		self.combo1.currentIndexChanged[int].connect(self.combo1_index_changed)
 	
 	def combo1_index_changed(self,i):
 		
@@ -1962,7 +1969,7 @@ class BoolDependentsEventHandler:
 		self.checkbox = checkbox
 		self.dependents = dependents # a list of depent names (ParamDef.name)
 		self.invert_logic = invert_logic
-		QtCore.QObject.connect(self.checkbox, QtCore.SIGNAL("stateChanged(int)"),self.checkbox_state_changed)
+		self.checkbox.stateChanged[int].connect(self.checkbox_state_changed)
 		
 	def checkbox_state_changed(self,integer=0):
 		name_map = self.target().name_widget_map
@@ -2120,13 +2127,13 @@ if __name__ == '__main__':
 	em_app = EMApp()
 	window = EMFormWidget(params=get_example_form_params())
 	window.setWindowTitle("A test form")
-	QtCore.QObject.connect(window,QtCore.SIGNAL("emform_ok"),on_ok)
-	QtCore.QObject.connect(window,QtCore.SIGNAL("emform_cancel"),on_cancel)
+	window.emform_ok.connect(on_ok)
+	window.emform_cancel.connect(on_cancel)
 	
 	window2= EMTableFormWidget(params=get_example_table_form_params())
 	window2.setWindowTitle("A test form")
-	QtCore.QObject.connect(window2,QtCore.SIGNAL("emform_ok"),on_ok)
-	QtCore.QObject.connect(window2,QtCore.SIGNAL("emform_cancel"),on_cancel)
+	window2.emform_ok.connect(on_ok)
+	window2.emform_cancel.connect(on_cancel)
 	
 	em_app.show()
 	em_app.execute()
