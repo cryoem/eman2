@@ -177,8 +177,8 @@ class ThumbsEventHandler:
 		connects the signals of the main 2D window to the slots of this object
 		'''
 		from PyQt4 import QtCore
-		QtCore.QObject.connect(self.thumbs_window(),QtCore.SIGNAL("mx_mouseup"),self.thumb_image_selected)
-		QtCore.QObject.connect(self.thumbs_window(),QtCore.SIGNAL("module_closed"),self.module_closed)
+		self.thumbs_window().mx_mouseup.connect(self.thumb_image_selected)
+		self.thumbs_window().module_closed.connect(self.module_closed)
 
 	def thumb_image_selected(self,event,lc):
 		if lc == None: return
@@ -593,8 +593,8 @@ class ErasingPanel:
 
 			vbl.addLayout(hbl)
 			vbl.addWidget(self.unerase)
-			QtCore.QObject.connect(self.erase_rad_edit,QtCore.SIGNAL("sliderReleased"),self.new_erase_radius)
-			QtCore.QObject.connect(self.unerase,QtCore.SIGNAL("clicked(bool)"),self.unerase_checked)
+			self.erase_rad_edit.sliderReleased.connect(self.new_erase_radius)
+			self.unerase.clicked[bool].connect(self.unerase_checked)
 
 		return self.widget
 
@@ -628,7 +628,7 @@ class ManualBoxingPanel:
 			vbl.addWidget(self.clearfrom,3,1)
 			
 
-			QtCore.QObject.connect(self.clear, QtCore.SIGNAL("clicked(bool)"), self.clear_clicked)
+			self.clear.clicked[bool].connect(self.clear_clicked)
 		return self.widget
 
 	def clear_clicked(self,val):
@@ -961,13 +961,13 @@ class Main2DWindowEventHandler(BoxEventsHandler):
 		connects the signals of the main 2D window to the slots of this object
 		'''
 		from PyQt4 import QtCore
-		QtCore.QObject.connect(self.main_2d_window,QtCore.SIGNAL("mousedown"),self.mouse_down)
-		QtCore.QObject.connect(self.main_2d_window,QtCore.SIGNAL("mousedrag"),self.mouse_drag)
-		QtCore.QObject.connect(self.main_2d_window,QtCore.SIGNAL("mouseup")  ,self.mouse_up  )
-		QtCore.QObject.connect(self.main_2d_window,QtCore.SIGNAL("keypress"),self.key_press)
-		QtCore.QObject.connect(self.main_2d_window,QtCore.SIGNAL("mousewheel"),self.mouse_wheel)
-		QtCore.QObject.connect(self.main_2d_window,QtCore.SIGNAL("mousemove"),self.mouse_move)
-		QtCore.QObject.connect(self.main_2d_window,QtCore.SIGNAL("module_closed"),self.module_closed)
+		self.main_2d_window.mousedown.connect(self.mouse_down)
+		self.main_2d_window.mousedrag.connect(self.mouse_drag)
+		self.main_2d_window.mouseup.connect(self.mouse_up)
+		self.main_2d_window.keypress.connect(self.key_press)
+		self.main_2d_window.mousewheel.connect(self.mouse_wheel)
+		self.main_2d_window.mousemove.connect(self.mouse_move)
+		self.main_2d_window.module_closed.connect(self.module_closed)
 
 	def boxes_erased(self,rm_boxes):
 		'''
@@ -1081,11 +1081,11 @@ class ParticlesWindowEventHandler(BoxEventsHandler):
 		connects the signals of the main 2D window to the slots of this object
 		'''
 		from PyQt4 import QtCore
-		QtCore.QObject.connect(self.particle_window,QtCore.SIGNAL("mx_image_selected"),self.box_selected)
-		QtCore.QObject.connect(self.particle_window,QtCore.SIGNAL("mx_mousedrag"),self.box_moved)
-		QtCore.QObject.connect(self.particle_window,QtCore.SIGNAL("mx_mouseup"),self.box_released)
-		QtCore.QObject.connect(self.particle_window,QtCore.SIGNAL("mx_boxdeleted"),self.box_image_deleted)
-		QtCore.QObject.connect(self.particle_window,QtCore.SIGNAL("module_closed"),self.module_closed)
+		self.particle_window.mx_image_selected.connect(self.box_selected)
+		self.particle_window.mx_mousedrag.connect(self.box_moved)
+		self.particle_window.mx_mouseup.connect(self.box_released)
+		self.particle_window.mx_boxdeleted.connect(self.box_image_deleted)
+		self.particle_window.module_closed.connect(self.module_closed)
 
 	def box_selected(self,event,lc):
 		if self.mouse_handler == None: return
@@ -1744,6 +1744,8 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 	that would otherwise not necessary interact. Overall the interactions can be complicated and this class is an
 	attempt to correctly granulate the overall design and the complexity of the classes involved.
 	'''
+	module_closed = PyQt4.QtCore.pyqtSignal()
+
 	def __init__(self,file_names=[],box_size=128):
 		'''
 		@file_name the name of a file on disk
@@ -1930,7 +1932,7 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 		if self.particles_window != None:
 			E2saveappwin("e2boxer","particles",self.particles_window.qt_parent)
 			self.particles_window.close()
-		self.emit(PyQt4.QtCore.SIGNAL("module_closed"))
+		self.module_closed.emit()
 
 	def run_output_dialog(self):
 		if self.current_tool=='Gauss':
@@ -1941,7 +1943,7 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 		if self.output_task != None: return
 		from PyQt4 import QtCore
 		self.output_task = EMBoxerWriteOutputTask(self.file_names, dfl_boxsize=self.box_size, current_tool=self.current_tool)
-		QtCore.QObject.connect(self.output_task.emitter(),QtCore.SIGNAL("task_idle"),self.on_output_task_idle)
+		self.output_task.emitter().task_idle.connect(self.on_output_task_idle)
 		self.output_task.run_form()
 
 	def on_output_task_idle(self):
@@ -2162,6 +2164,8 @@ from emsprworkflow import WorkFlowTask
 from emapplication import error
 class EMBoxerWriteOutputTask(WorkFlowTask):
 	"""Use this form for writing boxed particles and/or coordinate files to disk."""
+	task_idle = QtCore.pyqtSignal()
+
 	def __init__(self,file_names=[],output_formats=["hdf","spi","img","bdb"],dfl_boxsize=128, current_tool=None):
 		WorkFlowTask.__init__(self)
 		self.window_title = "Write Particle Output"
@@ -2291,7 +2295,7 @@ class EMBoxerWriteOutputTask(WorkFlowTask):
 			self.write_output(params["filenames"],coord_output_names,EMBoxList.write_coordinates,params["output_boxsize"],"Writing Coordinates")
 
 		from PyQt4 import QtCore
-		self.emit(QtCore.SIGNAL("task_idle"))
+		self.task_idle.emit()
 		self.form.close()
 		self.form = None
 		#self.write_db_entries(params)
@@ -2399,9 +2403,9 @@ class EMBoxerInspector(QtGui.QWidget):
 		self.vbl.addWidget(self.status_bar)
 		self.status_bar.showMessage("Ready",10000)
 
-		self.connect(self.status_bar,QtCore.SIGNAL("messageChanged(const QString&)"),self.on_status_msg_change)
-		self.connect(self.done_but,QtCore.SIGNAL("clicked(bool)"),self.on_done)
-		self.connect(self.gen_output_but,QtCore.SIGNAL("clicked(bool)"),self.write_output_clicked)
+		self.status_bar.messageChanged[QString].connect(self.on_status_msg_change)
+		self.done_but.clicked[bool].connect(self.on_done)
+		self.gen_output_but.clicked[bool].connect(self.write_output_clicked)
 		self.busy = False
 
 	def on_status_msg_change(self,s):
@@ -2473,12 +2477,12 @@ class EMBoxerInspector(QtGui.QWidget):
 		vbl.addWidget(displayboxes)
 
 
-		self.connect(self.viewboxes,QtCore.SIGNAL("clicked(bool)"),self.view_particles_clicked)
-		self.connect(self.viewimage,QtCore.SIGNAL("clicked(bool)"),self.view_2d_window_clicked)
+		self.viewboxes.clicked[bool].connect(self.view_particles_clicked)
+		self.viewimage.clicked[bool].connect(self.view_2d_window_clicked)
 		if self.target().has_thumbs():
-			self.connect(self.viewthumbs,QtCore.SIGNAL("clicked(bool)"),self.view_thumbs_clicked)
+			self.viewthumbs.clicked[bool].connect(self.view_thumbs_clicked)
 
-		QtCore.QObject.connect(self.boxformats, QtCore.SIGNAL("currentIndexChanged(QString)"), self.box_format_changed)
+		self.boxformats.currentIndexChanged[QString].connect(self.box_format_changed)
 
 		return widget
 	def view_particles_clicked(self,val):
@@ -2539,7 +2543,7 @@ class EMBoxerInspector(QtGui.QWidget):
 
 		self.add_bottom_buttons(vbl)
 
-		self.connect(self.box_size,QtCore.SIGNAL("editingFinished()"),self.new_box_size)
+		self.box_size.editingFinished.connect(self.new_box_size)
 		return widget
 
 	def add_bottom_buttons(self,layout):
@@ -2560,7 +2564,7 @@ class EMBoxerInspector(QtGui.QWidget):
 		hbl_q.addWidget(self.image_qualities)
 		layout.addLayout(hbl_q)
 
-		QtCore.QObject.connect(self.image_qualities, QtCore.SIGNAL("currentIndexChanged(QString)"), self.image_quality_changed)
+		self.image_qualities.currentIndexChanged[QString].connect(self.image_quality_changed)
 
 	def image_quality_changed(self,val):
 		if self.busy: return
@@ -2595,7 +2599,7 @@ class EMBoxerInspector(QtGui.QWidget):
 		self.tool_button_group_box_vbl.addLayout(self.tool_dynamic_vbl,1)
 		layout.addWidget(self.tool_button_group_box,0,)
 
-		QtCore.QObject.connect(self.current_tool_combobox, QtCore.SIGNAL("activated(int)"), self.current_tool_combobox_changed)
+		self.current_tool_combobox.activated[int].connect(self.current_tool_combobox_changed)
 
 	def add_mouse_tool(self,mouse_tool,):
 #		icon = mouse_tool.icon()
