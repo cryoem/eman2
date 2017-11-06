@@ -60,8 +60,8 @@ class EMDrawWindow(QtGui.QMainWindow):
 
 		print("imgnum,x,y,major,minor,angle")
 		
-		QtCore.QObject.connect(self.imgview,QtCore.SIGNAL("mouseup"),self.mouseup  )
-		QtCore.QObject.connect(self.imgview,QtCore.SIGNAL("mousemove"),self.mousemv)
+		self.imgview.mouseup.connect(self.mouseup)
+		self.imgview.mousemove.connect(self.mousemv)
 		
 		
 	def update_view(self):
