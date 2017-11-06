@@ -59,6 +59,7 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 	""" 
 	A QT widget for rendering 3D EMData objects
 	"""
+	set_perspective = QtCore.pyqtSignal()
 	allim=weakref.WeakKeyDictionary()
 	def add_model(self,model,num=0):
 		model.set_gl_widget(self)
@@ -571,7 +572,7 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 			self.qt_parent.setWindowTitle(remove_directories_from_name(self.file_name))
 	def set_perspective(self,bool):
 		self.perspective = bool
-		if self.emit_events: self.emit(QtCore.SIGNAL("set_perspective"),bool)
+		if self.emit_events: self.set_perspective.emit(bool)
 		self.updateGL()
 		#self.set_perspective(bool)
 	def set_scale(self,val):
@@ -676,11 +677,11 @@ class EMImageInspector3D(QtGui.QWidget):
 
 		self.insert_advance_tab()
 		
-		QtCore.QObject.connect(self.addIso, QtCore.SIGNAL("clicked()"), self.add_isosurface)
-		QtCore.QObject.connect(self.addVol, QtCore.SIGNAL("clicked()"), self.add_volume)
-		QtCore.QObject.connect(self.addSli, QtCore.SIGNAL("clicked()"), self.add_slices)
-		QtCore.QObject.connect(self.add_sym, QtCore.SIGNAL("clicked()"), self.add_symmetry)
-		QtCore.QObject.connect(self.delete, QtCore.SIGNAL("clicked()"), self.delete_selection)
+		self.addIso.clicked.connect(self.add_isosurface)
+		self.addVol.clicked.connect(self.add_volume)
+		self.addSli.clicked.connect(self.add_slices)
+		self.add_sym.clicked.connect(self.add_symmetry)
+		self.delete.clicked.connect(self.delete_selection)
 		
 	def update_rotations(self,t3d):
 		self.advanced_tab.update_rotations(t3d)
@@ -778,8 +779,8 @@ class EM3DAdvancedInspector(QtGui.QWidget,EMLightsInspectorBase):
 		self.vbl.addWidget(self.tabwidget)
 		
 
-		QtCore.QObject.connect(self.persbut, QtCore.SIGNAL("pressed()"), self.perspective_clicked)
-		QtCore.QObject.connect(self.orthbut, QtCore.SIGNAL("pressed()"), self.ortho_clicked)
+		self.persbut.pressed.connect(self.perspective_clicked)
+		self.orthbut.pressed.connect(self.ortho_clicked)
 	
 	
 	def get_main_tab(self):
