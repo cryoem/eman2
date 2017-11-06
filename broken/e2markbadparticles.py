@@ -128,9 +128,9 @@ class EMMarkPtclTool(QtGui.QMainWindow):
 		
 
 		# file menu
-		QtCore.QObject.connect(self.mfile_quit,QtCore.SIGNAL("triggered(bool)")  ,self.menu_file_quit)
-		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("currentRowChanged(int)"),self.newSet)
-		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("keypress"),self.listkey)
+		self.mfile_quit.triggered[bool].connect(self.menu_file_quit)
+		self.setlist.currentRowChanged[int].connect(self.newSet)
+		self.setlist.keypress.connect(self.listkey)
 
 	def menu_file_quit(self):
 		self.close()
