@@ -280,6 +280,10 @@ def EMSelectorBaseTemplate(Type):
 	Types currently in use are the QtGui.QWidget and the QtGui.QDialog
 	'''
 	class EMSelectorBase(Type):
+		ok = QtCore.pyqtSignal()
+		oky = QtCore.pyqtSignal()
+		cancel = QtCore.pyqtSignal()
+
 		def __init__(self, single_selection=False):
 			'''
 			@param single_selection - should selections be limited to singles?
@@ -331,7 +335,7 @@ def EMSelectorBaseTemplate(Type):
 			
 			self.timer_interval = 500 # half a second
 			self.timer = QtCore.QTimer()
-			QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.time_out) # for auto refresh
+			self.timer.timeout.connect(self.time_out) # for auto refresh
 			
 			self.timer.start(self.timer_interval)
 			
@@ -346,19 +350,19 @@ def EMSelectorBaseTemplate(Type):
 			self.cancel_button = QtGui.QPushButton("Cancel")
 			self.cancel_button.adjustSize()
 		
-			QtCore.QObject.connect(self.ok_button, QtCore.SIGNAL("clicked(bool)"),self.ok_button_clicked)
-			QtCore.QObject.connect(self.cancel_button, QtCore.SIGNAL("clicked(bool)"),self.cancel_button_clicked)
+			self.ok_button.clicked[bool].connect(self.ok_button_clicked)
+			self.cancel_button.clicked[bool].connect(self.cancel_button_clicked)
 		
 		def ok_button_clicked(self,bool):
 			''' Slot for OK button '''
 			#print "EMSelectorBase.ok_button_clicked"
-			self.emit(QtCore.SIGNAL("ok"),self.selections)
-			self.emit(QtCore.SIGNAL("oky"))
+			self.ok.emit(self.selections)
+			self.oky.emit()
 		
 		def cancel_button_clicked(self,bool):
 			''' Slot for Cancel button '''
 			#print "EMSelectorBase.cancel_button_clicked"
-			self.emit(QtCore.SIGNAL("cancel"),self.selections)
+			self.cancel.emit(self.selections)
 		
 		
 		def __del__(self):
@@ -428,7 +432,7 @@ def EMSelectorBaseTemplate(Type):
 			self.filter_combo.addItem("*")
 			self.filter_combo.setEditable(True)
 		
-			QtCore.QObject.connect(self.filter_combo, QtCore.SIGNAL("currentIndexChanged(int)"),self.filter_index_changed)
+			self.filter_combo.currentIndexChanged[int].connect(self.filter_index_changed)
 	#		QtCore.QObject.connect(self.filter_combo, QtCore.SIGNAL("currentIndexChanged(QString&)"),self.filter_index_changed)
 	
 		def filter_index_changed(self):
@@ -459,11 +463,11 @@ def EMSelectorBaseTemplate(Type):
 			
 			self.list_widget_data.append(None)
 			
-			QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemDoubleClicked(QListWidgetItem*)"),self.list_widget_dclicked)
+			list_widget.itemDoubleClicked[QListWidgetItem].connect(self.list_widget_dclicked)
 			#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemPressed(QListWidgetItem*)"),self.list_widget_clicked)
 			#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("currentRowChanged (int)"),self.list_widget_row_changed)
 			#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("paintEvent (int)"),self.list_widget_row_changed)
-			QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemEntered(QListWidgetItem*)"),self.list_widget_item_entered)
+			list_widget.itemEntered[QListWidgetItem].connect(self.list_widget_item_entered)
 			#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("currentItemChanged(QListWidgetItem*,QListWidgetItem*)"),self.list_widget_current_changed)
 			#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemChanged(QListWidgetItem*)"),self.list_widget_item_changed)
 			#\QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemActivated(QListWidgetItem*)"),self.list_widget_item_activated)
@@ -571,9 +575,9 @@ def EMSelectorBaseTemplate(Type):
 			list_widget = item.listWidget()
 			if list_widget != self.current_list_widget:
 				if self.current_list_widget != None:
-					QtCore.QObject.disconnect(self.current_list_widget,QtCore.SIGNAL("itemSelectionChanged()"), self.current_item_changed)
+					self.current_list_widget.itemSelectionChanged.disconnect(self.current_item_changed)
 				self.current_list_widget = item.listWidget()
-				QtCore.QObject.connect(self.current_list_widget,QtCore.SIGNAL("itemSelectionChanged()"), self.current_item_changed)
+				self.current_list_widget.itemSelectionChanged.connect(self.current_item_changed)
 #				
 		def current_item_changed(self):
 			'''
@@ -785,7 +789,7 @@ class EMBrowser(EMBrowserType):
 		self.preview_options.addItem("Multi preview")
 		#self.preview_options.setCurrentIndex(0)
 		
-		QtCore.QObject.connect(self.preview_options, QtCore.SIGNAL("currentIndexChanged(QString)"), self.preview_options_changed)
+		self.preview_options.currentIndexChanged[QString].connect(self.preview_options_changed)
 	
 	def preview_options_changed(self,qstring):
 		if str(qstring) == "Single preview":
@@ -882,7 +886,7 @@ class EMBrowser(EMBrowserType):
 					menu.addAction(SAVE_SUBSET)
 				
 
-		QtCore.QObject.connect(menu,QtCore.SIGNAL("triggered(QAction*)"),self.menu_action_triggered)
+		menu.triggered[QAction].connect(self.menu_action_triggered)
 		self.action_list_widget = l # only set if the menu acutally triggers
 		menu.exec_(event.globalPos())
 		
