@@ -150,7 +150,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		exit = QtGui.QAction('Exit', self)
 		exit.setShortcut('Ctrl+Q')
 		exit.setStatusTip('Exit application')
-		exit.triggered.connect(close)
+		exit.triggered.connect(self.close)
 		filemenu.addAction(exit)
 
 		# Project
