@@ -58,11 +58,11 @@ class ModuleEventsManager:
 		except AttributeError:
 			emitter = self.module() #Ross's hack to get this to work with QWidget's as well
 			
-		QtCore.QObject.connect(emitter, QtCore.SIGNAL("module_closed"), self.module_closed)
-		QtCore.QObject.connect(emitter, QtCore.SIGNAL("module_idle"), self.module_idle)
+		emitter.module_closed.connect(self.module_closed)
+		emitter.module_idle.connect(self.module_idle)
 	
-		QtCore.QObject.connect(emitter, QtCore.SIGNAL("ok"), self.module_ok) # yes, redundant, but time is short
-		QtCore.QObject.connect(emitter, QtCore.SIGNAL("cancel"), self.module_cancel)# yes, redundant, but time is short
+		emitter.ok.connect(self.module_ok) # yes, redundant, but time is short
+		emitter.cancel.connect(self.module_cancel) # yes, redundant, but time is short
 		
 	
 	def module_closed(self):
@@ -88,11 +88,11 @@ class ModuleEventsManager:
 		except AttributeError:
 			emitter = self.module() #Ross's hack to get this to work with QWidget's as well
 			
-		QtCore.QObject.disconnect(emitter, QtCore.SIGNAL("module_closed"), self.module_closed)
-		QtCore.QObject.disconnect(emitter, QtCore.SIGNAL("module_idle"), self.module_idle)
+		emitter.module_closed.disconnect(self.module_closed)
+		emitter.module_idle.disconnect(self.module_idle)
 	
-		QtCore.QObject.disconnect(emitter, QtCore.SIGNAL("ok"), self.module_ok) # yes, redundant, but time is short
-		QtCore.QObject.disconnect(emitter, QtCore.SIGNAL("cancel"), self.module_cancel)# yes, redundant, but time is short
+		emitter.ok.disconnect(self.module_ok) # yes, redundant, but time is short
+		emitter.cancel.disconnect(self.module_cancel) # yes, redundant, but time is short
 
 class EMGLWidget(QtOpenGL.QGLWidget):
 	"""
@@ -101,6 +101,9 @@ class EMGLWidget(QtOpenGL.QGLWidget):
 	a self.busy attribute to prevent updateGL() from redrawing before all changes to display parameters are in place. 
 	"""
 	
+	module_closed = QtCore.pyqtSignal()
+	inspector_shown = QtCore.pyqtSignal()
+
 	def hide(self):
 		if self.qt_parent:
 			self.qt_parent.hide()
@@ -159,7 +162,7 @@ class EMGLWidget(QtOpenGL.QGLWidget):
 			self.inspector.close()
 		QtOpenGL.QGLWidget.closeEvent(self, event)
 		if self.myparent : self.qt_parent.close()
-		self.emit(QtCore.SIGNAL("module_closed")) # this could be a useful signal, especially for something like the selector module, which can potentially show a lot of images but might want to close them all when it is closed
+		self.module_closed.emit() # this could be a useful signal, especially for something like the selector module, which can potentially show a lot of images but might want to close them all when it is closed
 		event.accept()
 		
 	def display_web_help(self,url="http://blake.bcm.edu/emanwiki/e2display"):
@@ -187,7 +190,7 @@ class EMGLWidget(QtOpenGL.QGLWidget):
 		if self.disable_inspector: 
 			return
 		
-		self.emit(QtCore.SIGNAL("inspector_shown")) # debug only
+		self.inspector_shown.emit() # debug only
 		app = get_application()
 		if app == None:
 			print("can't show an inspector with having an associated application")
@@ -345,7 +348,7 @@ class EMApp(QtGui.QApplication):
 	
 		self.tmr=QtCore.QTimer()
 		self.tmr.setInterval(interval)
-		QtCore.QObject.connect(self.tmr,QtCore.SIGNAL("timeout()"), function)
+		self.tmr.timeout.connect(function)
 		self.tmr.start()
 		
 		self.timer_function = function
@@ -354,7 +357,7 @@ class EMApp(QtGui.QApplication):
 	def stop_timer(self):
 		print("STOP APP TIMER")
 		if self.tmr != None:
-			QtCore.QObject.disconnect(self.tmr, QtCore.SIGNAL("timeout()"), self.timer_function)
+			self.tmr.timeout.disconnect(self.timer_function)
 			self.tmr = None
 			self.timer_function = None
 		else:
