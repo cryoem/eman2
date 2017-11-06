@@ -412,7 +412,7 @@ class EM3DSymModel(EM3DModel,Orientations,ColumnGraphics):
 		if self.image_display_window == None:
 			from emimage2d import EMImage2DWidget
 			self.image_display_window = EMImage2DWidget()
-			QtCore.QObject.connect(self.image_display_window,QtCore.SIGNAL("module_closed"),self.on_image_display_window_closed)
+			self.image_display_window.module_closed.connect(self.on_image_display_window_closed)
 			resize_necessary = True
 				
 		self.image_display_window.set_data(self.euler_data[object_number],"Data")
@@ -1321,10 +1321,10 @@ class SparseSymChoicesWidgets:
 		vbl.addLayout(self.button_hbl2)
 		
 		
-		QtCore.QObject.connect(self.symtog, QtCore.SIGNAL("toggled(bool)"), self.set_display_all_syms)
-		QtCore.QObject.connect(self.symtogdisplay, QtCore.SIGNAL("clicked(bool)"), self.toggle_sym_display)
-		QtCore.QObject.connect(self.triangletog, QtCore.SIGNAL("clicked(bool)"), self.triangle_tog)
-		QtCore.QObject.connect(self.arctog, QtCore.SIGNAL("clicked(bool)"), self.arc_tog)
+		self.symtog.toggled[bool].connect(self.set_display_all_syms)
+		self.symtogdisplay.clicked[bool].connect(self.toggle_sym_display)
+		self.triangletog.clicked[bool].connect(self.triangle_tog)
+		self.arctog.clicked[bool].connect(self.arc_tog)
 		self.busy = False
 
 	def set_display_all_syms(self,val):
@@ -1460,14 +1460,14 @@ class SparseSymChoicesWidgets:
 			self.hbl_sym.addWidget(self.mirror_checkbox)
 			self.mirror_checkbox.setChecked(self.target().mirror_enabled())
 			
-		QtCore.QObject.connect(self.sym_combo, QtCore.SIGNAL("currentIndexChanged(QString)"), self.sym_changed)
-		QtCore.QObject.connect(self.sym_text, QtCore.SIGNAL("editingFinished()"), self.sym_number_changed)
+		self.sym_combo.currentIndexChanged[QString].connect(self.sym_changed)
+		self.sym_text.editingFinished.connect(self.sym_number_changed)
 
 		if enable_orient_gen:
-			QtCore.QObject.connect(self.prop_text, QtCore.SIGNAL("editingFinished()"), self.prop_changed)
-			QtCore.QObject.connect(self.angle_label, QtCore.SIGNAL("currentIndexChanged(QString)"), self.angle_label_changed)
-			QtCore.QObject.connect(self.strategy_label, QtCore.SIGNAL("currentIndexChanged(QString)"), self.strategy_changed)
-		QtCore.QObject.connect(self.mirror_checkbox, QtCore.SIGNAL("stateChanged(int)"), self.set_mirror)
+			self.prop_text.editingFinished.connect(self.prop_changed)
+			self.angle_label.currentIndexChanged[QString].connect(self.angle_label_changed)
+			self.strategy_label.currentIndexChanged[QString].connect(self.strategy_changed)
+		self.mirror_checkbox.stateChanged[int].connect(self.set_mirror)
 	
 		vbl.addWidget(maintab)
 		self.busy = False
@@ -1632,8 +1632,8 @@ class EMSymChoiceDialog(QtGui.QDialog):
 	
 		self.dialog_result = None
 	
-		QtCore.QObject.connect(self.ok, QtCore.SIGNAL("clicked(bool)"), self.on_ok)
-		QtCore.QObject.connect(self.cancel, QtCore.SIGNAL("clicked(bool)"), self.on_cancel)
+		self.ok.clicked[bool].connect(self.on_ok)
+		self.cancel.clicked[bool].connect(self.on_cancel)
 		
 
 		
@@ -1712,7 +1712,7 @@ class EMSymInspector(QtGui.QWidget):
 			if self.score_options_hbl != None:
 				self.display_tab.vbl.removeItem(self.score_options_hbl)
 				self.score_options_hbl.deleteLater()
-				QtCore.QObject.disconnect(self.score_options,QtCore.SIGNAL("currentIndexChanged(int)"),self.score_option_changed)
+				self.score_options.currentIndexChanged[int].disconnect(self.score_option_changed)
 			return
 
 		if self.score_options_hbl == None:
@@ -1725,8 +1725,8 @@ class EMSymInspector(QtGui.QWidget):
 			self.score_options_hbl.addWidget(self.cylinder_log)
 			self.display_tab.vbl.addLayout(self.score_options_hbl)
 			
-			QtCore.QObject.connect(self.score_options,QtCore.SIGNAL("currentIndexChanged(int)"),self.score_option_changed)
-			QtCore.QObject.connect(self.cylinder_log,QtCore.SIGNAL("stateChanged(int)"),self.cylinder_log_clicked)
+			self.score_options.currentIndexChanged[int].connect(self.score_option_changed)
+			self.cylinder_log.stateChanged[int].connect(self.cylinder_log_clicked)
 		else:
 			self.score_options.clear()
 			idx = 0
@@ -1855,15 +1855,15 @@ class EMSymInspector(QtGui.QWidget):
 		hbl_l.addWidget(self.arc_divisions)
 		self.display_tab.vbl.addLayout(hbl_l)
 		
-		QtCore.QObject.connect(self.width_scale, QtCore.SIGNAL("valueChanged"), self.target().set_width_scale)
-		QtCore.QObject.connect(self.height_scale, QtCore.SIGNAL("valueChanged"), self.target().set_height_scale)
-		QtCore.QObject.connect(self.arc_width_scale, QtCore.SIGNAL("valueChanged"), self.target().set_arc_width_scale)
+		self.width_scale.valueChanged.connect(self.target().set_width_scale)
+		self.height_scale.valueChanged.connect(self.target().set_height_scale)
+		self.arc_width_scale.valueChanged.connect(self.target().set_arc_width_scale)
 #		QtCore.QObject.connect(self.glcontrast, QtCore.SIGNAL("valueChanged"), self.target().set_GL_contrast)
 #		QtCore.QObject.connect(self.glbrightness, QtCore.SIGNAL("valueChanged"), self.target().set_GL_brightness)
-		QtCore.QObject.connect(self.arc_color,QtCore.SIGNAL("currentIndexChanged(int)"),self.arc_color_changed)
-		QtCore.QObject.connect(self.small_column_color,QtCore.SIGNAL("currentIndexChanged(int)"),self.small_column_color_changed)
-		QtCore.QObject.connect(self.tall_column_color,QtCore.SIGNAL("currentIndexChanged(int)"),self.tall_column_color_changed)
-		QtCore.QObject.connect(self.arc_divisions, QtCore.SIGNAL("valueChanged(int)"), self.target().set_arc_segments)
+		self.arc_color.currentIndexChanged[int].connect(self.arc_color_changed)
+		self.small_column_color.currentIndexChanged[int].connect(self.small_column_color_changed)
+		self.tall_column_color.currentIndexChanged[int].connect(self.tall_column_color_changed)
+		self.arc_divisions.valueChanged[int].connect(self.target().set_arc_segments)
 		
 		return self.display_tab
 	
@@ -1930,11 +1930,11 @@ class EMSymInspector(QtGui.QWidget):
 			self.vbl.addLayout(self.hbl_pt)
 
 		if self.enable_trace:
-			QtCore.QObject.connect(self.tracetog, QtCore.SIGNAL("clicked(bool)"), self.toggle_trace)
-			QtCore.QObject.connect(self.reducetog, QtCore.SIGNAL("clicked(bool)"), self.target().reducetog)
-			QtCore.QObject.connect(self.lowrange, QtCore.SIGNAL("editingFinished()"), self.trace_update)
-			QtCore.QObject.connect(self.highrange, QtCore.SIGNAL("editingFinished()"), self.trace_update)
-			QtCore.QObject.connect(self.tracefile, QtCore.SIGNAL("editingFinished()"), self.trace_update)
+			self.tracetog.clicked[bool].connect(self.toggle_trace)
+			self.reducetog.clicked[bool].connect(self.target().reducetog)
+			self.lowrange.editingFinished.connect(self.trace_update)
+			self.highrange.editingFinished.connect(self.trace_update)
+			self.tracefile.editingFinished.connect(self.trace_update)
 
 		
 	def slider_rotate(self):

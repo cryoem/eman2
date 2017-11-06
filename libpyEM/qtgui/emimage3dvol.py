@@ -611,13 +611,13 @@ class EMVolumeInspector(QtGui.QWidget):
 		
 		self.n3_showing = False
 		
-		QtCore.QObject.connect(self.contrast, QtCore.SIGNAL("valueChanged"), target.set_contrast)
-		QtCore.QObject.connect(self.glcontrast, QtCore.SIGNAL("valueChanged"), target.set_GL_contrast)
-		QtCore.QObject.connect(self.glbrightness, QtCore.SIGNAL("valueChanged"), target.set_GL_brightness)
-		QtCore.QObject.connect(self.bright, QtCore.SIGNAL("valueChanged"), target.set_brightness)
-		QtCore.QObject.connect(self.cubetog, QtCore.SIGNAL("toggled(bool)"), target.toggle_cube)
-		QtCore.QObject.connect(self.defaults, QtCore.SIGNAL("clicked(bool)"), self.set_defaults)
-		QtCore.QObject.connect(self.smp, QtCore.SIGNAL("valueChanged(int)"), target.set_texture_sample)
+		self.contrast.valueChanged.connect(target.set_contrast)
+		self.glcontrast.valueChanged.connect(target.set_GL_contrast)
+		self.glbrightness.valueChanged.connect(target.set_GL_brightness)
+		self.bright.valueChanged.connect(target.set_brightness)
+		self.cubetog.toggled[bool].connect(target.toggle_cube)
+		self.defaults.clicked[bool].connect(self.set_defaults)
+		self.smp.valueChanged[int].connect(target.set_texture_sample)
 	
 	def update_rotations(self,t3d):
 		self.rotation_sliders.update_rotations(t3d)
