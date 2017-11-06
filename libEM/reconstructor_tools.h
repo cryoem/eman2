@@ -444,7 +444,7 @@ namespace EMAN
 
 			virtual string get_desc() const
 			{
-				return "Kaiser-bessel (KB) kernel 8x8x8";
+				return "Kaiser-bessel (KB) kernel 4x4x4";
 			}
 
 			static const string NAME;
