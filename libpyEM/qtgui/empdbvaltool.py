@@ -44,6 +44,8 @@ class EMPDBValWidget(QtGui.QWidget):
 	'''
 	EMPDB versus isosurface visual evaluation
 	'''
+	run_validate = QtCore.pyqtSignal()
+
 	def __init__(self):
 		QtGui.QWidget.__init__(self)
 
@@ -172,7 +174,7 @@ class EMPDBValWidget(QtGui.QWidget):
 		current_pdb = str(self.pdb_line_edit.text())
 		current_mrc = str(self.volume_line_edit.text())
 
-		self.emit(QtCore.SIGNAL("run_validate"), current_mrc, current_pdb, num_transformations, threshold)
+		self.run_validate.emit(current_mrc, current_pdb, num_transformations, threshold)
 		
 	def update_iso_file(self):
 		iso_file_path = str(self.volume_line_edit.text())
