@@ -63,7 +63,9 @@ class Animator:
 		
 			self.update()
 		else:
-			if not QtCore.QObject.disconnect(self.timer, QtCore.SIGNAL("timeout()"), self.time_out):
+			try:
+				self.timer.timeout.disconnect(self.time_out)
+			except:
 				print("failed to disconnect timer")
 			
 			self.timer_enabled = False
