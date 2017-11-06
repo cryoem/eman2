@@ -169,11 +169,11 @@ class MissingWedgeViewer(QtGui.QWidget):
 			self.volcombobox.addItem(str(i))
 			
 		#Add actions
-		QtCore.QObject.connect(self.volcombobox, QtCore.SIGNAL("activated(int)"), self.onVolChange)
-		QtCore.QObject.connect(self.wedgei,QtCore.SIGNAL("editingFinished()"),self.onWedgeChange)
-		QtCore.QObject.connect(self.wedgef,QtCore.SIGNAL("editingFinished()"),self.onWedgeChange)
-		QtCore.QObject.connect(self.setwedgestats,QtCore.SIGNAL("clicked()"),self.onOneVolStats)
-		QtCore.QObject.connect(self.setallwedgestats,QtCore.SIGNAL("clicked()"),self.onManyVolStats)
+		self.volcombobox.activated[int].connect(self.onVolChange)
+		self.wedgei.editingFinished.connect(self.onWedgeChange)
+		self.wedgef.editingFinished.connect(self.onWedgeChange)
+		self.setwedgestats.clicked.connect(self.onOneVolStats)
+		self.setallwedgestats.clicked.connect(self.onManyVolStats)
 		
 		# Use first volume
 		self.onVolChange(0)

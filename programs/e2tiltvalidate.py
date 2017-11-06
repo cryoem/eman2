@@ -560,8 +560,8 @@ class EMValidationPlot(QtGui.QWidget):
 		box.addWidget(self.polarplot)
 		box.addWidget(frame)
 		self.setLayout(box)
-		self.connect(self.polarplot, QtCore.SIGNAL('clusterStats'), self._on_stats)
-		self.connect(self.polarplot, QtCore.SIGNAL('pointIdentity(int)'), self._on_point)
+		self.polarplot.clusterStats.connect(self._on_stats)
+		self.polarplot.pointIdentity[int].connect(self._on_point)
 		
 	def _on_stats(self, stats):
 		""" Set the selected stats """
