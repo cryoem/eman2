@@ -363,7 +363,7 @@ class EMFileType(object) :
 		except :
 			target = EMImageMXWidget()
 			target.set_data(self.path, self.path)
-			QtCore.QObject.connect(target, QtCore.SIGNAL("mx_image_double"), target.mouse_double_click)		# this makes class average viewing work in app mode
+			target.mx_image_double.connect(target.mouse_double_click)		# this makes class average viewing work in app mode
 			# if self.getSetsDB() : target.set_single_active_set(self.getSetsDB())
 			brws.view2ds.append(target)
 
@@ -386,7 +386,7 @@ class EMFileType(object) :
 
 		target = EMImageMXWidget()
 		target.set_data(self.path, self.path)
-		QtCore.QObject.connect(target, QtCore.SIGNAL("mx_image_double"), target.mouse_double_click)
+		target.mx_image_double.connect(target.mouse_double_click)
 		# if self.getSetsDB() : target.set_single_active_set(self.getSetsDB())
 		brws.view2ds.append(target)
 
@@ -1004,6 +1004,7 @@ class EMBdbFileType(EMFileType) :
 
 class EMImageFileType(EMFileType) :
 	"""FileType for files containing a single 2-D image"""
+	module_closed = QtCore.pyqtSignal()
 
 	def __init__(self, path) :
 		if path[:2] == "./" : path = path[2:]
@@ -1026,7 +1027,7 @@ class EMImageFileType(EMFileType) :
 
 		event.accept()
 		# self.app().close_specific(self)
-		self.emit(QtCore.SIGNAL("module_closed"))
+		self.module_closed.emit()
 
 	@staticmethod
 	def name() :
@@ -1992,10 +1993,10 @@ class EMTextInfoPane(EMInfoPane) :
 
 		self.vbl.addLayout(self.hbl)
 
-		QtCore.QObject.connect(self.wfind, QtCore.SIGNAL("valueChanged"), self.find)
-		QtCore.QObject.connect(self.wbutedit, QtCore.SIGNAL('clicked(bool)'), self.buttonEdit)
-		QtCore.QObject.connect(self.wbutcancel, QtCore.SIGNAL('clicked(bool)'), self.buttonCancel)
-		QtCore.QObject.connect(self.wbutok, QtCore.SIGNAL('clicked(bool)'), self.buttonOk)
+		self.wfind.valueChanged.connect(self.find)
+		self.wbutedit.clicked[bool].connect(self.buttonEdit)
+		self.wbutcancel.clicked[bool].connect(self.buttonCancel)
+		self.wbutok.clicked[bool].connect(self.buttonOk)
 
 	def display(self, data) :
 		"""display information for the target EMDirEntry"""
@@ -2067,10 +2068,10 @@ class EMHTMLInfoPane(EMInfoPane) :
 
 		self.vbl.addLayout(self.hbl)
 
-		QtCore.QObject.connect(self.wfind, QtCore.SIGNAL("valueChanged"), self.find)
-		QtCore.QObject.connect(self.wbutedit, QtCore.SIGNAL('clicked(bool)'), self.buttonEdit)
-		QtCore.QObject.connect(self.wbutcancel, QtCore.SIGNAL('clicked(bool)'), self.buttonCancel)
-		QtCore.QObject.connect(self.wbutok, QtCore.SIGNAL('clicked(bool)'), self.buttonOk)
+		self.wfind.valueChanged.connect(self.find)
+		self.wbutedit.clicked[bool].connect(self.buttonEdit)
+		self.wbutcancel.clicked[bool].connect(self.buttonCancel)
+		self.wbutok.clicked[bool].connect(self.buttonOk)
 
 	def display(self, data) :
 		"""display information for the target EMDirEntry"""
@@ -2128,10 +2129,10 @@ class EMPDBInfoPane(EMInfoPane) :
 		self.wbutok.setEnabled(False)
 		self.hbl.addWidget(self.wbutok)
 		self.vbl.addLayout(self.hbl)
-		QtCore.QObject.connect(self.wfind, QtCore.SIGNAL("valueChanged"), self.find)
-		QtCore.QObject.connect(self.wbutedit, QtCore.SIGNAL('clicked(bool)'), self.buttonEdit)
-		QtCore.QObject.connect(self.wbutcancel, QtCore.SIGNAL('clicked(bool)'), self.buttonCancel)
-		QtCore.QObject.connect(self.wbutok, QtCore.SIGNAL('clicked(bool)'), self.buttonOk)
+		self.wfind.valueChanged.connect(self.find)
+		self.wbutedit.clicked[bool].connect(self.buttonEdit)
+		self.wbutcancel.clicked[bool].connect(self.buttonCancel)
+		self.wbutok.clicked[bool].connect(self.buttonOk)
 
 	def display(self, data) :
 		"""display information for the target EMDirEntry"""
@@ -2275,7 +2276,7 @@ class EMBDBInfoPane(EMInfoPane) :
 				self.wbutmisc.append(QtGui.QPushButton(""))
 				self.hbl2.addWidget(self.wbutmisc[-1], j, i)
 				self.wbutmisc[-1].hide()
-				QtCore.QObject.connect(self.wbutmisc[-1], QtCore.SIGNAL('clicked(bool)'), lambda x, v = i*2+j :self.buttonMisc(v))
+				self.wbutmisc[-1].clicked[bool].connect(lambda x, v = i*2+j :self.buttonMisc(v))
 
 		# These just clean up the layout a bit
 
@@ -2288,8 +2289,8 @@ class EMBDBInfoPane(EMInfoPane) :
 
 		self.gbl.addLayout(self.hbl2, 2, 0, 1, 2)
 
-		QtCore.QObject.connect(self.wimnum, QtCore.SIGNAL("valueChanged(int)"), self.imNumChange)
-		QtCore.QObject.connect(self.wimlist, QtCore.SIGNAL("itemSelectionChanged()"), self.imSelChange)
+		self.wimnum.valueChanged[int].connect(self.imNumChange)
+		self.wimlist.itemSelectionChanged.connect(self.imSelChange)
 ##		QtCore.QObject.connect(self.wbutedit, QtCore.SIGNAL('clicked(bool)'), self.buttonEdit)
 
 		self.view2d = []
@@ -2467,7 +2468,7 @@ class EMJSONInfoPane(EMInfoPane) :
 				self.wbutmisc.append(QtGui.QPushButton(""))
 				self.hbl2.addWidget(self.wbutmisc[-1], j, i)
 				self.wbutmisc[-1].hide()
-				QtCore.QObject.connect(self.wbutmisc[-1], QtCore.SIGNAL('clicked(bool)'), lambda x, v = i*2+j :self.buttonMisc(v))
+				self.wbutmisc[-1].clicked[bool].connect(lambda x, v = i*2+j :self.buttonMisc(v))
 
 		# These just clean up the layout a bit
 
@@ -2480,11 +2481,11 @@ class EMJSONInfoPane(EMInfoPane) :
 
 		self.gbl.addLayout(self.hbl2, 2, 0, 1, 2)
 
-		QtCore.QObject.connect(self.wkeylist, QtCore.SIGNAL("itemSelectionChanged()"), self.imSelChange)
-		QtCore.QObject.connect(self.wheadtree, QtCore.SIGNAL("itemExpanded(QTreeWidgetItem*)"), self.treeExp)
-		QtCore.QObject.connect(self.wheadtree, QtCore.SIGNAL("itemCollapsed(QTreeWidgetItem*)"), self.treeExp)
-		QtCore.QObject.connect(self.wheadtree, QtCore.SIGNAL("itemSelectionChanged()"), self.treeSel)
-		QtCore.QObject.connect(self.wheadtree, QtCore.SIGNAL("itemActivated(QTreeWidgetItem*, int)"), self.treeAct)
+		self.wkeylist.itemSelectionChanged.connect(self.imSelChange)
+		self.wheadtree.itemExpanded[QTreeWidgetItem].connect(self.treeExp)
+		self.wheadtree.itemCollapsed[QTreeWidgetItem].connect(self.treeExp)
+		self.wheadtree.itemSelectionChanged.connect(self.treeSel)
+		self.wheadtree.itemActivated[QTreeWidgetItem, int].connect(self.treeAct)
 ##		QtCore.QObject.connect(self.wbutedit, QtCore.SIGNAL('clicked(bool)'), self.buttonEdit)
 		self.view2d = []
 		self.view3d = []
@@ -2676,6 +2677,7 @@ class EMImageInfoPane(EMInfoPane) :
 #---------------------------------------------------------------------------
 
 class EMStackInfoPane(EMInfoPane) :
+	module_closed = QtCore.pyqtSignal()
 	maxim = 500
 
 	def __init__(self, parent = None) :
@@ -2742,7 +2744,7 @@ class EMStackInfoPane(EMInfoPane) :
 				self.wbutmisc.append(QtGui.QPushButton(""))
 				self.hbl2.addWidget(self.wbutmisc[-1], j, i)
 				self.wbutmisc[-1].hide()
-				QtCore.QObject.connect(self.wbutmisc[-1], QtCore.SIGNAL('clicked(bool)'), lambda x, v = i*2+j :self.buttonMisc(v))
+				self.wbutmisc[-1].clicked[bool].connect(lambda x, v = i*2+j :self.buttonMisc(v))
 
 		# These just clean up the layout a bit
 
@@ -2760,8 +2762,8 @@ class EMStackInfoPane(EMInfoPane) :
 		# self.gbl.addLayout(self.hbl2, 2, 0, 1, 2) # JOHN
 		self.gbl.addLayout(self.hbl2, 3, 0, 1, 2) # Jesus
 
-		QtCore.QObject.connect(self.wimnum, QtCore.SIGNAL("valueChanged(int)"), self.imNumChange)
-		QtCore.QObject.connect(self.wimlist, QtCore.SIGNAL("itemSelectionChanged()"), self.imSelChange)
+		self.wimnum.valueChanged[int].connect(self.imNumChange)
+		self.wimlist.itemSelectionChanged.connect(self.imSelChange)
 #		QtCore.QObject.connect(self.wbutedit, QtCore.SIGNAL('clicked(bool)'), self.buttonEdit)
 		self.view2d = []
 		self.view3d = []
@@ -2783,7 +2785,7 @@ class EMStackInfoPane(EMInfoPane) :
 		event.accept()
 
 		# self.app().close_specific(self)
-		self.emit(QtCore.SIGNAL("module_closed"))
+		self.module_closed.emit()
 
 	def hideEvent(self, event) :
 		"""If this pane is no longer visible close any child views"""
@@ -2935,6 +2937,7 @@ class EMInfoWin(QtGui.QWidget) :
 			# If we got here, then we need to make a new instance of the appropriate pane
 
 			if cls == None : print("No class ! (%s)"%str(ftype))
+			winclosed = QtCore.pyqtSignal()
 			pane = cls()
 			i = self.stack.addWidget(pane)		# add the new pane and get its index
 			pane.display(target)
@@ -2942,7 +2945,7 @@ class EMInfoWin(QtGui.QWidget) :
 
 	def closeEvent(self, event) :
 		QtGui.QWidget.closeEvent(self, event)
-		self.emit(QtCore.SIGNAL("winclosed()"))
+		self.winclosed.emit()
 
 class SortSelTree(QtGui.QTreeView) :
 	"""This is a subclass of QtGui.QTreeView. It is almost identical but implements selection processing with sorting.
@@ -2951,7 +2954,7 @@ class SortSelTree(QtGui.QTreeView) :
 	def __init__(self, parent = None) :
 		QtGui.QTreeView.__init__(self, parent)
 		self.header().setClickable(True)
-		self.connect(self.header(), QtCore.SIGNAL("sectionClicked(int)"), self.colclick)
+		self.header().sectionClicked[int].connect(self.colclick)
 		self.scol = -1
 		self.sdir = 1
 
@@ -3009,6 +3012,9 @@ class EMBrowserWidget(QtGui.QWidget) :
 	- embedding BDB: databases into the observed filesystem
 	- remote database access (EMEN2)*
 	"""
+	ok = QtCore.pyqtSignal()
+	cancel = QtCore.pyqtSignal()
+	module_closed = QtCore.pyqtSignal()
 
 	def __init__(self, parent = None, withmodal = False, multiselect = False, startpath = ".", setsmode = None) :
 		"""withmodal - if specified will have ok/cancel buttons, and provide a mechanism for a return value (not truly modal)
@@ -3165,7 +3171,7 @@ class EMBrowserWidget(QtGui.QWidget) :
 				self.hbl2.addWidget(self.wbutmisc[-1], j, i)
 				self.wbutmisc[-1].hide()
 #				self.wbutmisc[-1].setEnabled(False)
-				QtCore.QObject.connect(self.wbutmisc[-1], QtCore.SIGNAL('clicked(bool)'), lambda x, v = i*2+j :self.buttonMisc(v))
+				self.wbutmisc[-1].clicked[bool].connect(lambda x, v = i*2+j :self.buttonMisc(v))
 
 		self.wbutxx = QtGui.QLabel("")
 		self.wbutxx.setMaximumHeight(12)
@@ -3190,24 +3196,24 @@ class EMBrowserWidget(QtGui.QWidget) :
 			self.hbl2.setColumnStretch(7, 1)
 			self.hbl2.setColumnStretch(8, 1)
 
-			QtCore.QObject.connect(self.wbutcancel, QtCore.SIGNAL('clicked(bool)'), self.buttonCancel)
-			QtCore.QObject.connect(self.wbutok, QtCore.SIGNAL('clicked(bool)'), self.buttonOk)
+			self.wbutcancel.clicked[bool].connect(self.buttonCancel)
+			self.wbutok.clicked[bool].connect(self.buttonOk)
 
 		self.gbl.addLayout(self.hbl2, 4, 1)
 
-		QtCore.QObject.connect(self.wbutback, QtCore.SIGNAL('clicked(bool)'), self.buttonBack)
-		QtCore.QObject.connect(self.wbutfwd, QtCore.SIGNAL('clicked(bool)'), self.buttonFwd)
-		QtCore.QObject.connect(self.wbutup, QtCore.SIGNAL('clicked(bool)'), self.buttonUp)
-		QtCore.QObject.connect(self.wbutrefresh, QtCore.SIGNAL('clicked(bool)'), self.buttonRefresh)
-		QtCore.QObject.connect(self.wbutinfo, QtCore.SIGNAL('clicked(bool)'), self.buttonInfo)
-		QtCore.QObject.connect(self.selectall, QtCore.SIGNAL('clicked(bool)'), self.selectAll)
-		QtCore.QObject.connect(self.wtree, QtCore.SIGNAL('clicked(const QModelIndex)'), self.itemSel)
-		QtCore.QObject.connect(self.wtree, QtCore.SIGNAL('activated(const QModelIndex)'), self.itemActivate)
-		QtCore.QObject.connect(self.wtree, QtCore.SIGNAL('doubleClicked(const QModelIndex)'), self.itemDoubleClick)
-		QtCore.QObject.connect(self.wtree, QtCore.SIGNAL('expanded(const QModelIndex)'), self.itemExpand)
-		QtCore.QObject.connect(self.wpath, QtCore.SIGNAL('returnPressed()'), self.editPath)
-		QtCore.QObject.connect(self.wbookmarks, QtCore.SIGNAL('actionTriggered(QAction*)'), self.bookmarkPress)
-		QtCore.QObject.connect(self.wfilter, QtCore.SIGNAL('currentIndexChanged(int)'), self.editFilter)
+		self.wbutback.clicked[bool].connect(self.buttonBack)
+		self.wbutfwd.clicked[bool].connect(self.buttonFwd)
+		self.wbutup.clicked[bool].connect(self.buttonUp)
+		self.wbutrefresh.clicked[bool].connect(self.buttonRefresh)
+		self.wbutinfo.clicked[bool].connect(self.buttonInfo)
+		self.selectall.clicked[bool].connect(self.selectAll)
+		self.wtree.clicked[QModelIndex].connect(self.itemSel)
+		self.wtree.activated[QModelIndex].connect(self.itemActivate)
+		self.wtree.doubleClicked[QModelIndex].connect(self.itemDoubleClick)
+		self.wtree.expanded[QModelIndex].connect(self.itemExpand)
+		self.wpath.returnPressed.connect(self.editPath)
+		self.wbookmarks.actionTriggered[QAction].connect(self.bookmarkPress)
+		self.wfilter.currentIndexChanged[int].connect(self.editFilter)
 
 		self.setsmode = setsmode	# The sets mode is used when selecting bad particles
 		self.curmodel = None	# The current data model displayed in the tree
@@ -3231,7 +3237,7 @@ class EMBrowserWidget(QtGui.QWidget) :
 		# These items are used to do gradually filling in of file details for better interactivity
 
 		self.updtimer = QTimer()		# This causes the actual display updates, which can't be done from a python thread
-		QtCore.QObject.connect(self.updtimer, QtCore.SIGNAL('timeout()'), self.updateDetailsDisplay)
+		self.updtimer.timeout.connect(self.updateDetailsDisplay)
 		self.updthreadexit = False		# when set, this triggers the update thread to exit
 		self.updthread = threading.Thread(target = self.updateDetails)	# The actual thread
 		self.updlist = []				# List of QModelIndex items in need of updating
@@ -3435,14 +3441,14 @@ class EMBrowserWidget(QtGui.QWidget) :
 		qism = self.wtree.selectionModel().selectedRows()
 		self.result = [i.internalPointer().path().replace(os.getcwd(), ".") for i in qism]
 		self.updtimer.stop()
-		self.emit(QtCore.SIGNAL("ok")) # this signal is important when e2ctf is being used by a program running its own eve
+		self.ok.emit() # this signal is important when e2ctf is being used by a program running its own eve
 
 	def buttonCancel(self, tog) :
 		"""When the Cancel button is pressed, a signal is emitted, but getResult should not be called."""
 
 		self.result = []
 		self.updtimer.stop()
-		self.emit(QtCore.SIGNAL("cancel")) # this signal is important when e2ctf is being used by a program running its own eve
+		self.cancel.emit() # this signal is important when e2ctf is being used by a program running its own eve
 		self.close()
 
 	def selectAll(self) :
@@ -3503,7 +3509,7 @@ class EMBrowserWidget(QtGui.QWidget) :
 			if len(qism) == 1 :
 				self.infowin.set_target(qism[0].internalPointer(), self.curft)
 			else : self.infowin.set_target(None, None)
-			QtCore.QObject.connect(self.infowin, QtCore.SIGNAL('winclosed()'), self.infowinClosed)
+			self.infowin.winclosed.connect(self.infowinClosed)
 		else :
 			if self.infowin != None :
 				self.infowin.hide()
@@ -3674,7 +3680,7 @@ class EMBrowserWidget(QtGui.QWidget) :
 		event.accept()
 		self.updtimer.stop()
 		# self.app().close_specific(self)
-		self.emit(QtCore.SIGNAL("module_closed"))
+		self.module_closed.emit()
 
 # This is just for testing, of course
 
@@ -3686,8 +3692,8 @@ def test_result() :
 if __name__ == '__main__' :
 	em_app = EMApp()
 	window = EMBrowserWidget(withmodal = True, multiselect = True)
-	QtCore.QObject.connect(window, QtCore.SIGNAL("ok"), test_result)
-	QtCore.QObject.connect(window, QtCore.SIGNAL("cancel"), test_result)
+	window.ok.connect(test_result)
+	window.cancel.connect(test_result)
 
 	window.show()
 	ret = em_app.exec_()
