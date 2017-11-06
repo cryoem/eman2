@@ -2280,6 +2280,7 @@ def notzero(x):
 
 class MyListWidget(QtGui.QListWidget):
 	"""Exactly like a normal list widget but intercepts a few keyboard events"""
+	keypress = QtCore.pyqtSignal(QtGui.QKeyEvent)
 
 	def keyPressEvent(self,event):
 
@@ -2287,11 +2288,13 @@ class MyListWidget(QtGui.QListWidget):
 			QtGui.QListWidget.keyPressEvent(self,event)
 			return
 
-		self.emit(QtCore.SIGNAL("keypress"),event)
+		self.keypress.emit(event)
 #		event.key()==Qt.Key_I
 
 
 class GUIctf(QtGui.QWidget):
+	module_closed = QtCore.pyqtSignal()
+
 	def __init__(self,application,data,autohp=True,nosmooth=False,highdensity=False):
 		"""Implements the CTF fitting dialog using various EMImage and EMPlot2D widgets
 		'data' is a list of (filename,EMAN2CTF,im_1d,bg_1d,im_2d,bg_2d,qual,bg_1d_low)
@@ -2325,11 +2328,11 @@ class GUIctf(QtGui.QWidget):
 		self.guirealim=EMImage2DWidget(application=self.app())	# This will show the original particle images
 		self.flipim=None
 
-		self.guirealim.connect(self.guirealim,QtCore.SIGNAL("keypress"),self.realimgkey)
-		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousedown"),self.imgmousedown)
-		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousedrag"),self.imgmousedrag)
-		self.guiim.connect(self.guiim,QtCore.SIGNAL("mouseup")  ,self.imgmouseup)
-		self.guiplot.connect(self.guiplot,QtCore.SIGNAL("mousedown"),self.plotmousedown)
+		self.guirealim.keypress.connect(self.realimgkey)
+		self.guiim.mousedown.connect(self.imgmousedown)
+		self.guiim.mousedrag.connect(self.imgmousedrag)
+		self.guiim.mouseup.connect(self.imgmouseup)
+		self.guiplot.mousedown.connect(self.plotmousedown)
 
 
 
@@ -2426,25 +2429,25 @@ class GUIctf(QtGui.QWidget):
 		self.vbl.addLayout(self.hbl_buttons)
 		self.vbl.addLayout(self.hbl_buttons2)
 
-		QtCore.QObject.connect(self.sdefocus, QtCore.SIGNAL("valueChanged"), self.newCTF)
-		QtCore.QObject.connect(self.sbfactor, QtCore.SIGNAL("valueChanged"), self.newCTF)
-		QtCore.QObject.connect(self.sdfdiff, QtCore.SIGNAL("valueChanged"), self.newCTF)
-		QtCore.QObject.connect(self.sdfang, QtCore.SIGNAL("valueChanged"), self.newCTF)
+		self.sdefocus.valueChanged.connect(self.newCTF)
+		self.sbfactor.valueChanged.connect(self.newCTF)
+		self.sdfdiff.valueChanged.connect(self.newCTF)
+		self.sdfang.valueChanged.connect(self.newCTF)
 #		QtCore.QObject.connect(self.sapix, QtCore.SIGNAL("valueChanged"), self.newCTF)
-		QtCore.QObject.connect(self.sampcont, QtCore.SIGNAL("valueChanged"), self.newCTFac)
-		QtCore.QObject.connect(self.sphase, QtCore.SIGNAL("valueChanged"), self.newCTFpha)
-		QtCore.QObject.connect(self.svoltage, QtCore.SIGNAL("valueChanged"), self.newCTF)
-		QtCore.QObject.connect(self.scs, QtCore.SIGNAL("valueChanged"), self.newCTF)
-		QtCore.QObject.connect(self.squality, QtCore.SIGNAL("valueChanged"), self.newQual)
-		QtCore.QObject.connect(self.showzerorings, QtCore.SIGNAL("valueChanged"), self.update_plot)
-		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("currentRowChanged(int)"),self.newSet)
-		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("keypress"),self.listkey)
-		QtCore.QObject.connect(self.splotmode,QtCore.SIGNAL("currentIndexChanged(int)"),self.newPlotMode)
+		self.sampcont.valueChanged.connect(self.newCTFac)
+		self.sphase.valueChanged.connect(self.newCTFpha)
+		self.svoltage.valueChanged.connect(self.newCTF)
+		self.scs.valueChanged.connect(self.newCTF)
+		self.squality.valueChanged.connect(self.newQual)
+		self.showzerorings.valueChanged.connect(self.update_plot)
+		self.setlist.currentRowChanged[int].connect(self.newSet)
+		self.setlist.keypress.connect(self.listkey)
+		self.splotmode.currentIndexChanged[int].connect(self.newPlotMode)
 
-		QtCore.QObject.connect(self.saveparms,QtCore.SIGNAL("clicked(bool)"),self.on_save_params)
-		QtCore.QObject.connect(self.recallparms,QtCore.SIGNAL("clicked(bool)"),self.on_recall_params)
-		QtCore.QObject.connect(self.refit,QtCore.SIGNAL("clicked(bool)"),self.on_refit)
-		QtCore.QObject.connect(self.output,QtCore.SIGNAL("clicked(bool)"),self.on_output)
+		self.saveparms.clicked[bool].connect(self.on_save_params)
+		self.recallparms.clicked[bool].connect(self.on_recall_params)
+		self.refit.clicked[bool].connect(self.on_refit)
+		self.output.clicked[bool].connect(self.on_output)
 
 		self.neednewps=False
 		self.update_data()
@@ -2595,7 +2598,7 @@ class GUIctf(QtGui.QWidget):
 
 		event.accept()
 		self.app().close_specific(self)
-		self.emit(QtCore.SIGNAL("module_closed")) # this signal is important when e2ctf is being used by a program running its own event loop
+		self.module_closed.emit() # this signal is important when e2ctf is being used by a program running its own event loop
 
 	def newData(self,data):
 		self.data=data
