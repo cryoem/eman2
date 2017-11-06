@@ -574,9 +574,9 @@ class EMFileExistsDialog(QtGui.QDialog):
 		vbl.addLayout(hbl)
 		
 		if append_enable:
-			QtCore.QObject.connect(append, QtCore.SIGNAL("clicked(bool)"), self.append_clicked)
-		QtCore.QObject.connect(overwrite, QtCore.SIGNAL("clicked(bool)"), self.overwrite_clicked)
-		QtCore.QObject.connect(cancel, QtCore.SIGNAL("clicked(bool)"), self.cancel_clicked)
+			append.clicked[bool].connect(self.append_clicked)
+		overwrite.clicked[bool].connect(self.overwrite_clicked)
+		cancel.clicked[bool].connect(self.cancel_clicked)
 		
 		self.__result = 0
 		

@@ -129,9 +129,9 @@ class ControlPannel(QtGui.QWidget):
 		self.gridkernel.append(self.add_custom_kernels(7))
 		self.add_kernel_sizes()
 		
-		self.connect(self.filter_but,QtCore.SIGNAL("clicked(bool)"),self.on_filter)
-		QtCore.QObject.connect(self.kernel_combobox, QtCore.SIGNAL("activated(int)"), self.kernel_combobox_changed)
-		QtCore.QObject.connect(self.filter_combobox, QtCore.SIGNAL("activated(int)"), self.filter_combobox_changed)
+		self.filter_but.clicked[bool].connect(self.on_filter)
+		self.kernel_combobox.activated[int].connect(self.kernel_combobox_changed)
+		self.filter_combobox.activated[int].connect(self.filter_combobox_changed)
 		
 		return filterwidget
 	
@@ -170,9 +170,9 @@ class ControlPannel(QtGui.QWidget):
 		
 		processorwidget.setLayout(vboxa)
 		
-		self.connect(self.processor_but,QtCore.SIGNAL("clicked(bool)"),self.on_processor)
-		QtCore.QObject.connect(self.processor_combobox, QtCore.SIGNAL("activated(int)"), self.processor_combobox_changed)
-		QtCore.QObject.connect(self.params_listbox, QtCore.SIGNAL("editingFinished()"), self.params_listbox_changed)
+		self.processor_but.clicked[bool].connect(self.on_processor)
+		self.processor_combobox.activated[int].connect(self.processor_combobox_changed)
+		self.params_listbox.editingFinished.connect(self.params_listbox_changed)
 		
 		return processorwidget
 	
@@ -290,7 +290,7 @@ class ControlPannel(QtGui.QWidget):
 		hbl.addWidget(self.boxsize)
 		layout.addLayout(hbl)
 		
-		self.connect(self.boxsize,QtCore.SIGNAL("editingFinished()"),self.new_boxsize)
+		self.boxsize.editingFinished.connect(self.new_boxsize)
 		
 	def add_boxing_button_group(self,layout):
 		self.tool_button_group_box = QtGui.QGroupBox("Tools")
@@ -316,8 +316,8 @@ class ControlPannel(QtGui.QWidget):
 		self.tool_button_group_box.setLayout(grid)
 		layout.addWidget(self.tool_button_group_box,0,)
 		
-		QtCore.QObject.connect(self.current_tool_combobox, QtCore.SIGNAL("activated(int)"), self.current_tool_combobox_changed)
-		QtCore.QObject.connect(self.quality, QtCore.SIGNAL("activated(int)"), self.quality_score_changed)
+		self.current_tool_combobox.activated[int].connect(self.current_tool_combobox_changed)
+		self.quality.activated[int].connect(self.quality_score_changed)
 	
 	def add_controls(self, layout):
 		butbox = QtGui.QHBoxLayout()
@@ -329,9 +329,9 @@ class ControlPannel(QtGui.QWidget):
 		self.done_but=QtGui.QPushButton("Done")
 		layout.addWidget(self.done_but)
 		
-		self.connect(self.write_box_but,QtCore.SIGNAL("clicked(bool)"),self.on_write_box)
-		self.connect(self.write_but,QtCore.SIGNAL("clicked(bool)"),self.on_write)
-		self.connect(self.done_but,QtCore.SIGNAL("clicked(bool)"),self.on_done)
+		self.write_box_but.clicked[bool].connect(self.on_write_box)
+		self.write_but.clicked[bool].connect(self.on_write)
+		self.done_but.clicked[bool].connect(self.on_done)
 	
 	# This function configures the tools up tool change
 	def current_tool_combobox_changed(self, idx):
@@ -412,7 +412,7 @@ class ManualPicker(QtGui.QWidget):
 		self.mpsplitter = QtGui.QSplitter(QtCore.Qt.Vertical)
 		self.mpsplitter.setFrameShape(QtGui.QFrame.StyledPanel)
 		self.mpsplitter.addWidget(self)
-		self.connect(self.clr_but,QtCore.SIGNAL("clicked(bool)"),self.on_clear)
+		self.clr_but.clicked[bool].connect(self.on_clear)
 	
 	def on_clear(self):
 		for window in self.mediator.windowlist:
@@ -511,12 +511,12 @@ class PairPickerTool(QtGui.QWidget):
 		self.ppsplitter.setFrameShape(QtGui.QFrame.StyledPanel)
 		self.ppsplitter.addWidget(self)
 		
-		self.connect(self.spinbox,QtCore.SIGNAL("valueChanged(int)"),self.on_spinbox)
-		self.connect(self.updateboxes_cb,QtCore.SIGNAL("stateChanged(int)"),self.on_updateboxes)
-		self.connect(self.centertilts_cb,QtCore.SIGNAL("stateChanged(int)"),self.on_centertilts)
-		self.connect(self.clr_but,QtCore.SIGNAL("clicked(bool)"),self.on_clear)
-		self.connect(self.centerboxes_but,QtCore.SIGNAL("clicked(bool)"),self.on_centerboxes_but)
-		self.connect(self.upboxes_but,QtCore.SIGNAL("clicked(bool)"),self.on_upboxes_but)
+		self.spinbox.valueChanged[int].connect(self.on_spinbox)
+		self.updateboxes_cb.stateChanged[int].connect(self.on_updateboxes)
+		self.centertilts_cb.stateChanged[int].connect(self.on_centertilts)
+		self.clr_but.clicked[bool].connect(self.on_clear)
+		self.centerboxes_but.clicked[bool].connect(self.on_centerboxes_but)
+		self.upboxes_but.clicked[bool].connect(self.on_upboxes_but)
 	
 		# Initialize
 		self.spinbox.setValue(self.db.getdefault("ppspinbox",dfl=self.minpp_for_xform))
@@ -530,7 +530,7 @@ class PairPickerTool(QtGui.QWidget):
 		self.mask_combobox.addItem("SolidMask")
 		self.mask_combobox.setCurrentIndex(self.db.getdefault("masktype",dfl=0))
 		
-		QtCore.QObject.connect(self.mask_combobox, QtCore.SIGNAL("activated(int)"), self.mask_combobox_changed)
+		self.mask_combobox.activated[int].connect(self.mask_combobox_changed)
 		
 	def mask_combobox_changed(self, idx):
 		self.db["masktype"] = idx
