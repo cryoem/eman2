@@ -322,11 +322,11 @@ class ParticlesWindow:
 			self.window.updateGL()
 			
 	def connect_signals(self):
-		QtCore.QObject.connect(self.window,QtCore.SIGNAL("mx_image_selected"),self.box_selected)
-		QtCore.QObject.connect(self.window,QtCore.SIGNAL("mx_mousedrag"),self.box_moved)
-		QtCore.QObject.connect(self.window,QtCore.SIGNAL("mx_mouseup"),self.box_released)
-		QtCore.QObject.connect(self.window,QtCore.SIGNAL("mx_boxdeleted"),self.box_image_deleted)
-		QtCore.QObject.connect(self.window,QtCore.SIGNAL("module_closed"),self.module_closed)
+		self.window.mx_image_selected.connect(self.box_selected)
+		self.window.mx_mousedrag.connect(self.box_moved)
+		self.window.mx_mouseup.connect(self.box_released)
+		self.window.mx_boxdeleted.connect(self.box_image_deleted)
+		self.window.module_closed.connect(self.module_closed)
 			
 	def box_selected(self,event,lc):
 		if lc == None or lc[0] == None: return
@@ -383,13 +383,13 @@ class MainWin:
 		self.masktype = "None"
 		
 	def connect_signals(self):
-		QtCore.QObject.connect(self.window,QtCore.SIGNAL("mousedown"),self.mouse_down)
-		QtCore.QObject.connect(self.window,QtCore.SIGNAL("mousedrag"),self.mouse_drag)
-		QtCore.QObject.connect(self.window,QtCore.SIGNAL("mouseup")  ,self.mouse_up  )
-		QtCore.QObject.connect(self.window,QtCore.SIGNAL("keypress"),self.key_press)
-		QtCore.QObject.connect(self.window,QtCore.SIGNAL("mousewheel"),self.mouse_wheel)
-		QtCore.QObject.connect(self.window,QtCore.SIGNAL("mousemove"),self.mouse_move)
-		QtCore.QObject.connect(self.window,QtCore.SIGNAL("module_closed"),self.module_closed)
+		self.window.mousedown.connect(self.mouse_down)
+		self.window.mousedrag.connect(self.mouse_drag)
+		self.window.mouseup.connect(self.mouse_up)
+		self.window.keypress.connect(self.key_press)
+		self.window.mousewheel.connect(self.mouse_wheel)
+		self.window.mousemove.connect(self.mouse_move)
+		self.window.module_closed.connect(self.module_closed)
 	
 	def paint_mask(self,v1x,v1y,v2x,v2y,v3x,v3y,v4x,v4y):
 		if self.masktype == "None":
