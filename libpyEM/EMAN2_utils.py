@@ -219,6 +219,24 @@ def makepath(options, stem='e2dir'):
 	
 	return options
 
+
+def runcmd(options,cmd):
+	#if options.verbose > 8:
+	#	print "(e2spt_classaverage)(runcmd) running command", cmd
+	
+	p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+	text=p.communicate()	
+	p.stdout.close()
+	
+	#if options.verbose > 8:
+	#	print "(e2spt_classaverage)(runcmd) done"
+	
+	#if options.verbose > 9:
+	#	print text
+	
+	return 1
+
+
 def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ralign=None, alircmp=("dot",{}),shrink=None,mask=None,subset=None,prefilt=False,verbose=0):
 	"""Compares one image (target) to a list of many images (reflist). Returns """
 
