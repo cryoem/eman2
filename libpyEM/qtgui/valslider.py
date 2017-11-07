@@ -78,11 +78,11 @@ class ValSlider(QtGui.QWidget):
 	setValue(float) - to programatically change the value
 	emit valueChanged(float)
 	"""
-	enableChanged = QtCore.pyqtSignal()
-	valueChanged = QtCore.pyqtSignal()
-	textChanged = QtCore.pyqtSignal()
-	sliderReleased = QtCore.pyqtSignal()
-	sliderPressed = QtCore.pyqtSignal()
+	enableChanged = QtCore.pyqtSignal(int)
+	valueChanged = QtCore.pyqtSignal(float)
+	textChanged = QtCore.pyqtSignal(float)
+	sliderReleased = QtCore.pyqtSignal(float)
+	sliderPressed = QtCore.pyqtSignal(float)
 
 	def __init__(self, parent=None, rng=None, label=None, value=0,labelwidth=30,showenable=-1,rounding=3):
 		#if not parent: raise Exception,"ValSliders must have parents"
@@ -297,7 +297,7 @@ class ValBox(QtGui.QWidget):
 	"""A ValSlider without the slider part. Everything is the same except that the slider doesn't exist,
 	so for virtually all purposes it could be used as a drop-in replacement.
 	"""
-	enableChanged = QtCore.pyqtSignal()
+	enableChanged = QtCore.pyqtSignal(int)
 	valueChanged = QtCore.pyqtSignal()
 	textChanged = QtCore.pyqtSignal()
 
@@ -448,9 +448,9 @@ class ValBox(QtGui.QWidget):
 class StringBox(QtGui.QWidget):
 	"""A ValBox but it takes arbitrary text. Basically maintains the label/enable functionality for a QLineEdit widget
 	"""
-	enableChanged = QtCore.pyqtSignal()
-	valueChanged = QtCore.pyqtSignal()
-	textChanged = QtCore.pyqtSignal()
+	enableChanged = QtCore.pyqtSignal(int)
+	valueChanged = QtCore.pyqtSignal(str)
+	textChanged = QtCore.pyqtSignal(str)
 
 	def __init__(self, parent=None, label=None, value="",labelwidth=30,showenable=-1):
 		#if not parent: raise Exception,"ValSliders must have parents"
@@ -533,7 +533,7 @@ class StringBox(QtGui.QWidget):
 class CheckBox(QtGui.QWidget):
 	"""A QCheckBox with a label
 	"""
-	enableChanged = QtCore.pyqtSignal()
+	enableChanged = QtCore.pyqtSignal(int)
 	valueChanged = QtCore.pyqtSignal()
 
 	def __init__(self, parent=None, label=None, value="",labelwidth=30,showenable=-1):
@@ -622,7 +622,7 @@ class RangeSlider(QtGui.QWidget):
 	can be set individually or the pair can be moved up and down together. The values are displayed at
 	the top and bottom of the vertical slider.
 	"""
-	valueChanged = QtCore.pyqtSignal()
+	valueChanged = QtCore.pyqtSignal(tuple)
 
 	def __init__(self, parent=None, rng=(0,100), value=(25,75)):
 		#if not parent: raise Exception,"ValSliders must have parents"
@@ -992,7 +992,7 @@ class EMLightControls(QtOpenGL.QGLWidget):
 	Its position can be set via: setAngularPosition
 	@param light, the glLight the this widget uses
 	"""
-	lightPositionMoved = QtCore.pyqtSignal()
+	lightPositionMoved = QtCore.pyqtSignal(list)
 
 	def __init__(self, light, parent=None):
 		QtOpenGL.QGLWidget.__init__(self, parent)
