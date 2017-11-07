@@ -35,6 +35,7 @@
 
 from EMAN2 import *
 import numpy as np
+from EMAN2_utils import runcmd
 
 import weakref
 from PyQt4 import QtCore, QtGui
@@ -1802,12 +1803,12 @@ def commandline_tomoboxer(tomogram,options):
 		filename, file_extension = os.path.splitext('basename')
 		options.output = filename + '.hdf'
 
-	if options.path:
-		from e2spt_classaverage import sptmakepath
-		options = sptmakepath( options, 'spt_boxer')
+	
+	from EMAN2_utils import makepath
+	options = makepath( options, 'sptboxer')
 
-		if options.path not in options.output:
-			options.output = options.path + '/' + options.output
+	if options.path not in options.output:
+		options.output = options.path + '/' + options.output
 
 	xs = []
 	ys = []
@@ -1825,7 +1826,7 @@ def commandline_tomoboxer(tomogram,options):
 	if options.apix:
 		apix=options.apix
 
-	print "\n(e2spt_boxer.py)(extractptcl) reading tomogram header from {}".format(tomogram)
+	print "\n(e2spt_boxer.py)(commandline_tomoboxer) reading tomogram header from {}".format(tomogram)
 	
 	tomo_header=EMData(tomogram,0,True)
 	apix = tomo_header['apix_x']
@@ -1853,7 +1854,7 @@ def commandline_tomoboxer(tomogram,options):
 		newcoordslines.append(newcoordsline)
 		
 		if options.verbose: 
-			print "\n(e2spt_boxer.py)(extractptcl) the coordinates from --coords for particle# {}/{} are x={}, y={}, z={}".format(i,ncoords,x,y,z)
+			print "\n(e2spt_boxer.py)(commandline_tomoboxer) the coordinates from --coords for particle# {}/{} are x={}, y={}, z={}".format(i,ncoords,x,y,z)
 
 		
 	
@@ -1885,7 +1886,7 @@ def commandline_tomoboxer(tomogram,options):
 			e['xform.align3d'] = Transform({"type":'eman','az':0,'alt':0,'phi':0,'tx':0,'ty':0,'tz':0})
 
 			if options.verbose : 
-				print "\n(e2spt_boxer.py)(extractptcl) the extracted particle has this boxsize nx={}, ny={}, nz={}".format( e['nx'], e['ny'], e['nz'] )
+				print "\n(e2spt_boxer.py)(commandline_tomoboxer) the extracted particle has this boxsize nx={}, ny={}, nz={}".format( e['nx'], e['ny'], e['nz'] )
 				print "and the following mean BEFORE normalization".format( e['mean'] )
 
 			e.process_inplace(options.normproc[0],options.normproc[1])
@@ -1897,7 +1898,7 @@ def commandline_tomoboxer(tomogram,options):
 			if options.invert:
 				e=e*-1
 				if options.verbose: 
-					print "(e2spt_boxer.py)(extractptcl) particle has the following mean={} AFTER contrast inversion".format( e['mean'] )
+					print "(e2spt_boxer.py)(commandline_tomoboxer) particle has the following mean={} AFTER contrast inversion".format( e['mean'] )
 			
 			e.write_image(options.output,-1)
 
@@ -1944,11 +1945,11 @@ def commandline_tomoboxer(tomogram,options):
 
 		cmd = 'e2spt_icethicknessplot.py --plotparticleradii --fit --apix ' + str( apix ) + ' --radius ' + str( int(radius) ) + ' --files ' + newcoordsfile
 		
-		print "\n(e2spt_boxer.py)(extractptcl) calling e2spt_icethicknessplot.py to plot particle distribution."
+		print "\n(e2spt_boxer.py)(commandline_tomoboxer) calling e2spt_icethicknessplot.py to plot particle distribution."
 
 		retice = runcmd( options, cmd )
 		if retice:
-			print "\n(e2spt_boxer.py)(extractptcl) done"
+			print "\n(e2spt_boxer.py)(commandline_tomoboxer) done"
 		
 		if options.path:
 			c = os.getcwd()
@@ -1959,7 +1960,7 @@ def commandline_tomoboxer(tomogram,options):
 					os.rename( fi, options.path + '/' + fi )
 
 	elif failed >= ncoords:
-		print "\n(e2spt_boxer.py)(extractptcl) ERROR: No particles were boxed successfully. --coords might be messed up, or --chsrink might be incorrect."
+		print "\n(e2spt_boxer.py)(commandline_tomoboxer) ERROR: No particles were boxed successfully. --coords might be messed up, or --chsrink might be incorrect."
 
 	return options
 
@@ -2001,23 +2002,6 @@ def loadlines(infile):
 			outlines.append(line)
 
 	return outlines
-
-
-def runcmd(options,cmd):
-	if options.verbose > 8:
-		print "(e2spt_classaverage)(runcmd) running command", cmd
-	
-	p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-	text=p.communicate()	
-	p.stdout.close()
-	
-	if options.verbose > 8:
-		print "(e2spt_classaverage)(runcmd) done"
-	
-	#if options.verbose > 9:
-	#	print text
-	
-	return 1
 
 
 '''	
