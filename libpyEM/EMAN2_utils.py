@@ -195,15 +195,12 @@ def idfft2(v,u,amp,phase,nx=256,ny=256,dtype=np.float32,usedegrees=False):
 	return np.sum(np.real(AA*np.exp(2*np.pi*1j*(uuxx+vvyy)+pp)).reshape(len(u),nx,ny),axis=0)
 
 
+#makes a numbered series of subdirectories to compartmentalize results for spt programs when the same programs are run in the same parent directory
 def makepath(options, stem='e2dir'):
 	
 	if not options.path:
 		if options.verbose:
 			print "\n(EMAN2_utils)(makepath), stem is", stem
-	
-	#if options.path and ("/" in options.path or "#" in options.path):
-	#	print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
-	#	sys.exit(1)
 
 	elif options.path: 
 		stem=options.path
@@ -220,19 +217,13 @@ def makepath(options, stem='e2dir'):
 	return options
 
 
+#runs commands at the commnad line for multiple spt programs
 def runcmd(options,cmd):
-	#if options.verbose > 8:
-	#	print "(e2spt_classaverage)(runcmd) running command", cmd
+	import subprocess
 	
 	p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	text=p.communicate()	
 	p.stdout.close()
-	
-	#if options.verbose > 8:
-	#	print "(e2spt_classaverage)(runcmd) done"
-	
-	#if options.verbose > 9:
-	#	print text
 	
 	return 1
 
