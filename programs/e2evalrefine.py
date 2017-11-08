@@ -636,8 +636,14 @@ def main():
 				third = len(fsc)/3
 				fsc=array(fsc[third:third*2])
 				sums=[sum(fsc[rings[k]:rings[k+1]])/(rings[k+1]-rings[k]) for k in xrange(4)]		# sum the fsc into 5 range values
+				fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{};{};{}\n".format(sums[0],sums[1],sums[2],sums[3],cl["ptcl_repr"],alt,az,phi,sums[0]/(1.0001-sums[0])/(cl["ptcl_repr"]+0.01),sums[1]/(1.0001-sums[1])/float(cl["ptcl_repr"]+0.01),i,classes[eo],i,projections[eo]))
+#				if eo==0:
+#					out=open("cfsc{:04d}.txt".format(i),"w")
+#					for x in xrange(4,third-4,2): 
+#						v=sum(fsc[x-6:x+6])/12.0
+#						out.write("{}\t{}\n".format(x,v/(1.0-max(v,.00001))))
+#					out.close()
 				
-				fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{};{};{}\n".format(sums[0],sums[1],sums[2],sums[3],cl["ptcl_repr"],alt,az,phi,i,classes[eo],i,projections[eo]))
 
 		E2end(logid)
 		sys.exit(0)
