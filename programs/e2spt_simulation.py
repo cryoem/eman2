@@ -562,10 +562,15 @@ def randomizer(options, model, tag):
 
 	#if len(transforms) > 2:
 	if len( orientations ) > 2:
+		linestrans = []
 		if randomangles or randomtrans:
+			
 			for i in orientations:
+				
 				t = orientations[i]
+				
 				print "\n t to get rotations and translations from is",t
+				
 				if randomangles:
 					rots=t.get_rotation()
 					
@@ -590,6 +595,11 @@ def randomizer(options, model, tag):
 					z=trans[2]
 					zs.append(z)
 
+					line2writetrans = str(x) + '\t' + str(y) + '\t' + str(z) + '\n'
+					linestrans.append(line2writetrans)
+
+			
+
 		if randomangles:
 			textwriter(options, azs,'az')
 			plotvals( options, azs, 'az' )
@@ -610,6 +620,10 @@ def randomizer(options, model, tag):
 			textwriter(options, zs,'z')
 			plotvals( options, zs,'z' )
 
+			if linestrans:
+				with open(options.path + '/x_y_z_translations.txt','w') as f:
+					print "\n\n\n\n\n\nwwwwwwwwww writing translations text file"
+					f.writelines(linestrans)
 
 	return randptcls,randstackname
 
@@ -645,7 +659,7 @@ def plotvals( options, vals, tag ):
 	elif 'x' in tag or 'y' in tag or 'z' in tag:
 		pass
 
-	calcbins = round( (maxvals - minvals ) / width )
+	calcbins = int(round( (maxvals - minvals ) / width ))
 
 	#count, bins, ignored = plt.hist(vals, 30, normed=True)
 	ignored = plt.hist(vals, calcbins)
@@ -669,16 +683,16 @@ def textwriter(options,data,tag):
 	
 	print "I am in the text writer for this file", name
 	
-	f=open(name,'w')
 	lines=[]
+	
 	for i in range(len(data)):
 			
 		line2write = str(i) + '\t' + str(data[i]) + '\n'
 		#print "THe line to write is"
 		lines.append(line2write)
 	
-	f.writelines(lines)
-	f.close()
+	with open(name,'w') as f:
+		f.writelines(lines)
 
 	return
 
