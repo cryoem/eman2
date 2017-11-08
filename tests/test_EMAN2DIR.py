@@ -5,9 +5,9 @@ import EMAN2
 
 files = [
     "fonts/DejaVuSerif.ttf", 
-    "images/macimages/feather.png", 
-    "images/macimages/EMAN2Icon.png", 
-    "images/macimages/SirEMAN2.png",
+    "images/feather.png", 
+    "images/EMAN2Icon.png", 
+    "images/SirEMAN2.png",
     'lib/pmconfig/icons.json', 
     'lib/pmconfig/spr.json', 
     'lib/pmconfig/tomo.json', 

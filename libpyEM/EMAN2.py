@@ -388,7 +388,7 @@ def get_image_directory():
 	pf = get_platform()
 	dtag = get_dtag()
 	if pf != "Windows":
-		return os.getenv("EMAN2DIR")+ dtag + "images" + dtag + "macimages" + dtag
+		return os.getenv("EMAN2DIR")+ dtag + "images" + dtag
 	else:
 		return os.getenv("EMAN2DIR").replace('\\', '/') + dtag + "images" + dtag
 
