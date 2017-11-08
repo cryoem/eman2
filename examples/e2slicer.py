@@ -2,7 +2,7 @@
 
 '''
 ====================
-Author: Jesus Galaz-Montoya - 02/March/2013, Last update: 18/May/2017
+Author: Jesus Galaz-Montoya - 02/March/2013, Last update: 07/Nov/2017
 ====================
 
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -70,7 +70,6 @@ def main():
 	parser.add_argument("--onlymidz",action='store_true',default=False,help="Only extract the middle slice of the volume parallel to the XY plane.")
 	
 	parser.add_argument("--path",type=str,default=None,help="""Directory to store results in. The default is a numbered series of directories containing the prefix 'slices'; for example, slices_02 will be the directory by default if 'slices_01' already exists.""")
-	
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	parser.add_argument("--singlestack",action='store_true',default=False,help="""This option will save slices from all particles into a single .hdf stack file if --onlymidz or --onlymidy or --onlymidx are provided, instead of one slice file per volume.""")
@@ -119,10 +118,9 @@ def main():
 		options.normproc=parsemodopt(options.normproc)
 
 	
-	'''
-	Check for sanity of some supplied parameters
-	'''
-
+	'''#
+	#Check for sanity of some supplied parameters
+	'''#
 	if options.onlymidz:
 		if options.onlymidx or options.onlymidy:
 			print "ERROR: You can only supply one of --onlymidx, --onlymidy or --onlymidz at a time."
@@ -139,18 +137,16 @@ def main():
 			sys.exit()
 
 
-	'''
-	Make a directory where to store the results
-	'''
-
-	from e2spt_classaverage import sptmakepath
-	options = sptmakepath(options,'slices')
+	'''#
+	#Make a directory where to store the results
+	'''#
+	from EMAN2_utils import makepath
+	options = makepath(options,'sptslices')
 	
 	
-	'''
-	Generate orthogonal slice regions
-	'''
-	
+	'''#
+	#Generate orthogonal slice regions
+	'''#
 	for f in inputs:
 
 		try:
