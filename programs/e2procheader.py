@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Jesus Galaz, 28/March/2013. Updated: 25/September/2013
+# Author: Jesus Galaz, 28/March/2013. Updated: 07/Nov/2017
 # Copyright (c) 2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -53,40 +53,26 @@ def main():
 			
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_pos_argument(name="stack_files",default="",help="Stacks or images to process.")
+	parser.add_argument("--addfilename", action='store_true', default=False, help="""Adds the original filename of a file or stack to the header of each particle. This only works for .hdf files.""")
 
-	parser.add_argument("--refheader",type=str,help="""If supplied, the header of this image
-		will be copied to the header of all images in --input.""")
+	parser.add_argument("--input", type=str, default=None, help="""File or stack for which to fix header parameters. To indicate multiple files, do not use --input. Simply provide the program name followed by the string common to all files to process and *, followed by all parameters of interest. For example, to process all .mrc files in a directory, you would run e2fixheader.py *.mrc <parameters>.""")
 	
-	parser.add_argument("--input", type=str, default='',help="""File or stack for which to fix header 
-		parameters. To indicate multiple files, do not use --input. Simply provide the program name
-		followed by the string common to all files to process and *, followed by all parameters of interest.
-		For example, to process all .mrc files in a directory, you would run e2fixheader.py *.mrc <parameters>. 
-		""")
+	parser.add_argument("--output", type=str, default=None, help="""File to write the fixed stack to. If not provided, the stack in --input will be overwritten.""")
 	
-	parser.add_argument("--output", type=str, help="""File to write the fixed stack to. 
-		If not provided, the stack in --input will be overwritten.""", default='')
+	parser.add_argument("--params", type=str, default=None, help="""Comma separated pairs of parameter:value. The parameter will be changed to the value specified.""")
+	parser.add_argument("--ppid", type=int, default=-1, help="Set the PID of the parent process, used for cross platform PPID")
+
+	parser.add_argument("--refheader",type=str, default=None, help="""If supplied, the header of this image will be copied to the header of all images in --input.""")	
+
+	parser.add_pos_argument(name="stack_files", default=None, help="Stacks or images to process.")
+
+	parser.add_argument("--stem", type=str, default=None, help="""Some parameters have common stems. For example, 'origin_x', 'origin_y', 'origin"x'. Supply the stem and all parameters containing it will be modified.""")	
+	parser.add_argument("--stemval", type=str, default=None, help="""New value for all parameters containing --stem.""")
 	
-	parser.add_argument("--params", type=str, help="""Comma separated pairs of parameter:value. 
-		The parameter will be changed to the value specified.""", default='')
-	
-	parser.add_argument("--stem", type=str, help="""Some parameters have common stems. 
-		For example, 'origin_x', 'origin_y', 'origin"x'. 
-		Supply the stem and all parameters containing it will be modified.""",default='')
-	
-	parser.add_argument("--stemval", type=str, help="""New value for all parameters 
-		containing --stem.""",default='')
-	
-	parser.add_argument("--valtype", type=str, help="""Type of the value to enforce. 
-		It can be: str, float, int, list, or transform.""",default='str')
+	parser.add_argument("--valtype", type=str, default='str', help="""Type of the value to enforce. It can be: str, float, int, list, or transform.""")
 	
 	#parser.add_argument("--addparam", action='store_true', help="""If you want to add a new parameter to the header opposed to overwriting an existing one, turn this option on.""",default=False) 
-	
-	parser.add_argument("--addfilename", action='store_true', help="""Adds 
-		the original filename of a file or stack to the header of each particle.
-		This only works for .hdf files.""",default=False)
-		
-
+			
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness.")
 
 	(options, args) = parser.parse_args()
@@ -98,56 +84,16 @@ def main():
 	
 	t=[]
 	tags=[]
-	outputbase = os.path.basename( options.input ).split('.')[0]
-	
+
 	formats=['.hdf','.mrc','.mrcs','.st','.ali','.rec']
 	
 	originaloutput = options.output
 	
-	if options.output:
-		outputbase = options.output
-		
-		print "\n(e2fixheader)(main)--output is", options.output
-	
 	files2process = []
-	
-	
+
 	if options.input:
 		files2process.append(options.input)
-		#if '*' in options.input:
-		#	ts = options.input.split('*')
-		#	for t in ts:
-		#		if t:
-		#			tags.append( t )		
-		#	
-		#	current = os.getcwd()
-		#	findir = os.listdir( current )
-		#	
-		#	ntags = len(tags)
-		#
-		#	
-		#	for f in findir:
-		#		proceed=0
-		#		for tag in tags:
-		#			if tag in f:
-		#				proceed+=1
-		#	
-		#		if '*' in options.input and int(proceed) == int(ntags):
-		#			#options.input = f
-		#			inputextension = f.split('.')[-1]
-		#			if inputextension in f:
-		#				files2process.append( f )
-		#				print "\nFile appended!", f
-		#			else:
-		#				print "\nERROR: invalid image %s. You must supply .hdf,.mrc,.mrcs,.st,.ali or .rec files" %(f)
-		#				sys.exit(1)
-		#else:
-		#	inputextension = options.input.split('.')[-1]
-		#	if inputextension in options.input:
-		#		files2process.append( options.input )
-		#	else:
-		#		print "\nERROR: invalid image %s. You must supply .hdf,.mrc,.mrcs,.st,.ali or .rec files" %(options.input)
-		#		sys.exit(1)
+		
 	else:
 		if args:
 			files2process = args
@@ -158,10 +104,11 @@ def main():
 	k=0
 	for fyle in files2process:
 		extension = '.'+fyle.split('.')[-1]
+		outputbase = os.path.basename( fyle ).split('.')[0]
 		print "extension is",extension
 		if extension not in formats:
-				print "ERROR: invalid file %s" %(fyle)
-				sys.exit(1)
+			print "ERROR: invalid file %s" %(fyle)
+			sys.exit(1)
 
 		if originaloutput:
 			if len(files2process) > 1:
