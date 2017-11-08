@@ -445,7 +445,7 @@ class HistoryTask(WorkFlowTask,HistoryForm):
 		self.form = EMFormWidget(self.get_history_table())
 		self.form.resize(*self.preferred_size)
 		self.form.setWindowTitle(self.window_title)
-		self.form.setWindowIcon(QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/feather.png"))
+		self.form.setWindowIcon(QtGui.QIcon(get_image_directory() + "feather.png"))
 		get_application().show_specific(self.form)
 		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
 		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
