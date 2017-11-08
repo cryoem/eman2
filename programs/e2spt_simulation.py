@@ -2,7 +2,7 @@
 
 '''
 ====================
-Author: Jesus Galaz - 2011, Last update: May/2017
+Author: Jesus Galaz - 2011, Last update: 07/Nov/2017
 ====================
 
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -48,15 +48,18 @@ def main():
 	"""
 			
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)	
+	
 	parser.add_argument("--clip", type=int,default=0,help="""The final box size to clip the output subtomograms to.""")								
 	parser.add_argument("--gridholesize", type=float,default=1.0,help="""Default=1.0. Size of the carbon hole in micrometers for the simulated grid (this will determine the shifts in defocus for each particle at each tilt angle, depending on the position of the particle respect to the tilt axis; the tilt axis by convention goes parallel to Y through the middle of the tomogram.""")
 	parser.add_argument("--icethickness", type=float,default=0.4,help="""Thickness of the specimen to simulate, in microns. Default=0.4; --icethickness will be used to calculate the size of the tomogram in Z in PIXELS for the simulated tomogram. This parameter will also be used to assign a random coordinate in Z to each subtomogram.""")
 	parser.add_argument("--input", type=str, default='', help="""The name of the input volume from which simulated subtomograms will be generated. The output will be in HDF format, since volume stack support is required. The input CAN be PDB, MRC or and HDF stack. If the input file is PDB or MRC, a version of the supplied model will be written out in HDF format. If the input file is a stack, simulatd subvolumes will be generated from each model in the stack and written to different output stacks. For example, if the input file contains models A and B, two output stacks with simulated subvolumes will be generated.""")
 	parser.add_argument("--invert",action="store_true",default=False,help=""""This will multiply the pixel values by -1. This is intended to make the simulated particles be like real EM data before contrast reversal (black, negative contrast), assuming that they're being generated from a model/image where the protein has positive values. It not supplied, 'white protein' (positive density values) will be used by default (or whatever the original contrast is of the image supplied as a model).""")
+	
 	parser.add_argument("--nosim", action="store_true",default=False,help="""If on, the program will generate stacks of "perfect particles" in different random orientations, but with no missing wedge, no noise, no ctf parameters, etc. The output randstack.hdf will be identical to simptcls.hdf""")	
 	parser.add_argument("--notrandomize",action="store_true",default=False,help="This will prevent the simulated particles from being rotated and translated into random orientations.")
 	parser.add_argument("--nptcls", type=int,default=10,help="""Number of simulated subtomograms to generate per reference model supplied.""")	
 	parser.add_argument("--nslices", type=int,default=61,help="""This will determine the tilt step between slices, depending on tiltrange. For example, to simulate a 2 deg tilt step supply --nslices=61 --tiltrange=60. Recall that --tiltrange goes from - to + the supplied value, and that there is a central slice or projection at 0 deg, for symmetrical tilt series.""")	
+	
 	parser.add_argument("--path",type=str,default='sptsim',help="""Directory to store results in. The default is a numbered series of directories containing the prefix 'sptsim'; for example, sptsim_02 will be the directory by default if 'sptsim_01' already exists.""")
 	parser.add_argument("--pad3d", type=float,default=0.0,help="""Factor to calculate the boxsize to use for 3D reconstruction. For example, if the model in --input has an original boxsize with its largest dimension of 64 and you enter --pad3d=1.5x, then the volume used for 3D reconstruction will be 1.5*64, that is, 96. If you provide --shrink, for example, --shrink=2, then the reconstruction box will be 64/2 * 1.5 = 48. Make sure to supply --clip to clip the simulated subtomograms to the final desired box size; otherwise they will be clipped to the current largest dimension of the supplied model/volume.""")								
 	parser.add_argument("--pad2d", type=float,default=0.0,help="""Factor to pad projections in the tilt series by before reconstruction.""")								
@@ -67,6 +70,7 @@ def main():
 
 	parser.add_argument("--randstack",type=str,default='',help="If you already have a stack of particles (presumably in random orientations) you can supply it here.")
 	parser.add_argument("--reconstructor", type=str,default="fourier",help="""The reconstructor to use to reconstruct the tilt series into a tomogram. Type 'e2help.py reconstructors' at the command line to see all options and parameters available. To specify the interpolation scheme for the fourier reconstruction, specify 'mode'. Options are 'nearest_neighbor', 'gauss_2', 'gauss_3', 'gauss_5', 'gauss_5_slow', 'gypergeom_5', 'experimental'. For example --reconstructor=fourier:mode=gauss_5 """)																				
+	
 	parser.add_argument("--savenoise", action="store_true",default=False,help="""If on, it saves the noise stack for each particle. This can be useful for testing alignment under varying SNR, so that the same noise (just at a different ratio/level) is tested.""")
 	parser.add_argument("--saveorthostack", action="store_true",default=False,help="If on, --nptcls is ignored and you get 3 subtomograms (simulated from the model supplied) which are orthogonal to each other.")
 	parser.add_argument("--saverandstack", action="store_true",default=True,help="""DEPREPCATED. [This option is on by default and there's no way to turn it off. The stack of randomly oriented particles before simulating the missing wedge WILL be saved]. Save the stack of randomly oriented particles, before subtomogram simulation (before the missing wedge and noise are added).""")
@@ -76,6 +80,7 @@ def main():
 	parser.add_argument("--sym",type=str,default='c1',help="If your particle is symmetrical, it is only necessary to randomize orientations within the asymmetric unit only.")
 	parser.add_argument("--simref",action="store_true",default=False,help="This will make a simulated particle in the same orientation as the original input (or reference).")
 	parser.add_argument("--set2tiltaxis",action='store_true',default=False,help="""Default=False. Simulate particles along the tilt axis only.""")
+	
 	parser.add_argument("--tiltaxis",type=str,default='y',help="""Axis to produce projections about. Default is 'y'; the only other valid option is 'x'.""")
 	parser.add_argument('--tiltangles',type=str,default='',help="""File in .tlt or .txt format containing the tilt angle of each tilt image in the tiltseries.""")
 	
@@ -87,6 +92,7 @@ def main():
 	parser.add_argument("--trange", type=int,default=0,help="""Maximum number of pixels to randomly translate each subtomogram in all X, Y and Z. The random translation will be picked between -transrage and +trange; --txrange, --tyrange and --tzrange overwrite --trange for each specified direction.""")
 	parser.add_argument("--terror", type=int,default=0,help="""Range of random translation error in pixels to perturb individual 2-D images in each subtiltseries by along x, y and z. The random translation perturbation will be picked between -terror and +terror. If set, this will overwrite --txerror, --tyerror and --tzerror.""")
 	parser.add_argument("--tiltrange", type=float,default=60,help="""Maximum angular value at which the highest tilt picture will be simulated. Projections will be simulated from -tiltrange to +titlrange. For example, if simulating a tilt series collected from -60 to 60 degrees, enter a --tiltrange value of 60. Note that this parameter will determine the size of the missing wedge.""")
+	
 	parser.add_argument("--verbose", "-v", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness", dest="verbose", action="store", metavar="n")
 
 	'''
