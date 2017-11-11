@@ -88,15 +88,17 @@ def main():
 	if options.normproc: 
 		options.normproc=parsemodopt(options.normproc)
 	'''
-	
-	from e2spt_classaverage import sptOptionsParser
-	options = sptOptionsParser( options )
+	print "\n options should NOT be parsed, e.g., options.mask={}".format(options.mask)
+	from EMAN2_utils import sptOptionsParser
+	options = sptOptionsParser( options, 'e2spt_meanintensityplot')
+
+	print "\n options should be parsed, e.g., options.mask={}".format(options.mask)
 	
 	datafiles = options.input.split(',')
 	
 	
-	from e2spt_classaverage import sptmakepath
-	options = sptmakepath( options, 'meanintensityplots')
+	from EMAN2_utils import makepath
+	options = makepath( options, 'meanintensityplot')
 	
 	
 	intensitiesSeveral = []
@@ -108,10 +110,11 @@ def main():
 	means = []
 	stds = []
 	
-	from e2spt_classaverage import writeParameters
+	from EMAN2_utils import writeParameters
 	cmdwp = writeParameters(options,'e2spt_meanintensityplot.py', 'sptmeanintensity')
 	
 	for datafile in datafiles:
+		print "\ndatafile={}".format(datafile)
 		n = EMUtil.get_image_count(datafile)
 		
 		if options.subset:
@@ -320,6 +323,7 @@ def calcintensities( options, datafile ):
 			mask = clip2D( mask, options.clip)
 	
 	if options.mask:
+		print "\noptions.mask = {}".format(options.mask)
 		mask.process_inplace(options.mask[0],options.mask[1])
 	
 	print "Created mask of size", mask['nx'],mask['ny'],mask['nz']
@@ -523,22 +527,13 @@ def prunevals( options, intensities, mean, std ):
 	
 def plotintensities( intensities, options, datafile, tag='', onefile='yes' ):	
 	import matplotlib.pyplot as plt
-	
-	#msktag=''
-	#if options.mask:	
-	#	msktag = str(options.mask[1]).replace(':','_').replace(' ','').replace('}','').replace('{','').replace("'",'').replace(',','')
-	
-	#if options.maskfile:
-	#	msktag = options.maskfile
-	
-	#msktag=msktag.replace('.hdf','')
-	#msktag=msktag.split('.')[0]
 
-	#print "\n\n\n\n\n\n\nMSK TAG is\n", msktag
 	origtag = tag
 	if tag:
 		tag ='_' + tag
-	plotname = datafile.replace('.hdf', '_MIplotMSK' + tag + '.png')
+	rootname,extension = os.path.splitext(datafile)
+	
+	plotname = rootname.replace(extension, '_MIplotMSK' + tag + '.png')
 
 	print "The total number of particles is", len(intensities)
 	#print "because intensities are", intensities
@@ -558,7 +553,7 @@ def plotintensities( intensities, options, datafile, tag='', onefile='yes' ):
 	print "The standard deviation of the mean intensity distribution for this population is", std
 	
 	if not std:
-		print "ERROR: std=0, which means all intensity values are the same."
+		print "ERROR: std={}, which means all intensity values are the same.".format(std)
 		sys.exit()
 		
 	
@@ -568,13 +563,13 @@ def plotintensities( intensities, options, datafile, tag='', onefile='yes' ):
 	width = (3.5*std)/cuberoot
 	print "Therefore, according to Scott's normal reference rule, width = (3.5*std)/cuberoot(n), the width of the histogram bins will be", width
 	
-	calcbins = (max(intensities) - min(intensities)) / width
+	calcbins = int(round( (max(intensities) - min(intensities)) / width ))
 	
 	if options.bins:
-		calcbins = options.bins
+		calcbins = int(round(options.bins))
 	
 	print "\nAnd the number of bins n = ( max(intensities) - min(intensities) ) / width will thus be", calcbins
-	calcbins = round(calcbins)
+	calcbins = int(round(calcbins))
 	print "rounding to", calcbins
 	
 	statistics.append( 'bins=' + str( calcbins ) + ' , binwidth=' + str( width ) + '\n')
@@ -583,7 +578,7 @@ def plotintensities( intensities, options, datafile, tag='', onefile='yes' ):
 	
 	if not calcbins:
 		print "WARNING: nins=0, which means max and min intensity are the same, which probably means all intensities are zero. Defaulting nbins to number of partilces."
-		calcbins = len(intensities)
+		calcbins = int(len(intensities))
 			
 	statsfile = plotname.replace('.png','_INFO.txt')
 	f=open(options.path + '/' + statsfile,'w')
@@ -639,6 +634,9 @@ def plotintensities( intensities, options, datafile, tag='', onefile='yes' ):
 		plt.clf()
 	
 	return [mean,std]
+
+
+
 
 if __name__ == '__main__':
 	main()
