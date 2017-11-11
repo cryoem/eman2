@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-
 #
-# Author: Jesus Galaz-Montoya 2014 (jgmontoy@bcm.edu); last update 06/14
+# Author: Jesus Galaz-Montoya 2014 (jgalaz@gmail.com); last update 11/17
 # Copyright (c) 2000-2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -45,47 +44,31 @@ def main():
 	"""
 	
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
+
+	parser.add_argument("--boxsize", type=int, default=0, help="""If specified, the output subvolumes will be clipped to this size and centered in the box; otherwise, they will be saved in a boxsize equal to the volume they came from.""")
+
+	parser.add_argument("--coords", type=str, default=None, help="""File with coordinates from where to extract subvolumes.""")
+
+	parser.add_argument("--input", default=None,type=str, help="""3D map or stack of maps to extract smaller regions from.""")
 	
-	parser.add_argument("--input", default='',type=str, help="""3D map or stack of maps to extract smaller regions from.""")
+	parser.add_argument("--mask", type=str, help="""Mask processor to define the shape of regions to extract. Default is None.""", default="")
+	parser.add_argument("--maskfile", type=str, help="""Precomputed mask to use to extract subvolumes from the locations specified through --coords or through --radius and --sym""", default="")
 	
-	parser.add_argument("--output", default='extracts',type=str, help="""String to use as the 'stem' for naming output volumes. Note that for each input volume, you'll get a stack of subvolumes. For example, if you provide a stack with 3 volumes, and you extract 12 subvolumes from each of these, you'll have 3 stacks of extracted subvolumes.""")
+	parser.add_argument("--output", default='extracts',type=str, help="""String to use as the 'stem' for naming output volumes. Note that for each input volume, you'll get a stack of subvolumes. For example, if you provide a stack with 3 volumes (subtomograms), and you extract 12 subvolumes (sub-subtomograms) from each of these, you'll have 3 stacks of extracted subvolumes (sub-subtomograms); e.g., the virus vertexes for each of 3 virus particles.""")
 		
-	parser.add_argument("--path",type=str,help=""""Name of directory where to store the output file(s)""",default="melonscoops")
+	parser.add_argument("--path", type=str, help=""""Name of directory where to store the output file(s)""",default="melonscoops")
 	
+	parser.add_argument("--radius", type=int, help="""Radius (in pixels) where to center the mask for subvolume extraction. Works only for cases in which the asymmetric unit of interest lies along z (for example, vertexes of an icosahedral virus aligned to the symmetry axes such that a vertex lies along z). Supplying --tz should achieve the same results.""", default=0)
+
+	parser.add_argument("--savescoops", action='store_true', default='', help="""Save extracted parts from each particle into a per-particle stack, with extracted subvolumes centered in a box of the size specified by --boxsize, and rotated so that each subvolume is pointing along Z.""")
+	parser.add_argument("--savescoopsinplace", action='store_true', default='', help="""Save extracted parts from each particle into a per-particle stack, with extracted subvolumes 'in-situ'; that is, with the same size and orientation as in the original volume.""")			
 	parser.add_argument("--sym", dest = "sym", default="c1", help = """Specify symmetry. Choices are: c<n>, d<n>, h<n>, tet, oct, icos. For asymmetric reconstruction ommit this option or specify c1.""")
-	
-	parser.add_argument("--vertices", action='store_true', default=False,help="""Only works if --sym=icos. This flag will make the program extract only the 12 vertices from among all 60 symmetry related units.""") 
-	
-	parser.add_argument("--mask",type=str,help="""Mask processor to define the shape of regions to extract. Default is None.""", default="")
-		
-	parser.add_argument("--maskfile",type=str,help="""Precomputed mask to use to extract subvolumes from the locations specified through --coords or through --radius and --sym""", default="")
-		
-	parser.add_argument("--savescoops",action='store_true',default='',help="""Save extracted parts from each particle into a per-particle stack, with extracted subvolumes centered in a box of the size specified by --boxsize, and rotated so that each subvolume is pointing along Z.""")
-	
-	parser.add_argument("--savescoopsinplace",action='store_true',default='',help="""Save extracted parts from each particle into a per-particle stack, with extracted subvolumes 'in-situ'; that is, with the same size and orientation as in the original volume.""")		
-		
-	parser.add_argument("--coords",type=str,help="""File with coordinates from where to extract subvolumes.""", default="")
-		
-	parser.add_argument("--radius",type=int,help="""Radius (in pixels) where to center the mask for subvolume extraction. Works only for cases in which the asymmetric unit of interest lies along z (for example, vertexes of an icosahedral virus aligned to the symmetry axes such that a vertex lies along z). Supplying --tz should achieve the same results.""", default=0)
-	
+
 	parser.add_argument("--tx",type=int,help="""Translation (in pixels) along x to define the mask's center. If supplied with --radius, the latter will be ignored.""", default=0)
-
 	parser.add_argument("--ty",type=int,help="""Translation (in pixels) along y to define the masks's center. If supplied with --radius, the latter will be ignored.""", default=0)
-
 	parser.add_argument("--tz",type=int,help="""Translation (in pixels) along z to define the masks's center. If supplied with --radius, the latter will be ignored.""", default=0)
 	
-	#parser.add_argument("--normproc",type=str,default='',help="Normalization processor applied to particles before alignment. Default is to use normalize. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'")
-	#
-	#parser.add_argument("--threshold",default='',type=str,help="""A threshold applied to the subvolumes after normalization. 
-	#												For example, --threshold=threshold.belowtozero:minval=0 makes all negative pixels equal 0, so that they do not contribute to the correlation score.""", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=10, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
-	#
-	#parser.add_argument("--preprocess",default='',type=str,help="Any processor (as in e2proc3d.py) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=10, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
-		
-	#parser.add_argument("--lowpass",type=str,default='',help="A lowpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=17, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
-
-	#parser.add_argument("--highpass",type=str,default='',help="A highpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=18, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
-
-	parser.add_argument("--boxsize",type=int,default=0,help="""If specified, the output subvolumes will be clipped to this size and centered in the box; otherwise, they will be saved in a boxsize equal to the volume they came from.""")
+	parser.add_argument("--vertices", action='store_true', default=False,help="""Only works if --sym=icos. This flag will make the program extract only the 12 vertices from among all 60 symmetry related units.""") 
 	
 	#parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>:<value>",default=None, guitype='strbox', row=8, col=0, rowspan=1, colspan=2, mode="align")
 	
