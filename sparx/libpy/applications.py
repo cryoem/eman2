@@ -8803,6 +8803,19 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
 			for im in xrange(nima):
 				data[im].set_attr('xform.projection', trans[im])
 
+			from utilities import wrap_mpi_recv, wrap_mpi_send
+			from copy import deepcopy
+			if myid == main_node:
+				all_trans = []
+				for klm in xrange(number_of_proc):
+					if(klm == main_node):  all_trans.append(deepcopy(trans))
+					else:  all_params.append(wrap_mpi_recv(klm, MPI_COMM_WORLD))
+			else:  wrap_mpi_send(trans, main_node, MPI_COMM_WORLD)
+			if myid == main_node:
+				write_text_file(all_trans, os.path.join(outdir, "params_%02d_%04d"%(iref, total_iter)) )
+				del all_trans
+
+
 			if center == -1:
 				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center_MPI(data, total_nima, myid, number_of_proc, main_node)				
 				if myid == main_node:
