@@ -280,7 +280,7 @@ def main():
         sxprocess.py  vol3d.hdf  mask3d.hdf  --adaptive_mask  --nsigma=3.0  --ndilation=1  --kernel_size=9  --gauss_standard_dev=5
         
         Use the user-provided threshold to intially obtain the largest density cluster.
-        sxprocess.py  vol3d.hdf  mask3d.hdf  --adaptive_mask --threshold=0.05  -ndilation=0  --kernel_size=9  --gauss_standard_dev=5
+        sxprocess.py  vol3d.hdf  mask3d.hdf  --adaptive_mask --threshold=0.05  --ndilation=0  --kernel_size=9  --gauss_standard_dev=5
 
    13. Generate binary 3D mask from input 3D volume using the user-provided threshold.
         sxprocess.py  vol3d.hdf  mask3d.hdf  --binary_mask  --threshold=0.05  --ne=3  --nd==3
