@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: Pawel A.Penczek and Edward H. Egelman 05/27/2009 (Pawel.A.Penczek@uth.tmc.edu)
 # Copyright (c) 2000-2006 The University of Texas - Houston Medical School
@@ -52,7 +53,7 @@ def main():
 	(options, args) = parser.parse_args( arglist[1:] )
 
 	if( len(args) != 3):
-		print "usage: " + usage
+		print("usage: " + usage)
 		return None
 
 

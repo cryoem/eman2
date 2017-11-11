@@ -1,3 +1,4 @@
+from __future__ import print_function
 from EMAN2 import *
 from math import *
 import random
@@ -17,20 +18,20 @@ for i in xrange(40000):
 	a.center_to_zero()
 	if i%1000==0:
 #		a.sim_rescale()
-		print a.sim_potential()
+		print(a.sim_potential())
 		a.sim_printstat()
 		img=a.pdb2mrc_by_summation(160,4.52,10.,-1)
 		img.write_image("x.hdf",i/1000)
 
 #a.sim_rescale()
 a.sim_set_pot_parms(3.3,500.0,1000.0,35.9*pi/180.0,500.0,0,None)
-print "------------"
+print("------------")
 for i in xrange(40000):
 	a.sim_minstep_seq(0.02)
 	a.center_to_zero()
 	if i%1000==0:
 #		a.sim_rescale()
-		print a.sim_potential()
+		print(a.sim_potential())
 		a.sim_printstat()
 		img=a.pdb2mrc_by_summation(160,4.52,10.,-1)
 		img.write_image("x.hdf",i/1000+40)

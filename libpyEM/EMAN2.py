@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -54,6 +55,9 @@ import threading
 #from Sparx import *
 
 HOMEDB=None
+
+# This next line is to initialize the Transform object for threadsafety. Utterly stupid approach, but a functional hack
+T=Transform({"type":"2d","alpha":0})
 
 # When generating bispectral invariants, we need 2 parameters, which must be used consistently throughout the system
 bispec_invar_parm=(32,10)
@@ -132,7 +136,7 @@ def list_to_emdata(l):
 def timer(fn,n=1):
 	a=time.time()
 	for i in range(n): fn()
-	print time.time()-a
+	print(time.time()-a)
 
 # This is to remove stdio buffering, only line buffering is done. This is what is done for the terminal, but this extends terminal behaviour to redirected stdio
 # try/except is to prevent errors with systems that already redirect stdio
@@ -192,10 +196,10 @@ is complete. If the process is killed, 'end' may never be set."""
 
 	# We go to the end of the file. Record the location, then write a fixed length string
 	try:
-		hist=file(".eman2log.txt","r+")
+		hist=open(".eman2log.txt","r+")
 		hist.seek(0,os.SEEK_END)
 	except:
-		try: hist=file(".eman2log.txt","w")
+		try: hist=open(".eman2log.txt","w")
 		except: return -1
 	n=hist.tell()
 	hist.write("%s\tincomplete         \t%6d/%6d\t%s\t%s\n"%(local_datetime(),os.getpid(),ppid,socket.gethostname()," ".join(argv)))
@@ -214,7 +218,7 @@ set to indicate an error exit."""
 #	if EMAN2db.BDB_CACHE_DISABLE : return		# THIS MUST REMAIN DISABLED NOW THAT THE CACHE IS DISABLED PERMANENTLY !!!
 
 	try:
-		hist=file(".eman2log.txt","r+")
+		hist=open(".eman2log.txt","r+")
 		hist.seek(n+20)
 	except:
 		return -1
@@ -230,7 +234,7 @@ This function is called to log the end of the current job. n is returned by E2in
 #	if EMAN2db.BDB_CACHE_DISABLE : return		# THIS MUST REMAIN DISABLED NOW THAT THE CACHE IS DISABLED PERMANENTLY !!!
 
 	try:
-		hist=file(".eman2log.txt","r+")
+		hist=open(".eman2log.txt","r+")
 		hist.seek(n+20)
 	except:
 		return -1
@@ -250,7 +254,7 @@ def E2saveappwin(app,key,win):
 
 		E2setappval(app,key,geom)
 	except:
-		print "Error saving window location"
+		print("Error saving window location")
 
 def E2loadappwin(app,key,win):
 	"""restores a geometry saved with E2saveappwin"""
@@ -270,7 +274,7 @@ When settings are read, the local value is checked first, then if necessary, the
 		app.replace(".","_")
 		key.replace(".","_")
 	except:
-		print "Error with E2setappval, app and key must be strings"
+		print("Error with E2setappval, app and key must be strings")
 		return
 
 	try:
@@ -303,7 +307,7 @@ This function will get an application default by first checking the local direct
 		app.replace(".","_")
 		key.replace(".","_")
 	except:
-		print "Error with E2getappval, app and key must be strings"
+		print("Error with E2getappval, app and key must be strings")
 		return None
 
 	try:
@@ -472,7 +476,7 @@ def remove_image(fsp):
 # since there are only 3 odd numbers in the entire list, we remove them, and just limit ourselves to even numbers
 # Values thru 512 are carefully calculated as shown on the wiki. Larger values have prime factors 7 or lower.
 # 9/2/17 removing low numbers not divisible by 4 for convenience
-good_box_sizes=[16, 24, 32, 36, 40, 44, 48, 52, 56, 60, 64, 72, 84, 96, 100, 104, 112, 120, 128, 132, 140, 168, 180, 192, 196, 208, 220, 224, 240, 256,260, 288, 300, 320, 352, 360, 384, 416, 440, 448, 480, 512, 540, 560, 576, 588, 600, 630, 640, 648, 672, 686, 700, 720, 750, 756, 768, 784, 800, 810, 840, 864, 882, 896, 900, 960, 972, 980, 1000, 1008, 1024, 1050, 1080, 1120, 1134, 1152, 1176, 1200, 1250, 1260, 1280, 1296, 1344, 1350, 1372, 1400, 1440, 1458, 1470, 1500, 1512, 1536, 1568, 1600, 1620, 1680, 1728, 1750, 1764, 1792, 1800, 1890, 1920, 1944, 1960, 2000, 2016, 2048, 2058, 2100, 2160, 2240, 2250, 2268, 2304, 2352, 2400, 2430, 2450, 2500, 2520, 2560, 2592, 2646, 2688, 2700, 2744, 2800, 2880, 2916, 2940, 3000, 3024, 3072, 3136, 3150, 3200, 3240, 3360, 3402, 3430, 3456, 3500, 3528, 3584, 3600, 3750, 3780, 3840, 3888, 3920, 4000, 4032, 4050, 4096, 4116, 4200, 4320, 4374, 4410, 4480, 4500, 4536, 4608, 4704, 4800, 4802, 4860, 4900, 5000, 5040, 5120, 5184, 5250, 5292, 5376, 5400, 5488, 5600, 5670, 5760, 5832, 5880, 6000, 6048, 6144, 6174, 6250, 6272, 6300, 6400, 6480, 6720, 6750, 6804, 6860, 6912, 7000, 7056, 7168, 7200, 7290, 7350, 7500, 7560, 7680, 7776, 7840, 7938, 8000, 8064, 8100, 8192, 8232, 8400, 8640, 8748, 8750, 8820, 8960, 9000, 9072, 9216, 9408, 9450, 9600, 9604, 9720, 9800, 10000, 10080, 10206, 10240, 10290, 10368, 10500, 10584, 10752, 10800, 10976, 11200, 11250, 11340, 11520, 11664, 11760, 12000, 12096, 12150, 12250, 12288, 12348, 12500, 12544, 12600, 12800, 12960, 13122, 13230, 13440, 13500, 13608, 13720, 13824, 14000, 14112, 14336, 14400, 14406, 14580, 14700, 15000, 15120, 15360, 15552, 15680, 15750, 15876, 16000, 16128, 16200, 16384]
+good_box_sizes=[16, 24, 32, 36, 40, 44, 48, 52, 56, 60, 64, 72, 84, 96, 100, 104, 112, 120, 128, 132, 140, 168, 180, 192, 196, 208, 216, 220, 224, 240, 256, 260, 288, 300, 320, 352, 360, 384, 416, 440, 448, 480, 512, 540, 560, 576, 588, 600, 630, 640, 648, 672, 686, 700, 720, 750, 756, 768, 784, 800, 810, 840, 864, 882, 896, 900, 960, 972, 980, 1000, 1008, 1024, 1050, 1080, 1120, 1134, 1152, 1176, 1200, 1250, 1260, 1280, 1296, 1344, 1350, 1372, 1400, 1440, 1458, 1470, 1500, 1512, 1536, 1568, 1600, 1620, 1680, 1728, 1750, 1764, 1792, 1800, 1890, 1920, 1944, 1960, 2000, 2016, 2048, 2058, 2100, 2160, 2240, 2250, 2268, 2304, 2352, 2400, 2430, 2450, 2500, 2520, 2560, 2592, 2646, 2688, 2700, 2744, 2800, 2880, 2916, 2940, 3000, 3024, 3072, 3136, 3150, 3200, 3240, 3360, 3402, 3430, 3456, 3500, 3528, 3584, 3600, 3750, 3780, 3840, 3888, 3920, 4000, 4032, 4050, 4096, 4116, 4200, 4320, 4374, 4410, 4480, 4500, 4536, 4608, 4704, 4800, 4802, 4860, 4900, 5000, 5040, 5120, 5184, 5250, 5292, 5376, 5400, 5488, 5600, 5670, 5760, 5832, 5880, 6000, 6048, 6144, 6174, 6250, 6272, 6300, 6400, 6480, 6720, 6750, 6804, 6860, 6912, 7000, 7056, 7168, 7200, 7290, 7350, 7500, 7560, 7680, 7776, 7840, 7938, 8000, 8064, 8100, 8192, 8232, 8400, 8640, 8748, 8750, 8820, 8960, 9000, 9072, 9216, 9408, 9450, 9600, 9604, 9720, 9800, 10000, 10080, 10206, 10240, 10290, 10368, 10500, 10584, 10752, 10800, 10976, 11200, 11250, 11340, 11520, 11664, 11760, 12000, 12096, 12150, 12250, 12288, 12348, 12500, 12544, 12600, 12800, 12960, 13122, 13230, 13440, 13500, 13608, 13720, 13824, 14000, 14112, 14336, 14400, 14406, 14580, 14700, 15000, 15120, 15360, 15552, 15680, 15750, 15876, 16000, 16128, 16200, 16384]
 #good_box_sizes=[16,24,32, 36, 40, 42, 44, 48, 50, 52, 54, 56, 60, 64, 66, 70, 72, 84, 96, 98, 100, 104, 112, 120, 128,130, 132, 140, 150, 154, 168, 180, 182, 192, 196, 208, 210, 220, 224, 240, 250, 256,260, 288, 300, 320, 330, 352, 360, 384, 416, 440, 448, 450, 480, 512, 540, 560, 576, 588, 600, 630, 640, 648, 672, 686, 700, 720, 750, 756, 768, 784, 800, 810, 840, 864, 882, 896, 900, 960, 972, 980, 1000, 1008, 1024, 1050, 1080, 1120, 1134, 1152, 1176, 1200, 1250, 1260, 1280, 1296, 1344, 1350, 1372, 1400, 1440, 1458, 1470, 1500, 1512, 1536, 1568, 1600, 1620, 1680, 1728, 1750, 1764, 1792, 1800, 1890, 1920, 1944, 1960, 2000, 2016, 2048, 2058, 2100, 2160, 2240, 2250, 2268, 2304, 2352, 2400, 2430, 2450, 2500, 2520, 2560, 2592, 2646, 2688, 2700, 2744, 2800, 2880, 2916, 2940, 3000, 3024, 3072, 3136, 3150, 3200, 3240, 3360, 3402, 3430, 3456, 3500, 3528, 3584, 3600, 3750, 3780, 3840, 3888, 3920, 4000, 4032, 4050, 4096, 4116, 4200, 4320, 4374, 4410, 4480, 4500, 4536, 4608, 4704, 4800, 4802, 4860, 4900, 5000, 5040, 5120, 5184, 5250, 5292, 5376, 5400, 5488, 5600, 5670, 5760, 5832, 5880, 6000, 6048, 6144, 6174, 6250, 6272, 6300, 6400, 6480, 6720, 6750, 6804, 6860, 6912, 7000, 7056, 7168, 7200, 7290, 7350, 7500, 7560, 7680, 7776, 7840, 7938, 8000, 8064, 8100, 8192, 8232, 8400, 8640, 8748, 8750, 8820, 8960, 9000, 9072, 9216, 9408, 9450, 9600, 9604, 9720, 9800, 10000, 10080, 10206, 10240, 10290, 10368, 10500, 10584, 10752, 10800, 10976, 11200, 11250, 11340, 11520, 11664, 11760, 12000, 12096, 12150, 12250, 12288, 12348, 12500, 12544, 12600, 12800, 12960, 13122, 13230, 13440, 13500, 13608, 13720, 13824, 14000, 14112, 14336, 14400, 14406, 14580, 14700, 15000, 15120, 15360, 15552, 15680, 15750, 15876, 16000, 16128, 16200, 16384]
 
 def good_size(size):
@@ -584,7 +588,7 @@ def parse_transform(optstr):
 	if len(tpl)==3 :
 		try: tpl=[float(i) for i in tpl]
 		except:
-			raise Exception,"Invalid EMAN transform: %s"%optstr
+			raise Exception("Invalid EMAN transform: %s"%optstr)
 		return Transform({"type":"eman","az":tpl[0],"alt":tpl[1],"phi":tpl[2]})
 
 	# Now we must assume that we have a type:name=val:... specification
@@ -596,11 +600,11 @@ def parse_transform(optstr):
 		s=parm.split("=")
 		try : parms[s[0]]=float(s[1])
 		except :
-			raise Exception,"Invalid transform parameter: %s"%parm
+			raise Exception("Invalid transform parameter: %s"%parm)
 
 	try: ret=Transform(parms)
 	except:
-		raise Exception,"Invalid transform: %s"%optstr
+		raise Exception("Invalid transform: %s"%optstr)
 
 	return ret
 
@@ -632,8 +636,8 @@ def parsemodopt(optstr):
 	for p in op2[1:]:
 		try: k,v=p.split("=")
 		except:
-			print "ERROR: Command line parameter parsing failed on ",optstr
-			print "must have the form name:key=value:key=value"
+			print("ERROR: Command line parameter parsing failed on ",optstr)
+			print("must have the form name:key=value:key=value")
 			return(None,None)
 
 #		v=v.replace("bdb%","bdb:")
@@ -671,20 +675,20 @@ def parsemodopt_logical(optstr):
 
 	if len(p_1)==0: return (optstr,{})
 	if ( len(p_1) != 2 ):
-		print "ERROR: parsemodopt_logical currently only supports single logical expressions"
-		print "Could not handle %s" %optstr
+		print("ERROR: parsemodopt_logical currently only supports single logical expressions")
+		print("Could not handle %s" %optstr)
 		return (None,None,None)
 
 	p_2 = re.findall( parseparmobj_logical, optstr )
 
 	if ( len(p_2) != 1 ):
-		print "ERROR: could not find logical expression in %s" %optstr
+		print("ERROR: could not find logical expression in %s" %optstr)
 		return (None,None,None)
 
 
 	if ( p_2[0] not in ["==", "<=", ">=", "!=", "~=", "<", ">"] ):
-		print "ERROR: parsemodopt_logical %s could not extract logical expression" %(p_2[0])
-		print "Must be one of \"==\", \"<=\", \">=\", \"<\", \">\" \"!=\" or \~=\" "
+		print("ERROR: parsemodopt_logical %s could not extract logical expression" %(p_2[0]))
+		print("Must be one of \"==\", \"<=\", \">=\", \"<\", \">\" \"!=\" or \~=\" ")
 		return (None,None,None)
 
 	return (p_1[0], p_2[0], p_1[1])
@@ -697,19 +701,19 @@ def parsemodopt_operation(optstr):
 	if len(p_1)==0: return (optstr,{})
 
 	if ( len(p_1) != 2 ):
-		print "ERROR: parsemodopt_logical currently only supports single logical expressions"
-		print "Could not handle %s" %optstr
+		print("ERROR: parsemodopt_logical currently only supports single logical expressions")
+		print("Could not handle %s" %optstr)
 		return (None,None,None)
 
 	p_2 = re.findall( parseparmobj_op, optstr )
 	if ( len(p_2) != 1 ):
-		print "ERROR: could not find logical expression in %s" %optstr
+		print("ERROR: could not find logical expression in %s" %optstr)
 		return (None,None,None)
 
 
 	if ( p_2[0] not in ["+=", "-=", "*=", "/=", "%="]):
-		print "ERROR: parsemodopt_logical %s could not extract logical expression" %(p_2[0])
-		print "Must be one of", "+=", "-=", "*=", "/=", "%="
+		print("ERROR: parsemodopt_logical %s could not extract logical expression" %(p_2[0]))
+		print("Must be one of", "+=", "-=", "*=", "/=", "%=")
 		return (None,None,None)
 
 	return (p_1[0], p_2[0], p_1[1])
@@ -720,7 +724,7 @@ def read_number_file(path):
 
 	try:
 		regex = re.compile("[0-9]+")
-		return [int(i) for i in regex.findall(file(path,"r").read())]
+		return [int(i) for i in regex.findall(open(path,"r").read())]
 	except:
 		return []
 
@@ -770,7 +774,7 @@ def euler_display(emdata_list):
 			module.regen_dl()
 		widget.show()
 	else:
-		print "gui mode is disabled"
+		print("gui mode is disabled")
 
 def browse():
 	if GUIMode:
@@ -796,7 +800,7 @@ class EMImage(object):
 			try: image.optimally_resize()
 			except: pass
 			return image
-		else: print "can not instantiate EMImage in non gui mode"
+		else: print("can not instantiate EMImage in non gui mode")
 
 def plot_image_similarity(im1,im2,skipzero=True,skipnearzero=False):
 	"""Will plot pixels in the first image on x vs the same pixel in the second image on y
@@ -866,10 +870,10 @@ def plot(data,data2=None,data3=None,show=1,size=(800,600),path="plot.png"):
 					if data2!=None: pylab.plot(data2)
 					if data3!=None: pylab.plot(data3)
 				except:
-					print "List, but data isn't floats"
+					print("List, but data isn't floats")
 					return
 		else :
-			print "I don't know how to plot that type (%s)"%(str(type(data)))
+			print("I don't know how to plot that type (%s)"%(str(type(data))))
 			return
 
 		pylab.savefig(path)
@@ -1029,12 +1033,12 @@ def num_cpus():
 				except:pass # mem_used is just -1
 
 		if cores < 1:
-			print "warning, the number of cpus was negative (%i), this means the MAC system command (sysctl) has been updated and EMAN2 has not accommodated for this. Returning 1 for the number of cores." %cores
+			print("warning, the number of cpus was negative (%i), this means the MAC system command (sysctl) has been updated and EMAN2 has not accommodated for this. Returning 1 for the number of cores." %cores)
 			cores = 2# just for safety, something could have gone wrong. Maybe we should raise instead
 		return cores
 
 	else:
-		print "error, in num_cpus - uknown platform string:",platform_string," - returning 2"
+		print("error, in num_cpus - uknown platform string:",platform_string," - returning 2")
 		return 2
 
 def gimme_image_dimensions2D( imagefilename ):
@@ -1139,7 +1143,7 @@ def remove_file( file_name, img_couples_too=True ):
 	elif db_check_dict(file_name):
 		db_remove_dict(file_name)
 	else:
-		print "Warning, attempt to remove file (%s) that does not exist. No action taken." %file_name
+		print("Warning, attempt to remove file (%s) that does not exist. No action taken." %file_name)
 		return False
 
 # returns the local date and time as a string
@@ -1279,13 +1283,13 @@ def strip_file_tag(file_name):
 	'''
 	FIXME - could replace with Util.remove_filename_ext()
 	'''
-	print "Using deprecated strip_file_tag function, please remove"
+	print("Using deprecated strip_file_tag function, please remove")
 
 	for i in range(len(file_name)-1,-1,-1):
 		if file_name[i] == '.':
 			break
 	else:
-		print "never found the full stop in", file_name
+		print("never found the full stop in", file_name)
 		return None
 
 	return file_name[0:i]
@@ -1294,7 +1298,7 @@ def get_file_tag(file_name):
 	"""Returns the file identifier associated with a path, ie for "/home/stevel/abc1234.mrc" would return abc1234
 or for "bdb:hello99?1,2,3" would return hello99
 	"""
-	print "Using deprecated get_file_tag function, please switch to base_name()"
+	print("Using deprecated get_file_tag function, please switch to base_name()")
 
 	if file_name[:4].lower()=="bdb:" :
 		dname=file_name.find("#")+1
@@ -1316,7 +1320,7 @@ def item_name(file_name):
 
 	see also: get_file_tag
 	"""
-	print "Using deprecated item_name function, please switch to base_name()"
+	print("Using deprecated item_name function, please switch to base_name()")
 
 
 	file_name=str(file_name)
@@ -1337,8 +1341,8 @@ def base_name( file_name,extension=False,bdb_keep_dir=False,nodir=False ):
 	wraps os.path.basename but returns something sensible for bdb syntax
 	if nodir is set, then the last path element will never be included, otherwise it is included following a set of standard rules.
 	'''
-	if extension : print "base_name() with extension. please check"
-	if bdb_keep_dir : print "base_name() with bdb_keep_dir. please check"
+	if extension : print("base_name() with extension. please check")
+	if bdb_keep_dir : print("base_name() with bdb_keep_dir. please check")
 
 	file_name=str(file_name)
 	if file_name[:4].lower()=="bdb:" :
@@ -1385,12 +1389,12 @@ def file_exists( file_name ):
 
 		if ( file_tag == 'hed' ):
 			if ( not os.path.exists(name+'img') ):
-				print "Warning - %s does not exist" %(name+'img')
+				print("Warning - %s does not exist" %(name+'img'))
 				return False
 			else: return True;
 		elif (file_tag == 'img'):
 			if (not os.path.exists(name+'hed')):
-				print "Warning - %s does not exist" %(name+'hed')
+				print("Warning - %s does not exist" %(name+'hed'))
 				return False
 			else: return True;
 		else:
@@ -1463,24 +1467,24 @@ def check_eman2_type(modoptstring, object, objectname, verbose=True):
 	'''
 	if modoptstring == None:
 		if verbose:
-			print "Error: expecting a string but got python None, was looking for a type of %s" %objectname
+			print("Error: expecting a string but got python None, was looking for a type of %s" %objectname)
 		return False
 
 	if modoptstring == "":
 		if verbose:
-			print "Error: expecting a string was not empty, was looking for a type of %s" %objectname
+			print("Error: expecting a string was not empty, was looking for a type of %s" %objectname)
 		return False
 
 	try:
 		p = parsemodopt(modoptstring)
 		if p[0] == None:
 			if verbose:
-				print "Error: Can't interpret the construction string %s" %(modoptstring)
+				print("Error: Can't interpret the construction string %s" %(modoptstring))
 			return False
 		object.get(p[0], p[1])
 	except RuntimeError:
 		if (verbose):
-			print "Error: the specified %s (%s) does not exist or cannot be constructed" %(objectname, modoptstring)
+			print("Error: the specified %s (%s) does not exist or cannot be constructed" %(objectname, modoptstring))
 		return False
 
 	return True
@@ -1517,7 +1521,7 @@ def qplot(img):
 	"""This will plot a 1D image using qplot
 	Note that display(img) will automatically plot 1D images.
 	"""
-	out=file("/tmp/plt.txt","w")
+	out=open("/tmp/plt.txt","w")
 	for i in range(img.get_xsize()):
 		out.write("%d\t%f\n"%(i,img.get_value_at(i,0)))
 	out.close()
@@ -1526,7 +1530,7 @@ def qplot(img):
 def error_exit(s) :
 	"""A quick hack until I can figure out the logging stuff. This function
 	should still remain as a shortcut"""
-	print s
+	print(s)
 	exit(1)
 
 def write_test_refine_data(num_im=1000):
@@ -1697,11 +1701,11 @@ def test_image_3d(type=0,size=(128,128,128)):
 	size=(128,128,128) """
 	ret=EMData()
 	if len(size) != 3:
-		print "error, you can't create a 3d test image if there are not 3 dimensions in the size parameter"
+		print("error, you can't create a 3d test image if there are not 3 dimensions in the size parameter")
 		return None
 	if type != 2: ret.set_size(*size)
 	else:
-		if size!=(256,256,64) : print "Warning, size set to 256x256x64"
+		if size!=(256,256,64) : print("Warning, size set to 256x256x64")
 		ret.set_size(256,256,64)
 	if type==0 :
 		ret.process_inplace("testimage.axes")
@@ -1786,7 +1790,7 @@ def get_3d_font_renderer():
 		elif pfm == "Windows":
 			font_renderer.set_font_file_name("C:\\WINDOWS\\Fonts\\arial.ttf")
 		else:
-			print "unknown platform:",pfm
+			print("unknown platform:",pfm)
 		return font_renderer
 	except ImportError:
 		#print "Unable to import EMFTGL. The FTGL library may not be installed. Text on 3D and some 2D viewers may not work."
@@ -1802,7 +1806,7 @@ class EMAbstractFactory:
 		_args = [constructor]
 		_args.extend(args)
 #		setattr(self, methodName,Functor(_args, kargs))
- 		setattr(self, methodName, EMFunctor(*_args, **kargs))
+		setattr(self, methodName, EMFunctor(*_args, **kargs))
 
 	def unregister(self, methodName):
 		"""unregister a constructor"""
@@ -1894,7 +1898,7 @@ def clear_dead_cudajobs():
 		try:
 			os.kill(cpid, 0)
 		except OSError:
-			print "removing deadfile ", lock
+			print("removing deadfile ", lock)
 			os.unlink(lock)
 
 ### Very odd function, I can't find it used anywhere, so I'm commenting it out.
@@ -1943,13 +1947,13 @@ if the lst file does not exist."""
 
 		self.path=path
 
-		try: self.ptr=file(path,"rb+")		# file exists
+		try: self.ptr=open(path,"rb+")		# file exists
 		except:
-			if ifexists: raise Exception,"Error: lst file {} does not exist".format(path)
+			if ifexists: raise Exception("Error: lst file {} does not exist".format(path))
 
 			try: os.makedirs(os.path.dirname(path))
 			except: pass
-			self.ptr=file(path,"wb+")	# file doesn't exist
+			self.ptr=open(path,"wb+")	# file doesn't exist
 			self.ptr.write("#LSX\n# This file is in fast LST format. All lines after the next line have exactly the number of characters shown on the next line. This MUST be preserved if editing.\n# 20\n")
 
 		self.ptr.seek(0)
@@ -1958,7 +1962,7 @@ if the lst file does not exist."""
 			if l=="#LST\n" :
 				#### This is very similar to rewrite(), but is used to convert LST files to LSX files
 				self.seekbase=self.ptr.tell()
-				tmpfile=file(self.path+".tmp","wb")
+				tmpfile=open(self.path+".tmp","wb")
 				tmpfile.write("#LSX\n# This file is in fast LST format. All lines after the next line have exactly the number of characters shown on the next line. This MUST be preserved if editing.\n")
 
 				# we read the entire file, checking the length of each line
@@ -1988,14 +1992,14 @@ if the lst file does not exist."""
 				# rename the temporary file over the original
 				os.unlink(self.path)
 				os.rename(self.path+".tmp",self.path)
-				self.ptr=file(self.path,"rb+")
+				self.ptr=open(self.path,"rb+")
 				self.ptr.readline()
 
-			else: raise Exception,"ERROR: The file {} is not in #LSX format".format(self.path)
+			else: raise Exception("ERROR: The file {} is not in #LSX format".format(self.path))
 		self.filecomment=self.ptr.readline()
 		try: self.linelen=int(self.ptr.readline()[1:])
 		except:
-			print "ERROR: invalid line length in #LSX file {}".format(self.path)
+			print("ERROR: invalid line length in #LSX file {}".format(self.path))
 			raise Exception
 		self.seekbase=self.ptr.tell()
 
@@ -2041,7 +2045,7 @@ comment : optional comment string"""
 	def read(self,n):
 		"""Reads the nth record in the file. Note that this does not read the referenced image, which can be
 performed with read_image either here or in the EMData class. Returns a tuple (n extfile,extfile,comment)"""
-		if n>=self.n : raise Exception,"Attempt to read record {} from #LSX {} with {} records".format(n,self.path,self.n)
+		if n>=self.n : raise Exception("Attempt to read record {} from #LSX {} with {} records".format(n,self.path,self.n))
 		self.ptr.seek(self.seekbase+self.linelen*n)
 		ln=self.ptr.readline().strip().split("\t")
 		if len(ln)==2 : ln.append(None)
@@ -2083,7 +2087,7 @@ line length. Used when a line must be added in the middle of the file."""
 
 		self.ptr.seek(0)
 
-		tmpfile=file(self.path+".tmp","wb")
+		tmpfile=open(self.path+".tmp","wb")
 		# copy the header lines
 		tmpfile.write(self.ptr.readline())
 		tmpfile.write(self.ptr.readline())
@@ -2116,7 +2120,7 @@ line length. Used when a line must be added in the middle of the file."""
 		# rename the temporary file over the original
 		os.unlink(self.path)
 		os.rename(self.path+".tmp",self.path)
-		self.ptr=file(self.path,"rb+")
+		self.ptr=open(self.path,"rb+")
 
 #		print "rewrite ",self.linelen
 
@@ -2126,14 +2130,14 @@ files corresponding to even and odd numbered particles. It will return a tuple w
 corresponding to each 1/2 of the data."""
 
 	# create the even and odd data sets
-	print "### Creating virtual stacks for even/odd data"
-	if file(filename,"r").read(4)=="#LSX" :				# LSX (fast LST) format
+	print("### Creating virtual stacks for even/odd data")
+	if open(filename,"r").read(4)=="#LSX" :				# LSX (fast LST) format
 		eset=filename.rsplit(".",1)[0]
 		oset=eset+"_odd.lst"
 		eset+="_even.lst"
-		oute=file(eset,"w")
-		outo=file(oset,"w")
-		inf=file(filename,"r")
+		oute=open(eset,"w")
+		outo=open(oset,"w")
+		inf=open(filename,"r")
 
 		# copy the first 3 lines to both files
 		for i in range(3):

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 from EMAN2  import *
 from sparx  import *
@@ -86,10 +87,10 @@ print_col(kernel,n//2)
 a = model_circle(0.5,mx,my)
  
 scale = fc/0.5
-print ttime()
+print(ttime())
 #b = rsconvolution(a,kernel)
 b = a.downsample(sb, scale)
-print ttime()
+print(ttime())
 info(a)
 info(b)
 mmx = b.get_xsize()
@@ -102,15 +103,15 @@ for i in xrange(mmx):
 	d.append(p.get_value_at(i,mmy//2))
 del p
 write_text_file(d,'toto.txt')
-print ttime()
+print(ttime())
 
 b = filt_tanl(a, fc, 0.05)
 
-print ttime()
+print(ttime())
 exit()
 mmx = smallprime(mx,3)
 mmy = smallprime(my,3)
 a = Util.window(a,mmx,mmy,1,0,0,0)
 b = filt_gaussl(a, 0.2)
-print ttime()
+print(ttime())
 

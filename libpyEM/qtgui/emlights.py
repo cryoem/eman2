@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -887,7 +888,7 @@ class EMLightsInspectorBase:
 		if len(selected_items) == 0:
 			return None
 		if len(selected_items) > 1:
-			print "write a message box to say there is a function that assumes only one light is selected"
+			print("write a message box to say there is a function that assumes only one light is selected")
 			return None
 		
 		item = selected_items[0]
@@ -1036,7 +1037,7 @@ class EMLightsInspectorBase:
 				self.refresh_light_states()
 				break
 		else:
-			print "write a message box to say that there are no available lights!"
+			print("write a message box to say that there are no available lights!")
 	
 	def new_point_source_light(self):
 		for i,l in enumerate(self.gl_lights):
@@ -1050,7 +1051,7 @@ class EMLightsInspectorBase:
 				self.refresh_light_states()
 				break
 		else:
-			print "write a message box to say that there are no available lights!"
+			print("write a message box to say that there are no available lights!")
 			
 		#print "new directional",glGetInteger(GL_MAX_LIGHTS)
 		#for i in range(glGetInteger(GL_MAX_LIGHTS)):

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
@@ -58,7 +59,7 @@ def main():
 
 
 	if len(args) != 3 and len(args) != 4:
-		print usage
+		print(usage)
 		sys.exit(-1)
 
 	prj_stack = args[0]

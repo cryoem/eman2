@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Liwei Peng, 01/30/2005 (sludtke@bcm.edu)
@@ -605,7 +606,7 @@ class TestEMUtils(unittest.TestCase):
         self.assertEqual(EMUtil.get_imagetype_name(EMUtil.ImageType.IMAGE_PNG), 'PNG')
         self.assertEqual(EMUtil.get_imagetype_name(EMUtil.ImageType.IMAGE_HDF), 'HDF5')
         self.assertEqual(EMUtil.get_imagetype_name(EMUtil.ImageType.IMAGE_DM3), 'GatanDM3')
-        self.assertEqual(EMUtil.get_imagetype_name(EMUtil.ImageType.IMAGE_DM3), 'GatanDM4')
+        self.assertEqual(EMUtil.get_imagetype_name(EMUtil.ImageType.IMAGE_DM4), 'GatanDM4')
         self.assertEqual(EMUtil.get_imagetype_name(EMUtil.ImageType.IMAGE_TIFF), 'TIFF')
         self.assertEqual(EMUtil.get_imagetype_name(EMUtil.ImageType.IMAGE_VTK), 'VTK')
         self.assertEqual(EMUtil.get_imagetype_name(EMUtil.ImageType.IMAGE_SAL), 'HDR')
@@ -650,7 +651,7 @@ class TestEMUtils(unittest.TestCase):
         
         EMUtil.delete_hdf_attribute(file, 'count')
         d = img.get_attr_dict()
-        self.assertEqual(d.has_key('count'), False)
+        self.assertEqual('count' in d, False)
         
         testlib.safe_unlink(file)
         

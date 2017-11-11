@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 # Muyuan Chen 2015-10
 from EMAN2 import *
 import numpy as np
@@ -43,7 +44,7 @@ def main():
 	
 	if options.denthr<0:
 		e=EMData(mapin)
-		print "Density threshold not provided, using mean+sigma..."
+		print("Density threshold not provided, using mean+sigma...")
 		options.denthr=e["mean"]+e["sigma"]
 	
 	cmd="e2segment3d.py {} --pdbout={} --process=segment.kmeans:ampweight=1:nseg={}:verbose=1:minsegsep=1:pseudoatom=1:thr={}".format(mapin,segout,options.natoms,options.denthr)
@@ -61,7 +62,7 @@ def main():
 	E2end(logid)
 	
 def run(cmd):
-	print cmd
+	print(cmd)
 	launch_childprocess(cmd)
 	
 	

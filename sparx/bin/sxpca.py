@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: Pawel A.Penczek and Edward H. Egelman 05/27/2009 (Pawel.A.Penczek@uth.tmc.edu)
 # Copyright (c) 2000-2006 The University of Texas - Houston Medical School
@@ -59,7 +60,7 @@ def main():
 	output_stack = args[-1]
 
 	if options.nvec is None:
-		print "Error: number of components is not given"
+		print("Error: number of components is not given")
 		sys.exit(-2) 
 
 	isRoot = True

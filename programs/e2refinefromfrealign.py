@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 # Author: Stephen Murray (scmurray@bcm.edu), 2/14/11
 # Copyright (c) 2000-2011 Baylor Colelge of Medicine
 
@@ -35,8 +36,8 @@ optionList = pyemtbx.options.get_optionlist(sys.argv[1:])
 (options, args) = parser.parse_args()
 
 if len(args) != 1:
-   print "usage:" + usage
-   print "Please run'" + progname + " -h' for detailed options"
+   print("usage:" + usage)
+   print("Please run'" + progname + " -h' for detailed options")
    sys.exit(1)
 
 E2n = E2init(args,options.ppid)
@@ -125,7 +126,7 @@ for i in range(len(l)):
 
 
 if len(ptcl_dict_out) != len(ptcl_dict_in):
-   print "3D map has been fixed but FreAlign was not run in mode 1 so no fsc can be done"
+   print("3D map has been fixed but FreAlign was not run in mode 1 so no fsc can be done")
    exit(-1)
 f = open(dir + "/" + OUTFILE,'w')
 f.write("Particle    Psi-Diff   Theta-Diff   Phi-Diff   X-Shift-Diff  Y-Shift-Diff\n")
@@ -155,6 +156,6 @@ s=' Average{0:12.3f}{1:13.3f}{2:11.3f}{3:15.3f}{4:14.3f}\n'.format(phi_sum/len(p
 f.write(s)
 f.close()
 
-print "e2refinefromfrealign.py finished"
+print("e2refinefromfrealign.py finished")
 
 E2end(E2n)

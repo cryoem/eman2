@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: James Michael Bell 08/06/2015
@@ -60,7 +61,7 @@ def main():
 	ptcls = options.project+'/particles/'+options.average[:-4] + '_ptcls.hdf'
 	prepost = []
 	for b,box in enumerate(boxes[0:5]):
-		print('box {}/{}'.format(b+1,len(boxes)))
+		print(('box {}/{}'.format(b+1,len(boxes))))
 		ptcl = EMData(ptcls,b)
 		ptcl.process_inplace('normalize.edgemean')
 		# iteratively align particle frames to the avg of all of the particle's frames

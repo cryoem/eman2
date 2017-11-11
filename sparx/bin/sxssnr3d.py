@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
@@ -40,7 +41,7 @@ import sys
 
 def main():
 	arglist = []
-    	for arg in sys.argv: arglist.append( arg )
+	for arg in sys.argv: arglist.append( arg )
 	progname = os.path.basename(arglist[0])
 	usage = progname + " stack <output_volume> <ssnr_text_file> <reference_structure> <2Dmaskfile> --ou=outer_radius --rw=ring_width --npad=padding_times --CTF --MPI --sign=CTF_sign --sym=symmetry --random_angles=0"
 	parser = OptionParser(usage,version=SPARXVERSION)
@@ -54,8 +55,8 @@ def main():
 	parser.add_option("--random_angles",  type= "int",      default= "0",      help="  randomize Euler angles: 0 - no, 1 - only psi, 2 - all three")
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 1 or len(args) > 4:
-    		print "usage: " + usage
-		print "Please run '" + progname + " -h' for detailed options"
+		print("usage: " + usage)
+		print("Please run '" + progname + " -h' for detailed options")
 	else:
 		stack = args[0]
 		if   len(args) == 1:

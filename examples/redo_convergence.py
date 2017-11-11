@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 04/22/2010 (sludtke@bcm.edu)
@@ -48,14 +49,14 @@ else : dirs=[i for i in os.listdir(".") if "refine_"==i[:7] and len(i)==9]
 # iterates over all refine directories
 for d in dirs:
 
-	print "Updating ",d
+	print("Updating ",d)
 	
 	db2=db_open_dict("bdb:%s#register"%d,True)
 	try :
 		initm=db2["cmd_dict"]["model"]
-		print " Initial model ",initm
+		print(" Initial model ",initm)
 	except:
-		print "No initial model recorded"
+		print("No initial model recorded")
 		initm=None
 
 	db=db_open_dict("bdb:%s#convergence.results"%d)
@@ -78,7 +79,7 @@ for d in dirs:
 			saxis = [x/apix for x in xaxis]
 
 			db2[dictname]=[saxis[1:],fsc[1:]]
-			print "  %s (%s - %s)"%(dictname,"bdb:%s#%s"%(d,i),"bdb:%s_odd#%s"%(d[:-5],i))
+			print("  %s (%s - %s)"%(dictname,"bdb:%s#%s"%(d,i),"bdb:%s_odd#%s"%(d[:-5],i)))
 
 #			EMAN2fsc.db_compute_fsc(a, b, a["apix_x"], base, dictname)
 			
@@ -92,7 +93,7 @@ for d in dirs:
 		if i=="threed_filt_00" : k.append("init_00_fsc")
 		elif "masked" in i : k.append("even_odd_%s_fsc"%i.split("_")[2])
 		else : k.append("%02d_%02d_fsc"%(n-1,n))
-	print " %d comparisons"%len(k)
+	print(" %d comparisons"%len(k))
 	# iterates over all iterations in a directory
 	for n in k:
 		ns=n.split("_")
@@ -117,7 +118,7 @@ for d in dirs:
 				a=EMData("bdb:%s#threed_filt_%s"%(d,ns[0]),0)
 				b=EMData("bdb:%s#threed_filt_%s"%(d,ns[1]),0)
 			except:
-				print "Error with ",n,"bdb:%s#threed_filt_%s"%(d,ns[0]),"bdb:%s#threed_filt_%s"%(d,ns[1])
+				print("Error with ",n,"bdb:%s#threed_filt_%s"%(d,ns[0]),"bdb:%s#threed_filt_%s"%(d,ns[1]))
 				continue
 
 		# compute FSC and overwrite original results
@@ -132,5 +133,5 @@ for d in dirs:
 
 		#print "write"
 		db[n]=[saxis[1:],fsc[1:]]
-		print "  ",n
+		print("  ",n)
 

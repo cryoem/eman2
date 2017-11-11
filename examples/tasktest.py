@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 04/25/2009 (sludtke@bcm.edu)
@@ -57,25 +58,25 @@ if not os.path.exists("testdata.hdf") :
 task=EMTask("test",{"input":("cache","testdata.hdf",0,5),"transform":Transform()},{})
 
 etc=EMTaskCustomer("dc:localhost:9990")
-print "Est %d CPUs"%etc.cpu_est()
+print("Est %d CPUs"%etc.cpu_est())
 tid=etc.send_task(task)
-print "Task submitted tid=",tid
+print("Task submitted tid=",tid)
 
 while 1:
 	st=etc.check_task((tid,))[0]
-	print "%d%%"%st
+	print("%d%%"%st)
 	if st==100: break
 	time.sleep(15)
 
 r = etc.get_results(tid)
-print r
+print(r)
 
 transforms = r[1]["transforms"]
 for t in transforms:
-	print t
+	print(t)
 
 data = r[1]["data"]
 for d in data:
 	t = d.get_attr("xform.projection")
-	print t
+	print(t)
 

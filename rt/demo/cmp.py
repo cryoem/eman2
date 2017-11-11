@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -44,4 +45,4 @@ img2.read_image(testimg)
 
 cmpscore = img1.cmp("dot", img2, {"abc":EMObject(12)})
 
-print "cmp score = ", cmpscore
+print("cmp score = ", cmpscore)

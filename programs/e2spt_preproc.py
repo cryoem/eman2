@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Jesus Galaz-Montoya 03/2011, 
@@ -90,7 +91,7 @@ def main():
 	(options, args) = parser.parse_args()
 	
 	logger = E2init(sys.argv, options.ppid)
-	print "\n(e2spt_preproc)(main) started log"
+	print("\n(e2spt_preproc)(main) started log")
 	
 	
 	
@@ -109,7 +110,7 @@ def main():
 		try:
 			options.input = sys.argv[1]
 		except:
-			print "\n(e2spt_preproc)(main) ERROR: invalid input file"
+			print("\n(e2spt_preproc)(main) ERROR: invalid input file")
 			
 	if options.mask or options.maskfile or options.threshold or options.clip or options.threshold or options.normproc or options.preprocess or options.lowpass or options.highpass or int(options.shrink) > 1:
 		
@@ -122,18 +123,18 @@ def main():
 			if '.hdf' in options.output[-4:]:
 				preprocstack = options.output
 			else:
-				print "\n(e2spt_preproc)(main) ERROR: '.hdf' must be the last four characters of the output filename."
+				print("\n(e2spt_preproc)(main) ERROR: '.hdf' must be the last four characters of the output filename.")
 			
-		print "\n(e2spt_preproc)(main) output stack will be %s" %( preprocstack)
+		print("\n(e2spt_preproc)(main) output stack will be %s" %( preprocstack))
 
 		n = 0
 		try:
 			n = EMUtil.get_image_count( options.input )
 		except:
-			print "\n(e2spt_preproc)(main) ERROR: --input stack seems to be invalid"
+			print("\n(e2spt_preproc)(main) ERROR: --input stack seems to be invalid")
 			sys.exit()
 		
-		print "\n(e2spt_preproc)(main) number of particles is %d" %( n) 
+		print("\n(e2spt_preproc)(main) number of particles is %d" %( n)) 
 		
 		
 		c = os.getcwd()
@@ -149,7 +150,7 @@ def main():
 				dimg.write_image( preprocstack, i )
 		
 		else:
-			print "\n(e2spt_preproc)(main) WARNING: a file with the name of the output stack %s is already in the current directory and will be DELETED" %( preprocstack )
+			print("\n(e2spt_preproc)(main) WARNING: a file with the name of the output stack %s is already in the current directory and will be DELETED" %( preprocstack ))
 			os.remove( preprocstack )
 			
 			dimg = EMData(8,8,8)
@@ -173,10 +174,10 @@ def main():
 		#dimglarge.write_image(preprocstack,n-1)
 
 		if options.verbose:
-			print "\n(e2spt_preproc)(main) wrote dummy ptcls to %s" %( preprocstack)
+			print("\n(e2spt_preproc)(main) wrote dummy ptcls to %s" %( preprocstack))
 	
 		
-		print "\n(e2spt_preproc)(main) - INITIALIZING PARALLELISM!\n"
+		print("\n(e2spt_preproc)(main) - INITIALIZING PARALLELISM!\n")
 		
 		if options.parallel:
 			from EMAN2PAR import EMTaskCustomer
@@ -184,7 +185,7 @@ def main():
 			pclist=[options.input]
 
 			etc.precache(pclist)
-			print "\n(e2spt_preproc)(main) - precaching --input"
+			print("\n(e2spt_preproc)(main) - precaching --input")
 
 			tasks=[]
 			results=[]
@@ -213,7 +214,7 @@ def main():
 		if options.parallel and tasks:
 			tids = etc.send_tasks(tasks)
 			if options.verbose: 
-				print "\n(e2spt_preproc)(main) preprocessing %d tasks queued" % (len(tids)) 
+				print("\n(e2spt_preproc)(main) preprocessing %d tasks queued" % (len(tids))) 
 
 	
 			results = get_results( etc, tids, options )
@@ -226,7 +227,7 @@ def main():
 		#cache needs to be reloaded with the new options.input		
 		
 	else:
-		print "\n(e2spt_preproc)(main) Nothing to do. No preprocessing parameters specified."
+		print("\n(e2spt_preproc)(main) Nothing to do. No preprocessing parameters specified.")
 		
 	E2end(logger)
 	
@@ -259,18 +260,18 @@ class Preproc3DTask(JSTask):
 		i = self.classoptions['ptclnum']
 		#image=self.data["image"]
 		#print "simage is", simagefile
-		print "ptclnum is i",i
+		print("ptclnum is i",i)
 		
 		if isinstance(self.data["image"],EMData):
 			simage=self.data["image"]
 		else: 
 			simage=EMData(self.data["image"][1],self.data["image"][2])
-			print "image was actually file",image
+			print("image was actually file",image)
 			
 		#simage = self.data['image']
 		
 		if options.verbose:
-			print "in class, outname %s and i=%d " %(outname, i)
+			print("in class, outname %s and i=%d " %(outname, i))
 		
 		
 		preprocfunc( simage, options, i, outname )
@@ -287,7 +288,7 @@ def preprocfunc( simage, options, i, outname, simulation=False, resizeonly=False
 	#	simage = fyle.copy()
 
 	if options.verbose:
-		print "\n(e2spt_preproc) preprocessing particle", i
+		print("\n(e2spt_preproc) preprocessing particle", i)
 
 	
 	
@@ -297,23 +298,23 @@ def preprocfunc( simage, options, i, outname, simulation=False, resizeonly=False
 		apix = simage['apix_x']
 	
 		if options.verbose > 9:
-			print "\n(e2spt_preproc)(preprocfunc)apix is %f" % (apix)
+			print("\n(e2spt_preproc)(preprocfunc)apix is %f" % (apix))
 	
 		'''
 		Make the mask first 
 		'''
 		if options.verbose > 9:
-			print "\n(e2spt_preproc)(preprocfunc) masking particle", i
+			print("\n(e2spt_preproc)(preprocfunc) masking particle", i)
 	
 		maskimg = EMData( int(simage["nx"]), int(simage["ny"]), int(simage["nz"]) )
 		maskimg.to_one()
-		print "\n(e2spt_preproc)(preprocfunc) done creating mask"
+		print("\n(e2spt_preproc)(preprocfunc) done creating mask")
 
 	
 		if options.mask and options.mask != 'None' and options.mask != 'none':
 			#if options.verbose:
 			#print "\n(e2spt_preproc)(preprocfunc) this is the mask I will apply: %s,%s" %(options.mask[0],options.mask[1]) 
-			print "masking"
+			print("masking")
 			maskimg.process_inplace(options.mask[0],options.mask[1])
 	
 			#print ("\n(e2spt_preproc)(preprocfunc) --mask provided: %s" %( options.mask))
@@ -329,11 +330,11 @@ def preprocfunc( simage, options, i, outname, simulation=False, resizeonly=False
 				maskimg.mult( maskfileimg )
 			
 				if options.verbose > 9:
-					print "including --maskfile in mask"
+					print("including --maskfile in mask")
 				#print "\n(e2spt_preproc)(preprocfunc)a maskfile was multiplied by the mask %s" %( options.maskfile) 
 			else:
 				if options.verbose > 9:
-					print "\n(e2spt_preproc)(preprocfunc) apparently therewas no --maskfile"
+					print("\n(e2spt_preproc)(preprocfunc) apparently therewas no --maskfile")
 				#pass
 		except:
 			pass
@@ -354,14 +355,14 @@ def preprocfunc( simage, options, i, outname, simulation=False, resizeonly=False
 		if options.normproc and options.normproc != 'None' and options.normproc != 'none':
 			simage.process_inplace(options.normproc[0],options.normproc[1])
 			#simage.write_image(options.path + '/imgMsk1norm.hdf',-1)
-			print "normalizing"
+			print("normalizing")
 			#print "\n(e2spt_preproc)(preprocfunc) --normproc provided: %s" %( str(options.normproc[0]) ) 
 
 		try:
 			#if mask and mask != 'None' and mask != 'none' or options.maskfile:
 			if options.mask or options.maskfile:
 				if options.verbose > 9:
-					print "\n(e2spt_preproc)(preprocfunc) masking again after normalizing"
+					print("\n(e2spt_preproc)(preprocfunc) masking again after normalizing")
 				simage.mult(maskimg)
 				#simage.write_image(options.path + '/imgMsk1normMsk2.hdf',-1)
 		except:
@@ -373,7 +374,7 @@ def preprocfunc( simage, options, i, outname, simulation=False, resizeonly=False
 		'''
 		if options.threshold and options.threshold != 'None' and options.threshold != 'none':
 			if options.verbose > 9:
-				print "\n(e2spt_preproc)(preprocfunc) --thresholding provided"
+				print("\n(e2spt_preproc)(preprocfunc) --thresholding provided")
 			simage.process_inplace( options.threshold[0], options.threshold[1] )
 
 		if options.shrink  == 'None' or options.shrink == 'none':
@@ -392,21 +393,21 @@ def preprocfunc( simage, options, i, outname, simulation=False, resizeonly=False
 	
 		if options.lowpass:
 			if options.verbose > 9:
-				print "lowpassing particle",i
+				print("lowpassing particle",i)
 			#print "\n(e2spt_preproc)(preprocfunc) --lowpass provided: %s, %s" %( options.lowpass[0],options.lowpass[1]) 
 			simage.process_inplace(options.lowpass[0],options.lowpass[1])
 			#fimage.write_image(options.path + '/imgPrepLp.hdf',-1)
 
 		if options.highpass:
 			if options.verbose > 9:
-				print "highpassing particle",i 
+				print("highpassing particle",i) 
 			#print "\n(e2spt_preproc)(preprocfunc) --highpass provided: %s, %s" %( options.highpass[0],options.highpass[1]) 
 			simage.process_inplace(options.highpass[0],options.highpass[1])
 			#fimage.write_image(options.path + '/imgPrepLpHp.hdf',-1)
 
 		if options.preprocess:
 			if options.verbose > 9:
-				print "preprocessing particle",i
+				print("preprocessing particle",i)
 			#print "\n(e2spt_preproc)(preprocfunc) --preprocess provided: %s, %s" %( options.preprocess[0],options.preprocess[1])
 			simage.process_inplace(options.preprocess[0],options.preprocess[1])
 			#fimage.write_image(options.path + '/imgPrep.hdf',-1)
@@ -437,7 +438,7 @@ def preprocfunc( simage, options, i, outname, simulation=False, resizeonly=False
 	
 	if options.shrink and int( options.shrink  ) > 1:
 		if options.verbose > 9:
-			print "shrinking particle", i
+			print("shrinking particle", i)
 		#print "\n(e2spt_preproc)(preprocfunc)--shrink provided: %d" %(options.shrink)
 		simage.process_inplace("math.fft.resample",{"n":options.shrink })
 	
@@ -445,20 +446,20 @@ def preprocfunc( simage, options, i, outname, simulation=False, resizeonly=False
 	try:
 		if options.output:
 			if options.verbose > 9:
-				print "\n(e2spt_preproc)(preprocfunc) outname  %s and i=%d"  % (options.output, i)
+				print("\n(e2spt_preproc)(preprocfunc) outname  %s and i=%d"  % (options.output, i))
 			simage.write_image( outname, i )
 		else:
 			if options.verbose > 9:
-				print "\n(e2spt_preproc)(preprocfunc) no --output provided. Default outname %s and i=%d  " % ( outname, i) 
+				print("\n(e2spt_preproc)(preprocfunc) no --output provided. Default outname %s and i=%d  " % ( outname, i)) 
 			simage.write_image( outname, i )
 	except:
 		if options.verbose > 9:	
-			print "\n(e2spt_preproc)(preprocfunc) parameter --output probably doesn't exist in program calling this function. default outname %s and i=%d " %( outname , i) 
+			print("\n(e2spt_preproc)(preprocfunc) parameter --output probably doesn't exist in program calling this function. default outname %s and i=%d " %( outname , i)) 
 		
 		if outname:
 			simage.write_image( outname, i )
 		else:
-			print "no output name"
+			print("no output name")
 		
 		
 	#del simage		
@@ -478,7 +479,7 @@ def clip3D( vol, sizex, sizey=0, sizez=0 ):
 	volyc = vol['ny']/2
 	volzc = vol['nz']/2
 	
-	print "clipping volume to size", sizex, sizey, sizez
+	print("clipping volume to size", sizex, sizey, sizez)
 	
 	Rvol =  Region( (2*volxc - sizex)/2, (2*volyc - sizey)/2, (2*volzc - sizez)/2, sizex , sizey , sizez)
 	vol.clip_inplace( Rvol )
@@ -559,7 +560,7 @@ def get_results(etc,tids,options):
 		
 		tidsleft=[j for i,j in enumerate(tidsleft) if proglist[i]!=100]		# remove any completed tasks from the list we ask about
 		if options.verbose:
-			print ("%d tasks, %d complete, %d waiting to start \r" % (len(tids),ncomplete,nwait))
+			print(("%d tasks, %d complete, %d waiting to start \r" % (len(tids),ncomplete,nwait)))
 			sys.stdout.flush()
 	
 		if len(tidsleft)==0: break

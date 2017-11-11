@@ -1,4 +1,5 @@
 #!/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -43,79 +44,79 @@ mask=model_circle(32,75,75)
 
 volft,kb=prep_vol(vol)
 
-print  "spin"
+print("spin")
 #   phi theta psi
 cp=[12.1,54.7,77.7,0.4,-0.3]
 start=[11.2,55.2,77.3,0,0]
 proj=prgs(volft, kb, cp)
 proj.write_image("proj.spi")
-print  ref_3d_ali_spin(proj,mask,vol,start)
+print(ref_3d_ali_spin(proj,mask,vol,start))
 
-print  "Euler"
-
-proj=prgs(volft, kb, cp)
-proj.write_image("proj.spi")
-print  ref_3d_ali(proj,mask,vol,start)
-
-print  "xyz"
-
+print("Euler")
 
 proj=prgs(volft, kb, cp)
 proj.write_image("proj.spi")
-print  ref_3d_ali_xyz(proj,mask,vol,start)
+print(ref_3d_ali(proj,mask,vol,start))
 
-print " SMALL THETA "
+print("xyz")
 
-print  "spin"
+
+proj=prgs(volft, kb, cp)
+proj.write_image("proj.spi")
+print(ref_3d_ali_xyz(proj,mask,vol,start))
+
+print(" SMALL THETA ")
+
+print("spin")
 
 cp=[12.1,4.7,77.7,0.4,-0.3]
 start=[2.2,5.2,77.3,0,0]
 proj=prgs(volft, kb, cp)
 proj.write_image("proj.spi")
-print  ref_3d_ali_spin(proj,mask,vol,start)
+print(ref_3d_ali_spin(proj,mask,vol,start))
 
-print  "Euler"
+print("Euler")
 proj=prgs(volft, kb, cp)
 proj.write_image("proj.spi")
-print  ref_3d_ali(proj,mask,vol,start)
+print(ref_3d_ali(proj,mask,vol,start))
 
 
-print  "xyz"
+print("xyz")
 
 proj=prgs(volft, kb, cp)
 proj.write_image("proj.spi")
-print  ref_3d_ali_xyz(proj,mask,vol,start)
+print(ref_3d_ali_xyz(proj,mask,vol,start))
 
-print "  THETA 90"
+print("  THETA 90")
 
-print  "spin"
+print("spin")
 
 cp=[12.1,90.1,77.7,0.4,-0.3]
 start=[2.2,93,77.3,0,0]
 proj=prgs(volft, kb, cp)
 proj.write_image("proj.spi")
-print  ref_3d_ali_spin(proj,mask,vol,start)
+print(ref_3d_ali_spin(proj,mask,vol,start))
 
-print  "Euler"
+print("Euler")
 proj=prgs(volft, kb, cp)
 proj.write_image("proj.spi")
-print  ref_3d_ali(proj,mask,vol,start)
+print(ref_3d_ali(proj,mask,vol,start))
 
 
-print  "xyz"
+print("xyz")
 
 proj=prgs(volft, kb, cp)
 proj.write_image("proj.spi")
-print  ref_3d_ali_xyz(proj,mask,vol,start)
+print(ref_3d_ali_xyz(proj,mask,vol,start))
 
-print  " END "
+print(" END ")
 cp=[12.1,54.7,77.7,0.4,-0.3]
 proj=prgs(volft, kb, cp)
 proj.write_image("proj.spi")
-print  ref_3d_ali(proj,mask,vol,[10.2,56.2,76.3,0,0])
+print(ref_3d_ali(proj,mask,vol,[10.2,56.2,76.3,0,0]))
 
 
 cp=[12.1,54.7,77.7,0.4,-0.3]
 proj=prgs(volft, kb, cp)
 proj.write_image("proj.spi")
-print  ref_3d_ali_xyz(proj,mask,vol,[10.2,56.2,76.3,0,0])
+print(ref_3d_ali_xyz(proj,mask,vol,[10.2,56.2,76.3,0,0]))

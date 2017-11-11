@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steve Ludtke, 2/1/2011 (stevel@bcm.edu)
@@ -43,22 +44,22 @@ import sys
 
 
 def main():
-        progname = os.path.basename(sys.argv[0])
-        usage = """%prog <file1> <N1> <file2> <N2> <outfile> [options]
+	progname = os.path.basename(sys.argv[0])
+	usage = """%prog <file1> <N1> <file2> <N2> <outfile> [options]
 	
 	Using the selected comparator this program will rotate/translate an image exhaustively over a range
 	and write the similarity value to an output volume. (technically it writes the similarity * -1.0)
 
         """
 
-        parser = OptionParser(usage=usage,version=EMANVERSION)
+	parser = OptionParser(usage=usage,version=EMANVERSION)
 
-        parser.add_option("--xy0",type="float",help="How far to shift x/y from 0,0. Default = 20.0",default=20.0)
-        parser.add_option("--dxy",type="float",help="Step (in pixels) for x/y translation. Default 1.0",default=1.0)
+	parser.add_option("--xy0",type="float",help="How far to shift x/y from 0,0. Default = 20.0",default=20.0)
+	parser.add_option("--dxy",type="float",help="Step (in pixels) for x/y translation. Default 1.0",default=1.0)
 	parser.add_option("--dalpha",type="float",help="Angular step (in degrees). Default=3.0",default=5.0)
 	parser.add_option("--cmp",type="string",help="Comparator to use. Default=ccc",default="ccc")
 
-        (options, args) = parser.parse_args()
+	(options, args) = parser.parse_args()
 
 	cmpopt=parsemodopt(options.cmp)
 	nxy=int(options.xy0/options.dxy)*2+1
@@ -69,16 +70,16 @@ def main():
 
 	ali=im2.align("rotate_translate_flip",im1,{},cmpopt[0],cmpopt[1])
 	a2=ali["xform.align2d"]
-	print a2.inverse()
+	print(a2.inverse())
 	if a2.get_mirror():
 		im2.process_inplace("xform.flip",{"axis":"x"})
 		ali=im2.align("rotate_translate_flip",im1,{},cmpopt[0],cmpopt[1])
 		a2=ali["xform.align2d"]
-		print a2.inverse()
+		print(a2.inverse())
 	
 	ali=im2.align("refine",im1,{"xform.align2d":a2},cmpopt[0],cmpopt[1])
 	a2=ali["xform.align2d"]
-	print a2.inverse(),"\n\n"
+	print(a2.inverse(),"\n\n")
 
 	output=EMData(nxy,nxy,nz)
 	output.to_zero()
@@ -89,7 +90,7 @@ def main():
 	while alpha<360.0:
 		y=-options.xy0
 		j=0
-		print "\r alpha: ",alpha,"       ",
+		print("\r alpha: ",alpha,"       ", end=' ')
 		sys.stdout.flush()
 		while y<options.xy0:
 			x=-options.xy0
@@ -107,13 +108,13 @@ def main():
 		k+=1
 
 	output.write_image(args[4],0)
-	print "Best :",best
+	print("Best :",best)
 
 	best2=(-1.0e8,0,0,0)
 	output=EMData(41,41,41)
 	output.to_zero()
 	for k in range(-20,21):
-		print "\r alpha: ",k,"       ",
+		print("\r alpha: ",k,"       ", end=' ')
 		sys.stdout.flush()
 		for j in range(-20,21):
 			for i in range(-20,21):
@@ -124,7 +125,7 @@ def main():
 				
 				
 	output.write_image("o_"+args[4],0)
-	print "Best :",best2
+	print("Best :",best2)
 
 
 

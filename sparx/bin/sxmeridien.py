@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 #  09/09/2016
 #  
@@ -59,7 +60,6 @@ Local with an = 12*delta
 
 
 
-from __future__ import print_function
 from EMAN2 	import *
 from sparx 	import *
 from EMAN2  import EMNumPy
@@ -1377,7 +1377,7 @@ def steptwo_mpi(tvol, tweight, treg, cfsc = None, regularized = True, color = 0)
 	we_data = get_image_data(tweight)
 	#  tvol is overwritten, meaning it is also an output
 	ifi = mpi_iterefa( vol_data.__array_interface__['data'][0] ,  we_data.__array_interface__['data'][0] , nx, ny, nz, maxr2, \
-			Tracker["constants"]["nnxo"], Blockdata["myid_on_node"], color, Blockdata["no_of_processes_per_group"],  Blockdata["shared_comm"], n_iter)
+			Tracker["constants"]["nnxo"], Blockdata["myid_on_node"], color, Blockdata["no_of_processes_per_group"],  Blockdata["shared_comm"])### HERE  ###, n_iter)
 	#Util.iterefa(tvol, tweight, maxr2, Tracker["constants"]["nnxo"])
 
 	if( Blockdata["myid_on_node"] == 0 ):

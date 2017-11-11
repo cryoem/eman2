@@ -1,4 +1,5 @@
 #!/bin/env python
+from __future__ import print_function
 from EMAN2  import *
 from sparx  import *
 
@@ -126,7 +127,7 @@ for i in xrange(-ns,ns+1):
 			xma = value
 			im = xold+i/float(ns) - float(nx//2)
 			jm = yold+j/float(ns) - float(ny//2)
-print  "  PEAK  ",im,jm,xma
+print("  PEAK  ",im,jm,xma)
 
 
 
@@ -199,7 +200,7 @@ for i in xrange(-ns,ns+1):
 			xma = value
 			im = xold+i/float(ns) - float(nx//2)
 			jm = yold+j/float(ns) - float(ny//2)
-print  "  PEAK  ",im,jm,xma
+print("  PEAK  ",im,jm,xma)
 #drop_image(cfc,"cfc.hdf")
 
 
@@ -226,14 +227,14 @@ peak_search(cf,print_screen = True)
 
 u,kb=prepi(gs)
 res = u.rot_scale_conv(-angle*pi/180., -sx, -sy, kb)
-print ccc(e,res,mask)
+print(ccc(e,res,mask))
 
 fs = fshift(e,sx,sy)
 ff = ccfnp(fs,e)
 drop_image(ff,"ff.hdf")
 peak_search(ff,print_screen = True)
 
-print ccc(e,fshift(fs,-sx,-sy),mask)
+print(ccc(e,fshift(fs,-sx,-sy),mask))
 
 
 
@@ -242,7 +243,7 @@ refi,kb  = prepij(e)
 #refi = e.FourInterpol(2*nx, 2*ny, 1, 0)
 o = fs.FourInterpol(2*nx, 2*ny, 1, 0)
 #info(refi)
-print  "  padded "
+print("  padded ")
 qt = fft(o)
 drop_image(qt,"qt.hdf")
 a=peak_search(qt,print_screen = True)
@@ -258,7 +259,7 @@ ccfg = product.rot_scale_conv(0., 0., 0., kb)
 info(ccfg)
 
 a=peak_search(ccfg,print_screen = True)
-print " on gridding ",a
+print(" on gridding ",a)
 drop_image(ccfg,"ccfg.hdf")
 
 xma = -1.0e23
@@ -273,7 +274,7 @@ for i in xrange(-ns,ns+1):
 			xma = value
 			im = xold+i - float(nx//2)
 			jm = yold+j - float(ny//2)
-print  "  PEAK  ",im,jm,xma
+print("  PEAK  ",im,jm,xma)
 ns = 100
 cfc = model_blank(2*ns+1,2*ns+1)
 xma = -1.0e23
@@ -286,5 +287,5 @@ for i in xrange(-ns,ns+1):
 			xma = value
 			im = xold+i/float(ns) - float(nx//2)
 			jm = yold+j/float(ns) - float(ny//2)
-print  "  PEAK  ",im,jm,xma
+print("  PEAK  ",im,jm,xma)
 drop_image(cfc,"cfc.hdf")

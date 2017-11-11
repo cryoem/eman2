@@ -493,7 +493,7 @@ bool FourierInserter3DMode8::insert_pixel(const float&, const float&, const floa
 
 bool FourierInserter3DMode9::insert_pixel(const float& xx, const float& yy, const float& zz, const std::complex<float> dt,const float& weight)
 {
-	int N = 8;		// kernel width
+	int N = 4;		// kernel width
 
 	int x0 = (int) floor(xx-N/2);
 	int y0 = (int) floor(yy-N/2);
@@ -515,7 +515,7 @@ bool FourierInserter3DMode9::insert_pixel(const float& xx, const float& yy, cons
 		if (z1>nz2) z1=nz2;
 
 		float w=weight;
-		float a=10.0;
+		float a=15.0;
 		float r, kb;
 
 		for (int k = z0 ; k <= z1; k++) {

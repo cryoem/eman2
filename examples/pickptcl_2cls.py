@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 # Muyuan Chen 2017-03
 from EMAN2 import *
 import numpy as np
@@ -29,7 +30,7 @@ def main():
 	E2end(logid)
 	
 def run(cmd):
-	print cmd
+	print(cmd)
 	launch_childprocess(cmd)
 	
 
@@ -69,12 +70,12 @@ class boxerConvNet():
 		sz=64
 		shrinkfac=float(bxsz)/float(sz)
 		
-		print "Importing dependencies..."
+		print("Importing dependencies...")
 		if not hasattr(boxerConvNet,'import_done'):
 			if not boxerConvNet.do_import():
-				print "Cannot import required dependencies..Stop."
+				print("Cannot import required dependencies..Stop.")
 				
-		print "Setting up model ..."
+		print("Setting up model ...")
 		rng = np.random.RandomState(123)
 		nkernel=[20,20,2]
 		ksize=[15,15,15]
@@ -90,7 +91,7 @@ class boxerConvNet():
 			imageshape=image_shape
 		)
 		
-		print "Pre-processing particles..."
+		print("Pre-processing particles...")
 		#### here we shrink the particles so they are 64x64
 		#### and duplicate so there are more than 500 good and 500 bad particles
 		
@@ -102,7 +103,7 @@ class boxerConvNet():
 		for label, refs in enumerate([badrefs,refs0, refs1]):
 			nref=len(refs)
 			if nref<5:
-				print "Not enough references. Please box at least 5 good and 5 bad reference..."
+				print("Not enough references. Please box at least 5 good and 5 bad reference...")
 				return []
 			ncopy=nref_target/nref + 1
 			
@@ -148,7 +149,7 @@ class boxerConvNet():
 		labels=theano.shared(label_np, borrow=True)
 		
 		
-		print "Now Training..."
+		print("Now Training...")
 		classify=convnet.get_classify_func(train_set_x,labels,batch_size)
 		learning_rate=0.002
 		weightdecay=1e-5
@@ -163,8 +164,8 @@ class boxerConvNet():
 				c.append(err)
 
 			learning_rate*=.96
-			print 'Training epoch %d, cost ' % ( epoch),
-			print np.mean(c),", learning rate",learning_rate
+			print('Training epoch %d, cost ' % ( epoch), end=' ')
+			print(np.mean(c),", learning rate",learning_rate)
 
 		
 		save_model(convnet, nnet_savename)
@@ -209,7 +210,7 @@ class boxerConvNet():
 		shrinkfac=float(bxsz)/float(sz)
 		
 		if os.path.isfile(nnet_savename)==False:
-			print "Cannot find saved network, exit..."
+			print("Cannot find saved network, exit...")
 			return 0
 			
 		#else:
@@ -218,10 +219,10 @@ class boxerConvNet():
 		
 			
 		layers=boxerConvNet.load_network(nnet_savename, nx, ny)
-		print "Applying neural net..."
+		print("Applying neural net...")
 		boxes=boxerConvNet.apply_network(micrograph, layers, shrinkfac, nx, ny)
 		
-		print "{} particles found..".format(len(boxes))
+		print("{} particles found..".format(len(boxes)))
 		
 		
 		return boxes
@@ -229,7 +230,7 @@ class boxerConvNet():
 	
 	@staticmethod
 	def load_network(fname, nx, ny):
-		print "Loading the Neural Net..."
+		print("Loading the Neural Net...")
 			
 		hdr=EMData(fname,0)
 			
@@ -400,14 +401,14 @@ class boxerConvNet():
 			if thrtolaunch<len(thrds) :
 				
 				while (threading.active_count()==NTHREADS ) : time.sleep(.1)
-				print "Starting on img {}...".format(thrtolaunch)
+				print("Starting on img {}...".format(thrtolaunch))
 				thrds[thrtolaunch].start()
 				thrtolaunch+=1
 			else: time.sleep(1)
 		
 			while not jsd.empty():
 				idx, fsp, newboxes=jsd.get()
-				print "{}) {} boxes -> {}".format(i,len(newboxes),fsp)
+				print("{}) {} boxes -> {}".format(i,len(newboxes),fsp))
 		
 				# if we got nothing, we just leave the current results alone
 				if len(newboxes)==0 : continue

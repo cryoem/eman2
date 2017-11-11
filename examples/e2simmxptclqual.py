@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 03/16/2012 (sludtke@bcm.edu)
@@ -36,8 +37,8 @@ from EMAN2 import *
 from numpy import *
 
 def main():
-        progname = os.path.basename(sys.argv[0])
-        usage = """e2simmxptclqual.py [options] <simmx file in> 
+	progname = os.path.basename(sys.argv[0])
+	usage = """e2simmxptclqual.py [options] <simmx file in> 
 	Computes the average simmx score vector for each orientation, normalizes it, then uses it to compute per-particle projections which are hopefully representative of particle quality.
 
 	output is ptcl#,Npeak,cccpeak,peakval,Nbestvec,cccbestvec,bestvecval
@@ -48,14 +49,14 @@ def main():
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-#       parser.add_option("--input",type=str,help="Similarity matrix to analyze",default=None)
-#        parser.add_argument("--refine",type=str,default=None,help="Automatically get parameters for a refine directory")
-        #parser.add_argument("--output",type=str,help="Output text file",default="zvssim.txt")
-        #parser.add_argument("--refs",type=str,help="Reference images from the similarity matrix (projections)",default=None)
-        parser.add_argument("--inset",type=str,help="Input image set",default=None)
-        #parser.add_argument("--outimgs",type=str,help="Output image file",default="imgs.hdf")
-        #parser.add_argument("--filtimgs",type=str,help="A python expression using Z[n], Q[n] and N[n] for selecting specific particles to output. n is the 0 indexed number of the input file",default=None)
-        parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	#       parser.add_option("--input",type=str,help="Similarity matrix to analyze",default=None)
+	#        parser.add_argument("--refine",type=str,default=None,help="Automatically get parameters for a refine directory")
+	#parser.add_argument("--output",type=str,help="Output text file",default="zvssim.txt")
+	#parser.add_argument("--refs",type=str,help="Reference images from the similarity matrix (projections)",default=None)
+	parser.add_argument("--inset",type=str,help="Input image set",default=None)
+	#parser.add_argument("--outimgs",type=str,help="Output image file",default="imgs.hdf")
+	#parser.add_argument("--filtimgs",type=str,help="A python expression using Z[n], Q[n] and N[n] for selecting specific particles to output. n is the 0 indexed number of the input file",default=None)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--refs",type=str,help="Reference images from the similarity matrix (projections)",default=None)
 	parser.add_argument("--sym",type=str,help="Symmetry operator to include in best orientation distance search",default="c1")
 	parser.add_argument("--maxang",type=float,help="Maximum deviation angle for inclusion in good set (degrees)",default=-1.0)
@@ -81,11 +82,11 @@ def main():
 			o["phi"]=0
 			ort.set_rotation(o)
 			ORTs.append(ort)
-		print nx," projections read"
+		print(nx," projections read")
 
 	logid=E2init(sys.argv,options.ppid)
 
-	print "Computing average unit vectors"
+	print("Computing average unit vectors")
 	# compile vector sums for each class
 	for y in range(ny):
 		im=EMData(args[0],0,False,Region(0,y,nx,1))
@@ -106,7 +107,7 @@ def main():
 		except: pass
 		
 	mx.write_image("simvec.hdf",0)
-	print "Output mean quality vector per class in simvec.hdf"
+	print("Output mean quality vector per class in simvec.hdf")
 
 	syms=Symmetries.get(options.sym).get_syms()
 
@@ -116,14 +117,14 @@ def main():
 		if options.inset.lower()[:4]!="bdb:" : dbin=db_open_dict("bdb:sets#%s"%options.inset)
 		else : dbin=db_open_dict(options.inset)
 	
-	print "Particle quality file"
+	print("Particle quality file")
 	# Output particle quality file
-	out=file("simqual.txt","w")
+	out=open("simqual.txt","w")
 	t=time.time()
 	outn=0
 	for y in xrange(ny):
 		if time.time()-t>.2 :
-			print " %d\t %d\r"%(y,outn),
+			print(" %d\t %d\r"%(y,outn), end=' ')
 			sys.stdout.flush()
 			t=time.time()
 
@@ -159,7 +160,7 @@ def main():
 			dbout[outn]=im
 			outn+=1
 	
-	print "Output particle quality file simqual.txt"
+	print("Output particle quality file simqual.txt")
 	E2end(logid)
 
 if __name__ == "__main__":  main()

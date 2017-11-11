@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #### python utilities. 
 #### 2017-03
@@ -201,8 +202,9 @@ def makepath(options, stem='e2dir'):
 	
 	if not options.path:
 		if options.verbose:
-			print "\n(EMAN2_utils)(makepath), stem is", stem
 
+			print("\n(EMAN2_utils)(makepath), stem is", stem)
+	
 	elif options.path: 
 		stem=options.path
 	
@@ -250,7 +252,7 @@ def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ral
 		if align[0] :
 			r[0].del_attr("xform.align2d")
 			ta=r[0].align(align[0],target,align[1],alicmp[0],alicmp[1])
-			if verbose>3: print ta.get_attr("xform.align2d")
+			if verbose>3: print(ta.get_attr("xform.align2d"))
 			#ta.debug_print_params()
 
 			if ralign and ralign[0]:
@@ -268,7 +270,7 @@ def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ral
 					r[0].del_attr("xform.align2d")
 					ta = r[0].align(ralign[0],target,ralign[1],alircmp[0],alircmp[1])
 
-				if verbose>3: print ta.get_attr("xform.align2d")
+				if verbose>3: print(ta.get_attr("xform.align2d"))
 
 
 			t =  ta.get_attr("xform.align2d")
@@ -287,8 +289,8 @@ def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ral
 				try:
 					ret[i]=(target.cmp(cmp[0],ta,cmp[1]),scale_correction*p["tx"],scale_correction*p["ty"],p["alpha"],p["mirror"],p["scale"])
 				except:
-					print "ERROR: CMP FAILURE. See err.hdf"
-					print cmp
+					print("ERROR: CMP FAILURE. See err.hdf")
+					print(cmp)
 					target.write_image("err.hdf",0)
 					ta.write_image("err.hdf",1)
 					sys.exit(1)
@@ -306,11 +308,11 @@ def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ral
 		else :
 			ret[i]=(target.cmp(cmp[0],r[0],cmp[1]),0,0,0,1.0,False)
 
-		if verbose==3 : print ret[i][0],
+		if verbose==3 : print(ret[i][0], end=' ')
 
-	if verbose==3 : print ""
+	if verbose==3 : print("")
 	if verbose==2 :
-		print "Best: ",sorted([(ret[i][0],i) for i in range(len(ret))])[0]
+		print("Best: ",sorted([(ret[i][0],i) for i in range(len(ret))])[0])
 	return ret
 
 
@@ -320,9 +322,9 @@ def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ral
 #used by some SPT programs (nov/2017); function might be deprecated or refactored in the near future
 def sptOptionsParser( options, program='' ):
 	
-	print "\n(EMAN2_utils)(sptOptionsParser) parsing options" 
+	print("\n(EMAN2_utils)(sptOptionsParser) parsing options")
 	if program:
-		print "from program {}".format(program)
+		print("from program {}".format(program))
 	
 	try:
 		if options.align:
@@ -332,7 +334,7 @@ def sptOptionsParser( options, program='' ):
 			options.align=None
 	except:
 		if options.verbose > 9:
-			print "\nWARNING (might not be relevant): --align not provided"
+			print("\nWARNING (might not be relevant): --align not provided")
 		
 	try:
 		if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none': 
@@ -341,7 +343,7 @@ def sptOptionsParser( options, program='' ):
 			options.falign=None
 	except:
 		if options.verbose > 9:
-			print "\nWARNING (might not be relevant): --falign not provided"
+			print("\nWARNING (might not be relevant): --falign not provided")
 	
 	try:
 		if options.aligncmp: 
@@ -350,7 +352,7 @@ def sptOptionsParser( options, program='' ):
 			options.aligncmp=None
 	except:
 		if options.verbose > 9:
-			print "\nWARNING (might not be relevant): --aligncmp not provided"
+			print("\nWARNING (might not be relevant): --aligncmp not provided")
 	
 	try:	
 		if options.faligncmp: 
@@ -359,7 +361,7 @@ def sptOptionsParser( options, program='' ):
 			options.faligncmp=None
 	except:
 		if options.verbose > 9:
-			print "\nWARNING (might not be relevant): --faligncmp not provided"
+			print("\nWARNING (might not be relevant): --faligncmp not provided")
 		
 	try:
 		if options.averager: 
@@ -368,7 +370,7 @@ def sptOptionsParser( options, program='' ):
 			options.averager=None
 	except:
 		if options.verbose > 9:
-			print "\nWARNING (might not be relevant): --averager not provided"
+			print("\nWARNING (might not be relevant): --averager not provided")
 		
 	try:
 		if options.autocenter:
@@ -377,7 +379,7 @@ def sptOptionsParser( options, program='' ):
 			options.autocenter=None
 	except:
 		if options.verbose > 9:
-			print "\nWARNING (might not be relevant): --autocenter not provided"
+			print("\nWARNING (might not be relevant): --autocenter not provided")
 		
 	try:
 		if options.autocentermask:
@@ -386,7 +388,7 @@ def sptOptionsParser( options, program='' ):
 			options.autocentermask=None
 	except:
 		if options.verbose > 9:
-			print "\nWARNING (might not be relevant): --autocentermask not provided"
+			print("\nWARNING (might not be relevant): --autocentermask not provided")
 	
 	try:
 		if options.normproc and options.normproc != 'None' and options.normproc != 'none':
@@ -395,7 +397,7 @@ def sptOptionsParser( options, program='' ):
 			options.normproc=None
 	except:
 		if options.verbose > 9:
-			print "\nWARNING (might not be relevant): --normproc not provided"
+			print("\nWARNING (might not be relevant): --normproc not provided")
 	
 	try:
 		if options.mask and options.mask != 'None' and options.mask != 'none':
@@ -407,7 +409,7 @@ def sptOptionsParser( options, program='' ):
 			options.mask=None
 	except:
 		if options.verbose > 9:
-			print "\nWARNING (might not be relevant): --mask not provided"
+			print("\nWARNING (might not be relevant): --mask not provided")
 	
 	try:	
 		if options.preprocess and options.preprocess != 'None' and options.preprocess != 'none': 
@@ -416,7 +418,7 @@ def sptOptionsParser( options, program='' ):
 			options.preprocess=None
 	except:
 		if options.verbose > 9:
-			print "\nWARNING (might not be relevant): --preprocess not provided"
+			print("\nWARNING (might not be relevant): --preprocess not provided")
 	
 	try:	
 		if options.threshold and options.threshold != 'None' and options.threshold != 'none': 
@@ -425,7 +427,7 @@ def sptOptionsParser( options, program='' ):
 			options.threshold=None
 	except:
 		if options.verbose > 9:
-			print "\nWARNING (might not be relevant): --threshold not provided"
+			print("\nWARNING (might not be relevant): --threshold not provided")
 	
 	try:
 		if options.preprocessfine and options.preprocessfine != 'None' and options.preprocessfine != 'none': 
@@ -434,7 +436,7 @@ def sptOptionsParser( options, program='' ):
 			options.preprocessfine=None
 	except:
 		if options.verbose > 9:
-			print "\nWARNING (might not be relevant): --preprocessfine not provided"
+			print("\nWARNING (might not be relevant): --preprocessfine not provided")
 	
 	try:	
 		if options.lowpass and options.lowpass != 'None' and options.lowpass != 'none': 
@@ -443,7 +445,7 @@ def sptOptionsParser( options, program='' ):
 			options.lowpass=None
 	except:
 		if options.verbose > 9:
-			print "\nWARNING (might not be relevant): --lowpass not provided"
+			print("\nWARNING (might not be relevant): --lowpass not provided")
 	
 	try:
 		if options.lowpassfine and options.lowpassfine != 'None' and options.lowpassfine != 'none': 
@@ -452,7 +454,7 @@ def sptOptionsParser( options, program='' ):
 			options.lowpassfine=None
 	except:
 		if options.verbose > 9:
-			print "\nWARNING (might not be relevant): --lowpassfine not provided"
+			print("\nWARNING (might not be relevant): --lowpassfine not provided")
 	
 	try:
 		if options.highpass and options.highpass != 'None' and options.highpass != 'none': 
@@ -461,7 +463,7 @@ def sptOptionsParser( options, program='' ):
 			options.highpass=None
 	except:
 		if options.verbose > 9:
-			print "\nWARNING (might not be relevant): --highpass not provided"
+			print("\nWARNING (might not be relevant): --highpass not provided")
 	
 	try:
 		if options.highpassfine and options.highpassfine != 'None' and options.highpassfine != 'none': 
@@ -470,7 +472,7 @@ def sptOptionsParser( options, program='' ):
 			options.highpassfine=None
 	except:
 		if options.verbose > 9:
-			print "\nWARNING (might not be relevant): --highpassfine not provided"
+			print("\nWARNING (might not be relevant): --highpassfine not provided")
 	try:
 		if options.postprocess and options.postprocess != 'None' and options.postprocess != 'none': 
 			options.postprocess=parsemodopt(options.postprocess)
@@ -478,7 +480,7 @@ def sptOptionsParser( options, program='' ):
 			options.postprocess=None
 	except:
 		if options.verbose > 9:
-			print "\nWARNING (might not be relevant): --postprocess not provided"
+			print("\nWARNING (might not be relevant): --postprocess not provided")
 	
 	try:
 		if options.reconstructor and options.reconstructor != 'None' and options.reconstructor != 'none': 
@@ -487,7 +489,7 @@ def sptOptionsParser( options, program='' ):
 			options.reconstructor=None
 	except:
 		if options.verbose > 9:
-			print "\nWARNING (might not be relevant): --reconstructor not provided"
+			print("\nWARNING (might not be relevant): --reconstructor not provided")
 	
 	try:
 		if options.preavgproc1 and options.preavgproc1 != 'None' and options.preavgproc1 != 'none': 
@@ -496,7 +498,7 @@ def sptOptionsParser( options, program='' ):
 			options.preavgproc1=None
 	except:
 		if options.verbose > 9:
-			print "\nWARNING (might not be relevant): --reconstructor not provided"
+			print("\nWARNING (might not be relevant): --reconstructor not provided")
 		
 	try:
 		if options.preavgproc2 and options.preavgproc2 != 'None' and options.preavgproc2 != 'none': 
@@ -505,7 +507,7 @@ def sptOptionsParser( options, program='' ):
 			options.preavgproc2=None
 	except:
 		if options.verbose > 9:
-			print "\nWARNING (might not be relevant): --reconstructor not provided"
+			print("\nWARNING (might not be relevant): --reconstructor not provided")
 	
 	return options
 
@@ -519,7 +521,7 @@ is useful, as it also explicitly records values for parameters that were used by
 def writeParameters( options, program, tag ):
 	import datetime
 
-	print "Tag received in writeParameters is", tag
+	print("Tag received in writeParameters is {}".format(tag))
 
 	names = dir(options)
 	

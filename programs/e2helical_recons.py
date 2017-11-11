@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 from EMAN2 import *
 import random
 from math import *
@@ -31,8 +32,8 @@ def main():
   
 ############above are paramter sets#######################  
   ptcls=EMData.read_images(options.input) # read in the original particle set, this typically does not change 
-  print options.input  # input is the original particles set
-  print "total %d particles"%len(ptcls) # print out how many particles in the set
+  print(options.input)  # input is the original particles set
+  print("total %d particles"%len(ptcls)) # print out how many particles in the set
   reso=90 # define projections number, more projections mean higher resolution
   #ret=EMData.read_images(update_vol1) # read in the volume set
   orts=[Transform({"type":"eman","az":360/reso*j,"phi":0,"alt":90}) for j in xrange(reso)]
@@ -41,11 +42,11 @@ def main():
   #### the projections has to be cleared before next run
     
     cycle=len(ret)+2*cycle1
-    print "this is cycle %d" %cycle
+    print("this is cycle %d" %cycle)
     proj1=proj0+"cycle_%d" %cycle
-    print proj1
+    print(proj1)
     ret=EMData.read_images(update_vol1) # volume set is updated, need reload
-    print "len(ret)=%d" %len(ret)
+    print("len(ret)=%d" %len(ret))
     
     projs=[ret[cycle].project("standard",ort) for ort in orts] # orts is the list of transformations, projs is the projections list corresponding those transformations
     
@@ -53,7 +54,7 @@ def main():
     except: pass
     #dcts=db_list_dicts("bdb:projections")
     for i in xrange(reso):
-      print "this is projection %d" %i
+      print("this is projection %d" %i)
 
       projs[i].write_image("%s" %proj1,-1) # write out the 90 projections of volume to file for the following e2simmx.py to use
     #os.system("rm -rf simmx") # clean the simmx folder
@@ -74,7 +75,7 @@ def main():
       bslst.append((best_score,i)) # bslst is the best score list of all the particles, ith particle has a best score and stored in bslst and so on for the other particle.
       n=bs.index(best_score) # find the projection number n corresponding best score of particle i.
       ptcls[i]["match_n"]=n # assign n to particle i
-      if i%30==0: print "%d, %2d%% complete!" %(i,i*100/len(ptcls))
+      if i%30==0: print("%d, %2d%% complete!" %(i,i*100/len(ptcls)))
       ptcls[i]["match_qual"]=best_score 
       ptcls[i]["xform.projection"]=orts[n]
 
@@ -87,7 +88,7 @@ def main():
       n=ptcls[bslst[i][1]]["match_n"] # the ith best score corresponds particle bslst[i][1]
       aptcls.append(ptcls[bslst[i][1]].align("rotate_translate_flip",projs[n],{},"dot",{}))
       #aptcls[-1].process_inplace("xform.centerofmass",{})
-      if i%30==0: print "score=%f, %d, %2d%% complete!" %(bslst[i][0], i,i*100*8/6/len(ptcls))
+      if i%30==0: print("score=%f, %d, %2d%% complete!" %(bslst[i][0], i,i*100*8/6/len(ptcls)))
       #aptcls[i].process_inplace("xform.centerofmass",{})
       #aptcls[i].write_image(aligned1,-1) # write out the aligned particle set
 
@@ -95,7 +96,7 @@ def main():
     try: os.mkdir("updated_models") 
     except: pass
     vol.write_image(update_vol1,-1) # write out the volume file to the end of list
-    print "back projection completed"
+    print("back projection completed")
    # display(vol) 
     
     new_volume=vol.copy()  # new_volume is the volume in the volume set new_vol
@@ -106,7 +107,7 @@ def main():
     phi_array=[]
     std_array=[]
     for ite in xrange(1): 
-      print "this is %d cycle" %ite
+      print("this is %d cycle" %ite)
       d_phi=35.+0.05*ite # initial guessing of d_phi, the unit is degree
   ################## change the volume to cyliner
       '''
@@ -126,7 +127,7 @@ def main():
               r=sqrt((i-nx/2-0.5)*(i-nx/2-0.5)+(j-nx/2-0.5)*(j-nx/2-0.5))  # find r, the distance to the center (nx/2-0.5,nx/2-0.5)
               theta=180.0*atan((j-nx/2-0.5)/(i-nx/2-0.5))/pi # find the angle theta ranging from 0 to 360
               if i<nx/2:
-	        theta+=180.0 # this is very important, since atan(theta) range from -pi/2 to pi/2
+                theta+=180.0 # this is very important, since atan(theta) range from -pi/2 to pi/2
               #print "r=%f\t theta=%f" %(r,theta) 
               for units in xrange(-4,5): #use 8 neighboring subunits from -4 to +4: -4 -3 -2 -1 0 1 2 3 4
                 if units==0:
@@ -142,11 +143,11 @@ def main():
               avg_vol.set_value_at(i,j,k,temp_mean)
               temp_std=numpy.std(sublst)
               mean_std+=temp_std 
-        print "i,j,k=%d,%d,%d\t std=%f" %(i,j,k,mean_std)
-      print "dz=%f\t d_phi=%f\t mean_deviation=%f\n" %(dz,d_phi,mean_std)
+        print("i,j,k=%d,%d,%d\t std=%f" %(i,j,k,mean_std))
+      print("dz=%f\t d_phi=%f\t mean_deviation=%f\n" %(dz,d_phi,mean_std))
     
-      thisfile=file(least_output1,'a') # output the least square data to file
-      print>>thisfile,dz,d_phi,mean_std
+      thisfile=open(least_output1,'a') # output the least square data to file
+      print(dz,d_phi,mean_std, file=thisfile)
       thisfile.close()
       phi_array.append(d_phi)
       std_array.append(mean_std)

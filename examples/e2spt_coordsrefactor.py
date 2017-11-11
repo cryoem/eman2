@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: Jesus Galaz, 06/05/2012 - Modifid 08/Jun/2017
 # Copyright (c) 2011 Baylor College of Medicine
@@ -70,7 +71,8 @@ def main():
 			if '.txt' in argv[1]:
 				cfile = argv[1]
 			else:
-				print "\nERROR: coordinates file must be in .txt format"
+
+				print("ERROR: coordinates file must be in .txt format")
 				sys.exit(1)
 	except:
 		pass
@@ -80,15 +82,15 @@ def main():
 	
 
 	if options.rotx and not options.tomothickness:
-		print "\nERROR: You must supply --tomothickness if you intend to use --rotx"
+		print("ERROR: You must supply --tomothickness if you intend to use --rotx")
 		sys.exit()
 		
 	if not cfile:
-		print "\nERROR: Must provide a coordinates file"
+		print("ERROR: Must provide a coordinates file")
 		sys.exit(1)
 	
 	if options.randomize and options.sort:
-		print "\nERROR: Cannot randomize and sort at the same time; the functions are contradictory. Chooe one, please."
+		print("ERROR: Cannot randomize and sort at the same time; the functions are contradictory. Chooe one, please.")
 	
 
 	sanelines = loadlines(cfile)
@@ -102,7 +104,7 @@ def main():
 	
 	n=len(sanelines)
 	if options.verbose:
-		print "\nyou have these many potentially sane lines in your coordinates file {} ".format(n)
+		print("\nyou have these many potentially sane lines in your coordinates file {} ".format(n))
 	
 	if options.subset and not options.randomize and not options.sort:
 		n = options.subset
@@ -121,7 +123,8 @@ def main():
 		
 	
 		if options.swapyz:
-			print "\nYou indicated Y and Z are flipped in the coords file, respect to the tomogram's orientation; therefore, they will be swapped"
+
+			print("You indicated Y and Z are flipped in the coords file, respect to the tomogram's orientation; therefore, they will be swapped")
 			aux = y
 			y = z
 			z = aux
@@ -189,7 +192,8 @@ def loadlines(infile):
 	for line in lines:
 		#print "The len of this line is", len(line)
 		if len(line)<5 or len(line) > 30:
-			print "\nThis line is insane and therefore will be removed", line
+
+			print("This line is insane and therefore will be removed", line)
 		else:
 			outlines.append(line)
 

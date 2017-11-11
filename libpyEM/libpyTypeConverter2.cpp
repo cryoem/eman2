@@ -44,6 +44,16 @@
 // Using =======================================================================
 using namespace boost::python;
 
+#if PY_MAJOR_VERSION >= 3
+int
+#else
+void
+#endif
+init_numpy()
+{
+    import_array();
+}
+
 // Module ======================================================================
 BOOST_PYTHON_MODULE(libpyTypeConverter2)
 {
@@ -60,7 +70,7 @@ BOOST_PYTHON_MODULE(libpyTypeConverter2)
     ;
 
 
-	import_array();
+    init_numpy();
 	python::numeric::array::set_module_and_type("numpy", "ndarray");
 
 

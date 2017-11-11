@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 # Muyuan Chen 2016-05
 from EMAN2 import *
 
@@ -8,6 +9,8 @@ def main():
 	procnd_par.py \"e2proc3d.py a.hdf b.hdf --process blabla...\" --threads=1024"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--threads", type=int,help="number of threads", default=10)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	
@@ -20,7 +23,7 @@ def main():
 	cmds[2]="{fname}"
 	newcmd= " ".join(cmds)
 	num=EMUtil.get_image_count(infile)
-	print "Total number of images: {}".format(num)
+	print("Total number of images: {}".format(num))
 	
 	### prepare the threads
 	t={}
@@ -42,7 +45,7 @@ def main():
 		t[td].join()
 	
 	### put outputs together
-	print "Merging outputs..."
+	print("Merging outputs...")
 	for i in range(nthd):
 		fm=tmpfname[i]
 		n=EMUtil.get_image_count(fm)
@@ -52,13 +55,13 @@ def main():
 		e=None
 		try: os.remove(fm)
 		except: 
-			print "Cannot remove {}".format(fm)
+			print("Cannot remove {}".format(fm))
 			pass
-	
+	print("Done")
 	E2end(logid)
 	
 def run(cmd):
-	print cmd
+	print(cmd)
 	launch_childprocess(cmd)
 	
 	

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 # 01/13/2014		Steven Ludtke
 # This program tries to fit a closed loop of blobs to DNA-minicircle density pattern using
 # a simple distance, angle, dihedral potential with a closed linear chain of balls
@@ -26,7 +27,7 @@ def main():
 		files = [ f for f in listdir(mypath) if f.endswith(".mrc")]
 		#print files
 		for fname in files:
-			print join(mypath,fname)
+			print(join(mypath,fname))
 			shape=process_image(join(mypath,fname),fname)
 			
 			# The statistics output part should be replaced by ringstat.py
@@ -36,7 +37,7 @@ def main():
 	
 def process_image(imgname,imgprefix):
 	p=EMData(imgname,0)
-	print "Preprocessing"
+	print("Preprocessing")
 	# This will (hopefully) isolate the mini-circle
 	##p.process_inplace("normalize.edgemean")
 	##p.write_image("000.mrc",0)
@@ -75,7 +76,7 @@ def process_image(imgname,imgprefix):
 	p.process_inplace("normalize.unitsum")
 	p.mult(10000.0)
 	# Align the circle for setting initial points
-	print "Inertia matrix and alignment"
+	print("Inertia matrix and alignment")
 	# compute the resulting inertia matrix
 	an=Analyzers.get("inertiamatrix",{"verbose":0})
 	an.insert_image(p)
@@ -85,7 +86,7 @@ def process_image(imgname,imgprefix):
 	# Compute the eigenvalues/vectors
 	eigvv=LA.eig(mx)		# a 3-vector with eigenvalues and a 3x3 with the vectors
 	if min(eigvv[0])==0 :
-		print "error on ",pf
+		print("error on ",pf)
 		drn-=1
 		sys.exit(1)
 
@@ -99,7 +100,7 @@ def process_image(imgname,imgprefix):
 	m=EMData(p)
 
 	
-	print "Initializing start points..."
+	print("Initializing start points...")
 	# Calculate the length of three axis of the circle
 	SX=m.get_xsize()
 	SY=m.get_ysize()
@@ -119,7 +120,7 @@ def process_image(imgname,imgprefix):
 					if(y>yend): yend=y
 					if(z<zsta): zsta=z
 					if(z>zend): zend=z
-	print xsta,xend,ysta,yend,zsta,zend
+	print(xsta,xend,ysta,yend,zsta,zend)
 	#print SX,SY,SZ
 	#print (xsta+xend)/2-SX/2,(ysta+yend)/2-SY/2,(zsta+zend)/2-SZ/2
 	iT=T.inverse()
@@ -166,7 +167,7 @@ def process_image(imgname,imgprefix):
 			if skipping==0:	# run one simulation step
 				pa.sim_minstep_seq(.1)
 				if random.uniform(0,1.0)>.9996 and nowbp>10:
-					print "swapping................"
+					print("swapping................")
 					sn=random.randint(0,9)
 					s=[sn,sn+9]
 					for ii in range(s[0],(s[0]+s[1])/2):
@@ -178,10 +179,10 @@ def process_image(imgname,imgprefix):
 
 			if isstable>5:
 				if nowbp*2<numofbp: # Add points when result is stable and number of current points is lower than the total number
-					print "adding points...."
+					print("adding points....")
 					pa.sim_add_point_double()	# Put one additional point on each edge
 					nowbp=nowbp*2
-					print nowbp
+					print(nowbp)
 					plen=(nowbp*math.sin(math.pi/nowbp))/(math.pi)	# Recalculate the length penalty
 					totlen=336*3.3*plen
 					#totlen=2*336*3.3*plen
@@ -194,7 +195,7 @@ def process_image(imgname,imgprefix):
 			#if i==500: print "aaa"
 			if i%stepsz==0:
 				
-				print i/stepsz
+				print(i/stepsz)
 				pa.sim_printstat()
 				
 				old_potential=now_potential
@@ -259,7 +260,7 @@ def process_image(imgname,imgprefix):
 			
 		#
 
-	print bestres
+	print(bestres)
 
 	#compute the resulting inertia matrix
 	img=EMData("img.mrc")
@@ -302,9 +303,9 @@ def process_image(imgname,imgprefix):
 	# Z/Y - should always be >1, Y/X, Z/X
 	#out.write("%1.3g\t%1.3g\t%1.3g\t# %s\n"%(shp[2]/shp[1],shp[1]/shp[0],shp[2]/shp[0],pf.split("/")[-1]))
 	shape=sorted([abs(shp[0]),abs(shp[1]),abs(shp[2])])
-	print shape
+	print(shape)
 
-	print "%1.3g\t%1.3g\t%1.3g\t#"%(shape[2]/shape[1],shape[1]/shape[0],shape[2]/shape[0])
+	print("%1.3g\t%1.3g\t%1.3g\t#"%(shape[2]/shape[1],shape[1]/shape[0],shape[2]/shape[0]))
 	return [shape[2]/shape[1],shape[1]/shape[0],shape[2]/shape[0]]
 
 

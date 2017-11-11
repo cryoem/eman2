@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 # Author: Steven Ludtke, 06/16/14 (sludtke@bcm.edu)
 # Copyright (c) 2000- Baylor College of Medicine
@@ -60,7 +61,7 @@ indicating its position in the movie.
 	(options, args) = parser.parse_args()
 
 	if options.boxsize<10 : 
-		print "Please specify a box size"
+		print("Please specify a box size")
 		sys.exit(1)
 
 	box=options.boxsize
@@ -92,10 +93,10 @@ indicating its position in the movie.
 		elif os.path.exists("movie/"+ u.replace("_aliavg","").replace("_proc","")+".mrcs"):m=u.replace("_aliavg","").replace("_proc","")+".mrcs"
 		elif os.path.exists("movie/"+ u.split(".")[0]+"_raw_proc_corr.hdf") : m= u.split(".")[0]+"_raw_proc_corr.hdf"
 		else :
-			print "Couldn't find movie for ",u
-			print "Tried: ","{}_raw_proc_align.hdf".format(u), "{}.hdf".format(u.replace("_aliavg","_align")), "{}_proc_align.hdf".format(u), "{}.mrcs".format(u), u.replace("aliavg","align")+".hdf",u.replace("_aliavg","").replace("_proc","")+".mrcs","movie/"+ u.split(".")[0]+"_raw_proc_corr.hdf"
+			print("Couldn't find movie for ",u)
+			print("Tried: ","{}_raw_proc_align.hdf".format(u), "{}.hdf".format(u.replace("_aliavg","_align")), "{}_proc_align.hdf".format(u), "{}.mrcs".format(u), u.replace("aliavg","align")+".hdf",u.replace("_aliavg","").replace("_proc","")+".mrcs","movie/"+ u.split(".")[0]+"_raw_proc_corr.hdf")
 			continue
-		print "Movie found {} -> {}".format(u,m)
+		print("Movie found {} -> {}".format(u,m))
 
 
 		fsp=os.path.join("movie",m)
@@ -108,10 +109,10 @@ indicating its position in the movie.
 				fsp=os.path.join("movie",m)
 				n=EMUtil.get_image_count(fsp)
 			if n<=2 : 
-				print "skipping ",m," (too few images)"
+				print("skipping ",m," (too few images)")
 				continue	
 		except:
-			print "skipping ",m," (read error)"
+			print("skipping ",m," (read error)")
 			continue
 
 		#if not os.path.exists("info/{}_info.json".format(u)) :
@@ -131,7 +132,7 @@ indicating its position in the movie.
 			nptcl=EMUtil.get_image_count(ptclfile)
 
 		if nptcl==0 : 
-			print "no particles found :",u
+			print("no particles found :",u)
 			continue
 
 		if len(uniq[u])==0 : uniq[u]=xrange(nptcl)

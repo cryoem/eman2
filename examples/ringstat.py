@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 # 01/13/2014		Steven Ludtke
 # This program tries to fit a closed loop of blobs to DNA-minicircle density pattern using
 # a simple distance, angle, dihedral potential with a closed linear chain of balls
@@ -33,7 +34,7 @@ def main():
 			#print mrcf
 			
 			for i in range(len(mrcf)):
-				print mrcf[i],pdbf[i]
+				print(mrcf[i],pdbf[i])
 				pdbshp=process_image(join(mypath,pdbf[i]),pdbf[i])
 				mrcshp=process_image(join(mypath,mrcf[i]),mrcf[i])
 				outfile=open(options.output,"a")
@@ -49,13 +50,13 @@ def main():
 			elif filetype=="pdb":
 				files = sorted([ f for f in listdir(mypath) if f.endswith("_result.pdb")])
 			else:
-				print "pdb or mrc only.."
+				print("pdb or mrc only..")
 				exit()
 			
-			print files
+			print(files)
 			
 			for fname in files:
-				print join(mypath,fname)
+				print(join(mypath,fname))
 				shape=process_image(join(mypath,fname),fname)
 				#totalen=process_image(join(mypath,fname),fname)
 				
@@ -134,7 +135,7 @@ def process_image(imgname,imgprefix):
 		#shp=append(shp.A1,d)
 		shp=append(shp.A1,totalen)
 		shp=append(shp,area)
-		print shp
+		print(shp)
 		#for i in range(nn):
 			#pa.set_vector_at(i,Vec3f(pl[i,0],pl[i,1],pl[i,2]),1.0)
 		#pa.save_to_pdb(imgprefix+"aaa.pdb")
@@ -176,7 +177,7 @@ def process_image(imgname,imgprefix):
 		shp=an.analyze()[0]
 		#shp=EMNumPy.em2numpy(shp)
 		
-		print shp[0],shp[1],shp[2],shp[3],shp[2]/shp[1],shp[1]/shp[0]
+		print(shp[0],shp[1],shp[2],shp[3],shp[2]/shp[1],shp[1]/shp[0])
 		for i in range(4):
 			shp[i]=sqrt(shp[i]/finalimg["mean"])*finalimg["apix_x"]
 		

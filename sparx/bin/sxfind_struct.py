@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
@@ -60,8 +61,8 @@ def main():
 	parser.add_option("--maxgen",     type="int",          default=10,       help="Maximum number of generations (set to 10)")
 	(options, args) = parser.parse_args()
 	if len(args) != 2:
-		print "usage: " + usage
-		print "Please run '" + progname + " -h' for detailed options"
+		print("usage: " + usage)
+		print("Please run '" + progname + " -h' for detailed options")
 	else:
 		if options.maxit < 1: options.maxit = 1
 		if options.noweights: weights = False

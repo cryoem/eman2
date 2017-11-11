@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: Steven Ludtke, 11/01/2007 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -499,7 +500,7 @@ class EMShape:
 				self.shape[2]=g
 				self.shape[3]=b
 		except:
-			print "Invalid color set in shape ",self.shape
+			print("Invalid color set in shape ",self.shape)
 			return
 			
 	def translate(self,dx,dy):

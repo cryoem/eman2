@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Benjamin Bammes, 06/03/2008 (bammes@bcm.edu)
@@ -94,24 +95,24 @@ models are not completely compatible."""
 		if options.last > options.first :
 			if i > options.last :
 				continue
-		print "[%0.1f" % ( 100. * float( i ) / len( ptcls ) ) + "%" + "] Converting %s..." % f
+		print("[%0.1f" % ( 100. * float( i ) / len( ptcls ) ) + "%" + "] Converting %s..." % f)
 		
 		# Load CTF parameters from EMAN2
 		if options.debug :
-			print "  Loading EMAN2 CTF parameters..."
+			print("  Loading EMAN2 CTF parameters...")
 		( e2ctf, ps, bg ) = loadctf( f )
 		ds = e2ctf.dsbg
 		
 		# Load structure factor file
 		if options.debug :
-			print "  Loading structure factor file..."
+			print("  Loading structure factor file...")
 		if ds != oldds :
 			sf = loadsf( options.sf, ds, len( bg ) )
 			oldds = ds
 		
 		# Create EMAN1 CTF object to store converted CTF parameters
 		if options.debug :
-			print "  Creating EMAN1 CTF object..."
+			print("  Creating EMAN1 CTF object...")
 		e1ctf = EMAN1Ctf( )
 #		e1ctf.defocus = e2ctf.defocus * -1.		# no longer necessary
 		e1ctf.voltage = e2ctf.voltage
@@ -125,7 +126,7 @@ models are not completely compatible."""
 		
 		# Convert noise model
 		if options.debug :
-			print "  Converting noise model..."
+			print("  Converting noise model...")
 		noise_min = [ 0., -50., 40., 0. ]
 		noise_max = [ 30., 0., 140., 10. ]
 		( e1ctf.noise0, e1ctf.noise1, e1ctf.noise2, e1ctf.noise3 ) = getnoise( bg, ps, ds, noise_min, noise_max, options.noisemin, options.noisemax )
@@ -133,39 +134,39 @@ models are not completely compatible."""
 		# Determine defocus
 		if options.df :
 			if options.debug :
-				print "  Calculating defocus..."
+				print("  Calculating defocus...")
 			e1ctf.defocus = getdefocus( f, e1ctf, ps, -1. * options.dfmin, -1. * options.dfmax )
-		elif options.dfval <> 0. :
+		elif options.dfval != 0. :
 			if options.debug :
-				print "  Setting defocus..."
+				print("  Setting defocus...")
 			e1ctf.defocus = -1. * options.dfval
 		
 		# Determine amplitude
 		if options.debug :
-			print "  Calculating amplitude..."
+			print("  Calculating amplitude...")
 		e1ctf.amplitude = getamp( ps, sf, e1ctf, e2ctf, ds )
 		
 		# Add SNR to integrated SNR
 		if options.ctfcoverage :
 			if options.debug :
-				print "  Adding SNR to integrated SNR..."
+				print("  Adding SNR to integrated SNR...")
 			e1bg = calcnoise( e1ctf.noise0, e1ctf.noise1, e1ctf.noise2, e1ctf.noise3, ds, bg )
 			intsnr = addsnr( intsnr, ps, e1bg )
 		
 		# Save parameters
 		if options.debug :
-			print "  Saving result..."
+			print("  Saving result...")
 		newctflines.append( [ base_name( f ), str( e1ctf.defocus ) + "," + str( e1ctf.bfactor ) + "," + str( e1ctf.amplitude ) + "," + str( e1ctf.ampcont ) + "," + str( e1ctf.noise0 ) + "," + str( e1ctf.noise1 ) + "," + str( e1ctf.noise2 ) + "," + str( e1ctf.noise3 ) + "," + str( e1ctf.voltage ) + "," + str( e1ctf.cs ) + "," + str( e1ctf.apix ) + "," + str( options.sf ) ] )
 	
 	# Save results
 	if options.debug :
-		print "Writing ctfparm.txt file..."
+		print("Writing ctfparm.txt file...")
 	write_ctfparm( "ctfparm.txt", newctflines )
 	
 	# Save integrated SNR
 	if options.ctfcoverage :
 		if options.debug :
-			print "Writing ctfcoverage.png file..."
+			print("Writing ctfcoverage.png file...")
 		write_snrmap( "ctfcoverage.png", intsnr, ds )
 	
 	# End program

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 # Muyuan Chen 2017-08
 import numpy as np
 
@@ -347,66 +348,81 @@ class Microscope(QtOpenGL.QGLWidget):
 			#self.pltwindow.set_data([np.arange(sz)-sz/2, contrast], "phase_contrast", linetype=0)
 		return img
 
-	def draw_wave_twod(self):
-		
-		sz=128 ### length of x-axis
-		xydivz=0.06#2e-3 ### xy/z scale ratio
+	def specimen_propagation(self):
+		sz = self.sz
+		xydivz=2e-3 ### xy/z scale ratio
 		mpix=3e-8 ### pixel to meter
 		wavelen=2e-12/mpix ### wave length
-		mult=400 ### size multiplier from GL lens diagram to wave image
+		mult=floor(sz*0.5) ### size multiplier from GL lens diagram to wave image
 
-		### input signal
-		raw=np.ones((sz,sz))
-
-		### input signal
-		raw=np.zeros((sz,sz))
-
-		### specimen
 		yap,xap = np.ogrid[-sz/2:sz/2, -sz/2:sz/2]
-		r = sz/2
-		hard_aperature = xap*xap+yap*yap<r*r
-		hard_aperature = hard_aperature.astype(float)
-		hard_aperature /= np.sum(hard_aperature)
 
-		raw0 = np.exp(-(xap**2/r+yap**2/r))
-		raw0 = raw0.astype(float)
-		raw0 /= np.max(raw0)
-		raw0 *= hard_aperature
+		#### from top to bottom of specimen
+		spec = []
 
-		raw1 = np.zeros_like(raw0)
-		coords = [[0,0,1.0,sz/5.,sz/5.],#, # x0,y0,scale,sigma_x,sigma_y
-				[5,5,1,sz/20.,sz/20.],
-				[-5,-5,1,sz/20.,sz/20.],
-				[-5,5,1,sz/20.,sz/20.],
-				[5,-5,1,sz/20.,sz/20.]]
-		for x0,y0,s,sigx,sigy in coords:
-			x0 = float(x0)
-			y0 = float(y0)
-			s = float(s)
-			sigx = float(sigx)
-			sigy = float(sigy)
-			raw1 += s*np.exp(-((xap-x0)**2/sigx+(yap-y0)**2/sigy))
-		raw1 = raw1.astype(float)
-		raw1 /= np.max(raw1)
+		layers = []
+		layers.append( [[ -10,  -10, 0.15, 4., 8.]] ) # t = 3-0 = 3
+		layers.append( [[  0,  0,  0.3, 8., 8.]] ) # t = 3-1 = 2
+		layers.append( [[  10, 10, 0.45, 4., 8.]] ) # t = 3-2 = 1
 
-		#raw=raw1*np.exp(-2*np.pi*1j*raw1) # amplitude + phase object?
-		raw=hard_aperature*np.exp(-2*np.pi*1j*raw1) # phase object
-		
+		scale = 5
+		t = len(layers)*scale # specimen thickness (in pixels)
+
+		raw1 = np.zeros((sz,sz))
+
+		ix2d, iy2d=(np.array(np.indices((sz,sz)), dtype=np.float32)-sz/2)*xydivz
+		rr=ix2d**2+iy2d**2
+		ixy = (ix2d[:,:,None,None]-ix2d[None,None,:])**2+ (iy2d[:,:,None,None]-iy2d[None,None,:])**2
+		for t0,coords in enumerate(layers):
+			for x0,y0,s,sigx,sigy in coords:
+				x0 = float(x0)
+				y0 = float(y0)
+				s = float(s)
+				sigx = float(sigx)
+				sigy = float(sigy)
+				raw1 += s*np.exp(-((xap-x0)**2/sigx+(yap-y0)**2/sigy),dtype=np.float32)
+			raw1 /= len(coords)
+			raw1 /= np.max(raw1)
+			phaseobj = np.exp(-1j*raw1*2*np.pi)
+
+			z = t0*scale
+			dst = np.sqrt(ixy+(t-z)**2)
+			cpx=phaseobj[:,:,None,None]*np.exp(-1j*2.*np.pi*dst/wavelen)*(1/dst**2)
+			img = np.sum(cpx, axis=(1,0))
+			img/=np.max(abs(img))
+			spec.append(img)
+
+		return np.sum(spec,axis=0)
+
+	def draw_wave_twod(self):
+		self.sz = 64
+		sz=self.sz ### length of x-axis
+
+		xydivz=2e-3 ### xy/z scale ratio
+		mpix=3e-8 ### pixel to meter
+		wavelen=2e-12/mpix ### wave length
+		mult=floor(sz*0.78) ### size multiplier from GL lens diagram to wave image
+
 		#### load lens info
 		l=np.array(self.lens)[3:]
 		lens_gl=np.array([[l[i,0]-l[i+1,0], l[i,1]] for i in range(len(l)-1)]) ### use relative distance between lens instead of absolute positions
 		lens=np.round(mult*lens_gl)
 
-		alldata=[]
 		#### start wave propagation
 		imgs=[]
-		#### from scattering point to the first lens
+
+		### specimen exit waveform
+		raw = self.specimen_propagation()
+		imgs.append(raw)
+		
+		#### from exiting specimen to the first lens
+		yap,xap = np.ogrid[-sz/2:sz/2, -sz/2:sz/2]
 		iz=np.round((self.lens[2][0]-l[0,0])*mult) ### z position of the first lens
 		ix2d, iy2d=(np.array(np.indices((sz,sz)), dtype=np.float32)-sz/2)*xydivz
 		rr=ix2d**2+iy2d**2
 		ixy = (ix2d[:,:,None,None]-ix2d[None,None,:])**2+ (iy2d[:,:,None,None]-iy2d[None,None,:])**2
 		dst = np.sqrt(ixy+iz**2)
-		cpx=raw[:,:,None,None]*np.exp(-1j*2.*np.pi*dst/wavelen)
+		cpx=raw[:,:,None,None]*np.exp(-1j*2.*np.pi*dst/wavelen)*(1/dst**2)
 		img = np.sum(cpx, axis=(1,0))
 		img/=np.max(abs(img))
 		imgs.append(img)
@@ -419,18 +435,19 @@ class Microscope(QtOpenGL.QGLWidget):
 				proj_ps=proj.copy()
 				ap=lens_gl[il][1]+4
 				clip=int((1-ap)*sz)/2
-				aperature = xap*xap + yap*yap <= clip**2
-				proj_ps *= aperature
+				proj_ps *= (xap*xap+yap*yap<clip**2)
 			else: ### lens
 				ps=rr/(f*2)*(2*np.pi/wavelen)  ### phase shift
+				ps+=self.cs*(rr**4)/4.
 				proj_ps=proj*np.exp(-1j*(-ps)) ### projection after phase shift
 			dst = np.sqrt(ixy+zmax**2)
-			cpx1=proj_ps[:,:,None,None]*np.exp(-1j*2*np.pi*dst/wavelen)
+			cpx1=proj_ps[:,:,None,None]*np.exp(-1j*2*np.pi*dst/wavelen)*(1/dst**2)
 			img=np.sum(cpx1,axis=(1,0))
 			img/=np.max(abs(img))
 			imgs.append(img)
 			vz -= zmax-1
-		self.twodwindow.set_data([from_numpy(np.abs(d).copy()) for d in imgs])
+
+		self.twodwindow.set_data([from_numpy(np.real(d).copy()) for d in imgs])
 		return imgs[-1]
 	
 	#### draw vertex and keep track of the distance
@@ -611,7 +628,7 @@ class Microscope(QtOpenGL.QGLWidget):
 				dist[si]+=self.beam_dist
 				if l[1]==-1: ### specimen stage, generate scattered and unscatterd beams
 					if passsample:
-						print "Multiple sample stage??"
+						print("Multiple sample stage??")
 					diff_f.append(abs(w))
 					news.append(s)
 					newt.append(tt)
@@ -778,10 +795,6 @@ class Microscope(QtOpenGL.QGLWidget):
 				glVertexPointerf(pts.tolist())
 				glDrawArrays(GL_LINE_STRIP, 0, len(pts))
 			
-		
-			
-			
-			
 		return pts
 		
 	def scr_to_img(self, pp):
@@ -884,14 +897,14 @@ class Microscope(QtOpenGL.QGLWidget):
 				img=self.draw_wave()
 			if self.twodwindow:
 				img=self.draw_wave_twod()
-			print "lens {:d}: py={:.3f}, f={:.3f}".format(
-				self.drag_lens, l[0], l[1])
+			print("lens {:d}: py={:.3f}, f={:.3f}".format(
+				self.drag_lens, l[0], l[1]))
 			self.drag_lens=-1
 			
 	
 	def closeEvent(self, event):
-		print self.lens
-		print "Exit.."
+		print(self.lens)
+		print("Exit..")
 		exit()
 
 class MainWindow(QtGui.QMainWindow):

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Muyuan Chen, April 2015
@@ -84,13 +85,13 @@ def main():
 	### Build tree
 	### always overwrite the tree here now
 	#if not os.path.isfile(options.nodes):
-	print "Building binary tree..."
+	print("Building binary tree...")
 	buildtree(projs,par,options.nodes,options.incomplete,options.verbose)
 	#else:
 		#print "Using existing tree..."
 	
 	## Generate children pairs for comparison
-	print "Generating children pairs for comparison..."
+	print("Generating children pairs for comparison...")
 	if options.cmpdiff:
 		nodepath= os.path.dirname(options.nodes)
 		masktmp='/'.join([nodepath,"tmp_msk.hdf"])
@@ -105,7 +106,7 @@ def main():
 	
 	E2progress(E2n,0.5)
 	#exit()
-	print "Starting classification..."
+	print("Starting classification...")
 	### Classify particles
 	
 		
@@ -136,7 +137,7 @@ def main():
 					rslt= rslt[1]
 					for r in rslt:
 						nfinished+=1
-						if options.verbose>0: print "Particle:",r["id"],"\tnodes:",r["choice"]
+						if options.verbose>0: print("Particle:",r["id"],"\tnodes:",r["choice"])
 						for c in r["choice"]:
 							ptclpernode[c]+=1
 						clsmx[0].set_value_at(0,r["id"],r["cls"])
@@ -144,7 +145,7 @@ def main():
 							clsmx[nt].set_value_at(0,r["id"],r["simmx"][nt])
 			
 			taskids=[j for i,j in enumerate(taskids) if curstat[i]!=100]
-			if haveprogress: print "{:d}/{:d} finished".format(nfinished,npt)
+			if haveprogress: print("{:d}/{:d} finished".format(nfinished,npt))
 			E2progress(E2n, 0.5 + float(nfinished)/npt)
 			
 		for i in range(nnod):
@@ -176,7 +177,7 @@ def main():
 	if options.cmpdiff:	
 		os.remove(cmptmp)
 		os.remove(masktmp)
-	print "Finished~"
+	print("Finished~")
 	E2progress(E2n,1.0)
 	E2end(E2n)
 	
@@ -191,7 +192,7 @@ def buildtree(projs,par,nodes,incomplete,verbose):
 	### Building the similarity matrix for all projections
 	#cmd="e2simmx.py {pj} {pj} {smx} --align=rotate_translate_flip --aligncmp=sqeuclidean:normto=1 --cmp=sqeuclidean --saveali -v {vb:d} --force {parallel}".format(pj=projs,smx=tmpsim, parallel=par, vb=verbose-1)
 	cmd="e2simmx.py {pj} {pj} {smx} --align=rotate_translate_flip --aligncmp=sqeuclidean:normto=1 --cmp=frc:maxres=10.0 --ralign=refine --raligncmp=frc:maxres=10.0 --saveali -v {vb:d} --force {parallel}".format(pj=projs,smx=tmpsim, parallel=par, vb=verbose-1)
-	print cmd
+	print(cmd)
 	launch_childprocess(cmd)
 	
 	### Initialize buttom level nodes
@@ -254,7 +255,7 @@ def buildtree(projs,par,nodes,incomplete,verbose):
 		y=y[0]
 		
 		### Do averaging
-		if verbose>0: print "Averaging ",ai[x],ai[y]," to ",npj+k
+		if verbose>0: print("Averaging ",ai[x],ai[y]," to ",npj+k)
 		
 		alipm=[a[x,y] for a in pms]
 		alidict={"type":"2d"}
@@ -410,7 +411,7 @@ def classify(ptcl,ai,nodes,clsmx,align,alicmp,cmp,ralign,alircmp,cmptmp,masktmp)
 				ni=nimg["tree_children"][0]
 			else:
 				ni=nimg["tree_children"][1]
-		print "Particle",pp,"nodes",choice
+		print("Particle",pp,"nodes",choice)
 		nimg=EMData(nodes,ni)
 		pm=compare(prob,nimg,options)
 		clsmx[0].set_value_at(0,pp,ni)

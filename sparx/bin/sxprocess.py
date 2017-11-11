@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -183,7 +184,7 @@ def tsp(lccc):
 		# Plot
 		#         Plot(city, R, dist)
 
-		print "T=%10.5f , distance= %10.5f , accepted steps= %d" %(T, dist, accepted)
+		print("T=%10.5f , distance= %10.5f , accepted steps= %d" %(T, dist, accepted))
 		T *= fCool             # The system is cooled down
 		if accepted == 0: break  # If the path does not want to change any more, we can stop
 
@@ -279,7 +280,7 @@ def main():
         sxprocess.py  vol3d.hdf  mask3d.hdf  --adaptive_mask  --nsigma=3.0  --ndilation=1  --kernel_size=9  --gauss_standard_dev=5
         
         Use the user-provided threshold to intially obtain the largest density cluster.
-        sxprocess.py  vol3d.hdf  mask3d.hdf  --adaptive_mask --threshold=0.05  -ndilation=0  --kernel_size=9  --gauss_standard_dev=5
+        sxprocess.py  vol3d.hdf  mask3d.hdf  --adaptive_mask --threshold=0.05  --ndilation=0  --kernel_size=9  --gauss_standard_dev=5
 
    13. Generate binary 3D mask from input 3D volume using the user-provided threshold.
         sxprocess.py  vol3d.hdf  mask3d.hdf  --binary_mask  --threshold=0.05  --ne=3  --nd==3
@@ -309,9 +310,13 @@ def main():
 		
 	 for 2-D images:       calculate B-factor and apply negative B-factor to 2-D images.
 		
-   15. Window stack file -reduce the size of images without changing the pixel size.
+   15. Window stack file --window out central area of images.
+        sxprocess.py input.hdf output.hdf --box=new_box_size
 
-   16. Create angular distribution .build file
+   16. Pad stack file --pad images to a larger size and set surround background to request value (default 0.0).
+        sxprocess.py input.hdf output.hdf --box=new_box_size --background=3.0
+
+   17. Create angular distribution .build file
         sxprocess.py --angular_distribution  inputfile=example/path/params.txt --pixel_size=1.0  --round_digit=5  --box_size=500  --particle_radius=175  --cylinder_width=1  --cylinder_length=10000
         
 
@@ -382,9 +387,13 @@ def main():
 	parser.add_option("--consine_edge", 	    type="float",		  help="the width for cosine transition area ", default= 6.0)
 	parser.add_option("--dilation", 			type="float",		  help="the pixels for dilate or erosion of binary mask ", default= 3.0)
 	#parser.add_option("--randomphasesafter", 	type="float",		  help=" set Fourier pixels random phases after FSC value ", default= 0.8)
-	# 
+	# window
 	parser.add_option("--window_stack",         action="store_true",                      help="window stack images using a smaller window size", default=False)
 	parser.add_option("--box",                  type="int",		      default= 0,         help="the new window size ")
+	
+	# pad
+	parser.add_option("--pad",                  action="store_true",                      help="pad stack images to a larger window size and set the surrounding background (by default to 0.0)", default=False)
+	parser.add_option("--background",           type="float",		  default= 0.0,       help="value the surrounding area will be set to")
 	
 	# Options for angular distribution
 	parser.add_option('--angular_distribution',    	action="store_true",  	default=False,        	help='create an angular distribution file based on a project3d.txt')
@@ -400,7 +409,7 @@ def main():
 	if options.phase_flip:
 		nargs = len(args)
 		if nargs != 2:
-			print "must provide name of input and output file!"
+			print("must provide name of input and output file!")
 			return
 		from EMAN2 import Processor
 		instack = args[0]
@@ -413,7 +422,7 @@ def main():
 			try:
 				ctf = img.get_attr('ctf')
 			except:
-				print "no ctf information in input stack! Exiting..."
+				print("no ctf information in input stack! Exiting...")
 				return
 
 			dopad = True
@@ -590,7 +599,7 @@ def main():
 		elif(ndim == 2):
 			from fundamentals import window2d
 			nn = min(nx,ny)
-			print nn,nx,ny
+			print(nn,nx,ny)
 			t = rops_table(window2d(im,nn,nn))
 		else:
 			t = periodogram(im)
@@ -613,10 +622,10 @@ def main():
 	elif options.makedb != None:
 		nargs = len(args)
 		if nargs != 1:
-			print "must provide exactly one argument denoting database key under which the input params will be stored"
+			print("must provide exactly one argument denoting database key under which the input params will be stored")
 			return
 		dbkey = args[0]
-		print "database key under which params will be stored: ", dbkey
+		print("database key under which params will be stored: ", dbkey)
 		gbdb = js_open_dict("e2boxercache/gauss_box_DB.json")
 
 		parmstr = 'dummy:'+options.makedb[0]
@@ -663,7 +672,7 @@ def main():
 		if 'boxsize' in param_dict:
 			boxsize = int(param_dict['boxsize'])
 
-		print "pixel size: ", parm_apix, " format: ", parm_format, " add CTF: ", parm_CTF, " box size: ", boxsize
+		print("pixel size: ", parm_apix, " format: ", parm_format, " add CTF: ", parm_CTF, " box size: ", boxsize)
 
 		scale_mult      = 2500
 		sigma_add       = 1.5
@@ -807,7 +816,7 @@ def main():
 		drop_spider_doc("params.txt", params)
 
 	elif options.importctf != None:
-		print ' IMPORTCTF  '
+		print(' IMPORTCTF  ')
 		from utilities import read_text_row,write_text_row
 		from random import randint
 		import subprocess
@@ -864,7 +873,7 @@ def main():
 				#print cmd
 				subprocess.call(cmd, shell=True)
 			else:
-				print  ' >>>  Group ',name,'  skipped.'
+				print(' >>>  Group ',name,'  skipped.')
 
 		cmd = "{} {} {}".format("rm -f",grpfile,ctfpfile)
 		subprocess.call(cmd, shell=True)
@@ -874,7 +883,7 @@ def main():
 		scale = options.scale
 		nargs = len(args)
 		if nargs != 2:
-			print "Please provide names of input and output file!"
+			print("Please provide names of input and output file!")
 			return
 		p = read_text_row(args[0])
 		for i in xrange(len(p)):
@@ -887,13 +896,13 @@ def main():
 		from morphology import adaptive_mask1
 		nargs = len(args)
 		if nargs ==0:
-			print " Generate soft-edged 3D mask from input 3D volume automatically or using the user provided threshold."
+			print(" Generate soft-edged 3D mask from input 3D volume automatically or using the user provided threshold.")
 			return
 		elif nargs > 2:
 			ERROR( "Too many arguments are given, try again!", "options.adaptive_mask")
 			return
 		
-		print "Started sxprocess.py  --adaptive_mask"
+		print("Started sxprocess.py  --adaptive_mask")
 		inputvol = get_im(args[0]) # args[0]: input 3D volume file path
 		input_path, input_file_name = os.path.split(args[0])
 		input_file_name_root,ext=os.path.splitext(input_file_name)
@@ -901,24 +910,24 @@ def main():
 		else:           mask_file_name = "adaptive_mask_for_" + input_file_name_root + ".hdf" # Only hdf file is output.
 		mask3d, density_stats = adaptive_mask1(inputvol, options.nsigma, options.threshold, options.ndilation, options.kernel_size, options.gauss_standard_dev)
 		mask3d.write_image(mask_file_name)
-		print "  Applied threshold for binarize: %f" % density_stats[0]
-		print "  Background density average    : %f" % density_stats[1]
-		print "  Background density sigma      : %f" % density_stats[2]
-		print "  Sigma factor (nsigma)         : %f" % density_stats[3]
-		print "Finished sxprocess.py  --adaptive_mask"
+		print("  Applied threshold for binarize: %f" % density_stats[0])
+		print("  Background density average    : %f" % density_stats[1])
+		print("  Background density sigma      : %f" % density_stats[2])
+		print("  Sigma factor (nsigma)         : %f" % density_stats[3])
+		print("Finished sxprocess.py  --adaptive_mask")
 	
 	elif options.binary_mask:
 		from utilities import get_im
 		from morphology import binarize, erosion, dilation
 		nargs = len(args)
 		if nargs == 0:
-			print " Generate binary 3D mask from input 3D volume using the user-provided threshold."
+			print(" Generate binary 3D mask from input 3D volume using the user-provided threshold.")
 			return
 		elif nargs > 2:
-			print "Too many arguments are given, try again!"
+			print("Too many arguments are given, try again!")
 			return
 		
-		print "Started sxprocess.py  --binary_mask"
+		print("Started sxprocess.py  --binary_mask")
 		inputvol = get_im(args[0])
 		input_path, input_file_name = os.path.split(args[0])
 		input_file_name_root,ext=os.path.splitext(input_file_name)
@@ -928,8 +937,8 @@ def main():
 		for i in xrange(options.ne): mask3d = erosion(mask3d)
 		for i in xrange(options.nd): mask3d = dilation(mask3d)
 		mask3d.write_image(mask_file_name)
-		print "Applied threshold value for binarization is %f" % options.bin_threshold
-		print "Finished sxprocess.py  --binary_mask"
+		print("Applied threshold value for binarization is %f" % options.bin_threshold)
+		print("Finished sxprocess.py  --binary_mask")
 
 	elif options.postprocess:
 		from logger import Logger,BaseLogger_Files
@@ -1277,34 +1286,64 @@ def main():
 	elif options.window_stack:
 		nargs = len(args)
 		if nargs ==0:
-			print "  reduce image size of a stack"
+			print("  window images in a stack")
 			return
 		else:
 			output_stack_name = None
 			inputstack = args[0]
-			if nargs ==2:output_stack_name = args[1]
+			if nargs ==2: output_stack_name = args[1]
 			input_path,input_file_name     = os.path.split(inputstack)
 			input_file_name_root,ext       = os.path.splitext(input_file_name)
 			if input_file_name_root[0:3]=="bdb":stack_is_bdb = True
 			else:                               stack_is_bdb = False
 			if output_stack_name is None:
-				if stack_is_bdb: output_stack_name  = "bdb:reduced_"+input_file_name_root[4:]
-				else: output_stack_name = "reduced_"+input_file_name_root+".hdf" # Only hdf file is output.
+				if stack_is_bdb: output_stack_name  = "bdb:window_"+input_file_name_root[4:]
+				else: output_stack_name = "window_"+input_file_name_root+".hdf" # Only hdf file is output.
 			nimage = EMUtil.get_image_count(inputstack)
-			from fundamentals import window2d
 			from utilities import get_im
-			for i in xrange(nimage): window2d(get_im(inputstack,i),options.box,options.box).write_image(output_stack_name,i)
+			for i in xrange(nimage):
+				im = get_im(inputstack,i)
+				if( i == 0 ):
+					if( im.get_xsize() < options.box ):  ERROR( "New image size has to be smaller than the original image size", "sxprocess.py", 1)
+					newz = im.get_zsize()
+					if( newz > 1):  newz = options.box
+				im = Util.window(im, options.box,options.box, newz, 0,0,0)
+				im.write_image(output_stack_name,i)
+
+	elif options.pad:
+		nargs = len(args)
+		if nargs ==0:
+			print("  pad images in a stack")
+			return
+		else:
+			output_stack_name = None
+			inputstack = args[0]
+			if nargs ==2: output_stack_name = args[1]
+			input_path,input_file_name     = os.path.split(inputstack)
+			input_file_name_root,ext       = os.path.splitext(input_file_name)
+			if input_file_name_root[0:3]=="bdb":stack_is_bdb = True
+			else:                               stack_is_bdb = False
+			if output_stack_name is None:
+				if stack_is_bdb: output_stack_name  = "bdb:pad_"+input_file_name_root[4:]
+				else: output_stack_name = "pad_"+input_file_name_root+".hdf" # Only hdf file is output.
+			nimage = EMUtil.get_image_count(inputstack)
+			from utilities import get_im, pad
+			for i in xrange(nimage):
+				im = get_im(inputstack,i)
+				if( i == 0 ):
+					if( im.get_xsize() > options.box ):  ERROR( "New image size has to be larger than the original image size", "sxprocess.py", 1)
+					newz = im.get_zsize()
+					if( newz > 1):  newz = options.box
+				pad(im, options.box, options.box, newz, float(options.background)).write_image(output_stack_name,i)
 
 	elif options.angular_distribution:
 		from utilities import angular_distribution
 		nargs = len(args)
 		if nargs > 1:
-			print 'Too many inputs are given, see usage and restart the program!'
+			ERROR('Too many inputs are given, see usage and restart the program!',"sxprocess.py",1)
 		else:
 			if not os.path.exists(args[0]):
-				ERROR(
-					'Params file does not exists! Please rename and restart the program.', 1
-					)
+				ERROR( "Params file does not exists! Please rename and restart the program.", "sxprocess.py", 1)
 			strInput = args[0]
 			strOutput = strInput[:-len(strInput.split('/')[-1])] + 'distribution.bild'
 			angular_distribution(inputfile=strInput, options=options, output=strOutput)

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -101,12 +102,12 @@ for i in range(1,n):
 	a.rotate(b.get_attr("rotational"),0,0)
 	a.translate(b.get_attr("translational.dx"),b.get_attr("translational.dy"),0)
 #	b=a.align("translational",ref0,{"nozero":1,"maxshift":nx/2})
-	print "%4d. %3d\t%3d\t%1.2f\t%1.4f"%(i,b.get_attr("translational.dx"),b.get_attr("translational.dy"),b.get_attr("rotational"),dot)
+	print("%4d. %3d\t%3d\t%1.2f\t%1.4f"%(i,b.get_attr("translational.dx"),b.get_attr("translational.dy"),b.get_attr("rotational"),dot))
 	if dot>thr : 
 		avg=avg+a
 		sum+=1
 	
-print "%d/%d used"%(sum,n)
+print("%d/%d used"%(sum,n))
 avg-=avg.get_attr("minimum")
 avg/=avg.get_attr("maximum")
 #avg.process_inplace("math.pow",{"pow":gamma})

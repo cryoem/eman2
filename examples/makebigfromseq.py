@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -43,7 +44,7 @@ try:
 	import wx
 	from emimage import *
 except:
-	print "no wx"
+	print("no wx")
 
 def fixup(i,d,l):
 	"""Takes an image, a dark reference and a light/flat reference and corrects the image in-place"""
@@ -77,7 +78,7 @@ def transalign(i1,i2,m1,m2):
 	
 def main(argv,app=None) :
 	if len(argv)==1 : 
-		print "makebigfromseq.py <infile> <sizexsize> <dot threshold> <darkref> <lightref> <im1 shift x,y>"
+		print("makebigfromseq.py <infile> <sizexsize> <dot threshold> <darkref> <lightref> <im1 shift x,y>")
 		sys.exit(1)
 		
 	n=EMUtil.get_image_count(argv[1])
@@ -138,11 +139,11 @@ def main(argv,app=None) :
 	#	olap=an.cmp("dot",m2,{"negative":0,"normalize":1})		# overlap dot product for normalization of quality factors
 	#	if olap==0 : continue
 	#	olap=sqrt(olap)		# we don't want to upweight small overlaps too much, this is empirical
-		print i,b.get_attr("align_score"),b.get_attr("translational.dx"),b.get_attr("translational.dy"),
+		print(i,b.get_attr("align_score"),b.get_attr("translational.dx"),b.get_attr("translational.dy"), end=' ')
 		if b.get_attr("align_score")<thr : 
-			print " *"
+			print(" *")
 			continue
-		else : print ""
+		else : print("")
 	#	b.process_inplace("normalize.toimage",{"noisy":a2,"keepzero":1})
 		avg+=b
 		avgn+=m2
@@ -167,11 +168,11 @@ def main(argv,app=None) :
 		b=transalign(a,avg,mask,avgn)
 		m2=mask.copy()			# copy and translate the map for normalization map
 		m2.translate(b.get_attr("translational.dx"),b.get_attr("translational.dy"),0)
-		print i,b.get_attr("align_score"),b.get_attr("translational.dx"),b.get_attr("translational.dy"),
+		print(i,b.get_attr("align_score"),b.get_attr("translational.dx"),b.get_attr("translational.dy"), end=' ')
 		if b.get_attr("align_score")<thr2: 
-			print " *"
+			print(" *")
 			continue
-		else : print ""
+		else : print("")
 	#	b.process_inplace("normalize.toimage",{"noisy":avg,"keepzero":1})
 		avg2+=b
 		avgn2+=m2

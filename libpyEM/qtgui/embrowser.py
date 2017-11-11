@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke (sludtke@bcm.edu)
@@ -59,7 +60,7 @@ import weakref
 def display_error(msg) :
 	"""Displays an error message, in gui and on terminal."""
 
-	print msg
+	print(msg)
 	sys.stdout.flush()
 	QtGui.QMessageBox.warning(None, "Error", msg)
 
@@ -75,7 +76,7 @@ def safe_int(v) :
 	try :
 		return int(v)
 	except (ValueError, TypeError) :
-		return -sys.maxint-1
+		return -sys.maxsize-1
 
 def safe_float(v) :
 	"""Performs a safe conversion from a string to a float. If a non float is presented we return the lowest possible value"""
@@ -504,7 +505,7 @@ class EMTextFileType(EMFileType) :
 
 		if size > 5000000 : dim = "big"
 		else :
-			f = file(path, "r").read()
+			f = open(path, "r").read()
 			lns = max(f.count("\n"), f.count("\r"))
 			dim = "%d ln"%lns
 
@@ -543,7 +544,7 @@ class EMHTMLFileType(EMFileType) :
 
 		if size > 5000000 : dim = "big"
 		else :
-			f = file(path, "r").read()
+			f = open(path, "r").read()
 			lns = max(f.count("\n"), f.count("\r"))
 			dim = "%d ln"%lns
 
@@ -568,7 +569,7 @@ class EMHTMLFileType(EMFileType) :
 		elif get_platform() == "Darwin" :
 			os.system("open {}".format(os.path.abspath(self.path)))		# uses the default browser
 		else : 
-			print "Sorry, I don't know how to run Firefox on this platform"
+			print("Sorry, I don't know how to run Firefox on this platform")
 
 #---------------------------------------------------------------------------
 
@@ -610,7 +611,7 @@ class EMPlotFileType(EMFileType) :
 
 		# Make sure all of the lines have the same number of columns
 
-		fin = file(path, "r")
+		fin = open(path, "r")
 		numr = 0
 
 		for l in fin :
@@ -634,13 +635,13 @@ class EMPlotFileType(EMFileType) :
 
 		# Make sure all of the lines have the same number of columns
 
-		fin = file(path, "r")
+		fin = open(path, "r")
 		numr = 0
 		numc = 0
 
 		for l in fin :
 			if "nan" in l :
-				print "Warning, NaN present in file"
+				print("Warning, NaN present in file")
 				continue
 
 			if l[0] == "#" : continue
@@ -649,7 +650,7 @@ class EMPlotFileType(EMFileType) :
 
 			if lnumc != 0 and numc == 0 : numc = lnumc
 			elif lnumc != 0 and lnumc != numc :
-				print "Error: invalid Plot file:", path
+				print("Error: invalid Plot file:", path)
 				self.numr = 0
 				self.numc = 0
 				return
@@ -736,7 +737,7 @@ class EMPlotFileType(EMFileType) :
 		brws.busy()
 
 		data1 = []
-		fin = file(self.path, "r")
+		fin = open(self.path, "r")
 		numr = 0
 
 		for l in fin :
@@ -764,7 +765,7 @@ class EMPlotFileType(EMFileType) :
 		brws.busy()
 
 		data1 = []
-		fin = file(self.path, "r")
+		fin = open(self.path, "r")
 		numr = 0
 
 		for l in fin :
@@ -997,7 +998,7 @@ class EMBdbFileType(EMFileType) :
 		elif get_platform() == "Darwin" :
 			os.system("e2proc3d.py %s /tmp/vol.hdf"%self.path)		# Probably not a good hack to use, but it will do for now...
 			os.system("/Applications/Chimera.app/Contents/MacOS/chimera /tmp/vol.hdf&")
-		else : print "Sorry, I don't know how to run Chimera on this platform"
+		else : print("Sorry, I don't know how to run Chimera on this platform")
 
 #---------------------------------------------------------------------------
 
@@ -1096,7 +1097,7 @@ class EMImageFileType(EMFileType) :
 		elif get_platform() == "Darwin" :
 			os.system("e2proc3d.py %s /tmp/vol.hdf"%self.path)		# Probably not a good hack to use, but it will do for now...
 			os.system("/Applications/Chimera.app/Contents/MacOS/chimera /tmp/vol.hdf&")
-		else : print "Sorry, I don't know how to run Chimera on this platform"
+		else : print("Sorry, I don't know how to run Chimera on this platform")
 
 #---------------------------------------------------------------------------
 
@@ -1136,7 +1137,7 @@ class EMStackFileType(EMFileType) :
 
 		try : self.dim = (im0["nx"], im0["ny"], im0["nz"])
 		except :
-			print "First 10 images all missing in ", path
+			print("First 10 images all missing in ", path)
 			self.dim = "?"
 
 	def actions(self) :
@@ -1151,7 +1152,7 @@ class EMStackFileType(EMFileType) :
 		# 1-D stack
 		elif self.nimg > 1:
 			return [("Plot 2D", "Plot all on a single 2-D plot", self.plot2dNew), ("Save As", "Saves images in new file format", self.saveAs)]
-		else : print "Error: stackfile with < 2 images ? (%s)"%self.path
+		else : print("Error: stackfile with < 2 images ? (%s)"%self.path)
 
 		return []
 
@@ -1167,7 +1168,7 @@ class EMStackFileType(EMFileType) :
 		elif get_platform() == "Darwin" :
 			os.system("e2proc3d.py %s /tmp/vol.hdf"%self.path)		# Probably not a good hack to use, but it will do for now...
 			os.system("/Applications/Chimera.app/Contents/MacOS/chimera /tmp/vol.hdf&")
-		else : print "Sorry, I don't know how to run Chimera on this platform"
+		else : print("Sorry, I don't know how to run Chimera on this platform")
 
 #---------------------------------------------------------------------------
 
@@ -1210,7 +1211,7 @@ class EMPDBFileType(EMFileType):
 		
 		if size > 5000000: dim = "big"
 		else :
-			f = file(path, "r").read()
+			f = open(path, "r").read()
 			lns = max(f.count("\n"), f.count("\r"))
 			dim = "%d ln"%lns
 		
@@ -1299,7 +1300,7 @@ class EMPDBFileType(EMFileType):
 		elif get_platform() == "Darwin":
 			os.system("/Applications/Chimera.app/Contents/MacOS/chimera %s &" % self.path)
 		else:
-			print "Sorry, I don't know how to run Chimera on this platform"
+			print("Sorry, I don't know how to run Chimera on this platform")
 
 #---------------------------------------------------------------------------
 
@@ -1463,7 +1464,7 @@ class EMDirEntry(object) :
 
 		try : return self.__children[n]
 		except :
-			print "Request for child %d of children %s (%d)"%(n, self.__children, len(self.__children))
+			print("Request for child %d of children %s (%d)"%(n, self.__children, len(self.__children)))
 			traceback.print_stack()
 			raise Exception
 
@@ -1659,7 +1660,7 @@ class EMDirEntry(object) :
 					except : continue
 					break
 				if i == 9 :
-					print "Error: all of the first 10 images are missing ! : ",self.path()
+					print("Error: all of the first 10 images are missing ! : ",self.path())
 					return
 
 			if tmp["ny"] == 1 : self.dim = str(tmp["nx"])
@@ -1673,7 +1674,7 @@ class EMDirEntry(object) :
 
 		else :
 			try :
-				head = file(self.path(), "rb").read(4096)		# Most FileTypes should be able to identify themselves using the first 4K block of a file
+				head = open(self.path(), "rb").read(4096)		# Most FileTypes should be able to identify themselves using the first 4K block of a file
 
 				try : guesses = EMFileType.extbyft[os.path.splitext(self.path())[1]]		# This will get us a list of possible FileTypes for this extension
 				except : guesses = EMFileType.alltocheck
@@ -1780,7 +1781,7 @@ class EMFileItemModel(QtCore.QAbstractItemModel) :
 		data = index.internalPointer()
 
 		if data == None :
-			print "Error with index ", index.row(), index.column()
+			print("Error with index ", index.row(), index.column())
 			return "XXX"
 
 		#if index.column() == 0 : print "EMFileItemModel.data(%d %d %s) = %s"%(index.row(), index.column(), index.parent(), str(data.__dict__))
@@ -1873,7 +1874,7 @@ class EMFileItemModel(QtCore.QAbstractItemModel) :
 		if index.isValid() :
 			try : data = index.internalPointer().parent()
 			except :
-				print "Parent index error:", str(index.__dict__)
+				print("Parent index error:", str(index.__dict__))
 		else : return QtCore.QModelIndex()
 
 		if data == None : return QtCore.QModelIndex()			# No data, return invalid
@@ -1915,7 +1916,7 @@ class myQItemSelection(QtGui.QItemSelectionModel) :
 	"""For debugging"""
 
 	def select(self, tl, br) :
-		print tl.indexes()[0].row(), tl.indexes()[0].column(), int(br)
+		print(tl.indexes()[0].row(), tl.indexes()[0].column(), int(br))
 		QtGui.QItemSelectionModel.select(self, tl, QtGui.QItemSelectionModel.SelectionFlags(QtGui.QItemSelectionModel.ClearAndSelect+QtGui.QItemSelectionModel.Rows))
 
 #---------------------------------------------------------------------------
@@ -2001,7 +2002,7 @@ class EMTextInfoPane(EMInfoPane) :
 
 		self.target = data
 
-		self.text.setPlainText(file(self.target.path(), "r").read())
+		self.text.setPlainText(open(self.target.path(), "r").read())
 
 		self.text.setReadOnly(True)
 		self.wbutedit.setEnabled(True)
@@ -2026,7 +2027,7 @@ class EMTextInfoPane(EMInfoPane) :
 		self.display(self.target)
 
 	def buttonOk(self, tog) :
-		try : file(self.target.path(), "w").write(str(self.text.toPlainText()))
+		try : open(self.target.path(), "w").write(str(self.text.toPlainText()))
 		except : QtGui.QMessageBox.warning(self, "Error !", "File write failed")
 
 #---------------------------------------------------------------------------
@@ -2075,7 +2076,7 @@ class EMHTMLInfoPane(EMInfoPane) :
 		"""display information for the target EMDirEntry"""
 
 		self.target = data
-		self.text.setHtml(file(self.target.path(), "r").read())
+		self.text.setHtml(open(self.target.path(), "r").read())
 		self.text.setReadOnly(True)
 		self.wbutedit.setEnabled(True)
 		self.wbutcancel.setEnabled(False)
@@ -2099,7 +2100,7 @@ class EMHTMLInfoPane(EMInfoPane) :
 		self.display(self.target)
 
 	def buttonOk(self, tog) :
-		try : file(self.target.path(), "w").write(str(self.text.toHtml()))
+		try : open(self.target.path(), "w").write(str(self.text.toHtml()))
 		except : QtGui.QMessageBox.warning(self, "Error !", "File write failed")
 
 #---------------------------------------------------------------------------
@@ -2135,7 +2136,7 @@ class EMPDBInfoPane(EMInfoPane) :
 	def display(self, data) :
 		"""display information for the target EMDirEntry"""
 		self.target = data
-		self.text.setPlainText(file(self.target.path(), "r").read())
+		self.text.setPlainText(open(self.target.path(), "r").read())
 		self.text.setReadOnly(True)
 		self.wbutedit.setEnabled(True)
 		self.wbutcancel.setEnabled(False)
@@ -2158,7 +2159,7 @@ class EMPDBInfoPane(EMInfoPane) :
 		self.display(self.target)
 
 	def buttonOk(self, tog) :
-		try : file(self.target.path(), "w").write(str(self.text.toPlainText()))
+		try : open(self.target.path(), "w").write(str(self.text.toPlainText()))
 		except : QtGui.QMessageBox.warning(self, "Error !", "File write failed")
 
 #---------------------------------------------------------------------------
@@ -2185,7 +2186,7 @@ class EMPlotInfoPane(EMInfoPane) :
 		numc = 0
 		data = []
 
-		for l in file(target.path(), "r") :
+		for l in open(target.path(), "r") :
 			if l[0] == "#" : continue
 
 			vals = [float(i) for i in renumfind.findall(l)]
@@ -2631,7 +2632,7 @@ class EMImageInfoPane(EMInfoPane) :
 		self.wheadtree.clear()
 		try : trg = EMData(self.target.path(), 0, True).get_attr_dict()		# read the header only, discard the emdata object
 		except :
-			print "Error reading:", self.target.path(), key
+			print("Error reading:", self.target.path(), key)
 
 		if trg == None :
 			#print "Warning: tried to read unavailable key: %s"%key
@@ -2844,7 +2845,7 @@ class EMStackInfoPane(EMInfoPane) :
 			try :
 				val = int(self.wimnum.value())
 			except :
-				print "Error with key:", val
+				print("Error with key:", val)
 				return
 
 		self.showItem(val)
@@ -2856,7 +2857,7 @@ class EMStackInfoPane(EMInfoPane) :
 
 		try : trg = EMData(self.target.path(), key, True).get_attr_dict()		# read the header only, discard the emdata object
 		except :
-			print "Error reading:", self.target.path(), key
+			print("Error reading:", self.target.path(), key)
 
 		if trg == None :
 #			print "Warning: tried to read unavailable key: %s"%key
@@ -2933,7 +2934,7 @@ class EMInfoWin(QtGui.QWidget) :
 		else :
 			# If we got here, then we need to make a new instance of the appropriate pane
 
-			if cls == None : print "No class ! (%s)"%str(ftype)
+			if cls == None : print("No class ! (%s)"%str(ftype))
 			pane = cls()
 			i = self.stack.addWidget(pane)		# add the new pane and get its index
 			pane.display(target)
@@ -3434,14 +3435,14 @@ class EMBrowserWidget(QtGui.QWidget) :
 		qism = self.wtree.selectionModel().selectedRows()
 		self.result = [i.internalPointer().path().replace(os.getcwd(), ".") for i in qism]
 		self.updtimer.stop()
- 		self.emit(QtCore.SIGNAL("ok")) # this signal is important when e2ctf is being used by a program running its own eve
+		self.emit(QtCore.SIGNAL("ok")) # this signal is important when e2ctf is being used by a program running its own eve
 
 	def buttonCancel(self, tog) :
 		"""When the Cancel button is pressed, a signal is emitted, but getResult should not be called."""
 
 		self.result = []
 		self.updtimer.stop()
- 		self.emit(QtCore.SIGNAL("cancel")) # this signal is important when e2ctf is being used by a program running its own eve
+		self.emit(QtCore.SIGNAL("cancel")) # this signal is important when e2ctf is being used by a program running its own eve
 		self.close()
 
 	def selectAll(self) :
@@ -3477,7 +3478,7 @@ class EMBrowserWidget(QtGui.QWidget) :
 		if "/" in self.curpath : newpath = self.curpath.rsplit("/", 1)[0]
 		else : newpath = os.path.realpath(self.curpath).rsplit("/", 1)[0]
 
-		print "Newpath:", newpath
+		print("Newpath:", newpath)
 
 		#if len(newpath) > 1 : self.setPath(newpath)	# What if we want to return to CWD, '.' # John F
 
@@ -3621,9 +3622,9 @@ class EMBrowserWidget(QtGui.QWidget) :
 				self.curmodel = inimodel(path, dirregex = filt)
 			except :
 				self.curmodel = inimodel(path)
- 				filt = None
+				filt = None
 #				QtGui.QMessageBox.warning(None, "Error", "Filtering not allowed.")
-				print "Filtering is not implemented in this instance of the file browser."
+				print("Filtering is not implemented in this instance of the file browser.")
 		else :
 			self.curmodel = inimodel(path)
 
@@ -3679,8 +3680,8 @@ class EMBrowserWidget(QtGui.QWidget) :
 
 def test_result() :
 	global window
-	print "Returned"
-	print window.getResult()
+	print("Returned")
+	print(window.getResult())
 
 if __name__ == '__main__' :
 	em_app = EMApp()

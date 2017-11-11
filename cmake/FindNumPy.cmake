@@ -1,4 +1,4 @@
-execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "import numpy; print numpy.get_include()"
+execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "import numpy; print(numpy.get_include())"
 		OUTPUT_VARIABLE numpy_include_dir
 		OUTPUT_STRIP_TRAILING_WHITESPACE
 		)

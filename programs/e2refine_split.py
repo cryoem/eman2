@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 10/11/15 
@@ -71,7 +72,7 @@ def main():
 		options.nbasis=6
 		if options.nbasis<=options.usebasis+1 :
 			options.nbasis=options.usebasis+1
-			print "--nbasis adjusted to ",options.nbasis
+			print("--nbasis adjusted to ",options.nbasis)
 
 	if options.path==None:
 		paths=[i for i in os.listdir(".") if "refine_" in i and len(i)==9]
@@ -94,10 +95,10 @@ def main():
 		sym=olddb["sym"]
 		if olddb["breaksym"]:
 			sym="c1"
-		if options.verbose : print "Found iteration {} in {}, using {}".format(last_iter,options.path," & ".join(ptcls))
+		if options.verbose : print("Found iteration {} in {}, using {}".format(last_iter,options.path," & ".join(ptcls)))
 	except:
 		traceback.print_exc()
-		print "Error: Cannot find necessary files in ",options.path
+		print("Error: Cannot find necessary files in ",options.path)
 		sys.exit(1)
 		
 	logger=E2init(sys.argv,options.ppid)
@@ -141,7 +142,7 @@ def main():
 		mask=EMData(options.mask)
 		nx=EMData(projin,i,True)["nx"]
 		if mask["nx"]!=nx :
-			print "ERROR: mask dimensions do not match refinement volume"
+			print("ERROR: mask dimensions do not match refinement volume")
 			sys.exit(1)
 	else : mask=None
 	
@@ -165,7 +166,7 @@ def main():
 	# execute task list
 	taskids=etc.send_tasks(tasks)
 	alltaskids=taskids[:]
-	print "Doing split on {} classes...".format(len(taskids))
+	print("Doing split on {} classes...".format(len(taskids)))
 	classes=[]
 	while len(taskids)>0 :
 		curstat=etc.check_task(taskids)
@@ -174,8 +175,8 @@ def main():
 				rslt=etc.get_results(taskids[i])
 				rsltd=rslt[1]
 				cls=rslt[0].options["classnum"]
-				if rsltd.has_key("failed") :
-					print "Bad average in ",cls
+				if "failed" in rsltd :
+					print("Bad average in ",cls)
 				else:
 					#rsltd["avg1"].write_image(classout[0],cls)
 					#rsltd["avg2"].write_image(classout[1],cls)
@@ -188,18 +189,18 @@ def main():
 		taskids=[j for i,j in enumerate(taskids) if curstat[i]!=100]
 
 		if options.verbose and 100 in curstat :
-			print "%d/%d tasks remain"%(len(taskids),len(alltaskids))
+			print("%d/%d tasks remain"%(len(taskids),len(alltaskids)))
 		if 100 in curstat :
 			E2progress(logger,1.0-(float(len(taskids))/len(alltaskids)))
 
-	if options.verbose : print "Completed all tasks\nGrouping consistent averages"
+	if options.verbose : print("Completed all tasks\nGrouping consistent averages")
 
 	classes.sort(reverse=True)		# we want to start with the largest number of particles
 	apix=classes[0][2]["apix_x"]
 
 	boxsize=classes[0][2]["ny"]
 	pad=good_size(boxsize*1.5)
-	if options.verbose: print "Boxsize -> {}, padding to {}".format(boxsize,pad)
+	if options.verbose: print("Boxsize -> {}, padding to {}".format(boxsize,pad))
 		
 	# a pair of reconstructors. we will then simultaneously reconstruct in the pair, and use each to decide on the best target for each particle
 	recon=[Reconstructors.get("fourier",{"size":[pad,pad,pad],"sym":sym,"mode":"gauss_2"}) for i in (0,1)]
@@ -216,7 +217,7 @@ def main():
 	
 	classes[0].append(0)
 
-	if options.verbose : print "Reconstruction: pass 1"
+	if options.verbose : print("Reconstruction: pass 1")
 	for i,c in enumerate(classes[1:]):
 		proj=EMData(projin,c[5])		# the projection corresponding to this average
 		# while this does cost us a final interpolation, high resolution isn't the primary aim anyway, and getting the alignment consistent is important
@@ -257,7 +258,7 @@ def main():
 		q1b=b3["reconstruct_absqual_lowres"]		# quality for average a in reconstruction0
 #		n1b=b3["reconstruct_norm"]			# normalization for same
 		
-		if options.verbose>1 : print i,q0a,q1a,q0b,q1b,q0a+q1b,q1a+q0b
+		if options.verbose>1 : print(i,q0a,q1a,q0b,q1b,q0a+q1b,q1a+q0b)
 		#if options.verbose>2 : print "\t\t",n0a,n1a,n0b,n1b
 			
 		if q0a+q1b>q1a+q0b :		# if true, a -> recon0 and b -> recon1 
@@ -273,7 +274,7 @@ def main():
 #			b3.mult(n0b)
 			recon[0].insert_slice(b3,c[1],b3n)
 
-	if options.verbose : print "Reconstruction: pass 2"
+	if options.verbose : print("Reconstruction: pass 2")
 	
 	# another pass with the filled reconstruction to make sure our initial assignments were ok
 #	for i,c in enumerate(classes[1:]):
@@ -324,7 +325,7 @@ def main():
 #			b3.mult(n0b)
 #	
 #		
-	if options.verbose : print "All done, writing output"
+	if options.verbose : print("All done, writing output")
 
 	if mask!=None: msk="_msk"
 	else: msk=""
@@ -380,7 +381,7 @@ def main():
 	if os.path.exists("strucfac.txt"):
 		launch_childprocess("e2proc3d.py {} {} --setsf strucfac.txt --process filter.wiener.byfsc:fscfile={}/fsc_masked_{:02d}.txt:snrmult=2:sscale=1.1:maxfreq={} --process mask.soft:outer_radius=-9:width=4".format(threedout,threedout2,options.path,last_iter,1.0/targetres))
 	else:
-		print "Missing structure factor, cannot filter properly"
+		print("Missing structure factor, cannot filter properly")
 		launch_childprocess("e2proc3d.py {} {} --process filter.wiener.byfsc:fscfile={}/fsc_masked_{:02d}.txt:snrmult=2:sscale=1.1:maxfreq={} --process mask.soft:outer_radius=-9:width=4".format(threedout,threedout2,options.path,last_iter,1.0/targetres))
 
 	E2end(logger)
@@ -400,7 +401,7 @@ class ClassSplitTask(JSTask):
 		"""This does the actual class-averaging, and returns the result"""
 		options=self.options
 
-		if options["verbose"]>0 : print "Start averaging class {} with {} particles ".format(options["classnum"],len(options["particles"]))
+		if options["verbose"]>0 : print("Start averaging class {} with {} particles ".format(options["classnum"],len(options["particles"])))
 		
 		files=self.data["particles1"][1],self.data["particles2"][1]
 		
@@ -487,7 +488,7 @@ class ClassSplitTask(JSTask):
 		#for p in ptcls: 
 			#avgr.add_image(p[3].process("xform",{"transform":p[2]}))
 		
-		if options["verbose"]>0: print "Finish averaging class {}".format(options["classnum"])
+		if options["verbose"]>0: print("Finish averaging class {}".format(options["classnum"]))
 #		if callback!=None : callback(100)
 #		return {"avg":avg,"basis":basis}
 		try:

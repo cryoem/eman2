@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -70,11 +71,11 @@ def main():
 		print("Box size required")
 		sys.exit(1)
 	
-	if options.res<=options.apix : print "Warning: res<=apix. Generally res should be 2x apix or more"
+	if options.res<=options.apix : print("Warning: res<=apix. Generally res should be 2x apix or more")
 	handler=myhandler()
 	xml.sax.parse(args[0],handler)
 
-	print "%d markers in CMM file"%len(handler.parsed)
+	print("%d markers in CMM file"%len(handler.parsed))
 
 	pa=PointArray()
 	pa.set_number_points(len(handler.parsed))

@@ -1,4 +1,5 @@
 # simtomo.py		Steven Ludtke	2/2011
+from __future__ import print_function
 # This program will generate a set of 'tomographic single particles' in random orientation
 # with tomographic sampling. Generates a set of projections for each orientation, adds flatband noise, then reconstructs
 # from the projections.
@@ -10,13 +11,13 @@ from os import system
 import random
 
 optcl=EMData(argv[1],0)
-log=file("tomo.ort","w")
+log=open("tomo.ort","w")
 
 # 8 particles
 for m in range(32):
 	
 	xf=Transform({"type":"eman","az":random.uniform(0,360.0),"phi":random.uniform(0,360.0),"alt":random.uniform(0,360.0)})
-	print "Model ",m,xf
+	print("Model ",m,xf)
 	log.write("%d\t%s\n"%(m,str(xf)))
 	ptcl=optcl.process("xform",{"transform":xf})
 

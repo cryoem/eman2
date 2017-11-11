@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Philip Baldwin, 9/12/2007 (woolford@bcm.edu)
@@ -83,9 +84,9 @@ def main():
 	
 	if (options.verbose > 0):
 		if (error):
-			print "e2classify.py command line arguments test.... FAILED"
+			print("e2classify.py command line arguments test.... FAILED")
 		else:
-			print "e2classify.py command line arguments test.... PASSED"
+			print("e2classify.py command line arguments test.... PASSED")
 		
 	if error : exit(1)
 	if options.check: exit(0)
@@ -99,7 +100,7 @@ def main():
 
 	num_sim =  EMUtil.get_image_count(args[0])
 	if (num_sim < 5):
-		print "Warning, similarity matrix did not contain alignments, neither will the classification matrix"
+		print("Warning, similarity matrix did not contain alignments, neither will the classification matrix")
 
 	tmp=EMData(args[0],0,True)
 	nptcl=tmp["ny"]
@@ -114,7 +115,7 @@ def main():
 	# preparation for the simvec option. This finds all particles with a peak value corresponding to a particular orientation
 	# and then computes an average similarity vector (across all references).
 	if options.simvec:
-		print "Computing average unit vectors"
+		print("Computing average unit vectors")
 		
 		bvecs={}
 		# compile vector sums for each class
@@ -177,7 +178,7 @@ def main():
 			
 		E2end(E2n)
 
-	print "Classification complete, writing classmx"
+	print("Classification complete, writing classmx")
 	clsmx[0].write_image(args[1],0)
 	clsmx[1].write_image(args[1],1)
 	if num_sim>=5 :
@@ -194,7 +195,7 @@ def check(options,verbose):
 	
 	if (options.sep < 1):
 		if verbose>0:
-			print "Error: the --sep argument must be greater than zero, currently it is %d" %(options.sep)
+			print("Error: the --sep argument must be greater than zero, currently it is %d" %(options.sep))
 		error = True
 	
 
@@ -203,18 +204,18 @@ def check(options,verbose):
 		if os.path.exists(options.outfile):
 			if (not options.force):
 				if verbose>0:
-					print "File %s exists, will not write over, exiting" %options.outfile
+					print("File %s exists, will not write over, exiting" %options.outfile)
 				error = True
 		
 		if not os.path.exists(options.simmxfile) and not db_check_dict(options.simmxfile):
 			if verbose>0:
-				print "Error: the similarity matrix file (%s) was not found, cannot run e2classify.py" %(options.simmxfile)
+				print("Error: the similarity matrix file (%s) was not found, cannot run e2classify.py" %(options.simmxfile))
 			error = True
 		else:
 			num_sim =  EMUtil.get_image_count(options.simmxfile)
 			if (num_sim<5):
 				if verbose>0:
-					print "Error, the similarity matrix did not contain 5 images - be sure to use the --saveali argument when running e2simmx.py"
+					print("Error, the similarity matrix did not contain 5 images - be sure to use the --saveali argument when running e2simmx.py")
 				error = True
 	
 	return error

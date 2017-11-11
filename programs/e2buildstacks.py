@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: John Flanagan (jfflanag@bcm.edu)
 # Copyright (c) 2000-2011 Baylor College of Medicine
@@ -61,14 +62,14 @@ def main():
 	(options, args) = parser.parse_args()
 	
 	if options.stackname==None :
-		print "--stackname is required (output file)"
+		print("--stackname is required (output file)")
 		sys.exit(1)
 	
 	# remove existing output file
 	if os.path.exists(options.stackname) :
 		try: os.unlink(options.stackname)
 		except:
-			print "ERROR: Unable to remove ",options.stackname,". Cannot proceed"
+			print("ERROR: Unable to remove ",options.stackname,". Cannot proceed")
 			sys.exit(1)
 			
 	# if output is LSX format, we handle it differently, with a specific object for these files
@@ -81,8 +82,8 @@ def main():
 		nimg = EMUtil.get_image_count(infile)		# number of images in each input file as it is processed
 		
 		if options.verbose : 
-			if nimg==1 : print infile
-			else : print infile,nimg
+			if nimg==1 : print(infile)
+			else : print(infile,nimg)
 
 		for i in xrange(nimg):
 			if outfile!=None:
@@ -92,7 +93,7 @@ def main():
 				img.write_image(options.stackname,n)
 			n+=1
 			
-	if options.verbose : print n," total images written to ",options.stackname
+	if options.verbose : print(n," total images written to ",options.stackname)
 			
 			
 if __name__ == "__main__":

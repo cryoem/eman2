@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
@@ -120,8 +121,8 @@ def main():
 	parser.add_option("--begin_zero", action="store_true",  default=False,   help="whether to use zero as the starting point")	
 	(options, args) = parser.parse_args()
 	if len(args) != 2:
-		print "usage: " + usage
-		print "Please run '" + progname + " -h' for detailed options"
+		print("usage: " + usage)
+		print("Please run '" + progname + " -h' for detailed options")
 	else:
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache

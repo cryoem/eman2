@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Jesus Galaz, 04/01/2012 - Last update July/23/2015
@@ -38,7 +39,7 @@ import numpy as np
 
 
 def main():
-	print "I have entered main"
+	print("I have entered main")
 	#progname = os.path.basename(sys.argv[0])
 	#usage = """Aligns a 3d volume to another by executing e2spt_classaverage.py and then calculates the FSC between them by calling e2proc3d.py . It returns both a number for the resolution based on the FSC0.5 
 	#criterion(on the screen) and a plot as an image in .png format."""
@@ -83,15 +84,15 @@ def main():
 	(options, args) = parser.parse_args()
 	
 	if options.groups and (options.cutoff or options.topn):
-		print "ERROR: you cannot specify --cutoff, --groups and --topn all at the same time. Choose one."
+		print("ERROR: you cannot specify --cutoff, --groups and --topn all at the same time. Choose one.")
 		sys.exit()
 
 	if options.cutoff and (options.groups or options.topn):
-		print "ERROR: you cannot specify --cutoff, --groups and --topn all at the same time. Choose one."
+		print("ERROR: you cannot specify --cutoff, --groups and --topn all at the same time. Choose one.")
 		sys.exit()
 		
 	if options.topn and (options.cutoff or options.groups):
-		print "ERROR: you cannot specify --cutoff, --groups and --topn all at the same time. Choose one."
+		print("ERROR: you cannot specify --cutoff, --groups and --topn all at the same time. Choose one.")
 		sys.exit()
 		
 	logger = E2init(sys.argv, options.ppid)
@@ -99,7 +100,7 @@ def main():
 	from e2spt_classaverage import sptmakepath
 	options = sptmakepath( options, 'sptcoeff')
 	
-	print "\nI have read the parameters"
+	print("\nI have read the parameters")
 	
 
 	if options.lowpass:
@@ -110,7 +111,7 @@ def main():
 			nyquistfreq = 1.0/nyquist
 			options.lowpass = 'filter.lowpass.tanh:cutoff_freq='+str(nyquistfreq)+':apix='+str(apix)
 			if apix =='1.0':
-				print "\nWARNING: apix is 1.0, most likely wrong (default empty value). You can fix/change it with e2fixheaderparam.py"
+				print("\nWARNING: apix is 1.0, most likely wrong (default empty value). You can fix/change it with e2fixheaderparam.py")
 		elif 'None' in options.lowpass or 'none' in options.lowpass:
 			options.lowpass=None
 
@@ -136,16 +137,16 @@ def main():
 			score = None
 
 			if options.verbose:
-				print  "\nanalyzing header for particle", i
+				print("\nanalyzing header for particle", i)
 			
 			if 'spt_score' in ahdr.get_attr_dict():
 				score=-1*ahdr['spt_score']
-				print "spt_score is", score
+				print("spt_score is", score)
 			elif 'spt_coefficient' in ahdr.get_attr_dict():
 				score=ahdr['spt_coefficient']*-1
-				print "spt_coefficient is", score
+				print("spt_coefficient is", score)
 			else:
-				print "\nERROR: no score found in header for particle %d. Skipping it! A prepruned stack will be made with all the particles that did have score info in their header" %(i)
+				print("\nERROR: no score found in header for particle %d. Skipping it! A prepruned stack will be made with all the particles that did have score info in their header" %(i))
 				a = EMData( options.alistack, i )
 				a.write_image( newstack, k )
 				usenewstack = True
@@ -160,7 +161,7 @@ def main():
 		scores = [ round(float(line.replace('\n','')),6) for line in lines]
 	
 	elif not options.scores and not options.alistack:
-		print "\n(e2spt_coeffplot)(main) ERROR: you need to supply either --alistack or --scores, with the former taking precedence over the latter."
+		print("\n(e2spt_coeffplot)(main) ERROR: you need to supply either --alistack or --scores, with the former taking precedence over the latter.")
 		sys.exit()
 	
 	
@@ -172,12 +173,12 @@ def main():
 	nstack = EMUtil.get_image_count( options.alistack )
 	
 	if n != nstack:
-		print "\n!!!! WARNING: the number of scores %d does not match the number of images %d in the stack %s" %( n, nstack, options.alistack )
+		print("\n!!!! WARNING: the number of scores %d does not match the number of images %d in the stack %s" %( n, nstack, options.alistack ))
 
 	if scores and n > 1:
-		print "\nThe set has these many particles", len( scores )
+		print("\nThe set has these many particles", len( scores ))
 	else:
-		print "\nERROR: There seems to be no information on particle scores. The number of scores must be larger than one to do any statistics with them."
+		print("\nERROR: There seems to be no information on particle scores. The number of scores must be larger than one to do any statistics with them.")
 		sys.exit()
 		
 	for i in range( n ):
@@ -219,30 +220,30 @@ def main():
 	mean = np.mean( scores )
 	statistics = ['mean='+str(mean) + ' std='+str(std) + '\n']
 
-	print "\nthe standard deviation %.6f, mean %.6f" %( std, mean )
+	print("\nthe standard deviation %.6f, mean %.6f" %( std, mean ))
 	
 	if not std:
-		print "\nERROR: std=0, which means all intensity values are the same."
+		print("\nERROR: std=0, which means all intensity values are the same.")
 		sys.exit()
 	
 	cuberoot = np.power(len( scores ),1.0/3.0)
 	width = (3.5*std)/cuberoot
-	print "\naccording to Scott's normal reference rule, width = (3.5*std)/cuberoot(n), the width of the histogram bins will be", width
+	print("\naccording to Scott's normal reference rule, width = (3.5*std)/cuberoot(n), the width of the histogram bins will be", width)
 	
 	calcbins = ( max(scores) - min( scores )) / width
 	
 	if options.nbins:
 		calcbins = options.nbins
-		print "\overwriting number of bins to be", options.nbins
+		print("\overwriting number of bins to be", options.nbins)
 	
-	print "\nand the number of bins n = ( max(scores) - min(scores) ) / width will thus be", calcbins
+	print("\nand the number of bins n = ( max(scores) - min(scores) ) / width will thus be", calcbins)
 	calcbins = round(calcbins)
-	print "rounding to", calcbins
+	print("rounding to", calcbins)
 	
 	statistics.append( 'bins=' + str( calcbins ) + ' , binwidth=' + str( width ) + '\n')
 		
 	if not calcbins:
-		print "WARNING: nbins=0, which means max and min intensity are the same, which probably means all scores are zero. Defaulting nbins to number of partilces."
+		print("WARNING: nbins=0, which means max and min intensity are the same, which probably means all scores are zero. Defaulting nbins to number of partilces.")
 		calcbins = len( scores )
 	
 	datafile = ''
@@ -260,25 +261,25 @@ def main():
 	plottitle = os.path.basename( options.alistack ).replace('.hdf','') + ' CC scores distribution histogram'
 	plt.title( plottitle )
 
-  	matplotlib.rc('xtick', labelsize=16) 
+	matplotlib.rc('xtick', labelsize=16) 
 	matplotlib.rc('ytick', labelsize=16) 
   		 	
-  	font = {'weight':'bold','size':16}
+	font = {'weight':'bold','size':16}
 	matplotlib.rc('font', **font)
   		 	
 	pylab.rc("axes", linewidth=2.0)
 		
 	pylab.xlabel('CC score (au)', fontsize=16, fontweight='bold')
-  	pylab.ylabel('Number of particles', fontsize=16, fontweight='bold')
+	pylab.ylabel('Number of particles', fontsize=16, fontweight='bold')
   	
-  	plt.savefig( options.path + '/scores_histogram.png' )
-  	plt.clf()
+	plt.savefig( options.path + '/scores_histogram.png' )
+	plt.clf()
   	
   	
-  	'''
+	'''
   	c:plot decay in ranked correlation scores
   	'''
-  	x = [i for i in range(len(scores))]
+	x = [i for i in range(len(scores))]
   	
 	plt.plot(x, scores, color='k', linewidth=3)
 	plottitle = os.path.basename( options.alistack ).replace('.hdf','') + ' CC scores decay' 
@@ -289,7 +290,7 @@ def main():
 	matplotlib.rc('font', **font)
 
 	pylab.xlabel('Particle index', fontsize=16, fontweight='bold')
-  	pylab.ylabel('CC score (au)', fontsize=16, fontweight='bold')
+	pylab.ylabel('CC score (au)', fontsize=16, fontweight='bold')
 
 	plt.savefig( options.path + '/scores_decay.png')
 	plt.clf()
@@ -310,7 +311,7 @@ def main():
 	matplotlib.rc('font', **font)
 	
 	pylab.xlabel('Particle index', fontsize=16, fontweight='bold')
-  	pylab.ylabel('Distance from mean (sigmas)', fontsize=16, fontweight='bold')
+	pylab.ylabel('Distance from mean (sigmas)', fontsize=16, fontweight='bold')
 	
 	plt.savefig( options.path + '/scores_distance2mean.png')
 	plt.clf()
@@ -332,13 +333,13 @@ def main():
 	matplotlib.rc('font', **font)
 	
 	pylab.xlabel('Particle index', fontsize=16, fontweight='bold')
-  	pylab.ylabel('Distance from max (sigmas)', fontsize=16, fontweight='bold')
+	pylab.ylabel('Distance from max (sigmas)', fontsize=16, fontweight='bold')
 	
 	plt.savefig( options.path + '/scores_distance2max.png')
 	plt.clf()
 	
 	
-	print 'sorted dataset is', dataset
+	print('sorted dataset is', dataset)
 	
 	'''
 	c:prune and/or divide into groups
@@ -354,18 +355,18 @@ def main():
 		mu=mean
 		sigma=std
 		
-		print "\nMean is", mu
-		print "Std is", sigma
+		print("\nMean is", mu)
+		print("Std is", sigma)
 		filter = mu - sigma * (options.sigmaprune)
-		print "Therefore, filter is", filter
+		print("Therefore, filter is", filter)
 
 		for d in dataset:
 			if float(d['score']) < float(filter):
 				dataset.remove(d)
-				print "I have removed this aberrant particle from the dataset due to its low score", d['score']
+				print("I have removed this aberrant particle from the dataset due to its low score", d['score'])
 			else:
 				newscores.append(float(d['score']))
-				print "This score is high enough to survive", d['score']
+				print("This score is high enough to survive", d['score'])
 		
 		newscores.sort()
 		newscores.reverse()
@@ -389,22 +390,22 @@ def main():
 	if options.groups:
 		
 		if not options.alistack:
-			print "\nERROR: --groups requires --alistack"
+			print("\nERROR: --groups requires --alistack")
 			sys.exit()
 	
 		halfptclnum= int(round(n/2.0))
 		halfptcl = dataset[halfptclnum][0]
-		print "half ptclnum is", halfptclnum
-		print "which happens to be ptcl indx", halfptcl
+		print("half ptclnum is", halfptclnum)
+		print("which happens to be ptcl indx", halfptcl)
 		halfscore = dataset[halfptcl][1]
-		print "with halfscore being", halfscore
+		print("with halfscore being", halfscore)
 		
 		subdatasetsSET=[]
 		N=len(dataset)
 		#print "THe type of dataset is", type(dataset)
-		print "The len of the dataset is", N
+		print("The len of the dataset is", N)
 		subN = N/options.groups
-		print "The len of each subset, except the last, should be", subN
+		print("The len of each subset, except the last, should be", subN)
 		for g in range(options.groups):
 			#subscores = scores[g*subN : (g+1)*subN]
 			subdataset = dataset[g*subN : (g+1)*subN]			
@@ -414,12 +415,12 @@ def main():
 	
 		kk=0
 		for subdataset in subdatasetsSET:
-			print "The len of subset %d is %d" % (kk, len(subdataset))
+			print("The len of subset %d is %d" % (kk, len(subdataset)))
 			jj = 0		
 			groupname = options.path + '/' + os.path.basename(options.alistack).replace('.', '_'+ str(kk).zfill(len(str(options.groups))) + '.')
 			particleLIST = []			
 			lines = []
-			print "options.averager is", options.averager
+			print("options.averager is", options.averager)
 			#avgr = Averagers.get(options.averager[0], options.averager[1])
 			avgr = Averagers.get('mean.tomo')
 
@@ -445,7 +446,7 @@ def main():
 			average.process_inplace('normalize.edgemean')
 
 			if options.lowpass:
-				print "(e2spt_coeffplot)(main) --lowpass provided:", options.lowpass
+				print("(e2spt_coeffplot)(main) --lowpass provided:", options.lowpass)
 				average.process_inplace(options.lowpass[0],options.lowpass[1])
 			
 			average.write_image(averageNAME,0)
@@ -460,12 +461,12 @@ def main():
 	if options.cutoff:
 	
 		if not options.alistack:
-			print "\nERROR: --cutoff requires --alistack"
+			print("\nERROR: --cutoff requires --alistack")
 			sys.exit()
 	
 		threshptclnum=int(round(newN/(1/options.cutoff)))
 		threshptcl=dataset[threshptclnum]	
-		print "The new threshptcl is", threshptcl
+		print("The new threshptcl is", threshptcl)
 		threshscore = dataset[threshptclnum][1]
 
 		threshlabel="%0.2f" %(options.cutoff)
@@ -505,7 +506,7 @@ def main():
 	if options.topn:
 	
 		if not options.alistack:
-			print "\nERROR: --topn requires --alistack"
+			print("\nERROR: --topn requires --alistack")
 			sys.exit()
 			
 		topndataset = dataset[0:options.topn]
@@ -564,14 +565,14 @@ def main():
 
 def runcmd(options,cmd):
 	if options.verbose > 9:
-		print "\n(e2spt_coeffplot)(runcmd) running command", cmd
+		print("\n(e2spt_coeffplot)(runcmd) running command", cmd)
 	
 	p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	text=p.communicate()	
 	p.stdout.close()
 	
 	if options.verbose > 8:
-		print "\n(e2spt_coeffplot)(runcmd) done"
+		print("\n(e2spt_coeffplot)(runcmd) done")
 	
 	#if options.verbose > 9:
 	#	print text

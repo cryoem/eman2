@@ -1,4 +1,5 @@
 #!/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -53,11 +54,11 @@ xrng=2
 yrng=2
 step=1
 newp = proj_ali(vol, mask3D, "grj/bprj{*****}.tcp", start, end, "grj/prj{*****}.tcp", first_r,last_r,rstep,xrng,yrng,step,dtheta)
-print  newp
+print(newp)
 #newp=[0.0,0.0,0.0,0.0,0.0]
 #print  newp
 #volft,kb=prep_vol(vol)
 #proj=prgs(volft, kb, newp)
 #print  ref_3d_ali(proj,mask,vol,newp)
 refp = ref_ali(vol, mask3D, mask, "grj/bprj{*****}.tcp", start, end, "grj/prj{*****}.tcp", dtheta, newp)
-print  refp
+print(refp)

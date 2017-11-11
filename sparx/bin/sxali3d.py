@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
 # Copyright (c) 2000-2006 The University of Texas - Houston Medical School
@@ -39,9 +40,9 @@ import sys
 
 def main():
 
-        arglist = []
-        for arg in sys.argv:
-        	arglist.append( arg )
+	arglist = []
+	for arg in sys.argv:
+		arglist.append( arg )
 	progname = os.path.basename(arglist[0])
 	usage = progname + " stack ref_vol outdir <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --an=angular_neighborhood --deltapsi=Delta_psi --startpsi=Start_psi --maxit=max_iter --stoprnct=percentage_to_stop --CTF --snr=SNR  --ref_a=S --sym=c1 --function=user_function --Fourvar=Fourier_variance --debug --MPI"
 	parser = OptionParser(usage,version=SPARXVERSION)
@@ -79,8 +80,8 @@ def main():
 	parser.add_option("--gamma",    type="float",        default= -1.0,               help="gamma")
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 3 or len(args) > 4:
-		print "usage: " + usage
-		print "Please run '" + progname + " -h' for detailed options"
+		print("usage: " + usage)
+		print("Please run '" + progname + " -h' for detailed options")
 	else:
 		if len(args) == 3 :
 			mask = None
@@ -113,7 +114,7 @@ def main():
 			global_def.BATCH = False
 		elif(options.shc):
 			if not options.MPI:
-				print "Only MPI version is implemented!!!"
+				print("Only MPI version is implemented!!!")
 			else:
 				global_def.BATCH = True
 				if(options.nsoft == 1):

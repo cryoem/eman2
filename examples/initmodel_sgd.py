@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 # Muyuan Chen 2017-03
 import numpy as np
 from EMAN2 import *
@@ -197,7 +198,7 @@ def make_model(jsd,myid, options):
 		mapnew.process_inplace("mask.auto3d",{"radius":boxsize/6,"threshold":map0["sigma_nonzero"]*.85,"nmaxseed":30,"nshells":boxsize/20,"nshellsgauss":boxsize/20})
 		ddmap=mapnew-map0
 		ddmap.mult(ddmap)
-		if options.verbose>0:print myid, it, ddmap["mean"]
+		if options.verbose>0:print(myid, it, ddmap["mean"])
 		
 		
 		map0=mapnew
@@ -248,12 +249,12 @@ def main():
 				path="initmodel_{:02d}".format(i)
 				os.mkdir(path)
 				options.path=path
-				print "Writing initial model in {}..".format(path)
+				print("Writing initial model in {}..".format(path))
 				break
 			except:
 				continue
 		else:
-			print "Too many initmodel folders in the project, or something odd happened....Exit."
+			print("Too many initmodel folders in the project, or something odd happened....Exit.")
 			exit()
 		
 	
@@ -290,7 +291,7 @@ def main():
 	
 	sid=np.argsort(scrs)
 	for i,si in enumerate(sid):
-		print i,si,grads[si],scrs[si]
+		print(i,si,grads[si],scrs[si])
 		models[si].write_image("{}/model_{:02d}.hdf".format(path, i))
 		for c in cmps[si]:
 			c.write_image("{}/model_{:02d}_aptcl.hdf".format(path, i), -1)
@@ -298,14 +299,14 @@ def main():
 		
 	
 	#m, grad, scr=make_model(options)
-	print "total time:", time.time()-tt0
+	print("total time:", time.time()-tt0)
 
 
 	E2end(logid)
 
 	
 def run(cmd):
-	print cmd
+	print(cmd)
 	launch_childprocess(cmd)
 	
 	

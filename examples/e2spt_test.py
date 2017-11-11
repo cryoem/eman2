@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Jesus Galaz-Montoya 03/2011, 
@@ -76,11 +77,11 @@ def main():
 		import multiprocessing
 		nparallel = multiprocessing.cpu_count()
 		options.parallel = 'thread:' + str(nparallel)
-		print "\nfound %d cores" %(nparallel)
-		print "setting --parallel to", options.parallel
+		print("\nfound %d cores" %(nparallel))
+		print("setting --parallel to", options.parallel)
 	
 	if options.testn < 6:
-		print "\nERROR: --testn must be > 5."
+		print("\nERROR: --testn must be > 5.")
 		sys.exit()
 	
 	
@@ -205,7 +206,7 @@ def main():
 
 def runcmd(options,cmd):
 	if options.verbose > 9:
-		print "(e2spt_classaverage)(runcmd) running command", cmd
+		print("(e2spt_classaverage)(runcmd) running command", cmd)
 	
 	p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	text=p.communicate()	
@@ -222,7 +223,7 @@ def runcmd(options,cmd):
 	f.close()
 	
 	if options.verbose > 9:
-		print "(e2spt_classaverage)(runcmd) done"
+		print("(e2spt_classaverage)(runcmd) done")
 	return
 
 

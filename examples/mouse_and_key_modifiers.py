@@ -1,3 +1,4 @@
+from __future__ import print_function
 from PyQt4 import QtCore, QtGui
 
 class MouseAndKeyModifiers(QtGui.QWidget):

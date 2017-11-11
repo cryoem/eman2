@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Jesus Galaz, 10/20/2012; last update July/26/2015
@@ -190,7 +191,7 @@ def main():
 											#(written) in the invisible file .eman2log.txt
 	
 	if options.verbose:
-		print "THE particle radius at reading is!", options.ptclradius
+		print("THE particle radius at reading is!", options.ptclradius)
 	
 	'''
 	c:check that the tomogam format is sane, to prevent crashes later.
@@ -198,11 +199,11 @@ def main():
 	
 	if options.keep:
 		if options.keep >= 1.0:
-			print "\nERROR: --keep needs to be a decimal smaller than 1.0"
+			print("\nERROR: --keep needs to be a decimal smaller than 1.0")
 			sys.exit()
 	
 	if '.hdf' not in options.tomogram and '.mrc' not in options.tomogram and '.rec' not in options.tomogram:
-			print "\nERROR: The tomogram must be in .mrc, .rec (which is also just an MRC file) or .hdf format."
+			print("\nERROR: The tomogram must be in .mrc, .rec (which is also just an MRC file) or .hdf format.")
 			sys.exit()
 			
 	'''
@@ -227,13 +228,13 @@ def main():
 	tomoz = tomohdr['nz']
 	
 	if tomoy < tomoz:
-		print """\nERROR: the length of the tomogram in y=%d is smaller than the length in z=%d.
+		print("""\nERROR: the length of the tomogram in y=%d is smaller than the length in z=%d.
 		tomograms MUST be ZSHORT and NOT YSHORT. 
 		Use e2proc3d.py input output --tomoprep to convert the tomogram to ZSHORT.
 		Alternatively, use IMOD clip command as follows at the command line:
 		cliop rotx input output. 
 		Alternatively, go back to the IMOD etomo workflow and select 'rotate around the x axis' in the
-		postprocessing tab during tomographic reconstruction.""" %( tomoy, tomoz )
+		postprocessing tab during tomographic reconstruction.""" %( tomoy, tomoz ))
 		sys.exit()
 	
 	if options.apix:
@@ -265,10 +266,10 @@ def main():
 		import multiprocessing
 		nparallel = multiprocessing.cpu_count()
 		options.parallel = 'thread:' + str(nparallel)
-		print "\nfound %d cores" %(nparallel)
-		print "setting --parallel to", options.parallel
+		print("\nfound %d cores" %(nparallel))
+		print("setting --parallel to", options.parallel)
 	elif options.parallel == 'None' or options.parallel == 'none':
-		print "\nWARNING: parallelism disabled", options.parallel
+		print("\nWARNING: parallelism disabled", options.parallel)
 	
 	
 	'''
@@ -318,7 +319,7 @@ def main():
 			if options.tiltrange and options.nslices:
 				cmd += ' --tiltrange ' + str(options.tiltrange) + ' --nslices ' + str(options.nslices)
 			else:
-				print "\nERROR: if --simtemplatesn is provided, either --tiltanges OR --tiltrange AND --nslices must be provided"
+				print("\nERROR: if --simtemplatesn is provided, either --tiltanges OR --tiltrange AND --nslices must be provided")
 				sys.exit()				
 		
 		runcmd( options, cmd )
@@ -352,10 +353,10 @@ def main():
 		#datas = sorted(datan, key=itemgetter(0))	#?????
 		
 		if not datas:
-			print "WARNING: no particles found for template", i
+			print("WARNING: no particles found for template", i)
 			break
 		
-		print "before any pruning, datalen is", len(datas)
+		print("before any pruning, datalen is", len(datas))
 		
 		#for d in datas:
 		#	print d
@@ -365,12 +366,12 @@ def main():
 			if ( d[0],d[1],d[2],d[3] ) not in setdata:
 				setdata.append( ( d[0],d[1],d[2],d[3] ) )	
 			else:
-				print "repeated particle when pruning by set data explicitly!"
+				print("repeated particle when pruning by set data explicitly!")
 		
 		
 		dataf = list(setdata)
 
-		print "\nafter set pruning by set, len data is", len(dataf)
+		print("\nafter set pruning by set, len data is", len(dataf))
 
 		dataf = sorted(dataf, key=itemgetter(0))
 		#print "the final sorted data is",dataf
@@ -384,38 +385,38 @@ def main():
 		if options.backgroundstack or options.carbonstack or options.goldstack:
 			lendata1=len(dataf)
 			if options.backgroundstack:
-				print "BG Stack to send is", options.backgroundstack
+				print("BG Stack to send is", options.backgroundstack)
 				ret = meancalc(options,options.backgroundstack)
 				tag='background'
 				dataf = pruner(dataf,tag,ret[0],ret[1],ret[2],ret[3])
 		
 				lendata2=len(dataf)
 				pruned= lendata1-lendata2
-				print "These many particles were pruned using the background stack",pruned
+				print("These many particles were pruned using the background stack",pruned)
 	
 			lendata1=len(dataf)
 			if options.carbonstack:
-				print "CARBON Stack to send is", options.carbonstack
+				print("CARBON Stack to send is", options.carbonstack)
 				ret = meancalc(options,options.carbonstack)
 				tag='carbon'
 				dataf = pruner(dataf,tag,ret[0],ret[1],ret[2],ret[3])
 		
 				lendata2=len(dataf)
 				pruned= lendata1-lendata2
-				print "These many particles were pruned using the carbon stack",pruned
+				print("These many particles were pruned using the carbon stack",pruned)
 	
 			lendata1=len(dataf)
 			if options.goldstack:
-				print "GOLD Stack to send is", options.goldstack
+				print("GOLD Stack to send is", options.goldstack)
 				ret = meancalc(options,options.goldstack)
 				tag='gold'
 				dataf = pruner(dataf,tag,ret[0],ret[1],ret[2],ret[3])
 		
 				lendata2=len(dataf)
 				pruned= lendata1-lendata2
-				print "These many particles were pruned using the gold stack",pruned
+				print("These many particles were pruned using the gold stack",pruned)
 	
-			print "\nthe len of data AFTER pruning using stacks is", len(dataf)
+			print("\nthe len of data AFTER pruning using stacks is", len(dataf))
 		
 		
 		
@@ -426,8 +427,8 @@ def main():
 			dataf = prjpruner( options, dataf )
 		
 		
-		print "after pruneprj data is",dataf
-		print "after pruneprj"
+		print("after pruneprj data is",dataf)
+		print("after pruneprj")
 		#sys.exit()
 		####### END OF NON-TESTED SECTION -JULY 2015
 		
@@ -466,10 +467,10 @@ def main():
 	
 	
 	if not datal:
-		print "\nERROR: no particles found"
+		print("\nERROR: no particles found")
 		sys.exit()
 	
-	print "Final data to consider after all special pruning is this long", len(datal)	
+	print("Final data to consider after all special pruning is this long", len(datal))	
 
 	finaldata = set()
 	nnn=0
@@ -492,34 +493,34 @@ def main():
 
 	#finaldata=list(rmsdpruner(finaldata,options))
 	
-	print "options.keep", options.keep
+	print("options.keep", options.keep)
 	
 	if options.keep:
-		print "options.keep is True"
+		print("options.keep is True")
 	if not options.nkeep:
-		print "options.nkeep is False"
+		print("options.nkeep is False")
 	
 	if options.keep and not options.nkeep:
 		#print "Keeping these many particles based on --keep", options.keep 
 		upperlim = int(round( len(finaldata)*options.keep ))
-		print "type of final data is", type(finaldata)
-		print "upperlim is", upperlim
-		print "len of finaldata is", len(finaldata)
+		print("type of final data is", type(finaldata))
+		print("upperlim is", upperlim)
+		print("len of finaldata is", len(finaldata))
 		finaldata = finaldata[:upperlim]	
 
 	elif options.nkeep and not options.keep:
 		#print "Keeping these many particles based on --nkeep", options.nkeep 
 		finaldata = finaldata[:options.nkeep]
 		
-		print "final sorted selected data is", finaldata
-		print "took subset of %d particles" %(options.nkeep)	
+		print("final sorted selected data is", finaldata)
+		print("took subset of %d particles" %(options.nkeep))	
 
 	#if options.subsettrans and options.subsettrans < len(finaldata):
 	#	finaldata = finaldata[0:options.subsettrans]
 	#	print "taking a subset of the data", options.subsettrans, len(finaldata)
 	
 	if options.verbose:
-		print "\nThe program has finished scanning the tomogram for subvolumes"
+		print("\nThe program has finished scanning the tomogram for subvolumes")
 
 	coords=set()	
 	for i in finaldata:
@@ -536,9 +537,9 @@ def main():
 	coords=list(coords)
 	coords=sorted(coords, key=itemgetter(0,1,2))
 
-	print "The sorted coords are",
+	print("The sorted coords are", end=' ')
 	for c in coords:
-		print c
+		print(c)
 	
 	lines = []
 	
@@ -557,7 +558,7 @@ def main():
 		line = str(x) + ' ' + str(y) + ' ' + str(z) + '\n'
 		lines.append(line)
 	
-	print "Coordinates for THESE many FINAL particles were written", len(coords) 
+	print("Coordinates for THESE many FINAL particles were written", len(coords)) 
 	coordsname = options.path + '/coords.txt'
 
 	f = open(coordsname,'w')
@@ -565,7 +566,7 @@ def main():
 	f.close()
 
 	if options.verbose:
-		print "I have written the coordinates to the following file", coordsname 
+		print("I have written the coordinates to the following file", coordsname) 
 
 	return()
 
@@ -575,14 +576,14 @@ c:function to run commands and the command line
 '''
 def runcmd( options, cmd ):
 	if options.verbose > 9:
-		print "\n(e2spt_autoboxer)(runcmd) Running command", cmd
+		print("\n(e2spt_autoboxer)(runcmd) Running command", cmd)
 	
 	p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	text=p.communicate()	
 	p.stdout.close()
 	
 	if options.verbose > 9:
-		print "\n(e2spt_autoboxer)(runcmd) Done"
+		print("\n(e2spt_autoboxer)(runcmd) Done")
 	return
 	
 
@@ -592,7 +593,7 @@ c:function to preprocess the tomogram if needed/specified
 def tomogrampreprocess(options):
 	tomogramfile = options.tomogram
 
-	print "\n(e2spt_autoboxer)(tomogrampreprocess) before preprocessing, --tomogram is located at", tomogramfile
+	print("\n(e2spt_autoboxer)(tomogrampreprocess) before preprocessing, --tomogram is located at", tomogramfile)
 	
 	
 	'''
@@ -607,7 +608,7 @@ def tomogrampreprocess(options):
 		tomoz = tomohdr['nz']
 		
 		try:
-			print "Patience. Clipping the tomogram"
+			print("Patience. Clipping the tomogram")
 			tomogramfile = options.path + '/' + os.path.basename( tomogramfile ).replace('.','_clip.')
 			
 			clips=options.clip.split(',')
@@ -635,12 +636,12 @@ def tomogrampreprocess(options):
 			runcmd( options, cmd )
 			options.tomogram = tomogramfile
 		except:
-			print "\nWARNING: NOT clipping tomogram. IMOD needs to be installed to use 'trimvol', which is the program called when --clip is provided."
+			print("\nWARNING: NOT clipping tomogram. IMOD needs to be installed to use 'trimvol', which is the program called when --clip is provided.")
 		
 	
 	if options.shrinktomo > 1:
 		try:
-			print "Patience. Shrinking the tomogram"
+			print("Patience. Shrinking the tomogram")
 			tomogramfile = options.path + '/' + os.path.basename( tomogramfile ).replace('.','_sh.')
 			#cmd = 'e2proc3d.py ' + options.tomogram + ' ' + tomogramfile + ' --meanshrinkbig ' + str(options.shrinktomo)
 		
@@ -655,7 +656,7 @@ def tomogrampreprocess(options):
 			
 			options.tomogram = tomogramfile
 		except:
-			print "\nWARNING: NOT shrinking tomogram. IMOD needs to be installed to use 'binvol', which is the program called when --shrinktomo is provided."
+			print("\nWARNING: NOT shrinking tomogram. IMOD needs to be installed to use 'binvol', which is the program called when --shrinktomo is provided.")
 	
 	
 	'''
@@ -673,7 +674,7 @@ def tomogrampreprocess(options):
 	c:apply any specified filters (preprocess, lowpass and/or highpass)
 	'''
 	if options.inverttomo:
-		print "Patience. Inverting the tomogram's contrast"
+		print("Patience. Inverting the tomogram's contrast")
 		tomogramfile = options.path + '/' + os.path.basename( tomogramfile ).replace('.','_inv.')
 		cmd = 'e2proc3d.py ' + options.tomogram + ' ' + tomogramfile + ' --mult=-1'
 
@@ -688,7 +689,7 @@ def tomogrampreprocess(options):
 		options.tomogram = tomogramfile
 	
 	if options.normproc:	
-		print "Patience. Normalizing the tomogram."
+		print("Patience. Normalizing the tomogram.")
 		tomogramfile = options.path + '/' + os.path.basename( tomogramfile ).replace('.','_norm.')
 		cmd = 'e2proc3d.py ' + options.tomogram + ' ' + tomogramfile + ' --process=' + options.normproc
 		
@@ -703,7 +704,7 @@ def tomogrampreprocess(options):
 		options.tomogram = tomogramfile
 	
 	if options.highpass:
-		print "Patience. Applying highpass filter to the tomogram:", options.highpass
+		print("Patience. Applying highpass filter to the tomogram:", options.highpass)
 		tomogramfile = options.path + '/' + os.path.basename( tomogramfile ).replace('.','_hp.')
 		cmd = 'e2proc3d.py ' + options.tomogram + ' ' + tomogramfile + ' --process=' + options.highpass +':apix='+str(tomogramapix)
 		
@@ -718,7 +719,7 @@ def tomogrampreprocess(options):
 		options.tomogram = tomogramfile
 	
 	if options.preprocess:
-		print "Patience. Applying this processor to the tomogram:", options.preprocess
+		print("Patience. Applying this processor to the tomogram:", options.preprocess)
 		tomogramfile = options.path + '/' + os.path.basename( tomogramfile ).replace('.','_pr.')
 		cmd = 'e2proc3d.py ' + options.tomogram + ' ' + tomogramfile + ' --process=' + options.preprocess
 		
@@ -733,7 +734,7 @@ def tomogrampreprocess(options):
 		options.tomogram = tomogramfile
 		
 	if options.lowpass:
-		print "Patience. Applying lowpass filter to the tomogram:", options.lowpass		
+		print("Patience. Applying lowpass filter to the tomogram:", options.lowpass)		
 		tomogramfile = options.path + '/' + os.path.basename( tomogramfile ).replace('.','_lp.')
 		cmd = 'e2proc3d.py ' + options.tomogram + ' ' + tomogramfile + ' --process=' + options.lowpass + ':apix='+str(tomogramapix)
 		
@@ -748,7 +749,7 @@ def tomogrampreprocess(options):
 		options.tomogram = tomogramfile
 	
 	if options.threshold:	
-		print "Patience. Thresholding tomogram."
+		print("Patience. Thresholding tomogram.")
 		tomogramfile = options.path + '/' + os.path.basename( tomogramfile ).replace('.','_thresh.')
 		cmd = 'e2proc3d.py ' + options.tomogram + ' ' + tomogramfile + ' --process=' + options.threshold
 		
@@ -825,7 +826,7 @@ def tomogrampreprocess(options):
 		cubem = max(tomox,tomoy,tomoz)
 		masksize = cubem
 		if options.gridradius*2 > cubem:
-			print "WARNING: --gridradius %d is larger than the largest tomogram dimension %d. --gridradius will be set to %d" %(options.gridradius,cubem,cubem)
+			print("WARNING: --gridradius %d is larger than the largest tomogram dimension %d. --gridradius will be set to %d" %(options.gridradius,cubem,cubem))
 			masksize = options.gridradius*2
 		
 		mask = EMData(masksize,masksize,masksize)
@@ -836,7 +837,7 @@ def tomogrampreprocess(options):
 		mask.write_image(mskfileORIG,0)
 		
 		if yshort:
-			print "I will rotate the mask"
+			print("I will rotate the mask")
 			#yo*=-1
 			mask.rotate(0,-90,0) #-90 rotates clockwise, towards the screen. +90 rotates counterclockwise, into the screen.
 		
@@ -859,8 +860,8 @@ def tomogrampreprocess(options):
 		maskc = mask.get_clip(r)
 		
 		if options.verbose:
-			print "The dimensions of the mask are", mask['nx'],mask['ny'],mask['nz']
-			print "The dimensions of the tomogram are", tomox,tomoy,tomoz
+			print("The dimensions of the mask are", mask['nx'],mask['ny'],mask['nz'])
+			print("The dimensions of the tomogram are", tomox,tomoy,tomoz)
 		
 		tomo = EMData( options.tomogram, 0 )
 		
@@ -880,7 +881,7 @@ c:fuction to 1) read a template from file and make it match the tomogram, 2) gen
 c:template using a particle stack, or 3) generate a (spherical) template from scratch. 
 '''
 def templategen( options ):
-	print "\n(e2spt_autoboxer)(templategen) - loading/generating template"
+	print("\n(e2spt_autoboxer)(templategen) - loading/generating template")
 	
 	tomohdr = EMData( options.tomogram,0,True )
 	tomogramapix = tomohdr['apix_x']
@@ -896,24 +897,24 @@ def templategen( options ):
 	if options.template:
 		
 		if options.verbose:
-			print "\n(e2spt_autoboxer)(templategen)\n--template is", options.template
+			print("\n(e2spt_autoboxer)(templategen)\n--template is", options.template)
 		
 		if options.template == 'sphere':
 			if options.boxsize and options.ptclradius:
 				options = gensph( options, tomogramapix )
 			else: 
-				print "\nERROR: when --template=sphere, you must specify --boxsize AND --ptclradius"
+				print("\nERROR: when --template=sphere, you must specify --boxsize AND --ptclradius")
 				sys.exit()
 				
 		elif 'cylinder' in options.template and '.' not in options.template:
 			if options.boxsize:
 				options = gencylinder( options )
 			else: 
-				print "\nERROR: when --template=cylinder, you must specify --boxsize"
+				print("\nERROR: when --template=cylinder, you must specify --boxsize")
 				sys.exit()	
 		
 		elif '.hdf' not in options.template[-4:] and '.pdb' not in options.template[-4:] and '.mrc' not in options.template[-4:]:
-			print "\nERROR: The format of the template to use must be .pdb, .mrc or .hdf. Alternatively, provide --template=sphere or --template=cylinder"
+			print("\nERROR: The format of the template to use must be .pdb, .mrc or .hdf. Alternatively, provide --template=sphere or --template=cylinder")
 			sys.exit()
 		
 		elif '.hdf' not in options.template[-4:]:
@@ -936,7 +937,7 @@ def templategen( options ):
 				options.template = hdfmodel
 			
 			if options.verbose:
-				print "\nconverted the template to .hdf"
+				print("\nconverted the template to .hdf")
 		elif '.hdf' in options.template[:-4]:
 			hdfmodel = options.path + '/template_' + os.path.basename( options.template )
 			
@@ -991,7 +992,7 @@ def templategen( options ):
 			
 	
 	elif options.ptclstack:
-		print "\n--ptclstack provided %s\n" %( options.ptclstack )
+		print("\n--ptclstack provided %s\n" %( options.ptclstack ))
 	
 		ptclhdr = EMData( options.ptclstack, 0, True ) 
 		box = ptclhdr['nx']
@@ -1003,7 +1004,7 @@ def templategen( options ):
 		
 		cmd = "cd " + options.path + " && e2spt_classaverage.py --path=genref --input=../" + options.ptclstack + " --npeakstorefine=4 -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=filter.lowpass.gauss:cutoff_freq=.0333 --lowpassfine=filter.lowpass.gauss:cutoff_freq=.05 --search " + str( radius ) + " --radius " + str( radius ) + " --precision=2 --parallel" + options.parllel + " --savesteps --saveali --normproc=normalize.edgemean"
 		if options.verbose:
-			print "\ngenerating template from --particlestack %s by executing the following command \n%s"%( options.ptclstack, cmd )
+			print("\ngenerating template from --particlestack %s by executing the following command \n%s"%( options.ptclstack, cmd ))
 	
 		runcmd( options, cmd )
 		
@@ -1015,7 +1016,7 @@ def templategen( options ):
 		options = gensph( options, tomogramapix )
 	
 	else:
-		print """\nERROR: in the absence of --template and --ptclstack, you must provide --boxsize AND --ptclradius to have a spherical template generated automatically."""
+		print("""\nERROR: in the absence of --template and --ptclstack, you must provide --boxsize AND --ptclradius to have a spherical template generated automatically.""")
 		sys.exit()
 	
 	
@@ -1023,7 +1024,7 @@ def templategen( options ):
 	c:if the apix of --template and --tomogram don't match, scale --template to match --tomogram.
 	c:this assumes both have accurate apix values in the header to begin with.
 	'''
-	print "\n(e2spt_autoboxer)(templategen) options.template is", options.template
+	print("\n(e2spt_autoboxer)(templategen) options.template is", options.template)
 	templatehdr = EMData( options.template, 0, True )
 	templateapix = templatehdr['apix_x']
 	
@@ -1040,7 +1041,7 @@ c:function to generate spherical template
 '''
 def gensph( options, tomogramapix ):
 	
-	print "\n(e2spt_autoboxer)(gensph) generating spherical template from scratch"
+	print("\n(e2spt_autoboxer)(gensph) generating spherical template from scratch")
 	
 	#tomogramapix = EMData( options.tomogra, 0, True)['apix_x']
 		
@@ -1055,14 +1056,14 @@ def gensph( options, tomogramapix ):
 		a.process_inplace('mask.sharp',{'outer_radius':options.ptclradius})
 		a.process_inplace('normalize.edgemean')
 	else:
-		print "\nERROR: in the absence of --template and --ptclstack, you must provide --boxsize AND --ptclradius."
+		print("\nERROR: in the absence of --template and --ptclstack, you must provide --boxsize AND --ptclradius.")
 		sys.exit()
 	
 	a.write_image(options.path + '/templatesph.hdf',0)
 	#if not options.invert:
 	#	a.mult(-1)		
 	options.template = options.path + '/templatesph.hdf'
-	print "writing spherical template", options.template
+	print("writing spherical template", options.template)
 	
 	return options
 
@@ -1098,21 +1099,21 @@ def gencylinder( options ):
 		radiusinner = params['radiusinner']
 		
 		if heightinner > height:
-			print "\nWARNING: heightinner %d > height %d; therefore, heightinner will be defaulted to height/2" %( heightinner, height )
+			print("\nWARNING: heightinner %d > height %d; therefore, heightinner will be defaulted to height/2" %( heightinner, height ))
 			heightinner = height/2
 			
 		if radiusinner > radius:
-			print "\nWARNING: radiusinner %d > radius %d; therefore, heightinner will be defaulted to radius/2" %( radiusinner, radius )
+			print("\nWARNING: radiusinner %d > radius %d; therefore, heightinner will be defaulted to radius/2" %( radiusinner, radius ))
 			radiusinner=radius/2
 			
 		maskin = mask.process("testimage.cylinder",{'height':options.heightinner,'radius':options.radiusinner})
 		finalmask = maskout - maskin
 
 	elif 'heightinner' in params:
-		print "\nWARNING: heightinner not used since radiusinner is absent. You need to supply BOTH of these when generating a hollow cylyndrical template"
+		print("\nWARNING: heightinner not used since radiusinner is absent. You need to supply BOTH of these when generating a hollow cylyndrical template")
 
 	elif 'radiusinner' in params:
-		print "\nWARNING: radiusinner not used since heightinner is absent. You need to supply BOTH of these when generating a hollow cylyndrical template"
+		print("\nWARNING: radiusinner not used since heightinner is absent. You need to supply BOTH of these when generating a hollow cylyndrical template")
 	
 	a.process_inplace('mask.sharp',{'outer_radius':-2})
 	a['apix_x'] = tomogramapix
@@ -1140,7 +1141,7 @@ def clip3D( vol, size ):
 	if Rvol:
 		vol.clip_inplace( Rvol )
 	else:
-		print "ERROR!: Empty Region to clip", Rvol
+		print("ERROR!: Empty Region to clip", Rvol)
 	#vol.process_inplace('mask.sharp',{'outer_radius':-1})
 	
 	return vol
@@ -1166,9 +1167,9 @@ def tomosubblocks( options, boxsize ):
 	ncubes = int( tomovol / cubevol )
 	
 	if options.verbose:
-		print "\nThe volume of the tomogram is", tomovol
-		print "The volume of the subregions is", cubevol
-		print "Therefore, in principle, you could divide the tomogram into at least %d cubes wiht a sidelength of %d" %( ncubes, cubesize )
+		print("\nThe volume of the tomogram is", tomovol)
+		print("The volume of the subregions is", cubevol)
+		print("Therefore, in principle, you could divide the tomogram into at least %d cubes wiht a sidelength of %d" %( ncubes, cubesize ))
 	
 	zc = cubesize/2	#the center in z never changes
 		
@@ -1182,9 +1183,9 @@ def tomosubblocks( options, boxsize ):
 	'''
 		
 	if options.verbose:
-		print "\nI will look for subvolumes throughout the tomogram, which has these x, y, z dimensions", tomox, tomoy, tomoz
-		print "Where the boxsize of SUBREGIONS to examine is", cubesize
-		print "And the boxsize of (UNSHRUNK) ptcls to extract is", boxsize
+		print("\nI will look for subvolumes throughout the tomogram, which has these x, y, z dimensions", tomox, tomoy, tomoz)
+		print("Where the boxsize of SUBREGIONS to examine is", cubesize)
+		print("And the boxsize of (UNSHRUNK) ptcls to extract is", boxsize)
 	
 	##### The TOMOGRAM SHOULD HAVE BEEN SHRUNK ALREADY, during preprocessing, and the template should have been scaled to match it
 	#if options.shrinktomo > 1:
@@ -1201,34 +1202,34 @@ def tomosubblocks( options, boxsize ):
 	cube depending on the specific tomogram, but will be accounted for later
 	'''
 	nxs = tomox/(cubesize - boxsize/2)
-	print "nxs",nxs
+	print("nxs",nxs)
 	xcenters = [ cubesize/2 + i*(cubesize - boxsize/2 ) for i in range( nxs ) ] 
 	
 	lastx = xcenters[-1]+cubesize/2
 	unscannedx = tomox-lastx
-	print "unscannedx",unscannedx
+	print("unscannedx",unscannedx)
 	if unscannedx > boxsize/2:
 		lastxc = tomox - cubesize/2
 
 		if lastxc not in xcenters:
 			xcenters += [lastxc]
 
-	print "xcenters",xcenters
+	print("xcenters",xcenters)
 	nys = tomoy/(cubesize - boxsize/2)
-	print "nys",nys
+	print("nys",nys)
 	ycenters = [ cubesize/2 + i*(cubesize - boxsize/2 ) for i in range( nys ) ] 
 	
 	lasty = ycenters[-1]+cubesize/2
 	unscannedy = tomoy-lasty
-	print "unscannedy",unscannedy
+	print("unscannedy",unscannedy)
 	if unscannedy > boxsize/2:
 		lastyc = tomoy - cubesize/2
-		print "lastyc",lastyc
+		print("lastyc",lastyc)
 		if lastyc not in ycenters:
 			
 			ycenters += [lastyc]
 
-	print "ycenters",ycenters
+	print("ycenters",ycenters)
 	#sys.exit()
 	'''
 	now iterate through rows and columns of tomogram SUBREGIONS or 'cubes'
@@ -1279,7 +1280,7 @@ def scanchunks( options, centers, templateindx ):
 	if options.dilutionfactor:
 		nptcls = nptclsmax/options.dilutionfactor
 	
-	print "\nat maximum concentration, %d particles would fit in each subregion; given dilution factor %d, the estimate is %d" %(nptcls, options.dilutionfactor, nptcls)
+	print("\nat maximum concentration, %d particles would fit in each subregion; given dilution factor %d, the estimate is %d" %(nptcls, options.dilutionfactor, nptcls))
 	
 	#'''
 	#preprocesstemplate if necessary		
@@ -1309,7 +1310,7 @@ def scanchunks( options, centers, templateindx ):
 	
 	templatesphavg.process_inplace('xform.scale',{'scale':1,'clip':cubesize})
 	
-	print "\ntemplate resized", templatesphavg['nx'],templatesphavg['ny'],templatesphavg['nz']
+	print("\ntemplate resized", templatesphavg['nx'],templatesphavg['ny'],templatesphavg['nz'])
 	
 	zc = tomoz/2
 	
@@ -1321,7 +1322,7 @@ def scanchunks( options, centers, templateindx ):
 		xc = centers[i][0]
 		yc = centers[i][1]
 		
-		print "\nscanning SUBREGION %d/%d, centered at x=%d y=%d z=%d" %( i, len(centers),xc, yc, zc )
+		print("\nscanning SUBREGION %d/%d, centered at x=%d y=%d z=%d" %( i, len(centers),xc, yc, zc ))
 		
 		xi = xc - zc	#the beginning of each subregion to scan will be half the size of 
 		yi = yc - zc	#the subregion (zc) left of the center in both x and y. 
@@ -1329,7 +1330,7 @@ def scanchunks( options, centers, templateindx ):
 		r = Region( xi, yi, 0, tomoz, tomoz, tomoz )	#The subregion extends zc pixels from the initial 
 											#xi,yi,0 position in all three directions
 
-		print "therefore, the region of data from the tomogram to scan is", r
+		print("therefore, the region of data from the tomogram to scan is", r)
 		
 		subbox = EMData()
 		subbox.read_image(options.tomogram,0,False,r)	#load only the pixel data from the region r
@@ -1345,10 +1346,10 @@ def scanchunks( options, centers, templateindx ):
 			#subbox.process_inplace('normalize')
 		
 		if not subbox['sigma']:
-			print "\nthere's something wrong with this subregion and it will be skipped. mean=%.4f, std=%.4f" %(subbox['mean'],subbox['sigma'])
-			print "\nyou might be scanning empty regions of the tomogram. You might have a --yshort tomogram and haven't realized so."
+			print("\nthere's something wrong with this subregion and it will be skipped. mean=%.4f, std=%.4f" %(subbox['mean'],subbox['sigma']))
+			print("\nyou might be scanning empty regions of the tomogram. You might have a --yshort tomogram and haven't realized so.")
 		else:
-			print "subbox['sigma'] is", subbox['sigma']
+			print("subbox['sigma'] is", subbox['sigma'])
 
 			if options.test:
 				nptcls = 1	
@@ -1397,8 +1398,8 @@ def scanchunks( options, centers, templateindx ):
 			c:only calculate the cross correlation between template and subregion once
 			'''
 			
-			print 'subbox size', subbox['nx'],subbox['ny'],subbox['nz']
-			print 'template2use size', template2use['nx'],template2use['ny'],template2use['nz']
+			print('subbox size', subbox['nx'],subbox['ny'],subbox['nz'])
+			print('template2use size', template2use['nx'],template2use['ny'],template2use['nz'])
 			template2use.process_inplace('filter.matchto',{'to':subboxnorm} )
 			
 			ccf = subboxnorm.calc_ccf(template2use)
@@ -1409,7 +1410,7 @@ def scanchunks( options, centers, templateindx ):
 			subboxnorm.write_image( options.path+'/subregions.hdf',i)
 			coordssubset = set()
 			
-			print "ccf done"
+			print("ccf done")
 			
 			masks=[]
 	
@@ -1440,11 +1441,11 @@ def scanchunks( options, centers, templateindx ):
 			'''
 			c:iterate through the likely number of particles
 			'''
-			print "iterating over %d peaks" %( nptcls )
+			print("iterating over %d peaks" %( nptcls ))
 			
 			for p in range(nptcls):
 				if options.verbose == 10:
-					print "\nexamining peak %d/%d" %(p,nptcls)
+					print("\nexamining peak %d/%d" %(p,nptcls))
 				#print "\nAttempt numbr %d to find a particle" %(p)
 				#print "in subregion", sbn+1
 				#box = ccf.get_zsize()
@@ -1459,7 +1460,7 @@ def scanchunks( options, centers, templateindx ):
 			
 				score = ccf['maximum']
 				if options.verbose == 10:
-					print "score=",score
+					print("score=",score)
 					
 				#print "Therefore, after subtracting this max from the subbox, the max is at", xmax,ymax,zmax
 				#if max < 1.0
@@ -1467,8 +1468,8 @@ def scanchunks( options, centers, templateindx ):
 					#print "Either the max was less than 1; lets see", max
 					#print "Or one of the coordinates of the maximum was too close to the edge", locmax
 					if options.verbose > 11:
-						print "\npotential particle skipped based on EDGE VALUES! cubesize=%d, edgeminval=%d, edgemaxval=%d" %( cubesize, edgeminval, edgemaxval )
-						print "locmax", locmax
+						print("\npotential particle skipped based on EDGE VALUES! cubesize=%d, edgeminval=%d, edgemaxval=%d" %( cubesize, edgeminval, edgemaxval ))
+						print("locmax", locmax)
 					#pass			
 				else:
 					#print "THE max for a potential particle was found at", locmax
@@ -1507,15 +1508,15 @@ def scanchunks( options, centers, templateindx ):
 					particle to the coordinates set IF they are within the mask
 					'''
 					if options.mask and options.gridradius:
-						print "\nBecause mask is on, I will see if the real center of the putative particle is within"
+						print("\nBecause mask is on, I will see if the real center of the putative particle is within")
 						#if (realxmax - (xo + tomoxc)) * (realxmax - (xo + tomoxc)) + (realymax - (yo + tomoyc)) * (realymax - (yo + tomoyc)) > (options.gridradius * options.gridradius) :
 						
 						dist = math.sqrt( math.pow( realxmax - (xo + tomoxc), 2 ) + math.pow( realymax - (yo + tomoyc), 2 ) ) 
 						if dist > options.gridradius:	
-							print "\npotential particle excluded because it is outside tomogram mask!"
+							print("\npotential particle excluded because it is outside tomogram mask!")
 						else:
 							if options.verbose:
-								print "\npotential particle included because it is inside tomogram mask!"
+								print("\npotential particle included because it is inside tomogram mask!")
 						
 							results.append([score,realxmax,realymax,realzmax])
 							#coordssubset.add(( realxmax, realymax, realzmax )) 
@@ -1559,10 +1560,10 @@ def rmsdpruner( datar, options ):
 	
 	elementstoremove = set()
 	data = list(datar)     #list of lists with per particle info [ [score1,x1,y1,z1], [score2,x2,y2,z2],...,[scoren,xn,yn,zn] ]
-	print "\nin rmsdpruner data length is", len(data)
+	print("\nin rmsdpruner data length is", len(data))
     #perform all-vs-all comparisons with two nested loops
 	numcomp = (len(data)*(len(data)-1))/2
-	print "which will require %d comparisons\n" %(numcomp)
+	print("which will require %d comparisons\n" %(numcomp))
 	cn=0
 	ntoremove = 0
 	for d in range( len(data) ):
@@ -1576,43 +1577,43 @@ def rmsdpruner( datar, options ):
 		for e in range(d+1,len(data)):
 			evector = numpy.array( [ data[e][1],data[e][2],data[e][3] ] )
 			ecoeff = data[e][0]
-			print "\rrmsd comparison %d/%d" %(cn,numcomp) 	
+			print("\rrmsd comparison %d/%d" %(cn,numcomp)) 	
 			cn+=1
-			print'cn',cn
-			print "dvector",dvector
-			print "evector",evector
+			print('cn',cn)
+			print("dvector",dvector)
+			print("evector",evector)
 			
             #compute the angle and rmsd between the two particle vectors
 			angle = float( numpy.degrees( numpy.arccos( numpy.dot(dvector,evector) / ( numpy.dot(evector,evector) * numpy.dot(dvector,dvector) ) )) )
 			rmsd = float( numpy.linalg.norm(dvector - evector) )
-			print "rmsd is", rmsd
-			print "ptclradius, diameters",options.ptclradius,options.ptclradius*2.0
-			print "EXCLUDE because rmsd < ptclradius*2.0", float(rmsd) < float(options.ptclradius*2.0)
+			print("rmsd is", rmsd)
+			print("ptclradius, diameters",options.ptclradius,options.ptclradius*2.0)
+			print("EXCLUDE because rmsd < ptclradius*2.0", float(rmsd) < float(options.ptclradius*2.0))
 
 
 			diameter = options.ptclradius*2.0
 			if rmsd < diameter:
-				print "TRUE!"
+				print("TRUE!")
 				if rmsd < diameter:
-					print "\nREMOVING a particle that overlapped with another with an RMSD of", rmsd
+					print("\nREMOVING a particle that overlapped with another with an RMSD of", rmsd)
 					ntoremove+=1
-					print  rmsd < diameter
+					print(rmsd < diameter)
 					#however, if two particles overlap, keep the one with the highest score
-	        		elementoremove = data[e]
-	        		#if dcoeff > ecoeff:
-	        		if ecoeff > dcoeff:
-	        			elementoremove = data[d]
-					print "elementoremove",elementoremove
+					elementoremove = data[e]
+					#if dcoeff > ecoeff:
+					if ecoeff > dcoeff:
+						elementoremove = data[d]
+					print("elementoremove",elementoremove)
 					elementstoremove.add( elementoremove )
 				
 				
-			print '\n'
+			print('\n')
 				
 
-	print "\n(e2spt_autoboxer)(rmsdpruner), removing %d / %d particles, because ntoremove is %d" %( len(elementstoremove), len(data), ntoremove )
+	print("\n(e2spt_autoboxer)(rmsdpruner), removing %d / %d particles, because ntoremove is %d" %( len(elementstoremove), len(data), ntoremove ))
 	
-	print "type of data is",type(data)
-	print "len(data)",len(data)
+	print("type of data is",type(data))
+	print("len(data)",len(data))
 	#print "data list is",data
 
 	#finaldataset = set(data)
@@ -1634,33 +1635,33 @@ def plothistogram(  options, scores ):
 	statistics = ['mean='+str(mean) + ' std='+str(std) + '\n']
 
 
-	print "\n(e2spt_autoboxer)(plothistogram) number of scores", len(scores)
-	print "sigma = %.6f and mean = %.6f" %( std, mean )
+	print("\n(e2spt_autoboxer)(plothistogram) number of scores", len(scores))
+	print("sigma = %.6f and mean = %.6f" %( std, mean ))
 	
 	if not std:
-		print "ERROR: std=0, which means all intensity values are the same."
+		print("ERROR: std=0, which means all intensity values are the same.")
 		sys.exit()
 	
 	cuberoot = numpy.power(len(scores),1.0/3.0)
 	#print "The cuberoot of n is", cuberoot
 	width = (3.5*std)/cuberoot
-	print "\naccording to Scott's normal reference rule, width = (3.5*std)/cuberoot(n), the width of the histogram bins will be", width
+	print("\naccording to Scott's normal reference rule, width = (3.5*std)/cuberoot(n), the width of the histogram bins will be", width)
 	
 	calcbins = (max(scores) - min(scores)) / width
 	
 	if options.nbins:
 		calcbins = options.nbins
 	
-	print "and the number of bins n = ( max(scores) - min(scores) ) / width, will thus be", calcbins
+	print("and the number of bins n = ( max(scores) - min(scores) ) / width, will thus be", calcbins)
 	calcbins = round(calcbins)
-	print "rounding to", calcbins
+	print("rounding to", calcbins)
 	
 	statistics += ['bins=' + str( calcbins ) + ' , binwidth=' + str( width ) + '\n']
 	
-	print "statistics for this distribution are", statistics
+	print("statistics for this distribution are", statistics)
 	
 	if not calcbins:
-		print "\nWARNING: nins=0, which means max and min intensity are the same, which probably means all scores are zero. Defaulting nbins to number of partilces."
+		print("\nWARNING: nins=0, which means max and min intensity are the same, which probably means all scores are zero. Defaulting nbins to number of partilces.")
 		calcbins = len(scores)
 			
 	statsfile = options.path + '/histogram_stats.txt'
@@ -1698,16 +1699,16 @@ def plothistogram(  options, scores ):
 	plottitle = 'CC scores distribution histogram'
 	plt.title( plottitle )
 
-  	matplotlib.rc('xtick', labelsize=16) 
+	matplotlib.rc('xtick', labelsize=16) 
 	matplotlib.rc('ytick', labelsize=16) 
   		 	
-  	font = {'weight':'bold','size':16}
+	font = {'weight':'bold','size':16}
 	matplotlib.rc('font', **font)
   		 	
 	pylab.rc("axes", linewidth=2.0)
 		
 	pylab.xlabel('CC score (au)', fontsize=16, fontweight='bold')
-  	pylab.ylabel('Number of particles', fontsize=16, fontweight='bold')
+	pylab.ylabel('Number of particles', fontsize=16, fontweight='bold')
 	
 	plt.savefig(options.path + '/histogram.png')
 	plt.clf()
@@ -1729,7 +1730,7 @@ def cccpruner( options, scores, data ):
 		scoressigma = numpy.std(scores)
 
 		#print "scores are", scores
-		print "\nThese many ptcls before ccc pruning", len(scores)
+		print("\nThese many ptcls before ccc pruning", len(scores))
 		
 		nscores = len(scores)
 	
@@ -1740,17 +1741,17 @@ def cccpruner( options, scores, data ):
 	
 		topnscores = int(nscores*(0.05))
 	
-		print "Therefore, 5% are", topnscores
+		print("Therefore, 5% are", topnscores)
 		topscores = scores[:topnscores]
 		bottomscores = scores[topnscores:]
-		print "The top scores are", topscores
-		print "And the len of bottom scores are", len(bottomscores)
+		print("The top scores are", topscores)
+		print("And the len of bottom scores are", len(bottomscores))
 
-		print "The sum of bottom and top scores should equal the len of data", len(data), len(topscores) + len(bottomscores)
+		print("The sum of bottom and top scores should equal the len of data", len(data), len(topscores) + len(bottomscores))
 
-		print "\n\n\n\nThe mean and sigma of the datas CCC", scoresmean, scoressigma
-		print "\n\n\n\nWhereas the max and the min of the data's ccc are CCC", numpy.max(scores), numpy.min(scores)
-		print "\n\n\n\n"
+		print("\n\n\n\nThe mean and sigma of the datas CCC", scoresmean, scoressigma)
+		print("\n\n\n\nWhereas the max and the min of the data's ccc are CCC", numpy.max(scores), numpy.min(scores))
+		print("\n\n\n\n")
 		lowerbound = scoresmean - 2*scoressigma
 		upperbound = scoresmean + 2*scoressigma
 		
@@ -1761,7 +1762,7 @@ def cccpruner( options, scores, data ):
 		conserved_count=0
 
 		pruneddata = []
-		print "Will now do correlation coefficient based pruning"	
+		print("Will now do correlation coefficient based pruning")	
 		for d in data:
 			#print "The data element to examine", d
 			coeff = d[0]
@@ -1773,9 +1774,9 @@ def cccpruner( options, scores, data ):
 		
 				try:
 					scores.remove(coeff)
-					print "One element was removed because it has coeff < lowerbound or coeff > upperbound", coeff, lowerbound, upperbound
+					print("One element was removed because it has coeff < lowerbound or coeff > upperbound", coeff, lowerbound, upperbound)
 				except:
-					print "The coeff smaller than lowerbound or larger than upperbound was not in scores"
+					print("The coeff smaller than lowerbound or larger than upperbound was not in scores")
 			
 			elif coeff in scores and coeff in bottomscores:
 		
@@ -1784,36 +1785,36 @@ def cccpruner( options, scores, data ):
 		
 				try:
 					scores.remove(coeff)
-					print "Element removed because coeff was in bottomscores", coeff
+					print("Element removed because coeff was in bottomscores", coeff)
 				except:
-					print "The coeff smaller than lowerbound or larger than upperbound was not in scores"
+					print("The coeff smaller than lowerbound or larger than upperbound was not in scores")
 			
 			elif coeff in scores and coeff not in topscores:
 				scores.remove(coeff)
 				data.remove(d)
 				removed_count+=1
-				print "Element removed because coeff was in top coeff", coeff
+				print("Element removed because coeff was in top coeff", coeff)
 			else:
 				conserved_count+=1
-				print "not removed", coeff
+				print("not removed", coeff)
 				if d not in pruneddata:
 					pruneddata.append(d)
-			print "removed count", removed_count
-			print "preserved count", conserved_count
+			print("removed count", removed_count)
+			print("preserved count", conserved_count)
 
-		print "I have pruned out these many based on mean and sigma statistics", removed_count
-		print "And therefore data now is", len(data)
-		print "But pruned data is more accurately", len(pruneddata)
+		print("I have pruned out these many based on mean and sigma statistics", removed_count)
+		print("And therefore data now is", len(data))
+		print("But pruned data is more accurately", len(pruneddata))
 
 		data = pruneddata
 
-		print "THe len of data AFTER CCC pruning is", len(data)
+		print("THe len of data AFTER CCC pruning is", len(data))
 
 		return data
 		
 		
 	except:
-		print "\nERROR: SciPy not found. Must be installed if using --pruneccc"
+		print("\nERROR: SciPy not found. Must be installed if using --pruneccc")
 		
 		return data
 			
@@ -1823,7 +1824,7 @@ def cccpruner( options, scores, data ):
 
 #def meancalc(options,stack,normalize=False):
 def meancalc(options,stack):
-	print "Stack RECEIVED in meancalc is", stack
+	print("Stack RECEIVED in meancalc is", stack)
 	n=EMUtil.get_image_count(stack)
 	#print "N is", n
 	means=[]
@@ -1894,11 +1895,11 @@ def pruner(data,tag,mean_maxs,sigma_maxs,mean_mins,sigma_mins):
 				data.remove(d)
 				#print "particle REMOVED based on GOLD PRUNING!"
 		elif tag == 'background':
-			 if max < (mean_maxs + sigma_maxs):
+			if max < (mean_maxs + sigma_maxs):
 				data.remove(d)
 				#print "particle REMOVED based on BACKGROUND PRUNING!"
 		elif tag == 'carbon':
-			print "NO cabron pruning method yet"			
+			print("NO cabron pruning method yet")			
 	
 	return data
 
@@ -1961,12 +1962,12 @@ def statspruner( options, data ):
 	MAXSmean = numpy.mean(maxs2d,dtype=numpy.float64)
 	MAXSsigma = numpy.std(maxs2d,dtype=numpy.float64)
 
-	print "The mean of MAXS", MAXSmean
-	print "The sgima of MAXS", MAXSsigma
-	print "\n"
+	print("The mean of MAXS", MAXSmean)
+	print("The sgima of MAXS", MAXSsigma)
+	print("\n")
 
 	maxs_thresh = MAXSmean + 2*MAXSsigma
-	print "Because MAXSmean is %f and MAXSsigma is %f then maxs_thresh = MAXSmean + 2*MAXSsigma is %f" %(MAXSmean, MAXSsigma, maxs_thresh)
+	print("Because MAXSmean is %f and MAXSsigma is %f then maxs_thresh = MAXSmean + 2*MAXSsigma is %f" %(MAXSmean, MAXSsigma, maxs_thresh))
 	
 	for d in data:
 		score = data[0]
@@ -1982,8 +1983,8 @@ def statspruner( options, data ):
 				bad.add({ score: 1 })
 			
 
-	print "These many particles were removed based on max value", co
-	print "Len data after max pruning is", len(newestdata)
+	print("These many particles were removed based on max value", co)
+	print("Len data after max pruning is", len(newestdata))
 
 	'''
 	MIN based pruning (not clear so far that min info can be used to prune in addition to max pruning)
@@ -1996,9 +1997,9 @@ def statspruner( options, data ):
 	MINSmean = numpy.mean( newmins,dtype=numpy.float64 )
 	MINSsigma = numpy.std( newmins,dtype=numpy.float64 )
 
-	print "The mean of MINS", MINSmean
-	print "The sgima of MINS", MINSsigma
-	print "\n"
+	print("The mean of MINS", MINSmean)
+	print("The sgima of MINS", MINSsigma)
+	print("\n")
 
 
 	'''
@@ -2012,13 +2013,13 @@ def statspruner( options, data ):
 	SIGMASmean = numpy.mean(newsigmas,dtype=numpy.float64)
 	SIGMASsigma = numpy.std(newsigmas,dtype=numpy.float64)
 
-	print "The mean of SIGMAS", SIGMASmean
-	print "The sgima of SIGMAS", SIGMASsigma
-	print "\n"
+	print("The mean of SIGMAS", SIGMASmean)
+	print("The sgima of SIGMAS", SIGMASsigma)
+	print("\n")
 
 	sigmas_thresh_upper = SIGMASmean + 2*SIGMASsigma
 	sigmas_thresh_lower = SIGMASmean - 2*SIGMASsigma
-	print "Because SIGMASmean is %f and SIGMASsigma is %f then sgimas_thresh_upper and lower are %f, %f" %(SIGMASmean, SIGMASsigma, sigmas_thresh_upper, sigmas_thresh_lower)
+	print("Because SIGMASmean is %f and SIGMASsigma is %f then sgimas_thresh_upper and lower are %f, %f" %(SIGMASmean, SIGMASsigma, sigmas_thresh_upper, sigmas_thresh_lower))
 
 	co=0
 	for d in newestdata:
@@ -2026,8 +2027,8 @@ def statspruner( options, data ):
 			#print "A particle has been removed because its sgima is larger or smaller than mean_thresh based on PRJ"
 			newestdata.remove(d)
 			co+=1
-	print "These many particles were removed based on sigma pruning", co
-	print "Len data after sigma pruning is", len(newestdata)
+	print("These many particles were removed based on sigma pruning", co)
+	print("Len data after sigma pruning is", len(newestdata))
 
 
 	'''
@@ -2041,8 +2042,8 @@ def statspruner( options, data ):
 	MEANSmean = numpy.mean(newmeans,dtype=numpy.float64)
 	MEANSsigma = numpy.std(newmeans,dtype=numpy.float64)
 
-	print "\nThe mean of MEANS is", MEANSmean
-	print "The sigma of MEANS is", MEANSsigma
+	print("\nThe mean of MEANS is", MEANSmean)
+	print("The sigma of MEANS is", MEANSsigma)
 
 	means_thresh_lower = MEANSmean - 2*MEANSsigma
 	means_thresh_upper = MEANSmean + 2*MEANSsigma
@@ -2052,7 +2053,7 @@ def statspruner( options, data ):
 
 #NOT WORKING 07/2015
 def prjpruner( options, data ):
-	print "I will do projection based pruning"
+	print("I will do projection based pruning")
 	bxf = options.boxsize
 	tempcrop = EMData( options.template, 0 )
 
@@ -2227,7 +2228,7 @@ def prjpruner( options, data ):
 	
 			kkk+=1
 		else:
-			print "Trying to add repeated particle in FIRST PRJ loop!"
+			print("Trying to add repeated particle in FIRST PRJ loop!")
 		newdata.sort()
 
 	#print "\n\n\nsorted newdata are", newdata
@@ -2246,7 +2247,7 @@ def prjpruner( options, data ):
 	#print "repeated particles when pruning by FIRST PRJ prune!",lll
 
 	newdata = list(setdata)
-	print "Therefore data len is now", len(newdata)
+	print("Therefore data len is now", len(newdata))
 
 
 	newdata=sorted(newdata, key=itemgetter(1,2,3))
@@ -2380,7 +2381,7 @@ def prjpruner( options, data ):
 				basicdata.add( (newestccf,newx,newy,newz) )
 				ppp+=1
 			else:
-				print "TRYing to add repeated particle in second PRJ loop!"	
+				print("TRYing to add repeated particle in second PRJ loop!")	
 		
 		else:
 			rrr+=1
@@ -2391,8 +2392,8 @@ def prjpruner( options, data ):
 		#	newdata.remove(d)
 		#	print "I have removed a particle based new PRJ mask"
 
-	print "The number of particles pruned by AUTOCORRELATION is", rrr		
-	print "Therefore, AFTER AUTUCORRELATION pruning, the len of data is", len(newestdata)
+	print("The number of particles pruned by AUTOCORRELATION is", rrr)		
+	print("Therefore, AFTER AUTUCORRELATION pruning, the len of data is", len(newestdata))
 
 
 	#setdata = set()

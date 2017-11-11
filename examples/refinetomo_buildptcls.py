@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 # Muyuan Chen 2016-09
 from EMAN2 import *
 import numpy as np
@@ -25,7 +26,7 @@ def main():
 	pjfile=options.ptclout
 	try: 
 		os.remove(pjfile)
-		print "Overwriting...."
+		print("Overwriting....")
 	except: pass
 	
 	rotmat=[]
@@ -71,13 +72,13 @@ def main():
 			pj.process_inplace("normalize")
 			pj.write_image(pjfile,-1)
 		
-		print "Processing particle # {}/{}. Number of projections: {}".format(ptid,num,len(pks))
+		print("Processing particle # {}/{}. Number of projections: {}".format(ptid,num,len(pks)))
 
 
 	E2end(logid)
 	
 def run(cmd):
-	print cmd
+	print(cmd)
 	launch_childprocess(cmd)
 	
 def get_fft(img):

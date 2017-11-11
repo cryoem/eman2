@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 10/18/2014 (sludtke@bcm.edu)
@@ -60,7 +61,7 @@ n SNR(20-200) SNR(4-10) quality defocus SNR1*SNR2
 
 	(options, args) = parser.parse_args()
 
-	out=file(options.output,"w")
+	out=open(options.output,"w")
 
 	# Some info about the project for the header... may be useful when comparing multiple projects
 	db=js_open_dict("info/project.json")

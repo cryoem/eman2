@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 06/27/2007 (sludtke@bcm.edu)
@@ -82,9 +83,9 @@ def main():
 	
 	#options.align=parsemodopt(options.align)
 
-	print "WARNING:  e2resolution is an experimental program. It does not (yet) produce reliable resolution curves in most cases."
+	print("WARNING:  e2resolution is an experimental program. It does not (yet) produce reliable resolution curves in most cases.")
 
-	print "read models"
+	print("read models")
 	data=EMData(args[0],0)
 	mask=EMData(args[1],0)
 
@@ -104,13 +105,13 @@ def main():
 
 	data*=mask
 
-	print "compute FFT"
+	print("compute FFT")
 	dataf=data.do_fft()
 	noisef=noise.do_fft()
 
-	print "compute power 1"
+	print("compute power 1")
 	datapow=dataf.calc_radial_dist(dataf.get_ysize()/2-1,1,1,1)
-	print "compute power 2"
+	print("compute power 2")
 	noisepow=noisef.calc_radial_dist(noisef.get_ysize()/2-1,1,1,1)
 
 	x=range(1,len(datapow)+1)
@@ -127,7 +128,7 @@ def main():
 		s+=datapow[i]/noisepow[i]
 		sn+=1.0
 	if sn==0 :
-		print "Warning, strange normalization"
+		print("Warning, strange normalization")
 		s=datapow[int(len(noisepow)*.9)]/noisepow[int(len(noisepow)*.9)]
 	else: s/=sn
 
@@ -146,15 +147,15 @@ def main():
 	# convert to FSC
 	fsc=[i/(2.0+i) for i in snr]
 
-	out=file(args[2],"w")
+	out=open(args[2],"w")
 	for i in range(len(fsc)): out.write("%f\t%f\n"%(x[i],fsc[i]))
 	out.close()
 	
-	out=file(args[2]+".dat","w")
+	out=open(args[2]+".dat","w")
 	for i in range(len(fsc)): out.write("%f\t%f\n"%(x[i],datapow[i]))
 	out.close()
 
-	out=file(args[2]+".noi","w")
+	out=open(args[2]+".noi","w")
 	for i in range(len(noisepow)): out.write("%f\t%f\n"%(x[i],noisepow[i]))
 	out.close()
 	

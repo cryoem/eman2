@@ -1,4 +1,5 @@
 #
+from __future__ import print_function
 # Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
 # Copyright (c) 2000-2006 The University of Texas - Houston Medical School
 #
@@ -163,7 +164,7 @@ def ref_ali3dm( refdata ):
 	#varf   = refdata[4]
 	mask   = refdata[5]
 
-	print 'filter every volume at (0.4, 0.1)'
+	print('filter every volume at (0.4, 0.1)')
 	for iref in xrange(numref):
 		v = get_im(os.path.join(outdir, "vol%04d.hdf"%total_iter), iref)
 		v = filt_tanl(v, 0.4, 0.1)
@@ -186,8 +187,8 @@ def ref_sort3d(refdata):
 	from time import strftime, localtime
 	theme='filter every volume at (%f, 0.1)'%low_pass_filter
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-	print(line+theme)
-	print 'filter every volume at (%f, 0.1)'%low_pass_filter
+	print((line+theme))
+	print('filter every volume at (%f, 0.1)'%low_pass_filter)
 	for iref in xrange(numref):
 		v = get_im(os.path.join(outdir, "vol%04d.hdf"%total_iter), iref)
 		v = filt_tanl(v, low_pass_filter, 0.1)
@@ -218,9 +219,9 @@ def ref_ali3dm_ali_50S( refdata ):
 		if (fl > flmax):
 			flmax = fl
 			aamax = aa
-		print 'iref,fl,aa: ', iref, fl, aa
+		print('iref,fl,aa: ', iref, fl, aa)
 		# filter to minimum resolution
-	print 'flmin,aamin:', flmin, aamin
+	print('flmin,aamin:', flmin, aamin)
 	for iref in xrange(numref):
 		v = get_im(os.path.join(outdir, "vol%04d.hdf"%total_iter), iref)
 		v = filt_tanl(v, flmin, aamin)
@@ -234,7 +235,7 @@ def ref_ali3dm_ali_50S( refdata ):
 				v = alivol_mask( v, v50S_ref, mask_50S )
 
 		if not(varf is None):
-			print 'filtering by fourier variance'
+			print('filtering by fourier variance')
 			v.filter_by_image( varf )
 	
 		v.write_image(os.path.join(outdir, "volf%04d.hdf"%total_iter), iref)
@@ -1004,7 +1005,7 @@ def do_volume_mrk02(ref_data):
 	except:  local_filter = False
 	#=========================================================================
 	# volume reconstruction
-	if( type(data) == types.ListType ):
+	if( type(data) == list ):
 		if Tracker["constants"]["CTF"]:
 			vol = recons3d_4nn_ctf_MPI(myid, data, Tracker["constants"]["snr"], \
 					symmetry=Tracker["constants"]["sym"], npad=Tracker["constants"]["npad"], mpi_comm=mpi_comm, smearstep = Tracker["smearstep"])
@@ -1026,7 +1027,7 @@ def do_volume_mrk02(ref_data):
 			from utilities import adaptive_mask
 			mask3D = adaptive_mask(vol)
 		else:
-			if( type(Tracker["constants"]["mask3D"]) == types.StringType ):  mask3D = get_im(Tracker["constants"]["mask3D"])
+			if( type(Tracker["constants"]["mask3D"]) == bytes ):  mask3D = get_im(Tracker["constants"]["mask3D"])
 			else:  mask3D = (Tracker["constants"]["mask3D"]).copy()
 			nxm = mask3D.get_xsize()
 			if( nx != nxm):
@@ -1059,7 +1060,7 @@ def do_volume_mrk02(ref_data):
 				# skip low-pass filtration
 				vol = fft( filt_table( vol, ro) )
 			else:
-				if( type(Tracker["lowpass"]) == types.ListType ):
+				if( type(Tracker["lowpass"]) == list ):
 					vol = fft( filt_table( filt_table(vol, Tracker["lowpass"]), ro) )
 				else:
 					vol = fft( filt_table( filt_tanl(vol, Tracker["lowpass"], Tracker["falloff"]), ro) )
@@ -1076,7 +1077,7 @@ def do_volume_mrk02(ref_data):
 				filt_table(vol, ro)
 				del ro
 			if not local_filter:
-				if( type(Tracker["lowpass"]) == types.ListType ):
+				if( type(Tracker["lowpass"]) == list ):
 					vol = filt_table(vol, Tracker["lowpass"])
 				else:
 					vol = filt_tanl(vol, Tracker["lowpass"], Tracker["falloff"])
@@ -1166,7 +1167,7 @@ def do_volume_mrk03(ref_data):
 	except:  local_filter = False
 	#=========================================================================
 	# volume reconstruction
-	if( type(data) == types.ListType ):
+	if( type(data) == list ):
 		if Tracker["constants"]["CTF"]:
 			#vol = recons3d_4nn_ctf_MPI(myid, data, Tracker["constants"]["snr"], \
 			#		symmetry=Tracker["constants"]["sym"], npad=Tracker["constants"]["npad"], mpi_comm=mpi_comm, smearstep = Tracker["smearstep"])
@@ -1190,7 +1191,7 @@ def do_volume_mrk03(ref_data):
 			from utilities import adaptive_mask
 			mask3D = adaptive_mask(vol)
 		else:
-			if( type(Tracker["constants"]["mask3D"]) == types.StringType ):  mask3D = get_im(Tracker["constants"]["mask3D"])
+			if( type(Tracker["constants"]["mask3D"]) == bytes ):  mask3D = get_im(Tracker["constants"]["mask3D"])
 			else:  mask3D = (Tracker["constants"]["mask3D"]).copy()
 			nxm = mask3D.get_xsize()
 			if( nx != nxm ):
@@ -1200,7 +1201,7 @@ def do_volume_mrk03(ref_data):
 				assert(nx == nxm)
 
 		if not local_filter:
-			if( type(Tracker["lowpass"]) == types.ListType ):
+			if( type(Tracker["lowpass"]) == list ):
 				vol = filt_table(vol, Tracker["lowpass"])
 			else:
 				vol = filt_tanl(vol, Tracker["lowpass"], Tracker["falloff"])
@@ -1291,7 +1292,7 @@ def do_volume_mrk04(ref_data):
 	except:  local_filter = False
 	#=========================================================================
 	# volume reconstruction
-	if( type(data) == types.ListType ):
+	if( type(data) == list ):
 		if Tracker["constants"]["CTF"]:
 			ERROR("should not be here","mrk04",1)
 			vol = recons3d_4nn_ctf_MPI(myid, data, Tracker["constants"]["snr"], \
@@ -1314,7 +1315,7 @@ def do_volume_mrk04(ref_data):
 			from utilities import adaptive_mask
 			mask3D = adaptive_mask(vol)
 		else:
-			if( type(Tracker["constants"]["mask3D"]) == types.StringType ):  mask3D = get_im(Tracker["constants"]["mask3D"])
+			if( type(Tracker["constants"]["mask3D"]) == bytes ):  mask3D = get_im(Tracker["constants"]["mask3D"])
 			else:  mask3D = (Tracker["constants"]["mask3D"]).copy()
 			nxm = mask3D.get_xsize()
 			if( nx != nxm):
@@ -1418,7 +1419,7 @@ def do_volume_mrk05(ref_data):
 		from utilities import adaptive_mask
 		mask3D = adaptive_mask(vol)
 	else:
-		if( type(Tracker["constants"]["mask3D"]) == types.StringType ):  mask3D = get_im(Tracker["constants"]["mask3D"])
+		if( type(Tracker["constants"]["mask3D"]) == bytes ):  mask3D = get_im(Tracker["constants"]["mask3D"])
 		else:  mask3D = (Tracker["constants"]["mask3D"]).copy()
 		nxm = mask3D.get_xsize()
 		if( nx != nxm):
@@ -1469,7 +1470,7 @@ class factory_class:
 		self.contents["steady"]             = steady
 		self.contents["dovolume"]           = dovolume	 
 		self.contents["temp_dovolume"]      = temp_dovolume
-                self.contents["do_volume_mask"]     = do_volume_mask
+		self.contents["do_volume_mask"]     = do_volume_mask
 		self.contents["do_volume_mrk02"]    = do_volume_mrk02	 
 		self.contents["do_volume_mrk03"]    = do_volume_mrk03
 		self.contents["do_volume_mrk04"]    = do_volume_mrk04
@@ -1554,13 +1555,13 @@ def build_user_function(module_name=None,function_name=None,path_name=None):
 	try:
 		(file,path,descript) = imp.find_module(module_name,path_list)
 	except ImportError:
-		print "could not find module "+str(module_name)+" in path "+str(path_name)
+		print("could not find module "+str(module_name)+" in path "+str(path_name))
 		return None
 
 	try:
 		dynamic_mod = imp.load_module(module_name,file,path,descript)
 	except ImportError:
-		print "could not load module "+str(module_name)+" in path "+str(path)
+		print("could not load module "+str(module_name)+" in path "+str(path))
 		return None
 		
 	# function name has to be taken from dict, since otherwise we would be trying an
@@ -1569,11 +1570,11 @@ def build_user_function(module_name=None,function_name=None,path_name=None):
 		dynamic_func = dynamic_mod.__dict__[function_name]
 	except KeyError:
 		# key error means function is not defined in the module....
-		print "could not import user function "+str(function_name)+" from module"
-		print str(path)
+		print("could not import user function "+str(function_name)+" from module")
+		print(str(path))
 		return None
 	except:
-		print "unknown error getting function!"
+		print("unknown error getting function!")
 		return None
 	else:
 		return dynamic_func

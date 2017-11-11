@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: James Michael Bell, 2016 (jmbell@bcm.edu)
@@ -391,7 +392,7 @@ class EMBallStickModel(EMPDBItem3D):
 			for k in range(len(self.allResidues)):
 				res = self.allResidues[k]
 				key =  res[4][0]
-				if self.side_chains.has_key(key):
+				if key in self.side_chains:
 					self.renderResidues(res,self)
 					continue
 				if k !=0: #connects residues together from the nitrogen of one residue to the O of the next residue
@@ -408,7 +409,7 @@ class EMBallStickModel(EMPDBItem3D):
 		try:
 			glCallList(self.dl)
 		except:
-			print "call list failed",self.dl
+			print("call list failed",self.dl)
 			glDeleteLists(self.dl,1)
 			self.dl = None
 	
@@ -1195,7 +1196,7 @@ class EMSphereModel(EMPDBItem3D):
 		try:
 			glCallList(self.dl)
 		except:
-			print "call list failed",self.dl
+			print("call list failed",self.dl)
 			glDeleteLists(self.dl,1)
 			self.dl = None
 

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 3/1/2010 (sludtke@bcm.edu)
@@ -76,7 +77,7 @@ def main():
 
 	(options, args) = parser.parse_args()
 
-	print "This program has been deprecated in favor of running 'e2bdb.py -c' followed by using regular scp"
+	print("This program has been deprecated in favor of running 'e2bdb.py -c' followed by using regular scp")
 	
 	if options.client : 
 		scp_client()
@@ -84,11 +85,11 @@ def main():
 
 	# Make sure at most one of source or dest is remote
 	if '@' in args[-1] and '@' in args[0] :
-		print "Remote specification may not be in both source and target"
+		print("Remote specification may not be in both source and target")
 		sys.exit(1)
 	
 	if "bdb:" in args[0].lower() or "bdb:" in args[-1].lower():
-		print "Neither source base path or destination path  may be a bdb specifier"
+		print("Neither source base path or destination path  may be a bdb specifier")
 		sys.exit(1)
 	
 	# source is remote
@@ -104,17 +105,17 @@ def main():
 		basepath=args[-1]
 		
 		for a in args[1:-1]:
-			print a,remotepath
+			print(a,remotepath)
 			sources=ssh.listrecurse(a,remotepath)
 			
-			if options.verbose : print len(sources)," source files in ",a
+			if options.verbose : print(len(sources)," source files in ",a)
 			
 			for s in sources:
 				if s[:4].lower()=="bdb:" :
-					if options.verbose>1 : print "Read %s as %s"%("bdb:"+remotepath+"/"+s[4:],"bdb:"+basepath+"/"+s[4:])
+					if options.verbose>1 : print("Read %s as %s"%("bdb:"+remotepath+"/"+s[4:],"bdb:"+basepath+"/"+s[4:]))
 					ssh.getbdb("bdb:"+remotepath+"/"+s[4:],"bdb:"+basepath+"/"+s[4:])
 				else:
-					if options.verbose>1 : print "Read %s as %s"%(remotepath+"/"+s,basepath+"/"+s)
+					if options.verbose>1 : print("Read %s as %s"%(remotepath+"/"+s,basepath+"/"+s))
 					ssh.getfile(remotepath+"/"+s,basepath+"/"+s)
 		
 
@@ -125,7 +126,7 @@ def main():
 		
 		# create the target path
 		remotepath=args[-1][args[-1].find(":")+1:]
-		if options.verbose>1 : print "Create remote path: ",remotepath
+		if options.verbose>1 : print("Create remote path: ",remotepath)
 		ssh.mkdir(remotepath)
 		
 		# local base path
@@ -134,19 +135,19 @@ def main():
 		for a in args[1:-1]:
 			sources=get_dir_list_recurse(a,basepath)
 			
-			if options.verbose : print len(sources)," source files in ",a
+			if options.verbose : print(len(sources)," source files in ",a)
 		
 			for s in sources:
 				if s[:4].lower()=="bdb:" :
-					if options.verbose>1 : print "Write %s as %s"%("bdb:"+basepath+s[4:],"bdb:"+remotepath+"/"+s[4:])
+					if options.verbose>1 : print("Write %s as %s"%("bdb:"+basepath+s[4:],"bdb:"+remotepath+"/"+s[4:]))
 					ssh.putbdb("bdb:"+basepath+"/"+s[4:],"bdb:"+remotepath+"/"+s[4:])
 				else:
-					if options.verbose>1 : print "Write %s as %s"%(basepath+"/"+s,remotepath+"/"+s)
+					if options.verbose>1 : print("Write %s as %s"%(basepath+"/"+s,remotepath+"/"+s))
 					ssh.putfile(basepath+"/"+s,remotepath+"/"+s)
 				
 					
 	else: 
-		print "Local copying not supported, at least one of source/target must be user@hostname:path"
+		print("Local copying not supported, at least one of source/target must be user@hostname:path")
 	
 
 def client_error(stdout,msg):
@@ -165,8 +166,8 @@ def read_obj(stdin):
 	size=stdin.readline()
 	try: size=int(size)
 	except:
-		if size[:4]=="!!!!" : raise Exception,size[4:]
-		raise Exception,"Unknown error : "+size
+		if size[:4]=="!!!!" : raise Exception(size[4:])
+		raise Exception("Unknown error : "+size)
 	return loads(decompress(stdin.read(size)))
 
 def write_chunk(stdout,obj):
@@ -183,14 +184,14 @@ def read_chunk(stdin):
 	size=stdin.readline()
 	try: size=int(size)
 	except:
-		if size[:4]=="!!!!" : raise Exception,size[4:]
-		raise Exception,"Unknown error : "+size
+		if size[:4]=="!!!!" : raise Exception(size[4:])
+		raise Exception("Unknown error : "+size)
 	if size==0 : return ""
 	return decompress(stdin.read(size))
 
 def send_file(stdout,path):
 	"Sends a file to stdout as a set of chunks terminated with a 0 length chunk"
-	fin=file(path,"rb")
+	fin=open(path,"rb")
 	while 1:
 		data=fin.read(1000000)
 		if len(data)==0 :break
@@ -202,7 +203,7 @@ def recv_file(stdin,path):
 	"Receives a file into path. Reads a set of chunks terminated with a zero-length chunk"
 	try :os.makedirs(os.path.dirname(path))
 	except: pass
-	out=file(path,"w")
+	out=open(path,"w")
 	while 1:
 		chunk=read_chunk(stdin)
 		if len(chunk)==0 or chunk==None : break
@@ -248,7 +249,7 @@ def get_dir_list_recurse(path,basepath=None):
 	"Recursively lists the contents of a directory, including BDB contents"
 	
 	if ("EMAN2DB") in path:
-		print "ERROR : EMAN2DB may not be specified as a path to copy. Use bdb: specifier instead."
+		print("ERROR : EMAN2DB may not be specified as a path to copy. Use bdb: specifier instead.")
 		return []
 	
 	if path[:4].lower()=="bdb:" :
@@ -372,19 +373,19 @@ class scp_proxy:
 			self.stdout=self.ssh.stdout		# read from this
 			self.stdin=self.ssh.stdin		# write to this
 		except:
-			print "ssh to remote machine failed : ",("ssh",host,"e2ssh.py --client")
+			print("ssh to remote machine failed : ",("ssh",host,"e2ssh.py --client"))
 			traceback.print_exc()
 			sys.exit(2)
 		
 		while 1:
 			ln=self.stdout.readline().strip()
 			if len(ln)==0 : 
-				print "Error running e2scp.py on the remote machine. EMAN2 installed ?"
+				print("Error running e2scp.py on the remote machine. EMAN2 installed ?")
 				sys.exit(3)
 			if ln=="HELO" : 
-				if self.verbose : print "Connection established"
+				if self.verbose : print("Connection established")
 				break
-			if self.verbose >1 : print "*** ",ln
+			if self.verbose >1 : print("*** ",ln)
 		
 		atexit.register(self.close)
 		
@@ -404,7 +405,7 @@ class scp_proxy:
 		self.stdin.write("mkdir\n%s\n"%path)
 		self.stdin.flush()
 		r=self.stdout.readline().strip()
-		if r!="OK" : raise Exception,"Error in creating remote path (%s)"%(r)
+		if r!="OK" : raise Exception("Error in creating remote path (%s)"%(r))
 
 	def listrecurse(self,path,basepath=""):
 		"""Recursively list the contents of a remote path, may be a directory or a BDB specifier. If specified

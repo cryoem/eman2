@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 01/03/07 (sludtke@bcm.edu)
@@ -48,7 +49,7 @@ def stacktoanim(stack,outpath,ntk):
 		im.set_attr("render_min",im.get_attr("mean")-im.get_attr("sigma")*3.0)
 		im.set_attr("render_max",im.get_attr("mean")+im.get_attr("sigma")*3.0)
 		im.write_image("tmp_img-%03d.pgm"%i)
-		print "%d. %1.3f - %1.3f"%(i,im.get_attr("render_min"),im.get_attr("render_max"))
+		print("%d. %1.3f - %1.3f"%(i,im.get_attr("render_min"),im.get_attr("render_max")))
 	os.system("convert -delay 10 tmp_img-*.pgm %s "%outpath)
 	
 	for i in range(ntk+1):

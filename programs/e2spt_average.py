@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 # average selected subset of particles
 
 from EMAN2 import *
@@ -81,32 +82,32 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 	if options.path == None:
 		fls=[int(i[-2:]) for i in os.listdir(".") if i[:4]=="spt_" and len(i)==6 and str.isdigit(i[-2:])]
 		if len(fls)==0 : 
-			print "Error, cannot find any spt_XX folders"
+			print("Error, cannot find any spt_XX folders")
 			sys.exit(2)
 		options.path = "spt_{:02d}".format(max(fls))
-		if options.verbose : print "Working in : ",options.path
+		if options.verbose : print("Working in : ",options.path)
 
 	if options.iter<=0 :
 		fls=[int(i[15:17]) for i in os.listdir(options.path) if i[:15]=="particle_parms_" and str.isdigit(i[15:17])]
 		if len(fls)==0 : 
-			print "Cannot find a {}/particle_parms* file".format(options.path)
+			print("Cannot find a {}/particle_parms* file".format(options.path))
 			sys.exit(2)
 		options.iter=max(fls)
-		if options.verbose : print "Using iteration ",options.iter
+		if options.verbose : print("Using iteration ",options.iter)
 		angs=js_open_dict("{}/particle_parms_{:02d}.json".format(options.path,options.iter))
 	else:
 		fls=[int(i[15:17]) for i in os.listdir(options.path) if i[:15]=="particle_parms_" and str.isdigit(i[15:17])]
 		if len(fls)==0 : 
-			print "Cannot find a {}/particle_parms* file".format(options.path)
+			print("Cannot find a {}/particle_parms* file".format(options.path))
 			sys.exit(2)
 		mit=max(fls)
 		if options.iter>mit : 
 			angs=js_open_dict("{}/particle_parms_{:02d}.json".format(options.path,mit))
-			print "WARNING: no particle_parms found for iter {}, using parms from {}".format(options.iter,mit)
+			print("WARNING: no particle_parms found for iter {}, using parms from {}".format(options.iter,mit))
 		else : angs=js_open_dict("{}/particle_parms_{:02d}.json".format(options.path,options.iter))
 
 	if options.listfile!=None :
-		plist=set([int(i) for i in file(options.listfile,"r")])
+		plist=set([int(i) for i in open(options.listfile,"r")])
 
 	NTHREADS=max(options.threads+1,2)		# we have one thread just writing results
 
@@ -123,16 +124,16 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 	keys=angs.keys()
 	if options.listfile!=None :
 		keys=[i for i in keys if eval(i)[1] in plist]
-		if options.verbose : print "{}/{} particles based on list file".format(len(keys),len(angs.keys()))
+		if options.verbose : print("{}/{} particles based on list file".format(len(keys),len(angs.keys())))
 	
 	keys=[k for k in keys if angs[k]["score"]<=options.simthr and inrange(options.minalt,angs[k]["xform.align3d"].get_params("eman")["alt"],options.maxalt)]
-	if options.verbose : print "{}/{} particles after filters".format(len(keys),len(angs.keys()))
+	if options.verbose : print("{}/{} particles after filters".format(len(keys),len(angs.keys())))
 																		 
 
 	# Rotation and insertion are slow, so we do it with threads. 
 	if options.symalimasked!=None:
 		if options.replace!=None :
-			print "Error: --replace cannot be used with --symalimasked"
+			print("Error: --replace cannot be used with --symalimasked")
 			sys.exit(1)
 		alimask=EMData(options.symalimasked)
 		thrds=[threading.Thread(target=rotfnsym,args=(avg[i%2],eval(k)[0],eval(k)[1],angs[k]["xform.align3d"],options.sym,alimask,options.maxtilt,options.verbose)) for i,k in enumerate(keys)]
@@ -145,7 +146,7 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 			thrds=[threading.Thread(target=rotfn,args=(avg[i%2],eval(k)[0],eval(k)[1],angs[k]["xform.align3d"],options.maxtilt,options.verbose)) for i,k in enumerate(keys)]
 
 
-	print len(thrds)," threads"
+	print(len(thrds)," threads")
 	thrtolaunch=0
 	while thrtolaunch<len(thrds) or threading.active_count()>1:
 		# If we haven't launched all threads yet, then we wait for an empty slot, and launch another
@@ -153,7 +154,7 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 		# thread hasn't finished.
 		if thrtolaunch<len(thrds) :
 			while (threading.active_count()==NTHREADS ) : time.sleep(.1)
-			if options.verbose : print "Starting thread {}/{}".format(thrtolaunch,len(thrds))
+			if options.verbose : print("Starting thread {}/{}".format(thrtolaunch,len(thrds)))
 			thrds[thrtolaunch].start()
 			thrtolaunch+=1
 		else: time.sleep(1)

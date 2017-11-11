@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
 # Copyright (c) 2000-2006 The University of Texas - Houston Medical School
@@ -153,7 +154,7 @@ def apply_rotation(angleset1, qrot):
 		angleset2 = new_ang2
 	"""
 	import types
-	if(type(qrot) == types.ListType): rot = Transform({"type":"spider","phi":qrot[0],"theta":qrot[1],"psi":qrot[2]})
+	if(type(qrot) == list): rot = Transform({"type":"spider","phi":qrot[0],"theta":qrot[1],"psi":qrot[2]})
 	else:                             rot = qrot
 	for i in xrange(len(angleset1)):
 		T1 = Transform({"type":"spider","phi":angleset1[i][0],"theta":angleset1[i][1],"psi":angleset1[i][2],"tx":0.0,"ty":0.0,"tz":0.0,"mirror":0,"scale":1.0})
@@ -165,7 +166,7 @@ def apply_rotation(angleset1, qrot):
 def apply_rotation_gaps(angleset1, qrot):
 	from EMAN2 import Transform, Vec2f
 	import types
-	if(type(qrot) == types.ListType): rot = Transform({"type":"spider","phi":qrot[0],"theta":qrot[1],"psi":qrot[2]})
+	if(type(qrot) == list): rot = Transform({"type":"spider","phi":qrot[0],"theta":qrot[1],"psi":qrot[2]})
 	else:                             rot = qrot
 	for i in xrange(len(angleset1)):
 		if(len(angleset1[i]) > 1):
@@ -288,7 +289,7 @@ def average_trans(params):
 				nas[0] += n1
 				nas[1] += n2
 				nas[2] += n3
-				print qnom, n1,n2,n3,nas
+				print(qnom, n1,n2,n3,nas)
 			#  To get the correct pixer phi angle has to be taken from the above!!
 
 		nom = sqrt(nas[0]**2 + nas[1]**2 + nas[2]**2)
@@ -395,7 +396,7 @@ def main():
 					break
 			if isame: thesame += 1
 		qt = float(thesame)/nn
-		print "Proportion of the same orientations ",qt
+		print("Proportion of the same orientations ",qt)
 		write_text_file([qt], os.path.join(outdir,howmanythesame) )
 
 	#########     PHASE 3
@@ -426,7 +427,7 @@ def main():
 		for i in xrange(6):
 			prms = read_text_row(os.path.join(outdir,options.params+"%01d.txt"%i))
 			for q in blocks:
-				if params.has_key(q+chr(48+i)):
+				if q+chr(48+i) in params:
 					params[q+chr(48+i)] = prms[:chunklengths[q]]
 					del prms[:chunklengths[q]]
 
@@ -474,7 +475,7 @@ def main():
 						nas[0] += n1
 						nas[1] += n2
 						nas[2] += n3
-						print qnom, n1,n2,n3,nas
+						print(qnom, n1,n2,n3,nas)
 					#  To get the correct pixer phi angle has to be taken from the above!!
 					pixer[q[0][0]][j] = max_3D_pixel_error(fifi[0], fifi[1], r=radius)
 
@@ -501,12 +502,12 @@ def main():
 				if(pixer[q][k] > thresherr):  perr[q][k] = False
 				if  perr[q][k]: tgood += 1
 			if(tgood < 4):
-				print "  No good images within the pixel error threshold specified"
+				print("  No good images within the pixel error threshold specified")
 				exit()
-		print  " tgood ", tgood
+		print(" tgood ", tgood)
 		hi = hist_list([pixer[q][k] for q in blocks for k in xrange(chunklengths[q])  ],16)
 		for i in xrange(len(hi[0])):
-			print  "%4d   %12.3f    %12.0f "%(i,hi[0][i],hi[1][i])
+			print("%4d   %12.3f    %12.0f "%(i,hi[0][i],hi[1][i]))
 		#  Finished, store average orientation params and table of good images
 
 
@@ -531,7 +532,7 @@ def main():
 			#  These parameters refer to the original X files.
 			ll = 0
 			for m in xrange(6):
-				if params.has_key(q+chr(48+m)):
+				if q+chr(48+m) in params:
 					prmsgood = []
 					prmsbad  = []
 					try:
@@ -566,7 +567,7 @@ def main():
 		for i in xrange(6):
 			prms = []
 			for q in blocks:
-				if params.has_key(q+chr(48+i)):
+				if q+chr(48+i) in params:
 					try:
 						j = lefts.index(q+chr(48+i))
 						prms += params[q+chr(48+i)]
@@ -659,7 +660,7 @@ def main():
 						nas[0] += n1
 						nas[1] += n2
 						nas[2] += n3
-						print qnom, n1,n2,n3,nas
+						print(qnom, n1,n2,n3,nas)
 					#  To get the correct pixer phi angle has to be taken from the above!!
 
 				nom = sqrt(nas[0]**2 + nas[1]**2 + nas[2]**2)
@@ -694,9 +695,9 @@ def main():
 				for ii in xrange(ll):  write_text_row([params[ii][rejects[k][1]] for k in xrange(len(rejects))]  ,  os.path.join(outdir,"params-rejects%01d%01d.txt"%(jj,ii)))
 
 			hi = hist_list([perr[j][0]  for j in xrange(nn)  ], 16)
-			print  "Pixel errors for BAD GROUP  ",chr(65+jj)
+			print("Pixel errors for BAD GROUP  ",chr(65+jj))
 			for ii in xrange(len(hi[0])):
-				print  "%4d   %12.3f    %12.0f "%(ii,hi[0][ii],hi[1][ii])
+				print("%4d   %12.3f    %12.0f "%(ii,hi[0][ii],hi[1][ii]))
 
 	elif options.phase == 5 and len(args) == 1:
 		#  This version is for meridien refinement.  There are simply three full sets of params.
@@ -750,7 +751,7 @@ def main():
 						nas[0] += n1
 						nas[1] += n2
 						nas[2] += n3
-						print qnom, n1,n2,n3,nas
+						print(qnom, n1,n2,n3,nas)
 					#  To get the correct pixer phi angle has to be taken from the above!!
 
 				nom = sqrt(nas[0]**2 + nas[1]**2 + nas[2]**2)
@@ -786,14 +787,14 @@ def main():
 				for ii in xrange(ll):  write_text_row([params[ii][rejects[k][1]] for k in xrange(len(rejects))]  ,  os.path.join(outdir,"params-rejects%01d%01d.txt"%(jj,ii)))
 
 			hi = hist_list([perr[j][0]  for j in xrange(nn)  ], 16)
-			print  "Pixel errors for BAD GROUP  ",chr(65+jj)
+			print("Pixel errors for BAD GROUP  ",chr(65+jj))
 			for ii in xrange(len(hi[0])):
-				print  "%4d   %12.3f    %12.0f "%(ii,hi[0][ii],hi[1][ii])
+				print("%4d   %12.3f    %12.0f "%(ii,hi[0][ii],hi[1][ii]))
 
 
 	else:
-		print "Usage: "
-		print """
+		print("Usage: ")
+		print("""
 		Phase 1:   sxconsistency.py  --phase=1  bdb:data  outdir
 			output files are:
 			  in directory outdir: lili0.txt to lili5.txt contain indices of images in resampled six groups
@@ -830,8 +831,8 @@ def main():
 			  rescued*.txt - four files with indices of accepted images from badchunk.
 			  rejects*.txt - four files with indices of rejected images from badchunk.
 			  					There are two columns: [number in original bdb:chunk, number in bdb:newbad] 
-		"""
-		print "Please run '" + progname + " -h' for detailed options"
+		""")
+		print("Please run '" + progname + " -h' for detailed options")
 
 	global_def.BATCH = False
 

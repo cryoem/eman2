@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: David Woolford, 11/19/2007 (woolford@bcm.edu)
@@ -48,7 +49,7 @@ def main():
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 	(options, args) = parser.parse_args()
 	if len(args)<3 : 
-		print usage
+		print(usage)
 		parser.error("Specify all input and output files")
 
 	angles_filename=args[1]
@@ -56,7 +57,7 @@ def main():
 	output_stack=args[2]
 
 	logid=E2init(sys.argv)
-	f=file(angles_filename,'r')
+	f=open(angles_filename,'r')
 	lines=f.readlines()
 	angles=[]
 	for line in lines:
@@ -70,17 +71,17 @@ def main():
 	ny = input_image.get_attr('ny')
 	nz = input_image.get_attr('nz')
 	
-	print len(angles),nz
+	print(len(angles),nz)
 	if len(angles) != nz:
-		print len(angles),nz,ny,nx
+		print(len(angles),nz,ny,nx)
 		raise RuntimeError("The number of angles in the tlt file does not match the number of images in the input image")
 
-	print nx,ny,nz
+	print(nx,ny,nz)
 	for z_index in range(0,nz):
 		roi=Region(0,0,z_index,nx,ny,1)
 		input_image=EMData()
 		input_image.read_image(ali_filename,0, HEADER_AND_DATA, roi)
-		print angles[z_index]
+		print(angles[z_index])
 		input_image.set_attr("xform.projection",Transform({"type":"eman","az":90,"alt":angles[z_index],"phi":90}))
 		#input_image.set_rotation(90,angles[z_index],90)
 		input_image.set_attr('ptcl_repr',1)

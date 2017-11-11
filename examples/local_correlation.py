@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 # This program will compute the 'local correlation' between two maps
 # maps are hardcoded as a,b below, as is the local region
 from EMAN2 import *

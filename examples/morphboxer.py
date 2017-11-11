@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Authors: James Michael Bell, 06/03/2015
@@ -198,12 +199,12 @@ class MorphBoxingTool(EMBoxingTool):
 		else:
 			box = self.target().get_box(box_num)
 			if box.type == MorphBoxingTool.BOX_TYPE:
-		 		if event.modifiers()&Qt.ShiftModifier :
+				if event.modifiers()&Qt.ShiftModifier :
 					self.target().remove_box(box_num)
 				else:
 					self.moving=[m,box_num]
 			else:
-				raise EMUnknownBoxType,box.type
+				raise EMUnknownBoxType(box.type)
 
 	def mouse_drag(self,event) :
 		m=self.get_2d_window().scr_to_img((event.x(),event.y()))
@@ -215,7 +216,7 @@ class MorphBoxingTool(EMBoxingTool):
 				if box.type ==  MorphBoxingTool.BOX_TYPE:
 					self.target().remove_box(box_num)
 				else:
-					raise EMUnknownBoxType,box.type
+					raise EMUnknownBoxType(box.type)
 
 		elif self.moving != None:
 			oldm = self.moving[0]
@@ -235,7 +236,7 @@ class MorphBoxingTool(EMBoxingTool):
 	def moving_ptcl_established(self,box_num,x,y):
 		box = self.target().get_box(box_num)
 		if box.type != MorphBoxingTool.BOX_TYPE:
-			raise EMUnknownBoxType,box.type
+			raise EMUnknownBoxType(box.type)
 		self.moving_data = [x,y,box_num]
 
 	def move_ptcl(self,box_num,x,y,scale):
@@ -253,7 +254,7 @@ class MorphBoxingTool(EMBoxingTool):
 	def delete_ptcl(self,box_num):
 		box = self.target().get_box(box_num)
 		if box.type != MorphBoxingTool.BOX_TYPE:
-			raise EMUnknownBoxType,box.type
+			raise EMUnknownBoxType(box.type)
 		self.target().remove_box(box_num)
 
 	def get_unique_box_types(self):

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 ###	procpdb.py	Steven Ludtke	2/2002
 
 #N procpdb.py
@@ -88,12 +89,12 @@ def main():
 	mat=options.matrix.split(',')
 	try: mat=[float(i) for i in mat]
 	except:
-		raise Exception,"Invalid Input: %s"%optstr
+		raise Exception("Invalid Input: %s"%optstr)
 		
 	trans=options.trans.split(',')
 	try: trans=[float(i) for i in trans]
 	except:
-		raise Exception,"Invalid Input: %s"%optstr				
+		raise Exception("Invalid Input: %s"%optstr)				
 
 	parms={"type":options.type}
 	parms["tx"]=trans[0]
@@ -111,35 +112,35 @@ def main():
 			parms["phi"]=options.phi
 			try: t=Transform(parms)
 			except:
-				raise Exception,"Invalid transform: %s"%parms
+				raise Exception("Invalid transform: %s"%parms)
 		elif options.type=="imagic":
 			parms["alpha"]=options.alpha
 			parms["beta"]=options.beta
 			parms["gamma"]=options.gamma
 			try: t=Transform(parms)
 			except:
-				raise Exception,"Invalid transform: %s"%parms
+				raise Exception("Invalid transform: %s"%parms)
 		elif options.type=="spider":
 			parms["phi"]=options.phi
 			parms["theta"]=options.theta
 			parms["psi"]=options.psi
 			try: t=Transform(parms)
 			except:
-				raise Exception,"Invalid transform: %s"%parms	
+				raise Exception("Invalid transform: %s"%parms)	
 		elif options.type=="xyz":
 			parms["xtilt"]=options.xtilt
 			parms["ytilt"]=options.ytilt
 			parms["ztilt"]=options.ztilt
 			try: t=Transform(parms)
 			except:
-				raise Exception,"Invalid transform: %s"%parms						
+				raise Exception("Invalid transform: %s"%parms)						
 		elif options.type=="mrc":
 			parms["phi"]=options.phi
 			parms["theta"]=options.theta
 			parms["omega"]=options.omega
 			try: t=Transform(parms)
 			except:
-				raise Exception,"Invalid transform: %s"%parms												
+				raise Exception("Invalid transform: %s"%parms)												
 		elif options.type=="quaternion":
 			parms["e0"]=options.e0
 			parms["e1"]=options.e1
@@ -147,7 +148,7 @@ def main():
 			parms["e3"]=options.e3
 			try: t=Transform(parms)
 			except:
-				raise Exception,"Invalid transform: %s"%parms												
+				raise Exception("Invalid transform: %s"%parms)												
 		elif options.type=="spin":
 			parms["omega"]=options.omega
 			parms["n1"]=options.n1
@@ -155,7 +156,7 @@ def main():
 			parms["n3"]=options.n3
 			try: t=Transform(parms)
 			except:
-				raise Exception,"Invalid transform: %s"%parms												
+				raise Exception("Invalid transform: %s"%parms)												
 		elif options.type=="sgirot":
 			parms["n1"]=options.n1
 			parms["n2"]=options.n2
@@ -163,9 +164,9 @@ def main():
 			parms["q"]=options.q
 			try: t=Transform(parms)
 			except:
-				raise Exception,"Invalid transform: %s"%parms															
+				raise Exception("Invalid transform: %s"%parms)															
 		else:		
-			print "get error, please input the right convention, example eman, imagic, spider, mrc, xyz, sgirot, quaternion, matrix"
+			print("get error, please input the right convention, example eman, imagic, spider, mrc, xyz, sgirot, quaternion, matrix")
 	else:		
 		t=parse_transform(options.rot[0])
 
@@ -216,7 +217,7 @@ def pdb_transform(t,lines,center=0,savetypes=["helix","sheet","other"],animorph=
 				electrons += atm[0]
 				atoms += 1.0
 			except:
-				print "Unknown Atom '%s' ignored." % a
+				print("Unknown Atom '%s' ignored." % a)
 		
 			xval[0] += x
 			yval[0] += y
@@ -248,14 +249,14 @@ def pdb_transform(t,lines,center=0,savetypes=["helix","sheet","other"],animorph=
 	yval[2] /= mass
 	zval[2] /= mass
 		
-	print title
-	print "%1.0f atoms   %1.0f electrons   mass= %1.3f kDa" % (atoms, electrons, mass / 1000.0)
-	print "atom center = (%1.2f,%1.2f,%1.2f)" % (xval[0], yval[0], zval[0])
-	print "electron density center = (%1.2f,%1.2f,%1.2f)" % (xval[1], yval[1], zval[1])
-	print "center of mass = (%1.2f,%1.2f,%1.2f)" % (xval[2], yval[2], zval[2])
-	print "x range: %1.1f to %1.1f  (%1.1f)" % (xval[3], xval[4], xval[4] - xval[3])
-	print "y range: %1.1f to %1.1f  (%1.1f)" % (yval[3], yval[4], yval[4] - yval[3])
-	print "z range: %1.1f to %1.1f  (%1.1f)" % (zval[3], zval[4], zval[4] - zval[3])
+	print(title)
+	print("%1.0f atoms   %1.0f electrons   mass= %1.3f kDa" % (atoms, electrons, mass / 1000.0))
+	print("atom center = (%1.2f,%1.2f,%1.2f)" % (xval[0], yval[0], zval[0]))
+	print("electron density center = (%1.2f,%1.2f,%1.2f)" % (xval[1], yval[1], zval[1]))
+	print("center of mass = (%1.2f,%1.2f,%1.2f)" % (xval[2], yval[2], zval[2]))
+	print("x range: %1.1f to %1.1f  (%1.1f)" % (xval[3], xval[4], xval[4] - xval[3]))
+	print("y range: %1.1f to %1.1f  (%1.1f)" % (yval[3], yval[4], yval[4] - yval[3]))
+	print("z range: %1.1f to %1.1f  (%1.1f)" % (zval[3], zval[4], zval[4] - zval[3]))
 		
 		
 	if (center == 1) : trans = (-xval[0], -yval[0], -zval[0])
@@ -263,7 +264,7 @@ def pdb_transform(t,lines,center=0,savetypes=["helix","sheet","other"],animorph=
 	elif (center == 3) : trans = (-xval[2], -yval[2], -zval[2])
 	
 	if (animorph) :
-		print "animorph"
+		print("animorph")
 		s=animorph.split(',')
 		animorph=(float(s[0]),float(s[1]),str(s[2]))
 		
@@ -315,13 +316,13 @@ def pdb_transform(t,lines,center=0,savetypes=["helix","sheet","other"],animorph=
 						lines[counter]=i
 				counter=counter+1
 			
-			print "%d/%d complete" % (m, int(animorph[0]))
+			print("%d/%d complete" % (m, int(animorph[0])))
 		return lines
 
 	else: 
-		print "transform"
-		print t
-		print len(lines)
+		print("transform")
+		print(t)
+		print(len(lines))
 		counter=0
 		for i in lines:
 			if (i[:6]=='HEADER') : title=i[10:72].strip()

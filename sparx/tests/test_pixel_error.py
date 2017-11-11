@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Piotr Pawliczek, 09/06/2012 
@@ -33,6 +34,7 @@
 
 import unittest
 from optparse import OptionParser
+from EMAN2 import *
 
 IS_TEST_EXCEPTION = False
 
@@ -45,7 +47,6 @@ class TestMultiAlignStability(unittest.TestCase):
     # a0, a1 - list of parameters (alpha0, sx0, sy0, mirror0, aplha1, sx1, sy1, mirror1, alpha2, ...)
     # d - diameter
     def internal_test_conf(self, a1, a2, d):
-        from EMAN2 import *
         from pixel_error import align_diff_params, multi_align_stability
         
         # number of images
