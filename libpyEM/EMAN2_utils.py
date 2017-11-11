@@ -5,6 +5,7 @@
 
 import numpy as np
 import os
+from EMAN2 import *
 
 amino_dict= {0: 'ALA', 1: 'ARG', 2: 'ASN', 3: 'ASP', 4: 'CYS', 5: 'GLU', 6: 'GLN', 7: 'GLY', 8: 'HIS', 9: 'ILE', 10: 'LEU', 11: 'LYS', 12: 'MET', 13: 'PHE', 14: 'PRO', 15: 'SER', 16: 'THR', 17: 'TRP', 18: 'TYR', 19: 'VAL', 20: 'ASX', 21:'GLX'}
 amino_dict.update(dict((v, k) for k, v in amino_dict.iteritems()))
@@ -311,3 +312,275 @@ def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ral
 	if verbose==2 :
 		print "Best: ",sorted([(ret[i][0],i) for i in range(len(ret))])[0]
 	return ret
+
+
+
+
+
+#used by some SPT programs (nov/2017); function might be deprecated or refactored in the near future
+def sptOptionsParser( options, program='' ):
+	
+	print "\n(EMAN2_utils)(sptOptionsParser) parsing options" 
+	if program:
+		print "from program {}".format(program)
+	
+	try:
+		if options.align:
+			#print "(e2spt_classaverage) --align to parse is", options.align
+			options.align=parsemodopt(options.align)
+		elif options.align == 'None' or  options.align == 'none':
+			options.align=None
+	except:
+		if options.verbose > 9:
+			print "\nWARNING (might not be relevant): --align not provided"
+		
+	try:
+		if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none': 
+			options.falign=parsemodopt(options.falign)
+		elif options.falign == 'None' or  options.falign == 'none':
+			options.falign=None
+	except:
+		if options.verbose > 9:
+			print "\nWARNING (might not be relevant): --falign not provided"
+	
+	try:
+		if options.aligncmp: 
+			options.aligncmp=parsemodopt(options.aligncmp)
+		elif options.aligncmp == 'None' or  options.aligncmp == 'none':
+			options.aligncmp=None
+	except:
+		if options.verbose > 9:
+			print "\nWARNING (might not be relevant): --aligncmp not provided"
+	
+	try:	
+		if options.faligncmp: 
+			options.faligncmp=parsemodopt(options.faligncmp)
+		elif options.faligncmp == 'None' or  options.faligncmp == 'none':
+			options.faligncmp=None
+	except:
+		if options.verbose > 9:
+			print "\nWARNING (might not be relevant): --faligncmp not provided"
+		
+	try:
+		if options.averager: 
+			options.averager=parsemodopt(options.averager)
+		elif options.averager == 'None' or  options.averager == 'none':
+			options.averager=None
+	except:
+		if options.verbose > 9:
+			print "\nWARNING (might not be relevant): --averager not provided"
+		
+	try:
+		if options.autocenter:
+			options.autocenter=parsemodopt(options.autocenter)
+		elif options.autocenter == 'None' or  options.autocenter == 'none':
+			options.autocenter=None
+	except:
+		if options.verbose > 9:
+			print "\nWARNING (might not be relevant): --autocenter not provided"
+		
+	try:
+		if options.autocentermask:
+			options.autocentermask=parsemodopt(options.autocentermask)
+		elif options.autocentermask == 'None' or  options.autocentermask == 'none':
+			options.autocentermask=None
+	except:
+		if options.verbose > 9:
+			print "\nWARNING (might not be relevant): --autocentermask not provided"
+	
+	try:
+		if options.normproc and options.normproc != 'None' and options.normproc != 'none':
+			options.normproc=parsemodopt(options.normproc)
+		elif options.normproc == 'None' or  options.normproc == 'none':
+			options.normproc=None
+	except:
+		if options.verbose > 9:
+			print "\nWARNING (might not be relevant): --normproc not provided"
+	
+	try:
+		if options.mask and options.mask != 'None' and options.mask != 'none':
+			#print "\nparsing mask"
+			#print "before = ".format(options.mask)
+			options.mask = parsemodopt(options.mask)
+			#print "after = ".format(options.mask)
+		elif options.mask == 'None' or  options.mask == 'none':
+			options.mask=None
+	except:
+		if options.verbose > 9:
+			print "\nWARNING (might not be relevant): --mask not provided"
+	
+	try:	
+		if options.preprocess and options.preprocess != 'None' and options.preprocess != 'none': 
+			options.preprocess=parsemodopt(options.preprocess)
+		elif options.preprocess == 'None' or  options.preprocess == 'none':
+			options.preprocess=None
+	except:
+		if options.verbose > 9:
+			print "\nWARNING (might not be relevant): --preprocess not provided"
+	
+	try:	
+		if options.threshold and options.threshold != 'None' and options.threshold != 'none': 
+			options.threshold=parsemodopt(options.threshold)
+		elif options.threshold == 'None' or  options.threshold == 'none':
+			options.threshold=None
+	except:
+		if options.verbose > 9:
+			print "\nWARNING (might not be relevant): --threshold not provided"
+	
+	try:
+		if options.preprocessfine and options.preprocessfine != 'None' and options.preprocessfine != 'none': 
+			options.preprocessfine=parsemodopt(options.preprocessfine)
+		elif options.preprocessfine == 'None' or  options.preprocessfine == 'none':
+			options.preprocessfine=None
+	except:
+		if options.verbose > 9:
+			print "\nWARNING (might not be relevant): --preprocessfine not provided"
+	
+	try:	
+		if options.lowpass and options.lowpass != 'None' and options.lowpass != 'none': 
+			options.lowpass=parsemodopt(options.lowpass)
+		elif options.lowpass == 'None' or  options.lowpass == 'none':
+			options.lowpass=None
+	except:
+		if options.verbose > 9:
+			print "\nWARNING (might not be relevant): --lowpass not provided"
+	
+	try:
+		if options.lowpassfine and options.lowpassfine != 'None' and options.lowpassfine != 'none': 
+			options.lowpassfine=parsemodopt(options.lowpassfine)
+		elif options.lowpassfine == 'None' or  options.lowpassfine == 'none':
+			options.lowpassfine=None
+	except:
+		if options.verbose > 9:
+			print "\nWARNING (might not be relevant): --lowpassfine not provided"
+	
+	try:
+		if options.highpass and options.highpass != 'None' and options.highpass != 'none': 
+			options.highpass=parsemodopt(options.highpass)
+		elif options.highpass == 'None' or  options.highpass == 'none':
+			options.highpass=None
+	except:
+		if options.verbose > 9:
+			print "\nWARNING (might not be relevant): --highpass not provided"
+	
+	try:
+		if options.highpassfine and options.highpassfine != 'None' and options.highpassfine != 'none': 
+			options.highpassfine=parsemodopt(options.highpassfine)
+		elif options.highpassfine == 'None' or  options.highpassfine == 'none':
+			options.highpassfine=None
+	except:
+		if options.verbose > 9:
+			print "\nWARNING (might not be relevant): --highpassfine not provided"
+	try:
+		if options.postprocess and options.postprocess != 'None' and options.postprocess != 'none': 
+			options.postprocess=parsemodopt(options.postprocess)
+		elif options.postprocess == 'None' or  options.postprocess == 'none':
+			options.postprocess=None
+	except:
+		if options.verbose > 9:
+			print "\nWARNING (might not be relevant): --postprocess not provided"
+	
+	try:
+		if options.reconstructor and options.reconstructor != 'None' and options.reconstructor != 'none': 
+			options.reconstructor=parsemodopt(options.reconstructor)
+		elif options.reconstructor == 'None' or  options.reconstructor == 'none':
+			options.reconstructor=None
+	except:
+		if options.verbose > 9:
+			print "\nWARNING (might not be relevant): --reconstructor not provided"
+	
+	try:
+		if options.preavgproc1 and options.preavgproc1 != 'None' and options.preavgproc1 != 'none': 
+			options.preavgproc1=parsemodopt(options.preavgproc1)
+		elif options.preavgproc1 == 'None' or  options.preavgproc1 == 'none':
+			options.preavgproc1=None
+	except:
+		if options.verbose > 9:
+			print "\nWARNING (might not be relevant): --reconstructor not provided"
+		
+	try:
+		if options.preavgproc2 and options.preavgproc2 != 'None' and options.preavgproc2 != 'none': 
+			options.preavgproc2=parsemodopt(options.preavgproc2)
+		elif options.preavgproc2 == 'None' or  options.preavgproc2 == 'none':
+			options.preavgproc2=None
+	except:
+		if options.verbose > 9:
+			print "\nWARNING (might not be relevant): --reconstructor not provided"
+	
+	return options
+
+
+'''
+Used by many SPT programs. Function to write the parameters used for every run of the program to parameters.txt inside the path specified by --path.
+Unfortunately, the usability of the .eman2log.txt file is limited when it is overcrowded with commands; e.g., a program that iteratively runs other EMAN2 programs at the command line
+will SWARM the log file with commands that will obscure the command you wanted to log. Having a parameters file explicitly record what was the state of every parameter used by the program
+is useful, as it also explicitly records values for parameters that were used by DEFAULT and not set by the user at the commnadline.
+'''
+def writeParameters( options, program, tag ):
+	import datetime
+
+	print "Tag received in writeParameters is", tag
+
+	names = dir(options)
+	
+	cmd = program
+	lines = []
+	now = datetime.datetime.now()
+	lines.append(str(now)+'\n')
+	
+	#print "\nnames are", names
+	optionscopy = options
+	
+	try:
+		if options.search == 0 or options.search == 0.0:
+			options.search = '0'
+	except:
+		pass
+	try:
+		if options.searchfine == 0 or options.searchfine == 0.0:
+			options.searchfine = '0'
+	except:
+		pass
+		
+	#print "mask in write parameters is", optionscopy.mask, type(optionscopy.mask)
+	for name in names:
+				
+		if getattr(options,name) and "__" not in name and "_" not in name:
+		#if "__" not in name and "_" not in name:	
+	
+			#if "__" not in name and "_" not in name and str(getattr(options,name)) and 'path' not in name and str(getattr(options,name)) != 'False' and str(getattr(options,name)) != 'True' and str(getattr(options,name)) != 'None':			
+			line = name + '=' + str(getattr(optionscopy,name))
+					
+			lines.append(line+'\n')
+			
+			if str(getattr(optionscopy,name)) != 'True' and str(getattr(optionscopy,name)) != 'False' and str(getattr(optionscopy,name)) != '':
+			
+				if name != 'parallel':
+					if "{" in str( getattr(optionscopy,name) ) or "}" in  str(getattr(optionscopy,name)) or ")" in  str(getattr(optionscopy,name)) or ")"  in str(getattr(optionscopy,name)): 
+						
+						tail = str( getattr(optionscopy,name) ).replace(':','=').replace('(','').replace(')','').replace('{','').replace('}','').replace(',',':').replace(' ','').replace("'",'')
+						if tail[-1] == ':':
+							tail = tail[:-1] 
+						cmd += ' --' + name + '=' + tail
+					else:
+						
+						tail = str( getattr(optionscopy,name) )
+						if tail[-1] == ':':
+							tail = tail[:-1]
+						cmd += ' --' + name + '=' + tail
+						
+				else:
+					cmd += ' --' + name + '=' + str(getattr(optionscopy,name))
+			
+			elif str(getattr(optionscopy,name)) == 'True' or str(getattr(optionscopy,name)) == 'False':
+				cmd += ' --' + name
+	
+	parmFile = 'parameters_' + tag + '.txt'
+	lines.append('\n'+cmd+'\n')
+	#f=open( optionscopy.path + '/' + parmFile,'w')
+	pfile = optionscopy.path + '/' + parmFile
+	f = open( pfile, 'w')
+	f.writelines(lines)
+	f.close()
+	
+	return cmd
