@@ -519,9 +519,9 @@ class EMArgumentParser(argparse.ArgumentParser):
 			self.add_argument('--version', action='version', version=version)
 		self.add_argument("postionalargs", nargs="*")
 
-	def parse_args(self):
+	def parse_args(self, args=None):
 		""" Masquerade as optpaser parse options """
-		parsedargs = argparse.ArgumentParser.parse_args(self)
+		parsedargs = argparse.ArgumentParser.parse_args(self, args)
 		return (parsedargs, parsedargs.postionalargs)
 
 	def add_pos_argument(self, **kwargs):
