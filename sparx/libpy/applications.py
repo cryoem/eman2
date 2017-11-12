@@ -8479,7 +8479,7 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
 	from utilities      import model_circle, reduce_EMData_to_root, bcast_EMData_to_all, bcast_number_to_all, drop_image
 	from utilities      import bcast_list_to_all, get_image, get_input_from_string, get_im
 	from utilities      import get_arb_params, set_arb_params, drop_spider_doc, send_attr_dict
-	from utilities      import get_params_proj, set_params_proj, model_blank
+	from utilities      import get_params_proj, set_params_proj, model_blank, write_text_row, write_text_file
 	from filter         import filt_params, filt_btwl, filt_ctf, filt_table, fit_tanh, filt_tanl
 	from utilities      import rotate_3D_shift,estimate_3D_center_MPI
 	from alignment      import Numrinit, prepare_refrings, proj_ali_incore
@@ -8487,6 +8487,8 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
 	from filter         import filt_ctf
 	from utilities      import print_begin_msg, print_end_msg, print_msg
 	from projection     import prep_vol, prgs, project, prgq, gen_rings_ctf
+	from utilities      import wrap_mpi_recv, wrap_mpi_send
+	from copy           import deepcopy
 	import os
 	import types
 	from mpi            import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
@@ -8500,7 +8502,7 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
 		from logger import Logger
 		log =Logger()
 
-	if os.path.exists(outdir): ERROR('Output directory exists, please change the name and restart the program', "mref_ali3d_MPI ", 1, myid)
+	if os.path.exists(outdir): ERROR('Output directory exists, please change the name and restart the program', "Kmref_ali3d_MPI ", 1, myid)
 	mpi_barrier(MPI_COMM_WORLD)
 
 	if myid == main_node:	
@@ -8636,7 +8638,7 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
 	mpi_barrier( MPI_COMM_WORLD )
 
 	if CTF:
-		if(data[0].get_attr("ctf_applied") > 0.0):  ERROR("mref_ali3d_MPI does not work for CTF-applied data", "mref_ali3d_MPI", 1, myid)
+		if(data[0].get_attr("ctf_applied") > 0.0):  ERROR("Kmref_ali3d_MPI does not work for CTF-applied data", "Kmref_ali3d_MPI", 1, myid)
 		from reconstruction import rec3D_MPI
 	else:
 		from reconstruction import rec3D_MPI_noCTF
@@ -8803,18 +8805,6 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
 			for im in xrange(nima):
 				data[im].set_attr('xform.projection', trans[im])
 
-			from utilities import wrap_mpi_recv, wrap_mpi_send
-			from copy import deepcopy
-			if myid == main_node:
-				all_trans = []
-				for klm in xrange(number_of_proc):
-					if(klm == main_node):  all_trans.append(deepcopy(trans))
-					else:  all_params.append(wrap_mpi_recv(klm, MPI_COMM_WORLD))
-			else:  wrap_mpi_send(trans, main_node, MPI_COMM_WORLD)
-			if myid == main_node:
-				write_text_file(all_trans, os.path.join(outdir, "params_%02d_%04d"%(iref, total_iter)) )
-				del all_trans
-
 
 			if center == -1:
 				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center_MPI(data, total_nima, myid, number_of_proc, main_node)				
@@ -8842,6 +8832,31 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
 				del region, histo
 			del recvbuf
 
+
+			for im in xrange(nima):
+				trans[im] = data[im].get_attr( "xform.projection" )
+			if myid == main_node:
+				all_trans = []
+				for klm in xrange(number_of_proc):
+					if(klm == main_node):  all_trans.append(deepcopy(trans))
+					else:  all_trans.append(wrap_mpi_recv(klm, MPI_COMM_WORLD))
+			else:  wrap_mpi_send(trans, main_node, MPI_COMM_WORLD)
+			if myid == main_node:
+				write_text_row(all_trans, os.path.join(outdir, "params_%04d.txt"%(total_iter)) )
+				del all_trans
+
+
+		if myid == main_node:
+			all_trans = []
+			for klm in xrange(number_of_proc):
+				if(klm == main_node):  all_trans.append(deepcopy(assignment))
+				else:  all_trans.append(wrap_mpi_recv(klm, MPI_COMM_WORLD))
+		else:  wrap_mpi_send(assignment, main_node, MPI_COMM_WORLD)
+		if myid == main_node:
+			write_text_file(all_trans, os.path.join(outdir, "assignment_%04d.txt"%(total_iter)) )
+			del all_trans
+
+
 		#if CTF: del vol
 		fscc = [None]*numref
 
@@ -8852,8 +8867,8 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
 		for iref in xrange(numref):
 			#  3D stuff
 			from time import localtime, strftime
-			if CTF: volref, fscc[iref] = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index = iref, npad = npad, finfo=frec)
-			else:    volref, fscc[iref] = rec3D_MPI_noCTF(data, sym, fscmask, os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index = iref, npad = npad, finfo=frec)
+			if CTF: volref, fscc[iref] = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution_%02d_%04d.txt"%(iref, total_iter)), myid, main_node, index = iref, npad = npad, finfo=frec)
+			else:    volref, fscc[iref] = rec3D_MPI_noCTF(data, sym, fscmask, os.path.join(outdir, "resolution_%02d_%04d.txt"%(iref, total_iter)), myid, main_node, index = iref, npad = npad, finfo=frec)
 			if myid == main_node:
 				log.add( "Time to compute 3D: %d" % (time()-start_time) );start_time = time()
 
@@ -8905,6 +8920,7 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
 		#	log.add( "Time to write headers: %d\n" % (time()-start_time) );start_time = time()
 	######writing paritition only in the end of the program
 	mpi_barrier(MPI_COMM_WORLD)
+	"""
 	if runtype=="REFINEMENT":
 		par_str = ['xform.projection', 'ID', 'group']
 	else:
@@ -8918,6 +8934,7 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
 			from utilities import recv_attr_dict
 			recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 	else:		send_attr_dict(main_node, data, par_str, image_start, image_end)
+	"""
 	if myid == main_node:
 		log.add("Kmref_ali3d_MPI is done!")
 	return empty_group
