@@ -30,6 +30,7 @@ Author: Jesus Galaz - Sep/2017, Last update: Sep/2017
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 '''
+from __future__ import print_function
 
 from optparse import OptionParser
 from EMAN2 import *
@@ -89,8 +90,8 @@ def main():
 			outdata = indata.replace(extension, '.hdf')
 
 	else:
-		print "\nERROR: invalid extension. Format must be " + ' or '.join([v for v in validextensions])
-		print "the extension of your data seems to be {} or {}".format(indata[-5:],indata[-4:])
+		print ("\nERROR: invalid extension. Format must be " + ' or '.join([v for v in validextensions]) )
+		print ("the extension of your data seems to be {} or {}".format(indata[-5:],indata[-4:]) )
 		sys.exit(1)
 
 
@@ -121,7 +122,7 @@ def main():
 
 				mask2use = newmask
 
-			print "\nWARNING: --mask has a different size than --data; running the following command to clip --mask to the size of --data {}".format(cmd)
+			print ("\nWARNING: --mask has a different size than --data; running the following command to clip --mask to the size of --data {}".format(cmd) )
 			runcmd( options, cmd)
 		
 		newmaskhdr = EMData( mask2use, 0, True )
@@ -130,7 +131,7 @@ def main():
 		newmz = maskhdr['nz']
 
 		if datax != newmx or datay != newmy or dataz != newmz:
-			print "\nERROR: cannot fix size discrepancy. clip --mask manually. size of --data is x={} y={} z={}; size of --mask is x={} y={} z={}".format(datax,datay,dataz,newmx,newmy,newmz)
+			print ("\nERROR: cannot fix size discrepancy. clip --mask manually. size of --data is x={} y={} z={}; size of --mask is x={} y={} z={}".format(datax,datay,dataz,newmx,newmy,newmz))
 			sys.exit(1)
 
 		count+=1
@@ -141,7 +142,7 @@ def main():
 
 		cmd = 'e2proc3d.py ' + mask2use + ' ' + mask2useth +  ' --process threshold.binary:value' + str(options.threshold)
 
-		print "\napplying threshold to mask"
+		print ("\napplying threshold to mask")
 		runcmd( options, cmd )
 
 		if len(masks) > 1:
@@ -150,14 +151,14 @@ def main():
 
 		cmd  = 'e2proc3d.py ' + indata +  ' ' + outdata + ' --multfile ' + mask2useth
 
-		print "\nmultiplying data by mask {}".format(mask2useth)
+		print("\nmultiplying data by mask {}".format(mask2useth))
 		runcmd( options, cmd )
 
 
 		if options.invert:
 			cmd = 'e2proc3d.py ' + outdata + ' ' + outdata.replace('.hdf','_inv.hdf') + ' --mult -1 ' + ' --process threshold.belowtozero:minval=' + str(options.threshold)
 			
-			print "\ninverting contrast"
+			print ("\ninverting contrast")
 			runcmd( options, cmd )
 
 
@@ -168,14 +169,14 @@ def main():
 
 def runcmd(options,cmd):
 	if options.verbose > 9:
-		print "(e2segmask)(runcmd) running command", cmd
+		print ("\n(e2segmask)(runcmd) running command = {}".format(cmd))
 	
 	p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	text=p.communicate()	
 	p.stdout.close()
 	
 	if options.verbose > 8:
-		print "(e2segmask)(runcmd) done"
+		print ("\n(e2segmask)(runcmd) done")
 	
 	return 1
 
