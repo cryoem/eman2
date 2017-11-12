@@ -4,7 +4,7 @@ from __future__ import print_function
 # LAST update: June/2017
 # Author: Muyuan Chen May, 2017 (cleanup and re-writing to allow boxing multiple types of features) 
 # Author: Steven Ludtke  2/8/2011 (rewritten)
-# Author: Jesus Galaz-Montoya, all command line functionality, + updates/enhancements/fixes, 2010-2017
+# Author: Jesus Galaz-Montoya, all command line functionality, + updates/enhancements/fixes.
 # Author: John Flanagan  9/7/2011 (helixboxer)
 # Copyright (c) 2011- Baylor College of Medicine
 #
@@ -36,7 +36,6 @@ from __future__ import print_function
 
 from EMAN2 import *
 import numpy as np
-from EMAN2_utils import runcmd
 
 import weakref
 from PyQt4 import QtCore, QtGui
@@ -49,6 +48,8 @@ from emscene3d import EMScene3D
 from emdataitem3d import EMDataItem3D, EMIsosurface
 from emshape import EMShape
 from valslider import ValSlider, ValBox
+
+from EMAN2_utils import runcmd
 
 	
 def run(cmd):
@@ -123,15 +124,6 @@ def main():
 				print("done")
 
 	else:
-
-		hdr = EMData(img, 0, True)
-		hdry = hdr['ny']
-		hdrz = hdr['nz']
-
-		if int(hdry) < int(hdrz):
-			print("\nWARNING: y={} is shorter than z={}. Make sure this is not a Y-SHORT tomogram; typically, tomograms MUST be rotated 90 around X such that Z is the shortest side/dimension.".format(hdry,hdrz) )
-
-
 		app = EMApp()
 
 		#img=args[0]
@@ -257,6 +249,28 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.wcoords=QtGui.QLabel("X: " + str(self.get_x()) + "\t\t" + "Y: " + str(self.get_y()) + "\t\t" + "Z: " + str(self.get_z()))
 		self.gbl2.addWidget(self.wcoords, 0, 0, 1, 2)
 
+		# Boxviewer subwidget (details of a single box)
+		self.boxviewer=EMBoxViewer()
+		#self.app().attach_child(self.boxviewer)
+
+		# Boxes Viewer (z projections of all boxes)
+		self.boxesviewer=EMImageMXWidget()
+		
+		#self.app().attach_child(self.boxesviewer)
+		self.boxesviewer.show()
+		self.boxesviewer.set_mouse_mode("App")
+		self.boxesviewer.setWindowTitle("Particle List")
+		self.boxesviewer.rzonce=True
+		
+		self.setspanel=EMTomoSetsPanel(self)
+
+		self.optionviewer=EMTomoBoxerOptions(self)
+		self.optionviewer.add_panel(self.setspanel,"Sets")
+		
+		self.optionviewer.show()
+
+
+
 		# file menu
 		QtCore.QObject.connect(self.mfile_open,QtCore.SIGNAL("triggered(bool)")  ,self.menu_file_open  )
 		QtCore.QObject.connect(self.mfile_read_boxloc,QtCore.SIGNAL("triggered(bool)")  ,self.menu_file_read_boxloc  )
@@ -310,43 +324,13 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		else:
 			self.filetag="__"
 			
-
-
-
-
-		# Boxviewer subwidget (details of a single box)
-		self.boxviewer=EMBoxViewer()
-		#self.app().attach_child(self.boxviewer)
-
-		# Boxes Viewer (z projections of all boxes)
-		self.boxesviewer=EMImageMXWidget()
-		
-		#self.app().attach_child(self.boxesviewer)
-		self.boxesviewer.show()
-		self.boxesviewer.set_mouse_mode("App")
-		self.boxesviewer.setWindowTitle("Particle List")
-		self.boxesviewer.rzonce=True
-		
-		self.setspanel=EMTomoSetsPanel(self)
-
-		self.optionviewer=EMTomoBoxerOptions(self)
-		self.optionviewer.add_panel(self.setspanel,"Sets")
-		
-		
-		self.optionviewer.show()
-
-
-
-
-
 		if options.inmemory:
-			data = EMData(datafile)
+			data=EMData(datafile)
 			self.set_data(data)
-			#self.set_datafile(datafile)
 		else:
-			#data=None
 			self.set_datafile(datafile)		# This triggers a lot of things to happen, so we do it last
 
+		
 		
 		# Average viewer shows results of background tomographic processing
 #		self.averageviewer=EMAverageViewer(self)
@@ -432,7 +416,6 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		#if self.yshort:
 		#	self.datasize=(imgh["nx"],imgh["nz"],imgh["ny"])
 		#else:
-		
 		self.datasize=(imgh["nx"],imgh["ny"],imgh["nz"])
 
 		self.wdepth.setRange(0,self.datasize[2]-1)
@@ -515,7 +498,6 @@ class EMTomoBoxer(QtGui.QMainWindow):
 	def get_slice(self,n,xyz):
 		"""Reads a slice either from a file or the preloaded memory array.
 		xyz is the axis along which 'n' runs, 0=x (yz), 1=y (xz), 2=z (xy)"""
-		
 		#if self.yshort:
 		#	if self.data!=None :
 		#		if xyz==0:
@@ -656,10 +638,10 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		QtGui.QMessageBox.warning(None,"Error","Sorry, in the current version, you must provide a file to open on the command-line.")
 
 	#def load_box_yshort(self, boxcoords):
-	#	#if options.yshort:
-	#	#	return [boxcoords[0], boxcoords[2], boxcoords[1]]
-	#	#else:
-	#	return boxcoords
+	#	if options.yshort:
+	#		return [boxcoords[0], boxcoords[2], boxcoords[1]]
+	#	else:
+	#		return boxcoords
 
 	def menu_file_read_boxloc(self):
 		fsp=str(QtGui.QFileDialog.getOpenFileName(self, "Select output text file"))
@@ -1119,7 +1101,6 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			self.setspanel.update_sets()
 
 	def add_helix_box(self, xf, yf, zf, xi, yi, zi):
-
 		print(xf, yf, zf, xi, yi, zi)
 		#if options.yshort:
 		#	self.helixboxes.append([xf, zf, yf, xi, zi, yi])
@@ -1805,12 +1786,12 @@ def commandline_tomoboxer(tomogram,options):
 		filename, file_extension = os.path.splitext('basename')
 		options.output = filename + '.hdf'
 
-	
-	from EMAN2_utils import makepath
-	options = makepath( options, 'sptboxer')
+	if options.path:
+		from e2spt_classaverage import sptmakepath
+		options = sptmakepath( options, 'spt_boxer')
 
-	if options.path not in options.output:
-		options.output = options.path + '/' + options.output
+		if options.path not in options.output:
+			options.output = options.path + '/' + options.output
 
 	xs = []
 	ys = []
@@ -1829,7 +1810,7 @@ def commandline_tomoboxer(tomogram,options):
 		apix=options.apix
 
 	print("\n(e2spt_boxer.py)(extractptcl) reading tomogram header from {}".format(tomogram))
-
+	
 	tomo_header=EMData(tomogram,0,True)
 	apix = tomo_header['apix_x']
 	prjstack = options.output.replace('.hdf','__prjsz.hdf')
@@ -1856,10 +1837,10 @@ def commandline_tomoboxer(tomogram,options):
 		newcoordslines.append(newcoordsline)
 		
 		if options.verbose: 
-
 			print("\n(e2spt_boxer.py)(extractptcl) the coordinates from --coords for particle# {}/{} are x={}, y={}, z={}".format(i,ncoords,x,y,z))
 
-
+		
+	
 		r = Region((2*x-options.boxsize)/2,(2*y-options.boxsize)/2, (2*z-options.boxsize)/2, options.boxsize, options.boxsize, options.boxsize)
 		e = EMData()
 		e.read_image(tomogram,0,False,r)
@@ -1888,10 +1869,8 @@ def commandline_tomoboxer(tomogram,options):
 			e['xform.align3d'] = Transform({"type":'eman','az':0,'alt':0,'phi':0,'tx':0,'ty':0,'tz':0})
 
 			if options.verbose : 
-
 				print("\n(e2spt_boxer.py)(extractptcl) the extracted particle has this boxsize nx={}, ny={}, nz={}".format( e['nx'], e['ny'], e['nz'] ))
 				print("and the following mean BEFORE normalization".format( e['mean'] ))
-
 
 			e.process_inplace(options.normproc[0],options.normproc[1])
 
@@ -1902,9 +1881,7 @@ def commandline_tomoboxer(tomogram,options):
 			if options.invert:
 				e=e*-1
 				if options.verbose: 
-
 					print("(e2spt_boxer.py)(extractptcl) particle has the following mean={} AFTER contrast inversion".format( e['mean'] ))
-
 			
 			e.write_image(options.output,-1)
 
@@ -1951,13 +1928,11 @@ def commandline_tomoboxer(tomogram,options):
 
 		cmd = 'e2spt_icethicknessplot.py --plotparticleradii --fit --apix ' + str( apix ) + ' --radius ' + str( int(radius) ) + ' --files ' + newcoordsfile
 		
-
 		print("\n(e2spt_boxer.py)(extractptcl) calling e2spt_icethicknessplot.py to plot particle distribution.")
 
 		retice = runcmd( options, cmd )
 		if retice:
 			print("\n(e2spt_boxer.py)(extractptcl) done")
-
 		
 		if options.path:
 			c = os.getcwd()
@@ -1968,7 +1943,6 @@ def commandline_tomoboxer(tomogram,options):
 					os.rename( fi, options.path + '/' + fi )
 
 	elif failed >= ncoords:
-
 		print("\n(e2spt_boxer.py)(extractptcl) ERROR: No particles were boxed successfully. --coords might be messed up, or --chsrink might be incorrect.")
 
 	return options
