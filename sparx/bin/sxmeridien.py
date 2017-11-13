@@ -8807,6 +8807,10 @@ def main():
 			Tracker 	= wrap_mpi_bcast(Tracker, Blockdata["main_node"])
 			if(Blockdata["myid"] == Blockdata["main_node"]):
 				print_dict(Tracker["constants"], "Permanent settings of previous run")
+			update_tracker(sys.argv[1:])
+			if(Blockdata["myid"] == Blockdata["main_node"]):
+				print_dict(Tracker["constants"], "Updated permanent settings")
+				
 			Blockdata["symclass"] = symclass(Tracker["constants"]["symmetry"])
 			update_options = True
 	if not options.ctref:
