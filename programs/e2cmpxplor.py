@@ -158,7 +158,7 @@ class EMCmpExplorer(EM3DSymModel):
 			resize_necessary = True
 
 		#if self.frc_display == None:
-			#self.frc_display = EMPlot2DModule()
+			#self.frc_display = EMPlot2DWidget()
 #			QtCore.QObject.connect(self.frc_display,QtCore.SIGNAL("module_closed"),self.on_frc_display_closed)
 
 		self.update_display(False)
