@@ -8808,6 +8808,7 @@ def main():
 			if(Blockdata["myid"] == Blockdata["main_node"]):
 				print_dict(Tracker["constants"], "Permanent settings of previous run")
 			Blockdata["symclass"] = symclass(Tracker["constants"]["symmetry"])
+			update_options = True
 	if not options.ctref:
 		# Create first fake directory main000 with parameters filled with zeroes or copied from headers.  Copy initial volume in.
 		doit, keepchecking = checkstep(initdir, keepchecking)
@@ -9256,6 +9257,11 @@ def main():
 				Tracker["directory"]			= os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"])
 			else: Tracker = None
 			Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
+			### 
+			if update_options:
+				update_tracker(sys.argv[1:]) # rare case!
+				update_memory_estimation()
+				update_options = False
 			
 			# prepare names of input file names, they are in main directory,
 			#   log subdirectories contain outputs from specific refinements
