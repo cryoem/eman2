@@ -8834,7 +8834,8 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
 
 
 			for im in xrange(nima):
-				trans[im] = data[im].get_attr( "xform.projection" )
+				phi,theta,psi,tx,ty = get_params_proj(data[im])
+				trans[im] = [phi,theta,psi,tx,ty]
 			if myid == main_node:
 				all_trans = []
 				for klm in xrange(number_of_proc):
@@ -8853,9 +8854,10 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
 				else:  all_trans.append(wrap_mpi_recv(klm, MPI_COMM_WORLD))
 		else:  wrap_mpi_send(assignment, main_node, MPI_COMM_WORLD)
 		if myid == main_node:
-			write_text_file(all_trans, os.path.join(outdir, "assignment_%04d.txt"%(total_iter)) )
-			del all_trans
-
+			klm = []
+			for q in all_trans:  klm += q
+			write_text_file(klm, os.path.join(outdir, "assignment_%04d.txt"%(total_iter)) )
+			del all_trans, klm
 
 		#if CTF: del vol
 		fscc = [None]*numref
