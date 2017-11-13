@@ -8957,6 +8957,7 @@ def Kmref2_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=
 	from projection     import prep_vol, prgs, project, prgq, gen_rings_ctf
 	from utilities      import wrap_mpi_recv, wrap_mpi_send
 	from copy           import deepcopy
+	import string as sting
 	import os
 	import types
 	from mpi            import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
@@ -9083,6 +9084,11 @@ def Kmref2_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=
 		finfo.write( "Image_start, image_end: %d %d\n" %(image_start, image_end) )
 		finfo.flush()
 
+	syms = sting.split(sym, ",")
+	if(len(syms) != numref):
+		ERROR('Number of symmetries (%d)  different from the number of reference volumes  (%d)'%(len(syms) , numref), "Kmref2_ali3d_MPI", 1,myid)
+
+
 	start_time = time()
 	data = EMData.read_images(stack, list_of_particles)
 	if myid == main_node:
@@ -9155,10 +9161,11 @@ def Kmref2_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=
 			pixer = [0.0]*nima
 			if(an[N_step] > 0):
 				from utilities    import even_angles
-				ref_angles = even_angles(delta[N_step], symmetry=sym, method = ref_a, phiEqpsi = "Zero")
+				#  We assume first symmetry is the lowest one
+				ref_angles = even_angles(delta[N_step], symmetry=syms[0], method = ref_a, phiEqpsi = "Zero")
 				# generate list of angles
 				from alignment import generate_list_of_reference_angles_for_search
-				list_of_reference_angles = generate_list_of_reference_angles_for_search(ref_angles, sym=sym)
+				list_of_reference_angles = generate_list_of_reference_angles_for_search(ref_angles, sym=syms[0])
 				del ref_angles
 			else:  list_of_reference_angles = [[1.0,1.0]]
  
@@ -9170,7 +9177,7 @@ def Kmref2_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=
 				volft=model_blank(nx,nx,nx)
 			bcast_EMData_to_all(volft, myid, main_node)
 			volft, kb = prep_vol(volft)
-			refrings = prepare_refrings(volft, kb, nx, delta[N_step], ref_a, sym, numr, True)
+			refrings = prepare_refrings(volft, kb, nx, delta[N_step], ref_a, syms[0], numr, True)
 			del volft, kb
 
 			if CTF:
@@ -9186,7 +9193,7 @@ def Kmref2_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=
 			else:
 				if runtype=="REFINEMENT":
 					start_time = time()
-					refrings = prepare_refrings( volft, kb, nx, delta[N_step], ref_a, sym, numr)
+					refrings = prepare_refrings( volft, kb, nx, delta[N_step], ref_a, syms[0], numr)
 					if myid == main_node:
 						log.add( "Initial time to prepare rings: %d" % (time()-start_time) );start_time = time()
 					del volft, kb
@@ -9349,8 +9356,8 @@ def Kmref2_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=
 		for iref in xrange(numref):
 			#  3D stuff
 			from time import localtime, strftime
-			if CTF: volref, fscc[iref] = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution_%02d_%04d.txt"%(iref, total_iter)), myid, main_node, index = iref, npad = npad, finfo=frec)
-			else:    volref, fscc[iref] = rec3D_MPI_noCTF(data, sym, fscmask, os.path.join(outdir, "resolution_%02d_%04d.txt"%(iref, total_iter)), myid, main_node, index = iref, npad = npad, finfo=frec)
+			if CTF: volref, fscc[iref] = rec3D_MPI(data, snr, syms[iref], fscmask, os.path.join(outdir, "resolution_%04d_%02d.txt"%(total_iter, iref)), myid, main_node, index = iref, npad = npad, finfo=frec)
+			else:    volref, fscc[iref] = rec3D_MPI_noCTF(data, syms[iref], fscmask, os.path.join(outdir, "resolution_%04d_%02d.txt"%(total_iter, iref)), myid, main_node, index = iref, npad = npad, finfo=frec)
 			if myid == main_node:
 				log.add( "Time to compute 3D: %d" % (time()-start_time) );start_time = time()
 
