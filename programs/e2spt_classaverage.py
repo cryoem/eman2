@@ -45,7 +45,7 @@ import random
 from random import choice
 from pprint import pprint
 from EMAN2jsondb import JSTask,jsonclasses
-import datetime
+#import datetime
 import gc 	#this will be used to free-up unused memory
 
 #from e2spt_hac import textwriter
@@ -525,6 +525,7 @@ def main():
 	'''
 	Parse parameters such that "None" or "none" are adequately interpreted to turn of an option
 	'''
+	from EMAN2_utils import sptOptionsParser
 	options = sptOptionsParser( options )
 
 	print("after parsing options, options.goldstandardoff is", options.goldstandardoff, type(options.goldstandardoff))
@@ -545,6 +546,7 @@ def main():
 	'''
 	Store parameters in parameters.txt file inside --path
 	'''
+	from EMAN2_utils import writeParameters
 	cmdwp = writeParameters(options,'e2spt_classaverage.py', 'sptclassavg')
 
 
@@ -2723,203 +2725,6 @@ def runcmd(options,cmd):
 	
 	return 1
 
-
-def sptOptionsParser( options ):
-	try:
-		if options.align:
-			#print "(e2spt_classaverage) --align to parse is", options.align
-			options.align=parsemodopt(options.align)
-		elif options.align == 'None' or  options.align == 'none':
-			options.align=None
-	except:
-		if options.verbose > 9:
-			print("\nWARNING (might not be relevant): --align not provided")
-	
-	
-	#try:
-	#	if options.ialign:
-	#		#print "(e2spt_classaverage) --align to parse is", options.align
-	#		options.ialign=parsemodopt(options.ialign)
-	#	elif options.ialign == 'None' or  options.ialign == 'none':
-	#		options.ialign=None
-	#except:
-	#	if options.verbose > 9:
-	#		print "\nWARNING (might not be relevant): --ialign not provided"
-	
-	
-		
-	try:
-		if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none': 
-			options.falign=parsemodopt(options.falign)
-		elif options.falign == 'None' or  options.falign == 'none':
-			options.falign=None
-	except:
-		if options.verbose > 9:
-			print("\nWARNING (might not be relevant): --falign not provided")
-	
-	try:
-		if options.aligncmp: 
-			options.aligncmp=parsemodopt(options.aligncmp)
-		elif options.aligncmp == 'None' or  options.aligncmp == 'none':
-			options.aligncmp=None
-	except:
-		if options.verbose > 9:
-			print("\nWARNING (might not be relevant): --aligncmp not provided")
-	
-	try:	
-		if options.faligncmp: 
-			options.faligncmp=parsemodopt(options.faligncmp)
-		elif options.faligncmp == 'None' or  options.faligncmp == 'none':
-			options.faligncmp=None
-	except:
-		if options.verbose > 9:
-			print("\nWARNING (might not be relevant): --faligncmp not provided")
-		
-	try:
-		if options.averager: 
-			options.averager=parsemodopt(options.averager)
-		elif options.averager == 'None' or  options.averager == 'none':
-			options.averager=None
-	except:
-		if options.verbose > 9:
-			print("\nWARNING (might not be relevant): --averager not provided")
-		
-	try:
-		if options.autocenter:
-			options.autocenter=parsemodopt(options.autocenter)
-		elif options.autocenter == 'None' or  options.autocenter == 'none':
-			options.autocenter=None
-	except:
-		if options.verbose > 9:
-			print("\nWARNING (might not be relevant): --autocenter not provided")
-		
-	try:
-		if options.autocentermask:
-			options.autocentermask=parsemodopt(options.autocentermask)
-		elif options.autocentermask == 'None' or  options.autocentermask == 'none':
-			options.autocentermask=None
-	except:
-		if options.verbose > 9:
-			print("\nWARNING (might not be relevant): --autocentermask not provided")
-	
-	try:
-		if options.normproc and options.normproc != 'None' and options.normproc != 'none':
-			options.normproc=parsemodopt(options.normproc)
-		elif options.normproc == 'None' or  options.normproc == 'none':
-			options.normproc=None
-	except:
-		if options.verbose > 9:
-			print("\nWARNING (might not be relevant): --normproc not provided")
-	
-	try:
-		if options.mask and options.mask != 'None' and options.mask != 'none':
-			#print "parsing mask", sys.exit()
-			options.mask=parsemodopt(options.mask)
-		elif options.mask == 'None' or  options.mask == 'none':
-			options.mask=None
-	except:
-		if options.verbose > 9:
-			print("\nWARNING (might not be relevant): --mask not provided")
-	
-	try:	
-		if options.preprocess and options.preprocess != 'None' and options.preprocess != 'none': 
-			options.preprocess=parsemodopt(options.preprocess)
-		elif options.preprocess == 'None' or  options.preprocess == 'none':
-			options.preprocess=None
-	except:
-		if options.verbose > 9:
-			print("\nWARNING (might not be relevant): --preprocess not provided")
-	
-	try:	
-		if options.threshold and options.threshold != 'None' and options.threshold != 'none': 
-			options.threshold=parsemodopt(options.threshold)
-		elif options.threshold == 'None' or  options.threshold == 'none':
-			options.threshold=None
-	except:
-		if options.verbose > 9:
-			print("\nWARNING (might not be relevant): --threshold not provided")
-	
-	try:
-		if options.preprocessfine and options.preprocessfine != 'None' and options.preprocessfine != 'none': 
-			options.preprocessfine=parsemodopt(options.preprocessfine)
-		elif options.preprocessfine == 'None' or  options.preprocessfine == 'none':
-			options.preprocessfine=None
-	except:
-		if options.verbose > 9:
-			print("\nWARNING (might not be relevant): --preprocessfine not provided")
-	
-	try:	
-		if options.lowpass and options.lowpass != 'None' and options.lowpass != 'none': 
-			options.lowpass=parsemodopt(options.lowpass)
-		elif options.lowpass == 'None' or  options.lowpass == 'none':
-			options.lowpass=None
-	except:
-		if options.verbose > 9:
-			print("\nWARNING (might not be relevant): --lowpass not provided")
-	
-	try:
-		if options.lowpassfine and options.lowpassfine != 'None' and options.lowpassfine != 'none': 
-			options.lowpassfine=parsemodopt(options.lowpassfine)
-		elif options.lowpassfine == 'None' or  options.lowpassfine == 'none':
-			options.lowpassfine=None
-	except:
-		if options.verbose > 9:
-			print("\nWARNING (might not be relevant): --lowpassfine not provided")
-	
-	try:
-		if options.highpass and options.highpass != 'None' and options.highpass != 'none': 
-			options.highpass=parsemodopt(options.highpass)
-		elif options.highpass == 'None' or  options.highpass == 'none':
-			options.highpass=None
-	except:
-		if options.verbose > 9:
-			print("\nWARNING (might not be relevant): --highpass not provided")
-	
-	try:
-		if options.highpassfine and options.highpassfine != 'None' and options.highpassfine != 'none': 
-			options.highpassfine=parsemodopt(options.highpassfine)
-		elif options.highpassfine == 'None' or  options.highpassfine == 'none':
-			options.highpassfine=None
-	except:
-		if options.verbose > 9:
-			print("\nWARNING (might not be relevant): --highpassfine not provided")
-	try:
-		if options.postprocess and options.postprocess != 'None' and options.postprocess != 'none': 
-			options.postprocess=parsemodopt(options.postprocess)
-		elif options.postprocess == 'None' or  options.postprocess == 'none':
-			options.postprocess=None
-	except:
-		if options.verbose > 9:
-			print("\nWARNING (might not be relevant): --postprocess not provided")
-	
-	try:
-		if options.reconstructor and options.reconstructor != 'None' and options.reconstructor != 'none': 
-			options.reconstructor=parsemodopt(options.reconstructor)
-		elif options.reconstructor == 'None' or  options.reconstructor == 'none':
-			options.reconstructor=None
-	except:
-		if options.verbose > 9:
-			print("\nWARNING (might not be relevant): --reconstructor not provided")
-	
-	try:
-		if options.preavgproc1 and options.preavgproc1 != 'None' and options.preavgproc1 != 'none': 
-			options.preavgproc1=parsemodopt(options.preavgproc1)
-		elif options.preavgproc1 == 'None' or  options.preavgproc1 == 'none':
-			options.preavgproc1=None
-	except:
-		if options.verbose > 9:
-			print("\nWARNING (might not be relevant): --reconstructor not provided")
-		
-	try:
-		if options.preavgproc2 and options.preavgproc2 != 'None' and options.preavgproc2 != 'none': 
-			options.preavgproc2=parsemodopt(options.preavgproc2)
-		elif options.preavgproc2 == 'None' or  options.preavgproc2 == 'none':
-			options.preavgproc2=None
-	except:
-		if options.verbose > 9:
-			print("\nWARNING (might not be relevant): --reconstructor not provided")
-	
-	return options
 
 
 '''

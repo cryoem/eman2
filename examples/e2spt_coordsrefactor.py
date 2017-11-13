@@ -71,6 +71,7 @@ def main():
 			if '.txt' in argv[1]:
 				cfile = argv[1]
 			else:
+
 				print("ERROR: coordinates file must be in .txt format")
 				sys.exit(1)
 	except:
@@ -102,7 +103,8 @@ def main():
 		sanelines = finalsetlines
 	
 	n=len(sanelines)
-	print("\nyou have these many potentially sane lines in your coordinates file {} ".format(n))
+	if options.verbose:
+		print("\nyou have these many potentially sane lines in your coordinates file {} ".format(n))
 	
 	if options.subset and not options.randomize and not options.sort:
 		n = options.subset
@@ -121,6 +123,7 @@ def main():
 		
 	
 		if options.swapyz:
+
 			print("You indicated Y and Z are flipped in the coords file, respect to the tomogram's orientation; therefore, they will be swapped")
 			aux = y
 			y = z
@@ -153,7 +156,9 @@ def main():
 		
 	if options.sort and not options.randomze:
 		pass
-		
+	
+	E2end(logger)
+
 	return
 
 
@@ -187,6 +192,7 @@ def loadlines(infile):
 	for line in lines:
 		#print "The len of this line is", len(line)
 		if len(line)<5 or len(line) > 30:
+
 			print("This line is insane and therefore will be removed", line)
 		else:
 			outlines.append(line)

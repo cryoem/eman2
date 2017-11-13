@@ -108,6 +108,14 @@ def main():
 	c=os.getcwd()
 	findir=os.listdir(c)
 
+	if not options.tltfile:
+		anglesfile = os.path.basename(options.tiltseries.replace(extension,'.tlt'))
+		if anglesfile in findir:
+			options.tltfile = anglesfile
+		else:
+			print "\nERROR: expected tlt file = {}, (text file with the list of tilt angles) not found. Supply --tltfile explicitly.".format(anglesfile)
+			sys.exit(1)
+
 	if options.iconpreproc and alifile not in findir:
 		print("\nERROR: the aligned tiltseries must be in the same directory, and should match the name of the raw .st tiltseries, except that the extension should be .ali instead of .st; the expected file is {}".format(alifile))
 		sys.exit(1)
