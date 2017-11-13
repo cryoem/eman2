@@ -189,7 +189,7 @@ def get_gui_arg_img_sets(filenames):
 		db_parms=db_open_dict("bdb:e2ctf.parms",ro=True)
 	else: return img_sets
 	for file in filenames:
-		name = get_file_tag(file)
+		name = base_name(file)
 		if name not in db_parms:
 			print("error, you must first run auto fit before running the gui - there are no parameters for",name)
 			return []
@@ -210,7 +210,7 @@ def write_e2ctf_output(options):
 	if options.phaseflip or options.wiener:
 		db_parms=db_open_dict("bdb:e2ctf.parms")
 		for i,filename in enumerate(options.filenames):
-			name=get_file_tag(filename)
+			name=base_name(filename)
 			if debug: print("Processing ",filename)
 
 			if options.phaseflip: phaseout="bdb:particles#"+name+"_ctf_flip"
@@ -245,7 +245,7 @@ def pspec_and_ctf_fit(options,debug=False):
 	db_parms=db_open_dict("bdb:e2ctf.parms")
 
 	for i,filename in enumerate(options.filenames):
-		name=get_file_tag(filename)
+		name=base_name(filename)
 
 		# compute the power spectra
 		if debug : print("Processing ",filename)
@@ -960,7 +960,7 @@ class GUIctf(QtGui.QWidget):
 			
 		val = self.curset
 		name = str(self.setlist.item(val).text())
-		name = get_file_tag(name)
+		name = base_name(name)
 		
 #		if not db_check_dict(name):
 #			print "error, the db doesn't exist:",name
@@ -983,7 +983,7 @@ class GUIctf(QtGui.QWidget):
 		val = self.curset
 		name = str(self.setlist.item(val).text())
 		data = [name]
-		name = get_file_tag(name)
+		name = base_name(name)
 		
 		db_parms=db_open_dict("bdb:e2ctf.parms")
 		if name not in db_parms:

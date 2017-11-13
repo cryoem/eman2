@@ -1734,7 +1734,7 @@ class Boxable:
 		#print "Added",len(self.boxes)-a," manual boxes"
 
 	def get_coord_file_name(self):
-		return get_file_tag(self.image_name)+".box"
+		return base_name(self.image_name)+".box"
 		
 	def write_coord_file(self,box_size=-1,force=False,verbose=True):
 		'''
@@ -1749,7 +1749,7 @@ class Boxable:
 			if file_exists(boxname):
 				if not force:
 					f=open(boxname,'r')
-					boxname_backup =  get_file_tag(self.image_name)+str(time()) + ".box.bak"
+					boxname_backup =  base_name(self.image_name)+str(time()) + ".box.bak"
 					print("warning, found box name",boxname,"- am renaming it to", boxname_backup, "- use force to overwrite this behavior")
 					fbak=open(boxname_backup,'w')
 					fbak.writelines(f.readlines())
@@ -1803,7 +1803,7 @@ class Boxable:
 		
 		name,suffix = path.splitext( name )
 		if imageformat == "bdb":
-			return "bdb:particles#"+get_file_tag(self.image_name)+"_ptcls"
+			return "bdb:particles#"+base_name(self.image_name)+"_ptcls"
 		else:
 			# please can we just use ptcls??? pretty please??
 			return name+"_ptcls."+imageformat
@@ -2385,7 +2385,7 @@ def merge_idd_key_entry_memory_to_disk(image_name,key):
 	project_db.set_key_entry(dbkey,data)
 	
 def get_idd_key(image_name):
-	return get_file_tag(image_name)+"_DD"
+	return base_name(image_name)+"_DD"
 
 def set_idd_key_entry_in_memory(image_name,key,object):
 	dbkey = get_idd_key(image_name)

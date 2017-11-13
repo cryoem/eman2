@@ -1291,24 +1291,6 @@ def abs_path(name):
 
 # a function for stripping a the file tag from the end of a string.
 # is if given image.mrc this functions strips the '.mrc' and returns 'image'
-def get_file_tag(file_name):
-	"""Returns the file identifier associated with a path, ie for "/home/stevel/abc1234.mrc" would return abc1234
-or for "bdb:hello99?1,2,3" would return hello99
-	"""
-	print("Using deprecated get_file_tag function, please switch to base_name()")
-
-	if file_name[:4].lower()=="bdb:" :
-		dname=file_name.find("#")+1
-		if dname==0 :dname=4
-		dtail=file_name.find("?")
-		if dtail>-1 : return file_name[dname:dtail]
-		return file_name[dname:]
-
-	dname=file_name.rfind("/")+1
-	ddot=file_name.rfind(".")
-	if ddot==-1 : return file_name[dname:]
-	return file_name[dname:ddot]
-
 def item_name(file_name):
 	"""
 	This will return an 'item name' for a path. This is generally the last element of the path without any extensions, eg:
