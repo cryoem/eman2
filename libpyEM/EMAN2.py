@@ -1291,22 +1291,6 @@ def abs_path(name):
 
 # a function for stripping a the file tag from the end of a string.
 # is if given image.mrc this functions strips the '.mrc' and returns 'image'
-def strip_file_tag(file_name):
-	# FIXME it's probably easiest to do this with regular expressions...
-	'''
-	FIXME - could replace with Util.remove_filename_ext()
-	'''
-	print("Using deprecated strip_file_tag function, please remove")
-
-	for i in range(len(file_name)-1,-1,-1):
-		if file_name[i] == '.':
-			break
-	else:
-		print("never found the full stop in", file_name)
-		return None
-
-	return file_name[0:i]
-
 def get_file_tag(file_name):
 	"""Returns the file identifier associated with a path, ie for "/home/stevel/abc1234.mrc" would return abc1234
 or for "bdb:hello99?1,2,3" would return hello99
