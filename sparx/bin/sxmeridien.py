@@ -8807,7 +8807,12 @@ def main():
 			Tracker 	= wrap_mpi_bcast(Tracker, Blockdata["main_node"])
 			if(Blockdata["myid"] == Blockdata["main_node"]):
 				print_dict(Tracker["constants"], "Permanent settings of previous run")
+			update_tracker(sys.argv[1:])
+			if(Blockdata["myid"] == Blockdata["main_node"]):
+				print_dict(Tracker["constants"], "Updated permanent settings")
+				
 			Blockdata["symclass"] = symclass(Tracker["constants"]["symmetry"])
+			update_options = True
 	if not options.ctref:
 		# Create first fake directory main000 with parameters filled with zeroes or copied from headers.  Copy initial volume in.
 		doit, keepchecking = checkstep(initdir, keepchecking)
@@ -9256,6 +9261,11 @@ def main():
 				Tracker["directory"]			= os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"])
 			else: Tracker = None
 			Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
+			### 
+			if update_options:
+				update_tracker(sys.argv[1:]) # rare case!
+				update_memory_estimation()
+				update_options = False
 			
 			# prepare names of input file names, they are in main directory,
 			#   log subdirectories contain outputs from specific refinements
@@ -9284,12 +9294,13 @@ def main():
 
 			keepgoing = AI( fff, anger, shifter, Blockdata["myid"] == Blockdata["main_node"])
 			if keepgoing == 1: # not converged
+				"""
 				if update_options:
 					update_tracker(sys.argv[1:])
 					update_memory_estimation()
 					update_options = False # only update once
 					if(Blockdata["myid"] == Blockdata["main_node"]): print_dict(Tracker["constants"], "Permanent settings of restart run")
-
+				"""
 				if Blockdata["myid"] == Blockdata["main_node"]:
 					if( Tracker["mainiteration"] > 1 ):
 						line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
