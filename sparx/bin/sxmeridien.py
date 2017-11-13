@@ -9290,12 +9290,13 @@ def main():
 
 			keepgoing = AI( fff, anger, shifter, Blockdata["myid"] == Blockdata["main_node"])
 			if keepgoing == 1: # not converged
+				"""
 				if update_options:
 					update_tracker(sys.argv[1:])
 					update_memory_estimation()
 					update_options = False # only update once
 					if(Blockdata["myid"] == Blockdata["main_node"]): print_dict(Tracker["constants"], "Permanent settings of restart run")
-
+				"""
 				if Blockdata["myid"] == Blockdata["main_node"]:
 					if( Tracker["mainiteration"] > 1 ):
 						line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
