@@ -67,27 +67,6 @@ def image_update():
 		except: pass
 	
 	
-def get_app():
-	'''
-	Deprecated
-	But being replaced by emapplication.get_application (in progress, April 15th 2009)
-	'''
-	app=QtGui.QApplication.instance()
-	if not app : app = QtGui.QApplication([])
-	
-	try: 
-		if app.updtimer : pass
-	except:
-		tmr=QtCore.QTimer()
-		tmr.setInterval(250)
-		tmr.connect(tmr,QtCore.SIGNAL("timeout()"), image_update)
-		tmr.start()
-	
-		app.updtimer=tmr
-
-	return app
-
-
 class EMImageWidget(object):
 	"""This is basically a factory class that will return an instance of the appropriate EMImage* class """
 	def __new__(cls,data=None,old=None,app=None,force_2d=False,force_plot=False,filename="",replace=True):
