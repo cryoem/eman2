@@ -77,7 +77,8 @@ def main():
 	parser.add_option("--npad",     type="int",          default= 2,               help="padding size for 3D reconstruction")
 	parser.add_option("--debug",    action="store_true", default=False,            help="debug ")
 	parser.add_option("--fourvar",  action="store_true", default=False,            help="compute and use fourier variance")
-	parser.add_option("--kmeans",  action="store_true", default=False,            help="use kmeansmref instead of equalmref")
+	parser.add_option("--kmeans",   action="store_true", default=False,            help="use kmeansmref instead of equalmref")
+	parser.add_option("--kmeans2",  action="store_true", default=False,            help="use kmeansmref2 (no assignment step!) instead of equalmref")
 
 	
 	(options, args) = parser.parse_args(arglist[1:])
@@ -102,6 +103,15 @@ def main():
 			if options.kmeans:
 				from applications import Kmref_ali3d_MPI
 				Kmref_ali3d_MPI(args[0], args[1], args[2], maskfile, options.focus, options.maxit, options.ir, options.ou, options.rs, \
+				options.xr, options.yr, options.ts, options.delta, options.an, options.center, \
+				options.nassign, options.nrefine, options.CTF, options.snr, options.ref_a, options.sym, \
+				options.function,  options.npad, options.debug, options.fourvar, options.stoprnct, mpi_comm=None, log=None)
+			elif options.kmeans2:
+				if( options.nassign != 0):
+					print("  Setting nassign to zero")
+					options.nassign = 0
+				from applications import Kmref2_ali3d_MPI
+				Kmref2_ali3d_MPI(args[0], args[1], args[2], maskfile, options.focus, options.maxit, options.ir, options.ou, options.rs, \
 				options.xr, options.yr, options.ts, options.delta, options.an, options.center, \
 				options.nassign, options.nrefine, options.CTF, options.snr, options.ref_a, options.sym, \
 				options.function,  options.npad, options.debug, options.fourvar, options.stoprnct, mpi_comm=None, log=None)
