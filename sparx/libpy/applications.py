@@ -9223,9 +9223,7 @@ def Kmref2_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=
 						finfo.write( "ID,iref,peak: %6d %d %8.5f\n" % (list_of_particles[im],iref,peak) )
 				else:
 					if an[N_step] == -1:
-						print("  START proj_ali_incore  ",myid,nima)
 						peak, pixel_error = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step])
-						print("  DONE proj_ali_incore  ",myid,nima)
 					else:
 						peak, pixel_error = proj_ali_incore_local(data[im], refrings, list_of_reference_angles, numr,\
 																	xrng[N_step], yrng[N_step], step[N_step], an[N_step])
