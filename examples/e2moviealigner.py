@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Authors: James Michael Bell & Muyuan Chen, 05/28/2015
@@ -90,7 +91,7 @@ def main():
 	(options, args) = parser.parse_args()
 
 	if len(args)<1:
-		print usage
+		print(usage)
 		parser.error("You must specify at least one input DDD stack.")
 		sys.exit(1)
 
@@ -110,7 +111,7 @@ def main():
 
 	for fname in args:
 
-		if options.verbose: print(font.BOLD + "\nProcessing {}\n".format(fname) + font.END)
+		if options.verbose: print((font.BOLD + "\nProcessing {}\n".format(fname) + font.END))
 		
 		options.path = fname
 		
@@ -335,7 +336,7 @@ class MovieModeAligner:
 			print("\n\nOptimal Frame Translations:\n")
 			ts = [t for tform in self.optimal_transforms for t in tform.get_trans_2d()]
 			for s in xrange(len(ts)):
-				if s % 2 == 0: print("Frame {} \t( {:.2}, {:.2} )".format((s/2)+1,ts[s],ts[s+1]))
+				if s % 2 == 0: print(("Frame {} \t( {:.2}, {:.2} )".format((s/2)+1,ts[s],ts[s+1])))
 			print("")
 		self._optimized = True
 
@@ -481,7 +482,7 @@ class MovieModeAligner:
 		nimg = EMUtil.get_image_count(options.path)
 		for i in xrange(nimg):
 			if options.verbose:
-				print "Processing frame: {}/{}	\r".format(i+1,nimg),
+				print("Processing frame: {}/{}	\r".format(i+1,nimg), end=' ')
 				sys.stdout.flush()
 			img = EMData(options.path,i,False)
 			for xybl in options.xybadlines: 
@@ -507,7 +508,7 @@ class MovieModeAligner:
 			a=Averagers.get("mean",{"sigma":sigd,"ignore0":1})
 			for i in xrange(0,nd):
 				if options.verbose:
-					print "Summing dark: {}/{}	\r".format(i+1,nd),
+					print("Summing dark: {}/{}	\r".format(i+1,nd), end=' ')
 					sys.stdout.flush()
 				t=EMData(options.dark,i)
 				t.process_inplace("threshold.clampminmax",{"minval":0,"maxval":t["mean"]+t["sigma"]*3.5,"tozero":1})
@@ -539,7 +540,7 @@ class MovieModeAligner:
 			a=Averagers.get("mean",{"sigma":sigg,"ignore0":1})
 			for i in xrange(0,nd):
 				if options.verbose:
-					print "Summing gain: {}/{}	\r".format(i+1,nd),
+					print("Summing gain: {}/{}	\r".format(i+1,nd), end=' ')
 					sys.stdout.flush()
 				t=EMData(options.gain,i)
 				t.process_inplace("threshold.clampminmax",{"minval":0,"maxval":t["mean"]+t["sigma"]*3.5,"tozero":1})
@@ -591,7 +592,7 @@ class MovieModeAligner:
 		if not outfile: outfile = options.path[:-4] + "_dgcor.hdf"
 		for i in xrange(first,last,step):
 			if options.verbose:
-				print "Correcting frame: {}/{}	\r".format(i+1,nd),
+				print("Correcting frame: {}/{}	\r".format(i+1,nd), end=' ')
 				sys.stdout.flush()
 			if options.path[-4:].lower() in (".mrc"):
 				r = Region(0,0,i,nx,ny,1)

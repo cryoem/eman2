@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 import sys
 import os
@@ -87,15 +88,15 @@ directory		output directory name: into which the results will be written (if it 
 	# Making sure all required options appeared.
 	for required_option in required_option_list:
 		if not options.__dict__[required_option]:
-			print "\n ==%s== mandatory option is missing.\n"%required_option
-			print "Please run '" + progname + " -h' for detailed options"
+			print("\n ==%s== mandatory option is missing.\n"%required_option)
+			print("Please run '" + progname + " -h' for detailed options")
 			return 1
 
 
 
 	if len(args) < 2 or len(args) > 3:
-		print "usage: " + usage
-		print "Please run '" + progname + " -h' for detailed options"
+		print("usage: " + usage)
+		print("Please run '" + progname + " -h' for detailed options")
 		return 1
 
 	mpi_init(0, [])

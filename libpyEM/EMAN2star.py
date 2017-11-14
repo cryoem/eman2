@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: Steven Ludtke, 04/17/14 (sludtke@bcm.edu)
 # Copyright (c) 2014- Baylor College of Medicine
@@ -93,7 +94,7 @@ class StarFile(dict):
 		matcher=re.compile("""("[^"]+")|('[^']+')|([^\s]+)""")
 		
 		# read the entire file into a buffer, this dramatically simplifies the logic, even if it eats a chunk of RAM
-		self.lines=[i for i in file(self.filename,"r") if len(i.strip())!=0 and i[0]!="#"]
+		self.lines=[i for i in open(self.filename,"r") if len(i.strip())!=0 and i[0]!="#"]
 		self.lineptr=0
 		
 		while 1:
@@ -121,16 +122,16 @@ class StarFile(dict):
 						val=[line2[1:]]
 						while 1:
 							try: line2=self._nextline()
-							except: raise Exception,"StarFile: Error found parsing multi-line string value for %s"%key
+							except: raise Exception("StarFile: Error found parsing multi-line string value for %s"%key)
 							if line2[0]==';' : break
 							val.append(line2)
 						val[-1]=val[-1].rstrip()		# remove trailing whitespace on the last line
 						val="".join(val)
 						self[key]=val
-					else: raise Exception,"StarFile: Key-value pair error. Matching value for %s not found."%key
+					else: raise Exception("StarFile: Key-value pair error. Matching value for %s not found."%key)
 			elif line[:5].lower()=="data_":
 				if len(self)>0 :
-					print "WARNING: second data_ block encountered in ",self.filename,". Cannot deal with this at present. Second block ignored"
+					print("WARNING: second data_ block encountered in ",self.filename,". Cannot deal with this at present. Second block ignored")
 					return
 				self.dataname=line[5:]
 			elif line[:5].lower()=="loop_":
@@ -165,23 +166,23 @@ class StarFile(dict):
 						if len(vals)<len(loop) :			# we may need to read multiple lines to get enough values
 							continue
 						if len(vals)>len(loop) : 
-							print "mismatch"
-							print line2
-							print len(loop),loop
-							print len(vals),vals
+							print("mismatch")
+							print(line2)
+							print(len(loop),loop)
+							print(len(vals),vals)
 							break
 						for i in range(len(vals)): self[loop[i]].append(vals[i])
 						vals=[]
 				self.lineptr-=1
 			else:
-				print "StarFile: Unknown content on line :",line
+				print("StarFile: Unknown content on line :",line)
 				break
 
 				
 	def writefile(self,filename=None):
 		"""Writes the contents of the current dictionary back to disk using either the existing filename, or an alternative name passed in"""
 		
-		print "Sorry, writing not implemented yet"
+		print("Sorry, writing not implemented yet")
 					
 			
 			

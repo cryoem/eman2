@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 # Author: Muthu Alagappan, m.alagappan901@gmail.com, 07/22/09
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -730,14 +731,14 @@ class EMPDBModel(EM3DModel):
 			f = open(self.fName)
 			f.close()
 		except IOError:	
-			print "Sorry, the file name \"" + str(self.fName) + "\" does not exist"
+			print("Sorry, the file name \"" + str(self.fName) + "\" does not exist")
 			sys.exit()
 		
-   		self.a = PDBReader()
-    		self.a.read_from_pdb(self.fName)
-    		point_x = self.a.get_x()
-   		point_y = self.a.get_y()
-	        point_z = self.a.get_z()
+		self.a = PDBReader()
+		self.a.read_from_pdb(self.fName)
+		point_x = self.a.get_x()
+		point_y = self.a.get_y()
+		point_z = self.a.get_z()
 		point_atomName = self.a.get_atomName()
 		point_resName = self.a.get_resName()
 		point_resNum = self.a.get_resNum()
@@ -750,17 +751,17 @@ class EMPDBModel(EM3DModel):
 		currentRes = point_resNum[0]
 
 
-    		for i in range(0, len(point_x)):
-        		if (point_resNum[i]==currentRes):
-           			x.append(point_x[i])
-            			y.append(point_y[i])
-            			z.append(point_z[i])
+		for i in range(0, len(point_x)):
+			if (point_resNum[i]==currentRes):
+				x.append(point_x[i])
+				y.append(point_y[i])
+				z.append(point_z[i])
 				temp = point_atomName[i]
 				temp2 = temp.strip()
 				atomName.append(temp2)
-            			resName.append(point_resName[i])
-       			else:
-            			currentRes = point_resNum[i]
+				resName.append(point_resName[i])
+			else:
+				currentRes = point_resNum[i]
 				amino.append(x[:])
 				amino.append(y[:])
 				amino.append(z[:])
@@ -768,18 +769,18 @@ class EMPDBModel(EM3DModel):
 				amino.append(resName[:])
 				self.allResidues.append(amino[:])
 				del amino[:]
-            			del x[:]
-            			del y[:]
-            			del z[:]
-            			del atomName[:]
-            			del resName[:]
-           			x.append(point_x[i])
-            			y.append(point_y[i])
-            			z.append(point_z[i])
+				del x[:]
+				del y[:]
+				del z[:]
+				del atomName[:]
+				del resName[:]
+				x.append(point_x[i])
+				y.append(point_y[i])
+				z.append(point_z[i])
 				temp = point_atomName[i]
 				temp2 = temp.strip()
 				atomName.append(temp2)
-            			resName.append(point_resName[i])
+				resName.append(point_resName[i])
 			if (i == (len(point_x)-1)): 
 				amino.append(x[:])
 				amino.append(y[:])
@@ -850,7 +851,7 @@ class EMPDBModel(EM3DModel):
 				
 				res = self.allResidues[k]
 				key =  res[4][0]
-				if self.side_chain_renderer.has_key(key): #goes through each residue and draws the newtwork of sticks connecting atoms
+				if key in self.side_chain_renderer: #goes through each residue and draws the newtwork of sticks connecting atoms
 					self.side_chain_renderer[key](res,self)
 					continue
 
@@ -871,7 +872,7 @@ class EMPDBModel(EM3DModel):
 
 		try: glCallList(self.dl)
 		except: 
-			print "call list failed",self.dl
+			print("call list failed",self.dl)
 			glDeleteLists(self.dl,1)
 			self.dl = None
 	def init_basic_shapes(self):
@@ -1008,7 +1009,7 @@ class EMPDBInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.browse, QtCore.SIGNAL("clicked(bool)"), self.on_browse)
 	
 	def on_text_change(self,text):
-		print "Use the Browse button to update the pdb file"
+		print("Use the Browse button to update the pdb file")
 
 	def on_browse(self):
 		import os

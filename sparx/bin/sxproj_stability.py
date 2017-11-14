@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: 
 # Copyright (c) 2012 The University of Texas - Houston Medical School
@@ -146,7 +147,7 @@ def main():
 	st = time()
 	if options.grouping == "GRP":
 		if myid == main_node:
-			print "  A  ",myid,"  ",time()-st
+			print("  A  ",myid,"  ",time()-st)
 			proj_attr = EMUtil.get_all_attributes(stack, "xform.projection")
 			proj_params = []
 			for i in xrange(nima):
@@ -167,7 +168,7 @@ def main():
 
 			proj_list_all, angle_list, mirror_list = group_proj_by_phitheta(proj_params, img_per_grp=img_per_grp)
 			del proj_params
-			print "  B  number of groups  ",myid,"  ",len(proj_list_all),time()-st
+			print("  B  number of groups  ",myid,"  ",len(proj_list_all),time()-st)
 		mpi_barrier(MPI_COMM_WORLD)
 
 		# Number of groups, actually there could be one or two more groups, since the size of the remaining group varies
@@ -190,7 +191,7 @@ def main():
 				proj_list.append(map(int, temp))
 				del temp
 			mpi_barrier(MPI_COMM_WORLD)
-		print "  C  ",myid,"  ",time()-st
+		print("  C  ",myid,"  ",time()-st)
 		if myid == main_node:
 			# Assign the remaining groups to main_node
 			for i in xrange(n_grp, len(proj_list_all)):
@@ -213,7 +214,7 @@ def main():
 			ref_ang[i*2]   = refprojdir[0][0]
 			ref_ang[i*2+1] = refprojdir[0][1]+i*0.1
 
-		print "  A  ",myid,"  ",time()-st
+		print("  A  ",myid,"  ",time()-st)
 		proj_attr = EMUtil.get_all_attributes(stack, "xform.projection")
 		#  the solution below is very slow, do not use it unless there is a problem with the i/O
 		"""
@@ -222,42 +223,42 @@ def main():
 				proj_attr = EMUtil.get_all_attributes(stack, "xform.projection")
 			mpi_barrier(MPI_COMM_WORLD)
 		"""
-		print "  B  ",myid,"  ",time()-st
+		print("  B  ",myid,"  ",time()-st)
 
 		proj_ang = [0.0]*(nima*2)
 		for i in xrange(nima):
 			dp = proj_attr[i].get_params("spider")
 			proj_ang[i*2]   = dp["phi"]
 			proj_ang[i*2+1] = dp["theta"]
-		print "  C  ",myid,"  ",time()-st
+		print("  C  ",myid,"  ",time()-st)
 		asi = Util.nearestk_to_refdir(proj_ang, ref_ang, img_per_grp)
 		del proj_ang, ref_ang
 		proj_list = []
 		for i in xrange(len(refprojdir)):
 			proj_list.append(asi[i*img_per_grp:(i+1)*img_per_grp])
 		del asi
-		print "  D  ",myid,"  ",time()-st
+		print("  D  ",myid,"  ",time()-st)
 		#from sys import exit
 		#exit()
 
 
 	#   Compute stability per projection
 	elif options.grouping == "PPR":
-		print "  A  ",myid,"  ",time()-st
+		print("  A  ",myid,"  ",time()-st)
 		proj_attr = EMUtil.get_all_attributes(stack, "xform.projection")
-		print "  B  ",myid,"  ",time()-st
+		print("  B  ",myid,"  ",time()-st)
 		proj_params = []
 		for i in xrange(nima):
 			dp = proj_attr[i].get_params("spider")
 			phi, theta, psi, s2x, s2y = dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]
 			proj_params.append([phi, theta, psi, s2x, s2y])
 		img_begin, img_end = MPI_start_end(nima, number_of_proc, myid)
-		print "  C  ",myid,"  ",time()-st
+		print("  C  ",myid,"  ",time()-st)
 		from utilities import nearest_proj
 		proj_list, mirror_list = nearest_proj(proj_params, img_per_grp, range(img_begin, img_begin+1))#range(img_begin, img_end))
 		refprojdir = proj_params[img_begin: img_end]
 		del proj_params, mirror_list
-		print "  D  ",myid,"  ",time()-st
+		print("  D  ",myid,"  ",time()-st)
 	else:  ERROR("Incorrect projection grouping option","sxproj_stability",1)
 	"""
 	from utilities import write_text_file
@@ -277,7 +278,7 @@ def main():
 	aveList = [model_blank(nx,ny)]*len(proj_list)
 	if options.grouping == "GRP":  refprojdir = [[0.0,0.0,-1.0]]*len(proj_list)
 	for i in xrange(len(proj_list)):
-		print "  E  ",myid,"  ",time()-st
+		print("  E  ",myid,"  ",time()-st)
 		class_data = EMData.read_images(stack, proj_list[i])
 		#print "  R  ",myid,"  ",time()-st
 		if options.CTF :
@@ -375,7 +376,7 @@ def main():
 			aveList[i].set_attr('refprojdir',refprojdir[i])
 			aveList[i].set_attr('pixerr', pix_err)
 		else:
-			print  " empty group ",i, refprojdir[i]
+			print(" empty group ",i, refprojdir[i])
 			aveList[i].set_attr('members',[-1])
 			aveList[i].set_attr('refprojdir',refprojdir[i])
 			aveList[i].set_attr('pixerr', [99999.])

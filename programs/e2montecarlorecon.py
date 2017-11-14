@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steve Ludtke (6/23/2013)  rewrote John Flanagan's program from scratch
@@ -90,15 +91,15 @@ def main():
 	freconstructor=Reconstructors.get(reconstructor[0], reconstructor[1])
 	freconstructor.setup()
 
-	print "\n\nTrying "+str(trials)+" Monte Carlo trials"
+	print("\n\nTrying "+str(trials)+" Monte Carlo trials")
 	besttlist = []
 	bestscore = 0.0
 	for mctrial in xrange(int(trials)):
 		if options.verbose==1 :
 			if((mctrial % 50) == 0):
-				print "MC trial", mctrial
+				print("MC trial", mctrial)
 		elif options.verbose :
-			print "MC trial %5d: "%mctrial,
+			print("MC trial %5d: "%mctrial, end=' ')
 			sys.stdout.flush()
 
 		score = 0.0
@@ -129,7 +130,7 @@ def main():
 			bestscore = score
 			besttlist = tlist
 
-		if options.verbose>1 : print "%f (%f)"%(score,bestscore)
+		if options.verbose>1 : print("%f (%f)"%(score,bestscore))
 
 	refiner = SAsca("simulated annealing, single class average steps\n")
 	#refiner = SA("simulated annealing\n")
@@ -159,7 +160,7 @@ class Refine:
 # Do per image SA
 class SAsca(Refine):
 	def refinerecon(self, calist, blist, reconstructor):
-		print "Running: "+self.name
+		print("Running: "+self.name)
 
 		#setup a reconstructor for use in refinement
 		rreconstructor=Reconstructors.get(reconstructor[0], reconstructor[1]) 	# lets make a new reconstrcutor
@@ -170,7 +171,7 @@ class SAsca(Refine):
 		temp = options.initemp
 		K = options.numsasteps*options.numtemps
 		for tstep in xrange(int(options.numtemps)):
-			print "Temperature is", temp
+			print("Temperature is", temp)
 			for i in xrange(int(options.numsasteps)):
 				for canum, ca in enumerate(calist):
 					rreconstructor.insert_slice(ca, blist[canum][0],1)
@@ -208,7 +209,7 @@ class SAsca(Refine):
 # DO all image SA
 class SA(Refine):
 	def refinerecon(self, calist, blist, reconstructor):
-		print "Running: "+self.name
+		print("Running: "+self.name)
 
 		#first get the initial energy
 		inienergy = 0
@@ -254,7 +255,7 @@ class SA(Refine):
 			rreconstructor.clear()
 			de = energy - inienergy
 			if self.pseudoboltzmann(-de, temp):
-				print "Found a better match"
+				print("Found a better match")
 				blist[:] = newt[:] # deep copy going on here
 				inienergy = energy
 			#print inienergy, energy

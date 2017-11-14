@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Jesus Galaz-Montoya, 2012. Last update: july/24/2014.
@@ -424,10 +425,10 @@ def main():
 			elif options.nsliceslowerlimit:
 				nslices = options.nsliceslowerlimit		
 			else:
-				print "ERROR: You have to supply either tiltrange parameters including --tiltstep, or nslices parameters"
+				print("ERROR: You have to supply either tiltrange parameters including --tiltstep, or nslices parameters")
 			
 			if not nslices:
-				print "ERROR: Couldn't figure out nslices"
+				print("ERROR: Couldn't figure out nslices")
 				sys.exit()
 			
 			
@@ -527,7 +528,7 @@ def main():
 		If ONLY PLOTTING previously computed alignment error files
 		'''		
 	elif options.plotonly:
-		print "\n\nI'm in PLOTONLY \n\n"
+		print("\n\nI'm in PLOTONLY \n\n")
 		
 		'''
 		Make the directory where to store the results. Sptakepath exists in e2spt_classaverage.py
@@ -548,17 +549,17 @@ def main():
 			findir = os.listdir(options.filesdir)
 			for f in findir:
 				if 'TR' in f and 'SNR' in f and 'NS' in f and '.txt' in f:
-					print "Found a file to analyse", f
+					print("Found a file to analyse", f)
 					files.append(f)
 		else:
-			print "ERROR: If --plotonly is provided, then you also must supply EITHER --files or --filesdir"
+			print("ERROR: If --plotonly is provided, then you also must supply EITHER --files or --filesdir")
 			sys.exit()		
 			
 		if files:
 			resultsdir = rootpath + '/' + options.path
 			files.sort()
-			print "\n\nAnd these the files", files
-			print "\n\n"
+			print("\n\nAnd these the files", files)
+			print("\n\n")
 			extra=''
 			resfiles_analysis(options,files,resultsdir,extra,0)
 		
@@ -624,12 +625,12 @@ def simloop(options,rootpath,randstack,wildcard=''):
 		nslices = nslicesl
 		
 		if options.tiltstep:
-			print """ERROR: You must supply EITHER parameters for --nslices change and lower and upper limits, OR --tiltstep. 
-			DO NOT supply parameters for both."""
+			print("""ERROR: You must supply EITHER parameters for --nslices change and lower and upper limits, OR --tiltstep. 
+			DO NOT supply parameters for both.""")
 			sys.exit()
 			
 	elif not options.tiltstep:
-		print """ERROR: You must supply parameters EITHER for --nslices change and lower and upper limits, OR --tiltstep."""
+		print("""ERROR: You must supply parameters EITHER for --nslices change and lower and upper limits, OR --tiltstep.""")
 		sys.exit()
 	
 	#print "\n\nORIGINAL options.model is", options.model
@@ -682,18 +683,18 @@ def simloop(options,rootpath,randstack,wildcard=''):
 				themodel=[]
 				
 				if len(iters) > 1 and options.comparators:
-					print """ERROR: You can't test MULTIPLE iteration numbers, AND MULTIPLE comparators at the same time.
-							To test a SINGLE comparator with MULTIPLE ITERATION NUMBERS, supply the comparator via --aligncmp and --faligncmp."""
+					print("""ERROR: You can't test MULTIPLE iteration numbers, AND MULTIPLE comparators at the same time.
+							To test a SINGLE comparator with MULTIPLE ITERATION NUMBERS, supply the comparator via --aligncmp and --faligncmp.""")
 					sys.exit()
 				
 				if options.comparators:
-					print "\nComparators are",options.comparators
+					print("\nComparators are",options.comparators)
 					if len(comps) > 1:
-						print "len(comps) is", len(comps)
+						print("len(comps) is", len(comps))
 						for comp in comps:
-							print "Comparator is", comp
-							print "Snr is", snr
-							print "Simround is", simround
+							print("Comparator is", comp)
+							print("Snr is", snr)
+							print("Simround is", simround)
 							#print "Whereas root is", originalpath
 							
 							options.aligncmp = comp
@@ -713,7 +714,7 @@ def simloop(options,rootpath,randstack,wildcard=''):
 								
 								try:
 									options = sptmakepath( options, options.path )
-									print "\n\n\n\n\n\n\n\nSimround is 0 and therefore I made path", options.path
+									print("\n\n\n\n\n\n\n\nSimround is 0 and therefore I made path", options.path)
 								except:
 									pass
 									
@@ -737,9 +738,9 @@ def simloop(options,rootpath,randstack,wildcard=''):
 							
 							#compPATHS.update({ compID : options.path })
 							
-							print "THE NEW PATH IS",  options.path
-							print "because compID is", compID
-							print "because comp is", comp
+							print("THE NEW PATH IS",  options.path)
+							print("because compID is", compID)
+							print("because comp is", comp)
 							
 							
 							#elif simround > 0:
@@ -760,7 +761,7 @@ def simloop(options,rootpath,randstack,wildcard=''):
 							if simround == 0:
 								firstrandstack = ret[2]
 						
-							print "Samestackformany is", samestackformany
+							print("Samestackformany is", samestackformany)
 							
 							samestackformany+=1
 					
@@ -902,8 +903,8 @@ def simloop(options,rootpath,randstack,wildcard=''):
 				simround+= 1
 				
 				snr += snrch
-				print "\n\nThe snr has increased by", snrch
-				print "And thus will be for the next round", snr
+				print("\n\nThe snr has increased by", snrch)
+				print("And thus will be for the next round", snr)
 
 			if options.tiltstep:
 				nslices += tiltstep
@@ -914,16 +915,16 @@ def simloop(options,rootpath,randstack,wildcard=''):
 	
 	if options.testalignment and wildcard != 'tmp':
 	
-		print "\n\n\n\n========================================================================================\n\n\n\n"
-		print "All ALIGNMENTS ARE DONE! It is now a matter of analyzing the results"
-		print "\n\n\n\n========================================================================================\n\n\n\n"
+		print("\n\n\n\n========================================================================================\n\n\n\n")
+		print("All ALIGNMENTS ARE DONE! It is now a matter of analyzing the results")
+		print("\n\n\n\n========================================================================================\n\n\n\n")
 
 		analyzeresults(options,rootpathOrig,nrefs,iterPATHS)
-		print "len(iterPATHS) is", len(iterPATHS)
+		print("len(iterPATHS) is", len(iterPATHS))
 	
 	
 	
-	print "\n\nIn simloop, these are stack and model", thestack, themodel
+	print("\n\nIn simloop, these are stack and model", thestack, themodel)
 	
 	return (options,rootpathOrig,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,simround,firstrandstack,samestackformany,thestack,themodel,itersMode)
 
@@ -964,8 +965,8 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 	
 	resultsdir = rootpath + '/results'
 
-	print "\n\n! ! ! ! ! ! ! ! ! ! ! ! ! ! \n The results dir to make should be", resultsdir
-	print "(e2spt_tomosimjobs) (function gencmds) Options path is", options.path
+	print("\n\n! ! ! ! ! ! ! ! ! ! ! ! ! ! \n The results dir to make should be", resultsdir)
+	print("(e2spt_tomosimjobs) (function gencmds) Options path is", options.path)
 	#print"\n ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
 	
 	inputdata = options.model
@@ -998,7 +999,7 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			#else:
 			subpath = options.path
 		
-		print "\n\n\n\nSUBPATH IS!!!!!!!!!!!!!!!!!!!!!!", subpath
+		print("\n\n\n\nSUBPATH IS!!!!!!!!!!!!!!!!!!!!!!", subpath)
 		#print "\n\n\n"
 		#>>subdirs = os.listdir(rootpath + '/' + options.path)
 		
@@ -1057,10 +1058,10 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			
 			model.write_image(newname,0)
 			inputdata = newname
-			print "\nModel is here", newname
-			print '\n'
+			print("\nModel is here", newname)
+			print('\n')
 			
-		print "\n\nHowever, for this specific model, the resultsdir to make should be", resultsdir
+		print("\n\nHowever, for this specific model, the resultsdir to make should be", resultsdir)
 		#print "And it should be amongst subdirs", subdirs
 		
 		if resultsbase not in subdirs:
@@ -1147,9 +1148,9 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			
 			cmd1a = 'cd ' + modeldir + ' && ' + jobcmd
 			
-			print "\n\n ! ! ! ! ! ! ! ! ! ! ! ! ! ! \n "
-			print "e2spt_simulation job, or cmd1a is",cmd1a
-			print "\n ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !\n\n"
+			print("\n\n ! ! ! ! ! ! ! ! ! ! ! ! ! ! \n ")
+			print("e2spt_simulation job, or cmd1a is",cmd1a)
+			print("\n ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !\n\n")
 			
 			runcmd( cmd1a )
 	
@@ -1176,9 +1177,9 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			
 			cmd1b = cmd1b + ' && cp ' + str(thesemodels[d]) + ' ' + simmodel
 			
-			print "\n\n ! ! ! ! ! ! ! ! ! ! ! ! ! ! \n "
-			print "e2spt_simulation job, or cmd1b is",cmd1b
-			print "\n ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !\n\n"
+			print("\n\n ! ! ! ! ! ! ! ! ! ! ! ! ! ! \n ")
+			print("e2spt_simulation job, or cmd1b is",cmd1b)
+			print("\n ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !\n\n")
 			
 			runcmd( cmd1b )
 			
@@ -1190,7 +1191,7 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 		#resultsfiles=[]
 		
 		finalAvgPath = ''
-		print "finalAvgPath is", finalAvgPath
+		print("finalAvgPath is", finalAvgPath)
 		cmd2 = extractcmd = solutioncmd = rfilecmd = ''
 		extractcmd1 = extractcmd2 = refprepcmd = extractcmd0 = finalAvgPath = ''
 		
@@ -1281,7 +1282,7 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			cmd2 = cmd2 + alicmd
 			runcmd( cmd2 )	
 			
-			print "\nCmd2+alicmd is", cmd2
+			print("\nCmd2+alicmd is", cmd2)
 			
 			aliptcls = output.replace('_avg.hdf','_ali.hdf')
 			
@@ -1302,8 +1303,8 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 				extractcmd1 = 'cd ' + alipath2 +' && e2proc3d.py class_0.hdf finalref.hdf --first=' + str(finalrefindx) + ' --last=' + str(finalrefindx)
 				
 				runcmd( extractcmd1 )
-				print "\n\n\n EXTRACT command 1 was", extractcmd1
-				print "\n\n\n"
+				print("\n\n\n EXTRACT command 1 was", extractcmd1)
+				print("\n\n\n")
 				
 				finalrefname = alipath2 + '/finalref.hdf'
 				
@@ -1343,8 +1344,8 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 				
 				runcmd( extractcmd2 )
 			
-				print "\n\n\n EXTRACT command 2 was", extractcmd2
-				print "\n\n\n"
+				print("\n\n\n EXTRACT command 2 was", extractcmd2)
+				print("\n\n\n")
 				
 			
 			#>>resultsfile = aliptcls.replace('_ali.hdf','_ali_error.txt')
@@ -1372,8 +1373,8 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			
 			runcmd( solutioncmd )
 			
-			print "\n\n\n SOLUTION command was", solutioncmd
-			print "\n\n\n"
+			print("\n\n\n SOLUTION command was", solutioncmd)
+			print("\n\n\n")
 				
 			
 			#rfilecmd =  'mv ' + resultsfile + ' ' + resultsdir
@@ -1393,23 +1394,23 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 		
 		if options.verbose:
 			if cmd1a:
-				print "\n\ncmd1a (jobcmd) was:\n", cmd1a
+				print("\n\ncmd1a (jobcmd) was:\n", cmd1a)
 			elif cmd1b:
-				print "\n\ncmd1b (to copy randstack before simulation) was:\n", cmd1b
+				print("\n\ncmd1b (to copy randstack before simulation) was:\n", cmd1b)
 			
-			print "\n\ncmd2 (alicmd) was:\n", cmd2
+			print("\n\ncmd2 (alicmd) was:\n", cmd2)
 			
 			if not options.simref and int(options.iter) >1:
-				print "\n\nrefprepcmd was:\n",refprepcmd
+				print("\n\nrefprepcmd was:\n",refprepcmd)
 			
-			print "\n\nextractcmd0 was:\n", extractcmd0
+			print("\n\nextractcmd0 was:\n", extractcmd0)
 			
 			if extractcmd1:
-				print "\n\nextractcmd1 was:\n",extractcmd1
+				print("\n\nextractcmd1 was:\n",extractcmd1)
 			if extractcmd2:
-				print "\n\nextractcmd2 was:\n",extractcmd2
+				print("\n\nextractcmd2 was:\n",extractcmd2)
 			
-			print "\n\nsolutioncmd was:\n", solutioncmd
+			print("\n\nsolutioncmd was:\n", solutioncmd)
 
 			#print "rfilecmd was:", rfilecmd
 		#print "\n\n\n*********************The command to execute is \n %s \n*********************\n" %(cmd)
@@ -1426,10 +1427,10 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 		if samestackformany == 0:
 			#>>thisstack = subpath + '/' + thisstack.split('/')[-1].replace('.hdf','_ptcls.hdf')
 			
-			print "\nthe stack before messing up is", thisstack
+			print("\nthe stack before messing up is", thisstack)
 			thisstack = subpath + '/' + thisstack.split('/')[-1]
 			
-			print "\nThis is where I'm messing up the stack see", thisstack
+			print("\nThis is where I'm messing up the stack see", thisstack)
 			
 			thesestacks.append(thisstack)			
 			
@@ -1437,12 +1438,12 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 				if options.simref:			
 					#>>thissimmodel = subpath + '/' + thissimmodel.split('/')[-1].replace('.hdf','_sptsimMODEL_SIM.hdf')
 					
-					print "\n and the model before", thissimmodel
+					print("\n and the model before", thissimmodel)
 					thissimmodel = subpath + '/' + thissimmodel.split('/')[-1]
 					
 					thissimmodel = subpath + '/simmodel.hdf'
 					
-					print "\n and the model after", thissimmodel
+					print("\n and the model after", thissimmodel)
 					thesemodels.append(thissimmodel)
 				
 				
@@ -1486,7 +1487,7 @@ def analyzeresults(options,rootpath,nrefs,iterPATHS,extra=''):
 		comps = options.comparators.split(',')
 		#iters = str(options.iter).split(',')
 		
-		print "\n\nCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCn\nIn analyze results, comaprators are", comps
+		print("\n\nCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCn\nIn analyze results, comaprators are", comps)
 
 		if options.comparators and len(comps) >1 :
 			originalpath = rootpath
@@ -1508,10 +1509,10 @@ def analyzeresults(options,rootpath,nrefs,iterPATHS,extra=''):
 		
 			for filt in compFilts:
 				rootpath = filt
-				print "\nComparator filt and refnum are", filt,i
-				print "Whereas originalpath, refnum are", originalpath,i
-				print "But CURRENT path is", options.path
-				print "And ROOTPATH is", rootpath
+				print("\nComparator filt and refnum are", filt,i)
+				print("Whereas originalpath, refnum are", originalpath,i)
+				print("But CURRENT path is", options.path)
+				print("And ROOTPATH is", rootpath)
 			
 				otherFilts = compFilts - set(filt)
 				#options.aligncmp = comp
@@ -1622,7 +1623,7 @@ def analyzeresults(options,rootpath,nrefs,iterPATHS,extra=''):
 	
 				if rootpath not in resultsdir:
 					resultsdir = rootpath + '/' + resultsdir
-					print "Rootpath was not in resultsdir, so latter now is", resultsdir
+					print("Rootpath was not in resultsdir, so latter now is", resultsdir)
 	
 				if 'test' in extra:
 					resultsdir = rootpath + '/results'
@@ -1635,7 +1636,7 @@ def analyzeresults(options,rootpath,nrefs,iterPATHS,extra=''):
 					resfiles.append(f)
 	
 			if len(resfiles) < 2:
-				print "Some of your jobs failed. There seems to be only ONE results file, and thus no variability of either SNR, TR, or TS"
+				print("Some of your jobs failed. There seems to be only ONE results file, and thus no variability of either SNR, TR, or TS")
 				sys.exit()
 			else:
 				resfiles.sort()		
@@ -1666,23 +1667,23 @@ def runcmd(cmd):
 		#p.communicate()	
 		p.stdout.close()
 	else:
-		print "Command to run was empty!"
+		print("Command to run was empty!")
 	return
 
 
 
 def resfiles_analysis(options,resfiles,resultsdir,extra,modelnum=0):
-	print "Inside resfiles_analysis"
+	print("Inside resfiles_analysis")
 	
 	ang_errors = []
 	trans_errors = []
 	var=''
 	
-	print "\nExtra received is", extra
+	print("\nExtra received is", extra)
 	if 'test' in extra:
 		var = extra.replace('test','').upper()
 		
-		print "Therefore var is",var
+		print("Therefore var is",var)
 	
 		vals=[]
 		resfiles.sort()
@@ -1691,7 +1692,7 @@ def resfiles_analysis(options,resfiles,resultsdir,extra,modelnum=0):
 			val=0.0
 			#var=''
 			xaxis=''
-			print "\nParsing this resfile", ff
+			print("\nParsing this resfile", ff)
 			ffbase = ff.split('/')[-1].split('_')[0]
 			if 'bx' in ffbase:
 				val = float(ffbase.replace('bx',''))
@@ -1732,9 +1733,9 @@ def resfiles_analysis(options,resfiles,resultsdir,extra,modelnum=0):
 				trans_errors.append(trans)
 				
 			else:
-				print "ERROR: There seems to be something wrong with your resfiles"
-				print "xaxis is", xaxis
-				print "var is", var
+				print("ERROR: There seems to be something wrong with your resfiles")
+				print("xaxis is", xaxis)
+				print("var is", var)
 		
 		if vals and var and ang_errors and trans_errors:
 			angfilename = resultsdir+'/' + extra + '_angular_error_var' + var + '.txt'
@@ -1763,10 +1764,10 @@ def resfiles_analysis(options,resfiles,resultsdir,extra,modelnum=0):
 		threeD_points = []
 
 		resfiles.sort()
-		print "\n\n\nIN resfiles_analysis, sorted files are", resfiles
+		print("\n\n\nIN resfiles_analysis, sorted files are", resfiles)
 	
 		for ff in resfiles:
-			print "\nParsing this one", ff
+			print("\nParsing this one", ff)
 			tr = float(ff.split('TR')[-1].split('_')[0])
 			trs.append(tr)
 
@@ -1799,14 +1800,14 @@ def resfiles_analysis(options,resfiles,resultsdir,extra,modelnum=0):
 			twoD_snr_tr_points.append({'tilt range':tr,'noise level':snr,'angular_error':ang,'translational_error':trans})
 			twoD_snr_ts_points.append({'tilt step':ts,'noise level':snr,'angular_error':ang,'translational_error':trans})
 	
-		print "The len(set(snrs)) is", len(set(snrs))
+		print("The len(set(snrs)) is", len(set(snrs)))
 	
-		print "The len(set(trs)) is", len(set(trs))
+		print("The len(set(trs)) is", len(set(trs)))
 			
-		print "The len(set(tss)) is", len(set(tss))
+		print("The len(set(tss)) is", len(set(tss)))
 	
 		if len(set(snrs)) == 1 and len(set(tss)) == 1 and len(set(trs)) == 1:
-			print "Some of your jobs failed. There seems to be only ONE results file, and thus no variability of either SNR, TR, or TS"
+			print("Some of your jobs failed. There seems to be only ONE results file, and thus no variability of either SNR, TR, or TS")
 			sys.exit()
 		
 	
@@ -1851,7 +1852,7 @@ def resfiles_analysis(options,resfiles,resultsdir,extra,modelnum=0):
 		if len(set(tss)) > 1 and len(set(trs)) > 1 and len(set(snrs)) > 1:
 			threeD_plot(threeD_points,resultsdir +'/')
 	
-	print "Done with resfiles_analysis"
+	print("Done with resfiles_analysis")
 	return()
 
 
@@ -1898,8 +1899,8 @@ def color(value):
 
 
 def writeresultsfile(x,y,filename):
-	print "\n\n\n"
-	print "In writeresultsfile, I am going to write",filename
+	print("\n\n\n")
+	print("In writeresultsfile, I am going to write",filename)
 
 	aa = open(filename,'w')
 	lines=[]
@@ -1908,13 +1909,13 @@ def writeresultsfile(x,y,filename):
 		lines.append(line)
 	aa.writelines(lines)
 	aa.close()
-	print "DONE.\n\n\n"
+	print("DONE.\n\n\n")
 		
 	return()
 
 
 def oneD_plot(points,errors,name,xlabel,ylabel):
-	print "INSIDE oneD plotter"
+	print("INSIDE oneD plotter")
 	titlee=name.split('/')[-1].replace('.png','').replace('_',' ')
 	#plt.title(title)
 	
@@ -1932,7 +1933,7 @@ def oneD_plot(points,errors,name,xlabel,ylabel):
 	
 	plt.plot(points,errors,color='k',marker='x',linewidth=2)
 	plt.savefig(name,bbox_inches=0)
-	print "Will save plot here", name
+	print("Will save plot here", name)
 	plt.clf()
 	
 	return()
@@ -1953,7 +1954,7 @@ def twoD_plot(points,val1,val2,location):
 		trans_errors.append(p['translational_error'])
 	
 	plotname1 = location + 'angular_errors_2d_' + '_'.join(val1.split(' ')) + '.png'
-	print "\n\n########\nI will save the plot inside 2d_plot to\n########\n\n", plotname1
+	print("\n\n########\nI will save the plot inside 2d_plot to\n########\n\n", plotname1)
 
 	plt.title("Angular error")
 	plt.xlabel(val1)
@@ -1997,7 +1998,7 @@ def threeD_plot(points,location):
 	
 	plotname1 = location + 'angular_errors_3d.png'
 	
-	print "\n\n#########\nI will save the plot inside 3d_plot to\n###########\n\n", plotname1
+	print("\n\n#########\nI will save the plot inside 3d_plot to\n###########\n\n", plotname1)
 	
 	fig = plt.figure()
 	ax = fig.gca(projection='3d')
@@ -2018,7 +2019,7 @@ def threeD_plot(points,location):
 	for i in range(len(finalpoints)):
 		ax.plot(*zip(*[finalpoints[i]]),marker='o',markersize=4, color=color(ang_errors[i]) )
 	plt.savefig(plotname1,bbox_inches=0)
-	print "\n\n**********\nI HAVE saved the plot inside 3d_plot to\n********\n\n", plotname1
+	print("\n\n**********\nI HAVE saved the plot inside 3d_plot to\n********\n\n", plotname1)
 
 	#plt.clf()
 	

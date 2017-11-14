@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: David Woolford 11/10/08 (woolford@bcm.edu)
 # Copyright (c) 2000-2008 Baylor College of Medicine
@@ -30,5 +31,5 @@
 #
 #
 
-print """Sorry, e2workflow.py has been formally retired with the release of EMAN2.1. You must now
-use the new e2projectmanager interface instead."""
+print("""Sorry, e2workflow.py has been formally retired with the release of EMAN2.1. You must now
+use the new e2projectmanager interface instead.""")

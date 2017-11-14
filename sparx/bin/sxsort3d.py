@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 #
 #  08/13/2015
@@ -19,16 +20,16 @@ from   logger     import Logger, BaseLogger_Files
 
 def main():
 	from logger import Logger, BaseLogger_Files
-        arglist = []
-        i = 0
-        while( i < len(sys.argv) ):
-            if sys.argv[i]=='-p4pg':
-                i = i+2
-            elif sys.argv[i]=='-p4wd':
-                i = i+2
-            else:
-                arglist.append( sys.argv[i] )
-                i = i+1
+	arglist = []
+	i = 0
+	while( i < len(sys.argv) ):
+		if sys.argv[i]=='-p4pg':
+			i = i+2
+		elif sys.argv[i]=='-p4wd':
+			i = i+2
+		else:
+			arglist.append( sys.argv[i] )
+			i = i+1
 	progname = os.path.basename(arglist[0])
 	usage = progname + " stack  outdir  <mask> --focus=3Dmask --radius=outer_radius --delta=angular_step" +\
 	"--an=angular_neighborhood --maxit=max_iter  --CTF --sym=c1 --function=user_function --independent=indenpendent_runs  --number_of_images_per_group=number_of_images_per_group  --low_pass_filter=.25  --seed=random_seed"
@@ -67,8 +68,8 @@ def main():
 	parser.add_option("--interpolation",                 type   ="string",        default ="4nn",                 help="3-d reconstruction interpolation method, two options trl and 4nn")
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 1  or len(args) > 4:
-    		print "usage: " + usage
-    		print "Please run '" + progname + " -h' for detailed options"
+    		print("usage: " + usage)
+    		print("Please run '" + progname + " -h' for detailed options")
 	else:
 
 		if len(args)>2:
@@ -198,7 +199,7 @@ def main():
 		from utilities import get_shrink_data_huang
 		if(myid == main_node):
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			print(line+"Initialization of 3-D sorting")
+			print((line+"Initialization of 3-D sorting"))
 			a = get_im(orgstack)
 			nnxo = a.get_xsize()
 			if( Tracker["nxinit"] > nnxo ):
@@ -268,7 +269,7 @@ def main():
 		mpi_barrier(MPI_COMM_WORLD)
 		from time import sleep
 		while not os.path.exists(masterdir):
-				print  "Node ",myid,"  waiting..."
+				print("Node ",myid,"  waiting...")
 				sleep(5)
 		mpi_barrier(MPI_COMM_WORLD)
 		if myid == main_node:
@@ -294,10 +295,10 @@ def main():
 		chunk_two = wrap_mpi_bcast(chunk_two, main_node)
 		mpi_barrier(MPI_COMM_WORLD)
 		######################## Read/write bdb: data on main node ############################
-	   	if myid==main_node:
+		if myid==main_node:
 			if(orgstack[:4] == "bdb:"):	cmd = "{} {} {}".format("e2bdb.py", orgstack,"--makevstack="+Tracker["constants"]["stack"])
 			else:  cmd = "{} {} {}".format("sxcpy.py", orgstack, Tracker["constants"]["stack"])
-	   		junk = cmdexecute(cmd)
+			junk = cmdexecute(cmd)
 			cmd = "{} {} {}".format("sxheader.py  --params=xform.projection", "--export="+Tracker["constants"]["ali3d"],orgstack)
 			junk = cmdexecute(cmd)
 			cmd = "{} {} {}".format("sxheader.py  --params=ctf", "--export="+Tracker["constants"]["ctf_params"],orgstack)

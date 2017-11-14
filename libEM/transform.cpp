@@ -358,7 +358,6 @@ void Transform::init_permissable_keys()
 	permissable_rot_keys["matrix"] = tmp;
 }
 
-
 void Transform::detect_problem_keys(const Dict& d) {
 	if (permissable_rot_keys.size() == 0 ) {
 		init_permissable_keys();

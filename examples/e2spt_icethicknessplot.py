@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 from EMAN2 import *
 import os, numpy, math, sys
@@ -50,13 +51,13 @@ def main():
 	
 	
 	if not options.files and not options.stacks:
-		print "\nERROR: you must provide --files, --stacks, or both."""
+		print("\nERROR: you must provide --files, --stacks, or both.""")
 		sys.exit()
 	
 	
 	if options.singleplot:
 		if options.files and options.stacks:
-			print """\nERROR: To use --singleplot, you must provide either --stakcs or --files separately"""
+			print("""\nERROR: To use --singleplot, you must provide either --stakcs or --files separately""")
 			
 	'''
 	Make a directory where to store output files
@@ -90,7 +91,7 @@ def main():
 	if options.files:
 		if options.units in apixunits:
 			if not options.apix:
-				print "\nERROR: You must provide --apix in angstroms/pixel when --units is 'micrometers','nanometers' or 'angstroms'"""
+				print("\nERROR: You must provide --apix in angstroms/pixel when --units is 'micrometers','nanometers' or 'angstroms'""")
 				sys.exit()
 			else:
 				apix = options.apix
@@ -105,8 +106,8 @@ def main():
 	else:
 		unitslabel = '(pixels)'
 	
-	print "set unitslabel", unitslabel
-	print "because options.units",options.units
+	print("set unitslabel", unitslabel)
+	print("because options.units",options.units)
 		
 	
 		
@@ -128,9 +129,9 @@ def main():
 			ff.close()
 		
 			for line in lines:
-				print "line is", line
+				print("line is", line)
 				parsed = line.replace('\n','').replace('\t',' ').split()
-				print "parsed is", parsed
+				print("parsed is", parsed)
 				x = float( parsed[0] )
 				y = float( parsed[1] )
 				z = 0
@@ -206,7 +207,7 @@ def main():
 				y = int( coords[1])
 				z = int( coords[2])
 		
-				print "\nfor particle %d XZ coords are x=%d, z=%d" %(i,x,z)
+				print("\nfor particle %d XZ coords are x=%d, z=%d" %(i,x,z))
 			
 				if options.units in aunits:
 					x = x*apix
@@ -246,9 +247,9 @@ def main():
 						pad = 10
 				
 				
-				print "\nfor particle %d XY coords are x=%d, y=%d in %d" %(i,x,y,options.units)
+				print("\nfor particle %d XY coords are x=%d, y=%d in %d" %(i,x,y,options.units))
 		
-				print "\nfor particle %d XZ coords are x=%d, z=%d in %d" %(i,x,z,options.units)
+				print("\nfor particle %d XZ coords are x=%d, z=%d in %d" %(i,x,z,options.units))
 		
 				xs.append(x)
 				ys.append(y)
@@ -261,7 +262,7 @@ def main():
 	yaxislabel = 'Y axis ' + unitslabel
 	zaxislabel = 'Z axis ' + unitslabel
 	
-	print "unitslabel",unitslabel
+	print("unitslabel",unitslabel)
 	
 	if stacksdata:
 		for data in stacksdata:
@@ -309,8 +310,8 @@ def main():
 			plt.savefig(singleplotname)
 			plt.clf()
 
-	print "\nline 301"
-	print "\noptions.xrange, options.yrange", options.xrange, options.yrange
+	print("\nline 301")
+	print("\noptions.xrange, options.yrange", options.xrange, options.yrange)
 	if filesdata:
 		
 		data3count = 0
@@ -444,7 +445,7 @@ def main():
 
 
 def plotter(options,xaxis,yaxis,xaxislabel,yaxislabel,title,pad=0,squareplot=False):
-	print "\npad is", pad
+	print("\npad is", pad)
 	import matplotlib
 
 	matplotlib.use('Agg',warn=False)
@@ -499,8 +500,8 @@ def plotter(options,xaxis,yaxis,xaxislabel,yaxislabel,title,pad=0,squareplot=Fal
 	maxy = max(yaxis)
 	miny = min(yaxis)
 	
-	print "\nmax y is", maxy
-	print "\nmin y is", miny
+	print("\nmax y is", maxy)
+	print("\nmin y is", miny)
 	ylim1 = miny - pad
 	ylim2 = maxy + pad
 	
@@ -511,9 +512,9 @@ def plotter(options,xaxis,yaxis,xaxislabel,yaxislabel,title,pad=0,squareplot=Fal
 		
 	pylab.ylim([ylim1, ylim2])
 	
-	print 'yrange', ylim1,ylim2
+	print('yrange', ylim1,ylim2)
 	
-	print "\nmax x is", max(xaxis)
+	print("\nmax x is", max(xaxis))
 	
 	maxx = max(xaxis)
 	minx = min(xaxis)
@@ -527,7 +528,7 @@ def plotter(options,xaxis,yaxis,xaxislabel,yaxislabel,title,pad=0,squareplot=Fal
 	
 	pylab.xlim([xlim1, xlim2])
 	
-	print 'xrange', xlim1,xlim2
+	print('xrange', xlim1,xlim2)
 	
 	
 	deltaz = maxy-miny
@@ -592,10 +593,10 @@ def plotter(options,xaxis,yaxis,xaxislabel,yaxislabel,title,pad=0,squareplot=Fal
 	
 		anglecalc = round( math.degrees(numpy.arctan( m )), 3 )
 		
-		print "\nm and b", m,b
+		print("\nm and b", m,b)
 		
 		anglelabel = str(anglecalc) + ' deg'
-		print '\nanglelabel',anglelabel
+		print('\nanglelabel',anglelabel)
 		xarray = numpy.array( xaxis )
 		#fitline = plt.plot(xaxis, m*xarray + b, '--', linewidth=3, alpha=0.333,color='k',linestyle='--', label=anglelabel)
 		
@@ -616,7 +617,7 @@ def plotter(options,xaxis,yaxis,xaxislabel,yaxislabel,title,pad=0,squareplot=Fal
 				circle = pylab.Circle( (x,y), radius = rad, facecolor='none',edgecolor='b', alpha=0.3, linewidth=3)
 				axes.add_patch(circle)
 			
-			print "squareplot is", squareplot	
+			print("squareplot is", squareplot)	
 			if not options.fit:
 				if not squareplot:
 					plt.legend( [circle,(circle)],[deltazlabel] )
@@ -624,7 +625,7 @@ def plotter(options,xaxis,yaxis,xaxislabel,yaxislabel,title,pad=0,squareplot=Fal
 			elif options.fit:
 				plt.legend( [circle,fitline],[deltazlabel,anglelabel],loc=2 )
 		else:
-			print "\nERROR: --plotparticleradii requires --radius"
+			print("\nERROR: --plotparticleradii requires --radius")
 			
 	#name = 'scatterplot.png'
 	

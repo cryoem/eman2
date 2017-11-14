@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: John Flanagan (jfflanag@bcm.edu)
 # Edited by: Stephen Murray (scmurray@bcm.edu) May 2014
@@ -91,7 +92,7 @@ Usage: e2RCTboxer.py untilted.hdf tilted.hdf options.
 	if cache_box_size: rctdb["box_size"] = options.boxsize
 	
 	if len(args) != 2:
-		print "You need to supply both untiled and tilted micrographs.\nUsage: e2RCTboxer.py [options] <untilted micrograph> <tilted micrograph>"
+		print("You need to supply both untiled and tilted micrographs.\nUsage: e2RCTboxer.py [options] <untilted micrograph> <tilted micrograph>")
 		sys.exit(1)
 	
 	if options.write_boxes or options.write_ptcls:
@@ -144,7 +145,7 @@ class RCTprocessor:
 					if self.options.shrink: image.process_inplace('math.meanshrink',{'n':self.options.shrink})
 					if self.options.norm: image.process_inplace(self.options.norm)
 					image.write_image(str(output), i)
-		print "Done writing particles!"
+		print("Done writing particles!")
 	
 	def get_ptcl_names(self):
 		self.names = []
@@ -168,7 +169,7 @@ class RCTprocessor:
 				for i,box in enumerate(tiltbox_list.boxlist):
 					boxfile.write("%d\t%d\t%d\t%d\t-1\n" % (int(box.x - self.options.boxsize/2),int(box.y - self.options.boxsize/2),self.options.boxsize,self.options.boxsize))
 				boxfile.close()
-		print "Done writing box files!"
+		print("Done writing box files!")
 
 	def get_box_names(self):
 		self.names = []
@@ -470,10 +471,10 @@ class MainWin:
 		self.moving=None
 		
 	def key_press(self, event):
-		print "Main keypress"
+		print("Main keypress")
 		
 	def mouse_wheel(self, event):
-		print "Main mouse_wheel"
+		print("Main mouse_wheel")
 		
 	def mouse_move(self, event):
 		pass
@@ -550,7 +551,7 @@ class EMBoxList:
 	
 	def get_tiltdata_from_db(self):
 		#First check for the full path, if not present, then use the basename only
-		if self.db.has_key("tiltparams_"+self.entry):
+		if "tiltparams_"+self.entry in self.db:
 			return self.db["tiltparams_"+self.entry]
 		else:
 			return None
@@ -667,7 +668,7 @@ class EMBox:
 		@param box_color an RGB list [R,G,B] (floats)
 		@param force something you'd set to True if you want to force the overwrite of the old color (previously stored)
 		'''
-		if not force and EMBox.BOX_COLORS.has_key(box_type):
+		if not force and box_type in EMBox.BOX_COLORS:
 			# this is just to make sure there are no conflicts - if someone is resetting a color they 
 			# should know what they're doing
 			raise RuntimeError("Error, attempt to set a color key (%s) that already existed" %box_type)
@@ -695,7 +696,7 @@ class EMBox:
 		self.image = None
 		
 	def get_shape(self,shape_string,box_size):
-		if EMBox.BOX_COLORS.has_key(self.type):
+		if self.type in EMBox.BOX_COLORS:
 			r,g,b = EMBox.BOX_COLORS[self.type]
 		else:
 			r,g,b = 1.0,0.42,0.71 # hot pink, apparently ;)

@@ -1,8 +1,9 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 '''
 ====================
-Author: Jesus Galaz - whoknows-2012, Last update: 10/Dec/2013
+Author: Jesus Galaz - whoknows-2012, Last update: 07/Nov/2017
 ====================
 
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -51,91 +52,79 @@ def main():
 			
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)	
 	
-	parser.add_argument("--path",type=str,default=None,help="""Directory to store results in. The default is a numbered series of directories containing the prefix 'orthoproject';
-														for example, orthoproject_02 will be the directory by default if 'orthoproject_01' already exists.""")
+	parser.add_argument("--angles", type=str, default='', help="A single comma or space separated triplet of az,alt,phi values representing the particle rotation to apply before projecting it.")
+	
+	parser.add_argument("--input", type=str, default=None, help="""The name of the input volume from which you want to generate orthogonal projections. You can supply more than one model either by providing an .hdf stack of models, or by providing multiple files separated by commas.""")
+
+	parser.add_argument("--lowpass", type=str, default=None, help="A lowpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to alignment. Not applied to aligned particles before averaging.")
+
+	parser.add_argument("--mask", type=str, default=None, help="Mask processor applied to particles before alignment. Default is None")
+
+	parser.add_argument("--normproc", type=str, default="normalize.edgemean", help="""Normalization processor applied to particles before alignment. Default is to use normalize.mask. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'""")
+
+	parser.add_argument("--path", type=str, default=None, help="""Directory to store results in. The default is a numbered series of directories containing the prefix 'orthoproject'; for example, orthoproject_02 will be the directory by default if 'orthoproject_01' already exists.""")
+	parser.add_argument("--ppid", type=int, default=-1, help="Set the PID of the parent process, used for cross platform PPID")
 
 	parser.add_argument("--onlyx",action='store_true',default=False,help="Only projection of the YZ plane will be generated [a 'side view'].")
 	parser.add_argument("--onlyy",action='store_true',default=False,help="Only projection of the XZ plane will be generated [another 'side view'].")
 	parser.add_argument("--onlyz",action='store_true',default=False,help="Only projection of the XY plane will be generated a 'top view']")
 	
+	parser.add_argument("--saverotvol",action='store_true',default=False,help="Will save the volume in each rotated position used to generate a projection.")
 	parser.add_argument("--shrink",type=int,default=False,help="Integer value to shrink the models by before generating projections.")
 
+	parser.add_argument("--tag", type=str, default='', help="When supplying --angles, tag the output projection with a string provided through --tag")
+	parser.add_argument("--transformsfile", type=str, default='', help="A text files containing lines with one triplet of az,alt,phi values each, representing the transforms to use to project a single volume supplied.")
 	
-	parser.add_argument("--saverotvol",action='store_true',default=False,help="Will save the volume in each rotated position used to generate a projection.")
-
-	parser.add_argument("--input", type=str, help="""The name of the input volume from which you want to generate orthogonal projections.
-													You can supply more than one model either by providing an .hdf stack of models, or by providing multiple files
-													separated by commas.""", default=None)
-
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness.")
-
-	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-
-	parser.add_argument("--mask",type=str,help="Mask processor applied to particles before alignment. Default is None", default=None)
-	parser.add_argument("--lowpass",type=str,help="A lowpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to alignment. Not applied to aligned particles before averaging.", default=None)
-
-	parser.add_argument("--transformsfile",type=str,help="A text files containing lines with one triplet of az,alt,phi values each, representing the transforms to use to project a single volume supplied. ", default='')
-	parser.add_argument("--angles",type=str,help="A single comma or space separated triplet of az,alt,phi values representing the particle rotation to apply before projecting it.", default='')
-	parser.add_argument("--tag",type=str,help="When supplying --angles, tag the output projection with a string provided through --tag", default='')
-
-	parser.add_argument("--normproc",type=str,help="""Normalization processor applied to particles before alignment. 
-													Default is to use normalize.mask. If normalize.mask is used, results of the mask option will be passed in automatically. 
-													If you want to turn this option off specify \'None\'""", default="normalize.edgemean")
-
 
 	(options, args) = parser.parse_args()	
 	
-	
 	if not options.input:
-		#print "ERROR: Supply volume(s) through --input=."
-		
 		try:
 			options.input = sys.argv[1]
 			EMData(options.input,0,True)
 		except:
-			print "ERROR: input file %s seems to have an invalid format" %( options.input )
+			print("ERROR: input file %s seems to have an invalid format" %( options.input ))
 			sys.exit()
 	
 	if options.transformsfile:
 		n=EMUtil.get_image_count(options.input)
 		if n>1:
-			print "ERROR: You cannot supply --transformsfile for particle stacks; it only works for individual volumes."
+			print("ERROR: You cannot supply --transformsfile for particle stacks; it only works for individual volumes.")
 			sys.exit()
 	
-	'''
-	Check for sanity of some supplied parameters
-	'''
-
+	'''#
+	#Check for sanity of some supplied parameters
+	'''#
 	if options.onlyz:
 		if options.onlyx or options.onlyy:
-			print "ERROR: You can only supply one of --onlyx, --onlyy or --onlyz at a time."
+			print("ERROR: You can only supply one of --onlyx, --onlyy or --onlyz at a time.")
 			sys.exit()
 	
 	if options.onlyx:
 		if options.onlyy or options.onlyz:
-			print "ERROR: You can only supply one of --onlyx, --onlyy or --onlyz at a time."
+			print("ERROR: You can only supply one of --onlyx, --onlyy or --onlyz at a time.")
 			sys.exit()
 			
 	if options.onlyy:
 		if options.onlyx or options.onlyz:
-			print "ERROR: You can only supply one of --onlyx, --onlyy or --onlyz at a time."
+			print("ERROR: You can only supply one of --onlyx, --onlyy or --onlyz at a time.")
 			sys.exit()
 
 
 	if options.onlyz and options.onlyx:
-		print "ERROR: Cannot supply --onlyz and --onlyx at the same time"
+		print("ERROR: Cannot supply --onlyz and --onlyx at the same time")
 		sys.exit()
 	if options.onlyz and options.onlyy:
-		print "ERROR: Cannot supply --onlyz and --onlyy at the same time"
+		print("ERROR: Cannot supply --onlyz and --onlyy at the same time")
 		sys.exit()
 	if options.onlyy and options.onlyx:
-		print "ERROR: Cannot supply --onlyy and --onlyx at the same time"
+		print("ERROR: Cannot supply --onlyy and --onlyx at the same time")
 		sys.exit()
 	
-	'''
-	Generate projection transforms
-	'''
-	
+	'''#
+	#Generate projection transforms
+	'''#
 	projectiondirections = []
 	
 	if options.onlyz:
@@ -170,20 +159,6 @@ def main():
 			tag = 'p' + str(k).zfill(len(str(np)))
 			projectiondirections.update({ tag:t })
 			k+=1
-	
-	#elif options.angles:
-	#	angles=options.angles
-	#	angles=angles.replace(',',' ')
-	#	angles=angles.split()
-	#	t=Transform({'type':'eman','az':float(angles[0]),'alt':float(angles[1]),'phi':float(angles[2])})
-		
-	#	tag = 'p' + 'az' + str(int(round(float( angles[0] )))) + 'alt' + str(int(round(float( angles[1] ))))  + 'phi' + str(int(round(float( angles[2] ))))  
-	#	if options.tag:
-	#		tag = options.tag
-		
-		#projectiondirections.update({ tag:t })
-		
-	
 
 	logger = E2init(sys.argv, options.ppid)
 
@@ -195,19 +170,18 @@ def main():
 		
 	if options.normproc: 
 		options.normproc=parsemodopt(options.normproc)
-	'''
-	Make a directory where to store the results
-	'''
 	
-	from e2spt_classaverage import sptmakepath
-	options = sptmakepath(options,'orthoprjs')
+	'''#
+	#Make a directory where to store the results
+	'''#
+	from EMAN2_utils import makepath
+	options = makepath(options,'orthoprjs')
 	
 
-	'''
-	Read input
-	'''
-
-	print "options.input",options.input
+	'''#
+	#Read input
+	'''#
+	print("options.input",options.input)
 	models=options.input.split(',')
 	
 	rootpath = os.getcwd()
@@ -248,10 +222,10 @@ def main():
 				submodel.transform(t)
 			
 			apix = submodel['apix_x']
+		
 			'''
 			Pre-process/enhance subvolume if specified
 			'''
-			
 			# Make the mask first, use it to normalize (optionally), then apply it 
 			mask=EMData(submodel["nx"],submodel["ny"],submodel["nz"])
 			mask.to_one()
@@ -291,18 +265,14 @@ def main():
 			
 			kindividual=0
 			for d in projectiondirections:	
-				print "\nThis is the projection direction", d
-				print "And this the corresponding transform",projectiondirections[d]		
-				print "\n"
+				print("\nThis is the projection direction", d)
+				print("And this the corresponding transform",projectiondirections[d])		
+				print("\n")
 				prj = submodel.project("standard",projectiondirections[d])
 				prj.set_attr('xform.projection',projectiondirections[d])
 				prj['apix_x']=apix
 				prj['apix_y']=apix
 			
-				#print "The size of the prj is", prj['nx']
-			
-				#prj.process_inplace('normalize')
-				
 				tag=''
 				
 				if options.angles:
@@ -321,8 +291,12 @@ def main():
 				
 				else:
 					k = kindividual
-						
-				prj.write_image(submodelname.replace('.hdf','_' + tag + '.hdf'),k)
+				
+				if tag:
+					prj.write_image(submodelname.replace('.hdf','_' + tag + '.hdf'),k)
+				else:
+					prj.write_image(submodelname,k)
+
 				
 				#print "Options.saverotvol is", options.saverotvol
 				if options.saverotvol:

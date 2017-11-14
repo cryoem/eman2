@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 02/10/2011 (sludtke@bcm.edu)
@@ -76,22 +77,22 @@ process a single volume in a single file in-place.
 		
 	(options, args) = parser.parse_args()
 
-	print "Sorry, this program still under development. Not functional yet."
+	print("Sorry, this program still under development. Not functional yet.")
 	sys.exit(1)
 
 	try:
 		hdr=EMData(args[1],0,1)
 	except:
-		print "ERROR: Can't read input file header"
+		print("ERROR: Can't read input file header")
 		sys.exit(1)
 
 
 	if options.mediansubtract!=None :
-		
+		pass  # Added this to make python happy
 		
 
 def findmode(img) :
-	"""This computes something akin to the mode
+	"""This computes something akin to the mode"""
 
 
 if __name__ == "__main__":

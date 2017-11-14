@@ -1,4 +1,5 @@
 #!/usr/local/EMAN2/python/Python-2.6.5-ucs4/bin/python
+from __future__ import print_function
 
 # it is likely that the above line would have to be changed depending on python location
 
@@ -35,14 +36,14 @@ for ii in xrange(1) :
 	#trans = read_txt_col(fn_tran)
 	#angl = read_txt_col(fn_angl)
 
-	print "Converting ", proj_in, " Number of my great particles is ",nimage
+	print("Converting ", proj_in, " Number of my great particles is ",nimage)
 
 	prev_defocus = 0.
 
 	for iq in xrange(nimage):
 		defocus = atof( split( i_ctfs.readline() )[2] )
 		if defocus != prev_defocus:
-			print "Defocus is ", defocus
+			print("Defocus is ", defocus)
 		prev_defocus = defocus
 		i = iq  #int(selected_particles[iq][0])-1
 
@@ -87,5 +88,5 @@ for ii in xrange(1) :
 
 
 
-print "Total of ", total_high_proj, "  projections written"
+print("Total of ", total_high_proj, "  projections written")
 

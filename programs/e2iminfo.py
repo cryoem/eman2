@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu), Last update: 11/27/201 (Jesus Galaz)
@@ -80,11 +81,11 @@ def main():
 	(options, args) = parser.parse_args()
 	
 	if len(args)<1:
-		print usage
+		print(usage)
 		parser.error("Specify image file")
 
 	if options.header and options.stat : 
-		print "Only one of --header and --stat may be specified"
+		print("Only one of --header and --stat may be specified")
 		sys.exit(1)
 		
 	nimgs=0
@@ -100,7 +101,7 @@ def main():
 				sys.stderr.write("No quality for {}. Including\n".format(imagefile))
 				
 		if options.nameonly :
-			print imagefile
+			print(imagefile)
 			continue
 		
 		if imagefile.lower()[:4]!="bdb:" :
@@ -114,11 +115,11 @@ def main():
 			d=EMData()
 			try: d.read_image(imagefile, max(options.number,0), True)
 			except :
-				print "Image read error (%s)"%imagefile
+				print("Image read error (%s)"%imagefile)
 				continue
-			if options.count : print "%d\t"%(nimg),
-			if d["nz"]==1 : print "%s\t %d images in %s format\t%d x %d"%(imagefile,nimg,imgtypename,d["nx"],d["ny"])
-			else : print "%s\t %d images in %s format\t%d x %d x %d"%(imagefile,nimg,imgtypename,d["nx"],d["ny"],d["nz"])
+			if options.count : print("%d\t"%(nimg), end=' ')
+			if d["nz"]==1 : print("%s\t %d images in %s format\t%d x %d"%(imagefile,nimg,imgtypename,d["nx"],d["ny"]))
+			else : print("%s\t %d images in %s format\t%d x %d x %d"%(imagefile,nimg,imgtypename,d["nx"],d["ny"],d["nz"]))
 			
 			
 		else :
@@ -128,8 +129,8 @@ def main():
 			nimgs+=nimg
 			
 			d=EMData(imagefile, max(options.number,0), True)
-			if d["nz"]==1 : print "%s\t %d images in BDB format\t%d x %d"%(imagefile,len(dct),d["nx"],d["ny"])
-			else : print "%s\t %d images in BDB format\t%d x %d x %d"%(imagefile,len(dct),d["nx"],d["ny"],d["nz"])
+			if d["nz"]==1 : print("%s\t %d images in BDB format\t%d x %d"%(imagefile,len(dct),d["nx"],d["ny"]))
+			else : print("%s\t %d images in BDB format\t%d x %d x %d"%(imagefile,len(dct),d["nx"],d["ny"],d["nz"]))
 
 		if options.all or options.check:
 			imgn = xrange(nimg)
@@ -147,46 +148,46 @@ def main():
 			if options.stat : d.read_image(imagefile,i)
 			else : 
 				try: d.read_image(imagefile,i,True) #Jesus
-				except: print "Error reading image ",imagefile,i
+				except: print("Error reading image ",imagefile,i)
 			if options.check:
 				try: 
 					ctf=d["ctf"]	
 					snr=ctf.snr[0]
 				except:
-					print "Error with CTF on ",imagefile,i
+					print("Error with CTF on ",imagefile,i)
 			else:
-				print "%d. "%i,
+				print("%d. "%i, end=' ')
 				try:
-					print "%d ptcl\t"%d["ptcl_repr"],
+					print("%d ptcl\t"%d["ptcl_repr"], end=' ')
 					nptcl+=d["ptcl_repr"]
 				except:
-					print "\t"
+					print("\t")
 			
 			if options.stat :
-				print "apix=%1.2f\tmin=%1.4g\tmax=%1.4g\tmean=%1.4g\tsigma=%1.4g\tskewness=%1.4g \tkurtosis=%1.4g"%(d["apix_x"],d["minimum"],d["maximum"],d["mean"],d["sigma"],d["skewness"],d["kurtosis"]),
+				print("apix=%1.2f\tmin=%1.4g\tmax=%1.4g\tmean=%1.4g\tsigma=%1.4g\tskewness=%1.4g \tkurtosis=%1.4g"%(d["apix_x"],d["minimum"],d["maximum"],d["mean"],d["sigma"],d["skewness"],d["kurtosis"]), end=' ')
 				try:
 					c=d["ctf"]
-					print "\tdefocus=%1.2f\tB=%1.0f"%(c.defocus,c.bfactor)
+					print("\tdefocus=%1.2f\tB=%1.0f"%(c.defocus,c.bfactor))
 				except:
-					print " "
+					print(" ")
 						
 			if options.euler:
 #				d=EMData(imagefile,i,True) #Jesus
-				try: print "%s"%(str(d["xform.projection"]))
-				except : print "No transform information",
+				try: print("%s"%(str(d["xform.projection"])))
+				except : print("No transform information", end=' ')
 
 			if options.header :
 #				d=EMData(imagefile,i, True) #Jesus
-				print ""
+				print("")
 				keys=d.get_attr_dict().keys()
 				keys.sort()
 				for k in keys:
-					print "\t%s: %s"%(k,str(d[k]))
-				print "======================"
+					print("\t%s: %s"%(k,str(d[k])))
+				print("======================")
 			
 	
-	if nimgs>1 : print "%d total images"%nimgs
-	try : print "representing %d particles"%nptcl
+	if nimgs>1 : print("%d total images"%nimgs)
+	try : print("representing %d particles"%nptcl)
 	except: pass
 	
 if __name__ == "__main__":

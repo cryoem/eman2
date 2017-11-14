@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 # Muyuan Chen 2016-05
 from EMAN2 import *
 import numpy as np
@@ -30,7 +31,7 @@ def main():
 			if options.replace:
 				tail=srcname.find("__")
 				if tail<0:
-					print "cannot find particles to replace"
+					print("cannot find particles to replace")
 					exit()
 				repname= srcname[:tail+2]+options.replace+srcname[-4:]
 			e1=EMData(repname, 0, True)
@@ -45,7 +46,7 @@ def main():
 		ptcls=str(js["input"][eoid])
 		
 		lstname=args[0][:-4]+'_'+eo[eoid]+".lst"
-		print lstname,clsmxfile, ptcls
+		print(lstname,clsmxfile, ptcls)
 		try: os.remove(lstname)
 		except: pass
 		lst=LSXFile(lstname, False)
@@ -89,7 +90,7 @@ def main():
 			if options.replace:
 				tail=srcname.find("__")
 				if tail<0:
-					print "cannot find particles to replace"
+					print("cannot find particles to replace")
 					exit()
 					
 				srcname= srcname[:tail+2]+options.replace+srcname[-4:]
@@ -104,7 +105,7 @@ def main():
 	E2end(logid)
 	
 def run(cmd):
-	print cmd
+	print(cmd)
 	launch_childprocess(cmd)
 	
 	

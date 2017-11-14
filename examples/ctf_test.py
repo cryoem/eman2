@@ -1,10 +1,11 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 from EMAN2 import *
 from numpy import *
 
 def wrt(ary,s,fsp):
-	f=file(fsp,"w")
+	f=open(fsp,"w")
 	for j,i in enumerate(ary): f.write("%f\t%g\n"%(s[j],i))
 
 ctf=EMAN2Ctf()

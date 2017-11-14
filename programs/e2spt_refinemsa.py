@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Jesus Galaz  1/1/2012 (rewritten)
@@ -59,7 +60,7 @@ def main():
 	(options, args) = parser.parse_args()
 	
 	stack = options.input
-	print "The stack name is", stack
+	print("The stack name is", stack)
 		
 	stack_basis = stack.replace(".hdf","_basis.hdf")
 	stack_projection = stack.replace(".hdf","_projection.hdf")
@@ -79,12 +80,12 @@ def main():
 	cmd3 = 'e2classifykmeans.py --ncls=' + str(options.ncls) + ' --average --original=' + stack + ' ' + stack_projection
 	
 	if cmd1 and cmd2 and cmd3:
-		print "Running msa on stack %s through commands cmd1=%s, cmd2=%s, cmd3=%s" %( stack, cmd1, cmd2, cmd3 )
+		print("Running msa on stack %s through commands cmd1=%s, cmd2=%s, cmd3=%s" %( stack, cmd1, cmd2, cmd3 ))
 		cmd = cmd1 + " && " + cmd2 + " && " + cmd3
 		#print "The command to execute is", cmd
 		runcmd( cmd )
 	else:
-		print "\nError building command for stack=%s, cmd1=%s, cmd2=%s, cmd3=%s" %( stack, cmd1, cmd2, cmd3 )
+		print("\nError building command for stack=%s, cmd1=%s, cmd2=%s, cmd3=%s" %( stack, cmd1, cmd2, cmd3 ))
 		sys.exit(1)
 
 	return
@@ -92,14 +93,14 @@ def main():
 
 def runcmd(options,cmd):
 	if options.verbose > 9:
-		print "(e2spt_classaverage)(runcmd) running command", cmd
+		print("(e2spt_classaverage)(runcmd) running command", cmd)
 	
 	p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	text=p.communicate()	
 	p.stdout.close()
 	
 	
-	print "(e2spt_refinemsa)(runcmd) done"
+	print("(e2spt_refinemsa)(runcmd) done")
 
 	return 1
 	

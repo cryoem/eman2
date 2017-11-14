@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: John Flanagan (jfflanag@bcm.edu)
 # Copyright (c) 2011- Baylor College of Medicine
@@ -1179,7 +1180,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			
 			
 	def mouseDoubleClickEvent(self,event):
-		print "Mouse Double Click Event"
+		print("Mouse Double Click Event")
 	
 	# Grab and release the keyboard
 	def enterEvent(self, event):
@@ -1392,7 +1393,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		else:
 			filename = "%s.%s"%(filename,format)
 			image.save(filename, format)
-		print "Saved %s to disk"%os.path.basename(str(filename))
+		print("Saved %s to disk"%os.path.basename(str(filename)))
 	
 	def saveMovie(self, filename):
 
@@ -1469,7 +1470,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		try:
 			tree = pickle.load(rfile)
 		except:
-			print "ERROR!!! Couldn't load the session file"
+			print("ERROR!!! Couldn't load the session file")
 			rfile.close()
 			return	
 		rfile.close()
@@ -2271,7 +2272,7 @@ class EMInspector3D(QtGui.QWidget):
 				self.scenegraph().setCurrentSelection(self.tree_widget.currentItem().item3d())
 			self.updateSceneGraph()
 		else:
-			print "Error cannot remove root node!!"
+			print("Error cannot remove root node!!")
 			
 	def _get_toolbox_layout(self):
 		tvbox = QtGui.QHBoxLayout()

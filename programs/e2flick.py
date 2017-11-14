@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author:David Woolford 09/23/2008 (woolford@bcm.edu)
@@ -58,7 +59,7 @@ def main():
 	
 """
 
-	print "WARNING: This program is currently broken. We intend to ressurect it in future."
+	print("WARNING: This program is currently broken. We intend to ressurect it in future.")
 	sys.exit(1)
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)

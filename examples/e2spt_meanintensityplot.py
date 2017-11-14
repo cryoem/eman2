@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: Jesus Galaz, 2011?2012? - Last change 12/Jan/2015
 # Copyright (c) 2011 Baylor College of Medicine
@@ -88,15 +89,17 @@ def main():
 	if options.normproc: 
 		options.normproc=parsemodopt(options.normproc)
 	'''
-	
-	from e2spt_classaverage import sptOptionsParser
-	options = sptOptionsParser( options )
+	print "\n options should NOT be parsed, e.g., options.mask={}".format(options.mask)
+	from EMAN2_utils import sptOptionsParser
+	options = sptOptionsParser( options, 'e2spt_meanintensityplot')
+
+	print "\n options should be parsed, e.g., options.mask={}".format(options.mask)
 	
 	datafiles = options.input.split(',')
 	
 	
-	from e2spt_classaverage import sptmakepath
-	options = sptmakepath( options, 'meanintensityplots')
+	from EMAN2_utils import makepath
+	options = makepath( options, 'meanintensityplot')
 	
 	
 	intensitiesSeveral = []
@@ -108,21 +111,22 @@ def main():
 	means = []
 	stds = []
 	
-	from e2spt_classaverage import writeParameters
+	from EMAN2_utils import writeParameters
 	cmdwp = writeParameters(options,'e2spt_meanintensityplot.py', 'sptmeanintensity')
 	
 	for datafile in datafiles:
+		print "\ndatafile={}".format(datafile)
 		n = EMUtil.get_image_count(datafile)
 		
 		if options.subset:
 			if options.subset < 3:
-				print "ERROR:Subset must be > 2."
+				print("ERROR:Subset must be > 2.")
 				sys.exit(1)
 			
 			n = options.subset
 			
 		if n < 3:
-			print "ERROR: All stacks must have at least 3 particles in them. This one doesn't:", datafile
+			print("ERROR: All stacks must have at least 3 particles in them. This one doesn't:", datafile)
 			sys.exit(1)
 	
 	for datafile in datafiles:
@@ -156,8 +160,8 @@ def main():
 		means.append(mean)
 		stds.append(std)
 		
-		print "\nfor datafile",datafile
-		print "intenfull is",intenfull
+		print("\nfor datafile",datafile)
+		print("intenfull is",intenfull)
 		ret = plotintensities( intenfull, options, datafile,'intenfull' )
 		ret = plotintensities( imins, options, datafile,'mins' )
 		ret = plotintensities( imaxs, options, datafile,'maxs' )
@@ -182,7 +186,7 @@ def main():
 		g.writelines(lines)
 		g.close()
 		
-		print "\nzzzzzzz\n%s" %( zscoreline )
+		print("\nzzzzzzz\n%s" %( zscoreline ))
 		
 		absmax = absmin = 0
 		if options.normalizeplot:
@@ -200,11 +204,11 @@ def main():
 			absmax = max( maxes ) - absmin
 		
 		for intensities in intensitiesSeveral:	
-			print "\nType and len of intensities is", type(intensities[1]), len(intensities[1])
+			print("\nType and len of intensities is", type(intensities[1]), len(intensities[1]))
 			
 			intensitiesNorm = intensities[1]			
 			if options.normalizeplot:
-				print "Normalizeplot on"	
+				print("Normalizeplot on")	
 				intensitiesNorm = normintensities( intensities[1], absmin, absmax )
 				
 			plotintensities( intensitiesNorm, options, datafile, 'no' )
@@ -217,24 +221,24 @@ def main():
 
 
 def normintensities( intensitiesR, minval=0, maxval=0 ):
-	print "normalize function"
+	print("normalize function")
 	intensitiesNormalizedMin = []
 	
-	print "Intensities R type and length are", type(intensitiesR), len(intensitiesR)
+	print("Intensities R type and length are", type(intensitiesR), len(intensitiesR))
 	imin = min( intensitiesR )
 	if minval:
 		imin = minval
 	
-	print "\nMin is", imin
+	print("\nMin is", imin)
 	
 	for x in range(len( intensitiesR )):
 		intenNormMin = ( float(intensitiesR[x]) - imin )
 		intensitiesNormalizedMin.append( intenNormMin )
 	
-	print "After minnorm, intensitiesNormalizedMin[10] is", intensitiesNormalizedMin[10]
-	print "Len of intensitiesNormalizedMin is", len(intensitiesNormalizedMin)
+	print("After minnorm, intensitiesNormalizedMin[10] is", intensitiesNormalizedMin[10])
+	print("Len of intensitiesNormalizedMin is", len(intensitiesNormalizedMin))
 	imax = float(max( intensitiesNormalizedMin ))
-	print "max is", imax
+	print("max is", imax)
 	
 	if maxval:
 		imax = maxval
@@ -286,7 +290,7 @@ def clip2D( img, size ):
 
 def calcintensities( options, datafile ):
 
-	print "\n(e2spt_meanintensityplot) (calcintensities)"
+	print("\n(e2spt_meanintensityplot) (calcintensities)")
 	intensities = []
 	intensitiesWzeros = []
 	intensitiesMins = []
@@ -297,7 +301,7 @@ def calcintensities( options, datafile ):
 	
 	if options.subset and options.subset > 2:
 		n = options.subset
-		print "Taking subset", n
+		print("Taking subset", n)
 	
 	hdr = EMData( datafile, 0, True)
 	dimensionality = 3
@@ -311,7 +315,7 @@ def calcintensities( options, datafile ):
 	
 	mask.to_one()
 	
-	print "dimensionality", dimensionality
+	print("dimensionality", dimensionality)
 	
 	if options.clip:
 		if dimensionality == 3:
@@ -320,76 +324,77 @@ def calcintensities( options, datafile ):
 			mask = clip2D( mask, options.clip)
 	
 	if options.mask:
+		print "\noptions.mask = {}".format(options.mask)
 		mask.process_inplace(options.mask[0],options.mask[1])
 	
-	print "Created mask of size", mask['nx'],mask['ny'],mask['nz']
+	print("Created mask of size", mask['nx'],mask['ny'],mask['nz'])
 	mask.write_image(options.path + '/mask.hdf',0)
 	
 	for i in range(n):
 		a = EMData(datafile,i)
 		
-		print "\nAnalyzing particle number %d/%d for stack %s with mean %f and non-zero mean %f before preprocessing" % (i,n,datafile, a['mean'], a['mean_nonzero'])
+		print("\nAnalyzing particle number %d/%d for stack %s with mean %f and non-zero mean %f before preprocessing" % (i,n,datafile, a['mean'], a['mean_nonzero']))
 		
 		if options.clip:
 			if options.verbose:
-				print "\nBEFORE CLIPPING, mean intensity is", a['mean_nonzero']
+				print("\nBEFORE CLIPPING, mean intensity is", a['mean_nonzero'])
 			if dimensionality == 3:
 				a = clip3D( a, options.clip)
 			if dimensionality == 2:
 				a = clip2D( a, options.clip)
 			if options.verbose:
-				print "\nAFTER CLIPPING with clipsize=%d, mean intensity is %f" %( options.clip, a['mean_nonzero'] )
+				print("\nAFTER CLIPPING with clipsize=%d, mean intensity is %f" %( options.clip, a['mean_nonzero'] ))
 		
 		if options.normproc:
 			if options.verbose:
-				print "\nBEFORE NORMALIZING, mean intensity is", a['mean_nonzero']
+				print("\nBEFORE NORMALIZING, mean intensity is", a['mean_nonzero'])
 			
 			if options.normproc[0]=="normalize.mask":
 				if options.mask:			
 					options.normproc[1]["mask"]=mask
 				else:
-					print "ERROR: To use normalize.mask you also need to specify a mask"
+					print("ERROR: To use normalize.mask you also need to specify a mask")
 					sys.exit(1)
 			
 			a.process_inplace(options.normproc[0],options.normproc[1])
 			
 			if options.verbose:
-				print "\nAFTER NORMALIZING with %s, non-zero mean intensity is %f" %( options.normproc, a['mean_nonzero'])	
+				print("\nAFTER NORMALIZING with %s, non-zero mean intensity is %f" %( options.normproc, a['mean_nonzero']))	
 
 		if options.preprocess:
 			if options.verbose:
-				print "\nBEFORE PREPROCESS, non-zero mean intensity is", a['mean_nonzero']
+				print("\nBEFORE PREPROCESS, non-zero mean intensity is", a['mean_nonzero'])
 			a.process_inplace(options.preprocess[0],options.preprocess[1])
 			if options.verbose:
-					print "\nATER PREPROCESS, non-zero mean intensity is", a['mean_nonzero']
+					print("\nATER PREPROCESS, non-zero mean intensity is", a['mean_nonzero'])
 		
 		if options.lowpass:
 			if options.verbose:
-				print "\nBEFORE LOWPASSING, non-zero mean intensity is", a['mean_nonzero']
+				print("\nBEFORE LOWPASSING, non-zero mean intensity is", a['mean_nonzero'])
 			a.process_inplace(options.lowpass[0],options.lowpass[1])
 			if options.verbose:
-				print "\nAFTER LOWPASSING, non-zero mean intensity is", a['mean_nonzero']
+				print("\nAFTER LOWPASSING, non-zero mean intensity is", a['mean_nonzero'])
 
 		if options.highpass:
 			if options.verbose:
-				print "\nBEFORE HIGHPASSING, non-zero mean intensity is", a['mean_nonzero']
+				print("\nBEFORE HIGHPASSING, non-zero mean intensity is", a['mean_nonzero'])
 			a.process_inplace(options.highpass[0],options.highpass[1])
 			if options.verbose:
-				print "\nAFTER HIGHPASSING, non-zero mean intensity is", a['mean_nonzero']
+				print("\nAFTER HIGHPASSING, non-zero mean intensity is", a['mean_nonzero'])
 
 		if options.threshold:
 			if options.verbose:
-				print "\nBEFORE THRESHOLDING, non-zero mean intensity is", a['mean_nonzero']
+				print("\nBEFORE THRESHOLDING, non-zero mean intensity is", a['mean_nonzero'])
 			a.process_inplace(options.threshold[0],options.threshold[1])
 			if options.verbose:
-				print "\nAFTER THRESHOLDING, non-zero mean intensity is", a['mean_nonzero']
+				print("\nAFTER THRESHOLDING, non-zero mean intensity is", a['mean_nonzero'])
 		
 		if options.mask:
 			if options.verbose:
-				print "\nBEFORE MASKING, non-zero mean intensity is", a['mean_nonzero']
+				print("\nBEFORE MASKING, non-zero mean intensity is", a['mean_nonzero'])
 			a.mult(mask)
 			if options.verbose:
-				print "\nAFTER MASKING, non-zero mean intensity is", a['mean_nonzero']
+				print("\nAFTER MASKING, non-zero mean intensity is", a['mean_nonzero'])
 		
 		if options.maskfile:
 			m = EMData(options.maskfile,0)
@@ -400,25 +405,18 @@ def calcintensities( options, datafile ):
 					m = clip3D( m, options.clip )
 	
 			if options.verbose:	
-				print "\nBEFORE MASKING with MASKFILE, non-zero mean intensity is", a['mean_nonzero']
+				print("\nBEFORE MASKING with MASKFILE, non-zero mean intensity is", a['mean_nonzero'])
 			a.mult(m)
 			if options.verbose:	
-				print "\nAFTER MASKING with MASKFILE, non-zero mean intensity is", a['mean_nonzero']
+				print("\nAFTER MASKING with MASKFILE, non-zero mean intensity is", a['mean_nonzero'])
 			
 		if options.shrink and options.shrink > 1 :
 			if options.verbose:
-				print "\nBEFORE SHRINKING, non-zero mean intensity is", a['mean_nonzero']
+				print("\nBEFORE SHRINKING, non-zero mean intensity is", a['mean_nonzero'])
 			a.process_inplace("math.meanshrink",{"n":options.shrink})
 			if options.verbose:
-				print "\nAFTER SHRINKING, non-zero mean intensity is", a['mean_nonzero']
+				print("\nAFTER SHRINKING, non-zero mean intensity is", a['mean_nonzero'])
 		
-		#intensities.append(a['mean_nonzero']*1000)
-		#finalval=1+a['mean_nonzero']
-		
-		#intensities.append(finalval)
-		
-		#print "Value added to 1!!!!!",finalval
-			
 		intensities.append(a['mean_nonzero'])
 		
 		intensitiesWzeros.append(a['mean'])
@@ -428,18 +426,14 @@ def calcintensities( options, datafile ):
 	
 			
 		if not a['mean_nonzero']:
-			print "WARNING: mean intensity appended is zero"
+			print("WARNING: mean intensity appended is zero")
 		else:
-			print "appended non-zero mean intensity of", a['mean_nonzero']
+			print("appended non-zero mean intensity of", a['mean_nonzero'])
 			
 		if options.savepreprocessed:
 			a.write_image(options.path + '/' + datafile.replace('.','_EDITED.'),i)
 
-	
 
-	
-	
-	
 	finalvalues = []
 	stdin = np.std( intensities )
 	meanin = np.mean( intensities )
@@ -473,13 +467,6 @@ def calcintensities( options, datafile ):
 	finalvaluesStds = prunevals( options, intensitiesStds, meaninStds, stdinStds )
 	intensitiestxtStd = options.path + '/' + datafile.replace('.hdf','_STD.txt')
 	
-	
-	#print "Type of intensities is", type(finalvalues)
-	#stddinpruned = np.std( finalvalues )
-	#meaninpruned = np.mean( finalvalues )
-	
-	#plotintensities( finalvalues, options, datafile, 'yes' )
-	
 	return [finalvalues, finalvaluesWz, finalvaluesMins, finalvaluesMaxs, finalvaluesStds]
 
 
@@ -504,61 +491,53 @@ def prunevals( options, intensities, mean, std ):
 	for val in intensities:
 		if not options.removesigma:
 			finalvalues.append( val )
-			print "finalval added", val
+			print("finalval added", val)
 		elif options.removesigma:
-			print "\nBecause --removesigma is non-zero", options.removesigma
+			print("\nBecause --removesigma is non-zero", options.removesigma)
 			topthreshold = float( options.removesigma ) * stddin + meanin
-			print "the top threshold for keeping particles is", topthreshold
+			print("the top threshold for keeping particles is", topthreshold)
 			bottomthreshold = meanin - float( options.removesigma ) * stddin
-			print "whereas the bottom threshold is", bottomthreshold			
+			print("whereas the bottom threshold is", bottomthreshold)			
 			if float( val ) < topthreshold and float(val) > bottomthreshold:
 				finalvalues.append( val )
-				print """Value %f included""" %( float(val) )
+				print("""Value %f included""" %( float(val) ))
 				
 			else:
-				print """Value %f EXCLUDED""" %( float(val) )
+				print("""Value %f EXCLUDED""" %( float(val) ))
 	
 	return finalvalues
 	
 	
 def plotintensities( intensities, options, datafile, tag='', onefile='yes' ):	
 	import matplotlib.pyplot as plt
-	
-	#msktag=''
-	#if options.mask:	
-	#	msktag = str(options.mask[1]).replace(':','_').replace(' ','').replace('}','').replace('{','').replace("'",'').replace(',','')
-	
-	#if options.maskfile:
-	#	msktag = options.maskfile
-	
-	#msktag=msktag.replace('.hdf','')
-	#msktag=msktag.split('.')[0]
 
-	#print "\n\n\n\n\n\n\nMSK TAG is\n", msktag
 	origtag = tag
 	if tag:
 		tag ='_' + tag
-	plotname = datafile.replace('.hdf', '_MIplotMSK' + tag + '.png')
+	rootname,extension = os.path.splitext(datafile)
+	
+	plotname = rootname.replace(extension, '_MIplotMSK' + tag + '.png')
 
-	print "The total number of particles is", len(intensities)
+	print("The total number of particles is", len(intensities))
 	#print "because intensities are", intensities
 
 	#plt.hist(y, bins=5)
 	
 	if options.verbose==10:
-		print "\n\n\nThe intensities to plot are", intensities
-		print "\n\n\n\n\n"
+		print("\n\n\nThe intensities to plot are", intensities)
+		print("\n\n\n\n\n")
 	
 	std = np.std(intensities)
 	mean = np.mean(intensities)
 	statistics = ['mean='+str(mean) + ' std='+str(std) + '\n']
 
 
-	print "The number of particles kept is", len(intensities)
-	print "The standard deviation of the mean intensity distribution for this population is", std
+	print("The number of particles kept is", len(intensities))
+	print("The standard deviation of the mean intensity distribution for this population is", std)
 	
 	if not std:
-		print "ERROR: std=0, which means all intensity values are the same."
+
+		print "ERROR: std={}, which means all intensity values are the same.".format(std)
 		sys.exit()
 		
 	
@@ -566,23 +545,24 @@ def plotintensities( intensities, options, datafile, tag='', onefile='yes' ):
 	cuberoot = np.power(len(intensities),1.0/3.0)
 	#print "The cuberoot of n is", cuberoot
 	width = (3.5*std)/cuberoot
-	print "Therefore, according to Scott's normal reference rule, width = (3.5*std)/cuberoot(n), the width of the histogram bins will be", width
+	print("Therefore, according to Scott's normal reference rule, width = (3.5*std)/cuberoot(n), the width of the histogram bins will be", width)
 	
-	calcbins = (max(intensities) - min(intensities)) / width
+	calcbins = int(round( (max(intensities) - min(intensities)) / width ))
 	
 	if options.bins:
-		calcbins = options.bins
+		calcbins = int(round(options.bins))
 	
 	print "\nAnd the number of bins n = ( max(intensities) - min(intensities) ) / width will thus be", calcbins
-	calcbins = round(calcbins)
+	calcbins = int(round(calcbins))
 	print "rounding to", calcbins
 	
 	statistics.append( 'bins=' + str( calcbins ) + ' , binwidth=' + str( width ) + '\n')
 	
-	print "statistics are", statistics
+	print("statistics are", statistics)
 	
 	if not calcbins:
-		print "WARNING: nins=0, which means max and min intensity are the same, which probably means all intensities are zero. Defaulting nbins to number of partilces."
+
+		print("WARNING: nins=0, which means max and min intensity are the same, which probably means all intensities are zero. Defaulting nbins to number of partilces.")
 		calcbins = len(intensities)
 			
 	statsfile = plotname.replace('.png','_INFO.txt')
@@ -639,6 +619,9 @@ def plotintensities( intensities, options, datafile, tag='', onefile='yes' ):
 		plt.clf()
 	
 	return [mean,std]
+
+
+
 
 if __name__ == '__main__':
 	main()

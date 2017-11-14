@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: Jesus Galaz, 11/01/2012; last update 31/Aug/2016
 # Copyright (c) 2011 Baylor College of Medicine
@@ -225,7 +226,7 @@ def main():
 	#angles = {}
 	#if options.anglesfile:
 	angles = getangles( options )
-	print "returned angles are", angles, len(angles)
+	print("returned angles are", angles, len(angles))
 	
 	'''
 	c:get the images to process into an ordered list
@@ -238,7 +239,7 @@ def main():
 	nangles = len( angles )
 	nimgs = len( imagefilenameslist )
 	if nangles != nimgs:
-		print "\nERROR: The number of angles %d does not coincide with number of images %d" % ( nangles, nimgs)
+		print("\nERROR: The number of angles %d does not coincide with number of images %d" % ( nangles, nimgs))
 		sys.exit(1)	
 
 	'''
@@ -256,8 +257,8 @@ def main():
 		angles = { key:value for key, value in angles.items() if key < options.subset }
 		angles = collections.OrderedDict(sorted(angles.items()))
 	
-		print "subset of imagefilenamesdict",imagefilenamesdict
-		print "subset of angles",angles
+		print("subset of imagefilenamesdict",imagefilenamesdict)
+		print("subset of angles",angles)
 	
 	'''
 	c:figure out apix to use, the x size of the images, and the number of images nimgs to process.
@@ -322,15 +323,15 @@ def main():
 	'''
 	if ctfs:
 		if len( ctfs ) != len( imagefilenamesdict ):
-			print """\n(e2spt_tomo)(main) ERROR: it seems like you have fewer parameter
+			print("""\n(e2spt_tomo)(main) ERROR: it seems like you have fewer parameter
 				lines in the --ctfparamsfile than images in the tilt series.
 				You need one line of parameters per image.
 				To apply the same correction to all images, enter the parameters directly,
-				through --defocus, --apix, --ampcont, --bfactor, --cs and --voltage"""
+				through --defocus, --apix, --ampcont, --bfactor, --cs and --voltage""")
 			sys.exit(1)
 	else:
-		print """\n(e2spt_tomo)(main) ERROR: there is no CTF information for any of the images. If you were
-			using --autofit, this means autofitting failed for all images."""
+		print("""\n(e2spt_tomo)(main) ERROR: there is no CTF information for any of the images. If you were
+			using --autofit, this means autofitting failed for all images.""")
 		sys.exit(1)
 			
 	'''
@@ -349,7 +350,7 @@ def main():
 	
 	E2end(logger)
 	
-	print "ABCDEFG"
+	print("ABCDEFG")
 	
 	return
 
@@ -366,7 +367,7 @@ def getimages(options):
 	#If input consists of individual image files, find them and put them into an imagefilenames dictionary
 	'''
 	if options.imagestem:
-		print "\n(e2spt_ctf)(getimages)processing all images in the current directory containing the following string", options.imagestem
+		print("\n(e2spt_ctf)(getimages)processing all images in the current directory containing the following string", options.imagestem)
 		findir=os.listdir(os.getcwd())
 		
 		for f in findir:
@@ -374,7 +375,7 @@ def getimages(options):
 				imagestem = f.replace('.mrc','')
 				imagefilenameslist.append(f)
 			
-		print "\n(e2spt_ctf)(getimages) found these many tilt images",len(imagefilenameslist)
+		print("\n(e2spt_ctf)(getimages) found these many tilt images",len(imagefilenameslist))
 
 	'''
 	#If input is a tiltseries, unstack it, then put the individual images into an imagefilenames dictionary
@@ -382,10 +383,10 @@ def getimages(options):
 	if options.tiltseries:
 		#nz=EMData(options.tiltseries,0,True)['nz']
 		if '.st' in options.tiltseries or '.mrc' in options.tiltseries or '.mrcs' in options.tiltseries or '.ali' in options.tiltseries or '.hdf' in options.tiltseries:
-			print "\n(e2spt_ctf)(getimages) unstacking tiltseries", options.tiltseries
+			print("\n(e2spt_ctf)(getimages) unstacking tiltseries", options.tiltseries)
 			
 			nimgs = EMData(options.tiltseries,0,True)['nz']
-			print "\n(e2spt_ctf.py)(main) containing %d tilt images" %(nimgs)
+			print("\n(e2spt_ctf.py)(main) containing %d tilt images" %(nimgs))
 			
 			#if nimgs > 1:
 			
@@ -427,7 +428,7 @@ def getimages(options):
 			
 			#print "\n\n.st in tiltseries", ".st" in options.tiltseries[-3:]
 			
-			print "\nunstacking cmdun is", cmdun
+			print("\nunstacking cmdun is", cmdun)
 
 			
 			runcmd( options, cmdun )
@@ -450,12 +451,12 @@ def getimages(options):
 
 			nfiles = len(imagefilenameslist)
 			if nimgs != nfiles:
-				print """\n(e2spt_ctf.py)(getimages) ERROR: it seems like not all the images
-				in the tilt series were properly unstacked. nimages and nfiles are""",nimgs,nfiles
+				print("""\n(e2spt_ctf.py)(getimages) ERROR: it seems like not all the images
+				in the tilt series were properly unstacked. nimages and nfiles are""",nimgs,nfiles)
 				sys.exit(1)
 			
 		else:
-			print "\n(e2spt_ctf)(getimages) --tiltseries must be in .st or .mrc or .mrcs or .ali or .hdf extension"
+			print("\n(e2spt_ctf)(getimages) --tiltseries must be in .st or .mrc or .mrcs or .ali or .hdf extension")
 			sys.exit(1)	
 		
 		
@@ -600,7 +601,7 @@ def pruneexcluded(options):
 	newtiltseries = options.path + '/' + os.path.splitext(options.tiltseries)[0] + '_sptctftmp' + os.path.splitext(options.tiltseries)[1]
 	
 	cmdstack = 'e2buildstacks.py --stackname tmpstack.hdf ' + stem + '* && e2proc2d.py tmpstack.hdf ' + newtiltseries + ' --twod2threed --outmode int16'
-	print "command to rebuild tiltseries", cmdstack
+	print("command to rebuild tiltseries", cmdstack)
 	runcmd(options,cmdstack)
 	
 	#os.rename(newtiltseries, options.path + '/' + newtiltseries)
@@ -635,11 +636,11 @@ c:function to run commands and the command line
 def errordetector( options ):
 	
 	if options.tiltseries and options.imagestem:
-		print """ERROR: You either 1) supply a tiltseries with .mrc, .st, or .ali extension (in MRC format),
+		print("""ERROR: You either 1) supply a tiltseries with .mrc, .st, or .ali extension (in MRC format),
 		or with .hdf extension (in HDF format), for an entire tomogram, 2) a stem (a 'string') common 
 		to all individual .mrc or .hdf images corresponding to a tiltseries, OR 3) a directory 
 		with subtiltseries in .hdf format for individual subtomograms. You cannot supply both
-		--tiltseries, --subtiltsdir and --imagestem at the same time. Pick one."""
+		--tiltseries, --subtiltsdir and --imagestem at the same time. Pick one.""")
 		sys.exit()
 	
 	nimgs=0
@@ -648,12 +649,12 @@ def errordetector( options ):
 			hdr=EMData(options.tiltseries,0,True)
 			nimgs=hdr['nz']
 		except:
-			print "\n(e2tomo_ctf)(errordetector) ERROR: bad image", options.tiltseries
+			print("\n(e2tomo_ctf)(errordetector) ERROR: bad image", options.tiltseries)
 			sys.exit()	
 	
 	if options.phaseflipstrips:
 		if not options.fitgradient:
-			print "\n(e2tomo_ctf)(errordetector) ERROR: --phaseflipstrips requires --fitgradient"
+			print("\n(e2tomo_ctf)(errordetector) ERROR: --phaseflipstrips requires --fitgradient")
 	
 	return
 
@@ -663,14 +664,14 @@ c:function to run commands and the command line
 '''
 def runcmd( options, cmd ):
 	if options.verbose > 9:
-		print "\n(e2spt_ctf)(runcmd) running command", cmd
+		print("\n(e2spt_ctf)(runcmd) running command", cmd)
 	
 	p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	text=p.communicate()	
 	p.stdout.close()
 	
 	if options.verbose > 9:
-		print "\n(e2spt_ctf)(runcmd) done"
+		print("\n(e2spt_ctf)(runcmd) done")
 	return
 
 
@@ -681,7 +682,7 @@ def genctfparamlines( options, apix, nimgs, angles, imagefilenames ):
 	
 	#indxstoexclude = [int(i) for i in options.exclude.split(',')]
 	
-	print "e2spt_ctf (genctfparamlines)"
+	print("e2spt_ctf (genctfparamlines)")
 	#print "received imagefilenames", imagefilenames
 	
 	ctfs={}
@@ -690,20 +691,20 @@ def genctfparamlines( options, apix, nimgs, angles, imagefilenames ):
 	#Determine where to get ctf parameters from
 	'''
 	if options.ctfparamsfile:
-		print "\nI'll parse the ctfparamsfile", options.ctfparamsfile
+		print("\nI'll parse the ctfparamsfile", options.ctfparamsfile)
 		g = open(options.ctfparamsfile,'r')
 		initiallines = g.readlines()
 		g.close()
 	
-		print "\nCTF will be derived from --ctfparamsfile",options.ctfparamsfile
+		print("\nCTF will be derived from --ctfparamsfile",options.ctfparamsfile)
 		
 		if len( initiallines ) != nimgs:
-			print """ERROR: The number of lines in the file provided through 
+			print("""ERROR: The number of lines in the file provided through 
 				--ctfparamsfile should match the number of images in the tiltseries
 				or in each subtiltseries provided.
 				To use the same parameters for all images provide them
 				explicitly through --cs, --bfactor,--voltage, --defocus, --ampcont and, optionally --apix
-				(this apix will be read from the header if not provided, so make sure it's correct). """
+				(this apix will be read from the header if not provided, so make sure it's correct). """)
 			sys.exit(1)
 		
 		kk=0
@@ -716,7 +717,7 @@ def genctfparamlines( options, apix, nimgs, angles, imagefilenames ):
 				kk+=1
 		
 	elif options.infodir:
-		print "\nCTF will be read from info files in --infodir",options.infodir
+		print("\nCTF will be read from info files in --infodir",options.infodir)
 		
 		findirinfo = os.listdir( options.infodir )
 		
@@ -740,41 +741,41 @@ def genctfparamlines( options, apix, nimgs, angles, imagefilenames ):
 				kk+=1
 
 		if len( ctflines ) != nimgs:
-			print """ERROR: The number of _info.json files inside the directory provided
+			print("""ERROR: The number of _info.json files inside the directory provided
 				through --infodir should match the number of images in the tiltseries
 				or in each subtiltseries provided.
 				To use the same parameters for all images provide them
 				explicitly through --cs, --bfactor,--voltage, --defocus, --ampcont and, optionally --apix
-				(this apix will be read from the header if not provided, so make sure it's correct). """
+				(this apix will be read from the header if not provided, so make sure it's correct). """)
 			sys.exit(1)
 	
 	elif options.defocilist:
-		print "\nI'll parse the defocilist %s and fill the other CTF parameters with default values" % ( options.defocilist )
+		print("\nI'll parse the defocilist %s and fill the other CTF parameters with default values" % ( options.defocilist ))
 		g = open(options.defocilist,'r')
 		defoci = g.readlines()
 		g.close()
 		#if kk not in indxstoexclude: 
 		if len( defoci ) != nimgs:
-			print """ERROR: The number lines in the file provided
+			print("""ERROR: The number lines in the file provided
 				through --defocilist should match the number of images in the tiltseries
 				or in each subtiltseries provided.
 				To use the same parameters for all images provide them
 				explicitly through --cs, --bfactor,--voltage, --defocus, --ampcont and, optionally --apix
 				(this apix will be read from the header if not provided, so make sure it's correct). 
-				"""
+				""")
 			sys.exit(1)
 		else:
-			print "same number of defoci %d as imgs %d" %(len(defoci),nimgs)
+			print("same number of defoci %d as imgs %d" %(len(defoci),nimgs))
 			if len(defoci) != len(angles):
-				print "ERROR: number of defoci %d not the same as number of angles %d" %(len(defoci),len(angles))
+				print("ERROR: number of defoci %d not the same as number of angles %d" %(len(defoci),len(angles)))
 				sys.exit()
 		
 		if options.voltage and options.cs and apix and options.bfactor and options.ampcont:
-			print """\nExplicit parameters --cs,--apix,--bfactor,--voltage and --ampcont 
-				will be used."""
+			print("""\nExplicit parameters --cs,--apix,--bfactor,--voltage and --ampcont 
+				will be used.""")
 				
 			kk=0
-			print "\nread defocuses are",defoci
+			print("\nread defocuses are",defoci)
 			for d in defoci:
 				#if kk not in indxstoexclude and kk < len(angles):
 				#de = d.replace('\n','').replace(' ','').replace('\t','')
@@ -785,14 +786,14 @@ def genctfparamlines( options, apix, nimgs, angles, imagefilenames ):
 				ctfs.update( { kk:ctf } )
 				kk+=1
 		else:
-			print """\nERROR: There's nothing to do. If you supply --defocilist, you also 
+			print("""\nERROR: There's nothing to do. If you supply --defocilist, you also 
 			have to provide the following 4 parameters:
 			--ampcont,--cs,--voltage,--bfactor (and, optionally, --apix, if the images 
-			don't have the correct apix in their headers.)"""
+			don't have the correct apix in their headers.)""")
 			sys.exit(1)
 		
 	else:
-		print "(e2spt_ctf)(main) autofitting using voltage=%.2f, cs=%.2f, apix=%.2f, ampcont=%.2f" %( float(options.voltage), float( options.cs), float( apix), float( options.ampcont))
+		print("(e2spt_ctf)(main) autofitting using voltage=%.2f, cs=%.2f, apix=%.2f, ampcont=%.2f" %( float(options.voltage), float( options.cs), float( apix), float( options.ampcont)))
 		#print "imagefilenames", imagefilenames
 		if options.voltage and options.cs and apix and options.ampcont:
 			defocusmean=0 
@@ -818,7 +819,7 @@ def genctfparamlines( options, apix, nimgs, angles, imagefilenames ):
 					#print "len angles", len(angles)
 					#print 'len finaldefoci is', len(finaldefoci)
 					
-					print 'defocus, finaldefoci[kk]',finaldefoci[kk]
+					print('defocus, finaldefoci[kk]',finaldefoci[kk])
 					params = {'ampcont':options.ampcont,'apix':apix,'bfactor':options.bfactor,'cs':options.cs,'defocus':finaldefoci[kk],'voltage':options.voltage}	
 					ctf = EMAN2Ctf()
 					ctf.from_dict(params)
@@ -826,13 +827,13 @@ def genctfparamlines( options, apix, nimgs, angles, imagefilenames ):
 				
 		else:
 			if not options.voltage:
-				print "\n(e2spt_ctf)(main) ERROR: --voltage required with --fitgradient."
+				print("\n(e2spt_ctf)(main) ERROR: --voltage required with --fitgradient.")
 			if not options.cs:
-				print "\n(e2spt_ctf)(main) ERROR: --cs and required with --fitgradient."
+				print("\n(e2spt_ctf)(main) ERROR: --cs and required with --fitgradient.")
 			if not options.ampcont:
-				print "\n(e2spt_ctf)(main) ERROR: --ampcont required with --fitgradient."
+				print("\n(e2spt_ctf)(main) ERROR: --ampcont required with --fitgradient.")
 			if not apix:
-				print "\n(e2spt_ctf)(main) ERROR: apix required with --fitgradient."
+				print("\n(e2spt_ctf)(main) ERROR: apix required with --fitgradient.")
 			sys.exit(1)
 			
 	return ctfs
@@ -849,12 +850,12 @@ def getangles( options ):
 
 	if options.anglesfile:
 		if options.verbose > 9:
-			print "\n(e2spt_ctf)(getangles) reading angles from --anglesfile %s" %(options.anglesfile)
+			print("\n(e2spt_ctf)(getangles) reading angles from --anglesfile %s" %(options.anglesfile))
 		f = open( options.anglesfile, 'r' )
 		lines = f.readlines()
 		f.close()
 		
-		print "lines are len(lines)", lines, len(lines)
+		print("lines are len(lines)", lines, len(lines))
 		
 		ai=0
 		for line in lines:
@@ -866,14 +867,14 @@ def getangles( options ):
 
 	elif options.angles:
 		if options.verbose > 9:
-			print "\n(e2spt_ctf)(getangles) parsing angles from --angles %s" %(options.anglesfile)
+			print("\n(e2spt_ctf)(getangles) parsing angles from --angles %s" %(options.anglesfile))
 		lines=[ float(a) for a in options.angles.split(',')]
 		
 		for i in range(len(lines)):
 			anglesdict.update( {i:lines[i]} )
 	
 	if options.verbose > 9:
-		print "\n(e2spt_ctf.py)(getangles) angles are", anglesdict
+		print("\n(e2spt_ctf.py)(getangles) angles are", anglesdict)
 	
 	anglesdict = collections.OrderedDict(sorted(anglesdict.items()))
 	
@@ -890,10 +891,10 @@ def ctfparamparser( pline ):
 	bfactor = pline.replace('\n',' ').split("bfactor=")[-1].split(' ')[0]
 
 	params = {'ampcont':ampcont,'apix':apix,'bfactor':bfactor,'cs':cs,'defocus':defocus,'voltage':voltage}
-	print "\nparameters are",params
-	print "\n(e2spt_ctf.py)(ctfparamparser) The parsed parameters are:\n"
+	print("\nparameters are",params)
+	print("\n(e2spt_ctf.py)(ctfparamparser) The parsed parameters are:\n")
 	for key in params.keys():
-		print key + '=' + params[key] +'\n'
+		print(key + '=' + params[key] +'\n')
 	
 	ctf = EMAN2Ctf()
 	#ctf.from_dict({'defocus':params['defocus'],'bfactor':params['bfactor'],'ampcont':params['ampcont'],'apix':params['apix'],'voltage':params['voltage'],'cs':params['cs']})	
@@ -905,9 +906,9 @@ def ctfparamparser( pline ):
 def flipstack(options,imgsdict,ctfs,apix):
 	
 	for indx in imgsdict:
-		print "\n(e2tomo_ctf)(flipstack) working on image",indx,imgsdict[indx]
+		print("\n(e2tomo_ctf)(flipstack) working on image",indx,imgsdict[indx])
 	
-		print "\nI will phaseflip these images ignoring the defocus gradient",len(imgsdict)
+		print("\nI will phaseflip these images ignoring the defocus gradient",len(imgsdict))
 		
 		ctf = ctfs[indx]
 		
@@ -915,7 +916,7 @@ def flipstack(options,imgsdict,ctfs,apix):
 			imgfile = imgsdict[indx][0]
 			imgfilebase = os.path.basename(imgsdict[indx][0])
 			imgfilextension = os.path.splitext(imgfilebase)[1]
-			print "\nLoading image file", imgfile
+			print("\nLoading image file", imgfile)
 			img = EMData( imgfile )
 		
 			originalx = img['nx']
@@ -931,12 +932,12 @@ def flipstack(options,imgsdict,ctfs,apix):
 			imgf['apix_y'] = ctf.apix
 			
 			if options.verbose:
-				print "\nwriting image out to %s, with size %d,%d, sigma %f, mean %f" %(imgffileout,imgf['nx'],imgf['ny'],imgf['sigma'],imgf['mean'])
+				print("\nwriting image out to %s, with size %d,%d, sigma %f, mean %f" %(imgffileout,imgf['nx'],imgf['ny'],imgf['sigma'],imgf['mean']))
 			
 			imgf.write_image(imgffileout,0)
-			print "\nWrote flipped image to", imgffileout
+			print("\nWrote flipped image to", imgffileout)
 		else:
-			print "\nERROR: no ctf for image at index %d" %( indx )
+			print("\nERROR: no ctf for image at index %d" %( indx ))
 
 
 	outflippedstack = ''
@@ -983,7 +984,7 @@ def flipimage(options,img,ctf):
 	
 	if nx != ny:
 		#img.process_inplace('filter.ctf',{"ctf":ctf, "type":1}) 
-		print "image is NOT square nx, ny are ",nx,ny
+		print("image is NOT square nx, ny are ",nx,ny)
 		
 		maxsize = max(nx,ny)
 		img = clip2d( img, maxsize )
@@ -1001,8 +1002,8 @@ def flipimage(options,img,ctf):
 	img_corrected['apix_x'] = ctf.apix
 	img_corrected['apix_y'] = ctf.apix
 
-	print "\nflipped image with this ctf", ctf
-	print "ctf.defocus", ctf.defocus
+	print("\nflipped image with this ctf", ctf)
+	print("ctf.defocus", ctf.defocus)
 
 	return img_corrected
 	
@@ -1010,9 +1011,9 @@ def flipimage(options,img,ctf):
 def flipstripbystrip(options,imgsdict,ctfs,angles):
 	
 	for indx in imgsdict:
-		print "\n(e2tomo_ctf)(flipstripbystrip) working on image",indx,imgsdict[indx]
+		print("\n(e2tomo_ctf)(flipstripbystrip) working on image",indx,imgsdict[indx])
 	
-		print "\nI will phaseflip these images computing the defocus gradient strip by strip",len(imgsdict)
+		print("\nI will phaseflip these images computing the defocus gradient strip by strip",len(imgsdict))
 		
 		ctf = ctfs[indx]
 		angle = angles[indx]
@@ -1021,7 +1022,7 @@ def flipstripbystrip(options,imgsdict,ctfs,angles):
 			imgfile = imgsdict[indx][0]
 			imgfilebase = os.path.basename(imgsdict[indx][0])
 			imgfilextension = os.path.splitext(imgfilebase)[1]
-			print "\nLoading image file", imgfile
+			print("\nLoading image file", imgfile)
 			
 			img = EMData( imgfile, 0, True )
 			
@@ -1074,21 +1075,21 @@ def flipstripbystrip(options,imgsdict,ctfs,angles):
 				'''
 				px = ( stripcenterXpixels - nx/2.0 ) * apix/10000	#this is the position of the strip center relative to the tilt axis
 				if px < 0:
-					print "\npx (in microns) is left of the tilt axis", px
+					print("\npx (in microns) is left of the tilt axis", px)
 				elif px > 0:
-					print "\npx (in microns) is right of the tilt axis", px
+					print("\npx (in microns) is right of the tilt axis", px)
 				elif px==0:
-					print "\npx (in microns) is on the tilt axis", px
+					print("\npx (in microns) is on the tilt axis", px)
 			
 				dzx = -1 * px * numpy.sin( math.radians( angle ) )		#the -1 accounts for the fact that positive tilt angles are clockwise, negative counter clockwise
 		
 				if angle < 0.0:
-					print "\ngiven a negative, CLOCKWISE tilt angle=%f, and coordx=%f pixels, px=%f microns, THEN dzx=%f microns" %( angle,stripcenterXmicrons,px,dzx) 
+					print("\ngiven a negative, CLOCKWISE tilt angle=%f, and coordx=%f pixels, px=%f microns, THEN dzx=%f microns" %( angle,stripcenterXmicrons,px,dzx)) 
 				if angle > 0.0:
-					print "\ngiven a positive, COUNTER CLOCKWISE tilt angle=%f, and coordx=%f pixels, px=%f microns, THEN dzx=%f microns" %( angle,stripcenterXmicrons,px,dzx) 
+					print("\ngiven a positive, COUNTER CLOCKWISE tilt angle=%f, and coordx=%f pixels, px=%f microns, THEN dzx=%f microns" %( angle,stripcenterXmicrons,px,dzx)) 
 					
 				newdefocus = ctf.defocus + dzx 
-				print "\ntherefore, for angle=%f, and defocus=%f, the first corrected defocus is NEWdefocus1=%f" % ( angle, ctf.defocus, newdefocus )
+				print("\ntherefore, for angle=%f, and defocus=%f, the first corrected defocus is NEWdefocus1=%f" % ( angle, ctf.defocus, newdefocus ))
 				
 				stripctf = EMAN2Ctf()
 				stripctf.from_dict({ 'defocus':newdefocus, 'bfactor':ctf.bfactor, 'ampcont':ctf.ampcont, 'apix':ctf.apix, 'voltage':ctf.voltage, 'cs':ctf.cs })			
@@ -1115,7 +1116,7 @@ def flipstripbystrip(options,imgsdict,ctfs,angles):
 					r = Region( stripcenterXpixels - options.tilesize, stripcenterYpixels - options.tilesize, 2*options.tilesize, 2*options.tilesize )
 					
 
-					print "\nclipping region", r
+					print("\nclipping region", r)
 				
 					clipr_padded = EMData()
 					clipr_padded.read_image( imgfile, 0, False, r )
@@ -1156,9 +1157,9 @@ def flipstripbystrip(options,imgsdict,ctfs,angles):
 					#	clipr_flipped_originalsize.to_zero()
 					#	print "\nMMMMMMADE clip 0"
 
-					print "\nfor strip, column=%d, row=%d, clipping corrected strip to size nx=%d, nx=%d, ny=%d, ny=%d" %(i,j,xpixels,ypixels,clipr_flipped_originalsize['nx'],clipr_flipped_originalsize['ny'])
-					print "and inserting it at x=%d, y=%d" %(startx,starty)
-					print "mean=%.4f, sigma=%.4f" %( clipr_flipped_originalsize['mean_nonzero'], clipr_flipped_originalsize['sigma'] )
+					print("\nfor strip, column=%d, row=%d, clipping corrected strip to size nx=%d, nx=%d, ny=%d, ny=%d" %(i,j,xpixels,ypixels,clipr_flipped_originalsize['nx'],clipr_flipped_originalsize['ny']))
+					print("and inserting it at x=%d, y=%d" %(startx,starty))
+					print("mean=%.4f, sigma=%.4f" %( clipr_flipped_originalsize['mean_nonzero'], clipr_flipped_originalsize['sigma'] ))
 
 
 					#strip_final = clip2d( img_flipped_originalsize, options.tilesize, ny )
@@ -1185,19 +1186,19 @@ def flipstripbystrip(options,imgsdict,ctfs,angles):
 
 			finalimage['spt_phaseflipped']='strips'
 			finalimage['spt_defocus_mean'] = ctf.defocus
-			print "\nbefore normalization, finalimage mean=%.4f, sigma=%.4f" %(finalimage['mean_nonzero'],finalimage['sigma'])
+			print("\nbefore normalization, finalimage mean=%.4f, sigma=%.4f" %(finalimage['mean_nonzero'],finalimage['sigma']))
 			
 			finalimage.process_inplace('normalize')
 
 			
-			print "\nwriting image out to %s, with size %d, %d, sigma %f, mean %f" %(imgffileout,finalimage['nx'],finalimage['ny'],finalimage['sigma'],finalimage['mean'])
+			print("\nwriting image out to %s, with size %d, %d, sigma %f, mean %f" %(imgffileout,finalimage['nx'],finalimage['ny'],finalimage['sigma'],finalimage['mean']))
 			
 			finalimage.write_image(imgffileout,0)
-			print "\nwrote flipped image to", imgffileout
+			print("\nwrote flipped image to", imgffileout)
 
 
 		else:
-			print "\nERROR: no CTF for image at indx %d" %(indx)
+			print("\nERROR: no CTF for image at indx %d" %(indx))
 			
 			
 	outflippedstack = ''
@@ -1269,7 +1270,7 @@ def tilerfft(options, angle, imgf, currentstrip, nstrips, start, end):
 	step=options.tilesize
 	if options.overlaptiles:
 		step = int(options.tilesize/2)
-		print "\n(e2spt_ctf)(tilerfft) --overlaptiles is on, therefore step is", step
+		print("\n(e2spt_ctf)(tilerfft) --overlaptiles is on, therefore step is", step)
 	
 	#for x in range( micrographstarts[m], micrographstarts[m] + micrographwidth - options.tilesize + 1, options.stripfitstep ):
 	
@@ -1345,10 +1346,10 @@ def tilerfft(options, angle, imgf, currentstrip, nstrips, start, end):
 	
 			return fftcumulative, tilesgood
 		else:
-			print "\nWARNING: bad strip!"
+			print("\nWARNING: bad strip!")
 			return None
 	else:
-		print "\nWARNING: strip has too few good tiles and thus is being skipped"
+		print("\nWARNING: strip has too few good tiles and thus is being skipped")
 		return None
 
 
@@ -1417,9 +1418,9 @@ def fitdefocus( ffta, angle, apix, options, nsubmicros, currentsubmicro, defocus
 		ctfi = e2ctf.ctf_fit( fft1d, bg_1d, bg_1d, ffta, fftbg, options.voltage, options.cs, options.ampcont, apix, 1,dfhint=( defocusmin, defocusmax, defocusstep ) )
 		bgAdj(ctfi,fft1d)
 	except:
-		print "\nctf fit failed! first try"
-		print "len fft1d is", len(fft1d)
-		print "ffta is", ffta
+		print("\nctf fit failed! first try")
+		print("len fft1d is", len(fft1d))
+		print("ffta is", ffta)
 		#ctfi = None
 			
 	try:
@@ -1430,9 +1431,9 @@ def fitdefocus( ffta, angle, apix, options, nsubmicros, currentsubmicro, defocus
 		#if options.astigmatism: 
 		#	e2ctf.ctf_fit_stig(ffta,fftbg,ctf)
 	except:
-		print "ctf fit failed! second adjustment try"
-		print "len fft1d is", len(fft1d)
-		print "ffta is", ffta
+		print("ctf fit failed! second adjustment try")
+		print("len fft1d is", len(fft1d))
+		print("ffta is", ffta)
 		#ctfi = None
 		
 
@@ -1451,7 +1452,7 @@ the incoherent average and FFT using all the tiles)
 '''
 def calcglobaldefocus(options, apix, imagefilenames, angles):
 	
-	print "\n(e2spt_tomo)(calcglobaldefocus)"
+	print("\n(e2spt_tomo)(calcglobaldefocus)")
 	
 	defocuswiggle = None
 	globaldefocus = None
@@ -1491,7 +1492,7 @@ def calcglobaldefocus(options, apix, imagefilenames, angles):
 			try:
 				lowesttiltangleindx = angles.keys()[angles.values().index(lowesttiltangle)]	#c:if the lowest tiltangle is negative
 			except:
-				print "(e2tomo_ctf)(calcglobaldefocus) ERROR: determined lowest tilt angle %f somehow is not in --angles or --anglesfile. Using the middle index by default" %(lowesttiltangle)
+				print("(e2tomo_ctf)(calcglobaldefocus) ERROR: determined lowest tilt angle %f somehow is not in --angles or --anglesfile. Using the middle index by default" %(lowesttiltangle))
 				#sys.exit()
 		lowesttiltimgfile = imagefilenames[lowesttiltangleindx][0]
 		#lowesttiltimg = EMData(lowesttiltimgfile,0)
@@ -1528,10 +1529,10 @@ def calcglobaldefocus(options, apix, imagefilenames, angles):
 		if globaldefocus:
 			allglobaldefocuses.update({ imgindx:globaldefocus })
 			
-			print "\n(e2spt_ctf)(calcglobaldefocus) global defocus is", globaldefocus
+			print("\n(e2spt_ctf)(calcglobaldefocus) global defocus is", globaldefocus)
 			
 		else:
-			print "\n(e2spt_ctf)(calcglobaldefocus) WARNING: global defocus measurement failed for image index %d, image file %s" %(imgindx, imgfile)
+			print("\n(e2spt_ctf)(calcglobaldefocus) WARNING: global defocus measurement failed for image index %d, image file %s" %(imgindx, imgfile))
 			if options.targetdefocus:
 				allglobaldefocuses.update({ imgindx:options.targetdefocus })
 					
@@ -1599,7 +1600,7 @@ def calcglobaldefocus(options, apix, imagefilenames, angles):
 			print "\nWARNING! global defocus fitting failed! for image", label
 		"""
 	
-	print "\n\n(e2spt_ctf)(calcglobaldefocus) allglobaldefocuses",allglobaldefocuses
+	print("\n\n(e2spt_ctf)(calcglobaldefocus) allglobaldefocuses",allglobaldefocuses)
 	
 	
 	globaldefocuseslist = []
@@ -1620,7 +1621,7 @@ def calcglobaldefocus(options, apix, imagefilenames, angles):
 				img = EMData(imgfile,0)
 				angle = angles[indx]
 				
-				print "\n(e2spt_ctf)(calcglobaldefocus) RETRYING global defocus for image %s, indx %d, because its defocus was %f, while the mean defocus was %f with an std of %f" %( imgfile, indx, d, defocusmean, defocusstd )
+				print("\n(e2spt_ctf)(calcglobaldefocus) RETRYING global defocus for image %s, indx %d, because its defocus was %f, while the mean defocus was %f with an std of %f" %( imgfile, indx, d, defocusmean, defocusstd ))
 				
 				defocusmin = defocusmean - 2*defocusstd
 				defocusmax = defocusmean + 2*defocusstd
@@ -1651,7 +1652,7 @@ def calcglobaldefocus(options, apix, imagefilenames, angles):
 				angledefocuspairs.update({indx:[angle,defocus]})
 				
 			else:
-				print "\n(e2spt_ctf)(calcglobaldefocus) WARNING: missing blobal defocus for image at angle %f" %( angle )
+				print("\n(e2spt_ctf)(calcglobaldefocus) WARNING: missing blobal defocus for image at angle %f" %( angle ))
 				globaldefocuseslist.append( -1.0 )
 				angleslist.append( angle )
 			
@@ -1689,7 +1690,7 @@ def calcglobaldefocus(options, apix, imagefilenames, angles):
 		
 		return allglobaldefocuses, defocusmean, defocusstd
 	else:
-		print "\n(e2spt_ctf)(calcglobaldefocus) WARNING! All global defocuses estimations failed!"
+		print("\n(e2spt_ctf)(calcglobaldefocus) WARNING! All global defocuses estimations failed!")
 	
 	
 def fitdefocusgradient( options, apix, imagefilenames, angles, globaldefocuses, defocusmean, defocusstd ):
@@ -1733,11 +1734,11 @@ def fitdefocusgradient( options, apix, imagefilenames, angles, globaldefocuses, 
 	allowabledzmicrons = allowabledz/10000
 	allowabledzpixels = allowabledz/apix
 
-	print "\n(e2spt_ctf)(fitdefocusgradient) the theoretical allowable depth of focus or defocus variation limit in angstroms is %.2f to reach 2/3 nyquist resolution %.2f" %( allowabledz, twothirdsnyquist )
+	print("\n(e2spt_ctf)(fitdefocusgradient) the theoretical allowable depth of focus or defocus variation limit in angstroms is %.2f to reach 2/3 nyquist resolution %.2f" %( allowabledz, twothirdsnyquist ))
 
 	if options.depthfocus:
 		allowabledz = options.depthfocus
-		print "however, the allowable depth of focus in micrometers has been set via --depthfocus and is", allowabledz
+		print("however, the allowable depth of focus in micrometers has been set via --depthfocus and is", allowabledz)
 		#print "which in angstroms is", allowabledz*10000
 		allowabledzmicrons = allowabledz/10000
 		allowabledzpixels = allowabledz/apix
@@ -1759,7 +1760,7 @@ def fitdefocusgradient( options, apix, imagefilenames, angles, globaldefocuses, 
 		
 		angle = imagefilenames[imgindx][1]
 
-		print "\n(e2spt_ctf)(fitdefocusgradient) autofitting defocus gradient for imgindx %d, image %s, angle %f, apix %f, progress = %d/%d" %( imgindx, imagefilenames[imgindx][0],angle,apix,imgindx,len(angles))
+		print("\n(e2spt_ctf)(fitdefocusgradient) autofitting defocus gradient for imgindx %d, image %s, angle %f, apix %f, progress = %d/%d" %( imgindx, imagefilenames[imgindx][0],angle,apix,imgindx,len(angles)))
 		
 		imgfile = imagefilenames[imgindx][0]
 		imghdr = EMData( imgfile, 0, True )
@@ -1795,7 +1796,7 @@ def fitdefocusgradient( options, apix, imagefilenames, angles, globaldefocuses, 
 			if math.fabs( angle ) > 0.5:
 				
 				stripwidthold = math.fabs( 0.1 / numpy.sin( math.radians( angle ) ) * 10000/apix )
-				print "\nOOOOOOOO for angle %f old strip width in pixels with no thickness was %f" %(angle, stripwidthold)
+				print("\nOOOOOOOO for angle %f old strip width in pixels with no thickness was %f" %(angle, stripwidthold))
 				
 				if options.thickness:
 					depthdefocus = math.fabs( options.thickness / numpy.cos( math.radians( angle ) ) )	#icethickness, in pixels, will contribute to defocus variation with tilt, in addition to the tilting itself
@@ -1805,9 +1806,9 @@ def fitdefocusgradient( options, apix, imagefilenames, angles, globaldefocuses, 
 				stripwidthold*=2 #this factor of two accounts for the fact that the old method only calculated things for half of the micrograph (from the tilt axis)
 
 				
-				print "old depthfocus was", math.fabs( options.thickness / numpy.cos( math.radians( angle ) ) )
-				print "using this thickness", options.thickness
-				print "old strip width in pixels was", stripwidthold
+				print("old depthfocus was", math.fabs( options.thickness / numpy.cos( math.radians( angle ) ) ))
+				print("using this thickness", options.thickness)
+				print("old strip width in pixels was", stripwidthold)
 				
 				
 				#cos/sin is cot, but the function does not exist in numpy
@@ -1819,7 +1820,7 @@ def fitdefocusgradient( options, apix, imagefilenames, angles, globaldefocuses, 
 				stripwidth += depthfocusnew
 				stripwidth = int( math.fabs( stripwidth ))
 				
-				print "however, new strip width accounting for depth of focus, it is",stripwidth
+				print("however, new strip width accounting for depth of focus, it is",stripwidth)
 				
 				if stripwidth > nx:
 					stripwidth = nx
@@ -1872,7 +1873,7 @@ def fitdefocusgradient( options, apix, imagefilenames, angles, globaldefocuses, 
 				micrographwidth = options.tilesize
 				adjuststart = 1
 			
-			print "--stripfitstep is!!!!!!!!!!!!!!!!!!!", stripfitstep
+			print("--stripfitstep is!!!!!!!!!!!!!!!!!!!", stripfitstep)
 		
 			include = 1
 			if not adjuststart:
@@ -1919,7 +1920,7 @@ def fitdefocusgradient( options, apix, imagefilenames, angles, globaldefocuses, 
 				
 			micrographstarts.sort()
 			#print "\nfor img %d micrographstarts are" % (imgindx) 
-			print micrographstarts	
+			print(micrographstarts)	
 		
 			#micromids = [h+micrographwidth/2 for h in micrographstarts]
 			micromids = []
@@ -1937,7 +1938,7 @@ def fitdefocusgradient( options, apix, imagefilenames, angles, globaldefocuses, 
 				micrographmiddlemicrometers =  ( list(micrographstarts)[m] + micrographwidth/2.0 ) * apix / 10000.00 #xaxis in micrometers too
 				
 				if options.verbose > 8:
-					print "\n(e2tomo_ctf)(fitgradient) micrograph start is %f, micrograph width is %f, therefore micrograph middle is %f" %(micrographstarts[m],micrographwidth,micrographmiddle)
+					print("\n(e2tomo_ctf)(fitgradient) micrograph start is %f, micrograph width is %f, therefore micrograph middle is %f" %(micrographstarts[m],micrographwidth,micrographmiddle))
 							
 				if options.predictdefocus:
 					dx = imagemiddle-micrographmiddle
@@ -1963,23 +1964,23 @@ def fitdefocusgradient( options, apix, imagefilenames, angles, globaldefocuses, 
 						
 						defocuswiggle = defocuswigglex + defocuswiggley
 						
-						print "(e2spt_ctf)(fitdefocusgradient) icethicknessm is", icethicknessm
-						print "\ndefocuswiggle is", defocuswiggle
+						print("(e2spt_ctf)(fitdefocusgradient) icethicknessm is", icethicknessm)
+						print("\ndefocuswiggle is", defocuswiggle)
 						
 						if defocuswiggle:
 							defocusmin = globaldefocus - 2*defocuswiggle
 							defocusmax = globaldefocus + 2*defocuswiggle
 							
-							print "after wiggle, defocusmin is", defocusmin
-							print "after wiggle, defocusmax is", defocusmax
+							print("after wiggle, defocusmin is", defocusmin)
+							print("after wiggle, defocusmax is", defocusmax)
 										
 					
 					stripdefocus = fitdefocus( fftc, angle, apix, options, len(micrographstarts), m, defocusmin, defocusmax, defocusstep, micrographstarts[m])
 				
 					if stripdefocus:
-						print "defocus for strip at x %d is %.6f" %( micrographstarts[m] , stripdefocus )
+						print("defocus for strip at x %d is %.6f" %( micrographstarts[m] , stripdefocus ))
 					else:
-						print "WARNING! bad strip for image at index %d; defocus for strip at x %d is None, and the number of good tiles was %d" %( imgindx, micrographstarts[m], ntiles )
+						print("WARNING! bad strip for image at index %d; defocus for strip at x %d is None, and the number of good tiles was %d" %( imgindx, micrographstarts[m], ntiles ))
 
 					
 			
@@ -1991,15 +1992,15 @@ def fitdefocusgradient( options, apix, imagefilenames, angles, globaldefocuses, 
 					imgdefocuses.append( stripdefocus )					#defocus in micrometers
 				
 					micromids.append( micrographmiddlemicrometers )	
-					print "\nappended (good) micrographmiddle is", micrographmiddlemicrometers	
+					print("\nappended (good) micrographmiddle is", micrographmiddlemicrometers)	
 				else:
-					print "\nappending to failed results, for which the number of good tiles ntiles was", ntiles
+					print("\nappending to failed results, for which the number of good tiles ntiles was", ntiles)
 					faileddefs.append( (defocusmin+defocusmax)/2 )
 					failedmids.append( micrographmiddlemicrometers )
 			
 			#xs = numpy.array( [i*options.stripfitstep + options.tilesize/2.0 for i in range(len(imgdefocuses))] )
 		
-			print "micromids are", micromids
+			print("micromids are", micromids)
 			#xs =numpy.array( micromids )
 			xs=micromids
 			#imgdefocuses = numpy.array( imgdefocuses )
@@ -2010,7 +2011,7 @@ def fitdefocusgradient( options, apix, imagefilenames, angles, globaldefocuses, 
 		
 			
 		else:
-			print "img being skipped for strip-based fitting"
+			print("img being skipped for strip-based fitting")
 			xs.append(imagemiddle)
 			imgdefocuses.append(globaldefocus)
 			#anglestoexclude.append(angle)
@@ -2040,15 +2041,15 @@ def fitdefocusgradient( options, apix, imagefilenames, angles, globaldefocuses, 
 			
 			if len(xs) < 2 and len (imgdefocuses) < 2:
 				anglecalc = angle
-				print "defocus calc is derived from middle strip only! it would have been", defocuscalc
+				print("defocus calc is derived from middle strip only! it would have been", defocuscalc)
 				defocuscalc = imgdefocuses[0]
-				print "but is", defocuscalc
+				print("but is", defocuscalc)
 				
 				
 			#if angle not in anglestoexclude:
 			angerror = math.fabs( angle - anglecalc )
 			
-			print "angle, anglecalc, and angerror are", angle, anglecalc, angerror
+			print("angle, anglecalc, and angerror are", angle, anglecalc, angerror)
 			angerrors.update( { angle:angerror } )
 			
 			if angerror > 15.0:
@@ -2058,7 +2059,7 @@ def fitdefocusgradient( options, apix, imagefilenames, angles, globaldefocuses, 
 				#	middef = imgdefocuses[len(imgdefocuses)/2]
 				#	defocuscalc = (globaldefocus+middef)/2.0
 					
-				print "\nWARNING: ERRRRRRRRRRROR; angerror %f > 15.0; using globaldefocus %f, defocuscalc %f" %(angerror, globaldefocus, defocuscalc)
+				print("\nWARNING: ERRRRRRRRRRROR; angerror %f > 15.0; using globaldefocus %f, defocuscalc %f" %(angerror, globaldefocus, defocuscalc))
 										
 			angleindx = angles.keys()[angles.values().index(angle)]
 
@@ -2075,7 +2076,7 @@ def fitdefocusgradient( options, apix, imagefilenames, angles, globaldefocuses, 
 			
 			
 		else:
-			print "\nWarning: All defocuses failed for this submicrograph. Nothing to plot."
+			print("\nWarning: All defocuses failed for this submicrograph. Nothing to plot.")
 		
 		#if xs.any() and imgdefocuses.any():
 			#pass nx in micrometers
@@ -2175,9 +2176,9 @@ def sptctfplotter( options, nx, xdata, ydata, maxangle, angle, angleindx, nangle
 	if gdefocus:
 		gdefocus *= -1
 	else:
-		print "WARNING! No global defocus gdefocus for angle", angle
+		print("WARNING! No global defocus gdefocus for angle", angle)
 	
-	print "failed data in plotter is", failedys, failedxs
+	print("failed data in plotter is", failedys, failedxs)
 	
 	if failedxs and failedys:		
 		for y in range( len(failedys)):
@@ -2235,7 +2236,7 @@ def sptctfplotter( options, nx, xdata, ydata, maxangle, angle, angleindx, nangle
 
 	#print "max y is", max(yaxis)
 	
-	print "ydata is", ydata
+	print("ydata is", ydata)
 	
 	'''
 	maxy = max(ydata)
@@ -2286,19 +2287,19 @@ def sptctfplotter( options, nx, xdata, ydata, maxangle, angle, angleindx, nangle
 	if m and b:
 		plt.plot(xdata, m*xdata + b, '-', linewidth=3, alpha=0.75)
 	
-	print "\nglobal defocus and mid inside plotter are", gdefocus, gmid
+	print("\nglobal defocus and mid inside plotter are", gdefocus, gmid)
 
 	if gdefocus and gmid:	
-		print "\nplotting global fit at", gdefocus, gmid
+		print("\nplotting global fit at", gdefocus, gmid)
 		gdefs= numpy.array([gdefocus])
 		gmids= numpy.array([gmid])
-		print "\nplotting global fit at", gdefs, gmids
+		print("\nplotting global fit at", gdefs, gmids)
 		plt.scatter(gmids,gdefs,alpha=0.6,zorder=1,s=400,marker='o',facecolors='none', edgecolors='g',linewidth=3)
 		#plt.plot( gdefs, gmids )
 		#plt.show()
 		
 		imodm = math.tan( math.radians( angle ) )
-		print "\nIMOD slope is",imodm
+		print("\nIMOD slope is",imodm)
 		
 		#y = mx + b ; therefore, b = y - mx
 		b = gdefocus - imodm * gmid
@@ -2351,7 +2352,7 @@ def generalplotter( options, xaxis, yaxis, xlabel, ylabel, plotname, title, flip
 	elif sizerangey > sizerangex:
 		proportionfactor = sizerangex/sizerangey
 		sizeplotx = int( round( sizeplotx*proportionfactor ) )
-	print "\nsizerangex=%f, sizerangey=%f, proportionfactor=%f therefore sizeplotx=%d, sizeploty=%d" %(sizerangex,sizerangey,proportionfactor,sizeplotx,sizeploty)
+	print("\nsizerangex=%f, sizerangey=%f, proportionfactor=%f therefore sizeplotx=%d, sizeploty=%d" %(sizerangex,sizerangey,proportionfactor,sizeplotx,sizeploty))
 		
 	fig = plt.figure(figsize=(30, 3))
 	
@@ -2407,7 +2408,7 @@ def generalplotter( options, xaxis, yaxis, xlabel, ylabel, plotname, title, flip
 			extray = extrax = int(ptclnx/2)
 		
 			
-	print "\nmax y is", maxy
+	print("\nmax y is", maxy)
 	ylim1 = miny - extray
 	ylim2 = maxy + extray
 	
@@ -2423,13 +2424,13 @@ def generalplotter( options, xaxis, yaxis, xlabel, ylabel, plotname, title, flip
 
 	pylab.ylim([ylim1, ylim2])
 	
-	print 'yrange', ylim1,ylim2
+	print('yrange', ylim1,ylim2)
 	
-	print "\nmax x is", max(xaxis)
+	print("\nmax x is", max(xaxis))
 	
 	pylab.xlim([xlim1, xlim2])
 	
-	print 'xrange', xlim1,xlim2
+	print('xrange', xlim1,xlim2)
 	
 	ax.set_xlabel(xlabel, fontsize=18, fontweight='bold')
 	ax.set_ylabel(ylabel, fontsize=18, fontweight='bold')

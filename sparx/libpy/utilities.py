@@ -1,4 +1,5 @@
 #
+from __future__ import print_function
 # Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
 # Copyright (c) 2000-2006 The University of Texas - Houston Medical School
 #
@@ -29,6 +30,7 @@
 #
 
 from global_def import *
+from functools import reduce
 
 def params_2D_3D(alpha, sx, sy, mirror):
 	"""
@@ -472,7 +474,7 @@ def center_2D(image_to_be_centered, center_method = 1, searching_range = -1, Gau
 	from   utilities    import peak_search
 	from   fundamentals import fshift
 	import types
-	if type(image_to_be_centered) == types.StringType: image_to_be_centered = get_im(image_to_be_centered)
+	if type(image_to_be_centered) == bytes: image_to_be_centered = get_im(image_to_be_centered)
 	if    center_method == 0 :  return  image_to_be_centered,0.,0.
 	elif  center_method == 1 :
 		cs = image_to_be_centered.phase_cog()
@@ -578,7 +580,7 @@ def common_line_in3D(phiA,thetaA,phiB,thetaB):
 	ph2 = phiB*piOver;
 	th2 = thetaB*piOver;
 
- 	#nx = cos(thetaBR)*sin(thetaAR)*sin(phiAR) - cos(thetaAR)*sin(thetaBR)*sin(phiBR) ;
+	#nx = cos(thetaBR)*sin(thetaAR)*sin(phiAR) - cos(thetaAR)*sin(thetaBR)*sin(phiBR) ;
 	#ny = cos(thetaAR)*sin(thetaBR)*cos(phiBR) - cos(thetaBR)*sin(thetaAR)*cos(phiAR) ;
 	#nz = sin(thetaAR)*sin(thetaBR)*sin(phiAR-phiBR);
 
@@ -1185,8 +1187,8 @@ def get_textimage(fname):
 		and val is the floating point value of that point.  All points
 		not explicitly listed are set to zero.
 	"""
-    	from string import atoi,atof
-    	infile = open(fname)
+	from string import atoi,atof
+	infile = open(fname)
 	lines = infile.readlines()
 	infile.close()
 	data = lines[0].split()
@@ -1232,7 +1234,7 @@ def info(image, mask=None, Comment=""):
 
 	Purpose: calculate basic statistical characteristics of an image.
 	"""
-	if(Comment):  print  " ***  ", Comment
+	if(Comment):  print(" ***  ", Comment)
 	e = get_image(image)
 	[mean, sigma, imin, imax] = Util.infomask(e, mask, True)
 	nx = e.get_xsize()
@@ -1243,14 +1245,14 @@ def info(image, mask=None, Comment=""):
 		if e.is_shuffled():
 			s = " (shuffled)"
 		if (e.is_fftodd()):
-			print "Complex odd image%s: nx = %i, ny = %i, nz = %i" % (s, nx, ny, nz)
+			print("Complex odd image%s: nx = %i, ny = %i, nz = %i" % (s, nx, ny, nz))
 		else:
-			print "Complex even image%s: nx = %i, ny = %i, nz = %i" % (s, nx, ny, nz)
+			print("Complex even image%s: nx = %i, ny = %i, nz = %i" % (s, nx, ny, nz))
 
 	else:
-		print "Real image: nx = %i, ny = %i, nz = %i" % (nx, ny, nz)
+		print("Real image: nx = %i, ny = %i, nz = %i" % (nx, ny, nz))
 
-	print "avg = %g, std dev = %g, min = %g, max = %g" % (mean, sigma, imin, imax)
+	print("avg = %g, std dev = %g, min = %g, max = %g" % (mean, sigma, imin, imax))
 	return mean, sigma, imin, imax, nx, ny, nz
 
 def image_decimate(img, decimation=2, fit_to_fft=1,frequency_low=0, frequency_high=0):
@@ -1390,7 +1392,7 @@ def parse_spider_fname(mystr, *fieldvals):
 				return mystr[:-1]
 			else:
 				# '@' not at the end, so it's an error
-				raise ValueError, "Invalid format: misplaced '@'."
+				raise ValueError("Invalid format: misplaced '@'.")
 		else:
 			# no '@' at all
 			return mystr
@@ -1414,8 +1416,8 @@ def parse_spider_fname(mystr, *fieldvals):
 			# check validity
 			asterisks = mystr[begin+1:end]
 			if asterisks.strip("*") != "":
-			    raise ValueError, "Malformed {*...*} field: %s" % \
-				mystr[begin:end+1]
+			    raise ValueError("Malformed {*...*} field: %s" % \
+				mystr[begin:end+1])
 			fields.append(Fieldloc(begin, end))
 			loc = end
 		return fields
@@ -1427,8 +1429,8 @@ def parse_spider_fname(mystr, *fieldvals):
 	fields = find_fields(mystr)
 	if len(fields) != len(fieldvals):
 		# wrong number of fields?
-		raise ValueError, "Number of field values provided differs from" \
-			"the number of {*...*} fields."
+		raise ValueError("Number of field values provided differs from" \
+			"the number of {*...*} fields.")
 	newstrfrags = []
 	loc = 0
 	for i, field in enumerate(fields):
@@ -1450,13 +1452,13 @@ def peak_search(e, npeak = 1, invert = 1, print_screen = 0):
 		outpeaks = []
 		if(print_screen):
 			if  ndim == 1 :
-				print		      '%10s%10s%10s%10s%10s'%("Index  "," Peak_value","X   ",		     "Peak/P_max", "X-NX/2")
+				print('%10s%10s%10s%10s%10s'%("Index  "," Peak_value","X   ",		     "Peak/P_max", "X-NX/2"))
 				print_list_format(peaks[1:], 4)
 			elif ndim == 2 :
-				print	      '%10s%10s%10s%10s%10s%10s%10s'%("Index  ", "Peak_value","X   ","Y   ",	     "Peak/P_max", "X-NX/2", "Y-NY/2")
+				print('%10s%10s%10s%10s%10s%10s%10s'%("Index  ", "Peak_value","X   ","Y   ",	     "Peak/P_max", "X-NX/2", "Y-NY/2"))
 				print_list_format(peaks[1:], 6)
 			elif ndim == 3 :
-				print '%10s%10s%10s%10s%10s%10s%10s%10s%10s'%("Index  ", "Peak_value","X   ","Y   ","Z   ", "Peak/P_max", "X-NX/2", "Y-NY/2", "Z-NZ/2")
+				print('%10s%10s%10s%10s%10s%10s%10s%10s%10s'%("Index  ", "Peak_value","X   ","Y   ","Z   ", "Peak/P_max", "X-NX/2", "Y-NY/2", "Z-NZ/2"))
 				print_list_format(peaks[1:], 8)
 			else:	ERROR("Image dimension extracted in peak_search is wrong", "Util.peak_search", 1)
 		for i in xrange(nlist):
@@ -1494,13 +1496,13 @@ def print_row(input, ix=0, iz=0):
 	nx = image.get_xsize()
 	ny = image.get_ysize()
 	nz = image.get_zsize()
-	print "(z = %d slice, x = %d row)" % (iz, ix)
+	print("(z = %d slice, x = %d row)" % (iz, ix))
 	line = []
 	for iy in xrange(ny):
 		line.append("%12.5g  " % (image.get_value_at(ix,iy,iz)))
 		if ((iy + 1) % 5 == 0): line.append("\n   ")
 	line.append("\n")
-	print "".join(line)
+	print("".join(line))
 
 def print_col(input, iy=0, iz=0):
 	"""Print the data in slice iz, column iy of an image to standard out.
@@ -1513,13 +1515,13 @@ def print_col(input, iy=0, iz=0):
 	nx = image.get_xsize()
 	ny = image.get_ysize()
 	nz = image.get_zsize()
-	print "(z = %d slice, y = %d col)" % (iz, iy)
+	print("(z = %d slice, y = %d col)" % (iz, iy))
 	line = []
 	for ix in xrange(nx):
 		line.append("%12.5g  " % (image.get_value_at(ix,iy,iz)))
 		if ((ix + 1) % 5 == 0): line.append("\n   ")
 	line.append("\n")
-	print "".join(line)
+	print("".join(line))
 
 def print_slice(input, iz=0):
 	"""Print the data in slice iz of an image to standard out.
@@ -1532,7 +1534,7 @@ def print_slice(input, iz=0):
 	nx = image.get_xsize()
 	ny = image.get_ysize()
 	nz = image.get_zsize()
-	print "(z = %d slice)" % (iz)
+	print("(z = %d slice)" % (iz))
 	line = []
 	for iy in xrange(ny):
 		line.append("Row ")
@@ -1544,7 +1546,7 @@ def print_slice(input, iz=0):
 				line.append("      ")
 	    	line.append("\n")
 	    	if(nx%5 != 0): line.append("\n")
-	print "".join(line)
+	print("".join(line))
 
 def print_image(input):
 	"""Print the data in an image to standard out.
@@ -1569,13 +1571,13 @@ def print_image_col(input, ix=0, iz=0):
 	nx = image.get_xsize()
 	ny = image.get_ysize()
 	nz = image.get_zsize()
-	print "(z = %d slice, x = %d row)" % (iz, ix)
+	print("(z = %d slice, x = %d row)" % (iz, ix))
 	line = []
 	for iy in xrange(ny):
 		line.append("%12.5g  " % (image.get_value_at(ix,iy,iz)))
 		if ((iy + 1) % 5 == 0): line.append("\n   ")
 	line.append("\n")
-	print "".join(line)
+	print("".join(line))
 
 def print_image_row(input, iy=0, iz=0):
 	"""Print the data in slice iz, column iy of an image to standard out.
@@ -1588,13 +1590,13 @@ def print_image_row(input, iy=0, iz=0):
 	nx = image.get_xsize()
 	ny = image.get_ysize()
 	nz = image.get_zsize()
-	print "(z = %d slice, y = %d col)" % (iz, iy)
+	print("(z = %d slice, y = %d col)" % (iz, iy))
 	line = []
 	for ix in xrange(nx):
 		line.append("%12.5g  " % (image.get_value_at(ix,iy,iz)))
 		if ((ix + 1) % 5 == 0): line.append("\n   ")
 	line.append("\n")
-	print "".join(line)
+	print("".join(line))
 
 def print_image_slice(input, iz=0):
 	"""Print the data in slice iz of an image to standard out in a format that agrees with v2
@@ -1607,7 +1609,7 @@ def print_image_slice(input, iz=0):
 	nx = image.get_xsize()
 	ny = image.get_ysize()
 	nz = image.get_zsize()
-	print "(z = %d slice)" % (iz)
+	print("(z = %d slice)" % (iz))
 	line = []
 	for iy in xrange(ny-1,-1,-1):
 		line.append("Row ")
@@ -1619,7 +1621,7 @@ def print_image_slice(input, iz=0):
 				line.append("      ")
 	    	line.append("\n")
 	    	if(nx%5 != 0): line.append("\n")
-	print "".join(line)
+	print("".join(line))
 
 def print_image_slice_3d(input, num=0,direction="z"):
 	"""Print the data in slice iz of an image to standard out in a format that agrees with v2
@@ -1636,7 +1638,7 @@ def print_image_slice_3d(input, num=0,direction="z"):
 	if(direction=="x"):
 		#print "xxxxx"
 		ix=num
-		print "(x = %d slice)" % (ix)
+		print("(x = %d slice)" % (ix))
 		line = []
 		for iz in xrange(nz-1,-1,-1):
 			line.append("Z ")
@@ -1648,11 +1650,11 @@ def print_image_slice_3d(input, num=0,direction="z"):
 					line.append("      ")
 	    		line.append("\n")
 	    		if(ny%5 != 0): line.append("\n")
-		print "".join(line)
+		print("".join(line))
 	elif(direction=="y"):
 		#print "yyy"
 		iy=num
-		print "(y = %d slice)" % (iy)
+		print("(y = %d slice)" % (iy))
 		line = []
 		for iz in xrange(nz-1,-1,-1):
 			line.append("Z ")
@@ -1664,11 +1666,11 @@ def print_image_slice_3d(input, num=0,direction="z"):
 					line.append("      ")
 	    		line.append("\n")
 	    		if(nx%5 != 0): line.append("\n")
-		print "".join(line)
+		print("".join(line))
 	else:
 		#print "zzzz"
 		iz=num
-		print "(z = %d slice)" % (iz)
+		print("(z = %d slice)" % (iz))
 		line = []
 		for iy in xrange(ny-1,-1,-1):
 			line.append("Row ")
@@ -1680,7 +1682,7 @@ def print_image_slice_3d(input, num=0,direction="z"):
 					line.append("      ")
 	    		line.append("\n")
 	    		if(nx%5 != 0): line.append("\n")
-		print "".join(line)
+		print("".join(line))
 
 
 def print_list_format(m, narray = 0):
@@ -1695,8 +1697,8 @@ def print_list_format(m, narray = 0):
 	"""
 	flist = []
 	for i in xrange(len(m)):
-		if   type(m[i])  is types.FloatType: flist.append('%10.3g'%(m[i]))
-		elif type(m[i])  is types.IntType :  flist.append(  '%10d'%(m[i]))
+		if   type(m[i])  is float: flist.append('%10.3g'%(m[i]))
+		elif type(m[i])  is int :  flist.append(  '%10d'%(m[i]))
 		else				   : flist.append(  '%10s'%(m[i]))
 	if(narray > len(m)):
 		narray = 0
@@ -1719,11 +1721,11 @@ def print_list_format(m, narray = 0):
 			else:			 break
 		plist.append(qlist)
 	for i in xrange(lnum):
-		print '%6d '%(i+1),plist[i]
+		print('%6d '%(i+1),plist[i])
 
 def pad(image_to_be_padded, new_nx, new_ny = 1,	new_nz = 1, background = "average", off_center_nx = 0, off_center_ny = 0, off_center_nz = 0):
 	import types
-	if type(background) != types.StringType: background = str(background)
+	if type(background) != bytes: background = str(background)
 	if   background == "average"       :     image_padded = Util.pad(image_to_be_padded, new_nx, new_ny, new_nz, off_center_nx, off_center_ny, off_center_nz, "average")
 	elif background == "circumference" :     image_padded = Util.pad(image_to_be_padded, new_nx, new_ny, new_nz, off_center_nx, off_center_ny, off_center_nz, "circumference")
 	else:                                    image_padded = Util.pad(image_to_be_padded, new_nx, new_ny, new_nz, off_center_nx, off_center_ny, off_center_nz,  background  )
@@ -1737,7 +1739,7 @@ def read_spider_doc(fnam):
 		5   2    12     ...(when key <=99999)
 		6   2    12     ...(when key >99999)
 	"""
-	inf = file(fnam, "r")
+	inf = open(fnam, "r")
 	comment_line=inf.readline() # assume there is only one comment line
 	docf_in = []
 	data    = []
@@ -1789,7 +1791,7 @@ def read_text_row(fnam, format="", skip=";"):
  	"""
 	from string import split
 
-	inf  = file(fnam, "r")
+	inf  = open(fnam, "r")
 	strg = inf.readline()
 	x    = []
 	data = []
@@ -1833,14 +1835,14 @@ def write_text_row(data, file_name):
 	"""
 	import types
 	outf = open(file_name, "w")
-	if (type(data[0]) == types.ListType):
+	if (type(data[0]) == list):
 		# It is a list of lists
 		for i in xrange(len(data)):
 			for j in xrange(len(data[i])):
 				tpt = data[i][j]
 				qtp = type(tpt)
-				if qtp == types.IntType:		outf.write("  %12d"%tpt)
-				elif qtp == types.FloatType:
+				if qtp == int:		outf.write("  %12d"%tpt)
+				elif qtp == float:
 					frmt = chooseformat(tpt)
 					if( frmt == "f" ):			outf.write("  %12.5f"%tpt)
 					else:						outf.write("  %12.5e"%tpt)
@@ -1851,8 +1853,8 @@ def write_text_row(data, file_name):
 		for j in xrange(len(data)):
 			tpt = data[j]
 			qtp = type(tpt)
-			if qtp == types.IntType :			outf.write("  %12d\n"%tpt)
-			elif qtp == types.FloatType:
+			if qtp == int :			outf.write("  %12d\n"%tpt)
+			elif qtp == float:
 				frmt = chooseformat(tpt)
 				if( frmt == "f" ):				outf.write("  %12.5f\n"%tpt)
 				else:							outf.write("  %12.5e\n"%tpt)
@@ -1868,7 +1870,7 @@ def read_text_file(file_name, ncol = 0):
 	"""
 
 	from string import split
-	inf = file(file_name, "r")
+	inf = open(file_name, "r")
 	line = inf.readline()
 	data = []
 	while len(line) > 0:
@@ -1912,14 +1914,14 @@ def write_text_file(data, file_name):
 
 	import types
 	outf = open(file_name, "w")
-	if (type(data[0]) == types.ListType):
+	if (type(data[0]) == list):
 		# It is a list of lists
 		for i in xrange(len(data[0])):
 			for j in xrange(len(data)):
 				tpt = data[j][i]
 				qtp = type(tpt)
-				if qtp == types.IntType:			outf.write("  %12d"%tpt)
-				elif qtp == types.FloatType:
+				if qtp == int:			outf.write("  %12d"%tpt)
+				elif qtp == float:
 					frmt = chooseformat(tpt)
 					if( frmt == "f" ):				outf.write("  %12.5f"%tpt)
 					else:							outf.write("  %12.5e"%tpt)
@@ -1930,8 +1932,8 @@ def write_text_file(data, file_name):
 		for j in xrange(len(data)):
 			tpt = data[j]
 			qtp = type(tpt)
-			if qtp == types.IntType :			outf.write("  %12d\n"%tpt)
-			elif qtp == types.FloatType:
+			if qtp == int :			outf.write("  %12d\n"%tpt)
+			elif qtp == float:
 				frmt = chooseformat(tpt)
 				if( frmt == "f" ):				outf.write("  %12.5f\n"%tpt)
 				else:							outf.write("  %12.5e\n"%tpt)
@@ -1943,22 +1945,22 @@ def reconstitute_mask(image_mask_applied_file, new_mask_file, save_file_on_disk 
 	"""
 		Substitute masked area value with image average
 	"""
-	if type(image_mask_applied_file) == types.StringType:
+	if type(image_mask_applied_file) == bytes:
 		nima = EMUtil.get_image_count(image_mask_applied_file)
 		if (nima > 1):
 			image_mask_applied = []
-		 	for ima in xrange(nima):
+			for ima in xrange(nima):
 				e = EMData()
 				e.read_image(image_mask_applied_file, ima)
 				image_mask_applied.append(e)
 		else:
 			image_mask_applied = get_im(image_mask_applied_file)
-	elif  type(image_mask_applied_file) == types.ListType:
+	elif  type(image_mask_applied_file) == list:
 		nima =  len( image_mask_applied )
 		image_mask_applied = image_mask_applied_file
-	if type(new_mask_file) == types.StringType:
+	if type(new_mask_file) == bytes:
 		new_mask = get_im( new_mask_file )
-        elif type(new_mask_file) == types.IntType or type( new_mask_file ) == types.floatType:
+        elif type(new_mask_file) == int or type( new_mask_file ) == types.floatType:
 		if nima > 1:
 			e = image_mask_applied[0]
 			nx = e.get_xsize()
@@ -2059,7 +2061,7 @@ def estimate_3D_center(data):
 	from numpy import matrix
 	from numpy import linalg
 	import types
-	if(type(data[0]) is types.ListType):
+	if(type(data[0]) is list):
 		ali_params = data
 	else:
 		ali_params = []
@@ -2194,7 +2196,7 @@ def start_time():
 def finish_time(start_time):
 	import time
 	finish_time = time.time()
-	print ("Running time is"), finish_time-start_time
+	print(("Running time is"), finish_time-start_time)
 	return finish_time
 
 def ttime():
@@ -2323,7 +2325,7 @@ def bcast_compacted_EMData_all_to_all(list_of_em_objects, myid, comm=-1):
 	size_of_one_refring_assumed_common_to_all = dict_received["size_of_one_refring_assumed_common_to_all"]
 
 	if size_of_one_refring_assumed_common_to_all*(ref_end-ref_start) > (2**31-1):
-		print "Sending refrings: size of data to broadcast is greater than 2GB"
+		print("Sending refrings: size of data to broadcast is greater than 2GB")
 
 	for sender_id in range(ncpu):
 		sender_ref_start, sender_ref_end = MPI_start_end(num_ref, ncpu, sender_id)
@@ -2412,7 +2414,7 @@ def bcast_compacted_EMData_all_to_all___original(list_of_em_objects, myid, comm=
 	# for i in n: size_of_one_refring_assumed_common_to_all *= i
 
 	if size_of_one_refring_assumed_common_to_all*(ref_end-ref_start) > (2**31-1):
-		print "Sending refrings: size of data to broadcast is greater than 2GB"
+		print("Sending refrings: size of data to broadcast is greater than 2GB")
 
 	for sender_id in range(ncpu):
 		if sender_id == myid:
@@ -2528,7 +2530,7 @@ def gather_compacted_EMData_to_root_with_header_info_for_each_image(number_of_al
 	# for i in n: size_of_one_refring_assumed_common_to_all *= i
 
 	if size_of_one_refring_assumed_common_to_all*(ref_end-ref_start) > (2**31-1):
-		print "Sending refrings: size of data to broadcast is greater than 2GB"
+		print("Sending refrings: size of data to broadcast is greater than 2GB")
 
 	for sender_id in range(1,ncpu):
 		if sender_id == myid:
@@ -2650,7 +2652,7 @@ def gather_compacted_EMData_to_root(number_of_all_em_objects_distributed_across_
 	# for i in n: size_of_one_refring_assumed_common_to_all *= i
 
 	if size_of_one_refring_assumed_common_to_all*(ref_end-ref_start) > (2**31-1):
-		print "Sending refrings: size of data to broadcast is greater than 2GB"
+		print("Sending refrings: size of data to broadcast is greater than 2GB")
 
 	for sender_id in range(1,ncpu):
 		if sender_id == myid:
@@ -2972,20 +2974,20 @@ def bcast_number_to_all(number_to_send, source_node = 0, mpi_comm = -1):
 	from mpi import mpi_bcast, MPI_INT, MPI_COMM_WORLD, MPI_FLOAT
 	import types
 	if mpi_comm == -1:  mpi_comm = MPI_COMM_WORLD
-	if    type(number_to_send) is types.IntType:
+	if    type(number_to_send) is int:
 		TMP = mpi_bcast(number_to_send, 1, MPI_INT,   source_node, mpi_comm)
 		return int(TMP[0])
-	elif  type(number_to_send) is types.FloatType:
+	elif  type(number_to_send) is float:
 		TMP = mpi_bcast(number_to_send, 1, MPI_FLOAT, source_node, mpi_comm)
 		return float(TMP[0])
-	elif  type(number_to_send) is types.BooleanType:
+	elif  type(number_to_send) is bool:
 		if number_to_send: number_to_send = 1
 		else: number_to_send = 0
 		TMP = mpi_bcast(number_to_send, 1, MPI_INT, source_node, mpi_comm)
 		if TMP == 1:  return True
 		else:         return False
 	else:
-		print  " ERROR in bcast_number_to_all"
+		print(" ERROR in bcast_number_to_all")
 
 def bcast_list_to_all(list_to_send, myid, source_node = 0, mpi_comm = -1):
 	from mpi import mpi_bcast, MPI_COMM_WORLD, MPI_FLOAT, MPI_INT
@@ -2994,8 +2996,8 @@ def bcast_list_to_all(list_to_send, myid, source_node = 0, mpi_comm = -1):
 	if(myid == source_node):
 		n = len(list_to_send)
 		# we will also assume all elements on the list are of the same type
-		if( type(list_to_send[0]) == types.IntType ): tp = 0
-		elif( type(list_to_send[0]) == types.FloatType ): tp = 1
+		if( type(list_to_send[0]) == int ): tp = 0
+		elif( type(list_to_send[0]) == float ): tp = 1
 		else: tp = 2
 	else:
 		n = 0
@@ -3030,10 +3032,10 @@ def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, 
 	ink = []
 	len_list = 0
 	for il in xrange(len(list_params)):
-		if type(value[il]) is types.IntType:
+		if type(value[il]) is int:
 			ink.append(1)
 			len_list += 1
-		elif type(value[il]) is types.FloatType:
+		elif type(value[il]) is float:
 			ink.append(0)
 			len_list += 1
 		elif type(value[il]) is TransType:
@@ -3102,8 +3104,8 @@ def send_attr_dict(main_node, data, list_params, image_start, image_end, comm = 
 	for im in xrange(image_start, image_end):
 		value = get_arb_params(data[im-image_start], list_params)
 		for il in xrange(len(value)):
-			if    type(value[il]) is types.IntType:  nvalue.append(float(value[il]))
-			elif  type(value[il]) is types.FloatType: nvalue.append(value[il])
+			if    type(value[il]) is int:  nvalue.append(float(value[il]))
+			elif  type(value[il]) is float: nvalue.append(value[il])
 			elif  type(value[il]) is TransType:
 				m = value[il].get_matrix()
 				assert (len(m)==12)
@@ -3130,10 +3132,10 @@ def recv_attr_dict_bdb(main_node, stack, data, list_params, image_start, image_e
 	ISID = -1
 	for il in xrange(len(list_params)):
 		if(list_params[il] == 'ID'):  ISID = il
-		if type(value[il]) is types.IntType:
+		if type(value[il]) is int:
 			ink.append(1)
 			len_list += 1
-		elif type(value[il]) is types.FloatType:
+		elif type(value[il]) is float:
 			ink.append(0)
 			len_list += 1
 		elif type(value[il]) is TransType:
@@ -3183,12 +3185,12 @@ def recv_attr_dict_bdb(main_node, stack, data, list_params, image_start, image_e
 def check_attr(ima, num, params, default_value, action="Warning"):
 	from sys import exit
 	attr_list = ima.get_attr_dict()
-	if attr_list.has_key(params) == False:
+	if (params in attr_list) == False:
 		if action=="Warning":
-			print "WARNING: In image %i, cannot find attribute \'%s\' in the header, set it to the default value" %(num, params), default_value
+			print("WARNING: In image %i, cannot find attribute \'%s\' in the header, set it to the default value" %(num, params), default_value)
 			ima.set_attr_dict({params:default_value})
 		elif action=="Error":
-			print "ERROR:   In image %i, cannot find attribute \'%s\' in the header, the program has to terminate" %(num, params)
+			print("ERROR:   In image %i, cannot find attribute \'%s\' in the header, the program has to terminate" %(num, params))
 			exit()
 		return False
 	else: return True
@@ -3201,9 +3203,9 @@ def print_begin_msg(program_name, onscreen=False):
 	s = (t-len(string))/2
 	spacing = ' '*s
 	if onscreen:
-		print stars
-		print spacing+string
-		print stars
+		print(stars)
+		print(spacing+string)
+		print(stars)
 	else:
 		print_msg(stars+"\n")
 		print_msg(spacing+string+"\n")
@@ -3217,9 +3219,9 @@ def print_end_msg(program_name, onscreen=False):
 	s = (t-len(string))/2
 	spacing = ' '*s
 	if onscreen:
-		print stars
-		print spacing+string
-		print stars
+		print(stars)
+		print(spacing+string)
+		print(stars)
 	else:
 		print_msg(stars+"\n")
 		print_msg(spacing+string+"\n")
@@ -3718,7 +3720,7 @@ def nearestk_projangles(projangles, whichone = 0, howmany = 1, sym="c1"):
 			del tempan[best_j], lookup[best_j]
 
 	else:
-		print  "  ERROR:  symmetry not supported  ",sym
+		print("  ERROR:  symmetry not supported  ",sym)
 		assignments = []
 
 
@@ -3908,7 +3910,7 @@ def cone_ang( projangles, phi, tht, ant, symmetry = 'c1'):
 				if(qk<nsym):  la.append(projangles[i])
 				else:         la.append([projangles[i][0],projangles[i][1],(projangles[i][2]+180.0)%360.0])
 	
-	else:  print  "Symmetry not supported ",symmetry
+	else:  print("Symmetry not supported ",symmetry)
 	return la
 
 #  Push to C.  PAP  11/25/2016
@@ -3959,7 +3961,7 @@ def cone_ang_f( projangles, phi, tht, ant, symmetry = 'c1'):
 				if(qk<nsym):  la.append(projangles[i])
 				else:         la.append([projangles[i][0],projangles[i][1],(projangles[i][2]+180.0)%360.0])
 	
-	else:  print  "Symmetry not supported ",symmetry
+	else:  print("Symmetry not supported ",symmetry)
 
 	return la
 
@@ -4113,7 +4115,7 @@ def rotation_between_anglesets(agls1, agls2):
 	import types
 
 	def ori2xyz(ori):
-		if(type(ori) == types.ListType):
+		if(type(ori) == list):
 			phi, theta, psi = ori[:3]
 		else:
 			# it has to be Transformation object
@@ -4343,7 +4345,7 @@ def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, ve
 	previous_group = -1
 	previous_zone = 5
 	for grp in xrange(N/img_per_grp):
-		print grp,
+		print(grp, end=' ')
 		N_remain = N-grp*img_per_grp
 		# The idea here is that if each group has more than 100 images in average,
 		# we consider it crowded enough to just consider the most crowded group.
@@ -4401,7 +4403,7 @@ def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, ve
 				if len(assignments[i]) > max_group_size:
 					max_group_size = len(assignments[i])
 					max_group = i
-			print max_group_size, max_group, previous_group,
+			print(max_group_size, max_group, previous_group, end=' ')
 			for i in xrange(len(assignments[max_group])):
 				ind = remain_index[assignments[max_group][i]]
 				v.append(proj_ang[ind][5])
@@ -4427,9 +4429,9 @@ def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, ve
 					diff_table[j][i] = q
 			diff_table_index = dict()
 			for i in xrange(Nn): diff_table_index[index[i]] = i
-			print Nn, True,
+			print(Nn, True, end=' ')
 		else:
-			print Nn, False,
+			print(Nn, False, end=' ')
 
 		t21 = time()
 		for i in xrange(Nn):
@@ -4461,7 +4463,7 @@ def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, ve
 		center_i = index[dang[0][1]]
 		angles_list.append([proj_ang[center_i][0], proj_ang[center_i][1], dang[img_per_grp-1][0]])
 		previous_group = max_group
-		print t2-t1, t3-t2, t22-t21, t3-t22, t4-t3
+		print(t2-t1, t3-t2, t22-t21, t3-t22, t4-t3)
 
 	if N%img_per_grp*3 >= 2*img_per_grp:
 		members = []
@@ -4474,7 +4476,7 @@ def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, ve
 		for i in xrange(N):
 			if proj_ang[i][4]:
 				proj_list[-1].append(i)
-	print "Total time used = ", time()-t0
+	print("Total time used = ", time()-t0)
 
 	return proj_list, angles_list
 
@@ -4645,7 +4647,7 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 	N = len(proj_ang)
 	if len(List) == 0: List = range(N)
 	if N < img_per_grp:
-		print "Error: image per group larger than the number of particles!"
+		print("Error: image per group larger than the number of particles!")
 		exit()
 	phi_list   = [[0.0, 0] for i in xrange(N)]
 	theta_list = [[0.0, 0] for i in xrange(N)]
@@ -4797,6 +4799,32 @@ def findall(value, L, start=0):
 			pass
 	return positions
 
+def assignments_to_groups(assignments, n = -1):
+	#  convert a list of assignments of images to groups to list of lists of image numbers within groups
+	#  n can be maximum number of groups
+	if( n == -1 ): nmax = max(assignments)
+	else:  nmax = n
+	groups = [[] for i in xrange(nmax+1)]
+	for i,q in enumerate(assignments):  groups[q].append(i)
+	for q in xrange(len(groups)):  groups[q].sort()
+	return groups
+
+
+def groups_assignments(groups, n = -1):
+	#  convert groups (a list of lists of image numbers within groups) into a list of assignments of images to groups
+	#  n can be maximum number of elements
+	if( n == -1 ): 
+		nmax = -1
+		for q in xrange(len(groups)):  nmax = max(nmax,max(groups[q]))
+	else:
+		nmax = n
+	assignments = [-1]*(nmax+1)
+
+	for i,q in enumerate(groups):
+		for l in q:
+			assignments[l] = i
+	return assignments
+
 """
 def findall(val, lo):
 	'''
@@ -4938,7 +4966,7 @@ def unpack_message(msg):
 	elif msg[0]=="Z" : return loads(decompress((msg[1:]).tostring()))
 	elif msg[0]=="O" : return loads((msg[1:]).tostring())
 	else :
-		print "ERROR: Invalid MPI message. Please contact developers. (%s)"%str(msg[:20])
+		print("ERROR: Invalid MPI message. Please contact developers. (%s)"%str(msg[:20]))
 		raise Exception("unpack_message")
 
 
@@ -4947,7 +4975,7 @@ statistics_send_recv = dict()
 def update_tag(communicator, target_rank):   # TODO - it doesn't work when communicators are destroyed and recreated
 	return 123456
 	global statistics_send_recv
-	if not statistics_send_recv.has_key(communicator):
+	if communicator not in statistics_send_recv:
 		from mpi import mpi_comm_size
 		statistics_send_recv[communicator] = [0] * mpi_comm_size(communicator)
 	statistics_send_recv[communicator][target_rank] += 1
@@ -5250,17 +5278,17 @@ def cmdexecute(cmd, printing_on_success = True):
 	outcome = os.system(cmd)
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	if(outcome != 0):
-		print  line,"ERROR!!   Command failed:  ", cmd, " return code of failed command: ", outcome
+		print(line,"ERROR!!   Command failed:  ", cmd, " return code of failed command: ", outcome)
 		return 0
 	elif printing_on_success:
-		print line,"Executed successfully: ",cmd
+		print(line,"Executed successfully: ",cmd)
 		return 1
 
 def string_found_in_file(myregex, filename):
 	import re
 	pattern = re.compile(myregex)
 	for line in open(filename):
-		if re.findall(pattern, line) <> []:
+		if re.findall(pattern, line) != []:
 			return True
 	return False
 
@@ -5293,7 +5321,7 @@ def get_nonexistent_directory_increment_value(directory_location, directory_name
 def print_with_time_info(msg):
 	from time import localtime, strftime
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>" + msg
-	print line
+	print(line)
 
 def if_error_then_all_processes_exit_program(error_status):
 	import sys, os
@@ -5617,8 +5645,8 @@ def store_value_of_simple_vars_in_json_file(filename, local_vars, exclude_list_o
 
 	import json, types, collections
 
-	allowed_types = [types.NoneType, types.BooleanType, types.IntType, types.LongType, types.FloatType, types.ComplexType,
-					 types.UnicodeType, types.StringType]
+	allowed_types = [type(None), bool, int, int, float, complex,
+					 str, bytes]
 
 	local_vars_keys = local_vars.keys()
 
@@ -5626,7 +5654,7 @@ def store_value_of_simple_vars_in_json_file(filename, local_vars, exclude_list_o
 	for key in set(local_vars_keys) - set(exclude_list_of_vars):
 		if type(local_vars[key]) in allowed_types:
 			my_vars[key] = local_vars[key]
-		elif type(local_vars[key]) in [types.ListType, types.TupleType, type(set())]:
+		elif type(local_vars[key]) in [list, tuple, type(set())]:
 			if len({type(i) for i in local_vars[key]} - set(allowed_types)) == 0:
 				if key in vars_that_will_show_only_size:
 					my_vars[key] = "%s with length: %d"%(str(type(local_vars[key])),len(local_vars[key]))
@@ -5635,7 +5663,7 @@ def store_value_of_simple_vars_in_json_file(filename, local_vars, exclude_list_o
 						my_vars[key] = list(local_vars[key])
 					else:
 						my_vars[key] = local_vars[key]
-		elif type(local_vars[key]) == types.DictType:
+		elif type(local_vars[key]) == dict:
 			if len({type(local_vars[key][i]) for i in local_vars[key]} - set(allowed_types)) == 0:
 					my_vars[key] = local_vars[key]
 
@@ -5656,9 +5684,9 @@ def print_program_start_information():
 	mpi_size = mpi_comm_size(MPI_COMM_WORLD)	# Total number of processes, passed by --np option.
 
 	if(myid == 0):
-		print "Location: " + os.getcwd()
+		print("Location: " + os.getcwd())
 
-	print "MPI Rank: %03d/%03d "%(myid, mpi_size) + "Hostname: " + gethostname() +  " proc_id: " + str(os.getpid())
+	print("MPI Rank: %03d/%03d "%(myid, mpi_size) + "Hostname: " + gethostname() +  " proc_id: " + str(os.getpid()))
 
 
 
@@ -5745,7 +5773,7 @@ def program_state_stack(full_current_state, frameinfo, file_name_of_saved_state=
 	while mpi_comm_rank(MPI_COMM_WORLD) == 0:
 		if "file_name_of_saved_state" not in program_state_stack.__dict__:
 			if type(file_name_of_saved_state) != type(""):
-				print "Must provide the file name of saved state as a string in the first call of the function!"
+				print("Must provide the file name of saved state as a string in the first call of the function!")
 				error_status = 1
 				break
 
@@ -5896,8 +5924,8 @@ def print_from_process(process_rank, message):
 	mpi_size = mpi_comm_size(MPI_COMM_WORLD)	# Total number of processes, passed by --np option.
 
 	if(myid == process_rank):
-		print "MPI Rank: %03d/%03d "%(myid, mpi_size) + "Hostname: " + gethostname() +  " proc_id: " + str(os.getpid()) +\
-			"message:::", message
+		print("MPI Rank: %03d/%03d "%(myid, mpi_size) + "Hostname: " + gethostname() +  " proc_id: " + str(os.getpid()) +\
+			"message:::", message)
 	sys.stdout.flush()
 
 def mpi_exit():
@@ -6067,7 +6095,7 @@ def print_upper_triangular_matrix(data_table_dict,N_indep,log_main):
 
 def print_a_line_with_timestamp(string_to_be_printed ):
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
- 	print(line,string_to_be_printed)
+	print((line,string_to_be_printed))
 	return string_to_be_printed
 
 def convertasi(asig,K):
@@ -6097,15 +6125,15 @@ def prepare_ptp(data_list, K):
 
 def print_dict(dict,theme):
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(line+theme)
+		print((line+theme))
 		spaces = "                           "
 		for key, value in sorted( dict.items() ):
 			if(key != "constants"):
-				print("                    => "+key+spaces[len(key):]+":  "+str(value))
+				print(("                    => "+key+spaces[len(key):]+":  "+str(value)))
 
 def get_resolution_mrk01(vol, radi, nnxo, fscoutputdir, mask_option):
-        # this function is single processor
-        #  Get updated FSC curves, user can also provide a mask using radi variable
+	# this function is single processor
+	#  Get updated FSC curves, user can also provide a mask using radi variable
 	import types
 	from statistics import fsc
 	from utilities import model_circle, get_im
@@ -6127,7 +6155,7 @@ def get_resolution_mrk01(vol, radi, nnxo, fscoutputdir, mask_option):
 			#print("  Something wrong with the resolution, cannot continue")
 		currentres = nfsc[0][i-1]
 
-        """ this commented previously
+	""" this commented previously
 		lowpass = 0.5
 		ns = len(nfsc[1])
         #  This is resolution used to filter half-volumes
@@ -6500,7 +6528,7 @@ def recons_mref(Tracker):
 		mpi_barrier(MPI_COMM_WORLD)
 		vol = recons3d_4nn_ctf_MPI(myid=myid,prjlist=data,symmetry=Tracker["constants"]["sym"],finfo=None)
 		if myid ==main_node:
-			print "reconstructed %3d"%igrp
+			print("reconstructed %3d"%igrp)
 		ref_list.append(vol)
 		number_of_ref_class.append(len(Tracker["this_data_list"]))
 	Tracker["number_of_ref_class"] = number_of_ref_class
@@ -6539,14 +6567,14 @@ def get_number_of_groups(total_particles,number_of_images_per_group):
 
 def get_complementary_elements(total_list,sub_data_list):
 	if len(total_list)<len(sub_data_list):
-		print "Wrong input list!"
+		print("Wrong input list!")
 		return []
 	else:
 		sub_data_dict     = {}
 		complementary     = []
 		for index in xrange(len(sub_data_list)):sub_data_dict[sub_data_list[index]]=index
 		for any in total_list:
-			if sub_data_dict.has_key(any) is False:complementary.append(any)
+			if (any in sub_data_dict) is False:complementary.append(any)
 		return complementary
 
 def get_complementary_elements_total(total_stack, data_list):
@@ -6554,7 +6582,7 @@ def get_complementary_elements_total(total_stack, data_list):
 	complementary     = []
 	for index in xrange(len(data_list)):data_dict[data_list[index]]=index
 	for index in xrange(total_stack):
-		if data_dict.has_key(index) is False:complementary.append(index)
+		if (index in data_dict) is False:complementary.append(index)
 	return complementary
 
 def update_full_dict(leftover_list, Tracker):
@@ -6587,7 +6615,7 @@ def adjust_fsc_down(fsc,n1,n2):
 	# n1 total data n2 subset
 	from utilities import read_text_file
 	import types
-	if type(fsc) == types.StringType:fsc=read_text_file(fsc,-1)
+	if type(fsc) == bytes:fsc=read_text_file(fsc,-1)
 	N_bins =  len(fsc[0])
 	adjusted_fsc = N_bins*[None]
 	for index_of_cc in xrange(N_bins):
@@ -6881,9 +6909,9 @@ def Kmeans_exhaustive_run(ref_vol_list,Tracker):
 				#volref = filt_tanl(volref, Tracker["low_pass_filter"],.1)
 				volref, fsc_kmref = rec3D_two_chunks_MPI(data,snr,Tracker["constants"]["sym"],mask3D,\
 			 os.path.join(outdir, "resolution_%02d_Kmref%04d"%(igrp,kmref)), myid, main_node, index=-1, npad=npad, finfo = None)
-			 	if myid !=main_node:
-			 		volref = model_blank(Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"])
-			 	bcast_EMData_to_all(volref, myid, main_node, MPI_COMM_WORLD)
+				if myid !=main_node:
+					volref = model_blank(Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"])
+				bcast_EMData_to_all(volref, myid, main_node, MPI_COMM_WORLD)
 				ref_vol_list.append(volref)
 				mpi_barrier(MPI_COMM_WORLD)
 		else:
@@ -6897,7 +6925,7 @@ def Kmeans_exhaustive_run(ref_vol_list,Tracker):
 
 def print_a_line_with_timestamp(string_to_be_printed ):
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
- 	print(line,string_to_be_printed)
+	print((line,string_to_be_printed))
 	return string_to_be_printed
 
 def split_a_group(workdir,list_of_a_group,Tracker):
@@ -7159,7 +7187,7 @@ def angular_distribution(inputfile, options, output):
 					options.cylinder_width
 				)
 			)
-	print('All done! Saved output to: {0}'.format(output))
+	print(('All done! Saved output to: {0}'.format(output)))
 
 #####---------------------------------------------------
 # used in new meridien

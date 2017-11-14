@@ -1,4 +1,5 @@
 #!/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -60,7 +61,7 @@ prl = project(vol,params,1000)
 info(prl)
 drop_image(proj,"xxx2.hdf")
 
-print  ccc(proj,prl)
+print(ccc(proj,prl))
 f = fsc(proj,prl,1.,"zero.txt")
 
 d = im_diff(proj,prl)
@@ -81,7 +82,7 @@ drop_image(proj,"xxx4.hdf")
 
 
 
-print  ccc(proj,prl)
+print(ccc(proj,prl))
 f = fsc(proj,prl,1.,"weird.txt")
 
 
@@ -117,32 +118,32 @@ ia2,ix2,iy2,s = inverse_transform2(a2,x2,y2)
 ia1,ix1,iy1,s = inverse_transform2(a1,x1,y1)
 io = rtshg(o,ia1,ix1,iy1)
 
-print ccc(io,proj,msk)
+print(ccc(io,proj,msk))
 
 # inverse transfromation in one step
 ta,tx,ty,s=compose_transform2(ia2,ix2,iy2,1.0,ia1,ix1,iy1,1.0)
-print  ta,tx,ty
+print(ta,tx,ty)
 
 q = rtshg(t,ta,tx,ty)
 drop_image(q,"xxx4.spi")
-print ccc(q,proj,msk)
+print(ccc(q,proj,msk))
 
 # inverse trasformation in one step with additional rotation by psi added
 
 tta,ttx,tty,s=compose_transform2(ta,tx,ty,1.0,-85.,0,0,1.0)
-print  tta,ttx,tty
+print(tta,ttx,tty)
 
 p = rtshg(t,tta,ttx,tty)
 drop_image(p,"xxx5.spi")
-print ccc(p,proj0,msk)
+print(ccc(p,proj0,msk))
 
 # work until here
 
 
 # Now invert and transfer all these parameters to the projection of the volume....
 ia,ix,iy,s=inverse_transform2(tta,ttx,tty)
-print  ia,ix,iy
+print(ia,ix,iy)
 params = [19.0,77.0,ia,ix,iy]
 projt=prgs(volft,kb,params)
 drop_image(projt,"xxx7.spi")
-print ccc(t,projt,msk)
+print(ccc(t,projt,msk))

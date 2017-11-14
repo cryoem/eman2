@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -226,7 +227,7 @@ class EMHistogramWidget(EMGLWidget):
 			if self.inspector: self.inspector.datachange()
 			if not quiet: self.updateGL()
 			return
-		if self.data.has_key(key) : oldkey=True
+		if key in self.data : oldkey=True
 		else: oldkey=False
 		if isinstance(input_data,EMData):
 			data = input_data.get_data_as_vector()
@@ -249,7 +250,7 @@ class EMHistogramWidget(EMGLWidget):
 				else : self.axes[key]=(0,)#,1,-2,-2)
 			else : self.axes[key]=(-1,)#,0,-2,-2)
 		except:
-			print "Data error:", data
+			print("Data error:", data)
 			return
 
 		self.bins[key],self.edges = np.histogram(self.data[key][self.axes[key][0]],self.nbins,range=self.xlimits,density=self.normed)
@@ -293,7 +294,7 @@ class EMHistogramWidget(EMGLWidget):
 				im = im[0]
 				l = [i for i in range(im.get_size())]
 				k = im.get_data_as_vector()
-				if self.data.has_key(filename) : filename="{}.{}".format(filename,len(self.data))
+				if filename in self.data : filename="{}.{}".format(filename,len(self.data))
 				self.set_data([l,k],filename,quiet=quiet)
 			elif im[0].get_attr_default("isvector",0):
 				all=[]
@@ -309,7 +310,7 @@ class EMHistogramWidget(EMGLWidget):
 					k = image.get_data_as_vector()
 					self.set_data([l,k],filename+":"+str(idx),quiet=quiet)
 		elif file_type == 'fp':
-			fin=file(filename)
+			fin=open(filename)
 			fph=struct.unpack("120sII",fin.read(128))
 			ny=fph[1]
 			nx=fph[2]
@@ -319,7 +320,7 @@ class EMHistogramWidget(EMGLWidget):
 			self.set_data(data,filename,quiet=quiet)
 		else:
 			try:
-				fin=file(filename)
+				fin=open(filename)
 				fin.seek(0)
 				rdata=fin.readlines()
 				if '#' in rdata[0]:
@@ -335,7 +336,7 @@ class EMHistogramWidget(EMGLWidget):
 				self.set_data(data,remove_directories_from_name(filename,1),quiet=quiet)#,comments=comments)
 			except:
 				traceback.print_exc()
-				print "couldn't read",filename
+				print("couldn't read",filename)
 				return False
 		return True
 
@@ -365,7 +366,7 @@ class EMHistogramWidget(EMGLWidget):
 					k = image.get_data_as_vector()
 					data = [l,k]
 		elif file_type == 'fp':
-			fin=file(filename)
+			fin=open(filename)
 			fph=struct.unpack("120sII",fin.read(128))
 			ny=fph[1]
 			nx=fph[2]
@@ -374,7 +375,7 @@ class EMHistogramWidget(EMGLWidget):
 				data.append(struct.unpack("%df"%ny,fin.read(4*ny)))
 		else:
 			try:
-				fin=file(filename)
+				fin=open(filename)
 				fin.seek(0)
 				rdata=fin.readlines()
 				rdata=[i for i in rdata if i[0]!='#']
@@ -384,7 +385,7 @@ class EMHistogramWidget(EMGLWidget):
 				ny=len(rdata)
 				data=[[array([rdata[j][i]]) for j in range(ny)] for i in range(nx)]
 			except:
-				print "couldn't read",filename
+				print("couldn't read",filename)
 		return data
 
 	@staticmethod
@@ -397,7 +398,7 @@ class EMHistogramWidget(EMGLWidget):
 		any adaptations occur in future
 		'''
 		try:
-			fin=file(filename)
+			fin=open(filename)
 			fin.seek(0)
 			rdata = []
 			while (len(rdata) < 2):
@@ -511,7 +512,7 @@ class EMHistogramWidget(EMGLWidget):
 				try: # this should work for matplotlib 0.91
 					self.scrlim=(ax.get_window_extent().xmin(),ax.get_window_extent().ymin(),ax.get_window_extent().xmax()-ax.get_window_extent().xmin(),ax.get_window_extent().ymax()-ax.get_window_extent().ymin())
 				except:
-					print 'there is a problem with your matplotlib'
+					print('there is a problem with your matplotlib')
 					return
 			self.plotlim=(ax.get_xlim()[0],ax.get_ylim()[0],ax.get_xlim()[1]-ax.get_xlim()[0],ax.get_ylim()[1]-ax.get_ylim()[0])
 
@@ -1179,13 +1180,13 @@ class EMHistogramInspector(QtGui.QWidget):
 		while os.path.exists(name2):
 			name2="plt_concat_%02d.txt"%(i)
 			i+=1
-		out=file(name2,"a")
+		out=open(name2,"a")
 		for name in names :
 			data=self.target().data[name]
 			for i in xrange(len(data[0])):
 				out.write("%g\t%g\n"%(data[0][i],data[1][i]))
 		out=None
-		print "Wrote ",name2
+		print("Wrote ",name2)
 
 	def savePlot(self):
 		"""Saves the contents of the current plot to a text file"""
@@ -1202,10 +1203,10 @@ class EMHistogramInspector(QtGui.QWidget):
 			while os.path.exists(name2):
 				name2="plt_%s_%02d.txt"%(sname,i)
 				i+=1
-			out=file(name2,"w")
+			out=open(name2,"w")
 			for i in xrange(len(data[0])):
 				out.write("%g\t%g\n"%(data[0][i],data[1][i]))
-			print "Wrote ",name2
+			print("Wrote ",name2)
 
 	def savePdf(self):
 		"""Saves the contents of the current plot to a pdf"""
@@ -1311,11 +1312,11 @@ class EMHistogramInspector(QtGui.QWidget):
 			a.setFlags(flags)
 			try: a.setTextColor(qt_color_map[colortypes[parms[j][0]]])
 			except:
-				print "Color error"
-				print list(sorted(parms.keys()))
-				print parms[j][0]
-				print colortypes[parms[j][0]]
-				print qt_color_map[colortypes[parms[j][0]]]
+				print("Color error")
+				print(list(sorted(parms.keys())))
+				print(parms[j][0])
+				print(colortypes[parms[j][0]])
+				print(qt_color_map[colortypes[parms[j][0]]])
 			if visible[j]: a.setCheckState(Qt.Checked)
 			else: a.setCheckState(Qt.Unchecked)
 			self.setlist.addItem(a)
@@ -1367,12 +1368,12 @@ class DragListWidget(QtGui.QListWidget):
 				# parses out each number from each line and puts it in our list of lists
 				for i,f in enumerate(rex.findall(s)):
 					try: data[i].append(float(f))
-					except: print "Error (%d): %s"%(i,f)
+					except: print("Error (%d): %s"%(i,f))
 			# Find an unused name for the data set
 			trgplot=self.datasource().target()
 			name="Dropped"
 			nn=1
-			while trgplot.data.has_key(name) :
+			while name in trgplot.data :
 				name="Dropped_%d"%nn
 				nn+=1
 			trgplot.set_data(data,name,quiet=True)

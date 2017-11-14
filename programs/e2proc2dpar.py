@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 07/18/2017 (sludtke@bcm.edu)
@@ -92,8 +93,8 @@ def main():
 	(options, args) = parser.parse_args()
 
 	if len(args) != 2:
-		print "usage: " + usage
-		print "Please run '" + progname + " -h' for detailed options"
+		print("usage: " + usage)
+		print("Please run '" + progname + " -h' for detailed options")
 		sys.exit(1)
 
 	if options.parallel!=None:
@@ -104,23 +105,26 @@ def main():
 
 	logid = E2init(sys.argv,options.ppid)
 
-	if not file_mode_map.has_key(options.outmode) :
-		print "Invalid output mode, please specify one of :\n",str(file_mode_map.keys()).translate(None,'"[]')
+	if options.outmode not in file_mode_map :
+		print("Invalid output mode, please specify one of :\n",str(file_mode_map.keys()).translate(None,'"[]'))
 		sys.exit(1)
 	
 	N=EMUtil.get_image_count(args[0])
-	npt=max(min(100,N/(options.threads-2)),1)
+	npt=max(min(100,N/(options.threads-2)+1),1)
 	
 	jsd=Queue.Queue(0)
 	# these start as arguments, but get replaced with actual threads
 	thrds=[(jsd,args,options,i,i*npt,min(i*npt+npt,N)) for i in xrange(N/npt+1)]
+
+	#import pprint
+	#pprint.pprint(thrds)
 	
 	thrtolaunch=0
 	while thrtolaunch<len(thrds) or threading.active_count()>1:
 		if thrtolaunch<len(thrds):
 			while (threading.active_count()>=options.threads) : time.sleep(0.1)
 			if options.verbose>0 : 
-				print "\r Starting thread {}/{}      ".format(thrtolaunch,len(thrds)),
+				print("\r Starting thread {}/{}      ".format(thrtolaunch,len(thrds)), end=' ')
 				sys.stdout.flush()
 			thrds[thrtolaunch]=threading.Thread(target=procfn,args=thrds[thrtolaunch])		# replace args
 			thrds[thrtolaunch].start()
@@ -137,7 +141,7 @@ def main():
 			thrds[rd[0]]=None
 			
 			if options.verbose>1:
-				print "{} done with {} ptcls. ".format(rd[0],len(rd[1])),
+				print("{} done with {} ptcls. ".format(rd[0],len(rd[1])), end=' ')
 
 
 	logid = E2end(options.ppid)
@@ -165,7 +169,7 @@ def procfn(jsd,args,options,thrn,n0,n1):
 				try:
 					if i == n0 and d["ctf"].apix != apix :
 						if options.verbose > 0:
-							print "Warning: A/pix value in CTF was %1.2f, changing to %1.2f. May impact CTF parameters."%(d["ctf"].apix,apix)
+							print("Warning: A/pix value in CTF was %1.2f, changing to %1.2f. May impact CTF parameters."%(d["ctf"].apix,apix))
 
 					d["ctf"].apix = apix
 				except: pass
@@ -221,8 +225,8 @@ def procfn(jsd,args,options,thrn,n0,n1):
 					angle=float(angle)
 				except:
 					traceback.print_exc()
-					print options.anisotropic[index_d[option1]]
-					print "Error: --anisotropic specify amount,angle"
+					print(options.anisotropic[index_d[option1]])
+					print("Error: --anisotropic specify amount,angle")
 					sys.exit(1)
 					
 				rt=Transform({"type":"2d","alpha":angle})
@@ -330,7 +334,7 @@ def procfn(jsd,args,options,thrn,n0,n1):
 						sc.common_lines(e, e, sclmd, scl, true)
 					else:
 						if options.verbose > 0:
-							print "Error: invalid common-line mode '" + sclmd + "'"
+							print("Error: invalid common-line mode '" + sclmd + "'")
 
 						sys.exit(1)
 		ret[1][n]=d

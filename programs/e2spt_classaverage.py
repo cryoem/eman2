@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Jesus Galaz-Montoya 03/2011, 
@@ -44,7 +45,7 @@ import random
 from random import choice
 from pprint import pprint
 from EMAN2jsondb import JSTask,jsonclasses
-import datetime
+#import datetime
 import gc 	#this will be used to free-up unused memory
 
 #from e2spt_hac import textwriter
@@ -282,14 +283,14 @@ def main():
 	
 	if options.shrink < options.shrinkfine:
 		options.shrink = options.shrinkfine
-		print "\n(e2spt_classaverage)(main) WARNING: It makes no sense for shrinkfine to be larger than shrink; therefore, shrink will be made to match shrinkfine"
+		print("\n(e2spt_classaverage)(main) WARNING: It makes no sense for shrinkfine to be larger than shrink; therefore, shrink will be made to match shrinkfine")
 		
 	checksaneimagesize( options, options.input )
 
 	if options.ref:
 		checksaneimagesize( options, options.input, options.ref )
 
-	print "Initially, options.goldstandardoff is", options.goldstandardoff, type(options.goldstandardoff)
+	print("Initially, options.goldstandardoff is", options.goldstandardoff, type(options.goldstandardoff))
 	
 	'''
 	Get rootpath to provide absoulute paths to files. 
@@ -311,8 +312,8 @@ def main():
 			options.resume = rootpath + '/' + options.resume
 	
 		if not options.path:
-			print """\nERROR: If you provide --resume, you need to specify which working 
-			directory needs to be resumed. Provide it through --path"""			
+			print("""\nERROR: If you provide --resume, you need to specify which working 
+			directory needs to be resumed. Provide it through --path""")			
 			sys.exit()
 
 	if rootpath not in options.path:
@@ -336,43 +337,43 @@ def main():
 			#print "smaller than the number of particles", nptcl
 			
 			if options.goldstandardoff:
-				print "goldstandard is off"
+				print("goldstandard is off")
 				if options.subset < 2:
 					if not options.ref:
-						print "ERROR: You need at least 2 particles in --input to buidl a reference if --ref is not provided."""
+						print("ERROR: You need at least 2 particles in --input to buidl a reference if --ref is not provided.""")
 						sys.exit()	
 			else:
-				print "goldstandard is on"
+				print("goldstandard is on")
 				if options.subset < 4:
-					print "ERROR: You need at least 4 particles in --input for goldstandard refinement if --ref is not provided and --goldstandardoff not provided."""
+					print("ERROR: You need at least 4 particles in --input for goldstandard refinement if --ref is not provided and --goldstandardoff not provided.""")
 					sys.exit()
 				
 				if options.hacref and options.subset < options.hacref * 2:
-					print """WARNING: --subset=%d wasn't large enough to accommodate gold standard
+					print("""WARNING: --subset=%d wasn't large enough to accommodate gold standard
 					refinement with two independent halves using the specified number of particles
 					for initial model generation --hacref=%d. Therefore, --hacref will be reset
-					to --subset/2.""" %( options.subset, options.hacref )				
+					to --subset/2.""" %( options.subset, options.hacref ))				
 					options.hacref = options.subset / 2			
 			
 				elif options.ssaref and options.subset < options.ssaref * 2:		
-					print """WARNING: --subset=%d wasn't large enough to accommodate gold standard
+					print("""WARNING: --subset=%d wasn't large enough to accommodate gold standard
 					refinement with two independent halves using the specified number of particles
 					for initial model generation --ssaref=%d. Therefore, --ssaref will be reset
-					to --subset/2.""" %( options.subset, options.ssaref )
+					to --subset/2.""" %( options.subset, options.ssaref ))
 					options.ssaref = options.subset / 2	
 			
 				elif options.btref and options.subset < options.btref * 2:			
-					print """WARNING: --subset=%d wasn't large enough to accommodate gold standard
+					print("""WARNING: --subset=%d wasn't large enough to accommodate gold standard
 					refinement with two independent halves using the specified number of particles
 					for initial model generation --btref=%d. Therefore, --btref has been reset
-					to --subset/2.""" %( options.subset, options.btref )
+					to --subset/2.""" %( options.subset, options.btref ))
 					options.btref = options.subset / 2
 					
 			subsetStack = options.path + '/subset' + str( options.subset ).zfill( len( str( options.subset))) + '.hdf' 
-			print "\nSubset to be written to", subsetStack
+			print("\nSubset to be written to", subsetStack)
 		
 			subsetcmd = 'e2proc3d.py ' + options.input + ' ' + subsetStack + ' --first=0 --last=' + str(options.subset-1) 
-			print "Subset cmd is", subsetcmd
+			print("Subset cmd is", subsetcmd)
 		
 			runcmd( options, subsetcmd )
 			#p=subprocess.Popen( subsetcmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE )
@@ -381,22 +382,22 @@ def main():
 		
 			options.input = subsetStack
 			nptcl = EMUtil.get_image_count(options.input)
-			print "\nnptcl for subset is now", nptcl
+			print("\nnptcl for subset is now", nptcl)
 			
 		else:
-			print """\n(e2spt_classaverage)(main) WARNING: --subset was larger or equal to the number of particles in --input. 
-			Therefore, using all particles."""
+			print("""\n(e2spt_classaverage)(main) WARNING: --subset was larger or equal to the number of particles in --input. 
+			Therefore, using all particles.""")
 	else:
 		if not options.ref:
 			if not options.goldstandardoff:
 				if nptcl < 4:
-					print "ERROR: You need at least 4 particles in --input for goldstandard refinement if --ref is not provided and --goldstandardoff not provided."""
+					print("ERROR: You need at least 4 particles in --input for goldstandard refinement if --ref is not provided and --goldstandardoff not provided.""")
 					sys.exit()
 				else:
 					pass
 			else:
 				if nptcl < 2:
-					print "ERROR: You need at least 2 particles in --input to build a reference (or to --recompute and average) if --ref is not provided."""
+					print("ERROR: You need at least 2 particles in --input to build a reference (or to --recompute and average) if --ref is not provided.""")
 					sys.exit()
 		#else:
 		#	print "ref is", options.ref
@@ -409,7 +410,7 @@ def main():
 		if options.search or options.searchfine:
 			options = sptParseAligner( options )
 		
-			print "aligner parsed", sptParseAligner
+			print("aligner parsed", sptParseAligner)
 	else:
 		options.align = 'rotate_translate_3d_grid:phi0=0:phi1=1:alt0=0:alt1=1:az0=0:az1=1:dphi=2:daz=2:dalt=2'
 		
@@ -427,7 +428,7 @@ def main():
 	
 	
 	
-	print "after fixing searches but before calcali options.falign is", options.falign
+	print("after fixing searches but before calcali options.falign is", options.falign)
 	if options.radius and float(options.radius) > 0.0:
 		#print "(e2spt_classaverage)(main) before calling calcAliStep, options.input is", options.input
 		options = calcAliStep(options)
@@ -441,20 +442,20 @@ def main():
 	
 	if options.mask or options.maskfile or options.normproc or options.threshold or options.clip or (options.shrink > 1) or options.lowpass or options.highpass or options.preprocess:		
 		
-		print "\noptions.mask", options.mask
-		print "\noptions.maskfile", options.maskfile
-		print "\noptions.normproc", options.normproc
-		print "\noptions.threshold", options.threshold
-		print "\noptions.clip", options.clip
-		print "\noptions.shrink", options.shrink
-		print "\noptions.shrinkfine", options.shrinkfine
-		print "\noptions.lowpass", options.lowpass
-		print "\noptions.highpass", options.highpass
-		print "\noptions.preprocess", options.preprocess
+		print("\noptions.mask", options.mask)
+		print("\noptions.maskfile", options.maskfile)
+		print("\noptions.normproc", options.normproc)
+		print("\noptions.threshold", options.threshold)
+		print("\noptions.clip", options.clip)
+		print("\noptions.shrink", options.shrink)
+		print("\noptions.shrinkfine", options.shrinkfine)
+		print("\noptions.lowpass", options.lowpass)
+		print("\noptions.highpass", options.highpass)
+		print("\noptions.preprocess", options.preprocess)
 		
-		print "\ntruth statement", options.mask or options.maskfile or options.normproc or options.threshold or options.clip or (options.shrink > 1) or options.lowpass or options.highpass or options.preprocess
+		print("\ntruth statement", options.mask or options.maskfile or options.normproc or options.threshold or options.clip or (options.shrink > 1) or options.lowpass or options.highpass or options.preprocess)
 		
-		print "\n\n\nPPPPPPP options.input is", options.input
+		print("\n\n\nPPPPPPP options.input is", options.input)
 		ret = cmdpreproc( options.input, options, False )
 		if ret: 
 			preprocdone += 1
@@ -466,7 +467,7 @@ def main():
 			options.input = options.path + '/' + ret
 		
 		else:
-			print "\n(e2spt_classaverage)(main) preprocessing --input for coarse alignment failed"
+			print("\n(e2spt_classaverage)(main) preprocessing --input for coarse alignment failed")
 		
 		"""
 		--ref needs to be preprocessed every iteration because it is updated every iteration. no point preprocessing it here
@@ -497,7 +498,7 @@ def main():
 			if ret: 
 				preprocdone += 1
 			else:
-				print "\n(e2spt_classaverage)(main) preprocessing --input for fine alignment failed"
+				print("\n(e2spt_classaverage)(main) preprocessing --input for fine alignment failed")
 			
 			
 			"""
@@ -519,18 +520,19 @@ def main():
 		preprocdone += 1
 	
 
-	print "\n(e2spt_classaverage)(main) preprocessing completed"
+	print("\n(e2spt_classaverage)(main) preprocessing completed")
 
 	'''
 	Parse parameters such that "None" or "none" are adequately interpreted to turn of an option
 	'''
+	from EMAN2_utils import sptOptionsParser
 	options = sptOptionsParser( options )
 
-	print "after parsing options, options.goldstandardoff is", options.goldstandardoff, type(options.goldstandardoff)
-	print options.align, type(options.align)
+	print("after parsing options, options.goldstandardoff is", options.goldstandardoff, type(options.goldstandardoff))
+	print(options.align, type(options.align))
 	
 	if options.resultmx: 
-		print "\nSorry, resultmx not implemented yet"
+		print("\nSorry, resultmx not implemented yet")
 
 	#????
 	if options.resultmx != None: 
@@ -544,21 +546,22 @@ def main():
 	'''
 	Store parameters in parameters.txt file inside --path
 	'''
+	from EMAN2_utils import writeParameters
 	cmdwp = writeParameters(options,'e2spt_classaverage.py', 'sptclassavg')
 
 
 	
 	if nptcl<1 : 
-		print "(e2spt_classaverage)(main) - ERROR : at least 1 particle required in input stack"
+		print("(e2spt_classaverage)(main) - ERROR : at least 1 particle required in input stack")
 		sys.exit(1)
 	
 	if nptcl==1:
 		if options.iter>1 :
-			print "(e2spt_classaverage)(main) - Error: makes no sense to have iter>1 with one particle"
+			print("(e2spt_classaverage)(main) - Error: makes no sense to have iter>1 with one particle")
 			sys.exit(1)
 	
 		if options.keepsig or options.keep!=1.0 :
-			print "(e2spt_classaverage)(main) - Error: do not use --keepsig with one particle, also keep should be 1.0 if specified"
+			print("(e2spt_classaverage)(main) - Error: do not use --keepsig with one particle, also keep should be 1.0 if specified")
 			sys.exit(1)
 
 	'''
@@ -572,8 +575,8 @@ def main():
 			etc = None
 	
 		else:
-			print "\n\n(e2spt_classaverage)(main) - INITIALIZING PARALLELISM!"
-			print "\n\n"
+			print("\n\n(e2spt_classaverage)(main) - INITIALIZING PARALLELISM!")
+			print("\n\n")
 			from EMAN2PAR import EMTaskCustomer
 			etc=EMTaskCustomer(options.parallel)
 			pclist=[options.input]
@@ -585,7 +588,7 @@ def main():
 		etc=''
 
 
-	print "\n\n\nCCCC chached this input", options.input
+	print("\n\n\nCCCC chached this input", options.input)
 
 	
 	
@@ -636,7 +639,7 @@ def main():
 	refsdict = {}
 
 	if options.classmx:
-		print "\n--classmx=",options.classmx
+		print("\n--classmx=",options.classmx)
 		classmxFile = options.classmx
 		classmx = EMData.read_images( classmxFile )		# we keep the entire classification matrix in memory, since we need to update it in most cases
 		#ncls = int(classmx[0]["maximum"])
@@ -649,7 +652,7 @@ def main():
 				inputalidict = js_open_dict( options.inputaliparams )
 				numdigits = len( inputalidict.keys()[0].split('_')[-1] )	#keys are of the form 'subtomo_XXX'; we determine how many XXX the keys have
 			except:
-				print "ERROR: Something is wrong with the json file provided". options.inputaliparams
+				print("ERROR: Something is wrong with the json file provided". options.inputaliparams)
 				sys.exit(1)
 		
 		
@@ -670,9 +673,9 @@ def main():
 			
 			for i in range( ptclrange ):			#Loop over the number of particles
 				score = scoresImg.get_value_at(ic,i)
-				print "score in classmx is", score
+				print("score in classmx is", score)
 				if score:
-					print "therefore score is TRUE (should not be if it is 0.0!!!!)"
+					print("therefore score is TRUE (should not be if it is 0.0!!!!)")
 					ptclnums.append(i)
 				
 		
@@ -681,19 +684,19 @@ def main():
 				score = classmx[0].get_value_at(ic,indx)
 			
 				if float( score ) > -0.000000001:
-					print "\nscore in classmx was empty (positive or zero)"
+					print("\nscore in classmx was empty (positive or zero)")
 				
 					if options.recompute:
 						if not options.inputaliparams:
 							if options.keepsig or options.keep < 1.0:
-								print "\n(e2spt_classaverage)(main) ERROR: if --recompute and --keep (or --keepsig) are provided simulaneously, you must also provide --inputaliparams"
+								print("\n(e2spt_classaverage)(main) ERROR: if --recompute and --keep (or --keepsig) are provided simulaneously, you must also provide --inputaliparams")
 								sys.exit()
 						
 					if options.inputaliparams:
 						numtag = str( indx ).zfill( numdigits )
 						key = 'subtomo_' + numtag
 						score = inputalidict[ key ][1]
-						print "\nfor subtomo %d, getting score from --inputaliparams, score=%f" %( indx, score )
+						print("\nfor subtomo %d, getting score from --inputaliparams, score=%f" %( indx, score ))
 				
 				#classnum = classmx[0][indx]
 				'''
@@ -723,17 +726,17 @@ def main():
 					key = 'subtomo_' + numtag
 					transformjson = inputalidict[ key ][0]
 				
-					print "\ntransform classmx is", alitransform
-					print "\nwhereas transform json is", transformjson
+					print("\ntransform classmx is", alitransform)
+					print("\nwhereas transform json is", transformjson)
 			
 				resultsforaverage.update( { indx:[score,alitransform] } )
 		
-			print "\nic is", ic
+			print("\nic is", ic)
 			if ic == 0:
-				print "\nresults for average EVEN are", resultsforaverage
+				print("\nresults for average EVEN are", resultsforaverage)
 			
 			if ic == 1:
-				print "\nresults for average ODD are", resultsforaverage
+				print("\nresults for average ODD are", resultsforaverage)
 		
 			ret = makeAverage( options, ic, resultsforaverage, 0 )
 			ref = ret[0]
@@ -761,21 +764,21 @@ def main():
 		
 		
 		
-			print "options.align is", options.align
+			print("options.align is", options.align)
 			refsavg = compareEvenOdd( options, refeven, refodd, 2, etc, fscfile, 'initial' ) #We pass on an "iteration number" > 1, that is 2 here, just so that both initial references are preprocessed and treated equally (this is required since --refpreprocessing is off when --ref is supplied 
 		
 			if options.recompute:
 				refsavg.write_image( options.path + '/recomp_avg.hdf', 0 )
 		
 		else:
-			print "\nERROR: building initial references from classmx failed!"
+			print("\nERROR: building initial references from classmx failed!")
 
 	
 		if options.inputaliparams:
 			inputalidict.close()
 	
 		if options.recompute:
-			print "recompute finished"
+			print("recompute finished")
 			sys.exit()	
 	else:
 		options.classmx = classmxFile
@@ -803,7 +806,7 @@ def main():
 					#print "\n(e2spt_classaverage)(main) - Particle %d will belong to odd class" %( i )
 					#classmxScores.set_value_at( 1, i, 1.0 )					
 			
-				print "\n(e2spt_classaverage)(main) - Particle %d will belong to classid %d" %( i, klassid )
+				print("\n(e2spt_classaverage)(main) - Particle %d will belong to classid %d" %( i, klassid ))
 				classmxScores.set_value_at( klassid, i, 1.0 )
 				
 		else:
@@ -828,7 +831,7 @@ def main():
 		classmxPhis.write_image(classmxFile,7)	
 		classmxScales.write_image(classmxFile,8)
 		
-	print "\n(e2spt_classaverage)(main) - classmx files initialized."
+	print("\n(e2spt_classaverage)(main) - classmx files initialized.")
 		
 	'''		
 	Figure out from the classmx file how many classes there are, and what particle indexes are in each
@@ -859,20 +862,20 @@ def main():
 
 
 	if not options.goldstandardoff:
-		print "\nThe number of classes and their indexes are"
+		print("\nThe number of classes and their indexes are")
 		for klass in ptclnumsdict:
-			print "Klass is", klass
-			print "Indexes are", ptclnumsdict[ klass ]
+			print("Klass is", klass)
+			print("Indexes are", ptclnumsdict[ klass ])
 
 	#originalOutput = options.output
 
 
 	if not refsdict:
-		print "\nno classmx provided. Building initial models from scratch or preparing reference (phase randomizing) if --ref provided. --ref is", options.ref
+		print("\nno classmx provided. Building initial models from scratch or preparing reference (phase randomizing) if --ref provided. --ref is", options.ref)
 		refsdict = sptRefGen( options, ptclnumsdict, cmdwp )
 
 		if not refsdict:
-			print "\nERROR: failed to build initial models from scratch"
+			print("\nERROR: failed to build initial models from scratch")
 			sys.exit()
 	
 	if not options.goldstandardoff and ncls > 1 and nptcl > 1:
@@ -893,9 +896,9 @@ def main():
 			else:
 				calcFsc( options, refeven, refodd, fscfile )
 		
-			print "options.lowpass and type were", options.lowpass, type( options.lowpass )
+			print("options.lowpass and type were", options.lowpass, type( options.lowpass ))
 			options.lowpass = ('filter.wiener.byfsc',{ 'fscfile':fscfile })
-			print "Now it is", options.lowpass, type(options.lowpass)
+			print("Now it is", options.lowpass, type(options.lowpass))
 
 
 	'''
@@ -913,7 +916,7 @@ def main():
 	This dictionary is used as one measure of convergence. If two consecutive averages have the same values on the header, they are equivalent and the algorithm has converged
 	'''
 	avgshdrs = { 0:[''] }
-	print "Upon initial setup, avgshdrs[0] is",  avgshdrs[0], type( avgshdrs[0] )
+	print("Upon initial setup, avgshdrs[0] is",  avgshdrs[0], type( avgshdrs[0] ))
 
 	'''
 	This dictionary will store the mean score per class across alignment iterations
@@ -923,7 +926,7 @@ def main():
 	if not options.goldstandardoff and ncls > 1 and nptcl > 1:
 		avgshdrs.update({1:['']})
 		meanScores.update( { 1:[0] } )
-		print "Upon initial setup, avgshdrs[1] is",  avgshdrs[1], type( avgshdrs[1] )
+		print("Upon initial setup, avgshdrs[1] is",  avgshdrs[1], type( avgshdrs[1] ))
 
 
 	gc.collect()	#free up unused memory
@@ -936,7 +939,7 @@ def main():
 			options.refpreprocess = True
 		
 		if options.verbose: 
-			print "\n(e2spt_classaverage)(main) - ###### Iteration %d/%d"%(it, options.iter)
+			print("\n(e2spt_classaverage)(main) - ###### Iteration %d/%d"%(it, options.iter))
 
 		classmxFile = options.path + '/classmx_' + str( it ).zfill( len (str (options.iter))) + '.hdf'
 	
@@ -945,7 +948,7 @@ def main():
 		for ic in range( ncls ):
 			weights = {}
 			if options.verbose:
-				print "Processing class %d/%d"%(ic+1,ncls)
+				print("Processing class %d/%d"%(ic+1,ncls))
 
 			ptclnums = ptclnumsdict[ ic ]
 		
@@ -958,9 +961,9 @@ def main():
 				klassid = ''
 		
 		
-			print "for klassid", klassid
-			print "ptclnums are", ptclnums
-			print "\n"
+			print("for klassid", klassid)
+			print("ptclnums are", ptclnums)
+			print("\n")
 			
 			#if options.savesteps:
 			#	refname = options.path + '/class_' + str(ic).zfill( len( str(ic) )) + '.hdf'
@@ -1085,13 +1088,13 @@ def main():
 			
 				try:
 					if actualNums and ptclnum in actualNums:
-						print """Skipping this particle because you provided --resume and the alignment info for this particle is aready present.
-						Info for particle loaded into results""", ptclnum
+						print("""Skipping this particle because you provided --resume and the alignment info for this particle is aready present.
+						Info for particle loaded into results""", ptclnum)
 				
 						tomoID = "subtomo_" + str(ptclnum).zfill( len(str( len(ptclnums) )) )
 				
 						if tomoID not in resumeDict.keys():
-							print "ERROR: This key is not in the file provided for --resume", tomoID
+							print("ERROR: This key is not in the file provided for --resume", tomoID)
 							sys.exit() 
 				
 		
@@ -1100,12 +1103,12 @@ def main():
 					
 							for key in keys:
 								if type(resumeDict[key]) is not list:					 
-									print """ERROR: Your sptali_ir.json file seems to be incomplete. The value for the particle key is a Transform(), but should be a list.
+									print("""ERROR: Your sptali_ir.json file seems to be incomplete. The value for the particle key is a Transform(), but should be a list.
 									The file should contain a dictionary where there's a 'key' for each particle, containing the word 'subtomo_' followed by the particle's index 
 									(with as many digits as there are orders of magnitude in the set; for example
 									the first particle in a set of 10 would be 'subtomo_0', but in a set of 10 to 100 it would be 'subtomo_00', and in a set of 101 to 1000
 									it would be 'subtomo_000'), and the 'value' of each key would be a list with two elements, [ Transform(), score ], where Transform
-									contains the alignment parameters between a particle and the reference, and score the cross correlation score for that alignment.""" 
+									contains the alignment parameters between a particle and the reference, and score the cross correlation score for that alignment.""") 
 									sys.exit()
 						
 						results.append( [ {'xform.align3d': resumeDict[tomoID][0] , 'score':resumeDict[tomoID][1] } ] )
@@ -1117,8 +1120,8 @@ def main():
 					tomoID = "subtomo_" + str(ptclnum).zfill( len(str( len(ptclnums) )) )
 					transform = preOrientationsDict[tomoID][0]
 				
-					print transform
-					print "Of type", type(transform)
+					print(transform)
+					print("Of type", type(transform))
 			
 			
 			
@@ -1137,7 +1140,7 @@ def main():
 			if options.parallel:
 				tids=etc.send_tasks(tasks)
 				if options.verbose: 
-					print "%d tasks queued in class %d iteration %d"%(len(tids),ic,it) 
+					print("%d tasks queued in class %d iteration %d"%(len(tids),ic,it)) 
 
 				"""Wait for alignments to finish and get results"""
 				#results=get_results(etc,tids,options.verbose,jsA,len(ptclnums),1)
@@ -1151,7 +1154,7 @@ def main():
 			
 			
 			if options.verbose > 2: 
-				print "Results:" 
+				print("Results:") 
 				pprint(results)
 					
 			if not options.donotaverage:					
@@ -1198,9 +1201,9 @@ def main():
 					ref['origin_y'] = 0
 					ref['origin_z'] = 0
 					
-					print "results len", len(results)
-					print "results[0]", results[0]
-					print "results", results
+					print("results len", len(results))
+					print("results[0]", results[0])
+					print("results", results)
 					t = Transform()
 					score = 100000000000
 					try:
@@ -1243,7 +1246,7 @@ def main():
 					jsA.setval( xformslabel, [ t , score ] )
 					jsA.close()
 					
-					print "Done aligning the only particle in --input to --ref"
+					print("Done aligning the only particle in --input to --ref")
 					sys.exit()
 		
 				
@@ -1293,14 +1296,14 @@ def main():
 			jsAliParamsPath = options.path + '/sptali_ir.json'
 		
 		
-			print "options.refinemultireftag and type are", options.refinemultireftag, type(options.refinemultireftag)
+			print("options.refinemultireftag and type are", options.refinemultireftag, type(options.refinemultireftag))
 		
 			if not options.refinemultireftag:
 				jsAliParamsPath = jsAliParamsPath.replace('.json', '_' + str(it).zfill( len(str(options.iter))) + '.json')
 			
 			
 
-			print "(e2spt_classaverage) This is the .json file to write", jsAliParamsPath
+			print("(e2spt_classaverage) This is the .json file to write", jsAliParamsPath)
 			jsA = js_open_dict( jsAliParamsPath ) #Write particle orientations to json database.
 		
 			iii = 0
@@ -1310,8 +1313,8 @@ def main():
 			'''
 			Iterate over alignment results to write them to classmx.hdf and .json files
 			'''
-			print "len results is", len(results)
-			print "should match nptcl", nptcl
+			print("len results is", len(results))
+			print("should match nptcl", nptcl)
 		
 			#print "results are", results
 		
@@ -1323,7 +1326,7 @@ def main():
 				
 				score = r[0][0]['score']
 				if options.verbose > 3:
-					print "for particle %d score is %.4f" %(ptclindx,score)
+					print("for particle %d score is %.4f" %(ptclindx,score))
 			
 				#classmxScores.set_value_at(ic,iii,score)
 				#posscore = math.fabs(score)
@@ -1334,24 +1337,24 @@ def main():
 				#weight=1.0
 			
 				if options.verbose > 3:
-					print "classmxWeights img is", classmxWeights['nx'], classmxWeights['ny'], classmxWeights['nz']
+					print("classmxWeights img is", classmxWeights['nx'], classmxWeights['ny'], classmxWeights['nz'])
 				
-				print "weights is", weights
-				print "gout to set value for classmxweights at", ic, ptclindx, weights[ptclindx]
+				print("weights is", weights)
+				print("gout to set value for classmxweights at", ic, ptclindx, weights[ptclindx])
 				classmxWeights.set_value_at(ic,ptclindx,weights[ptclindx])
 			
-				print "set value for classmxweights at", ic, ptclindx, weights[ptclindx]
+				print("set value for classmxweights at", ic, ptclindx, weights[ptclindx])
 			
 				t = r[0][0]['xform.align3d']
 			
 				if options.verbose > 3:
-					print "and transform is",t
+					print("and transform is",t)
 		
 				xformslabel = 'subtomo_' + str( ptclindx ).zfill( len( str( nptcl ) ) )			
 				jsA.setval( xformslabel, [ t , score ] )
 		
 				if options.verbose > 3:
-					print "wrote info to .json file"
+					print("wrote info to .json file")
 			
 				if options.saveallpeaks and options.npeakstorefine > 1 and options.falign:
 					scoresCoarse = []
@@ -1391,42 +1394,42 @@ def main():
 							if float( sc ) < 0.0:
 								z = ( sc - meanPeaksScoresCoarse ) / sigmaPeaksScoresCoarse
 					
-								print "pi, sc, meanPeaksScoresCoarse, sigmaPeaksScoresCoarse, z", pi, sc, meanPeaksScoresCoarse, sigmaPeaksScoresCoarse, z
+								print("pi, sc, meanPeaksScoresCoarse, sigmaPeaksScoresCoarse, z", pi, sc, meanPeaksScoresCoarse, sigmaPeaksScoresCoarse, z)
 					
 								peaklabel = str( pi ).zfill( len( str(options.npeakstorefine) ) )
 					
 								jsAcoarseAll.setval( xformslabel + '_peak_' + peaklabel , [ tc , 'ccc='+str(sc), 'zscore='+str(z) ] )
 							else:
-								print "Empty score for peak", pi
+								print("Empty score for peak", pi)
 					
 							pi += 1	
 					
 						jsAcoarseAll.close()
 				
 					else:
-						print "WARNING: Not enough successful alignments to compute a z-score"
+						print("WARNING: Not enough successful alignments to compute a z-score")
 				else:
 					pass #Only one peak from --npeakstorefine was refined
 					
 			
 				if options.verbose > 3:
-					print "setting classmx"
+					print("setting classmx")
 					
 				trans=t.get_trans()
-				print "\n\n\nTranslations were", trans
-				print "Therefre the transform was", t
+				print("\n\n\nTranslations were", trans)
+				print("Therefre the transform was", t)
 				rots=t.get_rotation()
 		
 				tx=trans[0]
-				print "Translation in x was", tx
+				print("Translation in x was", tx)
 				classmxXs.set_value_at(ic,ptclindx,tx)
 		
 				ty=trans[1]
-				print "Translation in y was", ty
+				print("Translation in y was", ty)
 				classmxYs.set_value_at(ic,ptclindx,ty)
 		
 				tz=trans[2]
-				print "Translation in z was", tz
+				print("Translation in z was", tz)
 				classmxZs.set_value_at(ic,ptclindx,tz)
 		
 				az=rots['az']
@@ -1449,7 +1452,7 @@ def main():
 			
 									
 			jsA.close()
-			print "closed .json file"
+			print("closed .json file")
 		
 		
 		
@@ -1502,9 +1505,9 @@ def main():
 			avgeven = refsdict[0]
 			avgodd = refsdict[1] 
 		
-			print "goldstandardoff is", options.goldstandardoff
-			print "avgshdrs[0] is and type", avgshdrs[0], type(avgshdrs[0])
-			print "avgshdrs[1] is and type", avgshdrs[1], type(avgshdrs[1])
+			print("goldstandardoff is", options.goldstandardoff)
+			print("avgshdrs[0] is and type", avgshdrs[0], type(avgshdrs[0]))
+			print("avgshdrs[1] is and type", avgshdrs[1], type(avgshdrs[1]))
 		
 			#print "avgeven is", avgeven
 			#print "avgodd is", avgodd
@@ -1516,7 +1519,7 @@ def main():
 		
 			if it > 0 and len(avgshdrs[0]) > 1 and len(avgshdrs[1]) > 1:
 				if avgshdrs[0][-1]['mean'] == avgshdrs[0][-2]['mean'] and avgshdrs[1][-1]['mean'] == avgshdrs[0][-2]['mean']:
-					print "Both independent averages have converged!"
+					print("Both independent averages have converged!")
 					#os.system('rm ' + options.path + '/tmpref.hdf')
 					os.remove( options.path + '/tmpref.hdf' )
 					sys.exit()
@@ -1558,7 +1561,7 @@ def main():
 		
 			if it > 0 and len(avgshdrs[0]) > 1 :
 				if avgshdrs[0][-1]['mean'] == avgshdrs[0][-2]['mean']:
-					print "The average has converged!"
+					print("The average has converged!")
 					outname = options.path + '/final_avg_ali2ref.hdf'
 					avg.write_image( outname , 0)
 					#os.system('rm ' + options.path + '/tmpref.hdf')
@@ -1584,9 +1587,9 @@ def main():
 		
 		
 			if options.filterbyfsc:
-				print "Options.lowpass was and of type", options.lowpass, type( options.lowpass )
+				print("Options.lowpass was and of type", options.lowpass, type( options.lowpass ))
 				options.lowpass = ('filter.wiener.byfsc',{ 'fscfile':fscfile })
-				print "Now it is", options.lowpass, type(options.lowpass)
+				print("Now it is", options.lowpass, type(options.lowpass))
 			
 		ic+=1	
 		#import matplotlib as plt
@@ -1625,10 +1628,10 @@ def main():
 	#os.system('rm ' + options.path + '/tmpref.hdf')
 	os.remove( options.path + '/tmpref.hdf' )
 	
-	print "Logger ending"	
+	print("Logger ending")	
 	E2end(logger)
 	
-	print "logger ended"
+	print("logger ended")
 	sys.stdout.flush()
 	
 	
@@ -1649,34 +1652,34 @@ def checksaneimagesize( options, stack1, stack2=''):
 	for stack in stacks:
 	
 		try:
-			print "(try) stack is", stack
+			print("(try) stack is", stack)
 			stackhdr = EMData( stack, 0, True )
 			nx = stackhdr["nx"]
 			ny = stackhdr["ny"]
 			nz = stackhdr["nz"]
 		
 			if nx!=ny or ny!=nz or nx!=nz:
-				print ("\n(e2spt_classaverage)(checksaneimagesize) ERROR: stack %s must contain volumes that are cubes (nx=ny=nz). The size of the images in stack %s is nx=%d, ny=%d, nz=%d" %(stack,nx,ny,nz))
+				print(("\n(e2spt_classaverage)(checksaneimagesize) ERROR: stack %s must contain volumes that are cubes (nx=ny=nz). The size of the images in stack %s is nx=%d, ny=%d, nz=%d" %(stack,nx,ny,nz)))
 				sys.exit(1)
 			
 			if nx % 2 or ny % 2 or nz %2:
-				print ("\n(e2spt_classaverage)(checksaneimagesize) ERROR: volumes in stack %s must be even sized. The size of the images provided is nx=%d, ny=%d, nz=%d" %(nx,ny,nz))
+				print(("\n(e2spt_classaverage)(checksaneimagesize) ERROR: volumes in stack %s must be even sized. The size of the images provided is nx=%d, ny=%d, nz=%d" %(nx,ny,nz)))
 				print ("while I could resize the images for you on the fly, results will be less murky if you're explicitly aware that the particles need resizing. Please run 'e2proc3d.py input.hdf output_resized.hdf --clip newsize' at the commandline, choosing 'newsize' to be an even number (e.g., 1 pixel smaller than the current boxsize). Then rerun e2spt_classaverage with the resized stack as --input.") 
-				print sys.exit()
+				print(sys.exit())
 			elif options.shrink:
 				if nx/options.shrink %2 or ny/options.shrink %2 or nz/options.shrink %2:
-					print ("\n(e2spt_classaverage)(checksaneimagesize) --shrink is %d; therefore the size of the images in stack %s after shrinking would be x=%d, y=%d, z=%d, which is not even. Please run 'e2proc3d.py input.hdf output_resized.hdf --clip newsize' at the commandline, choosing a box size such that when shrunk by the shrink factor specified it still yields an even box size. " %(options.shrink, nx/options.shrink %2 ,ny/options.shrink %2 ,nz/options.shrink %2 ))
+					print(("\n(e2spt_classaverage)(checksaneimagesize) --shrink is %d; therefore the size of the images in stack %s after shrinking would be x=%d, y=%d, z=%d, which is not even. Please run 'e2proc3d.py input.hdf output_resized.hdf --clip newsize' at the commandline, choosing a box size such that when shrunk by the shrink factor specified it still yields an even box size. " %(options.shrink, nx/options.shrink %2 ,ny/options.shrink %2 ,nz/options.shrink %2 )))
 					sys.exit(1)
 			
 			elif options.shrinkfine:
 				if nx/options.shrinkfine %2 or ny/options.shrinkfine %2 or nz/options.shrinkfine %2:
-					print ("\n(e2spt_classaverage)(checksaneimagesize) --shrinkfine is %d; therefore the size of the images in stack %s after shrinking would be x=%d, y=%d, z=%d, which is not even. Please run 'e2proc3d.py input.hdf output_resized.hdf --clip newsize' at the commandline, choosing a box size such that when shrunk by the shrink factor specified it still yields an even box size. " %(options.shrinkfine, nx/options.shrinkfine %2 ,ny/options.shrinkfine %2 ,nz/options.shrinkfine %2 ))
+					print(("\n(e2spt_classaverage)(checksaneimagesize) --shrinkfine is %d; therefore the size of the images in stack %s after shrinking would be x=%d, y=%d, z=%d, which is not even. Please run 'e2proc3d.py input.hdf output_resized.hdf --clip newsize' at the commandline, choosing a box size such that when shrunk by the shrink factor specified it still yields an even box size. " %(options.shrinkfine, nx/options.shrinkfine %2 ,ny/options.shrinkfine %2 ,nz/options.shrinkfine %2 )))
 					sys.exit(1)
 		except:
-			print "(except) stack is", stack
+			print("(except) stack is", stack)
 			stackhdr = EMData( stack, 0, True )
-			print "header stack1hdr is", stack1hdr
-			print ("\n(e2spt_classaverage)(checksaneimagesize) ERROR reading stack %s. Check that the file name is correct and the file is sane" %(stack) )
+			print("header stack1hdr is", stack1hdr)
+			print(("\n(e2spt_classaverage)(checksaneimagesize) ERROR reading stack %s. Check that the file name is correct and the file is sane" %(stack) ))
 			sys.exit(1)
 	
 	
@@ -1684,7 +1687,7 @@ def checksaneimagesize( options, stack1, stack2=''):
 		stack1hdr = EMData( stack1, 0, True )
 		stack2hdr = EMData( stack2, 0, True )
 		if stack2hdr["nx"]!=stack1hdr["nx"] or stack2hdr["ny"]!=stack1hdr["nx"] or stack2hdr["nz"]!=stack1hdr["nx"]: 
-			print """(e2spt_classaverage)(checksaneimagesize). ERROR: the size of stack %s is x1=%d, y1=%d, z1=%d, is not the same as the size of stack %s, x2=%d, y2=%d, z2=%d""" %(stack2, stack2hdr["nx"], stack2hdr["ny"], stack2hdr["nz"], stack1, stack1hdr["nx"], stack1hdr["nx"], stack1hdr["nx"])
+			print("""(e2spt_classaverage)(checksaneimagesize). ERROR: the size of stack %s is x1=%d, y1=%d, z1=%d, is not the same as the size of stack %s, x2=%d, y2=%d, z2=%d""" %(stack2, stack2hdr["nx"], stack2hdr["ny"], stack2hdr["nz"], stack1, stack1hdr["nx"], stack1hdr["nx"], stack1hdr["nx"]))
 			sys.exit(1)
 		
 	return
@@ -1793,17 +1796,17 @@ def cmdpreproc( fyle, options, finetag=False ):
 	if ret:
 		input_preproc = options.path + '/' + preprocstack
 		
-		print "\npreprocstack %s will be %s" %(preprocstack, input_preproc)
+		print("\npreprocstack %s will be %s" %(preprocstack, input_preproc))
 
 		import time
 		time.sleep(5)
 
-		print "renaming preprocstack %s to input_preproc %s" %(preprocstack, input_preproc )
+		print("renaming preprocstack %s to input_preproc %s" %(preprocstack, input_preproc ))
 
 		os.rename( preprocstack, input_preproc )
 		options.input = input_preproc
 	else:
-		print "\n(e2spt_classaverage)(cmdpreproc) preprocessing %s crashed" %( fyle ) 
+		print("\n(e2spt_classaverage)(cmdpreproc) preprocessing %s crashed" %( fyle )) 
 		sys.exit(1)
 		
 			
@@ -1826,13 +1829,13 @@ def cmdpreproc( fyle, options, finetag=False ):
 
 def textwriterinfo(ydata,options,name):
 	if len(ydata) ==0:
-		print "ERROR: Attempting to write an empty text file!"
+		print("ERROR: Attempting to write an empty text file!")
 		sys.exit()
 	
 	if options.path not in name:
 		name=options.path + '/' + name
 	
-	print "I am in the text writer for this file", name
+	print("I am in the text writer for this file", name)
 	
 	f=open(name,'w')
 	lines=[]
@@ -1856,7 +1859,7 @@ def textwriter(ydata,options,name,invert=0):
 	if options.path not in name:
 		name=options.path + '/' + name
 	
-	print "I am in the text writer for this file", name
+	print("I am in the text writer for this file", name)
 	
 	f=open(name,'w')
 	lines=[]
@@ -1911,9 +1914,9 @@ def sptParseAligner( options ):
 				if len(trail) > 2 and '=' in trail:
 					options.align += ':' + trail 
 			
-				print """\nWARNING: --search is different from search= provided through
+				print("""\nWARNING: --search is different from search= provided through
 				--align or its default value of 8. There's no need to specify both, but 
-				if you did, --search takes precedence :-) ."""
+				if you did, --search takes precedence :-) .""")
 				#sys.exit()
 			elif options.search == searchdefault:
 				options.search = searchA
@@ -1924,54 +1927,54 @@ def sptParseAligner( options ):
 				alt0 = int(options.align.split('alt0')[-1].split(':')[0].replace('=',''))	
 				alt1 = int(options.align.split('alt1')[-1].split(':')[0].replace('=',''))
 				
-				print "alt0 and alt1 are", alt0,alt1, type(alt0), type(alt1)
-				print alt1-alt0 == 0
+				print("alt0 and alt1 are", alt0,alt1, type(alt0), type(alt1))
+				print(alt1-alt0 == 0)
 				#sys.exit()
 				
 				if alt1-alt0 == 0:
-					print """\nERROR: alt0 and alt1 cannot be equal for rotate_translate_3d_grid.
+					print("""\nERROR: alt0 and alt1 cannot be equal for rotate_translate_3d_grid.
 					If you want to inactivate searches in this angle, provide a alt0 and alt1
 					such that alt1-alt0 is NOT ZERO, and provide a step size for dalt that is larger
 					than this difference. For example: 
-					alt0=0:alt1=1:dalt=2."""
+					alt0=0:alt1=1:dalt=2.""")
 					sys.exit()
 					
 			if "phi0" and "phi1" in options.align:
 				phi0 = int(options.align.split('phi0')[-1].split(':')[0].replace('=',''))	
 				phi1 = int(options.align.split('phi1')[-1].split(':')[0].replace('=',''))
 				
-				print "phi0 and phi1 are", phi0,phi1, type(phi0), type(phi1)
-				print phi1-phi0 == 0
+				print("phi0 and phi1 are", phi0,phi1, type(phi0), type(phi1))
+				print(phi1-phi0 == 0)
 				#sys.exit()
 				
 				if phi1-phi0 == 0:
-					print """\nERROR: phi0 and phi1 cannot be equal for rotate_translate_3d_grid.
+					print("""\nERROR: phi0 and phi1 cannot be equal for rotate_translate_3d_grid.
 					If you want to inactivate searches in this angle, provide a phi0 and phi1
 					such that phi1-phi0 is NOT ZERO, and provide a step size for dphi that is larger
 					than this difference. For example: 
-					phi0=0:phi1=1:dphi=2."""
+					phi0=0:phi1=1:dphi=2.""")
 					sys.exit()
 					
 			if "az0" and "az1" in options.align:
 				az0 = int(options.align.split('az0')[-1].split(':')[0].replace('=',''))	
 				az1 = int(options.align.split('az1')[-1].split(':')[0].replace('=',''))
 				
-				print "az0 and az1 are", az0,az1, type(az0), type(az1)
-				print az1-az0 == 0
+				print("az0 and az1 are", az0,az1, type(az0), type(az1))
+				print(az1-az0 == 0)
 				#sys.exit()
 				
 				if az1-az0 == 0:
-					print """\nERROR: az0 and az1 cannot be equal for rotate_translate_3d_grid.
+					print("""\nERROR: az0 and az1 cannot be equal for rotate_translate_3d_grid.
 					If you want to inactivate searches in this angle, provide a az0 and az1
 					such that az1-az0 is NOT ZERO, and provide a step size for daz that is larger
 					than this difference. For example: 
-					az0=0:az1=1:daz=2."""
+					az0=0:az1=1:daz=2.""")
 					sys.exit()
 		
 	if options.falign:
-		print "\n(e2spt_classaverage)(main) Before adding and fixing searches, options.falign is", options.falign, type(options.falign)	
+		print("\n(e2spt_classaverage)(main) Before adding and fixing searches, options.falign is", options.falign, type(options.falign))	
 	else:
-		print "\n(e2spt_classaverage)(main) no --falign specified"
+		print("\n(e2spt_classaverage)(main) no --falign specified")
 	
 	if options.falign: 
 		if options.falign != 'None' and options.falign != 'none':
@@ -1994,9 +1997,9 @@ def sptParseAligner( options ):
 			
 							options.falign += ':' + trail 
 		
-						print """\nWARNING: --searchfine is different from search= provided through
+						print("""\nWARNING: --searchfine is different from search= provided through
 						--falign or its default value of 2. There's no need to specify both, but 
-						if you did, --searchfine takes precedence :-) ."""
+						if you did, --searchfine takes precedence :-) .""")
 						#sys.exit()
 		
 					elif options.searchfine == searchfinedefault:
@@ -2017,7 +2020,7 @@ def compareEvenOdd( options, avgeven, avgodd, it, etc, fscfile, tag, average=Tru
 	#tasks = []
 	
 	if not options.parallel:
-		print "ERROR: Parallelization cannot be turned off unless you supply --goldstandardoff as well"
+		print("ERROR: Parallelization cannot be turned off unless you supply --goldstandardoff as well")
 		sys.exit()
 	
 	#task = Align3DTask( avgeven, avgodd, 0, "avgeven(ref) vs avgodd", options, None, it, nptclsexception=1)
@@ -2221,10 +2224,10 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 			ref = EMData(options.ref,0)
 
 			if options.verbose:
-				print "\n(e2spt_classaverage)(sptRefGen) - READ reference and its types and min, max, sigma, mean stats are", options.ref, type(ref), ref['minimum'],ref['maximum'],ref['sigma'],ref['mean']
+				print("\n(e2spt_classaverage)(sptRefGen) - READ reference and its types and min, max, sigma, mean stats are", options.ref, type(ref), ref['minimum'],ref['maximum'],ref['sigma'],ref['mean'])
 
 			if not ref['maximum'] and not ref['minimum']:
-				print "(e2spt_classaverage)(sptRefGen) - ERROR: Empty/blank reference file. Exiting."
+				print("(e2spt_classaverage)(sptRefGen) - ERROR: Empty/blank reference file. Exiting.")
 				sys.exit()
 			
 			if options.apix:
@@ -2247,7 +2250,7 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 				ref.write_image( refrandphfile, 0 )
 
 			if float(ref['apix_x']) <= 1.0:
-				print "\n(e2spt_classaverage)(sptRefGen) - WARNING: apix <= 1.0. This is most likely wrong. You might want to fix the reference's apix value by providing --apix or by running it through e2fixheaderparam.py"
+				print("\n(e2spt_classaverage)(sptRefGen) - WARNING: apix <= 1.0. This is most likely wrong. You might want to fix the reference's apix value by providing --apix or by running it through e2fixheaderparam.py")
 			
 			refsdict.update({ klassnum : ref })
 			
@@ -2280,13 +2283,13 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 				
 			if not method and not options.ref:
 				method = 'bt'
-				print "\n\n\nbt by default!!!!"
+				print("\n\n\nbt by default!!!!")
 				
 			#elif options.hacref:
 			if method == 'hac':
 		
 				if options.verbose:
-					print "\n(e2spt_classaverage)(sptRefGen) - Generating initial reference using hierarchical ascendant classification through e2spt_hac.py"
+					print("\n(e2spt_classaverage)(sptRefGen) - Generating initial reference using hierarchical ascendant classification through e2spt_hac.py")
 			
 				subsetForHacRef = 'spthacrefsubset'+ klassidref + '.hdf'
 				
@@ -2307,11 +2310,11 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 				if nptclsforref >= len(ptclnums):
 					nptclsforref =  len(ptclnums)
 			
-				print "Hacreflimit is", nptclsforref
+				print("Hacreflimit is", nptclsforref)
 				if nptclsforref < 3:
-					print """ERROR: You cannot build a HAC reference with less than 3 particles.
+					print("""ERROR: You cannot build a HAC reference with less than 3 particles.
 					Either provide a larger --hacref number, a larger --subset number, or provide
-					--goldstandardoff"""
+					--goldstandardoff""")
 				
 					sys.exit()
 			
@@ -2341,7 +2344,7 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 				
 				try:
 					files=glob.glob(hacrefsubdir+'*')		
-					print "files are", files
+					print("files are", files)
 					for path in files: 
 						shutil.rmtree(path)
 				except:
@@ -2351,15 +2354,15 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 				cmdhac+=' --input='+subsetForHacRef
 				
 				if options.verbose:
-					print "\n(e2spt_classaverage)(sptRefGen) - Command to generate hacref is", cmdhac
+					print("\n(e2spt_classaverage)(sptRefGen) - Command to generate hacref is", cmdhac)
 				
 				runcmd( options, cmdhac )
 			
 				try:
-					print "\nmoving hacrefsubdir %s into path %s" %( hacrefsubdir, options.path )
+					print("\nmoving hacrefsubdir %s into path %s" %( hacrefsubdir, options.path ))
 					os.rename( hacrefsubdir, options.path + '/' + hacrefsubdir )
 				except:
-					print "\nfirst try moving hacrefsubdir %s into path %s failed" %( hacrefsubdir, options.path )
+					print("\nfirst try moving hacrefsubdir %s into path %s failed" %( hacrefsubdir, options.path ))
 					hacsubdirstem = '_'.join( hacrefsubdir.split('_')[:-1])
 
 					try:
@@ -2371,10 +2374,10 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 
 					newhacrefsubdir = hacsubdirstem + '_' + hacsubdircount #if the subdirectory exists, add one to the tag count at the end of the subdirectory name
 					try: 
-						print "\nmoving hacrefsubdir %s into path %s" %( hacrefsubdir, options.path )
+						print("\nmoving hacrefsubdir %s into path %s" %( hacrefsubdir, options.path ))
 						os.rename( newhacrefsubdir, options.path + '/' + hacrefsubdir )
 					except:
-						print "\nsecond and final try moving hacrefsubdir %s into path %s failed" %( newhacrefsubdir, options.path )
+						print("\nsecond and final try moving hacrefsubdir %s into path %s failed" %( newhacrefsubdir, options.path ))
 						sys.exit(1)
 
 				
@@ -2392,18 +2395,18 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 					findircurrent = os.listdir(currentdir)
 					if subsetForHacRef in findircurrent:
 						newsubsetcount = '_'.join( subsetForHacRef.split('_')[:-1]) + '_' + str( int(subsetForHacRef.split('_')[-1].split('.hdf')[0]) +1 ) +'.hdf'	#if the subdirectory exists, add one to the tag count at the end of the subdirectory name
-						print "\ntrying to move new subsetForHacRef into path", newsubsetcount, options.path
+						print("\ntrying to move new subsetForHacRef into path", newsubsetcount, options.path)
 						os.rename( subsetForHacRef, options.path + '/' + newsubsetcount )
 					else:
-						print "\nWARNING subsetForHacRef does not exist in current directory", subsetForHacRef
+						print("\nWARNING subsetForHacRef does not exist in current directory", subsetForHacRef)
 						
 				else:
 					os.rename( subsetForHacRef, options.path + '/' + subsetForHacRef )
-					print "\nmoving subsetForHacRef into path", subsetForHacRef, options.path
+					print("\nmoving subsetForHacRef into path", subsetForHacRef, options.path)
 				
 				
 				if options.verbose:
-					print "\n(e2spt_classaverage)(sptRefGen) - Command to generate hacref is", cmdhac
+					print("\n(e2spt_classaverage)(sptRefGen) - Command to generate hacref is", cmdhac)
 				
 				ref = EMData( options.path + '/' + hacrefsubdir +'/final_avg.hdf', 0 )
 
@@ -2412,11 +2415,11 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 			
 			if method == 'ssa':
 				if options.verbose:
-					print "\n(e2spt_classaverage)(sptRefGen) - Generating initial reference using self symmetry alignment through e2symsearch3d.py"
+					print("\n(e2spt_classaverage)(sptRefGen) - Generating initial reference using self symmetry alignment through e2symsearch3d.py")
 			
 				if options.sym == 'c1' or options.sym == 'C1':
-					print """\n(e2spt_classaverage)(sptRefGen) - ERROR: You must provide at least c2 or higher symmetry to use
-					--ssaref"""
+					print("""\n(e2spt_classaverage)(sptRefGen) - ERROR: You must provide at least c2 or higher symmetry to use
+					--ssaref""")
 			
 				subsetForSsaRef = 'sptssarefsubset'+ klassidref + '.hdf'
 				
@@ -2453,18 +2456,18 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 					
 						
 				ssaelements = []
-				print "\nelements are", elements
+				print("\nelements are", elements)
 				for ele in elements:
 					if 'saveallpeaks' not in ele and 'fine' not in ele and 'raw' not in ele and 'btref' not in ele and 'hacref' not in ele and 'ssaref' not in ele and 'subset4ref' not in ele and 'refgenmethod' not in ele and 'nref' not in ele and 'sfine' not in ele and 'procfine' not in ele and 'fsc' not in ele and 'output' not in ele and 'path' not in ele and 'goldstandardoff' not in ele and 'saveallalign' not in ele and 'savepreproc' not in ele and 'align' not in ele and 'iter' not in ele and 'npeakstorefine' not in ele and 'precision'not in ele and '--radius' not in ele and 'randphase' not in ele and 'search' not in ele and '--save' not in ele and '--ref' not in ele and 'input' not in ele and 'output' not in ele and 'subset' not in ele:
 						ssaelements.append(ele)
-						print "appending element",ele
+						print("appending element",ele)
 		
 				cmdssa = ' '.join(ssaelements)
-				print "before replacing program name, cmdssa is", cmdssa
+				print("before replacing program name, cmdssa is", cmdssa)
 
 				cmdssa = cmdssa.replace('e2spt_classaverage','e2symsearch3d')
 				if refinemulti:
-					print "should replace refinemulti"
+					print("should replace refinemulti")
 					cmdssa = cmdssa.replace('e2spt_refinemulti','e2symsearch3d')
 			
 				cmdssa += ' --input=' + subsetForSsaRef 
@@ -2472,20 +2475,20 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 				cmdssa += ' --symmetrize'
 				cmdssa += ' --average'
 				
-				print "\ncmdssa is", cmdssa
+				print("\ncmdssa is", cmdssa)
 				
 				if options.verbose:
-					print "\n(e2spt_classaverage)(sptRefGen) - Command to generate ssaref is", cmdssa
+					print("\n(e2spt_classaverage)(sptRefGen) - Command to generate ssaref is", cmdssa)
 
 				runcmd( options, cmdssa )
 				
 				ssarefname = 'final_avg.hdf'
 					
 				try:
-					print "\nmoving ssarefsubdir %s into path %s" %( ssarefsubdir, options.path )
+					print("\nmoving ssarefsubdir %s into path %s" %( ssarefsubdir, options.path ))
 					os.rename( ssarefsubdir, options.path + '/' + ssarefsubdir )
 				except:
-					print "\nfirst try moving ssarefsubdir %s into path %s failed" %( ssarefsubdir, options.path )
+					print("\nfirst try moving ssarefsubdir %s into path %s failed" %( ssarefsubdir, options.path ))
 					hacsubdirstem = '_'.join( ssarefsubdir.split('_')[:-1])
 
 					try:
@@ -2496,10 +2499,10 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 					
 					newssarefsubdir = ssasubdirstem + '_' + ssasubdircount #if the subdirectory exists, add one to the tag count at the end of the subdirectory name
 					try: 
-						print "\nmoving ssarefsubdir %s into path %s" %( ssarefsubdir, options.path )
+						print("\nmoving ssarefsubdir %s into path %s" %( ssarefsubdir, options.path ))
 						os.rename( newssarefsubdir, options.path + '/' + ssarefsubdir )
 					except:
-						print "\nsecond and final try moving ssarefsubdir %s into path %s failed" %( newssarefsubdir, options.path )
+						print("\nsecond and final try moving ssarefsubdir %s into path %s failed" %( newssarefsubdir, options.path ))
 						sys.exit(1)
 
 
@@ -2507,16 +2510,16 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 
 				findir = os.listdir(options.path)
 				if subsetForSsaRef in findir:
-					print "tried moving subsetForSsaRef into path but failed", subsetForSsaRef, options.path
+					print("tried moving subsetForSsaRef into path but failed", subsetForSsaRef, options.path)
 					newsubsetcount = '_'.join( subsetForSsaRef.split('_')[:-1]) + '_' + str( int(subsetForSsaRef.split('_')[-1].split('.hdf')[0]) +1 ) +'.hdf'	#if the subdirectory exists, add one to the tag count at the end of the subdirectory name
 					os.rename( subsetForSsaRef, options.path + '/' + newsubsetcount )
 				else:
 					os.rename( subsetForSsaRef, options.path + '/' + subsetForSsaRef )
-					print "\nmoving subsetForSsaRef into path", subsetForSsaRef, options.path
+					print("\nmoving subsetForSsaRef into path", subsetForSsaRef, options.path)
 				
 				
 				if options.verbose:
-					print "\n(e2spt_classaverage)(sptRefGen) - Command to generate ssaref is", cmdssa
+					print("\n(e2spt_classaverage)(sptRefGen) - Command to generate ssaref is", cmdssa)
 
 				#p=subprocess.Popen( cmdssa, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 				#text=p.communicate()	
@@ -2544,18 +2547,18 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 				
 				
 				#from e2spt_binarytree import binaryTreeRef
-				print "\ninput is", options.input
-				print "with nimgs", EMUtil.get_image_count( options.input )
-				print "--goldstandardoff is", options.goldstandardoff
-				print "len ptclnums is", len(ptclnums)
+				print("\ninput is", options.input)
+				print("with nimgs", EMUtil.get_image_count( options.input ))
+				print("--goldstandardoff is", options.goldstandardoff)
+				print("len ptclnums is", len(ptclnums))
 				
-				print "log 2 of that is" 
-				print log( len(ptclnums), 2 )
+				print("log 2 of that is") 
+				print(log( len(ptclnums), 2 ))
 			
 				niter = int(floor(log( len(ptclnums), 2 )))
-				print "and niter is", niter
+				print("and niter is", niter)
 				nseed = 2**niter
-				print "therefore nseed=2**niter is", nseed
+				print("therefore nseed=2**niter is", nseed)
 				
 				
 				#try:
@@ -2586,10 +2589,10 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 				#print "with len", len(ptclnums)
 				
 				while i < nseed :
-					print "i is", i
+					print("i is", i)
 					a = EMData( options.input, ptclnums[i] )
 					a.write_image( subsetForBTRef, i )
-					print "writing image %d to file %s, which will contain the subset of particles used for BTA reference building" %(i,subsetForBTRef)
+					print("writing image %d to file %s, which will contain the subset of particles used for BTA reference building" %(i,subsetForBTRef))
 					i+=1
 
 				btelements = []
@@ -2633,13 +2636,13 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 			
 				
 				if options.verbose:
-					print "\n(e2spt_classaverage)(sptRefGen) - Command to generate btref is", cmdbt
+					print("\n(e2spt_classaverage)(sptRefGen) - Command to generate btref is", cmdbt)
 
 				try:
-					print "\nmoving btrefsubdir into path", btrefsubdir, options.path
+					print("\nmoving btrefsubdir into path", btrefsubdir, options.path)
 					os.rename( btrefsubdir, options.path + '/' + btrefsubdir )
 				except:
-					print "\nfirst try moving btrefsubdir %s into path %s failed" %( btrefsubdir, options.path )
+					print("\nfirst try moving btrefsubdir %s into path %s failed" %( btrefsubdir, options.path ))
 					
 					btsubdirstem = '_'.join( btrefsubdir.split('_')[:-1])
 
@@ -2654,7 +2657,7 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 					try: 
 						os.rename( newbtrefsubdir, options.path + '/' + btrefsubdir )
 					except:
-						print "\nsecond and final try moving btrefsubdir %s into path %s failed" %( newbtrefsubdir, options.path )
+						print("\nsecond and final try moving btrefsubdir %s into path %s failed" %( newbtrefsubdir, options.path ))
 						sys.exit(1)
 						
 								
@@ -2664,26 +2667,26 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 				
 				findir = os.listdir(options.path)
 				if subsetForBTRef in findir:
-					print "tried moving subsetForBTRef into path but failed", subsetForBTRef, options.path
+					print("tried moving subsetForBTRef into path but failed", subsetForBTRef, options.path)
 					newsubsetcount = '_'.join( subsetForBTRef.split('_')[:-1]) + '_' + str( int(subsetForBTRef.split('_')[-1].split('.hdf')[0]) +1 ) +'.hdf'	#if the subset exists, add one to the tag count at the end of the subdirectory name
 					os.rename( subsetForBTRef, options.path + '/' + newsubsetcount )
 				else:
 					os.rename( subsetForBTRef, options.path + '/' + subsetForBTRef )
-					print "\nmoving subsetForBTRef into path", subsetForBTRef, options.path
+					print("\nmoving subsetForBTRef into path", subsetForBTRef, options.path)
 								
 				
 			
 				#if os.getcwd() not in options.path:
 				#	options.path = os.getcwd() + '/' + ptions.path
 			
-				print "\ncmdbt is", cmdbt
+				print("\ncmdbt is", cmdbt)
 			
 				#print "\nfindir are"
 				#findir=os.listdir(current)
 				#for f in findir:
 				#	print f
 			
-				print "The BT reference to load is in file",  options.path+ '/' +btrefsubdir +'/final_avg.hdf'
+				print("The BT reference to load is in file",  options.path+ '/' +btrefsubdir +'/final_avg.hdf')
 				ref = EMData( options.path + '/' + btrefsubdir +'/final_avg.hdf', 0 )
 
 				refsdict.update({ klassnum : ref })
@@ -2708,14 +2711,14 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 
 def runcmd(options,cmd):
 	if options.verbose > 9:
-		print "(e2spt_classaverage)(runcmd) running command", cmd
+		print("(e2spt_classaverage)(runcmd) running command", cmd)
 	
 	p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	text=p.communicate()	
 	p.stdout.close()
 	
 	if options.verbose > 8:
-		print "(e2spt_classaverage)(runcmd) done"
+		print("(e2spt_classaverage)(runcmd) done")
 	
 	#if options.verbose > 9:
 	#	print text
@@ -2723,210 +2726,13 @@ def runcmd(options,cmd):
 	return 1
 
 
-def sptOptionsParser( options ):
-	try:
-		if options.align:
-			#print "(e2spt_classaverage) --align to parse is", options.align
-			options.align=parsemodopt(options.align)
-		elif options.align == 'None' or  options.align == 'none':
-			options.align=None
-	except:
-		if options.verbose > 9:
-			print "\nWARNING (might not be relevant): --align not provided"
-	
-	
-	#try:
-	#	if options.ialign:
-	#		#print "(e2spt_classaverage) --align to parse is", options.align
-	#		options.ialign=parsemodopt(options.ialign)
-	#	elif options.ialign == 'None' or  options.ialign == 'none':
-	#		options.ialign=None
-	#except:
-	#	if options.verbose > 9:
-	#		print "\nWARNING (might not be relevant): --ialign not provided"
-	
-	
-		
-	try:
-		if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none': 
-			options.falign=parsemodopt(options.falign)
-		elif options.falign == 'None' or  options.falign == 'none':
-			options.falign=None
-	except:
-		if options.verbose > 9:
-			print "\nWARNING (might not be relevant): --falign not provided"
-	
-	try:
-		if options.aligncmp: 
-			options.aligncmp=parsemodopt(options.aligncmp)
-		elif options.aligncmp == 'None' or  options.aligncmp == 'none':
-			options.aligncmp=None
-	except:
-		if options.verbose > 9:
-			print "\nWARNING (might not be relevant): --aligncmp not provided"
-	
-	try:	
-		if options.faligncmp: 
-			options.faligncmp=parsemodopt(options.faligncmp)
-		elif options.faligncmp == 'None' or  options.faligncmp == 'none':
-			options.faligncmp=None
-	except:
-		if options.verbose > 9:
-			print "\nWARNING (might not be relevant): --faligncmp not provided"
-		
-	try:
-		if options.averager: 
-			options.averager=parsemodopt(options.averager)
-		elif options.averager == 'None' or  options.averager == 'none':
-			options.averager=None
-	except:
-		if options.verbose > 9:
-			print "\nWARNING (might not be relevant): --averager not provided"
-		
-	try:
-		if options.autocenter:
-			options.autocenter=parsemodopt(options.autocenter)
-		elif options.autocenter == 'None' or  options.autocenter == 'none':
-			options.autocenter=None
-	except:
-		if options.verbose > 9:
-			print "\nWARNING (might not be relevant): --autocenter not provided"
-		
-	try:
-		if options.autocentermask:
-			options.autocentermask=parsemodopt(options.autocentermask)
-		elif options.autocentermask == 'None' or  options.autocentermask == 'none':
-			options.autocentermask=None
-	except:
-		if options.verbose > 9:
-			print "\nWARNING (might not be relevant): --autocentermask not provided"
-	
-	try:
-		if options.normproc and options.normproc != 'None' and options.normproc != 'none':
-			options.normproc=parsemodopt(options.normproc)
-		elif options.normproc == 'None' or  options.normproc == 'none':
-			options.normproc=None
-	except:
-		if options.verbose > 9:
-			print "\nWARNING (might not be relevant): --normproc not provided"
-	
-	try:
-		if options.mask and options.mask != 'None' and options.mask != 'none':
-			#print "parsing mask", sys.exit()
-			options.mask=parsemodopt(options.mask)
-		elif options.mask == 'None' or  options.mask == 'none':
-			options.mask=None
-	except:
-		if options.verbose > 9:
-			print "\nWARNING (might not be relevant): --mask not provided"
-	
-	try:	
-		if options.preprocess and options.preprocess != 'None' and options.preprocess != 'none': 
-			options.preprocess=parsemodopt(options.preprocess)
-		elif options.preprocess == 'None' or  options.preprocess == 'none':
-			options.preprocess=None
-	except:
-		if options.verbose > 9:
-			print "\nWARNING (might not be relevant): --preprocess not provided"
-	
-	try:	
-		if options.threshold and options.threshold != 'None' and options.threshold != 'none': 
-			options.threshold=parsemodopt(options.threshold)
-		elif options.threshold == 'None' or  options.threshold == 'none':
-			options.threshold=None
-	except:
-		if options.verbose > 9:
-			print "\nWARNING (might not be relevant): --threshold not provided"
-	
-	try:
-		if options.preprocessfine and options.preprocessfine != 'None' and options.preprocessfine != 'none': 
-			options.preprocessfine=parsemodopt(options.preprocessfine)
-		elif options.preprocessfine == 'None' or  options.preprocessfine == 'none':
-			options.preprocessfine=None
-	except:
-		if options.verbose > 9:
-			print "\nWARNING (might not be relevant): --preprocessfine not provided"
-	
-	try:	
-		if options.lowpass and options.lowpass != 'None' and options.lowpass != 'none': 
-			options.lowpass=parsemodopt(options.lowpass)
-		elif options.lowpass == 'None' or  options.lowpass == 'none':
-			options.lowpass=None
-	except:
-		if options.verbose > 9:
-			print "\nWARNING (might not be relevant): --lowpass not provided"
-	
-	try:
-		if options.lowpassfine and options.lowpassfine != 'None' and options.lowpassfine != 'none': 
-			options.lowpassfine=parsemodopt(options.lowpassfine)
-		elif options.lowpassfine == 'None' or  options.lowpassfine == 'none':
-			options.lowpassfine=None
-	except:
-		if options.verbose > 9:
-			print "\nWARNING (might not be relevant): --lowpassfine not provided"
-	
-	try:
-		if options.highpass and options.highpass != 'None' and options.highpass != 'none': 
-			options.highpass=parsemodopt(options.highpass)
-		elif options.highpass == 'None' or  options.highpass == 'none':
-			options.highpass=None
-	except:
-		if options.verbose > 9:
-			print "\nWARNING (might not be relevant): --highpass not provided"
-	
-	try:
-		if options.highpassfine and options.highpassfine != 'None' and options.highpassfine != 'none': 
-			options.highpassfine=parsemodopt(options.highpassfine)
-		elif options.highpassfine == 'None' or  options.highpassfine == 'none':
-			options.highpassfine=None
-	except:
-		if options.verbose > 9:
-			print "\nWARNING (might not be relevant): --highpassfine not provided"
-	try:
-		if options.postprocess and options.postprocess != 'None' and options.postprocess != 'none': 
-			options.postprocess=parsemodopt(options.postprocess)
-		elif options.postprocess == 'None' or  options.postprocess == 'none':
-			options.postprocess=None
-	except:
-		if options.verbose > 9:
-			print "\nWARNING (might not be relevant): --postprocess not provided"
-	
-	try:
-		if options.reconstructor and options.reconstructor != 'None' and options.reconstructor != 'none': 
-			options.reconstructor=parsemodopt(options.reconstructor)
-		elif options.reconstructor == 'None' or  options.reconstructor == 'none':
-			options.reconstructor=None
-	except:
-		if options.verbose > 9:
-			print "\nWARNING (might not be relevant): --reconstructor not provided"
-	
-	try:
-		if options.preavgproc1 and options.preavgproc1 != 'None' and options.preavgproc1 != 'none': 
-			options.preavgproc1=parsemodopt(options.preavgproc1)
-		elif options.preavgproc1 == 'None' or  options.preavgproc1 == 'none':
-			options.preavgproc1=None
-	except:
-		if options.verbose > 9:
-			print "\nWARNING (might not be relevant): --reconstructor not provided"
-		
-	try:
-		if options.preavgproc2 and options.preavgproc2 != 'None' and options.preavgproc2 != 'none': 
-			options.preavgproc2=parsemodopt(options.preavgproc2)
-		elif options.preavgproc2 == 'None' or  options.preavgproc2 == 'none':
-			options.preavgproc2=None
-	except:
-		if options.verbose > 9:
-			print "\nWARNING (might not be relevant): --reconstructor not provided"
-	
-	return options
-
 
 '''
 Function to write the parameters used for every run of the program to parameters.txt inside the path specified by --path.
 *** Imported by many e2spt programs ***
 '''
 def writeParameters( options, program, tag ):
-	print "Tag received in writeParameters is", tag
+	print("Tag received in writeParameters is", tag)
 
 	names = dir(options)
 	
@@ -2995,8 +2801,8 @@ def writeParameters( options, program, tag ):
 
 def calcAliStep(options):
 
-	print "\n\n(e2spt_classaverage)(calcAliStep) options.radius is", options.radius
-	print "(e2spt_classaverage)(calcAliStep) options.input is", options.input
+	print("\n\n(e2spt_classaverage)(calcAliStep) options.radius is", options.radius)
+	print("(e2spt_classaverage)(calcAliStep) options.input is", options.input)
 
 	hdr = EMData( options.input,0,True )
 	apix = float( hdr['apix_x'] )
@@ -3011,20 +2817,20 @@ def calcAliStep(options):
 	#radPix = radPixC = radPixF = options.radius
 	
 	if options.shrink and float( options.shrink ) > 1.0:
-		print "options.shrink is > 1, see:", options.shrink
+		print("options.shrink is > 1, see:", options.shrink)
 		factorc = options.shrink
 		capix =  apix*factor
 	
 	if options.shrinkfine  and float( options.shrinkfine ) > 1.0:
 		factorf = options.shrinkfine
-		print "options.shrinkfine > 1, see:", options.shrinkfine
+		print("options.shrinkfine > 1, see:", options.shrinkfine)
 		fapix = apix*factorf
 	
 	#if factorc > 1.0 and factorf > 1.0:										#The relative shrinking factor doesn't really matter
 	#	factorRelative = factorc / factorf
 	
-	print "\n\n\n\nAAAAAAAAAAA\nApix is", apix
-	print "\n\n\n\nAAAAAAAAAAA\n"
+	print("\n\n\n\nAAAAAAAAAAA\nApix is", apix)
+	print("\n\n\n\nAAAAAAAAAAA\n")
 	
 	radPixC = options.radius / capix
 	radPixF = options.radius / fapix
@@ -3054,31 +2860,31 @@ def calcAliStep(options):
 	
 	if coarseStep < coarseStep1pix:
 		coarseStep = coarseStep1pix
-		print """The coarse step %f was finer than one pixel at the edge of the particle, 
-		therefore it will be replaced with %f""" % (coarseStep,coarseStep1pix)
+		print("""The coarse step %f was finer than one pixel at the edge of the particle, 
+		therefore it will be replaced with %f""" % (coarseStep,coarseStep1pix))
 	
 	CSrounded = math.floor( coarseStep * 100.00 )/100.00		#Round coarse step DOWN to scan slightly more finally than theoretically needed
 
 	
-	print "\n\n*****************"
-	print"\n\nThe radius in pixels at size for fine alignment (taking --shrinkfine into account) is", radPixF
-	print "Shrink is", options.shrink
-	print "Shrink refine is", options.shrinkfine
-	print "Therefore, the coarse step and itself rounded are", coarseStep, CSrounded
-	print "And the fine step before and after rounding is", fineStep, fineStepRounded
-	print "rango and its rounded are", rango, rangoRounded
-	print "\n\n*****************\n\n"
+	print("\n\n*****************")
+	print("\n\nThe radius in pixels at size for fine alignment (taking --shrinkfine into account) is", radPixF)
+	print("Shrink is", options.shrink)
+	print("Shrink refine is", options.shrinkfine)
+	print("Therefore, the coarse step and itself rounded are", coarseStep, CSrounded)
+	print("And the fine step before and after rounding is", fineStep, fineStepRounded)
+	print("rango and its rounded are", rango, rangoRounded)
+	print("\n\n*****************\n\n")
 	
 	searchC = hdr['nx']/2.0 - 2.0
 	searchF = 2
 	
 	if int( options.search ) > 1 :
 		searchC = options.search
-		print "searchC is", searchC
+		print("searchC is", searchC)
 	else:
 		if int(options.search) == 0:
 			searchC = 0
-			print "searchC is", searchC	
+			print("searchC is", searchC)	
 
 		elif int( options.search ) == 1:
 			searchC = 1
@@ -3098,12 +2904,12 @@ def calcAliStep(options):
 		if options.shrink and float(options.shrink) > 1.0:
 			searchC = int( searchC / options.shrink )
 	
-			print "\nBecause shrink >1.0, searchC is actually", searchC
+			print("\nBecause shrink >1.0, searchC is actually", searchC)
 		
 	if options.searchfine:
 		searchF = options.searchfine
-		print "\nSearchF is", searchF
-		print "\n"
+		print("\nSearchF is", searchF)
+		print("\n")
 	else:
 		searchF = 0
 	
@@ -3112,7 +2918,7 @@ def calcAliStep(options):
 		options.align += ':sym=' + options.sym
 	
 	
-	print "inside calcali options.falign received is", options.falign
+	print("inside calcali options.falign received is", options.falign)
 	if options.falign:
 		if options.falign != None and options.falign != 'None' and options.falign != 'none':
 			#if options.radius:
@@ -3120,7 +2926,7 @@ def calcAliStep(options):
 		else:
 			options.falign = 'None'
 		
-	print "and has been set to", options.falign
+	print("and has been set to", options.falign)
 	
 	
 	if options.verbose:
@@ -3157,7 +2963,7 @@ def postprocess(img,mask,normproc,postprocess):
 
 def sptmakepath(options, stem='spt'):
 	if options.verbose:
-		print "\n(e2spt_classaverage)(sptmakepath), stem is", stem
+		print("\n(e2spt_classaverage)(sptmakepath), stem is", stem)
 	
 	#if options.path and ("/" in options.path or "#" in options.path):
 	#	print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
@@ -3205,9 +3011,9 @@ def makeAverage(options,ic,results,it=0):
 	Otherwise it represents a sigma multiplier akin to e2classaverage.py.'''
 	
 	
-	print "len of results inside makeAverage is", len(results)
+	print("len of results inside makeAverage is", len(results))
 	
-	print "(e2pt_classaverage.py)(makeAverage) The results to parse are", 
+	print("(e2pt_classaverage.py)(makeAverage) The results to parse are", end=' ') 
 	
 	#for r in results:
 	#	print r
@@ -3248,13 +3054,13 @@ def makeAverage(options,ic,results,it=0):
 				
 	if keep < 1.0:
 		#print "p[0]['score'] is", align_parms[0]['score']
-		print "Len of align_parms is", len(results)
+		print("Len of align_parms is", len(results))
 			
 			#val=[p[0]["score"] for p in align_parms]
 		scores.sort()
 		thresh = float( scores[ int( keep * len(scores) ) - 1] )
 		if verbose: 
-			print "Keep threshold : %f (min=%f  max=%f)"%(thresh,scores[0],scores[-1])
+			print("Keep threshold : %f (min=%f  max=%f)"%(thresh,scores[0],scores[-1]))
 	
 	if keepsig:
 		# inefficient memory-wise
@@ -3271,15 +3077,15 @@ def makeAverage(options,ic,results,it=0):
 		sig=sqrt(val2/len(scores)-mean*mean)
 		thresh = float( mean + sig * keep )
 		if verbose: 
-			print "Keep threshold : %f (mean=%f  sigma=%f)"%(thresh,mean,sig)
+			print("Keep threshold : %f (mean=%f  sigma=%f)"%(thresh,mean,sig))
 
 	"""Make variance image if available"""
 	variance = EMData(ptcl_file,0).copy_head()
 	if averager[0] == 'mean':
-		print "Making variance map"
+		print("Making variance map")
 		averager[1]['sigma'] = variance
 	
-	print "averager is", averager
+	print("averager is", averager)
 	avgr = Averagers.get(averager[0], averager[1])
 	included=[]
 	
@@ -3291,7 +3097,7 @@ def makeAverage(options,ic,results,it=0):
 	#try:
 	maxscore = min( scores )
 	
-	print "\n(e2spt_classaverage)(makeAverage) maxscore is", maxscore
+	print("\n(e2spt_classaverage)(makeAverage) maxscore is", maxscore)
 	
 	#except:
 	#	print "There are no scores!", scores
@@ -3319,7 +3125,7 @@ def makeAverage(options,ic,results,it=0):
 	for indx in results:
 		#ptclindx = r[1]
 		ptclindx = indx
-		print "ptclindx is", ptclindx
+		print("ptclindx is", ptclindx)
 		ptcl = EMData(ptcl_file,ptclindx)
 		weight = 1.0
 		
@@ -3331,13 +3137,13 @@ def makeAverage(options,ic,results,it=0):
 	
 		#score = r[0][0]["score"]
 		score = results[indx][0]
-		print "\n!!!score is", score
-		print "and thresh is", thresh
+		print("\n!!!score is", score)
+		print("and thresh is", thresh)
 		
 		if score <= thresh:
 			#if thresh != 1.0:
 		
-			print "particle kept because its score %f is LOWER (which means BETTER, in EMAN2 good scores are more negative) than the threshold %f, when the best score was %f" %( score, thresh, maxscore )
+			print("particle kept because its score %f is LOWER (which means BETTER, in EMAN2 good scores are more negative) than the threshold %f, when the best score was %f" %( score, thresh, maxscore ))
 			#else:
 			#	print "Particle kept because its score %f is LOWER than the DEFAULT threshold %f, when the best score was %f" %( score, thresh, maxscore )
 
@@ -3349,23 +3155,23 @@ def makeAverage(options,ic,results,it=0):
 				if options.preavgproc1:
 					ptcl.process_inplace( options.preavgproc1[0], options.preavgproc1[1] )
 			except:
-				print """ERROR: Preavgproc1 probably requires parameters you did not specify.
+				print("""ERROR: Preavgproc1 probably requires parameters you did not specify.
 					For example, --preavgproc1=threshold.clampminmax.nsigma would fail.
 					You need to specify an integer for nsgima, e.g.:
-					--preavgproc1=threshold.clampminmax.nsigma:nsimga=2."""	
+					--preavgproc1=threshold.clampminmax.nsigma:nsimga=2.""")	
 				sys.exit()		 
 			try:
 				if options.preavgproc2:
 					ptcl.process_inplace( options.preavgproc2[0], options.preavgproc2[1] )
 			except:
-				print """ERROR: Preavgproc2 probably requires parameters you did not specify.
+				print("""ERROR: Preavgproc2 probably requires parameters you did not specify.
 					For example, --preavgproc2=threshold.clampminmax.nsigma would fail.
 					You need to specify an integer for nsgima, e.g.:
-					--preavgproc1=threshold.clampminmax.nsigma:nsimga=2."""
+					--preavgproc1=threshold.clampminmax.nsigma:nsimga=2.""")
 				sys.exit()	
 					
 			if options.weighbytiltaxis:
-				print "\n--weighbytiltaxis is", options.weighbytiltaxis
+				print("\n--weighbytiltaxis is", options.weighbytiltaxis)
 				px = x = int(ptcl['ptcl_source_coord'][0])
 				
 				tiltaxis = int( options.weighbytiltaxis.split(',')[0] )
@@ -3378,32 +3184,32 @@ def makeAverage(options,ic,results,it=0):
 				W = 1.0 - minweight
 				slope = W/X
 										#Having the slope of the line and its y-axis (or w-axis in this case) crossing we predict the weight of any particle depending on its dx distance to the tiltaxis
-				print "tiltaxis is", X
-				print "W is", W
-				print "Therefore slope is", slope
+				print("tiltaxis is", X)
+				print("W is", W)
+				print("Therefore slope is", slope)
 				
 				dx = tiltaxis - px 
 				taweight = slope * px + minweight 
 				weight = weight * ( taweight )
-				print "tiltaxis weight was %f because it's distance from the tilt axis is %d, because it's x coordinate was %d" % (taweight, dx, x)
+				print("tiltaxis weight was %f because it's distance from the tilt axis is %d, because it's x coordinate was %d" % (taweight, dx, x))
 
 			if options.weighbyscore:
 				scoreweight = score / maxscore
-				print "the score weight is %f because score was %f and the best score was %f" % (scoreweight, score, maxscore )
+				print("the score weight is %f because score was %f and the best score was %f" % (scoreweight, score, maxscore ))
 				weight = weight * scoreweight
 			
 			weights.update( {ptclindx:weight} )
 				
-			print "therefore the final weight for particle %d is %f" %(ptclindx, weight )
+			print("therefore the final weight for particle %d is %f" %(ptclindx, weight ))
 				
 			ptcl.mult( weight )
 			avgr.add_image( ptcl )
 			included.append( ptclindx )
-			print "\nptcl %d added (included in average) because its score %.6f is below (better) the threshold %f" %(ptclindx,score,thresh) 
+			print("\nptcl %d added (included in average) because its score %.6f is below (better) the threshold %f" %(ptclindx,score,thresh)) 
 			
 		
 		else:
-			print "\nptcl %d skipped (not included in average) because its score %.6f is above (worse) the threshold %f" %(ptclindx,score,thresh) 
+			print("\nptcl %d skipped (not included in average) because its score %.6f is above (worse) the threshold %f" %(ptclindx,score,thresh)) 
 			weights.update( {ptclindx:0.0} )
 		
 		#js["subtomo_%04d"%i] = ptcl_parms[0]['xform.align3d']
@@ -3434,12 +3240,12 @@ def makeAverage(options,ic,results,it=0):
 	#js.close()
 	
 	if verbose: 
-		print "Kept %d / %d particles in average"%(len(included),len(results))
+		print("Kept %d / %d particles in average"%(len(included),len(results)))
 
-	print "Will finalize average"
+	print("Will finalize average")
 
 	avg=avgr.finish()
-	print "done"
+	print("done")
 	
 	
 	if avg:	
@@ -3460,7 +3266,7 @@ def makeAverage(options,ic,results,it=0):
 	
 	
 		if options.autocenter:
-			print "\n\n\n\nYou have selected to autocenter!\n", options.autocenter
+			print("\n\n\n\nYou have selected to autocenter!\n", options.autocenter)
 		
 			avgac = avg.copy()
 			if options.autocentermask:
@@ -3478,7 +3284,7 @@ def makeAverage(options,ic,results,it=0):
 			avgac.process_inplace(options.autocenter[0],options.autocenter[1])
 		
 			tcenter = avgac['xform.align3d']
-			print "Thus the average HAS BEEN be translated like this", tcenter
+			print("Thus the average HAS BEEN be translated like this", tcenter)
 			avg.transform(tcenter)
 
 		avg['origin_x']=0
@@ -3487,7 +3293,7 @@ def makeAverage(options,ic,results,it=0):
 	
 		return [avg,weights]
 	else:
-		print "\nERROR: for class %d in iteration %d failed to compute average (the average is empty)" %(ic,it)
+		print("\nERROR: for class %d in iteration %d failed to compute average (the average is empty)" %(ic,it))
 		sys.exit()
 		return [avg,weights]
 
@@ -3516,7 +3322,7 @@ def get_results(etc,tids,verbose,nptcls,refmethod=''):
 	
 	ncomplete=0
 	tidsleft = tids[:]
-	print "before loop, in get_results, tidsleft are", tidsleft
+	print("before loop, in get_results, tidsleft are", tidsleft)
 	
 	while 1:
 		time.sleep(5)
@@ -3531,7 +3337,7 @@ def get_results(etc,tids,verbose,nptcls,refmethod=''):
 				
 				#print "r is", r
 				ptcl = r[0].classoptions['ptclnum']			# get the particle number from the task rather than trying to work back to it
-				print "ptcl is", ptcl
+				print("ptcl is", ptcl)
 				#print "results inside get_results are", results
 				
 				
@@ -3556,7 +3362,7 @@ def get_results(etc,tids,verbose,nptcls,refmethod=''):
 		tidsleft=[j for i,j in enumerate(tidsleft) if proglist[i]!=100]		# remove any completed tasks from the list we ask about
 		if verbose:
 			# removed nwait here. It was giving an incorrect perception, since the tasks are apparently not updating progress as they should
-			print "  %d tasks, %d complete        \r"%(len(tids),ncomplete)
+			print("  %d tasks, %d complete        \r"%(len(tids),ncomplete))
 			sys.stdout.flush()
 	
 		if len(tidsleft)==0: break
@@ -3567,7 +3373,7 @@ def get_results(etc,tids,verbose,nptcls,refmethod=''):
 def wedgestats(volume,angle, wedgei, wedgef, options):
 	#print "RECEIEVED, in wedge statistics, angle, wedgei and wedgef", angle, wedgei, wedgef
 	vfft = volume.do_fft()
-	print "Size of vfft is", vfft['nx'],vfft['ny'],vfft['nz']
+	print("Size of vfft is", vfft['nx'],vfft['ny'],vfft['nz'])
 	wedge = vfft.getwedge(angle, wedgei, wedgef)
 	
 	mean = vfft.get_attr('spt_wedge_mean')
@@ -3588,7 +3394,7 @@ def wedgestats(volume,angle, wedgei, wedgef, options):
 	'''
 	Compute fft amps of the vol and center
 	'''
-	print "Size of vfft BEFORE real is", vfft['nx'],vfft['ny'],vfft['nz']
+	print("Size of vfft BEFORE real is", vfft['nx'],vfft['ny'],vfft['nz'])
 	vfft.ri2ap()
 	ampsOrig = vfft.amplitude()
 	amps = ampsOrig.process('xform.phaseorigin.tocenter')
@@ -3598,10 +3404,10 @@ def wedgestats(volume,angle, wedgei, wedgef, options):
 	#print "Size of amps is", amps['nx'],amps['ny'],amps['nz']
 	
 	sigmas = options.aligncmp[1]['sigmas']
-	print "Sigmas is", sigmas
+	print("Sigmas is", sigmas)
 	
 	thresh = math.pow( mean + sigmas * sigma, 2.0 )
-	print "Therefore thresh = mean + (sigmas*sigma)^2 is", thresh
+	print("Therefore thresh = mean + (sigmas*sigma)^2 is", thresh)
 	
 	#print "Size of symamps is", symamps['nx'],symamps['ny'],symamps['nz']
 	
@@ -3612,14 +3418,14 @@ def wedgestats(volume,angle, wedgei, wedgef, options):
 
 	#print "Size of finalamps is", finalamps['nx'],finalamps['ny'],finalamps['nz']
 	
-	print "\nType of wedge is", type(finalwedge)
-	print "\nType of amps is", type(finalamps)
-	print "\nType of ampsThresh is", type(ampsThresh)
+	print("\nType of wedge is", type(finalwedge))
+	print("\nType of amps is", type(finalamps))
+	print("\nType of ampsThresh is", type(ampsThresh))
 	
 	if options.writewedge:
 		
 		completePath = os.getcwd() + '/' + options.path
-		print "\nThe list of files in path is", os.listdir( completePath )
+		print("\nThe list of files in path is", os.listdir( completePath ))
 		 
 		wedgename = os.getcwd() + '/' + options.path + '/wedge.hdf'
 		finalwedge.write_image(wedgename,0)
@@ -3829,7 +3635,7 @@ class Align3DTask(JSTask):
 			refpreprocess=1
 			
 		if options.verbose:
-			print "\n\n!!!!!!!!!!!!!!!!!!!!!!!!\n(e2spt_classaverage)(Align3DTask) ",classoptions['label']
+			print("\n\n!!!!!!!!!!!!!!!!!!!!!!!!\n(e2spt_classaverage)(Align3DTask) ",classoptions['label'])
 			#print "\n\!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!n\n\n\n\n\n\n"
 		
 		
@@ -3842,7 +3648,7 @@ class Align3DTask(JSTask):
 		if nptcls == 1:
 			classoptions['ptclnum'] = 0
 		
-		print "\n in alignment class, before alignment function fixedimage and image sizes are", fixedimage['nx'], fixedimage['ny'], fixedimage['nz'], image['nx'], image['ny'], image['nz']
+		print("\n in alignment class, before alignment function fixedimage and image sizes are", fixedimage['nx'], fixedimage['ny'], fixedimage['nz'], image['nx'], image['ny'], image['nz'])
 
 		ret = alignment(fixedimage,image,classoptions['label'],classoptions['options'],xformslabel,classoptions['currentIter'],classoptions['transform'],'e2spt_classaverage',refpreprocess)
 		
@@ -3913,7 +3719,7 @@ def align3Dfunc(fixedimage,image,ptclnum,label,options,transform,currentIter):
 	#print "\n\n\nReceived from alignment in 3dfunc, bestfinal", bestfinal
 	
 	if not fixedimage['maximum'] and not fixedimage['minimum']:
-		print "Error. Empty reference."
+		print("Error. Empty reference.")
 		sys.exit()
 	
 	
@@ -3932,7 +3738,7 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 	from operator import itemgetter	
 	
 	if options.verbose: 
-		print "\n\n!!!!\n(e2spt_classaverage)(alignment) Aligning ",label
+		print("\n\n!!!!\n(e2spt_classaverage)(alignment) Aligning ",label)
 		#print "\n\!!!!!n\n\n\n\n\n\n"
 	
 	round=iter
@@ -3984,8 +3790,8 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 			s2fixedimage = reffullsize
 			print ("\n(e2spt_classaverage)(alignment) preprocessed particle not found. Using raw version")
 
-	print "\n(e2spt_classaverage)(alignment) s2fixedimage starts with size", s2fixedimage['nx']		
-	print "\n(e2spt_classaverage)(alignment) before refpreprocess, refpreprocess, iter", refpreprocess, iter
+	print("\n(e2spt_classaverage)(alignment) s2fixedimage starts with size", s2fixedimage['nx'])		
+	print("\n(e2spt_classaverage)(alignment) before refpreprocess, refpreprocess, iter", refpreprocess, iter)
 	
 	if 'rotate_translate_3d_tree' not in options.align[0]:	
 		
@@ -4059,15 +3865,15 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 		
 		if sfixedimage:
 			if options.verbose:
-				print "\n(e2spt_classaverage)(alignment) COARSE ref is of size %d, in iter %d" %( sfixedimage['nx'], iter)
+				print("\n(e2spt_classaverage)(alignment) COARSE ref is of size %d, in iter %d" %( sfixedimage['nx'], iter))
 
 		if s2fixedimage:
 			if options.verbose:
-				print "\n(e2spt_classaverage)(alignment) FINE ref is of size %d, in iter %d" %( s2fixedimage['nx'], iter)
+				print("\n(e2spt_classaverage)(alignment) FINE ref is of size %d, in iter %d" %( s2fixedimage['nx'], iter))
 	
 		if reffullsize:
 			if options.verbose:
-				print "\n(e2spt_classaverage)(alignment) REFFULLSIZE is of size %d, in iter %d" %( reffullsize['nx'], iter)
+				print("\n(e2spt_classaverage)(alignment) REFFULLSIZE is of size %d, in iter %d" %( reffullsize['nx'], iter))
 		
 	
 	#########################################
@@ -4164,15 +3970,15 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 		
 	if simage:
 		if options.verbose:
-			print "after all preproc, COARSE ptcl is of size %d, in iter %d" %( simage['nx'], iter)
+			print("after all preproc, COARSE ptcl is of size %d, in iter %d" %( simage['nx'], iter))
 
 	if s2image:
 		if options.verbose:
-			print "after all preproc, FINE ptcl is of size %d, in iter %d" %( s2image['nx'], iter)	
+			print("after all preproc, FINE ptcl is of size %d, in iter %d" %( s2image['nx'], iter))	
 
 	if imgfullsize:
 		if options.verbose:
-			print "after all preproc, IMGFULLSIZE is of size %d, in iter %d" %( imgfullsize['nx'], iter)
+			print("after all preproc, IMGFULLSIZE is of size %d, in iter %d" %( imgfullsize['nx'], iter))
 		
 		
 		#print "falign is", options.falign
@@ -4180,14 +3986,14 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 	
 	
 	if sfixedimage['nx'] != simage['nx']:
-		print "ERROR: preprocessed images for coarse alignment not the same size, sfixedimage, simage", sfixedimage['nx'], simage['nx']
+		print("ERROR: preprocessed images for coarse alignment not the same size, sfixedimage, simage", sfixedimage['nx'], simage['nx'])
 		#print "ERROR: preprocessed images for coarse alignment not the same size"
 		sys.exit()
 	
 	if 'rotate_translate_3d_tree' not in options.align[0]:
 		if options.falign and s2fixedimage and s2image:
 			if s2fixedimage['nx'] != s2image['nx']:
-				print "ERROR: preprocessed images for fine alignment not the same size, s2fixedimage, s2image", s2fixedimage['nx'], s2image['nx']
+				print("ERROR: preprocessed images for fine alignment not the same size, s2fixedimage, s2image", s2fixedimage['nx'], s2image['nx'])
 				#print "ERROR: preprocessed images for fine alignment not the same size"
 				sys.exit()
 	
@@ -4251,7 +4057,7 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 		#if options.align:
 		
 		if simage['nx'] != sfixedimage['nx'] or simage['ny'] != sfixedimage['ny'] or simage['nz'] != sfixedimage['nz']:
-			print "\n\nERROR: COARSE alignment images not the same size"
+			print("\n\nERROR: COARSE alignment images not the same size")
 			#print "\nThe particle's COARSE size is", simage['nx'],simage['ny'],simage['nz']
 			#print "\nThe reference's COARSE size is", sfixedimage['nx'],sfixedimage['ny'],sfixedimage['nz']
 			sys.exit()	
@@ -4265,11 +4071,11 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 		#print "\nsfixedimage and type", sfixedimage, type(sfixedimage)
 		
 		bestcoarse = simage.xform_align_nbest(options.align[0],sfixedimage,options.align[1],options.npeakstorefine,options.aligncmp[0],options.aligncmp[1])
-		print "aligner was", options.align[0]
-		print "with parameters",options.align[1]
-		print "npeaks",options.npeakstorefine
-		print "comparator",options.aligncmp[0]
-		print "results are thus", bestcoarse
+		print("aligner was", options.align[0])
+		print("with parameters",options.align[1])
+		print("npeaks",options.npeakstorefine)
+		print("comparator",options.aligncmp[0])
+		print("results are thus", bestcoarse)
 		
 		#except:
 		#	bestcoarse = simage.align(options.align[0],sfixedimage,options.align[1],options.npeakstorefine,options.aligncmp[0],options.aligncmp[1])
@@ -4298,7 +4104,7 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 				pass
 				#print "\n\nshrink and shrink refine were equal!\n\n"
 		else:
-			print "\ntree alignment returned this best score and alignment", bestcoarse
+			print("\ntree alignment returned this best score and alignment", bestcoarse)
 		
 			
 	# verbose printout
@@ -4326,7 +4132,7 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 				#print "\n(e2spt_classaverage)(alignment) s2image['nz'] == s2fixedimage['nz']", s2image['nz'] == s2fixedimage['nz'],  s2image['nz'], type(s2image['nz']), s2fixedimage['nz'], type(s2fixedimage['nz'])
 			
 				if int(s2image['nx']) != int(s2fixedimage['nx']) or int(s2image['ny']) != int(s2fixedimage['ny']) or int(s2image['nz']) != int(s2fixedimage['nz']):
-					print "\n(e2spt_classaverage)(alignment) ERROR: FINE alignment images not the same size"
+					print("\n(e2spt_classaverage)(alignment) ERROR: FINE alignment images not the same size")
 					#print "\nThe particle's FINE size is", s2image['nx'],s2image['ny'],s2image['nz']
 					#print "\nThe reference's FINE size is", s2fixedimage['nx'],s2fixedimage['ny'],s2fixedimage['nz']
 					sys.exit('MIE')
@@ -4364,7 +4170,7 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 					c["xform.align3d"].set_trans(newtrans)
 					
 				if options.tweak:
-					print "tweak is on"
+					print("tweak is on")
 					bestfinal = sorted(bestfinal, key=itemgetter('score'))
 				
 					originalLpFine = options.lowpassfine
@@ -4376,25 +4182,25 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 					
 					
 					if reffullsize['nx'] != imgfullsize['nx'] or  reffullsize['ny'] != imgfullsize['ny'] or  reffullsize['nz'] != imgfullsize['nz']:
-						print "ERROR: reffullsize and imgfullsize are not the same size" 
-						print "reffullsize", reffullsize['nx'], reffullsize['ny'], reffullsize['nz']
-						print "imgfullsize", imgfullsize['nx'], imgfullsize['ny'], imgfullsize['nz']
+						print("ERROR: reffullsize and imgfullsize are not the same size") 
+						print("reffullsize", reffullsize['nx'], reffullsize['ny'], reffullsize['nz'])
+						print("imgfullsize", imgfullsize['nx'], imgfullsize['ny'], imgfullsize['nz'])
 						sys.exit()
 			
-					print "\ntweaking alignment!"	
+					print("\ntweaking alignment!")	
 					bestT = bestfinal[0]["xform.align3d"]
 					bestScore = bestfinal[0]['score']
 				
-					print "best alignment was", bestT
+					print("best alignment was", bestT)
 					tweakrange = options.falign[1]['delta']+0.5
-					print "tweaking range is", tweakrange
+					print("tweaking range is", tweakrange)
 					tweakdelta = options.falign[1]['delta']/2.0 - 0.1
-					print "tweaking step is", tweakdelta
+					print("tweaking step is", tweakdelta)
 
 					tweaksearch = options.shrinkfine
 			
 					if options.lowpassfine:
-						print "new options.lowpassfine is", options.lowpassfine
+						print("new options.lowpassfine is", options.lowpassfine)
 			
 					reffullsizeali = reffullsize.copy()
 					imgfullsizeali = imgfullsize.copy()
@@ -4403,8 +4209,8 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 					imgfullsizeali = preprocfilter(imgfullsizeali,options,ptclindx, savetagp ,'no',round,'noshrink')
 						
 						
-					print "before alitweak, sizes of img are and apix", imgfullsizeali['nx'], imgfullsizeali['ny'], imgfullsizeali['nz'],imgfullsizeali['apix_x']
-					print "before alitweak, sizes of ref are and apix", reffullsizeali['nx'], reffullsizeali['ny'], reffullsizeali['nz'],reffullsizeali['apix_x']
+					print("before alitweak, sizes of img are and apix", imgfullsizeali['nx'], imgfullsizeali['ny'], imgfullsizeali['nz'],imgfullsizeali['apix_x'])
+					print("before alitweak, sizes of ref are and apix", reffullsizeali['nx'], reffullsizeali['ny'], reffullsizeali['nz'],reffullsizeali['apix_x'])
 					
 					#print "aligner to tweak is", ['refine_3d_grid',{'xform.align3d':bestT,'range':tweakrange,'delta':tweakdelta,'search':tweaksearch}]
 					
@@ -4437,20 +4243,20 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 					
 						if float( besttweakScore ) < float( bestScore ) and besttweakT != bestT:
 					
-							print "tweaking improved score from %.6f to %.6f" %( float( bestScore ), float( besttweakScore ) )
+							print("tweaking improved score from %.6f to %.6f" %( float( bestScore ), float( besttweakScore ) ))
 							bestfinal[0]['score'] = besttweakScore
 							bestfinal[0]["xform.align3d"] = besttweakT
-							print "and changed the transform from, to", bestT, besttweakT
+							print("and changed the transform from, to", bestT, besttweakT)
 						else:
-							print "tweaking did not improve score; therefore, it will be ignored."			
+							print("tweaking did not improve score; therefore, it will be ignored.")			
 
 					except:
-						print "WARNING: tweaking failed!"
+						print("WARNING: tweaking failed!")
 
 					options.lowpassfine = originalLpFine
 				
 				else:
-					print "NOT tweaking!"								
+					print("NOT tweaking!")								
 						
 					
 				
@@ -4469,7 +4275,7 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 				pass
 				#print "\nThere was no fine alignment; therefore, score is", bestfinal[0]['score']
 		else:
-			print "\nno fine alignment", options.falign
+			print("\nno fine alignment", options.falign)
 	#else: 
 	#	bestfinal = bestcoarse
 	#	if options.verbose:
@@ -4492,14 +4298,14 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 		pass
 	
 	if bestfinal[0]["score"] == 1.0e10 and options.falign:
-		print "Error: all fine alignments failed for %s. May need to consider altering filter/shrink parameters. Using coarse alignment, but results are likely invalid."%self.options["label"]
+		print("Error: all fine alignments failed for %s. May need to consider altering filter/shrink parameters. Using coarse alignment, but results are likely invalid."%self.options["label"])
 	
 	if options.verbose: 
 		#print "Best %1.5g\t %s"%(bestfinal[0]["score"],str(bestfinal[0]["xform.align3d"]))
 		#print "Inside ALIGNMENT function in e2spt_classaverage, done aligning ",label
 		pass	
 	
-	print "\n(e2spt_classaverage)(alignment) finishing - ", label	
+	print("\n(e2spt_classaverage)(alignment) finishing - ", label)	
 	
 	#print "\n\n\nRRRRRRRRR\n Returning from alignment", 
 	#print "bestfinal",bestfinal
@@ -4513,7 +4319,7 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 	
 	gc.collect() 	#free up unused memory
 	
-	print "(e2spt_classaverage)(alignment) sorted bestcoarse to return", bestcoarse
+	print("(e2spt_classaverage)(alignment) sorted bestcoarse to return", bestcoarse)
 	
 	return [bestfinal, bestcoarse]
 	
@@ -4524,7 +4330,7 @@ jsonclasses["Align3DTask"]=Align3DTask.from_jsondict
 def classmx_ptcls(classmx,n):
 	"""Scans a classmx file to determine which images are in a specific class. Classmx may be a filename or an EMData object.
 	returns a list of integers"""
-	print "Classmx and its type received in classmx_ptcls are", classmx, type(classmx)
+	print("Classmx and its type received in classmx_ptcls are", classmx, type(classmx))
 	if isinstance(classmx,str): 
 		classmx=EMData(classmx,0)
 	

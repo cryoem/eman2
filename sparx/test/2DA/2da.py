@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 from EMAN2  import *
 from sparx  import *
 from sys import exit
@@ -26,7 +27,7 @@ for alpha in xrange(0,91):
 	fq = fsc(a*m,q*m)
 	fg = fsc(a*m,g*m)
 	fl = fsc(a*m,l*m)
-	print ccc(a,l,m), ccc(a,q,m), ccc(a,g,m), ccc(a,h,m)
+	print(ccc(a,l,m), ccc(a,q,m), ccc(a,g,m), ccc(a,h,m))
 exit()
 """
 info(a)
@@ -50,4 +51,4 @@ for i in xrange(10):
 	sg = Util.infomask(dag, None, True)
 	dah = square(m*filt_tophatb((a-h)*m,fl,fh))
 	sh = Util.infomask(dah, None, True)
-	print  i,sg[0], sh[0]
+	print(i,sg[0], sh[0])

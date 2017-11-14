@@ -1,4 +1,5 @@
 #
+from __future__ import print_function
 # Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
 # Copyright (c) 2000-2006 The University of Texas - Houston Medical School
 #
@@ -819,7 +820,7 @@ def rot_avg_image(image_to_be_averaged):
 	"""
 	import types
 	from utilities import get_im
-	if type(image_to_be_averaged) is types.StringType: image_to_be_averaged = get_im(image_to_be_averaged)
+	if type(image_to_be_averaged) is bytes: image_to_be_averaged = get_im(image_to_be_averaged)
 	return image_to_be_averaged.rotavg_i()
 
 def ro_textfile(e, filename, helpful_string=""):
@@ -889,12 +890,12 @@ def rops_dir(indir, output_dir = "1dpw2_dir"):
 	from EMAN2 import periodogram
 	import os
 	flist = os.listdir(indir)
-	print flist
+	print(flist)
 	if os.path.exists(output_dir) is False: os.mkdir(output_dir)
 	for i, v in enumerate(flist):
 		(filename, filextension) = os.path.splitext(v)
 		nima = EMUtil.get_image_count(os.path.join(indir,v))
-		print nima
+		print(nima)
 		for im in xrange(nima):
 			e = EMData()
 			file_name = os.path.join(indir,v)
@@ -1288,7 +1289,7 @@ def bracket(f,x1,h):
 		if f3 > f2: return x1,x3
 		x1 = x2; x2 = x3
 		f1 = f2; f2 = f3
-	print "Bracket did not find a mimimum"        
+	print("Bracket did not find a mimimum")        
  
 def goldsearch(f,a,b,tol=1.0e-9):
 	from math import log, ceil
@@ -1316,6 +1317,7 @@ def goldsearch(f,a,b,tol=1.0e-9):
 #                 will fix the problem of rotation of a 0,0,0 direction.  It does not as one neeeds psi
 #                 in this case as well.  So, the only choice is to use small theta instead of exact 0,0,0 direction
 def rotate_params(params, transf):
+	from fundamentals import rotmatrix, recmat, rotmatrix
 	matinv = rotmatrix( -transf[2], -transf[1], -transf[0] )
 	n = len(params)
 	cpar = [None]*n
@@ -1727,7 +1729,7 @@ class symclass():
 		is_platonic_sym = self.sym[0] == "o" or self.sym[0] == "t" or self.sym[0] == "i"
 		if(self.sym[0] == "c"): qs = 360.0/self.nsym
 		elif(self.sym[0] == "d"): qs = 720.0/self.nsym
-		if( type(angles[0]) is types.ListType):
+		if( type(angles[0]) is list):
 			toprocess = angles
 			lis = True
 		else:

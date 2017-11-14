@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 # Author: Stephen Murray (scmurray@bcm.edu), 2/14/11
 # Copyright (c) 2000-2013 Baylor College of Medicine
 
@@ -78,8 +79,8 @@ optionList = pyemtbx.options.get_optionlist(sys.argv[1:])
 (options, args) = parser.parse_args()
 
 if len(args) != 2:
-   print "usage:" + usage
-   print "Please run'" + progname + " -h' for detailed options"
+   print("usage:" + usage)
+   print("Please run'" + progname + " -h' for detailed options")
    sys.exit(1)
 
 
@@ -129,7 +130,7 @@ total_len = len(az_list)
 even_set_name,odd_set_name=command_dict["input"]
 all_set_name = "sets/"+base_name(even_set_name)+"_ptcls.lst"
 all_set_data = EMData.read_images(all_set_name)
-print all_set_name
+print(all_set_name)
 
 s = "e2proc2d.py " + all_set_name + " " + E2FA + "/particlestack.mrc --twod2threed --process=normalize.edgemean --mult=-1 --verbose=" + str(options.verbose)
 call(s, shell=True)
@@ -224,30 +225,30 @@ f.close()
 
 RO = str(apix_shift*.375*(all_set_data[0]['nx']))
 for option1 in optionList:
-	if option1 == "fbeaut":
-		FBEAUT = 'T'
-	elif option1 == "ffilt":
-		FFILT = 'T'
-  	elif option1 == "rrec":
-		RREC = str(options.rrec)
-	elif option1 == "reslow":
-		RMAX1 = str(options.reslow)
-	elif option1 == "reshigh":
-		RMAX2 = str(options.reshigh)
-	elif option1 == "rclas":
-		RCLAS = str(options.rclas)
-	elif option1 == "fstat":
-		FSTAT = 'T'
-	elif option1 == "mass":
-		MASS = str(options.mass)
-	elif option1 == "interp":
-		INTERP = str(options.interp)
-	elif option1 == "mode":
-		IFLAG = str(options.mode)
-	elif option1 == "randomizemodel":
-		if float(options.randomizemodel) != 0.0:
-			s1 = "e2proc3d.py " + E2FA + "/3DMapInOut.mrc " + E2FA + "/3DMapInOut.mrc --process=filter.lowpass.randomphase:apix=" + str(apix_shift) + ":cutoff_freq=" + str(1/float(options.randomizemodel))
-			call(s1, shell=True)
+    if option1 == "fbeaut":
+        FBEAUT = 'T'
+    elif option1 == "ffilt":
+        FFILT = 'T'
+    elif option1 == "rrec":
+        RREC = str(options.rrec)
+    elif option1 == "reslow":
+        RMAX1 = str(options.reslow)
+    elif option1 == "reshigh":
+        RMAX2 = str(options.reshigh)
+    elif option1 == "rclas":
+        RCLAS = str(options.rclas)
+    elif option1 == "fstat":
+        FSTAT = 'T'
+    elif option1 == "mass":
+        MASS = str(options.mass)
+    elif option1 == "interp":
+        INTERP = str(options.interp)
+    elif option1 == "mode":
+        IFLAG = str(options.mode)
+    elif option1 == "randomizemodel":
+        if float(options.randomizemodel) != 0.0:
+            s1 = "e2proc3d.py " + E2FA + "/3DMapInOut.mrc " + E2FA + "/3DMapInOut.mrc --process=filter.lowpass.randomphase:apix=" + str(apix_shift) + ":cutoff_freq=" + str(1/float(options.randomizemodel))
+            call(s1, shell=True)
 
 OUTFILE2 = E2FA + "/card.txt"          # Cards required by FA
 f = open(OUTFILE2, 'w')      # card.txt to be placed in the E2FA subdirectory created above
@@ -368,6 +369,6 @@ f.write(FPOI + '\n')
 
 f.close()
 
-print "e2refinetofrealign.py finished"
+print("e2refinetofrealign.py finished")
 
 E2end(E2n)

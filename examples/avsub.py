@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 # This program is designed to take an aligned movie stack and extract the best quality frames and average them together. This is
 # similar to capabilities in e2ddd_movie, but without the alignment step.  This program was designed in the context of a specific project
@@ -26,7 +27,7 @@ def paircmp(im1,im2):
 	return vals
 
 # read MRC stack even when named ".mrc"
-print "read"
+print("read")
 try: os.unlink("tmp.mrcs")
 except: pass 
 os.symlink(sys.argv[1],"tmp.mrcs")
@@ -45,7 +46,7 @@ ctf=info["ctf_frame"][1]
 #ctf.compute_2d_complex(flipim,Ctf.CtfType.CTF_SIGN)
 
 # we work only with a 3k x 3k region from the middle of the image
-print "preprocess"
+print("preprocess")
 stkf=[]
 for img in stk:
 #	imgf=img.get_clip(Region(512,512,1024*3,1024*3)).process("normalize.edgemean").do_fft()
@@ -86,8 +87,8 @@ sigma=stat.transpose()[3].std()
 
 statgood=stat[stathires>mean-sigma*.5]		# extract the indices of the particles where the high resolution quality is > the average - sigma
 
-print statgood[:,0], len(statgood),len(stat)
-print "Write Output"
+print(statgood[:,0], len(statgood),len(stat))
+print("Write Output")
 
 avr=Averagers.get("mean")
 avr.add_image_list(stk)

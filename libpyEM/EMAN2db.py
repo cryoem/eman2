@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: Steven Ludtke, 06/16/2008 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -46,7 +47,7 @@ import traceback
 
 try:
 	from bsddb3 import db
-except ImportError, e:
+except ImportError as e:
 #	print "WARNING: Could not import bsddb3; falling back on the older bsddb. Consider installing BerkeleyDB and bsddb3:", e
 	from bsddb import db
 
@@ -88,8 +89,8 @@ def DB_cleanup(signum=None,stack=None):
 		if len(DBDict.alldicts)>0 :
 			try: nopen=len([i for i in DBDict.alldicts if i.bdb!=None])
 			except: nopen=0
-			print "Program interrupted (%d), closing %d databases, please wait (%d)"%(signum,nopen,os.getpid())
-			for i in DBDict.alldicts.keys(): print i.name
+			print("Program interrupted (%d), closing %d databases, please wait (%d)"%(signum,nopen,os.getpid()))
+			for i in DBDict.alldicts.keys(): print(i.name)
 		if stack!=None : traceback.print_stack(stack)
 	for d in DBDict.alldicts.keys():
 		d.forceclose()
@@ -99,7 +100,7 @@ def DB_cleanup(signum=None,stack=None):
 		try : d.lock.release()	# This will (intentionally) allow the threads to fail, since the environment is now closed
 		except : pass
 	if signum in (2,15) :
-		print "Shutdown complete, exiting"
+		print("Shutdown complete, exiting")
 		sys.stderr.flush()
 		sys.stdout.flush()
 		#parallel_process_exit()
@@ -204,7 +205,7 @@ def db_parse_path(url):
 	bdb:/path/to/dict   (also works, but # preferred)
 	"""
 
-	if url[:4].lower()!="bdb:": raise Exception,"Invalid URL, bdb: only (%s)"%url
+	if url[:4].lower()!="bdb:": raise Exception("Invalid URL, bdb: only (%s)"%url)
 	url=url.replace("~",e2gethome())
 	url=url[4:].rsplit('#',1)
 	if len(url)==1 : url=url[0].rsplit("/",1)
@@ -232,13 +233,13 @@ def db_parse_path(url):
 		if u2[0][:7].lower()=="select." :
 			ddb=EMAN2DB.open_db(".")
 			ddb.open_dict("select")
-			if not ddb.select.has_key(u2[0][7:]) : raise Exception,"Unknown selection list %s"%u2[0][7:]
+			if u2[0][7:] not in ddb.select : raise Exception("Unknown selection list %s"%u2[0][7:])
 			return (url[0],url[1],ddb.select[u2[0][7:]])		# bdb:path/to#dict?select/name
 		elif u2[0][:8].lower()=="exclude." :
 			ddb=EMAN2DB.open_db(".")
 			ddb.open_dict("select")
 			all_set = set(range(0,EMUtil.get_image_count("bdb:"+url[0]+"#"+url[1])))
-			if not ddb.select.has_key(u2[0][8:]) :
+			if u2[0][8:] not in ddb.select :
 				return (url[0],url[1],list(all_set))			# if the exclusion list is missing, we exclude nothing
 #				raise Exception,"Unknown selection list %s"%u2[0][8:]
 			exc_set = set(ddb.select[u2[0][8:]])
@@ -298,7 +299,7 @@ def db_check_dict(url,readonly=True):
 	read/write (or just read). Deals only with bdb: urls. Returns false for other specifiers"""
 
 	if len(url) < 4 or url[:4] != "bdb:": return False
-  	path,dictname,keys=db_parse_path(url)
+	path,dictname,keys=db_parse_path(url)
 
 	path=path+"/EMAN2DB/"+dictname+".bdb"
 #	print path
@@ -428,13 +429,13 @@ def db_read_image(self,fsp,*parms,**kparms):
 #			raise Exception("Could not access "+str(fsp)+" "+str(key))
 		return None
 	if len(kparms)!=0:
-		if not kparms.has_key('img_index'):
+		if 'img_index' not in kparms:
 			kparms['img_index'] = 0
-		if not kparms.has_key('header_only'):
+		if 'header_only' not in kparms:
 			kparms['header_only'] = False
-		if not kparms.has_key('region'):
+		if 'region' not in kparms:
 			kparms['region'] = None
-		if not kparms.has_key('is_3d'):
+		if 'is_3d' not in kparms:
 			kparms['is_3d'] = False
 	return self.read_image_c(fsp,*parms, **kparms)
 
@@ -483,8 +484,8 @@ def db_write_image(self,fsp,*parms):
 	if fsp[:4].lower()=="bdb:" :
 		db,keys=db_open_dict(fsp,False,True)
 		if keys :			# if the user specifies the key in fsp, we ignore parms
-			if len(keys)>1 : raise Exception,"Too many keys provided in write_image %s"%str(keys)
-			if isinstance(keys[0],int) and keys[0]<0 : raise Exception,"Negative integer keys not allowed %d"%keys[0]
+			if len(keys)>1 : raise Exception("Too many keys provided in write_image %s"%str(keys))
+			if isinstance(keys[0],int) and keys[0]<0 : raise Exception("Negative integer keys not allowed %d"%keys[0])
 			db[keys[0]]=self
 			return
 		if len(parms)==0 : parms=[0]
@@ -516,7 +517,7 @@ Takes a path or bdb: specifier and returns the number of images in the reference
 			db2=db_open_dict("bdb:%s#%s"%(path,"00image_counts"))
 
 			# If this is true, we need to update the dictionary
-			if (db2.has_key(dictname) and os.path.getmtime("%s/EMAN2DB/%s.bdb"%(path,dictname))>db2[dictname][0]) or not db2.has_key(dictname) :
+			if (dictname in db2 and os.path.getmtime("%s/EMAN2DB/%s.bdb"%(path,dictname))>db2[dictname][0]) or dictname not in db2 :
 				db=db_open_dict(fsp,True)
 				try:
 					im=db[0]
@@ -536,7 +537,7 @@ Takes a path or bdb: specifier and returns the number of images in the reference
 		ret=EMUtil.get_image_count_c(fsp)
 	except:
 #		print"Error with get_image_count on : ",fsp
-		raise Exception,fsp
+		raise Exception(fsp)
 	return ret
 
 EMUtil.get_image_count_c=staticmethod(EMUtil.get_image_count)
@@ -553,7 +554,7 @@ Takes a bdb: specifier and returns the number of images and image dimensions."""
 			db2=db_open_dict("bdb:%s#%s"%(path,"00image_counts"))
 
 			# If this is true, we need to update the dictionary
-			if (db2.has_key(dictname) and os.path.getmtime("%s/EMAN2DB/%s.bdb"%(path,dictname))>db2[dictname][0]) or not db2.has_key(dictname) or db2[dictname][2][0]==0:
+			if (dictname in db2 and os.path.getmtime("%s/EMAN2DB/%s.bdb"%(path,dictname))>db2[dictname][0]) or dictname not in db2 or db2[dictname][2][0]==0:
 #				print "update ",dictname,os.path.getmtime("%s/EMAN2DB/%s.bdb"%(path,dictname)),db2[dictname][0],db2.has_key(dictname)
 				db=db_open_dict(fsp,True)
 				try:
@@ -634,7 +635,7 @@ class EMTaskQueue:
 			task=self.active[tid]
 			if isinstance(task,int) : continue
 			if task==None :
-				print "Missing task ",tid
+				print("Missing task ",tid)
 				continue
 			if task.starttime==None:
 				task.starttime=time.time()
@@ -666,7 +667,7 @@ class EMTaskQueue:
 				raise Exception
 		except:
 			did=(fmt,random.randint(0,999999))	# since there may be multiple files with the same timestamp, we also use a random int
-			while (self.didtoname.has_key(did)):
+			while (did in self.didtoname):
 				did=(fmt,random.randint(0,999999))
 
 		self.nametodid[name]=did
@@ -679,7 +680,7 @@ class EMTaskQueue:
 		"""Adds a new task to the active queue, scheduling it for execution. If parentid is
 		specified, a doubly linked list is established. parentid MUST be the id of a task
 		currently in the active queue. parentid and wait_for may be set in the task instead"""
-		if not isinstance(task,EMTask) : raise Exception,"Invalid Task"
+		if not isinstance(task,EMTask) : raise Exception("Invalid Task")
 		#self.active["max"]+=1
 		#tid=self.active["max"]
 
@@ -697,8 +698,8 @@ class EMTaskQueue:
 			try:
 				did=self.todid(k[1])
 			except:
-				print "Invalid data item %s: %s"%(str(j),str(k))
-				print str(task)
+				print("Invalid data item %s: %s"%(str(j),str(k)))
+				print(str(task))
 				os._exit(1)
 			try: k[1]=did
 			except:
@@ -707,7 +708,7 @@ class EMTaskQueue:
 
 		self.active[tid]=task		# store the task in the queue
 		try: EMTaskQueue.lock.release()
-		except: print "Warning: lock re-released in add_task. Not serious, but shouldn't happen."
+		except: print("Warning: lock re-released in add_task. Not serious, but shouldn't happen.")
 		return tid
 
 	def task_progress(self,tid,percent):
@@ -721,7 +722,7 @@ class EMTaskQueue:
 				task=self.complete[tid]
 				return False
 			except:
-				print "ERROR: Progress, No such task : ",tid,percent
+				print("ERROR: Progress, No such task : ",tid,percent)
 				return False
 		task.progtime=(time.time(),percent)
 		self.active[tid]=task
@@ -748,7 +749,7 @@ class EMTaskQueue:
 		try:
 			task=self.active[tid]
 			if task==None:
-				print "*** Warning, task %d was already complete"%tid
+				print("*** Warning, task %d was already complete"%tid)
 				EMTaskQueue.lock.release()
 				return
 		except:
@@ -779,7 +780,7 @@ class EMTaskQueue:
 				return
 
 		if task==None :
-			print "Warning: tried to requeue task ",taskid," but couldn't find it"
+			print("Warning: tried to requeue task ",taskid," but couldn't find it")
 			return
 
 		if task.failcount==MAXTASKFAIL :
@@ -794,7 +795,7 @@ class EMTaskQueue:
 		task.exechost=None
 
 		if cpl :
-			print "Completed task %d requeued (%d failures)"%(taskid,task.failcount)
+			print("Completed task %d requeued (%d failures)"%(taskid,task.failcount))
 			del self.complete[taskid]
 
 		self.active[taskid]=task
@@ -870,7 +871,7 @@ class EMAN2DB:
 
 		if not path : path=e2gethome()+"/.eman2"
 		if path=="." or path=="./" : path=e2getcwd()
-		if EMAN2DB.opendbs.has_key(path) :
+		if path in EMAN2DB.opendbs :
 			EMAN2DB.lock.release()
 			return EMAN2DB.opendbs[path]
 		ret=EMAN2DB(path)
@@ -923,7 +924,7 @@ class EMAN2DB:
 			self.dbenv.set_lk_detect(db.DB_LOCK_DEFAULT)	# internal deadlock detection
 			self.dbenv.set_lk_max_locks(20000)		# if we don't do this, we can easily run out when dealing with large numbers of files
 			try: self.dbenv.set_lg_regionmax(5000000)
-			except: print "Could not alter log region size. Please run e2bdb.py -c"
+			except: print("Could not alter log region size. Please run e2bdb.py -c")
 			self.dbenv.set_lk_max_objects(20000)
 
 			try:
@@ -933,7 +934,7 @@ class EMAN2DB:
 					self.dbenv.open("/tmp/eman2db-%s"%os.getenv("USERNAME","anyone"),envopenflags)
 			except:
 				try:
-					print """Cache open failed. Retyring one time."""
+					print("""Cache open failed. Retyring one time.""")
 					# retry once
 					time.sleep(2)
 					if(sys.platform != 'win32'):
@@ -941,16 +942,16 @@ class EMAN2DB:
 					else:
 						self.dbenv.open("/tmp/eman2db-%s"%os.getenv("USERNAME","anyone"),envopenflags)
 				except:
-					print "/tmp/eman2db-%s"%os.getenv("USER","anyone")
+					print("/tmp/eman2db-%s"%os.getenv("USER","anyone"))
 					traceback.print_exc()
-					print """
+					print("""
 ========
 ERROR OPENING DATABASE CACHE      (This most often occurs if you upgrade EMAN2 without running 'e2bdb.py -c' first. It could
 also indicate that a program crashed in a bad way causing potential database corruption. You can try running 'e2bdb.py -c', and
 see if that fixes the problem, otherwise you may need to 'rm -rf /tmp/eman2db-*' (or on windows remove the corresponding folder).
 While there is a small possibility that this will prevent recovery of image files that were corrupted by the crash, it may be the
 only practical option.)
-"""
+""")
 					os._exit(1)
 
 		self.dicts={}
@@ -981,7 +982,7 @@ only practical option.)
 
 	def open_dict(self,name,ro=False):
 #		print "open ",name,ro
-		if self.dicts.has_key(name) : return
+		if name in self.dicts : return
 		self.dicts[name]=DBDict(name,dbenv=self.dbenv,path=self.path+"/EMAN2DB",parent=self,ro=ro)
 		self.__dict__[name]=self.dicts[name]
 
@@ -1059,7 +1060,7 @@ class DBDict:
 	def updateold(self,lfile,ro=False):
 		"""Called to update old 4.2 databases with funny problem"""
 		self.bdb=db.DB(self.dbenv)
-		print "Old format DB detected (%s). Do not be alarmed, this must be done 1 time for each database file. Please wait."%lfile
+		print("Old format DB detected (%s). Do not be alarmed, this must be done 1 time for each database file. Please wait."%lfile)
 		try: os.unlink(self.path+"/"+lfile.replace(".bdb",".old"))
 		except: pass
 		os.rename(self.path+"/"+lfile,self.path+"/"+lfile.replace(".bdb",".old"))
@@ -1067,19 +1068,19 @@ class DBDict:
 			tmpdb=db.DB()
 			tmpdb.open(self.path+"/"+lfile.replace(".bdb",".old"),self.name)
 		except:
-			print "Error updating %s. Please contact sludtke@bcm.edu."%lfile
+			print("Error updating %s. Please contact sludtke@bcm.edu."%lfile)
 			os._exit(1)
 		try:
 			self.bdb.open(self.path+"/"+lfile,self.name,db.DB_BTREE,db.DB_CREATE|db.DB_THREAD)
 		except:
-			print "Error 2 updating %s. Please contact sludtke@bcm.edu."%lfile
+			print("Error 2 updating %s. Please contact sludtke@bcm.edu."%lfile)
 			os._exit(1)
 
 		for k in tmpdb.keys():
 			self.bdb[k]=tmpdb[k]
 
 		tmpdb.close()
-		print "Conversion complete. (-old file retained as an emergency backup, safe to remove)"
+		print("Conversion complete. (-old file retained as an emergency backup, safe to remove)")
 
 	def realopen(self,ro=False):
 		"""This actually opens the database (unless already open), if ro is set and the database is not already
@@ -1090,16 +1091,16 @@ class DBDict:
 		global DBDEBUG
 		if DBDEBUG:
 			while not self.lock.acquire(False) :
-				print"DB %s locked. Waiting"%self.name
+				print("DB %s locked. Waiting"%self.name)
 				time.sleep(1)
 		else : self.lock.acquire()
 		self.lasttime=time.time()
 		if self.bdb!=None :
 			if ro==True or self.isro==False :
-				if DBDEBUG : print "already open",self.name
+				if DBDEBUG : print("already open",self.name)
 				self.lock.release()
 				return  		# return if the database is already open and in a compatible read-only mode
-			if DBDEBUG : print "reopening R/W ",self.name
+			if DBDEBUG : print("reopening R/W ",self.name)
 			self.lock.release()
 			self.close()	# we need to reopen read-write
 			self.lock.acquire()
@@ -1125,7 +1126,7 @@ class DBDict:
 				self.bdb=None
 				self.lock.release()
 				if DBDEBUG : traceback.print_exc()
-				raise Exception, "Cannot open or find %s"%self.name
+				raise Exception("Cannot open or find %s"%self.name)
 
 			#except:
 				## try one more time... this shouldn't be necessary...
@@ -1149,7 +1150,7 @@ class DBDict:
 					self.bdb=None
 					self.lock.release()
 					traceback.print_exc()
-					print "Unable to open read/write %s (%s/%s)"%(self.name,self.path,lfile)
+					print("Unable to open read/write %s (%s/%s)"%(self.name,self.path,lfile))
 					return
 			#except:
 				## try one more time... this shouldn't be necessary...
@@ -1167,7 +1168,7 @@ class DBDict:
 		global MAXOPEN
 		if DBDict.nopen>MAXOPEN : self.close_one()
 
-		if DBDEBUG : print "Opened ",self.name
+		if DBDEBUG : print("Opened ",self.name)
 
 #		print "%d open"%DBDict.nopen
 #		print "opened ",self.name,ro
@@ -1190,13 +1191,13 @@ class DBDict:
 #			print "%d dbs open, autoclose disabled"%len(l)
 #			for j,i in enumerate(l): print j,i[2].name,i[0]-time.time(),i[1]
 		if len(l)>MAXOPEN :
-			if DBDEBUG: print "DB autoclosing %d/%d "%(len(l)-MAXOPEN,len(l))
+			if DBDEBUG: print("DB autoclosing %d/%d "%(len(l)-MAXOPEN,len(l)))
 			for i in range(len(l)-MAXOPEN):
-				if DBDEBUG: print "CLOSE:",l[i][2].name
+				if DBDEBUG: print("CLOSE:",l[i][2].name)
 				if (l[i][2]!=self) :
 					l[i][2].close()
 				else :
-					print "Warning: attempt to autoclose the DB we just opened, please report this"
+					print("Warning: attempt to autoclose the DB we just opened, please report this")
 
 		DBDict.closelock.release()
 
@@ -1219,14 +1220,14 @@ class DBDict:
 		self.bdb=None
 		DBDict.nopen-=1
 		self.lock.release()
-		if DBDEBUG : print "Closed ",self.name
+		if DBDEBUG : print("Closed ",self.name)
 
 
 	def close(self):
 		global DBDEBUG
 		n=0
 		while not self.lock.acquire(False) and n<3:
-			print "Sleep on close ",self.name
+			print("Sleep on close ",self.name)
 			time.sleep(.2)
 			n+=1
 		if n>=4 : return	# failed too many times, just return and let things fail where they may...
@@ -1239,7 +1240,7 @@ class DBDict:
 		self.bdb=None
 		DBDict.nopen-=1
 		self.lock.release()
-		if DBDEBUG : print "Closed ",self.name
+		if DBDEBUG : print("Closed ",self.name)
 
 	def sync(self):
 		if self.bdb!=None : self.bdb.sync()
@@ -1308,7 +1309,7 @@ of these occasional errors"""
 				break
 			except:
 				if n in (0,9) : traceback.print_exc()
-				print "********** Warning: problem writing ",key," to ",self.name,". Retrying (%d/10)"%n
+				print("********** Warning: problem writing ",key," to ",self.name,". Retrying (%d/10)"%n)
 				time.sleep(5)
 				n+=1
 
@@ -1328,7 +1329,7 @@ of these occasional errors"""
 			try :
 				n=loads(self.bdb.get(fkey+dumps(key,-1),txn=self.txn))
 			except:
-				if not self.has_key(fkey) : self[fkey]=0
+				if fkey not in self : self[fkey]=0
 				else: self[fkey]+=1
 				n=self[fkey]
 			self.put(fkey+dumps(key,-1),dumps(n,-1),txn=self.txn)		# a special key for the binary location
@@ -1341,7 +1342,7 @@ of these occasional errors"""
 			ad["timestamp"]="%04d/%02d/%02d %02d:%02d:%02d"%t[:6]
 			self.put(dumps(key,-1),dumps(ad,-1),txn=self.txn)
 
-			if isinstance(key,int) and (not self.has_key("maxrec") or key>self["maxrec"]) :
+			if isinstance(key,int) and ("maxrec" not in self or key>self["maxrec"]) :
 				self["maxrec"]=key
 
 				# Updates the image count cache
@@ -1363,25 +1364,25 @@ of these occasional errors"""
 
 		else :
 			self.put(dumps(key,-1),dumps(val,-1),txn=self.txn)
-			if isinstance(key,int) and (not self.has_key("maxrec") or key>self["maxrec"]) : self["maxrec"]=key
+			if isinstance(key,int) and ("maxrec" not in self or key>self["maxrec"]) : self["maxrec"]=key
 
 	def __getitem__(self,key):
 		self.realopen(self.rohint)
 		try: r=loads(self.bdb.get(dumps(key,-1),txn=self.txn))
 		except: return None
-		if isinstance(r,dict) and r.has_key("is_complex_x") :
+		if isinstance(r,dict) and "is_complex_x" in r :
 			pkey="%s/%s_"%(self.path,self.name)
 			fkey="%dx%dx%d"%(r["nx"],r["ny"],r["nz"])
 #			print "r",fkey
 			ret=EMData(r["nx"],r["ny"],r["nz"])
-			if r.has_key("data_path"):
+			if "data_path" in r:
 				p,l=r["data_path"].split("*")
 #				print "read ",os.getcwd(),self.path,p,l
 				if p[0]=='/' : ret.read_data(p,int(l))
 				else : ret.read_data(self.path+"/"+p,int(l))
 			else:
 				try: n=loads(self.bdb.get(fkey+dumps(key,-1)))	 # this is the index for this binary data item in the image-dimensions-specific binary data file
-				except: raise KeyError,"Undefined data location key for : %s"%key
+				except: raise KeyError("Undefined data location key for : %s"%key)
 				ret.read_data(pkey+fkey,n*4*r["nx"]*r["ny"]*r["nz"])
 			k=set(r.keys())
 			k-=DBDict.fixedkeys
@@ -1401,13 +1402,13 @@ of these occasional errors"""
 
 	def __contains__(self,key):
 		self.realopen(self.rohint)
-		return self.bdb.has_key(dumps(key,-1))
+		return dumps(key,-1) in self.bdb
 
 	def item_type(self,key):
 		self.realopen(self.rohint)
 		try: r=loads(self.bdb.get(dumps(key,-1),txn=self.txn))
 		except: return None
-		if isinstance(r,dict) and r.has_key("is_complex_x") : return EMData
+		if isinstance(r,dict) and "is_complex_x" in r : return EMData
 		return type(r)
 
 	def keys(self):
@@ -1415,7 +1416,7 @@ of these occasional errors"""
 		try: return [loads(x) for x in self.bdb.keys() if x[0]=='\x80']
 		except:
 			traceback.print_exc()
-			print "This is a serious error, which should never occur during normal usage.\n Please report it (with the error text above) to sludtke@bcm.edu. Please also read the database warning page in the Wiki."
+			print("This is a serious error, which should never occur during normal usage.\n Please report it (with the error text above) to sludtke@bcm.edu. Please also read the database warning page in the Wiki.")
 			sys.exit(1)
 
 	def values(self):
@@ -1428,17 +1429,17 @@ of these occasional errors"""
 
 	def has_key(self,key):
 		self.realopen(self.rohint)
-		return self.bdb.has_key(dumps(key,-1))
+		return dumps(key,-1) in self.bdb
 
 	def get_data_path(self,key):
 		"""returns the path to the binary data as "path*location". Only valid for EMData objects."""
 		self.realopen(self.rohint)
 		try: r=loads(self.bdb.get(dumps(key,-1)))
 		except: return None
-		if isinstance(r,dict) and r.has_key("is_complex_x") :
+		if isinstance(r,dict) and "is_complex_x" in r :
 			pkey="%s/%s_"%(self.path,self.name)
 			fkey="%dx%dx%d"%(r["nx"],r["ny"],r["nz"])
-			if r.has_key("data_path"):
+			if "data_path" in r:
 				if r["data_path"][0]=="/" : return r["data_path"]
 				return self.path+"/"+r["data_path"]
 			else :
@@ -1452,7 +1453,7 @@ of these occasional errors"""
 		self.realopen(self.rohint)
 		try: r=loads(self.bdb.get(dumps(key,-1),txn=txn))
 		except: return dfl
-		if isinstance(r,dict) and r.has_key("is_complex_x") :
+		if isinstance(r,dict) and "is_complex_x" in r :
 			pkey="%s/%s_"%(self.path,self.name)
 			rnx,rny,rnz = r["nx"],r["ny"],r["nz"]
 			fkey="%dx%dx%d"%(rnx,rny,rnz)
@@ -1484,18 +1485,18 @@ of these occasional errors"""
 			if not nodata:
 
 				if region != None: ret.to_zero() # this has to occur in situations where the clip region goes outside the image
-				if r.has_key("data_path"):
+				if "data_path" in r:
 					p,l=r["data_path"].split("*")
 					if p[0]=='/' or p[0]=='\\' or p[1]==':': ret.read_data(p,int(l),region,rnx,rny,rnz)		# absolute path
 					else :
 						ret.read_data(self.path+"/"+p,int(l),region,rnx,rny,rnz) 		# relative path
 				else:
 					try: n=loads(self.bdb.get(fkey+dumps(key,-1)))	 # this is the index for this binary data item in the image-dimensions-specific binary data file
-					except: raise KeyError,"Undefined data location key %s for %s"%(key,pkey+fkey)
+					except: raise KeyError("Undefined data location key %s for %s"%(key,pkey+fkey))
 					try: ret.read_data(pkey+fkey,n*4*rnx*rny*rnz,region,rnx,rny,rnz)	# note that this uses n, NOT 'key'. Images cannot be located in the binary file based on their numerical key
 					except :
 						import socket
-						print "Data read error (%s) on %s (%d)"%(socket.gethostname(),pkey+fkey,key*4*rnx*rny*rnz)
+						print("Data read error (%s) on %s (%d)"%(socket.gethostname(),pkey+fkey,key*4*rnx*rny*rnz))
 						traceback.print_exc()
 						sys.stderr.flush()
 						sys.stdout.flush()
@@ -1534,7 +1535,7 @@ of these occasional errors"""
 			try :
 				n=loads(self.bdb.get(fkey+dumps(key,-1),txn=txn))
 			except:
-				if not self.has_key(fkey) :
+				if fkey not in self :
 					self[fkey]=0
 				else: self[fkey]+=1
 				n=self[fkey]
@@ -1548,7 +1549,7 @@ of these occasional errors"""
 			ad["timestamp"]="%04d/%02d/%02d %02d:%02d:%02d"%t[:6]
 			self.put(dumps(key,-1),dumps(ad,-1),txn=txn)
 
-			if isinstance(key,int) and (not self.has_key("maxrec") or key>self["maxrec"]) :
+			if isinstance(key,int) and ("maxrec" not in self or key>self["maxrec"]) :
 				self["maxrec"]=key
 
 				# update the image count cache
@@ -1574,25 +1575,25 @@ of these occasional errors"""
 
 		else :
 			self.put(dumps(key,-1),dumps(val,-1),txn=txn)
-			if isinstance(key,int) and (not self.has_key("maxrec") or key>self["maxrec"]) : self["maxrec"]=key
+			if isinstance(key,int) and ("maxrec" not in self or key>self["maxrec"]) : self["maxrec"]=key
 
 	def set_header(self,key,val,txn=None):
 		"Alternative to x[key]=val with transaction set"
 		self.realopen()
 		# make sure the object exists and is an EMData object
 		try: r=loads(self.bdb.get(dumps(key,-1),txn=txn))
-		except: raise Exception,"set_header can only be used to update existing EMData objects"
-		if not isinstance(r,dict) or not r.has_key("is_complex_ri") :
-			raise Exception,"set_header can only be used to update existing EMData objects"
+		except: raise Exception("set_header can only be used to update existing EMData objects")
+		if not isinstance(r,dict) or "is_complex_ri" not in r :
+			raise Exception("set_header can only be used to update existing EMData objects")
 
-		if (val==None) : raise Exception,"You cannot delete an EMData object header"
+		if (val==None) : raise Exception("You cannot delete an EMData object header")
 		elif isinstance(val,EMData) :
 			# write the metadata
 			ad=val.get_attr_dict()
 			self.bdb.put(dumps(key,-1),dumps(ad,-1),txn=txn)
 		elif isinstance(val,dict) :
 			self.bdb.put(dumps(key,-1),dumps(val,-1),txn=txn)
-		else : raise Exception,"set_header is only valid for EMData objects or dictionaries"
+		else : raise Exception("set_header is only valid for EMData objects or dictionaries")
 
 
 	def update(self,dict):

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 # Muyuan Chen 2016-09
 from EMAN2 import *
 import numpy as np
@@ -42,7 +43,7 @@ def main():
 		
 		if options.apix<=0:
 			options.apix=tomo["apix_x"]
-			print "Reading apix from data: {}".format(options.apix)
+			print("Reading apix from data: {}".format(options.apix))
 			
 			
 		nn=EMUtil.get_image_count(tomoname)
@@ -50,7 +51,7 @@ def main():
 			pks=np.loadtxt(options.bxcoord, dtype=float)
 			pks*=shrink
 		elif nn>1:
-			print "Particle stack? getting coordinates from header.."
+			print("Particle stack? getting coordinates from header..")
 			pks=[]
 			for i in range(nn):
 				e=EMData(tomoname, i, True)
@@ -59,7 +60,7 @@ def main():
 				elif e.has_attr("box"):
 					pks.append(e["box"])
 				else:
-					print "Cannot find coordinates from header.. exit."
+					print("Cannot find coordinates from header.. exit.")
 					return
 			pks=np.array(pks)*shrink
 			if np.min(pks)<0:
@@ -76,7 +77,7 @@ def main():
 		b2=bxsz/2
 		
 		if options.zthick>0:
-			print "Making projection of {} pixel thickness".format(options.zthick)
+			print("Making projection of {} pixel thickness".format(options.zthick))
 			zthick=options.zthick
 		else:
 			zthick=bxsz
@@ -87,7 +88,7 @@ def main():
 			
 			try: os.remove(pname)
 			except: pass
-			print len(pks), " particles, unbin by ", shrink
+			print(len(pks), " particles, unbin by ", shrink)
 
 			for p in pks:
 				
@@ -105,7 +106,7 @@ def main():
 				pj.write_image(pname, -1)
 		else:
 			pname=options.genmask
-			print len(pks), " particles, unbin by ", shrink
+			print(len(pks), " particles, unbin by ", shrink)
 			try: os.remove(pname)
 			except: pass
 			
@@ -116,8 +117,8 @@ def main():
 			e.to_zero()
 			
 			for ii,p in enumerate(pks):
-				if ii%100==0: print ii
-				print ii,p
+				if ii%100==0: print(ii)
+				print(ii,p)
 				e.insert_scaled_sum(a, p.tolist())
 			
 			e.process_inplace("threshold.clampminmax",{"maxval":1, "minval":0})
@@ -134,9 +135,9 @@ def main():
 		
 		if options.shrink==0:
 			tm=EMData(tomoname,0,True)
-			shrinkz=tm["nz"]/e["nz"]
+			shrinkz=float(tm["nz"])/e["nz"]
 			shrinkxy=tm["nx"]/e["nx"]
-			print "Shrink by {} in x-y plane, and shrink {} in z axis".format(shrinkxy, shrinkz)
+			print("Shrink by {} in x-y plane, and shrink {} in z axis".format(shrinkxy, shrinkz))
 		else:
 			shrinkz=shrinkxy=options.shrink
 		
@@ -177,7 +178,7 @@ def main():
 			np.random.shuffle(ip)
 			pts=pts[ip]
 			pks=pts[:options.random].copy()
-			pkscore=[0 for p in pks]
+			pkscore=np.array([0 for p in pks])
 			#print pks
 		
 		n=len(pks)
@@ -196,7 +197,7 @@ def main():
 
 		jsname=info_name(tomoname)
 		js=js_open_dict(jsname)
-		if js.has_key("class_list"):
+		if "class_list" in js:
 			clst=[int(k) for k in js["class_list"].keys()]
 			for ii in range(100):
 				if ii not in clst:
@@ -220,14 +221,14 @@ def main():
 			allbox3d.append([box[2], box[1],int(box[0]), "tomoseg", pkscore[j], mytag])
 			allbox.append([box[2], box[1],"manual", int(box[0])])
 		
-		if js.has_key("boxes_3d"):
+		if "boxes_3d" in js:
 			b3d=js["boxes_3d"]
 			b3d.extend(allbox3d)
 		else:
 			b3d=allbox3d
 		
 		js["boxes_3d"]=b3d
-		if js.has_key("class_list"):
+		if "class_list" in js:
 			clst=js["class_list"]
 		else:
 			clst={}
@@ -235,12 +236,12 @@ def main():
 		js["class_list"]=clst
 		js["boxes"]=allbox
 		js.close()
-		print "{} boxes found..".format(len(allbox))
+		print("{} boxes found..".format(len(allbox)))
 
 	E2end(logid)
 	
 def run(cmd):
-	print cmd
+	print(cmd)
 	launch_childprocess(cmd)
 	
 	

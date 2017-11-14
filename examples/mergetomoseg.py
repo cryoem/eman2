@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 # Muyuan Chen 2017-06
 from EMAN2 import *
 import numpy as np
@@ -17,10 +18,10 @@ def main():
 	logid=E2init(sys.argv)
 	
 	if not options.output:
-		print "Output file name is required. Exit."
+		print("Output file name is required. Exit.")
 		return
 	if len(args)<2:
-		print "Less than 2 inputs. Nothing to merge. Exit."
+		print("Less than 2 inputs. Nothing to merge. Exit.")
 		return
 	
 	imgs=[]
@@ -36,12 +37,12 @@ def main():
 			apix=e["apix_x"]
 		else:
 			if shp!=m.shape:
-				print "Error: Shape of the input files does not match ({} and {}). Exit.".format(shp, m.shape)
+				print("Error: Shape of the input files does not match ({} and {}). Exit.".format(shp, m.shape))
 				return
 		imgs.append(m)
 		try:
 			lbs.append(e["nnet_src"])
-			print "{} : {}".format(ii+1, e["nnet_src"])
+			print("{} : {}".format(ii+1, e["nnet_src"]))
 		except: 
 			lbs.append(a)
 		
@@ -61,7 +62,7 @@ def main():
 	E2end(logid)
 	
 def run(cmd):
-	print cmd
+	print(cmd)
 	launch_childprocess(cmd)
 	
 	

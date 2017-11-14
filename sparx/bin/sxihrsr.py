@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: Pawel A.Penczek and Edward H. Egelman 05/27/2009 (Pawel.A.Penczek@uth.tmc.edu)
 # Copyright (c) 2000-2006 The University of Texas - Houston Medical School
@@ -38,9 +39,9 @@ def main():
 	from optparse import OptionParser
 	from global_def import SPARXVERSION
 	import global_def
-        arglist = []
-        for arg in sys.argv:
-        	arglist.append( arg )
+	arglist = []
+	for arg in sys.argv:
+		arglist.append( arg )
 	progname = os.path.basename(arglist[0])
 	usage = progname + " stack ref_vol outdir  <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --ynumber=y_numbers  --txs=translational_search_stepx  --delta=angular_step --an=angular_neighborhood --center=1 --maxit=max_iter --CTF --snr=1.0  --ref_a=S --sym=c1 --datasym=symdoc --new"
 	
@@ -85,12 +86,12 @@ def main():
 
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 1 or len(args) > 5:
-		print "usage: " + usage + "\n"
-		print "Please run '" + progname + " -h' for detailed options"
+		print("usage: " + usage + "\n")
+		print("Please run '" + progname + " -h' for detailed options")
 	else:
 		# Convert input arguments in the units/format as expected by ihrsr_MPI in applications.
 		if options.apix < 0:
-			print "Please enter pixel size"
+			print("Please enter pixel size")
 			sys.exit()
 
 		rminp = int((float(options.rmin)/options.apix) + 0.5)

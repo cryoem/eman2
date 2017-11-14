@@ -665,6 +665,13 @@ EMData *EMData::get_clip(const Region & area, const float fill) const
 	if( attr_dict.has_key("apix_x") && attr_dict.has_key("apix_y") &&
 		attr_dict.has_key("apix_z") )
 	{
+		float apix_x = attr_dict["apix_x"];
+		float apix_y = attr_dict["apix_y"];
+		float apix_z = attr_dict["apix_z"];
+		result->set_attr("apix_x",apix_x);
+		result->set_attr("apix_y",apix_y);
+		result->set_attr("apix_z",apix_z);
+		
 		if( attr_dict.has_key("origin_x") && attr_dict.has_key("origin_y") &&
 		    attr_dict.has_key("origin_z") )
 		{
@@ -672,9 +679,6 @@ EMData *EMData::get_clip(const Region & area, const float fill) const
 			float yorigin = attr_dict["origin_y"];
 			float zorigin = attr_dict["origin_z"];
 
-			float apix_x = attr_dict["apix_x"];
-			float apix_y = attr_dict["apix_y"];
-			float apix_z = attr_dict["apix_z"];
 
 			result->set_xyz_origin(xorigin + apix_x * area.origin[0],
 							   	   yorigin + apix_y * area.origin[1],

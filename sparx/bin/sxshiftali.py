@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
@@ -57,13 +58,13 @@ def main():
 	(options, args) = parser.parse_args()
 	
 	if not(options.MPI):
-		print "Only MPI version is currently implemented."
-		print "Please run '" + progname + " -h' for detailed options"
+		print("Only MPI version is currently implemented.")
+		print("Please run '" + progname + " -h' for detailed options")
 		return
 			
 	if len(args) < 1 or len(args) > 2:
-		print "usage: " + usage
-		print "Please run '" + progname + " -h' for detailed options"
+		print("usage: " + usage)
+		print("Please run '" + progname + " -h' for detailed options")
 	else:
 	
 		if len(args) == 1: mask = None
@@ -436,7 +437,7 @@ def helicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fou
 		k = k1
 	data = EMData.read_images(stack, list_of_particles)
 	ldata = len(data)
-	print "ldata=", ldata
+	print("ldata=", ldata)
 	nx = data[0].get_xsize()
 	ny = data[0].get_ysize()
 	if maskfile == None:
@@ -576,11 +577,11 @@ def helicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fou
 			#print  "  settings ",nsegms,cents,dst,search_rng,maxincline,kang
 			
 			# ## C code for alignment. @ming
- 			results = [0.0]*3;
- 			results = Util.helixshiftali(ctx, pcoords, nsegms, maxincline, kang, search_rng,nxc)
+			results = [0.0]*3;
+			results = Util.helixshiftali(ctx, pcoords, nsegms, maxincline, kang, search_rng,nxc)
 			sib = int(results[0])
- 			bang = results[1]
- 			qm = results[2]
+			bang = results[1]
+			qm = results[2]
 			#print qm, sib, bang
 			
 			# qm = -1.e23	

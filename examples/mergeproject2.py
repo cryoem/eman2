@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 01/09/2013 (sludtke@bcm.edu)
@@ -35,23 +36,23 @@ from EMAN2 import *
 import sys
 import time
 
-print "WARNING: this program was designed for EMAN2.07. It will not work properly with EMAN2.1+ projects. With EMAN2.1 projects, you can simply combine the files from micrographs, particles and info into a single project directory. No specific programs need to be used"
+print("WARNING: this program was designed for EMAN2.07. It will not work properly with EMAN2.1+ projects. With EMAN2.1 projects, you can simply combine the files from micrographs, particles and info into a single project directory. No specific programs need to be used")
 
 if len(sys.argv)<2 : 
-	print "Usage: mergeproject.py <project dir> ... [--minquality=<0-9>]\n\nThis is a new version of mergeproject desinged to work with e2projectmanager projects rather than e2workflow project. \n\nRun this program from the target project directory, and specify the path to another project whose particles you wish to incorporate.\nDeals only with boxed particles & CTF. New sets will need to be made in the current project.\nIf minquality is provided, only particles with a quality at least as large as the specified value will be copied."
+	print("Usage: mergeproject.py <project dir> ... [--minquality=<0-9>]\n\nThis is a new version of mergeproject desinged to work with e2projectmanager projects rather than e2workflow project. \n\nRun this program from the target project directory, and specify the path to another project whose particles you wish to incorporate.\nDeals only with boxed particles & CTF. New sets will need to be made in the current project.\nIf minquality is provided, only particles with a quality at least as large as the specified value will be copied.")
 
 minq=0
 for i in sys.argv[1:]:
 	if i[:13]=="--minquality=" :
 		minq=int(i[13:])
 	elif i[0]=="-" :
-		print "Usage: mergeproject2.py <project dir> ... [--minquality=<0-9>]"
-		print "Unknown option: ",i
+		print("Usage: mergeproject2.py <project dir> ... [--minquality=<0-9>]")
+		print("Unknown option: ",i)
 		sys.exit(1)
 
 for source in sys.argv[1:]:
 	if source[0]=="-" : continue
-	print "================= Processing project : ",source
+	print("================= Processing project : ",source)
 
 	dest=db_open_dict("bdb:.#project")
 	src=db_open_dict("bdb:%s#project"%source,ro=True)
@@ -71,13 +72,13 @@ for source in sys.argv[1:]:
 		goodkeys=[]
 		for k in src2.keys():
 			if src2[k][3]<minq :
-				print "%s excluded with quality %d"%(k,src2[k][3])
+				print("%s excluded with quality %d"%(k,src2[k][3]))
 				srcptcl=[i for i in srcptcl if not k in i]
 			else: goodkeys.append(k)
 
 	# now copy the particle databases from the source project
 	for f in srcptcl:
-		print "process ",f
+		print("process ",f)
 
 		# This copies the image files
 		src=db_open_dict("bdb:%s/particles#%s"%(source,f),ro=True)
@@ -85,34 +86,34 @@ for source in sys.argv[1:]:
 		for i in xrange(len(src)): dest[i]=src[i]
 
 	# now copy CTF parameters
-	print "Copy e2ctf.bg2d"
+	print("Copy e2ctf.bg2d")
 	src=db_open_dict("bdb:%s#e2ctf.bg2d"%source,ro=True)
 	dest=db_open_dict("bdb:.#e2ctf.bg2d")
 	for k in goodkeys: 
-		print k
+		print(k)
 		dest[k]=src[k]
 
-	print "Copy e2ctf.im2d"
+	print("Copy e2ctf.im2d")
 	src=db_open_dict("bdb:%s#e2ctf.im2d"%source,ro=True)
 	dest=db_open_dict("bdb:.#e2ctf.im2d")
 	for k in goodkeys: 
-		print k
+		print(k)
 		dest[k]=src[k]
 
-	print "Copy e2ctf.parms"
+	print("Copy e2ctf.parms")
 	src=db_open_dict("bdb:%s#e2ctf.parms"%source,ro=True)
 	dest=db_open_dict("bdb:.#e2ctf.parms")
 	for k in goodkeys: 
-		print k
+		print(k)
 		dest[k]=src[k]
 	
 	# Copy bad particles list
 	try:
-		print "Copy bad particles lists"
+		print("Copy bad particles lists")
 		src=db_open_dict("bdb:%s#select"%source,ro=True)
 		dest=db_open_dict("bdb:.#select")
 		for k in goodkeys: 
-			print k
+			print(k)
 			dest[k]=src[k]
 	except:
-		print "Error in copying bad particle list. No bad particles marked ?"
+		print("Error in copying bad particle list. No bad particles marked ?")

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steve Ludtke 06/20/2013 (sludtke@bcm.edu)
@@ -54,7 +55,7 @@ def main():
 	parser.add_argument("--output", dest="output", type=str,default=None, help="Filename for the final averaged/filtered result.")
 	parser.add_argument("--mass", default=0, type=float,help="The rough mass of the particle in kilodaltons, used to run normalize.bymass. Due to resolution effects, not always the true mass.")
 	parser.add_argument("--restarget", default=5, type=float,help="The specified target resolution to avoid underfiltering artifacts.")
-	parser.add_argument("--setsf",type=str,help="Force the structure factor to match a 'known' curve prior to postprocessing (<filename>, auto or none). default=none",default="none")
+	parser.add_argument("--setsf",type=str,help="Force the structure factor to match a 'known' curve prior to postprocessing (<filename>, none). default=none",default="none")
 	parser.add_argument("--iter", dest = "iter", type = int, default=6, help = "Iteration number to generate FSC filenames")
 	parser.add_argument("--align",action="store_true",default=False,help="Will do o to e alignment and test for handedness flips. Should not be repeated as it overwrites the odd file with the aligned result.")
 	parser.add_argument("--tophat",type=str,default=None,help="'global' or 'local'. Final Wiener filter disabled, and replaced by a tophat filter either across the map at 0.143 as Relion appears to do, or locally based on e2fsc.py results")
@@ -113,13 +114,13 @@ def main():
 			try: ali=a["xform.align3d"]
 			except: ali=Transform()
 			o=EMData(oddfile,0)
-			print "correct hand detected ",ali
+			print("correct hand detected ",ali)
 		else :
 			try: ali=b["xform.align3d"]
 			except: ali=Transform()
 			o=EMData(oddfile,0)
 			o.process_inplace("xform.flip",{"axis":"z"})
-			print "handedness flip required",ali
+			print("handedness flip required",ali)
 		o.transform(ali)
 
 		os.unlink(oddfile)
@@ -154,7 +155,7 @@ def main():
 		try:
 			noisecutoff=calc_noise_cutoff(unmaskedfsc, options.ncmult)
 			print("Performing amplitude correction via 'flattening'")
-			print "noise cutoff: {:1.2f}".format(1.0/noisecutoff)
+			print("noise cutoff: {:1.2f}".format(1.0/noisecutoff))
 			ampcorrect="--process=filter.lowpass.autob:cutoff_abs=1.0:noisecutoff={}:interpolate=1:bfactor=0.0".format(noisecutoff)
 		except:
 			print("Could not compute noise cutoff from the unmasked FSC.")
@@ -319,14 +320,14 @@ def main():
 	try:
 		noisecutoff=calc_noise_cutoff("{path}fsc_masked_{itr:02d}.txt".format(path=path,itr=options.iter),options.ncmult)
 	except:
-		print "WARNING: no resolution determined from FSC at 0.143, using 1/restarget for tophat cutoff"
+		print("WARNING: no resolution determined from FSC at 0.143, using 1/restarget for tophat cutoff")
 		noisecutoff=1.0/options.restarget
 
 	# readjust 'flatten' for new fsc
 	if options.ampcorrect == "flatten":
 		try:
 			ampcorrect="--process=filter.lowpass.autob:noisecutoff={}:interpolate=1:bfactor=0.0".format(noisecutoff)
-			print "new noise cutoff: {:1.2f}".format(1.0/noisecutoff)
+			print("new noise cutoff: {:1.2f}".format(1.0/noisecutoff))
 		except: pass
 
 
@@ -366,14 +367,14 @@ def main():
 			# we impose the symmetry in real-space, since this is what people expect
 			if options.sym=="c1" : symopt=""
 			else: symopt="--sym {}".format(options.sym)
-			
+
 			run("e2proc3d.py {path}threed_{itr:02d}.hdf {path}threed_{itr:02d}.hdf --multfile {path}mask.hdf --process normalize.bymass:thr=1:mass={mass} {postproc} {symopt} ".format(path=path,itr=options.iter,mass=options.mass,postproc=m3dpostproc,symopt=symopt))
 			run("e2proc3d.py {evenfile} {evenfile} --multfile {path}mask.hdf --process normalize.bymass:thr=1:mass={mass} {postproc} {symopt} ".format(evenfile=evenfile,path=path,itr=options.iter,mass=options.mass,postproc=m3dpostproc,symopt=symopt))
 			run("e2proc3d.py {oddfile} {oddfile}  --multfile {path}mask.hdf --process normalize.bymass:thr=1:mass={mass} {postproc} {symopt} ".format(oddfile=oddfile,path=path,itr=options.iter,mass=options.mass,postproc=m3dpostproc,symopt=symopt))
-						
+
 			nx,ny,nz=combined["nx"],combined["ny"],combined["nz"]
 		else:
-			print "ERROR: invalid tophat option. Must be 'global' or 'local'."
+			print("ERROR: invalid tophat option. Must be 'global' or 'local'.")
 			sys.exit(1)
 	else:
 		# _unmasked volumes are filtered
@@ -422,14 +423,14 @@ def calc_noise_cutoff(fsc_file,mult=1.1):
 def run(command):
 	"Mostly here for debugging, allows you to control how commands are executed (os.system is normal)"
 
-	print "{}: {}".format(time.ctime(time.time()),command)
+	print("{}: {}".format(time.ctime(time.time()),command))
 #	append_html("<p>{}: {}</p>".format(time.ctime(time.time()),command))
 
 	ret=launch_childprocess(command)
 
 	# We put the exit here since this is what we'd do in every case anyway. Saves replication of error detection code above.
 	if ret !=0 :
-		print "Error running: ",command
+		print("Error running: ",command)
 		sys.exit(1)
 
 	return

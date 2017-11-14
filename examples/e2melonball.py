@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
-#
-# Author: Jesus Galaz-Montoya 2014 (jgmontoy@bcm.edu); last update 06/14
+from __future__ import print_function
+
+# Author: Jesus Galaz-Montoya 2014 (jgalaz@gmail.com); last update 11/17
 # Copyright (c) 2000-2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -45,47 +46,31 @@ def main():
 	"""
 	
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
+
+	parser.add_argument("--boxsize", type=int, default=0, help="""If specified, the output subvolumes will be clipped to this size and centered in the box; otherwise, they will be saved in a boxsize equal to the volume they came from.""")
+
+	parser.add_argument("--coords", type=str, default=None, help="""File with coordinates from where to extract subvolumes.""")
+
+	parser.add_argument("--input", default=None,type=str, help="""3D map or stack of maps to extract smaller regions from.""")
 	
-	parser.add_argument("--input", default='',type=str, help="""3D map or stack of maps to extract smaller regions from.""")
+	parser.add_argument("--mask", type=str, help="""Mask processor to define the shape of regions to extract. Default is None.""", default="")
+	parser.add_argument("--maskfile", type=str, help="""Precomputed mask to use to extract subvolumes from the locations specified through --coords or through --radius and --sym""", default="")
 	
-	parser.add_argument("--output", default='extracts',type=str, help="""String to use as the 'stem' for naming output volumes. Note that for each input volume, you'll get a stack of subvolumes. For example, if you provide a stack with 3 volumes, and you extract 12 subvolumes from each of these, you'll have 3 stacks of extracted subvolumes.""")
+	parser.add_argument("--output", default='extracts',type=str, help="""String to use as the 'stem' for naming output volumes. Note that for each input volume, you'll get a stack of subvolumes. For example, if you provide a stack with 3 volumes (subtomograms), and you extract 12 subvolumes (sub-subtomograms) from each of these, you'll have 3 stacks of extracted subvolumes (sub-subtomograms); e.g., the virus vertexes for each of 3 virus particles.""")
 		
-	parser.add_argument("--path",type=str,help=""""Name of directory where to store the output file(s)""",default="melonscoops")
+	parser.add_argument("--path", type=str, help=""""Name of directory where to store the output file(s)""",default="melonscoops")
 	
+	parser.add_argument("--radius", type=int, help="""Radius (in pixels) where to center the mask for subvolume extraction. Works only for cases in which the asymmetric unit of interest lies along z (for example, vertexes of an icosahedral virus aligned to the symmetry axes such that a vertex lies along z). Supplying --tz should achieve the same results.""", default=0)
+
+	parser.add_argument("--savescoops", action='store_true', default='', help="""Save extracted parts from each particle into a per-particle stack, with extracted subvolumes centered in a box of the size specified by --boxsize, and rotated so that each subvolume is pointing along Z.""")
+	parser.add_argument("--savescoopsinplace", action='store_true', default='', help="""Save extracted parts from each particle into a per-particle stack, with extracted subvolumes 'in-situ'; that is, with the same size and orientation as in the original volume.""")			
 	parser.add_argument("--sym", dest = "sym", default="c1", help = """Specify symmetry. Choices are: c<n>, d<n>, h<n>, tet, oct, icos. For asymmetric reconstruction ommit this option or specify c1.""")
-	
-	parser.add_argument("--vertices", action='store_true', default=False,help="""Only works if --sym=icos. This flag will make the program extract only the 12 vertices from among all 60 symmetry related units.""") 
-	
-	parser.add_argument("--mask",type=str,help="""Mask processor to define the shape of regions to extract. Default is None.""", default="")
-		
-	parser.add_argument("--maskfile",type=str,help="""Precomputed mask to use to extract subvolumes from the locations specified through --coords or through --radius and --sym""", default="")
-		
-	parser.add_argument("--savescoops",action='store_true',default='',help="""Save extracted parts from each particle into a per-particle stack, with extracted subvolumes centered in a box of the size specified by --boxsize, and rotated so that each subvolume is pointing along Z.""")
-	
-	parser.add_argument("--savescoopsinplace",action='store_true',default='',help="""Save extracted parts from each particle into a per-particle stack, with extracted subvolumes 'in-situ'; that is, with the same size and orientation as in the original volume.""")		
-		
-	parser.add_argument("--coords",type=str,help="""File with coordinates from where to extract subvolumes.""", default="")
-		
-	parser.add_argument("--radius",type=int,help="""Radius (in pixels) where to center the mask for subvolume extraction. Works only for cases in which the asymmetric unit of interest lies along z (for example, vertexes of an icosahedral virus aligned to the symmetry axes such that a vertex lies along z). Supplying --tz should achieve the same results.""", default=0)
-	
+
 	parser.add_argument("--tx",type=int,help="""Translation (in pixels) along x to define the mask's center. If supplied with --radius, the latter will be ignored.""", default=0)
-
 	parser.add_argument("--ty",type=int,help="""Translation (in pixels) along y to define the masks's center. If supplied with --radius, the latter will be ignored.""", default=0)
-
 	parser.add_argument("--tz",type=int,help="""Translation (in pixels) along z to define the masks's center. If supplied with --radius, the latter will be ignored.""", default=0)
 	
-	#parser.add_argument("--normproc",type=str,default='',help="Normalization processor applied to particles before alignment. Default is to use normalize. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'")
-	#
-	#parser.add_argument("--threshold",default='',type=str,help="""A threshold applied to the subvolumes after normalization. 
-	#												For example, --threshold=threshold.belowtozero:minval=0 makes all negative pixels equal 0, so that they do not contribute to the correlation score.""", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=10, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
-	#
-	#parser.add_argument("--preprocess",default='',type=str,help="Any processor (as in e2proc3d.py) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=10, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
-		
-	#parser.add_argument("--lowpass",type=str,default='',help="A lowpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=17, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
-
-	#parser.add_argument("--highpass",type=str,default='',help="A highpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=18, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
-
-	parser.add_argument("--boxsize",type=int,default=0,help="""If specified, the output subvolumes will be clipped to this size and centered in the box; otherwise, they will be saved in a boxsize equal to the volume they came from.""")
+	parser.add_argument("--vertices", action='store_true', default=False,help="""Only works if --sym=icos. This flag will make the program extract only the 12 vertices from among all 60 symmetry related units.""") 
 	
 	#parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>:<value>",default=None, guitype='strbox', row=8, col=0, rowspan=1, colspan=2, mode="align")
 	
@@ -104,8 +89,8 @@ def main():
 	
 	
 	if options.savescoops and not options.boxsize:
-		print """ERROR: Specify the box size through --boxsize for the saved
-		scoops."""	
+		print("""ERROR: Specify the box size through --boxsize for the saved
+		scoops.""")	
 		sys.exit()
 
 	#If no failures up until now, initialize logger
@@ -119,7 +104,7 @@ def main():
 	
 	
 	if not options.mask and not options.maskfile:
-		print "\nERROR: You must define --mask or supply a volume through --maskfile"
+		print("\nERROR: You must define --mask or supply a volume through --maskfile")
 		sys.exit()
 	
 	mask = EMData(inputhdr['nx'],inputhdr['ny'],inputhdr['nz'])
@@ -144,15 +129,15 @@ def main():
 		r=Region( (2*maskcx - inputhdr['nx'])/2, (2*maskcx - inputhdr['ny'])/2, (2*maskcx - inputhdr['nz'])/2, inputhdr['nx'],inputhdr['ny'],inputhdr['nz'])
 		mask.clip_inplace( r )
 	
-	print "\nMask done"
+	print("\nMask done")
 	
 	if options.radius:
 		mask.translate(0,0, float(options.radius) )
-		print "\nMask translated by radius %d along z" %( options.radius )
+		print("\nMask translated by radius %d along z" %( options.radius ))
 
 	else:
 		mask.translate( options.tx, options.ty, options.tz )
-		print "\nMask translated by tx=%d, ty=%d, tz=%d,", options.tx, options.ty, options.tz
+		print("\nMask translated by tx=%d, ty=%d, tz=%d,", options.tx, options.ty, options.tz)
 	
 	symnames = ['oct','OCT','icos','ICOS','tet','TET']
 	
@@ -161,7 +146,7 @@ def main():
 	anglelines = []
 	
 	if options.sym:
-		print "\nsym found", options.sym
+		print("\nsym found", options.sym)
 	
 		symnum = 0
 		
@@ -179,8 +164,8 @@ def main():
 					symletter = symletter.replace(x,'')
 			
 			
-			print "\nThe letter for sym is", symletter
-			print "\nThe num for sym is", symnum
+			print("\nThe letter for sym is", symletter)
+			print("\nThe num for sym is", symnum)
 		
 		if options.sym == 'oct' or options.sym == 'OCT':
 			symnum = 8
@@ -196,12 +181,12 @@ def main():
 		t = Transform()
 		
 		if symnum:
-			print "\nsymnum determined",symnum
-			print "while symletter is", symletter
+			print("\nsymnum determined",symnum)
+			print("while symletter is", symletter)
 			
 			if symletter == 'd' or symletter == 'D':
 				symnum *= 2
-				print "\nsymnum corrected, because symmetry is d",symnum
+				print("\nsymnum corrected, because symmetry is d",symnum)
 				
 			#if options.save
 			
@@ -225,11 +210,11 @@ def main():
 	masks = {}
 	
 	if orientations:
-		print "\ngenerated these many orientations", len (orientations)
+		print("\ngenerated these many orientations", len (orientations))
 		if options.sym == 'icos' or options.sym == 'ICOS':
 			if options.vertices:
 
-				print "\nbut fetching vertices only"
+				print("\nbut fetching vertices only")
 			
 				#orientations = genicosvertices ( orientations )
 
@@ -258,7 +243,7 @@ def main():
 		for k in range( len(orientations) ):
 			t =  orientations[k]
 			
-			print "\nWorking with this orientation",t
+			print("\nWorking with this orientation",t)
 			
 			tmpmask = mask.copy()
 			tmpmask.transform( t )
@@ -358,7 +343,7 @@ def main():
 					scoopinplace['xform.align3d'] = t
 					
 					scoopinplace.write_image( options.path + '/' + scoopsinplacestack, key )
-					print "\nWrote this scoop 'in place' ", key
+					print("\nWrote this scoop 'in place' ", key)
 					
 				if options.savescoops:
 					
@@ -371,8 +356,8 @@ def main():
 					
 					#print "Center for region is", sx,sy,sz
 						
-					print "\nExtracting this scoop", key
-					print "With a padded box of this size", paddedbox
+					print("\nExtracting this scoop", key)
+					print("With a padded box of this size", paddedbox)
 					bigr = Region( (sx*2 - paddedbox)/2 ,  (sy*2 - paddedbox)/2 ,  (sz*2 - paddedbox)/2, paddedbox,paddedbox,paddedbox)
 					bigscoop = scoop.get_clip(bigr)
 					
@@ -382,7 +367,7 @@ def main():
 					bigscoop['origin_y'] = 0
 					bigscoop['origin_z'] = 0
 					
-					print "\nOrienting the subscoop with this transform", t
+					print("\nOrienting the subscoop with this transform", t)
 					
 					t2use = Transform()
 					rot = t.get_rotation()
@@ -398,7 +383,7 @@ def main():
 					syB = bigscoop['ny']/2
 					szB = bigscoop['nz']/2
 					
-					print "\nCenter of bigs scoops is", sxB,syB,szB
+					print("\nCenter of bigs scoops is", sxB,syB,szB)
 					
 					scoop = clip3D( bigscoop, box )
 					
@@ -407,7 +392,7 @@ def main():
 					
 					#print "\nTherefore region for small scoop is", r
 					
-					print "\nClipping the extracted and oriented scoop back to the desired boxsize", box
+					print("\nClipping the extracted and oriented scoop back to the desired boxsize", box)
 					
 					defaultmask = EMData( scoop['nx'], scoop['ny'],scoop['nz'])
 					defaultmask.to_one()

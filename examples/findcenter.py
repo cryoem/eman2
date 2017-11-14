@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Authors: James Michael Bell, 06/03/2015
@@ -91,7 +92,7 @@ def main():
 			sys.exit(1)
 
 	if options.output.split('.')[-1] != 'hdf':
-		print("Replacing your output file extension ('.{}') with '.hdf'".format(options.output.split('.')[-1]))
+		print(("Replacing your output file extension ('.{}') with '.hdf'".format(options.output.split('.')[-1])))
 		options.output = options.output.split('.')[-2] + '.hdf'
 
 	if os.path.isfile(options.output):
@@ -116,12 +117,12 @@ def main():
 
 	nimgs = EMUtil.get_image_count(options.path)
 	if options.predisplay: display([EMData(options.path,i) for i in xrange(nimgs)])
-	if options.verbose > 2: print("Applying a {} filter {} times to {}.".format(options.filter, options.ntimes, os.path.basename(options.path)))
+	if options.verbose > 2: print(("Applying a {} filter {} times to {}.".format(options.filter, options.ntimes, os.path.basename(options.path))))
 
 	if not options.nopreprocess:
 		for i in xrange(nimgs):
 
-			if options.verbose > 5: print("Pre-processing image {}/{}".format(i+1,nimgs))
+			if options.verbose > 5: print(("Pre-processing image {}/{}".format(i+1,nimgs)))
 
 			ptcl = EMData(options.path,i)
 
@@ -158,7 +159,7 @@ def main():
 
 	with PdfPages(options.path[:-4] + '.pdf') as pdf:
 		for i in xrange(nimgs):
-			if options.verbose > 5: print("Centering image {}/{}".format(i+1,nimgs))
+			if options.verbose > 5: print(("Centering image {}/{}".format(i+1,nimgs)))
 
 			orig = EMData(options.path,i)
 
@@ -199,7 +200,7 @@ def main():
 
 			tx = -(mu[1] - nx)
 			ty = -(mu[0] - nx)
-			if options.verbose > 8: print("Translating image {} by ({},{})".format(i,tx,ty))
+			if options.verbose > 8: print(("Translating image {} by ({},{})".format(i,tx,ty)))
 			t = Transform({'type':'eman','tx':tx,'ty':ty})
 			centered.transform(t)
 			final = ax3.imshow(centered.numpy(),cmap=plt.cm.Greys_r)

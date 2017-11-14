@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: David Woolford (woolford@bcm.edu)
 # Copyright (c) 2000- Baylor College of Medicine
@@ -49,7 +50,7 @@ def e2boxer_check(options,args):
 		if not js_check_dict("e2boxercache/swarm.json"): error_message.append("There is no autoboxing information present in the current directory")
 		else:
 			db = js_open_dict("e2boxercache/swarm.json")
-			if not db.has_key(options.autoboxer):
+			if options.autoboxer not in db:
 				s = "There is no autoboxing information present for %s." %options.autoboxer
 				if len(db.keys()) > 0:
 					s+= ("Choose from")
@@ -94,7 +95,7 @@ e2boxer.py ????.mrc --boxsize=256
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--gui", action="store_true", default=True, help="Dummy option; used in older version of e2boxer")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
- 	parser.add_argument("--gauss_autoboxer",type=str,help="Name of autoboxed file whose autoboxing parameters (obtained via some previous run of Gauss autoboxer via the GUI) should be used for automatic boxing.",default=None)
+	parser.add_argument("--gauss_autoboxer",type=str,help="Name of autoboxed file whose autoboxing parameters (obtained via some previous run of Gauss autoboxer via the GUI) should be used for automatic boxing.",default=None)
 	parser.add_argument("--do_ctf",type=str,help="Name of file whose ctf estimation parameters (obtained via some previous run of Gauss autoboxer via the GUI) should be used for automatic ctf estimation.",default=None)
 
 	# ctf estimation using cter
@@ -118,14 +119,14 @@ e2boxer.py ????.mrc --boxsize=256
 		from global_def import SPARXVERSION
 		import global_def
 		if len(args) <2 or len(args) > 3:
-			print "see usage"
+			print("see usage")
 			sys.exit()
 
 		stack = None
 
 		if len(args) == 3:
 			if options.MPI:
-				print "Please use single processor version if specifying a stack."
+				print("Please use single processor version if specifying a stack.")
 				sys.exit()
 			stack = args[0]
 			out1 = args[1]
@@ -136,7 +137,7 @@ e2boxer.py ????.mrc --boxsize=256
 			out2 = args[1]
 
 		if options.apix < 0:
-			print "Enter pixel size"
+			print("Enter pixel size")
 			sys.exit()
 
 		if options.MPI:
@@ -182,7 +183,7 @@ e2boxer.py ????.mrc --boxsize=256
 	if options.gauss_autoboxer or options.do_ctf:
 		err = gauss_cmd_line_autobox(args, options,logid)
 		if len(err) > 0:
-			print err
+			print(err)
 			return
 		if options.write_ptcls or options.write_dbbox:
 			write_output(args,options,logid)
@@ -226,13 +227,13 @@ def gauss_cmd_line_autobox(args,options,logid):
 		err = "There is no gausse method autoboxing information present in the current directory"
 		return err
 	gbdb = js_open_dict(gdb_name)
-	if (not gbdb.has_key(boxkey)):
+	if (boxkey not in gbdb):
 		err = "There is no autoboxing information present for %s." %boxkey
 		return err
 
 	gboxer = GaussBoxer()
 	if options.boxsize == -1:
-		print "box size must be set! Exiting ..."
+		print("box size must be set! Exiting ...")
 		sys.exit(1)
 	boxsize=int(options.boxsize)
 	do_autobox=False
@@ -249,7 +250,7 @@ def gauss_cmd_line_autobox(args,options,logid):
 			gboxer.set_thr_low(float(autoboxdict['thr_low']))
 			gboxer.set_thr_hi(float(autoboxdict['thr_hi']))
 		except:
-			print 'no autoboxing parameters were found in database...will not autobox'
+			print('no autoboxing parameters were found in database...will not autobox')
 			do_autobox=False # maybe user just want to estimate ctf in batch mode...
 
 	do_ctfest = False
@@ -259,7 +260,7 @@ def gauss_cmd_line_autobox(args,options,logid):
 		try:
 			ctf_params={'pixel_input': float(ctfdict['pixel_input']), 'pixel_output': float(ctfdict['pixel_output']),'ctf_fstart':float(ctfdict['ctf_fstart']),'ctf_fstop':float(ctfdict['ctf_fstop']), 'ctf_window':int(ctfdict['ctf_window']),'ctf_edge':int(ctfdict['ctf_edge']),'ctf_overlap':int(ctfdict['ctf_overlap']),'ctf_ampcont':float(ctfdict['ctf_ampcont']),'ctf_volt':float(ctfdict['ctf_volt']),'ctf_cs':float(ctfdict['ctf_cs'])}
 		except:
-			print 'no ctf parameters stored in current directory! Estimate ctf in the GUI in gauss mode first!'
+			print('no ctf parameters stored in current directory! Estimate ctf in the GUI in gauss mode first!')
 			do_ctfest = False
 
 	for i,arg in enumerate(args):
@@ -302,7 +303,7 @@ def write_output(args,options,logid, database="e2boxercache"):
 
 	if options.write_ptcls:
 		if options.gauss_autoboxer != None:
-			print "\n\n --write_ptcl option has been deactivated for Gauss mode.\n\nPlease use sxwindow.py for windowing!\n\n"
+			print("\n\n --write_ptcl option has been deactivated for Gauss mode.\n\nPlease use sxwindow.py for windowing!\n\n")
 		else:
 			names = get_particle_outnames(params)
 			for i,output in enumerate(names):
@@ -315,8 +316,8 @@ def write_output(args,options,logid, database="e2boxercache"):
 				if (len(box_list) > 0) and (options.gauss_autoboxer == None):
 					bx = box_list[0]
 					if bx.type == GaussBoxer.AUTO_NAME and options.gauss_autoboxer == None:
-						print 'For automatic boxing using Gauss Boxer, particles should be written at the time of autoboxing either by 1) activating "Write Output" button in GUI mode, or 2) adding --write_ptcls when autoboxing in command line mode'
-						print 'I will continue and write particles, but results may not be as expected.'
+						print('For automatic boxing using Gauss Boxer, particles should be written at the time of autoboxing either by 1) activating "Write Output" button in GUI mode, or 2) adding --write_ptcls when autoboxing in command line mode')
+						print('I will continue and write particles, but results may not be as expected.')
 	
 				# if box type is GaussBoxer.AUTO_NAME, the pre-process and possibly decimate image using params in db
 				# only need to do this if write_ptcls is called on its own
@@ -328,13 +329,13 @@ def write_output(args,options,logid, database="e2boxercache"):
 	
 						gdb_name = GaussPanel.GDB_NAME
 						if not js_check_dict(gdb_name):
-							print "no gauss mode autoboxing parameters were found in database...this should not happen"
-							print 'exiting...'
+							print("no gauss mode autoboxing parameters were found in database...this should not happen")
+							print('exiting...')
 							return
 						gbdb = js_open_dict(gdb_name)
-						if not gbdb.has_key(boxkey):
-							print "no gauss mode autoboxing parameters were found in database for %s...this should not happen"%boxkey
-							print 'exiting...'
+						if boxkey not in gbdb:
+							print("no gauss mode autoboxing parameters were found in database for %s...this should not happen"%boxkey)
+							print('exiting...')
 							return
 						autoboxdict = gbdb[boxkey]
 	
@@ -349,8 +350,8 @@ def write_output(args,options,logid, database="e2boxercache"):
 							gboxer.set_thr_low(float(autoboxdict['thr_low']))
 							gboxer.set_thr_hi(float(autoboxdict['thr_hi']))
 						except:
-							print 'no gauss mode autoboxing parameters were found in database...this should not happen'
-							print 'exiting...'
+							print('no gauss mode autoboxing parameters were found in database...this should not happen')
+							print('exiting...')
 							return
 	
 						gboxer.get_small_image(input,modecmd=True,boxsize=boxsize,ret_dummy=True)
@@ -1535,7 +1536,7 @@ class SwarmBoxer:
 				if self.gui_mode:
 					from PyQt4 import QtCore
 					get_application().setOverrideCursor(QtCore.Qt.ArrowCursor)
-				print "funny error"
+				print("funny error")
 				return
 
 		if self.pick_mode == SwarmBoxer.THRESHOLD: mode = 0
@@ -1583,7 +1584,7 @@ class SwarmBoxer:
 			exc_x = box[0]/exclusion_shrink
 			exc_y = box[1]/exclusion_shrink
 			if exc_x >= exclusion_image.get_xsize() or exc_y > exclusion_image.get_ysize():
-				print "Box position (%i,%i) was outside exclusion image boundaries (%i,%i)... ignoring (email this to woolford@bcm.edu)" %(exc_x,exc_y,exclusion_image.get_xsize(),exclusion_image.get_ysize())
+				print("Box position (%i,%i) was outside exclusion image boundaries (%i,%i)... ignoring (email this to woolford@bcm.edu)" %(exc_x,exc_y,exclusion_image.get_xsize(),exclusion_image.get_ysize()))
 				continue
 			if exclusion_image.get(exc_x,exc_y) != 0: boxes.append(box)
 			#else the particle was re-centered on an excluded region!
@@ -1606,7 +1607,7 @@ class SwarmBoxer:
 					self.move_ref(box_num,image_name,dx,dy,allow_template_update=False)
 
 
-	   	boxes.sort(compare_box_correlation) # sorting like this will often put large ice contaminations in a group, thanks Pawel Penczek
+		boxes.sort(compare_box_correlation) # sorting like this will often put large ice contaminations in a group, thanks Pawel Penczek
 		self.target().add_boxes(boxes, self.proximity_threshold == None)
 
 		if self.proximity_threshold != None:
@@ -1622,7 +1623,7 @@ class SwarmBoxer:
 			get_application().setOverrideCursor(QtCore.Qt.ArrowCursor)
 			self.target().set_status_message("Autoboxed %d Particles" %len(boxes), 10000)
 		else:
-			print "Autoboxed %d Particles" %len(boxes)
+			print("Autoboxed %d Particles" %len(boxes))
 
 
 		return boxes
@@ -1720,8 +1721,8 @@ class SwarmBoxer:
 		@param box_size the size of the box used to center
 		Returns the dx and dy parameters, i.e. does not actually alter the box
 		'''
-	  	global BigImageCache
-	  	image = BigImageCache.get_image_directly(image_name)
+		global BigImageCache
+		image = BigImageCache.get_image_directly(image_name)
 
 		xc = box[0]-box_size/2
 		yc = box[1]-box_size/2
@@ -1818,7 +1819,7 @@ class SwarmTool(SwarmBoxer,EMBoxingTool):
 					self.moving=[m,box_num,box.type]
 #					self.target().moving_box_established(box_num)
 			else:
-				raise EMUnknownBoxType,box.type
+				raise EMUnknownBoxType(box.type)
 
 
 
@@ -1829,7 +1830,7 @@ class SwarmTool(SwarmBoxer,EMBoxingTool):
 			self.target().remove_box(box_num)
 			self.remove_ref(box,self.target().current_file())
 		else:
-			raise EMUnknownBoxType,box.type
+			raise EMUnknownBoxType(box.type)
 
 	def mouse_drag(self,event) :
 		m=self.get_2d_window().scr_to_img((event.x(),event.y()))
@@ -1863,7 +1864,7 @@ class SwarmTool(SwarmBoxer,EMBoxingTool):
 	def moving_ptcl_established(self,box_num,x,y):
 		box = self.target().get_box(box_num)
 		if box.type not in [SwarmBoxer.REF_NAME,SwarmBoxer.AUTO_NAME,SwarmBoxer.WEAK_REF_NAME]:
-			raise EMUnknownBoxType,box.type
+			raise EMUnknownBoxType(box.type)
 
 		self.ptcl_moving_data = [x,y,box_num]
 
@@ -1893,7 +1894,7 @@ class SwarmTool(SwarmBoxer,EMBoxingTool):
 	def delete_ptcl(self,box_num):
 		box = self.target().get_box(box_num)
 		if box.type not in [SwarmBoxer.REF_NAME,SwarmBoxer.AUTO_NAME,SwarmBoxer.WEAK_REF_NAME]:
-			raise EMUnknownBoxType,box.type
+			raise EMUnknownBoxType(box.type)
 
 		self.handle_box_delete(self.target().get_box(box_num),box_num)
 
@@ -1951,7 +1952,7 @@ class GaussPanel:
 		#self.nbin = self.width()
 		# hardcode nbin to 256 for now, which is the hardcoded width of the ccf histogram widget in sxboxer...
 		self.nbin = 256
-                self.data = histogram1d( data, self.nbin, self.PRESIZE )
+		self.data = histogram1d( data, self.nbin, self.PRESIZE )
 
 		hmin = self.data[0][0]
 		hmax = self.data[0][-1]
@@ -2273,7 +2274,7 @@ class GaussPanel:
 		pixin = float(self.pixel_input_edit.text())
 		pixout=float(self.pixel_output_edit.text())
 		if pixout < pixin:
-			print "output pixel size cannot be smaller than input pixel size"
+			print("output pixel size cannot be smaller than input pixel size")
 			self.pixel_input_edit.setText(str(self.target().pixel_input))
 			return
 		self.target().set_pixel_input(pixin)
@@ -2286,7 +2287,7 @@ class GaussPanel:
 		pixin = float(self.pixel_input_edit.text())
 		if pixout < pixin:
 			self.pixel_output_edit.setText(str(self.target().pixel_output))
-			print "output pixel size cannot be smaller than input pixel size"
+			print("output pixel size cannot be smaller than input pixel size")
 			return
 		self.target().set_pixel_output(pixout)
 		gbdb = js_open_dict(GaussPanel.GDB_NAME)
@@ -2416,17 +2417,17 @@ class GaussPanel:
 			ctf_cs           = float(self.ctf_cs.text())
 			ctf_ampcont      = float(self.ctf_ampcont.text())
 
-		except ValueError,extras:
+		except ValueError as extras:
 			# conversion of a value failed!
-			print "integer conversion failed."
+			print("integer conversion failed.")
 			if not(extras.args is None):
-				print extras.args[0]
+				print(extras.args[0])
 			return
 		except:
-			print "error"
-			print self.ctf_window_size.text()
-			print self.ctf_overlap_size.text()
-			print self.ctf_edge_size.text()
+			print("error")
+			print(self.ctf_window_size.text())
+			print(self.ctf_overlap_size.text())
+			print(self.ctf_edge_size.text())
 			return
 
 		# print "determine power spectrum"
@@ -2474,21 +2475,21 @@ class GaussPanel:
 		set_ctf(img, [defocus, ctf_cs, ctf_volt, input_pixel_size, 0, ctf_ampcont])
 		# and rewrite image
 		img.write_image(image_name)
-		print [defocus, ctf_cs, ctf_volt, input_pixel_size, 0, ctf_ampcont]
+		print([defocus, ctf_cs, ctf_volt, input_pixel_size, 0, ctf_ampcont])
 		# get alternate, and set its ctf
 		altimg=BigImageCache.get_object(image_name).get_image(use_alternate=True)
 		set_ctf(altimg, [defocus, ctf_cs, ctf_volt, output_pixel_size, 0, ctf_ampcont])
 		BigImageCache.get_object(image_name).register_alternate(altimg)
-		print [defocus, ctf_cs, ctf_volt, output_pixel_size, 0, ctf_ampcont]
- 		print "CTF estimation done."
- 		#print "Estimated defocus value: ", defocus
+		print([defocus, ctf_cs, ctf_volt, output_pixel_size, 0, ctf_ampcont])
+		print("CTF estimation done.")
+		#print "Estimated defocus value: ", defocus
 
 		##############################################################################
 		#### save ctf estimation parameters to db for command line batch processing
 		gbdb = js_open_dict(GaussPanel.GDB_NAME)
 		ctfdict = {'pixel_input':input_pixel_size,'pixel_output':output_pixel_size,'ctf_fstart':ctf_f_start,'ctf_fstop':ctf_f_stop, 'ctf_window':ctf_window_size,'ctf_edge':ctf_edge_size,'ctf_overlap':ctf_overlap_size,'ctf_ampcont':ctf_ampcont,'ctf_volt':ctf_volt,'ctf_cs':ctf_cs}
 		#print "calc_ctf image_name: ", image_name
-		if gbdb.has_key(image_name):
+		if image_name in gbdb:
 			olddict=gbdb[image_name]
 			gbdb[image_name] = dict((olddict).items() + ctfdict.items() ) # merge the two dictionaries with conflict resolution resolved in favorr of the latest ctf parameters
 		else:
@@ -2515,7 +2516,7 @@ class GaussPanel:
 		# calculate ctf of ORIGINAL micrograph using cter in gui mode
 		# this must mean cter is being calculated on a single micrograph!
 
-		print "Starting CTER"
+		print("Starting CTER")
 		# get the current image
 		from utilities import get_im
 		#image_name = self.target().boxable.get_image_name()
@@ -2535,14 +2536,14 @@ class GaussPanel:
 			ctf_ampcont      = float(self.ctf_ampcont.text())
 			ctf_kboot        = int(self.ctf_kboot.text())
 
-		except ValueError,extras:
+		except ValueError as extras:
 			# conversion of a value failed!
-			print "integer conversion failed."
+			print("integer conversion failed.")
 			if not(extras.args is None):
-				print extras.args[0]
+				print(extras.args[0])
 			return
 		except:
-			print "error"
+			print("error")
 			return
 
 		fname, fext = os.path.splitext(image_name)
@@ -2550,7 +2551,7 @@ class GaussPanel:
 		outpartres = 'partres_%s'%fname
 
 		if os.path.exists(outpwrot) or os.path.exists(outpartres):
-			print "Please remove or rename %s and or %s"%(outpwrot,outpartres)
+			print("Please remove or rename %s and or %s"%(outpwrot,outpartres))
 			return
 
 		from morphology import cter
@@ -2580,21 +2581,21 @@ class GaussPanel:
 		set_ctf(img, [defocus, ctf_cs, ctf_volt, input_pixel_size, 0, ctf_ampcont, ast_amp, ast_agl])
 		# and rewrite image
 		img.write_image(image_name)
-		print [defocus, ctf_cs, ctf_volt, input_pixel_size, 0, ctf_ampcont, ast_amp, ast_agl]
+		print([defocus, ctf_cs, ctf_volt, input_pixel_size, 0, ctf_ampcont, ast_amp, ast_agl])
 		# get alternate, and set its ctf
 		altimg=BigImageCache.get_object(image_name).get_image(use_alternate=True)
 		set_ctf(altimg, [defocus, ctf_cs, ctf_volt, input_pixel_size, 0, ctf_ampcont, ast_amp, ast_agl])
 		BigImageCache.get_object(image_name).register_alternate(altimg)
-		print [defocus, ctf_cs, ctf_volt, input_pixel_size, 0, ctf_ampcont, ast_amp, ast_agl]
- 		print "CTF estimation using CTER done."
- 		#print "Estimated defocus value: ", defocus
+		print([defocus, ctf_cs, ctf_volt, input_pixel_size, 0, ctf_ampcont, ast_amp, ast_agl])
+		print("CTF estimation using CTER done.")
+		#print "Estimated defocus value: ", defocus
 
 		##############################################################################
 		#### save ctf estimation parameters to db for command line batch processing
 		gbdb = db_open_dict(GaussPanel.GDB_NAME)
 		ctfdict = {'pixel_input':input_pixel_size,'pixel_output':output_pixel_size,'ctf_window':ctf_window_size,'ctf_edge':ctf_edge_size,'ctf_overlap':ctf_overlap_size,'ctf_ampcont':ctf_ampcont,'ctf_volt':ctf_volt,'ctf_cs':ctf_cs, 'ctf_kboot':ctf_kboot}
 		#print "calc_ctf image_name: ", image_name
-		if gbdb.has_key(image_name):
+		if image_name in gbdb:
 			olddict=gbdb[image_name]
 			gbdb[image_name] = dict((olddict).items() + ctfdict.items() ) # merge the two dictionaries with conflict resolution resolved in favorr of the latest ctf parameters
 		else:
@@ -2626,15 +2627,15 @@ class GaussBoxer:
 
 		self.panel_object = None # maybe it doesn't exist
 
-                self.pixel_input = 1.0
-                self.pixel_output = 1.0
-                self.frequency_cutoff = 0
-                self.window_size_min = 15
-                self.gauss_width = 1.0
-                self.use_variance = True
-                self.invert = False
-                self.thr_low = None
-                self.thr_hgh = None
+		self.pixel_input = 1.0
+		self.pixel_output = 1.0
+		self.frequency_cutoff = 0
+		self.window_size_min = 15
+		self.gauss_width = 1.0
+		self.use_variance = True
+		self.invert = False
+		self.thr_low = None
+		self.thr_hgh = None
 		self.gui_mode = False # set this to False to stop any calls to Qt - such as the act of making the cursor busy...
 
 		self.mvt_cache = [] # we have to remember if any of the auto selected boxes were moved, so if the user reboxes then the movements they previously supplied will be applied
@@ -2707,7 +2708,7 @@ class GaussBoxer:
 		'''
 		When the autobox button is clicked then we force an autobox.
 		'''
-		print 'file to be processed: ', self.target().current_file()
+		print('file to be processed: ', self.target().current_file())
 		self.auto_box(self.target().current_file(),force_remove_auto_boxes=True)
 
 	def auto_box(self, imgname, parameter_update=True, force_remove_auto_boxes=False, cache=True):
@@ -2719,7 +2720,7 @@ class GaussBoxer:
 		@param cache whether or not the newly establish state, i.e. at the end of this function, should be cached to the database and internally. Generally True but sometimes False (see self.load_from_last_state) .
 		'''
 		from sparx import filt_gaussl
-		print "Gauss method............start auto boxing"
+		print("Gauss method............start auto boxing")
 		if self.gui_mode:
 			from PyQt4 import QtCore
 			get_application().setOverrideCursor(QtCore.Qt.BusyCursor)
@@ -2738,7 +2739,7 @@ class GaussBoxer:
 		if(self.use_variance):
 			from morphology import power
 			small_img = power(small_img, 2.0)
-			print "using variance"
+			print("using variance")
 
 		boxsize = self.target().get_box_size()
 		ccf = filt_gaussl( small_img, self.gauss_width/boxsize )
@@ -2746,16 +2747,16 @@ class GaussBoxer:
 		peaks = ccf.peak_ccf( boxsize/2-1)
 		del ccf
 		npeak = len(peaks)/3
-		print "npeak: ", npeak
+		print("npeak: ", npeak)
 		boxes = []
 		ccfs = [] # ccfs are used to set threshold_low adn threshold_high after the particles have been picked. see set_data in CcfHistogram in sxboxer and set_params_of_gui in pawelautoboxer in boxertools.py
-		print "thr low: ", self.thr_low
-		print "thr hi: ", self.thr_hgh
-		print "pixel_output: ", self.pixel_output
-		print "pixel input: ", self.pixel_input
-		print "invert: ", self.invert
-		print "gauss width: ", self.gauss_width
-		print "variance: ", self.use_variance
+		print("thr low: ", self.thr_low)
+		print("thr hi: ", self.thr_hgh)
+		print("pixel_output: ", self.pixel_output)
+		print("pixel input: ", self.pixel_input)
+		print("invert: ", self.invert)
+		print("gauss width: ", self.gauss_width)
+		print("variance: ", self.use_variance)
 		for i in xrange(npeak):
 			cx = peaks[3*i+1]
 			cy = peaks[3*i+2]
@@ -2795,7 +2796,7 @@ class GaussBoxer:
 			get_application().setOverrideCursor(QtCore.Qt.ArrowCursor)
 			self.target().set_status_message("Autoboxed %d Particles" %len(boxes), 10000)
 		else:
-			print "Autoboxed %d Particles" %len(boxes)
+			print("Autoboxed %d Particles" %len(boxes))
 
 		self.panel_object.enable_auto_box(False)
 		gbdb = js_open_dict(GaussPanel.GDB_NAME)
@@ -2807,7 +2808,7 @@ class GaussBoxer:
 
 		autoboxdict = {'boxsize':boxsize, 'pixel_input':self.pixel_input, 'pixel_output':self.pixel_output, 'invert_contrast':self.invert, 'use_variance':self.use_variance, 'gauss_width':self.gauss_width,'thr_low':self.thr_low,'thr_hi':self.thr_hgh}
 
-		if gbdb.has_key(imgname):
+		if imgname in gbdb:
 			oldautoboxdict = gbdb[imgname]
 			gbdb[imgname] = dict(oldautoboxdict.items() + autoboxdict.items()) # resolve conflicts in favor of new autoboxdict
 		else:
@@ -2834,14 +2835,14 @@ class GaussBoxer:
 		self.panel_object.setgwbox=True
 		tlowtext = self.panel_object.THRNA
 		if self.thr_low != None:
-		        tlowtext = str(self.thr_low )
+			tlowtext = str(self.thr_low )
 		self.panel_object.thr_low_edit.setText(tlowtext)
 		self.panel_object.new_thr_low()
 		thitext = self.panel_object.THRNA
 		if self.thr_hgh != None:
-		        thitext = str(self.thr_hgh )
-                self.panel_object.thr_hi_edit.setText(thitext)
-                self.panel_object.new_thr_hi()
+			thitext = str(self.thr_hgh )
+			self.panel_object.thr_hi_edit.setText(thitext)
+			self.panel_object.new_thr_hi()
 
 		self.panel_object.use_variance_chk.setChecked(self.use_variance)
 		self.panel_object.use_variance_checked( self.use_variance)
@@ -2879,7 +2880,7 @@ class GaussBoxer:
 		img_filt = filt_gaussh( img, gaussh_param )
 
 		if subsample_rate != 1.0:
-			print "Generating downsampled image\n"
+			print("Generating downsampled image\n")
 			sb = Util.sincBlackman(template_min, frequency_cutoff,1999) # 1999 taken directly from util_sparx.h
 			small_img = img_filt.downsample(sb,subsample_rate)
 			del sb
@@ -2967,7 +2968,7 @@ class GaussBoxer:
 
 		try:
 			if gbdb['clear'] == False and gbdb['filename']==filename:
-				print "Restoring micrograph and particles window for Gauss mode..."
+				print("Restoring micrograph and particles window for Gauss mode...")
 				# set parameters from cache so get_small image work from the correct parameters
 				self.pixel_input = gbdb['pixel_input']
 				self.pixel_output = gbdb['pixel_output']
@@ -2986,7 +2987,7 @@ class GaussBoxer:
 	def auto_box_cmdline(self, imgname,boxsize=128,norm="normalize.edgemean"):
 
 		from sparx import filt_gaussl
-		print "Gauss method............start command line auto boxing"
+		print("Gauss method............start command line auto boxing")
 		# user pawelautoboxer (gauss method) to compute soln
 		# downsample input image.
 		small_img = self.get_small_image(imgname,modecmd=True,boxsize=boxsize)
@@ -2998,14 +2999,14 @@ class GaussBoxer:
 		if(self.use_variance):
 			from morphology import power
 			small_img = power(small_img, 2.0)
-			print "using variance"
+			print("using variance")
 
 		ccf = filt_gaussl( small_img, self.gauss_width/boxsize )
 		del small_img
 		peaks = ccf.peak_ccf( boxsize/2-1)
 		del ccf
 		npeak = len(peaks)/3
-		print "npeak: ", npeak
+		print("npeak: ", npeak)
 		boxes = []
 		for i in xrange(npeak):
 			cx = peaks[3*i+1]
@@ -3026,7 +3027,7 @@ class GaussBoxer:
 		del peaks
 		# adds boxes and write to database
 		self.target.add_boxes(boxes, True)
-		print "Autoboxed %d Particles" %len(boxes)
+		print("Autoboxed %d Particles" %len(boxes))
 
 	# auto_ctf is meant to be called for batch only...
 	# take care of case where estimated ctf is saved into downsampled micrograph from which particles are picked.
@@ -3061,7 +3062,7 @@ class GaussBoxer:
 		ctf_tuple = [defocus,ctf_Cs,ctf_volt,self.pixel_output,0,ctf_ampcont]
 		set_ctf(img, ctf_tuple)
 		img.write_image(image_name, 0)
-		print "        CTF parameters for original micrograph %s:"%image_name, ctf_tuple
+		print("        CTF parameters for original micrograph %s:"%image_name, ctf_tuple)
 		del img
 
 class GaussTool(GaussBoxer,EMBoxingTool):
@@ -3108,7 +3109,7 @@ class GaussTool(GaussBoxer,EMBoxingTool):
 			self.target().remove_box(box_num)
 			self.remove_ref(box,self.target().current_file())
 		else:
-			raise EMUnknownBoxType,box.type
+			raise EMUnknownBoxType(box.type)
 
 	def mouse_drag(self,event) :
 		m=self.get_2d_window().scr_to_img((event.x(),event.y()))
@@ -3142,7 +3143,7 @@ class GaussTool(GaussBoxer,EMBoxingTool):
 	def moving_ptcl_established(self,box_num,x,y):
 		box = self.target().get_box(box_num)
 		if box.type not in [GaussBoxer.REF_NAME,GaussBoxer.AUTO_NAME,GaussBoxer.WEAK_REF_NAME]:
-			raise EMUnknownBoxType,box.type
+			raise EMUnknownBoxType(box.type)
 
 		self.ptcl_moving_data = [x,y,box_num]
 
@@ -3172,7 +3173,7 @@ class GaussTool(GaussBoxer,EMBoxingTool):
 	def delete_ptcl(self,box_num):
 		box = self.target().get_box(box_num)
 		if box.type not in [GaussBoxer.REF_NAME,GaussBoxer.AUTO_NAME,GaussBoxer.WEAK_REF_NAME]:
-			raise EMUnknownBoxType,box.type
+			raise EMUnknownBoxType(box.type)
 
 		self.handle_box_delete(self.target().get_box(box_num),box_num)
 

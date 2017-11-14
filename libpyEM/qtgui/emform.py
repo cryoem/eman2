@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: David Woolford 11/7/2008 (woolford@bcm.edu)
@@ -422,7 +423,7 @@ class EMFileTable(QtGui.QTableWidget):
 		Internally caches the originally name in a dictionary so it can be recovered
 		Redefine self.convert_name to achieve your custom-desired display name
 		'''
-		if not self.name_conversions.has_key(name):
+		if name not in self.name_conversions:
 			converted = self.convert_name(name) 
 			self.name_conversions[name] = converted
 			return converted # for efficiency
@@ -820,7 +821,7 @@ class EMPlotTable(EMFileTable):
 		
 	def num_plot_entries(filename):
 		try:
-			f = file(filename,"r")
+			f = open(filename,"r")
 			lines = f.readlines()
 			return str(len(lines))
 		except:
@@ -855,7 +856,7 @@ class EM2DStackExamineTable(EM2DStackTable):
 		'''
 		See EMFileTable.table_item_double_clicked for comments
 		'''
-		print "X"
+		print("X")
 		if item.column() != 0: return # only can display files from the first column
 		filename = self.convert_text(str(item.text()))
 		if not file_exists(filename): return # this happens sometimes when there is filtered data but no raw data
@@ -868,7 +869,7 @@ class EM2DStackExamineTable(EM2DStackTable):
 		
 		self.display_module.set_data(filename,filename) #  I know this looks stupid, but c'est la vie
 		self.display_module.updateGL()
-		if self.name_map.has_key(filename):
+		if filename in self.name_map:
 			self.display_module.set_single_active_set(self.name_map[filename])
 		else:
 			self.display_module.clear_sets()
@@ -1025,7 +1026,7 @@ class EMEmanStrategyWidget(QtGui.QWidget):
 		for i in xrange(1,len(data),3):
 			vartype = data[i+1]
 			
-			if self.auto_incorporate.has_key(vartype):
+			if vartype in self.auto_incorporate:
 				name = data[i]
 				desc_long = data[i+2]
 				p = ParamDef(name=name,vartype=vartype,desc_short=name,desc_long=desc_long,defaultunits="")
@@ -1035,7 +1036,7 @@ class EMEmanStrategyWidget(QtGui.QWidget):
 					params.append(tmp_params)
 					tmp_params = []
 			
-			else: print "ignoring",vartype
+			else: print("ignoring",vartype)
 				
 		if len(tmp_params) != 0:
 			params.append(tmp_params)
@@ -1391,7 +1392,7 @@ class IncorpParamTable:
 				num_choices = len(param.choices)
 			else:
 				if len(param.choices) != num_choices:
-					print "error, the number of choices is not consistent in __incorporate_paramtable"
+					print("error, the number of choices is not consistent in __incorporate_paramtable")
 					return
 		
 		vbl=QtGui.QVBoxLayout()
@@ -2106,10 +2107,10 @@ def get_example_table_form_params():
 	return par
 
 def on_ok(dict):
-	print "got the ok signal, the return dictionary is",dict
+	print("got the ok signal, the return dictionary is",dict)
 	
 def on_cancel():
-	print "got the cancel signal"
+	print("got the cancel signal")
 
 
 # This is just for testing, of course

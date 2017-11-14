@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steve Ludtke 05/23/2016 (sludtke@bcm.edu)
@@ -35,7 +36,7 @@ from EMAN2 import *
 from sys import argv,exit
 
 if len(argv)<4 :
-	print "e2omitmap.py <map> <nseg> <mass>"
+	print("e2omitmap.py <map> <nseg> <mass>")
 	sys.exit(1)
 
 model=EMData(argv[1],0)

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 # Author: Matthew Baker
 # Copyright (c) 2000-2012 Baylor College of Medicine

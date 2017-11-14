@@ -1,8 +1,9 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 '''
 ====================
-Author: Jesus Galaz-Montoya - 02/March/2013, Last update: 18/May/2017
+Author: Jesus Galaz-Montoya - 02/March/2013, Last update: 07/Nov/2017
 ====================
 
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -70,7 +71,6 @@ def main():
 	parser.add_argument("--onlymidz",action='store_true',default=False,help="Only extract the middle slice of the volume parallel to the XY plane.")
 	
 	parser.add_argument("--path",type=str,default=None,help="""Directory to store results in. The default is a numbered series of directories containing the prefix 'slices'; for example, slices_02 will be the directory by default if 'slices_01' already exists.""")
-	
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	parser.add_argument("--singlestack",action='store_true',default=False,help="""This option will save slices from all particles into a single .hdf stack file if --onlymidz or --onlymidy or --onlymidx are provided, instead of one slice file per volume.""")
@@ -105,7 +105,7 @@ def main():
 		#	print """\nERROR: Supply volume(s) through --input or as the first argument after the program name. For example, program.py volume.hdf --parameter1=value1 --parameter2=value2... etc."""
 		#	sys.exit()
 	
-	print "\ninputs are {}".format(inputs)
+	print("\ninputs are {}".format(inputs))
 
 	logger = E2init(sys.argv, options.ppid)
 
@@ -119,50 +119,47 @@ def main():
 		options.normproc=parsemodopt(options.normproc)
 
 	
-	'''
-	Check for sanity of some supplied parameters
-	'''
-
+	'''#
+	#Check for sanity of some supplied parameters
+	'''#
 	if options.onlymidz:
 		if options.onlymidx or options.onlymidy:
-			print "ERROR: You can only supply one of --onlymidx, --onlymidy or --onlymidz at a time."
+			print("ERROR: You can only supply one of --onlymidx, --onlymidy or --onlymidz at a time.")
 			sys.exit()
 	
 	if options.onlymidx:
 		if options.onlymidy or options.onlymidz:
-			print "ERROR: You can only supply one of --onlymidx, --onlymidy or --onlymidz at a time."
+			print("ERROR: You can only supply one of --onlymidx, --onlymidy or --onlymidz at a time.")
 			sys.exit()
 			
 	if options.onlymidy:
 		if options.onlymidx or options.onlymidz:
-			print "ERROR: You can only supply one of --onlymidx, --onlymidy or --onlymidz at a time."
+			print("ERROR: You can only supply one of --onlymidx, --onlymidy or --onlymidz at a time.")
 			sys.exit()
 
 
-	'''
-	Make a directory where to store the results
-	'''
-
-	from e2spt_classaverage import sptmakepath
-	options = sptmakepath(options,'slices')
+	'''#
+	#Make a directory where to store the results
+	'''#
+	from EMAN2_utils import makepath
+	options = makepath(options,'sptslices')
 	
 	
-	'''
-	Generate orthogonal slice regions
-	'''
-	
+	'''#
+	#Generate orthogonal slice regions
+	'''#
 	for f in inputs:
 
 		try:
 			hdf = EMData( f, 0, True )
 		except:
-			print "ERROR: invalid image file {}".format(f)
+			print("ERROR: invalid image file {}".format(f))
 			sys.exit(1)
 
 		n = EMUtil.get_image_count( f )
 		
 		for i in range(n):
-			print "\nprocessing particle {}".format(i)
+			print("\nprocessing particle {}".format(i))
 			a = EMData(f,i)
 			
 			ap = a.copy()
@@ -191,7 +188,7 @@ def main():
 				
 				if options.onlymidz:	
 					rmid = Region(0, 0, nz/2, nx, ny, 1)
-					print "The region for the orthogonal z slice is", rmid
+					print("The region for the orthogonal z slice is", rmid)
 					
 					slicestag += 'z'
 					if n < 2:
@@ -199,7 +196,7 @@ def main():
 										
 				elif options.onlymidx:
 					rmid = Region(nx/2, 0, 0, 1, ny, nz)
-					print "The region for the orthogonal x slice is", rmid
+					print("The region for the orthogonal x slice is", rmid)
 
 					#slicemidx=a.get_clip(rmidx)
 					#slicemidx.write_image(options.path + '/' + options.input.replace('.',ptcltag+'_SLICEmidx.'),0)
@@ -213,7 +210,7 @@ def main():
 		
 				elif options.onlymidy:
 					rmid = Region(0, ny/2, 0, nx, 1, nz)
-					print "The region for the orthogonal y slice is", rmid
+					print("The region for the orthogonal y slice is", rmid)
 		
 					#slicemidy=a.get_clip(rmidy)
 					#slicemidy.write_image(options.path + '/' + options.input.replace('.',ptcltag+'_SLICEmidy.'),0)
@@ -240,7 +237,7 @@ def main():
 				
 				#regions={}
 				if not options.orthogonaloff:
-					print "Generating orthogonal slices"
+					print("Generating orthogonal slices")
 					rmidz = Region(0, 0, nz/2, nx, ny, 1)
 					rmidx = Region(nx/2, 0, 0, 1, ny, nz)
 					rmidy = Region(0, ny/2, 0, nx, 1, nz)
@@ -266,32 +263,32 @@ def main():
 						#d = EMData()
 						#d.read_image(options.input, 0, False, regions[tag])
 					
-						print "I have extracted this orthogonal region", regions[kk]
+						print("I have extracted this orthogonal region", regions[kk])
 						slice = app.get_clip(regions[kk])
 						slice.set_size(x,y,1)
-						print "ptcl tag is", ptcltag
-						print "slice is", slice , type(slice)
+						print("ptcl tag is", ptcltag)
+						print("slice is", slice , type(slice))
 						
 						outname = options.path + '/' + os.path.basename( f ).replace('.',ptcltag+'_SLICESortho.')
-						print "outname is", outname
+						print("outname is", outname)
 						if '.mrc' in outname:
 							outname=outname.replace('.mrc','.hdf')
-							print "new outname is", outname
+							print("new outname is", outname)
 						slice.write_image( outname,kk)
 						
 						
-						print "The mean and index are", slice['mean'],kk
+						print("The mean and index are", slice['mean'],kk)
 						#k+=1
 					
 				if options.allz:
-					print "Generating all z slices"
+					print("Generating all z slices")
 					#Tz = Transform({'type':'eman','az':0,'alt':0,'phi':0})
 					
 					outname = options.path + '/' + os.path.basename( f ).replace('.',ptcltag+'_SLICESz.')
 					os.system('e2proc2d.py ' + f + ' ' + outname + ' --threed2twod')
 			
 				if options.allx:
-					print "Generating all x slices"
+					print("Generating all x slices")
 					Tx = Transform({'type':'eman','az':0,'alt':-90,'phi':0})
 					volx = app.copy()
 					volx.transform(Tx)
@@ -303,7 +300,7 @@ def main():
 					os.system('e2proc2d.py ' + rotvolxname + ' ' + outname + ' --threed2twod')
 			
 				if options.ally:	
-					print "Generating all y slices"
+					print("Generating all y slices")
 					Ty = Transform({'type':'eman','az':0,'alt':-90,'phi':-90})
 					voly = app.copy()
 					voly.transform(Ty)

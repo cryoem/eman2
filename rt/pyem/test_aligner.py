@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Grant Tang, 09/01/2005 (gtang@bcm.edu)
@@ -139,6 +140,8 @@ class TestAligner(unittest.TestCase):
 					dif.process_inplace("math.absvalue")
 					self.failIf(dif["mean"] > 0.01)
 				
+	test_RotationalAligner.broken = True
+	
 	def no_test_RotatePrecenterAligner(self):
 		"""test RotatePrecenterAligner ......................"""
 
@@ -164,7 +167,7 @@ class TestAligner(unittest.TestCase):
 					t =  g.get_attr("xform.align2d")
 					params = t.get_params("2d")
 					result = fabs(params["alpha"] - az)
-					print params["alpha"],az
+					print(params["alpha"],az)
 					#print g.get_attr("align.az"), az
 					if result > 180 and result < 360:
 						result = 360-result
@@ -287,8 +290,8 @@ class TestAligner(unittest.TestCase):
 					t =  g.get_attr("xform.align2d")
 					params = t.get_params("2d")
 					if debug:
-						print params
-						print az,dx,dy,mirror
+						print(params)
+						print(az,dx,dy,mirror)
 					self.failIf(fabs(params["tx"] + dx) > 2)
 					self.failIf(fabs(params["ty"] + dy) > 2)
 					
@@ -299,7 +302,7 @@ class TestAligner(unittest.TestCase):
 					if result > 360: result = result-360
 					self.failIf( result > 5 ) # 5 seems accurate enough
 					self.failIf( t.get_mirror() != mirror)
-	
+
 	def test_RotateTranslateFlipAligner(self):
 		"""test RotateTranslateFlip Aligner ................."""
 		e = EMData()

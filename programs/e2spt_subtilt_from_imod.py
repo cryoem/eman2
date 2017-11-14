@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 # Muyuan Chen 2016-10
 # Muyuan Chen mostly rewrite 2017-03
 from EMAN2 import *
@@ -48,13 +49,13 @@ def main():
 		origin=options.ptclin
 	
 	#box=box[:50]
-	print "Read {} particles".format(len(box))
+	print("Read {} particles".format(len(box)))
 	edfname=os.path.abspath(options.edf)
 	spos=edfname.rfind('/')
 	path=edfname[:spos+1]
 	fname=edfname[spos+1:-4]
 	
-	print "Looking for trim sizes from imod..."
+	print("Looking for trim sizes from imod...")
 	
 	f=open(edfname)
 	lines=f.readlines()
@@ -70,24 +71,24 @@ def main():
 				if s in l:
 					eqpos=l.rfind('=')
 					trimshp[i]=int(l[eqpos+1:])
-	print "Trim sizes are: "
+	print("Trim sizes are: ")
 	for i,s in enumerate(ss):
-		print s[1:], trimshp[i]
+		print(s[1:], trimshp[i])
 	trimshp=trimshp.reshape((3,2))
 	
 	
 	raw0=EMData(path+fname+"_full.rec",0, True)
 	rawshp=np.array([raw0["nx"], raw0["nz"], raw0["ny"]])
 	
-	print "Full size tomogram shape:", rawshp
+	print("Full size tomogram shape:", rawshp)
 	
 	corsft=rawshp/2-np.mean(trimshp, axis=1)
 	#corsft[2]=0
-	print "Coordinates shift: ", corsft
+	print("Coordinates shift: ", corsft)
 
 	tltfile=path+fname+".tlt"
 	tlts=np.loadtxt(tltfile)
-	print "Read {} tilts from {} to {}.".format(len(tlts), np.min(tlts), np.max(tlts))
+	print("Read {} tilts from {} to {}.".format(len(tlts), np.min(tlts), np.max(tlts)))
 	
 	tlogfile=path+"tilt.log"
 	f=open(tlogfile)
@@ -99,7 +100,7 @@ def main():
 		if "XAXISTILT" in l:
 			eqpos=l.rfind('=')
 			xtilt=float(l[eqpos+1:])
-			print "Xtilt is {}".format(xtilt)
+			print("Xtilt is {}".format(xtilt))
 			break
 		
 	
@@ -130,9 +131,9 @@ def main():
 	box-=tomoshape/2
 	
 	if options.unbin<=0:
-		print "Apix of ali is {:.2f}, Apix from tomo is {:.2f}".format(aapix, eapix)
+		print("Apix of ali is {:.2f}, Apix from tomo is {:.2f}".format(aapix, eapix))
 		options.unbin=eapix/aapix
-		print "Box coordinates unbinned by {} based on apix..".format(options.unbin)
+		print("Box coordinates unbinned by {} based on apix..".format(options.unbin))
 	
 	box*=options.unbin
 	box=box-corsft
@@ -141,10 +142,10 @@ def main():
 	if options.ctffile:
 		ctfsave=np.loadtxt(options.ctffile)
 		defocus=ctfsave[:, options.defcol]
-		print "Read defocus for {:d} tilts from file, range from {:.2f} to {:.2f}.".format(len(defocus), np.min(defocus), np.max(defocus))
+		print("Read defocus for {:d} tilts from file, range from {:.2f} to {:.2f}.".format(len(defocus), np.min(defocus), np.max(defocus)))
 		if options.weight:
 			wt=ctfsave[:,options.defcol]
-			print "Weight particles by the variance of esitimated defocus, from {:.2f} to {:.2f}".format(np.max(wt), np.min(wt))
+			print("Weight particles by the variance of esitimated defocus, from {:.2f} to {:.2f}".format(np.max(wt), np.min(wt)))
 			wt=1./(wt+.1)
 			wt/=np.max(wt)
 		
@@ -155,16 +156,16 @@ def main():
 			if l.startswith("#"):
 				if "Voltage" in l:
 					ctf.voltage=float(l[l.find(':')+1:])
-					print "Voltage: {:.1f} kV".format(ctf.voltage)
+					print("Voltage: {:.1f} kV".format(ctf.voltage))
 				if "Cs" in l:
 					ctf.cs=float(l[l.find(':')+1:])
-					print "Cs={:.1f}".format(ctf.cs)
+					print("Cs={:.1f}".format(ctf.cs))
 			else:
 				break
 		
 		
 	kk=0
-	print "Generating particles..."
+	print("Generating particles...")
 	for bi,b in enumerate(box):
 		for i,t in enumerate(tlts):
 	
@@ -210,11 +211,11 @@ def main():
 	js0["boxes"]=allb
 	js0=None
 	
-	print "Done. {:d} 2D projections written.".format(kk)
+	print("Done. {:d} 2D projections written.".format(kk))
 	E2end(logid)
 	
 def run(cmd):
-	print cmd
+	print(cmd)
 	launch_childprocess(cmd)
 	
 	

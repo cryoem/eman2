@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: Steven Ludtke, 09/04/2014 (sludtke@bcm.edu)
@@ -80,7 +81,7 @@ try:
 	from emshape import *
 	from valslider import ValSlider
 except:
-	print "Error: PyQt4 must be installed"
+	print("Error: PyQt4 must be installed")
 	sys.exit(1)
 
 class MyListWidget(QtGui.QListWidget):
@@ -103,12 +104,12 @@ class GUIctfsim(QtGui.QWidget):
 		try:
 			from emimage2d import EMImage2DWidget
 		except:
-			print "Cannot import EMAN image GUI objects (EMImage2DWidget)"
+			print("Cannot import EMAN image GUI objects (EMImage2DWidget)")
 			sys.exit(1)
 		try:
 			from emplot2d import EMPlot2DWidget
 		except:
-			print "Cannot import EMAN plot GUI objects (is matplotlib installed?)"
+			print("Cannot import EMAN plot GUI objects (is matplotlib installed?)")
 			sys.exit(1)
 
 		self.app = weakref.ref(application)
@@ -126,7 +127,7 @@ class GUIctfsim(QtGui.QWidget):
 		else : 
 			self.apply=EMData(apply,0)
 			self.df_apix=self.apply["apix_x"]
-			print "A/pix reset to ",self.df_apix
+			print("A/pix reset to ",self.df_apix)
 			self.applyim=EMImage2DWidget(application=self.app())
 
 		QtGui.QWidget.__init__(self,None)
@@ -235,7 +236,7 @@ class GUIctfsim(QtGui.QWidget):
 		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("keypress"),self.listkey)
 		QtCore.QObject.connect(self.splotmode,QtCore.SIGNAL("currentIndexChanged(int)"),self.newPlotMode)
 
-	   	QtCore.QObject.connect(self.newbut,QtCore.SIGNAL("clicked(bool)"),self.on_new_but)
+		QtCore.QObject.connect(self.newbut,QtCore.SIGNAL("clicked(bool)"),self.on_new_but)
 
 
 		self.resize(720,380) # figured these values out by printing the width and height in resize event
@@ -332,7 +333,7 @@ class GUIctfsim(QtGui.QWidget):
 				if d==0 : avg=curve[:]
 				else:
 					if len(curve)!=len(avg) :
-						print "Number of samples must be fixed to compute an average ({})".format(d+1)
+						print("Number of samples must be fixed to compute an average ({})".format(d+1))
 					else:
 						avg+=curve
 			
@@ -465,7 +466,7 @@ class GUIctfsim(QtGui.QWidget):
 		if event.key()==Qt.Key_I:			# if user presses I in this window we invert the stack on disk
 			fsp=self.data[self.curset][0]
 			n=EMUtil.get_image_count(fsp)
-			print "Inverting images in %s"%fsp
+			print("Inverting images in %s"%fsp)
 			for i in xrange(n):
 				img=EMData(fsp,i)
 				img.mult(-1.0)

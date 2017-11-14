@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 #
 # Author: David Woolford 10/01/2008 (woolford@bcm.edu)
@@ -53,7 +54,7 @@ class ModuleEventsManager:
 		self.module = weakref.ref(module)
 		try:
 			emitter = self.module().emitter()
-			print "It has an emitter() function! Check whether it should be converted to a QWidget subclass."
+			print("It has an emitter() function! Check whether it should be converted to a QWidget subclass.")
 		except AttributeError:
 			emitter = self.module() #Ross's hack to get this to work with QWidget's as well
 			
@@ -146,7 +147,7 @@ class EMGLWidget(QtOpenGL.QGLWidget):
 		self.makeCurrent()
 		self.font_renderer = get_3d_font_renderer()
 		if self.font_renderer == None : 
-			print "FTGL not initialized. Please make sure you have FTGL installed, and configured for compilation in CMake. If using a binary, please report a problem to sludtke@bcm.edu."
+			print("FTGL not initialized. Please make sure you have FTGL installed, and configured for compilation in CMake. If using a binary, please report a problem to sludtke@bcm.edu.")
 			sys.exit(1)
 		self.font_renderer.set_face_size(16)
 		self.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
@@ -189,7 +190,7 @@ class EMGLWidget(QtOpenGL.QGLWidget):
 		self.emit(QtCore.SIGNAL("inspector_shown")) # debug only
 		app = get_application()
 		if app == None:
-			print "can't show an inspector with having an associated application"
+			print("can't show an inspector with having an associated application")
 		
 		if not force and self.inspector==None : 
 			return
@@ -243,13 +244,13 @@ class EMApp(QtGui.QApplication):
 		style=QtGui.QStyleFactory.create("Plastique")
 		
 		if style==None:
-			print "Note: standard Plastique style not available, controls may be distorted. Using ",
+			print("Note: standard Plastique style not available, controls may be distorted. Using ", end=' ')
 			
 			# the first one should work, but we have the loop, just in case
 			for s in list(QtGui.QStyleFactory.keys()):
 				style=QtGui.QStyleFactory.create(s)
 				if style!=None: 
-					print s
+					print(s)
 					break
 
 		if style!=None and get_platform()!="Darwin": self.setStyle(style)
@@ -263,7 +264,7 @@ class EMApp(QtGui.QApplication):
 
 	def detach_child(self,child):
 		if child not in self.children:
-			print "EMApp.detach_child() error, EMApp instance doesn't contain this child:", child
+			print("EMApp.detach_child() error, EMApp instance doesn't contain this child:", child)
 			return
 		
 		while child in self.children:
@@ -271,7 +272,7 @@ class EMApp(QtGui.QApplication):
 			
 	def attach_child(self,child):
 		if child in self.children:
-			print "error, can't attach the same child twice:", child
+			print("error, can't attach the same child twice:", child)
 			return
 			
 		self.children.append(child)
@@ -302,7 +303,7 @@ class EMApp(QtGui.QApplication):
 		
 	def execute(self, logid=None):
 		self.exec_()
-		print logid
+		print(logid)
 		if logid: E2end(logid) # We need to log the end of the process, don't we....
 		return sys.exit()
 		
@@ -315,7 +316,7 @@ class EMApp(QtGui.QApplication):
 					inspector.hide()
 				return
 			
-		print "couldn't hide",child
+		print("couldn't hide",child)
 		
 
 	def show_specific(self,child):
@@ -335,10 +336,10 @@ class EMApp(QtGui.QApplication):
 			child.setFocus()
 
 	def start_timer(self,interval,function):
-		print "START APP TIMER"
+		print("START APP TIMER")
 	
 		if self.tmr != None:
-			print "can't start a timer, already have one running. Call stop_timer first"
+			print("can't start a timer, already have one running. Call stop_timer first")
 			#FIXME, add support for mutliple timers
 			return
 	
@@ -351,13 +352,13 @@ class EMApp(QtGui.QApplication):
 		
 	
 	def stop_timer(self):
-		print "STOP APP TIMER"
+		print("STOP APP TIMER")
 		if self.tmr != None:
 			QtCore.QObject.disconnect(self.tmr, QtCore.SIGNAL("timeout()"), self.timer_function)
 			self.tmr = None
 			self.timer_function = None
 		else:
-			print "warning, can't stop a timer when there is none"
+			print("warning, can't stop a timer when there is none")
 
 		
 	

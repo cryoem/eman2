@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #********************************************************************************
 # Author: Stephen Murray (scmurray@bcm.edu), 6/12/13
 # Copyright (c) 2000-2013 Baylor College of Medicine
@@ -27,7 +28,7 @@ This program will extract the required information from an EMAN2 project and out
 
 """
 
-print "Running e2emx.py"
+print("Running e2emx.py")
 # Required Program Options and Parameters (GUI and Command Line)
 parser = EMArgumentParser(usage, version=EMANVERSION)
 parser.add_argument("--export_whole_project", action="store_true", help="This option will create an emx directory, where it will export the eman2 project into EMX format", default=False)
@@ -52,10 +53,10 @@ optionList = pyemtbx.options.get_optionlist(sys.argv[1:])
 for option1 in optionList:
 	if option1 == "export_whole_project":
 		if not os.path.exists("./emx"):
-			print "Creating EMX directory"
+			print("Creating EMX directory")
 			os.mkdir("emx")
 		else:
-			print "EMX directory already exists"
+			print("EMX directory already exists")
 
 		f = open("./emx/particles.emx",'w')
 
@@ -76,7 +77,7 @@ for option1 in optionList:
 		#Check to see if the micrographs folder exists
 		dir_list = os.listdir(cwd)
 		if "micrographs" in dir_list:
-			print "-----Writing Micrograph Information-----"
+			print("-----Writing Micrograph Information-----")
 			for image in os.listdir(cwd + "/micrographs"):
 				if not image[0] == '.':
 					if options.writeimages:
@@ -96,7 +97,7 @@ for option1 in optionList:
 			f.write("\n")
 		else:
 			temp_micrograph_list = []
-			print "------Writing Micrograph Information Placeholders"
+			print("------Writing Micrograph Information Placeholders")
 			for ptcl_by_micrograph in os.listdir(cwd + "/particles"):
 				micro_string = base_name(ptcl_by_micrograph.replace("_ptcls","")).split("__")[0] + ".mrc"
 				if micro_string not in temp_micrograph_list:
@@ -105,7 +106,7 @@ for option1 in optionList:
 				f.write("<micrograph fileName=\"" + str(micrograph) + ".mrc\"/>\n")
 			f.write("\n")
 		if "particles" in dir_list:
-			print "-----Writing Particle Information-----"
+			print("-----Writing Particle Information-----")
 			for ptcl_by_micrograph in os.listdir(cwd + "/particles"):
 				if ptcl_by_micrograph.find("__") == -1 and ptcl_by_micrograph.find(".") != 0:
 					if os.path.exists(cwd + "/particles/" + ptcl_by_micrograph.replace(".hdf","") + "__ctf_flip.hdf"):
@@ -114,14 +115,14 @@ for option1 in optionList:
 							s1 = "e2proc2d.py " + cwd + "/particles/" + ptcl_by_micrograph.replace(".hdf",'') + "__ctf_flip.hdf emx/" + ptcl_by_micrograph.replace(".hdf.",".mrcs")
 							call(s1,shell=True)
 					else:
-                                            try:
-						particle_stack = EMData().read_images(cwd + "/particles/" + ptcl_by_micrograph)
-						if options.writeimages:
-							s1 = "e2proc2d.py " + cwd + "/particles/" + ptcl_by_micrograph + " emx/" + ptcl_by_micrograph.replace(".hdf",".mrcs")
-							call(s1,shell=True)
-						#num_images = len(particle_stack)
-                                            except:
-                                                print(cwd+"/particles/"+ptcl_by_micrograph)
+						try:
+							particle_stack = EMData().read_images(cwd + "/particles/" + ptcl_by_micrograph)
+							if options.writeimages:
+								s1 = "e2proc2d.py " + cwd + "/particles/" + ptcl_by_micrograph + " emx/" + ptcl_by_micrograph.replace(".hdf",".mrcs")
+								call(s1,shell=True)
+							#num_images = len(particle_stack)
+						except:
+							print((cwd+"/particles/"+ptcl_by_micrograph))
 						#print num_images
 					index = 1
 					for particle in particle_stack:
@@ -178,7 +179,7 @@ for option1 in optionList:
 					elif micrograph_attrib == "fileName":
 						micrograph_filename = item.attrib['fileName']
 					else:
-						print "Unknown tag: " + micrograph_attrib
+						print("Unknown tag: " + micrograph_attrib)
 				for item2 in item:
 					if item2.tag == "acceleratingVoltage":
 						voltage = item2.text #in kilovolts
@@ -213,7 +214,7 @@ for option1 in optionList:
 								apix_z = float(item3.text)
 								temp_dict['apix_z']=apix_z
 					else:
-						print "Unknown tag: " + item2.tag
+						print("Unknown tag: " + item2.tag)
 				micro_dict[micrograph_filename] = temp_dict
 				ctf=EMAN2Ctf()
 				ctf.from_dict({"defocus":(float(defocus1)+float(defocus2))/2000,"dfang":float(defocus_angle),"dfdiff":abs(float(defocus1)-float(defocus2))/1000,"voltage":float(voltage),"cs":float(cs),"ampcont":float(ampcont),"apix":float(apix_x)})
@@ -232,7 +233,7 @@ for option1 in optionList:
 						particle = item.attrib['index']
 						temp_dict['index']=particle
 					else:
-						print "Unknown tag: " + particle_attrib
+						print("Unknown tag: " + particle_attrib)
 				for item2 in item:
 					if item2.tag == "defocusU":
 						temp_dict['defocusU'] = float(item2.text) / 1000 # in nm
@@ -252,7 +253,7 @@ for option1 in optionList:
 								particle_micrograph_index = item2.attrib['index']
 								temp_dict['index']=particle_micrograph_index
 							else:
-								print "Unknown tag: " + micrograph_attrib
+								print("Unknown tag: " + micrograph_attrib)
 					elif item2.tag == "pixelSpacing":
 						for item3 in item2:
 							if item3.tag == "X":
@@ -265,7 +266,7 @@ for option1 in optionList:
 								foundapix = True
 								apix_z = float(item3.text)
 							else:
-								print "Unknown Tag: " + item3.tag
+								print("Unknown Tag: " + item3.tag)
 					elif item2.tag == "boxSize":
 						for item3 in item2:
 							if item3.tag == "X":
@@ -294,11 +295,11 @@ for option1 in optionList:
 							transform_dict[item.find('micrograph').get('fileName')] = [t]
 						if not item2.find('t31') and not item2.find('t32') and item2.find('t33'):
 							if not twod_xform:
-								print "2D transforms found"
+								print("2D transforms found")
 							twod_xform = True
 						else:
 							if not threed_xform:
-								print "3D transforms found"
+								print("3D transforms found")
 							threed_xform = True
 				part_list.append(temp_dict)
 				if particle_micrograph_filename != last_part_filename:
@@ -330,17 +331,17 @@ for option1 in optionList:
 
 		if options.refinedefocus :
 			dfopt="--curdefocushint --refinebysnr"
-			if options.verbose>0 : print "CTF Refinement"
+			if options.verbose>0 : print("CTF Refinement")
 		elif options.refitdefocus :
 			dfopt="--curdefocushint"
-			if options.verbose>0 : print "CTF Refit"
+			if options.verbose>0 : print("CTF Refit")
 		else:
 			dfopt="--curdefocusfix"
-			if options.verbose>0 : print "Computing particle SNRs"
+			if options.verbose>0 : print("Computing particle SNRs")
 		if not os.path.exists("particles"):
 			os.mkdir("particles")
 		for item in micro_dict.keys():
-			print "e2proc2d.py {} particles/{}_ptcls.hdf --threed2twod --first {} --last {}".format(micro_dict[item]['stack'],base_name(item),micro_dict[item]['first_index'],micro_dict[item]['last_index'])
+			print("e2proc2d.py {} particles/{}_ptcls.hdf --threed2twod --first {} --last {}".format(micro_dict[item]['stack'],base_name(item),micro_dict[item]['first_index'],micro_dict[item]['last_index']))
 			launch_childprocess("e2proc2d.py {} particles/{}_ptcls.hdf --threed2twod --first {} --last {}".format(micro_dict[item]['stack'],base_name(item),micro_dict[item]['first_index'],micro_dict[item]['last_index']))
 			launch_childprocess("e2ctf.py particles/{}_ptcls.hdf --voltage {} --cs {} --ac {} --apix {} --autofit --zerook --storeparm --astigmatism {} -v {}".format(base_name(item),micro_dict[item]['voltage'],micro_dict[item]['cs'],micro_dict[item]['ampcont'],micro_dict[item]['apix_x'],dfopt,options.verbose-1))
 		if twod_xform:
@@ -356,9 +357,9 @@ for option1 in optionList:
 					temp_images[i]['xform.align3d'] = transform_dict[micrograph_xform][i]
 					temp_images[i].write_image("particles/" + base_name(micrograph_xform) + "_ptcls.hdf",i)
 		if found_per_particle:
-			print "Per-particle defocus values or angles found. Please note that we do not support import of this information at the moment. Using the per-micrograph information provided"
+			print("Per-particle defocus values or angles found. Please note that we do not support import of this information at the moment. Using the per-micrograph information provided")
 
-print "e2emx.py finished!"
+print("e2emx.py finished!")
 
 
 

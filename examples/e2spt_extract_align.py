@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: Jesus Galaz-Montoya, March 2014; last update by Jesus Galaz-Montoya on May/22/2016
 # Copyright (c) 2000-2011 Baylor College of Medicine
@@ -80,7 +81,7 @@ def main():
 	#	sys.exit()
 	
 	if ".hdf" not in options.input:
-		print "ERROR. HDF is the only supported input format."
+		print("ERROR. HDF is the only supported input format.")
 		sys.exit()
 	
 	logid=E2init(sys.argv,options.ppid)
@@ -106,12 +107,12 @@ def main():
 				pass
 			
 			if tomogram not in tomograms:
-				print "Indentified a new tomogram",tomogram
+				print("Indentified a new tomogram",tomogram)
 				tomograms.update({tomogram:[]})
 				
 			line = str(coords[0]) + ' ' + str(coords[1]) + ' ' + str(coords[2]) + '\n'
 			#lines.append(line)
-			print "Line of coordinates to add",line
+			print("Line of coordinates to add",line)
 			tomograms[tomogram].append(line)
 			
 		for tomogram in tomograms.keys():
@@ -158,7 +159,7 @@ def main():
 					#symscore=im['spt_symsearch_score']
 					
 				except:
-					print "\nERROR: particle %d does not have 'symxform' parameter in its header. Defaulting to identity transform."
+					print("\nERROR: particle %d does not have 'symxform' parameter in its header. Defaulting to identity transform.")
 				symjsA.setval( symxformslabel, [ symxf , score ] )
 
 			
@@ -182,7 +183,7 @@ def main():
 		avgr=Averagers.get(options.averager[0], options.averager[1])
 	
 		for i in range(n):	
-			print "reading particle"		
+			print("reading particle")		
 			a=EMData( options.input, i)
 			
 			ptcl = a.copy()
@@ -203,8 +204,8 @@ def main():
 			'''
 			ID='subtomo_' + str(i).zfill(len(str(n)))
 			t = preOrientationsDict[ID][0]	
-			print "\nfor particle",i
-			print "transform is", t
+			print("\nfor particle",i)
+			print("transform is", t)
 			
 			ptcl['origin_x'] = 0
 			ptcl['origin_y'] = 0
@@ -216,7 +217,7 @@ def main():
 				ptcl['xform.align3d'] = t
 				alistack = os.path.basename(options.input).replace('.hdf','_ali.hdf')
 				if options.saveali:
-					print "\nsaving aligned particle",i
+					print("\nsaving aligned particle",i)
 					ptcl.write_image(options.path + '/' + alistack, i )
 			
 			avgr.add_image(ptcl)

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 #
 # Author: Pawel A.Penczek and Edward H. Egelman 05/27/2009 (Pawel.A.Penczek@uth.tmc.edu)
 # Copyright (c) 2000-2006 The University of Texas - Houston Medical School
@@ -38,9 +39,9 @@ def main():
 	from optparse import OptionParser
 	from global_def import SPARXVERSION
 	import global_def
-        arglist = []
-        for arg in sys.argv:
-        	arglist.append( arg )
+	arglist = []
+	for arg in sys.argv:
+		arglist.append( arg )
 	progname = os.path.basename(arglist[0])
 	usage2 = progname + """ inputfile outputfile [options]
         Functionalities:
@@ -156,20 +157,20 @@ def main():
 
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 1 or len(args) > 5:
-		print "Various helical reconstruction related functionalities: " + usage2
-		print "Please run '" + progname + " -h' for detailed options"
+		print("Various helical reconstruction related functionalities: " + usage2)
+		print("Please run '" + progname + " -h' for detailed options")
 	else:
 
 		if len(options.hfsc) > 0:
 			if len(args) != 1:
-				print  "Incorrect number of parameters"
+				print("Incorrect number of parameters")
 				sys.exit()
 			from applications import imgstat_hfsc
 			imgstat_hfsc( args[0], options.hfsc, options.filament_attr)
 			sys.exit()
 		elif len(options.filinfo) > 0:
 			if len(args) != 1:
-				print  "Incorrect number of parameters"
+				print("Incorrect number of parameters")
 				sys.exit()
 			from EMAN2 import EMUtil
 			filams =  EMUtil.get_all_attributes(args[0], "filament")
@@ -193,12 +194,12 @@ def main():
 		
 		if len(options.stackdisk) > 0:
 			if len(args) != 1:
-				print  "Incorrect number of parameters"
+				print("Incorrect number of parameters")
 				sys.exit()
 			dpp = (float(options.dp)/options.apix)
 			rise = int(dpp)
 			if(abs(float(rise) - dpp)>1.0e-3):
-				print "  dpp has to be integer multiplicity of the pixel size"
+				print("  dpp has to be integer multiplicity of the pixel size")
 				sys.exit()
 			from utilities import get_im
 			v = get_im(args[0])
@@ -212,7 +213,7 @@ def main():
 
 		if len(options.consistency) > 0:
 			if len(args) != 1:
-				print  "Incorrect number of parameters"
+				print("Incorrect number of parameters")
 				sys.exit()
 			from development import consistency_params	
 			consistency_params(args[0], options.consistency, options.dphi, options.dp, options.apix,phithr=options.phithr, ythr=options.ythr, THR=options.segthr)
@@ -247,10 +248,10 @@ def main():
 
 		if len(options.predict_helical) > 0:
 			if len(args) != 1:
-				print  "Incorrect number of parameters"
+				print("Incorrect number of parameters")
 				sys.exit()
 			if options.dp < 0:
-				print "Helical symmetry paramter rise --dp should not be negative"
+				print("Helical symmetry paramter rise --dp should not be negative")
 				sys.exit()
 			from applications import predict_helical_params
 			predict_helical_params(args[0], options.dp, options.dphi, options.apix, options.predict_helical)
@@ -258,10 +259,10 @@ def main():
 
 		if options.helicise:	
 			if len(args) != 2:
-				print "Incorrect number of parameters"
+				print("Incorrect number of parameters")
 				sys.exit()
 			if options.dp < 0:
-				print "Helical symmetry paramter rise --dp should not be negative"
+				print("Helical symmetry paramter rise --dp should not be negative")
 				sys.exit()
 			from utilities import get_im, sym_vol
 			vol = get_im(args[0])
@@ -274,10 +275,10 @@ def main():
 
 		if options.helicisepdb:	
 			if len(args) != 2:
-				print "Incorrect number of parameters"
+				print("Incorrect number of parameters")
 				sys.exit()
 			if options.dp < 0:
-				print "Helical symmetry paramter rise --dp should not be negative"
+				print("Helical symmetry paramter rise --dp should not be negative")
 				sys.exit()
 			from math import cos, sin, radians
 			from copy import deepcopy
@@ -346,7 +347,7 @@ def main():
 
 		if options.volalixshift:
 			if options.maxit > 1:
-				print "Inner iteration for x-shift determinatin is restricted to 1"
+				print("Inner iteration for x-shift determinatin is restricted to 1")
 				sys.exit()
 			if len(args) < 4:  mask = None
 			else:               mask = args[3]
@@ -374,7 +375,7 @@ def main():
 		
 			if len(options.symdoc) < 1:
 				if options.dp < 0 or options.dphi < 0:
-					print "Enter helical symmetry parameters either using --symdoc or --dp and --dphi"
+					print("Enter helical symmetry parameters either using --symdoc or --dp and --dphi")
 					sys.exit()
 			
 			if options.dp < 0 or options.dphi < 0:
@@ -402,7 +403,7 @@ def main():
 			if len(args) == 1:  mask3d = None
 			else:               mask3d = args[1]
 			if options.dp < 0:
-				print "Helical symmetry paramter rise --dp must be explictly set!"
+				print("Helical symmetry paramter rise --dp must be explictly set!")
 				sys.exit()
 			gendisks_MPI(args[0], mask3d, options.ref_nx, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, options.CTF, options.function, options.sym, options.gendisk, options.maxerror, options.new_pixel_size, options.match_pixel_rise)
 			global_def.BATCH = False
