@@ -1317,6 +1317,7 @@ def goldsearch(f,a,b,tol=1.0e-9):
 #                 will fix the problem of rotation of a 0,0,0 direction.  It does not as one neeeds psi
 #                 in this case as well.  So, the only choice is to use small theta instead of exact 0,0,0 direction
 def rotate_params(params, transf):
+	from fundamentals import rotmatrix, recmat, rotmatrix
 	matinv = rotmatrix( -transf[2], -transf[1], -transf[0] )
 	n = len(params)
 	cpar = [None]*n
