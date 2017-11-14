@@ -9180,7 +9180,8 @@ def Kmref2_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=
 			volft, kb = prep_vol(volft)
 			refrings = prepare_refrings(volft, kb, nx, delta[N_step], ref_a, syms[0], numr, True)
 			del volft, kb
-			log.add( "Initial time to prepare rings: %d" % (time()-start_time) );start_time = time()
+			if myid == main_node:
+				log.add( "Time to prepare %d rings: %g" % (len(refrings),time()-start_time) );start_time = time()
 
 			"""
 			if CTF:
@@ -9247,7 +9248,7 @@ def Kmref2_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=
 						finfo.write( "\n" )
 						finfo.flush()
 			if myid == main_node:
-				log.add( "Time to process particles for reference %3d: %d" % (iref, time()-start_time) );start_time = time()
+				log.add( "Time to process particles for reference %3d: %g" % (iref, time()-start_time) );start_time = time()
 
 
 		del peaks
@@ -9429,7 +9430,7 @@ def Kmref2_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=
 	"""
 	if myid == main_node:
 		log.add("Kmref_ali3d_MPI is done!")
-	return empty_group
+	#return empty_group
 
 def get_refiparams(nx):
 	from EMAN2 import Processor
