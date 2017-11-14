@@ -9153,7 +9153,7 @@ def Kmref2_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=
 
 		total_iter += 1
 		if myid == main_node:
-			log.add("\n%s ITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, an = %5.2f, xrange = %5.2f, yrange = %5.2f, step = %5.2f"%(runtype, total_iter, Iter, delta[N_step], an[N_step], xrng[N_step],yrng[N_step],step[N_step]))
+			log.add("  %s ITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, an = %5.2f, xrange = %5.2f, yrange = %5.2f, step = %5.2f"%(runtype, total_iter, Iter, delta[N_step], an[N_step], xrng[N_step],yrng[N_step],step[N_step]))
 			start_ime = time()
 		peaks = [ -1.0e23]*nima
 		if runtype=="REFINEMENT":
@@ -9171,6 +9171,7 @@ def Kmref2_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=
  
 		cs = [0.0]*3
 		for iref in xrange(numref):
+			start_time = time()
 			if myid==main_node:
 				volft = get_im(os.path.join(outdir, "volf%04d.hdf"%(total_iter-1)), iref)
 			else:
@@ -9179,17 +9180,17 @@ def Kmref2_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=
 			volft, kb = prep_vol(volft)
 			refrings = prepare_refrings(volft, kb, nx, delta[N_step], ref_a, syms[0], numr, True)
 			del volft, kb
+			log.add( "Initial time to prepare rings: %d" % (time()-start_time) );start_time = time()
 
+			"""
 			if CTF:
 				previous_defocus = -1.0
-				"""
 				if runtype=="REFINEMENT":
 					start_time = time()
 					prjref = prgq( volft, kb, nx, delta[N_step], ref_a, sym, MPI=True)
 					if myid == main_node:
 						log.add( "Calculation of projections: %d" % (time()-start_time) );start_time = time()
 					del volft, kb
-				"""
 			else:
 				if runtype=="REFINEMENT":
 					start_time = time()
@@ -9197,8 +9198,8 @@ def Kmref2_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=
 					if myid == main_node:
 						log.add( "Initial time to prepare rings: %d" % (time()-start_time) );start_time = time()
 					del volft, kb
+			"""
 
-			start_time = time()
 			for im in xrange(nima):
 				"""
 				if CTF:
@@ -9221,7 +9222,9 @@ def Kmref2_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=
 						finfo.write( "ID,iref,peak: %6d %d %8.5f\n" % (list_of_particles[im],iref,peak) )
 				else:
 					if an[N_step] == -1:
+						print("  START proj_ali_incore  ",myid,nima)
 						peak, pixel_error = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step])
+						print("  DONE proj_ali_incore  ",myid,nima)
 					else:
 						peak, pixel_error = proj_ali_incore_local(data[im], refrings, list_of_reference_angles, numr,\
 																	xrng[N_step], yrng[N_step], step[N_step], an[N_step])
