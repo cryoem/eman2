@@ -24,7 +24,7 @@ def main():
 	
 	usage=" "
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--path", type=str,help="path", default="sptsgd_00/")
+	parser.add_argument("--path", type=str,help="path", default="sptsgd")
 	parser.add_argument("--ref", type=str,help="ref", default=None)
 	parser.add_argument("--sym", type=str,help="symmetry", default="c1")
 	parser.add_argument("--batchsize", type=int,help="batch size", default=12)
@@ -35,7 +35,11 @@ def main():
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	
+	from EMAN2_utils import makepath
+	options = makepath(options,'sptsgd')
+	
 	path=options.path
+	
 	fname=args[0]
 	num=EMUtil.get_image_count(fname)
 	batchsize=options.batchsize
