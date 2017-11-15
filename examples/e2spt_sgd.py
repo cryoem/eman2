@@ -35,16 +35,19 @@ def main():
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	
-	if options.path==None:
-		for i in range(100):
-			pname="sptsgd_{:02d}".format(i)
-			if not os.path.isdir(pname):
-				os.mkdir(pname)
-				options.path=pname
-				break
-		else:
-			print("something is wrong...")
-			exit()
+	from EMAN2_utils import makepath
+	options = makepath(options,'sptsgd')
+	
+	#if options.path==None:
+	#	for i in range(100):
+	#		pname="sptsgd_{:02d}".format(i)
+	#		if not os.path.isdir(pname):
+	#			os.mkdir(pname)
+	#			options.path=pname
+	#			break
+	#	else:
+	#		print("something is wrong...")
+	#		exit()
 			
 	path=options.path
 	print("Writing in {}..".format(path))
