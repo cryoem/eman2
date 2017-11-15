@@ -24648,7 +24648,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 
 void Util::version()
 {
- cout <<"  Source modification date: 09/29/2017  10:22 PM " <<  endl;
+ cout <<"  Source modification date: 11/15/2017  11:54 AM " <<  endl;
 }
 
 
