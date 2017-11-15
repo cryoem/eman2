@@ -1564,18 +1564,18 @@ class symclass():
 		from string import lower
 		self.sym = sym.lower()
 		#t = Transform()
-		#self.nsym = 0#t.get_nsym(sym)
-		#self.angles = get_sym(sym)
-		#self.transforms = get_symt(sym)
-		if(sym[0] == "c"):
-			self.nsym = int(sym[1:])
+		#self.nsym = 0#t.get_nsym(self.sym)
+		#self.angles = get_sym(self.sym)
+		#self.transforms = get_symt(self.sym)
+		if(self.sym[0] == "c"):
+			self.nsym = int(self.sym[1:])
 			self.brackets = [[360./self.nsym,90.0,360./self.nsym,90.0],[360./self.nsym,180.0,360./self.nsym,180.0]]
 			self.symangles = []
 			for i in xrange(self.nsym):
 				self.symangles.append([0.0, 0.0, i*360./self.nsym])
 
-		elif(sym[0] == "d"):
-			self.nsym = 2*int(sym[1:])
+		elif(self.sym[0] == "d"):
+			self.nsym = 2*int(self.sym[1:])
 			self.brackets = [[360./self.nsym,90.0,360./self.nsym,90.0],[360./self.nsym*2,90.0,360./self.nsym*2,90.0]]
 			self.symangles = []
 			for i in xrange(self.nsym/2):
@@ -1583,7 +1583,7 @@ class symclass():
 			for i in xrange(self.nsym/2):
 				self.symangles.append([0.0, 180.0, i*360./self.nsym*2])
 
-		elif(sym[:3] == "oct"):
+		elif(self.sym[:3] == "oct"):
 			self.nsym = 24
 			ncap = 4
 			cap_sig = 360.0/ncap  # also called platonic_params["az_max"]
@@ -1596,7 +1596,7 @@ class symclass():
 					self.symangles.append([float(j),90.0,float(i)])
 			for i in xrange(0,271,90):  self.symangles.append([0.0,180.0,float(i)])
 
-		elif(sym[:3] == "tet"):
+		elif(self.sym[:3] == "tet"):
 			self.nsym = 12
 			ncap = 3
 			cap_sig = 360.0/ncap  # also called platonic_params["az_max"]
@@ -1609,7 +1609,7 @@ class symclass():
 				for l2 in xrange(30,271,120):
 					self.symangles.append([float(l1),lvl1,float(l2)])
 
-		elif(sym[:4] == "icos"):
+		elif(self.sym[:4] == "icos"):
 			self.nsym = 60
 			ncap = 5
 			cap_sig = 360.0/ncap  # also called platonic_params["az_max"]
@@ -1796,7 +1796,6 @@ class symclass():
 		from math      import pi, sqrt, cos, acos, tan, sin, radians, degrees
 		from utilities import even_angles_cd
 		angles = []
-		self.sym = self.sym
 		if(phi2<phi1 or theta2<theta1 or delta <= 0.0):  ERROR("even_angles","incorrect parameters (phi1,phi2,theta1,theta2,delta): %f   %f   %f   %f   %f"%(phi1,phi2,theta1,theta2,delta),1)
 		if(phi1 < 0.0):  phi1 = 0.0
 		if(phi2 < 0.0):  phi2 = self.brackets[inc_mirror][0] - 1.0e-7 # exclude right border of unit

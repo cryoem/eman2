@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-
 #
 # Author: Jesus Galaz-Montoya 03/2011, 
 # (based on Steven Ludtke's initial implementation [02/15/2011] of Jesus's older scripts, from M.F.Schmid's methods).
@@ -34,6 +32,8 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 #
+
+from __future__ import print_function
 
 from EMAN2 import *
 import math
@@ -412,10 +412,19 @@ def main():
 		
 			print("aligner parsed", sptParseAligner)
 	else:
+		
+		hdr=EMData(options.input,0,True)
+		
+		search = hdr['nx']/2.0
+
 		options.align = 'rotate_translate_3d_grid:phi0=0:phi1=1:alt0=0:alt1=1:az0=0:az1=1:dphi=2:daz=2:dalt=2'
 		
+		#options.falign = 'refine_3d_grid'
+		
 		if options.search:
-			options.align += ':search=' + str(options.search)
+			search = options.search
+		
+		options.align += ':search=' + str(search)
 			
 		#if options.searchx:
 		#	options.align += ':searchx=' + str(options.searchx)
