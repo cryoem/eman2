@@ -221,13 +221,29 @@ def makepath(options, stem='e2dir'):
 
 
 #runs commands at the commnad line for multiple spt programs
-def runcmd(options,cmd):
-	import subprocess
+#def runcmd(options,cmd):
+#	import subprocess
+#	
+#	p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+#	text=p.communicate()	
+#	p.stdout.close()
+#	
+#	return 1
+
+def runcmd(options,cmd,cmdsfilepath=''):
+	if options.verbose > 9:
+		print("\n(EMAN2_utils)(runcmd) running command {}".format(cmd))
 	
 	p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	text=p.communicate()	
 	p.stdout.close()
 	
+	if cmdsfilepath:
+		with open(cmdsfilepath,'a') as cmdfile: cmdfile.write( cmd + '\n')
+
+	if options.verbose > 8:
+		print("\n(EMAN2_utils)(runcmd) done")
+
 	return 1
 
 
