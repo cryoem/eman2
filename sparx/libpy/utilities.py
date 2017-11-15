@@ -4799,6 +4799,32 @@ def findall(value, L, start=0):
 			pass
 	return positions
 
+def assignments_to_groups(assignments, n = -1):
+	#  convert a list of assignments of images to groups to list of lists of image numbers within groups
+	#  n can be maximum number of groups
+	if( n == -1 ): nmax = max(assignments)
+	else:  nmax = n
+	groups = [[] for i in xrange(nmax+1)]
+	for i,q in enumerate(assignments):  groups[q].append(i)
+	for q in xrange(len(groups)):  groups[q].sort()
+	return groups
+
+
+def groups_assignments(groups, n = -1):
+	#  convert groups (a list of lists of image numbers within groups) into a list of assignments of images to groups
+	#  n can be maximum number of elements
+	if( n == -1 ): 
+		nmax = -1
+		for q in xrange(len(groups)):  nmax = max(nmax,max(groups[q]))
+	else:
+		nmax = n
+	assignments = [-1]*(nmax+1)
+
+	for i,q in enumerate(groups):
+		for l in q:
+			assignments[l] = i
+	return assignments
+
 """
 def findall(val, lo):
 	'''

@@ -9157,12 +9157,29 @@ def Kmref2_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=
 			start_ime = time()
 		peaks = [ -1.0e23]*nima
 		if runtype=="REFINEMENT":
+			from utilities    import even_angles
+			#  We assume first symmetry is the lowest one
+			ref_angles = even_angles(delta[N_step], symmetry=syms[0], method = ref_a, phiEqpsi = "Zero")
+			from random import uniform
+			from fundamentals import rotate_params
+			shake = 0.5
+			if(myid == main_node):
+				shakenumber = uniform( -shake, shake)
+			else:
+				shakenumber = 0.0
+			shakenumber = bcast_number_to_all(shakenumber, source_node = main_node)
+			# it has to be rounded as the number written to the disk is rounded,
+			#  so if there is discrepancy one cannot reproduce iteration.
+			shakenumber  = round(shakenumber,5)
+
+			rangle = shakenumber*delta[N_step]
+			rshift = shakenumber*step[N_step]
+			refang = rotate_params(refang, [-rangle,-rangle,-rangle])
+
 			trans = [tr_dummy]*nima
 			pixer = [0.0]*nima
 			if(an[N_step] > 0):
-				from utilities    import even_angles
-				#  We assume first symmetry is the lowest one
-				ref_angles = even_angles(delta[N_step], symmetry=syms[0], method = ref_a, phiEqpsi = "Zero")
+				#  These are local searches.
 				# generate list of angles
 				from alignment import generate_list_of_reference_angles_for_search
 				list_of_reference_angles = generate_list_of_reference_angles_for_search(ref_angles, sym=syms[0])
@@ -9178,7 +9195,7 @@ def Kmref2_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=
 				volft=model_blank(nx,nx,nx)
 			bcast_EMData_to_all(volft, myid, main_node)
 			volft, kb = prep_vol(volft)
-			refrings = prepare_refrings(volft, kb, nx, delta[N_step], ref_a, syms[0], numr, True)
+			refrings = prepare_refrings(volft, kb, nx, delta[N_step], refang, syms[0], numr, True)
 			del volft, kb
 			if myid == main_node:
 				log.add( "Time to prepare %d rings: %g" % (len(refrings),time()-start_time) );start_time = time()
@@ -9223,7 +9240,7 @@ def Kmref2_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=
 						finfo.write( "ID,iref,peak: %6d %d %8.5f\n" % (list_of_particles[im],iref,peak) )
 				else:
 					if an[N_step] == -1:
-						peak, pixel_error = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step])
+						peak, pixel_error = proj_ali_incore(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step], rshift = rshift)
 					else:
 						peak, pixel_error = proj_ali_incore_local(data[im], refrings, list_of_reference_angles, numr,\
 																	xrng[N_step], yrng[N_step], step[N_step], an[N_step])
