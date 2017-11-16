@@ -127,6 +127,7 @@ def main():
 	parser.add_argument("--timingbypath", default=False, action="store_true", help="Report on the CPU time required in each refine_xx folder")
 	parser.add_argument("--resolution", default=False, action="store_true", help="generates a resolution and convergence plot for a single refinement run.")
 	parser.add_argument("--resolution_all", default=False, action="store_true", help="generates resolution plot with the last iteration of all refine_xx directories")
+	parser.add_argument("--resolution_vsref", type=str, default=None, help="Computes the FSC between the last iteration of each refine_xx directory and a specified reference map. Map must be aligned, but will be rescaled if necessary.")
 	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful",guitype='intbox', row=9, col=0, rowspan=1, colspan=1, mode='evalptcl[4]')
 	#parser.add_argument("--parmcmp",  default=False, action="store_true",help="Compare parameters used in different refinement rounds")
 	#parser.add_argument("--parmpair",default=None,type=str,help="Specify iter,iter to compare the parameters used between 2 itertions.")
@@ -213,7 +214,7 @@ def main():
 		ptclmask.process_inplace("mask.addshells",{"nshells":nx//15})
 		ptclmask.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.25})
 
-		ring=(2*nx*apix/100.0,2*nx*apix/10)
+		ring=(int(2*nx*apix/100.0),int(2*nx*apix/10))
 #		fout=open("ptclsnr.txt".format(i),"w")
 		fout=open("aniso_{:02d}.txt".format(options.anisotropy),"w")
 		# generate a projection for each particle so we can compare
@@ -261,7 +262,11 @@ def main():
 						fsc = ptcl.calc_fourier_shell_correlation(projc)
 						third = len(fsc)/3
 						fsc=array(fsc[third:third*2])
-						esum+= sum(fsc[ring[0]:ring[1]])
+						try: esum+= sum(fsc[ring[0]:ring[1]])
+						except:
+							print("error")
+							print(ring,fsc)
+							sys.exit(1)
 
 						best=max(best,(esum,angle,1.01))
 	#					snr=fsc/(1.0-fsc)
@@ -637,12 +642,21 @@ def main():
 				fsc=array(fsc[third:third*2])
 				sums=[sum(fsc[rings[k]:rings[k+1]])/(rings[k+1]-rings[k]) for k in xrange(4)]		# sum the fsc into 5 range values
 				fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{};{};{}\n".format(sums[0],sums[1],sums[2],sums[3],cl["ptcl_repr"],alt,az,phi,sums[0]/(1.0001-sums[0])/(cl["ptcl_repr"]+0.01),sums[1]/(1.0001-sums[1])/float(cl["ptcl_repr"]+0.01),i,classes[eo],i,projections[eo]))
-#				if eo==0:
-#					out=open("cfsc{:04d}.txt".format(i),"w")
-#					for x in xrange(4,third-4,2): 
-#						v=sum(fsc[x-6:x+6])/12.0
-#						out.write("{}\t{}\n".format(x,v/(1.0-max(v,.00001))))
-#					out.close()
+
+				if eo==0:
+					out=open("cfsc{:04d}.txt".format(i),"w")
+					fsc=cl.calc_fourier_shell_correlation(pr)
+					third=len(fsc)/3
+					ssnr=[fsc[third+1]]*5+fsc[third+1:third*2]+[fsc[third*2-1]]*4		# we extend the list by replication to make the running average more natural
+#					print(len(ssnr),third)
+					npnt=[fsc[third*2+1]]*5+fsc[third*2+1:third*3]+[fsc[-1]]*4	# number of points in each average
+					try:
+						ssnr=[sum([ssnr[k]*npnt[k] for k in xrange(j-4,j+5)])/sum([npnt[k] for k in xrange(j-4,j+5)]) for j in xrange(4,third+4)]			# smoothing by weighted running average
+					except:
+						ssnr=[0,0]
+					ssnr=[v/(1.0-min(v,.999999)) for v in ssnr]							# convert FSC to pseudo SSNR
+					for x,v in enumerate(ssnr): out.write("{}\t{}\n".format(x,v))
+					out.close()
 				
 
 		E2end(logid)
@@ -773,6 +787,72 @@ def main():
 		print("Generated: goldstandard.pdf")
 		plt.clf()
 
+		os.system("e2display.py --plot "+" ".join(fscs))
+
+	if options.resolution_vsref!=None:
+		plt.title("Map vs Ref FSC")
+		plt.xlabel(r"Spatial Frequency (1/$\AA$)")
+		plt.ylabel("FSC")
+
+		refines=[i for i in os.listdir(".") if "refine_" in i]
+		maps=[]
+		for r in refines:
+			try: itr=max([i for i in os.listdir(r) if "threed_" in i and "even" not in i and "odd" not in i])
+			except: continue
+			maps.append("{}/{}".format(r,itr))
+
+		maps.sort()
+		
+		fscs=[]
+		ref=EMData(options.resolution_vsref,0,True)
+		for m in maps:
+			print(m)
+			mi=EMData(m,0,True)
+			
+			# insure volumes have same sampling and box-size
+			if fabs(ref["apix_x"]/mi["apix_x"]-1.0)>.001 or ref["nz"]!=mi["nz"] :
+				if options.verbose:
+					print("{} and {} do not have the same sampling/box size. Adjusting".format(options.resolution_vsref,m))
+				sca=mi["apix_x"]/ref["apix_x"]
+				if sca>1 : cmd="e2proc3d.py {} cmp_map.hdf --fouriershrink {} --clip {},{},{} --align translational --alignref {}".format(options.resolution_vsref,sca,mi["nx"],mi["ny"],mi["nz"],m)
+				else: cmd="e2proc3d.py {} cmp_map.hdf --clip {},{},{} --scale {}  --align translational --alignref {}".format(options.resolution_vsref,mi["nx"],mi["ny"],mi["nz"],1.0/sca,m)
+				launch_childprocess(cmd)
+				if options.verbose>1 : print(cmd)
+				refname="cmp_map.hdf"
+			else: refname=options.resolution_vsref
+			
+			# FSC
+			outname=m.replace("threed_","fsc_vsref").replace(".hdf",".txt")
+			cmd="e2proc3d.py {} {} --calcfsc {}".format(refname,outname,m)
+			launch_childprocess(cmd)
+			if options.verbose>1 : print(cmd)
+			fscs.append(outname)
+			
+			
+		maxx=0.01
+
+		# iterate over fsc curves
+		for num,f in enumerate(fscs):
+			# read the fsc curve
+			d=np.loadtxt(f).transpose()
+
+			# plot the curve
+			try: plt.plot(d[0],d[1],label=f[:9],color=pltcolors[(num)%12])
+			except: pass
+			maxx=max(maxx,max(d[0]))
+
+		if max(d[0])<max(xticlocs) :
+			xticlocs=[i for i in xticlocs if i<=max(d[0])]
+			xticlbl=xticlbl[:len(xticlocs)]
+		plt.axhline(0.0,color="k")
+		plt.axhline(0.143,color="#306030",linestyle=":")
+		plt.axis((0,maxx,-.02,1.02))
+		plt.legend(loc="upper right",fontsize="x-small")
+		plt.xticks(xticlocs,xticlbl)
+		plt.yticks(yticlocs,yticlbl)
+		plt.savefig("vsref.pdf")
+		print("Generated: vsref.pdf")
+		plt.clf()
 		os.system("e2display.py --plot "+" ".join(fscs))
 
 	if options.timingbypath:

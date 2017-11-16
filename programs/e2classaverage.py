@@ -473,6 +473,14 @@ def class_average_withali(images,ptcl_info,xform,ref,averager=("mean",{}),normpr
 
 		avg["class_qual"]=avg.cmp("ccc",ref)
 
+		# We compute a smoothed SSNR curve by comparing to the reference. We keep overwriting ssnr to gradually produce what we're after
+		ssnr=avg.calc_fourier_shell_correlation(ref)
+		third=len(ssnr)/3
+		ssnr=[ssnr[third]]*4+ssnr[third:third*2]+[ssnr[third*2-1]]*4	# we extend the list by replication to make the running average more natural
+		ssnr=[sum(ssnr[i-4:i+5])/9.0 for i in xrange(4,third+4)]		# smoothing by running average
+		ssnr=[v/(1.0-min(v,.999999)) for v in ssnr]						# convert FSC to pseudo SSNR
+		avg["class_ssnr"]=ssnr
+
 	# set some useful attributes
 	if len(incl)>0 or len(excl)>0 :
 		if len(incl)>0 : avg["class_ptcl_idxs"]=incl

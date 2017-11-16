@@ -894,6 +894,8 @@ class EMImage2DWidget(EMGLWidget):
 
 			if value_size != 3 :
 				values = self.display_fft
+			else:
+				values = self.display_fft
 
 			min_val = self.fcurmin
 			max_val = self.fcurmax
