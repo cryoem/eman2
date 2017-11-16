@@ -322,6 +322,16 @@ def main():
 #		from multiprocessing import Pool
 		import threading,Queue
 		print("Particle quality evaluation mode")
+
+		jsparm=js_open_dict(args[0]+"/0_refine_parms.json")
+
+		if options.iter==None:
+			try:
+				options.iter=int(jsparm["last_map"].split("_")[-1][:2])
+				options.sym=jsparm["sym"]
+			except:
+				print("Could not find a completed iteration in ",args[0])
+				sys.exit(1)
 		
 		# This is not great programming process, but greatly simplifies threading, and reduces potential memory usage
 
