@@ -776,7 +776,7 @@ EMData* FourierReconstructor::preprocess_slice( const EMData* const slice,  cons
 }
 
 
-int FourierReconstructor::insert_slice(const EMData* const input_slice, const Transform & arg, const float weight)
+int FourierReconstructor::insert_slice(const EMData* const input_slice, const Transform & arg, const float oweight)
 {
 	// Are these exceptions really necessary? (d.woolford)
 	if (!input_slice) throw NullPointerException("EMData pointer (input image) is NULL");
@@ -787,7 +787,16 @@ int FourierReconstructor::insert_slice(const EMData* const input_slice, const Tr
 	}
 #endif
 
-	Transform * rotation;
+	bool usessnr=params.set_default("usessnr",false);
+	float weight=oweight;
+	if (usessnr) {
+		if (input_slice->has_attr("class_ssnr")) weight=-1.0;	// negative weight is a flag for using SSNR
+		else weight=0;
+	}
+
+	if (weight==0) return -1;
+	
+Transform * rotation;
 /*	if ( input_slice->has_attr("xform.projection") ) {
 		rotation = (Transform*) (input_slice->get_attr("xform.projection")); // assignment operator
 	} else {*/
@@ -818,6 +827,7 @@ int FourierReconstructor::insert_slice(const EMData* const input_slice, const Tr
 	return 0;
 }
 
+// note that negative weight is a prompt for using SSNR from header
 void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice, const Transform & arg,const float weight)
 {
 	// Reload the inserter if the mode has changed
@@ -834,7 +844,9 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 
 	float inx=(float)(input_slice->get_xsize());		// x/y dimensions of the input image
 	float iny=(float)(input_slice->get_ysize());
-
+	
+	if (abs(inx-iny)>2 && weight<0) printf("WARNING: Fourier Reconstruction failure. SSNR flag set with asymmetric dimensions on input image\n");
+	
 #ifdef EMAN2_USING_CUDA
 	if(EMData::usecuda == 1) {
 		if(!image->getcudarwdata()){
@@ -852,6 +864,13 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 		return;
 	}
 #endif
+	vector<float> ssnr;
+	float sscale = 1.0f;
+	if (weight<0) {
+		ssnr=input_slice->get_attr("class_ssnr");
+		sscale=2.0*(ssnr.size()-1)/iny;
+	}
+	
 	for ( vector<Transform>::const_iterator it = syms.begin(); it != syms.end(); ++it ) {
 		Transform t3d = arg*(*it);
 		for (int y = -iny/2; y < iny/2; y++) {
@@ -859,6 +878,13 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 
 				float rx = (float) x/(inx-2.0f);	// coords relative to Nyquist=.5
 				float ry = (float) y/iny;
+				int r=Util::hypot_fast_int(x,y);
+				if (r>iny/2 && abs(inx-iny)<3) continue;	// no filling in Fourier corners...
+
+				float rweight;
+				if (weight<0) rweight=Util::get_max(0.0f,ssnr[int(r*sscale)]);
+				else rweight=weight;
+//				printf("%d\t%f\n",int(r*sscale),rweight);
 
 				Vec3f coord(rx,ry,0);
 				coord = coord*t3d; // transpose multiplication
@@ -870,7 +896,7 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 				xx=xx*(nx-2);
 				yy=yy*ny;
 				zz=zz*nz;
-
+				
 // 				if (x==10 && y==0) printf("10,0 -> %1.2f,%1.2f,%1.2f\t(%5.2f %5.2f %5.2f   %5.2f %5.2f %5.2f   %5.2f %5.2f %5.2f) %1.0f %d\n",
 // 					xx,yy,zz,t3d.at(0,0),t3d.at(0,1),t3d.at(0,2),t3d.at(1,0),t3d.at(1,1),t3d.at(1,2),t3d.at(2,0),t3d.at(2,1),t3d.at(2,2),inx,nx);
 // 				if (x==0 && y==10 FourierReconstructor:) printf("0,10 -> %1.2f,%1.2f,%1.2f\t(%5.2f %5.2f %5.2f   %5.2f %5.2f %5.2f   %5.2f %5.2f %5.2f)\n",
@@ -879,7 +905,7 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 				//printf("%3.1f %3.1f %3.1f\t %1.4f %1.4f\t%1.4f\n",xx,yy,zz,input_slice->get_complex_at(x,y).real(),input_slice->get_complex_at(x,y).imag(),weight);
 //				if (floor(xx)==45 && floor(yy)==45 &&floor(zz)==0) printf("%d. 45 45 0\t %d %d\t %1.4f %1.4f\t%1.4f\n",(int)input_slice->get_attr("n"),x,y,input_slice->get_complex_at(x,y).real(),input_slice->get_complex_at(x,y).imag(),weight);
 //				if (floor(xx)==21 && floor(yy)==21 &&floor(zz)==0) printf("%d. 21 21 0\t %d %d\t %1.4f %1.4f\t%1.4f\n",(int)input_slice->get_attr("n"),x,y,input_slice->get_complex_at(x,y).real(),input_slice->get_complex_at(x,y).imag(),weight);
-				inserter->insert_pixel(xx,yy,zz,input_slice->get_complex_at(x,y),weight);
+				inserter->insert_pixel(xx,yy,zz,input_slice->get_complex_at(x,y),rweight);
 			}
 		}
 	}

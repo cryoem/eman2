@@ -98,6 +98,7 @@ def main():
 	parser.add_argument("--keepabs",action="store_true",default=False, dest="keepabs", help="If set, keep will refer to the absolute quality of the class-average, not a local quality relative to other similar sized classes.")
 	parser.add_argument("--no_wt", action="store_true", dest="no_wt", default=False, help="This argument turns automatic weighting off causing all images to be weighted by 1. If this argument is not specified images inserted into the reconstructed volume are weighted by the number of particles that contributed to them (i.e. as in class averages), which is extracted from the image header (as the ptcl_repr attribute).")
 	parser.add_argument("--sqrt_wt", action="store_true", default=False, help="Normally class-averages are weighted into the reconstruction based on the number of particles in the average. This option causes the sqrt of the number of particles to be used instead.")
+	parser.add_argument("--usessnr", action="store_true", default=False, help="Makes use of the class_ssnr header data to weight each slice during insertion, instead of the default behavior of just using the number of particles in the average as a global weight.")
 	parser.add_argument("--mode", type=str, default="gauss_2", help="Fourier reconstruction 'mode' to use. The default should not normally be changed. default='gauss_2'")
 	parser.add_argument("--noradcor", action="store_true",default=False, help="Normally a radial correction will be applied based on the --mode used. This option disables that correction.")
 	parser.add_argument("--seedmap",type=str, default = None, help="If specified this volume will be used as a starting point for the reconstruction, filling any missing values in Fourier space. experimental.")
@@ -222,7 +223,8 @@ def main():
 	if options.verbose: print("After filter, %d images"%len(data))
 
 	# Get the reconstructor and initialize it correctly
-	a = {"size":padvol,"sym":options.sym,"mode":options.mode,"verbose":options.verbose-1}
+	a = {"size":padvol,"sym":options.sym,"mode":options.mode,"usessnr":options.usessnr,"verbose":options.verbose-1}
+#	a = {"size":padvol,"sym":options.sym,"mode":options.mode,"verbose":options.verbose-1}
 	if options.savenorm!=None : a["savenorm"]=options.savenorm
 	recon=Reconstructors.get("fourier", a)
 
@@ -230,7 +232,7 @@ def main():
 	# The actual reconstruction
 
 	threads=[threading.Thread(target=reconstruct,args=(data[i::options.threads],recon,options.preprocess,options.pad,
-			options.fillangle,options.verbose-1)) for i in xrange(options.threads)]
+			options.fillangle,max(options.verbose-1,0))) for i in xrange(options.threads)]
 
 	if options.seedmap!=None :
 		seed=EMData(options.seedmap)

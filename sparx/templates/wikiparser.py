@@ -1257,18 +1257,19 @@ def create_exclude_list_meridien():
 
 	return exclude_list
 
+def create_exclude_list_sort3d():
+	exclude_list = []
+	exclude_list.append("seed")
+	exclude_list.append("sausage")
+	
+	return exclude_list
+
 ### 
 ### NOTE: Toshio Moriya 2017/11/15
 ### The following lines are necessary for rsort3d.txt.
 ### 
 def create_exclude_list_rsort3d():
 	exclude_list = []
-	###
-	### NOTE: Toshio Moriya 2017/11/15
-	### Excluded chunkdir option because the file name convention changed in meridien
-	### and sxrsort3d.py is not reflecting this at this point.
-	###
-	exclude_list.append("chunkdir")
 	exclude_list.append("seed")
 	exclude_list.append("sausage")
 	
@@ -1456,7 +1457,7 @@ def main():
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_refine3d_postprocess()))
 
 	sxcmd_role = "sxr_alt"
-	sxcmd_config_list.append(SXcmd_config("../doc/sort3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/sort3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_sort3d()))
 
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))

@@ -210,7 +210,17 @@ def main():
 				quals=array([p[1] for p in clsinfo[i]])
 				avg["class_ptcl_qual"]=quals.mean()
 				avg["class_ptcl_qual_sigma"]=quals.std()
-				avg["class_qual"]=avg.cmp("frc",refs[i],{"maxres":8})
+#				avg["class_qual"]=avg.cmp("frc",refs[i],{"maxres":8})
+				avg["class_qual"]=avg.cmp("ccc",refs[i])	# since we are doing SNR below now, frc seems unnecessary, particularly since ccc is used in e2classaverage
+				
+				# We compute a smoothed SSNR curve by comparing to the reference. We keep overwriting ssnr to gradually produce what we're after
+				ssnr=avg.calc_fourier_shell_correlation(refs[i])
+				third=len(ssnr)/3
+				ssnr=[ssnr[third]]*4+ssnr[third:third*2]+[ssnr[third*2-1]]*4	# we extend the list by replication to make the running average more natural
+				ssnr=[sum(ssnr[j-4:j+5])/9.0 for j in xrange(4,third+4)]		# smoothing by running average
+				ssnr=[v/(1.0-min(v,.999999)) for v in ssnr]						# convert FSC to pseudo SSNR
+				avg["class_ssnr"]=ssnr
+				
 				avg["class_ptcl_src"]=args[1]
 				avg["projection_image"]=args[0]
 				avg["projection_image_idx"]=i

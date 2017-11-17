@@ -328,7 +328,10 @@ bool FourierInserter3DMode6::insert_pixel(const float& xx, const float& yy, cons
 
 //		float h=2.0/((1.0+pow(Util::hypot3sq(xx,yy,zz),.5))*EMConsts::I2G);
 //		float h=1.0f/EMConsts::I5G;
-		float h=1.0f/(Util::hypot3sq(xx/nx2,yy/ny2,zz/nz2)*EMConsts::I5G*2.0+.1);		// gaussian kernel is used as a weight not a kernel. We increase radius of integration with resolution
+//		float h=1.0f/(Util::hypot3sq(xx/nx2,yy/ny2,zz/nz2)*EMConsts::I5G*2.0+.1);		// gaussian kernel is used as a weight not a kernel. We increase radius of integration with resolution. Changed away from this on 11/10/17
+		float h=1.0f/((Util::hypot3sq(xx,yy,zz)/4000)+.15);		// gaussian kernel is used as a weight not a kernel. We increase radius of integration with resolution. Changed away from this on 11/10/17
+		h=h<0.1?0.1:h;	// new formula has h from 0.2 to 5
+//		if (yy==0 &&zz==0) printf("%0.0f\t%0.0f\t%0.0f\t%g\n",xx,yy,zz,h);
 //		printf("%1.0f\t%1.0f\t%1.0f\t%1.4f\n",xx,yy,zz,h);
 		float w=weight;
 
@@ -345,11 +348,13 @@ bool FourierInserter3DMode6::insert_pixel(const float& xx, const float& yy, cons
 					r = Util::hypot3sq((float) i - xx, j - yy, k - zz);
 //					gg=weight;
 					gg = Util::fast_exp(-r *h);
+//					if (gg<.00001) continue;		// skip tiny weights for speed
 //					gg = Util::fast_exp(-r / EMConsts::I2G)*weight;
 //					gg = sqrt(Util::fast_exp(-r / EMConsts::I2G))*weight;
 
 					size_t off;
 					off=data->add_complex_at_fast(i,j,k,dt*gg*w);
+//					if (i==16 && j==7 && k==4) printf("%g\t%g\t%g\t%g\t%g\n",dt.real(),dt.imag(),gg*w,gg,w);
 					norm[off/2]+=gg*w;		// This would use a Gaussian WEIGHT with square kernel
 //					norm[off/2]+=w;			// This would use a Gaussian KERNEL rather than WEIGHT 
 
