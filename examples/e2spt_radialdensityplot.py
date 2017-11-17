@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-from __future__ import print_function
 #
-# Author: Jesus Galaz, 06/05/2012 - Last change 12/17/2012
+# Author: Jesus Galaz, 06/05/2012 - Last change Nov/2017
 # Copyright (c) 2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -29,6 +28,7 @@ from __future__ import print_function
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 
+from __future__ import print_function
 import os, sys, commands
 from EMAN2 import *
 import math
@@ -37,100 +37,62 @@ import numpy as np
 def main():
 
 	progname = os.path.basename(sys.argv[0])
-	usage = """This program allows you to examine density variations along one or more given volume (at the same time).
-				It calculates the mean intensity either for slices (planes) along any the three cartesian axes (X, Y or Z), or for radial consecutive shells of increasing radius, 
+	usage = """This program allows you to examine density variations along one or more volumes.
+				It calculates the mean intensity either for slices (planes) along any of the three cartesian axes (X, Y or Z), 
+				or for radial consecutive shells of increasing radius, 
 				or for cylindrical shells of varying or fixed height, starting from the center of the volume. 
-				All mean density values are saved to .txt files, and plots are produced with them and saved as .png images. In fact, to compare different volumes you can plot all curves in a single plot."""
+				All mean density values are saved to .txt files, and plots are produced from them are saved as .png images. 
+				To compare the density variations across different volumes, you can plot all curves in a single plot.
+				To reduce complexity and anomalies induced by the missign wedge, and option is provided to project the volumes onto 2-D images first."""
 			
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_argument('--path',type=str,default='spt_radialplot',help="""Directory to save 
-		the results.""")
-		
-	parser.add_argument("--input", type=str, help="""Volume whose radial density plot you 
-		want to compute. For multiple volumes, either provide them as an .hdf stack, or 
-		separate them by commas --vols=first.hdf,second.hdf,etc...""", default='')
+	parser.add_argument("--classifymaxpeaks", type=int, default=0, help="""default=0. Number of highest peaks to consider for classification. Amongst the n peaks provided, --classifymaxpeaks=n, the peak occurring at the largest radius will be used as the classifier. If --classifymaxpeaks=1, the highest peak will be the classifier. To smooth the radial density curve consider low pass filtering through --lowpass. To remove aberrant peaks consider masking with --mask.""")
 	
-	parser.add_argument("--mode", type=str, help="""provide --mode=x, y, or z to get the 
-		average density per slice in the indicated direction. 
-		--mode=cylinder for concentric cylindrical shell; default is --mode=sphere.
-		For MULTIPLE modes, separate them by commas, for example --mode=x,y,z,cylinder""", default='sphere')
+	parser.add_argument("--fixedcylinderheight", type=int, default=0, help="""Default=0. Works only if --mode=cylinder, and keeps the height of the cylinder at a constant value, while varying the radius.""")
 	
-	parser.add_argument("--fixedcylinderheight", type=int, help="""Works only if --mode=cylinder, 
-		and keeps the height of the cylinder at a constant value, while varying the radius.""", default=0)
-	
-	parser.add_argument("--mask",type=str,help="""Masking processor (see e2help.py --verbose=10) 
-		applied to each volume prior to radial density plot computation. Default=None.""", default='')
-	
-	parser.add_argument("--normproc",type=str,help="""Normalization processor 
-		(see e2help.py --verbose=10) applied to each volume prior to radial density plot 
-		computation. Default is None.
-		If normalize.mask is used, results of the mask option will be passed in automatically.""", default='')
-	
-	parser.add_argument("--preprocess",type=str,help="""Any processor 
-		(see e2help.py --verbose=10) applied to each volume prior to radial density plot 
-		computation.""", default='')
-	
-	parser.add_argument("--lowpass",type=str,help="""Default=None. A lowpass filtering processor 
-		(see e2help.py --verbose=10) applied to each volume prior to radial density plot 
-		computation.""", default='')
-	
-	parser.add_argument("--highpass",type=str,help="""Default=None. A highpass filtering processor 
-		(see e2help.py --verbose=10) applied to each volume prior to radial density plot 
-		computation.""", default='')	
-		
-	parser.add_argument("--threshold",type=str,help="""Default=None. A threshold  processor 
-		(see e2help.py --verbose=10) applied to each volume prior to radial density plot 
-		computation.""", default='')
-	
-	parser.add_argument("--shrink", type=int,default=1,help="""Default=1 (no shrinking). Optionally shrink the input 
-		volumes by an integer amount.""")	
-	
-	#parser.add_argument("--apix", type=float, help="Provide --apix to overrride the value found in the volumes' header paramter.", default=0)
-	
-	parser.add_argument("--singleplotperfile", action="store_true",default=False,help="""
-		Plot all the Radial Density Profiles of the volumes provided in each .hdf stack in 
-		one single plot.""")	
-	
-	parser.add_argument("--singlefinalplot", action="store_true",default=False,help="""Plot 
-		all the Radial Density Profiles of the volumes provided in all .hdf stacks in one 
-		FINAL single 'master' plot.""")	
+	parser.add_argument("--highpass", type=str, default=None, help="""default=none. A highpass filtering processor (see e2help.py --verbose=10) applied to each volume prior to radial density plot computation.""")	
 
-	parser.add_argument("--normalizeplot", action="store_true",default=False,help="""This 
-		will make the maximum density in each plot or curve equal to 1.""")
+	parser.add_argument("--input", type=str, default=None, help="""Volume whose radial density plot you want to compute. For multiple volumes, either provide them as an .hdf stack, or separate them by commas --vols=first.hdf,second.hdf,etc...""")
 	
-	parser.add_argument("--savetxt", action="store_true",default=False,help="""Save plot
-		files as .txt, so that they can be replotted with other software if necessary.""")
+	parser.add_argument("--lowpass", type=str, default=None, help="""default=None. A lowpass filtering processor (see e2help.py --verbose=10) applied to each volume prior to radial density plot computation.""")
+
+	parser.add_argument("--mask", type=str, default=None, help="""default=none. Masking processor (see e2help.py --verbose=10) applied to each volume prior to radial density plot computation.""")
+
+	parser.add_argument("--mode", type=str, default='sphere', help="""default=sphere. provide --mode=x, y, or z to get the average density per slice in the indicated direction. --mode=cylinder for concentric cylindrical shells. For MULTIPLE modes, separate them by commas, for example --mode=x,y,z,cylinder""")
+
+	parser.add_argument("--normproc", type=str, default=None, help="""default=none. Normalization processor (see e2help.py --verbose=10) applied to each volume prior to radial density plot computation. If normalize.mask is used, results of the mask option will be passed in automatically.""")
 	
-	parser.add_argument("--ppid", type=int, help="""Set the PID of the parent process, 
-		used for cross platform PPID""",default=-1)
+	parser.add_argument("--normalizeplot", action="store_true",default=False,help="""default=false. This will make the maximum density in each plot or curve equal to 1.""")
 	
-	parser.add_argument("--verbose", "-v", default=0, help="""Verbose level [0-9], higner 
-		number means higher level of verboseness""",dest="verbose", action="store", metavar="n",type=int)
+	parser.add_argument('--path', type=str, default='spt_radialplot', help="""Directory to save the results.""")	
 	
-	parser.add_argument("--sym", dest = "sym", default='c1', help = """Symmetry to impose 
-		- choices are: c<n>, d<n>, h<n>, tet, oct, icos.
-		For this to make any sense in the context of this program, the particles need to be
-		aligned to the symmetry axis first, which can be accomplished by running them 
-		through e2symsearch3d.py.""")
+	parser.add_argument("--preprocess", type=str, default=None, help="""Any processor (see e2help.py --verbose=10) applied to each volume prior to radial density plot computation.""")
+		
+	parser.add_argument("--savetxt", action="store_true", default=False, help="""default=false. Save plot files as .txt, so that they can be replotted with other software if necessary.""")
+
+	parser.add_argument("--shrink", type=int, default=0, help="""default=0 (not used). Optionally shrink the input volumes by an integer amount.""")	
 	
-	parser.add_argument("--classifymaxpeaks",type=int,default=0, help="""Number of highest 
-		peaks to consider for classification. Amongst the n peaks provided, --classifymaxpeaks=n,
-		the peak occurring at the largest radius will be used as the classifier.
-		If --classifymaxpeaks=1, the highest peak will be the classifier.
-		To smooth the radial density curve consider low pass filtering through --lowpass.
-		To remove aberrant peaks consider masking with --mask.""")
+	parser.add_argument("--singlefinalplot", action="store_true", default=False, help="""default=false. Plot all the Radial Density Profiles of the volumes provided in all .hdf stacks in one FINAL single 'master' plot.""")	
+
+	parser.add_argument("--singleplotperfile", action="store_true", default=False, help="""default=false. Plot all the Radial Density Profiles of the volumes provided in each .hdf stack in one single plot.""")	
 	
-	parser.add_argument("--subset",type=int,default=0,help="""An n-subset of particles from
-		--input to use.""")
+	parser.add_argument("--subset", type=int, default=0, help="""An n-subset of particles from --input to use.""")
+
+	parser.add_argument("--sym", dest = "sym", default='c1', help ="""default=c1. Symmetry to impose choices are: c<n>, d<n>, h<n>, tet, oct, icos. For this to make any sense in the context of this program, the particles need to be aligned to the symmetry axis first, which can be accomplished by running them through e2symsearch3d.py.""")
+			
+	parser.add_argument("--threshold", type=str, default=None, help="""default=None. A threshold  processor (see e2help.py --verbose=10) applied to each volume prior to radial density plot computation.""")
+		
+	parser.add_argument("--ppid", type=int, help="""Set the PID of the parent process, used for cross platform PPID""",default=-1)
+	
+	parser.add_argument("--verbose", "-v", default=0, help="""default=0. Verbose level [0-9], higner number means higher level of verboseness""",dest="verbose", action="store", metavar="n", type=int)
 	
 	(options, args) = parser.parse_args()
 	
 	import matplotlib.pyplot as plt
-	#from matplotlib.ticker import MaxNLocator
 	
-	from e2spt_classaverage import sptmakepath
-	options = sptmakepath(options,'spt_radialplot')
+	from EMAN2_utils import makepath, runcmd, sptOptionsParser
+	options = makepath(options,'spt_radialplot')
 	
 	if not options.input:
 		parser.print_help()
@@ -142,32 +104,35 @@ def main():
 		subsetcmd = 'e2proc3d.py ' + options.input + ' ' + subsetStack + ' --first=0 --last=' + str(options.subset-1) 
 		print("Subset cmd is", subsetcmd)
 		
-		p=subprocess.Popen( subsetcmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE )
-		text=p.communicate()	
-		p.stdout.close()
+		runcmd(subsetcmd)
+		#p=subprocess.Popen( subsetcmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE )
+		#text=p.communicate()	
+		#p.stdout.close()
 		
 		options.input = subsetStack
 	
 	
 	logger = E2init(sys.argv, options.ppid)
 
-	if options.normproc: 
-		options.normproc=parsemodopt(options.normproc)
+	options = sptOptionsParser(options)
+
+	#if options.normproc: 
+	#	options.normproc=parsemodopt(options.normproc)
 	
-	if options.mask: 
-		options.mask=parsemodopt(options.mask)
+	#if options.mask: 
+	#	options.mask=parsemodopt(options.mask)
 	
-	if options.preprocess: 
-		options.preprocess=parsemodopt(options.preprocess)
+	#if options.preprocess: 
+	#	options.preprocess=parsemodopt(options.preprocess)
 		
-	if options.lowpass: 
-		options.lowpass=parsemodopt(options.lowpass)
+	#if options.lowpass: 
+	#	options.lowpass=parsemodopt(options.lowpass)
 	
-	if options.highpass: 
-		options.highpass=parsemodopt(options.highpass)
+	#if options.highpass: 
+	#	options.highpass=parsemodopt(options.highpass)
 	
-	if options.threshold: 
-		options.threshold=parsemodopt(options.threshold)
+	#if options.threshold: 
+	#	options.threshold=parsemodopt(options.threshold)
 			
 	files = options.input
 	files = files.split(',')
@@ -175,8 +140,9 @@ def main():
 	for i in xrange(0,len(files)):
 		for j in range(i+1,len(files)):
 			if files[i] == files[j]:
-				print("ERROR: You have supplied a file twice, see", files[i],files[j])
-				sys.exit()
+				print("ERROR: You have supplied a file twice, see file[i]={}, file[j]={}".format(files[i],files[j]) )
+				sys.exit(1)
+
 	modes=options.mode.split(',')
 	
 	for m in modes:
@@ -193,7 +159,7 @@ def main():
 		for i in files:	
 			n = EMUtil.get_image_count(i)
 			
-			print("The stack %s has %d images in it" % ( i, n )) 
+			print("Stack={} has n={} images in it".format( i, n )) 
 			
 			kk=0
 			stack={}
@@ -214,7 +180,7 @@ def main():
 				maxsall.update({ uniquetag:maxima })
 				minsall.update({ uniquetag:minima })	
 
-				print("For file %s img number %d the max is %f" %(i,j,max(values)))
+				print("For file={} img number={} the max={}".format(i,j,max(values)))
 				
 				if options.normalizeplot:
 					
@@ -225,7 +191,7 @@ def main():
 					maxv = max(values)
 					for v in range(len(values)):	
 						values[v] = values[v]/maxv	
-					print("Therefore, max is", max(values))
+					print("Therefore, max={}".format(max(values)))
 				
 				id=i.replace('.',suffix + '.')
 				stackvalues.append([id,values])
@@ -343,7 +309,7 @@ def classifymax( options, maxsall ):
 		#print "\nimgfile is", imgfile
 		
 		ptclindx = int(f.split('_indxtag')[-1])
-		print("ptclindx is", ptclindx)
+		print("\nptclindx is", ptclindx)
 		
 		maxs = maxsall[f]
 		print("\nmaxs are", maxs)
@@ -358,7 +324,7 @@ def classifymax( options, maxsall ):
 		for p in twoPeaks:
 			pixelvals.append(p[0])
 		
-		print("therefore pixelvals are", pixelvals)
+		print("\ntherefore pixelvals are", pixelvals)
 		
 		maxRadPixel = max(pixelvals)
 		if options.shrink:
@@ -368,7 +334,7 @@ def classifymax( options, maxsall ):
 		sizeClasses.add( maxRadPixel )
 		particlesByRadius.update( { f:maxRadPixel } )
 	
-	print("There are these many sizeClasses", len (sizeClasses), sizeClasses)
+	print("\nThere are these many sizeClasses", len (sizeClasses), sizeClasses)
 	for radius in sizeClasses:
 		
 		print("Analyzing class of size", radius)
@@ -552,7 +518,7 @@ def calc_dimension(a):
 	if nx >1 and ny > 1 and nz > 1:
 		dimensionality = 3
 	
-	return (dimensionality)
+	return dimensionality
 
 
 def direction(a,options):
@@ -560,8 +526,8 @@ def direction(a,options):
 	dimensionality = calc_dimension(a)
 	if dimensionality < 2:
 		if dimensionality == 0:
-			print("Your image is a point. There's nothing to analyze. Perhaps you over shrunk")
-			sys.exit()
+			print("Your image is a point. There's nothing to analyze. Perhaps you overshrunk/overbinned it.")
+			sys.exit(1)
 	x = a['nx']
 	y = a['ny']
 	z = a['nz']
@@ -600,8 +566,8 @@ def direction(a,options):
 			if dimensionality == 3:
 				maskslice = mask.process("mask.zeroedge3d",{'x0':0,'x1':0,'y0':0,'y1':0,'z0':i,'z1':a['nz'] -i -1})
 			else:
-				print("ERROR: It makes no sense to look for density variations across z y a 2D image")
-				sys.exit()	
+				print("\nERROR: It makes no sense to look for density variations across z y a 2D image")
+				sys.exit(1)	
 		b = a.copy()
 		b.mult(maskslice)
 		#print "The mask was applied.\n"
