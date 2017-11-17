@@ -247,6 +247,19 @@ def runcmd(options,cmd,cmdsfilepath=''):
 	return 1
 
 
+def clip3d( vol, size ):
+	
+	volxc = vol['nx']/2
+	volyc = vol['ny']/2
+	volzc = vol['nz']/2
+	
+	Rvol =  Region( (2*volxc - size)/2, (2*volyc - size)/2, (2*volzc - size)/2, size , size , size)
+	vol.clip_inplace( Rvol )
+	#vol.process_inplace('mask.sharp',{'outer_radius':-1})
+	
+	return vol
+
+
 def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ralign=None, alircmp=("dot",{}),shrink=None,mask=None,subset=None,prefilt=False,verbose=0):
 	"""Compares one image (target) to a list of many images (reflist). Returns """
 
