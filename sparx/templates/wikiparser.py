@@ -252,6 +252,11 @@ def handle_exceptional_cases(sxcmd):
 		assert(sxcmd.token_dict["locres_volume"].key_base == "locres_volume")
 		assert(sxcmd.token_dict["locres_volume"].type == "output")
 		sxcmd.token_dict["locres_volume"].type = "image"
+	elif sxcmd.name == "sxpipe":
+		if sxcmd.subname == "organize_micrographs":
+			assert(sxcmd.token_dict["output_directory"].key_base == "output_directory")
+			assert(sxcmd.token_dict["output_directory"].type == "output")
+			sxcmd.token_dict["output_directory"].type = "string"
 
 # ----------------------------------------------------------------------------------------
 def remove_MoinMoinWiki_makeup(target_text):

@@ -299,7 +299,7 @@ def organize_micrographs(args):
 	# Check error condition of input micrograph file path list
 	print_progress("Found %d microgarphs in %s."%(len(input_mic_path_list), input_dir))
 	if len(input_mic_path_list) == 0:
-		ERROR("No micrograph files are found in the directory specified by micrograph path pattern (%s). Please check input_micrograph_pattern argument and restart the program."%(input_dir)) # action=1 - fatal error, exit
+		ERROR("No micrograph files are found in the directory specified by micrograph path pattern (%s). Please check input_micrograph_pattern argument and restart the program."%(input_dir), subcommand_name) # action=1 - fatal error, exit
 	assert (len(input_mic_path_list) > 0)
 	
 	# Register micrograph id substrings to the global entry dictionary
@@ -364,7 +364,7 @@ def organize_micrographs(args):
 	# Check error condition of micrograph entry lists
 	print_progress("Found %d microgarph entries in %s."%(len(selected_mic_path_list), args.input_selection_list))
 	if len(selected_mic_path_list) == 0:
-		ERROR("No micrograph entries are found in the selection list file. Please check input_selection_list option and restart the program."%(input_dir)) # action=1 - fatal error, exit
+		ERROR("No micrograph entries are found in the selection list file (%s). Please check input_selection_list option and restart the program."%(args.input_selection_list), subcommand_name) # action=1 - fatal error, exit
 	assert (len(selected_mic_path_list) > 0)
 	
 	selected_mic_directory = os.path.dirname(selected_mic_path_list[0])
