@@ -1,0 +1,61 @@
+= Name =
+sxpipe organize_micrographs - Organize micrographs: Organize micrographs by moving micrographs in a selecting file from input directory (specified by input micrographs pattern) to output directory.
+
+
+= Usage =
+
+''usage in command line''
+
+sxpipe.py  organize_micrographs  input_micrograph_pattern  input_selection_list  output_directory  --reverse  --check_consistency
+
+
+=== Typical usage ===
+
+sxpipeline.py organize_micrographs does not support MPI. 
+
+
+ 1. Normal Operation Mode: The program moves micrographs in selecting list from input directory to output directory.
+
+''' sxpipe.py organize_micrographs 'CorrectedSums/corrsum/TcdA1-*_frames_sum.mrc' 'CTFest/Tutorial_micrographs_discard.txt' 'CorrectedSums/DISCARDED' '''
+
+ 2. Reverse Operation Mode: The program moves micrographs in selecting list from output directory to input directory.
+
+''' sxpipe.py organize_micrographs 'CorrectedSums/corrsum/TcdA1-*_frames_sum.mrc' 'CTFest/Tutorial_micrographs_discard.txt' 'CorrectedSums/MRK_DISCARDED'  --reverse '''
+
+
+== Input ==
+    input_micrograph_pattern:: Input micrograph path pattern: Specify path pattern of input micrographs with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (\') or double quotes (\"). (Note: sxgui.py automatically adds single quotes (\')). The substring at the variable part must be same between the associated pair of input micrograph and coordinates file. bdb files cannot be selected as input micrographs. (default required string)
+    input_selection_list:: Input micrograph selecting list: Specify a name of text file containing a list of selected micrograph names or paths. The file extension must be '.txt'. The directory path of each entry will be ignored if there is. (default required string)
+    
+    reverse:: Reverse operation: Move back micrographs from output directory to input directory. Please use this option to restore the previously-moved micrographs. (default False)
+    
+    * The remaining parameters are optional.
+    check_consistency:: Check consistency of inputs: Create a text file containing the list of Micrograph ID entries might have inconsitency among inputs (i.e. mic_consistency_check_info.txt). (default False)
+
+== Output ==
+    output_directory:: Output directory: The micrographs in selecting list will be moved to this directory. This directory will be created automatically if it does not exist. (default required string)
+
+
+= Description =
+
+= Method =
+
+= Reference =
+
+
+= Author / Maintainer =
+Toshio Moriya
+
+= Keywords =
+ category 1:: APPLICATIONS
+
+= Files =
+sparx/bin/sxpipe.py
+
+= See also =
+
+= Maturity =
+ alpha::     under development
+
+= Bugs =
+Under development

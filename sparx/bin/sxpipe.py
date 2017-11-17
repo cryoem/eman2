@@ -185,19 +185,19 @@ def isac_substack(args):
 # TEST COMMAND
 # cd /home/moriya/SPHIRE-demo/Precalculated-Results
 # 
-# sxpipe.py organize_micrographs 'CorrectedSums/corrsum/TcdA1-*_frames_sum.mrc' 'CorrectedSums/MRK_DISCARDED' 'CTFest/Tutorial_micrographs_discard.txt'  --check_consistency 2>&1 | tee sxpipe_organize_micrographs01.log
+# sxpipe.py organize_micrographs 'CorrectedSums/corrsum/TcdA1-*_frames_sum.mrc' 'CTFest/Tutorial_micrographs_discard.txt' 'CorrectedSums/MRK_DISCARDED' --check_consistency 2>&1 | tee sxpipe_organize_micrographs01.log
 # 
-# sxpipe.py organize_micrographs 'CorrectedSums/corrsum/TcdA1-*_frames_sum.mrc' 'CorrectedSums/MRK_DISCARDED' 'CTFest/Tutorial_micrographs_discard.txt'  --reverse  --check_consistency 2>&1 | tee sxpipe_organize_micrographs02.log
+# sxpipe.py organize_micrographs 'CorrectedSums/corrsum/TcdA1-*_frames_sum.mrc' 'CTFest/Tutorial_micrographs_discard.txt' 'CorrectedSums/MRK_DISCARDED' --reverse --check_consistency 2>&1 | tee sxpipe_organize_micrographs02.log
 # 
-# sxpipe.py organize_micrographs 'CorrectedSums/corrsum/TcdA1-*_frames_sum.mrc' 'CorrectedSums/MRK_DISCARDED' 'CTFest/Tutorial_micrographs_discard.txt'  --check_consistency 2>&1 | tee sxpipe_organize_micrographs03.log
+# sxpipe.py organize_micrographs 'CorrectedSums/corrsum/TcdA1-*_frames_sum.mrc' 'CTFest/Tutorial_micrographs_discard.txt' 'CorrectedSums/MRK_DISCARDED' --check_consistency 2>&1 | tee sxpipe_organize_micrographs03.log
 # 
 # cp -r CorrectedSums/MRK_DISCARDED CorrectedSums/MRK_DISCARDED_DUPLICATED
 # 
-# sxpipe.py organize_micrographs 'CorrectedSums/corrsum/TcdA1-*_frames_sum.mrc' 'CorrectedSums/MRK_DISCARDED' 'CTFest/Tutorial_micrographs_discard.txt'  --reverse  --check_consistency 2>&1 | tee sxpipe_organize_micrographs04.log
+# sxpipe.py organize_micrographs 'CorrectedSums/corrsum/TcdA1-*_frames_sum.mrc' 'CTFest/Tutorial_micrographs_discard.txt' 'CorrectedSums/MRK_DISCARDED' --reverse --check_consistency 2>&1 | tee sxpipe_organize_micrographs04.log
 # 
-# sxpipe.py organize_micrographs 'CorrectedSums/corrsum/TcdA1-*_frames_sum.mrc' 'CorrectedSums/MRK_DISCARDED_DUPLICATED' 'CTFest/Tutorial_micrographs_discard.txt'  --check_consistency 2>&1 | tee sxpipe_organize_micrographs05.log
+# sxpipe.py organize_micrographs 'CorrectedSums/corrsum/TcdA1-*_frames_sum.mrc' 'CTFest/Tutorial_micrographs_discard.txt' 'CorrectedSums/MRK_DISCARDED_DUPLICATED' --check_consistency 2>&1 | tee sxpipe_organize_micrographs05.log
 # 
-# sxpipe.py organize_micrographs 'CorrectedSums/corrsum/TcdA1-*_frames_sum.mrc' 'CorrectedSums/MRK_DISCARDED_DUPLICATED' 'CTFest/Tutorial_micrographs_discard.txt'  --reverse  --check_consistency 2>&1 | tee sxpipe_organize_micrographs06.log
+# sxpipe.py organize_micrographs 'CorrectedSums/corrsum/TcdA1-*_frames_sum.mrc' 'CTFest/Tutorial_micrographs_discard.txt' 'CorrectedSums/MRK_DISCARDED_DUPLICATED' --reverse  --check_consistency 2>&1 | tee sxpipe_organize_micrographs06.log
 # 
 # ----------------------------------------------------------------------------------------
 def organize_micrographs(args):
@@ -219,12 +219,16 @@ def organize_micrographs(args):
 	# Check error conditions
 	# ------------------------------------------------------------------------------------
 	subcommand_name = "organize_micrographs"
+	
 	if input_mic_pattern.find("*") == -1:
 		ERROR("Input micrograph path pattern must contain wild card (*). Please check input_micrograph_pattern argument. Please correct input_micrograph_pattern argument and restart the program.", subcommand_name) # action=1 - fatal error, exit
 	
-	if not os.path.exists(args.selection_list):
+	if os.path.splitext(args.input_selection_list)[1] != ".txt":
+		ERROR("The extension of input micrograph selecting list file must \'.txt\'. Please choose correct file or change the file extension, and restart the program.", subcommand_name) # action=1 - fatal error, exit
+	
+	if not os.path.exists(args.input_selection_list):
 		ERROR("Input micrograph selecting list file does not exist. Please correct the file path and restart the program.", subcommand_name) # action=1 - fatal error, exit
-	assert (os.path.exists(args.selection_list))
+	assert (os.path.exists(args.input_selection_list))
 	
 	# ------------------------------------------------------------------------------------
 	# Define operation mode information
@@ -355,12 +359,12 @@ def organize_micrographs(args):
 	# Generate micrograph lists according to the execution mode
 	print(" ")
 	print_progress("Checking the selection list...")
-	selected_mic_path_list = read_text_file(args.selection_list)
+	selected_mic_path_list = read_text_file(args.input_selection_list)
 	
 	# Check error condition of micrograph entry lists
-	print_progress("Found %d microgarph entries in %s."%(len(selected_mic_path_list), args.selection_list))
+	print_progress("Found %d microgarph entries in %s."%(len(selected_mic_path_list), args.input_selection_list))
 	if len(selected_mic_path_list) == 0:
-		ERROR("No micrograph entries are found in the selection list file. Please check selection_list option and restart the program."%(input_dir)) # action=1 - fatal error, exit
+		ERROR("No micrograph entries are found in the selection list file. Please check input_selection_list option and restart the program."%(input_dir)) # action=1 - fatal error, exit
 	assert (len(selected_mic_path_list) > 0)
 	
 	selected_mic_directory = os.path.dirname(selected_mic_path_list[0])
@@ -453,7 +457,7 @@ def organize_micrographs(args):
 				# Check if associated micrograph basename exists in selection list
 				if not subkey_selected_mic_basename in mic_id_entry:
 					mic_basename = mic_basename_pattern.replace("*", mic_id_substr)
-					consistency_messages.append("    associated micrograph (%s) is not in selection list (%s)."%(mic_basename, args.selection_list))
+					consistency_messages.append("    associated micrograph (%s) is not in selection list (%s)."%(mic_basename, args.input_selection_list))
 			
 				if len(consistency_messages) > 0:
 					mic_consistency_check_info_file.write("Micrograph ID %s might have problems with consistency among the provided dataset:\n"%(mic_id_substr))
@@ -556,7 +560,7 @@ def organize_micrographs(args):
 				# Check if associated micrograph basename exists in selection list
 				if not subkey_selected_mic_basename in mic_id_entry:
 					mic_basename = mic_basename_pattern.replace("*", mic_id_substr)
-					consistency_messages.append("    associated micrograph (%s) is not in selection list (%s)."%(mic_basename, args.selection_list))
+					consistency_messages.append("    associated micrograph (%s) is not in selection list (%s)."%(mic_basename, args.input_selection_list))
 			
 				# Check if associated micrograph path does not exist in output directory
 				if subkey_output_mic_path in mic_id_entry:
@@ -634,7 +638,7 @@ def organize_micrographs(args):
 	
 	if len(valid_mic_id_substr_list) > 0:
 		print(" ")
-		print_progress("Moving micrographs in selecting list (%s) from input directory (%s) to output directory (%s)..."%(args.selection_list, input_dir, output_dir))
+		print_progress("Moving micrographs in selecting list (%s) from input directory (%s) to output directory (%s)..."%(args.input_selection_list, input_dir, output_dir))
 		### print("Micrographs processed (including percent of progress):")
 		### progress_percent_step = len(valid_mic_id_substr_list)*0.1 # Report every 10% of the number of micrograms
 
@@ -693,10 +697,10 @@ def main():
 	# create the parser for the "organize_micrographs" command
 	parser_organize_micrographs = subparsers.add_parser("organize_micrographs", help="Organize micrographs: Organize micrographs by moving micrographs in a selecting file from input directory (specified by input micrographs pattern) to output directory.")
 	parser_organize_micrographs.add_argument("input_micrograph_pattern", type=str,                                help="Input micrograph path pattern: Specify path pattern of input micrographs with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (\') or double quotes (\"). (Note: sxgui.py automatically adds single quotes (\')). The substring at the variable part must be same between the associated pair of input micrograph and coordinates file. bdb files can not be selected as input micrographs. (default required string)")
+	parser_organize_micrographs.add_argument("input_selection_list",     type=str,                                help="Input micrograph selecting list: Specify a name of text file containing a list of selected micrograph names or paths. The file extension must be \'.txt\'. The directory path of each entry will be ignored if there is. (default required string)")
 	parser_organize_micrographs.add_argument("output_directory",         type=str,                                help="Output directory: The micrographs in selecting list will be moved to this directory. This directory will be created automatically if it does not exist. (default required string)")
-	parser_organize_micrographs.add_argument("selection_list",           type=str,                                help="Micrograph selecting list: Specify a name of text file containing a list of selected micrograph names or paths. The directory path of each entry will be ignored if there is. (default required string)")
 	parser_organize_micrographs.add_argument("--reverse",                action="store_true",  default=False,     help="Reverse operation: Move back micrographs from output directory to input directory. Please use this option to restore the moved micrographs. (default False)")
-	parser_organize_micrographs.add_argument("--check_consistency",      action="store_true",  default=False,     help="Check consistency of input dataset: Create a text file containing the list of Micrograph ID entries might have inconsitency (i.e. mic_consistency_check_info.txt). (default False)")
+	parser_organize_micrographs.add_argument("--check_consistency",      action="store_true",  default=False,     help="Check consistency of inputs: Create a text file containing the list of Micrograph ID entries might have inconsitency among inputs. (i.e. mic_consistency_check_info.txt). (default False question reversed in GUI)")
 	parser_organize_micrographs.set_defaults(func=organize_micrographs)
 	
 	# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
