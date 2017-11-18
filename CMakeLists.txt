@@ -358,12 +358,12 @@ find_package(Nosetests)
 foreach(t ${test_methods})
 	add_test(NAME ${t}
 			COMMAND ${NOSETESTS_EXECUTABLE} -v -m "^test_*" -a \!broken
-					${CMAKE_INSTALL_PREFIX}/test/rt/pyem/${t}
+					${CMAKE_SOURCE_DIR}/rt/pyem/${t}
 			)
 endforeach()
 
 add_custom_target(test-verbose-broken
-		COMMAND ${NOSETESTS_EXECUTABLE} -v -m "^test_*" -a broken ${CMAKE_INSTALL_PREFIX}/test/rt/pyem/*
+		COMMAND ${NOSETESTS_EXECUTABLE} -v -m "^test_*" -a broken ${CMAKE_SOURCE_DIR}/rt/pyem/*
 		)
 
 file(READ ${CMAKE_SOURCE_DIR}/tests/test_imports.py py_imports_list)
