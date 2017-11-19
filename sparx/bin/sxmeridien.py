@@ -8171,7 +8171,6 @@ def update_memory_estimation():
 		data_size    = total_stack*4*float(image_size**2)/float(Blockdata["no_of_groups"])/1.0e9
 		volume_size  = (1.5*4*(2.0*image_size+3.0)**3)/1.e9
 		#nnprocs = Blockdata["no_of_processes_per_group"]
-		print(Tracker["constants"]["memory_per_node"])
 		nnprocs = min(Blockdata["no_of_processes_per_group"], int(((Tracker["constants"]["memory_per_node"] - data_size*1.2)/volume_size)))
 		print("  MEMORY ESTIMATION.  memory per node = %6.1fGB,  volume size = %6.2fGB, data size per node = %6.2fGB, estimated number of CPUs = %d"%(Tracker["constants"]["memory_per_node"],volume_size,data_size,nnprocs))
 		memory_per_cpu_3d = data_size/Blockdata["no_of_processes_per_group"]*1.2 + volume_size
