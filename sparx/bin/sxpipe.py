@@ -32,7 +32,6 @@ from __future__ import print_function
 # Imports
 # ========================================================================================
 # Python Standard Libraries
-from __future__ import print_function
 import sys
 import os
 import argparse
@@ -61,6 +60,14 @@ def print_progress(message):
 	from time import strftime, localtime
 	time_stamp = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	print(time_stamp, message)
+
+# ----------------------------------------------------------------------------------------
+# Get suffix of current time stamp
+# ----------------------------------------------------------------------------------------
+def get_time_stamp_suffix():
+	from time import strftime, localtime
+	time_stamp_suffix = strftime("%Y%m%d_%H%M%S", localtime())
+	return time_stamp_suffix
 
 # ========================================================================================
 # Subcommand functions
@@ -116,10 +123,11 @@ def isac_substack(args):
 	
 	# Copy the header from input to output BDB dictionary
 	n_img_detected = len(isac_substack_particle_id_list)
-	print_progress("Detected %d ISAC validated particles in %s"%(n_img_detected, args.input_isac_class_avgs_path))
 	print(" ")
+	print_progress("Detected %d ISAC validated particles in %s"%(n_img_detected, args.input_isac_class_avgs_path))
 	
 	# Loop through all ISAC validated particles
+	print(" ")
 	n_img_processed = 0
 	n_img_of_10_percent = n_img_detected // 10
 	for i_img_detected, isac_substack_particle_id in enumerate(isac_substack_particle_id_list):
@@ -176,11 +184,25 @@ def isac_substack(args):
 # ----------------------------------------------------------------------------------------
 # TEST COMMAND
 # cd /home/moriya/SPHIRE-demo/Precalculated-Results
-# sxpipe.py organize_micrographs 'CorrectedSums/corrsum/TcdA1-*_frames_sum.mrc' 'CorrectedSums/discard_corrsum' 'CTFest/Tutorial_micrographs_discard.txt' --check_consistency
+# 
+# sxpipe.py organize_micrographs 'CorrectedSums/corrsum/TcdA1-*_frames_sum.mrc' 'CTFest/Tutorial_micrographs_discard.txt' 'CorrectedSums/MRK_DISCARDED' --check_consistency 2>&1 | tee sxpipe_organize_micrographs01.log
+# 
+# sxpipe.py organize_micrographs 'CorrectedSums/corrsum/TcdA1-*_frames_sum.mrc' 'CTFest/Tutorial_micrographs_discard.txt' 'CorrectedSums/MRK_DISCARDED' --reverse --check_consistency 2>&1 | tee sxpipe_organize_micrographs02.log
+# 
+# sxpipe.py organize_micrographs 'CorrectedSums/corrsum/TcdA1-*_frames_sum.mrc' 'CTFest/Tutorial_micrographs_discard.txt' 'CorrectedSums/MRK_DISCARDED' --check_consistency 2>&1 | tee sxpipe_organize_micrographs03.log
+# 
+# cp -r CorrectedSums/MRK_DISCARDED CorrectedSums/MRK_DISCARDED_DUPLICATED
+# 
+# sxpipe.py organize_micrographs 'CorrectedSums/corrsum/TcdA1-*_frames_sum.mrc' 'CTFest/Tutorial_micrographs_discard.txt' 'CorrectedSums/MRK_DISCARDED' --reverse --check_consistency 2>&1 | tee sxpipe_organize_micrographs04.log
+# 
+# sxpipe.py organize_micrographs 'CorrectedSums/corrsum/TcdA1-*_frames_sum.mrc' 'CTFest/Tutorial_micrographs_discard.txt' 'CorrectedSums/MRK_DISCARDED_DUPLICATED' --check_consistency 2>&1 | tee sxpipe_organize_micrographs05.log
+# 
+# sxpipe.py organize_micrographs 'CorrectedSums/corrsum/TcdA1-*_frames_sum.mrc' 'CTFest/Tutorial_micrographs_discard.txt' 'CorrectedSums/MRK_DISCARDED_DUPLICATED' --reverse  --check_consistency 2>&1 | tee sxpipe_organize_micrographs06.log
 # 
 # ----------------------------------------------------------------------------------------
 def organize_micrographs(args):
 	import glob
+	import shutil
 	from utilities import read_text_file
 	
 	# To make the execution exit upon fatal error by ERROR in global_def.py
@@ -192,15 +214,48 @@ def organize_micrographs(args):
 	# Use short names for arguments and options
 	input_mic_pattern = args.input_micrograph_pattern
 	output_dir = args.output_directory
-	
+
+	# ------------------------------------------------------------------------------------
 	# Check error conditions
-	subcommand_name = "move_micrographs"
+	# ------------------------------------------------------------------------------------
+	subcommand_name = "organize_micrographs"
+	
 	if input_mic_pattern.find("*") == -1:
 		ERROR("Input micrograph path pattern must contain wild card (*). Please check input_micrograph_pattern argument. Please correct input_micrograph_pattern argument and restart the program.", subcommand_name) # action=1 - fatal error, exit
 	
-	if not os.path.exists(args.selection_list):
+	if os.path.splitext(args.input_selection_list)[1] != ".txt":
+		ERROR("The extension of input micrograph selecting list file must \'.txt\'. Please choose correct file or change the file extension, and restart the program.", subcommand_name) # action=1 - fatal error, exit
+	
+	if not os.path.exists(args.input_selection_list):
 		ERROR("Input micrograph selecting list file does not exist. Please correct the file path and restart the program.", subcommand_name) # action=1 - fatal error, exit
-	assert (os.path.exists(args.selection_list))
+	assert (os.path.exists(args.input_selection_list))
+	
+	# ------------------------------------------------------------------------------------
+	# Define operation mode information
+	# ------------------------------------------------------------------------------------
+	# Micrograph basename pattern (directory path is removed from micrograph path pattern)
+	mic_basename_pattern = os.path.basename(input_mic_pattern)
+	input_dir = os.path.dirname(input_mic_pattern)
+	record_dir = output_dir # always use the original output directory for recording generated information
+	
+	# Swap input directory and output directory if necessary
+	if not args.reverse:
+		print(" ")
+		print_progress("Running with Normal Operation Mode... ")
+	else:
+		assert (args.reverse)
+		print(" ")
+		print_progress("Running with Reverse Operation Mode... ")
+		output_dir = input_dir
+		input_dir = record_dir
+		input_mic_pattern = os.path.join(input_dir, mic_basename_pattern)
+	
+	print_progress("Input micrograph basename pattern  : %s"%(input_mic_pattern))
+	print_progress("Input directory                    : %s"%(input_dir))
+	print_progress("Output directory                   : %s"%(output_dir))
+	print_progress("Recording directory                : %s"%(record_dir))
+	print(" ")
+	
 
 	# --------------------------------------------------------------------------------
 	# Prepare variables
@@ -218,9 +273,6 @@ def organize_micrographs(args):
 	
 	# List keeps only id substrings of micrographs whose all necessary information are available
 	valid_mic_id_substr_list = [] 
-
-	# Micrograph basename pattern (directory path is removed from micrograph path pattern)
-	mic_basename_pattern = os.path.basename(input_mic_pattern)
 	
 	# Prefix and suffix of micrograph basename pattern 
 	# to find the head/tail indices of micrograph id substring
@@ -233,7 +285,7 @@ def organize_micrographs(args):
 	output_mic_pattern = None
 	if os.path.exists(output_dir):
 		print(" ")
-		print_progress("Output directory (%s) exists. The program will move duplicated micrographs in output directoy to \'duplicates_DATE_TIME\' directory if there are any."%(output_dir))
+		print_progress("The output directory (%s) already exists. "%(output_dir))
 		output_mic_pattern = os.path.join(output_dir, mic_basename_pattern)
 	
 	# --------------------------------------------------------------------------------
@@ -245,9 +297,9 @@ def organize_micrographs(args):
 	print_progress("Checking the input directory...")
 	input_mic_path_list = glob.glob(input_mic_pattern)
 	# Check error condition of input micrograph file path list
-	print("Found %d microgarphs in %s."%(len(input_mic_path_list), os.path.dirname(input_mic_pattern)))
+	print_progress("Found %d microgarphs in %s."%(len(input_mic_path_list), input_dir))
 	if len(input_mic_path_list) == 0:
-		ERROR("No micrograph files are found in the directory specified by micrograph path pattern (%s). Please check input_micrograph_pattern argument and restart the program."%(os.path.dirname(input_mic_pattern))) # action=1 - fatal error, exit
+		ERROR("No micrograph files are found in the directory specified by micrograph path pattern (%s). Please check input_micrograph_pattern argument and restart the program."%(input_dir), subcommand_name) # action=1 - fatal error, exit
 	assert (len(input_mic_path_list) > 0)
 	
 	# Register micrograph id substrings to the global entry dictionary
@@ -279,7 +331,7 @@ def organize_micrographs(args):
 		print_progress("Checking the output directory...")
 		output_mic_path_list = glob.glob(output_mic_pattern)
 		# Check error condition of input micrograph file path list
-		print("Found %d microgarphs in %s."%(len(output_mic_path_list), output_dir))
+		print_progress("Found %d microgarphs in %s."%(len(output_mic_path_list), output_dir))
 		
 		# Register micrograph id substrings to the global entry dictionary
 		for output_mic_path in output_mic_path_list:
@@ -305,18 +357,19 @@ def organize_micrographs(args):
 	# Generate the list of selected micrograph paths in the selection file
 	selected_mic_path_list = []
 	# Generate micrograph lists according to the execution mode
-	print("Checking the selection list...")
-	selected_mic_path_list = read_text_file(args.selection_list)
+	print(" ")
+	print_progress("Checking the selection list...")
+	selected_mic_path_list = read_text_file(args.input_selection_list)
 	
 	# Check error condition of micrograph entry lists
-	print("Found %d microgarph entries in %s."%(len(selected_mic_path_list), args.selection_list))
+	print_progress("Found %d microgarph entries in %s."%(len(selected_mic_path_list), args.input_selection_list))
 	if len(selected_mic_path_list) == 0:
-		ERROR("No micrograph entries are found in the selection list file. Please check selection_list option and restart the program."%(os.path.dirname(input_mic_pattern))) # action=1 - fatal error, exit
+		ERROR("No micrograph entries are found in the selection list file (%s). Please check input_selection_list option and restart the program."%(args.input_selection_list), subcommand_name) # action=1 - fatal error, exit
 	assert (len(selected_mic_path_list) > 0)
 	
 	selected_mic_directory = os.path.dirname(selected_mic_path_list[0])
 	if selected_mic_directory != "":
-		print("    NOTE: Program disregards the directory paths in the selection list (%s)."%(selected_mic_directory))
+		print_progress("    NOTE: Program disregards the directory paths in the selection list (%s)."%(selected_mic_directory))
 
 	# Register micrograph id substrings to the global entry dictionary
 	for selected_mic_path in selected_mic_path_list:
@@ -345,7 +398,7 @@ def organize_micrographs(args):
 	# Create the list containing only valid micrograph id substrings
 	# --------------------------------------------------------------------------------
 	print(" ")
-	print("Checking the input datasets consistency...")
+	print_progress("Checking consistency of the provided dataset ...")
 
 	if output_mic_pattern is None:
 		assert (not os.path.exists(output_dir))
@@ -361,15 +414,15 @@ def organize_micrographs(args):
 			if subkey_selected_mic_basename in mic_id_entry: 
 				# Check if associated input micrograph exists
 				if not subkey_input_mic_path in mic_id_entry:
-					input_mic_path = input_mic_pattern.replace("*", mic_id_substr)
-					warinnig_messages.append("    associated input micrograph %s does not exist."%(input_mic_path))
+					mic_basename = mic_basename_pattern.replace("*", mic_id_substr)
+					warinnig_messages.append("    associated micrograph (%s) does not exist in input directory (%s)."%(mic_basename, input_dir))
 					no_input_mic_id_substr_list.append(mic_id_substr)
-			
+				
 				if len(warinnig_messages) > 0:
-					print("WARNING!!! Micrograph ID %s have inconsistency amoung provided information:"%(mic_id_substr))
+					print_progress("WARNING!!! Micrograph ID %s has problems with consistency among the provided dataset:"%(mic_id_substr))
 					for warinnig_message in warinnig_messages:
-						print(warinnig_message)
-					print("    Ignores this as an invalid entry.")
+						print_progress(warinnig_message)
+					print_progress("    Ignores this as an invalid entry.")
 				else:
 					# print("MRK_DEBUG: adding mic_id_substr := ", mic_id_substr)
 					valid_mic_id_substr_list.append(mic_id_substr)
@@ -385,35 +438,36 @@ def organize_micrographs(args):
 			assert (os.path.exists(output_dir))
 			
 			# Open the consistency check file
-			inconsist_mic_list_path = os.path.join(output_dir,"inconsist_mic_id_file.txt")
+			mic_consistency_check_info_path = os.path.join(record_dir, "mic_consistency_check_info_%s.txt"%(get_time_stamp_suffix()))
 			print(" ")
-			print("Generating the provided information consistency report in %s..."%(inconsist_mic_list_path))
-			inconsist_mic_list_file = open(inconsist_mic_list_path, "w")
-			inconsist_mic_list_file.write("# The information about inconsistent micrograph IDs\n")
+			print_progress("Generating consistency report of the provided dataset in %s..."%(mic_consistency_check_info_path))
+			mic_consistency_check_info_file = open(mic_consistency_check_info_path, "w")
+			mic_consistency_check_info_file.write("# The consistency information about micrograph IDs that might have problmes with consistency among the provided dataset.\n")
+			mic_consistency_check_info_file.write("# \n")
 			# Loop over substring id list
 			for mic_id_substr in global_entry_dict:
 				mic_id_entry = global_entry_dict[mic_id_substr]
 			
 				consistency_messages = []
-				# Check if associated input micrograph path exists
+				# Check if associated micrograph path exists in input directory
 				if not subkey_input_mic_path in mic_id_entry:
-					input_mic_path = input_mic_pattern.replace("*", mic_id_substr)
-					consistency_messages.append("    associated input micrograph %s is missing."%(input_mic_path))
+					mic_basename = mic_basename_pattern.replace("*", mic_id_substr)
+					consistency_messages.append("    associated micrograph (%s) does not exist in input directory (%s)."%(mic_basename, input_dir))
 			
-				# Check if associated selected micrograph basename exists
+				# Check if associated micrograph basename exists in selection list
 				if not subkey_selected_mic_basename in mic_id_entry:
-					input_mic_path = input_mic_pattern.replace("*", mic_id_substr)
-					consistency_messages.append("    associated selected micrograph %s is missing."%(input_mic_path))
+					mic_basename = mic_basename_pattern.replace("*", mic_id_substr)
+					consistency_messages.append("    associated micrograph (%s) is not in selection list (%s)."%(mic_basename, args.input_selection_list))
 			
 				if len(consistency_messages) > 0:
-					inconsist_mic_list_file.write("Micrograph ID %s have inconsistency amoung provided information:\n"%(mic_id_substr))
+					mic_consistency_check_info_file.write("Micrograph ID %s might have problems with consistency among the provided dataset:\n"%(mic_id_substr))
 					for consistency_message in consistency_messages:
-						inconsist_mic_list_file.write(consistency_message)
-						inconsist_mic_list_file.write("\n")
+						mic_consistency_check_info_file.write(consistency_message)
+						mic_consistency_check_info_file.write("\n")
 		
 			# Close the consistency check file, if necessary
-			inconsist_mic_list_file.flush()
-			inconsist_mic_list_file.close()
+			mic_consistency_check_info_file.flush()
+			mic_consistency_check_info_file.close()
 		
 		# Since mic_id_substr is once stored as the key of global_entry_dict and extracted with the key order
 		# we need sort the valid_mic_id_substr_list here
@@ -425,10 +479,11 @@ def organize_micrographs(args):
 		# Print out the summary of input consistency
 		# --------------------------------------------------------------------------------
 		print(" ")
-		print("Summary of dataset consistency check...")
-		print("Detected                           : %6d"%(len(global_entry_dict)))
-		print("Valid                              : %6d"%(len(valid_mic_id_substr_list)))
-		print("Rejected by no input micrograph    : %6d"%(len(no_input_mic_id_substr_list)))
+		print_progress("Summary of consistency check for provided dataset ...")
+		print_progress("Detected                           : %6d"%(len(global_entry_dict)))
+		print_progress("Valid                              : %6d"%(len(valid_mic_id_substr_list)))
+		print_progress("Rejected by no input micrograph    : %6d"%(len(no_input_mic_id_substr_list)))
+		print(" ")
 		
 		# --------------------------------------------------------------------------------
 		# Clean up variables related to tracking of invalid (rejected) micrographs 
@@ -452,31 +507,28 @@ def organize_micrographs(args):
 			if subkey_selected_mic_basename in mic_id_entry: 
 				# Check if associated input micrograph exists
 				if not subkey_input_mic_path in mic_id_entry:
-					input_mic_path = input_mic_pattern.replace("*", mic_id_substr)
-					output_mic_path = output_mic_pattern.replace("*", mic_id_substr)
+					mic_basename = mic_basename_pattern.replace("*", mic_id_substr)
 					if not subkey_output_mic_path in mic_id_entry:
-						warinnig_messages.append("    associated micrographs do not exist neither in input and output directories (%s and %s)."%(input_mic_path, output_mic_path))
+						warinnig_messages.append("    associated micrograph (%s) does not exist neither in input directory (%s) nor in output directory (%s)."%(mic_basename, input_dir, output_dir))
 						no_mic_in_both_dir_id_substr_list.append(mic_id_substr)
 					else:
 						assert (subkey_output_mic_path in mic_id_entry)
-						warinnig_messages.append("    associated micrographs already has been moved to output directory (%s)."%(output_mic_path))
+						warinnig_messages.append("    associated micrograph (%s) exists only in output directory (%s), but not in input directory (%s)."%(mic_basename, output_dir, input_dir))
 						already_in_output_dir_mic_id_substr_list.append(mic_id_substr)
 				else: 
 					assert (subkey_input_mic_path in mic_id_entry)
 					if subkey_output_mic_path in mic_id_entry:
-						input_mic_path = input_mic_pattern.replace("*", mic_id_substr)
-						output_mic_path = output_mic_pattern.replace("*", mic_id_substr)
-						warinnig_messages.append("    associated micrographs are dupliicated in both input and output directories (%s and %s)."%(input_mic_path, output_mic_path))
+						mic_basename = mic_basename_pattern.replace("*", mic_id_substr)
+						warinnig_messages.append("    associated micrograph (%s) exist both in input directory (%s) and output directory (%s)."%(mic_basename, input_dir, output_dir))
 						duplicated_in_output_dir_mic_id_substr_list.append(mic_id_substr)
 					# else:
-					# 	# This is normal case!
-					# 	assert (not subkey_output_mic_path in mic_id_entry)
-			
+					#	# This should most typical case!
+					#	assert (not subkey_output_mic_path in mic_id_entry)
 				if len(warinnig_messages) > 0:
-					print("WARNING!!! Micrograph ID %s have inconsistency amoung provided information:"%(mic_id_substr))
+					print_progress("WARNING!!! Micrograph ID %s has problems with consistency among the provided datasets:"%(mic_id_substr))
 					for warinnig_message in warinnig_messages:
-						print(warinnig_message)
-					print("    Ignores this as an invalid entry.")
+						print_progress(warinnig_message)
+					print_progress("    Ignores this as an invalid entry.")
 				else:
 					# print("MRK_DEBUG: adding mic_id_substr := ", mic_id_substr)
 					valid_mic_id_substr_list.append(mic_id_substr)
@@ -489,56 +541,78 @@ def organize_micrographs(args):
 			assert (os.path.exists(output_dir))
 			
 			# Open the consistency check file
-			inconsist_mic_list_path = os.path.join(output_dir,"inconsist_mic_id_file.txt")
+			mic_consistency_check_info_path = os.path.join(record_dir, "mic_consistency_check_info_%s.txt"%(get_time_stamp_suffix()))
 			print(" ")
-			print("Generating the provided information consistency report in %s..."%(inconsist_mic_list_path))
-			inconsist_mic_list_file = open(inconsist_mic_list_path, "w")
-			inconsist_mic_list_file.write("# The information about inconsistent micrograph IDs\n")
+			print_progress("Generating consistency report of the provided dataset in %s..."%(mic_consistency_check_info_path))
+			mic_consistency_check_info_file = open(mic_consistency_check_info_path, "w")
+			mic_consistency_check_info_file.write("# The consistency information about micrograph IDs that might have problmes with consistency among the provided dataset.\n")
+			mic_consistency_check_info_file.write("# \n")
 			# Loop over substring id list
 			for mic_id_substr in global_entry_dict:
 				mic_id_entry = global_entry_dict[mic_id_substr]
 				
 				consistency_messages = []
-				# Check if associated input micrograph path exists
+				# Check if associated micrograph path exists in input directory
 				if not subkey_input_mic_path in mic_id_entry:
-					input_mic_path = input_mic_pattern.replace("*", mic_id_substr)
-					consistency_messages.append("    associated micrograph %s does not exist in input directory."%(input_mic_path))
+					mic_basename = mic_basename_pattern.replace("*", mic_id_substr)
+					consistency_messages.append("    associated micrograph (%s) does not exist in input directory (%s)."%(mic_basename, input_dir))
 			
-				if subkey_output_mic_path in mic_id_entry:
-					output_mic_path = output_mic_pattern.replace("*", mic_id_substr)
-					consistency_messages.append("    associated micrograph %s already exist in output directory."%(output_mic_path))
-			
-				# Check if associated selected micrograph basename exists
+				# Check if associated micrograph basename exists in selection list
 				if not subkey_selected_mic_basename in mic_id_entry:
-					input_mic_path = input_mic_pattern.replace("*", mic_id_substr)
-					consistency_messages.append("    associated selected micrograph %s is missing. This must be discared."%(input_mic_path))
+					mic_basename = mic_basename_pattern.replace("*", mic_id_substr)
+					consistency_messages.append("    associated micrograph (%s) is not in selection list (%s)."%(mic_basename, args.input_selection_list))
+			
+				# Check if associated micrograph path does not exist in output directory
+				if subkey_output_mic_path in mic_id_entry:
+					mic_basename = mic_basename_pattern.replace("*", mic_id_substr)
+					consistency_messages.append("    associated micrograph (%s) already exist in output directory (%s)."%(mic_basename, output_dir))
 			
 				if len(consistency_messages) > 0:
-					inconsist_mic_list_file.write("Micrograph ID %s have inconsistency amoung provided information:\n"%(mic_id_substr))
+					mic_consistency_check_info_file.write("Micrograph ID %s have inconsistency among provided information:\n"%(mic_id_substr))
 					for consistency_message in consistency_messages:
-						inconsist_mic_list_file.write(consistency_message)
-						inconsist_mic_list_file.write("\n")
+						mic_consistency_check_info_file.write(consistency_message)
+						mic_consistency_check_info_file.write("\n")
 		
 			# Close the consistency check file, if necessary
-			inconsist_mic_list_file.flush()
-			inconsist_mic_list_file.close()
+			mic_consistency_check_info_file.flush()
+			mic_consistency_check_info_file.close()
 		
 		# Since mic_id_substr is once stored as the key of global_entry_dict and extracted with the key order
 		# we need sort the valid_mic_id_substr_list here
 		# print("MRK_DEBUG: before sort, valid_mic_id_substr_list := ", valid_mic_id_substr_list)
 		valid_mic_id_substr_list.sort()
 		# print("MRK_DEBUG: after sort, valid_mic_id_substr_list := ", valid_mic_id_substr_list)
-	
+		
 		# --------------------------------------------------------------------------------
 		# Print out the summary of input consistency
 		# --------------------------------------------------------------------------------
 		print(" ")
-		print("Summary of dataset consistency check...")
-		print("Detected                           : %6d"%(len(global_entry_dict)))
-		print("Valid                              : %6d"%(len(valid_mic_id_substr_list)))
-		print("Rejected by not found at all       : %6d"%(len(no_mic_in_both_dir_id_substr_list)))
-		print("Rejected by already in output dir  : %6d"%(len(already_in_output_dir_mic_id_substr_list)))
-		print("Rejected by duplicated             : %6d"%(len(duplicated_in_output_dir_mic_id_substr_list)))
+		print_progress("Summary of dataset consistency check...")
+		print_progress("Detected                           : %6d"%(len(global_entry_dict)))
+		print_progress("Valid                              : %6d"%(len(valid_mic_id_substr_list)))
+		print_progress("Rejected by not found at all       : %6d"%(len(no_mic_in_both_dir_id_substr_list)))
+		print_progress("Rejected by already in output dir  : %6d"%(len(already_in_output_dir_mic_id_substr_list)))
+		print_progress("Rejected by duplicated             : %6d"%(len(duplicated_in_output_dir_mic_id_substr_list)))
+		print(" ")
+		
+		# --------------------------------------------------------------------------------
+		# Save the list of duplicated_micrographs in duplicated_micrographs_DATE_TIME.txt 
+		# under output directory if necessary
+		# --------------------------------------------------------------------------------
+		if len(duplicated_in_output_dir_mic_id_substr_list) > 0:
+			duplicated_mic_list_path = os.path.join(record_dir, "duplicated_micrographs_%s.txt"%(get_time_stamp_suffix()))
+			print_progress("Storing the list of duplicated micrographs in %s."%(duplicated_mic_list_path))
+			print(" ")
+			
+			# Open the duplicated micrograph list file
+			duplicated_mic_list_file = open(duplicated_mic_list_path, "w")
+			for mic_id_substr in duplicated_in_output_dir_mic_id_substr_list:
+				duplicated_mic_basename = mic_basename_pattern.replace("*", mic_id_substr)
+				duplicated_mic_list_file.write(duplicated_mic_basename)
+				duplicated_mic_list_file.write("\n")
+			# Close the duplicated micrograph list file
+			duplicated_mic_list_file.flush()
+			duplicated_mic_list_file.close()
 		
 		# --------------------------------------------------------------------------------
 		# Clean up variables related to tracking of invalid (rejected) micrographs 
@@ -547,41 +621,54 @@ def organize_micrographs(args):
 		del already_in_output_dir_mic_id_substr_list
 		del duplicated_in_output_dir_mic_id_substr_list
 
-"""
 	# --------------------------------------------------------------------------------
 	# Create output directory
 	# --------------------------------------------------------------------------------
-	print_progress("Creating output directory...")
-	os.mkdir(args.output_directory)
-	print(" ")
-	
-	# --------------------------------------------------------------------------------
-	# Load micrograph list form the file
-	# --------------------------------------------------------------------------------
-	print_progress("Loading micrograph name list from the selection list file...")
-	assert (os.path.exists(args.selection_list))
-	mic_path_list = read_text_file(args.selection_list)
-	
-	print_progress("# Found %d entries in %s"%(len(mic_path_list), args.selection_list))
-	print(" ")
+	if not os.path.exists(output_dir):
+		print(" ")
+		print_progress("Creating output directory (%)..."%(output_dir))
+		os.mkdir(output_dir)
+	assert (os.path.exists(output_dir))
 
-	# move micrographs in the list to output directory
-	for mic_path in mic_path_list:
-		if os.path.exists(mic_path):
-			print_progress("Moving %s..."%(mic_path))
-			shutil.move(mic_path, args.output_directory)
-		else:
-			assert (os.path.exists(mic_path) == False)
-			print_progress "WARNINNG: Cannot find %s!!! Skipping this micrograph..."%(mic_path)
-			continue
+	# --------------------------------------------------------------------------------
+	# Move micrographs in selecting list form input directory to output directory
+	# --------------------------------------------------------------------------------
+	# Prepare the counters for the global summary of micrographs
+	n_movied_mics = 0
+	
+	if len(valid_mic_id_substr_list) > 0:
+		print(" ")
+		print_progress("Moving micrographs in selecting list (%s) from input directory (%s) to output directory (%s)..."%(args.input_selection_list, input_dir, output_dir))
+		### print("Micrographs processed (including percent of progress):")
+		### progress_percent_step = len(valid_mic_id_substr_list)*0.1 # Report every 10% of the number of micrograms
+
+	# Loop over substring id list
+	for mic_id_substr_idx, mic_id_substr in enumerate(valid_mic_id_substr_list):
+		mic_id_entry = global_entry_dict[mic_id_substr]
+		mic_basename = mic_id_entry[subkey_selected_mic_basename]
+		assert (mic_basename == mic_basename_pattern.replace("*", mic_id_substr))
+		
+		### # Print out progress if necessary
+		### print("%s ---> % 2.2f%%" % (mic_basename, mic_id_substr_idx / progress_percent_step))
+		
+		# At this point, this micrograph
+		# - must exist in input directory
+		# - must NOT exist in output directory
+		# because of the consistency check above
+		assert (subkey_input_mic_path in mic_id_entry)
+		assert (os.path.exists(mic_id_entry[subkey_input_mic_path]))
+		assert (not os.path.exists(os.path.join(output_dir, mic_basename)))
+		
+		# Move this micrograph from input directory to output directory
+		input_mic_path = mic_id_entry[subkey_input_mic_path]
+		shutil.move(input_mic_path, output_dir)
+		n_movied_mics += 1
 	
 	# Print summary of processing
 	print(" ")
 	print_progress("Summary of processing...")
-	print_progress("Detected  : %6d"%(n_img_detected))
-	print_progress("Processed : %6d"%(n_img_processed))
+	print_progress("Moved      : %6d"%(n_movied_mics))
 	print(" ")
-"""
 	
 # ========================================================================================
 # Main function
@@ -607,13 +694,14 @@ def main():
 	### parser_isac_subset.add_argument("--no_virtual_stack",            action="store_true",  default=False,  help="Do not create virtual stack: Use this option to create only the particle ID list text file associated with the ISAC class averages. (default False)")
 	parser_isac_subset.set_defaults(func=isac_substack)
 	
-	# create the parser for the "move_micrographs" command
-	parser_move_micrographs = subparsers.add_parser("organize_micrographs", help="Organize micrographs: Organize micrographs by moving micrographs in a selecting file from specifed input directory (given by input micrographs pattern) to specified output directory.")
-	parser_move_micrographs.add_argument("input_micrograph_pattern", type=str,                             help="Input micrograph path pattern: Specify path pattern of input micrographs with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (\') or double quotes (\"). (Note: sxgui.py automatically adds single quotes (\')). The substring at the variable part must be same between the associated pair of input micrograph and coordinates file. bdb files can not be selected as input micrographs. (default required string)")
-	parser_move_micrographs.add_argument("output_directory",         type=str,                             help="Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)")
-	parser_move_micrographs.add_argument("selection_list",           type=str,                             help="Micrograph selecting list: Specify a name of text file containing a list of selected micrograph names or paths. The directory path of each entry will be ignored if there is. (default required string)")
-	parser_move_micrographs.add_argument("--check_consistency",      action="store_true",  default=False,  help="Check consistency of inputs: Create a text file containing the list of inconsistent Micrograph ID entries (i.e. inconsist_mic_list_file.txt). (default False)")
-	parser_move_micrographs.set_defaults(func=organize_micrographs)
+	# create the parser for the "organize_micrographs" command
+	parser_organize_micrographs = subparsers.add_parser("organize_micrographs", help="Organize micrographs: Organize micrographs by moving micrographs in a selecting file from input directory (specified by input micrographs pattern) to output directory.")
+	parser_organize_micrographs.add_argument("input_micrograph_pattern", type=str,                                help="Input micrograph path pattern: Specify path pattern of input micrographs with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (\') or double quotes (\"). (Note: sxgui.py automatically adds single quotes (\')). The substring at the variable part must be same between the associated pair of input micrograph and coordinates file. bdb files can not be selected as input micrographs. (default required string)")
+	parser_organize_micrographs.add_argument("input_selection_list",     type=str,                                help="Input micrograph selecting list: Specify a name of text file containing a list of selected micrograph names or paths. The file extension must be \'.txt\'. The directory path of each entry will be ignored if there is. (default required string)")
+	parser_organize_micrographs.add_argument("output_directory",         type=str,                                help="Output directory: The micrographs in selecting list will be moved to this directory. This directory will be created automatically if it does not exist. (default required string)")
+	parser_organize_micrographs.add_argument("--reverse",                action="store_true",  default=False,     help="Reverse operation: Move back micrographs from output directory to input directory. Please use this option to restore the moved micrographs. (default False)")
+	parser_organize_micrographs.add_argument("--check_consistency",      action="store_true",  default=False,     help="Check consistency of inputs: Create a text file containing the list of Micrograph ID entries might have inconsitency among inputs. (i.e. mic_consistency_check_info.txt). (default False question reversed in GUI)")
+	parser_organize_micrographs.set_defaults(func=organize_micrographs)
 	
 	# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 	# Run specified subcommand
@@ -622,12 +710,14 @@ def main():
 	# args_dict = vars(parser.parse_args()) # convert it to dictionary object
 	# print (args_dict)
 	
+	print(" ")
 	print_progress(get_cmd_line())
 	print(" ")
 	
 	# Call the associated function of the specified subcommand
 	args.func(args)
 
+	print(" ")
 	print_progress("DONE!!!")
 	print(" ")
 
