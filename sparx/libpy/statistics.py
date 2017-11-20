@@ -10573,10 +10573,8 @@ def randprojdir(ang, sigma):
 
 	return aout
 
-def adjust_fsc_to_full_data_set(fsc_to_be_adjusted, nsubset, nf):
-	q = float(nsubset)/float(nf)
-	fsc_sub = [None for i in xrange(len(fsc_to_be_adjusted))]
-	for i in xrange(len(fsc_to_be_adjusted)):
-		y = fsc_to_be_adjusted[i]
-		fsc_sub[i] = y/(y*(1.-q)+q)
+def scale_fsc_datasetsize(fsc_to_be_adjusted, nfsc, nnew):
+	s = float(nfsc)/float(nnew)
+	fsc_sub = [0.0]*len(fsc_to_be_adjusted)
+	for i,q in enumerate(fsc_to_be_adjusted):  fsc_sub[i] = q/(q*(1.0-s)+s)
 	return fsc_sub
