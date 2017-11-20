@@ -523,7 +523,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 				mgdirname = "micrographs_allali"
 				try: os.mkdir(mgdirname)
 				except: pass
-				alioutname="{}/{}.hdf".format(mgdirname,base_name(fsp))
+				alioutname="{}/{}-{}.hdf".format(mgdirname,base_name(fsp),options.round)
 				out=qsum(outim)
 				out.write_image(alioutname,0)
 
@@ -554,7 +554,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 				mgdirname = "micrographs_goodali"
 				try: os.mkdir(mgdirname)
 				except: pass
-				alioutname="{}/{}.hdf".format(mgdirname,base_name(fsp))
+				alioutname="{}/{}-{}.hdf".format(mgdirname,base_name(fsp),options.round)
 				thr=(max(quals[1:])-min(quals))*0.4+min(quals)	# max correlation cutoff for inclusion
 				best=[im for i,im in enumerate(outim) if quals[i]>thr]
 				out=qsum(best)
@@ -565,7 +565,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 				mgdirname = "micrographs_bestali"
 				try: os.mkdir(mgdirname)
 				except: pass
-				alioutname="{}/{}.hdf".format(mgdirname,base_name(fsp))
+				alioutname="{}/{}-{}.hdf".format(mgdirname,base_name(fsp),options.round)
 				thr=(max(quals[1:])-min(quals))*0.6+min(quals)	# max correlation cutoff for inclusion
 				best=[im for i,im in enumerate(outim) if quals[i]>thr]
 				out=qsum(best)
@@ -576,7 +576,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 				mgdirname = "micrographs_4-14"
 				try: os.mkdir(mgdirname)
 				except: pass
-				alioutname="{}/{}.hdf".format(mgdirname,base_name(fsp))
+				alioutname="{}/{}-{}.hdf".format(mgdirname,base_name(fsp),options.round)
 				# skip the first 4 frames then keep 10
 				out=qsum(outim[4:14])
 				out.write_image(alioutname,0)
@@ -589,7 +589,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 				mgdirname = "micrographs_{}-{}".format(rng[0],rng[1])
 				try: os.mkdir(mgdirname)
 				except: pass
-				alioutname="{}/{}.hdf".format(mgdirname,base_name(fsp))
+				alioutname="{}/{}-{}.hdf".format(mgdirname,base_name(fsp),options.round)
 				out=qsum(outim[rng[0]:rng[1]+1])
 				out.write_image(alioutname,0)
 
