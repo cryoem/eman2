@@ -10572,3 +10572,11 @@ def randprojdir(ang, sigma):
 		aout.append([d["phi"],d["theta"]] + [ang[n][k] for k in xrange(2,l)])
 
 	return aout
+
+def adjust_fsc_to_full_data_set(fsc_to_be_adjusted, nsubset, nf):
+	q = float(nsubset)/float(nf)
+	fsc_sub = [None for i in xrange(len(fsc_to_be_adjusted))]
+	for i in xrange(len(fsc_to_be_adjusted)):
+		y = fsc_to_be_adjusted[i]
+		fsc_sub[i] = y/(y*(1.-q)+q)
+	return fsc_sub
