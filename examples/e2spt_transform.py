@@ -2,7 +2,7 @@
 
 '''
 ====================
-Author: Jesus Galaz - oct/2017, Last update: oct/2017
+Author: Jesus Galaz - oct/2017, Last update: nov/2017
 ====================
 
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -69,7 +69,7 @@ def main():
 	(options, args) = parser.parse_args()	
 
 	if options.input and options.coords:
-		print "\nto minimize confusion, apply --transformfile to --input and to --coords on separate runs of the program."
+		print("\nto minimize confusion, apply --transformfile to --input and to --coords on separate runs of the program.")
 		sys.exit(1)
 	#elif if not coords and not options.input:
 	#	options.input = sys.argv[1]
@@ -108,12 +108,12 @@ def main():
 		#print "\nthe number of transformations to plot is %d" %(n)
 		#print "\n n={}, type={}, nt={}, type={}".format(n,type(n),nt,type(nt))
 		if int(n) != int(nt):
-			print "int(n)={}, int(nt)={}".format(int(n),int(nt))
+			print("int(n)={}, int(nt)={}".format(int(n),int(nt)))
 			if int(n) < int(nt):
-				print "\nWARNING: fewer particles/coordinates n={} than transform parameters nt={}. Only transforming as many particles from {} as transforms in {}".format(n,nt,options.input,options.transformfile)
+				print("\nWARNING: fewer particles/coordinates n={} than transform parameters nt={}. Only transforming as many particles from {} as transforms in {}".format(n,nt,options.input,options.transformfile))
 			elif int(n) > int(nt):
 				n = int(nt)
-				print "\nWARNING: more particles/coordinates n={} than transform parameters nt={}".format(n,nt)
+				print("\nWARNING: more particles/coordinates n={} than transform parameters nt={}".format(n,nt))
 
 		keys = jsonfileopen.keys()
 		keys.sort()
@@ -154,23 +154,23 @@ def main():
 				newlines.append(str(newx)+'\t'+str(newy)+'\t'+str(newz)+'\n')
 			
 			if options.verbose > 9:
-				print "\ntransformed particle/coordinate n={}/{}, using transform={} from .json file {}".format( j, n, t, options.transformfile )
+				print("\ntransformed particle/coordinate n={}/{}, using transform={} from .json file {}".format( j, n, t, options.transformfile ))
 
 		if options.coords:
 			name,ext = os.path.splitext(options.coords)
 			if newlines:
 				if int(len(newlines)) < int(len(coordlines)):
 					dif = len(coordlines) - len(newlines)
-					print "\nlen(newlines)={} , len(coordlines)={} , dif={}".format(len(newlines),len(coordlines),dif)
+					print("\nlen(newlines)={} , len(coordlines)={} , dif={}".format(len(newlines),len(coordlines),dif))
 					for kk in xrange(dif):
 						indx = len(coordlines) -1*kk -1
-						print "\nWARNING: appending untranslated cooridates from --coords {}".format(coordlines[indx])
+						print("\nWARNING: appending untranslated cooridates from --coords {}".format(coordlines[indx]))
 						newlines.append(coordlines[indx])	#if the coordinates file grew with respect to the alignment parameters file because new particles were boxed (but not aligned), this adds untranslated coordinates from the end of the original --coords file 
 
 				with open( name + '_trans' + ext, 'w') as newcoordsfile:
 					newcoordsfile.writelines(newlines)
 			elif not newlines:
-				print "\nERROR: no transformed coordinates to write. something went terribly -terribly- wrong! (sorry)."
+				print("\nERROR: no transformed coordinates to write. something went terribly -terribly- wrong! (sorry).")
 				sys.exit(1)
 
 

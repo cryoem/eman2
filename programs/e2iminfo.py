@@ -105,7 +105,10 @@ def main():
 			continue
 		
 		if imagefile.lower()[:4]!="bdb:" :
-			nimg = EMUtil.get_image_count(imagefile)
+			try: nimg = EMUtil.get_image_count(imagefile)
+			except:
+				print(imagefile," is not a recognized image format")
+				continue
 			nimgs+=nimg
 			imgtype = EMUtil.get_image_type(imagefile)
 			imgtypename = EMUtil.get_imagetype_name(imgtype)

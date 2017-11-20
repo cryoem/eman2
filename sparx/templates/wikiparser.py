@@ -121,7 +121,8 @@ def construct_keyword_dict():
 	keyword_dict["rotpw"]                         = SXkeyword_map(1, "output")         # rotpw
 	keyword_dict["output_mask3D"]                 = SXkeyword_map(1, "output")         # output_mask3D
 	keyword_dict["--makevstack"]                  = SXkeyword_map(1, "output")         # --makevstack
-	keyword_dict["input_micrograph_list"]         = SXkeyword_map(1, "any_image_list") # input_micrograph_list (contains keyworkd 'input_micrograph' but this should be image_list type)
+	keyword_dict["input_micrograph_list"]         = SXkeyword_map(1, "any_image_list") # input_micrograph_list (contains keyword 'input_micrograph' but this should be image_list type)
+	keyword_dict["input_selection_list"]          = SXkeyword_map(1, "txt")            # input_selection_list (contains keyword 'selection_list' but this should be txt type)
 	keyword_dict["--ctref_orgstack"]              = SXkeyword_map(1, "bdb")            # --ctref_orgstack=stack_for_continuation
 	# Use priority 2 for the others
 	keyword_dict["stack"]                         = SXkeyword_map(2, "image")          # stack, prj_stack, input_stack, --instack=input_stack_file
@@ -251,6 +252,11 @@ def handle_exceptional_cases(sxcmd):
 		assert(sxcmd.token_dict["locres_volume"].key_base == "locres_volume")
 		assert(sxcmd.token_dict["locres_volume"].type == "output")
 		sxcmd.token_dict["locres_volume"].type = "image"
+	elif sxcmd.name == "sxpipe":
+		if sxcmd.subname == "organize_micrographs":
+			assert(sxcmd.token_dict["output_directory"].key_base == "output_directory")
+			assert(sxcmd.token_dict["output_directory"].type == "output")
+			sxcmd.token_dict["output_directory"].type = "string"
 
 # ----------------------------------------------------------------------------------------
 def remove_MoinMoinWiki_makeup(target_text):
@@ -1257,18 +1263,19 @@ def create_exclude_list_meridien():
 
 	return exclude_list
 
+def create_exclude_list_sort3d():
+	exclude_list = []
+	exclude_list.append("seed")
+	exclude_list.append("sausage")
+	
+	return exclude_list
+
 ### 
 ### NOTE: Toshio Moriya 2017/11/15
 ### The following lines are necessary for rsort3d.txt.
 ### 
 def create_exclude_list_rsort3d():
 	exclude_list = []
-	###
-	### NOTE: Toshio Moriya 2017/11/15
-	### Excluded chunkdir option because the file name convention changed in meridien
-	### and sxrsort3d.py is not reflecting this at this point.
-	###
-	exclude_list.append("chunkdir")
 	exclude_list.append("seed")
 	exclude_list.append("sausage")
 	
@@ -1377,6 +1384,7 @@ def main():
 
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
+	sxcmd_config_list.append(SXcmd_config("../doc/pipe_organize_micrographs.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 
 	# --------------------------------------------------------------------------------
 	sxcmd_category = "sxc_window"
@@ -1391,6 +1399,7 @@ def main():
 
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
+	sxcmd_config_list.append(SXcmd_config("../doc/pipe_organize_micrographs.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 
 	# --------------------------------------------------------------------------------
 	sxcmd_category = "sxc_isac"
@@ -1447,16 +1456,15 @@ def main():
 	sxcmd_role = "sxr_pipe"
 	sxcmd_config_list.append(SXcmd_config("../doc/3dvariability.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_variability_preprocess()))
 	sxcmd_config_list.append(SXcmd_config("../doc/3dvariability.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list=["symmetrize"]))
-	# sxcmd_config_list.append(SXcmd_config("../doc/3dvariability.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
-	# sxcmd_config_list.append(SXcmd_config("../doc/sort3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/sort3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_sort3d()))
 	sxcmd_config_list.append(SXcmd_config("../doc/rsort3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_rsort3d()))
 ### sxcmd_config_list.append(SXcmd_config("../doc/rsort3d-1105.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_rsort3d_1105()))
 ###	sxcmd_config_list.append(SXcmd_config("../doc/sort3d_new.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_sort3d_new()))
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_local()))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_refine3d_postprocess()))
 
-	sxcmd_role = "sxr_alt"
-	sxcmd_config_list.append(SXcmd_config("../doc/sort3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
+###	sxcmd_role = "sxr_alt"
+###	sxcmd_config_list.append(SXcmd_config("../doc/sort3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_sort3d()))
 
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
@@ -1486,6 +1494,7 @@ def main():
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/summovie.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/pipe_organize_micrographs.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 
 	# --------------------------------------------------------------------------------
 	sxcmd_category = "sxc_utilities"
@@ -1499,8 +1508,9 @@ def main():
 	sxcmd_config_list.append(SXcmd_config("../doc/e2proc3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_utility_window()))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_refine3d_angular_distribution()))
 	sxcmd_config_list.append(SXcmd_config("../doc/unblur.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
-	sxcmd_config_list.append(SXcmd_config("../doc/summovie.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, is_submittable = True))
+	sxcmd_config_list.append(SXcmd_config("../doc/summovie.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/e2bdb.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_utility_makevstack()))
+	sxcmd_config_list.append(SXcmd_config("../doc/pipe_organize_micrographs.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 	# sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 
 #	token_edit_list = []

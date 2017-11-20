@@ -24,7 +24,7 @@ def main():
 	
 	usage=" "
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--path", type=str,help="path", default="sptsgd")
+	parser.add_argument("--path", type=str,help="path", default=None)
 	parser.add_argument("--ref", type=str,help="ref", default=None)
 	parser.add_argument("--sym", type=str,help="symmetry", default="c1")
 	parser.add_argument("--batchsize", type=int,help="batch size", default=12)
@@ -38,8 +38,19 @@ def main():
 	from EMAN2_utils import makepath
 	options = makepath(options,'sptsgd')
 	
+	#if options.path==None:
+	#	for i in range(100):
+	#		pname="sptsgd_{:02d}".format(i)
+	#		if not os.path.isdir(pname):
+	#			os.mkdir(pname)
+	#			options.path=pname
+	#			break
+	#	else:
+	#		print("something is wrong...")
+	#		exit()
+			
 	path=options.path
-	
+	print("Writing in {}..".format(path))
 	fname=args[0]
 	num=EMUtil.get_image_count(fname)
 	batchsize=options.batchsize
@@ -69,7 +80,7 @@ def main():
 	try: os.remove(tmpout)
 	except: pass
 	ref.write_image(tmpout,-1)
-	
+	print("iteration, learning rate, mean gradient")
 	for it in range(options.niter):
 		idx=np.arange(num)
 		np.random.shuffle(idx)
@@ -100,16 +111,17 @@ def main():
 			#print "{:d}\t{:.3f}\t{:.3f}".format(it, ddm["mean_nonzero"], np.mean(scr))
 			cc.append(ddm["mean_nonzero"])
 			ref=ref+learnrate*dmap
-			ref.process_inplace("xform.centerofmass")
-			ref.write_image(tmpout,-1)
+		ref.process_inplace("xform.centerofmass")
+		ref.write_image(tmpout,-1)
 		
 		
 		#ref.write_image(tmpout,-1)
 		
-		print("\t{}, {}, {}".format(it, learnrate, np.mean(cc)))
+		print("\t{:d}, {:.3f}, {:.5f}".format(it, learnrate, np.mean(cc)))
 		learnrate*=lrmult	
 	
 	ref.write_image(os.path.join(path,"output.hdf"))
+	print("Done")
 	E2end(logid)
 	
 def run(cmd):

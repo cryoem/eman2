@@ -6610,19 +6610,6 @@ def get_two_chunks_from_stack(Tracker):
 		else:chunk_two.append(index_of_total_chunk)
 	return chunk_one, chunk_two
 
-def adjust_fsc_down(fsc,n1,n2):
-	# fsc curve:  frequencies   cc values  number of the sampling points
-	# n1 total data n2 subset
-	from utilities import read_text_file
-	import types
-	if type(fsc) == bytes:fsc=read_text_file(fsc,-1)
-	N_bins =  len(fsc[0])
-	adjusted_fsc = N_bins*[None]
-	for index_of_cc in xrange(N_bins):
-		adjusted_fsc[index_of_cc] = (float(n2)/float(n1))*fsc[1][index_of_cc]/(1.-(1.-float(n2)/float(n1))*fsc[1][index_of_cc])
-	calibrated_fsc=[fsc[0], adjusted_fsc, fsc[2]]
-	return calibrated_fsc
-
 def set_filter_parameters_from_adjusted_fsc(n1,n2,Tracker):
 	fsc_cutoff   = 1.0/3.0
 	adjusted_fsc = adjust_fsc_down(Tracker["global_fsc"],n1,n2)
