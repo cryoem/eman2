@@ -319,12 +319,12 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 		ny=outim[0]["ny"]
 
 		md = min(nx,ny)
-		if md > 6000:
-			if options.optbox == -1: options.optbox = 512
-			if options.optstep == -1: options.optstep = 448
+		if md < 1024:
+			if options.optbox == -1: options.optbox = 256
+			if options.optstep == -1: options.optstep = 224
 		else:
-			if options.optbox == -1: options.optbox = 448
-			if options.optstep == -1: options.optstep = 384
+			if options.optbox == -1: options.optbox = 1024
+			if options.optstep == -1: options.optstep = 864
 
 		if options.align_frames :
 
