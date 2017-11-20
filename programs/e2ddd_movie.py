@@ -33,7 +33,6 @@ from __future__ import print_function
 #
 
 from EMAN2 import *
-#from Simplex import Simplex
 from numpy import *
 import pprint
 import sys
@@ -67,12 +66,12 @@ def main():
 	#parser.add_header(name="orblock2", help='Just a visual separation', title="- CHOOSE FROM -", row=3, col=0, rowspan=1, colspan=3, mode="align")
 
 	parser.add_argument("--dark",type=str,default=None,help="Perform dark image correction using the specified image file",guitype='filebox',browser="EMMovieDataTable(withmodal=True,multiselect=False)", row=4, col=0, rowspan=1, colspan=3, mode="align")
-	parser.add_argument("--rotate_dark",  default = 0, type=str, choices=[0,90,180,270], help="Rotate dark reference by 0, 90, 180, or 270 degrees. Default is 0. Transformation order is rotate then reverse.",guitype='combobox', choicelist='["0","90","180","270"]', row=5, col=0, rowspan=1, colspan=1, mode='align')
+	parser.add_argument("--rotate_dark",  default = "0", type=str, choices=["0","90","180","270"], help="Rotate dark reference by 0, 90, 180, or 270 degrees. Default is 0. Transformation order is rotate then reverse.",guitype='combobox', choicelist='["0","90","180","270"]', row=5, col=0, rowspan=1, colspan=1, mode='align')
 	parser.add_argument("--reverse_dark", default=False, help="Flip dark reference along y axis. Default is False. Transformation order is rotate then reverse.",action="store_true",guitype='boolbox', row=5, col=1, rowspan=1, colspan=1, mode='align')
 
 	parser.add_argument("--gain",type=str,default=None,help="Perform gain image correction using the specified image file",guitype='filebox',browser="EMMovieDataTable(withmodal=True,multiselect=False)", row=6, col=0, rowspan=1, colspan=3, mode="align")
 	parser.add_argument("--gaink2", default=False, help="Perform gain image correction. Gatan K2 gain images are the reciprocal of DDD gain images.",action="store_true",guitype='boolbox', row=7, col=0, rowspan=1, colspan=1, mode='align')
-	parser.add_argument("--rotate_gain", default = 0, type=str, choices=[0,90,180,270], help="Rotate gain reference by 0, 90, 180, or 270 degrees. Default is 0. Transformation order is rotate then reverse.",guitype='combobox', choicelist='["0","90","180","270"]', row=7, col=1, rowspan=1, colspan=1, mode='align')
+	parser.add_argument("--rotate_gain", default = 0, type=str, choices=["0","90","180","270"], help="Rotate gain reference by 0, 90, 180, or 270 degrees. Default is 0. Transformation order is rotate then reverse.",guitype='combobox', choicelist='["0","90","180","270"]', row=7, col=1, rowspan=1, colspan=1, mode='align')
 	parser.add_argument("--reverse_gain", default=False, help="Flip gain reference along y axis. Default is False. Transformation order is rotate then reverse.",action="store_true",guitype='boolbox', row=7, col=2, rowspan=1, colspan=1, mode='align')
 
 	#parser.add_header(name="orblock3", help='Just a visual separation', title="- OR -", row=6, col=0, rowspan=1, colspan=3, mode="align")
@@ -135,8 +134,9 @@ def main():
 	pid=E2init(sys.argv)
 
 	if options.dark :
+		if options.verbose: print("Loading Dark Reference")
 		nd=EMUtil.get_image_count(options.dark)
-		dark=EMData(options.dark,0)
+		dark = EMData(options.dark,0)
 		if nd>1:
 			sigd=dark.copy()
 			sigd.to_zero()
@@ -144,7 +144,7 @@ def main():
 			print("Summing dark")
 			for i in xrange(0,nd):
 				if options.verbose:
-					sys.stdout.write(" {}/{}   \r".format(i+1,nd))
+					sys.stdout.write("({}/{})   \r".format(i+1,nd))
 					sys.stdout.flush()
 				t=EMData(options.dark,i)
 				t.process_inplace("threshold.clampminmax",{"minval":0,"maxval":t["mean"]+t["sigma"]*3.5,"tozero":1})
@@ -160,6 +160,7 @@ def main():
 		dark2=dark.process("normalize.unitlen")
 	else : dark=None
 	if options.gain :
+		if options.verbose: print("Loading Gain Reference")
 		if options.gaink2: gain=EMData(options.gaink2)
 		else:
 			nd=EMUtil.get_image_count(options.gain)
@@ -171,7 +172,7 @@ def main():
 				print("Summing gain")
 				for i in xrange(0,nd):
 					if options.verbose:
-						sys.stdout.write(" {}/{}   \r".format(i+1,nd))
+						sys.stdout.write("({}/{})   \r".format(i+1,nd))
 						sys.stdout.flush()
 					t=EMData(options.gain,i)
 					#t.process_inplace("threshold.clampminmax.nsigma",{"nsigma":4.0,"tozero":1})
@@ -280,7 +281,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			if fsp[-4:].lower() in (".mrc") :
 				im=EMData(fsp,0,False,Region(0,0,ii,nx,ny,1))
 			else: im=EMData(fsp,ii)
-
+			
 			if dark!=None : im.sub(dark)
 			if gain!=None : im.mult(gain)
 			#im.process_inplace("threshold.clampminmax",{"minval":0,"maxval":im["mean"]+im["sigma"]*3.5,"tozero":1})
