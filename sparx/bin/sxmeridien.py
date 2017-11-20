@@ -6498,6 +6498,7 @@ def ctref_init(masterdir, option_orgstack, option_old_refinement_dir, option_sub
 	if(Blockdata["myid"] == Blockdata["nodes"][0]):
 		print_dict(Tracker["constants"], "Permanent settings of meridien")
 		print_dict(Tracker, "Current state of varibles")
+		
 	for procid in xrange(2):
 		partids[procid]   = os.path.join(Tracker["directory"],"chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]))
 		partstack[procid] = os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"],"params-chunk_%01d_%03d.txt"%(procid, Tracker["mainiteration"]))
@@ -6513,7 +6514,9 @@ def ctref_init(masterdir, option_orgstack, option_old_refinement_dir, option_sub
 		projdata[procid] = get_shrink_data(Tracker["nxinit"], procid, original_data[procid], oldparams[procid],\
 		  return_real = False, preshift = True, apply_mask = False, nonorm = True, nosmearing = True)
 		mpi_barrier(mpi_comm)
+		
 	compute_sigma(original_data[0]+original_data[1],oldparams[0]+oldparams[1], len(oldparams[0]), False, Blockdata["myid"], mpi_comm = mpi_comm)
+	
 	# Estimate initial resolution/image size
 	if(Blockdata["myid"] == Blockdata["nodes"][0]):
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
@@ -6526,6 +6529,7 @@ def ctref_init(masterdir, option_orgstack, option_old_refinement_dir, option_sub
 		projdata[procid] = []
 		mpi_barrier(mpi_comm)
 	mpi_barrier(MPI_COMM_WORLD)
+	
 	ctref_do_maps_mpi(Tracker["directory"])
 	
 	if(Blockdata["myid"] == Blockdata["nodes"][0]):
@@ -6550,8 +6554,10 @@ def ctref_init(masterdir, option_orgstack, option_old_refinement_dir, option_sub
 	else: 
 		nfsc_143  = 0
 		nfsc_half = 0
+		
 	nfsc_143 = bcast_number_to_all(nfsc_143, Blockdata["nodes"][0], MPI_COMM_WORLD)
 	nfsc_half = bcast_number_to_all(nfsc_half, Blockdata["nodes"][0], MPI_COMM_WORLD)
+	
 	### AI jobs:
 	Tracker["nxinit"]     = nfsc_143*2+30  # will be figured in first AI.
 	Tracker["fsc143"]     = nfsc_143
@@ -7785,7 +7791,7 @@ def main():
 		mainiteration = 0
 		Tracker["mainiteration"] = mainiteration
 		if (options.ctref_smearing ==-1):
-			if (options.ctref_orgstack !=''): # start from datastack
+			if (options.ctref_orgstack !=''): #         start from datastack
 				Constants["stack"]             			= options.ctref_orgstack
 				Constants["rs"]                			= 1
 				Constants["radius"]            			= options.radius
@@ -7871,37 +7877,30 @@ def main():
 				if(Blockdata["myid"] == Blockdata["main_node"]): 
 					if not os.path.exists(Tracker["directory"]): os.mkdir(Tracker["directory"])
 					if not os.path.exists(os.path.join(Tracker["directory"], "tempdir")): os.mkdir(os.path.join(Tracker["directory"], "tempdir"))
-				refang, rshifts, coarse_angles, coarse_shifts = get_refangs_and_shifts() # no shake
-				
-				
+				refang, rshifts, coarse_angles, coarse_shifts = get_refangs_and_shifts() # no shake				
 				if( Tracker["constants"]["shake"] > 0.0 ):
 					if(Blockdata["myid"] == Blockdata["main_node"]):
 						shakenumber = uniform( -Tracker["constants"]["shake"], Tracker["constants"]["shake"])
-					else:
-						shakenumber = 0.0
+					else: shakenumber = 0.0
 					shakenumber = bcast_number_to_all(shakenumber, source_node = Blockdata["main_node"])
 					# it has to be rounded as the number written to the disk is rounded,
 					#  so if there is discrepancy one cannot reproduce iteration.
-					shakenumber  = round(shakenumber,5)
-
-					rangle = shakenumber*Tracker["delta"]
-					rshift = shakenumber*Tracker["ts"]
-					refang = Blockdata["symclass"].reduce_anglesets( rotate_params(refang, [-rangle,-rangle,-rangle]) )
+					shakenumber   = round(shakenumber,5)
+					rangle        = shakenumber*Tracker["delta"]
+					rshift        = shakenumber*Tracker["ts"]
+					refang        = Blockdata["symclass"].reduce_anglesets( rotate_params(refang, [-rangle,-rangle,-rangle]) )
 					coarse_angles = Blockdata["symclass"].reduce_anglesets( rotate_params(coarse_angles, [-rangle,-rangle,-rangle]) )
 					shakegrid(rshifts, rshift)
 					shakegrid(coarse_shifts, rshift)
-
 					if(Blockdata["myid"] == Blockdata["main_node"]):
 						write_text_row([[shakenumber, rangle, rshift]], os.path.join(Tracker["directory"] ,"randomize_search.txt") )
 				else:
 					rangle = 0.0
 					rshift = 0.0
-
 				if(Blockdata["myid"] == Blockdata["main_node"]):
 					write_text_row( refang, os.path.join(Tracker["directory"] ,"refang.txt") )
 					write_text_row( rshifts, os.path.join(Tracker["directory"] ,"rshifts.txt") )
 				mpi_barrier(MPI_COMM_WORLD)
-				
 				if(Blockdata["myid"] == Blockdata["main_node"]):
 					write_text_row( refang, os.path.join(Tracker["directory"] ,"refang.txt") )
 					write_text_row( rshifts, os.path.join(Tracker["directory"] ,"rshifts.txt") )
@@ -7940,6 +7939,7 @@ def main():
 					   
 					else: newparamstructure[procid], norm_per_particle[procid] = ali3D_local_polar(refang, rshifts, coarse_angles, coarse_shifts, procid, original_data[procid], oldparams[procid], \
 					   preshift = True, apply_mask = True, nonorm = False, applyctf = True)
+					   
 					qt  = 1.0/Tracker["constants"]["nnxo"]/Tracker["constants"]["nnxo"]
 					params = []
 					for im in xrange(len(newparamstructure[procid])):
@@ -8017,7 +8017,7 @@ def main():
 				else: 
 					nfsc_143  = 0
 					nfsc_half = 0
-				nfsc_143 = bcast_number_to_all(nfsc_143, Blockdata["main_node"], MPI_COMM_WORLD)
+				nfsc_143  = bcast_number_to_all(nfsc_143,  Blockdata["main_node"], MPI_COMM_WORLD)
 				nfsc_half = bcast_number_to_all(nfsc_half, Blockdata["main_node"], MPI_COMM_WORLD)
 				Tracker["nxinit"]     = nfsc_143*2+30  # will be figured in first AI.
 				Tracker["fsc143"]     = nfsc_143
@@ -8194,7 +8194,6 @@ def main():
 				norm_per_particle = [[],[]]
 
 				from time import sleep
-			
 				for procid in xrange(2):
 					Tracker["refvol"] = os.path.join(Tracker["previousoutputdir"],"vol_%01d_%03d.hdf"%(procid,Tracker["mainiteration"]-1))
 
