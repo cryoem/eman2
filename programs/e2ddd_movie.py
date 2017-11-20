@@ -95,7 +95,7 @@ def main():
 	parser.add_argument("--highdose", default=False, help="Use this flag when aligning high dose data (where features in each frame can be distinguished visually).",action="store_true",guitype='boolbox', row=18, col=0, rowspan=1, colspan=1,mode='align')
 	parser.add_argument("--phaseplate", default=False, help="Use this flag when aligning phase plate frames.",action="store_true",guitype='boolbox', row=18, col=1, rowspan=1, colspan=1,mode='align')
 	parser.add_argument("--frames",action="store_true",default=False,help="Save the dark/gain corrected frames", guitype='boolbox', row=18, col=2, rowspan=1, colspan=1, mode='align')
-	parser.add_argument("--round", choices=["float","integer","half integer"],help="If float (default), apply subpixel frame shifts. If integer, use integer shifts. If half integer, round shifts to nearest half integer values.",default="none",guitype='combobox', choicelist='["float","integer","half integer"]', row=19, col=0, rowspan=1, colspan=1, mode='align')
+	parser.add_argument("--round", choices=["float","integer","half integer"],help="If float (default), apply subpixel frame shifts. If integer, use integer shifts. If half integer, round shifts to nearest half integer values.",default="float",guitype='combobox', choicelist='["float","integer","half integer"]', row=19, col=0, rowspan=1, colspan=1, mode='align')
 	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful", guitype='intbox', row=19, col=1, rowspan=1, colspan=2, mode="align")
 
 	parser.add_header(name="orblock6", help='Just a visual separation', title="Alignment optimization: ", row=20, col=0, rowspan=2, colspan=3, mode="align")
