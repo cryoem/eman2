@@ -4375,13 +4375,15 @@ float NormalizeCircleMeanProcessor::calc_mean(EMData * image) const
 	int nz=image->get_zsize();
 
 	float radius = params.set_default("radius",((float)ny/2-2));
+	float width = params.set_default("radius",2.0f);
 	if (radius<0) radius=ny/2+radius;
 
-	static bool busy = false;		// avoid problems with threads and different image sizes
+	static bool busy = false;		// reduce problems with threads and different image sizes
 	static EMData *mask = 0;
 	static int oldradius=radius;
+	static int oldwidth=width;
 
-	if (!mask || !EMUtil::is_same_size(image, mask)||radius!=oldradius) {
+	if (!mask || !EMUtil::is_same_size(image, mask)||radius!=oldradius||width!=oldwidth) {
 		while (busy) ;
 		busy=true;
 		if (!mask) {
@@ -4390,8 +4392,8 @@ float NormalizeCircleMeanProcessor::calc_mean(EMData * image) const
 		mask->set_size(nx, ny, nz);
 		mask->to_one();
 
-		mask->process_inplace("mask.sharp", Dict("inner_radius", radius - 1,
-							 "outer_radius", radius + 1));
+		mask->process_inplace("mask.sharp", Dict("inner_radius", radius,
+							 "outer_radius", radius + width));
 
 	}
 	busy=true;
@@ -4400,7 +4402,7 @@ float NormalizeCircleMeanProcessor::calc_mean(EMData * image) const
 	float * data = image->get_data();
 	size_t size = (size_t)nx*ny*nz;
 	for (size_t i = 0; i < size; ++i) {
-		if (d[i]) { n+=1.0; s+=data[i]; }
+		if (d[i]!=0.0f) { n+=1.0; s+=data[i]; }
 	}
 
 	float result = (float)(s/n);

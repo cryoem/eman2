@@ -5620,7 +5620,8 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("radius", EMObject::FLOAT,"Radius of 2 pixel circular border");
+			d.put("radius", EMObject::FLOAT,"Radius (pixels) of inner edge of circular ring");
+			d.put("width", EMObject::FLOAT,"width (pixels) of ring to average over, default 2");
 			return d;
 		}
 
