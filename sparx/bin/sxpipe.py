@@ -185,6 +185,12 @@ def isac_substack(args):
 # TEST COMMAND
 # cd /home/moriya/SPHIRE-demo/Precalculated-Results
 # 
+# ls -l CorrectedSums/MRK_DISCARDED
+# rm -r CorrectedSums/MRK_DISCARDED
+# 
+# ls -l CorrectedSums/MRK_DISCARDED_DUPLICATED
+# rm -r CorrectedSums/MRK_DISCARDED_DUPLICATED
+# 
 # sxpipe.py organize_micrographs 'CorrectedSums/corrsum/TcdA1-*_frames_sum.mrc' 'CTFest/Tutorial_micrographs_discard.txt' 'CorrectedSums/MRK_DISCARDED' --check_consistency 2>&1 | tee sxpipe_organize_micrographs01.log
 # 
 # sxpipe.py organize_micrographs 'CorrectedSums/corrsum/TcdA1-*_frames_sum.mrc' 'CTFest/Tutorial_micrographs_discard.txt' 'CorrectedSums/MRK_DISCARDED' --reverse --check_consistency 2>&1 | tee sxpipe_organize_micrographs02.log
@@ -192,6 +198,7 @@ def isac_substack(args):
 # sxpipe.py organize_micrographs 'CorrectedSums/corrsum/TcdA1-*_frames_sum.mrc' 'CTFest/Tutorial_micrographs_discard.txt' 'CorrectedSums/MRK_DISCARDED' --check_consistency 2>&1 | tee sxpipe_organize_micrographs03.log
 # 
 # cp -r CorrectedSums/MRK_DISCARDED CorrectedSums/MRK_DISCARDED_DUPLICATED
+# ls -l CorrectedSums/MRK_DISCARDED_DUPLICATED
 # 
 # sxpipe.py organize_micrographs 'CorrectedSums/corrsum/TcdA1-*_frames_sum.mrc' 'CTFest/Tutorial_micrographs_discard.txt' 'CorrectedSums/MRK_DISCARDED' --reverse --check_consistency 2>&1 | tee sxpipe_organize_micrographs04.log
 # 
@@ -696,12 +703,12 @@ def main():
 	parser_isac_subset.set_defaults(func=isac_substack)
 	
 	# create the parser for the "organize_micrographs" command
-	parser_organize_micrographs = subparsers.add_parser("organize_micrographs", help="Organize micrographs: Organize micrographs by moving micrographs in a selecting file from source directory (specified by input micrographs pattern) to destination directory.")
+	parser_organize_micrographs = subparsers.add_parser("organize_micrographs", help="Organize micrographs: Organize micrographs by moving micrographs in a selecting file from a source directory (specified by source micrographs pattern) to a destination directory.")
 	parser_organize_micrographs.add_argument("source_micrograph_pattern",    type=str,                                help="Source micrograph path pattern: Specify path pattern of source micrographs with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (\') or double quotes (\"). (Note: sxgui.py automatically adds single quotes (\')). The substring at the variable part must be same between each associated pair of micrograph names. bdb files can not be selected as source micrographs. (default required string)")
 	parser_organize_micrographs.add_argument("selection_list",               type=str,                                help="Micrograph selecting list: Specify a name of text file containing a list of selected micrograph names or paths. The file extension must be \'.txt\'. The directory path of each entry will be ignored if there are any. (default required string)")
 	parser_organize_micrographs.add_argument("destination_directory",        type=str,                                help="Destination directory: The micrographs in selecting list will be moved to this directory. This directory will be created automatically if it does not exist. (default required string)")
-	parser_organize_micrographs.add_argument("--reverse",                    action="store_true",  default=False,     help="Reverse operation: Move back micrographs from destination directory to source directory. Please use this option to restore the moved micrographs. (default False)")
-	parser_organize_micrographs.add_argument("--check_consistency",          action="store_true",  default=False,     help="Check consistency of inputs: Create a text file containing the list of Micrograph ID entries might have inconsitency among the provided dataset. (i.e. mic_consistency_check_info.txt). (default False)")
+	parser_organize_micrographs.add_argument("--reverse",                    action="store_true",  default=False,     help="Reverse operation: Move back micrographs from the destination directory to the source directory. Please use this option to restore the previously-moved micrographs. (default False)")
+	parser_organize_micrographs.add_argument("--check_consistency",          action="store_true",  default=False,     help="Check consistency of dataset: Create a text file containing the list of Micrograph ID entries might have inconsitency among the provided dataset. (i.e. mic_consistency_check_info.txt). (default False)")
 	parser_organize_micrographs.set_defaults(func=organize_micrographs)
 	
 	# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
