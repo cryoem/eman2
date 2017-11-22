@@ -212,31 +212,32 @@ def organize_micrographs(args):
 	# Prepare the variables for all sections
 	# ------------------------------------------------------------------------------------
 	# Use short names for arguments and options
-	input_mic_pattern = args.input_micrograph_pattern
-	output_dir = args.output_directory
+	src_mic_pattern = args.source_micrograph_pattern
+	select_list_path = args.selection_list
+	dst_dir = args.destination_directory
 
 	# ------------------------------------------------------------------------------------
 	# Check error conditions
 	# ------------------------------------------------------------------------------------
 	subcommand_name = "organize_micrographs"
 	
-	if input_mic_pattern.find("*") == -1:
-		ERROR("Input micrograph path pattern must contain wild card (*). Please check input_micrograph_pattern argument. Please correct input_micrograph_pattern argument and restart the program.", subcommand_name) # action=1 - fatal error, exit
+	if src_mic_pattern.find("*") == -1:
+		ERROR("The source micrograph path pattern must contain wild card (*). Please correct source_micrograph_pattern argument and restart the program.", subcommand_name) # action=1 - fatal error, exit
 	
-	if os.path.splitext(args.input_selection_list)[1] != ".txt":
-		ERROR("The extension of input micrograph selecting list file must \'.txt\'. Please choose correct file or change the file extension, and restart the program.", subcommand_name) # action=1 - fatal error, exit
+	if os.path.splitext(select_list_path)[1] != ".txt":
+		ERROR("The extension of source micrograph selecting list file must \'.txt\'. Please choose a correct file path or change the file extension, then restart the program.", subcommand_name) # action=1 - fatal error, exit
 	
-	if not os.path.exists(args.input_selection_list):
-		ERROR("Input micrograph selecting list file does not exist. Please correct the file path and restart the program.", subcommand_name) # action=1 - fatal error, exit
-	assert (os.path.exists(args.input_selection_list))
+	if not os.path.exists(select_list_path):
+		ERROR("The micrograph selecting list file does not exist. Please choose a correct file path and restart the program.", subcommand_name) # action=1 - fatal error, exit
+	assert (os.path.exists(select_list_path))
 	
 	# ------------------------------------------------------------------------------------
 	# Define operation mode information
 	# ------------------------------------------------------------------------------------
 	# Micrograph basename pattern (directory path is removed from micrograph path pattern)
-	mic_basename_pattern = os.path.basename(input_mic_pattern)
-	input_dir = os.path.dirname(input_mic_pattern)
-	record_dir = output_dir # always use the original output directory for recording generated information
+	mic_basename_pattern = os.path.basename(src_mic_pattern)
+	src_dir = os.path.dirname(src_mic_pattern)
+	record_dir = dst_dir # always use the original output directory for recording generated information
 	
 	# Swap input directory and output directory if necessary
 	if not args.reverse:
@@ -246,13 +247,13 @@ def organize_micrographs(args):
 		assert (args.reverse)
 		print(" ")
 		print_progress("Running with Reverse Operation Mode... ")
-		output_dir = input_dir
-		input_dir = record_dir
-		input_mic_pattern = os.path.join(input_dir, mic_basename_pattern)
+		dst_dir = src_dir
+		src_dir = record_dir
+		src_mic_pattern = os.path.join(src_dir, mic_basename_pattern)
 	
-	print_progress("Input micrograph basename pattern  : %s"%(input_mic_pattern))
-	print_progress("Input directory                    : %s"%(input_dir))
-	print_progress("Output directory                   : %s"%(output_dir))
+	print_progress("Source micrograph basename pattern : %s"%(src_mic_pattern))
+	print_progress("Source directory                   : %s"%(src_dir))
+	print_progress("Destination directory              : %s"%(dst_dir))
 	print_progress("Recording directory                : %s"%(record_dir))
 	print(" ")
 	
@@ -267,9 +268,9 @@ def organize_micrographs(args):
 
 	# Global entry dictionary (all possible entries from all lists) for all mic id substring
 	global_entry_dict = {} # mic id substring is the key
-	subkey_input_mic_path = "Input Micrograph Path"
-	subkey_output_mic_path = "Output Micrograph Path"
-	subkey_selected_mic_basename = "Selected Micrograph Basename"
+	subkey_src_mic_path = "Source Micrograph Path"
+	subkey_dst_mic_path = "Destination Micrograph Path"
+	subkey_select_mic_basename = "Selected Micrograph Basename"
 	
 	# List keeps only id substrings of micrographs whose all necessary information are available
 	valid_mic_id_substr_list = [] 
@@ -282,111 +283,111 @@ def organize_micrographs(args):
 	mic_id_substr_head_idx = len(mic_basename_tokens[0])
 
 	# Set up output directory 
-	output_mic_pattern = None
-	if os.path.exists(output_dir):
+	dst_mic_pattern = None
+	if os.path.exists(dst_dir):
 		print(" ")
-		print_progress("The output directory (%s) already exists. "%(output_dir))
-		output_mic_pattern = os.path.join(output_dir, mic_basename_pattern)
+		print_progress("The destination directory (%s) already exists. "%(dst_dir))
+		dst_mic_pattern = os.path.join(dst_dir, mic_basename_pattern)
 	
 	# --------------------------------------------------------------------------------
-	# Register micrograph id substrings found in input directory (specified by micrograph path pattern)
-	# and associated input micrograph path to the global entry dictionary
+	# Register micrograph id substrings found in source directory (specified by source micrograph path pattern)
+	# and associated source micrograph path to the global entry dictionary
 	# --------------------------------------------------------------------------------
-	# Generate the list of micrograph paths in the input directory
+	# Generate the list of micrograph paths in the source directory
 	print(" ")
-	print_progress("Checking the input directory...")
-	input_mic_path_list = glob.glob(input_mic_pattern)
-	# Check error condition of input micrograph file path list
-	print_progress("Found %d microgarphs in %s."%(len(input_mic_path_list), input_dir))
-	if len(input_mic_path_list) == 0:
-		ERROR("No micrograph files are found in the directory specified by micrograph path pattern (%s). Please check input_micrograph_pattern argument and restart the program."%(input_dir), subcommand_name) # action=1 - fatal error, exit
-	assert (len(input_mic_path_list) > 0)
+	print_progress("Checking the source directory...")
+	src_mic_path_list = glob.glob(src_mic_pattern)
+	# Check error condition of source micrograph file path list
+	print_progress("Found %d microgarphs in %s."%(len(src_mic_path_list), src_dir))
+	if len(src_mic_path_list) == 0:
+		ERROR("No micrograph files are found in the directory specified by the micrograph path pattern (%s). Please check source_micrograph_pattern argument and restart the program."%(src_dir), subcommand_name) # action=1 - fatal error, exit
+	assert (len(src_mic_path_list) > 0)
 	
 	# Register micrograph id substrings to the global entry dictionary
-	for input_mic_path in input_mic_path_list:
+	for src_mic_path in src_mic_path_list:
 		# Find tail index of micrograph id substring and extract the substring from the micrograph name
-		input_mic_basename = os.path.basename(input_mic_path)
-		mic_id_substr_tail_idx = input_mic_basename.index(mic_basename_tokens[1])
-		mic_id_substr = input_mic_basename[mic_id_substr_head_idx:mic_id_substr_tail_idx]
-		assert (input_mic_path == input_mic_pattern.replace("*", mic_id_substr))
+		src_mic_basename = os.path.basename(src_mic_path)
+		mic_id_substr_tail_idx = src_mic_basename.index(mic_basename_tokens[1])
+		mic_id_substr = src_mic_basename[mic_id_substr_head_idx:mic_id_substr_tail_idx]
+		assert (src_mic_path == src_mic_pattern.replace("*", mic_id_substr))
 		if not mic_id_substr in global_entry_dict:
-			# print("MRK_DEBUG: Added new mic_id_substr (%s) to global_entry_dict from input_mic_path_list "%(mic_id_substr))
+			# print("MRK_DEBUG: Added new mic_id_substr (%s) to global_entry_dict from src_mic_path_list "%(mic_id_substr))
 			global_entry_dict[mic_id_substr] = {}
 		assert (mic_id_substr in global_entry_dict)
-		global_entry_dict[mic_id_substr][subkey_input_mic_path] = input_mic_path
+		global_entry_dict[mic_id_substr][subkey_src_mic_path] = src_mic_path
 	assert (len(global_entry_dict) > 0)
 	
 	# Clean up variables which won't be used anymore
-	del input_mic_path_list
+	del src_mic_path_list
 
 	# --------------------------------------------------------------------------------
-	# Register micrograph id substrings found in output directory if any
-	# and associated input micrograph path to the global entry dictionary
+	# Register micrograph id substrings found in destination directory if any
+	# and associated source micrograph path to the global entry dictionary
 	# --------------------------------------------------------------------------------
-	if output_mic_pattern is not None:
-		assert (os.path.exists(output_dir))
-		output_mic_pattern = os.path.join(output_dir, mic_basename_pattern)
+	if dst_mic_pattern is not None:
+		assert (os.path.exists(dst_dir))
+		dst_mic_pattern = os.path.join(dst_dir, mic_basename_pattern)
 		# Generate the list of micrograph paths in the output directory
 		print(" ")
-		print_progress("Checking the output directory...")
-		output_mic_path_list = glob.glob(output_mic_pattern)
-		# Check error condition of input micrograph file path list
-		print_progress("Found %d microgarphs in %s."%(len(output_mic_path_list), output_dir))
+		print_progress("Checking the destination directory...")
+		dst_mic_path_list = glob.glob(dst_mic_pattern)
+		# Check error condition of destination micrograph file path list
+		print_progress("Found %d microgarphs in %s."%(len(dst_mic_path_list), dst_dir))
 		
 		# Register micrograph id substrings to the global entry dictionary
-		for output_mic_path in output_mic_path_list:
+		for dst_mic_path in dst_mic_path_list:
 			# Find tail index of micrograph id substring and extract the substring from the micrograph name
-			output_mic_basename = os.path.basename(output_mic_path)
-			mic_id_substr_tail_idx = output_mic_basename.index(mic_basename_tokens[1])
-			mic_id_substr = output_mic_basename[mic_id_substr_head_idx:mic_id_substr_tail_idx]
-			assert (output_mic_path == output_mic_pattern.replace("*", mic_id_substr))
+			dst_mic_basename = os.path.basename(dst_mic_path)
+			mic_id_substr_tail_idx = dst_mic_basename.index(mic_basename_tokens[1])
+			mic_id_substr = dst_mic_basename[mic_id_substr_head_idx:mic_id_substr_tail_idx]
+			assert (dst_mic_path == dst_mic_pattern.replace("*", mic_id_substr))
 			if not mic_id_substr in global_entry_dict:
-				# print("MRK_DEBUG: Added new mic_id_substr (%s) to global_entry_dict from output_mic_path_list "%(mic_id_substr))
+				# print("MRK_DEBUG: Added new mic_id_substr (%s) to global_entry_dict from dst_mic_path_list "%(mic_id_substr))
 				global_entry_dict[mic_id_substr] = {}
 			assert (mic_id_substr in global_entry_dict)
-			global_entry_dict[mic_id_substr][subkey_output_mic_path] = output_mic_path
+			global_entry_dict[mic_id_substr][subkey_dst_mic_path] = dst_mic_path
 		assert (len(global_entry_dict) > 0)
 	
 		# Clean up variables which won't be used anymore
-		del output_mic_path_list
+		del dst_mic_path_list
 
 	# --------------------------------------------------------------------------------
 	# Register micrograph id substrings found in the selection list
 	# and associated micrograph basename to the global entry dictionary
 	# --------------------------------------------------------------------------------
-	# Generate the list of selected micrograph paths in the selection file
-	selected_mic_path_list = []
+	# Generate the list of select micrograph paths in the selection file
+	select_mic_path_list = []
 	# Generate micrograph lists according to the execution mode
 	print(" ")
 	print_progress("Checking the selection list...")
-	selected_mic_path_list = read_text_file(args.input_selection_list)
+	select_mic_path_list = read_text_file(select_list_path)
 	
 	# Check error condition of micrograph entry lists
-	print_progress("Found %d microgarph entries in %s."%(len(selected_mic_path_list), args.input_selection_list))
-	if len(selected_mic_path_list) == 0:
-		ERROR("No micrograph entries are found in the selection list file (%s). Please check input_selection_list option and restart the program."%(args.input_selection_list), subcommand_name) # action=1 - fatal error, exit
-	assert (len(selected_mic_path_list) > 0)
+	print_progress("Found %d microgarph entries in %s."%(len(select_mic_path_list), select_list_path))
+	if len(select_mic_path_list) == 0:
+		ERROR("No micrograph entries are found in the selection list file (%s). Please correct selection_list option and restart the program."%(select_list_path), subcommand_name) # action=1 - fatal error, exit
+	assert (len(select_mic_path_list) > 0)
 	
-	selected_mic_directory = os.path.dirname(selected_mic_path_list[0])
-	if selected_mic_directory != "":
-		print_progress("    NOTE: Program disregards the directory paths in the selection list (%s)."%(selected_mic_directory))
+	select_mic_dir = os.path.dirname(select_mic_path_list[0])
+	if select_mic_dir != "":
+		print_progress("    NOTE: Program disregards the directory paths in the source selection list (%s)."%(select_mic_dir))
 
 	# Register micrograph id substrings to the global entry dictionary
-	for selected_mic_path in selected_mic_path_list:
+	for select_mic_path in select_mic_path_list:
 		# Find tail index of micrograph id substring and extract the substring from the micrograph name
-		selected_mic_basename = os.path.basename(selected_mic_path)
-		mic_id_substr_tail_idx = selected_mic_basename.index(mic_basename_tokens[1])
-		mic_id_substr = selected_mic_basename[mic_id_substr_head_idx:mic_id_substr_tail_idx]
-		assert (selected_mic_basename == mic_basename_pattern.replace("*", mic_id_substr))
+		select_mic_basename = os.path.basename(select_mic_path)
+		mic_id_substr_tail_idx = select_mic_basename.index(mic_basename_tokens[1])
+		mic_id_substr = select_mic_basename[mic_id_substr_head_idx:mic_id_substr_tail_idx]
+		assert (select_mic_basename == mic_basename_pattern.replace("*", mic_id_substr))
 		if not mic_id_substr in global_entry_dict:
-			# print("MRK_DEBUG: Added new mic_id_substr (%s) to global_entry_dict from selected_mic_path_list "%(mic_id_substr))
+			# print("MRK_DEBUG: Added new mic_id_substr (%s) to global_entry_dict from select_mic_path_list "%(mic_id_substr))
 			global_entry_dict[mic_id_substr] = {}
 		assert (mic_id_substr in global_entry_dict)
-		global_entry_dict[mic_id_substr][subkey_selected_mic_basename] = selected_mic_basename
+		global_entry_dict[mic_id_substr][subkey_select_mic_basename] = select_mic_basename
 	assert (len(global_entry_dict) > 0)
 	
 	# Clean up variables which won't be used anymore
-	del selected_mic_path_list
+	del select_mic_path_list
 	
 	# --------------------------------------------------------------------------------
 	# Clean up variables related to registration to the global entry dictionary
@@ -400,10 +401,10 @@ def organize_micrographs(args):
 	print(" ")
 	print_progress("Checking consistency of the provided dataset ...")
 
-	if output_mic_pattern is None:
-		assert (not os.path.exists(output_dir))
+	if dst_mic_pattern is None:
+		assert (not os.path.exists(dst_dir))
 		# Prepare lists to keep track of invalid (rejected) micrographs
-		no_input_mic_id_substr_list = []
+		no_src_mic_id_substr_list = []
 		
 		# Loop over substring id list
 		for mic_id_substr in global_entry_dict:
@@ -411,12 +412,12 @@ def organize_micrographs(args):
 		
 			warinnig_messages = []
 			# selected micrograph basename must have been registed always .
-			if subkey_selected_mic_basename in mic_id_entry: 
+			if subkey_select_mic_basename in mic_id_entry: 
 				# Check if associated input micrograph exists
-				if not subkey_input_mic_path in mic_id_entry:
+				if not subkey_src_mic_path in mic_id_entry:
 					mic_basename = mic_basename_pattern.replace("*", mic_id_substr)
-					warinnig_messages.append("    associated micrograph (%s) does not exist in input directory (%s)."%(mic_basename, input_dir))
-					no_input_mic_id_substr_list.append(mic_id_substr)
+					warinnig_messages.append("    associated micrograph (%s) does not exist in the source directory (%s)."%(mic_basename, src_dir))
+					no_src_mic_id_substr_list.append(mic_id_substr)
 				
 				if len(warinnig_messages) > 0:
 					print_progress("WARNING!!! Micrograph ID %s has problems with consistency among the provided dataset:"%(mic_id_substr))
@@ -427,15 +428,15 @@ def organize_micrographs(args):
 					# print("MRK_DEBUG: adding mic_id_substr := ", mic_id_substr)
 					valid_mic_id_substr_list.append(mic_id_substr)
 			# else:
-			# 	assert (not subkey_selected_mic_basename in mic_id_entry)
+			# 	assert (not subkey_select_mic_basename in mic_id_entry)
 			# 	# This entry is not in the selection list. Do nothing
 			
 		# Check the input dataset consistency and save the result to a text file, if necessary.
 		if args.check_consistency:
-			# Create output directory
-			assert (not os.path.exists(output_dir))
-			os.mkdir(output_dir)
-			assert (os.path.exists(output_dir))
+			# Create destination directory
+			assert (not os.path.exists(dst_dir))
+			os.mkdir(dst_dir)
+			assert (os.path.exists(dst_dir))
 			
 			# Open the consistency check file
 			mic_consistency_check_info_path = os.path.join(record_dir, "mic_consistency_check_info_%s.txt"%(get_time_stamp_suffix()))
@@ -449,15 +450,15 @@ def organize_micrographs(args):
 				mic_id_entry = global_entry_dict[mic_id_substr]
 			
 				consistency_messages = []
-				# Check if associated micrograph path exists in input directory
-				if not subkey_input_mic_path in mic_id_entry:
+				# Check if associated micrograph path exists in source directory
+				if not subkey_src_mic_path in mic_id_entry:
 					mic_basename = mic_basename_pattern.replace("*", mic_id_substr)
-					consistency_messages.append("    associated micrograph (%s) does not exist in input directory (%s)."%(mic_basename, input_dir))
+					consistency_messages.append("    associated micrograph (%s) does not exist in the source directory (%s)."%(mic_basename, src_dir))
 			
 				# Check if associated micrograph basename exists in selection list
-				if not subkey_selected_mic_basename in mic_id_entry:
+				if not subkey_select_mic_basename in mic_id_entry:
 					mic_basename = mic_basename_pattern.replace("*", mic_id_substr)
-					consistency_messages.append("    associated micrograph (%s) is not in selection list (%s)."%(mic_basename, args.input_selection_list))
+					consistency_messages.append("    associated micrograph (%s) is not in the selection list (%s)."%(mic_basename, select_list_path))
 			
 				if len(consistency_messages) > 0:
 					mic_consistency_check_info_file.write("Micrograph ID %s might have problems with consistency among the provided dataset:\n"%(mic_id_substr))
@@ -479,24 +480,24 @@ def organize_micrographs(args):
 		# Print out the summary of input consistency
 		# --------------------------------------------------------------------------------
 		print(" ")
-		print_progress("Summary of consistency check for provided dataset ...")
+		print_progress("Summary of consistency check for provided dataset...")
 		print_progress("Detected                           : %6d"%(len(global_entry_dict)))
 		print_progress("Valid                              : %6d"%(len(valid_mic_id_substr_list)))
-		print_progress("Rejected by no input micrograph    : %6d"%(len(no_input_mic_id_substr_list)))
+		print_progress("Rejected by no source micrographs  : %6d"%(len(no_src_mic_id_substr_list)))
 		print(" ")
 		
 		# --------------------------------------------------------------------------------
 		# Clean up variables related to tracking of invalid (rejected) micrographs 
 		# --------------------------------------------------------------------------------
-		del no_input_mic_id_substr_list
+		del no_src_mic_id_substr_list
 
 	else:
-		assert (output_mic_pattern is not None)
-		assert (os.path.exists(output_dir))
+		assert (dst_mic_pattern is not None)
+		assert (os.path.exists(dst_dir))
 		# Prepare lists to keep track of invalid (rejected) micrographs
-		no_mic_in_both_dir_id_substr_list = []
-		already_in_output_dir_mic_id_substr_list = []
-		duplicated_in_output_dir_mic_id_substr_list = []
+		no_mic_in_both_dirs_id_substr_list = []
+		already_in_dst_dir_mic_id_substr_list = []
+		duplicated_in_dst_dir_mic_id_substr_list = []
 
 		# Loop over substring id list
 		for mic_id_substr in global_entry_dict:
@@ -504,28 +505,28 @@ def organize_micrographs(args):
 		
 			warinnig_messages = []
 			# selected micrograph basename must have been registed always .
-			if subkey_selected_mic_basename in mic_id_entry: 
+			if subkey_select_mic_basename in mic_id_entry: 
 				# Check if associated input micrograph exists
-				if not subkey_input_mic_path in mic_id_entry:
+				if not subkey_src_mic_path in mic_id_entry:
 					mic_basename = mic_basename_pattern.replace("*", mic_id_substr)
-					if not subkey_output_mic_path in mic_id_entry:
-						warinnig_messages.append("    associated micrograph (%s) does not exist neither in input directory (%s) nor in output directory (%s)."%(mic_basename, input_dir, output_dir))
-						no_mic_in_both_dir_id_substr_list.append(mic_id_substr)
+					if not subkey_dst_mic_path in mic_id_entry:
+						warinnig_messages.append("    associated micrograph (%s) does not exist neither in the source directory (%s) nor in the destination directory (%s)."%(mic_basename, src_dir, dst_dir))
+						no_mic_in_both_dirs_id_substr_list.append(mic_id_substr)
 					else:
-						assert (subkey_output_mic_path in mic_id_entry)
-						warinnig_messages.append("    associated micrograph (%s) exists only in output directory (%s), but not in input directory (%s)."%(mic_basename, output_dir, input_dir))
-						already_in_output_dir_mic_id_substr_list.append(mic_id_substr)
+						assert (subkey_dst_mic_path in mic_id_entry)
+						warinnig_messages.append("    associated micrograph (%s) exists only in the destination directory (%s), but not in the source directory (%s)."%(mic_basename, dst_dir, src_dir))
+						already_in_dst_dir_mic_id_substr_list.append(mic_id_substr)
 				else: 
-					assert (subkey_input_mic_path in mic_id_entry)
-					if subkey_output_mic_path in mic_id_entry:
+					assert (subkey_src_mic_path in mic_id_entry)
+					if subkey_dst_mic_path in mic_id_entry:
 						mic_basename = mic_basename_pattern.replace("*", mic_id_substr)
-						warinnig_messages.append("    associated micrograph (%s) exist both in input directory (%s) and output directory (%s)."%(mic_basename, input_dir, output_dir))
-						duplicated_in_output_dir_mic_id_substr_list.append(mic_id_substr)
+						warinnig_messages.append("    associated micrograph (%s) exist both in the source directory (%s) and in the destination directory (%s)."%(mic_basename, src_dir, dst_dir))
+						duplicated_in_dst_dir_mic_id_substr_list.append(mic_id_substr)
 					# else:
 					#	# This should most typical case!
-					#	assert (not subkey_output_mic_path in mic_id_entry)
+					#	assert (not subkey_dst_mic_path in mic_id_entry)
 				if len(warinnig_messages) > 0:
-					print_progress("WARNING!!! Micrograph ID %s has problems with consistency among the provided datasets:"%(mic_id_substr))
+					print_progress("WARNING!!! Micrograph ID %s has problems with consistency among the provided dataset:"%(mic_id_substr))
 					for warinnig_message in warinnig_messages:
 						print_progress(warinnig_message)
 					print_progress("    Ignores this as an invalid entry.")
@@ -533,12 +534,12 @@ def organize_micrographs(args):
 					# print("MRK_DEBUG: adding mic_id_substr := ", mic_id_substr)
 					valid_mic_id_substr_list.append(mic_id_substr)
 			# else:
-			# 	assert (not subkey_selected_mic_basename in mic_id_entry)
+			# 	assert (not subkey_select_mic_basename in mic_id_entry)
 			# 	# This entry is not in the selection list. Do nothing
 			
 		# Check the input dataset consistency and save the result to a text file, if necessary.
 		if args.check_consistency:
-			assert (os.path.exists(output_dir))
+			assert (os.path.exists(dst_dir))
 			
 			# Open the consistency check file
 			mic_consistency_check_info_path = os.path.join(record_dir, "mic_consistency_check_info_%s.txt"%(get_time_stamp_suffix()))
@@ -552,23 +553,23 @@ def organize_micrographs(args):
 				mic_id_entry = global_entry_dict[mic_id_substr]
 				
 				consistency_messages = []
-				# Check if associated micrograph path exists in input directory
-				if not subkey_input_mic_path in mic_id_entry:
+				# Check if associated micrograph path exists in source directory
+				if not subkey_src_mic_path in mic_id_entry:
 					mic_basename = mic_basename_pattern.replace("*", mic_id_substr)
-					consistency_messages.append("    associated micrograph (%s) does not exist in input directory (%s)."%(mic_basename, input_dir))
+					consistency_messages.append("    associated micrograph (%s) does not exist in the source directory (%s)."%(mic_basename, src_dir))
 			
 				# Check if associated micrograph basename exists in selection list
-				if not subkey_selected_mic_basename in mic_id_entry:
+				if not subkey_select_mic_basename in mic_id_entry:
 					mic_basename = mic_basename_pattern.replace("*", mic_id_substr)
-					consistency_messages.append("    associated micrograph (%s) is not in selection list (%s)."%(mic_basename, args.input_selection_list))
+					consistency_messages.append("    associated micrograph (%s) is not in the selection list (%s)."%(mic_basename, select_list_path))
 			
-				# Check if associated micrograph path does not exist in output directory
-				if subkey_output_mic_path in mic_id_entry:
+				# Check if associated micrograph path does not exist in destination directory
+				if subkey_dst_mic_path in mic_id_entry:
 					mic_basename = mic_basename_pattern.replace("*", mic_id_substr)
-					consistency_messages.append("    associated micrograph (%s) already exist in output directory (%s)."%(mic_basename, output_dir))
+					consistency_messages.append("    associated micrograph (%s) already exist in the destination directory (%s)."%(mic_basename, dst_dir))
 			
 				if len(consistency_messages) > 0:
-					mic_consistency_check_info_file.write("Micrograph ID %s have inconsistency among provided information:\n"%(mic_id_substr))
+					mic_consistency_check_info_file.write("Micrograph ID %s have inconsistency among provided dataset:\n"%(mic_id_substr))
 					for consistency_message in consistency_messages:
 						mic_consistency_check_info_file.write(consistency_message)
 						mic_consistency_check_info_file.write("\n")
@@ -590,23 +591,23 @@ def organize_micrographs(args):
 		print_progress("Summary of dataset consistency check...")
 		print_progress("Detected                           : %6d"%(len(global_entry_dict)))
 		print_progress("Valid                              : %6d"%(len(valid_mic_id_substr_list)))
-		print_progress("Rejected by not found at all       : %6d"%(len(no_mic_in_both_dir_id_substr_list)))
-		print_progress("Rejected by already in output dir  : %6d"%(len(already_in_output_dir_mic_id_substr_list)))
-		print_progress("Rejected by duplicated             : %6d"%(len(duplicated_in_output_dir_mic_id_substr_list)))
+		print_progress("Rejected by not found in both dirs : %6d"%(len(no_mic_in_both_dirs_id_substr_list)))
+		print_progress("Rejected by already in dst dir     : %6d"%(len(already_in_dst_dir_mic_id_substr_list)))
+		print_progress("Rejected by duplicated in dst dir  : %6d"%(len(duplicated_in_dst_dir_mic_id_substr_list)))
 		print(" ")
 		
 		# --------------------------------------------------------------------------------
 		# Save the list of duplicated_micrographs in duplicated_micrographs_DATE_TIME.txt 
-		# under output directory if necessary
+		# under destination directory if necessary
 		# --------------------------------------------------------------------------------
-		if len(duplicated_in_output_dir_mic_id_substr_list) > 0:
+		if len(duplicated_in_dst_dir_mic_id_substr_list) > 0:
 			duplicated_mic_list_path = os.path.join(record_dir, "duplicated_micrographs_%s.txt"%(get_time_stamp_suffix()))
 			print_progress("Storing the list of duplicated micrographs in %s."%(duplicated_mic_list_path))
 			print(" ")
 			
 			# Open the duplicated micrograph list file
 			duplicated_mic_list_file = open(duplicated_mic_list_path, "w")
-			for mic_id_substr in duplicated_in_output_dir_mic_id_substr_list:
+			for mic_id_substr in duplicated_in_dst_dir_mic_id_substr_list:
 				duplicated_mic_basename = mic_basename_pattern.replace("*", mic_id_substr)
 				duplicated_mic_list_file.write(duplicated_mic_basename)
 				duplicated_mic_list_file.write("\n")
@@ -617,57 +618,57 @@ def organize_micrographs(args):
 		# --------------------------------------------------------------------------------
 		# Clean up variables related to tracking of invalid (rejected) micrographs 
 		# --------------------------------------------------------------------------------
-		del no_mic_in_both_dir_id_substr_list
-		del already_in_output_dir_mic_id_substr_list
-		del duplicated_in_output_dir_mic_id_substr_list
+		del no_mic_in_both_dirs_id_substr_list
+		del already_in_dst_dir_mic_id_substr_list
+		del duplicated_in_dst_dir_mic_id_substr_list
 
 	# --------------------------------------------------------------------------------
-	# Create output directory
+	# Create destination directory
 	# --------------------------------------------------------------------------------
-	if not os.path.exists(output_dir):
+	if not os.path.exists(dst_dir):
 		print(" ")
-		print_progress("Creating output directory (%)..."%(output_dir))
-		os.mkdir(output_dir)
-	assert (os.path.exists(output_dir))
+		print_progress("Creating the destination directory (%)..."%(dst_dir))
+		os.mkdir(dst_dir)
+	assert (os.path.exists(dst_dir))
 
 	# --------------------------------------------------------------------------------
-	# Move micrographs in selecting list form input directory to output directory
+	# Move micrographs in selecting list form source directory to destination directory
 	# --------------------------------------------------------------------------------
 	# Prepare the counters for the global summary of micrographs
-	n_movied_mics = 0
+	n_moved_mics = 0
 	
 	if len(valid_mic_id_substr_list) > 0:
 		print(" ")
-		print_progress("Moving micrographs in selecting list (%s) from input directory (%s) to output directory (%s)..."%(args.input_selection_list, input_dir, output_dir))
+		print_progress("Moving micrographs in the selecting list (%s) from the source directory (%s) to the destination directory (%s)..."%(select_list_path, src_dir, dst_dir))
 		### print("Micrographs processed (including percent of progress):")
 		### progress_percent_step = len(valid_mic_id_substr_list)*0.1 # Report every 10% of the number of micrograms
 
 	# Loop over substring id list
 	for mic_id_substr_idx, mic_id_substr in enumerate(valid_mic_id_substr_list):
 		mic_id_entry = global_entry_dict[mic_id_substr]
-		mic_basename = mic_id_entry[subkey_selected_mic_basename]
+		mic_basename = mic_id_entry[subkey_select_mic_basename]
 		assert (mic_basename == mic_basename_pattern.replace("*", mic_id_substr))
 		
 		### # Print out progress if necessary
 		### print("%s ---> % 2.2f%%" % (mic_basename, mic_id_substr_idx / progress_percent_step))
 		
 		# At this point, this micrograph
-		# - must exist in input directory
-		# - must NOT exist in output directory
+		# - must exist in source directory
+		# - must NOT exist in destination directory
 		# because of the consistency check above
-		assert (subkey_input_mic_path in mic_id_entry)
-		assert (os.path.exists(mic_id_entry[subkey_input_mic_path]))
-		assert (not os.path.exists(os.path.join(output_dir, mic_basename)))
+		assert (subkey_src_mic_path in mic_id_entry)
+		assert (os.path.exists(mic_id_entry[subkey_src_mic_path]))
+		assert (not os.path.exists(os.path.join(dst_dir, mic_basename)))
 		
 		# Move this micrograph from input directory to output directory
-		input_mic_path = mic_id_entry[subkey_input_mic_path]
-		shutil.move(input_mic_path, output_dir)
-		n_movied_mics += 1
+		src_mic_path = mic_id_entry[subkey_src_mic_path]
+		shutil.move(src_mic_path, dst_dir)
+		n_moved_mics += 1
 	
 	# Print summary of processing
 	print(" ")
 	print_progress("Summary of processing...")
-	print_progress("Moved      : %6d"%(n_movied_mics))
+	print_progress("Moved      : %6d"%(n_moved_mics))
 	print(" ")
 	
 # ========================================================================================
@@ -695,12 +696,12 @@ def main():
 	parser_isac_subset.set_defaults(func=isac_substack)
 	
 	# create the parser for the "organize_micrographs" command
-	parser_organize_micrographs = subparsers.add_parser("organize_micrographs", help="Organize micrographs: Organize micrographs by moving micrographs in a selecting file from input directory (specified by input micrographs pattern) to output directory.")
-	parser_organize_micrographs.add_argument("input_micrograph_pattern", type=str,                                help="Input micrograph path pattern: Specify path pattern of input micrographs with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (\') or double quotes (\"). (Note: sxgui.py automatically adds single quotes (\')). The substring at the variable part must be same between the associated pair of input micrograph and coordinates file. bdb files can not be selected as input micrographs. (default required string)")
-	parser_organize_micrographs.add_argument("input_selection_list",     type=str,                                help="Input micrograph selecting list: Specify a name of text file containing a list of selected micrograph names or paths. The file extension must be \'.txt\'. The directory path of each entry will be ignored if there is. (default required string)")
-	parser_organize_micrographs.add_argument("output_directory",         type=str,                                help="Output directory: The micrographs in selecting list will be moved to this directory. This directory will be created automatically if it does not exist. (default required string)")
-	parser_organize_micrographs.add_argument("--reverse",                action="store_true",  default=False,     help="Reverse operation: Move back micrographs from output directory to input directory. Please use this option to restore the moved micrographs. (default False)")
-	parser_organize_micrographs.add_argument("--check_consistency",      action="store_true",  default=False,     help="Check consistency of inputs: Create a text file containing the list of Micrograph ID entries might have inconsitency among inputs. (i.e. mic_consistency_check_info.txt). (default False question reversed in GUI)")
+	parser_organize_micrographs = subparsers.add_parser("organize_micrographs", help="Organize micrographs: Organize micrographs by moving micrographs in a selecting file from source directory (specified by input micrographs pattern) to destination directory.")
+	parser_organize_micrographs.add_argument("source_micrograph_pattern",    type=str,                                help="Source micrograph path pattern: Specify path pattern of source micrographs with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (\') or double quotes (\"). (Note: sxgui.py automatically adds single quotes (\')). The substring at the variable part must be same between each associated pair of micrograph names. bdb files can not be selected as source micrographs. (default required string)")
+	parser_organize_micrographs.add_argument("selection_list",               type=str,                                help="Micrograph selecting list: Specify a name of text file containing a list of selected micrograph names or paths. The file extension must be \'.txt\'. The directory path of each entry will be ignored if there are any. (default required string)")
+	parser_organize_micrographs.add_argument("destination_directory",        type=str,                                help="Destination directory: The micrographs in selecting list will be moved to this directory. This directory will be created automatically if it does not exist. (default required string)")
+	parser_organize_micrographs.add_argument("--reverse",                    action="store_true",  default=False,     help="Reverse operation: Move back micrographs from destination directory to source directory. Please use this option to restore the moved micrographs. (default False)")
+	parser_organize_micrographs.add_argument("--check_consistency",          action="store_true",  default=False,     help="Check consistency of inputs: Create a text file containing the list of Micrograph ID entries might have inconsitency among the provided dataset. (i.e. mic_consistency_check_info.txt). (default False)")
 	parser_organize_micrographs.set_defaults(func=organize_micrographs)
 	
 	# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
