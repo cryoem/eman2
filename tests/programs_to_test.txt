@@ -116,7 +116,6 @@ e2spt_scramblestack.py
 e2spt_simulation.py
 e2spt_stat.py
 e2spt_tiltstacker.py
-e2spt_translate.py
 e2spt_wedge.py
 e2ssehunter.py
 e2ssematch.py
