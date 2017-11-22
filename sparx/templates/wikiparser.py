@@ -103,6 +103,7 @@ def construct_keyword_dict():
 	keyword_dict["--symmetrize"]                  = SXkeyword_map(0, "")               # --symmetrize (contains keyworkd '--sym' but this should be bool type)
 ###	keyword_dict["isac_directory"]                = SXkeyword_map(0, "directory")      # isac_directory (contains keyworkd 'directory' but this should be directory type)
 	keyword_dict["--chunkdir"]                    = SXkeyword_map(0, "directory")      # --chunkdir=chunkdir (contains keyworkd 'chunk' but this should be directory type)
+	keyword_dict["destination_directory"]         = SXkeyword_map(0, "directory")      # destination_directory (contains keyworkd 'directory' but this should be directory type)
 	keyword_dict["--single_stack_output"]         = SXkeyword_map(0, "bool")           # --single_stack_output (contains keyworkd 'output' but this should be bool type)
 	keyword_dict["--do_adaptive_mask"]            = SXkeyword_map(0, "bool")           # --do_adaptive_mask (contains keyworkd 'mask' but this should be bool type)
 	keyword_dict["--skip_create_substack"]        = SXkeyword_map(0, "bool")           # --skip_create_substack (contains keyworkd 'stack' but this should be bool type)
@@ -122,7 +123,6 @@ def construct_keyword_dict():
 	keyword_dict["output_mask3D"]                 = SXkeyword_map(1, "output")         # output_mask3D
 	keyword_dict["--makevstack"]                  = SXkeyword_map(1, "output")         # --makevstack
 	keyword_dict["input_micrograph_list"]         = SXkeyword_map(1, "any_image_list") # input_micrograph_list (contains keyword 'input_micrograph' but this should be image_list type)
-	keyword_dict["input_selection_list"]          = SXkeyword_map(1, "txt")            # input_selection_list (contains keyword 'selection_list' but this should be txt type)
 	keyword_dict["--ctref_orgstack"]              = SXkeyword_map(1, "bdb")            # --ctref_orgstack=stack_for_continuation
 	# Use priority 2 for the others
 	keyword_dict["stack"]                         = SXkeyword_map(2, "image")          # stack, prj_stack, input_stack, --instack=input_stack_file
@@ -135,7 +135,8 @@ def construct_keyword_dict():
 	keyword_dict["--ctref_initvol"]               = SXkeyword_map(2, "image")          # --ctref_initvol=restarting_initial_volume
 	keyword_dict["input_isac_class_avgs_path"]    = SXkeyword_map(2, "image")          # input_isac_class_avgs_path
 	keyword_dict["input_image_path"]              = SXkeyword_map(2, "any_image")      # input_image_path
-	keyword_dict["input_micrograph"]              = SXkeyword_map(2, "any_image")      # input_micrograph_pattern
+	keyword_dict["input_micrograph"]              = SXkeyword_map(2, "any_image")      # input_micrograph_pattern 
+	keyword_dict["source_micrograph"]             = SXkeyword_map(2, "any_image")      # source_micrograph_pattern
 	keyword_dict["selection_list"]                = SXkeyword_map(2, "any_micrograph") # selection_list
 	keyword_dict["--tr0"]                         = SXkeyword_map(2, "parameters")     # --tr0=matrix_file
 	keyword_dict["input_shift_pattern"]           = SXkeyword_map(2, "parameters")     # input_shift_pattern
@@ -254,9 +255,9 @@ def handle_exceptional_cases(sxcmd):
 		sxcmd.token_dict["locres_volume"].type = "image"
 	elif sxcmd.name == "sxpipe":
 		if sxcmd.subname == "organize_micrographs":
-			assert(sxcmd.token_dict["output_directory"].key_base == "output_directory")
-			assert(sxcmd.token_dict["output_directory"].type == "output")
-			sxcmd.token_dict["output_directory"].type = "string"
+			assert(sxcmd.token_dict["selection_list"].key_base == "selection_list")
+			assert(sxcmd.token_dict["selection_list"].type == "any_micrograph")
+			sxcmd.token_dict["selection_list"].type = "txt"
 
 # ----------------------------------------------------------------------------------------
 def remove_MoinMoinWiki_makeup(target_text):
