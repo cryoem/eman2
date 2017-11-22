@@ -1,3 +1,5 @@
+ e2speedtest.py               # manually tested
+ e2version.py                 # manually tested
  e2.py                        # no -h
  e2_real.py                   # no -h
  e2fhstat.py                  # broken
