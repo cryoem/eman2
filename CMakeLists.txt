@@ -317,43 +317,7 @@ set(test_methods
 		test_imageio.py:TestPNGIO.test_write_png
 	)
 
-set(test_methods-non-win
-		test_aligner.py:TestAligner
-		test_averager.py:TestAverager
-		test_cmp.py:TestCmp
-		test_emdata.py:TestEMData
-		test_imageio.py:ImageIOTester
-		test_imageio.py:TestEMIO
-		test_imageio.py:TestPifIO
-		test_imageio.py:TestFitsIO
-		test_imageio.py:TestIcosIO
-		test_imageio.py:TestPNGIO
-		test_imageio.py:TestVTKIO
-		test_imageio.py:TestXPLORIO
-		test_imageio.py:TestPGMIO
-		test_imageio.py:TestSpiderIO
-		test_imageio.py:TestDF3IO
-		test_imageio.py:TestHdfIO
-		test_imageio.py:TestMrcIO
-		test_imageio.py:TestImagicIO
-		test_imageio.py:TestImageIO
-		test_misc.py:TestPixel
-		test_misc.py:TestBoost
-		test_misc.py:TestException
-		test_misc.py:TestRegion
-		test_processor.py:TestProcessor
-		test_reconstructor.py:TestReconstructor
-		test_transform.py:TestTransform
-		test_transform.py:TestSymmetry
-		test_typeconverter.py:TestTypeConverter
-		test_utils.py:TestUtils
-		test_utils.py:TestEMUtils
-		test_vec.py:TestVec
-		test_xydata.py:TestXYData
-		)
-
 if(NOT WIN32)
-	set(test_methods ${test_methods} ${test_methods-non-win})
 endif()
 
 foreach(t ${test_methods})
