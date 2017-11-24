@@ -312,7 +312,7 @@ find_package(Nosetests)
 
 if(NOT WIN32)
 	add_test(NAME nose-tests
-			COMMAND ${NOSETESTS_EXECUTABLE} -v -m "^test_*" -e "^test_image_" -e "test_main" -e "test_result" -e "test_boxing" -a \!broken
+			COMMAND ${NOSETESTS_EXECUTABLE} -vv --exe -m "^test_*" -e "^test_image_" -e "test_main" -e "test_result" -e "test_boxing" -a \!broken
 					${CMAKE_SOURCE_DIR}/rt/pyem/
 			)
 else()
