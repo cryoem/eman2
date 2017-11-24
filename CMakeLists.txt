@@ -322,8 +322,8 @@ foreach(i ${py_imports_list})
 	endif()
 endforeach()
 
-add_test(NAME import-inners
-		 COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/test_imports_inner.py
+add_test(NAME imports
+		 COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/test_imports.py
 		 )
 
 add_test(NAME test-EMAN2DIR
