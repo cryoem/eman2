@@ -308,6 +308,8 @@ add_custom_target(test-verbose
 #		DEPENDS Tests
 #		)
 
+find_package(Nosetests)
+
 set(test_methods
 		test_imageio.py:TestHdfIO.test_read_image
 		test_imageio.py:TestHdfIO.test_write_image
@@ -354,7 +356,6 @@ if(NOT WIN32)
 	set(test_methods ${test_methods} ${test_methods-non-win})
 endif()
 
-find_package(Nosetests)
 foreach(t ${test_methods})
 	add_test(NAME ${t}
 			COMMAND ${NOSETESTS_EXECUTABLE} -v -m "^test_*" -a \!broken
