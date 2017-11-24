@@ -318,6 +318,11 @@ set(test_methods
 	)
 
 if(NOT WIN32)
+	add_test(NAME nose-tests
+			COMMAND ${NOSETESTS_EXECUTABLE} -v -m "^test_*" -a \!broken
+					${CMAKE_SOURCE_DIR}/rt/pyem/
+			)
+else()
 endif()
 
 foreach(t ${test_methods})
