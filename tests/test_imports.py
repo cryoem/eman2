@@ -35,7 +35,11 @@ from libpyProjector2 import Projectors
 from libpyProjector2 import __Projector
 from libpyReconstructor2 import Reconstructors
 from libpyReconstructor2 import __Reconstructor
-from libpyTomoSeg2 import TomoSeg
+
+import platform
+if platform.system() != "Windows":
+    from libpyTomoSeg2 import TomoSeg
+
 from libpyTransform2 import OrientGens
 from libpyTransform2 import Quaternion
 from libpyTransform2 import Symmetries
