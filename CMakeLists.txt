@@ -323,14 +323,13 @@ if(NOT WIN32)
 					${CMAKE_SOURCE_DIR}/rt/pyem/
 			)
 else()
+	foreach(t ${test_methods})
+		add_test(NAME ${t}
+				COMMAND ${NOSETESTS_EXECUTABLE} -v -m "^test_*" -a \!broken
+						${CMAKE_SOURCE_DIR}/rt/pyem/${t}
+				)
+	endforeach()
 endif()
-
-foreach(t ${test_methods})
-	add_test(NAME ${t}
-			COMMAND ${NOSETESTS_EXECUTABLE} -v -m "^test_*" -a \!broken
-					${CMAKE_SOURCE_DIR}/rt/pyem/${t}
-			)
-endforeach()
 
 add_custom_target(test-verbose-broken
 		COMMAND ${NOSETESTS_EXECUTABLE} -v -m "^test_*" -a broken ${CMAKE_SOURCE_DIR}/rt/pyem/*
