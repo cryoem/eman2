@@ -316,14 +316,14 @@ if(NOT WIN32)
 					${CMAKE_SOURCE_DIR}/rt/pyem/
 			)
 else()
-	set(test_methods
+	set(test_methods-win
 			test_imageio.py:TestHdfIO.test_read_image
 			test_imageio.py:TestHdfIO.test_write_image
 			test_imageio.py:TestHdfIO.test_read_write_hdf
 			test_imageio.py:TestPNGIO.test_write_png
 		)
 
-	foreach(t ${test_methods})
+	foreach(t ${test_methods-win})
 		add_test(NAME ${t}
 				COMMAND ${NOSETESTS_EXECUTABLE} -v -m "^test_*" -a \!broken
 						${CMAKE_SOURCE_DIR}/rt/pyem/${t}
