@@ -308,6 +308,28 @@ add_custom_target(test-verbose
 #		DEPENDS Tests
 #		)
 
+file(READ ${CMAKE_SOURCE_DIR}/tests/test_imports.py py_imports_list)
+STRING(REGEX REPLACE "\n" ";" py_imports_list "${py_imports_list}")
+foreach(i ${py_imports_list})
+	set(import_statement ${i})
+	separate_arguments(import_statement)
+	list(GET import_statement 1 item1)
+	list(GET import_statement 3 item2)
+	if(NOT WIN32 OR NOT "${item1}" STREQUAL "libpyTomoSeg2")
+		add_test(NAME import-${item1}.${item2}
+				 COMMAND ${PYTHON_EXECUTABLE} -c "${i}"
+				 )
+	endif()
+endforeach()
+
+add_test(NAME import-inners
+		 COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/test_imports_inner.py
+		 )
+
+add_test(NAME test-EMAN2DIR
+		 COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/test_EMAN2DIR.py
+		 )
+
 find_package(Nosetests)
 
 if(NOT WIN32)
@@ -334,28 +356,6 @@ endif()
 add_custom_target(test-verbose-broken
 		COMMAND ${NOSETESTS_EXECUTABLE} -v -m "^test_*" -a broken ${CMAKE_SOURCE_DIR}/rt/pyem/*
 		)
-
-file(READ ${CMAKE_SOURCE_DIR}/tests/test_imports.py py_imports_list)
-STRING(REGEX REPLACE "\n" ";" py_imports_list "${py_imports_list}")
-foreach(i ${py_imports_list})
-	set(import_statement ${i})
-	separate_arguments(import_statement)
-	list(GET import_statement 1 item1)
-	list(GET import_statement 3 item2)
-	if(NOT WIN32 OR NOT "${item1}" STREQUAL "libpyTomoSeg2")
-		add_test(NAME import-${item1}.${item2}
-				 COMMAND ${PYTHON_EXECUTABLE} -c "${i}"
-				 )
-	endif()
-endforeach()
-
-add_test(NAME import-inners
-		 COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/test_imports_inner.py
-		 )
-
-add_test(NAME test-EMAN2DIR
-		COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/test_EMAN2DIR.py
-)
 
 if(NOT WIN32)
 	add_custom_target(test-progs
