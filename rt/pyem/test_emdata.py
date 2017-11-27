@@ -165,8 +165,8 @@ class TestEMData(unittest.TestCase):
 
         self.assertEqual(e.get_attr_dict(), e2.get_attr_dict())
                     
-    def test_get_clip(self):
-        """test get_clip() function ........................."""
+    def test_get_clip1(self):
+        """test get_clip1() function ........................"""
         e = EMData()
         e.set_size(32,32,32)
         e.to_zero()
