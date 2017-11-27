@@ -1,3 +1,19 @@
+Home: http://blake.bcm.edu/emanwiki
+
+License: GPL2, BSD 3-Clause
+
+Summary: A scientific image processing software suite with a focus on CryoEM and CryoET.
+
+
+
+Current build status
+====================
+
+Linux: [![CircleCI](https://circleci.com/gh/cryoem/eman2.svg?style=svg)](https://circleci.com/gh/cryoem/eman2)
+OSX: [![TravisCI](https://travis-ci.org/cryoem/eman2.svg?branch=benchmark-fftw)](https://travis-ci.org/cryoem/eman2)
+
+
+
 Coding Style
     1) EMAN2 follows the GNU coding style with minor differences. We use
        GNU indent to make the proper indentation.
