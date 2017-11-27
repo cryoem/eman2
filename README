@@ -1,6 +1,4 @@
-EMAN2 README
-
-What's the coding style of EMAN2
+Coding Style
     1) EMAN2 follows the GNU coding style with minor differences. We use
        GNU indent to make the proper indentation.
 
