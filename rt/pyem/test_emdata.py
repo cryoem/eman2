@@ -183,7 +183,7 @@ class TestEMData(unittest.TestCase):
         
         #test padding zero for clip larger than original image
         e3 = e.get_clip(Region(30,30,30, 35,35,35))
-        d3 = e3.get_3d_view()
+        d3 = e3.get_3dview()
         for k in range(2):
             for j in range(2):
                 for i in range(2):
