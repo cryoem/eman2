@@ -49,7 +49,7 @@ def do_ali_fullcov(ptcls, projs):
 	pts=[(p, None) for p in ptcls]
 	for i in range(len(projs)):
 		#sim=cmponetomany(pjs,ptcls[i],align=("rotate_translate_flip",{"maxshift":boxsize/5}),alicmp=("ccc",{}),ralign=("refine",{}),cmp=("frc",{"minres":80,"maxres":20}))
-		sim=cmponetomany(pts,projs[i],align=("rotate_translate_tree",{"maxshift":boxsize/5, "maxres":30}),alicmp=("ccc",{}),ralign=("refine",{}),cmp=("frc",{"minres":160,"maxres":30}))
+		sim=cmponetomany(pts,projs[i],align=("rotate_translate_tree",{"maxshift":boxsize/5, "maxres":20}),alicmp=("ccc",{}),ralign=("refine",{}),cmp=("frc",{"minres":80,"maxres":20}))
 		bs=min(sim)
 		
 		bss+=bs[0]
@@ -63,7 +63,7 @@ def do_ali_fullcov(ptcls, projs):
 	for i in range(len(projs)):
 		n=projs[i]["match_n"]
 		quals.append(projs[i]["match_qual"])
-		aptcls.append(ptcls[n].align("rotate_translate_tree",projs[i],{"maxshift":boxsize/5, "maxres":30},"frc",{}))
+		aptcls.append(ptcls[n].align("rotate_translate_tree",projs[i],{"maxshift":boxsize/5, "maxres":20},"frc",{}))
 		aptcls[-1].process_inplace("normalize.toimage",{"to":projs[i]})
 		#aptcls[-1].process_inplace("normalize")
 		aptcls[-1]["match_n"]=i
@@ -79,7 +79,7 @@ def do_ali(ptcls, projs):
 	pjs=[(p, None) for p in projs]
 	for i in range(len(ptcls)):
 		#sim=cmponetomany(pjs,ptcls[i],align=("rotate_translate_flip",{"maxshift":boxsize/5}),alicmp=("ccc",{}),ralign=("refine",{}),cmp=("frc",{"minres":80,"maxres":20}))
-		sim=cmponetomany(pjs,ptcls[i],align=("rotate_translate_tree",{"maxshift":boxsize/5, "maxres":30}),alicmp=("ccc",{}),ralign=("refine",{}),cmp=("frc",{"minres":160,"maxres":30}))
+		sim=cmponetomany(pjs,ptcls[i],align=("rotate_translate_tree",{"maxshift":boxsize/5, "maxres":20}),alicmp=("ccc",{}),ralign=("refine",{}),cmp=("frc",{"minres":160,"maxres":20}))
 		bs=min(sim)
 		
 		bss+=bs[0]
@@ -97,7 +97,7 @@ def do_ali(ptcls, projs):
 	for i in range(len(ptcls)):
 		n=ptcls[bslst[i][1]]["match_n"]
 		quals.append(ptcls[bslst[i][1]]["match_qual"])
-		aptcls.append(ptcls[bslst[i][1]].align("rotate_translate_tree",projs[n],{"maxshift":boxsize/5, "maxres":30},"frc",{}))
+		aptcls.append(ptcls[bslst[i][1]].align("rotate_translate_tree",projs[n],{"maxshift":boxsize/5, "maxres":20},"frc",{}))
 		aptcls[-1].process_inplace("normalize.toimage",{"to":projs[n]})
 		#aptcls[-1].process_inplace("normalize")
 		aptcls[-1].add(-aptcls[-1]["mean"])
@@ -166,7 +166,7 @@ def make_model(jsd,myid, options):
 			p.process_inplace("normalize")
 			if options.addnoise>0:
 				p.process_inplace("math.addsignoise",{"noise":options.addnoise})
-			p.process_inplace("filter.lowpass.gauss",{"cutoff_freq":.05})
+			p.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1./options.targetres})
 			#p.process_inplace("normalize.edgemean")
 			p.process_inplace("normalize")
 			
@@ -201,7 +201,7 @@ def make_model(jsd,myid, options):
 		learnrate*=lrmult
 		
 		
-		mapnew.process_inplace("filter.lowpass.gauss",{"cutoff_freq":.05})
+		mapnew.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1./options.targetres})
 		#mapnew.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.3})
 		mapnew.process_inplace("mask.auto3d",{"radius":boxsize/6,"threshold":map0["sigma_nonzero"]*.85,"nmaxseed":30,"nshells":boxsize/20,"nshellsgauss":boxsize/20})
 		ddmap=mapnew-map0
@@ -231,10 +231,10 @@ def main():
 	
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_header(name="initialmodelheader", help='Options below this label are specific to e2initialmodel', title="### e2initialmodel options ###", row=1, col=0, rowspan=1, colspan=3)
+	#parser.add_header(name="initialmodelheader", help='Options below this label are specific to e2initialmodel', title="### e2initialmodel options ###", row=1, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--path", type=str,help="Path to write initial model output. Default is initmodel_XX", default=None)
 	parser.add_argument("--ptcls", type=str,help="Class average or particles input.", default=None, browser='EMBrowserWidget(withmodal=True,multiselect=False)', guitype='filebox', row=0, col=0, rowspan=1, colspan=3)
-	parser.add_argument("--sym", type=str, default='c1', help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos", guitype='symbox', row=1, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--sym", type=str, default='c1', help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos", guitype='symbox', row=1, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--batchsize", type=int,help="Batch size of stochastic gradient desent. N particles are randomly selected to generate an initial model at each step.", default=5, guitype='intbox', row=1, col=1, rowspan=1, colspan=1)
 	parser.add_argument("--niter", type=int,help="Number of iterations", default=20, guitype='intbox', row=2, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--ntry", type=int,help="The number of different initial models to generate in search of a good one", default=10, guitype='intbox', row=2, col=1, rowspan=1, colspan=1)
@@ -246,6 +246,7 @@ def main():
 	parser.add_argument("--fullcov", action="store_true", default=False ,help="Assume the input particles covers most of the orientation of the model. This gives better performance when the model is relatively feature-less, but is more likely to fail when there are incorrect particles in the input.",guitype='boolbox', row=5, col=1, rowspan=1, colspan=1)
 	parser.add_argument("--threads", type=int,help="threads", default=10, guitype='intbox', row=6, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--verbose", "-v", type=int,help="Verbose", default=0, guitype='intbox', row=6, col=1, rowspan=1, colspan=1)
+	parser.add_argument("--targetres", type=float, help="Target resolution", default=20., guitype='floatbox', row=7, col=0, rowspan=1, colspan=1)
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 
