@@ -285,6 +285,15 @@
 	"NOTELEVEL": "1",
         "CHILDREN": []
       },
+     {
+        "ICON": "single_image_3d",
+        "EXPERT": 1,
+        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2initialmodel",
+        "PROGRAM": "e2initialmodel_sgd.py",
+        "NAME": "Stochastic gradient descent initial model (e2initialmodel_sgd)",
+	"NOTELEVEL": "1",
+        "CHILDREN": []
+      },
       {
         "ICON":"refine",
         "NAME":"Random Conical Tilt Reconstruction (e2rct)",
