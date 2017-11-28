@@ -338,6 +338,11 @@ else()
 	endforeach()
 endif()
 
+add_custom_target(test-rt
+		COMMAND ${CMAKE_CTEST_COMMAND} -V -C Release -R nose-tests
+		DEPENDS PythonFiles
+)
+
 add_custom_target(test-verbose-broken
 		COMMAND ${NOSETESTS_EXECUTABLE} -v -m "^test_*" -a broken ${CMAKE_SOURCE_DIR}/rt/pyem/*
 		)
