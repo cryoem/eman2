@@ -235,7 +235,7 @@ def main():
 	parser.add_argument("--path", type=str,help="Path to write initial model output. Default is initmodel_XX", default=None)
 	parser.add_argument("--ptcls", type=str,help="Class average or particles input.", default=None, browser='EMBrowserWidget(withmodal=True,multiselect=False)', guitype='filebox', row=0, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--sym", type=str, default='c1', help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos", guitype='symbox', row=1, col=0, rowspan=1, colspan=1)
-	parser.add_argument("--batchsize", type=int,help="Batch size of stochastic gradient desent. N particles are randomly selected to generate an initial model at each step.", default=5, guitype='intbox', row=1, col=1, rowspan=1, colspan=1)
+	parser.add_argument("--batchsize", type=int,help="Batch size of stochastic gradient desent. N particles are randomly selected to generate an initial model at each step.", default=10, guitype='intbox', row=1, col=1, rowspan=1, colspan=1)
 	parser.add_argument("--niter", type=int,help="Number of iterations", default=20, guitype='intbox', row=2, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--ntry", type=int,help="The number of different initial models to generate in search of a good one", default=10, guitype='intbox', row=2, col=1, rowspan=1, colspan=1)
 	parser.add_argument("--learnrate", type=float, help="Learning rate. i.e. how much the initial model changes toward the gradient direction in each iteration. Range from 0.0~1.0. Default is 0.3", default=.3, guitype='floatbox', row=3, col=0, rowspan=1, colspan=1)
