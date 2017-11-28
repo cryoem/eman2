@@ -49,7 +49,7 @@ def do_ali_fullcov(ptcls, projs):
 	pts=[(p, None) for p in ptcls]
 	for i in range(len(projs)):
 		#sim=cmponetomany(pjs,ptcls[i],align=("rotate_translate_flip",{"maxshift":boxsize/5}),alicmp=("ccc",{}),ralign=("refine",{}),cmp=("frc",{"minres":80,"maxres":20}))
-		sim=cmponetomany(pts,projs[i],align=("rotate_translate_tree",{"maxshift":boxsize/5, "maxres":15}),alicmp=("ccc",{}),ralign=("refine",{}),cmp=("frc",{"minres":80,"maxres":10}))
+		sim=cmponetomany(pts,projs[i],align=("rotate_translate_tree",{"maxshift":boxsize/5, "maxres":30}),alicmp=("ccc",{}),ralign=("refine",{}),cmp=("frc",{"minres":160,"maxres":30}))
 		bs=min(sim)
 		
 		bss+=bs[0]
@@ -63,7 +63,7 @@ def do_ali_fullcov(ptcls, projs):
 	for i in range(len(projs)):
 		n=projs[i]["match_n"]
 		quals.append(projs[i]["match_qual"])
-		aptcls.append(ptcls[n].align("rotate_translate_tree",projs[i],{"maxshift":boxsize/5, "maxres":10},"frc",{}))
+		aptcls.append(ptcls[n].align("rotate_translate_tree",projs[i],{"maxshift":boxsize/5, "maxres":30},"frc",{}))
 		aptcls[-1].process_inplace("normalize.toimage",{"to":projs[i]})
 		#aptcls[-1].process_inplace("normalize")
 		aptcls[-1]["match_n"]=i
@@ -79,7 +79,7 @@ def do_ali(ptcls, projs):
 	pjs=[(p, None) for p in projs]
 	for i in range(len(ptcls)):
 		#sim=cmponetomany(pjs,ptcls[i],align=("rotate_translate_flip",{"maxshift":boxsize/5}),alicmp=("ccc",{}),ralign=("refine",{}),cmp=("frc",{"minres":80,"maxres":20}))
-		sim=cmponetomany(pjs,ptcls[i],align=("rotate_translate_tree",{"maxshift":boxsize/5, "maxres":15}),alicmp=("ccc",{}),ralign=("refine",{}),cmp=("frc",{"minres":80,"maxres":10}))
+		sim=cmponetomany(pjs,ptcls[i],align=("rotate_translate_tree",{"maxshift":boxsize/5, "maxres":30}),alicmp=("ccc",{}),ralign=("refine",{}),cmp=("frc",{"minres":160,"maxres":30}))
 		bs=min(sim)
 		
 		bss+=bs[0]
@@ -97,7 +97,7 @@ def do_ali(ptcls, projs):
 	for i in range(len(ptcls)):
 		n=ptcls[bslst[i][1]]["match_n"]
 		quals.append(ptcls[bslst[i][1]]["match_qual"])
-		aptcls.append(ptcls[bslst[i][1]].align("rotate_translate_tree",projs[n],{"maxshift":boxsize/5, "maxres":10},"frc",{}))
+		aptcls.append(ptcls[bslst[i][1]].align("rotate_translate_tree",projs[n],{"maxshift":boxsize/5, "maxres":30},"frc",{}))
 		aptcls[-1].process_inplace("normalize.toimage",{"to":projs[n]})
 		#aptcls[-1].process_inplace("normalize")
 		aptcls[-1].add(-aptcls[-1]["mean"])
@@ -123,10 +123,13 @@ def make_model(jsd,myid, options):
 	oris=origen.gen_orientations('rand',{"n":ninit+1, "phitoo":1})
 	for i in range(ninit):
 		aptcls[i]["xform.projection"]=oris[i]
-		
+		if options.shrink!=1:
+			aptcls[i].process_inplace("math.fft.resample",{"n":options.shrink})
+		aptcls[i].process_inplace("normalize")
 	map0=make3d(aptcls,sym)
 	map0.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.1})
 	map0.process_inplace("filter.lowpass.randomphase",{"cutoff_abs":.05})
+	map0.process_inplace("normalize")
 	#map0.write_image("{}/model_00.hdf".format(path))
 	boxsize=map0["nx"]
 	niter=options.niter
@@ -141,7 +144,7 @@ def make_model(jsd,myid, options):
 	for it in range(1,niter):
 		if it==niter-1:
 			#### bigger batch size in the last iteration so we can sort the initial model stably 
-			options.batchsize=max(32, options.batchsize)
+			options.batchsize=max(64, options.batchsize)
 		pjs=None
 		if options.writetmp: map0.write_image("{}/model_tmp_{:02d}.hdf".format(path,myid), it-1)
 		pjs=makeprojs(map0, options)
@@ -157,10 +160,15 @@ def make_model(jsd,myid, options):
 			ptcls=[EMData(ptclname, i) for i in samples[kk:kk+options.batchsize]]
 			
 		for p in ptcls:
+			if options.shrink!=1:
+				p.process_inplace("math.fft.resample",{"n":options.shrink})
+			
+			p.process_inplace("normalize")
 			if options.addnoise>0:
 				p.process_inplace("math.addsignoise",{"noise":options.addnoise})
-			p.process_inplace("filter.lowpass.gauss",{"cutoff_freq":.1})
-			p.process_inplace("normalize.edgemean")
+			p.process_inplace("filter.lowpass.gauss",{"cutoff_freq":.05})
+			#p.process_inplace("normalize.edgemean")
+			p.process_inplace("normalize")
 			
 			
 		kk+=options.batchsize
@@ -193,7 +201,7 @@ def make_model(jsd,myid, options):
 		learnrate*=lrmult
 		
 		
-		mapnew.process_inplace("filter.lowpass.gauss",{"cutoff_freq":.1})
+		mapnew.process_inplace("filter.lowpass.gauss",{"cutoff_freq":.05})
 		#mapnew.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.3})
 		mapnew.process_inplace("mask.auto3d",{"radius":boxsize/6,"threshold":map0["sigma_nonzero"]*.85,"nmaxseed":30,"nshells":boxsize/20,"nshellsgauss":boxsize/20})
 		ddmap=mapnew-map0
@@ -218,24 +226,26 @@ def make_model(jsd,myid, options):
 def main():
 	
 	usage="""
-	This program makes initial models using a (kind of) stochastic gradient descent approach.
+	This program makes initial models using a (kind of) stochastic gradient descent approach. It is recommended that the box size of particles is around 100. 
 	[prog] --ptcls <particle stack> 
 	
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
+	parser.add_header(name="initialmodelheader", help='Options below this label are specific to e2initialmodel', title="### e2initialmodel options ###", row=1, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--path", type=str,help="Path to write initial model output. Default is initmodel_XX", default=None)
-	parser.add_argument("--ptcls", type=str,help="Class average or particles input.", default=None)
-	parser.add_argument("--sym", type=str,help="Symmetry", default='c1')
-	parser.add_argument("--batchsize", type=int,help="Batch size of stochastic gradient desent. N particles are randomly selected to generate an initial model at each step.", default=5)
-	parser.add_argument("--learnrate", type=float, help="Learning rate. i.e. how much the initial model changes toward the gradient direction in each iteration. Range from 0.0~1.0. Default is 0.3", default=.3)
-	parser.add_argument("--lrdecay", type=float, help="Learning rate multiplier after each iteration.", default=1.)
-	parser.add_argument("--addnoise", type=float, help="Add noise on particles at each iteration. Stablize convergence for some reason.", default=3.)
-	parser.add_argument("--ntry", type=int,help="Number of tries.", default=10)
-	parser.add_argument("--writetmp", action="store_true", default=False ,help="Write output for each iteration")
-	parser.add_argument("--fullcov", action="store_true", default=False ,help="Assume the input particles covers most of the orientation of the model. This gives better performance when the model is relatively feature-less, but is more likely to fail when there are incorrect particles in the input.")
-	parser.add_argument("--threads", type=int,help="threads", default=10)
-	parser.add_argument("--niter", type=int,help="Number of iterations", default=20)
-	parser.add_argument("--verbose", "-v", type=int,help="Verbose", default=0)
+	parser.add_argument("--ptcls", type=str,help="Class average or particles input.", default=None, browser='EMBrowserWidget(withmodal=True,multiselect=False)', guitype='filebox', row=0, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--sym", type=str, default='c1', help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos", guitype='symbox', row=1, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--batchsize", type=int,help="Batch size of stochastic gradient desent. N particles are randomly selected to generate an initial model at each step.", default=5, guitype='intbox', row=1, col=1, rowspan=1, colspan=1)
+	parser.add_argument("--niter", type=int,help="Number of iterations", default=20, guitype='intbox', row=2, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--ntry", type=int,help="The number of different initial models to generate in search of a good one", default=10, guitype='intbox', row=2, col=1, rowspan=1, colspan=1)
+	parser.add_argument("--learnrate", type=float, help="Learning rate. i.e. how much the initial model changes toward the gradient direction in each iteration. Range from 0.0~1.0. Default is 0.3", default=.3, guitype='floatbox', row=3, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--lrdecay", type=float, help="Learning rate multiplier after each iteration.", default=1., guitype='floatbox', row=3, col=1, rowspan=1, colspan=1)
+	parser.add_argument("--addnoise", type=float, help="Add noise on particles at each iteration. Stablize convergence for some reason.", default=3., guitype='floatbox', row=4, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--shrink", type=int,help="shrinking factor", default=1, guitype='intbox', row=4, col=1, rowspan=1, colspan=1)
+	parser.add_argument("--writetmp", action="store_true", default=False ,help="Write output for each iteration",guitype='boolbox', row=5, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--fullcov", action="store_true", default=False ,help="Assume the input particles covers most of the orientation of the model. This gives better performance when the model is relatively feature-less, but is more likely to fail when there are incorrect particles in the input.",guitype='boolbox', row=5, col=1, rowspan=1, colspan=1)
+	parser.add_argument("--threads", type=int,help="threads", default=10, guitype='intbox', row=6, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--verbose", "-v", type=int,help="Verbose", default=0, guitype='intbox', row=6, col=1, rowspan=1, colspan=1)
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 
