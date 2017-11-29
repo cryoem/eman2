@@ -344,8 +344,8 @@ add_custom_target(test-verbose-broken
 
 if(NOT WIN32)
 	add_custom_target(test-progs
-					  COMMAND ${CMAKE_COMMAND} -P cmake_install.cmake
 					  COMMAND ${CMAKE_CTEST_COMMAND} -V -C Release -R progs
+					  DEPENDS PythonFiles
 					  )
 	
 	add_test(NAME progs
