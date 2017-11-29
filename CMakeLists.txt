@@ -285,7 +285,6 @@ ADD_SUBDIRECTORY(recipes)
 
 add_custom_target(PythonFiles
 				  COMMAND ${CMAKE_COMMAND} -DCOMPONENT=PythonFiles -P cmake_install.cmake
-				  DEPENDS Programs EMPyLibs QtGuiFiles
 				  )
 
 if(NOT WIN32)
@@ -308,12 +307,26 @@ add_custom_target(test-verbose
 #		DEPENDS Tests
 #		)
 
+add_test(NAME imports
+		 COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/test_imports.py
+		 )
+
+add_test(NAME test-EMAN2DIR
+		 COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/test_EMAN2DIR.py
+		 )
+
 find_package(Nosetests)
 
 if(NOT WIN32)
 	add_test(NAME nose-tests
-			COMMAND ${NOSETESTS_EXECUTABLE} -v -m "^test_*" -a \!broken
-					${CMAKE_SOURCE_DIR}/rt/pyem/
+			COMMAND ${NOSETESTS_EXECUTABLE} -vv --exe -m "^test_*" -e "^test_image_" -e "test_main" -e "test_result" -e "test_boxing" -a \!broken
+					${CMAKE_SOURCE_DIR}/rt/pyem/ --with-coverage --cover-html --cover-html-dir=covnose --cover-erase
+					--cover-package=EMAN2
+					--cover-package=EMAN2_cppwrap
+					--cover-package=EMAN2_meta
+					--cover-package=EMAN2db
+					--cover-package=EMAN2jsondb
+					--cover-package=pyemtbx
 			)
 else()
 	set(test_methods-win
@@ -331,36 +344,19 @@ else()
 	endforeach()
 endif()
 
+add_custom_target(test-rt
+		COMMAND ${CMAKE_CTEST_COMMAND} -V -C Release -R nose-tests
+		DEPENDS PythonFiles
+)
+
 add_custom_target(test-verbose-broken
 		COMMAND ${NOSETESTS_EXECUTABLE} -v -m "^test_*" -a broken ${CMAKE_SOURCE_DIR}/rt/pyem/*
 		)
 
-file(READ ${CMAKE_SOURCE_DIR}/tests/test_imports.py py_imports_list)
-STRING(REGEX REPLACE "\n" ";" py_imports_list "${py_imports_list}")
-foreach(i ${py_imports_list})
-	set(import_statement ${i})
-	separate_arguments(import_statement)
-	list(GET import_statement 1 item1)
-	list(GET import_statement 3 item2)
-	if(NOT WIN32 OR NOT "${item1}" STREQUAL "libpyTomoSeg2")
-		add_test(NAME import-${item1}.${item2}
-				 COMMAND ${PYTHON_EXECUTABLE} -c "${i}"
-				 )
-	endif()
-endforeach()
-
-add_test(NAME import-inners
-		 COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/test_imports_inner.py
-		 )
-
-add_test(NAME test-EMAN2DIR
-		COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/test_EMAN2DIR.py
-)
-
 if(NOT WIN32)
 	add_custom_target(test-progs
-					  COMMAND ${CMAKE_COMMAND} -P cmake_install.cmake
 					  COMMAND ${CMAKE_CTEST_COMMAND} -V -C Release -R progs
+					  DEPENDS PythonFiles
 					  )
 	
 	add_test(NAME progs
