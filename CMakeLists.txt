@@ -285,7 +285,6 @@ ADD_SUBDIRECTORY(recipes)
 
 add_custom_target(PythonFiles
 				  COMMAND ${CMAKE_COMMAND} -DCOMPONENT=PythonFiles -P cmake_install.cmake
-				  DEPENDS Programs EMPyLibs QtGuiFiles
 				  )
 
 if(NOT WIN32)
