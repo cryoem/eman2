@@ -384,6 +384,10 @@ add_test(NAME import-inners
 		 COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/test_imports_inner.py
 		 )
 
+add_test(NAME test-EMAN2DIR
+		COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/test_EMAN2DIR.py
+)
+
 if(NOT WIN32)
 	add_custom_target(test-progs
 					  COMMAND ${CMAKE_COMMAND} -P cmake_install.cmake
