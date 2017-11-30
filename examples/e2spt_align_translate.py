@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+from __future__ import print_function
 '''
 ====================
 Author: Jesus Galaz - nov/2017, Last update: nov/2017
@@ -31,14 +31,10 @@ Author: Jesus Galaz - nov/2017, Last update: nov/2017
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 '''
 
-from optparse import OptionParser
+#from optparse import OptionParser
 from EMAN2 import *
 from EMAN2jsondb import JSTask,jsonclasses
-
-import sys
-import numpy
-import math
-import random
+from EMAN2_utils import *
 
 
 def main():
@@ -53,32 +49,30 @@ def main():
 
 	parser.add_argument("--ref", type=str, default=None, help="""default=None. volume to be used as a reference.""")
 	
-	#parser.add_argument("--transformfile", type=str, default=None, help="""default=None. .json file with alignment parameters produced by other e2spt programs""") 
-	
-	#parser.add_argument("--translateonly", action='store_true', default=False, help="""default=False (not used). requieres --input. If supplied, this option will ensure that only translations are applied to the --input stack.""")
-
-	parser.add_argument("--path",type=str,default='spttranslate',help="""Directory to store results in. The default is a numbered series of directories containing the prefix 'spttranslate'; for example, spttranslate_02 will be the directory by default if 'spttranslate_01' already exists.""")
+	parser.add_argument("--path",type=str, default='spttranslate',help="""Directory to store results in. The default is a numbered series of directories containing the prefix 'spttranslate'; for example, spttranslate_02 will be the directory by default if 'spttranslate_01' already exists.""")
 	
 	parser.add_argument("--ppid", type=int, default=-1, help="set the PID of the parent process, used for cross platform PPID.")
 	
-	#parser.add_argument("--subset",type=int,default=0,help="""Default=0 (not used). Plot only this substet of transforms from the hdf stack or json file provided.""")
-	parser.add_argument("intonly", action='store_true', default=False, help="default=Flase. If on, this will allow integer translations only.")
+	parser.add_argument("--intonly", action='store_true', default=False, help="default=Flase. If on, this will allow integer translations only.")
 
-	parser.add_argument("masked", action='store_true', default=False, help="default=False. treat zero pixels in --ref as a mask for normalization.")
+	parser.add_argument("--masked", action='store_true', default=False, help="default=False. treat zero pixels in --ref as a mask for normalization.")
 	
-	parser.add_argument("maxshift", type=int, default=0, help="default=0 (not used). Maximum allowable translation in pixels.")
+	parser.add_argument("--maxshift", type=int, default=0, help="default=0 (not used). Maximum allowable translation in pixels.")
 	
-	parser.add_argument("nozero", action='store_true', default=False, help="default=False. Zero translations not permitted (useful for CCD images)")
+	parser.add_argument("--nozero", action='store_true', default=False, help="default=False. Zero translations not permitted (useful for CCD images)")
 	
-	parser.add_argument("useflcf", action='store_true', default=False, help="default=False. Use Fast Local Correlation Function rather than CCF.")
+	parser.add_argument("--subset",type=int,default=0, help="""default=0 (not used). Subset of particles to align translationally.""")
 
-	parser.add_argument("--verbose", "-v", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness", dest="verbose", action="store", metavar="n")
-	
-	#arser.add_argument("--inversetoo",action="store_true",default=False,help="""Also plots the angles for the inverse of a transform.""")
-	
+	parser.add_argument("--useflcf", action='store_true', default=False, help="default=False. Use Fast Local Correlation Function rather than CCF.")
+
+	parser.add_argument("--verbose", "-v", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness.", dest="verbose", action="store", metavar="n")
+		
 	(options, args) = parser.parse_args()	
 
 	logger = E2init(sys.argv, options.ppid)
+
+	if options.verbose:
+		print('\nlogging')
 
 	alignerparams = {}
 	
@@ -97,42 +91,84 @@ def main():
 	if options.useflcf:
 		alignerparams.update({"useflcf":1})
 	
-	from EMAN2_utils import makepath
 	options = makepath(options,'spttranslate')
 
+	if options.verbose:
+		print('\ncreated path')
+
 	n = EMUtil.get_image_count(options.input)
+	if options.subset:
+		n = options.subset
 
 	ref = EMData(options.ref,0)
 	
 	jsAliParamsPath = options.path + '/sptali_trans.json'
-
 	jsA = js_open_dict( jsAliParamsPath )
 	
 	basename = os.path.basename(options.input)
-	stem,extension = os.splitext(basename)
+	stem,extension = os.path.splitext(basename)
 	outfile = options.path + '/' + stem + '_translated.hdf'
 
+	boxsize = EMData(options.input,0,True)['nx']
+
 	for i in xrange(0,n):
-
 		img = EMData(options.input,i)
-		
-		ali = img.align('translational',ref,alignerparams)
-		
-		print('\nali={}'.format(ali))
+		print('\nread iamge {}'.format(i))
 
-		#bestcoarse = img.xform_align_nbest(options.align[0],sfixedimage,options.align[1],options.npeakstorefine,options.aligncmp[0],options.aligncmp[1])
+		ccf = ref.calc_ccf(img)
+		print('\ncalculated cccf')
 
-		xformslabel = 'subtomo_' + str( 0 ).zfill( len( str( nptcl ) ) )
-		t = ali['xform.align3d']
-		score = ali['score']			
+		ccf.process_inplace("xform.phaseorigin.tocorner")
+		print('\nto corner')
+
+		ccf.process_inplace('normalize')
+		print('\nnormalized')
+
+		#box = ccf.get_zsize()
+		#r =  Region((box/2) - options.maxshift, (box/2)-options.maxshift, (box/2)-options.maxshift, 2*options.maxshift+1, 2*options.maxshift+1, 2*options.maxshift+1)
+		#sub_ccf = ccf.get_clip(r)
+
+		if options.maxshift:
+			print("\n!!!!")
+			#ccf = ccf.process('mask.sharp',{'outer_radius':options.maxshift})
+			masklength = boxsize - options.maxshift
+
+			print('\nboxsize={}, options.maskshift={}, therefore masklength={}'.format(boxsize,options.maxshift,masklength))
+			ccf = ccf.process('mask.zeroedge3d',{'x0':masklength,'x1':masklength,'y0':masklength,'y1':masklength,'z0':masklength,'z1':masklength})
+		else:
+			print('\nno options.maskshift={}'.format(options.maxshift))
+
+		loc = ccf.calc_max_location()
+		
+		tx = loc[0]
+		ty = loc[1]
+		tz = loc[2]
+
+		score = ccf.get_value_at(loc[0],loc[1],loc[2])
+
+		#ali = img.align('translational',ref,alignerparams)
+	
+		if options.verbose:
+			#print('\nali={}'.format(ali))
+			print('\naligned particle {}'.format(i))
+
+		xformslabel = 'subtomo_' + str( 0 ).zfill( len( str( n ) ) )
+		#t = ali['xform.align3d']
+		t = Transform({'type':'eman','tx':tx,'ty':ty,'tz':tz})
+		#score = ali['score']
+
 		jsA.setval( xformslabel, [ t , score ] )
+		
+		imgt = img.copy() 
+		imgt.transform(t)
+		imgt['xform.align3d'] = t
+		imgt = origin2zero(imgt)
 
-		imgt=img.transform(t)
-
+		#imgt.write_image(outfile,i)
 		imgt.write_image(outfile,i)
 
 
-	jsA.close()
+	#jsA.close()
 	
 	E2end(logger)
 
