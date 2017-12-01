@@ -97,7 +97,7 @@ def main():
 		print('\ncreated path')
 
 	n = EMUtil.get_image_count(options.input)
-	if options.subset:
+	if options.subset and options.subset < n:
 		n = options.subset
 
 	ref = EMData(options.ref,0)
@@ -116,7 +116,7 @@ def main():
 		print('\nread iamge {}'.format(i))
 
 		ccf = ref.calc_ccf(img)
-		print('\ncalculated cccf')
+		print('\ncalculated ccf')
 
 		ccf.process_inplace("xform.phaseorigin.tocorner")
 		print('\nto corner')
@@ -131,35 +131,43 @@ def main():
 		if options.maxshift:
 			print("\n!!!!")
 			#ccf = ccf.process('mask.sharp',{'outer_radius':options.maxshift})
-			masklength = boxsize - options.maxshift
+			masklength = boxsize/2.0 - options.maxshift
 
 			print('\nboxsize={}, options.maskshift={}, therefore masklength={}'.format(boxsize,options.maxshift,masklength))
 			ccf = ccf.process('mask.zeroedge3d',{'x0':masklength,'x1':masklength,'y0':masklength,'y1':masklength,'z0':masklength,'z1':masklength})
 		else:
-			print('\nno options.maskshift={}'.format(options.maxshift))
+			print('\nno options.maxshift={}'.format(options.maxshift))
 
 		loc = ccf.calc_max_location()
-		
-		tx = loc[0]
-		ty = loc[1]
-		tz = loc[2]
-
 		score = ccf.get_value_at(loc[0],loc[1],loc[2])
 
+		tx = loc[0] - boxsize/2.0
+		ty = loc[1] - boxsize/2.0
+		tz = loc[2] - boxsize/2.0
+		print('\ntx={},ty={},tz={}'.format(tx,ty,tz))
+		
+		
+		print('\nscore={}, type={}'.format(score,type(score)))
 		#ali = img.align('translational',ref,alignerparams)
 	
 		if options.verbose:
 			#print('\nali={}'.format(ali))
 			print('\naligned particle {}'.format(i))
 
-		xformslabel = 'subtomo_' + str( 0 ).zfill( len( str( n ) ) )
+		xformslabel = 'subtomo_' + str( i ).zfill( len( str( n ) ) )
 		#t = ali['xform.align3d']
+		print('\nxformslabel'.format(xformslabel))
+
 		t = Transform({'type':'eman','tx':tx,'ty':ty,'tz':tz})
 		#score = ali['score']
+		print('\nt'.format(t))
 
 		jsA.setval( xformslabel, [ t , score ] )
 		
+		#print('\nimg type', type(img))
 		imgt = img.copy() 
+		
+		#print('\nimgt type', type(imgt))
 		imgt.transform(t)
 		imgt['xform.align3d'] = t
 		imgt = origin2zero(imgt)
@@ -168,7 +176,7 @@ def main():
 		imgt.write_image(outfile,i)
 
 
-	#jsA.close()
+	jsA.close()
 	
 	E2end(logger)
 
