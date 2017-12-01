@@ -165,8 +165,8 @@ class TestEMData(unittest.TestCase):
 
         self.assertEqual(e.get_attr_dict(), e2.get_attr_dict())
                     
-    def test_get_clip(self):
-        """test get_clip() function ........................."""
+    def test_get_clip1(self):
+        """test get_clip1() function ........................"""
         e = EMData()
         e.set_size(32,32,32)
         e.to_zero()
@@ -183,7 +183,7 @@ class TestEMData(unittest.TestCase):
         
         #test padding zero for clip larger than original image
         e3 = e.get_clip(Region(30,30,30, 35,35,35))
-        d3 = e3.get_3d_view()
+        d3 = e3.get_3dview()
         for k in range(2):
             for j in range(2):
                 for i in range(2):
@@ -3360,7 +3360,7 @@ class TestEMData(unittest.TestCase):
                 for x in range(16):
                     self.assertEqual(data1[z][y][x], data2[z][y][x])
         
-        #testlib.safe_unlink('mydb')
+        testlib.safe_unlink('mydb')
         
     def test_eman1ctf_pickling(self):
         """test EMAN1Ctf pickle as image attribute .........."""
@@ -3377,7 +3377,7 @@ class TestEMData(unittest.TestCase):
         self.assertEqual(c.to_vector(), c2.to_vector())
         self.assertEqual(c.to_string(), c2.to_string())
         self.assertEqual(c.to_dict(), c2.to_dict())
-        #testlib.safe_unlink('mydb1')
+        testlib.safe_unlink('mydb1')
         
     def test_eman2ctf_pickling(self):
         """test EMAN2Ctf pickle as image attribute .........."""
@@ -3394,7 +3394,7 @@ class TestEMData(unittest.TestCase):
         self.assertEqual(q.to_vector(), q2.to_vector())
         self.assertEqual(q.to_string(), q2.to_string())
         self.assertEqual(q.to_dict(), q2.to_dict())
-        #testlib.safe_unlink('mydb2')
+        testlib.safe_unlink('mydb2')
         
     def test_transform_pickling(self):
         """test Transform pickle as attribute ..............."""
