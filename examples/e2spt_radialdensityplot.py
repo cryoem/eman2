@@ -419,8 +419,8 @@ def calcvalues(a,options):
 
 # Define model function to be used to fit to the data above:
 def gauss(x, *p):
-    A, mu, sigma = p
-   return A*numpy.exp(-(x-mu)**2/(2.*sigma**2))
+	A, mu, sigma = p
+	return A*numpy.exp(-(x-mu)**2/(2.*sigma**2))
 
 
 def preprocRadPlot( a, options):
