@@ -38,6 +38,7 @@ import sys
 from emimageutil import EMParentWin
 from EMAN2 import remove_directories_from_name, get_image_directory,get_3d_font_renderer, E2end,get_platform
 import EMAN2db
+import EMAN2
 import weakref
 from libpyGLUtils2 import *
 
@@ -302,10 +303,11 @@ class EMApp(QtGui.QApplication):
 		#print "couldn't close",child
 		
 	def execute(self, logid=None):
-		self.exec_()
 		print(logid)
 		if logid: E2end(logid) # We need to log the end of the process, don't we....
-		return sys.exit()
+		if not hasattr(EMAN2, '_called_from_test'):
+			self.exec_()
+			return sys.exit()
 		
 	def hide_specific(self,child,inspector_too=True):
 		for child_ in self.children:
