@@ -50,6 +50,7 @@ def main():
 	
 	parser.add_argument("--classifymaxpeaks", type=int, default=0, help="""default=0. Number of highest peaks to consider for classification. Amongst the n peaks provided, --classifymaxpeaks=n, the peak occurring at the largest radius will be used as the classifier. If --classifymaxpeaks=1, the highest peak will be the classifier. To smooth the radial density curve consider low pass filtering through --lowpass. To remove aberrant peaks consider masking with --mask.""")
 	
+	parser.add_argument("--fitgaussian", action="store_true", default=False, help="""default=false. Fits a Gaussian to the radial density plot (only appropriate in certain cases; look at the raw plot first and rerun program if the plot looks like a bell curve).""")
 	parser.add_argument("--fixedcylinderheight", type=int, default=0, help="""Default=0. Works only if --mode=cylinder, and keeps the height of the cylinder at a constant value, while varying the radius.""")
 	
 	parser.add_argument("--highpass", type=str, default=None, help="""default=none. A highpass filtering processor (see e2help.py --verbose=10) applied to each volume prior to radial density plot computation.""")	
