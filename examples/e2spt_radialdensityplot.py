@@ -33,6 +33,7 @@ import os, sys, commands
 from EMAN2 import *
 import math
 import numpy as np
+from scipy.optimize import curve_fit
 
 def main():
 
@@ -58,27 +59,19 @@ def main():
 	parser.add_argument("--lowpass", type=str, default=None, help="""default=None. A lowpass filtering processor (see e2help.py --verbose=10) applied to each volume prior to radial density plot computation.""")
 
 	parser.add_argument("--mask", type=str, default=None, help="""default=none. Masking processor (see e2help.py --verbose=10) applied to each volume prior to radial density plot computation.""")
-
 	parser.add_argument("--mode", type=str, default='sphere', help="""default=sphere. provide --mode=x, y, or z to get the average density per slice in the indicated direction. --mode=cylinder for concentric cylindrical shells. For MULTIPLE modes, separate them by commas, for example --mode=x,y,z,cylinder""")
 
-	parser.add_argument("--normproc", type=str, default=None, help="""default=none. Normalization processor (see e2help.py --verbose=10) applied to each volume prior to radial density plot computation. If normalize.mask is used, results of the mask option will be passed in automatically.""")
-	
+	parser.add_argument("--normproc", type=str, default=None, help="""default=none. Normalization processor (see e2help.py --verbose=10) applied to each volume prior to radial density plot computation. If normalize.mask is used, results of the mask option will be passed in automatically.""")	
 	parser.add_argument("--normalizeplot", action="store_true",default=False,help="""default=false. This will make the maximum density in each plot or curve equal to 1.""")
 	
-	parser.add_argument('--path', type=str, default='spt_radialplot', help="""Directory to save the results.""")	
-	
+	parser.add_argument('--path', type=str, default='spt_radialplot', help="""Directory to save the results.""")		
 	parser.add_argument("--preprocess", type=str, default=None, help="""Any processor (see e2help.py --verbose=10) applied to each volume prior to radial density plot computation.""")
 		
 	parser.add_argument("--savetxt", action="store_true", default=False, help="""default=false. Save plot files as .txt, so that they can be replotted with other software if necessary.""")
-
-	parser.add_argument("--shrink", type=int, default=0, help="""default=0 (not used). Optionally shrink the input volumes by an integer amount.""")	
-	
+	parser.add_argument("--shrink", type=int, default=0, help="""default=0 (not used). Optionally shrink the input volumes by an integer amount.""")		
 	parser.add_argument("--singlefinalplot", action="store_true", default=False, help="""default=false. Plot all the Radial Density Profiles of the volumes provided in all .hdf stacks in one FINAL single 'master' plot.""")	
-
-	parser.add_argument("--singleplotperfile", action="store_true", default=False, help="""default=false. Plot all the Radial Density Profiles of the volumes provided in each .hdf stack in one single plot.""")	
-	
+	parser.add_argument("--singleplotperfile", action="store_true", default=False, help="""default=false. Plot all the Radial Density Profiles of the volumes provided in each .hdf stack in one single plot.""")		
 	parser.add_argument("--subset", type=int, default=0, help="""An n-subset of particles from --input to use.""")
-
 	parser.add_argument("--sym", dest = "sym", default='c1', help ="""default=c1. Symmetry to impose choices are: c<n>, d<n>, h<n>, tet, oct, icos. For this to make any sense in the context of this program, the particles need to be aligned to the symmetry axis first, which can be accomplished by running them through e2symsearch3d.py.""")
 			
 	parser.add_argument("--threshold", type=str, default=None, help="""default=None. A threshold  processor (see e2help.py --verbose=10) applied to each volume prior to radial density plot computation.""")
@@ -237,6 +230,20 @@ def main():
 						lines.append(line)
 					txtf.writelines(lines)
 					txtf.close()
+
+				ziplist = list(zip(values[:-1], values[1:]))
+				diflist = [a1 - a2 for a1, a2 in ziplist]
+
+				#print("\nziplist is".format(ziplist))
+				#print("\ndiflist is".format(diflist))
+				
+				max_slope = max(diflist)
+				indexmaxslope = diflist.index(max_slope)
+				print("\nmax slope is at pixel={}".format(indexmaxslope))
+				
+				min_slope = min(diflist)
+				indexminslope = diflist.index(min_slope)
+				print("\nmin slope is at pixel={}".format(indexminslope))
 				
 				plt.plot(x,values,linewidth=2,alpha=0.5)
 				
@@ -396,8 +403,23 @@ def calcvalues(a,options):
 		
 	elif options.mode == 'x' or options.mode == 'y' or options.mode == 'z':
 		values = direction(a,options)
-		
+	
+	if options.fitgaussian:
+		# p0 is the initial guess for the fitting coefficients (A, mu and sigma above)
+		p0 = [1., 0., 1.]
+
+		coeff, var_matrix = curve_fit(gauss, bin_centres, hist, p0=p0)
+
+		# Get the fitted curve
+		values = gauss(bin_centres, *coeff)
+
 		return values
+
+
+# Define model function to be used to fit to the data above:
+def gauss(x, *p):
+    A, mu, sigma = p
+   return A*numpy.exp(-(x-mu)**2/(2.*sigma**2))
 
 
 def preprocRadPlot( a, options):
