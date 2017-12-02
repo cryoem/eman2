@@ -3,16 +3,16 @@
 /* The available keys can be found by browsing the JSON files of looking at e2 projectmanager.py */ 
 [
   {
-    "single_image":"/images/macimages/single_image.png",
-    "multiple_images":"/images/macimages/multiple_images.png",
-    "green_boxes":"/images/macimages/green_boxes.png",
-    "ctf":"/images/macimages/ctf.png",
-    "web":"/images/macimages/classes.png",
-    "single_image_3d":"/images/macimages/single_image_3d.png",
-    "refine":"/images/macimages/refine.png",
-    "eulers":"/images/macimages/eulerxplor.png",
-    "resolution":"/images/macimages/plot.png",
-    "tomo_hunter":"/images/macimages/tomo_hunter.png",
-    "eulers":"/images/macimages/eulerxplor.png"
+    "single_image":"/images/single_image.png",
+    "multiple_images":"/images/multiple_images.png",
+    "green_boxes":"/images/green_boxes.png",
+    "ctf":"/images/ctf.png",
+    "web":"/images/classes.png",
+    "single_image_3d":"/images/single_image_3d.png",
+    "refine":"/images/refine.png",
+    "eulers":"/images/eulerxplor.png",
+    "resolution":"/images/plot.png",
+    "tomo_hunter":"/images/tomo_hunter.png",
+    "eulers":"/images/eulerxplor.png"
   }
 ]
