@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-
 #
 # Author: John Flanagan Sept 2011 (jfflanag@bcm.edu)
 # Modified by Jesus Galaz-Montoya (jgalaz@gmail.com)
@@ -32,7 +30,8 @@ from __future__ import print_function
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 
-
+from __future__ import print_function
+from EMAN2_utils import *
 from EMAN2 import *
 import math
 import os
@@ -154,11 +153,9 @@ def main():
 	#	os.mkdir(options.path)
 	
 	#Make directory to save results
-	#from e2spt_classaverage import sptmakepath, preprocessingprefft, Preprocprefft3DTask, get_results_preproc, preprocfilter, sptOptionsParser
+	#from e2spt_classaverage import sptmakepath, preprocessingprefft, Preprocprefft3DTask, get_results_preproc, preprocfilter, sptOptionsParser 
 	
-	from e2spt_classaverage import sptmakepath, sptOptionsParser 
-	
-	options = sptmakepath(options,'symsearch')
+	options = makepath(options,'symsearch')
 	
 	if options.nopath:
 		options.path = '.'
