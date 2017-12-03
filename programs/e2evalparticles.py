@@ -69,6 +69,7 @@ def main():
 	app = EMApp()
 	control=EMEvalPtclTool(args,verbose=options.verbose)
 	control.show()
+	control.raise_()
 	app.execute()
 
 #	E2end(logid)

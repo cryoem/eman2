@@ -945,6 +945,7 @@ def main():
 	
 	window = MainWindow(options.mode, options.cs, options.twod)
 	window.show()
+	window.raise_()
 	
 	app.execute()
 	

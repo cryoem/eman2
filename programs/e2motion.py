@@ -104,6 +104,7 @@ def main():
 	app = EMApp()
 	motion=EMMotion(app,options.path,options.iter,options.threads)
 	motion.show()
+	motion.raise_()
 	app.execute()
 	
 	E2end(pid)
