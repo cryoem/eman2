@@ -46,6 +46,8 @@ import weakref
 import traceback
 from numpy import array,arange
 
+from emapplication import EMApp
+app=EMApp()
 
 def main(sys_argv=None):
 	progname = os.path.basename(sys.argv[0])
@@ -66,8 +68,6 @@ A simple CTF simulation program.
 
 	(options, args) = parser.parse_args(sys_argv)
 
-	from emapplication import EMApp
-	app=EMApp()
 	gui=GUIctfsim(app,options.apix,options.voltage,options.cs,options.ac,options.samples,options.apply)
 	gui.show_guis()
 	app.execute()

@@ -45,6 +45,8 @@ from OpenGL import GL, GLU, GLUT
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 
+app = EMApp()
+
 def main(sys_argv=None):
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options] <image file> ...
@@ -73,7 +75,6 @@ def main(sys_argv=None):
 
 #	logid=E2init(sys.argv)
 
-	app = EMApp()
 	#gapp = app
 	#QtGui.QApplication(sys.argv)
 	win=[]

@@ -43,6 +43,9 @@ import EMAN2db
 
 # also defined in EMAN2, but we don't want to have to import it
 
+from emapplication import EMApp
+app = EMApp()
+
 def main(sys_argv=None):
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + """ [options]
@@ -58,8 +61,6 @@ def main(sys_argv=None):
 	(options, args) = parser.parse_args(sys_argv)
 	
 	if options.gui:
-		from emapplication import EMApp
-		app = EMApp()
 		hist = HistoryForm(app,os.getcwd())
 		app.show()
 		app.execute()

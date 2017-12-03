@@ -44,6 +44,9 @@ import threading
 from numpy import array,arange
 import traceback
 
+from emapplication import EMApp
+app=EMApp()
+
 try:
 	from PyQt4 import QtCore, QtGui, QtOpenGL
 	from PyQt4.QtCore import Qt
@@ -95,8 +98,6 @@ power spectrum in various ways."""
 
 	logid=E2init(sys.argv,options.ppid)
 
-	from emapplication import EMApp
-	app=EMApp()
 	gui=GUIEvalImage(args,options.voltage,options.apix,options.cs,options.ac,options.box,options.usefoldername,options.constbfactor,options.astigmatism,options.phaseplate)
 	gui.show()
 

@@ -46,6 +46,8 @@ import os, sys, itertools
 
 EMBOXERRCT_DB = "e2boxercache/rctboxer.json"
 
+application = EMApp()
+
 def main(sys_argv=None):
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options] <untilted micrograph> <tilted micrograph>....
@@ -102,7 +104,6 @@ Usage: e2RCTboxer.py untilted.hdf tilted.hdf options.
 		if options.write_boxes: rctproc.write_boxes()
 	else:
 		# Open Application, setup rct object, and run
-		application = EMApp()
 		rctboxer = RCTboxer(application, options.boxsize)	# Initialize the boxertools
 		rctboxer.load_untilt_image(args[0])		# Load the untilted image
 		rctboxer.load_tilt_image(args[1])		# Load the tilted image

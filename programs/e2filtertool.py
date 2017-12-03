@@ -51,6 +51,8 @@ from emshape import EMShape
 from valslider import *
 import traceback
 
+app = EMApp()
+
 def main(sys_argv=None):
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options] <image file>
@@ -76,7 +78,6 @@ def main(sys_argv=None):
 
 #	logid=E2init(sys.argv,options.ppid)
 
-	app = EMApp()
 	pix_init()
 	control=EMFilterTool(datafile=args[0],apix=options.apix,force2d=False,verbose=options.verbose)
 #	control=EMFilterTool(datafile=args[0],apix=options.apix,force2d=options.force2d,verbose=options.verbose)

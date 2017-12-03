@@ -45,6 +45,8 @@ from EMAN2db import *
 from valslider import *
 import traceback
 
+app = EMApp()
+
 def main(sys_argv=None):
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [classfile]
@@ -66,7 +68,6 @@ def main(sys_argv=None):
 
 	#logid=E2init(sys.argv, options.ppid)
 
-	app = EMApp()
 	control=EMEvalPtclTool(args,verbose=options.verbose)
 	control.show()
 	app.execute()
