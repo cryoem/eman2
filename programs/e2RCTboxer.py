@@ -109,6 +109,8 @@ Usage: e2RCTboxer.py untilted.hdf tilted.hdf options.
 		rctboxer.init_control_pannel()
 		rctboxer.init_control_pannel_tools()			# Initialize control panel tools, this needs to be done last as loaded data maybe be used
 		application.execute()
+		
+		return rctboxer
 	
 	# Clean up
 	E2end(logid)

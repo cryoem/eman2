@@ -127,6 +127,8 @@ def main(sys_argv=None):
 			helixboxer.show()
 			app.execute()
 			E2end(logid)
+			
+			return helixboxer
 		else:
 			return
 	else:

@@ -68,6 +68,8 @@ read into memory. Do not use it on large sets of particles !!!
 	em_app.show()
 	em_app.execute()
 	
+	return window
+	
 	E2end(logid)
 
 

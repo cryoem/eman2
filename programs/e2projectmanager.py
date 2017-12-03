@@ -2101,7 +2101,9 @@ GUI directly to browse the contents of old-style projects.""")
 	pm.show()
 	try: pm.raise_()
 	except: pass
-	app.exec_()
+	app.execute()
+	
+	return pm
 
 if __name__ == "__main__":
 	main()

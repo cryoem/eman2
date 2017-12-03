@@ -112,6 +112,8 @@ power spectrum in various ways."""
 	app.execute()
 
 	E2end(logid)
+	
+	return gui
 
 
 

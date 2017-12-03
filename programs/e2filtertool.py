@@ -87,6 +87,8 @@ def main(sys_argv=None):
 	app.execute()
 #	E2end(logid)
 
+	return control
+
 def filtchange(name,value):
 	return {}
 

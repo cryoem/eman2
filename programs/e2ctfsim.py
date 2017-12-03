@@ -70,7 +70,9 @@ A simple CTF simulation program.
 	app=EMApp()
 	gui=GUIctfsim(app,options.apix,options.voltage,options.cs,options.ac,options.samples,options.apply)
 	gui.show_guis()
-	app.exec_()
+	app.execute()
+	
+	return gui
 
 #		print "done execution"
 
