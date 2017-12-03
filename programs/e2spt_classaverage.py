@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-
 #
 # Author: Jesus Galaz-Montoya 03/2011, 
 # (based on Steven Ludtke's initial implementation [02/15/2011] of Jesus's older scripts, from M.F.Schmid's methods).
@@ -35,7 +33,10 @@ from __future__ import print_function
 #
 #
 
+from __future__ import print_function
 from EMAN2 import *
+from EMAN2jsondb import JSTask,jsonclasses
+from EMAN2_utils import runcmd
 import math
 import numpy
 from copy import deepcopy
@@ -44,14 +45,11 @@ import sys
 import random
 from random import choice
 from pprint import pprint
-from EMAN2jsondb import JSTask,jsonclasses
-#import datetime
+
+import datetime
 import gc 	#this will be used to free-up unused memory
 
 #from e2spt_hac import textwriter
-
-
-
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -90,7 +88,8 @@ def main():
 	'''
 	parser.add_argument("--input", type=str, default='',help="""Default=None. The name of the input volume stack. MUST be HDF since volume stack support is required.""", guitype='filebox', browser='EMSubTomosTable(withmodal=True,multiselect=False)', row=0, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 
-	
+	parser.add_argument("--ref", type=str, default='', help="""Default=None. Reference image. Used as an initial alignment reference. The refinements are 'gold standard' by default, and therefore two independent copies of the reference will be generated and randomphase-lowpass filtered to the resolution specified through --refrandphase. To turn dataset splitting and gold standard refinement off, supply --goldstandardoff.""", guitype='filebox', browser='EMBrowserWidget(withmodal=True,multiselect=True)', filecheck=False, row=1, col=0, rowspan=1, colspan=3, mode='alignment')
+
 	'''
 	STANDARD PARAMETERS
 	'''
@@ -151,18 +150,16 @@ def main():
 	parser.add_argument("--recompute",action='store_true',default=False,help="""default=False. This parameter requires --classmx and will recompute averages (for example, even and odd) based on the classmx file and the alignment parameters specified therein for each particle. No refinements will follow. This is exclusively for recomputing averages.""")
 	
 	parser.add_argument("--donotaverage",action="store_true", default=False,help="""Default=False. If e2spt_refinemulti.py is calling e2spt_classaverage.py, the latter need not average any particles, but rather only yield the alignment results.""")
-	
-	parser.add_argument("--ref", type=str, default='', help="""Default=None. Reference image. Used as an initial alignment reference. The refinements are 'gold standard' by default, and therefore two independent copies of the reference will be generated and randomphase-lowpass filtered to the resolution specified through --refrandphase. To turn dataset splitting and gold standard refinement off, supply --goldstandardoff.""", guitype='filebox', browser='EMBrowserWidget(withmodal=True,multiselect=True)', filecheck=False, row=1, col=0, rowspan=1, colspan=3, mode='alignment')
-	
+		
 	parser.add_argument("--refpreprocess",action="store_true",default=False,help="""Default=False. This will preprocess the reference identically to the particles. It is off by default, but it is internally turned on when no reference is supplied. It should probably be off when using a crystal structure (with all positive densities) turned to EM density as an initial model, but it should be on when using an EM map.""")
 	
-	parser.add_argument("--refrandphase", type=float, default=0, help="""Default=0 (off). Resolution to phase randomize the reference to (or the two copies of the reference if --goldstandardoff is NOT supplied [gold standard refinement is on by default].""")
+	parser.add_argument("--refrandphase", type=float, default=0.0, help="""Default=0 (off). Resolution to phase randomize the reference to (or the two copies of the reference if --goldstandardoff is NOT supplied [gold standard refinement is on by default].""")
 	
-	parser.add_argument("--hacref",type=int,default=0,help="""Default=0 (not used by default). Size of the SUBSET of particles to use to build an initial reference by calling e2spt_hac.py which does Hierarchical Ascendant Classification (HAC) or 'all vs all' alignments.""") 
+	#parser.add_argument("--hacref",type=int,default=0,help="""Default=0 (not used by default). Size of the SUBSET of particles to use to build an initial reference by calling e2spt_hac.py which does Hierarchical Ascendant Classification (HAC) or 'all vs all' alignments.""") 
 		
-	parser.add_argument("--ssaref",type=int,default=0,help="""Default=0 (not used by default). Size of the SUBSET of particles to use to build an initial reference by calling e2symsearch3d.py, which does self-symmetry alignments. You must provide --sym different than c1 for this to make any sense.""")
+	#parser.add_argument("--ssaref",type=int,default=0,help="""Default=0 (not used by default). Size of the SUBSET of particles to use to build an initial reference by calling e2symsearch3d.py, which does self-symmetry alignments. You must provide --sym different than c1 for this to make any sense.""")
 		
-	parser.add_argument("--btref",type=int,default=0,help="""Default=0 (internally turned on and set to 64). Size of the SUBSET of particles to use to build an initial reference by calling e2spt_binarytree.py. By default, the largest power of two smaller than the number of particles in --input will be used. For example, if you supply a stack with 150 subtomograms, the program will automatically select 128 as the limit to use because it's the largest power of 2 that is smaller than 150. But if you provide, say --btref=100, then the number of particles used will be 64, because it's the largest power of 2 that is still smaller than 100.""")
+	#parser.add_argument("--btref",type=int,default=0,help="""Default=0 (internally turned on and set to 64). Size of the SUBSET of particles to use to build an initial reference by calling e2spt_binarytree.py. By default, the largest power of two smaller than the number of particles in --input will be used. For example, if you supply a stack with 150 subtomograms, the program will automatically select 128 as the limit to use because it's the largest power of 2 that is smaller than 150. But if you provide, say --btref=100, then the number of particles used will be 64, because it's the largest power of 2 that is still smaller than 100.""")
 	
 	parser.add_argument("--resultmx",type=str,default=None,help="""Default=None. Specify an output image to store the result matrix. This is in the same format as the classification matrix. http://blake.bcm.edu/emanwiki/EMAN2/ClassmxFiles""")
 	
@@ -263,9 +260,9 @@ def main():
 	
 	parser.add_argument("--autocenter",type=str, default='',help="""WARNING: Experimental. Default=None. Autocenters each averaged pair during initial average generation with --btref and --hacref. Will also autocenter the average of all particles after each iteration of iterative refinement. Options are --autocenter=xform.centerofmass (self descriptive), or --autocenter=xform.centeracf, which applies auto-convolution on the average.""")
 	
-	parser.add_argument("--autocentermask",type=str, default='',help="""WARNING: Experimental. Requires --autocenter. Default=None. Masking processor to apply before autocentering. See 'e2help.py processors -v 10' at the command line.""")
+	#parser.add_argument("--autocentermask",type=str, default='',help="""WARNING: Experimental. Requires --autocenter. Default=None. Masking processor to apply before autocentering. See 'e2help.py processors -v 10' at the command line.""")
 	
-	parser.add_argument("--autocenterpreprocess",action='store_true', default=False,help="""WARNING: Experimental. Requires --autocenter. Default=False. This will apply a highpass filter at a frequency of half the box size times the apix, shrink by 2, and apply a low pass filter at half nyquist frequency to any computed average for autocentering purposes if --autocenter is provided. Default=False.""")
+	#parser.add_argument("--autocenterpreprocess",action='store_true', default=False,help="""WARNING: Experimental. Requires --autocenter. Default=False. This will apply a highpass filter at a frequency of half the box size times the apix, shrink by 2, and apply a low pass filter at half nyquist frequency to any computed average for autocentering purposes if --autocenter is provided. Default=False.""")
 	
 	
 	
@@ -277,9 +274,20 @@ def main():
 	
 	parser.add_argument("--tweak",action='store_true',default=False,help="""WARNING: BUGGY. This will perform a final alignment with no downsampling [without using --shrink or --shrinkfine] if --shrinkfine > 1.""")
 	
+	
+	
+	#print("\nin MAIN!!!!!!")
+	
+	
 	(options, args) = parser.parse_args()
 	
+	if not options.input:
+		parser.print_help()
+		exit(0)
 	
+	if not options.ref:
+		print("\nERROR: --ref required. Use e2spt_refprep.py, or e2spt_binarytree.py, e2spt_hac.py, e2symsearch3d.py, to generate initial references.")
+		sys.exit(1)
 	
 	if options.shrink < options.shrinkfine:
 		options.shrink = options.shrinkfine
@@ -287,8 +295,7 @@ def main():
 		
 	checksaneimagesize( options, options.input )
 
-	if options.ref:
-		checksaneimagesize( options, options.input, options.ref )
+	checksaneimagesize( options, options.input, options.ref )
 
 	print("Initially, options.goldstandardoff is", options.goldstandardoff, type(options.goldstandardoff))
 	
@@ -306,7 +313,9 @@ def main():
 	rootpath = os.getcwd()
 
 	if not options.resume:
-		options = sptmakepath(options,'spt')	
+		#options = sptmakepath(options,'spt')
+		from EMAN2_utils import makepath
+		options = makepath(options,'sptir')	
 	else:
 		if rootpath not in options.resume:
 			options.resume = rootpath + '/' + options.resume
@@ -318,57 +327,30 @@ def main():
 
 	if rootpath not in options.path:
 		options.path = rootpath + '/' + options.path
-		
-	#abspath= rootpath + '/' + options.path
-	#print "\nThus the abs path could be", abspath
 	
 	nptcl = EMUtil.get_image_count(options.input)
 	
 	if nptcl < 2:
 		options.goldstandardoff = True
 	
-	if not options.input:
-		parser.print_help()
-		exit(0)
-	elif options.subset:
-		#print "there is subset!", options.subset
-		
-		if options.subset < nptcl:
-			#print "smaller than the number of particles", nptcl
+	if options.subset:
 			
-			if options.goldstandardoff:
-				print("goldstandard is off")
-				if options.subset < 2:
-					if not options.ref:
-						print("ERROR: You need at least 2 particles in --input to buidl a reference if --ref is not provided.""")
-						sys.exit()	
-			else:
-				print("goldstandard is on")
-				if options.subset < 4:
-					print("ERROR: You need at least 4 particles in --input for goldstandard refinement if --ref is not provided and --goldstandardoff not provided.""")
-					sys.exit()
+		if options.goldstandardoff:
+			print("goldstandard is off")
+			if options.subset < 2:
+				if not options.ref:
+					print("ERROR: Use e2spt_align to aling 1 particle from --input to --ref.""")
+					sys.exit()	
+		else:
+			print("goldstandard is on")
+			if options.subset < 4:
+				print("ERROR: You need at least 2 particles in --input for goldstandard refinement.""")
+				sys.exit()
 				
-				if options.hacref and options.subset < options.hacref * 2:
-					print("""WARNING: --subset=%d wasn't large enough to accommodate gold standard
-					refinement with two independent halves using the specified number of particles
-					for initial model generation --hacref=%d. Therefore, --hacref will be reset
-					to --subset/2.""" %( options.subset, options.hacref ))				
-					options.hacref = options.subset / 2			
-			
-				elif options.ssaref and options.subset < options.ssaref * 2:		
-					print("""WARNING: --subset=%d wasn't large enough to accommodate gold standard
-					refinement with two independent halves using the specified number of particles
-					for initial model generation --ssaref=%d. Therefore, --ssaref will be reset
-					to --subset/2.""" %( options.subset, options.ssaref ))
-					options.ssaref = options.subset / 2	
-			
-				elif options.btref and options.subset < options.btref * 2:			
-					print("""WARNING: --subset=%d wasn't large enough to accommodate gold standard
-					refinement with two independent halves using the specified number of particles
-					for initial model generation --btref=%d. Therefore, --btref has been reset
-					to --subset/2.""" %( options.subset, options.btref ))
-					options.btref = options.subset / 2
-					
+		if options.subset < nptcl:
+			if options.verbose:
+				print ("\taking a subset s={} smaller than the number of particles in --input n={}".format(options.subset, nptcl))
+		
 			subsetStack = options.path + '/subset' + str( options.subset ).zfill( len( str( options.subset))) + '.hdf' 
 			print("\nSubset to be written to", subsetStack)
 		
@@ -376,59 +358,28 @@ def main():
 			print("Subset cmd is", subsetcmd)
 		
 			runcmd( options, subsetcmd )
-			#p=subprocess.Popen( subsetcmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE )
-			#text=p.communicate()	
-			#p.stdout.close()
 		
 			options.input = subsetStack
 			nptcl = EMUtil.get_image_count(options.input)
 			print("\nnptcl for subset is now", nptcl)
 			
-		else:
-			print("""\n(e2spt_classaverage)(main) WARNING: --subset was larger or equal to the number of particles in --input. 
-			Therefore, using all particles.""")
-	else:
-		if not options.ref:
-			if not options.goldstandardoff:
-				if nptcl < 4:
-					print("ERROR: You need at least 4 particles in --input for goldstandard refinement if --ref is not provided and --goldstandardoff not provided.""")
-					sys.exit()
-				else:
-					pass
-			else:
-				if nptcl < 2:
-					print("ERROR: You need at least 2 particles in --input to build a reference (or to --recompute and average) if --ref is not provided.""")
-					sys.exit()
-		#else:
-		#	print "ref is", options.ref
-	
+		elif options.subset > nptcl:
+			print("""\n(e2spt_classaverage)(main) WARNING: --subset s={} was larger or equal to the number of particles in --input n={}. 
+			Therefore, using all particles.""".format(options.subset, nptcl))
 	
 	options.raw = options.input
-
-					
+				
 	if not options.translateonly:
 		if options.search or options.searchfine:
 			options = sptParseAligner( options )
 		
-			print("aligner parsed", sptParseAligner)
-	else:
+			print("aligner parsed {}".format(sptParseAligner))
+	elif options.translateonly:
 		options.align = 'rotate_translate_3d_grid:phi0=0:phi1=1:alt0=0:alt1=1:az0=0:az1=1:dphi=2:daz=2:dalt=2'
 		
 		if options.search:
 			options.align += ':search=' + str(options.search)
-			
-		#if options.searchx:
-		#	options.align += ':searchx=' + str(options.searchx)
-		
-		#if options.searchy:
-		#	options.align += ':searchy=' + str(options.searchy)
-		
-		#if options.searchz:
-		#	options.align += ':searchz=' + str(options.searchz)
 	
-	
-	
-	print("after fixing searches but before calcali options.falign is", options.falign)
 	if options.radius and float(options.radius) > 0.0:
 		#print "(e2spt_classaverage)(main) before calling calcAliStep, options.input is", options.input
 		options = calcAliStep(options)
@@ -473,17 +424,6 @@ def main():
 		--ref needs to be preprocessed every iteration because it is updated every iteration. no point preprocessing it here
 		"""
 		
-		"""
-		if options.ref and options.refpreprocess:
-			retref = cmdpreproc( options.ref, options, False )
-			if retref: 
-				preprocdone += 1
-			else:
-				print "\n(e2spt_classaverage)(main) preprocessing --ref for coarse alignment failed"
-		else: 
-			preprocdone += 1
-		"""
-		
 	
 	else:
 		preprocdone += 1
@@ -505,17 +445,6 @@ def main():
 			--ref needs to be preprocessed every iteration because it is updated every iteration. no point preprocessing it here
 			"""
 			
-			"""
-			if options.ref and options.refpreprocess:
-				retref = cmdpreproc( options.ref, options, True )
-				if retref: 
-					preprocdone += 1
-				else:
-					print "\n(e2spt_classaverage)(main) preprocessing --ref for fine alignment failed"
-			else:
-				preprocdone += 1
-			"""
-			
 	else:
 		preprocdone += 1
 	
@@ -523,7 +452,7 @@ def main():
 	print("\n(e2spt_classaverage)(main) preprocessing completed")
 
 	'''
-	Parse parameters such that "None" or "none" are adequately interpreted to turn of an option
+	Parse parameters such that "None" or "none" are adequately interpreted to turn off an option
 	'''
 	from EMAN2_utils import sptOptionsParser
 	options = sptOptionsParser( options )
@@ -538,9 +467,6 @@ def main():
 	if options.resultmx != None: 
 		options.storebad = True
 				
-	
-	
-
 	logger = E2init(sys.argv, options.ppid)
 
 	'''
@@ -549,8 +475,6 @@ def main():
 	from EMAN2_utils import writeParameters
 	cmdwp = writeParameters(options,'e2spt_classaverage.py', 'sptclassavg')
 
-
-	
 	if nptcl<1 : 
 		print("(e2spt_classaverage)(main) - ERROR : at least 1 particle required in input stack")
 		sys.exit(1)
@@ -565,9 +489,22 @@ def main():
 			sys.exit(1)
 
 	'''
+	c:if parallelism isn't set, parallelize automatically unless disabled
+	'''
+	if options.parallel != 'None' and options.parallel != 'none' and options.parallel != 'NONE':
+		import multiprocessing
+		nparallel = multiprocessing.cpu_count()
+		options.parallel = 'thread:' + str(nparallel)
+		print("\nfound n={} cores".format(nparallel))
+		print("setting --parallel to {}".format(options.parallel))
+	elif options.parallel == 'None' or options.parallel == 'none' or options.parallel == 'NONE':
+		options.parallel = None
+		print("\nWARNING: parallelism disabled {}".format(options.parallel))
+	
+	
+	'''
 	Initialize parallelism if being used
 	'''
-
 	if options.parallel :
 
 		if options.parallel == 'none' or options.parallel == 'None' or options.parallel == 'NONE':
@@ -872,11 +809,18 @@ def main():
 
 	if not refsdict:
 		print("\nno classmx provided. Building initial models from scratch or preparing reference (phase randomizing) if --ref provided. --ref is", options.ref)
-		refsdict = sptRefGen( options, ptclnumsdict, cmdwp )
-
-		if not refsdict:
-			print("\nERROR: failed to build initial models from scratch")
-			sys.exit()
+		#refsdict = sptRefGen( options, ptclnumsdict, cmdwp )
+		
+		refimg = EMData(options.ref,0)
+		
+		refimge = refimg.copy()
+		refimgo = refimg.copy()
+		
+		if options.refrandphase:
+			refimge.process_inplace("filter.lowpass.randomphase",{"cutoff_freq":1.0/float(options.refrandphase)})
+			refimgo.process_inplace("filter.lowpass.randomphase",{"cutoff_freq":1.0/float(options.refrandphase)})
+		
+		refsdict.update({ 0:refimge, 1:refimgo })
 	
 	if not options.goldstandardoff and ncls > 1 and nptcl > 1:
 	
@@ -2176,629 +2120,6 @@ def calcFsc( options, img1, img2, fscfile ):
 	return
 
 
-
-
-'''
-Function to generate the reference either by reading from disk or bootstrapping
-'''
-def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref=0):
-	
-	import glob, shutil
-	
-	refsdict = {}
-	elements = cmdwp.split(' ')
-	
-	#print "elements are", elements
-	#print "ptclnumsdict received in sptRefGen is", ptclnumsdict
-	#print "RECEIVED CMDWP", cmdwp
-	#print 'Therefore elemnts are', elements
-	
-	#current = os.getcwd()
-	
-	for klassnum in ptclnumsdict:
-		
-		klassidref = '_even'
-		
-		if klassnum == 1:
-			klassidref = '_odd'
-		
-		try:
-			if options.goldstandardoff:
-				klassidref = ''
-		except:
-			if refinemulti:
-				klassidref = ''
-				
-		
-		if refinemulti:
-			zfillfactor = len(str( len( ptclnumsdict )))
-			
-			#if ptclnumsdict[klassnum]:
-			#else:
-			
-			klassidref = '_' + str( klassnum ).zfill( zfillfactor )
-			if len( ptclnumsdict ) < 2:
-				klassidref = '_' + str( refinemulti ).zfill( zfillfactor )	
-		
-		if options.ref: 
-			ref = EMData(options.ref,0)
-
-			if options.verbose:
-				print("\n(e2spt_classaverage)(sptRefGen) - READ reference and its types and min, max, sigma, mean stats are", options.ref, type(ref), ref['minimum'],ref['maximum'],ref['sigma'],ref['mean'])
-
-			if not ref['maximum'] and not ref['minimum']:
-				print("(e2spt_classaverage)(sptRefGen) - ERROR: Empty/blank reference file. Exiting.")
-				sys.exit()
-			
-			if options.apix:
-				ref['apix_x'] = options.apix
-				ref['apix_y'] = options.apix
-				ref['apix_z'] = options.apix
-			
-			if int(options.refrandphase) > 0:
-				filterfreq =  1.0/float( options.refrandphase )
-				ref.process_inplace("filter.lowpass.randomphase",{"cutoff_freq":filterfreq,"apix":ref['apix_x']})
-						
-				refrandphfile = options.path + '/' + os.path.basename( options.ref ).replace('.hdf','_randPH' + klassidref +'.hdf')
-				
-				if 'final_avg' in refrandphfile:								#you don't want any confusion between final averages produces in other runs of the program and references
-					refrandphfile = refrandphfile.replace('final_avg','ref')
-
-				ref['origin_x'] = 0
-				ref['origin_y'] = 0
-				ref['origin_z'] = 0
-				ref.write_image( refrandphfile, 0 )
-
-			if float(ref['apix_x']) <= 1.0:
-				print("\n(e2spt_classaverage)(sptRefGen) - WARNING: apix <= 1.0. This is most likely wrong. You might want to fix the reference's apix value by providing --apix or by running it through e2fixheaderparam.py")
-			
-			refsdict.update({ klassnum : ref })
-			
-		
-		else:
-			ptclnums = ptclnumsdict[ klassnum ]
-			#print "Therefore for class", klassnum
-			#print "ptclnums len and themsvels are", len(ptclnums), ptclnums
-		
-			if ptclnums:
-				ptclnums.sort()		
-			
-			try:
-				if options.hacref:
-					method = 'hac'
-			except:
-				pass
-			
-			try:
-				if options.btref:
-					method = 'bt'
-			except:
-				pass
-			
-			try:
-				if options.ssaref:
-					method = 'ssa'
-			except:
-				pass
-				
-			if not method and not options.ref:
-				method = 'bt'
-				print("\n\n\nbt by default!!!!")
-				
-			#elif options.hacref:
-			if method == 'hac':
-		
-				if options.verbose:
-					print("\n(e2spt_classaverage)(sptRefGen) - Generating initial reference using hierarchical ascendant classification through e2spt_hac.py")
-			
-				subsetForHacRef = 'spthacrefsubset'+ klassidref + '.hdf'
-				
-				try:
-					os.remove(subsetForHacRef)
-				except:
-					pass
-								
-				i = 0
-				nptclsforref = 10
-				try:
-					if options.hacref:
-						nptclsforref = options.hacref								
-				except:
-					if subset4ref:
-						nptclsforref=subset4ref
-			
-				if nptclsforref >= len(ptclnums):
-					nptclsforref =  len(ptclnums)
-			
-				print("Hacreflimit is", nptclsforref)
-				if nptclsforref < 3:
-					print("""ERROR: You cannot build a HAC reference with less than 3 particles.
-					Either provide a larger --hacref number, a larger --subset number, or provide
-					--goldstandardoff""")
-				
-					sys.exit()
-			
-			
-				i = 0
-				while i < nptclsforref :
-					a = EMData( options.input, ptclnums[i] )
-					a.write_image( subsetForHacRef, i )
-					i+=1
-			
-				niterhac = nptclsforref - 1
-
-				hacelements = []
-				for ele in elements:
-					if 'saveallpeaks' not in ele and 'raw' not in ele and 'btref' not in ele and 'hacref' not in ele and 'ssaref' not in ele and 'subset4ref' not in ele and 'refgenmethod' not in ele and 'nref' not in ele and 'output' not in ele and 'fsc' not in ele and 'subset' not in ele and 'input' not in ele and '--ref' not in ele and 'path' not in ele and 'keep' not in ele and 'iter' not in ele and 'subset' not in ele and 'goldstandardoff' not in ele and 'saveallalign' not in ele and 'savepreproc' not in ele:
-						hacelements.append(ele)
-			
-				cmdhac = ' '.join(hacelements)
-				cmdhac = cmdhac.replace('e2spt_classaverage','e2spt_hac')
-			
-				if refinemulti:
-					cmdhac = cmdhac.replace('e2spt_refinemulti','e2spt_hac')
-				
-			
-				hacrefsubdir = 'spthacref' + klassidref
-				
-				
-				try:
-					files=glob.glob(hacrefsubdir+'*')		
-					print("files are", files)
-					for path in files: 
-						shutil.rmtree(path)
-				except:
-					pass
-					
-				cmdhac+=' --path=' + hacrefsubdir
-				cmdhac+=' --input='+subsetForHacRef
-				
-				if options.verbose:
-					print("\n(e2spt_classaverage)(sptRefGen) - Command to generate hacref is", cmdhac)
-				
-				runcmd( options, cmdhac )
-			
-				try:
-					print("\nmoving hacrefsubdir %s into path %s" %( hacrefsubdir, options.path ))
-					os.rename( hacrefsubdir, options.path + '/' + hacrefsubdir )
-				except:
-					print("\nfirst try moving hacrefsubdir %s into path %s failed" %( hacrefsubdir, options.path ))
-					hacsubdirstem = '_'.join( hacrefsubdir.split('_')[:-1])
-
-					try:
-						hacsubdircount = str( int(hacrefsubdir.split('_')[-1])+1)
-					except:
-						hacsubdircount = '01'
-						hacsubdirstem = hacrefsubdir
-					
-
-					newhacrefsubdir = hacsubdirstem + '_' + hacsubdircount #if the subdirectory exists, add one to the tag count at the end of the subdirectory name
-					try: 
-						print("\nmoving hacrefsubdir %s into path %s" %( hacrefsubdir, options.path ))
-						os.rename( newhacrefsubdir, options.path + '/' + hacrefsubdir )
-					except:
-						print("\nsecond and final try moving hacrefsubdir %s into path %s failed" %( newhacrefsubdir, options.path ))
-						sys.exit(1)
-
-				
-				
-				try:
-					os.rename( subsetForHacRef, options.path + '/' + subsetForHacRef )
-				except:
-					newsubsetcount = '_'.join( subsetForHacRef.split('_')[:-1]) + '_' + str( int(subsetForHacRef.split('_')[-1])+1 )	#if the subdirectory exists, add one to the tag count at the end of the subdirectory name
-					os.rename( subsetForHacRef, options.path + '/' + newsubsetcount )
-				
-				
-				findir = os.listdir(options.path)
-				if subsetForHacRef in findir:
-					currentdir = os.getcwd()
-					findircurrent = os.listdir(currentdir)
-					if subsetForHacRef in findircurrent:
-						newsubsetcount = '_'.join( subsetForHacRef.split('_')[:-1]) + '_' + str( int(subsetForHacRef.split('_')[-1].split('.hdf')[0]) +1 ) +'.hdf'	#if the subdirectory exists, add one to the tag count at the end of the subdirectory name
-						print("\ntrying to move new subsetForHacRef into path", newsubsetcount, options.path)
-						os.rename( subsetForHacRef, options.path + '/' + newsubsetcount )
-					else:
-						print("\nWARNING subsetForHacRef does not exist in current directory", subsetForHacRef)
-						
-				else:
-					os.rename( subsetForHacRef, options.path + '/' + subsetForHacRef )
-					print("\nmoving subsetForHacRef into path", subsetForHacRef, options.path)
-				
-				
-				if options.verbose:
-					print("\n(e2spt_classaverage)(sptRefGen) - Command to generate hacref is", cmdhac)
-				
-				ref = EMData( options.path + '/' + hacrefsubdir +'/final_avg.hdf', 0 )
-
-				refsdict.update({ klassnum : ref })
-				
-			
-			if method == 'ssa':
-				if options.verbose:
-					print("\n(e2spt_classaverage)(sptRefGen) - Generating initial reference using self symmetry alignment through e2symsearch3d.py")
-			
-				if options.sym == 'c1' or options.sym == 'C1':
-					print("""\n(e2spt_classaverage)(sptRefGen) - ERROR: You must provide at least c2 or higher symmetry to use
-					--ssaref""")
-			
-				subsetForSsaRef = 'sptssarefsubset'+ klassidref + '.hdf'
-				
-				try:
-					os.remove( subsetForSsaRef )
-				except:
-					pass
-								
-				nptclsforref = 10
-				try:
-					if options.ssaref:
-						nptclsforref=options.ssaref	
-				except:
-					if subset4ref:
-						nptclsforref=subset4ref
-			
-				if nptclsforref >= len(ptclnums):
-					nptclsforref =  len(ptclnums)
-			
-				i = 0
-				while i < nptclsforref :
-					a = EMData( options.input, ptclnums[i] )
-					a.write_image( subsetForSsaRef, i )
-					i+=1
-			
-				ssarefsubdir = 'sptssaref' + klassidref
-				
-				try:
-					files=glob.glob(ssarefsubdir+'*')
-					for path in files:
-						shutil.rmtree(path)
-				except:
-					pass
-					
-						
-				ssaelements = []
-				print("\nelements are", elements)
-				for ele in elements:
-					if 'saveallpeaks' not in ele and 'fine' not in ele and 'raw' not in ele and 'btref' not in ele and 'hacref' not in ele and 'ssaref' not in ele and 'subset4ref' not in ele and 'refgenmethod' not in ele and 'nref' not in ele and 'sfine' not in ele and 'procfine' not in ele and 'fsc' not in ele and 'output' not in ele and 'path' not in ele and 'goldstandardoff' not in ele and 'saveallalign' not in ele and 'savepreproc' not in ele and 'align' not in ele and 'iter' not in ele and 'npeakstorefine' not in ele and 'precision'not in ele and '--radius' not in ele and 'randphase' not in ele and 'search' not in ele and '--save' not in ele and '--ref' not in ele and 'input' not in ele and 'output' not in ele and 'subset' not in ele:
-						ssaelements.append(ele)
-						print("appending element",ele)
-		
-				cmdssa = ' '.join(ssaelements)
-				print("before replacing program name, cmdssa is", cmdssa)
-
-				cmdssa = cmdssa.replace('e2spt_classaverage','e2symsearch3d')
-				if refinemulti:
-					print("should replace refinemulti")
-					cmdssa = cmdssa.replace('e2spt_refinemulti','e2symsearch3d')
-			
-				cmdssa += ' --input=' + subsetForSsaRef 
-				cmdssa += ' --path=' + ssarefsubdir
-				cmdssa += ' --symmetrize'
-				cmdssa += ' --average'
-				
-				print("\ncmdssa is", cmdssa)
-				
-				if options.verbose:
-					print("\n(e2spt_classaverage)(sptRefGen) - Command to generate ssaref is", cmdssa)
-
-				runcmd( options, cmdssa )
-				
-				ssarefname = 'final_avg.hdf'
-					
-				try:
-					print("\nmoving ssarefsubdir %s into path %s" %( ssarefsubdir, options.path ))
-					os.rename( ssarefsubdir, options.path + '/' + ssarefsubdir )
-				except:
-					print("\nfirst try moving ssarefsubdir %s into path %s failed" %( ssarefsubdir, options.path ))
-					hacsubdirstem = '_'.join( ssarefsubdir.split('_')[:-1])
-
-					try:
-						ssasubdircount = str( int(ssarefsubdir.split('_')[-1])+1)
-					except:
-						ssasubdircount = '01'
-						ssasubdirstem = ssarefsubdir
-					
-					newssarefsubdir = ssasubdirstem + '_' + ssasubdircount #if the subdirectory exists, add one to the tag count at the end of the subdirectory name
-					try: 
-						print("\nmoving ssarefsubdir %s into path %s" %( ssarefsubdir, options.path ))
-						os.rename( newssarefsubdir, options.path + '/' + ssarefsubdir )
-					except:
-						print("\nsecond and final try moving ssarefsubdir %s into path %s failed" %( newssarefsubdir, options.path ))
-						sys.exit(1)
-
-
-
-
-				findir = os.listdir(options.path)
-				if subsetForSsaRef in findir:
-					print("tried moving subsetForSsaRef into path but failed", subsetForSsaRef, options.path)
-					newsubsetcount = '_'.join( subsetForSsaRef.split('_')[:-1]) + '_' + str( int(subsetForSsaRef.split('_')[-1].split('.hdf')[0]) +1 ) +'.hdf'	#if the subdirectory exists, add one to the tag count at the end of the subdirectory name
-					os.rename( subsetForSsaRef, options.path + '/' + newsubsetcount )
-				else:
-					os.rename( subsetForSsaRef, options.path + '/' + subsetForSsaRef )
-					print("\nmoving subsetForSsaRef into path", subsetForSsaRef, options.path)
-				
-				
-				if options.verbose:
-					print("\n(e2spt_classaverage)(sptRefGen) - Command to generate ssaref is", cmdssa)
-
-				#p=subprocess.Popen( cmdssa, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-				#text=p.communicate()	
-				#p.stdout.close()
-			
-				ref = EMData( options.path + '/' + ssarefsubdir +'/' + ssarefname, 0 )
-
-				refsdict.update({ klassnum : ref })
-
-			#elif not options.hacref and not options.ssaref:				
-			if method == 'bt':
-		
-				nptclsforref = 64
-				
-				#try:
-				#	if options.btref:
-				#		nptclsforref = options.btref		
-				#except:
-				#	if subset4ref:
-				#		nptclsforref = subset4ref
-			
-				#if nptclsforref >= len(ptclnums):
-				#	nptclsforref =  len(ptclnums)
-				
-				
-				
-				#from e2spt_binarytree import binaryTreeRef
-				print("\ninput is", options.input)
-				print("with nimgs", EMUtil.get_image_count( options.input ))
-				print("--goldstandardoff is", options.goldstandardoff)
-				print("len ptclnums is", len(ptclnums))
-				
-				print("log 2 of that is") 
-				print(log( len(ptclnums), 2 ))
-			
-				niter = int(floor(log( len(ptclnums), 2 )))
-				print("and niter is", niter)
-				nseed = 2**niter
-				print("therefore nseed=2**niter is", nseed)
-				
-				
-				#try:
-				#	if options.btref:
-				#		niter = int(floor(log( options.btref, 2 )))
-				#		nseed=2**niter			
-				#except:
-				#	if subset4ref:
-				#		niter = int(floor(log( subset4ref, 2 )))
-				#		nseed=2**niter	
-				
-				
-				#if not options.goldstandardoff:
-				#	nseed /= 2
-				
-					
-				subsetForBTRef = 'sptbtrefsubset'+ klassidref + '.hdf'
-				
-				try:
-					os.remove( subsetForBTRef )
-				except:
-					pass
-								
-				i = 0
-				
-				
-				#print "ptclnums are", ptclnums
-				#print "with len", len(ptclnums)
-				
-				while i < nseed :
-					print("i is", i)
-					a = EMData( options.input, ptclnums[i] )
-					a.write_image( subsetForBTRef, i )
-					print("writing image %d to file %s, which will contain the subset of particles used for BTA reference building" %(i,subsetForBTRef))
-					i+=1
-
-				btelements = []
-				#print "elements are", elements
-				for ele in elements:
-					if 'saveallpeaks' not in ele and 'raw' not in ele and 'btref' not in ele and 'hacref' not in ele and 'ssaref' not in ele and 'subset4ref' not in ele and 'refgenmethod' not in ele and 'nref' not in ele and 'output' not in ele and 'fsc' not in ele and 'subset' not in ele and 'input' not in ele and '--ref' not in ele and 'path' not in ele and 'keep' not in ele and 'iter' not in ele and 'goldstandardoff' not in ele and 'saveallalign' not in ele and 'savepreproc' not in ele:
-						#print "added ele", ele
-						btelements.append(ele)
-					else:
-						pass
-						#print "skipped ele", ele
-			
-				cmdbt = ' '.join(btelements)
-				cmdbt = cmdbt.replace('e2spt_classaverage','e2spt_binarytree')
-			
-				#print "wildcard is!", wildcard
-				#print "BEFORE replacement", cmdbt
-			
-				if refinemulti:
-					cmdbt = cmdbt.replace('e2spt_refinemulti','e2spt_binarytree')
-			
-			
-				btrefsubdir = 'sptbtref' + klassidref		
-				
-				try:
-					files=glob.glob(btrefsubdir+'*')
-					for path in files:
-						shutil.rmtree(path)
-				except:
-					pass
-					
-						
-				cmdbt+=' --path=' + btrefsubdir
-				#cmdbt+=' --iter=' + str( niter )
-				cmdbt+=' --input=' + subsetForBTRef
-				#cmdbt+= ' --nopreprocprefft'
-				
-				runcmd( options, cmdbt )
-				
-				#cmdbt+= ' && mv ' + btrefsubdir + ' ' + options.path + '/' + ' && mv ' + subsetForBTRef + ' ' + options.path
-			
-				
-				if options.verbose:
-					print("\n(e2spt_classaverage)(sptRefGen) - Command to generate btref is", cmdbt)
-
-				try:
-					print("\nmoving btrefsubdir into path", btrefsubdir, options.path)
-					os.rename( btrefsubdir, options.path + '/' + btrefsubdir )
-				except:
-					print("\nfirst try moving btrefsubdir %s into path %s failed" %( btrefsubdir, options.path ))
-					
-					btsubdirstem = '_'.join( btrefsubdir.split('_')[:-1])
-
-					try:
-						btsubdircount = str( int(btrefsubdir.split('_')[-1])+1)
-					except:
-						btsubdircount = '01'
-						btsubdirstem = btrefsubdir
-					
-
-					newbtrefsubdir = btsubdirstem + '_' + btsubdircount #if the subdirectory exists, add one to the tag count at the end of the subdirectory name
-					try: 
-						os.rename( newbtrefsubdir, options.path + '/' + btrefsubdir )
-					except:
-						print("\nsecond and final try moving btrefsubdir %s into path %s failed" %( newbtrefsubdir, options.path ))
-						sys.exit(1)
-						
-								
-				
-				#cmdbt3 = 'mv ' + subsetForBTRef + ' ' + options.path
-				#runcmd( options, cmdbt3 )
-				
-				findir = os.listdir(options.path)
-				if subsetForBTRef in findir:
-					print("tried moving subsetForBTRef into path but failed", subsetForBTRef, options.path)
-					newsubsetcount = '_'.join( subsetForBTRef.split('_')[:-1]) + '_' + str( int(subsetForBTRef.split('_')[-1].split('.hdf')[0]) +1 ) +'.hdf'	#if the subset exists, add one to the tag count at the end of the subdirectory name
-					os.rename( subsetForBTRef, options.path + '/' + newsubsetcount )
-				else:
-					os.rename( subsetForBTRef, options.path + '/' + subsetForBTRef )
-					print("\nmoving subsetForBTRef into path", subsetForBTRef, options.path)
-								
-				
-			
-				#if os.getcwd() not in options.path:
-				#	options.path = os.getcwd() + '/' + ptions.path
-			
-				print("\ncmdbt is", cmdbt)
-			
-				#print "\nfindir are"
-				#findir=os.listdir(current)
-				#for f in findir:
-				#	print f
-			
-				print("The BT reference to load is in file",  options.path+ '/' +btrefsubdir +'/final_avg.hdf')
-				ref = EMData( options.path + '/' + btrefsubdir +'/final_avg.hdf', 0 )
-
-				refsdict.update({ klassnum : ref })
-	
-	refnames={}
-	#if options.savesteps:
-	#	if options.goldstandardoff and options.ref:
-	#		refname = options.path + '/refinitial.hdf'
-	#		ref = refsdict[0]
-	#		ref.write_image( refname, 0 )
-	#
-	#	else:
-	#		for klass in refsdict:
-	#			refname = options.path + '/refinitial_even.hdf'	
-	#			if klass == 1:
-	#				refname = options.path + '/refinitial_odd.hdf'
-	#			ref = refsdict[ klass ]
-	#			ref.write_image(refname, 0)
-
-	return refsdict
-	
-
-def runcmd(options,cmd):
-	if options.verbose > 9:
-		print("(e2spt_classaverage)(runcmd) running command", cmd)
-	
-	p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-	text=p.communicate()	
-	p.stdout.close()
-	
-	if options.verbose > 8:
-		print("(e2spt_classaverage)(runcmd) done")
-	
-	#if options.verbose > 9:
-	#	print text
-	
-	return 1
-
-
-
-'''
-Function to write the parameters used for every run of the program to parameters.txt inside the path specified by --path.
-*** Imported by many e2spt programs ***
-'''
-def writeParameters( options, program, tag ):
-	print("Tag received in writeParameters is", tag)
-
-	names = dir(options)
-	
-	cmd = program
-	lines = []
-	now = datetime.datetime.now()
-	lines.append(str(now)+'\n')
-	
-	#print "\nnames are", names
-	optionscopy = options
-	
-	try:
-		if options.search == 0 or options.search == 0.0:
-			options.search = '0'
-	except:
-		pass
-	try:
-		if options.searchfine == 0 or options.searchfine == 0.0:
-			options.searchfine = '0'
-	except:
-		pass
-		
-	#print "mask in write parameters is", optionscopy.mask, type(optionscopy.mask)
-	for name in names:
-				
-		if getattr(options,name) and "__" not in name and "_" not in name:
-		#if "__" not in name and "_" not in name:	
-	
-			#if "__" not in name and "_" not in name and str(getattr(options,name)) and 'path' not in name and str(getattr(options,name)) != 'False' and str(getattr(options,name)) != 'True' and str(getattr(options,name)) != 'None':			
-			line = name + '=' + str(getattr(optionscopy,name))
-					
-			lines.append(line+'\n')
-			
-			if str(getattr(optionscopy,name)) != 'True' and str(getattr(optionscopy,name)) != 'False' and str(getattr(optionscopy,name)) != '':
-			
-				if name != 'parallel':
-					if "{" in str( getattr(optionscopy,name) ) or "}" in  str(getattr(optionscopy,name)) or ")" in  str(getattr(optionscopy,name)) or ")"  in str(getattr(optionscopy,name)): 
-						
-						tail = str( getattr(optionscopy,name) ).replace(':','=').replace('(','').replace(')','').replace('{','').replace('}','').replace(',',':').replace(' ','').replace("'",'')
-						if tail[-1] == ':':
-							tail = tail[:-1] 
-						cmd += ' --' + name + '=' + tail
-					else:
-						
-						tail = str( getattr(optionscopy,name) )
-						if tail[-1] == ':':
-							tail = tail[:-1]
-						cmd += ' --' + name + '=' + tail
-						
-				else:
-					cmd += ' --' + name + '=' + str(getattr(optionscopy,name))
-			
-			elif str(getattr(optionscopy,name)) == 'True' or str(getattr(optionscopy,name)) == 'False':
-				cmd += ' --' + name
-	
-	parmFile = 'parameters_' + tag + '.txt'
-	lines.append('\n'+cmd+'\n')
-	#f=open( optionscopy.path + '/' + parmFile,'w')
-	pfile = optionscopy.path + '/' + parmFile
-	f = open( pfile, 'w')
-	f.writelines(lines)
-	f.close()
-	
-	return cmd
-
-
 def calcAliStep(options):
 
 	print("\n\n(e2spt_classaverage)(calcAliStep) options.radius is", options.radius)
@@ -2890,17 +2211,7 @@ def calcAliStep(options):
 			searchC = 1
 
 		#elif options.mask:
-		#	if 'mask.sharp' in options.mask[0]:
-		#		if 'outer_radius' in options.mask[1]:
-		#			om = options.mask[1]['outer_radius']
-		#	
-		#			if '-' in str(om):
-		#				om = hdr['nx']/2 + om
-		#			searchC = om/2.0
-		#			print "\nBecause the radius for the mask is", om
-		#			print "searchC is", searchC
-		#			print "\n"
-				
+
 		if options.shrink and float(options.shrink) > 1.0:
 			searchC = int( searchC / options.shrink )
 	
@@ -2959,27 +2270,6 @@ def postprocess(img,mask,normproc,postprocess):
 	if postprocess: 
 		img.process_inplace(postprocess[0],postprocess[1])
 	return img
-
-
-def sptmakepath(options, stem='spt'):
-	if options.verbose:
-		print("\n(e2spt_classaverage)(sptmakepath), stem is", stem)
-	
-	#if options.path and ("/" in options.path or "#" in options.path):
-	#	print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
-	#	sys.exit(1)
-
-
-	if options.path!=None and len(options.path)>0 : stem=options.path
-	
-	i=1
-	while os.path.exists("{}_{:02d}".format(stem,i)): i+=1
-	
-	options.path="{}_{:02d}".format(stem,i)
-	try: os.mkdir(options.path)
-	except: pass
-	
-	return options
 
 
 def makeAverage(options,ic,results,it=0):
@@ -3695,12 +2985,20 @@ def align3Dfunc(fixedimage,image,ptclnum,label,options,transform,currentIter):
 	
 	
 	#print "Inside func, options.ref and type and len are", options.ref, type(options.ref), len(str(options.ref))
-	if not options.ref or options.ref == '':
-		refpreprocess=1
-		#print "\n(e2spt_classaverage)(align3Dfunc) There is no reference; therfore, refpreprocess should be turned on", refpreprocess
+	try:
+		if not options.ref or options.ref == '':
+			refpreprocess=1
+			#print "\n(e2spt_classaverage)(align3Dfunc) There is no reference; therfore, refpreprocess should be turned on", refpreprocess
 
-	if options.refpreprocess:
-		refpreprocess=1
+	except:
+		options.ref = None
+		
+	
+	try:
+		if options.refpreprocess:
+			refpreprocess = 1
+	except:
+		options.refpreprocess = 1
 	
 	try:
 		if int(options.iter) > 1 and currentIter > 0:
@@ -4307,10 +3605,6 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 	
 	print("\n(e2spt_classaverage)(alignment) finishing - ", label)	
 	
-	#print "\n\n\nRRRRRRRRR\n Returning from alignment", 
-	#print "bestfinal",bestfinal
-	#print "and bestcorase", bestcoarse
-	
 	'''
 	bestfinal was sorted, but should also sort bestcoarse in case it's used independently later
 	'''
@@ -4341,5 +3635,6 @@ def classmx_ptcls(classmx,n):
 
 	
 if __name__ == "__main__":
+	#print("launching!!!")
     main()
     sys.stdout.flush()
