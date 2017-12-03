@@ -372,13 +372,30 @@ def main():
 	if not options.translateonly:
 		if options.search or options.searchfine:
 			options = sptParseAligner( options )
-		
-			print("aligner parsed {}".format(sptParseAligner))
+			print("aligner parsed {}".format(options.align))
 	elif options.translateonly:
+	
+		hdr=EMData(options.input,0,True)
+		
+		search = hdr['nx']/2.0
 		options.align = 'rotate_translate_3d_grid:phi0=0:phi1=1:alt0=0:alt1=1:az0=0:az1=1:dphi=2:daz=2:dalt=2'
 		
+		#options.falign = 'refine_3d_grid'
+		
 		if options.search:
-			options.align += ':search=' + str(options.search)
+			search = options.search
+		
+		options.align += ':search=' + str(search)
+			
+		#if options.searchx:
+		#	options.align += ':searchx=' + str(options.searchx)
+		
+		#if options.searchy:
+		#	options.align += ':searchy=' + str(options.searchy)
+		
+		#if options.searchz:
+		#	options.align += ':searchz=' + str(options.searchz)
+
 	
 	if options.radius and float(options.radius) > 0.0:
 		#print "(e2spt_classaverage)(main) before calling calcAliStep, options.input is", options.input

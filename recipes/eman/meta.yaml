@@ -47,7 +47,7 @@ test:
   
   source_files:
     - tests/run_prog_tests.sh
-    - tests/programs_to_test.txt
+    - tests/programs_no_test.txt
     - tests/test_EMAN2DIR.py
 
   commands:

@@ -2,4 +2,4 @@
 
 set -x
 
-conda remove openmpi --force
+conda remove openmpi --force ${@}

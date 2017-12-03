@@ -97,7 +97,8 @@ once complete, bispectra can be recomputed based on the masked particles, or the
 	nx=classes[0]["nx"]
 
 	# Make a mask for each class-average
-	masks=[i.process("mask.auto2d",{"nmaxseed":8,"nshells":nx/16,"radius":4,"return_mask":1,"sigma":0.5}) for i in classes]
+	for c in classes: c.process_inplace("filter.lowpass.gauss",{"cutoff_freq":0.05})
+	masks=[c.process("mask.auto2d",{"nmaxseed":12,"nshells":nx/12,"radius":nx/10,"return_mask":1,"sigma":0.1}) for c in classes]
 	for i in masks: i.process_inplace("filter.lowpass.gauss",{"cutoff_freq":0.03})
 
 	# Find all of the particles

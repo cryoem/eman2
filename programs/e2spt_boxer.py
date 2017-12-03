@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 
-# LAST update: June/2017
+# LAST update: nov/2017
 # Author: Muyuan Chen May, 2017 (cleanup and re-writing to allow boxing multiple types of features) 
 # Author: Steven Ludtke  2/8/2011 (rewritten)
 # Author: Jesus Galaz-Montoya, all command line functionality, + updates/enhancements/fixes.
@@ -36,7 +36,6 @@ from __future__ import print_function
 
 from EMAN2 import *
 import numpy as np
-
 import weakref
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
@@ -1786,12 +1785,12 @@ def commandline_tomoboxer(tomogram,options):
 		filename, file_extension = os.path.splitext('basename')
 		options.output = filename + '.hdf'
 
-	if options.path:
-		from e2spt_classaverage import sptmakepath
-		options = sptmakepath( options, 'spt_boxer')
+	#if options.path:
+	from EMAN2_utils import makepath
+	options = makepath( options, 'sptboxer')
 
-		if options.path not in options.output:
-			options.output = options.path + '/' + options.output
+	if options.path not in options.output:
+		options.output = options.path + '/' + options.output
 
 	xs = []
 	ys = []
@@ -1910,7 +1909,7 @@ def commandline_tomoboxer(tomogram,options):
 
 		elif float(e['sigma']) == 0.0:
 			print("""\nWARNING! particle {} at coordinates x={}, y={}, z={}, was skipped because it's SIGMA was ZERO (suggesting the box was empty). --coords might be messed up or --cshrink wrong.""".format(i,x,y,z))
-			faield += 1
+			failed += 1
 
 	newcoordsfilestem = os.path.splitext(options.coords)[0] + '_clean_unbinned'
 	newcoordsfile = newcoordsfilestem + '.txt'

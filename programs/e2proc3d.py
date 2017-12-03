@@ -98,10 +98,11 @@ def main():
 								help="Downsamples the volume by a factor of n by computing the local average")
 	parser.add_option("--meanshrinkbig", metavar="n", type="int", default=0,
 								help="Downsamples the volume by a factor of n without reading the entire volume into RAM. The output file (after shrinking) must fit into RAM. If specified, this must be the ONLY option on the command line. Any other options will be ignored. Output data type will match input data type. Works only on single image files, not stack files.")
+	parser.add_option("--fouriershrink", metavar="n", type=float, action="append", help="Reduce an image size by an arbitrary scaling factor by clipping in Fourier space. eg - 2 will reduce image size to 1/2.")
 
 #    parser.add_option("--tomoshrink", metavar="n", type="int", action="append",
 #                                help="Mean shrinks the image but is careful of memory - reads small pixel blocks from disk and slowly builds up the result")
-	parser.add_option("--scale", metavar="n", type="float", action="append", help="Rescales the image by 'n', generally used with clip option.")
+	parser.add_option("--scale", metavar="n", type="float", action="append", help="Rescales the data in the image by 'n', opposite behavior of 'shrink' above. Scaling is done by interpolation in real-space. Box size unchanged. See '--clip'")
 	parser.add_option("--sym", dest = "sym", action="append", help = "Symmetry to impose - choices are: c<n>, d<n>, h<n>, tet, oct, icos")
 	parser.add_option("--averager", type="string", default="mean", help="Averager used for --average and --sym options")
 	parser.add_option("--clip", metavar="x[,y,z[,xc,yc,zc]]", type='string', action="callback", callback=intvararg_callback, help="Make the output have this size by padding/clipping. 1, 3 or 6 arguments. ")
@@ -150,7 +151,7 @@ def main():
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_option("--step",type=str,default=None,help="Specify <init>,<step>. Processes only a subset of the input data. For example, 0,2 would process only the even numbered particles")
 
-	append_options = ["clip", "fftclip", "process", "filter", "filtertable",  "meanshrink", "medianshrink", "scale", "sym", "multfile", "addfile", "trans", "rot", "align","ralignzphi","alignctod"]
+	append_options = ["clip", "fftclip", "process", "filter", "filtertable",  "meanshrink", "medianshrink", "fouriershrink", "scale", "sym", "multfile", "addfile", "trans", "rot", "align","ralignzphi","alignctod"]
 
 	optionlist = pyemtbx.options.get_optionlist(sys.argv[1:])
 
@@ -432,7 +433,7 @@ def main():
 				fsc = fsc[third:2*third]
 				saxis = [x/apix for x in xaxis]
 				Util.save_data(saxis[1],saxis[1]-saxis[0],fsc[1:-1],args[1])
-				print("Exiting after FSC calculation")
+				if options.verbose: print("Exiting after FSC calculation")
 				sys.exit(0)
 
 			elif option1 == "calcsf":
@@ -709,6 +710,15 @@ def main():
 				shrink_f = options.meanshrink[index_d[option1]]
 				if shrink_f > 1:
 					data.process_inplace("math.meanshrink",{"n":shrink_f})
+					nx = data.get_xsize()
+					ny = data.get_ysize()
+					nz = data.get_zsize()
+				index_d[option1] += 1
+
+			elif option1 == "fouriershrink":
+				shrink_f = options.fouriershrink[index_d[option1]]
+				if shrink_f > 1:
+					data.process_inplace("math.fft.resample",{"n":shrink_f})
 					nx = data.get_xsize()
 					ny = data.get_ysize()
 					nz = data.get_zsize()

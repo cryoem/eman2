@@ -1386,6 +1386,11 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 							avs = "%1.1f,%1.1f,%1.1f" %(t["az"],t["alt"],t["phi"])
 						elif isinstance(av,EMAN2Ctf):
 							avs = "%1.3f,%1.1f" %(av.defocus,av.bfactor)
+						elif isinstance(av,list) or isinstance(av,tuple):
+							if isinstance(av[0],float) :
+								avs=["{:1.2g}".format(j) for j in av]
+								avs=",".join(avs)
+							else: avs=str(av)
 						else: avs=str(av)
 					except:avs ="???"
 				except: avs = ""

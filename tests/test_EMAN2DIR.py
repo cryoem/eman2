@@ -7,11 +7,11 @@ files = [
     "fonts/DejaVuSerif.ttf", 
     "images/feather.png", 
     "images/EMAN2Icon.png", 
+    "images/SirEMAN2.png",
     'lib/pmconfig/icons.json', 
     'lib/pmconfig/spr.json', 
     'lib/pmconfig/tomo.json', 
     'lib/pmconfig/tomosegpanel.json', 
-    "images/SirEMAN2.png", 
 ]
 
 eman2dir = os.getenv("EMAN2DIR")

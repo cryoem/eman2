@@ -34,6 +34,8 @@ Author: Jesus Galaz - 2011, Last update: 07/Nov/2017
 
 from optparse import OptionParser
 from EMAN2 import *
+from EMAN2_utils import *
+import shutil
 from EMAN2jsondb import JSTask,jsonclasses
 
 import sys
@@ -125,7 +127,8 @@ def main():
 	#if options.reconstructor:
 	#	options.reconstructor = parsemodopt(options.reconstructor)
 	
-	from EMAN2_utils import sptOptionsParser
+	
+	#function imported from EMAN2_utils
 	options = sptOptionsParser( options )
 
 	if options.input and options.randstack:
@@ -140,10 +143,8 @@ def main():
 	Make the directory where to create the database where the results will be stored
 	'''
 	
-	from EMAN2_utils import makepath
+	#functions imported from EMAN2_utils
 	options = makepath(options,'sptsim')
-	
-	from EMAN2_utils import writeParameters
 	writeParameters( options, 'e2spt_simulation.py', 'sptsim' )
 	
 	rootpath = os.getcwd()
@@ -169,10 +170,7 @@ def main():
 
 		copycmd = 'e2proc3d.py ' + options.randstack + ' ' + randstackcopy
 		
-		p=subprocess.Popen( copycmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-		text=p.communicate()	
-		p.stdout.close()
-		
+		runcmd(options,copycmd)
 		
 		nr=EMUtil.get_image_count(randstackcopy)
 		if options.verbose > 3:
@@ -189,18 +187,16 @@ def main():
 			
 			if options.clip:
 				clip2cmd = 'e2proc3d.py ' + randstackcopy + ' ' + randstackcopy + ' --clip=' + str(options.clip)
-				p=subprocess.Popen( clip2cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-				text=p.communicate()	
-				p.stdout.close()
-	
-			os.system('cp ' + options.input + ' ' + simptclsname)
+				runcmd(options,clip2cmd)
+			
+			shutil.copy(options.input,simptclsname)
+			#os.system('cp ' + options.input + ' ' + simptclsname)
 		
 			simrefname = options.path + '/simmodel.hdf'
 			
 			simrefcmd = 'e2proc3d.py ' + randstackcopy + ' ' + simrefname + ' --first=0 --last=0'
-			p=subprocess.Popen( simrefcmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-			text=p.communicate()	
-			p.stdout.close()
+	
+			runcmd(options,simrefcmd)
 			
 			
 		else:
@@ -253,13 +249,16 @@ def main():
 
 					options.path = originalpath + '/model' + str(i).zfill(2)
 
-					os.system('mkdir ' + options.path)
+					#os.system('mkdir ' + options.path)
+					os.mkdir(options.path)
 					#cmd = 'e2proc3d.py '  + options.input + ' ' + options.path + '/' + modelfilename + ' --first=' + str(i) + ' --last=' + str(i) + ' --append'
 	
-					os.system('e2proc3d.py '  + originalinput + ' ' + options.path + '/' + modelfilename + ' --first=' + str(i) + ' --last=' + str(i) + ' --append')
-					print("This is the command to create the model")
-					print('e2proc3d.py '  + originalinput + ' ' + options.path + '/' + modelfilename + ' --first=' + str(i) + ' --last=' + str(i) + ' --append')
-	
+					#os.system('e2proc3d.py '  + originalinput + ' ' + options.path + '/' + modelfilename + ' --first=' + str(i) + ' --last=' + str(i) + ' --append')
+					
+					#print("This is the command to create the model")
+					cmdmakemodel = 'e2proc3d.py '  + originalinput + ' ' + options.path + '/' + modelfilename + ' --first=' + str(i) + ' --last=' + str(i) + ' --append'
+					runcmd(options,cmdmakemodel)
+
 					options.input = options.path + '/' + modelfilename
 					tag = str(i).zfill(len(str(nrefs)))
 	
@@ -270,12 +269,12 @@ def main():
 				if dimension == 3:					
 					if model['nx'] != model['ny'] or model['nx'] != model['nz'] or model['ny'] != model['nz']:	
 						#if options.clip:
-						model = clip3D( model, max( model['nx'], model['ny'], model['nz'] ) )
+						model = clip3d( model, max( model['nx'], model['ny'], model['nz'] ) )
 						#modelhdr = EMData(options.input,0,True)
 						
 				elif model['nx'] != model['ny'] or model['nx'] != model['nz'] or model['ny'] != model['nz']:
 					print("\nThe image is 2D")
-					model = clip2D( model, max( model['nx'], model['ny'] ) )	
+					model = clip2d( model, max( model['nx'], model['ny'] ) )	
 							
 				retrand = randomizer(options, model, tag)
 				randptcls = retrand[0]
@@ -288,14 +287,15 @@ def main():
 				if not options.nosim:
 					subtomosim(options,randptcls,simptclsname,dimension)		
 				else:
-					os.system('cp ' + randstackname + ' ' + simptclsname)
+					#os.system('cp ' + randstackname + ' ' + simptclsname)
 					
+					shutil.copy(randstackname,simptclsname)
+
 					simrefname = options.path + '/simmodel.hdf'
 			
 					simrefcmd = 'e2proc3d.py ' + options.input + ' ' + simrefname + ' --first=0 --last=0'
-					p=subprocess.Popen( simrefcmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-					text=p.communicate()	
-					p.stdout.close()
+					
+					runcmd(options,simrefcmd)
 					
 				if options.saveorthostack:
 					orthoptcls = orthostack( options, model )
@@ -308,46 +308,49 @@ def main():
 	
 	E2end(logger)		
 	return
-
+					
 
 def sptfixformat( options ):
-	check=0	
 	
-	if '.pdb' in options.input:
+	if '.pdb' in options.input[-4:]:
 		pdbmodel = options.input
-		os.system('cp ' + pdbmodel + ' ' + options.path)
-		pdbmodel = options.path + '/' + pdbmodel.split('/')[-1]
-		mrcmodel = pdbmodel.replace('.pdb','.mrc')
-		os.system('e2pdb2mrc.py ' + pdbmodel + ' ' + mrcmodel + ' && rm ' + pdbmodel)
-		options.input = mrcmodel
-		check=1
+		mrcmodel = options.path + '/' + os.path.basename(options.input).replace('.pdb','.mrc')
+		
+		cmdpdb2mrc = 'e2pdb2mrc.py ' + pdbmodel + ' ' + mrcmodel
+		runcmd(options,cmdpdb2mrc)
+		
+		hdfmodel = mrcmodel.replace('.mrc','_MODEL.hdf')
+		cmdmrc2hdf = 'e2proc3d.py ' + mrcmodel + ' ' + hdfmodel
+		
+		runcmd(options,cmdmrc2hdf)
 
-	if '.mrc' in options.input:
-		mrcmodel = options.input
-		if check==0:
-			os.system('cp ' + mrcmodel + ' ' + options.path)
-			mrcmodel = options.path + '/' + mrcmodel.split('/')[-1]
-		hdfmodel = mrcmodel.replace('.mrc','.hdf')
-		os.system('e2proc3d.py ' + options.input + ' ' + hdfmodel + ' && rm ' + mrcmodel)
+		os.remove(mrcmodel)
+
 		options.input = hdfmodel
-		check=1
-			
-	if '.hdf' in options.input:
-		hdfmodel = options.input
-		if check == 0:
-			os.system('cp ' + hdfmodel + ' ' + options.path)
-			hdfmodel = options.path + '/' + hdfmodel.split('/')[-1]
-			options.input = hdfmodel
-		workname = hdfmodel.replace('.hdf','_sptsimMODEL.hdf')
-		#if nrefs > 1:
-		#	workname = hdfmodel.replace('.hdf','_sptsimMODELS.hdf')
 
-		os.system('cp ' + hdfmodel + ' ' + workname + ' && rm ' + hdfmodel)
-		options.input = workname
+	elif '.mrc' in options.input[-4:]:
+		hdfmodel = options.path + '/' + os.path.basename(options.input).replace('.mrc','_MODEL.hdf')
+		cmdmrc2hdf = 'e2proc3d.py ' + mrcmodel + ' ' + hdfmodel
+		
+		runcmd(options,cmdmrc2hdf)
+		options.input = hdfmodel
+	
+	elif '.mrcs' in options.input[-5:]:
+		hdfmodel = options.path + '/' + os.path.basename(options.input).replace('.mrcs','_MODEL.hdf')
+		cmdmrc2hdf = 'e2proc3d.py ' + mrcmodel + ' ' + hdfmodel
+		
+		runcmd(options,cmdmrc2hdf)
+		options.input = hdfmodel 		
+	
+	elif '.hdf' in options.input[-4:]:
+		hdfmodel = options.path + '/' + os.path.basename(options.input).replace('.hdf','_MODEL.hdf')
+
+		shutil.copy(options.input,hdfmodel)
+		options.input = hdfmodel 
 
 	return options
 
-
+'''
 def clip3D( vol, size ):
 	
 	volxc = vol['nx']/2
@@ -379,7 +382,7 @@ def clip2D( img, size ):
 	#img.process_inplace('mask.sharp',{'outer_radius':-1})
 	
 	return img
-
+'''
 
 '''
 ====================
@@ -511,7 +514,16 @@ def randomizer(options, model, tag):
 	b['sptsim_randT'] = outtransform
 	b['xform.align3d'] = Transform()
 	
+	jsTransformParamsPath = options.path + '/sptsim.json'
+	jsA = js_open_dict( jsTransformParamsPath )
+	
+	jsTransformParamsPath_solution = options.path + '/sptsim_solution.json'
+	jsAS = js_open_dict( jsTransformParamsPath_solution )
+	
 	for i in range( options.nptcls ):
+		
+		xformslabel = 'subtomo_' + str( i ).zfill( len( str( options.nptcls ) ) )			
+
 		if options.verbose:
 			print("\n(e2spt_simulation.py) generating particle #%d" %( i ))
 		
@@ -520,6 +532,10 @@ def randomizer(options, model, tag):
 			b = model.copy()
 
 			outtransform = orientations[i]
+			jsA.setval( xformslabel, [ outtransform ] )
+
+			outtransformi = outtransform.inverse()
+			jsAS.setval( xformslabel, [ outtransformi ] )
 
 			print("\nouttransform", outtransform)
 			b.transform(outtransform)
@@ -558,6 +574,10 @@ def randomizer(options, model, tag):
 		
 		if options.verbose:
 			print("\n(e2spt_simulation.py) applied transform", random_transform)
+
+
+	jsA.close()
+	jsAS.close()
 
 
 	azs=[]

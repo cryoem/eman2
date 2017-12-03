@@ -197,15 +197,19 @@ def idfft2(v,u,amp,phase,nx=256,ny=256,dtype=np.float32,usedegrees=False):
 	return np.sum(np.real(AA*np.exp(2*np.pi*1j*(uuxx+vvyy)+pp)).reshape(len(u),nx,ny),axis=0)
 
 
-#makes a numbered series of subdirectories to compartmentalize results for spt programs when the same programs are run in the same parent directory
 def makepath(options, stem='e2dir'):
-	
+	"""
+	Makes a numbered series of subdirectories to compartmentalize results 
+	when the same programs are run in the same parent directory
+	Author: Jesus Montoya, jgalaz@gmail.com
+	"""
+
 	if not options.path:
 		if options.verbose:
 
-			print("\n(EMAN2_utils)(makepath), stem is", stem)
+			print("\n(EMAN2_utils)(makepath), stem={}".format(stem))
 	
-	elif options.path: 
+	elif options.path:
 		stem=options.path
 	
 	i=1
@@ -220,15 +224,90 @@ def makepath(options, stem='e2dir'):
 	return options
 
 
-#runs commands at the commnad line for multiple spt programs
-def runcmd(options,cmd):
-	import subprocess
+def runcmd(options,cmd,cmdsfilepath=''):
+	"""
+	Runs commands "properly" at the commnad line
+	Author: Jesus Montoya, jgalaz@gmail.com
+	"""
+	if options.verbose > 9:
+		print("\n(EMAN2_utils)(runcmd) running command {}".format(cmd))
 	
 	p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	text=p.communicate()	
 	p.stdout.close()
 	
+	if cmdsfilepath:
+		with open(cmdsfilepath,'a') as cmdfile: cmdfile.write( cmd + '\n')
+
+	if options.verbose > 8:
+		print("\n(EMAN2_utils)(runcmd) done")
+
 	return 1
+
+
+def origin2zero(img):
+	"""
+	sets the 'origin_' parameters in image headers to zero
+	Author: Jesus Montoya, jgalaz@gmail.com
+	"""
+	#print("\n(EMAN2_utils)(origin2zero)")
+
+	img['origin_x'] = 0
+	img['origin_y'] = 0
+	try:
+		img['origin_z'] = 0
+	except:
+		pass
+	return img
+
+
+def clip3d( vol, size, center=None ):
+	"""
+	3d clipping function to avoid having to define a region in your code when you know the center and size of the box you want
+	Author: Jesus Montoya, jgalaz@gmail.com
+	"""
+
+	#if options.verbose:
+	#	print("\n(EMAN2_utils)(clip3d) starting")
+	
+	volxc = vol['nx']/2
+	volyc = vol['ny']/2
+	volzc = vol['nz']/2
+	
+	if center:
+		volxc = center[0]
+		volyc = center[1]
+		volzc = center[2]
+	
+	Rvol =  Region( (2*volxc - size)/2, (2*volyc - size)/2, (2*volzc - size)/2, size , size , size)
+	volclip = vol.get_clip( Rvol )
+	
+	#if options.verbose:
+	#	print("\n(EMAN2_utils)(clip3d) done")
+	
+	return volclip
+
+
+def clip2d( img, size, center=None ):
+	"""
+	2d clipping function to avoid having to define a region in your code when you know the center and size of the box you want
+	Author: Jesus Montoya, jgalaz@gmail.com
+	"""
+
+	#if options.verbose:
+	#	print("\n(EMAN2_utils)(clip2d)")
+
+	imgxc = img['nx']/2
+	imgyc = img['ny']/2
+	
+	if center:
+		imgxc = center[0]
+		imgyc = center[1]
+	
+	Rimg = Region( (2*imgxc - size)/2, (2*imgyc - size)/2, size , size )
+	imgclip = img.get_clip( Rimg )
+	
+	return imgclip
 
 
 def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ralign=None, alircmp=("dot",{}),shrink=None,mask=None,subset=None,prefilt=False,verbose=0):
@@ -316,11 +395,11 @@ def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ral
 	return ret
 
 
-
-
-
-#used by some SPT programs (nov/2017); function might be deprecated or refactored in the near future
 def sptOptionsParser( options, program='' ):
+	"""
+	Used by some SPT programs (nov/2017); function might be deprecated or refactored in the near future	
+	Author: Jesus Montoya, jgalaz@gmail.com
+	"""
 	
 	print("\n(EMAN2_utils)(sptOptionsParser) parsing options")
 	if program:
@@ -512,13 +591,16 @@ def sptOptionsParser( options, program='' ):
 	return options
 
 
-'''
-Used by many SPT programs. Function to write the parameters used for every run of the program to parameters.txt inside the path specified by --path.
-Unfortunately, the usability of the .eman2log.txt file is limited when it is overcrowded with commands; e.g., a program that iteratively runs other EMAN2 programs at the command line
-will SWARM the log file with commands that will obscure the command you wanted to log. Having a parameters file explicitly record what was the state of every parameter used by the program
-is useful, as it also explicitly records values for parameters that were used by DEFAULT and not set by the user at the commnadline.
-'''
+
 def writeParameters( options, program, tag ):
+	'''
+	Used by many SPT programs. Function to write the parameters used for every run of the program to parameters.txt inside the path specified by --path.
+	Unfortunately, the usability of the .eman2log.txt file is limited when it is overcrowded with commands; e.g., a program that iteratively runs other EMAN2 programs at the command line
+	will SWARM the log file with commands that will obscure the command you wanted to log. Having a parameters file explicitly record what was the state of every parameter used by the program
+	is useful, as it also explicitly records values for parameters that were used by DEFAULT and not set by the user at the commnadline.
+
+	Author: Jesus Montoya, jgalaz@gmail.com
+	'''
 	import datetime
 
 	print("Tag received in writeParameters is {}".format(tag))

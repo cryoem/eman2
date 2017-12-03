@@ -388,7 +388,7 @@ def get_image_directory():
 	pf = get_platform()
 	dtag = get_dtag()
 	if pf != "Windows":
-		return os.getenv("EMAN2DIR")+ dtag + "images" + dtag + "macimages" + dtag
+		return os.getenv("EMAN2DIR")+ dtag + "images" + dtag
 	else:
 		return os.getenv("EMAN2DIR").replace('\\', '/') + dtag + "images" + dtag
 
@@ -1685,6 +1685,7 @@ def test_image(type=0,size=(128,128)):
 
 
 	return ret
+test_image.broken = True
 
 def test_image_3d(type=0,size=(128,128,128)):
 	"""Returns a simple standard test image

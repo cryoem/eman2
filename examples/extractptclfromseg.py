@@ -10,11 +10,39 @@ except:
 	havescipy=False
 def main():
 	
-	usage=" "
+	usage="""
+This program is designed to extract subtomograms from segmentation results from the Tomoseg workflow in EMAN2.
+Frist, generate particle coordinates from the segmentation output.
+
+extractptclfromseg.py <segmentation output> <input tomogram for segmentation> [--thresh <intensity threshold in the segmentation output>]
+
+Note that the second argument has to be the tomogram you provided for the 'apply to tomogram' step in the Tomoseg workflow. If you are segmenting some continuous features (like microtubules) and there is no individual particles, run:
+
+extractptclfromseg.py <segmentation output> <input tomogram for segmentation> [--thresh <intensity threshold in the segmentation output>] --random <number of particles>
+
+This will seed particle coordinates at random points where the intensity segmentation output is above the threshold value. The program will write particle coordinates to standard EMAN2 particle metadata corresponding to the input tomogram, same as manual particle boxing. So the extracted particles can be viewed in the tomogram using:
+
+e2spt_boxer.py <input tomogram for segmentation> --inmemory [--invert if density is dark in the tomogram]
+
+You can manually add or remove particles in the GUI. Once you are satisfied, you can generate particles from the e2spt_boxer GUI. If you are confident in the automated segmentation and do not want to go through the spt_boxer step, or you want to extract particles from the raw unbinned tomogram, run:
+
+extractptclfromseg.py <raw tomogram> <input tomogram for segmentation> --genptcls <output particle stack name> --boxsz <box size> 
+
+The first argument can be any binned or filtered version of the tomogram and the second argument has to be the same as the argument in the previous extractptclfromseg command. If you have a binned particle stack from somewhere else (like e2spt_boxer), this program also allows you to extract the same particles from the unbinned raw tomogram using
+
+extractptclfromseg.py <raw tomogram> <input particle stack> --genptcls <output particle stack name> --boxsz <box size> 
+
+Please make sure the Apix value in all tomograms/particles is correct. To double check the output, consider run 
+
+e2proc3d.py <output particle stack> tmp_avg.hdf --average
+
+and make sure the unaligned average looks reasonable.
+	
+	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--thresh", type=float,help="Threshold of density value for particle extraction.", default=1.0)
 	parser.add_argument("--massthresh", type=float,help="Threshold of total mass of each continous object to be considered a particle. ", default=20.)
-	parser.add_argument("--edge", type=int,help="min distance to edge", default=4)
+	parser.add_argument("--edge", type=int,help="mininmum distance to the edge of tomogram", default=4)
 	parser.add_argument("--featurename", type=str,help="name of the current feature to extract", default=None)
 	parser.add_argument("--sort", action="store_true",help="sort by density", default=False)
 	parser.add_argument("--random", type=int,help="randomly seed particles on density above threshold", default=-1)

@@ -5779,6 +5779,7 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_local(EMData* dataimage, EMD
 	int n_assignments_of_refangles_to_angles = assignments_of_refangles_to_angles.size();
 	int n_assignments_of_refangles_to_cones  = assignments_of_refangles_to_cones.size();
 	int n_coarse_ang = n_assignments_of_refangles_to_angles;	
+	float oldpsi_inc = oldpsi + 0.5*delta;
 
 
 	vector<float> vpsi(npsi);
@@ -5859,7 +5860,6 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_local(EMData* dataimage, EMD
 
 			float qdm = 1.0e23;
 			int bpsi;
-			float oldpsi_inc = oldpsi + 0.5*delta;
 			for ( i=0; i<npsi; i++) {
 				float psi = startpsi[ic] + i*delta;
 				while( psi >= 360.0f )  psi -= 360.0f;
@@ -5929,6 +5929,7 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_scores_local(EMData* dataima
 	int n_assignments_of_refangles_to_angles = assignments_of_refangles_to_angles.size();
 	//int n_assignments_of_refangles_to_cones  = assignments_of_refangles_to_cones.size();
 	int n_coarse_ang = n_assignments_of_refangles_to_angles;	
+	float oldpsi_inc = oldpsi + 0.5*delta;
 
 
 	vector<float> vpsi(npsi);
@@ -6021,7 +6022,6 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_scores_local(EMData* dataima
 
 			float qdm = 1.0e23;
 			int bpsi;
-			float oldpsi_inc = oldpsi + 0.5*delta;
 			for ( i=0; i<npsi; i++) {
 				float psi = startpsi[ic] + i*delta;
 				while( psi >= 360.0f )  psi -= 360.0f;
@@ -6111,6 +6111,7 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_scores_local(EMData* dataima
 	int n_assignments_of_refangles_to_angles = assignments_of_refangles_to_angles.size();
 	int n_assignments_of_refangles_to_cones  = assignments_of_refangles_to_cones.size();
 	int n_coarse_ang = n_assignments_of_refangles_to_angles;	
+	float oldpsi_inc = oldpsi + 0.5*delta;
 
 
 	vector<float> vpsi(npsi);
@@ -6200,7 +6201,6 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_scores_local(EMData* dataima
 
 			float qdm = 1.0e23;
 			int bpsi;
-			float oldpsi_inc = oldpsi + 0.5*delta;
 			for ( i=0; i<npsi; i++) {
 				float psi = startpsi[ic] + i*delta;
 				while( psi >= 360.0f )  psi -= 360.0f;
@@ -24648,7 +24648,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 
 void Util::version()
 {
- cout <<"  Source modification date: 09/29/2017  10:22 PM " <<  endl;
+ cout <<"  Source modification date: 11/15/2017  11:54 AM " <<  endl;
 }
 
 
