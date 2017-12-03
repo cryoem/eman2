@@ -43,7 +43,7 @@ import EMAN2db
 
 # also defined in EMAN2, but we don't want to have to import it
 
-def main():
+def main(sys_argv=None):
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + """ [options]
 	A tool for displaying EMAN2 command history
@@ -55,7 +55,7 @@ def main():
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
-	(options, args) = parser.parse_args()
+	(options, args) = parser.parse_args(sys_argv)
 	
 	if options.gui:
 		from emapplication import EMApp

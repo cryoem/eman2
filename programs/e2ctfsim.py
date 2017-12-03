@@ -47,7 +47,7 @@ import traceback
 from numpy import array,arange
 
 
-def main():
+def main(sys_argv=None):
 	progname = os.path.basename(sys.argv[0])
 
 	usage = """prog [options]
@@ -64,7 +64,7 @@ A simple CTF simulation program.
 	parser.add_argument("--apply",type=str,default=None,help="A 2-D image file which the CTF will be applied to in real-time")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
-	(options, args) = parser.parse_args()
+	(options, args) = parser.parse_args(sys_argv)
 
 	from emapplication import EMApp
 	app=EMApp()

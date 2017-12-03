@@ -2084,7 +2084,7 @@ class ProjectDialog(QtGui.QDialog):
 	def _on_cancel(self):
 		self.done(1)
 
-def main():
+def main(sys_argv=None):
 	import sys
 
 	if os.path.isdir("EMAN2DB") and os.path.isfile("EMAN2DB/project.bdb") :

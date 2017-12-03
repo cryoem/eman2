@@ -46,7 +46,7 @@ import os, sys, itertools
 
 EMBOXERRCT_DB = "e2boxercache/rctboxer.json"
 
-def main():
+def main(sys_argv=None):
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options] <untilted micrograph> <tilted micrograph>....
 This is a tilted - untilted particle particle picker, for use in RCT particle picking. A tilted and untilted micrograph are loaded and the user picks a untilted particle and a corresponding tilted particle.
@@ -77,7 +77,7 @@ Usage: e2RCTboxer.py untilted.hdf tilted.hdf options.
 
 
 	# Options need to be accessible, anywhere
-	(options, args) = parser.parse_args()
+	(options, args) = parser.parse_args(sys_argv)
 	
 	logid=E2init(sys.argv,options.ppid)
 	

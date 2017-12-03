@@ -40,7 +40,7 @@ from PyQt4 import QtGui,QtCore
 from emimagemx import EMImageMXModule
 
 	
-def main():
+def main(sys_argv=None):
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog  <projection file>  <particles file>
 	
@@ -51,7 +51,7 @@ read into memory. Do not use it on large sets of particles !!!
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
-	(options, args) = parser.parse_args()
+	(options, args) = parser.parse_args(sys_argv)
 	
 	if len(args)<2 :
 		print("Error, please specify projection file and particles file")

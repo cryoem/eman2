@@ -51,7 +51,7 @@ from emshape import EMShape
 from valslider import *
 import traceback
 
-def main():
+def main(sys_argv=None):
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options] <image file>
 
@@ -66,7 +66,7 @@ def main():
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
-	(options, args) = parser.parse_args()
+	(options, args) = parser.parse_args(sys_argv)
 
 	if len(args) != 1: parser.error("You must specify a single data file on the command-line.")
 	if not file_exists(args[0]): parser.error("%s does not exist" %args[0])
