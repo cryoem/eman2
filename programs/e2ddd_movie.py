@@ -55,6 +55,9 @@ def main():
 	translation vector map.
 
 	See e2ddd_particles for per-particle alignment.
+
+	Note: We have found the following to work on DE64 images:
+	e2ddd_movie.py <movies> --gain <GainImages.mrcs> --reverse_gain --invert_gain --de64 --gain_darkcorrected
 	"""
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
@@ -70,9 +73,12 @@ def main():
 	parser.add_argument("--reverse_dark", default=False, help="Flip dark reference along y axis. Default is False. Transformation order is rotate then reverse.",action="store_true",guitype='boolbox', row=5, col=1, rowspan=1, colspan=1, mode='align')
 
 	parser.add_argument("--gain",type=str,default=None,help="Perform gain image correction using the specified image file",guitype='filebox',browser="EMMovieDataTable(withmodal=True,multiselect=False)", row=6, col=0, rowspan=1, colspan=3, mode="align")
-	parser.add_argument("--gaink2", default=False, help="Perform gain image correction. Gatan K2 gain images are the reciprocal of DDD gain images.",action="store_true",guitype='boolbox', row=7, col=0, rowspan=1, colspan=1, mode='align')
+	parser.add_argument("--k2", default=False, help="Perform gain image correction on gain images from a Gatan K2. Note, these are the reciprocal of typical DDD gain images.",action="store_true",guitype='boolbox', row=7, col=0, rowspan=1, colspan=1, mode='align')
+	parser.add_argument("--de64", default=False, help="Perform gain image correction on DE64 data. Note, these should not be normalized.",action="store_true",guitype='boolbox', row=7, col=0, rowspan=1, colspan=1, mode='align')
 	parser.add_argument("--rotate_gain", default = 0, type=str, choices=["0","90","180","270"], help="Rotate gain reference by 0, 90, 180, or 270 degrees. Default is 0. Transformation order is rotate then reverse.",guitype='combobox', choicelist='["0","90","180","270"]', row=7, col=1, rowspan=1, colspan=1, mode='align')
-	parser.add_argument("--reverse_gain", default=False, help="Flip gain reference along y axis. Default is False. Transformation order is rotate then reverse.",action="store_true",guitype='boolbox', row=7, col=2, rowspan=1, colspan=1, mode='align')
+	parser.add_argument("--reverse_gain", default=False, help="Flip gain reference along y axis (about x axis). Default is False. Transformation order is rotate then reverse.",action="store_true",guitype='boolbox', row=7, col=2, rowspan=1, colspan=1, mode='align')
+	parser.add_argument("--gain_darkcorrected", default=False, help="Do not dark correct gain image. False by default",action="store_true",guitype='boolbox', row=8, col=0, rowspan=1, colspan=1, mode='align')
+	parser.add_argument("--invert_gain", default=False, help="Use reciprocal of input gain image",action="store_true",guitype='boolbox', row=8, col=1, rowspan=1, colspan=1, mode='align')
 
 	#parser.add_header(name="orblock3", help='Just a visual separation', title="- OR -", row=6, col=0, rowspan=1, colspan=3, mode="align")
 
@@ -159,9 +165,10 @@ def main():
 		dark.process_inplace("threshold.clampminmax.nsigma",{"nsigma":3.0})
 		dark2=dark.process("normalize.unitlen")
 	else : dark=None
+	
 	if options.gain :
 		if options.verbose: print("Loading Gain Reference")
-		if options.gaink2: gain=EMData(options.gaink2)
+		if options.k2: gain=EMData(options.gain)
 		else:
 			nd=EMUtil.get_image_count(options.gain)
 			gain=EMData(options.gain,0)
@@ -188,9 +195,11 @@ def main():
 			#else: gain.mult(1.0/99.0)
 	#		gain.process_inplace("threshold.clampminmax.nsigma",{"nsigma":3.0})
 
-			if dark!=None : gain.sub(dark)								# dark correct the gain-reference
-			gain.mult(1.0/gain["mean"])									# normalize so gain reference on average multiplies by 1.0
+			if dark!=None and options.gain_darkcorrected == False: gain.sub(dark) # dark correct the gain-reference
+			if not options.de64: gain.mult(1.0/gain["mean"])
 			gain.process_inplace("math.reciprocal",{"zero_to":0.0})		# setting zero values to zero helps identify bad pixels
+
+		if options.invert_gain: gain.process_inplace("math.reciprocal") 
 	#elif options.gaink2 :
 	#	gain=EMData(options.gaink2)
 	else : gain=None
@@ -199,7 +208,7 @@ def main():
 		tf = Transform({"type":"2d","alpha":int(options.rotate_gain)})
 		gain.process_inplace("xform",{"transform":tf})
 
-	if options.reverse_gain: gain.process_inplace("xform.reverse",{"axis":"y"})
+	if options.reverse_gain or options.de64: gain.process_inplace("xform.reverse",{"axis":"y"})
 
 	if options.rotate_dark and dark != None: 
 		tf = Transform({"type":"2d","alpha":int(options.rotate_dark)})
@@ -464,10 +473,15 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			A = np.asmatrix(A)
 			b = np.asmatrix(b)
 
+			print(b,b.shape)
+
 			# remove all zero rows from A and corresponding entries in b
 			z = np.argwhere(np.all(A==0,axis=1))
 			A = np.delete(A,z,axis=0)
 			b = np.delete(b,z,axis=0)
+
+			print(b)
+			print(b.shape)
 
 			regr = linear_model.Ridge(alpha=options.optalpha,normalize=True,fit_intercept=True)
 			regr.fit(A,b)
@@ -794,10 +808,10 @@ def bimodal_peak_model(options,ccf):
 		initial_guess = [x1,y1,s1,a1,s2,a2]
 		bds = [(-np.inf, -np.inf, 0.01, 0.01, 0.6, 0.01), (np.inf, np.inf, 100.0, 20000.0,2.5,100000.0)]
 		#bds = [(-bs/2, -bs/2,  0.01, 0.01, 0.6, 0.01),(bs/2, bs/2, 100.0, 20000.0, 2.5, 100000.0)]
-		try: 
-			popt,pcov=optimize.curve_fit(twod_bimodal,(xx,yy),ncc.ravel(),p0=initial_guess,bounds=bds,method='dogbox',max_nfev=50) #,xtol=0.05)#,ftol=0.0001,gtol=0.0001)
-		except:
-			return None,-1#popt = initial_guess#, -1#popt = initial_guess 
+		#try: 
+		popt,pcov=optimize.curve_fit(twod_bimodal,(xx,yy),ncc.ravel(),p0=initial_guess,bounds=bds,method='dogbox',max_nfev=50) #,xtol=0.05)#,ftol=0.0001,gtol=0.0001)
+		#except:
+		#	return None,-1#popt = initial_guess#, -1#popt = initial_guess 
 
 		popt = [p for p in popt]
 		popt[0] = popt[0] + nxx/2 - bs/2
