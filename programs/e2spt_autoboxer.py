@@ -262,7 +262,7 @@ def main():
 	'''
 	c:if parallelism isn't set, parallelize automatically unless disabled
 	'''
-	if not options.parallel:
+	if options.parallel != 'None' and options.parallel != 'none' and options.parallel != 'NONE':
 		import multiprocessing
 		nparallel = multiprocessing.cpu_count()
 		options.parallel = 'thread:' + str(nparallel)
@@ -270,7 +270,7 @@ def main():
 		print("setting --parallel to", options.parallel)
 	elif options.parallel == 'None' or options.parallel == 'none':
 		print("\nWARNING: parallelism disabled", options.parallel)
-	
+
 	
 	'''
 	c:get the template for template matching (read it in and "prepare it", or just generate it from scratch or from the data itself)

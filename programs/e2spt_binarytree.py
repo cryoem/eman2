@@ -88,11 +88,11 @@ def main():
 	
 	parser.add_argument("--weighbyscore",action='store_true',default=False,help="""Default=False. This option will weigh the contribution of each subtomogram to the average by score/bestscore.""")
 	
-	parser.add_argument("--align",type=str,default="rotate_translate_3d:search=8:delta=12:dphi=12",help="""This is the aligner used to align particles to the previous class average. Default is rotate_translate_3d:search=8:delta=12:dphi=12, specify 'None' (with capital N) to disable.""", returnNone=True,guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'3d\')', row=12, col=0, rowspan=1, colspan=3, nosharedb=True, mode="alignment,breaksym['rotate_symmetry_3d']")
+	#parser.add_argument("--align",type=str,default="rotate_translate_3d:search=8:delta=12:dphi=12",help="""This is the aligner used to align particles to the previous class average. Default is rotate_translate_3d:search=8:delta=12:dphi=12, specify 'None' (with capital N) to disable.""", returnNone=True,guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'3d\')', row=12, col=0, rowspan=1, colspan=3, nosharedb=True, mode="alignment,breaksym['rotate_symmetry_3d']")
+	parser.add_argument("--align",type=str,default="rotate_translate_3d_tree",help="""Default is rotate_translate_3d_tree. See e2help.py aligners to see the list of parameters the aligner takes (for example, if there's symmetry, supply --align rotate_translate_3d_tree:sym=icos). This is the aligner used to align particles to the previous class average. Specify 'None' (with capital N) to disable.""")
 	
 	parser.add_argument("--aligncmp",type=str,default="ccc.tomo.thresh",help="""Default=ccc.tomo.thresh. The comparator used for the --align aligner. Do not specify unless you need to use anotherspecific aligner.""",guitype='comboparambox',choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=13, col=0, rowspan=1, colspan=3,mode="alignment,breaksym")
-	
-	
+		
 	#parser.add_argument("--output", type=str, default='avg.hdf', help="""Default=avg.hdf. The name of the output class-average stack. MUST be HDF since volume stack support is required.""", guitype='strbox', row=2, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	
 	#parser.add_argument("--classmx", type=str, default='', help="""Default=None. The name of the classification matrix specifying how particles in 'input' should be grouped. If omitted, all particles will be averaged.""")
@@ -277,12 +277,12 @@ def main():
 		from e2spt_classaverage import calcAliStep
 		options = calcAliStep(options)
 	
-	'''
-	Parse parameters such that "None" or "none" are adequately interpreted to turn of an option
-	'''
-	
-	from e2spt_classaverage import sptOptionsParser
-	options = sptOptionsParser( options )
+	#'''
+	#Parse parameters such that "None" or "none" are adequately interpreted to turn off an option
+	#'''
+	#
+	#from e2spt_classaverage import sptOptionsParser
+	#options = sptOptionsParser( options )
 	
 	from e2spt_classaverage import writeParameters
 	writeParameters(options,'e2spt_binarytree.py', 'bt')
@@ -449,33 +449,43 @@ def binaryTreeRef(options,nptclForRef,nseed,etc):
 		print("\noptions.lowpass", options.lowpass)
 		print("\noptions.highpass", options.highpass)
 		print("\noptions.preprocess", options.preprocess)
+
 		
 		print("\ntruth statement", options.mask or options.maskfile or options.normproc or options.threshold or options.clip or (options.shrink > 1) or options.lowpass or options.highpass or options.preprocess)
 		
 		cmdpreproc( seedfile, options, False )
 		
 		preproc = 1
-
+	
+	
+	'''
+	#Parse parameters such that "None" or "none" are adequately interpreted to turn off an option
+	#'''
+	#
+	#from e2spt_classaverage import sptOptionsParser
+	#options = sptOptionsParser( options )
+	
 	'''
 	#Outer loop covering levels in the converging binary tree
 	'''
 	
 	print("\nnseediter is", nseediter)
+
 	for i in range( nseediter ):
 		#infile="%s/seedtree_%d_cl_%d.hdf"%(options.path,i,ic)
 		#if ic < 0:
 		
-		rawinfile = "%s/seedtree_%d.hdf"%(options.path,i)
+		rawinfile = "{}/seedtree_{}.hdf".format(options.path,i)
 		infile = rawinfile
 		
 		if preproc:
-			infile="%s/seedtree_%d.hdf"%(options.path,i).replace('.hdf','_preproc.hdf')
+			infile="{}/seedtree_{}.hdf".format(options.path,i).replace('.hdf','_preproc.hdf')
 				
 		print("\n(e2spt_binarytree)(binaryTreeRef) infile will be", infile)
 		
 		#outfile="%s/seedtree_%d_cl_%d.hdf"%(options.path,i+1,ic)
 		#if ic < 0:
-		outfile="%s/seedtree_%d.hdf"%(options.path,i+1)
+		outfile="{}/seedtree_{}.hdf".format(options.path,i+1)
 	
 		if i == nseediter-1:
 			outfile = options.path + '/final_avg.hdf'
