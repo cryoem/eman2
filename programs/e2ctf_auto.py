@@ -205,7 +205,7 @@ resolution, but for high resolution work, fitting defocus/astig from frames is r
 					print("""Astigmatism present in frame parameters, but not specified here.
 	No astigmatism will be used, and defocuses will be refined from particles.
 	Astigmatism info will be preserved in frame parameters, so this program may be re-run later to take astigmatism into account""")
-					fit_options="--curdefocushint"
+					fit_options="--curdefocushint --useframedf"
 			else :
 				if options.astigmatism :
 					print("Frame parameters present, but without astigmatism. Will refine frame-based defocus from particle data.")

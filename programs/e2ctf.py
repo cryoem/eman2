@@ -352,10 +352,12 @@ def get_gui_arg_img_sets(filenames):
 			js_parms=js_open_dict(info_name(fsp))
 			img_set=js_parms["ctf"]
 			# new style info file, splits image data into separate fields
-			if len(img_set)==3: 
-				img_set.append(js_parms["ctf_im2d"])
-				img_set.append(js_parms["ctf_bg2d"])
-				if not isinstance(img_set[4],EMData): print(img_set[4])
+			while len(img_set)<5: img_set.append(None)
+			try: img_set[3]=js_parms["ctf_im2d"]
+			except: pass
+			try: img_set[4]=js_parms["ctf_bg2d"]
+			except: pass
+			if not isinstance(img_set[4],EMData): print("Error: ",img_set[4])
 		except:
 			print("Warning, you must run auto-fit before running the GUI. No parameters for ",info_name(fsp))
 #			traceback.print_exc()
