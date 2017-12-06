@@ -2,8 +2,8 @@
 from __future__ import print_function
 
 from PyQt4 import QtCore, QtGui, QtOpenGL
-from qtgui.emscene3d import EMScene3D, EMInspector3D, EMInspectorControlShape
-from qtgui.emshapeitem3d import *
+from eman2_gui.emscene3d import EMScene3D, EMInspector3D, EMInspectorControlShape
+from eman2_gui.emshapeitem3d import *
 
 from EMAN2 import *
 

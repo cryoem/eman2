@@ -38,7 +38,7 @@ from EMAN2jsondb import *
 from pyemtbx.boxertools import CoarsenedFlattenedImageCache,FLCFImageCache
 from copy import deepcopy
 from EMAN2 import *
-from qtgui.emboxerbase import *
+from eman2_gui.emboxerbase import *
 import os
 
 SWARM_TEMPLATE_MIN = TEMPLATE_MIN # this comes from emboxerbase
@@ -590,7 +590,7 @@ class SwarmPanel:
 			self.enable_interactive_threshold  = QtGui.QCheckBox("Interactive Threshold")
 			self.enable_interactive_threshold.setToolTip("Tweak the correlation threshold that is used to select particles.")
 			self.enable_interactive_threshold.setChecked(False)
-			from qtgui.valslider import ValSlider
+			from eman2_gui.valslider import ValSlider
 			self.thr = ValSlider(None,(0.0,3.0),"")
 			self.thr.setValue(1.0)
 			self.thr.setEnabled(False)
@@ -1258,7 +1258,7 @@ class SwarmBoxer:
 		Brings the template viewer to the foreground
 		'''
 		if self.template_viewer == None:
-			from qtgui.emimagemx import EMImageMXWidget
+			from eman2_gui.emimagemx import EMImageMXWidget
 			self.template_viewer = EMImageMXWidget()
 
 			self.template_viewer.set_data(self.templates,soft_delete=True) # should work if self.templates is None

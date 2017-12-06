@@ -778,7 +778,7 @@ def euler_display(emdata_list):
 
 def browse():
 	if GUIMode:
-		from qtgui.emselector import EMBrowser
+		from eman2_gui.emselector import EMBrowser
 		browser = EMBrowser()
 		browser.show()
 		#app.attach_child(browser)
@@ -822,7 +822,7 @@ def plot_image_similarity(im1,im2,skipzero=True,skipnearzero=False):
 def plot(data,data2=None,data3=None,show=1,size=(800,600),path="plot.png"):
 	"""plots an image or an array using the matplotlib library"""
 	if GUIMode:
-		from qtgui.emplot2d import EMPlot2DWidget
+		from eman2_gui.emplot2d import EMPlot2DWidget
 		plotw=EMPlot2DWidget(application=app)
 		plotw.set_data(data,"interactive")
 		if data2!=None : plotw.set_data(data2,"interactive2")

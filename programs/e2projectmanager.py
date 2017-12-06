@@ -34,12 +34,12 @@ from __future__ import print_function
 from EMAN2 import *
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
-from qtgui.pmicons import *
+from eman2_gui.pmicons import *
 import os, json, re, glob, signal
 import subprocess
-from qtgui.empmwidgets import *
-from qtgui.valslider import EMQTColorWidget
-from qtgui.embrowser import EMBrowserWidget
+from eman2_gui.empmwidgets import *
+from eman2_gui.valslider import EMQTColorWidget
+from eman2_gui.embrowser import EMBrowserWidget
 
 class EMProjectManager(QtGui.QMainWindow):
 	""" The EM Project Manager is a QT application to provide a GUI for EMAN2 job managment.

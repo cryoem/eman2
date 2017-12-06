@@ -47,7 +47,7 @@ from numpy import *
 import os
 import sys
 import weakref
-from qtgui.emapplication import EMApp
+from eman2_gui.emapplication import EMApp
 
 from Simplex import Simplex
 
@@ -828,7 +828,7 @@ def ctf_env_points(im_1d,bg_1d,ctf) :
 try:
 	from PyQt4 import QtCore, QtGui, QtOpenGL
 	from PyQt4.QtCore import Qt
-	from qtgui.valslider import ValSlider
+	from eman2_gui.valslider import ValSlider
 except:
 	print("Warning: PyQt4 must be installed to use the --gui option")
 	class dummy:
@@ -846,12 +846,12 @@ class GUIctf(QtGui.QWidget):
 		'data' is a list of (filename,ctf,im_1d,bg_1d,im_2d,bg_2d)
 		"""
 		try:
-			from qtgui.emimage2d import EMImage2DWidget
+			from eman2_gui.emimage2d import EMImage2DWidget
 		except:
 			print("Cannot import EMAN image GUI objects (EMImage2DWidget)")
 			sys.exit(1)
 		try: 
-			from qtgui.emplot2d import EMPlot2DWidget
+			from eman2_gui.emplot2d import EMPlot2DWidget
 		except:
 			print("Cannot import EMAN plot GUI objects (is matplotlib installed?)")
 			sys.exit(1)
@@ -1001,7 +1001,7 @@ class GUIctf(QtGui.QWidget):
 #	def get_output_params(self):
 	
 	def on_output(self):
-		from qtgui.emsprworkflow import E2CTFOutputTaskGeneral
+		from eman2_gui.emsprworkflow import E2CTFOutputTaskGeneral
 		self.form = E2CTFOutputTaskGeneral()
 		self.form.run_form()
 	

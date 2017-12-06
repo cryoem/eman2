@@ -40,10 +40,10 @@ from sys import argv
 from EMAN2 import *
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
-from qtgui.emapplication import get_application, EMApp
-from qtgui.emimage2d import EMImage2DWidget
-from qtgui.emimagemx import EMImageMXWidget
-from qtgui.valslider import *
+from eman2_gui.emapplication import get_application, EMApp
+from eman2_gui.emimage2d import EMImage2DWidget
+from eman2_gui.emimagemx import EMImageMXWidget
+from eman2_gui.valslider import *
 import Queue
 from qtgui import embrowser
 

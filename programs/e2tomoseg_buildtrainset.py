@@ -4,9 +4,9 @@ from __future__ import print_function
 from EMAN2 import *
 import numpy as np
 import random
-from qtgui.emapplication import EMApp
-from qtgui.emimage import EMImageWidget
-from qtgui.emboxerbase import *
+from eman2_gui.emapplication import EMApp
+from eman2_gui.emimage import EMImageWidget
+from eman2_gui.emboxerbase import *
 import shutil
 
 

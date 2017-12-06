@@ -33,10 +33,10 @@ from __future__ import print_function
 
 from EMAN2 import *
 from PyQt4 import QtCore
-from qtgui.emfoldhunterstat import *
-from qtgui.emapplication import get_application
-from qtgui.empdbvaltool import EMPDBValWidget
-from qtgui.emplot3d import *
+from eman2_gui.emfoldhunterstat import *
+from eman2_gui.emapplication import get_application
+from eman2_gui.empdbvaltool import EMPDBValWidget
+from eman2_gui.emplot3d import *
 import os
 
 class E2ValidateMed():
@@ -236,7 +236,7 @@ class E2ValidateMed():
 		#################################################
 
 if __name__ == '__main__':
-	from qtgui.emapplication import EMApp
+	from eman2_gui.emapplication import EMApp
 	em_app = EMApp()
 	window = E2ValidateMed()
 	window.start()

@@ -7,11 +7,11 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 from PyQt4 import QtGui, QtCore, QtOpenGL
 from PyQt4.QtCore import Qt
-from qtgui.emimage2d import EMImage2DWidget
+from eman2_gui.emimage2d import EMImage2DWidget
 from EMAN2 import *
-from qtgui.emapplication import EMApp
-from qtgui.emshape import EMShape
-from qtgui.emplot2d import EMPlot2DWidget
+from eman2_gui.emapplication import EMApp
+from eman2_gui.emshape import EMShape
+from eman2_gui.emplot2d import EMPlot2DWidget
 
 
 

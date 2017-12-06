@@ -42,14 +42,14 @@ import numpy as np
 import weakref
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
-from qtgui.emapplication import get_application, EMApp
-from qtgui.emimage2d import EMImage2DWidget
-from qtgui.emimagemx import EMImageMXWidget
-from qtgui.emimage3d import EMImage3DWidget
-from qtgui.emscene3d import EMScene3D
-from qtgui.emdataitem3d import EMDataItem3D, EMIsosurface
-from qtgui.emshape import EMShape
-from qtgui.valslider import ValSlider, ValBox
+from eman2_gui.emapplication import get_application, EMApp
+from eman2_gui.emimage2d import EMImage2DWidget
+from eman2_gui.emimagemx import EMImageMXWidget
+from eman2_gui.emimage3d import EMImage3DWidget
+from eman2_gui.emscene3d import EMScene3D
+from eman2_gui.emdataitem3d import EMDataItem3D, EMIsosurface
+from eman2_gui.emshape import EMShape
+from eman2_gui.valslider import ValSlider, ValBox
 
 	
 def run(cmd):
