@@ -40,6 +40,7 @@ from EMAN2db import *
 from EMAN2jsondb import *
 from sparx import *
 from applications import MPI_start_end
+from morphology import ampcont2angle
 from inspect import currentframe, getframeinfo
 from utilities import generate_ctf
 import global_def
@@ -76,6 +77,27 @@ def read_spider_coords_file(coords_path):
 # ========================================================================================
 #  Helper functions
 # ========================================================================================
+# ----------------------------------------------------------------------------------------
+#  Generate command line
+# ----------------------------------------------------------------------------------------
+def get_cmd_line():
+	cmd_line = ""
+	for arg in sys.argv:
+		cmd_line += arg + "  "
+	cmd_line = "Shell line command: " + cmd_line
+	return cmd_line
+
+# ----------------------------------------------------------------------------------------
+# Get suffix of current time stamp
+# ----------------------------------------------------------------------------------------
+def get_time_stamp_suffix():
+	from time import strftime, localtime
+	time_stamp_suffix = strftime("%Y%m%d_%H%M%S", localtime())
+	return time_stamp_suffix
+
+# ----------------------------------------------------------------------------------------
+#  Data type checker
+# ----------------------------------------------------------------------------------------
 def is_float(value):
 	try:
 		float(value)
@@ -134,10 +156,10 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 	parser.add_option("--coordinates_format",  type="string",        default="eman1",   help="Coordinate file format: Allowed values are \'sparx\', \'eman1\', \'eman2\', or \'spider\'. The sparx, eman2, and spider formats use the particle center as coordinates. The eman1 format uses the lower left corner of the box as coordinates. (default eman1)")
 	parser.add_option("--box_size",            type="int",           default=256,       help="Particle box size [Pixels]: The x and y dimensions of square area to be windowed. The box size after resampling is assumed when resample_ratio < 1.0. (default 256)")
 	parser.add_option("--skip_invert",         action="store_true",  default=False,     help="Skip invert image contrast: Use this option for negative staining data. By default, the image contrast is inverted for cryo data. (default False)")
-	parser.add_option("--limit_ctf",           action="store_true",  default=False,     help="Use CTF limit filter: Frequencies where CTF oscillations can not be properly modeled with the resampled pixel size will be discarded in the images with the appropriate low-pass filter. This has no effects when the CTER CTF File is not specified by the CTF paramters source argument. (default False)")
-	parser.add_option("--astigmatism_error",   type="float",         default=360.0,     help="Astigmatism error limit [Degrees]: Set astigmatism to zero for all micrographs where the angular error computed by sxcter is larger than the desired value. This has no effects when the CTER CTF File is not specified by the CTF paramters source argument. (default 360.0)")
+	parser.add_option("--limit_ctf",           action="store_true",  default=False,     help="Use CTF limit filter: Frequencies where CTF oscillations can not be properly modeled with the resampled pixel size will be discarded in the images with the appropriate low-pass filter. This has no effects when the CTER partres file is not specified by the CTF paramters source argument. (default False)")
+	parser.add_option("--astigmatism_error",   type="float",         default=360.0,     help="Astigmatism error limit [Degrees]: Set astigmatism to zero for all micrographs where the angular error computed by sxcter is larger than the desired value. This has no effects when the CTER partres file is not specified by the CTF paramters source argument. (default 360.0)")
 	parser.add_option("--resample_ratio",      type="float",         default=1.0,       help="Ratio between new and original pixel size: Use a value between 0.0 and 1.0 (excluding 0.0). The new pixel size will be automatically recalculated and stored in CTF paramers when resample_ratio < 1.0 is used. (default 1.0)")
-	parser.add_option("--check_consistency",   action="store_true",  default=False,     help="Check consistency of inputs: Create a text file containing the list of inconsistent Micrograph ID entries (i.e. inconsist_mic_list_file.txt). (default False)")
+	parser.add_option("--check_consistency",   action="store_true",  default=False,     help="Check consistency of dataset: Create a text file containing the list of Micrograph ID entries might have inconsitency among the provided dataset. (i.e. mic_consistency_check_info_TIMESTAMP.txt). (default False)")
 	
 	(options, args) = parser.parse_args(sys.argv[1:])
 	
@@ -172,6 +194,14 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 	# Change the name log file for error message
 	original_logfilename = global_def.LOGFILE
 	global_def.LOGFILE = os.path.splitext(program_name)[0] + '_' + original_logfilename + '.txt'
+	
+	# ------------------------------------------------------------------------------------
+	# Print command line
+	# ------------------------------------------------------------------------------------
+	if my_mpi_proc_id == main_mpi_proc:
+		print(" ")
+		print("%s" % get_cmd_line())
+		# print(" ")
 	
 	# ------------------------------------------------------------------------------------
 	# Check error conditions of arguments and options, then prepare variables for arguments
@@ -214,9 +244,9 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		
 		if not is_float(ctf_params_src):
 			assert (type(ctf_params_src) is str)
-			# This should be string for CTER CTF parameter file
+			# This should be string for CTER partres (CTF parameter) file
 			if os.path.exists(ctf_params_src) == False:
-				error_status = ("Specified CTER CTF file is not found. Please check input_ctf_params_source argument. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
+				error_status = ("Specified CTER partres file is not found. Please check input_ctf_params_source argument. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
 				break
 		else:
 			assert (is_float(ctf_params_src))
@@ -259,42 +289,72 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		assert (type(ctf_params_src) is str)
 		if is_float(ctf_params_src):
 			if options.limit_ctf:
-				print("WARNING!!! --limit_ctf option has no effects since the CTER CTF File is not specified with input_ctf_params_source argument...")
+				print("WARNING!!! --limit_ctf option has no effects since the CTER partres file is not specified with input_ctf_params_source argument...")
 				
 			if options.astigmatism_error != 360.0: # WARN User only when it is obvious that user is trying to use astigmatism_error option
-				print("WARNING!!! --astigmatism_error option has no effects since the CTER CTF File is not specified with input_ctf_params_source argument...")
+				print("WARNING!!! --astigmatism_error option has no effects since the CTER partres file is not specified with input_ctf_params_source argument...")
 	
 	# ------------------------------------------------------------------------------------
 	# Check the source of CTF parameteres and select the CTF mode
-	# (1) Real CTF parameters mode  : Use real CTF parameters stored in a CTER CTF parameter file for cryo data (use_real_ctf_params is True)
+	# (1) Real CTF parameters mode  : Use real CTF parameters stored in a CTER partres (CTF parameter) file for cryo data (use_real_ctf_params is True)
 	# (2) Dummy CTF parameters mode : Create dummy CTF parameters for negative staining data (use_real_ctf_params is False)
 	# ------------------------------------------------------------------------------------
 	use_real_ctf_params = not is_float(ctf_params_src)
 	
-	# Define indices of CTER Parameters
+	# NOTE: 2017/12/05 Toshio Moriya
+	# The following code is to support the old format of CTER partres file. It should be removed near future
+	# 
+	# Define enumerators for indices of parameters of each CTER partres entry in the old format(BEFIRE 2017/12/05).
 	# All mpi processes must have access to these indices
 	i_enum = -1
-	i_enum += 1; idx_cter_def          = i_enum # defocus [um]; index must be same as ctf object format
-	i_enum += 1; idx_cter_cs           = i_enum # Cs [mm]; index must be same as ctf object format
-	i_enum += 1; idx_cter_vol          = i_enum # voltage[kV]; index must be same as ctf object format
-	i_enum += 1; idx_cter_apix         = i_enum # pixel size [A]; index must be same as ctf object format
-	i_enum += 1; idx_cter_bfactor      = i_enum # B-factor [A^2]; index must be same as ctf object format
-	i_enum += 1; idx_cter_ac           = i_enum # amplitude contrast [%]; index must be same as ctf object format
-	i_enum += 1; idx_cter_astig_amp    = i_enum # astigmatism amplitude [um]; index must be same as ctf object format
-	i_enum += 1; idx_cter_astig_ang    = i_enum # astigmatism angle [degree]; index must be same as ctf object format
-	i_enum += 1; idx_cter_sd_def       = i_enum # std dev of defocus [um]
-	i_enum += 1; idx_cter_sd_ac        = i_enum # std dev of amplitude contrast [%]
-	i_enum += 1; idx_cter_sd_astig_amp = i_enum # std dev of ast amp [A]
-	i_enum += 1; idx_cter_sd_astig_ang = i_enum # std dev of ast angle [degree]
-	i_enum += 1; idx_cter_cv_def       = i_enum # coefficient of variation of defocus [%]
-	i_enum += 1; idx_cter_cv_astig_amp = i_enum # coefficient of variation of ast amp [%]
-	i_enum += 1; idx_cter_spectra_diff = i_enum # average of differences between with- and without-astig. experimental 1D spectra at extrema
-	i_enum += 1; idx_cter_error_def    = i_enum # frequency at which signal drops by 50% due to estimated error of defocus alone [1/A]
-	i_enum += 1; idx_cter_error_astig  = i_enum # frequency at which signal drops by 50% due to estimated error of defocus and astigmatism [1/A]
-	i_enum += 1; idx_cter_error_ctf    = i_enum # limit frequency by CTF error [1/A]
-	i_enum += 1; idx_cter_mic_path     = i_enum # micrograph file path
-	i_enum += 1; n_idx_cter            = i_enum
+	i_enum += 1; idx_old_cter_def          = i_enum # defocus [um]; index must be same as ctf object format
+	i_enum += 1; idx_old_cter_cs           = i_enum # Cs [mm]; index must be same as ctf object format
+	i_enum += 1; idx_old_cter_vol          = i_enum # voltage[kV]; index must be same as ctf object format
+	i_enum += 1; idx_old_cter_apix         = i_enum # pixel size [A]; index must be same as ctf object format
+	i_enum += 1; idx_old_cter_bfactor      = i_enum # B-factor [A^2]; index must be same as ctf object format
+	i_enum += 1; idx_old_cter_total_ac     = i_enum # total amplitude contrast [%]; index must be same as ctf object format
+	i_enum += 1; idx_old_cter_astig_amp    = i_enum # astigmatism amplitude [um]; index must be same as ctf object format
+	i_enum += 1; idx_old_cter_astig_ang    = i_enum # astigmatism angle [degree]; index must be same as ctf object format
+	i_enum += 1; idx_old_cter_sd_def       = i_enum # std dev of defocus [um]
+	i_enum += 1; idx_old_cter_sd_total_ac  = i_enum # std dev of total amplitude contrast [%]
+	i_enum += 1; idx_old_cter_sd_astig_amp = i_enum # std dev of ast amp [A]
+	i_enum += 1; idx_old_cter_sd_astig_ang = i_enum # std dev of ast angle [degree]
+	i_enum += 1; idx_old_cter_cv_def       = i_enum # coefficient of variation of defocus [%]
+	i_enum += 1; idx_old_cter_cv_astig_amp = i_enum # coefficient of variation of ast amp [%]
+	i_enum += 1; idx_old_cter_spectra_diff = i_enum # average of differences between with- and without-astig. experimental 1D spectra at extrema
+	i_enum += 1; idx_old_cter_error_def    = i_enum # frequency at which signal drops by 50% due to estimated error of defocus alone [1/A]
+	i_enum += 1; idx_old_cter_error_astig  = i_enum # frequency at which signal drops by 50% due to estimated error of defocus and astigmatism [1/A]
+	i_enum += 1; idx_old_cter_error_ctf    = i_enum # limit frequency by CTF error [1/A]
+	i_enum += 1; idx_old_cter_mic_name     = i_enum # micrograph name
+	i_enum += 1; n_idx_old_cter            = i_enum
 	
+	# Define enumerators for indices of parameters of each CTER partres entry in the new format (AFTER 2017/12/05).
+	# All mpi processes must have access to these indices
+	i_enum = -1
+	i_enum += 1; idx_cter_def              = i_enum # defocus [um]; index must be same as ctf object format
+	i_enum += 1; idx_cter_cs               = i_enum # Cs [mm]; index must be same as ctf object format
+	i_enum += 1; idx_cter_vol              = i_enum # voltage[kV]; index must be same as ctf object format
+	i_enum += 1; idx_cter_apix             = i_enum # pixel size [A]; index must be same as ctf object format
+	i_enum += 1; idx_cter_bfactor          = i_enum # B-factor [A^2]; index must be same as ctf object format
+	i_enum += 1; idx_cter_total_ac         = i_enum # total amplitude contrast [%]; index must be same as ctf object format
+	i_enum += 1; idx_cter_astig_amp        = i_enum # astigmatism amplitude [um]; index must be same as ctf object format
+	i_enum += 1; idx_cter_astig_ang        = i_enum # astigmatism angle [degree]; index must be same as ctf object format
+	i_enum += 1; idx_cter_sd_def           = i_enum # std dev of defocus [um]
+	i_enum += 1; idx_cter_sd_total_ac      = i_enum # std dev of total amplitude contrast [%]
+	i_enum += 1; idx_cter_sd_astig_amp     = i_enum # std dev of astigmatism amp [A]
+	i_enum += 1; idx_cter_sd_astig_ang     = i_enum # std dev of astigmatism angle [degree]
+	i_enum += 1; idx_cter_cv_def           = i_enum # coefficient of variation of defocus [%]
+	i_enum += 1; idx_cter_cv_astig_amp     = i_enum # coefficient of variation of astigmatism amp [%]
+	i_enum += 1; idx_cter_error_def        = i_enum # frequency at which signal drops by 50% due to estimated error of defocus alone [1/A]
+	i_enum += 1; idx_cter_error_astig      = i_enum # frequency at which signal drops by 50% due to estimated error of defocus and astigmatism [1/A]
+	i_enum += 1; idx_cter_error_ctf        = i_enum # limit frequency by CTF error [1/A] 
+	i_enum += 1; idx_cter_max_freq         = i_enum # visual-impression-based maximum frequency limit [A] (e.g. max frequency of relion; CCC between neighbour zero-crossing pair)
+	i_enum += 1; idx_cter_reserved         = i_enum # reserved spot for maximum frequency limit or error criterion. possibly originated from external program (e.g. CTF figure of merit of RELION)
+	i_enum += 1; idx_cter_const_ac         = i_enum # constant amplitude contrast [%]
+	i_enum += 1; idx_cter_phase_shift      = i_enum # phase shift [degrees]
+	i_enum += 1; idx_cter_mic_name         = i_enum # micrograph name
+	i_enum += 1; n_idx_cter                = i_enum
+
 	# ------------------------------------------------------------------------------------
 	# Prepare the variables for all sections
 	# ------------------------------------------------------------------------------------
@@ -306,7 +366,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 	subkey_input_mic_path = "Input Micrograph Path"
 	subkey_selected_mic_basename = "Selected Micrograph Basename"
 	subkey_coords_path = "Input Coordinates File Path"
-	subkey_cter_entry = "CTER Entry"
+	subkey_cter_entry = "CTER Partres Entry"
 	
 	# List keeps only id substrings of micrographs whose all necessary information are available
 	valid_mic_id_substr_list = [] 
@@ -456,69 +516,117 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		del coords_path_list # Do not need this anymore
 		
 		# --------------------------------------------------------------------------------
-		# If necessary, register micrograph id substrings of CTER entries to the global entry dictionary
+		# If necessary, register micrograph id substrings of CTER partres entries to the global entry dictionary
 		# --------------------------------------------------------------------------------
 		if use_real_ctf_params:
-			# This should be string for CTER CTF parameter file
+			# This should be string for CTER partres (CTF parameter) file
 			print(" ")
-			print("Checking the CTER CTF file...")
+			print("Checking the CTER partres file...")
 			assert (os.path.exists(ctf_params_src))
 			cter_entry_list = read_text_row(ctf_params_src)
 			
-			# Check error condition of CTER entry list
-			print("Found %d CTER entries in %s." % (len(cter_entry_list), ctf_params_src))
+			# Check error condition of CTER partres entry list
+			print("Found %d CTER partres entries in %s." % (len(cter_entry_list), ctf_params_src))
 			if len(cter_entry_list) == 0:
-				error_status = ("No CTER entries are found in %s. Please check input_ctf_params_source argument. Run %s -h for help." % (ctf_params_src, program_name), getframeinfo(currentframe()))
+				error_status = ("No CTER partres entries are found in %s. Please check input_ctf_params_source argument. Run %s -h for help." % (ctf_params_src, program_name), getframeinfo(currentframe()))
 				break
 			assert (len(cter_entry_list) > 0)
 			
-			# NOTE: 2017/03/22 Toshio Moriya
-			# The following code is to support the old format of CTER. It should be removed near future
-			if len(cter_entry_list[0]) == n_idx_cter - 1:
-				print("    WARNING!!!: Number of columns is %d in the specified CTER CTF File %s. The format might be old because new one should contain %d colums. The file format might be old. We will stop supporting this format near future. Please consider rerun CTER.." % (len(cter_entry_list[0]), ctf_params_src, n_idx_cter), getframeinfo(currentframe()))
-				# Reassign the indices to fit the old format
-				idx_cter_sd_ac        = -1 # use invalid valid
-				idx_cter_sd_astig_amp -= 1
-				idx_cter_sd_astig_ang -= 1
-				idx_cter_cv_def       -= 1
-				idx_cter_cv_astig_amp -= 1
-				idx_cter_spectra_diff -= 1
-				idx_cter_error_def    -= 1
-				idx_cter_error_astig  -= 1
-				idx_cter_error_ctf    -= 1
-				idx_cter_mic_path     -= 1
-				n_idx_cter            -= 1
-			
-			if len(cter_entry_list[0]) != n_idx_cter:
+			# 
+			# NOTE: 2017/12/05 Toshio Moriya
+			# The following code is to support the old format of CTER partres file. It should be removed near future
+			# 
+			if len(cter_entry_list[0]) != n_idx_cter and len(cter_entry_list[0]) != n_idx_old_cter:
 				error_status = ("The number of columns (%d) has to be %d in %s." % (len(cter_entry_list[0]), n_idx_cter, ctf_params_src), getframeinfo(currentframe()))
 				break
-			assert (len(cter_entry_list[0]) == n_idx_cter)
+			assert len(cter_entry_list[0]) == n_idx_cter or len(cter_entry_list[0]) == n_idx_old_cter
 			
-			cter_mic_directory = os.path.dirname(cter_entry_list[0][idx_cter_mic_path])
-			if cter_mic_directory != "":
-				print("    NOTE: Program disregards the directory paths in the CTER CTF file (%s)." % (cter_mic_directory))
-			
-			for cter_entry in cter_entry_list:
-				assert (len(cter_entry) == n_idx_cter)
-				# Find tail index of micrograph id substring and extract the substring from the micrograph path of CTER entry
-				cter_mic_path = cter_entry[idx_cter_mic_path]
-				cter_mic_basename = os.path.basename(cter_mic_path)
-				mic_id_substr_tail_idx = cter_mic_basename.index(mic_basename_tokens[1])
-				mic_id_substr = cter_mic_basename[mic_id_substr_head_idx:mic_id_substr_tail_idx]
-				# Between cter_mic_path and mic_path, directory paths might be different but the basenames should be same!
-				assert (cter_mic_basename == mic_basename_pattern.replace("*", mic_id_substr))
+			# For NEW CTER partres format (AFTER 2017/12/05)
+			if len(cter_entry_list[0]) == n_idx_cter:
+				cter_mic_directory = os.path.dirname(cter_entry_list[0][idx_cter_mic_name])
+				if cter_mic_directory != "":
+					print("    NOTE: Program disregards the directory paths in the CTER partres file (%s)." % (cter_mic_directory))
 				
-				if(cter_entry[idx_cter_sd_astig_ang] > options.astigmatism_error):
-					print("    NOTE: Astigmatism angular SD of %s (%f degree) exceeds specified limit (%f degree). Resetting astigmatism parameters to zeros..." % (cter_mic_basename, cter_entry[idx_cter_sd_astig_ang], options.astigmatism_error))
-					cter_entry[idx_cter_astig_amp] = 0.0
-					cter_entry[idx_cter_astig_ang] = 0.0
+				for cter_entry in cter_entry_list:
+					# Find tail index of micrograph id substring and extract the substring from the micrograph path of CTER partres entry
+					cter_mic_path = cter_entry[idx_cter_mic_name]
+					cter_mic_basename = os.path.basename(cter_mic_path)
+					mic_id_substr_tail_idx = cter_mic_basename.index(mic_basename_tokens[1])
+					mic_id_substr = cter_mic_basename[mic_id_substr_head_idx:mic_id_substr_tail_idx]
+					# Between cter_mic_path and mic_path, directory paths might be different but the basenames should be same!
+					assert (cter_mic_basename == mic_basename_pattern.replace("*", mic_id_substr))
 				
-				if not mic_id_substr in global_entry_dict:
-					# print("MRK_DEBUG: Added new mic_id_substr (%s) to global_entry_dict from cter_entry_list " % (mic_id_substr))
-					global_entry_dict[mic_id_substr] = {}
-				assert (mic_id_substr in global_entry_dict)
-				global_entry_dict[mic_id_substr][subkey_cter_entry] = cter_entry
-			assert (len(global_entry_dict) > 0)
+					if(cter_entry[idx_cter_sd_astig_ang] > options.astigmatism_error):
+						print("    NOTE: Astigmatism angular SD of %s (%f degree) exceeds specified limit (%f degree). Resetting astigmatism parameters to zeros..." % (cter_mic_basename, cter_entry[idx_cter_sd_astig_ang], options.astigmatism_error))
+						cter_entry[idx_cter_astig_amp] = 0.0
+						cter_entry[idx_cter_astig_ang] = 0.0
+				
+					if not mic_id_substr in global_entry_dict:
+						# print("MRK_DEBUG: Added new mic_id_substr (%s) to global_entry_dict from cter_entry_list " % (mic_id_substr))
+						global_entry_dict[mic_id_substr] = {}
+					assert (mic_id_substr in global_entry_dict)
+					global_entry_dict[mic_id_substr][subkey_cter_entry] = cter_entry
+				assert (len(global_entry_dict) > 0)
+			# For OLD CTER partres format (BEFORE 2017/12/05)
+			else:
+				assert len(cter_entry_list[0]) == n_idx_old_cter, "MKR_DEBUG"
+				print("WARNING!!!: Number of columns is %d in the specified CTER partres file %s. The format might be old because the new one should contain %d colums." % (len(cter_entry_list[0]), ctf_params_src, n_idx_cter))
+				print("            We will stop supporting the old format in near future. Please consider rerun CTER.")
+				
+				cter_mic_directory = os.path.dirname(cter_entry_list[0][idx_old_cter_mic_name])
+				if cter_mic_directory != "":
+					print("    NOTE: Program disregards the directory paths in the CTER partres file (%s)." % (cter_mic_directory))
+				
+				for old_cter_entry in cter_entry_list:
+					# Convert each entry to new format
+					# 
+					# assume amplitude amplitude contrast is total amplitude constrast in [%], estimated as variable Volta phase shift. Conver it to [deg].
+					# Also, assuming constant amplitude contrast is zero since there is no information available in the old format.
+					# 
+					cter_entry = [None] * n_idx_cter
+					cter_entry[idx_cter_def]          = old_cter_entry[idx_old_cter_def]
+					cter_entry[idx_cter_cs]           = old_cter_entry[idx_old_cter_cs]
+					cter_entry[idx_cter_vol]          = old_cter_entry[idx_old_cter_vol]
+					cter_entry[idx_cter_apix]         = old_cter_entry[idx_old_cter_apix]
+					cter_entry[idx_cter_bfactor]      = old_cter_entry[idx_old_cter_bfactor]
+					cter_entry[idx_cter_total_ac]     = old_cter_entry[idx_old_cter_total_ac]
+					cter_entry[idx_cter_astig_amp]    = old_cter_entry[idx_old_cter_astig_amp]
+					cter_entry[idx_cter_astig_ang]    = old_cter_entry[idx_old_cter_astig_ang]
+					cter_entry[idx_cter_sd_def]       = old_cter_entry[idx_old_cter_sd_def]
+					cter_entry[idx_cter_sd_total_ac]  = old_cter_entry[idx_old_cter_sd_total_ac]
+					cter_entry[idx_cter_sd_astig_amp] = old_cter_entry[idx_old_cter_sd_astig_amp]
+					cter_entry[idx_cter_sd_astig_ang] = old_cter_entry[idx_old_cter_sd_astig_ang]
+					cter_entry[idx_cter_cv_def]       = old_cter_entry[idx_old_cter_cv_def]
+					cter_entry[idx_cter_cv_astig_amp] = old_cter_entry[idx_old_cter_cv_astig_amp]
+					cter_entry[idx_cter_error_def]    = old_cter_entry[idx_old_cter_error_def]
+					cter_entry[idx_cter_error_astig]  = old_cter_entry[idx_old_cter_error_astig]
+					cter_entry[idx_cter_error_ctf]    = old_cter_entry[idx_old_cter_error_ctf]
+					cter_entry[idx_cter_max_freq]     = 0.5/old_cter_entry[idx_old_cter_apix] # Set to Nyquist frequency
+					cter_entry[idx_cter_reserved]     = 0.0
+					cter_entry[idx_cter_const_ac]     = 0.0
+					cter_entry[idx_cter_phase_shift]  = ampcont2angle(old_cter_entry[idx_old_cter_total_ac])
+					cter_entry[idx_cter_mic_name]     = old_cter_entry[idx_old_cter_mic_name]
+					assert (len(cter_entry) == n_idx_cter)
+				
+					# Find tail index of micrograph id substring and extract the substring from the micrograph path of CTER partres entry
+					cter_mic_path = cter_entry[idx_cter_mic_name]
+					cter_mic_basename = os.path.basename(cter_mic_path)
+					mic_id_substr_tail_idx = cter_mic_basename.index(mic_basename_tokens[1])
+					mic_id_substr = cter_mic_basename[mic_id_substr_head_idx:mic_id_substr_tail_idx]
+					# Between cter_mic_path and mic_path, directory paths might be different but the basenames should be same!
+					assert (cter_mic_basename == mic_basename_pattern.replace("*", mic_id_substr))
+				
+					if(cter_entry[idx_cter_sd_astig_ang] > options.astigmatism_error):
+						print("    NOTE: Astigmatism angular SD of %s (%f degree) exceeds specified limit (%f degree). Resetting astigmatism parameters to zeros..." % (cter_mic_basename, cter_entry[idx_cter_sd_astig_ang], options.astigmatism_error))
+						cter_entry[idx_cter_astig_amp] = 0.0
+						cter_entry[idx_cter_astig_ang] = 0.0
+				
+					if not mic_id_substr in global_entry_dict:
+						# print("MRK_DEBUG: Added new mic_id_substr (%s) to global_entry_dict from cter_entry_list " % (mic_id_substr))
+						global_entry_dict[mic_id_substr] = {}
+					assert (mic_id_substr in global_entry_dict)
+					global_entry_dict[mic_id_substr][subkey_cter_entry] = cter_entry
+				assert (len(global_entry_dict) > 0)
 			
 			del cter_entry_list # Do not need this anymore
 		
@@ -539,7 +647,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		no_cter_entry_mic_id_substr_list = []
 		
 		print(" ")
-		print("Checking the input datasets consistency...")
+		print("Checking consistency of the provided dataset ...")
 		
 		# Loop over substring id list
 		for mic_id_substr in global_entry_dict:
@@ -561,15 +669,15 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 					no_coords_mic_id_substr_list.append(mic_id_substr)
 				
 				if use_real_ctf_params:
-					# Check if associated CTER entry exists
+					# Check if associated CTER partres entry exists
 					if not subkey_cter_entry in mic_id_entry:
 						mic_basename = mic_basename_pattern.replace("*", mic_id_substr)
-						warinnig_messages.append("    associated CTF parameter entry with %s in the CTER paramter file %s." % (mic_basename, ctf_params_src))
+						warinnig_messages.append("    associated entry with %s in the CTER partres file %s." % (mic_basename, ctf_params_src))
 						no_cter_entry_mic_id_substr_list.append(mic_id_substr)
 				else:
 					assert(not use_real_ctf_params)
 					# Register dummy CTF parameters
-					# Create dummy CTER entry
+					# Create dummy CTER partres entry
 					assert (float(ctf_params_src) > 0.0)
 					dummy_cter_entry = [None] * n_idx_cter
 					assert (len(dummy_cter_entry) == n_idx_cter)
@@ -578,21 +686,23 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 					dummy_cter_entry[idx_cter_vol]          = 300.0
 					dummy_cter_entry[idx_cter_apix]         = float(ctf_params_src)
 					dummy_cter_entry[idx_cter_bfactor]      = 0.0
-					dummy_cter_entry[idx_cter_ac]           = 100.0
+					dummy_cter_entry[idx_cter_total_ac]     = 100.0
 					dummy_cter_entry[idx_cter_astig_amp]    = 0.0
 					dummy_cter_entry[idx_cter_astig_ang]    = 0.0
 					dummy_cter_entry[idx_cter_sd_def]       = 0.0
-					if idx_cter_sd_ac != -1:
-						dummy_cter_entry[idx_cter_sd_ac]        = 0.0
+					dummy_cter_entry[idx_cter_sd_total_ac]  = 0.0
 					dummy_cter_entry[idx_cter_sd_astig_amp] = 0.0
 					dummy_cter_entry[idx_cter_sd_astig_ang] = 0.0
 					dummy_cter_entry[idx_cter_cv_def]       = 0.0
 					dummy_cter_entry[idx_cter_cv_astig_amp] = 0.0
-					dummy_cter_entry[idx_cter_spectra_diff] = 0.0
 					dummy_cter_entry[idx_cter_error_def]    = 0.5/dummy_cter_entry[idx_cter_apix] # Set to Nyquist frequency
 					dummy_cter_entry[idx_cter_error_astig]  = 0.5/dummy_cter_entry[idx_cter_apix] # Set to Nyquist frequency
 					dummy_cter_entry[idx_cter_error_ctf]    = 0.5/dummy_cter_entry[idx_cter_apix] # Set to Nyquist frequency
-					dummy_cter_entry[idx_cter_mic_path]     = ""
+					dummy_cter_entry[idx_cter_max_freq]     = 0.5/dummy_cter_entry[idx_cter_apix] # Set to Nyquist frequency
+					dummy_cter_entry[idx_cter_reserved]     = 0.0
+					dummy_cter_entry[idx_cter_const_ac]     = 0.0
+					dummy_cter_entry[idx_cter_phase_shift]  = 0.0
+					dummy_cter_entry[idx_cter_mic_name]     = ""
 		
 					assert (not subkey_cter_entry in mic_id_entry)
 					global_entry_dict[mic_id_substr][subkey_cter_entry] = dummy_cter_entry
@@ -616,11 +726,12 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 			os.mkdir(out_dir)
 			
 			# Open the consistency check file
-			inconsist_mic_list_path = os.path.join(out_dir,"inconsist_mic_id_file.txt")
+			mic_consistency_check_info_path = os.path.join(out_dir, "mic_consistency_check_info_%s.txt"%(get_time_stamp_suffix()))
 			print(" ")
-			print("Generating the input datasets consistency report in %s..." % (inconsist_mic_list_path))
-			inconsist_mic_list_file = open(inconsist_mic_list_path, "w")
-			inconsist_mic_list_file.write("# The information about inconsistent micrograph IDs\n")
+			print("Generating consistency report of the provided dataset in %s..."%(mic_consistency_check_info_path))
+			mic_consistency_check_info_file = open(mic_consistency_check_info_path, "w")
+			mic_consistency_check_info_file.write("# The consistency information about micrograph IDs that might have problmes with consistency among the provided dataset.\n")
+			mic_consistency_check_info_file.write("# \n")
 			# Loop over substring id list
 			for mic_id_substr in global_entry_dict:
 				mic_id_entry = global_entry_dict[mic_id_substr]
@@ -642,24 +753,24 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 					consistency_messages.append("    associated coordinates file %s." % (coords_path))
 				
 				if use_real_ctf_params:
-					# Check if associated CTER entry exists
+					# Check if associated CTER partres entry exists
 					if not subkey_cter_entry in mic_id_entry:
 						mic_basename = mic_basename_pattern.replace("*", mic_id_substr)
-						consistency_messages.append("    associated CTF parameter entry with %s in the CTER paramter file %s." % (mic_basename, ctf_params_src))
+						consistency_messages.append("    associated entry with %s in the CTER partres file %s." % (mic_basename, ctf_params_src))
 				else:
 					assert (not use_real_ctf_params)
 					# All entry must have dummy cter entry
 					assert (subkey_cter_entry in mic_id_entry)
 				
 				if len(consistency_messages) > 0:
-					inconsist_mic_list_file.write("Micrograph ID %s does not have:\n" % (mic_id_substr))
+					mic_consistency_check_info_file.write("Micrograph ID %s might have problems with consistency among the provided dataset:\n"%(mic_id_substr))
 					for consistency_message in consistency_messages:
-						inconsist_mic_list_file.write(consistency_message)
-						inconsist_mic_list_file.write("\n")
+						mic_consistency_check_info_file.write(consistency_message)
+						mic_consistency_check_info_file.write("\n")
 			
 			# Close the consistency check file, if necessary
-			inconsist_mic_list_file.flush()
-			inconsist_mic_list_file.close()
+			mic_consistency_check_info_file.flush()
+			mic_consistency_check_info_file.close()
 			
 		# Since mic_id_substr is once stored as the key of global_entry_dict and extracted with the key order
 		# we need sort the valid_mic_id_substr_list here
@@ -676,7 +787,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		print("Valid                              : %6d" % (len(valid_mic_id_substr_list)))
 		print("Rejected by no coordinates file    : %6d" % (len(no_coords_mic_id_substr_list)))
 		if use_real_ctf_params:
-			print("Rejected by no CTER entry          : %6d" % (len(no_cter_entry_mic_id_substr_list)))
+			print("Rejected by no CTER partres entry  : %6d" % (len(no_cter_entry_mic_id_substr_list)))
 			
 		# --------------------------------------------------------------------------------
 		# Clean up variables related to tracking of invalid (rejected) micrographs 
@@ -822,7 +933,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		ctf_entry.append(cter_entry[idx_cter_vol])
 		ctf_entry.append(cter_entry[idx_cter_apix])
 		ctf_entry.append(cter_entry[idx_cter_bfactor])
-		ctf_entry.append(cter_entry[idx_cter_ac])
+		ctf_entry.append(cter_entry[idx_cter_total_ac])
 		ctf_entry.append(cter_entry[idx_cter_astig_amp])
 		ctf_entry.append(cter_entry[idx_cter_astig_ang])
 		assert(len(ctf_entry) == 8)
@@ -932,7 +1043,11 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 			particle_img = ramp(particle_img)
 			particle_stats = Util.infomask(particle_img, mask2d, False) # particle_stats[0:mean, 1:SD, 2:min, 3:max]
 			particle_img -= particle_stats[0]
-			particle_img /= particle_stats[1]
+			try:
+				particle_img /= particle_stats[1]
+			except ZeroDivisionError:
+				print("The standard deviation of the particle image associated with %dth coordinates entry in micrograph %s for %s is zero unexpectedly. Skipping..." % (coords_id, mic_path, mic_basename))
+				continue
 			
 			# Set header entries (attributes) of this particle image
 			# 
@@ -941,9 +1056,9 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 			# Consider re-organizing header entries...
 			# 
 			particle_img.set_attr("ptcl_source_image", mic_path)
-			particle_img.set_attr("ptcl_source_apix", src_pixel_size) # Store the original pixel size
-			particle_img.set_attr("ptcl_source_coord_id", coords_id)
 			particle_img.set_attr("ptcl_source_coord", [int(coords_list[coords_id][0]), int(coords_list[coords_id][1])])
+			particle_img.set_attr("ptcl_source_coord_id", coords_id)
+			particle_img.set_attr('data_n', coords_id)  # NOTE: Toshio Moriya 2017/11/20: same as ptcl_source_coord_id but the other program uses this header entry key...
 			particle_img.set_attr("resample_ratio", resample_ratio)
 			# 
 			# NOTE: 2015/04/13 Toshio Moriya 
@@ -962,6 +1077,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 			particle_img.set_attr("apix_x", 1.0) # particle_img.set_attr("apix_x", resampled_pixel_size)
 			particle_img.set_attr("apix_y", 1.0) # particle_img.set_attr("apix_y", resampled_pixel_size)
 			particle_img.set_attr("apix_z", 1.0) # particle_img.set_attr("apix_z", resampled_pixel_size)
+			particle_img.set_attr("ptcl_source_apix", src_pixel_size) # Store the original pixel size
 			particle_img.set_attr("ctf",ctf_obj)
 			particle_img.set_attr("ctf_applied", 0)
 			
@@ -973,8 +1089,13 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		# Save the message list of rejected coordinates because of out-of-boundary
 		# print("MRK_DEBUG: len(coords_reject_out_of_boundary_messages) := %d" % len(coords_reject_out_of_boundary_messages))
 		if len(coords_reject_out_of_boundary_messages) > 0:
+			reject_out_of_boundary_dir = os.path.join(root_out_dir, "reject_out_of_boundary")
+			if not os.path.exists(reject_out_of_boundary_dir):
+				os.mkdir(reject_out_of_boundary_dir)
+			assert os.path.exists(reject_out_of_boundary_dir), "MRK_DEBUG"
+			
 			# Open file path to save the message list
-			coords_reject_out_of_boundary_path = os.path.join(root_out_dir, os.path.splitext(os.path.basename(coords_path))[0] + "_reject_out_of_boundary.txt")
+			coords_reject_out_of_boundary_path = os.path.join(reject_out_of_boundary_dir, os.path.splitext(os.path.basename(coords_path))[0] + "_reject_out_of_boundary.txt")
 			# print("MRK_DEBUG: coords_reject_out_of_boundary_path := %s" % coords_reject_out_of_boundary_path)
 			coords_reject_out_of_boundary_file = open(coords_reject_out_of_boundary_path, "w")
 			
@@ -1007,7 +1128,8 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 			# Print out the summary of CTF limit absolute frequency
 			print(" ")
 			print("Global summary of CTF limit absolute frequency (--limit_ctf)...")
-			print("Percentage of filtered micrographs: %8.2f\n" % (len(abs_ctf_limit_histogram) * 100.0 / len(unsliced_valid_serial_id_list)))
+			print("Percentage of filtered micrographs: %8.2f" % (len(abs_ctf_limit_histogram) * 100.0 / len(unsliced_valid_serial_id_list)))
+			print(" ")
 			
 			n_bins = 10
 			if len(abs_ctf_limit_histogram) >= n_bins:
@@ -1043,7 +1165,9 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		print("Processed                          : %6d" % (n_global_coords_process))
 		print("Rejected by out of boundary        : %6d" % (n_global_coords_reject_out_of_boundary))
 		if n_global_coords_reject_out_of_boundary > 0:
-			print("    NOTE: Information of rejected coordinates by out of boundary are saved in %s files." % (os.path.join(root_out_dir, os.path.splitext(os.path.basename(coords_pattern))[0] + "_reject_out_of_boundary.txt" )))
+			reject_out_of_boundary_dir = os.path.join(root_out_dir, "reject_out_of_boundary")
+			assert os.path.exists(reject_out_of_boundary_dir), "MRK_DEBUG"
+			print("    NOTE: Information of rejected coordinates by out of boundary are saved in %s files." % (os.path.join(reject_out_of_boundary_dir, os.path.splitext(os.path.basename(coords_pattern))[0] + "_reject_out_of_boundary.txt" )))
 	
 	if RUNNING_UNDER_MPI:
 		mpi_barrier(MPI_COMM_WORLD)
