@@ -41,13 +41,13 @@ import weakref
 import threading
 
 from EMAN2 import *
-from emapplication import get_application, EMApp
-from emimage2d import EMImage2DWidget
-from emplot2d import EMPlot2DWidget
-from emimagemx import EMImageMXWidget
-from emscene3d import EMScene3D
-from emdataitem3d import EMDataItem3D, EMIsosurface, EMSliceItem3D
-from emshape import EMShape
+from qtgui.emapplication import get_application, EMApp
+from qtgui.emimage2d import EMImage2DWidget
+from qtgui.emplot2d import EMPlot2DWidget
+from qtgui.emimagemx import EMImageMXWidget
+from qtgui.emscene3d import EMScene3D
+from qtgui.emdataitem3d import EMDataItem3D, EMIsosurface, EMSliceItem3D
+from qtgui.emshape import EMShape
 from valslider import *
 import traceback
 

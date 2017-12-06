@@ -32,8 +32,8 @@ from __future__ import print_function
 #
 
 from EMAN2 import *
-from emplot2d import EMPolarPlot2DWidget,colortypes
-from emapplication import EMApp
+from qtgui.emplot2d import EMPolarPlot2DWidget,colortypes
+from qtgui.emapplication import EMApp
 import math
 
 def main():

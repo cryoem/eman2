@@ -38,9 +38,9 @@ from __future__ import print_function
 from EMAN2 import *
 from math import *
 from PyQt4 import QtCore
-from emapplication import EMApp
-from emimage2d import EMImage2DWidget
-from emshape import EMShape
+from qtgui.emapplication import EMApp
+from qtgui.emimage2d import EMImage2DWidget
+from qtgui.emshape import EMShape
 
 
 def main():

@@ -38,13 +38,13 @@ from PyQt4 import QtGui,QtCore
 from valslider import ValSlider
 
 from e2eulerxplor import get_eulers_from
-from emimagemx import EMImageMXWidget
-from emimage2d import EMImage2DWidget
-from emplot2d import EMPlot2DWidget
+from qtgui.emimagemx import EMImageMXWidget
+from qtgui.emimage2d import EMImage2DWidget
+from qtgui.emplot2d import EMPlot2DWidget
 from EMAN2db import db_convert_path, db_open_dict, db_check_dict, db_list_dicts
-from emapplication import EMApp, get_application
-from emglobjects import EM3DGLWidget
-from emimage3dsym import EM3DSymModel,EMSymInspector, EMSymViewerWidget
+from qtgui.emapplication import EMApp, get_application
+from qtgui.emglobjects import EM3DGLWidget
+from qtgui.emimage3dsym import EM3DSymModel,EMSymInspector, EMSymViewerWidget
 from EMAN2 import *
 
 def main():

@@ -3,9 +3,9 @@ from __future__ import print_function
 # Muyuan Chen 2016-09
 from EMAN2 import *
 import numpy as np
-from emapplication import EMApp
-from emimage2d import EMImage2DWidget
-from emshape import EMShape
+from qtgui.emapplication import EMApp
+from qtgui.emimage2d import EMImage2DWidget
+from qtgui.emshape import EMShape
 
 import PyQt4
 from PyQt4 import QtCore, QtGui, QtOpenGL

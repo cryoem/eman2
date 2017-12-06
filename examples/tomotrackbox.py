@@ -35,12 +35,12 @@ from optparse import OptionParser
 import sys
 import os
 from EMAN2 import *
-from emapplication import EMApp
-from emimage2d import EMImage2DWidget
-from emimage3d import EMImage3DModule
+from qtgui.emapplication import EMApp
+from qtgui.emimage2d import EMImage2DWidget
+from qtgui.emimage3d import EMImage3DModule
 from valslider import ValSlider
 import weakref
-from emshape import EMShape
+from qtgui.emshape import EMShape
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
 #import EMAN2db

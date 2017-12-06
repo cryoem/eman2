@@ -32,13 +32,13 @@ from __future__ import print_function
 #
 #
 
-from emapplication import EMApp, get_application
-from emimage3dsym import EM3DSymModel,EMSymInspector
+from qtgui.emapplication import EMApp, get_application
+from qtgui.emimage3dsym import EM3DSymModel,EMSymInspector
 import os,sys
 from EMAN2 import *
 from PyQt4 import QtGui,QtCore
-from emimagemx import EMImageMXModule
-from emglobjects import EM3DGLWidget
+from qtgui.emimagemx import EMImageMXModule
+from qtgui.emglobjects import EM3DGLWidget
 
 	
 def main():

@@ -34,8 +34,8 @@ from __future__ import print_function
 
 
 from EMAN2 import *
-from emplot2d import EMPlot2DWidget
-from emapplication import EMApp
+from qtgui.emplot2d import EMPlot2DWidget
+from qtgui.emapplication import EMApp
 
 def main():
 	progname = os.path.basename(sys.argv[0])

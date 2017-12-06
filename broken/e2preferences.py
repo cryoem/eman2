@@ -32,10 +32,10 @@ from __future__ import print_function
 #
 #
 import EMAN2db
-from emdatastorage import ParamDef 
+from qtgui.emdatastorage import ParamDef 
 
-from emsprworkflow import WorkFlowTask
-from emapplication import get_application
+from qtgui.emsprworkflow import WorkFlowTask
+from qtgui.emapplication import get_application
 
 global HOMEDB
 HOMEDB=EMAN2db.EMAN2DB.open_db()
@@ -87,7 +87,7 @@ class EMPreferencesTask(WorkFlowTask):
 		self.emit(QtCore.SIGNAL("task_idle"))
 	
 	def run_form(self):
-		from emform import EMTableFormWidget
+		from qtgui.emform import EMTableFormWidget
 		self.form = EMTableFormWidget(self.get_params())
 		self.form.resize(*self.preferred_size)
 		self.form.setWindowTitle(self.window_title)
@@ -114,7 +114,7 @@ class EMPreferencesTask(WorkFlowTask):
 			
 		
 def main():
-	from emapplication import EMApp
+	from qtgui.emapplication import EMApp
 
 	em_app = EMApp()
 	

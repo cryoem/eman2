@@ -38,7 +38,7 @@ from EMAN2jsondb import *
 from pyemtbx.boxertools import CoarsenedFlattenedImageCache,FLCFImageCache
 from copy import deepcopy
 from EMAN2 import *
-from emboxerbase import *
+from qtgui.emboxerbase import *
 import os
 
 SWARM_TEMPLATE_MIN = TEMPLATE_MIN # this comes from emboxerbase
@@ -1258,7 +1258,7 @@ class SwarmBoxer:
 		Brings the template viewer to the foreground
 		'''
 		if self.template_viewer == None:
-			from emimagemx import EMImageMXWidget
+			from qtgui.emimagemx import EMImageMXWidget
 			self.template_viewer = EMImageMXWidget()
 
 			self.template_viewer.set_data(self.templates,soft_delete=True) # should work if self.templates is None

@@ -44,13 +44,13 @@ from EMAN2 import *
 '''
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
-from emapplication import get_application, EMApp
-from emimage2d import EMImage2DWidget
-from emimagemx import EMImageMXWidget
-from emimage3d import EMImage3DWidget
-from emscene3d import EMScene3D
-from emdataitem3d import EMDataItem3D, EMIsosurface
-from emshape import EMShape
+from qtgui.emapplication import get_application, EMApp
+from qtgui.emimage2d import EMImage2DWidget
+from qtgui.emimagemx import EMImageMXWidget
+from qtgui.emimage3d import EMImage3DWidget
+from qtgui.emscene3d import EMScene3D
+from qtgui.emdataitem3d import EMDataItem3D, EMIsosurface
+from qtgui.emshape import EMShape
 '''
 #from valslider import *
 
@@ -205,13 +205,13 @@ def main():
 		'''
 		from PyQt4 import QtCore, QtGui
 		from PyQt4.QtCore import Qt
-		from emapplication import get_application, EMApp
-		from emimage2d import EMImage2DWidget
-		from emimagemx import EMImageMXWidget
-		from emimage3d import EMImage3DWidget
-		from emscene3d import EMScene3D
-		from emdataitem3d import EMDataItem3D, EMIsosurface
-		from emshape import EMShape
+		from qtgui.emapplication import get_application, EMApp
+		from qtgui.emimage2d import EMImage2DWidget
+		from qtgui.emimagemx import EMImageMXWidget
+		from qtgui.emimage3d import EMImage3DWidget
+		from qtgui.emscene3d import EMScene3D
+		from qtgui.emdataitem3d import EMDataItem3D, EMIsosurface
+		from qtgui.emshape import EMShape
 
 
 		if options.path and options.verbose:
@@ -920,13 +920,13 @@ def sptboxergui(options,args):
 
 	from PyQt4 import QtCore, QtGui
 	from PyQt4.QtCore import Qt
-	from emapplication import get_application, EMApp
-	from emimage2d import EMImage2DWidget
-	from emimagemx import EMImageMXWidget
-	from emimage3d import EMImage3DWidget
-	from emscene3d import EMScene3D
-	from emdataitem3d import EMDataItem3D, EMIsosurface
-	from emshape import EMShape
+	from qtgui.emapplication import get_application, EMApp
+	from qtgui.emimage2d import EMImage2DWidget
+	from qtgui.emimagemx import EMImageMXWidget
+	from qtgui.emimage3d import EMImage3DWidget
+	from qtgui.emscene3d import EMScene3D
+	from qtgui.emdataitem3d import EMDataItem3D, EMIsosurface
+	from qtgui.emshape import EMShape
 	from valslider import ValSlider, ValBox
 
 	class EMAverageViewer(QtGui.QWidget):

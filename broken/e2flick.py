@@ -34,8 +34,8 @@ from __future__ import print_function
 
 
 #from EMAN2 import *
-#from emimage import EMImage
-#from emimageutil import EMParentWin
+#from qtgui.emimage import EMImage
+#from qtgui.emimageutil import EMParentWin
 import sys
 import os
 #from optparse import OptionParser
@@ -43,8 +43,8 @@ import os
 #from PyQt4.QtCore import Qt
 #from OpenGL import GL,GLU,GLUT
 
-#from emimagemxrotor import * #emimagemxrotor was deprecated and removed from CVS
-#from emapplication import EMStandAloneApplication #EMStandAloneApplication was deprecated and removed from CVS
+#from qtgui.emimagemxrotor import * #emimagemxrotor was deprecated and removed from CVS
+#from qtgui.emapplication import EMStandAloneApplication #EMStandAloneApplication was deprecated and removed from CVS
 from optparse import OptionParser
 
 def main():

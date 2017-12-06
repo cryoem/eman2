@@ -35,13 +35,13 @@ from __future__ import print_function
 from EMAN2 import *
 from EMAN2db import db_open_dict, db_close_dict, db_remove_dict
 from PyQt4 import QtCore
-from emapplication import EMApp
-from emimagemx import EMImageMXWidget
-from emimage2d import EMImage2DWidget
+from qtgui.emapplication import EMApp
+from qtgui.emimagemx import EMImageMXWidget
+from qtgui.emimage2d import EMImage2DWidget
 from pyemtbx.boxertools import BigImageCache
-from emrctstrategy import Strategy2IMGMan, Strategy2IMGPair
-from emrctboxergui import ControlPannel
-from emshape import EMShape
+from qtgui.emrctstrategy import Strategy2IMGMan, Strategy2IMGPair
+from qtgui.emrctboxergui import ControlPannel
+from qtgui.emshape import EMShape
 import os, sys, itertools
 
 EMBOXERRCT_DB = "e2boxercache/rctboxer.json"

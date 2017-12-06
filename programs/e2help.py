@@ -65,7 +65,7 @@ act as a filter on the names of the algorithms."""
 		
 	if options.gui:
 		from e2projectmanager import TheHelp
-		from emapplication import EMApp
+		from qtgui.emapplication import EMApp
 		app = EMApp()
 		thehelp = TheHelp()
 		thehelp.show()

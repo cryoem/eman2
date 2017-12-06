@@ -33,7 +33,7 @@ from __future__ import print_function
 
 from EMAN2 import *
 import sys
-from emboxerbase import *
+from qtgui.emboxerbase import *
 import subprocess as sp
 
 def main():

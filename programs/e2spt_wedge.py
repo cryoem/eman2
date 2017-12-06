@@ -33,7 +33,7 @@ from __future__ import print_function
 from EMAN2 import *
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
-from emapplication import EMApp
+from qtgui.emapplication import EMApp
 from qtgui import emscene3d
 from qtgui import emdataitem3d 
 

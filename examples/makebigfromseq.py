@@ -42,7 +42,7 @@ import sys
 from math import *
 try:
 	import wx
-	from emimage import *
+	from qtgui.emimage import *
 except:
 	print("no wx")
 

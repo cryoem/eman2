@@ -47,7 +47,7 @@ from numpy import *
 import os
 import sys
 import weakref
-from emapplication import EMApp
+from qtgui.emapplication import EMApp
 
 from Simplex import Simplex
 
@@ -846,12 +846,12 @@ class GUIctf(QtGui.QWidget):
 		'data' is a list of (filename,ctf,im_1d,bg_1d,im_2d,bg_2d)
 		"""
 		try:
-			from emimage2d import EMImage2DWidget
+			from qtgui.emimage2d import EMImage2DWidget
 		except:
 			print("Cannot import EMAN image GUI objects (EMImage2DWidget)")
 			sys.exit(1)
 		try: 
-			from emplot2d import EMPlot2DWidget
+			from qtgui.emplot2d import EMPlot2DWidget
 		except:
 			print("Cannot import EMAN plot GUI objects (is matplotlib installed?)")
 			sys.exit(1)
@@ -1001,7 +1001,7 @@ class GUIctf(QtGui.QWidget):
 #	def get_output_params(self):
 	
 	def on_output(self):
-		from emsprworkflow import E2CTFOutputTaskGeneral
+		from qtgui.emsprworkflow import E2CTFOutputTaskGeneral
 		self.form = E2CTFOutputTaskGeneral()
 		self.form.run_form()
 	

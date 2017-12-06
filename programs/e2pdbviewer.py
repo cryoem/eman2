@@ -31,9 +31,9 @@ from __future__ import print_function
 #
 
 from EMAN2 import *
-from emapplication import EMApp
-from emdataitem3d import EMDataItem3D
-from emscene3d import EMScene3D, EMInspector3D
+from qtgui.emapplication import EMApp
+from qtgui.emdataitem3d import EMDataItem3D
+from qtgui.emscene3d import EMScene3D, EMInspector3D
 import os
 import sys
 

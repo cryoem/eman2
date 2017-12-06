@@ -32,7 +32,7 @@ from __future__ import print_function
 #
 
 from EMAN2 import *
-from emimage import *
+from qtgui.emimage import *
 import time
 import sys
 from optparse import OptionParser

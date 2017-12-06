@@ -33,13 +33,13 @@ from __future__ import print_function
 
 #
 from EMAN2 import *
-from emimagemx import EMImageMXWidget
+from qtgui.emimagemx import EMImageMXWidget
 
 import sys
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 #from OpenGL import GL,GLU,GLUT
-from emapplication import EMApp
+from qtgui.emapplication import EMApp
 import os
 from EMAN2db import *
 from valslider import *

@@ -2276,7 +2276,7 @@ class Boxable:
 		
 	def process_finished(self,int):
 		try:
-			from emimage import EMImage
+			from qtgui.emimage import EMImage
 		except:
 			print("Cannot import EMAN image GUI objects (emimage,etc.)")
 			sys.exit(1)
