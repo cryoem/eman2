@@ -82,9 +82,9 @@ def main():
 	gui.raise_()
 	gui.activateWindow()
 	
-	# read CTER CTF file if necessary
+	# read CTER partres file if necessary
 	if cter_ctf_file != None:
-		gui.readCterCtfFile(os.path.relpath(cter_ctf_file))
+		gui.readCterPartresFile(os.path.relpath(cter_ctf_file))
 	
 #	try:
 #		# gui.wimgmicthumb.qt_parent.raise_() # wimgmicthumb should not be visible upon start-up
@@ -154,8 +154,8 @@ class SXGuiCter(QtGui.QWidget):
 # 		QtGui.QWidget.__init__(self,None)
 		super(SXGuiCter, self).__init__(None)
 		
-		# MRK_TEST: Flags to test experimental functions
-		self.is_enable_max_power = False # MRK_TEST: Can this be an option in future?
+###		# MRK_TEST: Flags to test experimental functions
+###		self.is_enable_max_power = False # MRK_TEST: Can this be an option in future?
 		
 		# NOTE: 2016/03/15 Toshio Moriya
 		# Due to the representation error of float number, 
@@ -219,40 +219,73 @@ class SXGuiCter(QtGui.QWidget):
 #			
 		self.installEventFilter(self) # Necessary for self.eventFilter()
 		
+		#
+		# NOTE: 2017/11/22 Toshio Moriya
+		# The following code is to support the old format of CTER. It should be removed near future
+		# 
+		# Define enumerators for the old format of CTER.
 		i_enum = -1
-		i_enum += 1; self.idx_cter_id           = i_enum # <extra> entry id
-		i_enum += 1; self.idx_cter_select       = i_enum # <extra> selected state
-		i_enum += 1; self.idx_cter_def          = i_enum # defocus [um]
-		i_enum += 1; self.idx_cter_cs           = i_enum # Cs [mm]
-		i_enum += 1; self.idx_cter_vol          = i_enum # voltage[kV]
-		i_enum += 1; self.idx_cter_apix         = i_enum # pixel size [A]
-		i_enum += 1; self.idx_cter_bfactor      = i_enum # B-factor [A^2]
-		i_enum += 1; self.idx_cter_ac           = i_enum # amplitude contrast [%]
-		i_enum += 1; self.idx_cter_astig_amp    = i_enum # astigmatism amplitude [um]
-		i_enum += 1; self.idx_cter_astig_ang    = i_enum # astigmatism angle [degree]
-		i_enum += 1; self.idx_cter_sd_def       = i_enum # std dev of defocus [um]
-		i_enum += 1; self.idx_cter_sd_ac        = i_enum # std dev of amplitude contrast [%]
-		i_enum += 1; self.idx_cter_sd_astig_amp = i_enum # std dev of ast amp [A]
-		i_enum += 1; self.idx_cter_sd_astig_ang = i_enum # std dev of ast angle [degree]
-		i_enum += 1; self.idx_cter_cv_def       = i_enum # coefficient of variation of defocus [%]
-		i_enum += 1; self.idx_cter_cv_astig_amp = i_enum # coefficient of variation of ast amp [%]
-		i_enum += 1; self.idx_cter_spectra_diff = i_enum # average of differences between with- and without-astig. experimental 1D spectra at extrema
-		i_enum += 1; self.idx_cter_error_def    = i_enum # frequency at which signal drops by 50% due to estimated error of defocus alone [1/A]
-		i_enum += 1; self.idx_cter_error_astig  = i_enum # frequency at which signal drops by 50% due to estimated error of defocus and astigmatism [1/A]
-		i_enum += 1; self.idx_cter_error_ctf    = i_enum # limit frequency by CTF error [1/A] 
-		i_enum += 1; self.idx_cter_mic_name     = i_enum # micrograph name
-#		i_enum += 1; self.idx_cter_pwrot_name   = i_enum # <extra> CTER power spectrum rotational average file name
-		if self.is_enable_max_power == True: i_enum += 1; self.idx_cter_max_power = i_enum # MRK_TEST: <extra> maximum power in experimental rotational average (with astigmatism)
-		i_enum += 1; self.n_idx_cter            = i_enum
+		i_enum += 1; self.idx_old_cter_def          = i_enum # defocus [um]
+		i_enum += 1; self.idx_old_cter_cs           = i_enum # Cs [mm]
+		i_enum += 1; self.idx_old_cter_vol          = i_enum # voltage[kV]
+		i_enum += 1; self.idx_old_cter_apix         = i_enum # pixel size [A]
+		i_enum += 1; self.idx_old_cter_bfactor      = i_enum # B-factor [A^2]
+		i_enum += 1; self.idx_old_cter_ac           = i_enum # amplitude contrast [%]
+		i_enum += 1; self.idx_old_cter_astig_amp    = i_enum # astigmatism amplitude [um]
+		i_enum += 1; self.idx_old_cter_astig_ang    = i_enum # astigmatism angle [degree]
+		i_enum += 1; self.idx_old_cter_sd_def       = i_enum # std dev of defocus [um]
+		i_enum += 1; self.idx_old_cter_sd_ac        = i_enum # std dev of amplitude contrast [%]
+		i_enum += 1; self.idx_old_cter_sd_astig_amp = i_enum # std dev of astigmatism amp [A]
+		i_enum += 1; self.idx_old_cter_sd_astig_ang = i_enum # std dev of astigmatism angle [degree]
+		i_enum += 1; self.idx_old_cter_cv_def       = i_enum # coefficient of variation of defocus [%]
+		i_enum += 1; self.idx_old_cter_cv_astig_amp = i_enum # coefficient of variation of astigmatism amp [%]
+		i_enum += 1; self.idx_old_cter_spectra_diff = i_enum # average of differences between with- and without-astig. experimental 1D spectra at extrema
+		i_enum += 1; self.idx_old_cter_error_def    = i_enum # frequency at which signal drops by 50% due to estimated error of defocus alone [1/A]
+		i_enum += 1; self.idx_old_cter_error_astig  = i_enum # frequency at which signal drops by 50% due to estimated error of defocus and astigmatism [1/A]
+		i_enum += 1; self.idx_old_cter_error_ctf    = i_enum # limit frequency by CTF error [1/A] 
+		i_enum += 1; self.idx_old_cter_mic_name     = i_enum # micrograph name
+		i_enum += 1; self.n_idx_old_cter            = i_enum
+
+		# Define enumerators for mapping of parameter value items (line edit widgets)
+		i_enum = -1
+		i_enum += 1; self.idx_cter_id               = i_enum # <extra> entry id
+		i_enum += 1; self.idx_cter_select           = i_enum # <extra> selected state
+		i_enum += 1; self.idx_cter_def              = i_enum # defocus [um]
+		i_enum += 1; self.idx_cter_cs               = i_enum # Cs [mm]
+		i_enum += 1; self.idx_cter_vol              = i_enum # voltage[kV]
+		i_enum += 1; self.idx_cter_apix             = i_enum # pixel size [A]
+		i_enum += 1; self.idx_cter_bfactor          = i_enum # B-factor [A^2]
+		i_enum += 1; self.idx_cter_total_ac         = i_enum # total amplitude contrast [%]
+		i_enum += 1; self.idx_cter_astig_amp        = i_enum # astigmatism amplitude [um]
+		i_enum += 1; self.idx_cter_astig_ang        = i_enum # astigmatism angle [degree]
+		i_enum += 1; self.idx_cter_sd_def           = i_enum # std dev of defocus [um]
+		i_enum += 1; self.idx_cter_sd_total_ac      = i_enum # std dev of total amplitude contrast [%]
+		i_enum += 1; self.idx_cter_sd_astig_amp     = i_enum # std dev of astigmatism amp [A]
+		i_enum += 1; self.idx_cter_sd_astig_ang     = i_enum # std dev of astigmatism angle [degree]
+		i_enum += 1; self.idx_cter_cv_def           = i_enum # coefficient of variation of defocus [%]
+		i_enum += 1; self.idx_cter_cv_astig_amp     = i_enum # coefficient of variation of astigmatism amp [%]
+		i_enum += 1; self.idx_cter_error_def        = i_enum # frequency at which signal drops by 50% due to estimated error of defocus alone [1/A]
+		i_enum += 1; self.idx_cter_error_astig      = i_enum # frequency at which signal drops by 50% due to estimated error of defocus and astigmatism [1/A]
+		i_enum += 1; self.idx_cter_error_ctf        = i_enum # limit frequency by CTF error [1/A] 
+		i_enum += 1; self.idx_cter_max_freq         = i_enum # visual-impression-based maximum frequency limit [A] (e.g. max frequency of relion; CCC between neighbour zero-crossing pair)
+		i_enum += 1; self.idx_cter_reserved         = i_enum # reserved spot for maximum frequency limit or error criterion. possibly originated from external program (e.g. CTF figure of merit of RELION)
+		i_enum += 1; self.idx_cter_const_ac         = i_enum # constant amplitude contrast [%]
+		i_enum += 1; self.idx_cter_phase_shift      = i_enum # phase shift [degrees]
+		i_enum += 1; self.idx_cter_mic_name         = i_enum # micrograph name
+###		if self.is_enable_max_power == True: 
+###			i_enum += 1; self.idx_cter_max_power    = i_enum # MRK_TEST: <extra> maximum power in experimental rotational average (with astigmatism)
+		i_enum += 1; self.n_idx_cter                = i_enum
 		self.n_idx_cter_extra = 2
-		if self.is_enable_max_power == True: self.n_idx_cter_extra += 1 # MRK_TEST:
+###		if self.is_enable_max_power == True: 
+###			self.n_idx_cter_extra += 1 # MRK_TEST:
 		
+		# Define enumerators for items of each entry in value_map_list 
 		i_enum = -1
 		i_enum += 1; self.idx_cter_item_label   =  i_enum
 		i_enum += 1; self.idx_cter_item_widget  =  i_enum
 		i_enum += 1; self.n_idx_cter_item       =  i_enum
 		
-		# Mapping for parameter value items (line edit widgets)
+		# Map parameter value items (line edit widgets)
 		self.value_map_list = [None] * self.n_idx_cter
 		self.value_map_list[self.idx_cter_id]           = ["CTER ID", None]
 		self.value_map_list[self.idx_cter_select]       = ["Select", None]
@@ -261,23 +294,28 @@ class SXGuiCter(QtGui.QWidget):
 		self.value_map_list[self.idx_cter_vol]          = ["Voltage [kV]", None]
 		self.value_map_list[self.idx_cter_apix]         = ["Pixel Size [A]", None]
 		self.value_map_list[self.idx_cter_bfactor]      = ["B-factor [A^2]", None]
-		self.value_map_list[self.idx_cter_ac]           = ["Amp. Contrast [%]", None]
+		self.value_map_list[self.idx_cter_total_ac]     = ["Total Amp. Contrast [%]", None]
 		self.value_map_list[self.idx_cter_astig_amp]    = ["Astig. Amp.[um]", None]
 		self.value_map_list[self.idx_cter_astig_ang]    = ["Astig. Ang.[deg]", None]
 		self.value_map_list[self.idx_cter_sd_def]       = ["Defocus SD [um]", None]
-		self.value_map_list[self.idx_cter_sd_ac]        = ["Amp. Contrast SD [%] ", None]
+		self.value_map_list[self.idx_cter_sd_total_ac]  = ["Total Amp. Contrast SD [%]", None]
 		self.value_map_list[self.idx_cter_sd_astig_amp] = ["Astig. Amp. SD [um]", None]
 		self.value_map_list[self.idx_cter_sd_astig_ang] = ["Astig. Ang. SD [deg]", None]
 		self.value_map_list[self.idx_cter_cv_def]       = ["Defocus CV [%]", None]
 		self.value_map_list[self.idx_cter_cv_astig_amp] = ["Astig. Amp. CV [%]", None]
-		self.value_map_list[self.idx_cter_spectra_diff] = ["Spectrum Diff", None]
 		self.value_map_list[self.idx_cter_error_def]    = ["Defocus Freq. Limit [1/A]", None]
 		self.value_map_list[self.idx_cter_error_astig]  = ["Astig. Freq. Limit [1/A]", None]
 		self.value_map_list[self.idx_cter_error_ctf]    = ["CTF Freq. Limit [1/A]", None]
+		self.value_map_list[self.idx_cter_max_freq]     = ["Max Freq. [A]", None]
+		self.value_map_list[self.idx_cter_reserved]     = ["Reserved", None]
+		self.value_map_list[self.idx_cter_const_ac]     = ["Const. Amp. Contrast [%]", None]
+		self.value_map_list[self.idx_cter_phase_shift]  = ["Phase Shift [deg]", None]
 		self.value_map_list[self.idx_cter_mic_name]     = ["Micrograph", None]
 #		self.value_map_list[self.idx_cter_pwrot_name]   = ["PW. Rot. File", None]
-		if self.is_enable_max_power == True: self.value_map_list[self.idx_cter_max_power] = ["Max Power", None] # MRK_TEST:
+###		if self.is_enable_max_power == True: 
+###			self.value_map_list[self.idx_cter_max_power] = ["Max Power", None] # MRK_TEST:
 		
+		# Define enumerators for curves of 1D power spectrum & CTF fitting plot
 		i_enum = -1
 		i_enum += 1; self.idx_rotinf_cter_id        = i_enum # line number == cter id
 		i_enum += 1; self.idx_rotinf_freq           = i_enum # spatial frequency (1/A)
@@ -287,67 +325,80 @@ class SXGuiCter(QtGui.QWidget):
 		i_enum += 1; self.idx_rotinf_fit_with_astig = i_enum # fitted rotational average (with astigmatism)
 		i_enum += 1; self.n_idx_rotinf              = i_enum
 		
+		# Define enumerators for mapping of sorting items (combo box widget)
 		i_enum = -1
 		i_enum += 1; self.idx_sort_id           = i_enum
 		i_enum += 1; self.idx_sort_def          = i_enum
-		i_enum += 1; self.idx_sort_ac           = i_enum
+		i_enum += 1; self.idx_sort_total_ac     = i_enum
 		i_enum += 1; self.idx_sort_astig_amp    = i_enum
 		i_enum += 1; self.idx_sort_astig_ang    = i_enum
-		i_enum += 1; self.idx_sort_sd_def       = i_enum
-		i_enum += 1; self.idx_sort_sd_ac        = i_enum
-		i_enum += 1; self.idx_sort_sd_astig_amp = i_enum
-		i_enum += 1; self.idx_sort_sd_astig_ang = i_enum
+###		i_enum += 1; self.idx_sort_sd_def       = i_enum
 		i_enum += 1; self.idx_sort_cv_def       = i_enum
+		i_enum += 1; self.idx_sort_sd_total_ac  = i_enum
+###		i_enum += 1; self.idx_sort_sd_astig_amp = i_enum
 		i_enum += 1; self.idx_sort_cv_astig_amp = i_enum
-		i_enum += 1; self.idx_sort_spectra_diff = i_enum
+		i_enum += 1; self.idx_sort_sd_astig_ang = i_enum
 		i_enum += 1; self.idx_sort_error_def    = i_enum
 		i_enum += 1; self.idx_sort_error_astig  = i_enum
 		i_enum += 1; self.idx_sort_error_ctf    = i_enum
-		if self.is_enable_max_power == True: i_enum += 1; self.idx_sort_max_power = i_enum # MRK_TEST:
+		i_enum += 1; self.idx_sort_max_freq     = i_enum
+		i_enum += 1; self.idx_sort_reserved     = i_enum
+		i_enum += 1; self.idx_sort_phase_shift  = i_enum
+###		if self.is_enable_max_power == True: 
+###			i_enum += 1; self.idx_sort_max_power = i_enum # MRK_TEST:
 		i_enum += 1; self.n_idx_sort            = i_enum
 		
+		# Define enumerators for items of each entry in sort_map_list
 		i_enum = -1
 		i_enum += 1; self.idx_sort_item_idx_cter =  i_enum
 		i_enum += 1; self.n_idx_sort_item        =  i_enum
 		
-		# Mapping for sorting item (combo box widget)
+		# Map sorting items (combo box widget)
 		# Includes mapping from idx_sort to idx_cter
 		self.sort_map_list = [None] * self.n_idx_sort
 		self.sort_map_list[self.idx_sort_id]           = [self.idx_cter_id]
 		self.sort_map_list[self.idx_sort_def]          = [self.idx_cter_def]
-		self.sort_map_list[self.idx_sort_ac]           = [self.idx_cter_ac]
+		self.sort_map_list[self.idx_sort_total_ac]     = [self.idx_cter_total_ac]
 		self.sort_map_list[self.idx_sort_astig_amp]    = [self.idx_cter_astig_amp]
 		self.sort_map_list[self.idx_sort_astig_ang]    = [self.idx_cter_astig_ang]
-		self.sort_map_list[self.idx_sort_sd_def]       = [self.idx_cter_sd_def]
-		self.sort_map_list[self.idx_sort_sd_ac]        = [self.idx_cter_sd_ac]
-		self.sort_map_list[self.idx_sort_sd_astig_amp] = [self.idx_cter_sd_astig_amp]
-		self.sort_map_list[self.idx_sort_sd_astig_ang] = [self.idx_cter_sd_astig_ang]
+###		self.sort_map_list[self.idx_sort_sd_def]       = [self.idx_cter_sd_def]
 		self.sort_map_list[self.idx_sort_cv_def]       = [self.idx_cter_cv_def]
+		self.sort_map_list[self.idx_sort_sd_total_ac]  = [self.idx_cter_sd_total_ac]
+###		self.sort_map_list[self.idx_sort_sd_astig_amp] = [self.idx_cter_sd_astig_amp]
 		self.sort_map_list[self.idx_sort_cv_astig_amp] = [self.idx_cter_cv_astig_amp]
-		self.sort_map_list[self.idx_sort_spectra_diff] = [self.idx_cter_spectra_diff]
+		self.sort_map_list[self.idx_sort_sd_astig_ang] = [self.idx_cter_sd_astig_ang]
 		self.sort_map_list[self.idx_sort_error_def]    = [self.idx_cter_error_def]
 		self.sort_map_list[self.idx_sort_error_astig]  = [self.idx_cter_error_astig]
 		self.sort_map_list[self.idx_sort_error_ctf]    = [self.idx_cter_error_ctf]
-		if self.is_enable_max_power == True: self.sort_map_list[self.idx_sort_max_power] = [self.idx_cter_max_power] # MRK_TEST:
+		self.sort_map_list[self.idx_sort_max_freq]     = [self.idx_cter_max_freq]
+		self.sort_map_list[self.idx_sort_reserved]     = [self.idx_cter_reserved]
+		self.sort_map_list[self.idx_sort_phase_shift]  = [self.idx_cter_phase_shift]
+###		if self.is_enable_max_power == True: 
+###			self.sort_map_list[self.idx_sort_max_power] = [self.idx_cter_max_power] # MRK_TEST:
 		
+		# Define enumerators for mapping of histogram items (combo box widget) and threshold setting (line edit widgets)
 		i_enum = -1
 		i_enum += 1; self.idx_hist_def          = i_enum
-		i_enum += 1; self.idx_hist_ac           = i_enum
+		i_enum += 1; self.idx_hist_total_ac     = i_enum
 		i_enum += 1; self.idx_hist_astig_amp    = i_enum
 		i_enum += 1; self.idx_hist_astig_ang    = i_enum
-		i_enum += 1; self.idx_hist_sd_def       = i_enum
-		i_enum += 1; self.idx_hist_sd_ac        = i_enum
-		i_enum += 1; self.idx_hist_sd_astig_amp = i_enum
-		i_enum += 1; self.idx_hist_sd_astig_ang = i_enum
+###		i_enum += 1; self.idx_hist_sd_def       = i_enum
 		i_enum += 1; self.idx_hist_cv_def       = i_enum
+		i_enum += 1; self.idx_hist_sd_total_ac  = i_enum
+###		i_enum += 1; self.idx_hist_sd_astig_amp = i_enum
 		i_enum += 1; self.idx_hist_cv_astig_amp = i_enum
-		i_enum += 1; self.idx_hist_spectra_diff = i_enum
+		i_enum += 1; self.idx_hist_sd_astig_ang = i_enum
 		i_enum += 1; self.idx_hist_error_def    = i_enum
 		i_enum += 1; self.idx_hist_error_astig  = i_enum
 		i_enum += 1; self.idx_hist_error_ctf    = i_enum
-		if self.is_enable_max_power == True: i_enum += 1; self.idx_hist_max_power = i_enum  # MRK_TEST:
+		i_enum += 1; self.idx_hist_max_freq     = i_enum
+		i_enum += 1; self.idx_hist_reserved     = i_enum
+		i_enum += 1; self.idx_hist_phase_shift  = i_enum
+###		if self.is_enable_max_power == True: 
+###			i_enum += 1; self.idx_hist_max_power = i_enum  # MRK_TEST:
 		i_enum += 1; self.n_idx_hist            = i_enum
 		
+		# Define enumerators for items of each entry in hist_map_list
 		i_enum = -1
 		i_enum += 1; self.idx_hist_item_idx_cter                = i_enum
 		i_enum += 1; self.idx_hist_item_idx_sort                = i_enum
@@ -363,31 +414,36 @@ class SXGuiCter(QtGui.QWidget):
 		i_enum += 1; self.idx_hist_item_apply_widget_upper      = i_enum
 		i_enum += 1; self.n_idx_hist_item                       = i_enum
 		
-		# Mapping for histogram items (combo box widget) and threshold setting (line edit widgets)
+		# Map histogram items (combo box widget) and threshold setting (line edit widgets)
 		# Includes mapping from idx_hist to idx_cter and idx_sort
 		self.hist_map_list = [None] * self.n_idx_hist
 		self.hist_map_list[self.idx_hist_def]          = [self.idx_cter_def, self.idx_sort_def, 0, 5, 0, 5, None, None, 0, 5, None, None]
-		self.hist_map_list[self.idx_hist_ac]           = [self.idx_cter_ac, self.idx_sort_ac, 0, 100, 0, 100, None, None, 0, 100, None, None]
+		self.hist_map_list[self.idx_hist_total_ac]     = [self.idx_cter_total_ac, self.idx_sort_total_ac, 0, 100, 0, 100, None, None, 0, 100, None, None]
 		self.hist_map_list[self.idx_hist_astig_amp]    = [self.idx_cter_astig_amp, self.idx_sort_astig_amp, 0, 1, 0, 1, None, None, 0, 1, None, None]
 		self.hist_map_list[self.idx_hist_astig_ang]    = [self.idx_cter_astig_ang, self.idx_sort_astig_ang, 0, 180, 0, 180, None, None, 0, 180, None, None]
-		self.hist_map_list[self.idx_hist_sd_def]       = [self.idx_cter_sd_def, self.idx_sort_sd_def, 0, 5, 0, 5, None, None, 0, 5, None, None]
-		self.hist_map_list[self.idx_hist_sd_ac]        = [self.idx_cter_sd_ac, self.idx_sort_sd_ac, 0, 100, 0, 100, None, None, 0, 100, None, None]
-		self.hist_map_list[self.idx_hist_sd_astig_amp] = [self.idx_cter_sd_astig_amp, self.idx_sort_sd_astig_amp, 0, 1, 0, 1, None, None, 0, 1, None, None]
-		self.hist_map_list[self.idx_hist_sd_astig_ang] = [self.idx_cter_sd_astig_ang, self.idx_sort_sd_astig_ang, 0, 180, 0, 180, None, None, 0, 180, None, None]
+###		self.hist_map_list[self.idx_hist_sd_def]       = [self.idx_cter_sd_def, self.idx_sort_sd_def, 0, 5, 0, 5, None, None, 0, 5, None, None]
 		self.hist_map_list[self.idx_hist_cv_def]       = [self.idx_cter_cv_def, self.idx_sort_cv_def, 0, 5, 0, 5, None, None, 0, 5, None, None]
+		self.hist_map_list[self.idx_hist_sd_total_ac]  = [self.idx_cter_sd_total_ac, self.idx_sort_sd_total_ac, 0, 100, 0, 100, None, None, 0, 100, None, None]
+###		self.hist_map_list[self.idx_hist_sd_astig_amp] = [self.idx_cter_sd_astig_amp, self.idx_sort_sd_astig_amp, 0, 1, 0, 1, None, None, 0, 1, None, None]
 		self.hist_map_list[self.idx_hist_cv_astig_amp] = [self.idx_cter_cv_astig_amp, self.idx_sort_cv_astig_amp, 0, 1, 0, 1, None, None, 0, 1, None, None]
-		self.hist_map_list[self.idx_hist_spectra_diff] = [self.idx_cter_spectra_diff, self.idx_sort_spectra_diff, -99999, 99999, -99999, 99999, None, None, -99999, 99999, None, None]
+		self.hist_map_list[self.idx_hist_sd_astig_ang] = [self.idx_cter_sd_astig_ang, self.idx_sort_sd_astig_ang, 0, 180, 0, 180, None, None, 0, 180, None, None]
 		self.hist_map_list[self.idx_hist_error_def]    = [self.idx_cter_error_def, self.idx_sort_error_def, 0, 10, 0, 10, None, None, 0, 10, None, None]
 		self.hist_map_list[self.idx_hist_error_astig]  = [self.idx_cter_error_astig, self.idx_sort_error_astig, 0, 10, 0, 10, None, None, 0, 10, None, None]
 		self.hist_map_list[self.idx_hist_error_ctf]    = [self.idx_cter_error_ctf, self.idx_sort_error_ctf, 0, 10, 0, 10, None, None, 0, 10, None, None]
-		if self.is_enable_max_power == True: self.hist_map_list[self.idx_hist_max_power] = [self.idx_cter_max_power, self.idx_sort_max_power, 0, 99999, 0, 99999, None, None, 0, 99999, None, None] # MRK_TEST:
+		self.hist_map_list[self.idx_hist_max_freq]     = [self.idx_cter_max_freq, self.idx_sort_max_freq, 0, 10, 0, 10, None, None, 0, 10, None, None]
+		self.hist_map_list[self.idx_hist_reserved]     = [self.idx_cter_reserved, self.idx_sort_reserved, 0, 10, 0, 10, None, None, 0, 10, None, None]
+		self.hist_map_list[self.idx_hist_phase_shift]  = [self.idx_cter_phase_shift, self.idx_sort_phase_shift, 0, 180, 0, 180, None, None, 0, 180, None, None]
+###		if self.is_enable_max_power == True: 
+###			sself.hist_map_list[self.idx_hist_max_power] = [self.idx_cter_max_power, self.idx_sort_max_power, 0, 99999, 0, 99999, None, None, 0, 99999, None, None] # MRK_TEST:
 		
+		# Define enumerators for threshold control selection
 		i_enum = -1
 		i_enum += 1; self.idx_threshold_control_lower     = i_enum
 		i_enum += 1; self.idx_threshold_control_upper     = i_enum
 		i_enum += 1; self.idx_threshold_control_edit_only = i_enum
 		i_enum += 1; self.n_idx_threshold_control         = i_enum
 		
+		# Define enumerators for items of each entry in threshold_control_map_list
 		i_enum = -1
 		i_enum += 1; self.idx_threshold_control_item_label = i_enum
 		i_enum += 1; self.idx_threshold_control_item_color = i_enum
@@ -399,6 +455,7 @@ class SXGuiCter(QtGui.QWidget):
 		self.threshold_control_map_list[self.idx_threshold_control_upper]     = ["Upper (red)", "red"]
 		self.threshold_control_map_list[self.idx_threshold_control_edit_only] = ["Edit Only", "black"]
 		
+		# Define enumerators for display curve selection of 1D power spectrum & CTF fitting plot
 		i_enum = -1
 		i_enum += 1; self.idx_graph_exp_no_astig   = i_enum
 		i_enum += 1; self.idx_graph_fit_no_astig   = i_enum
@@ -406,6 +463,7 @@ class SXGuiCter(QtGui.QWidget):
 		i_enum += 1; self.idx_graph_fit_with_astig = i_enum
 		i_enum += 1; self.n_idx_graph              = i_enum
 		
+		# Define enumerators for items of each entry in graph_map_list
 		i_enum = -1
 		i_enum += 1; self.idx_graph_item_name   = i_enum
 		i_enum += 1; self.idx_graph_item_label  = i_enum
@@ -413,23 +471,25 @@ class SXGuiCter(QtGui.QWidget):
 		i_enum += 1; self.idx_graph_item_widget = i_enum
 		i_enum += 1; self.n_idx_graph_item      = i_enum
 		
-		# Mapping for graph display setting (check box widgets)
+		# Map for graph display setting (check box widgets)
 		self.graph_map_list = [None] * self.n_idx_graph
 		self.graph_map_list[self.idx_graph_exp_no_astig]   = ["exp_no_astig", "Exp. No Astig (Black)", self.idx_rotinf_exp_no_astig, None]
 		self.graph_map_list[self.idx_graph_fit_no_astig]   = ["fit_no_astig", "Fit. No Astig (Blue)", self.idx_rotinf_fit_no_astig, None]
 		self.graph_map_list[self.idx_graph_exp_with_astig] = ["exp_with_astig", "Exp. with Astig (Red)", self.idx_rotinf_exp_with_astig, None]
 		self.graph_map_list[self.idx_graph_fit_with_astig] = ["fit_with_astig", "Fit. with Astig (Green)", self.idx_rotinf_fit_with_astig, None]
 		
+		# Define enumerators for threshold apply status
 		i_enum = -1
 		i_enum += 1; self.idx_thresholdset_unapplied = i_enum
 		i_enum += 1; self.idx_thresholdset_applied   = i_enum
 		i_enum += 1; self.n_idx_thresholdset         = i_enum
 		
+		# Define enumerators for items of each entry in thresholdset_map_list
 		i_enum = -1
 		i_enum += 1; self.idx_thresholdset_item_label  = i_enum
 		i_enum += 1; self.n_idx_thresholdset_item      = i_enum
 		
-		# Mapping for threshold set (combo box widget)
+		# Map for threshold set (combo box widget)
 		self.thresholdset_map_list = [None] * self.n_idx_thresholdset
 		self.thresholdset_map_list[self.idx_thresholdset_unapplied] = ["Unapplied"]
 		self.thresholdset_map_list[self.idx_thresholdset_applied]   = ["Applied"]
@@ -440,18 +500,19 @@ class SXGuiCter(QtGui.QWidget):
 		self.cter_micthumb_file_path = None
 		self.cter_pwrot_file_path    = None
 		
-		self.curimgmicthumbdisplay=True
-		self.curplotfixscale=5
-		self.curentry=None
-		self.cursort=0
-		self.cursortoder=False
+		self.curplotrotavgdisplay = True
+		self.curimgmicthumbdisplay = True
+		self.curplotfixscale = 5
+		self.curentry = None
+		self.cursort = 0
+		self.cursortoder = False
 		self.cursortselect = False
-		self.curhist=0
-		self.curhistdisable=False
+		self.curhist = 0
+		self.curhistdisable = False
 		self.curthresholdcontrol = 0
-		self.curentryperbin=10
+		self.curentryperbin = 10
 		self.cursyncsort = False
-		self.curthresholdset=0
+		self.curthresholdset = 0
 		
 		self.child_status_list = [] 
 		
@@ -516,14 +577,15 @@ class SXGuiCter(QtGui.QWidget):
 		col_span_edit = 2
 		col_span_sublabel = 2
 		col_span_subedit = 1
-		assert(col_span_label + col_span_edit == col_span_sublabel + col_span_subedit) # MRK_DEBUG
+		assert col_span_label + col_span_edit == col_span_sublabel + col_span_subedit, "MRK_DEBUG"
 		col_span = col_span_label + col_span_edit
 		grid_row = 0
 		
 		labelwidth=70
+		editwidth=100
 		sublabelwidth=140
 		
-		self.pbopencter=QtGui.QPushButton("Open CTER CTF file")
+		self.pbopencter=QtGui.QPushButton("Open CTER partres file")
 		self.gbl.addWidget(self.pbopencter,grid_row,grid_col,1,col_span)
 		grid_row += 1
 		
@@ -542,6 +604,7 @@ class SXGuiCter(QtGui.QWidget):
 		self.vbnentry=ValBox(self,(0,10000),None,0)
 		self.vbnentry.setEnabled(False)
 		self.vbnentry.intonly=True
+		self.vbnentry.text.setStyleSheet("color: rgb(127,127,127);")
 		self.gbl.addWidget(self.vbnentry,grid_row,grid_col+col_span_label,1,col_span_edit)
 		grid_row+=1
 		
@@ -552,6 +615,7 @@ class SXGuiCter(QtGui.QWidget):
 		self.vbuncheckcounts=ValBox(self,(0,1000000),None,0)
 		self.vbuncheckcounts.setEnabled(False)
 		self.vbuncheckcounts.intonly=True
+		self.vbuncheckcounts.text.setStyleSheet("color: rgb(0,0,0);")
 		self.gbl.addWidget(self.vbuncheckcounts,grid_row,grid_col+col_span_label,1,col_span_edit)
 		grid_row+=1
 		
@@ -561,6 +625,7 @@ class SXGuiCter(QtGui.QWidget):
 		self.gbl.addWidget(temp_label,grid_row,grid_col,1,col_span_label)
 		self.vbuncheckratio=ValBox(self,(0,1.0),None,0)
 		self.vbuncheckratio.setEnabled(False)
+		self.vbuncheckratio.text.setStyleSheet("color: rgb(0,0,0);")
 		self.gbl.addWidget(self.vbuncheckratio,grid_row,grid_col+col_span_label,1,col_span_edit)
 		grid_row+=1
 		
@@ -572,32 +637,38 @@ class SXGuiCter(QtGui.QWidget):
 		self.gbl.addWidget(temp_label,grid_row,grid_col,1,col_span)
 		grid_row += 1
 		
-		self.add_value_widget(self.idx_cter_vol,0,500,grid_row,grid_col,col_span_label,col_span_edit,labelwidth=labelwidth)
+		self.add_value_widget(self.idx_cter_vol,0,500,grid_row,grid_col,col_span_label,col_span_edit, style_sheet = "color: rgb(127,127,127);", labelwidth=labelwidth)
 		grid_row+=1
 		
-		self.add_value_widget(self.idx_cter_cs,0,5,grid_row,grid_col,col_span_label,col_span_edit,labelwidth=labelwidth)
+		self.add_value_widget(self.idx_cter_cs,0,5,grid_row,grid_col,col_span_label,col_span_edit, style_sheet = "color: rgb(127,127,127);",labelwidth=labelwidth)
 		grid_row+=1
 		
-###		self.add_value_widget(self.idx_cter_ac,0,100,grid_row,grid_col,col_span_label,col_span_edit,labelwidth=labelwidth)
-###		grid_row+=1
-		
-		self.add_value_widget(self.idx_cter_apix,0,500,grid_row,grid_col,col_span_label,col_span_edit,labelwidth=labelwidth)
+		self.add_value_widget(self.idx_cter_apix,0,500,grid_row,grid_col,col_span_label,col_span_edit, style_sheet = "color: rgb(127,127,127);",labelwidth=labelwidth)
 		grid_row+=1
 		
 		# Make space
 		grid_row+=1
 		
-		temp_label=QtGui.QLabel("<b>Display Micrograph:</b>",self)
+		temp_label=QtGui.QLabel("<b>Display Windows:</b>",self)
 		temp_label.setAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
 		self.gbl.addWidget(temp_label,grid_row,grid_col,1,col_span)
 		grid_row += 1
 		
-		temp_label=QtGui.QLabel("Open Window",self)
+		temp_label=QtGui.QLabel("Rot. Avg. Plot",self)
+		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
+		temp_label.setMinimumSize(QtCore.QSize(sublabelwidth,20))
+		self.gbl.addWidget(temp_label,grid_row,grid_col, 1, col_span_sublabel)
+		self.cbrotavgdisplay=CheckBox(None,None,self.curplotrotavgdisplay)
+		# self.cbrotavgdisplay.setEnabled(self.cbrotavgdisplay)
+		self.gbl.addWidget(self.cbrotavgdisplay,grid_row,grid_col+col_span_sublabel,1,col_span_subedit)
+		grid_row+=1
+		
+		temp_label=QtGui.QLabel("Micrograph Thumbnail",self)
 		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
 		temp_label.setMinimumSize(QtCore.QSize(sublabelwidth,20))
 		self.gbl.addWidget(temp_label,grid_row,grid_col, 1, col_span_sublabel)
 		self.cbmicthumbdisplay=CheckBox(None,None,self.curimgmicthumbdisplay)
-#		self.cbmicthumbdisplay.setEnabled(False)
+		# self.cbmicthumbdisplay.setEnabled(self.curimgmicthumbdisplay)
 		self.gbl.addWidget(self.cbmicthumbdisplay,grid_row,grid_col+col_span_sublabel,1,col_span_subedit)
 		grid_row+=1
 		
@@ -662,7 +733,7 @@ class SXGuiCter(QtGui.QWidget):
 		col_span_2nd_subedit = col_span_1st_subedit
 		col_span_3rd_sublabel = col_span_1st_sublabel
 		col_span_3rd_subedit = col_span_1st_subedit
-		assert(col_span_1st_label + col_span_1st_edit == col_span_1st_subspace + col_span_1st_sublabel + col_span_1st_subedit)
+		assert col_span_1st_label + col_span_1st_edit == col_span_1st_subspace + col_span_1st_sublabel + col_span_1st_subedit, "MRK_DEBUG"
 		col_span_1st = col_span_1st_label + col_span_1st_edit
 		col_span_1st_sub = col_span_1st_sublabel + col_span_1st_subedit
 		col_span_2nd = 2
@@ -675,7 +746,7 @@ class SXGuiCter(QtGui.QWidget):
 		grid_col_2nd = grid_col_1st + col_span_1st
 		grid_col_3rd = grid_col_2nd + col_span_2nd
 		
-		labelwidth=160
+		labelwidth=180 # labelwidth=160
 		editwidth=100
 		sublabelwidth=editwidth
 		
@@ -697,6 +768,8 @@ class SXGuiCter(QtGui.QWidget):
 		self.ssortedid=ValBox(self,(0,10000),None,0)
 		self.ssortedid.setEnabled(False)
 		self.ssortedid.intonly=True
+		self.ssortedid.text.setStyleSheet("color: rgb(0,0,0);")
+		self.ssortedid.text.setMinimumSize(QtCore.QSize(editwidth,0))
 		self.gbl.addWidget(self.ssortedid,grid_row,grid_col_1st+col_span_1st_label,1,col_span_1st_edit)
 		grid_row+=1
 		
@@ -712,7 +785,10 @@ class SXGuiCter(QtGui.QWidget):
 		self.hist_map_list[0][self.idx_hist_item_unapply_widget_lower].setEnabled(True)
 		# self.hist_map_list[0][self.idx_hist_item_unapply_widget_upper].setEnabled(True)
 		
-		self.add_value_widget(self.idx_cter_bfactor,0,1600,grid_row,grid_col_1st,col_span_1st_label,col_span_1st_edit,labelwidth=labelwidth,editwidth=editwidth)
+		self.add_value_widget(self.idx_cter_const_ac,0,1600,grid_row,grid_col_1st,col_span_1st_label,col_span_1st_edit, style_sheet = "color: rgb(127,127,127);",labelwidth=labelwidth,editwidth=editwidth)
+		grid_row+=1
+		
+		self.add_value_widget(self.idx_cter_bfactor,0,1600,grid_row,grid_col_1st,col_span_1st_label,col_span_1st_edit, style_sheet = "color: rgb(127,127,127);",labelwidth=labelwidth,editwidth=editwidth)
 		grid_row+=1
 		
 		# make space
@@ -837,8 +913,9 @@ class SXGuiCter(QtGui.QWidget):
 		# --------------------------------------------------------------------------------
 		# Set signal handler
 		# --------------------------------------------------------------------------------
-		QtCore.QObject.connect(self.pbopencter, QtCore.SIGNAL("clicked(bool)"),self.openCter)
+		QtCore.QObject.connect(self.pbopencter, QtCore.SIGNAL("clicked(bool)"),self.openCterPartres)
 		
+		QtCore.QObject.connect(self.cbrotavgdisplay, QtCore.SIGNAL("valueChanged"),self.newPlotDisplay)
 		QtCore.QObject.connect(self.cbmicthumbdisplay, QtCore.SIGNAL("valueChanged"),self.newMicThumbDisplay)
 		
 		for idx_graph in xrange(self.n_idx_graph):
@@ -958,21 +1035,21 @@ class SXGuiCter(QtGui.QWidget):
 #			self.wplotrotavgcoarse.show()
 		
 		### This section is responsible for background updates
-		self.busy=False
-#		self.needupdate=True
-		self.needredisp=False
-#		self.procthread=None
-#		self.errors=None # used to communicate errors back from the reprocessing thread
+		self.busy = False
+#		self.needupdate = True
+		self.needredisp = False
+#		self.procthread = None
+#		self.errors = None # used to communicate errors back from the reprocessing thread
 		
 		self.timer=QTimer()
 		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeOut)
 		self.timer.start(100)
 		
-#		# Finally, read CTER CTF file if necessary
+#		# Finally, read CTER partres file if necessary
 #		if cter_ctf_file != None:
-#			self.readCterCtfFile(os.path.relpath(cter_ctf_file))
+#			self.readCterPartresFile(os.path.relpath(cter_ctf_file))
 		
-	def add_value_widget(self, idx_cter, val_min, val_max, grid_row, grid_col, col_span_label, col_span_edit, intonly = False, labelwidth = 80, editwidth = 80):
+	def add_value_widget(self, idx_cter, val_min, val_max, grid_row, grid_col, col_span_label, col_span_edit, intonly = False, style_sheet = "color: rgb(0,0,0);", labelwidth = 80, editwidth = 80):
 		param_label = self.value_map_list[idx_cter][self.idx_cter_item_label]
 		temp_label=QtGui.QLabel(param_label,self)
 		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
@@ -982,6 +1059,7 @@ class SXGuiCter(QtGui.QWidget):
 		val_widget = ValBox(self,(val_min,val_max),None,val_default)
 		val_widget.setEnabled(False)
 		val_widget.intonly=intonly
+		val_widget.text.setStyleSheet(style_sheet)
 		val_widget.text.setMinimumSize(QtCore.QSize(editwidth,0))
 		self.gbl.addWidget(val_widget,grid_row,grid_col+col_span_label,1,col_span_edit)
 		self.value_map_list[idx_cter][self.idx_cter_item_widget] = val_widget
@@ -1014,50 +1092,48 @@ class SXGuiCter(QtGui.QWidget):
 		self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_upper].text.setMinimumSize(QtCore.QSize(editwidth,0))
 		self.gbl.addWidget(self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_upper],grid_row,grid_col_3rd+1)
 	
-	def readCterCtfFile(self, file_path):
-		"""Read all entries from a CTER CTF file into the list box"""
+	def readCterPartresFile(self, file_path):
+		"""Read all entries from a CTER partres file into the list box"""
 		
 		if not os.path.exists(file_path):
-			QtGui.QMessageBox.warning(None,"Warning","Can not find CTER CTF File (%s). Please check the file path." % (file_path))
+			QtGui.QMessageBox.warning(None,"Warning","Can not find CTER partres file (%s). Please check the file path." % (file_path))
 			return
 		
 		if os.path.basename(file_path).find("partres") == -1:
-			QtGui.QMessageBox.warning(None,"Warning","Invalid file name for CTER CTF File (%s). The file name must contain \"partres\"." % (file_path))
+			QtGui.QMessageBox.warning(None,"Warning","Invalid file name for CTER partres file (%s). The file name must contain \"partres\"." % (file_path))
 			return
 		
 		if file_path[-1*len(".txt"):] != ".txt":
-			QtGui.QMessageBox.warning(None,"Warning","Invalid file extension for CTER CTF File (%s). The file extension must be \".txt\"." % (file_path))
+			QtGui.QMessageBox.warning(None,"Warning","Invalid file extension for CTER partres file (%s). The file extension must be \".txt\"." % (file_path))
 			return
-		
-#		if os.path.dirname(file_path)[-1*len("partres"):] != "partres":
-#			QtGui.QMessageBox.warning(None,"Warning","Invalid file path for CTER CTF File (%s). The file must be in \"partres\" directory." % (file_path))
-#			return
 		
 		new_entry_list = read_text_row(file_path)
 		if len(new_entry_list) == 0:
-			QtGui.QMessageBox.warning(self, "Warning", "Specified CTER CTF file (%s) does not contain any entry. Please check the file." % (file_path))
+			QtGui.QMessageBox.warning(self, "Warning", "Specified CTER partres file (%s) does not contain any entry. Please check the file." % (file_path))
 			return
-		assert(len(new_entry_list) > 0)
+		assert len(new_entry_list) > 0, "MRK_DEBUG"
 		
 		# NOTE: 2017/03/20 Toshio Moriya
 		# The following code is to support the old format of CTER. It should be removed near future
-		if len(new_entry_list[0]) == self.n_idx_cter - self.n_idx_cter_extra - 1:
-			QtGui.QMessageBox.warning(None,"Warning","The format of CTER CTF File (%s) might be old. We will stop supporting this format near future. Please consider rerun CTER." % (file_path))
+		
+		if len(new_entry_list[0]) == self.n_idx_old_cter:
+			QtGui.QMessageBox.warning(None,"Warning","The format of CTER partres file (%s) might be old. We will stop supporting this format near future. Please consider rerun CTER." % (file_path))
 			# Continue processing for now (2017/03/20 Toshio Moriya)
 		elif len(new_entry_list[0]) != self.n_idx_cter - self.n_idx_cter_extra:
-			QtGui.QMessageBox.warning(None,"Warning","The number of columns (%d) has to be %d in %s" % (len(new_entry_list[0]), self.n_idx_cter - self.n_idx_cter_extra, file_path))
+			QtGui.QMessageBox.warning(None,"Warning","The number of columns (%d) has to be %d in %s." % (len(new_entry_list[0]), self.n_idx_cter - self.n_idx_cter_extra, file_path))
 			return
 		
-		cter_pwrot_dir = os.path.join(os.path.dirname(file_path), "pwrot")
-		if not os.path.exists(cter_pwrot_dir):
-			QtGui.QMessageBox.warning(self, "Warning", "Can not find \"%s\" sub-directory associated with specified CTER CTF file (%s). Please check your project directory." % (cter_pwrot_dir, file_path))
-			return
+		self.busy = True
 		
-		# print "MRK_DEBUG: Detected %s entries in %s" % (len(new_entry_list), file_path)
-		# print "MRK_DEBUG: Num. of Columns is %d in %s" % (len(new_entry_list[0]), file_path)
+		# print("MRK_DEBUG: ")
+		# print("MRK_DEBUG: Detected %s entries in %s" % (len(new_entry_list), file_path))
+		# print("MRK_DEBUG: Num. of Columns is %d in %s" % (len(new_entry_list[0]), file_path))
+		# print("MRK_DEBUG: ")
 		for cter_id in xrange(len(new_entry_list)):
-			# NOTE: 2017/03/20 Toshio Moriya
+			#
+			# NOTE: 2017/11/22 Toshio Moriya
 			# This CTEF file format is the latest
+			#
 			if len(new_entry_list[cter_id]) == self.n_idx_cter - self.n_idx_cter_extra:
 				# Add extra items first to make sure indices match
 				extended_entry = []
@@ -1065,83 +1141,121 @@ class SXGuiCter(QtGui.QWidget):
 				extended_entry = extended_entry + [1]                                    # self.idx_cter_select  <extra> selected state
 				
 				extended_entry = extended_entry + new_entry_list[cter_id]                # original entry
-#				extended_entry = extended_entry + [""]                                   # self.idx_cter_pwrot_name, <extra> CTER power spectrum rotational average file name
-#				extended_entry = extended_entry + [0.5]                                  # self.idx_cter_error_ctf, <extra> limit frequency by CTF error 
-				if self.is_enable_max_power == True: extended_entry = extended_entry + [0.0] # MRK_TEST: self.idx_cter_max_power, <extra> maximum power in experimental rotational average (with astigmatism)
+				
+###				if self.is_enable_max_power == True: 
+###					extended_entry = extended_entry + [0.0] # MRK_TEST: self.idx_cter_max_power, <extra> maximum power in experimental rotational average (with astigmatism)
 				
 				# Store the extended entry to entry list
 				new_entry_list[cter_id] = extended_entry
 				
-#				# Cut off frequency components higher than CTF limit 
-#				cter_box_size = 512 # NOTE: Toshio Moriya 2016/03/15: This is temporary. Remove this after adding CTF limit to cter output file
-#				cter_def = new_entry_list[cter_id][self.idx_cter_def]
-#				cter_cs = new_entry_list[cter_id][self.idx_cter_cs]
-#				cter_vol = new_entry_list[cter_id][self.idx_cter_vol]
-#				cter_apix = new_entry_list[cter_id][self.idx_cter_apix]
-#				cter_limit_ab_freq, cter_limit_freq = ctflimit(cter_box_size, cter_def, cter_cs, cter_vol, cter_apix)
-#				# NOTE: 2015/12/16 Toshio Moriya
-#				# Limiting_frequency[cycle/A]: xr[cycle/A]. Max is Nyquist frequency = 1.0[cycle]/(2*apix[A/pixel]). <UNIT: [cycle/(A/pixel)/[pixel])] => [(cycle*pixel)/(A*pixel] => [cycle/A]>
-#				# limiting_period(Angstrom resolution)[A/cycle]: 1.0/xr[cycle/A]. Min is Nyquist period = (2*apix[A/pixel]). <UNIT: [1/(cycle/A)] = [A/cycle]>
-#				# Width of Fourier pixel [pixel/A]: fwpix = 1.0[pixel]/(2*apix[A/pixel])/box_half[pixel] = 1[pixel]/fullsize[A]) <UNIT: [pixel/(A/pixel)/(pixel)] = [pixel*(pixel/A)*(1/pixel) = [pixel/A]>
-#				# Limiting_absolute_frequency [cycle/pixel] int(xr/fwpix+0.5) = <Unit:[(cycle/A)/(pixel/A)] = [(cycle/A)*(A/pixel)] = [cycle/pixel]>
-#				# return  Limiting_abs_frequency [cycle/pixel]Limiting_frequency[cycle/A] <= int(xr/fwpix+0.5),xr
-#				new_entry_list[cter_id][self.idx_cter_error_ctf] = cter_limit_freq
-				
-				# Set associated pwrot file path 
-#				assert os.path.dirname(file_path).find("partres") != -1 # MRK_DEBUG
-#				cter_pwrot_dir = os.path.dirname(file_path).replace("partres", "pwrot")
-#				cter_pwrot_dir = os.path.join(os.path.dirname(file_path), "pwrot")
-#				new_cter_pwrot_file_path = os.path.join(cter_pwrot_dir, "rotinf%04d.txt" % new_entry_list[cter_id][self.idx_cter_id])
-#				new_entry_list[cter_id][self.idx_cter_pwrot_name] = new_cter_pwrot_file_path
-				
-				# MRK_TEST: Set max value of pwrot related to this micrograph
-				if self.is_enable_max_power == True: # MRK_TEST: 
-					new_cter_mic_file_path = new_entry_list[cter_id][self.idx_cter_mic_name]
-#					print "MRK_DEBUG: new_cter_mic_file_path := ", new_cter_mic_file_path
-					mic_basename_root = os.path.splitext(os.path.basename(new_cter_mic_file_path))
-#					print "MRK_DEBUG: mic_basename_root := ", mic_basename_root
-					new_cter_pwrot_file_path = os.path.join(os.path.dirname(file_path), "pwrot", "%s_rotinf.txt" % (mic_basename_root))
-#					print "MRK_DEBUG: new_cter_pwrot_file_path := ", new_cter_pwrot_file_path
-					new_rotinf_table = read_text_file(new_cter_pwrot_file_path, ncol=-1) # MRK_TEST: 
-					new_entry_list[cter_id][self.idx_cter_max_power] = max(new_rotinf_table[self.idx_rotinf_exp_with_astig]) # MRK_TEST: 
+###				# MRK_TEST: Set max value of pwrot related to this micrograph
+###				if self.is_enable_max_power == True: # MRK_TEST: 
+###					new_cter_mic_file_path = new_entry_list[cter_id][self.idx_cter_mic_name]
+###					# print "MRK_DEBUG: new_cter_mic_file_path := ", new_cter_mic_file_path
+###					mic_basename_root = os.path.splitext(os.path.basename(new_cter_mic_file_path))
+###					# print "MRK_DEBUG: mic_basename_root := ", mic_basename_root
+###					new_cter_pwrot_file_path = os.path.join(os.path.dirname(file_path), "pwrot", "%s_rotinf.txt" % (mic_basename_root))
+###					# print "MRK_DEBUG: new_cter_pwrot_file_path := ", new_cter_pwrot_file_path
+###					new_rotinf_table = read_text_file(new_cter_pwrot_file_path, ncol=-1) # MRK_TEST: 
+###					new_entry_list[cter_id][self.idx_cter_max_power] = max(new_rotinf_table[self.idx_rotinf_exp_with_astig]) # MRK_TEST: 
 				
 				# Always set selection state to 1 (selected)
 				new_entry_list[cter_id][self.idx_cter_select] = 1
-			# NOTE: 2017/03/20 Toshio Moriya
+			#
+			# NOTE: 2017/11/22 Toshio Moriya
 			# The following code is to support the old format of CTER. It should be removed near future
-			elif len(new_entry_list[cter_id]) == self.n_idx_cter - self.n_idx_cter_extra - 1:
+			# 
+			elif len(new_entry_list[cter_id]) == self.n_idx_old_cter:
+				# assume amplitude amplitude contrast is total amplitude constrast in [%], estimated as variable Volta phase shift. Conver it to [deg].
+				# Also, assuming constant amplitude contrast is zero since there is no information available in the old format.
+				from morphology import ampcont2angle
+				total_phase_shift = ampcont2angle(new_entry_list[cter_id][self.idx_old_cter_ac])
+				
 				# Add extra items first to make sure indices match
 				extended_entry = []
-				extended_entry = extended_entry + [cter_id]                              # self.idx_cter_id , <extra> entry id
-				extended_entry = extended_entry + [1]                                    # self.idx_cter_select  <extra> selected state
+				extended_entry = extended_entry + [cter_id]                                # self.idx_cter_id , <extra> entry id
+				extended_entry = extended_entry + [1]                                      # self.idx_cter_select  <extra> selected state
 				
-				# original entry
-				for original_entry_id in xrange(0, self.idx_cter_sd_ac): # From self.idx_cter_def to self.idx_cter_sd_def
-					extended_entry = extended_entry + [new_entry_list[cter_id][original_entry_id]]
-				extended_entry = extended_entry + [0.0] # self.idx_cter_sd_ac
-				for original_entry_id in xrange(self.idx_cter_sd_ac, len(new_entry_list[0])): # From self.idx_cter_sd_astig_amp to self.idx_cter_mic_name 
-					extended_entry = extended_entry + [new_entry_list[cter_id][original_entry_id]]
-				
-#				extended_entry = extended_entry + [""]                                   # self.idx_cter_pwrot_name, <extra> CTER power spectrum rotational average file name
-#				extended_entry = extended_entry + [0.5]                                  # self.idx_cter_error_ctf, <extra> limit frequency by CTF error 
-				if self.is_enable_max_power == True: extended_entry = extended_entry + [0.0] # MRK_TEST: self.idx_cter_max_power, <extra> maximum power in experimental rotational average (with astigmatism)
+				extended_entry = extended_entry + [new_entry_list[cter_id][self.idx_old_cter_def]]          # self.idx_cter_def
+				extended_entry = extended_entry + [new_entry_list[cter_id][self.idx_old_cter_cs]]           # self.idx_cter_cs
+				extended_entry = extended_entry + [new_entry_list[cter_id][self.idx_old_cter_vol]]          # self.idx_cter_vol
+				extended_entry = extended_entry + [new_entry_list[cter_id][self.idx_old_cter_apix]]         # self.idx_cter_apix
+				extended_entry = extended_entry + [new_entry_list[cter_id][self.idx_old_cter_bfactor]]      # self.idx_cter_bfactor
+				extended_entry = extended_entry + [new_entry_list[cter_id][self.idx_old_cter_ac]]           # self.idx_cter_total_ac
+				extended_entry = extended_entry + [new_entry_list[cter_id][self.idx_old_cter_astig_amp]]    # self.idx_cter_astig_amp
+				extended_entry = extended_entry + [new_entry_list[cter_id][self.idx_old_cter_astig_ang]]    # self.idx_cter_astig_ang
+				extended_entry = extended_entry + [new_entry_list[cter_id][self.idx_old_cter_sd_def]]       # self.idx_cter_sd_def
+				extended_entry = extended_entry + [new_entry_list[cter_id][self.idx_old_cter_sd_ac]]        # self.idx_cter_sd_total_ac
+				extended_entry = extended_entry + [new_entry_list[cter_id][self.idx_old_cter_sd_astig_amp]] # self.idx_cter_sd_astig_amp
+				extended_entry = extended_entry + [new_entry_list[cter_id][self.idx_old_cter_sd_astig_amp]] # self.idx_cter_sd_astig_ang
+				extended_entry = extended_entry + [new_entry_list[cter_id][self.idx_old_cter_cv_def]]       # self.idx_cter_cv_def 
+				extended_entry = extended_entry + [new_entry_list[cter_id][self.idx_old_cter_cv_astig_amp]] # self.idx_cter_cv_astig_amp 
+				# Ignore self.idx_old_cter_spectra_diff
+				extended_entry = extended_entry + [new_entry_list[cter_id][self.idx_old_cter_error_def]]    # self.idx_cter_error_def 
+				extended_entry = extended_entry + [new_entry_list[cter_id][self.idx_old_cter_error_astig]]  # self.idx_cter_error_astig 
+				extended_entry = extended_entry + [new_entry_list[cter_id][self.idx_old_cter_error_ctf]]    # self.idx_cter_error_ctf 
+				extended_entry = extended_entry + [0.5/new_entry_list[cter_id][self.idx_old_cter_apix]]     # self.idx_cter_max_freq. Set to Nyquist frequency.
+				extended_entry = extended_entry + [0.0]                                                     # self.idx_cter_reserved
+				extended_entry = extended_entry + [0.0]                                                     # self.idx_cter_const_ac 
+				extended_entry = extended_entry + [total_phase_shift]                                       # self.idx_cter_phase_shift 
+				extended_entry = extended_entry + [new_entry_list[cter_id][self.idx_old_cter_mic_name ]]    # self.idx_cter_mic_name 
 				
 				# Store the extended entry to entry list
 				new_entry_list[cter_id] = extended_entry
 				
-				# MRK_TEST: Set max value of pwrot related to this micrograph
-				if self.is_enable_max_power == True: # MRK_TEST: 
-					new_cter_mic_file_path = new_entry_list[cter_id][self.idx_cter_mic_name]
-#					print "MRK_DEBUG: new_cter_mic_file_path := ", new_cter_mic_file_path
-					mic_basename_root = os.path.splitext(os.path.basename(new_cter_mic_file_path))
-#					print "MRK_DEBUG: mic_basename_root := ", mic_basename_root
-					new_cter_pwrot_file_path = os.path.join(os.path.dirname(file_path), "pwrot", "%s_rotinf.txt" % (mic_basename_root))
-#					print "MRK_DEBUG: new_cter_pwrot_file_path := ", new_cter_pwrot_file_path
-					new_rotinf_table = read_text_file(new_cter_pwrot_file_path, ncol=-1) # MRK_TEST: 
-					new_entry_list[cter_id][self.idx_cter_max_power] = max(new_rotinf_table[self.idx_rotinf_exp_with_astig]) # MRK_TEST: 
+###				# MRK_TEST: Set max value of pwrot related to this micrograph
+###				if self.is_enable_max_power == True: # MRK_TEST: 
+###					new_cter_mic_file_path = new_entry_list[cter_id][self.idx_cter_mic_name]
+###					# print "MRK_DEBUG: new_cter_mic_file_path := ", new_cter_mic_file_path
+###					mic_basename_root = os.path.splitext(os.path.basename(new_cter_mic_file_path))
+###					# print "MRK_DEBUG: mic_basename_root := ", mic_basename_root
+###					new_cter_pwrot_file_path = os.path.join(os.path.dirname(file_path), "pwrot", "%s_rotinf.txt" % (mic_basename_root))
+###					# print "MRK_DEBUG: new_cter_pwrot_file_path := ", new_cter_pwrot_file_path
+###					new_rotinf_table = read_text_file(new_cter_pwrot_file_path, ncol=-1) # MRK_TEST: 
+###					new_entry_list[cter_id][self.idx_cter_max_power] = max(new_rotinf_table[self.idx_rotinf_exp_with_astig]) # MRK_TEST: 
 				
 				# Always set selection state to 1 (selected)
 				new_entry_list[cter_id][self.idx_cter_select] = 1
+			#
+			# NOTE: 2017/11/22 Toshio Moriya
+			# Removed following code because it is too old at this point.
+			#
+			# NOTE: 2017/03/20 Toshio Moriya
+			# The following code is to support the old format of CTER. It should be removed near future
+			#
+			# elif len(new_entry_list[cter_id]) == self.n_idx_cter - self.n_idx_cter_extra - 1:
+			# 	# Add extra items first to make sure indices match
+			# 	extended_entry = []
+			# 	extended_entry = extended_entry + [cter_id]                              # self.idx_cter_id , <extra> entry id
+			# 	extended_entry = extended_entry + [1]                                    # self.idx_cter_select  <extra> selected state
+			# 	
+			# 	# original entry
+			# 	for original_entry_id in xrange(0, self.idx_cter_sd_total_ac): # From self.idx_cter_def to self.idx_cter_sd_def
+			# 		extended_entry = extended_entry + [new_entry_list[cter_id][original_entry_id]]
+			# 	extended_entry = extended_entry + [0.0] # self.idx_cter_sd_total_ac
+			# 	for original_entry_id in xrange(self.idx_cter_sd_total_ac, len(new_entry_list[0])): # From self.idx_cter_sd_astig_amp to self.idx_cter_mic_name 
+			# 		extended_entry = extended_entry + [new_entry_list[cter_id][original_entry_id]]
+			# 	
+#			# 	extended_entry = extended_entry + [""]                                   # self.idx_cter_pwrot_name, <extra> CTER power spectrum rotational average file name
+#			# 	extended_entry = extended_entry + [0.5]                                  # self.idx_cter_error_ctf, <extra> limit frequency by CTF error 
+			# 	if self.is_enable_max_power == True: extended_entry = extended_entry + [0.0] # MRK_TEST: self.idx_cter_max_power, <extra> maximum power in experimental rotational average (with astigmatism)
+			# 	
+			# 	# Store the extended entry to entry list
+			# 	new_entry_list[cter_id] = extended_entry
+			# 	
+			# 	# MRK_TEST: Set max value of pwrot related to this micrograph
+			# 	if self.is_enable_max_power == True: # MRK_TEST: 
+			# 		new_cter_mic_file_path = new_entry_list[cter_id][self.idx_cter_mic_name]
+#			# 		print "MRK_DEBUG: new_cter_mic_file_path := ", new_cter_mic_file_path
+			# 		mic_basename_root = os.path.splitext(os.path.basename(new_cter_mic_file_path))
+#			# 		print "MRK_DEBUG: mic_basename_root := ", mic_basename_root
+			# 		new_cter_pwrot_file_path = os.path.join(os.path.dirname(file_path), "pwrot", "%s_rotinf.txt" % (mic_basename_root))
+#			# 		print "MRK_DEBUG: new_cter_pwrot_file_path := ", new_cter_pwrot_file_path
+			# 		new_rotinf_table = read_text_file(new_cter_pwrot_file_path, ncol=-1) # MRK_TEST: 
+			# 		new_entry_list[cter_id][self.idx_cter_max_power] = max(new_rotinf_table[self.idx_rotinf_exp_with_astig]) # MRK_TEST: 
+			# 	
+			# 	# Always set selection state to 1 (selected)
+			# 	new_entry_list[cter_id][self.idx_cter_select] = 1
 			else: 
 				assert False, "MRK_DEBUG: Unreachable code! Found Invalid number of columns (%d) in %s" % (len(new_entry_list[0]), file_path)
 		
@@ -1171,6 +1285,23 @@ class SXGuiCter(QtGui.QWidget):
 			self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_lower].setValue(val_min)
 			# self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_upper].setRange(val_min, val_max)
 			self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_upper].setValue(val_max)
+			
+			idx_sort = self.hist_map_list[idx_hist][self.idx_hist_item_idx_sort]
+			if val_min == val_max:
+				self.shist.model().item(idx_hist).setEnabled(False)
+				self.ssort.model().item(idx_sort).setEnabled(False)
+				self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_lower].text.setStyleSheet("color: rgb(127,127,127);")
+				self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_upper].text.setStyleSheet("color: rgb(127,127,127);")
+				self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_lower].text.setStyleSheet("color: rgb(127,127,127);")
+				self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_upper].text.setStyleSheet("color: rgb(127,127,127);")
+			else:
+				assert val_min < val_max, "MRK_DEBUG"
+				self.shist.model().item(idx_hist).setEnabled(True)
+				self.ssort.model().item(idx_sort).setEnabled(True)
+				self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_lower].text.setStyleSheet("color: rgb(0,0,255);")
+				self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_upper].text.setStyleSheet("color: rgb(255,0,0);")
+				self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_lower].text.setStyleSheet("color: rgb(0,0,255);")
+				self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_upper].text.setStyleSheet("color: rgb(255,0,0);")
 		
 		# Set disable status of histogram
 		if self.hist_map_list[self.curhist][self.idx_hist_item_val_min] == self.hist_map_list[self.curhist][self.idx_hist_item_val_max]:
@@ -1201,53 +1332,109 @@ class SXGuiCter(QtGui.QWidget):
 		self.pbloadthresholdset.setEnabled(True)
 		self.pbsaveselection.setEnabled(True)
 		
+#		# Always disable rotational average plot display at the beginning of loading new dataset
+#		if self.wplotrotavgcoarse.isVisible():
+#			self.wplotrotavgcoarse.hide()
+#		if self.wplotrotavgfine.isVisible():
+#			self.wplotrotavgfine.hide()
+#		self.cbrotavgdisplay.setValue(False)
+#		self.curplotrotavgdisplay = False
+		
 #		# Always disable micrograph display at the beginning of loading new dataset
-#		if self.wimgmicthumb.isVisible() == True:
+#		if self.wimgmicthumb.isVisible():
 #			self.wimgmicthumb.hide()
 #		self.cbmicthumbdisplay.setValue(False)
 #		self.curimgmicthumbdisplay = False
 		
+		cter_pwrot_dir = os.path.join(os.path.dirname(self.cter_partres_file_path), "pwrot")
+		# print "MRK_DEBUG: cter_pwrot_dir = \"%s\" in readCterPartresFile() "% (cter_pwrot_dir)
+		if os.path.exists(cter_pwrot_dir):
+			# if not self.cbrotavgdisplay.getEnabled(): # MRK_NOTE: 2017/11/22 Toshio Moriya: This method does not work as I expected
+			self.cbrotavgdisplay.setEnabled(True)
+			for idx_graph in xrange(self.n_idx_graph):
+				self.graph_map_list[idx_graph][self.idx_graph_item_widget].setEnabled(True)
+			self.vbplotfixscale.setEnabled(True)
+		else:
+			# if self.cbrotavgdisplay.getEnabled(): # MRK_NOTE: 2017/11/22 Toshio Moriya: This method does not work as I expected
+			self.cbrotavgdisplay.setEnabled(False)
+			for idx_graph in xrange(self.n_idx_graph):
+				self.graph_map_list[idx_graph][self.idx_graph_item_widget].setEnabled(False)
+			self.vbplotfixscale.setEnabled(False)
+			# Error message of this condition should be displayed at the end of this function for smooth visual presentation
+			# QtGui.QMessageBox.warning(None,"Warning","Can not find \"%s\" sub-directory associated with specified CTER partres file (%s). Please check your project directory. \n\nPower spectrum rotational average plots display option is disabled for this session." % (cter_pwrot_dir, self.cter_partres_file_path))
+		
 		cter_micthumb_dir = os.path.join(os.path.dirname(self.cter_partres_file_path), "micthumb")
-		# print "MRK_DEBUG: cter_micthumb_dir = \"%s\" in readCterCtfFile() "% (cter_micthumb_dir)
+		# print "MRK_DEBUG: cter_micthumb_dir = \"%s\" in readCterPartresFile() "% (cter_micthumb_dir)
 		if os.path.exists(cter_micthumb_dir):
-			# if self.cbmicthumbdisplay.getEnabled() == False: # MRK_NOTE: 2016/03/22 Toshio Moriya: This method does not work as I expected
+			# if not self.cbmicthumbdisplay.getEnabled(): # MRK_NOTE: 2016/03/22 Toshio Moriya: This method does not work as I expected
 			self.cbmicthumbdisplay.setEnabled(True)
 		else:
-			# if self.cbmicthumbdisplay.getEnabled() == True: # MRK_NOTE: 2016/03/22 Toshio Moriya: This method does not work as I expected
+			# if self.cbmicthumbdisplay.getEnabled() != self.curimgmicthumbdisplay: # MRK_NOTE: 2016/03/22 Toshio Moriya: This method does not work as I expected
 			self.cbmicthumbdisplay.setEnabled(False)
-			if self.curimgmicthumbdisplay == True:
-				self.curimgmicthumbdisplay = False
-				self.cbmicthumbdisplay.setValue(self.curimgmicthumbdisplay)
-			if self.wimgmicthumb.isVisible():
-				self.wimgmicthumb.hide()
 			# Error message of this condition should be displayed at the end of this function for smooth visual presentation
+			# QtGui.QMessageBox.warning(None,"Warning","Can not find \"%s\" sub-directory associated with specified CTER partres file (%s). Please check your project directory. \n\nMicrograph thumbnail display option is disabled for this session." % (cter_micthumb_dir, self.cter_partres_file_path))
 			
 		# NOTE: 2016/01/03 Toshio Moriya
 		# Force update related plots to hide too much scaling delay...
 		self.updateImgMicThumb(False)
 		self.updateHist()
 		self.updatePlotParam()
+		self.updatePlot()
 		
+###		print("MRK_DEBUG: ")
+###		print("MRK_DEBUG: readCterPartresFile(): self.curplotrotavgdisplay = ", self.curplotrotavgdisplay)
+###		print("MRK_DEBUG: readCterPartresFile(): self.wplotrotavgcoarse.isVisible() = ", self.wplotrotavgcoarse.isVisible())
+###		print("MRK_DEBUG: readCterPartresFile(): self.wplotrotavgcoarse.isVisible() = ", self.wplotrotavgcoarse.isVisible())
+		if self.curplotrotavgdisplay:
+			if not self.wplotrotavgcoarse.isVisible():
+				self.wplotrotavgcoarse.show()
+			if not self.wplotrotavgfine.isVisible():
+				self.wplotrotavgfine.show()
+		else:
+			assert not self.curplotrotavgdisplay, "MRK_DEBUG"
+			if self.wplotrotavgcoarse.isVisible():
+				self.wplotrotavgcoarse.hide()
+			if self.wplotrotavgfine.isVisible():
+				self.wplotrotavgfine.hide()
+###		print("MRK_DEBUG: readCterPartresFile(): self.wplotrotavgcoarse.isVisible() = ", self.wplotrotavgcoarse.isVisible())
+###		print("MRK_DEBUG: readCterPartresFile(): self.wplotrotavgcoarse.isVisible() = ", self.wplotrotavgcoarse.isVisible())
+		
+###		print("MRK_DEBUG: ")
+###		print("MRK_DEBUG: readCterPartresFile(): self.curimgmicthumbdisplay = ", self.curimgmicthumbdisplay)
+###		print("MRK_DEBUG: readCterPartresFile(): self.wimgmicthumb.isVisible() = ", self.wimgmicthumb.isVisible())
+		if self.curimgmicthumbdisplay:
+			if not self.wimgmicthumb.isVisible():
+				self.wimgmicthumb.show()
+		else:
+			assert not self.curimgmicthumbdisplay, "MRK_DEBUG"
+			if self.wimgmicthumb.isVisible():
+				self.wimgmicthumb.hide()
+###		print("MRK_DEBUG: readCterPartresFile(): self.wimgmicthumb.isVisible() = ", self.wimgmicthumb.isVisible())
+		
+		self.busy = False
 		self.needredisp = True
 		
 		if self.hist_map_list[self.curhist][self.idx_hist_item_val_min] == self.hist_map_list[self.curhist][self.idx_hist_item_val_max]:
 			param_label = self.value_map_list[idx_cter][self.idx_cter_item_label]
-			QtGui.QMessageBox.information(self, "Information","All entries have the same selected parameter values (%s). \n\nParameter Histogram & Plot will not be shown" % (param_label))
+			QtGui.QMessageBox.information(self, "Information","All entries have the same selected parameter values (%s). \n\nParameter Histogram & Plot will not be shown." % (param_label))
 		
+		if not os.path.exists(cter_pwrot_dir):
+			QtGui.QMessageBox.warning(None,"Warning","Can not find \"%s\" sub-directory associated with specified CTER partres file (%s). Please check your project directory. \n\nPower spectrum rotational average plots display option is disabled for this session." % (cter_pwrot_dir, self.cter_partres_file_path))
+
 		if not os.path.exists(cter_micthumb_dir):
-			QtGui.QMessageBox.warning(None,"Warning","Can not find \"%s\" sub-directory associated with specified CTER CTF file (%s). Please check your project directory. \n\nMicrograph thumbnail display option is disabled for this session." % (cter_micthumb_dir, self.cter_partres_file_path))
-		
-#		assert(self.isVisible()) 
+			QtGui.QMessageBox.warning(None,"Warning","Can not find \"%s\" sub-directory associated with specified CTER partres file (%s). Please check your project directory. \n\nMicrograph thumbnail display option is disabled for this session." % (cter_micthumb_dir, self.cter_partres_file_path))
+
+#		assert self.isVisible(), "MRK_DEBUG"
 #		self.raise_()
 #		self.activateWindow()
 	
-	def openCter(self,val=None):
-		"""Open CTER CTF file"""
+	def openCterPartres(self,val=None):
+		"""Open CTER partres file"""
 		
-		file_path = str(QtGui.QFileDialog.getOpenFileName(self, "Open CTER CTF File", options = QtGui.QFileDialog.DontUseNativeDialog))
+		file_path = str(QtGui.QFileDialog.getOpenFileName(self, "Open CTER partres File", options = QtGui.QFileDialog.DontUseNativeDialog))
 		if file_path == "": return
 		
-		self.readCterCtfFile(os.path.relpath(file_path))
+		self.readCterPartresFile(os.path.relpath(file_path))
 	
 	def updateHist(self, error_display = True):
 		if self.whistparam == None: return # it's closed/not visible
@@ -1272,8 +1459,8 @@ class SXGuiCter(QtGui.QWidget):
 			self.vsentryperbin.setValue(self.curentryperbin)
 			# self.vsentryperbin.setRange(1,len(self.cter_entry_list))
 		n_bin = len(self.cter_entry_list)/ self.curentryperbin
-		assert len(val_list) >= n_bin
-		assert n_bin > 0
+		assert len(val_list) >= n_bin, "MRK_DEBUG"
+		assert n_bin > 0, "MRK_DEBUG"
 		from statistics import hist_list
 		hist_x_list, hist_y_list = hist_list(val_list, n_bin)
 		
@@ -1394,20 +1581,23 @@ class SXGuiCter(QtGui.QWidget):
 		self.wplotparam.autoscale(True)
 	
 	def updatePlot(self, error_display = True):
+		if not self.curplotrotavgdisplay: return # Power Spectrum rotational average plots display is unchecked
 		if self.wplotrotavgcoarse == None: return # it's closed/not visible
 		if self.wplotrotavgfine == None: return # it's closed/not visible
 		if self.cter_pwrot_file_path == None: return # no cter entry is selected
 		
-		# Now update the plots
+		# print "MRK_DEBUG: self.cter_pwrot_file_path =\"%s\" in updatePlot() "% (self.cter_pwrot_file_path)
 		if not os.path.exists(self.cter_pwrot_file_path):
 			if self.wplotrotavgcoarse.isVisible():
 				self.wplotrotavgcoarse.hide()
 			if self.wplotrotavgfine.isVisible():
 				self.wplotrotavgfine.hide()
-			if error_display:
+			if error_display and os.path.exists(os.path.dirname(self.cter_pwrot_file_path)):
 				QtGui.QMessageBox.warning(None,"Warning","Can not find file cter_pwrot_file_path (%s). Please check the contents of pwrot directory. \n\nPlots will not be shown." % (self.cter_pwrot_file_path))
 			return
-			
+		assert os.path.exists(self.cter_pwrot_file_path), "MRK_DEBUG"
+		
+		# Now update the plots
 		self.rotinf_table = read_text_file(self.cter_pwrot_file_path, ncol=-1)
 		
 		# print "MRK_DEBUG: Last entry of the 1st colum should be a micrograph name %s which is same as " % os.path.basename(self.rotinf_table[0][-1])
@@ -1416,7 +1606,7 @@ class SXGuiCter(QtGui.QWidget):
 #		mic_basename_partres = os.path.basename(self.cter_entry_list[self.curentry][self.idx_cter_mic_name])
 #		
 #		if mic_basename_rotinf != mic_basename_partres:
-#			QtGui.QMessageBox.warning(None,"Warning","Micrograph name (%s) in %s is not same as name (%s) in %s " % (mic_basename_rotinf, os.path.basename(self.cter_pwrot_file_path), mic_basename_partres, os.path.basename(self.cter_partres_file_path)))
+#			QtGui.QMessageBox.warning(None,"Warning","Micrograph name (%s) in %s is not same as name (%s) in %s." % (mic_basename_rotinf, os.path.basename(self.cter_pwrot_file_path), mic_basename_partres, os.path.basename(self.cter_partres_file_path)))
 #			return
 		
 		# global_min = float("inf")
@@ -1482,18 +1672,50 @@ class SXGuiCter(QtGui.QWidget):
 			# self.wplotrotavgfine.set_data(([error_freq, error_freq], [global_min, global_max]),"ctf_freq_limit")
 			self.wplotrotavgfine.add_shape("%s_freq"%(error_name),EMShape(("scrlabel",0,0,0,error_scr_x-260,self.wplotrotavgfine.scrlim[1]+self.wplotrotavgfine.scrlim[3]-54,"%s %1.5g (%1.5g)"%(error_label,error_freq,1.0/error_freq),120.0,-1)))
 		
-###		self.wplotrotavgcoarse.setAxisParms("frequency (1/"+ "$\AA$" +")","power spectrum")
-###		self.wplotrotavgfine.setAxisParms("frequency (1/"+ "$\AA$" +")","power spectrum")
-		self.wplotrotavgcoarse.setAxisParms("frequency (1/"+ "$\AA$" +")","amplitude")
-		self.wplotrotavgfine.setAxisParms("frequency (1/"+ "$\AA$" +")","amplitude")
+		self.wplotrotavgcoarse.setAxisParms("frequency (1/"+ "$\AA$" +")","power spectrum")
+		self.wplotrotavgfine.setAxisParms("frequency (1/"+ "$\AA$" +")","power spectrum")
+###		self.wplotrotavgcoarse.setAxisParms("frequency (1/"+ "$\AA$" +")","amplitude")
+###		self.wplotrotavgfine.setAxisParms("frequency (1/"+ "$\AA$" +")","amplitude")
 		
 		self.updatePlotVisibility()
 	
+	def newPlotDisplay(self,val=None):
+		"""Change rotational average plot display status."""
+		# assert self.cbrotavgdisplay.getEnabled() == True, "MRK_DEBUG: 2017/11/22 Toshio Moriya: This method does not work as I expected"
+		if self.curplotrotavgdisplay != val:
+			# now set the new display status
+			self.curplotrotavgdisplay = val
+		else:
+			assert self.curplotrotavgdisplay == val, "MRK_DEBUG"
+			# The status did not change, there is nothing to do nothing
+			return
+		
+		if self.cter_pwrot_file_path == None: return # no cter entry is selected
+		
+		# print "MRK_DEBUG: self.cter_micthumb_file_path =\"%s\" in newMicThumbDisplay() "% (self.cter_micthumb_file_path)
+		if not os.path.exists(self.cter_pwrot_file_path):
+			assert not self.wplotrotavgcoarse.isVisible(), "MRK_DEBUG"
+			assert not self.wplotrotavgfine.isVisible(), "MRK_DEBUG"
+			return
+		assert os.path.exists(self.cter_pwrot_file_path), "MRK_DEBUG"
+		
+		if self.curplotrotavgdisplay and not self.wplotrotavgcoarse.isVisible():
+			self.wplotrotavgcoarse.show()
+			self.needredisp = True
+		elif not self.curplotrotavgdisplay and self.wplotrotavgcoarse.isVisible():
+			self.wplotrotavgcoarse.hide()
+
+		if self.curplotrotavgdisplay and not self.wplotrotavgfine.isVisible():
+			self.wplotrotavgfine.show()
+			self.needredisp = True
+		elif not self.curplotrotavgdisplay and self.wplotrotavgfine.isVisible():
+			self.wplotrotavgfine.hide()
+		
 	def updateEntryList(self):
 		"""Updated entry list box after sorting of CTER entries based on current setting."""
 		
 		# sort CTER entry list
-		assert (self.cter_entry_list != None)
+		assert self.cter_entry_list != None, "MRK_DEBUG"
 		self.cter_entry_list = sorted(self.cter_entry_list, key=lambda x: x[self.sort_map_list[self.cursort][self.idx_sort_item_idx_cter]], reverse=self.cursortoder)
 		
 		if self.cursortselect: 
@@ -1510,7 +1732,7 @@ class SXGuiCter(QtGui.QWidget):
 			if cter_entry[self.idx_cter_select] == 1:
 				newItem.setCheckState(Qt.Checked)
 			else: 
-				assert(cter_entry[self.idx_cter_select] == 0)
+				assert cter_entry[self.idx_cter_select] == 0, "MRK_DEBUG"
 				newItem.setCheckState(Qt.Unchecked)
 			self.lbentry.addItem(newItem)
 			# self.lbentry.addItem(os.path.basename(cter_entry[self.idx_cter_mic_name]))
@@ -1519,22 +1741,23 @@ class SXGuiCter(QtGui.QWidget):
 		self.lbentry.setCurrentRow(0)
 
 	def updateImgMicThumb(self, error_display = True):
-		if not self.curimgmicthumbdisplay: return # Micrograph thumbnail display is disabled
+		if not self.curimgmicthumbdisplay: return # Micrograph thumbnail display is unchecked
 		if self.wimgmicthumb == None: return # it's closed/not visible
 		if self.cter_micthumb_file_path == None: return # no cter entry is selected
 		
 		# print "MRK_DEBUG: self.cter_micthumb_file_path =\"%s\" in updateImgMicThumb() "% (self.cter_micthumb_file_path)
 		if not os.path.exists(self.cter_micthumb_file_path):
-			# QtGui.QMessageBox.warning(None,"Warning","Can not find micrograph thumbnail (%s). Please check your micrograph thumbnail directory. \n\nA blank image is shown." % (self.cter_micthumb_file_path))
 			if self.wimgmicthumb.isVisible():
 				self.wimgmicthumb.hide()
-			if error_display:
+			if error_display and os.path.exists(os.path.dirname(self.cter_micthumb_file_path)):
 				QtGui.QMessageBox.warning(None,"Warning","Can not find micrograph thumbnail (%s). Please check your micrograph thumbnail directory. \n\nMicrograph thumbnail will not be shown." % (self.cter_micthumb_file_path))
 			return
+		assert os.path.exists(self.cter_micthumb_file_path), "MRK_DEBUG"
 		
+		# Now update the image
 		micthumb_img = EMData(self.cter_micthumb_file_path) # read the image from disk
 		self.wimgmicthumb.set_data(micthumb_img)
-		self.wimgmicthumb.setWindowTitle("sxgui_cter - Micrograph Thumbnail- %s, %s" % (os.path.basename(self.cter_entry_list[self.curentry][self.idx_cter_mic_name]), os.path.basename(self.cter_pwrot_file_path)))
+		self.wimgmicthumb.setWindowTitle("sxgui_cter - Micrograph Thumbnail- %s, %s" % (os.path.basename(self.cter_entry_list[self.curentry][self.idx_cter_mic_name]), os.path.basename(self.cter_micthumb_file_path)))
 		
 #		# print "MRK_DEBUG: self.cter_mic_file_path =\"%s\" in updateImgMicThumb() "% (self.cter_mic_file_path)
 #		if not os.path.exists(self.cter_mic_file_path):
@@ -1545,16 +1768,26 @@ class SXGuiCter(QtGui.QWidget):
 #		else:
 #			mic_img = EMData(self.cter_mic_file_path) # read the image from disk
 #		self.wimage.set_data(mic_img)
-#		self.wimage.setWindowTitle("sxgui_cter - Micrograph - %s, %s" % (os.path.basename(self.cter_entry_list[self.curentry][self.idx_cter_mic_name]), os.path.basename(self.cter_pwrot_file_path)))
+#		self.wimage.setWindowTitle("sxgui_cter - Micrograph - %s, %s" % (os.path.basename(self.cter_entry_list[self.curentry][self.idx_cter_mic_name]), os.path.basename(self.cter_mic_file_path)))
 		
 	def newMicThumbDisplay(self,val=None):
 		"""Change micrograph thumbnail display status."""
-		# assert(self.cbmicthumbdisplay.getEnabled() == True)  # MRK_NOTE: 2016/03/22 Toshio Moriya: This method does not work as I expected
+		# assert self.cbmicthumbdisplay.getEnabled() == True, "MRK_DEBUG: 2016/03/22 Toshio Moriya: This method does not work as I expected"
+		if self.curimgmicthumbdisplay != val:
+			# now set the new display status
+			self.curimgmicthumbdisplay = val
+		else: 
+			assert self.curimgmicthumbdisplay == val, "MRK_DEBUG"
+			# The status did not change, there is nothing to do nothing
+			return
 		
-		if self.curimgmicthumbdisplay == val: return
+		if self.cter_micthumb_file_path == None: return # no cter entry is selected
 		
-		# now set the new status
-		self.curimgmicthumbdisplay = val
+		# print "MRK_DEBUG: self.cter_micthumb_file_path =\"%s\" in newMicThumbDisplay() "% (self.cter_micthumb_file_path)
+		if not os.path.exists(self.cter_micthumb_file_path):
+			assert not self.wimgmicthumb.isVisible(), "MRK_DEBUG"
+			return
+		assert os.path.exists(self.cter_micthumb_file_path), "MRK_DEBUG"
 		
 		if self.curimgmicthumbdisplay and not self.wimgmicthumb.isVisible():
 			self.wimgmicthumb.show()
@@ -1564,8 +1797,8 @@ class SXGuiCter(QtGui.QWidget):
 		
 	def newEntry(self,currow):
 		"""called when a new data set is selected from the CTER Entry list box."""
-		assert(self.cter_partres_file_path != None)
-		assert(self.cter_entry_list != None)
+		assert self.cter_partres_file_path != None, "MRK_DEBUG"
+		assert self.cter_entry_list != None, "MRK_DEBUG"
 		
 		# always update the current row of cter entry list 
 		# to get associated micrograph path and pwrot file path 
@@ -1582,46 +1815,58 @@ class SXGuiCter(QtGui.QWidget):
 		new_cter_micthumb_file_path = os.path.join(os.path.dirname(self.cter_partres_file_path), "micthumb", "%s_thumb.hdf" % (mic_basename_root))
 		new_cter_pwrot_file_path = os.path.join(os.path.dirname(self.cter_partres_file_path), "pwrot", "%s_rotinf.txt" % (mic_basename_root))
 		
+			
 		# Changing row does not always change the pwrot file path after resorting of the cter entry list
 		# If same, skip the following processes
 		if self.cter_pwrot_file_path == new_cter_pwrot_file_path: 
-			assert(self.cter_micthumb_file_path == new_cter_micthumb_file_path)
-			assert(self.cter_mic_file_path == new_cter_mic_file_path)
+			assert self.cter_micthumb_file_path == new_cter_micthumb_file_path, "MRK_DEBUG"
+			assert self.cter_mic_file_path == new_cter_mic_file_path, "MRK_DEBUG"
 			return
 		
 		# now set the new item
-		assert(self.cter_pwrot_file_path != new_cter_pwrot_file_path)
+		assert self.cter_pwrot_file_path != new_cter_pwrot_file_path, "MRK_DEBUG"
 		self.cter_pwrot_file_path = new_cter_pwrot_file_path
-		assert(self.cter_micthumb_file_path != new_cter_micthumb_file_path)
+		assert self.cter_micthumb_file_path != new_cter_micthumb_file_path, "MRK_DEBUG"
 		self.cter_micthumb_file_path = new_cter_micthumb_file_path
-		assert(self.cter_mic_file_path != new_cter_mic_file_path)
+		assert self.cter_mic_file_path != new_cter_mic_file_path , "MRK_DEBUG"
 		self.cter_mic_file_path = new_cter_mic_file_path
-		
-#		# Now update the image
-#		self.updateImgMicThumb()
 		
 		# print "MRK_DEBUG: Row No. %d (CTER Entry No. %d) is selected from cter entry list box" % (self.curentry, self.cter_entry_list[self.curentry][self.idx_cter_id])
 		
 		self.ssortedid.setValue(self.curentry,True)
 		
 		for idx_cter in xrange(self.n_idx_cter):
-#			if idx_cter not in [self.idx_cter_mic_name, self.idx_cter_pwrot_name]:
-			if idx_cter not in [self.idx_cter_mic_name]:
+			if self.value_map_list[idx_cter][self.idx_cter_item_widget] is not None:
 				self.value_map_list[idx_cter][self.idx_cter_item_widget].setValue(self.cter_entry_list[self.curentry][idx_cter],True)
+			# else:
+			# 	assert self.value_map_list[idx_cter][self.idx_cter_item_widget] is None, "MRK_DEBUG"
+			# 	# Do nothing
+			# 	print("MRK_DEBUG: ")
+			# 	print("MRK_DEBUG: No widget is assigned to this item! Ignoring this item...")
+			# 	print("MRK_DEBUG: idx_cter = ", idx_cter)
+			# 	print("MRK_DEBUG: self.idx_cter_item_widget = ", self.idx_cter_item_widget)
+			# 	print("MRK_DEBUG: self.value_map_list[idx_cter][self.idx_cter_item_widget] = ", self.value_map_list[idx_cter][self.idx_cter_item_widget])
+			# 	print("MRK_DEBUG: ")
 		
-		# Use red font to indicate the value is not between applied threshold ranage
+		# Use blue (lower) & red (higher) fonts to indicate the value is not between applied threshold ranage
 		for idx_hist in xrange(self.n_idx_hist):
 			lower_threshold = round(self.hist_map_list[idx_hist][self.idx_hist_item_apply_threshold_lower], self.round_ndigits)
 			upper_threshold = round(self.hist_map_list[idx_hist][self.idx_hist_item_apply_threshold_upper], self.round_ndigits)
 			idx_cter = self.hist_map_list[idx_hist][self.idx_hist_item_idx_cter]
 			param_val = round(self.cter_entry_list[self.curentry][idx_cter], self.round_ndigits)
-			if lower_threshold <= param_val and param_val <= upper_threshold:
-				self.value_map_list[idx_cter][self.idx_cter_item_widget].text.setStyleSheet("color: rgb(0,0,0);")
-			elif param_val < lower_threshold:
-				self.value_map_list[idx_cter][self.idx_cter_item_widget].text.setStyleSheet("color: rgb(0,0,255);")
+			assert self.value_map_list[idx_cter][self.idx_cter_item_widget] is not None, "MRK_DEBUG: A widget must be assigned to this item since it is a histogram item"
+			if lower_threshold < upper_threshold:
+				if lower_threshold <= param_val and param_val <= upper_threshold:
+						self.value_map_list[idx_cter][self.idx_cter_item_widget].text.setStyleSheet("color: rgb(0,0,0);")
+				elif param_val < lower_threshold:
+					self.value_map_list[idx_cter][self.idx_cter_item_widget].text.setStyleSheet("color: rgb(0,0,255);")
+				else:
+					assert upper_threshold < param_val, "MRK_DEBUG"
+					self.value_map_list[idx_cter][self.idx_cter_item_widget].text.setStyleSheet("color: rgb(255,0,0);")
 			else:
-				assert(upper_threshold < param_val)
-				self.value_map_list[idx_cter][self.idx_cter_item_widget].text.setStyleSheet("color: rgb(255,0,0);")
+				assert lower_threshold == upper_threshold, "MRK_DEBUG"
+				assert lower_threshold == param_val and param_val == upper_threshold, "MRK_DEBUG"
+				self.value_map_list[idx_cter][self.idx_cter_item_widget].text.setStyleSheet("color: rgb(127,127,127);")
 		
 #		self.wfft.setWindowTitle("sxgui_cter - 2D FFT - "+fsp.split("/")[-1])
 		self.wplotrotavgcoarse.setWindowTitle("sxgui_cter - Plot - %s, %s" % (os.path.basename(self.cter_entry_list[self.curentry][self.idx_cter_mic_name]), os.path.basename(self.cter_pwrot_file_path)))
@@ -1633,8 +1878,8 @@ class SXGuiCter(QtGui.QWidget):
 	
 	def updateEntrySelect(self, entry):
 		"""called when check status of an cter entry in list box is changed."""
-		assert(self.cter_partres_file_path != None)
-		assert(self.cter_entry_list != None)
+		assert self.cter_partres_file_path != None, "MRK_DEBUG"
+		assert self.cter_entry_list != None, "MRK_DEBUG"
 		
 		newSelect = 1
 		if entry.checkState() == Qt.Unchecked:
@@ -1643,21 +1888,22 @@ class SXGuiCter(QtGui.QWidget):
 		self.cter_entry_list[entry_row][self.idx_cter_select] = newSelect
 		
 		if self.curentry == entry_row:
+			assert self.value_map_list[self.idx_cter_select][self.idx_cter_item_widget] is not None, "MRK_DEBUG: It should be impossible to select item without any associated widgets!!!"
 			self.value_map_list[self.idx_cter_select][self.idx_cter_item_widget].setValue(self.cter_entry_list[self.curentry][self.idx_cter_select],True)
 			
 		self.updateUncheckCounts()
 	
 	def updateUncheckCounts(self):
 		"""called whenever checked status of cter entries change."""
-		assert(self.cter_partres_file_path != None)
-		assert(self.cter_entry_list != None)
+		assert self.cter_partres_file_path != None, "MRK_DEBUG"
+		assert self.cter_entry_list != None, "MRK_DEBUG"
 		
-		assert(len(self.cter_entry_list) > 0)
+		assert len(self.cter_entry_list) > 0, "MRK_DEBUG"
 		n_entry = len(self.cter_entry_list)
 		uncheck_counts  = n_entry
 		for cter_entry in self.cter_entry_list:
 			uncheck_counts -= cter_entry[self.idx_cter_select]
-		assert(uncheck_counts >= 0 and uncheck_counts <= n_entry)
+		assert uncheck_counts >= 0 and uncheck_counts <= n_entry, "MRK_DEBUG"
 		
 		self.vbuncheckcounts.setValue(uncheck_counts,True)
 		self.vbuncheckratio.setValue(float(uncheck_counts)/n_entry,True)
@@ -1746,7 +1992,7 @@ class SXGuiCter(QtGui.QWidget):
 		elif self.curthresholdcontrol == self.idx_threshold_control_upper:
 			self.hist_map_list[self.curhist][self.idx_hist_item_unapply_widget_upper].setEnabled(False)
 		else:
-			assert(self.curthresholdcontrol == self.idx_threshold_control_edit_only)
+			assert self.curthresholdcontrol == self.idx_threshold_control_edit_only, "MRK_DEBUG"
 			self.hist_map_list[self.curhist][self.idx_hist_item_unapply_widget_lower].setEnabled(False)
 			self.hist_map_list[self.curhist][self.idx_hist_item_unapply_widget_upper].setEnabled(False)
 		
@@ -1763,14 +2009,14 @@ class SXGuiCter(QtGui.QWidget):
 				self.whistparam.hide()
 			if self.wplotparam.isVisible():
 				self.wplotparam.hide()
-			QtGui.QMessageBox.information(self, "Information","All entries have the same selected parameter values (%s). \n\nParameter Histogram & Plot will not be shown" % (param_label))
+			QtGui.QMessageBox.information(self, "Information","All entries have the same selected parameter values (%s). \n\nParameter Histogram & Plot will not be shown." % (param_label))
 		else:
 			if self.curthresholdcontrol == self.idx_threshold_control_lower:
 				self.hist_map_list[self.curhist][self.idx_hist_item_unapply_widget_lower].setEnabled(True)
 			elif self.curthresholdcontrol == self.idx_threshold_control_upper:
 				self.hist_map_list[self.curhist][self.idx_hist_item_unapply_widget_upper].setEnabled(True)
 			else:
-				assert(self.curthresholdcontrol == self.idx_threshold_control_edit_only)
+				assert self.curthresholdcontrol == self.idx_threshold_control_edit_only, "MRK_DEBUG"
 				self.hist_map_list[self.curhist][self.idx_hist_item_unapply_widget_lower].setEnabled(True)
 				self.hist_map_list[self.curhist][self.idx_hist_item_unapply_widget_upper].setEnabled(True)
 			
@@ -1784,8 +2030,8 @@ class SXGuiCter(QtGui.QWidget):
 				if (idx_sort != self.cursort):
 					self.newSort(idx_sort)
 					self.ssort.setCurrentIndex(idx_sort)
-				# else: assert(idx_sort == self.cursort) # Do nothing
-			# else: assert(self.cursyncsort == False) # Do nothing
+				# else: assert idx_sort == self.cursort, "MRK_DEBUG" # Do nothing
+			# else: assert self.cursyncsort == False, "MRK_DEBUG" # Do nothing
 			
 			if self.cter_partres_file_path == None: return # no cter ctf file is selected
 			if self.cter_entry_list == None: return # no cter ctf file is selected
@@ -1816,7 +2062,7 @@ class SXGuiCter(QtGui.QWidget):
 		elif self.curthresholdcontrol == self.idx_threshold_control_upper:
 			self.hist_map_list[self.curhist][self.idx_hist_item_unapply_widget_upper].setEnabled(False)
 		else:
-			assert(self.curthresholdcontrol == self.idx_threshold_control_edit_only)
+			assert self.curthresholdcontrol == self.idx_threshold_control_edit_only, "MRK_DEBUG"
 			self.hist_map_list[self.curhist][self.idx_hist_item_unapply_widget_lower].setEnabled(False)
 			self.hist_map_list[self.curhist][self.idx_hist_item_unapply_widget_upper].setEnabled(False)
 		
@@ -1829,7 +2075,7 @@ class SXGuiCter(QtGui.QWidget):
 		elif self.curthresholdcontrol == self.idx_threshold_control_upper:
 			self.hist_map_list[self.curhist][self.idx_hist_item_unapply_widget_upper].setEnabled(True)
 		else:
-			assert(self.curthresholdcontrol == self.idx_threshold_control_edit_only)
+			assert self.curthresholdcontrol == self.idx_threshold_control_edit_only, "MRK_DEBUG"
 			self.hist_map_list[self.curhist][self.idx_hist_item_unapply_widget_lower].setEnabled(True)
 			self.hist_map_list[self.curhist][self.idx_hist_item_unapply_widget_upper].setEnabled(True)
 	
@@ -1847,8 +2093,8 @@ class SXGuiCter(QtGui.QWidget):
 			if (idx_sort != self.cursort):
 				self.newSort(idx_sort)
 				self.ssort.setCurrentIndex(idx_sort)
-			# else: assert(idx_sort == self.cursort) # Do nothing
-		# else: assert(self.cursyncsort == False) # Do nothing
+			# else: assert idx_sort == self.cursort, "MRK_DEBUG" # Do nothing
+		# else: assert self.cursyncsort == False, "MRK_DEBUG" # Do nothing
 	
 	def newEntryPerBin(self,curentryperbin):
 		if self.curentryperbin == curentryperbin: return
@@ -1903,8 +2149,8 @@ class SXGuiCter(QtGui.QWidget):
 		self.curthresholdset=currow
 	
 	def writeThresholdSet(self, file_path_out, idx_thresholdset):
-		assert(self.cter_partres_file_path != None)
-		assert(self.cter_entry_list != None)
+		assert self.cter_partres_file_path != None, "MRK_DEBUG"
+		assert self.cter_entry_list != None, "MRK_DEBUG"
 		
 		file_out = open(file_path_out,"w")
 		
@@ -1913,7 +2159,7 @@ class SXGuiCter(QtGui.QWidget):
 		# file_out.write(EMANVERSION + " (CVS" + CVSDATESTAMP[6:-2] +")")
 		file_out.write(EMANVERSION + " (GITHUB: " + DATESTAMP +")" )
 		file_out.write(" @@@@@ \n")
-		file_out.write("# Associated CTER CTF File == %s\n" % (self.cter_partres_file_path))
+		file_out.write("# Associated CTER partres File == %s\n" % (self.cter_partres_file_path))
 		file_out.write("# Saved Threshold Set == %s\n" % (self.thresholdset_map_list[idx_thresholdset][self.idx_thresholdset_item_label]))
 		file_out.write("# [Parameter Id] [Parameter Name] [Lower Threshold] [Upper Threshold]\n")
 		
@@ -1935,8 +2181,8 @@ class SXGuiCter(QtGui.QWidget):
 		file_out.close()
 	
 	def readThresholdSet(self, file_path_in, idx_thresholdset):
-		assert(self.cter_partres_file_path != None)
-		assert(self.cter_entry_list != None)
+		assert self.cter_partres_file_path != None, "MRK_DEBUG"
+		assert self.cter_entry_list != None, "MRK_DEBUG"
 		
 		file_in = open(file_path_in,"r")
 		
@@ -1949,13 +2195,13 @@ class SXGuiCter(QtGui.QWidget):
 					continue
 					
 				tokens_in = line_in.split("==")
-				assert(len(tokens_in) == 2)
+				assert len(tokens_in) == 2, "MRK_DEBUG"
 				tokens_label = tokens_in[0].split()
-				assert(len(tokens_label) >= 2)
+				assert len(tokens_label) >= 2, "MRK_DEBUG"
 				idx_hist = int(tokens_label[0]) # index of hist_map_list
 				map_entry = self.hist_map_list[idx_hist]
 				tokens_val = tokens_in[1].split()
-				assert(len(tokens_val) == 2)
+				assert len(tokens_val) == 2, "MRK_DEBUG"
 				threshold_lower = round(float(tokens_val[0]), self.round_ndigits)
 				threshold_upper = round(float(tokens_val[1]), self.round_ndigits)
 				map_entry[self.idx_hist_item_unapply_threshold_lower] = threshold_lower
@@ -2000,9 +2246,9 @@ class SXGuiCter(QtGui.QWidget):
 		if self.cter_partres_file_path == None: return # no cter ctf file is selected
 		if self.cter_entry_list == None: return # no cter ctf file is selected
 		
-		assert(os.path.basename(self.cter_partres_file_path).find("partres") != -1)
-		assert(self.cter_partres_file_path[-1*len(".txt"):] == ".txt")
-#		assert(os.path.dirname(self.cter_partres_file_path)[-1*len("partres"):] == "partres")
+		assert os.path.basename(self.cter_partres_file_path).find("partres") != -1, "MRK_DEBUG"
+		assert self.cter_partres_file_path[-1*len(".txt"):] == ".txt", "MRK_DEBUG"
+#		assert os.path.dirname(self.cter_partres_file_path)[-1*len("partres"):] == "partres", "MRK_DEBUG"
 		
 		file_suffix = self.vfilesuffix.getValue()
 		file_path_out_select = os.path.join(os.path.dirname(self.cter_partres_file_path), "%s_partres_select.txt" % (file_suffix))
@@ -2036,12 +2282,13 @@ class SXGuiCter(QtGui.QWidget):
 		save_cter_entry_list = sorted(self.cter_entry_list, key=lambda x: x[self.idx_cter_id])
 # 		idx_cter_ignore_list = [self.idx_cter_id, self.idx_cter_pwrot_name, self.idx_cter_error_ctf, self.idx_cter_select]
 		idx_cter_ignore_list = [self.idx_cter_id, self.idx_cter_select]
-		if self.is_enable_max_power == True: idx_cter_ignore_list.append(self.idx_cter_max_power)
+###		if self.is_enable_max_power == True: 
+###			idx_cter_ignore_list.append(self.idx_cter_max_power)
 		for cter_entry in save_cter_entry_list:
 			file_out = file_out_select
 			if cter_entry[self.idx_cter_select] == 0:
 				file_out = file_out_discard
-			# else: assert(cter_entry[self.idx_cter_select] == 1) # do nothing
+			# else: assert cter_entry[self.idx_cter_select] == 1, "MRK_DEBUG" # do nothing
 			
 			for idx_cter in xrange(self.n_idx_cter):
 				if idx_cter in idx_cter_ignore_list:
@@ -2064,7 +2311,7 @@ class SXGuiCter(QtGui.QWidget):
 			file_out = file_out_mic_select
 			if cter_entry[self.idx_cter_select] == 0:
 				file_out = file_out_mic_discard
-			# else: assert(cter_entry[self.idx_cter_select] == 1) # do nothing
+			# else: assert cter_entry[self.idx_cter_select] == 1, "MRK_DEBUG" # do nothing
 			file_out.write("  %s\n" % os.path.basename(cter_entry[self.idx_cter_mic_name]))
 		
 		file_out_mic_select.close()
@@ -2104,10 +2351,10 @@ class SXGuiCter(QtGui.QWidget):
 			if not self.wimgmicthumb.isVisible() and self.curimgmicthumbdisplay and not self.is_wimgmicthumb_minimized:
 				self.wimgmicthumb.show()
 				is_child_shown = True
-			if not self.wplotrotavgcoarse.isVisible() and not self.is_wplotrotavgcoarse_minimized:
+			if not self.wplotrotavgcoarse.isVisible() and self.curplotrotavgdisplay and not self.is_wplotrotavgcoarse_minimized:
 				self.wplotrotavgcoarse.show()
 				is_child_shown = True
-			if not self.wplotrotavgfine.isVisible() and not self.is_wplotrotavgfine_minimized:
+			if not self.wplotrotavgfine.isVisible() and self.curplotrotavgdisplay and not self.is_wplotrotavgfine_minimized:
 				self.wplotrotavgfine.show()
 				is_child_shown = True
 			if not self.whistparam.isVisible() and not self.curhistdisable and not self.is_whistparam_minimized:
@@ -2125,7 +2372,7 @@ class SXGuiCter(QtGui.QWidget):
 		self.updatePlotParam()
 		self.updatePlot()
 		
-		self.busy=False
+		self.busy = False
 		
 #	def entryKey(self,event):
 #		if event.key()>=Qt.Key_0 and event.key()<=Qt.Key_9 :
@@ -2150,7 +2397,7 @@ class SXGuiCter(QtGui.QWidget):
 			# print "MRK_DEBUG: Hello QtCore.QEvent.WindowStateChange"
 			if self.windowState() & QtCore.Qt.WindowMinimized:
 				# print "MRK_DEBUG: sxgui main window has minimized"
-				assert(self.isMinimized() == True)
+				assert self.isMinimized() == True, "MRK_DEBUG"
 				#
 				# NOTE: 2016/03/09 Toshio Moriya
 				# Minimize icon button of child window should be disabled
@@ -2159,57 +2406,59 @@ class SXGuiCter(QtGui.QWidget):
 					# if self.wfft.isVisible() and not self.is_wfft_minimized:
 					# 	self.wfft.hide()
 					# 	self.is_wfft_minimized = True
-					if self.wimgmicthumb.isVisible() == True and self.is_wimgmicthumb_minimized == False:
-						assert(self.curimgmicthumbdisplay == True)
+					if self.wimgmicthumb.isVisible() and not self.is_wimgmicthumb_minimized:
+						assert self.curimgmicthumbdisplay, "MRK_DEBUG"
 						self.wimgmicthumb.hide()
 						self.is_wimgmicthumb_minimized = True
-					if self.wplotrotavgcoarse.isVisible() == True and self.is_wplotrotavgcoarse_minimized == False:
+					if self.wplotrotavgcoarse.isVisible() == True and not self.is_wplotrotavgcoarse_minimized:
+						assert self.curplotrotavgdisplay, "MRK_DEBUG"
 						self.wplotrotavgcoarse.hide()
 						self.is_wplotrotavgcoarse_minimized = True
-					if self.wplotrotavgfine.isVisible() == True and self.is_wplotrotavgfine_minimized == False:
+					if self.wplotrotavgfine.isVisible() and not self.is_wplotrotavgfine_minimized:
+						assert self.curplotrotavgdisplay, "MRK_DEBUG"
 						self.wplotrotavgfine.hide()
 						self.is_wplotrotavgfine_minimized = True
 					if self.whistparam.isVisible() == True and self.is_whistparam_minimized == False:
-						assert(self.curhistdisable == False)
+						assert self.curhistdisable == False, "MRK_DEBUG"
 						self.whistparam.hide()
 						self.is_whistparam_minimized = True
 					if self.wplotparam.isVisible() == True and self.is_wplotparam_minimized == False:
-						assert(self.curhistdisable == False )
+						assert self.curhistdisable == False, "MRK_DEBUG"
 						self.wplotparam.hide()
 						self.is_wplotparam_minimized = True
 			else:
 				# print "MRK_DEBUG: sxgui main window has not minimized"
-				assert(self.isMinimized() == False)
+				assert self.isMinimized() == False, "MRK_DEBUG"
 				#
 				# NOTE: 2016/03/09 Toshio Moriya
 				# Minimize icon button of child window should be disabled
 				#
 				if self.cter_entry_list != None:
 					# if self.is_wfft_minimized == True:
-					# 	assert(self.wfft.isVisible() == False and self.curfftdisplay == True)
+					# 	assert self.wfft.isVisible() == False and self.curfftdisplay == True, "MRK_DEBUG"
 					# 	self.wfft.show()
 					# 	self.is_wfft_minimized = False
-					if self.is_wimgmicthumb_minimized == True:
-						assert(self.wimgmicthumb.isVisible() == False and self.curimgmicthumbdisplay == True)
+					if self.is_wimgmicthumb_minimized:
+						assert not self.wimgmicthumb.isVisible() and self.curimgmicthumbdisplay, "MRK_DEBUG"
 						self.wimgmicthumb.show()
 						self.is_wimgmicthumb_minimized = False
-					if self.is_wplotrotavgcoarse_minimized == True:
-						assert(self.wplotrotavgcoarse.isVisible() == False)
+					if self.is_wplotrotavgcoarse_minimized:
+						assert not self.wplotrotavgcoarse.isVisible() and self.curplotrotavgdisplay, "MRK_DEBUG"
 						self.wplotrotavgcoarse.show()
 						self.is_wplotrotavgcoarse_minimized = False
-					if self.is_wplotrotavgfine_minimized == True:
-						assert(self.wplotrotavgfine.isVisible() == False)
+					if self.is_wplotrotavgfine_minimized:
+						assert not self.wplotrotavgfine.isVisible() and self.curplotrotavgdisplay, "MRK_DEBUG"
 						self.wplotrotavgfine.show()
 						self.is_wplotrotavgfine_minimized = False
-					if self.is_whistparam_minimized == True:
-						assert(self.whistparam.isVisible() == False and self.curhistdisable == False)
+					if self.is_whistparam_minimized:
+						assert not self.whistparam.isVisible() and not self.curhistdisable, "MRK_DEBUG"
 						self.whistparam.show()
 						self.is_whistparam_minimized = False
-					if self.is_wplotparam_minimized == True:
-						assert(self.wplotparam.isVisible() == False and self.curhistdisable == False )
+					if self.is_wplotparam_minimized:
+						assert not self.wplotparam.isVisible() and not self.curhistdisable, "MRK_DEBUG"
 						self.wplotparam.show()
 						self.is_wplotparam_minimized = False
-				if self.isVisible() == True: # Depends on timing at startup, this can happen?!!
+				if self.isVisible() : # Depends on timing at startup, this can happen?!!
 					self.raise_()
 					self.activateWindow()
 		elif event.type() == QtCore.QEvent.WindowActivate:
@@ -2232,7 +2481,7 @@ class SXGuiCter(QtGui.QWidget):
 					self.whistparam.qt_parent.raise_()
 				if self.wplotparam.isVisible() == True:
 					self.wplotparam.qt_parent.raise_()
-				assert(self.isVisible()) 
+				assert self.isVisible(), "MRK_DEBUG"
 				self.raise_()
 		# elif event.type()== QtCore.QEvent.WindowDeactivate:
 		# 	print "MRK_DEBUG: sxgui main window has lost focus (beome deactive)"
@@ -2264,6 +2513,10 @@ class SXGuiCter(QtGui.QWidget):
 		if self.wplotparam: self.wplotparam.close()
 		
 		event.accept()
+		# NOTE: Toshio Moriya 2017/11/23
+		# The following code seems to be printing "None" to standard output
+		# upon exiting the application. But why???
+		# print ("MRK_DEBUG: calling QtGui.qApp.exit(0)")
 		QtGui.qApp.exit(0)
 		
 	def updatePlotVisibility(self,val=None):
@@ -2324,7 +2577,7 @@ class SXGuiCter(QtGui.QWidget):
 				self.hist_map_list[self.curhist][self.idx_hist_item_unapply_widget_upper].setValue(plot_y)
 				self.newThresholdUpper()
 		else:
-			assert(self.curthresholdcontrol == self.idx_threshold_control_upper)
+			assert self.curthresholdcontrol == self.idx_threshold_control_upper, "MRK_DEBUG"
 			if is_not_reverse_control:
 				self.hist_map_list[self.curhist][self.idx_hist_item_unapply_widget_upper].setValue(plot_y)
 				self.newThresholdUpper()
@@ -2352,7 +2605,7 @@ class SXGuiCter(QtGui.QWidget):
 				self.newThresholdUpper()
 				
 		else:
-			assert(self.curthresholdcontrol == self.idx_threshold_control_upper)
+			assert self.curthresholdcontrol == self.idx_threshold_control_upper, "MRK_DEBUG"
 			if is_not_reverse_control:
 				self.hist_map_list[self.curhist][self.idx_hist_item_unapply_widget_upper].setValue(hist_x)
 				self.newThresholdUpper()
