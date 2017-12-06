@@ -37,7 +37,9 @@ from emapplication import EMApp
 import emscene3d
 import emdataitem3d 
 
-def main():
+em_app = EMApp()
+
+def main(sys_argv=None):
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog 3Dstack [options]
 	Visulaizse and compute the mean amplitude and sigma in the missing wedge region. After you are sasified that the missing wedge looks sane, compute missing wedge stats
@@ -55,17 +57,20 @@ def main():
 	parser.add_argument("--nogui", action="store_true", default=False, help="Do not launch the GUI and set the average of the missing wedge statistics on all the volumes.")
 	parser.add_argument("--averagestats", action="store_true", default=False, help="Do not launch the GUI and set the average of the missing wedge statistics on all the volumes.")
 
-	(options, args) = parser.parse_args()
+	(options, args) = parser.parse_args(sys_argv)
 
 	logger = E2init(sys.argv, options.ppid)
 
 	stack=args[0]
 	
 	if not options.nogui:	
-		em_app = EMApp()
 		wedgeviewer = MissingWedgeViewer(stack, options.wedgeangle, wedgei=options.wedgei, wedgef=options.wedgef)
 		wedgeviewer.show()
-		ret=em_app.exec_()
+		wedgeviewer.raise_()
+		ret=em_app.execute()
+		
+		return wedgeviewer
+		
 		sys.exit(ret)
 	else:
 		means=[]
