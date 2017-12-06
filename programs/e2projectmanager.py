@@ -34,7 +34,7 @@ from __future__ import print_function
 from EMAN2 import *
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
-from pmicons import *
+from qtgui.pmicons import *
 import os, json, re, glob, signal
 import subprocess
 from qtgui.empmwidgets import *
