@@ -2617,8 +2617,8 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 						# print "MRK_DEBUG: Trough Search: extremum_i = %03d, freq[extremum_i] = %12.5g, extremum_counts = %03d, (pwrot1[extremum_i] - pwrot2[extremum_i]) = %12.5g, extremum_diff_sum = %12.5g " % (extremum_i, freq[extremum_i] , extremum_counts, (pwrot1[extremum_i] - pwrot2[extremum_i]), extremum_diff_sum)
 						is_peak_target = True
 					pre_crot2_val = cur_crot2_val
-				#if extremum_counts == 0: ERROR("Logical Error: Encountered unexpected zero extremum counts. Consult with the developer." % (bd1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
-				extremum_diff_avg = 1.1#extremum_diff_sum / extremum_counts
+#				#if extremum_counts == 0: ERROR("Logical Error: Encountered unexpected zero extremum counts. Consult with the developer." % (bd1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
+#				extremum_diff_avg = 1.1#extremum_diff_sum / extremum_counts
 				
 				# print "MRK_DEBUG: extremum_avg = %12.5g, extremum_diff_sum = %12.5g, extremum_counts = %03d," % (extremum_avg, extremum_diff_sum, extremum_counts)
 				
@@ -2626,11 +2626,19 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 #				else:                 cmd = "echo " + "    " + "  >>  " + fou
 #				os.system(cmd)
 				
+				ed1      = wgh            # total amplitude contrast. Here, it is also constant amplitude contrast since Volta phase shift is not estimated with this function. 
+				stdaved1 = 0.0            # dummy value for error of total amplitude contrast estimation
+				max_freq = 0.5/pixel_size # dummy value for maximum frequency. set to Nyquist frequency for now. let's add the implementation in near future (Toshio 2017/12/06)
+				reserved = 0.0            # dummy value for reserved spot, which might be used for parameter of external programs (e.g. CTFFIND4, GCTF, and etc.)
+				# wgh                     # constant amplitude contrast provided by user (default 10%). Here, it is also total amplitude contrast since Volta phase shift is not estimated with this function.
+				phase_shift = ampcont2angle(ed1) - ampcont2angle(wgh) # Volta phase shift [deg] = total amplitude contrast phase shift [deg] (ed1) -  constant amplitude contrast phase shift [deg]; ed1 is boot strap average of total amplitude contrast [%]
+				
 				if debug_mode: print(("    %s %s: Process %04d finished the processing. Estimated CTF parmaters are stored in %s." % (img_type, img_name, ifi, os.path.join(output_directory, "partres.txt"))))
-				if debug_mode: print((ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, cvavad1, cvavbd1, extremum_diff_avg, ib1, ibec, ctflim))
-				# totresi.append( [ img_name, ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, cvavad1, cvavbd1, extremum_diff_avg, ib1, ibec, ctflim])
-				stdaved1 = 0.0 # dummy value for error of amplitude contrast estimation
-				totresi.append( [ img_name, ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdaved1, stdavbd1, cd2, cvavad1, cvavbd1, extremum_diff_avg, ib1, ibec, ctflim])
+#				if debug_mode: print((ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, cvavad1, cvavbd1, extremum_diff_avg, ib1, ibec, ctflim))
+#				# totresi.append([img_name, ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, cvavad1, cvavbd1, extremum_diff_avg, ib1, ibec, ctflim])
+#				totresi.append([img_name, ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdaved1, stdavbd1, cd2, cvavad1, cvavbd1, extremum_diff_avg, ib1, ibec, ctflim])
+				if debug_mode: print((ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdaved1, stdavbd1, cd2, cvavad1, cvavbd1, ib1, ibec, ctflim, max_freq, reserved, wgh, phase_shift))
+				totresi.append([img_name, ad1, Cs, voltage, pixel_size, temp, ed1, bd1, cd1, stdavad1, stdaved1, stdavbd1, cd2, cvavad1, cvavbd1, ib1, ibec, ctflim, max_freq, reserved, wgh, phase_shift])
 				
 #				if stack == None:
 #					print  namics[ifi], ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, ib1, ibec
@@ -2712,7 +2720,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 # NOTE: 2016/11/16 Toshio Moriya
 # Now, this function assume the MPI setup and clean up is done by caller, such as mpi_init, and mpi_finalize
 # 07/11/2017  This is power spectrum version of cter_mrk
-def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512, pixel_size = -1.0, Cs = 2.0, voltage = 300.0, wgh = 10.0, f_start = -1.0, f_stop = -1.0, kboot = 16, overlap_x = 50, overlap_y = 50, edge_x = 0, edge_y = 0, check_consistency = False, stack_mode = False, debug_mode = False, program_name = "cter_mrk() in morphology.py", RUNNING_UNDER_MPI = False, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1):
+def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512, pixel_size = -1.0, Cs = 2.0, voltage = 300.0, wgh = 10.0, f_start = -1.0, f_stop = -1.0, kboot = 16, overlap_x = 50, overlap_y = 50, edge_x = 0, edge_y = 0, check_consistency = False, stack_mode = False, debug_mode = False, program_name = "cter_pap() in morphology.py", RUNNING_UNDER_MPI = False, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1):
 	"""
 	Arguments
 		input_image_path  :  file name pattern for Micrographs Modes (e.g. 'Micrographs/mic*.mrc') or particle stack file path for Stack Mode (e.g. 'bdb:stack'; must be stack_mode = True).
@@ -3676,8 +3684,8 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 						# print "MRK_DEBUG: Trough Search: extremum_i = %03d, freq[extremum_i] = %12.5g, extremum_counts = %03d, (pwrot1[extremum_i] - pwrot2[extremum_i]) = %12.5g, extremum_diff_sum = %12.5g " % (extremum_i, freq[extremum_i] , extremum_counts, (pwrot1[extremum_i] - pwrot2[extremum_i]), extremum_diff_sum)
 						is_peak_target = True
 					pre_crot2_val = cur_crot2_val
-				#if extremum_counts == 0: ERROR("Logical Error: Encountered unexpected zero extremum counts. Consult with the developer." % (bd1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
-				extremum_diff_avg = 1.1#extremum_diff_sum / extremum_counts
+#				#if extremum_counts == 0: ERROR("Logical Error: Encountered unexpected zero extremum counts. Consult with the developer." % (bd1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
+#				extremum_diff_avg = 1.1#extremum_diff_sum / extremum_counts
 				
 				# print "MRK_DEBUG: extremum_avg = %12.5g, extremum_diff_sum = %12.5g, extremum_counts = %03d," % (extremum_avg, extremum_diff_sum, extremum_counts)
 				
@@ -3685,11 +3693,19 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 #				else:                 cmd = "echo " + "    " + "  >>  " + fou
 #				os.system(cmd)
 				
+				ed1      = wgh            # total amplitude contrast. Here, it is also constant amplitude contrast since Volta phase shift is not estimated with this function. 
+				stdaved1 = 0.0            # dummy value for error of total amplitude contrast estimation
+				max_freq = 0.5/pixel_size # dummy value for maximum frequency. set to Nyquist frequency for now. let's add the implementation in near future (Toshio 2017/12/06)
+				reserved = 0.0            # dummy value for reserved spot, which might be used for parameter of external programs (e.g. CTFFIND4, GCTF, and etc.)
+				# wgh                     # constant amplitude contrast provided by user (default 10%). Here, it is also total amplitude contrast since Volta phase shift is not estimated with this function.
+				phase_shift = ampcont2angle(ed1) - ampcont2angle(wgh) # Volta phase shift [deg] = total amplitude contrast phase shift [deg] (ed1) -  constant amplitude contrast phase shift [deg]; ed1 is boot strap average of total amplitude contrast [%]
+				
 				if debug_mode: print(("    %s %s: Process %04d finished the processing. Estimated CTF parmaters are stored in %s." % (img_type, img_name, ifi, os.path.join(output_directory, "partres.txt"))))
-				if debug_mode: print((ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, cvavad1, cvavbd1, extremum_diff_avg, ib1, ibec, ctflim))
-				# totresi.append( [ img_name, ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, cvavad1, cvavbd1, extremum_diff_avg, ib1, ibec, ctflim])
-				stdaved1 = 0.0 # dummy value for error of amplitude contrast estimation
-				totresi.append( [ img_name, ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdaved1, stdavbd1, cd2, cvavad1, cvavbd1, extremum_diff_avg, ib1, ibec, ctflim])
+#				if debug_mode: print((ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, cvavad1, cvavbd1, extremum_diff_avg, ib1, ibec, ctflim))
+#				# totresi.append([img_name, ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, cvavad1, cvavbd1, extremum_diff_avg, ib1, ibec, ctflim])
+#				totresi.append([img_name, ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdaved1, stdavbd1, cd2, cvavad1, cvavbd1, extremum_diff_avg, ib1, ibec, ctflim])
+				if debug_mode: print((ad1, Cs, voltage, pixel_size, temp, ed1, bd1, cd1, stdavad1, stdavbd1, stdavbd1, cd2, cvavad1, cvavbd1, ib1, ibec, ctflim, max_freq, reserved, wgh, phase_shift))
+				totresi.append([img_name, ad1, Cs, voltage, pixel_size, temp, ed1, bd1, cd1, stdavad1, stdaved1, stdavbd1, cd2, cvavad1, cvavbd1, ib1, ibec, ctflim, max_freq, reserved, wgh, phase_shift])
 				
 #				if stack == None:
 #					print  namics[ifi], ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, ib1, ibec
@@ -5106,9 +5122,9 @@ def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.
 ################
 # 
 # 
-def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512, pixel_size = -1.0, Cs = 2.0, voltage = 300.0, f_start = -1.0, f_stop = -1.0, \
+def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512, pixel_size = -1.0, Cs = 2.0, voltage = 300.0, wgh = 10.0, f_start = -1.0, f_stop = -1.0, \
 			kboot = 16, overlap_x = 50, overlap_y = 50, edge_x = 0, edge_y = 0, check_consistency = False, stack_mode = False, \
-			debug_mode = False, program_name = "cter_mrk() in morphology.py", vpp_options = [], RUNNING_UNDER_MPI = False, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1):
+			debug_mode = False, program_name = "cter_vpp() in morphology.py", vpp_options = [], RUNNING_UNDER_MPI = False, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1):
 	"""
 	Arguments
 		input_image_path  :  file name pattern for Micrographs Modes (e.g. 'Micrographs/mic*.mrc') or particle stack file path for Stack Mode (e.g. 'bdb:stack'; must be stack_mode = True).
@@ -5857,7 +5873,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			"""
 			valid_min_defocus = 0.05
 			if ad1 < valid_min_defocus:
-				reject_img_messages.append("  	  - Defocus (%f) is smaller than valid minimum value (%f)." % (ad1, valid_min_defocus))
+				reject_img_messages.append("    - Defocus (%f) is smaller than valid minimum value (%f)." % (ad1, valid_min_defocus))
 			"""
 
 			if len(reject_img_messages) > 0:
@@ -5994,19 +6010,27 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 						is_peak_target = True
 					pre_crot2_val = cur_crot2_val
 				'''
-				#if extremum_counts == 0: ERROR("Logical Error: Encountered unexpected zero extremum counts. Consult with the developer." % (bd1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
-				extremum_diff_avg = 1.1#extremum_diff_sum / extremum_counts
+#				#if extremum_counts == 0: ERROR("Logical Error: Encountered unexpected zero extremum counts. Consult with the developer." % (bd1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
+#				extremum_diff_avg = 1.1#extremum_diff_sum / extremum_counts
 				
-				#print "MRK_DEBUG: extremum_avg = %12.5g, extremum_diff_sum = %12.5g, extremum_counts = %03d," % (extremum_avg, extremum_diff_sum, extremum_counts)
-				#print "MRK_DEBUG: extremum_diff_avg = %12.5g, extremum_diff_sum = %12.5g, extremum_counts = %03d," % (extremum_diff_avg, extremum_diff_sum, extremum_counts)
+#				#print "MRK_DEBUG: extremum_avg = %12.5g, extremum_diff_sum = %12.5g, extremum_counts = %03d," % (extremum_avg, extremum_diff_sum, extremum_counts)
+#				#print "MRK_DEBUG: extremum_diff_avg = %12.5g, extremum_diff_sum = %12.5g, extremum_counts = %03d," % (extremum_diff_avg, extremum_diff_sum, extremum_counts)
 				
 #				if stack == None:     cmd = "echo " + "    " + namics[ifi] + "  >>  " + fou
 #				else:                 cmd = "echo " + "    " + "  >>  " + fou
 #				os.system(cmd)
 				cvavbd1 = stdavbd1 / bd1 * 100 # use percentage
+				
+				max_freq = 0.5/pixel_size # dummy value for maximum frequency. set to Nyquist frequency for now. let's add the implementation in near future (Toshio 2017/12/06)
+				reserved = 0.0            # dummy value for reserved spot, which might be used for parameter of external programs (e.g. CTFFIND4, GCTF, and etc.)
+				# wgh                     # constant amplitude contrast provided by user (default 10%)
+				phase_shift = ampcont2angle(ed1) - ampcont2angle(wgh) # Volta phase shift [deg] = total amplitude contrast phase shift [deg] (ed1) -  constant amplitude contrast phase shift [deg]; ed1 is boot strap average of total amplitude contrast [%]
+				
 				if debug_mode: print(("    %s %s: Process %04d finished the processing. Estimated CTF parmaters are stored in %s." % (img_type, img_name, ifi, os.path.join(output_directory, "partres.txt"))))
-				if debug_mode: print((ad1, Cs, voltage, pixel_size, temp, ed1, bd1, cd1, stdavad1, ed2, sstdavbd1, cd2, cvavad1, cvavbd1, extremum_diff_avg, ib1, ibec, ctflim))
-				totresi.append( [ img_name, ad1, Cs, voltage, pixel_size, temp, ed1, bd1, cd1, stdavad1, ed2, stdavbd1, cd2, cvavad1, cvavbd1, extremum_diff_avg, ib1, ibec, ctflim])
+#				if debug_mode: print((ad1, Cs, voltage, pixel_size, temp, ed1, bd1, cd1, stdavad1, ed2, stdavbd1, cd2, cvavad1, cvavbd1, extremum_diff_avg, ib1, ibec, ctflim))
+#				totresi.append([img_name, ad1, Cs, voltage, pixel_size, temp, ed1, bd1, cd1, stdavad1, ed2, stdavbd1, cd2, cvavad1, cvavbd1, extremum_diff_avg, ib1, ibec, ctflim])
+				if debug_mode: print((ad1, Cs, voltage, pixel_size, temp, ed1, bd1, cd1, stdavad1, ed2, stdavbd1, cd2, cvavad1, cvavbd1, ib1, ibec, ctflim, max_freq, reserved, wgh, phase_shift))
+				totresi.append([img_name, ad1, Cs, voltage, pixel_size, temp, ed1, bd1, cd1, stdavad1, ed2, stdavbd1, cd2, cvavad1, cvavbd1, ib1, ibec, ctflim, max_freq, reserved, wgh, phase_shift])
 				
 #				if stack == None:
 #					print  namics[ifi], ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, ib1, ibec
