@@ -51,7 +51,7 @@ try:
 	from qtgui.emimage2d import EMImage2DWidget
 	from qtgui.emplot2d import EMPlot2DWidget
 	from qtgui.emimagemx import EMImageMXWidget
-	from valslider import ValSlider,CheckBox,ValBox
+	from qtgui.valslider import ValSlider,CheckBox,ValBox
 	from qtgui.emshape import EMShape
 except:
 	QtGui=nothing()

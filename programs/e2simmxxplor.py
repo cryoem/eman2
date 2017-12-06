@@ -35,7 +35,7 @@ from __future__ import print_function
 
 import os,sys
 from PyQt4 import QtGui,QtCore
-from valslider import ValSlider
+from qtgui.valslider import ValSlider
 
 from e2eulerxplor import get_eulers_from
 from qtgui.emimagemx import EMImageMXWidget

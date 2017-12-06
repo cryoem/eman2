@@ -2255,7 +2255,7 @@ try:
 	from PyQt4.QtCore import Qt
 	from OpenGL import GL,GLUT
 	from qtgui.emshape import *
-	from valslider import ValSlider,CheckBox
+	from qtgui.valslider import ValSlider,CheckBox
 except:
 	print("Warning: PyQt4 must be installed to use the --gui option")
 	class dummy:

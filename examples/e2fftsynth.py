@@ -38,7 +38,7 @@ try:
 	from PyQt4 import QtCore, QtGui, QtOpenGL
 	from PyQt4.QtCore import Qt
 	from qtgui.emshape import *
-	from valslider import ValSlider,ValBox
+	from qtgui.valslider import ValSlider,ValBox
 	from qtgui.emimage import EMImageWidget
 	from qtgui.emimage2d import EMImage2DWidget
 	from qtgui.emplot2d import EMPlot2DWidget

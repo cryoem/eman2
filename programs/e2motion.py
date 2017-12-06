@@ -43,7 +43,7 @@ from PyQt4.QtCore import Qt
 from qtgui.emapplication import get_application, EMApp
 from qtgui.emimage2d import EMImage2DWidget
 from qtgui.emimagemx import EMImageMXWidget
-from valslider import *
+from qtgui.valslider import *
 import Queue
 from qtgui import embrowser
 

@@ -48,7 +48,7 @@ from qtgui.emimagemx import EMImageMXWidget
 from qtgui.emscene3d import EMScene3D
 from qtgui.emdataitem3d import EMDataItem3D, EMIsosurface, EMSliceItem3D
 from qtgui.emshape import EMShape
-from valslider import *
+from qtgui.valslider import *
 import traceback
 
 def main():

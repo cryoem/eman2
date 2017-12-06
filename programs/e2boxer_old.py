@@ -590,7 +590,7 @@ class SwarmPanel:
 			self.enable_interactive_threshold  = QtGui.QCheckBox("Interactive Threshold")
 			self.enable_interactive_threshold.setToolTip("Tweak the correlation threshold that is used to select particles.")
 			self.enable_interactive_threshold.setChecked(False)
-			from valslider import ValSlider
+			from qtgui.valslider import ValSlider
 			self.thr = ValSlider(None,(0.0,3.0),"")
 			self.thr.setValue(1.0)
 			self.thr.setEnabled(False)

@@ -38,7 +38,7 @@ from EMAN2 import *
 from qtgui.emapplication import EMApp
 from qtgui.emimage2d import EMImage2DWidget
 from qtgui.emimage3d import EMImage3DModule
-from valslider import ValSlider
+from qtgui.valslider import ValSlider
 import weakref
 from qtgui.emshape import EMShape
 from PyQt4 import QtCore, QtGui

@@ -44,7 +44,7 @@ try:
 	from PyQt4.QtCore import Qt
 	from PyQt4.QtCore import QTimer
 	from qtgui.emshape import *
-	from valslider import *
+	from qtgui.valslider import *
 	from qtgui.emplot2d import EMPlot2DWidget
 except:
 	print("Warning: PyQt4 must be installed")
