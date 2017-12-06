@@ -46,9 +46,6 @@ import weakref
 import traceback
 from numpy import array,arange
 
-from emapplication import EMApp
-app=EMApp()
-
 def main(sys_argv=None):
 	progname = os.path.basename(sys.argv[0])
 
@@ -82,6 +79,9 @@ try:
 	from PyQt4.QtCore import Qt
 	from emshape import *
 	from valslider import ValSlider
+	
+	from emapplication import EMApp
+	app=EMApp()
 except:
 	print("Error: PyQt4 must be installed")
 	sys.exit(1)

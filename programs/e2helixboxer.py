@@ -48,6 +48,8 @@ try:
 
 	ENABLE_GUI = True
 
+	app = EMApp()
+
 except ImportError as e:
 	print("Importing GUI libraries failed!")
 	print(e)
@@ -63,8 +65,6 @@ within a helix. Usually, all particles from a micrograph will have the same dime
 """
 
 E2HELIXBOXER_DB = "bdb:" # used to use "bdb:e2helixboxercache#"
-
-app = EMApp()
 
 def main(sys_argv=None):
 	usage = """e2helixboxer.py --gui <micrograph1> <<micrograph2> <micrograph3> ...

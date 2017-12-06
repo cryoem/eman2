@@ -39,9 +39,6 @@ import threading
 import Queue
 import os,sys
 
-from emapplication import EMApp
-app=EMApp()
-
 apix=0
 
 class nothing:
@@ -56,6 +53,9 @@ try:
 	from emimagemx import EMImageMXWidget
 	from valslider import ValSlider,CheckBox,ValBox
 	from emshape import EMShape
+	
+	from emapplication import EMApp
+	app=EMApp()
 except:
 	QtGui=nothing()
 	QtCore=nothing()
