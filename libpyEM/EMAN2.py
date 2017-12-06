@@ -732,7 +732,7 @@ def display(img,force_2d=False,force_plot=False):
 	"""Generic display function for images or sets of images. You can force images to be displayed in 2-D or as a plot with
 	the optional flags"""
 	if GUIMode:
-		from qtgui import emimage
+		from eman2_gui import emimage
 		if isinstance(img,tuple) : img=list(img)
 		image = emimage.EMImageWidget(img,None,app,force_2d,force_plot)
 		image.show()
@@ -793,7 +793,7 @@ class EMImage(object):
 		old= is provided, and of the appropriate type, it will be used rather than creating
 		a new instance."""
 		if GUIMode:
-			from qtgui import emimage
+			from eman2_gui import emimage
 			image = emimage.EMImageWidget(data,old,app)
 			image.show()
 			#app.show_specific(image)

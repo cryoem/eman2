@@ -45,7 +45,7 @@ from eman2_gui.emimage2d import EMImage2DWidget
 from eman2_gui.emimagemx import EMImageMXWidget
 from eman2_gui.valslider import *
 import Queue
-from qtgui import embrowser
+from eman2_gui import embrowser
 
 def main():
 	progname = os.path.basename(sys.argv[0])
