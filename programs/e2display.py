@@ -35,7 +35,7 @@ from __future__ import print_function
 from EMAN2 import EMANVERSION, E2init, E2end, EMData, base_name, file_exists, EMArgumentParser
 import EMAN2db
 from emapplication import EMApp
-import embrowser
+from qtgui import embrowser
 from emimage import EMImageWidget, EMWidgetFromFile
 from emscene3d import EMScene3D
 import os
