@@ -11,7 +11,7 @@ sxpipe.py  organize_micrographs  source_micrograph_pattern  selection_list  dest
 
 === Typical usage ===
 
-sxpipeline.py organize_micrographs does not support MPI. 
+sxpipe organize_micrographs does not support MPI. 
 
 
  1. Normal Operation Mode: The program moves micrographs in selecting list from the source directory to the destination directory.
@@ -25,8 +25,8 @@ sxpipeline.py organize_micrographs does not support MPI.
 
 == Input ==
     source_micrograph_pattern:: Source micrograph path pattern: Specify path pattern of source micrographs with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (') or double quotes ("). (Note: sxgui.py automatically adds single quotes (')). The substring at the variable part must be same between each associated pair of micrograph names. bdb files can not be selected as source micrographs. (default required string)
-    selection_list:: Micrograph selecting list: Specify a name of text file containing a list of selected micrograph names or paths. The file extension must be '.txt'. The directory path of each entry will be ignored if there are any. (default required string)
-    
+    selection_list:: Micrograph selection file: Specify a path of text file containing a list of selected micrograph names or paths. The file extension must be '.txt'. The directory path of each entry will be ignored if there are any. (default required string)
+
     reverse:: Reverse operation: Move back micrographs from the destination directory to the source directory. Please use this option to restore the previously-moved micrographs. (default False)
     
     * The remaining parameters are optional.
@@ -55,8 +55,10 @@ sparx/bin/sxpipe.py
 
 = See also =
 
+
 = Maturity =
  alpha::     under development
+
 
 = Bugs =
 Under development
