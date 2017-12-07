@@ -192,7 +192,7 @@ Stack Mode - Process a particle stack (Not supported by SPHIRE GUI))::
 			if wrong_params: break
 		if wrong_params:  ERROR("Some options are valid only for Volta Phase Plate command  %s"%command_token,"sxcter",1,my_mpi_proc_id)
 
-	if my_mpi_proc_id == main_mpi_proc or True:
+	if my_mpi_proc_id == main_mpi_proc:
 		command_line = ""
 		for command_token in sys.argv:
 			command_line += command_token + "  "
@@ -203,7 +203,7 @@ Stack Mode - Process a particle stack (Not supported by SPHIRE GUI))::
 	if options.vpp:
 		vpp_options = [options.defocus_min,  options.defocus_max,  options.defocus_step,  options.phase_min,  options.phase_max,  options.phase_step]
 		from morphology import cter_vpp
-		result = cter_vpp(input_image_path, output_directory, options.selection_list, options.wn, options.apix, options.Cs, options.voltage, options.f_start, options.f_stop, options.kboot, options.overlap_x, options.overlap_y, options.edge_x, options.edge_y, options.check_consistency, options.stack_mode, options.debug_mode, program_name, vpp_options, RUNNING_UNDER_MPI, main_mpi_proc, my_mpi_proc_id, n_mpi_procs)
+		result = cter_vpp(input_image_path, output_directory, options.selection_list, options.wn, options.apix, options.Cs, options.voltage, options.ac, options.f_start, options.f_stop, options.kboot, options.overlap_x, options.overlap_y, options.edge_x, options.edge_y, options.check_consistency, options.stack_mode, options.debug_mode, program_name, vpp_options, RUNNING_UNDER_MPI, main_mpi_proc, my_mpi_proc_id, n_mpi_procs)
 	elif options.pap:
 		from morphology import cter_pap
 		result = cter_pap(input_image_path, output_directory, options.selection_list, options.wn, options.apix, options.Cs, options.voltage, options.ac, options.f_start, options.f_stop, options.kboot, options.overlap_x, options.overlap_y, options.edge_x, options.edge_y, options.check_consistency, options.stack_mode, options.debug_mode, program_name, RUNNING_UNDER_MPI, main_mpi_proc, my_mpi_proc_id, n_mpi_procs)
