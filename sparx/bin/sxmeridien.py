@@ -1621,9 +1621,9 @@ def calculate_2d_params_for_centering(kwargs):
 		else:  return [0.0]
 	Finished_initial_2d_alignment = 1
 	if(Blockdata["myid"] == Blockdata["main_node"]): 
-		if os.path.exists(os.path.join(init2dir, "Finished_initial_2d_alignment.txt")): Finished_initial_2d_alignment = 0
+		if( os.path.exists(os.path.join(init2dir, "Finished_initial_2d_alignment.txt")) ): Finished_initial_2d_alignment = 0
 	Finished_initial_2d_alignment = bcast_number_to_all(Finished_initial_2d_alignment, Blockdata["main_node"], MPI_COMM_WORLD)
-	if Finished_initial_2d_alignment == 0:
+	if( Finished_initial_2d_alignment == 1 ):
 
 		if(Blockdata["myid"] == 0):
 			import subprocess
