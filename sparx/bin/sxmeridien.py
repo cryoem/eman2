@@ -10417,9 +10417,9 @@ def main():
 			Tracker["constants"]["number_of_groups"] = bcast_number_to_all(Tracker["constants"]["number_of_groups"], Blockdata["main_node"])
 			del params2d
 
+			mainiteration 	= 0
+			Tracker["mainiteration"] = mainiteration
 			if(Blockdata["myid"] == Blockdata["main_node"]):
-				mainiteration 	= 0
-				Tracker["mainiteration"] = mainiteration
 				fout = open(os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"],"Tracker_%03d.json"%Tracker["mainiteration"]),'w')
 				json.dump(Tracker, fout)
 				fout.close()
