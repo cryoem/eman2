@@ -1,9 +1,7 @@
 #!/usr/bin/env python
-from __future__ import print_function
-
 #
 # Author: Jesus Galaz-Montoya July/08/2015
-# Last modification: 19/Feb/2015
+# Last modification: 07/dic/2017
 # Copyright (c) 2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -31,7 +29,9 @@ from __future__ import print_function
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 
+from __future__ import print_function
 from EMAN2 import *
+from EMAN2_utils import *
 import os
 import sys
 from EMAN2jsondb import JSTask,jsonclasses
