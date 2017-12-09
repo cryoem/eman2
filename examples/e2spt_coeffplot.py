@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-
 #
 # Author: Jesus Galaz, 04/01/2012 - Last update July/23/2015
 # Copyright (c) 2011 Baylor College of Medicine
@@ -30,7 +28,8 @@ from __future__ import print_function
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 
-
+from __future__ import print_function
+from EMAN2_utils import *
 from EMAN2 import *
 from operator import itemgetter	
 
@@ -97,8 +96,7 @@ def main():
 		
 	logger = E2init(sys.argv, options.ppid)
 	
-	from e2spt_classaverage import sptmakepath
-	options = sptmakepath( options, 'sptcoeff')
+	options = makepath( options, 'sptcoeff')
 	
 	print("\nI have read the parameters")
 	
@@ -237,7 +235,7 @@ def main():
 		print("\overwriting number of bins to be", options.nbins)
 	
 	print("\nand the number of bins n = ( max(scores) - min(scores) ) / width will thus be", calcbins)
-	calcbins = round(calcbins)
+	calcbins = int(round(calcbins))
 	print("rounding to", calcbins)
 	
 	statistics.append( 'bins=' + str( calcbins ) + ' , binwidth=' + str( width ) + '\n')
