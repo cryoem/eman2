@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-from __future__ import print_function
 #
-# Author: John Flanagan (jfflanag@bcm.edu)
+# Author: John Flanagan (jfflanag@bcm.edu); modified extensively by Jesus Galaz-Montoya (jgalaz@gmail.com)
 # Copyright (c) 2012- Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -30,7 +29,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
 #
-
+from __future__ import print_function
 from EMAN2 import *
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
@@ -57,7 +56,9 @@ def main():
 	parser.add_argument("--averagestats", action="store_true", default=False, help="Do not launch the GUI and set the average of the missing wedge statistics on all the volumes.")
 
 	(options, args) = parser.parse_args()
-	
+
+	logger = E2init(sys.argv, options.ppid)
+
 	stack=args[0]
 	
 	if not options.nogui:	
@@ -96,7 +97,10 @@ def main():
 				a['spt_wedge_mean'] = meanavg
 				a['spt_wedge_sigma'] = sigmaavg
 				a.write_image(stack,i)
-	return()
+	
+	E2end(logger)
+	
+	return
 				
 	
 def wedgestats(volume,angle, wedgei, wedgef):
