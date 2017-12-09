@@ -72,7 +72,7 @@ def main():
 	
 	parser.add_argument("--ppid", type=int, help="""Default=-1. Set the PID of the parent process, used for cross platform PPID""",default=-1)
 	
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="""Default=0. Verbose level [0-9], higner number means higher level of verboseness""")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="""Default=0. Verbose level [0-9], higner number means higher level of verboseness; 10-11 will trigger many messages that might make little sense since this level of verboseness corresponds to 'debugging mode'""")
 		
 	#parser.add_argument("--resume",type=str,default='',help="""(Not working currently). tomo_fxorms.json file that contains alignment information for the particles in the set. If the information is incomplete (i.e., there are less elements in the file than particles in the stack), on the first iteration the program will complete the file by working ONLY on particle indexes that are missing. For subsequent iterations, all the particles will be used.""")
 															
@@ -207,16 +207,12 @@ def main():
 	parser.add_argument("--autocentermask",type=str, default='',help="""Default=None. Masking processor to apply before autocentering. See 'e2help.py processors -v 10' at the command line.""")
 	
 	parser.add_argument("--autocenterpreprocess",action='store_true', default=False,help="""Default=False. This will apply a highpass filter at a frequency of half the box size times the apix, shrink by 2, and apply a low pass filter at half nyquist frequency to any computed average for autocentering purposes if --autocenter is provided. Default=False.""")
-	
-	
-	
-	parser.add_argument("--tweak",action='store_true',default=False,help="""WARNING: BUGGY. This will perform a final alignment with no downsampling [without using --shrink or --shrinkfine] if --shrinkfine > 1.""")
 
+	parser.add_argument("--tweak",action='store_true',default=False,help="""WARNING: BUGGY. This will perform a final alignment with no downsampling [without using --shrink or --shrinkfine] if --shrinkfine > 1.""")
 
 	'''
 	BT SPECIFIC PARAMETERS
 	'''
-	
 		
 	parser.add_argument("--nseedlimit",type=int,default=0,help="""Maximum number of particles
 		to use. For example, if you supply a stack with 150 subtomograms, the program will
@@ -224,8 +220,6 @@ def main():
 		smaller than 150. But if you provide, say --nseedlimit=100, then the number of particles
 		used will be 64, because it's the largest power of 2 that is still smaller than 100.""")
 	
-	
-
 	(options, args) = parser.parse_args()
 	
 	options.nopreprocprefft = False
@@ -279,20 +273,13 @@ def main():
 		from e2spt_classaverage import calcAliStep
 		options = calcAliStep(options)
 	
-	#'''
-	#Parse parameters such that "None" or "none" are adequately interpreted to turn off an option
-	#'''
-	#
-	#from e2spt_classaverage import sptOptionsParser
+	'''c:
+	c:Parse parameters such that "None" or "none" are adequately interpreted to turn off an option
+	c:'''
 	options = sptOptionsParser( options )
-	
-#	from e2spt_classaverage import writeParameters
-	from EMAN2_utils import writeParameters
-	cmdwp = writeParameters(options,'e2spt_classaverage.py', 'sptclassavg')
 
-	writeParameters(options,'e2spt_binarytree.py', 'bt')
-	
-					
+	writeParameters(options, 'e2spt_binarytree.py', 'spt_bt')
+				
 	hdr = EMData(options.input,0,True)
 	nx = hdr["nx"]
 	ny = hdr["ny"]
@@ -303,27 +290,20 @@ def main():
 		
 	logger = E2init(sys.argv, options.ppid)
 	
-	
 	'''
-	Initialize parallelism if being used
+	Initialize parallelism if being used; it will be turned on automatically by detectThreads unless --parallel-=None
 	'''
-	
-	if options.parallel :
-	
-		if options.parallel == 'none' or options.parallel == 'None' or options.parallel == 'NONE':
-			options.parallel = ''
-			etc = ''
-		
-		else:
-			print("\n\n(e2spt_classaverage.py) INITIALIZING PARALLELISM!")
-			print("\n\n")
+	options = detectThreads( options )
+	if options.parallel:
+		print("\n\n(e2spt_classaverage.py) INITIALIZING PARALLELISM!")
+		print("\n\n")
 
-			from EMAN2PAR import EMTaskCustomer
-			etc=EMTaskCustomer(options.parallel)
+		from EMAN2PAR import EMTaskCustomer
+		etc=EMTaskCustomer(options.parallel)
 
-			pclist=[options.input]
+		pclist=[options.input]
 
-			etc.precache(pclist)
+		etc.precache(pclist)
 		
 	else:
 		etc=''
