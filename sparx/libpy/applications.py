@@ -9159,7 +9159,7 @@ def Kmref2_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=
 		if runtype=="REFINEMENT":
 			from utilities    import even_angles
 			#  We assume first symmetry is the lowest one
-			ref_angles = even_angles(delta[N_step], symmetry=syms[0], method = ref_a, phiEqpsi = "Zero")
+			refang = even_angles(delta[N_step], symmetry=syms[0], method = ref_a, phiEqpsi = "Zero")
 			from random import uniform
 			from fundamentals import rotate_params
 			shake = 0.5
@@ -9182,8 +9182,8 @@ def Kmref2_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=
 				#  These are local searches.
 				# generate list of angles
 				from alignment import generate_list_of_reference_angles_for_search
-				list_of_reference_angles = generate_list_of_reference_angles_for_search(ref_angles, sym=syms[0])
-				del ref_angles
+				list_of_reference_angles = generate_list_of_reference_angles_for_search(refang, sym=syms[0])
+				#del ref_angles
 			else:  list_of_reference_angles = [[1.0,1.0]]
  
 		cs = [0.0]*3
