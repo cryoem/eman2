@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-
 #
 # Author: Jesus Galaz, 04/28/2012; last update 9/Mar/2015
 # Copyright (c) 2011 Baylor College of Medicine
@@ -31,7 +29,8 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 #
-
+from __future__ import print_function
+from EMAN2_utils import *
 from EMAN2 import *
 import os
 import sys
@@ -52,84 +51,26 @@ def main():
 			
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_argument("--input", type=str, help="""Volume or stack of volumes to be compared to --ref""", default=None)
-	parser.add_argument("--path", type=str, help="Results directory. If not specified, defaults to e2sptfscs/", default='e2sptfscs')
+	parser.add_argument("--input", type=str, default=None, help="""Volume or stack of volumes to be compared to --ref""")
 
-	parser.add_argument("--ref", type=str, help="Volume that will be 'static' (the 'reference' to which volumes in --input will be aligned to). The format MUST be '.hdf' or '.mrc' ", default=None)
-	#parser.add_argument("--output", type=str, help="""Name for the .txt file that will contain the FSC data. If not specified, a default name will be used.""", default=None)
+	parser.add_argument("--path", type=str, default='e2sptfscs', help="Results directory. If not specified, defaults to e2sptfscs/")
 
+	parser.add_argument("--ref", type=str, default=None, help="Volume that will be 'static' (the 'reference' to which volumes in --input will be aligned to). The format MUST be '.hdf' or '.mrc' ")
 
-	#parser.add_argument("--symali", type=str, default='c1', help = """Will pass the value to --sym for alignment with e2spt_classaverage.py""")
-
-	parser.add_argument("--nocolor",action='store_true',default=False,help="""Turns the ouput png(s) into grey scale figures. Instead of using different colors to distinguish between various curves on the same plot, this option will have the program automatically use different markers in black and white for each curve.""")
+	parser.add_argument("--nocolor", action='store_true', default=False, help="""Turns the ouput png(s) into grey scale figures. Instead of using different colors to distinguish between various curves on the same plot, this option will have the program automatically use different markers in black and white for each curve.""")
 	
 	parser.add_argument("--sym", type=str, default='c1', help = """Will symmetrize --ref and --input prior to FSC computation.""")
-	
-	#parser.add_argument("--maskali",type=str,help="""Mask processor applied to particles 
-	#	before alignment. Default is mask.sharp:outer_radius=-2""", default="mask.sharp:outer_radius=-2")
-	
-	parser.add_argument("--mask",type=str,help="""Mask processor applied to particles 
-		before fsc computation. Default is mask.sharp:outer_radius=-2""", default=None)
-	
-	
-	#parser.add_argument("--search", type=int,default=8,help=""""During COARSE alignment
-	#	translational search in X, Y and Z, in pixels. Only works when --radius is provided.
-	#	Otherwise, search parameters are provided with the aligner, through --align.""")
-	
-	#parser.add_argument("--searchfine", type=int,default=2,help=""""During FINE alignment
-	#	translational search in X, Y and Z, in pixels. Only works when --radius is provided.
-	#	Otherwise, search parameters are provided with the aligner, through --falign.""")
-			
-	#parser.add_argument("--normproc",type=str,help="""Normalization processor applied to particles before alignment. 
-	#												Default is to use normalize.mask. If normalize.mask is used, results of the mask option will be passed in automatically. 
-	#												If you want to turn this option off specify \'None\'""", default="normalize.mask")
 
-	#parser.add_argument("--saveallalign",action="store_true", help="If set, will save the alignment parameters after each iteration",default=True)
+	parser.add_argument("--mask", type=str, default=None, help="""Mask processor applied to particles before fsc computation. Default is mask.sharp:outer_radius=-2""")
 
-	parser.add_argument("--mirror",action="store_true", help="""If set, it will generate a mirrored version of --ref and recompute FSCs against it.
-															This will be IN ADDITION to FSC computation of --input against the original, unmirrored --ref.""",default=False)
+	parser.add_argument("--mirror",action="store_true", help="""If set, it will generate a mirrored version of --ref and recompute FSCs against it. This will be IN ADDITION to FSC computation of --input against the original, unmirrored --ref.""",default=False)
 
-
-	parser.add_argument("--preproc",type=str,default='',help="Any processor (as in e2proc3d.py) to be applied to each volumes prior to FSC computation. Typically this would be an automask.")
+	#parser.add_argument("--preproc",type=str,default='',help="Any processor (as in e2proc3d.py) to be applied to each volumes prior to FSC computation. Typically this would be an automask.")
 	
-	parser.add_argument("--savepreproc",action='store_true',default=False,help="""Default=False. Otherwise, save preprocessed/masked volumes for inspection.""")
+	#parser.add_argument("--savepreproc",action='store_true',default=False,help="""Default=False. Otherwise, save preprocessed/masked volumes for inspection.""")
 
 	parser.add_argument("--averagefscs",action='store_true',default=False,help="""Default=False. Averages FSC curves if --input contains multiple images.""")
 
-	#parser.add_argument("--preprocessfine",type=str,default='',help="Any processor (as in e2proc3d.py) to be applied to each volume prior to FINE alignment. Not applied to aligned particles before averaging.")
-	
-	#parser.add_argument("--lowpass",type=str,default='',help="A lowpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.")
-	#parser.add_argument("--lowpassfine",type=str,default='',help="A lowpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to FINE alignment. Not applied to aligned particles before averaging.")
-
-	#parser.add_argument("--highpass",type=str,default='',help="A highpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.")
-	#parser.add_argument("--highpassfine",type=str,default='',help="A highpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to FINE alignment. Not applied to aligned particles before averaging.")
-
-	#parser.add_argument("--shrink", type=int,default=1,help="Optionally shrink the input volumes by an integer amount for coarse alignment.")
-	#parser.add_argument("--shrinkfine", type=int,default=1,help="Optionally shrink the input volumes by an integer amount for refine alignment.")
-
-	#parser.add_argument("--threshold",type=str,default='',help="""A threshold applied to 
-	#	the subvolumes after normalization. 
-	#	For example, --threshold=threshold.belowtozero:minval=0 makes all negative pixels 
-	#	equal 0, so that they do not contribute to the correlation score.""")
-
-	#parser.add_argument("--nocenterofmass", default=False, action="store_true", help="""Disable Centering 
-	#	of mass of the subtomogram every iteration.""")
-
-	#parser.add_argument("--npeakstorefine", type=int, help="The number of best 'coarse peaks' from 'coarse alignment' to refine in search for the best final alignment. Default=4.", default=4)
-	
-	#parser.add_argument("--align",type=str,help="This is the aligner used to align particles to the previous class average.", default="rotate_translate_3d:search=6:delta=12:dphi=12")
-	#parser.add_argument("--aligncmp",type=str,help="The comparator used for the --align aligner. Default is the internal tomographic ccc. Do not specify unless you need to use another specific aligner.",default="ccc.tomo")
-	
-	#parser.add_argument("--radius", type=float, help="""Hydrodynamic radius of the particle in Angstroms. 
-	#												This will be used to automatically calculate the angular steps to use in search of the best alignment.
-	#												Make sure the apix is correct on the particles' headers, sine the radius will be converted from Angstroms to pixels.
-	#												Then, the fine angular step is equal to 360/(2*pi*radius), and the coarse angular step 4 times that""", default=0)
-	
-	#parser.add_argument("--falign",type=str,help="This is the second stage aligner used to refine the first alignment. Default is refine_3d:search=2:delta=3:range=12", default="refine_3d:search=2:delta=3:range=9")
-	#parser.add_argument("--faligncmp",type=str,help="The comparator used by the second stage aligner. Default is the internal tomographic ccc",default="ccc.tomo")
-	
-	#parser.add_argument("--postprocess",type=str,help="A processor to be applied to the volume after averaging the raw volumes, before subsequent iterations begin.",default=None)
-		
 	parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default="thread:2")
 	
 	parser.add_argument("--apix", type=float, help="Provide --apix for automatic FSC calculation if you supply --plotonly and no volumes for --input and --ref, or if the apix of these is wrong.", default=1.0)
@@ -138,27 +79,21 @@ def main():
 	parser.add_argument("--maxres", type=float, help="How far in resolution to extend the FSC curve on the x axis; for example, to see up to 20anstroms, provide --maxres=1.0. Default=15", default=1.0)
 	parser.add_argument("--cutoff", type=str, help="Comma separated values of cutoff thresholds to plot as horizontal lines. Default=0.5, to turn of supply 'None'. ", default='0.5')
 	
-	parser.add_argument("--smooth",action="store_true", help="""Smooth out FSC curves 
-		by taking the average of a low value with a subsequent maxima.""", default=False)
+	parser.add_argument("--smooth",action="store_true", help="""Smooth out FSC curves by taking the average of a low value with a subsequent maxima.""", default=False)
 	
-	parser.add_argument("--smooththresh",type=float, help="""If --smooth is provided
-		the curve will be smoothed only up to this resolution. Default is 100.""", default=100)
+	parser.add_argument("--smooththresh",type=float, help="""If --smooth is provided the curve will be smoothed only up to this resolution. Default is 100.""", default=100)
 
 	#parser.add_argument("--fit",action="store_true", help="Smooth out FSC curves.", default=False)
 	
 	parser.add_argument("--polydegree",type=int, help="Degree of the polynomial to fit.", default=None)
 
-
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID.",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-	#parser.add_argument("--plotonly",action="store_true", help="Assumes vol1 and vol2 are already aligned and fsc files will be provided through --curves; thus skips alignment and fsc curve generation", default=False)
-	
-	#parser.add_argument("--fsconly",action="store_true", help="""Assumes --input and --ref 
-	#	are already aligned with respect to each other and thus skips alignment""", default=False)
 		
 	parser.add_argument("--plotonly",type=str, help="""FSC curves to plot in separate plots. 
 		Skips fsc curve generation. Provide .txt. files separated by commas 
 		--plotonly=file1.txt,file2.txt,file3.txt etc...""", default=None)
+	
 	parser.add_argument("--singleplot",action="store_true",help="It --plotonly provided, all FSC curves will be on the same plot/figure", default=False)
 		
 	(options, args) = parser.parse_args()
@@ -178,21 +113,6 @@ def main():
 	else:
 		options.cutoff = None
 
-	#if not options.output and not options.plotonly:
-	#	print "ERROR: Unless you provide .txt files through --plotonly, you must specify an --output in .txt format."
-	#elif options.output and not options.plotonly:
-	#	if '.txt' not in options.output:
-	#		print "ERROR: Output must be in .txt format"
-	#		sys.exit()
-		
-	findir=os.listdir(os.getcwd())
-
-	#if options.path not in findir:
-	#	os.system('mkdir ' + options.path)
-	
-	#print "Befere options are of type", type(options)
-	#print "\n\n\nand are", options
-	
 	from EMAN2_utils import makepath
 	options = makepath(options,'sptres')
 
@@ -204,10 +124,7 @@ def main():
 	
 	if options.apix:
 		apix = float (options.apix)
-		
-	#print "Returned options are of type", type(options)
-	#print "\n\n\nand are", options
-	
+
 	if options.plotonly:
 		curves = options.plotonly
 		curves = curves.split(',')
@@ -227,43 +144,6 @@ def main():
 		getfscs(options,apix)
 	
 		print("Done calculating FSCs and plotting them.")
-		#sys.exit()
-	
-	'''
-	elif options.align:
-		print '\n\nI will align'
-		if options.symmap and options.symmap is not 'c1' and options.symmap is not 'C1':		
-			ref = EMData(options.ref,0)
-			ref = symmetrize(ref,options)
-			options.ref = options.path + '/' + os.path.basename(options.ref).replace('.','_' + options.sym + '.')
-			ref.write_image(options.ref,0)
-		
-		ptclali = alignment(options)
-		
-		print '\n\nthe returned path for ali ptcl is', ptclali
-		inputbackup = options.input
-		options.input = ptclali
-		
-		print '\n\nwill get fsc'
-		getfscs(options,apix)
-
-		if options.mirror:
-			options.input = inputbackup
-			ref = EMData(options.ref,0)
-			t=Transform({'type':'eman','mirror':True})
-			
-			options.ref = os.path.basename(options.ref).replace('.','_mirror.')
-			if options.path not in options.ref:
-				options.ref = options.path + '/' + options.ref
-		
-			ref.transform(t)
-			ref.write_image(options.ref,0)
-			
-			ptclalimirror = alignment(options)
-		
-			options.input = ptclalimirror
-			getfscs(options,apix)
-	'''
 
 	E2end(logger)
 	return
@@ -280,19 +160,6 @@ def getfscs(options,apix):
 	print('and the current directory is', os.getcwd())
 	
 	fyle = options.input.split('/')[-1]
-	#if not options.fsconly:
-	#	fyle = 'alignment/' + options.input.split('/')[-1]
-	#
-	#
-	#	if options.path not in fyle:
-	#		fyle = options.path + '/' + fyle
-	#
-	#
-	#		current = os.getcwd()
-	#
-	#		if current not in fyle:
-	#			fyle = current + '/' + fyle
-	
 	
 	print("\n\n\n\n\nThe fyle to get image count from is", fyle)
 	print("Whereas current dir is", os.getcwd())
@@ -306,7 +173,6 @@ def getfscs(options,apix):
 	fscsmsym = []
 	
 	format=fyle[-4:]
-	#if not options.output:
 	
 	output = fyle.split(format)[0] + '_FSC.txt'
 	
@@ -350,8 +216,6 @@ def getfscs(options,apix):
 	
 		refsymm = refsym.copy()
 		refsymm.transform(t)
-
-		#print "The mirror fsc file is", fscfilename
 
 	'''
 	Interate trough the particles
@@ -504,71 +368,7 @@ def fscaverager(options,curves,outname):
 	outavgtxt.close()
 	
 	return
-
-
-
-'''
-def alignment(options):
-	aligner=options.align
-	aligner=aligner.split(':')
-	newaligner=''
-		
-	if 'sym='+options.symali not in aligner:
-		
-		for element in aligner:
-			newElement = element
-			if 'sym' in element:
-				newElement='sym=' +options.symali
-			newaligner=newaligner + newElement + ":"
-		
-		if newaligner[-1] == ':':
-			newaligner = newaligner[:-1]
-			options.align=newaligner
 	
-	print "\n\n\n\n\nTHE fixed aligner is", newaligner, options.align
-	
-	alivolfile = os.path.basename(options.input).split('.')[0] + '_VS_' + os.path.basename(options.ref).split('.')[0] + '.hdf'
-	#print "alivolfile is", alivolfile
-	#print "Path is", options.path
-	#print "input is", options.input
-	#print "ref is", options.ref
-	#print "npeakstorefine is", options.npeakstorefine
-	#print "verbose is", options.verbose
-	#print "maskali is", options.maskali
-	#print "lowpass is", options.lowpass
-	#print "\n\nalign and its type are", options.align, type(options.align)
-	#print "\n\nfalign is type are", options.falign, type(options.falign)
-	
-	alicmd = 'cd ' + options.path + ' && e2spt_classaverage.py --search=' + str(options.search) + ' --searchfine=' + str(options.searchfine) + ' --path=alignment --input=../' + str(options.input) + ' --output=' + str(alivolfile) + ' --ref=../' + str(options.ref) + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose) + ' --mask=' + str(options.maskali) + ' --lowpass=' + str(options.lowpass) + ' --parallel=' + str(options.parallel) + ' --aligncmp=' + str(options.aligncmp) + ' --faligncmp=' + str(options.faligncmp) + ' --shrink=' + str(options.shrink) + ' --shrinkfine=' + str(options.shrinkfine) + ' --threshold=' + str(options.threshold) + ' --saveali' + ' --normproc=' + str(options.normproc) + ' --sym=' + str(options.symali) + ' --breaksym'
-	
-	if options.nocenterofmass:
-		alicmd += ' --nocenterofmass'
-	
-	if options.radius:
-		alicmd += ' --radius=' + str(options.radius)
-	
-	else:
-		alicmd += ' --align=' + str(options.align) + ' --falign=' + str(options.falign)
-	
-	
-	print "\n\n\n\n\n\nThe alig command to run is", alicmd
-			
-	#os.system(alicmd)
-	
-	p=subprocess.Popen( alicmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-	
-	#for line in iter(p.stdout.readline, ''):
-	#	print line.replace('\n','')
-
-	text=p.communicate()	
-	p.stdout.close()
-	
-	print "BEFORE ALIGNMENT, input was", options.input
-	print "BEFORE ALIGNMENT, ref was", options.ref
-	print "Returning this from ALIGNMENT", alivolfile
-	
-	return os.getcwd() + '/' + options.path + '/alignment/' + alivolfile
-'''
 
 def calcfsc(v1,v2,fscfilename,options):
 	
