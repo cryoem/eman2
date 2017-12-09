@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-
 #
 # Author: Jesus Galaz-Montoya
 # Last update 25/Feb/2015
@@ -36,7 +34,9 @@ from __future__ import print_function
 
 import os
 from EMAN2 import *
+from EMAN2_utils import *
 from time import time
+from __future__ import print_function
 
 #import matplotlib
 #matplotlib.use('Agg',warn=False)		 
@@ -97,7 +97,6 @@ def main():
 	#if options.averager: 
 	#	options.averager=parsemodopt(options.averager)
 	
-	from e2spt_classaverage import sptOptionsParser
 	options = sptOptionsParser( options )
 	
 	logger = E2init( sys.argv, options.ppid )
@@ -107,8 +106,7 @@ def main():
 	'''
 	
 	if not options.nonewpath:
-		from e2spt_classaverage import sptmakepath
-		options = sptmakepath (options, 'sptintrafsc')
+		options = makepath (options, 'sptintrafsc')
 	else:
 		try:
 			findir = os.lisdir( options.path )
