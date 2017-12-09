@@ -115,18 +115,18 @@ def main():
 	parser.add_argument("--ptclstack", type=str, default='', help="""Name of the stack containing a few sample particles picked from the tomogram, used to create an initial template.
 															with which to search for particles throughout the tomogram.""")
 	
-	parser.add_argument("--template", type=str, help="""Default=None. Path to file containing the template 
+	parser.add_argument("--template", type=str, default=None, help="""Default=None. Path to file containing the template 
 		to search for particles throughout the tomogram. Alternatively, provide --template=sphere 
 		to generate a spherical template from scratch. This requires also setting --boxsize and --ptclradius.
 		You can also provide --template=cylinder, which generates a solid or hollow cylinder,
 		depending on which of the following options you specify:
 		--template=cylinder:radius=r:height=h:radiusinner=ri:heightinner=hi.
 		radiusinner and heightinner MUST be specified together, and must be smaller
-		than radius and height; otherwise they will be defaulted to radius/2 and height/2.""",default='')
+		than radius and height; otherwise they will be defaulted to radius/2 and height/2.""")
 
-	parser.add_argument("--backgroundstack", type=str, help="""Name of the stack containing a few boxes picked from regions of the tomogram where there where no particles, 
-															no gold, and no carbon.""",default=None)
-	parser.add_argument("--carbonstack", type=str, help="Name of the stack containing a few boxes picked from the grid hole (or carbon).",default=None)
+	parser.add_argument("--backgroundstack", type=str, default=None, help="""Name of the stack containing a few boxes picked from regions of the tomogram where there where no particles, 
+															no gold, and no carbon.""")
+	parser.add_argument("--carbonstack", type=str, default=None, help="Name of the stack containing a few boxes picked from the grid hole (or carbon).")
 
 	#parser.add_argument("--output", type=str, help="Name to output the auto-boxed particles.",default='')
 	parser.add_argument("--boxsize", type=int, help="Size of the box to put the extracted particles in, and amount by which the subregions will overlap, when searching for particles in the tomogram.", default=0)
@@ -142,13 +142,13 @@ def main():
 																calculated based on --particleradius or --boxsize, or the template's boxsize ['nx']; 'D' is the dilution factor;
 																therefore, the larger D is, the fewer locations that will be initially picked as potential particles (before any pruning).""")
 
-	parser.add_argument("--apix", type=float, help="The actual apix of the tomogram if for some reason it is wrong on the header.", default=0.0)
+	parser.add_argument("--apix", type=float, default=0.0, help="The actual apix of the tomogram if for some reason it is wrong on the header.")
 	
-	parser.add_argument("--ptclradius", type=int, help="The estimated radius of the particle in pixels.", default=0)
+	parser.add_argument("--ptclradius", type=int, default=0, help="The estimated radius of the particle in pixels.")
 
-	parser.add_argument("--cshrink", type=int, help="""If the tomogram was PREVIOUSLY shrunk, --cshrink is the factor by which the tomogram supplied through --tomogram was shrunk with respect to 
+	parser.add_argument("--cshrink", type=int, default=0, help="""If the tomogram was PREVIOUSLY shrunk, --cshrink is the factor by which the tomogram supplied through --tomogram was shrunk with respect to 
 														the raw (unshrunk) tomogram. This CAN work in conjuction with --shrinktomo, so be careful. If both parameters are specified,
-														the coordinates found by the autoboxer will be multiplied by BOTH factors.""", default=0)
+														the coordinates found by the autoboxer will be multiplied by BOTH factors.""")
 
 	#parser.add_argument("--boxsize", type=int, help="Boxsize to resize the template, either provided through --template or computed from --particlestack", default=1)
 
