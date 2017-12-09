@@ -310,6 +310,43 @@ def clip2d( img, size, center=None ):
 	return imgclip
 
 
+def textwriter(data,options,name,invert=0,xvals=None):
+	"""
+	writes a list of values into a double column text file with rows of the form index,value. E.g., 0 10.0, 1 21.2, 1 -18.2,..., N valueN
+	This aims to make a file from which 'data' can be easily plotted with any other program
+	Author: Jesus Montoya, jgalaz@gmail.com
+	"""
+
+	try:
+		if options.path:
+			if options.path not in name:
+				name = options.path + '/' + name
+	except:
+		pass
+
+	if options.verbose:
+		print("(EMAN2_utils)(textwriter) writing the following file {}".format(name))
+	
+	with open(name,'w') as f:
+		lines=[]
+		for i in range(len(data)):
+			val=data[i]
+			if invert:
+				val*=-1
+				
+			line2write = str(i) + '\t' + str(val) + '\n'
+			if xvals:
+				line2write = str(xvals[i]) + '\t' + str(val) + '\n'
+
+			#print "THe line to write is"
+			lines.append(line2write)
+		
+		f.writelines(lines)
+	#f.close()
+
+	return
+
+
 def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ralign=None, alircmp=("dot",{}),shrink=None,mask=None,subset=None,prefilt=False,verbose=0):
 	"""Compares one image (target) to a list of many images (reflist). Returns """
 
