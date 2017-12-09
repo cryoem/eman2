@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 #
 # Author: Jesus Galaz-Montoya, 2011?2012?
 # Last update 25/Feb/2015
@@ -30,9 +29,10 @@ from __future__ import print_function
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
-
+from __future__ import print_function
 import os
 from EMAN2 import *
+from EMAN2_utils import *
 from sys import argv
 from optparse import OptionParser
 import sys
@@ -116,13 +116,10 @@ def main():
 		print("ERROR: Cannot provide --input and --inputdir simultaneously")
 		sys.exit()
 	
-	
-	from e2spt_classaverage import sptOptionsParser
 	options = sptOptionsParser( options )
 	#print "Options have been parsed, for example, mask is", options.mask, type(options.mask), len(options.mask)
 	
-	from e2spt_classaverage import sptmakepath
-	options = sptmakepath(options,'sptisr')
+	options = makepath(options,'sptisr')
 	
 	originalpath = options.path
 	
