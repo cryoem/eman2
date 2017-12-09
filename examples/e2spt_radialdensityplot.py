@@ -31,6 +31,7 @@
 from __future__ import print_function
 import os, sys, commands
 from EMAN2 import *
+from EMAN2_utils import *
 import math
 import numpy as np
 from scipy.optimize import curve_fit
@@ -66,6 +67,7 @@ def main():
 	parser.add_argument("--normalizeplot", action="store_true",default=False,help="""default=false. This will make the maximum density in each plot or curve equal to 1.""")
 	
 	parser.add_argument('--path', type=str, default='spt_radialplot', help="""Directory to save the results.""")		
+	parser.add_argument("--plotmaxima", action="store_true",default=False,help="""default=false. If on, this plots a vertical line at each maxima (peak) for easier visualization.""")
 	parser.add_argument("--preprocess", type=str, default=None, help="""Any processor (see e2help.py --verbose=10) applied to each volume prior to radial density plot computation.""")
 		
 	parser.add_argument("--savetxt", action="store_true", default=False, help="""default=false. Save plot files as .txt, so that they can be replotted with other software if necessary.""")
@@ -170,7 +172,7 @@ def main():
 				maxima=ret[0]				#These are a list of lists [[pixel,value],[pixel,value],...] with all maxima and minima
 				minima=ret[-1]
 				
-				uniquetag = i+'_indxtag'+str(j)
+				uniquetag = i+'_indextag'+str(j)
 				maxsall.update({ uniquetag:maxima })
 				minsall.update({ uniquetag:minima })	
 
@@ -201,52 +203,102 @@ def main():
 	
 		cc=0
 		for ele in finalvalues:
-			i = ele.keys()[0]
-			key = i
+			thisfile = ele.keys()[0]
+			key = thisfile
 			
-			n = EMUtil.get_image_count(i)
+			n = EMUtil.get_image_count(thisfile)
 			
 			if options.singleplotperfile:
 				fileid=i.split('.')[0]	
 				plotname = fileid + modetag + '.png'
 				
 			kk=0
-			for f in range(n):
-				apix = EMData(i,f,True)['apix_x']
+			for index in range(n):
+
 				
-				values = ele[key][f][1]
-				id = ele[key][f][0]
+				apix = EMData(thisfile,index,True)['apix_x']
 				
-				x = range(len(values))				
+				values = ele[key][index][1]
+				id = ele[key][index][0]
+				
+				
+
+				xs = range(len(values))				
 					
-				for j in range(len(x)):
-					x[j] = int(round(x[j] * apix))				
+				for j in range(len(xs)):
+					xs[j] = int(round(xs[j] * apix))				
 				
 				if options.savetxt:
-					txtname = options.path + '/' + i.split('.')[0] + modetag + str(kk).zfill(len(str(n))) + '.txt'
-					txtf = open(txtname,'w')
-					lines = []	
-					for v in range(len(values)):
-						line = str(v) +  ' ' + str(values[v]) + '\n'
-						lines.append(line)
-					txtf.writelines(lines)
-					txtf.close()
+					
+					txtname = options.path + '/' + thisfile.split('.')[0] + modetag + str(kk).zfill(len(str(n))) + '.txt'
+					textwriter(values,options,txtname)
+					#txtf = open(txtname,'w')
+					#lines = []	
+					#for v in range(len(values)):
+					#	line = str(v) +  ' ' + str(values[v]) + '\n'
+					#	lines.append(line)
+					#txtf.writelines(lines)
+					#txtf.close()
+
+				maxval = max(values)
+				maxvalloc = values.index(maxval)
+
+				uniquetag = thisfile +'_indextag' + str(index) #i=filename, f=index of img in filename
+				maxima = maxsall[uniquetag]
+
+				lastpeakloc = maxima[-1][0]
 
 				ziplist = list(zip(values[:-1], values[1:]))
-				diflist = [a1 - a2 for a1, a2 in ziplist]
+				ziplistpostmax = list(zip(values[maxvalloc:-1], values[maxvalloc+1:]))
+				ziplistpostlastpeak = list(zip(values[lastpeakloc:-1], values[lastpeakloc+1:]))
 
+				diflist = [a1 - a2 for a1, a2 in ziplist]
+				diflistpostmax = [a1 - a2 for a1, a2 in ziplistpostmax]
+				diflistpostlastpeak = [a1 - a2 for a1, a2 in ziplistpostlastpeak]
 				#print("\nziplist is".format(ziplist))
 				#print("\ndiflist is".format(diflist))
 				
 				max_slope = max(diflist)
 				indexmaxslope = diflist.index(max_slope)
-				print("\nmax slope is at pixel={}".format(indexmaxslope))
+
+				max_slope_postmax = max(diflistpostmax)
+				indexmaxslope_postmax = diflist.index(max_slope_postmax)
+
+				max_slope_postlastpeak = indexmaxslope_postlastpeak = None
+				
+				try:
+					max_slope_postlastpeak = max(diflistpostlastpeak)
+					indexmaxslope_postlastpeak = diflist.index(max_slope_postlastpeak)
+				except:
+					if options.verbose:
+						print('\nERROR computing slope after last peak')
+				
+				if options.verbose:
+					print("\nmaxpeak at pixel={}; maxslope at pixel={}; after maxpeak, maxslope at pixel={}; after lastpeak, maxslope at pixel={}".format(maxvalloc,indexmaxslope,indexmaxslope_postmax,indexmaxslope_postlastpeak))
 				
 				min_slope = min(diflist)
 				indexminslope = diflist.index(min_slope)
 				print("\nmin slope is at pixel={}".format(indexminslope))
 				
-				plt.plot(x,values,linewidth=2,alpha=0.5)
+				plt.plot(xs,values,linewidth=2,alpha=0.5)
+
+				if options.plotmaxima:
+					nm = len(maxima)
+					peaklocs = []
+					peakvals = []
+					for ii in range(nm):
+						peakloc = maxima[ii][0]*apix
+						peaklocs.append(peakloc)
+
+						peakval = maxima[ii][1]
+						peakvals.append(peakval)
+
+						plt.axvline(x=peakloc,linewidth=2,alpha=0.5,color='k',linestyle='--')
+					
+					#takes data of the form: textwriter(yvalues,options,txtname,invert=0,xvalues=None)
+					maxtxtname = options.path + '/' + thisfile.split('.')[0] + modetag + str(kk).zfill(len(str(n))) + '_maxima.txt'
+
+					textwriter(peakvals,options,maxtxtname,0,peaklocs)
 				
 				if not options.singleplotperfile and not options.singlefinalplot:
 					#plotname=i.split('.')[0]+str(kk).zfill(len(str(n))) + '.png'
@@ -311,13 +363,13 @@ def classifymax( options, maxsall ):
 	#print "\n\n\n"
 	
 	for f in maxsall:
-		imgfile = f.split('_indxtag')[0]
+		imgfile = f.split('_indextag')[0]
 		
 		apix = EMData( imgfile, 0, True)['apix_x']
 		#print "\nimgfile is", imgfile
 		
-		ptclindx = int(f.split('_indxtag')[-1])
-		print("\nptclindx is", ptclindx)
+		ptclindex = int(f.split('_indextag')[-1])
+		print("\nptclindex is", ptclindex)
 		
 		maxs = maxsall[f]
 		print("\nmaxs are", maxs)
@@ -354,13 +406,13 @@ def classifymax( options, maxsall ):
 			#print "ele is", ele
 			#print "particlesByRadius[ele] is", particlesByRadius[ele]
 			if int(particlesByRadius[ele]) == int(radius):
-				ptclfile = ele.split('_indxtag')[0]
-				ptclindx = int(ele.split('_indxtag')[-1])
-				ptcl = EMData(ptclfile,ptclindx)
+				ptclfile = ele.split('_indextag')[0]
+				ptclindex = int(ele.split('_indextag')[-1])
+				ptcl = EMData(ptclfile,ptclindex)
 				radiusAngs = float(radius)*float(apix)
 				#print "radiusAngs is", radiusAngs
 				print("\nFound a particle at radius in pixels %d which is %f in angstroms" % ( radius, radiusAngs ))
-				print("To be extracted from file %s and index %d" %(ptclfile,ptclindx))
+				print("To be extracted from file %s and index %d" %(ptclfile,ptclindex))
 				ptcl['spt_radialplot_radius']=radius
 				ptcl.write_image( outStack, -1 )
 	
@@ -392,15 +444,16 @@ def calcmaxima( values ):
 def calcvalues(a,options):
 	
 	a = preprocRadPlot( a, options )
-	
+	values=[]
+	x=[]
 	if options.mode == 'sphere':
 		print("I will calculate the radial density")
 		values = a.calc_radial_dist(a['nx']/2, 0, 1, 1)
-		return(values)
+		#return(values)
 	
 	elif options.mode == 'cylinder':
 		values = cylinder(a,options)
-		return(values)
+		#return(values)
 		
 	elif options.mode == 'x' or options.mode == 'y' or options.mode == 'z':
 		values = direction(a,options)
@@ -408,19 +461,30 @@ def calcvalues(a,options):
 	if options.fitgaussian:
 		# p0 is the initial guess for the fitting coefficients (A, mu and sigma above)
 		p0 = [1., 0., 1.]
+		
+		#hist, bin_edges = np.histogram(values, density=True)
+		#bin_centers = (bin_edges[:-1] + bin_edges[1:])/2
 
-		coeff, var_matrix = curve_fit(gauss, bin_centres, hist, p0=p0)
-
+		#print("\nhist={}".format(hist))
+		#print("\nbin_centers={}".format(bin_centers))
+		
+		x = range(len(values))
+		coeff, var_matrix = curve_fit(gauss, x, values, p0=p0)
+		print('\nfitting gaussian!')
 		# Get the fitted curve
-		values = gauss(bin_centres, *coeff)
+		values = list(gauss(values, *coeff))
 
+	if values:
 		return values
+	else:
+		print("\n(e2spt_radialdensityplot)(calcvalues) ERROR: something went wrong during value calculation/fitting.")
+		sys.exit(1)
 
 
 # Define model function to be used to fit to the data above:
 def gauss(x, *p):
 	A, mu, sigma = p
-	return A*numpy.exp(-(x-mu)**2/(2.*sigma**2))
+	return A*np.exp(-(x-mu)**2/(2.*sigma**2))
 
 
 def preprocRadPlot( a, options):
