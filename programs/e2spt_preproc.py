@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-
 #
 # Author: Jesus Galaz-Montoya 03/2011, 
 # (based on Steven Ludtke's initial implementation [02/15/2011] of Jesus's older scripts, from M.F.Schmid's methods).
@@ -34,8 +32,9 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 #
-
+from __future__ import print_function
 from EMAN2 import *
+from EMAN2_utils import *
 from EMAN2jsondb import JSTask,jsonclasses
 import os
 from sys import argv
@@ -92,14 +91,10 @@ def main():
 	
 	logger = E2init(sys.argv, options.ppid)
 	print("\n(e2spt_preproc)(main) started log")
-	
-	
-	
-	from e2spt_classaverage import sptmakepath
-	
+		
 	if options.path and not options.nopath:
 	
-		options = sptmakepath(options,'sptpreproc')
+		options = makepath(options,'sptpreproc')
 
 	if options.parallel=='None' or options.parallel=='none':
 		options.parallel=None
@@ -189,9 +184,7 @@ def main():
 
 			tasks=[]
 			results=[]
-		
-		
-		from e2spt_classaverage import sptOptionsParser
+				
 		options = sptOptionsParser( options )
 		
 		
