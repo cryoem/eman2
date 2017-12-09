@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-
 #
 # Author: Jesus Galaz-Montoya  November/21/2013
 # Last modification: 1/Jun/2017
@@ -31,10 +29,11 @@ from __future__ import print_function
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
-
+from __future__ import print_function
 from sys import argv
 import os
 from EMAN2 import *
+from EMAN2_utils import *
 from EMAN2jsondb import JSTask,jsonclasses
 
 from e2spt_classaverage import Align3DTask, align3Dfunc, get_results
@@ -263,12 +262,10 @@ def main():
 	'''
 	Make the directory where to create the database where the results will be stored
 	'''
-	
-	from e2spt_classaverage import sptmakepath 
-	
+		
 	print("(e2spt_refinemulti.py) BEFORE sptmakepath, otions.path is", options.path)
 	
-	options = sptmakepath(options,'spt_refinemulti')
+	options = makepath(options,'spt_refinemulti')
 
 	print("(e2spt_refinemulti.py) AFTER sptmakepath, otions.path is", options.path)
 
@@ -355,7 +352,6 @@ def main():
 		Parse parameters such that "None" or "none" are adequately interpreted to turn of an option
 		'''
 	
-		from e2spt_classaverage import sptOptionsParser
 		options = sptOptionsParser( options )
 	
 	
@@ -382,8 +378,12 @@ def main():
 		#setattr(options, 'goldstandardoff')
 	
 		print("options types are", type(options))
-	
-		from e2spt_classaverage import sptRefGen 
+		
+		try:
+			from e2spt_classaverage import sptRefGen
+		except:
+			print("\nimporting sptRefGen needs to be fixed. ABORTING")
+			sys.exit(1) 
 	
 		nptcls = EMUtil.get_image_count( options.input )
 	
