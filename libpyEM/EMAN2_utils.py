@@ -7,6 +7,8 @@ from __future__ import print_function
 import numpy as np
 import os
 from EMAN2 import *
+import importlib
+import sys
 
 amino_dict= {0: 'ALA', 1: 'ARG', 2: 'ASN', 3: 'ASP', 4: 'CYS', 5: 'GLU', 6: 'GLN', 7: 'GLY', 8: 'HIS', 9: 'ILE', 10: 'LEU', 11: 'LYS', 12: 'MET', 13: 'PHE', 14: 'PRO', 15: 'SER', 16: 'THR', 17: 'TRP', 18: 'TYR', 19: 'VAL', 20: 'ASX', 21:'GLX'}
 amino_dict.update(dict((v, k) for k, v in amino_dict.iteritems()))
@@ -227,17 +229,22 @@ def makepath(options, stem='e2dir'):
 def detectThreads(options):
 	"""
 	c:If parallelism isn't set, parallelize automatically unless disabled
+	Author: Jesus Montoya, jgalaz@gmail.com
 	"""
 	if options.parallel != 'None' and options.parallel != 'none' and options.parallel != 'NONE':
-		import multiprocessing
-		nparallel = multiprocessing.cpu_count()
-		options.parallel = 'thread:' + str(nparallel)
-		print("\nfound cores n={}".format(nparallel))
-		print("setting --parallel={}".format(options.parallel))
+		
+		if 'mpi' not in options.parallel:
+			import multiprocessing
+			nparallel = multiprocessing.cpu_count()
+			options.parallel = 'thread:' + str(nparallel)
+			print("\nfound cores n={}".format(nparallel))
+			print("setting --parallel={}".format(options.parallel))
+		else:
+			print("\n(EMAN2_utils)(detectThreads) nothing to do; mpi paralellism specified; options.parallel={}".format(otpions.parallel)) 
 	
 	elif options.parallel == 'None' or options.parallel == 'none':
 		options.parallel = None
-		print("\nWARNING: parallelism disabled, options.parallel={}".format(options.parallel) )
+		print("\n(EMAN2_utils)(detectThreads) WARNING: parallelism disabled, options.parallel={}".format(options.parallel) )
 	
 	return options
 
