@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-
 #
 # Author: Jesus Galaz-Montoya, 07/2011
 # Last modification: July/08/2015
@@ -31,9 +29,9 @@ from __future__ import print_function
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 
-
+from __future__ import print_function
 from EMAN2 import *
-
+from EMAN2_utils import *
 import os
 import sys
 from EMAN2jsondb import JSTask,jsonclasses
@@ -232,8 +230,7 @@ def main():
 	'''
 	Make the directory where to create the database where the results will be stored
 	'''
-	from e2spt_classaverage import sptmakepath
-	options = sptmakepath(options,'spt_hac')
+	options = makepath(options,'spt_hac')
 	
 	rootpath = os.getcwd()
 	if rootpath not in options.path:
@@ -280,7 +277,6 @@ def main():
 	'''
 	Parse parameters such that "None" or "none" are adequately interpreted to turn of an option
 	'''
-	from e2spt_classaverage import sptOptionsParser
 	options = sptOptionsParser( options )
 
 	
@@ -923,7 +919,8 @@ def allvsall(options):
 		#from e2figureplot import textwriter
 		#textwriterinfo(plotX, compsInfo, options, plotName.replace('.png','_info.txt') )
 		
-		from e2spt_classaverage import textwriter, textwriterinfo
+		#from e2spt_classaverage import textwriter, textwriterinfo
+		from e2spt_classaverage import textwriterinfo
 		textwriter(plotY, options, plotName.replace('.png','.txt'), invert=1 )
 
 		if options.verbose:
