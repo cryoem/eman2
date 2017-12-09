@@ -57,7 +57,9 @@ def main():
 	See e2ddd_particles for per-particle alignment.
 
 	Note: We have found the following to work on DE64 images:
-	e2ddd_movie.py <movies> --gain <GainImages.mrcs> --reverse_gain --invert_gain --de64 --gain_darkcorrected
+	e2ddd_movie.py <movies> --de64 --dark <dark_frames> --gain <gain_frames> --gain_darkcorrected --reverse_gain --invert_gain
+
+	Note: Do not use .mrc extensions for multi-image files. Use .mrcs instead.
 	"""
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
@@ -77,7 +79,7 @@ def main():
 	parser.add_argument("--de64", default=False, help="Perform gain image correction on DE64 data. Note, these should not be normalized.",action="store_true",guitype='boolbox', row=7, col=0, rowspan=1, colspan=1, mode='align')
 	parser.add_argument("--rotate_gain", default = 0, type=str, choices=["0","90","180","270"], help="Rotate gain reference by 0, 90, 180, or 270 degrees. Default is 0. Transformation order is rotate then reverse.",guitype='combobox', choicelist='["0","90","180","270"]', row=7, col=1, rowspan=1, colspan=1, mode='align')
 	parser.add_argument("--reverse_gain", default=False, help="Flip gain reference along y axis (about x axis). Default is False. Transformation order is rotate then reverse.",action="store_true",guitype='boolbox', row=7, col=2, rowspan=1, colspan=1, mode='align')
-	parser.add_argument("--gain_darkcorrected", default=False, help="Do not dark correct gain image. False by default",action="store_true",guitype='boolbox', row=8, col=0, rowspan=1, colspan=1, mode='align')
+	parser.add_argument("--gain_darkcorrected", default=False, help="Do not dark correct gain image. False by default.",action="store_true",guitype='boolbox', row=8, col=0, rowspan=1, colspan=1, mode='align')
 	parser.add_argument("--invert_gain", default=False, help="Use reciprocal of input gain image",action="store_true",guitype='boolbox', row=8, col=1, rowspan=1, colspan=1, mode='align')
 
 	#parser.add_header(name="orblock3", help='Just a visual separation', title="- OR -", row=6, col=0, rowspan=1, colspan=3, mode="align")
@@ -192,12 +194,21 @@ def main():
 					if dark!=None : sigg.mult(sigd)
 					gain.mult(sigg)
 				gain.write_image(options.gain.rsplit(".",1)[0]+"_sum.hdf")
-			#else: gain.mult(1.0/99.0)
-	#		gain.process_inplace("threshold.clampminmax.nsigma",{"nsigma":3.0})
+			if options.de64: 
+				gain.process_inplace( "threshold.clampminmax", { "minval" : gain[ 'mean' ] - 8.0 * gain[ 'sigma' ], "maxval" : gain[ 'mean' ] + 8.0 * gain[ 'sigma' ], "tomean" : True } )
+			else:
+				gain.process_inplace("math.reciprocal",{"zero_to":0.0})
+				#gain.mult(1.0/99.0)
+				#gain.process_inplace("threshold.clampminmax.nsigma",{"nsigma":3.0})
 
-			if dark!=None and options.gain_darkcorrected == False: gain.sub(dark) # dark correct the gain-reference
-			if not options.de64: gain.mult(1.0/gain["mean"])
-			gain.process_inplace("math.reciprocal",{"zero_to":0.0})		# setting zero values to zero helps identify bad pixels
+		if dark!=None and options.gain_darkcorrected == False: gain.sub(dark) # dark correct the gain-reference
+
+		if options.de64:
+			mean_val = gain["mean"]
+			if mean_val <= 0.: mean_val=1.
+			gain.process_inplace("threshold.belowtominval",{"minval":0.01,"newval":mean_val})
+
+		gain.mult(1.0/gain["mean"])
 
 		if options.invert_gain: gain.process_inplace("math.reciprocal") 
 	#elif options.gaink2 :
@@ -208,7 +219,7 @@ def main():
 		tf = Transform({"type":"2d","alpha":int(options.rotate_gain)})
 		gain.process_inplace("xform",{"transform":tf})
 
-	if options.reverse_gain or options.de64: gain.process_inplace("xform.reverse",{"axis":"y"})
+	if options.reverse_gain: gain.process_inplace("xform.reverse",{"axis":"y"})
 
 	if options.rotate_dark and dark != None: 
 		tf = Transform({"type":"2d","alpha":int(options.rotate_dark)})
@@ -294,7 +305,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			if dark!=None : im.sub(dark)
 			if gain!=None : im.mult(gain)
 			#im.process_inplace("threshold.clampminmax",{"minval":0,"maxval":im["mean"]+im["sigma"]*3.5,"tozero":1})
-			
+			if options.de64: im.process_inplace( "threshold.clampminmax", { "minval" : im[ 'minimum' ], "maxval" : im[ 'mean' ] + 8.0 * im[ 'sigma' ], "tomean" : True } )
 			#if options.fixbadpixels : im.process_inplace("threshold.outlier.localmean",{"sigma":3.5,"fix_zero":1}) # fixes clear outliers as well as values which were exactly zero
 
 			#im.process_inplace("threshold.clampminmax.nsigma",{"nsigma":3.0})

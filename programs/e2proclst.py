@@ -46,6 +46,7 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 #	parser.add_argument("--average", action="store_true", help="Averages all input images (without alignment) and writes a single output image")
 	
 	parser.add_argument("--create", type=str, default=None, help="to use this option, the input files should be image files. Specify an .lst or .lsx file to create here (e.g., --create mylst.lst) with references to all of the images in the inputs.")
+	parser.add_argument("--eosplit", action="store_true", help="Will generate _even and _odd .lst files for each specified input .lst file")
 
 	parser.add_argument("--dereforig", type=str, default=None, help="Extract the data_source and data_n parameters from each image in the file and create a new .lst file referencing the original image(s)")
 
@@ -84,6 +85,25 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 	logid=E2init(sys.argv,options.ppid)
 
 	#if options.numaslist != None:
+	if options.eosplit:
+		for inp in args:
+			if inp[-4:].lower()!=".lst" : continue
+			lin=LSXFile(inp,True)
+			ename="{}_even.lst".format(inp[:-4])
+			oname="{}_odd.lst".format(inp[:-4])
+			try: os.unlink(ename)
+			except: pass
+			try: os.unlink(oname)
+			except: pass
+			loute=LSXFile(ename,False)
+			louto=LSXFile(oname,False)
+			for i in xrange(len(lin)):
+				imt=lin.read(i)
+				if i%2: louto.write(-1,imt[0],imt[1],imt[2])
+				else: loute.write(-1,imt[0],imt[1],imt[2])
+		print("Generated: ",ename,oname)
+		sys.exit(0)
+
 	if options.numaslist:
 		out=open(options.numaslist,"w")
 

@@ -241,8 +241,10 @@ def main():
 	'''
 	Make the directory where to create the database where the results will be stored
 	'''
-	from e2spt_classaverage import sptmakepath
-	options = sptmakepath(options,'spt_bt')
+	#from e2spt_classaverage import sptmakepath
+	#options = sptmakepath(options,'spt_bt')
+	from EMAN2_utils import makepath
+	options = makepath(options,'spt_bt')	
 	
 	rootpath = os.getcwd()
 	if rootpath not in options.path:
@@ -284,7 +286,10 @@ def main():
 	#from e2spt_classaverage import sptOptionsParser
 	#options = sptOptionsParser( options )
 	
-	from e2spt_classaverage import writeParameters
+#	from e2spt_classaverage import writeParameters
+	from EMAN2_utils import writeParameters
+	cmdwp = writeParameters(options,'e2spt_classaverage.py', 'sptclassavg')
+
 	writeParameters(options,'e2spt_binarytree.py', 'bt')
 	
 					
