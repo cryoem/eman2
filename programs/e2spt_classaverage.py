@@ -1754,10 +1754,12 @@ def cmdpreproc( fyle, options, finetag=False ):
 	
 	ret = runcmd( options, cmdpreproc )
 	
+	print("\n(e2spt_classaverage)(cmdpreproc) e2spt_preproc returned this={}".format(ret))
+	
 	if ret:
 		input_preproc = options.path + '/' + preprocstack
 		
-		print("\npreprocstack %s will be %s" %(preprocstack, input_preproc))
+		print("\npreprocstack {} will be renamed to {}".format(preprocstack, input_preproc))
 
 		import time
 		time.sleep(5)
