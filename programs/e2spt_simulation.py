@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-
 '''
 ====================
 Author: Jesus Galaz - 2011, Last update: 07/Nov/2017
@@ -31,7 +29,7 @@ Author: Jesus Galaz - 2011, Last update: 07/Nov/2017
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 '''
-
+from __future__ import print_function
 from optparse import OptionParser
 from EMAN2 import *
 from EMAN2_utils import *
