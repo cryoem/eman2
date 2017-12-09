@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-
 #
 # Author: Jesus Galaz  20/3/2012
 # Copyright (c) 2011- Baylor College of Medicine
@@ -29,7 +27,8 @@ from __future__ import print_function
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
-
+from __future__ import print_function
+from EMAN2_utils import *
 from sys import argv
 import os
 from EMAN2 import *
@@ -52,6 +51,8 @@ def main():
 	
 	(options, args) = parser.parse_args()	
 	
+	logger = E2init(sys.argv, options.ppid)
+
 	n = EMUtil.get_image_count(options.input)
 	indexes = list(xrange(n))
 	
@@ -67,7 +68,11 @@ def main():
 		print("I have chosen taken particle %d from the original stack" %num)
 		print("And have put it into index %d in the randomized stack" %i)
 	print("DONE!")	
-	return()
+
+	E2end(logger)
+	
+	return
+
 	
 if __name__ == "__main__":
     main()
