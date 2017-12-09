@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-
 #
 # Author: Jesus Galaz, 10/20/2012; last update July/26/2015
 # Copyright (c) 2011 Baylor College of Medicine
@@ -32,7 +30,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 #
-
+from __future__ import print_function
 import os
 from EMAN2 import *
 from EMAN2_utils import *
@@ -47,7 +45,6 @@ matplotlib.use('Agg',warn=False)
 #from pyemtbx.options import intvararg_callback
 #from pyemtbx.options import floatvararg_callback
 #from optparse import OptionParser
-
 
 import matplotlib.pyplot as plt
 import sys
@@ -259,19 +256,8 @@ def main():
 	if options.shrinktomo or options.inverttomo or options.preprocess or options.lowpass or options.highpass or options.normproc or options.threshold or options.mask:
 		options = tomogrampreprocess(options)
 	
-	'''
-	c:if parallelism isn't set, parallelize automatically unless disabled
-	'''
-	if options.parallel != 'None' and options.parallel != 'none' and options.parallel != 'NONE':
-		import multiprocessing
-		nparallel = multiprocessing.cpu_count()
-		options.parallel = 'thread:' + str(nparallel)
-		print("\nfound %d cores" %(nparallel))
-		print("setting --parallel to", options.parallel)
-	elif options.parallel == 'None' or options.parallel == 'none':
-		print("\nWARNING: parallelism disabled", options.parallel)
+	options = detectThreads( options )
 
-	
 	'''
 	c:get the template for template matching (read it in and "prepare it", or just generate it from scratch or from the data itself)
 	'''
