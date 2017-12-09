@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 #
 # Author: Jesus Galaz-Montoya, August 2014; last update by Jesus Galaz-Montoya on August/04/2014
 # Copyright (c) 2000-2011 Baylor College of Medicine
@@ -28,8 +27,9 @@ from __future__ import print_function
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
-
+from __future__ import print_function
 from EMAN2 import *
+from EMAN2_utils import *
 import sys
 import os
 
@@ -89,36 +89,12 @@ def main():
 	#	aligned particle volumes in class_ptcl.hdf. Overwrites existing file.""")
 
 	(options, args) = parser.parse_args()
-	
-	
-	from e2spt_classaverage import sptOptionsParser
+		
 	options = sptOptionsParser( options )
-	
-	'''
-	if options.normproc: 
-		options.normproc=parsemodopt(options.normproc)
-		
-	if options.threshold: 
-		options.threshold=parsemodopt(options.threshold)
-		
-	if options.lowpass: 
-		options.lowpass=parsemodopt(options.lowpass)
-	
-	if options.preprocess: 
-		options.preprocess=parsemodopt(options.preprocess)
-		
-	if options.averager: 
-		options.averager=parsemodopt(options.averager)
-	'''
-	
-	#if not options.boxsize:
-	#	print "\n(e2spt_recompute.py) (main) ERROR: Boxsize must be greater than zero. It is:", options.boxsize
-	#	sys.exit()
 	
 	logid=E2init(sys.argv,options.ppid)
 	
-	from e2spt_classaverage import sptmakepath
-	options = sptmakepath(options,'sptrecompute')
+	options = makepath(options,'sptrecompute')
 	
 	c = os.getcwd()					#Get current directory
 	
