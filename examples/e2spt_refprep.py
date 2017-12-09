@@ -154,7 +154,7 @@ def main():
 	nptcl = EMUtil.get_image_count(options.input)
 	
 	if nptcl < 2:
-		print "\nERROR: you need more than two particles in --input to 
+		print "\nERROR: you need more than two particles in --input to particles"
 	
 	if not options.input:
 		parser.print_help()
@@ -280,10 +280,13 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 				
 			#elif options.hacref:
 			if method == 'hac':
+				pass
 		
 			if method == 'ssa':
+				pass
 								
 			if method == 'bt':
+				pass
 		
 				
 	
