@@ -49,57 +49,48 @@ def main():
 			
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
+	parser.add_argument("--apix",type=float,default=0.0,help="""Default=0.0 (not used). Use this apix value where relevant instead of whatever is in the header of the reference and the particles. Will overwrite particle header as well.""")
+
+	parser.add_argument("--clip",type=int,default=0,help="""Default=0 (which means it's not used). Boxsize to clip particles. For example, the boxsize of the particles might be 100 pixels, but the particles are only 50 pixels in diameter. Aliasing effects are not always as deleterious for all specimens, and sometimes 2x padding isn't necessary.""")
+
+	parser.add_argument("--highpass",type=str,default='',help="""Default=None. A highpass filtering processor (see 'e2help.py processors -v 10' at the command line) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.""")
 
 	parser.add_argument("--input", type=str, default='',help="""Default=None. The name of the input volume stack. MUST be HDF since volume stack support is required.""")
 	
-	parser.add_argument("--output", type=str, default='',help="""Default=None. Specific name of HDF file to write processed particles to.""")
-		
-	parser.add_argument("--parallel",type=str, default='', help="""default=None. Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel""")
-	
-	parser.add_argument("--ppid", type=int, help="""Default=-1. Set the PID of the parent process, used for cross platform PPID""",default=-1)
-	
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="""Default=0. Verbose level [0-9], higner number means higher level of verboseness""")
-		
-	parser.add_argument("--subset",type=int,default=0,help="""Default=0 (not used). Refine only this substet of particles from the stack provided through --input""")
+	parser.add_argument("--lowpass",type=str,default='',help="""Default=None. A lowpass filtering processor (see 'e2help.py processors -v 10' at the command line) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.""")
 
-	parser.add_argument("--apix",type=float,default=0.0,help="""Default=0.0 (not used). Use this apix value where relevant instead of whatever is in the header of the reference and the particles. Will overwrite particle header as well.""")
-
-	parser.add_argument("--shrink", type=int,default=0,help="""Default=0 (no shrinking). Optionally shrink the input volumes by an integer amount for coarse alignment.""")
-		
-	parser.add_argument("--threshold",type=str,default='',help="""Default=None. A threshold applied to the subvolumes after normalization. For example, --threshold=threshold.belowtozero:minval=0 makes all negative pixels equal 0, so that they do not contribute to the correlation score.""")
-	
 	parser.add_argument("--mask",type=str,default='', help="""Default=None. Masking processor applied to particles before alignment. IF using --clip, make sure to express outer mask radii as negative pixels from the edge.""")
-	
 	parser.add_argument("--maskfile",type=str,default='',help="""Default=None. Mask file (3D IMAGE) applied to particles before alignment. Must be in HDF format. Default is None.""")
 	
+	parser.add_argument("--nopath",action='store_true',default=False,help="""If supplied, this option will save results in the directory where the command is run. A directory to store the results will not be made.""")
 	parser.add_argument("--normproc",type=str, default='',help="""Default=None (see 'e2help.py processors -v 10' at the command line). Normalization processor applied to particles before alignment. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'""")
 	
+	parser.add_argument("--output", type=str, default='',help="""Default=None. Specific name of HDF file to write processed particles to.""")
+
+	parser.add_argument("--path",type=str,default='spt_preproc',help="""Default=spt. Directory to store results in. The default is a numbered series of directories containing the prefix 'sptpreproc'; for example, sptpreproc_02 will be the directory by default if 'sptpreproc_01' already exists.""")
+	parser.add_argument("--parallel",type=str, default='', help="""default=None. Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel""")
+	parser.add_argument("--ppid", type=int, help="""Default=-1. Set the PID of the parent process, used for cross platform PPID""",default=-1)
 	parser.add_argument("--preprocess",type=str,default='',help="""Any processor (see 'e2help.py processors -v 10' at the command line) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.""")
-	
-	parser.add_argument("--lowpass",type=str,default='',help="""Default=None. A lowpass filtering processor (see 'e2help.py processors -v 10' at the command line) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.""")
-	
-	parser.add_argument("--highpass",type=str,default='',help="""Default=None. A highpass filtering processor (see 'e2help.py processors -v 10' at the command line) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.""")
-	
-	parser.add_argument("--clip",type=int,default=0,help="""Default=0 (which means it's not used). Boxsize to clip particles. For example, the boxsize of the particles might be 100 pixels, but the particles are only 50 pixels in diameter. Aliasing effects are not always as deleterious for all specimens, and sometimes 2x padding isn't necessary.""")
-	
-	parser.add_argument("--nopath",action='store_true',default=False,help="""If supplied, this option will save results in the directory where the command is run. A directory to store the results will not be made.""")
 
-	parser.add_argument("--path",type=str,default='sptpreproc',help="""Default=spt. Directory to store results in. The default is a numbered series of directories containing the prefix 'sptpreproc'; for example, sptpreproc_02 will be the directory by default if 'sptpreproc_01' already exists.""")
-
+	parser.add_argument("--shrink", type=int,default=0,help="""Default=0 (no shrinking). Optionally shrink the input volumes by an integer amount for coarse alignment.""")
+	parser.add_argument("--subset",type=int,default=0,help="""Default=0 (not used). Refine only this substet of particles from the stack provided through --input""")
 	
+	parser.add_argument("--threshold",type=str,default='',help="""Default=None. A threshold applied to the subvolumes after normalization. For example, --threshold=threshold.belowtozero:minval=0 makes all negative pixels equal 0, so that they do not contribute to the correlation score.""")
+	
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="""Default=0. Verbose level [0-9], higner number means higher level of verboseness""")
+
 	(options, args) = parser.parse_args()
 	
 	logger = E2init(sys.argv, options.ppid)
+	
 	print("\n(e2spt_preproc)(main) started log")
 		
 	if options.path and not options.nopath:
 	
-		options = makepath(options,'sptpreproc')
+		options = makepath(options,'spt_preproc')
 
 	if options.parallel=='None' or options.parallel=='none':
 		options.parallel=None
-	
-	
 	
 	if not options.input:
 		try:
