@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-
 #
 # Author: Jesus Galaz  1/1/2012 (rewritten)
 # Copyright (c) 2011- Baylor College of Medicine
@@ -30,9 +28,11 @@ from __future__ import print_function
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 
+from __future__ import print_function
 from sys import argv
 import os
 from EMAN2 import *
+from EMAN2_utils import *
 
 current = os.getcwd()
 filesindir = os.listdir(current)
@@ -59,6 +59,8 @@ def main():
 		
 	(options, args) = parser.parse_args()
 	
+	logger = E2init(sys.argv, options.ppid)
+
 	stack = options.input
 	print("The stack name is", stack)
 		
@@ -87,10 +89,12 @@ def main():
 	else:
 		print("\nError building command for stack=%s, cmd1=%s, cmd2=%s, cmd3=%s" %( stack, cmd1, cmd2, cmd3 ))
 		sys.exit(1)
-
+	
+	E2end(logger)
+	
 	return
 
-
+"""
 def runcmd(options,cmd):
 	if options.verbose > 9:
 		print("(e2spt_classaverage)(runcmd) running command", cmd)
@@ -103,6 +107,7 @@ def runcmd(options,cmd):
 	print("(e2spt_refinemsa)(runcmd) done")
 
 	return 1
+"""
 	
 	
 if __name__ == "__main__":
