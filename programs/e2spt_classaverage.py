@@ -133,7 +133,7 @@ def main():
 	
 	parser.add_argument("--sym", type=str,dest = "sym", default='', help = """Default=None (equivalent to c1). Symmetry to impose -choices are: c<n>, d<n>, h<n>, tet, oct, icos""", guitype='symbox', row=9, col=1, rowspan=1, colspan=2, mode='alignment,breaksym')
 	
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="""Default=0. Verbose level [0-9], higner number means higher level of verboseness""")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="""Default=0. Verbose level [0-9], higner number means higher level of verboseness; 10-11 will trigger many messages that might make little sense since this level of verboseness corresponds to 'debugging mode'""")
 
 	parser.add_argument("--weighbytiltaxis",type=str,default='',help="""Default=None. A,B, where A is an integer number and B a decimal. A represents the location of the tilt axis in the tomogram in pixels (eg.g, for a 4096x4096xZ tomogram, this value should be 2048), and B is the weight of the particles furthest from the tiltaxis. For example, --weighbytiltaxis=2048,0.5 means that praticles at the tilt axis (with an x coordinate of 2048) will have a weight of 1.0 during averaging, while the distance in the x coordinates of particles not-on the tilt axis will be used to weigh their contribution to the average, with particles at the edge(0+radius or 4096-radius) weighing 0.5, as specified by the value provided for B.""")
 
@@ -3382,24 +3382,25 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 			#print "\nThe reference's COARSE size is", sfixedimage['nx'],sfixedimage['ny'],sfixedimage['nz']
 			sys.exit()	
 		
-		#some aligners don't have the ability to return 'nbest' answers
-	#	try:
-	
-		print("\n\noptions.align is", options.align, type(options.align))
-		print("\noptions.align[0]", options.align[0])
-		print("\noptions.align[1]", options.align[1])
-		print("\nsimage and type", simage, type(simage))
-		print("\nsfixedimage and type", sfixedimage, type(sfixedimage))
-		print("\n\noptions.aligncmp is", options.aligncmp, type(options.aligncmp))
-		print("\noptions.aligncmp[0]", options.aligncmp[0])
-		print("\noptions.aligncmp[1]", options.aligncmp[1])
+		#use verbose=11 for debugging mode
+		if options.verbose == 11:
+			print("\n\noptions.align is", options.align, type(options.align))
+			print("\noptions.align[0]", options.align[0])
+			print("\noptions.align[1]", options.align[1])
+			print("\nsimage and type", simage, type(simage))
+			print("\nsfixedimage and type", sfixedimage, type(sfixedimage))
+			print("\n\noptions.aligncmp is", options.aligncmp, type(options.aligncmp))
+			print("\noptions.aligncmp[0]", options.aligncmp[0])
+			print("\noptions.aligncmp[1]", options.aligncmp[1])
 		
 		bestcoarse = simage.xform_align_nbest(options.align[0],sfixedimage,options.align[1],options.npeakstorefine,options.aligncmp[0],options.aligncmp[1])
-		print("aligner was", options.align[0])
-		print("with parameters",options.align[1])
-		print("npeaks",options.npeakstorefine)
-		print("comparator",options.aligncmp[0])
-		print("results are thus", bestcoarse)
+		
+		if options.verbose == 11:
+			print("aligner was", options.align[0])
+			print("with parameters",options.align[1])
+			print("npeaks",options.npeakstorefine)
+			print("comparator",options.aligncmp[0])
+			print("results are thus", bestcoarse)
 		
 		#except:
 		#	bestcoarse = simage.align(options.align[0],sfixedimage,options.align[1],options.npeakstorefine,options.aligncmp[0],options.aligncmp[1])
