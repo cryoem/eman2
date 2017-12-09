@@ -1,7 +1,5 @@
 #!/usr/bin/env python
-from __future__ import print_function
-
-# LAST update: nov/2017
+# LAST update: dec/2017
 # Author: Muyuan Chen May, 2017 (cleanup and re-writing to allow boxing multiple types of features) 
 # Author: Steven Ludtke  2/8/2011 (rewritten)
 # Author: Jesus Galaz-Montoya, all command line functionality, + updates/enhancements/fixes.
@@ -33,8 +31,9 @@ from __future__ import print_function
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
-
+from __future__ import print_function
 from EMAN2 import *
+from EMAN2_utils import *
 import numpy as np
 import weakref
 from PyQt4 import QtCore, QtGui
@@ -47,8 +46,6 @@ from emscene3d import EMScene3D
 from emdataitem3d import EMDataItem3D, EMIsosurface
 from emshape import EMShape
 from valslider import ValSlider, ValBox
-
-from EMAN2_utils import runcmd
 
 	
 def run(cmd):
@@ -1785,8 +1782,6 @@ def commandline_tomoboxer(tomogram,options):
 		filename, file_extension = os.path.splitext('basename')
 		options.output = filename + '.hdf'
 
-	#if options.path:
-	from EMAN2_utils import makepath
 	options = makepath( options, 'sptboxer')
 
 	if options.path not in options.output:
