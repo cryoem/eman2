@@ -148,13 +148,6 @@ def main():
 		logid=E2init(sys.argv,options.ppid)
 		log = 1
 
-	#inimodeldir = os.path.join(".",options.path)
-	#if not os.access(inimodeldir, os.R_OK):
-	#	os.mkdir(options.path)
-	
-	#Make directory to save results
-	#from e2spt_classaverage import sptmakepath, preprocessingprefft, Preprocprefft3DTask, get_results_preproc, preprocfilter, sptOptionsParser 
-	
 	options = makepath(options,'symsearch')
 	
 	if options.nopath:
@@ -179,131 +172,7 @@ def main():
 	if options.subset and options.subset < n:
 		n = options.subset
 	
-	
-	
 	options.raw = options.input
-	
-	
-	"""
-	
-	if options.mask or options.maskfile or options.normproc or options.threshold or options.clip or (options.shrink > 1) or options.lowpass or options.highpass or options.preprocess:		
-		ret = cmdpreproc( options.input, options, False )
-		if ret: 
-			preprocdone += 1
-		else:
-			print "\n(e2spt_classaverage)(main) preprocessing --input for coarse alignment failed"
-		
-		if options.ref and options.refpreprocess:
-			retref = cmdpreproc( options.ref, options, False )
-			if retref: 
-				preprocdone += 1
-			else:
-				print "\n(e2spt_classaverage)(main) preprocessing --ref for coarse alignment failed"
-		else: 
-			preprocdone += 1
-			
-		'''
-		Use preprocessed particles as input. Flawed, since you can only pass in one stack to
-		alignment, and there could be two (fine and coarse) and the alignment function still
-		decides internally #fix this later (jan/2016)
-		'''
-		options.input = options.path + '/' + ret
-	
-	else:
-		preprocdone += 2
-	
-	
-	if 'rotate_translate_3d_tree' not in options.align and options.falign:
-		if options.mask or options.maskfile or options.normproc or options.threshold or options.clip or (options.shrinkfine > 1) or options.lowpassfine or options.highpassfine or options.preprocessfine:	
-			
-			ret =cmdpreproc( options.input, options, True )
-			if ret: 
-				preprocdone += 1
-			else:
-				print "\n(e2spt_classaverage)(main) preprocessing --input for fne alignment failed"
-		
-			if options.ref and options.refpreprocess:
-				retref = cmdpreproc( options.ref, options, True )
-				if retref: 
-					preprocdone += 1
-				else:
-					print "\n(e2spt_classaverage)(main) preprocessing --ref for fine alignment failed"
-			else:
-				preprocdone += 1
-	else:
-		preprocdone += 2		
-	
-	
-	
-	
-	if preprocdone > 3:
-	
-
-	'''
-	OLD
-	'''
-	if not options.nopreprocprefft:
-	
-		if options.mask or options.normproc or options.threshold or options.clip:		
-			
-			preprocprefftstack = options.path + '/' + os.path.basename( options.input ).replace('.hdf','_preproc.hdf')
-			
-			#save "dummy" images for preproc images
-			for i in range(n):
-				dimg = EMData(8,8,8)
-				dimg.to_one()
-				dimg.write_image( preprocprefftstack, i )
-			
-			originalsavepreproc = options.savepreproc
-			
-			options.savepreproc=True
-			
-		
-			print "\n(e2spt_hac.py) (allvsall) Initializing parallelism for preprocessing"
-			if options.parallel:							# Initialize parallelism if being used
-				#from EMAN2PAR import EMTaskCustomer
-				etc=EMTaskCustomer(options.parallel)
-				pclist=[options.input]
-				etc.precache(pclist)
-			
-			
-			tasks=[]
-			results=[]
-	
-			#preprocprefftstack = options.path + '/' + options.input.replace('.hdf','_preproc.hdf')
-	
-			for i in range(n):
-		
-				img = EMData( options.input, i )
-		
-				if options.parallel:
-					task = Preprocprefft3DTask( ["cache",options.input,i], options, i, preprocprefftstack )
-					tasks.append(task)
-	
-				else:
-					pimg = preprocessingprefft( img, options)
-					pimg.write_image( preprocprefftstack, i )
-	
-			print "\nthere are these many tasks to send", len(tasks)
-			if options.parallel and tasks:
-				tids = etc.send_tasks(tasks)
-				print "therefore these many tids", len(tids)
-				
-				if options.verbose: 
-					print "%d preprocessing tasks queued"%(len(tids)) 
-
-
-			results = get_results_preproc( etc, tids, options.verbose )
-			
-			print "results are", results
-	
-
-			options.input = preprocprefftstack
-			
-			options.savepreproc = originalsavepreproc
-	
-	"""
-	
 	
 	jsAliParamsPath = options.path + '/symxform.json'
 	jsA = js_open_dict( jsAliParamsPath )
