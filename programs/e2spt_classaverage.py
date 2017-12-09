@@ -36,7 +36,7 @@
 from __future__ import print_function
 from EMAN2 import *
 from EMAN2jsondb import JSTask,jsonclasses
-from EMAN2_utils import runcmd
+from EMAN2_utils import *
 import math
 import numpy
 from copy import deepcopy
@@ -1814,7 +1814,7 @@ def textwriterinfo(ydata,options,name):
 
 	return()
 	
-	
+'''	
 def textwriter(ydata,options,name,invert=0):
 	
 	if options.path not in name:
@@ -1837,6 +1837,7 @@ def textwriter(ydata,options,name,invert=0):
 	f.close()
 
 	return
+'''
 
 
 
@@ -1851,6 +1852,8 @@ Command line options should take precedence.
 '''
 def sptParseAligner( options ):
 	
+	print("\n(e2spt_classaverage)(sptParseAligner) BEFORE parsing aligner!",options.align)
+
 	if options.align and 'rotate' in options.align:
 		#print "There's options.align", options.align
 		if options.sym and options.sym is not 'c1' and options.sym is not 'C1' and 'sym' not in options.align and 'grid' not in options.align:
@@ -1967,6 +1970,8 @@ def sptParseAligner( options ):
 						options.searchfine = searchF	
 	
 	
+	print("\n(e2spt_classaverage)(sptParseAligner) AFTER parsing aligner!",options.align)
+
 	return options
 
 
@@ -3380,10 +3385,14 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 		#some aligners don't have the ability to return 'nbest' answers
 	#	try:
 	
-		#print "\n\noptions.align is", options.align, type(options.align)
-		#print "\noptions.align[0]", options.align[0]
-		#print "\nsimage and type", simage, type(simage)
-		#print "\nsfixedimage and type", sfixedimage, type(sfixedimage)
+		print("\n\noptions.align is", options.align, type(options.align))
+		print("\noptions.align[0]", options.align[0])
+		print("\noptions.align[1]", options.align[1])
+		print("\nsimage and type", simage, type(simage))
+		print("\nsfixedimage and type", sfixedimage, type(sfixedimage))
+		print("\n\noptions.aligncmp is", options.aligncmp, type(options.aligncmp))
+		print("\noptions.aligncmp[0]", options.aligncmp[0])
+		print("\noptions.aligncmp[1]", options.aligncmp[1])
 		
 		bestcoarse = simage.xform_align_nbest(options.align[0],sfixedimage,options.align[1],options.npeakstorefine,options.aligncmp[0],options.aligncmp[1])
 		print("aligner was", options.align[0])
