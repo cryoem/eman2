@@ -224,6 +224,24 @@ def makepath(options, stem='e2dir'):
 	return options
 
 
+def detectThreads(options):
+	"""
+	c:If parallelism isn't set, parallelize automatically unless disabled
+	"""
+	if options.parallel != 'None' and options.parallel != 'none' and options.parallel != 'NONE':
+		import multiprocessing
+		nparallel = multiprocessing.cpu_count()
+		options.parallel = 'thread:' + str(nparallel)
+		print("\nfound cores n={}".format(nparallel))
+		print("setting --parallel={}".format(options.parallel))
+	
+	elif options.parallel == 'None' or options.parallel == 'none':
+		options.parallel = None
+		print("\nWARNING: parallelism disabled, options.parallel={}".format(options.parallel) )
+	
+	return options
+
+
 def runcmd(options,cmd,cmdsfilepath=''):
 	"""
 	Runs commands "properly" at the commnad line
