@@ -269,8 +269,10 @@ def icongpufunc(options,alifile,cmdsfilepath):
 			sigmanonzero = hdr['sigma_nonzero']
 		except:
 			with open(icondir + '/crossValidation/crossV.frc', 'r') as crossVfrcfile: 
-				lines=crossVfrcfile.readlines()
-				if len(lines) < nx/2 -1:
+				lines = crossVfrcfile.readlines()
+
+				if not lines: sigma=sigmanonzero=0.0
+				elif int(len(lines)) < int(nx/2.0 -1.0):
 					sigma=0.0
 					sigmanonzero=0.0
 
