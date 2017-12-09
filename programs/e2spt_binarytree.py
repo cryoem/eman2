@@ -221,9 +221,10 @@ def main():
 		used will be 64, because it's the largest power of 2 that is still smaller than 100.""")
 	
 	(options, args) = parser.parse_args()
+	(optionsUnparsed, args) = parser.parse_args()
 	
 	options.nopreprocprefft = False
-	
+
 	
 	if options.shrink < options.shrinkfine:
 		options.shrink = options.shrinkfine
@@ -238,7 +239,8 @@ def main():
 	#from e2spt_classaverage import sptmakepath
 	#options = sptmakepath(options,'spt_bt')
 	from EMAN2_utils import makepath
-	options = makepath(options,'spt_bt')	
+	options = makepath(options,'spt_bt')
+	optionsUnparsed.path = options.path	
 	
 	rootpath = os.getcwd()
 	if rootpath not in options.path:
@@ -277,6 +279,8 @@ def main():
 	c:Parse parameters such that "None" or "none" are adequately interpreted to turn off an option
 	c:'''
 	options = sptOptionsParser( options )
+	print("\nAFTER PARSING options type={}".format(type(options)))
+	print("\nAFTER PARSING optionsUnparsed type={}".format(type(optionsUnparsed)))
 
 	writeParameters(options, 'e2spt_binarytree.py', 'spt_bt')
 				
@@ -343,7 +347,7 @@ def main():
 		
 	#binaryTreeRef(options,nptclForRef,nseed,-1,etc)
 
-	binaryTreeRef(options,nptclForRef,nseed,etc)
+	binaryTreeRef(options,optionsUnparsed,nptclForRef,nseed,etc)
 		
 	print("Will end logger")	
 	E2end(logger)
@@ -352,9 +356,9 @@ def main():
 	sys.stdout.flush()
 	
 	return
-	
 
-def binaryTreeRef(options,nptclForRef,nseed,etc):
+
+def binaryTreeRef(options, optionsUnparsed, nptclForRef, nseed, etc):
 	
 	from e2spt_classaverage import Align3DTask,align3Dfunc,get_results
 	
@@ -422,23 +426,23 @@ def binaryTreeRef(options,nptclForRef,nseed,etc):
 	
 	
 	preproc = 0
-	if options.mask or options.maskfile or options.normproc or options.threshold or options.clip or (options.shrink > 1) or options.lowpass or options.highpass or options.preprocess:		
+	if optionsUnparsed.mask or optionsUnparsed.maskfile or optionsUnparsed.normproc or optionsUnparsed.threshold or optionsUnparsed.clip or (optionsUnparsed.shrink > 1) or optionsUnparsed.lowpass or optionsUnparsed.highpass or optionsUnparsed.preprocess:		
 		
-		print("\noptions.mask", options.mask)
-		print("\noptions.maskfile", options.maskfile)
-		print("\noptions.normproc", options.normproc)
-		print("\noptions.threshold", options.threshold)
-		print("\noptions.clip", options.clip)
-		print("\noptions.shrink", options.shrink)
-		print("\noptions.shrinkfine", options.shrinkfine)
-		print("\noptions.lowpass", options.lowpass)
-		print("\noptions.highpass", options.highpass)
-		print("\noptions.preprocess", options.preprocess)
+		#print("\noptions.mask", options.mask)
+		#print("\noptions.maskfile", options.maskfile)
+		#print("\noptions.normproc", options.normproc)
+		#print("\noptions.threshold", options.threshold)
+		#print("\noptions.clip", options.clip)
+		#print("\noptions.shrink", options.shrink)
+		#print("\noptions.shrinkfine", options.shrinkfine)
+		#print("\noptions.lowpass", options.lowpass)
+		#print("\noptions.highpass", options.highpass)
+		#print("\noptions.preprocess", options.preprocess)
 
 		
-		print("\ntruth statement", options.mask or options.maskfile or options.normproc or options.threshold or options.clip or (options.shrink > 1) or options.lowpass or options.highpass or options.preprocess)
+		#print("\ntruth statement", options.mask or options.maskfile or options.normproc or options.threshold or options.clip or (options.shrink > 1) or options.lowpass or options.highpass or options.preprocess)
 		
-		cmdpreproc( seedfile, options, False )
+		cmdpreproc( seedfile, optionsUnparsed, False )
 		
 		preproc = 1
 	
@@ -530,7 +534,7 @@ def binaryTreeRef(options,nptclForRef,nseed,etc):
 			
 			if ret:
 				if preproc:
-					cmdpreproc( outfile, options, False )
+					cmdpreproc( outfile, optionsUnparsed, False )
 		
 		else:
 			print("\nalgorithm converged since infile %s has only one particle, nimgs=%d" %(infile,nptclsinInfile))
