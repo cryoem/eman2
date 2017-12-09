@@ -113,30 +113,32 @@ def main():
 
 	for i in xrange(0,n):
 		img = EMData(options.input,i)
-		print('\nread iamge {}'.format(i))
+		if options.verbose:
+			print('\naligning image {}'.format(i))
 
 		ccf = ref.calc_ccf(img)
-		print('\ncalculated ccf')
+		#print('\ncalculated ccf')
 
 		ccf.process_inplace("xform.phaseorigin.tocorner")
-		print('\nto corner')
+		#print('\nto corner')
 
 		ccf.process_inplace('normalize')
-		print('\nnormalized')
+		#print('\nnormalized')
 
 		#box = ccf.get_zsize()
 		#r =  Region((box/2) - options.maxshift, (box/2)-options.maxshift, (box/2)-options.maxshift, 2*options.maxshift+1, 2*options.maxshift+1, 2*options.maxshift+1)
 		#sub_ccf = ccf.get_clip(r)
 
 		if options.maxshift:
-			print("\n!!!!")
+			#print("\n!!!!")
 			#ccf = ccf.process('mask.sharp',{'outer_radius':options.maxshift})
 			masklength = boxsize/2.0 - options.maxshift
 
-			print('\nboxsize={}, options.maskshift={}, therefore masklength={}'.format(boxsize,options.maxshift,masklength))
+			#print('\nboxsize={}, options.maskshift={}, therefore masklength={}'.format(boxsize,options.maxshift,masklength))
 			ccf = ccf.process('mask.zeroedge3d',{'x0':masklength,'x1':masklength,'y0':masklength,'y1':masklength,'z0':masklength,'z1':masklength})
 		else:
-			print('\nno options.maxshift={}'.format(options.maxshift))
+			if options.verbose:
+				print('\nno options.maxshift={}'.format(options.maxshift))
 
 		loc = ccf.calc_max_location()
 		score = ccf.get_value_at(loc[0],loc[1],loc[2])
@@ -144,23 +146,22 @@ def main():
 		tx = loc[0] - boxsize/2.0
 		ty = loc[1] - boxsize/2.0
 		tz = loc[2] - boxsize/2.0
-		print('\ntx={},ty={},tz={}'.format(tx,ty,tz))
-		
-		
-		print('\nscore={}, type={}'.format(score,type(score)))
-		#ali = img.align('translational',ref,alignerparams)
-	
 		if options.verbose:
-			#print('\nali={}'.format(ali))
+			print('\ntx={},ty={},tz={}'.format(tx,ty,tz))
+		
+		#ali = img.align('translational',ref,alignerparams)
+		if options.verbose:
+			print('\nscore={}, type={}'.format(score,type(score)))	
 			print('\naligned particle {}'.format(i))
 
 		xformslabel = 'subtomo_' + str( i ).zfill( len( str( n ) ) )
 		#t = ali['xform.align3d']
-		print('\nxformslabel'.format(xformslabel))
+		if options.verbose:
+			print('\nxformslabel'.format(xformslabel))
 
 		t = Transform({'type':'eman','tx':tx,'ty':ty,'tz':tz})
 		#score = ali['score']
-		print('\nt'.format(t))
+		#print('\nt'.format(t))
 
 		jsA.setval( xformslabel, [ t , score ] )
 		
