@@ -1,7 +1,5 @@
 #!/usr/bin/env python
-from __future__ import print_function
-
-# Author: Jesus Galaz  19/1/2012; last modified, July/2016
+# Author: Jesus Galaz  19/1/2012; last modified, dec/2017
 # Copyright (c) 2011- Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -28,25 +26,26 @@ from __future__ import print_function
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
-
+from __future__ import print_function
 from sys import argv
 import os
 from EMAN2 import *
+from EMAN2_utils import *
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """prog [options] <Volume file>
-
-	WARNING: This program is still under development.
-	
-	It writes out the 3D image of the amplitudes of the fourier transform of a subvolume or a stack of subvolumes"""
+	usage = """prog <Volume file> [options]
+	This program writes out the 3D image of the amplitudes of the Fourier transform of a subvolume or a stack of subvolumes."""
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_argument("--input", type=str, help="The name of the volumes stack that HAVE BEEN ALIGNED to a common reference", default=None)
+	parser.add_argument("--input", type=str, default=None, help="default=None. Filename of 3-D image or stack of 3-D images whose FFT amplitudes you want to see.")
+	
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")				
 	
 	(options, args) = parser.parse_args()	
+
+	logger = E2init(sys.argv, options.ppid)
 	
 	data = argv[1]
 	
@@ -72,8 +71,11 @@ def main():
 		
 		e = c + d
 		e.write_image(data.replace('.','_fftamp.'),i)
-		
-	return()
+	
+	E2end(logger)
+	
+	return
+	
 	
 if __name__ == "__main__":
     main()
