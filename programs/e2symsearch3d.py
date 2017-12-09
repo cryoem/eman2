@@ -156,9 +156,10 @@ def main():
 	#Make directory to save results
 	#from e2spt_classaverage import sptmakepath, preprocessingprefft, Preprocprefft3DTask, get_results_preproc, preprocfilter, sptOptionsParser
 	
-	from e2spt_classaverage import sptmakepath, sptOptionsParser 
+	from e2spt_classaverage import sptOptionsParser 
+	from EMAN2_utils import makepath
 	
-	options = sptmakepath(options,'symsearch')
+	options = makepath(options,'symsearch')
 	
 	if options.nopath:
 		options.path = '.'
