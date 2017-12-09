@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Author: Jesus Galaz-Montoya
-# Last update 25/Feb/2015
+# Last update 07/dec/2017
 # Copyright (c) 2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -54,17 +54,18 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
 	parser.add_argument("--averager",type=str,default="mean.tomo",help="""Default=mean.tomo. The type of averager used to produce the class average.""")
-	parser.add_argument("--averagehalves",action="store_true", default=False,help="""Default=False. This will averager the even and odd volumes.""")
+	parser.add_argument("--averagehalves",action="store_true", default=False,help="""Default=False. This will average the even and odd volumes.""")
 	
 	parser.add_argument('--input',type=str,default='',help="""Default=None. Subtiltseries file to process. If processing a single file, --inputstem will work too, but you can also just provide the entire filename here --input=subt00.hdf""")
 	parser.add_argument("--inputstem", type=str, default='', help="""Default=None. Aligned tilt series. String common to all files to be processed, in the current folder. For example, if you have many subtiltseries named subt00.hdf, subt01.hdf, ...subt99.hdf, you would supply --stem=subt to have all these processed.""")
 
 	parser.add_argument("--nolog",action="store_true",default=False,help="Default=False. Turn off recording of the command ran for this program onto the .eman2log.txt file") 
 	parser.add_argument('--nonewpath',action='store_true',default=False,help="""Default=False. If True, a new --path directory will not be made. Therefore, whatever is sepcified in --path will be used as the output directory. Note that this poses the risk of overwriting data.""")
-
+	parser.add_argument('--normproc',type=str,default=None,help="""default=None. Normalization processor to apply to the reconstructed halves; e.g., --normproc=normalize.edgemean.""")
+	
 	parser.add_argument("--pad2d", type=float,default=0.0,help="""Default=0.0. Padding factor (e.g., 2.0, to make the box twice as big) to zero-pad the 2d images in the tilt series for reconstruction purposes (the final reconstructed subvolumes will be cropped back to the original size though).""")
 	parser.add_argument("--pad3d", type=float,default=0.0,help="""Default=0.0. Padding factor (e.g., 2.0, to make the box twice as big) to zero-pad the volumes for reconstruction purposes (the final reconstructed subvolumes will be cropped back to the original size though).""")
-	parser.add_argument('--path',type=str,default='sptintrafsc',help="""Default=sptintrafsc. Directory to save the results.""")	
+	parser.add_argument('--path',type=str,default='spt_intrafsc',help="""Default=sptintrafsc. Directory to save the results.""")	
 	parser.add_argument("--ppid", type=int, default=-1, help="""default=-1. Set the PID of the parent process, used for cross platform PPID.""")
 
 	parser.add_argument('--savehalftiltseries',action='store_true',default=False,help="""Default=False. If this parameter is on, the odd and even subtiltseries will be saved.""")
@@ -94,7 +95,7 @@ def main():
 	'''
 	
 	if not options.nonewpath:
-		options = makepath (options, 'sptintrafsc')
+		options = makepath (options, 'spt_intrafsc')
 	else:
 		try:
 			findir = os.lisdir( options.path )
@@ -118,10 +119,13 @@ def main():
 		inputfiles.append( options.input )	
 	
 	for fi in inputfiles:
-		
+		options.input = fi
 		#genOddAndEvenVols( options, fi )
 		
-		ret = genOddAndEvenVols( options, fi,[] )
+		hdr = EMData(options.input,0,True)
+		apix = hdr['apix_x']
+		
+		ret = genOddAndEvenVols( options, fi )
 		volOdd = ret[1]
 		volEven = ret[0]
 			
@@ -136,8 +140,8 @@ def main():
 		
 		if options.averagehalves:
 			avgr = Averagers.get( options.averager[0], options.averager[1] )
-			avgr.add_image( recOdd )
-			avgr.add_image( recEven )
+			avgr.add_image( volOdd )
+			avgr.add_image( volEven )
 			
 			avg = avgr.finish()
 			avg['origin_x'] = 0
@@ -174,30 +178,14 @@ def fscOddVsEven( options, filename, odd, even ):
 	return [fscfilename,fscarea]
 	
 	
-def genOddAndEvenVols( options, fi, imgs ):
+def genOddAndEvenVols( options, fi ):
 	
-	#print "size of imageslist images received is", imgs[0]['nx'], imgs[-1]['ny']
+	hdr = EMData(options.input,0,True)
 	
-	
-	#if isinstance( fi, str ):	
-	if not imgs:
-		#hdr = EMData( fi, 0, True)
-		nimgs = EMUtil.get_image_count( fi )
-		
-		for i in range( nimgs ):		
-			img = EMData( fi, i )
-			imgs.append( img )
-
-	#elif isinstance( fi, list ):
-	#	imgs = fi
-	
-	#print "therefore converted images list is type", type(imgs),imgs
-	
-	apix = imgs[0]['apix_x']
-	nx = imgs[0]['nx']
-	ny = imgs[0]['ny']
+	apix = hdr['apix_x']
+	nx = hdr['nx']
+	ny = hdr['ny']
 	box = nx
-	#apix = hdr['apix_x']
 	
 	mode='gauss_2'
 	if options.reconstructor:
@@ -228,10 +216,6 @@ def genOddAndEvenVols( options, fi, imgs ):
 	rOdd = Reconstructors.get(options.reconstructor[0],{'size':(box,box,box),'sym':'c1','verbose':False,'mode':mode})
 	rEven = Reconstructors.get(options.reconstructor[0],{'size':(box,box,box),'sym':'c1','verbose':False,'mode':mode})
 	
-	#print "in intrafsc reconstructor is", options.reconstructor
-	#print "rOdd is", rOdd
-	#print "and box was", box
-	
 	rOdd.setup()
 	rEven.setup()
 	
@@ -242,13 +226,16 @@ def genOddAndEvenVols( options, fi, imgs ):
 	eventilts = options.path + '/' + fi.replace('.hdf', '_EVENTILTS.hdf')
 	
 	iii = 0
-	for img in imgs:
-				
-		#img = EMData( fi, i )
+	
+	nimgs =EMUtil.get_image_count(options.input)
+	for i in range(nimgs):
+		#for img in imgs:		
+		
+		img = EMData( options.input, i )
 		
 		if options.pad2d:
 			box2d = img['nx'] * options.pad2d
-			img = clip2D( img, box2d )
+			img = clip2d( img, box2d )
 		
 		t = Transform( {'type':'eman', 'az':90, 'alt':img['spt_tiltangle'], 'phi':-90 } )
 		img.set_attr('xform.projection',t)
@@ -294,7 +281,7 @@ def genOddAndEvenVols( options, fi, imgs ):
 	recOdd['apix_x'] = apix
 	recOdd['apix_y'] = apix
 	recOdd['apix_z'] = apix
-	recOdd.process_inplace('normalize')
+
 	
 	recEven = rEven.finish(True)
 	recEven['origin_x'] = 0
@@ -303,19 +290,18 @@ def genOddAndEvenVols( options, fi, imgs ):
 	recEven['apix_x'] = apix
 	recEven['apix_y'] = apix
 	recEven['apix_z'] = apix
-	recEven.process_inplace('normalize')
 	
-	#t90 = Transform({ 'type':'eman','alt':180,'az':0,'phi':0 })
-	#recOdd.transform( t90 )
-	#recEven.transform( t90 )
-	#recOdd.rotate( 0,90,0 )
-	#recEven.rotate( 0,90,0 )
+	if options.normproc:
+		recOdd.process_inplace(options.normproc[0],options.normproc[1])
+		recEven.process_inplace(options.normproc[0],options.normproc[1])
+	else:
+		recOdd.process_inplace('normalize')
+		recEven.process_inplace('normalize')
 	
 	if options.pad3d or options.pad2d:
-		recOdd = clip3D( recOdd, originalboxsize )
-		recEven = clip3D( recEven, originalboxsize )
+		recOdd = clip3d( recOdd, originalboxsize )
+		recEven = clip3d( recEven, originalboxsize )
 	
-		
 	ccm = recEven.calc_ccf( recOdd )
 	ccm.process_inplace('normalize')
 	maxloc = ccm.calc_max_location()
@@ -323,35 +309,10 @@ def genOddAndEvenVols( options, fi, imgs ):
 	maxy = maxloc[1]
 	maxz = maxloc[2]
 	score3d = ccm.get_value_at( maxx, maxy, maxz )
+	print("\nThe maximum of the cc map between the even and odd volumes is score={}, at location x={}, y={}, z={}".format(score3d,maxx,maxy,maxz))
 	
-	#return fscfilename
 	return [ recEven, recOdd, score3d ]
 
-
-def clip3D( vol, size ):
-	
-	volxc = vol['nx']/2
-	volyc = vol['ny']/2
-	volzc = vol['nz']/2
-	
-	Rvol =  Region( (2*volxc - size)/2, (2*volyc - size)/2, (2*volzc - size)/2, size , size , size)
-	vol.clip_inplace( Rvol )
-	#vol.process_inplace('mask.sharp',{'outer_radius':-1})
-	
-	return vol
-
-
-def clip2D( img, size ):
-	
-	imgxc = img['nx']/2
-	imgyc = img['ny']/2
-	#imgzc = img['nz']/2
-	
-	Rimg =  Region( (2*imgxc - size)/2, (2*imgyc - size)/2, 0, size , size , 1)
-	img.clip_inplace( Rimg )
-	#img.process_inplace('mask.sharp',{'outer_radius':-1})
-	
-	return img
 
 if '__main__' == __name__:
 	main()
