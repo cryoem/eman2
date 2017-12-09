@@ -31,16 +31,11 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 #
-
+from __future__ import print_function
 import os
 from EMAN2 import *
 from EMAN2_utils import *
 from time import time
-from __future__ import print_function
-
-#import matplotlib
-#matplotlib.use('Agg',warn=False)		 
-#import matplotlib.pyplot as plt
 import sys
 import numpy		 
 
@@ -58,33 +53,26 @@ def main():
 			
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_argument("--inputstem", type=str, default='', help="""Default=None. Aligned tilt series. String common to all files to be processed, in the current folder. For example, if you have many subtiltseries named subt00.hdf, subt01.hdf, ...subt99.hdf, you would supply --stem=subt to have all these processed.""")
+	parser.add_argument("--averager",type=str,default="mean.tomo",help="""Default=mean.tomo. The type of averager used to produce the class average.""")
+	parser.add_argument("--averagehalves",action="store_true", default=False,help="""Default=False. This will averager the even and odd volumes.""")
 	
-	parser.add_argument('--path',type=str,default='sptintrafsc',help="""Default=sptintrafsc. Directory to save the results.""")
-		
-	parser.add_argument('--nonewpath',action='store_true',default=False,help="""Default=False. If True, a new --path directory will not be made. Therefore, whatever is sepcified in --path will be used as the output directory. Note that this poses the risk of overwriting data.""")
-		
 	parser.add_argument('--input',type=str,default='',help="""Default=None. Subtiltseries file to process. If processing a single file, --inputstem will work too, but you can also just provide the entire filename here --input=subt00.hdf""")
-		
+	parser.add_argument("--inputstem", type=str, default='', help="""Default=None. Aligned tilt series. String common to all files to be processed, in the current folder. For example, if you have many subtiltseries named subt00.hdf, subt01.hdf, ...subt99.hdf, you would supply --stem=subt to have all these processed.""")
+
+	parser.add_argument("--nolog",action="store_true",default=False,help="Default=False. Turn off recording of the command ran for this program onto the .eman2log.txt file") 
+	parser.add_argument('--nonewpath',action='store_true',default=False,help="""Default=False. If True, a new --path directory will not be made. Therefore, whatever is sepcified in --path will be used as the output directory. Note that this poses the risk of overwriting data.""")
+
+	parser.add_argument("--pad2d", type=float,default=0.0,help="""Default=0.0. Padding factor (e.g., 2.0, to make the box twice as big) to zero-pad the 2d images in the tilt series for reconstruction purposes (the final reconstructed subvolumes will be cropped back to the original size though).""")
+	parser.add_argument("--pad3d", type=float,default=0.0,help="""Default=0.0. Padding factor (e.g., 2.0, to make the box twice as big) to zero-pad the volumes for reconstruction purposes (the final reconstructed subvolumes will be cropped back to the original size though).""")
+	parser.add_argument('--path',type=str,default='sptintrafsc',help="""Default=sptintrafsc. Directory to save the results.""")	
+	parser.add_argument("--ppid", type=int, default=-1, help="""default=-1. Set the PID of the parent process, used for cross platform PPID.""")
+
 	parser.add_argument('--savehalftiltseries',action='store_true',default=False,help="""Default=False. If this parameter is on, the odd and even subtiltseries will be saved.""")
-		
 	parser.add_argument('--savehalfvolumes',action='store_true',default=False,help="""Default=False. If this parameter is on, the odd and even volumes will be saved.""")
 	
 	parser.add_argument("--reconstructor", type=str,default="fourier:mode=gauss_2",help="""Default=fourier:mode=gauss_2. The reconstructor to use to reconstruct the tilt series into a tomogram. Type 'e2help.py reconstructors' at the command line to see all options and parameters available. To specify the interpolation scheme for the fourier reconstructor, specify 'mode'. Options are 'nearest_neighbor', 'gauss_2', 'gauss_3', 'gauss_5'. For example --reconstructor=fourier:mode=gauss_5 """)
 	
-	parser.add_argument("--pad2d", type=float,default=0.0,help="""Default=0.0. Padding factor (e.g., 2.0, to make the box twice as big) to zero-pad the 2d images in the tilt series for reconstruction purposes (the final reconstructed subvolumes will be cropped back to the original size though).""")
-
-	parser.add_argument("--pad3d", type=float,default=0.0,help="""Default=0.0. Padding factor (e.g., 2.0, to make the box twice as big) to zero-pad the volumes for reconstruction purposes (the final reconstructed subvolumes will be cropped back to the original size though).""")
-	
-	parser.add_argument("--averager",type=str,default="mean.tomo",help="""Default=mean.tomo. The type of averager used to produce the class average.""")
-	
-	parser.add_argument("--averagehalves",action="store_true", default=False,help="""Default=False. This will averager the even and odd volumes.""")
-	
-	parser.add_argument("--ppid", type=int, default=-1, help="""default=-1. Set the PID of the parent process, used for cross platform PPID.""")
-	
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-	
-	parser.add_argument("--nolog",action="store_true",default=False,help="Default=False. Turn off recording of the command ran for this program onto the .eman2log.txt file") 
 	
 	(options, args) = parser.parse_args()	
 	
