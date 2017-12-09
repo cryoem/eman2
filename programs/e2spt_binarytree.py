@@ -62,7 +62,7 @@ def main():
 	
 	parser.add_header(name="caheader", help="""Options below this label are specific to sptclassaverage""", title="### sptclassaverage options ###", row=3, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	
-	parser.add_argument("--path",type=str,default='spt',help="""Default=spt. Directory to store results in. The default is a numbered series of directories containing the prefix 'spt'; for example, spt_02 will be the directory by default if 'spt_01' already exists.""")
+	parser.add_argument("--path",type=str,default='spt_bt',help="""Default=spt. Directory to store results in. The default is a numbered series of directories containing the prefix 'spt'; for example, spt_02 will be the directory by default if 'spt_01' already exists.""")
 	
 	parser.add_argument("--input", type=str, default='',help="""Default=None. The name of the input volume stack. MUST be HDF since volume stack support is required.""", guitype='filebox', browser='EMSubTomosTable(withmodal=True,multiselect=False)', row=0, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	
@@ -181,7 +181,7 @@ def main():
 	
 	
 	
-	parser.add_argument("--falign",type=str,default='',help="""Default=None. This is the second stage aligner used to fine-tune the first alignment.""", returnNone=True, guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine.*3d\')', row=14, col=0, rowspan=1, colspan=3, nosharedb=True, mode='alignment,breaksym[None]')
+	parser.add_argument("--falign",type=str,default=None,help="""Default=None. This is the second stage aligner used to fine-tune the first alignment.""", returnNone=True, guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine.*3d\')', row=14, col=0, rowspan=1, colspan=3, nosharedb=True, mode='alignment,breaksym[None]')
 		
 	parser.add_argument("--faligncmp",type=str,default="ccc.tomo.thresh",help="""Default=ccc.tomo.thresh. The comparator used by the second stage aligner.""", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=15, col=0, rowspan=1, colspan=3,mode="alignment,breaksym")		
 		
@@ -284,7 +284,7 @@ def main():
 	#'''
 	#
 	#from e2spt_classaverage import sptOptionsParser
-	#options = sptOptionsParser( options )
+	options = sptOptionsParser( options )
 	
 #	from e2spt_classaverage import writeParameters
 	from EMAN2_utils import writeParameters
