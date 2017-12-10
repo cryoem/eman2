@@ -2035,6 +2035,9 @@ class TestProcessor(unittest.TestCase):
             except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageFormatException")
 
+if "EMAN_TEST_SKIP" in os.environ:
+    TestProcessor.broken = True
+
 def test_main():
     p = OptionParser()
     p.add_option('--t', action='store_true', help='test exception', default=False )
