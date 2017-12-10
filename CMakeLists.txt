@@ -347,7 +347,7 @@ endif()
 add_custom_target(test-rt
 		COMMAND ${CMAKE_CTEST_COMMAND} -V -C Release -R nose-tests
 		DEPENDS PythonFiles
-)
+		)
 
 add_custom_target(test-verbose-broken
 		COMMAND ${NOSETESTS_EXECUTABLE} -v -m "^test_*" -a broken ${CMAKE_SOURCE_DIR}/rt/pyem/*
@@ -363,3 +363,12 @@ if(NOT WIN32)
 			 COMMAND bash ${CMAKE_SOURCE_DIR}/tests/run_prog_tests.sh
 			 )
 endif()
+
+add_test(NAME py-compile
+		COMMAND ${PYTHON_EXECUTABLE} -m compileall -q ${CMAKE_SOURCE_DIR}
+		)
+
+add_custom_target(test-py-compile
+		COMMAND ${CMAKE_CTEST_COMMAND} -V -C Release -R py-compile
+		DEPENDS PythonFiles
+		)
