@@ -275,15 +275,11 @@ def main():
 	parser.add_argument("--tweak",action='store_true',default=False,help="""WARNING: BUGGY. This will perform a final alignment with no downsampling [without using --shrink or --shrinkfine] if --shrinkfine > 1.""")
 	
 	
-	
-	#print("\nin MAIN!!!!!!")
-	
-	
 	(options, args) = parser.parse_args()
 	
-	if not options.input:
-		parser.print_help()
-		exit(0)
+	options = checkinput( options )
+	
+	options = detectThreads( options )
 	
 	if not options.ref:
 		print("\nERROR: --ref required. Use e2spt_refprep.py, or e2spt_binarytree.py, e2spt_hac.py, e2symsearch3d.py, to generate initial references.")
@@ -293,8 +289,6 @@ def main():
 		options.shrink = options.shrinkfine
 		print("\n(e2spt_classaverage)(main) WARNING: It makes no sense for shrinkfine to be larger than shrink; therefore, shrink will be made to match shrinkfine")
 		
-	checksaneimagesize( options, options.input )
-
 	checksaneimagesize( options, options.input, options.ref )
 
 	print("Initially, options.goldstandardoff is", options.goldstandardoff, type(options.goldstandardoff))
