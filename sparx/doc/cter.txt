@@ -1,5 +1,6 @@
 = Name =
-sxcter - CTF Estimation: Automated estimation of CTF parameters with error assessment.
+sxcter - CTF Estimation: Automated estimation of CTF parameters with error assessment, including Volta phase shift.
+
 
 = Usage =
 
@@ -59,7 +60,7 @@ By default, amplitude is used for the CTF model fitting but user can select powe
     check_consistency:: Check consistency of inputs: Create a text file containing the list of inconsistent Micrograph ID entries (i.e. inconsist_mic_list_file.txt). (default False)
     stack_mode:: Use stack mode: Use a stack as the input. Please set the file path of a stack as the first argument and output directory for the second argument. This is advanced option. Not supported by sxgui. (default False)
     debug_mode:: Enable debug mode: Print out debug information. (default False)
-    vpp:: Estimate amplitude contrast: UNDER DEVELOPMENT! Also estimate phase shift as amplitude contrast. Use this option to estimate phase shift induced by Volta Phase Plate imaging. (default False)
+    vpp:: Volta Phase Plate Dataset: UNDER DEVELOPMENT! Also estimate phase shift as amplitude contrast. Use this option to estimate phase shift induced by Volta Phase Plate imaging. (default False)
     defocus_min:: Minimum defocus search [um]: UNDER DEVELOPMENT! This is applicable only with --vpp option. (default 0.3)
     defocus_max:: Maximum defocus search [um]: UNDER DEVELOPMENT! This is applicable only with --vpp option. (default 9.0)
     defocus_step:: Defocus search step [um]: UNDER DEVELOPMENT! This is applicable only with --vpp option. (default 0.1)
@@ -72,14 +73,74 @@ By default, amplitude is used for the CTF model fitting but user can select powe
     output_directory:: Output directory: The CTF parameters (partres file), rotationally averaged power spectra (rotinf), and micrograph thumbnails (thumb files) will be written here. This directory will be created automatically and it must not exist previously. (default required string)
 
 
+== Description ==
 After successful execution, sxcter will create in the output_directory: 
 
  1. A CTF parameters file, written to ''partres.txt''<<BR>><<BR>>
  2. A list of rotationally averaged power spectra, written to ''pwrot/*_rotinf.txt''.<<BR>><<BR>>
  3. A collection of micrographs Thumbnails (512 x 512 pixels), written to ''micthumb/*_thumb.hdf''.<<BR>><<BR>>
 
+The CTF parameter file, ''partres.txt'', contains 22 columns with the following information:<<BR>><<BR>>
 
-The CTF parameter file, ''partres.txt'', contains 19 columns with the following information:<<BR>><<BR>>
+|| Column || Parameter ||
+|| 1 || Image defocus [um] ||
+|| 2 || Microscope spherical aberration [mm] ||
+|| 3 || Microscope voltage [kV] ||
+|| 4 || Pixel size [A] ||
+|| 5 || B-factor [A^2] ||
+|| 6 || Total amplitude contrast [%], which can include estimated Volta phase shift ||
+|| 7 || Astigmatism amplitude [um] ||
+|| 8 || Astigmatism angle [degrees] ||
+|| 9 || Standard deviation of defocus [um] ||
+|| 10 || Standard deviation of total amplitude contrast [%] ||
+|| 11 || Standard deviation of astigmatism amplitude [um] ||
+|| 12 || Standard deviation of astigmatism angle [degrees] ||
+|| 13 || Coefficient of variation of defocus [um] ||
+|| 14 || Coefficient of variation of astigmatism amplitude [um] ||
+|| 15 || Frequency at which the signal drops by 50% due to estimated error of defocus alone [1/A] ||
+|| 16 || Frequency at which the signal drops by 50% due to estimated error of defocus and astigmatism [1/A] ||
+|| 17 || Frequency at which the CTF oscillation can no longer be modelled correctly due the pixel size of the image [1/A] ||
+|| 18 || NOT IMPLEMENTED YET! Maximum frequency limit (visual-impression-based)[A] ||
+|| 19 || NOT IMPLEMENTED YET! Reserved spot for other means of maximum frequency limit or error criterion. Possibly originated from external program ||
+|| 20 || Constant amplitude contrast [%], which is provided by user as a input of CTER and does not include estimated Volta phase shift ||
+|| 21 || Volta phase shift [degrees] ||
+|| 22 || Micrograph name ||
+
+
+<<BR>><<BR>>
+The rotationally averaged power spectra or amplitude (rotinf.txt files) will be written to the pwrot directory. These files contain 6 columns with the following information:<<BR>><<BR>>
+
+
+|| Column || Parameter ||
+|| 1 || Line number ||
+|| 2 || Spatial frequency [1/A] ||
+|| 3 || Experimental rotational average without considering astigmatism ||
+|| 4 || Fitted rotational average without considering astigmatism ||
+|| 5 || Experimental rotational average including astigmatism ||
+|| 6 || Fitted rotational average including astigmatism ||
+
+
+= Method =
+
+
+= Reference =
+
+
+= Developer Notes =
+NOTE: 2017/12/07 Toshio Moriya
+The format of partres.txt is changed. The old format below is also supported for now but will be removed in near future.
+In the new format above, 
+
+REMOVED:
+- #15 in old: Mean difference between the experimental rotational averages calculated with and without considering astigmatism.
+
+ADDED:
+- #18 in new: Maximum frequency limit (visual-impression-based)[A].
+- #19 in new: Reserved spot for other means of maximum frequency limit or error criterion.
+- #20 in new: Constant amplitude contrast [%] .
+- #21 in new: Volta phase shift [degrees].
+
+The old format of the CTF parameter file, ''partres.txt'', contains 19 columns with the following information:<<BR>><<BR>>
 
 || Column || Parameter ||
 || 1 || Image defocus [um] ||
@@ -102,23 +163,6 @@ The CTF parameter file, ''partres.txt'', contains 19 columns with the following 
 || 18 || Frequency at which the CTF oscillation can no longer be modelled correctly due the pixel size of the image [1/A] ||
 || 19 || Micrograph name ||
 
-<<BR>><<BR>>
-The rotationally averaged power spectra or amplitude (rotinf.txt files) will be written to the pwrot directory. These files contain 6 columns with the following information:<<BR>><<BR>>
-
-
-|| Column || Parameter ||
-|| 1 || Line number ||
-|| 2 || Spatial frequency [1/A] ||
-|| 3 || Experimental rotational average without considering astigmatism ||
-|| 4 || Fitted rotational average without considering astigmatism ||
-|| 5 || Experimental rotational average including astigmatism ||
-|| 6 || Fitted rotational average including astigmatism ||
-
-
-== Description ==
-
-''''The phase shift estimation is in progress now''''
-
 
 == Author / Maintainer ==
 Pawel A. Penczek and Toshio Moriya
@@ -129,17 +173,20 @@ Pawel A. Penczek and Toshio Moriya
 
 
 == Keywords ==
-    category 1:: APPLICATIONS
+category 1:: APPLICATIONS
 
 
 == Files ==
 sparx/bin/sxcter.py
 
+
 === See also ===
 [[http://sparx-em.org/sparxwiki/sxgui_cter|sxgui_cter]], [[http://sparx-em.org/sparxwiki/sxwindow|sxwindow]]
 
+
 === Maturity ===
-    alpah:: The phase shift estimation is under development.
+Beta:: Under evaluation and testing. Please let us know if there are any bugs.
+
 
 === Bugs ===
-We have not reached to testing phase yet.
+There are no known bugs so far.

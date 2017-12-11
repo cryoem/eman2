@@ -4,7 +4,6 @@ sxgui_cter - CTF Assessment: GUI tool to assess and sort micrographs using sxcte
 
 = Usage =
 
-
 ''usage in command line''
 
 sxgui_cter.py  cter_ctf_file 
@@ -26,26 +25,41 @@ sxgui_cter GUI tool can be run as a stand-alone program or run from sxgui.py.
 
 == Description ==
 
-''''This is in progress 03/04/2016''''
-
 
 = Method =
 
+
 = Reference =
+
+
+= Developer Notes =
+NOTE: 2017/12/07 Toshio Moriya
+The format of partres.txt is changed. The old format is also supported for now, but will be removed in near future.
+Please also refer [[http://sparx-em.org/sparxwiki/sxcter|sxcter]].
+
 
 == Author / Maintainer ==
 Toshio Moriya
 
+
 === Attachments ===
 
+
 == Keywords ==
-    category 1:: APPLICATIONS
+category 1:: APPLICATIONS
+
 
 == Files ==
 sparx/bin/sxgui_cter.py
 
+
 === See also ===
 [[http://sparx-em.org/sparxwiki/sxcter|sxcter]], [[http://sparx-em.org/sparxwiki/sxwindow|sxwindow]]
 
+
 === Maturity ===
- alpha:: in development
+Beta:: Under evaluation and testing. Please let us know if there are any bugs.
+
+
+=== Bugs ===
+There are no known bugs so far.

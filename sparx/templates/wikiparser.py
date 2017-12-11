@@ -109,6 +109,7 @@ def construct_keyword_dict():
 	keyword_dict["--skip_create_substack"]        = SXkeyword_map(0, "bool")           # --skip_create_substack (contains keyworkd 'stack' but this should be bool type)
 	keyword_dict["--no_virtual_stack"]            = SXkeyword_map(0, "bool")           # --no_virtual_stack (contains keyworkd 'stack' but this should be bool type)
 	keyword_dict["--applymask"]                   = SXkeyword_map(0, "bool")           # --applymask (contains keyworkd 'mask' but this should be bool type)
+	keyword_dict["--create_stack"]                = SXkeyword_map(0, "bool")           # --create_stack (contains keyworkd 'stack' but this should be bool type)
 	# Use priority 1 for output
 	keyword_dict["output"]                        = SXkeyword_map(1, "output")         # output_hdf, output_directory, outputfile, outputfile, --output=OUTPUT, output_stack, output_file
 	keyword_dict["outdir"]                        = SXkeyword_map(1, "output")         # outdir
@@ -150,6 +151,7 @@ def construct_keyword_dict():
 	keyword_dict["--list"]                        = SXkeyword_map(2, "parameters")     # --list
 ###	keyword_dict["--subset"]                      = SXkeyword_map(2, "parameters")     # --subset=subset_file_path
 	keyword_dict["--ctref_subset"]                = SXkeyword_map(2, "parameters")     # --ctref_subset=selection_file_path
+	keyword_dict["input_star_file"]               = SXkeyword_map(2, "parameters")     # input_star_file
 	keyword_dict["inputfile"]                     = SXkeyword_map(2, "any_file")       # inputfile
 	keyword_dict["unblur_path"]                   = SXkeyword_map(2, "exe")            # unblur_path
 	keyword_dict["summovie_path"]                 = SXkeyword_map(2, "exe")            # summovie_path
@@ -1503,6 +1505,7 @@ def main():
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/pdb2em.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/relion2sphire.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_adaptive_mask3d()))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_binary_mask3d()))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_utility_changesize()))
