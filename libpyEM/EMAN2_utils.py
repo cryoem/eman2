@@ -249,6 +249,22 @@ def detectThreads(options):
 	return options
 
 
+def checkinput(options):
+	"""
+	Allows to provide input as the first argument, instead of through --input. Both should be functional.
+	Author: Jesus Montoya, jgalaz@gmail.com
+	"""
+	if not options.input:
+		try:
+			options.input = sys.argv[1]
+			EMData(options.input,0,True)
+		except:
+			print("\nERROR: input file {} seems to have an invalid format".format( options.input ))
+			parser.print_help()
+			sys.exit(1)
+	return options
+	
+
 def runcmd(options,cmd,cmdsfilepath=''):
 	"""
 	Runs commands "properly" at the commnad line
