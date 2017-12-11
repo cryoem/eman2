@@ -81,7 +81,7 @@ def get_time_stamp_suffix():
 # ----------------------------------------------------------------------------------------
 def isac_substack(args):
 	from utilities import get_im, write_text_file
-	from EMAN2db import db_open_dict
+	from EMAN2db import db_open_dict, db_check_dict
 	from e2bdb import makerelpath
 	
 	# To make the execution exit upon fatal error by ERROR in global_def.py
@@ -89,6 +89,8 @@ def isac_substack(args):
 	
 	# Check error conditions
 	subcommand_name = "isac_substack"
+	if not db_check_dict(args.input_bdb_stack_path, readonly=True):
+		ERROR("Input BDB image stack file does not exist. Please check the file path and restart the program.", subcommand_name) # action=1 - fatal error, exit
 	if not os.path.exists(args.input_isac_class_avgs_path):
 		ERROR("Input ISAC class average stack file does not exist. Please check the file path and restart the program.", subcommand_name) # action=1 - fatal error, exit
 	if os.path.exists(args.output_directory):
@@ -96,6 +98,7 @@ def isac_substack(args):
 	if args.substack_basename.strip() == "":
 		ERROR("Substack basename cannot be empty string or only white spaces.", subcommand_name) # action=1 - fatal error, exit
 	
+	assert (db_check_dict(args.input_bdb_stack_path, readonly=True))
 	assert (os.path.exists(args.input_isac_class_avgs_path))
 	assert (not os.path.exists(args.output_directory))
 	assert (args.substack_basename.strip() != "")
@@ -147,8 +150,9 @@ def isac_substack(args):
 		try: 
 			img_header = input_bdb_stack.get(isac_substack_particle_id, nodata=1).get_attr_dict() # Need only header information
 		except:
-			ERROR("Failed to read image header of particle #%d from %s. Skipping this image..."%(isac_substack_particle_id, args.input_bdb_stack_path), subcommand_name, action = 0) # action = 0 - non-fatal, print a warning;
-			continue
+			# ERROR("Failed to read image header of particle #%d from %s. Skipping this image..."%(isac_substack_particle_id, args.input_bdb_stack_path), subcommand_name, action = 0) # action = 0 - non-fatal, print a warning;
+			# continue
+			ERROR("Failed to read image header of particle #%d from %s. Please make sure input_bdb_stack_path (%s) and input_isac_class_avgs_path (%s) are correct pair and run the command again..."%(isac_substack_particle_id, args.input_bdb_stack_path, args.input_bdb_stack_path, args.input_isac_class_avgs_path), subcommand_name)  # action=1 - fatal error, exit
 		
 		# Convert an absolute path to the actual input data to a relative path by eliminating any symbolic links 
 		try:
