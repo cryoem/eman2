@@ -18,21 +18,25 @@ sxsort3d_depth.py exists only in MPI version. It surports single node workstatio
 
 == Input ==
 	
-	refinement_dir:: Input 3D refinement directory: The output directory of sxmeridien. (default required string)
-    niter_for_sorting:: 3D refinement iteration: an iteration number of 3D refinement specified by user. By default, it uses iteration achieved best resolution. (default -1)
+	output_dir:: sort3d output directory name: If not provided system will create one. (default requires string)
+	refinement_dir:: 3D refinement directory from which data is imported: The output directory of sxmeridien. (default required string)
+    niter_for_sorting:: user specified iteration number of 3D refinement for sorting: By default, it uses the iteration at which refinement achieved the best resolution. (default -1)
     mask3D:: 3D mask: File path of the global 3D mask for clustering. (default none)
     focus:: Focus 3D mask: File path of a binary 3D mask for focused clustering. (default none)
-    radius:: Outer radius for rotational correlation peak search [Pixels]: Generally, use the radius of the particle. However the value must be smaller than half the box size.  (default -1)
+    radius:: Estimated protein radius [Pixels]: The value must be smaller than half of the box size.  (default -1)
     sym:: Point-group symmetry: Point group symmetry of the macromolecular structure. It can be inherited from refinement. (default c1) 
-    img_per_grp:: Images per group: The number of images per a group. This value is critical for successful 3D clustering. (default 1000) 
-    minimum_grp_size:: Cluster selection size: It also serves as the minimum group size in MGKmeans . However this value must be smaller than the number of images per a group (img_per_grp). (default -1)
-    order_of_depth:: depth order: a number defines the number of initial independent MGSKmeans runs (2^order_of_depth). (default 2)
-    orien_groups:: number of orientation groups in asymmetric unit: (default 100)
+    img_per_grp:: Number of images per group: User expected group size. This value is critical for a successful 3D clustering. (default 1000)
+    minimum_grp_size:: Cluster selection size: It also serves as the minimum group size constraint in MGSKmeans. However this value must be smaller than the number of images per a group (img_per_grp). (default -1)
+    nsmear:: Number of smears used in sorting: Fill it with 1 if user does not want to use all smears. (default -1)
+    order_of_depth:: Depth order: a number defines the number of initial independent MGSKmeans runs (2^order_of_depth). (default 2)
+    orientation_groups:: Number of orientation groups in the asymmetric unit: (default 100)
     memory_per_node:: Memory per node [GB]: User provided information about memory per node in GB (NOT per CPU). It will be used to evaluate the number of CPUs per node from user-provided MPI setting. By default, it uses 2GB * (number of CPUs per node) (default -1.0)
-    stop_mgsqkmeans_percentage:: Stop EQK-means Percentage [%]: Particle change percentage for stopping minimum group size K-means. (default 10.0)
-	do_swap_au:: swap a certain number of elements in clusters with unaccounted elements. (default )
-	swap_ratio:: ratio of swapped elements.
-	shake:: perturbation factor applied to orientations(default )
+    stop_mgsqkmeans_percentage:: Stop MGSKmeans Percentage [%]: Particle change percentage for stopping minimum group size K-means. (default 10.0)
+	do_swap_au:: Swap flag: Swap a certain number of accounted elements per cluster with the unaccounted elements. (default False)
+	swap_ratio:: Swap ratio: A float number between 0.0 and 50. (default 1.0)
+	shake:: Perturbation factor applied to orientation groups: A float number between 0.0 and 0.5. (default 0.0)
+	notapplybckgnoise:: flag to turn off background noise: (default is False)
+	mtf:: MTF file: File contains the MTF (modulation transfer function) of the detector used. (default none)
     B_enhance:: B-factor enhancement: -1.0: B-factor is not applied; 0.0: program estimates B-factor from options. B_start (usually 10 Angstrom) to the resolution determined by FSC143; 128.0: program use the given value 128.0 [A^2] to enhance map. (default 0.0)
     fl:: Low-pass filter frequency [1/Pixels]: 0.0: low-pass filter to resolution; A value > 0.5: low-pass filter to the value in Angstrom; A value > 0.0 and < 0.5: low-pass filter to the value in absolute frequency; -1.0: no low-pass filter. (default 0.0)
     aa:: Low-pass filter fall-off [1/Pixels]: Low-pass filter fall-off. (default 0.1)
@@ -53,29 +57,32 @@ sxsort3d_depth.py exists only in MPI version. It surports single node workstatio
     ''' mpirun -np 48 sxsort3d_depth.py --output_dir='outdir_sxsort3d_depth' --instack='bdb:data'  --sym='c1' --radius=52 --img_per_grp=2000  --stop_mgskmeans_percentage=10.0 --minimum_grp_size=1500  --do_swap_au --swap_ratio=5 ''' <<BR>><<BR>>
 
 
-== Input ==	
-	instack:: Input images stack: File path of particle stack for sorting provided by user. If specified, sorting starts from a given data stack. This option is not currently supported by SHPIRE GUI (sxgui). (default none)
+== Input ==
+	
+	instack:: Input images stack: File path of particle stack for sorting provided by user. (default None)
 	nxinit:: User provided image size: Image size used for MGSKmeans in case of starting sorting from a data stack. By default, the program determines window size. (default -1) 
- 	mask3D:: 3D mask: File path of the global 3D mask for clustering. (default none)
- 	focus:: Focus 3D mask: File path of a binary 3D mask for focused clustering. (default none)
-    radius:: Outer radius for rotational correlation peak search [Pixels]: Generally, use the radius of the particle. However the value must be smaller than half the box size.  (default -1)
+    mask3D:: 3D mask: File path of the global 3D mask for clustering. (default none)
+    focus:: Focus 3D mask: File path of a binary 3D mask for focused clustering. (default none)
+    radius:: Estimated protein radius [Pixels]: The value must be smaller than half of the box size.  (default -1)
     sym:: Point-group symmetry: Point group symmetry of the macromolecular structure. It can be inherited from refinement. (default c1) 
-    img_per_grp:: Images per group: The number of images per a group. This value is critical for successful 3D clustering. (default 1000) 
-    minimum_grp_size:: Cluster selection size: It also serves as the minimum group size in MGKmeans . However this value must be smaller than the number of images per a group (img_per_grp). (default -1)
-    order_of_depth:: depth order: a number defines the number of initial independent MGSKmeans runs (2^order_of_depth). (default 2)
-    orien_groups:: number of orientation groups in asymmetric unit: (default 100)
+    img_per_grp:: Number of images per group: User expected group size. This value is critical for a successful 3D clustering. (default 1000)
+    minimum_grp_size:: Cluster selection size: It also serves as the minimum group size constraint in MGSKmeans. However this value must be smaller than the number of images per a group (img_per_grp). (default -1)
+    order_of_depth:: Depth order: a number defines the number of initial independent MGSKmeans runs (2^order_of_depth). (default 2)
+    orientation_groups:: Number of orientation groups in the asymmetric unit: (default 100)
     memory_per_node:: Memory per node [GB]: User provided information about memory per node in GB (NOT per CPU). It will be used to evaluate the number of CPUs per node from user-provided MPI setting. By default, it uses 2GB * (number of CPUs per node) (default -1.0)
-	stop_mgsqkmeans_percentage:: Stop EQK-means Percentage [%]: Particle change percentage for stopping minimum group size K-means. (default 2.0)
-	do_swap_au:: swap a certain number of elements in clusters with unaccounted elements.
-	swap_ratio:: ratio of swapped elements.
-	shake:: perturbation factor applied to orientations
-	B_enhance:: B-factor enhancement: -1.0: B-factor is not applied; 0.0: program estimates B-factor from options. B_start (usually 10 Angstrom) to the resolution determined by FSC143; 128.0: program use the given value 128.0 [A^2] to enhance map. (default 0.0)
+    stop_mgsqkmeans_percentage:: Stop MGSKmeans Percentage [%]: Particle change percentage for stopping minimum group size K-means. (default 10.0)
+	do_swap_au:: Swap flag: Swap a certain number of accounted elements per cluster with the unaccounted elements. (default False)
+	swap_ratio:: Swap ratio: A float number between 0.0 and 50. (default 1.0)
+	shake:: Perturbation factor applied to orientation groups: A float number between 0.0 and 0.5. (default 0.0)
+	notapplybckgnoise:: flag to turn off background noise: (default is False)
+	mtf:: MTF file: File contains the MTF (modulation transfer function) of the detector used. (default none)
+    B_enhance:: B-factor enhancement: -1.0: B-factor is not applied; 0.0: program estimates B-factor from options. B_start (usually 10 Angstrom) to the resolution determined by FSC143; 128.0: program use the given value 128.0 [A^2] to enhance map. (default 0.0)
     fl:: Low-pass filter frequency [1/Pixels]: 0.0: low-pass filter to resolution; A value > 0.5: low-pass filter to the value in Angstrom; A value > 0.0 and < 0.5: low-pass filter to the value in absolute frequency; -1.0: no low-pass filter. (default 0.0)
     aa:: Low-pass filter fall-off [1/Pixels]: Low-pass filter fall-off. (default 0.1)
     B_start:: B-factor lower limit [A]: Lower bound of frequency range for B-factor estimation. (default 10.0)
     B_stop:: B-factor higher limit [A]: Higher bound of frequency range for B-factor estimation. (default  0.0)
     nofsc_adj:: Apply FSC-based low-pass filter: Indicate if an FSC-based low-pass filter (square root of FSC) should be applied or not. The filter will be applied to the merged volume before the B-factor estimation. By default, apply low-pass filter. (default False question reversed in GUI)
-
+ 
 
 
 == Output ==
@@ -89,7 +96,7 @@ sxsort3d_depth.py exists only in MPI version. It surports single node workstatio
     
   == Input ==  
     
-	post_sorting_sharpen:: Sharpen maps of each clusters: Sharpen maps generated from sorted clusters. (default False)
+	post_sorting_sharpen:: post sorting sharpen flag: Sharpen maps generated from sorted clusters. (default False)
 	memory_per_node:: Memory per node [GB]: User provided information about memory per node in GB (NOT per CPU). It will be used to evaluate the number of CPUs per node from user-provided MPI setting. By default, it uses 2GB * (number of CPUs per node) (default -1.0)
 	mtf:: MTF file: File contains the MTF (modulation transfer function) of the detector used. (default none)
     B_enhance:: B-factor enhancement: -1.0: B-factor is not applied; 0.0: program estimates B-factor from options. B_start (usually 10 Angstrom) to the resolution determined by FSC143; 128.0: program use the given value 128.0 [A^2] to enhance map. (default 0.0)
@@ -104,16 +111,11 @@ sxsort3d_depth.py exists only in MPI version. It surports single node workstatio
 	
 	
 
-
-
-
-
 = Description =
-sxsort3d_depth finds out stable members by carrying out two-way comparison of two independent sxsort3d runs.
+sxsort3d_depth finds out stable members by carrying out two-way comparison of two independent Kmeans clustering with minimum group size constraint.
 
 
 Note - 2017/12/10: About new version 
-The new version is better integrated with meridien, and supports only sorting that imports parameters from meridien refinement and the 3D reconstruction in sorting uses all the information inhered from meridien, not just the final optimal X-form parameters. The options for post processing are also included. Continuation option of sxmeridien.py allows to continue refinement of a dataset subset determined by the 3D sorting.
 
 This version supports single workstation
 
@@ -132,9 +134,9 @@ Reconstructed halfset maps to be used for postprocessing.
 
 - vol_final_nomask_cluster*.hdf  
 
-- anova of clusters in log.txt saved in output directory
+- anova on defocus, number of smears, norm and statistics of micrographs of the final clusters and clusters produced in each generation are documented in log.txt.
 
-- vol_final_cluster*.hdf, Cluster*.txt, vol_unfiltered_0_group*.hdf and vol_unfiltered_1_group*.hdf in each generation_00? directories. The last cluster is unaccounted ones in this generation.
+- vol_final_cluster*.hdf, Cluster*.txt, vol_unfiltered_0_group*.hdf and vol_unfiltered_1_group*.hdf in each generation_00? directories. The last cluster is the unaccounted elements in each generation.
 
 Some examples for timing: 
 
@@ -145,7 +147,7 @@ In general, reconstruction costs more than 80% of time for each sorting.
 
 
 = Method =
-K-means, equal K-means, reproducibility, two-way comparison.
+K-means, MGSK-means, reproducibility, two-way comparison.
 
 = Reference =
 Not published yet.

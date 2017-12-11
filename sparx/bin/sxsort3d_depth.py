@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 #
 #
 #  08/26/2016
@@ -16,19 +15,19 @@ from    sparx      import *
 from    EMAN2      import *
 from    numpy      import array
 from    logger     import Logger, BaseLogger_Files
-from mpi   	import  *
-from math  	import  *
-from random import  *
-import shutil
-import os
-import sys
-import subprocess
-import time
-import string
-import json
-from   sys 	import exit
-from   time import localtime, strftime, sleep
-global Tracker, Blockdata
+from    mpi        import  *
+from    math  	   import  *
+from    random     import  *
+import  shutil
+import  os
+import  sys
+import  subprocess
+import  time
+import  string
+import  json
+from    sys 	import exit
+from    time    import localtime, strftime, sleep
+global  Tracker, Blockdata
 
 # ------------------------------------------------------------------------------------
 mpi_init(0, [])
@@ -39,6 +38,7 @@ Blockdata = {}
 Blockdata["nproc"]              = nproc
 Blockdata["myid"]               = myid
 Blockdata["main_node"]          = 0
+Blockdata["last_node"]          = nproc -1
 
 Blockdata["shared_comm"]                    = mpi_comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED,  0, MPI_INFO_NULL)
 Blockdata["myid_on_node"]                   = mpi_comm_rank(Blockdata["shared_comm"])
@@ -46,6 +46,7 @@ Blockdata["no_of_processes_per_group"]      = mpi_comm_size(Blockdata["shared_co
 masters_from_groups_vs_everything_else_comm = mpi_comm_split(MPI_COMM_WORLD, Blockdata["main_node"] == Blockdata["myid_on_node"], Blockdata["myid_on_node"])
 Blockdata["color"], Blockdata["no_of_groups"], balanced_processor_load_on_nodes = get_colors_and_subsets(Blockdata["main_node"], MPI_COMM_WORLD, Blockdata["myid"], \
          Blockdata["shared_comm"], Blockdata["myid_on_node"], masters_from_groups_vs_everything_else_comm)
+         
 #  We need two nodes for processing of volumes
 if(Blockdata["no_of_groups"] > 1):
 	Blockdata["node_volume"] = [Blockdata["no_of_groups"]-2, Blockdata["no_of_groups"]-1]
@@ -90,12 +91,710 @@ def create_subgroup():
 	mpi_barrier(MPI_COMM_WORLD)
 	return
 	
+def create_zero_group():
+	# select a subset of myids to be in subdivision, This is a group of all zero IDs on nodes, taken from isac2
+	if( Blockdata["myid_on_node"] == 0 ): submyids = [Blockdata["myid"]]
+	else:  submyids = []
+
+	submyids = wrap_mpi_gatherv(submyids, Blockdata["main_node"], MPI_COMM_WORLD)
+	submyids = wrap_mpi_bcast(submyids, Blockdata["main_node"], MPI_COMM_WORLD)
+	#if( Blockdata["myid"] == Blockdata["main_node"] ): print(submyids)
+	world_group = mpi_comm_group(MPI_COMM_WORLD)
+	subgroup = mpi_group_incl(world_group,len(submyids),submyids)
+	#print(" XXX world group  ",Blockdata["myid"],world_group,subgroup)
+	Blockdata["group_zero_comm"] = mpi_comm_create(MPI_COMM_WORLD, subgroup)
+	mpi_barrier(MPI_COMM_WORLD)
+	#print(" ZZZ subgroup  ",Blockdata["myid"],world_group,subgroup,subgroup_comm)
+
+	Blockdata["group_zero_size"] = -1
+	Blockdata["group_zero_myid"] = -1
+	if (MPI_COMM_NULL != Blockdata["group_zero_comm"]):
+		Blockdata["group_zero_size"] = mpi_comm_size(Blockdata["group_zero_comm"])
+		Blockdata["group_zero_myid"] = mpi_comm_rank(Blockdata["group_zero_comm"])
+	#  "nodes" are zero nodes on subgroups on the two "node_volume" that compute backprojection
+	#Blockdata["nodes"] = [Blockdata["node_volume"][0]*Blockdata["ncpuspernode"], Blockdata["node_volume"][1]*Blockdata["ncpuspernode"]]
+	mpi_barrier(MPI_COMM_WORLD)
+	return
+	
+### restart
+
+def check_restart_from_given_depth_order(current_depth_order,  restart_from_generation, \
+     restart_from_depth_order_init, restart_from_nbox_init, log_main):
+	global Tracker, Blockdata
+	import shutil
+	from   logger import Logger, BaseLogger_Files
+	
+	keepgoing                = 1
+	restart_from_depth_order = max(0, restart_from_depth_order_init)
+	restart_from_nbox        = max(0, restart_from_nbox_init)
+	
+	log_main = Logger(BaseLogger_Files())
+	log_main.prefix = Tracker["constants"]["masterdir"]+"/"
+	
+	if(Blockdata["myid"] == Blockdata["main_node"]):
+		if not os.path.exists(Tracker["constants"]["masterdir"]):
+			print("masterdir does not exist")
+			keepgoing = 0
+		
+	keepgoing = bcast_number_to_all(keepgoing, Blockdata["main_node"], MPI_COMM_WORLD)
+	if keepgoing == 0:
+		 ERROR("masterdir does not exist", "restart from depth order", 1, Blockdata["myid"])
+	 
+	if(Blockdata["myid"] == Blockdata["main_node"]):
+		if not os.path.exists(os.path.join(Tracker["constants"]["masterdir"]), "Tracker.json"):
+			print("Tracker.json in masterdir does not exist")
+			keepgoing = 0
+		
+	keepgoing = bcast_number_to_all(keepgoing, Blockdata["main_node"], MPI_COMM_WORLD)
+	if keepgoing == 0:
+		 ERROR("Tracker does not exist", "restart from depth order", 1, Blockdata["myid"])
+		 
+	sort3d_utils("load_tracker", log_main =  log_main)
+	if(Blockdata["myid"] == Blockdata["main_node"]):
+		keepchecking = 1
+		msg = "previous depth order: %d  current depth order: %d"%(Tracker["constants"]["depth_order"], current_depth_order)
+		log_main.add(msg)
+		
+		if current_depth_order >Tracker["constants"]["depth_order"]:
+			Tracker["constants"]["depth_order"] = current_depth_order #
+		# remove the directories after specified ones
+		
+		for idepth in xrange(Tracker["constants"]["depth_order"]):
+			depth_dir = os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%restart_from_generation, "layer%d"%idepth)
+			n_cluster_boxes = 2**(current_depth_order - idepth)
+			if idepth > restart_from_depth_order:
+				if os.path.exists(depth_dir):
+					shutil.rmtree(depth_dir)
+					
+			elif idepth == restart_from_depth_order:
+				if os.path.exists(depth_dir):
+					keepchecking = check_sorting_state(depth_dir, keepchecking, log_file)
+					if keepchecking ==1:
+						for ibox in xrange(n_cluster_boxes):
+							box_dir = os.path.join(depth_dir, "nbox%d"%ibox)
+							if ibox>= restart_from_nbox:
+								if os.path.exists(box_dir): shutil.rmtree(box_dir)
+							else:
+								checking_box  =1 
+								checking_box = check_sorting_state(depth_dir, checking_box, log_file)
+								if checking_box == 0: shutil.rmtree(box_dir)
+				else:
+					msg = "%d layer has not been created"%idepth
+					print(msg)
+					log_main.add(msg)
+					break
+			else: continue
+	else: Tracker = 0
+	Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
+	return
+			
+######### depth clustering functions
+def depth_clustering(work_dir, depth_order, initial_id_file, params, previous_params, log_main):
+	global Tracker, Blockdata
+	keepchecking   = 1
+	init_layer_dir = os.path.join(work_dir, "layer0")
+	
+	if(Blockdata["myid"] == Blockdata["main_node"]):
+		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		if not os.path.exists(init_layer_dir): os.mkdir(init_layer_dir)
+		msg = "depth_clustering starts"
+		log_main.add(msg)
+		print(line, msg)
+	
+	if(Blockdata["myid"] == Blockdata["main_node"]):
+		partition_per_box_per_layer_list = []
+		initial_id_list = read_text_file(initial_id_file)
+		for iparti in xrange(0, 2**(depth_order+1), 2):
+			reassign = [initial_id_list, None]
+			partition_per_box_per_layer_list.append(reassign)
+	else: partition_per_box_per_layer_list = 0
+	partition_per_box_per_layer_list = wrap_mpi_bcast(partition_per_box_per_layer_list, Blockdata["main_node"])
+	
+	for depth in xrange(depth_order): #  layers, depth_order = 1 means one layer and two boxes.
+		time_layer_start = time.time()
+		n_cluster_boxes  = 2**(depth_order - depth)
+		depth_dir        = os.path.join(work_dir, "layer%d"%depth)
+		
+		if(Blockdata["myid"] == Blockdata["main_node"]):
+			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+			msg  = "----->>>>>depth level %d<<<<----------- "%depth
+			print(line, msg)
+			log_main.add(msg)
+			if not os.path.exists(depth_dir): 
+				os.mkdir(depth_dir)
+				keepchecking = 0
+				mark_sorting_state(depth_dir, False, log_main)
+			else: 
+				keepchecking = check_sorting_state(depth_dir, keepchecking, log_main)
+				if keepchecking == 0: mark_sorting_state(depth_dir, False, log_main)
+		else: keepchecking = 0
+		keepchecking = bcast_number_to_all(keepchecking, Blockdata["main_node"], MPI_COMM_WORLD)
+		## box loop
+		if keepchecking == 0:
+			checkingbox = 1
+			Tracker["box_nxinit"] = -1
+			for nbox in xrange(n_cluster_boxes):
+				input_accounted_file   = partition_per_box_per_layer_list[nbox][0]
+				input_unaccounted_file = partition_per_box_per_layer_list[nbox][1]
+				nbox_dir = os.path.join(depth_dir, "nbox%d"%nbox)
+				if(Blockdata["myid"] == Blockdata["main_node"]):
+					line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+					msg = "++++++>>>>>box %d<<<++++++++ "%nbox
+					print(line, msg)
+					log_main.add(msg)
+					if not os.path.exists(nbox_dir):
+						os.mkdir(nbox_dir)
+						checkingbox = 0
+						mark_sorting_state(nbox_dir, False, log_main)
+					else:
+						checkingbox = check_sorting_state(nbox_dir, checkingbox, log_main)
+						if checkingbox == 0:# found not finished box
+							line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+							msg ="box %d is not finished. Remove it and recompute..."%nbox
+							print(line, msg)
+							log_main.add(msg)
+							shutil.rmtree(nbox_dir)
+							os.mkdir(nbox_dir)
+							mark_sorting_state(nbox_dir, False, log_main)	
+				else: checkingbox = 0
+				checkingbox = bcast_number_to_all(checkingbox, Blockdata["main_node"], MPI_COMM_WORLD)
+				# Code structure of the box
+				if checkingbox == 0:
+					depth_clustering_box(nbox_dir, input_accounted_file, input_unaccounted_file, params, previous_params, nbox, log_main)
+					if(Blockdata["myid"] == Blockdata["main_node"]): mark_sorting_state(nbox_dir, True, log_main)
+				else: continue
+			partition_per_box_per_layer_list = []
+			if(Blockdata["myid"] == Blockdata["main_node"]):
+				for nbox in xrange(0,n_cluster_boxes,2):
+					input_box_parti1 = os.path.join(depth_dir, "nbox%d"%nbox,     "partition.txt")
+					input_box_parti2 = os.path.join(depth_dir, "nbox%d"%(nbox+1), "partition.txt")
+					line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+					msg ="------>>>comparison between nbox %d and nbox %d<<<------------"%(nbox, (nbox+1))
+					log_main.add(msg)
+					print(line, msg)
+					minimum_grp_size, maximum_grp_size, accounted_list, unaccounted_list = \
+					do_boxes_two_way_comparison(nbox, input_box_parti1, input_box_parti2, log_main)
+					partition_per_box_per_layer_list.append([accounted_list, unaccounted_list])
+			else: partition_per_box_per_layer_list = 0
+			partition_per_box_per_layer_list = wrap_mpi_bcast(partition_per_box_per_layer_list, Blockdata["main_node"], MPI_COMM_WORLD)
+			if(Blockdata["myid"] == Blockdata["main_node"]): mark_sorting_state(depth_dir, True, log_main)
+		else:
+			if(Blockdata["myid"] == Blockdata["main_node"]):
+				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+				msg  = "----->>>>>depth level %d is done<<<<----------- "%depth
+				print(line, msg)
+				log_main.add(msg)
+		time_of_sorting_h,  time_of_sorting_m = get_time(time_layer_start)
+		if Blockdata["myid"] == Blockdata["main_node"]:
+			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+			msg = "layer %d costs time %d hours %d minutes"%(depth, time_of_sorting_h, time_of_sorting_m)
+			log_main.add(msg)
+			print(msg)
+			
+	if(Blockdata["myid"] == Blockdata["main_node"]):
+		msg = "++++++>>>>>depth_clustering finishes<<<++++++++ "
+		print(msg)
+		log_main.add(msg)
+	return partition_per_box_per_layer_list
+
+def depth_box_initialization(box_dir, input_list1, input_list2, log_file):
+	global Tracker, Blockdata
+	img_per_grp  = Tracker["constants"]["img_per_grp"]
+	if input_list2 is not None: #Track 2
+		total_stack = len(input_list1)+ len(input_list2)
+		groups = []
+		for one in input_list1:
+			if one[0] not in groups: groups.append(one[0]) # safe in speed when the number of groups is not large.
+		number_of_groups = len(groups)
+		if number_of_groups< total_stack//img_per_grp: number_of_groups = total_stack//img_per_grp
+		minimum_grp_size = Tracker["constants"]["minimum_grp_size"]
+		if Blockdata["myid"] == Blockdata["main_node"]:
+			msg = "intialization found %d  groups, the total possible groups  %d"%(number_of_groups, total_stack//img_per_grp)
+			print(msg)
+			log_file.add(msg)
+			write_text_row(input_list1, os.path.join(box_dir, "previous_NACC.txt"))
+			write_text_file(input_list2, os.path.join(box_dir, "previous_NUACC.txt"))
+		mpi_barrier(MPI_COMM_WORLD)
+		
+		if Tracker["constants"]["do_swap_au"]: swap_ratio = Tracker["constants"]["swap_ratio"]
+		else: swap_ratio = 0.0
+		new_assignment = []
+		for indep in xrange(2):
+			tmp_assignment = swap_accounted_with_unaccounted_elements_mpi(os.path.join(box_dir, "previous_NACC.txt"), \
+				os.path.join(box_dir, "previous_NUACC.txt"), log_file, number_of_groups, swap_ratio)
+			new_assignment.append(tmp_assignment)
+			  
+		if Blockdata["myid"] == Blockdata["main_node"]:
+			for indep in xrange(2):
+				write_text_file(new_assignment[indep], os.path.join(box_dir, "independent_index_%03d.txt"%indep))
+			new_assignment = []
+			for indep in xrange(2):
+				new_assignment.append(read_text_row(os.path.join(box_dir,"independent_index_%03d.txt"%indep)))
+			id_list = read_text_file( os.path.join(box_dir, "independent_index_000.txt"), -1)
+			if len(id_list)>1: id_list=id_list[0]
+			total_stack = len(id_list)
+			number_of_groups = max(id_list)+1 # assume K be 0, ...,number_of_groups-1
+		else:
+			number_of_groups = 0
+			total_stack      = 0
+			new_assignment   = 0
+		new_assignment = wrap_mpi_bcast(new_assignment, Blockdata["main_node"], MPI_COMM_WORLD)
+		number_of_groups = bcast_number_to_all(number_of_groups, Blockdata["main_node"], MPI_COMM_WORLD)
+		total_stack = bcast_number_to_all(total_stack, Blockdata["main_node"], MPI_COMM_WORLD)
+		
+	else: #Tracker 1
+		total_stack = len(input_list1)
+		if Blockdata["myid"] == Blockdata["main_node"]:
+			write_text_file(input_list1, os.path.join(box_dir, "previous_all_indexes.txt"))
+		number_of_groups = total_stack//img_per_grp
+		if number_of_groups <= 1:number_of_groups = total_stack//Tracker["constants"]["minimum_grp_size"]
+		new_assignment = create_nrandom_lists_from_given_pids(box_dir, os.path.join(box_dir, \
+		      "previous_all_indexes.txt"), number_of_groups, 2)
+		if Tracker["constants"]["minimum_grp_size"] == -1: minimum_grp_size = total_stack//number_of_groups**2
+		else: minimum_grp_size = Tracker["constants"]["minimum_grp_size"]
+	
+	if Blockdata["myid"] == Blockdata["main_node"]:
+		msg = "depth_box_initialization  total_stack  %d number_of_groups  %d  minimum_grp_size  %d"%(total_stack, number_of_groups, minimum_grp_size)
+		log_file.add(msg)
+	mpi_barrier(MPI_COMM_WORLD)		
+	
+	return img_per_grp, number_of_groups, total_stack, minimum_grp_size, new_assignment
+	
+def depth_iter_initialization(run_id_file):
+	id_list          = read_text_file(run_id_file, -1)
+	number_of_groups = max(id_list[0])+1
+	total_stack      = len(id_list[0])
+	return total_stack, number_of_groups
+	
+def output_iter_results(box_dir, ncluster, NACC, NUACC, minimum_grp_size, list_of_stable, unaccounted_list, log_main):
+	### single node
+	line     = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	new_list = []
+	nc       = 0
+	for index_of_any in xrange(len(list_of_stable)):
+		any = list_of_stable[index_of_any]
+		any.tolist()
+		if len(any) >= minimum_grp_size:
+			any.sort()
+			new_list.append(any)
+			msg = "cluster %d:   %d saved as accounted"%(index_of_any, len(any))
+			log_main.add(msg)
+			print(line, msg)
+			write_text_file(any, os.path.join(box_dir, "Cluster_%03d.txt"%ncluster))
+			ncluster += 1
+			nc       += 1
+		else:
+			msg ="group %d with size %d is rejected and sent back into unaccounted ones"%(index_of_any, len(any))
+			log_main.add(msg)
+			print(line, msg)
+			for element in any: unaccounted_list.append(element)
+	unaccounted_list.sort()
+	NUACC = len(unaccounted_list)
+	return ncluster, NACC, NUACC, unaccounted_list, nc
+	
+def check_state_within_box_run(keepgoing, nruns, img_per_grp, minimum_grp_size, unaccounted_list, no_cluster_last_run):
+	global Tracker, Blockdata
+	total_stack = len(unaccounted_list)
+	
+	if total_stack//img_per_grp <=1:
+		number_of_groups = 2
+		if total_stack/float(Tracker["constants"]["minimum_grp_size"]) <= 2.0: 
+			keepgoing = 0 # otherwise sorting will fall into endless loop
+		else: number_of_groups = total_stack//Tracker["constants"]["minimum_grp_size"]
+	else: number_of_groups = total_stack//img_per_grp
+	
+	if keepgoing ==1: nruns +=1
+	else:
+		total_stack      = 0
+		number_of_groups = 0
+	if no_cluster_last_run: number_of_groups -=1
+	if number_of_groups<=1 : keepgoing = 0
+	return keepgoing, nruns, total_stack, number_of_groups
+	
+def get_box_partition(box_dir, ncluster, unaccounted_list):
+	if ncluster >=1:
+		unaccounted_list.sort()
+		clusters_in_box = []
+		for ic in xrange(ncluster):
+			one_cluster = read_text_file(os.path.join(box_dir, "Cluster_%03d.txt"%ic))
+			clusters_in_box.append(one_cluster)
+		if len(unaccounted_list)>0: clusters_in_box.append(unaccounted_list)
+		alist, plist = merge_classes_into_partition_list(clusters_in_box)
+	else: plist = []
+	return plist
+		
+def get_box_partition_reassign(input_list):
+	global Tracker, Blockdata
+	
+	if Blockdata["myid"] == Blockdata["main_node"]:
+		plist            = input_list[0][0]
+		unaccounted_list = input_list[0][1]
+		clusters, npart  = split_partition_into_ordered_clusters(plist)
+		if len(unaccounted_list)>1: unaccounted_list.sort()
+		total_stack = len(plist)+len(unaccounted_list)
+	else:
+		unaccounted_list = 0
+		clusters         = 0
+		total_stack      = 0
+	clusters         = wrap_mpi_bcast(clusters, Blockdata["main_node"],         MPI_COMM_WORLD)
+	unaccounted_list = wrap_mpi_bcast(unaccounted_list, Blockdata["main_node"], MPI_COMM_WORLD)
+	total_stack      = bcast_number_to_all(total_stack, Blockdata["main_node"], MPI_COMM_WORLD)
+	
+	if len(unaccounted_list)> 0:
+		if len(unaccounted_list)>100*Blockdata["nproc"]:
+			clusters  = assign_unaccounted_elements_mpi(\
+				unaccounted_list, clusters, total_stack)
+			dlist, assignment_list = merge_classes_into_partition_list(clusters)
+		else:
+			if Blockdata["myid"] == Blockdata["main_node"]: clusters = \
+			              assign_unaccounted_elements(unaccounted_list, clusters, total_stack)
+			else: clusters = 0
+			clusters = wrap_mpi_bcast(clusters, Blockdata["main_node"], MPI_COMM_WORLD)
+			dlist, assignment_list = merge_classes_into_partition_list(clusters)
+	else: dlist, assignment_list = merge_classes_into_partition_list(clusters)
+	return assignment_list, len(clusters)
+		
+def output_clusters(output_dir, partition, unaccounted_list, not_include_unaccounted, log_main):
+	global Tracker, Blockdata
+	import copy
+	nclasses, npart = split_partition_into_ordered_clusters(partition)
+	nc = 0
+	identified_clusters = []
+	
+	for ic in xrange(len(nclasses)):
+		if len(nclasses[ic])>= Tracker["constants"]["minimum_grp_size"]:
+			write_text_file(nclasses[ic], os.path.join(output_dir,"Cluster_%03d.txt"%nc))
+			nc +=1
+			identified_clusters.append(nclasses[ic])
+		else: unaccounted_list +=nclasses[ic]
+		
+	if len(unaccounted_list)>1: 
+		unaccounted_list.sort()
+		write_text_file(unaccounted_list, os.path.join(output_dir, "Unaccounted.txt"))
+	nclasses = copy.deepcopy(identified_clusters)
+	del identified_clusters
+	
+	if len(unaccounted_list)>1:
+		if not not_include_unaccounted:
+			write_text_file(unaccounted_list, os.path.join(output_dir,"Cluster_%03d.txt"%nc))
+			msg  ="the Cluster_%03d.txt contains unaccounted ones"%nc
+			log_main.add(msg)
+		
+	do_analysis_on_identified_clusters(nclasses, log_main)
+	if not not_include_unaccounted:
+		import copy
+		unclasses = copy.deepcopy(nclasses)
+		unclasses.append(unaccounted_list)
+		alist, partition = merge_classes_into_partition_list(unclasses)
+		del unclasses
+	else: alist, partition = merge_classes_into_partition_list(nclasses)
+	write_text_row(partition, os.path.join(output_dir, "final_partition.txt"))
+	return nclasses
+	
+def do_analysis_on_identified_clusters(clusters, log_main):
+	global Tracker, Blockdata
+	dummy = output_micrograph_number_per_cluster(Tracker["constants"]["orgstack"], \
+		os.path.join(Tracker["constants"]["masterdir"], "indexes.txt"), clusters, log_main = log_main)
+		   
+	if Tracker["nosmearing"]:
+		vs, ds, ss, norms = get_params_for_analysis(Tracker["constants"]["orgstack"], \
+		os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt"),\
+		 None, None)
+	else:
+		vs, ds, ss, norms = get_params_for_analysis(Tracker["constants"]["orgstack"], \
+		os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt"),\
+		 os.path.join(Tracker["constants"]["masterdir"], "all_smearing.txt"), Tracker["constants"]["nsmear"])
+
+	do_one_way_anova_scipy(clusters, ds, name_of_variable="defocus", log_main = log_main)
+	if ss is not None: do_one_way_anova_scipy(clusters, ss, name_of_variable="smearing", log_main = log_main)
+	if norms: do_one_way_anova_scipy(clusters, norms, name_of_variable="norm", log_main = log_main)
+	return
+	
+def check_sorting_state(current_dir, keepchecking, log_file):
+	# single processor job
+	import json
+	try:
+		fout = open(os.path.join(current_dir, "state.json"),'r')
+		current_state = convert_json_fromunicode(json.load(fout))
+		fout.close()
+		if current_state["done"]: 
+			keepchecking = 1
+			msg = "directory %s is done already"%current_dir
+			log_file.add(msg)
+		else:  
+			keepchecking = 0
+			msg = "directory %s is not finished yet"%current_dir
+			log_file.add(msg)
+	except:
+		keepchecking = 0
+		msg = "directory %s is not finished yet"%current_dir
+		log_file.add(msg)
+	return keepchecking
+	
+def read_tracker_mpi(current_dir, log_file):
+	global Tracker, Blockdata
+	open_tracker = 1
+	if(Blockdata["myid"] == Blockdata["main_node"]):
+		try:
+			fout    = open(os.path.join(current_dir, "Tracker.json"),'r')
+			Tracker = convert_json_fromunicode(json.load(fout))
+			fout.close()
+		except:
+			open_tracker = 0
+			msg = "fail in opening Tracker.json"
+			log_file.add(msg)
+	else: open_tracker = 0
+	open_tracker =  bcast_number_to_all(open_tracker, Blockdata["main_node"], MPI_COMM_WORLD)
+	if open_tracker ==1:
+		if(Blockdata["myid"] != Blockdata["main_node"]): Tracker = 0
+		Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
+	return		
+
+def mark_sorting_state(current_dir, sorting_done, log_file):
+	# single processor job
+	import json
+	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	current_state = {}
+	fout = open(os.path.join(current_dir, "state.json"),'w')
+	if sorting_done: current_state["done"] = True
+	else: current_state["done"] = False
+	json.dump(current_state, fout)
+	fout.close()
+	if sorting_done: msg = "directory %s is marked as done"%current_dir
+	else:    msg = "directory %s is marked as not finished"%current_dir
+	log_file.add(msg)
+	print(line, msg)
+	return
+
+def depth_clustering_box(work_dir, input_accounted_file, input_unaccounted_file, params, previous_params, nbox, log_main):
+	global Tracker, Blockdata
+	from utilities import read_text_file, wrap_mpi_bcast, write_text_file, write_text_row
+	import copy
+	import shutil
+	from   shutil import copyfile
+	from   math   import sqrt
+	import time
+	box_niter = 5
+	if(Blockdata["myid"] == Blockdata["main_node"]):
+		if not os.path.exists(work_dir): os.mkdir(work_dir)
+		
+	### ------- Initialization
+	ncluster  = 0
+	nruns     = 0
+	keepgoing = 1
+	converged = 0
+	####
+	img_per_grp, number_of_groups_init, total_stack_init, minimum_grp_size_init, new_assignment = \
+	   depth_box_initialization(work_dir, input_accounted_file, input_unaccounted_file, log_main)
+	NUACC = total_stack_init
+	NACC  = 0
+	####<<<<--------------------------
+	assignment_list = new_assignment[:]
+	within_box_run_dir = os.path.join(work_dir, "run%d"%nruns)
+	if Blockdata["myid"] == Blockdata["main_node"]:
+		if not os.path.exists(within_box_run_dir):os.mkdir(within_box_run_dir)
+		time_box_start = time.time()
+		
+	total_stack      = total_stack_init
+	number_of_groups = number_of_groups_init
+	while keepgoing ==1:
+		######<<<<<----iter initialization
+		iter                = 0
+		previous_iter_ratio = 0.0
+		current_iter_ratio  = 0.0
+		iter_dir = os.path.join(within_box_run_dir, "iter%d"%iter)
+		if Blockdata["myid"] == Blockdata["main_node"]:
+			if not os.path.exists(iter_dir):os.mkdir(iter_dir)
+			for indep in xrange(2):
+				write_text_row(assignment_list[indep], \
+				    os.path.join(iter_dir, "random_assignment_%03d.txt"%indep))
+		mpi_barrier(MPI_COMM_WORLD)
+		
+		iter_id_init_file = os.path.join(iter_dir, "random_assignment_000.txt")
+		if Blockdata["myid"] == Blockdata["main_node"]:
+			iter_total_stack, iter_number_of_groups = depth_iter_initialization(iter_id_init_file)
+		else:
+			iter_total_stack      = 0
+			iter_number_of_groups = 0
+			
+		iter_total_stack      = bcast_number_to_all(iter_total_stack, Blockdata["main_node"],      MPI_COMM_WORLD)
+		iter_number_of_groups = bcast_number_to_all(iter_number_of_groups, Blockdata["main_node"], MPI_COMM_WORLD)
+		total_stack           = iter_total_stack
+		current_number_of_groups      = iter_number_of_groups
+		
+		if Blockdata["myid"] == Blockdata["main_node"]:
+			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+			msg  = "before run %3d current NACC:  %8d   NUACC: %8d K: %3d  total_stack: %8d  No. of identified clusters: %3d"%\
+			   (nruns, NACC, NUACC, current_number_of_groups, total_stack, ncluster)
+			log_main.add(msg)
+			print(line, msg)
+			
+		#### computation starts! <<<<<<---prepare data
+		original_data, norm_per_particle  = read_data_for_sorting(iter_id_init_file, params, previous_params)
+		
+		if Tracker["nosmearing"]:
+			parameterstructure  = None
+			paramstructure_dict = None
+			paramstructure_dir  = None
+		else:
+			paramstructure_dict = Tracker["paramstructure_dict"]
+			paramstructure_dir  = Tracker["paramstructure_dir"]
+			parameterstructure  = read_paramstructure_for_sorting(iter_id_init_file, paramstructure_dict, paramstructure_dir)
+			
+		Tracker["directory"] = within_box_run_dir
+		if nruns == 0: # only do it in the first box
+			if Tracker["box_nxinit"] ==-1:
+				Tracker["nxinit"] = get_sorting_image_size(original_data, iter_id_init_file, current_number_of_groups,\
+					parameterstructure, norm_per_particle, log_main)
+				Tracker["box_nxinit"] = Tracker["nxinit"]
+			else: Tracker["nxinit"]   = Tracker["box_nxinit"]
+		else: # nruns>1 always estimate image size
+			Tracker["nxinit"] = get_sorting_image_size(original_data, iter_id_init_file, current_number_of_groups,\
+				parameterstructure, norm_per_particle, log_main)
+				
+		### preset variables in trackers
+		Tracker["total_stack"]      = total_stack
+		Tracker["number_of_groups"] = current_number_of_groups
+		minimum_grp_size = minimum_grp_size_init
+		iter_previous_iter_ratio = 0.0
+		iter_current_iter_ratio  = 0.0
+		while iter <= box_niter and converged == 0:
+			for indep_run_iter in xrange(2):
+				Tracker["directory"] = os.path.join(iter_dir, "MGSKmeans_%03d"%indep_run_iter)
+				MGSKmeans_index_file = os.path.join(iter_dir, "random_assignment_%03d.txt"%indep_run_iter)
+				if Blockdata["myid"] == Blockdata["main_node"]:
+					line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+					msg =  "indep_run_iter %d"%indep_run_iter
+					print(line, msg)
+					log_main.add(msg)
+					if not os.path.exists(Tracker["directory"]):os.mkdir(Tracker["directory"])
+					if not os.path.exists(os.path.join(Tracker["directory"], "tempdir")): os.mkdir(os.path.join(Tracker["directory"], "tempdir"))
+				mpi_barrier(MPI_COMM_WORLD)
+				if Tracker["constants"]["relax_oriens"]:
+					tmp_final_list, premature =  Kmeans_minimum_group_size_relaxing_orien_groups(original_data, MGSKmeans_index_file, \
+					   params, parameterstructure, norm_per_particle, minimum_grp_size, clean_volumes= True)
+				else: 
+					tmp_final_list, premature =  Kmeans_minimum_group_size_orien_groups(original_data, MGSKmeans_index_file, \
+					   params, parameterstructure, norm_per_particle, minimum_grp_size, clean_volumes= True)
+					   
+				if Blockdata["myid"] == Blockdata["main_node"]:
+					write_text_row(tmp_final_list, os.path.join(iter_dir, "partition_%03d.txt"%indep_run_iter))
+				mpi_barrier(MPI_COMM_WORLD)
+				
+			if Blockdata["myid"] == Blockdata["main_node"]:
+				minimum_grp_size1, maximum_grp_size1, list_of_stable, unaccounted_list, iter_current_iter_ratio, selected_number_of_groups = \
+				do_two_way_comparison_keep_all(iter_dir, log_main) # two partitions are written in partition_dir as partition_%03d.txt
+			else: 
+				unaccounted_list =  0
+				list_of_stable   =  0
+				minimum_grp_size1 = 0
+			
+			minimum_grp_size1 = bcast_number_to_all(minimum_grp_size1, Blockdata["main_node"], MPI_COMM_WORLD)
+			unaccounted_list  = wrap_mpi_bcast(unaccounted_list, Blockdata["main_node"])
+			list_of_stable    = wrap_mpi_bcast(list_of_stable, Blockdata["main_node"], MPI_COMM_WORLD)
+			
+			accounted_file   = os.path.join(iter_dir, "Accounted.txt")
+			unaccounted_file = os.path.join(iter_dir, "Unaccounted.txt")
+			
+			if Tracker["constants"]["do_swap_au"]: swap_ratio = Tracker["constants"]["swap_ratio"]
+			else: swap_ratio = 0.0
+			new_assignment_list = []
+			
+			for indep in xrange(2):
+				tmp_list = swap_accounted_with_unaccounted_elements_mpi(accounted_file, unaccounted_file, \
+					log_main, current_number_of_groups, swap_ratio)
+				new_assignment_list.append(tmp_list)
+				
+			if Blockdata["myid"] == Blockdata["main_node"]:
+				if abs(iter_current_iter_ratio - iter_previous_iter_ratio< 1.0) and iter_current_iter_ratio > 90.: converged = 1
+			converged = bcast_number_to_all(converged, Blockdata["main_node"], MPI_COMM_WORLD)
+			
+			if converged == 0:
+				iter_previous_iter_ratio = iter_current_iter_ratio
+				iter +=1
+				if (iter <= box_niter):
+					iter_dir = os.path.join(within_box_run_dir, "iter%d"%iter)
+					if Blockdata["myid"] == Blockdata["main_node"]:
+						line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+						if not os.path.exists(iter_dir):os.mkdir(iter_dir)
+						for indep in xrange(2):
+							write_text_file(new_assignment_list[indep], \
+								os.path.join(iter_dir, "random_assignment_%03d.txt"%indep))				   
+						msg ="+++++++++++++ move to iter %d... +++++++++++++++"%iter
+						log_main.add(msg)
+						print(line, msg)
+			else:
+				if Blockdata["myid"] == Blockdata["main_node"]:
+					line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+					msg =" internal loop converged "
+					log_main.add(msg)
+					print(line, msg)
+			mpi_barrier(MPI_COMM_WORLD)
+			
+		if Blockdata["myid"] == Blockdata["main_node"]:
+			ncluster, NACC, NUACC, unaccounted_list, new_clusters = output_iter_results(\
+			    work_dir, ncluster, NACC, NUACC, Tracker["constants"]["minimum_grp_size"], \
+			            list_of_stable, unaccounted_list, log_main)
+		else:
+			ncluster = 0
+			NACC  = 0
+			NUACC = 0
+			unaccounted_list = 0
+			new_clusters     = 0
+		new_clusters = bcast_number_to_all(new_clusters, Blockdata["main_node"], MPI_COMM_WORLD)
+		ncluster = bcast_number_to_all(ncluster, Blockdata["main_node"], MPI_COMM_WORLD)
+		NACC     = bcast_number_to_all(NACC,     Blockdata["main_node"], MPI_COMM_WORLD)
+		NUACC    = bcast_number_to_all(NUACC,    Blockdata["main_node"], MPI_COMM_WORLD)
+		unaccounted_list = wrap_mpi_bcast(unaccounted_list, Blockdata["main_node"], MPI_COMM_WORLD)
+		if new_clusters >0: no_cluster = False
+		else:               no_cluster = True
+		keepgoing, nruns, total_stack, current_number_of_groups = \
+		   check_state_within_box_run(keepgoing, nruns, img_per_grp, minimum_grp_size, unaccounted_list, no_cluster)
+		   
+		if Blockdata["myid"] == Blockdata["main_node"]:# report current state
+			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+			if keepgoing ==1: pnruns =nruns-1
+			else: 			  pnruns =nruns
+			msg1 = "run %d summary"%pnruns 
+			msg2 = "after run %3d current NACC:  %8d   NUACC: %8d K: %3d  No. of identified clusters: %3d   new_clusters: %3d"%\
+			  (pnruns, NACC, NUACC, current_number_of_groups, ncluster, new_clusters)
+			log_main.add(msg1)
+			log_main.add(msg2)
+			time_of_box_h,  time_of_box_m = get_time(time_box_start)
+			msg = "%d box run costs time %d hours %d minutes"%(nbox, time_of_box_h, time_of_box_m)
+			log_main.add(msg)
+			print(line, msg)
+			if os.path.exists(os.path.join(within_box_run_dir, "tempdir")): shutil.rmtree(os.path.join(within_box_run_dir, "tempdir"))
+			print(line, msg1)
+			print(line, msg2)
+			
+		if keepgoing == 1:
+			within_box_run_dir = os.path.join(work_dir, "run%d"%nruns)
+			unaccounted_file = os.path.join(within_box_run_dir, "Unaccounted_from_previous_run.txt")
+			if(Blockdata["myid"] == Blockdata["main_node"]):
+				if not os.path.exists(within_box_run_dir):os.mkdir(within_box_run_dir)
+				write_text_file(unaccounted_list, unaccounted_file)# new starting point
+			nreassign_list  = []
+			assignment_list = create_nrandom_lists(unaccounted_file, current_number_of_groups, 2)
+			
+			if(Blockdata["myid"] == Blockdata["main_node"]):
+				for indep in xrange(2):
+					write_text_row(assignment_list[indep], os.path.join(within_box_run_dir,\
+				     "independent_index_%03d.txt"%indep))
+			run_id_file = os.path.join(within_box_run_dir, "independent_index_000.txt")
+		else:
+			partition = get_box_partition(work_dir, ncluster, unaccounted_list)
+			if(Blockdata["myid"] == Blockdata["main_node"]): write_text_row(partition, os.path.join(work_dir, "partition.txt"))
+		mpi_barrier(MPI_COMM_WORLD)
+	return
+######<<<<<<----------------------------+++++++++++++++++++
 def check_mpi_settings(log):
 	global Tracker, Blockdata
 	from   utilities import wrap_mpi_bcast, read_text_file, bcast_number_to_all
 	import os
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	current_mpi_settings_is_bad = 0
+	
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		fsc_refinement = read_text_file(os.path.join(Tracker["constants"]["masterdir"], "fsc_global.txt"))
 		q = float(Tracker["constants"]["img_per_grp"])/float(Tracker["constants"]["total_stack"])
@@ -109,6 +808,7 @@ def check_mpi_settings(log):
 	else: nxinit =0
 	nxinit = bcast_number_to_all(nxinit, Blockdata["main_node"], MPI_COMM_WORLD)	
 	sys_required_mem = 1.0*Blockdata["no_of_processes_per_group"]
+	
 	if( Blockdata["myid"] == Blockdata["main_node"]):
 		msg = "------->>>>>>>Check memory and mpi settings<<<<-------------"
 		log.add(msg)
@@ -117,7 +817,7 @@ def check_mpi_settings(log):
 		log.add(msg)
 		print(line, msg)
 	try:
-		image_org_size = Tracker["constants"]["nnxo"]
+		image_org_size     = Tracker["constants"]["nnxo"]
 		image_in_core_size = nxinit
 		ratio = float(nxinit)/float(image_org_size)
 		raw_data_size = float(Tracker["constants"]["total_stack"]*image_org_size*image_org_size)*4.0/1.e9
@@ -149,7 +849,7 @@ def check_mpi_settings(log):
 		if( Blockdata["myid"] == Blockdata["main_node"]):
 			log.add(msg)
 			print(line, msg)
-	if( Blockdata["myid"] == Blockdata["main_node"]):
+	if(Blockdata["myid"] == Blockdata["main_node"]):
 		msg = "total number of particles:  %d  number of particles per group:  %d"%(Tracker["constants"]["total_stack"], Tracker["constants"]["img_per_grp"])
 		log.add(msg)
 		print(line, msg)
@@ -168,7 +868,7 @@ def check_mpi_settings(log):
 			msg ="Suggestion: use  number of processes %d"%int(new_nproc)
 			print(line, msg)
 			log.add(msg)
-		ERROR("In sufficient memory", "check_mpi_settings", 1, Blockdata["myid"])
+		ERROR("Insufficient memory", "check_mpi_settings", 1, Blockdata["myid"])
 	images_per_cpu = float(Tracker["constants"]["total_stack"])/float(Blockdata["nproc"])
 	images_per_cpu_for_unaccounted_data  = Tracker["constants"]["img_per_grp"]*1.5/float(Blockdata["nproc"])
 	if( Blockdata["myid"] == Blockdata["main_node"]):
@@ -178,15 +878,16 @@ def check_mpi_settings(log):
 	if images_per_cpu < 5.0: ERROR("image per cpu less than 5", "check_mpi_settings", 1, Blockdata["myid"])	
 	return
 	
-def get_sorting_image_size(original_data, partids, sparamstructure, snorm_per_particle, log):
+def get_sorting_image_size(original_data, partids, number_of_groups, sparamstructure, snorm_per_particle, log):
 	global Tracker, Blockdata
 	from utilities    import wrap_mpi_bcast, read_text_file, write_text_file
 	from applications import MPI_start_end
 	iter = 0
-	number_of_groups =  Tracker["number_of_groups"]
+	Tracker["number_of_groups"] = number_of_groups
 	if(Blockdata["myid"] == Blockdata["main_node"]):
+		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		msg = "start reconstruction with refinement window_size  %d"%Tracker["nxinit_refinement"]
-		print(msg)
+		print(line, msg)
 		log.add(msg)
 		lpartids = read_text_file(partids, -1)
 		if len(lpartids) == 1:
@@ -197,6 +898,7 @@ def get_sorting_image_size(original_data, partids, sparamstructure, snorm_per_pa
 			iter_assignment = lpartids[0]
 	else:   iter_assignment = 0
 	iter_assignment = wrap_mpi_bcast(iter_assignment, Blockdata["main_node"])
+	
 	Tracker["total_stack"] = len(iter_assignment)
 	proc_list = [[None, None] for iproc in xrange(Blockdata["nproc"])]
 	for iproc in xrange(Blockdata["nproc"]):
@@ -209,10 +911,13 @@ def get_sorting_image_size(original_data, partids, sparamstructure, snorm_per_pa
 	compute_noise(Tracker["nxinit"])
 	do3d_sorting_groups_fsc_only_iter(rdata, sparamstructure, snorm_per_particle, iteration = iter)
 	del rdata
+	
 	if( Blockdata["myid"] == Blockdata["main_node"]):
+		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		msg = "reconstruction with refinement window_size %d finshes"%Tracker["nxinit_refinement"]
-		print(msg)
+		print(line, msg)
 		log.add(msg)
+		
 	if( Blockdata["myid"] == Blockdata["main_node"]):
 		fsc_data = []
 		for igroup in xrange(Tracker["number_of_groups"]):
@@ -245,9 +950,17 @@ def compute_noise(image_size):
 	from utilities    import get_im, model_blank
 	from fundamentals import fft
 	if Tracker["applybckgnoise"]: # from SPARX refinement only
-		tsd = get_im(Tracker["bckgnoise"]) # invert power spectrum 
-		nnx = tsd.get_xsize()
-		nny = tsd.get_ysize()
+		if(Blockdata["myid"] == Blockdata["main_node"]):
+			tsd = get_im(Tracker["bckgnoise"]) # inverted power spectrum
+			nnx = tsd.get_xsize()
+			nny = tsd.get_ysize()
+		else:
+			nnx = 0
+			nny = 0
+		nnx = bcast_number_to_all(nnx, Blockdata["main_node"], MPI_COMM_WORLD)
+		nny = bcast_number_to_all(nny, Blockdata["main_node"], MPI_COMM_WORLD)
+		if( Blockdata["myid"] != Blockdata["main_node"]):tsd = model_blank(nnx, nny)
+		bcast_EMData_to_all(tsd, Blockdata["myid"], Blockdata["main_node"])
 		temp_image = model_blank(image_size, image_size)
 		temp_image = fft(temp_image)
 		nx = temp_image.get_xsize()
@@ -268,242 +981,7 @@ def compute_noise(image_size):
 		Blockdata["bckgnoise"] = [1.0]*nx
 		Blockdata["unrolldata"] = Util.unroll1dpw(ny, nx*[1.0])
 	return
-
-def Kmeans_top_layer(work_dir, num_of_indep_runs, original_data, params, parameterstructure, norm_per_particle, log_main):
-	global Tracker, Blockdata
-	from utilities import read_text_file, wrap_mpi_bcast, write_text_file, write_text_row
-	import copy
-	import shutil
-	from math import sqrt
-	
-	for indep_run_iter in xrange(num_of_indep_runs): # N independent runs
-		index_file = os.path.join(work_dir,"independent_index_%03d.txt"%indep_run_iter)
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		if Blockdata["myid"] == Blockdata["main_node"]:
-			Tracker["directory"]  = os.path.join(work_dir, "EQKmeans_%03d"%indep_run_iter)
-			msg =  "indep_run_iter %d"%indep_run_iter
-			print(line, msg)
-			log_main.add(msg)
-			if not os.path.exists(Tracker["directory"]):os.mkdir(Tracker["directory"])
-			if not os.path.exists(os.path.join(Tracker["directory"], "tempdir")): os.mkdir(os.path.join(Tracker["directory"], "tempdir"))
-		Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
-		
-		if Tracker["constants"]["minimum_grp_size"] ==-1: #default value ,random ratio
-		
-			minimum_group_size =  Tracker["total_stack"]//Tracker["number_of_groups"]//Tracker["number_of_groups"]
-			tmp_final_list, premature = Kmeans_minimum_group_size_orien_groups(original_data, index_file, \
-		     params, parameterstructure, norm_per_particle, minimum_group_size, clean_volumes= True)
-		     
-		elif Tracker["constants"]["minimum_grp_size"]>0: # user provided 
 			
-			minimum_group_size =  Tracker["constants"]["minimum_grp_size"]
-			tmp_final_list, premature = Kmeans_minimum_group_size_orien_groups(original_data, index_file, \
-		     params, parameterstructure, norm_per_particle, minimum_group_size, clean_volumes= True)
-		     
-		elif Tracker["constants"]["minimum_grp_size"]==0: # adaptive
-			msize =  Tracker["total_stack"]//Tracker["number_of_groups"]
-			tmp_final_list, premature = Kmeans_adaptive_minimum_group_size(original_data, index_file, params, \
-				parameterstructure, norm_per_particle, msize, clean_volumes= True)
-		
-		if Blockdata["myid"] == Blockdata["main_node"]:write_text_row(tmp_final_list, os.path.join(work_dir, "partition_%03d.txt"%indep_run_iter))
-		mpi_barrier(MPI_COMM_WORLD)
-	if Blockdata["myid"] == Blockdata["main_node"]: avg_min, avg_max = do_multiple_two_way_comparisons(work_dir, num_of_indep_runs, log_main)
-	else:
-		avg_max = 0
-		avg_min = 0
-	avg_min = bcast_number_to_all(avg_min, Blockdata["main_node"], MPI_COMM_WORLD)
-	avg_max = bcast_number_to_all(avg_max, Blockdata["main_node"], MPI_COMM_WORLD)
-	return avg_min, avg_max
-
-def Kmeans_middle_layer(input_dir, work_dir, num_of_runs, minimum_group_size, original_data, \
-       params, parameterstructure, norm_per_particle, log_main):
-	global Tracker, Blockdata
-	from utilities import read_text_file, wrap_mpi_bcast, write_text_file, write_text_row
-	import copy
-	import shutil
-	from math import sqrt
-	for indep_run_iter in xrange(num_of_runs):
-		if Blockdata["myid"] == Blockdata["main_node"]:
-			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			msg =  "indep_run_iter %d"%indep_run_iter
-			print(line, msg)
-			log_main.add(msg)
-			Tracker["directory"]  = os.path.join(work_dir, "EQKmeans_%03d"%indep_run_iter)
-			if not os.path.exists(Tracker["directory"]):os.mkdir(Tracker["directory"])
-			if not os.path.exists(os.path.join(Tracker["directory"], "tempdir")):
-				os.mkdir(os.path.join(Tracker["directory"], "tempdir"))
-		else: Tracker = 0
-		Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
-		assign_list = resize_groups_from_stable_members_mpi(os.path.join(input_dir, "Accounted_%03d.txt"%indep_run_iter), \
-			os.path.join(input_dir, "Unaccounted_%03d.txt"%indep_run_iter))
-		if Blockdata["myid"] == Blockdata["main_node"]: write_text_file(assign_list, \
-			os.path.join(work_dir, "random_assignment_%03d.txt"%indep_run_iter))
-		index_file = os.path.join(work_dir, "random_assignment_%03d.txt"%indep_run_iter)
-		
-		if Tracker["constants"]["minimum_grp_size"] ==-1:
-			tmp_final_list, premature = Kmeans_minimum_group_size_orien_groups(original_data, index_file, \
-					params, parameterstructure, norm_per_particle, minimum_group_size, clean_volumes= False)
-		
-		elif Tracker["constants"]["minimum_grp_size"] == 0:
-			msize =  Tracker["total_stack"]//Tracker["number_of_groups"]
-			tmp_final_list, premature = Kmeans_adaptive_minimum_group_size(original_data, index_file, params, \
-				parameterstructure, norm_per_particle, msize, clean_volumes= True)
-		else:
-			tmp_final_list, premature = Kmeans_minimum_group_size_orien_groups(original_data, index_file, \
-			   params, parameterstructure, norm_per_particle, minimum_group_size, clean_volumes= True)
-		
-		if Blockdata["myid"] == Blockdata["main_node"]:write_text_row(tmp_final_list, os.path.join(work_dir, "partition_%03d.txt"%indep_run_iter))
-		mpi_barrier(MPI_COMM_WORLD)
-	if Blockdata["myid"] == Blockdata["main_node"]: avg_min, avg_max = do_multiple_two_way_comparisons(work_dir, num_of_runs, log_main)
-	else:
-		avg_max = 0
-		avg_min = 0
-	avg_min = bcast_number_to_all(avg_min, Blockdata["main_node"], MPI_COMM_WORLD)
-	avg_max = bcast_number_to_all(avg_max, Blockdata["main_node"], MPI_COMM_WORLD)
-	return avg_min, avg_max
-
-def Kmeans_bottom_layer(input_dir, work_dir, num_of_runs, init_minimum_group_size, original_data, \
-       params, parameterstructure, norm_per_particle, log_main):
-	global Tracker, Blockdata
-	from   utilities import read_text_file, wrap_mpi_bcast, write_text_file, write_text_row
-	import copy
-	import shutil
-	from shutil import copyfile
-	from math import sqrt
-	if not Tracker["terminate"]:
-		for indep_run_iter in xrange(num_of_runs):
-			if Blockdata["myid"] == Blockdata["main_node"]:
-				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-				msg =  "indep_run_iter %d"%indep_run_iter
-				print(line, msg)
-				log_main.add(msg)
-				Tracker["directory"]  = os.path.join(work_dir, "EQKmeans_%03d"%indep_run_iter)
-				if not os.path.exists(Tracker["directory"]):os.mkdir(Tracker["directory"])
-				if not os.path.exists(os.path.join(Tracker["directory"], "tempdir")): os.mkdir(os.path.join(Tracker["directory"], "tempdir"))
-			else: Tracker = 0
-			Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
-			assign_list = resize_groups_from_stable_members_mpi(os.path.join(input_dir, "Accounted_%03d.txt"%indep_run_iter), \
-				os.path.join(input_dir, "Unaccounted_%03d.txt"%indep_run_iter))
-			if Blockdata["myid"] == Blockdata["main_node"]:
-				write_text_file(assign_list, os.path.join(work_dir, "random_assignment_%03d.txt"%indep_run_iter))
-			
-			index_file = os.path.join(work_dir, "random_assignment_%03d.txt"%indep_run_iter)
-		
-			if Tracker["constants"]["final_MGSK"]==-1:
-				if Tracker["constants"]["minimum_grp_size"] > 0: minimum_group_size = Tracker["constants"]["minimum_grp_size"]
-				else:  minimum_group_size = max(init_minimum_group_size, Tracker["total_stack"]//(Tracker["number_of_groups"]*Tracker["number_of_groups"]))
-			else:  minimum_group_size = Tracker["constants"]["final_MGSK"]
-		
-			if not Tracker["constants"]["final_adaptive"]:
-				tmp_final_list, premature = Kmeans_minimum_group_size_relaxing_orien_groups(original_data, index_file, \
-					params, parameterstructure, norm_per_particle, minimum_group_size, clean_volumes= True)
-			else:
-				 tmp_final_list, premature = Kmeans_adaptive_minimum_group_size(original_data, index_file, \
-					params, parameterstructure, norm_per_particle, minimum_group_size, clean_volumes= True)
-				
-			if Blockdata["myid"] == Blockdata["main_node"]:
-				write_text_row(tmp_final_list, os.path.join(work_dir, "partition_%03d.txt"%indep_run_iter))
-			
-			mpi_barrier(MPI_COMM_WORLD)
-		if Blockdata["myid"] == Blockdata["main_node"]: 
-			avg_min_size, avg_max_size, newindeces, list_stable, score_list = \
-				do_final_two_way_comparison(work_dir, log_main)
-		else:
-			avg_min_size = 0
-			avg_max_size = 0
-			newindeces   = 0
-			list_stable  = 0
-			score_list   = 0
-		
-		avg_min_size = bcast_number_to_all(avg_min_size, Blockdata["main_node"], MPI_COMM_WORLD)
-		avg_max_size = bcast_number_to_all(avg_max_size, Blockdata["main_node"], MPI_COMM_WORLD)
-		newindeces   = wrap_mpi_bcast(newindeces, Blockdata["main_node"])
-		list_stable  = wrap_mpi_bcast(list_stable, Blockdata["main_node"])
-		score_list   = wrap_mpi_bcast(score_list, Blockdata["main_node"])
-		return avg_min_size, avg_max_size, newindeces, list_stable, score_list
-	else:# directly copy the first result as output
-		if Blockdata["myid"] == Blockdata["main_node"]:
-			npair = 0
-			copyfile(os.path.join(input_dir, "Accounted_%03d.txt"%npair),  os.path.join(work_dir, "Accounted_%03d.txt"%npair))
-			copyfile(os.path.join(input_dir, "Unaccounted_%03d.txt"%npair), os.path.join(work_dir, "Unaccounted_%03d.txt"%npair))
-			copyfile(os.path.join(input_dir, "Accounted_%03d.txt"%npair),  os.path.join(work_dir, "../","Accounted.txt"))
-			copyfile(os.path.join(input_dir, "Unaccounted_%03d.txt"%npair), os.path.join(work_dir, "../","Unaccounted.txt"))
-		mpi_barrier(MPI_COMM_WORLD)
-		return None, None, None, None
-		
-def do_depth_one_run(work_dir, initial_id_file, params, previous_params, log, initial_seeds_file = None, random_members = None, order_of_depth = 3):
-	global Tracker, Blockdata
-	
-	original_data, norm_per_particle  = read_data_for_sorting(initial_id_file, params, previous_params)
-	if Tracker["nosmearing"]:
-		parameterstructure             = None
-		Tracker["paramstructure_dict"] = None
-		Tracker["paramstructure_dir"]  = None
-	else: parameterstructure = read_paramstructure_for_sorting(initial_id_file, Tracker["paramstructure_dict"], Tracker["paramstructure_dir"])
-	
-	Tracker["directory"] = 	work_dir
-	if Tracker["iter"] == 0:
-		if Tracker["constants"]["nxinit"] ==-1:
-			Tracker["nxinit"] = get_sorting_image_size(original_data, initial_id_file, parameterstructure, norm_per_particle, log)
-		elif Tracker["constants"]["nxinit"] >0: Tracker["nxinit"] = Tracker["constants"]["nxinit"]
-		else: ERROR("wroing initial image size", "do_depth_one_run", 1, Blockdata["myid"])
-		
-	if Blockdata["myid"] == Blockdata["main_node"]:
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		msg ="run iter%d image size for sorting determined by get_sorting_image_size is %d"%(Tracker["iter"], Tracker["nxinit"])
-		print(line, msg)
-		log.add(msg)
-		if os.path.exists(os.path.join(Tracker["directory"], "tempdir")): shutil.rmtree(os.path.join(Tracker["directory"], "tempdir"))
-	current_order_of_depth = 0
-
-	while current_order_of_depth < order_of_depth:
-	
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		current_work_dir = os.path.join(work_dir, "layer%d"%current_order_of_depth)
-		if Blockdata["myid"] == Blockdata["main_node"]:
-			if not os.path.exists(work_dir): os.mkdir(work_dir)
-			if not os.path.exists(current_work_dir): os.mkdir(current_work_dir)
-			msg ="---->>>layer    %d<<<------"%current_order_of_depth
-			print(line, msg)
-			log.add(msg)
-		num_of_indep_runs = 2**(order_of_depth-current_order_of_depth)
-		
-		if current_order_of_depth == 0:
-			Tracker["directory"] = current_work_dir
-			if Tracker["iter"] == 0: create_nrandom_lists(initial_id_file, 2**order_of_depth)
-			else: reassign_nrandom_lists(initial_seeds_file, random_members, 2**order_of_depth)
-			minimum_group_size, maximum_group_size = Kmeans_top_layer(current_work_dir, num_of_indep_runs, \
-			 original_data, params, parameterstructure, norm_per_particle, log)
-			input_dir = current_work_dir
-		elif current_order_of_depth >0 and current_order_of_depth< order_of_depth -1:
-		
-			#minimum_group_size = 0
-			minimum_group_size, maximum_group_size = Kmeans_middle_layer(input_dir, current_work_dir, \
-			   num_of_indep_runs, minimum_group_size, original_data, \
-			    params, parameterstructure, norm_per_particle, log)
-			input_dir = current_work_dir
-		else:
-			avg_min_size, avg_max_size, newindeces, list_stable, score_list = Kmeans_bottom_layer(input_dir,\
-			   current_work_dir, num_of_indep_runs, minimum_group_size, original_data,
-			    params, parameterstructure, norm_per_particle, log)
-			if Tracker["terminate"]: break
-		current_order_of_depth +=1
-		
-	if not Tracker["terminate"]:
-		if Blockdata["myid"] == Blockdata["main_node"]: Tracker["directory"] = 	work_dir
-		else:  Tracker = 0
-		Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
-		keepgoing = AI("iter_update", log)
-		if not keepgoing: AI("output_clusters", log, list_stable, score_list, initial_id_file)
-		else: AI("save_iter_results", log, list_stable, score_list, initial_id_file)
-		mpi_barrier(MPI_COMM_WORLD)
-		print(keepgoing)
-		if keepgoing: return initial_id_file, os.path.join(work_dir, "Accounted.txt"), os.path.join(work_dir, "Unaccounted.txt"), keepgoing
-		else: return os.path.join(work_dir, "Unaccounted.txt"), None, None, keepgoing
-	else: # Force to stop because of early mature
-		clusters, new_partition = AI("output_clusters_dueto_terminate", log, os.path.join(work_dir, "Accounted.txt"), None, None)
-		return None, None, None, keepgoing
-	
 def get_params_for_analysis(orgstack, ali3d_params, smearing_file, smearing_number):
 	if ali3d_params is not None:
 		vecs_list =[]
@@ -514,7 +992,7 @@ def get_params_for_analysis(orgstack, ali3d_params, smearing_file, smearing_numb
 			try: norm_list.append(ali3d_params[im][7])
 			except: norm_list = None
 	##
-	if orgstack is not None:
+	if( orgstack is not None ):
 		defo_list = []
 		ctfs = EMUtil.get_all_attributes(orgstack, "ctf")
 		for im in xrange(len(ctfs)):
@@ -528,7 +1006,7 @@ def get_params_for_analysis(orgstack, ali3d_params, smearing_file, smearing_numb
 	##
 	return vecs_list, defo_list, smearing_list, norm_list
 	
-def orien_analysis(veclist, cluster_id, log):
+def orien_analysis(veclist, cluster_id, log_main):
 	mean_vec = [0.0, 0.0, 0.0]
 	for im in xrange(len(veclist)):
 		for jm in xrange(len(mean_vec)):
@@ -545,15 +1023,18 @@ def orien_analysis(veclist, cluster_id, log):
 	   "%5s  %f   %f  %f  "%\
 	   (" ", mean_vec[0]/max_value, mean_vec[1]/max_value, mean_vec[2]/max_value)
 	print(msg)
-	log.add(msg)
+	log_main.add(msg)
 	return mean_vec
 
-def do_one_way_anova_scipy(clusters, value_list, name_of_variable="variable", log = None):
+def do_one_way_anova_scipy(clusters, value_list, name_of_variable="variable", log_main = None):
 	import copy
 	from math   import sqrt
 	import scipy
 	from scipy import stats
 	NMAX = 30
+	if len(clusters)<=1:
+		print("the number of clusters for anova is less than 2")
+		return None, None
 	K = min(NMAX, len(clusters))
 	if len(clusters) > K : print("total number of clusters is larger than 30. Process only the first 30 clusters")
 	replicas = []
@@ -686,26 +1167,39 @@ def do_one_way_anova_scipy(clusters, value_list, name_of_variable="variable", lo
 	mst = sst/float(n1)
 	f_ratio = msa/mse
 	msg ="---------->>>ANOVA on %s<<<--------- \n"%(name_of_variable)+\
-		"f_value:  %f  p_value:  %f"%(res[0], res[1])
+		"f_value:  %12.5f  p_value:  %12.5f"%(res[0], res[1])
 	print(msg)
-	log.add(msg)
+	log_main.add(msg)
 	if res[1] <=0.00001:
-		msg = "null hpypothesis is rejected! %s in clusters are uneven"%name_of_variable
+		msg = "null hpypothesis is rejected! %s of clusters are uneven"%name_of_variable
 		print(msg)
-		log.add(msg)
+		log_main.add(msg)
 	print("----->>>global %s mean of all clusters: "%name_of_variable, global_mean/(float(nsamples)))
 	msg = "----->>>Means per group<<<-----\n"+\
 	"cluster ID    N      Mean          Std  \n"
 	for i in xrange(K):
-		msg +="%5d   %5d   %12.5f   %12.5f"%(i, len(replicas[i]), avgs[i], std_list[i])+"\n"
+		msg +="%5d   %8d  %12.5f  %12.5f"%(i, len(replicas[i]), avgs[i], std_list[i])+"\n"
 	print(msg)
-	log.add(msg)
-	msg = "---->>>END OF %s ANOVA"%name_of_variable
-	log.add(msg)
+	log_main.add(msg)
+	msg ="------>>>pairwise anova<<<--------"
+	log_main.add(msg)
+	print(msg)
+	msg ="A      B     avgA     avgB      P_value    f-value    are A and B the same?" 
+	print(msg)
+	log_main.add(msg)
+	for ires in xrange(K-1):
+		for jres in xrange(ires+1, K):
+			cres = stats.f_oneway(replicas[ires], replicas[jres])
+			if cres[1] <=0.00001: msg = "%3d  %3d %12.3f %12.3f %12.5f %12.5f   No"%(ires, jres,  avgs[ires], avgs[jres], cres[0], cres[1])
+			else:                 msg = "%3d  %3d %12.3f %12.3f %12.5f %12.5f   Yes"%(ires, jres, avgs[ires], avgs[jres], cres[0], cres[1])
+			print(msg)
+			log_main.add(msg)
+	msg = "---->>>end of %s ANOVA"%name_of_variable
+	log_main.add(msg)
 	print(msg)
 	return res[0], res[1]
 	
-def output_micrograph_number_per_cluster(orgstack, index_file, clusters, log = None):
+def output_micrograph_number_per_cluster(orgstack, index_file, clusters, log_main = None):
 	# single node job
 	mic_dict = {}
 	inverse_mic_dict = {}
@@ -713,7 +1207,7 @@ def output_micrograph_number_per_cluster(orgstack, index_file, clusters, log = N
 	except:
 		msg = "No ptcl_source_image attribute are set in data headers!"
 		print(msg)
-		log.add(msg)
+		log_main.add(msg)
 		try:
 			tmpmics = EMUtil.get_all_attributes(orgstack, "ctf")
 			mics = [None for i in xrange(len(tmpmics))]
@@ -721,7 +1215,7 @@ def output_micrograph_number_per_cluster(orgstack, index_file, clusters, log = N
 		except:
 			msg = "CTF parameters are not found either, so sort3d skips counting micograph number per cluster..."
 			print(msg)
-			log.add(msg)
+			log_main.add(msg)
 			return
 	pid_list =read_text_file(index_file)
 	for im in xrange(len(pid_list)):
@@ -729,300 +1223,226 @@ def output_micrograph_number_per_cluster(orgstack, index_file, clusters, log = N
 		inverse_mic_dict[mics[pid_list[im]]] =  im
 	mics_in_clusters = [None for i in xrange(len(clusters))]
 	msg = "------->>>number of micrographs in clusters<<<--------------"
-	log.add(msg)
+	log_main.add(msg)
 	print(msg)
 	msg = "total number of micrographs:  %d "%len(inverse_mic_dict)
-	log.add(msg)
+	log_main.add(msg)
 	print(msg)
 	msg ="cluster ID       number of micrographs  "
-	log.add(msg)
+	log_main.add(msg)
 	print(msg)
 	for ic in xrange(len(clusters)):
 		tmp_mics_in_cluster = {}
 		for im in xrange(len(clusters[ic])): 
 			tmp_mics_in_cluster[mic_dict[clusters[ic][im]]] = im
 		mics_in_clusters[ic] = len(tmp_mics_in_cluster)
-		msg = " %d        %d"%(ic, mics_in_clusters[ic])
-		log.add(msg)
+		msg = " %3d        %8d       %f"%(ic, mics_in_clusters[ic],  float(mics_in_clusters[ic])/float(len(inverse_mic_dict))*100.)
+		log_main.add(msg)
 		print(msg)
 	return mics_in_clusters
-		
-def AI(to_be_decided, log = None, list_stable = None, score_list = None, initial_id_file = None):
+
+def check_3dmask(log_main):
+	global Tracker, Blockdata
+	###########################################################################	
+	Tracker["nxinit"]     = Tracker["nxinit_refinement"]
+	Tracker["currentres"] = float(Tracker["constants"]["fsc05"])/float(Tracker["nxinit"])
+	##################--------------->>>>>> shrinkage, current resolution, fuse_freq <<<<<<------------------------------------------
+	Tracker["total_stack"] = Tracker["constants"]["total_stack"]
+	Tracker["shrinkage"]   = float(Tracker["nxinit"])/Tracker["constants"]["nnxo"]
+	Tracker["radius"]      = Tracker["constants"]["radius"]*Tracker["shrinkage"]
+	try: fuse_freq = Tracker["fuse_freq"]
+	except: Tracker["fuse_freq"] = int(Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/Tracker["constants"]["fuse_freq"]+0.5)	
+	if Tracker["constants"]["mask3D"]:Tracker["mask3D"] =Tracker["constants"]["mask3D"]
+	else: Tracker["mask3D"] = None
+	if Tracker["constants"]["focus3Dmask"]:Tracker["focus3D"] = Tracker["constants"]["focus3Dmask"]
+	else: Tracker["focus3D"] = None
+	
+	if(Blockdata["myid"] == Blockdata["main_node"]):
+		bad_focus3Dmask = 0
+		if Tracker["constants"]["focus3Dmask"]:
+			try:
+				focusmask = get_im(Tracker["constants"]["focus3Dmask"])
+				st = info(focusmask)
+				if ((st[2] != 0.0) or (st[3] != 1.0)):
+					focusmask = binarize(focusmask)# binarize focus mask if it is not a binary mask
+					st = Util.infomask(focusmask)
+				if(st[0] == 0.0) or (st[0] == 1.0): bad_focus3Dmask = 1
+				else:
+					focusmask.write_image(os.path.join(Tracker["constants"]["masterdir"], "focus3d.hdf"))
+					Tracker["focus3D"] = os.path.join(Tracker["constants"]["masterdir"], "focus3d.hdf")
+			except:  bad_focus3Dmask = 1
+	else: bad_focus3Dmask = 0
+	bad_focus3Dmask = bcast_number_to_all(bad_focus3Dmask,	source_node =  Blockdata["main_node"])
+	if bad_focus3Dmask: ERROR("Incorrect focused mask, after binarize all values zero","sxsort3d.py", 1, Blockdata["myid"])
+	
+	if(Blockdata["myid"] == Blockdata["main_node"]):
+		bad_3Dmask = 0
+		if Tracker["constants"]["mask3D"]:
+			try: 
+				mask3D = get_im(Tracker["constants"]["mask3D"])
+				st = Util.infomask(binarize(mask3D), None, True)
+				if (st[0] ==0.0): bad_3Dmask = 1
+				else: 
+					mask3D.write_image(os.path.join(Tracker["constants"]["masterdir"], "mask3D.hdf"))
+					Tracker["mask3D"]= os.path.join(Tracker["constants"]["masterdir"], "mask3D.hdf")
+			except: bad_3Dmask = 1
+	else: bad_3Dmask = 0
+	bad_3Dmask = bcast_number_to_all(bad_focus3Dmask,	source_node =  Blockdata["main_node"])
+	if bad_3Dmask: ERROR("Incorrect 3D mask", "sxsort3d.py", 1, Blockdata["myid"])
+	
+	Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
+	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	if(Blockdata["myid"] == Blockdata["main_node"]):
+		print_dict(Tracker["constants"],"Permanent sorting settings from input options")
+		fout = open(os.path.join(Tracker["constants"]["masterdir"], "Tracker.json"),'w')
+		json.dump(Tracker, fout)
+		fout.close()
+		msg = "---------->>>DEPTH SORT3D<<<-----------"
+		log_main.add(msg)
+		print(line, msg)
+		msg = "orgstack: %s  image comparison method: %s "%(Tracker["constants"]["orgstack"], \
+		   Tracker["constants"]["comparison_method"])
+		print(line, msg)
+		log_main.add(msg)
+		if Tracker ["constants"]["focus3Dmask"]:
+			msg ="User provided focus mask file:  %s"%Tracker ["constants"]["focus3Dmask"]
+			print(line, msg)
+			log_main.add(msg)
+	Tracker["shrinkage"] = float(Tracker["nxinit"])/Tracker["constants"]["nnxo"]
+	if(Blockdata["myid"] == Blockdata["main_node"]):print_dict(Tracker,"Current sorting settings")
+	return
+
+def import_data(log_main):
+	global Tracker, Blockdata
+	# Two typical sorting scenarios
+	# 1. import data and refinement parameters from meridien refinement;
+	# 2. given data stack and xform.projection/ctf in header(For simulated test data);
+	if(Blockdata["myid"] == Blockdata["main_node"]):
+		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		msg = "importing data ... "
+		print(line, msg)
+		log_main.add(msg)
+	import_from_relion_refinement = 0
+	import_from_sparx_refinement  = 0
+	import_from_data_stack		  = 0
+	total_stack					  = 0
+	if Tracker["constants"]["refinement_method"] =="SPARX": # Senario one
+		import_from_sparx_refinement = get_input_from_sparx_ref3d(log_main)
+		Tracker["smearing"] = True
+	else:  # Senario three, sorting from a given data stack, general cases
+		import_from_data_stack = get_input_from_datastack(log_main)
+		Tracker["constants"]["hardmask"] = True
+		Tracker["applybckgnoise"]        = False
+		Tracker["applymask"]             = True
+		Tracker["smearing"]              = False
+	Tracker["total_stack"] = Tracker["constants"]["total_stack"]
+	###<<<------------------------>>>>>>checks<<<<<-------------
+	if Tracker["constants"]["symmetry"] != Tracker["constants"]["sym"]:
+		if(Blockdata["myid"] == Blockdata["main_node"]):
+			msg = "input symmetry %s is altered to %s after reading refinement information! "%(Tracker["constants"]["sym"], Tracker["constants"]["symmetry"])
+			log_main.add(msg)
+			print(msg)
+	return
+	
+def create_masterdir(log_main):
+	global Tracker, Blockdata
+	line      = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	masterdir = Tracker["constants"]["masterdir"]
+	restart   = 0
+	if(Blockdata["myid"] == Blockdata["main_node"]):
+		if not os.path.exists(os.path.join(Tracker["constants"]["masterdir"])):
+			print(line, "Sort3d starts")
+			if not masterdir:
+				timestring = strftime("_%d_%b_%Y_%H_%M_%S", localtime())
+				masterdir  ="sort3d"+timestring
+				os.mkdir(masterdir)
+			else:
+				if not os.path.exists(masterdir): os.mkdir(masterdir)
+			li =len(masterdir)
+		else:
+			li =len(masterdir)
+			if os.path.exists(os.path.join(Tracker["constants"]["masterdir"], "layer0")): restart = 1
+			if os.path.exists(os.path.join(Tracker["constants"]["masterdir"], "Tracker.json")): restart = 1
+			print("restart", restart)
+	else: 
+		restart = 0
+		li = 0
+	restart = bcast_number_to_all(restart, Blockdata["main_node"], MPI_COMM_WORLD)
+	li                                    = mpi_bcast(li,1,MPI_INT,Blockdata["main_node"],MPI_COMM_WORLD)[0]
+	masterdir                             = mpi_bcast(masterdir,li,MPI_CHAR,Blockdata["main_node"],MPI_COMM_WORLD)
+	masterdir                             = string.join(masterdir,"")
+	if not Tracker["constants"]["masterdir"]: Tracker["constants"]["masterdir"]  = masterdir
+	Tracker["constants"]["chunk_0"]       = os.path.join(Tracker["constants"]["masterdir"],"chunk_0.txt")
+	Tracker["constants"]["chunk_1"]       = os.path.join(Tracker["constants"]["masterdir"],"chunk_1.txt")
+	if restart == 0:
+		for iproc in xrange(Blockdata["nproc"]):
+			if Blockdata["myid"] == iproc:
+				while not os.path.exists(Tracker["constants"]["masterdir"]):
+					print("Node ", Blockdata["myid"], "waiting...", Tracker["constants"]["masterdir"])
+					sleep(1)
+			mpi_barrier(MPI_COMM_WORLD)
+	return restart
+
+def sort3d_init(to_be_decided, log_main):
+	global Tracker, Blockdata
+	if Tracker["constants"]["img_per_grp"]<= 2:
+		ERROR("poor img_per_grp", "sort3d_init", 1, Blockdata["myid"])
+	if Tracker["total_stack"] <= Blockdata["nproc"]*2:
+		ERROR("either too many cpus are used, or number of images is too small", "sort3d_init", 1, Blockdata["myid"])
+	Tracker["img_per_grp"]             = Tracker["constants"]["img_per_grp"]
+	Tracker["number_of_groups"]        = Tracker["total_stack"]//Tracker["constants"]["img_per_grp"]
+	Tracker["rnd_assign_group_size"]   = Tracker["constants"]["img_per_grp"]//Tracker["number_of_groups"]
+	if Tracker["constants"]["minimum_grp_size"] ==-1: Tracker["minimum_grp_size"] = Tracker["constants"]["img_per_grp"]//2
+	else: 
+		Tracker["minimum_grp_size"] = Tracker["constants"]["minimum_grp_size"]
+		if Tracker["constants"]["minimum_grp_size"] < Tracker["rnd_assign_group_size"]:
+			if Blockdata["myid"] == Blockdata["main_node"]:
+				msg = "warning: speficied minimum_grp_size is less than actual random group size"
+				print(msg)
+				log_main.add(msg)
+		elif Tracker["constants"]["minimum_grp_size"]>Tracker["img_per_grp"]:
+			ERROR("img_per_grp is less than minimum_grp_size", "sort3d_init", 1, Blockdata["myid"])
+	if Blockdata["myid"] == Blockdata["main_node"]: print_dict(Tracker, to_be_decided)
+	return
+
+def print_shell_command(args_list, log_main):
+	global Tracker, Blockdata
+	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	if(Blockdata["myid"] == Blockdata["main_node"]):
+		log_main.add("The shell line command:")
+		line = ""
+		for a in args_list: line +=(a + " ")
+		log_main.add(line)
+		log_main.add("Sort3d master directory: %s"%Tracker["constants"]["masterdir"])
+		print_dict(Tracker["constants"],"Permanent sorting settings after initialization")
+	mpi_barrier(MPI_COMM_WORLD)
+	return
+
+def sort3d_utils(to_be_decided, log_main = None, input_file1 = None):
 	global Tracker, Blockdata
 	from utilities import get_number_of_groups
 	### global initialization
-	try: Tracker["AI_counter"] +=1
-	except: 
-		Tracker["AI_counter"]   = 0
-		Tracker["stop_sorting"] = False
-	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	
+	try:    Tracker["sort3d_counter"] +=1
+	except: Tracker["sort3d_counter"]  =0
+		
 	if Blockdata["myid"] == Blockdata["main_node"]:
-		msg = " AI_step  %d  "%Tracker["AI_counter"]+ to_be_decided
+		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		msg = " sort3d_step  %d  "%Tracker["sort3d_counter"]+ to_be_decided
 		print(line, msg)
-		if log != None: log.add(msg)
+		if log_main != None: log_main.add(msg)
 		
 	if to_be_decided == "initialization":
-		Tracker["expected_number_of_groups"] = \
-		 get_number_of_groups(Tracker["constants"]["total_stack"], Tracker["constants"]["img_per_grp"])
+		sort3d_init(to_be_decided, log_main)
+		return True
 		
-		Tracker["terminate"]                    = False 
-		Tracker["determined_number_of_groups"]	= 0
-		Tracker["img_per_grp"]                  = Tracker["constants"]["img_per_grp"]
-		Tracker["number_of_groups"]             = Tracker["expected_number_of_groups"]
-		Tracker["accounted_of_this_run"]        = 0
-		Tracker["rnd_assign_group_size"]        = Tracker["constants"]["img_per_grp"]//Tracker["number_of_groups"]
-		Tracker["number_of_runs"]               = 0
-		Tracker["total_number_of_accounted"]    = 0
-		Tracker["determined_number_of_groups"]  = 0
-		Tracker ["cluster_score"]               = {} 
-		if Tracker["constants"]["minimum_grp_size"] ==-1: Tracker["minimum_grp_size"] = Tracker["rnd_assign_group_size"]
-		else: Tracker["minimum_grp_size"] = Tracker["constants"]["minimum_grp_size"]
-		
-		if Blockdata["myid"] == Blockdata["main_node"]:
-			msg ="------>>> RUN  %d  <<<----------"%Tracker["number_of_runs"]
-			print(line, msg)
-			log.add(msg)
-			print_dict(Tracker, to_be_decided)
-		return
-	
-			
-	elif to_be_decided == "iter_init":
-	
-		Tracker["iter"] = 0
-		Tracker["last_iter_ratio"]    = 0.0
-		Tracker["current_iter_ratio"] = 0.0
-		Tracker["iter_hist"] = {}
+	elif to_be_decided == "check_mpi_settings":
+		check_mpi_settings(log_main)
 		return
 		
-	elif to_be_decided == "iter_update": 
-		if Tracker["current_iter_ratio"]>95.:return False # stop iteration when ratio above 95
-		else:
-			Tracker["iter_hist"] [Tracker["iter"]] = Tracker["current_iter_ratio"]
-			if Tracker["current_iter_ratio"] - Tracker["last_iter_ratio"] >=Tracker["constants"]["iter_minimum_increment"]:
-				Tracker["iter"] += 1
-				Tracker["last_iter_ratio"] = Tracker["current_iter_ratio"]
-				return True # keepgoing iterations
-			else:
-				if Blockdata["myid"] == Blockdata["main_node"]:
-					msg = " ratios within %d RUN "%(Tracker["number_of_runs"])
-					print(msg)
-					log.add(msg)
-					for niter, ratio in Tracker["iter_hist"].iteritems():
-						msg = "iter: %5d  ratio:  %f "%(niter, ratio)
-						print(msg)
-						log.add(msg)
-				return False # stop iterations
-	
-	elif to_be_decided =="output_clusters_dueto_terminate":
-		if Blockdata["myid"] == Blockdata["main_node"]:
-			partition = read_text_row(list_stable) # accounted members, put in this postion.
-			nclasses, npart = split_partition_into_ordered_clusters(partition)
-			for ic in xrange(len(nclasses)):
-				write_text_file(nclasses[ic], os.path.join(Tracker["constants"]["masterdir"],\
-					 "Cluster_%03d.txt"%ic))
-		return nclasses, npart
-		
-	elif to_be_decided =="output_clusters":
-		
-		if Blockdata["myid"] == Blockdata["main_node"]:
-			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			accounted_list = []
-			nclass = 0
-			msg = "output clusters sorted in %d th RUN"%Tracker["number_of_runs"]
-			log.add(msg)
-			msg = "cluster ID score group size"
-			log.add(msg)
-			for i in xrange(len(list_stable)):
-				avg_score = (score_list[i][0]+score_list[i][1])/2.
-				msg = " %d     %f    %d"%(i, avg_score, len(list_stable[i]))
-				print(line, msg)
-				log.add(msg)
-				if avg_score >0.:
-					Tracker ["cluster_score"][Tracker["determined_number_of_groups"]] = avg_score
-					accounted_list +=list_stable[i].tolist()
-					write_text_file(list_stable[i], os.path.join(Tracker["constants"]["masterdir"],\
-					 "Cluster_%03d.txt"%Tracker["determined_number_of_groups"]))
-					Tracker["determined_number_of_groups"] +=1
-					nclass +=1
-				pids = read_text_file(initial_id_file)
-			a =  set(pids)
-			b =  set(accounted_list)
-			unaccounted_list = list(a.difference(b))
-			accounted_list.sort()
-			write_text_file(accounted_list, os.path.join(Tracker["directory"], "Accounted.txt"))
-			if len(unaccounted_list)>1: unaccounted_list.sort()
-			write_text_file(unaccounted_list, os.path.join(Tracker["directory"], "Unaccounted.txt"))
-			Tracker["nclass"] =  nclass
-			Tracker["accounted_of_this_run"] = len(accounted_list)
-		else:
-			Tracker = 0
-		Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
-		return
-		
-	elif to_be_decided =="save_iter_results": # always after iter update
-		if Blockdata["myid"] == Blockdata["main_node"]:
-			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			accounted_list = []
-			nclass = 0
-			group_dict = {}
-			msg = "AI save results of iter %d"%(Tracker["iter"]-1)
-			log.add(msg)
-			msg = " cluster ID  score1  score2   averaged score  group size"
-			print(msg)
-			log.add(msg)
-			for i in xrange(len(list_stable)):
-				avg_score = (score_list[i][0]+score_list[i][1])/2.
-				msg = "%5d     %5.2f     %5.2f     %5.2f   %8d"%(i, score_list[i][0], score_list[i][1], avg_score, len(list_stable[i]))
-				print(line, msg)
-				log.add(msg)
-				for element in list_stable[i]: group_dict[element] = nclass
-				accounted_list +=list_stable[i].tolist()
-				nclass +=1
-				pids = read_text_file(initial_id_file)
-			a =  set(pids)
-			b =  set(accounted_list)
-			unaccounted_list = list(a.difference(b))
-			accounted_list.sort()
-			write_text_row([[group_dict[accounted_list[im]], accounted_list[im]] for im in xrange(len(accounted_list))], \
-			    os.path.join(Tracker["directory"], "Accounted.txt"))
-			if len(unaccounted_list)>1: unaccounted_list.sort()
-			write_text_file(unaccounted_list, os.path.join(Tracker["directory"], "Unaccounted.txt"))
-		else: Tracker = 0
-		Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
-		return
-	
-	elif to_be_decided == "update":
-		if Blockdata["myid"] == Blockdata["main_node"]: print_dict(Tracker, " before " + to_be_decided)
-		Tracker["total_number_of_accounted"] +=Tracker["accounted_of_this_run"]
-		Tracker["accounted_of_this_run"]  = 0
-		Tracker["nclass"] = 0
-		unacccounted = Tracker["constants"]["total_stack"] - Tracker["total_number_of_accounted"]
-		if unacccounted <= Tracker["rnd_assign_group_size"]: Tracker["stop_sorting"] = True
-		else: # recalculate number_of_groups
-			img_per_grp = Tracker["img_per_grp"]
-			current_number_of_groups = get_number_of_groups(unacccounted, img_per_grp)
-			if Tracker["expected_number_of_groups"]>Tracker["determined_number_of_groups"]:
-				current_number_of_groups = max(Tracker["expected_number_of_groups"]-\
-				 Tracker["determined_number_of_groups"], current_number_of_groups)
-				 
-			if current_number_of_groups <=1:
-				img_per_grp = Tracker["img_per_grp"]
-				while img_per_grp > 2*max(Tracker["rnd_assign_group_size"], Tracker["minimum_grp_size"]) and current_number_of_groups <=1:
-					img_per_grp //=2 # always decrease by 2 until the specified minimum group size reaches
-					current_number_of_groups = get_number_of_groups(unacccounted, img_per_grp)
-				if current_number_of_groups>=2:
-					Tracker["img_per_grp"]      = img_per_grp
-					Tracker["number_of_groups"] = current_number_of_groups
-					if Blockdata["myid"] == Blockdata["main_node"]:
-						print("current_number_of_groups", current_number_of_groups, "img_per_grp", img_per_grp, "number_of_groups", Tracker["number_of_groups"])
-		
-			if current_number_of_groups <=1:
-				img_per_grp = Tracker["img_per_grp"]
-				while img_per_grp > 2*min(Tracker["rnd_assign_group_size"], Tracker["minimum_grp_size"]) and current_number_of_groups <=1:
-					img_per_grp //=2
-					current_number_of_groups = get_number_of_groups(unacccounted, img_per_grp)
-				if current_number_of_groups>=2:
-					Tracker["img_per_grp"] = img_per_grp
-					Tracker["number_of_groups"] = current_number_of_groups
-					if Blockdata["myid"] == Blockdata["main_node"]:
-						print("current_number_of_groups", current_number_of_groups, "img_per_grp", img_per_grp, "number_of_groups", Tracker["number_of_groups"])
-			
-			current_number_of_groups = bcast_number_to_all(current_number_of_groups, Blockdata["main_node"], MPI_COMM_WORLD)
-			Tracker["number_of_groups"] = current_number_of_groups
-			if current_number_of_groups <=1: Tracker["stop_sorting"] = True
-			
-			if Blockdata["myid"] == Blockdata["main_node"]:
-				msg = "----->>>Summary of RUN %d<<<-----"%Tracker["number_of_runs"]
-				print(line, msg)
-				log.add(msg)
-				msg = "accumulated accounted:  %d  unaccounted: %d  current K: %d  stop sorting:  %r"%\
-				    (Tracker["total_number_of_accounted"], unacccounted, current_number_of_groups, Tracker["stop_sorting"])
-				print(line, msg)
-				log.add(msg)
-				print_dict(Tracker, " after "+to_be_decided)
-			
-		if Tracker["stop_sorting"]:
-			if Blockdata["myid"] == Blockdata["main_node"]:
-				msg = "Sort3d reaches stop criterion. Now read clusters and write final partition list..."
-				print(line, msg)
-				log.add(msg)
-				final_number_of_clusters = 0
-				clusters  = []
-				accounted = []
-				import itertools
-				while os.path.exists(os.path.join(Tracker["constants"]["masterdir"], "Cluster_%03d.txt"%final_number_of_clusters)):
-					clusters.append(read_text_file(os.path.join(Tracker["constants"]["masterdir"], "Cluster_%03d.txt"%final_number_of_clusters)))
-					final_number_of_clusters +=1
-				if not Tracker["constants"]["do_not_include_final_unaccounted"]:
-					partids   = read_text_file(os.path.join(Tracker["constants"]["masterdir"], "indexes.txt"),-1)
-					partids   = partids[0]
-					partids.sort()
-					a =  set(partids)
-					for clas in clusters: accounted +=clas
-					accounted.sort()
-					b =  set(accounted)
-					unaccounted = list(a.difference(b))
-					unaccounted.sort()
-					if len(unaccounted) >= Blockdata["nproc"]*10: # do not reconstruct cluster with too few memebers
-						write_text_file(unaccounted, os.path.join(Tracker["constants"]["masterdir"], "Cluster_%03d.txt"%final_number_of_clusters))
-						final_number_of_clusters +=1
-						clusters.append(unaccounted)
-						msg ="include the final %d unaccounted images as the last cluster %d"%(len(unaccounted), final_number_of_clusters)
-					else: msg ="number of unaccounted images is too few"
-					log.add(msg)
-					print(line, msg)
-				dlist, nindex = merge_classes_into_partition_list(clusters) #
-				write_text_row(nindex, os.path.join(Tracker["constants"]["masterdir"], "final_partition.txt"))
-			else: clusters = 0
-			clusters = wrap_mpi_bcast(clusters, Blockdata["main_node"], MPI_COMM_WORLD)
-			# analysis
-			if Blockdata["myid"] == Blockdata["main_node"]:
-				
-				dummy = output_micrograph_number_per_cluster(Tracker["constants"]["orgstack"], \
-				   os.path.join(Tracker["constants"]["masterdir"], "indexes.txt"), clusters, log = log)
-				
-				if Tracker["constants"]["refinement_method"]=="stack":
-					vs, ds, ss, norms = get_params_for_analysis(Tracker["constants"]["orgstack"], \
-				      os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt"),\
-				       None, None)
-				else:
-					vs, ds, ss, norms = get_params_for_analysis(Tracker["constants"]["orgstack"], \
-					os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt"),\
-					 os.path.join(Tracker["constants"]["masterdir"], "all_smearing.txt"), Tracker["constants"]["nsmear"])
-			 
-				do_one_way_anova_scipy(clusters, ds, name_of_variable="defocus", log = log)
-				if ss: do_one_way_anova_scipy(clusters, ss, name_of_variable="smearing", log = log)
-			
-				if norms: do_one_way_anova_scipy(clusters, norms, name_of_variable="norm", log = log)
-				"""
-				msg = "---->>>Orientations per group analysis<<<----- \n"+\
-					"%10s %10s %10s  "%("X", "Y", "Z")
-				print(msg)
-				log.add(msg)
-				for i in xrange(len(clusters)):
-					oriens = []
-					for j in xrange(len(clusters[i])):
-						oriens.append(vs[clusters[i][j]])
-					orien_analysis(oriens, i, log)
-				"""
-			mpi_barrier(MPI_COMM_WORLD)
-		else:
-			Tracker["number_of_runs"] +=1
-			if Blockdata["myid"] == Blockdata["main_node"]:
-				msg="------------->>>RUN %d<<<---------------"%Tracker["number_of_runs"]
-				print(msg)
-				log.add(msg)
-		mpi_barrier(MPI_COMM_WORLD)
-		return
-		
-	elif to_be_decided == "check_mpi_settings": 
-		check_mpi_settings(log)
-		return
-		
-	elif  to_be_decided == "post_sorting_sharpen":
+	elif to_be_decided == "post_sorting_sharpen":
 		if Tracker["constants"]["post_sorting_sharpen"]:
-			post_sorting_rec3d(log)
-			
+			post_sorting_rec3d(log_main, Tracker["constants"]["masterdir"])
 			from mpi import mpi_finalize
 			mpi_finalize()
 			exit()
@@ -1030,196 +1450,150 @@ def AI(to_be_decided, log = None, list_stable = None, score_list = None, initial
 			if Blockdata["myid"] == Blockdata["main_node"]:
 				msg = " option post_sorting_sharpen is not currently active !"
 				print(line, msg)
-				log.add(msg)
+				log_main.add(msg)
 			return
 			
-	elif to_be_decided == "final_sharpen":
-	
-		if Tracker["constants"]["final_sharpen"]:
-			sharpen_map(log)
+	elif to_be_decided == "final_sharpen":	
+			sharpen_map(log_main, input_file1)
 			return
-		else:return
 		
 	elif to_be_decided =="check_mask3d":
-		############################################################################################	
-		Tracker["nxinit"]     = Tracker["nxinit_refinement"]
-		Tracker["currentres"] = float(Tracker["constants"]["fsc05"])/float(Tracker["nxinit"])
-		##################--------------->>>>>> shrinkage, current resolution, fuse_freq <<<<<<------------------------------------------
-		Tracker["total_stack"] = Tracker["constants"]["total_stack"]
-		Tracker["shrinkage"]   = float(Tracker["nxinit"])/Tracker["constants"]["nnxo"]
-		Tracker["radius"]      = Tracker["constants"]["radius"]*Tracker["shrinkage"]
-		try: fuse_freq = Tracker["fuse_freq"]
-		except: Tracker["fuse_freq"] = int(Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/Tracker["constants"]["fuse_freq"]+0.5)	
-		if Tracker["constants"]["mask3D"]:Tracker["mask3D"] = os.path.join(Tracker["constants"]["masterdir"],"smask.hdf")
-		else: Tracker["mask3D"] = None
-		if Tracker["constants"]["focus3Dmask"]:Tracker["focus3D"] = Tracker["constants"]["focus3Dmask"]
-		else: Tracker["focus3D"] = None
-		if(Blockdata["myid"] == Blockdata["main_node"]):
-			bad_focus3Dmask = 0
-			if Tracker["constants"]["focus3Dmask"]:
-				try:
-					focusmask = get_im(Tracker["constants"]["focus3Dmask"])
-					st = Util.infomask(focusmask)
-					if ((st[2] != 0.0) or (st[3] != 1.0)):
-						focusmask = binarize(focusmask)# binarize focus mask if it is not a binary mask
-						st = Util.infomask(focusmask)
-					if(st[0] == 0.0): bad_focus3Dmask = 1
-					else:
-						focusmask.write_image(os.path.join(Tracker["constants"]["masterdir"], "focus3d.hdf"))
-						Tracker["focus3D"] = os.path.join(Tracker["constants"]["masterdir"], "focus3d.hdf")
-				except:  bad_focus3Dmask = 1
-		else: bad_focus3Dmask = 0
-		bad_focus3Dmask = bcast_number_to_all(bad_focus3Dmask,	source_node =  Blockdata["main_node"])
-		if bad_focus3Dmask: ERROR("Incorrect focused mask, after binarize all values zero","sxsort3d.py", 1, Blockdata["myid"])	
-		if(Blockdata["myid"] == Blockdata["main_node"]):
-			bad_3Dmask = 0
-			if Tracker["constants"]["mask3D"]:
-				try: 
-					mask3D = get_im(Tracker["constants"]["mask3D"])
-					st = Util.infomask(binarize(mask3D), None, True)
-					if (st[0] ==0.0): bad_3Dmask = 1
-					else: 
-						mask3D.write_image(os.path.join(Tracker["constants"]["masterdir"], "mask3D.hdf"))
-						Tracker["mask3D"]= os.path.join(Tracker["constants"]["masterdir"], "mask3D.hdf")
-				except: bad_3Dmask = 1
-		else: bad_3Dmask = 0
-		bad_3Dmask = bcast_number_to_all(bad_focus3Dmask,	source_node =  Blockdata["main_node"])
-		if bad_3Dmask: ERROR("Incorrect 3D mask", "sxsort3d.py", 1, Blockdata["myid"])
-		Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
-		
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		if(Blockdata["myid"] == Blockdata["main_node"]):
-			print_dict(Tracker["constants"],"Permanent sorting settings from input options")
-			fout = open(os.path.join(Tracker["constants"]["masterdir"], "Tracker.json"),'w')
-			json.dump(Tracker, fout)
-			fout.close()
-			msg = "---------->>>DEPTH SORT3D<<<-----------"
-			log.add(msg)
-			print(line, msg)
-			msg = "orgstack: %s  image comparison method: %s "%(Tracker["constants"]["orgstack"], \
-			   Tracker["constants"]["comparison_method"])
-			print(line, msg)
-			log.add(msg)
-			if Tracker ["constants"]["focus3Dmask"]:
-				msg ="User provided focus mask file:  %s"%Tracker ["constants"]["focus3Dmask"]
-				print(line, msg)
-				log.add(msg)
-		Tracker["shrinkage"] = float(Tracker["nxinit"])/Tracker["constants"]["nnxo"]
-		if(Blockdata["myid"] == Blockdata["main_node"]):
-			print_dict(Tracker,"Current sorting settings")
+		check_3dmask(log_main)
 		return
-		
+
 	elif to_be_decided =="import_data":
-		# Two typical sorting scenarios
-		# 1. import data and refinement parameters from meridien refinement;
-		# 2. given data stack and xform.projection/ctf in header(For simulated test data);
-		if(Blockdata["myid"] == Blockdata["main_node"]):
-			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			msg = "importing data ... "
-			print(line, msg)
-			log.add(msg)
-		import_from_relion_refinement = 0
-		import_from_sparx_refinement  = 0
-		import_from_data_stack		  = 0
-		total_stack					  = 0
-		if Tracker["constants"]["refinement_method"] =="SPARX": # Senario one
-			import_from_sparx_refinement = get_input_from_sparx_ref3d(log)
-			Tracker["smearing"] = True
-		else:  # Senario three, sorting from a given data stack, general cases
-			import_from_data_stack = get_input_from_datastack(log)
-			Tracker["constants"]["hardmask"] = True
-			Tracker["applybckgnoise"]        = False
-			Tracker["applymask"]             = True
-			Tracker["smearing"]              = False
-		###<<<------------------------>>>>>>checks<<<<<-------------
-		if Tracker["constants"]["symmetry"] != Tracker["constants"]["sym"]:
-			if(Blockdata["myid"] == Blockdata["main_node"]):
-				msg = "input symmetry %s is altered to %s after reading refinement information! "%(Tracker["constants"]["sym"], Tracker["constants"]["symmetry"])
-				log.add(msg)
-				print(msg)
+		import_data(log_main)
 		return
 		
 	elif to_be_decided =="create_masterdir":
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		masterdir = Tracker["constants"]["masterdir"]
-		if(Blockdata["myid"] == Blockdata["main_node"]):
-			print(line, "Sort3d starts")
-			if not masterdir:
-				timestring = strftime("_%d_%b_%Y_%H_%M_%S", localtime())
-				masterdir ="sort3d"+timestring
-				os.mkdir(masterdir)
-			else:
-				if not os.path.exists(masterdir): os.mkdir(masterdir)
-			li =len(masterdir)
-		else:li = 0
-		li                                    = mpi_bcast(li,1,MPI_INT,Blockdata["main_node"],MPI_COMM_WORLD)[0]
-		masterdir                             = mpi_bcast(masterdir,li,MPI_CHAR,Blockdata["main_node"],MPI_COMM_WORLD)
-		masterdir                             = string.join(masterdir,"")
-		Tracker["constants"]["masterdir"]     = masterdir
-		Tracker["constants"]["chunk_0"]       = os.path.join(Tracker["constants"]["masterdir"],"chunk_0.txt")
-		Tracker["constants"]["chunk_1"]       = os.path.join(Tracker["constants"]["masterdir"],"chunk_1.txt")
-		while not os.path.exists(Tracker["constants"]["masterdir"]):
-			print("Node ", Blockdata["myid"], "waiting...", Tracker["constants"]["masterdir"])
-			sleep(1)
-		mpi_barrier(MPI_COMM_WORLD)
-		return
+		return create_masterdir(log_main)
 		
 	elif to_be_decided == "dump_tracker":
 		if(Blockdata["myid"] == Blockdata["main_node"]):
-			fout = open(os.path.join(Tracker["constants"]["masterdir"], "Tracker.json"),'w')
+			if input_file1 is None: dump_dir = Tracker["constants"]["masterdir"]
+			else:  dump_dir = input_file1
+			fout = open(os.path.join(dump_dir, "Tracker.json"),'w')
 			json.dump(Tracker, fout)
 			fout.close()
 		mpi_barrier(MPI_COMM_WORLD)
 		return
 		
-	elif to_be_decided =="print_command": 	
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	elif to_be_decided == "load_tracker":
 		if(Blockdata["myid"] == Blockdata["main_node"]):
-			print(line, "Sort3d main program")
-			log.add("---------->>>SPARX sort3d<<<--------------")
-			log.add("The shell line command:")
-			line = ""
-			for a in sys.argv: line +=(a + " ")
-			log.add(line)
-			log.add("Sort3d master directory: %s"%Tracker["constants"]["masterdir"])
-			print_dict(Tracker["constants"],"Permanent sorting settings after initialization")
-		mpi_barrier(MPI_COMM_WORLD)
-		return
+			fout = open(os.path.join(Tracker["constants"]["masterdir"], "Tracker.json"),'r')
+			Tracker = convert_json_fromunicode(json.load(fout))
+			fout.close()
+			msg ="restart from interuption, load tracker files"
+			log_main.add(msg)
+		else: Tracker = 0
+		Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
 		
+	elif to_be_decided =="print_command":
+		print_shell_command(sys.argv, log_main)
+		return
 	return
 	
 def reset_assignment_to_previous_groups(assignment, match_pairs):
 	# match pair is computed by two way comparison of new_iteration with old_iteration 
 	group_dict = {}
 	for ic in xrange(len(match_pairs)): group_dict[match_pairs[ic][0]] = match_pairs[ic][1]
-	for im in xrange(len(assignment)):  assignment[im] = group_dict[assignment[im]]
+	print("  group_dict", group_dict)
+	for im in xrange(len(assignment)): assignment[im] = group_dict[assignment[im]]
 	return assignment
-			
+	
+def AI_MGSKmeans(iter_assignment, last_iter_assignment, best_assignment, keepgoing, best_score, stopercnt, minimum_grp_size, log_file):
+	# single cpu function
+	import collections
+	group_dict       = collections.Counter(iter_assignment)
+	number_of_groups = len(group_dict)
+	msg = "group id     group size"
+	log_file.add(msg)
+	clusters = []
+	for igrp in xrange(len(group_dict)):
+		msg ="%5d    %10d"%(igrp, group_dict[igrp])
+		log_file.add(msg)
+		clusters.append(group_dict[igrp])
+	is_unicorn_cluster = 0
+	nc  = 0
+	tot = 0
+	for ic in xrange(len(clusters)):
+		tot += clusters[ic]
+		if clusters[ic] < minimum_grp_size + len(clusters): nc +=1
+	if tot//minimum_grp_size>2*len(clusters) and nc+1==len(clusters):is_unicorn_cluster =1
+	if is_unicorn_cluster == 0:
+		sum_newindices1 = 0
+		sum_newindices2 = 0
+		ratio, newindices, stable_clusters = compare_two_iterations(iter_assignment, last_iter_assignment, number_of_groups)
+		for idx in xrange(len(newindices)):
+			sum_newindices1 += newindices[idx][0]
+			sum_newindices2 += newindices[idx][1]
+			if newindices[idx][0] != newindices[idx][1]:
+				msg ="group %d  swaps with group %d "%(newindices[idx][0], newindices[idx][1])
+				log_file.add(msg)
+		changed_nptls = 100.- ratio*100.
+		if best_score >= changed_nptls:
+			best_score = changed_nptls
+			best_assignment = copy.copy(iter_assignment)
+		if changed_nptls < stopercnt: keepgoing = 0
+	else:
+		msg ="unicorn cluster is found. shuffle assignment"
+		log_file.add(msg)
+		print(msg)
+		iter_assignment = shuffle_assignment(iter_assignment, number_of_groups)
+		best_score    = 100.
+		changed_nptls = 100.
+		keepgoing     = 1
+		best_assignment = copy.copy(iter_assignment)
+	return best_score, changed_nptls, keepgoing, best_assignment, iter_assignment
+
+def shuffle_assignment(iter_assignment, number_of_groups):
+	import random
+	new_assignment  = range(0, len(iter_assignment))
+	tmp_assignment  = range(0, len(iter_assignment))
+	ngroup          = 0
+	while len(tmp_assignment) >=1:
+		shuffle(tmp_assignment)
+		im = tmp_assignment[0]
+		new_assignment[im] = ngroup%number_of_groups
+		del tmp_assignment[0]
+		ngroup +=1
+	return new_assignment
+	
 #####
 def Kmeans_minimum_group_size_orien_groups(original_data, partids, params, paramstructure, norm_per_particle, minimum_group_size, clean_volumes = False):
 	global Tracker, Blockdata
 	import shutil
 	import numpy as np
 	#<<<<---------- >>>>EQKmeans starts<<<<------------ 
-	log	                    = Logger()
-	log                     = Logger(BaseLogger_Files())
-	log.prefix              = Tracker["directory"]+"/"
-	premature               = 0
-	changed_nptls           = 100.0
-	number_of_groups        = Tracker["number_of_groups"]
-	stopercnt               = Tracker["constants"]["stop_eqkmeans_percentage"]
-	total_iter              = 0
-	require_check_setting   = False
-	partial_rec3d           = False
-	best_score              = 100.0
-	best_assignment         = []
+	log	                     = Logger()
+	log                      = Logger(BaseLogger_Files())
+	log.prefix               = Tracker["directory"]+"/"
+	premature                = 0
+	changed_nptls            = 100.0
+	number_of_groups         = Tracker["number_of_groups"]
+	stopercnt                = Tracker["constants"]["stop_mgskmeans_percentage"]
+	total_iter               = 0
+	require_check_setting    = False
+	partial_rec3d            = False
+	best_score               = 100.0
+	best_assignment          = []
+	max_iter                 = Tracker["total_number_of_iterations"]
+	last_score               = 100.0
+	fixed_value              = 100.0
+	has_converged            = 0
+	times_around_fixed_value = 0  
 	###<<<<<<------------
-	if Tracker["mask3D"]: # prepare mask
-		mask3D = get_im(Tracker["mask3D"])
-		if mask3D.get_xsize() != Tracker["nxinit"]: mask3D = fdecimate(mask3D, Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"], True, False)
-	else: 
+	#if( Blockdata["myid"] == Blockdata["main_node"]):
+		
+	try:
+		if os.path.exists(Tracker["mask3D"]): # prepare mask
+			mask3D = get_im(Tracker["mask3D"])
+			if mask3D.get_xsize() != Tracker["nxinit"]: 
+				mask3D = fdecimate(mask3D, Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"], True, False)
+	except:
 		mask3D = model_circle(Tracker["constants"]["radius"], Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"])
 		mask3D = fdecimate(mask3D, Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"], True, False)
+		
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	if( Blockdata["myid"] == Blockdata["main_node"]):
 		lpartids = read_text_file(partids, -1)
@@ -1229,12 +1603,12 @@ def Kmeans_minimum_group_size_orien_groups(original_data, partids, params, param
 		else: iter_assignment = lpartids[0]
 	else: iter_assignment = 0
 	iter_assignment = wrap_mpi_bcast(iter_assignment, Blockdata["main_node"]) # initial assignment
-	####
-	total_stack             = len(iter_assignment)
-	Tracker["total_stack"]  = total_stack
-	minimum_group_size_ratio =  min((minimum_group_size*Tracker["number_of_groups"])/float(Tracker["total_stack"]), 0.9)
-	nima                    = len(original_data)
-	image_start, image_end  = MPI_start_end(Tracker["total_stack"], Blockdata["nproc"], Blockdata["myid"])
+	###
+	total_stack              = len(iter_assignment)
+	Tracker["total_stack"]   = total_stack
+	minimum_group_size_ratio =  min((minimum_group_size*Tracker["number_of_groups"])/float(Tracker["total_stack"]), 0.95)
+	nima                     = len(original_data)
+	image_start, image_end   = MPI_start_end(Tracker["total_stack"], Blockdata["nproc"], Blockdata["myid"])
 	
 	Tracker["min_orien_group_size"] = Tracker["number_of_groups"]*Tracker["minimum_ptl_number"]
 	angle_step  = get_angle_step_from_number_of_orien_groups(Tracker["constants"]["orientation_groups"])
@@ -1242,19 +1616,19 @@ def Kmeans_minimum_group_size_orien_groups(original_data, partids, params, param
 		
 	### printed info
 	if( Blockdata["myid"] == Blockdata["main_node"]):
-		msg = "------>>>> Kmeans clustering with constrained minimum group size<<<<--------"
+		msg = "------>>>> MGSKmeans clustering <<<<--------"
 		log.add(msg)
 		msg = "total_stack:  %d K = : %d  nxinit: %d  CTF:  %s  Symmetry:  %s  stop percentage: %f  3-D mask: %s focus mask: %s  Comparison method: %s  minimum_group_size: %d orien  %d"% \
 		   (Tracker["total_stack"], Tracker["number_of_groups"], Tracker["nxinit"],  Tracker["constants"]["CTF"], \
 		     Tracker["constants"]["symmetry"], stopercnt, Tracker["mask3D"], Tracker["focus3D"], Tracker["constants"]["comparison_method"], minimum_group_size, len(ptls_in_orien_groups))
 		log.add(msg)
 		print(line, msg)
-		print(" input value", Tracker["constants"]["minimum_grp_size"])
-	###
+		
 	proc_list = [[None, None] for iproc in xrange(Blockdata["nproc"])]
 	for iproc in xrange(Blockdata["nproc"]):
 		iproc_image_start, iproc_image_end = MPI_start_end(Tracker["total_stack"], Blockdata["nproc"], iproc)
 		proc_list[iproc] = [iproc_image_start, iproc_image_end]
+		
 	compute_noise(Tracker["nxinit"])
 	cdata, rdata, fdata = downsize_data_for_sorting(original_data, preshift = True, npad = 1, norms =norm_per_particle)# pay attentions to shifts!
 	srdata = precalculate_shifted_data_for_recons3D(rdata, paramstructure, Tracker["refang"], \
@@ -1262,25 +1636,36 @@ def Kmeans_minimum_group_size_orien_groups(original_data, partids, params, param
 	     Tracker["constants"]["nnxo"], Tracker["nosmearing"], norm_per_particle, Tracker["constants"]["nsmear"])
 	del rdata
 	last_iter_assignment = copy.copy(iter_assignment)
-	iter       = 0
-	total_iter = 0
-	while total_iter<Tracker["total_number_of_iterations"]:
+	best_assignment      = copy.copy(iter_assignment)
+	total_iter       = 0
+	keepgoing        = 1
+	do_partial_rec3d = 0
+	partial_rec3d    =  False
+	
+	while total_iter < max_iter:
+		ptls_in_orien_groups = get_orien_assignment_mpi(angle_step, partids, params, log)
 		if(Blockdata["myid"] == Blockdata["main_node"]):
 			msg = "Iteration %d particle assignment changed ratio  %f "%(total_iter, changed_nptls)
 			log.add(msg)
 			write_text_file(iter_assignment, os.path.join(Tracker["directory"], "assignment%03d.txt"%total_iter))
-		if changed_nptls< 50.0: partial_rec3d = True
-		else: partial_rec3d = False
+			if changed_nptls< 50.0: do_partial_rec3d = 1
+			else:                   do_partial_rec3d = 0
+		else: do_partial_rec3d = 0
+		do_partial_rec3d       = bcast_number_to_all(do_partial_rec3d, Blockdata["main_node"], MPI_COMM_WORLD)
+		if do_partial_rec3d ==1: partial_rec3d = True
+		else:                    partial_rec3d = False
+			
 		update_data_assignment(cdata, srdata, iter_assignment, proc_list, Tracker["nosmearing"], Blockdata["myid"])
 		mpi_barrier(MPI_COMM_WORLD)
 		do3d_sorting_groups_nofsc_smearing_iter(srdata, partial_rec3d, iteration = total_iter)
 		mpi_barrier(MPI_COMM_WORLD)
+		
 		local_peaks = [0.0 for im in xrange(number_of_groups*nima)]
-		total_im           = 0
+		total_im    = 0
 		local_kmeans_peaks = [ -1.0e23 for im in xrange(nima)]
 		## compute peaks and save them in 1D list
 		for iref in xrange(number_of_groups):
-			if(Blockdata["myid"] == Blockdata["main_node"]):
+			if(Blockdata["myid"] == Blockdata["last_node"]):
 				try: fsc143 = Tracker["fsc143"][iref]
 				except:	fsc143 = 0.0
 				try: fsc05 = Tracker["fsc05"][iref]
@@ -1293,7 +1678,7 @@ def Kmeans_minimum_group_size_orien_groups(original_data, partids, params, param
 				if stat[1]!=0.0:Util.mul_scalar(ref_vol, 1.0/stat[1])
 				ref_vol *=mask3D
 			else: ref_vol = model_blank(Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"])
-			bcast_EMData_to_all(ref_vol, Blockdata["myid"], Blockdata["main_node"])
+			bcast_EMData_to_all(ref_vol, Blockdata["myid"], Blockdata["last_node"])
 			## Image comparison optimal solution is the larger one	
 			if Tracker["constants"]["comparison_method"] =="cross": ref_peaks = compare_two_images_cross(cdata, ref_vol)
 			else: ref_peaks = compare_two_images_eucd(cdata, ref_vol, fdata)
@@ -1323,7 +1708,7 @@ def Kmeans_minimum_group_size_orien_groups(original_data, partids, params, param
 					ptls_in_orien_groups[iorien], Tracker["number_of_groups"], minimum_group_size_ratio)
 				for iptl in xrange(len(ptls_in_orien_groups[iorien])):
 					iter_assignment[ptls_in_orien_groups[iorien][iptl]] = local_assignment[iptl]
-		mpi_barrier(MPI_COMM_WORLD)		
+		mpi_barrier(MPI_COMM_WORLD)
 		if Blockdata["myid"] != Blockdata["main_node"]: wrap_mpi_send(iter_assignment, Blockdata["main_node"], MPI_COMM_WORLD)
 		else:
 			for iproc in xrange(Blockdata["nproc"]):
@@ -1331,24 +1716,34 @@ def Kmeans_minimum_group_size_orien_groups(original_data, partids, params, param
 					dummy = wrap_mpi_recv(iproc, MPI_COMM_WORLD)
 					for iptl in xrange(len(dummy)):
 						if dummy[iptl] !=-1:iter_assignment[iptl] = dummy[iptl]
-						else: pass
-			#iter_assignment = shake_assignment(iter_assignment, randomness_rate = 1.-Tracker["constants"]["eqk_shake"]/200.)#						
-		mpi_barrier(MPI_COMM_WORLD)	
+						else: pass		
 		iter_assignment = wrap_mpi_bcast(iter_assignment, Blockdata["main_node"], MPI_COMM_WORLD)
-		ratio, newindices, stable_clusters = compare_two_iterations(iter_assignment, last_iter_assignment, number_of_groups)
-		reset_assignment_to_previous_groups(iter_assignment, newindices)
-		changed_nptls = 100.-ratio*100.
-		if(Blockdata["myid"] == Blockdata["main_node"]):
-			msg = "Iteration %d particle assignment changed ratio subject to induced randomness  %f "% \
-				 (total_iter, changed_nptls)
-		if best_score >= changed_nptls:
-			best_score = changed_nptls
-			best_assignment = copy.copy(iter_assignment)
-		iter       +=1
+		if Blockdata["myid"] == Blockdata["main_node"]:
+			last_score =  changed_nptls
+			best_score, changed_nptls, keepgoing, best_assignmen, iter_assignment = \
+			     AI_MGSKmeans(iter_assignment, last_iter_assignment, best_assignment, keepgoing, best_score, stopercnt, minimum_group_size, log)
+			if abs(last_score - changed_nptls)<1.0:
+				if  times_around_fixed_value == 0:
+					fixed_value = changed_nptls
+					times_around_fixed_value +=1
+				else:
+					if abs(changed_nptls - fixed_value)<1.0: times_around_fixed_value +=1
+					else:
+						times_around_fixed_value = 0
+						fixed_value = changed_nptls
+		else:
+			iter_assignment = 0
+			best_assignment = 0
+			keepgoing       = 1
+		iter_assignment = wrap_mpi_bcast(iter_assignment, Blockdata["main_node"], MPI_COMM_WORLD)
+		best_assignment = wrap_mpi_bcast(best_assignment, Blockdata["main_node"], MPI_COMM_WORLD)
+		times_around_fixed_value = bcast_number_to_all(times_around_fixed_value, Blockdata["main_node"], MPI_COMM_WORLD)
+		keepgoing = bcast_number_to_all(keepgoing,  Blockdata["main_node"], MPI_COMM_WORLD)
 		total_iter +=1
-		#last_iter_assignment = copy.copy(iter_assignment)
-		if changed_nptls < stopercnt: break
-	#Finalize
+		last_iter_assignment = copy.copy(iter_assignment)
+		if times_around_fixed_value>=3: keepgoing = 0
+		if keepgoing == 0: break
+	# Finalize
 	update_data_assignment(cdata, srdata, iter_assignment, proc_list, Tracker["nosmearing"], Blockdata["myid"])
 	res_sort3d = get_sorting_all_params(cdata)
 	del cdata
@@ -1357,41 +1752,43 @@ def Kmeans_minimum_group_size_orien_groups(original_data, partids, params, param
 	del last_iter_assignment
 	del best_assignment
 	if mask3D: del mask3D
-	#if best_score > 15.0: require_check_setting = True
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		if best_score > Tracker["constants"]["stop_eqkmeans_percentage"]: 
-			msg ="EQKmeans premature stop with changed particles ratio %f and image size %d"%(best_score,Tracker["nxinit"])
+		if best_score > Tracker["constants"]["stop_mgskmeans_percentage"]: 
+			msg ="MGSKmeans premature stop with changed particles ratio %f and image size %d"%(best_score,Tracker["nxinit"])
 			premature  = 1
-		else: msg = "EQKmeans mature stop with changed particles ratio %f within %d iterations and actually used stop percentage is %f"%(\
+		else: msg = "MGSKmeans mature stop with changed particles ratio %f within %d iterations and actually used stop percentage is %f"%(\
 		        best_score, total_iter, stopercnt)
 		print(line, msg)
 		log.add(msg)
-		Tracker["partition"], ali3d_params_list = parsing_sorting_params(partids, res_sort3d)
-		write_text_row(Tracker["partition"], os.path.join(Tracker["directory"],"list.txt"))
+		partition, ali3d_params_list = parsing_sorting_params(partids, res_sort3d)
+		write_text_row(partition, os.path.join(Tracker["directory"],"list.txt"))
 		shutil.rmtree(os.path.join(Tracker["directory"], "tempdir"))
 		if clean_volumes:
 			for jter in xrange(total_iter):
-				for igroup in xrange(Tracker["number_of_groups"]): os.remove(os.path.join(Tracker["directory"], "vol_grp%03d_iter%03d.hdf"%(igroup,jter)))
-	else:Tracker["partition"] = 0
-	Tracker["partition"] = wrap_mpi_bcast(Tracker["partition"], Blockdata["main_node"])
+				for igroup in xrange(Tracker["number_of_groups"]): 
+					os.remove(os.path.join(Tracker["directory"], "vol_grp%03d_iter%03d.hdf"%(igroup,jter)))
+	else: partition = 0
+	partition  = wrap_mpi_bcast(partition, Blockdata["main_node"])
 	premature  = wrap_mpi_bcast(premature, Blockdata["main_node"])
+	
 	if require_check_setting:
 		if(Blockdata["myid"] == Blockdata["main_node"]): print("Too large changed particles, and the sorting settings, such as img_per_grp requires a check")
-	return Tracker["partition"], premature
+	return partition, premature
+	
 #####
 def Kmeans_minimum_group_size_relaxing_orien_groups(original_data, partids, params, paramstructure, norm_per_particle, minimum_group_size, clean_volumes = False):
 	global Tracker, Blockdata
 	import shutil
 	import numpy as np
 	#<<<<---------- >>>>EQKmeans starts<<<<------------ 
-	log	                    = Logger()
-	log                     = Logger(BaseLogger_Files())
-	log.prefix              = Tracker["directory"]+"/"
-	premature               = 0
-	changed_nptls           = 100.0
-	number_of_groups        = Tracker["number_of_groups"]
-	stopercnt               = 3.0
+	log	                    =  Logger()
+	log                     =  Logger(BaseLogger_Files())
+	log.prefix              =  Tracker["directory"]+"/"
+	premature               =  0
+	changed_nptls           =  100.0
+	number_of_groups        =  Tracker["number_of_groups"]
+	stopercnt               =  Tracker["constants"]["stop_mgskmeans_percentage"]
 	total_iter              = 0
 	require_check_setting   = False
 	partial_rec3d           = False
@@ -1459,7 +1856,7 @@ def Kmeans_minimum_group_size_relaxing_orien_groups(original_data, partids, para
 			log.add(msg)
 			write_text_file(iter_assignment, os.path.join(Tracker["directory"], "assignment%03d.txt"%total_iter))
 		if changed_nptls< 50.0: partial_rec3d = True
-		else: partial_rec3d = False
+		else:                   partial_rec3d = False
 		update_data_assignment(cdata, srdata, iter_assignment, proc_list, Tracker["nosmearing"], Blockdata["myid"])
 		mpi_barrier(MPI_COMM_WORLD)
 		do3d_sorting_groups_nofsc_smearing_iter(srdata, partial_rec3d, iteration = total_iter)
@@ -1525,8 +1922,8 @@ def Kmeans_minimum_group_size_relaxing_orien_groups(original_data, partids, para
 		mpi_barrier(MPI_COMM_WORLD)	
 		iter_assignment = wrap_mpi_bcast(iter_assignment, Blockdata["main_node"], MPI_COMM_WORLD)
 		ratio, newindices, stable_clusters = compare_two_iterations(iter_assignment, last_iter_assignment, number_of_groups)
-		reset_assignment_to_previous_groups(iter_assignment, newindices)
-		changed_nptls = 100.-ratio*100.
+		#reset_assignment_to_previous_groups(iter_assignment, newindices)
+		changed_nptls = 100.- ratio*100.
 		if(Blockdata["myid"] == Blockdata["main_node"]):
 			msg = "Iteration %d particle assignment changed ratio subject to induced randomness  %f "% \
 				 (total_iter, changed_nptls )
@@ -1563,7 +1960,7 @@ def Kmeans_minimum_group_size_relaxing_orien_groups(original_data, partids, para
 	#if best_score > 15.0: require_check_setting = True
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		if best_score > Tracker["constants"]["stop_eqkmeans_percentage"]: 
+		if best_score > Tracker["constants"]["stop_mgskmeans_percentage"]: 
 			msg ="MGSKmeans premature stop with changed particles ratio %f and image size %d"%(best_score,Tracker["nxinit"])
 			premature  = 1
 		else: msg = "MGSKmeans mature stop with changed particles ratio %f within %d iterations and actually used stop percentage is %f"%(\
@@ -1581,216 +1978,12 @@ def Kmeans_minimum_group_size_relaxing_orien_groups(original_data, partids, para
 	premature  = wrap_mpi_bcast(premature, Blockdata["main_node"])
 	return Tracker["partition"], premature
 #####
-def Kmeans_adaptive_minimum_group_size(original_data, partids, params, paramstructure, norm_per_particle, init_minimum_group_size, clean_volumes = False):
-	global Tracker, Blockdata
-	import shutil
-	import numpy as np
-	#<<<<---------- >>>>Kmeans_adaptive_minimum_group_size starts<<<<------------
-	log	                    = Logger()
-	log                     = Logger(BaseLogger_Files())
-	log.prefix              = Tracker["directory"]+"/"
-	premature               = 0
-	changed_nptls           = 100.0
-	number_of_groups        = Tracker["number_of_groups"]
-	stopercnt               = 6.
-	total_iter              = 0
-	require_check_setting   = False
-	partial_rec3d           = False
-	best_score              = 100.0
-	best_assignment         = []
-	###<<<<<<------------
-	norien = Tracker["constants"]["orientation_groups"]
-	#else: norien = 20
-	Tracker["min_orien_group_size"] = Tracker["number_of_groups"]*Tracker["minimum_ptl_number"]
-	angle_step = get_angle_step_from_number_of_orien_groups(norien)
-	ptls_in_orien_groups = get_orien_assignment_mpi(angle_step, partids, params, log)
-	
-	if Tracker["mask3D"]: # prepare mask
-		mask3D = get_im(Tracker["mask3D"])
-		if mask3D.get_xsize() != Tracker["nxinit"]: mask3D = fdecimate(mask3D, Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"], True, False)
-	else: 
-		mask3D = model_circle(Tracker["constants"]["radius"], Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"])
-		mask3D = fdecimate(mask3D, Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"], True, False)
-	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-	if( Blockdata["myid"] == Blockdata["main_node"]):
-		lpartids = read_text_file(partids, -1)
-		if len(lpartids) == 1:# Not true for sorting
-			iter_assignment = []
-			for im in xrange(len(lpartids[0])):iter_assignment.append(randint(0,number_of_groups-1))# simple version
-		else: iter_assignment = lpartids[0]
-	else: iter_assignment = 0
-	iter_assignment = wrap_mpi_bcast(iter_assignment, Blockdata["main_node"]) # initial assignment
-	####
-	Tracker["total_stack"]   = len(iter_assignment)
-	if init_minimum_group_size <= 0:  minimum_group_size       = Tracker["total_stack"]//Tracker["number_of_groups"]
-	else: minimum_group_size = init_minimum_group_size
-	random_selection_ratio   = 1./float(Tracker["number_of_groups"])
-	minimum_group_size_ratio = min((minimum_group_size*Tracker["number_of_groups"])/float(Tracker["total_stack"]), 0.9)
-	nima                     = len(original_data)
-	image_start, image_end   = MPI_start_end(Tracker["total_stack"], Blockdata["nproc"], Blockdata["myid"])
-	### printed info
-	if( Blockdata["myid"] == Blockdata["main_node"]):
-		msg = "------>>>>Adaptive Kmeans clustering with constrained minimum group size<<<<--------"
-		log.add(msg)
-		msg = "total_stack:  %d K = : %d  nxinit: %d  CTF:  %s  Symmetry:  %s  stop percentage: %f  3-D mask: %s focus mask: %s  Comparison method: %s  minimum_group_size: %d orien  %d"% \
-		   (Tracker["total_stack"], Tracker["number_of_groups"], Tracker["nxinit"],  Tracker["constants"]["CTF"], \
-		     Tracker["constants"]["symmetry"], stopercnt, Tracker["mask3D"], Tracker["focus3D"], Tracker["constants"]["comparison_method"], minimum_group_size, len(ptls_in_orien_groups))
-		log.add(msg)
-		print(line, msg)
-		print(" input value", Tracker["constants"]["minimum_grp_size"])
-	###
-	proc_list = [[None, None] for iproc in xrange(Blockdata["nproc"])]
-	for iproc in xrange(Blockdata["nproc"]):
-		iproc_image_start, iproc_image_end = MPI_start_end(Tracker["total_stack"], Blockdata["nproc"], iproc)
-		proc_list[iproc] = [iproc_image_start, iproc_image_end]
-	compute_noise(Tracker["nxinit"])
-	cdata, rdata, fdata = downsize_data_for_sorting(original_data, preshift = True, npad = 1, norms = norm_per_particle)# pay attentions to shifts!
-	srdata = precalculate_shifted_data_for_recons3D(rdata, paramstructure, Tracker["refang"], \
-	   Tracker["rshifts"], Tracker["delta"], Tracker["avgnorm"], Tracker["nxinit"], \
-	    Tracker["constants"]["nnxo"], Tracker["nosmearing"], norm_per_particle,  Tracker["constants"]["nsmear"])
-	del rdata
-	last_iter_assignment = copy.copy(iter_assignment)
-	iter       = 0
-	total_iter = 0
-	#Tracker["total_number_of_iterations"] = 35
-	improved           = False
-	last_changed_nptls = 100.
-	update_best        = False
-	assign_shake       = Tracker["constants"]["eqk_shake"]
-	while total_iter<Tracker["total_number_of_iterations"] and norien >4: # 
-		if(Blockdata["myid"] == Blockdata["main_node"]):
-			msg = "Iteration %d particle assignment changed ratio:  %f current stop criterion:  %f current image size: %d  minimum_group_size:  %d  No of orien groups: %d"%(total_iter, \
-			  changed_nptls, stopercnt, Tracker["nxinit"], minimum_group_size, len(ptls_in_orien_groups))
-			log.add(msg)
-			write_text_file(iter_assignment, os.path.join(Tracker["directory"], "assignment%03d.txt"%total_iter))
-			
-		if changed_nptls < last_changed_nptls: improved = True
-		if changed_nptls < 50.0: partial_rec3d = True
-		else: partial_rec3d = False
-		if  changed_nptls < 15.0 and changed_nptls> 6 :  assign_shake = 1.0
-		elif changed_nptls <= 6.0:  assign_shake = 0.0
-		else:  assign_shake = changed_nptls/10.
-		
-		if changed_nptls < 40.0 and improved and minimum_group_size>Tracker["total_stack"]//Tracker["number_of_groups"]**2:
-			if update_best:
-				minimum_group_size      *= Tracker["grp_size_relx_ratio"]
-				minimum_group_size       = int(minimum_group_size) 
-				minimum_group_size_ratio = min((minimum_group_size*Tracker["number_of_groups"])/float(Tracker["total_stack"]), 0.9)
-				
-		update_data_assignment(cdata, srdata, iter_assignment, proc_list, Tracker["nosmearing"], Blockdata["myid"])
-		mpi_barrier(MPI_COMM_WORLD)
-		do3d_sorting_groups_nofsc_smearing_iter(srdata, partial_rec3d, iteration = total_iter)
-		mpi_barrier(MPI_COMM_WORLD)
-		local_peaks = [0.0 for im in xrange(number_of_groups*nima)]
-		total_im           = 0
-		local_kmeans_peaks = [ -1.0e23 for im in xrange(nima)]
-		## compute peaks and save them in 1D list
-		for iref in xrange(number_of_groups):
-			if(Blockdata["myid"] == Blockdata["main_node"]):
-				try: fsc143 = Tracker["fsc143"][iref]
-				except:	fsc143 = 0.0
-				try: fsc05 = Tracker["fsc05"][iref]
-				except:	fsc05 = 0.0	
-				ref_vol = get_im(os.path.join(Tracker["directory"],"vol_grp%03d_iter%03d.hdf"%(iref, total_iter)))
-				nnn = ref_vol.get_xsize()
-				if(Tracker["nxinit"] != nnn): ref_vol = fdecimate(ref_vol, Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"], True, False)
-				stat = Util.infomask(ref_vol, mask3D, False)
-				ref_vol -= stat[0]
-				if stat[1]!=0.0:Util.mul_scalar(ref_vol, 1.0/stat[1])
-				ref_vol *=mask3D
-			else: ref_vol = model_blank(Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"])
-			bcast_EMData_to_all(ref_vol, Blockdata["myid"], Blockdata["main_node"])
-			## Image comparison optimal solution is the larger one	
-			if Tracker["constants"]["comparison_method"] =="cross": ref_peaks = compare_two_images_cross(cdata, ref_vol)
-			else: ref_peaks = compare_two_images_eucd(cdata, ref_vol, fdata)
-			for im in xrange(nima):
-				local_peaks[total_im] = ref_peaks[im]
-				total_im +=1
-			mpi_barrier(MPI_COMM_WORLD)
-			
-		del ref_vol
-		# pass to main_node
-		if Blockdata["myid"] == Blockdata["main_node"]:
-			dmatrix =[[ 0.0 for im in xrange(Tracker["total_stack"])] for iref in xrange(number_of_groups)]
-			for im in xrange(len(local_peaks)): dmatrix[im//nima][im%nima + image_start] = local_peaks[im]
-		else: dmatrix = 0
-		if Blockdata["myid"] != Blockdata["main_node"]: wrap_mpi_send(local_peaks, Blockdata["main_node"], MPI_COMM_WORLD)
-		else:
-			for iproc in xrange(Blockdata["nproc"]):
-				if iproc != Blockdata["main_node"]:
-					local_peaks = wrap_mpi_recv(iproc, MPI_COMM_WORLD)
-					iproc_nima  = proc_list[iproc][1] - proc_list[iproc][0]
-					for im in xrange(len(local_peaks)): dmatrix[im/iproc_nima][im%iproc_nima + proc_list[iproc][0]] = local_peaks[im]
-		dmatrix = wrap_mpi_bcast(dmatrix, Blockdata["main_node"], MPI_COMM_WORLD)
-		last_iter_assignment = copy.copy(iter_assignment)
-		iter_assignment = [-1 for iptl in xrange(Tracker["total_stack"])]
-		for iorien in xrange(len(ptls_in_orien_groups)):
-			if iorien%Blockdata["nproc"] == Blockdata["myid"]:
-				local_assignment = do_assignment_by_dmatrix_orien_group_minimum_group_size(dmatrix, \
-					ptls_in_orien_groups[iorien], Tracker["number_of_groups"], minimum_group_size_ratio)
-				for iptl in xrange(len(ptls_in_orien_groups[iorien])):
-					iter_assignment[ptls_in_orien_groups[iorien][iptl]] = local_assignment[iptl]
-		mpi_barrier(MPI_COMM_WORLD)		
-		if Blockdata["myid"] != Blockdata["main_node"]: wrap_mpi_send(iter_assignment, Blockdata["main_node"], MPI_COMM_WORLD)
-		else:
-			for iproc in xrange(Blockdata["nproc"]):
-				if iproc != Blockdata["main_node"]:
-					dummy = wrap_mpi_recv(iproc, MPI_COMM_WORLD)
-					for iptl in xrange(len(dummy)):
-						if dummy[iptl] !=-1:iter_assignment[iptl] = dummy[iptl]
-						else: pass
-			iter_assignment = shake_assignment(iter_assignment, randomness_rate = 1.-assign_shake/200.)#						
-		mpi_barrier(MPI_COMM_WORLD)	
-		iter_assignment = wrap_mpi_bcast(iter_assignment, Blockdata["main_node"], MPI_COMM_WORLD)
-		ratio, newindices, stable_clusters = compare_two_iterations(iter_assignment, last_iter_assignment, number_of_groups)
-		reset_assignment_to_previous_groups(iter_assignment, newindices)
-		last_changed_nptls = changed_nptls
-		changed_nptls = 100.-ratio*100.
-		if(Blockdata["myid"] == Blockdata["main_node"]):
-			msg = "Iteration %d particle assignment changed ratio subject to induced randomness  %f, and current stop criterion is %f, current image size %d  minimum_group_size %d  norien %d"% \
-				 (total_iter, changed_nptls, changed_nptls, Tracker["nxinit"], minimum_group_size, len(ptls_in_orien_groups))
-		if best_score >= changed_nptls:
-			best_score = changed_nptls
-			best_assignment = copy.copy(iter_assignment)
-			update_best  = True
-		else: update_best  = False
-		iter       +=1
-		total_iter +=1
-		if changed_nptls < stopercnt: break
-	#Finalize
-	update_data_assignment(cdata, srdata, best_assignment, proc_list, Tracker["nosmearing"], Blockdata["myid"])
-	res_sort3d = get_sorting_all_params(cdata)
-	del cdata
-	del srdata
-	del iter_assignment
-	del last_iter_assignment
-	del best_assignment
-	if  mask3D: del mask3D
-	if(Blockdata["myid"] == Blockdata["main_node"]):
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		if best_score > Tracker["constants"]["stop_eqkmeans_percentage"]: 
-			msg ="MGSKmeans premature stop with changed particles ratio %f and image size %d   minimum_group_size  %d    number of orien  %d"%(best_score,Tracker["nxinit"], minimum_group_size, len(ptls_in_orien_groups))
-			premature  = 1
-		else: msg = "MGSKmeans mature stop with changed particles ratio %f within %d iterations and actually used stop percentage is %f  minimum_group_size  %d"%(\
-		        best_score, total_iter, stopercnt, minimum_group_size)
-		print(line, msg)
-		log.add(msg)
-		Tracker["partition"], ali3d_params_list = parsing_sorting_params(partids, res_sort3d)
-		write_text_row(Tracker["partition"], os.path.join(Tracker["directory"],"list.txt"))
-		shutil.rmtree(os.path.join(Tracker["directory"], "tempdir"))
-		if clean_volumes:
-			for jter in xrange(total_iter):
-				for igroup in xrange(Tracker["number_of_groups"]): os.remove(os.path.join(Tracker["directory"], "vol_grp%03d_iter%03d.hdf"%(igroup,jter)))
-	else:Tracker["partition"] = 0
-	Tracker["partition"] = wrap_mpi_bcast(Tracker["partition"], Blockdata["main_node"])
-	premature  = wrap_mpi_bcast(premature, Blockdata["main_node"])
-	return Tracker["partition"], premature
-	
+
 def do_assignment_by_dmatrix_orien_group_minimum_group_size(dmatrix, orien_group_members, number_of_groups, minimum_group_size_ratio):
 	import numpy as np
 	results = [[] for i in xrange(number_of_groups)]
-	nima = len(orien_group_members)
-	minimum_group_size = int(minimum_group_size_ratio*nima/number_of_groups)-1
+	nima    = len(orien_group_members)
+	minimum_group_size = int(minimum_group_size_ratio*nima/number_of_groups)
 	submatrix = np.zeros((number_of_groups, nima))
 	for i in xrange(number_of_groups):
 		for j in xrange(len(orien_group_members)):
@@ -2314,15 +2507,13 @@ def read_data_for_sorting(partids, partstack, previous_partstack):
 	if(Tracker["total_stack"] < Blockdata["nproc"]): ERROR("number of processors in use is larger than the total number of particles", \
 		  "get_data_and_prep", 1, Blockdata["myid"])
 	else: image_start, image_end = MPI_start_end(Tracker["total_stack"], Blockdata["nproc"], Blockdata["myid"])
-	lpartids  = lpartids[image_start:image_end]
-	groupids  = groupids[image_start:image_end]
-	nima      =	image_end - image_start
-	data      = [None]*nima
+	lpartids          = lpartids[image_start:image_end]
+	groupids          = groupids[image_start:image_end]
+	nima              = image_end - image_start
+	data              = [None]*nima
 	norm_per_particle = [ None for im in xrange(nima)]
-	#print(Tracker["constants"]["orgstack"])
 	for im in xrange(nima):
 		image = get_im(Tracker["constants"]["orgstack"], lpartids[im])
-		#print(im, Blockdata["myid"])
 		try: phi, theta, psi, sx, sy, chunk_id, particle_group_id, mnorm = partstack[lpartids[im]][0], \
 		   partstack[lpartids[im]][1], partstack[lpartids[im]][2], \
 			partstack[lpartids[im]][3], partstack[lpartids[im]][4], partstack[lpartids[im]][5], \
@@ -2336,7 +2527,6 @@ def read_data_for_sorting(partids, partstack, previous_partstack):
 		image.set_attr("chunk_id", chunk_id)
 		image.set_attr("group", groupids[im])
 		image.set_attr("particle_group", particle_group_id)
-		#image.set_attr("mnorm", mnorm)
 		image.set_attr("previous_shifts", [sx1, sy1])
 		image.set_attr("current_shifts", [sx, sy])
 		norm_per_particle[im] = mnorm
@@ -2490,6 +2680,7 @@ def copy_oldparamstructure_from_meridien_MPI(selected_iteration, log):
 					dummy = wrap_mpi_recv(iproc, MPI_COMM_WORLD)
 					for idum in xrange(len(dummy)): smearing_list[idum + im_start_old] = dummy[idum]
 				else: pass
+			
 			write_text_file(smearing_list, os.path.join(Tracker["constants"]["masterdir"], "smearing_%d.txt"%procid))
 			for im in xrange(len(chunk)): smearing_dict[chunk[im]] =  smearing_list[im]
 			tchunk +=chunk
@@ -2780,6 +2971,7 @@ def downsize_data_for_rec3D(original_data, particle_size, return_real = False, n
 		else: rdata[im].set_attr("bckgnoise", Blockdata["bckgnoise"])
 	return rdata
 ### end of downsize
+
 ###<<<--- comparison	    
 def compare_two_images_eucd(data, ref_vol, fdata):
 	global Tracker, Blockdata
@@ -2806,7 +2998,7 @@ def compare_two_images_eucd(data, ref_vol, fdata):
 #
 def compare_two_images_cross(data, ref_vol):
 	global Tracker, Blockdata
-	ny = data[0].get_ysize()
+	ny    = data[0].get_ysize()
 	peaks = len(data)*[None]
 	volft = prep_vol(ref_vol, 2, 1)
 	ctfs  = [None for im in xrange(len(data))]
@@ -2846,8 +3038,9 @@ def clusters_to_plist(clusters, pall):
 	b =  set(plist)
 	unaccounted = list(a.difference(b))
 	return [assignment, plist], qlist, unaccounted
-
-def create_nrandom_lists(partids, number_of_runs):
+	
+#####<<<<--------------------utilities of creating random assignments
+def create_nrandom_lists(partids, number_of_groups, number_of_runs):
 	# the second column denotes orignal particle IDs
 	# the first column is randomized group ID 
 	global Tracker, Blockdata
@@ -2855,20 +3048,19 @@ def create_nrandom_lists(partids, number_of_runs):
 	import random
 	from   utilities import wrap_mpi_bcast, read_text_file, write_text_file
 	if Blockdata["myid"] == Blockdata["main_node"]:
-		Tracker["random_assignment"] = []
+		random_assignment = []
 		data_list = read_text_file(partids, -1)
-		if len(data_list)==1: Tracker["sorting_data_list"]= data_list[0]
-		else: Tracker["sorting_data_list"]= data_list[1]
-		if Tracker["constants"]["seed"] == -1: random.seed()
-		else: random.seed(Tracker["constants"]["seed"])
-		group_size = len(Tracker["sorting_data_list"])//Tracker["number_of_groups"]
+		if len(data_list)==1: sorting_data_list = data_list[0]
+		else: sorting_data_list= data_list[1]
+		random.seed()
+		group_size = len(sorting_data_list)//number_of_groups
 		for index_of_random in xrange(number_of_runs):
 			particle_dict = {}
-			ll = copy.deepcopy(Tracker["sorting_data_list"])
+			ll = copy.deepcopy(sorting_data_list)
 			random.shuffle(ll)
 			group_list = []
-			for index_of_groups in xrange(Tracker["number_of_groups"]):
-				if index_of_groups != Tracker["number_of_groups"]-1:
+			for index_of_groups in xrange(number_of_groups):
+				if index_of_groups != number_of_groups-1:
 					for iparticle in ll[index_of_groups*group_size:(index_of_groups+1)*group_size]:
 						particle_dict[iparticle] = index_of_groups
 						group_list.append(index_of_groups)
@@ -2877,19 +3069,55 @@ def create_nrandom_lists(partids, number_of_runs):
 						particle_dict[iparticle] = index_of_groups
 						group_list.append(index_of_groups)
 			assignment = []
-			for im in xrange(len(Tracker["sorting_data_list"])):
-				assignment.append([particle_dict[Tracker["sorting_data_list"][im]], Tracker["sorting_data_list"][im]])
-			write_text_row(assignment, os.path.join(Tracker["directory"],"independent_index_%03d.txt"%index_of_random))
-			Tracker["random_assignment"].append(assignment)
+			for im in xrange(len(sorting_data_list)):
+				assignment.append([particle_dict[sorting_data_list[im]], sorting_data_list[im]])
+			random_assignment.append(assignment)
 			del assignment
 			del ll
 	else:
-		Tracker["sorting_data_list"] = 0
-		Tracker["random_assignment"] = 0
-	Tracker["random_assignment"] = wrap_mpi_bcast(Tracker["random_assignment"], Blockdata["main_node"])
-	Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
-	return
-	
+		random_assignment = 0
+	random_assignment = wrap_mpi_bcast(random_assignment , Blockdata["main_node"])
+	return  random_assignment
+
+def create_nrandom_lists_from_given_pids(work_dir, partids, number_of_groups, number_of_runs):
+	# the second column denotes orignal particle IDs
+	# the first column is randomized group ID 
+	global Tracker, Blockdata
+	import copy
+	import random
+	from   utilities import wrap_mpi_bcast, read_text_file, write_text_file
+	if Blockdata["myid"] == Blockdata["main_node"]:
+		random_assignment = []
+		data_list = read_text_file(partids, -1)
+		if len(data_list)==1: sorting_data_list= data_list[0]
+		else: sorting_data_list = data_list[1]
+		random.seed()
+		group_size = len(sorting_data_list)//number_of_groups
+		for index_of_random in xrange(number_of_runs):
+			particle_dict = {}
+			ll = copy.deepcopy(sorting_data_list)
+			random.shuffle(ll)
+			group_list = []
+			for index_of_groups in xrange(number_of_groups):
+				if index_of_groups != number_of_groups -1:
+					for iparticle in ll[index_of_groups*group_size:(index_of_groups+1)*group_size]:
+						particle_dict[iparticle] = index_of_groups
+						group_list.append(index_of_groups)
+				else:
+					for iparticle in ll[index_of_groups*group_size:]:
+						particle_dict[iparticle] = index_of_groups
+						group_list.append(index_of_groups)
+			assignment = []
+			for im in xrange(len(sorting_data_list)):
+				assignment.append([particle_dict[sorting_data_list[im]], sorting_data_list[im]])
+			write_text_row(assignment, os.path.join(work_dir,"independent_index_%03d.txt"%index_of_random))
+			random_assignment.append(assignment)
+			del assignment
+			del ll
+	else: random_assignment = 0
+	random_assignment = wrap_mpi_bcast(random_assignment, Blockdata["main_node"])
+	return  random_assignment
+
 def	reassign_nrandom_lists(Accounted_on_disk, Unaccounted_on_disk, nrandom_trials):
 	global Tracker, Blockdata
 	import random
@@ -2897,46 +3125,61 @@ def	reassign_nrandom_lists(Accounted_on_disk, Unaccounted_on_disk, nrandom_trial
 		ptl_dict = {}
 		accounted = read_text_file(Accounted_on_disk, -1)
 		number_of_groups = max(accounted[0]) + 1
-		try: assert(number_of_groups == Tracker["number_of_groups"])
-		except:  ERROR("number of groups in Tracker disagree with the one in accounted list", \
-		      "reassign_nrandom_lists", 1, Blockdata["myid"])
 		groups = [[] for igrp in xrange(number_of_groups)]
-		unaccounted = read_text_file(Unaccounted_on_disk, -1)
+		unaccounted = read_text_file(Unaccounted_on_disk)
 		for im in xrange(len(accounted[0])):
 			groups[accounted[0][im]].append(accounted[1][im])
 			ptl_dict[accounted[1][im]] = accounted[0][im]
 		accounted_members = sorted(accounted[1])
-		unaccounted = sorted(unaccounted[0])
+		if len(unaccounted)>1: unaccounted = sorted(unaccounted)
 		full_list = (accounted_members + unaccounted)
-		full_list.sort()	
+		full_list.sort()
 		total_stack = len(full_list)
 		group_size = total_stack//number_of_groups
 	else:
 		number_of_groups = 0
 		total_stack      = 0
+		unaccounted      = 0
+		groups           = 0
 	number_of_groups = bcast_number_to_all(number_of_groups, Blockdata["main_node"], MPI_COMM_WORLD)
-	total_stack = bcast_number_to_all(total_stack, Blockdata["main_node"], MPI_COMM_WORLD)
+	total_stack      = bcast_number_to_all(total_stack, Blockdata["main_node"], MPI_COMM_WORLD)
+	unaccounted      = wrap_mpi_bcast(unaccounted, Blockdata["main_node"], MPI_COMM_WORLD)
+	groups           = wrap_mpi_bcast(groups, Blockdata["main_node"], MPI_COMM_WORLD)
 	###-----
-	if Blockdata["myid"] == Blockdata["main_node"]:
-		assignment_list = [ None for i in xrange(nrandom_trials)]
+	if len(unaccounted)<100*Blockdata["nproc"]:
+		if Blockdata["myid"] == Blockdata["main_node"]:
+			assignment_list = []
+			for indep in xrange(nrandom_trials):
+				unaccounted_members = copy.deepcopy(unaccounted)
+				new_groups = copy.deepcopy(groups)
+				new_groups = assign_unaccounted_elements(unaccounted_members, new_groups, total_stack)
+				alist, plist = merge_classes_into_partition_list(new_groups)
+				tmp_assignment = [[],[]]
+				for im in xrange(len(plist)):
+					for jm in xrange(2):
+						tmp_assignment[jm].append(plist[im][jm])
+				assignment_list.append(tmp_assignment)
+				del unaccounted_members
+				del new_groups
+		else: assignment_list = 0
+		assignment_list = wrap_mpi_bcast(assignment_list, Blockdata["main_node"], MPI_COMM_WORLD)
+		if Blockdata["myid"] == Blockdata["main_node"]: del ptl_dict
+	else:
+		assignment_list = []
 		for indep in xrange(nrandom_trials):
-			#print("after iter %d"%indep)
 			unaccounted_members = copy.deepcopy(unaccounted)
 			new_groups = copy.deepcopy(groups)
-			for im in xrange(len(unaccounted_members)):
-				igroup = random.randrange(0, number_of_groups)	
-				new_groups[igroup].append(unaccounted_members[im])
-				ptl_dict[unaccounted_members[im]] = igroup
-			assignment = [None for iptl in xrange(len(full_list))]
-			for im in xrange(len(full_list)): assignment[im] = ptl_dict[full_list[im]]
-			assignment_list[indep] = [assignment, full_list]
-			write_text_file(assignment_list[indep], os.path.join(Tracker["directory"],"independent_index_%03d.txt"%indep))
+			new_groups = assign_unaccounted_elements_mpi(unaccounted_members, new_groups, total_stack)
+			alist, plist = merge_classes_into_partition_list(new_groups)
+			tmp_assignment = [[],[]]
+			for im in xrange(len(plist)):
+				for jm in xrange(2):
+					tmp_assignment[jm].append(plist[im][jm])
+			assignment_list.append(tmp_assignment)
 			del unaccounted_members
-	else: assignment_list = 0
-	mpi_barrier(MPI_COMM_WORLD)
-	assignment_list = wrap_mpi_bcast(assignment_list, Blockdata["main_node"], MPI_COMM_WORLD)
-	if Blockdata["myid"] == Blockdata["main_node"]: del ptl_dict
-	return
+			del new_groups
+			mpi_barrier(MPI_COMM_WORLD)
+	return assignment_list
 	
 def resize_groups_from_stable_members_mpi(Accounted_on_disk, Unaccounted_on_disk):
 	global Tracker, Blockdata
@@ -2946,24 +3189,25 @@ def resize_groups_from_stable_members_mpi(Accounted_on_disk, Unaccounted_on_disk
 		accounted  = read_text_file(Accounted_on_disk, -1)
 		number_of_groups = max(accounted[0]) + 1
 		groups = [[] for igrp in xrange(number_of_groups)]
-		unaccounted = read_text_file(Unaccounted_on_disk, -1)
+		unaccounted = read_text_file(Unaccounted_on_disk)
 		for im in xrange(len(accounted[0])):
 			groups[accounted[0][im]].append(accounted[1][im])
 			ptl_dict[accounted[1][im]] = accounted[0][im]
 		accounted_members = sorted(accounted[1])
-		unaccounted = sorted(unaccounted[0])
+		if len(unaccounted)>1:
+			unaccounted = sorted(unaccounted)
 		full_list = accounted_members + unaccounted
 		full_list = sorted(full_list)
 		total_stack = len(full_list)
-		Tracker["number_of_groups"] = number_of_groups
 		group_size = int(float(total_stack)/number_of_groups)
 	else:
 		number_of_groups = 0
 		total_stack      = 0
+		accounted_members = 0
 	number_of_groups = bcast_number_to_all(number_of_groups, Blockdata["main_node"], MPI_COMM_WORLD)
 	total_stack = bcast_number_to_all(total_stack, Blockdata["main_node"], MPI_COMM_WORLD)
-	Tracker["total_stack"] = total_stack
-	Tracker["number_of_groups"] = number_of_groups
+	accounted_members = wrap_mpi_bcast(accounted_members, Blockdata["main_node"], MPI_COMM_WORLD)
+	
 	###-----
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		assignment_list = []
@@ -2971,33 +3215,616 @@ def resize_groups_from_stable_members_mpi(Accounted_on_disk, Unaccounted_on_disk
 			print("after iter %d"%indep)
 			unaccounted_members = copy.deepcopy(unaccounted)
 			new_groups = copy.deepcopy(groups)
-			for im in xrange(len(unaccounted_members)):
-				igroup = random.randrange(0, number_of_groups)	
-				new_groups[igroup].append(unaccounted_members[im])
-				ptl_dict[unaccounted_members[im]] = igroup
-			"""
-			shuffle(unaccounted_members)
-			l1 = 0
-			while l1 <len(unaccounted_members):
-				for igrp in xrange(number_of_groups):
-					if len(new_groups[igrp])< group_size + 1:
-						new_groups[igrp].append(unaccounted_members[l1])
-						ptl_dict[unaccounted_members[l1]] = igrp
-						l1 +=1
-						print(l1, len(unaccounted_members), len(new_groups[igrp]))
-			"""
+			new_groups = assign_unaccounted_elements(unaccounted_members, new_groups, total_stack)
 			print ("unaccounted, resize", len(unaccounted_members))
 			assignment = [None for iptl in xrange(len(full_list))]
 			for im in xrange(len(full_list)): assignment[im] = ptl_dict[full_list[im]]
 			assignment_list = [assignment, full_list]
 			del unaccounted_members
-		
+
 	else: assignment_list = 0
 	mpi_barrier(MPI_COMM_WORLD)
 	assignment_list = wrap_mpi_bcast(assignment_list, Blockdata["main_node"], MPI_COMM_WORLD)
 	if Blockdata["myid"] == Blockdata["main_node"]: del ptl_dict
 	return assignment_list
-				
+
+def find_smallest_group(clusters):
+	min_size =[len(clusters[0]), [0]]
+	for ic in xrange(1, len(clusters)):
+		if len(cluster[ic]) < min_size[0]: min_size = [len(clusters[ic]), [ic]]
+		elif len(cluster[ic]) == min_size[0]: min_size[1].append(ic)
+	if len(min_size[1])>=1: shuffle(min_size[1])
+	return min_size[1][0]
+
+def assign_unaccounted_elements(glist, clusters):
+	# assign unaccounted particles by group probabilities
+	import random
+	import copy
+	ulist = copy.deepcopy(glist)
+	while len(ulist)>0:
+		shuffle(ulist)
+		im = find_smallest_group(clusters)
+		clusters[im].append(ulist[0])
+		del ulist[0]
+	del ulist
+	return clusters
+	
+def assign_unaccounted_elements_even(glist, clusters, total_data):
+	# assign unaccounted particles by group probabilities
+	import random
+	import copy
+	while len(ulist)>0:
+		im =  random.randint(0, (len(clusters)-1))
+		shuffle(ulist)
+		clusters[im].append(ulist[0])
+		del ulist[0]
+	del ulist
+	return clusters
+
+def assign_unaccounted_elements_mpi(glist, clusters, img_per_grp):
+	# assign unaccounted particles by group probabilities
+	global Tracker, Blockdata
+	import random
+	import copy
+	if Blockdata["myid"]== Blockdata["main_node"]:
+		print("refilling: assign_unaccounted_elements_mpi")
+		
+	icut = 3*img_per_grp//2
+	if Blockdata["myid"]== Blockdata["main_node"]:
+		for ic in xrange(len(clusters)):
+			if len(clusters)>(3*img_per_grp//2):
+				shuffle(clusters[ic])
+				glist +=clusters[ic][icut:]
+	else:
+		glist    = 0
+		clusters = 0
+	clusters = wrap_mpi_bcast(clusters, Blockdata["main_node"], MPI_COMM_WORLD)
+	glist = wrap_mpi_bcast(glist, Blockdata["main_node"], MPI_COMM_WORLD)
+	
+	if len(glist) <= Blockdata["nproc"]*30:
+		if Blockdata["myid"]== Blockdata["main_node"]:
+			clusters = assign_unaccounted_inverse_proportion_to_size(glist, clusters, img_per_grp)
+		else: clusters = 0
+		clusters = wrap_mpi_bcast(clusters, Blockdata["main_node"], MPI_COMM_WORLD)
+	else:
+		slist = []
+		clist = []
+		for ic in xrange(len(clusters)):
+			if len(clusters[ic])<=img_per_grp:
+				slist.append(max(1.- float(len(clusters[ic]))/float(img_per_grp), 0.05))
+			else: slist.append(0.05)
+		uplist = copy.deepcopy(glist)
+		image_start, image_end = MPI_start_end(len(uplist), Blockdata["nproc"], Blockdata["myid"])
+		uplist = uplist[image_start:image_end]
+		nsize = len(uplist)//3
+		for ichunk in xrange(3):
+			if ichunk !=2: ulist = uplist[ichunk*nsize:(ichunk+1)*nsize]
+			else: ulist = uplist[ichunk*nsize:]
+			while len(ulist)>0:
+				im =  random.randint(0, len(clusters)-1)
+				shuffle(ulist)
+				if slist[im] > random.random():
+					clusters[im].append(ulist[0])
+					if len(clusters[ic])<=img_per_grp:
+						slist[im] = max(1.- float(len(clusters[im]))/float(img_per_grp), 0.05)
+					else: slist[im] = 0.05
+					del ulist[0]
+					if len(ulist)== 0: break
+				else: continue
+			mpi_barrier(MPI_COMM_WORLD)
+			if Blockdata["myid"]!= Blockdata["main_node"]:
+				 wrap_mpi_send(clusters, Blockdata["main_node"], MPI_COMM_WORLD)
+			else:
+				for iproc in xrange(Blockdata["nproc"]):
+					if iproc != Blockdata["main_node"]:
+						dummy = wrap_mpi_recv(iproc, MPI_COMM_WORLD)
+						for ic in xrange(len(clusters)):clusters[ic]+=dummy[ic]
+			mpi_barrier(MPI_COMM_WORLD)
+			if Blockdata["myid"]== Blockdata["main_node"]:
+				for ic in  xrange(len(clusters)): 
+					clusters[ic] = list(set(clusters[ic]))
+					if len(clusters[ic])<=img_per_grp:
+						slist[ic] = max(1.- float(len(clusters[ic]))/float(img_per_grp), 0.05)
+					else: slist[ic] = 0.05
+			else:
+				slist    = 0 
+				clusters = 0
+			slist    = wrap_mpi_bcast(slist, Blockdata["main_node"], MPI_COMM_WORLD)
+			clusters = wrap_mpi_bcast(clusters, Blockdata["main_node"], MPI_COMM_WORLD)
+	return clusters
+
+def swap_elements_by_probability(clusters, unaccounted_list, total_stack, minimum_grp_size, swap_ratio, log_file):
+	global Tracker, Blockdata
+	import random
+	slist = [0.0 for ic in xrange(len(clusters))]
+	tot   = 0
+	for ic in xrange(len(clusters)):
+		slist[ic] = float(len(clusters[ic]))/float(total_stack)
+		tot +=len(clusters[ic])
+	rlist   = []
+	swapped = [[] for ic in xrange(len(clusters))]
+	if Blockdata["myid"] == Blockdata["main_node"]:
+		total_swap = int(tot*swap_ratio/100.)
+		while total_swap>0:
+			im =  random.randint(0, (len(clusters)-1))
+			if slist[im] > random.random():
+				if len(clusters[im])>= minimum_grp_size: # swap only those with large group size
+					shuffle(unaccounted_list)
+					swapped[im]+=[unaccounted_list[0]]
+					del unaccounted_list[0]
+					one_cluster = clusters[im]
+					shuffle(one_cluster)
+					rlist.append(one_cluster[0])
+					del one_cluster[0]
+					clusters[im] = one_cluster
+					slist[im] = float(len(clusters[im]))/float(total_stack)
+				total_swap -=1
+			else: continue	
+		unaccounted_list +=rlist
+		unaccounted_list.sort()
+		for ic in xrange(len(clusters)):
+			msg = " cluster ID %3d    swapped elements %6d"%(ic,len(swapped[ic]))
+			log_file.add(msg)
+			print(msg)
+			one_cluster = clusters[ic]
+			one_cluster +=swapped[ic]
+			one_cluster.sort()
+			clusters[ic] = one_cluster
+	else:
+		clusters = 0
+		unaccounted_list = 0
+		total_stack = 0
+	clusters = wrap_mpi_bcast(clusters, Blockdata["main_node"], MPI_COMM_WORLD)
+	unaccounted_list = wrap_mpi_bcast(unaccounted_list, Blockdata["main_node"], MPI_COMM_WORLD)
+	return clusters, unaccounted_list
+	
+def swap_elements_by_percentage(clusters, unaccounted_list, total_stack, swap_ratio):
+	global Tracker, Blockdata
+	import random
+	if Blockdata["myid"] == Blockdata["main_node"]:
+		tota = 0
+		for ic in xrange(len(clusters)):
+			tota +=len(clusters[ic])
+		tot = int(tota*swap_ratio/100.)
+		rlist = []
+		new_clusters  = []
+		for ic in xrange(len(clusters)):
+			one_cluster = clusters[ic]
+			shuffle(one_cluster)
+			nc = int(len(one_cluster)*swap_ratio/100.)
+			shuffle(unaccounted_list)
+			rlist +=one_cluster[0:nc]
+			del one_cluster[0:nc]
+			one_cluster +=unaccounted_list[0:nc]
+			one_cluster.sort()
+			new_clusters.append(one_cluster)
+			del unaccounted_list[0:nc]
+		clusters = copy.deepcopy(new_clusters)
+		del new_clusters
+		unaccounted_list +=rlist
+		msg = "NUACC: %d swap ratio: %f swap elements:  %d"%(len(unaccounted_list), swap_ratio, int(tot*swap_ratio))
+		log_file.add(msg)
+		print(msg)
+		### reassign ulist into alist randomly while evenly
+	else:
+		clusters = 0
+		unaccounted_list = 0
+	clusters = wrap_mpi_bcast(clusters, Blockdata["main_node"], MPI_COMM_WORLD)
+	unaccounted_list = wrap_mpi_bcast(unaccounted_list, Blockdata["main_node"], MPI_COMM_WORLD)
+	return clusters, unaccounted_list
+	
+def check_unicorn_cluster(clusters, minimum_grp_size):
+	is_unicorn_cluster = 0
+	nc  = 0
+	tot = 0
+	for ic in xrange(len(clusters)):
+		tot += len(clusters[ic])
+		if len(clusters[ic]) < minimum_grp_size + len(clusters): nc +=1
+	if tot//minimum_grp_size>2*len(clusters) and nc+1==len(clusters):is_unicorn_cluster =1
+	return is_unicorn_cluster
+
+def refilling_global_scheme_mpi(clusters, unaccounted_list, number_of_clusters, log_file, swap_ratio):
+	global Tracker, Blockdata
+	if Blockdata["myid"] == Blockdata["main_node"]: 
+		print("refilling_global_scheme_mpi")
+	m     = 0
+	NACC  = 0
+	NUACC = len(unaccounted_list)
+	for cluster in clusters: NACC += len(cluster)	
+	swap_ratio /=100.
+	N  = NUACC + NACC
+	m = number_of_clusters - len(clusters)
+	if Blockdata["myid"] == Blockdata["main_node"]:
+		msg = "NACC %d NUACC %d  K %d m %d  number_of_clusters %d"%(NACC, NUACC, (len(clusters)), m, number_of_clusters)
+		log_file.add(msg)
+		print(msg)
+	# shake
+	if swap_ratio > 0.0:
+		if Blockdata["myid"] == Blockdata["main_node"]:
+			if int(swap_ratio*NACC) > NUACC:
+				msg = "shake_clusters_small_NUACC"
+				log_file.add(msg)
+				unaccounted_list, clusters = shake_clusters_small_NUACC(\
+						 unaccounted_list, clusters, swap_ratio)
+			else:
+				msg = "shake_clusters_large_NUACC"
+				log_file.add(msg)
+				unaccounted_list, clusters = shake_clusters_large_NUACC(\
+						 unaccounted_list, clusters, swap_ratio)
+		else:
+			unaccounted_list = 0
+			clusters         = 0
+		clusters = wrap_mpi_bcast(clusters, Blockdata["main_node"], MPI_COMM_WORLD)
+		unaccounted_list = wrap_mpi_bcast(unaccounted_list, Blockdata["main_node"], MPI_COMM_WORLD)
+	
+	avg_size = N//number_of_clusters
+	m = number_of_clusters - len(clusters)
+	if Blockdata["myid"] == Blockdata["main_node"]:
+		large_clusters = []
+		for ic in xrange(len(clusters)):
+			if len(clusters[ic]) > 2*avg_size:
+				large_clusters.append(clusters[ic])
+	else: large_clusters = 0
+	large_clusters = wrap_mpi_bcast(large_clusters, Blockdata["main_node"], MPI_COMM_WORLD)
+	L = len(large_clusters)
+	
+	if m == 0 and L == 0:
+		if Blockdata["myid"] == Blockdata["main_node"]:
+			print("m %d  L %d"%(m, L))
+			msg ="assign_unaccounted_elements_mpi"
+			log_file.add(msg)
+		out_clusters = assign_unaccounted_elements_mpi(unaccounted_list, clusters, avg_size)
+	else:
+		if m !=0: empty_clusters =[[] for ie in xrange(m)]
+		else: empty_clusters = []
+		msg ="fill_no_large_groups_and_unaccounted_to_m_and_rcluster_mpi"
+		if Blockdata["myid"] == Blockdata["main_node"]:log_file.add(msg)
+		out_clusters = fill_no_large_groups_and_unaccounted_to_m_and_rcluster_mpi(\
+				 unaccounted_list, empty_clusters, clusters, NUACC, NACC)
+	for i in xrange(len(out_clusters)): out_clusters[i].sort()
+	return out_clusters
+
+def select_fixed_size_cluster_from_alist(ulist, img_per_grp):
+	cluster = []
+	shuffle(ulist)
+	cluster += ulist[0:img_per_grp]
+	del ulist[0:img_per_grp]
+	return cluster, ulist
+
+def shake_clusters_small_NUACC(glist, clusters, shake_ratio):
+	slist = [None for i in xrange(len(clusters))]
+	temp_list = []
+	for ic in xrange(len(clusters)):
+		slist[ic] = int(shake_ratio*len(clusters[ic]))
+		#print("ZZZZ   %d"%slist[ic])
+		shuffle(clusters[ic])
+		temp_list +=clusters[ic][0:slist[ic]]
+		del clusters[ic][0:slist[ic]]
+	temp_list +=glist
+	for ic in xrange(len(clusters)):
+		shuffle(temp_list)
+		clusters[ic] +=temp_list[0:slist[ic]]
+		del temp_list[0:slist[ic]]
+	return temp_list, clusters
+		
+def shake_clusters_large_NUACC(glist, clusters, shake_ratio):
+	import copy
+	slist = [None for i in xrange(len(clusters))]
+	temp_list = []
+	ulist = copy.deepcopy(glist)
+	for ic in xrange(len(clusters)):
+		print("cluster ID %d  size %d"%(ic, len(clusters[ic])))
+		slist[ic] = int(shake_ratio*len(clusters[ic]))
+		shuffle(clusters[ic])
+		temp_list +=clusters[ic][0:slist[ic]]
+		del clusters[ic][0:slist[ic]]
+	for ic in xrange(len(clusters)):
+		shuffle(ulist)
+		clusters[ic] +=ulist[0:slist[ic]]
+		del ulist[0:slist[ic]]
+	ulist +=temp_list
+	shuffle(ulist)
+	return ulist, clusters
+
+def even_assignment_alist_to_mclusters(glist, number_of_groups):
+	# evenly assign glist to clusters
+	import copy
+	if number_of_groups >0:
+		clusters = [[] for i in xrange(number_of_groups)]
+		ulist = copy.deepcopy(glist)
+		nc = 0
+		while len(ulist)>0:
+			im =  nc%number_of_groups
+			shuffle(ulist)
+			clusters[im].append(ulist[0])
+			del ulist[0]
+			nc +=1
+		return clusters
+	else: return []
+	
+def fill_large_groups_and_unaccounted_to_m_and_rclusters(\
+        large_groups, unaccounted_list, empty_clusters, other_clusters, NUACC, NACC):
+	clusters = []
+	L = len(large_groups)
+	m = len(empty_clusters)
+	r = len(other_clusters)
+	N =  NUACC + NACC
+	number_of_groups = L + m + r
+	avg_size   =  N//number_of_groups
+	mlist      = [0 for i in xrange(L)]
+	NACC_large = 0
+	for ic in xrange(L): NACC_large += len(large_groups[ic])
+	if m > 0:
+		if len(unaccounted_list)//avg_size -1 > 0:
+			J = len(unaccounted_list)//avg_size -1
+			#print(" J %d K %d"%(J, number_of_groups))
+			for ij in xrange(J):
+				ucluster, unaccounted_list= select_fixed_size_cluster_from_alist(unaccounted_list, avg_size)
+				clusters.append(ucluster)
+			for il in xrange(L): mlist[il] = int(len(large_groups[il])/float(NACC_large)*(m-J))+1
+			nacc_large_clusters = []
+			for il in xrange(L):
+				mclusters = even_assignment_alist_to_mclusters(large_groups[il], mlist[il])
+				if len(mclusters)>0:
+					for mcluster in mclusters: nacc_large_clusters.append(mcluster)
+				del mclusters
+			for il in xrange(len(nacc_large_clusters)):
+				if len(nacc_large_clusters[il])< avg_size:
+					other_clusters.append(nacc_large_clusters[il])
+				else:
+					shuffle(nacc_large_clusters[il])
+					clusters.append(nacc_large_clusters[il][0:avg_size])
+					for ir in xrange(len(nacc_large_clusters[il][avg_size:])):
+						ucluster.append(nacc_large_clusters[il][ir])
+			other_clusters = assign_unaccounted_inverse_proportion_to_size(ucluster, other_clusters, avg_size)
+			for cluster in other_clusters: clusters.append(cluster)
+		else:
+			nacc_large_clusters = []
+			ucluster            = []
+			for il in xrange(L):
+				mlist[il] = int(len(large_groups[il])/float(NACC_large)*m + 0.5)+1
+			for il in xrange(L):
+				mclusters = even_assignment_alist_to_mclusters(large_groups[il], mlist[il])
+				if len(mclusters) > 0:
+					for mcluster in mclusters: nacc_large_clusters.append(mcluster)
+				del mclusters
+			for il in xrange(len(nacc_large_clusters)):
+				if len(nacc_large_clusters[il])< avg_size:
+					other_clusters.append(nacc_large_clusters[il])
+				else:
+					shuffle(nacc_large_clusters[il])
+					clusters.append(nacc_large_clusters[il][0:avg_size])
+					for ir in xrange(len(nacc_large_clusters[il][avg_size:])):
+						ucluster.append(nacc_large_clusters[il][ir])
+			#print("UCLUSTER", len(ucluster), len(unaccounted_list), len(other_clusters))
+			ucluster += unaccounted_list
+			other_clusters = assign_unaccounted_inverse_proportion_to_size(ucluster, other_clusters, avg_size)
+			for cluster in other_clusters: clusters.append(cluster)
+	else:
+		for il in xrange(L):
+			cluster, ulist = select_fixed_size_cluster_from_alist(ulist, avg_size)
+			clusters.append(cluster)
+			unaccounted_list +=ulist
+		other_clusters = assign_unaccounted_inverse_proportion_to_size(unaccounted_list, other_clusters, avg_size)
+		for cluster in other_clusters: clusters.append(cluster)
+	return clusters
+
+def fill_large_groups_and_unaccounted_to_m_and_rclusters_mpi(\
+        large_groups, unaccounted_list, empty_clusters, other_clusters, NUACC, NACC):
+	global Tracker, Blockdata
+	if Blockdata["myid"] == Blockdata["main_node"]:
+		print("refilling: fill_large_groups_and_unaccounted_to_m_and_rclusters_mpi")
+	clusters = []
+	L = len(large_groups)
+	m = len(empty_clusters)
+	r = len(other_clusters)
+	N =  NUACC + NACC
+	number_of_groups = L + m + r
+	avg_size   =  N//number_of_groups
+	mlist      = [0 for i in xrange(L)]
+	NACC_large = 0
+	for ic in xrange(L): NACC_large += len(large_groups[ic])
+	if m > 0:
+		if len(unaccounted_list)//avg_size -1 > 0:
+			J = len(unaccounted_list)//avg_size -1
+			if Blockdata["myid"] == Blockdata["main_node"]:
+				#print(" J %d K %d"%(J, number_of_groups))
+				for ij in xrange(J):
+					ucluster, unaccounted_list= select_fixed_size_cluster_from_alist(unaccounted_list, avg_size)
+					clusters.append(ucluster)
+			else: 
+				clusters = 0
+				unaccounted_list = 0
+			clusters = wrap_mpi_bcast(clusters, Blockdata["main_node"], MPI_COMM_WORLD)
+			unaccounted_list = wrap_mpi_bcast(unaccounted_list, Blockdata["main_node"], MPI_COMM_WORLD)
+			for il in xrange(L): mlist[il] = int(len(large_groups[il])/float(NACC_large)*(m-J))+1
+			nacc_large_clusters = []
+			if Blockdata["myid"] == Blockdata["main_node"]:
+				for il in xrange(L):
+					mclusters = even_assignment_alist_to_mclusters(large_groups[il], mlist[il])
+					if len(mclusters)>0:
+						for mcluster in mclusters: nacc_large_clusters.append(mcluster)
+					del mclusters
+			else: mclusters = 0
+			nacc_large_clusters = wrap_mpi_bcast(nacc_large_clusters, Blockdata["main_node"], MPI_COMM_WORLD)
+			if Blockdata["myid"] == Blockdata["main_node"]:
+				for il in xrange(len(nacc_large_clusters)):
+					if len(nacc_large_clusters[il])< avg_size:
+						other_clusters.append(nacc_large_clusters[il])
+					else:
+						shuffle(nacc_large_clusters[il])
+						clusters.append(nacc_large_clusters[il][0:avg_size])
+						for ir in xrange(len(nacc_large_clusters[il][avg_size:])):
+							ucluster.append(nacc_large_clusters[il][ir])
+			else: 
+				ucluster = 0
+				clusters = 0
+				other_clusters = 0
+			clusters       = wrap_mpi_bcast(clusters, Blockdata["main_node"], MPI_COMM_WORLD)
+			ucluster       = wrap_mpi_bcast(ucluster, Blockdata["main_node"], MPI_COMM_WORLD)
+			other_clusters = wrap_mpi_bcast(other_clusters, Blockdata["main_node"], MPI_COMM_WORLD)
+			other_clusters = assign_unaccounted_elements_mpi(ucluster, other_clusters, avg_size)
+			for cluster in other_clusters: clusters.append(cluster)
+		else:
+			nacc_large_clusters = []
+			ucluster            = []
+			for il in xrange(L):
+				mlist[il] = int(len(large_groups[il])/float(NACC_large)*m + 0.5)+1
+			if Blockdata["myid"] == Blockdata["main_node"]:
+				for il in xrange(L):
+					mclusters = even_assignment_alist_to_mclusters(large_groups[il], mlist[il])
+					if len(mclusters) > 0:
+						for mcluster in mclusters: nacc_large_clusters.append(mcluster)
+					del mclusters
+			else: nacc_large_clusters = 0
+			nacc_large_clusters = wrap_mpi_bcast(nacc_large_clusters, Blockdata["main_node"], MPI_COMM_WORLD)
+			if Blockdata["myid"] == Blockdata["main_node"]:
+				for il in xrange(len(nacc_large_clusters)):
+					if len(nacc_large_clusters[il])< avg_size:
+						other_clusters.append(nacc_large_clusters[il])
+					else:
+						shuffle(nacc_large_clusters[il])
+						clusters.append(nacc_large_clusters[il][0:avg_size])
+						for ir in xrange(len(nacc_large_clusters[il][avg_size:])):
+							ucluster.append(nacc_large_clusters[il][ir])
+				#print("UCLUSTER", len(ucluster), len(unaccounted_list), len(other_clusters))
+				ucluster += unaccounted_list
+			else:
+				ucluster       = 0
+				other_clusters = 0
+				clusters       = 0
+			other_clusters = wrap_mpi_bcast(other_clusters, Blockdata["main_node"], MPI_COMM_WORLD)	
+			ucluster = wrap_mpi_bcast(ucluster, Blockdata["main_node"], MPI_COMM_WORLD)
+			clusters = wrap_mpi_bcast(clusters, Blockdata["main_node"], MPI_COMM_WORLD)	
+			other_clusters = assign_unaccounted_elements_mpi(ucluster, other_clusters, avg_size)
+			for cluster in other_clusters: clusters.append(cluster)
+	else:
+		if Blockdata["myid"] == Blockdata["main_node"]:
+			for il in xrange(L):
+				cluster, ulist = select_fixed_size_cluster_from_alist(large_groups, avg_size)
+				clusters.append(cluster)
+				unaccounted_list +=ulist
+		else:
+			unaccounted_list = 0
+			clusters   = 0
+		unaccounted_list = wrap_mpi_bcast(unaccounted_list, Blockdata["main_node"], MPI_COMM_WORLD)
+		clusters = wrap_mpi_bcast(clusters, Blockdata["main_node"], MPI_COMM_WORLD)
+		other_clusters = assign_unaccounted_elements_mpi(unaccounted_list, other_clusters, avg_size)
+		for cluster in other_clusters: clusters.append(cluster)
+	return clusters
+
+def fill_no_large_groups_and_unaccounted_to_m_and_rcluster_mpi(\
+		unaccounted_list, empty_clusters, clusters, NUACC, NACC):
+	global Tracker, Blockdata
+	if Blockdata["myid"] == Blockdata["main_node"]:
+		print("refilling: fill_no_large_groups_and_unaccounted_to_m_and_rcluster_mpi")
+		
+	N = NUACC + NACC
+	m = len(empty_clusters)
+	number_of_groups = m + len(clusters)
+	avg_size = N//number_of_groups
+	if m*avg_size < NUACC - avg_size:
+		if Blockdata["myid"] == Blockdata["main_node"]:
+			for ic in xrange(len(clusters)):
+				shuffle(clusters[ic])
+				if len(clusters[ic])> avg_size:
+					unaccounted_list +=clusters[ic][avg_size:]
+					del clusters[ic][avg_size:]
+			shuffle(unaccounted_list)
+			print("fill_no_large_groups_and_unaccounted_to_m_and_rcluster")
+			print("NUACC %d NACC %d  m %d  avg_size %d  K %d"%(NUACC, NACC, m, avg_size, number_of_groups))
+		else: unaccounted_list = 0
+		unaccounted_list = wrap_mpi_bcast(unaccounted_list, Blockdata["main_node"], MPI_COMM_WORLD)
+		clusters     = wrap_mpi_bcast(clusters, Blockdata["main_node"], MPI_COMM_WORLD)
+		tmp_clusters = []
+		if m > 0:
+			if Blockdata["myid"] == Blockdata["main_node"]:
+				print("refill groups from unaccounted elements")
+				for im in xrange(m):
+					cluster, unaccounted_list = select_fixed_size_cluster_from_alist(unaccounted_list, avg_size//2)
+					tmp_clusters.append(cluster)
+			else: tmp_clusters = 0
+			tmp_clusters     = wrap_mpi_bcast(tmp_clusters, Blockdata["main_node"], MPI_COMM_WORLD)
+			unaccounted_list = wrap_mpi_bcast(unaccounted_list, Blockdata["main_node"], MPI_COMM_WORLD)	 
+		if len(tmp_clusters)>0:
+			for cluster in tmp_clusters: clusters.append(cluster)
+		clusters = assign_unaccounted_elements_mpi(unaccounted_list, clusters, avg_size)
+		del unaccounted_list
+	else:
+		for a in empty_clusters: clusters.append(a)
+		clusters = assign_unaccounted_elements_mpi(unaccounted_list, clusters, avg_size)
+		del unaccounted_list
+	return clusters
+
+def assign_unaccounted_inverse_proportion_to_size(glist, clusters, img_per_grp):
+	# assign unaccounted particles by group probabilities, single processor version
+	import random
+	import copy
+	ulist = copy.deepcopy(glist)
+	number_of_groups = len(clusters)
+	slist = []
+	#print("unaccounted  %d  K %d  avg_size %d"%(len(glist), len(clusters), img_per_grp)) 
+	for ic in xrange(len(clusters)):
+		if len(clusters[ic])<=img_per_grp:
+			slist.append(max(1.- float(len(clusters[ic]))/float(img_per_grp), 0.05))
+		else: slist.append(0.05)
+	nc = 0
+	#print(slist)
+	while len(ulist)>0:
+		im = random.randint(0, number_of_groups - 1)
+		shuffle(ulist)
+		r = random.uniform(0.0, 1.0)
+		if r<slist[im]:
+			clusters[im].append(ulist[0])
+			if len(clusters[im])<=img_per_grp:
+				slist[im] = max(1.- float(len(clusters[im])/float(img_per_grp)), 0.05)
+			else: slist[im] = 0.05
+			del ulist[0]
+			if len(ulist)==0: break
+		else: continue
+	print(slist)	
+	del ulist
+	return clusters
+
+def swap_accounted_with_unaccounted_elements_mpi(accounted_file, unaccounted_file, log_file, number_of_groups, swap_ratio):
+	global Tracker, Blockdata
+	import random
+	import copy
+	checking_flag = 0
+	
+	if Blockdata["myid"] == Blockdata["main_node"]:
+		p1 = read_text_row(accounted_file)
+		if len(p1) <= 1: checking_flag = 1
+	checking_flag = bcast_number_to_all(checking_flag, Blockdata["main_node"], MPI_COMM_WORLD)
+	
+	if checking_flag == 0:
+		tot = 0
+		if Blockdata["myid"] == Blockdata["main_node"]:
+			p1 = read_text_row(accounted_file)
+			clusters, npart  = split_partition_into_ordered_clusters(p1)
+			unaccounted_list = read_text_file(unaccounted_file)
+			total_stack = len(unaccounted_list)
+			for any in clusters: total_stack +=len(any)
+		else: 
+			clusters = 0
+			unaccounted_list = 0
+			total_stack      = 0	
+		clusters          = wrap_mpi_bcast(clusters, Blockdata["main_node"],         MPI_COMM_WORLD)
+		total_stack       = bcast_number_to_all(total_stack, Blockdata["main_node"], MPI_COMM_WORLD)
+		unaccounted_list  = wrap_mpi_bcast(unaccounted_list, Blockdata["main_node"], MPI_COMM_WORLD)
+		clusters = refilling_global_scheme_mpi(clusters, unaccounted_list, number_of_groups, log_file, swap_ratio)
+	
+		if Blockdata["myid"] == Blockdata["main_node"]:
+			dlist, assignment_list    = merge_classes_into_partition_list(clusters)
+			converted_assignment_list = [[],[]]
+			for im in xrange(len(assignment_list)):
+				for jm in xrange(2): 
+					converted_assignment_list[jm].append(assignment_list[im][jm])
+		else: converted_assignment_list = 0
+		converted_assignment_list = wrap_mpi_bcast(converted_assignment_list, Blockdata["main_node"], MPI_COMM_WORLD)
+	else: assignment_list = create_nrandom_lists(unaccounted_file, number_of_groups, 1)
+	return converted_assignment_list
+		
 def patch_to_do_k_means_match_clusters_asg_new(ptp1, ptp2):
 	from statistics import k_means_match_clusters_asg_new
 	# patch ad hoc elements to make equal number of classes for two partitions and thus two_way comparison becomes feasible
@@ -3035,76 +3862,96 @@ def patch_to_do_k_means_match_clusters_asg_new(ptp1, ptp2):
 			ptp1[i] = array(ptp1[i],"int32")
 			ptp2[i] = array(ptp2[i],"int32")
 	newindeces, list_stable, nb_tot_objs = k_means_match_clusters_asg_new(ptp1, ptp2)
-	return newindeces, list_stable, nb_tot_objs, patch_elements
+	new_list_stable = []
+	for a in list_stable:
+		a.tolist()
+		if len(a)>0: new_list_stable.append(a) # remove empty ones
+	return newindeces, new_list_stable, nb_tot_objs, patch_elements
 	
-def do_multiple_two_way_comparisons(partition_dir, num_of_runs, log_main):
-	num_of_pairs = num_of_runs//2
-	min_list =[ None for i in xrange(num_of_pairs)]
-	max_list =[ None for i in xrange(num_of_pairs)]
-	for ipair in xrange(num_of_pairs):
-		group_dict = {}
-		line  = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		core1 = read_text_row(os.path.join(partition_dir, "partition_%03d.txt"%(2*ipair)))
-		total_stack = len(core1)
-		full_list   = []
-		for a in core1: full_list.append(a[1])
-		total_stack = len(full_list)
-		ptp1, tmp1 = split_partition_into_ordered_clusters(core1)
-		core2 = read_text_row(os.path.join(partition_dir, "partition_%03d.txt"%(2*ipair+1)))
-		ptp2, tmp2 = split_partition_into_ordered_clusters(core2)
-		minimum_group_size = total_stack
-		maximum_group_size = 0
-		newindeces, list_stable, nb_tot_objs, patch_elements = patch_to_do_k_means_match_clusters_asg_new(ptp1, ptp2)
-		ratio_unaccounted  = 100.- nb_tot_objs/float(total_stack)*100.
-		ratio_accounted    = nb_tot_objs/float(total_stack)*100.
-		new_list           = []
-		nclass = 0
-		msg ="comparison between P%d  and P%d  percentage of accounted:  %f "%(2*ipair, 2*ipair+1, ratio_accounted)
-		log_main.add(msg)
-		print(line, msg)
-		for index_of_any in xrange(len(list_stable)):
-			any = list_stable[index_of_any]
-			any.tolist()
-			for anyone in any: group_dict[anyone] = index_of_any
-			score1 = float(len(any))*100./float(len(ptp1[newindeces[index_of_any][0]]))
-			score2 = float(len(any))*100./float(len(ptp2[newindeces[index_of_any][1]]))
+def do_boxes_two_way_comparison(nbox, input_box_parti1, input_box_parti2, log_main):
+	global Tracker, Blockdata
+	## used by single node only
+	ipair = 0
+	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	core1 = read_text_row(input_box_parti1)
+	ptp1, tmp1 = split_partition_into_ordered_clusters( core1)
+	core2 = read_text_row(input_box_parti2)
+	ptp2, tmp2 = split_partition_into_ordered_clusters( core2)
+	
+	try: assert(len(core1) ==len(core2))
+	except: ERROR("two partitions have non-equal length", "do_boxes_two_way_comparison", 1, 0)
+	full_list  = []
+	for a in core1: full_list.append(a[1])
+	full_list.sort()
+	total_data = len(full_list)
+	minimum_group_size = total_data
+	maximum_group_size = 0
+	newindeces, list_stable, nb_tot_objs, patch_elements = patch_to_do_k_means_match_clusters_asg_new(ptp1, ptp2)
+	ratio_unaccounted  = 100. - nb_tot_objs/float(total_data)*100.
+	ratio_accounted    = nb_tot_objs/float(total_data)*100.
+	new_list           = []
+	msg ="box%d   box%d  percentage accounted:  %f "%(nbox, nbox+1, ratio_accounted)
+	Tracker["current_iter_ratio"] = ratio_accounted
+	log_main.add(msg)
+	print(line, msg)
+	score_list = [ ]
+	current_random_group_size = len(core1)//len(list_stable)**2
+	nclass = 0
+	msg    = "group number   group size   ratio of trial1   ratio of trial2 "
+	print(msg)
+	log_main.add(msg)
+	for index_of_any in xrange(len(list_stable)):
+		any = list_stable[index_of_any]
+		any.tolist()
+		any.sort()
+		score1 = float(len(any))*100./float(len(ptp1[newindeces[index_of_any][0]]))
+		score2 = float(len(any))*100./float(len(ptp2[newindeces[index_of_any][1]]))
+		if len(any) >= Tracker["constants"]["minimum_grp_size"]:
+			score_list.append([score1, score2])
 			minimum_group_size = min(minimum_group_size, len(any))
 			maximum_group_size = max(maximum_group_size, len(any))
 			new_list.append(any)
 			nclass +=1
-			msg ="Group number: %d   size: %d   score1: %f score2: %f"%(nclass, len(any), score1, score2)
+			msg ="   %3d     %8d    %6.3f    %6.3f"%(nclass, len(any), score1, score2)
 			log_main.add(msg)
 			print(line, msg)
+		else:
+			msg ="group %d with size %d is rejected and sent back into unaccounted ones"%(index_of_any, len(any))
+			log_main.add(msg)
+			print(line, msg)
+	if nclass == 0:
+		msg = "No cluster is found due to improper input parameters, and keep the old clusters"
+		print(msg)
+		accounted_list, new_index = merge_classes_into_partition_list(list_stable)
+		a = set(full_list)
+		b = set(accounted_list)
+		unaccounted_list = sorted(list(a.difference(b)))
+		return minimum_group_size, maximum_group_size, new_index, unaccounted_list
+	else:
 		accounted_list, new_index = merge_classes_into_partition_list(new_list)
 		a = set(full_list)
 		b = set(accounted_list)
-		if len(list(a.difference(b)))>Tracker["number_of_groups"]*2: unaccounted_list = sorted(list(a.difference(b)))
-		else:
-			unaccounted_list = list(a.difference(b))
-			Tracker["terminate"] = True
-		write_text_row(new_index, os.path.join(partition_dir, "Accounted_%03d.txt"%ipair))
-		write_text_file(unaccounted_list, os.path.join(partition_dir, "Unaccounted_%03d.txt"%ipair))
-		min_list[ipair] = minimum_group_size
-		max_list[ipair] = maximum_group_size
-	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-	avg_min_size = sum(min_list)//num_of_pairs
-	avg_max_size = sum(max_list)//num_of_pairs
-	msg ="current smallest group size: %d largest group size: %d"%(avg_min_size, avg_max_size)
-	print(line, msg)
+		unaccounted_list = sorted(list(a.difference(b)))
+		msg ="minimum group size: %d maximum group size: %d"%(minimum_group_size, maximum_group_size)
+		print(line, msg)
+		log_main.add(msg)
+		return minimum_group_size, maximum_group_size, new_index, unaccounted_list
+		
+def do_two_way_comparison_keep_all(partition_dir, log_main):
+	global Tracker, Blockdata
+	## for single node only
+	msg ="+++++++++>>>do_two_way_comparison_keep_all<<<+++++++++++"
+	print(msg)
 	log_main.add(msg)
-	return avg_min_size, avg_max_size
-
-def do_final_two_way_comparison(partition_dir, log_main):
 	ipair = 0
-	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	line  = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	core1 = read_text_row(os.path.join(partition_dir, "partition_%03d.txt"%(2*ipair)))
 	ptp1, tmp1 = split_partition_into_ordered_clusters( core1)
 	core2 = read_text_row(os.path.join(partition_dir, "partition_%03d.txt"%(2*ipair+1)))
 	ptp2, tmp2 = split_partition_into_ordered_clusters( core2)
-	try: 
-		assert(len(core1) ==len(core2))
-		current_random_group_size = len(core1)//Tracker["number_of_groups"]**2
-	except: ERROR("two partitions have unequal size", "do_final_two_way_comparison", 1, 0)
+	
+	try: assert(len(core1) ==len(core2))
+	except: ERROR("two partitions have non-equal length", "do_two_way_comparison_keep_all", 1, 0)
 	full_list  = []
 	for a in core1: full_list.append(a[1])
 	full_list.sort()
@@ -3114,48 +3961,50 @@ def do_final_two_way_comparison(partition_dir, log_main):
 	newindeces, list_stable, nb_tot_objs, patch_elements = patch_to_do_k_means_match_clusters_asg_new(ptp1, ptp2)
 	ratio_unaccounted  = 100.-nb_tot_objs/float(total_data)*100.
 	ratio_accounted    = nb_tot_objs/float(total_data)*100.
-	new_list           = []
-	nclass = 0
-	msg ="P%d   P%d  percentage accounted:  %f "%(2*ipair, 2*ipair+1, ratio_accounted)
+	msg ="P%d   P%d  percentage accounted:  %6.3f "%(2*ipair, 2*ipair+1, ratio_accounted)
 	Tracker["current_iter_ratio"] = ratio_accounted
 	log_main.add(msg)
 	print(line, msg)
-	score_list = [None for i in xrange(len(list_stable))]
+	score_list = [ ]
+	nclass     = 0
+	msg = "status   ID  Group size  MGR size     ratio of trial1   ratio of trial2 "
+	print(msg)
+	log_main.add(msg)
+	current_MGR = get_MGR_from_two_way_comparison(newindeces, ptp1, ptp2, total_data)
+	stable_clusters   = []
+	selected_clusters = []
+	
 	for index_of_any in xrange(len(list_stable)):
 		any = list_stable[index_of_any]
 		any.tolist()
 		any.sort()
 		score1 = float(len(any))*100./float(len(ptp1[newindeces[index_of_any][0]]))
 		score2 = float(len(any))*100./float(len(ptp2[newindeces[index_of_any][1]]))
-		score_list[index_of_any] = [score1, score2]
-		minimum_group_size = min(minimum_group_size, len(any))
-		maximum_group_size = max(maximum_group_size, len(any))
-		new_list.append(any)
-		nclass +=1
-		msg ="Group number: %d   size: %d   score1: %f score2: %f"%(nclass, len(any), score1, score2)
-		log_main.add(msg)
-		print(line, msg)
-		"""
-		if len(any) >= current_random_group_size:
+		if len(any) > current_MGR[index_of_any]:
+			score_list.append([score1, score2])
 			minimum_group_size = min(minimum_group_size, len(any))
 			maximum_group_size = max(maximum_group_size, len(any))
-			new_list.append(any)
 			nclass +=1
-			msg ="Group number: %d   size: %d   score1: %f score2: %f"%(nclass, len(any), score1, score2)
+			msg ="accepted   %3d     %8d    %8d   %6.3f    %6.3f"%(index_of_any, len(any), current_MGR[index_of_any], score1, score2)
 			log_main.add(msg)
+			selected_clusters.append(any)
 			print(line, msg)
-		"""
-	accounted_list, new_index = merge_classes_into_partition_list(new_list)
+		else:
+			msg ="rejected   %3d     %8d   %8d   %6.3f    %6.3f"%(index_of_any, len(any), current_MGR[index_of_any], score1, score2)
+			log_main.add(msg)
+			
+	accounted_list, new_index = merge_classes_into_partition_list(selected_clusters)
 	a = set(full_list)
 	b = set(accounted_list)
 	unaccounted_list = sorted(list(a.difference(b)))
-	write_text_row(new_index, os.path.join(partition_dir, "Accounted_%03d.txt"%ipair))
-	write_text_file(unaccounted_list, os.path.join(partition_dir, "Unaccounted_%03d.txt"%ipair))
+	write_text_row(new_index, os.path.join(partition_dir, "Accounted.txt"))
+	write_text_file(unaccounted_list, os.path.join(partition_dir, "Unaccounted.txt"))
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	msg ="minimum group size: %d maximum group size: %d"%(minimum_group_size, maximum_group_size)
 	print(line, msg)
 	log_main.add(msg)
-	return minimum_group_size, maximum_group_size, newindeces, list_stable, score_list
+	minimum_group_size = sum(current_MGR)//len(current_MGR)
+	return minimum_group_size, maximum_group_size, selected_clusters, unaccounted_list, ratio_accounted, len(list_stable)
 
 #####	
 def split_partition_into_clusters(sorting_res):
@@ -3181,8 +4030,8 @@ def split_partition_into_clusters(sorting_res):
 def split_partition_into_ordered_clusters(partition):
 	# split groupids from indexes of particles
 	# reindex groups
-	clusters          = []
-	cluster_id        = []
+	clusters   = []
+	cluster_id = []
 	for im in xrange(len(partition)):
 		if  partition[im][0] not in cluster_id:cluster_id.append(partition[im][0])
 	####
@@ -3240,13 +4089,17 @@ def merge_classes_into_partition_list(classes_list):
 	group_dict = {}
 	data_list  = []
 	new_index  = []
-	for index_of_class in xrange(len(classes_list)):
-		for index_of_particle in xrange(len(classes_list[index_of_class])):
-			data_list.append(classes_list[index_of_class][index_of_particle])
-			group_dict[classes_list[index_of_class][index_of_particle]] = index_of_class
-	data_list = sorted(data_list)
-	for index_of_particle in xrange(len(data_list)):new_index.append([group_dict[data_list[index_of_particle]], data_list[index_of_particle]])
-	del group_dict
+	if len(classes_list)>0:
+		for index_of_class in xrange(len(classes_list)):
+			for index_of_particle in xrange(len(classes_list[index_of_class])):
+				data_list.append(classes_list[index_of_class][index_of_particle])
+				group_dict[classes_list[index_of_class][index_of_particle]] = index_of_class
+		data_list = sorted(data_list)
+		for index_of_particle in xrange(len(data_list)):new_index.append([group_dict[data_list[index_of_particle]], data_list[index_of_particle]])
+		del group_dict
+	else:
+		data_list = []
+		new_index = [[]]
 	return data_list, new_index
 
 def adjust_fsc_to_full_data_set(fsc_to_be_adjusted, n1, n):
@@ -3344,6 +4197,7 @@ def update_data_partition(cdata, rdata, partids):
 		groupids   = 0
 	lpartids = wrap_mpi_bcast(lpartids, Blockdata["main_node"])
 	groupids = wrap_mpi_bcast(groupids, Blockdata["main_node"])
+	
 	assignment = copy.copy(groupids)
 	try: assert(Tracker["total_stack"] == len(groupids))
 	except: ERROR("total stack in Tracker does not agree with the one is just read in", "update_data_partition", 1, Blockdata["myid"])
@@ -3388,8 +4242,9 @@ def find_neighborhood(refa_vecs, minor_groups):
 def reassign_ptls_in_orien_groups(assigned_ptls_in_groups, matched_pairs):
 	tmplist = []
 	for iorien in xrange(len(matched_pairs)):
-		assigned_ptls_in_groups[matched_pairs[iorien][1]] +=assigned_ptls_in_groups[matched_pairs[iorien][0]]
-		tmplist.append(matched_pairs[iorien][0])
+		if matched_pairs[iorien][1] !=None and matched_pairs[iorien][0]!= None:
+			assigned_ptls_in_groups[matched_pairs[iorien][1]] +=assigned_ptls_in_groups[matched_pairs[iorien][0]]
+			tmplist.append(matched_pairs[iorien][0])
 	reassignment = []
 	for iorien in xrange(len(assigned_ptls_in_groups)):
 		if iorien not in tmplist: reassignment.append(sorted(assigned_ptls_in_groups[iorien]))
@@ -3415,18 +4270,26 @@ def get_orien_assignment_mpi(angle_step, partids, params, log_main):
 	from utilities    import even_angles, wrap_mpi_recv, wrap_mpi_bcast, wrap_mpi_send, read_text_row, read_text_file, getvec
 	sym_class = Blockdata["symclass"]
 	if Blockdata["myid"] == Blockdata["main_node"]:
-		msg = " Generate sampling orientations for MGSKmeans with step %f   theta1  %f  theta2  %f"%(angle_step, Tracker["tilt1"], Tracker["tilt2"])
+		msg = " Generate sampling orientations for MGSKmeans with angular step %f  "%(angle_step)
 		log_main.add(msg)
 		print(msg)
 	image_start, image_end = MPI_start_end(Tracker["total_stack"], Blockdata["nproc"], Blockdata["myid"])
+	
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		orien_group_assignment = [None for im in xrange(Tracker["total_stack"])]
 	else:  orien_group_assignment = 0
 	refa = sym_class.even_angles(angle_step, theta1 = Tracker["tilt1"], theta2 = Tracker["tilt2"])
+	
+	shakenumber = uniform( -Tracker["constants"]["shake"], Tracker["constants"]["shake"])
+	shakenumber = round(shakenumber, 5)
+	rangle = angle_step*shakenumber
+	refa = Blockdata["symclass"].reduce_anglesets(rotate_params(refa, [-rangle,-rangle,-rangle]))
+	
 	refa_vecs = []
 	for i in xrange(len(refa)):
 		tmp = getvec(refa[i][0], refa[i][1])
 		refa_vecs.append(tmp)
+		
 	if Blockdata["main_node"] == Blockdata["myid"]:
 		params  = read_text_row(params)
 		partids = read_text_file(partids, -1)
@@ -3439,6 +4302,7 @@ def get_orien_assignment_mpi(angle_step, partids, params, log_main):
 		del partids
 	else: data_angles = 0
 	data_angles = wrap_mpi_bcast(data_angles, Blockdata["main_node"], MPI_COMM_WORLD)
+	
 	data_angles = data_angles[image_start: image_end]
 	local_orien_group_assignment = partition_data_into_orientation_groups_nompi(refa_vecs, data_angles)
 	if Blockdata["myid"] == Blockdata["main_node"]: orien_group_assignment[image_start:image_end] = local_orien_group_assignment[:]
@@ -3457,6 +4321,7 @@ def get_orien_assignment_mpi(angle_step, partids, params, log_main):
 	for iorien in xrange(len(refa_vecs)):
 		if iorien%Blockdata["nproc"] == Blockdata["myid"]: ptls_in_orien_groups[iorien] = findall_dict(iorien, orien_group_assignment)
 	mpi_barrier(MPI_COMM_WORLD)
+	
 	for iorien in xrange(len(refa_vecs)):
 		if iorien%Blockdata["nproc"]!= Blockdata["main_node"]:
 			if iorien%Blockdata["nproc"]==Blockdata["myid"]: wrap_mpi_send(ptls_in_orien_groups[iorien], Blockdata["main_node"], MPI_COMM_WORLD)
@@ -3465,6 +4330,7 @@ def get_orien_assignment_mpi(angle_step, partids, params, log_main):
 	mpi_barrier(MPI_COMM_WORLD)
 	mpi_barrier(MPI_COMM_WORLD)
 	zero_member_group_found = 0
+	
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		small_groups = []
 		for iorien in xrange(len(refa_vecs)):
@@ -3472,17 +4338,19 @@ def get_orien_assignment_mpi(angle_step, partids, params, log_main):
 			if len(ptls_in_orien_groups[iorien]) == 0:
 				zero_member_group_found += 1
 		matched_pairs = find_neighborhood(refa_vecs, small_groups)
-		ptls_in_orien_groups = reassign_ptls_in_orien_groups(ptls_in_orien_groups, matched_pairs)
+		if len(matched_pairs)>=1:
+			ptls_in_orien_groups = reassign_ptls_in_orien_groups(ptls_in_orien_groups, matched_pairs)
 	else: ptls_in_orien_groups = 0
 	zero_member_group_found = bcast_number_to_all(zero_member_group_found, Blockdata["main_node"], MPI_COMM_WORLD)
 	ptls_in_orien_groups = wrap_mpi_bcast(ptls_in_orien_groups, Blockdata["main_node"], MPI_COMM_WORLD)
+	
 	del refa_vecs, refa
 	del local_orien_group_assignment
 	del data_angles
 	del orien_group_assignment
 	del sym_class
 	return ptls_in_orien_groups
-###
+
 def get_angle_step_from_number_of_orien_groups(orien_groups):
 	global Tracker, Blockdata
 	from string import atof
@@ -3496,6 +4364,7 @@ def get_angle_step_from_number_of_orien_groups(orien_groups):
 	del sym_class
 	return angle_step
 	
+#####<<<<<<<<<<<--------------orientation groups	
 def compare_two_iterations(assignment1, assignment2, number_of_groups):
 	# compare two assignments during clustering, either iteratively or independently
 	import numpy as np
@@ -3734,7 +4603,7 @@ def recons3d_4nnsorting_MPI(myid, main_node, prjlist, random_subset, CTF = True,
 	import datetime
 	if mpi_comm == None: mpi_comm = MPI_COMM_WORLD
 	imgsize = prjlist[0].get_ysize()  # It can be Fourier, so take y-size
-	refvol = model_blank(target_size)
+	refvol  = model_blank(target_size)
 	refvol.set_attr("fudge", 1.0)
 	if CTF: do_ctf = 1
 	else: do_ctf = 0
@@ -3757,8 +4626,7 @@ def recons3d_4nnsorting_MPI(myid, main_node, prjlist, random_subset, CTF = True,
 			if prjlist[im].get_attr("chunk_id") == random_subset:
 				#try:	bckgn = prjlist[im].get_attr("bckgnoise")
 				bckgn = target_size*[1.]
-				if prjlist[im].get_attr("is_complex")==0:	
-					prjlist[im] = fft(prjlist[im])
+				if prjlist[im].get_attr("is_complex")==0: prjlist[im] = fft(prjlist[im])
 				prjlist[im].set_attr_dict({"padffted":1, "is_complex":1})
 				if not upweighted:  prjlist[im] = filt_table(prjlist[im], bckgn)
 				prjlist[im].set_attr("bckgnoise", bckgn)
@@ -3828,134 +4696,54 @@ def recons3d_4nnsorting_group_MPI(myid, main_node, prjlist, random_subset, group
 	if myid == main_node: return fftvol, weight, refvol
 	else: return None, None, None
 
-def do3d_sorting(procid, data):
+def do3d_sorting(procid, data, myid, mpi_comm = -1):
 	global Tracker, Blockdata
+	if (mpi_comm == -1): mpi_comm = MPI_COMM_WORLD
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	if(procid == 0):
+		if(Blockdata["no_of_groups"] >1):
+			if(Blockdata["myid"] == Blockdata["nodes"][procid]):
+				if os.path.exists(os.path.join(Tracker["directory"], "tempdir")): print("tempdir exists")
+				else:
+					try: os.mkdir(os.path.join(Tracker["directory"], "tempdir"))
+					except:  print("tempdir exists")
+		else:
+			if myid == Blockdata["main_node"]:
+				if not os.path.exists(os.path.join(Tracker["directory"],"tempdir")): 
+					try: os.mkdir(os.path.join(Tracker["directory"], "tempdir"))
+					except: print("tempdir exists")
+				else: print("tempdir exists")
+	mpi_barrier(mpi_comm)
+	
 	if(Blockdata["myid"] == Blockdata["main_node"]):print(line, "do3d_sorting")
 	tvol, tweight, trol = recons3d_4nnsorting_MPI(myid = Blockdata["myid"], main_node = Blockdata["nodes"][procid], prjlist = data,\
-		random_subset = procid, CTF = Tracker["constants"]["CTF"], upweighted = False, target_size = (2*Tracker["nxinit"]+3))
-	if(Blockdata["myid"] == Blockdata["nodes"][procid]):
-		if(procid == 0):
-			if not os.path.exists(os.path.join(Tracker["directory"], "tempdir")):os.mkdir(os.path.join(Tracker["directory"],"tempdir"))
-		tvol.set_attr("is_complex",0)
-		tvol.write_image(os.path.join(Tracker["directory"], "tempdir", "tvol_%01d.hdf"%procid))
-		tweight.write_image(os.path.join(Tracker["directory"], "tempdir", "tweight_%01d.hdf"%procid))
-		trol.write_image(os.path.join(Tracker["directory"], "tempdir", "trol_%01d.hdf"%procid))
-	mpi_barrier(MPI_COMM_WORLD)
+		random_subset = procid, CTF = Tracker["constants"]["CTF"], upweighted = False, target_size = (2*Tracker["nxinit"]+3), mpi_comm  = mpi_comm)
+		
+	if(Blockdata["no_of_groups"] >1):
+		if(Blockdata["myid"] == Blockdata["nodes"][procid]):
+			if(procid == 0):
+				if not os.path.exists(os.path.join(Tracker["directory"], "tempdir")):os.mkdir(os.path.join(Tracker["directory"],"tempdir"))
+			tvol.set_attr("is_complex",0)
+			tvol.write_image(os.path.join(Tracker["directory"], "tempdir", "tvol_%01d.hdf"%procid))
+			tweight.write_image(os.path.join(Tracker["directory"], "tempdir", "tweight_%01d.hdf"%procid))
+			trol.write_image(os.path.join(Tracker["directory"], "tempdir", "trol_%01d.hdf"%procid))
+	else:
+		if myid == Blockdata["main_node"]:
+			tvol.set_attr("is_complex",0)
+			tvol.write_image(os.path.join(Tracker["directory"], "tempdir", "tvol_%01d.hdf"%procid))
+			tweight.write_image(os.path.join(Tracker["directory"], "tempdir", "tweight_%01d.hdf"%procid))
+			trol.write_image(os.path.join(Tracker["directory"], "tempdir", "trol_%01d.hdf"%procid))
+	mpi_barrier(mpi_comm)
 	return
-	
-def do3d_sorting_groups(particle_ID_index, partstack):
-	global Tracker, Blockdata
-	from utilities import get_im, wrap_mpi_bcast
-	data = get_shrink_data_sorting(particle_ID_index, partstack)
-	do3d_sorting_group_insertion(data)
-	mpi_barrier(MPI_COMM_WORLD)
-	fsc143                          =   0
-	fsc05                           =   0
-	Tracker["fsc143"]				=	0
-	Tracker["fsc05"]				=	0
-	res_05 						    =	Blockdata["no_of_groups"]*[0]
-	res_143 					    =	Blockdata["no_of_groups"]*[0]
-	for index_of_colors in xrange(Blockdata["no_of_groups"]):
-		group_start, group_end = MPI_volume_start_end(Tracker["number_of_groups"], Blockdata["no_of_groups"], index_of_colors)
-		if Blockdata["color"] == index_of_colors:  # It has to be 1 to avoid problem with tvol1 not closed on the disk
-			for index_of_group in xrange(group_start, group_end):
-				cfsc = 0
-				if Blockdata["myid_on_node"] == 0:					
-					tvol0 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_0_%d.hdf")%index_of_group)
-					tweight0 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_0_%d.hdf")%index_of_group)
-					tvol1 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_1_%d.hdf")%index_of_group)
-					tweight1 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_1_%d.hdf")%index_of_group)
-					Util.fuse_low_freq(tvol0, tvol1, tweight0, tweight1, 2*Tracker["fuse_freq"])
-					tag = 7007
-					send_EMData(tvol1, Blockdata["no_of_processes_per_group"]-1, tag, Blockdata["shared_comm"])
-					send_EMData(tweight1, Blockdata["no_of_processes_per_group"]-1, tag, Blockdata["shared_comm"])
-					shrank0 	= stepone(tvol0, tweight0)
-				elif Blockdata["myid_on_node"] == Blockdata["no_of_processes_per_group"]-1:				
-					tag = 7007
-					tvol1 		= recv_EMData(0, tag, Blockdata["shared_comm"])
-					tweight1 	= recv_EMData(0, tag, Blockdata["shared_comm"])
-					tvol1.set_attr_dict( {"is_complex":1, "is_fftodd":1, 'is_complex_ri': 1, 'is_fftpad': 1} )
-					shrank1 	= stepone(tvol1, tweight1)
-				mpi_barrier(Blockdata["shared_comm"])
-				if 	Blockdata["myid_on_node"] == 0:
-					tag = 7007					
-					send_EMData(shrank0, Blockdata["no_of_processes_per_group"]-1, tag, Blockdata["shared_comm"])
-					del shrank0
-					lcfsc = 0
-				elif Blockdata["myid_on_node"] == Blockdata["no_of_processes_per_group"]-1:
-					tag = 7007
-					shrank0 = recv_EMData(0, tag, Blockdata["shared_comm"])
-					cfsc 	= fsc(shrank0, shrank1)[1]
-					write_text_row(cfsc, os.path.join(Tracker["directory"], "fsc_driver_%d.txt")%index_of_group)
-					del shrank0, shrank1
-					if(Tracker["nxinit"]<Tracker["constants"]["nnxo"]):
-						cfsc = cfsc[:Tracker["nxinit"]]
-						for i in xrange(len(cfsc),Tracker["constants"]["nnxo"]//2+1):  cfsc.append(0.0)
-					lcfsc  = len(cfsc)							
-					fsc05  = 0
-					fsc143 = 0 
-					for ifreq in xrange(len(cfsc)):	
-						if cfsc[ifreq] < 0.5: break
-					fsc05  = ifreq - 1
-					for ifreq in xrange(len(cfsc)):
-						if cfsc[ifreq] < 0.143: break
-					fsc143 = ifreq - 1
-					Tracker["fsc143"] = fsc143
-					Tracker["fsc05"]  = fsc05
-				Tracker = wrap_mpi_bcast(Tracker, Blockdata["no_of_processes_per_group"]-1, Blockdata["shared_comm"])
-				cfsc = wrap_mpi_bcast(cfsc, Blockdata["no_of_processes_per_group"]-1, Blockdata["shared_comm"])
-				Tracker["maxfrad"] = Tracker["nxinit"]//2
-				if( Blockdata["myid_on_node"] == 0): 
-					res_05[index_of_group]  = Tracker["fsc05"]
-					res_143[index_of_group] = Tracker["fsc143"]
-				if Blockdata["fftwmpi"]: 
-					if( Blockdata["myid_on_node"] == 0):
-						tvol2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_2_%d.hdf")%index_of_group)
-						tweight2 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_2_%d.hdf")%index_of_group)
-						treg2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "trol_2_%d.hdf"%index_of_group))
-					else:
-						tvol2 		= model_blank(1)
-						tweight2 	= model_blank(1)
-						treg2		= model_blank(1)
-					tvol2 = steptwo_mpi(tvol2, tweight2, treg2, cfsc, True, color = index_of_colors)
-					del tweight2, treg2
-					if( Blockdata["myid_on_node"] == 0): 
-						if(Tracker["mask3D"] == None):  tvol2 = cosinemask(tvol2, radius = Tracker["constants"]["radius"])
-						else:  Util.mul_img(tvol2, get_im(Tracker["mask3D"]))
-						tvol2.write_image(os.path.join(Tracker["directory"], "vol_grp%03d_iter000.hdf"%(index_of_group)))
-						del tvol2
-				else:
-					if( Blockdata["myid_on_node"] == 0):
-						tvol2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_2_%d.hdf")%index_of_group)
-						tweight2 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_2_%d.hdf")%index_of_group)
-						treg2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "trol_2_%d.hdf"%index_of_group))
-						tvol2       = steptwo(tvol2, tweight2, treg2, cfsc, True)
-						del tweight2, treg2
-						if(Tracker["mask3D"] == None): tvol2 = cosinemask(tvol2, radius = Tracker["constants"]["radius"])
-						else: Util.mul_img(tvol2, get_im(Tracker["mask3D"]))
-						tvol2.write_image(os.path.join(Tracker["directory"], "vol_grp%03d_iter000.hdf"%(index_of_group)))
-						del tvol2
-				mpi_barrier(Blockdata["shared_comm"])
-			mpi_barrier(Blockdata["shared_comm"])	
-	mpi_barrier(MPI_COMM_WORLD)
-	res_05  = mpi_reduce(res_05,  Tracker["number_of_groups"], MPI_INT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
-	res_143 = mpi_reduce(res_143, Tracker["number_of_groups"], MPI_INT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
-	res_05  = map(int, res_05)
-	res_143 = map(int, res_143)
-	if (Blockdata["myid"] == Blockdata["main_node"]):
-		Tracker["fsc143"] = res_143
-		Tracker["fsc05"]  = res_05
-	Tracker = wrap_mpi_bcast(Tracker,Blockdata["main_node"])
-	return 
 			
 def do3d_sorting_group_insertion(data, randomset=2):
 	global Tracker, Blockdata
-	if(Blockdata["myid"] == Blockdata["node_volume"][0]):
+	if(Blockdata["myid"] == Blockdata["last_node"]):
 		if not os.path.exists(os.path.join(Tracker["directory"], "tempdir")):os.mkdir(os.path.join(Tracker["directory"], "tempdir"))
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	if Blockdata["myid"] ==  Blockdata["main_node"]:print(line, "start backprojection of %d volumes"%Tracker["number_of_groups"])
 	if randomset ==1:
+		if Blockdata["myid"] == Blockdata["main_node"]:print(line, "mode1: start backprojection of %d volumes"%Tracker["number_of_groups"])		
 		for index_of_groups in xrange(Tracker["number_of_groups"]):
 			for procid in xrange(2, 3):
 				tvol, tweight, trol = recons3d_4nnsorting_group_MPI(myid = Blockdata["myid"], main_node = Blockdata["nodes"][0],\
@@ -3968,7 +4756,8 @@ def do3d_sorting_group_insertion(data, randomset=2):
 					tweight.write_image(os.path.join(Tracker["directory"], "tempdir", "tweight_%d_%d.hdf"%(procid, index_of_groups)))
 					trol.write_image(os.path.join(Tracker["directory"], "tempdir", "trol_%d_%d.hdf"%(procid, index_of_groups)))
 				mpi_barrier(MPI_COMM_WORLD)
-	else:		
+	else:
+		if Blockdata["myid"] == Blockdata["main_node"]:print(line, "mode2: start backprojection of %d volumes"%Tracker["number_of_groups"])		
 		for index_of_groups in xrange(Tracker["number_of_groups"]):
 			for procid in xrange(2):
 				tvol, tweight, trol = recons3d_4nnsorting_group_MPI(myid = Blockdata["myid"], main_node = Blockdata["nodes"][procid],  \
@@ -3977,154 +4766,208 @@ def do3d_sorting_group_insertion(data, randomset=2):
 				
 				if(Blockdata["myid"] == Blockdata["nodes"][procid]):
 					tvol.set_attr("is_complex",0)
+					tag =7007
+					send_EMData(tvol,    Blockdata["last_node"], tag, MPI_COMM_WORLD)
+					send_EMData(tweight, Blockdata["last_node"], tag, MPI_COMM_WORLD)
+					send_EMData(trol,    Blockdata["last_node"], tag, MPI_COMM_WORLD)
+					
+				elif Blockdata["myid"] == Blockdata["last_node"]:
+					tag =7007
+					tvol    = recv_EMData(Blockdata["nodes"][procid], tag, MPI_COMM_WORLD)
+					tweight = recv_EMData(Blockdata["nodes"][procid], tag, MPI_COMM_WORLD)
+					trol    = recv_EMData(Blockdata["nodes"][procid], tag, MPI_COMM_WORLD)
 					tvol.write_image(os.path.join(Tracker["directory"], "tempdir", "tvol_%d_%d.hdf"%(procid, index_of_groups)))
 					tweight.write_image(os.path.join(Tracker["directory"], "tempdir", "tweight_%d_%d.hdf"%(procid, index_of_groups)))
 					trol.write_image(os.path.join(Tracker["directory"], "tempdir", "trol_%d_%d.hdf"%(procid, index_of_groups)))
 				mpi_barrier(MPI_COMM_WORLD)
-	mpi_barrier(MPI_COMM_WORLD)
+			mpi_barrier(MPI_COMM_WORLD)
+		mpi_barrier(MPI_COMM_WORLD)
 	return
 	
 def do3d_sorting_groups_trl_iter(data, iteration):
 	global Tracker, Blockdata
 	from utilities import get_im, write_text_row, bcast_number_to_all, wrap_mpi_bcast
 	keepgoing = 1
-	if(Blockdata["myid"] == Blockdata["nodes"][0]):
+	if(Blockdata["myid"] == Blockdata["last_node"]):
 		if not os.path.exists(os.path.join(Tracker["directory"], "tempdir")): os.mkdir(os.path.join(Tracker["directory"], "tempdir"))
+	mpi_barrier(MPI_COMM_WORLD)
 	do3d_sorting_group_insertion(data)
-	mpi_barrier(MPI_COMM_WORLD)
-	fsc143                          =   0
-	fsc05                           =   0
-	Tracker["fsc143"]				=	0
-	Tracker["fsc05"]				=	0
-	res_05 						    =	Tracker["number_of_groups"]*[0]
-	res_143 					    =	Tracker["number_of_groups"]*[0]
-	for index_of_colors in xrange(Blockdata["no_of_groups"]):
-		group_start, group_end = MPI_volume_start_end(Tracker["number_of_groups"], Blockdata["no_of_groups"], index_of_colors)
-		if Blockdata["color"] == index_of_colors:  # It has to be 1 to avoid problem with tvol1 not closed on the disk
-			for index_of_group in xrange(group_start, group_end):
-				cfsc = 0
-				if Blockdata["myid_on_node"] == 0:
-					tvol0 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_0_%d.hdf")%index_of_group)
-					tweight0 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_0_%d.hdf")%index_of_group)
-					tvol1 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_1_%d.hdf")%index_of_group)
-					tweight1 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_1_%d.hdf")%index_of_group)
-					Util.fuse_low_freq(tvol0, tvol1, tweight0, tweight1, 2*Tracker["fuse_freq"])
-					tag = 7007
-					send_EMData(tvol1, Blockdata["no_of_processes_per_group"]-1, tag, Blockdata["shared_comm"])
-					send_EMData(tweight1, Blockdata["no_of_processes_per_group"]-1, tag, Blockdata["shared_comm"])
-					shrank0 	= stepone(tvol0, tweight0)
-				elif Blockdata["myid_on_node"] == Blockdata["no_of_processes_per_group"]-1:					
-					tag = 7007
-					tvol1 		= recv_EMData(0, tag, Blockdata["shared_comm"])
-					tweight1 	= recv_EMData(0, tag, Blockdata["shared_comm"])
-					tvol1.set_attr_dict( {"is_complex":1, "is_fftodd":1, 'is_complex_ri': 1, 'is_fftpad': 1} )
-					shrank1 	= stepone(tvol1, tweight1)
-				mpi_barrier(Blockdata["shared_comm"])
-				if 	Blockdata["myid_on_node"] == 0:
-					tag = 7007					
-					send_EMData(shrank0, Blockdata["no_of_processes_per_group"]-1, tag, Blockdata["shared_comm"])
-					del shrank0
-					lcfsc = 0
-				elif Blockdata["myid_on_node"] == Blockdata["no_of_processes_per_group"]-1:
-					tag = 7007
-					shrank0 	= recv_EMData(0, tag, Blockdata["shared_comm"])
-					#  Note shrank volumes are Fourier uncentered.
-					cfsc 		= fsc(shrank0, shrank1)[1]
-					write_text_row(cfsc, os.path.join(Tracker["directory"], "fsc_driver_grp%03d_iter%03d.txt")%(index_of_group,iteration))
-					del shrank0, shrank1
-					if(Tracker["nxinit"]<Tracker["constants"]["nnxo"]):
-						cfsc 	= cfsc[:Tracker["nxinit"]]
-						for i in xrange(len(cfsc),Tracker["constants"]["nnxo"]//2+1): cfsc.append(0.0)
-					lcfsc = len(cfsc)							
-					fsc05  = 0
-					fsc143 = 0 
-					for ifreq in xrange(len(cfsc)):	
-						if cfsc[ifreq] <0.5: break
-					fsc05  = ifreq - 1
-					for ifreq in xrange(len(cfsc)):
-						if cfsc[ifreq]<0.143: break
-					fsc143 = ifreq - 1
-					Tracker["fsc143"] = fsc143
-					Tracker["fsc05"]  = fsc05
-				Tracker = wrap_mpi_bcast(Tracker, Blockdata["no_of_processes_per_group"]-1, Blockdata["shared_comm"])
-				cfsc = wrap_mpi_bcast(cfsc, Blockdata["no_of_processes_per_group"]-1, Blockdata["shared_comm"])
-				######
+	print("done step1")
+	fsc143             = 0
+	fsc05              = 0
+	Tracker["fsc143"]  = 0
+	Tracker["fsc05"]   = 0
+	res_05             = Tracker["number_of_groups"]*[0]
+	res_143            = Tracker["number_of_groups"]*[0]
+	#####
+	if Blockdata["no_of_groups"]>1:
+		sub_main_node_list = [-1 for i in xrange(Blockdata["no_of_groups"])]
+		for index_of_colors in xrange(Blockdata["no_of_groups"]):
+			for iproc in xrange(Blockdata["nproc"]-1):
+				if Blockdata["myid"]== iproc:
+					if Blockdata["color"] == index_of_colors and Blockdata["myid_on_node"] == 0:
+						sub_main_node_list[index_of_colors] = Blockdata["myid"]
+					wrap_mpi_send(sub_main_node_list, Blockdata["last_node"], MPI_COMM_WORLD)
+				if Blockdata["myid"] == Blockdata["last_node"]:
+					dummy = wrap_mpi_recv(iproc, MPI_COMM_WORLD)
+					for im in xrange(len(dummy)):
+						if dummy[im]>-1: sub_main_node_list[im] = dummy[im]
+				mpi_barrier(MPI_COMM_WORLD)
+			mpi_barrier(MPI_COMM_WORLD)
+		mpi_barrier(MPI_COMM_WORLD)
+		#print("done step2")
+		wrap_mpi_bcast(sub_main_node_list, Blockdata["last_node"], MPI_COMM_WORLD)
+		#if Blockdata["myid"] == Blockdata["last_node"]:
+		#	print("MMM", sub_main_node_list)
+		####		
+		if Tracker["number_of_groups"]%Blockdata["no_of_groups"] == 0: 
+			nbig_loop = Tracker["number_of_groups"]//Blockdata["no_of_groups"]
+		else: nbig_loop = Tracker["number_of_groups"]//Blockdata["no_of_groups"]+1
+	
+		big_loop_colors = [[] for i in xrange(nbig_loop)]
+		big_loop_groups = [[] for i in xrange(nbig_loop)]
+		nc = 0
+		while nc <Tracker["number_of_groups"]:
+			im =  nc//Blockdata["no_of_groups"]
+			jm =  nc%Blockdata["no_of_groups"]
+			big_loop_colors[im].append(jm)
+			big_loop_groups[im].append(nc)
+			nc +=1
+		if Blockdata["myid"] == Blockdata["last_node"]:
+			print(big_loop_groups, big_loop_colors)
+		#####
+		for iloop in xrange(nbig_loop):
+			#print("step 4", Tracker["directory"])
+			for im in xrange(len(big_loop_colors[iloop])):
+				index_of_group  = big_loop_groups[iloop][im]
+				index_of_colors = big_loop_colors[iloop][im]
+				if(Blockdata["myid"] == Blockdata["last_node"]):
+					tvol2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_0_%d.hdf")%index_of_group)
+					tweight2 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_0_%d.hdf")%index_of_group)
+					treg2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_0_%d.hdf")%index_of_group)
+					tag         = 7007
+					send_EMData(tvol2, sub_main_node_list[index_of_colors], tag,MPI_COMM_WORLD)
+					send_EMData(tweight2, sub_main_node_list[index_of_colors], tag,MPI_COMM_WORLD)
+					send_EMData(treg2, sub_main_node_list[index_of_colors], tag,MPI_COMM_WORLD)
+				elif (Blockdata["myid"] == sub_main_node_list[index_of_colors]):
+					tag      = 7007
+					tvol2    = recv_EMData(Blockdata["last_node"], tag, MPI_COMM_WORLD)
+					tweight2 = recv_EMData(Blockdata["last_node"], tag, MPI_COMM_WORLD)
+					treg2    = recv_EMData(Blockdata["last_node"], tag, MPI_COMM_WORLD)
+				mpi_barrier(MPI_COMM_WORLD)
+			mpi_barrier(MPI_COMM_WORLD)
+		
+			for im in xrange(len(big_loop_colors[iloop])):
+				#print("step 5")
+				index_of_group  = big_loop_groups[iloop][im]
+				index_of_colors = big_loop_colors[iloop][im]
 				Tracker["maxfrad"] = Tracker["nxinit"]//2
-				if( Blockdata["myid_on_node"] == 0):
-					res_05[index_of_group]  = Tracker["fsc05"]
-					res_143[index_of_group] = Tracker["fsc143"]
-				if Blockdata["fftwmpi"]:
-					if( Blockdata["myid_on_node"] == 0):
-						tvol2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_0_%d.hdf")%index_of_group)
-						tweight2 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_0_%d.hdf")%index_of_group)
-						treg2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "trol_0_%d.hdf"%index_of_group))
-					else:
+				if Blockdata["color"] == index_of_colors:
+					if( Blockdata["myid_on_node"] != 0):
 						tvol2 		= model_blank(1)
 						tweight2 	= model_blank(1)
 						treg2		= model_blank(1)
-					tvol2 = steptwo_mpi(tvol2, tweight2, treg2, cfsc, False, color = index_of_colors) # has to be False!!!
+					tvol2 = steptwo_mpi(tvol2, tweight2, treg2, None, False, color = index_of_colors) # has to be False!!!
 					del tweight2, treg2
-					if( Blockdata["myid_on_node"] == 0):
-						if(Tracker["mask3D"] == None): tvol2 = cosinemask(tvol2, radius = Tracker["constants"]["radius"])
-						else: Util.mul_img(tvol2, get_im(Tracker["constants"]["mask3D"]))
-						tvol2.write_image(os.path.join(Tracker["directory"], "vol_unfiltered_0_grp%03d_iter%03d.hdf"%(index_of_group,iteration)))
-						del tvol2
-				else:
-					if( Blockdata["myid_on_node"] == 0):
-						tvol2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_0_%d.hdf")%index_of_group)
-						tweight2 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_0_%d.hdf")%index_of_group)
-						treg2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "trol_0_%d.hdf"%index_of_group))
-						tvol2       = steptwo(tvol2, tweight2, treg2, cfsc, False)
-						del tweight2, treg2
-						if(Tracker["mask3D"] == None):  tvol2 = cosinemask(tvol2, radius = Tracker["constants"]["radius"])
-						else:  Util.mul_img(tvol2, get_im(Tracker["constants"]["mask3D"]))
-						tvol2.write_image(os.path.join(Tracker["directory"], "vol_unfiltered_0_grp%03d_iter%03d.hdf"%(index_of_group,iteration)))
-						del tvol2
-				######
+					#if( Blockdata["myid_on_node"] == 0):
+					#	tvol2 = cosinemask(tvol2, radius = Tracker["constants"]["radius"])
 				mpi_barrier(Blockdata["shared_comm"])
-				if( Blockdata["myid_on_node"] == 0):
-					res_05[index_of_group]  = Tracker["fsc05"]
-					res_143[index_of_group] = Tracker["fsc143"]
-				if Blockdata["fftwmpi"]:
-					if( Blockdata["myid_on_node"] == 0):
-						tvol2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_1_%d.hdf")%index_of_group)
-						tweight2 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_1_%d.hdf")%index_of_group)
-						treg2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "trol_1_%d.hdf"%index_of_group))
-					else:
+			mpi_barrier(MPI_COMM_WORLD)
+		
+			for im in xrange(len(big_loop_colors[iloop])):
+				#print("step 6")
+				index_of_group  = big_loop_groups[iloop][im]
+				index_of_colors = big_loop_colors[iloop][im]
+				if (Blockdata["color"] == index_of_colors) and (Blockdata["myid_on_node"] == 0):
+					tag = 7007
+					send_EMData(tvol2, Blockdata["last_node"], tag, MPI_COMM_WORLD)
+				elif(Blockdata["myid"] == Blockdata["last_node"]):
+					tag = 7007
+					tvol2 = recv_EMData(sub_main_node_list[index_of_colors], tag, MPI_COMM_WORLD)
+					tvol2.write_image(os.path.join(Tracker["directory"], "vol_unfiltered_0_grp%03d_iter%03d.hdf"%(index_of_group,iteration)))
+					del tvol2
+				mpi_barrier(MPI_COMM_WORLD)
+			mpi_barrier(MPI_COMM_WORLD)
+		
+			for im in xrange(len(big_loop_colors[iloop])):
+				index_of_group  = big_loop_groups[iloop][im]
+				index_of_colors = big_loop_colors[iloop][im]
+				if(Blockdata["myid"] == Blockdata["last_node"]):
+					tvol2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_1_%d.hdf")%index_of_group)
+					tweight2 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_1_%d.hdf")%index_of_group)
+					treg2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "trol_1_%d.hdf"%index_of_group))
+					tag      = 7007
+					send_EMData(tvol2,    sub_main_node_list[index_of_colors], tag, MPI_COMM_WORLD)
+					send_EMData(tweight2, sub_main_node_list[index_of_colors], tag, MPI_COMM_WORLD)
+					send_EMData(treg2,    sub_main_node_list[index_of_colors], tag, MPI_COMM_WORLD)
+				elif (Blockdata["myid"] == sub_main_node_list[index_of_colors]):
+					tag      = 7007
+					tvol2    = recv_EMData(Blockdata["last_node"], tag, MPI_COMM_WORLD)
+					tweight2 = recv_EMData(Blockdata["last_node"], tag, MPI_COMM_WORLD)
+					treg2    = recv_EMData(Blockdata["last_node"], tag, MPI_COMM_WORLD)
+				mpi_barrier(MPI_COMM_WORLD)
+			mpi_barrier(MPI_COMM_WORLD)
+		
+			for im in xrange(len(big_loop_colors[iloop])):
+				index_of_group  = big_loop_groups[iloop][im]
+				index_of_colors = big_loop_colors[iloop][im]
+				Tracker["maxfrad"] = Tracker["nxinit"]//2
+				if Blockdata["color"] == index_of_colors:
+					if( Blockdata["myid_on_node"] != 0):
 						tvol2 		= model_blank(1)
 						tweight2 	= model_blank(1)
 						treg2		= model_blank(1)
-					tvol2 = steptwo_mpi(tvol2, tweight2, treg2, cfsc, False, color = index_of_colors) # has to be False!!!
+					tvol2 = steptwo_mpi(tvol2, tweight2, treg2, None, False, color = index_of_colors) # has to be False!!!
 					del tweight2, treg2
-					if( Blockdata["myid_on_node"] == 0):
-						if(Tracker["mask3D"] == None): tvol2 = cosinemask(tvol2, radius = Tracker["constants"]["radius"])
-						else: Util.mul_img(tvol2, get_im(Tracker["constants"]["mask3D"]))
-						tvol2.write_image(os.path.join(Tracker["directory"], "vol_unfiltered_1_grp%03d_iter%03d.hdf"%(index_of_group,iteration)))
-						del tvol2
-				else:
-					if( Blockdata["myid_on_node"] == 0):
-						tvol2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_1_%d.hdf")%index_of_group)
-						tweight2 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_1_%d.hdf")%index_of_group)
-						treg2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "trol_1_%d.hdf"%index_of_group))
-						tvol2 = steptwo(tvol2, tweight2, treg2, cfsc, False)
-						del tweight2, treg2
-						if(Tracker["mask3D"] == None):  tvol2 = cosinemask(tvol2, radius = Tracker["constants"]["radius"])
-						else:  Util.mul_img(tvol2, get_im(Tracker["constants"]["mask3D"]))
-						tvol2.write_image(os.path.join(Tracker["directory"], "vol_unfiltered_1_grp%03d_iter%03d.hdf"%(index_of_group,iteration)))
-						del tvol2
+					#if( Blockdata["myid_on_node"] == 0):
+					#	tvol2 = cosinemask(tvol2, radius = Tracker["constants"]["radius"])
 				mpi_barrier(Blockdata["shared_comm"])
-			mpi_barrier(Blockdata["shared_comm"])
-	mpi_barrier(MPI_COMM_WORLD)
-	res_05         = mpi_reduce(res_05,  Tracker["number_of_groups"], MPI_INT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
-	res_143        = mpi_reduce(res_143, Tracker["number_of_groups"], MPI_INT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
-	res_05         = map(int, res_05)
-	res_143        = map(int, res_143)
-	if (Blockdata["myid"] == Blockdata["main_node"]):
-		Tracker["fsc143"] = res_143
-		Tracker["fsc05"]  = res_05
+			mpi_barrier(MPI_COMM_WORLD)
+			for im in xrange(len(big_loop_colors[iloop])):
+				index_of_group  = big_loop_groups[iloop][im]
+				index_of_colors = big_loop_colors[iloop][im]
+				if (Blockdata["color"] == index_of_colors) and (Blockdata["myid_on_node"] == 0):
+					tag = 7007
+					send_EMData(tvol2, Blockdata["last_node"], tag, MPI_COMM_WORLD)
+				elif(Blockdata["myid"] == Blockdata["last_node"]):
+					tag = 7007
+					tvol2 = recv_EMData(sub_main_node_list[index_of_colors], tag, MPI_COMM_WORLD)
+					tvol2.write_image(os.path.join(Tracker["directory"], "vol_unfiltered_1_grp%03d_iter%03d.hdf"%(index_of_group,iteration)))
+					del tvol2
+				mpi_barrier(MPI_COMM_WORLD)
+			mpi_barrier(MPI_COMM_WORLD)
+	else:
+		Tracker["maxfrad"] = Tracker["nxinit"]//2
+		for index_of_group in xrange(Tracker["number_of_groups"]):
+			for iprocid in xrange(2):
+				if(Blockdata["myid"] == Blockdata["last_node"]):
+					tvol2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_%d_%d.hdf")%(iprocid, index_of_group))
+					tweight2 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_%d_%d.hdf")%(iprocid, index_of_group))
+					treg2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "trol_%d_%d.hdf"%(iprocid, index_of_group)))
+					tag      = 7007
+					send_EMData(tvol2, Blockdata["main_node"],    tag, MPI_COMM_WORLD)
+					send_EMData(tweight2, Blockdata["main_node"], tag, MPI_COMM_WORLD)
+					send_EMData(treg2, Blockdata["main_node"],    tag, MPI_COMM_WORLD)
+				elif (Blockdata["myid"] == Blockdata["main_node"]):
+					tag      = 7007
+					tvol2    = recv_EMData(Blockdata["last_node"], tag, MPI_COMM_WORLD)
+					tweight2 = recv_EMData(Blockdata["last_node"], tag, MPI_COMM_WORLD)
+					treg2    = recv_EMData(Blockdata["last_node"], tag, MPI_COMM_WORLD)
+				mpi_barrier(MPI_COMM_WORLD)
+				if( Blockdata["myid"] != Blockdata["main_node"]):
+					tvol2 		= model_blank(1)
+					tweight2 	= model_blank(1)
+					treg2		= model_blank(1)
+				tvol2 = steptwo_mpi(tvol2, tweight2, treg2, None, False, color = 0) # has to be False!!!
+				del tweight2, treg2
+				if( Blockdata["myid"] == Blockdata["main_node"]):
+					#tvol2 = cosinemask(tvol2, radius = Tracker["constants"]["radius"])
+					tvol2.write_image(os.path.join(Tracker["directory"], "vol_unfiltered_%d_grp%03d_iter%03d.hdf"%(iprocid, index_of_group,iteration)))
+				mpi_barrier(MPI_COMM_WORLD)
+			mpi_barrier(MPI_COMM_WORLD)
 	keepgoing = bcast_number_to_all(keepgoing, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD) # always check 
 	Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
-	if not keepgoing: ERROR("do3d_sorting_groups_trl_iter  %s"%os.path.join(Tracker["directory"], "tempdir"),"do3d_sorting_groups_trl_iter", 1, Blockdata["myid"]) 
+	if keepgoing == 0: ERROR("do3d_sorting_groups_trl_iter  %s"%os.path.join(Tracker["directory"], "tempdir"),"do3d_sorting_groups_trl_iter", 1, Blockdata["myid"]) 
 	return
 	
 # Three ways of importing refinement results
@@ -4244,7 +5087,7 @@ def get_input_from_sparx_ref3d(log_main):# case one
 		else:
 			import_from_sparx_refinement == 0
 			for search_iter in xrange(selected_iter-1, 0, -1):
-				if os.path.exists(os.path.join(Tracker["constants"]["refinement_dir"], "main%03d"%search_iter, "bckgnoise.hdf")):
+				 if os.path.exists(os.path.join(Tracker["constants"]["refinement_dir"], "main%03d"%search_iter, "bckgnoise.hdf")):
 					copyfile(os.path.join(Tracker["constants"]["refinement_dir"], "main%03d"%search_iter, \
 					"bckgnoise.hdf"), os.path.join(Tracker["constants"]["masterdir"], "bckgnoise.hdf"))
 					import_from_sparx_refinement = 1
@@ -4273,15 +5116,17 @@ def get_input_from_sparx_ref3d(log_main):# case one
 			if fsc_curve[ifreq][0] < 0.143: break
 		fsc143 = ifreq - 1	
 		Tracker["constants"]["fsc143"]  = fsc143
-		Tracker["constants"]["fsc05"]   = fsc05			
+		Tracker["constants"]["fsc05"]   = fsc05
+		
 	import_from_sparx_refinement = bcast_number_to_all(import_from_sparx_refinement, source_node = Blockdata["main_node"])
 	if import_from_sparx_refinement == 0:ERROR("The driver of the best solution is not accessible","get_input_from_sparx_ref3d", 1, Blockdata["myid"])
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		if os.path.exists(os.path.join(Tracker["constants"]["refinement_dir"], "main000/indexes_000.txt")):
 			copyfile(os.path.join(Tracker["constants"]["refinement_dir"], "main000/indexes_000.txt"), \
 			os.path.join(Tracker["constants"]["masterdir"], "indexes.txt"))
-		else:	import_from_sparx_refinement = 0	
+		else:	import_from_sparx_refinement = 0
 	import_from_sparx_refinement = bcast_number_to_all(import_from_sparx_refinement, source_node = Blockdata["main_node"])
+	
 	if import_from_sparx_refinement == 0: ERROR("The index file of the best solution are not accessible","get_input_from_sparx_ref3d", 1, Blockdata["myid"])
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		if os.path.exists(os.path.join(Tracker["constants"]["refinement_dir"], "main000/chunk_0_000.txt")):
@@ -4304,6 +5149,7 @@ def get_input_from_sparx_ref3d(log_main):# case one
 		else:import_from_sparx_refinement == 0
 	import_from_sparx_refinement = bcast_number_to_all(import_from_sparx_refinement, source_node = Blockdata["main_node"])
 	if import_from_sparx_refinement == 0:ERROR("The chunk files and partice group files are not accessible","get_input_from_sparx_ref3d",1, Blockdata["myid"])
+	
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	# copy all relavant parameters into sorting tracker
 	if Blockdata["myid"] == Blockdata["main_node"]:
@@ -4322,11 +5168,12 @@ def get_input_from_sparx_ref3d(log_main):# case one
 		except:  sym =  Tracker_refinement["constants"]["symmetry"]
 		Tracker["constants"]["symmetry"] = sym
 		print(line, "Parameters importing is done!")
-		if not Tracker["constants"]["mask3D"] and Tracker_refinement["constants"]["mask3D"]:
-			refinement_mask3D_path, refinement_mask3D_file = os.path.split(Tracker_refinement["constants"]["mask3D"])# MRK_DEBUG
-			copyfile( os.path.join(refinement_dir_path, Tracker_refinement["constants"]["mask3D"]), \
-			os.path.join(Tracker["constants"]["masterdir"], refinement_mask3D_file))
-			Tracker["constants"]["mask3D"] = os.path.join(Tracker["constants"]["masterdir"], refinement_mask3D_file)
+		if not Tracker["constants"]["mask3D"]:
+			if Tracker_refinement["constants"]["mask3D"] and (not Tracker["constants"]["do_not_use_3dmask"]):
+				refinement_mask3D_path, refinement_mask3D_file = os.path.split(Tracker_refinement["constants"]["mask3D"])# MRK_DEBUG
+				copyfile( os.path.join(refinement_dir_path, Tracker_refinement["constants"]["mask3D"]), \
+				os.path.join(Tracker["constants"]["masterdir"], refinement_mask3D_file))
+				Tracker["constants"]["mask3D"] = os.path.join(Tracker["constants"]["masterdir"], refinement_mask3D_file)
 	Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], communicator = MPI_COMM_WORLD)
 	import_from_sparx_refinement = bcast_number_to_all(import_from_sparx_refinement, source_node = Blockdata["main_node"])
 	if not import_from_sparx_refinement:ERROR("Import parameters from SPARX refinement failed", "get_input_from_sparx_ref3d", 1,  Blockdata["myid"])
@@ -4393,6 +5240,7 @@ def get_input_from_datastack(log_main):# Case three
 	from   random import shuffle
 	import_from_data_stack = 1
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		msg =  "Import xform.projection paramters from data stack %s "%Tracker["constants"]["orgstack"]
 		print(line, msg)
@@ -4410,7 +5258,7 @@ def get_input_from_datastack(log_main):# Case three
 				Tracker["constants"]["pixel_size"] = 1.0
 				del image
 	else:
-		Tracker["constants"]["nnxo"] = 0
+		Tracker["constants"]["nnxo"]       = 0
 		Tracker["constants"]["pixel_size"] = 1.0
 	Tracker["constants"]["nnxo"] = bcast_number_to_all(Tracker["constants"]["nnxo"], source_node = Blockdata["main_node"])
 	if( Tracker["constants"]["nnxo"] < 0): ERROR("Image size is negative", "get_input_from_datastack", 1, Blockdata["main_node"])
@@ -4474,57 +5322,84 @@ def get_input_from_datastack(log_main):# Case three
 	Tracker["directory"] = Tracker["constants"]["masterdir"]
 	if Tracker["constants"]["nxinit"]< 0: Tracker["nxinit_refinement"] = Tracker["constants"]["nnxo"]
 	else: Tracker["nxinit_refinement"] =  Tracker["constants"]["nxinit"]
+	
 	for procid in xrange(2):
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		if Blockdata["myid"] == Blockdata["main_node"]: print(line, "Reconstruction of random subset %d"%procid)
 		data = get_shrink_data_sorting(os.path.join(Tracker["constants"]["masterdir"],"chunk_%01d.txt"%procid), Tracker["constants"]["partstack"])
 		mpi_barrier(MPI_COMM_WORLD)
-		do3d_sorting(procid, data)
+		do3d_sorting(procid, data, myid = Blockdata["myid"],  mpi_comm = MPI_COMM_WORLD)# 1
 	mpi_barrier(MPI_COMM_WORLD)
-	if( Blockdata["myid"] == Blockdata["main_shared_nodes"][1]):  # It has to be 1 to avoid problem with tvol1 not closed on the disk
-		print("come to mainshared_nodes 1", Blockdata["myid"])
-		print(Blockdata["main_shared_nodes"], Blockdata["no_of_processes_per_group"])
-		tvol0 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_0.hdf"))
-		tweight0 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_0.hdf"))
-		tvol1 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_1.hdf"))
-		tweight1 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_1.hdf"))
-		Util.fuse_low_freq(tvol0, tvol1, tweight0, tweight1, 2*Tracker["fuse_freq"])
-		tag = 7007
-		send_EMData(tvol1, Blockdata["main_shared_nodes"][0], tag, MPI_COMM_WORLD)
-		send_EMData(tweight1, Blockdata["main_shared_nodes"][0], tag, MPI_COMM_WORLD)
-		shrank0 	= stepone(tvol0, tweight0)
-		send_EMData(shrank0, Blockdata["main_shared_nodes"][0], tag, MPI_COMM_WORLD)
-		del shrank0
-		lcfsc = 0
-	elif( Blockdata["myid"] == Blockdata["main_shared_nodes"][0]):
-		print("come to mainshared_nodes 1", Blockdata["myid"])
-		tag = 7007
-		tvol1 		= recv_EMData(Blockdata["main_shared_nodes"][1], tag, MPI_COMM_WORLD)
-		tweight1 	= recv_EMData(Blockdata["main_shared_nodes"][1], tag, MPI_COMM_WORLD)
-		tvol1.set_attr_dict( {"is_complex":1, "is_fftodd":1, 'is_complex_ri': 1, 'is_fftpad': 1} )
-		shrank1 	= stepone(tvol1, tweight1)
-		#  Get shrank volume, do fsc, send it to all
-		shrank0 	= recv_EMData(Blockdata["main_shared_nodes"][1], tag, MPI_COMM_WORLD)
-		#  Note shrank volumes are Fourier uncentered.
-		cfsc 		= fsc(shrank0, shrank1)[1]
-		write_text_row(cfsc, os.path.join(Tracker["directory"], "fsc_global.txt"))
-		del shrank0, shrank1
-		if(Tracker["nxinit"]<Tracker["constants"]["nnxo"]):
-			cfsc  = cfsc[:Tracker["nxinit"]]
+	
+	if(Blockdata["no_of_groups"] == 1):
+		if( Blockdata["myid"] == Blockdata["main_node"]):
+			tvol0 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_0.hdf"))
+			tweight0 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_0.hdf"))
+			tvol1 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_1.hdf"))
+			tweight1 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_1.hdf"))
+			Util.fuse_low_freq(tvol0, tvol1, tweight0, tweight1, 2*Tracker["fuse_freq"])
+			shrank0 	= stepone(tvol0, tweight0)
+			shrank1 	= stepone(tvol1, tweight1)
+		    #  Note shrank volumes are Fourier uncentered.
+			cfsc 		= fsc(shrank0, shrank1)[1]
+			del shrank0, shrank1
+			if(Tracker["nxinit"]<Tracker["constants"]["nnxo"]): cfsc  = cfsc[:Tracker["nxinit"]]
 			for i in xrange(len(cfsc),Tracker["constants"]["nnxo"]//2+1): cfsc.append(0.0)
-		lcfsc  = len(cfsc)							
-		fsc05  = 0
-		fsc143 = 0 
-		for ifreq in xrange(len(cfsc)):	
-			if cfsc[ifreq] <0.5: break
-		fsc05  = ifreq - 1
-		for ifreq in xrange(len(cfsc)):
-			if cfsc[ifreq]<0.143: break
-		fsc143 = ifreq - 1
-		Tracker["constants"]["fsc143"] = fsc143
-		Tracker["constants"]["fsc05"]  = fsc05
-	else:lcfsc = 0
-	Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_shared_nodes"][0], communicator = MPI_COMM_WORLD)
+			write_text_row(cfsc, os.path.join(Tracker["directory"], "fsc_global.txt"))
+			lcfsc  = len(cfsc)							
+			fsc05  = 0
+			fsc143 = 0 
+			for ifreq in xrange(len(cfsc)):	
+				if cfsc[ifreq] <0.5: break
+			fsc05  = ifreq - 1
+			for ifreq in xrange(len(cfsc)):
+				if cfsc[ifreq]<0.143: break
+			fsc143 = ifreq - 1
+			Tracker["constants"]["fsc143"] = fsc143
+			Tracker["constants"]["fsc05"]  = fsc05
+		Tracker = wrap_mpi_bcast(Tracker,Blockdata["nodes"][0], communicator = MPI_COMM_WORLD)
+	else:
+		if(Blockdata["myid"] == Blockdata["nodes"][1]):  # It has to be 1 to avoid problem with tvol1 not closed on the disk
+			tvol0 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_0.hdf"))
+			tweight0 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_0.hdf"))
+			tvol1 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_1.hdf"))
+			tweight1 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_1.hdf"))
+			Util.fuse_low_freq(tvol0, tvol1, tweight0, tweight1, 2*Tracker["fuse_freq"])
+			tag = 7007
+			send_EMData(tvol1, Blockdata["nodes"][0], tag, MPI_COMM_WORLD)
+			send_EMData(tweight1, Blockdata["nodes"][0], tag, MPI_COMM_WORLD)
+			shrank0 	= stepone(tvol0, tweight0)
+			send_EMData(shrank0, Blockdata["nodes"][0], tag, MPI_COMM_WORLD)
+			del shrank0
+			lcfsc = 0
+		
+		elif( Blockdata["myid"] == Blockdata["nodes"][0]):
+			tag = 7007
+			tvol1 		= recv_EMData(Blockdata["nodes"][1], tag, MPI_COMM_WORLD)
+			tweight1 	= recv_EMData(Blockdata["nodes"][1], tag, MPI_COMM_WORLD)
+			tvol1.set_attr_dict( {"is_complex":1, "is_fftodd":1, 'is_complex_ri': 1, 'is_fftpad': 1} )
+			shrank1 	= stepone(tvol1, tweight1)
+			#  Get shrank volume, do fsc, send it to all
+			shrank0 	= recv_EMData(Blockdata["nodes"][1], tag, MPI_COMM_WORLD)
+			#  Note shrank volumes are Fourier uncentered.
+			cfsc 		= fsc(shrank0, shrank1)[1]
+			write_text_row(cfsc, os.path.join(Tracker["directory"], "fsc_global.txt"))
+			del shrank0, shrank1
+			if(Tracker["nxinit"]<Tracker["constants"]["nnxo"]):
+				cfsc  = cfsc[:Tracker["nxinit"]]
+				for i in xrange(len(cfsc),Tracker["constants"]["nnxo"]//2+1): cfsc.append(0.0)
+			lcfsc  = len(cfsc)							
+			fsc05  = 0
+			fsc143 = 0 
+			for ifreq in xrange(len(cfsc)):	
+				if cfsc[ifreq] <0.5: break
+			fsc05  = ifreq - 1
+			for ifreq in xrange(len(cfsc)):
+				if cfsc[ifreq]<0.143: break
+			fsc143 = ifreq - 1
+			Tracker["constants"]["fsc143"] = fsc143
+			Tracker["constants"]["fsc05"]  = fsc05
+		Tracker = wrap_mpi_bcast(Tracker, Blockdata["nodes"][0], communicator = MPI_COMM_WORLD)
 	return import_from_data_stack
 	
 #### Old rec3ds
@@ -4537,28 +5412,28 @@ def do_ctrefromsort3d_get_subset_data(masterdir, option_old_refinement_dir, opti
 	if (Blockdata["subgroup_myid"] > -1):
 		orgstack = Tracker["constants"]["orgstack"]
 		selected_iter = option_selected_iter
-		if Blockdata["subgroup_myid"] == Blockdata["main_node"]: cluster = sorted(read_text_file(option_selected_cluster))
+		if Blockdata["subgroup_myid"] ==  0: cluster = sorted(read_text_file(option_selected_cluster))
 		else: cluster = 0
-		cluster = wrap_mpi_bcast(cluster, Blockdata["main_node"], comm) # balance processors	
+		cluster = wrap_mpi_bcast(cluster, 0, comm) # balance processors	
 		old_refinement_iter_dir    = os.path.join(option_old_refinement_dir, "main%03d"%selected_iter)
 		old_oldparamstructure_dir  = os.path.join(old_refinement_iter_dir, "oldparamstructure")
 		old_previousoutputdir      = os.path.join(option_old_refinement_dir, "main%03d"%(selected_iter-1))	
-		if Blockdata["subgroup_myid"] == Blockdata["main_node"]: 
+		if Blockdata["subgroup_myid"] == 0: 
 			nproc_old_ref3d = 0
 			while os.path.exists(os.path.join(old_oldparamstructure_dir, "oldparamstructure_0_%03d_%03d.json"%(nproc_old_ref3d, selected_iter))):nproc_old_ref3d += 1
 		else: nproc_old_ref3d = 0
 		nproc_old_ref3d = bcast_number_to_all(nproc_old_ref3d, Blockdata["main_node"], comm)
 	
 		# read old refinement Tracker
-		if Blockdata["subgroup_myid"] == Blockdata["main_node"]:
+		if Blockdata["subgroup_myid"] == 0:
 			fout = open(os.path.join(old_refinement_iter_dir, "Tracker_%03d.json"%selected_iter),"r")
 			Tracker 	= convert_json_fromunicode(json.load(fout))
 			fout.close()
 		else: Tracker = 0
-		Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], comm) # balance processors
+		Tracker = wrap_mpi_bcast(Tracker, 0, comm) # balance processors
 		Tracker["constants"]["orgstack"] = orgstack
 		
-		if Blockdata["subgroup_myid"] == Blockdata["main_node"]:
+		if Blockdata["subgroup_myid"] == 0:
 			noiseimage        = get_im(os.path.join(old_previousoutputdir, "bckgnoise.hdf"))
 			noiseimage1       = get_im(os.path.join(old_refinement_iter_dir, "bckgnoise.hdf"))
 			params            = read_text_row(os.path.join(old_refinement_iter_dir, "params_%03d.txt"%selected_iter))
@@ -4576,11 +5451,11 @@ def do_ctrefromsort3d_get_subset_data(masterdir, option_old_refinement_dir, opti
 			chunk_two        = 0
 			params_last_iter = 0
 		params            = wrap_mpi_bcast(params, Blockdata["main_node"], comm)
-		params_last_iter  = wrap_mpi_bcast(params_last_iter, Blockdata["main_node"], comm)
-		refang            = wrap_mpi_bcast(refang,    Blockdata["main_node"], comm)
-		rshifts           = wrap_mpi_bcast(rshifts,   Blockdata["main_node"], comm)
+		params_last_iter  = wrap_mpi_bcast(params_last_iter,0, comm)
+		refang            = wrap_mpi_bcast(refang,   0, comm)
+		rshifts           = wrap_mpi_bcast(rshifts,  0, comm)
 		chunk_one         = wrap_mpi_bcast(chunk_one, Blockdata["main_node"], comm)
-		chunk_two         = wrap_mpi_bcast(chunk_two, Blockdata["main_node"], comm)
+		chunk_two         = wrap_mpi_bcast(chunk_two,0, comm)
 		chunk_dict = {}
 		for a in chunk_one: chunk_dict[a] = 0
 		for b in chunk_two: chunk_dict[b] = 1
@@ -4590,7 +5465,7 @@ def do_ctrefromsort3d_get_subset_data(masterdir, option_old_refinement_dir, opti
 		iter_dir                  = os.path.join(masterdir, "main%03d"%selected_iter)
 		previousoutputdir         = os.path.join(masterdir, "main%03d"%(selected_iter-1))
 		new_oldparamstructure_dir = os.path.join(iter_dir,"oldparamstructure")
-		if Blockdata["subgroup_myid"] == Blockdata["main_node"]:
+		if Blockdata["subgroup_myid"] == 0:
 			if not os.path.exists(iter_dir): os.mkdir(iter_dir)
 			if not os.path.exists(main0_dir):os.mkdir(main0_dir)
 			if not os.path.exists(new_oldparamstructure_dir):os.mkdir(new_oldparamstructure_dir)
@@ -4618,7 +5493,7 @@ def do_ctrefromsort3d_get_subset_data(masterdir, option_old_refinement_dir, opti
 				Tracker["avgvaradj"][1] += params[cluster[index_of_particle]][7] 
 			new_params.append(params[cluster[index_of_particle]])		
 		selected_new_params = new_params
-		if Blockdata["subgroup_myid"] == Blockdata["main_node"]:# some numbers and path are required to be modified
+		if Blockdata["subgroup_myid"] == 0:# some numbers and path are required to be modified
 			Tracker["constants"]["masterdir"] = masterdir
 			Tracker["directory"]              = iter_dir
 			try:    sym = Tracker["constants"]["sym"] # For those generated by old version meridians
@@ -4671,7 +5546,7 @@ def do_ctrefromsort3d_get_subset_data(masterdir, option_old_refinement_dir, opti
 						if ichunk == 0: nproc_dict[chunk_one[index_of_particle]] = [ichunk, myproc, index_of_particle - image_start]
 						else: nproc_dict[chunk_two[index_of_particle]] = [ichunk, myproc, index_of_particle - image_start]
 		else: nproc_dict = 0
-		nproc_dict = wrap_mpi_bcast(nproc_dict, Blockdata["main_node"], comm)
+		nproc_dict = wrap_mpi_bcast(nproc_dict, 0, comm)
 		### parse previous nproc in refinement to current nproc
 		#proc_start, proc_end = MPI_start_end(Blockdata["nsubset"], Blockdata["nsubset"], Blockdata["subgroup_myid"])
 		for ichunk in xrange(2):
@@ -4686,15 +5561,15 @@ def do_ctrefromsort3d_get_subset_data(masterdir, option_old_refinement_dir, opti
 				old_oldparams 	= convert_json_fromunicode(json.load(fout))
 				fout.close()
 				oldparams.append(old_oldparams[old_index_of_particle])
-			if Blockdata["subgroup_myid"] == Blockdata["main_node"]:
+			if Blockdata["subgroup_myid"] == 0:
 				fout = open(os.path.join(new_oldparamstructure_dir, "oldparamstructure_%d_%03d_%03d.json"%(ichunk, Blockdata["subgroup_myid"], selected_iter)), "w")
 				json.dump(oldparams, fout)
 				fout.close()
 				del oldparams
 			mpi_barrier(comm)
 			for iproc in xrange(1, Blockdata["nsubset"]): # always skip main node
-				if iproc == Blockdata["subgroup_myid"]:wrap_mpi_send(oldparams, Blockdata["main_node"], comm)
-				if Blockdata["subgroup_myid"] ==  Blockdata["main_node"]:
+				if iproc == Blockdata["subgroup_myid"]:wrap_mpi_send(oldparams, 0, comm)
+				if Blockdata["subgroup_myid"] == 0:
 					dummy = wrap_mpi_recv(iproc, comm)
 					fout = open(os.path.join(new_oldparamstructure_dir, "oldparamstructure_%d_%03d_%03d.json"%(ichunk, iproc, selected_iter)), "w")
 					json.dump(dummy, fout)
@@ -4709,18 +5584,18 @@ def do_ctrefromsort3d_get_subset_data(masterdir, option_old_refinement_dir, opti
 		old_oldparamstructure_dir  = os.path.join(old_refinement_iter_dir, "oldparamstructure")
 		iter_dir                   = os.path.join(masterdir, "main%03d"%selected_iter)
 	
-		if Blockdata["subgroup_myid"] == Blockdata["main_node"]:
+		if Blockdata["subgroup_myid"] == 0:
 			fout     = open(os.path.join(old_refinement_iter_dir, "Tracker_%03d.json"%selected_iter),"r")
 			Tracker  = convert_json_fromunicode(json.load(fout))
 			fout.close()
 		else: Tracker = 0
-		Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], comm) # balance processors
+		Tracker = wrap_mpi_bcast(Tracker, 0, comm) # balance processors
 		Tracker["constants"]["orgstack"] = orgstack
-		if Blockdata["subgroup_myid"] == Blockdata["main_node"]:
+		if Blockdata["subgroup_myid"] == 0:
 			if not os.path.exists(iter_dir):os.mkdir(iter_dir)
 		mpi_barrier(comm)
 	
-		if Blockdata["subgroup_myid"] == Blockdata["main_node"]:
+		if Blockdata["subgroup_myid"] == 0:
 			params               = read_text_row(os.path.join(old_refinement_iter_dir,  "params_%03d.txt"%selected_iter))
 			chunk_one            = read_text_file(os.path.join(old_refinement_iter_dir, "chunk_0_%03d.txt"%selected_iter))
 			chunk_two            = read_text_file(os.path.join(old_refinement_iter_dir, "chunk_1_%03d.txt"%selected_iter))
@@ -4737,12 +5612,12 @@ def do_ctrefromsort3d_get_subset_data(masterdir, option_old_refinement_dir, opti
 			chunk_two  = 0
 			particle_group_one = 0
 			particle_group_two = 0
-		params              = wrap_mpi_bcast(params,    Blockdata["main_node"], comm)
-		chunk_one           = wrap_mpi_bcast(chunk_one, Blockdata["main_node"], comm)
-		chunk_two           = wrap_mpi_bcast(chunk_two, Blockdata["main_node"], comm)
-		particle_group_one  = wrap_mpi_bcast(particle_group_one, Blockdata["main_node"], comm)
-		particle_group_two  = wrap_mpi_bcast(particle_group_two, Blockdata["main_node"], comm)
-		groupids            = wrap_mpi_bcast(groupids, Blockdata["main_node"], comm)
+		params              = wrap_mpi_bcast(params,    0, comm)
+		chunk_one           = wrap_mpi_bcast(chunk_one,0, comm)
+		chunk_two           = wrap_mpi_bcast(chunk_two,0, comm)
+		particle_group_one  = wrap_mpi_bcast(particle_group_one,0, comm)
+		particle_group_two  = wrap_mpi_bcast(particle_group_two,0, comm)
+		groupids            = wrap_mpi_bcast(groupids,0, comm)
 		group_ids_dict = {}
 		for iptl in xrange(len(particle_group_one)): group_ids_dict[chunk_one[iptl]] =  particle_group_one[iptl]
 		for iptl in xrange(len(particle_group_two)): group_ids_dict[chunk_two[iptl]] =  particle_group_two[iptl]
@@ -4767,7 +5642,7 @@ def do_ctrefromsort3d_get_subset_data(masterdir, option_old_refinement_dir, opti
 			new_params.append(params[cluster[index_of_particle]])	
 		for iptl in xrange(len(new_chunk_one)):new_particle_group_one.append(group_ids_dict[new_chunk_one[iptl]])
 		for iptl in xrange(len(new_chunk_two)):new_particle_group_two.append(group_ids_dict[new_chunk_two[iptl]])
-		if Blockdata["subgroup_myid"] == Blockdata["main_node"]:# some numbers and path are required to be modified
+		if Blockdata["subgroup_myid"] ==0:# some numbers and path are required to be modified
 			# varibles in Tracker to be updated
 			Tracker["constants"]["masterdir"] = masterdir
 			Tracker["previousoutputdir"]      = Tracker["directory"]
@@ -4786,16 +5661,16 @@ def do_ctrefromsort3d_get_subset_data(masterdir, option_old_refinement_dir, opti
 			write_text_file(new_chunk_two, os.path.join(iter_dir, "chunk_1_%03d.txt"%selected_iter))
 			write_text_file(new_particle_group_one, os.path.join(iter_dir, "particle_groups_0.txt"))
 			write_text_file(new_particle_group_two, os.path.join(iter_dir, "particle_groups_1.txt"))
-		Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], comm) # balance processors
+		Tracker = wrap_mpi_bcast(Tracker,0, comm) # balance processors
 		Tracker["constants"]["orgstack"] = orgstack
-		if Blockdata["subgroup_myid"] == Blockdata["main_node"]:# some numbers and path are required to be modified
+		if Blockdata["subgroup_myid"] ==0:# some numbers and path are required to be modified
 			fout = open(os.path.join(iter_dir, "Tracker_%03d.json"%selected_iter),"w")
 			json.dump(Tracker, fout)
 			fout.close()
 		mpi_barrier(comm)
 	return
 	
-#######functions for ctreffromsorting
+####### functions for ctreffromsorting
 def ctrefromsorting_rec3d_faked_iter(masterdir, selected_iter=-1, rec3d_image_size =-1, comm = -1):
 	global Tracker, Blockdata
 	import json
@@ -4812,17 +5687,17 @@ def ctrefromsorting_rec3d_faked_iter(masterdir, selected_iter=-1, rec3d_image_si
 		partids           = [None, None]
 		partstack         = [None, None]
 		final_dir         = Tracker["directory"] 
-		if Blockdata["subgroup_myid"] == Blockdata["main_node"]:
-			fout = open(os.path.join(Tracker["directory"], "Tracker_%03d.json"%selected_iter),"r")
+		if Blockdata["subgroup_myid"] == 0:
+			fout    = open(os.path.join(Tracker["directory"], "Tracker_%03d.json"%selected_iter),"r")
 			Tracker = convert_json_fromunicode(json.load(fout))
 			fout.close()
 			if rec3d_image_size !=-1: Tracker["nxinit"] = rec3d_image_size
 		else: Tracker = 0
-		Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], comm) # balance processors
+		Tracker = wrap_mpi_bcast(Tracker,0, comm) # balance processors
 		Blockdata["accumulatepw"] = [[],[]]
 		if selected_iter ==-1: ERROR("Iteration number has to be determined in advance.","ctrefromsorting_rec3d_faked_iter",1, Blockdata["subgroup_myid"])  
 		carryon = 1
-		if(Blockdata["subgroup_myid"] == Blockdata["main_node"]):
+		if(Blockdata["subgroup_myid"] == 0):
 			try:
 				refang  = read_text_row( os.path.join(Tracker["directory"], "refang.txt"))
 				rshifts = read_text_row( os.path.join(Tracker["directory"], "rshifts.txt"))
@@ -4830,31 +5705,31 @@ def ctrefromsorting_rec3d_faked_iter(masterdir, selected_iter=-1, rec3d_image_si
 		else:
 			refang  = 0
 			rshifts = 0
-		carryon = bcast_number_to_all(carryon, source_node = Blockdata["main_node"], mpi_comm = comm)
+		carryon = bcast_number_to_all(carryon, source_node =0, mpi_comm = comm)
 		if carryon == 0: ERROR("Failed to read refang and rshifts: %s %s "%(os.path.join(Tracker["directory"], "refang.txt"), os.path.join(Tracker["directory"], \
 			"rshifts.txt")), "ctrefromsorting_rec3d_faked_iter", 1,Blockdata["subgroup_myid"])
-		refang  = wrap_mpi_bcast(refang, Blockdata["main_node"], comm)
-		rshifts = wrap_mpi_bcast(rshifts, Blockdata["main_node"], comm)
+		refang  = wrap_mpi_bcast(refang,0, comm)
+		rshifts = wrap_mpi_bcast(rshifts,0, comm)
 		partids =[None, None]
-		if(Blockdata["subgroup_myid"] == Blockdata["main_node"]):
+		if(Blockdata["subgroup_myid"] == 0):
 			if not os.path.exists(os.path.join(Tracker["directory"], "tempdir")): os.mkdir (os.path.join(Tracker["directory"], "tempdir"))
 			l = 0
 			for procid in xrange(2):
 				partids[procid] = os.path.join(Tracker["directory"],"chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]))
 				l += len(read_text_file(partids[procid]))
 		else:l  = 0
-		l = bcast_number_to_all(l, source_node = Blockdata["main_node"], mpi_comm = comm)
+		l = bcast_number_to_all(l, source_node =0, mpi_comm = comm)
 		norm_per_particle = [[],[]]
 		for procid in xrange(2):
 			if procid ==0: original_data[1] = None	
 			partids[procid]   = os.path.join(Tracker["directory"],"chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]))
 			partstack[procid] = os.path.join(Tracker["constants"]["masterdir"],"main%03d"%(Tracker["mainiteration"]-1),"params-chunk_%01d_%03d.txt"%(procid,(Tracker["mainiteration"]-1)))
-			if Blockdata["subgroup_myid"] == Blockdata["main_node"]:
+			if Blockdata["subgroup_myid"] ==0:
 				nproc_previous = 0
 				while os.path.exists(os.path.join(Tracker["directory"],"oldparamstructure","oldparamstructure_%01d_%03d_%03d.json"%(procid, nproc_previous, Tracker["mainiteration"]))):nproc_previous += 1
 				psize = len(read_text_file(partids[procid]))
 			for jproc in xrange(Blockdata["nsubset"]):
-				if Blockdata["subgroup_myid"] == Blockdata["main_node"]:
+				if Blockdata["subgroup_myid"] == 0:
 					dummy = []
 					im_start, im_end = MPI_start_end(psize, Blockdata["nsubset"], jproc)
 					istart_old_proc_id = -1
@@ -4876,10 +5751,10 @@ def ctrefromsorting_rec3d_faked_iter(masterdir, selected_iter=-1, rec3d_image_si
 							ptl_on_this_cpu  +=1
 							mlocal_id_on_old +=1
 					del oldparamstructure_on_old_cpu
-					if jproc== Blockdata["main_node"]: oldparamstructure[procid] = dummy
+					if jproc == 0: oldparamstructure[procid] = dummy
 					else: wrap_mpi_send(dummy, jproc, comm)
 				else:
-					if Blockdata["subgroup_myid"] ==jproc: oldparamstructure[procid] = wrap_mpi_recv(0, comm)
+					if Blockdata["subgroup_myid"] == jproc: oldparamstructure[procid] = wrap_mpi_recv(0, comm)
 				mpi_barrier(comm)
 			mpi_barrier(comm)
 			#####
@@ -5159,150 +6034,216 @@ def do3d_sorting_groups_rec3d(iteration, masterdir, log_main):
 	res_143 					    =	Tracker["number_of_groups"]*[0]
 	Tracker["directory"]            =   masterdir
 	Tracker["constants"]["masterdir"] = masterdir
-	for index_of_colors in xrange(Blockdata["no_of_groups"]):	
-		group_start, group_end = MPI_volume_start_end(Tracker["number_of_groups"], Blockdata["no_of_groups"], index_of_colors)
-		if Blockdata["color"] == index_of_colors:  # It has to be 1 to avoid problem with tvol1 not closed on the disk
-			for index_of_group in xrange(group_start, group_end):
+	Tracker["maxfrad"] = Tracker["nxinit"]//2
+	####
+	if Blockdata["no_of_groups"]>1:
+		sub_main_node_list = [-1 for i in xrange(Blockdata["no_of_groups"])]
+		for index_of_colors in xrange(Blockdata["no_of_groups"]):
+			for iproc in xrange(Blockdata["nproc"]-1):
+				if Blockdata["myid"]== iproc:
+					if Blockdata["color"] == index_of_colors and Blockdata["myid_on_node"] == 0:
+						sub_main_node_list[index_of_colors] = Blockdata["myid"]
+					wrap_mpi_send(sub_main_node_list, Blockdata["last_node"], MPI_COMM_WORLD)
+				if Blockdata["myid"] == Blockdata["last_node"]:
+					dummy = wrap_mpi_recv(iproc, MPI_COMM_WORLD)
+					for im in xrange(len(dummy)):
+						if dummy[im]>-1: sub_main_node_list[im] = dummy[im]
+				mpi_barrier(MPI_COMM_WORLD)
+			mpi_barrier(MPI_COMM_WORLD)
+		mpi_barrier(MPI_COMM_WORLD)
+		wrap_mpi_bcast(sub_main_node_list, Blockdata["last_node"], MPI_COMM_WORLD)
+		#if Blockdata["myid"] == Blockdata["last_node"]:
+		#	print("MMM", sub_main_node_list)
+		####		
+		if Tracker["number_of_groups"]%Blockdata["no_of_groups"]== 0: 
+			nbig_loop = Tracker["number_of_groups"]//Blockdata["no_of_groups"]
+		else: nbig_loop = Tracker["number_of_groups"]//Blockdata["no_of_groups"]+1
+	
+		big_loop_colors = [[] for i in xrange(nbig_loop)]
+		big_loop_groups = [[] for i in xrange(nbig_loop)]
+		nc = 0
+		while nc <Tracker["number_of_groups"]:
+			im =  nc//Blockdata["no_of_groups"]
+			jm =  nc%Blockdata["no_of_groups"]
+			big_loop_colors[im].append(jm)
+			big_loop_groups[im].append(nc)
+			nc +=1
+		#if Blockdata["myid"] == Blockdata["last_node"]:
+		#	print(big_loop_groups, big_loop_colors)
+		#####
+		for iloop in xrange(nbig_loop):
+			for im in xrange(len(big_loop_colors[iloop])):
+				index_of_group  = big_loop_groups[iloop][im]
+				index_of_colors = big_loop_colors[iloop][im]
 				Clusterdir = os.path.join(Tracker["directory"], "Cluster%d"%index_of_group, "main%03d"%iteration)
-				cfsc = 0
-				if Blockdata["myid_on_node"] == 0:					
-					tvol0 		= get_im(os.path.join(Clusterdir, "tempdir", "tvol_0_%03d.hdf")%iteration)
-					tweight0 	= get_im(os.path.join(Clusterdir, "tempdir", "tweight_0_%03d.hdf")%iteration)
-					tvol1 		= get_im(os.path.join(Clusterdir, "tempdir", "tvol_1_%03d.hdf")%iteration)
-					tweight1 	= get_im(os.path.join(Clusterdir, "tempdir", "tweight_1_%03d.hdf")%iteration)
-					Util.fuse_low_freq(tvol0, tvol1, tweight0, tweight1, 2*Tracker["fuse_freq"])
+				if(Blockdata["myid"] == Blockdata["last_node"]):
+					tvol2 		= get_im(os.path.join(Clusterdir, "tempdir", "tvol_0_%03d.hdf"%iteration))
+					tweight2 	= get_im(os.path.join(Clusterdir, "tempdir", "tweight_0_%03d.hdf"%iteration))
+					treg2 		= get_im(os.path.join(Clusterdir, "tempdir", "trol_0_%03d.hdf"%iteration))
+					tag      = 7007
+					send_EMData(tvol2, sub_main_node_list[index_of_colors], tag,MPI_COMM_WORLD)
+					send_EMData(tweight2, sub_main_node_list[index_of_colors], tag,MPI_COMM_WORLD)
+					send_EMData(treg2, sub_main_node_list[index_of_colors], tag,MPI_COMM_WORLD)
+				elif (Blockdata["myid"] == sub_main_node_list[index_of_colors]):
+					tag      = 7007
+					tvol2    = recv_EMData(Blockdata["last_node"], tag, MPI_COMM_WORLD)
+					tweight2 = recv_EMData(Blockdata["last_node"], tag, MPI_COMM_WORLD)
+					treg2    = recv_EMData(Blockdata["last_node"], tag, MPI_COMM_WORLD)
+				mpi_barrier(MPI_COMM_WORLD)
+			mpi_barrier(MPI_COMM_WORLD)
+		
+			for im in xrange(len(big_loop_colors[iloop])):
+				index_of_group  = big_loop_groups[iloop][im]
+				index_of_colors = big_loop_colors[iloop][im]
+				if Blockdata["color"] == index_of_colors:
+					if( Blockdata["myid_on_node"] != 0):
+						tvol2 		= model_blank(1)
+						tweight2 	= model_blank(1)
+						treg2		= model_blank(1)
+					tvol2 = steptwo_mpi(tvol2, tweight2, treg2, None, False, color = index_of_colors) # has to be False!!!
+					del tweight2, treg2
+				mpi_barrier(Blockdata["shared_comm"])
+			mpi_barrier(MPI_COMM_WORLD)
+		
+			for im in xrange(len(big_loop_colors[iloop])):
+				index_of_group  = big_loop_groups[iloop][im]
+				index_of_colors = big_loop_colors[iloop][im]
+				if (Blockdata["color"] == index_of_colors) and (Blockdata["myid_on_node"] == 0):
 					tag = 7007
-					send_EMData(tvol1,    Blockdata["no_of_processes_per_group"]-1, tag, Blockdata["shared_comm"])
-					send_EMData(tweight1, Blockdata["no_of_processes_per_group"]-1, tag, Blockdata["shared_comm"])
-					tvol0.set_attr_dict( {"is_complex":1, "is_fftodd":1, 'is_complex_ri': 1, 'is_fftpad': 1} )
-					shrank0 	= stepone(tvol0, tweight0)
-				elif Blockdata["myid_on_node"] == Blockdata["no_of_processes_per_group"]-1:					
+					send_EMData(tvol2, Blockdata["last_node"], tag, MPI_COMM_WORLD)
+				elif(Blockdata["myid"] == Blockdata["last_node"]):
 					tag = 7007
-					tvol1 		= recv_EMData(0, tag, Blockdata["shared_comm"])
-					tweight1 	= recv_EMData(0, tag, Blockdata["shared_comm"])
-					tvol1.set_attr_dict( {"is_complex":1, "is_fftodd":1, 'is_complex_ri': 1, 'is_fftpad': 1} )
-					shrank1 	= stepone(tvol1, tweight1)
-					treg1       = get_im(os.path.join(Clusterdir, "tempdir", "trol_1_%03d.hdf"%iteration))
+					tvol2 = recv_EMData(sub_main_node_list[index_of_colors], tag, MPI_COMM_WORLD)
+					tvol2.write_image(os.path.join(Tracker["directory"], "vol_unfiltered_0_grp%03d.hdf"%index_of_group))
+					del tvol2
+				mpi_barrier(MPI_COMM_WORLD)
+			mpi_barrier(MPI_COMM_WORLD)
+		
+			for im in xrange(len(big_loop_colors[iloop])):
+				index_of_group  = big_loop_groups[iloop][im]
+				index_of_colors = big_loop_colors[iloop][im]
+				Clusterdir = os.path.join(Tracker["directory"], "Cluster%d"%index_of_group, "main%03d"%iteration)
+				if(Blockdata["myid"] == Blockdata["last_node"]):
+					tvol2 		= get_im(os.path.join(Clusterdir, "tempdir", "tvol_1_%03d.hdf"%iteration))
+					tweight2 	= get_im(os.path.join(Clusterdir, "tempdir", "tweight_1_%03d.hdf"%iteration))
+					treg2 		= get_im(os.path.join(Clusterdir, "tempdir", "trol_1_%03d.hdf"%iteration))
+					tag      = 7007
+					send_EMData(tvol2,    sub_main_node_list[index_of_colors], tag,MPI_COMM_WORLD)
+					send_EMData(tweight2, sub_main_node_list[index_of_colors], tag,MPI_COMM_WORLD)
+					send_EMData(treg2,    sub_main_node_list[index_of_colors], tag,MPI_COMM_WORLD)
+				
+				elif (Blockdata["myid"] == sub_main_node_list[index_of_colors]):
+					tag      = 7007
+					tvol2       = recv_EMData(Blockdata["last_node"], tag, MPI_COMM_WORLD)
+					tweight2    = recv_EMData(Blockdata["last_node"], tag, MPI_COMM_WORLD)
+					treg2       = recv_EMData(Blockdata["last_node"], tag, MPI_COMM_WORLD)
+				mpi_barrier(MPI_COMM_WORLD)
+			mpi_barrier(MPI_COMM_WORLD)
+		
+			for im in xrange(len(big_loop_colors[iloop])):
+				index_of_group  = big_loop_groups[iloop][im]
+				index_of_colors = big_loop_colors[iloop][im]
+				Tracker["maxfrad"] = Tracker["nxinit"]//2
+				if Blockdata["color"] == index_of_colors:
+					if( Blockdata["myid_on_node"] != 0):
+						tvol2 		= model_blank(1)
+						tweight2 	= model_blank(1)
+						treg2		= model_blank(1)
+					tvol2 = steptwo_mpi(tvol2, tweight2, treg2, None, False, color = index_of_colors) # has to be False!!!
+					del tweight2, treg2
 				mpi_barrier(Blockdata["shared_comm"])
-				if 	Blockdata["myid_on_node"] == 0:
-					tag = 7007					
-					send_EMData(shrank0, Blockdata["no_of_processes_per_group"]-1, tag, Blockdata["shared_comm"])
-					del shrank0
-					lcfsc = 0
-				elif Blockdata["myid_on_node"] == Blockdata["no_of_processes_per_group"]-1:
-					tag         = 7007
-					shrank0 	= recv_EMData(0, tag, Blockdata["shared_comm"])
-					#  Note shrank volumes are Fourier uncentered.
-					cfsc 		= fsc(shrank0, shrank1)[1]
-					write_text_row(cfsc, os.path.join(Tracker["directory"], "fsc_driver_grp%03d_iter%03d.txt")%(index_of_group,iteration))
-					del shrank0, shrank1
-					if(Tracker["nxinit"]<Tracker["constants"]["nnxo"]):
-						cfsc 	= cfsc[:Tracker["nxinit"]]
-						for i in xrange(len(cfsc),Tracker["constants"]["nnxo"]//2+1):  cfsc.append(0.0)
-					lcfsc  = len(cfsc)							
-					fsc05  = 0
-					fsc143 = 0 		
-					for ifreq in xrange(len(cfsc)):	
-						if cfsc[ifreq] <0.5: break
-					fsc05  = ifreq - 1
-					for ifreq in xrange(len(cfsc)):
-						if cfsc[ifreq]<0.143: break
-					fsc143 = ifreq - 1
-					Tracker["fsc143"] = fsc143
-					Tracker["fsc05"]  = fsc05
-				Tracker = wrap_mpi_bcast(Tracker, Blockdata["no_of_processes_per_group"]-1, Blockdata["shared_comm"])
-				cfsc = wrap_mpi_bcast(cfsc, Blockdata["no_of_processes_per_group"]-1, Blockdata["shared_comm"])
-				Tracker["maxfrad"] = Tracker["constants"]["nnxo"]//2
-				if( Blockdata["myid_on_node"] == 0):
-					res_05[index_of_group]  = Tracker["fsc05"]
-					res_143[index_of_group] = Tracker["fsc143"]
-				if Blockdata["fftwmpi"]:
-					if( Blockdata["myid_on_node"] == 0):
-						treg0 = get_im(os.path.join(Clusterdir, "tempdir", "trol_0_%03d.hdf"%iteration))
-					else:
-						treg0    = model_blank(1)
-						tvol0    = model_blank(1)
-						tweight0 = model_blank(1)
-					tvol0 = steptwo_mpi(tvol0, tweight0, treg0, cfsc, False, color = index_of_colors)
-					if( Blockdata["myid_on_node"] == 0): 
-						tvol0.write_image(os.path.join(masterdir, "vol_unfiltered_0_grp%03d.hdf"%index_of_group))
-					del tvol0, tweight0, treg0
-				else:
-					if( Blockdata["myid_on_node"] == 0):
-						treg0 = get_im(os.path.join(Clusterdir, "tempdir", "trol_0_%03d.hdf"%iteration))
-						tvol0 = steptwo(tvol0, tweight0, treg0, cfsc, False)
-						tvol0.write_image(os.path.join(masterdir, "vol_unfiltered_0_grp%03d.hdf"%index_of_group))			
-						del tvol0, tweight0, treg0
-				mpi_barrier(Blockdata["shared_comm"])
-				if Blockdata["fftwmpi"]:
-					if( Blockdata["myid_on_node"] == 0):# has to be main cpu
-						tvol1 		= get_im(os.path.join(Clusterdir, "tempdir", "tvol_1_%03d.hdf")%iteration)
-						tweight1 	= get_im(os.path.join(Clusterdir, "tempdir", "tweight_1_%03d.hdf")%iteration)
-						treg1 =       get_im(os.path.join(Clusterdir, "tempdir", "trol_1_%03d.hdf"%iteration))
-						tvol0 		= get_im(os.path.join(Clusterdir, "tempdir", "tvol_0_%03d.hdf")%iteration)
-						tweight0 	= get_im(os.path.join(Clusterdir, "tempdir", "tweight_0_%03d.hdf")%iteration)
-						Util.fuse_low_freq(tvol0, tvol1, tweight0, tweight1, 2*Tracker["fuse_freq"])
-					else:
-						treg1    = model_blank(1)
-						tvol1    = model_blank(1)
-						tweight1 = model_blank(1)
-					tvol1 = steptwo_mpi(tvol1, tweight1, treg1, cfsc, False, color = index_of_colors)
-					if (Blockdata["myid_on_node"] == 0): 
-						tvol1.write_image(os.path.join(masterdir, "vol_unfiltered_1_grp%03d.hdf"%index_of_group))
-					del tvol1, tweight1, treg1
-				else:
-					if( Blockdata["myid_on_node"] ==0):
-						tvol1    = get_im(os.path.join(Clusterdir, "tempdir", "tvol_1_%03d.hdf")%iteration)
-						tweight1 = get_im(os.path.join(Clusterdir, "tempdir", "tweight_1_%03d.hdf")%iteration)
-						treg1    = get_im(os.path.join(Clusterdir, "tempdir", "trol_1_%03d.hdf"%iteration))
-						tvol1    = steptwo(tvol1, tweight1, treg1, cfsc, False)
-						tvol1.write_image(os.path.join(masterdir, "vol_unfiltered_1_grp%03d.hdf"%index_of_group))					
-						#--  memory_check(Blockdata["myid"],"first node, before steptwo")
-						del tvol1, tweight1, treg1
-				mpi_barrier(Blockdata["shared_comm"])
-			mpi_barrier(Blockdata["shared_comm"])
-	mpi_barrier(MPI_COMM_WORLD)	
-	res_05   = mpi_reduce(res_05,  Tracker["number_of_groups"], MPI_INT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
-	res_143  = mpi_reduce(res_143, Tracker["number_of_groups"], MPI_INT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
-	res_05   = map(int, res_05)
-	res_143  = map(int, res_143)	
-	if (Blockdata["myid"] == Blockdata["main_node"]):
-		Tracker["fsc143"] = res_143
-		Tracker["fsc05"]  = res_05
-		for icluster in xrange(Tracker["number_of_groups"]):
-			res05  = Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/res_05[icluster]
-			res143 = Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/res_143[icluster]
-			#msg = "cluster  %d   fsc05/fsc143   %d/%d, %5.2f/%5.2f"%(icluster, Tracker["fsc05"][icluster], Tracker["fsc143"][icluster], res05, res143)
-			#print(msg)
-			#log_main.add(msg)
-	keepgoing = bcast_number_to_all(keepgoing, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD) # always check	
-	Tracker   = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
-	if (Blockdata["myid"] == Blockdata["main_node"]):
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		msg = "command for sharpening maps: sxprocess.py map0.hdf map1.hdf --postprocess  --mask=%s --fsc_adj --pixel_size=%f"%(Tracker["constants"]["mask3D"], Tracker["constants"]["pixel_size"])
-		print(line, msg)
-		log_main.add(msg)
-	if not keepgoing: ERROR("do3d_sorting_groups_trl_iter  %s"%os.path.join(Tracker["directory"], "tempdir"),"do3d_sorting_groups_trl_iter", 1, Blockdata["myid"]) 
+			mpi_barrier(MPI_COMM_WORLD)
+			for im in xrange(len(big_loop_colors[iloop])):
+				index_of_group  = big_loop_groups[iloop][im]
+				index_of_colors = big_loop_colors[iloop][im]
+				if (Blockdata["color"] == index_of_colors) and (Blockdata["myid_on_node"] == 0):
+					tag = 7007
+					send_EMData(tvol2, Blockdata["last_node"], tag, MPI_COMM_WORLD)
+				elif(Blockdata["myid"] == Blockdata["last_node"]):
+					tag = 7007
+					tvol2 = recv_EMData(sub_main_node_list[index_of_colors], tag, MPI_COMM_WORLD)
+					tvol2.write_image(os.path.join(Tracker["directory"], "vol_unfiltered_1_grp%03d.hdf"%index_of_group))
+					del tvol2
+				mpi_barrier(MPI_COMM_WORLD)
+			mpi_barrier(MPI_COMM_WORLD)
+	else:
+		Tracker["maxfrad"] = Tracker["nxinit"]//2
+		for index_of_group in xrange(Tracker["number_of_groups"]):
+			Clusterdir = os.path.join(Tracker["directory"], "Cluster%d"%index_of_group, "main%03d"%iteration)
+			
+			if(Blockdata["myid"] == Blockdata["last_node"]):
+				tvol2 		= get_im(os.path.join(Clusterdir, "tempdir", "tvol_0_%03d.hdf"%iteration))
+				tweight2 	= get_im(os.path.join(Clusterdir, "tempdir", "tweight_0_%03d.hdf"%iteration))
+				treg2 		= get_im(os.path.join(Clusterdir, "tempdir", "trol_0_%03d.hdf"%iteration))
+				tag      = 7007
+				send_EMData(tvol2, Blockdata["main_node"],    tag, MPI_COMM_WORLD)
+				send_EMData(tweight2, Blockdata["main_node"], tag, MPI_COMM_WORLD)
+				send_EMData(treg2, Blockdata["main_node"],    tag, MPI_COMM_WORLD)
+			elif (Blockdata["myid"] == Blockdata["main_node"]):
+				tag      = 7007
+				tvol2    = recv_EMData(Blockdata["last_node"], tag, MPI_COMM_WORLD)
+				tweight2 = recv_EMData(Blockdata["last_node"], tag, MPI_COMM_WORLD)
+				treg2    = recv_EMData(Blockdata["last_node"], tag, MPI_COMM_WORLD)
+			mpi_barrier(MPI_COMM_WORLD)
+			if Blockdata["myid"] != Blockdata["main_node"]:
+				tvol2 		= model_blank(1)
+				tweight2 	= model_blank(1)
+				treg2		= model_blank(1)
+			tvol2 = steptwo_mpi(tvol2, tweight2, treg2, None, False, color = 0) # has to be False!!!
+			del tweight2, treg2
+			if( Blockdata["myid"] == Blockdata["main_node"]):
+				#tvol2 = cosinemask(tvol2, radius = Tracker["constants"]["radius"])
+				tvol2.write_image(os.path.join(Tracker["directory"], "vol_unfiltered_0_grp%03d.hdf"%index_of_group))
+			mpi_barrier(MPI_COMM_WORLD)
+			
+			if(Blockdata["myid"] == Blockdata["last_node"]):
+				tvol2 		= get_im(os.path.join(Clusterdir, "tempdir", "tvol_1_%03d.hdf"%iteration))
+				tweight2 	= get_im(os.path.join(Clusterdir, "tempdir", "tweight_1_%03d.hdf"%iteration))
+				treg2 		= get_im(os.path.join(Clusterdir, "tempdir", "trol_1_%03d.hdf"%iteration))
+				tag      = 7007
+				send_EMData(tvol2, Blockdata["main_node"],    tag, MPI_COMM_WORLD)
+				send_EMData(tweight2, Blockdata["main_node"], tag, MPI_COMM_WORLD)
+				send_EMData(treg2, Blockdata["main_node"],    tag, MPI_COMM_WORLD)
+			elif (Blockdata["myid"] == Blockdata["main_node"]):
+				tag      = 7007
+				tvol2    = recv_EMData(Blockdata["last_node"], tag, MPI_COMM_WORLD)
+				tweight2 = recv_EMData(Blockdata["last_node"], tag, MPI_COMM_WORLD)
+				treg2    = recv_EMData(Blockdata["last_node"], tag, MPI_COMM_WORLD)
+			mpi_barrier(MPI_COMM_WORLD)
+			if Blockdata["myid"] != Blockdata["main_node"]:
+				tvol2 		= model_blank(1)
+				tweight2 	= model_blank(1)
+				treg2		= model_blank(1)
+			tvol2 = steptwo_mpi(tvol2, tweight2, treg2, None, False, color = 0) # has to be False!!!
+			del tweight2, treg2
+			if( Blockdata["myid"] == Blockdata["main_node"]):
+				tvol2.write_image(os.path.join(Tracker["directory"], "vol_unfiltered_1_grp%03d.hdf"%index_of_group))
+			mpi_barrier(MPI_COMM_WORLD)
+			
+	keepgoing = bcast_number_to_all(keepgoing, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD) # always check 
+	Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
+	if keepgoing == 0: ERROR("do3d_sorting_groups_trl_iter  %s"%os.path.join(Tracker["directory"], "tempdir"),"do3d_sorting_groups_trl_iter", 1, Blockdata["myid"]) 
 	return
 ####<<<--------
-### nofsc rec3d	
+### nofsc rec3d
 def do3d_sorting_groups_nofsc_smearing_iter(srdata, partial_rec3d, iteration):
 	global Tracker, Blockdata
 	keepgoing = 1
-	if(Blockdata["myid"] == Blockdata["main_node"]):
+	if(Blockdata["myid"] == Blockdata["last_node"]):
 		if not os.path.exists(os.path.join(Tracker["directory"], "tempdir")):os.mkdir(os.path.join(Tracker["directory"], "tempdir"))
 	mpi_barrier(MPI_COMM_WORLD)
 	for index_of_groups in xrange(Tracker["number_of_groups"]):
 		if partial_rec3d:
-			tvol, tweight, trol = recons3d_trl_struct_group_nofsc_shifted_data_partial_MPI(Blockdata["myid"], Blockdata["main_node"], Blockdata["nproc"], srdata, index_of_groups, \
+			tvol, tweight, trol = recons3d_trl_struct_group_nofsc_shifted_data_partial_MPI(Blockdata["myid"], Blockdata["last_node"], Blockdata["nproc"], srdata, index_of_groups, \
 			os.path.join(Tracker["directory"], "tempdir", "trol_2_%d.hdf"%index_of_groups), \
 			os.path.join(Tracker["directory"], "tempdir", "tvol_2_%d.hdf"%index_of_groups), \
 			os.path.join(Tracker["directory"], "tempdir", "tweight_2_%d.hdf"%index_of_groups),\
       		None,  Tracker["constants"]["CTF"], (2*Tracker["nxinit"]+3), Tracker["nosmearing"])
 		else:
-			tvol, tweight, trol = recons3d_trl_struct_group_nofsc_shifted_data_MPI(Blockdata["myid"], Blockdata["main_node"], srdata,\
+			tvol, tweight, trol = recons3d_trl_struct_group_nofsc_shifted_data_MPI(Blockdata["myid"], Blockdata["last_node"], srdata,\
 			     index_of_groups, None,  Tracker["constants"]["CTF"], (2*Tracker["nxinit"]+3), Tracker["nosmearing"])
-		if(Blockdata["myid"] == Blockdata["main_node"]):
+			     
+		if(Blockdata["myid"] == Blockdata["last_node"]):
 			tvol.set_attr("is_complex",0)
 			tvol.write_image(os.path.join(Tracker["directory"], "tempdir", "tvol_2_%d.hdf"%index_of_groups))
 			tweight.write_image(os.path.join(Tracker["directory"], "tempdir", "tweight_2_%d.hdf"%index_of_groups))
@@ -5310,14 +6251,6 @@ def do3d_sorting_groups_nofsc_smearing_iter(srdata, partial_rec3d, iteration):
 			del tvol
 			del tweight
 			del trol
-			"""
-			if partial_rec3d:
-				tvol3.set_attr("is_complex",0)
-				tvol3.write_image(os.path.join(Tracker["directory"], "tempdir", "tvol_3_%d.hdf"%index_of_groups))
-				tweight3.write_image(os.path.join(Tracker["directory"], "tempdir", "tweight_3_%d.hdf"%index_of_groups))
-				trol3.write_image(os.path.join(Tracker["directory"], "tempdir", "trol_3_%d.hdf"%index_of_groups))
-			"""
-		mpi_barrier(MPI_COMM_WORLD)
 	mpi_barrier(MPI_COMM_WORLD)
 	#fsc143            = 0
 	#fsc05             = 0
@@ -5325,109 +6258,107 @@ def do3d_sorting_groups_nofsc_smearing_iter(srdata, partial_rec3d, iteration):
 	Tracker["fsc05"]  = 0
 	Tracker["maxfrad"]= Tracker["nxinit"]//2
 	if Blockdata["no_of_groups"]>1:
+	 	# new starts
+		sub_main_node_list = [ -1 for i in xrange(Blockdata["no_of_groups"])]
 		for index_of_colors in xrange(Blockdata["no_of_groups"]):
-			group_start, group_end = MPI_volume_start_end(Tracker["number_of_groups"], Blockdata["no_of_groups"], index_of_colors)
-			if Blockdata["color"] == index_of_colors:  # It has to be 1 to avoid problem with tvol1 not closed on the disk
-				for index_of_group in xrange(group_start, group_end):
-					Tracker["fsc143"] =	Tracker["nxinit"]//2
-					Tracker["fsc05"]  =	Tracker["nxinit"]//2
-					cfsc = [0.0 for i in xrange(Tracker["constants"]["nnxo"])]
-					if Blockdata["fftwmpi"]:
-						if(Blockdata["myid_on_node"] == 0):
-							tvol2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_2_%d.hdf")%index_of_group)
-							tweight2 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_2_%d.hdf")%index_of_group)
-							treg2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "trol_2_%d.hdf"%index_of_group))
-						else:
-							tvol2 		= model_blank(1)
-							tweight2 	= model_blank(1)
-							treg2		= model_blank(1)
-						tvol2 = steptwo_mpi(tvol2, tweight2, treg2, cfsc, False, color = index_of_colors) # has to be False!!!
-						del tweight2, treg2
-						if(Blockdata["myid_on_node"] == 0):
-							if(Tracker["mask3D"] == None):tvol2 = cosinemask(tvol2, radius = Tracker["constants"]["radius"])
-							else: Util.mul_img(tvol2, get_im(Tracker["constants"]["mask3D"]))
-							tvol2.write_image(os.path.join(Tracker["directory"], "vol_grp%03d_iter%03d.hdf"%(index_of_group,iteration)))
-							del tvol2
-					else:
-						if(Blockdata["myid_on_node"] == 0):
-							tvol2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_2_%d.hdf")%index_of_group)
-							tweight2 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_2_%d.hdf")%index_of_group)
-							treg2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "trol_2_%d.hdf"%index_of_group))
-							tvol2 = steptwo(tvol2, tweight2, treg2, cfsc, False)
-							del tweight2, treg2
-							if(Tracker["mask3D"] == None): tvol2 = cosinemask(tvol2, radius = Tracker["constants"]["radius"])
-							else: Util.mul_img(tvol2, get_im(Tracker["constants"]["mask3D"]))
-							tvol2.write_image(os.path.join(Tracker["directory"], "vol_grp%03d_iter%03d.hdf"%(index_of_group,iteration)))
-							del tvol2
-					mpi_barrier(Blockdata["shared_comm"])
-					######
-					"""
-					if partial_rec3d:
-						if Blockdata["fftwmpi"]:
-							if(Blockdata["myid_on_node"] == 0):
-								tvol2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_3_%d.hdf")%index_of_group)
-								tweight2 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_3_%d.hdf")%index_of_group)
-								treg2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "trol_3_%d.hdf"%index_of_group))
-							else:
-								tvol2 		= model_blank(1)
-								tweight2 	= model_blank(1)
-								treg2		= model_blank(1)
-							tvol2 = steptwo_mpi(tvol2, tweight2, treg2, cfsc, False, color = index_of_colors) # has to be False!!!
-							del tweight2, treg2
-							if(Blockdata["myid_on_node"] == 0):
-								if(Tracker["mask3D"] == None):tvol2 = cosinemask(tvol2, radius = Tracker["constants"]["radius"])
-								else: Util.mul_img(tvol2, get_im(Tracker["constants"]["mask3D"]))
-								tvol2.write_image(os.path.join(Tracker["directory"], "vol_grp%03d_iter%03d.hdf"%(index_of_group,iteration)))
-								del tvol2
-						else:
-							if(Blockdata["myid_on_node"] == 0):
-								tvol2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_3_%d.hdf")%index_of_group)
-								tweight2 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_3_%d.hdf")%index_of_group)
-								treg2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "trol_3_%d.hdf"%index_of_group))
-								tvol2       = steptwo(tvol2, tweight2, treg2, cfsc, False)
-								del tweight2, treg2
-								if(Tracker["mask3D"] == None):tvol2 = cosinemask(tvol2, radius = Tracker["constants"]["radius"])
-								else: Util.mul_img(tvol2, get_im(Tracker["constants"]["mask3D"]))
-								tvol2.write_image(os.path.join(Tracker["directory"], "vol_3_grp%03d_iter%03d.hdf"%(index_of_group,iteration)))
-								del tvol2
-						"""
+			for iproc in xrange(Blockdata["nproc"]-1):
+				if Blockdata["myid"]== iproc:
+					if Blockdata["color"] == index_of_colors and Blockdata["myid_on_node"] == 0:
+						sub_main_node_list[index_of_colors] = Blockdata["myid"]
+					wrap_mpi_send(sub_main_node_list, Blockdata["last_node"], MPI_COMM_WORLD)
+				if Blockdata["myid"] == Blockdata["last_node"]:
+					dummy = wrap_mpi_recv(iproc, MPI_COMM_WORLD)
+					for im in xrange(len(dummy)):
+						if dummy[im]>-1: sub_main_node_list[im] = dummy[im]
+				mpi_barrier(MPI_COMM_WORLD)
+			mpi_barrier(MPI_COMM_WORLD)
+		mpi_barrier(MPI_COMM_WORLD)
+		wrap_mpi_bcast(sub_main_node_list, Blockdata["last_node"], MPI_COMM_WORLD)
+		#if Blockdata["myid"] == Blockdata["last_node"]:print("MMM", sub_main_node_list)
+		####		
+		if Tracker["number_of_groups"]%Blockdata["no_of_groups"]== 0: 
+			nbig_loop = Tracker["number_of_groups"]//Blockdata["no_of_groups"]
+		else: nbig_loop = Tracker["number_of_groups"]//Blockdata["no_of_groups"]+1
+	
+		big_loop_colors = [[] for i in xrange(nbig_loop)]
+		big_loop_groups = [[] for i in xrange(nbig_loop)]
+		nc = 0
+		while nc <Tracker["number_of_groups"]:
+			im =  nc//Blockdata["no_of_groups"]
+			jm =  nc%Blockdata["no_of_groups"]
+			big_loop_colors[im].append(jm)
+			big_loop_groups[im].append(nc)
+			nc +=1
+		#if Blockdata["myid"] == Blockdata["last_node"]:
+		#	print(big_loop_groups, big_loop_colors)
+		for iloop in xrange(nbig_loop):
+			for im in xrange(len(big_loop_colors[iloop])):
+				index_of_group  = big_loop_groups[iloop][im]
+				index_of_colors = big_loop_colors[iloop][im]
+			
+				if(Blockdata["myid"] == Blockdata["last_node"]):
+					tvol2    = get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_2_%d.hdf")%index_of_group)
+					tweight2 = get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_2_%d.hdf")%index_of_group)
+					treg2 	 = get_im(os.path.join(Tracker["directory"], "tempdir", "trol_2_%d.hdf"%index_of_group))
+					tvol2.set_attr_dict( {"is_complex":1, "is_fftodd":1, 'is_complex_ri': 1, 'is_fftpad': 1})
+					tag = 7007
+					send_EMData(tvol2,    sub_main_node_list[index_of_colors], tag, MPI_COMM_WORLD)
+					send_EMData(tweight2, sub_main_node_list[index_of_colors], tag, MPI_COMM_WORLD)
+					send_EMData(treg2,    sub_main_node_list[index_of_colors], tag, MPI_COMM_WORLD)
+				
+				elif (Blockdata["myid"] == sub_main_node_list[index_of_colors]):
+					tag      = 7007
+					tvol2    = recv_EMData(Blockdata["last_node"], tag, MPI_COMM_WORLD)
+					tweight2 = recv_EMData(Blockdata["last_node"], tag, MPI_COMM_WORLD)
+					treg2    = recv_EMData(Blockdata["last_node"], tag, MPI_COMM_WORLD)
+				mpi_barrier(MPI_COMM_WORLD)
+			mpi_barrier(MPI_COMM_WORLD)
+	
+			for im in xrange(len(big_loop_colors[iloop])):
+				index_of_group  = big_loop_groups[iloop][im]
+				index_of_colors = big_loop_colors[iloop][im]
+				
+				if Blockdata["color"] == index_of_colors:  # It has to be 1 to avoid problem with tvol1 not closed on the disk								
+					if(Blockdata["myid_on_node"] != 0): 
+						tvol2     = model_blank(1)
+						tweight2  = model_blank(1)
+						treg2     = model_blank(1)
+					tvol2 = steptwo_mpi(tvol2, tweight2, treg2, None, False, color = index_of_colors) # has to be False!!!
+					del tweight2, treg2				
 				mpi_barrier(Blockdata["shared_comm"])
-			mpi_barrier(Blockdata["shared_comm"])
+			mpi_barrier(MPI_COMM_WORLD)
+		
+			for im in xrange(len(big_loop_colors[iloop])):
+				index_of_group  = big_loop_groups[iloop][im]
+				index_of_colors = big_loop_colors[iloop][im]
+				if (Blockdata["color"] == index_of_colors) and (Blockdata["myid_on_node"] == 0):
+					tag = 7007
+					send_EMData(tvol2, Blockdata["last_node"], tag, MPI_COMM_WORLD)
+				elif(Blockdata["myid"] == Blockdata["last_node"]):
+					tag = 7007
+					tvol2    = recv_EMData(sub_main_node_list[index_of_colors], tag, MPI_COMM_WORLD)
+					tvol2.write_image(os.path.join(Tracker["directory"], "vol_grp%03d_iter%03d.hdf"%(index_of_group,iteration)))
+					del tvol2
+			mpi_barrier(MPI_COMM_WORLD)
+		mpi_barrier(MPI_COMM_WORLD)
+		
 	else:# loop over all groups for single node
 		for index_of_group in xrange(Tracker["number_of_groups"]):
-				Tracker["fsc143"] =	Tracker["nxinit"]//2
-				Tracker["fsc05"]  =	Tracker["nxinit"]//2
-				cfsc = [0.0 for i in xrange(Tracker["constants"]["nnxo"])]
-				if Blockdata["fftwmpi"]:
-					if(Blockdata["myid_on_node"] == 0):
-						tvol2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_2_%d.hdf")%index_of_group)
-						tweight2 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_2_%d.hdf")%index_of_group)
-						treg2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "trol_2_%d.hdf"%index_of_group))
-						tvol2.set_attr_dict( {"is_complex":1, "is_fftodd":1, 'is_complex_ri': 1, 'is_fftpad': 1})
-					else:
-						tvol2 		= model_blank(1)
-						tweight2 	= model_blank(1)
-						treg2		= model_blank(1)
-					tvol2 = steptwo_mpi(tvol2, tweight2, treg2, cfsc, False, color = Blockdata["node_volume"][0]) # has to be False!!!
-					del tweight2, treg2
-					if(Blockdata["myid_on_node"] == 0):
-						if(Tracker["mask3D"] == None):tvol2 = cosinemask(tvol2, radius = Tracker["constants"]["radius"])
-						else: Util.mul_img(tvol2, get_im(Tracker["constants"]["mask3D"]))
-						tvol2.write_image(os.path.join(Tracker["directory"], "vol_grp%03d_iter%03d.hdf"%(index_of_group,iteration)))
-						del tvol2
-				else:# to be paralleled
-					if(Blockdata["myid_on_node"] == 0):
-						tvol2 	 = get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_2_%d.hdf")%index_of_group)
-						tweight2 = get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_2_%d.hdf")%index_of_group)
-						treg2 	 = get_im(os.path.join(Tracker["directory"], "tempdir", "trol_2_%d.hdf"%index_of_group))
-						tvol2.set_attr_dict( {"is_complex":1, "is_fftodd":1, 'is_complex_ri': 1, 'is_fftpad': 1})
-						tvol2    = steptwo(tvol2, tweight2, treg2, cfsc, False)
-						del tweight2, treg2
-						if(Tracker["mask3D"] == None):tvol2 = cosinemask(tvol2, radius = Tracker["constants"]["radius"])
-						else: Util.mul_img(tvol2, get_im(Tracker["constants"]["mask3D"]))
-						tvol2.write_image(os.path.join(Tracker["directory"], "vol_grp%03d_iter%03d.hdf"%(index_of_group,iteration)))
-						del tvol2
-				mpi_barrier(MPI_COMM_WORLD)
+			if(Blockdata["myid_on_node"] == 0):
+				tvol2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_2_%d.hdf")%index_of_group)
+				tweight2 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_2_%d.hdf")%index_of_group)
+				treg2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "trol_2_%d.hdf"%index_of_group))
+				tvol2.set_attr_dict( {"is_complex":1, "is_fftodd":1, 'is_complex_ri': 1, 'is_fftpad': 1})
+			else:
+				tvol2 		= model_blank(1)
+				tweight2 	= model_blank(1)
+				treg2		= model_blank(1)
+			tvol2 = steptwo_mpi(tvol2, tweight2, treg2, None, False) # has to be False!!!
+			del tweight2, treg2
+			if(Blockdata["myid_on_node"] == 0):
+				tvol2.write_image(os.path.join(Tracker["directory"], "vol_grp%03d_iter%03d.hdf"%(index_of_group,iteration)))
+				del tvol2
+			mpi_barrier(MPI_COMM_WORLD)
 	mpi_barrier(MPI_COMM_WORLD)
 	keepgoing = bcast_number_to_all(keepgoing, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD) # always check 
 	Tracker   = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
@@ -5764,6 +6695,7 @@ def do3d_sorting_groups_fsc_only_iter(data, paramstructure, norm_per_particle, i
 					tweight1 	= recv_EMData(0, tag, Blockdata["shared_comm"])
 					tvol1.set_attr_dict( {"is_complex":1, "is_fftodd":1, 'is_complex_ri': 1, 'is_fftpad': 1} )
 					shrank1 	= stepone(tvol1, tweight1)
+					
 				if Blockdata["myid_on_node"] == 1:
 					tvol0 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_0_1_%d.hdf")%index_of_group)
 					tweight0 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_0_1_%d.hdf")%index_of_group)
@@ -5780,7 +6712,8 @@ def do3d_sorting_groups_fsc_only_iter(data, paramstructure, norm_per_particle, i
 					tvol1 		= recv_EMData(1, tag, Blockdata["shared_comm"])
 					tweight1 	= recv_EMData(1, tag, Blockdata["shared_comm"])
 					tvol1.set_attr_dict( {"is_complex":1, "is_fftodd":1, 'is_complex_ri': 1, 'is_fftpad': 1} )
-					shrank1 	= stepone(tvol1, tweight1)					
+					shrank1 	= stepone(tvol1, tweight1)
+										
 				mpi_barrier(Blockdata["shared_comm"])				
 				if 	Blockdata["myid_on_node"] == 0:
 					tag = 7007					
@@ -5865,6 +6798,7 @@ def do3d_sorting_group_insertion_random_two_for_fsc(data, sparamstructure, snorm
 		mpi_barrier(MPI_COMM_WORLD)
 	mpi_barrier(MPI_COMM_WORLD)
 	return
+#### Never read volumes
 		
 def recons3d_4nnsorting_group_fsc_MPI(myid, main_node, prjlist, fsc_half, random_subset, group_ID, paramstructure, norm_per_particle, \
     CTF = True, upweighted = True, mpi_comm= None, target_size=-1):
@@ -5898,10 +6832,10 @@ def recons3d_4nnsorting_group_fsc_MPI(myid, main_node, prjlist, fsc_half, random
 	if norm_per_particle == None: norm_per_particle = len(prjlist)*[1.0]
 	# Definitions for smearing ,all copied from refinement
 	if not Tracker["nosmearing"]:
-		delta         = Tracker["delta"]
-		refang        = Tracker["refang"]
+		delta           = Tracker["delta"]
+		refang          = Tracker["refang"]
 		rshifts_shrank  = copy.deepcopy(Tracker["rshifts"])
-		nshifts = len(rshifts_shrank)
+		nshifts         = len(rshifts_shrank)
 		for im in xrange(nshifts):
 			rshifts_shrank[im][0] *= float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
 			rshifts_shrank[im][1] *= float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
@@ -5914,9 +6848,9 @@ def recons3d_4nnsorting_group_fsc_MPI(myid, main_node, prjlist, fsc_half, random
 			else: avgnorm =  Tracker["avgnorm"][prjlist[im].get_attr("chunk_id")]#
 			if nc %2 == fsc_half:
 				if Tracker["nosmearing"]:
-					ct = prjlist[im].get_attr("ctf")
+					ct    = prjlist[im].get_attr("ctf")
 					bckgn = prjlist[im].get_attr("bckgnoise")
-					if not upweighted:  prjlist[im] = filt_table(prjlist[im], bckgn)
+					if not upweighted: prjlist[im] = filt_table(prjlist[im], bckgn)
 					prjlist[im].set_attr_dict( {"bckgnoise":bckgn, "ctf":ct})
 					phi,theta,psi,s2x,s2y = get_params_proj(prjlist[im], xform = "xform.projection")
 					r.insert_slice(prjlist[im], Transform({"type":"spider","phi":phi, "theta":theta, "psi":psi}), 1.0)
@@ -6000,113 +6934,6 @@ def do3d_sorting_group_insertion_smearing(sdata, sparamstructure, snorm_per_part
 	mpi_barrier(MPI_COMM_WORLD)
 	return
 ### rec3d 
-def do3d_sorting_groups_trl_smearing_iter(data, paramstructure, norm_per_particle, iteration, unfiltered = False):
-	global Tracker, Blockdata
-	keepgoing = 1
-	if(Blockdata["myid"] == Blockdata["nodes"][0]):
-		if not os.path.exists(os.path.join(Tracker["directory"], "tempdir")): os.mkdir(os.path.join(Tracker["directory"], "tempdir"))
-	do3d_sorting_group_insertion_smearing(data, paramstructure, norm_per_particle)
-	mpi_barrier(MPI_COMM_WORLD)
-	fsc143                = 0
-	fsc05                 = 0
-	Tracker["fsc143"]	  = 0
-	Tracker["fsc05"]	  = 0
-	res_05 				  = Tracker["number_of_groups"]*[0]
-	res_143 			  = Tracker["number_of_groups"]*[0]
-	for index_of_colors in xrange(Blockdata["no_of_groups"]):
-		group_start, group_end = MPI_volume_start_end(Tracker["number_of_groups"], Blockdata["no_of_groups"], index_of_colors)
-		if Blockdata["color"] == index_of_colors:  # It has to be 1 to avoid problem with tvol1 not closed on the disk
-			for index_of_group in xrange(group_start, group_end):
-				cfsc = 0
-				if Blockdata["myid_on_node"] == 0:
-					tvol0 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_0_%d.hdf")%index_of_group)
-					tweight0 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_0_%d.hdf")%index_of_group)
-					tvol1 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_1_%d.hdf")%index_of_group)
-					tweight1 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_1_%d.hdf")%index_of_group)
-					Util.fuse_low_freq(tvol0, tvol1, tweight0, tweight1, 2*Tracker["fuse_freq"])
-					tag = 7007
-					send_EMData(tvol1, Blockdata["no_of_processes_per_group"]-1, tag, Blockdata["shared_comm"])
-					send_EMData(tweight1, Blockdata["no_of_processes_per_group"]-1, tag, Blockdata["shared_comm"])
-					shrank0 = stepone(tvol0, tweight0)
-					
-				elif Blockdata["myid_on_node"] == Blockdata["no_of_processes_per_group"]-1:
-					tag = 7007
-					tvol1 		= recv_EMData(0, tag, Blockdata["shared_comm"])
-					tweight1 	= recv_EMData(0, tag, Blockdata["shared_comm"])
-					tvol1.set_attr_dict( {"is_complex":1, "is_fftodd":1, 'is_complex_ri': 1, 'is_fftpad': 1})
-					shrank1 	= stepone(tvol1, tweight1)
-				mpi_barrier(Blockdata["shared_comm"])
-				if 	Blockdata["myid_on_node"] == 0:
-					tag = 7007
-					send_EMData(shrank0, Blockdata["no_of_processes_per_group"]-1, tag, Blockdata["shared_comm"])
-					del shrank0
-					lcfsc = 0
-				elif Blockdata["myid_on_node"] == Blockdata["no_of_processes_per_group"]-1:
-					tag = 7007
-					shrank0 	= recv_EMData(0, tag, Blockdata["shared_comm"])
-					cfsc 		= fsc(shrank0, shrank1)[1]
-					write_text_row(cfsc, os.path.join(Tracker["directory"], "fsc_driver_grp%03d_iter%03d.txt")%(index_of_group,iteration))
-					del shrank0, shrank1
-					if(Tracker["nxinit"]<Tracker["constants"]["nnxo"]):
-						cfsc = cfsc[:Tracker["nxinit"]]
-						for i in xrange(len(cfsc),Tracker["constants"]["nnxo"]//2+1):  cfsc.append(0.0)
-					lcfsc = len(cfsc)							
-					fsc05  = 0
-					fsc143 = 0 
-					for ifreq in xrange(len(cfsc)):	
-						if cfsc[ifreq] <0.5: break
-					fsc05  = ifreq - 1
-					for ifreq in xrange(len(cfsc)):
-						if cfsc[ifreq]<0.143: break
-					fsc143 = ifreq - 1
-					Tracker["fsc143"] = fsc143
-					Tracker["fsc05"]  = fsc05
-				Tracker = wrap_mpi_bcast(Tracker, Blockdata["no_of_processes_per_group"]-1, Blockdata["shared_comm"])
-				cfsc = wrap_mpi_bcast(cfsc, Blockdata["no_of_processes_per_group"]-1, Blockdata["shared_comm"])
-				Tracker["maxfrad"] = Tracker["nxinit"]//2
-				res_05[index_of_group]  = Tracker["fsc05"]
-				res_143[index_of_group] = Tracker["fsc143"]
-				if Blockdata["fftwmpi"]:			
-					if( Blockdata["myid_on_node"] == 0):
-						tvol2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_2_%d.hdf")%index_of_group)
-						tweight2 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_2_%d.hdf")%index_of_group)
-						treg2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "trol_2_%d.hdf"%index_of_group))
-					else:
-						tvol2 		= model_blank(1)
-						tweight2 	= model_blank(1)
-						treg2		= model_blank(1)
-					tvol2 = steptwo_mpi(tvol2, tweight2, treg2, cfsc, unfiltered, color = index_of_colors) # has to be False!!!
-					del tweight2, treg2
-					if( Blockdata["myid_on_node"] == 0):
-						if(Tracker["mask3D"] == None):  tvol2 = cosinemask(tvol2, radius = Tracker["constants"]["radius"])
-						else: Util.mul_img(tvol2, get_im(Tracker["constants"]["mask3D"]))
-						tvol2.write_image(os.path.join(Tracker["directory"], "vol_grp%03d_iter%03d.hdf"%(index_of_group,iteration)))
-						del tvol2
-				else:
-					if( Blockdata["myid_on_node"] == 0):
-						tvol2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_2_%d.hdf")%index_of_group)
-						tweight2 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_2_%d.hdf")%index_of_group)
-						treg2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "trol_2_%d.hdf"%index_of_group))
-						tvol2       = steptwo(tvol2, tweight2, treg2, cfsc, unfiltered)
-						del tweight2, treg2
-						if(Tracker["mask3D"] == None):  tvol2 = cosinemask(tvol2, radius = Tracker["constants"]["radius"])
-						else: Util.mul_img(tvol2, get_im(Tracker["constants"]["mask3D"]))
-						tvol2.write_image(os.path.join(Tracker["directory"], "vol_grp%03d_iter%03d.hdf"%(index_of_group,iteration)))
-						del tvol2
-				mpi_barrier(Blockdata["shared_comm"])
-			mpi_barrier(Blockdata["shared_comm"])
-	mpi_barrier(MPI_COMM_WORLD)	
-	res_05  = mpi_reduce(res_05, Tracker["number_of_groups"], MPI_INT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
-	res_143 = mpi_reduce(res_143,Tracker["number_of_groups"], MPI_INT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
-	res_05  = map(int, res_05)
-	res_143 = map(int, res_143)	
-	if (Blockdata["myid"] == Blockdata["main_node"]):
-		Tracker["fsc143"] = res_143
-		Tracker["fsc05"]  = res_05
-	keepgoing = bcast_number_to_all(keepgoing, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD) # always check 
-	Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
-	if not keepgoing:ERROR("do3d_sorting_groups_trl_iter  %s"%os.path.join(Tracker["directory"], "tempdir"),"do3d_sorting_groups_trl_iter", 1, Blockdata["myid"]) 
-	return
 ####<<<-------MEM related functions
 def _VmB(VmKey):
     global _proc_status, _scale
@@ -6148,7 +6975,7 @@ def memory_check(s="check_memory"):
 def do_final_maps(number_of_groups, minimum_size, selected_iter, refinement_dir, masterdir, rec3d_image_size, log_main):
 	global Tracker, Blockdata
 	import shutil
-	from shutil import copyfile
+	from   shutil import copyfile
 	for icluster  in xrange(number_of_groups):
 		clusterdir = os.path.join(masterdir, "Cluster%d"%icluster)
 		if os.path.exists(clusterdir):
@@ -6159,9 +6986,10 @@ def do_final_maps(number_of_groups, minimum_size, selected_iter, refinement_dir,
 		msg = "------->>>>>>>Check memory <<<<----------"
 		log_main.add(msg)
 		print(line, msg)
-	basic_memory_per_cpu = 1.0
-	total_data_in_mem = Tracker["constants"]["nnxo"]*Tracker["constants"]["nnxo"]*Tracker["constants"]["total_stack"]*4./1.e9
-	one_volume_in_mem = Tracker["constants"]["nnxo"]*Tracker["constants"]["nnxo"]*Tracker["constants"]["nnxo"]*4.*8./1.e9
+		
+	basic_memory_per_cpu    = 1.0
+	total_data_in_mem       = Tracker["constants"]["nnxo"]*Tracker["constants"]["nnxo"]*Tracker["constants"]["total_stack"]*4./1.e9
+	one_volume_in_mem       = Tracker["constants"]["nnxo"]*Tracker["constants"]["nnxo"]*Tracker["constants"]["nnxo"]*4.*8./1.e9
 	nproc_do_final_per_node =(Tracker["constants"]["memory_per_node"] - total_data_in_mem -1.0)/(basic_memory_per_cpu + one_volume_in_mem)
 	if( Blockdata["myid"] == Blockdata["main_node"]):
 		msg = "total mem per node: %5.1f G"%Tracker["constants"]["memory_per_node"]
@@ -6178,7 +7006,7 @@ def do_final_maps(number_of_groups, minimum_size, selected_iter, refinement_dir,
 		log_main.add(msg)
 		print(line, msg)
 	Blockdata["ncpuspernode"] = ncpu_per_node
-	Blockdata["nsubset"] = Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
+	Blockdata["nsubset"]      = Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
 	create_subgroup()
 	fuse_freq = Tracker["fuse_freq"] # sort does it already
 	mask3D    = Tracker["mask3D"]
@@ -6187,11 +7015,13 @@ def do_final_maps(number_of_groups, minimum_size, selected_iter, refinement_dir,
 	Bstart    = Tracker["constants"]["B_start"]
 	Bstop     = Tracker["constants"]["B_stop"]
 	aa        = Tracker["constants"]["aa"]
-	postlowpassfilter = Tracker["constants"]["postlowpassfilter"]
-	B_enhance = Tracker["constants"]["B_enhance"]
-	memory_per_node  = Tracker["constants"]["memory_per_node"]
-	Blockdata["fftwmpi"]  = True
+	total_stack                 = Tracker["constants"]["total_stack"]
+	postlowpassfilter           = Tracker["constants"]["postlowpassfilter"]
+	B_enhance                   = Tracker["constants"]["B_enhance"]
+	memory_per_node             = Tracker["constants"]["memory_per_node"]
+	Blockdata["fftwmpi"]        = True
 	Tracker["number_of_groups"] = number_of_groups
+	
 	if Tracker["nosmearing"]:
 		if(Blockdata["myid"] == Blockdata["main_node"]):
 			map_dir = os.path.join(masterdir, "maps_dir")
@@ -6199,9 +7029,9 @@ def do_final_maps(number_of_groups, minimum_size, selected_iter, refinement_dir,
 		else:map_dir = 0
 		map_dir = wrap_mpi_bcast(map_dir, Blockdata["main_node"], MPI_COMM_WORLD)
 		Tracker["directory"] = map_dir
-		Tracker["nxinit"] = Tracker["constants"]["nnxo"]
+		Tracker["nxinit"]    = Tracker["constants"]["nnxo"]
 		compute_noise(Tracker["nxinit"])
-		data = get_shrink_data_sorting(os.path.join(Tracker["constants"]["masterdir"], "final_partition.txt"), \
+		data = get_shrink_data_sorting(os.path.join(masterdir, "final_partition.txt"), \
 		os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt"), \
 		return_real = False, preshift = True, apply_mask = False)
 		do3d_sorting_groups_trl_iter(data, 0)
@@ -6209,9 +7039,9 @@ def do_final_maps(number_of_groups, minimum_size, selected_iter, refinement_dir,
 		if(Blockdata["myid"] == Blockdata["main_node"]):
 			for icluster in xrange(number_of_groups):
 				copyfile(os.path.join(Tracker["directory"], "vol_unfiltered_0_grp%03d_iter000.hdf"%icluster), \
-				os.path.join(Tracker["constants"]["masterdir"], "vol_unfiltered_0_grp%03d.hdf"%icluster))
+				os.path.join(masterdir, "vol_unfiltered_0_grp%03d.hdf"%icluster))
 				copyfile(os.path.join(Tracker["directory"], "vol_unfiltered_1_grp%03d_iter000.hdf"%icluster), \
-				os.path.join(Tracker["constants"]["masterdir"], "vol_unfiltered_1_grp%03d.hdf"%icluster))
+				os.path.join(masterdir, "vol_unfiltered_1_grp%03d.hdf"%icluster))
 			shutil.rmtree(map_dir)
 		mpi_barrier(MPI_COMM_WORLD)
 	else:
@@ -6226,10 +7056,11 @@ def do_final_maps(number_of_groups, minimum_size, selected_iter, refinement_dir,
 			ctrefromsorting_rec3d_faked_iter(cluster_masterdir, selected_iter, rec3d_image_size, Blockdata["subgroup_comm"])
 			mpi_barrier(MPI_COMM_WORLD)
 		mpi_barrier(MPI_COMM_WORLD)
+		
 		Tracker["constants"]["B_enhance"] = B_enhance
-		Tracker["constants"]["B_start"] = Bstart    
-		Tracker["constants"]["B_stop"]  = Bstop    
-		Tracker["constants"]["aa"]      = aa  
+		Tracker["constants"]["B_start"]   = Bstart    
+		Tracker["constants"]["B_stop"]    = Bstop    
+		Tracker["constants"]["aa"]        = aa  
 		Tracker["constants"]["postlowpassfilter"] = postlowpassfilter  
 		Tracker["constants"]["fsc_adj"]=fsc_adj
 		Tracker["constants"]["mtf"]    = mtf
@@ -6238,6 +7069,8 @@ def do_final_maps(number_of_groups, minimum_size, selected_iter, refinement_dir,
 		Tracker["number_of_groups"]    = number_of_groups
 		Tracker["fuse_freq"]           = fuse_freq # reset
 		Tracker["constants"]["memory_per_node"] = memory_per_node
+		Tracker["constants"]["total_stack"] = total_stack
+		
 		# Using all CPUS to do step two
 		Blockdata["ncpuspernode"] = Blockdata["nproc"]//Blockdata["no_of_groups"]
 		Blockdata["nsubset"]  = Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
@@ -6248,8 +7081,8 @@ def do_final_maps(number_of_groups, minimum_size, selected_iter, refinement_dir,
 				cluster_masterdir = os.path.join(masterdir,"Cluster%d"%icluster)
 				if os.path.exists(cluster_masterdir): shutil.rmtree(cluster_masterdir)
 	return
-#####<<<<--------------------------------------
-def merge_two_unfiltered_maps(map1_file, map2_file, cluster_ID):
+#####<<<<-------------------------Functions for post processing 
+def merge_two_unfiltered_maps(map1_file, map2_file, cluster_ID, work_dir):
 	global Tracker, Blockdata
 	# single processor only
 	from math import sqrt, log
@@ -6280,6 +7113,7 @@ def merge_two_unfiltered_maps(map1_file, map2_file, cluster_ID):
 	resolution_FSC143_left   = 0.0
 	dip_at_fsc = False
 	nfreq0 = 1
+	
 	for ifreq in xrange(1, len(fsc_true[1])):
 		if fsc_true[1][ifreq] < 0.0:
 			nfreq0  = ifreq - 1
@@ -6313,12 +7147,12 @@ def merge_two_unfiltered_maps(map1_file, map2_file, cluster_ID):
 	nfreq143 = nfreq143_right
 	fsc_out = []
 	for ifreq in xrange(len(fsc_true[0])): fsc_out.append("%5d   %7.2f   %7.3f"%(ifreq, resolution_in_angstrom[ifreq],fsc_true[1][ifreq]))
-	write_text_file(fsc_out, os.path.join(Tracker["constants"]["masterdir"],"fsc_%d.txt"%cluster_ID))													
+	write_text_file(fsc_out, os.path.join(work_dir,"fsc_%d.txt"%cluster_ID))													
 	map1 +=map2 #(get_im(args[0])+get_im(args[1]))/2.0
 	map1 /=2.0
 	del map2
 	### compute adjusted FSC
-	n1 = len(read_text_file(os.path.join(Tracker["constants"]["masterdir"],"Cluster_%03d.txt"%cluster_ID)))
+	n1 = len(read_text_file(os.path.join(work_dir,"Cluster_%03d.txt"%cluster_ID)))
 	fsc_adj = adjust_fsc_to_full_data_set(fsc_true[1], n1, Tracker["constants"]["total_stack"])
 	### get resolution of adjusted FSC
 	adj_resolution_FSC143_right  = 0.0
@@ -6357,8 +7191,7 @@ def merge_two_unfiltered_maps(map1_file, map2_file, cluster_ID):
 	adj_nfreq143 = nfreq143_right
 	fsc_out = []
 	for ifreq in xrange(len(fsc_adj)): fsc_out.append("%5d   %7.2f   %7.3f"%(ifreq, resolution_in_angstrom[ifreq],fsc_adj[ifreq]))
-	write_text_file(fsc_out, os.path.join(Tracker["constants"]["masterdir"],"fsc_%d_adj.txt"%cluster_ID))
-	
+	write_text_file(fsc_out, os.path.join(work_dir,"fsc_%d_adj.txt"%cluster_ID))
 	###
 	outtext = [["Squaredfreq"],[ "LogOrig"]]
 	guinierline = rot_avg_table(power(periodogram(map1),.5))
@@ -6371,7 +7204,7 @@ def merge_two_unfiltered_maps(map1_file, map2_file, cluster_ID):
 	if Tracker["constants"]["mtf"]: # divided by the mtf #1
 		log_main.add("MTF correction is applied")
 		log_main.add("MTF file is %s"%Tracker["constants"]["mtf"])
-		try: mtf_core  = read_text_file(Tracker["constants"]["mtf"], -1)
+		try: mtf_core = read_text_file(Tracker["constants"]["mtf"], -1)
 		except: ERROR("Sphire postprocess fails to read MTF file "+Tracker["constants"]["mtf"], "--postprocess option for 3-D", 1)
 		map1 = fft(Util.divide_mtf(fft(map1), mtf_core[1], mtf_core[0]))
 		outtext.append(["LogMTFdiv"])
@@ -6382,10 +7215,9 @@ def merge_two_unfiltered_maps(map1_file, map2_file, cluster_ID):
 		#### FSC adjustment ((2.*fsc)/(1+fsc)) to the powerspectrum;
 		## smooth FSC after FSC143 and set other values to zero
 		for ifreq in xrange(nfreq143+1, len(fsc_true[1])):
-			if ifreq ==nfreq143+1: fsc_true[1][ifreq] = (fsc_true[1][nfreq143-2] + fsc_true[1][nfreq143-1])/5.
+			if ifreq == nfreq143+1: fsc_true[1][ifreq] = (fsc_true[1][nfreq143-2] + fsc_true[1][nfreq143-1])/5.
 			elif ifreq ==nfreq143+2: fsc_true[1][ifreq] = (fsc_true[1][nfreq143-1])/5.
 			else: fsc_true[1][ifreq] = 0.0
-			
 		fil = len(fsc_true[1])*[None]
 		for i in xrange(len(fil)): fil[i] = sqrt(fsc_true[1][i]) # fsc already matched to full dataset
 		map1 = filt_table(map1,fil)
@@ -6397,20 +7229,20 @@ def merge_two_unfiltered_maps(map1_file, map2_file, cluster_ID):
 		if Tracker["constants"]["B_enhance"] == 0.0: # auto mode
 			cutoff_by_fsc = 0
 			for ifreq in xrange(len(fsc_true[1])):
-				if fsc_true[1][ifreq]<0.143: break
-			cutoff_by_fsc = float(ifreq-1)
+				if fsc_true[1][ifreq]< 0.143: break
+			cutoff_by_fsc = float(ifreq - 1)
 			freq_max = cutoff_by_fsc/(2.*len(fsc_true[0]))/Tracker["constants"]["pixel_size"]
 			guinierline = rot_avg_table(power(periodogram(map1),.5))
 			logguinierline = []
 			for ig in xrange(len(guinierline)):logguinierline.append(log(guinierline[ig]))
 			freq_min = 1./Tracker["constants"]["B_start"] # given frequencies in Angstrom unit, say, B_start is 10 Angstrom, or 15  Angstrom
-			if Tracker["constants"]["B_stop"]!=0.0: 
+			if Tracker["constants"]["B_stop"]!= 0.0: 
 				freq_max = 1./Tracker["constants"]["B_stop"]
 				B_stop = Tracker["constants"]["B_stop"]
 			else: B_stop = Tracker["constants"]["pixel_size"]/(float(nfreq143)/Tracker["constants"]["nnxo"])
 			if freq_min>= freq_max:
 				print("Your B_start is too high!")
-				freq_min = 1./(B_stop + 8.)
+				freq_min = 1./(B_stop + 8.) 
 			b, junk, ifreqmin, ifreqmax = compute_bfactor(guinierline, freq_min, freq_max, Tracker["constants"]["pixel_size"])
 			global_b = min(4.*b, 400.) # B-factor should always not be too large...
 			cc = pearson(junk[1],logguinierline)
@@ -6426,6 +7258,7 @@ def merge_two_unfiltered_maps(map1_file, map2_file, cluster_ID):
 				outtext[-1].append("%10.6f"%log(guinierline[ig]))
 				last_non_zero = log(guinierline[ig])
 			else: outtext[-1].append("%10.6f"%last_non_zero)
+			
 	lowpassfilter = 0.0
 	if Tracker["constants"]["postlowpassfilter"] != 0.0: # User provided low-pass filter #4.
 		if Tracker["constants"]["postlowpassfilter"] > 0.5: # Input is in Angstrom 
@@ -6435,26 +7268,26 @@ def merge_two_unfiltered_maps(map1_file, map2_file, cluster_ID):
 			map1 = filt_tanl(map1,Tracker["constants"]["postlowpassfilter"], min(Tracker["constants"]["aa"],.1))
 			lowpassfilter = Tracker["constants"]["postlowpassfilter"]
 	else: 
-		map1 = filt_tanl(map1,resolution_FSC143, Tracker["constants"]["aa"])
-		lowpassfilter = resolution_FSC143
-	msg = " %3d   %10.6f   %10.6f "%(cluster_ID, global_b,  Tracker["constants"]["pixel_size"]/lowpassfilter)
+		map1 = filt_tanl(map1, resolution_FSChalf, Tracker["constants"]["aa"])
+		lowpassfilter = resolution_FSChalf
+	msg  = " %3d   %10.6f   %10.6f "%(cluster_ID, global_b,  Tracker["constants"]["pixel_size"]/lowpassfilter)
 	msg +="  %5d/%-5d  %6.3f/%-6.3f"      "%5d/%-5d  %6.3f/%-6.3f "%(nfreq05, nfreq143, Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(nfreq05), \
 	    Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(nfreq143), \
 	    adj_nfreq05, adj_nfreq143, Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(adj_nfreq05), \
 	    Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(adj_nfreq143))
 	    
-	map1.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_final_nomask_cluster%03d.hdf"%cluster_ID))
+	map1.write_image(os.path.join(work_dir, "vol_final_nomask_cluster%03d.hdf"%cluster_ID))
 	if mask3D: map1 *=mask3D
-	map1.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_final_cluster%03d.hdf"%cluster_ID))
+	map1.write_image(os.path.join(work_dir, "vol_final_cluster%03d.hdf"%cluster_ID))
 	if mask3D: del mask3D
 	del map1
 	return msg
 
-def post_sorting_rec3d(log):
+def post_sorting_rec3d(log_main, work_dir):
 	global Tracker, Blockdata
-	try: nxinit = Tracker["nxinit"]
-	except: Tracker["nxinit"]  = -1
-	Tracker["constants"]["orgres"] = 0.0
+	try:    nxinit = Tracker["nxinit"]
+	except: Tracker["nxinit"]                 = -1
+	Tracker["constants"]["orgres"]            = 0.0
 	Tracker["constants"]["refinement_delta"]  = 0.0
 	Tracker["constants"]["refinement_ts"]     = 0.0
 	Tracker["constants"]["refinement_xr"]     = 0.0
@@ -6468,128 +7301,253 @@ def post_sorting_rec3d(log):
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		msg = "---->>> Summaries of final results <<<-----"
 		print(line, msg)
-		while os.path.exists(os.path.join(Tracker["constants"]["masterdir"], "Cluster_%03d.txt"%number_of_groups)):
-			class_in = read_text_file(os.path.join(Tracker["constants"]["masterdir"], "Cluster_%03d.txt"%number_of_groups))
-			minimum_size = min(len(class_in), minimum_size)
-			msg = " cluster ID: %10d  number of images:  %10d  "%(number_of_groups, len(class_in))
-			print(line, msg)
-			number_of_groups +=1
-			final_accounted_ptl +=len(class_in)
+		log_main.add(msg)
+		all_files = os.listdir(Tracker["constants"]["masterdir"])
+		cluster_list = []
+		nlist = []
+		from string import atoi
+		for file in all_files:
+			if file[0:7] == "Cluster" and file[-4:] == ".txt": 
+				cluster_list.append(file)
+				nlist.append(atoi(file[8:11]))
+		if len(nlist)>1: nlist.sort()
+		if len(nlist)>0:
+			for i in xrange(len(nlist)):
+				class_in = read_text_file(os.path.join(Tracker["constants"]["masterdir"],\
+				 "Cluster_%03d.txt"%nlist[i]))
+				final_accounted_ptl +=len(class_in)
+				clusters.append(class_in)
+				msg = " cluster ID: %10d  number of images:  %10d  "%(nlist[i], len(class_in))
+				print(line, msg)
+				log_main.add(msg)
+				minimum_size = min(len(class_in), minimum_size)
+			number_of_groups = len(nlist)
+		if os.path.exists(os.path.join(Tracker["constants"]["masterdir"], "Unaccounted.txt")):
+			class_in = read_text_file(os.path.join(Tracker["constants"]["masterdir"], "Unaccounted.txt"))
 			clusters.append(class_in)
-		msg = "total number of particle images:  %10d; accounted:   %10d ;  number_of_groups:   %5d"%(Tracker["constants"]["total_stack"], final_accounted_ptl, number_of_groups)
-		print(line, msg)
-		# analysis
-		dummy = output_micrograph_number_per_cluster(Tracker["constants"]["orgstack"], \
-			os.path.join(Tracker["constants"]["masterdir"], "indexes.txt"), clusters, log = log)
-				   
-		if not Tracker["nosmearing"]:
-			vs, ds, ss, norms = get_params_for_analysis(Tracker["constants"]["orgstack"], \
-			os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt"),\
-			 os.path.join(Tracker["constants"]["masterdir"], "all_smearing.txt"), Tracker["constants"]["nsmear"])
+			number_of_groups +=1
+			msg = "include %d Unaccounted images as a cluster"%len(class_in)
+			print(line, msg)
+			log_main.add(msg)
+		if len(clusters) == 0: terminate = 1
 		else:
-			vs, ds, ss, norms = get_params_for_analysis(Tracker["constants"]["orgstack"], \
-			os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt"),\
-			 None, None)
-			 
-		do_one_way_anova_scipy(clusters, ds, name_of_variable="defocus", log = log)
-		
-		if ss is not None: do_one_way_anova_scipy(clusters, ss, name_of_variable="smearing", log = log)
+			terminate = 0
+			msg = "total number of particle images:  %10d; accounted:   %10d ;  number_of_groups:   %5d"%(Tracker["constants"]["total_stack"], final_accounted_ptl, number_of_groups)
+			print(line, msg)
+			log_main.add(msg)
+			# analysis
+			dummy = output_micrograph_number_per_cluster(Tracker["constants"]["orgstack"], \
+				os.path.join(Tracker["constants"]["masterdir"], "indexes.txt"), clusters, log_main = log_main)
+				   
+			if not Tracker["nosmearing"]:
+				vs, ds, ss, norms = get_params_for_analysis(Tracker["constants"]["orgstack"], \
+				os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt"),\
+				 os.path.join(Tracker["constants"]["masterdir"], "all_smearing.txt"), Tracker["constants"]["nsmear"])
+			else:
+				vs, ds, ss, norms = get_params_for_analysis(Tracker["constants"]["orgstack"], \
+				os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt"),\
+				 None, None)
 
-		if norms: do_one_way_anova_scipy(clusters, norms, name_of_variable="norm", log = log)
-		
-		"""
-		msg = "---->>>Orientations per group analysis<<<----- \n"+\
-		 "%10s %10s %10s  "%("X", "Y", "Z")
-		print(msg)
-		log.add(msg)
-		for i in xrange(len(clusters)):
-			oriens = []
-			for j in xrange(len(clusters[i])): oriens.append(vs[clusters[i][j]])
-			orien_analysis(oriens, i, log)
-		"""
-	number_of_groups = bcast_number_to_all(number_of_groups, Blockdata["main_node"], MPI_COMM_WORLD)
-	if number_of_groups == 0:ERROR("No cluster is found, and the program terminates. ", "option post_sorting_sharpen ", 1, Blockdata["myid"])
-	minimum_size = bcast_number_to_all(minimum_size, Blockdata["main_node"], MPI_COMM_WORLD)
-	compute_noise(Tracker["constants"]["nnxo"])
-	do_final_maps(number_of_groups, minimum_size, Tracker["constants"]["selected_iter"], Tracker["constants"]["refinement_dir"], \
-	   Tracker["constants"]["masterdir"], Tracker["constants"]["nnxo"], log)
-	if(Blockdata["myid"] == Blockdata["main_node"]):
-		msg = " Cluster ID  B-factor  Low-pass-filter(Angstrom)  FSC05/FSC0143  in Fourier pixels  in Angstrom   Adjusted to full set FSC05/FSC143  in Fourier pixels  in Angstrom "
-		log.add(msg)
-		print(msg)
-		for iproc in xrange(number_of_groups):
-			msg = merge_two_unfiltered_maps(os.path.join(Tracker["constants"]["masterdir"], "vol_unfiltered_0_grp%03d.hdf"%iproc), \
-			os.path.join(Tracker["constants"]["masterdir"], "vol_unfiltered_1_grp%03d.hdf"%iproc), iproc)
-			log.add(msg)
+			do_one_way_anova_scipy(clusters, ds, name_of_variable="defocus", log_main = log_main)
+			if ss is not None: do_one_way_anova_scipy(clusters, ss, name_of_variable="smearing", log_main = log_main)
+			if norms: do_one_way_anova_scipy(clusters, norms, name_of_variable="norm", log_main = log_main)
+	else:
+		Tracker   = 0
+		terminate = 0
+	Tracker   = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
+	terminate = bcast_number_to_all(terminate, Blockdata["main_node"], MPI_COMM_WORLD)
+	if terminate ==1:
+		if(Blockdata["myid"] == Blockdata["main_node"]):
+			msg ="No cluster is found"
+			print(line, msg)
+			log_main.add(msg)
+		from mpi import mpi_finalize
+		mpi_finalize()
+		exit()
+	else:
+		if(Blockdata["myid"] == Blockdata["main_node"]):
+			if not os.path.exists(os.path.join(work_dir, "final_partition.txt")):
+				msg ="create partition file in master directory"
+				dlist, nindex = merge_classes_into_partition_list(clusters)
+				write_text_row(nindex, os.path.join(work_dir, "final_partition.txt"))
+			else: msg ="partition file is  %s."%os.path.join(work_dir, "final_partition.txt")
+			print(line, msg)
+			log_main.add(msg)
+		number_of_groups = bcast_number_to_all(number_of_groups, Blockdata["main_node"], MPI_COMM_WORLD)
+		if number_of_groups == 0:ERROR("No cluster is found, and the program terminates. ", "option post_sorting_sharpen ", 1, Blockdata["myid"])
+		minimum_size = bcast_number_to_all(minimum_size, Blockdata["main_node"], MPI_COMM_WORLD)
+		compute_noise(Tracker["constants"]["nnxo"])
+		do_final_maps(number_of_groups, minimum_size, Tracker["constants"]["selected_iter"], Tracker["constants"]["refinement_dir"], \
+		   work_dir, Tracker["constants"]["nnxo"], log_main)
+		if(Blockdata["myid"] == Blockdata["main_node"]):
+			msg = " Cluster ID  B-factor  Low-pass-filter(Angstrom)  FSC05/FSC0143  in Fourier pixels  in Angstrom   Adjusted to full set FSC05/FSC143  in Fourier pixels  in Angstrom "
+			log_main.add(msg)
 			print(msg)
-	mpi_barrier(MPI_COMM_WORLD)
-	return
+			for iproc in xrange(number_of_groups):
+				msg = merge_two_unfiltered_maps(os.path.join(work_dir, "vol_unfiltered_0_grp%03d.hdf"%iproc), \
+				os.path.join(work_dir, "vol_unfiltered_1_grp%03d.hdf"%iproc), iproc, work_dir)
+				log_main.add(msg)
+				print(msg)
+		mpi_barrier(MPI_COMM_WORLD)
+		return
 
-def sharpen_map(log):
+def sharpen_map(log_file, work_dir):
 	global Tracker, Blockdata
 	Tracker["constants"]["orgres"]			 = 0.0
 	Tracker["constants"]["refinement_delta"] = 0.0
 	Tracker["constants"]["refinement_ts"]	 = 0.0
 	Tracker["constants"]["refinement_xr"]	 = 0.0
 	Tracker["constants"]["refinement_an"]	 = 0.0
-	minimum_size = Tracker["constants"]["img_per_grp"]
+	minimum_size     = Tracker["constants"]["img_per_grp"]
 	number_of_groups = 0
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		final_accounted_ptl = 0
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		msg = "---->>> Summaries of the final results <<<-----"
 		print(line, msg)
-		log.add(msg)
-		msg = " cluster ID  cluster size  sorting score"
+		log_file.add(msg)
+		msg = " cluster ID  cluster size  "
 		print(line, msg)
-		log.add(msg)
-		while os.path.exists(os.path.join(Tracker["constants"]["masterdir"], "Cluster_%03d.txt"%number_of_groups)):
-			class_in = read_text_file(os.path.join(Tracker["constants"]["masterdir"], "Cluster_%03d.txt"%number_of_groups))
+		log_file.add(msg)
+		fout = open(os.path.join(work_dir, "Tracker.json"),'w')
+		json.dump(Tracker, fout)
+		fout.close()
+		while os.path.exists(os.path.join(work_dir, "Cluster_%03d.txt"%number_of_groups)):
+			class_in = read_text_file(os.path.join(work_dir, "Cluster_%03d.txt"%number_of_groups))
 			minimum_size = min(len(class_in), minimum_size)
-			try: score =  Tracker["cluster_score"][number_of_groups]
-			except:  score = 0.0 # unaccounted members
-			msg = " %10d    %10d    %f"%(number_of_groups, len(class_in), score)
+			msg = " %10d    %10d   "%(number_of_groups, len(class_in))
 			print(line, msg)
-			log.add(msg)
+			log_file.add(msg)
 			number_of_groups += 1
 			final_accounted_ptl +=len(class_in)
 			del class_in
-		msg = "total number of particle images:  %10d;  accounted:   %10d ;  number_of_groups:   %5d"%(Tracker["constants"]["total_stack"], final_accounted_ptl, number_of_groups)
+		msg = "accounted:   %10d ;  number_of_groups:   %5d"%(final_accounted_ptl, number_of_groups)
 		print(line, msg)
 	else: Tracker = 0
+	
 	number_of_groups = bcast_number_to_all(number_of_groups, Blockdata["main_node"], MPI_COMM_WORLD)
 	Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
 	if number_of_groups == 0: ERROR("No cluster is found, and the program terminates.", "do_final_maps", 1, Blockdata["myid"])
 	minimum_size = bcast_number_to_all(minimum_size, Blockdata["main_node"], MPI_COMM_WORLD)
 	compute_noise(Tracker["constants"]["nnxo"])
+	
 	do_final_maps(number_of_groups, minimum_size, Tracker["constants"]["selected_iter"], Tracker["constants"]["refinement_dir"], \
-	  Tracker["constants"]["masterdir"], Tracker["constants"]["nnxo"], log)
+	  work_dir, Tracker["constants"]["nnxo"], log_file)
+	  
 	mpi_barrier(MPI_COMM_WORLD)
 	if(Blockdata["myid"] == Blockdata["main_node"]):
-		fout = open(os.path.join(Tracker["constants"]["masterdir"], "Tracker.json"),'r')
+		fout = open(os.path.join(work_dir, "Tracker.json"),'r')
 		Tracker = convert_json_fromunicode(json.load(fout))
 		fout.close()
 		msg = " Cluster ID  B-factor  Low-pass-filter(Angstrom)  FSC05/FSC0143  (in Fourier pixels)  (in Angstrom) adjusted to full set FSC05/FSC143  (in Fourier pixels)  (in Angstrom) "
-		log.add(msg)
+		log_file.add(msg)
 		print(msg)
 		for iproc in xrange(number_of_groups):
-			msg = merge_two_unfiltered_maps(os.path.join(Tracker["constants"]["masterdir"], "vol_unfiltered_0_grp%03d.hdf"%iproc), \
-			  os.path.join(Tracker["constants"]["masterdir"], "vol_unfiltered_1_grp%03d.hdf"%iproc), iproc)
+			msg = merge_two_unfiltered_maps(os.path.join(work_dir, "vol_unfiltered_0_grp%03d.hdf"%iproc), \
+			  os.path.join(work_dir, "vol_unfiltered_1_grp%03d.hdf"%iproc), iproc, work_dir)
 			print(msg)
-			log.add(msg)
-		fout = open(os.path.join(Tracker["constants"]["masterdir"], "Tracker.json"),'w')
-		json.dump(Tracker, fout)
-		fout.close()
-	mpi_barrier(MPI_COMM_WORLD)
+			log_file.add(msg)
+	else: Tracker = 0
+	Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
 	return
-
+######<<<<------End of post processing functions
+#####<<<<----various utilities
 def shake_assignment(assignment, randomness_rate = 1.0):
 	import random
 	number_of_group = max(assignment)
 	for im in xrange(len(assignment)):
-		if (random.uniform(0.0, 1.0) > randomness_rate): assignment[im] = random.randint(0, number_of_group)
+		if (random.uniform(0.0, 1.0) > randomness_rate): assignment[im] = random.randint(0, number_of_groups)
 	return assignment
-        
+
+def get_time(time_start):
+	current_time   = time.time() - time_start
+	current_time_h = current_time // 3600
+	current_time_m = (current_time - current_time_h*3600)// 60
+	return current_time_h, current_time_m
+
+def check_sorting(total_data, keepsorting, log_file):
+	global Tracker, Blockdata
+	import json
+	if Blockdata["myid"] == Blockdata["main_node"]:
+		fout = open(os.path.join(Tracker["constants"]["masterdir"],"Tracker.json"),'r')
+		Tracker_main = convert_json_fromunicode(json.load(fout))
+		fout.close()
+	else: Tracker_main = 0
+	Tracker_main = wrap_mpi_bcast(Tracker_main, Blockdata["main_node"])
+	if total_data//Tracker_main["constants"]["img_per_grp"] >=2: keepsorting = 1
+	else:
+		if Tracker_main["constants"]["minimum_grp_size"]>0:
+			if total_data//Tracker_main["constants"]["minimum_grp_size"]>=3: keepsorting = 1
+			else: keepsorting = 0
+		else: keepsorting     = 0
+	if keepsorting ==1:
+		Tracker["total_data"] = total_data
+		sort3d_init("initialization", log_file)
+	return keepsorting
+
+def copy_results(log_file):
+	global Tracker, Blockdata
+	import json
+	from   shutil import copyfile
+	from   string import atoi
+	if Blockdata["myid"] == Blockdata["main_node"]:
+		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		msg  ="copy clusters and the associated maps to main directory......"
+		log_file.add(msg)
+		print(msg)
+		nclusters = 0
+		msg       ="cluster ID    size"
+		log_file.add(msg)
+		print(msg)
+		clusters = []
+		for element in Tracker["generation"].items():
+			ig    = atoi(element[0])
+			value = element[1]
+			for ic in xrange(value):
+				cluster_file = os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%ig, "Cluster_%03d.txt"%ic)
+				try:
+					copyfile(cluster_file, os.path.join(Tracker["constants"]["masterdir"], "Cluster_%03d.txt"%nclusters))
+					clusters.append(read_text_file(cluster_file))
+					copyfile(os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%ig, \
+					 "vol_final_cluster%03d.hdf"%ic), \
+					   os.path.join(Tracker["constants"]["masterdir"], "vol_final_cluster%03d.hdf"%nclusters))
+					cluster = read_text_file(os.path.join(Tracker["constants"]["masterdir"], \
+					   "generation_%03d"%ig, "Cluster_%03d.txt"%ic))
+					msg = "%5d    %10d"%(nclusters, len(cluster))
+					nclusters +=1
+				except: msg ="%s and associated files are not found "%cluster_file
+				log_file.add(msg)
+				print(msg)
+		do_analysis_on_identified_clusters(clusters, log_file)
+		msg = "sort3d finishes"
+		log_file.add(msg)
+		print(line, msg)
+	mpi_barrier(MPI_COMM_WORLD)
+	return
+####+++++++
+def get_MGR_from_two_way_comparison(newindeces, clusters1, clusters2, N):
+	rnd_grp_sizes = {}
+	K = len(newindeces)
+	reordered_cluster2 =[ None for i in xrange(K)]
+	for ij in xrange(len(newindeces)):
+		reordered_cluster2[newindeces[ij][0]] = clusters2[newindeces[ij][1]]
+	table_k_k =[[ None for i in xrange(K)] for j in xrange(K)]
+	for i in xrange(K):
+		for j in xrange(K):
+			table_k_k[i][j] = len(set(clusters1[i]).intersection(set(reordered_cluster2[j])))	
+	sum_rows = [ 0 for i in xrange(K)]
+	sum_cols = [ 0 for i in xrange(K)]
+	for i in xrange(K):
+		for j in xrange(K):
+			sum_rows[i] +=table_k_k[i][j]
+			sum_cols[j] +=table_k_k[i][j]
+	diagonal_k = [None for i in xrange(K)]
+	for i in xrange(K): diagonal_k[i] = (sum_rows[i] + sum_cols[i])//2 # nk
+	min_sizes = [None for i in xrange(K)]
+	for i in xrange(K): min_sizes[i] = diagonal_k[i]**2/N
+	return min_sizes
+	
+#####<<<----------------------------- End of various utilities	
 def main():
 	from optparse   import OptionParser
 	from global_def import SPARXVERSION
@@ -6599,86 +7557,146 @@ def main():
 	import sys, os, time, shutil
 	global Tracker, Blockdata
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack  outdir --refinement_dir=masterdir_of_sxmeridien --mask3D=mask.hdf --focus=binarymask.hdf  --radius=outer_radius " +\
-	"  --sym=c1  --nindependent=indenpendent_runs  --img_per_grp=img_per_grp  "
+	usage = progname + " --refinement_dir=masterdir_of_sxmeridien   --output_dir=sort3d_output --mask3D=mask.hdf --focus=binarymask.hdf  --radius=outer_radius " +\
+	"  --sym=c1  --img_per_grp=img_per_grp  --minimum_grp_size=minimum_grp_size "
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--refinement_dir",                  type   ="string",        default ='',                       help="3-D refinement directory, the master directory of sxmeridien")
-	parser.add_option("--output_dir",                      type   ="string",        default ='',					   help="name of the directory for sorting computing")
-	parser.add_option("--niter_for_sorting",               type   ="int",           default =-1,					   help="selected number of iteration of meridien refinement for sorting, -1 implies program uses the best iteration to initiate sorting")
-	parser.add_option("--focus",                           type   ="string",        default ='',                       help="file name, the bineary 3D mask for focused clustering ")
-	parser.add_option("--mask3D",                          type   ="string",        default ='',                       help="file name, the 3-D global mask for clustering ")
-	parser.add_option("--instack",                         type   ="string",        default ='',					   help="file name, data stack for sorting provided by user. It applies when sorting starts from a given data stack")
-	parser.add_option("--radius",                          type   ="int",           default =-1,	                   help="particle radius in pixel for rotational correlation <nx-1 (set to the radius of the particle)")
-	parser.add_option("--sym",                             type   ="string",        default ='c1',                     help="point group symmetry of macromolecular structure, can be inherited from refinement")
-	parser.add_option("--img_per_grp",                     type   ="int",           default =1000,                     help="number of images in a group")
-	parser.add_option("--nxinit",                          type   ="int",           default =-1,                       help="user provided image size")
-	parser.add_option("--nsmear",                          type   ="float",         default =-1.,                      help="=-1, all smearing are used else only the one with maximum probability is used")
-	#parser.add_option("--final_MGSK",                     type   ="int",           default =-1,                       help="minimum group size for final MGSKmeans")
-	parser.add_option("--minimum_grp_size",				   type   ="int",           default =-1,					   help="minimum number of members for being identified as a group")
-	parser.add_option("--order_of_depth",				   type   ="int",           default =2,					       help="order of depth that determines number of independent MGSKmeans runs(2^order_of_depth)")
-	parser.add_option("--comparison_method",               type   ="string",        default ='cross',                  help="option for comparing two images, either using cross-correlaton coefficients [cross] or using Euclidean distance [eucd] ")
-	parser.add_option("--memory_per_node",                 type   ="float",         default =-1.0,                     help="memory_per_node, the number used for evaluate the CPUs/NODE settings given by user")
-	parser.add_option("--nofinal_sharpen",                 action ="store_true",    default =False,                    help="not reconstruct unfiltered final maps for post refinement process")
-	parser.add_option("--orientation_groups",              type   ="int",           default =100,                      help="number of sampling angular groups used for EQKmeans orientation constraints")
-	parser.add_option("--post_sorting_sharpen",            action ="store_true",    default =False,                    help="reconstruct odd and even unfiltered maps per cluster after sorting")
-	parser.add_option("--stop_eqkmeans_percentage",        type   ="float",         default =2.0,                      help="particle change percentage for stopping equal size Kmeans")
-	#parser.add_option("--eqk_shake",                      type   ="float",         default =5.0,                      help="randomness ratio in adaptive Kmeans")
-	parser.add_option("--minimum_ptl_number",              type   ="int",           default =20,					   help="integer number, the smallest orien group size equals number_of_groups multiplies this number")
-	parser.add_option("--notapplybckgnoise",               action ="store_true",    default =False,                    help="do not applynoise")
-	#parser.add_option("--final_adaptive",                  action ="store_true",    default =False,                    help="use adaptive MGSKmeans in the final layer")
-	parser.add_option("--do_not_include_final_unaccounted",  action ="store_true",  default =False,                    help="do not include the final unaccounted images as a cluster")
-	# postprocessing options
-	parser.add_option("--mtf",                             type   ="string",        default ='',                       help="mtf file")
-	parser.add_option("--B_enhance",                       type   ="float",         default=0.0,                       help="apply Bfactor to enhance map or not")
-	parser.add_option("--fl",                              type   ="float",         default=0.0,                       help="=0.0, low_pass filter to resolution limit; =some value, low_pass filter to some valume; =-1, not low_pass filter applied")
-	parser.add_option("--aa",                              type   ="float",         default=.1,                        help="low pass filter falloff")
-	parser.add_option("--B_start",                         type   ="float",         default=10.,                       help="starting frequency in Angstrom for B-factor estimation")
-	parser.add_option("--B_stop",                          type   ="float",         default=0.0,                       help="cutoff frequency in Angstrom for B-factor estimation, cutoff is set to the frequency where fsc < 0.0")
-	parser.add_option("--nofsc_adj",                       action ="store_true",    default=False,                     help="do not multiply sqrt(fsc)")
-	(options, args) = parser.parse_args(sys.argv[1:])
-	from utilities import bcast_number_to_all
-	### Sanity check
+	parser.add_option("--refinement_dir",                    type   ="string",        default ='',                     help="sxmeridien 3-D refinement directory")
+	parser.add_option("--instack",                           type   ="string",        default ='',					   help="file name, data stack for sorting provided by user. It applies when sorting starts from a given data stack")
+	parser.add_option("--post_sorting_sharpen",              action ="store_true",    default =False,                  help="reconstruct odd and even unfiltered maps per cluster after sorting")
+
+	initiate_from_meridien_mode = False
+	for q in sys.argv[1:]:
+		if( q[:16] == "--refinement_dir" ):
+			initiate_from_meridien_mode = True
+			break
 	
-	if not options.post_sorting_sharpen: # fresh run
-		if options.refinement_dir !='':
-			if not os.path.exists(options.refinement_dir): ERROR("The specified refinement_dir does not exist", "sort3d", 1, Blockdata["myid"])
+	initiate_from_data_stack_mode = False
+	for q in sys.argv[1:]:
+		if( q[:9] == "--instack" ):
+			initiate_from_data_stack_mode = True
+			break
+	
+	do_post_sorting_sharpen_mode = False
+	for q in sys.argv[1:]:
+		if(q[:22] == "--post_sorting_sharpen"):
+			do_post_sorting_sharpen_mode = True
+			break
+	
+  	# priority 
+  	if do_post_sorting_sharpen_mode:
+  		initiate_from_data_stack_mode = False
+		initiate_from_meridien_mode   = False
+		
+	if initiate_from_data_stack_mode and initiate_from_meridien_mode:
+		initiate_from_data_stack_mode = False
+		
+	if (not initiate_from_data_stack_mode) and (not do_post_sorting_sharpen_mode) and (not initiate_from_meridien_mode):
+		if Blockdata["myid"] == Blockdata["main_node"]:
+			print("Specify any one of three options to start the program: --refinement_dir, --instack, --post_sorting_sharpen")
+	
+	if initiate_from_meridien_mode:
+		if Blockdata["myid"] == Blockdata["main_node"]: print("initiate_from_meridien_mode")
+		parser.add_option("--output_dir",                        type   ="string",        default ='',					   help="sort3d output directory name")
+		parser.add_option("--niter_for_sorting",                 type   ="int",           default =-1,					   help="user specified iteration number of 3D refinement for sorting")
+		parser.add_option("--focus",                             type   ="string",        default ='',                     help="Focus 3D mask. File path of a binary 3D mask for focused clustering ")
+		parser.add_option("--mask3D",                            type   ="string",        default ='',                     help="3D mask. File path of the global 3D mask for clustering")
+		parser.add_option("--radius",                            type   ="int",           default =-1,	                   help="Estimated protein radius in pixels")
+		parser.add_option("--sym",                               type   ="string",        default ='c1',                   help="point-group symmetry")
+		parser.add_option("--img_per_grp",                       type   ="int",           default =1000,                   help="number of images per group")
+		parser.add_option("--nsmear",                            type   ="float",         default =-1.,                    help="number of smears used in sorting. Fill it with 1 if user does not want to use all smears")
+		parser.add_option("--minimum_grp_size",				     type   ="int",           default =-1,					   help="cluster selection size")
+		parser.add_option("--depth_order",				         type   ="int",           default =2,					   help="depth order. A number defines the number of initial independent MGSKmeans runs (2^depth_order)")
+		parser.add_option("--memory_per_node",                   type   ="float",         default =-1.0,                   help="memory_per_node, the number used for computing the CPUs/NODE settings given by user")
+		parser.add_option("--orientation_groups",                type   ="int",           default =100,                    help="mumber of orientation groups in the asymmetric unit")
+		parser.add_option("--not_include_unaccounted",           action ="store_true",    default =False,                  help="do not reconstruct unaccounted elements in each generation")
+		parser.add_option("--stop_mgskmeans_percentage",         type   ="float",         default =10.0,                   help="swap ratio. A float number between 0.0 and 50")
+		parser.add_option("--swap_ratio",                        type   ="float",         default =1.0,                    help="randomness ratio of swapping accounted elements with unaccounted elemetns per cluster")
+		parser.add_option("--notapplybckgnoise",                 action ="store_true",    default =False,                  help="do not applynoise")
+		parser.add_option("--do_swap_au",                        action ="store_true",    default =False,                  help="swap flag")
+		parser.add_option("--restart_from_generation",		     type   ="int",           default =-1,					   help="restart from this geneartion,  the defalut value implies there is no restart")
+		parser.add_option("--restart_from_depth_order",		     type   ="int",           default =-1,					   help="restart from this depth order, the defalut value implies there is no restart")
+		parser.add_option("--restart_from_nbox",				 type   ="int",           default = 0,					   help="restart from the nubmer of box in the specified depth level")
+		parser.add_option("--shake",                             type   ="float",         default = 0.0,                   help="perturbation factor applied to orientation groups")
+		# postprocessing options <<<<-------
+		parser.add_option("--mtf",                               type   ="string",        default = '',                    help="mtf file")
+		parser.add_option("--B_enhance",                         type   ="float",         default = 0.0,                   help="B-factor enhancement flag. -1.0: B-factor is not applied; 0.0: program estimates B-factor from options; else, use user provided B-factor")
+		parser.add_option("--fl",                                type   ="float",         default = 0.0,                   help="=0.0, low_pass filter to resolution limit; =some value, low_pass filter to some valume; =-1, not low_pass filter applied")
+		parser.add_option("--aa",                                type   ="float",         default = 0.1,                   help="low pass filter falloff")
+		parser.add_option("--B_start",                           type   ="float",         default = 10.,                   help="starting frequency in Angstrom for B-factor estimation")
+		parser.add_option("--B_stop",                            type   ="float",         default = 0.0,                   help="cutoff frequency in Angstrom for B-factor estimation, cutoff is set to the frequency where fsc < 0.0")
+		parser.add_option("--nofsc_adj",                         action ="store_true",    default = False,                 help="do not multiply sqrt(fsc)")
+		(options, args) = parser.parse_args(sys.argv[1:])
+		from utilities import bcast_number_to_all
+		### Sanity check
+	
+		checking_flag = 0
+		if Blockdata["myid"] == Blockdata["main_node"]:
+			if options.refinement_dir !='':
+				if not os.path.exists(options.refinement_dir): checking_flag = 1
+		checking_flag = bcast_number_to_all(checking_flag, Blockdata["main_node"], MPI_COMM_WORLD)
+		if checking_flag ==1:  ERROR("The specified refinement_dir does not exist", "sort3d", 1, Blockdata["myid"])
+	
 		if options.focus !='':
-			if not os.path.exists(options.focus): ERROR("The specified focus mask file does not exist", "sort3d", 1, Blockdata["myid"])
+			if Blockdata["myid"] == Blockdata["main_node"]:
+				if not os.path.exists(options.focus):  checking_flag = 1
+			checking_flag = bcast_number_to_all(checking_flag, Blockdata["main_node"], MPI_COMM_WORLD)
+			if checking_flag ==1: ERROR("The specified focus mask file does not exist", "sort3d", 1, Blockdata["myid"])
+		
 		if options.mask3D !='':
-			if not os.path.exists(options.mask3D): ERROR("The specified mask3D file does not exist", "sort3d", 1, Blockdata["myid"])
-		if options.img_per_grp <= options.minimum_grp_size: ERROR("img_per_grp should be way larger than minimum_grp_size", "sort3d", 1, Blockdata["myid"])
+			if Blockdata["myid"] == Blockdata["main_node"]:
+				if not os.path.exists(options.mask3D): checking_flag = 1
+			checking_flag = bcast_number_to_all(checking_flag, Blockdata["main_node"], MPI_COMM_WORLD)
+			if checking_flag ==1: ERROR("The specified mask3D file does not exist", "sort3d", 1, Blockdata["myid"])
+		
+		if options.img_per_grp <=1: ERROR("improperiate number for img_per_grp", "sort3d", 1, Blockdata["myid"])
+		elif options.img_per_grp < options.minimum_grp_size: ERROR("img_per_grp should be always larger than minimum_grp_size", "sort3d", 1, Blockdata["myid"])
 	
 		#--- Fill input parameters into dictionary Constants
-	
 		Constants		                         = {}
-		Constants["stop_eqkmeans_percentage"]    = options.stop_eqkmeans_percentage
-		if options.nofinal_sharpen: Constants["final_sharpen"] = False
-		else:                       Constants["final_sharpen"] = True
+		Constants["stop_mgskmeans_percentage"]   = options.stop_mgskmeans_percentage
 		Constants["niter_for_sorting"]           = options.niter_for_sorting
 		Constants["memory_per_node"]             = options.memory_per_node
 		Constants["orgstack"]                    = options.instack
 		Constants["masterdir"]                   = options.output_dir
 		Constants["refinement_dir"]              = options.refinement_dir
-		Constants["mask3D"]                      = options.mask3D
-		Constants["focus3Dmask"]                 = options.focus
-		Constants["order_of_depth"]              = options.order_of_depth
+	
+		if options.mask3D == '': Constants["mask3D"] = False
+		else:   Constants["mask3D"] = options.mask3D
+		if options.focus!='':   Constants["focus3Dmask"] = options.focus
+		else: Constants["focus3Dmask"] = False
+	
+		Constants["depth_order"]                 = options.depth_order
 		Constants["img_per_grp"]                 = options.img_per_grp
 		Constants["minimum_grp_size"]      		 = options.minimum_grp_size
-		Constants["CTF"]                		 = True
+		if options.minimum_grp_size == -1: Constants["minimum_grp_size"] = options.img_per_grp//2
 		Constants["radius"]              		 = options.radius
 		Constants["sym"]                         = options.sym
-		Constants["symmetry"]                    = Constants["sym"]
-		Constants["nxinit"]                      = options.nxinit
 		Constants["nsmear"]                      = options.nsmear
-		Constants["seed"]                        = -1
+
+		Constants["post_sorting_sharpen"]        = options.post_sorting_sharpen
+	
+		Constants["restart_from_nbox"]           =  0 #options.restart_from_nbox
+		Constants["restart_from_depth_order"]    = -1 #options.restart_from_depth_order
+		Constants["restart_from_generation"]     = -1 #options.restart_from_generation
+		Constants["shake"]                       = options.shake
+	
+		#### options for advanced users
+		Constants["relax_oriens"]                = False 
+		Constants["do_swap_au"]                  = options.do_swap_au
+		Constants["swap_ratio"]                  = options.swap_ratio
+		Constants["not_include_unaccounted"]     = False
+		Constants["final_sharpen"]               = True #options.do_not_postprocessing
+		Constants["nxinit"]                      = -1
+		Constants["box_niter"]                   = 5 
+	
+		### Frozen options
 		Constants["upscale"]                     = 0.5 #
 		Constants["interpolation"]               = "trl"
-		Constants["final_MGSK"]                  = -1 #options.final_MGSK
-		Constants["comparison_method"]           = options.comparison_method # either cross or eucd
-		Constants["do_not_include_final_unaccounted"] = options.do_not_include_final_unaccounted # either cross or eucd
-		Constants["post_sorting_sharpen"]       = options.post_sorting_sharpen
-		Constants["final_adaptive"]             = False #options.final_adaptive
-		Constants["eqk_shake"]                  = 5.0 #options.eqk_shake
+		Constants["comparison_method"]           = "cross" #options.comparison_method # either cross or eucd
+		Constants["symmetry"]                    = Constants["sym"]
+		Constants["CTF"]                		 = True
+		Constants["do_not_use_3dmask"]           = False 
+	
 		### postprocessing
 		if options.mtf =='': Constants["mtf"]  = None
 		else: Constants["mtf"] = options.mtf
@@ -6688,62 +7706,55 @@ def main():
 		Constants["postlowpassfilter"]           = options.fl
 		Constants["aa"]                          = options.aa
 		if options.nofsc_adj: Constants["fsc_adj"] = False
-		else:   Constants["fsc_adj"] = True	
+		else: Constants["fsc_adj"] = True	
 		if options.focus:  Constants["comparison_method"] = "cross" # in case of focus3D, cross is used.
 		Constants["fuse_freq"] = 45.  # Now in A, convert to pixels before being used
 		Constants["orientation_groups"]  = options.orientation_groups # orientation constrained angle step
-		Constants["iter_minimum_increment"] = 1.0 # expert option, increasing it would reduce iterations within one run 
 		# -------------------------------------------------------------
 		#
 		# Create and initialize Tracker dictionary with input options  # State Variables	
 		Tracker                     = {}
 		Tracker["constants"]	    = Constants
 		if Tracker["constants"]["mask3D"]: Tracker["mask3D"] = Tracker["constants"]["mask3D"]
-		else: Tracker["mask3D"] = None
+		else: Tracker["mask3D"]     = None
 		Tracker["radius"]           = Tracker["constants"]["radius"]
 		Tracker["upscale"]          = Tracker["constants"]["upscale"]
 		Tracker["applyctf"]         = False  # Should the data be premultiplied by the CTF.  Set to False for local continuous.
 		Tracker["nxinit"]           = Tracker["constants"]["nxinit"]
 		if options.notapplybckgnoise: Tracker["applybckgnoise"] = False
-		else: Tracker["applybckgnoise"] = True
+		else:                         Tracker["applybckgnoise"] = True
+	
 		###<<<--options for advanced users:
-		Tracker["total_number_of_iterations"] = 35
-		Tracker["clean_volumes"]  = True
+		Tracker["total_number_of_iterations"] = 25
+		Tracker["clean_volumes"]              = True # always true
+	
 		### -----------Orientation constraints
 		Tracker["tilt1"]                =  0.0
 		Tracker["tilt2"]                = 180.0
 		Tracker["grp_size_relx_ratio"]  = 0.98
-	
+		Tracker["minimum_ptl_number"]   = 20
 		### ------------<<< option for proteins images that have preferred orientations
-		Tracker["minimum_ptl_number"] = options.minimum_ptl_number  # for orientation groups
-		if Tracker["constants"]["memory_per_node"] == -1 or Tracker["constants"]["memory_per_node"] <32.: Tracker["constants"]["small_memory"] = True
+		 # for orientation groups
+		if    Tracker["constants"]["memory_per_node"] == -1 or Tracker["constants"]["memory_per_node"] <32.: Tracker["constants"]["small_memory"] = True
 		else: Tracker["constants"]["small_memory"] = False
-		## Additional check
+	
+		## additional check
 		Tracker["constants"]["hardmask"] = True
 		Tracker["applymask"]             = True
-	
-		Tracker["nosmearing"]  = True
-		if os.path.exists(options.refinement_dir):
-			Tracker["constants"]["refinement_method"] ="SPARX"
-			Tracker["nosmearing"]  = False
+		Tracker["constants"]["refinement_method"] ="SPARX"
+		Tracker["nosmearing"] = False
+			
+		checking_flag = 0 # reset
 		
-		elif options.instack !='':
-			Tracker["constants"]["refinement_method"] ="stack"
-			Tracker["constants"]["refinement_dir"]    = None
-			Tracker["paramstructure_dir"]             = None
-			Tracker["refang"]                         = None
-			Tracker["rshifts"]                        = None
-			Tracker["paramstructure_dict"]            = None
-			Tracker["constants"]["selected_iter"]     = -1
-		
-		else: ERROR("Incorrect refinement_dir ", "sxsort3d_new.py", 1, Blockdata["myid"])
-		if os.path.exists(options.refinement_dir) and options.instack !='': ERROR("contractdict refinement methods", "sxsort3d_smearing.py", 1, Blockdata["myid"])
-		Blockdata["fftwmpi"]  = True
-		Blockdata["symclass"] = symclass(Tracker["constants"]["symmetry"])
+		Blockdata["fftwmpi"]      = True
+		Blockdata["symclass"]     = symclass(Tracker["constants"]["symmetry"])
 		get_angle_step_from_number_of_orien_groups(Tracker["constants"]["orientation_groups"])
 		Blockdata["ncpuspernode"] = Blockdata["no_of_processes_per_group"]
-		Blockdata["nsubset"] = Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
+		Blockdata["nsubset"]      = Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
+		
 		create_subgroup()
+		create_zero_group()
+		
 		#<<<---------------------->>>imported functions<<<---------------------------------------------
 		from statistics 	import k_means_match_clusters_asg_new,k_means_stab_bbenum
 		from utilities 		import get_im,bcast_number_to_all,cmdexecute,write_text_file,read_text_file,wrap_mpi_bcast, get_params_proj, write_text_row
@@ -6752,58 +7763,430 @@ def main():
 		from time           import sleep
 		from logger         import Logger,BaseLogger_Files
 		import string
-		from string         import split, atoi, atof
 		import json
 		import user_functions
+		from string         import split, atoi, atof
 		####--------------------------------------------------------------
+	
+		continue_from_interuption = 0
 		# sorting starts...
-		AI("create_masterdir", None)
-		log_main = Logger(BaseLogger_Files())
-		log_main.prefix = Tracker["constants"]["masterdir"]+"/"			 
-		AI("import_data", log_main)
-		AI("print_command", log_main)
-		AI("check_mask3d", log_main)
-		AI("check_mpi_settings", log_main)
-		Tracker["order_of_depth"] = Tracker["constants"]["order_of_depth"]
-		AI("initialization", log_main)
-		my_pids = os.path.join(Tracker["constants"]["masterdir"], "indexes.txt")
-		while not Tracker["stop_sorting"]:
-			rundir = os.path.join(Tracker["constants"]["masterdir"], "RUN%d"%Tracker["number_of_runs"])
-			if(Blockdata["myid"] == Blockdata["main_node"]):
-				if not os.path.exists(rundir): 
-					os.mkdir(rundir)
-					AI("iter_init", log_main)
-			else: Tracker = 0
-			Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
-			keepgoing = True
-			my_seeds  = None
-			my_random_members = None
-			while keepgoing:		
-				current_run_work_dir =  os.path.join(Tracker["constants"]["masterdir"], "RUN%d"%Tracker["number_of_runs"], "iter%d"%Tracker["iter"])
-				if(Blockdata["myid"] == Blockdata["main_node"]):
-					if not os.path.exists(current_run_work_dir): os.mkdir(current_run_work_dir)
-					msg = "run %d  iter %d"%(Tracker["number_of_runs"], Tracker["iter"])
-					log_main.add(msg)
-				my_pids, my_seeds, my_random_members, keepgoing = do_depth_one_run(current_run_work_dir, my_pids, \
-					os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt"), \
-					  Tracker["previous_parstack"], log_main, my_seeds, my_random_members, Tracker["order_of_depth"])
-				mpi_barrier(MPI_COMM_WORLD)
-			if not Tracker["terminate"]: AI("update", log_main)
-			else: # early mature
-				Tracker["stop_sorting"] = True
-				break
-		mpi_barrier(MPI_COMM_WORLD)
-		### Final Rec3D unfiltered two halves, valid only in case of sorting initiated from sphire refinement
-		AI("dump_tracker",log_main)
-		AI("final_sharpen",log_main)
+		time_sorting_start = time.time()
+	
+		if Tracker["constants"]["restart_from_generation"] == -1:
+			continue_from_interuption = sort3d_utils("create_masterdir", None)
+			if Blockdata["myid"] == Blockdata["main_node"]:
+				print("continue_from_interuption", continue_from_interuption, Blockdata["myid"])
+			log_main = Logger(BaseLogger_Files())
+			log_main.prefix = Tracker["constants"]["masterdir"]+"/"
+			if continue_from_interuption == 0: 
+				sort3d_utils("import_data",   log_main)
+				sort3d_utils("print_command", log_main)
+				sort3d_utils("check_mask3d",  log_main)
+				sort3d_utils("check_mpi_settings", log_main)
+				keepsorting = sort3d_utils("initialization", log_main)
+				sort3d_utils("dump_tracker", log_main = log_main)
+				if not keepsorting:
+					from mpi import mpi_finalize
+					mpi_finalize()
+					exit()
+			else: sort3d_utils("load_tracker", log_main = log_main) # a simple continuation, continue from the interrupted box
+		else: check_restart_from_given_depth_order(options.depth_order, options.restart_from_generation, \
+				 options.restart_from_depth_order, options.restart_from_nbox, log_main) # need a check !!!
+	
+		Tracker["generation"] = {}
+		igen         = 0
+		keepsorting  = 1
+		keepchecking = 1
+		my_pids      = os.path.join(Tracker["constants"]["masterdir"], "indexes.txt")
+		work_dir     = os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%igen)
+		if Blockdata["myid"] == Blockdata["main_node"]:
+			if not os.path.exists(os.path.join(work_dir)): 
+				os.mkdir(work_dir)
+				msg ="=====>>>>>>>sort3d generation %d<<<<<========"%igen
+				print(msg)
+				log_main.add(msg)
+				mark_sorting_state(work_dir, False, log_main)
+				time_generation_start = time.time()
+		while keepsorting ==1:
+			if Blockdata["myid"] == Blockdata["main_node"]:
+				keepchecking = check_sorting_state(work_dir, keepchecking, log_main)
+				time_generation_start = time.time()
+			else: keepchecking = 0
+			keepchecking = bcast_number_to_all(keepchecking, Blockdata["main_node"], MPI_COMM_WORLD)
+			if keepchecking == 0: # new, do it
+				params          = os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt")
+				previous_params = Tracker["previous_parstack"]
+				output_list     = depth_clustering(work_dir, options.depth_order, my_pids, params, previous_params, log_main)
+				keepsorting     = check_sorting(len(output_list[0][1]), keepsorting, log_main)
+				if keepsorting == 0:# do final box refilling
+					time_final_box_start = time.time()
+					if Blockdata["myid"] == Blockdata["main_node"]:
+						clusters = output_clusters(os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%igen), \
+							output_list[0][0], output_list[0][1], options.not_include_unaccounted, log_main)
+						Tracker["generation"][igen] = len(clusters)
+					else: Tracker = 0
+					Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
+					sort3d_utils("dump_tracker",  log_main = log_main, input_file1 = os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%igen))
+					sort3d_utils("final_sharpen", log_main = log_main, input_file1 = os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%igen))
+					if Blockdata["myid"] == Blockdata["main_node"]:
+						line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+						msg ="=====>>>>>>>  sort3d depth is done  <<<<<========"
+						print(msg)
+						log_main.add(msg)
+						mark_sorting_state(work_dir, True, log_main)
+						time_of_sorting_h,  time_of_sorting_m = get_time(time_final_box_start)
+						msg  = "sort3d reconstruction costs time %d hours %d minutes"%(time_of_sorting_h, time_of_sorting_m)
+						log_main.add(msg)
+						print(line, msg)
+					copy_results(log_main)# all nodes function
+				else:
+					if Blockdata["myid"] == Blockdata["main_node"]:
+						line     = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+						clusters = output_clusters(work_dir, output_list[0][0], output_list[0][1], options.not_include_unaccounted, log_main)
+						Tracker["generation"][igen] = len(clusters)
+					else: Tracker = 0
+					Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
+					sort3d_utils("dump_tracker", log_main =  log_main, input_file1 = work_dir)
+			
+					if Blockdata["myid"] == Blockdata["main_node"]:
+						time_of_sorting_h,  time_of_sorting_m = get_time(time_sorting_start)
+						line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+						msg  = "3-D sorting costs time %d hours %d minutes"%(time_of_sorting_h, time_of_sorting_m)
+						log_main.add(msg)
+						print(line, msg)
+						time_rec3d_start = time.time()
+					
+					sort3d_utils("final_sharpen", log_main = log_main, input_file1 = work_dir)
+					if Blockdata["myid"] == Blockdata["main_node"]:
+						line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+						time_of_rec3d_h,  time_of_rec3d_m = get_time(time_rec3d_start)
+						msg = "3-D reconstruction costs time %d hours %d minutes"%(time_of_rec3d_h, time_of_rec3d_m)
+						log_main.add(msg)
+						print(line, msg)
+						mark_sorting_state(work_dir, True, log_main)
+						time_of_generation_h,  time_of_generation_m = get_time(time_generation_start)
+						msg  = "generation%d costs time %d hours %d minutes"%(igen, time_of_generation_h, time_of_generation_m)
+						log_main.add(msg)
+						print(line, msg)
+					igen    +=1
+					work_dir = os.path.join( Tracker["constants"]["masterdir"], "generation_%03d"%igen)
+					if Blockdata["myid"] == Blockdata["main_node"]:
+						if not os.path.exists(os.path.join(work_dir)): os.mkdir(work_dir)
+						write_text_file(output_list[0][1], os.path.join(work_dir, "indexes.txt"))
+						mark_sorting_state(work_dir, False, log_main)
+						my_pids = os.path.join(work_dir, "indexes.txt")
+			else:
+				read_tracker_mpi(work_dir, log_main)
+				igen +=1
+				work_dir = os.path.join( Tracker["constants"]["masterdir"], "generation_%03d"%igen)
+			mpi_barrier(MPI_COMM_WORLD)		
+		from mpi import mpi_finalize
+		mpi_finalize()
+		exit()
+			
+	elif initiate_from_data_stack_mode:
+		if Blockdata["myid"] == Blockdata["main_node"]: print("initiate_from_data_stack_mode")
+		parser.add_option("--nxinit",                            type   ="int",           default =-1,                     help="User provided image size")
+		parser.add_option("--output_dir",                        type   ="string",        default ='',					   help="name of the sort3d directory")
+		parser.add_option("--focus",                             type   ="string",        default ='',                     help="Focus 3D mask. File path of a binary 3D mask for focused clustering ")
+		parser.add_option("--mask3D",                            type   ="string",        default ='',                     help="3D mask. File path of the global 3D mask for clustering")
+		parser.add_option("--radius",                            type   ="int",           default =-1,	                   help="Estimated protein radius in pixels")
+		parser.add_option("--sym",                               type   ="string",        default ='c1',                   help="point-group symmetry")
+		parser.add_option("--img_per_grp",                       type   ="int",           default =1000,                   help="number of images per group")
+		parser.add_option("--nsmear",                            type   ="float",         default =-1.,                    help="number of smears used in sorting. Fill it with 1 if user does not want to use all smears")
+		parser.add_option("--minimum_grp_size",				     type   ="int",           default =-1,					   help="cluster selection size")
+		parser.add_option("--depth_order",				         type   ="int",           default =2,					   help="depth order. A number defines the number of initial independent MGSKmeans runs (2^depth_order)")
+		parser.add_option("--memory_per_node",                   type   ="float",         default =-1.0,                   help="memory_per_node, the number used for computing the CPUs/NODE settings given by user")
+		parser.add_option("--orientation_groups",                type   ="int",           default =100,                    help="mumber of orientation groups in the asymmetric unit")
+		parser.add_option("--not_include_unaccounted",           action ="store_true",    default =False,                  help="do not reconstruct unaccounted elements in each generation")
+		parser.add_option("--stop_mgskmeans_percentage",         type   ="float",         default =10.0,                   help="swap ratio. A float number between 0.0 and 50")
+		parser.add_option("--swap_ratio",                        type   ="float",         default =1.0,                    help="randomness ratio of swapping accounted elements with unaccounted elemetns per cluster")
+		parser.add_option("--notapplybckgnoise",                 action ="store_true",    default =False,                  help="flag to turn off background noise")
+		parser.add_option("--do_swap_au",                        action ="store_true",    default =False,                  help="swap flag")
+		parser.add_option("--restart_from_generation",		     type   ="int",           default =-1,					   help="restart from this geneartion,  the defalut value implies there is no restart")
+		parser.add_option("--restart_from_depth_order",		     type   ="int",           default =-1,					   help="restart from this depth order, the defalut value implies there is no restart")
+		parser.add_option("--restart_from_nbox",				 type   ="int",           default = 0,					   help="restart from the nubmer of box in the specified depth level")
+		parser.add_option("--shake",                             type   ="float",         default = 0.0,                   help="perturbation factor applied to orientation groups")
+		# postprocessing options <<<<-------
+		parser.add_option("--mtf",                               type   ="string",        default = '',                    help="mtf file")
+		parser.add_option("--B_enhance",                         type   ="float",         default = 0.0,                   help="B-factor enhancement flag. -1.0: B-factor is not applied; 0.0: program estimates B-factor from options; else, use user provided B-factor")
+		parser.add_option("--fl",                                type   ="float",         default = 0.0,                   help="=0.0, low_pass filter to resolution limit; =some value, low_pass filter to some valume; =-1, not low_pass filter applied")
+		parser.add_option("--aa",                                type   ="float",         default = 0.1,                   help="low pass filter falloff")
+		parser.add_option("--B_start",                           type   ="float",         default = 10.,                   help="starting frequency in Angstrom for B-factor estimation")
+		parser.add_option("--B_stop",                            type   ="float",         default = 0.0,                   help="cutoff frequency in Angstrom for B-factor estimation, cutoff is set to the frequency where fsc < 0.0")
+		parser.add_option("--nofsc_adj",                         action ="store_true",    default = False,                 help="do not multiply sqrt(fsc)")
+		(options, args) = parser.parse_args(sys.argv[1:])
+		from utilities import bcast_number_to_all
+		### Sanity check
 		
-	else: # final reconstruction only
-		from utilities import wrap_mpi_bcast
+		checking_flag = 0
+		if options.focus !='':
+			if Blockdata["myid"] == Blockdata["main_node"]:
+				if not os.path.exists(options.focus):  checking_flag = 1
+			checking_flag = bcast_number_to_all(checking_flag, Blockdata["main_node"], MPI_COMM_WORLD)
+			if checking_flag ==1: ERROR("The specified focus mask file does not exist", "sort3d", 1, Blockdata["myid"])
+		
+		if options.mask3D !='':
+			if Blockdata["myid"] == Blockdata["main_node"]:
+				if not os.path.exists(options.mask3D): checking_flag = 1
+			checking_flag = bcast_number_to_all(checking_flag, Blockdata["main_node"], MPI_COMM_WORLD)
+			if checking_flag ==1: ERROR("The specified mask3D file does not exist", "sort3d", 1, Blockdata["myid"])
+		
+		if options.img_per_grp <=1: ERROR("improperiate number for img_per_grp", "sort3d", 1, Blockdata["myid"])
+		elif options.img_per_grp < options.minimum_grp_size: ERROR("img_per_grp should be always larger than minimum_grp_size", "sort3d", 1, Blockdata["myid"])
+	
+		#--- Fill input parameters into dictionary Constants
+		Constants		                         = {}
+		Constants["stop_mgskmeans_percentage"]   = options.stop_mgskmeans_percentage
+		Constants["memory_per_node"]             = options.memory_per_node
+		Constants["orgstack"]                    = options.instack
+		Constants["masterdir"]                   = options.output_dir
+	
+		if options.mask3D == '': Constants["mask3D"] = False
+		else:   Constants["mask3D"] = options.mask3D
+		if options.focus!='':   Constants["focus3Dmask"] = options.focus
+		else: Constants["focus3Dmask"] = False
+		
+		Constants["nsmear"]                      = 1
+		Constants["depth_order"]                 = options.depth_order
+		Constants["img_per_grp"]                 = options.img_per_grp
+		Constants["minimum_grp_size"]      		 = options.minimum_grp_size
+		if options.minimum_grp_size == -1:       Constants["minimum_grp_size"] = options.img_per_grp//2
+		Constants["radius"]              		 = options.radius
+		Constants["sym"]                         = options.sym
+	
+		Constants["restart_from_nbox"]           = 0  #options.restart_from_nbox
+		Constants["restart_from_depth_order"]    = -1 #options.restart_from_depth_order
+		Constants["restart_from_generation"]     = -1 #options.restart_from_generation
+		Constants["shake"]                       = options.shake
+	
+		#### options for advanced users
+		Constants["relax_oriens"]                = False 
+		Constants["do_swap_au"]                  = options.do_swap_au
+		Constants["swap_ratio"]                  = options.swap_ratio
+		Constants["not_include_unaccounted"]     = False
+		Constants["final_sharpen"]               = True #options.do_not_postprocessing
+		Constants["nxinit"]                      = options.nxinit
+		Constants["box_niter"]                   = 5 
+		
+		### Frozen options
+		Constants["upscale"]                      = 0.5 #
+		Constants["interpolation"]                = "trl"
+		Constants["comparison_method"]            = "cross" #options.comparison_method # either cross or eucd
+		Constants["symmetry"]                     = Constants["sym"]
+		Constants["CTF"]                		  = True
+		Constants["do_not_use_3dmask"]            = False 
+	
+		### postprocessing
+		if options.mtf =='': Constants["mtf"]  = None
+		else: Constants["mtf"] = options.mtf
+		Constants["B_enhance"]                     = options.B_enhance
+		Constants["B_start"]                       = options.B_start
+		Constants["B_stop"]                        = options.B_stop
+		Constants["postlowpassfilter"]             = options.fl
+		Constants["aa"]                            = options.aa
+		if options.nofsc_adj: Constants["fsc_adj"] = False
+		else: Constants["fsc_adj"] = True	
+		if options.focus:  Constants["comparison_method"] = "cross" # in case of focus3D, cross is used.
+		Constants["fuse_freq"] = 45.  # Now in A, convert to pixels before being used
+		Constants["orientation_groups"]  = options.orientation_groups # orientation constrained angle step
+		# -------------------------------------------------------------
+		#
+		# Create and initialize Tracker dictionary with input options  # State Variables	
+		Tracker                     = {}
+		Tracker["constants"]	    = Constants
+		if Tracker["constants"]["mask3D"]: Tracker["mask3D"] = Tracker["constants"]["mask3D"]
+		else: Tracker["mask3D"]     = None
+		Tracker["radius"]           = Tracker["constants"]["radius"]
+		Tracker["upscale"]          = Tracker["constants"]["upscale"]
+		Tracker["applyctf"]         = False  # Should the data be premultiplied by the CTF.  Set to False for local continuous.
+		Tracker["nxinit"]           = Tracker["constants"]["nxinit"]
+		if options.notapplybckgnoise: Tracker["applybckgnoise"] = False
+		else:                         Tracker["applybckgnoise"] = True
+	
+		###<<<--options for advanced users:
+		Tracker["total_number_of_iterations"] = 25
+		Tracker["clean_volumes"]              = True # always true
+	
+		### -----------Orientation constraints
+		Tracker["tilt1"]                =  0.0
+		Tracker["tilt2"]                = 180.0
+		Tracker["grp_size_relx_ratio"]  = 0.98
+		Tracker["minimum_ptl_number"]   = 20
+		### ------------<<< option for proteins images that have preferred orientations
+		 # for orientation groups
+		if    Tracker["constants"]["memory_per_node"] == -1 or Tracker["constants"]["memory_per_node"] <32.: Tracker["constants"]["small_memory"] = True
+		else: Tracker["constants"]["small_memory"] = False
+	
+		## additional check
+		Tracker["constants"]["hardmask"] = True
+		Tracker["applymask"]             = True
+		Tracker["constants"]["refinement_method"] ="stack"
+		Tracker["constants"]["refinement_dir"]    = None
+		Tracker["paramstructure_dir"]             = None
+		Tracker["refang"]                         = None
+		Tracker["rshifts"]                        = None
+		Tracker["paramstructure_dict"]            = None
+		Tracker["constants"]["selected_iter"]     = -1
+		Tracker["nosmearing"] = True
+		
+		checking_flag = 0 # reset
+		Blockdata["fftwmpi"]      = True
+		Blockdata["symclass"]     = symclass(Tracker["constants"]["symmetry"])
+		get_angle_step_from_number_of_orien_groups(Tracker["constants"]["orientation_groups"])
+		Blockdata["ncpuspernode"] = Blockdata["no_of_processes_per_group"]
+		Blockdata["nsubset"]      = Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
+		create_subgroup()
+	
+		#<<<---------------------->>>imported functions<<<---------------------------------------------
+		from statistics 	import k_means_match_clusters_asg_new,k_means_stab_bbenum
+		from utilities 		import get_im,bcast_number_to_all,cmdexecute,write_text_file,read_text_file,wrap_mpi_bcast, get_params_proj, write_text_row
+		from utilities 		import get_number_of_groups
+		from filter			import filt_tanl
+		from time           import sleep
+		from logger         import Logger,BaseLogger_Files
+		import string
 		import json
-		masterdir = options.output_dir
-		if not os.path.exists(masterdir):ERROR("masterdir does not exist", "post_sorting_sharpen", 1, Blockdata["myid"])
+		import user_functions
+		from string         import split, atoi, atof
+		####--------------------------------------------------------------
+	
+		continue_from_interuption = 0
+		# sorting starts...
+		time_sorting_start = time.time()
+	
+		if Tracker["constants"]["restart_from_generation"] == -1:
+			continue_from_interuption = sort3d_utils("create_masterdir", None)
+			if Blockdata["myid"] == Blockdata["main_node"]:
+				print("continue_from_interuption", continue_from_interuption, Blockdata["myid"])
+			log_main = Logger(BaseLogger_Files())
+			log_main.prefix = Tracker["constants"]["masterdir"]+"/"
+			if continue_from_interuption == 0: 
+				sort3d_utils("import_data",   log_main)
+				sort3d_utils("print_command", log_main)
+				sort3d_utils("check_mask3d",  log_main)
+				sort3d_utils("check_mpi_settings", log_main)
+				keepsorting = sort3d_utils("initialization", log_main)
+				sort3d_utils("dump_tracker", log_main = log_main)
+				if not keepsorting:
+					from mpi import mpi_finalize
+					mpi_finalize()
+					exit()
+			else: sort3d_utils("load_tracker", log_main = log_main) # a simple continuation, continue from the interrupted box
+		else: check_restart_from_given_depth_order(options.depth_order, options.restart_from_generation, \
+				 options.restart_from_depth_order, options.restart_from_nbox, log_main) # need a check !!!
+	
+		Tracker["generation"] = {}
+		igen         = 0
+		keepsorting  = 1
+		keepchecking = 1
+		my_pids      = os.path.join(Tracker["constants"]["masterdir"], "indexes.txt")
+		work_dir     = os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%igen)
+		if Blockdata["myid"] == Blockdata["main_node"]:
+			if not os.path.exists(os.path.join(work_dir)): 
+				os.mkdir(work_dir)
+				msg ="=====>>>>>>>sort3d generation %d<<<<<========"%igen
+				print(msg)
+				log_main.add(msg)
+				mark_sorting_state(work_dir, False, log_main)
+				time_generation_start = time.time()
+		while keepsorting == 1:
+			if Blockdata["myid"] == Blockdata["main_node"]:
+				keepchecking = check_sorting_state(work_dir, keepchecking, log_main)
+				time_generation_start = time.time()
+			else: keepchecking = 0
+			keepchecking = bcast_number_to_all(keepchecking, Blockdata["main_node"], MPI_COMM_WORLD)
+			if keepchecking == 0: # new, do it
+				params          = os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt")
+				previous_params = Tracker["previous_parstack"]
+				output_list     = depth_clustering(work_dir, options.depth_order, my_pids, params, previous_params, log_main)
+				keepsorting     = check_sorting(len(output_list[0][1]), keepsorting, log_main)
+				if keepsorting == 0:# do final box refilling
+					time_final_box_start = time.time()
+					if Blockdata["myid"] == Blockdata["main_node"]:
+						clusters = output_clusters(os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%igen), \
+							output_list[0][0], output_list[0][1], options.not_include_unaccounted, log_main)
+						Tracker["generation"][igen] = len(clusters)
+					else: Tracker = 0
+					Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
+					sort3d_utils("dump_tracker",  log_main = log_main, input_file1 = os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%igen))
+					sort3d_utils("final_sharpen", log_main = log_main, input_file1 = os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%igen))
+					if Blockdata["myid"] == Blockdata["main_node"]:
+						line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+						msg ="=====>>>>>>>  sort3d depth is done  <<<<<========"
+						print(msg)
+						log_main.add(msg)
+						mark_sorting_state(work_dir, True, log_main)
+						time_of_sorting_h,  time_of_sorting_m = get_time(time_final_box_start)
+						msg  = "sort3d reconstruction costs time %d hours %d minutes"%(time_of_sorting_h, time_of_sorting_m)
+						log_main.add(msg)
+						print(line, msg)
+					copy_results(log_main)# all nodes function
+				else:
+					if Blockdata["myid"] == Blockdata["main_node"]:
+						line     = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+						clusters = output_clusters(work_dir, output_list[0][0], output_list[0][1], options.not_include_unaccounted, log_main)
+						Tracker["generation"][igen] = len(clusters)
+					else: Tracker = 0
+					Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
+					sort3d_utils("dump_tracker", log_main =  log_main, input_file1 = work_dir)
+			
+					if Blockdata["myid"] == Blockdata["main_node"]:
+						time_of_sorting_h,  time_of_sorting_m = get_time(time_sorting_start)
+						line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+						msg  = "3-D sorting costs time %d hours %d minutes"%(time_of_sorting_h, time_of_sorting_m)
+						log_main.add(msg)
+						print(line, msg)
+						time_rec3d_start = time.time()
+					
+					sort3d_utils("final_sharpen", log_main = log_main, input_file1 = work_dir)
+					if Blockdata["myid"] == Blockdata["main_node"]:
+						line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+						time_of_rec3d_h,  time_of_rec3d_m = get_time(time_rec3d_start)
+						msg = "3-D reconstruction costs time %d hours %d minutes"%(time_of_rec3d_h, time_of_rec3d_m)
+						log_main.add(msg)
+						print(line, msg)
+						mark_sorting_state(work_dir, True, log_main)
+						time_of_generation_h,  time_of_generation_m = get_time(time_generation_start)
+						msg  = "generation%d costs time %d hours %d minutes"%(igen, time_of_generation_h, time_of_generation_m)
+						log_main.add(msg)
+						print(line, msg)
+					igen    +=1
+					work_dir = os.path.join( Tracker["constants"]["masterdir"], "generation_%03d"%igen)
+					if Blockdata["myid"] == Blockdata["main_node"]:
+						if not os.path.exists(os.path.join(work_dir)): os.mkdir(work_dir)
+						write_text_file(output_list[0][1], os.path.join(work_dir, "indexes.txt"))
+						mark_sorting_state(work_dir, False, log_main)
+						my_pids = os.path.join(work_dir, "indexes.txt")
+			else:
+				read_tracker_mpi(work_dir, log_main)
+				igen +=1
+				work_dir = os.path.join( Tracker["constants"]["masterdir"], "generation_%03d"%igen)
+			mpi_barrier(MPI_COMM_WORLD)
+		from mpi import mpi_finalize
+		mpi_finalize()
+		exit()
+	else:
+		parser.add_option("--output_dir",          type   ="string",        default ='',       help="name of the sort3d directory")
+		parser.add_option("--memory_per_node",     type   ="float",         default =-1.0,     help="memory_per_node, the number used for evaluate the CPUs/NODE settings given by user")
+		parser.add_option("--niter_for_sorting",   type   ="int",           default =-1,       help="sort3d will use the parameters imported from the selected iteration of meridien refinement, and -1 implies program uses the best iteration to initiate sorting")
+		parser.add_option("--mtf",                 type   ="string",        default = '',      help="mtf file")
+		parser.add_option("--B_enhance",           type   ="float",         default = 0.0,     help="B-factor enhancement flag. -1.0: B-factor is not applied; 0.0: program estimates B-factor from options; else, use user provided B-factor")
+		parser.add_option("--fl",                  type   ="float",         default = 0.0,     help="=0.0, low_pass filter to resolution limit; =some value, low_pass filter to some valume; =-1, not low_pass filter applied")
+		parser.add_option("--aa",                  type   ="float",         default = 0.1,     help="low pass filter falloff")
+		parser.add_option("--B_start",             type   ="float",         default = 10.,     help="starting frequency in Angstrom for B-factor estimation")
+		parser.add_option("--B_stop",              type   ="float",         default = 0.0,     help="cutoff frequency in Angstrom for B-factor estimation, cutoff is set to the frequency where fsc < 0.0")
+		parser.add_option("--nofsc_adj",           action ="store_true",    default = False,   help="do not multiply sqrt(fsc)")		
+		(options, args) = parser.parse_args(sys.argv[1:])
+		from utilities import bcast_number_to_all, wrap_mpi_bcast
+		import json
+		checking_flag = 0
+		if Blockdata["myid"] == Blockdata["main_node"]:
+			if not os.path.exists(options.output_dir):checking_flag = 1
+		checking_flag = bcast_number_to_all(checking_flag, Blockdata["main_node"], MPI_COMM_WORLD)
+		if checking_flag==1: ERROR("masterdir does not exist", "post_sorting_sharpen", 1, Blockdata["myid"])
 		log_main = Logger(BaseLogger_Files())
-		log_main.prefix = masterdir+"/"	
+		log_main.prefix = options.output_dir+"/"	
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			fout = open(os.path.join(options.output_dir,"Tracker.json"),'r')
 			Tracker = convert_json_fromunicode(json.load(fout))
@@ -6811,13 +8194,20 @@ def main():
 			Tracker["constants"]["post_sorting_sharpen"] = True
 			if options.niter_for_sorting !=-1: Tracker["constants"]["niter_for_sorting"] = options.niter_for_sorting
 			if options.memory_per_node !=-1: Tracker["constants"]["memory_per_node"] = options.memory_per_node
+			if options.B_enhance !=0.0: Tracker["constants"]["B_enhance"] = options.B_enhance
+			if options.B_start !=10.0: Tracker["constants"]["B_start"]    = options.B_start    
+			if options.B_stop  !=0.0: Tracker["constants"]["B_stop"]      = optiuons.B_stop    
+			if options.aa !=0.1: Tracker["constants"]["aa"]               = options.aa  
+			if options.fl !=0.0: Tracker["constants"]["postlowpassfilter"]= options.postlowpassfilter  
+			if options.nofsc_adj == True: Tracker["constants"]["fsc_adj"]  = options.nofsc_adj
+			if options.mtf !='': Tracker["constants"]["mtf"]              = options.mtf
+			
 		else: Tracker = 0
 		Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
-		AI("print_command", log_main)
-		AI("post_sorting_sharpen", log_main)
-		
-	from mpi import mpi_finalize
-	mpi_finalize()
-	exit()
+		sort3d_utils("print_command", log_main)
+		sort3d_utils("post_sorting_sharpen", log_main)
+		from mpi import mpi_finalize
+		mpi_finalize()
+		exit()
 if __name__ == "__main__":
 	main()
