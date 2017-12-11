@@ -138,7 +138,7 @@ def isac_substack(args):
 		# Print progress
 		if i_img_detected % n_img_of_10_percent == 0:
 			try:
-				print_progress("Progress %5.2f%%: Processing %6dth entry (Particle ID %6d)."%(float(i_img_detected)/n_img_detected*100.0, i_img_detected, isac_substack_particle_id))
+				print_progress("Progress %5.2f%%: Processing entry %6d (Particle ID %6d)."%(float(i_img_detected)/n_img_detected*100.0, i_img_detected, isac_substack_particle_id))
 				sys.stdout.flush()
 			except:
 				pass
