@@ -147,7 +147,7 @@ In general, reconstruction costs more than 80% of time for each sorting.
 
 
 = Method =
-K-means, equal K-means, reproducibility, two-way comparison.
+K-means, MGSK-means, reproducibility, two-way comparison.
 
 = Reference =
 Not published yet.
