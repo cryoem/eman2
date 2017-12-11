@@ -34,6 +34,7 @@ Author: Jesus Galaz - whoknows-2012, Last update: 07/Nov/2017
 
 from optparse import OptionParser
 from EMAN2 import *
+from EMAN2_utils import *
 import sys
 import EMAN2
 import heapq
@@ -79,13 +80,16 @@ def main():
 
 	(options, args) = parser.parse_args()	
 	
-	if not options.input:
-		try:
-			options.input = sys.argv[1]
-			EMData(options.input,0,True)
-		except:
-			print("ERROR: input file %s seems to have an invalid format" %( options.input ))
-			sys.exit()
+	#if not options.input:
+	#	try:
+	#		options.input = sys.argv[1]
+	#		EMData(options.input,0,True)
+	#	except:
+	#		print("\nERROR: input file {} seems to have an invalid format".format( options.input ))
+	#		parser.print_help()
+	#		sys.exit(1)
+	
+	options = checkinput( options )
 	
 	if options.transformsfile:
 		n=EMUtil.get_image_count(options.input)
