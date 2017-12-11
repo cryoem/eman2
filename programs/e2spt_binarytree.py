@@ -225,10 +225,11 @@ def main():
 	
 	options.nopreprocprefft = False
 
-	
 	if options.shrink < options.shrinkfine:
 		options.shrink = options.shrinkfine
 		print("\n(e2spt_binarytree)(main) it makes no sense for shrinkfine to be larger than shrink; therefore, shrink will be made to match shrinkfine")
+	
+	options = checkinput( options )
 	
 	from e2spt_classaverage import checksaneimagesize	
 	checksaneimagesize( options, options.input )
