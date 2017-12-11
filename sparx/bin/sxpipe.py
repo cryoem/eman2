@@ -76,6 +76,7 @@ def get_time_stamp_suffix():
 # TEST COMMAND
 # cd /home/moriya/mrk_develop/sxdemo/sxdemo07_20160908/mpi_bdb_ctf
 # rm -r mrkout_sxpipe_isac_substack; sxpipe.py isac_substack bdb:beta20161216_pa03b_sxwindow01#data beta20161216_pa04a_sxisac01/class_averages.hdf mrkout_sxpipe_isac_substack
+# rm -r mrkout_sxpipe_isac_substack_02; sxpipe.py isac_substack bdb:beta20161216_pa03b_sxwindow01#data beta20161216_pa04a_sxisac01/class_averages.hdf mrkout_sxpipe_isac_substack_02 --substack_basename=mrk_substack
 # 
 # ----------------------------------------------------------------------------------------
 def isac_substack(args):
@@ -92,9 +93,12 @@ def isac_substack(args):
 		ERROR("Input ISAC class average stack file does not exist. Please check the file path and restart the program.", subcommand_name) # action=1 - fatal error, exit
 	if os.path.exists(args.output_directory):
 		ERROR("Output directory exists. Please change the name and restart the program.", subcommand_name) # action=1 - fatal error, exit
+	if args.substack_basename.strip() == "":
+		ERROR("Substack basename cannot be empty string or only white spaces.", subcommand_name) # action=1 - fatal error, exit
 	
 	assert (os.path.exists(args.input_isac_class_avgs_path))
 	assert (not os.path.exists(args.output_directory))
+	assert (args.substack_basename.strip() != "")
 	
 	# Create output directory
 	os.mkdir(args.output_directory)
@@ -107,12 +111,12 @@ def isac_substack(args):
 	isac_substack_particle_id_list.sort()
 	
 	# Save the substack particle id list
-	isac_substack_particle_id_list_file_path = os.path.join(args.output_directory, "isac_substack_particle_id_list.txt")
+	isac_substack_particle_id_list_file_path = os.path.join(args.output_directory, "{0}_particle_id_list.txt".format(args.substack_basename))
 	write_text_file(isac_substack_particle_id_list, isac_substack_particle_id_list_file_path)
 	
 	# Open the output BDB dictionary
 	assert (args.output_directory != "")
-	output_virtual_bdb_stack_real_path = "bdb:%s#isac_substack"%(args.output_directory)
+	output_virtual_bdb_stack_real_path = "bdb:{0}#{1}".format(args.output_directory,args.substack_basename )
 	output_virtual_bdb_stack = db_open_dict(output_virtual_bdb_stack_real_path)
 	
 	# Convert an absolute path to the actual output data to a relative path by eliminating any symbolic links 
@@ -692,9 +696,10 @@ def main():
 
 	# create the parser for the "isac_substack" command
 	parser_isac_subset = subparsers.add_parser("isac_substack", help="Create Stack Subset: Create virtual subset stack consisting from ISAC accounted particles by retrieving particle numbers associated with the class averages. The command also saves a list text file containing the retrieved original image numbers.")
-	parser_isac_subset.add_argument("input_bdb_stack_path",          type=str,                             help="Input BDB image stack: Specify the same BDB image stack used for the associated ISAC run. (default required string)")
-	parser_isac_subset.add_argument("input_isac_class_avgs_path",    type=str,                             help="ISAC class average file path: Input ISAC class average file path. (default required string)")
-	parser_isac_subset.add_argument("output_directory",              type=str,                             help="Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)")
+	parser_isac_subset.add_argument("input_bdb_stack_path",          type=str,                              help="Input BDB image stack: Specify the same BDB image stack used for the associated ISAC run. (default required string)")
+	parser_isac_subset.add_argument("input_isac_class_avgs_path",    type=str,                              help="ISAC class average file path: Input ISAC class average file path. (default required string)")
+	parser_isac_subset.add_argument("output_directory",              type=str,                              help="Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)")
+	parser_isac_subset.add_argument("--substack_basename",           type=str,  default="isac_substack",    help="Substack basename: Specify the basename of ISAC substack file.  It cannot be empty string or only white spaces. (default isac_substack)")
 	### 
 	### NOTE: Toshio Moriya 2017/11/16
 	### The following options are not implemented yet.
