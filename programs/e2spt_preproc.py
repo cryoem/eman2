@@ -92,11 +92,7 @@ def main():
 	if options.parallel=='None' or options.parallel=='none':
 		options.parallel=None
 	
-	if not options.input:
-		try:
-			options.input = sys.argv[1]
-		except:
-			print("\n(e2spt_preproc)(main) ERROR: invalid input file")
+	options = checkinput( options )
 			
 	if options.mask or options.maskfile or options.threshold or options.clip or options.threshold or options.normproc or options.preprocess or options.lowpass or options.highpass or int(options.shrink) > 1:
 		
