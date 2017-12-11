@@ -125,6 +125,7 @@ def construct_keyword_dict():
 	keyword_dict["--makevstack"]                  = SXkeyword_map(1, "output")         # --makevstack
 	keyword_dict["input_micrograph_list"]         = SXkeyword_map(1, "any_image_list") # input_micrograph_list (contains keyword 'input_micrograph' but this should be image_list type)
 	keyword_dict["--ctref_orgstack"]              = SXkeyword_map(1, "bdb")            # --ctref_orgstack=stack_for_continuation
+	keyword_dict["--substack_basename"]           = SXkeyword_map(1, "string")         # --substack_basename=SUBSTACK_BASENAME (contains keyword 'stack' but this should be string type)
 	# Use priority 2 for the others
 	keyword_dict["stack"]                         = SXkeyword_map(2, "image")          # stack, prj_stack, input_stack, --instack=input_stack_file
 	keyword_dict["volume"]                        = SXkeyword_map(2, "image")          # initial_volume, firstvolume, secondvolume, input_volume
