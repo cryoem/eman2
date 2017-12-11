@@ -89,11 +89,11 @@ def main():
 	if options.normproc: 
 		options.normproc=parsemodopt(options.normproc)
 	'''
-	print "\n options should NOT be parsed, e.g., options.mask={}".format(options.mask)
+	print("\n options should NOT be parsed, e.g., options.mask={}".format(options.mask))
 	from EMAN2_utils import sptOptionsParser
 	options = sptOptionsParser( options, 'e2spt_meanintensityplot')
 
-	print "\n options should be parsed, e.g., options.mask={}".format(options.mask)
+	print("\n options should be parsed, e.g., options.mask={}".format(options.mask))
 	
 	datafiles = options.input.split(',')
 	
@@ -115,7 +115,7 @@ def main():
 	cmdwp = writeParameters(options,'e2spt_meanintensityplot.py', 'sptmeanintensity')
 	
 	for datafile in datafiles:
-		print "\ndatafile={}".format(datafile)
+		print("\ndatafile={}".format(datafile))
 		n = EMUtil.get_image_count(datafile)
 		
 		if options.subset:
@@ -324,7 +324,7 @@ def calcintensities( options, datafile ):
 			mask = clip2D( mask, options.clip)
 	
 	if options.mask:
-		print "\noptions.mask = {}".format(options.mask)
+		print("\noptions.mask = {}".format(options.mask))
 		mask.process_inplace(options.mask[0],options.mask[1])
 	
 	print("Created mask of size", mask['nx'],mask['ny'],mask['nz'])
@@ -537,7 +537,7 @@ def plotintensities( intensities, options, datafile, tag='', onefile='yes' ):
 	
 	if not std:
 
-		print "ERROR: std={}, which means all intensity values are the same.".format(std)
+		print("ERROR: std={}, which means all intensity values are the same.".format(std))
 		sys.exit()
 		
 	
@@ -552,9 +552,9 @@ def plotintensities( intensities, options, datafile, tag='', onefile='yes' ):
 	if options.bins:
 		calcbins = int(round(options.bins))
 	
-	print "\nAnd the number of bins n = ( max(intensities) - min(intensities) ) / width will thus be", calcbins
+	print("\nAnd the number of bins n = ( max(intensities) - min(intensities) ) / width will thus be", calcbins)
 	calcbins = int(round(calcbins))
-	print "rounding to", calcbins
+	print("rounding to", calcbins)
 	
 	statistics.append( 'bins=' + str( calcbins ) + ' , binwidth=' + str( width ) + '\n')
 	
