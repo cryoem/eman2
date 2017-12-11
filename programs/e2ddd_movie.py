@@ -143,74 +143,80 @@ def main():
 
 	if options.dark :
 		if options.verbose: print("Loading Dark Reference")
-		nd=EMUtil.get_image_count(options.dark)
-		dark = EMData(options.dark,0)
-		if nd>1:
-			sigd=dark.copy()
-			sigd.to_zero()
-			a=Averagers.get("mean",{"sigma":sigd,"ignore0":1})
-			print("Summing dark")
-			for i in xrange(0,nd):
-				if options.verbose:
-					sys.stdout.write("({}/{})   \r".format(i+1,nd))
-					sys.stdout.flush()
-				t=EMData(options.dark,i)
-				t.process_inplace("threshold.clampminmax",{"minval":0,"maxval":t["mean"]+t["sigma"]*3.5,"tozero":1})
-				a.add_image(t)
-			dark=a.finish()
-			sigd.write_image(options.dark.rsplit(".",1)[0]+"_sig.hdf")
-			if options.fixbadpixels:
-				sigd.process_inplace("threshold.binary",{"value":sigd["sigma"]/10.0}) # Theoretically a "perfect" pixel would have zero sigma, but in reality, the opposite is true
-				dark.mult(sigd)
-			dark.write_image(options.dark.rsplit(".",1)[0]+"_sum.hdf")
-		#else: dark.mult(1.0/99.0)
-		dark.process_inplace("threshold.clampminmax.nsigma",{"nsigma":3.0})
-		dark2=dark.process("normalize.unitlen")
-	else : dark=None
-	
-	if options.gain :
-		if options.verbose: print("Loading Gain Reference")
-		if options.k2: gain=EMData(options.gain)
+		if "e2ddd_darkref.hdf" in options.dark:
+			dark = EMData(options.dark)
 		else:
-			nd=EMUtil.get_image_count(options.gain)
-			gain=EMData(options.gain,0)
+			nd=EMUtil.get_image_count(options.dark)
+			dark = EMData(options.dark,0)
 			if nd>1:
-				sigg=gain.copy()
-				sigg.to_zero()
-				a=Averagers.get("mean",{"sigma":sigg,"ignore0":1})
-				print("Summing gain")
+				sigd=dark.copy()
+				sigd.to_zero()
+				a=Averagers.get("mean",{"sigma":sigd,"ignore0":1})
+				print("Summing dark")
 				for i in xrange(0,nd):
 					if options.verbose:
 						sys.stdout.write("({}/{})   \r".format(i+1,nd))
 						sys.stdout.flush()
-					t=EMData(options.gain,i)
-					#t.process_inplace("threshold.clampminmax.nsigma",{"nsigma":4.0,"tozero":1})
+					t=EMData(options.dark,i)
 					t.process_inplace("threshold.clampminmax",{"minval":0,"maxval":t["mean"]+t["sigma"]*3.5,"tozero":1})
 					a.add_image(t)
-				gain=a.finish()
-				sigg.write_image(options.gain.rsplit(".",1)[0]+"_sig.hdf")
+				dark=a.finish()
+				sigd.write_image(options.dark.rsplit(".",1)[0]+"_sig.hdf")
 				if options.fixbadpixels:
-					sigg.process_inplace("threshold.binary",{"value":sigg["sigma"]/10.0}) # Theoretically a "perfect" pixel would have zero sigma, but in reality, the opposite is true
-					if dark!=None : sigg.mult(sigd)
-					gain.mult(sigg)
-				gain.write_image(options.gain.rsplit(".",1)[0]+"_sum.hdf")
-			if options.de64: 
-				gain.process_inplace( "threshold.clampminmax", { "minval" : gain[ 'mean' ] - 8.0 * gain[ 'sigma' ], "maxval" : gain[ 'mean' ] + 8.0 * gain[ 'sigma' ], "tomean" : True } )
+					sigd.process_inplace("threshold.binary",{"value":sigd["sigma"]/10.0}) # Theoretically a "perfect" pixel would have zero sigma, but in reality, the opposite is true
+					dark.mult(sigd)
+				dark.write_image(options.dark.rsplit(".",1)[0]+"_sum.hdf")
+			#else: dark.mult(1.0/99.0)
+			dark.process_inplace("threshold.clampminmax.nsigma",{"nsigma":3.0})
+			dark2=dark.process("normalize.unitlen")
+	else : dark=None
+	
+	if options.gain :
+		if options.verbose: print("Loading Gain Reference")\
+		if "e2ddd_gainref.hdf" in options.gain:
+			gain = EMData(options.gain)
+		else:
+			if options.k2: gain=EMData(options.gain)
 			else:
-				gain.process_inplace("math.reciprocal",{"zero_to":0.0})
-				#gain.mult(1.0/99.0)
-				#gain.process_inplace("threshold.clampminmax.nsigma",{"nsigma":3.0})
+				nd=EMUtil.get_image_count(options.gain)
+				gain=EMData(options.gain,0)
+				if nd>1:
+					sigg=gain.copy()
+					sigg.to_zero()
+					a=Averagers.get("mean",{"sigma":sigg,"ignore0":1})
+					print("Summing gain")
+					for i in xrange(0,nd):
+						if options.verbose:
+							sys.stdout.write("({}/{})   \r".format(i+1,nd))
+							sys.stdout.flush()
+						t=EMData(options.gain,i)
+						#t.process_inplace("threshold.clampminmax.nsigma",{"nsigma":4.0,"tozero":1})
+						t.process_inplace("threshold.clampminmax",{"minval":0,"maxval":t["mean"]+t["sigma"]*3.5,"tozero":1})
+						a.add_image(t)
+					gain=a.finish()
+					sigg.write_image(options.gain.rsplit(".",1)[0]+"_sig.hdf")
+					if options.fixbadpixels:
+						sigg.process_inplace("threshold.binary",{"value":sigg["sigma"]/10.0}) # Theoretically a "perfect" pixel would have zero sigma, but in reality, the opposite is true
+						if dark!=None : sigg.mult(sigd)
+						gain.mult(sigg)
+					gain.write_image(options.gain.rsplit(".",1)[0]+"_sum.hdf")
+				if options.de64: 
+					gain.process_inplace( "threshold.clampminmax", { "minval" : gain[ 'mean' ] - 8.0 * gain[ 'sigma' ], "maxval" : gain[ 'mean' ] + 8.0 * gain[ 'sigma' ], "tomean" : True } )
+				else:
+					gain.process_inplace("math.reciprocal",{"zero_to":0.0})
+					#gain.mult(1.0/99.0)
+					#gain.process_inplace("threshold.clampminmax.nsigma",{"nsigma":3.0})
 
-		if dark!=None and options.gain_darkcorrected == False: gain.sub(dark) # dark correct the gain-reference
+			if dark!=None and options.gain_darkcorrected == False: gain.sub(dark) # dark correct the gain-reference
 
-		if options.de64:
-			mean_val = gain["mean"]
-			if mean_val <= 0.: mean_val=1.
-			gain.process_inplace("threshold.belowtominval",{"minval":0.01,"newval":mean_val})
+			if options.de64:
+				mean_val = gain["mean"]
+				if mean_val <= 0.: mean_val=1.
+				gain.process_inplace("threshold.belowtominval",{"minval":0.01,"newval":mean_val})
 
-		gain.mult(1.0/gain["mean"])
+			gain.mult(1.0/gain["mean"])
 
-		if options.invert_gain: gain.process_inplace("math.reciprocal") 
+			if options.invert_gain: gain.process_inplace("math.reciprocal") 
 	#elif options.gaink2 :
 	#	gain=EMData(options.gaink2)
 	else : gain=None
