@@ -52,7 +52,7 @@ from global_def import *
 # (like function pointer in C/C++)
 # This way, switch statement is unnecessary inside of the coordinates loop.
 # ========================================================================================
-def read_sparx_coords_file(coords_path):
+def read_sphire_coords_file(coords_path):
 	coords_list = read_text_row(coords_path)
 	return coords_list
 
@@ -153,7 +153,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 """
 	parser = OptionParser(usage, version=SPARXVERSION)
 	parser.add_option("--selection_list",      type="string",        default=None,      help="Micrograph selecting list: Specify a name of micrograph selection list text file for Selected Micrographs Mode. The file extension must be \'.txt\'. Alternatively, the file name of a single micrograph can be specified for Single Micrograph Mode. (default none)")
-	parser.add_option("--coordinates_format",  type="string",        default="eman1",   help="Coordinate file format: Allowed values are \'sparx\', \'eman1\', \'eman2\', or \'spider\'. The sparx, eman2, and spider formats use the particle center as coordinates. The eman1 format uses the lower left corner of the box as coordinates. (default eman1)")
+	parser.add_option("--coordinates_format",  type="string",        default="eman1",   help="Coordinate file format: Allowed values are \'sphire\', \'eman1\', \'eman2\', or \'spider\'. The sphire, eman2, and spider formats use the particle center as coordinates. The eman1 format uses the lower left corner of the box as coordinates. (default eman1)")
 	parser.add_option("--box_size",            type="int",           default=256,       help="Particle box size [Pixels]: The x and y dimensions of square area to be windowed. The box size after resampling is assumed when resample_ratio < 1.0. (default 256)")
 	parser.add_option("--skip_invert",         action="store_true",  default=False,     help="Skip invert image contrast: Use this option for negative staining data. By default, the image contrast is inverted for cryo data. (default False)")
 	parser.add_option("--limit_ctf",           action="store_true",  default=False,     help="Use CTF limit filter: Frequencies where CTF oscillations can not be properly modeled with the resampled pixel size will be discarded in the images with the appropriate low-pass filter. This has no effects when the CTER partres file is not specified by the CTF paramters source argument. (default False)")
@@ -266,7 +266,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 				error_status = ("File specified by selection_list option does not exists. Please check selection_list option. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
 				break
 		
-		if options.coordinates_format.lower() not in ["sparx", "eman1", "eman2", "spider"]:
+		if options.coordinates_format.lower() not in ["sphire", "eman1", "eman2", "spider"]:
 			error_status = ("Invalid option value: --coordinates_format=%s. Please run %s -h for help." % (options.coordinates_format, program_name), getframeinfo(currentframe()))
 			break
 		
@@ -827,8 +827,8 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 	# This way, the following switch statement is unnecessary inside of the coordinates loop.
 	coords_format = options.coordinates_format.lower()
 	read_coords_file = None
-	if coords_format == "sparx":
-		read_coords_file = read_sparx_coords_file
+	if coords_format == "sphire":
+		read_coords_file = read_sphire_coords_file
 	elif coords_format == "eman1":
 		read_coords_file = read_eman1_coords_file
 	elif coords_format == "eman2":
