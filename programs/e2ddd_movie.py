@@ -144,7 +144,7 @@ def main():
 	if options.dark :
 		if options.verbose: print("Loading Dark Reference")
 		if "e2ddd_darkref.hdf" in options.dark:
-			dark = EMData(options.dark)
+			dark = EMData(options.dark,-1)
 		else:
 			nd=EMUtil.get_image_count(options.dark)
 			dark = EMData(options.dark,0)
@@ -174,7 +174,7 @@ def main():
 	if options.gain :
 		if options.verbose: print("Loading Gain Reference")\
 		if "e2ddd_gainref.hdf" in options.gain:
-			gain = EMData(options.gain)
+			gain = EMData(options.gain,-1)
 		else:
 			if options.k2: gain=EMData(options.gain)
 			else:
