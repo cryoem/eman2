@@ -32,7 +32,6 @@ from __future__ import print_function
 from EMAN2 import *
 from EMAN2_utils import *
 import os
-from e2spt_classaverage import *
 import sys
 
 
