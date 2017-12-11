@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 #
 # Author: Jesus Galaz, 22/Jan/2017; last update Jan/22/2017
 # Copyright (c) 2011 Baylor College of Medicine
@@ -31,10 +30,10 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 #
-
+from __future__ import print_function
 import os
 from EMAN2 import *
-
+from EMAN2_utils import *
 import sys
 import numpy
 import math
@@ -90,7 +89,7 @@ def main():
 	logger = E2init(sys.argv, options.ppid)	#c:this initiates the EMAN2 logger such that the execution
 											#of the program with the specified parameters will be logged
 											#(written) in the invisible file .eman2log.txt
-	
+		
 	if options.inputstack:
 		if options.inputeven or options.inputodd:
 			print("\nERROR: cannot supply --inputodd or --inputeven with --inputstack")
@@ -119,8 +118,7 @@ def main():
 	if options.mask2:
 		options.mask2=parsemodopt(options.mask2)
 	
-	from e2spt_classaverage import sptmakepath
-	options = sptmakepath(options,'sptbfactor')
+	options = makepath(options,'sptbfactor')
 
 
 	if options.inputeven and options.inputodd:
