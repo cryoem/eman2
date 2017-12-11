@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-
 #
 # Author: Jesus Galaz-Montoya, 2012. Last update: july/24/2014.
 # Copyright (c) 2011 Baylor College of Medicine
@@ -31,9 +29,10 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 #
-
+from __future__ import print_function
 from optparse import OptionParser
 from EMAN2 import *
+from EMAN2_utils import *
 from sys import argv
 import EMAN2
 import heapq
@@ -52,8 +51,6 @@ matplotlib.use('Agg',warn=False)
 
 import matplotlib.pyplot as plt
 
-from e2spt_classaverage import sptmakepath
-
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -68,7 +65,7 @@ def main():
 	
 	#parser = OptionParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_argument("--path",type=str,default=None,help="Directory to store results in. The default is a numbered series of directories containing the prefix 'sptsimjob'; for example, sptsimjob_02 will be the directory by default if 'sptsimjob_01' already exists.")
+	parser.add_argument("--path",type=str,default='spt_simjobs',help="Directory to store results in. The default is a numbered series of directories containing the prefix 'sptsimjob'; for example, sptsimjob_02 will be the directory by default if 'sptsimjob_01' already exists.")
 	
 	parser.add_argument("--snrlowerlimit", type=float,default=0.00,help="Minimum weight for noise compared to singal.")
 	parser.add_argument("--snrupperlimit", type=float,default=1.00,help="Maximum weight for noise compared to singal.")
@@ -325,7 +322,7 @@ def main():
 		
 		if not skip:
 		
-			options = sptmakepath( options, options.path )
+			options = makepath( options, 'spt_simpjobs')
 		
 		#print "This is the path RETURNED after the first path made", options.path
 		
