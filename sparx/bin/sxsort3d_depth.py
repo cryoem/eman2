@@ -3582,7 +3582,7 @@ def fill_large_groups_and_unaccounted_to_m_and_rclusters(\
 	if m > 0:
 		if len(unaccounted_list)//avg_size -1 > 0:
 			J = len(unaccounted_list)//avg_size -1
-			print(" J %d K %d"%(J, number_of_groups))
+			#print(" J %d K %d"%(J, number_of_groups))
 			for ij in xrange(J):
 				ucluster, unaccounted_list= select_fixed_size_cluster_from_alist(unaccounted_list, avg_size)
 				clusters.append(ucluster)
@@ -3621,7 +3621,7 @@ def fill_large_groups_and_unaccounted_to_m_and_rclusters(\
 					clusters.append(nacc_large_clusters[il][0:avg_size])
 					for ir in xrange(len(nacc_large_clusters[il][avg_size:])):
 						ucluster.append(nacc_large_clusters[il][ir])
-			print("UCLUSTER", len(ucluster), len(unaccounted_list), len(other_clusters))
+			#print("UCLUSTER", len(ucluster), len(unaccounted_list), len(other_clusters))
 			ucluster += unaccounted_list
 			other_clusters = assign_unaccounted_inverse_proportion_to_size(ucluster, other_clusters, avg_size)
 			for cluster in other_clusters: clusters.append(cluster)
@@ -3653,7 +3653,7 @@ def fill_large_groups_and_unaccounted_to_m_and_rclusters_mpi(\
 		if len(unaccounted_list)//avg_size -1 > 0:
 			J = len(unaccounted_list)//avg_size -1
 			if Blockdata["myid"] == Blockdata["main_node"]:
-				print(" J %d K %d"%(J, number_of_groups))
+				#print(" J %d K %d"%(J, number_of_groups))
 				for ij in xrange(J):
 					ucluster, unaccounted_list= select_fixed_size_cluster_from_alist(unaccounted_list, avg_size)
 					clusters.append(ucluster)
@@ -3788,13 +3788,13 @@ def assign_unaccounted_inverse_proportion_to_size(glist, clusters, img_per_grp):
 	ulist = copy.deepcopy(glist)
 	number_of_groups = len(clusters)
 	slist = []
-	print("unaccounted  %d  K %d  avg_size %d"%(len(glist), len(clusters), img_per_grp)) 
+	#print("unaccounted  %d  K %d  avg_size %d"%(len(glist), len(clusters), img_per_grp)) 
 	for ic in xrange(len(clusters)):
 		if len(clusters[ic])<=img_per_grp:
 			slist.append(max(1.- float(len(clusters[ic]))/float(img_per_grp), 0.05))
 		else: slist.append(0.05)
 	nc = 0
-	print(slist)
+	#print(slist)
 	while len(ulist)>0:
 		im = random.randint(0, number_of_groups - 1)
 		shuffle(ulist)
