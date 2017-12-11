@@ -34,6 +34,7 @@
 #
 
 from EMAN2 import *
+from EMAN2_utils import *
 import math
 import numpy
 f#rom copy import deepcopy
@@ -98,7 +99,7 @@ def main():
 
 	parser.add_argument("--iter", type=int, default=1, help="""Default=1. The number of iterations to perform.""", guitype='intbox', row=5, col=0, rowspan=1, colspan=1, nosharedb=True, mode='alignment,breaksym')
 	
-	parser.add_argument("--path",type=str,default='spt',help="""Default=spt. Directory to store results in. The default is a numbered series of directories containing the prefix 'spt'; for example, spt_02 will be the directory by default if 'spt_01' already exists.""")
+	parser.add_argument("--path",type=str,default='spt_refprep',help="""Default=spt. Directory to store results in. The default is a numbered series of directories containing the prefix 'spt'; for example, spt_02 will be the directory by default if 'spt_01' already exists.""")
 		
 	parser.add_argument("--npeakstorefine", type=int, help="""Default=1. The number of best coarse alignments to refine in search of the best final alignment.""", default=1, guitype='intbox', row=9, col=0, rowspan=1, colspan=1, nosharedb=True, mode='alignment,breaksym[1]')
 			
@@ -150,6 +151,7 @@ def main():
 
 	(options, args) = parser.parse_args()
 	
+	options = checkinput( options )
 	
 	nptcl = EMUtil.get_image_count(options.input)
 	
@@ -167,9 +169,7 @@ def main():
 			if options.verbose:
 				print "\taking a subset s={} smaller than the number of particles in --input n={}".format(options.subset, nptcl)
 			
-	from EMAN2_utils import makepath
-	options = makepath(options,'sptrefprep')
-		
+	options = makepath(options,'spt_refprep')
 		
 	if options.subset < 4:
 		print "ERROR: You need at least 4 particles in --input for goldstandard refinement if --ref is not provided and --goldstandardoff not provided."""
@@ -287,9 +287,7 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 								
 			if method == 'bt':
 				pass
-		
 				
-	
 	refnames={}
 	
 
@@ -364,7 +362,6 @@ def func_hacref():
 		--goldstandardoff"""
 	
 		sys.exit()
-
 
 	i = 0
 	while i < nptclsforref :
