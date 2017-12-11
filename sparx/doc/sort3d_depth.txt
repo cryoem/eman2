@@ -35,6 +35,7 @@ sxsort3d_depth.py exists only in MPI version. It surports single node workstatio
 	do_swap_au:: Swap flag: Swap a certain number of accounted elements per cluster with the unaccounted elements. (default False)
 	swap_ratio:: Swap ratio: A float number between 0.0 and 50. (default 1.0)
 	shake:: Perturbation factor applied to orientation groups: A float number between 0.0 and 0.5. (default 0.0)
+	notapplybckgnoise:: flag to turn off background noise: (default is False)
 	mtf:: MTF file: File contains the MTF (modulation transfer function) of the detector used. (default none)
     B_enhance:: B-factor enhancement: -1.0: B-factor is not applied; 0.0: program estimates B-factor from options. B_start (usually 10 Angstrom) to the resolution determined by FSC143; 128.0: program use the given value 128.0 [A^2] to enhance map. (default 0.0)
     fl:: Low-pass filter frequency [1/Pixels]: 0.0: low-pass filter to resolution; A value > 0.5: low-pass filter to the value in Angstrom; A value > 0.0 and < 0.5: low-pass filter to the value in absolute frequency; -1.0: no low-pass filter. (default 0.0)
@@ -73,6 +74,7 @@ sxsort3d_depth.py exists only in MPI version. It surports single node workstatio
 	do_swap_au:: Swap flag: Swap a certain number of accounted elements per cluster with the unaccounted elements. (default False)
 	swap_ratio:: Swap ratio: A float number between 0.0 and 50. (default 1.0)
 	shake:: Perturbation factor applied to orientation groups: A float number between 0.0 and 0.5. (default 0.0)
+	notapplybckgnoise:: flag to turn off background noise: (default is False)
 	mtf:: MTF file: File contains the MTF (modulation transfer function) of the detector used. (default none)
     B_enhance:: B-factor enhancement: -1.0: B-factor is not applied; 0.0: program estimates B-factor from options. B_start (usually 10 Angstrom) to the resolution determined by FSC143; 128.0: program use the given value 128.0 [A^2] to enhance map. (default 0.0)
     fl:: Low-pass filter frequency [1/Pixels]: 0.0: low-pass filter to resolution; A value > 0.5: low-pass filter to the value in Angstrom; A value > 0.0 and < 0.5: low-pass filter to the value in absolute frequency; -1.0: no low-pass filter. (default 0.0)
@@ -132,7 +134,7 @@ Reconstructed halfset maps to be used for postprocessing.
 
 - vol_final_nomask_cluster*.hdf  
 
-- anova on defocus, number of smears, norm and statistics of micrographs of the final clusters and clusters produced in each generation are documented in log.txt saved in output directory.
+- anova on defocus, number of smears, norm and statistics of micrographs of the final clusters and clusters produced in each generation are documented in log.txt.
 
 - vol_final_cluster*.hdf, Cluster*.txt, vol_unfiltered_0_group*.hdf and vol_unfiltered_1_group*.hdf in each generation_00? directories. The last cluster is the unaccounted elements in each generation.
 
