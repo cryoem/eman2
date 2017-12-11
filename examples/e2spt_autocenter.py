@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-
 #
 # Author: Jesus Galaz, 12/08/2011 - Last Update 10/Feb/2014
 # Copyright (c) 2011 Baylor College of Medicine
@@ -30,7 +28,9 @@ from __future__ import print_function
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 
+from __future__ import print_function
 from EMAN2 import *
+from EMAN2_utils import *
 import os
 from e2spt_classaverage import *
 import sys
@@ -97,44 +97,24 @@ def main():
 
 	(options, args) = parser.parse_args()
 
-
+	options = checkinput( options )
+	
 	hdr = EMData(options.input,0,True)
+	
 	nx = hdr["nx"]
 	ny = hdr["ny"]
 	nz = hdr["nz"]
-	if nx!=ny or ny!=nz :
-		print("ERROR, input volumes are not cubes")
-		sys.exit(1)
+	
+	#if nx!=ny or ny!=nz :
+	#	print("ERROR, input volumes are not cubes")
+	#	sys.exit(1)
+	
 	oldbox=nx
 
-
-	from e2spt_classaverage import sptmakepath
-	options = sptmakepath( options )
+	options = makepath( options )
 	
-	if options.averager: 
-		options.averager=parsemodopt(options.averager)
-	
-	if options.mask: 
-		options.mask=parsemodopt(options.mask)
-
-	if options.lowpass: 
-		options.lowpass=parsemodopt(options.lowpass)
-
-	if options.highpass: 
-		options.highpass=parsemodopt(options.highpass)
+	options = sptOptionsParser( options )
 		
-	if options.preprocess: 
-		options.preprocess=parsemodopt(options.preprocess)
-		
-	if options.normproc: 
-		options.normproc=parsemodopt(options.normproc)
-	
-	if options.align: 
-		options.align=parsemodopt(options.align)
-	
-	if options.aligncmp: 
-		options.aligncmp=parsemodopt(options.aligncmp)
-	
 	n=EMUtil.get_image_count(options.input)
 	
 	modes=options.mode.split(',')
