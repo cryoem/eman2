@@ -3227,32 +3227,7 @@ def resize_groups_from_stable_members_mpi(Accounted_on_disk, Unaccounted_on_disk
 	assignment_list = wrap_mpi_bcast(assignment_list, Blockdata["main_node"], MPI_COMM_WORLD)
 	if Blockdata["myid"] == Blockdata["main_node"]: del ptl_dict
 	return assignment_list
-"""
-def assign_unaccounted_elements(glist, clusters, total_data):
-	# assign unaccounted particles by group probabilities
-	import random
-	import copy
-	ulist = copy.deepcopy(glist)
-	img_per_grp = total_data//len(clusters)
-	slist = []
-	for ic in xrange(len(clusters)):
-		if len(clusters[ic])<=img_per_grp:
-			slist.append(max(1.- float(len(clusters[ic]))/float(img_per_grp), 0.05))
-		else: slist.append(0.05)
-	while len(ulist)>0:
-		im =  random.randint(0, (len(clusters)-1))
-		shuffle(ulist)
-		if slist[im] > random.random():
-			clusters[im].append(ulist[0])
-			if len(clusters[im])<=img_per_grp:
-				slist[im] = max(1.- float(len(clusters[im])/float(img_per_grp)), 0.05)
-			else: slist[im] = 0.05
-			del ulist[0]
-			if len(ulist)==0: break
-		else: continue
-	del ulist
-	return clusters
-"""
+
 def find_smallest_group(clusters):
 	min_size =[len(clusters[0]), [0]]
 	for ic in xrange(1, len(clusters)):
@@ -7700,9 +7675,9 @@ def main():
 
 		Constants["post_sorting_sharpen"]        = options.post_sorting_sharpen
 	
-		Constants["restart_from_nbox"]           = options.restart_from_nbox
-		Constants["restart_from_depth_order"]    = options.restart_from_depth_order
-		Constants["restart_from_generation"]     = options.restart_from_generation
+		Constants["restart_from_nbox"]           =  0 #options.restart_from_nbox
+		Constants["restart_from_depth_order"]    = -1 #options.restart_from_depth_order
+		Constants["restart_from_generation"]     = -1 #options.restart_from_generation
 		Constants["shake"]                       = options.shake
 	
 		#### options for advanced users
@@ -7980,9 +7955,9 @@ def main():
 		Constants["radius"]              		 = options.radius
 		Constants["sym"]                         = options.sym
 	
-		Constants["restart_from_nbox"]           = options.restart_from_nbox
-		Constants["restart_from_depth_order"]    = options.restart_from_depth_order
-		Constants["restart_from_generation"]     = options.restart_from_generation
+		Constants["restart_from_nbox"]           = 0  #options.restart_from_nbox
+		Constants["restart_from_depth_order"]    = -1 #options.restart_from_depth_order
+		Constants["restart_from_generation"]     = -1 #options.restart_from_generation
 		Constants["shake"]                       = options.shake
 	
 		#### options for advanced users
