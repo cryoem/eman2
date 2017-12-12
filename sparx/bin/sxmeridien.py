@@ -5018,12 +5018,18 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 					###print("  STARTING6    ",Blockdata["myid"],keepf)
 					if( Blockdata["myid"] == 0 ):
 						keepf = [junk for junk in keepf if junk >0]
-						if( len(keepf) <2 ):  ERROR("Too few images to estimate keepfirst","sxmeridien")
-						keepf.sort()
-						keepf = keepf[int(len(keepf)*Blockdata["rkeepf"])]
+						if( len(keepf) <2 ):
+							keepf = 0
+						else:
+							keepf.sort()
+							keepf = keepf[int(len(keepf)*Blockdata["rkeepf"])]
 					else:  keepf = 0
 					###print("  STARTING7    ",Blockdata["myid"],keepf)
 					keepf = wrap_mpi_bcast(keepf, Blockdata["main_node"], MPI_COMM_WORLD)
+					if(keepf == 0):
+						ERROR("Too few images to estimate keepfirst","sxmeridien", 1, Blockdata["myid"])
+						mpi_finalize()
+						exit()
 					###print("  STARTING8    ",Blockdata["myid"],keepf)
 					Tracker["keepfirst"] = int(keepf)
 					###if( Blockdata["myid"] == 0 ):  print("  keepfirst first ",Tracker["keepfirst"])
@@ -6062,12 +6068,18 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 					###print("  STARTING6    ",Blockdata["myid"],keepf)
 					if( Blockdata["myid"] == 0 ):
 						keepf = [junk for junk in keepf if junk >0]
-						if( len(keepf) <2 ):  ERROR("Too few images to estimate keepfirst","sxmeridien")
-						keepf.sort()
-						keepf = keepf[int(len(keepf)*Blockdata["rkeepf"])]
+						if( len(keepf) <2 ):
+							keepf = 0
+						else:
+							keepf.sort()
+							keepf = keepf[int(len(keepf)*Blockdata["rkeepf"])]
 					else:  keepf = 0
 					###print("  STARTING7    ",Blockdata["myid"],keepf)
 					keepf = wrap_mpi_bcast(keepf, Blockdata["main_node"], MPI_COMM_WORLD)
+					if(keepf == 0):
+						ERROR("Too few images to estimate keepfirst","sxmeridien", 1, Blockdata["myid"])
+						mpi_finalize()
+						exit()
 					###print("  STARTING8    ",Blockdata["myid"],keepf)
 					Tracker["keepfirst"] = int(keepf)
 					###if( Blockdata["myid"] == 0 ):  print("  keepfirst first ",Tracker["keepfirst"])
@@ -7079,12 +7091,18 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 					###print("  STARTING6    ",Blockdata["myid"],keepf)
 					if( Blockdata["myid"] == 0 ):
 						keepf = [junk for junk in keepf if junk >0]
-						if( len(keepf) <2 ):  ERROR("Too few images to estimate keepfirst","sxmeridien")
-						keepf.sort()
-						keepf = keepf[int(len(keepf)*Blockdata["rkeepf"])]
+						if( len(keepf) <2 ):
+							keepf = 0
+						else:
+							keepf.sort()
+							keepf = keepf[int(len(keepf)*Blockdata["rkeepf"])]
 					else:  keepf = 0
 					###print("  STARTING7    ",Blockdata["myid"],keepf)
 					keepf = wrap_mpi_bcast(keepf, Blockdata["main_node"], MPI_COMM_WORLD)
+					if(keepf == 0):
+						ERROR("Too few images to estimate keepfirst","sxmeridien", 1, Blockdata["myid"])
+						mpi_finalize()
+						exit()
 					###print("  STARTING8    ",Blockdata["myid"],keepf)
 					Tracker["keepfirst"] = int(keepf)
 					###if( Blockdata["myid"] == 0 ):  print("  keepfirst first ",Tracker["keepfirst"])
@@ -8387,13 +8405,19 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 					keepf = wrap_mpi_gatherv(keepf, Blockdata["main_node"], MPI_COMM_WORLD)
 					###print("  STARTING6    ",Blockdata["myid"],keepf)
 					if( Blockdata["myid"] == 0 ):
-						keepf = [junk for junk in keepf if junk != -1]
-						if( len(keepf) <2 ):  ERROR("Too few images to estimate keepfirst","sxmeridien")
-						keepf.sort()
-						keepf = keepf[int(len(keepf)*Blockdata["rkeepf"])]
+						keepf = [junk for junk in keepf if junk >0]
+						if( len(keepf) <2 ):
+							keepf = 0
+						else:
+							keepf.sort()
+							keepf = keepf[int(len(keepf)*Blockdata["rkeepf"])]
 					else:  keepf = 0
 					###print("  STARTING7    ",Blockdata["myid"],keepf)
 					keepf = wrap_mpi_bcast(keepf, Blockdata["main_node"], MPI_COMM_WORLD)
+					if(keepf == 0):
+						ERROR("Too few images to estimate keepfirst","sxmeridien", 1, Blockdata["myid"])
+						mpi_finalize()
+						exit()
 					###print("  STARTING8    ",Blockdata["myid"],keepf)
 					Tracker["keepfirst"] = int(keepf)
 					if( Blockdata["myid"] == 0 ):  print("  keepfirst first ",Tracker["keepfirst"])

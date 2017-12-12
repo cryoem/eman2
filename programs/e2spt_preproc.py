@@ -305,7 +305,7 @@ def preprocfunc( simage, options, i, outname, simulation=False, resizeonly=False
 				maskfileimg = EMData(options.maskfile,0)
 		
 				if maskfileimg['nx'] !=  maskimg['nx'] or maskfileimg['ny'] !=  maskimg['ny'] or maskfileimg['nz'] !=  maskimg['nz']:
-					maskfileimg = clip3D( maskfileimg, maskimg['nx'] )
+					maskfileimg = clip3d( maskfileimg, maskimg['nx'] )
 	
 				maskimg.mult( maskfileimg )
 			
@@ -410,7 +410,7 @@ def preprocfunc( simage, options, i, outname, simulation=False, resizeonly=False
 		#	simage = clip3D( simage, clipf)
 		#else:
 		
-		simage = clip3D( simage, clipf)
+		simage = clip3d( simage, clipf)
 			
 		simage.process_inplace('mask.soft',{'outer_radius':-4})
 	
@@ -446,7 +446,7 @@ def preprocfunc( simage, options, i, outname, simulation=False, resizeonly=False
 	return simage
 
 
-
+'''
 def clip3D( vol, sizex, sizey=0, sizez=0 ):
 	
 	if not sizey:
@@ -466,6 +466,7 @@ def clip3D( vol, sizex, sizey=0, sizez=0 ):
 	#vol.process_inplace('mask.sharp',{'outer_radius':-1})
 	
 	return vol
+'''
 
 
 """

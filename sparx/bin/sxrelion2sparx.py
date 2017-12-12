@@ -71,6 +71,10 @@ def main():
 	# ------------------------------------------------------------------------------------
 	# Check validity of input arguments and options
 	# ------------------------------------------------------------------------------------
+	print( '# ')
+	print( '# WARNING!!! This script is obsolete now (2017/12/07). Please use sxrelion2sphire.py instead!')
+	print( '# ')
+	
 	if len(args) != 1:
 		print( 'ERROR!!! Please provide path of input star file!' )
 		print(( 'usage: ' + usage))

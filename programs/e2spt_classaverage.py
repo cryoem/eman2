@@ -1753,12 +1753,12 @@ def cmdpreproc( fyle, options, finetag=False ):
 	if ret:
 		input_preproc = options.path + '/' + preprocstack
 		
-		print("\npreprocstack {} will be renamed to {}".format(preprocstack, input_preproc))
+		print("\n*(e2spt_classaverage)(cmdpreproc) preprocstack {} will be renamed to {}".format(preprocstack, input_preproc))
 
 		import time
 		time.sleep(5)
 
-		print("renaming preprocstack %s to input_preproc %s" %(preprocstack, input_preproc ))
+		print("\n(e2spt_classaverage)(cmdpreproc) renaming preprocstack %s to input_preproc %s" %(preprocstack, input_preproc ))
 
 		os.rename( preprocstack, input_preproc )
 		options.input = input_preproc

@@ -37,7 +37,7 @@ NOTE: Please remember to adjust box_size also when setting resample_ratio < 0.1.
     input_ctf_params_source:: CTF parameters source: Specify the file produced by sxcter and normally called partres.txt for cryo data. For negative staining data, enter pixel size [A/Pixels]. (default required string)
 
     selection_list:: Micrograph selection file: Specify a name of micrograph selection list text file for Selected Micrographs Mode. The file extension must be '.txt'. Alternatively, the file name of a single micrograph can be specified for Single Micrograph Mode. (default none)
-    coordinates_format:: Coordinate file format: Allowed values are 'sparx', 'eman1', 'eman2', or 'spider'. The sparx, eman2, and spider formats use the particle center as coordinates. The eman1 format uses the lower left corner of the box as coordinates. (default eman1)
+    coordinates_format:: Coordinate file format: Allowed values are 'sphire', 'eman1', 'eman2', or 'spider'. The sphire, eman2, and spider formats use the particle center as coordinates. The eman1 format uses the lower left corner of the box as coordinates. (default eman1)
     box_size:: Particle box size [Pixels]: The x and y dimensions of square area to be windowed. The box size after resampling is assumed when resample_ratio < 1.0. (default 256)
     skip_invert:: Invert image contrast: Indicate if image contrast should be inverted or not. Do not invert for negative staining data. By default, the image contrast will be inverted for cryo data. (default False question reversed in GUI)
 
@@ -51,28 +51,45 @@ NOTE: Please remember to adjust box_size also when setting resample_ratio < 0.1.
 == Output ==
     output_directory:: Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)
 
-Inside the output directory, the program will write a local BDB stack image for each micrograph. The files are named micrograph name with "_ptcls" suffix. For example, ''particles/EMAN2DB/mic0_ptcls.bdb'' or ''bdb:particles#mic0_ptcls'' 
-
-
 = Description =
  1. Takes micrographs and coordinates as input and writes the particle images to a local stack.
  2. Normalization is done by subtracting the average of the region outside of a circle with radius half the box size.
  3. Micrographs are applied a Gaussian high-pass filter equivalent to the box size.
 
+Inside the output directory, the program will write a local BDB stack image for each micrograph. The files are named micrograph name with "_ptcls" suffix. For example, ''particles/EMAN2DB/mic0_ptcls.bdb'' or ''bdb:particles#mic0_ptcls'' 
+
+
+= Method =
+
+
+= Reference =
+
+
+= Developer Notes =
+NOTE: 2017/12/07 Toshio Moriya
+The format of partres.txt is changed. The old format is also supported for now, but will be removed in near future.
+Please also refer [[http://sparx-em.org/sparxwiki/sxcter|sxcter]].
+
+
 = Author / Maintainer =
-T. Durmaz and T.Moriya
+Toshio Moriya
+
 
 = Keywords =
- category 1:: FUNDAMENTALS, UTILITIES, APPLICATIONS
+category 1:: FUNDAMENTALS, UTILITIES, APPLICATIONS
+
 
 = Files =
-sxwindow.py
+sparx/bin/sxwindow.py
+
 
 = See also =
-[[http://sparx-em.org/sparxwiki/window|window]]
+[[http://sparx-em.org/sparxwiki/sxcter|sxcter]], [[http://sparx-em.org/sparxwiki/sxwindow|sxwindow]]
+
 
 = Maturity =
-    beta::    Please let us know if there are any bugs.
+Beta:: Under evaluation and testing. Please let us know if there are any bugs.
+
 
 === Bugs ===
-None so far.
+There are no known bugs so far.

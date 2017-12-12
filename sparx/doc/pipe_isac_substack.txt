@@ -6,7 +6,7 @@ sxpipe isac_substack - Create Stack Subset: Create virtual subset stack consisti
 
 ''usage in command line''
 
-sxpipe.py  isac_substack  input_bdb_stack_path  input_isac_class_avgs_path  output_directory  --isac_class_id=ISAC_CLASS_ID  --no_virtual_stack
+sxpipe.py  isac_substack  input_bdb_stack_path  input_isac_class_avgs_path  output_directory  --substack_basename=SUBSTACK_BASENAME
 
 
 === Typical usage ===
@@ -23,9 +23,9 @@ sxpipe isac_substack does not support MPI.
     input_bdb_stack_path:: Input BDB image stack: Specify the same BDB image stack used for the associated ISAC run. (default required string)
     input_isac_class_avgs_path:: ISAC class average file path: Input ISAC class average file path. (default required string)
     
+    substack_basename:: Substack basename: Specify the basename of ISAC substack file. It cannot be empty string or only white spaces. (default isac_substack)
+    
     * The remaining parameters are optional.
-    isac_class_id:: ISAC class average ID: Retrieve only particle members of the specifed ISAC class. By default, retrieve from all classes. (default -1)
-    no_virtual_stack:: Create virtual stack: Indicate if virtual stack should be created or not. By default, create virtual stack. Otherwise, create only the particle ID list text file associated with the ISAC class averages. (default False question reversed in GUI)
 
 
 == Output ==
@@ -33,6 +33,14 @@ sxpipe isac_substack does not support MPI.
 
 
 = Description =
+
+
+= Developer Notes =
+NOTE: 2017/11/16 Toshio Moriya
+The following options are not implemented yet.
+- isac_class_id:: ISAC class average ID: Retrieve only particle members of the specifed ISAC class. By default, retrieve from all classes. (default -1)
+- no_virtual_stack:: Create virtual stack: Indicate if virtual stack should be created or not. By default, create virtual stack. Otherwise, create only the particle ID list text file associated with the ISAC class averages. (default False question reversed in GUI)
+(sxpipe.py  isac_substack  input_bdb_stack_path  input_isac_class_avgs_path  output_directory  --isac_class_id=ISAC_CLASS_ID  --no_virtual_stack)
 
 
 = Method =

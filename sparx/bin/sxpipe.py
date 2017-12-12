@@ -76,11 +76,12 @@ def get_time_stamp_suffix():
 # TEST COMMAND
 # cd /home/moriya/mrk_develop/sxdemo/sxdemo07_20160908/mpi_bdb_ctf
 # rm -r mrkout_sxpipe_isac_substack; sxpipe.py isac_substack bdb:beta20161216_pa03b_sxwindow01#data beta20161216_pa04a_sxisac01/class_averages.hdf mrkout_sxpipe_isac_substack
+# rm -r mrkout_sxpipe_isac_substack_02; sxpipe.py isac_substack bdb:beta20161216_pa03b_sxwindow01#data beta20161216_pa04a_sxisac01/class_averages.hdf mrkout_sxpipe_isac_substack_02 --substack_basename=mrk_substack
 # 
 # ----------------------------------------------------------------------------------------
 def isac_substack(args):
 	from utilities import get_im, write_text_file
-	from EMAN2db import db_open_dict
+	from EMAN2db import db_open_dict, db_check_dict
 	from e2bdb import makerelpath
 	
 	# To make the execution exit upon fatal error by ERROR in global_def.py
@@ -88,13 +89,19 @@ def isac_substack(args):
 	
 	# Check error conditions
 	subcommand_name = "isac_substack"
+	if not db_check_dict(args.input_bdb_stack_path, readonly=True):
+		ERROR("Input BDB image stack file does not exist. Please check the file path and restart the program.", subcommand_name) # action=1 - fatal error, exit
 	if not os.path.exists(args.input_isac_class_avgs_path):
 		ERROR("Input ISAC class average stack file does not exist. Please check the file path and restart the program.", subcommand_name) # action=1 - fatal error, exit
 	if os.path.exists(args.output_directory):
 		ERROR("Output directory exists. Please change the name and restart the program.", subcommand_name) # action=1 - fatal error, exit
+	if args.substack_basename.strip() == "":
+		ERROR("Substack basename cannot be empty string or only white spaces.", subcommand_name) # action=1 - fatal error, exit
 	
+	assert (db_check_dict(args.input_bdb_stack_path, readonly=True))
 	assert (os.path.exists(args.input_isac_class_avgs_path))
 	assert (not os.path.exists(args.output_directory))
+	assert (args.substack_basename.strip() != "")
 	
 	# Create output directory
 	os.mkdir(args.output_directory)
@@ -107,12 +114,12 @@ def isac_substack(args):
 	isac_substack_particle_id_list.sort()
 	
 	# Save the substack particle id list
-	isac_substack_particle_id_list_file_path = os.path.join(args.output_directory, "isac_substack_particle_id_list.txt")
+	isac_substack_particle_id_list_file_path = os.path.join(args.output_directory, "{0}_particle_id_list.txt".format(args.substack_basename))
 	write_text_file(isac_substack_particle_id_list, isac_substack_particle_id_list_file_path)
 	
 	# Open the output BDB dictionary
 	assert (args.output_directory != "")
-	output_virtual_bdb_stack_real_path = "bdb:%s#isac_substack"%(args.output_directory)
+	output_virtual_bdb_stack_real_path = "bdb:{0}#{1}".format(args.output_directory,args.substack_basename )
 	output_virtual_bdb_stack = db_open_dict(output_virtual_bdb_stack_real_path)
 	
 	# Convert an absolute path to the actual output data to a relative path by eliminating any symbolic links 
@@ -134,7 +141,7 @@ def isac_substack(args):
 		# Print progress
 		if i_img_detected % n_img_of_10_percent == 0:
 			try:
-				print_progress("Progress %5.2f%%: Processing %6dth entry (Particle ID %6d)."%(float(i_img_detected)/n_img_detected*100.0, i_img_detected, isac_substack_particle_id))
+				print_progress("Progress %5.2f%%: Processing entry %6d (Particle ID %6d)."%(float(i_img_detected)/n_img_detected*100.0, i_img_detected, isac_substack_particle_id))
 				sys.stdout.flush()
 			except:
 				pass
@@ -143,8 +150,9 @@ def isac_substack(args):
 		try: 
 			img_header = input_bdb_stack.get(isac_substack_particle_id, nodata=1).get_attr_dict() # Need only header information
 		except:
-			ERROR("Failed to read image header of particle #%d from %s. Skipping this image..."%(isac_substack_particle_id, args.input_bdb_stack_path), subcommand_name, action = 0) # action = 0 - non-fatal, print a warning;
-			continue
+			# ERROR("Failed to read image header of particle #%d from %s. Skipping this image..."%(isac_substack_particle_id, args.input_bdb_stack_path), subcommand_name, action = 0) # action = 0 - non-fatal, print a warning;
+			# continue
+			ERROR("Failed to read image header of particle #%d from %s. Please make sure input_bdb_stack_path (%s) and input_isac_class_avgs_path (%s) are correct pair and run the command again..."%(isac_substack_particle_id, args.input_bdb_stack_path, args.input_bdb_stack_path, args.input_isac_class_avgs_path), subcommand_name)  # action=1 - fatal error, exit
 		
 		# Convert an absolute path to the actual input data to a relative path by eliminating any symbolic links 
 		try:
@@ -692,9 +700,10 @@ def main():
 
 	# create the parser for the "isac_substack" command
 	parser_isac_subset = subparsers.add_parser("isac_substack", help="Create Stack Subset: Create virtual subset stack consisting from ISAC accounted particles by retrieving particle numbers associated with the class averages. The command also saves a list text file containing the retrieved original image numbers.")
-	parser_isac_subset.add_argument("input_bdb_stack_path",          type=str,                             help="Input BDB image stack: Specify the same BDB image stack used for the associated ISAC run. (default required string)")
-	parser_isac_subset.add_argument("input_isac_class_avgs_path",    type=str,                             help="ISAC class average file path: Input ISAC class average file path. (default required string)")
-	parser_isac_subset.add_argument("output_directory",              type=str,                             help="Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)")
+	parser_isac_subset.add_argument("input_bdb_stack_path",          type=str,                              help="Input BDB image stack: Specify the same BDB image stack used for the associated ISAC run. (default required string)")
+	parser_isac_subset.add_argument("input_isac_class_avgs_path",    type=str,                              help="ISAC class average file path: Input ISAC class average file path. (default required string)")
+	parser_isac_subset.add_argument("output_directory",              type=str,                              help="Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)")
+	parser_isac_subset.add_argument("--substack_basename",           type=str,  default="isac_substack",    help="Substack basename: Specify the basename of ISAC substack file.  It cannot be empty string or only white spaces. (default isac_substack)")
 	### 
 	### NOTE: Toshio Moriya 2017/11/16
 	### The following options are not implemented yet.
@@ -708,7 +717,7 @@ def main():
 	parser_organize_micrographs.add_argument("selection_list",               type=str,                                help="Micrograph selecting list: Specify a name of text file containing a list of selected micrograph names or paths. The file extension must be \'.txt\'. The directory path of each entry will be ignored if there are any. (default required string)")
 	parser_organize_micrographs.add_argument("destination_directory",        type=str,                                help="Destination directory: The micrographs in selecting list will be moved to this directory. This directory will be created automatically if it does not exist. (default required string)")
 	parser_organize_micrographs.add_argument("--reverse",                    action="store_true",  default=False,     help="Reverse operation: Move back micrographs from the destination directory to the source directory. Please use this option to restore the previously-moved micrographs. (default False)")
-	parser_organize_micrographs.add_argument("--check_consistency",          action="store_true",  default=False,     help="Check consistency of dataset: Create a text file containing the list of Micrograph ID entries might have inconsitency among the provided dataset. (i.e. mic_consistency_check_info.txt). (default False)")
+	parser_organize_micrographs.add_argument("--check_consistency",          action="store_true",  default=False,     help="Check consistency of dataset: Create a text file containing the list of Micrograph ID entries might have inconsitency among the provided dataset. (i.e. mic_consistency_check_info_TIMESTAMP.txt). (default False)")
 	parser_organize_micrographs.set_defaults(func=organize_micrographs)
 	
 	# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
