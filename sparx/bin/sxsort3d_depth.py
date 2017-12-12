@@ -6192,7 +6192,6 @@ def do3d_sorting_groups_rec3d(iteration, masterdir, log_main):
 			tvol2 = steptwo_mpi(tvol2, tweight2, treg2, None, False, color = 0) # has to be False!!!
 			del tweight2, treg2
 			if( Blockdata["myid"] == Blockdata["main_node"]):
-				#tvol2 = cosinemask(tvol2, radius = Tracker["constants"]["radius"])
 				tvol2.write_image(os.path.join(Tracker["directory"], "vol_unfiltered_0_grp%03d.hdf"%index_of_group))
 			mpi_barrier(MPI_COMM_WORLD)
 			
@@ -6393,6 +6392,7 @@ def recons3d_trl_struct_group_nofsc_shifted_data_partial_MPI(myid, main_node, np
 	# fftvol
 	if (myid == main_node): 
 		fftvol = get_im(fftvol_file)
+		fftvol.set_attr_dict( {"is_complex":1, "is_fftodd":1, 'is_complex_ri': 1, 'is_fftpad': 1} )
 		fftvol /=float(nproc)
 		#Util.mult_scalar(fftvol, 1./float(Blockdata["nproc"]))
 		nxfft  =fftvol.get_xsize()
@@ -7613,9 +7613,9 @@ def main():
 		parser.add_option("--swap_ratio",                        type   ="float",         default =1.0,                    help="randomness ratio of swapping accounted elements with unaccounted elemetns per cluster")
 		parser.add_option("--notapplybckgnoise",                 action ="store_true",    default =False,                  help="do not applynoise")
 		parser.add_option("--do_swap_au",                        action ="store_true",    default =False,                  help="swap flag")
-		parser.add_option("--restart_from_generation",		     type   ="int",           default =-1,					   help="restart from this geneartion,  the defalut value implies there is no restart")
-		parser.add_option("--restart_from_depth_order",		     type   ="int",           default =-1,					   help="restart from this depth order, the defalut value implies there is no restart")
-		parser.add_option("--restart_from_nbox",				 type   ="int",           default = 0,					   help="restart from the nubmer of box in the specified depth level")
+		#parser.add_option("--restart_from_generation",		     type   ="int",           default =-1,					   help="restart from this geneartion,  the defalut value implies there is no restart")
+		#parser.add_option("--restart_from_depth_order",		 type   ="int",           default =-1,					   help="restart from this depth order, the defalut value implies there is no restart")
+		#parser.add_option("--restart_from_nbox",				 type   ="int",           default = 0,					   help="restart from the nubmer of box in the specified depth level")
 		parser.add_option("--shake",                             type   ="float",         default = 0.0,                   help="perturbation factor applied to orientation groups")
 		# postprocessing options <<<<-------
 		parser.add_option("--mtf",                               type   ="string",        default = '',                    help="mtf file")
@@ -7903,9 +7903,9 @@ def main():
 		parser.add_option("--swap_ratio",                        type   ="float",         default =1.0,                    help="randomness ratio of swapping accounted elements with unaccounted elemetns per cluster")
 		parser.add_option("--notapplybckgnoise",                 action ="store_true",    default =False,                  help="flag to turn off background noise")
 		parser.add_option("--do_swap_au",                        action ="store_true",    default =False,                  help="swap flag")
-		parser.add_option("--restart_from_generation",		     type   ="int",           default =-1,					   help="restart from this geneartion,  the defalut value implies there is no restart")
-		parser.add_option("--restart_from_depth_order",		     type   ="int",           default =-1,					   help="restart from this depth order, the defalut value implies there is no restart")
-		parser.add_option("--restart_from_nbox",				 type   ="int",           default = 0,					   help="restart from the nubmer of box in the specified depth level")
+		#parser.add_option("--restart_from_generation",		     type   ="int",           default =-1,					   help="restart from this geneartion,  the defalut value implies there is no restart")
+		#parser.add_option("--restart_from_depth_order",		 type   ="int",           default =-1,					   help="restart from this depth order, the defalut value implies there is no restart")
+		#parser.add_option("--restart_from_nbox",				 type   ="int",           default = 0,					   help="restart from the nubmer of box in the specified depth level")
 		parser.add_option("--shake",                             type   ="float",         default = 0.0,                   help="perturbation factor applied to orientation groups")
 		# postprocessing options <<<<-------
 		parser.add_option("--mtf",                               type   ="string",        default = '',                    help="mtf file")
