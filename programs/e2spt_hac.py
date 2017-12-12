@@ -37,6 +37,7 @@ import sys
 from EMAN2jsondb import JSTask,jsonclasses
 
 from e2spt_classaverage import alignment
+from e2spt_preproc import preprocfunc
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -56,7 +57,7 @@ def main():
 	
 	parser.add_header(name="spthacheader", help="""Options below this label are specific to spthac""", title="### spthac options ###", row=4, col=0, rowspan=1, colspan=3,mode='alignment,breaksym')
 	
-	parser.add_argument("--path",type=str,default='spt',help="""Default=spt. Directory to store results in. The default is a numbered series of directories containing the prefix 'spt'; for example, spt_02 will be the directory by default if 'spt_01' already exists.""")
+	parser.add_argument("--path",type=str,default='spt_hac',help="""Default=spt. Directory to store results in. The default is a numbered series of directories containing the prefix 'spt'; for example, spt_02 will be the directory by default if 'spt_01' already exists.""")
 	
 	parser.add_argument("--input", type=str, default='',help="""Default=None. The name of the input volume stack. MUST be HDF since volume stack support is required.""", guitype='filebox', browser='EMSubTomosTable(withmodal=True,multiselect=False)', row=0, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	
@@ -82,7 +83,7 @@ def main():
 	
 	parser.add_argument("--weighbyscore",action='store_true',default=False,help="""Default=False. This option will weigh the contribution of each subtomogram to the average by score/bestscore.""")
 	
-	parser.add_argument("--align",type=str,default="rotate_translate_3d:search=8:delta=12:dphi=12",help="""This is the aligner used to align particles to the previous class average. Default is rotate_translate_3d:search=8:delta=12:dphi=12, specify 'None' (with capital N) to disable.""", returnNone=True,guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'3d\')', row=12, col=0, rowspan=1, colspan=3, nosharedb=True, mode="alignment,breaksym['rotate_symmetry_3d']")
+	parser.add_argument("--align",type=str,default="rotate_translate_3d_tree",help="""This is the aligner used to align particles to the previous class average. Default is rotate_translate_3d:search=8:delta=12:dphi=12, specify 'None' (with capital N) to disable.""", returnNone=True,guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'3d\')', row=12, col=0, rowspan=1, colspan=3, nosharedb=True, mode="alignment,breaksym['rotate_symmetry_3d']")
 	
 	parser.add_argument("--aligncmp",type=str,default="ccc.tomo.thresh",help="""Default=ccc.tomo.thresh. The comparator used for the --align aligner. Do not specify unless you need to use anotherspecific aligner.""",guitype='comboparambox',choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=13, col=0, rowspan=1, colspan=3,mode="alignment,breaksym")
 	
@@ -121,7 +122,7 @@ def main():
 	
 	parser.add_argument("--maskfile",type=str,default='',help="""Default=None. Mask file (3D IMAGE) applied to particles before alignment. Must be in HDF format. Default is None.""")
 	
-	parser.add_argument("--normproc",type=str, default='',help="""Default=None (see 'e2help.py processors -v 10' at the command line). Normalization processor applied to particles before alignment. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'""")
+	parser.add_argument("--normproc",type=str, default='normalize',help="""Default=normalize. See 'e2help.py processors -v 10' at the command line for other available normalization processors. Normalization processor applied to particles before alignment. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'""")
 	
 	parser.add_argument("--clip",type=int,default=0,help="""Default=0 (which means it's not used). Boxsize to clip particles as part of preprocessing to speed up alignment. For example, the boxsize of the particles might be 100 pixels, but the particles are only 50 pixels in diameter. Aliasing effects are not always as deleterious for all specimens, and sometimes 2x padding isn't necessary; still, there are some benefits from 'oversampling' the data during averaging; so you might still want an average of size 2x, but perhaps particles in a box of 1.5x are sufficiently good for alignment. In this case, you would supply --clip=75""")
 
@@ -168,15 +169,15 @@ def main():
 	
 	parser.add_argument("--saveallalign",action="store_true", default=False, help="""Default=False. If set, will save the alignment parameters after each iteration""", guitype='boolbox', row=4, col=2, rowspan=1, colspan=1, mode='alignment,breaksym')
 	
-	parser.add_argument("--sym", dest = "sym", default='', help = """Default=None (equivalent to c1). Symmetry to impose -choices are: c<n>, d<n>, h<n>, tet, oct, icos""", guitype='symbox', row=9, col=1, rowspan=1, colspan=2, mode='alignment,breaksym')
+	parser.add_argument("--sym", dest = "sym", default=None, help = """Default=None (equivalent to c1). Symmetry to impose -choices are: c<n>, d<n>, h<n>, tet, oct, icos""", guitype='symbox', row=9, col=1, rowspan=1, colspan=2, mode='alignment,breaksym')
 	
-	parser.add_argument("--postprocess",type=str,default='',help="""A processor to be applied to the FINAL volume after averaging the raw volumes in their FINAL orientations, after all iterations are done.""",guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=16, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	parser.add_argument("--postprocess",type=str,default=None,help="""default=None. A processor to be applied to the FINAL volume after averaging the raw volumes in their FINAL orientations, after all iterations are done.""",guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=16, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	
 	parser.add_argument("--procfinelikecoarse",action='store_true',default=False,help="""If you supply this parameters, particles for fine alignment will be preprocessed identically to particles for coarse alignment by default. If you supply this, but want specific parameters for preprocessing particles for also supply: fine alignment, nd supply fine alignment parameters, such as --lowpassfine, --highpassfine, etc; to preprocess the particles for FINE alignment differently than for COARSE alignment.""")
 	
 	
 	
-	parser.add_argument("--falign",type=str,default='',help="""Default=None. This is the second stage aligner used to fine-tune the first alignment.""", returnNone=True, guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine.*3d\')', row=14, col=0, rowspan=1, colspan=3, nosharedb=True, mode='alignment,breaksym[None]')
+	parser.add_argument("--falign",type=str,default=None,help="""Default=None. This is the second stage aligner used to fine-tune the first alignment.""", returnNone=True, guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine.*3d\')', row=14, col=0, rowspan=1, colspan=3, nosharedb=True, mode='alignment,breaksym[None]')
 		
 	parser.add_argument("--faligncmp",type=str,default="ccc.tomo.thresh",help="""Default=ccc.tomo.thresh. The comparator used by the second stage aligner.""", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=15, col=0, rowspan=1, colspan=3,mode="alignment,breaksym")		
 		
@@ -223,6 +224,8 @@ def main():
 	parser.add_argument("--maxmergenum",type=int,default=0,help="""Default=0 (which means this option is off by default and not used). This is the maximum number of particles ('multiplicity') that any two given averages can have to be allowed to merge. For example, if at some point (some given iteration in the algorithm) a particular average "A" is an average of 10 particles, and --maxmergenum=8, this average "A" will only be allowed to merge with other averages that have 8 particles or less in them. This maintains "big classes" in a mutually exclusive state. For example, if --maxmergenum=1, particles will merge pair-wise in the first round; but after that averages with more than one particle will NOT merge each other, because they will contain 2 or more particles, which exceeds 'maxmergenum'. So in subsequent iterations, the averages formed in the first iteration will continue to take up raw particles or new averages (between single raw particles) might emerge; but "large averages" never inter-merge""")
 		
 	(options, args) = parser.parse_args()
+	(optionsUnparsed, args) = parser.parse_args()
+
 	
 	
 	options.nopreprocprefft = False
@@ -230,7 +233,13 @@ def main():
 	'''
 	Make the directory where to create the database where the results will be stored
 	'''
+	options = checkinput( options )
+
+	options = detectThreads( options )
+
 	options = makepath(options,'spt_hac')
+	originalpath = options.path
+	optionsUnparsed.path = options.path
 	
 	rootpath = os.getcwd()
 	if rootpath not in options.path:
@@ -293,24 +302,28 @@ def main():
 	
 
 
+
+	from e2spt_classaverage import cmdpreproc
+
 	group_ranges=[]
 	data_files = []
 	
 	nptcl = EMUtil.get_image_count(options.input)
 	entirestack = options.input
-	originalpath = options.path
+	
 	
 	logger = E2init(sys.argv,options.ppid)
 
 	print("(e2spt_hac.py, main) - Logging started. Groups is", options.groups)
 	
-	for i in range(options.groups):	
+	for i in range(options.groups):
+		preproc = 0	
 		#if options.groups > 1:
 		if options.groups * 3 > nptcl:
 			print("ERROR: You need at least 3 particles per group to do all vs all within each group.")
 			print("You asked for %d groups; thus, the stack needs to have more than %d particles, but it only has %d" % (options.groups,3*options.groups,nptcl))
 			print("Reduce the number of groups requested or provide a larger stack.")
-			sys.exit()
+			sys.exit(1)
 		else:
 			print("(e2spt_hac.py, main) - working on group", i)
 			groupsize = int( nptcl/options.groups )
@@ -321,6 +334,10 @@ def main():
 			
 			groupPATH = entirestack
 			options.input = groupPATH
+			
+			groupDIR=options.path
+			groupID=options.input
+
 			if options.groups > 1:
 				groupDIR = originalpath + '/group' + str(i+1).zfill(len(str(options.groups)))
 				groupID = 'group' + str(i+1).zfill(len(str(options.groups))) + 'ptcls.hdf'
@@ -334,114 +351,13 @@ def main():
 				#groupStack = options.input.replace('.hdf','group' + str(i+1).zfill(len(str(options.nrefs))) + 'ptcls.hdf'
 
 				options.path = groupDIR
+				optionsUnparsed.path = groupDIR
 				options.input = groupPATH
 				print("\n************************************\n(e2spt_hac.py) I will start ALL vs ALL on group number", i+1)
 				print("For which options.input is", options.input)
-				print("And uodated options.path is", options.path)
+				print("And updated options.path is", options.path)
 				print("************************************")
 
-
-			#if options.savepreproc:
-			#	dummy = EMData(8,8,8)
-			#	dummy.to_one()
-				
-			#	preprocnameCoarse = options.input.replace('.hdf','_preprocCoarse.hdf')
-			#	if options.path not in preprocnameCoarse:
-			#		preprocnameCoarse = options.path + '/' + options.input.replace('.hdf','_preprocCoarse.hdf')
-				
-			#	preprocnameFine = options.input.replace('.hdf','_preprocFine.hdf')
-			#	if options.path not in preprocnameFine:
-			#		preprocnameFine = options.path + '/' + options.input.replace('.hdf','_preprocFine.hdf')
-				
-			#	print "\n\nPreprocname coarse and fine are", preprocnameCoarse, preprocnameFine
-			#	for i in range(nptcl):
-			#		dummy.write_image( preprocnameCoarse ,i)
-		
-			#		if options.falign and options.falign != 'None' and options.falign != 'none':
-			#			dummy.write_image( preprocnameFine ,i)
-				
-			
-			if 'tree' in options.align:
-				options.falign = None
-				options.mask = None
-				options.lowpass = None
-				options.highpass = None
-				options.normproc = None
-				options.lowpassfine = None
-				options.highpassfine = None
-				options.preprocess = None
-				options.preprocessfine = None
-			
-			'''
-			elif not options.nopreprocprefft:
-				
-				from e2spt_classaverage import preprocessingprefft, Preprocprefft3DTask, get_results_preproc
-				
-				print "\n(e2spt_hac.py) (allvsall) Initializing parallelism for preprocessing"
-				if options.parallel:							# Initialize parallelism if being used
-					from EMAN2PAR import EMTaskCustomer
-					etc=EMTaskCustomer(options.parallel)
-					pclist=[options.input]
-					etc.precache(pclist)
-			
-				if options.mask or options.normproc or options.threshold or options.clip:		
-					tasks=[]
-					results=[]
-			
-					preprocprefftstack = options.path + '/' + options.input.replace('.hdf','_preproc.hdf')
-			
-					for i in range(nptcl):
-				
-						img = EMData( options.input, i )
-				
-						if options.parallel:
-							task = Preprocprefft3DTask( ["cache",options.input,i], options, i )
-							tasks.append(task)
-			
-						else:
-							pimg = preprocessingprefft( img, options)
-							pimg.write_image( preprocprefftstack, i )
-			
-					print "there are these many tasks to send", len(tasks)
-					if options.parallel and tasks:
-						tids = etc.send_tasks(tasks)
-						print "therefore these many tids", len(tids)
-						
-						if options.verbose: 
-							print "%d preprocessing tasks queued"%(len(tids)) 
-
-		
-					results = get_results_preproc( etc, tids, options.verbose )
-					
-					print "results are", results
-			
-	
-					options.input = preprocprefftstack
-			
-					
-					#cache needs to be reloaded with the new options.input	#not for HAC. This is done in the inner avsa function	
-					#if options.parallel :
-	
-					#	if options.parallel == 'none' or options.parallel == 'None' or options.parallel == 'NONE':
-					#		options.parallel = None
-					#		etc = None
-		
-					#	else:
-					#		print "\n\n(e2spt_classaverage)(main) - re-INITIALIZING PARALLELISM after preprocessing!"
-					#		print "\n\n"
-					#		from EMAN2PAR import EMTaskCustomer
-					#		etc=EMTaskCustomer(options.parallel)
-					#		pclist=[options.input]
-		
-					#		if options.ref: 
-					#			pclist.append(options.ref)
-					#		etc.precache(pclist)
-					#else:
-					#	etc=''
-			
-			'''
-			
-			
 			mm = 0
 			for jj in xrange(bottom_range,top_range):
 				if mm == 0:
@@ -467,16 +383,45 @@ def main():
 				mm += 1
 
 			
+			if 'tree' in options.align:
+				options.falign = None
+				options.mask = None
+				options.lowpass = None
+				options.highpass = None
+				options.normproc = None
+				options.lowpassfine = None
+				options.highpassfine = None
+				options.preprocess = None
+				options.preprocessfine = None
+			
+			elif optionsUnparsed.mask or optionsUnparsed.maskfile or optionsUnparsed.normproc or optionsUnparsed.threshold or optionsUnparsed.clip or (optionsUnparsed.shrink > 1) or optionsUnparsed.lowpass or optionsUnparsed.highpass or optionsUnparsed.preprocess:		
+
+				groupPATHraw = groupPATH
+				options.raw = groupPATHraw
+
+				cmdpreproc( groupPATH, optionsUnparsed, False )
+				
+				preproc = 1
+
+				groupPATHpreproc = groupPATHraw.replace('.hdf','_preproc.hdf')
+				options.input = groupPATHpreproc
+						
+				print("\n(e2spt_hac)(main) preproc on, input is now", groupPATHpreproc)
+
+			
 		
 		#print "\nTHe len of options is ", len(options)
 		#print "\n\nAnd options are", options
 		print("(e2spt_hac.py, main) - I'll enter allvsall.")
-		allvsall(options)
+		
+		allvsall(options,preproc)
+		
 		if options.exclusive_class_min:
 			exclusive_classes(options)
+	
 	E2end(logger)
 
-	return()
+	return
 
 
 def exclusive_classes(options):
@@ -544,38 +489,16 @@ def exclusive_classes(options):
 			outpp = out.replace('.hdf','_postp.hdf')
 			a.write_image(outpp,0)
 
-	return()
+	return
 
 
-def allvsall(options):
-	from operator import itemgetter	
+def setHACheader(options,inputfile,nptcl,roundtag,fillfactor):
+	allptclsRound={}
+	newptcls={}
 
-	#print "These are path and input received in allvsall", options.path, options.input
-	#print "With these many particles in it", EMUtil.get_image_count(options.input)
-	
-	hdr = EMData(options.input,0,True)
-	nx = int(hdr["nx"])
-	ny = int(hdr["ny"])
-	nz = int(hdr["nz"])
-	if nx!=ny or ny!=nz :
-		print("ERROR, input volumes are not cubes")
-		sys.exit(1)
-	
-	nptcl = EMUtil.get_image_count(options.input)
-	if nptcl<3: 
-		print("ERROR: at least 3 particles are required in the input stack for all vs all. Otherwise, to align 2 particles (one to the other or to a model) use e2spt_classaverage.py")
-		sys.exit(1)
-	
-	fillfactor = len(str(nptcl))							#Calculate this based on the number of particles so that tags are adequate ("pretty") and ordered
-	roundtag='round' + str(0).zfill(fillfactor)					#We need to keep track of what round we're in
-	newptcls={}													#This dictionary stores 'new particles' produced in each round as { particleID : particleDATA } elements
-	allptclsRound={}								#This dictionary stores all particlces in a round ("new" and "old") as 
-											#{particle_id : [EMData,{index1:totalTransform1, index2:totalTransform2...}]} elements
-											#The totalTransform needs to be calculated for each particle after each round, to avoid multiple interpolations
-	
-	print("\n(e2spt_hac.py) Preparing particle headers")
 	for i in range(nptcl):								#In the first round, all the particles in the input stack are "new" and should have an identity transform associated to them
-		a=EMData(options.input,i)
+		#a=EMData(options.input,i)
+		a=EMData(inputfile,i)
 		totalt=Transform()
 		
 		if 'spt_multiplicity' not in a.get_attr_dict():				#spt_multiplicity keeps track of how many particles were averaged to make any given new particle (set to 1 for the raw data)
@@ -606,13 +529,47 @@ def allvsall(options):
 		#print "spt_dendoID has been set to", spt_dendoID
 		#print "for the particle it is", a['spt_dendoID']
 			
-		a.write_image(options.input,i)						#Overwrite the raw stack with one that has the appropriate header parameters set to work with e2spt_hac	
-		
+		#a.write_image(options.input,i)						#Overwrite the raw stack with one that has the appropriate header parameters set to work with e2spt_hac	
+		a.write_image(inputfile,i)
 		allptclsRound.update({particletag : [a,{i:totalt}]})			
 		
 		if options.verbose:
 			print("\n ptcl %d/%d done" %( i, nptcl ))
-		
+	
+	return allptclsRound,newptcls
+
+
+def allvsall(options,preproc):
+	from operator import itemgetter	
+
+	#print "These are path and input received in allvsall", options.path, options.input
+	#print "With these many particles in it", EMUtil.get_image_count(options.input)
+	
+	hdr = EMData(options.input,0,True)
+	nx = int(hdr["nx"])
+	ny = int(hdr["ny"])
+	nz = int(hdr["nz"])
+	if nx!=ny or ny!=nz :
+		print("ERROR, input volumes are not cubes")
+		sys.exit(1)
+	
+	nptcl = EMUtil.get_image_count(options.input)
+	if nptcl<3: 
+		print("ERROR: at least 3 particles are required in the input stack for all vs all. Otherwise, to align 2 particles (one to the other or to a model) use e2spt_classaverage.py")
+		sys.exit(1)
+	
+	fillfactor = len(str(nptcl))							#Calculate this based on the number of particles so that tags are adequate ("pretty") and ordered
+	roundtag='round' + str(0).zfill(fillfactor)					#We need to keep track of what round we're in
+	#newptcls={}													#This dictionary stores 'new particles' produced in each round as { particleID : particleDATA } elements
+	#allptclsRound={}								#This dictionary stores all particlces in a round ("new" and "old") as 
+											#{particle_id : [EMData,{index1:totalTransform1, index2:totalTransform2...}]} elements
+											#The totalTransform needs to be calculated for each particle after each round, to avoid multiple interpolations
+	print("\n(e2spt_hac.py) Preparing particle headers")
+	
+	allptclsRound,newptcls = setHACheader(options,options.input,nptcl,roundtag,fillfactor) #if preproc, this is the preproc stack, and the raw one needs to be fixexd below
+	if preproc:
+		allptclsRound,newptcls = setHACheader(options,options.raw,nptcl,roundtag,fillfactor)
+			
 		
 	oldptcls = {}									#'Unused' particles (those that weren't part of any unique-best-pair) join the 'oldptcls' dictionary onto the next round
 	surviving_results = []							#This list stores the results for previous alignment pairs that weren't used, so you don't have to recompute them
@@ -678,9 +635,8 @@ def allvsall(options):
 			break
 		
 		elif k < int( iters ):
-			f=open(dendofile,'a')
-			f.write('ITERATION ' + str(k) + '\n')
-			f.close()
+			with open(dendofile,'a') as f: f.write('ITERATION ' + str(k) + '\n')
+				#f.close()
 		
 		allptclsRound = {}							
 		
@@ -1045,6 +1001,9 @@ def allvsall(options):
 					
 					
 					subp1 = EMData(options.input,p)
+					if preproc:
+						subp1 = EMData(options.raw,p)
+
 					
 					#subp1.process_inplace("xform",{"transform":pastt})					#RADICAL CHANGE ****************************************					
 					subp1.transform(pastt)
@@ -1112,6 +1071,9 @@ def allvsall(options):
 					print("Which means their product is", totalt)
 
 					subp2 = EMData(options.input,p)
+					if preproc:
+						subp2 = EMData(options.raw,p)
+					
 					#subp2.process_inplace("xform",{"transform":totalt})					#RADICAL CHANGE **********************************
 					subp2.transform(totalt)
 					subp2['xform.align3d']=totalt
@@ -1173,6 +1135,9 @@ def allvsall(options):
 						
 						
 						subp1 = EMData(options.input,p)
+						if preproc:
+							subp1 = EMData(options.raw,p)
+	
 						subp1.process_inplace("xform",{"transform":totalt})
 						avg_ptcls.append(subp1)
 						
@@ -1192,6 +1157,9 @@ def allvsall(options):
 						ali_info.update({p:totalt})
 						
 						subp2 = EMData(options.input,p)
+						if preproc:
+							subp2 = EMData(options.raw,p)
+						
 						subp2.process_inplace("xform",{"transform":totalt})
 						avg_ptcls.append(subp2)
 						
@@ -1224,6 +1192,8 @@ def allvsall(options):
 				avg["spt_ptcl_indxs"] = avgindexes						#Keep track of what particles go into each average or "new particle"				
 				
 				avg["spt_ptcl_src"] = options.input
+				if preproc:
+					subp1 = avg["spt_ptcl_src"] = options.raw
 				
 				avg['origin_x'] = 0								#The origin needs to be set to ZERO to avoid display issues in Chimera
 				avg['origin_y'] = 0
@@ -1236,42 +1206,12 @@ def allvsall(options):
 				
 				print("I will normalize the average")
 				
-				
-				
-				
-				#Make the mask first, use it to normalize (optionally), then apply it 
-				#mask=EMData(avg['nx'],avg['ny'],avg['nz'])
-				#mask.to_one()
-				
-				#if options.mask:
-				#	#print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options.mask[0],options.mask[1]) 
-			
-				#mask.process_inplace( 'mask.sharp', {'outer_radius':-2})
-				#avg.mult(mask)
-		
-				# normalize
 				#if options.normproc:
-				#	if options.normproc[0]=="normalize.mask": 
-				#		options.normproc[1]["mask"]=mask
-
 				#	avg.process_inplace(options.normproc[0],options.normproc[1])
-
-				#Mask after normalizing with the mask you just made, which is just a box full of 1s if not mask is specified
-				#avg.mult(mask)
-
-				#If normalizing, it's best to do normalize-mask-normalize-mask
-				#if options.normproc:
-				#	if options.normproc[0]=="normalize.mask": 
-				#		options.normproc[1]["mask"]=mask
-
-				#	avg.process_inplace(options.normproc[0],options.normproc[1])
-
-				#	avg.mult(mask)
-				
-				#avg.process_inplace(options.normproc[0],options.normproc[1])
-				
+				#else:
 				avg.process_inplace('normalize')
-				
+
+
 				#avg.mult(mask)
 				
 				dendonew = 'avg' + str(dendocount).zfill(4)
@@ -1298,6 +1238,9 @@ def allvsall(options):
 					avgp=avg.process(options.postprocess[0],options.postprocess[1])
 					avgp.write_image(options.path + '/round' + str(k).zfill(fillfactor) + '_averages_postp.hdf',mm)
 										
+				if preproc:
+					avg = preprocfunc( avg, options, i, outname='', simulation=False, resizeonly=False )
+				
 				averages.update({avgtag:avg})	   						#The list of averages will become the new set of "newptcls"
 				allptclsRound.update({avgtag : [avg,indx_trans_pairs]})
 				
