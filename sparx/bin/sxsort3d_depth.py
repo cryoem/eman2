@@ -4471,7 +4471,7 @@ def steptwo_mpi(tvol, tweight, treg, cfsc = None, regularized = True, color = 0)
 		nz = tweight.get_zsize()
 		ny = tweight.get_ysize()
 		nx = tweight.get_xsize()
-		tvol.set_attr("is_complex",1)
+		tvol.set_attr_dict({"is_complex":1, "is_fftodd":1, 'is_complex_ri': 1, 'is_fftpad': 1})
 		if regularized:
 			nr = len(cfsc)
 			limitres = 0
@@ -6277,7 +6277,7 @@ def do3d_sorting_groups_nofsc_smearing_iter(srdata, partial_rec3d, iteration):
 			mpi_barrier(MPI_COMM_WORLD)
 		mpi_barrier(MPI_COMM_WORLD)
 		wrap_mpi_bcast(sub_main_node_list, Blockdata["last_node"], MPI_COMM_WORLD)
-		if Blockdata["myid"] == Blockdata["last_node"]:print("MMM", sub_main_node_list)
+		#if Blockdata["myid"] == Blockdata["last_node"]:print("MMM", sub_main_node_list)
 		####		
 		if Tracker["number_of_groups"]%Blockdata["no_of_groups"]== 0: 
 			nbig_loop = Tracker["number_of_groups"]//Blockdata["no_of_groups"]
@@ -6292,8 +6292,8 @@ def do3d_sorting_groups_nofsc_smearing_iter(srdata, partial_rec3d, iteration):
 			big_loop_colors[im].append(jm)
 			big_loop_groups[im].append(nc)
 			nc +=1
-		if Blockdata["myid"] == Blockdata["last_node"]:
-			print(big_loop_groups, big_loop_colors)
+		#if Blockdata["myid"] == Blockdata["last_node"]:
+		#	print(big_loop_groups, big_loop_colors)
 		for iloop in xrange(nbig_loop):
 			for im in xrange(len(big_loop_colors[iloop])):
 				index_of_group  = big_loop_groups[iloop][im]
@@ -6326,12 +6326,8 @@ def do3d_sorting_groups_nofsc_smearing_iter(srdata, partial_rec3d, iteration):
 						tvol2     = model_blank(1)
 						tweight2  = model_blank(1)
 						treg2     = model_blank(1)
-					else:
-						a = info(tvol2)
-						print("PPPP", a, Blockdata["myid"], Blockdata["myid_on_node"], Blockdata["color"], Blockdata["last_node"])
-					tvol2 = steptwo_mpi(tvol2, tweight2, treg2, None, False, color = index_of_colors) # has to be False!!!
-					del tweight2, treg2				
-				mpi_barrier(Blockdata["shared_comm"])
+					tvol2 = steptwo_mpi(tvol2, tweight2, treg2,  None,  False, color = index_of_colors) # has to be False!!!
+					del tweight2, treg2
 			mpi_barrier(MPI_COMM_WORLD)
 		
 			for im in xrange(len(big_loop_colors[iloop])):
