@@ -36,6 +36,7 @@ from EMAN2 import *
 from numpy import *
 import pprint
 import sys
+import os
 from sys import argv
 from time import sleep,time
 import threading
@@ -102,7 +103,11 @@ def main():
 	parser.add_argument("--normaxes",action="store_true",default=False,help="Tries to erase vertical/horizontal line artifacts in Fourier space by replacing them with the mean of their neighboring values.",guitype='boolbox', row=17, col=2, rowspan=1, colspan=1, mode='align')
 	parser.add_argument("--highdose", default=False, help="Use this flag when aligning high dose data (where features in each frame can be distinguished visually).",action="store_true",guitype='boolbox', row=18, col=0, rowspan=1, colspan=1,mode='align')
 	parser.add_argument("--phaseplate", default=False, help="Use this flag when aligning phase plate frames.",action="store_true",guitype='boolbox', row=18, col=1, rowspan=1, colspan=1,mode='align')
-	parser.add_argument("--frames",action="store_true",default=False,help="Save the dark/gain corrected frames", guitype='boolbox', row=18, col=2, rowspan=1, colspan=1, mode='align')
+	
+	parser.add_argument("--frames",action="store_true",default=False,help="Save the dark/gain corrected frames. Note that frames will be overwritten if identical --suffix is already present.", guitype='boolbox', row=18, col=2, rowspan=1, colspan=1, mode='align')
+	parser.add_argument("--ext",default="hdf",type=str, choices=["hdf","mrcs","mrc"],help="Save frames with this extension. Default is 'hdf'.", guitype='boolbox', row=18, col=2, rowspan=1, colspan=1, mode='align')
+	parser.add_argument("--suffix",type=str,default="proc",help="Specify a unique suffix for output frames. Default is 'proc'. Note that the output of --frames will be overwritten if identical suffix is already present.")#,guitype='strbox', row=17, col=0, rowspan=1, colspan=1, mode="align")
+
 	parser.add_argument("--round", choices=["float","integer","half integer"],help="If float (default), apply subpixel frame shifts. If integer, use integer shifts. If half integer, round shifts to nearest half integer values.",default="float",guitype='combobox', choicelist='["float","integer","half integer"]', row=19, col=0, rowspan=1, colspan=1, mode='align')
 	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful", guitype='intbox', row=19, col=1, rowspan=1, colspan=2, mode="align")
 
@@ -286,7 +291,7 @@ def main():
 	E2end(pid)
 
 def process_movie(fsp,dark,gain,first,flast,step,options):
-		outname=fsp.rsplit(".",1)[0]+"_proc.hdf"		# always output to an HDF file. Output contents vary with options
+		
 
 		#if options.simpleavg: savgr = Averagers.get("mean")
 
@@ -318,10 +323,15 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 #			im.mult(-1.0)
 			im.process_inplace("normalize.edgemean")
 
-			if options.frames : im.write_image(outname[:-4]+"_corr.hdf",ii-first)
+			#if options.frames : im.write_image(outname[:-4]+"_corr.hdf",ii-first)
+			if options.frames:
+				if options.ext == "mrc": outname="{}_{}.{}".format(fsp.rsplit(".",1)[0],options.suffix,"mrcs") #Output contents vary with options
+				else: outname="{}_{}.{}".format(fsp.rsplit(".",1)[0],options.suffix,options.ext) #Output contents vary with options
+				im.write_image(outname,ii-first)
 			outim.append(im)
 
-			# if options.simpleavg: savgr.add_image(im)
+		if options.ext == "mrc": os.rename(outname,outname.replace(".mrcs",".mrc"))
+		# if options.simpleavg: savgr.add_image(im)
 
 		# if options.simpleavg:
 		# 	savg = savgr.finish()

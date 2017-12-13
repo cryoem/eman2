@@ -4518,7 +4518,7 @@ def steptwo_mpi(tvol, tweight, treg, cfsc = None, regularized = True, color = 0)
 	#  tvol is overwritten, meaning it is also an output
 	n_iter =10
 	ifi = mpi_iterefa( vol_data.__array_interface__['data'][0] ,  we_data.__array_interface__['data'][0] , nx, ny, nz, maxr2, \
-			Tracker["constants"]["nnxo"], Blockdata["myid_on_node"], color, Blockdata["no_of_processes_per_group"],  Blockdata["shared_comm"], n_iter)	
+			Tracker["constants"]["nnxo"], Blockdata["myid_on_node"], color, Blockdata["no_of_processes_per_group"],  Blockdata["shared_comm"]) #####, n_iter)	
 	if( Blockdata["myid_on_node"] == 0 ):
 		#  Either pad or window in F space to 2*nnxo
 		nx = tvol.get_ysize()
@@ -4980,7 +4980,11 @@ def get_input_from_sparx_ref3d(log_main):# case one
 	import_from_sparx_refinement = 1
 	selected_iter      = 0
 	Tracker_refinement = 0
-	if not os.path.exists (Tracker["constants"]["refinement_dir"]): ERROR("SPARX refinement dir does not exist", "get_input_from_sparx_ref3d", 1, Blockdata["myid"])
+	checking_flag      = 0
+	if Blockdata["myid"] == Blockdata["main_node"]:
+		if not os.path.exists (Tracker["constants"]["refinement_dir"]): checking_flag = 1
+	checking_flag = bcast_number_to_all(checking_flag, Blockdata["main_node"], MPI_COMM_WORLD)
+	if checking_flag: ERROR("SPARX refinement dir does not exist", "get_input_from_sparx_ref3d", 1, Blockdata["myid"])
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		msg = "Import results from SPARX 3-D refinement"
@@ -5119,7 +5123,7 @@ def get_input_from_sparx_ref3d(log_main):# case one
 		Tracker["constants"]["fsc05"]   = fsc05
 		
 	import_from_sparx_refinement = bcast_number_to_all(import_from_sparx_refinement, source_node = Blockdata["main_node"])
-	if import_from_sparx_refinement == 0:ERROR("The driver of the best solution is not accessible","get_input_from_sparx_ref3d", 1, Blockdata["myid"])
+	if import_from_sparx_refinement == 0: ERROR("The driver of the best solution is not accessible","get_input_from_sparx_ref3d", 1, Blockdata["myid"])
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		if os.path.exists(os.path.join(Tracker["constants"]["refinement_dir"], "main000/indexes_000.txt")):
 			copyfile(os.path.join(Tracker["constants"]["refinement_dir"], "main000/indexes_000.txt"), \
@@ -6192,7 +6196,6 @@ def do3d_sorting_groups_rec3d(iteration, masterdir, log_main):
 			tvol2 = steptwo_mpi(tvol2, tweight2, treg2, None, False, color = 0) # has to be False!!!
 			del tweight2, treg2
 			if( Blockdata["myid"] == Blockdata["main_node"]):
-				#tvol2 = cosinemask(tvol2, radius = Tracker["constants"]["radius"])
 				tvol2.write_image(os.path.join(Tracker["directory"], "vol_unfiltered_0_grp%03d.hdf"%index_of_group))
 			mpi_barrier(MPI_COMM_WORLD)
 			
@@ -6274,7 +6277,7 @@ def do3d_sorting_groups_nofsc_smearing_iter(srdata, partial_rec3d, iteration):
 			mpi_barrier(MPI_COMM_WORLD)
 		mpi_barrier(MPI_COMM_WORLD)
 		wrap_mpi_bcast(sub_main_node_list, Blockdata["last_node"], MPI_COMM_WORLD)
-		#if Blockdata["myid"] == Blockdata["last_node"]:print("MMM", sub_main_node_list)
+		if Blockdata["myid"] == Blockdata["last_node"]:print("MMM", sub_main_node_list)
 		####		
 		if Tracker["number_of_groups"]%Blockdata["no_of_groups"]== 0: 
 			nbig_loop = Tracker["number_of_groups"]//Blockdata["no_of_groups"]
@@ -6289,8 +6292,8 @@ def do3d_sorting_groups_nofsc_smearing_iter(srdata, partial_rec3d, iteration):
 			big_loop_colors[im].append(jm)
 			big_loop_groups[im].append(nc)
 			nc +=1
-		#if Blockdata["myid"] == Blockdata["last_node"]:
-		#	print(big_loop_groups, big_loop_colors)
+		if Blockdata["myid"] == Blockdata["last_node"]:
+			print(big_loop_groups, big_loop_colors)
 		for iloop in xrange(nbig_loop):
 			for im in xrange(len(big_loop_colors[iloop])):
 				index_of_group  = big_loop_groups[iloop][im]
@@ -6318,11 +6321,14 @@ def do3d_sorting_groups_nofsc_smearing_iter(srdata, partial_rec3d, iteration):
 				index_of_group  = big_loop_groups[iloop][im]
 				index_of_colors = big_loop_colors[iloop][im]
 				
-				if Blockdata["color"] == index_of_colors:  # It has to be 1 to avoid problem with tvol1 not closed on the disk								
+				if Blockdata["color"] == index_of_colors:  # It has to be 1 to avoid problem with tvol1 not closed on the disk 							
 					if(Blockdata["myid_on_node"] != 0): 
 						tvol2     = model_blank(1)
 						tweight2  = model_blank(1)
 						treg2     = model_blank(1)
+					else:
+						a = info(tvol2)
+						print("PPPP", a, Blockdata["myid"], Blockdata["myid_on_node"], Blockdata["color"], Blockdata["last_node"])
 					tvol2 = steptwo_mpi(tvol2, tweight2, treg2, None, False, color = index_of_colors) # has to be False!!!
 					del tweight2, treg2				
 				mpi_barrier(Blockdata["shared_comm"])
@@ -6393,6 +6399,7 @@ def recons3d_trl_struct_group_nofsc_shifted_data_partial_MPI(myid, main_node, np
 	# fftvol
 	if (myid == main_node): 
 		fftvol = get_im(fftvol_file)
+		fftvol.set_attr_dict( {"is_complex":1, "is_fftodd":1, 'is_complex_ri': 1, 'is_fftpad': 1} )
 		fftvol /=float(nproc)
 		#Util.mult_scalar(fftvol, 1./float(Blockdata["nproc"]))
 		nxfft  =fftvol.get_xsize()
@@ -7613,9 +7620,9 @@ def main():
 		parser.add_option("--swap_ratio",                        type   ="float",         default =1.0,                    help="randomness ratio of swapping accounted elements with unaccounted elemetns per cluster")
 		parser.add_option("--notapplybckgnoise",                 action ="store_true",    default =False,                  help="do not applynoise")
 		parser.add_option("--do_swap_au",                        action ="store_true",    default =False,                  help="swap flag")
-		parser.add_option("--restart_from_generation",		     type   ="int",           default =-1,					   help="restart from this geneartion,  the defalut value implies there is no restart")
-		parser.add_option("--restart_from_depth_order",		     type   ="int",           default =-1,					   help="restart from this depth order, the defalut value implies there is no restart")
-		parser.add_option("--restart_from_nbox",				 type   ="int",           default = 0,					   help="restart from the nubmer of box in the specified depth level")
+		#parser.add_option("--restart_from_generation",		     type   ="int",           default =-1,					   help="restart from this geneartion,  the defalut value implies there is no restart")
+		#parser.add_option("--restart_from_depth_order",		 type   ="int",           default =-1,					   help="restart from this depth order, the defalut value implies there is no restart")
+		#parser.add_option("--restart_from_nbox",				 type   ="int",           default = 0,					   help="restart from the nubmer of box in the specified depth level")
 		parser.add_option("--shake",                             type   ="float",         default = 0.0,                   help="perturbation factor applied to orientation groups")
 		# postprocessing options <<<<-------
 		parser.add_option("--mtf",                               type   ="string",        default = '',                    help="mtf file")
@@ -7742,7 +7749,8 @@ def main():
 		Tracker["constants"]["hardmask"] = True
 		Tracker["applymask"]             = True
 		Tracker["constants"]["refinement_method"] ="SPARX"
-		Tracker["nosmearing"] = False
+		if Tracker["constants"]["nsmear"] ==-1: Tracker["nosmearing"] = False
+		else: Tracker["nosmearing"] = True
 			
 		checking_flag = 0 # reset
 		
@@ -7903,9 +7911,9 @@ def main():
 		parser.add_option("--swap_ratio",                        type   ="float",         default =1.0,                    help="randomness ratio of swapping accounted elements with unaccounted elemetns per cluster")
 		parser.add_option("--notapplybckgnoise",                 action ="store_true",    default =False,                  help="flag to turn off background noise")
 		parser.add_option("--do_swap_au",                        action ="store_true",    default =False,                  help="swap flag")
-		parser.add_option("--restart_from_generation",		     type   ="int",           default =-1,					   help="restart from this geneartion,  the defalut value implies there is no restart")
-		parser.add_option("--restart_from_depth_order",		     type   ="int",           default =-1,					   help="restart from this depth order, the defalut value implies there is no restart")
-		parser.add_option("--restart_from_nbox",				 type   ="int",           default = 0,					   help="restart from the nubmer of box in the specified depth level")
+		#parser.add_option("--restart_from_generation",		     type   ="int",           default =-1,					   help="restart from this geneartion,  the defalut value implies there is no restart")
+		#parser.add_option("--restart_from_depth_order",		 type   ="int",           default =-1,					   help="restart from this depth order, the defalut value implies there is no restart")
+		#parser.add_option("--restart_from_nbox",				 type   ="int",           default = 0,					   help="restart from the nubmer of box in the specified depth level")
 		parser.add_option("--shake",                             type   ="float",         default = 0.0,                   help="perturbation factor applied to orientation groups")
 		# postprocessing options <<<<-------
 		parser.add_option("--mtf",                               type   ="string",        default = '',                    help="mtf file")
@@ -8090,6 +8098,7 @@ def main():
 				log_main.add(msg)
 				mark_sorting_state(work_dir, False, log_main)
 				time_generation_start = time.time()
+				
 		while keepsorting == 1:
 			if Blockdata["myid"] == Blockdata["main_node"]:
 				keepchecking = check_sorting_state(work_dir, keepchecking, log_main)

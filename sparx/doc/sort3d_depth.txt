@@ -138,6 +138,9 @@ Reconstructed halfset maps to be used for postprocessing.
 
 - vol_final_cluster*.hdf, Cluster*.txt, vol_unfiltered_0_group*.hdf and vol_unfiltered_1_group*.hdf in each generation_00? directories. The last cluster is the unaccounted elements in each generation.
 
+Restart: 
+The current version supports restart program from interruption. User simply delete the unfinished nbox directory and state.json file from the interrupted layer and start the program with specified output_dir.
+
 Some examples for timing: 
 
 

@@ -869,11 +869,38 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		# generate subdirectories of out_dir, one for each process
 		out_dir = os.path.join(out_dir, "mpi_proc_%03d" % my_mpi_proc_id)
 	
-	# Set up progress message
+	# Set up progress message and all necessary output directories
+	reject_out_of_boundary_dir = os.path.join(root_out_dir, "reject_out_of_boundary")
 	if my_mpi_proc_id == main_mpi_proc:
 		print(" ")
 		print("Micrographs processed by main process (including percent of progress):")
 		progress_percent_step = len(valid_mic_id_substr_list)/100.0 # the number of micrograms for main node divided by 100
+		
+		# Create output directory
+		# 
+		# NOTE: Toshio Moriya 2017/12/12
+		# This might not be necessary since particle_img.write_image() will automatically create all directory tree necessary to save the file.
+		# However, it is side-effect of the function, so we will explicitly make root output directory here.
+		# 
+		if not os.path.exists(out_dir):
+			os.mkdir(out_dir)
+		assert not os.path.exists(reject_out_of_boundary_dir), "MRK_DEBUG"
+		os.mkdir(reject_out_of_boundary_dir)
+	
+	if RUNNING_UNDER_MPI:
+		mpi_barrier(MPI_COMM_WORLD) # all MPI processes should wait until the directory is created by main process
+		# 
+		# NOTE: 2017/12/12 Toshio Moriya
+		# To walk-around synchronisation problem between all MPI nodes and a file server,
+		# we use exception to assert the existence of directory.
+		# 
+		try: 
+			os.mkdir(reject_out_of_boundary_dir)
+			assert False, "MRK_DEBUG: Unreachable code..."
+		except OSError as err:
+			pass
+	else: 
+		assert os.path.exists(reject_out_of_boundary_dir), "MRK_DEBUG"
 	
 	# ------------------------------------------------------------------------------------
 	# Starting main parallel execution
@@ -1089,12 +1116,20 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		# Save the message list of rejected coordinates because of out-of-boundary
 		# print("MRK_DEBUG: len(coords_reject_out_of_boundary_messages) := %d" % len(coords_reject_out_of_boundary_messages))
 		if len(coords_reject_out_of_boundary_messages) > 0:
-			reject_out_of_boundary_dir = os.path.join(root_out_dir, "reject_out_of_boundary")
-			if not os.path.exists(reject_out_of_boundary_dir):
-				os.mkdir(reject_out_of_boundary_dir)
-			assert os.path.exists(reject_out_of_boundary_dir), "MRK_DEBUG"
-			
 			# Open file path to save the message list
+			# 
+			# NOTE: 2017/12/12 Toshio Moriya
+			# To walk-around synchronisation problem between all MPI nodes and a file server,
+			# we use exception to assert the existence of directory.
+			# 
+			if RUNNING_UNDER_MPI:
+				try: 
+					os.mkdir(reject_out_of_boundary_dir)
+					assert False, "MRK_DEBUG: Unreachable code..."
+				except OSError as err:
+					pass
+			else: 
+				assert os.path.exists(reject_out_of_boundary_dir), "MRK_DEBUG"
 			coords_reject_out_of_boundary_path = os.path.join(reject_out_of_boundary_dir, os.path.splitext(os.path.basename(coords_path))[0] + "_reject_out_of_boundary.txt")
 			# print("MRK_DEBUG: coords_reject_out_of_boundary_path := %s" % coords_reject_out_of_boundary_path)
 			coords_reject_out_of_boundary_file = open(coords_reject_out_of_boundary_path, "w")
@@ -1165,9 +1200,14 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		print("Processed                          : %6d" % (n_global_coords_process))
 		print("Rejected by out of boundary        : %6d" % (n_global_coords_reject_out_of_boundary))
 		if n_global_coords_reject_out_of_boundary > 0:
-			reject_out_of_boundary_dir = os.path.join(root_out_dir, "reject_out_of_boundary")
 			assert os.path.exists(reject_out_of_boundary_dir), "MRK_DEBUG"
 			print("    NOTE: Information of rejected coordinates by out of boundary are saved in %s files." % (os.path.join(reject_out_of_boundary_dir, os.path.splitext(os.path.basename(coords_pattern))[0] + "_reject_out_of_boundary.txt" )))
+		else:
+			assert n_global_coords_reject_out_of_boundary == 0, "MRK_DEBUG"
+			if os.path.exists(reject_out_of_boundary_dir):
+				# This directory must be empty and should not contain any sub-directries
+				assert os.listdir(reject_out_of_boundary_dir) == [], "MRK_DEBUG"
+				shutil.rmtree(reject_out_of_boundary_dir, ignore_errors=True)
 	
 	if RUNNING_UNDER_MPI:
 		mpi_barrier(MPI_COMM_WORLD)
