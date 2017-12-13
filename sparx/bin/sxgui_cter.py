@@ -1110,7 +1110,7 @@ class SXGuiCter(QtGui.QWidget):
 		new_entry_list = read_text_row(file_path)
 		if len(new_entry_list) == 0:
 			QtGui.QMessageBox.warning(self, "Warning", "Specified CTER partres file (%s) does not contain any entry. Please check the file." % (file_path))
-			returnF
+			return
 		assert len(new_entry_list) > 0, "MRK_DEBUG"
 		
 		# NOTE: 2017/03/20 Toshio Moriya
