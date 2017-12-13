@@ -1110,7 +1110,7 @@ class SXGuiCter(QtGui.QWidget):
 		new_entry_list = read_text_row(file_path)
 		if len(new_entry_list) == 0:
 			QtGui.QMessageBox.warning(self, "Warning", "Specified CTER partres file (%s) does not contain any entry. Please check the file." % (file_path))
-			returnF
+			return
 		assert len(new_entry_list) > 0, "MRK_DEBUG"
 		
 		# NOTE: 2017/03/20 Toshio Moriya
@@ -2348,13 +2348,13 @@ class SXGuiCter(QtGui.QWidget):
 #			if not self.wfft.isVisible() and self.is_wfft_minimized:
 #				self.wfft.show()
 #				is_child_shown = True
-			if not self.wimgmicthumb.isVisible() and self.curimgmicthumbdisplay and not self.is_wimgmicthumb_minimized:
+			if not self.wimgmicthumb.isVisible() and self.curimgmicthumbdisplay and not self.is_wimgmicthumb_minimized and os.path.exists(self.cter_micthumb_file_path):
 				self.wimgmicthumb.show()
 				is_child_shown = True
-			if not self.wplotrotavgcoarse.isVisible() and self.curplotrotavgdisplay and not self.is_wplotrotavgcoarse_minimized:
+			if not self.wplotrotavgcoarse.isVisible() and self.curplotrotavgdisplay and not self.is_wplotrotavgcoarse_minimized and os.path.exists(self.cter_pwrot_file_path):
 				self.wplotrotavgcoarse.show()
 				is_child_shown = True
-			if not self.wplotrotavgfine.isVisible() and self.curplotrotavgdisplay and not self.is_wplotrotavgfine_minimized:
+			if not self.wplotrotavgfine.isVisible() and self.curplotrotavgdisplay and not self.is_wplotrotavgfine_minimized and os.path.exists(self.cter_pwrot_file_path):
 				self.wplotrotavgfine.show()
 				is_child_shown = True
 			if not self.whistparam.isVisible() and not self.curhistdisable and not self.is_whistparam_minimized:
