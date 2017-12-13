@@ -341,8 +341,8 @@ def main():
 			if options.groups > 1:
 				groupDIR = originalpath + '/group' + str(i+1).zfill(len(str(options.groups)))
 				groupID = 'group' + str(i+1).zfill(len(str(options.groups))) + 'ptcls.hdf'
-				groupPATH = groupDIR + '/' + groupID
-				#os.system('mkdir ' + groupDIR)				
+				
+				#groupPATH = groupDIR + '/' + groupID
 				os.mkdir( groupDIR )
 				
 				
@@ -357,7 +357,11 @@ def main():
 				print("For which options.input is", options.input)
 				print("And updated options.path is", options.path)
 				print("************************************")
-
+			
+			
+			groupPATH = groupDIR + '/' + groupID
+			print("\nOOOOOOOOOOOO options.groups={}, therefore, groupPATH={}".format(options.groups,groupPATH))
+			#sys.exit(1)
 			mm = 0
 			for jj in xrange(bottom_range,top_range):
 				if mm == 0:
