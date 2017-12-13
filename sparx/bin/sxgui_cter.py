@@ -221,9 +221,9 @@ class SXGuiCter(QtGui.QWidget):
 		
 		#
 		# NOTE: 2017/11/22 Toshio Moriya
-		# The following code is to support the old format of CTER. It should be removed near future
+		# The following code is to support the old format of CTER partres file. It should be removed near future
 		# 
-		# Define enumerators for the old format of CTER.
+		# Define enumerators for the old format of CTER partres file.
 		i_enum = -1
 		i_enum += 1; self.idx_old_cter_def          = i_enum # defocus [um]
 		i_enum += 1; self.idx_old_cter_cs           = i_enum # Cs [mm]
@@ -721,7 +721,7 @@ class SXGuiCter(QtGui.QWidget):
 		grid_col_entry_list = grid_col
 		
 		# --------------------------------------------------------------------------------
-		# Columns 5-7 (for Micrograph/CTER Entry), 7-8 (for Unapplied Threshold), 9-10 (for Applied Threshold)
+		# Columns 5-7 (for Micrograph/CTER partres entry), 7-8 (for Unapplied Threshold), 9-10 (for Applied Threshold)
 		# --------------------------------------------------------------------------------
 		grid_col += col_span
 		col_span_1st_label = 2
@@ -794,7 +794,7 @@ class SXGuiCter(QtGui.QWidget):
 		# make space
 		grid_row += 1
 		
-		temp_label=QtGui.QLabel("<b>Sort CTER Entries:</b>",self)
+		temp_label=QtGui.QLabel("<b>Sort CTER Partres Entries:</b>",self)
 		temp_label.setAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
 		self.gbl.addWidget(temp_label,grid_row,grid_col_1st_sub,1,col_span_1st_sub)
 		
@@ -1110,14 +1110,14 @@ class SXGuiCter(QtGui.QWidget):
 		new_entry_list = read_text_row(file_path)
 		if len(new_entry_list) == 0:
 			QtGui.QMessageBox.warning(self, "Warning", "Specified CTER partres file (%s) does not contain any entry. Please check the file." % (file_path))
-			return
+			returnF
 		assert len(new_entry_list) > 0, "MRK_DEBUG"
 		
 		# NOTE: 2017/03/20 Toshio Moriya
-		# The following code is to support the old format of CTER. It should be removed near future
+		# The following code is to support the old format of CTER partres file. It should be removed near future
 		
 		if len(new_entry_list[0]) == self.n_idx_old_cter:
-			QtGui.QMessageBox.warning(None,"Warning","The format of CTER partres file (%s) might be old. We will stop supporting this format near future. Please consider rerun CTER." % (file_path))
+			QtGui.QMessageBox.warning(None,"Warning","The format of CTER partres file (%s) might be old. We will stop supporting this format near future. \n\nPlease consider rerun CTER. Alternatively, please save selection now to generate *_partres_select.txt with the new format then open it. (Note: when you save selecction, *_partres_select.txt and *_partres_discard.txt will be saved with the new CTER partres format.)" % (file_path))
 			# Continue processing for now (2017/03/20 Toshio Moriya)
 		elif len(new_entry_list[0]) != self.n_idx_cter - self.n_idx_cter_extra:
 			QtGui.QMessageBox.warning(None,"Warning","The number of columns (%d) has to be %d in %s." % (len(new_entry_list[0]), self.n_idx_cter - self.n_idx_cter_extra, file_path))
@@ -1163,7 +1163,7 @@ class SXGuiCter(QtGui.QWidget):
 				new_entry_list[cter_id][self.idx_cter_select] = 1
 			#
 			# NOTE: 2017/11/22 Toshio Moriya
-			# The following code is to support the old format of CTER. It should be removed near future
+			# The following code is to support the old format of CTER partres. It should be removed near future
 			# 
 			elif len(new_entry_list[cter_id]) == self.n_idx_old_cter:
 				# assume amplitude amplitude contrast is total amplitude constrast in [%], estimated as variable Volta phase shift. Conver it to [deg].
@@ -1221,7 +1221,7 @@ class SXGuiCter(QtGui.QWidget):
 			# Removed following code because it is too old at this point.
 			#
 			# NOTE: 2017/03/20 Toshio Moriya
-			# The following code is to support the old format of CTER. It should be removed near future
+			# The following code is to support the old format of CTER partres. It should be removed near future
 			#
 			# elif len(new_entry_list[cter_id]) == self.n_idx_cter - self.n_idx_cter_extra - 1:
 			# 	# Add extra items first to make sure indices match
@@ -1712,9 +1712,9 @@ class SXGuiCter(QtGui.QWidget):
 			self.wplotrotavgfine.hide()
 		
 	def updateEntryList(self):
-		"""Updated entry list box after sorting of CTER entries based on current setting."""
+		"""Updated entry list box after sorting of CTER partres entries based on current setting."""
 		
-		# sort CTER entry list
+		# sort CTER partres entry list
 		assert self.cter_entry_list != None, "MRK_DEBUG"
 		self.cter_entry_list = sorted(self.cter_entry_list, key=lambda x: x[self.sort_map_list[self.cursort][self.idx_sort_item_idx_cter]], reverse=self.cursortoder)
 		
@@ -1796,7 +1796,7 @@ class SXGuiCter(QtGui.QWidget):
 			self.wimgmicthumb.hide()
 		
 	def newEntry(self,currow):
-		"""called when a new data set is selected from the CTER Entry list box."""
+		"""called when a new data set is selected from the CTER partres entry list box."""
 		assert self.cter_partres_file_path != None, "MRK_DEBUG"
 		assert self.cter_entry_list != None, "MRK_DEBUG"
 		
@@ -1831,7 +1831,7 @@ class SXGuiCter(QtGui.QWidget):
 		assert self.cter_mic_file_path != new_cter_mic_file_path , "MRK_DEBUG"
 		self.cter_mic_file_path = new_cter_mic_file_path
 		
-		# print "MRK_DEBUG: Row No. %d (CTER Entry No. %d) is selected from cter entry list box" % (self.curentry, self.cter_entry_list[self.curentry][self.idx_cter_id])
+		# print "MRK_DEBUG: Row No. %d (CTER partres entry No. %d) is selected from cter entry list box" % (self.curentry, self.cter_entry_list[self.curentry][self.idx_cter_id])
 		
 		self.ssortedid.setValue(self.curentry,True)
 		
@@ -1916,7 +1916,7 @@ class SXGuiCter(QtGui.QWidget):
 		self.updateEntryList()
 	
 	def newSort(self,cursort):
-		"""Sort CTER entries by selected parameter values."""
+		"""Sort CTER partres entries by selected parameter values."""
 		if self.cursort == cursort: return
 		
 		# now set the new item
@@ -1928,7 +1928,7 @@ class SXGuiCter(QtGui.QWidget):
 		self.updateEntryList()
 	
 	def newSortOrder(self, sortoder):
-		"""Change sorting order of CTER entries."""
+		"""Change sorting order of CTER partres entries."""
 		if self.cursortoder == sortoder: return
 		
 		# now set the new status
@@ -1940,7 +1940,7 @@ class SXGuiCter(QtGui.QWidget):
 		self.updateEntryList()
 	
 	def newSortSelect(self, sortselect):
-		"""Change sort select status of CTER entries."""
+		"""Change sort select status of CTER partres entries."""
 		if self.cursortselect == sortselect: return
 		
 		# now set the new status
@@ -2159,7 +2159,7 @@ class SXGuiCter(QtGui.QWidget):
 		# file_out.write(EMANVERSION + " (CVS" + CVSDATESTAMP[6:-2] +")")
 		file_out.write(EMANVERSION + " (GITHUB: " + DATESTAMP +")" )
 		file_out.write(" @@@@@ \n")
-		file_out.write("# Associated CTER partres File == %s\n" % (self.cter_partres_file_path))
+		file_out.write("# Associated CTER Partres File == %s\n" % (self.cter_partres_file_path))
 		file_out.write("# Saved Threshold Set == %s\n" % (self.thresholdset_map_list[idx_thresholdset][self.idx_thresholdset_item_label]))
 		file_out.write("# [Parameter Id] [Parameter Name] [Lower Threshold] [Upper Threshold]\n")
 		
@@ -2320,7 +2320,7 @@ class SXGuiCter(QtGui.QWidget):
 		# Save the associated applied threshold 
 		self.writeThresholdSet(file_path_out_thresholds, self.idx_thresholdset_applied) 
 		
-		QtGui.QMessageBox.information(self, "Information","The following files are saved in %s:\n\nCTER CTF List - Selected: %s\n\nCTER CTF List - Discarded: %s\n\nMicrograph - Selected: %s\n\nMicrograph - Discarded: %s\n\nApplied Threshold Set: %s" % (os.path.dirname(self.cter_partres_file_path), os.path.basename(file_path_out_select), os.path.basename(file_path_out_discard), os.path.basename(file_path_out_mic_select), os.path.basename(file_path_out_mic_discard), os.path.basename(file_path_out_thresholds)))
+		QtGui.QMessageBox.information(self, "Information","The following files are saved in %s:\n\nCTER Partres File - Selected: %s\n\nCTER Partres FIle - Discarded: %s\n\nMicrograph - Selected: %s\n\nMicrograph - Discarded: %s\n\nApplied Threshold Set: %s" % (os.path.dirname(self.cter_partres_file_path), os.path.basename(file_path_out_select), os.path.basename(file_path_out_discard), os.path.basename(file_path_out_mic_select), os.path.basename(file_path_out_mic_discard), os.path.basename(file_path_out_thresholds)))
 	
 	def timeOut(self):
 		if self.busy: return
