@@ -260,7 +260,7 @@ def checkinput(options):
 			EMData(options.input,0,True)
 		except:
 			print("\nERROR: input file {} seems to have an invalid format".format( options.input ))
-			parser.print_help()
+			#parser.print_help()
 			sys.exit(1)
 	return options
 	
