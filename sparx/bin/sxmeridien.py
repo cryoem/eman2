@@ -357,10 +357,7 @@ def AI_continuation(fff, anger = -1.0, shifter = -1.0, chout = False):
 		Tracker["currentres"]	= l05
 		Tracker["fsc143"]		= l01
 		Tracker["large_at_Nyquist"] = (fff[Tracker["nxinit"]//2] > 0.1 or fff[Tracker["nxinit"]//2-1] > 0.2)
-		inc = Tracker["currentres"]
-		if Tracker["large_at_Nyquist"]:	inc += int(0.25 * Tracker["constants"]["nnxo"]/2 +0.5)
-		else:							inc += Tracker["nxstep"]
-		Tracker["nxinit"]	= min(2*inc, Tracker["constants"]["nnxo"] )  #  Cannot exceed image size
+		Tracker["nxinit"]	= min(2*Tracker["fsc143"], Tracker["constants"]["nnxo"] )  #  Cannot exceed image size
 		Tracker["local"]	= True
 		Tracker["an"]		= 6*Tracker["delta"]
 		Tracker["no_improvement"] 		= 0
@@ -5019,17 +5016,17 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 					if( Blockdata["myid"] == 0 ):
 						keepf = [junk for junk in keepf if junk >0]
 						if( len(keepf) <2 ):
-							keepf = 0
+							keepf = 3
 						else:
 							keepf.sort()
 							keepf = keepf[int(len(keepf)*Blockdata["rkeepf"])]
 					else:  keepf = 0
 					###print("  STARTING7    ",Blockdata["myid"],keepf)
 					keepf = wrap_mpi_bcast(keepf, Blockdata["main_node"], MPI_COMM_WORLD)
-					if(keepf == 0):
-						ERROR("Too few images to estimate keepfirst","sxmeridien", 1, Blockdata["myid"])
-						mpi_finalize()
-						exit()
+					#if(keepf == 0):
+					#	ERROR("Too few images to estimate keepfirst","sxmeridien", 1, Blockdata["myid"])
+					#	mpi_finalize()
+					#	exit()
 					###print("  STARTING8    ",Blockdata["myid"],keepf)
 					Tracker["keepfirst"] = int(keepf)
 					###if( Blockdata["myid"] == 0 ):  print("  keepfirst first ",Tracker["keepfirst"])
@@ -10057,7 +10054,26 @@ def main():
 	# ------------------------------------------------------------------------------------
 	# PARSE COMMAND OPTIONS
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack  [output_directory]  initial_volume  --radius=particle_radius --symmetry=c1 --initialshifts --inires=25  --mask3D=surface_mask.hdf --function=user_function"
+	usage = progname + """ stack  [output_directory]  initial_volume  --radius=particle_radius --symmetry=c1 --initialshifts --inires=25  --mask3D=surface_mask.hdf --function=user_function
+	
+	
+	There are five ways to run the program:
+
+1. Standard default run, starts from exhaustive searches, uses initial reference volume
+mpirun -np 64 --hostfile four_nodes.txt  psxmeridien.py  bdb:sparx_stack vton1 mask15.hdf --sym=c5  --initialshifts  --radius=120  --mask3D=mask15.hdf    >1ovotn &
+
+2. Restart after the last fully finished iteration, one can change some parameters (MPI settings have to be the same)
+mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py  vton1 --radius=100 >2ovotn &
+
+3. Local refinement, starts from user-provided orientation parameters, delta has to be <= 3.75
+mpirun -np 64 --hostfile four_nodes.txt sxmeridien.py --local_refinement bdb:sparx_stack   vton3 --delta=1.875 --xr=2.0  --inires=5.5  --sym=c5  --radius=120  --mask3D=mask15.hdf >5ovotn &
+
+4. Restart of local refinement after the last fully finished iteration, one can change some parameters (MPI settings have to be the same)
+mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3  --xr=0.6 >6ovotn &
+
+5.  mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py vton3 --do_final=21
+	
+	"""
 	parser = OptionParser(usage, version=SPARXVERSION)
 	parser.add_option("--do_final",           type="int",			 	default= -1,  help="Do unfiltered odd and even volume 3-D reconstruction from an existing meridien refinement with optional specified iteration")
 	parser.add_option("--local_refinement",    action="store_true",  default= False,  help="Perform local refinement starting from user-provided orientation parameters")
@@ -11001,9 +11017,9 @@ def main():
 		keepgoing1 = bcast_number_to_all(keepgoing1, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
 		keepgoing2 = bcast_number_to_all(keepgoing2, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
 		if keepgoing1== 0:
-			ERROR("To restart, meridien requires only the name of existing refinement directory.", "meridien",1, Blockdata["myid"])
+			ERROR("To restart, meridien requires only the name of existing refinement directory.", "meridien local",1, Blockdata["myid"])
 		if keepgoing2 ==0:
-			ERROR("To start, meridien requires at least the stack name and the name of reference volume", "meridien",1, Blockdata["myid"])
+			ERROR("To start, meridien requires at least the stack name and the name of reference volume", "meridien local",1, Blockdata["myid"])
 		if restart_flag ==1: restart_mode = True
 		else: restart_mode  = False
 		
@@ -11080,7 +11096,7 @@ def main():
 			Tracker = {}
 			Tracker["constants"]	= Constants
 			Tracker["maxit"]		= Tracker["constants"]["maxit"]
-		
+
 			Tracker["xr"]			= options.xr
 			Tracker["yr"]			= options.xr  # Do not change!  I do not think it is used anywhere
 			Tracker["ts"]			= options.ts
@@ -11149,6 +11165,7 @@ def main():
 			Tracker["constants"]["fuse_freq"]    = fq
 			del fq, nnxo, pixel_size
 			# Resolution is always in full size image pixel units.
+			#HOHO
 			if(Tracker["constants"]["inires"]>0.0):  Tracker["constants"]["inires"] = int(Tracker["constants"]["nnxo"]*Tracker["constants"]["pixel_size"]/Tracker["constants"]["inires"] + 0.5)
 			Tracker["currentres"] = Tracker["constants"]["inires"]
 			Tracker["fsc143"] = Tracker["constants"]["inires"]
@@ -11161,6 +11178,7 @@ def main():
 			if checking_flag==0:ERROR("mask3D file does  not exists ","meridien",1,Blockdata["myid"])
 			
 			if( options.xr/options.ts<1.0 ): ERROR("Incorrect translational searching settings, search range cannot be smaller than translation step ","meridien",1,Blockdata["myid"])
+			#HOHO
 			if( 2*(Tracker["currentres"] + Tracker["nxstep"]) > Tracker["constants"]["nnxo"] ):
 				ERROR("Image size less than what would follow from the initial resolution provided %d  %d  %d"%(Tracker["currentres"], Tracker["nxstep"],\
 				 2*(Tracker["currentres"] + Tracker["nxstep"])),"sxmeridien",1, Blockdata["myid"])
@@ -11248,6 +11266,7 @@ def main():
 			oldparams      = [[],[]]
 			currentparams  = [[],[]]
 			original_data  = [None, None]
+			#HOHO
 			if( Tracker["constants"]["inires"] > 0 ):  Tracker["nxinit"] = min(2*Tracker["constants"]["inires"], Tracker["constants"]["nnxo"] )
 			else:  Tracker["nxinit"] = Tracker["constants"]["nnxo"]
 			rec3d_continuation_nosmearing(original_data, MPI_COMM_WORLD)
@@ -11456,9 +11475,6 @@ def main():
 							write_text_row(params, os.path.join(Tracker["directory"], "params-chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"])) )
 						del params
 
-
-						#  START HERE
-
 						projdata[procid] = []
 						if Tracker["constants"]["small_memory"]:
 							original_data[procid], oldparams[procid] = getindexdata(partids[procid], partstack[procid], \
@@ -11589,12 +11605,6 @@ def main():
 								if( Blockdata["myid_on_node"] == 0 ):
 									#--  memory_check(Blockdata["myid"],"first node, before masking")
 									if( Tracker["mainiteration"] == 1 ):
-										# At a first iteration truncate resolution at the initial resolution set by the user
-										for i in xrange(len(cfsc)):
-											if(  i < Tracker["constants"]["inires"]+1 ):  cfsc[i]   = 1.0
-											if(  i == Tracker["constants"]["inires"]+1 ): cfsc[i]  	= 0.5
-											elif( i > Tracker["constants"]["inires"]+1 ): cfsc[i]  	= 0.0
-										tvol0 = filt_table(tvol0, cfsc)
 										if( Blockdata["no_of_groups"] > 1 ):  del cfsc
 
 									user_func = user_functions.factory[Tracker["constants"]["user_func"]]
@@ -11618,14 +11628,6 @@ def main():
 								del tweight1, treg1
 								if( Blockdata["myid_on_node"] == 0 ):
 									#--  memory_check(Blockdata["myid"],"second node, before masking")
-									if( Tracker["mainiteration"] == 1 ):
-										# At a first iteration truncate resolution at the initial resolution set by the user
-										for i in xrange(len(cfsc)):
-											if(  i < Tracker["constants"]["inires"]+1 ):  cfsc[i]   = 1.0
-											if(  i == Tracker["constants"]["inires"]+1 ):  cfsc[i]  = 0.5
-											elif( i > Tracker["constants"]["inires"]+1 ):  cfsc[i]  = 0.0
-										tvol1 = filt_table(tvol1, cfsc)
-										del cfsc
 									user_func = user_functions.factory[Tracker["constants"]["user_func"]]
 									ref_data = [tvol1, Tracker, mainiteration]
 									#--  #--  memory_check(Blockdata["myid"],"first node, after masking")
