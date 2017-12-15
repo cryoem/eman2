@@ -182,20 +182,26 @@ def main():
 		sym = options.sym.lower()
 		if( sym == "c1" ):
 			ERROR("Thre is no need to symmetrize stack for C1 symmetry","sx3dvariability",1)
-
+		
+		line =""
+		for a in sys.argv:
+			line +=" "+a
+		log_main.add(line)
+	
 		if(instack[:4] !="bdb:"):
 			if output_dir =="./": stack = "bdb:data"
 			else: stack = "bdb:"+options.output_dir+"/data"
 			delete_bdb(stack)
 			junk = cmdexecute("sxcpy.py  "+instack+"  "+stack)
 		else: stack = instack
-
+		
 		qt = EMUtil.get_all_attributes(stack,'xform.projection')
 
 		na = len(qt)
 		ts = get_symt(sym)
 		ks = len(ts)
 		angsa = [None]*na
+		
 		for k in xrange(ks):
 			Qfile = os.path.join(options.output_dir, "Q%1d"%k)
 			#delete_bdb("bdb:Q%1d"%k)
@@ -275,12 +281,7 @@ def main():
 		# 	disable_bdb_cache()
 		# global_def.BATCH = True
 
-		if myid == main_node:
-			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			print_begin_msg("sx3dvariability")
-			msg = ("%-70s:  %s\n"%("Input stack", stack))
-			log_main.add(msg)
-			print(line, msg)
+
 	
 		img_per_grp = options.img_per_grp
 		nvec = options.nvec
@@ -290,7 +291,24 @@ def main():
 		#if os.path.exists(os.path.join(options.output_dir, "log.txt")): os.remove(os.path.join(options.output_dir, "log.txt"))
 		log_main=Logger(BaseLogger_Files())
 		log_main.prefix = os.path.join(options.output_dir, "./")
-
+		
+		if myid == main_node:
+			line = ""
+			for a in sys.argv: line +=" "+a
+			log_main.add(line)	
+			log_main.add("-------->>>Settings given by all options<<<-------")
+			log_main.add("instack  		    :"+stack)
+			log_main.add("output_dir        :"+options.output_dir)
+			log_main.add("var3d   		    :"+options.var3D)
+	
+			
+		if myid == main_node:
+			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+			print_begin_msg("sx3dvariability")
+			msg = ("%-70s:  %s\n"%("Input stack", stack))
+			log_main.add(msg)
+			print(line, msg)
+	
 		symbaselen = 0
 		if myid == main_node:
 			nima = EMUtil.get_image_count(stack)
@@ -482,9 +500,9 @@ def main():
 			#imgdata = EMData.read_images(stack, all_proj)
 			imgdata = []
 			for index_of_proj in xrange(len(all_proj)):
-				img     = EMData()
-				img.read_image(stack, all_proj[index_of_proj])
-				dmg = image_decimate_window_xform_ctf(img, options.decimate, options.window, options.CTF)
+				#img     = EMData()
+				#img.read_image(stack, all_proj[index_of_proj])
+				dmg = image_decimate_window_xform_ctf(get_im(stack, all_proj[index_of_proj]), options.decimate, options.window, options.CTF)
 				#print dmg.get_xsize(), "init"
 				imgdata.append(dmg)
 			if options.VERBOSE:
@@ -735,7 +753,7 @@ def main():
 						if i == main_node :
 							for im in xrange(len(varList)):
 								tmpvol=fpol(varList[im], Tracker["nx"], Tracker["nx"],1)
-								tmpvol.write_image(options.var2D, km)
+								tmpvol.write_image(os.path.join(options.output_dir, options.var2D), km)
 								km += 1
 						else:
 							nl = mpi_recv(1, MPI_INT, i, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)

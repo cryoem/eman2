@@ -6,32 +6,38 @@ sxcompute_isac_avg - Beautifier: Beautify the ISAC 2D clustering result with the
 
 ''Usage in command lines'':
 
-sxcompute_isac_avg.py  --stack=stack_file_path  --isac_dir=isac_output_directory  --output_dir=output_directory  --radius=radius  --noctf  --nopwadj --modelpw=pw2_model_txt  --B_enhance  --B_start=B_start  --Bfactor=Bfactor  --fl=cutoff_frequency  --pixel_size=pixel_size  --xr=xr  --ts=ts  --fh=fh  --maxit=maxit --navg=navg 
+sxcompute_isac_avg.py  --stack=stack_file_path  --isac_dir=isac_output_directory  --output_dir=output_directory    --adjust_to_given_pw2 --radius=radius  --noctf  --modelpw=pw2_model_txt  --B_enhance  --B_start=B_start  --Bfactor=Bfactor  --fl=cutoff_frequency  --pixel_size=pixel_size  --xr=xr  --ts=ts  --fh=fh  --maxit=maxit --navg=navg 
 
 === Typical usage ===
 
 sxcompute_isac_avg.py exists only in MPI version
 
-''' mpirun  -np  48  sxcompute_isac_avg.py  --stack=bdb:data  --isac_dir=outdir_isac  --output_dir=outdir_beautify2d  --radius=120  '''
+''' mpirun  -np  48  sxcompute_isac_avg.py  --stack=bdb:data  --isac_dir=outdir_isac  --output_dir=outdir_beautify2d  --radius=120  --no_adjustment  '''
 
-''' mpirun  -np  48  sxcompute_isac_avg.py  --stack=bdb:data  --isac_dir=outdir_isac  --output_dir=outdir_beautify2d  --radius=120  --B_enhance '''
+''' mpirun  -np  48  sxcompute_isac_avg.py  --stack=bdb:data  --isac_dir=outdir_isac  --output_dir=outdir_beautify2d  --radius=120  --adjust_to_analytic_model  '''
+
+''' mpirun  -np  48  sxcompute_isac_avg.py  --stack=bdb:data  --isac_dir=outdir_isac  --output_dir=outdir_beautify2d  --radius=120  --adjust_to_given_pw2  --modelpw=roo.txt '''
 
 ''' mpirun  -np  48  sxcompute_isac_avg.py  --stack=bdb:data  --isac_dir=outdir_isac  --output_dir=outdir_beautify2d  --radius=120  --B_enhance  --Bfactor=40.0  --fl=0.2 '''
 
 
 == Input ==
+	no_adjustment:: do not adjust power spectrum of averages.
+	adjust_to_analytic_model:: adjust power spectrum of averages to an analytical model
+	adjust_to_given_pw2:: adjust power spectrum of averages to a given 1-D reference power spectrum
+	B_enhance:: using B-factor to enhance averages. 
     stack:: Original image stack: Data stack that ISAC run used. Particles required to create the full-sized class averages. (default required string)
     isac_dir:: Isac output directory: Path to ISAC run output directory. This is input directory for this command. (default required string)
     radius:: Particle radius [Pixels]: There is no default radius. (default -1)
     noctf:: CTF correction: Indicate if full CTF correction should be applied or not. Always use the CTF correction for cryo data, but not for negative stained data. By default, do full CTF correction. (default False question reversed in GUI) 
-
+	skip_local_alignment:: apply or skip local alignment
+	
     * The remaining parameters are optional.
-    nopwadj:: Adjust PW spectrum: Indicate if PW spectrum should be adjusted or not. The program adjust PW spectrum to analytical model or given 1-D rotationally averaged power spectrum. By default, apply PW spectrum adjustment to model. (default False question reversed in GUI)
     modelpw:: Reference 1D PW spectrum: A text file contains 1-D rotational averaged power spectrum of either PDB model or EM map sampled in the given pixel_size and in original image size. By default, use the analytic model (See Penczek Methods Enzymol 2010) (default none)
     B_enhance:: Apply B-factor enhancement: Apply B-factor enhancement. (default False)
     B_start:: B-factor lower limit [A]: Lower limit for B-factor estimation. (default 10.0)
     Bfactor:: Use ad-hoc B-factor [A^2]: Skip the automatic estimation and use user-provided ad-hoc B-factor for the enhancement. (default 45.0)
-    fl:: Low-pass filter frequency: Cutoff frequency of low-pass filter. (default -1.0)
+    fl:: Low-pass filter frequency: Cutoff frequency of low-pass filter. =-1.0, do not use it;  ==1.0 low pass filter to initial ISAC resolution;  ==2 to resolution after local alignment; else using user provided cut_off   (default -1.0)
     pixel_size:: Pixel size [A]: The pixel size of images in input particle stack for isac. (default -1.0)
     xr:: Local X search range [Pixels]: Translational search range in the x direction for local alignment. (default -1.0)
     ts:: Local search step [Pixels]: Translational search step for local alignment. (default 1.0)
@@ -43,18 +49,22 @@ sxcompute_isac_avg.py exists only in MPI version
     output_dir:: Output directory: The directory will be automatically created and the results will be written here. (default required string)
     
 Important output files are:
-'''class_averages.hdf'''         : Computed averages in original image size. Each average has attributes "members" and "n_objects" in the image header.
-'''ordered_class_averages.hdf''' : Sorted version of class_averages.hdf. Averaged images are sorted by their similarity and re-arranged in a cyclic manner.
-'''params_avg_*.txt'''           : 2D alignment parameters computed by ISAC.
-'''ali2d_local_params_avg_*.txt  : 2D alignment parameters computed by local alignment of this program.
+'''class_averages.hdf'''            : Computed averages in original image size. Each average has attributes "members" and "n_objects" in the image header.
+'''ordered_class_averages.hdf'''    : Sorted version of class_averages.hdf. Averaged images are sorted by their similarity and re-arranged in a cyclic manner.
+'''params_avg_*.txt'''              : 2D alignment parameters computed by ISAC.
+'''init_isac_params.txt'''          : 2D alignment parameters of all particles computed by ISAC.
+'''ali2d_local_params_avg_*.txt'''  : 2D alignment parameters computed by local alignment of this program.
+'''ali2d_local_params*.txt'''       : 2D alignment parameters of all particles computed by local alignment of this program.
+'''FH_list.txt'''                   : Initial ISAC resolution and resolution after local alignment.
+
 
 = Description =
 There are three ways to change power spectrum:
 1. adjust it to an analytical model.
 2. adjust it to a given powerspectrum.
 3. apply B-factors. 
-
-Note these three options are exclusive. 
+4. no adjustment
+Note these four options are exclusive. 
 
 
 = Method =

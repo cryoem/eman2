@@ -243,6 +243,7 @@ def main():
 		parser.add_option("--Bfactor",   type   ="float",   default = 45.0,  help= "User defined bactors")
 			
 	if adjust_to_given_pw2:
+		parser.add_option("--modelpw",              type   ="string",         default ='',     help="1-D reference power spectrum")
 		checking_flag = 0
 		if(Blockdata["myid"] == Blockdata["main_node"]):
 			if not os.path.exists(options.modelpw): checking_flag = 1
