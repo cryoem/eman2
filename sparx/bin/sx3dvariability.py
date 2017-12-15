@@ -280,8 +280,10 @@ def main():
 		# 	from utilities import disable_bdb_cache
 		# 	disable_bdb_cache()
 		# global_def.BATCH = True
-
-
+		
+		if myid == main_node:
+			if options.output_dir !="./" and not os.path.exists(options.output_dir): 
+				os.mkdir(options.output_dir)
 	
 		img_per_grp = options.img_per_grp
 		nvec = options.nvec
@@ -295,7 +297,7 @@ def main():
 		if myid == main_node:
 			line = ""
 			for a in sys.argv: line +=" "+a
-			log_main.add(line)	
+			log_main.add(line)
 			log_main.add("-------->>>Settings given by all options<<<-------")
 			log_main.add("instack  		    :"+stack)
 			log_main.add("output_dir        :"+options.output_dir)
