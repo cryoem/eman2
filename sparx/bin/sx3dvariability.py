@@ -99,7 +99,8 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " prj_stack  --ave2D= --var2D=  --ave3D= --var3D= --img_per_grp= --fl=0.2 --aa=0.1  --sym=symmetry --CTF"
 	parser = OptionParser(usage, version=SPARXVERSION)
-
+	
+	parser.add_option("--output_dir",   type="string"	   ,	default="./",				help="output directory")
 	parser.add_option("--ave2D",		type="string"	   ,	default=False,				help="write to the disk a stack of 2D averages")
 	parser.add_option("--var2D",		type="string"	   ,	default=False,				help="write to the disk a stack of 2D variances")
 	parser.add_option("--ave3D",		type="string"	   ,	default=False,				help="write to the disk reconstructed 3D average")
@@ -166,21 +167,28 @@ def main():
 					pass
 			except:
 				pass
-		
+		if options.output_dir !="./" and not os.path.exists(options.output_dir): os.mkdir(options.output_dir)
 		#  Input
 		#instack = "Clean_NORM_CTF_start_wparams.hdf"
 		#instack = "bdb:data"
+		
+		
+		from logger import Logger,BaseLogger_Files
+		if os.path.exists(os.path.join(options.output_dir, "log.txt")): os.remove(os.path.join(options.output_dir, "log.txt"))
+		log_main=Logger(BaseLogger_Files())
+		log_main.prefix = os.path.join(options.output_dir, "./")
+		
 		instack = args[0]
 		sym = options.sym.lower()
 		if( sym == "c1" ):
 			ERROR("Thre is no need to symmetrize stack for C1 symmetry","sx3dvariability",1)
 
 		if(instack[:4] !="bdb:"):
-			stack = "bdb:data"
+			if output_dir =="./": stack = "bdb:data"
+			else: stack = "bdb:"+options.output_dir+"/data"
 			delete_bdb(stack)
 			junk = cmdexecute("sxcpy.py  "+instack+"  "+stack)
-		else:
-			stack = instack
+		else: stack = instack
 
 		qt = EMUtil.get_all_attributes(stack,'xform.projection')
 
@@ -189,9 +197,13 @@ def main():
 		ks = len(ts)
 		angsa = [None]*na
 		for k in xrange(ks):
-			delete_bdb("bdb:Q%1d"%k)
-			junk = cmdexecute("e2bdb.py  "+stack+"  --makevstack=bdb:Q%1d"%k)
-			DB = db_open_dict("bdb:Q%1d"%k)
+			Qfile = os.path.join(options.output_dir, "Q%1d"%k)
+			#delete_bdb("bdb:Q%1d"%k)
+			delete_bdb("bdb:"+Qfile)
+			#junk = cmdexecute("e2bdb.py  "+stack+"  --makevstack=bdb:Q%1d"%k)
+			junk = cmdexecute("e2bdb.py  "+stack+"  --makevstack=bdb:"+Qfile)
+			#DB = db_open_dict("bdb:Q%1d"%k)
+			DB = db_open_dict("bdb:"+Qfile)
 			for i in xrange(na):
 				ut = qt[i]*ts[k]
 				DB.set_attr(i, "xform.projection", ut)
@@ -201,15 +213,21 @@ def main():
 			#junk = cmdexecute("e2bdb.py  "+stack+"  --makevstack=bdb:Q%1d"%k)
 			#junk = cmdexecute("sxheader.py  bdb:Q%1d  --params=xform.projection  --import=ptsma%1d.txt"%(k,k))
 			DB.close()
-		delete_bdb("bdb:sdata")
-		junk = cmdexecute("e2bdb.py . --makevstack=bdb:sdata --filt=Q")
+		if options.output_dir =="./": delete_bdb("bdb:sdata")
+		else: delete_bdb("bdb:" + options.output_dir + "/"+"sdata")
+		#junk = cmdexecute("e2bdb.py . --makevstack=bdb:sdata --filt=Q")
+		sdata = "bdb:"+options.output_dir+"/"+"sdata"
+		print(sdata)
+		junk = cmdexecute("e2bdb.py   " + options.output_dir +"  --makevstack="+sdata +" --filt=Q")
 		#junk = cmdexecute("ls  EMAN2DB/sdata*")
-		a = get_im("bdb:sdata")
+		#a = get_im("bdb:sdata")
+		a = get_im(sdata)
 		a.set_attr("variabilitysymmetry",sym)
-		a.write_image("bdb:sdata")
-
+		#a.write_image("bdb:sdata")
+		a.write_image(sdata)
 
 	else:
+
 
 		sys.argv       = mpi_init(len(sys.argv), sys.argv)
 		myid           = mpi_comm_rank(MPI_COMM_WORLD)
@@ -258,12 +276,20 @@ def main():
 		# global_def.BATCH = True
 
 		if myid == main_node:
+			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 			print_begin_msg("sx3dvariability")
-			print_msg("%-70s:  %s\n"%("Input stack", stack))
+			msg = ("%-70s:  %s\n"%("Input stack", stack))
+			log_main.add(msg)
+			print(line, msg)
 	
 		img_per_grp = options.img_per_grp
 		nvec = options.nvec
 		radiuspca = options.radiuspca
+
+		from logger import Logger,BaseLogger_Files
+		#if os.path.exists(os.path.join(options.output_dir, "log.txt")): os.remove(os.path.join(options.output_dir, "log.txt"))
+		log_main=Logger(BaseLogger_Files())
+		log_main.prefix = os.path.join(options.output_dir, "./")
 
 		symbaselen = 0
 		if myid == main_node:
@@ -312,8 +338,10 @@ def main():
 		if radiuspca == -1: radiuspca = nx/2-2
 
 		if myid == main_node:
-			print_msg("%-70s:  %d\n"%("Number of projection", nima))
-		
+			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+			msg = "%-70s:  %d\n"%("Number of projection", nima)
+			log_main.add(msg)
+			print(line, msg)
 		img_begin, img_end = MPI_start_end(nima, number_of_proc, myid)
 		"""
 		if options.SND:
@@ -380,11 +408,20 @@ def main():
 					x = x*10000+psi
 					proj_angles.append([x, t['phi'], t['theta'], t['psi'], i])
 				t2 = time()
-				print_msg("%-70s:  %d\n"%("Number of neighboring projections", img_per_grp))
-				print_msg("...... Finding neighboring projections\n")
+				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+				msg = "%-70s:  %d\n"%("Number of neighboring projections", img_per_grp)
+				log_main.add(msg)
+				print(line, msg)
+				msg = "...... Finding neighboring projections\n"
+				log_main.add(msg)
+				print(line, msg)
 				if options.VERBOSE:
-					print("Number of images per group: ", img_per_grp)
-					print("Now grouping projections")
+					msg = "Number of images per group: %d"%img_per_grp
+					log_main.add(msg)
+					print(line, msg)
+					msg = "Now grouping projections"
+					log_main.add(msg)
+					print(line, msg)
 				proj_angles.sort()
 			proj_angles_list = [0.0]*(nima*4)
 			if myid == main_node:
@@ -414,15 +451,23 @@ def main():
 			mpi_barrier(MPI_COMM_WORLD)
 
 			if myid == main_node:
-				print_msg("%-70s:  %.2f\n"%("Finding neighboring projections lasted [s]", time()-t2))
-				print_msg("%-70s:  %d\n"%("Number of groups processed on the main node", len(proj_list)))
+				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+				msg =  ("%-70s:  %.2f\n"%("Finding neighboring projections lasted [s]", time()-t2))
+				log_main.add(msg)
+				print(msg)
+				msg  = ("%-70s:  %d\n"%("Number of groups processed on the main node", len(proj_list)))
+				log_main.add(msg)
+				print(line, msg)
 				if options.VERBOSE:
 					print("Grouping projections took: ", (time()-t2)/60	, "[min]")
 					print("Number of groups on main node: ", len(proj_list))
 			mpi_barrier(MPI_COMM_WORLD)
 
 			if myid == main_node:
-				print_msg("...... calculating the stack of 2D variances \n")
+				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+				msg = ("...... calculating the stack of 2D variances \n")
+				log_main.add(msg)
+				print(line, msg)
 				if options.VERBOSE:
 					print("Now calculating the stack of 2D variances")
 
@@ -582,7 +627,7 @@ def main():
 					for i in xrange(number_of_proc):
 						if i == main_node :
 							for im in xrange(len(aveList)):
-								aveList[im].write_image(options.ave2D, km)
+								aveList[im].write_image(os.path.join(options.output_dir, options.ave2D), km)
 								km += 1
 						else:
 							nl = mpi_recv(1, MPI_INT, i, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
@@ -600,7 +645,7 @@ def main():
 								ave.set_attr('refprojdir', map(float, members))
 								"""
 								tmpvol=fpol(ave, Tracker["nx"],Tracker["nx"],1)								
-								tmpvol.write_image(options.ave2D, km)
+								tmpvol.write_image(os.path.join(options.output_dir, options.ave2D), km)
 								km += 1
 				else:
 					mpi_send(len(aveList), 1, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
@@ -626,9 +671,12 @@ def main():
 				ave3D = recons3d_4nn_MPI(myid, aveList, symmetry=options.sym, npad=options.npad)
 				bcast_EMData_to_all(ave3D, myid)
 				if myid == main_node:
+					line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 					ave3D=fpol(ave3D,Tracker["nx"],Tracker["nx"],Tracker["nx"])
-					ave3D.write_image(options.ave3D)
-					print_msg("%-70s:  %s\n"%("Writing to the disk volume reconstructed from averages as", options.ave3D))
+					ave3D.write_image(os.path.join(options.output_dir, options.ave3D))
+					msg = ("%-70s:  %s\n"%("Writing to the disk volume reconstructed from averages as", options.ave3D))
+					log_main.add(msg)
+					print(line, msg)
 			del ave, var, proj_list, stack, phi, theta, psi, s2x, s2y, alpha, sx, sy, mirror, aveList
 
 			if nvec > 0:
@@ -645,7 +693,7 @@ def main():
 						if options.fl > 0.0:
 							eig3D = filt_tanl(eig3D, options.fl, options.aa)
 						if myid == main_node:
-							eig3D.write_image("eig3d_%03d.hdf"%k, ITER)
+							eig3D.write_image(os.path.join(options.outpout_dir, "eig3d_%03d.hdf"%(k, ITER)))
 						Util.mul_img( eig3D, model_circle(radiuspca, nx, nx, nx) )
 						eig3Df, kb = prep_vol(eig3D)
 						del eig3D
@@ -664,8 +712,11 @@ def main():
 						icont = mpi_reduce([icont], 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
 
 						if myid == main_node:
+							line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 							u = int(u[0])
-							print(" Eigenvector: ",k," number changed ",int(icont[0]))
+							msg = (" Eigenvector: ",k," number changed ",int(icont[0]))
+							log_main.add(msg)
+							print(line, msg)
 						else: u = 0
 						u = bcast_number_to_all(u, main_node)
 						cont = bool(u)
@@ -692,7 +743,7 @@ def main():
 							for im in xrange(nl):
 								ave = recv_EMData(i, im+i+70000)
 								tmpvol=fpol(ave, Tracker["nx"], Tracker["nx"],1)
-								tmpvol.write_image(options.var2D, km)
+								tmpvol.write_image(os.path.join(options.output_dir, options.var2D, km))
 								km += 1
 				else:
 					mpi_send(len(varList), 1, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
@@ -703,8 +754,10 @@ def main():
 
 		if  options.var3D:
 			if myid == main_node and options.VERBOSE:
-				print("Reconstructing 3D variability volume")
-
+				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+				msg = ("Reconstructing 3D variability volume")
+				log_main.add(msg)
+				print(line, msg)
 			t6 = time()
 			# radiusvar = options.radius
 			# if( radiusvar < 0 ):  radiusvar = nx//2 -3
@@ -713,18 +766,28 @@ def main():
 			if myid == main_node:
 				from fundamentals import fpol
 				res =fpol(res, Tracker["nx"], Tracker["nx"], Tracker["nx"])
-				res.write_image(options.var3D)
+				res.write_image(os.path.join(options.output_dir, options.var3D))
 
 			if myid == main_node:
-				print_msg("%-70s:  %.2f\n"%("Reconstructing 3D variability took [s]", time()-t6))
+				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+				msg = ("%-70s:  %.2f\n"%("Reconstructing 3D variability took [s]", time()-t6))
+				log_main.add(msg)
+				print(line, msg)
 				if options.VERBOSE:
 					print("Reconstruction took: %.2f [min]"%((time()-t6)/60))
 
 			if myid == main_node:
-				print_msg("%-70s:  %.2f\n"%("Total time for these computations [s]", time()-t0))
+				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+				msg = ("%-70s:  %.2f\n"%("Total time for these computations [s]", time()-t0))
+				print(line, msg)
+				log_main.add(msg)
 				if options.VERBOSE:
 					print("Total time for these computations: %.2f [min]"%((time()-t0)/60))
-				print_end_msg("sx3dvariability")
+				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+				msg = ("sx3dvariability")
+				print(line, msg)
+				log_main.add(msg)
+	
 
 		from mpi import mpi_finalize
 		mpi_finalize()
