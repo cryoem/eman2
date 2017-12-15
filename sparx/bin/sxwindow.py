@@ -210,7 +210,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 	mic_pattern = None
 	coords_pattern = None
 	ctf_params_src = None
-	out_dir = None
+	root_out_dir = None
 	# Not a real while, each "if" statement has the opportunity to use break when errors need to be reported
 	error_status = None
 	while True:
@@ -225,7 +225,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		mic_pattern = args[0]
 		coords_pattern = args[1]
 		ctf_params_src = args[2]
-		out_dir = args[3]
+		root_out_dir = args[3]
 		
 		# --------------------------------------------------------------------------------
 		# Check error conditions of arguments
@@ -254,7 +254,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 				error_status = ("Specified pixel size is not larger than 0.0. Please check input_ctf_params_source argument. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
 				break
 		
-		if os.path.exists(out_dir):
+		if os.path.exists(root_out_dir):
 			error_status = ("Output directory exists. Please change the name and restart the program.", getframeinfo(currentframe()))
 			break
 		
@@ -279,7 +279,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 	assert (mic_pattern != None)
 	assert (coords_pattern != None)
 	assert (ctf_params_src != None)
-	assert (out_dir != None)
+	assert (root_out_dir != None)
 	
 	# ------------------------------------------------------------------------------------
 	# Check warning conditions of options
@@ -722,11 +722,11 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		# Check the input dataset consistency and save the result to a text file, if necessary.
 		if options.check_consistency:
 			# Create output directory
-			assert (not os.path.exists(out_dir))
-			os.mkdir(out_dir)
+			assert (not os.path.exists(root_out_dir))
+			os.mkdir(root_out_dir)
 			
 			# Open the consistency check file
-			mic_consistency_check_info_path = os.path.join(out_dir, "mic_consistency_check_info_%s.txt"%(get_time_stamp_suffix()))
+			mic_consistency_check_info_path = os.path.join(root_out_dir, "mic_consistency_check_info_%s.txt"%(get_time_stamp_suffix()))
 			print(" ")
 			print("Generating consistency report of the provided dataset in %s..."%(mic_consistency_check_info_path))
 			mic_consistency_check_info_file = open(mic_consistency_check_info_path, "w")
@@ -854,8 +854,8 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 	n_global_coords_reject_out_of_boundary = 0
 	
 	# keep a copy of the root output directory where the final bdb will be created
-	root_out_dir = out_dir
 	unsliced_valid_serial_id_list = valid_mic_id_substr_list
+	mpi_proc_dir = root_out_dir
 	if RUNNING_UNDER_MPI:
 		mpi_barrier(MPI_COMM_WORLD)
 		# All mpi processes should know global entry directory and valid micrograph id substring list
@@ -866,8 +866,8 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		mic_start, mic_end = MPI_start_end(len(valid_mic_id_substr_list), n_mpi_procs, my_mpi_proc_id)
 		valid_mic_id_substr_list = valid_mic_id_substr_list[mic_start:mic_end]
 		
-		# generate subdirectories of out_dir, one for each process
-		out_dir = os.path.join(out_dir, "mpi_proc_%03d" % my_mpi_proc_id)
+		# generate subdirectories user root_out_dir, one for each process
+		mpi_proc_dir = os.path.join(root_out_dir, "mpi_proc_%03d" % my_mpi_proc_id)
 	
 	# Set up progress message and all necessary output directories
 	reject_out_of_boundary_dir = os.path.join(root_out_dir, "reject_out_of_boundary")
@@ -882,8 +882,8 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		# This might not be necessary since particle_img.write_image() will automatically create all directory tree necessary to save the file.
 		# However, it is side-effect of the function, so we will explicitly make root output directory here.
 		# 
-		if not os.path.exists(out_dir):
-			os.mkdir(out_dir)
+		if not os.path.exists(root_out_dir):
+			os.mkdir(root_out_dir)
 		assert not os.path.exists(reject_out_of_boundary_dir), "MRK_DEBUG"
 		os.mkdir(reject_out_of_boundary_dir)
 	
@@ -1031,7 +1031,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		# Generate the output file path of particle stack for this mpi process
 		# --------------------------------------------------------------------------------
 		mic_baseroot = mic_baseroot_pattern.replace("*", mic_id_substr)
-		local_stack_path  = "bdb:%s#" % out_dir + mic_baseroot + "_ptcls"
+		local_stack_path  = "bdb:%s#" % mpi_proc_dir + mic_baseroot + "_ptcls"
 		
 		# --------------------------------------------------------------------------------
 		# Prepare coordinates loop variables
