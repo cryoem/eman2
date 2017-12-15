@@ -379,6 +379,7 @@ def main():
 	parser.add_option("--aa",                   type="float",         default=.1,         help="low pass filter falloff" )
 	parser.add_option("--mask",                 type="string",        help="path for input mask file",  default = None)
 	parser.add_option("--output",               type="string",        help="output file name", default = "vol_postrefine_masked.hdf")
+	parser.add_option("--output_dir",           type="string",        help="postprocess directory name", default = "./")
 	parser.add_option("--pixel_size",           type="float",         help="pixel size of the data", default=0.0)
 	parser.add_option("--B_start",              type="float",         help="starting frequency in Angstrom for B-factor estimation", default=10.)
 	parser.add_option("--B_stop",               type="float",         help="cutoff frequency in Angstrom for B-factor estimation, cutoff is set to the frequency where fsc < 0.0", default=0.0)
@@ -941,10 +942,12 @@ def main():
 		print("Finished sxprocess.py  --binary_mask")
 
 	elif options.postprocess:
+		if options.output_dir !="./":
+			if not os.path.exists(options.output_dir): os.mkdir(options.output_dir)
 		from logger import Logger,BaseLogger_Files
-		if os.path.exists("log.txt"): os.system(" rm log.txt")
+		if os.path.exists(os.path.join(options.output_dir, "log.txt")): os.remove(os.path.join(options.output_dir, "log.txt"))
 		log_main=Logger(BaseLogger_Files())
-		log_main.prefix="./"
+		log_main.prefix = os.path.join(options.output_dir, "./")
 		print_msg ="--------------------------------------------"
 		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		log_main.add(print_msg)
@@ -1048,13 +1051,13 @@ def main():
 			log_main.add("The first input volume: %s"%args[0])
 			try: map1    = get_im(args[0])
 			except:
-				ERROR("Sphire postprocess fails to read the first map "+args[0], "--postprocess option for 3-D")
+				ERROR("Sphire postprocess fails to read the first map " + args[0], "--postprocess option for 3-D")
 				exit()
 			log_main.add("The second input volume: %s"%args[1])
 			
 			try: map2  = get_im(args[1])
 			except:
-				ERROR("Sphire postprocess fails to read the second map "+args[1], "--postprocess option for 3-D")
+				ERROR("Sphire postprocess fails to read the second map " + args[1], "--postprocess option for 3-D")
 				exit()
 			if (map2.get_xsize() != map1.get_xsize()) or (map2.get_ysize() != map1.get_ysize()) or (map2.get_zsize() != map1.get_zsize()):
 				ERROR(" Two input maps have different image size", "--postprocess option for 3-D", 1)
@@ -1125,10 +1128,8 @@ def main():
 			log_main.add("adjust FSC to the full dataset by: 2.*FSC/(FSC+1.)")
 			fsc_out = []
 			for ifreq in xrange(len(fsc_true[0])): fsc_out.append("%5d   %7.2f   %7.3f"%(ifreq, resolution_in_angstrom[ifreq],fsc_true[1][ifreq]))
-			write_text_file(fsc_out, "fsc.txt")
+			write_text_file(fsc_out, os.path.join(options.output_dir, "fsc.txt"))
 			
-			
-				
 			## Determine 05/143 resolution from corrected FSC, RH correction of FSC from masked volumes
 			resolution_FSC143_right  = 0.0
 			resolution_FSC143_left   = 0.0
@@ -1263,24 +1264,24 @@ def main():
 			else: log_main.add("low_pass filter is not applied to map! ")
 			
 			file_name, file_ext = os.path.splitext(options.output)
-			if file_ext !='': map1.write_image(file_name+"_nomask"+file_ext)
+			if file_ext !='': map1.write_image(os.path.join(options.output_dir, file_name+"_nomask"+file_ext))
 			else: map1.write_image(file_name+"_nomask.hdf")
 			log_main.add("The non-mask applied postprocessed map is saved as %s"%(file_name+"_nomask_"+file_ext))
 			if m: map1 *=m
 			else: log_main.add("The final map is not masked!")
 			
-			map1.write_image(options.output)
+			map1.write_image(os.path.join(options.output_dir, options.output))
 			log_main.add("---------- >>>Summary<<<------------")
 			log_main.add("Resolution 0.5/0.143 are %5.2f/%5.2f Angstrom "%(round((options.pixel_size/resolution_FSChalf),3), round((options.pixel_size/resolution_FSC143),3)))
 			if dip_at_fsc: log_main.add("There is a dip in your fsc in the region between 0.5 and 0.143, and you might consider ploting your fsc curve")
 			if options.B_enhance !=-1:  log_main.add( "B-factor is  %6.2f Angstrom^2  "%(round((-global_b),2)))
 			else:  log_main.add( "B-factor is not applied  ")
 			log_main.add("FSC curve is saved in fsc.txt ")
-			log_main.add("The Final volume is "+options.output)
+			log_main.add("The Final volume is " + options.output)
 			log_main.add("guinierlines in logscale are saved in guinierlines.txt")
 			if options.fl !=-1: log_main.add("Top hat low-pass filter is applied to cut off high frequencies from resolution 1./%5.2f Angstrom" %round(cutoff,2))
 			else: log_main.add("The final volume is not low_pass filtered. ")
-			write_text_file(outtext, "guinierlines.txt")
+			write_text_file(outtext, os.path.join(options.output_dir, "guinierlines.txt"))
 			log_main.add("-----------------------------------")
 				
 	elif options.window_stack:
