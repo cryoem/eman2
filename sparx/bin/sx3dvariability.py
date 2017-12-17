@@ -203,7 +203,9 @@ def main():
 		angsa = [None]*na
 		
 		for k in xrange(ks):
-			Qfile = os.path.join(options.output_dir, "Q%1d"%k)
+			#Qfile = "Q%1d"%k
+			if options.output_dir!="./": Qfile = os.path.join(options.output_dir,"Q%1d"%k)
+			else: Qfile = os.path.join(options.output_dir, "Q%1d"%k)
 			#delete_bdb("bdb:Q%1d"%k)
 			delete_bdb("bdb:"+Qfile)
 			#junk = cmdexecute("e2bdb.py  "+stack+"  --makevstack=bdb:Q%1d"%k)

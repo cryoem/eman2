@@ -1342,6 +1342,11 @@ def import_data(log_main):
 			msg = "input symmetry %s is altered to %s after reading refinement information! "%(Tracker["constants"]["sym"], Tracker["constants"]["symmetry"])
 			log_main.add(msg)
 			print(msg)
+	## checking settings!
+	number_of_groups =  Tracker["constants"]["total_stack"]//Tracker["constants"]["img_per_grp"]
+	minimum_grp_size = Tracker["constants"]["minimum_grp_size"]
+	if minimum_grp_size < Tracker["constants"]["total_stack"]//number_of_groups**2:
+		 ERROR("minimum_grp_size is too small", "sxsort3d_depth.py", 1,  Blockdata["myid"])
 	return
 	
 def create_masterdir(log_main):
@@ -3992,7 +3997,6 @@ def do_two_way_comparison_keep_all(partition_dir, log_main):
 		else:
 			msg ="rejected   %3d     %8d   %8d   %6.3f    %6.3f"%(index_of_any, len(any), current_MGR[index_of_any], score1, score2)
 			log_main.add(msg)
-			
 	accounted_list, new_index = merge_classes_into_partition_list(selected_clusters)
 	a = set(full_list)
 	b = set(accounted_list)
@@ -8023,8 +8027,8 @@ def main():
 		else: Tracker["constants"]["small_memory"] = False
 	
 		## additional check
-		Tracker["constants"]["hardmask"] = True
-		Tracker["applymask"]             = True
+		Tracker["constants"]["hardmask"]     = True
+		Tracker["applymask"]                 = True
 		Tracker["constants"]["refinement_method"] ="stack"
 		Tracker["constants"]["refinement_dir"]    = None
 		Tracker["paramstructure_dir"]             = None
@@ -8084,8 +8088,8 @@ def main():
 		igen         = 0
 		keepsorting  = 1
 		keepchecking = 1
-		my_pids      = os.path.join(Tracker["constants"]["masterdir"], "indexes.txt")
-		work_dir     = os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%igen)
+		my_pids   = os.path.join(Tracker["constants"]["masterdir"], "indexes.txt")
+		work_dir  = os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%igen)
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			if not os.path.exists(os.path.join(work_dir)): 
 				os.mkdir(work_dir)
