@@ -34,7 +34,6 @@ sxcompute_isac_avg.py exists only in MPI version
 	
     * The remaining parameters are optional.
     modelpw:: Reference 1D PW spectrum: A text file contains 1-D rotational averaged power spectrum of either PDB model or EM map sampled in the given pixel_size and in original image size. By default, use the analytic model (See Penczek Methods Enzymol 2010) (default none)
-    B_enhance:: Apply B-factor enhancement: Apply B-factor enhancement. (default False)
     B_start:: B-factor lower limit [A]: Lower limit for B-factor estimation. (default 10.0)
     Bfactor:: Use ad-hoc B-factor [A^2]: Skip the automatic estimation and use user-provided ad-hoc B-factor for the enhancement. (default 45.0)
     fl:: Low-pass filter frequency: Cutoff frequency of low-pass filter. =-1.0, do not use it;  ==1.0 low pass filter to initial ISAC resolution;  ==2 to resolution after local alignment; else using user provided cut_off   (default -1.0)

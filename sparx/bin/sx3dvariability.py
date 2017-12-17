@@ -181,7 +181,7 @@ def main():
 		instack = args[0]
 		sym = options.sym.lower()
 		if( sym == "c1" ):
-			ERROR("Thre is no need to symmetrize stack for C1 symmetry","sx3dvariability",1)
+			ERROR("There is no need to symmetrize stack for C1 symmetry","sx3dvariability",1)
 		
 		line =""
 		for a in sys.argv:
