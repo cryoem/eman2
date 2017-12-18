@@ -3827,7 +3827,9 @@ def swap_accounted_with_unaccounted_elements_mpi(accounted_file, unaccounted_fil
 					converted_assignment_list[jm].append(assignment_list[im][jm])
 		else: converted_assignment_list = 0
 		converted_assignment_list = wrap_mpi_bcast(converted_assignment_list, Blockdata["main_node"], MPI_COMM_WORLD)
-	else: converted_assignment_list = create_nrandom_lists(unaccounted_file, number_of_groups, 1)
+	else: 
+		converted_assignment_list = create_nrandom_lists(unaccounted_file, number_of_groups, 1)
+		converted_assignment_list = converted_assignment_list[0] # output row format requires
 	return converted_assignment_list
 		
 def patch_to_do_k_means_match_clusters_asg_new(ptp1, ptp2):
