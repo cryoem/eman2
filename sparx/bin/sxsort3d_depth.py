@@ -272,12 +272,24 @@ def depth_clustering(work_dir, depth_order, initial_id_file, params, previous_pa
 					msg ="------>>>comparison between nbox %d and nbox %d<<<------------"%(nbox, (nbox+1))
 					log_main.add(msg)
 					print(line, msg)
-					minimum_grp_size, maximum_grp_size, accounted_list, unaccounted_list = \
-					do_boxes_two_way_comparison(nbox, input_box_parti1, input_box_parti2, log_main)
+					minimum_grp_size, maximum_grp_size, accounted_list, unaccounted_list, bad_clustering = \
+					do_boxes_two_way_comparison_new(nbox, input_box_parti1, input_box_parti2, depth_order - depth, log_main)
 					partition_per_box_per_layer_list.append([accounted_list, unaccounted_list])
-			else: partition_per_box_per_layer_list = 0
+			else: 
+				partition_per_box_per_layer_list = 0
+				bad_clustering = 0
 			partition_per_box_per_layer_list = wrap_mpi_bcast(partition_per_box_per_layer_list, Blockdata["main_node"], MPI_COMM_WORLD)
+			bad_clustering = bcast_number_to_all(bad_clustering, Blockdata["main_node"], MPI_COMM_WORLD)
 			if(Blockdata["myid"] == Blockdata["main_node"]): mark_sorting_state(depth_dir, True, log_main)
+			if bad_clustering ==1:
+				msg = "No cluster is found and sorting stops"
+				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+				if(Blockdata["myid"] == Blockdata["main_node"]):
+					print(line, msg)
+					log_main.add(msg)
+				from mpi import mpi_finalize
+				mpi_finalize()
+				exit()
 		else:
 			if(Blockdata["myid"] == Blockdata["main_node"]):
 				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
@@ -3927,7 +3939,7 @@ def do_boxes_two_way_comparison(nbox, input_box_parti1, input_box_parti2, log_ma
 			log_main.add(msg)
 			print(line, msg)
 	if nclass == 0:
-		msg = "No cluster is found due to improper input parameters, and keep the old clusters"
+		msg = "No cluster is found. However sorting keeps the old results and continue sorting"
 		print(msg)
 		accounted_list, new_index = merge_classes_into_partition_list(list_stable)
 		a = set(full_list)
@@ -3944,6 +3956,122 @@ def do_boxes_two_way_comparison(nbox, input_box_parti1, input_box_parti2, log_ma
 		log_main.add(msg)
 		return minimum_group_size, maximum_group_size, new_index, unaccounted_list
 		
+def do_boxes_two_way_comparison_new(nbox, input_box_parti1, input_box_parti2, depth, log_main):
+	global Tracker, Blockdata
+	## used by single node only
+	bad_clustering =  0
+	ipair = 0
+	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	core1 = read_text_row(input_box_parti1)
+	ptp1, tmp1 = split_partition_into_ordered_clusters( core1)
+	core2 = read_text_row(input_box_parti2)
+	ptp2, tmp2 = split_partition_into_ordered_clusters( core2)
+	
+	try: assert(len(core1) ==len(core2))
+	except: ERROR("two partitions have non-equal length", "do_boxes_two_way_comparison", 1, 0)
+	full_list  = []
+	for a in core1: full_list.append(a[1])
+	full_list.sort()
+	total_data = len(full_list)
+	minimum_group_size = total_data
+	maximum_group_size = 0
+	newindeces, list_stable, nb_tot_objs, patch_elements = patch_to_do_k_means_match_clusters_asg_new(ptp1, ptp2)
+	ratio_unaccounted  = 100. - nb_tot_objs/float(total_data)*100.
+	ratio_accounted    = nb_tot_objs/float(total_data)*100.
+	new_list           = []
+	msg ="box%d   box%d  percentage accounted:  %f "%(nbox, nbox+1, ratio_accounted)
+	Tracker["current_iter_ratio"] = ratio_accounted
+	log_main.add(msg)
+	print(line, msg)
+	score_list = [ ]
+	current_random_group_size = len(core1)//len(list_stable)**2
+	nclass = 0
+	msg    = "group number   group size   ratio of trial1   ratio of trial2 "
+	print(msg)
+	log_main.add(msg)
+	for index_of_any in xrange(len(list_stable)):
+		any = list_stable[index_of_any]
+		any.tolist()
+		any.sort()
+		score1 = float(len(any))*100./float(len(ptp1[newindeces[index_of_any][0]]))
+		score2 = float(len(any))*100./float(len(ptp2[newindeces[index_of_any][1]]))
+		if len(any) >= Tracker["constants"]["minimum_grp_size"]:
+			score_list.append([score1, score2])
+			minimum_group_size = min(minimum_group_size, len(any))
+			maximum_group_size = max(maximum_group_size, len(any))
+			new_list.append(any)
+			nclass +=1
+			msg ="   %3d     %8d    %6.3f    %6.3f"%(nclass, len(any), score1, score2)
+			log_main.add(msg)
+			print(line, msg)
+		else:
+			msg ="group %d with size %d is rejected and sent back into unaccounted ones"%(index_of_any, len(any))
+			log_main.add(msg)
+			print(line, msg)
+	if nclass == 0:
+		### redo two way comparison
+		if depth >1:
+			msg = "Warning: no cluster is found. However sorting keeps the old results and continue sorting"
+			log_main.add(msg)
+			print(msg)
+			ptp1, ucluster1 = split_partition_into_ordered_clusters_split_ucluster(core1)
+			ptp2, ucluster2 = split_partition_into_ordered_clusters_split_ucluster(core2)
+			newindeces, list_stable, nb_tot_objs, patch_elements = patch_to_do_k_means_match_clusters_asg_new(ptp1, ptp2)
+			accounted_list, new_index = merge_classes_into_partition_list(list_stable)
+			a = set(full_list)
+			b = set(accounted_list)
+			unaccounted_list = sorted(list(a.difference(b)))
+			return minimum_group_size, maximum_group_size, new_index, unaccounted_list, bad_clustering
+		else:
+			bad_clustering = 1
+			msg = "Fatal error: No cluster is found. You might decrease minimum_grp_size or adjust other parameters, and redo sorting"
+			log_main.add(msg)
+			print(msg)
+			return minimum_group_size, maximum_group_size, [ ], full_list, bad_clustering
+	else:
+		accounted_list, new_index = merge_classes_into_partition_list(new_list)
+		a = set(full_list)
+		b = set(accounted_list)
+		unaccounted_list = sorted(list(a.difference(b)))
+		msg ="minimum group size: %d maximum group size: %d"%(minimum_group_size, maximum_group_size)
+		print(line, msg)
+		log_main.add(msg)
+		return minimum_group_size, maximum_group_size, new_index, unaccounted_list, bad_clustering
+		
+def split_partition_into_ordered_clusters_split_ucluster(partition):
+	# split groupids from indexes of particles
+	# reindex groups
+	ucluster   = []
+	clusters   = []
+	cluster_id = []
+	for im in xrange(len(partition)):
+		if  partition[im][0] not in cluster_id:cluster_id.append(partition[im][0])
+	####
+	cluster_dict      = {}
+	group_change_dict = {}
+	new_group_id      = 0
+	if len(cluster_id)>1: cluster_id.sort()
+	for icluster in xrange(len(cluster_id)):
+		one_cluster = []
+		for a in partition:
+			if a[0]== icluster: 
+				one_cluster.append(a[1])
+				cluster_dict[a[1]] = icluster
+		one_cluster.sort()
+		if icluster<len(cluster_id)-1: clusters.append(one_cluster)
+		else:  ucluster.append(one_cluster)
+		group_change_dict[icluster] = new_group_id
+		new_group_id +=1
+	# create a partition list:
+	"""
+	new_partition = [] 
+	for iptl in xrange(len(partition)):
+		gid = group_change_dict[cluster_dict[partition[iptl][1]]]
+		if gid >-1: new_partition.append([group_change_dict[cluster_dict[partition[iptl][1]]], partition[iptl][1]])
+	return clusters, new_partition
+	"""
+	return clusters, ucluster[0]
+
 def do_two_way_comparison_keep_all(partition_dir, log_main):
 	global Tracker, Blockdata
 	## for single node only
@@ -7750,9 +7878,8 @@ def main():
 		## additional check
 		Tracker["constants"]["hardmask"] = True
 		Tracker["applymask"]             = True
-		Tracker["constants"]["refinement_method"] ="SPARX"
-		if Tracker["constants"]["nsmear"] ==-1: Tracker["nosmearing"] = False
-		else: Tracker["nosmearing"] = True
+		Tracker["constants"]["refinement_method"] ="SPARX" 
+		Tracker["nosmearing"] = False
 			
 		checking_flag = 0 # reset
 		
