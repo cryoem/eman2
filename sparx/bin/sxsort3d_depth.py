@@ -3842,9 +3842,10 @@ def swap_accounted_with_unaccounted_elements_mpi(accounted_file, unaccounted_fil
 	else: 
 		assignment_list = create_nrandom_lists(unaccounted_file, number_of_groups, 1)
 		assignment_list = assignment_list[0]
-		converted_assignment_list = []
-		for im in xrange(len(assignment_list[0])):
-			converted_assignment_list.append([assignment_list[0][im], assignment_list[1][im]])
+		converted_assignment_list = [[],[]]
+		for jm in xrange(2):
+			for im in xrange(len(assignment_list)):
+				converted_assignment_list[jm].append(assignment_list[im][jm])
 	return converted_assignment_list
 		
 def patch_to_do_k_means_match_clusters_asg_new(ptp1, ptp2):
