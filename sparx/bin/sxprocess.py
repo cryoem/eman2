@@ -330,8 +330,8 @@ def main():
 	parser.add_option("--initial",				type="int", 		default=-1, help="Specifies which image will be used as an initial seed to form the chain. (default = 0, means the first image)")
 	parser.add_option("--circular", 			action="store_true", help="Select circular ordering (fisr image has to be similar to the last", default=False)
 	parser.add_option("--radius", 				type="int", 		default=-1, help="Radius of a circular mask for similarity based ordering")
+	parser.add_option("--ratio",                            type="float",           default=1.0, help="The ratio of new to old image size (if <1 the pixel size will increase and image size decrease, if>1, the other way round")
 	parser.add_option("--changesize", 			action="store_true", help="resample (decimate or interpolate up) images (2D or 3D) in a stack to change the pixel size.", default=False)
-	parser.add_option("--ratio", 				type="float", 		default=1.0, help="The ratio of new to old image size (if <1 the pixel size will increase and image size decrease, if>1, the other way round")
 	parser.add_option("--pw", 					action="store_true", help="compute average power spectrum of a stack of 2-D images with optional padding (option wn) with zeroes", default=False)
 	parser.add_option("--wn", 					type="int", 		default=-1, help="Size of window to use (should be larger/equal than particle box size, default padding to max(nx,ny))")
 	parser.add_option("--phase_flip", 			action="store_true", help="Phase flip the input stack", default=False)
@@ -1091,8 +1091,149 @@ def main():
 			resolution_FSC143   = 0.5 # for single volume, this is the default resolution
 			resolution_FSChalf  = 0.5
 
-			if m: fsc_true = fsc(map1*m, map2*m, 1)
-			else: fsc_true = fsc(map1, map2, 1) 
+			def calculate_fsc(fsc, criterion):
+				"""
+				Calculate the fsc for the specified criterion
+				"""
+				resolution_left = fsc[0][len(fsc[1])-1]
+				idx_crit_left = len(fsc[1])-1
+				for ifreq in xrange(1, len(fsc[1])):
+					if fsc[1][ifreq] < criterion:
+						resolution_left = fsc[0][ifreq-1]
+						idx_crit_left = ifreq - 1
+						break
+				resolution_right = fsc[0][1]
+				idx_crit_right = 1
+				for ifreq in reversed(xrange(1, len(fsc[1]))):
+					if fsc[1][ifreq] >= 0.143:
+						resolution_right = fsc[0][ifreq]
+						idx_crit_right = ifreq
+						break
+
+				return resolution_left, resolution_right, idx_crit_left, idx_crit_right
+
+			def scale_fsc(x):
+				"""
+				Scale funtion to adjust the FSC to the full dataset
+				"""
+				return 2. * x / (1 + x)
+
+			def create_fsc_txt(output_dir, fsc, resolution, name):
+				"""
+				Create a text file based on the fsc
+				"""
+				fsc_out = []
+				for ifreq, value in enumerate(fsc[1]):
+					fsc_out.append("%5d   %7.2f   %7.3f"%(
+						ifreq,
+						resolution[ifreq],
+						value
+						))
+				write_text_file(
+					fsc_out,
+					os.path.join(
+						output_dir,
+						'{0}.txt'.format(name)
+						)
+					)
+
+			def adjust_zeros(value):
+				"""
+				Adjust zero values to 0.0001 to avoid DivisionByZero errors
+				"""
+				assert isinstance(value, (float, int))
+				if value == 0.0:
+					value = 0.0001
+				else:
+					pass
+				return value
+
+			def freq_to_angstrom(values, pixel_size):
+				"""
+				Convert spatial frequency to angstrom
+				"""
+				if isinstance(values, list):
+					pass
+				else:
+					values = [values]
+				adjust_values = [adjust_zeros(entry) for entry in values]
+				spatial = [1/entry for entry in adjust_values]
+				angstrom = [pixel_size * entry for entry in spatial]
+				return angstrom
+
+			# Plot FSC curves and write output fsc files
+			import matplotlib
+			matplotlib.use('Agg')
+			import matplotlib.pylab as plt
+			title = []
+
+			# Output curves lists
+			plot_curves = []
+			plot_names = []
+			plot_title = []
+
+			# Output curves
+			fsc_true = fsc(map1, map2, 1)
+			fsc_true[1][0] = 1.0  # always reset fsc of zero frequency as 1.0
+			plot_curves.append(fsc_true)
+			plot_names.append('FSC halves')
+			# map fsc obtained from two halves to full maps
+			plot_curves.append([fsc_true[0], map(scale_fsc, fsc_true[1])])
+			plot_names.append('FSC full')
+			if m is not None:
+				fsc_mask = fsc(map1*m, map2*m, 1)
+				fsc_mask[1][0] = 1.0  # always reset fsc of zero frequency as 1.0
+				plot_curves.append(fsc_mask)
+				plot_names.append('FSC masked halves')
+				# map fsc obtained from masked two halves to full maps
+				plot_curves.append([fsc_mask[0], map(scale_fsc, fsc_mask[1])])
+				plot_names.append('FSC masked full')
+
+			resolution_in_angstrom = freq_to_angstrom(pixel_size=options.pixel_size, values=fsc_true[0])
+
+			# Create plot and write output file
+			for fsc, name in zip(plot_curves, plot_names):
+				fsc[1][0] = 1
+				plt.plot(fsc[0], fsc[1], label=name)
+				title.append('{0:18s}:  0.5: {1}$\AA$  |  0.143: {2}$\AA$'.format(
+					name,
+					round(
+						freq_to_angstrom(
+							pixel_size=options.pixel_size,
+							values=calculate_fsc(fsc, criterion=0.5)[0]
+							)[0],
+						1
+						),
+					round(
+						freq_to_angstrom(
+							pixel_size=options.pixel_size,
+							values=calculate_fsc(fsc, criterion=0.143)[1]
+							)[0],
+						1
+						),
+					))
+				create_fsc_txt(
+					output_dir=options.output_dir,
+					fsc=fsc,
+					resolution=resolution_in_angstrom,
+					name=name.replace(' ', '_').lower()
+					)
+
+			# Plot related settings
+			plt.legend(loc='best')
+			plt.axhline(0.143, 0, 1, color='k', alpha=0.3)
+			plt.axhline(0.5, 0, 1, color='k', alpha=0.3)
+			title.append(' ')
+			plt.title('\n'.join(title), family='monospace')
+			plt.xlabel('Spatial frequency / $\AA^{-1}$')
+			plt.ylabel('FSC')
+			plt.grid()
+			plt.tight_layout()
+			plt.savefig(os.path.join(options.output_dir, "fsc.png"))
+			plt.clf()
+
+			if m is not None:
+				fsc_true = fsc_mask
 			""" 
 				# we abandon randomize phase strategy
 				frc_without_mask = fsc(map1, map2, 1)
@@ -1117,25 +1258,15 @@ def main():
 						else: fsc_true[1][i]=(fsct-fscn)/(1.-fscn)
 				else:
 			"""
-			resolution_in_angstrom = [None]*len(fsc_true[0])
-			for ifreq in xrange(len(fsc_true[0])):
-				if fsc_true[0][ifreq] !=0.0: resolution_in_angstrom [ifreq] = options.pixel_size/fsc_true[0][ifreq]
-				else: resolution_in_angstrom [ifreq] = 9999.0
-					
-			fsc_true[1][0] =1.0  # always reset fsc of zero frequency as 1.0
-			# map fsc obtained from two halves to full maps
-			for ifreq in xrange(len(fsc_true[0])): fsc_true[1][ifreq] = fsc_true[1][ifreq]*2./(1.+fsc_true[1][ifreq])
 			log_main.add("adjust FSC to the full dataset by: 2.*FSC/(FSC+1.)")
-			fsc_out = []
-			for ifreq in xrange(len(fsc_true[0])): fsc_out.append("%5d   %7.2f   %7.3f"%(ifreq, resolution_in_angstrom[ifreq],fsc_true[1][ifreq]))
-			write_text_file(fsc_out, os.path.join(options.output_dir, "fsc.txt"))
-			
+			fsc_true[1] = map(scale_fsc, fsc_true[1])
+
 			## Determine 05/143 resolution from corrected FSC, RH correction of FSC from masked volumes
 			resolution_FSC143_right  = 0.0
 			resolution_FSC143_left   = 0.0
 			dip_at_fsc = False
 			nfreq0     = 1
-			
+
 			for ifreq in xrange(1, len(fsc_true[1])):
 				if fsc_true[1][ifreq] < 0.0:
 					nfreq0  = ifreq - 1
@@ -1276,7 +1407,7 @@ def main():
 			if dip_at_fsc: log_main.add("There is a dip in your fsc in the region between 0.5 and 0.143, and you might consider ploting your fsc curve")
 			if options.B_enhance !=-1:  log_main.add( "B-factor is  %6.2f Angstrom^2  "%(round((-global_b),2)))
 			else:  log_main.add( "B-factor is not applied  ")
-			log_main.add("FSC curve is saved in fsc.txt ")
+			log_main.add("FSC curves are saved in {0}.txt ".format('.txt, '.join(plot_names).replace(' ', '_').lower()))
 			log_main.add("The Final volume is " + options.output)
 			log_main.add("guinierlines in logscale are saved in guinierlines.txt")
 			if options.fl !=-1: log_main.add("Top hat low-pass filter is applied to cut off high frequencies from resolution 1./%5.2f Angstrom" %round(cutoff,2))
