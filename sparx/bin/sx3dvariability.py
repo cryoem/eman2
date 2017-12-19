@@ -308,7 +308,10 @@ def main():
 			
 		if myid == main_node:
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			print_begin_msg("sx3dvariability")
+			#print_begin_msg("sx3dvariability")
+			msg = "sx3dvariability"
+			log_main.add(msg)
+			print(line, msg)
 			msg = ("%-70s:  %s\n"%("Input stack", stack))
 			log_main.add(msg)
 			print(line, msg)
