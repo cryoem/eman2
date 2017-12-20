@@ -65,10 +65,8 @@ def image_decimate_window_xform_ctf(img, decimation = 0.5, window_size = 0, CTF 
 		frequency_low     = 0.5*decimation-0.02
 		if frequency_low <= 0 : ERROR("Butterworth passband frequency is too low","image_decimation",1)
 		frequency_high    = min(0.5*decimation + 0.02, 0.499)
-		if window_size >0: 
-			img = Util.window(img, window_size, window_size, 1, 0, 0, 0)
-			e = filt_btwl(img, frequency_low, frequency_high)
-			decimated_image = Util.decimate(e, int(1./decimation), int(1./decimation), 1)
+		if window_size >0:img = Util.window(img, window_size, window_size, 1, 0, 0, 0)
+		decimated_image = Util.decimate(filt_btwl(img, frequency_low, frequency_high), int(1./decimation), int(1./decimation), 1)
 	else: #increase image size
 		if window_size ==0:
 			new_nx = int(nx*decimation+0.5)
