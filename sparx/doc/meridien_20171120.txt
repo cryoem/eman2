@@ -1,41 +1,41 @@
-ctref_oldrefdirctref_oldrefdirctref_oldrefdirctref_subsetctref_subsetctref_subsetctrefctref= Name =
-sxmeridien - 3D Refinement: Perform 3D structure refinement.
+= Name =
+sxmeridien_20171120 - 3D Refinement: OLD VERSION!!! Perform 3D structure refinement. This command is planed to removed in near future. It is kept here for the comparison evaluation of performances between continuation refinement from sorting results of this version and local refinement of new version.
 
 
 = Usage =
 
 ''usage in command line''
 
-sxmeridien.py  stack  output_directory  initial_volume  --radius=particle_radius  --mask3D=MASK3D  --symmetry=SYMMETRY  --inires=INIRES  --delta=DELTA  --do_final=DO_FINAL  --memory_per_node=MEMORY_PER_NODE  --ctref  --ctref_subset=selection_file_path  --ctref_oldrefdir=refine_dir_path  --ctref_iter=restarting_iteration  --ctref_initvol=restarting_initial_volume  --ctref_orgstack=stack_for_continuation  --ctref_smearing=smear_usage  --ctref_an=angular_neighborhood_for_continuation  --xr=XR  --ts=TS  --skip_prealignment  --initialshifts  --center_method=CENTER_METHOD  --target_radius=TARGET_RADIUS  --shake=SHAKE  --small_memory  --ref_a=REF_A  --ccfpercentage=CCFPERCENTAGE  --nonorm  --function=user_function
+sxmeridien_20171120.py  stack  output_directory  initial_volume  --radius=particle_radius  --mask3D=MASK3D  --symmetry=SYMMETRY  --inires=INIRES  --delta=DELTA  --do_final=DO_FINAL  --memory_per_node=MEMORY_PER_NODE  --ctref  --ctref_subset=selection_file_path  --ctref_oldrefdir=refine_dir_path  --ctref_iter=restarting_iteration  --ctref_initvol=restarting_initial_volume  --ctref_orgstack=stack_for_continuation  --ctref_smearing=smear_usage  --ctref_an=angular_neighborhood_for_continuation  --xr=XR  --ts=TS  --skip_prealignment  --initialshifts  --center_method=CENTER_METHOD  --target_radius=TARGET_RADIUS  --shake=SHAKE  --small_memory  --ref_a=REF_A  --ccfpercentage=CCFPERCENTAGE  --nonorm  --function=user_function
 
 
 === Typical usage ===
 
-sxmeridien exists only in MPI version.
+sxmeridien_20171120 exists only in MPI version.
 
     1. Fresh run::
 
-    ''' mpirun  -np  88  sxmeridien.py  bdb:data  meridien_outdir  ref3d.hdf  --mask3D=mask3d.hdf  --radius=145  --symmetry=c5 ''' <<BR>><<BR>>
+    ''' mpirun  -np  88  sxmeridien_20171120.py  bdb:data  meridien_outdir  ref3d.hdf  --mask3D=mask3d.hdf  --radius=145  --symmetry=c5 ''' <<BR>><<BR>>
 
     2. Continue run/simple restart::
 
-    ''' mpirun  -np  88  sxmeridien.py  meridien_outdir ''' <<BR>><<BR>>
+    ''' mpirun  -np  88  sxmeridien_20171120.py  meridien_outdir ''' <<BR>><<BR>>
 
     3. Continue run/restart with altered parameters::
 
-    ''' mpirun  -np  88  sxmeridien.py  meridien_outdir  —-raduis=140 ''' <<BR>><<BR>>
+    ''' mpirun  -np  88  sxmeridien_20171120.py  meridien_outdir  —-raduis=140 ''' <<BR>><<BR>>
 
     4. Do only final reconstruction at a specific iteration::
 
-    ''' mpirun  -np  88  sxmeridien.py  meridien_outdir  —-do_final=23 ''' <<BR>><<BR>>
+    ''' mpirun  -np  88  sxmeridien_20171120.py  meridien_outdir  —-do_final=23 ''' <<BR>><<BR>>
 
     5. Do only final reconstruction using the iteration which achieved the best resolution::
 
-    ''' mpirun  -np  88  sxmeridien.py  meridien_outdir  —-do_final=0 ''' <<BR>><<BR>>
+    ''' mpirun  -np  88  sxmeridien_20171120.py  meridien_outdir  —-do_final=0 ''' <<BR>><<BR>>
 
     6. Continuation refinement from sorting results:: Please use --ctref option, then specify the directory where you wish to continue the refinement to --ctref_oldrefdir option and a subset of data to —-ctref_subset option. The command will load the refinement information from the directory and continue refinement. Optionally, you can specify the iteration number for continuing refinement using -—ctref_iter option, which is not necessarily be the same iteration where you used for the 3D sorting. Also, one can modify refinement parameters of the selected iteration through the other options. 
 
-    ''' mpirun  -np  88  sxmeridien.py refine_subset3 --ctref  --ctref_oldrefdir=meridien_outdir  --ctref_iter=20  --ctref_subset=Clusters3.txt ''' <<BR>><<BR>>
+    ''' mpirun  -np  88  sxmeridien_20171120.py refine_subset3 --ctref  --ctref_oldrefdir=meridien_outdir  --ctref_iter=20  --ctref_subset=Clusters3.txt ''' <<BR>><<BR>>
 
 
 == Input ==
@@ -80,17 +80,31 @@ sxmeridien exists only in MPI version.
 
 = Description =
 
+
+= Method =
+
+
+= Reference =
+
+
 = Author / Maintainer =
 Pawel A. Penczek
 
+
 = Keywords =
-    category 1:: APPLICATIONS
+category 1:: APPLICATIONS
+
 
 = Files =
-sxmeridien.py
+sparx/bin/sxmeridien_20171120.py
+
 
 = See also =
 References to relevant other routines.
 
+
 = Maturity =
- alpha:: in development
+Beta:: Under evaluation and testing. Please let us know if there are any bugs.
+
+
+=== Bugs ===
