@@ -30,7 +30,7 @@ sxcompute_isac_avg.py exists only in MPI version
     isac_dir:: Isac output directory: Path to ISAC run output directory. This is input directory for this command. (default required string)
     radius:: Particle radius [Pixels]: There is no default radius. (default -1)
     noctf:: CTF correction: Indicate if full CTF correction should be applied or not. Always use the CTF correction for cryo data, but not for negative stained data. By default, do full CTF correction. (default False question reversed in GUI) 
-    skip_local_alignment:: apply or skip local alignment
+    skip_local_alignment:: Local alignment: Indicate if local alignment should be applied or not. (default False question reversed in GUI)
 
     * The remaining parameters are optional.
     modelpw:: Reference 1D PW spectrum: A text file contains 1-D rotational averaged power spectrum of either PDB model or EM map sampled in the given pixel_size and in original image size. By default, use the analytic model (See Penczek Methods Enzymol 2010) (default none)
