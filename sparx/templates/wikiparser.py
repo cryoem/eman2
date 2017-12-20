@@ -1325,6 +1325,19 @@ def create_sxcmd_subconfig_meridien_local_stack():
 
 	return sxcmd_subconfig
 
+def create_sxcmd_subconfig_meridien_final():
+	token_edit_list = []
+	token_edit = SXcmd_token(); token_edit.initialize_edit("do_final"); token_edit.is_required = True; token_edit.is_locked = False; token_edit.default = -1; token_edit.restore = -1; token_edit_list.append(token_edit)
+	
+	token_edit = SXcmd_token(); token_edit.initialize_edit("output_directory"); token_edit.label = "Meridien Fresh Run Directory"; token_edit.help = "This directory must exist. The results will be written here."; token_edit.is_required = True; token_edit.type = "output_continue"; token_edit_list.append(token_edit)
+	
+	token_edit = SXcmd_token(); token_edit.initialize_edit("memory_per_node"); token_edit_list.append(token_edit)
+
+	sxsubcmd_mpi_support = True
+	sxcmd_subconfig = SXsubcmd_config("Final 3D reconstruction only", "Do only final 3D reconstruction using a fully finished iteration of meridien fresh run.", token_edit_list, sxsubcmd_mpi_support)
+
+	return sxcmd_subconfig
+
 def create_sxcmd_subconfig_refine3d_angular_distribution():
 	token_edit_list = []
 	token_edit = SXcmd_token(); token_edit.initialize_edit("angular_distribution"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
@@ -1586,6 +1599,7 @@ def main():
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_refine3d_postprocess()))
 
 	sxcmd_role = "sxr_alt"
+	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_final()))
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_local_iteration()))
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_local_stack()))
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_continuation()))
@@ -1609,8 +1623,9 @@ def main():
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_local_stack()))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_refine3d_postprocess()))
 
-###	sxcmd_role = "sxr_alt"
+	sxcmd_role = "sxr_alt"
 ###	sxcmd_config_list.append(SXcmd_config("../doc/sort3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_sort3d()))
+	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_final()))
 
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
