@@ -146,6 +146,7 @@ def construct_keyword_dict():
 	keyword_dict["input_coordinates_pattern"]     = SXkeyword_map(2, "parameters")     # input_coordinates_pattern
 	keyword_dict["input_ctf_params_source"]       = SXkeyword_map(2, "parameters")     # input_ctf_params_source
 	keyword_dict["--importctf"]                   = SXkeyword_map(2, "parameters")     # --importctf=IMPORTCTF
+	keyword_dict["--modelpw"]                     = SXkeyword_map(2, "parameters")     # --modelpw=pw2_model_txt
 	keyword_dict["--pwreference"]                 = SXkeyword_map(2, "parameters")     # --pwreference=pwreference
 	keyword_dict["--PWadjustment"]                = SXkeyword_map(2, "parameters")     # --PWadjustment=PWadjustment, --PWadjustment=ref_pwspectrum1d_file 
 	keyword_dict["--mtf"]                         = SXkeyword_map(2, "parameters")     # --mtf=MTF_FILE_NAME
@@ -215,14 +216,10 @@ def handle_exceptional_cases(sxcmd):
 		assert(sxcmd.token_dict["radius"].key_base == "radius")
 		assert(sxcmd.token_dict["radius"].type == "radius")
 		sxcmd.token_dict["radius"].type = "int"
-###
-###	# NOTE: Toshio Moriya 2017/12/18
-###	# Moved this exception handling to create_sxcmd_subconfig_*() functions
-###	# 
-###	elif sxcmd.name == "sxmeridien":
-###		assert(sxcmd.token_dict["output_directory"].key_base == "output_directory")
-###		assert(sxcmd.token_dict["output_directory"].type == "output")
-###		sxcmd.token_dict["output_directory"].type = "output_continue"
+	elif sxcmd.name == "sxmeridien_20171120":
+		assert(sxcmd.token_dict["output_directory"].key_base == "output_directory")
+		assert(sxcmd.token_dict["output_directory"].type == "output")
+		sxcmd.token_dict["output_directory"].type = "output_continue"
 	elif sxcmd.name == "sxrsort3d":
 		# 
 		# NOTE: Toshio Moriya 2017/11/15
@@ -1061,6 +1058,77 @@ def create_sxcmd_subconfig_window_makevstack():
 ### 
 ### 	return sxcmd_subconfig
 
+def add_sxcmd_subconfig_isac_beautifier_shared(token_edit_list):
+	token_edit = SXcmd_token(); token_edit.initialize_edit("stack"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("isac_dir"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("output_dir"); token_edit_list.append(token_edit)
+	
+	token_edit = SXcmd_token(); token_edit.initialize_edit("pixel_size"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("radius"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("noctf"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("skip_local_alignment"); token_edit_list.append(token_edit)
+
+	token_edit = SXcmd_token(); token_edit.initialize_edit("fl"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("xr"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("ts"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("fh"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("maxit"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("navg"); token_edit_list.append(token_edit)
+
+def create_sxcmd_subconfig_isac_beautifier_to_bfactor():
+	token_edit_list = []
+	token_edit = SXcmd_token(); token_edit.initialize_edit("B_enhance"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
+	
+	token_edit = SXcmd_token(); token_edit.initialize_edit("B_start"); token_edit.group = "main"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("Bfactor"); token_edit.group = "main"; token_edit_list.append(token_edit)
+
+	add_sxcmd_subconfig_isac_beautifier_shared(token_edit_list)
+
+	sxsubcmd_mpi_support = True
+	is_modeless = True
+	sxcmd_subconfig = SXsubcmd_config("Beautifier - Adjust to B-factor", "Beautify the ISAC 2D clustering result with the original pixel size. In addition, adjust the power spectrum of resultant average images using B-factor to enhance averages.", token_edit_list, sxsubcmd_mpi_support)
+
+	return sxcmd_subconfig
+
+
+def create_sxcmd_subconfig_isac_beautifier_to_rot_avg():
+	token_edit_list = []
+	token_edit = SXcmd_token(); token_edit.initialize_edit("adjust_to_given_pw2"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
+	
+	token_edit = SXcmd_token(); token_edit.initialize_edit("modelpw"); token_edit.group = "main"; token_edit_list.append(token_edit)
+
+	add_sxcmd_subconfig_isac_beautifier_shared(token_edit_list)
+
+	sxsubcmd_mpi_support = True
+	is_modeless = True
+	sxcmd_subconfig = SXsubcmd_config("Beautifier - Adjust to Rot. Avgs.", "Beautify the ISAC 2D clustering result with the original pixel size. In addition, adjust the power spectrum of resultant average images to the user-provided 1-D reference power spectrum.", token_edit_list, sxsubcmd_mpi_support)
+
+	return sxcmd_subconfig
+
+def create_sxcmd_subconfig_isac_beautifier_to_model():
+	token_edit_list = []
+	token_edit = SXcmd_token(); token_edit.initialize_edit("adjust_to_analytic_model"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
+	
+	add_sxcmd_subconfig_isac_beautifier_shared(token_edit_list)
+
+	sxsubcmd_mpi_support = True
+	is_modeless = True
+	sxcmd_subconfig = SXsubcmd_config("Beautifier - Adjust to Model", "Beautify the ISAC 2D clustering result with the original pixel size. In addition, adjust the power spectrum of resultant average images to an analytical model.", token_edit_list, sxsubcmd_mpi_support)
+
+	return sxcmd_subconfig
+
+def create_sxcmd_subconfig_isac_beautifier_no_adjust():
+	token_edit_list = []
+	token_edit = SXcmd_token(); token_edit.initialize_edit("no_adjustment"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
+	
+	add_sxcmd_subconfig_isac_beautifier_shared(token_edit_list)
+
+	sxsubcmd_mpi_support = True
+	is_modeless = True
+	sxcmd_subconfig = SXsubcmd_config("Beautifier - No Adjust", "Beautify the ISAC 2D clustering result with the original pixel size, without adjusting the power spectrum of resultant average images.", token_edit_list, sxsubcmd_mpi_support)
+
+	return sxcmd_subconfig
+
 def create_sxcmd_subconfig_viper_changesize():
 	token_edit_list = []
 	token_edit = SXcmd_token(); token_edit.initialize_edit("changesize"); token_edit.label = "Change size of VIPER model"; token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
@@ -1159,107 +1227,45 @@ def create_sxcmd_subconfig_variability_preprocess():
 
 	return sxcmd_subconfig
 
-def create_sxcmd_subconfig_meridien_fresh():
+def create_sxcmd_subconfig_meridien_20171120_local():
 	token_edit_list = []
-	token_edit = SXcmd_token(); token_edit.initialize_edit("stack"); token_edit.is_required = True; token_edit_list.append(token_edit)
+	# token_edit = SXcmd_token(); token_edit.initialize_edit("continue_from_subset"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
+	# token_edit = SXcmd_token(); token_edit.initialize_edit("ctrefromsort3d"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("ctref"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("output_directory"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("initial_volume"); token_edit.is_required = True; token_edit_list.append(token_edit)
-	
-	token_edit = SXcmd_token(); token_edit.initialize_edit("radius"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("mask3D"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("symmetry"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("inires"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("delta"); token_edit_list.append(token_edit)
+	# token_edit = SXcmd_token(); token_edit.initialize_edit("subset"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("ctref_subset"); token_edit_list.append(token_edit)
+	# token_edit = SXcmd_token(); token_edit.initialize_edit("oldrefdir"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("ctref_oldrefdir"); token_edit_list.append(token_edit)
+	# token_edit = SXcmd_token(); token_edit.initialize_edit("continue_from_iter"); token_edit_list.append(token_edit)
+	# token_edit = SXcmd_token(); token_edit.initialize_edit("ctrefromiter"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("ctref_iter"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("ctref_initvol"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("ctref_orgstack"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("ctref_smearing"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("ctref_an"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("memory_per_node"); token_edit_list.append(token_edit)
-
-	token_edit = SXcmd_token(); token_edit.initialize_edit("xr"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("ts"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("an"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("skip_prealignment"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("initialshifts"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("center_method"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("target_radius"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("shake"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("small_memory"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("ccfpercentage"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("nonorm"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("function"); token_edit_list.append(token_edit)
+	
+	token_edit = SXcmd_token(); token_edit.initialize_edit("radius"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("mask3D"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("symmetry"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("inires"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("delta"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("xr"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("ts"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
+###	token_edit = SXcmd_token(); token_edit.initialize_edit("center_method"); token_edit.group = "advanced"; token_edit_list.append(token_edit) # 207/03/10 Toshio Moriya: For now disable 2D alignment related options
+###	token_edit = SXcmd_token(); token_edit.initialize_edit("target_radius"); token_edit.group = "advanced"; token_edit_list.append(token_edit) # 207/03/10 Toshio Moriya: For now disable 2D alignment related options
+	token_edit = SXcmd_token(); token_edit.initialize_edit("shake"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("small_memory"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("ref_a"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("ccfpercentage"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("nonorm"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
+###	token_edit = SXcmd_token(); token_edit.initialize_edit("function"); token_edit.group = "advanced"; token_edit_list.append(token_edit) # 207/03/10 Toshio Moriya: Not included for continue run at this point
 	
 	sxsubcmd_mpi_support = True
-	is_modeless = True
-	sxcmd_subconfig = SXsubcmd_config("3D Refinement", "Perform 3D structure refinement with standard default run or fresh run, which starts from exhaustive searches using initial reference volume.", token_edit_list, sxsubcmd_mpi_support, is_modeless)
+	sxcmd_subconfig = SXsubcmd_config("Subset Refinement (OLD)", None, token_edit_list, sxsubcmd_mpi_support)
 
-	return sxcmd_subconfig
-
-def create_sxcmd_subconfig_meridien_continuation():
-	token_edit_list = []
-	token_edit = SXcmd_token(); token_edit.initialize_edit("output_directory"); token_edit.label = "Meridien Fresh Run Directory"; token_edit.help = "This directory must exist. The results will be written here."; token_edit.is_required = True; token_edit.type = "output_continue"; token_edit_list.append(token_edit)
-	
-	token_edit = SXcmd_token(); token_edit.initialize_edit("radius"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("mask3D"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("symmetry"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("inires"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("delta"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("memory_per_node"); token_edit_list.append(token_edit)
-
-	token_edit = SXcmd_token(); token_edit.initialize_edit("xr"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("ts"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("an"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("skip_prealignment"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("initialshifts"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("center_method"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("target_radius"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("shake"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("small_memory"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("ccfpercentage"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("nonorm"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("function"); token_edit_list.append(token_edit)
-	
-	sxsubcmd_mpi_support = True
-	is_modeless = True
-	sxcmd_subconfig = SXsubcmd_config("3D Refinement Continuation", "Perform continuation run of 3D refinement, where the 3D refinement restarts after the last fully finished iteration of meridien fresh run. One can change some parameters, but MPI settings have to be the same.", token_edit_list, sxsubcmd_mpi_support, is_modeless)
-
-	return sxcmd_subconfig
-
-### def create_sxcmd_subconfig_meridien_20171218_local():
-### 	token_edit_list = []
-### 	# token_edit = SXcmd_token(); token_edit.initialize_edit("continue_from_subset"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
-### 	# token_edit = SXcmd_token(); token_edit.initialize_edit("ctrefromsort3d"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
-### 	token_edit = SXcmd_token(); token_edit.initialize_edit("ctref"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
-### 	token_edit = SXcmd_token(); token_edit.initialize_edit("output_directory"); token_edit_list.append(token_edit)
-### 	# token_edit = SXcmd_token(); token_edit.initialize_edit("subset"); token_edit_list.append(token_edit)
-### 	token_edit = SXcmd_token(); token_edit.initialize_edit("ctref_subset"); token_edit_list.append(token_edit)
-### 	# token_edit = SXcmd_token(); token_edit.initialize_edit("oldrefdir"); token_edit_list.append(token_edit)
-### 	token_edit = SXcmd_token(); token_edit.initialize_edit("ctref_oldrefdir"); token_edit_list.append(token_edit)
-### 	# token_edit = SXcmd_token(); token_edit.initialize_edit("continue_from_iter"); token_edit_list.append(token_edit)
-### 	# token_edit = SXcmd_token(); token_edit.initialize_edit("ctrefromiter"); token_edit_list.append(token_edit)
-### 	token_edit = SXcmd_token(); token_edit.initialize_edit("ctref_iter"); token_edit_list.append(token_edit)
-### 	token_edit = SXcmd_token(); token_edit.initialize_edit("ctref_initvol"); token_edit_list.append(token_edit)
-### 	token_edit = SXcmd_token(); token_edit.initialize_edit("ctref_orgstack"); token_edit_list.append(token_edit)
-### 	token_edit = SXcmd_token(); token_edit.initialize_edit("ctref_smearing"); token_edit_list.append(token_edit)
-### 	token_edit = SXcmd_token(); token_edit.initialize_edit("ctref_an"); token_edit_list.append(token_edit)
-### 	token_edit = SXcmd_token(); token_edit.initialize_edit("memory_per_node"); token_edit_list.append(token_edit)
-### 	
-### 	token_edit = SXcmd_token(); token_edit.initialize_edit("radius"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
-### 	token_edit = SXcmd_token(); token_edit.initialize_edit("mask3D"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
-### 	token_edit = SXcmd_token(); token_edit.initialize_edit("symmetry"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
-### 	token_edit = SXcmd_token(); token_edit.initialize_edit("inires"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
-### 	token_edit = SXcmd_token(); token_edit.initialize_edit("delta"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
-### 	token_edit = SXcmd_token(); token_edit.initialize_edit("xr"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
-### 	token_edit = SXcmd_token(); token_edit.initialize_edit("ts"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
-### ###	token_edit = SXcmd_token(); token_edit.initialize_edit("center_method"); token_edit.group = "advanced"; token_edit_list.append(token_edit) # 207/03/10 Toshio Moriya: For now disable 2D alignment related options
-### ###	token_edit = SXcmd_token(); token_edit.initialize_edit("target_radius"); token_edit.group = "advanced"; token_edit_list.append(token_edit) # 207/03/10 Toshio Moriya: For now disable 2D alignment related options
-### 	token_edit = SXcmd_token(); token_edit.initialize_edit("shake"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
-### 	token_edit = SXcmd_token(); token_edit.initialize_edit("small_memory"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
-### 	token_edit = SXcmd_token(); token_edit.initialize_edit("ref_a"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
-### 	token_edit = SXcmd_token(); token_edit.initialize_edit("ccfpercentage"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
-### 	token_edit = SXcmd_token(); token_edit.initialize_edit("nonorm"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
-### ###	token_edit = SXcmd_token(); token_edit.initialize_edit("function"); token_edit.group = "advanced"; token_edit_list.append(token_edit) # 207/03/10 Toshio Moriya: Not included for continue run at this point
-### 	
-### 	sxsubcmd_mpi_support = True
-### 	sxcmd_subconfig = SXsubcmd_config("Subset Refinement", None, token_edit_list, sxsubcmd_mpi_support)
-### 
-### 	return sxcmd_subconfig
+ 	return sxcmd_subconfig
 
 # NOTE: Toshio Moriya 2017/12/18
 # Default values of some options are different between standard refinement (fresh run & simple restart) and local refinement (stack & iteration mode)
@@ -1270,12 +1276,28 @@ def create_sxcmd_subconfig_meridien_continuation():
 # Standard: parser.add_option("--delta",   type="float",  default= 7.50,  help="Initial angular sampling step (default 7.5)")
 # Local   : parser.add_option("--delta",   type="float",  default= 3.75,  help="Initial angular sampling step (default 7.5)")
 # 
-def create_sxcmd_subconfig_meridien_local_iteration():
-	token_edit_list = []
-	token_edit = SXcmd_token(); token_edit.initialize_edit("local_refinement"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
-	
-	token_edit = SXcmd_token(); token_edit.initialize_edit("output_directory"); token_edit.label = "Meridien Fresh Run Directory"; token_edit.help = "This directory must exist. The results will be written here."; token_edit.is_required = True; token_edit.type = "output_continue"; token_edit_list.append(token_edit)
-	
+def add_sxcmd_subconfig_meridien_standard_shared(token_edit_list):
+	token_edit = SXcmd_token(); token_edit.initialize_edit("radius"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("mask3D"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("symmetry"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("inires"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("delta"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("memory_per_node"); token_edit_list.append(token_edit)
+
+	token_edit = SXcmd_token(); token_edit.initialize_edit("xr"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("ts"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("an"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("skip_prealignment"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("initialshifts"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("center_method"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("target_radius"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("shake"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("small_memory"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("ccfpercentage"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("nonorm"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("function"); token_edit_list.append(token_edit)
+
+def add_sxcmd_subconfig_meridien_local_shared_refine(token_edit_list):
 	token_edit = SXcmd_token(); token_edit.initialize_edit("radius"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("mask3D"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("symmetry"); token_edit_list.append(token_edit)
@@ -1291,7 +1313,42 @@ def create_sxcmd_subconfig_meridien_local_iteration():
 	token_edit = SXcmd_token(); token_edit.initialize_edit("ccfpercentage"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("nonorm"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("function"); token_edit_list.append(token_edit)
-	
+
+def create_sxcmd_subconfig_meridien_standard_fresh():
+	token_edit_list = []
+	token_edit = SXcmd_token(); token_edit.initialize_edit("stack"); token_edit.is_required = True; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("output_directory"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("initial_volume"); token_edit.is_required = True; token_edit_list.append(token_edit)
+
+	add_sxcmd_subconfig_meridien_standard_shared(token_edit_list)
+
+	sxsubcmd_mpi_support = True
+	is_modeless = True
+	sxcmd_subconfig = SXsubcmd_config("3D Refinement", "Perform 3D structure refinement with standard default run or fresh run, which starts from exhaustive searches using initial reference volume.", token_edit_list, sxsubcmd_mpi_support, is_modeless)
+
+	return sxcmd_subconfig
+
+def create_sxcmd_subconfig_meridien_standard_continuation():
+	token_edit_list = []
+	token_edit = SXcmd_token(); token_edit.initialize_edit("output_directory"); token_edit.label = "Meridien Fresh Run Directory"; token_edit.help = "This directory must exist. The results will be written here."; token_edit.is_required = True; token_edit.type = "output_continue"; token_edit_list.append(token_edit)
+
+	add_sxcmd_subconfig_meridien_standard_shared(token_edit_list)
+
+	sxsubcmd_mpi_support = True
+	is_modeless = True
+	sxcmd_subconfig = SXsubcmd_config("3D Refinement Continuation", "Perform continuation run of 3D refinement, where the 3D refinement restarts after the last fully finished iteration of meridien fresh run. One can change some parameters, but MPI settings have to be the same.", token_edit_list, sxsubcmd_mpi_support, is_modeless)
+
+	return sxcmd_subconfig
+
+
+def create_sxcmd_subconfig_meridien_local_iteration():
+	token_edit_list = []
+	token_edit = SXcmd_token(); token_edit.initialize_edit("local_refinement"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
+
+	token_edit = SXcmd_token(); token_edit.initialize_edit("output_directory"); token_edit.label = "Meridien Fresh Run Directory"; token_edit.help = "This directory must exist. The results will be written here."; token_edit.is_required = True; token_edit.type = "output_continue"; token_edit_list.append(token_edit)
+
+	add_sxcmd_subconfig_meridien_local_shared_refine(token_edit_list)
+
 	sxsubcmd_mpi_support = True
 	sxcmd_subconfig = SXsubcmd_config("Local Refinement from Iteration", "Perform local refinement where the restricted search of 3D refinement starts from user-provided orientation parameters stored in stack header. Note that delta has to be less than or equal to 3.75[A].", token_edit_list, sxsubcmd_mpi_support)
 
@@ -1300,29 +1357,15 @@ def create_sxcmd_subconfig_meridien_local_iteration():
 def create_sxcmd_subconfig_meridien_local_stack():
 	token_edit_list = []
 	token_edit = SXcmd_token(); token_edit.initialize_edit("local_refinement"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
-	
+
 	token_edit = SXcmd_token(); token_edit.initialize_edit("stack"); token_edit.help = "The stack must have the header entry for 3D alignment parameters (xform.projection), which can be imporeted using sxheader.py."; token_edit.is_required = True; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("output_directory"); token_edit_list.append(token_edit)
-	
-	token_edit = SXcmd_token(); token_edit.initialize_edit("radius"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("mask3D"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("symmetry"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("inires"); token_edit.help = "Resolution of the initial_volume volume. For local refinement, the program automatically calculates the initial resolution from inputs by default."; token_edit.default = -1.0; token_edit.restore = -1.0; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("delta"); token_edit.help = "Initial angular sampling step. For local refinement, the value has to be less than or equal to 3.75."; token_edit.default = 3.75; token_edit.restore = 3.75; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("memory_per_node"); token_edit_list.append(token_edit)
 
-	token_edit = SXcmd_token(); token_edit.initialize_edit("xr"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("ts"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("an"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("shake"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("small_memory"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("ccfpercentage"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("nonorm"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("function"); token_edit_list.append(token_edit)
-	
+	add_sxcmd_subconfig_meridien_local_shared_refine(token_edit_list)
+
 	sxsubcmd_mpi_support = True
 	sxcmd_subconfig = SXsubcmd_config("Local Refinement from Stack", "Perform local refinement wherer the restricted search of 3D refinement restarts after the last fully finished iteration of meridien fresh run. One can change some parameters, but MPI settings have to be the same.", token_edit_list, sxsubcmd_mpi_support)
-
+	
 	return sxcmd_subconfig
 
 def create_sxcmd_subconfig_meridien_final():
@@ -1350,6 +1393,79 @@ def create_sxcmd_subconfig_refine3d_angular_distribution():
 	token_edit = SXcmd_token(); token_edit.initialize_edit("cylinder_length"); token_edit_list.append(token_edit)
 	sxsubcmd_mpi_support = False
 	sxcmd_subconfig = SXsubcmd_config("Angular Distribution", None, token_edit_list, sxsubcmd_mpi_support)
+
+	return sxcmd_subconfig
+
+def add_sxcmd_subconfig_sort3d_depth_shared_sorting(token_edit_list):
+	token_edit = SXcmd_token(); token_edit.initialize_edit("focus"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("mask3D"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("radius"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("sym"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("img_per_grp"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("minimum_grp_size"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("memory_per_node"); token_edit_list.append(token_edit)
+
+	token_edit = SXcmd_token(); token_edit.initialize_edit("depth_order"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("stop_mgskmeans_percentage"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("nsmear"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("orientation_groups"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("swap_ratio"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("not_include_unaccounted"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("do_swap_au"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("shake"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("notapplybckgnoise"); token_edit_list.append(token_edit)
+
+def add_sxcmd_subconfig_sort3d_depth_shared_sharpen(token_edit_list):
+	token_edit = SXcmd_token(); token_edit.initialize_edit("mtf"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("B_enhance"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("fl"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("aa"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("B_start"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("B_stop"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("nofsc_adj"); token_edit_list.append(token_edit)
+
+def create_sxcmd_subconfig_sort3d_depth_iteration():
+	token_edit_list = []
+	token_edit = SXcmd_token(); token_edit.initialize_edit("refinement_dir"); token_edit.is_required = True; token_edit.is_locked = False; token_edit.default = "none"; token_edit.restore = "none"; token_edit_list.append(token_edit)
+
+	token_edit = SXcmd_token(); token_edit.initialize_edit("output_dir"); token_edit_list.append(token_edit)
+
+	token_edit = SXcmd_token(); token_edit.initialize_edit("niter_for_sorting"); token_edit_list.append(token_edit)
+	add_sxcmd_subconfig_sort3d_depth_shared_sorting(token_edit_list)
+	add_sxcmd_subconfig_sort3d_depth_shared_sharpen(token_edit_list)
+
+	sxsubcmd_mpi_support = True
+	sxcmd_subconfig = SXsubcmd_config("3D Clustering from Iteration - SORT3D_DEPTH", "Run from a fully finished iteration of meridien run and imports data from there. This mode uses all meridien information (i.e., smear, normalizations and such).", token_edit_list, sxsubcmd_mpi_support)
+
+	return sxcmd_subconfig
+
+def create_sxcmd_subconfig_sort3d_depth_stack():
+	token_edit_list = []
+	token_edit = SXcmd_token(); token_edit.initialize_edit("instack"); token_edit.is_required = True; token_edit.is_locked = False; token_edit.default = "none"; token_edit.restore = "none"; token_edit_list.append(token_edit)
+
+	token_edit = SXcmd_token(); token_edit.initialize_edit("output_dir"); token_edit_list.append(token_edit)
+
+	token_edit = SXcmd_token(); token_edit.initialize_edit("nxinit"); token_edit_list.append(token_edit)
+	add_sxcmd_subconfig_sort3d_depth_shared_sorting(token_edit_list)
+	add_sxcmd_subconfig_sort3d_depth_shared_sharpen(token_edit_list)
+
+	sxsubcmd_mpi_support = True
+	sxcmd_subconfig = SXsubcmd_config("3D Clustering from Stack - SORT3D_DEPTH", "Run from user-provided orientation parameters stored in stack header.  This mode uses only orientation parameters, which is useful for sorting data refined say with relion.", token_edit_list, sxsubcmd_mpi_support)
+
+	return sxcmd_subconfig
+
+def create_sxcmd_subconfig_sort3d_depth_sharpen():
+	token_edit_list = []
+	token_edit = SXcmd_token(); token_edit.initialize_edit("post_sorting_sharpen"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
+
+	token_edit = SXcmd_token(); token_edit.initialize_edit("output_dir"); token_edit_list.append(token_edit)
+
+	token_edit = SXcmd_token(); token_edit.initialize_edit("niter_for_sorting"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("memory_per_node"); token_edit_list.append(token_edit)
+	add_sxcmd_subconfig_sort3d_depth_shared_sharpen(token_edit_list)
+
+	sxsubcmd_mpi_support = True
+	sxcmd_subconfig = SXsubcmd_config("Post-Sorting Sharpening", "Reconstruct unfiltered maps from a list of selection files and merge the two halves maps, so that users can adjust B-factors and low-pass filter to have proper visualization.", token_edit_list, sxsubcmd_mpi_support)
 
 	return sxcmd_subconfig
 
@@ -1395,7 +1511,7 @@ def create_exclude_list_isac2():
 
 	return exclude_list
 
-# def create_exclude_list_meridien_20171218():
+# def create_exclude_list_meridien_20171120():
 # 	exclude_list = []
 # 
 # 	# exclude_list.append("continue_from_subset")
@@ -1564,7 +1680,13 @@ def main():
 ### 	sxcmd_config_list.append(SXcmd_config("../doc/pipeline_isac_substack.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/pipe_isac_substack.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 ### 	sxcmd_config_list.append(SXcmd_config("../doc/isac_post_processing.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
-	sxcmd_config_list.append(SXcmd_config("../doc/compute_isac_avg.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
+###	sxcmd_config_list.append(SXcmd_config("../doc/compute_isac_avg.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/compute_isac_avg.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_isac_beautifier_to_model()))
+
+	sxcmd_role = "sxr_alt"
+	sxcmd_config_list.append(SXcmd_config("../doc/compute_isac_avg.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_isac_beautifier_no_adjust()))
+	sxcmd_config_list.append(SXcmd_config("../doc/compute_isac_avg.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_isac_beautifier_to_rot_avg()))
+	sxcmd_config_list.append(SXcmd_config("../doc/compute_isac_avg.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_isac_beautifier_to_bfactor()))
 
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
@@ -1593,16 +1715,16 @@ def main():
 
 	sxcmd_role = "sxr_pipe"
 	# sxcmd_config_list.append(SXcmd_config("../doc/meridien.doku.txt", "DokuWiki", sxcmd_category, sxcmd_role))
-	# sxcmd_config_list.append(SXcmd_config("../doc/meridien_20171218.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_meridien_20171218()))
-	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_fresh()))
+	# sxcmd_config_list.append(SXcmd_config("../doc/meridien_20171120.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_meridien_20171120()))
+	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_standard_fresh()))
 	sxcmd_config_list.append(SXcmd_config("../doc/gui_meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_refine3d_postprocess()))
 
 	sxcmd_role = "sxr_alt"
-	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_final()))
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_local_iteration()))
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_local_stack()))
-	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_continuation()))
+	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_standard_continuation()))
+	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_final()))
 	
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
@@ -1615,16 +1737,21 @@ def main():
 	sxcmd_role = "sxr_pipe"
 	sxcmd_config_list.append(SXcmd_config("../doc/3dvariability.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_variability_preprocess()))
 	sxcmd_config_list.append(SXcmd_config("../doc/3dvariability.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list=["symmetrize"]))
-	sxcmd_config_list.append(SXcmd_config("../doc/sort3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_sort3d()))
-	sxcmd_config_list.append(SXcmd_config("../doc/rsort3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_rsort3d()))
+###	sxcmd_config_list.append(SXcmd_config("../doc/sort3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_sort3d()))
+###	sxcmd_config_list.append(SXcmd_config("../doc/rsort3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_rsort3d()))
 ### sxcmd_config_list.append(SXcmd_config("../doc/rsort3d-1105.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_rsort3d_1105()))
 ###	sxcmd_config_list.append(SXcmd_config("../doc/sort3d_new.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_sort3d_new()))
-###	sxcmd_config_list.append(SXcmd_config("../doc/meridien_20171218.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_20171218_local()))
+	sxcmd_config_list.append(SXcmd_config("../doc/sort3d_depth.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_sort3d_depth_iteration()))
+###	sxcmd_config_list.append(SXcmd_config("../doc/meridien_20171120.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_20171120_local()))
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_local_stack()))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_refine3d_postprocess()))
 
 	sxcmd_role = "sxr_alt"
-###	sxcmd_config_list.append(SXcmd_config("../doc/sort3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_sort3d()))
+	sxcmd_config_list.append(SXcmd_config("../doc/sort3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_sort3d()))
+	sxcmd_config_list.append(SXcmd_config("../doc/rsort3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_rsort3d()))
+	sxcmd_config_list.append(SXcmd_config("../doc/sort3d_depth.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_sort3d_depth_stack()))
+	sxcmd_config_list.append(SXcmd_config("../doc/sort3d_depth.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_sort3d_depth_sharpen()))
+	sxcmd_config_list.append(SXcmd_config("../doc/meridien_20171120.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_20171120_local()))
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_final()))
 
 	sxcmd_role = "sxr_util"
