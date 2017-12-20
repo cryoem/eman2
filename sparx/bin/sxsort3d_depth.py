@@ -7615,10 +7615,14 @@ def check_sorting(total_data, keepsorting, log_file):
 		fout.close()
 	else: Tracker_main = 0
 	Tracker_main = wrap_mpi_bcast(Tracker_main, Blockdata["main_node"])
-	if total_data//Tracker_main["constants"]["img_per_grp"] >=2: keepsorting = 1
+	if total_data//Tracker_main["constants"]["img_per_grp"] >=2:
+		Tracker["number_of_groups"] = total_data//Tracker_main["constants"]["img_per_grp"]
+		keepsorting = 1
 	else:
 		if Tracker_main["constants"]["minimum_grp_size"]>0:
-			if total_data//Tracker_main["constants"]["minimum_grp_size"]>=3: keepsorting = 1
+			if total_data//Tracker_main["constants"]["minimum_grp_size"]>=3:
+				Tracker["number_of_groups"] = total_data//Tracker_main["constants"]["minimum_grp_size"] -1
+				keepsorting = 1
 			else: keepsorting = 0
 		else: keepsorting     = 0
 	if keepsorting ==1:
