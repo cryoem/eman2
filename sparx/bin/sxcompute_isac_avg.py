@@ -157,14 +157,14 @@ def get_optimistic_res(frc):
 	if FH < 0.15:  FH = 0.15 # minimum freq
 	return FH
 	
-def apply_enhancement(avg, B_start, pixel_size, user_defined_Bfactor):	
+def apply_enhancement(avg, B_start, pixel_size, user_defined_Bfactor):
 	guinierline = rot_avg_table(power(periodogram(avg),.5))
 	freq_max   =  1./(2.*pixel_size)
 	freq_min   =  1./B_start
 	b, junk, ifreqmin, ifreqmax = compute_bfactor(guinierline, freq_min, freq_max, pixel_size)
 	print(ifreqmin, ifreqmax)
 	global_b = b*4. #
-	if user_defined_Bfactor!=0.0: global_b = user_defined_Bfactor
+	if user_defined_Bfactor < 0.0: global_b = user_defined_Bfactor
 	sigma_of_inverse = sqrt(2./global_b)
 	avg = filt_gaussinv(avg, sigma_of_inverse)
 	return avg, global_b
@@ -240,7 +240,7 @@ def main():
 
 	if B_enhance:
 		parser.add_option("--B_start",   type   ="float",  default = 10.0,  help="start frequency (1./Angstrom) of power spectrum for B_factor estimation")
-		parser.add_option("--Bfactor",   type   ="float",   default = 45.0,  help= "User defined bactors")
+		parser.add_option("--Bfactor",   type   ="float",  default = -1.0,  help= "User defined bactors (e.g. 45.0[A^2]). By default, the program automatically estimates B-factor. ")
 			
 	if adjust_to_given_pw2:
 		parser.add_option("--modelpw",              type   ="string",         default ='',     help="1-D reference power spectrum")
