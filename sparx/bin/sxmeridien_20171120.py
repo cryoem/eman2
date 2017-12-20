@@ -7379,7 +7379,15 @@ def ctref_init(masterdir, option_orgstack, option_old_refinement_dir, option_sub
 	if Blockdata["myid"] == Blockdata["nodes"][0]:
 		print(line, "ctref_init")
 		if option_smearing !=-1: print("Warning: the number of smearings is ignored for intitial reconstruction! ")
-		if not os.path.exists(masterdir): os.mkdir(masterdir)
+		#  NOTE: Toshio Moriya 2017/12/20
+		# The following causes problem because of the occasional asynchronization between file server and each MPI nodes.
+		# if not os.path.exists(masterdir): os.mkdir(masterdir)
+		try:
+			os.mkdir(masterdir)
+			assert False, "MRK_DEBUG: Unreachable."
+		except OSError:
+			pass
+		
 	# set state varibles for continuation run
 	if option_orgstack !='': from_orgstack = True
 	else:                    from_orgstack = False
