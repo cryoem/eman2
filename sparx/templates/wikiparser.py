@@ -146,6 +146,7 @@ def construct_keyword_dict():
 	keyword_dict["input_coordinates_pattern"]     = SXkeyword_map(2, "parameters")     # input_coordinates_pattern
 	keyword_dict["input_ctf_params_source"]       = SXkeyword_map(2, "parameters")     # input_ctf_params_source
 	keyword_dict["--importctf"]                   = SXkeyword_map(2, "parameters")     # --importctf=IMPORTCTF
+	keyword_dict["--modelpw"]                     = SXkeyword_map(2, "parameters")     # --modelpw=pw2_model_txt
 	keyword_dict["--pwreference"]                 = SXkeyword_map(2, "parameters")     # --pwreference=pwreference
 	keyword_dict["--PWadjustment"]                = SXkeyword_map(2, "parameters")     # --PWadjustment=PWadjustment, --PWadjustment=ref_pwspectrum1d_file 
 	keyword_dict["--mtf"]                         = SXkeyword_map(2, "parameters")     # --mtf=MTF_FILE_NAME
@@ -1057,6 +1058,77 @@ def create_sxcmd_subconfig_window_makevstack():
 ### 
 ### 	return sxcmd_subconfig
 
+def add_sxcmd_subconfig_isac_beautifier_shared(token_edit_list):
+	token_edit = SXcmd_token(); token_edit.initialize_edit("stack"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("isac_dir"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("output_dir"); token_edit_list.append(token_edit)
+	
+	token_edit = SXcmd_token(); token_edit.initialize_edit("pixel_size"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("radius"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("noctf"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("skip_local_alignment"); token_edit_list.append(token_edit)
+
+	token_edit = SXcmd_token(); token_edit.initialize_edit("fl"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("xr"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("ts"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("fh"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("maxit"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("navg"); token_edit_list.append(token_edit)
+
+def create_sxcmd_subconfig_isac_beautifier_to_bfactor():
+	token_edit_list = []
+	token_edit = SXcmd_token(); token_edit.initialize_edit("B_enhance"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
+	
+	token_edit = SXcmd_token(); token_edit.initialize_edit("B_start"); token_edit.group = "main"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("Bfactor"); token_edit.group = "main"; token_edit_list.append(token_edit)
+
+	add_sxcmd_subconfig_isac_beautifier_shared(token_edit_list)
+
+	sxsubcmd_mpi_support = True
+	is_modeless = True
+	sxcmd_subconfig = SXsubcmd_config("Beautifier - Adjust to B-factor", "Beautify the ISAC 2D clustering result with the original pixel size. In addition, adjust the power spectrum of resultant average images using B-factor to enhance averages.", token_edit_list, sxsubcmd_mpi_support)
+
+	return sxcmd_subconfig
+
+
+def create_sxcmd_subconfig_isac_beautifier_to_rot_avg():
+	token_edit_list = []
+	token_edit = SXcmd_token(); token_edit.initialize_edit("adjust_to_given_pw2"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
+	
+	token_edit = SXcmd_token(); token_edit.initialize_edit("modelpw"); token_edit.group = "main"; token_edit_list.append(token_edit)
+
+	add_sxcmd_subconfig_isac_beautifier_shared(token_edit_list)
+
+	sxsubcmd_mpi_support = True
+	is_modeless = True
+	sxcmd_subconfig = SXsubcmd_config("Beautifier - Adjust to Rot. Avgs.", "Beautify the ISAC 2D clustering result with the original pixel size. In addition, adjust the power spectrum of resultant average images to the user-provided 1-D reference power spectrum.", token_edit_list, sxsubcmd_mpi_support)
+
+	return sxcmd_subconfig
+
+def create_sxcmd_subconfig_isac_beautifier_to_model():
+	token_edit_list = []
+	token_edit = SXcmd_token(); token_edit.initialize_edit("adjust_to_analytic_model"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
+	
+	add_sxcmd_subconfig_isac_beautifier_shared(token_edit_list)
+
+	sxsubcmd_mpi_support = True
+	is_modeless = True
+	sxcmd_subconfig = SXsubcmd_config("Beautifier - Adjust to Model", "Beautify the ISAC 2D clustering result with the original pixel size. In addition, adjust the power spectrum of resultant average images to an analytical model.", token_edit_list, sxsubcmd_mpi_support)
+
+	return sxcmd_subconfig
+
+def create_sxcmd_subconfig_isac_beautifier_no_adjust():
+	token_edit_list = []
+	token_edit = SXcmd_token(); token_edit.initialize_edit("no_adjustment"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
+	
+	add_sxcmd_subconfig_isac_beautifier_shared(token_edit_list)
+
+	sxsubcmd_mpi_support = True
+	is_modeless = True
+	sxcmd_subconfig = SXsubcmd_config("Beautifier - No Adjust", "Beautify the ISAC 2D clustering result with the original pixel size, without adjusting the power spectrum of resultant average images.", token_edit_list, sxsubcmd_mpi_support)
+
+	return sxcmd_subconfig
+
 def create_sxcmd_subconfig_viper_changesize():
 	token_edit_list = []
 	token_edit = SXcmd_token(); token_edit.initialize_edit("changesize"); token_edit.label = "Change size of VIPER model"; token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
@@ -1608,7 +1680,13 @@ def main():
 ### 	sxcmd_config_list.append(SXcmd_config("../doc/pipeline_isac_substack.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/pipe_isac_substack.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 ### 	sxcmd_config_list.append(SXcmd_config("../doc/isac_post_processing.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
-	sxcmd_config_list.append(SXcmd_config("../doc/compute_isac_avg.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
+###	sxcmd_config_list.append(SXcmd_config("../doc/compute_isac_avg.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/compute_isac_avg.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_isac_beautifier_to_model()))
+
+	sxcmd_role = "sxr_alt"
+	sxcmd_config_list.append(SXcmd_config("../doc/compute_isac_avg.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_isac_beautifier_no_adjust()))
+	sxcmd_config_list.append(SXcmd_config("../doc/compute_isac_avg.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_isac_beautifier_to_rot_avg()))
+	sxcmd_config_list.append(SXcmd_config("../doc/compute_isac_avg.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_isac_beautifier_to_bfactor()))
 
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
