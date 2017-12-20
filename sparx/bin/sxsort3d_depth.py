@@ -412,7 +412,7 @@ def check_state_within_box_run(keepgoing, nruns, img_per_grp, minimum_grp_size, 
 		number_of_groups = 2
 		if total_stack/float(Tracker["constants"]["minimum_grp_size"]) <= 2.0: 
 			keepgoing = 0 # otherwise sorting will fall into endless loop
-		else: number_of_groups = total_stack//Tracker["constants"]["minimum_grp_size"]
+		else: number_of_groups = total_stack//Tracker["constants"]["minimum_grp_size"]-1
 	else: number_of_groups = total_stack//img_per_grp
 	
 	if keepgoing ==1: nruns +=1
