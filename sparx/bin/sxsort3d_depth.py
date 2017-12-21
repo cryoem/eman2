@@ -8342,14 +8342,14 @@ def main():
 			fout.close()
 			Tracker["constants"]["post_sorting_sharpen"] = True
 			if options.niter_for_sorting !=-1: Tracker["constants"]["niter_for_sorting"] = options.niter_for_sorting
-			if options.memory_per_node !=-1: Tracker["constants"]["memory_per_node"] = options.memory_per_node
-			if options.B_enhance !=0.0: Tracker["constants"]["B_enhance"] = options.B_enhance
-			if options.B_start !=10.0: Tracker["constants"]["B_start"]    = options.B_start    
-			if options.B_stop  !=0.0: Tracker["constants"]["B_stop"]      = optiuons.B_stop    
-			if options.aa !=0.1: Tracker["constants"]["aa"]               = options.aa  
-			if options.fl !=0.0: Tracker["constants"]["postlowpassfilter"]= options.postlowpassfilter  
+			if options.memory_per_node !=-1: Tracker["constants"]["memory_per_node"]     = options.memory_per_node
+			if options.B_enhance !=0.0: Tracker["constants"]["B_enhance"]  = options.B_enhance
+			if options.B_start !=10.0: Tracker["constants"]["B_start"]     = options.B_start    
+			if options.B_stop  !=0.0: Tracker["constants"]["B_stop"]       = optiuons.B_stop    
+			if options.aa !=0.1: Tracker["constants"]["aa"]                = options.aa  
+			if options.fl !=0.0: Tracker["constants"]["postlowpassfilter"] = options.postlowpassfilter  
 			if options.nofsc_adj == True: Tracker["constants"]["fsc_adj"]  = options.nofsc_adj
-			if options.mtf !='': Tracker["constants"]["mtf"]              = options.mtf
+			if options.mtf !='': Tracker["constants"]["mtf"]               = options.mtf
 			
 		else: Tracker = 0
 		Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
