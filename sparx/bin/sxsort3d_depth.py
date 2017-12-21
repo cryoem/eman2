@@ -1885,7 +1885,7 @@ def Kmeans_minimum_group_size_relaxing_orien_groups(original_data, partids, para
 		local_kmeans_peaks = [ -1.0e23 for im in xrange(nima)]
 		## compute peaks and save them in 1D list
 		for iref in xrange(number_of_groups):
-			if(Blockdata["myid"] == Blockdata["main_node"]):
+			if(Blockdata["myid"] == Blockdata["last_node"]):
 				try: fsc143 = Tracker["fsc143"][iref]
 				except:	fsc143 = 0.0
 				try: fsc05 = Tracker["fsc05"][iref]
@@ -1898,7 +1898,7 @@ def Kmeans_minimum_group_size_relaxing_orien_groups(original_data, partids, para
 				if stat[1]!=0.0:Util.mul_scalar(ref_vol, 1.0/stat[1])
 				ref_vol *=mask3D
 			else: ref_vol = model_blank(Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"])
-			bcast_EMData_to_all(ref_vol, Blockdata["myid"], Blockdata["main_node"])
+			bcast_EMData_to_all(ref_vol, Blockdata["myid"], Blockdata["last_node"])
 			## Image comparison optimal solution is the larger one	
 			if Tracker["constants"]["comparison_method"] =="cross": ref_peaks = compare_two_images_cross(cdata, ref_vol)
 			else: ref_peaks = compare_two_images_eucd(cdata, ref_vol, fdata)
@@ -1989,12 +1989,13 @@ def Kmeans_minimum_group_size_relaxing_orien_groups(original_data, partids, para
 		Tracker["partition"], ali3d_params_list = parsing_sorting_params(partids, res_sort3d)
 		write_text_row(Tracker["partition"], os.path.join(Tracker["directory"],"list.txt"))
 		shutil.rmtree(os.path.join(Tracker["directory"], "tempdir"))
-		if clean_volumes:
-			for jter in xrange(total_iter):
-				for igroup in xrange(Tracker["number_of_groups"]): os.remove(os.path.join(Tracker["directory"], "vol_grp%03d_iter%03d.hdf"%(igroup,jter)))
 	else:Tracker["partition"] = 0
 	Tracker["partition"] = wrap_mpi_bcast(Tracker["partition"], Blockdata["main_node"])
 	premature  = wrap_mpi_bcast(premature, Blockdata["main_node"])
+	if(Blockdata["myid"] == Blockdata["last_node"]):
+		if clean_volumes:
+			for jter in xrange(total_iter):
+				for igroup in xrange(Tracker["number_of_groups"]): os.remove(os.path.join(Tracker["directory"], "vol_grp%03d_iter%03d.hdf"%(igroup,jter)))
 	return Tracker["partition"], premature
 #####
 
