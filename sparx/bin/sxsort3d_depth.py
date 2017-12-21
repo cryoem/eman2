@@ -1781,14 +1781,16 @@ def Kmeans_minimum_group_size_orien_groups(original_data, partids, params, param
 		partition, ali3d_params_list = parsing_sorting_params(partids, res_sort3d)
 		write_text_row(partition, os.path.join(Tracker["directory"],"list.txt"))
 		shutil.rmtree(os.path.join(Tracker["directory"], "tempdir"))
-		if clean_volumes:
-			for jter in xrange(total_iter):
-				for igroup in xrange(Tracker["number_of_groups"]): 
-					os.remove(os.path.join(Tracker["directory"], "vol_grp%03d_iter%03d.hdf"%(igroup,jter)))
+	
 	else: partition = 0
 	partition  = wrap_mpi_bcast(partition, Blockdata["main_node"])
 	premature  = wrap_mpi_bcast(premature, Blockdata["main_node"])
-	
+
+	if(Blockdata["myid"] == Blockdata["last_node"]):
+		if clean_volumes:
+			for jter in xrange(total_iter):
+				for igroup in xrange(Tracker["number_of_groups"]): 
+					os.remove(os.path.join(Tracker["directory"], "vol_grp%03d_iter%03d.hdf"%(igroup,jter)))	
 	if require_check_setting:
 		if(Blockdata["myid"] == Blockdata["main_node"]): print("Too large changed particles, and the sorting settings, such as img_per_grp requires a check")
 	return partition, premature
@@ -1883,7 +1885,7 @@ def Kmeans_minimum_group_size_relaxing_orien_groups(original_data, partids, para
 		local_kmeans_peaks = [ -1.0e23 for im in xrange(nima)]
 		## compute peaks and save them in 1D list
 		for iref in xrange(number_of_groups):
-			if(Blockdata["myid"] == Blockdata["main_node"]):
+			if(Blockdata["myid"] == Blockdata["last_node"]):
 				try: fsc143 = Tracker["fsc143"][iref]
 				except:	fsc143 = 0.0
 				try: fsc05 = Tracker["fsc05"][iref]
@@ -1896,7 +1898,7 @@ def Kmeans_minimum_group_size_relaxing_orien_groups(original_data, partids, para
 				if stat[1]!=0.0:Util.mul_scalar(ref_vol, 1.0/stat[1])
 				ref_vol *=mask3D
 			else: ref_vol = model_blank(Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"])
-			bcast_EMData_to_all(ref_vol, Blockdata["myid"], Blockdata["main_node"])
+			bcast_EMData_to_all(ref_vol, Blockdata["myid"], Blockdata["last_node"])
 			## Image comparison optimal solution is the larger one	
 			if Tracker["constants"]["comparison_method"] =="cross": ref_peaks = compare_two_images_cross(cdata, ref_vol)
 			else: ref_peaks = compare_two_images_eucd(cdata, ref_vol, fdata)
@@ -1987,12 +1989,13 @@ def Kmeans_minimum_group_size_relaxing_orien_groups(original_data, partids, para
 		Tracker["partition"], ali3d_params_list = parsing_sorting_params(partids, res_sort3d)
 		write_text_row(Tracker["partition"], os.path.join(Tracker["directory"],"list.txt"))
 		shutil.rmtree(os.path.join(Tracker["directory"], "tempdir"))
-		if clean_volumes:
-			for jter in xrange(total_iter):
-				for igroup in xrange(Tracker["number_of_groups"]): os.remove(os.path.join(Tracker["directory"], "vol_grp%03d_iter%03d.hdf"%(igroup,jter)))
 	else:Tracker["partition"] = 0
 	Tracker["partition"] = wrap_mpi_bcast(Tracker["partition"], Blockdata["main_node"])
 	premature  = wrap_mpi_bcast(premature, Blockdata["main_node"])
+	if(Blockdata["myid"] == Blockdata["last_node"]):
+		if clean_volumes:
+			for jter in xrange(total_iter):
+				for igroup in xrange(Tracker["number_of_groups"]): os.remove(os.path.join(Tracker["directory"], "vol_grp%03d_iter%03d.hdf"%(igroup,jter)))
 	return Tracker["partition"], premature
 #####
 
@@ -7615,10 +7618,14 @@ def check_sorting(total_data, keepsorting, log_file):
 		fout.close()
 	else: Tracker_main = 0
 	Tracker_main = wrap_mpi_bcast(Tracker_main, Blockdata["main_node"])
-	if total_data//Tracker_main["constants"]["img_per_grp"] >=2: keepsorting = 1
+	if total_data//Tracker_main["constants"]["img_per_grp"] >=2:
+		Tracker["number_of_groups"] = total_data//Tracker_main["constants"]["img_per_grp"]
+		keepsorting = 1
 	else:
 		if Tracker_main["constants"]["minimum_grp_size"]>0:
-			if total_data//Tracker_main["constants"]["minimum_grp_size"]>=3: keepsorting = 1
+			if total_data//Tracker_main["constants"]["minimum_grp_size"]>=3:
+				Tracker["number_of_groups"] = total_data//Tracker_main["constants"]["minimum_grp_size"] -1
+				keepsorting = 1
 			else: keepsorting = 0
 		else: keepsorting     = 0
 	if keepsorting ==1:
@@ -8335,14 +8342,14 @@ def main():
 			fout.close()
 			Tracker["constants"]["post_sorting_sharpen"] = True
 			if options.niter_for_sorting !=-1: Tracker["constants"]["niter_for_sorting"] = options.niter_for_sorting
-			if options.memory_per_node !=-1: Tracker["constants"]["memory_per_node"] = options.memory_per_node
-			if options.B_enhance !=0.0: Tracker["constants"]["B_enhance"] = options.B_enhance
-			if options.B_start !=10.0: Tracker["constants"]["B_start"]    = options.B_start    
-			if options.B_stop  !=0.0: Tracker["constants"]["B_stop"]      = optiuons.B_stop    
-			if options.aa !=0.1: Tracker["constants"]["aa"]               = options.aa  
-			if options.fl !=0.0: Tracker["constants"]["postlowpassfilter"]= options.postlowpassfilter  
+			if options.memory_per_node !=-1: Tracker["constants"]["memory_per_node"]     = options.memory_per_node
+			if options.B_enhance !=0.0: Tracker["constants"]["B_enhance"]  = options.B_enhance
+			if options.B_start !=10.0: Tracker["constants"]["B_start"]     = options.B_start    
+			if options.B_stop  !=0.0: Tracker["constants"]["B_stop"]       = optiuons.B_stop    
+			if options.aa !=0.1: Tracker["constants"]["aa"]                = options.aa  
+			if options.fl !=0.0: Tracker["constants"]["postlowpassfilter"] = options.postlowpassfilter  
 			if options.nofsc_adj == True: Tracker["constants"]["fsc_adj"]  = options.nofsc_adj
-			if options.mtf !='': Tracker["constants"]["mtf"]              = options.mtf
+			if options.mtf !='': Tracker["constants"]["mtf"]               = options.mtf
 			
 		else: Tracker = 0
 		Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"])

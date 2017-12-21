@@ -1,12 +1,12 @@
 = Name =
 sxprocess - Miscellaneous Commands: Carry out various SPARX commands on image series, and generate data and initialize database for demo script.
 
-= Usage =
 
+= Usage =
 
 ''usage in command line''
 
-sxprocess.py  inputfile  outputfile  micrograph_prefix  --order  --order_lookup  --order_metropolis  --order_pca  --initial=INITIAL  --circular  --radius=RADIUS  --changesize  --ratio=RATIO  --pw  --wn=WN  --phase_flip  --makedb=param1=value1:param2=value2  --generate_projections=param1=value1:param2=value2  --isacgroup=ISACGROUP  --isacselect  --params=PARAMS  --adjpw  --rotpw=ROTPW  --transformparams=TRANSFORMPARAMS  --importctf=IMPORTCTF  --input=INPUT  --defocuserror=DEFOCUSERROR  --astigmatismerror=ASTIGMATISMERROR  --scale=SCALE  --adaptive_mask  --nsigma=NSIGMA  --threshold=THRESHOLD  --ndilation=NDILATION  --kernel_size=KERNEL_SIZE  --gauss_standard_dev=GAUSS_STANDARD_DEV  --binary_mask  --bin_threshold=BIN_THRESHOLD  --ne=NE  --nd=ND  --postprocess  --mtf=MTF_FILE_NAME  --fsc_adj  --B_enhance=B_ENHANCE  --fl=lpf_cutoff_freq  --aa=lpf_falloff  --mask=MASK  --do_adaptive_mask  --mask_threshold=MASK_THRESHOLD  --consine_edge=CONSINE_EDGE  --dilation=DILATION  --output=OUTPUT  --pixel_size=PIXEL_SIZE  --B_start=B_START  --B_stop=B_STOP  --window_stack  --box=BOX  --angular_distribution  --round_digit=ROUND_DIGIT  --box_size=BOX_SIZE  --particle_radius=PARTICLE_RADIUS  --cylinder_width=CYLINDER_WIDTH  --cylinder_length=CYLINDER_LENGTH
+sxprocess.py  inputfile  outputfile  micrograph_prefix  --order  --order_lookup  --order_metropolis  --order_pca  --initial=INITIAL  --circular  --radius=RADIUS  --changesize  --ratio=RATIO  --pw  --wn=WN  --phase_flip  --makedb=param1=value1:param2=value2  --generate_projections=param1=value1:param2=value2  --isacgroup=ISACGROUP  --isacselect  --params=PARAMS  --adjpw  --rotpw=ROTPW  --transformparams=TRANSFORMPARAMS  --importctf=IMPORTCTF  --input=INPUT  --defocuserror=DEFOCUSERROR  --astigmatismerror=ASTIGMATISMERROR  --scale=SCALE  --adaptive_mask  --nsigma=NSIGMA  --threshold=THRESHOLD  --ndilation=NDILATION  --kernel_size=KERNEL_SIZE  --gauss_standard_dev=GAUSS_STANDARD_DEV  --binary_mask  --bin_threshold=BIN_THRESHOLD  --ne=NE  --nd=ND  --postprocess  --output_dir=DIRECTORY  --output=OUTPUT  --pixel_size=PIXEL_SIZE  --mask=MASK  --do_adaptive_mask  --mask_threshold=MASK_THRESHOLD  --consine_edge=CONSINE_EDGE  --dilation=DILATION  --mtf=MTF_FILE_NAME  --fsc_adj  --B_enhance=B_ENHANCE  --B_start=B_START  --B_stop=B_STOP  --fl=lpf_cutoff_freq  --aa=lpf_falloff  --window_stack  --box=BOX  --angular_distribution  --round_digit=ROUND_DIGIT  --box_size=BOX_SIZE  --particle_radius=PARTICLE_RADIUS  --cylinder_width=CYLINDER_WIDTH  --cylinder_length=CYLINDER_LENGTH
 
 
 === Typical usage ===
@@ -114,6 +114,7 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
 16. Create angular distribution .build file
 '''sxprocess.py --angular_distribution  inputfile=example/path/params.txt --pixel_size=1.0  --round_digit=5  --box_size=500  --particle_radius=175  --cylinder_width=1  --cylinder_length=10000'''
 
+
 == Input ==
     inputfile:: input file: required for some options. (default none)
 
@@ -156,21 +157,22 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
     ne:: Erosion cycles: After initial binarization the volume is eroded to remove fragmented pieces of the volume. (default 0)
     nd:: Dilation cycles: After erosing the binary volume is dilated back to smooth the surface and match the original size. (default 0)
 
-    postprocess:: Apply B-factor to sharpen the power spectrum: B-factor is estimated from two unfiltered 3D volumes produced by meridien. (default False)
-    mtf:: MTF file: File contains the MTF (modulation transfer function) of the detector used. (default none)
-    fsc_adj:: Apply FSC-based low-pass filter: Applies an FSC-based low-pass filter to the merged volume before the B-factor estimation. (default False)
-    B_enhance:: B-factor enhancement: -1.0: B-factor is not applied; 0.0: program estimates B-factor from options. B_start (usually 10 Angstrom) to the resolution determined by FSC143; 128.0: program use the given value 128.0 [A^2] to enhance map. (default 0.0)
-    fl:: Low-pass filter frequency [1/Pixels]: 0.0: low-pass filter to resolution; A value > 0.5: low-pass filter to the value in Angstrom; A value > 0.0 and < 0.5: low-pass filter to the value in absolute frequency; -1.0: no low-pass filter. (default 0.0)
-    aa:: Low-pass filter fall-off [1/Pixels]: Low-pass filter fall-off. (default 0.1)
-    mask:: User-provided mask: Path to user-provided mask. (default none)
+    postprocess:: Sharpen the power spectrum: Run 3D refinement postprocessing for a pair of unfiltered odd & even 3-D volumes. B-factor can be estimated from the two unfiltered 3D volumes. (default False)
+    output_dir:: Output directory: Specify path to the output directory of postprocess. By default, the program uses the current directory. However, GUI requires the path other than the current directory. (default required string)
+    output:: Output volume file name: File name of output final volume. (default vol_postrefine_masked.hdf)
+    pixel_size:: Pixel size [A]: Pixel size of input data. (default 0.0)
+    mask:: 3D mask file: Path to user-provided mask. (default none)
     do_adaptive_mask:: Apply adaptive mask: Program creates mask adaptively with given density threshold. (default False)
     mask_threshold:: Adaptive mask threshold: Density threshold for creating adaptive surface mask. (default 0.02)
     consine_edge:: Cosine edge width [Pixels]: Width of cosine transition area for soft-edge masking. (default 6.0)
     dilation:: surface dilation size [Pixels]: Size of surface dilation or erosion. (default 3.0) 
-    output:: Output file: Output file name. (default vol_postrefine_masked.hdf)
-    pixel_size:: Pixel size [A]: Pixel size of input data. (default 0.0)
-    B_start:: B-factor lower limit [A]: Lower limit for B-factor estimation. (default 10.0)
-    B_stop:: B-factor higher limit [A]: Higher limit for B-factor estimation. (default  0.0)
+    mtf:: MTF file: Path to file contains the MTF (modulation transfer function) of the detector used. (default none)
+    fsc_adj:: Apply FSC-based low-pass filter: Applies an FSC-based low-pass filter to the merged volume before the B-factor estimation. (default False)
+    B_enhance:: B-factor enhancement: -1.0: B-factor is not applied; 0.0: program estimates B-factor from options. B_start (usually 10 Angstrom) to the resolution determined by FSC143; 128.0: program use the given value 128.0 [A^2] to enhance map. (default 0.0)
+    B_start:: B-factor estimation lower limit [A]: Frequency in Angstrom defining lower boundary of B-factor estimation. (default 10.0)
+    B_stop:: B-factor estimation upper limit [A]: Frequency in Angstrom defining upper boundary of B-factor estimation. Recommended to set the upper boundary to the frequency where fsc < 0.0. (default  0.0)
+    fl:: Low-pass filter frequency [1/Pixels]: 0.0: low-pass filter to resolution; A value > 0.5: low-pass filter to the value in Angstrom; A value > 0.0 and < 0.5: low-pass filter to the value in absolute frequency; -1.0: no low-pass filter. (default 0.0)
+    aa:: Low-pass filter fall-off [1/Pixels]: Low-pass filter fall-off. (default 0.1)
 
     window_stack:: Window stack images using a smaller window size: (default False)
     box:: new window size: (default 0)
@@ -197,24 +199,36 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
     transformparams:: Transform 3D projection orientation parameters: using six 3D parameters (phi,theta,psi,sx,sy,sz). input is --transformparams=45.,66.,12.,-2,3,-5.5 desired six transformation of the reconstructed structure. output is file with modified orientation parameters. (default none)
 
 
-
 == Output ==
     outputfile::  output file: required for some options. (default none)
     micrograph_prefix:: prefix for output micrographs: required for some options. (default none)
 
 
-== Development Notes ==
+= Description =
+
+
+= Method =
+
+
+= Reference =
 
 
 = Author / Maintainer =
 Jia Fang
 
+
 = Keywords =
- category 1:: UTILITIES
- category 1:: APPLICATIONS
+category 1:: UTILITIES
+category 1:: APPLICATIONS
+
 
 = Files =
-sxprocess.py
+sparx/bin/sxprocess.py
+
 
 = Maturity =
- beta:: works for author, often works for others.
+beta:: works for author, often works for others.
+
+
+=== Bugs ===
+

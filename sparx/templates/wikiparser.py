@@ -97,20 +97,18 @@ def construct_keyword_dict():
 	keyword_dict = {}
 
 	# Use priority 0 to overrule the exceptional cases (This is a reason why priority is introduced...)
-	keyword_dict["--use_latest_master_directory"] = SXkeyword_map(0, "")               # --use_latest_master_directory (contains keyworkd 'directory' but this should be bool type)
-	keyword_dict["--stack_mode"]                  = SXkeyword_map(0, "")               # stack_mode (contains keyworkd 'stack' but this should be bool type)
-	keyword_dict["--adaptive_mask"]               = SXkeyword_map(0, "")               # --adaptive_mask (contains keyworkd 'mask' but this should be bool type)
-	keyword_dict["--binary_mask"]                 = SXkeyword_map(0, "")               # --binary_mask (contains keyworkd 'mask' but this should be bool type)
-	keyword_dict["--symmetrize"]                  = SXkeyword_map(0, "")               # --symmetrize (contains keyworkd '--sym' but this should be bool type)
-###	keyword_dict["isac_directory"]                = SXkeyword_map(0, "directory")      # isac_directory (contains keyworkd 'directory' but this should be directory type)
+###	keyword_dict["--use_latest_master_directory"] = SXkeyword_map(0, "bool")           # --use_latest_master_directory (contains keyworkd 'directory' but this should be bool type)
+	keyword_dict["--stack_mode"]                  = SXkeyword_map(0, "bool")           # stack_mode (contains keyworkd 'stack' but this should be bool type)
+	keyword_dict["--binary_mask"]                 = SXkeyword_map(0, "bool")           # --binary_mask (contains keyworkd 'mask' but this should be bool type)
+	keyword_dict["--symmetrize"]                  = SXkeyword_map(0, "bool")           # --symmetrize (contains keyworkd '--sym' but this should be bool type)
 	keyword_dict["--chunkdir"]                    = SXkeyword_map(0, "directory")      # --chunkdir=chunkdir (contains keyworkd 'chunk' but this should be directory type)
 	keyword_dict["destination_directory"]         = SXkeyword_map(0, "directory")      # destination_directory (contains keyworkd 'directory' but this should be directory type)
-	keyword_dict["--single_stack_output"]         = SXkeyword_map(0, "bool")           # --single_stack_output (contains keyworkd 'output' but this should be bool type)
 	keyword_dict["--do_adaptive_mask"]            = SXkeyword_map(0, "bool")           # --do_adaptive_mask (contains keyworkd 'mask' but this should be bool type)
-	keyword_dict["--skip_create_substack"]        = SXkeyword_map(0, "bool")           # --skip_create_substack (contains keyworkd 'stack' but this should be bool type)
+	keyword_dict["--adaptive_mask"]               = SXkeyword_map(0, "bool")           # --adaptive_mask (contains keyworkd 'mask' but this should be bool type)
+###	keyword_dict["--skip_create_substack"]        = SXkeyword_map(0, "bool")           # --skip_create_substack (contains keyworkd 'stack' but this should be bool type)
 	keyword_dict["--no_virtual_stack"]            = SXkeyword_map(0, "bool")           # --no_virtual_stack (contains keyworkd 'stack' but this should be bool type)
-	keyword_dict["--applymask"]                   = SXkeyword_map(0, "bool")           # --applymask (contains keyworkd 'mask' but this should be bool type)
 	keyword_dict["--create_stack"]                = SXkeyword_map(0, "bool")           # --create_stack (contains keyworkd 'stack' but this should be bool type)
+	keyword_dict["--mask_threshold"]              = SXkeyword_map(0, "float")           # --mask_threshold=MASK_THRESHOLD (contains keyworkd 'mask' but this should be bool type)
 	# Use priority 1 for output
 	keyword_dict["output"]                        = SXkeyword_map(1, "output")         # output_hdf, output_directory, outputfile, outputfile, --output=OUTPUT, output_stack, output_file
 	keyword_dict["outdir"]                        = SXkeyword_map(1, "output")         # outdir
@@ -118,11 +116,10 @@ def construct_keyword_dict():
 	keyword_dict["--var3D"]                       = SXkeyword_map(1, "output")         # --var3D
 	keyword_dict["--ave2D"]                       = SXkeyword_map(1, "output")         # --ave2D
 	keyword_dict["--var2D"]                       = SXkeyword_map(1, "output")         # --var2D
-	keyword_dict["--masterdir"]                   = SXkeyword_map(1, "output")         # --masterdir=master_dir
+###	keyword_dict["--masterdir"]                   = SXkeyword_map(1, "output")         # --masterdir=master_dir
 	keyword_dict["locres_volume"]                 = SXkeyword_map(1, "output")         # locres_volume (this contained keyword "volume" also... This is another reason why priority is introduced...)
 	keyword_dict["directory"]                     = SXkeyword_map(1, "output")         # directory
 	keyword_dict["rotpw"]                         = SXkeyword_map(1, "output")         # rotpw
-	keyword_dict["output_mask3D"]                 = SXkeyword_map(1, "output")         # output_mask3D
 	keyword_dict["--makevstack"]                  = SXkeyword_map(1, "output")         # --makevstack
 	keyword_dict["input_micrograph_list"]         = SXkeyword_map(1, "any_image_list") # input_micrograph_list (contains keyword 'input_micrograph' but this should be image_list type)
 	keyword_dict["--ctref_orgstack"]              = SXkeyword_map(1, "bdb")            # --ctref_orgstack=stack_for_continuation
@@ -133,8 +130,7 @@ def construct_keyword_dict():
 	keyword_dict["mask"]                          = SXkeyword_map(2, "image")          # --mask3D=mask3D, maskfile, mask, --mask=MASK, --mask3D=mask3d_file
 	keyword_dict["--focus"]                       = SXkeyword_map(2, "image")          # --focus=3D_focus_mask, --focus=focus3d_file
 	keyword_dict["--input"]                       = SXkeyword_map(2, "image")          # --input=INPUT
-	keyword_dict["class_file_name_no_dir_info"]   = SXkeyword_map(2, "image")          # class_file_name_no_dir_info
-	keyword_dict["isac_averages"]                 = SXkeyword_map(2, "image")          # isac_averages
+###	keyword_dict["isac_averages"]                 = SXkeyword_map(2, "image")          # isac_averages
 	keyword_dict["--ctref_initvol"]               = SXkeyword_map(2, "image")          # --ctref_initvol=restarting_initial_volume
 	keyword_dict["input_isac_class_avgs_path"]    = SXkeyword_map(2, "image")          # input_isac_class_avgs_path
 	keyword_dict["input_image_path"]              = SXkeyword_map(2, "any_image")      # input_image_path
@@ -159,12 +155,10 @@ def construct_keyword_dict():
 	keyword_dict["unblur_path"]                   = SXkeyword_map(2, "exe")            # unblur_path
 	keyword_dict["summovie_path"]                 = SXkeyword_map(2, "exe")            # summovie_path
 	keyword_dict["input_pdb"]                     = SXkeyword_map(2, "pdb")            # input_pdb
-###	keyword_dict["input_mrc_micrograph"]          = SXkeyword_map(2, "mrc")            # input_mrc_micrograph
-	keyword_dict["input_bdb_stack_file"]          = SXkeyword_map(2, "bdb")            # input_bdb_stack_file
 	keyword_dict["input_bdb_stack_path"]          = SXkeyword_map(2, "bdb")            # input_bdb_stack_path
 	keyword_dict["input_shift_list_file"]         = SXkeyword_map(2, "txt")            # input_shift_list_file
 	keyword_dict["cter_ctf_file"]                 = SXkeyword_map(2, "txt")            # cter_ctf_file
-	keyword_dict["--resample_ratio_source"]       = SXkeyword_map(2, "txt")            # --resample_ratio_source
+###	keyword_dict["--resample_ratio_source"]       = SXkeyword_map(2, "txt")            # --resample_ratio_source
 	keyword_dict["input_data_list"]               = SXkeyword_map(2, "any_file_list")  # input_data_list
 	keyword_dict["--function"]                    = SXkeyword_map(2, "function")       # --function=user_function
 	keyword_dict["--isac_dir"]                    = SXkeyword_map(2, "directory")      # --isac_dir (contains keyworkd 'directory' but this should be directory type)
@@ -172,7 +166,6 @@ def construct_keyword_dict():
 	keyword_dict["--ctref_oldrefdir"]             = SXkeyword_map(2, "directory")      # --ctref_oldrefdir=refine_dir_path
 	keyword_dict["--refinement_dir"]              = SXkeyword_map(2, "directory")      # --refinement_dir=refinemen_out_dir
 	keyword_dict["--previous_run"]                = SXkeyword_map(2, "directory")      # --previous_run1=sort3d_run1_directory, --previous_run2=sort3d_run2_directory (need for sort3d.txt)
-	keyword_dict["input_bdb_stack_pattern"]       = SXkeyword_map(2, "any_directory")  # input_bdb_stack_pattern
 
 	keyword_dict["--apix"]                        = SXkeyword_map(2, "apix")           # --apix=pixel_size, --apix, --apix=PIXEL_SIZE
 	keyword_dict["--pixel_size"]                  = SXkeyword_map(2, "apix")           # --pixel_size=PIXEL_SIZE
@@ -180,7 +173,7 @@ def construct_keyword_dict():
 	keyword_dict["--box"]                         = SXkeyword_map(2, "box")            # --box=box_size, --box_size=box_size, --boxsize=BOX_SIZE
 	keyword_dict["--radius"]                      = SXkeyword_map(2, "radius")         # --radius=particle_radius, --radius=outer_radius, --radius=outer_radius, --radius=particle_radius, --radius=outer_radius, --radius=outer_radius
 	keyword_dict["--sym"]                         = SXkeyword_map(2, "sym")            # --sym=c1, --sym=symmetry, --sym=c4
-	keyword_dict["--molecular_mass"]              = SXkeyword_map(2, "mass")           # --molecular_mass
+###	keyword_dict["--molecular_mass"]              = SXkeyword_map(2, "mass")           # --molecular_mass
 	
 	# NOTE: 2016/02/23 Toshio Moriya
 	# Below might be useful to include
@@ -1197,21 +1190,24 @@ def create_sxcmd_subconfig_refine3d_postprocess():
 	token_edit = SXcmd_token(); token_edit.initialize_edit("postprocess"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("firstvolume"); token_edit.key_prefix = ""; token_edit.label = "First unfiltered half-volume "; token_edit.help = "Generated by sxmeridien"; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("secondvolume"); token_edit.key_prefix = ""; token_edit.label = "Second unfiltered half-volume "; token_edit.help = "Generated by sxmeridien"; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("mtf"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("fsc_adj"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("B_enhance"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("fl"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("aa"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("mask"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("output"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("output_dir"); token_edit_list.append(token_edit)
+	
 	token_edit = SXcmd_token(); token_edit.initialize_edit("pixel_size"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("B_start"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("B_stop"); token_edit_list.append(token_edit)
-#	token_edit = SXcmd_token(); token_edit.initialize_edit("randomphasesafter"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("mask"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("do_adaptive_mask"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("mask_threshold"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("consine_edge"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("dilation"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("mtf"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("fsc_adj"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("B_enhance"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("B_start"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("B_stop"); token_edit_list.append(token_edit)
+#	token_edit = SXcmd_token(); token_edit.initialize_edit("randomphasesafter"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("fl"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("aa"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("output"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
+	
 	sxsubcmd_mpi_support = False
 	sxcmd_subconfig = SXsubcmd_config("Sharpening", None, token_edit_list, sxsubcmd_mpi_support)
 
@@ -1220,7 +1216,10 @@ def create_sxcmd_subconfig_refine3d_postprocess():
 def create_sxcmd_subconfig_variability_preprocess():
 	token_edit_list = []
 	token_edit = SXcmd_token(); token_edit.initialize_edit("symmetrize"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
+
 	token_edit = SXcmd_token(); token_edit.initialize_edit("prj_stack"); token_edit.key_prefix = ""; token_edit.label = "Input image stack"; token_edit.help = "The images must containt the 3D orientation parameters in the header and optionally CTF information. The output image stack is bdb:sdata. Please use it as an input image stack of sx3dvariability."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("output_dir"); token_edit_list.append(token_edit)
+
 	token_edit = SXcmd_token(); token_edit.initialize_edit("sym"); token_edit_list.append(token_edit)
 	sxsubcmd_mpi_support = False
 	sxcmd_subconfig = SXsubcmd_config("3D Variability Preprocess", None, token_edit_list, sxsubcmd_mpi_support)
@@ -1622,7 +1621,7 @@ def create_exclude_list_display():
 	return exclude_list
 
 # ========================================================================================
-def main():
+def main(is_dev_mode = False):
 	# --------------------------------------------------------------------------------
 	# Define command categories used in GUI
 	# --------------------------------------------------------------------------------
@@ -1751,7 +1750,8 @@ def main():
 	sxcmd_config_list.append(SXcmd_config("../doc/rsort3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_rsort3d()))
 	sxcmd_config_list.append(SXcmd_config("../doc/sort3d_depth.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_sort3d_depth_stack()))
 	sxcmd_config_list.append(SXcmd_config("../doc/sort3d_depth.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_sort3d_depth_sharpen()))
-	sxcmd_config_list.append(SXcmd_config("../doc/meridien_20171120.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_20171120_local()))
+	if is_dev_mode:
+		sxcmd_config_list.append(SXcmd_config("../doc/meridien_20171120.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_20171120_local()))
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_final()))
 
 	sxcmd_role = "sxr_util"
@@ -1840,6 +1840,9 @@ def main():
 
 #	output_file_path = "../bin/sxgui.py" # output_file_path = "sxgui_trial.py"
 	output_file_path = "./sxgui_auto.py"
+	if is_dev_mode:
+		output_file_path = "./sxgui_dev.py"
+
 	# remove the previous output
 	if os.path.exists(output_file_path):
 		os.remove(output_file_path)
@@ -1891,7 +1894,14 @@ def main():
 
 # ========================================================================================
 if __name__ == '__main__':
+	print("")
+	print("==================== Creating release version ==================== " )
+	print("")
 	main()
+	print("")
+	print("==================== Creating development version ==================== " )
+	print("")
+	main(is_dev_mode = True)
 
 # ========================================================================================
 # END OF SCRIPT

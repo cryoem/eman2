@@ -382,7 +382,7 @@ def main():
 	parser.add_option("--output_dir",           type="string",        help="postprocess directory name", default = "./")
 	parser.add_option("--pixel_size",           type="float",         help="pixel size of the data", default=0.0)
 	parser.add_option("--B_start",              type="float",         help="starting frequency in Angstrom for B-factor estimation", default=10.)
-	parser.add_option("--B_stop",               type="float",         help="cutoff frequency in Angstrom for B-factor estimation, cutoff is set to the frequency where fsc < 0.0", default=0.0)
+	parser.add_option("--B_stop",               type="float",         help="cutoff frequency in Angstrom for B-factor estimation. recommended to set cutoff to the frequency where fsc < 0.0. by default, the program uses Nyquist frequency.", default=0.0)
 	parser.add_option("--do_adaptive_mask",     action="store_true",  help="generate adaptive mask with the given threshold ", default= False)
 	parser.add_option("--mask_threshold",       type="float",         help=" the threshold for adaptive_mask", default= 0.02)
 	parser.add_option("--consine_edge", 	    type="float",		  help="the width for cosine transition area ", default= 6.0)
@@ -1006,7 +1006,7 @@ def main():
 				if m: e1 *=m
 				if options.B_enhance ==0.0 or options.B_enhance == -1.:
 					guinierline = rot_avg_table(power(periodogram(e1),.5))
-					if options.B_stop:
+					if options.B_stop == 0.0:
 						freq_max   =  1./(2.*options.pixel_size)
 					else:
 						freq_max =1./options.B_stop
