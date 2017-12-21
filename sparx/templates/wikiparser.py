@@ -1216,7 +1216,10 @@ def create_sxcmd_subconfig_refine3d_postprocess():
 def create_sxcmd_subconfig_variability_preprocess():
 	token_edit_list = []
 	token_edit = SXcmd_token(); token_edit.initialize_edit("symmetrize"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
+
 	token_edit = SXcmd_token(); token_edit.initialize_edit("prj_stack"); token_edit.key_prefix = ""; token_edit.label = "Input image stack"; token_edit.help = "The images must containt the 3D orientation parameters in the header and optionally CTF information. The output image stack is bdb:sdata. Please use it as an input image stack of sx3dvariability."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("output_dir"); token_edit_list.append(token_edit)
+
 	token_edit = SXcmd_token(); token_edit.initialize_edit("sym"); token_edit_list.append(token_edit)
 	sxsubcmd_mpi_support = False
 	sxcmd_subconfig = SXsubcmd_config("3D Variability Preprocess", None, token_edit_list, sxsubcmd_mpi_support)
