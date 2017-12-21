@@ -34,6 +34,7 @@ import os, sys
 from optparse import OptionParser, SUPPRESS_HELP
 import glob
 import json
+import shutil
 
 from EMAN2 import *
 from EMAN2db import *
