@@ -1621,7 +1621,7 @@ def create_exclude_list_display():
 	return exclude_list
 
 # ========================================================================================
-def main():
+def main(is_dev_mode = False):
 	# --------------------------------------------------------------------------------
 	# Define command categories used in GUI
 	# --------------------------------------------------------------------------------
@@ -1750,7 +1750,8 @@ def main():
 	sxcmd_config_list.append(SXcmd_config("../doc/rsort3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_rsort3d()))
 	sxcmd_config_list.append(SXcmd_config("../doc/sort3d_depth.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_sort3d_depth_stack()))
 	sxcmd_config_list.append(SXcmd_config("../doc/sort3d_depth.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_sort3d_depth_sharpen()))
-	sxcmd_config_list.append(SXcmd_config("../doc/meridien_20171120.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_20171120_local()))
+	if is_dev_mode:
+		sxcmd_config_list.append(SXcmd_config("../doc/meridien_20171120.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_20171120_local()))
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_final()))
 
 	sxcmd_role = "sxr_util"
@@ -1839,6 +1840,9 @@ def main():
 
 #	output_file_path = "../bin/sxgui.py" # output_file_path = "sxgui_trial.py"
 	output_file_path = "./sxgui_auto.py"
+	if is_dev_mode:
+		output_file_path = "./sxgui_dev.py"
+
 	# remove the previous output
 	if os.path.exists(output_file_path):
 		os.remove(output_file_path)
@@ -1890,7 +1894,14 @@ def main():
 
 # ========================================================================================
 if __name__ == '__main__':
+	print("")
+	print("==================== Creating release version ==================== " )
+	print("")
 	main()
+	print("")
+	print("==================== Creating development version ==================== " )
+	print("")
+	main(is_dev_mode = True)
 
 # ========================================================================================
 # END OF SCRIPT
