@@ -1781,14 +1781,16 @@ def Kmeans_minimum_group_size_orien_groups(original_data, partids, params, param
 		partition, ali3d_params_list = parsing_sorting_params(partids, res_sort3d)
 		write_text_row(partition, os.path.join(Tracker["directory"],"list.txt"))
 		shutil.rmtree(os.path.join(Tracker["directory"], "tempdir"))
-		if clean_volumes:
-			for jter in xrange(total_iter):
-				for igroup in xrange(Tracker["number_of_groups"]): 
-					os.remove(os.path.join(Tracker["directory"], "vol_grp%03d_iter%03d.hdf"%(igroup,jter)))
+	
 	else: partition = 0
 	partition  = wrap_mpi_bcast(partition, Blockdata["main_node"])
 	premature  = wrap_mpi_bcast(premature, Blockdata["main_node"])
-	
+
+	if(Blockdata["myid"] == Blockdata["last_node"]):
+		if clean_volumes:
+			for jter in xrange(total_iter):
+				for igroup in xrange(Tracker["number_of_groups"]): 
+					os.remove(os.path.join(Tracker["directory"], "vol_grp%03d_iter%03d.hdf"%(igroup,jter)))	
 	if require_check_setting:
 		if(Blockdata["myid"] == Blockdata["main_node"]): print("Too large changed particles, and the sorting settings, such as img_per_grp requires a check")
 	return partition, premature
