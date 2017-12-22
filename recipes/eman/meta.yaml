@@ -53,9 +53,9 @@ test:
     - tests/run_prog_tests.sh
     - tests/programs_no_test.txt
     - tests/test_EMAN2DIR.py
-    - tests/run_common_tests.sh
-    - tests/run_common_tests.bat
+    - tests/run_tests.sh
+    - tests/run_tests.bat
 
   commands:
-    - bash tests/run_common_tests.sh                                # [not win]
-    - call tests\run_common_tests.bat                               # [win]
+    - bash tests/run_tests.sh                                # [not win]
+    - call tests\run_tests.bat                               # [win]

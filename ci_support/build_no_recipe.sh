@@ -17,4 +17,4 @@ export SRC_DIR=${PWD}
 bash ${SRC_DIR}/recipes/eman/build.sh
 
 # Run tests
-bash ${SRC_DIR}/tests/run_common_tests.sh
+bash ${SRC_DIR}/tests/run_tests.sh
