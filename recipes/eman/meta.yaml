@@ -59,5 +59,3 @@ test:
   commands:
     - bash tests/run_common_tests.sh                                # [not win]
     - call tests\run_common_tests.bat                               # [win]
-    - mpirun -n 4 $(which python) ${PREFIX}/examples/mpi_test.py    # [not win]
-    - bash tests/run_prog_tests.sh                                  # [not win]
