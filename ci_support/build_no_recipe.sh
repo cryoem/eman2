@@ -11,16 +11,8 @@ else
 fi
 
 # Build and install eman2
-export build_dir=$HOME/build_eman
-
-rm -rf ${build_dir}
-mkdir -p ${build_dir}
-cd ${build_dir}
-
-cmake "${OLDPWD}"
-make
-make install
-make test-verbose
+export SRC_DIR=${PWD}
+bash ${SRC_DIR}/recipes/eman/build.sh
 
 # Run tests
 e2version.py
