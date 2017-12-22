@@ -2,6 +2,8 @@
 
 source ci_support/setup_conda.sh
 
+export CPU_COUNT=2
+
 # Following Wiki instructions at
 # http://blake.bcm.edu/emanwiki/EMAN2/COMPILE_EMAN2_ANACONDA
 if [ "$(uname -s)" != "Darwin" ];then
