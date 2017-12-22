@@ -1408,7 +1408,7 @@ def main():
 			if options.B_enhance !=-1:  log_main.add( "B-factor is  %6.2f Angstrom^2  "%(round((-global_b),2)))
 			else:  log_main.add( "B-factor is not applied  ")
 			output_names = [plot_name.replace(' ', '_') for plot_name in plot_names]
-			log_main.add("FSC curves are saved in {0}.txt ".format('.txt, '.join(plot_names).lower()))
+			log_main.add("FSC curves are saved in {0}.txt ".format('.txt, '.join(output_names).lower()))
 			log_main.add("The Final volume is " + options.output)
 			log_main.add("guinierlines in logscale are saved in guinierlines.txt")
 			if options.fl !=-1: log_main.add("Top hat low-pass filter is applied to cut off high frequencies from resolution 1./%5.2f Angstrom" %round(cutoff,2))
