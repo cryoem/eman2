@@ -17,9 +17,6 @@ export SRC_DIR=${PWD}
 bash ${SRC_DIR}/recipes/eman/build.sh
 
 # Run tests
-e2version.py
-e2speedtest.py
-
 bash ${SRC_DIR}/tests/run_common_tests.sh
 mpirun -n 4 $(which python) ${SRC_DIR}/examples/mpi_test.py
 bash ${SRC_DIR}/tests/run_prog_tests.sh

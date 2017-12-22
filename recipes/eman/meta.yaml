@@ -57,8 +57,6 @@ test:
     - tests/run_common_tests.bat
 
   commands:
-    - e2version.py
-    - e2speedtest.py
     - bash tests/run_common_tests.sh                                # [not win]
     - call tests\run_common_tests.bat                               # [win]
     - mpirun -n 4 $(which python) ${PREFIX}/examples/mpi_test.py    # [not win]
