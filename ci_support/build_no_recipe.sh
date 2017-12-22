@@ -20,4 +20,3 @@ bash ${SRC_DIR}/recipes/eman/build.sh
 bash ${SRC_DIR}/tests/run_common_tests.sh
 mpirun -n 4 $(which python) ${SRC_DIR}/examples/mpi_test.py
 bash ${SRC_DIR}/tests/run_prog_tests.sh
-python ${SRC_DIR}/tests/test_EMAN2DIR.py

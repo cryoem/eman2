@@ -61,4 +61,3 @@ test:
     - call tests\run_common_tests.bat                               # [win]
     - mpirun -n 4 $(which python) ${PREFIX}/examples/mpi_test.py    # [not win]
     - bash tests/run_prog_tests.sh                                  # [not win]
-    - python tests/test_EMAN2DIR.py
