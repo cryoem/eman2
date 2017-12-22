@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
-source ci_support/setup_conda.sh
+if [ ! -z ${CI} ];then
+    source ci_support/setup_conda.sh
+fi
 
 export CPU_COUNT=2
 
