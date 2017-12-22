@@ -53,10 +53,14 @@ test:
     - tests/run_prog_tests.sh
     - tests/programs_no_test.txt
     - tests/test_EMAN2DIR.py
+    - tests/run_common_tests.sh
+    - tests/run_common_tests.bat
 
   commands:
     - e2version.py
     - e2speedtest.py
+    - bash tests/run_common_tests.sh                                # [not win]
+    - call tests\run_common_tests.bat                               # [win]
     - mpirun -n 4 $(which python) ${PREFIX}/examples/mpi_test.py    # [not win]
     - bash tests/run_prog_tests.sh                                  # [not win]
     - python tests/test_EMAN2DIR.py
