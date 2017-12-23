@@ -103,8 +103,8 @@ def main():
 	if options.mask: 
 		options.mask=parsemodopt(options.mask)
 
-	if options.preproc:
-		options.preproc=parsemodopt(options.preproc)
+	#if options.preproc:
+	#	options.preproc=parsemodopt(options.preproc)
 
 
 	if options.cutoff and options.cutoff != 'None' and options.cutoff != 'none':
@@ -198,15 +198,15 @@ def getfscs(options,apix):
 		if sym:
 			refsym.mult(mask)
 
-	if options.preproc:
-		ref.process_inplace(options.preproc[0],options.preproc[1])
-		if sym:
-			refsym.process_inplace(options.preproc[0],options.preproc[1])		
+	#if options.preproc:
+	#	ref.process_inplace(options.preproc[0],options.preproc[1])
+	#	if sym:
+	#		refsym.process_inplace(options.preproc[0],options.preproc[1])		
 
-	if options.savepreproc:
-		ref.write_image(options.ref.replace(options.ref[-4:],'_preproc'+options.ref[-4:]))
-		if sym:
-			refsym.write_image(options.ref.replace(options.ref[-4:],'_sym_preproc'+options.ref[-4:]))
+	#if options.savepreproc:
+	#	ref.write_image(options.ref.replace(options.ref[-4:],'_preproc'+options.ref[-4:]))
+	#	if sym:
+	#		refsym.write_image(options.ref.replace(options.ref[-4:],'_sym_preproc'+options.ref[-4:]))
 	
 	if options.mirror:
 		t = Transform({'type':'eman','mirror':True})
@@ -239,17 +239,6 @@ def getfscs(options,apix):
 			
 			#if options.mask:
 			#	ptclsym.mult(mask)
-
-
-		if options.preproc:
-			ptcl.process_inplace(options.preproc[0],options.preproc[1])
-			if sym:
-				ptclsym.process_inplace(options.preproc[0],options.preproc[1])
-
-		if options.savepreproc:
-			ptcl.write_image(options.input.replace(options.input[-4:],'_preproc'+options.input[-4:]))
-			if sym:
-				ptclsym.write_image(options.input.replace(options.input[-4:],'_sym_preproc'+options.input[-4:]))
 
 
 		'''
@@ -596,6 +585,7 @@ def fscplotter(fscs,options,apix=0.0,tag='',clearplot=False):
 		
 		if not firstline:
 			newlines = ['0.0 1.0']+newlines
+			print("\n!!!! added 0,1 as the first point to plot")
 		else:
 			pass
 		x=[]
@@ -631,20 +621,31 @@ def fscplotter(fscs,options,apix=0.0,tag='',clearplot=False):
 		kk=0
 		print("factorOfTicksIs", factorOfTicks)
 		print("And the final number of values is", len(values))
+
+		xpositionswithlabel = []
+		xpositionswithoutlabel = []
+
 		for i in range(len(values)):
+			
 			if i == 0:	
 				print("I always append the zero tick", inversefreqslabels[i])
-				xticks.append(inversefreqslabels[i])
+				#xticks.append(inversefreqslabels[i])
+				xpositionswithlabel.append(i)
 			
 			if not (kk+1) % factorOfTicks:
 				print("I have appended this tick!", inversefreqslabels[i])
 				print("Because k+1 is", kk+1)
 				print("And k mod factorOfTicks is", (kk+1) % factorOfTicks)
-				xticks.append(inversefreqslabels[i])
+				#xticks.append(inversefreqslabels[i])
+				xpositionswithlabel.append(i)
 			else:
 				print("skipped this thick", inversefreqslabels[i])
 				if i != len(values)-1 and i != 0:
-					xticks.append('')
+					#xticks.append('')
+					xpositionswithoutlabel.append(i)
+			
+			
+			xticks.append(inversefreqslabels[i])
 			
 			#if i == len(values) -1:
 			#	print "I always append the last tick", inversefreqslabels[i]
@@ -840,23 +841,58 @@ def fscplotter(fscs,options,apix=0.0,tag='',clearplot=False):
 		ax = fig.add_subplot(111)
 		
 		for tick in ax.xaxis.get_major_ticks():
-			tick.label1.set_fontsize(16)
+			tick.label1.set_fontsize(12)
 			tick.label1.set_fontweight('bold')
 		for tick in ax.yaxis.get_major_ticks():
-			tick.label1.set_fontsize(16)
+			tick.label1.set_fontsize(12)
 			tick.label1.set_fontweight('bold')
+
 
 		pylab.xlabel('X Axis', fontsize=16, fontweight='bold')
 		pylab.ylabel('Y Axis', fontsize=16, fontweight='bold')
 
-		plt.xticks(x,inversefreqslabels)
+		ax.set_xticks(xpositionswithlabel, minor=False)
+		#ax.set_xticks(xpositionswithoutlabel, minor=True)
+
+		#THIS WAS USED
+		#plt.xticks(x,inversefreqslabels)
+
+		labels = xticks
+
+		print ("\n\n\n\n\n!!!!BEFORE len(labels)={}\n\n\nlabels={}".format(len(labels),labels))
+		
+		finallabels = []
+		print ("\nxpositions with label are={}".format(xpositionswithlabel))
+		for i in range(len(xticks)):
+			if i in xpositionswithoutlabel:
+				labels[i] = ''
+				#xticks[i].label1.set_visible(False)
+			elif i in xpositionswithlabel:
+				labels[i] = inversefreqslabels[i]
+				finallabels.append(inversefreqslabels[i])
+
+		ax.set_xticklabels(finallabels)
+		
 		print("Len of x and inversefreqslabels are", len(x), len(inversefreqslabels))
 
 		print("len of ticks is", len(xticks))
 		print("ticks are", xticks)
+		'''
 		ax.xaxis.set_major_locator(MaxNLocator(nbins=len(xticks)))
 		pylab.setp(ax, xticklabels=xticks)
+		'''
+		#to set INVISIBLE TICKS
+		#make_invisible = True
+		#if make_invisible:
+		#	xticks = ax.xaxis.get_major_ticks()
+		#	for i in range(len(xticks)):
+		#		if i in xpositionswithoutlabel:
+		#			xticks[i].label1.set_visible(False)
 		
+
+		
+		
+		print ("\n!!!! len(x)={}, len(values)={}, len(xticks)={}".format(len(x),len(values),len(xticks)) )
 		
 		'''
 		PLOT Threshold criteria as horizontal lines
