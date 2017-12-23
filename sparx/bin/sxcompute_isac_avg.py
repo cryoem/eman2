@@ -395,6 +395,12 @@ def main():
 	# Now computing!
 	del init_dict
 	tag_sharpen_avg = 1000
+	## always apply low pass filter to B_enhanced images to suppress noise in high frequencies 
+	enforced_to_H1 = False
+	if options.B_enhance:
+		if Tracker["constants"]["low_pass_filter"] ==-1: 
+			print("User does not provide low pass filter")
+			enforced_to_H1 = True
 	if navg <Blockdata["nproc"]:#  Each CPU do one average 
 		FH_list = [ None for im in xrange(navg)]
 		for iavg in xrange(navg):
@@ -569,8 +575,10 @@ def main():
 				else: 
 					low_pass_filter = Tracker["constants"]["low_pass_filter"]
 					if low_pass_filter >=0.45: low_pass_filter =0.45 		
-				new_avg = filt_tanl(new_avg, low_pass_filter, 0.1)	
-				
+				new_avg = filt_tanl(new_avg, low_pass_filter, 0.1)
+			else:
+				if enforced_to_H1: new_avg = filt_tanl(new_avg, FH1, 0.1)
+			
 			new_avg.set_attr("members",   list_dict[iavg])
 			new_avg.set_attr("n_objects", len(list_dict[iavg]))
 			slist[iavg]    = new_avg
