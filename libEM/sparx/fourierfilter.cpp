@@ -390,7 +390,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 					jy=iy-1; if (jy>nyp2) jy=jy-nyp; argy = argz + float(jy*jy)*dy2;
 					for ( ix = 1; ix <= lsd2; ix++) {
 						jx=ix-1; argx = argy + float(jx*jx)*dx2;
-						// 3.34*10**8 -> exp(88)
+						// 3.34*10**38 -> exp(88)
 						float image_value_real = abs(fp->cmplx(ix,iy,iz).real());
 						float image_value_imag = abs(fp->cmplx(ix,iy,iz).imag());
 						int ncase = 0;
