@@ -394,9 +394,10 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 						float image_value_real = abs(fp->cmplx(ix,iy,iz).real());
 						float image_value_imag = abs(fp->cmplx(ix,iy,iz).imag());
 						int ncase = 0;
-						if ((image_value_real !=0.0) && (image_value_imag !=0.0))  ncase =  1;
-						if ((image_value_real !=0.0) && (image_value_imag ==0.0))  ncase =  2;
-						if ((image_value_real == 0.0) && (image_value_imag !=0.0)) ncase =  3;  
+						if ((image_value_real !=0.0)  && (image_value_imag !=0.0))  ncase =  1;
+						if ((image_value_real !=0.0)  && (image_value_imag ==0.0))  ncase =  2;
+						if ((image_value_real == 0.0) && (image_value_imag !=0.0))  ncase =  3;
+						if ((image_value_real == 0.0) && (image_value_imag ==0.0))  ncase =  4;  
 						switch (ncase)
 						{
 							case 1:
@@ -414,6 +415,9 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 								   throw InvalidValueException(ncase, "high-pass filter enhanced image value is out of bound");
 								else fp->cmplx(ix,iy,iz) *= exp(argx*omega);
 								break; 
+							case 4:
+								fp->cmplx(ix,iy,iz) *= exp(argx*omega);
+								break;
 						}	 
 					}
 				}
