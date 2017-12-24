@@ -80,6 +80,15 @@ pipeline {
         aborted {
           notifyGitHub('ERROR')
         }
+        
+        always {
+          emailext(recipientProviders: [[$class: 'DevelopersRecipientProvider']],  
+                  subject: '[$PROJECT_NAME] Build # $BUILD_NUMBER - $BUILD_STATUS!', 
+                  body: '''
+                        Build log: $BUILD_URL
+                        '''
+                  )
+        }
       }
     }
   }
