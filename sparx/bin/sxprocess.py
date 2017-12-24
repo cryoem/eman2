@@ -1027,7 +1027,7 @@ def main():
 					e1 =filt_tanl(e1,options.fl/option.pixel_size, options.aa)
 				e1.write_image(options.output)
 				
-		else: # 3D case
+		else: # 3D case High pass filter should always come along with low-pass filter. 
 			log_main.add("-------->>>Settings given by all options<<<-------")
 			log_main.add("pixle_size  		:"+str(options.pixel_size))
 			log_main.add("mask        		:"+str(options.mask))
@@ -1061,7 +1061,19 @@ def main():
 				exit()
 			if (map2.get_xsize() != map1.get_xsize()) or (map2.get_ysize() != map1.get_ysize()) or (map2.get_zsize() != map1.get_zsize()):
 				ERROR(" Two input maps have different image size", "--postprocess option for 3-D", 1)
-				
+			filter_to_resolution =  False	
+			### enforce low-pass filter
+			if options.B_enhance !=-1:
+				if not options.fsc_adj:
+					if options.fl == -1.0: 
+						filter_to_resolution = True
+						msg = "low_pass filter is enforeced to turn on"
+					else:
+						msg = "User chooses low_pass filter  %f"%options.fl
+				else:
+					msg = "fsc_adj options works as a low_pass filter"
+				log_main.add(msg)
+				 
 			## prepare mask 
 			if options.mask != None and options.do_adaptive_mask:
 				ERROR("Wrong options, use either adaptive_mask or user provided mask", " options.mask and options.do_adaptive_mask ", 1)
@@ -1392,8 +1404,16 @@ def main():
 				else: # low-pass filter to resolution determined by FSC0.143
 					map1   = filt_tanl(map1,resolution_FSC143, options.aa)
 					cutoff = options.pixel_size/resolution_FSC143
-			else: log_main.add("low_pass filter is not applied to map! ")
-			
+				
+			else:
+				if filter_to_resolution:
+					map1   = filt_tanl(map1,resolution_FSC143, options.aa)
+					cutoff = options.pixel_size/resolution_FSC143
+				else:
+					cutoff = 0.0 
+					log_main.add("low_pass filter is not applied to map! ")
+			msg = "low pass filter to  %f Angstrom"%cutoff
+			log_main.add(msg)
 			file_name, file_ext = os.path.splitext(options.output)
 			if file_ext !='': map1.write_image(os.path.join(options.output_dir, file_name+"_nomask"+file_ext))
 			else: map1.write_image(file_name+"_nomask.hdf")
