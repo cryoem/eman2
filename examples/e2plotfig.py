@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 '''
 ====================
 Author: Jesus Galaz-Montoya - 2017, Last update: 12/Sep/2017
@@ -30,7 +29,7 @@ Author: Jesus Galaz-Montoya - 2017, Last update: 12/Sep/2017
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 '''
-
+from __future__ import print_function
 import matplotlib
 matplotlib.use('Agg',warn=False)
 
@@ -39,7 +38,7 @@ import pylab
 
 #import matplotlib.colors as mcol
 #import matplotlib.cm as cm
-
+import numpy as np
 import colorsys
 
 import sys, os
@@ -71,12 +70,13 @@ def main():
 	"""
 		
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	
+
 	parser.add_argument("--data", type=str, default='', help="""default=None (not used). Text file(s) with two column of values mean to be plotted on the X and Y axes. If supplying multiple files, separate them by commas.""")
 	parser.add_argument("--datax", type=str, default='', help="""default=None (not used). Text file(s) with a single column of values meant to be plotted on the X axis. If not provided, the X axis will go from 0 to n, where n is the number of values in --datay. If supplying multiple files, separate them by commas (the number of files for --datax and --datay must be the same).""")
 	parser.add_argument("--datay", type=str, default='', help="""default=None (not used). Text file(s) with a single column of values meant to be plotted on the  Y axis. If not provided, the Y axis will go from 0 to n, where n is the number of values in --datax. If supplying multiple files, separate them by commas (the number of files for --datax and --datay must be the same).""")
 
 	parser.add_argument("--highresolution", action='store_true', default=False, help="""default=False. If on, this option will enforce writing high-resolution plots (dpi 300), ready for publication, as opposed to lower resolution plots which take up less space on your computer (dpi 150).""")
+	parser.add_argument("--histogram", action='store_true', default=False, help="""default=False. If on, this will make the resulting plot a histogram. If --nbins not supplied, the parameter will be automatically calculated.""")
 
 	parser.add_argument("--individualplots", action='store_true', default=False, help="""default=False. in addition to plotting the motion for all frames in all images in a single plot, generate individual plots per image""")
 	
@@ -93,9 +93,11 @@ def main():
 	parser.add_argument("--maxy",type=float,default=None,help="""Default=None. Maximum value to plot in Y. Automatically set to the maximum value in the data, per image, if not explicitly set.""")
 	parser.add_argument("--minx",type=float,default=None,help="""Default=None. Minimum value to plot in X. Automatically set to the maximum value in the data, per image, if not explicitly set.""")
 	parser.add_argument("--miny",type=float,default=None,help="""Default=None. Minimum value to plot in Y. Automatically set to the maximum value in the data, per image, if not explicitly set.""")
-	
-	parser.add_argument("--nocolor", action='store_true', default=False, help="""Default=False. Plots are colored, by default; don't be cheap; clear communication and representation pays off; or consider publishing in online open source journals that don't charge extra for color figures.""")
 
+	parser.add_argument("--mult",type=float,default=None,help="""Default=None. The data will be multiplied by this factor immediatebly prior to plotting. For example, if the data is in the order of magnitude of 10^6, you might say --mult=0.000001, and in --xunits change, e.g., nm^3 to nm^3x10^6""")
+
+	parser.add_argument("--nbins", type=int,default=0,help="""Default=0 (not used). Requires --histogram. Number of bins for histogram. If not provided, the optimal bin number will be automatically calculated based on bin-width, computed using Scott's normal reference rule, width = (3.5*std)/cuberoot(n), where 'std' is the standard deviation of the mean intensity distribution of population and n is the number of mean intensity values considered (this is affected by --removesigma). Then, bins will be nbins = (max(intensities) - min(intensities)) / width.""")	
+	parser.add_argument("--nocolor", action='store_true', default=False, help="""Default=False. Plots are colored, by default; don't be cheap; clear communication and representation pays off; or consider publishing in online open source journals that don't charge extra for color figures.""")
 	parser.add_argument("--normalize", action='store_true', default=False, help="""Default=False. This option will normalize all plots to be scaled between 0 and 1.""") 
 	
 	parser.add_argument("--outputtag",type=str,default='plotfig',help="""Default=plotfig. String common to all automatically generated output files. For example, --outputtag=myplot will generate myplot1.png, myplot2.png, ..., myplotN.png""")
@@ -404,14 +406,15 @@ def plotdata( options, data ):
 
 def plotfig( options, fig, ax, datax, datay, count, colorthis='k', markerthis='' )	:
 	
-	
 	n=len(datay)
+
+	if options.mult:
+		for i in range(len(datay)):
+			datay[i] = datay[i]*options.mult
 	#xaxis=range(n)
 	#if altxaxis:
 	#	xaxis=altxaxis
 
-
-	
 	#colorthis = 'k'
 	#if colorstart and colorstep:
 	#	colorthis = cpick.to_rgba( colorstart + kplot*colorstep)
@@ -433,8 +436,14 @@ def plotfig( options, fig, ax, datax, datay, count, colorthis='k', markerthis=''
 	if options.linesoff:
 		linestyle=''
 		linewidth=0
-	ax.plot( datax, datay, linestyle=linestyle, linewidth=linewidth, marker=markerthis, markersize=5, color=colorthis, label=label) #, alpha=0.75)
 	
+	if not options.histogram:
+		ax.plot( datax, datay, linestyle=linestyle, linewidth=linewidth, marker=markerthis, markersize=5, color=colorthis, label=label) #, alpha=0.75)
+	elif options.histogram:
+		nbins = calcbins(options,datay)
+		print("\ndatay is",datay)
+		n, bins, patches = plt.hist(datay, nbins, label=label, histtype='bar', edgecolor='black', linewidth=2.0)#, facecolor=colorthis, alpha=0.30, normed=1)
+
 	print("\noptions.miny is {}".format(options.miny))
 	if options.miny != None or options.maxy != None:
 		miny=min(datay)
@@ -463,15 +472,9 @@ def plotfig( options, fig, ax, datax, datay, count, colorthis='k', markerthis=''
 	
 	#ax.legend(handles, labels, loc='center right', bbox_to_anchor=(1.3, 0.5))
 	
-	
 	#plt.legend()
 	plt.legend(frameon=False, bbox_to_anchor=(1.05,1), loc="upper left", borderaxespad=0)
 	
-	
-
-	
-	
-		
 	#if errors:
 	#	lines = {'linestyle': 'None'}
 	#	plt.rc('lines', **lines)
@@ -488,9 +491,6 @@ def plotfig( options, fig, ax, datax, datay, count, colorthis='k', markerthis=''
 	else:
 		ax.set_ylabel(options.labelyaxis, fontsize=16, fontweight='bold')
 
-
-	
-	
 	#if colorbar:
 	#	cbr=plt.colorbar(cpick)
 	#	cbr.set_label("Tilt angle (degrees)",fontsize=18, fontweight='bold')
@@ -499,6 +499,48 @@ def plotfig( options, fig, ax, datax, datay, count, colorthis='k', markerthis=''
 		plt.tight_layout(pad=1.0, w_pad=1.0, h_pad=1.0)
 	
 	return
+
+
+def calcbins(options,data):
+	std = np.std(data)
+	mean = np.mean(data)
+	
+	statistics = ['mean='+str(mean) + ' std='+str(std) + '\n']
+	print("The number of particles kept is", len(data))
+	print("The standard deviation of the mean intensity distribution for this population is", std)
+	
+	if not std:
+		print("ERROR: std={}, which means all data values are the same.".format(std))
+		sys.exit()
+		
+	cuberoot = np.power(len(data),1.0/3.0)
+	#print "The cuberoot of n is", cuberoot
+	width = (3.5*std)/cuberoot
+	print("Therefore, according to Scott's normal reference rule, width = (3.5*std)/cuberoot(n), the width of the histogram bins will be", width)
+	
+	nbins = int(round( (max(data) - min(data)) / width ))
+	
+	if options.nbins:
+		nbins = int(round(options.nbins))
+	
+	print("\nAnd the number of bins n = ( max(data) - min(data) ) / width will thus be", nbins)
+	nbins = int(round(nbins))
+	print("rounding to", nbins)
+	
+	statistics.append( 'bins=' + str( nbins ) + ' , binwidth=' + str( width ) + '\n')
+	print("statistics are", statistics)
+	
+	if not nbins:
+
+		print("WARNING: nins=0, which means max and min intensity are the same, which probably means all intensities are zero. Defaulting nbins to number of partilces.")
+		nbins = len(data)
+			
+	stem,extension = os.path.splitext(os.path.basename(options.data))
+	statsfile = stem + '_stats.txt'
+
+	with open(options.path + '/' + statsfile,'w') as f: f.writelines(statistics)
+
+	return nbins
 
 
 if __name__ == '__main__':
