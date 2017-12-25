@@ -166,7 +166,7 @@ def apply_enhancement(avg, B_start, pixel_size, user_defined_Bfactor):
 	global_b = b*4. #
 	if user_defined_Bfactor < 0.0: global_b = user_defined_Bfactor
 	sigma_of_inverse = sqrt(2./global_b)
-	avg = filt_gaussinv(avg, sigma_of_inverse)
+	avg = filt_gaussinv(fft(avg), sigma_of_inverse)
 	return avg, global_b
 
 def main():
@@ -578,7 +578,8 @@ def main():
 				new_avg = filt_tanl(new_avg, low_pass_filter, 0.1)
 			else:
 				if enforced_to_H1: new_avg = filt_tanl(new_avg, FH1, 0.1)
-			
+			if options.B_enhance: new_avg = fft(new_avg)
+				
 			new_avg.set_attr("members",   list_dict[iavg])
 			new_avg.set_attr("n_objects", len(list_dict[iavg]))
 			slist[iavg]    = new_avg

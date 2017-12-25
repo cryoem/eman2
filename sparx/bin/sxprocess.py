@@ -1320,8 +1320,7 @@ def main():
 				elif ifreq ==nfreq143+2: fsc_true[1][ifreq] = (fsc_true[1][nfreq143-1])/5.
 				else:  fsc_true[1][ifreq] = 0.0
 			###															
-			map1 +=map2 #(get_im(args[0])+get_im(args[1]))/2.0
-			map1 /=2.0
+			map1 = (get_im(args[0])+get_im(args[1]))/2.0
 			outtext     = [["Squaredfreq"],[ "LogOrig"]]
 			guinierline = rot_avg_table(power(periodogram(map1),.5))
 			from math import log
@@ -1340,6 +1339,8 @@ def main():
 				outtext.append(["LogMTFdiv"])
 				guinierline   = rot_avg_table(power(periodogram(map1),.5))
 				for ig in xrange(len(guinierline)): outtext[-1].append("%10.6f"%log(guinierline[ig]))
+			else:
+				log_main.add("MTF is not applied")
 				
 			if options.fsc_adj: #2
 				log_main.add("sqrt(FSC) is multiplied to adjust power spectrum of the summed volumes")
@@ -1351,7 +1352,9 @@ def main():
 				guinierline = rot_avg_table(power(periodogram(map1),.5))
 				outtext.append(["LogFSCadj"])
 				for ig in xrange(len(guinierline)):outtext[-1].append("%10.6f"%log(guinierline[ig]))
-			
+			else: log_main.add("fsc_adj is not applied")
+				
+			map1 = fft(map1)
 			if options.B_enhance !=-1: #3 One specifies and then apply B-factor sharpen
 				if options.B_enhance == 0.0: # auto mode
 					cutoff_by_fsc = 0
@@ -1359,7 +1362,6 @@ def main():
 						if fsc_true[1][ifreq]<0.143: break
 					cutoff_by_fsc = float(ifreq-1)
 					freq_max      = cutoff_by_fsc/(2.*len(fsc_true[0]))/options.pixel_size
-		
 					guinierline    = rot_avg_table(power(periodogram(map1),.5))
 					logguinierline = []
 					for ig in xrange(len(guinierline)):logguinierline.append(log(guinierline[ig]))
@@ -1380,8 +1382,8 @@ def main():
 					log_main.add("User provided B-factor is %6.2f Angstrom^2   "%options.B_enhance)
 					sigma_of_inverse = sqrt(2./((abs(options.B_enhance))/options.pixel_size**2))
 					global_b = options.B_enhance
-					
-				map1 = filt_gaussinv(map1, sigma_of_inverse)
+				
+				map1 = (filt_gaussinv(map1, sigma_of_inverse))
 				guinierline = rot_avg_table(power(periodogram(map1),.5))
 				outtext.append([" LogBfacapplied"])
 				last_non_zero = -999.0
@@ -1391,29 +1393,31 @@ def main():
 						last_non_zero = log(guinierline[ig])
 					else: outtext[-1].append("%10.6f"%last_non_zero)
 			else: log_main.add("B-factor enhancement is not applied to map!")
-									
+						
 			if options.fl !=-1.: # User provided low-pass filter #4.
 				if options.fl>0.5: # Input is in Angstrom 
 					map1   = filt_tanl(map1,options.pixel_size/options.fl, min(options.aa,.1))
 					cutoff = options.fl
+					log_main.add("low_pass filter to user provided  %f"%cutoff)
 					
-				elif options.fl>0.0 and options.fl<0.5:  # input is in absolution frequency
+				elif options.fl>0.0 and options.fl< 0.5:  # input is in absolution frequency
 					map1   = filt_tanl(map1,options.fl, min(options.aa,.1))
 					cutoff = options.pixel_size/options.fl
-					
+					log_main.add("low_pass filter to user provided  %f"%cutoff)
 				else: # low-pass filter to resolution determined by FSC0.143
+					log_main.add("low_pass filter to FSC0.143 ! ")
 					map1   = filt_tanl(map1,resolution_FSC143, options.aa)
 					cutoff = options.pixel_size/resolution_FSC143
-				
 			else:
 				if filter_to_resolution:
 					map1   = filt_tanl(map1,resolution_FSC143, options.aa)
 					cutoff = options.pixel_size/resolution_FSC143
+					log_main.add("low_pass filter to resolution ! ")
 				else:
 					cutoff = 0.0 
 					log_main.add("low_pass filter is not applied to map! ")
-			msg = "low pass filter to  %f Angstrom"%cutoff
-			log_main.add(msg)
+					
+			map1 = fft(map1)
 			file_name, file_ext = os.path.splitext(options.output)
 			if file_ext !='': map1.write_image(os.path.join(options.output_dir, file_name+"_nomask"+file_ext))
 			else: map1.write_image(file_name+"_nomask.hdf")
