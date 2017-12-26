@@ -938,8 +938,8 @@ def main():
 		for i in xrange(options.ne): mask3d = erosion(mask3d)
 		for i in xrange(options.nd): mask3d = dilation(mask3d)
 		mask3d.write_image(mask_file_name)
-		print("Applied threshold value for binarization is %f" % options.bin_threshold)
-		print("Finished sxprocess.py  --binary_mask")
+		print("applied threshold value for binarization is %f" % options.bin_threshold)
+		print("finished sxprocess.py  --binary_mask")
 
 	elif options.combiningmaps:
 		if options.output_dir !="./":
@@ -951,7 +951,7 @@ def main():
 		print_msg ="--------------------------------------------"
 		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		log_main.add(print_msg)
-		print_msg="------->>>Sphire combiningmaps<<<-------"
+		print_msg="------->>>sphire combiningmaps<<<-------"
 		log_main.add(print_msg)
 		from utilities    	import get_im, write_text_file, read_text_file
 		from fundamentals 	import rot_avg_table, fft
@@ -963,7 +963,7 @@ def main():
 			ERROR("the number of inputs is incorrect", " --combiningmaps option")
 			exit()
 		if options.pixel_size ==0:
-			ERROR("Set pixel_size value first! There is no default value for pixel_size", " --combiningmaps option")
+			ERROR("set pixel_size value first! There is no default value for pixel_size", " --combiningmaps option")
 			exit()
 		try:
 			e1   = get_im(args[0],0)
@@ -1028,7 +1028,7 @@ def main():
 				e1.write_image(options.output)
 				
 		else: # 3D case High pass filter should always come along with low-pass filter. 
-			log_main.add("-------->>>Settings given by all options<<<-------")
+			log_main.add("-------->>>settings given by all options<<<-------")
 			log_main.add("pixle_size  		:"+str(options.pixel_size))
 			log_main.add("mask        		:"+str(options.mask))
 			log_main.add("fsc_adj     		:"+str(options.fsc_adj))
@@ -1046,22 +1046,22 @@ def main():
 			log_main.add("------------->>>processing<<<-----------------------")		
 			log_main.add("3-D refinement combiningmaps ")
 			nargs     = len(args)
-			if nargs >=3: ERROR("Too many inputs!", "--combiningmaps option for 3-D")
+			if nargs >=3: ERROR("too many inputs!", "--combiningmaps option for 3-D")
 			elif nargs <2:ERROR("combiningmaps needs two input maps!", "--combiningmaps option for 3-D", 1)
 				
-			log_main.add("The first input volume: %s"%args[0])
+			log_main.add("the first input volume: %s"%args[0])
 			try: map1    = get_im(args[0])
 			except:
-				ERROR("Sphire combiningmaps fails to read the first map " + args[0], "--combiningmaps option for 3-D")
+				ERROR("sphire combiningmaps fails to read the first map " + args[0], "--combiningmaps option for 3-D")
 				exit()
-			log_main.add("The second input volume: %s"%args[1])
+			log_main.add("the second input volume: %s"%args[1])
 			
 			try: map2  = get_im(args[1])
 			except:
-				ERROR("Sphire combiningmaps fails to read the second map " + args[1], "--combiningmaps option for 3-D")
+				ERROR("sphire combiningmaps fails to read the second map " + args[1], "--combiningmaps option for 3-D")
 				exit()
 			if (map2.get_xsize() != map1.get_xsize()) or (map2.get_ysize() != map1.get_ysize()) or (map2.get_zsize() != map1.get_zsize()):
-				ERROR(" Two input maps have different image size", "--combiningmaps option for 3-D", 1)
+				ERROR(" two input maps have different image size", "--combiningmaps option for 3-D", 1)
 			filter_to_resolution =  False	
 			### enforce low-pass filter
 			if options.B_enhance !=-1:
@@ -1070,20 +1070,20 @@ def main():
 						filter_to_resolution = True
 						msg = "low_pass filter is enforeced to turn on"
 					else:
-						msg = "User chooses low_pass filter  %f"%options.fl
+						msg = "user chooses low_pass filter  %f"%options.fl
 				else:
 					msg = "fsc_adj options works as a low_pass filter"
 				log_main.add(msg)
 				 
 			## prepare mask 
 			if options.mask != None and options.do_adaptive_mask:
-				ERROR("Wrong options, use either adaptive_mask or user provided mask", " options.mask and options.do_adaptive_mask ", 1)
+				ERROR("wrong options, use either adaptive_mask or user provided mask", " options.mask and options.do_adaptive_mask ", 1)
 				
 			if options.mask != None:
-				log_main.add("User provided mask: %s"%options.mask)
+				log_main.add("user provided mask: %s"%options.mask)
 				try: m = get_im(options.mask)
 				except:
-					ERROR("Sphire combiningmaps fails to read mask file " + options.mask, "--combiningmaps option for 3-D")
+					ERROR("sphire combiningmaps fails to read mask file " + options.mask, "--combiningmaps option for 3-D")
 					exit()
 				if (m.get_xsize() != map1.get_xsize()) or (m.get_ysize() != map1.get_ysize()) or (m.get_zsize() != map1.get_zsize()):
 					ERROR(" mask file  "+options.mask+" has different size with input image  ", "--combiningmaps for mask "+options.mask), 1
@@ -1091,14 +1091,14 @@ def main():
 			elif options.do_adaptive_mask:
 				map1 +=map2
 				map1 /=2.
-				log_main.add("Create an adaptive mask, let's wait...")
+				log_main.add("create an adaptive mask, let's wait...")
 				log_main.add("options.mask_threshold, options.dilation, options.consine_edge %f %5.2f %5.2f"%(options.mask_threshold, options.dilation, options.consine_edge))
 				m = Util.adaptive_mask(map1, options.mask_threshold, options.dilation, options.consine_edge)
 				m.write_image(os.path.join(options.output_dir, "vol_adaptive_mask.hdf"))
 				map1 = get_im(args[0]) # re-read map1
 			else:
 				m = None
-				log_main.add("No mask is applied")
+				log_main.add("no mask is applied")
 			## prepare FSC
 			from math import sqrt
 			resolution_FSC143   = 0.5 # for single volume, this is the default resolution
@@ -1456,7 +1456,7 @@ def main():
 			else: log_main.add("the final map is not masked!")
 			
 			map1.write_image(os.path.join(options.output_dir, options.output))
-			log_main.add("---------- >>>Summary<<<------------")
+			log_main.add("---------- >>>summary<<<------------")
 			log_main.add("resolution 0.5/0.143 are %5.2f/%5.2f Angstrom "%(round((options.pixel_size/resolution_FSChalf),3), round((options.pixel_size/resolution_FSC143),3)))
 			if dip_at_fsc: log_main.add("There is a dip in your fsc in the region between 0.5 and 0.143, and you might consider ploting your fsc curve")
 			if options.B_enhance !=-1:  log_main.add( "B-factor is  %6.2f Angstrom^2  "%(round((-global_b),2)))
