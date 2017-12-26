@@ -1475,7 +1475,7 @@ def main():
 				log_main.add("---->>>analysis of enhancement<<<-----")
 				log_main.add("B_factor:  %f   cutoff:   %f  aa:  %f  maximum enhancement in pixels: %d  maximum enhancement: %f   after pixel set to zero: %d   fallall in pixels:   %d"%\
 				   (global_b, cutoff, options.aa, mindex, mavlue, index_zero, pfall_off))
-			log_main.add("-----------------------------------")
+			log_main.add("-------------------------------------------------------")
 				
 	elif options.window_stack:
 		nargs = len(args)
