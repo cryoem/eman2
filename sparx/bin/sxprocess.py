@@ -1398,18 +1398,18 @@ def main():
 					freq_min = 1./options.B_start  # given frequencies in Angstrom unit, say, B_start is 10 Angstrom, or 15  Angstrom
 					if options.B_stop!=0.0: freq_max = 1./options.B_stop 
 					if freq_min>= freq_max:
-						log_main.add("Your B_start is too high! Decrease it and rerun the program!")
-						ERROR("Your B_start is too high! Decrease it and re-run the program!", "--combiningmaps option", 1)
+						log_main.add("your B_start is too high! Decrease it and rerun the program!")
+						ERROR("your B_start is too high! Decrease it and re-run the program!", "--combiningmaps option", 1)
 					b, junk, ifreqmin, ifreqmax = compute_bfactor(guinierline, freq_min, freq_max, options.pixel_size)
 					global_b = 4.*b # Just a convention!
 					cc = pearson(junk[1],logguinierline)
-					log_main.add("Similarity between the fitted line and 1-D rotationally average power spectrum within [%d, %d] is %5.3f"%(ifreqmin, ifreqmax, pearson(junk[1][ifreqmin:ifreqmax],logguinierline[ifreqmin:ifreqmax])))
-					log_main.add("The slope is %6.2f Angstrom^2 "%(round(-b,2)))
+					log_main.add("similarity between the fitted line and 1-D rotationally average power spectrum within [%d, %d] is %5.3f"%(ifreqmin, ifreqmax, pearson(junk[1][ifreqmin:ifreqmax],logguinierline[ifreqmin:ifreqmax])))
+					log_main.add("the slope is %6.2f Angstrom^2 "%(round(-b,2)))
 					sigma_of_inverse = sqrt(2./(global_b/options.pixel_size**2))
 					
 				else: # User provided value
 					#log_main.add( " apply user provided B-factor to enhance map!")
-					log_main.add("User provided B-factor is %6.2f Angstrom^2   "%options.B_enhance)
+					log_main.add("user provided B-factor is %6.2f Angstrom^2   "%options.B_enhance)
 					sigma_of_inverse = sqrt(2./((abs(options.B_enhance))/options.pixel_size**2))
 					global_b = options.B_enhance
 				
@@ -1451,22 +1451,22 @@ def main():
 			file_name, file_ext = os.path.splitext(options.output)
 			if file_ext !='': map1.write_image(os.path.join(options.output_dir, file_name+"_nomask"+file_ext))
 			else: map1.write_image(file_name+"_nomask.hdf")
-			log_main.add("The non-mask applied combinined map is saved as %s"%(file_name+"_nomask_"+file_ext))
+			log_main.add("the non-mask applied combinined map is saved as %s"%(file_name+"_nomask_"+file_ext))
 			if m: map1 *=m
-			else: log_main.add("The final map is not masked!")
+			else: log_main.add("the final map is not masked!")
 			
 			map1.write_image(os.path.join(options.output_dir, options.output))
 			log_main.add("---------- >>>Summary<<<------------")
-			log_main.add("Resolution 0.5/0.143 are %5.2f/%5.2f Angstrom "%(round((options.pixel_size/resolution_FSChalf),3), round((options.pixel_size/resolution_FSC143),3)))
+			log_main.add("resolution 0.5/0.143 are %5.2f/%5.2f Angstrom "%(round((options.pixel_size/resolution_FSChalf),3), round((options.pixel_size/resolution_FSC143),3)))
 			if dip_at_fsc: log_main.add("There is a dip in your fsc in the region between 0.5 and 0.143, and you might consider ploting your fsc curve")
 			if options.B_enhance !=-1:  log_main.add( "B-factor is  %6.2f Angstrom^2  "%(round((-global_b),2)))
 			else:  log_main.add( "B-factor is not applied  ")
 			output_names = [plot_name.replace(' ', '_') for plot_name in plot_names]
 			log_main.add("FSC curves are saved in {0}.txt ".format('.txt, '.join(output_names).lower()))
-			log_main.add("The Final volume is " + options.output)
+			log_main.add("the final volume is " + options.output)
 			log_main.add("guinierlines in logscale are saved in guinierlines.txt")
-			if options.fl !=-1: log_main.add("Top hat low-pass filter is applied to cut off high frequencies from resolution 1./%5.2f Angstrom" %round(cutoff,2))
-			else: log_main.add("The final volume is not low_pass filtered. ")
+			if options.fl !=-1: log_main.add("tanl low-pass filter is applied to cut off high frequencies from resolution 1./%5.2f Angstrom" %round(cutoff,2))
+			else: log_main.add("the final volume is not low_pass filtered. ")
 			write_text_file(outtext, os.path.join(options.output_dir, "guinierlines.txt"))
 			
 			# evaluation of enhancement: values, values.index(max(values)), max(values), index_zero, int(index_zero - cutoff*N*2)
