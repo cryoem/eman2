@@ -304,7 +304,7 @@ def main():
 		--do_adaptive_mask : =True when it is restored, the program adaptively creates adaptive mask file using summed two volumes. This takes a couple of minutes. For map with dimension of 384*384*384, it takes 6 minutes.
 		--output           : output volume 
 										
-		sxprocess.py vol_0_unfil.hdf vol_1_unfil.hdf  --mask=mask15.hdf --postprocess   --pixel_size=1.12     --fl =-1  --mtf=aa.txt  --fsc_adj --output=vol_post.hdf 
+		sxprocess.py vol_0_unfil.hdf vol_1_unfil.hdf  --mask=mask15.hdf --postprocess   --pixel_size=1.12     --fl =-1  --mtf=aa.txt  --fsc_adj --output=vol_post.hdf --output_dir=pipi
 		sxprocess.py vol_0_unfil.hdf vol_1_unfil.hdf  --mask=mask15.hdf --postprocess   --pixel_size=1.12     --fl=4.7  --mtf=aa.txt --fsc_adj
 		sxprocess.py vol_0_unfil.hdf vol_1_unfil.hdf  --do_adaptive_mask   --postprocess   --pixel_size=1.12   --mtf=aa.txt --fsc_adj --output=ribosome_postrefine.hdf
 		
