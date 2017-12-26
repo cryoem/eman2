@@ -165,7 +165,7 @@ def filt_gaussinv(e, sigma, pad = False):
 	params = {"filter_type" : Processor.fourier_filter_types.GAUSS_INVERSE,
 		  "cutoff_abs" : sigma, "dopad" : pad}
 	return Processor.EMFourierFilter(e, params)
- 
+
 def filt_gaussh(e, sigma, pad = False):
 	"""
 		Name
@@ -182,7 +182,7 @@ def filt_gaussh(e, sigma, pad = False):
 	params = {"filter_type" : Processor.fourier_filter_types.GAUSS_HIGH_PASS,
 		  "cutoff_abs" : sigma, "dopad" : pad}
 	return Processor.EMFourierFilter(e, params)
-    
+
 def filt_gaussb(e, sigma, center, pad = False):
 	"""
 		Name
