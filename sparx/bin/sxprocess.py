@@ -304,9 +304,9 @@ def main():
 		--do_adaptive_mask : =True when it is restored, the program adaptively creates adaptive mask file using summed two volumes. This takes a couple of minutes. For map with dimension of 384*384*384, it takes 6 minutes.
 		--output           : output volume 
 										
-		sxprocess.py vol_0_unfil.hdf vol_1_unfil.hdf  --mask=mask15.hdf --postprocess   --pixel_size=1.12     --fl =-1  --mtf=aa.txt  --fsc_adj --output=vol_post.hdf --output_dir=pipi
-		sxprocess.py vol_0_unfil.hdf vol_1_unfil.hdf  --mask=mask15.hdf --postprocess   --pixel_size=1.12     --fl=4.7  --mtf=aa.txt --fsc_adj
-		sxprocess.py vol_0_unfil.hdf vol_1_unfil.hdf  --do_adaptive_mask   --postprocess   --pixel_size=1.12   --mtf=aa.txt --fsc_adj --output=ribosome_postrefine.hdf
+		sxprocess.py vol_0_unfil.hdf vol_1_unfil.hdf  --mask=mask15.hdf --combiningmaps   --pixel_size=1.12     --fl =-1  --mtf=aa.txt  --fsc_adj --output=vol_post.hdf --output_dir=pipi
+		sxprocess.py vol_0_unfil.hdf vol_1_unfil.hdf  --mask=mask15.hdf --combiningmaps   --pixel_size=1.12     --fl=4.7  --mtf=aa.txt --fsc_adj
+		sxprocess.py vol_0_unfil.hdf vol_1_unfil.hdf  --do_adaptive_mask   --combiningmaps   --pixel_size=1.12   --mtf=aa.txt --fsc_adj --output=ribosome_postrefine.hdf
 		
 	 for 2-D images:       calculate B-factor and apply negative B-factor to 2-D images.
 		
@@ -371,7 +371,7 @@ def main():
 	parser.add_option("--nd",                   type="int",          default= 0,          help="number of times to dilate binarized volume")
 
 	# Postprocess 3-D  
-	parser.add_option("--postprocess",          action="store_true",                      help="flag to turn on postprocessing unfiltered odd, even 3-D volumes",default=False)
+	parser.add_option("--combiningmaps",        action="store_true",                      help="flag to turn on combining unfiltered odd, even 3-D volumes",default=False)
 	parser.add_option("--mtf",                  type="string",        default= None,      help="entry for mtf text file of camera")
 	parser.add_option("--fsc_adj",              action="store_true",                      help="flag to turn on power spectrum adjustment of summed volume by their FSC", default=False)
 	parser.add_option("--B_enhance",            type="float",         default=0.0,        help="apply Bfactor (!=-1.)to enhance map or not (=-1)")
@@ -379,7 +379,7 @@ def main():
 	parser.add_option("--aa",                   type="float",         default=.01,        help="low pass filter falloff" )
 	parser.add_option("--mask",                 type="string",        help="path for input mask file",  default = None)
 	parser.add_option("--output",               type="string",        help="output file name", default = "vol_postrefine_masked.hdf")
-	parser.add_option("--output_dir",           type="string",        help="postprocess directory name", default = "./")
+	parser.add_option("--output_dir",           type="string",        help="combiningmaps directory name", default = "./")
 	parser.add_option("--pixel_size",           type="float",         help="pixel size of the data", default=0.0)
 	parser.add_option("--B_start",              type="float",         help="starting frequency in Angstrom for B-factor estimation", default=10.)
 	parser.add_option("--B_stop",               type="float",         help="cutoff frequency in Angstrom for B-factor estimation. recommended to set cutoff to the frequency where fsc < 0.0. by default, the program uses Nyquist frequency.", default=0.0)
@@ -941,7 +941,7 @@ def main():
 		print("Applied threshold value for binarization is %f" % options.bin_threshold)
 		print("Finished sxprocess.py  --binary_mask")
 
-	elif options.postprocess:
+	elif options.combiningmaps:
 		if options.output_dir !="./":
 			if not os.path.exists(options.output_dir): os.mkdir(options.output_dir)
 		from logger import Logger,BaseLogger_Files
@@ -951,7 +951,7 @@ def main():
 		print_msg ="--------------------------------------------"
 		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		log_main.add(print_msg)
-		print_msg="------->>>Sphire postprocess<<<-------"
+		print_msg="------->>>Sphire combiningmaps<<<-------"
 		log_main.add(print_msg)
 		from utilities    	import get_im, write_text_file, read_text_file
 		from fundamentals 	import rot_avg_table, fft
@@ -960,15 +960,15 @@ def main():
 		from filter       	import filt_table, filt_gaussinv, filt_tanl
 		from EMAN2 			import periodogram
 		if len(args)<1 or len(args)>2:
-			ERROR("the number of inputs is incorrect", " --postprocess option")
+			ERROR("the number of inputs is incorrect", " --combiningmaps option")
 			exit()
 		if options.pixel_size ==0:
-			ERROR("Set pixel_size value first! There is no default value for pixel_size", " --postprocess option")
+			ERROR("Set pixel_size value first! There is no default value for pixel_size", " --combiningmaps option")
 			exit()
 		try:
 			e1   = get_im(args[0],0)
 		except:
-			ERROR(args[0]+" does not exist", " --postprocess option")
+			ERROR(args[0]+" does not exist", " --combiningmaps option")
 			exit()
 		nx = e1.get_xsize()
 		ny = e1.get_ysize()
@@ -988,14 +988,14 @@ def main():
 			log_main.add("B_stop   		:"+str(options.B_stop))
 			log_main.add("randomphasesafter    "+str(options.randomphasesafter))
 			log_main.add("------------>>>processing<<<-----------------------")		
-			log_main.add("2-D postprocess for ISAC averaged images")
+			log_main.add("2-D combiningmaps for ISAC averaged images")
 			nimage = EMUtil.get_image_count(args[0])
 			if options.mask !=None:
 				try:
 					m = get_im(options.mask)
 					log_main.add("user provided mask is %s"%options.mask)
 				except:
-					ERROR("mask image %s does not exists"%options.mask, " --postprocess for 2-D")
+					ERROR("mask image %s does not exists"%options.mask, " --combiningmaps for 2-D")
 					exit()
 			else:
 				m = None
@@ -1044,24 +1044,24 @@ def main():
 			log_main.add("dilation    		:"+str(options.dilation))			
 			#log_main.add("randomphasesafter        :"+str(options.randomphasesafter))
 			log_main.add("------------->>>processing<<<-----------------------")		
-			log_main.add("3-D refinement postprocess ")
+			log_main.add("3-D refinement combiningmaps ")
 			nargs     = len(args)
-			if nargs >=3: ERROR("Too many inputs!", "--postprocess option for 3-D")
-			elif nargs <2:ERROR("postprocessing needs two input maps!", "--postprocess option for 3-D", 1)
+			if nargs >=3: ERROR("Too many inputs!", "--combiningmaps option for 3-D")
+			elif nargs <2:ERROR("combiningmaps needs two input maps!", "--combiningmaps option for 3-D", 1)
 				
 			log_main.add("The first input volume: %s"%args[0])
 			try: map1    = get_im(args[0])
 			except:
-				ERROR("Sphire postprocess fails to read the first map " + args[0], "--postprocess option for 3-D")
+				ERROR("Sphire combiningmaps fails to read the first map " + args[0], "--combiningmaps option for 3-D")
 				exit()
 			log_main.add("The second input volume: %s"%args[1])
 			
 			try: map2  = get_im(args[1])
 			except:
-				ERROR("Sphire postprocess fails to read the second map " + args[1], "--postprocess option for 3-D")
+				ERROR("Sphire combiningmaps fails to read the second map " + args[1], "--combiningmaps option for 3-D")
 				exit()
 			if (map2.get_xsize() != map1.get_xsize()) or (map2.get_ysize() != map1.get_ysize()) or (map2.get_zsize() != map1.get_zsize()):
-				ERROR(" Two input maps have different image size", "--postprocess option for 3-D", 1)
+				ERROR(" Two input maps have different image size", "--combiningmaps option for 3-D", 1)
 			filter_to_resolution =  False	
 			### enforce low-pass filter
 			if options.B_enhance !=-1:
@@ -1083,10 +1083,10 @@ def main():
 				log_main.add("User provided mask: %s"%options.mask)
 				try: m = get_im(options.mask)
 				except:
-					ERROR("Sphire postprocess fails to read mask file " + options.mask, "--postprocess option for 3-D")
+					ERROR("Sphire combiningmaps fails to read mask file " + options.mask, "--combiningmaps option for 3-D")
 					exit()
 				if (m.get_xsize() != map1.get_xsize()) or (m.get_ysize() != map1.get_ysize()) or (m.get_zsize() != map1.get_zsize()):
-					ERROR(" mask file  "+options.mask+" has different size with input image  ", "--postprocess for mask "+options.mask), 1
+					ERROR(" mask file  "+options.mask+" has different size with input image  ", "--combiningmaps for mask "+options.mask), 1
 					
 			elif options.do_adaptive_mask:
 				map1 +=map2
@@ -1364,7 +1364,7 @@ def main():
 				log_main.add("MTF correction is applied")
 				log_main.add("MTF file is %s"%options.mtf)
 				try: mtf_core  = read_text_file(options.mtf, -1)
-				except: ERROR("Sphire postprocess fails to read MTF file "+options.mtf, "--postprocess option for 3-D", 1)
+				except: ERROR("Sphire combiningmaps fails to read MTF file "+options.mtf, "--combiningmaps option for 3-D", 1)
 				map1 = fft(Util.divide_mtf(fft(map1), mtf_core[1], mtf_core[0]))
 				outtext.append(["LogMTFdiv"])
 				guinierline   = rot_avg_table(power(periodogram(map1),.5))
@@ -1399,7 +1399,7 @@ def main():
 					if options.B_stop!=0.0: freq_max = 1./options.B_stop 
 					if freq_min>= freq_max:
 						log_main.add("Your B_start is too high! Decrease it and rerun the program!")
-						ERROR("Your B_start is too high! Decrease it and re-run the program!", "--postprocess option", 1)
+						ERROR("Your B_start is too high! Decrease it and re-run the program!", "--combiningmaps option", 1)
 					b, junk, ifreqmin, ifreqmax = compute_bfactor(guinierline, freq_min, freq_max, options.pixel_size)
 					global_b = 4.*b # Just a convention!
 					cc = pearson(junk[1],logguinierline)
@@ -1451,7 +1451,7 @@ def main():
 			file_name, file_ext = os.path.splitext(options.output)
 			if file_ext !='': map1.write_image(os.path.join(options.output_dir, file_name+"_nomask"+file_ext))
 			else: map1.write_image(file_name+"_nomask.hdf")
-			log_main.add("The non-mask applied postprocessed map is saved as %s"%(file_name+"_nomask_"+file_ext))
+			log_main.add("The non-mask applied combinined map is saved as %s"%(file_name+"_nomask_"+file_ext))
 			if m: map1 *=m
 			else: log_main.add("The final map is not masked!")
 			
