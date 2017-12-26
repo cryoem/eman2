@@ -376,7 +376,7 @@ def main():
 	parser.add_option("--fsc_adj",              action="store_true",                      help="flag to turn on power spectrum adjustment of summed volume by their FSC", default=False)
 	parser.add_option("--B_enhance",            type="float",         default=0.0,        help="apply Bfactor (!=-1.)to enhance map or not (=-1)")
 	parser.add_option("--fl",                   type="float",         default=0.0,        help="=0.0, low_pass filter to resolution limit; =some value, low_pass filter to some valume; =-1, not low_pass filter applied")
-	parser.add_option("--aa",                   type="float",         default=.1,         help="low pass filter falloff" )
+	parser.add_option("--aa",                   type="float",         default=.01,        help="low pass filter falloff" )
 	parser.add_option("--mask",                 type="string",        help="path for input mask file",  default = None)
 	parser.add_option("--output",               type="string",        help="output file name", default = "vol_postrefine_masked.hdf")
 	parser.add_option("--output_dir",           type="string",        help="postprocess directory name", default = "./")
@@ -1034,13 +1034,14 @@ def main():
 			log_main.add("fsc_adj     		:"+str(options.fsc_adj))
 			log_main.add("B_enhance   		:"+str(options.B_enhance))
 			log_main.add("low_pass_filter  	:"+str(options.fl))
+			log_main.add("aa        		:"+str(options.aa))
 			log_main.add("B_start  		:"+str(options.B_start))
 			log_main.add("B_stop   		:"+str(options.B_stop))
 			log_main.add("mtf     			:"+str(options.mtf))
 			log_main.add("output  			:"+str(options.output))
 			log_main.add("do_adaptive_mask  	:"+str(options.do_adaptive_mask))
 			log_main.add("cosine_edge    		:"+str(options.consine_edge))
-			log_main.add("dilation    		:"+str(options.dilation))
+			log_main.add("dilation    		:"+str(options.dilation))			
 			#log_main.add("randomphasesafter        :"+str(options.randomphasesafter))
 			log_main.add("------------->>>processing<<<-----------------------")		
 			log_main.add("3-D refinement postprocess ")
@@ -1102,7 +1103,36 @@ def main():
 			from math import sqrt
 			resolution_FSC143   = 0.5 # for single volume, this is the default resolution
 			resolution_FSChalf  = 0.5
-
+			
+			def filter_product(B_factor, pixel_size, cutoff, aa, image_size):
+				from math import sqrt
+				def gauss_inverse(x, sigma):
+					from math import exp
+					omega = 0.5/(sigma*sigma)
+					return exp(x*omega)
+				def tanhfl(x, cutoff, aa):
+					from math import pi, tanh
+					omega = cutoff
+					cnst  = pi/(2.0*omega*aa)
+					v1    = 0.5*(cnst*(x + omega))
+					v2    = 0.5*(cnst*(x - omega))
+					return 0.5*(tanh(v1) - tanh(v2))
+				from math import pi
+				N = image_size//2
+				sigma_of_inverse = sqrt(2./(B_factor/pixel_size**2))
+				values = []
+				if cutoff >0.5: cutoff = pixel_size/cutoff # always uses absolute frequencies
+				for i in xrange(N):
+					x = float(i)/float(N*2.)
+					values.append(tanhfl(x, cutoff, aa)*gauss_inverse(x, sigma_of_inverse))
+				index_zero = N+1
+				for i in xrange(N):
+					if values[i]== 0.0:
+						index_zero = i
+						break
+				#print("current fall off", (index_zero - cutoff*N*2))
+				return values, values.index(max(values)), max(values), index_zero, int(index_zero - cutoff*N*2)
+			
 			def calculate_fsc(fsc, criterion):
 				"""
 				Calculate the fsc for the specified criterion
@@ -1438,6 +1468,13 @@ def main():
 			if options.fl !=-1: log_main.add("Top hat low-pass filter is applied to cut off high frequencies from resolution 1./%5.2f Angstrom" %round(cutoff,2))
 			else: log_main.add("The final volume is not low_pass filtered. ")
 			write_text_file(outtext, os.path.join(options.output_dir, "guinierlines.txt"))
+			
+			# evaluation of enhancement: values, values.index(max(values)), max(values), index_zero, int(index_zero - cutoff*N*2)
+			if cutoff !=0.0:
+				pvalues, mindex, mavlue, index_zero, pfall_off = filter_product(global_b, options.pixel_size, cutoff, options.aa, map1.get_xsize())
+				log_main.add("---->>>analysis of enhancement<<<-----")
+				log_main.add("B_factor:  %f   cutoff:   %f  aa:  %f  maximum enhancement in pixels: %d  maximum enhancement: %f   after pixel set to zero: %d   fallall in pixels:   %d"%\
+				   (global_b, cutoff, options.aa, mindex, mavlue, index_zero, pfall_off))
 			log_main.add("-----------------------------------")
 				
 	elif options.window_stack:
