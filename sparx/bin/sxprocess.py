@@ -1114,8 +1114,8 @@ def main():
 					from math import pi, tanh
 					omega = cutoff
 					cnst  = pi/(2.0*omega*aa)
-					v1    = 0.5*(cnst*(x + omega))
-					v2    = 0.5*(cnst*(x - omega))
+					v1    = (cnst*(x + omega))
+					v2    = (cnst*(x - omega))
 					return 0.5*(tanh(v1) - tanh(v2))
 				from math import pi
 				N = image_size//2
@@ -1131,7 +1131,7 @@ def main():
 						index_zero = i
 						break
 				#print("current fall off", (index_zero - cutoff*N*2))
-				return values, values.index(max(values)), max(values), index_zero, int(index_zero - cutoff*N*2)
+				return values, values.index(max(values)), max(values), index_zero, int(index_zero - values.index(max(values)))
 			
 			def calculate_fsc(fsc, criterion):
 				"""
@@ -1473,8 +1473,14 @@ def main():
 			if cutoff !=0.0:
 				pvalues, mindex, mavlue, index_zero, pfall_off = filter_product(global_b, options.pixel_size, cutoff, options.aa, map1.get_xsize())
 				log_main.add("---->>>analysis of enhancement<<<-----")
-				log_main.add("B_factor:  %f   cutoff:   %f  aa:  %f  maximum enhancement in pixels: %d  maximum enhancement: %f   after pixel set to zero: %d   fallall in pixels:   %d"%\
+				log_main.add("B_factor:  %f   cutoff:   %f  aa:  %f  Maximum enhancement ocurs in %d pixels. Maximum enhancement ratio is %f. After %d pixel, power spectrum is set to zero. Fallall width is %d pixels"%\
 				   (global_b, cutoff, options.aa, mindex, mavlue, index_zero, pfall_off))
+				if mindex == 0:
+					msg = "enhancement has no maximum value, check your input parameters!"
+					log_main.add(msg)
+				if index_zero>map1.get_xsize()//2:
+					msg = "the enhancement exceeds nyquist frequency, you might change the input parameters, such as either reduce aa or B_factor, or both, and rerun the command "
+					log_main.add(msg)	
 			log_main.add("-------------------------------------------------------")
 				
 	elif options.window_stack:
