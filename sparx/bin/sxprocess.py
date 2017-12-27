@@ -304,9 +304,9 @@ def main():
 		--do_adaptive_mask : =True when it is restored, the program adaptively creates adaptive mask file using summed two volumes. This takes a couple of minutes. For map with dimension of 384*384*384, it takes 6 minutes.
 		--output           : output volume 
 										
-		sxprocess.py vol_0_unfil.hdf vol_1_unfil.hdf  --mask=mask15.hdf --combiningmaps   --pixel_size=1.12     --fl =-1  --mtf=aa.txt  --fsc_adj --output=vol_post.hdf --output_dir=pipi
-		sxprocess.py vol_0_unfil.hdf vol_1_unfil.hdf  --mask=mask15.hdf --combiningmaps   --pixel_size=1.12     --fl=4.7  --mtf=aa.txt --fsc_adj
-		sxprocess.py vol_0_unfil.hdf vol_1_unfil.hdf  --do_adaptive_mask   --combiningmaps   --pixel_size=1.12   --mtf=aa.txt --fsc_adj --output=ribosome_postrefine.hdf
+		sxprocess.py vol_0_unfil.hdf vol_1_unfil.hdf  --mask=mask15.hdf --combiningmaps   --pixel_size=1.12     --fl =-1  --mtf=aa.txt  --fsc_adj --output=vol.hdf --output_dir=pipi
+		sxprocess.py vol_0_unfil.hdf vol_1_unfil.hdf  --mask=mask15.hdf --combiningmaps   --pixel_size=1.12     --fl=4.7  --aa=0.02  --mtf=aa.txt --fsc_adj  --output_dir=final_maps
+		sxprocess.py vol_0_unfil.hdf vol_1_unfil.hdf  --do_adaptive_mask   --combiningmaps   --pixel_size=1.12   --mtf=aa.txt --fsc_adj --output=ribosome.hdf --fl=3.9 --aa=0.01  --output_dir=final_maps
 		
 	 for 2-D images:       calculate B-factor and apply negative B-factor to 2-D images.
 		
