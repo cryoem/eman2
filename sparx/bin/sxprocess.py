@@ -1237,7 +1237,7 @@ def main():
 			for fsc, name in zip(plot_curves, plot_names):
 				fsc[1][0] = 1
 				plt.plot(fsc[0], fsc[1], label=name)
-				title.append(r'{0:18s}:  0.5: {1}$\AA$  |  0.143: {2}$\AA$'.format(
+				title.append(r'{0:18s}:  $0.5$: ${1}\AA$  |  $0.143$: ${2}\AA$'.format(
 					name,
 					round(
 						freq_to_angstrom(
@@ -1263,21 +1263,22 @@ def main():
 			plt.axhline(0.143, 0, 1, color='k', alpha=0.3)
 			plt.axhline(0.5, 0, 1, color='k', alpha=0.3)
 
-			raw_x_ticks_ang = [100, 20, 10, 8, 6, 4, 3.5, 3, 2.5, 2, 1.5, 1, 0.1]
-			x_ticks_ang = [tick for tick in raw_x_ticks_ang if tick > resolution_in_angstrom[-1]]
-			x_ticks_freq = [options.pixel_size/float(tick) for tick in raw_x_ticks_ang if tick > resolution_in_angstrom[-1]]
-			x_ticks_ang.append(round(resolution_in_angstrom[-1], 2))
+			raw_x_ticks_ang = [100, 20, 10, 8, 6, 5, 4, 3.5, 3, 2.5, 2, 1.5, 1, 0.1]
+			x_ticks_ang = [r'$\frac{{1}}{{{0}}}$'.format(tick) for tick in raw_x_ticks_ang if tick > resolution_in_angstrom[-1]*1.03]
+			x_ticks_freq = [options.pixel_size/float(tick) for tick in raw_x_ticks_ang if tick > resolution_in_angstrom[-1]*1.03]
+			x_ticks_ang.append(r'$\frac{{1}}{{{0}}}$'.format(round(resolution_in_angstrom[-1], 2)))
 			x_ticks_freq.append(options.pixel_size/round(resolution_in_angstrom[-1], 2))
+			y_ticks = [-0.2, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
 			# Plot related settings
 			plt.legend(loc='best')
-			plt.text(0, 0.143, r'$0.143$', color='k', alpha=0.3)
-			plt.text(0, 0.5, r'$0.5$', color='k', alpha=0.3)
+			plt.text(0.005, 0.153, r'$0.143$', color='k', alpha=0.4)
+			plt.text(0.005, 0.51, r'$0.5$', color='k', alpha=0.4)
 			title.append(' ')
 			plt.title('\n'.join(title))
-			plt.xticks(x_ticks_freq, x_ticks_ang)
-			#plt.xlabel(r'Spatial frequency / $\AA^{-1}$')
-			plt.xlabel(r'Resolution $\AA$')
-			plt.ylabel(r'FSC', family='monospace')
+			plt.xticks(x_ticks_freq, x_ticks_ang, size='xx-large')
+			plt.yticks(y_ticks, [r'${0}$'.format(tick) for tick in y_ticks], size='large')
+			plt.xlabel(r'Spatial frequency / $\frac{1}{\AA}$')
+			plt.ylabel(r'FSC')
 			plt.grid()
 			plt.tight_layout()
 			plt.savefig(os.path.join(options.output_dir, "fsc.png"))
