@@ -23,6 +23,10 @@ pipeline {
     node { label 'jenkins-slave-1' }
   }
   
+  triggers {
+    cron('0 3 * * *')
+  }
+  
   environment {
     SKIP_UPLOAD = '1'
     JOB_TYPE = getJobType()
