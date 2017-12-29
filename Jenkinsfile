@@ -1,3 +1,23 @@
+def getJobType() {
+    def causes = "${currentBuild.rawBuild.getCauses()}"
+    def job_type = "UNKNOWN"
+    
+    if(causes ==~ /.*TimerTrigger.*/) {
+        job_type = "cron"
+    }
+    if(causes ==~ /.*GitHubPushCause.*/) {
+        job_type = "push"
+    }
+    if(causes ==~ /.*UserIdCause.*/) {
+        job_type = "manual"
+    }
+    if(causes ==~ /.*ReplayCause.*/) {
+        job_type = "manual"
+    }
+    
+    return job_type
+}
+
 pipeline {
   agent {
     node {
@@ -7,6 +27,7 @@ pipeline {
   
   environment {
     SKIP_UPLOAD = '1'
+    JOB_TYPE = getJobType()
   }
   
   stages {
