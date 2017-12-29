@@ -18,6 +18,22 @@ def getJobType() {
     return job_type
 }
 
+def notifyGitHub(status,stage) {
+    if(status == 'PENDING') {
+        message = 'Building...'
+    }
+    if(status == 'SUCCESS') {
+        message = 'Build succeeded!'
+    }
+    if(status == 'FAILURE') {
+        message = 'Build failed!'
+    }
+    if(status == 'ERROR') {
+        message = 'Build aborted!'
+    }
+    step([$class: 'GitHubCommitStatusSetter', contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: "${JOB_NAME}: "+stage], statusResultSource: [$class: 'ConditionalStatusResultSource', results: [[$class: 'AnyBuildResult', message: message, state: status]]]])
+}
+
 pipeline {
   agent {
     node {
@@ -33,7 +49,7 @@ pipeline {
   stages {
     stage('pending') {
       steps {
-        step([$class: 'GitHubCommitStatusSetter', contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: "${JOB_NAME}"], statusResultSource: [$class: 'ConditionalStatusResultSource', results: [[$class: 'AnyBuildResult', message: 'Building...', state: 'PENDING']]]])
+        notifyGitHub('PENDING', 'build')
       }
     }
     
@@ -56,15 +72,15 @@ pipeline {
   
   post {
     success {
-      step([$class: 'GitHubCommitStatusSetter', contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: "${JOB_NAME}"], statusResultSource: [$class: 'ConditionalStatusResultSource', results: [[$class: 'AnyBuildResult', message: 'Build succeeded!', state: 'SUCCESS']]]])
+      notifyGitHub('SUCCESS', 'build')
     }
     
     failure {
-      step([$class: 'GitHubCommitStatusSetter', contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: "${JOB_NAME}"], statusResultSource: [$class: 'ConditionalStatusResultSource', results: [[$class: 'AnyBuildResult', message: 'Build failed!', state: 'FAILURE']]]])
+      notifyGitHub('FAILURE', 'build')
     }
     
     aborted {
-      step([$class: 'GitHubCommitStatusSetter', contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: "${JOB_NAME}"], statusResultSource: [$class: 'ConditionalStatusResultSource', results: [[$class: 'AnyBuildResult', message: 'Build aborted!', state: 'ERROR']]]])
+      notifyGitHub('ERROR', 'build')
     }
   }
 }
