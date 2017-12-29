@@ -2,43 +2,25 @@ def getJobType() {
     def causes = "${currentBuild.rawBuild.getCauses()}"
     def job_type = "UNKNOWN"
     
-    if(causes ==~ /.*TimerTrigger.*/) {
-        job_type = "cron"
-    }
-    if(causes ==~ /.*GitHubPushCause.*/) {
-        job_type = "push"
-    }
-    if(causes ==~ /.*UserIdCause.*/) {
-        job_type = "manual"
-    }
-    if(causes ==~ /.*ReplayCause.*/) {
-        job_type = "manual"
-    }
+    if(causes ==~ /.*TimerTrigger.*/)    { job_type = "cron" }
+    if(causes ==~ /.*GitHubPushCause.*/) { job_type = "push" }
+    if(causes ==~ /.*UserIdCause.*/)     { job_type = "manual" }
+    if(causes ==~ /.*ReplayCause.*/)     { job_type = "manual" }
     
     return job_type
 }
 
 def notifyGitHub(status) {
-    if(status == 'PENDING') {
-        message = 'Building...'
-    }
-    if(status == 'SUCCESS') {
-        message = 'Build succeeded!'
-    }
-    if(status == 'FAILURE') {
-        message = 'Build failed!'
-    }
-    if(status == 'ERROR') {
-        message = 'Build aborted!'
-    }
+    if(status == 'PENDING') { message = 'Building...' }
+    if(status == 'SUCCESS') { message = 'Build succeeded!' }
+    if(status == 'FAILURE') { message = 'Build failed!' }
+    if(status == 'ERROR')   { message = 'Build aborted!' }
     step([$class: 'GitHubCommitStatusSetter', contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: "${JOB_NAME}"], statusResultSource: [$class: 'ConditionalStatusResultSource', results: [[$class: 'AnyBuildResult', message: message, state: status]]]])
 }
 
 pipeline {
   agent {
-    node {
-      label 'jenkins-slave-1'
-    }
+    node { label 'jenkins-slave-1' }
   }
   
   environment {
