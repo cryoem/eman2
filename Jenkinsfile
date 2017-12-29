@@ -96,30 +96,50 @@ pipeline {
     
     // Stages triggered by cron
     stage('build-scripts-checkout') {
+      when {
+        expression { JOB_TYPE == "cron" }
+      }
+      
       steps {
         sh 'cd ${HOME}/workspace/build-scripts-cron/ && git checkout jenkins && git pull --rebase'
       }
     }
     
     stage('centos6') {
+      when {
+        expression { JOB_TYPE == "cron" }
+      }
+      
       steps {
         sh 'bash ${HOME}/workspace/build-scripts-cron/cronjob.sh centos6'
       }
     }
     
     stage('centos7') {
+      when {
+        expression { JOB_TYPE == "cron" }
+      }
+      
       steps {
         sh 'bash ${HOME}/workspace/build-scripts-cron/cronjob.sh centos7'
       }
     }
     
     stage('mac') {
+      when {
+        expression { JOB_TYPE == "cron" }
+      }
+      
       steps {
         echo 'bash ${HOME}/workspace/build-scripts-cron/cronjob.sh mac'
       }
     }
     
     stage('build-scripts-reset') {
+      when {
+        expression { JOB_TYPE == "cron" }
+      }
+      
       steps {
         sh 'cd ${HOME}/workspace/build-scripts-cron/ && git checkout master'
       }
