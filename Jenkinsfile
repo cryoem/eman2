@@ -48,12 +48,20 @@ pipeline {
   
   stages {
     stage('pending') {
+      when {
+        expression { JOB_TYPE == "push" }
+      }
+      
       steps {
         notifyGitHub('PENDING', 'build')
       }
     }
     
     stage('build') {
+      when {
+        expression { JOB_TYPE == "push" }
+      }
+      
       parallel {
         stage('recipe') {
           steps {
@@ -70,6 +78,10 @@ pipeline {
     }
     
     stage('notify') {
+      when {
+        expression { JOB_TYPE == "push" }
+      }
+      
       steps {
         echo 'Setting GitHub status...'
       }
