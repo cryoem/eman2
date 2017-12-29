@@ -92,5 +92,35 @@ pipeline {
         }
       }
     }
+    
+    stage('build-scripts-checkout') {
+      steps {
+        sh 'cd ${HOME}/workspace/build-scripts-cron/ && git checkout jenkins && git pull --rebase'
+      }
+    }
+    
+    stage('centos6') {
+      steps {
+        sh 'bash ${HOME}/workspace/build-scripts-cron/cronjob.sh centos6'
+      }
+    }
+    
+    stage('centos7') {
+      steps {
+        sh 'bash ${HOME}/workspace/build-scripts-cron/cronjob.sh centos7'
+      }
+    }
+    
+    stage('mac') {
+      steps {
+        echo 'bash ${HOME}/workspace/build-scripts-cron/cronjob.sh mac'
+      }
+    }
+    
+    stage('build-scripts-reset') {
+      steps {
+        sh 'cd ${HOME}/workspace/build-scripts-cron/ && git checkout master'
+      }
+    }
   }
 }
