@@ -74,7 +74,7 @@ def main():
 		nf=0
 		for fsp in args:
 			js=js_open_dict(fsp)
-			if options.extractvalue in js:
+			if options.extractkey in js:
 				v=js[options.extractkey]
 				nf+=1
 				if isinstance(v,list) and isinstance(v[0],EMAN2Ctf): v=v[0]
