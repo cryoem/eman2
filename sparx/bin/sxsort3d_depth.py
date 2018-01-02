@@ -4010,12 +4010,13 @@ def do_boxes_two_way_comparison_new(nbox, input_box_parti1, input_box_parti2, de
 				fout.close()
 				freq_cutoff_dict3 = {}
 			except: freq_cutoff_dict3 = {}
-				
+			ncluster = 0
 			for im in xrange(len(newindeces)):
 				try:
 					f1 = freq_cutoff_dict1["Cluster_%03d.txt"%newindeces[im][0]] 
 					f2 = freq_cutoff_dict2["Cluster_%03d.txt"%newindeces[im][1]]
-					freq_cutoff_dict3["Cluster_%03d.txt"%im] = min(f1, f2)
+					freq_cutoff_dict3["Cluster_%03d.txt"%ncluster] = min(f1, f2)
+					ncluster +=1
 				except: pass
 			fout = open(os.path.join(gendir,"freq_cutoff.json"),'w')
 			json.dump(freq_cutoff_dict3, fout)
