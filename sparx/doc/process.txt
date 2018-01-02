@@ -95,7 +95,7 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
 
 ''' sxprocess.py  vol3d.hdf  mask3d.hdf  --binary_mask  --threshold=0.05  --ne=3  --nd==3 '''
 
-14. Postprocess two unfiltered 3D volumes produced by meridien: This command executes the following processes. (a) Calculate FSC with provided mask and adjust the FSC by random phases FSC, (b) Sum two volume, (c) Apply mask, (d) Apply MTF correction (optional), (e) Adjust power spectrum by 2*FSC/(1+FSC) (optional), (f) Estimate B-factor from 10 Angstrom (default) to the resolution (optional), (g) Apply negative B-factor to enhance the volume (optional), (h) Apply low_pass filter to the volume (optional). Options are independent of each others.
+14. Combine two unfiltered 3D volumes produced by meridien: This command executes the following processes. (a) Calculate FSC with provided mask and adjust the FSC by random phases FSC, (b) Sum two volume, (c) Apply mask, (d) Apply MTF correction (optional), (e) Adjust power spectrum by 2*FSC/(1+FSC) (optional), (f) Estimate B-factor from 10 Angstrom (default) to the resolution (optional), (g) Apply negative B-factor to enhance the volume (optional), (h) Apply low_pass filter to the volume (optional). Options are independent of each others.
 --fl               : =0.0, low_pass filter to resolution; =-1.0, no low_pass filter; =5.8 low_pass filter to 5.8 Angstrom; =0.2 low_pass filter to 0.2.
 --B_enhance        : =-1, B-factor is not applied; =0, program estimates B-factor from options. B_start (usually set as 10 Angstrom) to the resolution determined by FSC 0.143; =128.0, program uses the given value 128.0 to enhance map.
 --mtf              : =mtf.txt, for those high resolution maps, mtf correction would significantly enhance structural features.
@@ -103,11 +103,11 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
 --do_adaptive_mask : =True, the program adaptively creates 3d mask file using summed volumes. This takes a couple of minutes. For map with dimension of 384*384*384, it takes 6 minutes.
 --output           : output volume 
 
-''' sxprocess.py  --postprocess  vol_0_unfil.hdf  vol_1_unfil.hdf  --mask=mask15.hdf  --pixel_size=1.12  --fl=-1  --mtf=mtf.txt  --fsc_adj  --output=vol_post.hdf '''
+''' sxprocess.py  --combinemaps  vol_0_unfil.hdf  vol_1_unfil.hdf  --mask=mask15.hdf  --pixel_size=1.12  --fl=-1  --mtf=mtf.txt  --fsc_adj  --output=vol_combined.hdf  --output_dir=mapsrefineiter17'''
 
-''' sxprocess.py  --postprocess  vol_0_unfil.hdf  vol_1_unfil.hdf  --mask=mask15.hdf  --pixel_size=1.12  --fl=4.7  --mtf=mtf.txt  --fsc_adj '''
+''' sxprocess.py  --combinemaps  vol_0_unfil.hdf  vol_1_unfil.hdf  --mask=mask15.hdf  --pixel_size=1.12  --fl=4.7  --mtf=mtf.txt  --B_enhance=250. --output_dir=mapsrefineiter17 '''
 
-''' sxprocess.py  --postprocess  vol_0_unfil.hdf  vol_1_unfil.hdf  --do_adaptive_mask  --pixel_size=1.12  --mtf=mtf.txt  --fsc_adj '''
+''' sxprocess.py  --combinemaps  vol_0_unfil.hdf  vol_1_unfil.hdf  --do_adaptive_mask  --pixel_size=1.12  --mtf=mtf.txt  --fsc_adj --output=vol_iter17.hdf --output_dir=mapsrefineiter17'''
 
 15. Window stack file -reduce size of images without changing the pixel size.
 
@@ -157,7 +157,7 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
     ne:: Erosion cycles: After initial binarization the volume is eroded to remove fragmented pieces of the volume. (default 0)
     nd:: Dilation cycles: After erosing the binary volume is dilated back to smooth the surface and match the original size. (default 0)
 
-    postprocess:: Sharpen the power spectrum: Run 3D refinement postprocessing for a pair of unfiltered odd & even 3-D volumes. B-factor can be estimated from the two unfiltered 3D volumes. (default False)
+    combinemaps:: Enhance high frequencies of the power spectrum: Combine a pair of unfiltered odd & even 3-D volumes. B-factor can be estimated from the two unfiltered 3D volumes. (default False)
     output_dir:: Output directory: Specify path to the output directory of postprocess. By default, the program uses the current directory. However, GUI requires the path other than the current directory. (default required string)
     output:: Output volume file name: File name of output final volume. (default vol_postrefine_masked.hdf)
     pixel_size:: Pixel size [A]: Pixel size of input data. (default 0.0)
@@ -172,7 +172,7 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
     B_start:: B-factor estimation lower limit [A]: Frequency in Angstrom defining lower boundary of B-factor estimation. (default 10.0)
     B_stop:: B-factor estimation upper limit [A]: Frequency in Angstrom defining upper boundary of B-factor estimation. Recommended to set the upper boundary to the frequency where fsc < 0.0. (default  0.0)
     fl:: Low-pass filter frequency [1/Pixels]: 0.0: low-pass filter to resolution; A value > 0.5: low-pass filter to the value in Angstrom; A value > 0.0 and < 0.5: low-pass filter to the value in absolute frequency; -1.0: no low-pass filter. (default 0.0)
-    aa:: Low-pass filter fall-off [1/Pixels]: Low-pass filter fall-off. (default 0.1)
+    aa:: Low-pass filter fall-off [1/Pixels]: Low-pass filter fall-off. (default 0.01)
 
     window_stack:: Window stack images using a smaller window size: (default False)
     box:: new window size: (default 0)
