@@ -83,7 +83,7 @@ pipeline {
         
         always {
           emailext(recipientProviders: [[$class: 'DevelopersRecipientProvider']],  
-                  subject: '[$PROJECT_NAME] Build # $BUILD_NUMBER - $BUILD_STATUS!', 
+                  subject: '[JenkinsCI/$PROJECT_NAME] Build # $BUILD_NUMBER - $BUILD_STATUS!', 
                   body: '''${SCRIPT, template="groovy-text.template"}''')
         }
       }
