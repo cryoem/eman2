@@ -536,7 +536,7 @@ def do_analysis_on_identified_clusters(clusters, log_main):
 	tmpres1, tmpres2, summary = do_one_way_anova_scipy(clusters, ds, name_of_variable="defocus", summary= summary, log_main = log_main)
 	if ss is not None: tmpres1, tmpres2, summary = do_one_way_anova_scipy(clusters, ss, name_of_variable="smearing", summary= summary, log_main = log_main)
 	if norms:          tmpres1, tmpres2, summary = do_one_way_anova_scipy(clusters, norms, name_of_variable="norm", summary= summary, log_main = log_main)
-	if summary:
+	if summary is not None:
 		fout = open(os.path.join(Tracker["constants"]["masterdir"], "anova_summary.txt"),"w")
 		fout.writelines(summary)
 		fout.close()
@@ -1075,7 +1075,7 @@ def do_one_way_anova_scipy(clusters, value_list, name_of_variable="variable", su
 	NMAX = 30
 	if len(clusters)<=1:
 		print("the number of clusters for anova is less than 2")
-		return None, None
+		return None, None, None
 	K = min(NMAX, len(clusters))
 	if len(clusters) > K : print("total number of clusters is larger than 30. Process only the first 30 clusters")
 	replicas = []
@@ -4630,7 +4630,7 @@ def steptwo_mpi(tvol, tweight, treg, cfsc = None, regularized = True, color = 0)
 	#  tvol is overwritten, meaning it is also an output
 	n_iter =10
 	ifi = mpi_iterefa( vol_data.__array_interface__['data'][0] ,  we_data.__array_interface__['data'][0] , nx, ny, nz, maxr2, \
-			Tracker["constants"]["nnxo"], Blockdata["myid_on_node"], color, Blockdata["no_of_processes_per_group"],  Blockdata["shared_comm"], n_iter)	
+			Tracker["constants"]["nnxo"], Blockdata["myid_on_node"], color, Blockdata["no_of_processes_per_group"],  Blockdata["shared_comm"])#####, n_iter)	
 	if( Blockdata["myid_on_node"] == 0 ):
 		#  Either pad or window in F space to 2*nnxo
 		nx = tvol.get_ysize()
@@ -4699,7 +4699,7 @@ def steptwo_mpi_filter(tvol, tweight, treg, cfsc = None, cutoff_freq = 0.45, aa 
 	#  tvol is overwritten, meaning it is also an output
 	n_iter =10
 	ifi = mpi_iterefa( vol_data.__array_interface__['data'][0] ,  we_data.__array_interface__['data'][0] , nx, ny, nz, maxr2, \
-			Tracker["constants"]["nnxo"], Blockdata["myid_on_node"], color, Blockdata["no_of_processes_per_group"],  Blockdata["shared_comm"], n_iter)	
+			Tracker["constants"]["nnxo"], Blockdata["myid_on_node"], color, Blockdata["no_of_processes_per_group"],  Blockdata["shared_comm"])#####, n_iter)	
 	if( Blockdata["myid_on_node"] == 0 ):
 		from filter       import  filt_tanl
 		#  Either pad or window in F space to 2*nnxo
@@ -6848,123 +6848,6 @@ def do_final_maps(number_of_groups, minimum_size, selected_iter, refinement_dir,
 				if os.path.exists(cluster_masterdir): shutil.rmtree(cluster_masterdir)
 	return
 #####<<<<-------------------------Functions for post processing
-def post_sorting_rec3d(log_main, work_dir):
-	global Tracker, Blockdata
-	try:    nxinit = Tracker["nxinit"]
-	except: Tracker["nxinit"]                 = -1
-	Tracker["constants"]["orgres"]            = 0.0
-	Tracker["constants"]["refinement_delta"]  = 0.0
-	Tracker["constants"]["refinement_ts"]     = 0.0
-	Tracker["constants"]["refinement_xr"]     = 0.0
-	Tracker["constants"]["refinement_an"]     = 0.0
-	
-	summary = []
-	number_of_groups = 0
-	minimum_size = Tracker["constants"]["img_per_grp"]
-	if(Blockdata["myid"] == Blockdata["main_node"]):
-		clusters = []
-		final_accounted_ptl = 0
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		msg = "---->>> Summaries of final results <<<-----"
-		print(line, msg)
-		log_main.add(msg)
-		all_files = os.listdir(Tracker["constants"]["masterdir"])
-		cluster_list = []
-		nlist = []
-		from string import atoi
-		for file in all_files:
-			if file[0:7] == "Cluster" and file[-4:] == ".txt": 
-				cluster_list.append(file)
-				nlist.append(atoi(file[8:11]))
-		if len(nlist)>1: nlist.sort()
-		if len(nlist)>0:
-			for i in xrange(len(nlist)):
-				class_in = read_text_file(os.path.join(Tracker["constants"]["masterdir"],\
-				 "Cluster_%03d.txt"%nlist[i]))
-				final_accounted_ptl +=len(class_in)
-				clusters.append(class_in)
-				msg = " cluster ID: %10d  number of images:  %10d  "%(nlist[i], len(class_in))
-				print(line, msg)
-				log_main.add(msg)
-				minimum_size = min(len(class_in), minimum_size)
-			number_of_groups = len(nlist)
-		if os.path.exists(os.path.join(Tracker["constants"]["masterdir"], "Unaccounted.txt")):
-			class_in = read_text_file(os.path.join(Tracker["constants"]["masterdir"], "Unaccounted.txt"))
-			clusters.append(class_in)
-			number_of_groups +=1
-			msg = "include %d Unaccounted images as a cluster"%len(class_in)
-			print(line, msg)
-			log_main.add(msg)
-		if len(clusters) == 0: terminate = 1
-		else:
-			terminate = 0
-			summary   = []
-			msg = "total number of particle images:  %10d; accounted:   %10d ;  number_of_groups:   %5d"%(Tracker["constants"]["total_stack"], final_accounted_ptl, number_of_groups)
-			print(line, msg)
-			log_main.add(msg)
-			# analysis
-			dummy = output_micrograph_number_per_cluster(Tracker["constants"]["orgstack"], \
-				os.path.join(Tracker["constants"]["masterdir"], "indexes.txt"), clusters, log_main = log_main)
-				   
-			if not Tracker["nosmearing"]:
-				vs, ds, ss, norms = get_params_for_analysis(Tracker["constants"]["orgstack"], \
-				os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt"),\
-				 os.path.join(Tracker["constants"]["masterdir"], "all_smearing.txt"), Tracker["constants"]["nsmear"])
-			else:
-				vs, ds, ss, norms = get_params_for_analysis(Tracker["constants"]["orgstack"], \
-				os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt"),\
-				 None, None)
-
-			tmpres1, tmpres2, summary = do_one_way_anova_scipy(clusters, ds, name_of_variable="defocus", summary = summary, log_main = log_main)
-			if ss is not None: tmpres1, tmpres2, summary = do_one_way_anova_scipy(clusters, ss, name_of_variable="smearing", summary = summary, log_main = log_main)
-			if norms: tmpres1, tmpres2, summary = do_one_way_anova_scipy(clusters, norms, name_of_variable="norm", summary = summary, log_main = log_main)
-			if summary is not None:
-				fout = open(os.path.join(Tracker["constants"]["masterdir"], "anova_summary.txt"),"w")
-				fout.writelines(summary)
-				fout.close()
-			else:
-				msg ="anova is not computed"
-				print(line, msg)
-				log_main.add(msg)
-	else:
-		Tracker   = 0
-		terminate = 0
-	Tracker   = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
-	terminate = bcast_number_to_all(terminate, Blockdata["main_node"], MPI_COMM_WORLD)
-	if terminate ==1:
-		if(Blockdata["myid"] == Blockdata["main_node"]):
-			msg ="No cluster is found"
-			print(line, msg)
-			log_main.add(msg)
-		from mpi import mpi_finalize
-		mpi_finalize()
-		exit()
-	else:
-		if(Blockdata["myid"] == Blockdata["main_node"]):
-			if not os.path.exists(os.path.join(work_dir, "final_partition.txt")):
-				msg ="create partition file in master directory"
-				dlist, nindex = merge_classes_into_partition_list(clusters)
-				write_text_row(nindex, os.path.join(work_dir, "final_partition.txt"))
-			else: msg ="partition file is  %s."%os.path.join(work_dir, "final_partition.txt")
-			print(line, msg)
-			log_main.add(msg)
-		number_of_groups = bcast_number_to_all(number_of_groups, Blockdata["main_node"], MPI_COMM_WORLD)
-		if number_of_groups == 0:ERROR("No cluster is found, and the program terminates. ", "option post_sorting_sharpen ", 1, Blockdata["myid"])
-		minimum_size = bcast_number_to_all(minimum_size, Blockdata["main_node"], MPI_COMM_WORLD)
-		compute_noise(Tracker["constants"]["nnxo"])
-		if Tracker["constants"]["niter_for_sorting"] ==-1:  Tracker["constants"]["niter_for_sorting"] = Tracker["constants"]["selected_iter"]
-		do_final_maps(number_of_groups, minimum_size, Tracker["constants"]["niter_for_sorting"], Tracker["constants"]["refinement_dir"], \
-		   work_dir, Tracker["constants"]["nnxo"], log_main)
-		if(Blockdata["myid"] == Blockdata["main_node"]):
-			#msg = " Cluster ID  B-factor  Low-pass-filter(Angstrom)  FSC05/FSC0143  in Fourier pixels  in Angstrom   Adjusted to full set FSC05/FSC143  in Fourier pixels  in Angstrom "
-			msg = '{:5} {:^10} {:25} {:25} {:25} {:32} {:32}'.format('GID', 'B-factor', 'Low-pass-filter(A)', 'FSC05/FSC0143 in pixels',  'FSC05/FSC0143 in A', 'adjusted FSC05/FSC143 in pixels', 'adjusted FSC05/FSC143 in A')
-			log_main.add(msg)
-			for iproc in xrange(number_of_groups):
-				msg = combine_two_unfiltered_maps(os.path.join(work_dir, "vol_unfiltered_0_grp%03d.hdf"%iproc), \
-				os.path.join(work_dir, "vol_unfiltered_1_grp%03d.hdf"%iproc), iproc, work_dir)
-				log_main.add(msg)
-		mpi_barrier(MPI_COMM_WORLD)
-		return
 
 def compute_final_map(log_file, work_dir):
 	global Tracker, Blockdata
