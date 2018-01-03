@@ -2,6 +2,8 @@
 
 source ci_support/setup_conda.sh
 
+export CPU_COUNT=2
+
 # Following Wiki instructions at
 # http://blake.bcm.edu/emanwiki/EMAN2/COMPILE_EMAN2_ANACONDA
 if [ "$(uname -s)" != "Darwin" ];then
@@ -11,22 +13,8 @@ else
 fi
 
 # Build and install eman2
-export build_dir=$HOME/build_eman
-
-rm -rf ${build_dir}
-mkdir -p ${build_dir}
-cd ${build_dir}
-
-cmake "${OLDPWD}"
-make
-make install
-make test-verbose
+export SRC_DIR=${PWD}
+bash ${SRC_DIR}/recipes/eman/build.sh
 
 # Run tests
-e2version.py
-e2speedtest.py
-
-cd -
-mpirun -n 4 $(which python) examples/mpi_test.py
-bash tests/run_prog_tests.sh
-python tests/test_EMAN2DIR.py
+bash ${SRC_DIR}/tests/run_tests.sh
