@@ -24,7 +24,6 @@ install:
     - call setup_x64
 
     - conda install --quiet --yes conda-build=2
-    - conda update --yes --quiet conda -c defaults
 
     - conda info
     - conda config --get
