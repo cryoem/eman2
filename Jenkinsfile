@@ -38,7 +38,7 @@ pipeline {
   
   stages {
     // Stages triggered by GitHub pushes
-    stage('pending') {
+    stage('notify-pending') {
       when {
         expression { JOB_TYPE == "push" }
       }
