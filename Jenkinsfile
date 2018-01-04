@@ -18,6 +18,10 @@ def notifyGitHub(status) {
     step([$class: 'GitHubCommitStatusSetter', contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: "JenkinsCI/${JOB_NAME}"], statusResultSource: [$class: 'ConditionalStatusResultSource', results: [[$class: 'AnyBuildResult', message: message, state: status]]]])
 }
 
+def runCronJob() {
+    sh "bash ${HOME}/workspace/build-scripts-cron/cronjob.sh $STAGE_NAME"
+}
+
 pipeline {
   agent {
     node { label 'jenkins-slave-1' }
@@ -112,7 +116,7 @@ pipeline {
       }
       
       steps {
-        sh 'bash ${HOME}/workspace/build-scripts-cron/cronjob.sh centos6'
+        runCronJob()
       }
     }
     
@@ -123,7 +127,7 @@ pipeline {
       }
       
       steps {
-        sh 'bash ${HOME}/workspace/build-scripts-cron/cronjob.sh centos7'
+        runCronJob()
       }
     }
     
@@ -134,7 +138,7 @@ pipeline {
       }
       
       steps {
-        echo 'bash ${HOME}/workspace/build-scripts-cron/cronjob.sh mac'
+        runCronJob()
       }
     }
     
