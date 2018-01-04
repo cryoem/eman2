@@ -463,13 +463,29 @@ class GUIEvalImage(QtGui.QWidget):
 
 		# This updates the FFT CTF-zero circles
 		if self.f2danmode==0 :
-			fit=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP)
+			#fit=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP)
+			#shp={}
+			#nz=0
+			#for i in range(1,len(fit)):
+				#if fit[i-1]*fit[i]<=0.0:
+					#nz+=1
+					#shp["z%d"%i]=EMShape(("circle",0.0,0.0,1.0/nz,r,r,i,1.0))
 			shp={}
-			nz=0
-			for i in range(1,len(fit)):
-				if fit[i-1]*fit[i]<=0.0:
-					nz+=1
-					shp["z%d"%i]=EMShape(("circle",0.0,0.0,1.0/nz,r,r,i,1.0))
+			for i in range(1,10):
+				if ctf.dfdiff>0 :
+					d=ctf.defocus
+					ctf.defocus=d-ctf.dfdiff/2
+					z1=ctf.zero(i-1)/ctf.dsbg
+					ctf.defocus=d+ctf.dfdiff/2
+					z2=ctf.zero(i-1)/ctf.dsbg
+					ctf.defocus=d
+					if z2>len(s) : break
+					shp["z%d"%i]=EMShape(("ellipse",0,0,.75,r,r,z2,z1,ctf.dfang,1.0))
+				else:
+	#				z=zero(i,ctf.voltage,ctf.cs,ctf.defocus,ctf.ampcont)/ctf.dsbg
+					z=ctf.zero(i-1)/ctf.dsbg
+					if z>len(s) : break
+					shp["z%d"%i]=EMShape(("circle",0,0,.75,r,r,z,1.0))
 
 			self.wfft.del_shapes()
 			self.wfft.add_shapes(shp)
@@ -751,6 +767,8 @@ class GUIEvalImage(QtGui.QWidget):
 
 		self.sdefocus.setValue(ctf.defocus,True)
 		self.sbfactor.setValue(ctf.bfactor,True)
+		self.sdfdiff.setValue(ctf.dfdiff,True)
+		self.sdfang.setValue(ctf.dfang,True)
 		self.sapix.setValue(ctf.apix,True)
 		self.sampcont.setValue(ctf.ampcont,True)
 		self.svoltage.setValue(ctf.voltage,True)
