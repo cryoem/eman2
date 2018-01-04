@@ -6910,7 +6910,7 @@ correction is not possible, this will allow you to approximate the correction to
 
 		virtual string get_desc() const
 		{
-			return "This processor will remove localized 'striping' along the x/y axes, caused by issues with CCD/CMOS readout. In theory this should be done by dark/gain correction, but in many cases, there are residual effects that this will help eliminate. This can produce high-pass filter-like effects, so generally large length values are suggested. Integration covers +-xlen/ylen. Y and X axes are corrected sequentially, not simultaneously, Y first";
+			return "This processor will correct a single bad line in X or Y by averaging adjacent pixel values";
 		}
 
 		virtual TypeDict get_param_types() const
