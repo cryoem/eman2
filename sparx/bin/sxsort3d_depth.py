@@ -680,7 +680,7 @@ def depth_clustering_box(work_dir, input_accounted_file, input_unaccounted_file,
 			paramstructure_dict = Tracker["paramstructure_dict"]
 			paramstructure_dir  = Tracker["paramstructure_dir"]
 			parameterstructure  = read_paramstructure_for_sorting(iter_id_init_file, paramstructure_dict, paramstructure_dir)
-			
+		mpi_barrier(MPI_COMM_WORLD)	
 		Tracker["directory"] = within_box_run_dir
 		if nruns == 0: # only do it in the first box
 			if Tracker["box_nxinit"] ==-1:
@@ -1669,6 +1669,7 @@ def Kmeans_minimum_group_size_orien_groups(original_data, partids, params, param
 	   Tracker["rshifts"], Tracker["delta"], Tracker["avgnorm"], Tracker["nxinit"], \
 	     Tracker["constants"]["nnxo"], Tracker["nosmearing"], norm_per_particle, Tracker["constants"]["nsmear"])
 	del rdata
+	mpi_barrier(MPI_COMM_WORLD)
 	last_iter_assignment = copy.copy(iter_assignment)
 	best_assignment      = copy.copy(iter_assignment)
 	total_iter       = 0
@@ -2777,8 +2778,9 @@ def precalculate_shifted_data_for_recons3D(prjlist, paramstructure, refang, rshi
 			set_params_proj(prjlist[im],[ phi, theta, psi, 0.0, 0.0], xform = "xform.projection")
 		else:
 			avgnorm = avgnorms[prjlist[im].get_attr("chunk_id")]
-			if nsmear <=0.0: numbor = len(paramstructure[im][2])
-			else:         numbor = 1
+			#if nsmear <=0.0: numbor = len(paramstructure[im][2])
+			#else:         numbor = 1
+			numbor      = len(paramstructure[im][2])
 			ipsiandiang = [ paramstructure[im][2][i][0]/1000  for i in xrange(numbor) ]
 			allshifts   = [ paramstructure[im][2][i][0]%1000  for i in xrange(numbor) ]
 			probs       = [ paramstructure[im][2][i][1] for i in xrange(numbor) ]
@@ -6916,6 +6918,7 @@ def compute_final_map(log_file, work_dir):
 		paramstructure_dir  = Tracker["paramstructure_dir"]
 		parameterstructure  = read_paramstructure_for_sorting(parti_file, paramstructure_dict, paramstructure_dir)
 		
+	mpi_barrier(MPI_COMM_WORLD)	
 	Tracker["directory"]    = work_dir
 	compute_noise(Tracker["nxinit"])
 	cdata, rdata, fdata = downsize_data_for_sorting(original_data, preshift = True, npad = 1, norms = norm_per_particle)# pay attentions to shifts!
@@ -6923,6 +6926,7 @@ def compute_final_map(log_file, work_dir):
 	  Tracker["delta"], Tracker["avgnorm"], Tracker["nxinit"], Tracker["constants"]["nnxo"], Tracker["nosmearing"], \
 	      norm_per_particle,  Tracker["constants"]["nsmear"])
 	del rdata
+	mpi_barrier(MPI_COMM_WORLD)
 	do3d_sorting_groups_nofsc_smearing_iter(srdata, False, iteration = 0)
 	mpi_barrier(MPI_COMM_WORLD)
 	return
