@@ -323,7 +323,7 @@ def depth_box_initialization(box_dir, input_list1, input_list2, log_file):
 			if one[0] not in groups: groups.append(one[0]) # safe in speed when the number of groups is not large.
 		number_of_groups = len(groups)
 		if number_of_groups < total_stack//img_per_grp:
-			number_of_groups = total_stack//img_per_grp - 1 ### Alway less than minus one
+			number_of_groups = total_stack//Tracker["constants"]["minimum_grp_size"] - 1 ### Alway less than minus one
 		if number_of_groups <2: ERROR("number_of_groups less than two", "depth_box_initialization", 1, Blockdata["myid"])
 		minimum_grp_size = Tracker["constants"]["minimum_grp_size"]
 		if Blockdata["myid"] == Blockdata["main_node"]:
@@ -364,7 +364,8 @@ def depth_box_initialization(box_dir, input_list1, input_list2, log_file):
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			write_text_file(input_list1, os.path.join(box_dir, "previous_all_indexes.txt"))
 		number_of_groups = total_stack//img_per_grp
-		if number_of_groups <= 1:number_of_groups = total_stack//Tracker["constants"]["minimum_grp_size"]
+		if number_of_groups <= 1:
+			number_of_groups = total_stack//Tracker["constants"]["minimum_grp_size"] -1
 		new_assignment = create_nrandom_lists_from_given_pids(box_dir, os.path.join(box_dir, \
 		      "previous_all_indexes.txt"), number_of_groups, 2)
 		if Tracker["constants"]["minimum_grp_size"] == -1: minimum_grp_size = total_stack//number_of_groups**2
@@ -971,14 +972,13 @@ def get_sorting_image_size(original_data, partids, number_of_groups, sparamstruc
 	for igroup in xrange(1): # Use group zero first
 		for ifreq in xrange(1, len(fsc_data[0])):avg_fsc[ifreq] += fsc_data[igroup][ifreq]
 	fsc143 = len(fsc_data[0])
-	for igroup in xrange(Tracker["number_of_groups"]*2):
-		for ifreq in xrange(1, len(fsc_data[igroup])):
-			fsc_data[igroup][ifreq] = 2.*fsc_data[igroup][ifreq]/(1.+fsc_data[igroup][ifreq])
-			if fsc_data[igroup][ifreq] < 0.143: break
-		fsc143 = min(fsc143, ifreq)
+	for ifreq in xrange(len(avg_fsc)):
+		if avg_fsc[ifreq] < 0.143:
+			fsc143 = ifreq -1
+			break
 	if fsc143 !=0: nxinit = min((int(fsc143)+ max(int(Tracker["constants"]["nnxo"]*0.03), 5))*2, Tracker["constants"]["nnxo"])
 	else: ERROR("program obtains wrong image size", "get_sorting_image_size", 1, Blockdata["myid"])
-	freq_fsc143_cutoff = float(fsc143)/float(Tracker["nxinit_refinement"])
+	freq_fsc143_cutoff = float(fsc143)/float(nxinit)
 	if(Blockdata["myid"] == Blockdata["main_node"]): write_text_file(avg_fsc, os.path.join(Tracker["directory"], "fsc_image_size.txt"))
 	del iter_assignment
 	del proc_list
