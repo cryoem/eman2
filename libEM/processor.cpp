@@ -7268,7 +7268,7 @@ void BadLineXYProcessor::process_inplace(EMData * image)
 		return;
 	}
 
-	if (image->get_zsize()>1) throw ImageDimensionException("Error: math.xybadline works only on 2D images");
+	if (image->get_zsize()>1) throw ImageDimensionException("Error: math.xybadlines works only on 2D images");
 	
 	int nx=image->get_xsize();
 	int ny=image->get_ysize();
@@ -7277,11 +7277,9 @@ void BadLineXYProcessor::process_inplace(EMData * image)
 	vector <int> rows = params.set_default("rows",vector <int> ());
 	float nnorm = params.set_default("neighbornorm",1.0f);//sqrt(2.0f));
 
-	int ncols = cols.size();
 	int mincol = *min_element(cols.begin(),cols.end());
 	int maxcol = *max_element(cols.begin(),cols.end());
 
-	int nrows = rows.size();
 	int minrow = *min_element(rows.begin(),rows.end());
 	int maxrow = *max_element(rows.begin(),rows.end());
 
@@ -7294,11 +7292,11 @@ void BadLineXYProcessor::process_inplace(EMData * image)
 	ogl = 0;
 	for (int x=mincol-1; x<=maxcol+1; x++) {
 		inflag = false;
-		for (int i=0; i<=ncols; i++) if (x==cols[i]) inflag = true;
+		for (int i=0; i<=cols.size(); i++) if (x==cols[i]) inflag = true;
 		if (inflag == true) continue;
 		else {
 			inflag = false;
-			for (int i=0; i<=ncols; i++) if ((x-1)==cols[i]) inflag = true;
+			for (int i=0; i<=cols.size(); i++) if ((x-1)==cols[i]) inflag = true;
 			if (inflag == true){
 				ngl = x;
 				start = ogl+1;
@@ -7319,11 +7317,11 @@ void BadLineXYProcessor::process_inplace(EMData * image)
 	ogl = 0;
 	for (int y=minrow-1; y<=maxrow+1; y++) {
 		inflag = false;
-		for (int i=0; i<=nrows; i++) if (y==rows[i]) inflag = true;
+		for (int i=0; i<=rows.size(); i++) if (y==rows[i]) inflag = true;
 		if (inflag == true) continue;
 		else {
 			inflag = false;
-			for (int i=0; i<=nrows; i++) if ((y-1)==rows[i]) inflag = true;
+			for (int i=0; i<=rows.size(); i++) if ((y-1)==rows[i]) inflag = true;
 			if (inflag == true){
 				ngl = y;
 				for (int r=ogl+1; r<ngl; r++) {
@@ -7331,7 +7329,6 @@ void BadLineXYProcessor::process_inplace(EMData * image)
 					pos = r-ogl;
 					for (int x=0; x<nx; x++) {
 						float val = ((image->get_value_at(x,ogl)*(ngl-ogl-pos)+image->get_value_at(x,ngl)*pos)) / (nnorm*(ngl-ogl));
-						//float val = (image->get_value_at(x,ogl)+image->get_value_at(x,ngl))/2.0;
 						image->set_value_at(x,r,val);
 					}
 				}
