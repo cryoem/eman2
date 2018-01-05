@@ -322,7 +322,9 @@ def depth_box_initialization(box_dir, input_list1, input_list2, log_file):
 		for one in input_list1:
 			if one[0] not in groups: groups.append(one[0]) # safe in speed when the number of groups is not large.
 		number_of_groups = len(groups)
-		if number_of_groups< total_stack//img_per_grp: number_of_groups = total_stack//img_per_grp
+		if number_of_groups < total_stack//img_per_grp:
+			number_of_groups = total_stack//img_per_grp - 1 ### Alway less than minus one
+		if number_of_groups <2: ERROR("number_of_groups less than two", "depth_box_initialization", 1, Blockdata["myid"])
 		minimum_grp_size = Tracker["constants"]["minimum_grp_size"]
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			msg = "intialization found %d  groups, the total possible groups  %d"%(number_of_groups, total_stack//img_per_grp)
@@ -339,7 +341,6 @@ def depth_box_initialization(box_dir, input_list1, input_list2, log_file):
 			tmp_assignment = swap_accounted_with_unaccounted_elements_mpi(os.path.join(box_dir, "previous_NACC.txt"), \
 				os.path.join(box_dir, "previous_NUACC.txt"), log_file, number_of_groups, swap_ratio)
 			new_assignment.append(tmp_assignment)
-			  
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			for indep in xrange(2):
 				write_text_file(new_assignment[indep], os.path.join(box_dir, "independent_index_%03d.txt"%indep))
@@ -634,7 +635,6 @@ def depth_clustering_box(work_dir, input_accounted_file, input_unaccounted_file,
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		if not os.path.exists(within_box_run_dir):os.mkdir(within_box_run_dir)
 		time_box_start = time.time()
-		
 	total_stack      = total_stack_init
 	number_of_groups = number_of_groups_init
 	while keepgoing ==1:
@@ -694,7 +694,8 @@ def depth_clustering_box(work_dir, input_accounted_file, input_unaccounted_file,
 		else: # nruns>1 always estimate image size
 			Tracker["nxinit"], Tracker["freq_fsc143_cutoff"] = get_sorting_image_size(original_data, iter_id_init_file, current_number_of_groups,\
 				parameterstructure, norm_per_particle, log_main)
-				
+		Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
+			
 		### preset variables in trackers
 		Tracker["total_stack"]      = total_stack
 		Tracker["number_of_groups"] = current_number_of_groups
@@ -737,8 +738,8 @@ def depth_clustering_box(work_dir, input_accounted_file, input_unaccounted_file,
 			list_of_stable    = wrap_mpi_bcast(list_of_stable, Blockdata["main_node"], MPI_COMM_WORLD)
 			Tracker           = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
 			
-			accounted_file   = os.path.join(iter_dir, "Accounted.txt")
-			unaccounted_file = os.path.join(iter_dir, "Unaccounted.txt")
+			accounted_file    = os.path.join(iter_dir, "Accounted.txt")
+			unaccounted_file  = os.path.join(iter_dir, "Unaccounted.txt")
 			
 			if Tracker["constants"]["do_swap_au"]: swap_ratio = Tracker["constants"]["swap_ratio"]
 			else: swap_ratio = 0.0
@@ -1390,9 +1391,12 @@ def import_data(log_main):
 			print(msg)
 	## checking settings!
 	number_of_groups =  Tracker["constants"]["total_stack"]//Tracker["constants"]["img_per_grp"]
+	if number_of_groups<=1: ERROR("Your img_per_grp is too large", "sxsort3d_depth.py", 1,  Blockdata["myid"])
 	minimum_grp_size = Tracker["constants"]["minimum_grp_size"]
 	if minimum_grp_size < Tracker["constants"]["total_stack"]//number_of_groups**2:
-		 ERROR("minimum_grp_size is too small", "sxsort3d_depth.py", 1,  Blockdata["myid"])
+		ERROR("minimum_grp_size is too small", "sxsort3d_depth.py", 1,  Blockdata["myid"])
+	if minimum_grp_size >= Tracker["constants"]["img_per_grp"]:
+		ERROR("minimum_grp_size is too large", "sxsort3d_depth.py", 1,  Blockdata["myid"])
 	return
 	
 def create_masterdir(log_main):
@@ -1617,16 +1621,18 @@ def Kmeans_minimum_group_size_orien_groups(original_data, partids, params, param
 	has_converged            = 0
 	times_around_fixed_value = 0  
 	###<<<<<<------------
-	#if( Blockdata["myid"] == Blockdata["main_node"]):
-		
-	try:
-		if os.path.exists(Tracker["mask3D"]): # prepare mask
-			mask3D = get_im(Tracker["mask3D"])
-			if mask3D.get_xsize() != Tracker["nxinit"]: 
-				mask3D = fdecimate(mask3D, Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"], True, False)
-	except:
-		mask3D = model_circle(Tracker["constants"]["radius"], Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"])
-		mask3D = fdecimate(mask3D, Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"], True, False)
+	if( Blockdata["myid"] == Blockdata["main_node"]):
+		try:
+			if os.path.exists(Tracker["mask3D"]): # prepare mask
+				mask3D = get_im(Tracker["mask3D"])
+				if mask3D.get_xsize() != Tracker["nxinit"]: 
+					mask3D = fdecimate(mask3D, Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"], True, False)
+		except:
+			mask3D = model_circle(Tracker["constants"]["radius"], Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"])
+			mask3D = fdecimate(mask3D, Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"], True, False)
+	else:
+		mask3D = model_blank(Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"])
+	bcast_EMData_to_all(mask3D, Blockdata["myid"], Blockdata["main_node"])
 		
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	if( Blockdata["myid"] == Blockdata["main_node"]):
@@ -1664,7 +1670,9 @@ def Kmeans_minimum_group_size_orien_groups(original_data, partids, params, param
 		proc_list[iproc] = [iproc_image_start, iproc_image_end]
 		
 	compute_noise(Tracker["nxinit"])
+	mpi_barrier(MPI_COMM_WORLD)
 	cdata, rdata, fdata = downsize_data_for_sorting(original_data, preshift = True, npad = 1, norms =norm_per_particle)# pay attentions to shifts!
+	mpi_barrier(MPI_COMM_WORLD)
 	srdata = precalculate_shifted_data_for_recons3D(rdata, paramstructure, Tracker["refang"], \
 	   Tracker["rshifts"], Tracker["delta"], Tracker["avgnorm"], Tracker["nxinit"], \
 	     Tracker["constants"]["nnxo"], Tracker["nosmearing"], norm_per_particle, Tracker["constants"]["nsmear"])
@@ -1876,7 +1884,7 @@ def Kmeans_minimum_group_size_relaxing_orien_groups(original_data, partids, para
 		iproc_image_start, iproc_image_end = MPI_start_end(Tracker["total_stack"], Blockdata["nproc"], iproc)
 		proc_list[iproc] = [iproc_image_start, iproc_image_end]
 	compute_noise(Tracker["nxinit"])
-	cdata, rdata, fdata = downsize_data_for_sorting(original_data, preshift = True, npad = 1, norms =norm_per_particle)# pay attentions to shifts!
+	cdata, rdata, fdata = downsize_data_for_sorting(original_data, preshift = True, npad = 1, norms = norm_per_particle)# pay attentions to shifts!
 	srdata = precalculate_shifted_data_for_recons3D(rdata, paramstructure, Tracker["refang"], \
 	   Tracker["rshifts"], Tracker["delta"], Tracker["avgnorm"], Tracker["nxinit"], \
 	     Tracker["constants"]["nnxo"], Tracker["nosmearing"], norm_per_particle,  Tracker["constants"]["nsmear"])
@@ -6918,10 +6926,12 @@ def compute_final_map(log_file, work_dir):
 		paramstructure_dir  = Tracker["paramstructure_dir"]
 		parameterstructure  = read_paramstructure_for_sorting(parti_file, paramstructure_dict, paramstructure_dir)
 		
-	mpi_barrier(MPI_COMM_WORLD)	
+	mpi_barrier(MPI_COMM_WORLD)
 	Tracker["directory"]    = work_dir
 	compute_noise(Tracker["nxinit"])
 	cdata, rdata, fdata = downsize_data_for_sorting(original_data, preshift = True, npad = 1, norms = norm_per_particle)# pay attentions to shifts!
+	
+	mpi_barrier(MPI_COMM_WORLD)
 	srdata = precalculate_shifted_data_for_recons3D(rdata, parameterstructure, Tracker["refang"], Tracker["rshifts"], \
 	  Tracker["delta"], Tracker["avgnorm"], Tracker["nxinit"], Tracker["constants"]["nnxo"], Tracker["nosmearing"], \
 	      norm_per_particle,  Tracker["constants"]["nsmear"])
