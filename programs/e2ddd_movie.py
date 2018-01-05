@@ -351,7 +351,6 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			outim.append(im)
 
 		if options.ext == "mrc": os.rename(outname,outname.replace(".mrcs",".mrc"))
-		# if options.simpleavg: savgr.add_image(im)
 
 		# if options.simpleavg:
 		# 	savg = savgr.finish()
@@ -379,8 +378,8 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			if options.optbox == -1: options.optbox = 256
 			if options.optstep == -1: options.optstep = 224
 		else:
-			if options.optbox == -1: options.optbox = 1024
-			if options.optstep == -1: options.optstep = 864
+			if options.optbox == -1: options.optbox = 2048
+			if options.optstep == -1: options.optstep = 1024
 
 		if options.align_frames :
 
@@ -422,8 +421,8 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			for th in thds: th.join()
 			print()
 
-                        if options.debug:
-                            sys.exit(1)
+			#if options.debug:
+			#	sys.exit(1)
 
 			# create threads
 			thds=[]
@@ -605,7 +604,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 				db["runtime"]=runtime
 			db.close()
 
-			out=open("{}_info.txt".format(outname[:-4]),"w")
+			out=open("{}_info.txt".format(fsp[:-4]),"w")
 			out.write("#i,dx,dy,dr,rel dr,qual\n")
 			for i in range(1,n):
 				dx,dy = traj[i]
@@ -730,7 +729,7 @@ def split_fft(options,img,i,box,step,out):
 	#img.process_inplace("filter.highpass.gauss",{"cutoff_pixels":2})
 	#img.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.4})
 	#proc.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.3})
-        patchid = 0
+	patchid = 0
 	for dx in range(box/2,nx-box,step):
 		for dy in range(box/2,ny-box,step):
 			clp = img.get_clip(Region(dx,dy,box,box))
@@ -744,12 +743,12 @@ def split_fft(options,img,i,box,step,out):
 				#if options.tomo:
 				#	clp.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.3})
 				#clp.process_inplace("normalize")
-                        if options.debug:
-                            clp["patch_id"] = patchid
-                            clp["frame_id"] = i
-                            clp.write_image("patch_{}.hdf".format(str(patchid).zfill(4)),i)
+			if options.debug:
+				clp["patch_id"] = patchid
+				clp["frame_id"] = i
+				clp.write_image("patch_{}.hdf".format(str(patchid).zfill(4)),i)
 			patchid += 1
-                        lst.append(clp.do_fft())
+			lst.append(clp.do_fft())
 	out.put((i,lst))
 
 def correlation_peak_model(x_y, xo, yo, sigma, amp):
@@ -779,40 +778,40 @@ def twod_bimodal(x_y,x1,y1,sig1,amp1,sig2,amp2):
 # 	return (np.sum(a[:,0])+np.sum(a[0,1:])+np.sum(a[1:,-1])+np.sum(a[-1,1:-1]))/(4*(a.shape[0]-1))
 
 def neighbormean_origin(a): # replace origin pixel with mean of surrounding pixels
-    proc = a.copy()
-    if a.shape[0] % 2 == 0:
-        ac = proc.shape[0]/2
-        r = proc[ac-2:ac+2,ac-2:ac+2].copy()
-        rc = r.shape[0]/2
-        r[rc,rc] = np.nan
-        r[rc,rc-1] = np.nan
-        r[rc-1,rc] = np.nan
-        r[rc-1,rc-1] = np.nan
-        nm = np.nanmean(r)
-        proc[ac,ac] = nm
-        proc[ac,ac-1] = nm
-        proc[ac-1,ac] = nm
-        proc[ac-1,ac-1] = nm
-    else:
-        ac = proc.shape[0]/2
-        r = proc[ac-2:ac+1,ac-2:ac+1].copy()
-        plt.imshow(r)
-        rc = r.shape[0]/2
-        r[rc,rc] = np.nan
-        proc[ac,ac] = np.nanmean(r)
-    return proc
+	proc = a.copy()
+	if a.shape[0] % 2 == 0:
+		ac = proc.shape[0]/2
+		r = proc[ac-2:ac+2,ac-2:ac+2].copy()
+		rc = r.shape[0]/2
+		r[rc,rc] = np.nan
+		r[rc,rc-1] = np.nan
+		r[rc-1,rc] = np.nan
+		r[rc-1,rc-1] = np.nan
+		nm = np.nanmean(r)
+		proc[ac,ac] = nm
+		proc[ac,ac-1] = nm
+		proc[ac-1,ac] = nm
+		proc[ac-1,ac-1] = nm
+	else:
+		ac = proc.shape[0]/2
+		r = proc[ac-2:ac+1,ac-2:ac+1].copy()
+		plt.imshow(r)
+		rc = r.shape[0]/2
+		r[rc,rc] = np.nan
+		proc[ac,ac] = np.nanmean(r)
+	return proc
 
 def find_com(ccf): # faster alternative to gaussian fitting...less robust in theory.
-    thresh = (np.ones(ccf.shape) * np.mean(ccf))+2.5*np.std(ccf)
-    m = np.greater(ccf,thresh) * 1.0
-    m = m / np.sum(m)
-    # marginal distributions
-    dx = np.sum(m, 1)
-    dy = np.sum(m, 0)
-    # expected values
-    cx = np.sum(dx * np.arange(ccf.shape[0]))
-    cy = np.sum(dy * np.arange(ccf.shape[1]))
-    return cx-ccf.shape[0]/2,cy-ccf.shape[1]/2
+	thresh = (np.ones(ccf.shape) * np.mean(ccf))+2.5*np.std(ccf)
+	m = np.greater(ccf,thresh) * 1.0
+	m = m / np.sum(m)
+	# marginal distributions
+	dx = np.sum(m, 1)
+	dy = np.sum(m, 0)
+	# expected values
+	cx = np.sum(dx * np.arange(ccf.shape[0]))
+	cy = np.sum(dy * np.arange(ccf.shape[1]))
+	return cx-ccf.shape[0]/2,cy-ccf.shape[1]/2
 
 def bimodal_peak_model(options,ccf):
 	nxx = ccf["nx"]
