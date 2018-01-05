@@ -322,9 +322,7 @@ def depth_box_initialization(box_dir, input_list1, input_list2, log_file):
 		for one in input_list1:
 			if one[0] not in groups: groups.append(one[0]) # safe in speed when the number of groups is not large.
 		number_of_groups = len(groups)
-		if number_of_groups < total_stack//img_per_grp:
-			number_of_groups = total_stack//Tracker["constants"]["minimum_grp_size"] - 1 ### Alway less than minus one
-		if number_of_groups <2: ERROR("number_of_groups less than two", "depth_box_initialization", 1, Blockdata["myid"])
+		if number_of_groups< total_stack//img_per_grp: number_of_groups = total_stack//img_per_grp
 		minimum_grp_size = Tracker["constants"]["minimum_grp_size"]
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			msg = "intialization found %d  groups, the total possible groups  %d"%(number_of_groups, total_stack//img_per_grp)
