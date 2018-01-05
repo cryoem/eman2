@@ -222,7 +222,7 @@ const string FSCFourierProcessor::NAME = "filter.wiener.byfsc";
 const string SymSearchProcessor::NAME = "misc.symsearch";
 const string LocalNormProcessor::NAME = "normalize.local";
 const string StripeXYProcessor::NAME = "math.xystripefix";
-const string BadLineXYProcessor::NAME = "math.xybadline";
+const string BadLineXYProcessor::NAME = "math.xybadlines";
 const string IndexMaskFileProcessor::NAME = "mask.fromfile";
 // const string CoordinateMaskFileProcessor::NAME = "mask.fromfile.sizediff";
 const string PaintProcessor::NAME = "mask.paint";
@@ -7267,23 +7267,81 @@ void BadLineXYProcessor::process_inplace(EMData * image)
 		LOGWARN("NULL Image");
 		return;
 	}
+
 	if (image->get_zsize()>1) throw ImageDimensionException("Error: math.xybadline works only on 2D images");
-
-	int xloc = params.set_default("xloc",-1);
-	int yloc = params.set_default("yloc",-1);
-
+	
 	int nx=image->get_xsize();
 	int ny=image->get_ysize();
 
-	// each pixel is the average of its adjacent neighbors
-	if (xloc>0 && xloc<nx-1) {
-		for (int y=0; y<ny; y++) image->set_value_at(xloc,y,(image->get_value_at(xloc-1,y)+image->get_value_at(xloc+1,y))/2.0);
+	vector <int> cols = params.set_default("cols",vector <int> ());
+	vector <int> rows = params.set_default("rows",vector <int> ());
+	float nnorm = params.set_default("neighbornorm",1.0f);//sqrt(2.0f));
+
+	int ncols = cols.size();
+	int mincol = *min_element(cols.begin(),cols.end());
+	int maxcol = *max_element(cols.begin(),cols.end());
+
+	int nrows = rows.size();
+	int minrow = *min_element(rows.begin(),rows.end());
+	int maxrow = *max_element(rows.begin(),rows.end());
+
+	int start;
+	int ogl;
+	int ngl;
+	bool inflag;
+	int pos;
+
+	ogl = 0;
+	for (int x=mincol-1; x<=maxcol+1; x++) {
+		inflag = false;
+		for (int i=0; i<=ncols; i++) if (x==cols[i]) inflag = true;
+		if (inflag == true) continue;
+		else {
+			inflag = false;
+			for (int i=0; i<=ncols; i++) if ((x-1)==cols[i]) inflag = true;
+			if (inflag == true){
+				ngl = x;
+				start = ogl+1;
+				for (int c=start; c<ngl; c++) {
+					printf("Fixing column %d\n",c);
+					pos = c-ogl;
+					for (int y=0; y<ny; y++) {
+						float val = ((image->get_value_at(ogl,y)*(ngl-ogl-pos)+image->get_value_at(ngl,y)*pos)) / (nnorm*(ngl-ogl));
+						image->set_value_at(c,y,val);
+					}
+				}
+				ogl = x;
+			}
+			else ogl = x;
+		}
 	}
 
-	if (yloc>0 && yloc<ny-1) {
-		for (int x=0; x<nx; x++) image->set_value_at(x,yloc,(image->get_value_at(x,yloc-1)+image->get_value_at(x,yloc+1))/2.0);
+	ogl = 0;
+	for (int y=minrow-1; y<=maxrow+1; y++) {
+		inflag = false;
+		for (int i=0; i<=nrows; i++) if (y==rows[i]) inflag = true;
+		if (inflag == true) continue;
+		else {
+			inflag = false;
+			for (int i=0; i<=nrows; i++) if ((y-1)==rows[i]) inflag = true;
+			if (inflag == true){
+				ngl = y;
+				for (int r=ogl+1; r<ngl; r++) {
+					printf("Fixing row %d\n",r);
+					pos = r-ogl;
+					for (int x=0; x<nx; x++) {
+						float val = ((image->get_value_at(x,ogl)*(ngl-ogl-pos)+image->get_value_at(x,ngl)*pos)) / (nnorm*(ngl-ogl));
+						//float val = (image->get_value_at(x,ogl)+image->get_value_at(x,ngl))/2.0;
+						image->set_value_at(x,r,val);
+					}
+				}
+				ogl = y;
+			}
+			else ogl = y;
+		}
 	}
 }
+
 
 void StripeXYProcessor::process_inplace(EMData * image)
 {
