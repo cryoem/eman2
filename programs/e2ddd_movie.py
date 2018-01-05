@@ -103,6 +103,7 @@ def main():
 	parser.add_argument("--normaxes",action="store_true",default=False,help="Tries to erase vertical/horizontal line artifacts in Fourier space by replacing them with the mean of their neighboring values.",guitype='boolbox', row=17, col=2, rowspan=1, colspan=1, mode='align')
 	parser.add_argument("--highdose", default=False, help="Use this flag when aligning high dose data (where features in each frame can be distinguished visually).",action="store_true",guitype='boolbox', row=18, col=0, rowspan=1, colspan=1,mode='align')
 	parser.add_argument("--phaseplate", default=False, help="Use this flag when aligning phase plate frames.",action="store_true",guitype='boolbox', row=18, col=1, rowspan=1, colspan=1,mode='align')
+	parser.add_argument("--normalize",action="store_true",default=False,help="Apply edgenormalization to input images after dark/gain. Do not use this option when aligning frames with MotionCor2.", guitype='boolbox', row=13, col=0, rowspan=1, colspan=1, mode='align')
 
 	parser.add_argument("--frames",action="store_true",default=False,help="Save the dark/gain corrected frames. Note that frames will be overwritten if identical --suffix is already present.", guitype='boolbox', row=18, col=2, rowspan=1, colspan=1, mode='align')
 	parser.add_argument("--ext",default="hdf",type=str, choices=["hdf","mrcs","mrc"],help="Save frames with this extension. Default is 'hdf'.", guitype='boolbox', row=18, col=2, rowspan=1, colspan=1, mode='align')
@@ -127,7 +128,6 @@ def main():
 	#parser.add_argument("--avgs", action="store_true",help="Testing",default=False)
 	#parser.add_argument("--movie", type=int,help="Display an n-frame averaged 'movie' of the stack, specify number of frames to average",default=0)
 	#parser.add_argument("--ccweight", action="store_true",help="Supply coefficient matrix with cross correlation peak values rather than 1s.",default=False)
-	#parser.add_argument("--normalize",action="store_true",default=False,help="Apply edgenormalization to input images after dark/gain", guitype='boolbox', row=13, col=0, rowspan=1, colspan=1, mode='align')
 	#parser.add_argument("--optfsc", default=False, help="Specify whether to compute FSC during alignment optimization. Default is False.",action="store_true")
 	#parser.add_argument("--falcon", default=False, help="Use this flag to optimize alignment for falcon detector data.",action="store_true",guitype='boolbox', row=5, col=1, rowspan=1, colspan=1)
 	#parser.add_argument("--binning", type=int,help="Bin images by this factor by resampling in Fourier space. Default (-1) will choose based on input box size.",default=-1)
@@ -139,7 +139,16 @@ def main():
 
 	if len(args)<1:
 		print(usage)
-		parser.error("Specify input DDD stack")
+		parser.error("Specify input DDD stack to be processed.")
+
+	if options.frames == False and options.noali == False and options.align_frames == False:
+		print("No outputs specified. See --frames, --noali, or --align_frames. Exiting.") 
+		sys.exit(1)
+
+	if options.align_frames == True:
+		if options.allali == False and options.rangeali == False and options.goodali == False and options.bestali == False and options.ali4to14 == False:
+			print("No post alignment outputs specified. Try with --allali, --rangeali, --goodali, --bestali, or --ali4to14. Exiting.")
+			sys.exit(1)
 
 	# try: os.mkdir("micrographs")
 	# except: pass
@@ -341,7 +350,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 
 			#im.process_inplace("threshold.clampminmax.nsigma",{"nsigma":3.0})
 #			im.mult(-1.0)
-			im.process_inplace("normalize.edgemean")
+			if options.normalize: im.process_inplace("normalize.edgemean")
 
 			#if options.frames : im.write_image(outname[:-4]+"_corr.hdf",ii-first)
 			if options.frames:
@@ -374,9 +383,9 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 		ny=outim[0]["ny"]
 
 		md = min(nx,ny)
-		if md < 1024:
-			if options.optbox == -1: options.optbox = 256
-			if options.optstep == -1: options.optstep = 224
+		if md <= 1024:
+			if options.optbox == -1: options.optbox = md
+			if options.optstep == -1: options.optstep = md/2
 		else:
 			if options.optbox == -1: options.optbox = 2048
 			if options.optstep == -1: options.optstep = 1024
