@@ -28859,7 +28859,6 @@ void Util::iterefa(EMData* tvol, EMData* tweight, int maxr2, int nnxo) {
 	EXITFUNC;
 
 }
-#define MAX( a, b ) ( ( a > b) ? a : b )
 void Util::iterefadp(EMData* tvol, EMData* tweight, int maxr2, int nnxo) {
 	ENTERFUNC;
 	/* Exception Handle */
@@ -28955,7 +28954,7 @@ void Util::iterefadp(EMData* tvol, EMData* tweight, int maxr2, int nnxo) {
 		//cvvi->do_fft_inplace();
 		fftw_execute(plan_real_to_complex);
 
-		for (size_t i=0; i<size; ++i) nwe[i] /= MAX(1.0e-5f, sqrt(cvv[2*i]*cvv[2*i]+cvv[2*i+1]*cvv[2*i+1]));
+		for (size_t i=0; i<size; ++i) nwe[i] /= max(1.0e-5f, (float)sqrt(cvv[2*i]*cvv[2*i]+cvv[2*i+1]*cvv[2*i+1]));
 	}
 
 	fftw_destroy_plan(plan_real_to_complex);
@@ -28976,5 +28975,4 @@ void Util::iterefadp(EMData* tvol, EMData* tweight, int maxr2, int nnxo) {
 	EXITFUNC;
 
 }
-#undef MAX
 
