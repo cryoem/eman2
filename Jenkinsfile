@@ -86,34 +86,6 @@ pipeline {
       }
     }
     
-    stage('notify') {
-      when {
-        expression { JOB_TYPE == "push" }
-      }
-      
-      steps {
-        echo 'Setting GitHub status...'
-      }
-      
-      post {
-        success {
-          notifyGitHub('SUCCESS')
-        }
-        
-        failure {
-          notifyGitHub('FAILURE')
-        }
-        
-        aborted {
-          notifyGitHub('ERROR')
-        }
-        
-        always {
-          notifyEmail()
-        }
-      }
-    }
-    
     // Stages triggered by cron
     stage('build-scripts-checkout') {
       when {
@@ -166,6 +138,24 @@ pipeline {
       steps {
         sh 'cd ${HOME}/workspace/build-scripts-cron/ && git checkout master'
       }
+    }
+  }
+  
+  post {
+    success {
+      notifyGitHub('SUCCESS')
+    }
+    
+    failure {
+      notifyGitHub('FAILURE')
+    }
+    
+    aborted {
+      notifyGitHub('ERROR')
+    }
+    
+    always {
+      notifyEmail()
     }
   }
 }
