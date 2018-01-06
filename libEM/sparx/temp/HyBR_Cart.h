@@ -8,9 +8,6 @@
 
 #define frand() ((float) rand() / (RAND_MAX+1.0))
 
-//#define max(a,b) a > b ? a : b
-//#define min(a,b) a < b ? a : b
-
 #include "mpi.h"
 #include "emdata.h"
 
