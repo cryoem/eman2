@@ -12,11 +12,11 @@ def getJobType() {
 
 def notifyGitHub(status) {
     if(JOB_TYPE == "push") {
-    if(status == 'PENDING') { message = 'Building...' }
-    if(status == 'SUCCESS') { message = 'Build succeeded!' }
-    if(status == 'FAILURE') { message = 'Build failed!' }
-    if(status == 'ERROR')   { message = 'Build aborted!' }
-    step([$class: 'GitHubCommitStatusSetter', contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: "JenkinsCI/${JOB_NAME}"], statusResultSource: [$class: 'ConditionalStatusResultSource', results: [[$class: 'AnyBuildResult', message: message, state: status]]]])
+        if(status == 'PENDING') { message = 'Building...' }
+        if(status == 'SUCCESS') { message = 'Build succeeded!' }
+        if(status == 'FAILURE') { message = 'Build failed!' }
+        if(status == 'ERROR')   { message = 'Build aborted!' }
+        step([$class: 'GitHubCommitStatusSetter', contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: "JenkinsCI/${JOB_NAME}"], statusResultSource: [$class: 'ConditionalStatusResultSource', results: [[$class: 'AnyBuildResult', message: message, state: status]]]])
     }
 }
 
