@@ -18,6 +18,20 @@ def notifyGitHub(status) {
     step([$class: 'GitHubCommitStatusSetter', contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: "JenkinsCI/${JOB_NAME}"], statusResultSource: [$class: 'ConditionalStatusResultSource', results: [[$class: 'AnyBuildResult', message: message, state: status]]]])
 }
 
+def notifyEmail() {
+    if(JOB_TYPE == "push") {
+        emailext(recipientProviders: [[$class: 'DevelopersRecipientProvider']],  
+                 subject: '[JenkinsCI/$PROJECT_NAME] Build # $BUILD_NUMBER - $BUILD_STATUS!', 
+                 body: '''${SCRIPT, template="groovy-text.template"}''')
+    }
+    
+    if(JOB_TYPE == "cron") {
+        emailext(to: '$DEFAULT_RECIPIENTS',
+                 subject: '[JenkinsCI/$PROJECT_NAME/cron] Build # $BUILD_NUMBER - $BUILD_STATUS!', 
+                 body: '''${SCRIPT, template="groovy-text.template"}''')
+    }
+}
+
 def runCronJob() {
     sh "bash ${HOME}/workspace/build-scripts-cron/cronjob.sh $STAGE_NAME"
 }
