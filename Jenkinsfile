@@ -139,6 +139,7 @@ pipeline {
         sh 'cd ${HOME}/workspace/build-scripts-cron/ && git checkout master'
       }
     }
+  }
     
     stage('notify') {
       when {
@@ -167,5 +168,4 @@ pipeline {
         }
       }
     }
-  }
 }
