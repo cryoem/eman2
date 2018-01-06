@@ -140,15 +140,6 @@ pipeline {
       }
     }
   }
-    
-    stage('notify') {
-      when {
-        expression { JOB_TYPE == "push" }
-      }
-      
-      steps {
-        echo 'Setting GitHub status...'
-      }
       
       post {
         success {
@@ -167,5 +158,4 @@ pipeline {
           notifyEmail()
         }
       }
-    }
 }
