@@ -11,11 +11,27 @@ def getJobType() {
 }
 
 def notifyGitHub(status) {
-    if(status == 'PENDING') { message = 'Building...' }
-    if(status == 'SUCCESS') { message = 'Build succeeded!' }
-    if(status == 'FAILURE') { message = 'Build failed!' }
-    if(status == 'ERROR')   { message = 'Build aborted!' }
-    step([$class: 'GitHubCommitStatusSetter', contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: "JenkinsCI/${JOB_NAME}"], statusResultSource: [$class: 'ConditionalStatusResultSource', results: [[$class: 'AnyBuildResult', message: message, state: status]]]])
+    if(JOB_TYPE == "push") {
+        if(status == 'PENDING') { message = 'Building...' }
+        if(status == 'SUCCESS') { message = 'Build succeeded!' }
+        if(status == 'FAILURE') { message = 'Build failed!' }
+        if(status == 'ERROR')   { message = 'Build aborted!' }
+        step([$class: 'GitHubCommitStatusSetter', contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: "JenkinsCI/${JOB_NAME}"], statusResultSource: [$class: 'ConditionalStatusResultSource', results: [[$class: 'AnyBuildResult', message: message, state: status]]]])
+    }
+}
+
+def notifyEmail() {
+    if(JOB_TYPE == "push") {
+        emailext(recipientProviders: [[$class: 'DevelopersRecipientProvider']],  
+                 subject: '[JenkinsCI/$PROJECT_NAME/push] ' + "($GIT_BRANCH_SHORT - ${GIT_COMMIT_SHORT})" + ' #$BUILD_NUMBER - $BUILD_STATUS!',
+                 body: '''${SCRIPT, template="groovy-text.template"}''')
+    }
+    
+    if(JOB_TYPE == "cron") {
+        emailext(to: '$DEFAULT_RECIPIENTS',
+                 subject: '[JenkinsCI/$PROJECT_NAME/cron] ' + "($GIT_BRANCH_SHORT - ${GIT_COMMIT_SHORT})" + ' #$BUILD_NUMBER - $BUILD_STATUS!',
+                 body: '''${SCRIPT, template="groovy-text.template"}''')
+    }
 }
 
 def runCronJob() {
@@ -34,11 +50,13 @@ pipeline {
   environment {
     SKIP_UPLOAD = '1'
     JOB_TYPE = getJobType()
+    GIT_BRANCH_SHORT = sh(returnStdout: true, script: 'echo ${GIT_BRANCH##origin/}').trim()
+    GIT_COMMIT_SHORT = sh(returnStdout: true, script: 'echo ${GIT_COMMIT:0:7}').trim()
   }
   
   stages {
     // Stages triggered by GitHub pushes
-    stage('pending') {
+    stage('notify-pending') {
       when {
         expression { JOB_TYPE == "push" }
       }
@@ -64,36 +82,6 @@ pipeline {
           steps {
             sh 'source $(conda info --root)/bin/activate eman-env && bash ci_support/build_no_recipe.sh'
           }
-        }
-      }
-    }
-    
-    stage('notify') {
-      when {
-        expression { JOB_TYPE == "push" }
-      }
-      
-      steps {
-        echo 'Setting GitHub status...'
-      }
-      
-      post {
-        success {
-          notifyGitHub('SUCCESS')
-        }
-        
-        failure {
-          notifyGitHub('FAILURE')
-        }
-        
-        aborted {
-          notifyGitHub('ERROR')
-        }
-        
-        always {
-          emailext(recipientProviders: [[$class: 'DevelopersRecipientProvider']],  
-                  subject: '[JenkinsCI/$PROJECT_NAME] Build # $BUILD_NUMBER - $BUILD_STATUS!', 
-                  body: '''${SCRIPT, template="groovy-text.template"}''')
         }
       }
     }
@@ -150,6 +138,24 @@ pipeline {
       steps {
         sh 'cd ${HOME}/workspace/build-scripts-cron/ && git checkout master'
       }
+    }
+  }
+  
+  post {
+    success {
+      notifyGitHub('SUCCESS')
+    }
+    
+    failure {
+      notifyGitHub('FAILURE')
+    }
+    
+    aborted {
+      notifyGitHub('ERROR')
+    }
+    
+    always {
+      notifyEmail()
     }
   }
 }
