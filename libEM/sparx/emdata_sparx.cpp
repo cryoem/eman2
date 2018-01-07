@@ -598,15 +598,9 @@ EMData* EMData::rotavg() {
 
 		set_array_offsets(-nx/2,-ny/2,-nz/2);
 
-	#ifdef _WIN32
-		//int rmax = _cpp_min(nx/2 + nx%2, ny/2 + ny%2);
-		if ( nz == 1 )  rmax = _cpp_min( nx/2 + nx%2, ny/2 + ny%2);
-		else            rmax = _cpp_min(nx/2 + nx%2, _cpp_min(ny/2 + ny%2, nz/2 + nz%2));
-	#else
 		//int rmax = std::min(nx/2 + nx%2, ny/2 + ny%2);
 		if ( nz == 1 )  rmax = std::min(nx/2 + nx%2, ny/2 + ny%2);
 		else            rmax = std::min(nx/2 + nx%2, std::min(ny/2 + ny%2, nz/2 + nz%2));
-	#endif	//_WIN32
 
 		float rmax_ratio = 0.0f;
 		if      (rmax == nx/2 + nx%2 ) rmax_ratio = apix_x;
@@ -634,11 +628,7 @@ EMData* EMData::rotavg() {
 		}
 	}
 	for (int ir = 0; ir <= rmax; ir++) {
-	#ifdef _WIN32
-		(*ret)(ir) /= _cpp_max(count[ir],1.0f);
-	#else
 		(*ret)(ir) /= std::max(count[ir],1.0f);
-	#endif	//_WIN32
 	}
 	set_array_offsets(saved_offsets);
 	ret->update();
@@ -663,15 +653,9 @@ EMData* EMData::rotavg_i() {
 	result->set_array_offsets(-nx/2, -ny/2, -nz/2);
 
 	if ( nz == 1 ) {
-#ifdef	_WIN32
-		rmax = _cpp_min(nx/2 + nx%2, ny/2 + ny%2);
-	} else {
-		rmax = _cpp_min(nx/2 + nx%2, _cpp_min(ny/2 + ny%2, nz/2 + nz%2));
-#else
 		rmax = std::min(nx/2 + nx%2, ny/2 + ny%2);
 	} else {
 		rmax = std::min(nx/2 + nx%2, std::min(ny/2 + ny%2, nz/2 + nz%2));
-#endif	//_WIN32
 	}
 
 	avg1D = rotavg();
@@ -933,13 +917,8 @@ Output: 2D 3xk real image.
 	float dx2 = 1.0f/float(nx2)/float(nx2);
 	float dy2 = 1.0f/float(ny2)/float(ny2);
 
-#ifdef _WIN32
-	float dz2 = 1.0f / _cpp_max(float(nz2),1.0f)/_cpp_max(float(nz2),1.0f);
-	int inc = Util::round(float( _cpp_max( _cpp_max(nx2,ny2),nz2) )/w );
-#else
 	float dz2 = 1.0f/std::max(float(nz2),1.0f)/std::max(float(nz2),1.0f);
 	int inc = Util::round(float(std::max(std::max(nx2,ny2),nz2))/w);
-#endif	//_WIN32
 
 	double* ret = new double[inc+1];
 	double* n1 = new double[inc+1];
@@ -1073,13 +1052,8 @@ vector < float >EMData::scale_factors(EMData * with, int beg, int end)
 	float dy2 = 1.0f/float(ny2)/float(ny2);
 
 
-#ifdef _WIN32
-	float dz2 = 1.0f / _cpp_max(float(nz2),1.0f)/_cpp_max(float(nz2),1.0f);
-	int inc = Util::round(float( _cpp_max( _cpp_max(nx2,ny2),nz2) ));
-#else
 	float dz2 = 1.0f/std::max(float(nz2),1.0f)/std::max(float(nz2),1.0f);
 	int inc = Util::round(float(std::max(std::max(nx2,ny2),nz2) ));
-#endif	//_WIN32
 	int len = end - beg + 1;
 
 	double* ret1 = new double[len];
@@ -3069,23 +3043,11 @@ EMData::rot_scale_trans(const Transform &RA, EMData* ret) {
 					int IOY = int(yold);
 					int IOZ = int(zold);
 
-					#ifdef _WIN32
-					int IOXp1 = _cpp_min( nx-1 ,IOX+1);
-					#else
 					int IOXp1 = std::min( nx-1 ,IOX+1);
-					#endif  //_WIN32
 
-					#ifdef _WIN32
-					int IOYp1 = _cpp_min( ny-1 ,IOY+1);
-					#else
 					int IOYp1 = std::min( ny-1 ,IOY+1);
-					#endif  //_WIN32
 
-					#ifdef _WIN32
-					int IOZp1 = _cpp_min( nz-1 ,IOZ+1);
-					#else
 					int IOZp1 = std::min( nz-1 ,IOZ+1);
-					#endif  //_WIN32
 
 					float dx = xold-IOX;
 					float dy = yold-IOY;
@@ -3230,23 +3192,11 @@ EMData::rot_scale_trans_background(const Transform &RA) {
 					int IOY = int(yold);
 					int IOZ = int(zold);
 
-					#ifdef _WIN32
-					int IOXp1 = _cpp_min( nx-1 ,IOX+1);
-					#else
 					int IOXp1 = std::min( nx-1 ,IOX+1);
-					#endif  //_WIN32
 
-					#ifdef _WIN32
-					int IOYp1 = _cpp_min( ny-1 ,IOY+1);
-					#else
 					int IOYp1 = std::min( ny-1 ,IOY+1);
-					#endif  //_WIN32
 
-					#ifdef _WIN32
-					int IOZp1 = _cpp_min( nz-1 ,IOZ+1);
-					#else
 					int IOZp1 = std::min( nz-1 ,IOZ+1);
-					#endif  //_WIN32
 
 					float dx = xold-IOX;
 					float dy = yold-IOY;
@@ -3371,11 +3321,7 @@ EMData* EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBe
 	vector<int> saved_offsets = get_array_offsets();
 	set_array_offsets(0,0,0);
 	EMData* ret = this->copy_head();
-#ifdef _WIN32
-	ret->set_size(nxn, _cpp_max(nyn,1), _cpp_max(nzn,1));
-#else
 	ret->set_size(nxn, std::max(nyn,1), std::max(nzn,1));
-#endif	//_WIN32
 	//ret->to_zero();  //we will leave margins zeroed.
 	delx = restrict2(delx, nx);
 	dely = restrict2(dely, ny);
@@ -3461,11 +3407,7 @@ EMData* EMData::rot_scale_conv7(float ang, float delx, float dely, Util::KaiserB
 	vector<int> saved_offsets = get_array_offsets();
 	set_array_offsets(0,0,0);
 	EMData* ret = this->copy_head();
-#ifdef _WIN32
-	ret->set_size(nxn, _cpp_max(nyn,1), _cpp_max(nzn,1));
-#else
 	ret->set_size(nxn, std::max(nyn,1), std::max(nzn,1));
-#endif	//_WIN32
 	//ret->to_zero();  //we will leave margins zeroed.
 	delx = restrict2(delx, nx);
 	dely = restrict2(dely, ny);
@@ -3811,11 +3753,7 @@ EMData* EMData::downsample(Util::sincBlackman& kb, float scale) {
 	vector<int> saved_offsets = get_array_offsets();
 	set_array_offsets(0,0,0);
 	EMData* ret = this->copy_head();
-#ifdef _WIN32
-	ret->set_size(nxn, _cpp_max(nyn,1), _cpp_max(nzn,1));
-#else
 	ret->set_size(nxn, std::max(nyn,1), std::max(nzn,1));
-#endif	//_WIN32
 	ret->to_zero();  //we will leave margins zeroed.
 
 	// scan new, find pixels in old
@@ -3859,11 +3797,7 @@ EMData* EMData::rot_scale_conv_new(float ang, float delx, float dely, Util::Kais
 	vector<int> saved_offsets = get_array_offsets();
 	set_array_offsets(0,0,0);
 	EMData* ret = this->copy_head();
-#ifdef _WIN32
-	ret->set_size(nxn, _cpp_max(nyn,1), _cpp_max(nzn,1));
-#else
 	ret->set_size(nxn, std::max(nyn,1), std::max(nzn,1));
-#endif	//_WIN32
 	//ret->to_zero();  //we will leave margins zeroed.
 	delx = restrict2(delx, nx);
 	dely = restrict2(dely, ny);
@@ -3918,11 +3852,7 @@ EMData* EMData::rot_scale_conv_new_3D(float phi, float theta, float psi, float d
 	vector<int> saved_offsets = get_array_offsets();
 	set_array_offsets(0,0,0);
 	EMData* ret = this->copy_head();
-#ifdef _WIN32
-	ret->set_size(nxn, _cpp_max(nyn,1), _cpp_max(nzn,1));
-#else
 	ret->set_size(nxn, std::max(nyn,1), std::max(nzn,1));
-#endif	//_WIN32
 	//ret->to_zero();  //we will leave margins zeroed.
 	if(wrap){
 		delx = restrict2(delx, nx);
@@ -4006,11 +3936,7 @@ EMData* EMData::rot_scale_conv_new_background(float ang, float delx, float dely,
 	vector<int> saved_offsets = get_array_offsets();
 	set_array_offsets(0,0,0);
 	EMData* ret = this->copy_head();
-#ifdef _WIN32
-	ret->set_size(nxn, _cpp_max(nyn,1), _cpp_max(nzn,1));
-#else
 	ret->set_size(nxn, std::max(nyn,1), std::max(nzn,1));
-#endif	//_WIN32
 	//ret->to_zero();  //we will leave margins zeroed.
 	delx = restrict2(delx, nx);
 	dely = restrict2(dely, ny);
@@ -4072,11 +3998,7 @@ EMData* EMData::rot_scale_conv_new_background_twice(float ang, float delx, float
 	vector<int> saved_offsets = get_array_offsets();
 	set_array_offsets(0,0,0);
 	EMData* ret = this->copy_head();
-#ifdef _WIN32
-	ret->set_size(nxn, _cpp_max(nyn,1), _cpp_max(nzn,1));
-#else
 	ret->set_size(nxn, std::max(nyn,1), std::max(nzn,1));
-#endif	//_WIN32
 	//ret->to_zero();  //we will leave margins zeroed.
 	delx = restrict2(delx, nx);
 	dely = restrict2(dely, ny);
@@ -4136,11 +4058,7 @@ EMData* EMData::rot_scale_conv_new_background_3D(float phi, float theta, float p
 	vector<int> saved_offsets = get_array_offsets();
 	set_array_offsets(0,0,0);
 	EMData* ret = this->copy_head();
-#ifdef _WIN32
-	ret->set_size(nxn, _cpp_max(nyn,1), _cpp_max(nzn,1));
-#else
 	ret->set_size(nxn, std::max(nyn,1), std::max(nzn,1));
-#endif	//_WIN32
 	//ret->to_zero();  //we will leave margins zeroed.
 	if (wrap){
 		delx = restrict2(delx, nx);
@@ -7102,11 +7020,7 @@ float EMData::find_3d_threshold(float mass, float pixel_size)
 	size_t size = (size_t)nx*ny*nz;
 	float x0 = thr1,x3 = thr3,x1,x2,THR=0;
 
-	#ifdef _WIN32
-		int ILE = _cpp_min(nx*ny*nx,_cpp_max(1,vol_voxels));
-	#else
 		int ILE = std::min(nx*ny*nx,std::max(1,vol_voxels));
-	#endif	//_WIN32
 
 	if (abs(thr3-thr2)>abs(thr2-thr1)) {
 		x1=thr2;
@@ -7434,23 +7348,11 @@ EMData* EMData::helicise(float pixel_size, float dp, float dphi, float section_u
 	int IOY = int(yy);
 	int IOZ = int(zz);
 
-	#ifdef _WIN32
-	int IOXp1 = _cpp_min( nx-1 ,IOX+1);
-	#else
 	int IOXp1 = std::min( nx-1 ,IOX+1);
-	#endif  //_WIN32
 
-	#ifdef _WIN32
-	int IOYp1 = _cpp_min( ny-1 ,IOY+1);
-	#else
 	int IOYp1 = std::min( ny-1 ,IOY+1);
-	#endif  //_WIN32
 
-	#ifdef _WIN32
-	int IOZp1 = _cpp_min( nz-1 ,IOZ+1);
-	#else
 	int IOZp1 = std::min( nz-1 ,IOZ+1);
-	#endif  //_WIN32
 
 	float dx = xx-IOX;
 	float dy = yy-IOY;
@@ -7501,11 +7403,7 @@ EMData* EMData::helicise_grid(float pixel_size, float dp, float dphi, Util::Kais
 	vector<int> saved_offsets = get_array_offsets();
 	set_array_offsets(0,0,0);
 	EMData* ret = this->copy_head();
-#ifdef _WIN32
-	ret->set_size(nxn, _cpp_max(nyn,1), _cpp_max(nzn,1));
-#else
 	ret->set_size(nxn, std::max(nyn,1), std::max(nzn,1));
-#endif	//_WIN32
 	ret->to_zero();  //we will leave margins zeroed.
 
 	// center of big image,
@@ -7641,13 +7539,8 @@ void EMData::depad() {
 	if (0 == npad) npad = 1;
 	int offset = is_fftodd() ? 1 : 2;
 	int nxold = (nx - offset)/npad;
-#ifdef _WIN32
-	int nyold = _cpp_max(ny/npad, 1);
-	int nzold = _cpp_max(nz/npad, 1);
-#else
 	int nyold = std::max<int>(ny/npad, 1);
 	int nzold = std::max<int>(nz/npad, 1);
-#endif  //_WIN32
 	int xstart = 0, ystart = 0, zstart = 0;
 	if( npad > 1) {
 		xstart = (nx - offset - nxold)/2 + nxold%2;
@@ -7693,13 +7586,8 @@ void EMData::depad_corner() {
 	if(0 == npad) npad = 1;
 	int offset = is_fftodd() ? 1 : 2;
 	int nxold = (nx - offset)/npad;
-#ifdef _WIN32
-	int nyold = _cpp_max(ny/npad, 1);
-	int nzold = _cpp_max(nz/npad, 1);
-#else
 	int nyold = std::max<int>(ny/npad, 1);
 	int nzold = std::max<int>(nz/npad, 1);
-#endif  //_WIN32
 	size_t bytes = nxold*sizeof(float);
 	float* dest = get_data();
 	for (int iz=0; iz < nzold; iz++) {
