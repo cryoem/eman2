@@ -19685,7 +19685,7 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, phiwobble, psi_max, search
 		cnx = data_nn//2+1
 		cny = cnx
 		numr = Numrinit(1, data_nn//2-max(nwxc,nwyc)-1, 1, mode)
-		print("  Radius Used  ",data_nn//2-max(nwxc,nwyc)-1)
+		if myid == main_node:  print("  Radius Used  ",data_nn//2-max(nwxc,nwyc)-1)
 		wr   = ringwe(numr, mode)
 		maxrin = numr[len(numr)-1]
 		crefim = [None]*nphi
