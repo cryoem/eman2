@@ -83,6 +83,9 @@ def main():
 	parser.add_argument("--gain_darkcorrected", default=False, help="Do not dark correct gain image. False by default.",action="store_true",guitype='boolbox', row=8, col=0, rowspan=1, colspan=1, mode='align')
 	parser.add_argument("--invert_gain", default=False, help="Use reciprocal of input gain image",action="store_true",guitype='boolbox', row=8, col=1, rowspan=1, colspan=1, mode='align')
 
+	parser.add_argument("--bad_columns", type=str, help="Comma separated list of camera defect columns",default="")
+	parser.add_argument("--bad_rows", type=str, help="Comma separated list of camera defect rows",default="")
+
 	#parser.add_header(name="orblock3", help='Just a visual separation', title="- OR -", row=6, col=0, rowspan=1, colspan=3, mode="align")
 
 	parser.add_header(name="orblock4", help='Just a visual separation', title="Output: ", row=10, col=0, rowspan=2, colspan=1, mode="align")
@@ -148,6 +151,20 @@ def main():
 	if options.align_frames == True:
 		if options.allali == False and options.rangeali == False and options.goodali == False and options.bestali == False and options.ali4to14 == False:
 			print("No post alignment outputs specified. Try with --allali, --rangeali, --goodali, --bestali, or --ali4to14. Exiting.")
+			sys.exit(1)
+
+	if options.bad_columns == "": options.bad_columns = []
+	else: 
+		try: options.bad_columns = [int(c) for c in options.bad_columns.split(",")]
+		except:
+			print("Error: --bad_columns contains nonnumeric input.")
+			sys.exit(1)
+
+	if options.bad_rows == "": options.bad_rows = []
+	else: 
+		try: options.bad_rows = [int(r) for r in options.bad_rows.split(",")]
+		except:
+			print("Error: --bad_rows contains nonnumeric input.")
 			sys.exit(1)
 
 	# try: os.mkdir("micrographs")
@@ -346,11 +363,14 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			if gain!=None : im.mult(gain)
 			#im.process_inplace("threshold.clampminmax",{"minval":0,"maxval":im["mean"]+im["sigma"]*3.5,"tozero":1})
 			if options.de64: im.process_inplace( "threshold.clampminmax", { "minval" : im[ 'minimum' ], "maxval" : im[ 'mean' ] + 8.0 * im[ 'sigma' ], "tomean" : True } )
-			#if options.fixbadpixels : im.process_inplace("threshold.outlier.localmean",{"sigma":3.5,"fix_zero":1}) # fixes clear outliers as well as values which were exactly zero
+			if options.fixbadpixels : im.process_inplace("threshold.outlier.localmean",{"sigma":3.5,"fix_zero":1}) # fixes clear outliers as well as values which were exactly zero
 
 			#im.process_inplace("threshold.clampminmax.nsigma",{"nsigma":3.0})
 #			im.mult(-1.0)
 			if options.normalize: im.process_inplace("normalize.edgemean")
+
+			if options.bad_rows != None or options.bad_columns != None:
+				im = im.process("math.xybadlines",{"rows":options.bad_rows,"cols":options.bad_columns})
 
 			#if options.frames : im.write_image(outname[:-4]+"_corr.hdf",ii-first)
 			if options.frames:
