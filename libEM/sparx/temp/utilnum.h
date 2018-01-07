@@ -11,11 +11,6 @@ int ifix(float a);
 
 #define integer int
 #define frand() ((float) rand() / (RAND_MAX+1.0))
-//#define max(a,b) a > b ? a : b
-//#define min(a,b) ((a) > (b) ? (a) : (b))
-
-#define max(a,b) a > b ? a : b
-#define min(a,b) a < b ? a : b
 
 /* from matrix.c */
 extern float **matrix(int m, int n);
