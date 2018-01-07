@@ -1279,7 +1279,7 @@ public:
 	static EMData* adaptive_mask(EMData* img, float threshold, float surface_dilation_ini, float cosine_width);
 
 	static inline int mono(int k1, int k2) {
-#if defined(_WIN32) && _MSC_VER <= 1500
+#ifdef _WIN32
 		int  mk = _cpp_max(k1,k2);
 		return  _cpp_min(k1,k2) + mk*(mk-1)/2;
 #else
