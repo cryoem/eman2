@@ -29,6 +29,7 @@ requirements:
             "scikit-learn",
             "bsddb",       # [not win]
             "pydusa",      # [not win]
+            "nose",
     ] %}
     
     build:

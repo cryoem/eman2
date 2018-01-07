@@ -7565,11 +7565,7 @@ Dict Util::histc(EMData *ref,EMData *img, EMData *mask)
 	/* Histogram of reference image calculation */
 	float ref_h_diff = ref_h_max - ref_h_min;
 
-	#if defined(_WIN32) && _MSC_VER <= 1500
-		int hist_len = _cpp_min((unsigned long)size_ref/16,_cpp_min((unsigned long)size_img/16,256lu));
-	#else
 		int hist_len = std::min((unsigned long)size_ref/16,std::min((unsigned long)size_img/16,256lu));
-	#endif	//_WIN32
 
 	float *ref_freq_bin = new float[3*hist_len];
 
@@ -28863,7 +28859,6 @@ void Util::iterefa(EMData* tvol, EMData* tweight, int maxr2, int nnxo) {
 	EXITFUNC;
 
 }
-#define MAX( a, b ) ( ( a > b) ? a : b )
 void Util::iterefadp(EMData* tvol, EMData* tweight, int maxr2, int nnxo) {
 	ENTERFUNC;
 	/* Exception Handle */
@@ -28959,7 +28954,7 @@ void Util::iterefadp(EMData* tvol, EMData* tweight, int maxr2, int nnxo) {
 		//cvvi->do_fft_inplace();
 		fftw_execute(plan_real_to_complex);
 
-		for (size_t i=0; i<size; ++i) nwe[i] /= MAX(1.0e-5f, sqrt(cvv[2*i]*cvv[2*i]+cvv[2*i+1]*cvv[2*i+1]));
+		for (size_t i=0; i<size; ++i) nwe[i] /= max(1.0e-5f, (float)sqrt(cvv[2*i]*cvv[2*i]+cvv[2*i+1]*cvv[2*i+1]));
 	}
 
 	fftw_destroy_plan(plan_real_to_complex);
@@ -28980,5 +28975,4 @@ void Util::iterefadp(EMData* tvol, EMData* tweight, int maxr2, int nnxo) {
 	EXITFUNC;
 
 }
-#undef MAX
 

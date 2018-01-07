@@ -50,10 +50,6 @@ using namespace EMAN;
 #include "emobject.h"
 #include "vec3.h"
 
-#define min(a,b)(((a) < (b)) ? (a) : (b))
-#define max(a,b)(((a) > (b)) ? (a) : (b))
-
-
 //a2fVertexOffset lists the positions, relative to vertex0, of each of the 8 vertices of a cube
 static const int a2fVertexOffset[8][3] =
 {

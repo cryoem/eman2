@@ -18,9 +18,17 @@ def notifyGitHub(status) {
     step([$class: 'GitHubCommitStatusSetter', contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: "JenkinsCI/${JOB_NAME}"], statusResultSource: [$class: 'ConditionalStatusResultSource', results: [[$class: 'AnyBuildResult', message: message, state: status]]]])
 }
 
+def runCronJob() {
+    sh "bash ${HOME}/workspace/build-scripts-cron/cronjob.sh $STAGE_NAME"
+}
+
 pipeline {
   agent {
     node { label 'jenkins-slave-1' }
+  }
+  
+  triggers {
+    cron('0 3 * * *')
   }
   
   environment {
@@ -29,6 +37,7 @@ pipeline {
   }
   
   stages {
+    // Stages triggered by GitHub pushes
     stage('pending') {
       when {
         expression { JOB_TYPE == "push" }
@@ -86,6 +95,60 @@ pipeline {
                   subject: '[JenkinsCI/$PROJECT_NAME] Build # $BUILD_NUMBER - $BUILD_STATUS!', 
                   body: '''${SCRIPT, template="groovy-text.template"}''')
         }
+      }
+    }
+    
+    // Stages triggered by cron
+    stage('build-scripts-checkout') {
+      when {
+        expression { JOB_TYPE == "cron" }
+      }
+      
+      steps {
+        sh 'cd ${HOME}/workspace/build-scripts-cron/ && git checkout jenkins && git pull --rebase'
+      }
+    }
+    
+    stage('centos6') {
+      when {
+        expression { JOB_TYPE == "cron" }
+        expression { SLAVE_OS == "linux" }
+      }
+      
+      steps {
+        runCronJob()
+      }
+    }
+    
+    stage('centos7') {
+      when {
+        expression { JOB_TYPE == "cron" }
+        expression { SLAVE_OS == "linux" }
+      }
+      
+      steps {
+        runCronJob()
+      }
+    }
+    
+    stage('mac') {
+      when {
+        expression { JOB_TYPE == "cron" }
+        expression { SLAVE_OS == "mac" }
+      }
+      
+      steps {
+        runCronJob()
+      }
+    }
+    
+    stage('build-scripts-reset') {
+      when {
+        expression { JOB_TYPE == "cron" }
+      }
+      
+      steps {
+        sh 'cd ${HOME}/workspace/build-scripts-cron/ && git checkout master'
       }
     }
   }
