@@ -7565,7 +7565,7 @@ Dict Util::histc(EMData *ref,EMData *img, EMData *mask)
 	/* Histogram of reference image calculation */
 	float ref_h_diff = ref_h_max - ref_h_min;
 
-	#if defined(_WIN32) && _MSC_VER <= 1500
+	#ifdef _WIN32
 		int hist_len = _cpp_min((unsigned long)size_ref/16,_cpp_min((unsigned long)size_img/16,256lu));
 	#else
 		int hist_len = std::min((unsigned long)size_ref/16,std::min((unsigned long)size_img/16,256lu));
