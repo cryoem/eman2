@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -xe
+
 e2version.py
 e2speedtest.py
 
