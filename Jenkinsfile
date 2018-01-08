@@ -48,6 +48,11 @@ def runCronJob() {
       sh "rsync -avzh --stats ${INSTALLERS_DIR}/eman2.${STAGE_NAME}.unstable.sh ${DEPLOY_DEST}"
 }
 
+def resetBuildScripts() {
+    if(JOB_TYPE == "cron" || isRelease())
+        sh 'cd ${HOME}/workspace/build-scripts-cron/ && git checkout -f master'
+}
+
 pipeline {
   agent {
     node { label 'jenkins-slave-1' }
@@ -109,7 +114,7 @@ pipeline {
       }
       
       steps {
-        sh 'cd ${HOME}/workspace/build-scripts-cron/ && git checkout jenkins && git pull --rebase'
+        sh 'cd ${HOME}/workspace/build-scripts-cron/ && git checkout -f jenkins && git pull --rebase'
       }
     }
     
@@ -154,19 +159,6 @@ pipeline {
         runCronJob()
       }
     }
-    
-    stage('build-scripts-reset') {
-      when {
-        anyOf {
-          expression { JOB_TYPE == "cron" }
-          expression { isRelease() }
-        }
-      }
-      
-      steps {
-        sh 'cd ${HOME}/workspace/build-scripts-cron/ && git checkout master'
-      }
-    }
   }
   
   post {
@@ -184,6 +176,7 @@ pipeline {
     
     always {
       notifyEmail()
+      resetBuildScripts()
     }
   }
 }
