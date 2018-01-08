@@ -6,7 +6,7 @@ sxprocess - Miscellaneous Commands: Carry out various SPARX commands on image se
 
 ''usage in command line''
 
-sxprocess.py  inputfile  outputfile  micrograph_prefix  --order  --order_lookup  --order_metropolis  --order_pca  --initial=INITIAL  --circular  --radius=RADIUS  --changesize  --ratio=RATIO  --pw  --wn=WN  --phase_flip  --makedb=param1=value1:param2=value2  --generate_projections=param1=value1:param2=value2  --isacgroup=ISACGROUP  --isacselect  --params=PARAMS  --adjpw  --rotpw=ROTPW  --transformparams=TRANSFORMPARAMS  --importctf=IMPORTCTF  --input=INPUT  --defocuserror=DEFOCUSERROR  --astigmatismerror=ASTIGMATISMERROR  --scale=SCALE  --adaptive_mask  --nsigma=NSIGMA  --threshold=THRESHOLD  --ndilation=NDILATION  --kernel_size=KERNEL_SIZE  --gauss_standard_dev=GAUSS_STANDARD_DEV  --binary_mask  --bin_threshold=BIN_THRESHOLD  --ne=NE  --nd=ND  --postprocess  --output_dir=DIRECTORY  --output=OUTPUT  --pixel_size=PIXEL_SIZE  --mask=MASK  --do_adaptive_mask  --mask_threshold=MASK_THRESHOLD  --consine_edge=CONSINE_EDGE  --dilation=DILATION  --mtf=MTF_FILE_NAME  --fsc_adj  --B_enhance=B_ENHANCE  --B_start=B_START  --B_stop=B_STOP  --fl=lpf_cutoff_freq  --aa=lpf_falloff  --window_stack  --box=BOX  --angular_distribution  --round_digit=ROUND_DIGIT  --box_size=BOX_SIZE  --particle_radius=PARTICLE_RADIUS  --cylinder_width=CYLINDER_WIDTH  --cylinder_length=CYLINDER_LENGTH
+sxprocess.py  inputfile  outputfile  micrograph_prefix  --order  --order_lookup  --order_metropolis  --order_pca  --initial=INITIAL  --circular  --radius=RADIUS  --changesize  --ratio=RATIO  --pw  --wn=WN  --phase_flip  --makedb=param1=value1:param2=value2  --generate_projections=param1=value1:param2=value2  --isacgroup=ISACGROUP  --isacselect  --params=PARAMS  --adjpw  --rotpw=ROTPW  --transformparams=TRANSFORMPARAMS  --importctf=IMPORTCTF  --input=INPUT  --defocuserror=DEFOCUSERROR  --astigmatismerror=ASTIGMATISMERROR  --scale=SCALE  --adaptive_mask  --nsigma=NSIGMA  --threshold=THRESHOLD  --ndilation=NDILATION  --kernel_size=KERNEL_SIZE  --gauss_standard_dev=GAUSS_STANDARD_DEV  --binary_mask  --bin_threshold=BIN_THRESHOLD  --ne=NE  --nd=ND  --combinemaps  --output_dir=DIRECTORY  --output=OUTPUT  --pixel_size=PIXEL_SIZE  --mask=MASK  --do_adaptive_mask  --mask_threshold=MASK_THRESHOLD  --consine_edge=CONSINE_EDGE  --dilation=DILATION  --mtf=MTF_FILE_NAME  --fsc_adj  --B_enhance=B_ENHANCE  --B_start=B_START  --B_stop=B_STOP  --fl=lpf_cutoff_freq  --aa=lpf_falloff  --window_stack  --box=BOX  --angular_distribution  --round_digit=ROUND_DIGIT  --box_size=BOX_SIZE  --particle_radius=PARTICLE_RADIUS  --cylinder_width=CYLINDER_WIDTH  --cylinder_length=CYLINDER_LENGTH
 
 
 === Typical usage ===
@@ -103,11 +103,11 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
 --do_adaptive_mask : =True, the program adaptively creates 3d mask file using summed volumes. This takes a couple of minutes. For map with dimension of 384*384*384, it takes 6 minutes.
 --output           : output volume 
 
-''' sxprocess.py  --combinemaps  vol_0_unfil.hdf  vol_1_unfil.hdf  --mask=mask15.hdf  --pixel_size=1.12  --fl=-1  --mtf=mtf.txt  --fsc_adj  --output=vol_combined.hdf  --output_dir=mapsrefineiter17'''
+''' sxprocess.py  --combinemaps  vol_0_unfil.hdf  vol_1_unfil.hdf  --mask=mask3d.hdf  --pixel_size=1.12  --fl=-1  --mtf=mtf.txt  --fsc_adj  --output=vol_combined.hdf  --output_dir=outdir_sxprocess_combinemaps '''
 
-''' sxprocess.py  --combinemaps  vol_0_unfil.hdf  vol_1_unfil.hdf  --mask=mask15.hdf  --pixel_size=1.12  --fl=4.7  --mtf=mtf.txt  --B_enhance=250. --output_dir=mapsrefineiter17 '''
+''' sxprocess.py  --combinemaps  vol_0_unfil.hdf  vol_1_unfil.hdf  --mask=mask3d.hdf  --pixel_size=1.12  --fl=4.7  --mtf=mtf.txt  --B_enhance=250.0 --output_dir=outdir_sxprocess_combinemaps '''
 
-''' sxprocess.py  --combinemaps  vol_0_unfil.hdf  vol_1_unfil.hdf  --do_adaptive_mask  --pixel_size=1.12  --mtf=mtf.txt  --fsc_adj --output=vol_iter17.hdf --output_dir=mapsrefineiter17'''
+''' sxprocess.py  --combinemaps  vol_0_unfil.hdf  vol_1_unfil.hdf  --do_adaptive_mask  --pixel_size=1.12  --mtf=mtf.txt  --fsc_adj --output=vol_iter17.hdf --output_dir=outdir_sxprocess_combinemaps '''
 
 15. Window stack file -reduce size of images without changing the pixel size.
 
@@ -157,8 +157,8 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
     ne:: Erosion cycles: After initial binarization the volume is eroded to remove fragmented pieces of the volume. (default 0)
     nd:: Dilation cycles: After erosing the binary volume is dilated back to smooth the surface and match the original size. (default 0)
 
-    combinemaps:: Enhance high frequencies of the power spectrum: Combine a pair of unfiltered odd & even 3-D volumes. B-factor can be estimated from the two unfiltered 3D volumes. (default False)
-    output_dir:: Output directory: Specify path to the output directory of postprocess. By default, the program uses the current directory. However, GUI requires the path other than the current directory. (default required string)
+    combinemaps:: Combine unfiltered maps: Combine a pair of unfiltered odd & even 3D density maps, then enhance the power spectrum of high frequencies. B-factor can be estimated from the two unfiltered maps. (default False)
+    output_dir:: Output directory: Specify path to the output directory of this combine unfiltered maps process. By default, the program uses the current directory. However, GUI requires the path other than the current directory. (default required string)
     output:: Output volume file name: File name of output final volume. (default vol_postrefine_masked.hdf)
     pixel_size:: Pixel size [A]: Pixel size of input data. (default 0.0)
     mask:: 3D mask file: Path to user-provided mask. (default none)
