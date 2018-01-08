@@ -24,13 +24,17 @@ def notifyEmail() {
     if(JOB_TYPE == "push") {
         emailext(recipientProviders: [[$class: 'DevelopersRecipientProvider']],  
                  subject: '[JenkinsCI/$PROJECT_NAME/push] ' + "($GIT_BRANCH_SHORT - ${GIT_COMMIT_SHORT})" + ' #$BUILD_NUMBER - $BUILD_STATUS!',
-                 body: '''${SCRIPT, template="groovy-text.template"}''')
+                 body: '''${SCRIPT, template="groovy-text.template"}''',
+                 attachLog: true
+                 )
     }
     
     if(JOB_TYPE == "cron") {
         emailext(to: '$DEFAULT_RECIPIENTS',
                  subject: '[JenkinsCI/$PROJECT_NAME/cron] ' + "($GIT_BRANCH_SHORT - ${GIT_COMMIT_SHORT})" + ' #$BUILD_NUMBER - $BUILD_STATUS!',
-                 body: '''${SCRIPT, template="groovy-text.template"}''')
+                 body: '''${SCRIPT, template="groovy-text.template"}''',
+                 attachLog: true
+                 )
     }
 }
 
