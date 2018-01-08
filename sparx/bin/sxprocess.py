@@ -1237,8 +1237,7 @@ def main():
 			minimum_fsc = 0
 			for fsc, name in zip(plot_curves, plot_names):
 				fsc[1][0] = 1
-				plt.plot(fsc[0], fsc[1], label=name)
-				title.append(r'{0:18s}:  $0.5$: ${1}\AA$  |  $0.143$: ${2}\AA$'.format(
+				label = r'{0:18s}:  $0.5$: ${1}\AA$  |  $0.143$: ${2}\AA$'.format(
 					name,
 					round(
 						freq_to_angstrom(
@@ -1254,7 +1253,8 @@ def main():
 							)[0],
 						1
 						),
-					))
+					)
+				plt.plot(fsc[0], fsc[1], label=label)
 				create_fsc_txt(
 					output_dir=options.output_dir,
 					fsc=fsc,
@@ -1268,7 +1268,7 @@ def main():
 
 			# Ticks
 			nyquist_resolution = resolution_in_angstrom[-1]
-			raw_x_ticks_ang = [round(options.pixel_size * 1/float(entry), 0) for entry in [0.1, 0.2, 0.3, 0.4, 0.5]]
+			raw_x_ticks_ang = [int(round(options.pixel_size / float(entry), 0)) for entry in [0.1, 0.2, 0.3, 0.4, 0.5]]
 			x_ticks_ang = [r'$\frac{{1}}{{{0}}}$'.format(tick) for tick in raw_x_ticks_ang if tick > nyquist_resolution*1.03]
 			x_ticks_freq = [options.pixel_size/float(tick) for tick in raw_x_ticks_ang if tick > nyquist_resolution*1.03]
 			x_ticks_ang.insert(0, r'$0$')
@@ -1280,11 +1280,9 @@ def main():
 			plt.yticks(y_ticks, [r'${0}$'.format(tick) for tick in y_ticks], size='large')
 
 			# Plot related settings
-			title.append(' ')
-			plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+			plt.legend(loc='lower left', bbox_to_anchor=(0, 1, 1, 0.2), mode='expand', frameon=False)
 			plt.text(0.005, 0.153, r'$0.143$', color='k', alpha=0.4)
 			plt.text(0.005, 0.51, r'$0.5$', color='k', alpha=0.4)
-			plt.title('\n'.join(title))
 			plt.xlabel(r'Spatial frequency / $\frac{1}{\AA}$')
 			plt.ylabel(r'FSC')
 			plt.ylim([minimum_fsc-0.05, 1.05])
