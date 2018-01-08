@@ -402,7 +402,8 @@ def main():
 			print("User does not provide low pass filter")
 			enforced_to_H1 = True
 	if navg <Blockdata["nproc"]:#  Each CPU do one average 
-		FH_list = [ None for im in xrange(navg)]
+		FH_list    = [ None for im in xrange(navg)]
+		plist_dict = {}
 		for iavg in xrange(navg):
 			if Blockdata["myid"] == iavg:
 				mlist = [None for i in xrange(len(list_dict[iavg]))]
@@ -474,6 +475,7 @@ def main():
 				
 			if not options.skip_local_alignment:
 				if im == Blockdata["myid"]:
+					plist_dict[im] = plist
 					write_text_row(plist, os.path.join(Tracker["constants"]["masterdir"], "ali2d_local_params_avg_%03d.txt"%im))
 									
 				if Blockdata["myid"] == im and Blockdata["myid"] != Blockdata["main_node"]:
