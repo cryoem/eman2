@@ -34,8 +34,14 @@ def notifyEmail() {
     }
 }
 
+def isRelease() {
+    return (GIT_BRANCH ==~ /.*\/release.*/) && (JOB_TYPE == "push")
+}
+
 def runCronJob() {
     sh "bash ${HOME}/workspace/build-scripts-cron/cronjob.sh $STAGE_NAME"
+    if(isRelease())
+      sh "rsync -avzh --stats ${INSTALLERS_DIR}/eman2.${STAGE_NAME}.unstable.sh ${DEPLOY_DEST}"
 }
 
 pipeline {
@@ -52,6 +58,8 @@ pipeline {
     JOB_TYPE = getJobType()
     GIT_BRANCH_SHORT = sh(returnStdout: true, script: 'echo ${GIT_BRANCH##origin/}').trim()
     GIT_COMMIT_SHORT = sh(returnStdout: true, script: 'echo ${GIT_COMMIT:0:7}').trim()
+    INSTALLERS_DIR = '${HOME}/workspace/${STAGE_NAME}-installers'
+    DEPLOY_DEST    = 'zope@ncmi.grid.bcm.edu:/home/zope/zope-server/extdata/reposit/ncmi/software/counter_222/software_136/'
   }
   
   stages {
@@ -68,7 +76,8 @@ pipeline {
     
     stage('build') {
       when {
-        expression { JOB_TYPE == "push" }
+        not { expression { JOB_TYPE == "cron" } }
+        not { expression { isRelease() } }
       }
       
       parallel {
@@ -86,10 +95,13 @@ pipeline {
       }
     }
     
-    // Stages triggered by cron
+    // Stages triggered by cron or by a release branch
     stage('build-scripts-checkout') {
       when {
-        expression { JOB_TYPE == "cron" }
+        anyOf {
+          expression { JOB_TYPE == "cron" }
+          expression { isRelease() }
+        }
       }
       
       steps {
@@ -99,7 +111,10 @@ pipeline {
     
     stage('centos6') {
       when {
-        expression { JOB_TYPE == "cron" }
+        anyOf {
+          expression { JOB_TYPE == "cron" }
+          expression { isRelease() }
+        }
         expression { SLAVE_OS == "linux" }
       }
       
@@ -110,7 +125,10 @@ pipeline {
     
     stage('centos7') {
       when {
-        expression { JOB_TYPE == "cron" }
+        anyOf {
+          expression { JOB_TYPE == "cron" }
+          expression { isRelease() }
+        }
         expression { SLAVE_OS == "linux" }
       }
       
@@ -121,7 +139,10 @@ pipeline {
     
     stage('mac') {
       when {
-        expression { JOB_TYPE == "cron" }
+        anyOf {
+          expression { JOB_TYPE == "cron" }
+          expression { isRelease() }
+        }
         expression { SLAVE_OS == "mac" }
       }
       
@@ -132,7 +153,10 @@ pipeline {
     
     stage('build-scripts-reset') {
       when {
-        expression { JOB_TYPE == "cron" }
+        anyOf {
+          expression { JOB_TYPE == "cron" }
+          expression { isRelease() }
+        }
       }
       
       steps {
