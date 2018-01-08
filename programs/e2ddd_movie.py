@@ -369,7 +369,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 #			im.mult(-1.0)
 			if options.normalize: im.process_inplace("normalize.edgemean")
 
-			if options.bad_rows != None or options.bad_columns != None:
+			if options.bad_rows != [] or options.bad_columns != []:
 				im = im.process("math.xybadlines",{"rows":options.bad_rows,"cols":options.bad_columns})
 
 			#if options.frames : im.write_image(outname[:-4]+"_corr.hdf",ii-first)
@@ -893,7 +893,7 @@ def bimodal_peak_model(options,ccf):
 		bds = [(-np.inf, -np.inf, 0.01, 0.01, 0.6, 0.01), (np.inf, np.inf, 100.0, 20000.0,2.5,100000.0)]
 		#bds = [(-bs/2, -bs/2,  0.01, 0.01, 0.6, 0.01),(bs/2, bs/2, 100.0, 20000.0, 2.5, 100000.0)]
 		#try:
-		popt,pcov=optimize.curve_fit(twod_bimodal,(xx,yy),ncc.ravel(),p0=initial_guess,bounds=bds,method='dogbox') #,xtol=0.05)#,ftol=0.0001,gtol=0.0001)
+		popt,pcov=optimize.curve_fit(twod_bimodal,(xx,yy),ncc.ravel(),p0=initial_guess)#,bounds=bds,method='dogbox') #,xtol=0.05)#,ftol=0.0001,gtol=0.0001)
 		#except:
 		#	return None,-1#popt = initial_guess#, -1#popt = initial_guess
 
