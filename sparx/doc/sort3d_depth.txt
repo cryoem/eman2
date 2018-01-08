@@ -19,7 +19,7 @@ There are three ways of running it.
    
     ''' mpirun -np 48 sxsort3d_depth.py --refinement_dir='outdir_sxmeridien' --output_dir='outdir_sxsort3d_depth_iteration' --radius=52 --sym='c1' --memory_per_node=60.0 --img_per_grp=2000 --minimum_grp_size=1500 --stop_mgskmeans_percentage=10.0 --swap_ratio=5 --do_swap_au --shake=0.1 ''' <<BR>><<BR>>    
 
-    2. 3D sorting from stack: Run from user-provided orientation parameters stored in stack header.  This mode uses only orientation parameters, which is useful for sorting data refined say with relion.
+    2. 3D sorting from stack: Run from user-provided orientation parameters stored in stack header.  This mode uses only orientation parameters, which is useful for sorting data refined, say with relion.
    
     ''' mpirun -np 48 sxsort3d_depth.py --instack='bdb:data' --output_dir='outdir_sxsort3d_depth_stack' --radius=52 --sym='c1' --img_per_grp=2000 --minimum_grp_size=1500 --stop_mgskmeans_percentage=10.0 --swap_ratio=5 --do_swap_au ''' <<BR>><<BR>>
 
@@ -27,30 +27,30 @@ There are three ways of running it.
     refinement_dir:: Meridien run directory: Specify the path to meridien 3D refinement directory. From here, data will be imported. Specific to iteration mode. (default none)
     instack:: Input images stack: File path of input particle stack for sorting. Specific to stack mode. (default none)
  
-    niter_for_sorting:: 3D refinement iteration ID: Specify the iteration ID of 3D refinement for sorting. By default, it uses the iteration at which refinement achieved the best resolution. Ignored in stack mode. (default -1)
+    niter_for_sorting:: 3D refinement iteration ID: Specify the iteration ID of 3D refinement for sorting. By default, it uses the iteration at which refinement achieved the best resolution. Specific to iteration mode. (default -1)
     nxinit:: Initial image size: Image size used for MGSKmeans in case of starting sorting from a data stack. By default, the program determines window size. Specific to stack mode. (default -1) 
-    mask3D:: 3D mask: File path of the global 3D mask for clustering. Ignored in sharpening mode. (default none)
-    focus:: Focus 3D mask: File path of a binary 3D mask for focused clustering. Ignored in sharpening mode. (default none)
-    radius:: Estimated protein radius [Pixels]: The value must be smaller than half of the box size. Ignored in sharpening mode. (default -1)
-    sym:: Point-group symmetry: Point group symmetry of the macromolecular structure. It can be inherited from refinement. Ignored in sharpening mode. (default c1) 
-    img_per_grp:: Number of images per group: User expected group size. This value is critical for a successful 3D clustering. Ignored in sharpening mode. (default 1000)
-    minimum_grp_size:: Cluster selection size: It also serves as the minimum group size constraint in MGSKmeans. However this value must be smaller than the number of images per a group (img_per_grp). Ignored in sharpening mode.  (default -1)
-    memory_per_node:: Memory per node [GB]: User provided information about memory per node in GB (NOT per CPU). It will be used to evaluate the number of CPUs per node from user-provided MPI setting. By default, it uses 2GB * (number of CPUs per node). Used in all modes. (default -1.0)
+    mask3D:: 3D mask: File path of the global 3D mask for clustering. (default none)
+    focus:: Focus 3D mask: File path of a binary 3D mask for focused clustering. (default none)
+    radius:: Estimated protein radius [Pixels]: The value must be smaller than half of the box size. (default -1)
+    sym:: Point-group symmetry: Point group symmetry of the macromolecular structure. It can be inherited from refinement. (default c1) 
+    img_per_grp:: Number of images per group: User expected group size. This value is critical for a successful 3D clustering. (default 1000)
+    minimum_grp_size:: Minimum size of reproducible class: It serves as the minimum size of selected or accounted clusters as well as the minimum group size constraint in MGSKmeans. However this value must be smaller than the number of images per a group (img_per_grp). By default, the program uses half number of the images per group.  (default -1)
+    memory_per_node:: Memory per node [GB]: User provided information about memory per node in GB (NOT per CPU). It will be used to evaluate the number of CPUs per node from user-provided MPI setting. By default, it uses 2GB * (number of CPUs per node). (default -1.0)
 
     * The remaining parameters are optional.
-    depth_order:: Depth order: The value defines the number of initial independent MGSKmeans runs (2^depth_order). Ignored in sharpening mode. (default 2)
-    stop_mgskmeans_percentage:: Stop MGSKmeans Percentage [%]: Particle change percentage for stopping minimum group size K-means. Ignored in sharpening mode. (default 10.0)
-    nsmear:: Number of smears for sorting: Fill it with 1 if user does not want to use all smears. Ignored in sharpening mode. (default -1)
-    orientation_groups:: Number of orientation groups: Number of orientation groups in the asymmetric unit. Ignored in sharpening mode. (default 100)
-    swap_ratio:: Swap ratio: Specify a float number between 0.0 and 50. Ignored in sharpening mode. (default 1.0)
-    not_include_unaccounted:: Do unaccounted reconstruction: Do not reconstruct unaccounted elements in each generation. Ignored in sharpening mode. (default False question reversed in GUI)
-    do_swap_au:: Swap flag: Swap a certain number of accounted elements per cluster with the unaccounted elements. Ignored in sharpening mode. (default False)
-    shake:: Perturbation factor: Perturbation factor applied to orientation groups. Specify a float number between 0.0 and 0.5. Ignored in sharpening mode. (default 0.0)
-    notapplybckgnoise:: Use background noise flag: Flag to turn off background noise. Ignored in sharpening mode. (default False question reversed in GUI)
-    
+    depth_order:: Depth order: The value defines the number of initial independent MGSKmeans runs (2^depth_order). (default 2)
+    stop_mgskmeans_percentage:: Stop MGSKmeans Percentage [%]: Particle change percentage for stopping minimum group size K-means. (default 10.0)
+    nsmear:: Number of smears for sorting: Fill it with 1 if user does not want to use all smears. (default -1)
+    orientation_groups:: Number of orientation groups: Number of orientation groups in the asymmetric unit. (default 100)
+    swap_ratio:: Swap ratio: Specify a float number between 0.0 and 50. (default 1.0)
+    not_include_unaccounted:: Do unaccounted reconstruction: Do not reconstruct unaccounted elements in each generation. (default False question reversed in GUI)
+    do_swap_au:: Swap flag: Swap a certain number of accounted elements per cluster with the unaccounted elements. (default False)
+    shake:: Perturbation factor: Perturbation factor applied to orientation groups. Specify a float number between 0.0 and 0.5. (default 0.0)
+    notapplybckgnoise:: Use background noise flag: Flag to turn off background noise. (default False question reversed in GUI)
+
 
 == Output ==
-    output_dir:: Output directory: The master output directory for 3D sorting. The results will be written here. This directory will be created automatically if it does not exist. By default, the program uses sort3d_DATA_AND_TIME for the name. Here, you can find a log.txt that describes the sequences of computations in the program. Used in all modes. (default none)
+    output_dir:: Output directory: The master output directory for 3D sorting. The results will be written here. This directory will be created automatically if it does not exist. By default, the program uses sort3d_DATA_AND_TIME for the name. Here, you can find a log.txt that describes the sequences of computations in the program. (default none)
 
 
 = Description =
