@@ -1270,7 +1270,7 @@ def main():
 			x_ticks_freq.append(options.pixel_size/round(resolution_in_angstrom[-1], 2))
 			y_ticks = [-0.2, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
 			# Plot related settings
-			plt.legend(loc='best')
+			plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 			plt.text(0.005, 0.153, r'$0.143$', color='k', alpha=0.4)
 			plt.text(0.005, 0.51, r'$0.5$', color='k', alpha=0.4)
 			title.append(' ')
@@ -1281,7 +1281,7 @@ def main():
 			plt.ylabel(r'FSC')
 			plt.grid()
 			plt.tight_layout()
-			plt.savefig(os.path.join(options.output_dir, "fsc.png"))
+			plt.savefig(os.path.join(options.output_dir, "fsc.png"), bbox_inches='tight')
 			plt.clf()
 
 			if m is not None:
