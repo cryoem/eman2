@@ -307,7 +307,8 @@ def main():
 		sxprocess.py vol_0_unfil.hdf vol_1_unfil.hdf  --mask=mask15.hdf --combinemaps   --pixel_size=1.12     --fl =-1  --mtf=aa.txt  --fsc_adj --output=vol.hdf --output_dir=pipi
 		sxprocess.py vol_0_unfil.hdf vol_1_unfil.hdf  --mask=mask15.hdf --combinemaps   --pixel_size=1.12     --fl=4.7  --aa=0.02  --mtf=aa.txt --fsc_adj  --output_dir=final_maps
 		sxprocess.py vol_0_unfil.hdf vol_1_unfil.hdf  --do_adaptive_mask   --combinemaps   --pixel_size=1.12   --mtf=aa.txt  --output=ribosome.hdf --fl=3.9 --aa=0.01 --B_enhance=280  --output_dir=final_maps
-		
+		sxprocess.py  vol_cluster000.hdf  --do_adaptive_mask   --combinemaps   --pixel_size=1.12   --mtf=aa.txt  --output=ribosome.hdf --fl=3.9 --aa=0.01 --B_enhance=280  --output_dir=cluster0_iter17
+
 	 for 2-D images:       calculate B-factor and apply negative B-factor to 2-D images.
 		
    15. Window stack file --window out central area of images.
@@ -378,7 +379,7 @@ def main():
 	parser.add_option("--fl",                   type="float",         default=0.0,        help="=0.0, low_pass filter to resolution limit; =some value, low_pass filter to some valume; =-1, not low_pass filter applied")
 	parser.add_option("--aa",                   type="float",         default=.01,        help="low pass filter falloff" )
 	parser.add_option("--mask",                 type="string",        help="path for input mask file",   default = None)
-	parser.add_option("--output",               type="string",        help="output file name",           default = "vol_postrefine_masked.hdf")
+	parser.add_option("--output",               type="string",        help="output file name",           default = "vol_combined.hdf")
 	parser.add_option("--output_dir",           type="string",        help="combinemaps directory name", default = "./")
 	parser.add_option("--pixel_size",           type="float",         help="pixel size of the data",     default=0.0)
 	parser.add_option("--B_start",              type="float",         help="starting frequency in Angstrom for B-factor estimation", default=10.)
@@ -1046,23 +1047,27 @@ def main():
 			log_main.add("------------->>>processing<<<-----------------------")		
 			log_main.add("3-D refinement combinemaps ")
 			nargs     = len(args)
-			if nargs >=3: ERROR("too many inputs!", "--combinemaps option for 3-D")
-			elif nargs <2:ERROR("combinemaps needs two input maps!", "--combinemaps option for 3-D", 1)
+			if nargs >=3: ERROR("too many inputs!", "--combinemaps option for 3-D", 1)
+			elif nargs ==1: log_main.add("combinemaps enhances single map")
+			elif nargs ==2: log_main.add("combinemaps enhances odd and even map")
+			else: ERROR("incorrected number of inputs", "--combinemaps option for 3-D", 1)
 
 			log_main.add("the first input volume: %s"%args[0])
 			try: map1    = get_im(args[0])
 			except:
 				ERROR("sphire combinemaps fails to read the first map " + args[0], "--combinemaps option for 3-D")
 				exit()
-			log_main.add("the second input volume: %s"%args[1])
+			try:    log_main.add("the second input volume: %s"%args[1])
+			except: log_main.add("No second input volume")
 
-			try: map2  = get_im(args[1])
-			except:
-				ERROR("sphire combinemaps fails to read the second map " + args[1], "--combinemaps option for 3-D")
-				exit()
-			if (map2.get_xsize() != map1.get_xsize()) or (map2.get_ysize() != map1.get_ysize()) or (map2.get_zsize() != map1.get_zsize()):
-				ERROR(" two input maps have different image size", "--combinemaps option for 3-D", 1)
-			filter_to_resolution =  False	
+			try: 
+				map2       = get_im(args[1])
+				single_map = False
+			except: single_map = True
+			if not single_map:
+				if (map2.get_xsize() != map1.get_xsize()) or (map2.get_ysize() != map1.get_ysize()) or (map2.get_zsize() != map1.get_zsize()):
+					ERROR(" two input maps have different image size", "--combinemaps option for 3-D", 1)
+			filter_to_resolution =  False
 			### enforce low-pass filter
 			if options.B_enhance !=-1:
 				if not options.fsc_adj:
@@ -1089,8 +1094,10 @@ def main():
 					ERROR(" mask file  "+options.mask+" has different size with input image  ", "--combinemaps for mask "+options.mask), 1
 
 			elif options.do_adaptive_mask:
-				map1 +=map2
-				map1 /=2.
+				if not single_map:
+					map1 +=map2
+					map1 /=2.
+					del map2
 				log_main.add("create an adaptive mask, let's wait...")
 				log_main.add("options.mask_threshold, options.dilation, options.consine_edge %f %5.2f %5.2f"%(options.mask_threshold, options.dilation, options.consine_edge))
 				m = Util.adaptive_mask(map1, options.mask_threshold, options.dilation, options.consine_edge)
@@ -1201,174 +1208,176 @@ def main():
 				spatial = [1/float(entry) for entry in adjust_values]
 				angstrom = [pixel_size * entry for entry in spatial]
 				return angstrom
-
-			# Plot FSC curves and write output fsc files
-			import matplotlib
-			matplotlib.use('Agg')
-			import matplotlib.pylab as plt
-			plt.rcParams['font.family'] = 'monospace'
-			title = []
-
-			# Output curves lists
-			plot_curves = []
-			plot_names = []
-			plot_title = []
-
-			# Output curves
-			fsc_true = fsc(map1, map2, 1)
-			fsc_true[1][0] = 1.0  # always reset fsc of zero frequency as 1.0
-			plot_curves.append(fsc_true)
-			plot_names.append(r'FSC halves')
-			# map fsc obtained from two halves to full maps
-			plot_curves.append([fsc_true[0], map(scale_fsc, fsc_true[1])])
-			plot_names.append(r'FSC full')
-			if m is not None:
-				fsc_mask = fsc(map1*m, map2*m, 1)
-				fsc_mask[1][0] = 1.0  # always reset fsc of zero frequency as 1.0
-				plot_curves.append(fsc_mask)
-				plot_names.append(r'FSC masked halves')
-				# map fsc obtained from masked two halves to full maps
-				plot_curves.append([fsc_mask[0], map(scale_fsc, fsc_mask[1])])
-				plot_names.append(r'FSC masked full')
-
-			resolution_in_angstrom = freq_to_angstrom(pixel_size=options.pixel_size, values=fsc_true[0])
-
-			# Create plot and write output file
-			minimum_fsc = 0
-			for fsc, name in zip(plot_curves, plot_names):
-				fsc[1][0] = 1
-				label = r'{0:18s}:  $0.5$: ${1}\AA$  |  $0.143$: ${2}\AA$'.format(
-					name,
-					round(
-						freq_to_angstrom(
-							pixel_size=options.pixel_size,
-							values=calculate_fsc_criterion(fsc, criterion=0.5)[0]
-							)[0],
-						1
-						),
-					round(
-						freq_to_angstrom(
-							pixel_size=options.pixel_size,
-							values=calculate_fsc_criterion(fsc, criterion=0.143)[1]
-							)[0],
-						1
-						),
-					)
-				plt.plot(fsc[0], fsc[1], label=label)
-				create_fsc_txt(
-					output_dir=options.output_dir,
-					fsc=fsc,
-					resolution=resolution_in_angstrom,
-					name=name.replace(' ', '_').lower()
-					)
-				if min(fsc[1]) < minimum_fsc:
-					minimum_fsc = min(fsc[1])
-			plt.axhline(0.143, 0, 1, color='k', alpha=0.3)
-			plt.axhline(0.5, 0, 1, color='k', alpha=0.3)
-
-			# Ticks
-			nyquist_resolution = resolution_in_angstrom[-1]
-			raw_x_ticks_ang = [int(round(options.pixel_size / float(entry), 0)) for entry in [0.1, 0.2, 0.3, 0.4, 0.5]]
-			x_ticks_ang = [r'$\frac{{1}}{{{0}}}$'.format(tick) for tick in raw_x_ticks_ang if tick > nyquist_resolution*1.03]
-			x_ticks_freq = [options.pixel_size/float(tick) for tick in raw_x_ticks_ang if tick > nyquist_resolution*1.03]
-			x_ticks_ang.insert(0, r'$0$')
-			x_ticks_freq.insert(0, 0)
-			x_ticks_ang.append(r'$\frac{{1}}{{{0}}}$'.format(round(nyquist_resolution, 2)))
-			x_ticks_freq.append(options.pixel_size/round(nyquist_resolution, 2))
-			plt.xticks(x_ticks_freq, x_ticks_ang, size='xx-large')
-			y_ticks = [-0.2, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
-			plt.yticks(y_ticks, [r'${0}$'.format(tick) for tick in y_ticks], size='large')
-
-			# Plot related settings
-			plt.legend(loc='lower left', bbox_to_anchor=(0, 1, 1, 0.2), mode='expand', frameon=False)
-			plt.text(0.005, 0.153, r'$0.143$', color='k', alpha=0.4)
-			plt.text(0.005, 0.51, r'$0.5$', color='k', alpha=0.4)
-			plt.xlabel(r'Spatial frequency / $\frac{1}{\AA}$')
-			plt.ylabel(r'FSC')
-			plt.ylim([minimum_fsc-0.05, 1.05])
-			plt.grid()
-			plt.tight_layout()
-			plt.savefig(os.path.join(options.output_dir, "fsc.png"), bbox_inches='tight')
-			plt.clf()
-
-			if m is not None:
-				fsc_true = fsc_mask
-			""" 
-				# we abandon randomize phase strategy
-				frc_without_mask = fsc(map1, map2, 1)
-				randomize_at     = -1.0
-				for ifreq in xrange(1, len(frc_without_mask[1])): # always skip zero frequency
-					if frc_without_mask[1][ifreq] < options.randomphasesafter:
-						randomize_at = float(ifreq)
-						break
-				log_main.add("Phases are randomized after: %4.2f Angstrom"% (options.pixel_size/(randomize_at/map1.get_xsize())))
-				frc_masked = fsc(map1*m, map2*m, 1)
-				map1 = fft(Util.randomizedphasesafter(fft(map1), randomize_at))*m
-				map2 = fft(Util.randomizedphasesafter(fft(map2), randomize_at))*m
-				frc_random_masked = fsc(map1, map2, 1)
-				fsc_true          = [frc_without_mask[0], [None]*len(frc_without_mask[0])]
-				for i in xrange(len(fsc_true[1])):
-					if i < (int(randomize_at) + 2):# move two pixels up
-						fsc_true[1][i] = frc_masked[1][i]
-					else:
-						fsct = frc_masked[1][i]
-						fscn = frc_random_masked[1][i]
-						if (fscn > fsct): fsc_true[1][i]= 0.
-						else: fsc_true[1][i]=(fsct-fscn)/(1.-fscn)
-				else:
-			"""
-			log_main.add("adjust FSC to the full dataset by: 2.*FSC/(FSC+1.)")
-			fsc_true[1] = map(scale_fsc, fsc_true[1])
-
-			## Determine 05/143 resolution from corrected FSC, RH correction of FSC from masked volumes
-			resolution_FSC143_right  = 0.0
-			resolution_FSC143_left   = 0.0
+			### for two maps
 			dip_at_fsc = False
-			nfreq0     = 1
+			if not single_map:
+				# Plot FSC curves and write output fsc files
+				import matplotlib
+				matplotlib.use('Agg')
+				import matplotlib.pylab as plt
+				plt.rcParams['font.family'] = 'monospace'
+				title = []
 
-			for ifreq in xrange(1, len(fsc_true[1])):
-				if fsc_true[1][ifreq] < 0.0:
-					nfreq0  = ifreq - 1
-					break
-			if nfreq0 ==1: nfreq0= len(fsc_true[1]) - 1
+				# Output curves lists
+				plot_curves = []
+				plot_names = []
+				plot_title = []
 
-			nfreq05 = len(fsc_true[1])-1 		
-			for ifreq in xrange(1, len(fsc_true[1])):
-				if fsc_true[1][ifreq] < 0.5:
-					resolution_FSChalf = fsc_true[0][ifreq-1]
-					nfreq05 = ifreq-1
-					break
+				# Output curves
+				fsc_true = fsc(map1, map2, 1)
+				fsc_true[1][0] = 1.0  # always reset fsc of zero frequency as 1.0
+				plot_curves.append(fsc_true)
+				plot_names.append(r'FSC halves')
+				# map fsc obtained from two halves to full maps
+				plot_curves.append([fsc_true[0], map(scale_fsc, fsc_true[1])])
+				plot_names.append(r'FSC full')
+				if m is not None:
+					fsc_mask = fsc(map1*m, map2*m, 1)
+					fsc_mask[1][0] = 1.0  # always reset fsc of zero frequency as 1.0
+					plot_curves.append(fsc_mask)
+					plot_names.append(r'FSC masked halves')
+					# map fsc obtained from masked two halves to full maps
+					plot_curves.append([fsc_mask[0], map(scale_fsc, fsc_mask[1])])
+					plot_names.append(r'FSC masked full')
 
-			resolution_FSC143_left = fsc_true[0][len(fsc_true[1])-1]
-			for ifreq in xrange(nfreq05, len(fsc_true[1])):
-				if fsc_true[1][ifreq] < 0.143:
-					resolution_FSC143_left = fsc_true[0][ifreq-1]
-					nfreq143 = ifreq - 1
-					break
+				resolution_in_angstrom = freq_to_angstrom(pixel_size=options.pixel_size, values=fsc_true[0])
 
-			resolution_FSC143_right = fsc_true[0][nfreq05]
-			nfreq143_right = nfreq05
-			for ifreq in xrange(nfreq0, nfreq05, -1):
-				if fsc_true[1][ifreq] >= 0.143:
-					resolution_FSC143_right = fsc_true[0][ifreq]
-					nfreq143_right = ifreq
-					break
+				# Create plot and write output file
+				minimum_fsc = 0
+				for fsc, name in zip(plot_curves, plot_names):
+					fsc[1][0] = 1
+					label = r'{0:18s}:  $0.5$: ${1}\AA$  |  $0.143$: ${2}\AA$'.format(
+						name,
+						round(
+							freq_to_angstrom(
+								pixel_size=options.pixel_size,
+								values=calculate_fsc_criterion(fsc, criterion=0.5)[0]
+								)[0],
+							1
+							),
+						round(
+							freq_to_angstrom(
+								pixel_size=options.pixel_size,
+								values=calculate_fsc_criterion(fsc, criterion=0.143)[1]
+								)[0],
+							1
+							),
+						)
+					plt.plot(fsc[0], fsc[1], label=label)
+					create_fsc_txt(
+						output_dir=options.output_dir,
+						fsc=fsc,
+						resolution=resolution_in_angstrom,
+						name=name.replace(' ', '_').lower()
+						)
+					if min(fsc[1]) < minimum_fsc:
+						minimum_fsc = min(fsc[1])
+				plt.axhline(0.143, 0, 1, color='k', alpha=0.3)
+				plt.axhline(0.5, 0, 1, color='k', alpha=0.3)
 
-			## output resolution
-			if resolution_FSC143_left != resolution_FSC143_right: log_main.add("there is a dip between 0.5 to 0.143 in FSC!")
-			else:log_main.add("fsc smoothly falls from 0.5 to 0.143 !")
+				# Ticks
+				nyquist_resolution = resolution_in_angstrom[-1]
+				raw_x_ticks_ang = [int(round(options.pixel_size / float(entry), 0)) for entry in [0.1, 0.2, 0.3, 0.4, 0.5]]
+				x_ticks_ang = [r'$\frac{{1}}{{{0}}}$'.format(tick) for tick in raw_x_ticks_ang if tick > nyquist_resolution*1.03]
+				x_ticks_freq = [options.pixel_size/float(tick) for tick in raw_x_ticks_ang if tick > nyquist_resolution*1.03]
+				x_ticks_ang.insert(0, r'$0$')
+				x_ticks_freq.insert(0, 0)
+				x_ticks_ang.append(r'$\frac{{1}}{{{0}}}$'.format(round(nyquist_resolution, 2)))
+				x_ticks_freq.append(options.pixel_size/round(nyquist_resolution, 2))
+				plt.xticks(x_ticks_freq, x_ticks_ang, size='xx-large')
+				y_ticks = [-0.2, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
+				plt.yticks(y_ticks, [r'${0}$'.format(tick) for tick in y_ticks], size='large')
 
-			resolution_FSC143 = resolution_FSC143_right
-			nfreq143 = nfreq143_right
+				# Plot related settings
+				plt.legend(loc='lower left', bbox_to_anchor=(0, 1, 1, 0.2), mode='expand', frameon=False)
+				plt.text(0.005, 0.153, r'$0.143$', color='k', alpha=0.4)
+				plt.text(0.005, 0.51, r'$0.5$', color='k', alpha=0.4)
+				plt.xlabel(r'Spatial frequency / $\frac{1}{\AA}$')
+				plt.ylabel(r'FSC')
+				plt.ylim([minimum_fsc-0.05, 1.05])
+				plt.grid()
+				plt.tight_layout()
+				plt.savefig(os.path.join(options.output_dir, "fsc.png"), bbox_inches='tight')
+				plt.clf()
 
-			for ifreq in xrange(len(fsc_true[0])): fsc_true[1][ifreq] = max(fsc_true[1][ifreq], 0.0)
-			## smooth FSC after FSC143 and set other values to zero
-			for ifreq in xrange(nfreq143+1, len(fsc_true[1])):
-				if ifreq ==nfreq143+1: fsc_true[1][ifreq] = (fsc_true[1][nfreq143-2] + fsc_true[1][nfreq143-1])/5.
-				elif ifreq ==nfreq143+2: fsc_true[1][ifreq] = (fsc_true[1][nfreq143-1])/5.
-				else:  fsc_true[1][ifreq] = 0.0
-			###
-			map1 = (get_im(args[0])+get_im(args[1]))/2.0
+				if m is not None: fsc_true = fsc_mask
+				""" 
+					# we abandon randomize phase strategy
+					frc_without_mask = fsc(map1, map2, 1)
+					randomize_at     = -1.0
+					for ifreq in xrange(1, len(frc_without_mask[1])): # always skip zero frequency
+						if frc_without_mask[1][ifreq] < options.randomphasesafter:
+							randomize_at = float(ifreq)
+							break
+					log_main.add("Phases are randomized after: %4.2f Angstrom"% (options.pixel_size/(randomize_at/map1.get_xsize())))
+					frc_masked = fsc(map1*m, map2*m, 1)
+					map1 = fft(Util.randomizedphasesafter(fft(map1), randomize_at))*m
+					map2 = fft(Util.randomizedphasesafter(fft(map2), randomize_at))*m
+					frc_random_masked = fsc(map1, map2, 1)
+					fsc_true          = [frc_without_mask[0], [None]*len(frc_without_mask[0])]
+					for i in xrange(len(fsc_true[1])):
+						if i < (int(randomize_at) + 2):# move two pixels up
+							fsc_true[1][i] = frc_masked[1][i]
+						else:
+							fsct = frc_masked[1][i]
+							fscn = frc_random_masked[1][i]
+							if (fscn > fsct): fsc_true[1][i]= 0.
+							else: fsc_true[1][i]=(fsct-fscn)/(1.-fscn)
+					else:
+				"""
+				log_main.add("adjust FSC to the full dataset by: 2.*FSC/(FSC+1.)")
+				fsc_true[1] = map(scale_fsc, fsc_true[1])
+
+				## Determine 05/143 resolution from corrected FSC, RH correction of FSC from masked volumes
+				resolution_FSC143_right  = 0.0
+				resolution_FSC143_left   = 0.0
+				#dip_at_fsc = False
+				nfreq0     = 1
+
+				for ifreq in xrange(1, len(fsc_true[1])):
+					if fsc_true[1][ifreq] < 0.0:
+						nfreq0  = ifreq - 1
+						break
+				if nfreq0 ==1: nfreq0= len(fsc_true[1]) - 1
+
+				nfreq05 = len(fsc_true[1])-1 		
+				for ifreq in xrange(1, len(fsc_true[1])):
+					if fsc_true[1][ifreq] < 0.5:
+						resolution_FSChalf = fsc_true[0][ifreq-1]
+						nfreq05 = ifreq-1
+						break
+
+				resolution_FSC143_left = fsc_true[0][len(fsc_true[1])-1]
+				for ifreq in xrange(nfreq05, len(fsc_true[1])):
+					if fsc_true[1][ifreq] < 0.143:
+						resolution_FSC143_left = fsc_true[0][ifreq-1]
+						nfreq143 = ifreq - 1
+						break
+
+				resolution_FSC143_right = fsc_true[0][nfreq05]
+				nfreq143_right = nfreq05
+				for ifreq in xrange(nfreq0, nfreq05, -1):
+					if fsc_true[1][ifreq] >= 0.143:
+						resolution_FSC143_right = fsc_true[0][ifreq]
+						nfreq143_right = ifreq
+						break
+
+				## output resolution
+				if resolution_FSC143_left != resolution_FSC143_right: log_main.add("there is a dip between 0.5 to 0.143 in FSC!")
+				else:log_main.add("fsc smoothly falls from 0.5 to 0.143 !")
+
+				resolution_FSC143 = resolution_FSC143_right
+				nfreq143 = nfreq143_right
+
+				for ifreq in xrange(len(fsc_true[0])): fsc_true[1][ifreq] = max(fsc_true[1][ifreq], 0.0)
+				## smooth FSC after FSC143 and set other values to zero
+				for ifreq in xrange(nfreq143+1, len(fsc_true[1])):
+					if ifreq ==nfreq143+1: fsc_true[1][ifreq] = (fsc_true[1][nfreq143-2] + fsc_true[1][nfreq143-1])/5.
+					elif ifreq ==nfreq143+2: fsc_true[1][ifreq] = (fsc_true[1][nfreq143-1])/5.
+					else:  fsc_true[1][ifreq] = 0.0
+				###
+				map1 = (get_im(args[0])+get_im(args[1]))/2.0
+				
 			outtext     = [["Squaredfreq"],[ "LogOrig"]]
 			guinierline = rot_avg_table(power(periodogram(map1),.5))
 			from math import log
@@ -1376,9 +1385,9 @@ def main():
 				x = ig*.5/float(len(guinierline))/options.pixel_size
 				outtext[0].append("%10.6f"%(x*x))
 				outtext[1].append("%10.6f"%log(guinierline[ig]))
-
+					
 			# starts adjustment of powerspectrum
-			if options.mtf: # divided by the mtf #1
+			if options.mtf: # MTF division #1
 				log_main.add("MTF correction is applied")
 				log_main.add("MTF file is %s"%options.mtf)
 				try: mtf_core  = read_text_file(options.mtf, -1)
@@ -1387,10 +1396,9 @@ def main():
 				outtext.append(["LogMTFdiv"])
 				guinierline   = rot_avg_table(power(periodogram(map1),.5))
 				for ig in xrange(len(guinierline)): outtext[-1].append("%10.6f"%log(guinierline[ig]))
-			else:
-				log_main.add("MTF is not applied")
+			else: log_main.add("MTF is not applied")
 
-			if options.fsc_adj: #2
+			if options.fsc_adj and not single_map:# limit resolution #2
 				log_main.add("sqrt(FSC) is multiplied to adjust power spectrum of the summed volumes")
 				#log_main.add("Notice: FSC adjustment of powerspectrum will increase B-factor 2-3 times than not!")
 				#### FSC adjustment ((2.*fsc)/(1+fsc)) to the powerspectrum;
@@ -1421,7 +1429,8 @@ def main():
 					b, junk, ifreqmin, ifreqmax = compute_bfactor(guinierline, freq_min, freq_max, options.pixel_size)
 					global_b = 4.*b # Just a convention!
 					cc = pearson(junk[1],logguinierline)
-					log_main.add("similarity between the fitted line and 1-D rotationally average power spectrum within [%d, %d] is %5.3f"%(ifreqmin, ifreqmax, pearson(junk[1][ifreqmin:ifreqmax],logguinierline[ifreqmin:ifreqmax])))
+					log_main.add("similarity between the fitted line and 1-D rotationally average power spectrum within [%d, %d] is %5.3f"%(\
+					      ifreqmin, ifreqmax, pearson(junk[1][ifreqmin:ifreqmax],logguinierline[ifreqmin:ifreqmax])))
 					log_main.add("the slope is %6.2f Angstrom^2 "%(round(-b,2)))
 					sigma_of_inverse = sqrt(2./(global_b/options.pixel_size**2))
 					
@@ -1441,46 +1450,59 @@ def main():
 						last_non_zero = log(guinierline[ig])
 					else: outtext[-1].append("%10.6f"%last_non_zero)
 			else: log_main.add("B-factor enhancement is not applied to map!")
-
-			if options.fl !=-1.: # User provided low-pass filter #4.
-				if options.fl>0.5: # Input is in Angstrom 
-					map1   = filt_tanl(map1,options.pixel_size/options.fl, min(options.aa,.1))
-					cutoff = options.fl
-					log_main.add("low_pass filter to user provided  %f"%cutoff)
+			
+			if not single_map:
+				if options.fl !=-1.: # User provided low-pass filter #4.
+					if options.fl>0.5: # Input is in Angstrom 
+						map1   = filt_tanl(map1,options.pixel_size/options.fl, min(options.aa,.1))
+						cutoff = options.fl
+						log_main.add("low_pass filter to user provided  %f Angstrom"%cutoff)
 					
-				elif options.fl>0.0 and options.fl< 0.5:  # input is in absolution frequency
-					map1   = filt_tanl(map1,options.fl, min(options.aa,.1))
-					cutoff = options.pixel_size/options.fl
-					log_main.add("low_pass filter to user provided  %f"%cutoff)
-				else: # low-pass filter to resolution determined by FSC0.143
-					log_main.add("low_pass filter to FSC0.143 ! ")
-					map1   = filt_tanl(map1,resolution_FSC143, options.aa)
-					cutoff = options.pixel_size/resolution_FSC143
-			else:
-				if filter_to_resolution:
-					map1   = filt_tanl(map1,resolution_FSC143, options.aa)
-					cutoff = options.pixel_size/resolution_FSC143
-					log_main.add("low_pass filter to resolution ! ")
+					elif options.fl>0.0 and options.fl< 0.5:  # input is in absolution frequency
+						map1   = filt_tanl(map1,options.fl, min(options.aa,.1))
+						cutoff = options.pixel_size/options.fl
+						log_main.add("low_pass filter to user provided  %f Angstrom"%cutoff)
+					else: # low-pass filter to resolution determined by FSC0.143
+						log_main.add("low_pass filter to FSC0.143 ! ")
+						map1   = filt_tanl(map1,resolution_FSC143, options.aa)
+						cutoff = options.pixel_size/resolution_FSC143
 				else:
-					cutoff = 0.0 
-					log_main.add("low_pass filter is not applied to map! ")
-
+					if filter_to_resolution:
+						map1   = filt_tanl(map1,resolution_FSC143, options.aa)
+						cutoff = options.pixel_size/resolution_FSC143
+						log_main.add("low_pass filter to resolution ! ")
+					else:
+						cutoff = 0.0 
+						log_main.add("low_pass filter is not applied to map! ")
+			else:
+				if options.fl == -1.0: log_main.add("User does not apply low pass filter in single map enhancement")
+				else:
+					if options.fl>0.5: # Input is in Angstrom 
+						map1   = filt_tanl(map1,options.pixel_size/options.fl, min(options.aa,.1))
+						cutoff = options.fl
+					else:
+						map1   = filt_tanl(map1,options.fl, min(options.aa,.1))
+						cutoff = options.pixel_size/options.fl
+					log_main.add("low_pass filter to user provided  %f Angstrom"%cutoff)
+					
 			map1 = fft(map1)
 			file_name, file_ext = os.path.splitext(options.output)
 			if file_ext !='': map1.write_image(os.path.join(options.output_dir, file_name+"_nomask"+file_ext))
 			else: map1.write_image(file_name+"_nomask.hdf")
-			log_main.add("the non-mask applied combinined map is saved as %s"%(file_name+"_nomask_"+file_ext))
+			log_main.add("the non-mask applied combinined map is saved as %s"%(file_name+"_nomask"+file_ext))
 			if m: map1 *=m
 			else: log_main.add("the final map is not masked!")
 
 			map1.write_image(os.path.join(options.output_dir, options.output))
 			log_main.add("---------- >>>summary<<<------------")
-			log_main.add("resolution 0.5/0.143 are %5.2f/%5.2f Angstrom "%(round((options.pixel_size/resolution_FSChalf),3), round((options.pixel_size/resolution_FSC143),3)))
-			if dip_at_fsc: log_main.add("There is a dip in your fsc in the region between 0.5 and 0.143, and you might consider ploting your fsc curve")
+			if not single_map:
+				log_main.add("resolution 0.5/0.143 are %5.2f/%5.2f Angstrom "%(round((options.pixel_size/resolution_FSChalf),3), round((options.pixel_size/resolution_FSC143),3)))
+				if dip_at_fsc: log_main.add("There is a dip in your fsc in the region between 0.5 and 0.143, and you might consider ploting your fsc curve")
 			if options.B_enhance !=-1:  log_main.add( "B-factor is  %6.2f Angstrom^2  "%(round((-global_b),2)))
-			else:  log_main.add( "B-factor is not applied  ")
-			output_names = [plot_name.replace(' ', '_') for plot_name in plot_names]
-			log_main.add("FSC curves are saved in {0}.txt ".format('.txt, '.join(output_names).lower()))
+			else:log_main.add( "B-factor is not applied  ")
+			if not single_map:
+				output_names = [plot_name.replace(' ', '_') for plot_name in plot_names]
+				log_main.add("FSC curves are saved in {0}.txt ".format('.txt, '.join(output_names).lower()))
 			log_main.add("the final volume is " + options.output)
 			log_main.add("guinierlines in logscale are saved in guinierlines.txt")
 			if options.fl !=-1: log_main.add("tanl low-pass filter is applied to cut off high frequencies from resolution 1./%5.2f Angstrom" %round(cutoff,2))
@@ -1491,8 +1513,8 @@ def main():
 			if cutoff !=0.0:
 				pvalues, mindex, mavlue, index_zero, pfall_off = filter_product(global_b, options.pixel_size, cutoff, options.aa, map1.get_xsize())
 				log_main.add("---->>>analysis of enhancement<<<-----")
-				log_main.add("B_factor:  %f   cutoff:   %f  aa:  %f  Maximum enhancement ocurs in %d pixels. Maximum enhancement ratio is %f. After %d pixel, power spectrum is set to zero. Fallall width is %d pixels"%\
-				   (global_b, cutoff, options.aa, mindex, mavlue, index_zero, pfall_off))
+				log_main.add("B_factor:  %f   cutoff:   %f  (A)  %f (absolute) aa (absolute):  %f  Maximum enhancement ocurs in %d pixels. Maximum enhancement ratio is %f. After %d pixel, power spectrum is set to zero. Fallall width is %d pixels"%\
+				   (global_b, cutoff, options.pixel_size/cutoff, options.aa, mindex, mavlue, index_zero, pfall_off))
 				if mindex == 0:
 					msg = "enhancement has no maximum value, check your input parameters!"
 					log_main.add(msg)
