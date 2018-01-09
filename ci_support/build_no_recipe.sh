@@ -16,6 +16,7 @@ fi
 export CPU_COUNT=2
 
 export SRC_DIR=${PWD}
+export PREFIX=${PWD}
 bash ${SRC_DIR}/recipes/eman/build.sh
 
 # Run tests
