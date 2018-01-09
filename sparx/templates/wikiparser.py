@@ -1459,6 +1459,17 @@ def create_sxcmd_subconfig_sort3d_depth_stack():
 
 	return sxcmd_subconfig
 
+def create_sxcmd_subconfig_sort3d_makevstack():
+	token_edit_list = []
+	token_edit = SXcmd_token(); token_edit.initialize_edit("makevstack"); token_edit.label = "Output cluster stack subset"; token_edit.is_required = True; token_edit.is_locked = False; token_edit.default = "none"; token_edit.restore = "none"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("input_bdb_stack_file"); token_edit.key_prefix = ""; token_edit.label = "Original image stack"; token_edit.help = "Specify path to input BDB stack file used for the associated SORT3D_DEPTH run."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "bdb"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("list"); token_edit.label = "Selection text file"; token_edit.help = "Selection text file that contains indexes of the data subset. Typically, Cluster#.txt created by sxsort3d_depth (e.g. Cluster1.txt). "; token_edit_list.append(token_edit)
+
+	sxsubcmd_mpi_support = False
+	sxcmd_subconfig = SXsubcmd_config("Create Cluster Stack Subset", None, token_edit_list, sxsubcmd_mpi_support)
+
+	return sxcmd_subconfig
+
 ### # NOTE: 2018/01/08 Toshio Moriya
 ### # post-sort3d sharpening is removed recently.
 ### def create_sxcmd_subconfig_sort3d_depth_sharpen():
@@ -1750,6 +1761,7 @@ def main(is_dev_mode = False):
 ###	sxcmd_config_list.append(SXcmd_config("../doc/sort3d_new.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_sort3d_new()))
 	sxcmd_config_list.append(SXcmd_config("../doc/sort3d_depth.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_sort3d_depth_iteration()))
 ###	sxcmd_config_list.append(SXcmd_config("../doc/meridien_20171120.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_20171120_local()))
+	sxcmd_config_list.append(SXcmd_config("../doc/e2bdb.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_sort3d_makevstack()))
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_local_stack()))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_refine3d_combinemaps()))
 
