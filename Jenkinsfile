@@ -48,6 +48,14 @@ def runCronJob() {
       sh "rsync -avzh --stats ${INSTALLERS_DIR}/eman2.${STAGE_NAME}.unstable.sh ${DEPLOY_DEST}"
 }
 
+def setUploadFlag() {
+    if(getJobType() == "cron") {
+        return '0'
+    } else {
+        return '1'
+    }
+}
+
 def resetBuildScripts() {
     if(JOB_TYPE == "cron" || isRelease())
         sh 'cd ${HOME}/workspace/build-scripts-cron/ && git checkout -f master'
@@ -63,7 +71,7 @@ pipeline {
   }
   
   environment {
-    SKIP_UPLOAD = '1'
+    SKIP_UPLOAD = setUploadFlag()
     JOB_TYPE = getJobType()
     GIT_BRANCH_SHORT = sh(returnStdout: true, script: 'echo ${GIT_BRANCH##origin/}').trim()
     GIT_COMMIT_SHORT = sh(returnStdout: true, script: 'echo ${GIT_COMMIT:0:7}').trim()
