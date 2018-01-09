@@ -24,13 +24,17 @@ def notifyEmail() {
     if(JOB_TYPE == "push") {
         emailext(recipientProviders: [[$class: 'DevelopersRecipientProvider']],  
                  subject: '[JenkinsCI/$PROJECT_NAME/push] ' + "($GIT_BRANCH_SHORT - ${GIT_COMMIT_SHORT})" + ' #$BUILD_NUMBER - $BUILD_STATUS!',
-                 body: '''${SCRIPT, template="groovy-text.template"}''')
+                 body: '''${SCRIPT, template="groovy-text.template"}''',
+                 attachLog: true
+                 )
     }
     
     if(JOB_TYPE == "cron") {
         emailext(to: '$DEFAULT_RECIPIENTS',
                  subject: '[JenkinsCI/$PROJECT_NAME/cron] ' + "($GIT_BRANCH_SHORT - ${GIT_COMMIT_SHORT})" + ' #$BUILD_NUMBER - $BUILD_STATUS!',
-                 body: '''${SCRIPT, template="groovy-text.template"}''')
+                 body: '''${SCRIPT, template="groovy-text.template"}''',
+                 attachLog: true
+                 )
     }
 }
 
@@ -42,6 +46,11 @@ def runCronJob() {
     sh "bash ${HOME}/workspace/build-scripts-cron/cronjob.sh $STAGE_NAME"
     if(isRelease())
       sh "rsync -avzh --stats ${INSTALLERS_DIR}/eman2.${STAGE_NAME}.unstable.sh ${DEPLOY_DEST}"
+}
+
+def resetBuildScripts() {
+    if(JOB_TYPE == "cron" || isRelease())
+        sh 'cd ${HOME}/workspace/build-scripts-cron/ && git checkout -f master'
 }
 
 pipeline {
@@ -105,7 +114,7 @@ pipeline {
       }
       
       steps {
-        sh 'cd ${HOME}/workspace/build-scripts-cron/ && git checkout jenkins && git pull --rebase'
+        sh 'cd ${HOME}/workspace/build-scripts-cron/ && git checkout -f jenkins && git pull --rebase'
       }
     }
     
@@ -150,19 +159,6 @@ pipeline {
         runCronJob()
       }
     }
-    
-    stage('build-scripts-reset') {
-      when {
-        anyOf {
-          expression { JOB_TYPE == "cron" }
-          expression { isRelease() }
-        }
-      }
-      
-      steps {
-        sh 'cd ${HOME}/workspace/build-scripts-cron/ && git checkout master'
-      }
-    }
   }
   
   post {
@@ -180,6 +176,7 @@ pipeline {
     
     always {
       notifyEmail()
+      resetBuildScripts()
     }
   }
 }
