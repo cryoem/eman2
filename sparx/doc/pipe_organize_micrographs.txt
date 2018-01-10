@@ -1,5 +1,5 @@
 = Name =
-sxpipe organize_micrographs - Organize micrographs: Organize micrographs by moving micrographs in a selecting file from a source directory (specified by source micrographs pattern) to a destination directory.
+sxpipe organize_micrographs - Organize Micrographs: Organize micrographs by moving micrographs in a selecting file from a source directory (specified by source micrographs pattern) to a destination directory.
 
 
 = Usage =
