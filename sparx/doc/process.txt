@@ -95,19 +95,46 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
 
 ''' sxprocess.py  vol3d.hdf  mask3d.hdf  --binary_mask  --threshold=0.05  --ne=3  --nd==3 '''
 
-14. Combine two unfiltered 3D volumes produced by meridien: This command executes the following processes. (a) Calculate FSC with provided mask and adjust the FSC by random phases FSC, (b) Sum two volume, (c) Apply mask, (d) Apply MTF correction (optional), (e) Adjust power spectrum by 2*FSC/(1+FSC) (optional), (f) Estimate B-factor from 10 Angstrom (default) to the resolution (optional), (g) Apply negative B-factor to enhance the volume (optional), (h) Apply low_pass filter to the volume (optional). Options are independent of each others.
---fl               : =0.0, low_pass filter to resolution; =-1.0, no low_pass filter; =5.8 low_pass filter to 5.8 Angstrom; =0.2 low_pass filter to 0.2.
---B_enhance        : =-1, B-factor is not applied; =0, program estimates B-factor from options. B_start (usually set as 10 Angstrom) to the resolution determined by FSC 0.143; =128.0, program uses the given value 128.0 to enhance map.
---mtf              : =mtf.txt, for those high resolution maps, mtf correction would significantly enhance structural features.
---fsc_adj          : fsc adjustment of power spectrum is inclined to increase the slope of power spectrum of the summed volume.
---do_adaptive_mask : =True, the program adaptively creates 3d mask file using summed volumes. This takes a couple of minutes. For map with dimension of 384*384*384, it takes 6 minutes.
---output           : output volume 
+14. Sharpen volumes or images by enhancing the power spectrum.
+(1) Halfset Volumes Mode
+For a pair of unfiltered odd & even halfset volumes produced by MERIDIEN, this command executes the following processes:
+(a) Calculate FSC with provided mask and adjust the FSC;
+(b) Sum two volume; 
+(c) Apply mask
+(d) Apply MTF correction (optional);
+(e) Adjust power spectrum by 2*FSC/(1+FSC) (optional);  
+(f) Estimate B-factor from 10 Angstrom (default) to the resolution (optional); 
+(g) Apply negative B-factor to enhance the volume (optional);
+(h) Apply low-pass filter to the volume (optional)
+options are independent of each others.
+--do_adaptive_mask : =True when it is restored, the program adaptively creates adaptive mask file using summed two volumes. This takes a couple of minutes. For map with dimension of 384*384*384, it takes 6 minutes.
+--mtf              : For those high resolution maps, mtf correction would significantly enhance structural features.
+--fsc_adj          : FSC adjustment of power spectrum is inclined to increase the slope of power spectrum of the summed volume.
+--B_enhance        : =0.0, program estimates B-factor from B_start (usually 10 Angstrom) to the resolution determined by FSC 0.143; >0.0, program uses the given value to enhance map; =-1.0, B-factor is not applied.
+--fl               : =0.0, low-pass filter to resolution; >=0.5, low-pass filter to the given Angstrom; >0.0 AND <=0.5, low-pass filter to the given absolute frequency; =-1.0, no low-pass filter.
 
-''' sxprocess.py  --combinemaps  vol_0_unfil.hdf  vol_1_unfil.hdf  --mask=mask3d.hdf  --pixel_size=1.12  --fl=-1  --mtf=mtf.txt  --fsc_adj  --output=vol_combined.hdf  --output_dir=outdir_sxprocess_combinemaps '''
+''' sxprocess.py  --combinemaps  vol_0_unfil.hdf vol_1_unfil.hdf  --output_dir=outdir_sharpen_haflset  --output=spharpen_fullset_vol3d.hdf  --pixel_size=1.12  --mask=mask3d.hdf   --mtf=mtf.txt  --fl=-1   --fsc_adj '''
+''' sxprocess.py  --combinemaps  vol_0_unfil.hdf vol_1_unfil.hdf  --output_dir=outdir_sharpen  --pixel_size=1.12  --mask=mask3d.hdf   --mtf=aa.txt  --fl=4.7  --aa=0.02 --fsc_adj '''
+''' sxprocess.py  --combinemaps  vol_0_unfil.hdf vol_1_unfil.hdf  --output_dir=outdir_sharpen  --output=spharpen_fullset_vol3d.hdf  --pixel_size=1.12  --do_adaptive_mask  --mtf=mtf.txt  --fl=3.9  --aa=0.01  --B_enhance=280 '''
 
-''' sxprocess.py  --combinemaps  vol_0_unfil.hdf  vol_1_unfil.hdf  --mask=mask3d.hdf  --pixel_size=1.12  --fl=4.7  --mtf=mtf.txt  --B_enhance=250.0 --output_dir=outdir_sxprocess_combinemaps '''
+(2) Cluster Volumes Mode:
+For cluster volumes produced by SORT3D_DEPTH, this command executes the following processes:
+(a) Apply mask
+(b) Apply MTF correction (optional);
+(c) Apply negative B-factor to enhance the volume using user-provided ad-hoc value (optional);
+(d) Apply low-pass filter to the volume using user-provided ad-hoc value (optional)
+options are independent of each others.
+--do_adaptive_mask : =True when it is restored, the program adaptively creates adaptive mask file using each cluster volume. This takes a couple of minutes. For map with dimension of 384*384*384, it takes 6 minutes.
+--mtf              : For those high resolution maps, mtf correction would significantly enhance structural features.
+--B_enhance        : >0.0, program uses the given value to enhance map; =-1.0, B-factor is not applied.
+--fl               : >=0.5, low-pass filter to the given Angstrom; >0.0 AND <=0.5, low-pass filter to the given absolute frequency; =-1.0, no low-pass filter.
+ This mode is mainly used with SORT3D_DEPTH outputs but also can enhance the power spectrum of ANY volumes.
 
-''' sxprocess.py  --combinemaps  vol_0_unfil.hdf  vol_1_unfil.hdf  --do_adaptive_mask  --pixel_size=1.12  --mtf=mtf.txt  --fsc_adj --output=vol_iter17.hdf --output_dir=outdir_sxprocess_combinemaps '''
+''' sxprocess.py  --combinemaps  vol_cluster*.hdf    --output_dir=outdir_sharpen_cluster  --output=spharpen_cluster_vol3d.hdf  --pixel_size=1.12  --do_adaptive_mask  --mtf=mtf.txt  --fl=3.9  --aa=0.01  --B_enhance=280 '''
+''' sxprocess.py  --combinemaps  vol_cluster000.hdf  --output_dir=outdir_sharpen_cluster  --output=spharpen_cluster_vol3d.hdf  --pixel_size=1.12  --do_adaptive_mask  --mtf=mtf.txt  --fl=3.9  --aa=0.01  --B_enhance=280 '''
+
+(3) Images Mode - for 2D images
+Calculate B-factor and apply negative B-factor to 2D images.
 
 15. Window stack file -reduce size of images without changing the pixel size.
 
@@ -157,28 +184,27 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
     ne:: Erosion cycles: After initial binarization the volume is eroded to remove fragmented pieces of the volume. (default 0)
     nd:: Dilation cycles: After erosing the binary volume is dilated back to smooth the surface and match the original size. (default 0)
 
-    combinemaps:: Combine unfiltered maps: Combine a pair of unfiltered odd & even 3D density maps, then enhance the power spectrum of high frequencies. B-factor can be estimated from the two unfiltered maps. (default False)
-    output_dir:: Output directory: Specify path to the output directory of this combine unfiltered maps process. By default, the program uses the current directory. However, GUI requires the path other than the current directory. (default required string)
-    output:: Output volume file name: File name of output final volume. (default vol_postrefine_masked.hdf)
+    combinemaps:: Sharpen volumes or images: Sharpen volumes or images by enhancing the power spectrum. Available modes are (1) Halfset Volumes Mode, (2) Cluster Volumes Mode, and (3) Images Mode. (1) The Halfset Volumes Mode combines a pair of unfiltered odd & even 3D density maps, then enhance the power spectrum at high frequencies. B-factor can be automatically estimated from these unfiltered halfset volumes. This mode requires two arguments; typically use unfiltered halfset volumes produced by MERIDIEN. (2) The Cluster Volumes Mode enhances the power spectrum of cluster volumes, produced by SORT3D_DEPTH, at high frequencies. Only ad-hoc low-pass filter cutoff and B-factor can be used. This mode requires one argument (path pattern with wild card '*' can be used to specify a list of single maps). It is mainly used with SORT3D_DEPTH outputs but also can enhance the power spectrum of ANY volumes. (default False)
+    output_dir:: Output directory: Specify path to the output directory for this sharpening process. By default, the program uses the current directory. However, GUI requires the path other than the current directory. (default required string)
+    output:: Output volume file name: File name of output final sharpened volume. (default vol_combined.hdf)
     pixel_size:: Pixel size [A]: Pixel size of input data. (default 0.0)
     mask:: 3D mask file: Path to user-provided mask. (default none)
     do_adaptive_mask:: Apply adaptive mask: Program creates mask adaptively with given density threshold. (default False)
-    mask_threshold:: Adaptive mask threshold: Density threshold for creating adaptive surface mask. (default 0.02)
-    consine_edge:: Cosine edge width [Pixels]: Width of cosine transition area for soft-edge masking. (default 6.0)
-    dilation:: surface dilation size [Pixels]: Size of surface dilation or erosion. (default 3.0) 
+    mask_threshold:: Adaptive mask threshold: Density threshold for creating adaptive surface mask. Effective only with --do_adaptive_mask option. (default 0.02)
+    consine_edge:: Cosine edge width [Pixels]: Width of cosine transition area for soft-edge masking. Effective only with --do_adaptive_mask option. (default 6.0)
+    dilation:: surface dilation size [Pixels]: Size of surface dilation or erosion. Effective only with --do_adaptive_mask option. (default 3.0) 
     mtf:: MTF file: Path to file contains the MTF (modulation transfer function) of the detector used. (default none)
-    fsc_adj:: Apply FSC-based low-pass filter: Applies an FSC-based low-pass filter to the merged volume before the B-factor estimation. (default False)
-    B_enhance:: B-factor enhancement: -1.0: B-factor is not applied; 0.0: program estimates B-factor from options. B_start (usually 10 Angstrom) to the resolution determined by FSC143; 128.0: program use the given value 128.0 [A^2] to enhance map. (default 0.0)
-    B_start:: B-factor estimation lower limit [A]: Frequency in Angstrom defining lower boundary of B-factor estimation. (default 10.0)
-    B_stop:: B-factor estimation upper limit [A]: Frequency in Angstrom defining upper boundary of B-factor estimation. Recommended to set the upper boundary to the frequency where fsc < 0.0. (default  0.0)
-    fl:: Low-pass filter frequency [1/Pixels]: 0.0: low-pass filter to resolution; A value > 0.5: low-pass filter to the value in Angstrom; A value > 0.0 and < 0.5: low-pass filter to the value in absolute frequency; -1.0: no low-pass filter. (default 0.0)
-    aa:: Low-pass filter fall-off [1/Pixels]: Low-pass filter fall-off. (default 0.01)
+    fsc_adj:: Apply FSC-based low-pass filter: Applies an FSC-based low-pass filter to the merged volume before the B-factor estimation. Effective only in Halfset Volumes Mode. (default False)
+    B_enhance:: B-factor enhancement: 0.0: program automatically estimates B-factor using power spectrum at frequencies from B_start (usually 10 Angstrom) to the resolution determined by FSC143 (valid only in Halfset Volumes Mode; Non-zero positive value: program use the given value [A^2] to enhance map); -1.0: B-factor is not applied. (default 0.0)
+    B_start:: B-factor estimation lower limit [A]: Frequency in Angstrom defining lower boundary of B-factor estimation. Effective only in Halfset Volumes Mode with --B_enhance=0.0. (default 10.0)
+    B_stop:: B-factor estimation upper limit [A]: Frequency in Angstrom defining upper boundary of B-factor estimation. Recommended to set the upper boundary to the frequency where fsc is smaller than 0.0. Effective only in Halfset Volumes Mode with --B_enhance=0.0. (default  0.0)
+    fl:: Low-pass filter frequency [1/Pixels]: 0.0: low-pass filter to resolution (valid only in Halfset Volumes Mode); A value larger than 0.5: low-pass filter to the value in Angstrom; A value larger than 0.0 and smaller than 0.5: low-pass filter to the value in absolute frequency; -1.0: no low-pass filter. (default 0.0)
+    aa:: Low-pass filter fall-off [1/Pixels]: Low-pass filter fall-off. Effective only when --fl option is not -1.0. (default 0.01)
 
     window_stack:: Window stack images using a smaller window size: (default False)
     box:: new window size: (default 0)
 
     angular_distribution:: Create angular distribution file: Create angular distribution file containing a 3D representation of the given angular distribution. It can be viewed with UCFS Chimera. (default False)
-    pixel_size:: Pixel size [A]: Pixel size in A. (default 1.0)
     round_digit:: Number precision: Decimal numbers will be rounded to this number of decimal points. (default 5)
     box_size:: Box size [Pixels]: Box size in pixel used for calculating the center of the particle. (default 500)
     particle_radius:: Particle radius [Pixels]: Used for the representation in Chimera. Defines where the cylinders representing the histogram must start. (default 175)

@@ -145,8 +145,9 @@ class SXcmd(object):
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# class variables
 		self.name = ""                        # Name of this command (i.e. name of sx*.py script but without .py extension), used for generating command line
-		self.subname = ""                     # Subname of this command, used for generating command line
-		self.mode = ""                        # key base name of a command token, defining mode/subset of this command. For fullset command, use empty string
+		self.subname = ""                     # Subname of this command (i.e. sub-command name), used for generating command line. For fullset command, use empty string
+		self.mode = ""                        # Key base name of a command option token, defining mode/subset of this command (i.e. option mode name). For fullset command, use empty string
+		self.subset_config = ""               # Unique name to differentiate subset configuration of this command. For example, to name a command argument mode, which dependes on the number of input arguments. If not necessary, use empty string 
 		self.label = ""                       # User friendly name of this command
 		self.short_info = ""                  # Short description of this command
 		self.mpi_support = False              # Flag to indicate if this command suppors MPI version
@@ -154,8 +155,8 @@ class SXcmd(object):
 		self.category = category              # Category of this command: sxc_movie, sxc_cter, sxc_window, sxc_isac, sxc_viper, sxc_meridien, sxc_sort3d, sxc_localres, sxc_utilities
 		self.role = role                      # Role of this command; sxr_pipe (pipeline), sxr_alt (alternative) sxr_util (utility)
 		self.is_submittable = is_submittable  # External GUI Application (e.g. sxgui_cter.py) should not be submitted to job queue
-		self.token_list = []                  # list of command tokens. Need this to keep the order of command tokens
-		self.token_dict = {}                  # dictionary of command tokens, organised by key base name of command token. Easy to access a command token but looses their order
+		self.token_list = []                  # List of command tokens. Need this to keep the order of command tokens
+		self.token_dict = {}                  # Dictionary of command tokens, organised by key base name of command token. Easy to access a command token but looses their order
 		self.btn = None                       # <Used only in sxgui.py> QPushButton button instance associating with this command
 		self.widget = None                    # <Used only in sxgui.py> SXCmdWidget instance associating with this command
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
@@ -174,6 +175,12 @@ class SXcmd(object):
 				mode_name = "%s_%s" % (mode_name, self.mode)
 			elif target_name in ["human"]:
 				mode_name = "%s %s%s" % (mode_name, self.token_dict[self.mode].key_prefix, self.mode)
+		
+		if self.subset_config != "":
+			if target_name in ["file_path"]:
+				mode_name = "%s_%s" % (mode_name, self.subset_config.replace(" ", "_"))
+			elif target_name in ["human"]:
+				mode_name = "%s (%s)" % (mode_name, self.subset_config)
 		
 		return mode_name
 
