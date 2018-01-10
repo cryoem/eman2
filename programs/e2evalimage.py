@@ -233,7 +233,7 @@ class GUIEvalImage(QtGui.QWidget):
 		self.setlist.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
 		for i in images:
 			self.setlist.addItem(i)
-		self.gbl.addWidget(self.setlist,0,0,10,2)
+		self.gbl.addWidget(self.setlist,0,0,8,2)
 
 		self.lcalcmode=QtGui.QLabel("Region:",self)
 		self.gbl.addWidget(self.lcalcmode,10,0)
@@ -308,13 +308,13 @@ class GUIEvalImage(QtGui.QWidget):
 		self.gbl.addWidget(self.brefit,7,2)
 
 		self.cbgadj=CheckBox(None,"CTF BG Adj",1)
-		self.gbl.addWidget(self.cbgadj,7,3)
+		self.gbl.addWidget(self.cbgadj,10,3)
 
 		self.castig=CheckBox(None,"Astig:",fitastig)
-		self.gbl.addWidget(self.castig,7,4)
+		self.gbl.addWidget(self.castig,11,3)
 
 		self.cphasep=CheckBox(None,"Phaseplate:",phaseplate)
-		self.gbl.addWidget(self.cphasep,7,5)
+		self.gbl.addWidget(self.cphasep,12,3)
 
 #		self.sapix=ValSlider(self,(.2,10),"A/Pix:",2,90)
 #		self.vbl.addWidget(self.sapix)
@@ -471,7 +471,7 @@ class GUIEvalImage(QtGui.QWidget):
 					#nz+=1
 					#shp["z%d"%i]=EMShape(("circle",0.0,0.0,1.0/nz,r,r,i,1.0))
 			shp={}
-			for i in range(1,10):
+			for i in range(1,15):
 				if ctf.dfdiff>0 :
 					d=ctf.defocus
 					ctf.defocus=d-ctf.dfdiff/2
