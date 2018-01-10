@@ -112,7 +112,7 @@ def main():
 	parser.add_argument("--ext",default="hdf",type=str, choices=["hdf","mrcs","mrc"],help="Save frames with this extension. Default is 'hdf'.", guitype='boolbox', row=18, col=2, rowspan=1, colspan=1, mode='align')
 	parser.add_argument("--suffix",type=str,default="proc",help="Specify a unique suffix for output frames. Default is 'proc'. Note that the output of --frames will be overwritten if identical suffix is already present.")#,guitype='strbox', row=17, col=0, rowspan=1, colspan=1, mode="align")
 
-	parser.add_argument("--round", choices=["float","integer","half integer"],help="If float (default), apply subpixel frame shifts. If integer, use integer shifts. If half integer, round shifts to nearest half integer values.",default="float",guitype='combobox', choicelist='["float","integer","half integer"]', row=19, col=0, rowspan=1, colspan=1, mode='align')
+	parser.add_argument("--round", choices=["float","integer","half"],help="If float (default), apply subpixel frame shifts. If integer, use integer shifts. If half integer, round shifts to nearest half integer values.",default="float",guitype='combobox', choicelist='["float","integer","half integer"]', row=19, col=0, rowspan=1, colspan=1, mode='align')
 	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful", guitype='intbox', row=19, col=1, rowspan=1, colspan=2, mode="align")
 
 	parser.add_header(name="orblock6", help='Just a visual separation', title="Alignment optimization: ", row=20, col=0, rowspan=2, colspan=3, mode="align")
@@ -399,20 +399,20 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 		t1 = time()-t
 		print("{:.1f} s".format(time()-t))
 
-		nx=outim[0]["nx"]
-		ny=outim[0]["ny"]
-
-		md = min(nx,ny)
-		if md <= 1024:
-			if options.optbox == -1: options.optbox = md
-			if options.optstep == -1: options.optstep = md/2
-		else:
-			if options.optbox == -1: options.optbox = 2048
-			if options.optstep == -1: options.optstep = 1024
-
 		if options.align_frames :
 
 			start = time()
+
+			nx=outim[0]["nx"]
+			ny=outim[0]["ny"]
+
+			md = min(nx,ny)
+			if md <= 2048:
+				print("This program does not facilitate alignment of movies with frames smaller than 2048x2048 pixels.")
+				sys.exit(1)
+			else:
+				if options.optbox == -1: options.optbox = 800
+				if options.optstep == -1: options.optstep = 720
 
 			n=len(outim)
 			nx=outim[0]["nx"]
@@ -893,7 +893,7 @@ def bimodal_peak_model(options,ccf):
 		bds = [(-np.inf, -np.inf, 0.01, 0.01, 0.6, 0.01), (np.inf, np.inf, 100.0, 20000.0,2.5,100000.0)]
 		#bds = [(-bs/2, -bs/2,  0.01, 0.01, 0.6, 0.01),(bs/2, bs/2, 100.0, 20000.0, 2.5, 100000.0)]
 		#try:
-		popt,pcov=optimize.curve_fit(twod_bimodal,(xx,yy),ncc.ravel(),p0=initial_guess)#,bounds=bds,method='dogbox') #,xtol=0.05)#,ftol=0.0001,gtol=0.0001)
+		popt,pcov=optimize.curve_fit(twod_bimodal,(xx,yy),ncc.ravel(),p0=initial_guess,bounds=bds,method="dogbox",max_nfev=25,xtol=0.05)
 		#except:
 		#	return None,-1#popt = initial_guess#, -1#popt = initial_guess
 
