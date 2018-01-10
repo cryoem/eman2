@@ -285,32 +285,46 @@ def main():
    13. Generate binary 3D mask from input 3D volume using the user-provided threshold.
         sxprocess.py  vol3d.hdf  mask3d.hdf  --binary_mask  --threshold=0.05  --ne=3  --nd==3
 
-   14. Postprocess 3-D or 2-D images:
-   
-	for 3-D volumes: 
-		a. calculate FSC with provided mask and adjust the FSC by random phases FSC;
-		b. sum two volume; 
-		c. apply mask
-		d. apply MTF correction (optional);
-		e. adjust power spectrum by 2*FSC/(1+FSC) (optional);  
-		f. estimate B-factor from 10 Angstrom (default) to the resolution (optional); 
-		g. apply negative B-factor to enhance the volume (optional);
-		h. low_pass filter the volume (optional)
-		options are independent of each others.
-		--fl               : =0.0, low_pass filter to resolution; =-1., no low_pass filter; =5.8 low_pass filter to 5.8 Angstrom; =.2 low_pass filter to 0.2  
-		--B_enhance        : =-1, B-factor is not applied; =0, program estimates B-factor from options.B_start(usually set as 10 Angstrom)to the resolution determined by FSC 0.143; =128., program use the given value 128. to enhance map.
-		--mtf              : =aa.txt, for those high resolution maps, mtf correction would significantly enhance structural features.
-		--fsc_adj          : fsc adjustment of power spectrum is inclined to increase the slope of power spectrum of the summed volume.
-		--do_adaptive_mask : =True when it is restored, the program adaptively creates adaptive mask file using summed two volumes. This takes a couple of minutes. For map with dimension of 384*384*384, it takes 6 minutes.
-		--output           : output volume 
-										
-		sxprocess.py vol_0_unfil.hdf vol_1_unfil.hdf  --mask=mask15.hdf --combinemaps   --pixel_size=1.12     --fl =-1  --mtf=aa.txt  --fsc_adj --output=vol.hdf --output_dir=pipi
-		sxprocess.py vol_0_unfil.hdf vol_1_unfil.hdf  --mask=mask15.hdf --combinemaps   --pixel_size=1.12     --fl=4.7  --aa=0.02  --mtf=aa.txt --fsc_adj  --output_dir=final_maps
-		sxprocess.py vol_0_unfil.hdf vol_1_unfil.hdf  --do_adaptive_mask   --combinemaps   --pixel_size=1.12   --mtf=aa.txt  --output=ribosome.hdf --fl=3.9 --aa=0.01 --B_enhance=280  --output_dir=final_maps
-		sxprocess.py  vol_cluster000.hdf  --do_adaptive_mask   --combinemaps   --pixel_size=1.12   --mtf=aa.txt  --output=ribosome.hdf --fl=3.9 --aa=0.01 --B_enhance=280  --output_dir=cluster0_iter17
+   14. Sharpen of volumes or images by enhancing the power spectrum:
+       (1) Halfset Volumes Mode
+           For a pair of unfiltered odd & even halfset volumes produced by MERIDIEN, this command executes the following processes:
+           a. Calculate FSC with provided mask and adjust the FSC;
+           b. Sum two volume; 
+           c. Apply mask
+           d. Apply MTF correction (optional);
+           e. Adjust power spectrum by 2*FSC/(1+FSC) (optional);  
+           f. Estimate B-factor from 10 Angstrom (default) to the resolution (optional); 
+           g. Apply negative B-factor to enhance the volume (optional);
+           h. Apply low-pass filter to the volume (optional)
+           options are independent of each others.
+           --do_adaptive_mask : =True when it is restored, the program adaptively creates adaptive mask file using summed two volumes. This takes a couple of minutes. For map with dimension of 384*384*384, it takes 6 minutes.
+           --mtf              : For those high resolution maps, mtf correction would significantly enhance structural features.
+           --fsc_adj          : FSC adjustment of power spectrum is inclined to increase the slope of power spectrum of the summed volume.
+           --B_enhance        : =0.0, program estimates B-factor from B_start (usually 10 Angstrom) to the resolution determined by FSC 0.143; >0.0, program uses the given value to enhance map; =-1.0, B-factor is not applied.
+           --fl               : =0.0, low-pass filter to resolution; >=0.5, low-pass filter to the given Angstrom; >0.0 AND <=0.5, low-pass filter to the given absolute frequency; =-1.0, no low-pass filter.
+           
+           sxprocess.py  --combinemaps  vol_0_unfil.hdf vol_1_unfil.hdf  --output_dir=outdir_sharpen_haflset  --output=spharpen_fullset_vol3d.hdf  --pixel_size=1.12  --mask=mask3d.hdf   --mtf=mtf.txt  --fl=-1   --fsc_adj
+           sxprocess.py  --combinemaps  vol_0_unfil.hdf vol_1_unfil.hdf  --output_dir=outdir_sharpen  --pixel_size=1.12  --mask=mask3d.hdf   --mtf=aa.txt  --fl=4.7  --aa=0.02 --fsc_adj
+           sxprocess.py  --combinemaps  vol_0_unfil.hdf vol_1_unfil.hdf  --output_dir=outdir_sharpen  --output=spharpen_fullset_vol3d.hdf  --pixel_size=1.12  --do_adaptive_mask  --mtf=mtf.txt  --fl=3.9  --aa=0.01  --B_enhance=280
 
-	 for 2-D images:       calculate B-factor and apply negative B-factor to 2-D images.
-		
+       (2) Cluster Volumes Mode
+           For cluster volumes produced by SORT3D_DEPTH, this command executes the following processes:
+           a. Apply mask
+           b. Apply MTF correction (optional);
+           c. Apply negative B-factor to enhance the volume using user-provided ad-hoc value (optional);
+           d. Apply low-pass filter to the volume using user-provided ad-hoc value (optional)
+           options are independent of each others.
+           --do_adaptive_mask : =True when it is restored, the program adaptively creates adaptive mask file using each cluster volume. This takes a couple of minutes. For map with dimension of 384*384*384, it takes 6 minutes.
+           --mtf              : For those high resolution maps, mtf correction would significantly enhance structural features.
+           --B_enhance        : >0.0, program uses the given value to enhance map; =-1.0, B-factor is not applied.
+           --fl               : >=0.5, low-pass filter to the given Angstrom; >0.0 AND <=0.5, low-pass filter to the given absolute frequency; =-1.0, no low-pass filter.
+           
+           sxprocess.py  --combinemaps  vol_cluster*.hdf    --output_dir=outdir_sharpen_cluster  --output=spharpen_cluster_vol3d.hdf  --pixel_size=1.12  --do_adaptive_mask  --mtf=mtf.txt  --fl=3.9  --aa=0.01  --B_enhance=280
+           sxprocess.py  --combinemaps  vol_cluster000.hdf  --output_dir=outdir_sharpen_cluster  --output=spharpen_cluster_vol3d.hdf  --pixel_size=1.12  --do_adaptive_mask  --mtf=mtf.txt  --fl=3.9  --aa=0.01  --B_enhance=280
+
+       (3) Images Mode - for 2D images
+           Calculate B-factor and apply negative B-factor to 2D images.
+
    15. Window stack file --window out central area of images.
         sxprocess.py input.hdf output.hdf --box=new_box_size
 
@@ -324,86 +338,86 @@ def main():
 """
 
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--order", 				action="store_true", help="Two arguments are required: name of input stack and desired name of output stack. The output stack is the input stack sorted by similarity in terms of cross-correlation coefficent.", default=False)
-	parser.add_option("--order_lookup", 		action="store_true", help="Test/Debug.", default=False)
-	parser.add_option("--order_metropolis", 	action="store_true", help="Test/Debug.", default=False)
-	parser.add_option("--order_pca", 			action="store_true", help="Test/Debug.", default=False)
-	parser.add_option("--initial",				type="int", 		default=-1, help="Specifies which image will be used as an initial seed to form the chain. (default = 0, means the first image)")
-	parser.add_option("--circular", 			action="store_true", help="Select circular ordering (fisr image has to be similar to the last", default=False)
-	parser.add_option("--radius", 				type="int", 		default=-1, help="Radius of a circular mask for similarity based ordering")
-	parser.add_option("--ratio",                            type="float",           default=1.0, help="The ratio of new to old image size (if <1 the pixel size will increase and image size decrease, if>1, the other way round")
-	parser.add_option("--changesize", 			action="store_true", help="resample (decimate or interpolate up) images (2D or 3D) in a stack to change the pixel size.", default=False)
-	parser.add_option("--pw", 					action="store_true", help="compute average power spectrum of a stack of 2-D images with optional padding (option wn) with zeroes", default=False)
-	parser.add_option("--wn", 					type="int", 		default=-1, help="Size of window to use (should be larger/equal than particle box size, default padding to max(nx,ny))")
-	parser.add_option("--phase_flip", 			action="store_true", help="Phase flip the input stack", default=False)
-	parser.add_option("--makedb", 				metavar="param1=value1:param2=value2", type="string",
+	parser.add_option("--order",                action="store_true", default=False,                  help="Two arguments are required: name of input stack and desired name of output stack. The output stack is the input stack sorted by similarity in terms of cross-correlation coefficent.")
+	parser.add_option("--order_lookup",         action="store_true", default=False,                  help="Test/Debug.")
+	parser.add_option("--order_metropolis",     action="store_true", default=False,                  help="Test/Debug.")
+	parser.add_option("--order_pca",            action="store_true", default=False,                  help="Test/Debug.")
+	parser.add_option("--initial",              type="int",          default=-1,                     help="Specifies which image will be used as an initial seed to form the chain. (default -1; means the first image)")
+	parser.add_option("--circular",             action="store_true", default=False,                  help="Select circular ordering (fisr image has to be similar to the last")
+	parser.add_option("--radius",               type="int",          default=-1,                     help="Radius of a circular mask for similarity based ordering")
+	parser.add_option("--ratio",                type="float",        default=1.0,                    help="The ratio of new to old image size (if <1 the pixel size will increase and image size decrease, if>1, the other way round")
+	parser.add_option("--changesize",           action="store_true", default=False,                  help="resample (decimate or interpolate up) images (2D or 3D) in a stack to change the pixel size.")
+	parser.add_option("--pw",                   action="store_true", default=False,                  help="compute average power spectrum of a stack of 2-D images with optional padding (option wn) with zeroes")
+	parser.add_option("--wn",                   type="int",          default=-1,                     help="Size of window to use (should be larger/equal than particle box size, default padding to max(nx,ny))")
+	parser.add_option("--phase_flip",           action="store_true", default=False,                  help="Phase flip the input stack")
+	parser.add_option("--makedb",               metavar="param1=value1:param2=value2", type="string",
 					action="append",  help="One argument is required: name of key with which the database will be created. Fill in database with parameters specified as follows: --makedb param1=value1:param2=value2, e.g. 'gauss_width'=1.0:'pixel_input'=5.2:'pixel_output'=5.2:'thr_low'=1.0")
 	parser.add_option("--generate_projections", metavar="param1=value1:param2=value2", type="string",
-					action="append", help="Three arguments are required: name of input structure from which to generate projections, desired name of output projection stack, and desired prefix for micrographs (e.g. if prefix is 'mic', then micrographs mic0.hdf, mic1.hdf etc will be generated). Optional arguments specifying format, apix, box size and whether to add CTF effects can be entered as follows after --generate_projections: format='bdb':apix=5.2:CTF=True:boxsize=100, or format='hdf', etc., where format is bdb or hdf, apix (pixel size) is a float, CTF is True or False, and boxsize denotes the dimension of the box (assumed to be a square). If an optional parameter is not specified, it will default as follows: format='bdb', apix=2.5, CTF=False, boxsize=64.")
-	parser.add_option("--isacgroup", 			type="int", 		        help="Retrieve original image numbers in the selected ISAC group. See ISAC documentation for details.", default=-1)
-	parser.add_option("--isacselect", 			action="store_true", 		help="Retrieve original image numbers of images listed in ISAC output stack of averages. See ISAC documentation for details.", default=False)
-	parser.add_option("--params",	   			type="string",              default=None,    help="Name of header of parameter, which one depends on specific option")
-	parser.add_option("--adjpw", 				action="store_true",	    help="Adjust rotationally averaged power spectrum of an image", default=False)
-	parser.add_option("--rotpw", 				type="string",   	        default=None,    help="Name of the text file to contain rotationally averaged power spectrum of the input image.")
-	parser.add_option("--transformparams",		type="string",   	        default=None,    help="Transform 3D projection orientation parameters using six 3D parameters (phi, theta,psi,sx,sy,sz).  Input: --transformparams=45.,66.,12.,-2,3,-5.5 desired six transformation of the reconstructed structure. Output: file with modified orientation parameters.")
-
-
-	# import ctf estimates done using cter
-	parser.add_option("--input",              	type="string",		default= None,     		  help="Input particles.")
-	parser.add_option("--importctf",          	type="string",		default= None,     		  help="Name of the file containing CTF parameters produced by sxcter.")
-	parser.add_option("--defocuserror",       	type="float",  		default=1000000.0,        help="Exclude micrographs whose relative defocus error as estimated by sxcter is larger than defocuserror percent.  The error is computed as (std dev defocus)/defocus*100%")
-	parser.add_option("--astigmatismerror",   	type="float",  		default=360.0,            help="Set to zero astigmatism for micrographs whose astigmatism angular error as estimated by sxcter is larger than astigmatismerror degrees.")
+					action="append",  help="Three arguments are required: name of input structure from which to generate projections, desired name of output projection stack, and desired prefix for micrographs (e.g. if prefix is 'mic', then micrographs mic0.hdf, mic1.hdf etc will be generated). Optional arguments specifying format, apix, box size and whether to add CTF effects can be entered as follows after --generate_projections: format='bdb':apix=5.2:CTF=True:boxsize=100, or format='hdf', etc., where format is bdb or hdf, apix (pixel size) is a float, CTF is True or False, and boxsize denotes the dimension of the box (assumed to be a square). If an optional parameter is not specified, it will default as follows: format='bdb', apix=2.5, CTF=False, boxsize=64.")
+	parser.add_option("--isacgroup",            type="int",          default=-1,                     help="Retrieve original image numbers in the selected ISAC group. See ISAC documentation for details.")
+	parser.add_option("--isacselect",           action="store_true", default=False,                  help="Retrieve original image numbers of images listed in ISAC output stack of averages. See ISAC documentation for details.")
+	parser.add_option("--params",               type="string",       default=None,                   help="Name of header of parameter, which one depends on specific option")
+	parser.add_option("--adjpw",                action="store_true", default=False,                  help="Adjust rotationally averaged power spectrum of an image")
+	parser.add_option("--rotpw",                type="string",       default=None,                   help="Name of the text file to contain rotationally averaged power spectrum of the input image.")
+	parser.add_option("--transformparams",      type="string",       default=None,                   help="Transform 3D projection orientation parameters using six 3D parameters (phi, theta,psi,sx,sy,sz).  Input: --transformparams=45.,66.,12.,-2,3,-5.5 desired six transformation of the reconstructed structure. Output: file with modified orientation parameters.")
 
 	# import ctf estimates done using cter
-	parser.add_option("--scale",              	type="float", 		default=-1.0,      		  help="Divide shifts in the input 3D orientation parameters text file by the scale factor.")
+	parser.add_option("--input",                type="string",       default=None,                   help="Input particles.")
+	parser.add_option("--importctf",            type="string",       default=None,                   help="Name of the file containing CTF parameters produced by sxcter.")
+	parser.add_option("--defocuserror",         type="float",        default=1000000.0,              help="Exclude micrographs whose relative defocus error as estimated by sxcter is larger than defocuserror percent.  The error is computed as (std dev defocus)/defocus*100%")
+	parser.add_option("--astigmatismerror",     type="float",        default=360.0,                  help="Set to zero astigmatism for micrographs whose astigmatism angular error as estimated by sxcter is larger than astigmatismerror degrees.")
+
+	# import ctf estimates done using cter
+	parser.add_option("--scale",                type="float",        default=-1.0,                   help="Divide shifts in the input 3D orientation parameters text file by the scale factor.")
 
 	# Generate soft-edged 3D mask from input 3D volume and Generate binarized version of input 3D volume
-	parser.add_option("--adaptive_mask",        action="store_true",                      help="generate soft-edged 3D mask from input 3D volume", default= False)
-	parser.add_option("--nsigma",               type="float",        default= 1.0,        help="number of times of sigma of the input volume to intially obtain the largest density cluster")
-	parser.add_option("--threshold",            type="float",        default= -9999.0,    help="threshold provided by user to intially obtain the largest density cluster")
-	parser.add_option("--ndilation",            type="int",          default= 3,          help="number of times of dilation applied to the largest cluster of density")
-	parser.add_option("--kernel_size",          type="int",          default= 11,         help="convolution kernel for smoothing the edge of the mask")
-	parser.add_option("--gauss_standard_dev",   type="int",          default= 9,          help="stanadard deviation value to generate Gaussian edge")
+	parser.add_option("--adaptive_mask",        action="store_true", default=False,                  help="generate soft-edged 3D mask from input 3D volume")
+	parser.add_option("--nsigma",               type="float",        default=1.0,                    help="number of times of sigma of the input volume to intially obtain the largest density cluster")
+	parser.add_option("--threshold",            type="float",        default=-9999.0,                help="threshold provided by user to intially obtain the largest density cluster")
+	parser.add_option("--ndilation",            type="int",          default=3,                      help="number of times of dilation applied to the largest cluster of density")
+	parser.add_option("--kernel_size",          type="int",          default=11,                     help="convolution kernel for smoothing the edge of the mask")
+	parser.add_option("--gauss_standard_dev",   type="int",          default=9,                      help="stanadard deviation value to generate Gaussian edge")
 	
 	# Generate soft-edged 3D mask from input 3D volume and Generate binarized version of input 3D volume
-	parser.add_option("--binary_mask",          action="store_true",                      help="generate binary 3D mask from input 3D volume", default=False)
-	parser.add_option("--bin_threshold",        type="float",        default= 0.0,        help="threshold provided by user to binarize input volume")
-	parser.add_option("--ne",                   type="int",          default= 0,          help="number of times to erode binarized volume")
-	parser.add_option("--nd",                   type="int",          default= 0,          help="number of times to dilate binarized volume")
+	parser.add_option("--binary_mask",          action="store_true", default=False,                  help="generate binary 3D mask from input 3D volume")
+	parser.add_option("--bin_threshold",        type="float",        default=0.0,                    help="threshold provided by user to binarize input volume")
+	parser.add_option("--ne",                   type="int",          default=0,                      help="number of times to erode binarized volume")
+	parser.add_option("--nd",                   type="int",          default=0,                      help="number of times to dilate binarized volume")
 
 	# Postprocess 3-D  
-	parser.add_option("--combinemaps",          action="store_true",                      help="flag to turn on combining unfiltered odd, even 3-D volumes",default=False)
-	parser.add_option("--mtf",                  type="string",        default= None,      help="entry for mtf text file of camera")
-	parser.add_option("--fsc_adj",              action="store_true",                      help="flag to turn on power spectrum adjustment of summed volume by their FSC", default=False)
-	parser.add_option("--B_enhance",            type="float",         default=0.0,        help="apply Bfactor (!=-1.)to enhance map or not (=-1)")
-	parser.add_option("--fl",                   type="float",         default=0.0,        help="=0.0, low_pass filter to resolution limit; =some value, low_pass filter to some valume; =-1, not low_pass filter applied")
-	parser.add_option("--aa",                   type="float",         default=.01,        help="low pass filter falloff" )
-	parser.add_option("--mask",                 type="string",        help="path for input mask file",   default = None)
-	parser.add_option("--output",               type="string",        help="output file name",           default = "vol_combined.hdf")
-	parser.add_option("--output_dir",           type="string",        help="combinemaps directory name", default = "./")
-	parser.add_option("--pixel_size",           type="float",         help="pixel size of the data",     default=0.0)
-	parser.add_option("--B_start",              type="float",         help="starting frequency in Angstrom for B-factor estimation", default=10.)
-	parser.add_option("--B_stop",               type="float",         help="cutoff frequency in Angstrom for B-factor estimation. recommended to set cutoff to the frequency where fsc < 0.0. by default, the program uses Nyquist frequency.", default=0.0)
-	parser.add_option("--do_adaptive_mask",     action="store_true",  help="generate adaptive mask with the given threshold ", default= False)
-	parser.add_option("--mask_threshold",       type="float",         help=" the threshold for adaptive_mask", default= 0.02)
-	parser.add_option("--consine_edge", 	    type="float",		  help="the width for cosine transition area ", default= 6.0)
-	parser.add_option("--dilation", 			type="float",		  help="the pixels for dilate or erosion of binary mask ", default= 3.0)
-	#parser.add_option("--randomphasesafter", 	type="float",		  help=" set Fourier pixels random phases after FSC value ", default= 0.8)
+	parser.add_option("--combinemaps",          action="store_true",  default=False,                 help="flag to enhance the power spectrum of volumes or images. Available modes are (1) Halfset Volumes Mode, (2) Cluster Volumes Mode,and (3) Images Mode")
+	parser.add_option("--mtf",                  type="string",        default=None,                  help="entry for mtf text file of camera")
+	parser.add_option("--fsc_adj",              action="store_true",  default=False,                 help="flag to turn on power spectrum adjustment of summed volume by their FSC (effective only in Halfset Volumes Mode)")
+	parser.add_option("--B_enhance",            type="float",         default=0.0,                   help="=0.0, apply Bfactor to enhance map with automatic estimation (valid only in Halfset Volumes Mode); >=0.0, with ad-hoc value; =-1.0, not enhance at all")
+	parser.add_option("--fl",                   type="float",         default=0.0,                   help="=0.0, low-pass filter to resolution limit; =some value, low-pass filter to some valume; =-1, not low-pass filter applied")
+	parser.add_option("--aa",                   type="float",         default=0.01,                  help="low pass filter falloff (effective only when --fl option is not -1.0)" )
+	parser.add_option("--mask",                 type="string",        default=None,                  help="path for input mask file")
+	parser.add_option("--output",               type="string",        default="vol_combined.hdf",    help="output file name")
+	parser.add_option("--output_dir",           type="string",        default="./",                  help="output directory name")
+	parser.add_option("--pixel_size",           type="float",         default=0.0,                   help="pixel size of the data")
+	parser.add_option("--B_start",              type="float",         default=10.0,                  help="starting frequency in Angstrom for B-factor estimation (effective only in Halfset Volumes Mode with --B_enhance=0.0)")
+	parser.add_option("--B_stop",               type="float",         default=0.0,                   help="cutoff frequency in Angstrom for B-factor estimation. recommended to set cutoff to the frequency where fsc < 0.0. by default, the program uses Nyquist frequency. (effective only in Halfset Volumes Mode with --B_enhance=0.0)")
+	parser.add_option("--do_adaptive_mask",     action="store_true",  default=False,                 help="generate adaptive mask with the given threshold")
+	parser.add_option("--mask_threshold",       type="float",         default=0.02,                  help="the threshold for adaptive_mask (effective only with --do_adaptive_mask)")
+	parser.add_option("--consine_edge",         type="float",         default=6.0,                   help="the width for cosine transition area (effective only with --do_adaptive_mask)")
+	parser.add_option("--dilation",             type="float",         default=3.0,                   help="the pixels for dilate or erosion of binary mask (effective only with --do_adaptive_mask)")
+	#parser.add_option("--randomphasesafter",   type="float",         default=0.8,                   help=" set Fourier pixels random phases after FSC value ")
 	# window
-	parser.add_option("--window_stack",         action="store_true",                      help="window stack images using a smaller window size", default=False)
-	parser.add_option("--box",                  type="int",		      default= 0,         help="the new window size ")
+	parser.add_option("--window_stack",         action="store_true",  default=False,                 help="window stack images using a smaller window size")
+	parser.add_option("--box",                  type="int",           default=0,                     help="the new window size ")
 	
 	# pad
-	parser.add_option("--pad",                  action="store_true",                      help="pad stack images to a larger window size and set the surrounding background (by default to 0.0)", default=False)
-	parser.add_option("--background",           type="float",		  default= 0.0,       help="value the surrounding area will be set to")
+	parser.add_option("--pad",                  action="store_true",  default=False,                 help="pad stack images to a larger window size and set the surrounding background (by default to 0.0)")
+	parser.add_option("--background",           type="float",		  default=0.0,                   help="value the surrounding area will be set to")
 	
 	# Options for angular distribution
-	parser.add_option('--angular_distribution',    	action="store_true",  	default=False,        	help='create an angular distribution file based on a project3d.txt')
-	parser.add_option('--round_digit',             	type='int',          	default=5,           	help='accuracy of the loaded angle (default 5)')
-	parser.add_option('--box_size',                	type='int',          	default=500,         	help='box size in pixel used for calculating the center of the particle [px] (default 500)')
-	parser.add_option('--particle_radius',     		type='int',          	default=175,         	help='particle radius [Pixels] (default 175)')
-	parser.add_option('--cylinder_width',      		type='int',          	default=1,           	help='width of the cylinder (default 1)')
-	parser.add_option('--cylinder_length',     		type='int',          	default=10000,       	help='length of the cylinder (default 10000)')
+	parser.add_option('--angular_distribution', action="store_true",  default=False,                 help='create an angular distribution file based on a project3d.txt')
+	parser.add_option('--round_digit',          type='int',           default=5,                     help='accuracy of the loaded angle (default 5)')
+	parser.add_option('--box_size',             type='int',           default=500,                   help='box size in pixel used for calculating the center of the particle [px] (default 500)')
+	parser.add_option('--particle_radius',      type='int',           default=175,                   help='particle radius [Pixels] (default 175)')
+	parser.add_option('--cylinder_width',       type='int',           default=1,                     help='width of the cylinder (default 1)')
+	parser.add_option('--cylinder_length',      type='int',           default=10000,                 help='length of the cylinder (default 10000)')
+	
 	(options, args) = parser.parse_args()
 
 	global_def.BATCH = True
@@ -952,7 +966,7 @@ def main():
 		print_msg ="--------------------------------------------"
 		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		log_main.add(print_msg)
-		print_msg="------->>>sphire combinemaps<<<-------"
+		print_msg="------->>> sphire combinemaps <<<-------"
 		log_main.add(print_msg)
 		from utilities    	import get_im, write_text_file, read_text_file
 		from fundamentals 	import rot_avg_table, fft
@@ -960,17 +974,45 @@ def main():
 		from statistics   	import fsc, pearson
 		from filter       	import filt_table, filt_gaussinv, filt_tanl
 		from EMAN2 			import periodogram
-		if len(args)<1 or len(args)>2:
-			ERROR("the number of inputs is incorrect", " --combinemaps option")
+		
+		nargs = len(args)
+		if nargs < 1:
+			ERROR("too few inputs", " --combinemaps option")
 			exit()
-		if options.pixel_size ==0:
-			ERROR("set pixel_size value first! There is no default value for pixel_size", " --combinemaps option")
+		if options.pixel_size <= 0.0:
+			ERROR("set a valid value to pixel_size first! There is no default value for pixel_size", " --combinemaps option")
 			exit()
+		
+		input_path_list = []
+		suffix_patten = None
+		map1_basename_tokens = None
+		cluster_id_substr_head_idx = None
+		if nargs == 1: # 2D case, 3D single map case, or 3D single maps case
+			if args[0].find("*") != -1: # 3D single maps case
+				import glob
+				input_path_list = glob.glob(args[0])
+				# Check error condition of input file path list
+				if len(input_path_list) == 0:
+					ERROR("no input files are found with the provided path pattern %s"%(args[0]), "--combinemaps option for 3-D", 1)
+				# Prepare variables for the loop section below
+				# Get prefix and suffix in cluster volume basename pattern 
+				# to find the head/tail indices of cluster id substring
+				map1_basename_tokens = args[0].split('*')
+				# assert (len(map1_basename_tokens) == 2)
+				# Find head index of cluster id substring
+				cluster_id_substr_head_idx = len(map1_basename_tokens[0])
+				suffix_patten = "_cluster*"
+			else: # 2D case or 3D single map case
+				input_path_list.append(args[0])
+		else: # 3D two maps case
+			input_path_list.append(args[0])
+		
 		try:
-			e1   = get_im(args[0],0)
+			e1 = get_im(input_path_list[0],0)
 		except:
-			ERROR(args[0]+" does not exist", " --combinemaps option")
+			ERROR(input_path_list[0]+" does not exist", " --combinemaps option")
 			exit()
+		
 		nx = e1.get_xsize()
 		ny = e1.get_ysize()
 		nz = e1.get_zsize()
@@ -979,18 +1021,20 @@ def main():
 		for a in sys.argv:
 			line +=" "+a
 		log_main.add(line)
-		if e1.get_zsize() == 1:  # 2D case	
-			log_main.add("-------->>>Settings given by all options<<<-------")
-			log_main.add("pixle_size  		:"+str(options.pixel_size))
-			log_main.add("mask        		:"+str(options.mask))
-			log_main.add("B_enhance   		:"+str(options.B_enhance))
-			log_main.add("low_pass_filter  	:"+str(options.fl))
-			log_main.add("B_start  		:"+str(options.B_start))
-			log_main.add("B_stop   		:"+str(options.B_stop))
-			log_main.add("randomphasesafter    "+str(options.randomphasesafter))
-			log_main.add("------------>>>processing<<<-----------------------")		
+		if e1.get_zsize() == 1:  # 2D case
+			log_main.add("-------->>> Settings given by all options <<<-------")
+			log_main.add("pixle_size        :"+str(options.pixel_size))
+			log_main.add("mask              :"+str(options.mask))
+			log_main.add("B_enhance         :"+str(options.B_enhance))
+			log_main.add("low_pass_filter   :"+str(options.fl))
+			log_main.add("B_start           :"+str(options.B_start))
+			log_main.add("B_stop            :"+str(options.B_stop))
+			# log_main.add("randomphasesafter "+str(options.randomphasesafter))
+			log_main.add("------------>>> processing <<<-----------------------")
 			log_main.add("2-D combinemaps for ISAC averaged images")
-			nimage = EMUtil.get_image_count(args[0])
+			if nargs > 1: ERROR("too many inputs!", "--combinemaps option for 2-D", 1)
+			else: ERROR("incorrected number of inputs", "--combinemaps option for 2-D", 1) # This should be unreachable
+			nimage = EMUtil.get_image_count(input_path_list[0])
 			if options.mask !=None:
 				try:
 					m = get_im(options.mask)
@@ -1003,7 +1047,7 @@ def main():
 				log_main.add("mask is not used")
 			log_main.add("total number of average images is %d"%nimage)
 			for i in xrange(nimage):
-				e1 = get_im(args[0],i)
+				e1 = get_im(input_path_list[0],i)
 				if m: e1 *=m
 				if options.B_enhance ==0.0 or options.B_enhance == -1.:
 					guinierline = rot_avg_table(power(periodogram(e1),.5))
@@ -1029,498 +1073,531 @@ def main():
 				e1.write_image(options.output)
 
 		else: # 3D case High pass filter should always come along with low-pass filter. 
-			log_main.add("-------->>>settings given by all options<<<-------")
-			log_main.add("pixle_size  		:"+str(options.pixel_size))
-			log_main.add("mask        		:"+str(options.mask))
-			log_main.add("fsc_adj     		:"+str(options.fsc_adj))
-			log_main.add("B_enhance   		:"+str(options.B_enhance))
-			log_main.add("low_pass_filter  	:"+str(options.fl))
-			log_main.add("aa        		:"+str(options.aa))
-			log_main.add("B_start  		:"+str(options.B_start))
-			log_main.add("B_stop   		:"+str(options.B_stop))
-			log_main.add("mtf     			:"+str(options.mtf))
-			log_main.add("output  			:"+str(options.output))
-			log_main.add("do_adaptive_mask  	:"+str(options.do_adaptive_mask))
-			log_main.add("cosine_edge    		:"+str(options.consine_edge))
-			log_main.add("dilation    		:"+str(options.dilation))			
-			#log_main.add("randomphasesafter        :"+str(options.randomphasesafter))
-			log_main.add("------------->>>processing<<<-----------------------")		
-			log_main.add("3-D refinement combinemaps ")
-			nargs     = len(args)
-			if nargs >=3: ERROR("too many inputs!", "--combinemaps option for 3-D", 1)
-			elif nargs ==1: log_main.add("combinemaps enhances single map")
-			elif nargs ==2: log_main.add("combinemaps enhances odd and even map")
-			else: ERROR("incorrected number of inputs", "--combinemaps option for 3-D", 1)
-
-			log_main.add("the first input volume: %s"%args[0])
-			try: map1    = get_im(args[0])
-			except:
-				ERROR("sphire combinemaps fails to read the first map " + args[0], "--combinemaps option for 3-D")
-				exit()
-			try:    log_main.add("the second input volume: %s"%args[1])
-			except: log_main.add("No second input volume")
-
-			try: 
-				map2       = get_im(args[1])
+			log_main.add("-------->>> settings given by all options <<<-------")
+			log_main.add("pixle_size        :"+str(options.pixel_size))
+			log_main.add("mask              :"+str(options.mask))
+			log_main.add("fsc_adj           :"+str(options.fsc_adj))
+			log_main.add("B_enhance         :"+str(options.B_enhance))
+			log_main.add("low_pass_filter   :"+str(options.fl))
+			log_main.add("aa                :"+str(options.aa))
+			log_main.add("B_start           :"+str(options.B_start))
+			log_main.add("B_stop            :"+str(options.B_stop))
+			log_main.add("mtf               :"+str(options.mtf))
+			log_main.add("output            :"+str(options.output))
+			log_main.add("do_adaptive_mask  :"+str(options.do_adaptive_mask))
+			log_main.add("cosine_edge       :"+str(options.consine_edge))
+			log_main.add("dilation          :"+str(options.dilation))
+			# log_main.add("randomphasesafter :"+str(options.randomphasesafter))
+			log_main.add("------------->>> processing <<<-----------------------")
+			log_main.add("3-D refinement combinemaps")
+			single_map = True
+			map2_path = None
+			if nargs ==1: # 3D single map case or 3D single maps case
+				log_main.add("combinemaps enhances single map")
+				# Check error condition of input 3D density map file path list
+				if options.fl == 0.0: 
+					ERROR("low-pass filter to resolution (--fl=0.0) cannot be used with cluster volumes mode", "--combinemaps option for 3-D", 1)
+				if options.B_enhance == 0.0: 
+					ERROR("automatic B-factor estimation (--B_enhance=0.0) cannot be used with cluster volumes mode", "--combinemaps option for 3-D", 1)
+				if len(input_path_list) > 1:
+					log_main.add("using 3D density map path pattern (found %d files in %s)"%(len(input_path_list), os.path.dirname(args[0])))
+				else:
+					log_main.add("using a single file path")
+			elif nargs ==2:  # 3D two maps case
+				log_main.add("combinemaps enhances odd and even map")
 				single_map = False
-			except: single_map = True
-			if not single_map:
-				if (map2.get_xsize() != map1.get_xsize()) or (map2.get_ysize() != map1.get_ysize()) or (map2.get_zsize() != map1.get_zsize()):
-					ERROR(" two input maps have different image size", "--combinemaps option for 3-D", 1)
-			filter_to_resolution =  False
-			### enforce low-pass filter
-			if options.B_enhance !=-1:
-				if not options.fsc_adj:
-					if options.fl == -1.0: 
-						filter_to_resolution = True
-						msg = "low_pass filter is enforeced to turn on"
-					else:
-						msg = "user chooses low_pass filter  %f"%options.fl
-				else:
-					msg = "fsc_adj options works as a low_pass filter"
-				log_main.add(msg)
-
-			## prepare mask 
-			if options.mask != None and options.do_adaptive_mask:
-				ERROR("wrong options, use either adaptive_mask or user provided mask", " options.mask and options.do_adaptive_mask ", 1)
-
-			if options.mask != None:
-				log_main.add("user provided mask: %s"%options.mask)
-				try: m = get_im(options.mask)
-				except:
-					ERROR("sphire combinemaps fails to read mask file " + options.mask, "--combinemaps option for 3-D")
-					exit()
-				if (m.get_xsize() != map1.get_xsize()) or (m.get_ysize() != map1.get_ysize()) or (m.get_zsize() != map1.get_zsize()):
-					ERROR(" mask file  "+options.mask+" has different size with input image  ", "--combinemaps for mask "+options.mask), 1
-
-			elif options.do_adaptive_mask:
-				if not single_map:
-					map1 +=map2
-					map1 /=2.
-					del map2
-				log_main.add("create an adaptive mask, let's wait...")
-				log_main.add("options.mask_threshold, options.dilation, options.consine_edge %f %5.2f %5.2f"%(options.mask_threshold, options.dilation, options.consine_edge))
-				m = Util.adaptive_mask(map1, options.mask_threshold, options.dilation, options.consine_edge)
-				m.write_image(os.path.join(options.output_dir, "vol_adaptive_mask.hdf"))
-				map1 = get_im(args[0]) # re-read map1
-			else:
-				m = None
-				log_main.add("no mask is applied")
-			## prepare FSC
-			from math import sqrt
-			resolution_FSC143   = 0.5 # for single volume, this is the default resolution
-			resolution_FSChalf  = 0.5
-
-			def filter_product(B_factor, pixel_size, cutoff, aa, image_size):
-				from math import sqrt
-				def gauss_inverse(x, sigma):
-					from math import exp
-					omega = 0.5/(sigma*sigma)
-					return exp(x*omega)
-				def tanhfl(x, cutoff, aa):
-					from math import pi, tanh
-					omega = cutoff
-					cnst  = pi/(2.0*omega*aa)
-					v1    = (cnst*(x + omega))
-					v2    = (cnst*(x - omega))
-					return 0.5*(tanh(v1) - tanh(v2))
-				from math import pi
-				N = image_size//2
-				sigma_of_inverse = sqrt(2./(B_factor/pixel_size**2))
-				values = []
-				if cutoff >0.5: cutoff = pixel_size/cutoff # always uses absolute frequencies
-				for i in xrange(N):
-					x = float(i)/float(N*2.)
-					values.append(tanhfl(x, cutoff, aa)*gauss_inverse(x, sigma_of_inverse))
-				index_zero = N+1
-				for i in xrange(N):
-					if values[i]== 0.0:
-						index_zero = i
-						break
-				#print("current fall off", (index_zero - cutoff*N*2))
-				return values, values.index(max(values)), max(values), index_zero, int(index_zero - values.index(max(values)))
-
-			def calculate_fsc_criterion(fsc, criterion):
-				"""
-				Calculate the fsc for the specified criterion
-				"""
-				resolution_left = fsc[0][len(fsc[1])-1]
-				idx_crit_left = len(fsc[1])-1
-				for ifreq in xrange(1, len(fsc[1])):
-					if fsc[1][ifreq] < criterion:
-						resolution_left = fsc[0][ifreq-1]
-						idx_crit_left = ifreq - 1
-						break
-				resolution_right = fsc[0][1]
-				idx_crit_right = 1
-				for ifreq in reversed(xrange(1, len(fsc[1]))):
-					if fsc[1][ifreq] >= 0.143:
-						resolution_right = fsc[0][ifreq]
-						idx_crit_right = ifreq
-						break
-				return resolution_left, resolution_right, idx_crit_left, idx_crit_right
-
-			def scale_fsc(x):
-				"""
-				Scale funtion to adjust the FSC to the full dataset
-				"""
-				return 2. * x / (1 + x)
-
-			def create_fsc_txt(output_dir, fsc, resolution, name):
-				"""
-				Create a text file based on the fsc
-				"""
-				fsc_out = []
-				for ifreq, value in enumerate(fsc[1]):
-					fsc_out.append("%5d   %7.2f   %7.3f"%(
-						ifreq,
-						resolution[ifreq],
-						value
-						))
-				write_text_file(
-					fsc_out,
-					os.path.join(
-						output_dir,
-						'{0}.txt'.format(name)
-						)
-					)
-
-			def adjust_zeros(value):
-				"""
-				Adjust zero values to 0.0001 to avoid DivisionByZero errors
-				"""
-				assert isinstance(value, (float, int))
-				if value == 0.0:
-					value = 0.0001
-				else:
-					pass
-				return value
-
-			def freq_to_angstrom(values, pixel_size):
-				"""
-				Convert spatial frequency to angstrom
-				"""
-				if isinstance(values, list):
-					pass
-				else:
-					values = [values]
-				adjust_values = [adjust_zeros(entry) for entry in values]
-				spatial = [1/float(entry) for entry in adjust_values]
-				angstrom = [pixel_size * entry for entry in spatial]
-				return angstrom
-			### for two maps
-			dip_at_fsc = False
-			if not single_map:
-				# Plot FSC curves and write output fsc files
-				import matplotlib
-				matplotlib.use('Agg')
-				import matplotlib.pylab as plt
-				plt.rcParams['font.family'] = 'monospace'
-				title = []
-
-				# Output curves lists
-				plot_curves = []
-				plot_names = []
-				plot_title = []
-
-				# Output curves
-				fsc_true = fsc(map1, map2, 1)
-				fsc_true[1][0] = 1.0  # always reset fsc of zero frequency as 1.0
-				plot_curves.append(fsc_true)
-				plot_names.append(r'FSC halves')
-				# map fsc obtained from two halves to full maps
-				plot_curves.append([fsc_true[0], map(scale_fsc, fsc_true[1])])
-				plot_names.append(r'FSC full')
-				if m is not None:
-					fsc_mask = fsc(map1*m, map2*m, 1)
-					fsc_mask[1][0] = 1.0  # always reset fsc of zero frequency as 1.0
-					plot_curves.append(fsc_mask)
-					plot_names.append(r'FSC masked halves')
-					# map fsc obtained from masked two halves to full maps
-					plot_curves.append([fsc_mask[0], map(scale_fsc, fsc_mask[1])])
-					plot_names.append(r'FSC masked full')
-
-				resolution_in_angstrom = freq_to_angstrom(pixel_size=options.pixel_size, values=fsc_true[0])
-
-				# Create plot and write output file
-				minimum_fsc = 0
-				for fsc, name in zip(plot_curves, plot_names):
-					fsc[1][0] = 1
-					label = r'{0:18s}:  $0.5$: ${1}\AA$  |  $0.143$: ${2}\AA$'.format(
-						name,
-						round(
-							freq_to_angstrom(
-								pixel_size=options.pixel_size,
-								values=calculate_fsc_criterion(fsc, criterion=0.5)[0]
-								)[0],
-							1
-							),
-						round(
-							freq_to_angstrom(
-								pixel_size=options.pixel_size,
-								values=calculate_fsc_criterion(fsc, criterion=0.143)[1]
-								)[0],
-							1
-							),
-						)
-					plt.plot(fsc[0], fsc[1], label=label)
-					create_fsc_txt(
-						output_dir=options.output_dir,
-						fsc=fsc,
-						resolution=resolution_in_angstrom,
-						name=name.replace(' ', '_').lower()
-						)
-					if min(fsc[1]) < minimum_fsc:
-						minimum_fsc = min(fsc[1])
-				plt.axhline(0.143, 0, 1, color='k', alpha=0.3)
-				plt.axhline(0.5, 0, 1, color='k', alpha=0.3)
-
-				# Ticks
-				nyquist_resolution = resolution_in_angstrom[-1]
-				raw_x_ticks_ang = [int(round(options.pixel_size / float(entry), 0)) for entry in [0.1, 0.2, 0.3, 0.4, 0.5]]
-				x_ticks_ang = [r'$\frac{{1}}{{{0}}}$'.format(tick) for tick in raw_x_ticks_ang if tick > nyquist_resolution*1.03]
-				x_ticks_freq = [options.pixel_size/float(tick) for tick in raw_x_ticks_ang if tick > nyquist_resolution*1.03]
-				x_ticks_ang.insert(0, r'$0$')
-				x_ticks_freq.insert(0, 0)
-				x_ticks_ang.append(r'$\frac{{1}}{{{0}}}$'.format(round(nyquist_resolution, 2)))
-				x_ticks_freq.append(options.pixel_size/round(nyquist_resolution, 2))
-				plt.xticks(x_ticks_freq, x_ticks_ang, size='xx-large')
-				y_ticks = [-0.2, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
-				plt.yticks(y_ticks, [r'${0}$'.format(tick) for tick in y_ticks], size='large')
-
-				# Plot related settings
-				plt.legend(loc='lower left', bbox_to_anchor=(0, 1, 1, 0.2), mode='expand', frameon=False)
-				plt.text(0.005, 0.153, r'$0.143$', color='k', alpha=0.4)
-				plt.text(0.005, 0.51, r'$0.5$', color='k', alpha=0.4)
-				plt.xlabel(r'Spatial frequency / $\frac{1}{\AA}$')
-				plt.ylabel(r'FSC')
-				plt.ylim([minimum_fsc-0.05, 1.05])
-				plt.grid()
-				plt.tight_layout()
-				plt.savefig(os.path.join(options.output_dir, "fsc.png"), bbox_inches='tight')
-				plt.clf()
-
-				if m is not None: fsc_true = fsc_mask
-				""" 
-					# we abandon randomize phase strategy
-					frc_without_mask = fsc(map1, map2, 1)
-					randomize_at     = -1.0
-					for ifreq in xrange(1, len(frc_without_mask[1])): # always skip zero frequency
-						if frc_without_mask[1][ifreq] < options.randomphasesafter:
-							randomize_at = float(ifreq)
-							break
-					log_main.add("Phases are randomized after: %4.2f Angstrom"% (options.pixel_size/(randomize_at/map1.get_xsize())))
-					frc_masked = fsc(map1*m, map2*m, 1)
-					map1 = fft(Util.randomizedphasesafter(fft(map1), randomize_at))*m
-					map2 = fft(Util.randomizedphasesafter(fft(map2), randomize_at))*m
-					frc_random_masked = fsc(map1, map2, 1)
-					fsc_true          = [frc_without_mask[0], [None]*len(frc_without_mask[0])]
-					for i in xrange(len(fsc_true[1])):
-						if i < (int(randomize_at) + 2):# move two pixels up
-							fsc_true[1][i] = frc_masked[1][i]
-						else:
-							fsct = frc_masked[1][i]
-							fscn = frc_random_masked[1][i]
-							if (fscn > fsct): fsc_true[1][i]= 0.
-							else: fsc_true[1][i]=(fsct-fscn)/(1.-fscn)
-					else:
-				"""
-				log_main.add("adjust FSC to the full dataset by: 2.*FSC/(FSC+1.)")
-				fsc_true[1] = map(scale_fsc, fsc_true[1])
-
-				## Determine 05/143 resolution from corrected FSC, RH correction of FSC from masked volumes
-				resolution_FSC143_right  = 0.0
-				resolution_FSC143_left   = 0.0
-				#dip_at_fsc = False
-				nfreq0     = 1
-
-				for ifreq in xrange(1, len(fsc_true[1])):
-					if fsc_true[1][ifreq] < 0.0:
-						nfreq0  = ifreq - 1
-						break
-				if nfreq0 ==1: nfreq0= len(fsc_true[1]) - 1
-
-				nfreq05 = len(fsc_true[1])-1 		
-				for ifreq in xrange(1, len(fsc_true[1])):
-					if fsc_true[1][ifreq] < 0.5:
-						resolution_FSChalf = fsc_true[0][ifreq-1]
-						nfreq05 = ifreq-1
-						break
-
-				resolution_FSC143_left = fsc_true[0][len(fsc_true[1])-1]
-				for ifreq in xrange(nfreq05, len(fsc_true[1])):
-					if fsc_true[1][ifreq] < 0.143:
-						resolution_FSC143_left = fsc_true[0][ifreq-1]
-						nfreq143 = ifreq - 1
-						break
-
-				resolution_FSC143_right = fsc_true[0][nfreq05]
-				nfreq143_right = nfreq05
-				for ifreq in xrange(nfreq0, nfreq05, -1):
-					if fsc_true[1][ifreq] >= 0.143:
-						resolution_FSC143_right = fsc_true[0][ifreq]
-						nfreq143_right = ifreq
-						break
-
-				## output resolution
-				if resolution_FSC143_left != resolution_FSC143_right: log_main.add("there is a dip between 0.5 to 0.143 in FSC!")
-				else:log_main.add("fsc smoothly falls from 0.5 to 0.143 !")
-
-				resolution_FSC143 = resolution_FSC143_right
-				nfreq143 = nfreq143_right
-
-				for ifreq in xrange(len(fsc_true[0])): fsc_true[1][ifreq] = max(fsc_true[1][ifreq], 0.0)
-				## smooth FSC after FSC143 and set other values to zero
-				for ifreq in xrange(nfreq143+1, len(fsc_true[1])):
-					if ifreq ==nfreq143+1: fsc_true[1][ifreq] = (fsc_true[1][nfreq143-2] + fsc_true[1][nfreq143-1])/5.
-					elif ifreq ==nfreq143+2: fsc_true[1][ifreq] = (fsc_true[1][nfreq143-1])/5.
-					else:  fsc_true[1][ifreq] = 0.0
-				###
-				map1 = (get_im(args[0])+get_im(args[1]))/2.0
-				
-			outtext     = [["Squaredfreq"],[ "LogOrig"]]
-			guinierline = rot_avg_table(power(periodogram(map1),.5))
-			from math import log
-			for ig in xrange(len(guinierline)):
-				x = ig*.5/float(len(guinierline))/options.pixel_size
-				outtext[0].append("%10.6f"%(x*x))
-				outtext[1].append("%10.6f"%log(guinierline[ig]))
-					
-			# starts adjustment of powerspectrum
-			if options.mtf: # MTF division #1
-				log_main.add("MTF correction is applied")
-				log_main.add("MTF file is %s"%options.mtf)
-				try: mtf_core  = read_text_file(options.mtf, -1)
-				except: ERROR("Sphire combinemaps fails to read MTF file "+options.mtf, "--combinemaps option for 3-D", 1)
-				map1 = fft(Util.divide_mtf(fft(map1), mtf_core[1], mtf_core[0]))
-				outtext.append(["LogMTFdiv"])
-				guinierline   = rot_avg_table(power(periodogram(map1),.5))
-				for ig in xrange(len(guinierline)): outtext[-1].append("%10.6f"%log(guinierline[ig]))
-			else: log_main.add("MTF is not applied")
-
-			if options.fsc_adj and not single_map:# limit resolution #2
-				log_main.add("sqrt(FSC) is multiplied to adjust power spectrum of the summed volumes")
-				#log_main.add("Notice: FSC adjustment of powerspectrum will increase B-factor 2-3 times than not!")
-				#### FSC adjustment ((2.*fsc)/(1+fsc)) to the powerspectrum;
-				fil = len(fsc_true[1])*[None]
-				for i in xrange(len(fil)): fil[i] = sqrt(fsc_true[1][i]) # fsc already matched to full dataset
-				map1 = filt_table(map1,fil)
-				guinierline = rot_avg_table(power(periodogram(map1),.5))
-				outtext.append(["LogFSCadj"])
-				for ig in xrange(len(guinierline)):outtext[-1].append("%10.6f"%log(guinierline[ig]))
-			else: log_main.add("fsc_adj is not applied")
-
-			map1 = fft(map1)
-			if options.B_enhance !=-1: #3 One specifies and then apply B-factor sharpen
-				if options.B_enhance == 0.0: # auto mode
-					cutoff_by_fsc = 0
-					for ifreq in xrange(len(fsc_true[1])):
-						if fsc_true[1][ifreq]<0.143: break
-					cutoff_by_fsc = float(ifreq-1)
-					freq_max      = cutoff_by_fsc/(2.*len(fsc_true[0]))/options.pixel_size
-					guinierline    = rot_avg_table(power(periodogram(map1),.5))
-					logguinierline = []
-					for ig in xrange(len(guinierline)):logguinierline.append(log(guinierline[ig]))
-					freq_min = 1./options.B_start  # given frequencies in Angstrom unit, say, B_start is 10 Angstrom, or 15  Angstrom
-					if options.B_stop!=0.0: freq_max = 1./options.B_stop 
-					if freq_min>= freq_max:
-						log_main.add("your B_start is too high! Decrease it and rerun the program!")
-						ERROR("your B_start is too high! Decrease it and re-run the program!", "--combinemaps option", 1)
-					b, junk, ifreqmin, ifreqmax = compute_bfactor(guinierline, freq_min, freq_max, options.pixel_size)
-					global_b = 4.*b # Just a convention!
-					cc = pearson(junk[1],logguinierline)
-					log_main.add("similarity between the fitted line and 1-D rotationally average power spectrum within [%d, %d] is %5.3f"%(\
-					      ifreqmin, ifreqmax, pearson(junk[1][ifreqmin:ifreqmax],logguinierline[ifreqmin:ifreqmax])))
-					log_main.add("the slope is %6.2f Angstrom^2 "%(round(-b,2)))
-					sigma_of_inverse = sqrt(2./(global_b/options.pixel_size**2))
-					
-				else: # User provided value
-					#log_main.add( " apply user provided B-factor to enhance map!")
-					log_main.add("user provided B-factor is %6.2f Angstrom^2   "%options.B_enhance)
-					sigma_of_inverse = sqrt(2./((abs(options.B_enhance))/options.pixel_size**2))
-					global_b = options.B_enhance
-
-				map1 = (filt_gaussinv(map1, sigma_of_inverse))
-				guinierline = rot_avg_table(power(periodogram(map1),.5))
-				outtext.append([" LogBfacapplied"])
-				last_non_zero = -999.0
-				for ig in xrange(len(guinierline)):
-					if guinierline[ig]>0: 
-						outtext[-1].append("%10.6f"%log(guinierline[ig]))
-						last_non_zero = log(guinierline[ig])
-					else: outtext[-1].append("%10.6f"%last_non_zero)
-			else: log_main.add("B-factor enhancement is not applied to map!")
+				map2_path = args[1]
+			elif nargs >=3: 
+				ERROR("too many inputs!", "--combinemaps option for 3-D", 1)
+			else: ERROR("incorrected number of inputs", "--combinemaps option for 3-D", 1) # This should be unreachable
 			
-			if not single_map:
-				if options.fl !=-1.: # User provided low-pass filter #4.
-					if options.fl>0.5: # Input is in Angstrom 
-						map1   = filt_tanl(map1,options.pixel_size/options.fl, min(options.aa,.1))
-						cutoff = options.fl
-						log_main.add("low_pass filter to user provided  %f Angstrom"%cutoff)
-					
-					elif options.fl>0.0 and options.fl< 0.5:  # input is in absolution frequency
-						map1   = filt_tanl(map1,options.fl, min(options.aa,.1))
-						cutoff = options.pixel_size/options.fl
-						log_main.add("low_pass filter to user provided  %f Angstrom"%cutoff)
-					else: # low-pass filter to resolution determined by FSC0.143
-						log_main.add("low_pass filter to FSC0.143 ! ")
-						map1   = filt_tanl(map1,resolution_FSC143, options.aa)
-						cutoff = options.pixel_size/resolution_FSC143
+			for map1_path in input_path_list:
+				log_main.add("-------------------------------------------------------")
+				log_main.add("------------->>> %s <<<-----------------------" % map1_path)
+				log_main.add("the first input volume: %s"%map1_path)
+				try: map1 = get_im(map1_path)
+				except:
+					ERROR("sphire combinemaps fails to read the first map " + map1_path, "--combinemaps option for 3-D")
+					exit()
+			
+				if single_map:
+					log_main.add("no second input volume")
 				else:
-					if filter_to_resolution:
-						map1   = filt_tanl(map1,resolution_FSC143, options.aa)
-						cutoff = options.pixel_size/resolution_FSC143
-						log_main.add("low_pass filter to resolution ! ")
+					log_main.add("the second input volume: %s"%map2_path)
+					try:
+						map2 = get_im(map2_path)
+					except:
+						ERROR("sphire combinemaps fails to read the second map " + map2_path, "--combinemaps option for 3-D")
+						exit()
+				
+					if (map2.get_xsize() != map1.get_xsize()) or (map2.get_ysize() != map1.get_ysize()) or (map2.get_zsize() != map1.get_zsize()):
+						ERROR(" two input maps have different image size", "--combinemaps option for 3-D", 1)
+				
+				suffix = ""
+				if suffix_patten is not None:
+					# Find tail index of micrograph id substring and extract the substring from the micrograph name
+					cluster_id_substr_tail_idx = map1_path.index(map1_basename_tokens[1])
+					cluster_id_substr = map1_path[cluster_id_substr_head_idx:cluster_id_substr_tail_idx]
+					suffix = suffix_patten.replace("*", cluster_id_substr)
+				
+				filter_to_resolution =  False
+				### enforce low-pass filter
+				if options.B_enhance !=-1:
+					if not options.fsc_adj:
+						if options.fl == -1.0: 
+							filter_to_resolution = True
+							msg = "low-pass filter is enforeced to turn on"
+						else:
+							msg = "user chooses low-pass filter  %f"%options.fl
 					else:
-						cutoff = 0.0 
-						log_main.add("low_pass filter is not applied to map! ")
-			else:
-				if options.fl == -1.0: log_main.add("User does not apply low pass filter in single map enhancement")
+						msg = "fsc_adj option works as a low-pass filter"
+					log_main.add(msg)
+
+				## prepare mask 
+				if options.mask != None and options.do_adaptive_mask:
+					ERROR("wrong options, use either adaptive_mask or user provided mask", " options.mask and options.do_adaptive_mask ", 1)
+
+				if options.mask != None:
+					log_main.add("user provided mask: %s"%options.mask)
+					try: m = get_im(options.mask)
+					except:
+						ERROR("sphire combinemaps fails to read mask file " + options.mask, "--combinemaps option for 3-D")
+						exit()
+					if (m.get_xsize() != map1.get_xsize()) or (m.get_ysize() != map1.get_ysize()) or (m.get_zsize() != map1.get_zsize()):
+						ERROR(" mask file  "+options.mask+" has different size with input image  ", "--combinemaps for mask "+options.mask), 1
+
+				elif options.do_adaptive_mask:
+					if not single_map:
+						map1 +=map2
+						map1 /=2.
+						del map2
+					log_main.add("create an adaptive mask, let's wait...")
+					log_main.add("options.mask_threshold, options.dilation, options.consine_edge %f %5.2f %5.2f"%(options.mask_threshold, options.dilation, options.consine_edge))
+					m = Util.adaptive_mask(map1, options.mask_threshold, options.dilation, options.consine_edge)
+					m.write_image(os.path.join(options.output_dir, "vol_adaptive_mask%s.hdf"%suffix))
+					map1 = get_im(map1_path) # re-read map1
 				else:
-					if options.fl>0.5: # Input is in Angstrom 
-						map1   = filt_tanl(map1,options.pixel_size/options.fl, min(options.aa,.1))
-						cutoff = options.fl
+					m = None
+					log_main.add("no mask is applied")
+				## prepare FSC
+				from math import sqrt
+				resolution_FSC143   = 0.5 # for single volume, this is the default resolution
+				resolution_FSChalf  = 0.5
+
+				def filter_product(B_factor, pixel_size, cutoff, aa, image_size):
+					from math import sqrt
+					def gauss_inverse(x, sigma):
+						from math import exp
+						omega = 0.5/(sigma*sigma)
+						return exp(x*omega)
+					def tanhfl(x, cutoff, aa):
+						from math import pi, tanh
+						omega = cutoff
+						cnst  = pi/(2.0*omega*aa)
+						v1    = (cnst*(x + omega))
+						v2    = (cnst*(x - omega))
+						return 0.5*(tanh(v1) - tanh(v2))
+					from math import pi
+					N = image_size//2
+					sigma_of_inverse = sqrt(2./(B_factor/pixel_size**2))
+					values = []
+					if cutoff >0.5: cutoff = pixel_size/cutoff # always uses absolute frequencies
+					for i in xrange(N):
+						x = float(i)/float(N*2.)
+						values.append(tanhfl(x, cutoff, aa)*gauss_inverse(x, sigma_of_inverse))
+					index_zero = N+1
+					for i in xrange(N):
+						if values[i]== 0.0:
+							index_zero = i
+							break
+					#print("current fall off", (index_zero - cutoff*N*2))
+					return values, values.index(max(values)), max(values), index_zero, int(index_zero - values.index(max(values)))
+
+				def calculate_fsc_criterion(fsc, criterion):
+					"""
+					Calculate the fsc for the specified criterion
+					"""
+					resolution_left = fsc[0][len(fsc[1])-1]
+					idx_crit_left = len(fsc[1])-1
+					for ifreq in xrange(1, len(fsc[1])):
+						if fsc[1][ifreq] < criterion:
+							resolution_left = fsc[0][ifreq-1]
+							idx_crit_left = ifreq - 1
+							break
+					resolution_right = fsc[0][1]
+					idx_crit_right = 1
+					for ifreq in reversed(xrange(1, len(fsc[1]))):
+						if fsc[1][ifreq] >= 0.143:
+							resolution_right = fsc[0][ifreq]
+							idx_crit_right = ifreq
+							break
+					return resolution_left, resolution_right, idx_crit_left, idx_crit_right
+
+				def scale_fsc(x):
+					"""
+					Scale funtion to adjust the FSC to the full dataset
+					"""
+					return 2. * x / (1 + x)
+
+				def create_fsc_txt(output_dir, fsc, resolution, name):
+					"""
+					Create a text file based on the fsc
+					"""
+					fsc_out = []
+					for ifreq, value in enumerate(fsc[1]):
+						fsc_out.append("%5d   %7.2f   %7.3f"%(
+							ifreq,
+							resolution[ifreq],
+							value
+							))
+					write_text_file(
+						fsc_out,
+						os.path.join(
+							output_dir,
+							'{0}.txt'.format(name)
+							)
+						)
+
+				def adjust_zeros(value):
+					"""
+					Adjust zero values to 0.0001 to avoid DivisionByZero errors
+					"""
+					assert isinstance(value, (float, int))
+					if value == 0.0:
+						value = 0.0001
 					else:
-						map1   = filt_tanl(map1,options.fl, min(options.aa,.1))
-						cutoff = options.pixel_size/options.fl
-					log_main.add("low_pass filter to user provided  %f Angstrom"%cutoff)
+						pass
+					return value
+
+				def freq_to_angstrom(values, pixel_size):
+					"""
+					Convert spatial frequency to angstrom
+					"""
+					if isinstance(values, list):
+						pass
+					else:
+						values = [values]
+					adjust_values = [adjust_zeros(entry) for entry in values]
+					spatial = [1/float(entry) for entry in adjust_values]
+					angstrom = [pixel_size * entry for entry in spatial]
+					return angstrom
+				
+				### for two maps
+				dip_at_fsc = False
+				if not single_map:
+					# Plot FSC curves and write output fsc files
+					import matplotlib
+					matplotlib.use('Agg')
+					import matplotlib.pylab as plt
+					plt.rcParams['font.family'] = 'monospace'
+					title = []
+
+					# Output curves lists
+					plot_curves = []
+					plot_names = []
+					plot_title = []
+
+					# Output curves
+					fsc_true = fsc(map1, map2, 1)
+					fsc_true[1][0] = 1.0  # always reset fsc of zero frequency as 1.0
+					plot_curves.append(fsc_true)
+					plot_names.append(r'FSC halves')
+					# map fsc obtained from two halves to full maps
+					plot_curves.append([fsc_true[0], map(scale_fsc, fsc_true[1])])
+					plot_names.append(r'FSC full')
+					if m is not None:
+						fsc_mask = fsc(map1*m, map2*m, 1)
+						fsc_mask[1][0] = 1.0  # always reset fsc of zero frequency as 1.0
+						plot_curves.append(fsc_mask)
+						plot_names.append(r'FSC masked halves')
+						# map fsc obtained from masked two halves to full maps
+						plot_curves.append([fsc_mask[0], map(scale_fsc, fsc_mask[1])])
+						plot_names.append(r'FSC masked full')
+
+					resolution_in_angstrom = freq_to_angstrom(pixel_size=options.pixel_size, values=fsc_true[0])
+
+					# Create plot and write output file
+					minimum_fsc = 0
+					for fsc, name in zip(plot_curves, plot_names):
+						fsc[1][0] = 1
+						label = r'{0:18s}:  $0.5$: ${1}\AA$  |  $0.143$: ${2}\AA$'.format(
+							name,
+							round(
+								freq_to_angstrom(
+									pixel_size=options.pixel_size,
+									values=calculate_fsc_criterion(fsc, criterion=0.5)[0]
+									)[0],
+								1
+								),
+							round(
+								freq_to_angstrom(
+									pixel_size=options.pixel_size,
+									values=calculate_fsc_criterion(fsc, criterion=0.143)[1]
+									)[0],
+								1
+								),
+							)
+						plt.plot(fsc[0], fsc[1], label=label)
+						create_fsc_txt(
+							output_dir=options.output_dir,
+							fsc=fsc,
+							resolution=resolution_in_angstrom,
+							name=name.replace(' ', '_').lower()
+							)
+						if min(fsc[1]) < minimum_fsc:
+							minimum_fsc = min(fsc[1])
+					plt.axhline(0.143, 0, 1, color='k', alpha=0.3)
+					plt.axhline(0.5, 0, 1, color='k', alpha=0.3)
+
+					# Ticks
+					nyquist_resolution = resolution_in_angstrom[-1]
+					raw_x_ticks_ang = [int(round(options.pixel_size / float(entry), 0)) for entry in [0.1, 0.2, 0.3, 0.4, 0.5]]
+					x_ticks_ang = [r'$\frac{{1}}{{{0}}}$'.format(tick) for tick in raw_x_ticks_ang if tick > nyquist_resolution*1.03]
+					x_ticks_freq = [options.pixel_size/float(tick) for tick in raw_x_ticks_ang if tick > nyquist_resolution*1.03]
+					x_ticks_ang.insert(0, r'$0$')
+					x_ticks_freq.insert(0, 0)
+					x_ticks_ang.append(r'$\frac{{1}}{{{0}}}$'.format(round(nyquist_resolution, 2)))
+					x_ticks_freq.append(options.pixel_size/round(nyquist_resolution, 2))
+					plt.xticks(x_ticks_freq, x_ticks_ang, size='xx-large')
+					y_ticks = [-0.2, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
+					plt.yticks(y_ticks, [r'${0}$'.format(tick) for tick in y_ticks], size='large')
+
+					# Plot related settings
+					plt.legend(loc='lower left', bbox_to_anchor=(0, 1, 1, 0.2), mode='expand', frameon=False)
+					plt.text(0.005, 0.153, r'$0.143$', color='k', alpha=0.4)
+					plt.text(0.005, 0.51, r'$0.5$', color='k', alpha=0.4)
+					plt.xlabel(r'Spatial frequency / $\frac{1}{\AA}$')
+					plt.ylabel(r'FSC')
+					plt.ylim([minimum_fsc-0.05, 1.05])
+					plt.grid()
+					plt.tight_layout()
+					plt.savefig(os.path.join(options.output_dir, "fsc.png"), bbox_inches='tight')
+					plt.clf()
+
+					if m is not None: fsc_true = fsc_mask
+					""" 
+						# we abandon randomize phase strategy
+						frc_without_mask = fsc(map1, map2, 1)
+						randomize_at     = -1.0
+						for ifreq in xrange(1, len(frc_without_mask[1])): # always skip zero frequency
+							if frc_without_mask[1][ifreq] < options.randomphasesafter:
+								randomize_at = float(ifreq)
+								break
+						log_main.add("Phases are randomized after: %4.2f Angstrom"% (options.pixel_size/(randomize_at/map1.get_xsize())))
+						frc_masked = fsc(map1*m, map2*m, 1)
+						map1 = fft(Util.randomizedphasesafter(fft(map1), randomize_at))*m
+						map2 = fft(Util.randomizedphasesafter(fft(map2), randomize_at))*m
+						frc_random_masked = fsc(map1, map2, 1)
+						fsc_true          = [frc_without_mask[0], [None]*len(frc_without_mask[0])]
+						for i in xrange(len(fsc_true[1])):
+							if i < (int(randomize_at) + 2):# move two pixels up
+								fsc_true[1][i] = frc_masked[1][i]
+							else:
+								fsct = frc_masked[1][i]
+								fscn = frc_random_masked[1][i]
+								if (fscn > fsct): fsc_true[1][i]= 0.
+								else: fsc_true[1][i]=(fsct-fscn)/(1.-fscn)
+						else:
+					"""
+					log_main.add("adjust FSC to the full dataset by: 2.*FSC/(FSC+1.)")
+					fsc_true[1] = map(scale_fsc, fsc_true[1])
+
+					## Determine 05/143 resolution from corrected FSC, RH correction of FSC from masked volumes
+					resolution_FSC143_right  = 0.0
+					resolution_FSC143_left   = 0.0
+					#dip_at_fsc = False
+					nfreq0     = 1
+
+					for ifreq in xrange(1, len(fsc_true[1])):
+						if fsc_true[1][ifreq] < 0.0:
+							nfreq0  = ifreq - 1
+							break
+					if nfreq0 ==1: nfreq0= len(fsc_true[1]) - 1
+
+					nfreq05 = len(fsc_true[1])-1 		
+					for ifreq in xrange(1, len(fsc_true[1])):
+						if fsc_true[1][ifreq] < 0.5:
+							resolution_FSChalf = fsc_true[0][ifreq-1]
+							nfreq05 = ifreq-1
+							break
+
+					resolution_FSC143_left = fsc_true[0][len(fsc_true[1])-1]
+					for ifreq in xrange(nfreq05, len(fsc_true[1])):
+						if fsc_true[1][ifreq] < 0.143:
+							resolution_FSC143_left = fsc_true[0][ifreq-1]
+							nfreq143 = ifreq - 1
+							break
+
+					resolution_FSC143_right = fsc_true[0][nfreq05]
+					nfreq143_right = nfreq05
+					for ifreq in xrange(nfreq0, nfreq05, -1):
+						if fsc_true[1][ifreq] >= 0.143:
+							resolution_FSC143_right = fsc_true[0][ifreq]
+							nfreq143_right = ifreq
+							break
+
+					## output resolution
+					if resolution_FSC143_left != resolution_FSC143_right: log_main.add("there is a dip between 0.5 to 0.143 in FSC!")
+					else:log_main.add("fsc smoothly falls from 0.5 to 0.143 !")
+
+					resolution_FSC143 = resolution_FSC143_right
+					nfreq143 = nfreq143_right
+
+					for ifreq in xrange(len(fsc_true[0])): fsc_true[1][ifreq] = max(fsc_true[1][ifreq], 0.0)
+					## smooth FSC after FSC143 and set other values to zero
+					for ifreq in xrange(nfreq143+1, len(fsc_true[1])):
+						if ifreq ==nfreq143+1: fsc_true[1][ifreq] = (fsc_true[1][nfreq143-2] + fsc_true[1][nfreq143-1])/5.
+						elif ifreq ==nfreq143+2: fsc_true[1][ifreq] = (fsc_true[1][nfreq143-1])/5.
+						else:  fsc_true[1][ifreq] = 0.0
+					###
+					map1 = (get_im(map1_path)+get_im(map2_path))/2.0
+				
+				outtext     = [["Squaredfreq"],[ "LogOrig"]]
+				guinierline = rot_avg_table(power(periodogram(map1),.5))
+				from math import log
+				for ig in xrange(len(guinierline)):
+					x = ig*.5/float(len(guinierline))/options.pixel_size
+					outtext[0].append("%10.6f"%(x*x))
+					outtext[1].append("%10.6f"%log(guinierline[ig]))
 					
-			map1 = fft(map1)
-			file_name, file_ext = os.path.splitext(options.output)
-			if file_ext !='': map1.write_image(os.path.join(options.output_dir, file_name+"_nomask"+file_ext))
-			else: map1.write_image(file_name+"_nomask.hdf")
-			log_main.add("the non-mask applied combinined map is saved as %s"%(file_name+"_nomask"+file_ext))
-			if m: map1 *=m
-			else: log_main.add("the final map is not masked!")
+				# starts adjustment of powerspectrum
+				if options.mtf: # MTF division #1
+					log_main.add("MTF correction is applied")
+					log_main.add("MTF file is %s"%options.mtf)
+					try: mtf_core  = read_text_file(options.mtf, -1)
+					except: ERROR("Sphire combinemaps fails to read MTF file "+options.mtf, "--combinemaps option for 3-D", 1)
+					map1 = fft(Util.divide_mtf(fft(map1), mtf_core[1], mtf_core[0]))
+					outtext.append(["LogMTFdiv"])
+					guinierline   = rot_avg_table(power(periodogram(map1),.5))
+					for ig in xrange(len(guinierline)): outtext[-1].append("%10.6f"%log(guinierline[ig]))
+				else: log_main.add("MTF is not applied")
 
-			map1.write_image(os.path.join(options.output_dir, options.output))
-			log_main.add("---------- >>>summary<<<------------")
-			if not single_map:
-				log_main.add("resolution 0.5/0.143 are %5.2f/%5.2f Angstrom "%(round((options.pixel_size/resolution_FSChalf),3), round((options.pixel_size/resolution_FSC143),3)))
-				if dip_at_fsc: log_main.add("There is a dip in your fsc in the region between 0.5 and 0.143, and you might consider ploting your fsc curve")
-			if options.B_enhance !=-1:  log_main.add( "B-factor is  %6.2f Angstrom^2  "%(round((-global_b),2)))
-			else:log_main.add( "B-factor is not applied  ")
-			if not single_map:
-				output_names = [plot_name.replace(' ', '_') for plot_name in plot_names]
-				log_main.add("FSC curves are saved in {0}.txt ".format('.txt, '.join(output_names).lower()))
-			log_main.add("the final volume is " + options.output)
-			log_main.add("guinierlines in logscale are saved in guinierlines.txt")
-			if options.fl !=-1: log_main.add("tanl low-pass filter is applied to cut off high frequencies from resolution 1./%5.2f Angstrom" %round(cutoff,2))
-			else: log_main.add("the final volume is not low_pass filtered. ")
-			write_text_file(outtext, os.path.join(options.output_dir, "guinierlines.txt"))
+				if options.fsc_adj and not single_map:# limit resolution #2
+					log_main.add("sqrt(FSC) is multiplied to adjust power spectrum of the summed volumes")
+					#log_main.add("Notice: FSC adjustment of powerspectrum will increase B-factor 2-3 times than not!")
+					#### FSC adjustment ((2.*fsc)/(1+fsc)) to the powerspectrum;
+					fil = len(fsc_true[1])*[None]
+					for i in xrange(len(fil)): fil[i] = sqrt(fsc_true[1][i]) # fsc already matched to full dataset
+					map1 = filt_table(map1,fil)
+					guinierline = rot_avg_table(power(periodogram(map1),.5))
+					outtext.append(["LogFSCadj"])
+					for ig in xrange(len(guinierline)):outtext[-1].append("%10.6f"%log(guinierline[ig]))
+				else: log_main.add("fsc_adj is not applied")
 
-			# evaluation of enhancement: values, values.index(max(values)), max(values), index_zero, int(index_zero - cutoff*N*2)
-			if cutoff !=0.0:
-				pvalues, mindex, mavlue, index_zero, pfall_off = filter_product(global_b, options.pixel_size, cutoff, options.aa, map1.get_xsize())
-				log_main.add("---->>>analysis of enhancement<<<-----")
-				log_main.add("B_factor:  %f   cutoff:   %f  (A)  %f (absolute) aa (absolute):  %f  Maximum enhancement ocurs in %d pixels. Maximum enhancement ratio is %f. After %d pixel, power spectrum is set to zero. Fallall width is %d pixels"%\
-				   (global_b, cutoff, options.pixel_size/cutoff, options.aa, mindex, mavlue, index_zero, pfall_off))
-				if mindex == 0:
-					msg = "enhancement has no maximum value, check your input parameters!"
-					log_main.add(msg)
-				if index_zero>map1.get_xsize()//2:
-					msg = "the enhancement exceeds nyquist frequency, you might change the input parameters, such as either reduce aa or B_factor, or both, and rerun the command "
-					log_main.add(msg)
+				map1 = fft(map1)
+				if options.B_enhance !=-1: #3 One specifies and then apply B-factor sharpen
+					if options.B_enhance == 0.0: # auto mode
+						cutoff_by_fsc = 0
+						for ifreq in xrange(len(fsc_true[1])):
+							if fsc_true[1][ifreq]<0.143: break
+						cutoff_by_fsc = float(ifreq-1)
+						freq_max      = cutoff_by_fsc/(2.*len(fsc_true[0]))/options.pixel_size
+						guinierline    = rot_avg_table(power(periodogram(map1),.5))
+						logguinierline = []
+						for ig in xrange(len(guinierline)):logguinierline.append(log(guinierline[ig]))
+						freq_min = 1./options.B_start  # given frequencies in Angstrom unit, say, B_start is 10 Angstrom, or 15  Angstrom
+						if options.B_stop!=0.0: freq_max = 1./options.B_stop 
+						if freq_min>= freq_max:
+							log_main.add("your B_start is too high! Decrease it and rerun the program!")
+							ERROR("your B_start is too high! Decrease it and re-run the program!", "--combinemaps option", 1)
+						b, junk, ifreqmin, ifreqmax = compute_bfactor(guinierline, freq_min, freq_max, options.pixel_size)
+						global_b = 4.*b # Just a convention!
+						cc = pearson(junk[1],logguinierline)
+						log_main.add("similarity between the fitted line and 1-D rotationally average power spectrum within [%d, %d] is %5.3f"%(\
+							  ifreqmin, ifreqmax, pearson(junk[1][ifreqmin:ifreqmax],logguinierline[ifreqmin:ifreqmax])))
+						log_main.add("the slope is %6.2f Angstrom^2 "%(round(-b,2)))
+						sigma_of_inverse = sqrt(2./(global_b/options.pixel_size**2))
+					else: # User provided value
+						#log_main.add( " apply user provided B-factor to enhance map!")
+						log_main.add("user provided B-factor is %6.2f Angstrom^2   "%options.B_enhance)
+						sigma_of_inverse = sqrt(2./((abs(options.B_enhance))/options.pixel_size**2))
+						global_b = options.B_enhance
+
+					map1 = (filt_gaussinv(map1, sigma_of_inverse))
+					guinierline = rot_avg_table(power(periodogram(map1),.5))
+					outtext.append([" LogBfacapplied"])
+					last_non_zero = -999.0
+					for ig in xrange(len(guinierline)):
+						if guinierline[ig]>0: 
+							outtext[-1].append("%10.6f"%log(guinierline[ig]))
+							last_non_zero = log(guinierline[ig])
+						else: outtext[-1].append("%10.6f"%last_non_zero)
+				else: log_main.add("B-factor enhancement is not applied to map!")
+			
+				if not single_map:
+					if options.fl !=-1.: # User provided low-pass filter #4.
+						if options.fl>0.5: # Input is in Angstrom 
+							map1   = filt_tanl(map1,options.pixel_size/options.fl, min(options.aa,.1))
+							cutoff = options.fl
+							log_main.add("low-pass filter to user provided  %f Angstrom"%cutoff)
+					
+						elif options.fl>0.0 and options.fl< 0.5:  # input is in absolution frequency
+							map1   = filt_tanl(map1,options.fl, min(options.aa,.1))
+							cutoff = options.pixel_size/options.fl
+							log_main.add("low-pass filter to user provided  %f Angstrom"%cutoff)
+						else: # low-pass filter to resolution determined by FSC0.143
+							log_main.add("low-pass filter to FSC0.143 ! ")
+							map1   = filt_tanl(map1,resolution_FSC143, options.aa)
+							cutoff = options.pixel_size/resolution_FSC143
+					else:
+						if filter_to_resolution:
+							map1   = filt_tanl(map1,resolution_FSC143, options.aa)
+							cutoff = options.pixel_size/resolution_FSC143
+							log_main.add("low-pass filter to resolution ! ")
+						else:
+							cutoff = 0.0 
+							log_main.add("low-pass filter is not applied to map! ")
+				else:
+					if options.fl == -1.0: log_main.add("User does not apply low pass filter in single map enhancement")
+					else:
+						if options.fl>0.5: # Input is in Angstrom 
+							map1   = filt_tanl(map1,options.pixel_size/options.fl, min(options.aa,.1))
+							cutoff = options.fl
+						else:
+							map1   = filt_tanl(map1,options.fl, min(options.aa,.1))
+							cutoff = options.pixel_size/options.fl
+						log_main.add("low-pass filter to user provided  %f Angstrom"%cutoff)
+					
+				map1 = fft(map1)
+				file_name, file_ext = os.path.splitext(options.output)
+				if file_ext =='': file_ext = ".hdf"
+				file_path_nomask = os.path.join(options.output_dir, file_name+suffix+"_nomask"+file_ext)
+				map1.write_image(file_path_nomask)
+				log_main.add("the enhanced map without masking is saved as %s"%(file_path_nomask))
+				if m: map1 *=m
+				else: log_main.add("the final map is not masked!")
+				file_path_final = os.path.join(options.output_dir, file_name+suffix+file_ext)
+				map1.write_image(file_path_final)
+				log_main.add("---------- >>> summary <<<------------")
+				if not single_map:
+					log_main.add("resolution 0.5/0.143 are %5.2f/%5.2f Angstrom "%(round((options.pixel_size/resolution_FSChalf),3), round((options.pixel_size/resolution_FSC143),3)))
+					if dip_at_fsc: log_main.add("There is a dip in your fsc in the region between 0.5 and 0.143, and you might consider ploting your fsc curve")
+				if options.B_enhance !=-1:  log_main.add( "B-factor is  %6.2f Angstrom^2  "%(round((-global_b),2)))
+				else:log_main.add( "B-factor is not applied")
+				if not single_map:
+					output_names = [plot_name.replace(' ', '_') for plot_name in plot_names]
+					log_main.add("FSC curves are saved in {0}.txt ".format('.txt, '.join(output_names).lower()))
+				log_main.add("the final volume is " + file_path_final)
+				file_path_guinierlines = os.path.join(options.output_dir, "guinierlines"+suffix+".txt")
+				log_main.add("guinierlines in logscale are saved in "+file_path_guinierlines)
+				if options.fl !=-1: log_main.add("tanl low-pass filter is applied to cut off high frequencies from resolution 1./%5.2f Angstrom" %round(cutoff,2))
+				else: log_main.add("the final volume is not low-pass filtered. ")
+				write_text_file(outtext, file_path_guinierlines)
+
+				# evaluation of enhancement: values, values.index(max(values)), max(values), index_zero, int(index_zero - cutoff*N*2)
+				if cutoff !=0.0:
+					pvalues, mindex, mavlue, index_zero, pfall_off = filter_product(global_b, options.pixel_size, cutoff, options.aa, map1.get_xsize())
+					log_main.add("---->>> analysis of enhancement <<<-----")
+					log_main.add("B_factor:  %f   cutoff:   %f  (A)  %f (absolute) aa (absolute):  %f  Maximum enhancement ocurs in %d pixels. Maximum enhancement ratio is %f. After %d pixel, power spectrum is set to zero. Fallall width is %d pixels"%\
+					   (global_b, cutoff, options.pixel_size/cutoff, options.aa, mindex, mavlue, index_zero, pfall_off))
+					if mindex == 0:
+						msg = "enhancement has no maximum value, check your input parameters!"
+						log_main.add(msg)
+					if index_zero>map1.get_xsize()//2:
+						msg = "the enhancement exceeds nyquist frequency, you might change the input parameters, such as either reduce aa or B_factor, or both, and rerun the command "
+						log_main.add(msg)
+			log_main.add("-------------------------------------------------------")
+			log_main.add("---------- >>> DONE!!! <<<------------")
 			log_main.add("-------------------------------------------------------")
 
 	elif options.window_stack:
