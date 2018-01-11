@@ -366,8 +366,7 @@ def depth_box_initialization(box_dir, input_list1, input_list2, log_file):
 			number_of_groups = total_stack//Tracker["constants"]["minimum_grp_size"] -1
 		new_assignment = create_nrandom_lists_from_given_pids(box_dir, os.path.join(box_dir, \
 		      "previous_all_indexes.txt"), number_of_groups, 2)
-		if Tracker["constants"]["minimum_grp_size"] == -1: minimum_grp_size = total_stack//number_of_groups**2
-		else: minimum_grp_size = Tracker["constants"]["minimum_grp_size"]
+		minimum_grp_size = Tracker["constants"]["minimum_grp_size"]
 	
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		msg = "depth_box_initialization  total_stack  %d number_of_groups  %d  minimum_grp_size  %d"%(total_stack, number_of_groups, minimum_grp_size)
@@ -1391,8 +1390,6 @@ def import_data(log_main):
 	number_of_groups =  Tracker["constants"]["total_stack"]//Tracker["constants"]["img_per_grp"]
 	if number_of_groups<=1: ERROR("Your img_per_grp is too large", "sxsort3d_depth.py", 1,  Blockdata["myid"])
 	minimum_grp_size = Tracker["constants"]["minimum_grp_size"]
-	if minimum_grp_size < Tracker["constants"]["total_stack"]//number_of_groups**2:
-		ERROR("minimum_grp_size is too small", "sxsort3d_depth.py", 1,  Blockdata["myid"])
 	if minimum_grp_size >= Tracker["constants"]["img_per_grp"]:
 		ERROR("minimum_grp_size is too large", "sxsort3d_depth.py", 1,  Blockdata["myid"])
 	return
@@ -1445,16 +1442,9 @@ def sort3d_init(to_be_decided, log_main):
 	Tracker["img_per_grp"]             = Tracker["constants"]["img_per_grp"]
 	Tracker["number_of_groups"]        = Tracker["total_stack"]//Tracker["constants"]["img_per_grp"]
 	Tracker["rnd_assign_group_size"]   = Tracker["constants"]["img_per_grp"]//Tracker["number_of_groups"]
-	if Tracker["constants"]["minimum_grp_size"] ==-1: Tracker["minimum_grp_size"] = Tracker["constants"]["img_per_grp"]//2
-	else: 
-		Tracker["minimum_grp_size"] = Tracker["constants"]["minimum_grp_size"]
-		if Tracker["constants"]["minimum_grp_size"] < Tracker["rnd_assign_group_size"]:
-			if Blockdata["myid"] == Blockdata["main_node"]:
-				msg = "warning: speficied minimum_grp_size is less than actual random group size"
-				print(msg)
-				log_main.add(msg)
-		elif Tracker["constants"]["minimum_grp_size"]>Tracker["img_per_grp"]:
-			ERROR("img_per_grp is less than minimum_grp_size", "sort3d_init", 1, Blockdata["myid"])
+	Tracker["minimum_grp_size"] = Tracker["constants"]["minimum_grp_size"]
+	if Tracker["constants"]["minimum_grp_size"]>Tracker["img_per_grp"]:
+		ERROR("img_per_grp is less than minimum_grp_size", "sort3d_init", 1, Blockdata["myid"])
 	if Blockdata["myid"] == Blockdata["main_node"]: print_dict(Tracker, to_be_decided)
 	return
 
@@ -4707,7 +4697,7 @@ def steptwo_mpi_filter(tvol, tweight, treg, cfsc = None, cutoff_freq = 0.45, aa 
 	#  tvol is overwritten, meaning it is also an output
 	n_iter =10
 	ifi = mpi_iterefa( vol_data.__array_interface__['data'][0] ,  we_data.__array_interface__['data'][0] , nx, ny, nz, maxr2, \
-			Tracker["constants"]["nnxo"], Blockdata["myid_on_node"], color, Blockdata["no_of_processes_per_group"],  Blockdata["shared_comm"])#####, n_iter)	
+			Tracker["constants"]["nnxo"], Blockdata["myid_on_node"], color, Blockdata["no_of_processes_per_group"],  Blockdata["shared_comm"])######, n_iter)	
 	if( Blockdata["myid_on_node"] == 0 ):
 		from filter       import  filt_tanl
 		#  Either pad or window in F space to 2*nnxo
@@ -5211,6 +5201,7 @@ def get_input_from_sparx_ref3d(log_main):# case one
 	if import_from_sparx_refinement == 0:ERROR("The data stack is not accessible","get_input_from_sparx_ref3d",1, Blockdata["myid"])
 	total_stack = bcast_number_to_all(total_stack, source_node = Blockdata["main_node"])			
 	Tracker["constants"]["total_stack"] = total_stack
+	
 	# Now copy relevant refinement files to sorting directory:
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		if os.path.exists(os.path.join(Tracker["constants"]["refinement_dir"], "main%03d"%selected_iter, "params_%03d.txt"%selected_iter)):
@@ -5304,10 +5295,14 @@ def get_input_from_sparx_ref3d(log_main):# case one
 		Tracker["avgnorm"]                 = Tracker_refinement["avgvaradj"]
 		if Tracker["constants"]["nxinit"]<0: Tracker["nxinit_refinement"] = Tracker_refinement["nxinit"] #Sphire window size
 		else:  Tracker["nxinit_refinement"] = Tracker["constants"]["nxinit"] #User defined window size
-		 
+		
+		
 		try:     sym =  Tracker_refinement["constants"]["sym"]
 		except:  sym =  Tracker_refinement["constants"]["symmetry"]
-		Tracker["constants"]["symmetry"] = sym
+		if sym !='c1' and Tracker["constants"]["symmetry"] =='c1':
+			Tracker["constants"]["symmetry"] = sym
+			update_sym = 1
+		else: update_sym = 0
 		print(line, "Parameters importing is done!")
 		if not Tracker["constants"]["mask3D"]:
 			if Tracker_refinement["constants"]["mask3D"] and (not Tracker["constants"]["do_not_use_3dmask"]):
@@ -5315,9 +5310,15 @@ def get_input_from_sparx_ref3d(log_main):# case one
 				copyfile( os.path.join(refinement_dir_path, Tracker_refinement["constants"]["mask3D"]), \
 				os.path.join(Tracker["constants"]["masterdir"], refinement_mask3D_file))
 				Tracker["constants"]["mask3D"] = os.path.join(Tracker["constants"]["masterdir"], refinement_mask3D_file)
+	else: update_sym  = 0
 	Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], communicator = MPI_COMM_WORLD)
 	import_from_sparx_refinement = bcast_number_to_all(import_from_sparx_refinement, source_node = Blockdata["main_node"])
+	update_sym = bcast_number_to_all(update_sym, source_node = Blockdata["main_node"])
 	if not import_from_sparx_refinement:ERROR("Import parameters from SPARX refinement failed", "get_input_from_sparx_ref3d", 1,  Blockdata["myid"])
+	if update_sym ==1:
+		Blockdata["symclass"] = symclass(Tracker["constants"]["symmetry"])
+		from string import atoi
+		Tracker["constants"]["orientation_groups"] = max(4, 100//atoi(Blockdata["symclass"].sym[1]))
 	
 	# Setting for margin error				
 	chunk_dict = {}
@@ -5369,6 +5370,10 @@ def get_input_from_sparx_ref3d(log_main):# case one
 	total_stack                             = Tracker["constants"]["total_stack"]
 	Tracker["currentres"]                   = float(Tracker["constants"]["fsc05"])/float(Tracker["constants"]["nxinit"])
 	Tracker["bckgnoise"]                    =  os.path.join(Tracker["constants"]["masterdir"], "bckgnoise.hdf")
+	###
+	if Tracker["constants"]["minimum_grp_size"] ==-1:
+		from string import atoi
+		Tracker["constants"]["minimum_grp_size"] = Tracker["constants"]["total_stack"]//Tracker["constants"]["img_per_grp"]*100//atoi(Blockdata["symclass"].sym[1])
 	# Now copy oldparamstruture
 	copy_oldparamstructure_from_meridien_MPI(selected_iter, log_main)
 	return import_from_sparx_refinement
@@ -5416,6 +5421,10 @@ def get_input_from_datastack(log_main):# Case three
 	Tracker["constants"]["chunk_1"]		= os.path.join(Tracker["constants"]["masterdir"],"chunk_1.txt")
 	Tracker["constants"]["partstack"]	= os.path.join(Tracker["constants"]["masterdir"], "refinement_parameters.txt")
 	Tracker["previous_parstack"]        = os.path.join(Tracker["constants"]["masterdir"], "refinement_parameters.txt")#
+	if Tracker["constants"]["minimum_grp_size"] ==-1:
+		from string import atoi
+		Tracker["constants"]["minimum_grp_size"] = Tracker["constants"]["total_stack"]//Tracker["constants"]["img_per_grp"]*100//atoi(Blockdata["symclass"].sym[1])
+
 	###
 	Tracker["refang"], Tracker["rshifts"], Tracker["delta"] = None, None, None
 	Tracker["avgnorm"] =1.0
@@ -7210,7 +7219,7 @@ def main():
 	
 		if options.focus:  Constants["comparison_method"] = "cross" # in case of focus3D, cross is used.
 		Constants["fuse_freq"] = 45.  # Now in A, convert to pixels before being used
-		Constants["orientation_groups"]  = options.orientation_groups # orientation constrained angle step
+		Constants["orientation_groups"]  = 100 #options.orientation_groups # orientation constrained angle step
 		# -------------------------------------------------------------
 		#
 		# Create and initialize Tracker dictionary with input options  # State Variables	
@@ -7247,7 +7256,12 @@ def main():
 		checking_flag = 0 # reset
 		
 		Blockdata["fftwmpi"]      = True
-		Blockdata["symclass"]     = symclass(Tracker["constants"]["symmetry"])
+		try : 
+			Blockdata["symclass"]                      = symclass(Tracker["constants"]["symmetry"])
+			from string import atoi
+			Tracker["constants"]["orientation_groups"] = max(4, 100//atoi(Blockdata["symclass"].sym[1]))
+			
+		except: pass
 		get_angle_step_from_number_of_orien_groups(Tracker["constants"]["orientation_groups"])
 		Blockdata["ncpuspernode"] = Blockdata["no_of_processes_per_group"]
 		Blockdata["nsubset"]      = Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
@@ -7447,7 +7461,7 @@ def main():
 		Constants["depth_order"]                 = options.depth_order
 		Constants["img_per_grp"]                 = options.img_per_grp
 		Constants["minimum_grp_size"]      		 = options.minimum_grp_size
-		if options.minimum_grp_size == -1:       Constants["minimum_grp_size"] = options.img_per_grp//2
+		#if options.minimum_grp_size == -1:       Constants["minimum_grp_size"] = options.img_per_grp//2
 		Constants["radius"]              		 = options.radius
 		Constants["sym"]                         = options.sym
 	
@@ -7475,7 +7489,7 @@ def main():
 	
 		if options.focus:  Constants["comparison_method"] = "cross" # in case of focus3D, cross is used.
 		Constants["fuse_freq"] = 45.  # Now in A, convert to pixels before being used
-		Constants["orientation_groups"]  = options.orientation_groups # orientation constrained angle step
+		Constants["orientation_groups"]  = 100 #options.orientation_groups # orientation constrained angle step
 		# -------------------------------------------------------------
 		#
 		# Create and initialize Tracker dictionary with input options  # State Variables	
@@ -7519,6 +7533,9 @@ def main():
 		checking_flag = 0 # reset
 		Blockdata["fftwmpi"]      = True
 		Blockdata["symclass"]     = symclass(Tracker["constants"]["symmetry"])
+		print(Blockdata["symclass"].sym[1])
+		from string import atoi
+		Tracker["constants"]["orientation_groups"] = max(4, 100//atoi(Blockdata["symclass"].sym[1]))
 		get_angle_step_from_number_of_orien_groups(Tracker["constants"]["orientation_groups"])
 		Blockdata["ncpuspernode"] = Blockdata["no_of_processes_per_group"]
 		Blockdata["nsubset"]      = Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
