@@ -7194,7 +7194,6 @@ def main():
 		Constants["depth_order"]                 = options.depth_order
 		Constants["img_per_grp"]                 = options.img_per_grp
 		Constants["minimum_grp_size"]      		 = options.minimum_grp_size
-		#if options.minimum_grp_size == -1: Constants["minimum_grp_size"] = options.img_per_grp//2
 		Constants["radius"]              		 = options.radius
 		Constants["sym"]                         = options.sym
 		Constants["nsmear"]                      = options.nsmear
@@ -7465,7 +7464,6 @@ def main():
 		Constants["depth_order"]                 = options.depth_order
 		Constants["img_per_grp"]                 = options.img_per_grp
 		Constants["minimum_grp_size"]      		 = options.minimum_grp_size
-		#if options.minimum_grp_size == -1:       Constants["minimum_grp_size"] = options.img_per_grp//2
 		Constants["radius"]              		 = options.radius
 		Constants["sym"]                         = options.sym
 	
