@@ -1056,7 +1056,7 @@ def main():
 					else:
 						freq_max =1./options.B_stop
 					freq_min   =  1./options.B_start
-					log_main.add("B-factor exp(-B*s^2) is estimated from %f Angstrom to %f Angstrom"%(options.B_start, 2*options.pixel_size))
+					log_main.add("B-factor exp(-B*s^2) is estimated from %f[A] to %f[A]"%(options.B_start, 2*options.pixel_size))
 					b,junk,ifreqmin, ifreqmax =compute_bfactor(guinierline, freq_min, freq_max, options.pixel_size)
 					global_b = b*4
 					log_main.add( "The estimated slope of rotationally averaged Fourier factors  of the summed volumes is %f"%round(-b,2))
@@ -1140,18 +1140,20 @@ def main():
 					cluster_id_substr = map1_path[cluster_id_substr_head_idx:cluster_id_substr_tail_idx]
 					suffix = suffix_patten.replace("*", cluster_id_substr)
 				
-				filter_to_resolution =  False
-				### enforce low-pass filter
-				if options.B_enhance !=-1:
-					if not options.fsc_adj:
-						if options.fl == -1.0: 
-							filter_to_resolution = True
-							msg = "low-pass filter is enforeced to turn on"
-						else:
-							msg = "user chooses low-pass filter  %f"%options.fl
-					else:
-						msg = "fsc_adj option works as a low-pass filter"
-					log_main.add(msg)
+				### # NOTE: Toshio Moriya 2018/01/11
+				### # Remove "enforce low-pass filter"
+				### filter_to_resolution =  False
+				### ### enforce low-pass filter
+				### if options.B_enhance !=-1:
+				### 	if not options.fsc_adj:
+				### 		if options.fl == -1.0: 
+				### 			filter_to_resolution = True
+				### 			msg = "low-pass filter is enforeced to turn on"
+				### 		else:
+				### 			msg = "user chooses low-pass filter  %f"%options.fl
+				### 	else:
+				### 		msg = "fsc_adj option works as a low-pass filter"
+				### 	log_main.add(msg)
 
 				## prepare mask 
 				if options.mask != None and options.do_adaptive_mask:
@@ -1382,7 +1384,7 @@ def main():
 							if frc_without_mask[1][ifreq] < options.randomphasesafter:
 								randomize_at = float(ifreq)
 								break
-						log_main.add("Phases are randomized after: %4.2f Angstrom"% (options.pixel_size/(randomize_at/map1.get_xsize())))
+						log_main.add("Phases are randomized after: %4.2f[A]"% (options.pixel_size/(randomize_at/map1.get_xsize())))
 						frc_masked = fsc(map1*m, map2*m, 1)
 						map1 = fft(Util.randomizedphasesafter(fft(map1), randomize_at))*m
 						map2 = fft(Util.randomizedphasesafter(fft(map2), randomize_at))*m
@@ -1448,7 +1450,9 @@ def main():
 						if ifreq ==nfreq143+1: fsc_true[1][ifreq] = (fsc_true[1][nfreq143-2] + fsc_true[1][nfreq143-1])/5.
 						elif ifreq ==nfreq143+2: fsc_true[1][ifreq] = (fsc_true[1][nfreq143-1])/5.
 						else:  fsc_true[1][ifreq] = 0.0
-					###
+					# NOTE: Toshio Moriya 2018/01/11
+					# Here, program re-reads map1 and map2 and combine them.
+					# However, re-reading might not be necessary....
 					map1 = (get_im(map1_path)+get_im(map2_path))/2.0
 				
 				outtext     = [["Squaredfreq"],[ "LogOrig"]]
@@ -1504,11 +1508,11 @@ def main():
 						cc = pearson(junk[1],logguinierline)
 						log_main.add("similarity between the fitted line and 1-D rotationally average power spectrum within [%d, %d] is %5.3f"%(\
 							  ifreqmin, ifreqmax, pearson(junk[1][ifreqmin:ifreqmax],logguinierline[ifreqmin:ifreqmax])))
-						log_main.add("the slope is %6.2f Angstrom^2 "%(round(-b,2)))
+						log_main.add("the slope is %6.2f[A^2]"%(round(-b,2)))
 						sigma_of_inverse = sqrt(2./(global_b/options.pixel_size**2))
 					else: # User provided value
 						#log_main.add( " apply user provided B-factor to enhance map!")
-						log_main.add("user provided B-factor is %6.2f Angstrom^2   "%options.B_enhance)
+						log_main.add("user provided B-factor is %6.2f[A^2]"%options.B_enhance)
 						sigma_of_inverse = sqrt(2./((abs(options.B_enhance))/options.pixel_size**2))
 						global_b = options.B_enhance
 
@@ -1523,31 +1527,35 @@ def main():
 						else: outtext[-1].append("%10.6f"%last_non_zero)
 				else: log_main.add("B-factor enhancement is not applied to map!")
 			
+				cutoff = 0.0
 				if not single_map:
 					if options.fl !=-1.: # User provided low-pass filter #4.
 						if options.fl>0.5: # Input is in Angstrom 
 							map1   = filt_tanl(map1,options.pixel_size/options.fl, min(options.aa,.1))
 							cutoff = options.fl
-							log_main.add("low-pass filter to user provided  %f Angstrom"%cutoff)
-					
+							log_main.add("low-pass filter to user provided %f[A]"%cutoff)
 						elif options.fl>0.0 and options.fl< 0.5:  # input is in absolution frequency
 							map1   = filt_tanl(map1,options.fl, min(options.aa,.1))
 							cutoff = options.pixel_size/options.fl
-							log_main.add("low-pass filter to user provided  %f Angstrom"%cutoff)
+							log_main.add("low-pass filter to user provided %f[A]"%cutoff)
 						else: # low-pass filter to resolution determined by FSC0.143
-							log_main.add("low-pass filter to FSC0.143 ! ")
 							map1   = filt_tanl(map1,resolution_FSC143, options.aa)
 							cutoff = options.pixel_size/resolution_FSC143
+							log_main.add("low-pass filter to FSC0.143 resolution (%f[A])!"%cutoff)
 					else:
-						if filter_to_resolution:
-							map1   = filt_tanl(map1,resolution_FSC143, options.aa)
-							cutoff = options.pixel_size/resolution_FSC143
-							log_main.add("low-pass filter to resolution ! ")
-						else:
-							cutoff = 0.0 
-							log_main.add("low-pass filter is not applied to map! ")
+						### # NOTE: Toshio Moriya 2018/01/11
+						### # Remove "enforce low-pass filter"
+						### if filter_to_resolution:
+						### 	map1   = filt_tanl(map1,resolution_FSC143, options.aa)
+						### 	cutoff = options.pixel_size/resolution_FSC143
+						### 	log_main.add("low-pass filter to FSC0.143 resolution (%f[A])!"%cutoff)
+						### else:
+						### 	cutoff = 0.0 
+						### 	log_main.add("low-pass filter is not applied to map!")
+						log_main.add("low-pass filter is not applied to map!")
 				else:
-					if options.fl == -1.0: log_main.add("User does not apply low pass filter in single map enhancement")
+					if options.fl == -1.0: 
+						log_main.add("User does not apply low pass filter in single map enhancement")
 					else:
 						if options.fl>0.5: # Input is in Angstrom 
 							map1   = filt_tanl(map1,options.pixel_size/options.fl, min(options.aa,.1))
@@ -1555,7 +1563,7 @@ def main():
 						else:
 							map1   = filt_tanl(map1,options.fl, min(options.aa,.1))
 							cutoff = options.pixel_size/options.fl
-						log_main.add("low-pass filter to user provided  %f Angstrom"%cutoff)
+						log_main.add("low-pass filter to user provided %f[A]"%cutoff)
 					
 				map1 = fft(map1)
 				file_name, file_ext = os.path.splitext(options.output)
@@ -1569,9 +1577,9 @@ def main():
 				map1.write_image(file_path_final)
 				log_main.add("---------- >>> summary <<<------------")
 				if not single_map:
-					log_main.add("resolution 0.5/0.143 are %5.2f/%5.2f Angstrom "%(round((options.pixel_size/resolution_FSChalf),3), round((options.pixel_size/resolution_FSC143),3)))
+					log_main.add("resolution 0.5/0.143 are %5.2f/%5.2f[A]"%(round((options.pixel_size/resolution_FSChalf),3), round((options.pixel_size/resolution_FSC143),3)))
 					if dip_at_fsc: log_main.add("There is a dip in your fsc in the region between 0.5 and 0.143, and you might consider ploting your fsc curve")
-				if options.B_enhance !=-1:  log_main.add( "B-factor is  %6.2f Angstrom^2  "%(round((-global_b),2)))
+				if options.B_enhance !=-1:  log_main.add( "B-factor is %6.2f[A^2]"%(round((-global_b),2)))
 				else:log_main.add( "B-factor is not applied")
 				if not single_map:
 					output_names = [plot_name.replace(' ', '_') for plot_name in plot_names]
@@ -1579,7 +1587,7 @@ def main():
 				log_main.add("the final volume is " + file_path_final)
 				file_path_guinierlines = os.path.join(options.output_dir, "guinierlines"+suffix+".txt")
 				log_main.add("guinierlines in logscale are saved in "+file_path_guinierlines)
-				if options.fl !=-1: log_main.add("tanl low-pass filter is applied to cut off high frequencies from resolution 1./%5.2f Angstrom" %round(cutoff,2))
+				if options.fl !=-1: log_main.add("tanl low-pass filter is applied to cutoff high frequencies from 1/%5.2f[1/A]" %round(cutoff,2))
 				else: log_main.add("the final volume is not low-pass filtered. ")
 				write_text_file(outtext, file_path_guinierlines)
 
@@ -1587,13 +1595,20 @@ def main():
 				if cutoff !=0.0:
 					pvalues, mindex, mavlue, index_zero, pfall_off = filter_product(global_b, options.pixel_size, cutoff, options.aa, map1.get_xsize())
 					log_main.add("---->>> analysis of enhancement <<<-----")
-					log_main.add("B_factor:  %f   cutoff:   %f  (A)  %f (absolute) aa (absolute):  %f  Maximum enhancement ocurs in %d pixels. Maximum enhancement ratio is %f. After %d pixel, power spectrum is set to zero. Fallall width is %d pixels"%\
-					   (global_b, cutoff, options.pixel_size/cutoff, options.aa, mindex, mavlue, index_zero, pfall_off))
+					### log_main.add("B_factor:  %f   cutoff:   %f[A]  (%f[absolute]) aa: [absolute]:  %f  Maximum enhancement ocurs in %d pixels. Maximum enhancement ratio is %f. After %d pixel, power spectrum is set to zero. Fallall width is %d pixels"%\
+					###    (global_b, cutoff, options.pixel_size/cutoff, options.aa, mindex, mavlue, index_zero, pfall_off))
+					log_main.add("B_factor                   :  %f"%(global_b))
+					log_main.add("low-pass filter cutoff     :  %f[A] (%f[absolute])"%(cutoff, options.pixel_size/cutoff))
+					log_main.add("low-pass filter falloff    :  %f[absolute]"%(options.aa))
+					log_main.add("max enhancement point      :  %d[pixels]"%(mindex))
+					log_main.add("max enhancement ratio      :  %f"%(mavlue))
+					log_main.add("1st zero pw spectrum point :  %d[pixels]"%(index_zero))
+					log_main.add("fallall width              :  %d[pixels]"%(pfall_off))
 					if mindex == 0:
 						msg = "enhancement has no maximum value, check your input parameters!"
 						log_main.add(msg)
 					if index_zero>map1.get_xsize()//2:
-						msg = "the enhancement exceeds nyquist frequency, you might change the input parameters, such as either reduce aa or B_factor, or both, and rerun the command "
+						msg = "enhancement exceeds nyquist frequency, you might change the input parameters, such as either reduce aa or B_factor, or both, and rerun the command "
 						log_main.add(msg)
 			log_main.add("-------------------------------------------------------")
 			log_main.add("---------- >>> DONE!!! <<<------------")
