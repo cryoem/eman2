@@ -1170,7 +1170,6 @@ def main():
 					if not single_map:
 						map1 +=map2
 						map1 /=2.
-						del map2
 					log_main.add("create an adaptive mask, let's wait...")
 					log_main.add("options.mask_threshold, options.dilation, options.consine_edge %f %5.2f %5.2f"%(options.mask_threshold, options.dilation, options.consine_edge))
 					m = Util.adaptive_mask(map1, options.mask_threshold, options.dilation, options.consine_edge)
