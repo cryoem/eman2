@@ -5317,8 +5317,7 @@ def get_input_from_sparx_ref3d(log_main):# case one
 	if not import_from_sparx_refinement:ERROR("Import parameters from SPARX refinement failed", "get_input_from_sparx_ref3d", 1,  Blockdata["myid"])
 	if update_sym ==1:
 		Blockdata["symclass"] = symclass(Tracker["constants"]["symmetry"])
-		from string import atoi
-		Tracker["constants"]["orientation_groups"] = max(4, 100//atoi(Blockdata["symclass"].sym[1]))
+		Tracker["constants"]["orientation_groups"] = max(4, 100//Blockdata["symclass"].nsym)
 	
 	# Setting for margin error				
 	chunk_dict = {}
@@ -5373,9 +5372,10 @@ def get_input_from_sparx_ref3d(log_main):# case one
 	###
 	from string import atoi
 	if Tracker["constants"]["minimum_grp_size"] ==-1:
-		Tracker["constants"]["minimum_grp_size"] = Tracker["constants"]["total_stack"]//Tracker["constants"]["img_per_grp"]*100//atoi(Blockdata["symclass"].sym[1])
+		Tracker["constants"]["minimum_grp_size"] = Tracker["constants"]["total_stack"]//Tracker["constants"]["img_per_grp"]*(100//Blockdata["symclass"].nsym)
 	else: 
-		Tracker["constants"]["minimum_grp_size"] = max(Tracker["constants"]["minimum_grp_size"], Tracker["constants"]["total_stack"]//Tracker["constants"]["img_per_grp"]*100//atoi(Blockdata["symclass"].sym[1]))
+		Tracker["constants"]["minimum_grp_size"] = max(Tracker["constants"]["minimum_grp_size"], \
+		   Tracker["constants"]["total_stack"]//Tracker["constants"]["img_per_grp"]*100//Blockdata["symclass"].nsym)
 	# Now copy oldparamstruture
 	copy_oldparamstructure_from_meridien_MPI(selected_iter, log_main)
 	return import_from_sparx_refinement
@@ -5423,11 +5423,12 @@ def get_input_from_datastack(log_main):# Case three
 	Tracker["constants"]["chunk_1"]		= os.path.join(Tracker["constants"]["masterdir"],"chunk_1.txt")
 	Tracker["constants"]["partstack"]	= os.path.join(Tracker["constants"]["masterdir"], "refinement_parameters.txt")
 	Tracker["previous_parstack"]        = os.path.join(Tracker["constants"]["masterdir"], "refinement_parameters.txt")#
-	from string import atoi
+	
 	if Tracker["constants"]["minimum_grp_size"] ==-1:
-		Tracker["constants"]["minimum_grp_size"] = Tracker["constants"]["total_stack"]//Tracker["constants"]["img_per_grp"]*100//atoi(Blockdata["symclass"].sym[1])
+		Tracker["constants"]["minimum_grp_size"] = Tracker["constants"]["total_stack"]//Tracker["constants"]["img_per_grp"]*(100//Blockdata["symclass"].nsym)
 	else: 
-		Tracker["constants"]["minimum_grp_size"] = max(Tracker["constants"]["minimum_grp_size"], Tracker["constants"]["total_stack"]//Tracker["constants"]["img_per_grp"]*100//atoi(Blockdata["symclass"].sym[1]))
+		Tracker["constants"]["minimum_grp_size"] = max(Tracker["constants"]["minimum_grp_size"], \
+		   Tracker["constants"]["total_stack"]//Tracker["constants"]["img_per_grp"]*100//Blockdata["symclass"].nsym)
 
 	###
 	Tracker["refang"], Tracker["rshifts"], Tracker["delta"] = None, None, None
@@ -7262,7 +7263,7 @@ def main():
 		try : 
 			Blockdata["symclass"]                      = symclass(Tracker["constants"]["symmetry"])
 			from string import atoi
-			Tracker["constants"]["orientation_groups"] = max(4, 100//atoi(Blockdata["symclass"].sym[1]))
+			Tracker["constants"]["orientation_groups"] = max(4, 100//Blockdata["symclass"].nsym)
 			
 		except: pass
 		get_angle_step_from_number_of_orien_groups(Tracker["constants"]["orientation_groups"])
@@ -7535,9 +7536,9 @@ def main():
 		checking_flag = 0 # reset
 		Blockdata["fftwmpi"]      = True
 		Blockdata["symclass"]     = symclass(Tracker["constants"]["symmetry"])
-		print(Blockdata["symclass"].sym[1])
-		from string import atoi
-		Tracker["constants"]["orientation_groups"] = max(4, 100//atoi(Blockdata["symclass"].sym[1]))
+		
+		Tracker["constants"]["orientation_groups"] = max(4, 100//Blockdata["symclass"].nsym)
+		
 		get_angle_step_from_number_of_orien_groups(Tracker["constants"]["orientation_groups"])
 		Blockdata["ncpuspernode"] = Blockdata["no_of_processes_per_group"]
 		Blockdata["nsubset"]      = Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
