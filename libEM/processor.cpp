@@ -7301,7 +7301,7 @@ void BadLineXYProcessor::process_inplace(EMData * image)
 				ngl = x;
 				start = ogl+1;
 				for (int c=start; c<ngl; c++) {
-					printf("Fixing column %d\n",c);
+					//printf("Fixing column %d\n",c);
 					pos = c-ogl;
 					for (int y=0; y<ny; y++) {
 						float val = ((image->get_value_at(ogl,y)*(ngl-ogl-pos)+image->get_value_at(ngl,y)*pos)) / (nnorm*(ngl-ogl));
@@ -7325,7 +7325,7 @@ void BadLineXYProcessor::process_inplace(EMData * image)
 			if (inflag == true){
 				ngl = y;
 				for (int r=ogl+1; r<ngl; r++) {
-					printf("Fixing row %d\n",r);
+                    //printf("Fixing row %d\n",r);
 					pos = r-ogl;
 					for (int x=0; x<nx; x++) {
 						float val = ((image->get_value_at(x,ogl)*(ngl-ogl-pos)+image->get_value_at(x,ngl)*pos)) / (nnorm*(ngl-ogl));
