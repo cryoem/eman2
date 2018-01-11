@@ -60,8 +60,8 @@ def main():
 	Note: We have found the following to work on DE64 images:
 	e2ddd_movie.py <movies> --de64 --dark <dark_frames> --gain <gain_frames> --gain_darkcorrected --reverse_gain --invert_gain
 
+	Note: For multi-image files in MRC format, use the .mrcs extension. Do not use .mrc, as it will handle input stack as a 3D volume.
 	"""
-	# Note: Do not use .mrc extensions for multi-image files. Use .mrcs instead.
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
@@ -111,7 +111,7 @@ def main():
 	parser.add_argument("--ext",default="hdf",type=str, choices=["hdf","mrcs","mrc"],help="Save frames with this extension. Default is 'hdf'.", guitype='strbox', row=19, col=1, rowspan=1, colspan=1, mode='align')
 	parser.add_argument("--suffix",type=str,default="proc",help="Specify a unique suffix for output frames. Default is 'proc'. Note that the output of --frames will be overwritten if identical suffix is already present.",guitype='strbox', row=19, col=2, rowspan=1, colspan=1, mode="align")
 
-	parser.add_argument("--round", choices=["float","integer","half"],help="If float (default), apply subpixel frame shifts. If integer, use integer shifts. If half integer, round shifts to nearest half integer values.",default="float",guitype='combobox', choicelist='["float","integer","half integer"]', row=18, col=2, rowspan=1, colspan=1, mode='align')
+	parser.add_argument("--round", choices=["float","int"],help="If float (default), apply subpixel frame shifts. If integer, use integer shifts.",default="float",guitype='combobox', choicelist='["float","integer"]', row=18, col=2, rowspan=1, colspan=1, mode='align')
 	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful", guitype='intbox', row=20, col=0, rowspan=1, colspan=2, mode="align")
 
 	parser.add_header(name="orblock6", help='Just a visual separation', title="Alignment optimization: ", row=22, col=0, rowspan=2, colspan=3, mode="align")
@@ -123,22 +123,6 @@ def main():
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--debug", default=False, action="store_true", help="run with debugging output")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
-
-	################################################################################################################################################################
-
-	#parser.add_argument("--normalize",action="store_true",default=False,help="Apply edgenormalization to input images after dark/gain. Do not use this option when aligning frames with MotionCor2.", guitype='boolbox', row=13, col=0, rowspan=1, colspan=1, mode='align')
-	#parser.add_argument("--gaink2",type=str,default=None,help="Perform gain image correction. Gatan K2 gain images are the reciprocal of DDD gain images.",guitype='filebox',browser="EMMovieDataTable(withmodal=True,multiselect=False)", row=7, col=0, rowspan=1, colspan=3, mode="align")
-	#parser.add_argument("--plot", default=False,help="Display a plot of the movie trajectory after alignment",action="store_true")
-	#parser.add_argument("--simpleavg", action="store_true",help="Will save a simple average of the dark/gain corrected frames (no alignment or weighting)",default=False)
-	#parser.add_argument("--avgs", action="store_true",help="Testing",default=False)
-	#parser.add_argument("--movie", type=int,help="Display an n-frame averaged 'movie' of the stack, specify number of frames to average",default=0)
-	#parser.add_argument("--ccweight", action="store_true",help="Supply coefficient matrix with cross correlation peak values rather than 1s.",default=False)
-	#parser.add_argument("--optfsc", default=False, help="Specify whether to compute FSC during alignment optimization. Default is False.",action="store_true")
-	#parser.add_argument("--falcon", default=False, help="Use this flag to optimize alignment for falcon detector data.",action="store_true",guitype='boolbox', row=5, col=1, rowspan=1, colspan=1)
-	#parser.add_argument("--binning", type=int,help="Bin images by this factor by resampling in Fourier space. Default (-1) will choose based on input box size.",default=-1)
-#	parser.add_argument("--align_frames_tree", action="store_true",help="Perform whole-frame alignment of the stack hierarchically",default=False)
-#	parser.add_argument("--align_frames_countmode", action="store_true",help="Perform whole-frame alignment of frames collected in counting mode",default=False)
-	#parser.add_argument("--save_aligned", action="store_true",help="Save dark/gain corrected and optionally aligned stack",default=False, guitype='boolbox', row=14, col=0, rowspan=1, colspan=1, mode='align[True]')
 
 	(options, args) = parser.parse_args()
 
@@ -543,8 +527,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 
 			traj -= traj[0]
 
-			if options.round == "integer": traj = np.round(traj,0)#.astype(np.int8)
-			elif options.round == "half integer": traj = np.round(traj*2)/2
+			if options.round == "int": traj = np.round(traj,0)#.astype(np.int8)
 
 			locs = traj.ravel()
 			quals=[0]*n # quality of each frame based on its correlation peak summed over all images
@@ -577,9 +560,14 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 
 			print("{:1.1f} s\nShift images".format(time()-t0))
 			for i,im in enumerate(outim):
-				dx = int(floor(locs[i*2]+.5))
-				dy = int(floor(locs[i*2+1]+.5))
-				im.translate(dx,dy,0)
+				if options.round == "int":
+					dx = int(round(locs[i*2],0))
+					dy = int(round(locs[i*2+1],0))
+					im.translate(dx,dy,0)
+				else: # float by default
+					dx = float(locs[i*2])
+					dy = float(locs[i*2+1])
+					im.translate(dx,dy,0)
 
 			if options.normaxes:
 				for f in outim:
@@ -825,7 +813,7 @@ def find_com(ccf): # faster alternative to gaussian fitting...less robust in the
 
 def bimodal_peak_model(options,ccf):
 	nxx = ccf["nx"]
-	bs = nxx/2
+	bs = int(nxx/4)
 
 	xx = np.linspace(0,bs,bs)
 	yy = np.linspace(0,bs,bs)
@@ -836,8 +824,8 @@ def bimodal_peak_model(options,ccf):
 	ccfreg = ccf.get_clip(r)
 	ncc = ccfreg.numpy().copy()
 
-	x1 = bs/2.
-	y1 = bs/2.
+	x1 = int(bs/2.)
+	y1 = int(bs/2.)
 	a1 = 1000.0
 	s1 = 10.0
 	a2 = 20000.0
@@ -873,9 +861,9 @@ def bimodal_peak_model(options,ccf):
 		initial_guess = [x1,y1,s1,a1,s2,a2]
 		bds = [(-bs/2, -bs/2, 0.01, 0.01, 0.6, 0.01),(bs/2, bs/2, 100.0, 20000.0, 2.5, 100000.0)]
 		try:
-			popt,pcov=optimize.curve_fit(twod_bimodal,(xx,yy),ncc.ravel(),p0=initial_guess,bounds=bds,method="dogbox",max_nfev=50)#,xtol=0.05)
+			popt,pcov=optimize.curve_fit(twod_bimodal,(xx,yy),ncc.ravel(),p0=initial_guess,bounds=bds,method="dogbox",max_nfev=100,xtol=1e-6,ftol=1e-8,loss='linear')
 		except RuntimeError:
-			return [0,0,0,0,0,0],-1 #popt = initial_guess#, -1#popt = initial_guess
+			return None,-1 
 
 		popt = [p for p in popt]
 		popt[0] = popt[0] + nxx/2 - bs/2
@@ -905,6 +893,20 @@ def qual(locs,ccfs):
 if __name__ == "__main__":
 	main()
 
+
+	#parser.add_argument("--normalize",action="store_true",default=False,help="Apply edgenormalization to input images after dark/gain. Do not use this option when aligning frames with MotionCor2.", guitype='boolbox', row=13, col=0, rowspan=1, colspan=1, mode='align')
+	#parser.add_argument("--gaink2",type=str,default=None,help="Perform gain image correction. Gatan K2 gain images are the reciprocal of DDD gain images.",guitype='filebox',browser="EMMovieDataTable(withmodal=True,multiselect=False)", row=7, col=0, rowspan=1, colspan=3, mode="align")
+	#parser.add_argument("--plot", default=False,help="Display a plot of the movie trajectory after alignment",action="store_true")
+	#parser.add_argument("--simpleavg", action="store_true",help="Will save a simple average of the dark/gain corrected frames (no alignment or weighting)",default=False)
+	#parser.add_argument("--avgs", action="store_true",help="Testing",default=False)
+	#parser.add_argument("--movie", type=int,help="Display an n-frame averaged 'movie' of the stack, specify number of frames to average",default=0)
+	#parser.add_argument("--ccweight", action="store_true",help="Supply coefficient matrix with cross correlation peak values rather than 1s.",default=False)
+	#parser.add_argument("--optfsc", default=False, help="Specify whether to compute FSC during alignment optimization. Default is False.",action="store_true")
+	#parser.add_argument("--falcon", default=False, help="Use this flag to optimize alignment for falcon detector data.",action="store_true",guitype='boolbox', row=5, col=1, rowspan=1, colspan=1)
+	#parser.add_argument("--binning", type=int,help="Bin images by this factor by resampling in Fourier space. Default (-1) will choose based on input box size.",default=-1)
+#	parser.add_argument("--align_frames_tree", action="store_true",help="Perform whole-frame alignment of the stack hierarchically",default=False)
+#	parser.add_argument("--align_frames_countmode", action="store_true",help="Perform whole-frame alignment of frames collected in counting mode",default=False)
+	#parser.add_argument("--save_aligned", action="store_true",help="Save dark/gain corrected and optionally aligned stack",default=False, guitype='boolbox', row=14, col=0, rowspan=1, colspan=1, mode='align[True]')
 
 
 
