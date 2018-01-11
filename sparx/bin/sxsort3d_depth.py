@@ -5371,9 +5371,11 @@ def get_input_from_sparx_ref3d(log_main):# case one
 	Tracker["currentres"]                   = float(Tracker["constants"]["fsc05"])/float(Tracker["constants"]["nxinit"])
 	Tracker["bckgnoise"]                    =  os.path.join(Tracker["constants"]["masterdir"], "bckgnoise.hdf")
 	###
+	from string import atoi
 	if Tracker["constants"]["minimum_grp_size"] ==-1:
-		from string import atoi
 		Tracker["constants"]["minimum_grp_size"] = Tracker["constants"]["total_stack"]//Tracker["constants"]["img_per_grp"]*100//atoi(Blockdata["symclass"].sym[1])
+	else: 
+		Tracker["constants"]["minimum_grp_size"] = max(Tracker["constants"]["minimum_grp_size"], Tracker["constants"]["total_stack"]//Tracker["constants"]["img_per_grp"]*100//atoi(Blockdata["symclass"].sym[1]))
 	# Now copy oldparamstruture
 	copy_oldparamstructure_from_meridien_MPI(selected_iter, log_main)
 	return import_from_sparx_refinement
@@ -5421,9 +5423,11 @@ def get_input_from_datastack(log_main):# Case three
 	Tracker["constants"]["chunk_1"]		= os.path.join(Tracker["constants"]["masterdir"],"chunk_1.txt")
 	Tracker["constants"]["partstack"]	= os.path.join(Tracker["constants"]["masterdir"], "refinement_parameters.txt")
 	Tracker["previous_parstack"]        = os.path.join(Tracker["constants"]["masterdir"], "refinement_parameters.txt")#
+	from string import atoi
 	if Tracker["constants"]["minimum_grp_size"] ==-1:
-		from string import atoi
 		Tracker["constants"]["minimum_grp_size"] = Tracker["constants"]["total_stack"]//Tracker["constants"]["img_per_grp"]*100//atoi(Blockdata["symclass"].sym[1])
+	else: 
+		Tracker["constants"]["minimum_grp_size"] = max(Tracker["constants"]["minimum_grp_size"], Tracker["constants"]["total_stack"]//Tracker["constants"]["img_per_grp"]*100//atoi(Blockdata["symclass"].sym[1]))
 
 	###
 	Tracker["refang"], Tracker["rshifts"], Tracker["delta"] = None, None, None
@@ -7190,7 +7194,7 @@ def main():
 		Constants["depth_order"]                 = options.depth_order
 		Constants["img_per_grp"]                 = options.img_per_grp
 		Constants["minimum_grp_size"]      		 = options.minimum_grp_size
-		if options.minimum_grp_size == -1: Constants["minimum_grp_size"] = options.img_per_grp//2
+		#if options.minimum_grp_size == -1: Constants["minimum_grp_size"] = options.img_per_grp//2
 		Constants["radius"]              		 = options.radius
 		Constants["sym"]                         = options.sym
 		Constants["nsmear"]                      = options.nsmear
