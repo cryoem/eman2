@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -xe
+
 unset MACOSX_DEPLOYMENT_TARGET
 
 build_dir="${SRC_DIR}/../build_eman"
