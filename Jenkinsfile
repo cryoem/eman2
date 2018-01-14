@@ -79,6 +79,7 @@ pipeline {
     GIT_COMMIT_SHORT = sh(returnStdout: true, script: 'echo ${GIT_COMMIT:0:7}').trim()
     INSTALLERS_DIR = '${HOME}/workspace/${STAGE_NAME}-installers'
     DEPLOY_DEST    = 'zope@ncmi.grid.bcm.edu:/home/zope/zope-server/extdata/reposit/ncmi/software/counter_222/software_136/'
+    BUILD_SCRIPTS_BRANCH='fix-cron'
   }
   
   stages {
@@ -124,7 +125,7 @@ pipeline {
       }
       
       steps {
-        sh 'cd ${HOME}/workspace/build-scripts-cron/ && git checkout -f jenkins && git pull --rebase'
+        sh 'cd ${HOME}/workspace/build-scripts-cron/ && git checkout -f $BUILD_SCRIPTS_BRANCH && git pull --rebase'
       }
     }
     
