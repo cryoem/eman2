@@ -21,11 +21,12 @@ requirements:
             "libpng",
             "zlib",
             "matplotlib",
+            "scipy 1.*",
             "ipython",
             "pyqt 4.*",
             "pyopengl 3.1.0",
-            "theano",
-            "scikit-learn",
+            "theano 1.*",
+            "scikit-learn 0.19.*",
             "bsddb",       # [not win]
             "pydusa",      # [not win]
             "nose",
