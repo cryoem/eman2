@@ -4194,7 +4194,7 @@ def do_boxes_two_way_comparison_new(nbox, input_box_parti1, input_box_parti2, de
 			a = set(full_list)
 			b = set(accounted_list)
 			unaccounted_list = sorted(list(a.difference(b)))
-			msg ='all groups pass the size checking'
+			msg ='all non-unaccounted groups pass the size checking'
 		else:#drop off the smallest one, and decrease K by one
 			if len(list_stable) >3:
 				fake_list = sorted(list_stable, key=len)
