@@ -25,7 +25,7 @@ requirements:
             "ipython",
             "pyqt 4.*",
             "pyopengl 3.1.0",
-            "theano 1.*",
+            "theano 0.9.*",
             "scikit-learn 0.19.*",
             "bsddb",       # [not win]
             "pydusa",      # [not win]
