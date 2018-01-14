@@ -4204,7 +4204,7 @@ def do_boxes_two_way_comparison_new(nbox, input_box_parti1, input_box_parti2, de
 			a = set(full_list)
 			b = set(accounted_list)
 			unaccounted_list = sorted(list(a.difference(b)))
-			msg ='after size checking, K is decreased by one'
+			msg ='Not all non-unaccounted groups pass the size checking'
 		print(line, msg)
 		log_main.add(msg)
 		mmsg =" minimum group size: %d maximum group size: %d NACC: %d NUACC: %d "%(minimum_group_size, maximum_group_size, len(accounted_list), len(unaccounted_list))
