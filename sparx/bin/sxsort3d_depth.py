@@ -537,7 +537,7 @@ def output_clusters(output_dir, partition, unaccounted_list, not_include_unaccou
 	msg = '++++++++++++++++++++++output cluster text file++++++++++++++++++++++++++++++++++'
 	log_main.add(msg)
 	print(line,msg)
-	msg = 'write the dermined clusters as Cluster*.txt on each generation directory'
+	msg = 'write the determined clusters as Cluster*.txt on each generation directory'
 	log_main.add(msg)
 	print(line, msg)
 	for ic in xrange(len(nclasses)):
@@ -4292,7 +4292,7 @@ def do_withinbox_two_way_comparison(partition_dir, nbox, nrun, niter, log_main):
 	      Tracker["depth"], nbox, nrun, niter)
 	print(line, msg)
 	log_main.add(msg)
-	msg = 'two runs to be compared inside the box are only indepdent in the first iteration'
+	msg = 'two runs to be compared inside the box are only independent in the first iteration'
 	print(line, msg)
 	log_main.add(msg)
 	smsg =' withinboxrun ID: generation %d layer %d nbox %d nrun %d niter %d freq_cutoff %f '%(Tracker["current_generation"], \
@@ -7380,7 +7380,7 @@ def estimate_tanhl_params(cutoff, taa, image_size):
 
 def print_matching_pairs(pair_list, log_file):
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-	msg ='P0 (column) matches P1 (row)'
+	msg ='P0 (GID as row index) matches P1 (GID as column index)'
 	log_file.add(msg)
 	print(line, msg)
 	msg ='   '
