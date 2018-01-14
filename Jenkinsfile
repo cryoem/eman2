@@ -43,9 +43,7 @@ def isRelease() {
 }
 
 def runCronJob() {
-    sh "bash ${HOME}/workspace/build-scripts-cron/cronjob.sh $STAGE_NAME release/2.21"
-    if(isRelease())
-      sh "rsync -avzh --stats ${INSTALLERS_DIR}/eman2.${STAGE_NAME}.unstable.sh ${DEPLOY_DEST}"
+    sh "bash ${HOME}/workspace/build-scripts-cron/cronjob.sh $STAGE_NAME $GIT_BRANCH_SHORT"
 }
 
 def setUploadFlag() {
@@ -79,6 +77,8 @@ pipeline {
     GIT_COMMIT_SHORT = sh(returnStdout: true, script: 'echo ${GIT_COMMIT:0:7}').trim()
     INSTALLERS_DIR = '${HOME}/workspace/${STAGE_NAME}-installers'
     DEPLOY_DEST    = 'zope@ncmi.grid.bcm.edu:/home/zope/zope-server/extdata/reposit/ncmi/software/counter_222/software_136/'
+    NUMPY_VERSION='1.9'
+    BUILD_SCRIPTS_BRANCH='jenkins-release'
   }
   
   stages {
@@ -124,7 +124,7 @@ pipeline {
       }
       
       steps {
-        sh 'cd ${HOME}/workspace/build-scripts-cron/ && git checkout -f jenkins && git pull --rebase'
+        sh 'cd ${HOME}/workspace/build-scripts-cron/ && git checkout -f $BUILD_SCRIPTS_BRANCH && git pull --rebase'
       }
     }
     

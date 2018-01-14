@@ -11,8 +11,7 @@ requirements:
             "python 2.7.*",
             "boost 1.63.*",
             "fftw-mpi",
-            "numpy x.x",  # [linux]
-            "numpy",      # [not linux]
+            "numpy " ~ os.environ.get('NUMPY_VERSION') ~ ".*",
             "ftgl",
             "freetype",
             "gsl",
@@ -22,11 +21,12 @@ requirements:
             "libpng",
             "zlib",
             "matplotlib",
+            "scipy 1.*",
             "ipython",
             "pyqt 4.*",
             "pyopengl 3.1.0",
-            "theano",
-            "scikit-learn",
+            "theano 0.9.*",
+            "scikit-learn 0.19.*",
             "bsddb",       # [not win]
             "pydusa",      # [not win]
             "nose",
