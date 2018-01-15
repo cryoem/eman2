@@ -7014,16 +7014,12 @@ def angular_distribution(inputfile, options, output):
 	listDType = [
 		('Phi', '<f8'),
 		('Theta', '<f8'),
-		('Psi', '<f8'),
-		('tx', '<f8'),
-		('ty', '<f8')
 	]
-	arrData = numpy.genfromtxt(inputfile, dtype=listDType)
+	arrData = numpy.genfromtxt(inputfile, dtype=listDType, usecols=(0, 1))
 
 	# Load angle Data
 	arrPhi = numpy.round(arrData['Phi'], options.round_digit)
 	arrTheta = numpy.round(arrData['Theta'], options.round_digit)
-	arrPsi = numpy.round(arrData['Psi'], options.round_digit)
 
 	# Set the vectors for transformation and plotting
 	vectorInital = numpy.array([0, 0, 1])
@@ -7033,68 +7029,15 @@ def angular_distribution(inputfile, options, output):
 		options.box_size
 	])
 
-	# Create list for the different resulting angles
-	idxAlpha = 0
-	idxBeta = 1
-	listCoord = [[], []]
-
-	# Go through the list of angles
-	print('Calculate angles')
-	for linenumber in xrange(len(arrPhi)):
-
-		# Set the angles in radiant
-		anglePhi = arrPhi[linenumber] * numpy.pi / 180
-		angleTheta = arrTheta[linenumber] * numpy.pi / 180
-		anglePsi = arrPsi[linenumber] * numpy.pi / 180
-
-		# Create the transformation matrix
-		matrixZ1 = numpy.matrix([
-			[numpy.cos(anglePhi), numpy.sin(anglePhi), 0],
-			[numpy.sin(-anglePhi), numpy.cos(anglePhi), 0],
-			[0, 0, 1]
-		])
-		matrixY = numpy.matrix([
-			[numpy.cos(angleTheta), 0, numpy.sin(-angleTheta)],
-			[0, 1, 0],
-			[numpy.sin(angleTheta), 0, numpy.cos(angleTheta)]
-		])
-		matrixZ2 = numpy.matrix([
-			[numpy.cos(anglePsi), numpy.sin(anglePsi), 0],
-			[numpy.sin(-anglePsi), numpy.cos(anglePsi), 0],
-			[0, 0, 1]
-		])
-
-		matrixTransform = matrixZ1 * matrixY * matrixZ2
-
-		# Transform the vector
-		transX, transY, transZ = numpy.round(
-			numpy.dot(matrixTransform, vectorInital).A1, 6
-		)
-
-		# Transform to spherical coordinates
-		# e = [sin(alpha)*cos(alpha), sin(alpha)*sin(beta), cos(alpha)]
-		angleAlpha = numpy.arccos(
-			transZ / numpy.sqrt(transX**2 + transY**2 + transZ**2)
-		)
-		angleBeta = numpy.arctan2(transY, transX)
-
-		# We want our range for phi from 0 to 2*pi not -pi to pi
-		if angleBeta < 0:
-			angleBeta += 2 * numpy.pi
-
-		# Append to the coordinate List
-		listCoord[idxAlpha].append(angleAlpha)
-		listCoord[idxBeta].append(angleBeta)
-
 	print('Calculate vector length')
 	# Create array for the angles
 	dtype = [
 		('alpha', '<f8'),
 		('beta', '<f8')
 	]
-	arrayAngles = numpy.empty(len(listCoord[idxAlpha]), dtype=dtype)
-	arrayAngles['alpha'] = listCoord[idxAlpha]
-	arrayAngles['beta'] = listCoord[idxBeta]
+	arrayAngles = numpy.empty(len(arrData), dtype=dtype)
+	arrayAngles['alpha'] = numpy.radians(arrTheta)
+	arrayAngles['beta'] = numpy.radians(arrPhi)
 
 	# Create length of the vectors. One angstrom is one particle.
 	uniqueArray, allArray = numpy.unique(
