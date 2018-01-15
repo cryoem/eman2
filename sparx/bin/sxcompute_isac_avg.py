@@ -219,7 +219,7 @@ def main():
 	
 	if len(options_list) == 0:
 		if(Blockdata["myid"] == Blockdata["main_node"]):
-			print("specify one of the following options to start: 1. adjust_to_analytic_model; 2. adjust_to_given_pw2; 3. B_enhance; 4. no_adjustment")
+			print("Specify one of the following options to start: 1. adjust_to_analytic_model; 2. adjust_to_given_pw2; 3. B_enhance; 4. no_adjustment")
 	if len(options_list) > 1:
 		ERROR("The specified options are exclusive. Use only one of them to start", "sxcompute_isac_avg.py", 1, Blockdata["myid"])
 	
@@ -293,7 +293,7 @@ def main():
 	#y_range =  x_range
 
 	####-----------------------------------------------------------
-	# Create Master directory
+	# Create Master directory and associated subdirectories
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	if Tracker["constants"]["masterdir"] == Tracker["constants"]["isac_dir"]:
 		masterdir = os.path.join(Tracker["constants"]["isac_dir"], "sharpen")
@@ -307,8 +307,16 @@ def main():
 			masterdir ="sharpen_"+Tracker["constants"]["isac_dir"]
 			os.mkdir(masterdir)
 		else:
-			if os.path.exists(masterdir): print("%s already exists"%masterdir)
-			else: os.mkdir(masterdir)
+			if os.path.exists(masterdir): 
+				print("%s already exists"%masterdir)
+			else: 
+				os.mkdir(masterdir)
+		subdir_path = os.path.join(masterdir, "ali2d_local_params_avg")
+		if not os.path.exists(subdir_path): 
+			os.mkdir(subdir_path)
+		subdir_path = os.path.join(masterdir, "params_avg")
+		if not os.path.exists(subdir_path): 
+			os.mkdir(subdir_path)
 		li =len(masterdir)
 	else: li = 0
 	li                                  = mpi_bcast(li,1,MPI_INT,Blockdata["main_node"],MPI_COMM_WORLD)[0]
@@ -337,13 +345,27 @@ def main():
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		#Tracker["constants"]["orgstack"] = "bdb:"+ os.path.join(Tracker["constants"]["isac_dir"],"../","sparx_stack")
 		image = get_im(Tracker["constants"]["orgstack"], 0)
-		Tracker["constants"]["nnxo"]     = image.get_xsize()
-		try:
-			ctf_params = image.get_attr("ctf")
-			if Tracker["constants"]["pixel_size"] ==-1.: Tracker["constants"]["pixel_size"] = ctf_params.apix
-		except: print("pixel size value is not given.")
-		Tracker["ini_shrink"] = float(get_im(os.path.join(Tracker["directory"], "aqfinal.hdf"), 0).get_xsize())/Tracker["constants"]["nnxo"]
-	else: Tracker["ini_shrink"] = 0
+		Tracker["constants"]["nnxo"] = image.get_xsize()
+		if Tracker["constants"]["pixel_size"] == -1.0:
+			print("Pixel size value is not provided by user. extracting it from ctf header entry of the original stack.")
+			try:
+				ctf_params = image.get_attr("ctf")
+				Tracker["constants"]["pixel_size"] = ctf_params.apix
+			except: 
+				ERROR("Pixel size could not be extracted from the original stack.", "sxcompute_isac_avg.py", 1, Blockdata["myid"]) # action=1 - fatal error, exit
+		isac_shrink_path = os.path.join(Tracker["constants"]["isac_dir"], "README_shrink_ratio.txt")
+		if not os.path.exists(isac_shrink_path):
+			ERROR("%s does not exist in the specified ISAC run output directory"%(isac_shrink_path), "sxcompute_isac_avg.py", 1, Blockdata["myid"]) # action=1 - fatal error, exit
+		isac_shrink_file = open(isac_shrink_path, "r")
+		isac_shrink_lines = isac_shrink_file.readlines()
+		isac_shrink_ratio = float(isac_shrink_lines[5])  # 6th line: shrink ratio (= [target particle radius]/[particle radius]) used in the ISAC run
+		isac_radius = float(isac_shrink_lines[6])        # 7th line: particle radius at original pixel size used in the ISAC run
+		isac_shrink_file.close()
+		print("Extracted parameter values")
+		print("ISAC shrink ratio    : {0}".format(isac_shrink_ratio))
+		print("ISAC particle radius : {0}".format(isac_radius))
+		Tracker["ini_shrink"] = isac_shrink_ratio
+	else: Tracker["ini_shrink"] = 0.0
 	Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], communicator = MPI_COMM_WORLD)
 
 	#print(Tracker["constants"]["pixel_size"], "pixel_size")	
@@ -374,12 +396,13 @@ def main():
 				global_dict[abs_id] = [iavg, im]
 				P = combine_params2( init_dict[abs_id][0], init_dict[abs_id][1], init_dict[abs_id][2], init_dict[abs_id][3], \
 				parameters[abs_id][0], parameters[abs_id][1]/Tracker["ini_shrink"], parameters[abs_id][2]/Tracker["ini_shrink"], parameters[abs_id][3])
-				if parameters[abs_id][3] ==-1: print("wrong one")
+				if parameters[abs_id][3] ==-1: 
+					print("WARNING: Image #{0} is an unaccounted particle with invalid 2D alignment parameters and should not be the member of any classes. Please check the consitency of input dataset.".format(abs_id)) # How to check what is wrong about mirror = -1 (Toshio 2018/01/11)
 				params_of_this_average.append([P[0], P[1], P[2], P[3], 1.0])
 				ptl_list.append(abs_id)
 			params_dict[iavg] = params_of_this_average
 			list_dict[iavg] = members
-			write_text_row(params_of_this_average, os.path.join(Tracker["constants"]["masterdir"], "params_avg_%03d.txt"%iavg))
+			write_text_row(params_of_this_average, os.path.join(Tracker["constants"]["masterdir"], "params_avg", "params_avg_%03d.txt"%iavg))
 		ptl_list.sort()
 		init_params = [ None for im in xrange(len(ptl_list))]
 		for im in xrange(len(ptl_list)):
@@ -470,13 +493,14 @@ def main():
 				if im != Blockdata["main_node"]:
 					new_avg_other_cpu = recv_EMData(im, tag_sharpen_avg)
 					new_avg_other_cpu.set_attr("members", memlist[im])
+					new_avg_other_cpu.set_attr("n_objects", len(memlist[im]))
 					new_avg_other_cpu.write_image(os.path.join(Tracker["constants"]["masterdir"], "class_averages.hdf"), im)
 				else: new_avg.write_image(os.path.join(Tracker["constants"]["masterdir"], "class_averages.hdf"), im)
 				
 			if not options.skip_local_alignment:
 				if im == Blockdata["myid"]:
 					plist_dict[im] = plist
-					write_text_row(plist, os.path.join(Tracker["constants"]["masterdir"], "ali2d_local_params_avg_%03d.txt"%im))
+					write_text_row(plist, os.path.join(Tracker["constants"]["masterdir"], "ali2d_local_params_avg", "ali2d_local_params_avg_%03d.txt"%im))
 									
 				if Blockdata["myid"] == im and Blockdata["myid"] != Blockdata["main_node"]:
 					wrap_mpi_send(plist_dict[im], Blockdata["main_node"], MPI_COMM_WORLD)
@@ -595,16 +619,18 @@ def main():
 			
 			elif cpu_dict[im] == Blockdata["myid"] and Blockdata["myid"] == Blockdata["main_node"]:
 				slist[im].set_attr("members", memlist[im])
+				slist[im].set_attr("n_objects", len(memlist[im]))
 				slist[im].write_image(os.path.join(Tracker["constants"]["masterdir"], "class_averages.hdf"), im)
 			
 			elif cpu_dict[im] != Blockdata["myid"] and Blockdata["myid"] == Blockdata["main_node"]:
 				new_avg_other_cpu = recv_EMData(cpu_dict[im], tag_sharpen_avg)
 				new_avg_other_cpu.set_attr("members", memlist[im])
+				new_avg_other_cpu.set_attr("n_objects", len(memlist[im]))
 				new_avg_other_cpu.write_image(os.path.join(Tracker["constants"]["masterdir"], "class_averages.hdf"), im)
 			
 			if not options.skip_local_alignment:
 				if cpu_dict[im] == Blockdata["myid"]:
-					write_text_row(plist_dict[im], os.path.join(Tracker["constants"]["masterdir"], "ali2d_local_params_avg_%03d.txt"%im))
+					write_text_row(plist_dict[im], os.path.join(Tracker["constants"]["masterdir"], "ali2d_local_params_avg", "ali2d_local_params_avg_%03d.txt"%im))
 				
 				if cpu_dict[im] == Blockdata["myid"] and cpu_dict[im]!= Blockdata["main_node"]:
 					wrap_mpi_send(plist_dict[im], Blockdata["main_node"], MPI_COMM_WORLD)

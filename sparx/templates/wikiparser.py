@@ -133,7 +133,7 @@ def construct_keyword_dict():
 	keyword_dict["--input"]                       = SXkeyword_map(2, "image")          # --input=INPUT
 ###	keyword_dict["isac_averages"]                 = SXkeyword_map(2, "image")          # isac_averages
 	keyword_dict["--ctref_initvol"]               = SXkeyword_map(2, "image")          # --ctref_initvol=restarting_initial_volume
-	keyword_dict["input_isac_class_avgs_path"]    = SXkeyword_map(2, "image")          # input_isac_class_avgs_path
+	keyword_dict["isac_class_avgs_path"]          = SXkeyword_map(2, "image")          # isac_class_avgs_path
 	keyword_dict["input_image_path"]              = SXkeyword_map(2, "any_image")      # input_image_path
 	keyword_dict["input_micrograph"]              = SXkeyword_map(2, "any_image")      # input_micrograph_pattern 
 	keyword_dict["source_micrograph"]             = SXkeyword_map(2, "any_image")      # source_micrograph_pattern
@@ -162,7 +162,8 @@ def construct_keyword_dict():
 ###	keyword_dict["--resample_ratio_source"]       = SXkeyword_map(2, "txt")            # --resample_ratio_source
 	keyword_dict["input_data_list"]               = SXkeyword_map(2, "any_file_list")  # input_data_list
 	keyword_dict["--function"]                    = SXkeyword_map(2, "function")       # --function=user_function
-	keyword_dict["--isac_dir"]                    = SXkeyword_map(2, "directory")      # --isac_dir (contains keyworkd 'directory' but this should be directory type)
+	keyword_dict["--isac_dir"]                    = SXkeyword_map(2, "directory")      # --isac_dir
+	keyword_dict["input_run_dir"]                 = SXkeyword_map(2, "directory")      # input_run_dir
 ###	keyword_dict["--oldrefdir"]                   = SXkeyword_map(2, "directory")      # --oldrefdir=refine_dir_path
 	keyword_dict["--ctref_oldrefdir"]             = SXkeyword_map(2, "directory")      # --ctref_oldrefdir=refine_dir_path
 	keyword_dict["--refinement_dir"]              = SXkeyword_map(2, "directory")      # --refinement_dir=refinemen_out_dir
@@ -1718,10 +1719,10 @@ def main(is_dev_mode = False):
 ### 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_isacselect()))
 ### 	sxcmd_config_list.append(SXcmd_config("../doc/e2bdb.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_isac_makevstack()))
 ### 	sxcmd_config_list.append(SXcmd_config("../doc/pipeline_isac_substack.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
-	sxcmd_config_list.append(SXcmd_config("../doc/pipe_isac_substack.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 ### 	sxcmd_config_list.append(SXcmd_config("../doc/isac_post_processing.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 ###	sxcmd_config_list.append(SXcmd_config("../doc/compute_isac_avg.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/compute_isac_avg.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_isac_beautifier_to_model()))
+	sxcmd_config_list.append(SXcmd_config("../doc/pipe_isac_substack.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 
 	sxcmd_role = "sxr_alt"
 	sxcmd_config_list.append(SXcmd_config("../doc/compute_isac_avg.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_isac_beautifier_no_adjust()))

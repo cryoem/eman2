@@ -1,30 +1,27 @@
 = Name =
-sxpipe isac_substack - Create Stack Subset: Create virtual subset stack consisting of ISAC accounted particles by retrieving particle numbers associated with the class averages. The command also saves a list text file containing the retrieved original image numbers.
-
+sxpipe isac_substack - Create Stack Subset: Create virtual subset stack consisting from ISAC accounted particles by retrieving particle numbers associated with the ISAC or Beautifier class averages. The command also saves a list text file containing the retrieved original image numbers and 2D alingment parameters. In addition, it stores the 2D alingment parameters to stack header.
 
 = Usage =
 
 ''usage in command line''
 
-sxpipe.py  isac_substack  input_bdb_stack_path  input_isac_class_avgs_path  output_directory  --substack_basename=SUBSTACK_BASENAME
+sxpipe.py  isac_substack  input_bdb_stack_path  input_run_dir  output_directory  --isac_class_avgs_path=FILE_PATH  --substack_basename=SUBSTACK_BASENAME
 
 
 === Typical usage ===
 
 sxpipe isac_substack does not support MPI. 
 
-
- 1. Retrieve member :
-
-''' sxpipe.py  isac_substack   bdb:test3  class_averages_generation_3.hdf  outdir_isac_substack '''
+''' sxpipe.py isac_substack 'bdb:outdir_window#data' 'outdir_pipe_sac_substack' --isac_class_avgs_path='ordered_class_averages_selected.hdf' ''' <<BR>><<BR>>
 
 
 == Input ==
     input_bdb_stack_path:: Input BDB image stack: Specify the same BDB image stack used for the associated ISAC run. (default required string)
-    input_isac_class_avgs_path:: ISAC class average file path: Input ISAC class average file path. (default required string)
-    
+    input_run_dir:: ISAC or Beautifier run output directory: Specify output directory of an ISAC or Beautifier run as an input to this command. From this directory, the program extracts the shrink ratio and 2D alingment parameters of the ISAC run or local 2D alingment parameters of the Beautifier run. (default required string)
+
+    isac_class_avgs_path:: ISAC or Beautifier class averages path: Specify path to a file containg ISAC or Beautifier class averages. The calss averages can be fullset or selected subset, as long as they are associated with the input BDB image stack and contain class member information stored in the headers. By default, the program uses the same deafult name of ordered class averages in ISAC or Beautifier (i.e. ordered_class_averages.hdf). (default none)
     substack_basename:: Substack basename: Specify the basename of ISAC substack file. It cannot be empty string or only white spaces. (default isac_substack)
-    
+
     * The remaining parameters are optional.
 
 
@@ -36,11 +33,11 @@ sxpipe isac_substack does not support MPI.
 
 
 = Developer Notes =
-NOTE: 2017/11/16 Toshio Moriya
+NOTE: Toshio Moriya 2018/01/13
 The following options are not implemented yet.
 - isac_class_id:: ISAC class average ID: Retrieve only particle members of the specifed ISAC class. By default, retrieve from all classes. (default -1)
-- no_virtual_stack:: Create virtual stack: Indicate if virtual stack should be created or not. By default, create virtual stack. Otherwise, create only the particle ID list text file associated with the ISAC class averages. (default False question reversed in GUI)
-(sxpipe.py  isac_substack  input_bdb_stack_path  input_isac_class_avgs_path  output_directory  --isac_class_id=ISAC_CLASS_ID  --no_virtual_stack)
+- no_virtual_stack:: Do not create virtual stack: Use this option to create only the particle ID list text file associated with the ISAC class averages. (default False)
+- no_import_align2d:: Do not import alignment:  (default False)
 
 
 = Method =
