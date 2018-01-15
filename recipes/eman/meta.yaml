@@ -18,7 +18,8 @@ requirements:
             "hdf5 1.8.*",
             "jpeg",
             "libtiff 4.0.9",
-            "libpng",
+            "libpng 1.6.17",  # [linux]
+            "libpng 1.6.32",  # [osx]
             "zlib",
             "matplotlib",
             "scipy 1.*",
