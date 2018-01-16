@@ -7268,7 +7268,7 @@ def check_sorting(total_data, keepsorting, log_file):
 			else: keepsorting = 0
 		else: keepsorting     = 0
 	if keepsorting ==1:
-		Tracker["total_data"] = total_data
+		Tracker["total_stack"] = total_data
 		sort3d_init("initialization", log_file)
 	return keepsorting
 
