@@ -398,7 +398,6 @@ def main():
 					sphire_cter_entry[idx_cter_const_ac] = 100 * relion_const_ac  # convert to %
 					
 					if relion_dict['_rlnPhaseShift'][idx_col] >= 0:
-						from morphology import ampcont2angle, angle2ampcont
 						relion_phase_shift = float(tokens_line[relion_dict['_rlnPhaseShift'][idx_col] - 1])
 						sphire_cter_entry[idx_cter_phase_shift] = relion_phase_shift  # in [degrees]
 					else: 

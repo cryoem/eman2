@@ -127,12 +127,13 @@ def isac_substack(args):
 	assert (not os.path.exists(args.output_directory))
 	
 	# Check error conditions of options
+	defalut_isac_class_avgs_path = os.path.join(args.input_run_dir, "ordered_class_averages.hdf")
 	if args.isac_class_avgs_path != "": # User provided name
 		args.isac_class_avgs_path = args.isac_class_avgs_path.strip()
 		if not os.path.exists(args.isac_class_avgs_path):
 			ERROR("The specifed ISAC class average stack file does not exist. Please check the file path and restart the program.", subcommand_name) # action=1 - fatal error, exit
 	else: # Default name of ISAC or Beautifier
-		args.isac_class_avgs_path = os.path.join(args.input_run_dir, "ordered_class_averages.hdf")
+		args.isac_class_avgs_path = defalut_isac_class_avgs_path
 		if not os.path.exists(args.isac_class_avgs_path):
 			ERROR("ISAC or Beautifier run output directory does not contain the default ISAC class average stack file ({}). Please check the directory path or specify ISAC class average stack file, then restart the program.".format(args.isac_class_avgs_path), subcommand_name) # action=1 - fatal error, exit
 	args.substack_basename = args.substack_basename.strip()
@@ -320,10 +321,10 @@ def isac_substack(args):
 		for fullstack_img_id in xrange(n_fullstack_img):
 			prealign2d = fullstack_prealign2d_list[fullstack_img_id]
 			if len(prealign2d) != n_idx_isac_align2d:
-				ERROR("Invalid number of columns {} at entry #{} in {}. It should be {}. The parameter file might be corrupted. Please consider to return ISAC.".format(len(prealign2d), fullstack_img_id, fullstack_prealign2d_path, n_idx_isac_align2d), subcommand_name) # action=1 - fatal error, exit
+				ERROR("Invalid number of columns {} at entry #{} in {}. It should be {}. The parameter file might be corrupted. Please consider to rerun ISAC.".format(len(prealign2d), fullstack_img_id, fullstack_prealign2d_path, n_idx_isac_align2d), subcommand_name) # action=1 - fatal error, exit
 			shrunk_core_align2d = fullstack_shrunk_core_align2d_list[fullstack_img_id]
 			if len(shrunk_core_align2d) != n_idx_isac_align2d:
-				ERROR("Invalid number of columns {} at entry #{} in {}. It should be {}. The parameter file might be corrupted. Please consider to return ISAC.".format(len(shrunk_core_align2d), fullstack_img_id, fullstack_shrunk_core_align2d_path, n_idx_isac_align2d), subcommand_name) # action=1 - fatal error, exit
+				ERROR("Invalid number of columns {} at entry #{} in {}. It should be {}. The parameter file might be corrupted. Please consider to rerun ISAC.".format(len(shrunk_core_align2d), fullstack_img_id, fullstack_shrunk_core_align2d_path, n_idx_isac_align2d), subcommand_name) # action=1 - fatal error, exit
 			if shrunk_core_align2d[idx_isac_align2d_mirror] != -1: # An accounted particle
 				alpha1  = prealign2d[idx_isac_align2d_alpha]
 				sx1     = prealign2d[idx_isac_align2d_tx]
@@ -377,9 +378,9 @@ def isac_substack(args):
 		for accounted_img_id in xrange(n_accounted_img):
 			local_total_param2d = accounted_local_total_align2d_list[accounted_img_id]
 			if len(local_total_param2d) != n_idx_beautifier_align2d:
-				ERROR("Invalid number of columns {} at entry #{} in {}. It should be {}. The parameter file might be corrupted. Please consider to return ISAC.".format(len(local_total_param2d), accounted_img_id, accounted_local_total_align2d_path, n_idx_beautifier_align2d), subcommand_name) # action=1 - fatal error, exit
+				ERROR("Invalid number of columns {} at entry #{} in {}. It should be {}. The parameter file might be corrupted. Please consider to rerun ISAC.".format(len(local_total_param2d), accounted_img_id, accounted_local_total_align2d_path, n_idx_beautifier_align2d), subcommand_name) # action=1 - fatal error, exit
 			if local_total_param2d[idx_beautifier_align2d_mirror] == -1: # An Unaccounted Particle
-				ERROR("Invalid alignment paramters of an unaccounted particle is detected at entry #{} in {}. The parameter files might be corrupted. Please consider to return Beautifier.".format(accounted_img_id, accounted_local_total_align2d_path), subcommand_name) # action=1 - fatal error, exit
+				ERROR("Invalid alignment paramters of an unaccounted particle is detected at entry #{} in {}. The parameter files might be corrupted. Please consider to rerun Beautifier.".format(accounted_img_id, accounted_local_total_align2d_path), subcommand_name) # action=1 - fatal error, exit
 			assert (local_total_param2d[idx_beautifier_align2d_mirror] != -1)
 			
 			fullstack_img_id  = local_total_param2d[idx_beautifier_align2d_fullstack_img_id]
@@ -426,12 +427,24 @@ def isac_substack(args):
 		print_progress("Creating output subdirectory {}.".format(subdir_path))
 		os.mkdir(subdir_path)
 	
+	# Check the number of default ISAC class averages in ISAC or Beautifier run
+	print(" ")
+	print_progress("Checking the number of default ISAC class averages {} in ISAC or Beautifier run output directory...".format(defalut_isac_class_avgs_path))
+	n_default_class_avg = 0
+	if os.path.exists(defalut_isac_class_avgs_path):
+		n_default_class_avg = EMUtil.get_image_count(defalut_isac_class_avgs_path)
+	else: 
+		print_progress("WARNING! The default ISAC class averages file does not exist.")
+		assert (n_default_class_avg == 0)
+	print(" ")
+	print_progress("Detected {} default ISAC class averages in {}".format(n_default_class_avg, defalut_isac_class_avgs_path))
+	
 	# Retrieve original fullstack particle IDs of members listed in ISAC class averages
 	print(" ")
 	print_progress("Extracting original fullstack particle IDs of members listed in ISAC class averages...")
 	n_class_avg = EMUtil.get_image_count(args.isac_class_avgs_path)
 	print(" ")
-	print_progress("Detected %d ISAC class averages in %s"%(n_class_avg, args.isac_class_avgs_path))
+	print_progress("Detected {} ISAC class averages in {}".format(n_class_avg, args.isac_class_avgs_path))
 	fullstack_img_id_list_of_isac_substack = []
 	for class_avg_id in xrange(n_class_avg):
 		fullstack_img_id_list_of_isac_class = []
@@ -440,6 +453,8 @@ def isac_substack(args):
 		total_align2d_list_of_isac_class = []
 		for fullstack_img_id in fullstack_img_id_list_of_isac_class:
 			total_align2d = fullstack_total_align2d_list[fullstack_img_id]
+			if total_align2d[idx_isac_align2d_mirror] == -1:
+				ERROR("The member with original fullstack particle ID {} listed in ISAC class averages {} has the invalid 2D alignment parameters for ISAC unaccounted particle. Please check the consistency of input datasets. Worse yet, the input datasets might be corrupted. In this case, please consider to rerun ISAC.".format(fullstack_img_id, args.isac_class_avgs_path), subcommand_name) # action=1 - fatal error, exit
 			assert (total_align2d[idx_isac_align2d_mirror] != -1) # all class member particles should be accounted!!!
 			scale = 1.0 # because this 2D alignment parameters are scaled back!
 			total_align2d_list_of_isac_class.append([total_align2d[idx_isac_align2d_alpha], total_align2d[idx_isac_align2d_tx], total_align2d[idx_isac_align2d_ty], total_align2d[idx_isac_align2d_mirror], scale])
@@ -458,7 +473,7 @@ def isac_substack(args):
 	print_progress("Extracted {} ISAC class members from {}".format(n_isac_substack_img, args.isac_class_avgs_path))
 	assert (n_accounted_img <= n_fullstack_img)
 	if not n_isac_substack_img <= n_accounted_img:
-		ERROR("Invalid number of ISAC class members {}. It must be smaller than or equal to the total number of ISAC accounted particles {}. The stack header might be corrupted. Please consider to return ISAC.".format(n_isac_substack_img, n_accounted_img), subcommand_name) # action=1 - fatal error, exit
+		ERROR("Invalid number of ISAC class members {}. It must be smaller than or equal to the total number of ISAC accounted particles {}. The stack header might be corrupted. Please consider to rerun ISAC.".format(n_isac_substack_img, n_accounted_img), subcommand_name) # action=1 - fatal error, exit
 	
 	# Save the substack particle id list
 	fullstack_img_id_path_of_isac_substack = os.path.join(args.output_directory, "{}_particle_id_list.txt".format(args.substack_basename))
@@ -521,11 +536,12 @@ def isac_substack(args):
 	# Print summary of processing
 	print(" ")
 	print_progress("Summary of processing...")
-	print_progress("  Particles in fullstack   : %6d"%(n_fullstack_img)) 
-	print_progress("  Accounted particles      : %6d"%(n_accounted_img))
-	print_progress("  Provided class averages  : %6d"%(n_class_avg)) 
-	print_progress("  Extreacted class members : %6d"%(n_isac_substack_img))
-	print_progress("  ISAC substack size       : %6d"%(EMUtil.get_image_count(virtual_bdb_substack_path)))
+	print_progress("  Particles in fullstack  : %6d"%(n_fullstack_img)) 
+	print_progress("  Accounted particles     : %6d"%(n_accounted_img))
+	print_progress("  Defalut class averages  : %6d"%(n_default_class_avg)) 
+	print_progress("  Provided class averages : %6d"%(n_class_avg)) 
+	print_progress("  Extracted class members : %6d"%(n_isac_substack_img))
+	print_progress("  ISAC substack size      : %6d"%(EMUtil.get_image_count(virtual_bdb_substack_path)))
 	print(" ")
 
 # ----------------------------------------------------------------------------------------
