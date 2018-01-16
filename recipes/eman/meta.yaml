@@ -15,10 +15,11 @@ requirements:
             "ftgl",
             "freetype",
             "gsl",
-            "hdf5 1.8.*",
+            "hdf5 1.8.18",
             "jpeg",
-            "libtiff",
-            "libpng",
+            "libtiff 4.0.9",
+            "libpng 1.6.17",  # [linux]
+            "libpng 1.6.32",  # [osx]
             "zlib",
             "matplotlib",
             "scipy 1.*",
