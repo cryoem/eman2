@@ -13969,16 +13969,21 @@ void ManhattanDistanceProcessor::process_inplace(EMData * image)
 			}
 		}
 	}
+
 	// traverse from bottom right to top left. Pixels will either be what we had on the first pass...
-	for (int i=nx-1; i>=0; i--) {
-		for (int j=ny-1; j>=0; j--) {
-			for (int k=nz-1; k>=0; k--) {
-				float south = Util::get_min(image->get_value_at(i,j,k),image->get_value_at(i+1,j,k)+1);
-				float east =  Util::get_min(image->get_value_at(i,j,k),image->get_value_at(i,j+1,k)+1);
-				float below = Util::get_min(image->get_value_at(i,j,k),image->get_value_at(i,j,k+1)+1);
-				if (i+1<nx) image->set_value_at_fast(i,j,k,south); // or one more than the pixel to the south
-				if (j+1<ny) image->set_value_at_fast(i,j,k,east); // or one more than the pixel to the east
-				if (k+1<nz) image->set_value_at_fast(i,j,k,below); // or one more than the pixel below
+	for (int i=nx-2; i>=0; i--) {
+		for (int j=ny-2; j>=0; j--) {
+			for (int k=nz-2; k>=0; k--) {
+				if (image->get_value_at(i,j,k) == 1) {
+					image->set_value_at_fast(i,j,k,0); // first pass and pixel was on, it gets a zero
+				} else {
+					float south = Util::get_min(image->get_value_at(i,j,k),image->get_value_at(i+1,j,k)+1);
+					float east =  Util::get_min(image->get_value_at(i,j,k),image->get_value_at(i,j+1,k)+1);
+					float below = Util::get_min(image->get_value_at(i,j,k),image->get_value_at(i,j,k+1)+1);
+					if (i+1<nx) image->set_value_at_fast(i,j,k,south); // or one more than the pixel to the south
+					if (j+1<ny) image->set_value_at_fast(i,j,k,east); // or one more than the pixel to the east
+					if (k+1<nz) image->set_value_at_fast(i,j,k,below); // or one more than the pixel below
+				}
 			}
 		}
 	}
