@@ -302,8 +302,8 @@ const string PruneSkeletonProcessor::NAME = "morph.prune";
 const string ManhattanDistanceProcessor::NAME = "math.distance.manhattan";
 const string BinaryDilationProcessor::NAME = "morph.dilate.binary";
 const string BinaryErosionProcessor::NAME = "morph.erode.binary";
-const string BinaryClosingProcessor::NAME = "morph.open.binary";
-const string BinaryOpeningProcessor::NAME = "morph.close.binary";
+const string BinaryOpeningProcessor::NAME = "morph.open.binary";
+const string BinaryClosingProcessor::NAME = "morph.close.binary";
 const string BinaryMorphGradientProcessor::NAME = "morph.gradient.binary";
 const string BinaryExternalGradientProcessor::NAME = "morph.ext_grad.binary";
 const string BinaryInternalGradientProcessor::NAME = "morph.int_grad.binary";
@@ -14081,14 +14081,14 @@ void BinaryErosionProcessor::process_inplace(EMData *image)
 	}
 }
 
-EMData* BinaryClosingProcessor::process(const EMData* const image)
+EMData* BinaryOpeningProcessor::process(const EMData* const image)
 {
 	EMData* proc = image->copy();
-	proc->process_inplace("morph.close.binary",params);
+	proc->process_inplace("morph.open.binary",params);
 	return proc;
 }
 
-void BinaryClosingProcessor::process_inplace(EMData *image)
+void BinaryOpeningProcessor::process_inplace(EMData *image)
 {
 	int iters=params.set_default("iters",1);
 	float thresh = params.set_default("thresh",0.5);
@@ -14100,14 +14100,14 @@ void BinaryClosingProcessor::process_inplace(EMData *image)
 	}
 }
 
-EMData* BinaryOpeningProcessor::process(const EMData* const image)
+EMData* BinaryClosingProcessor::process(const EMData* const image)
 {
 	EMData* proc = image->copy();
-	proc->process_inplace("morph.open.binary",params);
+	proc->process_inplace("morph.close.binary",params);
 	return proc;
 }
 
-void BinaryOpeningProcessor::process_inplace(EMData *image)
+void BinaryClosingProcessor::process_inplace(EMData *image)
 {
 	int iters=params.set_default("iters",1);
 	float thresh = params.set_default("thresh",0.5);
