@@ -1,4 +1,4 @@
-#!/work/home/stabrin/PIPELINE_TEST_2/TEST_RUNS/2018_01_16_10_08_58/EMAN2/bin/python
+#!/usr/bin/env python
 from __future__ import print_function
 
 #
