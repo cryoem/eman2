@@ -15,7 +15,7 @@ requirements:
             "ftgl",
             "freetype",
             "gsl",
-            "hdf5 1.8.*",
+            "hdf5 1.8.18",
             "jpeg",
             "libtiff 4.0.9",
             "libpng 1.6.17",  # [linux]
