@@ -491,7 +491,19 @@ def construct_token_list_from_MoinMoinWiki(sxcmd_config):
 							elif token.default == "False":
 								token.default = True # convert the default value to opposite boolean
 							else:
-								assert(False)
+								assert (False)
+							assert (not token.is_reversed)
+						elif default_value.find("value reversed in GUI") != -1:
+							token.is_required = False
+							token.default = default_value.replace("value reversed in GUI", "").strip()
+							token.type = "bool"
+							if token.default == "True":
+								token.default = False # convert the default value to opposite boolean
+							elif token.default == "False":
+								token.default = True # convert the default value to opposite boolean
+							else:
+								assert (False)
+							token.is_reversed = True
 						else:
 							# This is not required command token and should have default value
 							token.is_required = False
@@ -939,6 +951,8 @@ def apply_sxsubcmd_config(sxsubcmd_config, sxcmd):
 				token.is_required = token_edit.is_required
 			if token_edit.is_locked != None:
 				token.is_locked = token_edit.is_locked
+			if token_edit.is_reversed != None:
+				token.is_reversed = token_edit.is_reversed
 			if token_edit.default != None:
 				token.default = token_edit.default
 			if token_edit.restore != None:
@@ -998,6 +1012,7 @@ def insert_sxcmd_to_file(sxcmd, output_file, sxcmd_variable_name):
 		output_file.write("; token.group = \"%s\"" % token.group)
 		output_file.write("; token.is_required = %s" % token.is_required)
 		output_file.write("; token.is_locked = %s" % token.is_locked)
+		output_file.write("; token.is_reversed = %s" % token.is_reversed)
 		if token.type == "bool":
 			output_file.write("; token.default = %s" % token.default)
 			output_file.write("; token.restore = %s" % token.restore)
