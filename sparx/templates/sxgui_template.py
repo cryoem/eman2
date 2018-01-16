@@ -119,6 +119,7 @@ class SXcmd_token(object):
 		self.group = ""              # Tab group: main or advanced
 		self.is_required = False     # Required argument or options. No default values are available
 		self.is_locked = False       # The restore value will be used as the locked value.
+		self.is_reversed = False     # Reversed default value of bool. The flag will be added if the value is same as default 
 		self.default = ""            # Default value
 		self.restore = ""            # Restore value
 		self.type = ""               # Type of value
@@ -598,13 +599,33 @@ class SXCmdWidget(QWidget):
 			# Then, handle the other cases//
 			else:
 				if sxcmd_token.type == "bool":
-					if not ((sxcmd_token.widget.checkState() == Qt.Checked) == sxcmd_token.default and sxcmd_token.is_required == False):
-						### if (sxcmd_token.widget.checkState() == Qt.Checked) == sxcmd_token.default and sxcmd_token.is_required == True:  # Add this token to command line
-						### if (sxcmd_token.widget.checkState() == Qt.Checked) != sxcmd_token.default and sxcmd_token.is_required == True:  # Add this token to command line
-						### if (sxcmd_token.widget.checkState() == Qt.Checked) != sxcmd_token.default and sxcmd_token.is_required == False: # Add this token to command line
+					### Possbile cases:
+					### if not sxcmd_token.is_reversed  and  (sxcmd_token.widget.checkState() == Qt.Checked) != sxcmd_token.default  and  sxcmd_token.is_required == True:  # Add this token to command line
+					### if not sxcmd_token.is_reversed  and  (sxcmd_token.widget.checkState() == Qt.Checked) == sxcmd_token.default  and  sxcmd_token.is_required == True:  # Add this token to command line
+					### if not sxcmd_token.is_reversed  and  (sxcmd_token.widget.checkState() == Qt.Checked) != sxcmd_token.default  and  sxcmd_token.is_required == False: # Add this token to command line
+					### if not sxcmd_token.is_reversed  and  (sxcmd_token.widget.checkState() == Qt.Checked) == sxcmd_token.default  and  sxcmd_token.is_required == False: # Do not add this token to command line
+					### 
+					### if     sxcmd_token.is_reversed  and  (sxcmd_token.widget.checkState() == Qt.Checked) != sxcmd_token.default  and  sxcmd_token.is_required == True:  # Add this token to command line
+					### if     sxcmd_token.is_reversed  and  (sxcmd_token.widget.checkState() == Qt.Checked) == sxcmd_token.default  and  sxcmd_token.is_required == True:  # Add this token to command line
+					### if     sxcmd_token.is_reversed  and  (sxcmd_token.widget.checkState() == Qt.Checked) != sxcmd_token.default  and  sxcmd_token.is_required == False: # Do not add this token to command line
+					### if     sxcmd_token.is_reversed  and  (sxcmd_token.widget.checkState() == Qt.Checked) == sxcmd_token.default  and  sxcmd_token.is_required == False: # Add this token to command line
+					### 
+					is_flag_required = False
+					if sxcmd_token.is_required:
+						is_flag_required = True
+					else:
+						assert (not sxcmd_token.is_required)
+						if not sxcmd_token.is_reversed and (sxcmd_token.widget.checkState() == Qt.Checked) != sxcmd_token.default:
+							is_flag_required = True
+						elif sxcmd_token.is_reversed and (sxcmd_token.widget.checkState() == Qt.Checked) == sxcmd_token.default:
+							is_flag_required = True
+						else:
+							assert (not is_flag_required)
+					
+					if is_flag_required:
 						sxcmd_line += " %s%s" % (sxcmd_token.key_prefix, sxcmd_token.key_base)
-					#else:
-						### if (sxcmd_token.widget.checkState() == Qt.Checked) == sxcmd_token.default and sxcmd_token.is_required == False: # Do not add this token to command line
+					#else: # Do not add this token to command line
+					
 				else:
 					if sxcmd_token.widget.text() == sxcmd_token.default:
 						### if sxcmd_token.widget.text() == sxcmd_token.default and sxcmd_token.is_required == True:  # Error case
