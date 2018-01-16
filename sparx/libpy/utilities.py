@@ -7008,7 +7008,6 @@ def search_lowpass(fsc):
 
 def angular_distribution(inputfile, options, output):
 	import numpy
-	import fundamentals as fu
 
 	print('Loading data')
 	# Import data
@@ -7029,116 +7028,96 @@ def angular_distribution(inputfile, options, output):
 		options.box_size,
 		options.box_size
 	])
-	print('Symmetry:', options.sym)
-	print('Pixel_size:', options.pixel_size)
-	print('box_size:', options.box_size)
-	symclass = fu.symclass(options.sym)
 
-	for name, mirror in zip(['mirror', 'nomirror'], [1, 0]):
+	print('Calculate vector length')
+	# Create array for the angles
+	dtype = [
+		('alpha', '<f8'),
+		('beta', '<f8')
+	]
+	arrayAngles = numpy.empty(len(arrData), dtype=dtype)
+	arrayAngles['alpha'] = numpy.radians(arrTheta)
+	arrayAngles['beta'] = numpy.radians(arrPhi)
 
-		output_name = '{0}_{1}.bild'.format(output, name)
-		print('{0}: Calculate vector length'.format(name))
-		# Create array for the angles
-		dtype = [
-			('alpha', '<f8'),
-			('beta', '<f8')
-		]
-		arrayAngles = numpy.empty(len(arrPhi), dtype=dtype)
-		if mirror == 1:
-			arrayAngles['alpha'] = numpy.radians(arrTheta)
-			arrayAngles['beta'] = numpy.radians(arrPhi)
-		else:
-			for idx, phi, theta in zip(range(len(arrPhi)), arrPhi, arrTheta):
-				phi_reduced, theta_reduced, psi_reduced = \
-					symclass.reduce_angles(
-						phi,
-						theta,
-						0,
-						mirror
-						)
-				arrayAngles[idx]['alpha'] = numpy.radians(theta_reduced)
-				arrayAngles[idx]['beta'] = numpy.radians(phi_reduced)
+	# Create length of the vectors. One angstrom is one particle.
+	uniqueArray, allArray = numpy.unique(
+		arrayAngles, return_inverse=True
+	)
+	arrayRadius = numpy.histogram(allArray, bins=len(uniqueArray))[0]
 
-		# Create length of the vectors. One angstrom is one particle.
-		uniqueArray, allArray = numpy.unique(
-			arrayAngles, return_inverse=True
-		)
-		arrayRadius = numpy.histogram(allArray, bins=len(uniqueArray))[0]
+	# Calculate the overall number of particles for the normalisation.
+	# Normalise the radius and calculate
+	# how many times there is the same radius.
+	particleNumber = len(arrayAngles)
+	arrayRadius = arrayRadius / float(particleNumber)
+	uniqueRadius, indicesRadius = numpy.unique(
+		arrayRadius, return_index=True
+	)
 
-		# Calculate the overall number of particles for the normalisation.
-		# Normalise the radius and calculate
-		# how many times there is the same radius.
-		particleNumber = len(arrayAngles)
-		arrayRadius = arrayRadius / float(particleNumber)
-		uniqueRadius, indicesRadius = numpy.unique(
-			arrayRadius, return_index=True
+	# Set the right colour to the right radius
+	uniqueRadiusNumber = len(uniqueRadius)
+	rangeGreen = numpy.linspace(0, 1, uniqueRadiusNumber)
+	rangeBlue = numpy.linspace(1, 0, uniqueRadiusNumber)
+
+	sortRadius = numpy.sort(uniqueRadius)
+	dictColor = {}
+	for number, radius in enumerate(sortRadius):
+		dictColor.update(
+			{
+				radius:
+				str(rangeGreen[number]) +
+				' ' +
+				str(rangeBlue[number])
+			}
 		)
 
-		# Set the right colour to the right radius
-		uniqueRadiusNumber = len(uniqueRadius)
-		rangeGreen = numpy.linspace(0, 1, uniqueRadiusNumber)
-		rangeBlue = numpy.linspace(1, 0, uniqueRadiusNumber)
+	# Merge all unique data and the related radius into one array
+	dtype = [
+		('alpha', '<f8'),
+		('beta', '<f8'),
+		('radius', '<f8')
+	]
+	arrayAnglesRadius = numpy.empty(len(uniqueArray['alpha']), dtype=dtype)
+	arrayAnglesRadius['alpha'] = uniqueArray['alpha']
+	arrayAnglesRadius['beta'] = uniqueArray['beta']
+	arrayAnglesRadius['radius'] = arrayRadius
 
-		sortRadius = numpy.sort(uniqueRadius)
-		dictColor = {}
-		for number, radius in enumerate(sortRadius):
-			dictColor.update(
-				{
-					radius:
-					str(rangeGreen[number]) +
-					' ' +
-					str(rangeBlue[number])
-				}
-			)
+	print('Write output')
+	# Create vectors for chimera
+	with open(output, 'w') as f:
+		for vector in arrayAnglesRadius:
+			arrayVector1 = numpy.empty(3)
+			arrayVector2 = numpy.empty(3)
+			arrayVectorSphere = numpy.empty(3)
 
-		# Merge all unique data and the related radius into one array
-		dtype = [
-			('alpha', '<f8'),
-			('beta', '<f8'),
-			('radius', '<f8')
-		]
-		arrayAnglesRadius = numpy.empty(len(uniqueArray['alpha']), dtype=dtype)
-		arrayAnglesRadius['alpha'] = uniqueArray['alpha']
-		arrayAnglesRadius['beta'] = uniqueArray['beta']
-		arrayAnglesRadius['radius'] = arrayRadius
+			arrayVectorSphere[0] = numpy.sin(vector[0]) * numpy.cos(vector[1])
+			arrayVectorSphere[1] = numpy.sin(vector[0]) * numpy.sin(vector[1])
+			arrayVectorSphere[2] = numpy.cos(vector[0])
 
-		print('{0}: Write output'.format(name))
-		# Create vectors for chimera
-		with open(output_name, 'w') as f:
-			for vector in arrayAnglesRadius:
-				arrayVector1 = numpy.empty(3)
-				arrayVector2 = numpy.empty(3)
-				arrayVectorSphere = numpy.empty(3)
+			arrayVector1 = vectorCenter
+			arrayVector2 = vectorCenter
 
-				arrayVectorSphere[0] = numpy.sin(vector[0]) * numpy.cos(vector[1])
-				arrayVectorSphere[1] = numpy.sin(vector[0]) * numpy.sin(vector[1])
-				arrayVectorSphere[2] = numpy.cos(vector[0])
-
-				arrayVector1 = vectorCenter
-				arrayVector2 = vectorCenter
-
-				arrayVector1 = arrayVector1 + \
-					options.particle_radius * arrayVectorSphere / options.pixel_size
-				arrayVector2 = arrayVector2 + \
-					(
-						options.particle_radius / options.pixel_size +
-						0.01 + vector[2] * options.cylinder_length
-					) * \
-					arrayVectorSphere
-				f.write('.color 0 {:s} \n'.format(dictColor[vector[2]]))
-				f.write(
-					'.cylinder {:.3f} {:.3f} {:.3f} {:.3f} {:.3f} {:.3f} {:.3f} \n'.format(
-						arrayVector1[0],
-						arrayVector1[1],
-						arrayVector1[2],
-						arrayVector2[0],
-						arrayVector2[1],
-						arrayVector2[2],
-						options.cylinder_width
-					)
+			arrayVector1 = arrayVector1 + \
+				options.particle_radius * arrayVectorSphere / options.pixel_size
+			arrayVector2 = arrayVector2 + \
+				(
+					options.particle_radius / options.pixel_size +
+					0.01 + vector[2] * options.cylinder_length
+				) * \
+				arrayVectorSphere
+			f.write('.color 0 {:s} \n'.format(dictColor[vector[2]]))
+			f.write(
+				'.cylinder {:.3f} {:.3f} {:.3f} {:.3f} {:.3f} {:.3f} {:.3f} \n'.format(
+					arrayVector1[0],
+					arrayVector1[1],
+					arrayVector1[2],
+					arrayVector2[0],
+					arrayVector2[1],
+					arrayVector2[2],
+					options.cylinder_width
 				)
-		print('Saved output to: {0}'.format(output_name))
-	print('All done!')
+			)
+	print(('All done! Saved output to: {0}'.format(output)))
 
 #####---------------------------------------------------
 # used in new meridien

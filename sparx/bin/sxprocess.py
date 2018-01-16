@@ -331,8 +331,9 @@ def main():
    16. Pad stack file --pad images to a larger size and set surround background to request value (default 0.0).
         sxprocess.py input.hdf output.hdf --box=new_box_size --background=3.0
 
-   17. Create angular distribution .bild file
-        sxprocess.py --angular_distribution  inputfile=example/path/params.txt --pixel_size=1.0  --round_digit=5  --box_size=500  --particle_radius=175  --cylinder_width=1  --cylinder_length=10000 --sym=c1
+   17. Create angular distribution .build file
+        sxprocess.py --angular_distribution  inputfile=example/path/params.txt --pixel_size=1.0  --round_digit=5  --box_size=500  --particle_radius=175  --cylinder_width=1  --cylinder_length=10000
+        
 
 """
 
@@ -416,7 +417,6 @@ def main():
 	parser.add_option('--particle_radius',      type='int',           default=175,                   help='particle radius [Pixels] (default 175)')
 	parser.add_option('--cylinder_width',       type='int',           default=1,                     help='width of the cylinder (default 1)')
 	parser.add_option('--cylinder_length',      type='int',           default=10000,                 help='length of the cylinder (default 10000)')
-	parser.add_option('--sym',      type='str',           default='c1',                 help='Symmetry (default c1)')
 	
 	(options, args) = parser.parse_args()
 
@@ -1676,7 +1676,7 @@ def main():
 			if not os.path.exists(args[0]):
 				ERROR( "Params file does not exists! Please rename and restart the program.", "sxprocess.py", 1)
 			strInput = args[0]
-			strOutput = strInput[:-len(strInput.split('/')[-1])] + 'distribution'
+			strOutput = strInput[:-len(strInput.split('/')[-1])] + 'distribution.bild'
 			if options.pixel_size == 0:
 				options.pixel_size = 1
 			angular_distribution(inputfile=strInput, options=options, output=strOutput)
