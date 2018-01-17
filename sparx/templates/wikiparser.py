@@ -1216,17 +1216,17 @@ def create_sxcmd_subconfig_sharpen_halfset_vol():
 	token_edit = SXcmd_token(); token_edit.initialize_edit("consine_edge"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("dilation"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("mtf"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("fsc_adj"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("fsc_adj"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("B_enhance"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("B_start"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("B_stop"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("B_start"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("B_stop"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
 #	token_edit = SXcmd_token(); token_edit.initialize_edit("randomphasesafter"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("fl"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("aa"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("aa"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("output"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
 	
 	sxsubcmd_mpi_support = False
-	sxcmd_subconfig = SXsubcmd_config("Sharpening for Halfset Volumes", "Combine a pair of unfiltered odd & even halfset volumes, then enhance the power spectrum at high frequencies (Halfset Volumes Mode). B-factor can be estimated from these unfiltered halfset volumes. This mode is typically used with MERIDIEN outputs.", token_edit_list, sxsubcmd_mpi_support, subset_config="halfset volumes")
+	sxcmd_subconfig = SXsubcmd_config("Sharpening of Halfset Volumes", "Combine a pair of unfiltered odd & even halfset volumes, then enhance the power spectrum at high frequencies (Halfset Volumes Mode). B-factor can be estimated from these unfiltered halfset volumes. This mode is typically used with MERIDIEN outputs.", token_edit_list, sxsubcmd_mpi_support, subset_config="halfset volumes")
 
 	return sxcmd_subconfig
 
@@ -1245,11 +1245,11 @@ def create_sxcmd_subconfig_shapen_cluster_vol():
 	token_edit = SXcmd_token(); token_edit.initialize_edit("mtf"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("B_enhance"); token_edit.is_required = True; token_edit.help = "Non-zero positive value: program use the given value [A^2] to enhance map; -1.0: B-factor is not applied."; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("fl"); token_edit.is_required = True; token_edit.help = "A value larger than 0.5: low-pass filter to the value in Angstrom; A value larger than 0.0 and smaller than 0.5: low-pass filter to the value in absolute frequency; -1.0: no low-pass filter."; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("aa"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("aa"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("output"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
 	
 	sxsubcmd_mpi_support = False
-	sxcmd_subconfig = SXsubcmd_config("Sharpening for Cluster Volumes", "Enhance the power spectrum of the cluster volumes, produced by SORT3D_DEPTH, at high frequencies (Cluster Volumes Mode). Only ad-hoc low-pass filter cutoff and B-factor can be used. This mode is mainly used with SORT3D_DEPTH outputs, but also can enhance the power spectrum of ANY volumes.", token_edit_list, sxsubcmd_mpi_support, subset_config="cluster volumes")
+	sxcmd_subconfig = SXsubcmd_config("Sharpening of Cluster Volumes", "Enhance the power spectrum of the cluster volumes, produced by SORT3D_DEPTH, at high frequencies (Cluster Volumes Mode). Only ad-hoc low-pass filter cutoff and B-factor can be used. This mode is mainly used with SORT3D_DEPTH outputs, but also can enhance the power spectrum of ANY volumes.", token_edit_list, sxsubcmd_mpi_support, subset_config="cluster volumes")
 	
 	return sxcmd_subconfig
 
@@ -1422,12 +1422,12 @@ def create_sxcmd_subconfig_refine3d_angular_distribution():
 	token_edit_list = []
 	token_edit = SXcmd_token(); token_edit.initialize_edit("angular_distribution"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("inputfile"); token_edit.label = "Alignment Parameter file"; token_edit.help = "Alignment Parameter file created by a previous 3D reconstruction step (e.g. sxmeridien.py)"; token_edit.is_required = True; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("pixel_size"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("pixel_size"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("round_digit"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("box_size"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("box_size"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("particle_radius"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("cylinder_width"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("cylinder_length"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("cylinder_width"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("cylinder_length"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
 	sxsubcmd_mpi_support = False
 	sxcmd_subconfig = SXsubcmd_config("Angular Distribution", None, token_edit_list, sxsubcmd_mpi_support)
 
