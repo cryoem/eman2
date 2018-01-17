@@ -70,6 +70,8 @@ def main():
 	"""
 		
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
+	
+	parser.add_argument("--binwidth", type=float, default=0.0, help="""default=0.0 (not used). requires --histogram. Y axes. Enforce this value for the width of histogram bins (it will be used to calculate --nbins)""")
 
 	parser.add_argument("--data", type=str, default='', help="""default=None (not used). Text file(s) with two column of values mean to be plotted on the X and Y axes. If supplying multiple files, separate them by commas.""")
 	parser.add_argument("--datax", type=str, default='', help="""default=None (not used). Text file(s) with a single column of values meant to be plotted on the X axis. If not provided, the X axis will go from 0 to n, where n is the number of values in --datay. If supplying multiple files, separate them by commas (the number of files for --datax and --datay must be the same).""")
@@ -358,6 +360,10 @@ def plotdata( options, data ):
 		for k in data:
 			#if count==ndata-1:
 			#	colorbar=True
+			transparent=False
+			if len(data) > 1:
+				transparent=True
+
 			color = RGB_tuples[k]
 			if options.nocolor or options.markerson and not marker:
 				marker = markers[k]
@@ -374,7 +380,7 @@ def plotdata( options, data ):
 				print("color is {}".format(color))
 				print("marker is {}".format(marker))
 			
-			plotfig( options, fig, ax, data[k][0], data[k][1], k, color, marker )
+			plotfig( options, fig, ax, data[k][0], data[k][1], k, color, marker, transparent )
 			
 			areay = round(sum(data[k][1]),2)	
 			with open(options.path + '/' + options.outputtag + '_areas.txt','a') as areasfile:
@@ -404,8 +410,11 @@ def plotdata( options, data ):
 	return
 
 
-def plotfig( options, fig, ax, datax, datay, count, colorthis='k', markerthis='' )	:
+def plotfig( options, fig, ax, datax, datay, count, colorthis='k', markerthis='', transparent=False )	:
 	
+	alphaval=1.0
+	if transparent:
+		alphaval=0.5
 	n=len(datay)
 
 	if options.mult:
@@ -438,11 +447,11 @@ def plotfig( options, fig, ax, datax, datay, count, colorthis='k', markerthis=''
 		linewidth=0
 	
 	if not options.histogram:
-		ax.plot( datax, datay, linestyle=linestyle, linewidth=linewidth, marker=markerthis, markersize=5, color=colorthis, label=label) #, alpha=0.75)
+		ax.plot( datax, datay, linestyle=linestyle, linewidth=linewidth, marker=markerthis, markersize=5, color=colorthis, label=label, alpha=alphaval)
 	elif options.histogram:
 		nbins = calcbins(options,datay)
 		print("\ndatay is",datay)
-		n, bins, patches = plt.hist(datay, nbins, label=label, histtype='bar', edgecolor='black', linewidth=2.0)#, facecolor=colorthis, alpha=0.30, normed=1)
+		n, bins, patches = plt.hist(datay, nbins, label=label, histtype='bar', edgecolor='black', linewidth=2.0, alpha=alphaval)#, facecolor=colorthis,normed=1)
 
 	print("\noptions.miny is {}".format(options.miny))
 	if options.miny != None or options.maxy != None:
@@ -517,11 +526,17 @@ def calcbins(options,data):
 	#print "The cuberoot of n is", cuberoot
 	width = (3.5*std)/cuberoot
 	print("Therefore, according to Scott's normal reference rule, width = (3.5*std)/cuberoot(n), the width of the histogram bins will be", width)
+
+	if options.binwidth:
+		width = options.binwidth
 	
-	nbins = int(round( (max(data) - min(data)) / width ))
-	
+	nbins=3
 	if options.nbins:
+		if options.binwidth:
+			print("\n\n\nWARNING!!!: --binwidth ignored since --nbins supersedes it.")
 		nbins = int(round(options.nbins))
+	else:
+		nbins = int(round( (max(data) - min(data)) / width ))
 	
 	print("\nAnd the number of bins n = ( max(data) - min(data) ) / width will thus be", nbins)
 	nbins = int(round(nbins))
