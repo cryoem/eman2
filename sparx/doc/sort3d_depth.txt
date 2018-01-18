@@ -42,9 +42,9 @@ There are three ways of running it.
     stop_mgskmeans_percentage:: Stop MGSKmeans Percentage [%]: Particle change percentage for stopping minimum group size K-means. (default 10.0)
     nsmear:: Number of smears for sorting: Fill it with 1 if user does not want to use all smears. (default -1)
     orientation_groups:: Number of orientation groups: Number of orientation groups in the asymmetric unit. (default 100)
-    swap_ratio:: Swap ratio: Specify a float number between 0.0 and 50. (default 1.0)
     not_include_unaccounted:: Do unaccounted reconstruction: Do not reconstruct unaccounted elements in each generation. (default False question reversed in GUI)
     do_swap_au:: Swap flag: Swap a certain number of accounted elements per cluster with the unaccounted elements. (default False)
+    swap_ratio:: Swap ratio: Specify a float number between 0.0 and 50. Effective only with --do_swap_au. Without --do_swap_au, the program automatically sets --swap_ratio to 0.0. (default 1.0)
     shake:: Perturbation factor: Perturbation factor applied to orientation groups. Specify a float number between 0.0 and 0.5. (default 0.0)
     notapplybckgnoise:: Use background noise flag: Flag to turn off background noise. (default False question reversed in GUI)
 
@@ -61,7 +61,9 @@ Important parameters:
 --minimum_grp_size: This parameter selects qualified clusters and controls Kmeans clustering stability. The suggested value would be between img_per_grp/2 and img_per_grp but should be less than img_per_grp.
 --stop_mgskmeans_percentage: Even though this option is not new, here the suggestion would be not to set it too small. 5.0 - 10.0  is a good choice.
 --orientation_groups: It divides the asymmetric unit into the specified number of orientation groups and cast the data orientation parameters into them. It is meant to prevent sorting by angle, i.e., assign certain angle to one group, for example top views to one group and side views to another.
---swap_ratio: a ratio of randomly replaced particles in a group, it is meant to prevent premature convergence.
+--swap_ratio: A ratio of randomly replaced particles in a group, it is meant to prevent premature convergence. When the program obtains both stable groups and unaccounted elements, it reassigns unaccounted elements back to stable groups, and continues sorting. Before re-assignment of unaccounted elements, the program swaps some elements of stable groups with unaccounted ones using this specified swap_ratio. 
+
+
 
 Results outputted:
 1. in addition to selection text files and cluster maps in the main directory, anova analysis about defocus, smearing, average norm of particles in clusters are also given in log.txt file.
