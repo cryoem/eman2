@@ -125,7 +125,7 @@ pipeline {
       }
       
       steps {
-        sh 'cd ${HOME}/workspace/build-scripts-cron/ && git checkout -f $BUILD_SCRIPTS_BRANCH && git pull --rebase'
+        sh 'cd ${HOME}/workspace/build-scripts-cron/ && git fetch && (git checkout $BUILD_SCRIPTS_BRANCH || git checkout -t origin/$BUILD_SCRIPTS_BRANCH) && git pull --rebase'
       }
     }
     
