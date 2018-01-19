@@ -42,9 +42,13 @@ def isRelease() {
     return (GIT_BRANCH ==~ /.*\/release.*/) && (JOB_TYPE == "push")
 }
 
+def isCurrentRelease() {
+    return (GIT_BRANCH ==~ /origin\/release\/2.21/) && (JOB_TYPE == "push")
+}
+
 def runCronJob() {
     sh "bash ${HOME}/workspace/build-scripts-cron/cronjob.sh $STAGE_NAME $GIT_BRANCH_SHORT"
-    if(isRelease())
+    if(isCurrentRelease())
       sh "rsync -avzh --stats ${INSTALLERS_DIR}/eman2.${STAGE_NAME}.unstable.sh ${DEPLOY_DEST}"
 }
 
@@ -126,7 +130,7 @@ pipeline {
       }
       
       steps {
-        sh 'cd ${HOME}/workspace/build-scripts-cron/ && git checkout -f $BUILD_SCRIPTS_BRANCH && git pull --rebase'
+        sh 'cd ${HOME}/workspace/build-scripts-cron/ && git fetch --prune && (git checkout -f $BUILD_SCRIPTS_BRANCH || git checkout -t origin/$BUILD_SCRIPTS_BRANCH) && git pull --rebase'
       }
     }
     
