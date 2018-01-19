@@ -1,0 +1,36 @@
+environment:
+
+  matrix:
+    - TARGET_ARCH: x64
+      CONDA_PY: 27
+      CONDA_INSTALL_LOCN: C:\\Miniconda-x64
+
+
+platform:
+    - x64
+
+install:
+    - set
+    # Cywing's git breaks conda-build. (See https://github.com/conda-forge/conda-smithy-feedstock/pull/2.)
+    - rmdir C:\cygwin /s /q
+
+    - call %CONDA_INSTALL_LOCN%\Scripts\activate.bat
+    - set PYTHONUNBUFFERED=1
+    - set CPU_COUNT=2
+
+    - conda config --set show_channel_urls true
+
+    - conda install -n root --yes --quiet vs2008_express_vc_python_patch -c conda-forge
+    - call setup_x64
+
+    - conda install --quiet --yes conda-build=2
+
+    - conda info
+    - conda config --get
+
+
+# Skip .NET project specific build phase.
+build: off
+
+test_script:
+    - conda build %APPVEYOR_BUILD_FOLDER%\recipes\eman -c cryoem -c defaults -c conda-forge
