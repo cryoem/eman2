@@ -260,13 +260,14 @@ def main():
 	Constants["radius"]                       = options.radius
 	Constants["xrange"]                       = options.xr
 	Constants["xstep"]                        = options.ts
-	Constants["FH"]                           = options.fh
+	#Constants["FH"]                          = options.fh
 	Constants["maxit"]                        = options.maxit
 	Constants["navg"]                         = options.navg
 	
 	if options.fl >0.0 and options.fl <=0.5:
 		ERROR("incorrected low pass filter. low pass filter should be expressed in Angstrom", "sxcompute_isac_avg.py", 1, Blockdata["myid"]) # action=1 - fatal error, exit
-		
+	if options.FH >0.0 and options.FH <=0.5:
+		ERROR("incorrected FH. FH should be expressed in Angstrom", "sxcompute_isac_avg.py", 1, Blockdata["myid"]) # action=1 - fatal error, exit
 	
 	if B_enhance:
 		Constants["B_start"]   = options.B_start
@@ -360,6 +361,9 @@ def main():
 		
 		if options.fl>0.5: Tracker["constants"]["low_pass_filter"] = Tracker["constants"]["pixel_size"]/options.fl 
 		else:  Tracker["constants"]["low_pass_filter"] = options.fl
+		
+		if options.fl>0.5: Tracker["constants"]["FH"] = Tracker["constants"]["pixel_size"]/options.fh
+		else: Tracker["constants"]["FH"] = options.fh
 		
 		isac_shrink_path = os.path.join(Tracker["constants"]["isac_dir"], "README_shrink_ratio.txt")
 		if not os.path.exists(isac_shrink_path):
