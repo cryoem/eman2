@@ -1561,8 +1561,11 @@ def main():
 							map1   = filt_tanl(map1,options.pixel_size/options.fl, min(options.aa,.1))
 							cutoff = options.fl
 						else:
+							"""
 							map1   = filt_tanl(map1,options.fl, min(options.aa,.1))
 							cutoff = options.pixel_size/options.fl
+							"""
+							ERROR("User provides incorrect low pass filter. Low pass filter should be in Angstrom", "combinemaps", 1)
 						log_main.add("low-pass filter to user provided %f[A]"%cutoff)
 					
 				map1 = fft(map1)
