@@ -75,7 +75,7 @@ def main():
 	parser.add_argument("--center", action="store_true", help="Move the atomic center to the center of the box", default=False)
 	parser.add_argument("--chains",type=str,help="String list of chain identifiers to include, eg 'ABEFG'")
 	parser.add_argument("--info", action="store_true", help="If this is specified, information on the PDB file is displayed, no conversion is performed.",default=False)
-	parser.add_argument("--full", action="store_true", help="Apply non-crystallographic symmetry (MTRIX, SMTRY, and BIOMT transformation matrices) to obtain 'full' structure.",default=False)
+	parser.add_argument("--full", action="store_true", help="Apply non-crystallographic symmetry to obtain 'full' structure.",default=False)
 	parser.add_argument("--quiet",action="store_true",default=False,help="Verbose is the default")
 	parser.add_argument("--model", type=int,default=None, help="Extract only a single numbered model from a multi-model PDB")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -158,33 +158,33 @@ def main():
 					else:
 						tfs[tfid] = np.zeros((3,4))
 						tfs[tfid][rowid] = row
-				elif line[:18] == "REMARK 350   BIOMT":
-					rowid = int(line[10:19].replace("BIOMT",""))-1
-					tfid = int(line[19:23]) - 1
-					rx = float(line[23:33])
-					ry = float(line[33:43])
-					rz = float(line[43:53])
-					t = float(line[53:68])
-					row = np.array([rx,ry,rz,t])
-					if tfid in tfs.keys():
-						tfs[tfid][rowid] = row
-					else:
-						tfs[tfid] = np.zeros((3,4))
-						tfs[tfid][rowid] = row
-				elif line[:18] == "REMARK 290   SMTRY":
-					rowid = int(line[10:19].replace("SMTRY",""))-1
-					tfid = int(line[19:23]) - 1
-					rx = float(line[23:33])
-					ry = float(line[33:43])
-					rz = float(line[43:53])
-					t = float(line[53:68])
-					print(line[:18],tfid,rx,ry,rz)
-					row = np.array([rx,ry,rz,t])
-					if tfid in tfs.keys():
-						tfs[tfid][rowid] = row
-					else:
-						tfs[tfid] = np.zeros((3,4))
-						tfs[tfid][rowid] = row
+				# elif line[:18] == "REMARK 350   BIOMT":
+				# 	rowid = int(line[10:19].replace("BIOMT",""))-1
+				# 	tfid = int(line[19:23]) - 1
+				# 	rx = float(line[23:33])
+				# 	ry = float(line[33:43])
+				# 	rz = float(line[43:53])
+				# 	t = float(line[53:68])
+				# 	row = np.array([rx,ry,rz,t])
+				# 	if tfid in tfs.keys():
+				# 		tfs[tfid][rowid] = row
+				# 	else:
+				# 		tfs[tfid] = np.zeros((3,4))
+				# 		tfs[tfid][rowid] = row
+				# elif line[:18] == "REMARK 290   SMTRY":
+				# 	rowid = int(line[10:19].replace("SMTRY",""))-1
+				# 	tfid = int(line[19:23]) - 1
+				# 	rx = float(line[23:33])
+				# 	ry = float(line[33:43])
+				# 	rz = float(line[43:53])
+				# 	t = float(line[53:68])
+				# 	print(line[:18],tfid,rx,ry,rz)
+				# 	row = np.array([rx,ry,rz,t])
+				# 	if tfid in tfs.keys():
+				# 		tfs[tfid][rowid] = row
+				# 	else:
+				# 		tfs[tfid] = np.zeros((3,4))
+				# 		tfs[tfid][rowid] = row
 
 			if line[:5] =="HELIX":
 				# not confident about this... 
