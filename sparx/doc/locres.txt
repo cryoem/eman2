@@ -22,9 +22,9 @@ sxlocres exists in for both MPI and non-MPI versions.
     
     wn:: FSC window size [Pixels]: Defines the size of window where the local real-space FSC is computed. (default 7)
     step:: Fourier shell step size [Pixels]: (default 1.0)
-    cutoff:: Resolution cut-off threshold [1/Pixels]: Specify resolution cut-off threshold for the FSC with absolute frequency. By default it goes to the Nyquist frequencies. (default 0.5)
+    cutoff:: Resolution cut-off threshold [A]: Specify resolution cut-off threshold for the FSC with absolute frequency. By default it goes to the Nyquist frequencies. (default 2*pixel_size)
     radius:: Mask radius [Pixels]: In case no mask is provided, a hard sphere of this radius will be used. (default -1)
-    res_overall:: Overall resolution [1/Pixels]: Set an absolute frequency between 0 to 0.5 for calibration of the average local resolution. See Description section in the wiki page for details. (default -1.0)
+    res_overall:: Overall resolution [A]: Set an resolution between 100. to 1.0 for calibration of the average local resolution. See Description section in the wiki page for details. (default -1.0)
     
     * The remaining parameters are optional.
     out_ang_res:: Save Angstrom local resolution: Additionally creates a local resolution file in Angstroms. (default False)
