@@ -46,10 +46,10 @@ There are four choices to adjust the power spectrum of resultant average images.
 
     modelpw:: Reference 1D PW spectrum: A text file contains 1-D rotationally-averaged power spectrum of either PDB model or EM map sampled in the given pixel_size and in original image size (see Penczek Methods Enzymol 2010). Specific to adjust to rotational average method. (default none)
 
-    fl:: Low-pass filter frequency: Cutoff frequency of low-pass filter. =0.0, do not use it;  ==-1.0, low pass filter to initial ISAC resolution;  ==-2, to resolution after local alignment; else using user provided cut_off in Angstrom. (default 0.0)
+    fl:: Low-pass filter frequency [A]: Cutoff frequency of low-pass filter. =0.0, do not use it;  ==-1.0, low pass filter to initial ISAC resolution;  ==-2, to resolution after local alignment; else using user provided cut_off in Angstrom. (default 0.0)
     xr:: Local search range [Pixels]: Translational search range for local alignment. (default -1.0)
     ts:: Local search step [Pixels]: Translational search step for local alignment. (default 1.0)
-    fh:: High frequency search limit: High frequency search limit for local alignment. (default -1.0)
+    fh:: High frequency search limit [A]: High frequency search limit for local alignment. (default -1.0)
     maxit:: Local alignment iterations: The number of iterations for local aligment. (default 5)
     navg:: Number of averages: The number of averages to be process, starting from the first image. By default, uses all ISAC average images. (default -1)
 
