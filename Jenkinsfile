@@ -7,7 +7,7 @@ def getJobType() {
     if(causes ==~ /.*UserIdCause.*/)     { job_type = "manual" }
     if(causes ==~ /.*ReplayCause.*/)     { job_type = "manual" }
     
-    return "cron"
+    return job_type
 }
 
 def notifyGitHub(status) {
