@@ -95,7 +95,7 @@ def main():
 		return  alpha, sx, sy, m
 	
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " prj_stack  --ave2D= --var2D=  --ave3D= --var3D= --img_per_grp= --fl=0.2 --aa=0.1  --sym=symmetry --CTF"
+	usage = progname + " prj_stack  --ave2D= --var2D=  --ave3D= --var3D= --img_per_grp= --fl=15. --aa=0.01  --sym=symmetry --CTF"
 	parser = OptionParser(usage, version=SPARXVERSION)
 	
 	parser.add_option("--output_dir",   type="string"	   ,	default="./",				help="output directory")
