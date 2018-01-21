@@ -7706,7 +7706,9 @@ def recons3d_final(masterdir, do_final_iter_init, memory_per_node):
 	elif do_final_iter_init == -1: do_final_iter = Tracker["constants"]["best"]
 	else:
 		do_final_iter = do_final_iter_init
-		if(Blockdata["myid"] == Blockdata["main_node"]): print("User selected %d iteration to do the reconstruction "%do_final_iter)			
+		if(Blockdata["myid"] == Blockdata["main_node"]): print("User selected %d iteration to do the reconstruction "%do_final_iter)
+		if do_final_iter<=2:  ERROR("the selected iteartion should be larager than 2", "recons3d_final", 1, Blockdata["myid"])
+			
 	final_dir = os.path.join(masterdir, "main%03d"%do_final_iter)
 	if(Blockdata["myid"] == Blockdata["main_node"]): # check json file and load tracker
 		try:
