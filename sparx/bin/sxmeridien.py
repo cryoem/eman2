@@ -10947,7 +10947,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 						fout = open(os.path.join(masterdir,"main%03d"%Tracker["mainiteration"],"Tracker_%03d.json"%(Tracker["mainiteration"]-1)),'r') # AI already correctly set Tracker["mainiteration"]
 						Tracker_final_iter = convert_json_fromunicode(json.load(fout))
 						fout.close()
-						line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"'
+						line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 						"""
 						if Tracker_final_iter["bestres"] <= Tracker["bestres"]: # need an update even it is equal
 							Tracker_final_iter["bestres"] = Tracker["bestres"]  
