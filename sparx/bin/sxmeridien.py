@@ -440,6 +440,7 @@ def AI_continuation(fff, anger = -1.0, shifter = -1.0, chout = False):
 				Tracker["anger"]				= 1.0e23
 				Tracker["shifter"]				= 1.0e23
 	Tracker["keepfirst"] = -1
+	"""
 	if( (keepgoing == 0) and (Blockdata["myid"] == Blockdata["main_node"]) ):
 		print(line, "ITERATION  #%2d. Resolution achieved       : %3d/%3d pixels, %5.2fA/%5.2fA."%\
 				(Tracker["mainiteration"], \
@@ -447,6 +448,7 @@ def AI_continuation(fff, anger = -1.0, shifter = -1.0, chout = False):
 				Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"])))
 		print(line, "The best solution is in the directory main%03d "%Tracker["constants"]["best"] )
 		Tracker["mainiteration"] -= 1
+	"""
 	return keepgoing
 
 def params_changes( params, oldparams ):
@@ -7688,15 +7690,10 @@ def recons3d_final(masterdir, do_final_iter_init, memory_per_node):
 	carryon  = 1
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	if(Blockdata["myid"] == Blockdata["main_node"]):	print(line, "recons3d_final")
-	do_final_iter = 3
 	if do_final_iter_init == 0:
 		if(Blockdata["myid"] == Blockdata["main_node"]):
 			try:
-				iter_max = 3
-				while  os.path.exists(os.path.join(masterdir, "main%03d"%iter_max)) and os.path.exists(os.path.join(masterdir,"main%03d"%iter_max,"Tracker_%03d.json"%iter_max)):
-					iter_max +=1
-				iter_max -=1
-				fout = open(os.path.join(masterdir,"main%03d"%iter_max,"Tracker_%03d.json"%iter_max),'r')
+				fout = open(os.path.join(masterdir, "Tracker_final_iter.json"),'r')
 				Tracker = convert_json_fromunicode(json.load(fout))
 				fout.close()
 				print("The best solution is %d  "%Tracker["constants"]["best"])
@@ -7704,7 +7701,7 @@ def recons3d_final(masterdir, do_final_iter_init, memory_per_node):
 			except:				
 				carryon = 0
 		carryon = bcast_number_to_all(carryon)
-		if carryon == 0: ERROR("search failed, and the final reconstruction terminates ", "recons3d_final", 1, Blockdata["myid"])	# Now work on selected directory
+		if carryon == 0: ERROR("best resolution is not found, and do_final stop", "recons3d_final", 1, Blockdata["myid"])	# Now work on selected directory
 		do_final_iter = bcast_number_to_all(do_final_iter)
 	elif do_final_iter_init == -1: do_final_iter = Tracker["constants"]["best"]
 	else:
@@ -11743,6 +11740,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 						Tracker_final_iter = convert_json_fromunicode(json.load(fout))
 						fout.close()
 						line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+						"""
 						if Tracker_final_iter["bestres"] <= Tracker["bestres"]: # need an update even it is equal
 							Tracker_final_iter["bestres"] = Tracker["bestres"]  
 							Tracker_final_iter["constants"]["best"] = Tracker["mainiteration"] # replaced by current iteration, decision made outside AI
@@ -11751,6 +11749,9 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 							fout.close()
 							print(line,"The last iteration captures the best resolution")
 						else: print(line,"The last iteration does not capture the best resolution")
+						"""
+						fout = open(os.path.join(masterdir,"Tracker_final_iter.json"),'w')
+						json.dump(Tracker_final_iter, fout)
 						del Tracker_final_iter
 					mpi_barrier(MPI_COMM_WORLD)
 				
@@ -11774,7 +11775,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 		#print( "  args  ",args)
 		checking_flag = 1
 		if( len(args) == 3):
-			ERROR("do_final option requires only one or two arguments ","meridien", 1,Blockdata["myid"])
+			ERROR("do_final option requires only one or two arguments ","meridien", 1, Blockdata["myid"])
 
 		elif(len(args) == 2):
 			masterdir = args[1]
