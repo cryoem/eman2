@@ -227,7 +227,7 @@ def main():
 	parser.add_option("--isac_dir",              type   ="string",         default ='',     help="ISAC run output directory, input directory for this command")
 	parser.add_option("--output_dir",            type   ="string",         default ='',     help="output directory where computed averages are saved")
 	parser.add_option("--pixel_size",            type   ="float",          default =-1.0,   help="pixel_size of raw images. one can put 1.0 in case of negative stain data")
-	parser.add_option("--fl",                    type   ="float",          default =0.0,    help= "low pass filter, = 0.0, not applied; =-1., using FH1 (initial resolution), =-2. using FH2 (resolution after local alignment), or user provided value in Angstrom")
+	parser.add_option("--fl",                    type   ="float",          default =0.0,    help= "low pass filter, = 0.0, not applied; =-1., using FH1 (initial resolution), =-2. using FH2 (resolution after local alignment), or user provided value in absolute freqency [0.0:0.5]")
 	parser.add_option("--stack",                 type   ="string",         default ="",     help= "data stack used in ISAC")
 	parser.add_option("--radius",                type   ="int",            default =-1,     help= "radius")
 	parser.add_option("--xr",                    type   ="float",          default =-1.0,   help= "local alignment search range")
@@ -239,7 +239,7 @@ def main():
 	parser.add_option("--noctf",                 action ="store_true",     default =False,  help="no ctf correction, useful for negative stained data. always ctf for cryo data")
 
 	if B_enhance:
-		parser.add_option("--B_start",   type   ="float",  default = 10.0,  help="start frequency (1./Angstrom) of power spectrum for B_factor estimation")
+		parser.add_option("--B_start",   type   ="float",  default = 10.0,  help="start frequency (Angstrom) of power spectrum for B_factor estimation")
 		parser.add_option("--Bfactor",   type   ="float",  default = -1.0,  help= "User defined bactors (e.g. 45.0[A^2]). By default, the program automatically estimates B-factor. ")
 			
 	if adjust_to_given_pw2:
@@ -260,15 +260,12 @@ def main():
 	Constants["radius"]                       = options.radius
 	Constants["xrange"]                       = options.xr
 	Constants["xstep"]                        = options.ts
-	#Constants["FH"]                          = options.fh
+	Constants["FH"]                           = options.fh
+	Constants["low_pass_filter"]              = options.fl
 	Constants["maxit"]                        = options.maxit
 	Constants["navg"]                         = options.navg
 	
-	if options.fl >0.0 and options.fl <=0.5:
-		ERROR("incorrected low pass filter. low pass filter should be expressed in Angstrom", "sxcompute_isac_avg.py", 1, Blockdata["myid"]) # action=1 - fatal error, exit
-	if options.FH >0.0 and options.FH <=0.5:
-		ERROR("incorrected FH. FH should be expressed in Angstrom", "sxcompute_isac_avg.py", 1, Blockdata["myid"]) # action=1 - fatal error, exit
-	
+
 	if B_enhance:
 		Constants["B_start"]   = options.B_start
 		Constants["Bfactor"]   = options.Bfactor
@@ -358,13 +355,7 @@ def main():
 			except: 
 				ERROR("Pixel size could not be extracted from the original stack.", "sxcompute_isac_avg.py", 1, Blockdata["myid"]) # action=1 - fatal error, exit
 		## Now fill in low-pass filter
-		
-		if options.fl>0.5: Tracker["constants"]["low_pass_filter"] = Tracker["constants"]["pixel_size"]/options.fl 
-		else:  Tracker["constants"]["low_pass_filter"] = options.fl
-		
-		if options.fl>0.5: Tracker["constants"]["FH"] = Tracker["constants"]["pixel_size"]/options.fh
-		else: Tracker["constants"]["FH"] = options.fh
-		
+			
 		isac_shrink_path = os.path.join(Tracker["constants"]["isac_dir"], "README_shrink_ratio.txt")
 		if not os.path.exists(isac_shrink_path):
 			ERROR("%s does not exist in the specified ISAC run output directory"%(isac_shrink_path), "sxcompute_isac_avg.py", 1, Blockdata["myid"]) # action=1 - fatal error, exit

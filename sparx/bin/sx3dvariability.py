@@ -108,7 +108,7 @@ def main():
 	#parser.add_option("--radius", 	    type="int"         ,	default=-1   ,				help="radius for 3D variability" )
 	parser.add_option("--npad",			type="int"         ,	default=2    ,				help="number of time to pad the original images")
 	parser.add_option("--sym" , 		type="string"      ,	default="c1" ,				help="symmetry")
-	parser.add_option("--fl",			type="float"       ,	default=0.0  ,				help="cutoff resolution in Angstrom. In case of no ctf information, assume pixel_size =1.0 (Default - no filtration)")
+	parser.add_option("--fl",			type="float"       ,	default=0.0  ,				help="cutoff freqency in absolute frequency (0.0-0.5). (Default - no filtration)")
 	parser.add_option("--aa",			type="float"       ,	default=0.0  ,				help="fall off of the filter. Put 0.01 if user has no clue about falloff (Default - no filtration)")
 	parser.add_option("--CTF",			action="store_true",	default=False,				help="use CFT correction")
 	parser.add_option("--VERBOSE",		action="store_true",	default=False,				help="Long output for debugging")
@@ -570,14 +570,12 @@ def main():
 					if options.CTF:
 						from utilities import pad
 						for k in xrange(img_per_grp):
-							if k==0: pixel_size = (grp_imgdata[k].get_attr("ctf")).apix
-							grp_imgdata[k] = window2d(fft( filt_tanl( filt_ctf(fft(pad(grp_imgdata[k], nx2, ny2, 1,0.0)), grp_imgdata[k].get_attr("ctf"), binary=1), pixel_size/options.fl, options.aa) ),nx,ny)
+							grp_imgdata[k] = window2d(fft( filt_tanl( filt_ctf(fft(pad(grp_imgdata[k], nx2, ny2, 1,0.0)), grp_imgdata[k].get_attr("ctf"), binary=1), options.fl, options.aa) ),nx,ny)
 							#grp_imgdata[k] = window2d(fft( filt_table( filt_tanl( filt_ctf(fft(pad(grp_imgdata[k], nx2, ny2, 1,0.0)), grp_imgdata[k].get_attr("ctf"), binary=1), options.fl, options.aa), fifi) ),nx,ny)
 							#grp_imgdata[k] = filt_tanl(grp_imgdata[k], options.fl, options.aa)
 					else:
-						pixel_size = 1.0
 						for k in xrange(img_per_grp):
-							grp_imgdata[k] = filt_tanl( grp_imgdata[k], pixel_size/options.fl, options.aa)
+							grp_imgdata[k] = filt_tanl( grp_imgdata[k], options.fl, options.aa)
 							#grp_imgdata[k] = window2d(fft( filt_table( filt_tanl( filt_ctf(fft(pad(grp_imgdata[k], nx2, ny2, 1,0.0)), grp_imgdata[k].get_attr("ctf"), binary=1), options.fl, options.aa), fifi) ),nx,ny)
 							#grp_imgdata[k] = filt_tanl(grp_imgdata[k], options.fl, options.aa)
 				else:
