@@ -306,13 +306,16 @@ def AI( fff, anger, shifter, chout = False):
 				Tracker["anger"]				= 1.0e23
 				Tracker["shifter"]				= 1.0e23
 	Tracker["keepfirst"] = -1
+	"""
 	if( (keepgoing == 0) and (Blockdata["myid"] == Blockdata["main_node"]) ):
+		
 		print(line, "ITERATION  #%2d. Resolution achieved       : %3d/%3d pixels, %5.2fA/%5.2fA."%\
 				(Tracker["mainiteration"], \
 				Tracker["currentres"], Tracker["fsc143"], Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"]), \
 				Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"])))
 		print(line, "The best solution is in the directory main%03d "%Tracker["constants"]["best"] )
 		Tracker["mainiteration"] -= 1
+	"""
 	return keepgoing
 	
 def AI_continuation(fff, anger = -1.0, shifter = -1.0, chout = False):
