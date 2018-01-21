@@ -10944,10 +10944,11 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 					if( Blockdata["subgroup_myid"]> -1): mpi_comm_free(Blockdata["subgroup_comm"])
 					# now let check whether we need update bestres
 					if(Blockdata["myid"] == Blockdata["main_node"]):
-						fout = open(os.path.join(masterdir,"main%03d"%Tracker["mainiteration"],"Tracker_%03d.json"%Tracker["mainiteration"]),'r') # AI already correctly set Tracker["mainiteration"]
+						fout = open(os.path.join(masterdir,"main%03d"%Tracker["mainiteration"],"Tracker_%03d.json"%(Tracker["mainiteration"]-1)),'r') # AI already correctly set Tracker["mainiteration"]
 						Tracker_final_iter = convert_json_fromunicode(json.load(fout))
 						fout.close()
-						line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+						line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"'
+						"""
 						if Tracker_final_iter["bestres"] <= Tracker["bestres"]: # need an update even it is equal
 							Tracker_final_iter["bestres"] = Tracker["bestres"]  
 							Tracker_final_iter["constants"]["best"] = Tracker["mainiteration"] # replaced by current iteration, decision made outside AI
@@ -10956,6 +10957,10 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 							fout.close()
 							print(line,"The last iteration captures the best resolution")
 						else: print(line,"The last iteration does not capture the best resolution")
+						del Tracker_final_iter
+						"""
+						fout = open(os.path.join(masterdir,"Tracker_final_iter.json"),'w')
+						json.dump(Tracker_final_iter, fout)
 						del Tracker_final_iter
 					mpi_barrier(MPI_COMM_WORLD)
 				
