@@ -10,7 +10,7 @@ from __future__ import print_function
 #  11/18/2016 change in strategy
 #  04/10/2017 - Enabled for one node
 #  04/18/2017 - Introduce symclass to handle angles in a unified manner
-#  12/06/2016 - Rationalize the code, particularly restart
+#  01/21/2018 - Rationalize the code, particularly restart
 """
 There are four ways to run the program:
 
@@ -11746,7 +11746,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 					if( Blockdata["subgroup_myid"]> -1): mpi_comm_free(Blockdata["subgroup_comm"])
 					# now let check whether we need update bestres
 					if(Blockdata["myid"] == Blockdata["main_node"]):
-						fout = open(os.path.join(masterdir,"main%03d"%Tracker["mainiteration"],"Tracker_%03d.json"%(Tracker["mainiteration"]-1)),'r') # AI already correctly set Tracker["mainiteration"]
+						fout = open(os.path.join(masterdir,"main%03d"%(Tracker["mainiteration"]-1),"Tracker_%03d.json"%(Tracker["mainiteration"]-1)),'r') # AI already correctly set Tracker["mainiteration"]
 						Tracker_final_iter = convert_json_fromunicode(json.load(fout))
 						fout.close()
 						line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
