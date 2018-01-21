@@ -227,7 +227,7 @@ def main():
 	parser.add_option("--isac_dir",              type   ="string",         default ='',     help="ISAC run output directory, input directory for this command")
 	parser.add_option("--output_dir",            type   ="string",         default ='',     help="output directory where computed averages are saved")
 	parser.add_option("--pixel_size",            type   ="float",          default =-1.0,   help="pixel_size of raw images. one can put 1.0 in case of negative stain data")
-	parser.add_option("--fl",                    type   ="float",          default =0.0,    help= "low pass filter, = 0.0, not applied; =-1., using FH1 (initial resolution), =-2. using FH2 (resolution after local alignment), or user provided value in absolute freqency [0.0:0.5]")
+	parser.add_option("--fl",                    type   ="float",          default =-1.0,    help= "low pass filter, = -1.0, not applied; =0.0, using FH1 (initial resolution), = 1.0 using FH2 (resolution after local alignment), or user provided value in absolute freqency [0.0:0.5]")
 	parser.add_option("--stack",                 type   ="string",         default ="",     help= "data stack used in ISAC")
 	parser.add_option("--radius",                type   ="int",            default =-1,     help= "radius")
 	parser.add_option("--xr",                    type   ="float",          default =-1.0,   help= "local alignment search range")
@@ -424,7 +424,7 @@ def main():
 	## always apply low pass filter to B_enhanced images to suppress noise in high frequencies 
 	enforced_to_H1 = False
 	if options.B_enhance:
-		if Tracker["constants"]["low_pass_filter"] == 0.0: 
+		if Tracker["constants"]["low_pass_filter"] == -1.0: 
 			print("User does not provide low pass filter")
 			enforced_to_H1 = True
 	if navg <Blockdata["nproc"]:#  Each CPU do one average 
@@ -473,9 +473,9 @@ def main():
 				elif options.no_adjustment: pass
 		
 				print("Process avg  %d   %f   %f"%(iavg, FH1, FH2))
-				if Tracker["constants"]["low_pass_filter"] !=0.0:
-					if Tracker["constants"]["low_pass_filter"] ==-1.: low_pass_filter = FH1
-					elif Tracker["constants"]["low_pass_filter"] ==-2.: 
+				if Tracker["constants"]["low_pass_filter"] !=-1.0:
+					if Tracker["constants"]["low_pass_filter"] == 0.0: low_pass_filter = FH1
+					elif Tracker["constants"]["low_pass_filter"] ==1.0: 
 						low_pass_filter = FH2
 						if options.skip_local_alignment: low_pass_filter = FH1
 					else: 
@@ -595,9 +595,9 @@ def main():
 			elif options.no_adjustment: pass
 			
 				
-			if Tracker["constants"]["low_pass_filter"] != 0.0:
-				if Tracker["constants"]["low_pass_filter"] ==-1.: low_pass_filter = FH1
-				elif Tracker["constants"]["low_pass_filter"] ==-2.: 
+			if Tracker["constants"]["low_pass_filter"] != -1.0:
+				if Tracker["constants"]["low_pass_filter"] == 0.0: low_pass_filter = FH1
+				elif Tracker["constants"]["low_pass_filter"] == 1.0: 
 					low_pass_filter = FH2
 					if options.skip_local_alignment: low_pass_filter = FH1
 				else: 
