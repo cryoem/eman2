@@ -173,7 +173,7 @@ Calculate B-factor and apply negative B-factor to 2D images.
     scale:: Divide shifts in input 3D orientation parameters text file by this scale factor: (default -1.0)
 
     adaptive_mask:: Create soft-edged 3D mask: Create soft-edged 3D mask from reference volume. (default False)
-    nsigma:: Density standard deviations threshold: Defines the threshold used to find the main volume within the data. All voxels with density <= mean + nsigma standard deviations will be included into the main volume. This option will not be used if the option threshold is larger than -9999.0. (default 1.0)
+    nsigma:: Density standard deviation threshold: Defines the threshold used to find the main volume within the data. All voxels with density <= mean + nsigma standard deviation will be included into the main volume. This option will not be used if the option threshold is larger than -9999.0. (default 1.0)
     threshold:: Binarization threshold: Below this value the data is assumed to not belong to the main volume. With the value lower than the default, the option will be ignored and the mask will be set according to nsigma. (default -9999.0)
     ndilation:: Mask extension cycles: The initial mask will be extended this number of cycles. To keep the size of the main volume, set this to kernel_size/2 (default 3)
     kernel_size:: Gaussian kernel size [Pixels]: Size of the gaussian kernel used to smooth the binary mask. (default 11)
