@@ -94,8 +94,8 @@ Stack Mode - Process a particle stack (Not supported by SPHIRE GUI))::
 	parser.add_option("--Cs",				type="float",         default=2.0,    help="Microscope spherical aberration (Cs) [mm]: The spherical aberration (Cs) of microscope used for imaging. (default 2.0)")
 	parser.add_option("--voltage",			type="float",         default=300.0,  help="Microscope voltage [kV]: The acceleration voltage of microscope used for imaging. (default 300.0)")
 	parser.add_option("--ac",				type="float",         default=10.0,   help="Amplitude contrast [%]: The typical amplitude contrast is in the range of 7% - 14%. The value mainly depends on the thickness of the ice embedding the particles. (default 10.0)")
-	parser.add_option("--f_start",			type="float",         default=-1.0,   help="Lowest frequency [1/A]: Lowest frequency to be considered in the CTF estimation. Determined automatically by default. (default -1.0)")
-	parser.add_option("--f_stop",			type="float",         default=-1.0,   help="Highest frequency [1/A]: Highest frequency to be considered in the CTF estimation. Determined automatically by default. (default -1.0)")
+	parser.add_option("--f_start",			type="float",         default=-1.0,   help="Lowest resolution [A]: Lowest resolution to be considered in the CTF estimation. Determined automatically by default. (default -1.0)")
+	parser.add_option("--f_stop",			type="float",         default=-1.0,   help="Highest resolution [A]: Highest resolution to be considered in the CTF estimation. Determined automatically by default. (default -1.0)")
 	parser.add_option("--kboot",			type="int",           default=16,     help="Number of CTF estimates per micrograph: Used for error assessment. (default 16)")
 	parser.add_option("--overlap_x",		type="int",           default=50,     help="X overlap [%]: Overlap between the windows in the x direction. This will be ignored in Stack Mode. (default 50)")
 	parser.add_option("--overlap_y",		type="int",           default=50,     help="Y overlap [%]: Overlap between the windows in the y direction. This will be ignored in Stack Mode. (default 50)")
@@ -155,6 +155,18 @@ Stack Mode - Process a particle stack (Not supported by SPHIRE GUI))::
 	output_directory = None
 	# not a real while, an if with the opportunity to use break when errors need to be reported
 	error_status = None
+	# change input unit
+	freq_start = -1.0
+	freq_stop  = -1.0
+	
+	if options.f_start >0.0: 
+		if options.f_start <=0.5: ERROR("f_start should be in Angstrom","sxcter", 1) # exclude abs frequencies and spatial frequencies
+		else: freq_start = 1./options.f_start
+		
+	if options.f_stop >0.0:
+		if options.f_stop  <=0.5: ERROR("f_stop should be in Angstrom","sxcter", 1) # exclude abs frequencies and spatial frequencies
+		else: freq_stop = 1./options.f_stop
+
 	while True:
 		# --------------------------------------------------------------------------------
 		# Check the number of arguments. If OK, then prepare variables for them
@@ -203,13 +215,13 @@ Stack Mode - Process a particle stack (Not supported by SPHIRE GUI))::
 	if options.vpp:
 		vpp_options = [options.defocus_min,  options.defocus_max,  options.defocus_step,  options.phase_min,  options.phase_max,  options.phase_step]
 		from morphology import cter_vpp
-		result = cter_vpp(input_image_path, output_directory, options.selection_list, options.wn, options.apix, options.Cs, options.voltage, options.ac, options.f_start, options.f_stop, options.kboot, options.overlap_x, options.overlap_y, options.edge_x, options.edge_y, options.check_consistency, options.stack_mode, options.debug_mode, program_name, vpp_options, RUNNING_UNDER_MPI, main_mpi_proc, my_mpi_proc_id, n_mpi_procs)
+		result = cter_vpp(input_image_path, output_directory, options.selection_list, options.wn, options.apix, options.Cs, options.voltage, options.ac, freq_start, freq_stop, options.kboot, options.overlap_x, options.overlap_y, options.edge_x, options.edge_y, options.check_consistency, options.stack_mode, options.debug_mode, program_name, vpp_options, RUNNING_UNDER_MPI, main_mpi_proc, my_mpi_proc_id, n_mpi_procs)
 	elif options.pap:
 		from morphology import cter_pap
-		result = cter_pap(input_image_path, output_directory, options.selection_list, options.wn, options.apix, options.Cs, options.voltage, options.ac, options.f_start, options.f_stop, options.kboot, options.overlap_x, options.overlap_y, options.edge_x, options.edge_y, options.check_consistency, options.stack_mode, options.debug_mode, program_name, RUNNING_UNDER_MPI, main_mpi_proc, my_mpi_proc_id, n_mpi_procs)
+		result = cter_pap(input_image_path, output_directory, options.selection_list, options.wn, options.apix, options.Cs, options.voltage, options.ac, freq_start, freq_stop, options.kboot, options.overlap_x, options.overlap_y, options.edge_x, options.edge_y, options.check_consistency, options.stack_mode, options.debug_mode, program_name, RUNNING_UNDER_MPI, main_mpi_proc, my_mpi_proc_id, n_mpi_procs)
 	else:
 		from morphology import cter_mrk
-		result = cter_mrk(input_image_path, output_directory, options.selection_list, options.wn, options.apix, options.Cs, options.voltage, options.ac, options.f_start, options.f_stop, options.kboot, options.overlap_x, options.overlap_y, options.edge_x, options.edge_y, options.check_consistency, options.stack_mode, options.debug_mode, program_name, RUNNING_UNDER_MPI, main_mpi_proc, my_mpi_proc_id, n_mpi_procs)
+		result = cter_mrk(input_image_path, output_directory, options.selection_list, options.wn, options.apix, options.Cs, options.voltage, options.ac, freq_start, freq_stop, options.kboot, options.overlap_x, options.overlap_y, options.edge_x, options.edge_y, options.check_consistency, options.stack_mode, options.debug_mode, program_name, RUNNING_UNDER_MPI, main_mpi_proc, my_mpi_proc_id, n_mpi_procs)
 
 	if RUNNING_UNDER_MPI:
 		mpi_barrier(MPI_COMM_WORLD)
