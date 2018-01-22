@@ -714,7 +714,7 @@ def main():
 						eig3D = recons3d_4nn_MPI(myid, eigList[k], symmetry=options.sym, npad=options.npad)
 						bcast_EMData_to_all(eig3D, myid, main_node)
 						if options.fl > 0.0:
-							eig3D = filt_tanl(eig3D, pixel_size/options.fl, options.aa)
+							eig3D = filt_tanl(eig3D, options.fl, options.aa)
 						if myid == main_node:
 							eig3D.write_image(os.path.join(options.outpout_dir, "eig3d_%03d.hdf"%(k, ITER)))
 						Util.mul_img( eig3D, model_circle(radiuspca, nx, nx, nx) )
