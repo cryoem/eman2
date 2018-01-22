@@ -10925,6 +10925,12 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 				else: # converged, do final
 					if( Blockdata["subgroup_myid"] > -1 ): mpi_comm_free(Blockdata["subgroup_comm"])
 					if(Blockdata["myid"] == Blockdata["main_node"]):
+						print(line,"Resolution achieved in ITERATION  #%2d: %3d/%3d pixels, %5.2fA/%5.2fA."%
+								(Tracker["mainiteration"]-1, \
+								Tracker["currentres"], Tracker["fsc143"], Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"]), \
+								Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"]) ) )
+						print("\n\n\n\n")
+
 						print("the iteration of the best resolution is %d"%Tracker["constants"]["best"])
 						fout = open(os.path.join(masterdir,"Tracker_final.json"),'w')
 						json.dump(Tracker, fout)
@@ -11345,9 +11351,9 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 								Tracker["currentres"], Tracker["fsc143"], Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"]), \
 								Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"]) ) )
 						print("\n\n\n\n")
-						line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-						print(line,"ITERATION  #%2d. Current state: %14s, nxinit: %3d, delta: %9.4f, xr: %9.4f, ts: %9.4f"%\
-							(Tracker["mainiteration"], Tracker["state"],Tracker["nxinit"], Tracker["delta"], Tracker["xr"], Tracker["ts"]  ))
+						#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+						#print(line,"ITERATION  #%2d. Current state: %14s, nxinit: %3d, delta: %9.4f, xr: %9.4f, ts: %9.4f"%\
+						#	(Tracker["mainiteration"], Tracker["state"],Tracker["nxinit"], Tracker["delta"], Tracker["xr"], Tracker["ts"]  ))
 					#print("RACING  A ",Blockdata["myid"])
 					li = True
 					doit2, keepchecking2 = checkstep(Tracker["directory"], li)
@@ -11711,8 +11717,13 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 					#	print("  MOVING  ON --------------------------------------------------------------------")
 				else: # converged, do final
 					if( Blockdata["subgroup_myid"] > -1 ): mpi_comm_free(Blockdata["subgroup_comm"])
-					
 					if(Blockdata["myid"] == Blockdata["main_node"]):
+						print(line,"Resolution achieved in ITERATION  #%2d: %3d/%3d pixels, %5.2fA/%5.2fA."%
+								(Tracker["mainiteration"]-1, \
+								Tracker["currentres"], Tracker["fsc143"], Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"]), \
+								Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"]) ) )
+						print("\n\n\n\n")
+					
 						print("the iteration of the best resolution is %d"%Tracker["constants"]["best"])
 						fout = open(os.path.join(masterdir,"Tracker_final.json"),'w')
 						json.dump(Tracker, fout)
