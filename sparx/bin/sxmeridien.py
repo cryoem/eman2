@@ -7682,7 +7682,6 @@ def recons3d_final(masterdir, do_final_iter_init, memory_per_node):
 				fout.close()
 				print("The best solution is %d  "%Tracker["constants"]["best"])
 				do_final_iter =  Tracker["constants"]["best"] # set the best as do_final iteration
-				if do_final_iter == Tracker["mainiteration"]: do_final_iter -=1
 			except:				
 				carryon = 0
 		carryon = bcast_number_to_all(carryon)
@@ -10925,14 +10924,11 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 				else: # converged, do final
 					if( Blockdata["subgroup_myid"] > -1 ): mpi_comm_free(Blockdata["subgroup_comm"])
 					if(Blockdata["myid"] == Blockdata["main_node"]):
+						print("the iteration of the best resolution is %d"%Tracker["constants"]["best"])
 						fout = open(os.path.join(masterdir,"Tracker_final.json"),'w')
 						json.dump(Tracker, fout)
 						fout.close()
 					mpi_barrier(MPI_COMM_WORLD)
-					
-					if Tracker["constants"]["best"] == Tracker["mainiteration"]:
-						iteration_best_res   =   Tracker["constants"]["best"] - 1
-					else: iteration_best_res =   Tracker["constants"]["best"]
 					
 					newparamstructure 			= [[],[]]
 					projdata          			= [[model_blank(1,1)], [model_blank(1,1)]]
@@ -10940,7 +10936,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 					oldparams         			= [[],[]]
 					Blockdata["accumulatepw"]  	= [None, None]
 					#if Tracker["constants"]["memory_per_node"] <0.0: Tracker["constants"]["memory_per_node"] = 2.0*Blockdata["no_of_processes_per_group"]
-					recons3d_final(Tracker["constants"]["masterdir"], iteration_best_res, Tracker["constants"]["memory_per_node"])
+					recons3d_final(Tracker["constants"]["masterdir"], Tracker["constants"]["best"], Tracker["constants"]["memory_per_node"])
 
 			#  End of if doit
 		#   end of while
@@ -11714,15 +11710,13 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 					#	print("  MOVING  ON --------------------------------------------------------------------")
 				else: # converged, do final
 					if( Blockdata["subgroup_myid"] > -1 ): mpi_comm_free(Blockdata["subgroup_comm"])
+					
 					if(Blockdata["myid"] == Blockdata["main_node"]):
+						print("the iteration of the best resolution is %d"%Tracker["constants"]["best"])
 						fout = open(os.path.join(masterdir,"Tracker_final.json"),'w')
 						json.dump(Tracker, fout)
 						fout.close()
 					mpi_barrier(MPI_COMM_WORLD)
-					
-					if Tracker["constants"]["best"] == Tracker["mainiteration"]:
-						iteration_best_res =   Tracker["constants"]["best"] - 1
-					else: iteration_best_res =   Tracker["constants"]["best"]
 					
 					newparamstructure 			= [[],[]]
 					projdata          			= [[model_blank(1,1)], [model_blank(1,1)]]
@@ -11730,7 +11724,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 					oldparams         			= [[],[]]
 					Blockdata["accumulatepw"]  	= [None, None]
 					#if Tracker["constants"]["memory_per_node"] <0.0: Tracker["constants"]["memory_per_node"] = 2.0*Blockdata["no_of_processes_per_group"]
-					recons3d_final(Tracker["constants"]["masterdir"], iteration_best_res, Tracker["constants"]["memory_per_node"])
+					recons3d_final(Tracker["constants"]["masterdir"], Tracker["constants"]["best"], Tracker["constants"]["memory_per_node"])
 
 			#  End of if doit
 		#   end of while
