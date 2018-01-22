@@ -15,6 +15,8 @@ for f in ${@};do
     
     bash $f -bf -p ${conda_loc}
     source ${conda_loc}/bin/activate root
+    conda info -a
+    conda list
     bash "${MYDIR}/run_tests_from_binary.sh"
     source deactivate
 done

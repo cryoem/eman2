@@ -29,8 +29,9 @@ requirements:
             "pyopengl 3.1.0",
             "theano 0.9.*",
             "scikit-learn 0.19.*",
-            "bsddb",       # [not win]
-            "pydusa",      # [not win]
+            "bsddb",          # [not win]
+            "openmpi 2.0.2",  # [not win]
+            "pydusa",         # [not win]
             "nose",
     ] %}
     
