@@ -10075,7 +10075,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 
 	if( (not do_final_mode) and (not do_continuation_mode) ):
 		# case1: standard meridien run
-		# case2: restart mode of standard meridien run. Parameters can be altered in the restar run.
+		# case2: restart mode of standard meridien run. Parameters can be altered in the restart run.
 		parser.add_option("--radius",      		   		type= "int",          	default= -1,			     	help="Outer radius [in pixels] of particles < int(nx/2)-1")
 		parser.add_option("--xr",      		       		type="float",         	default= 5.,		         	help="Range for translation search in both directions, search is +/xr (default 5), can be fractional")
 		parser.add_option("--ts",      		       		type="float",        	default= 1.,		         	help="Step size of the translation search in both directions, search is within a circle of radius xr on a grid with steps ts, (default 1), can be fractional")
@@ -10945,7 +10945,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 
 	elif( do_continuation_mode ):
 		# case1: local meridien run using parameters stored in headers
-		# case2: restart mode of standard meridien run. Parameters can be altered in the restar run.
+		# case2: restart mode of standard meridien run. Parameters can be altered in the restart run.
 		parser.add_option("--radius",      		   		type= "int",          	default= -1,			     	help="Outer radius [in pixels] of particles < int(nx/2)-1")
 		parser.add_option("--xr",      		       		type="float",         	default= 5.,		         	help="Range for translation search in both directions, search is +/xr (default 5), can be fractional")
 		parser.add_option("--ts",      		       		type="float",        	default= 1.,		         	help="Step size of the translation search in both directions, search is within a circle of radius xr on a grid with steps ts, (default 1), can be fractional")
