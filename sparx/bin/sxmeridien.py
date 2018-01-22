@@ -10927,6 +10927,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 					if(Blockdata["myid"] == Blockdata["main_node"]):
 						fout = open(os.path.join(masterdir,"Tracker_final.json"),'w')
 						json.dump(Tracker, fout)
+						fout.close()
 					mpi_barrier(MPI_COMM_WORLD)
 
 					newparamstructure 			= [[],[]]
@@ -11712,6 +11713,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 					if(Blockdata["myid"] == Blockdata["main_node"]):
 						fout = open(os.path.join(masterdir,"Tracker_final.json"),'w')
 						json.dump(Tracker, fout)
+						fout.close()
 					mpi_barrier(MPI_COMM_WORLD)
 
 					newparamstructure 			= [[],[]]
