@@ -7674,6 +7674,7 @@ def recons3d_final(masterdir, do_final_iter_init, memory_per_node):
 	carryon  = 1
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	if(Blockdata["myid"] == Blockdata["main_node"]):	print(line, "recons3d_final")
+	do_final_iter = 3
 	if( do_final_iter_init == 0 ):
 		if(Blockdata["myid"] == Blockdata["main_node"]):
 			try:
