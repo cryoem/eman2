@@ -371,7 +371,7 @@ def AI_continuation(fff, anger = -1.0, shifter = -1.0, chout = False):
 		maxres = max(l05, 5)
 		if( maxres >= Tracker["bestres"]):
 			Tracker["bestres"]				= maxres
-			Tracker["constants"]["best"] 	= Tracker["mainiteration"]-1
+			Tracker["constants"]["best"] 	= max(Tracker["mainiteration"]-1, 3)
 
 		if( maxres > Tracker["currentres"]):
 			Tracker["no_improvement"] 		= 0
@@ -7681,7 +7681,8 @@ def recons3d_final(masterdir, do_final_iter_init, memory_per_node):
 				Tracker = convert_json_fromunicode(json.load(fout))
 				fout.close()
 				print("The best solution is %d  "%Tracker["constants"]["best"])
-				do_final_iter = Tracker["constants"]["best"] # set the best as do_final iteration
+				do_final_iter =  Tracker["constants"]["best"] # set the best as do_final iteration
+				if do_final_iter == Tracker["mainiteration"]: do_final_iter -=1
 			except:				
 				carryon = 0
 		carryon = bcast_number_to_all(carryon)
