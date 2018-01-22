@@ -10929,14 +10929,18 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 						json.dump(Tracker, fout)
 						fout.close()
 					mpi_barrier(MPI_COMM_WORLD)
-
+					
+					if Tracker["constants"]["best"] == Tracker["mainiteration"]:
+						iteration_best_res   =   Tracker["constants"]["best"] - 1
+					else: iteration_best_res =   Tracker["constants"]["best"]
+					
 					newparamstructure 			= [[],[]]
 					projdata          			= [[model_blank(1,1)], [model_blank(1,1)]]
 					original_data     			= [None,None]
 					oldparams         			= [[],[]]
 					Blockdata["accumulatepw"]  	= [None, None]
 					#if Tracker["constants"]["memory_per_node"] <0.0: Tracker["constants"]["memory_per_node"] = 2.0*Blockdata["no_of_processes_per_group"]
-					recons3d_final(Tracker["constants"]["masterdir"], Tracker["constants"]["best"], Tracker["constants"]["memory_per_node"])
+					recons3d_final(Tracker["constants"]["masterdir"], iteration_best_res, Tracker["constants"]["memory_per_node"])
 
 			#  End of if doit
 		#   end of while
@@ -11715,14 +11719,18 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 						json.dump(Tracker, fout)
 						fout.close()
 					mpi_barrier(MPI_COMM_WORLD)
-
+					
+					if Tracker["constants"]["best"] == Tracker["mainiteration"]:
+						iteration_best_res =   Tracker["constants"]["best"] - 1
+					else: iteration_best_res =   Tracker["constants"]["best"]
+					
 					newparamstructure 			= [[],[]]
 					projdata          			= [[model_blank(1,1)], [model_blank(1,1)]]
 					original_data     			= [None,None]
 					oldparams         			= [[],[]]
 					Blockdata["accumulatepw"]  	= [None, None]
 					#if Tracker["constants"]["memory_per_node"] <0.0: Tracker["constants"]["memory_per_node"] = 2.0*Blockdata["no_of_processes_per_group"]
-					recons3d_final(Tracker["constants"]["masterdir"], Tracker["constants"]["best"], Tracker["constants"]["memory_per_node"])
+					recons3d_final(Tracker["constants"]["masterdir"], iteration_best_res, Tracker["constants"]["memory_per_node"])
 
 			#  End of if doit
 		#   end of while
