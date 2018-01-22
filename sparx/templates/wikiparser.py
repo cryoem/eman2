@@ -1135,7 +1135,7 @@ def create_sxcmd_subconfig_isac_beautifier_no_adjust():
 	add_sxcmd_subconfig_isac_beautifier_shared(token_edit_list)
 
 	sxsubcmd_mpi_support = True
-	sxcmd_subconfig = SXsubcmd_config("Beautifier - No Adjust", "Beautify the ISAC 2D clustering result with the original pixel size, without adjusting the power spectrum of resultant average images.", token_edit_list, sxsubcmd_mpi_support)
+	sxcmd_subconfig = SXsubcmd_config("Beautifier - No Adjust", "Beautify the ISAC 2D clustering result using the original pixel size, without adjusting the power spectrum of resultant average images. Use this option to skip all power spectrum adjustment methods and simply compute class averages with the original pixel size.", token_edit_list, sxsubcmd_mpi_support)
 
 	return sxcmd_subconfig
 
@@ -1244,7 +1244,7 @@ def create_sxcmd_subconfig_shapen_cluster_vol():
 	token_edit = SXcmd_token(); token_edit.initialize_edit("dilation"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("mtf"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("B_enhance"); token_edit.is_required = True; token_edit.help = "Non-zero positive value: program use the given value [A^2] to enhance map; -1.0: B-factor is not applied."; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("fl"); token_edit.is_required = True; token_edit.help = "A value larger than 0.5: low-pass filter to the value in Angstrom; A value larger than 0.0 and smaller than 0.5: low-pass filter to the value in absolute frequency; -1.0: no low-pass filter."; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("fl"); token_edit.is_required = True; token_edit.help = "A value larger than 0.5: low-pass filter to the value in Angstrom; -1.0: no low-pass filter."; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("aa"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("output"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
 	
