@@ -7564,7 +7564,7 @@ def do_final_rec3d(partids, partstack, original_data, oldparams, oldparamstructu
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		if(Blockdata["subgroup_myid"] == Blockdata["main_node"]):
 			print(line, "do_final_rec3d")
-			print("Reconstruction uses solution from  %d iteration"%final_iter)
+			print("Reconstruction uses solution of %d iteration"%final_iter)
 			print("Final reconstruction image size is:  %d"%(Tracker["constants"]["nnxo"]))
 			print("Final directory is %s"%(Tracker["directory"]))
 		final_dir = Tracker["directory"]
