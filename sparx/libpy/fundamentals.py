@@ -1638,6 +1638,7 @@ class symclass():
 		from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
 		if( (self.sym[0] == "c")  or  (self.sym[0] == "d") ):
 			if((phi>= 0.0 and phi<self.brackets[inc_mirror][0]) and (theta<=self.brackets[inc_mirror][1])):  return True
+			else:  return False
 		elif( (self.sym[:3] == "oct")  or  (self.sym[:4] == "icos") ):
 			if( phi>= 0.0 and phi<self.brackets[inc_mirror][0] and theta<=self.brackets[inc_mirror][3] ):
 				tmphi = min(phi, self.brackets[inc_mirror][2]-phi)
@@ -1737,17 +1738,22 @@ class symclass():
 			lis = False
 		redang = []
 		for q in toprocess:
-			if( inc_mirror == 0 and q[1]>90.0): phi = 360.0-q[0]; theta = 180.0 - q[1]; psi = (180.0 + q[2])%360.0
-			else: phi = q[0]; theta = q[1]; psi = q[2]
+			phi = q[0]; theta = q[1]; psi = q[2]
 			if is_platonic_sym:
 				if(not self.is_in_subunit(phi, theta, inc_mirror)):
+					if( inc_mirror == 0 ):
+						phi = (360.0-phi)%self.brackets[1][0]; theta = 180.0 - theta; psi = (180.0 + psi)%360.0
+						if(phi>=self.brackets[0][0]):  phi = self.brackets[1][0]-phi
 					mat = rotmatrix(phi,theta,psi)
-					for l in xrange(1,self.nsym):
+					for l in xrange(self.nsym):
 						p1,p2,p3 = recmat( mulmat( mat , self.symatrix[l]) )
+						#print("  ",l,p1,p2,p3)
 						if(self.is_in_subunit(p1, p2, inc_mirror)):
 							phi=p1; theta=p2; psi=p3
+							#print(" FOUND  ",l,phi,theta,psi)
 							break
 			else:
+				if( inc_mirror == 0 and theta>90.0): phi = 360.0-phi; theta = 180.0 - theta; psi = (180.0 + psi)%360.0
 				phi = phi%qs
 				if(self.sym[0] == "d"):
 					if( inc_mirror == 0 and phi>=self.brackets[0][0]): phi = self.brackets[1][0]-phi
