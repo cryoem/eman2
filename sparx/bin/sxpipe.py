@@ -326,15 +326,15 @@ def isac_substack(args):
 			if len(shrunk_core_align2d) != n_idx_isac_align2d:
 				ERROR("Invalid number of columns {} at entry #{} in {}. It should be {}. The parameter file might be corrupted. Please consider to rerun ISAC.".format(len(shrunk_core_align2d), fullstack_img_id, fullstack_shrunk_core_align2d_path, n_idx_isac_align2d), subcommand_name) # action=1 - fatal error, exit
 			if shrunk_core_align2d[idx_isac_align2d_mirror] != -1: # An accounted particle
-				alpha1  = prealign2d[idx_isac_align2d_alpha]
-				sx1     = prealign2d[idx_isac_align2d_tx]
-				sy1     = prealign2d[idx_isac_align2d_ty]
-				mirror1 = prealign2d[idx_isac_align2d_mirror]
-				alpha2  = shrunk_core_align2d[idx_isac_align2d_alpha]
-				sx2     = shrunk_core_align2d[idx_isac_align2d_tx]/isac_shrink_ratio # Need to apply the shrink ratio to ISAC x-shift
-				sy2     = shrunk_core_align2d[idx_isac_align2d_ty]/isac_shrink_ratio # Need to apply the shrink ratio to ISAC y-shift
-				mirror2 = shrunk_core_align2d[idx_isac_align2d_mirror]
-				isac_total_align2d = combine_params2(alpha1, sx1, sy1, mirror1, alpha2, sx2, sy2, mirror2)
+				alpha1  = float(prealign2d[idx_isac_align2d_alpha])
+				sx1     = float(prealign2d[idx_isac_align2d_tx])
+				sy1     = float(prealign2d[idx_isac_align2d_ty])
+				mirror1 = int(prealign2d[idx_isac_align2d_mirror])
+				alpha2  = float(shrunk_core_align2d[idx_isac_align2d_alpha])
+				sx2     = float(shrunk_core_align2d[idx_isac_align2d_tx])/isac_shrink_ratio # Need to apply the shrink ratio to ISAC x-shift
+				sy2     = float(shrunk_core_align2d[idx_isac_align2d_ty])/isac_shrink_ratio # Need to apply the shrink ratio to ISAC y-shift
+				mirror2 = int(shrunk_core_align2d[idx_isac_align2d_mirror])
+				isac_total_align2d = list(combine_params2(alpha1, sx1, sy1, mirror1, alpha2, sx2, sy2, mirror2)) # return value is tuple type but we want to list! 
 				
 				fullstack_total_align2d_list[fullstack_img_id] = isac_total_align2d
 				assert(len(fullstack_total_align2d_list[fullstack_img_id]) == n_idx_isac_align2d)
@@ -383,12 +383,12 @@ def isac_substack(args):
 				ERROR("Invalid alignment parameters of an unaccounted particle is detected at entry #{} in {}. The parameter files might be corrupted. Please consider to rerun Beautifier.".format(accounted_img_id, accounted_local_total_align2d_path), subcommand_name) # action=1 - fatal error, exit
 			assert (local_total_param2d[idx_beautifier_align2d_mirror] != -1)
 			
-			fullstack_img_id  = local_total_param2d[idx_beautifier_align2d_fullstack_img_id]
-			alpha             = local_total_param2d[idx_beautifier_align2d_alpha]
-			sx                = local_total_param2d[idx_beautifier_align2d_tx]
-			sy                = local_total_param2d[idx_beautifier_align2d_ty]
-			mirror            = local_total_param2d[idx_beautifier_align2d_mirror]
-			scale             = local_total_param2d[idx_beautifier_align2d_scale]
+			fullstack_img_id  = int(local_total_param2d[idx_beautifier_align2d_fullstack_img_id])
+			alpha             = float(local_total_param2d[idx_beautifier_align2d_alpha])
+			sx                = float(local_total_param2d[idx_beautifier_align2d_tx])
+			sy                = float(local_total_param2d[idx_beautifier_align2d_ty])
+			mirror            = int(local_total_param2d[idx_beautifier_align2d_mirror])
+			scale             = float(local_total_param2d[idx_beautifier_align2d_scale])
 			
 			fullstack_total_align2d_list[fullstack_img_id] = [alpha, sx, sy, mirror]
 			assert(len(fullstack_total_align2d_list[fullstack_img_id]) == n_idx_isac_align2d)
