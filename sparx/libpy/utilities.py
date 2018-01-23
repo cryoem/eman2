@@ -7009,17 +7009,30 @@ def search_lowpass(fsc):
 def angular_distribution(inputfile, options, output):
 	import numpy
 
-	print('Loading data')
+	#print('Loading data')
 	# Import data
 	listDType = [
 		('Phi', '<f8'),
 		('Theta', '<f8'),
 	]
-	arrData = numpy.genfromtxt(inputfile, dtype=listDType, usecols=(0, 1))
+	#arrData = numpy.genfromtxt(inputfile, dtype=listDType, usecols=(0, 1))
+	# The following two lines are in case there is no symmetry option in sxprocess, to be simiplified
+	try: sym = options.symmetry
+	except: sym = "c1"
+	from fundamentals import symclass
+	from utilities import read_text_row
+	scs = symclass(sym)
+	angs = scs.reduce_anglesets(read_text_row(inputfile),0)
+	nang = len(angs)
 
 	# Load angle Data
-	arrPhi = numpy.round(arrData['Phi'], options.round_digit)
-	arrTheta = numpy.round(arrData['Theta'], options.round_digit)
+	# below makes no sense
+	#arrPhi = numpy.round(arrData['Phi'], options.round_digit)
+	#arrTheta = numpy.round(arrData['Theta'], options.round_digit)
+
+	arrPhi   = numpy.array([angs[i][0] for i in xrange(nang)])
+	arrTheta = numpy.array([angs[i][1] for i in xrange(nang)])
+	del angs
 
 	# Set the vectors for transformation and plotting
 	vectorInital = numpy.array([0, 0, 1])
@@ -7029,13 +7042,13 @@ def angular_distribution(inputfile, options, output):
 		options.box_size
 	])
 
-	print('Calculate vector length')
+	#print('Calculate vector length')
 	# Create array for the angles
 	dtype = [
 		('alpha', '<f8'),
 		('beta', '<f8')
 	]
-	arrayAngles = numpy.empty(len(arrData), dtype=dtype)
+	arrayAngles = numpy.empty(nang, dtype=dtype)
 	arrayAngles['alpha'] = numpy.radians(arrTheta)
 	arrayAngles['beta'] = numpy.radians(arrPhi)
 
@@ -7082,7 +7095,7 @@ def angular_distribution(inputfile, options, output):
 	arrayAnglesRadius['beta'] = uniqueArray['beta']
 	arrayAnglesRadius['radius'] = arrayRadius
 
-	print('Write output')
+	#print('Write output')
 	# Create vectors for chimera
 	with open(output, 'w') as f:
 		for vector in arrayAnglesRadius:
