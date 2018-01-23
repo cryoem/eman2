@@ -1602,7 +1602,7 @@ class symclass():
 			cap_sig = 360.0/ncap  # also called platonic_params["az_max"]
 			alpha = degrees(acos(1.0/(sqrt(3.0)*tan(2*pi/ncap/2.0)))) # also platonic_params["alt_max"]
 			theta = degrees(0.5*acos( cos(radians(cap_sig))/(1.0-cos(radians(cap_sig))) ))  #  also platonic_params["theta_c_on_two"]
-			self.brackets = [[360.0/ncap,theta,cap_sig,alpha],[360.0/ncap,theta,cap_sig,alpha]]
+			self.brackets = [[180.0/ncap,theta,cap_sig,alpha],[360.0/ncap,theta,cap_sig,alpha]]# modified but I do not know whether correctly 01/23/2018
 			lvl1 = degrees(acos(-1.0/3.0)) # There  are 3 faces at this angle
 			self.symangles = [ [0.,0.,0.], [0., 0., 120.], [0., 0., 240.]]
 			for l1 in xrange(30,271,120):
@@ -1727,6 +1727,7 @@ class symclass():
 	def reduce_anglesets(self, angles, inc_mirror=1):
 		from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
 		import types
+		if self.sym[0] == "t": return angles
 		is_platonic_sym = self.sym[0] == "o" or self.sym[0] == "t" or self.sym[0] == "i"
 		if(self.sym[0] == "c"): qs = 360.0/self.nsym
 		elif(self.sym[0] == "d"): qs = 720.0/self.nsym
@@ -1740,18 +1741,17 @@ class symclass():
 		for q in toprocess:
 			phi = q[0]; theta = q[1]; psi = q[2]
 			if is_platonic_sym:
-				if(not self.is_in_subunit(phi, theta, inc_mirror)):
-					if( inc_mirror == 0 ):
-						phi = (360.0-phi)%self.brackets[1][0]; theta = 180.0 - theta; psi = (180.0 + psi)%360.0
-						if(phi>=self.brackets[0][0]):  phi = self.brackets[1][0]-phi
+				if(not self.is_in_subunit(phi, theta, 1)):
 					mat = rotmatrix(phi,theta,psi)
 					for l in xrange(self.nsym):
 						p1,p2,p3 = recmat( mulmat( mat , self.symatrix[l]) )
-						#print("  ",l,p1,p2,p3)
-						if(self.is_in_subunit(p1, p2, inc_mirror)):
+						if(self.is_in_subunit(p1, p2, 1)):
 							phi=p1; theta=p2; psi=p3
-							#print(" FOUND  ",l,phi,theta,psi)
 							break
+					if( inc_mirror == 0 ):
+						if(phi>=self.brackets[0][0]):  phi = self.brackets[1][0]-phi
+				elif(inc_mirror == 0):
+					if(phi>=self.brackets[0][0]):  phi = self.brackets[1][0]-phi
 			else:
 				if( inc_mirror == 0 and theta>90.0): phi = 360.0-phi; theta = 180.0 - theta; psi = (180.0 + psi)%360.0
 				phi = phi%qs
@@ -1765,21 +1765,32 @@ class symclass():
 
 	def reduce_angles(self, phiin, thetain, psiin, inc_mirror=1):
 		from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
-		if( inc_mirror == 0 and thetain>90.0): phi = 360.0-phiin; theta = 180.0 - thetain; psi = (180.0 + psiin)%360.0
-		else: phi = phiin; theta = thetain; psi = psiin
-		if(self.sym[0] == "c"):
-			phi = phi%(360.0/self.nsym)
-		elif(self.sym[0] == "d"):
-			phi = phi%(720.0/self.nsym)
-			if( inc_mirror == 0 and phi>=self.brackets[0][0]): phi = self.brackets[1][0]-phi
-		else:
-			if(not self.is_in_subunit(phi, theta, inc_mirror)):
-				mat = rotmatrix(phi,theta,psi)
-				for l in xrange(1,self.nsym):
+		if self.sym[0] == "t": return phiin, thetain, psiin
+		is_platonic_sym = self.sym[0] == "o" or self.sym[0] == "t" or self.sym[0] == "i"
+		if(self.sym[0] == "c"): qs = 360.0/self.nsym
+		elif(self.sym[0] == "d"): qs = 720.0/self.nsym
+		if is_platonic_sym:
+			if(not self.is_in_subunit(phiin, thetain, 1)):
+				mat = rotmatrix(phiin,thetain,psiin)
+				for l in xrange(self.nsym):
 					p1,p2,p3 = recmat( mulmat( mat , self.symatrix[l]) )
-					if(self.is_in_subunit(p1, p2, inc_mirror)):
-						phi=p1;theta=p2;psi=p3
+					#print(p1,p2,p3)
+					if(self.is_in_subunit(p1, p2, 1)):
+						phi=p1; theta=p2; psi=p3
+						#print("  FOUND ")
 						break
+				if( inc_mirror == 0 ):
+					if(phi>=self.brackets[0][0]):  phi = self.brackets[1][0]-phi
+			elif(inc_mirror == 0):
+				phi = phiin; theta = thetain; psi = psiin
+				if(phi>=self.brackets[0][0]):  phi = self.brackets[1][0]-phi
+			else:
+				phi = phiin; theta = thetain; psi = psiin
+		else:
+			if( inc_mirror == 0 and thetain>90.0): phi = 360.0-phiin; theta = 180.0 - thetain; psi = (180.0 + psiin)%360.0
+			phi = phi%qs
+			if(self.sym[0] == "d"):
+				if( inc_mirror == 0 and phi>=self.brackets[0][0]): phi = self.brackets[1][0]-phi
 
 		return phi, theta, psi
 
