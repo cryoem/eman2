@@ -1120,7 +1120,7 @@ EMData* EMData::symvol(string symString) {
 	// actual work -- loop over symmetries and symmetrize
 	for (int isym = 0; isym < nsym; isym++) {
 		Transform rm = sym.get_sym(symString, isym);
-		this -> rot_scale_trans(rm, svol);
+		this -> rot_scale_trans_background(rm, svol);
 	}
 	*svol /=  ((float) nsym);
 	svol->update();
@@ -2945,62 +2945,62 @@ EMData::rot_scale_trans(const Transform &RA, EMData* ret) {
 
 	if (1 >= ny)  throw ImageDimensionException("Can't rotate 1D image");
 	if (nz < 2) {
-	float  p1, p2, p3, p4;
-	float delx = translations.at(0);
-	float dely = translations.at(1);
-	delx = restrict2(delx, nx);
-	dely = restrict2(dely, ny);
-	int xc = nx/2;
-	int yc = ny/2;
-//         shifted center for rotation
-	float shiftxc = xc + delx;
-	float shiftyc = yc + dely;
-		for (int iy = 0; iy < ny; iy++) {
-			float y = float(iy) - shiftyc;
-			float ysang = y*RAinv[0][1]+xc;
-			float ycang = y*RAinv[1][1]+yc;
-			for (int ix = 0; ix < nx; ix++) {
-				float x = float(ix) - shiftxc;
-				float xold = x*RAinv[0][0] + ysang;
-				float yold = x*RAinv[1][0] + ycang;
+		float  p1, p2, p3, p4;
+		float delx = translations.at(0);
+		float dely = translations.at(1);
+		delx = restrict2(delx, nx);
+		dely = restrict2(dely, ny);
+		int xc = nx/2;
+		int yc = ny/2;
+	//         shifted center for rotation
+		float shiftxc = xc + delx;
+		float shiftyc = yc + dely;
+			for (int iy = 0; iy < ny; iy++) {
+				float y = float(iy) - shiftyc;
+				float ysang = y*RAinv[0][1]+xc;
+				float ycang = y*RAinv[1][1]+yc;
+				for (int ix = 0; ix < nx; ix++) {
+					float x = float(ix) - shiftxc;
+					float xold = x*RAinv[0][0] + ysang;
+					float yold = x*RAinv[1][0] + ycang;
 
-				xold = restrict1(xold, nx);
-				yold = restrict1(yold, ny);
+					xold = restrict1(xold, nx);
+					yold = restrict1(yold, ny);
 
-				int xfloor = int(xold);
-				int yfloor = int(yold);
-				float t = xold-xfloor;
-				float u = yold-yfloor;
-				if(xfloor == nx -1 && yfloor == ny -1) {
+					int xfloor = int(xold);
+					int yfloor = int(yold);
+					float t = xold-xfloor;
+					float u = yold-yfloor;
+					if(xfloor == nx -1 && yfloor == ny -1) {
 
-				    p1 =in[xfloor   + yfloor*ny];
-					p2 =in[ yfloor*ny];
-					p3 =in[0];
-					p4 =in[xfloor];
-				} else if(xfloor == nx - 1) {
+						p1 =in[xfloor   + yfloor*ny];
+						p2 =in[ yfloor*ny];
+						p3 =in[0];
+						p4 =in[xfloor];
+					} else if(xfloor == nx - 1) {
 
-					p1 =in[xfloor   + yfloor*ny];
-					p2 =in[           yfloor*ny];
-					p3 =in[          (yfloor+1)*ny];
-					p4 =in[xfloor   + (yfloor+1)*ny];
-				} else if(yfloor == ny - 1) {
+						p1 =in[xfloor   + yfloor*ny];
+						p2 =in[           yfloor*ny];
+						p3 =in[          (yfloor+1)*ny];
+						p4 =in[xfloor   + (yfloor+1)*ny];
+					} else if(yfloor == ny - 1) {
 
-					p1 =in[xfloor   + yfloor*ny];
-					p2 =in[xfloor+1 + yfloor*ny];
-					p3 =in[xfloor+1 ];
-					p4 =in[xfloor   ];
-				} else {
-					p1 =in[xfloor   + yfloor*ny];
-					p2 =in[xfloor+1 + yfloor*ny];
-					p3 =in[xfloor+1 + (yfloor+1)*ny];
-					p4 =in[xfloor   + (yfloor+1)*ny];
-				}
-				if (ret_is_initially_null) (*ret)(ix,iy) = p1 + u * ( p4 - p1) + t * ( p2 - p1 + u *(p3-p2-p4+p1));
-				else (*ret)(ix,iy) += p1 + u * ( p4 - p1) + t * ( p2 - p1 + u *(p3-p2-p4+p1));
-			} //ends x loop
-		} // ends y loop
-		set_array_offsets(saved_offsets);
-		return ret;
+						p1 =in[xfloor   + yfloor*ny];
+						p2 =in[xfloor+1 + yfloor*ny];
+						p3 =in[xfloor+1 ];
+						p4 =in[xfloor   ];
+					} else {
+						p1 =in[xfloor   + yfloor*ny];
+						p2 =in[xfloor+1 + yfloor*ny];
+						p3 =in[xfloor+1 + (yfloor+1)*ny];
+						p4 =in[xfloor   + (yfloor+1)*ny];
+					}
+					if (ret_is_initially_null) (*ret)(ix,iy) = p1 + u * ( p4 - p1) + t * ( p2 - p1 + u *(p3-p2-p4+p1));
+					else (*ret)(ix,iy) += p1 + u * ( p4 - p1) + t * ( p2 - p1 + u *(p3-p2-p4+p1));
+				} //ends x loop
+			} // ends y loop
+			set_array_offsets(saved_offsets);
+			return ret;
 	} else {
 	//		 This begins the 3D version tri-linear interpolation.
 
@@ -3077,8 +3077,12 @@ EMData::rot_scale_trans(const Transform &RA, EMData* ret) {
 // new function added for background option
 #define in(i,j,k)          in[i+(j+(k*ny))*(size_t)nx]
 EMData*
-EMData::rot_scale_trans_background(const Transform &RA) {
-	EMData* ret = copy_head();
+EMData::rot_scale_trans_background(const Transform &RA, EMData* ret) {
+
+    int ret_is_initially_null = ret == NULL; 
+
+	if (ret == NULL) ret = copy_head();
+
 	float *in = this->get_data();
 	vector<int> saved_offsets = get_array_offsets();
 	set_array_offsets(0,0,0);
@@ -3087,82 +3091,83 @@ EMData::rot_scale_trans_background(const Transform &RA) {
 
 	if (1 >= ny)  throw ImageDimensionException("Can't rotate 1D image");
 	if (nz < 2) {
-	float  p1, p2, p3, p4;
-	float delx = translations.at(0);
-	float dely = translations.at(1);
-	delx = restrict2(delx, nx);
-	dely = restrict2(dely, ny);
-	int xc = nx/2;
-	int yc = ny/2;
-//         shifted center for rotation
-	float shiftxc = xc + delx;
-	float shiftyc = yc + dely;
-		for (int iy = 0; iy < ny; iy++) {
-			float y = float(iy) - shiftyc;
-			float ysang = y*RAinv[0][1]+xc;
-			float ycang = y*RAinv[1][1]+yc;
-			for (int ix = 0; ix < nx; ix++) {
-				float x = float(ix) - shiftxc;
-				float xold = x*RAinv[0][0] + ysang;
-				float yold = x*RAinv[1][0] + ycang;
+		float  p1, p2, p3, p4;
+		float delx = translations.at(0);
+		float dely = translations.at(1);
+		delx = restrict2(delx, nx);
+		dely = restrict2(dely, ny);
+		int xc = nx/2;
+		int yc = ny/2;
+	//         shifted center for rotation
+		float shiftxc = xc + delx;
+		float shiftyc = yc + dely;
+			for (int iy = 0; iy < ny; iy++) {
+				float y = float(iy) - shiftyc;
+				float ysang = y*RAinv[0][1]+xc;
+				float ycang = y*RAinv[1][1]+yc;
+				for (int ix = 0; ix < nx; ix++) {
+					float x = float(ix) - shiftxc;
+					float xold = x*RAinv[0][0] + ysang;
+					float yold = x*RAinv[1][0] + ycang;
 
-				// if (xold,yold) is outside the image, then let xold = ix and yold = iy
+					// if (xold,yold) is outside the image, then let xold = ix and yold = iy
 
-                if ( (xold < 0.0f) || (xold >= (float)(nx)) || (yold < 0.0f) || (yold >= (float)(ny)) ){
-				    xold = (float)ix;
-					yold = (float)iy;
-				}
+					if ( (xold < 0.0f) || (xold >= (float)(nx)) || (yold < 0.0f) || (yold >= (float)(ny)) ){
+						xold = (float)ix;
+						yold = (float)iy;
+					}
 
-				int xfloor = int(xold);
-				int yfloor = int(yold);
-				float t = xold-xfloor;
-				float u = yold-yfloor;
-				if(xfloor == nx -1 && yfloor == ny -1) {
+					int xfloor = int(xold);
+					int yfloor = int(yold);
+					float t = xold-xfloor;
+					float u = yold-yfloor;
+					if(xfloor == nx -1 && yfloor == ny -1) {
 
-				    p1 =in[xfloor   + yfloor*ny];
-					p2 =in[ yfloor*ny];
-					p3 =in[0];
-					p4 =in[xfloor];
-				} else if(xfloor == nx - 1) {
+						p1 =in[xfloor   + yfloor*ny];
+						p2 =in[ yfloor*ny];
+						p3 =in[0];
+						p4 =in[xfloor];
+					} else if(xfloor == nx - 1) {
 
-					p1 =in[xfloor   + yfloor*ny];
-					p2 =in[           yfloor*ny];
-					p3 =in[          (yfloor+1)*ny];
-					p4 =in[xfloor   + (yfloor+1)*ny];
-				} else if(yfloor == ny - 1) {
+						p1 =in[xfloor   + yfloor*ny];
+						p2 =in[           yfloor*ny];
+						p3 =in[          (yfloor+1)*ny];
+						p4 =in[xfloor   + (yfloor+1)*ny];
+					} else if(yfloor == ny - 1) {
 
-					p1 =in[xfloor   + yfloor*ny];
-					p2 =in[xfloor+1 + yfloor*ny];
-					p3 =in[xfloor+1 ];
-					p4 =in[xfloor   ];
-				} else {
+						p1 =in[xfloor   + yfloor*ny];
+						p2 =in[xfloor+1 + yfloor*ny];
+						p3 =in[xfloor+1 ];
+						p4 =in[xfloor   ];
+					} else {
 
-					p1 =in[xfloor   + yfloor*ny];
-					p2 =in[xfloor+1 + yfloor*ny];
-					p3 =in[xfloor+1 + (yfloor+1)*ny];
-					p4 =in[xfloor   + (yfloor+1)*ny];
-				}
-				(*ret)(ix,iy) = p1 + u * ( p4 - p1) + t * ( p2 - p1 + u *(p3-p2-p4+p1));
-			} //ends x loop
-		} // ends y loop
-		set_array_offsets(saved_offsets);
-		return ret;
+						p1 =in[xfloor   + yfloor*ny];
+						p2 =in[xfloor+1 + yfloor*ny];
+						p3 =in[xfloor+1 + (yfloor+1)*ny];
+						p4 =in[xfloor   + (yfloor+1)*ny];
+					}
+					if (ret_is_initially_null) (*ret)(ix,iy) = p1 + u * ( p4 - p1) + t * ( p2 - p1 + u *(p3-p2-p4+p1));
+					else (*ret)(ix,iy) += p1 + u * ( p4 - p1) + t * ( p2 - p1 + u *(p3-p2-p4+p1));
+				} //ends x loop
+			} // ends y loop
+			set_array_offsets(saved_offsets);
+			return ret;
 	} else {
-//		 This begins the 3D version tril-inear interpolation.
+//		 This begins the 3D version tri-linear interpolation.
 
-	float delx = translations.at(0);
-	float dely = translations.at(1);
-	float delz = translations.at(2);
-	delx = restrict2(delx, nx);
-	dely = restrict2(dely, ny);
-	delz = restrict2(delz, nz);
-	int xc = nx/2;
-	int yc = ny/2;
-	int zc = nz/2;
-//         shifted center for rotation
-	float shiftxc = xc + delx;
-	float shiftyc = yc + dely;
-	float shiftzc = zc + delz;
+		float delx = translations.at(0);
+		float dely = translations.at(1);
+		float delz = translations.at(2);
+		delx = restrict2(delx, nx);
+		dely = restrict2(dely, ny);
+		delz = restrict2(delz, nz);
+		int xc = nx/2;
+		int yc = ny/2;
+		int zc = nz/2;
+	//         shifted center for rotation
+		float shiftxc = xc + delx;
+		float shiftyc = yc + dely;
+		float shiftzc = zc + delz;
 
 		for (int iz = 0; iz < nz; iz++) {
 			float z = float(iz) - shiftzc;
@@ -3182,9 +3187,9 @@ EMData::rot_scale_trans_background(const Transform &RA) {
 
 					// if (xold,yold,zold) is outside the image, then let xold = ix, yold = iy and zold=iz
 
-                    if ( (xold < 0.0f) || (xold >= (float)(nx)) || (yold < 0.0f) || (yold >= (float)(ny))  || (zold < 0.0f) || (zold >= (float)(nz)) ){
-				         xold = (float)ix;
-					     yold = (float)iy;
+					if ( (xold < 0.0f) || (xold >= (float)(nx)) || (yold < 0.0f) || (yold >= (float)(ny))  || (zold < 0.0f) || (zold >= (float)(nz)) ){
+						 xold = (float)ix;
+						 yold = (float)iy;
 						 zold = (float)iz;
 					}
 
@@ -3212,7 +3217,8 @@ EMData::rot_scale_trans_background(const Transform &RA) {
 					float a8 = in(IOXp1,IOY,IOZ) + in(IOX,IOYp1,IOZ)+ in(IOX,IOY,IOZp1)
 							- in(IOX,IOY,IOZ)- in(IOXp1,IOYp1,IOZ) - in(IOXp1,IOY,IOZp1)
 							- in(IOX,IOYp1,IOZp1) + in(IOXp1,IOYp1,IOZp1);
-					(*ret)(ix,iy,iz) = a1 + dz*(a4 + a6*dx + (a7 + a8*dx)*dy) + a3*dy + dx*(a2 + a5*dy);
+					if (ret_is_initially_null) (*ret)(ix,iy,iz) = a1 + dz*(a4 + a6*dx + (a7 + a8*dx)*dy) + a3*dy + dx*(a2 + a5*dy);
+					else (*ret)(ix,iy,iz) += a1 + dz*(a4 + a6*dx + (a7 + a8*dx)*dy) + a3*dy + dx*(a2 + a5*dy);
 				} //ends x loop
 			} // ends y loop
 		} // ends z loop

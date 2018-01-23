@@ -404,6 +404,7 @@ EMData* rot_scale_trans2D_background(float ang, float delx = 0.0f, float dely = 
  *  rotated/translated/scaled.
  *
  *  @param[in] RA Transform object
+ *  @param[in] ret if true add to input volume
  *  @exception ImageDimensionException can not rotate 1 D image
  *  @return New rotated/shifted/scaled image
 	 */
@@ -419,10 +420,11 @@ EMData* rot_scale_trans(const Transform &RA, EMData* ret = NULL);
  *  rotated/translated/scaled.
  *
  *  @param[in] RA Transform object
+ *  @param[in] ret if true add to input volume
  *  @exception ImageDimensionException can not rotate 1 D image
  *  @return New rotated/shifted/scaled image
  */
-EMData* rot_scale_trans_background(const Transform &RA);
+EMData* rot_scale_trans_background(const Transform &RA, EMData* ret = NULL);
 
 /*
 		To restrict the value to [0, nx)
