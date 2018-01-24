@@ -4568,6 +4568,9 @@ def lacos(x):
 	from math import degrees, acos
 	return  degrees(acos(max(-1.0,min(1.0,x))))
 
+def mulvec(v1,v2):
+	return v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2]
+
 def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 	from utilities import getfvec
 	from math import exp, pi
@@ -7021,8 +7024,12 @@ def angular_distribution(inputfile, options, output):
 	except: sym = "c1"
 	from fundamentals import symclass
 	from utilities import read_text_row
-	scs = symclass(sym)
-	angs = scs.reduce_anglesets(read_text_row(inputfile),0)
+	if( sym == "c0" ):
+		angs = read_text_row(inputfile)
+	else:
+		scs = symclass(sym)
+		angs = scs.reduce_anglesets(read_text_row(inputfile),0)
+		del scs
 	nang = len(angs)
 
 	# Load angle Data
