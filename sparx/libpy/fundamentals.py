@@ -995,12 +995,12 @@ def rot_shift2D(img, angle = 0.0, sx = 0.0, sy = 0.0, mirror = 0, scale = 1.0, i
 
 	if(use_method == "linear" and mode == "cyclic"):
 		T  = Transform({'type': 'SPIDER', 'psi': angle, 'tx': sx, 'ty': sy, 'scale':scale})
-		img = img.rot_scale_trans(T)
+		img = img.rot_scale_trans(T, None)
 		if  mirror: img.process_inplace("xform.mirror", {"axis":'x'})
 		return img
 	elif(use_method == "linear" and mode == "background"):
 		T  = Transform({'type': 'SPIDER', 'psi': angle, 'tx': sx, 'ty': sy, 'scale':scale})
-		img = img.rot_scale_trans_background(T)
+		img = img.rot_scale_trans_background(T, None)
 		if  mirror: img.process_inplace("xform.mirror", {"axis":'x'})
 		return img
 	elif(use_method == "quadratic" and mode == "cyclic"):
@@ -1052,8 +1052,8 @@ def rot_shift3D(image, phi = 0, theta = 0, psi = 0, sx = 0, sy = 0, sz = 0, scal
 	T1 = Transform({'scale':scale})
 	T2 = Transform({'type': 'SPIDER', 'phi': phi, 'theta': theta, 'psi': psi, 'tx': sx, 'ty': sy, 'tz': sz})
 	T  = T1*T2
-	if (mode == "cyclic"): return image.rot_scale_trans(T)
-	else: return image.rot_scale_trans_background(T)
+	if (mode == "cyclic"): return image.rot_scale_trans(T, None)
+	else: return image.rot_scale_trans_background(T, None)
 
 
 def rot_shift3D_grid(img, phi=0.0, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0, scale=1.0, kb=None, mode="background", wrap=False):
