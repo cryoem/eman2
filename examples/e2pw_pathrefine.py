@@ -3,7 +3,7 @@ from __future__ import print_function
 # Muyuan Chen 2015-03
 from EMAN2 import *
 import numpy as np
-from cmy_utils import *
+from EMAN2_utils import *
 import scipy.spatial.distance as scidist
 from time import time
 from scipy.interpolate import interp1d
