@@ -323,335 +323,339 @@ def main():
 	E2end(pid)
 
 def process_movie(fsp,dark,gain,first,flast,step,options):
+	cwd = os.getcwd()
+	
+	if options.frames:
+		if options.ext == "mrc":
+			outname="{}/{}_{}.{}".format(cwd,base_name(fsp),options.suffix,"mrcs") #Output contents vary with options
+		else: outname="{}/{}_{}.{}".format(cwd,base_name(fsp),options.suffix,options.ext) #Output contents vary with options
+	else: outname="{}/{}.{}".format(cwd,base_name(fsp),options.ext)
 
-		if fsp[-4:].lower() in (".mrc"):
-			hdr=EMData(fsp,0,True)			# read header
-			nx,ny=hdr["nx"],hdr["ny"]
+	if fsp[-4:].lower() in (".mrc"):
+		hdr=EMData(fsp,0,True)			# read header
+		nx,ny=hdr["nx"],hdr["ny"]
 
-		# bgsub and gain correct the stack
-		outim=[]
-		nfs = 0
-		t = time()
-		for ii in xrange(first,flast,step):
+	# bgsub and gain correct the stack
+	outim=[]
+	nfs = 0
+	t = time()
+	for ii in xrange(first,flast,step):
+		if options.verbose:
+			sys.stdout.write(" {}/{}   \r".format(ii-first+1,flast-first+1))
+			sys.stdout.flush()
+
+		if fsp[-4:].lower() in (".mrc","mrcs") :
+		#if fsp[-4:].lower() in (".mrc") :
+			im=EMData(fsp,0,False,Region(0,0,ii,nx,ny,1))
+		else: im=EMData(fsp,ii)
+
+		if dark!=None : im.sub(dark)
+		if gain!=None : im.mult(gain)
+		#im.process_inplace("threshold.clampminmax",{"minval":0,"maxval":im["mean"]+im["sigma"]*3.5,"tozero":1})
+		if options.de64: im.process_inplace( "threshold.clampminmax", { "minval" : im[ 'minimum' ], "maxval" : im[ 'mean' ] + 8.0 * im[ 'sigma' ], "tomean" : True } )
+		if options.fixbadpixels : im.process_inplace("threshold.outlier.localmean",{"sigma":3.5,"fix_zero":1}) # fixes clear outliers as well as values which were exactly zero
+
+		#im.process_inplace("threshold.clampminmax.nsigma",{"nsigma":3.0})
+#			im.mult(-1.0)
+		#if options.normalize: im.process_inplace("normalize.edgemean") 
+
+		if options.bad_rows != [] or options.bad_columns != []:
+			im = im.process("math.xybadlines",{"rows":options.bad_rows,"cols":options.bad_columns})
+
+		if options.frames: im.write_image(outname,ii-first)
+
+		outim.append(im)
+
+	if options.frames and options.ext == "mrc": os.rename(outname,outname.replace(".mrcs",".mrc"))
+
+	if options.noali:
+		mgdirname = "micrographs_noali"
+		try: os.mkdir(mgdirname)
+		except: pass
+		alioutname="{}/{}.hdf".format(mgdirname,base_name(fsp))
+		out=qsum(outim)
+		#write out the unaligned average movie
+		out.write_image(alioutname,0)
+
+	t1 = time()-t
+	print("{:.1f} s".format(time()-t))
+
+	if options.align_frames :
+
+		start = time()
+
+		nx=outim[0]["nx"]
+		ny=outim[0]["ny"]
+
+		md = min(nx,ny)
+		if md <= 2048:
+			print("This program does not facilitate alignment of movies with frames smaller than 2048x2048 pixels.")
+			sys.exit(1)
+
+		n=len(outim)
+		nx=outim[0]["nx"]
+		ny=outim[0]["ny"]
+
+		print("{} frames read {} x {}".format(n,nx,ny))
+
+		ccfs=Queue.Queue(0)
+
+		# prepare image data (outim) by clipping and FFT'ing all tiles (this is threaded as well)
+		immx=[0]*n
+		thds = []
+		for i in range(n):
+			thd = threading.Thread(target=split_fft,args=(options,outim[i],i,options.optbox,options.optstep,ccfs))
+			thds.append(thd)
+		sys.stdout.write("\rPrecompute  /{} FFTs".format(len(thds)))
+		t0=time()
+
+		thrtolaunch=0
+		while thrtolaunch<len(thds) or threading.active_count()>1:
+			if thrtolaunch<len(thds) :
+				while (threading.active_count()==options.threads ) : sleep(.01)
+				#if options.verbose :
+				#	sys.stdout.write("\rPrecompute {}/{} FFTs {}".format(thrtolaunch+1,len(thds),threading.active_count()))
+				#	sys.stdout.flush()
+				thds[thrtolaunch].start()
+				thrtolaunch+=1
+			else: sleep(0.5)
+
+			while not ccfs.empty():
+				i,d=ccfs.get()
+				immx[i]=d
+
+		for th in thds: th.join()
+		print()
+
+		# create threads
+		thds=[]
+		peak_locs=Queue.Queue(0)
+		i=-1
+		for ima in range(n-1):
+			for imb in range(ima+1,n):
+				if options.verbose>3: i+=1		# if i>0 then it will write pre-processed CCF images to disk for debugging
+				thds.append(threading.Thread(target=calc_ccf_wrapper,args=(options,(ima,imb),options.optbox,options.optstep,immx[ima],immx[imb],ccfs,peak_locs,i,fsp)))
+
+		print("{:1.1f} s\nCompute {} ccfs".format(time()-t0,len(thds)))
+		t0=time()
+
+		# here we run the threads and save the results, no actual alignment done here
+		csum2={}
+
+		thrtolaunch=0
+		while thrtolaunch<len(thds) or threading.active_count()>1:
+			# If we haven't launched all threads yet, then we wait for an empty slot, and launch another
+			# note that it's ok that we wait here forever, since there can't be new results if an existing
+			# thread hasn't finished.
+			if thrtolaunch<len(thds) :
+				while (threading.active_count()==options.threads ) : sleep(.01)
+				#if options.verbose : print "Starting thread {}/{}".format(thrtolaunch,len(thds))
+				thds[thrtolaunch].start()
+				thrtolaunch+=1
+			else:
+				sleep(0.5)
+
+			while not ccfs.empty():
+				i,d=ccfs.get()
+				csum2[i]=d
+
 			if options.verbose:
-				sys.stdout.write(" {}/{}   \r".format(ii-first+1,flast-first+1))
+				sys.stdout.write("\r  {}/{} ({})".format(thrtolaunch,len(thds),threading.active_count()))
 				sys.stdout.flush()
 
-			#if fsp[-4:].lower() in (".mrc","mrcs") :
-			if fsp[-4:].lower() in (".mrc") :
-				im=EMData(fsp,0,False,Region(0,0,ii,nx,ny,1))
-			else: im=EMData(fsp,ii)
+		for th in thds: th.join()
+		print()
 
-			if dark!=None : im.sub(dark)
-			if gain!=None : im.mult(gain)
-			#im.process_inplace("threshold.clampminmax",{"minval":0,"maxval":im["mean"]+im["sigma"]*3.5,"tozero":1})
-			if options.de64: im.process_inplace( "threshold.clampminmax", { "minval" : im[ 'minimum' ], "maxval" : im[ 'mean' ] + 8.0 * im[ 'sigma' ], "tomean" : True } )
-			if options.fixbadpixels : im.process_inplace("threshold.outlier.localmean",{"sigma":3.5,"fix_zero":1}) # fixes clear outliers as well as values which were exactly zero
+		avgr=Averagers.get("minmax",{"max":0})
+		avgr.add_image_list(csum2.values())
+		csum=avgr.finish()
 
-			#im.process_inplace("threshold.clampminmax.nsigma",{"nsigma":3.0})
-#			im.mult(-1.0)
-			#if options.normalize: im.process_inplace("normalize.edgemean") 
+		#####
+		# Alignment code
+		#####
 
-			if options.bad_rows != [] or options.bad_columns != []:
-				im = im.process("math.xybadlines",{"rows":options.bad_rows,"cols":options.bad_columns})
+		# array of x,y locations of each frame, all relative to the last frame in the series, which will always have 0,0 shift
+		locs=[0]*(n*2) # we store the value for the last frame as well as a conveience
 
-			#if options.frames : im.write_image(outname[:-4]+"_corr.hdf",ii-first)
-			if options.frames:
-				if options.ext == "mrc": outname="{}_{}.{}".format(fsp.rsplit(".",1)[0],options.suffix,"mrcs") #Output contents vary with options
-				else: outname="{}_{}.{}".format(fsp.rsplit(".",1)[0],options.suffix,options.ext) #Output contents vary with options
-				im.write_image(outname,ii-first)
-			outim.append(im)
+		print("{:1.1f} s\nAlign {} frames".format(time()-t0,n))
+		t0=time()
 
-		if options.ext == "mrc": os.rename(outname,outname.replace(".mrcs",".mrc"))
+		peak_locs = {p[0]:p[1] for p in peak_locs.queue}
 
-		if options.noali:
-			mgdirname = "micrographs_noali"
+		if options.debug and options.verbose == 9:
+			print("PEAK LOCATIONS:")
+			for l in peak_locs.keys():
+				print(peak_locs[l])
+
+		# if options.ccweight:
+		# 	# normalize ccpeak values
+		# 	vals = []
+		# 	for ima,(i,j) in enumerate(sorted(peak_locs.keys())):
+		# 		for imb in range(i,j):
+		# 			try:
+		# 				vals.append(peak_locs[(i,j)][-1])
+		# 			except:
+		# 				pass
+		# 	ccmean = np.mean(vals)
+		# 	ccstd = np.std(vals)
+
+		m = n*(n-1)/2
+		bx = np.ones(m)
+		by = np.ones(m)
+		A = np.zeros([m,n]) # coefficient matrix
+		for ima,(i,j) in enumerate(sorted(peak_locs.keys())):
+			for imb in range(i,j):
+				try:
+					bx[ima] = peak_locs[(i,j)][0]
+					by[ima] = peak_locs[(i,j)][1]
+					A[ima,imb] = 1
+					#A[ima,imb] = float(n-np.fabs(i-j))/n
+					#A[ima,imb] = np.exp(1-peak_locs[(i,j)][3])
+					#A[ima,imb] = sqrt(float(n-fabs(i-j))/n)
+				except:
+					pass # CCF peak was not found
+		b = np.c_[bx,by]
+		A = np.asmatrix(A)
+		b = np.asmatrix(b)
+
+		# remove all zero rows from A and corresponding entries in b
+		z = np.argwhere(np.all(A==0,axis=1))
+		A = np.delete(A,z,axis=0)
+		b = np.delete(b,z,axis=0)
+
+		regr = linear_model.Ridge(alpha=options.optalpha,normalize=True,fit_intercept=True)
+		regr.fit(A,b)
+
+		traj = regr.predict(np.tri(n))
+		#shifts = regr.predict(np.eye(n))-options.optbox/2
+
+		traj -= traj[0]
+
+		if options.round == "int": traj = np.round(traj,0)#.astype(np.int8)
+
+		locs = traj.ravel()
+		quals=[0]*n # quality of each frame based on its correlation peak summed over all images
+		cen=options.optbox/2 #csum2[(0,1)]["nx"]/2
+		for i in xrange(n-1):
+			for j in xrange(i+1,n):
+				val=csum2[(i,j)].sget_value_at_interp(int(cen+locs[j*2]-locs[i*2]),int(cen+locs[j*2+1]-locs[i*2+1]))*sqrt(float(n-fabs(i-j))/n)
+				quals[i]+=val
+				quals[j]+=val
+
+		print("{:1.1f} s".format(time()-t0,n))
+
+		runtime = time()-start
+		print("Runtime: {:.1f} s".format(runtime))
+
+		# if options.plot:
+		# 	import matplotlib.pyplot as plt
+		# 	fig,ax = plt.subplots(1,3,figsize=(12,3))
+		# 	ax[0].plot(traj[:,0],traj[:,1],c='b',alpha=0.5)
+		# 	ax[0].scatter(traj[:,0],traj[:,1],c='b',alpha=0.5)
+		# 	ax[0].set_title("Trajectory (x/y pixels)")
+		# 	ax[1].set_title("Quality (cumulative pairwise ccf value)")
+		# 	ax[1].plot(quals,'k')
+		# 	for k in peak_locs.keys():
+		# 		try:
+		# 			p = peak_locs[k]
+		# 			ax[2].scatter(p[0],p[1])
+		# 		except: pass
+		# 	ax[2].set_title("CCF Peak Coordinates")
+
+		print("{:1.1f} s\nShift images".format(time()-t0))
+		for i,im in enumerate(outim):
+			if options.round == "int":
+				dx = int(round(locs[i*2],0))
+				dy = int(round(locs[i*2+1],0))
+				im.translate(dx,dy,0)
+			else: # float by default
+				dx = float(locs[i*2])
+				dy = float(locs[i*2+1])
+				im.translate(dx,dy,0)
+
+		if options.normaxes:
+			for f in outim:
+				f.process_inplace("filter.xyaxes0",{"neighbor":1})
+
+		if options.allali:
+			mgdirname = "micrographs_allali"
 			try: os.mkdir(mgdirname)
 			except: pass
 			alioutname="{}/{}.hdf".format(mgdirname,base_name(fsp))
 			out=qsum(outim)
-			#write out the unaligned average movie
 			out.write_image(alioutname,0)
 
-		t1 = time()-t
-		print("{:.1f} s".format(time()-t))
+		# write translations and qualities
+		db=js_open_dict(info_name(fsp))
+		db["movieali_trans"]=locs
+		db["movieali_qual"]=quals
+		db["movie_name"]=fsp
+		if gain:
+			db["gain_name"]=gain["filename"]
+			db["gain_id"]=gain["fileid"]
+		if dark:
+			db["dark_name"]=dark["filename"]
+			db["dark_id"]=dark["fileid"]
+		db["runtime"]=runtime
+		db["precision"]=options.round
+		db["optbox"]=options.optbox
+		db["optstep"]=options.optstep
+		db["optalpha"]=options.optalpha
+		db.close()
 
-		if options.align_frames :
+		out=open("{}_info.txt".format(fsp[:-4]),"w")
+		out.write("#i,dx,dy,dr,rel dr,qual\n")
+		for i in range(1,n):
+			dx,dy = traj[i]
+			dxlast,dylast = traj[i-1]
+			dr = hypot(dx,dy)
+			reldr = hypot(dx-dxlast,dy-dylast)
+			out.write("{}\t{}\t{}\t{}\t{}\t{}\n".format(i,dx,dy,dr,reldr,quals[i]))
 
-			start = time()
+		if options.goodali:
+			mgdirname = "micrographs_goodali"
+			try: os.mkdir(mgdirname)
+			except: pass
+			alioutname="{}/{}.hdf".format(mgdirname,base_name(fsp))
+			thr=(max(quals[1:])-min(quals))*0.4+min(quals)	# max correlation cutoff for inclusion
+			best=[im for i,im in enumerate(outim) if quals[i]>thr]
+			out=qsum(best)
+			print("Keeping {}/{} frames".format(len(best),len(outim)))
+			out.write_image(alioutname,0)
 
-			nx=outim[0]["nx"]
-			ny=outim[0]["ny"]
+		if options.bestali:
+			mgdirname = "micrographs_bestali"
+			try: os.mkdir(mgdirname)
+			except: pass
+			alioutname="{}/{}.hdf".format(mgdirname,base_name(fsp))
+			thr=(max(quals[1:])-min(quals))*0.6+min(quals)	# max correlation cutoff for inclusion
+			best=[im for i,im in enumerate(outim) if quals[i]>thr]
+			out=qsum(best)
+			print("Keeping {}/{} frames".format(len(best),len(outim)))
+			out.write_image(alioutname,0)
 
-			md = min(nx,ny)
-			if md <= 2048:
-				print("This program does not facilitate alignment of movies with frames smaller than 2048x2048 pixels.")
+		if options.ali4to14:
+			mgdirname = "micrographs_4-14"
+			try: os.mkdir(mgdirname)
+			except: pass
+			alioutname="{}/{}.hdf".format(mgdirname,base_name(fsp))
+			# skip the first 4 frames then keep 10
+			out=qsum(outim[4:14])
+			out.write_image(alioutname,0)
+
+		if len(options.rangeali)>0:
+			try: rng=[int(i) for i in options.rangeali.split("-")]
+			except:
+				print("Error: please specify --rangeali as X-Y where X and Y are inclusive starting with 0")
 				sys.exit(1)
+			mgdirname = "micrographs_{}-{}".format(rng[0],rng[1])
+			try: os.mkdir(mgdirname)
+			except: pass
+			alioutname="{}/{}.hdf".format(mgdirname,base_name(fsp))
+			out=qsum(outim[rng[0]:rng[1]+1])
+			out.write_image(alioutname,0)
 
-			n=len(outim)
-			nx=outim[0]["nx"]
-			ny=outim[0]["ny"]
-
-			print("{} frames read {} x {}".format(n,nx,ny))
-
-			ccfs=Queue.Queue(0)
-
-			# prepare image data (outim) by clipping and FFT'ing all tiles (this is threaded as well)
-			immx=[0]*n
-			thds = []
-			for i in range(n):
-				thd = threading.Thread(target=split_fft,args=(options,outim[i],i,options.optbox,options.optstep,ccfs))
-				thds.append(thd)
-			sys.stdout.write("\rPrecompute  /{} FFTs".format(len(thds)))
-			t0=time()
-
-			thrtolaunch=0
-			while thrtolaunch<len(thds) or threading.active_count()>1:
-				if thrtolaunch<len(thds) :
-					while (threading.active_count()==options.threads ) : sleep(.01)
-					#if options.verbose :
-					#	sys.stdout.write("\rPrecompute {}/{} FFTs {}".format(thrtolaunch+1,len(thds),threading.active_count()))
-					#	sys.stdout.flush()
-					thds[thrtolaunch].start()
-					thrtolaunch+=1
-				else: sleep(0.5)
-
-				while not ccfs.empty():
-					i,d=ccfs.get()
-					immx[i]=d
-
-			for th in thds: th.join()
-			print()
-
-			# create threads
-			thds=[]
-			peak_locs=Queue.Queue(0)
-			i=-1
-			for ima in range(n-1):
-				for imb in range(ima+1,n):
-					if options.verbose>3: i+=1		# if i>0 then it will write pre-processed CCF images to disk for debugging
-					thds.append(threading.Thread(target=calc_ccf_wrapper,args=(options,(ima,imb),options.optbox,options.optstep,immx[ima],immx[imb],ccfs,peak_locs,i,fsp)))
-
-			print("{:1.1f} s\nCompute {} ccfs".format(time()-t0,len(thds)))
-			t0=time()
-
-			# here we run the threads and save the results, no actual alignment done here
-			csum2={}
-
-			thrtolaunch=0
-			while thrtolaunch<len(thds) or threading.active_count()>1:
-				# If we haven't launched all threads yet, then we wait for an empty slot, and launch another
-				# note that it's ok that we wait here forever, since there can't be new results if an existing
-				# thread hasn't finished.
-				if thrtolaunch<len(thds) :
-					while (threading.active_count()==options.threads ) : sleep(.01)
-					#if options.verbose : print "Starting thread {}/{}".format(thrtolaunch,len(thds))
-					thds[thrtolaunch].start()
-					thrtolaunch+=1
-				else:
-					sleep(0.5)
-
-				while not ccfs.empty():
-					i,d=ccfs.get()
-					csum2[i]=d
-
-				if options.verbose:
-					sys.stdout.write("\r  {}/{} ({})".format(thrtolaunch,len(thds),threading.active_count()))
-					sys.stdout.flush()
-
-			for th in thds: th.join()
-			print()
-
-			avgr=Averagers.get("minmax",{"max":0})
-			avgr.add_image_list(csum2.values())
-			csum=avgr.finish()
-
-			#####
-			# Alignment code
-			#####
-
-			# array of x,y locations of each frame, all relative to the last frame in the series, which will always have 0,0 shift
-			locs=[0]*(n*2) # we store the value for the last frame as well as a conveience
-
-			print("{:1.1f} s\nAlign {} frames".format(time()-t0,n))
-			t0=time()
-
-			peak_locs = {p[0]:p[1] for p in peak_locs.queue}
-
-			if options.debug and options.verbose == 9:
-				print("PEAK LOCATIONS:")
-				for l in peak_locs.keys():
-					print(peak_locs[l])
-
-			# if options.ccweight:
-			# 	# normalize ccpeak values
-			# 	vals = []
-			# 	for ima,(i,j) in enumerate(sorted(peak_locs.keys())):
-			# 		for imb in range(i,j):
-			# 			try:
-			# 				vals.append(peak_locs[(i,j)][-1])
-			# 			except:
-			# 				pass
-			# 	ccmean = np.mean(vals)
-			# 	ccstd = np.std(vals)
-
-			m = n*(n-1)/2
-			bx = np.ones(m)
-			by = np.ones(m)
-			A = np.zeros([m,n]) # coefficient matrix
-			for ima,(i,j) in enumerate(sorted(peak_locs.keys())):
-				for imb in range(i,j):
-					try:
-						bx[ima] = peak_locs[(i,j)][0]
-						by[ima] = peak_locs[(i,j)][1]
-						A[ima,imb] = 1
-						#A[ima,imb] = float(n-np.fabs(i-j))/n
-						#A[ima,imb] = np.exp(1-peak_locs[(i,j)][3])
-						#A[ima,imb] = sqrt(float(n-fabs(i-j))/n)
-					except:
-						pass # CCF peak was not found
-			b = np.c_[bx,by]
-			A = np.asmatrix(A)
-			b = np.asmatrix(b)
-
-			# remove all zero rows from A and corresponding entries in b
-			z = np.argwhere(np.all(A==0,axis=1))
-			A = np.delete(A,z,axis=0)
-			b = np.delete(b,z,axis=0)
-
-			regr = linear_model.Ridge(alpha=options.optalpha,normalize=True,fit_intercept=True)
-			regr.fit(A,b)
-
-			traj = regr.predict(np.tri(n))
-			#shifts = regr.predict(np.eye(n))-options.optbox/2
-
-			traj -= traj[0]
-
-			if options.round == "int": traj = np.round(traj,0)#.astype(np.int8)
-
-			locs = traj.ravel()
-			quals=[0]*n # quality of each frame based on its correlation peak summed over all images
-			cen=options.optbox/2 #csum2[(0,1)]["nx"]/2
-			for i in xrange(n-1):
-				for j in xrange(i+1,n):
-					val=csum2[(i,j)].sget_value_at_interp(int(cen+locs[j*2]-locs[i*2]),int(cen+locs[j*2+1]-locs[i*2+1]))*sqrt(float(n-fabs(i-j))/n)
-					quals[i]+=val
-					quals[j]+=val
-
-			print("{:1.1f} s".format(time()-t0,n))
-
-			runtime = time()-start
-			print("Runtime: {:.1f} s".format(runtime))
-
-			# if options.plot:
-			# 	import matplotlib.pyplot as plt
-			# 	fig,ax = plt.subplots(1,3,figsize=(12,3))
-			# 	ax[0].plot(traj[:,0],traj[:,1],c='b',alpha=0.5)
-			# 	ax[0].scatter(traj[:,0],traj[:,1],c='b',alpha=0.5)
-			# 	ax[0].set_title("Trajectory (x/y pixels)")
-			# 	ax[1].set_title("Quality (cumulative pairwise ccf value)")
-			# 	ax[1].plot(quals,'k')
-			# 	for k in peak_locs.keys():
-			# 		try:
-			# 			p = peak_locs[k]
-			# 			ax[2].scatter(p[0],p[1])
-			# 		except: pass
-			# 	ax[2].set_title("CCF Peak Coordinates")
-
-			print("{:1.1f} s\nShift images".format(time()-t0))
-			for i,im in enumerate(outim):
-				if options.round == "int":
-					dx = int(round(locs[i*2],0))
-					dy = int(round(locs[i*2+1],0))
-					im.translate(dx,dy,0)
-				else: # float by default
-					dx = float(locs[i*2])
-					dy = float(locs[i*2+1])
-					im.translate(dx,dy,0)
-
-			if options.normaxes:
-				for f in outim:
-					f.process_inplace("filter.xyaxes0",{"neighbor":1})
-
-			if options.allali:
-				mgdirname = "micrographs_allali"
-				try: os.mkdir(mgdirname)
-				except: pass
-				alioutname="{}/{}.hdf".format(mgdirname,base_name(fsp))
-				out=qsum(outim)
-				out.write_image(alioutname,0)
-
-			# write translations and qualities
-			db=js_open_dict(info_name(fsp))
-			db["movieali_trans"]=locs
-			db["movieali_qual"]=quals
-			db["movie_name"]=fsp
-			if gain:
-				db["gain_name"]=gain["filename"]
-				db["gain_id"]=gain["fileid"]
-			if dark:
-				db["dark_name"]=dark["filename"]
-				db["dark_id"]=dark["fileid"]
-			db["runtime"]=runtime
-			db["precision"]=options.round
-			db["optbox"]=options.optbox
-			db["optstep"]=options.optstep
-			db["optalpha"]=options.optalpha
-			db.close()
-
-			out=open("{}_info.txt".format(fsp[:-4]),"w")
-			out.write("#i,dx,dy,dr,rel dr,qual\n")
-			for i in range(1,n):
-				dx,dy = traj[i]
-				dxlast,dylast = traj[i-1]
-				dr = hypot(dx,dy)
-				reldr = hypot(dx-dxlast,dy-dylast)
-				out.write("{}\t{}\t{}\t{}\t{}\t{}\n".format(i,dx,dy,dr,reldr,quals[i]))
-
-			if options.goodali:
-				mgdirname = "micrographs_goodali"
-				try: os.mkdir(mgdirname)
-				except: pass
-				alioutname="{}/{}.hdf".format(mgdirname,base_name(fsp))
-				thr=(max(quals[1:])-min(quals))*0.4+min(quals)	# max correlation cutoff for inclusion
-				best=[im for i,im in enumerate(outim) if quals[i]>thr]
-				out=qsum(best)
-				print("Keeping {}/{} frames".format(len(best),len(outim)))
-				out.write_image(alioutname,0)
-
-			if options.bestali:
-				mgdirname = "micrographs_bestali"
-				try: os.mkdir(mgdirname)
-				except: pass
-				alioutname="{}/{}.hdf".format(mgdirname,base_name(fsp))
-				thr=(max(quals[1:])-min(quals))*0.6+min(quals)	# max correlation cutoff for inclusion
-				best=[im for i,im in enumerate(outim) if quals[i]>thr]
-				out=qsum(best)
-				print("Keeping {}/{} frames".format(len(best),len(outim)))
-				out.write_image(alioutname,0)
-
-			if options.ali4to14:
-				mgdirname = "micrographs_4-14"
-				try: os.mkdir(mgdirname)
-				except: pass
-				alioutname="{}/{}.hdf".format(mgdirname,base_name(fsp))
-				# skip the first 4 frames then keep 10
-				out=qsum(outim[4:14])
-				out.write_image(alioutname,0)
-
-			if len(options.rangeali)>0:
-				try: rng=[int(i) for i in options.rangeali.split("-")]
-				except:
-					print("Error: please specify --rangeali as X-Y where X and Y are inclusive starting with 0")
-					sys.exit(1)
-				mgdirname = "micrographs_{}-{}".format(rng[0],rng[1])
-				try: os.mkdir(mgdirname)
-				except: pass
-				alioutname="{}/{}.hdf".format(mgdirname,base_name(fsp))
-				out=qsum(outim[rng[0]:rng[1]+1])
-				out.write_image(alioutname,0)
-
-			print("Done")
+		print("Done")
 
 # CCF calculation
 def calc_ccf_wrapper(options,N,box,step,dataa,datab,out,locs,ii,fsp):
