@@ -995,12 +995,12 @@ def rot_shift2D(img, angle = 0.0, sx = 0.0, sy = 0.0, mirror = 0, scale = 1.0, i
 
 	if(use_method == "linear" and mode == "cyclic"):
 		T  = Transform({'type': 'SPIDER', 'psi': angle, 'tx': sx, 'ty': sy, 'scale':scale})
-		img = img.rot_scale_trans(T)
+		img = img.rot_scale_trans(T, None)
 		if  mirror: img.process_inplace("xform.mirror", {"axis":'x'})
 		return img
 	elif(use_method == "linear" and mode == "background"):
 		T  = Transform({'type': 'SPIDER', 'psi': angle, 'tx': sx, 'ty': sy, 'scale':scale})
-		img = img.rot_scale_trans_background(T)
+		img = img.rot_scale_trans_background(T, None)
 		if  mirror: img.process_inplace("xform.mirror", {"axis":'x'})
 		return img
 	elif(use_method == "quadratic" and mode == "cyclic"):
@@ -1052,8 +1052,8 @@ def rot_shift3D(image, phi = 0, theta = 0, psi = 0, sx = 0, sy = 0, sz = 0, scal
 	T1 = Transform({'scale':scale})
 	T2 = Transform({'type': 'SPIDER', 'phi': phi, 'theta': theta, 'psi': psi, 'tx': sx, 'ty': sy, 'tz': sz})
 	T  = T1*T2
-	if (mode == "cyclic"): return image.rot_scale_trans(T)
-	else: return image.rot_scale_trans_background(T)
+	if (mode == "cyclic"): return image.rot_scale_trans(T, None)
+	else: return image.rot_scale_trans_background(T, None)
 
 
 def rot_shift3D_grid(img, phi=0.0, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0, scale=1.0, kb=None, mode="background", wrap=False):
@@ -1638,14 +1638,15 @@ class symclass():
 		from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
 		if( (self.sym[0] == "c")  or  (self.sym[0] == "d") ):
 			if((phi>= 0.0 and phi<self.brackets[inc_mirror][0]) and (theta<=self.brackets[inc_mirror][1])):  return True
+			else:  return False
 		elif( (self.sym[:3] == "oct")  or  (self.sym[:4] == "icos") ):
 			if( phi>= 0.0 and phi<self.brackets[inc_mirror][0] and theta<=self.brackets[inc_mirror][3] ):
 				tmphi = min(phi, self.brackets[inc_mirror][2]-phi)
 				baldwin_lower_alt_bound = \
 				(sin(radians(self.brackets[inc_mirror][2]/2.0-tmphi))/tan(radians(self.brackets[inc_mirror][1])) + \
 					sin(radians(tmphi))/tan(radians(self.brackets[inc_mirror][3])))/sin(radians(self.brackets[inc_mirror][2]/2.0))
-				baldwin_lower_alt_bound = degrees(atan(1.0/baldwin_lower_alt_bound));
-				#print  "  baldwin_lower_alt_bound ",self.brackets,baldwin_lower_alt_bound,theta
+				baldwin_lower_alt_bound = degrees(atan(1.0/baldwin_lower_alt_bound))
+				#print(  "  baldwin_lower_alt_bound ",self.brackets,baldwin_lower_alt_bound,theta)
 				if(baldwin_lower_alt_bound>theta): return True
 				else: return False
 			else:
@@ -1658,8 +1659,8 @@ class symclass():
 				(sin(radians(self.brackets[inc_mirror][2]/2.0-tmphi))/tan(radians(self.brackets[inc_mirror][1])) + \
 					sin(radians(tmphi))/tan(radians(self.brackets[inc_mirror][3])))/sin(radians(self.brackets[inc_mirror][2]/2.0))
 				baldwin_lower_alt_bound = degrees(atan(1.0/baldwin_lower_alt_bound))
-				#print  "  baldwin_lower_alt_bound ",self.brackets,baldwin_lower_alt_bound,theta
-				if(baldwin_lower_alt_bound>theta): 
+				#print(  "  baldwin_lower_alt_bound ",phi,theta,self.brackets[inc_mirror],baldwin_lower_alt_bound)
+				if(baldwin_lower_alt_bound>theta):
 					if( inc_mirror == 1 ):
 						return True
 					else:
@@ -1737,17 +1738,23 @@ class symclass():
 			lis = False
 		redang = []
 		for q in toprocess:
-			if( inc_mirror == 0 and q[1]>90.0): phi = 360.0-q[0]; theta = 180.0 - q[1]; psi = (180.0 + q[2])%360.0
-			else: phi = q[0]; theta = q[1]; psi = q[2]
+			phi = q[0]; theta = q[1]; psi = q[2]
 			if is_platonic_sym:
-				if(not self.is_in_subunit(phi, theta, inc_mirror)):
+				if(not self.is_in_subunit(phi, theta, 1)):
 					mat = rotmatrix(phi,theta,psi)
-					for l in xrange(1,self.nsym):
+					for l in xrange(self.nsym):
 						p1,p2,p3 = recmat( mulmat( mat , self.symatrix[l]) )
-						if(self.is_in_subunit(p1, p2, inc_mirror)):
+						fifi = False
+						if(self.is_in_subunit(p1, p2, 1)):
 							phi=p1; theta=p2; psi=p3
+							fifi = True
 							break
+					if( inc_mirror == 0 and fifi):
+						if(phi>=self.brackets[0][0]):  phi = self.brackets[1][0]-phi
+				elif(inc_mirror == 0):
+					if(phi>=self.brackets[0][0]):  phi = self.brackets[1][0]-phi
 			else:
+				if( inc_mirror == 0 and theta>90.0): phi = 360.0-phi; theta = 180.0 - theta; psi = (180.0 + psi)%360.0
 				phi = phi%qs
 				if(self.sym[0] == "d"):
 					if( inc_mirror == 0 and phi>=self.brackets[0][0]): phi = self.brackets[1][0]-phi
@@ -1759,21 +1766,34 @@ class symclass():
 
 	def reduce_angles(self, phiin, thetain, psiin, inc_mirror=1):
 		from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
-		if( inc_mirror == 0 and thetain>90.0): phi = 360.0-phiin; theta = 180.0 - thetain; psi = (180.0 + psiin)%360.0
-		else: phi = phiin; theta = thetain; psi = psiin
-		if(self.sym[0] == "c"):
-			phi = phi%(360.0/self.nsym)
-		elif(self.sym[0] == "d"):
-			phi = phi%(720.0/self.nsym)
-			if( inc_mirror == 0 and phi>=self.brackets[0][0]): phi = self.brackets[1][0]-phi
-		else:
-			if(not self.is_in_subunit(phi, theta, inc_mirror)):
-				mat = rotmatrix(phi,theta,psi)
-				for l in xrange(1,self.nsym):
+		is_platonic_sym = self.sym[0] == "o" or self.sym[0] == "t" or self.sym[0] == "i"
+		if(self.sym[0] == "c"): qs = 360.0/self.nsym
+		elif(self.sym[0] == "d"): qs = 720.0/self.nsym
+		if is_platonic_sym:
+			if(not self.is_in_subunit(phiin, thetain, 1)):
+				mat = rotmatrix(phiin,thetain,psiin)
+				phi=phiin; theta=thetain; psi=psiin
+				for l in xrange(self.nsym):
 					p1,p2,p3 = recmat( mulmat( mat , self.symatrix[l]) )
-					if(self.is_in_subunit(p1, p2, inc_mirror)):
-						phi=p1;theta=p2;psi=p3
+					#print(p1,p2,p3)
+					fifi = False
+					if(self.is_in_subunit(p1, p2, 1)):
+						phi=p1; theta=p2; psi=p3
+						fifi = True
+						#print("  FOUND ")
 						break
+				if( inc_mirror == 0 and fifi):
+					if(phi>=self.brackets[0][0]):  phi = self.brackets[1][0]-phi
+			elif(inc_mirror == 0):
+				phi = phiin; theta = thetain; psi = psiin
+				if(phi>=self.brackets[0][0]):  phi = self.brackets[1][0]-phi
+			else:
+				phi = phiin; theta = thetain; psi = psiin
+		else:
+			if( inc_mirror == 0 and thetain>90.0): phi = 360.0-phiin; theta = 180.0 - thetain; psi = (180.0 + psiin)%360.0
+			phi = phi%qs
+			if(self.sym[0] == "d"):
+				if( inc_mirror == 0 and phi>=self.brackets[0][0]): phi = self.brackets[1][0]-phi
 
 		return phi, theta, psi
 

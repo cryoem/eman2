@@ -95,7 +95,7 @@ def main():
 		return  alpha, sx, sy, m
 	
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " prj_stack  --ave2D= --var2D=  --ave3D= --var3D= --img_per_grp= --fl=0.2 --aa=0.1  --sym=symmetry --CTF"
+	usage = progname + " prj_stack  --ave2D= --var2D=  --ave3D= --var3D= --img_per_grp= --fl=15. --aa=0.01  --sym=symmetry --CTF"
 	parser = OptionParser(usage, version=SPARXVERSION)
 	
 	parser.add_option("--output_dir",   type="string"	   ,	default="./",				help="output directory")
@@ -108,8 +108,8 @@ def main():
 	#parser.add_option("--radius", 	    type="int"         ,	default=-1   ,				help="radius for 3D variability" )
 	parser.add_option("--npad",			type="int"         ,	default=2    ,				help="number of time to pad the original images")
 	parser.add_option("--sym" , 		type="string"      ,	default="c1" ,				help="symmetry")
-	parser.add_option("--fl",			type="float"       ,	default=0.0  ,				help="stop-band frequency (Default - no filtration)")
-	parser.add_option("--aa",			type="float"       ,	default=0.0  ,				help="fall off of the filter (Default - no filtration)")
+	parser.add_option("--fl",			type="float"       ,	default=0.0  ,				help="cutoff freqency in absolute frequency (0.0-0.5). (Default - no filtration)")
+	parser.add_option("--aa",			type="float"       ,	default=0.0  ,				help="fall off of the filter. Put 0.01 if user has no clue about falloff (Default - no filtration)")
 	parser.add_option("--CTF",			action="store_true",	default=False,				help="use CFT correction")
 	parser.add_option("--VERBOSE",		action="store_true",	default=False,				help="Long output for debugging")
 	#parser.add_option("--MPI" , 		action="store_true",	default=False,				help="use MPI version")

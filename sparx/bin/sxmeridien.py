@@ -10,7 +10,7 @@ from __future__ import print_function
 #  11/18/2016 change in strategy
 #  04/10/2017 - Enabled for one node
 #  04/18/2017 - Introduce symclass to handle angles in a unified manner
-#  12/06/2016 - Rationalize the code, particularly restart
+#  01/21/2018 - Rationalize the code, particularly restart
 """
 There are four ways to run the program:
 
@@ -306,13 +306,6 @@ def AI( fff, anger, shifter, chout = False):
 				Tracker["anger"]				= 1.0e23
 				Tracker["shifter"]				= 1.0e23
 	Tracker["keepfirst"] = -1
-	if( (keepgoing == 0) and (Blockdata["myid"] == Blockdata["main_node"]) ):
-		print(line, "ITERATION  #%2d. Resolution achieved       : %3d/%3d pixels, %5.2fA/%5.2fA."%\
-				(Tracker["mainiteration"], \
-				Tracker["currentres"], Tracker["fsc143"], Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"]), \
-				Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"])))
-		print(line, "The best solution is in the directory main%03d "%Tracker["constants"]["best"] )
-		Tracker["mainiteration"] -= 1
 	return keepgoing
 	
 def AI_continuation(fff, anger = -1.0, shifter = -1.0, chout = False):
@@ -378,7 +371,7 @@ def AI_continuation(fff, anger = -1.0, shifter = -1.0, chout = False):
 		maxres = max(l05, 5)
 		if( maxres >= Tracker["bestres"]):
 			Tracker["bestres"]				= maxres
-			Tracker["constants"]["best"] 	= Tracker["mainiteration"]-1
+			Tracker["constants"]["best"] 	= max(Tracker["mainiteration"]-1, 3)
 
 		if( maxres > Tracker["currentres"]):
 			Tracker["no_improvement"] 		= 0
@@ -440,13 +433,6 @@ def AI_continuation(fff, anger = -1.0, shifter = -1.0, chout = False):
 				Tracker["anger"]				= 1.0e23
 				Tracker["shifter"]				= 1.0e23
 	Tracker["keepfirst"] = -1
-	if( (keepgoing == 0) and (Blockdata["myid"] == Blockdata["main_node"]) ):
-		print(line, "ITERATION  #%2d. Resolution achieved       : %3d/%3d pixels, %5.2fA/%5.2fA."%\
-				(Tracker["mainiteration"], \
-				Tracker["currentres"], Tracker["fsc143"], Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"]), \
-				Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"])))
-		print(line, "The best solution is in the directory main%03d "%Tracker["constants"]["best"] )
-		Tracker["mainiteration"] -= 1
 	return keepgoing
 
 def params_changes( params, oldparams ):
@@ -7578,7 +7564,7 @@ def do_final_rec3d(partids, partstack, original_data, oldparams, oldparamstructu
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		if(Blockdata["subgroup_myid"] == Blockdata["main_node"]):
 			print(line, "do_final_rec3d")
-			print("Reconstruction uses solution from  %d iteration"%final_iter)
+			print("Reconstruction uses solution of %d iteration"%final_iter)
 			print("Final reconstruction image size is:  %d"%(Tracker["constants"]["nnxo"]))
 			print("Final directory is %s"%(Tracker["directory"]))
 		final_dir = Tracker["directory"]
@@ -7614,7 +7600,7 @@ def do_final_rec3d(partids, partstack, original_data, oldparams, oldparamstructu
 			while os.path.exists(os.path.join(final_dir,"oldparamstructure","oldparamstructure_%01d_%03d_%03d.json"%(procid,nproc_previous,Tracker["mainiteration"]))):
 				nproc_previous += 1
 		nproc_previous = bcast_number_to_all(nproc_previous, source_node = Blockdata["main_node"], mpi_comm = comm)
-		
+
 		for procid in xrange(2):
 			if procid ==0: original_data[1] = None	
 			partids[procid]   = os.path.join(final_dir,"chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]))
@@ -7633,7 +7619,7 @@ def do_final_rec3d(partids, partstack, original_data, oldparams, oldparamstructu
 				if (im_end>= im_start_old) and im_end <=im_end_old:
 					iend_old_proc_id = iproc_old
 				plist.append([im_start_old, im_end_old])
-					
+
 			ptl_on_this_cpu = im_start
 			for iproc_index_old in xrange(istart_old_proc_id, iend_old_proc_id+1):
 				fout = open(os.path.join(final_dir,"oldparamstructure","oldparamstructure_%01d_%03d_%03d.json"%(procid,iproc_index_old,Tracker["mainiteration"])),'r')
@@ -7689,27 +7675,25 @@ def recons3d_final(masterdir, do_final_iter_init, memory_per_node):
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	if(Blockdata["myid"] == Blockdata["main_node"]):	print(line, "recons3d_final")
 	do_final_iter = 3
-	if do_final_iter_init == 0:
+	if( do_final_iter_init == 0 ):
 		if(Blockdata["myid"] == Blockdata["main_node"]):
 			try:
-				iter_max = 3
-				while  os.path.exists(os.path.join(masterdir, "main%03d"%iter_max)) and os.path.exists(os.path.join(masterdir,"main%03d"%iter_max,"Tracker_%03d.json"%iter_max)):
-					iter_max +=1
-				iter_max -=1
-				fout = open(os.path.join(masterdir,"main%03d"%iter_max,"Tracker_%03d.json"%iter_max),'r')
+				fout = open(os.path.join(masterdir, "Tracker_final.json"),'r')
 				Tracker = convert_json_fromunicode(json.load(fout))
 				fout.close()
 				print("The best solution is %d  "%Tracker["constants"]["best"])
-				do_final_iter = Tracker["constants"]["best"] # set the best as do_final iteration
+				do_final_iter =  Tracker["constants"]["best"] # set the best as do_final iteration
 			except:				
 				carryon = 0
 		carryon = bcast_number_to_all(carryon)
-		if carryon == 0: ERROR("search failed, and the final reconstruction terminates ", "recons3d_final", 1, Blockdata["myid"])	# Now work on selected directory
+		if carryon == 0: ERROR("Best resolution is not found, do_final will not be computed", "recons3d_final", 1, Blockdata["myid"])	# Now work on selected directory
 		do_final_iter = bcast_number_to_all(do_final_iter)
-	elif do_final_iter_init == -1: do_final_iter = Tracker["constants"]["best"]
+	elif( do_final_iter_init == -1 ): do_final_iter = Tracker["constants"]["best"]
 	else:
 		do_final_iter = do_final_iter_init
-		if(Blockdata["myid"] == Blockdata["main_node"]): print("User selected %d iteration to do the reconstruction "%do_final_iter)			
+		if(Blockdata["myid"] == Blockdata["main_node"]): print("User selected %d iteration to compute the 3D reconstruction "%do_final_iter)
+		if do_final_iter<=2:  ERROR("The selected iteration should be larger than 2", "recons3d_final", 1, Blockdata["myid"])
+			
 	final_dir = os.path.join(masterdir, "main%03d"%do_final_iter)
 	if(Blockdata["myid"] == Blockdata["main_node"]): # check json file and load tracker
 		try:
@@ -7727,7 +7711,7 @@ def recons3d_final(masterdir, do_final_iter_init, memory_per_node):
 		try: image = get_im(Tracker["constants"]["stack"],0)
 		except:carryon = 0
 	carryon = bcast_number_to_all(carryon)
-	if carryon == 0: ERROR("The orignal data stack for reconstuction %s does not exist, final reconstruction terminates"%Tracker["constants"]["stack"],"recons3d_final", 1, Blockdata["myid"])
+	if carryon == 0: ERROR("The orignal data stack for reconstruction %s does not exist, final reconstruction terminates"%Tracker["constants"]["stack"],"recons3d_final", 1, Blockdata["myid"])
 
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		#  Estimated volume size
@@ -10092,7 +10076,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 
 	if( (not do_final_mode) and (not do_continuation_mode) ):
 		# case1: standard meridien run
-		# case2: restart mode of standard meridien run. Parameters can be altered in the restar run.
+		# case2: restart mode of standard meridien run. Parameters can be altered in the restart run.
 		parser.add_option("--radius",      		   		type= "int",          	default= -1,			     	help="Outer radius [in pixels] of particles < int(nx/2)-1")
 		parser.add_option("--xr",      		       		type="float",         	default= 5.,		         	help="Range for translation search in both directions, search is +/xr (default 5), can be fractional")
 		parser.add_option("--ts",      		       		type="float",        	default= 1.,		         	help="Step size of the translation search in both directions, search is within a circle of radius xr on a grid with steps ts, (default 1), can be fractional")
@@ -10939,24 +10923,20 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 					Tracker["previousoutputdir"] = Tracker["directory"]
 					#	print("  MOVING  ON --------------------------------------------------------------------")
 				else: # converged, do final
-					if( Blockdata["subgroup_myid"]> -1): mpi_comm_free(Blockdata["subgroup_comm"])
-					# now let check whether we need update bestres
+					if( Blockdata["subgroup_myid"] > -1 ): mpi_comm_free(Blockdata["subgroup_comm"])
 					if(Blockdata["myid"] == Blockdata["main_node"]):
-						fout = open(os.path.join(masterdir,"main%03d"%Tracker["mainiteration"],"Tracker_%03d.json"%Tracker["mainiteration"]),'r') # AI already correctly set Tracker["mainiteration"]
-						Tracker_final_iter = convert_json_fromunicode(json.load(fout))
+						print(line,"Resolution achieved in ITERATION  #%2d: %3d/%3d pixels, %5.2fA/%5.2fA."%
+								(Tracker["mainiteration"]-1, \
+								Tracker["currentres"], Tracker["fsc143"], Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"]), \
+								Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"]) ) )
+						print("\n\n\n\n")
+
+						print("The iteration contains the best resolution is %d"%Tracker["constants"]["best"])
+						fout = open(os.path.join(masterdir,"Tracker_final.json"),'w')
+						json.dump(Tracker, fout)
 						fout.close()
-						line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-						if Tracker_final_iter["bestres"] <= Tracker["bestres"]: # need an update even it is equal
-							Tracker_final_iter["bestres"] = Tracker["bestres"]  
-							Tracker_final_iter["constants"]["best"] = Tracker["mainiteration"] # replaced by current iteration, decision made outside AI
-							fout = open(os.path.join(masterdir,"main%03d"%Tracker["mainiteration"],"Tracker_%03d.json"%Tracker["mainiteration"]),'w')
-							json.dump(Tracker_final_iter, fout)
-							fout.close()
-							print(line,"The last iteration captures the best resolution")
-						else: print(line,"The last iteration does not capture the best resolution")
-						del Tracker_final_iter
 					mpi_barrier(MPI_COMM_WORLD)
-				
+					
 					newparamstructure 			= [[],[]]
 					projdata          			= [[model_blank(1,1)], [model_blank(1,1)]]
 					original_data     			= [None,None]
@@ -10974,7 +10954,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 
 	elif( do_continuation_mode ):
 		# case1: local meridien run using parameters stored in headers
-		# case2: restart mode of standard meridien run. Parameters can be altered in the restar run.
+		# case2: restart mode of standard meridien run. Parameters can be altered in the restart run.
 		parser.add_option("--radius",      		   		type= "int",          	default= -1,			     	help="Outer radius [in pixels] of particles < int(nx/2)-1")
 		parser.add_option("--xr",      		       		type="float",         	default= 5.,		         	help="Range for translation search in both directions, search is +/xr (default 5), can be fractional")
 		parser.add_option("--ts",      		       		type="float",        	default= 1.,		         	help="Step size of the translation search in both directions, search is within a circle of radius xr on a grid with steps ts, (default 1), can be fractional")
@@ -11736,24 +11716,20 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 					Tracker["previousoutputdir"] = Tracker["directory"]
 					#	print("  MOVING  ON --------------------------------------------------------------------")
 				else: # converged, do final
-					if( Blockdata["subgroup_myid"]> -1): mpi_comm_free(Blockdata["subgroup_comm"])
-					# now let check whether we need update bestres
+					if( Blockdata["subgroup_myid"] > -1 ): mpi_comm_free(Blockdata["subgroup_comm"])
 					if(Blockdata["myid"] == Blockdata["main_node"]):
-						fout = open(os.path.join(masterdir,"main%03d"%Tracker["mainiteration"],"Tracker_%03d.json"%Tracker["mainiteration"]),'r') # AI already correctly set Tracker["mainiteration"]
-						Tracker_final_iter = convert_json_fromunicode(json.load(fout))
+						print(line,"Resolution achieved in ITERATION  #%2d: %3d/%3d pixels, %5.2fA/%5.2fA."%
+								(Tracker["mainiteration"]-1, \
+								Tracker["currentres"], Tracker["fsc143"], Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"]), \
+								Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"]) ) )
+						print("\n\n\n\n")
+					
+						print("The iteration contains the best resolution is %d"%Tracker["constants"]["best"])
+						fout = open(os.path.join(masterdir,"Tracker_final.json"),'w')
+						json.dump(Tracker, fout)
 						fout.close()
-						line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-						if Tracker_final_iter["bestres"] <= Tracker["bestres"]: # need an update even it is equal
-							Tracker_final_iter["bestres"] = Tracker["bestres"]  
-							Tracker_final_iter["constants"]["best"] = Tracker["mainiteration"] # replaced by current iteration, decision made outside AI
-							fout = open(os.path.join(masterdir,"main%03d"%Tracker["mainiteration"],"Tracker_%03d.json"%Tracker["mainiteration"]),'w')
-							json.dump(Tracker_final_iter, fout)
-							fout.close()
-							print(line,"The last iteration captures the best resolution")
-						else: print(line,"The last iteration does not capture the best resolution")
-						del Tracker_final_iter
 					mpi_barrier(MPI_COMM_WORLD)
-				
+					
 					newparamstructure 			= [[],[]]
 					projdata          			= [[model_blank(1,1)], [model_blank(1,1)]]
 					original_data     			= [None,None]
@@ -11774,7 +11750,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 		#print( "  args  ",args)
 		checking_flag = 1
 		if( len(args) == 3):
-			ERROR("do_final option requires only one or two arguments ","meridien", 1,Blockdata["myid"])
+			ERROR("do_final option requires only one or two arguments ","meridien", 1, Blockdata["myid"])
 
 		elif(len(args) == 2):
 			masterdir = args[1]
