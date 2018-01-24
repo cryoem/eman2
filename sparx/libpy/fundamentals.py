@@ -1906,4 +1906,3 @@ class symclass():
 						angles.append([i*delta,90.0-j*theta2,90.0])
 			"""
 		return angles
-
