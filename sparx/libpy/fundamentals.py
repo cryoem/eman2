@@ -1602,7 +1602,7 @@ class symclass():
 			cap_sig = 360.0/ncap  # also called platonic_params["az_max"]
 			alpha = degrees(acos(1.0/(sqrt(3.0)*tan(2*pi/ncap/2.0)))) # also platonic_params["alt_max"]
 			theta = degrees(0.5*acos( cos(radians(cap_sig))/(1.0-cos(radians(cap_sig))) ))  #  also platonic_params["theta_c_on_two"]
-			self.brackets = [[180.0/ncap,theta,cap_sig,alpha],[360.0/ncap,theta,cap_sig,alpha]]# modified but I do not know whether correctly 01/23/2018
+			self.brackets = [[360.0/ncap,theta,cap_sig,alpha],[360.0/ncap,theta,cap_sig,alpha]]
 			lvl1 = degrees(acos(-1.0/3.0)) # There  are 3 faces at this angle
 			self.symangles = [ [0.,0.,0.], [0., 0., 120.], [0., 0., 240.]]
 			for l1 in xrange(30,271,120):
@@ -1645,8 +1645,8 @@ class symclass():
 				baldwin_lower_alt_bound = \
 				(sin(radians(self.brackets[inc_mirror][2]/2.0-tmphi))/tan(radians(self.brackets[inc_mirror][1])) + \
 					sin(radians(tmphi))/tan(radians(self.brackets[inc_mirror][3])))/sin(radians(self.brackets[inc_mirror][2]/2.0))
-				baldwin_lower_alt_bound = degrees(atan(1.0/baldwin_lower_alt_bound));
-				#print  "  baldwin_lower_alt_bound ",self.brackets,baldwin_lower_alt_bound,theta
+				baldwin_lower_alt_bound = degrees(atan(1.0/baldwin_lower_alt_bound))
+				#print(  "  baldwin_lower_alt_bound ",self.brackets,baldwin_lower_alt_bound,theta)
 				if(baldwin_lower_alt_bound>theta): return True
 				else: return False
 			else:
@@ -1659,8 +1659,8 @@ class symclass():
 				(sin(radians(self.brackets[inc_mirror][2]/2.0-tmphi))/tan(radians(self.brackets[inc_mirror][1])) + \
 					sin(radians(tmphi))/tan(radians(self.brackets[inc_mirror][3])))/sin(radians(self.brackets[inc_mirror][2]/2.0))
 				baldwin_lower_alt_bound = degrees(atan(1.0/baldwin_lower_alt_bound))
-				#print  "  baldwin_lower_alt_bound ",self.brackets,baldwin_lower_alt_bound,theta
-				if(baldwin_lower_alt_bound>theta): 
+				#print(  "  baldwin_lower_alt_bound ",phi,theta,self.brackets[inc_mirror],baldwin_lower_alt_bound)
+				if(baldwin_lower_alt_bound>theta):
 					if( inc_mirror == 1 ):
 						return True
 					else:
@@ -1727,7 +1727,6 @@ class symclass():
 	def reduce_anglesets(self, angles, inc_mirror=1):
 		from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
 		import types
-		if self.sym[0] == "t": return angles
 		is_platonic_sym = self.sym[0] == "o" or self.sym[0] == "t" or self.sym[0] == "i"
 		if(self.sym[0] == "c"): qs = 360.0/self.nsym
 		elif(self.sym[0] == "d"): qs = 720.0/self.nsym
@@ -1745,10 +1744,12 @@ class symclass():
 					mat = rotmatrix(phi,theta,psi)
 					for l in xrange(self.nsym):
 						p1,p2,p3 = recmat( mulmat( mat , self.symatrix[l]) )
+						fifi = False
 						if(self.is_in_subunit(p1, p2, 1)):
 							phi=p1; theta=p2; psi=p3
+							fifi = True
 							break
-					if( inc_mirror == 0 ):
+					if( inc_mirror == 0 and fifi):
 						if(phi>=self.brackets[0][0]):  phi = self.brackets[1][0]-phi
 				elif(inc_mirror == 0):
 					if(phi>=self.brackets[0][0]):  phi = self.brackets[1][0]-phi
@@ -1765,21 +1766,23 @@ class symclass():
 
 	def reduce_angles(self, phiin, thetain, psiin, inc_mirror=1):
 		from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
-		if self.sym[0] == "t": return phiin, thetain, psiin
 		is_platonic_sym = self.sym[0] == "o" or self.sym[0] == "t" or self.sym[0] == "i"
 		if(self.sym[0] == "c"): qs = 360.0/self.nsym
 		elif(self.sym[0] == "d"): qs = 720.0/self.nsym
 		if is_platonic_sym:
 			if(not self.is_in_subunit(phiin, thetain, 1)):
 				mat = rotmatrix(phiin,thetain,psiin)
+				phi=phiin; theta=thetain; psi=psiin
 				for l in xrange(self.nsym):
 					p1,p2,p3 = recmat( mulmat( mat , self.symatrix[l]) )
 					#print(p1,p2,p3)
+					fifi = False
 					if(self.is_in_subunit(p1, p2, 1)):
 						phi=p1; theta=p2; psi=p3
+						fifi = True
 						#print("  FOUND ")
 						break
-				if( inc_mirror == 0 ):
+				if( inc_mirror == 0 and fifi):
 					if(phi>=self.brackets[0][0]):  phi = self.brackets[1][0]-phi
 			elif(inc_mirror == 0):
 				phi = phiin; theta = thetain; psi = psiin
