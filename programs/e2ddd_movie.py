@@ -65,60 +65,63 @@ def main():
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_pos_argument(name="movies",help="List the movies to align.", default="", guitype='filebox', browser="EMMovieDataTable(withmodal=True,multiselect=True)",  row=0, col=0,rowspan=1, colspan=3, mode="align")
+	parser.add_pos_argument(name="movies",help="List the movies to align.", default="", guitype='filebox', browser="EMMovieDataTable(withmodal=True,multiselect=True)",  row=0, col=0,rowspan=1, colspan=3, mode="align,tomo")
 
-	parser.add_header(name="orblock1", help='Just a visual separation', title="Dark/Gain Correction", row=2, col=0, rowspan=2, colspan=3, mode="align")
+	parser.add_header(name="orblock1", help='Just a visual separation', title="Dark/Gain Correction", row=2, col=0, rowspan=2, colspan=3, mode="align,tomo")
 
-	#parser.add_header(name="orblock2", help='Just a visual separation', title="- CHOOSE FROM -", row=3, col=0, rowspan=1, colspan=3, mode="align")
+	#parser.add_header(name="orblock2", help='Just a visual separation', title="- CHOOSE FROM -", row=3, col=0, rowspan=1, colspan=3, mode="align,tomo")
 
-	parser.add_argument("--dark",type=str,default=None,help="Perform dark image correction using the specified image file",guitype='filebox',browser="EMMovieDataTable(withmodal=True,multiselect=False)", row=4, col=0, rowspan=1, colspan=3, mode="align")
-	parser.add_argument("--rotate_dark",  default = "0", type=str, choices=["0","90","180","270"], help="Rotate dark reference by 0, 90, 180, or 270 degrees. Default is 0. Transformation order is rotate then reverse.",guitype='combobox', choicelist='["0","90","180","270"]', row=5, col=0, rowspan=1, colspan=1, mode='align')
-	parser.add_argument("--reverse_dark", default=False, help="Flip dark reference along y axis. Default is False. Transformation order is rotate then reverse.",action="store_true",guitype='boolbox', row=5, col=1, rowspan=1, colspan=1, mode='align')
+	parser.add_argument("--dark",type=str,default="",help="Perform dark image correction using the specified image file",guitype='filebox',browser="EMMovieDataTable(withmodal=True,multiselect=False)", row=4, col=0, rowspan=1, colspan=3, mode="align,tomo")
+	parser.add_argument("--rotate_dark",  default = "0", type=str, choices=["0","90","180","270"], help="Rotate dark reference by 0, 90, 180, or 270 degrees. Default is 0. Transformation order is rotate then reverse.",guitype='combobox', choicelist='["0","90","180","270"]', row=5, col=0, rowspan=1, colspan=1, mode="align,tomo")
+	parser.add_argument("--reverse_dark", default=False, help="Flip dark reference along y axis. Default is False. Transformation order is rotate then reverse.",action="store_true",guitype='boolbox', row=5, col=1, rowspan=1, colspan=1, mode="align,tomo")
 
-	parser.add_argument("--gain",type=str,default=None,help="Perform gain image correction using the specified image file",guitype='filebox',browser="EMMovieDataTable(withmodal=True,multiselect=False)", row=6, col=0, rowspan=1, colspan=3, mode="align")
-	parser.add_argument("--k2", default=False, help="Perform gain image correction on gain images from a Gatan K2. Note, these are the reciprocal of typical DDD gain images.",action="store_true",guitype='boolbox', row=7, col=0, rowspan=1, colspan=1, mode='align')
-	parser.add_argument("--rotate_gain", default = 0, type=str, choices=["0","90","180","270"], help="Rotate gain reference by 0, 90, 180, or 270 degrees. Default is 0. Transformation order is rotate then reverse.",guitype='combobox', choicelist='["0","90","180","270"]', row=7, col=1, rowspan=1, colspan=1, mode='align')
-	parser.add_argument("--reverse_gain", default=False, help="Flip gain reference along y axis (about x axis). Default is False. Transformation order is rotate then reverse.",action="store_true",guitype='boolbox', row=7, col=2, rowspan=1, colspan=1, mode='align')
-	parser.add_argument("--de64", default=False, help="Perform gain image correction on DE64 data. Note, these should not be normalized.",action="store_true",guitype='boolbox', row=8, col=0, rowspan=1, colspan=1, mode='align')
-	parser.add_argument("--gain_darkcorrected", default=False, help="Do not dark correct gain image. False by default.",action="store_true",guitype='boolbox', row=8, col=1, rowspan=1, colspan=1, mode='align')
-	parser.add_argument("--invert_gain", default=False, help="Use reciprocal of input gain image",action="store_true",guitype='boolbox', row=8, col=2, rowspan=1, colspan=1, mode='align')
+	parser.add_argument("--gain",type=str,default="",help="Perform gain image correction using the specified image file",guitype='filebox',browser="EMMovieDataTable(withmodal=True,multiselect=False)", row=6, col=0, rowspan=1, colspan=3, mode="align,tomo")
+	parser.add_argument("--k2", default=False, help="Perform gain image correction on gain images from a Gatan K2. Note, these are the reciprocal of typical DDD gain images.",action="store_true",guitype='boolbox', row=7, col=0, rowspan=1, colspan=1, mode="align,tomo")
+	parser.add_argument("--rotate_gain", default = 0, type=str, choices=["0","90","180","270"], help="Rotate gain reference by 0, 90, 180, or 270 degrees. Default is 0. Transformation order is rotate then reverse.",guitype='combobox', choicelist='["0","90","180","270"]', row=7, col=1, rowspan=1, colspan=1, mode="align,tomo")
+	parser.add_argument("--reverse_gain", default=False, help="Flip gain reference along y axis (about x axis). Default is False. Transformation order is rotate then reverse.",action="store_true",guitype='boolbox', row=7, col=2, rowspan=1, colspan=1, mode="align,tomo")
+	parser.add_argument("--de64", default=False, help="Perform gain image correction on DE64 data. Note, these should not be normalized.",action="store_true",guitype='boolbox', row=8, col=0, rowspan=1, colspan=1, mode="align,tomo")
+	parser.add_argument("--gain_darkcorrected", default=False, help="Do not dark correct gain image. False by default.",action="store_true",guitype='boolbox', row=8, col=1, rowspan=1, colspan=1, mode="align,tomo")
+	parser.add_argument("--invert_gain", default=False, help="Use reciprocal of input gain image",action="store_true",guitype='boolbox', row=8, col=2, rowspan=1, colspan=1, mode="align,tomo")
 
-	parser.add_argument("--bad_columns", type=str, help="Comma separated list of camera defect columns",default="")
-	parser.add_argument("--bad_rows", type=str, help="Comma separated list of camera defect rows",default="")
+	#parser.add_header(name="orblock3", help='Just a visual separation', title="- OR -", row=6, col=0, rowspan=1, colspan=3, mode="align,tomo")
 
-	#parser.add_header(name="orblock3", help='Just a visual separation', title="- OR -", row=6, col=0, rowspan=1, colspan=3, mode="align")
+	parser.add_header(name="orblock4", help='Just a visual separation', title="Output: ", row=10, col=0, rowspan=2, colspan=1, mode="align,tomo")
 
-	parser.add_header(name="orblock4", help='Just a visual separation', title="Output: ", row=10, col=0, rowspan=2, colspan=1, mode="align")
 
-	parser.add_argument("--align_frames", action="store_true",help="Perform whole-frame alignment of the input stacks",default=False, guitype='boolbox', row=11, col=1, rowspan=1, colspan=1, mode='align[True]')
+	parser.add_argument("--align_frames", action="store_true",help="Perform whole-frame alignment of the input stacks",default=False, guitype='boolbox', row=11, col=1, rowspan=1, colspan=1, mode='align[True],tomo[False]')
 
-	parser.add_argument("--allali", default=False, help="Average of all aligned frames.",action="store_true", guitype='boolbox', row=12, col=0, rowspan=1, colspan=1, mode='align[True]')
-	parser.add_argument("--noali", default=False, help="Average of non-aligned frames.",action="store_true", guitype='boolbox', row=12, col=1, rowspan=1, colspan=1, mode='align')
-	parser.add_argument("--rangeali", default="", help="Average frames 'n1-n2'",type=str, guitype='strbox', row=12, col=2, rowspan=1, colspan=1, mode='align')
-	parser.add_argument("--goodali", default=False, help="Average of good aligned frames.",action="store_true", guitype='boolbox', row=13, col=0, rowspan=1, colspan=1, mode='align')
-	parser.add_argument("--bestali", default=False, help="Average of best aligned frames.",action="store_true", guitype='boolbox', row=13, col=1, rowspan=1, colspan=1, mode='align')
-	parser.add_argument("--ali4to14", default=False, help="Average of frames from 4 to 14.",action="store_true",guitype='boolbox', row=13, col=2, rowspan=1, colspan=1, mode='align')
+	parser.add_argument("--allali", default=False, help="Average of all aligned frames.",action="store_true", guitype='boolbox', row=12, col=0, rowspan=1, colspan=1, mode='align[True],tomo[True]')
+	parser.add_argument("--noali", default=False, help="Average of non-aligned frames.",action="store_true", guitype='boolbox', row=12, col=1, rowspan=1, colspan=1, mode="align,tomo")
+	parser.add_argument("--rangeali", default="", help="Average frames 'n1-n2'",type=str, guitype='strbox', row=12, col=2, rowspan=1, colspan=1, mode="align,tomo")
+	parser.add_argument("--goodali", default=False, help="Average of good aligned frames.",action="store_true", guitype='boolbox', row=13, col=0, rowspan=1, colspan=1, mode="align,tomo")
+	parser.add_argument("--bestali", default=False, help="Average of best aligned frames.",action="store_true", guitype='boolbox', row=13, col=1, rowspan=1, colspan=1, mode="align,tomo")
+	parser.add_argument("--ali4to14", default=False, help="Average of frames from 4 to 14.",action="store_true",guitype='boolbox', row=13, col=2, rowspan=1, colspan=1, mode="align,tomo")
 
-	parser.add_header(name="orblock5", help='Just a visual separation', title="Optional parameters: ", row=14, col=0, rowspan=2, colspan=3, mode="align")
+	parser.add_header(name="orblock5", help='Just a visual separation', title="Optional parameters: ", row=14, col=0, rowspan=2, colspan=3, mode="align,tomo")
 
-	parser.add_argument("--step",type=str,default="0,1",help="Specify <first>,<step>,[last]. Processes only a subset of the input data. ie- 0,2 would process all even particles. Same step used for all input files. [last] is exclusive. Default= 0,1",guitype='strbox', row=17, col=0, rowspan=1, colspan=1, mode="align")
-	parser.add_argument("--fixbadpixels",action="store_true",default=False,help="Tries to identify bad pixels in the dark/gain reference, and fills images in with sane values instead", guitype='boolbox', row=17, col=1, rowspan=1, colspan=1, mode='align[True]')
-	parser.add_argument("--normaxes",action="store_true",default=False,help="Tries to erase vertical/horizontal line artifacts in Fourier space by replacing them with the mean of their neighboring values.",guitype='boolbox', row=17, col=2, rowspan=1, colspan=1, mode='align')
-	parser.add_argument("--highdose", default=False, help="Use this flag when aligning high dose data (where features in each frame can be distinguished visually).",action="store_true",guitype='boolbox', row=18, col=0, rowspan=1, colspan=1,mode='align')
-	parser.add_argument("--phaseplate", default=False, help="Use this flag when aligning phase plate frames.",action="store_true",guitype='boolbox', row=18, col=1, rowspan=1, colspan=1,mode='align')
+	parser.add_argument("--step",type=str,default="0,1",help="Specify <first>,<step>,[last]. Processes only a subset of the input data. ie- 0,2 would process all even particles. Same step used for all input files. [last] is exclusive. Default= 0,1",guitype='strbox', row=17, col=0, rowspan=1, colspan=1, mode="align,tomo")
+	parser.add_argument("--fixbadpixels",action="store_true",default=False,help="Tries to identify bad pixels in the dark/gain reference, and fills images in with sane values instead", guitype='boolbox', row=17, col=1, rowspan=1, colspan=1, mode='align[True],tomo[True]')
+	parser.add_argument("--normaxes",action="store_true",default=False,help="Tries to erase vertical/horizontal line artifacts in Fourier space by replacing them with the mean of their neighboring values.",guitype='boolbox', row=17, col=2, rowspan=1, colspan=1, mode='align,tomo')
+	parser.add_argument("--highdose", default=False, help="Use this flag when aligning high dose data (where features in each frame can be distinguished visually).",action="store_true",guitype='boolbox', row=18, col=0, rowspan=1, colspan=1,mode='align,tomo')
+	parser.add_argument("--phaseplate", default=False, help="Use this flag when aligning phase plate frames.",action="store_true",guitype='boolbox', row=18, col=1, rowspan=1, colspan=1,mode='align,tomo')
 
-	parser.add_argument("--frames",action="store_true",default=False,help="Save the dark/gain corrected frames. Note that frames will be overwritten if identical --suffix is already present.", guitype='boolbox', row=19, col=0, rowspan=1, colspan=1, mode='align')
-	parser.add_argument("--ext",default="hdf",type=str, choices=["hdf","mrcs","mrc"],help="Save frames with this extension. Default is 'hdf'.", guitype='strbox', row=19, col=1, rowspan=1, colspan=1, mode='align')
-	parser.add_argument("--suffix",type=str,default="proc",help="Specify a unique suffix for output frames. Default is 'proc'. Note that the output of --frames will be overwritten if identical suffix is already present.",guitype='strbox', row=19, col=2, rowspan=1, colspan=1, mode="align")
+	parser.add_argument("--frames",action="store_true",default=False,help="Save the dark/gain corrected frames. Note that frames will be overwritten if identical --suffix is already present.", guitype='boolbox', row=19, col=0, rowspan=1, colspan=1, mode="align,tomo")
+	parser.add_argument("--ext",default="hdf",type=str, choices=["hdf","mrcs","mrc"],help="Save frames with this extension. Default is 'hdf'.", guitype='strbox', row=19, col=1, rowspan=1, colspan=1, mode="align,tomo")
+	parser.add_argument("--suffix",type=str,default="proc",help="Specify a unique suffix for output frames. Default is 'proc'. Note that the output of --frames will be overwritten if identical suffix is already present.",guitype='strbox', row=19, col=2, rowspan=1, colspan=1, mode="align,tomo")
 
-	parser.add_argument("--round", choices=["float","int"],help="If float (default), apply subpixel frame shifts. If integer, use integer shifts.",default="float",guitype='combobox', choicelist='["float","integer"]', row=18, col=2, rowspan=1, colspan=1, mode='align')
-	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful", guitype='intbox', row=20, col=0, rowspan=1, colspan=2, mode="align")
+	parser.add_argument("--round", choices=["float","int"],help="If float (default), apply subpixel frame shifts. If integer, use integer shifts.",default="float",guitype='combobox', choicelist='["float","integer"]', row=18, col=2, rowspan=1, colspan=1, mode="align,tomo")
+	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful", guitype='intbox', row=20, col=0, rowspan=1, colspan=2, mode="align,tomo")
+	parser.add_argument("--tomo", default=False, help="Use this flag when processing tomograms to treat input movies as individual tilts",action="store_true",guitype='boolbox', row=20, col=2, rowspan=1, colspan=1,mode='tomo[True]')
 
-	parser.add_header(name="orblock6", help='Just a visual separation', title="Alignment optimization: ", row=22, col=0, rowspan=2, colspan=3, mode="align")
 
-	parser.add_argument("--optbox", type=int,help="Box size to use during alignment optimization. Default is 256.",default=256, guitype='intbox', row=24, col=0, rowspan=1, colspan=1, mode="align")
-	parser.add_argument("--optstep", type=int,help="Step size to use during alignment optimization. Default is 224.",default=224,  guitype='intbox', row=24, col=1, rowspan=1, colspan=1, mode="align")
-	parser.add_argument("--optalpha", type=float,help="Penalization to apply during robust regression. Default is 0.1. If 0.0, unpenalized least squares will be performed (i.e., no trajectory smoothing).",default=0.1, guitype='floatbox', row=24, col=2, rowspan=1, colspan=1, mode="align")
+	parser.add_argument("--bad_columns", type=str, help="Comma separated list of camera defect columns",default="", guitype='strbox', row=21, col=0, rowspan=1, colspan=3, mode="align,tomo")
+	parser.add_argument("--bad_rows", type=str, help="Comma separated list of camera defect rows",default="", guitype='strbox', row=22, col=0, rowspan=1, colspan=3, mode="align,tomo")
+
+	parser.add_header(name="orblock6", help='Just a visual separation', title="Alignment optimization: ", row=24, col=0, rowspan=2, colspan=3, mode="align,tomo")
+
+	parser.add_argument("--optbox", type=int,help="Box size to use during alignment optimization. Default is 256.",default=256, guitype='intbox', row=26, col=0, rowspan=1, colspan=1, mode="align,tomo")
+	parser.add_argument("--optstep", type=int,help="Step size to use during alignment optimization. Default is 224.",default=224,  guitype='intbox', row=26, col=1, rowspan=1, colspan=1, mode="align,tomo")
+	parser.add_argument("--optalpha", type=float,help="Penalization to apply during robust regression. Default is 0.1. If 0.0, unpenalized least squares will be performed (i.e., no trajectory smoothing).",default=0.1, guitype='floatbox', row=26, col=2, rowspan=1, colspan=1, mode="align,tomo")
 
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--debug", default=False, action="store_true", help="run with debugging output")
@@ -156,10 +159,14 @@ def main():
 	# try: os.mkdir("micrographs")
 	# except: pass
 
+	if options.tomo:
+		try: os.mkdir("rawtilts")
+		except: pass
+
 	pid=E2init(sys.argv)
 
-	if options.dark :
-		if options.verbose: print("Loading Dark Reference")
+	if options.dark != "":
+		print("Loading Dark Reference")
 		if "e2ddd_darkref" in options.dark:
 			dark = EMData(options.dark,-1)
 		else:
@@ -172,11 +179,13 @@ def main():
 			else:
 				nd=EMUtil.get_image_count(options.dark)
 				dark = EMData(options.dark,0)
+				nx = dark["nx"]
+				ny = dark["ny"]
 			if nd>1:
 				sigd=dark.copy()
 				sigd.to_zero()
 				a=Averagers.get("mean",{"sigma":sigd,"ignore0":1})
-				print("Summing dark")
+				print("Summing Dark Frames")
 				for i in xrange(0,nd):
 					if options.verbose:
 						sys.stdout.write("({}/{})   \r".format(i+1,nd))
@@ -188,18 +197,18 @@ def main():
 					t.process_inplace("threshold.clampminmax",{"minval":0,"maxval":t["mean"]+t["sigma"]*3.5,"tozero":1})
 					a.add_image(t)
 				dark=a.finish()
-				sigd.write_image(options.dark.rsplit(".",1)[0]+"_sig.hdf")
+				if options.debug: sigd.write_image(options.dark.rsplit(".",1)[0]+"_sig.hdf")
 				if options.fixbadpixels:
 					sigd.process_inplace("threshold.binary",{"value":sigd["sigma"]/10.0}) # Theoretically a "perfect" pixel would have zero sigma, but in reality, the opposite is true
 					dark.mult(sigd)
-				dark.write_image(options.dark.rsplit(".",1)[0]+"_sum.hdf")
+				if options.debug: dark.write_image(options.dark.rsplit(".",1)[0]+"_sum.hdf")
 			#else: dark.mult(1.0/99.0)
 			dark.process_inplace("threshold.clampminmax.nsigma",{"nsigma":3.0})
 			dark2=dark.process("normalize.unitlen")
 	else : dark=None
 
-	if options.gain :
-		if options.verbose: print("Loading Gain Reference")
+	if options.gain != "":
+		print("Loading Gain Reference")
 		if "e2ddd_gainref" in options.gain:
 			gain = EMData(options.gain,-1)
 		else:
@@ -212,18 +221,21 @@ def main():
 					nd = gain_hdr["nz"]
 					gain=EMData(options.gain,0,False,Region(0,0,0,nx,ny,1))
 				else:
+
 					nd=EMUtil.get_image_count(options.gain)
 					gain = EMData(options.gain,0)
+					nx = gain["nx"]
+					ny = gain["ny"]
 				if nd>1:
 					sigg=gain.copy()
 					sigg.to_zero()
 					a=Averagers.get("mean",{"sigma":sigg,"ignore0":1})
-					print("Summing gain")
+					print("Summing Gain Frames")
 					for i in xrange(0,nd):
 						if options.verbose:
 							sys.stdout.write("({}/{})   \r".format(i+1,nd))
 							sys.stdout.flush()
-						if options.dark[-4:].lower() in (".mrc") :
+						if options.dark != "" and options.dark[-4:].lower() in (".mrc") :
 							t=EMData(options.gain,0,False,Region(0,0,i,nx,ny,1))
 						else:
 							t=EMData(options.gain,i)
@@ -231,12 +243,14 @@ def main():
 						t.process_inplace("threshold.clampminmax",{"minval":0,"maxval":t["mean"]+t["sigma"]*3.5,"tozero":1})
 						a.add_image(t)
 					gain=a.finish()
-					sigg.write_image(options.gain.rsplit(".",1)[0]+"_sig.hdf")
+					if options.debug: sigg.write_image(options.gain.rsplit(".",1)[0]+"_sig.hdf")
 					if options.fixbadpixels:
 						sigg.process_inplace("threshold.binary",{"value":sigg["sigma"]/10.0}) # Theoretically a "perfect" pixel would have zero sigma, but in reality, the opposite is true
-						if dark!=None : sigg.mult(sigd)
+						if dark!="" : 
+							try: sigg.mult(sigd)
+							except: pass
 						gain.mult(sigg)
-					gain.write_image(options.gain.rsplit(".",1)[0]+"_sum.hdf")
+					if options.debug: gain.write_image(options.gain.rsplit(".",1)[0]+"_sum.hdf")
 				if options.de64:
 					gain.process_inplace( "threshold.clampminmax", { "minval" : gain[ 'mean' ] - 8.0 * gain[ 'sigma' ], "maxval" : gain[ 'mean' ] + 8.0 * gain[ 'sigma' ], "tomean" : True } )
 				else:
@@ -244,7 +258,7 @@ def main():
 					#gain.mult(1.0/99.0)
 					#gain.process_inplace("threshold.clampminmax.nsigma",{"nsigma":3.0})
 
-			if dark!=None and options.gain_darkcorrected == False: gain.sub(dark) # dark correct the gain-reference
+			if dark!="" and options.gain != "" and options.gain_darkcorrected == False: gain.sub(dark) # dark correct the gain-reference
 
 			if options.de64:
 				mean_val = gain["mean"]
@@ -300,7 +314,7 @@ def main():
 
 	# the user may provide multiple movies to process at once
 	for fsp in args:
-		if options.verbose : print("Processing {}".format(fsp))
+		print("Processing {}".format(base_name(fsp)))
 
 		n = EMUtil.get_image_count(fsp)
 
@@ -344,7 +358,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			sys.stdout.write(" {}/{}   \r".format(ii-first+1,flast-first+1))
 			sys.stdout.flush()
 
-		if fsp[-4:].lower() in (".mrc","mrcs") :
+		if fsp[-4:].lower() in (".mrc") :
 		#if fsp[-4:].lower() in (".mrc") :
 			im=EMData(fsp,0,False,Region(0,0,ii,nx,ny,1))
 		else: im=EMData(fsp,ii)
@@ -369,7 +383,10 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 	if options.frames and options.ext == "mrc": os.rename(outname,outname.replace(".mrcs",".mrc"))
 
 	if options.noali:
-		mgdirname = "micrographs_noali"
+		if options.tomo:
+			mgdirname = "rawtilts_noali"
+		else:
+			mgdirname = "micrographs_noali"
 		try: os.mkdir(mgdirname)
 		except: pass
 		alioutname="{}/{}.hdf".format(mgdirname,base_name(fsp))
@@ -578,7 +595,8 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 				f.process_inplace("filter.xyaxes0",{"neighbor":1})
 
 		if options.allali:
-			mgdirname = "micrographs_allali"
+			if options.tomo: mgdirname = "rawtilts_allali"
+			else: mgdirname = "micrographs_allali"
 			try: os.mkdir(mgdirname)
 			except: pass
 			alioutname="{}/{}.hdf".format(mgdirname,base_name(fsp))
@@ -612,8 +630,9 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			reldr = hypot(dx-dxlast,dy-dylast)
 			out.write("{}\t{}\t{}\t{}\t{}\t{}\n".format(i,dx,dy,dr,reldr,quals[i]))
 
-		if options.goodali:
-			mgdirname = "micrographs_goodali"
+		if options.goodali:	
+			if options.tomo: mgdirname = "rawtilts_goodali"
+			else: mgdirname = "micrographs_goodali"
 			try: os.mkdir(mgdirname)
 			except: pass
 			alioutname="{}/{}.hdf".format(mgdirname,base_name(fsp))
@@ -624,7 +643,8 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			out.write_image(alioutname,0)
 
 		if options.bestali:
-			mgdirname = "micrographs_bestali"
+			if options.tomo: mgdirname = "rawtilts_bestali"
+			else: mgdirname = "micrographs_bestali"
 			try: os.mkdir(mgdirname)
 			except: pass
 			alioutname="{}/{}.hdf".format(mgdirname,base_name(fsp))
@@ -635,7 +655,8 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			out.write_image(alioutname,0)
 
 		if options.ali4to14:
-			mgdirname = "micrographs_4-14"
+			if options.tomo: mgdirname = "rawtilts_4-14"
+			else: mgdirname = "micrographs_4-14"
 			try: os.mkdir(mgdirname)
 			except: pass
 			alioutname="{}/{}.hdf".format(mgdirname,base_name(fsp))
@@ -898,8 +919,8 @@ if __name__ == "__main__":
 	main()
 
 
-	#parser.add_argument("--normalize",action="store_true",default=False,help="Apply edgenormalization to input images after dark/gain. Do not use this option when aligning frames with MotionCor2.", guitype='boolbox', row=13, col=0, rowspan=1, colspan=1, mode='align')
-	#parser.add_argument("--gaink2",type=str,default=None,help="Perform gain image correction. Gatan K2 gain images are the reciprocal of DDD gain images.",guitype='filebox',browser="EMMovieDataTable(withmodal=True,multiselect=False)", row=7, col=0, rowspan=1, colspan=3, mode="align")
+	#parser.add_argument("--normalize",action="store_true",default=False,help="Apply edgenormalization to input images after dark/gain. Do not use this option when aligning frames with MotionCor2.", guitype='boolbox', row=13, col=0, rowspan=1, colspan=1, mode="align,tomo")
+	#parser.add_argument("--gaink2",type=str,default=None,help="Perform gain image correction. Gatan K2 gain images are the reciprocal of DDD gain images.",guitype='filebox',browser="EMMovieDataTable(withmodal=True,multiselect=False)", row=7, col=0, rowspan=1, colspan=3, mode="align,tomo")
 	#parser.add_argument("--plot", default=False,help="Display a plot of the movie trajectory after alignment",action="store_true")
 	#parser.add_argument("--simpleavg", action="store_true",help="Will save a simple average of the dark/gain corrected frames (no alignment or weighting)",default=False)
 	#parser.add_argument("--avgs", action="store_true",help="Testing",default=False)
