@@ -87,7 +87,6 @@ def main():
 
 	parser.add_header(name="orblock4", help='Just a visual separation', title="Output: ", row=10, col=0, rowspan=2, colspan=1, mode="align,tomo")
 
-
 	parser.add_argument("--align_frames", action="store_true",help="Perform whole-frame alignment of the input stacks",default=False, guitype='boolbox', row=11, col=1, rowspan=1, colspan=1, mode='align[True],tomo[False]')
 
 	parser.add_argument("--allali", default=False, help="Average of all aligned frames.",action="store_true", guitype='boolbox', row=12, col=0, rowspan=1, colspan=1, mode='align[True],tomo[True]')
@@ -621,7 +620,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 		db["optalpha"]=options.optalpha
 		db.close()
 
-		out=open("{}_info.txt".format(fsp[:-4]),"w")
+		out=open("{}_info.txt".format(base_name(fsp)),"w")
 		out.write("#i,dx,dy,dr,rel dr,qual\n")
 		for i in range(1,n):
 			dx,dy = traj[i]
