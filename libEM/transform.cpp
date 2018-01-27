@@ -1382,6 +1382,8 @@ vector<Transform > Transform::get_sym_proj(const string & sym_name) const
 					t.matrix[i][j] = TET[9*k + i*3 +j];
 				}
 			}
+			//vector<float> z = t.get_matrix();
+			//for (int i=0; i<12; i++)  cout<<z[i]<<endl;
 			ret.push_back( (*this) * t );
 		}
 	} else {
