@@ -1581,7 +1581,7 @@ class symclass():
 			for i in xrange(self.nsym/2):
 				self.symangles.append([0.0, 0.0, i*360./self.nsym*2])
 			for i in xrange(self.nsym/2):
-				self.symangles.append([0.0, 180.0, i*360./self.nsym*2])
+				self.symangles.append([0.0, 180.0, (i*360./self.nsym*2+180.0*(int(self.sym[1:])%2))%360.0])
 
 		elif(self.sym[:3] == "oct"):
 			self.nsym = 24
@@ -1605,9 +1605,15 @@ class symclass():
 			self.brackets = [[360.0/ncap,theta,cap_sig,alpha],[360.0/ncap,theta,cap_sig,alpha]]
 			lvl1 = degrees(acos(-1.0/3.0)) # There  are 3 faces at this angle
 			self.symangles = [ [0.,0.,0.], [0., 0., 120.], [0., 0., 240.]]
+			for l1 in xrange(0,241,120):
+				for l2 in xrange(60,301,120):
+					self.symangles.append([float(l1),lvl1,float(l2)])
+			
+			"""
 			for l1 in xrange(30,271,120):
 				for l2 in xrange(30,271,120):
 					self.symangles.append([float(l1),lvl1,float(l2)])
+			"""
 
 		elif(self.sym[:4] == "icos"):
 			self.nsym = 60
