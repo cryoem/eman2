@@ -1155,6 +1155,9 @@ def get_sym(symmetry):
 	"""
 	get a list of point-group symmetry angles, symmetry="c3"
 	"""
+	from fundamentals import symclass
+	scl = symclass(symmetry)
+	"""
 	RA   = Transform()
 	NTot = RA.get_nsym(symmetry)
 	angs = []
@@ -1162,21 +1165,26 @@ def get_sym(symmetry):
 		RNow  = RA.get_sym(symmetry, j)
 		RNowE = RNow.get_rotation('spider')
 		angs.append([RNowE['phi'], RNowE['theta'], RNowE['psi']])
-
-	return angs
+	"""
+	return scl.symangles
 
 def get_symt(symmetry):
 	"""
 	get a list of point-group symmetry transformations, symmetry="c3"
 	"""
-
+	from fundamentals import symclass
+	scl = symclass(symmetry)
+	trans = []
+	for q in scl.symangles:
+		trans.append(Transform({"type":"spider","phi":q[0],"theta":q[1],"psi":q[2]}))
+	"""
 	RA   = Transform()
 	NTot = RA.get_nsym(symmetry)
 	angs = []
 	for j in xrange(NTot):
 		angs.append(RA.get_sym(symmetry, j))
-
-	return angs
+	"""
+	return trans
 
 def get_textimage(fname):
 	"""
@@ -4568,6 +4576,9 @@ def lacos(x):
 	from math import degrees, acos
 	return  degrees(acos(max(-1.0,min(1.0,x))))
 
+def mulvec(v1,v2):
+	return v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2]
+
 def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 	from utilities import getfvec
 	from math import exp, pi
@@ -7021,8 +7032,12 @@ def angular_distribution(inputfile, options, output):
 	except: sym = "c1"
 	from fundamentals import symclass
 	from utilities import read_text_row
-	scs = symclass(sym)
-	angs = scs.reduce_anglesets(read_text_row(inputfile),0)
+	if( sym == "c0" ):
+		angs = read_text_row(inputfile)
+	else:
+		scs = symclass(sym)
+		angs = scs.reduce_anglesets(read_text_row(inputfile),0)
+		del scs
 	nang = len(angs)
 
 	# Load angle Data
