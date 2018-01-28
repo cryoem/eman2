@@ -1612,6 +1612,7 @@ class symclass():
 					self.symangles.append([float(l1),lvl1,float(l2)])
 			
 			"""
+			#  These angles were translated from eman to spider, but the do not agree with definitions of subunit above
 			for l1 in xrange(30,271,120):
 				for l2 in xrange(30,271,120):
 					self.symangles.append([float(l1),lvl1,float(l2)])
@@ -1675,7 +1676,7 @@ class symclass():
 				(sin(radians(self.brackets[inc_mirror][2]/2.0-tmphi))/tan(radians(self.brackets[inc_mirror][1])) + \
 					sin(radians(tmphi))/tan(radians(self.brackets[inc_mirror][3])))/sin(radians(self.brackets[inc_mirror][2]/2.0))
 				baldwin_lower_alt_bound = degrees(atan(1.0/baldwin_lower_alt_bound))
-				#print(  "  baldwin_lower_alt_bound ",phi,theta,self.brackets[inc_mirror],baldwin_lower_alt_bound)
+				#print(  "  baldwin_lower_alt_bound ",phi,theta,baldwin_lower_alt_bound,self.brackets[inc_mirror])
 				if(baldwin_lower_alt_bound>theta):
 					if( inc_mirror == 1 ):
 						return True
@@ -1684,6 +1685,7 @@ class symclass():
 						(sin(radians(self.brackets[inc_mirror][2]/2.0-tmphi))/tan(radians(self.brackets[inc_mirror][1])) + \
 							sin(radians(tmphi))/tan(radians(self.brackets[inc_mirror][3]/2.0)))/sin(radians(self.brackets[inc_mirror][2]/2.0))
 						baldwin_upper_alt_bound = degrees(atan(1.0/baldwin_upper_alt_bound))
+						#print(  "  baldwin_upper_alt_bound ",phi,theta,baldwin_upper_alt_bound,self.brackets[inc_mirror])
 						if(baldwin_upper_alt_bound<theta): return False
 						else:  return True
 				else: return False
@@ -1743,7 +1745,7 @@ class symclass():
 	def reduce_anglesets(self, angles, inc_mirror=1):
 		from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
 		import types
-		is_platonic_sym = self.sym[0] == "o" or self.sym[0] == "t" or self.sym[0] == "i"
+		is_platonic_sym = self.sym[0] == "o" or self.sym[0] == "i"
 		if(self.sym[0] == "c"): qs = 360.0/self.nsym
 		elif(self.sym[0] == "d"): qs = 720.0/self.nsym
 		if( type(angles[0]) is list):
@@ -1768,14 +1770,41 @@ class symclass():
 					if( inc_mirror == 0 ):
 						if(phi>=self.brackets[0][0]):
 							phi = self.brackets[1][0]-phi
-							if(l>0): psi = 360.0-psi
-			elif(inc_mirror == 0):
-				phi = phiin; theta = thetain; psi = psiin
-				if(phi>=self.brackets[0][0]):
-					phi = self.brackets[1][0]-phi
-					psi = 360.0-psi
+							if(l>0): psi = (360.0-psi)%360.0
 				elif(inc_mirror == 0):
-					if(phi>=self.brackets[0][0]):  phi = self.brackets[1][0]-phi
+					if(phi>=self.brackets[0][0]):
+						phi = self.brackets[1][0]-phi
+						psi = (360.0-psi)%360.0
+					elif(inc_mirror == 0):
+						if(phi>=self.brackets[0][0]):  phi = self.brackets[1][0]-phi
+			elif( self.sym[0] == "t" ):
+				if(not self.is_in_subunit(phi, theta, inc_mirror)):
+					mat = rotmatrix(phi,theta,psi)
+					fifi = False
+					for l in xrange(self.nsym):
+						p1,p2,p3 = recmat( mulmat( mat , self.symatrix[l]) )
+						if(self.is_in_subunit(p1, p2, inc_mirror)):
+							if(inc_mirror):
+								phi=p1; theta=p2; psi=p3
+								fifi = True
+								break
+							else:
+								if(self.is_in_subunit(p1, p2, 0)):
+									phi=p1; theta=p2; psi=p3
+									fifi = True
+									break
+					if(inc_mirror == 1 and not fifi): print("  FAILED no mirror ")
+					if( not fifi ):
+						phi = (180.0+phi)%360.0; theta = 180.0 - theta; psi = (180.0 - psi)%360.0
+						mat = rotmatrix(phi,theta,psi)
+						for l in xrange(self.nsym):
+							p1,p2,p3 = recmat( mulmat( mat , self.symatrix[l]) )
+							if(self.is_in_subunit(p1, p2, 0)):
+								phi=p1; theta=p2; psi=p3
+								fifi = True
+								break
+
+					if( not fifi ):  print("  FAILED mirror ")
 			else:
 				if( theta>90.0 ):
 					phi = (180.0+phi)%360.0; theta = 180.0 - theta; psi = (180.0 - psi)%360.0
@@ -1785,14 +1814,14 @@ class symclass():
 						if((self.nsym//2)%2 == 0):
 							if(phi>=qs/2):
 								phi = qs-phi
-								psi = 360.0 - psi
+								psi = (360.0-psi)%360.0
 						else:
 							if(phi>=360.0/self.nsym/2 and phi<360.0/self.nsym):
 								phi = 360.0/self.nsym-phi
 								psi = 360.0 - psi
 							elif(phi>=360.0/self.nsym+360.0/self.nsym/2 and phi<720.0/self.nsym):
 								phi = 720.0/self.nsym-phi+360.0/self.nsym
-								psi = 360.0 - psi
+								psi = (360.0-psi)%360.0
 
 			redang.append([phi, theta, psi])
 
@@ -1801,7 +1830,7 @@ class symclass():
 
 	def reduce_angles(self, phiin, thetain, psiin, inc_mirror=1):
 		from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
-		is_platonic_sym = self.sym[0] == "o" or self.sym[0] == "t" or self.sym[0] == "i"
+		is_platonic_sym = self.sym[0] == "o" or self.sym[0] == "i"
 		if(self.sym[0] == "c"): qs = 360.0/self.nsym
 		elif(self.sym[0] == "d"): qs = 720.0/self.nsym
 		if is_platonic_sym:
@@ -1818,14 +1847,34 @@ class symclass():
 				if( inc_mirror == 0 ):
 					if(phi>=self.brackets[0][0]):
 						phi = self.brackets[1][0]-phi
-						if(l>0): psi = 360.0-psi
+						if(l>0): psi = (360.0-psi)%360.0
 			elif(inc_mirror == 0):
 				phi = phiin; theta = thetain; psi = psiin
 				if(phi>=self.brackets[0][0]):
 					phi = self.brackets[1][0]-phi
-					psi = 360.0-psi
+					psi = (360.0-psi)%360.0
 			else:
 				phi = phiin; theta = thetain; psi = psiin
+		elif( self.sym[0] == "t" ):
+			phi=phiin; theta=thetain; psi=psiin
+			if(not self.is_in_subunit(phi, theta, inc_mirror)):
+				mat = rotmatrix(phi,theta,psi)
+				for l in xrange(self.nsym):
+					p1,p2,p3 = recmat( mulmat( mat , self.symatrix[l]) )
+					#print(" ASYM  ",l,p1,p2,p3 )
+					if(self.is_in_subunit(p1, p2, inc_mirror)):
+						if(inc_mirror):  return p1,p2,p3
+						else:
+							if(self.is_in_subunit(p1, p2, 0)):  return p1,p2,p3
+				if(inc_mirror == 1): print("  FAILED no mirror ")
+				phi = (180.0+phi)%360.0; theta = 180.0 - theta; psi = (180.0 - psi)%360.0
+				mat = rotmatrix(phi,theta,psi)
+				for l in xrange(self.nsym):
+					p1,p2,p3 = recmat( mulmat( mat , self.symatrix[l]) )
+					#print(" MIR  ",l,p1,p2,p3 )
+					if(self.is_in_subunit(p1, p2, 0)):  return p1,p2,p3
+
+				print("  FAILED mirror ")
 		else:
 			if( thetain>90.0 ):
 				phi = (180.0+phiin)%360.0; theta = 180.0 - thetain; psi = (180.0 - psiin)%360.0
