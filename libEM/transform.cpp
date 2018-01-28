@@ -1363,7 +1363,7 @@ vector<Transform > Transform::get_sym_proj(const string & sym_name) const
 	string lstr = Util::str_to_lower(sym_name);
 	if( lstr == "tet" ) {
 		nsym = 12;
-		float TET[108] = {
+		static float TET[108] = {
 			  1.0f,   0.0f,   0.0f,   0.0f,   1.0f,   0.0f,   0.0f,   0.0f,   1.0f,
 			   -0.5f,   0.86602540378f,   0.0f,   -0.86602540378f,   -0.5f,   0.0f,   0.0f,   0.0f,   1.0f,
 			   -0.5f,   -0.86602540378f,   0.0f,   0.86602540378f,   -0.5f,   -0.0f,   0.0f,   0.0f,   1.0f,
@@ -1391,7 +1391,7 @@ vector<Transform > Transform::get_sym_proj(const string & sym_name) const
 		}
 	} else if( lstr == "oct" ) {
 		nsym = 24;
-		float TET[216] = {
+		static float TET[216] = {
 		   1.0f,   0.0f,   0.0f,   0.0f,   1.0f,   0.0f,   0.0f,   0.0f,   1.0f,
 		   0.0f,   1.0f,   0.0f,   -1.0f,   0.0f,   0.0f,   0.0f,   0.0f,   1.0f,
 		   -1.0f,   0.0f,   0.0f,   0.0f,   -1.0f,   0.0f,   0.0f,   0.0f,   1.0f,
@@ -1431,7 +1431,7 @@ vector<Transform > Transform::get_sym_proj(const string & sym_name) const
 		}
 	} else if( lstr == "icos" ) {
 		nsym = 60;
-		float TET[540] = {
+		static float TET[540] = {
 		   1.0f,   0.0f,   0.0f,   0.0f,   1.0f,   0.0f,   0.0f,   0.0f,   1.0f,
 		   0.30901699437f,   0.9510565163f,   0.0f,   -0.9510565163f,   0.30901699437f,   0.0f,   0.0f,   0.0f,   1.0f,
 		   -0.80901699437f,   0.58778525229f,   0.0f,   -0.58778525229f,   -0.80901699437f,   0.0f,   0.0f,   0.0f,   1.0f,
