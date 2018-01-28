@@ -1979,7 +1979,6 @@ bool TetrahedralSym::is_in_asym_unit(const float& altitude, const float& azimuth
 	Dict d = get_delimiters(inc_mirror);
 	float alt_max = d["alt_max"];
 	float az_max = d["az_max"];
-
 	if ( altitude >= 0 &&  altitude <= alt_max && azimuth < az_max && azimuth >= 0) {
 		// convert azimuth to radians
 		float tmpaz = (float)(EMConsts::deg2rad * azimuth);
