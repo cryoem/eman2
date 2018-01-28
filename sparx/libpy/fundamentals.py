@@ -1569,6 +1569,7 @@ class symclass():
 		#self.transforms = get_symt(self.sym)
 		if(self.sym[0] == "c"):
 			self.nsym = int(self.sym[1:])
+			if(self.nsym<1):  ERROR("For Cn symmetry, we need n>0","symclass",1)
 			self.brackets = [[360./self.nsym,90.0,360./self.nsym,90.0],[360./self.nsym,180.0,360./self.nsym,180.0]]
 			self.symangles = []
 			for i in xrange(self.nsym):
@@ -1576,6 +1577,7 @@ class symclass():
 
 		elif(self.sym[0] == "d"):
 			self.nsym = 2*int(self.sym[1:])
+			if(self.nsym<1):  ERROR("For Dn symmetry, we need n>0","symclass",1)
 			self.brackets = [[360./self.nsym,90.0,360./self.nsym,90.0],[360./self.nsym*2,90.0,360./self.nsym*2,90.0]]
 			self.symangles = []
 			for i in xrange(self.nsym/2):
@@ -1642,9 +1644,17 @@ class symclass():
 
 	def is_in_subunit(self, phi, theta, inc_mirror=1):
 		from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
-		if( (self.sym[0] == "c")  or  (self.sym[0] == "d") ):
+		if( (self.sym[0] == "c")  or  (self.sym[0] == "d" and (self.nsym//2)%2 == 0) ):
 			if((phi>= 0.0 and phi<self.brackets[inc_mirror][0]) and (theta<=self.brackets[inc_mirror][1])):  return True
 			else:  return False
+		elif( self.sym[0] == "d" and (self.nsym//2)%2 == 1 ):
+			if(theta<=self.brackets[inc_mirror][1]):
+				phib = 360.0/self.nsym
+				if( phi>=0.0 and phi<self.brackets[1][0] ):
+					if(inc_mirror==1):  return True
+					elif( (phi>= 0.0 and phi<phib/2) or (phi>= phib and phi<(phib+phib/2)) ): return True
+			return False
+			
 		elif( (self.sym[:3] == "oct")  or  (self.sym[:4] == "icos") ):
 			if( phi>= 0.0 and phi<self.brackets[inc_mirror][0] and theta<=self.brackets[inc_mirror][3] ):
 				tmphi = min(phi, self.brackets[inc_mirror][2]-phi)
@@ -1694,7 +1704,7 @@ class symclass():
 			for l in xrange(1,nsm):
 				redang.append([(angles[0]+l*qt)%360.0, angles[1], angles[2]])
 			for l in xrange(nsm,self.nsym):
-				redang.append([(360.0-redang[l-nsm][0])%360.0, 180.0-angles[1], (180.0+angles[2])%360.0])
+				redang.append([(360.0-redang[l-nsm][0])%360.0, 180.0-angles[1], (angles[2]+180.0*(nsm%2))%360.0])
 		else:
 			from fundamentals import rotmatrix, recmat, mulmat
 			mat = rotmatrix(angles[0],angles[1],angles[2])
@@ -1750,20 +1760,39 @@ class symclass():
 					mat = rotmatrix(phi,theta,psi)
 					for l in xrange(self.nsym):
 						p1,p2,p3 = recmat( mulmat( mat , self.symatrix[l]) )
-						fifi = False
+						#print(p1,p2,p3)
 						if(self.is_in_subunit(p1, p2, 1)):
 							phi=p1; theta=p2; psi=p3
-							fifi = True
+							#print("  FOUND ")
 							break
-					if( inc_mirror == 0 and fifi):
-						if(phi>=self.brackets[0][0]):  phi = self.brackets[1][0]-phi
+					if( inc_mirror == 0 ):
+						if(phi>=self.brackets[0][0]):
+							phi = self.brackets[1][0]-phi
+							if(l>0): psi = 360.0-psi
+			elif(inc_mirror == 0):
+				phi = phiin; theta = thetain; psi = psiin
+				if(phi>=self.brackets[0][0]):
+					phi = self.brackets[1][0]-phi
+					psi = 360.0-psi
 				elif(inc_mirror == 0):
 					if(phi>=self.brackets[0][0]):  phi = self.brackets[1][0]-phi
 			else:
-				if( inc_mirror == 0 and theta>90.0): phi = 360.0-phi; theta = 180.0 - theta; psi = (180.0 + psi)%360.0
+				if( theta>90.0 ):
+					phi = (180.0+phi)%360.0; theta = 180.0 - theta; psi = (180.0 - psi)%360.0
 				phi = phi%qs
 				if(self.sym[0] == "d"):
-					if( inc_mirror == 0 and phi>=self.brackets[0][0]): phi = self.brackets[1][0]-phi
+					if( inc_mirror == 0 ):
+						if((self.nsym//2)%2 == 0):
+							if(phi>=qs/2):
+								phi = qs-phi
+								psi = 360.0 - psi
+						else:
+							if(phi>=360.0/self.nsym/2 and phi<360.0/self.nsym):
+								phi = 360.0/self.nsym-phi
+								psi = 360.0 - psi
+							elif(phi>=360.0/self.nsym+360.0/self.nsym/2 and phi<720.0/self.nsym):
+								phi = 720.0/self.nsym-phi+360.0/self.nsym
+								psi = 360.0 - psi
 
 			redang.append([phi, theta, psi])
 
@@ -1782,24 +1811,40 @@ class symclass():
 				for l in xrange(self.nsym):
 					p1,p2,p3 = recmat( mulmat( mat , self.symatrix[l]) )
 					#print(p1,p2,p3)
-					fifi = False
 					if(self.is_in_subunit(p1, p2, 1)):
 						phi=p1; theta=p2; psi=p3
-						fifi = True
 						#print("  FOUND ")
 						break
-				if( inc_mirror == 0 and fifi):
-					if(phi>=self.brackets[0][0]):  phi = self.brackets[1][0]-phi
+				if( inc_mirror == 0 ):
+					if(phi>=self.brackets[0][0]):
+						phi = self.brackets[1][0]-phi
+						if(l>0): psi = 360.0-psi
 			elif(inc_mirror == 0):
 				phi = phiin; theta = thetain; psi = psiin
-				if(phi>=self.brackets[0][0]):  phi = self.brackets[1][0]-phi
+				if(phi>=self.brackets[0][0]):
+					phi = self.brackets[1][0]-phi
+					psi = 360.0-psi
 			else:
 				phi = phiin; theta = thetain; psi = psiin
 		else:
-			if( inc_mirror == 0 and thetain>90.0): phi = 360.0-phiin; theta = 180.0 - thetain; psi = (180.0 + psiin)%360.0
+			if( thetain>90.0 ):
+				phi = (180.0+phiin)%360.0; theta = 180.0 - thetain; psi = (180.0 - psiin)%360.0
+			else:
+				phi = phiin; theta = thetain; psi = psiin
 			phi = phi%qs
 			if(self.sym[0] == "d"):
-				if( inc_mirror == 0 and phi>=self.brackets[0][0]): phi = self.brackets[1][0]-phi
+				if( inc_mirror == 0 ):
+					if((self.nsym//2)%2 == 0):
+						if(phi>=qs/2):
+							phi = qs-phi
+							psi = 360.0 - psi
+					else:
+						if(phi>=360.0/self.nsym/2 and phi<360.0/self.nsym):
+							phi = 360.0/self.nsym-phi
+							psi = 360.0 - psi
+						elif(phi>=360.0/self.nsym+360.0/self.nsym/2 and phi<720.0/self.nsym):
+							phi = 720.0/self.nsym-phi+360.0/self.nsym
+							psi = 360.0 - psi
 
 		return phi, theta, psi
 
