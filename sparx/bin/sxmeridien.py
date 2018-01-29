@@ -718,9 +718,6 @@ def find_nearest_k_refangles_to_angles(normals_set, ancor_angle, delta, howmany)
 		qtl = len(normals_set[u3:u5])
 		bigger *= 1.25
 		
-	#ancordir = angles_to_normals(symmetry_neighbors([ancor_angle[:3]], "c1"))
-	#ltemp = Util.cone_dirs_f( normals_set[u3:u5], ancordir, an )
-	###print " us ", an, ancor_angle[:2],len(normals_set[u3:u5])," u1 ",u1,Blockdata["angle_set"][u1][:2]," u3 ",u3,Blockdata["angle_set"][u3][:2]," u5 ",u5,Blockdata["angle_set"][u5][:2]#,"  ltemp ",ltemp
 	if( Blockdata["symclass"].sym == "c1"):
 		ancordir = getfvec(ancor_angle[0],ancor_angle[1])
 		ltemp = Util.nearest_fang_select(normals_set[u3:u5], ancordir[0], ancordir[1], ancordir[2], howmany)
