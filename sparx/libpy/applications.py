@@ -12408,7 +12408,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 					k3 = k1 +180.0
 
 					from utilities import get_sym
-					T = get_sym_sparx(symmetry_string[0:])
+					T = get_sym(symmetry_string[0:])
 
 					d1tp = tp.get_params('spider')
 					sxnew    = -d1tp["tx"]
@@ -13154,7 +13154,7 @@ def gchelix_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 					k3 = k1 +180.0
 
 					from utilities import get_sym
-					T = get_sym_sparx(symmetry_string[0:])
+					T = get_sym(symmetry_string[0:])
 
 					d1tp = tp.get_params('spider')
 					sxnew    = -d1tp["tx"]

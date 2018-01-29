@@ -1157,15 +1157,6 @@ def get_sym(symmetry):
 	"""
 	from fundamentals import symclass
 	scl = symclass(symmetry)
-	"""
-	RA   = Transform()
-	NTot = RA.get_nsym(symmetry)
-	angs = []
-	for j in xrange(NTot):
-		RNow  = RA.get_sym_sparx(symmetry, j)
-		RNowE = RNow.get_rotation('spider')
-		angs.append([RNowE['phi'], RNowE['theta'], RNowE['psi']])
-	"""
 	return scl.symangles
 
 def get_symt(symmetry):
@@ -1177,13 +1168,6 @@ def get_symt(symmetry):
 	trans = []
 	for q in scl.symangles:
 		trans.append(Transform({"type":"spider","phi":q[0],"theta":q[1],"psi":q[2]}))
-	"""
-	RA   = Transform()
-	NTot = RA.get_nsym(symmetry)
-	angs = []
-	for j in xrange(NTot):
-		angs.append(RA.get_sym_sparx(symmetry, j))
-	"""
 	return trans
 
 def get_textimage(fname):
