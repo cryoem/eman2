@@ -394,7 +394,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 		out.write_image(alioutname,0)
 
 	t1 = time()-t
-	print("{:.1f} s".format(time()-t))
+	print("{:.1f} s    ".format(time()-t))
 
 	if options.align_frames :
 
