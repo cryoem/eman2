@@ -6996,8 +6996,8 @@ def angular_distribution(inputfile, options, output):
 	#arrPhi = numpy.round(arrData['Phi'], options.round_digit)
 	#arrTheta = numpy.round(arrData['Theta'], options.round_digit)
 
-	arrPhi   = numpy.array([angs[i][0] for i in xrange(nang)])
-	arrTheta = numpy.array([angs[i][1] for i in xrange(nang)])
+	arrPhi   = numpy.array([numpy.round(angs[i][0], options.round_digit) for i in xrange(nang)])
+	arrTheta = numpy.array([numpy.round(angs[i][1], options.round_digit) for i in xrange(nang)])
 	del angs
 
 	# Set the vectors for transformation and plotting
