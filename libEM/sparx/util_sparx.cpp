@@ -21845,61 +21845,6 @@ Functions to handle angles, normals, their similarity, all use full range and in
 $$$
 */
 
-
-vector<float> Util::reduce_to_asymmetric(const vector<float>& angles, string symmetry) {
-// Reduces angles 
-	int nang = angles.size();
-	vector<float> redang(nang);
-
-	int nsym = atoi(symmetry.substr(1,1000).c_str());
-	for(int i=0; i<nang; i++)  redang[i] = angles[i];
-
-	if( symmetry.substr(0,1) == "c")  {
-		float qt = 360.0f/nsym;
-		while(redang[0] >= qt) redang[0] -= qt;
-	} else if( symmetry.substr(0,1) == "d")  {
-		if( redang[1] > 90.0f ) {
-			redang[0] = 360.0f - redang[0];
-			redang[1] = 180.0f - redang[1];
-			if(nang == 3) redang[2] = fmod(redang[2]+180.0f, 360.0f);
-		}
-		float qt = 360.0f/nsym;
-		while(redang[0] >= qt) redang[0] -= qt;
-	}
-
-	return redang;
-}
-
-
-vector<float> Util::reduce_to_asymmetric_list(const vector<vector<float> >& angles, string symmetry) {
-// Reduces angles 
-	int nlist = angles.size();
-	int nang = angles[0].size();
-	vector<float> redang(nlist*nang);
-
-	int nsym = atoi(symmetry.substr(1,1000).c_str());
-	float qt = 360.0f/nsym;
-	for(int l=0; l<nlist; l++)  for(int i=0; i<nang; i++)  redang[l*nang+i] = angles[l][i];
-
-	if( symmetry.substr(0,1) == "c")  {
-		for(int l=0; l<nlist; l++) {
-			while(redang[l*nang] >= qt) redang[l*nang] -= qt;
-		}
-	} else if( symmetry.substr(0,1) == "d")  {
-		for(int l=0; l<nlist; l++) {
-			if( redang[l*nang+1] > 90.0f ) {
-				redang[l*nang] = 360.0f - redang[l*nang];
-				redang[l*nang+1] = 180.0f - redang[l*nang+1];
-				if(nang == 3) redang[l*nang+2] = fmod(redang[l*nang+2]+180.0f, 360.0f);
-			}
-			while(redang[l*nang] >= qt) redang[l*nang] -= qt;
-		}
-	}
-
-	return redang;
-}
-
-
 vector<float> Util::angle_to_normal(const vector<float>& angles) {
 // converts to normal
 	float pi180 = M_PI/180.0f;
@@ -21932,42 +21877,6 @@ vector<float> Util::angles_to_normals(const vector<vector<float> >& angles) {
 	}
 
 	return normal;
-}
-
-
-vector<float> Util::symmetry_related(const vector<float>& angles, string symmetry) {
-// Symmetry related angles, all three are required
-	int nang = angles.size();
-	if( nang != 3)  throw InvalidValueException(nang, "Three angles are required");
-	int nsym = atoi(symmetry.substr(1,1000).c_str());
-	float qt = 360.0f/nsym;
-	int iod = nsym;
-	if( symmetry.substr(0,1) == "d") iod += iod;
-	vector<float> redang(nang*iod);
-
-	for(int i=0; i<nang; i++)  redang[i] = angles[i];
-
-	if( symmetry.substr(0,1) == "c" && nsym > 1)  {
-		for(int l=1; l<nsym; l++) {
-			redang[3*l]   = fmod(angles[0]+l*qt,360.0f);
-			redang[3*l+1] = angles[1];
-			redang[3*l+2] = angles[2];
-		}
-
-	} else if( symmetry.substr(0,1) == "d")  {
-		for(int l=1; l<nsym; l++) {
-			redang[3*l]   = fmod(angles[0]+l*qt,360.0f);
-			redang[3*l+1] = angles[1];
-			redang[3*l+2] = angles[2];
-		}
-		for(int l=nsym; l<2*nsym; l++) {
-			redang[3*l]   = fmod(360.0f - redang[3*(l-nsym)],360.0f);
-			redang[3*l+1] = 180.0f - angles[1];
-			redang[3*l+2] = fmod( 180.0f + angles[2], 360.0f);
-		}
-	} else return angles;
-
-	return redang;
 }
 
 
@@ -24644,7 +24553,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 
 void Util::version()
 {
- cout <<"  Source modification date: 01/29/2018  4:45 AM " <<  endl;
+ cout <<"  Source modification date: 01/29/2018  4:34 PM " <<  endl;
 }
 
 
