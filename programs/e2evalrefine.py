@@ -117,7 +117,8 @@ def main():
 
 	parser.add_pos_argument(name="refine_xx",help="Name of a completed refine_xx folder.", default="", guitype='filebox', browser="EMRefine2dTable(withmodal=True,multiselect=False)",  filecheck=False, row=0, col=0,rowspan=1, colspan=2, mode='evalptcl')
 	parser.add_argument("--evalptclqual", default=False, action="store_true", help="Evaluates the particle-map agreement using the refine_xx folder name. This may be used to identify bad particles.",guitype='boolbox', row=8, col=1, rowspan=1, colspan=1, mode='evalptcl[True]')
-	parser.add_argument("--evalclassqual", default=False, action="store_true", help="Evaluates the class-average-projection agreement using the refine_xx folder name.",guitype='boolbox', row=8, col=2, rowspan=1, colspan=1, mode='evalptcl[True]')
+	parser.add_argument("--evalclassqual", default=False, action="store_true", help="Evaluates the class-average-projection agreement using the refine_xx folder name.",guitype='boolbox', row=8, col=2, rowspan=1, colspan=1, mode='evalptcl[False]')
+	parser.add_argument("--evalclassdetail", default=False, action="store_true", help="If specified with evalclassqual, will generate individual FRC curves for each class average in the even subset")
 	parser.add_argument("--includeprojs", default=False, action="store_true", help="If specified with --evalptclqual, projections will be written to disk for easy comparison.",guitype='boolbox', row=8, col=0, rowspan=1, colspan=1, mode='evalptcl[True]')
 	parser.add_argument("--anisotropy", type=int, default=-1, help="Specify a class-number (more particles better). Will use that class to evaluate magnification anisotropy in the data. ")
 	parser.add_argument("--iter", type=int, default=None, help="If a refine_XX folder is being used, this selects a particular refinement iteration. Otherwise the last complete iteration is used.")
@@ -321,7 +322,6 @@ def main():
 				fout.write("{}\t{}\t{}\n".format(angle,ai,esum))
 
 			print(best)
-		sys.exit(0)
 
 	if options.evalptclqual:
 #		from multiprocessing import Pool
@@ -387,10 +387,12 @@ def main():
 #		except: pass
 
 #		fout=open("ptclsnr.txt".format(i),"w")
-		ptclfsc = "ptclfsc_{}.txt".format("_".join(args[0].split("_")[1:]))
+		try: rfnnum="_".join(args[0].split("_")[1:])
+		except: rfnnum="X"
+		ptclfsc = "ptclfsc_{}.txt".format(rfnnum)
 		# generate a projection for each particle so we can compare
 
-		pf = "ptclfsc_{}_projections.hdf".format("_".join(args[0].split("_")[1:]))
+		pf = "ptclfsc_{}_projections.hdf".format(rfnnum)
 
 		#tfs = []
 
@@ -485,27 +487,38 @@ def main():
 		rmsdthresh=rmsds.std()*2.5
 		print("Within consistency thr {:0.4f}: {}/{}".format(rmsdthresh,len(rmsds[rmsds<rmsdthresh]),len(rmsds)))
 
-		bname = base_name(ptclfsc)
-		try: os.unlink("sets/{}_bad.lst".format(bname))
+		# write actual classes
+		nameg = "sets/pf{}_good_{}".format(rfnnum,cptcl[0].replace("_even","").replace("sets/",""))
+		namegb=nameg.split("__")[0]+"__ctf_flip_bispec.lst"
+		nameb = "sets/pf{}_bad_{}".format(rfnnum,cptcl[0].replace("_even","").replace("sets/",""))
+		namebb=nameb.split("__")[0]+"__ctf_flip_bispec.lst"
+		try: os.unlink(nameg)
 		except: pass
-		try: os.unlink("sets/{}_good.lst".format(bname))
+		try: os.unlink(nameb)
 		except: pass
-		outb=LSXFile("sets/{}_bad.lst".format(bname))
-		outg=LSXFile("sets/{}_good.lst".format(bname))
+		outb=LSXFile(nameb)
+		outg=LSXFile(nameg)
 		ngood=0
 		for i,q in enumerate(quals):
 			r=result[(i,0)]
-			if q["class_id"]==badcls or rmsds[i]>rmsdthresh: outb.write(-1,r[-1],r[-2],"{:6.4f},{:6.4f},{:6.4f},{:6.4f}".format(quals[i][0],quals[i][1],quals[i][2],rmsds[i]))
+			if q["class_id"]==badcls or rmsds[i]>rmsdthresh: 
+				outb.write(-1,r[-1],r[-2],"{:6.4f},{:6.4f},{:6.4f},{:6.4f}".format(quals[i][0],quals[i][1],quals[i][2],rmsds[i]))
 			else: 
 				outg.write(-1,r[-1],r[-2],"{:6.4f},{:6.4f},{:6.4f},{:6.4f}".format(quals[i][0],quals[i][1],quals[i][2],rmsds[i]))
 				ngood+=1
-
+		outb.close()
+		outg.close()
+		
+		open(namegb,"w").write(open(nameg,"r").read())		# copy the file
+		launch_childprocess("e2proclst.py {} --retype ctf_flip_bispec".format(namegb))
+		
+		open(namebb,"w").write(open(nameb,"r").read())		# copy the file
+		launch_childprocess("e2proclst.py {} --retype ctf_flip_bispec".format(namebb))
+		
 		print("{}/{} kept as good".format(ngood,len(quals)))
 
-		print("Evaluation complete.\nParticles best resembling results from {ref} at low/intermediate resolution have been saved in 'sets/{bn}_good.lst' and can be used in further refinements.\nNote that this method will identify the worst particles as bad, regardless of whether they actually are (bad), and that it may be wise to do your own classification on these results instead, as described in the tutorial.".format(ref=args[0],bn=bname))
+		print("Evaluation complete.\nParticles best resembling results from {} at low/intermediate resolution have been saved in {} and can be used in further refinements.\nNote that this method will identify the worst particles as bad, regardless of whether they actually are (bad), and that it may be wise to do your own classification on these results instead, as described in the tutorial.".format(args[0],nameg))
 
-		E2end(logid)
-		sys.exit(0)
 
 		# TODO: This is Michael's code, not mine, I just uncommented it again after fixing some of the above
 		# a bit silly that it re-reads the data we already have in RAM. Should be rewritten --steve
@@ -621,11 +634,12 @@ def main():
 		nx=timg["nx"]
 		apix=timg["apix_x"]
 
-		rings=[int(2*nx*apix/res) for res in (100,30,15,8,4)]
+		rings=[int(2*nx*apix/res) for res in (100,30,15,8,3)]
 		print(("Frequency Bands: {lowest},{low},{mid},{high},{highest}".format(lowest=rings[0],low=rings[1],mid=rings[2],high=rings[3],highest=rings[4])))
 
 		classfsc="classfsc_{}_{}.txt".format(args[0][-2:],options.iter)
 		fout=open(classfsc,"w")
+		fout.write("# 100-30 A; 30-15 A; 15-8 A; 8-3 A; Nptcl; az; alt; phi; SSNR/Nptcl 100-30 A; SSNR/Nptcl 30-15 A; SSNR/Nptcl 15-8 A\n")
 		for eo in xrange(2):
 			for i in xrange(n):
 				cl=EMData(classes[eo],i)
@@ -641,9 +655,9 @@ def main():
 				third = len(fsc)/3
 				fsc=array(fsc[third:third*2])
 				sums=[sum(fsc[rings[k]:rings[k+1]])/(rings[k+1]-rings[k]) for k in xrange(4)]		# sum the fsc into 5 range values
-				fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{};{};{}\n".format(sums[0],sums[1],sums[2],sums[3],cl["ptcl_repr"],alt,az,phi,sums[0]/(1.0001-sums[0])/(cl["ptcl_repr"]+0.01),sums[1]/(1.0001-sums[1])/float(cl["ptcl_repr"]+0.01),i,classes[eo],i,projections[eo]))
+				fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{};{};{}\n".format(sums[0],sums[1],sums[2],sums[3],cl["ptcl_repr"],alt,az,phi,sums[0]/(1.0001-sums[0])/(cl["ptcl_repr"]+0.01),sums[1]/(1.0001-sums[1])/(cl["ptcl_repr"]+0.01),sums[2]/(1.0001-sums[2])/(cl["ptcl_repr"]+0.01),i,classes[eo],i,projections[eo]))
 
-				if eo==0:
+				if options.evalclassdetail and eo==0:
 					out=open("cfsc{:04d}.txt".format(i),"w")
 					fsc=cl.calc_fourier_shell_correlation(pr)
 					third=len(fsc)/3
@@ -658,10 +672,6 @@ def main():
 					for x,v in enumerate(ssnr): out.write("{}\t{}\n".format(x,v))
 					out.close()
 				
-
-		E2end(logid)
-		sys.exit(0)
-
 
 	if options.resolution:
 
@@ -916,6 +926,9 @@ def main():
 				print("\t%s\t%1.2f hours\t%s"%(difftime(ttime),ttime/3600.0,hist[n][0]))
 
 			n+=1
+			
+	E2end(logid)
+	sys.exit(0)
 
 
 if __name__ == "__main__":
