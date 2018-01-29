@@ -2142,7 +2142,7 @@ def recons3d_em(projections_stack, max_iterations_count = 100, radius = -1, min_
 		RA = proj.get_attr( "xform.projection" )
 		Util.mul_img( proj, sphere2D )
 		for j in range(RA.get_nsym(symmetry)):
-			angdict = RA.get_sym(symmetry,j).get_rotation("spider") 
+			angdict = RA.get_sym_sparx(symmetry,j).get_rotation("spider") 
 			angles.append( [angdict["phi"], angdict["theta"], angdict["psi"]] )
 			chao_params = {"anglelist":angles[j],"radius":radius}
 			Util.add_img( solution, proj.backproject("chao", chao_params) )
@@ -2258,7 +2258,7 @@ def recons3d_em_MPI(projections_stack, output_file, max_iterations_count = 100, 
 		RA = proj.get_attr( "xform.projection" )
 		Util.mul_img( proj, sphere2D )
 		for j in range(RA.get_nsym(symmetry)):
-			angdict = RA.get_sym(symmetry,j).get_rotation("spider") 
+			angdict = RA.get_sym_sparx(symmetry,j).get_rotation("spider") 
 			angles.append( [angdict["phi"], angdict["theta"], angdict["psi"]] )
 			chao_params = {"anglelist":angles[j],"radius":radius}
 			Util.add_img( solution, proj.backproject("chao", chao_params) )
@@ -2389,7 +2389,7 @@ def recons3d_sirt(stack_name, list_proj, radius, lam=1.0e-4, maxit=100, symmetry
 					# then continue as before
 				for ns in xrange(1,nsym+1):
 					# multiply myangles by symmetry using Phil's Transform class
-					Tf=RA.get_sym(symmetry,ns) #
+					Tf=RA.get_sym_sparx(symmetry,ns) #
 					angdict = Tf.get_rotation("spider")
 					#   Chao - please check the order of phi, theta, psi
 					symangles[0] = angdict["phi"]
@@ -2407,7 +2407,7 @@ def recons3d_sirt(stack_name, list_proj, radius, lam=1.0e-4, maxit=100, symmetry
 				RA = angles[i]
 				for ns in xrange(1,nsym+1):
 					# multiply myangles by symmetry using Phil's Transform class
-					Tf = RA.get_sym(symmetry,ns)#Tf.get_rotation()
+					Tf = RA.get_sym_sparx(symmetry,ns)#Tf.get_rotation()
 					angdict = Tf.get_rotation("spider")
 					#				    Chao - please check the order of phi, theta, psi
 					symangles[0] = angdict["phi"]
@@ -2464,7 +2464,7 @@ def recons3d_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetr
 			B = stack_name[list_proj[iProj]]
 		transform = B.get_attr("xform.projection")
 		for iSym in xrange(nsym):
-			symmetry_transforms[iProj][iSym] = transform.get_sym(symmetry, iSym)
+			symmetry_transforms[iProj][iSym] = transform.get_sym_sparx(symmetry, iSym)
 			d = symmetry_transforms[iProj][iSym].get_params("spider")
 			DMnSS = Util.CANG(d["phi"], d["theta"], d["psi"])
 			ss[ (iProj*nsym+iSym)*6 : (iProj*nsym+iSym+1)*6 ] = DMnSS["SS"]
@@ -2517,7 +2517,7 @@ def recons3d_vwbp(stack_name, list_proj, method = "general", const=1.0E4, symmet
 			B = stack_name[list_proj[iProj]]
 		transform = B.get_attr("xform.projection")
 		for iSym in xrange(nsym):
-			symmetry_transforms[iProj][iSym] = transform.get_sym(symmetry, iSym)
+			symmetry_transforms[iProj][iSym] = transform.get_sym_sparx(symmetry, iSym)
 			d = symmetry_transforms[iProj][iSym].get_params("spider")
 			DMnSS = Util.CANG(d["phi"], d["theta"], d["psi"])
 			ss[ (iProj*nsym+iSym)*6 : (iProj*nsym+iSym+1)*6 ] = DMnSS["SS"]

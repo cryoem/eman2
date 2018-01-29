@@ -1563,10 +1563,6 @@ class symclass():
 		#from utilities import get_sym, get_symt
 		from string import lower
 		self.sym = sym.lower()
-		#t = Transform()
-		#self.nsym = 0#t.get_nsym(self.sym)
-		#self.angles = get_sym(self.sym)
-		#self.transforms = get_symt(self.sym)
 		if(self.sym[0] == "c"):
 			self.nsym = int(self.sym[1:])
 			if(self.nsym<1):  ERROR("For Cn symmetry, we need n>0","symclass",1)

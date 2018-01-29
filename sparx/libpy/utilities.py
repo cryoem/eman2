@@ -1162,7 +1162,7 @@ def get_sym(symmetry):
 	NTot = RA.get_nsym(symmetry)
 	angs = []
 	for j in xrange(NTot):
-		RNow  = RA.get_sym(symmetry, j)
+		RNow  = RA.get_sym_sparx(symmetry, j)
 		RNowE = RNow.get_rotation('spider')
 		angs.append([RNowE['phi'], RNowE['theta'], RNowE['psi']])
 	"""
@@ -1182,7 +1182,7 @@ def get_symt(symmetry):
 	NTot = RA.get_nsym(symmetry)
 	angs = []
 	for j in xrange(NTot):
-		angs.append(RA.get_sym(symmetry, j))
+		angs.append(RA.get_sym_sparx(symmetry, j))
 	"""
 	return trans
 
