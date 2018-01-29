@@ -1739,6 +1739,7 @@ class symclass():
 
 
 	def reduce_anglesets(self, angles, inc_mirror=1):
+		#  Input is either list ot lists [[phi,thet,psi],[],[]] or a triplet [phi,thet,psi]
 		from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
 		import types
 		is_platonic_sym = self.sym[0] == "o" or self.sym[0] == "i"
