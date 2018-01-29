@@ -1802,7 +1802,7 @@ class symclass():
 
 					if( not fifi ):  print("  FAILED mirror ")
 			else:
-				if( theta>90.0 ):
+				if( theta>90.0  and inc_mirror == 0 ):
 					phi = (180.0+phi)%360.0; theta = 180.0 - theta; psi = (180.0 - psi)%360.0
 				phi = phi%qs
 				if(self.sym[0] == "d"):
@@ -1872,7 +1872,7 @@ class symclass():
 
 				print("  FAILED mirror ")
 		else:
-			if( thetain>90.0 ):
+			if( thetain>90.0 and inc_mirror == 0 ):
 				phi = (180.0+phiin)%360.0; theta = 180.0 - thetain; psi = (180.0 - psiin)%360.0
 			else:
 				phi = phiin; theta = thetain; psi = psiin
