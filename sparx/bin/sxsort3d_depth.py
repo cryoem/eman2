@@ -4078,7 +4078,6 @@ def do_boxes_two_way_comparison_new(nbox, input_box_parti1, input_box_parti2, de
 	tmsg ="betweenboxes_comparison: box%d   box%d generation%d layer%d percentage accounted:  %f "%(nbox, nbox+1, Tracker["current_generation"], Tracker["depth"], round(ratio_accounted,3))
 	Tracker["current_iter_ratio"] = ratio_accounted
 	score_list = [ ]
-	current_random_group_size = len(core1)//len(list_stable)**2
 	nclass = 0
 	###
 	if depth >1:
