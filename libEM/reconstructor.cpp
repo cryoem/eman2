@@ -3304,10 +3304,9 @@ int nnSSNR_Reconstructor::insert_padfft_slice( EMData* padfft, const Transform& 
 {
 	Assert( padfft != NULL );
 	// insert slice for all symmetry related positions
-	for (int isym=0; isym < m_nsym; isym++) {
-		Transform tsym = t.get_sym(m_symmetry, isym);
-		m_volume->nn_SSNR( m_wptr, m_wptr2, padfft, tsym, weight);
-	}
+	vector<Transform> tsym = t.get_sym_proj(m_symmetry);
+	for (int isym=0; isym < m_nsym; isym++) m_volume->nn_SSNR( m_wptr, m_wptr2, padfft, tsym[isym], weight);
+
 	return 0;
 }
 
@@ -5421,10 +5420,8 @@ int nnSSNR_ctfReconstructor::insert_padfft_slice( EMData* padfft, const Transfor
 {
 
 	// insert slice for all symmetry related positions
-	for (int isym=0; isym < m_nsym; isym++) {
-		Transform tsym = t.get_sym(m_symmetry, isym);
-		m_volume->nn_SSNR_ctf(m_wptr, m_wptr2, m_wptr3, padfft, tsym, weight);
-	}
+	vector<Transform> tsym = t.get_sym_proj(m_symmetry);
+	for (int isym=0; isym < m_nsym; isym++) m_volume->nn_SSNR_ctf(m_wptr, m_wptr2, m_wptr3, padfft, tsym[isym], weight);
 	return 0;
 }
 

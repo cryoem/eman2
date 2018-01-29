@@ -480,6 +480,8 @@ namespace EMAN
 			 *
 			 */
 			Transform get_sym(const string & sym, int n) const;
+			// The next two are used solely in sparx, mainly to deal with tet.
+			Transform get_sym_sparx(const string & sym, int n) const;
 			vector<Transform > get_sym_proj(const string & sym) const;
 
 			/**

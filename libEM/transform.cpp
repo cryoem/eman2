@@ -1330,7 +1330,8 @@ void Transform::assert_valid_2d() const {
 	if (fabs(matrix[2][3]) > ERR_LIMIT) translation_error++;
 	if (fabs(matrix[0][2]) > ERR_LIMIT) rotation_error++;
 	if (fabs(matrix[1][2]) > ERR_LIMIT) rotation_error++;
-//	if (fabs(matrix[2][2]-1.0) >ERR_LIMIT) rotation_error++; 
+//	if (fabs(matrix[2][2]-1.0) >ERR_LIMIT) rotation_error++;
+	if (matrix[2][2] <=0) rotation_error++; 		// previous line commented out due to addition of scaling. This line will insure we don't have alt=180.0
 	if ( translation_error && rotation_error ) {
 		throw UnexpectedBehaviorException("Error, the internal matrix contains 3D rotations and 3D translations. This object can not be considered 2D");
 	} else if ( translation_error ) {
@@ -1346,10 +1347,16 @@ void Transform::assert_valid_2d() const {
 
 Transform Transform::get_sym(const string & sym_name, int n) const
 {
-	//Symmetry3D* sym = Factory<Symmetry3D>::get(sym_name);
+	Symmetry3D* sym = Factory<Symmetry3D>::get(sym_name);
 	Transform ret;
-	//ret = (*this) * sym->get_sym(n);
-	//delete sym;
+	ret = (*this) * sym->get_sym(n);
+	delete sym;
+	return ret;
+}
+
+Transform Transform::get_sym_sparx(const string & sym_name, int n) const
+{
+	Transform ret;
 	vector<Transform> tut;
 	tut = ret.get_sym_proj(sym_name);
 	ret =  (*this) * tut[n];
@@ -1521,20 +1528,9 @@ vector<Transform > Transform::get_sym_proj(const string & sym_name) const
 
 int Transform::get_nsym(const string & sym_name)
 {
-	int nsym = 0;
-	string instancename = Util::str_to_lower(sym_name);
-	char leadingchar = instancename[0];
-	if (leadingchar == 'c') nsym = atoi(instancename.c_str() + 1);
-	else if (leadingchar == 'd') nsym = 2*atoi(instancename.c_str() + 1);
-	else if (instancename == "oct") nsym = 24;
-	else if (instancename == "tet") nsym = 12;
-	else if (instancename == "icos") nsym = 60;
-	else throw NotExistingObjectException(instancename, "No such symmetry group");
-	/*
 	Symmetry3D* sym = Factory<Symmetry3D>::get(sym_name);
 	int nsym = sym->get_nsym();
 	delete sym;
-	*/
 	return nsym;
 }
 
