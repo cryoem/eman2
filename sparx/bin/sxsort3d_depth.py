@@ -4041,26 +4041,36 @@ def do_boxes_two_way_comparison_new(nbox, input_box_parti1, input_box_parti2, de
 	blist   = []
 	plist1  = []
 	plist2  = []
-	nsize   = 0
+	
 	for i1 in xrange(len(ptp1)):
-		plist1.append([nsize, nsize + len(ptp1[i1])])
-		nsize += len(ptp1[i1])
+		#plist1.append([nsize, nsize + len(ptp1[i1])])
+		#nsize += len(ptp1[i1])
 		alist += ptp1[i1]
-	nsize = 0
+	
 	for i1 in xrange(len(ptp2)):
-		plist2.append([nsize, nsize + len(ptp2[i1])])
-		nsize += len(ptp2[i1])
+		#plist2.append([nsize, nsize + len(ptp2[i1])])
+		#nsize += len(ptp2[i1])
 		blist += ptp2[i1]
 	max_num = max(alist+blist)+1
 	alist = np.array(alist, "int32")
 	blist = np.array(blist, "int32")
+	
 	k = min(len(ptp1), len(ptp2))
-	if len(ptp1) >k:
+	if len(ptp1)>k:
 		for i1 in xrange(len(ptp1)-k): 
-			alist.append(np.array([max_num+i1], "int32"))
-	elif len(ptp2) >k:
+			ptp1.append([max_num+i1])
+	elif len(ptp2)>k:
 		for i1 in xrange(len(ptp2)-k): 
-			blist.append(np.array([max_num+i1], "int32"))
+			ptp2.append([max_num+i1])
+	nsize = 0
+	for i1 in xrange(len(ptp1)):
+		plist1.append([nsize, nsize + len(ptp1[i1])])
+		nsize += len(ptp1[i1])
+	nsize = 0
+	for i1 in xrange(len(ptp2)):
+		plist2.append([nsize, nsize + len(ptp2[i1])])
+		nsize += len(ptp2[i1])
+	
 	tlist = []
 	clist = [[] for i in xrange(k)]
 	for iter_simu in xrange(NT):
@@ -4956,7 +4966,7 @@ def steptwo_mpi(tvol, tweight, treg, cfsc = None, regularized = True, color = 0)
 	#  tvol is overwritten, meaning it is also an output
 	n_iter =10
 	ifi = mpi_iterefa( vol_data.__array_interface__['data'][0] ,  we_data.__array_interface__['data'][0] , nx, ny, nz, maxr2, \
-			Tracker["constants"]["nnxo"], Blockdata["myid_on_node"], color, Blockdata["no_of_processes_per_group"],  Blockdata["shared_comm"])######, n_iter)
+			Tracker["constants"]["nnxo"], Blockdata["myid_on_node"], color, Blockdata["no_of_processes_per_group"],  Blockdata["shared_comm"])###3, n_iter)
 	if( Blockdata["myid_on_node"] == 0 ):
 		#  Either pad or window in F space to 2*nnxo
 		nx = tvol.get_ysize()
