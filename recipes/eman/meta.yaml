@@ -18,7 +18,8 @@ requirements:
             "gsl",
             "hdf5 1.8.18",
             "jpeg",
-            "libtiff 4.0.9",
+            "libtiff 4.0.9",            # [not win]
+            "libtiff 4.0.9 hafacce9_0",  # [win]
             "libpng 1.6.17",  # [linux]
             "libpng 1.6.32",  # [osx]
             "zlib",
