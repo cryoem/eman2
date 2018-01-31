@@ -1,6 +1,6 @@
 package:
     name: eman2
-    version: 2.2
+    version: 2.21
 
 source:
     path: {{ RECIPE_DIR }}/../..

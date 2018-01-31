@@ -2018,8 +2018,9 @@ if the lst file does not exist."""
 
 	def close(self):
 		"""Once you call this, you should not try to access this object any more"""
-		self.normalize()
-		self.ptr=None
+		if self.ptr!=None :
+			self.normalize()
+			self.ptr=None
 
 	def write(self,n,nextfile,extfile,comment=None):
 		"""Writes a record to any location in a valid #LSX file.

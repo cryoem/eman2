@@ -830,8 +830,9 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=N
 				except : s["bad_particles"]=[i]
 				js["sets"]=s
 
-		try: ctf=im1["ctf"]
-		except : ctf=default_ctf
+#		try: ctf=im1["ctf"]
+#		except : ctf=default_ctf
+		ctf=default_ctf			# otherwise a CTF without SNR parameters inherited from the whole frame could wind up in the particles !!!  1/24/18
 		if storeparm :
 			if stackfile[-4:].lower()!=".hdf" and stackfile[:4].lower()!="bdb:" :
 				if i==0: print("Warning, --storeparm option ignored. Input paticle stack must be HDF or BDB for this option to work.")

@@ -6888,10 +6888,9 @@ correction is not possible, this will allow you to approximate the correction to
 		static const string NAME;
 	};
 
-	/** This processor will remove specific bad lines from CCD images, generally due to faulty lines/rows in the detector.
-	 * Specify only one of xloc or yloc
-	 *@param xloc x location of a bad vertical line
-	 *@param yloc y location of a bad horizontal line
+	/** This processor will remove specified bad lines from CCD/DDD images, generally due to faulty lines/rows in the detector.
+	 *@param cols x locations of bad vertical lines
+	 *@param rows y locations of bad horizontal lines
 	 */
 	class BadLineXYProcessor:public Processor
 	{

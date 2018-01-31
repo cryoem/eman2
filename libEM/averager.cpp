@@ -43,7 +43,7 @@
 using namespace EMAN;
 
 const string ImageAverager::NAME = "mean";
-const string VarianceAverager::NAME = "variance";
+const string SigmaAverager::NAME = "sigma";
 const string TomoAverager::NAME = "mean.tomo";
 const string MinMaxAverager::NAME = "minmax";
 const string AbsMaxMinAverager::NAME = "absmaxmin";
@@ -58,7 +58,7 @@ const string LocalWeightAverager::NAME = "localweight";
 template <> Factory < Averager >::Factory()
 {
 	force_add<ImageAverager>();
-	force_add<VarianceAverager>();
+	force_add<SigmaAverager>();
 	force_add<MinMaxAverager>();
 	force_add<AbsMaxMinAverager>();
 	force_add<LocalWeightAverager>();
@@ -330,20 +330,22 @@ EMData * ImageAverager::finish()
 	return result;
 }
 
-VarianceAverager::VarianceAverager()
-	: mean(0), nimg(0)
+
+SigmaAverager::SigmaAverager()
+	: mean_image(0), ignore0(0), normimage(0), freenorm(0), nimg(0)
 {
 
 }
 
-void VarianceAverager::add_image(EMData * image)
+void SigmaAverager::add_image(EMData * image)
 {
 	if (!image) {
 		return;
 	}
 
-	if (nimg >= 1 && !EMUtil::is_same_size(image, result)) {
-		LOGERR("%sAverager can only process same-size Image", get_name().c_str());
+	if (nimg >= 1 && !EMUtil::is_same_size(image, mean_image)) {
+		LOGERR("%sAverager can only process same-size Image",
+			   get_name().c_str());
 		return;
 	}
 
@@ -355,46 +357,94 @@ void VarianceAverager::add_image(EMData * image)
 	size_t image_size = (size_t)nx * ny * nz;
 
 	if (nimg == 1) {
+		mean_image = image->copy_head();
+		mean_image->set_size(nx, ny, nz);
+
 		result = image->copy_head();
 		result->set_size(nx, ny, nz);
+
+		ignore0 = params["ignore0"];
+		normimage = params.set_default("normimage", (EMData*)0);
+		if (ignore0 && normimage==0) { normimage=new EMData(nx,ny,nz); freenorm=1; }
+		if (normimage) normimage->to_zero();
 	}
 
+	float *mean_image_data = mean_image->get_data();
 	float *result_data = result->get_data();
-	float *image_data = image->get_data();
-	float *mean_data = mean->get_data();
+	float * image_data = image->get_data();
 
-	for (size_t j = 0; j < image_size; ++j) {
-		float f = image_data[j];
-		if (f) {
-			float delta = f - mean_data[j];
-			mean_data[j] += delta / ((float) nimg);
-			result_data[j] += delta * (f - mean_data[j]);
+	if (!ignore0) {
+		for (size_t j = 0; j < image_size; ++j) {
+			float f = image_data[j];
+			mean_image_data[j] += f;
+			if (result_data) {
+				result_data[j] += f * f;
+			}
+		}
+	}
+	else {
+		for (size_t j = 0; j < image_size; ++j) {
+			float f = image_data[j];
+			if (f) {
+				mean_image_data[j] += f;
+				if (result_data) {
+					result_data[j] += f * f;
+				}
+				normimage->set_value_at_fast(j,normimage->get_value_at(j)+1.0);
+			}
 		}
 	}
 }
 
-EMData * VarianceAverager::finish()
+EMData * SigmaAverager::finish()
 {
-	if (nimg < 2) {
-		LOGERR("Variance calculation requires two or more images");
-		return NULL;
-	}
+	if (mean_image && nimg > 1) {
+		size_t image_size = (size_t)mean_image->get_xsize() * mean_image->get_ysize() * mean_image->get_zsize();
+		float * mean_image_data = mean_image->get_data();
+		if (!ignore0) {
+			for (size_t j = 0; j < image_size; ++j) {
+				mean_image_data[j] /= nimg;
+			}
 
-	if (result) {
-		size_t image_size = (size_t)result->get_xsize() * result->get_ysize() * result->get_zsize();
-		float *result_data = result->get_data();
-		float tmp = (float)(nimg - 1);
-		for (size_t j = 0; j < image_size; ++j) {
-			float f = result_data[j];
-			if (f) {
-				result_data[j] /= tmp;
+			float * result_data = result->get_data();
+			
+			for (size_t j = 0; j < image_size; ++j) {
+				float f1 = result_data[j] / nimg;
+				float f2 = mean_image_data[j];
+				result_data[j] = sqrt(f1 - f2 * f2);
+			}
+
+			result->update();
+		}
+		else {
+			for (size_t j = 0; j < image_size; ++j) {
+				if (normimage->get_value_at(j)>0) mean_image_data[j] /= normimage->get_value_at(j);
+			}
+
+			float * result_data = result->get_data();
+
+			for (size_t j = 0; j < image_size; ++j) {
+				float f1 = 0;
+				if (normimage->get_value_at(j)>0) f1=result_data[j] / normimage->get_value_at(j);
+				float f2 = mean_image_data[j];
+				result_data[j] = sqrt(f1 - f2 * f2);
+			
+				result->update();
 			}
 		}
-		result->update();
-	}	
-	result->set_attr("ptcl_repr",nimg);
 
-	return result;
+		mean_image->update();
+		mean_image->set_attr("ptcl_repr",nimg);
+
+		result->set_attr("ptcl_repr",nimg);
+
+		if (freenorm) { delete normimage; normimage=(EMData*)0; }
+
+		return result;
+	}
+	else {
+		LOGERR("%sAverager requires >=2 images", get_name().c_str());
+	}
 }
 
 FourierWeightAverager::FourierWeightAverager()

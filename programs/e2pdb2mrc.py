@@ -75,8 +75,7 @@ def main():
 	parser.add_argument("--center", action="store_true", help="Move the atomic center to the center of the box", default=False)
 	parser.add_argument("--chains",type=str,help="String list of chain identifiers to include, eg 'ABEFG'")
 	parser.add_argument("--info", action="store_true", help="If this is specified, information on the PDB file is displayed, no conversion is performed.",default=False)
-	parser.add_argument("--full", action="store_true", help="Apply non-crystallographic symmetry (MTRIXs or BIOMTs) to get full structure.",default=False)
-	parser.add_argument("--addsym", default="c1", type=str, help="Impose additional symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos")
+	parser.add_argument("--full", action="store_true", help="Apply non-crystallographic symmetry to obtain 'full' structure.",default=False)
 	parser.add_argument("--quiet",action="store_true",default=False,help="Verbose is the default")
 	parser.add_argument("--model", type=int,default=None, help="Extract only a single numbered model from a multi-model PDB")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -91,12 +90,6 @@ def main():
 	except: chains=None
 	try: box=options.box
 	except: box=None
-
-	if options.addsym != "c1":
-		try: sym=Symmetries.get(options.addsym)
-		except RuntimeError:
-			print("Incorrect symmetry specified. Choices include: c<n>, d<n>, h<n>, tet, oct, icos")
-			sys.exit(1)
 
 	logger = E2init(sys.argv,options.ppid)
 
@@ -165,19 +158,33 @@ def main():
 					else:
 						tfs[tfid] = np.zeros((3,4))
 						tfs[tfid][rowid] = row
-				elif line[:18] == "REMARK 350   BIOMT":
-					rowid = int(line[10:19].replace("BIOMT",""))-1
-					tfid = int(line[19:23]) - 1
-					rx = float(line[23:33])
-					ry = float(line[33:43])
-					rz = float(line[43:53])
-					t = float(line[53:68])
-					row = np.array([rx,ry,rz,t])
-					if tfid in tfs.keys():
-						tfs[tfid][rowid] = row
-					else:
-						tfs[tfid] = np.zeros((3,4))
-						tfs[tfid][rowid] = row
+				# elif line[:18] == "REMARK 350   BIOMT":
+				# 	rowid = int(line[10:19].replace("BIOMT",""))-1
+				# 	tfid = int(line[19:23]) - 1
+				# 	rx = float(line[23:33])
+				# 	ry = float(line[33:43])
+				# 	rz = float(line[43:53])
+				# 	t = float(line[53:68])
+				# 	row = np.array([rx,ry,rz,t])
+				# 	if tfid in tfs.keys():
+				# 		tfs[tfid][rowid] = row
+				# 	else:
+				# 		tfs[tfid] = np.zeros((3,4))
+				# 		tfs[tfid][rowid] = row
+				# elif line[:18] == "REMARK 290   SMTRY":
+				# 	rowid = int(line[10:19].replace("SMTRY",""))-1
+				# 	tfid = int(line[19:23]) - 1
+				# 	rx = float(line[23:33])
+				# 	ry = float(line[33:43])
+				# 	rz = float(line[43:53])
+				# 	t = float(line[53:68])
+				# 	print(line[:18],tfid,rx,ry,rz)
+				# 	row = np.array([rx,ry,rz,t])
+				# 	if tfid in tfs.keys():
+				# 		tfs[tfid][rowid] = row
+				# 	else:
+				# 		tfs[tfid] = np.zeros((3,4))
+				# 		tfs[tfid][rowid] = row
 
 			if line[:5] =="HELIX":
 				# not confident about this... 
@@ -278,7 +285,6 @@ def main():
 			p = np.asmatrix(pa.get_points()).T
 			p = p.reshape(p.shape[0]/3,3)
 			points = []
-
 			for tfid in tfs.keys():
 				m = np.asmatrix(tfs[tfid]) # transformation matrix
 				tfd = np.dot(p,m[:,:3].T)+m[:,3].T
@@ -287,22 +293,8 @@ def main():
 			pa = PointArray()
 			pts = np.concatenate(points).flatten()
 			pa.set_from(pts.tolist()[0])
-
-		# apply additional, user specified symmetry
-		if options.addsym != "c1":
-			p = np.asmatrix(pa.get_points()).T
-			p = p.reshape(p.shape[0]/3,3)
-			points = []
-			for tf in sym.get_syms():
-				m = np.asarray(tf.get_matrix()).reshape(3,4)
-				tfd = np.dot(p,m[:,:3].T)+m[:,3].T
-				bfs = np.asmatrix(np.ones(tfd.shape[0])).T
-				points.append(np.hstack([tfd,bfs]))
-			pa = PointArray()
-			pts = np.concatenate(points).flatten()
-			pa.set_from(pts.tolist()[0])
-
-		if options.center: pa.center_to_zero() # center after applying symmetry
+		
+		if options.center: pa.center_to_zero()
 
 		#bound = max(pa.get_bounding_box().get_size())
 		#if boxsize < bound:
