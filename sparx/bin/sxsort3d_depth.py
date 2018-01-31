@@ -4025,15 +4025,78 @@ def do_boxes_two_way_comparison_new(nbox, input_box_parti1, input_box_parti2, de
 	msg = 'two box runs to be compared are entirely independent'
 	print(line, msg)
 	log_main.add(msg)
-	
+	msg = '**************** Simulation of random reproducibility estimation ******************* '
+	log_main.add(msg)
 	## used by single node only
 	bad_clustering =  0
 	ipair = 0
 	core1 = read_text_row(input_box_parti1)
-	ptp1, tmp1 = split_partition_into_ordered_clusters( core1)
+	ptp1, tmp1 = split_partition_into_ordered_clusters(core1)
 	core2 = read_text_row(input_box_parti2)
-	ptp2, tmp2 = split_partition_into_ordered_clusters( core2)
+	ptp2, tmp2 = split_partition_into_ordered_clusters(core2)
+	#### before comparison we do a simulation
+	NT = 200
+	import numpy as np
+	alist   = []
+	blist   = []
+	plist1  = []
+	plist2  = []
 	
+	for i1 in xrange(len(ptp1)):
+		#plist1.append([nsize, nsize + len(ptp1[i1])])
+		#nsize += len(ptp1[i1])
+		alist += ptp1[i1]
+	
+	for i1 in xrange(len(ptp2)):
+		#plist2.append([nsize, nsize + len(ptp2[i1])])
+		#nsize += len(ptp2[i1])
+		blist += ptp2[i1]
+	max_num = max(alist+blist)+1
+	alist = np.array(alist, "int32")
+	blist = np.array(blist, "int32")
+	
+	k = min(len(ptp1), len(ptp2))
+	if len(ptp1)>k:
+		for i1 in xrange(len(ptp1)-k): 
+			ptp1.append([max_num+i1])
+	elif len(ptp2)>k:
+		for i1 in xrange(len(ptp2)-k): 
+			ptp2.append([max_num+i1])
+	nsize = 0
+	for i1 in xrange(len(ptp1)):
+		plist1.append([nsize, nsize + len(ptp1[i1])])
+		nsize += len(ptp1[i1])
+	nsize = 0
+	for i1 in xrange(len(ptp2)):
+		plist2.append([nsize, nsize + len(ptp2[i1])])
+		nsize += len(ptp2[i1])
+	
+	tlist = []
+	clist = [[] for i in xrange(k)]
+	for iter_simu in xrange(NT):
+		new_clusters1 = []
+		new_clusters2 = []
+		np.random.shuffle(alist)
+		np.random.shuffle(blist)	
+		for j in xrange(k):new_clusters1.append(alist[plist1[j][0]:plist1[j][1]])
+		for j in xrange(k):new_clusters2.append(blist[plist2[j][0]:plist2[j][1]])
+		for j in xrange(k): new_clusters1[j] = np.sort(new_clusters1[j])
+		for j in xrange(k): new_clusters2[j] = np.sort(new_clusters2[j])
+		newindeces, list_stable, nb_tot_objs = k_means_match_clusters_asg_new(new_clusters1,new_clusters2)
+		tlist.append(nb_tot_objs/float((np.union1d(alist, blist)).size)*100.)	
+		for j in xrange(len(newindeces)):
+			if list_stable[j].size > 0:
+				clist[j].append(float((np.intersect1d(new_clusters1[newindeces[j][0]], new_clusters2[newindeces[j][1]])).size)\
+				  /float((np.union1d(new_clusters1[newindeces[j][0]], new_clusters2[newindeces[j][1]])).size)*100.)
+	t = table_stat(tlist)
+	msg = 'random reproducibility of total: %5.3f'%(round(t[0], 4))
+	log_main.add(msg)
+	for l in xrange(len(clist)):
+		if len(clist[l])>0:
+			msg = 'random reproducibility per group:  %5.3f   %8d '%(round(table_stat(clist[l])[0], 4), (plist1[l][1]-plist1[l][0]))
+			log_main.add(msg)
+	msg = '***********************************************************************************'
+	log_main.add(msg)
 	## before comparison
 	msg = 'P0 '
 	msg1 ='GID'
@@ -4078,7 +4141,6 @@ def do_boxes_two_way_comparison_new(nbox, input_box_parti1, input_box_parti2, de
 	tmsg ="betweenboxes_comparison: box%d   box%d generation%d layer%d percentage accounted:  %f "%(nbox, nbox+1, Tracker["current_generation"], Tracker["depth"], round(ratio_accounted,3))
 	Tracker["current_iter_ratio"] = ratio_accounted
 	score_list = [ ]
-	current_random_group_size = len(core1)//len(list_stable)**2
 	nclass = 0
 	###
 	if depth >1:
@@ -4277,6 +4339,7 @@ def split_partition_into_ordered_clusters_split_ucluster(partition):
 
 def do_withinbox_two_way_comparison(partition_dir, nbox, nrun, niter, log_main):
 	global Tracker, Blockdata
+	import numpy as np
 	## for single node only
 	line  = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	msg_pipe  ='--------------------------------------------------'
@@ -4341,7 +4404,7 @@ def do_withinbox_two_way_comparison(partition_dir, nbox, nrun, niter, log_main):
 	msg = 'Cluster intersections of P0 and P1 form new clusters and are checked by MGR group size. Rejected ones will be reassigned from the unaccounted elements'
 	print(line, msg)
 	log_main.add(msg)
-	msg = '{:^10} {:^5} {:^5} {:^10} {:^10} {:^10} {:^15} {:^15}'.format('New GID', 'P0 ID',  'P1 ID', 'GSIZE', 'MGRSIZE', 'status', 'R ratio of P0', 'R ratio of P1')
+	msg = '{:^10} {:^5} {:^5} {:^10} {:^10} {:^10} {:^15} {:^15} {:^15}'.format('New GID', 'P0 ID',  'P1 ID', 'GSIZE', 'MGRSIZE', 'status', 'R ratio of P0', 'R ratio of P1', 'reproducibility')
 	print(line, msg)
 	log_main.add(msg)
 	
@@ -4355,17 +4418,21 @@ def do_withinbox_two_way_comparison(partition_dir, nbox, nrun, niter, log_main):
 		any.sort()
 		score1 = float(len(any))*100./float(len(ptp1[newindeces[index_of_any][0]]))
 		score2 = float(len(any))*100./float(len(ptp2[newindeces[index_of_any][1]]))
+		score3 = float((np.intersect1d(ptp1[newindeces[index_of_any][0]], ptp2[newindeces[index_of_any][1]])).size)\
+			  /float((np.union1d(ptp1[newindeces[index_of_any][0]], ptp2[newindeces[index_of_any][1]])).size)*100.
 		if len(any) > current_MGR[index_of_any]:
 			score_list.append([score1, score2])
 			minimum_group_size = min(minimum_group_size, len(any))
 			maximum_group_size = max(maximum_group_size, len(any))
 			nclass +=1
-			msg ='{:^10d} {:^5d} {:^5d} {:^10d} {:^10d} {:^10} {:^15.3f} {:^15.3f}'.format(index_of_any, int(newindeces[index_of_any][0]), int(newindeces[index_of_any][1]), len(any), current_MGR[index_of_any],'accepted', round(score1,3), round(score2,3))
+			msg ='{:^10d} {:^5d} {:^5d} {:^10d} {:^10d} {:^10} {:^15.3f} {:^15.3f} {:^15.3f}'.format(index_of_any, int(newindeces[index_of_any][0]), \
+			     int(newindeces[index_of_any][1]), len(any), current_MGR[index_of_any],'accepted', round(score1,3), round(score2,3), round(score3,3))
 			log_main.add(msg)
 			selected_clusters.append(any)
 			print(msg)
 		else:
-			msg ='{:^10d} {:^5d} {:^5d} {:^10d} {:^10d} {:^10} {:^15.3f} {:^15.3f}'.format(index_of_any, int(newindeces[index_of_any][0]), int(newindeces[index_of_any][1]), len(any), current_MGR[index_of_any], 'rejected', round(score1,3), round(score2,3))
+			msg ='{:^10d} {:^5d} {:^5d} {:^10d} {:^10d} {:^10} {:^15.3f} {:^15.3f} {:^15.3f}'.format(index_of_any, int(newindeces[index_of_any][0]), \
+			     int(newindeces[index_of_any][1]), len(any), current_MGR[index_of_any], 'rejected', round(score1,3), round(score2,3), round(score3,3))
 			log_main.add(msg)
 			print(msg)
 			
@@ -4899,7 +4966,7 @@ def steptwo_mpi(tvol, tweight, treg, cfsc = None, regularized = True, color = 0)
 	#  tvol is overwritten, meaning it is also an output
 	n_iter =10
 	ifi = mpi_iterefa( vol_data.__array_interface__['data'][0] ,  we_data.__array_interface__['data'][0] , nx, ny, nz, maxr2, \
-			Tracker["constants"]["nnxo"], Blockdata["myid_on_node"], color, Blockdata["no_of_processes_per_group"],  Blockdata["shared_comm"])#####, n_iter)
+			Tracker["constants"]["nnxo"], Blockdata["myid_on_node"], color, Blockdata["no_of_processes_per_group"],  Blockdata["shared_comm"])###3, n_iter)
 	if( Blockdata["myid_on_node"] == 0 ):
 		#  Either pad or window in F space to 2*nnxo
 		nx = tvol.get_ysize()
@@ -4968,7 +5035,7 @@ def steptwo_mpi_filter(tvol, tweight, treg, cfsc = None, cutoff_freq = 0.45, aa 
 	#  tvol is overwritten, meaning it is also an output
 	n_iter =10
 	ifi = mpi_iterefa( vol_data.__array_interface__['data'][0] ,  we_data.__array_interface__['data'][0] , nx, ny, nz, maxr2, \
-			Tracker["constants"]["nnxo"], Blockdata["myid_on_node"], color, Blockdata["no_of_processes_per_group"],  Blockdata["shared_comm"])###, n_iter)	
+			Tracker["constants"]["nnxo"], Blockdata["myid_on_node"], color, Blockdata["no_of_processes_per_group"],  Blockdata["shared_comm"])####, n_iter)	
 	if( Blockdata["myid_on_node"] == 0 ):
 		from filter       import  filt_tanl
 		#  Either pad or window in F space to 2*nnxo
@@ -5838,41 +5905,6 @@ def out_fsc(f):
 	print(" ")
 	
 ### functions for faked rec3d from subsets
-def params_changes( params, oldparams ):
-	#  Indexes contain list of images processed - sorted integers, subset of the full range.
-	#  params - contain parameters associated with these images
-	#  Both lists can be of different sizes, so we have to find a common subset
-	#  We do not compensate for random changes of grids.
-	from utilities    	import getang3
-	from utilities    	import rotate_shift_params
-	from pixel_error  	import max_3D_pixel_error
-	from EMAN2        	import Vec2f
-	from math 			import sqrt
-	import sets
-	n = len(params)
-	anger       = 0.0
-	shifter     = 0.0
-	#  The shifter is given in the full scale displacement
-	for i in xrange(n):
-		shifter     += (params[i][3] - oldparams[i][3] )**2 + (params[i][4] - oldparams[i][4] )**2
-		anger += get_anger(params[i][0:3], oldparams[i][0:3],Tracker["constants"]["symmetry"])
-	return round(anger/n,5), round(sqrt(shifter/n),5)
-	
-def get_anger(angle1, angle2, sym="c1"):
-	from math import acos, pi
-	R1               = Transform({"type":"spider","phi":  angle1[0], "theta":  angle1[1],  "psi": angle1[2]})
-	R2               = Transform({"type":"spider","phi":  angle2[0], "theta":  angle2[1],  "psi": angle2[2]})
-	R2               = R2.get_sym_proj(sym)
-	axes_dis_min     = 1.0e23
-	for isym in xrange(len(R2)):
-		A1 		         = R1.get_matrix()
-		A2 		         = R2[isym].get_matrix()
-		X1               = A1[0]*A2[0] + A1[1]*A2[1] + A1[2]*A2[2] 
-		X2               = A1[4]*A2[4] + A1[5]*A2[5] + A1[6]*A2[6]
-		X3               = A1[8]*A2[8] + A1[9]*A2[9] + A1[10]*A2[10] 
-		axes_dis         = acos(max(min(X1,1.),-1.0))*180./pi +acos(max(min(X2,1.),-1.0))*180./pi +acos(max(min(X3,1.),-1.0))*180./pi/3.0
-		axes_dis_min     = min(axes_dis_min, axes_dis)
-	return axes_dis_min
 
 def compute_sigma(projdata, params, first_procid, dryrun = False, myid = -1, mpi_comm = -1):
 	global Tracker, Blockdata

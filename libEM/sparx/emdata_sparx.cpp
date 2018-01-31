@@ -1118,10 +1118,8 @@ EMData* EMData::symvol(string symString) {
 	svol->set_size(nx, ny, nz);
 	svol->to_zero();
 	// actual work -- loop over symmetries and symmetrize
-	for (int isym = 0; isym < nsym; isym++) {
-		Transform rm = sym.get_sym(symString, isym);
-		this -> rot_scale_trans_background(rm, svol);
-	}
+	vector<Transform> rm = sym.get_sym_proj(symString);
+	for (int isym = 0; isym < nsym; isym++)  this -> rot_scale_trans_background(rm[isym], svol);
 	*svol /=  ((float) nsym);
 	svol->update();
 	EXITFUNC;
@@ -1139,13 +1137,9 @@ EMData* EMData::symfvol(string symString, int radius) {
 	svol->to_zero();
 	svol->set_array_offsets(0,0,0);
 	this->set_array_offsets(0,0,0);
-	//cout<<" svol "<<svol->get_xsize()<<"  "<<svol->get_ysize()<<"  "<<svol->get_zsize()<<"  "<<svol->is_complex()<<endl;
 	// actual work -- loop over symmetries and symmetrize
-	for (int isym = 0; isym < nsym; isym++) {
-		Transform rm = sym.get_sym(symString, isym);
-		//cout<<"  wil rot fvol  "<<isym<<"  "<<svol->get_xsize()<<endl;
-		this -> rot_fvol(rm, svol, radius);
-	}
+	vector<Transform> rm = sym.get_sym_proj(symString);
+	for (int isym = 0; isym < nsym; isym++)  this -> rot_fvol(rm[isym], svol, radius);
 	*svol /=  ((float) nsym);
 	svol->update();
 	EXITFUNC;

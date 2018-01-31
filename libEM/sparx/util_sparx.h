@@ -1117,11 +1117,8 @@ public:
 	/*
 	Functions to handle angles, normals, their similarity, all use full range and include symmetry
 	*/
-	static vector<float> reduce_to_asymmetric(const vector<float>& angles, string symmetry);
-	static vector<float> reduce_to_asymmetric_list(const vector<vector<float> >& angles, string symmetry);
 	static vector<float> angle_to_normal(const vector<float>& angles);
 	static vector<float> angles_to_normals(const vector<vector<float> >& angles);
-	static vector<float> symmetry_related(const vector<float>& angles, string symmetry);
 	static vector<float> symmetry_neighbors(const vector<vector<float> >& angles, string symmetry);
 
 

@@ -1563,10 +1563,6 @@ class symclass():
 		#from utilities import get_sym, get_symt
 		from string import lower
 		self.sym = sym.lower()
-		#t = Transform()
-		#self.nsym = 0#t.get_nsym(self.sym)
-		#self.angles = get_sym(self.sym)
-		#self.transforms = get_symt(self.sym)
 		if(self.sym[0] == "c"):
 			self.nsym = int(self.sym[1:])
 			if(self.nsym<1):  ERROR("For Cn symmetry, we need n>0","symclass",1)
@@ -1743,6 +1739,7 @@ class symclass():
 
 
 	def reduce_anglesets(self, angles, inc_mirror=1):
+		#  Input is either list ot lists [[phi,thet,psi],[],[]] or a triplet [phi,thet,psi]
 		from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
 		import types
 		is_platonic_sym = self.sym[0] == "o" or self.sym[0] == "i"
@@ -1806,7 +1803,7 @@ class symclass():
 
 					if( not fifi ):  print("  FAILED mirror ")
 			else:
-				if( theta>90.0 ):
+				if( theta>90.0  and inc_mirror == 0 ):
 					phi = (180.0+phi)%360.0; theta = 180.0 - theta; psi = (180.0 - psi)%360.0
 				phi = phi%qs
 				if(self.sym[0] == "d"):
@@ -1876,7 +1873,7 @@ class symclass():
 
 				print("  FAILED mirror ")
 		else:
-			if( thetain>90.0 ):
+			if( thetain>90.0 and inc_mirror == 0 ):
 				phi = (180.0+phiin)%360.0; theta = 180.0 - thetain; psi = (180.0 - psiin)%360.0
 			else:
 				phi = phiin; theta = thetain; psi = psiin
