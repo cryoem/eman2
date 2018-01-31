@@ -42,9 +42,13 @@ def isRelease() {
     return (GIT_BRANCH ==~ /.*\/release.*/) && (JOB_TYPE == "push")
 }
 
+def isCurrentRelease() {
+    return (GIT_BRANCH ==~ /origin\/release\/2.21/) && (JOB_TYPE == "push")
+}
+
 def runCronJob() {
-    sh "bash ${HOME}/workspace/build-scripts-cron/cronjob.sh $STAGE_NAME master"
-    if(isRelease())
+    sh "bash ${HOME}/workspace/build-scripts-cron/cronjob.sh $STAGE_NAME $GIT_BRANCH_SHORT"
+    if(isCurrentRelease())
       sh "rsync -avzh --stats ${INSTALLERS_DIR}/eman2.${STAGE_NAME}.unstable.sh ${DEPLOY_DEST}"
 }
 
@@ -80,7 +84,7 @@ pipeline {
     INSTALLERS_DIR = '${HOME}/workspace/${STAGE_NAME}-installers'
     DEPLOY_DEST    = 'zope@ncmi.grid.bcm.edu:/home/zope/zope-server/extdata/reposit/ncmi/software/counter_222/software_136/'
     NUMPY_VERSION='1.9'
-    BUILD_SCRIPTS_BRANCH='fix-cron'
+    BUILD_SCRIPTS_BRANCH='jenkins-release'
   }
   
   stages {
