@@ -37,7 +37,6 @@ There are four choices to adjust the power spectrum of resultant average images.
     isac_dir:: Isac run directory: Path to the output directory of the associated ISAC run. This is input directory for this command. (default required string)
     pixel_size:: Pixel size [A]: The pixel size of particle images in input particle stack for the associated ISAC run. (default -1.0)
     radius:: Particle radius [Pixels]: There is no default radius. (default -1)
-    fl:: Low-pass filter frequency [1/Pixel]: Cutoff frequency of low-pass filter. =-1.0, do not apply the low-pass filter; =0.0, apply low pass filter to initial ISAC resolution; =1.0, to resolution after local alignment; else use user-provided cutoff in absolute frequency (>0.0 and <=0.45). (default -1.0)
     noctf:: CTF correction: Indicate if full CTF correction should be applied or not. Always use the CTF correction for cryo data, but not for negative stained data. By default, do full CTF correction. (default False question reversed in GUI) 
     skip_local_alignment:: Local alignment: Indicate if local alignment should be applied or not. (default False question reversed in GUI)
 
@@ -47,6 +46,7 @@ There are four choices to adjust the power spectrum of resultant average images.
 
     modelpw:: Reference 1D PW spectrum: A text file contains 1-D rotationally-averaged power spectrum of either PDB model or EM map sampled in the given pixel_size and in original image size (see Penczek Methods Enzymol 2010). Specific to adjust to rotational average method. (default none)
 
+    fl:: Low-pass filter frequency [1/Pixel]: Cutoff frequency of low-pass filter. =-1.0, do not apply the low-pass filter; =0.0, apply low pass filter to initial ISAC resolution; =1.0, to resolution after local alignment; else use user-provided cutoff in absolute frequency (>0.0 and <=0.45). (default -1.0)
     xr:: Local search range [Pixels]: Translational search range for local alignment. (default -1.0)
     ts:: Local search step [Pixels]: Translational search step for local alignment. (default 1.0)
     fh:: High frequency search limit [1/Pixel]: High frequency search limit in absolute frequency for local alignment. (default -1.0)
