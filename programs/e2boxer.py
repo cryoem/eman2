@@ -241,8 +241,8 @@ def main():
 			badrefs=EMData.read_images("info/boxrefsbad.hdf")
 		else: badrefs=[]
 
-		if os.path.exists("info/bgrefsbad.hdf"):
-			bgrefs=EMData.read_images("info/bgrefsbad.hdf")
+		if os.path.exists("info/boxrefsbg.hdf"):
+			bgrefs=EMData.read_images("info/boxrefsbg.hdf")
 		else: bgrefs=[]
 
 		
@@ -730,6 +730,7 @@ class boxerConvNet(QtCore.QObject):
 			bgrefs=boxer.bgrefs
 		elif args:
 			goodrefs, badrefs, bgrefs =args
+			
 		else:
 			print("Cannot find boxer window...")
 			
