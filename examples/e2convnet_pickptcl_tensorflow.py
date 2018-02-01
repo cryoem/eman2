@@ -109,6 +109,7 @@ def load_ptcls(ref0, ref1, sz=64, makegaussian=True):
 	else:
 		return data, lbs
 
+#### network training.
 def tf_do_training(convnet, data, label, session, shuffle=False, learnrate=1e-4, niter=10):
 	train_step = tf.train.AdamOptimizer(learnrate).minimize(convnet.loss)
 	session.run(tf.global_variables_initializer())
@@ -129,6 +130,7 @@ def tf_do_training(convnet, data, label, session, shuffle=False, learnrate=1e-4,
 	
 	session.run(convnet.iterator.initializer, feed_dict={convnet.data: data, convnet.label: label})
 	
+#### save network to hdf file
 def tf_save_cnn(convnet, fname, session):
 	try: os.remove(fname)
 	except: pass

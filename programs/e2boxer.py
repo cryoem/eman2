@@ -1028,7 +1028,7 @@ class boxerConvNet(QtCore.QObject):
 		
 		if os.path.isfile(nnet_savename)==False:
 			print("Cannot find saved network, retrain from scratch...")
-			do_training((goodrefs, badrefs, bgrefs))
+			boxerConvNet.do_training((goodrefs, badrefs, bgrefs))
 			
 		#else:
 		nx=int(micrograph["nx"]/shrinkfac)
