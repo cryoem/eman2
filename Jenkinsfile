@@ -146,6 +146,16 @@ pipeline {
         runCronJob()
       }
     }
+    
+    stage('win') {
+      when {
+        expression { isRunCurrentStage('win') }
+      }
+      
+      steps {
+        runCronJob()
+      }
+    }
   }
   
   post {
