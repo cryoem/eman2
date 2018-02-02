@@ -67,10 +67,6 @@ pipeline {
     timestamps()
   }
   
-  triggers {
-    cron('0 3 * * *')
-  }
-  
   environment {
     JOB_TYPE = getJobType()
     GIT_BRANCH_SHORT = sh(returnStdout: true, script: 'echo ${GIT_BRANCH##origin/}').trim()
