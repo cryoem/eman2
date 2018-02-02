@@ -43,14 +43,26 @@ def isRunCurrentStage(os_name) {
 }
 
 def runCronJob() {
-    sh "bash ${HOME}/workspace/build-scripts-cron/cronjob.sh $STAGE_NAME $GIT_BRANCH_SHORT"
+    sh "bash ${HOME_DIR}/workspace/build-scripts-cron/cronjob.sh $STAGE_NAME $GIT_BRANCH_SHORT"
     if(isContinuousBuild())
       sh "rsync -avzh --stats ${INSTALLERS_DIR}/eman2.${SLAVE_OS}.sh ${DEPLOY_DEST}/eman2.${STAGE_NAME}.unstable.sh"
 }
 
 def resetBuildScripts() {
     if(isContinuousBuild())
-        sh 'cd ${HOME}/workspace/build-scripts-cron/ && git checkout -f master'
+        sh 'cd ${HOME_DIR}/workspace/build-scripts-cron/ && git checkout -f master'
+}
+
+def getHomeDir() {
+    def result = ''
+    if(SLAVE_OS == "win") {
+        result = "${USERPROFILE}"
+    }
+    else {
+        result = "${HOME}"
+    }
+    
+    return result
 }
 
 pipeline {
@@ -67,7 +79,8 @@ pipeline {
     JOB_TYPE = getJobType()
     GIT_BRANCH_SHORT = sh(returnStdout: true, script: 'echo ${GIT_BRANCH##origin/}').trim()
     GIT_COMMIT_SHORT = sh(returnStdout: true, script: 'echo ${GIT_COMMIT:0:7}').trim()
-    INSTALLERS_DIR = '${HOME}/workspace/${STAGE_NAME}-installers'
+    HOME_DIR = getHomeDir()
+    INSTALLERS_DIR = '${HOME_DIR}/workspace/${STAGE_NAME}-installers'
     DEPLOY_DEST    = 'zope@ncmi.grid.bcm.edu:/home/zope/zope-server/extdata/reposit/ncmi/software/counter_222/software_136/'
     NUMPY_VERSION='1.9'
     BUILD_SCRIPTS_BRANCH='master'
@@ -111,7 +124,7 @@ pipeline {
       }
       
       steps {
-        sh 'cd ${HOME}/workspace/build-scripts-cron/ && git fetch --prune && (git checkout -f $BUILD_SCRIPTS_BRANCH || git checkout -t origin/$BUILD_SCRIPTS_BRANCH) && git pull --rebase'
+        sh 'cd ${HOME_DIR}/workspace/build-scripts-cron/ && git fetch --prune && (git checkout -f $BUILD_SCRIPTS_BRANCH || git checkout -t origin/$BUILD_SCRIPTS_BRANCH) && git pull --rebase'
       }
     }
     
