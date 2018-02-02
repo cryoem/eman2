@@ -31,7 +31,7 @@ def notifyEmail() {
 }
 
 def isRelease() {
-    return (GIT_BRANCH ==~ /.*\/release.*/) && (JOB_TYPE == "push")
+    return GIT_BRANCH ==~ /.*\/release.*/
 }
 
 def isContinuousBuild() {
