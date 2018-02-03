@@ -4375,7 +4375,7 @@ float NormalizeCircleMeanProcessor::calc_mean(EMData * image) const
 	int nz=image->get_zsize();
 
 	float radius = params.set_default("radius",((float)ny/2-2));
-	float width = params.set_default("radius",2.0f);
+	float width = params.set_default("width",2.0f);
 	if (radius<0) radius=ny/2+radius;
 
 	static bool busy = false;		// reduce problems with threads and different image sizes
