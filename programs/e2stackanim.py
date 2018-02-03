@@ -68,7 +68,7 @@ def main():
 
 	parser.add_argument("--scale", "-S", type=float, help="Scale factor",default=1.0)
 	parser.add_argument("--pingpong",action="store_true",default=False,help="Cycle through the sequence forwards then backwards")
-	parser.add_argument("--contrast","-M", type=float, help="Relative setting. Try 0.75 if images too bright. Default 1.0 ",default=1.0)
+	parser.add_argument("--contrast","-C", type=float, help="Relative setting. Try 0.75 if images too bright. Default 1.0 ",default=1.0)
 	parser.add_argument("--last","-M", type=int, help="Number of last image to use",default=0)
 #	parser.add_argument("--mode",type=str,help="centering mode 'modeshift', 'censym' or 'region,<x>,<y>,<clipsize>,<alisize>",default="censym")
 #	parser.add_argument("--twopass",action="store_true",default=False,help="Skip automatic tilt axis location, use fixed angle from x")
