@@ -77,7 +77,8 @@ def main():
 	
 	(options, args) = parser.parse_args()
 	if len(args)<2 : parser.error("Input and output files required")
-	global contrast=options.contrast
+	global contrast
+	contrast=options.contrast
 	
 	a=EMData.read_images(args[0])
 	if options.last>0 and options.last<len(a): ntk=options.last
