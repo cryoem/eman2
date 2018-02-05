@@ -94,7 +94,7 @@ def translate_to_bdb_path(std_path):
 	return bdb_path
 
 # ========================================================================================
-# Inherited by SXcmd_category and SXconst_set
+# Inherited by SXcmd_category, SXconst_set, and SXoperand_set
 # SXMainWindow use this class to handle events from menu item buttons
 class SXmenu_item(object):
 	def __init__(self, name = "", label = "", short_info = ""):
@@ -112,20 +112,25 @@ class SXcmd_token(object):
 	def __init__(self):
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# class variables
-		self.key_base = ""           # key base name of command token (argument or option) in command line
-		self.key_prefix = ""         # key prefix of of command token. None for argument, "--" or "-" for option
-		self.label = ""              # User friendly name of argument or option
-		self.help = ""               # Help info
-		self.group = ""              # Tab group: main or advanced
-		self.is_required = False     # Required argument or options. No default values are available
-		self.is_locked = False       # The restore value will be used as the locked value.
-		self.is_reversed = False     # Reversed default value of bool. The flag will be added if the value is same as default 
-		self.default = ""            # Default value
-		self.restore = ""            # Restore value
-		self.type = ""               # Type of value
-		self.is_in_io = False        # <Used only in wikiparser.py> To check consistency between "usage in command line" and list in "== Input ==" and "== Output ==" sections
-		self.restore_widget = None   # <Used only in sxgui.py> Restore widget instance associating with this command token
-		self.widget = None           # <Used only in sxgui.py> Widget instance associating with this command token
+		self.key_base = ""            # key base name of command token (argument or option) in command line
+		self.key_prefix = ""          # key prefix of of command token. None for argument, "--" or "-" for option
+		self.label = ""               # User friendly name of argument or option
+		self.help = ""                # Help info
+		self.group = ""               # Tab group: main or advanced
+		self.is_required = False      # Required argument or options. No default values are available
+		self.is_locked = False        # The restore value will be used as the locked value.
+		self.is_reversed = False      # Reversed default value of bool. The flag will be added if the value is same as default 
+		self.default = ""             # Default value
+		self.restore = ""             # Restore value
+		self.type = ""                # Type of value
+		# NOTE: Toshio Moriya 2018/01/19
+		# self.is_in_io should be removed after cleaning up MoinMoin related codes.
+		self.is_in_io = False         # <Used only in wikiparser.py> To check consistency between "usage in command line" and list in "== Input ==" and "== Output ==" sections
+		self.restore_widget = None    # <Used only in sxgui.py> Restore widget instance associating with this command token
+		self.widget = None            # <Used only in sxgui.py> Main widget instance associating with this command token
+		self.subwidget_left = None    # <Used only in sxgui.py> Subwidget instance at the left associating with the helper utility of this command token (e.g. conversion calculator)
+		self.subwidget_right = None   # <Used only in sxgui.py> SubWidget instance at the right associating with the helper utility of this command token (e.g. conversion calculator)
+		self.calculator_dialog = None # <Used only in sxgui.py> Calculator dialog instance associating with the helper utility of this command token (e.g. conversion calculator)
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 
 	def initialize_edit(self, key_base):
@@ -226,7 +231,7 @@ class SXconst(object):
 # ========================================================================================
 class SXconst_set(SXmenu_item):
 	def __init__(self):
-		super(SXconst_set, self).__init__()
+		super(SXmenu_item, self).__init__()
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# class variables
 		# self.name = ""        # <Inherit from SXmenu_item> Name of this constant parameter set
@@ -239,12 +244,45 @@ class SXconst_set(SXmenu_item):
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 
 # ========================================================================================
+class SXoperand(object):
+	def __init__(self):
+		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+		# class variables
+		self.key = ""                  # <Used only in sxgui.py> key of calculator operand
+		self.label = ""                # <Used only in sxgui.py> User friendly name of calculator operand
+		self.help = ""                 # <Used only in sxgui.py> Help info
+		self.register = ""             # <Used only in sxgui.py> Default value
+		self.type = ""                 # <Used only in sxgui.py> Type of value
+		self.is_input = True           # <Used only in sxgui.py> Flag to indicate if this operand is input or output
+		self.validated_register = None # <Used only in sxgui.py> Contain validated numerical value of register only if the value is valid. If not, it is None. This is used as a flag to indicate if the registered value is valid or not
+		self.validated = None          # <Used only in sxgui.py> Contain Validated numerical value of command widget only if the value is valid. If not, it is None. This is used as a flag to indicate if the registered value is valid or not
+		self.register_widget = None    # <Used only in sxgui.py> Restore widget instance associating with this calculator operand
+		self.widget = None             # <Used only in sxgui.py> Widget instance associating with this calculator operand
+		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+
+# ========================================================================================
+class SXoperand_set(SXmenu_item):
+	def __init__(self):
+		super(SXmenu_item, self).__init__()
+		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+		# class variables
+		# self.name = ""        # <Inherit from SXmenu_item> Name of this calculator operand set
+		# self.label = ""       # <Inherit from SXmenu_item> User friendly name of this set
+		# self.short_info = ""  # <Inherit from SXmenu_item> Short description of this set
+		self.list = []          # <Used only in sxgui.py> list of calculator operands. Need this to keep the order of calculator operands
+		self.dict = {}          # <Used only in sxgui.py> dictionary of calculator operands, organised by keys of calculator operands. Easy to access each calculator operand but looses their order
+		# self.btn = None       # <Inherit from SXmenu_item> QPushButton button instance associating with this set
+		# self.widget = None    # <Inherit from SXmenu_item> Widget instance associating with this set
+		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+
+# ========================================================================================
 class SXLookFeelConst(object):
 	# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 	# static class variables
 	# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 	default_bg_color = QColor(229, 229, 229, 192) # default_bg_color = QColor(229, 229, 229, 242) # Greyish-White Transparent
 	default_bg_color_string = 'rgba(229, 229, 229, 192)' # default_bg_color = QColor(229, 229, 229, 242) # Greyish-White Transparent
+	default_bg_color_calculator = QColor(214, 214, 214) # Greyish-White
 	sxinfo_widget_bg_color = QColor(0, 0, 0, 10) # Almost-Completely Transparent
 	sxcmd_widget_bg_color = QColor(0, 0, 0, 0) # Completely Transparent
 	sxcmd_tab_bg_color = QColor(229, 229, 229, 200) # White Transparent
@@ -577,7 +615,7 @@ class SXCmdWidget(QWidget):
 		# Loop through all command tokens
 		for sxcmd_token in self.sxcmd.token_list:
 			# First, handle very special cases
-			if sxcmd_token.type == "function":
+			if sxcmd_token.type == "user_func":
 				user_func_name_index = 0
 				external_file_path_index = 1
 				user_func_name = str(sxcmd_token.widget[user_func_name_index].text())
@@ -640,7 +678,8 @@ class SXCmdWidget(QWidget):
 
 						# For now, using line edit box for the other type
 						widget_text = str(sxcmd_token.widget.text())
-						if sxcmd_token.type not in ["int", "float", "apix", "ctfwin", "box", "radius", "mass", "any_file_list", "any_image_list", "any_directory"]:
+###						if sxcmd_token.type not in ["int", "float", "apix", "ctfwin", "box", "radius", "mass", "displayable_list", "mic_one_list", "any_file_list", "any_image_list", "dir_list"]:
+						if sxcmd_token.type not in ["int", "float", "abs_freq", "apix", "ctfwin", "box", "radius", "mass", "displayable_list", "mic_one_list", "dir_list"]:
 							# Always enclose the string value with single quotes (')
 							widget_text = widget_text.strip("\'")  # make sure the string is not enclosed by (')
 							widget_text = widget_text.strip("\"")  # make sure the string is not enclosed by (")
@@ -771,17 +810,17 @@ class SXCmdWidget(QWidget):
 			# Command line is not empty
 			# First, check existence of outputs
 			for sxcmd_token in self.sxcmd.token_list:
-				if sxcmd_token.type == "output" or sxcmd_token.type == "output_continue":
+				if sxcmd_token.type == "output" or sxcmd_token.type == "output_continue" or sxcmd_token.type == "output_bdb2d_stack":
 					if os.path.exists(sxcmd_token.widget.text()) or db_check_dict(str(sxcmd_token.widget.text())):
 						# DESIGN_NOTE: 2015/11/24 Toshio Moriya
 						# This special case needs to be handled with more general method...
-						if sxcmd_token.type == "output_continue" or self.sxcmd.name in ["sxisac", "sxviper", "sxrviper", "sxsort3d"]:
+						if sxcmd_token.type == "output_continue":
 							reply = QMessageBox.question(self, "Output Directory/File", "Output Directory/File (%s) already exists. Do you really want to run the program with continue mode?" % (sxcmd_token.widget.text()), QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
 							if reply == QMessageBox.No:
 								return
 							# else: # Do nothing
 						else:
-							assert(sxcmd_token.type == "output")
+							assert(sxcmd_token.type == "output" or sxcmd_token.type == "output_bdb2d_stack")
 							QMessageBox.warning(self, "Output Directory/File", "Output Directory/File (%s) already exists. Please change the name and try it again. Aborting execution ..." % (sxcmd_token.widget.text()))
 							return
 
@@ -853,6 +892,11 @@ class SXCmdWidget(QWidget):
 			self.write_params(self.gui_settings_file_path)
 		# else: Do nothing
 
+	def show_dialog_calculated_res(self):
+		# Generate command line
+		calculate = FSCPlot(self)
+		fsc_plot.plot(*args)
+
 	def write_params(self, file_path_out):
 		file_out = open(file_path_out,"w")
 
@@ -872,7 +916,7 @@ class SXCmdWidget(QWidget):
 			for cmd_token in self.sxcmd.token_list:
 				if cmd_token.group == group:
 					# First, handle very special cases
-					if cmd_token.type == "function":
+					if cmd_token.type == "user_func":
 						# This type has two line edit boxes as a list of widget
 						n_widgets = 2
 						for widget_index in xrange(n_widgets):
@@ -961,7 +1005,7 @@ class SXCmdWidget(QWidget):
 					cmd_token = self.sxcmd.token_dict[key_base]
 					if not cmd_token.is_locked: 
 						# First, handle very special cases
-						if cmd_token.type == "function":
+						if cmd_token.type == "user_func":
 							cmd_token.widget[function_type_line_counter].setText(val_str_in)
 							function_type_line_counter += 1
 							function_type_line_counter %= n_function_type_lines # function have two line edit boxes
@@ -995,40 +1039,294 @@ class SXCmdWidget(QWidget):
 
 	def select_file(self, target_widget, file_format = ""):
 		file_path = ""
-		if file_format == "bdb":
-			file_path = str(QFileDialog.getOpenFileName(self, "Select BDB File", SXLookFeelConst.file_dialog_dir, "BDB files (*.bdb)", options = QFileDialog.DontUseNativeDialog))
+		# NOTE: Toshio Moriya 2018/01/25
+		# All supported image/volume formats according to http://blake.bcm.edu/emanwiki/EMAN2ImageFormats
+		# ;; HDF (*.hdf);; MRC (*.mrc);; MRCS (*.mrcs);; Spider (*.spi);; Imagic (*.img *hed);; TIFF (*.tif *.tiff);; PNG (*.png);; JPEG (*.jpg *.jpeg);; BDB (*.bdb);; Gatan (*.dm2 *.dm3 *.dm4);; FEI (*.ser);; EM (*.em);; ICOS (*.icos);; Amira (*.am);; DF3 (*.d3);; FITS (*.fts);; LST (*.lst);; LSTFAST (*.lsx *.lst);; OMAP (*.omap);; PGM (*.pgm);; PIF (*.pif);; SAL (*.hdr *.img);; SITUS (*.situs);; V4L (*.v4l);; VTK (*.vtk);; XPLOR (*.xplor)
+		# 
+		if file_format == "displayable_list":
+			# Read not supported: ;; JPEG (*.jpg *.jpeg)
+			file_path_list = QFileDialog.getOpenFileNames(self, "Select any displayable files", SXLookFeelConst.file_dialog_dir, "Typical displayable files (*.hdf *.bdb *.mrc *.mrcs *.spi *.img *.tif *.tiff *.png *.txt);; HDF (*.hdf);; BDB (*.bdb);; MRC (*.mrc);; MRCS (*.mrcs);; Spider (*.spi);; Imagic (*.img *hed);; TIFF (*.tif *.tiff);; PNG (*.png);; Text (*.txt);; Gatan (*.dm2 *.dm3 *.dm4);; FEI (*.ser);; EM (*.em);; ICOS (*.icos);; Amira (*.am);; DF3 (*.d3);; FITS (*.fts);; LST (*.lst);; LSTFAST (*.lsx *.lst);; OMAP (*.omap);; PGM (*.pgm);; PIF (*.pif);; SAL (*.hdr *.img);; SITUS (*.situs);; V4L (*.v4l);; VTK (*.vtk);; XPLOR (*.xplor);; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			for a_file_path in file_path_list:
+				# Use relative path.
+				a_file_path = SXLookFeelConst.format_path(str(a_file_path))
+				try: # Check if the path is bdb
+					a_file_path = translate_to_bdb_path(a_file_path) # Convert the standard path to bdb key if possible.
+				except ValueError:  # If the path is not bdb, we will receive this exception
+					pass # This is not bdb path. Then, use standard path
+				file_path += a_file_path + " "
+		elif file_format == "data2d3d_both":
+			# Read not supported: ;; JPEG (*.jpg *.jpeg)
+			file_path = str(QFileDialog.getOpenFileName(self, "Select any image/volume file", SXLookFeelConst.file_dialog_dir, "Typical image & volume files (*.hdf *.bdb *.mrc *.mrcs *.spi *.img *.tif *.tiff *.png);; HDF (*.hdf);; BDB (*.bdb);; MRC (*.mrc);; MRCS (*.mrcs);; Spider (*.spi);; Imagic (*.img *hed);; TIFF (*.tif *.tiff);; PNG (*.png);; Gatan (*.dm2 *.dm3 *.dm4);; FEI (*.ser);; EM (*.em);; ICOS (*.icos);; Amira (*.am);; DF3 (*.d3);; FITS (*.fts);; LST (*.lst);; LSTFAST (*.lsx *.lst);; OMAP (*.omap);; PGM (*.pgm);; PIF (*.pif);; SAL (*.hdr *.img);; SITUS (*.situs);; V4L (*.v4l);; VTK (*.vtk);; XPLOR (*.xplor);; All files (*)", options = QFileDialog.DontUseNativeDialog))
+			# Use relative path.
+			if file_path:
+				file_path = SXLookFeelConst.format_path(file_path)
+				try: # Check if the path is bdb
+					file_path = translate_to_bdb_path(file_path) # Convert the standard path to bdb key if possible.
+				except ValueError:  # If the path is not bdb, we will receive this exception
+					pass # This is not bdb path. Then, use standard path
+		elif file_format == "mrc2d_mic_both":
+			file_path = str(QFileDialog.getOpenFileName(self, "Select MRC micrograph/movie file", SXLookFeelConst.file_dialog_dir, "MRC micrograph & movie files (*.mrc *.mrcs);; MRC (*.mrc);; MRCS (*.mrcs)", options = QFileDialog.DontUseNativeDialog))
+			# Use relative path.
+			if file_path:
+				file_path = SXLookFeelConst.format_path(file_path)
+		elif file_format == "mic_both":
+			# Read not supported: ;; JPEG (*.jpg *.jpeg)
+			file_path = str(QFileDialog.getOpenFileName(self, "Select any micrograph/movie file", SXLookFeelConst.file_dialog_dir, "Typical micrograph & movie files (*.mrc *.mrcs *.tif *.tiff *.hdf *.bdb *.spi *.img);; MRC (*.mrc);; MRCS (*.mrcs);; TIFF (*.tif *.tiff);; HDF (*.hdf);; BDB (*.bdb);; Spider (*.spi);; Imagic (*.img);; PNG (*.png);; Gatan (*.dm2 *.dm3 *.dm4);; FEI (*.ser);; EM (*.em);; ICOS (*.icos);; Amira (*.am);; DF3 (*.d3);; FITS (*.fts);; LST (*.lst);; LSTFAST (*.lsx *.lst);; OMAP (*.omap);; PGM (*.pgm);; PIF (*.pif);; SAL (*.img );; SITUS (*.situs);; V4L (*.v4l);; VTK (*.vtk);; XPLOR (*.xplor);; All files (*)", options = QFileDialog.DontUseNativeDialog))
+			# Use relative path.
+			if file_path:
+				file_path = SXLookFeelConst.format_path(file_path)
+				try: # Check if the path is bdb
+					file_path = translate_to_bdb_path(file_path) # Convert the standard path to bdb key if possible.
+				except ValueError:  # If the path is not bdb, we will receive this exception
+					pass # This is not bdb path. Then, use standard path
+		elif file_format == "mrc2d_mic_one":
+			file_path = str(QFileDialog.getOpenFileName(self, "Select MRC micrograph file", SXLookFeelConst.file_dialog_dir, "MRC micrograph files (*.mrc);; MRCS (*.mrcs)", options = QFileDialog.DontUseNativeDialog))
+			# Use relative path.
+			if file_path:
+				file_path = SXLookFeelConst.format_path(file_path)
+		elif file_format == "mic_one":
+			# NOTE: Toshio Moriya 2018/01/25
+			# Currently, the distinction between MRC and MRCS is not always used, and 
+			# MRC can be also micrograph stack dependes on external programs (e.g. unblur, summovie)...
+			# 
+			# Read not supported: ;; JPEG (*.jpg *.jpeg)
+			# Only stack: ;; MRCS (*.mrcs)
+			file_path = str(QFileDialog.getOpenFileName(self, "Select any micrograph file", SXLookFeelConst.file_dialog_dir, "Typical micrograph files (*.mrc *.mrcs *.tif *.tiff *.hdf *.bdb *.spi *.img);; MRC (*.mrc);; MRCS (*.mrcs);; TIFF (*.tif *.tiff);; HDF (*.hdf);; BDB (*.bdb);; Spider (*.spi);; Imagic (*.img);; PNG (*.png);; Gatan (*.dm2 *.dm3 *.dm4);; FEI (*.ser);; EM (*.em);; ICOS (*.icos);; Amira (*.am);; DF3 (*.d3);; FITS (*.fts);; LST (*.lst);; LSTFAST (*.lsx *.lst);; OMAP (*.omap);; PGM (*.pgm);; PIF (*.pif);; SAL (*.img );; SITUS (*.situs);; V4L (*.v4l);; VTK (*.vtk);; XPLOR (*.xplor);; All files (*)", options = QFileDialog.DontUseNativeDialog))
+			# Use relative path.
+			if file_path:
+				file_path = SXLookFeelConst.format_path(file_path)
+				try: # Check if the path is bdb
+					file_path = translate_to_bdb_path(file_path) # Convert the standard path to bdb key if possible.
+				except ValueError:  # If the path is not bdb, we will receive this exception
+					pass # This is not bdb path. Then, use standard path
+		elif file_format == "mrc2d_mic_one_list":
+			# NOTE: Toshio Moriya 2018/01/25
+			# Currently, the distinction between MRC and MRCS is not always used, and 
+			# MRC can be also micrograph stack dependes on external programs (e.g. unblur, summovie)...
+			# 
+			file_path_list = QFileDialog.getOpenFileNames(self, "Select MRC micrograph files", SXLookFeelConst.file_dialog_dir, "MRC files (*.mrc);; MRCS (*.mrcs)", options = QFileDialog.DontUseNativeDialog)
+			# Use relative path.
+			for a_file_path in file_path_list:
+				file_path += SXLookFeelConst.format_path(str(a_file_path)) + " "
+		elif file_format == "mic_one_list":
+			# NOTE: Toshio Moriya 2018/01/25
+			# Currently, the distinction between MRC and MRCS is not always used, and 
+			# MRC can be also micrograph stack dependes on external programs (e.g. unblur, summovie)...
+			# 
+			# Read not supported: ;; JPEG (*.jpg *.jpeg)
+			# Only stack: ;; MRCS (*.mrcs)
+			file_path_list = QFileDialog.getOpenFileNames(self, "Select any micrograph files", SXLookFeelConst.file_dialog_dir, "Typical micrograph files (*.mrc *.mrcs *.tif *.tiff *.hdf *.bdb *.spi *.img);; MRC (*.mrc);; MRCS (*.mrcs);; TIFF (*.tif *.tiff);; HDF (*.hdf);; BDB (*.bdb);; Spider (*.spi);; Imagic (*.img);; PNG (*.png);; Gatan (*.dm2 *.dm3 *.dm4);; FEI (*.ser);; EM (*.em);; ICOS (*.icos);; Amira (*.am);; DF3 (*.d3);; FITS (*.fts);; LST (*.lst);; LSTFAST (*.lsx *.lst);; OMAP (*.omap);; PGM (*.pgm);; PIF (*.pif);; SAL (*.img );; SITUS (*.situs);; V4L (*.v4l);; VTK (*.vtk);; XPLOR (*.xplor);; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			# Use relative path.
+			for a_file_path in file_path_list:
+				a_file_path = SXLookFeelConst.format_path(str(a_file_path))
+				try: # Check if the path is bdb
+					a_file_path = translate_to_bdb_path(a_file_path) # Convert the standard path to bdb key if possible.
+				except ValueError:  # If the path is not bdb, we will receive this exception
+					pass # This is not bdb path. Then, use standard path
+				file_path += a_file_path + " "
+		elif file_format == "mrc2d_mic_stack":
+			file_path = str(QFileDialog.getOpenFileName(self, "Select MRC movie file", SXLookFeelConst.file_dialog_dir, "MRC movie files (*.mrcs);; MRC (*.mrc)", options = QFileDialog.DontUseNativeDialog))
+			# Use relative path.
+			if file_path:
+				file_path = SXLookFeelConst.format_path(file_path)
+		elif file_format == "mic_stack":
+			# NOTE: Toshio Moriya 2018/01/25
+			# Currently, the distinction between MRC and MRCS is not always used, and 
+			# MRC can be also micrograph stack dependes on external programs (e.g. unblur, summovie)...
+			# 
+			# Read not supported: ;; JPEG (*.jpg *.jpeg)
+			# 2D image stack not supported: ;; Gatan (*.dm2 *.dm3);; EM (*.em);; ICOS (*.icos);; Amira (*.am);; DF3 (*.d3);; FITS (*.fts);; OMAP (*.omap);; PGM (*.pgm);; PNG (*.png);; SAL (*.hdr *.img);; SITUS (*.situs);; TIFF (*.tif *.tiff);; V4L (*.v4l);; VTK (*.vtk);; XPLOR (*.xplor)
+			# Maybe only single 2D image: ;; MRC (*.mrc)
+			file_path = str(QFileDialog.getOpenFileName(self, "Select any movie file", SXLookFeelConst.file_dialog_dir, "Typical movie files (*.mrcs *.mrc *.bdb *.hdf *.spi *.img );; MRCS (*.mrcs);; MRC (*.mrc);; BDB (*.bdb);; HDF (*.hdf);; Spider (*.spi);; Imagic (*.img *hed);; Gatan (*.dm4);; FEI (*.ser);; LST (*.lst);; LSTFAST (*.lsx *.lst);; PIF (*.pif);; All files (*)", options = QFileDialog.DontUseNativeDialog))
+			# Use relative path.
+			if file_path:
+				file_path = SXLookFeelConst.format_path(file_path)
+				try: # Check if the path is bdb
+					file_path = translate_to_bdb_path(file_path) # Convert the standard path to bdb key if possible.
+				except ValueError:  # If the path is not bdb, we will receive this exception
+					pass # This is not bdb path. Then, use standard path
+		elif file_format == "hdf2d_one":
+			file_path = str(QFileDialog.getOpenFileName(self, "Select HDF image file", SXLookFeelConst.file_dialog_dir, "HDF image files (*.hdf)", options = QFileDialog.DontUseNativeDialog))
+			# Use relative path.
+			if file_path:
+				file_path = SXLookFeelConst.format_path(file_path)
+		elif file_format == "data2d_one":
+			# Read not supported: ;; JPEG (*.jpg *.jpeg)
+			# Maybe only 2D image stack: ;; MRCS (*.mrcs)
+			file_path = str(QFileDialog.getOpenFileName(self, "Select any image file", SXLookFeelConst.file_dialog_dir, "Typical image files (*.hdf *.bdb *.mrc *.spi *.img *.tif *.tiff *.png);; HDF (*.hdf);; BDB (*.bdb);; MRC (*.mrc);; Spider (*.spi);; Imagic (*.img);; TIFF (*.tif *.tiff);; PNG (*.png);; Gatan (*.dm2 *.dm3 *.dm4);; FEI (*.ser);; EM (*.em);; ICOS (*.icos);; Amira (*.am);; DF3 (*.d3);; FITS (*.fts);; LST (*.lst);; LSTFAST (*.lsx *.lst);; OMAP (*.omap);; PGM (*.pgm);; PIF (*.pif);; SAL (*.img );; SITUS (*.situs);; V4L (*.v4l);; VTK (*.vtk);; XPLOR (*.xplor);; All files (*)", options = QFileDialog.DontUseNativeDialog))
+			# Use relative path.
+			if file_path:
+				file_path = SXLookFeelConst.format_path(file_path)
+				try: # Check if the path is bdb
+					file_path = translate_to_bdb_path(file_path) # Convert the standard path to bdb key if possible.
+				except ValueError:  # If the path is not bdb, we will receive this exception
+					pass # This is not bdb path. Then, use standard path
+		elif file_format == "bdb2d_stack":
+			file_path = str(QFileDialog.getOpenFileName(self, "Select BDB image stack file", SXLookFeelConst.file_dialog_dir, "BDB files (*.bdb)", options = QFileDialog.DontUseNativeDialog))
 			# Use relative path.
 			if file_path:
 				file_path = SXLookFeelConst.format_path(file_path)
 				file_path = translate_to_bdb_path(file_path)
-		elif file_format == "py":
-			file_path = str(QFileDialog.getOpenFileName(self, "Select Python File", SXLookFeelConst.file_dialog_dir, "PY files (*.py)", options = QFileDialog.DontUseNativeDialog))
-			# Use full path
-		elif file_format == "pdb":
-			file_path = str(QFileDialog.getOpenFileName(self, "Select PDB File", SXLookFeelConst.file_dialog_dir, "PDB files (*.pdb *.pdb*)", options = QFileDialog.DontUseNativeDialog))
+		elif file_format == "data2d_stack":
+			# NOTE: Toshio Moriya 2018/01/25
+			# Currently, this case is not used. Instead, using bdb2d_stack
+			# 
+			# Read not supported: ;; JPEG (*.jpg *.jpeg)
+			# 2D image stack not supported: ;; Gatan (*.dm2 *.dm3);; EM (*.em);; ICOS (*.icos);; Amira (*.am);; DF3 (*.d3);; FITS (*.fts);; OMAP (*.omap);; PGM (*.pgm);; PNG (*.png);; SAL (*.hdr *.img);; SITUS (*.situs);; TIFF (*.tif *.tiff);; V4L (*.v4l);; VTK (*.vtk);; XPLOR (*.xplor)
+			# Maybe only single 2D image: ;; MRC (*.mrc)
+			file_path = str(QFileDialog.getOpenFileName(self, "Select any image stack file", SXLookFeelConst.file_dialog_dir, "Typical image stack files (*.bdb *.hdf *.mrcs *.spi *.img );; BDB (*.bdb);; HDF (*.hdf);; MRCS (*.mrcs);; Spider (*.spi);; Imagic (*.img *hed);; Gatan (*.dm4);; FEI (*.ser);; LST (*.lst);; LSTFAST (*.lsx *.lst);; PIF (*.pif);; All files (*)", options = QFileDialog.DontUseNativeDialog))
 			# Use relative path.
 			if file_path:
 				file_path = SXLookFeelConst.format_path(file_path)
-		elif file_format == "mrc":
-			file_path = str(QFileDialog.getOpenFileName(self, "Select MRC File", SXLookFeelConst.file_dialog_dir, "MRC files (*.mrc *.mrcs)", options = QFileDialog.DontUseNativeDialog))
+				try: # Check if the path is bdb
+					file_path = translate_to_bdb_path(file_path) # Convert the standard path to bdb key if possible.
+				except ValueError:  # If the path is not bdb, we will receive this exception
+					pass # This is not bdb path. Then, use standard path
+		elif file_format == "hdf3d_one":
+			file_path = str(QFileDialog.getOpenFileName(self, "Select HDF volume file", SXLookFeelConst.file_dialog_dir, "HDF volume files (*.hdf)", options = QFileDialog.DontUseNativeDialog))
+			# Use relative path.
+			if file_path:
+				file_path = SXLookFeelConst.format_path(file_path)
+		elif file_format == "data3d_one":
+			# Read not supported: ;; JPEG (*.jpg *.jpeg)
+			# 3D volume not supported: ;; Gatan (*.dm2 *.dm3);; FEI (*.ser);; SAL (*.hdr *.img);; PGM (*.pgm);; PNG (*.png);; TIFF (*.tif *.tiff);; V4L (*.v4l)
+			# Maybe only 3D volume stack: ;; MRCS (*.mrcs)
+			file_path = str(QFileDialog.getOpenFileName(self, "Select any volume file", SXLookFeelConst.file_dialog_dir, "Typical volume files (*.hdf *.bdb *.mrc *.spi *.img);; HDF (*.hdf);; BDB (*.bdb);; MRC (*.mrc);; Spider (*.spi);; Imagic (*.img);; Gatan (*.dm4);; EM (*.em);; ICOS (*.icos);; Amira (*.am);; DF3 (*.d3);; FITS (*.fts);; LST (*.lst);; LSTFAST (*.lsx *.lst);; OMAP (*.omap);; PIF (*.pif);; SITUS (*.situs);; VTK (*.vtk);; XPLOR (*.xplor);; All files (*)", options = QFileDialog.DontUseNativeDialog))
+			# Use relative path.
+			if file_path:
+				file_path = SXLookFeelConst.format_path(file_path)
+				try: # Check if the path is bdb
+					file_path = translate_to_bdb_path(file_path) # Convert the standard path to bdb key if possible.
+				except ValueError:  # If the path is not bdb, we will receive this exception
+					pass # This is not bdb path. Then, use standard path
+		elif file_format == "hdf3d_stack":
+			# NOTE: Toshio Moriya 2018/01/25
+			# Currently, this case is not used.
+			# 
+			file_path = str(QFileDialog.getOpenFileName(self, "Select HDF volume stack file", SXLookFeelConst.file_dialog_dir, "HDF volume stack files (*.hdf)", options = QFileDialog.DontUseNativeDialog))
+			# Use relative path.
+			if file_path:
+				file_path = SXLookFeelConst.format_path(file_path)
+		elif file_format == "data3d_stack":
+			# NOTE: Toshio Moriya 2018/01/25
+			# Currently, this case is not used.
+			# 
+			# Read not supported: ;; JPEG (*.jpg *.jpeg)
+			# 3D volume stack not supported: ;; Gatan (*.dm2)
+			# Maybe 3D volume stack not supported: ;; Gatan (*.dm3 *.dm4);; FEI (*.ser);; EM (*.em);; ICOS (*.icos);; Spider (*.spi);; Amira (*.am);; DF3 (*.d3);; FITS (*.fts);; LST (*.lst);; LSTFAST (*.lsx *.lst);; OMAP (*.omap);; PGM (*.pgm);; PIF (*.pif);; PNG (*.png);; SAL (*.hdr *.img);; SITUS (*.situs);; TIFF (*.tif *.tiff);; V4L (*.v4l);; VTK (*.vtk);; XPLOR (*.xplor)
+			# Maybe only sigle 3D volume: ;; MRC (*.mrc)
+			file_path = str(QFileDialog.getOpenFileName(self, "Select any volume stack file", SXLookFeelConst.file_dialog_dir, "Typical volume stack files (*.hdf *.bdb *.mrcs *.img);; HDF (*.hdf);; BDB (*.bdb);; MRCS (*.mrcs);; Imagic (*.img *hed);; All files (*)", options = QFileDialog.DontUseNativeDialog))
+			# Use relative path.
+			if file_path:
+				file_path = SXLookFeelConst.format_path(file_path)
+				try: # Check if the path is bdb
+					file_path = translate_to_bdb_path(file_path) # Convert the standard path to bdb key if possible.
+				except ValueError:  # If the path is not bdb, we will receive this exception
+					pass # This is not bdb path. Then, use standard path
+		elif file_format == "select_mic_both":
+			file_path = str(QFileDialog.getOpenFileName(self, "Select micrograph/movie selection file", SXLookFeelConst.file_dialog_dir, "Micrograph/Movie selection files (*.txt);; All files (*)", options = QFileDialog.DontUseNativeDialog))
+			# Use relative path.
+			if file_path:
+				file_path = SXLookFeelConst.format_path(file_path)
+		elif file_format == "select_mic_one":
+			file_path = str(QFileDialog.getOpenFileName(self, "Select micrograph selection file", SXLookFeelConst.file_dialog_dir, "Micrograph selection files (*.txt);; All files (*)", options = QFileDialog.DontUseNativeDialog))
+			# Use relative path.
+			if file_path:
+				file_path = SXLookFeelConst.format_path(file_path)
+		elif file_format == "select_mic_stack":
+			file_path = str(QFileDialog.getOpenFileName(self, "Select micrograph movie selection file", SXLookFeelConst.file_dialog_dir, "Micrograph movie selection files (*.txt);; All files (*)", options = QFileDialog.DontUseNativeDialog))
+			# Use relative path.
+			if file_path:
+				file_path = SXLookFeelConst.format_path(file_path)
+		elif file_format == "select_data2d_stack":
+			file_path = str(QFileDialog.getOpenFileName(self, "Select image selection file", SXLookFeelConst.file_dialog_dir, "Image selection files (*.txt);; All files (*)", options = QFileDialog.DontUseNativeDialog))
+			# Use relative path.
+			if file_path:
+				file_path = SXLookFeelConst.format_path(file_path)
+		elif file_format == "select_drift_params":
+			file_path = str(QFileDialog.getOpenFileName(self, "Select drift shift params selection file", SXLookFeelConst.file_dialog_dir, "Drift shift params selection files (*.txt);; All files (*)", options = QFileDialog.DontUseNativeDialog))
+			# Use relative path.
+			if file_path:
+				file_path = SXLookFeelConst.format_path(file_path)
+		elif file_format == "params_any_txt":
+			file_path = str(QFileDialog.getOpenFileName(self, "Select parameters file", SXLookFeelConst.file_dialog_dir, "Parameters text files (*.txt);; All files (*)", options = QFileDialog.DontUseNativeDialog))
+			# Use relative path.
+			if file_path:
+				file_path = SXLookFeelConst.format_path(file_path)
+		elif file_format == "params_proj_txt":
+			file_path = str(QFileDialog.getOpenFileName(self, "Select projection parameters file", SXLookFeelConst.file_dialog_dir, "Projection parameters files (*.txt);; All files (*)", options = QFileDialog.DontUseNativeDialog))
+			# Use relative path.
+			if file_path:
+				file_path = SXLookFeelConst.format_path(file_path)
+		elif file_format == "params_coords_box":
+			file_path = str(QFileDialog.getOpenFileName(self, "Select EMAN BOX coordinates file", SXLookFeelConst.file_dialog_dir, "EMAN BOX coordinates files (*.box)", options = QFileDialog.DontUseNativeDialog))
+			# Use relative path.
+			if file_path:
+				file_path = SXLookFeelConst.format_path(file_path)
+		elif file_format == "params_coords_any":
+			file_path = str(QFileDialog.getOpenFileName(self, "Select any coordinates file", SXLookFeelConst.file_dialog_dir, "Typical coordinates files (*.box *.json *.dat *.txt);; EMAN BOX (*.box);; EMAN2 JSON (*.json);; SPIDER DAT (*.dat);; SPHIRE TXT (*.txt);; All files (*)", options = QFileDialog.DontUseNativeDialog))
+			# Use relative path.
+			if file_path:
+				file_path = SXLookFeelConst.format_path(file_path)
+		elif file_format == "params_cter_txt":
+			file_path = str(QFileDialog.getOpenFileName(self, "Select CTER partres parameters file", SXLookFeelConst.file_dialog_dir, "CTER partres parameters files (*.txt)", options = QFileDialog.DontUseNativeDialog))
+			# Use relative path.
+			if file_path:
+				file_path = SXLookFeelConst.format_path(file_path)
+		elif file_format == "params_drift_txt":
+			file_path = str(QFileDialog.getOpenFileName(self, "Select drift shift parameters file", SXLookFeelConst.file_dialog_dir, "Drift shift parameters files (*.txt);; All files (*)", options = QFileDialog.DontUseNativeDialog))
+			# Use relative path.
+			if file_path:
+				file_path = SXLookFeelConst.format_path(file_path)
+		elif file_format == "rot_matrix":
+			file_path = str(QFileDialog.getOpenFileName(self, "Select rotational matrix file", SXLookFeelConst.file_dialog_dir, "Rotational matrix files (*.txt);; All files (*)", options = QFileDialog.DontUseNativeDialog))
+			# Use relative path.
+			if file_path:
+				file_path = SXLookFeelConst.format_path(file_path)
+		elif file_format == "params_relion_star":
+			file_path = str(QFileDialog.getOpenFileName(self, "Select RELION STAR file", SXLookFeelConst.file_dialog_dir, "RELION STAR files (*.star);; All files (*)", options = QFileDialog.DontUseNativeDialog))
+			# Use relative path.
+			if file_path:
+				file_path = SXLookFeelConst.format_path(file_path)
+		elif file_format == "spectrum1d":
+			file_path = str(QFileDialog.getOpenFileName(self, "Select 1D power spectrum file", SXLookFeelConst.file_dialog_dir, "1D power spectrum files (*.txt);; All files (*)", options = QFileDialog.DontUseNativeDialog))
+			# Use relative path.
+			if file_path:
+				file_path = SXLookFeelConst.format_path(file_path)
+		elif file_format == "mtf":
+			file_path = str(QFileDialog.getOpenFileName(self, "Select MTF data file", SXLookFeelConst.file_dialog_dir, "MTF data files (*.txt);; All files (*)", options = QFileDialog.DontUseNativeDialog))
+			# Use relative path.
+			if file_path:
+				file_path = SXLookFeelConst.format_path(file_path)
+		elif file_format == "pdb":
+			file_path = str(QFileDialog.getOpenFileName(self, "Select PDB data file", SXLookFeelConst.file_dialog_dir, "PDB data files (*.pdb *.pdb*)", options = QFileDialog.DontUseNativeDialog))
 			# Use relative path.
 			if file_path:
 				file_path = SXLookFeelConst.format_path(file_path)
 		elif file_format == "exe":
-			file_path = str(QFileDialog.getOpenFileName(self, "Select EXE File", SXLookFeelConst.file_dialog_dir, "EXE files (*.exe );; All files (*)", options = QFileDialog.DontUseNativeDialog))
+			file_path = str(QFileDialog.getOpenFileName(self, "Select executable file", SXLookFeelConst.file_dialog_dir, "Executable files (*.exe );; All files (*)", options = QFileDialog.DontUseNativeDialog))
 			# Use relative path.
 			if file_path:
 				file_path = SXLookFeelConst.format_path(file_path)
-		elif file_format == "any_file_list" or file_format == "any_image_list":
-			file_path_list = QFileDialog.getOpenFileNames(self, "Select Files", SXLookFeelConst.file_dialog_dir, "All files (*)", options = QFileDialog.DontUseNativeDialog)
-			# Use relative path.
-			for a_file_path in file_path_list:
-				file_path += SXLookFeelConst.format_path(str(a_file_path)) + " "
+		elif file_format == "py":
+			file_path = str(QFileDialog.getOpenFileName(self, "Select Python script file", SXLookFeelConst.file_dialog_dir, "PY files (*.py)", options = QFileDialog.DontUseNativeDialog))
+			# Use full path
+###		elif file_format == "bdb":
+###			file_path = str(QFileDialog.getOpenFileName(self, "Select BDB image file", SXLookFeelConst.file_dialog_dir, "BDB files (*.bdb)", options = QFileDialog.DontUseNativeDialog))
+###			# Use relative path.
+###			if file_path:
+###				file_path = SXLookFeelConst.format_path(file_path)
+###				file_path = translate_to_bdb_path(file_path)
+###		elif file_format == "any_file_list" or file_format == "any_image_list":
+###			file_path_list = QFileDialog.getOpenFileNames(self, "Select files", SXLookFeelConst.file_dialog_dir, "All files (*)", options = QFileDialog.DontUseNativeDialog)
+###			# Use relative path.
+###			for a_file_path in file_path_list:
+###				file_path += SXLookFeelConst.format_path(str(a_file_path)) + " "
 		else:
 			if file_format:
-				file_path = str(QFileDialog.getOpenFileName(self, "Select %s File" % (file_format.upper()), SXLookFeelConst.file_dialog_dir, "%s files (*.%s)"  % (file_format.upper(), file_format), options = QFileDialog.DontUseNativeDialog))
+				file_path = str(QFileDialog.getOpenFileName(self, "Select %s file" % (file_format.upper()), SXLookFeelConst.file_dialog_dir, "%s files (*.%s)"  % (file_format.upper(), file_format), options = QFileDialog.DontUseNativeDialog))
 			else:
-				file_path = str(QFileDialog.getOpenFileName(self, "Select File", SXLookFeelConst.file_dialog_dir, "All files (*)", options = QFileDialog.DontUseNativeDialog))
+				file_path = str(QFileDialog.getOpenFileName(self, "Select any file", SXLookFeelConst.file_dialog_dir, "All files (*)", options = QFileDialog.DontUseNativeDialog))
 			# Use relative path.
 			if file_path:
 				file_path = SXLookFeelConst.format_path(file_path)
@@ -1037,7 +1335,7 @@ class SXCmdWidget(QWidget):
 			target_widget.setText(file_path)
 
 	def select_dir(self, target_widget):
-		dir_path = str(QFileDialog.getExistingDirectory(self, "Select Directory", SXLookFeelConst.file_dialog_dir, options = QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks | QFileDialog.DontUseNativeDialog))
+		dir_path = str(QFileDialog.getExistingDirectory(self, "Select directory", SXLookFeelConst.file_dialog_dir, options = QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks | QFileDialog.DontUseNativeDialog))
 		if dir_path != "":
 			# Use relative path.
 			target_widget.setText(SXLookFeelConst.format_path(dir_path))
@@ -1199,14 +1497,25 @@ class SXCmdTab(QWidget):
 		grid_row += 2
 
 		# Add widget for editing command args and options
+		cmd_token_apix = None
+		cmd_token_abs_freq = None
 		for cmd_token in self.sxcmdwidget.sxcmd.token_list:
+			# Keep some command tokens for further setting after the loop
+			if cmd_token.type == "apix":
+				cmd_token_apix = cmd_token
+			elif cmd_token.type == "abs_freq":
+				cmd_token_abs_freq = cmd_token
+			# else: # Do nothing
+			
 			if cmd_token.group == tab_group:
-
 				# First, handle very special cases
-				if cmd_token.type == "function":
+				if cmd_token.type == "user_func":
 					n_widgets = 2 # function type has two line edit boxes
-					cmd_token_widget = [None] * n_widgets
 					cmd_token_restore_widget = [None] * n_widgets
+					cmd_token_widget = [None] * n_widgets
+					cmd_token_subwidget_left = None
+					cmd_token_subwidget_right = None
+					cmd_token_calculator_dialog = None
 
 					# Define custom style for restore widgets
 					custom_style = "QPushButton {color:gray; }"
@@ -1252,7 +1561,7 @@ class SXCmdTab(QWidget):
 					self.connect(cmd_token_restore_widget[widget_index], SIGNAL("clicked()"), partial(self.handle_restore_widget_event, cmd_token, widget_index))
 
 					file_format = "py"
-					temp_btn = QPushButton("Select Script")
+					temp_btn = QPushButton("Select Python script")
 					temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s python script file</FONT>" % file_format)
 					grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 					self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget[widget_index], file_format))
@@ -1272,9 +1581,13 @@ class SXCmdTab(QWidget):
 					grid_layout.addWidget(temp_label, grid_row, grid_col_origin, token_label_row_span, token_label_col_span)
 
 					# Create widget and associate it to this cmd_token
-					cmd_token_widget = None
 					cmd_token_restore_widget = None
 					cmd_token_restore_tooltip = default_cmd_token_restore_tooltip
+					cmd_token_widget = None
+					cmd_token_subwidget_left = None
+					cmd_token_subwidget_right = None
+					cmd_token_calculator_dialog = None
+
 					if cmd_token.type == "bool":
 						btn_name = "NO"
 						is_btn_enable = True
@@ -1342,205 +1655,590 @@ class SXCmdTab(QWidget):
 
 						self.connect(cmd_token_restore_widget, SIGNAL("clicked()"), partial(self.handle_restore_widget_event, cmd_token))
 
-						if cmd_token.type == "image":
-							file_format = "hdf"
-							temp_btn = QPushButton("Select .%s" % file_format)
+						if cmd_token.type == "displayable_list":
+							file_format = cmd_token.type
+							temp_btn = QPushButton("Select any displayables")
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select displayable data files of any supported formats</FONT>")
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
-							file_format = "bdb"
-							temp_btn = QPushButton("Select .%s" % file_format)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
-							temp_btn.setMinimumWidth(func_btn_min_width)
-							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
-							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
-						elif cmd_token.type == "any_image":
-							temp_btn = QPushButton("Select Image")
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select standard format image file (e.g. .hdf, .mrc)</FONT>")
-							temp_btn.setMinimumWidth(func_btn_min_width)
-							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
-							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget))
-							file_format = "invisible"
-							temp_btn = QPushButton("Select .%s" % file_format)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
+							file_format = "INVISIBLE"
+							temp_btn = QPushButton("%s" % file_format)
+							temp_btn.setToolTip('<FONT>'+"This is %s button</FONT>" % file_format)
 							temp_btn.setEnabled(False)
 							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
 							temp_btn.setMinimumWidth(func_btn_min_width)
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
-						elif cmd_token.type == "any_micrograph":
-							temp_btn = QPushButton("Select Image")
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select standard format image file (e.g. .hdf, .mrc)</FONT>")
+						elif cmd_token.type == "data2d3d_both":
+							file_format = cmd_token.type
+							temp_btn = QPushButton("Select any image/volume")
 							temp_btn.setMinimumWidth(func_btn_min_width)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select an image/volume file of any supported format</FONT>")
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
-							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget))
-							file_format = "txt"
-							temp_btn = QPushButton("Select .%s" % file_format)
-							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s parameter file</FONT>" % file_format)
-							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
 							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
-						elif cmd_token.type == "any_file_list":
-							temp_btn = QPushButton("Select Files")
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select files (e.g. *.*)</FONT>")
-							temp_btn.setMinimumWidth(func_btn_min_width)
-							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
-							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, cmd_token.type))
-							file_format = "bdb"
-							temp_btn = QPushButton("Select .%s" % file_format)
-							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
-							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
-							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
-						elif cmd_token.type == "any_image_list":
-							temp_btn = QPushButton("Select Images")
-							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select standard format image files (e.g. .hdf, .mrc)</FONT>")
-							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
-							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, cmd_token.type))
-							file_format = "invisible"
-							temp_btn = QPushButton("Select .%s" % file_format)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
+							file_format = "INVISIBLE"
+							temp_btn = QPushButton("%s" % file_format)
+							temp_btn.setToolTip('<FONT>'+"This is %s button</FONT>" % file_format)
 							temp_btn.setEnabled(False)
 							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
 							temp_btn.setMinimumWidth(func_btn_min_width)
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
-						elif cmd_token.type == "bdb" or cmd_token.key_base == "makevstack":
-							file_format = "bdb"
-							temp_btn = QPushButton("Select .%s" % file_format)
+						elif cmd_token.type == "mic_both":
+							file_format = "mrc2d_mic_both"
+							temp_btn = QPushButton("Select MRC mic/movie")
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a MRC format micrograph or movie file</FONT>")
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
-							file_format = "invisible"
-							temp_btn = QPushButton("Select .%s" % file_format)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
+							file_format = cmd_token.type
+							temp_btn = QPushButton("Select any mic/movie")
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a micrograph or movie file of any supported format</FONT>")
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
+							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+						elif cmd_token.type == "mic_one":
+							file_format = "mrc2d_mic_one"
+							temp_btn = QPushButton("Select MRC micrograph")
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a MRC format micrograph file</FONT>")
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+							file_format = cmd_token.type
+							temp_btn = QPushButton("Select any micrograph")
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a micrograph file of any supported format</FONT>")
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
+							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+						elif cmd_token.type == "mic_one_list":
+							file_format = "mrc2d_mic_one_list"
+							temp_btn = QPushButton("Select MRC micrographs")
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select MRC format micrograph files</FONT>")
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+							file_format = cmd_token.type
+							temp_btn = QPushButton("Select any micrographs")
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select micrograph files of any supported formats</FONT>")
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
+							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+						elif cmd_token.type == "mic_stack":
+							file_format = "mrc2d_mic_stack"
+							temp_btn = QPushButton("Select MRC movie")
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a MRC format movie file</FONT>")
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+							file_format = cmd_token.type
+							temp_btn = QPushButton("Select any movie")
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a movie file of any supported format</FONT>")
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
+							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+						elif cmd_token.type == "data2d_one":
+							file_format = "hdf2d_one"
+							temp_btn = QPushButton("Select HDF image")
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a HDF format image file</FONT>")
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+							file_format = cmd_token.type
+							temp_btn = QPushButton("Select any image")
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a image file of any supported format</FONT>")
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
+							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+						elif cmd_token.type == "bdb2d_stack" or cmd_token.type == "output_bdb2d_stack":
+							file_format = "bdb2d_stack"
+							temp_btn = QPushButton("Select BDB image stack")
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a BDB format image stack file</FONT>")
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+							file_format = "INVISIBLE"
+							temp_btn = QPushButton("%s" % file_format)
+							temp_btn.setToolTip('<FONT>'+"This is %s button</FONT>" % file_format)
+							temp_btn.setEnabled(False)
+							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
+						elif cmd_token.type == "data2d_stack":
+							file_format = "bdb2d_stack"
+							temp_btn = QPushButton("Select BDB image stack")
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a BDB format image stack file</FONT>")
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+							file_format = cmd_token.type
+							temp_btn = QPushButton("Select any image stack")
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a image stack file of any supported format</FONT>")
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
+							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+						elif cmd_token.type == "data3d_one":
+							file_format = "hdf3d_one"
+							temp_btn = QPushButton("Select HDF volume")
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a HDF format volume file</FONT>")
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+							file_format = cmd_token.type
+							temp_btn = QPushButton("Select any volume")
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a volume file of any supported format</FONT>")
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
+							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+						elif cmd_token.type == "data3d_stack":
+							file_format = "hdf3d_stack"
+							temp_btn = QPushButton("Select HDF volume stack")
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a HDF format volume stack file</FONT>")
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+							file_format = cmd_token.type
+							temp_btn = QPushButton("Select any volume stack")
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a volume stack file of any supported format</FONT>")
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
+							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+						elif cmd_token.type == "select_mic_both":
+							file_format = cmd_token.type
+							temp_btn = QPushButton("Select mic/movie list")
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a micrograph/movie selection file</FONT>")
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+							file_format = "INVISIBLE"
+							temp_btn = QPushButton("%s" % file_format)
+							temp_btn.setToolTip('<FONT>'+"This is %s button</FONT>" % file_format)
+							temp_btn.setEnabled(False)
+							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
+						elif cmd_token.type == "select_mic_one":
+							file_format = cmd_token.type
+							temp_btn = QPushButton("Select micrograph list")
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a micrograph selection file</FONT>")
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+							file_format = "INVISIBLE"
+							temp_btn = QPushButton("%s" % file_format)
+							temp_btn.setToolTip('<FONT>'+"This is %s button</FONT>" % file_format)
+							temp_btn.setEnabled(False)
+							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
+						elif cmd_token.type == "select_mic_one_ext":
+							file_format = "select_mic_one"
+							temp_btn = QPushButton("Select micrograph list")
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a micrograph selection file</FONT>")
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+							file_format = "mic_one"
+							temp_btn = QPushButton("Select any micrograph")
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a micrograph file of any supported format</FONT>")
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
+							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+						elif cmd_token.type == "select_mic_stack":
+							file_format = cmd_token.type
+							temp_btn = QPushButton("Select movie list")
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a micrograph movie selection file</FONT>")
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+							file_format = "INVISIBLE"
+							temp_btn = QPushButton("%s" % file_format)
+							temp_btn.setToolTip('<FONT>'+"This is %s button</FONT>" % file_format)
+							temp_btn.setEnabled(False)
+							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
+						elif cmd_token.type == "select_data2d_stack":
+							file_format = cmd_token.type
+							temp_btn = QPushButton("Select image list")
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a image selection file</FONT>")
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+							file_format = "INVISIBLE"
+							temp_btn = QPushButton("%s" % file_format)
+							temp_btn.setToolTip('<FONT>'+"This is %s button</FONT>" % file_format)
+							temp_btn.setEnabled(False)
+							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
+						elif cmd_token.type == "select_drift_params":
+							file_format = cmd_token.type
+							temp_btn = QPushButton("Select drift params list")
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a drift shift parameters selection file</FONT>")
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+							file_format = "INVISIBLE"
+							temp_btn = QPushButton("%s" % file_format)
+							temp_btn.setToolTip('<FONT>'+"This is %s button</FONT>" % file_format)
+							temp_btn.setEnabled(False)
+							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
+						elif cmd_token.type == "params_any_txt":
+							file_format = cmd_token.type
+							temp_btn = QPushButton("Select parameters text")
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a parameters text file</FONT>")
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+							file_format = "INVISIBLE"
+							temp_btn = QPushButton("%s" % file_format)
+							temp_btn.setToolTip('<FONT>'+"This is %s button</FONT>" % file_format)
+							temp_btn.setEnabled(False)
+							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
+						elif cmd_token.type == "params_proj_txt":
+							file_format = cmd_token.type
+							temp_btn = QPushButton("Select projection params")
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a projection parameters file</FONT>")
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+							file_format = "INVISIBLE"
+							temp_btn = QPushButton("%s" % file_format)
+							temp_btn.setToolTip('<FONT>'+"This is %s button</FONT>" % file_format)
+							temp_btn.setEnabled(False)
+							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
+						elif cmd_token.type == "params_coords_any":
+							file_format = "params_coords_box"
+							temp_btn = QPushButton("Select BOX coordinates")
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a EMAN BOX coordinates file</FONT>")
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+							file_format = cmd_token.type
+							temp_btn = QPushButton("Select any coordinates")
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a coordinates file of any supported format</FONT>")
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
+							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+						elif cmd_token.type == "params_cter_txt":
+							file_format = cmd_token.type
+							temp_btn = QPushButton("Select CTER partres")
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a CTER partres parameters file</FONT>")
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+							file_format = "INVISIBLE"
+							temp_btn = QPushButton("%s" % file_format)
+							temp_btn.setToolTip('<FONT>'+"This is %s button</FONT>" % file_format)
+							temp_btn.setEnabled(False)
+							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
+						elif cmd_token.type == "params_drift_txt":
+							file_format = cmd_token.type
+							temp_btn = QPushButton("Select drift shift params")
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a drift shift parameters file</FONT>")
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+							file_format = "INVISIBLE"
+							temp_btn = QPushButton("%s" % file_format)
+							temp_btn.setToolTip('<FONT>'+"This is %s button</FONT>" % file_format)
+							temp_btn.setEnabled(False)
+							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
+						elif cmd_token.type == "rot_matrix":
+							file_format = cmd_token.type
+							temp_btn = QPushButton("Select matrix file")
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a rotational matrix file</FONT>")
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+							file_format = "INVISIBLE"
+							temp_btn = QPushButton("%s" % file_format)
+							temp_btn.setToolTip('<FONT>'+"This is %s button</FONT>" % file_format)
+							temp_btn.setEnabled(False)
+							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
+						elif cmd_token.type == "params_relion_star":
+							file_format = cmd_token.type
+							temp_btn = QPushButton("Select RELION STAR file")
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a RELION STAR file</FONT>")
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+							file_format = "INVISIBLE"
+							temp_btn = QPushButton("%s" % file_format)
+							temp_btn.setToolTip('<FONT>'+"This is %s button</FONT>" % file_format)
+							temp_btn.setEnabled(False)
+							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
+						elif cmd_token.type == "spectrum1d":
+							file_format = cmd_token.type
+							temp_btn = QPushButton("Select power spectrum")
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a 1D power spectrum file</FONT>")
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+							file_format = "INVISIBLE"
+							temp_btn = QPushButton("%s" % file_format)
+							temp_btn.setToolTip('<FONT>'+"This is %s button</FONT>" % file_format)
+							temp_btn.setEnabled(False)
+							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
+						elif cmd_token.type == "mtf":
+							file_format = cmd_token.type
+							temp_btn = QPushButton("Select MTF data")
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a MTF data file</FONT>")
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+							file_format = "INVISIBLE"
+							temp_btn = QPushButton("%s" % file_format)
+							temp_btn.setToolTip('<FONT>'+"This is %s button</FONT>" % file_format)
 							temp_btn.setEnabled(False)
 							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
 							temp_btn.setMinimumWidth(func_btn_min_width)
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
 						elif cmd_token.type == "pdb":
-							file_format = "pdb"
-							temp_btn = QPushButton("Select .%s" % file_format)
+							file_format = cmd_token.type
+							temp_btn = QPushButton("Select PDB data")
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a PDB data file</FONT>")
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
-							file_format = "invisible"
-							temp_btn = QPushButton("Select .%s" % file_format)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
-							temp_btn.setEnabled(False)
-							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
-							temp_btn.setMinimumWidth(func_btn_min_width)
-							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
-						elif cmd_token.type == "hdf":
-							file_format = "hdf"
-							temp_btn = QPushButton("Select .%s" % file_format)
-							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
-							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
-							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
-							file_format = "invisible"
-							temp_btn = QPushButton("Select .%s" % file_format)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
-							temp_btn.setEnabled(False)
-							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
-							temp_btn.setMinimumWidth(func_btn_min_width)
-							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
-						elif cmd_token.type == "mrc":
-							file_format = "mrc"
-							temp_btn = QPushButton("Select .%s" % file_format)
-							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
-							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
-							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
-							file_format = "invisible"
-							temp_btn = QPushButton("Select .%s" % file_format)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
-							temp_btn.setEnabled(False)
-							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
-							temp_btn.setMinimumWidth(func_btn_min_width)
-							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
-						elif cmd_token.type == "parameters":
-							temp_btn = QPushButton("Select Parameter")
-							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select parameter file (e.g. .txt)</FONT>")
-							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
-							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget))
-							file_format = "invisible"
-							temp_btn = QPushButton("Select .%s" % file_format)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
-							temp_btn.setEnabled(False)
-							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
-							temp_btn.setMinimumWidth(func_btn_min_width)
-							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
-						elif cmd_token.type == "txt":
-							file_format = "txt"
-							temp_btn = QPushButton("Select .%s" % file_format)
-							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s parameter file</FONT>" % file_format)
-							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
-							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
-							file_format = "invisible"
-							temp_btn = QPushButton("Select .%s" % file_format)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
+							file_format = "INVISIBLE"
+							temp_btn = QPushButton("%s" % file_format)
+							temp_btn.setToolTip('<FONT>'+"This is %s button</FONT>" % file_format)
 							temp_btn.setEnabled(False)
 							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
 							temp_btn.setMinimumWidth(func_btn_min_width)
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
 						elif cmd_token.type == "exe":
-							file_format = "exe"
-							temp_btn = QPushButton("Select .%s" % file_format)
+							file_format = cmd_token.type
+							temp_btn = QPushButton("Select executable")
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s parameter file</FONT>" % file_format)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select an executable file</FONT>")
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
-							file_format = "invisible"
-							temp_btn = QPushButton("Select .%s" % file_format)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
+							file_format = "INVISIBLE"
+							temp_btn = QPushButton("%s" % file_format)
+							temp_btn.setToolTip('<FONT>'+"This is %s button</FONT>" % file_format)
 							temp_btn.setEnabled(False)
 							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
 							temp_btn.setMinimumWidth(func_btn_min_width)
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
-						elif cmd_token.type == "any_file":
-							temp_btn = QPushButton("Select File")
-							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select file (e.g. *.*)</FONT>")
-							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
-							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget))
-							file_format = "invisible"
-							temp_btn = QPushButton("Select .%s" % file_format)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
-							temp_btn.setEnabled(False)
-							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
-							temp_btn.setMinimumWidth(func_btn_min_width)
-							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
-						elif cmd_token.type == "directory" or cmd_token.type == "any_directory" or cmd_token.type == "output_continue":
+						elif cmd_token.type == "dir" or cmd_token.type == "dir_list" or cmd_token.type == "output_continue":
 							temp_btn = QPushButton("Select directory")
 							temp_btn.setMinimumWidth(func_btn_min_width)
 							temp_btn.setToolTip('<FONT>'+"Display select directory dailog"+'</FONT>')
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_dir, cmd_token_widget))
-							file_format = "invisible"
-							temp_btn = QPushButton("Select .%s" % file_format)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
+							file_format = "INVISIBLE"
+							temp_btn = QPushButton("%s" % file_format)
+							temp_btn.setToolTip('<FONT>'+"This is %s button</FONT>" % file_format)
 							temp_btn.setEnabled(False)
 							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
 							temp_btn.setMinimumWidth(func_btn_min_width)
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
-						# elif cmd_token.type == "output":
-						# else:
-						# 	if cmd_token.type not in ["int", "float", "string", "apix", "ctfwin", "box", "radius", "sym", "mass"]: ERROR("Logical Error: Encountered unsupported type (%s). Consult with the developer."  % cmd_token.type, "%s in %s" % (__name__, os.path.basename(__file__)))
+						elif cmd_token.type == "abs_freq":
+							# Create button for resolution display. Here, I use button to keep the look & feel.
+							cmd_token_subwidget_left = QPushButton("Label for Resolution [A]")
+							cmd_token_subwidget_left.setEnabled(False)
+							cmd_token_subwidget_left.setMinimumWidth(func_btn_min_width)
+							cmd_token_subwidget_left.setToolTip('<FONT>'+"Resolution [A] corresponding to absolute frequency [1/Pixel]"+'</FONT>')
+							grid_layout.addWidget(cmd_token_subwidget_left, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+							# Create button to show the associated calculator dialog.
+							cmd_token_subwidget_right = QPushButton("Use resolution [A]")
+							cmd_token_subwidget_right.setToolTip('<FONT>'+"Display calculator dailog to use the resolution [A] instead of absolute frequency [1/Pixel] </FONT>")
+							cmd_token_subwidget_right.setMinimumWidth(func_btn_min_width)
+							grid_layout.addWidget(cmd_token_subwidget_right, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
+							# Associated this subwidget to open the calculator dialog
+							const_register_widget_apix = self.sxcmdwidget.sxconst_set.dict["apix"].register_widget
+							cmd_token_calculator_dialog = SXDialogCalculator(const_register_widget_apix, cmd_token_widget, cmd_token_subwidget_left, self)
+							cmd_token_calculator_dialog.reflect_external_local_update_abs_freq()
+							# Connect the main widget "editing finished" event to the calculator dialog
+							cmd_token_widget.editingFinished.connect(cmd_token_calculator_dialog.reflect_external_local_update_abs_freq)
+							# Connect the right subwidget "clicked" event to the calculator dialog
+							self.connect(cmd_token_subwidget_right, SIGNAL("clicked()"), cmd_token_calculator_dialog.show)
+###						elif cmd_token.type == "any_micrograph":
+###							temp_btn = QPushButton("Select Image")
+###							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select standard format image file (e.g. .hdf, .mrc)</FONT>")
+###							temp_btn.setMinimumWidth(func_btn_min_width)
+###							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+###							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget))
+###							file_format = "txt"
+###							temp_btn = QPushButton("Select text file")
+###							temp_btn.setMinimumWidth(func_btn_min_width)
+###							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a parameters text file</FONT>" )
+###							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
+###							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+###						elif cmd_token.type == "any_image":
+###							temp_btn = QPushButton("Select Image")
+###							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select standard format image file (e.g. .hdf, .mrc)</FONT>")
+###							temp_btn.setMinimumWidth(func_btn_min_width)
+###							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+###							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget))
+###							file_format = "INVISIBLE"
+###							temp_btn = QPushButton("%s" % file_format)
+###							temp_btn.setToolTip('<FONT>'+"This is %s button</FONT>" % file_format)
+###							temp_btn.setEnabled(False)
+###							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
+###							temp_btn.setMinimumWidth(func_btn_min_width)
+###							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
+###						elif cmd_token.type == "any_image_list":
+###							temp_btn = QPushButton("Select Images")
+###							temp_btn.setMinimumWidth(func_btn_min_width)
+###							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select standard format image files (e.g. .hdf, .mrc)</FONT>")
+###							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+###							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, cmd_token.type))
+###							file_format = "INVISIBLE"
+###							temp_btn = QPushButton("%s" % file_format)
+###							temp_btn.setToolTip('<FONT>'+"This is %s button</FONT>" % file_format)
+###							temp_btn.setEnabled(False)
+###							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
+###							temp_btn.setMinimumWidth(func_btn_min_width)
+###							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
+###						elif cmd_token.type == "any_file":
+###							temp_btn = QPushButton("Select File")
+###							temp_btn.setMinimumWidth(func_btn_min_width)
+###							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select file (e.g. *.*)</FONT>")
+###							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+###							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget))
+###							file_format = "INVISIBLE"
+###							temp_btn = QPushButton("%s" % file_format)
+###							temp_btn.setToolTip('<FONT>'+"This is %s button</FONT>" % file_format)
+###							temp_btn.setEnabled(False)
+###							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
+###							temp_btn.setMinimumWidth(func_btn_min_width)
+###							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
+###						elif cmd_token.type == "any_file_list":
+###							temp_btn = QPushButton("Select Files")
+###							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select files (e.g. *.*)</FONT>")
+###							temp_btn.setMinimumWidth(func_btn_min_width)
+###							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+###							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, cmd_token.type))
+###							file_format = "bdb"
+###							temp_btn = QPushButton("Select .%s" % file_format)
+###							temp_btn.setMinimumWidth(func_btn_min_width)
+###							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
+###							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
+###							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+###						elif cmd_token.type == "image":
+###							file_format = "hdf"
+###							temp_btn = QPushButton("Select .%s" % file_format)
+###							temp_btn.setMinimumWidth(func_btn_min_width)
+###							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
+###							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+###							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+###							file_format = "bdb"
+###							temp_btn = QPushButton("Select .%s" % file_format)
+###							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
+###							temp_btn.setMinimumWidth(func_btn_min_width)
+###							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
+###							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+###						elif cmd_token.type == "bdb":
+###							file_format = "bdb"
+###							temp_btn = QPushButton("Select .%s" % file_format)
+###							temp_btn.setMinimumWidth(func_btn_min_width)
+###							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
+###							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+###							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+###							file_format = "INVISIBLE"
+###							temp_btn = QPushButton("%s" % file_format)
+###							temp_btn.setToolTip('<FONT>'+"This is %s button</FONT>" % file_format)
+###							temp_btn.setEnabled(False)
+###							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
+###							temp_btn.setMinimumWidth(func_btn_min_width)
+###							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
+###						elif cmd_token.type == "hdf":
+###							file_format = cmd_token.type
+###							temp_btn = QPushButton("Select .%s" % file_format)
+###							temp_btn.setMinimumWidth(func_btn_min_width)
+###							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
+###							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+###							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+###							file_format = "INVISIBLE"
+###							temp_btn = QPushButton("%s" % file_format)
+###							temp_btn.setToolTip('<FONT>'+"This is %s button</FONT>" % file_format)
+###							temp_btn.setEnabled(False)
+###							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
+###							temp_btn.setMinimumWidth(func_btn_min_width)
+###							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
+###						elif cmd_token.type == "mrc":
+###							file_format = cmd_token.type
+###							temp_btn = QPushButton("Select .%s" % file_format)
+###							temp_btn.setMinimumWidth(func_btn_min_width)
+###							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
+###							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+###							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+###							file_format = "INVISIBLE"
+###							temp_btn = QPushButton("%s" % file_format)
+###							temp_btn.setToolTip('<FONT>'+"This is %s button</FONT>" % file_format)
+###							temp_btn.setEnabled(False)
+###							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
+###							temp_btn.setMinimumWidth(func_btn_min_width)
+###							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
+###						elif cmd_token.type == "txt":
+###							file_format = cmd_token.type
+###							temp_btn = QPushButton("Select text file")
+###							temp_btn.setMinimumWidth(func_btn_min_width)
+###							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a parameters text file</FONT>")
+###							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+###							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+###							file_format = "INVISIBLE"
+###							temp_btn = QPushButton("%s" % file_format)
+###							temp_btn.setToolTip('<FONT>'+"This is %s button</FONT>" % file_format)
+###							temp_btn.setEnabled(False)
+###							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
+###							temp_btn.setMinimumWidth(func_btn_min_width)
+###							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
+						else:
+							if cmd_token.type not in ["int", "float", "string", "output", "apix", "ctfwin", "box", "radius", "sym", "mass"]: ERROR("Logical Error: Encountered unsupported type (%s). Consult with the developer."  % cmd_token.type, "%s in %s" % (__name__, os.path.basename(__file__)))
+						
+						# if cmd_token.type in ["output", "output_continue", "output_bdb2d_stack"]:
+						# 	# Need to add output info button in future
 
 					cmd_token_widget.setToolTip('<FONT>'+cmd_token.help+'</FONT>')
 					cmd_token_restore_widget.setToolTip('<FONT>'+cmd_token_restore_tooltip+'</FONT>')
 
 					grid_row += 1
-
+					
 				# Register this widget
-				cmd_token.widget = cmd_token_widget
 				cmd_token.restore_widget = cmd_token_restore_widget
-
+				cmd_token.widget = cmd_token_widget
+				cmd_token.subwidget_left = cmd_token_subwidget_left
+				cmd_token.subwidget_right = cmd_token_subwidget_right
+				cmd_token.calculator_dialog = cmd_token_calculator_dialog
+		
+		is_necessary_to_connet_now = True
+		if cmd_token_abs_freq is None:
+			is_necessary_to_connet_now = False
+		elif cmd_token_abs_freq.calculator_dialog is None:
+			is_necessary_to_connet_now = False
+		elif cmd_token_apix is None:
+			is_necessary_to_connet_now = False
+		elif cmd_token_apix.widget is None:
+			is_necessary_to_connet_now = False
+		# else: # Do nothing
+		if is_necessary_to_connet_now:
+			# Associated the widget of apix command token to the calculator dialog
+			assert (cmd_token_abs_freq.calculator_dialog is not None and cmd_token_apix.widget is not None)
+			cmd_token_abs_freq.calculator_dialog.sxcmd_token_widget_apix = cmd_token_apix.widget
+			cmd_token_apix.calculator_dialog = cmd_token_abs_freq.calculator_dialog
+			cmd_token_apix.calculator_dialog.reflect_external_local_update_apix()
+			# Connect the apix command token widget "editing finished" event to the calculator dialog
+			cmd_token_apix.widget.editingFinished.connect(cmd_token_apix.calculator_dialog.reflect_external_local_update_apix)
+		
 		if tab_group == "main":
 			# Add space
 			grid_row += 1
@@ -1654,7 +2352,7 @@ class SXCmdTab(QWidget):
 			self.qsub_script_edit.setToolTip('<FONT>'+"File name of submission script template (e.g. $PROJECT_DIR/msgui_qsub.sh)"+'</FONT>')
 			submit_layout.addWidget(self.qsub_script_edit, grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
 
-			self.qsub_script_open_btn = QPushButton("Select Template")
+			self.qsub_script_open_btn = QPushButton("Select template")
 			self.qsub_script_open_btn.setMinimumWidth(func_btn_min_width)
 			self.qsub_script_open_btn.setToolTip('<FONT>'+"Display open file dailog to select job submission script template file"+'</FONT>')
 			self.connect(self.qsub_script_open_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, self.qsub_script_edit))
@@ -1672,6 +2370,17 @@ class SXCmdTab(QWidget):
 			submit_layout.addWidget(self.execute_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span*2)
 
 			grid_row += 1
+
+###			# Add a debug button
+###			sxoperand_set = self.construct_sxoperand_set()
+###			self.res_calculator = SXDialogCalculator(sxoperand_set, self)
+###			self.cmd_line_btn = QPushButton("Debug")
+###			self.cmd_line_btn.setMinimumWidth(btn_min_width)
+###			self.cmd_line_btn.setToolTip('<FONT>'+"Button for debug"+'</FONT>')
+###			self.connect(self.cmd_line_btn, SIGNAL("clicked()"), self.res_calculator.show)
+###			submit_layout.addWidget(self.cmd_line_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span*2)
+###
+###			grid_row += 1
 
 			# Initialize enable state of qsub related widgets
 			self.set_qsub_enable_state()
@@ -1705,7 +2414,7 @@ class SXCmdTab(QWidget):
 
 	def handle_restore_widget_event(self, sxcmd_token, widget_index=0):
 		assert(not sxcmd_token.is_locked)
-		if sxcmd_token.type == "function":
+		if sxcmd_token.type == "user_func":
 			assert(len(sxcmd_token.widget) == 2 and len(sxcmd_token.restore) == 2 and widget_index < 2)
 			sxcmd_token.widget[widget_index].setText("%s" % sxcmd_token.restore[widget_index])
 		else:
@@ -1716,6 +2425,26 @@ class SXCmdTab(QWidget):
 					sxcmd_token.widget.setChecked(Qt.Unchecked)
 			else:
 				sxcmd_token.widget.setText("%s" % sxcmd_token.restore)
+				if sxcmd_token.type == "abs_freq":
+					assert (sxcmd_token.calculator_dialog is not None)
+					sxcmd_token.calculator_dialog.reflect_external_local_update_abs_freq()
+				elif sxcmd_token.type == "apix":
+					if sxcmd_token.calculator_dialog is not None:
+						sxcmd_token.calculator_dialog.reflect_external_local_update_apix()
+	
+###	def handle_abs_freq_editing_finished_event(self, sxcmd_token_widget_abs_freq, sxcmd_token_subwidget_left_ares):
+###		apix_str = self.sxcmdwidget.sxconst_set.dict["apix"].register
+###		abs_freq_str = sxcmd_token_widget_abs_freq.text()
+###		ares_str, is_valid_ares = SXDialogCalculator.convert_abs_freq_to_ares(apix_str, abs_freq_str)
+###		print("MRK_DEBUG: ----- handle_abs_freq_editing_finished_event() ----- ")
+###		print("MRK_DEBUG: Input Abs. Freq. [1/Pixel] string ; abs_freq_str := {}".format(abs_freq_str))
+###		print("MRK_DEBUG: Input Pixel Size [A/Pixel] string ; apix_str := {}".format(apix_str))
+###		print("MRK_DEBUG: Output Resolution [A] string      ; ares_str:= {}".format(ares_str))
+###		if is_valid_ares:
+###			sxcmd_token_subwidget_left_ares.setText("{}[A]@{}[A/Pix]".format(ares_str, apix_str))
+###		else:
+###			sxcmd_token_subwidget_left_ares.setText("Mode {}".format(ares_str))
+
 
 # ========================================================================================
 # Command Category Widget (opened by class SXMainWindow)
@@ -2068,6 +2797,27 @@ class SXConstSetWidget(QWidget):
 						cmd_token.restore_widget.setText("%s" % cmd_token.restore)
 						cmd_token.widget.setText(cmd_token.restore)
 						# print "MRK_DEBUG: %s, %s, %s, %s, %s, %s" % (sxcmd.name, sxcmd.subname, cmd_token.key_base, cmd_token.type, cmd_token.default, cmd_token.restore)
+					elif cmd_token.type == "abs_freq":
+						assert("apix" in self.sxconst_set.dict.keys())
+###						print("MRK_DEBUG: ----- register_const_set() ----- ")
+###						print("MRK_DEBUG: cmd_token.type = {}".format(cmd_token.type))
+###						sxconst_apix = self.sxconst_set.dict["apix"]
+###						print("MRK_DEBUG: sxconst_apix.type = {}".format(sxconst_apix.type))
+###						print("MRK_DEBUG: sxconst_apix.register = {}".format(sxconst_apix.register))
+###						assert (cmd_token.subwidget_left is not None)
+###						assert (cmd_token.subwidget_right is not None)
+						assert (cmd_token.calculator_dialog is not None)
+###						sxoperand_apix = cmd_token.calculator_dialog.sxoperand_set.dict["apix"]
+###						print("MRK_DEBUG: BEFORE sxoperand_apix.register = {}".format(sxoperand_apix.register))
+###						print("MRK_DEBUG: BEFORE sxoperand_apix.register_widget.text() = {}".format(sxoperand_apix.register_widget.text()))
+###						print("MRK_DEBUG: BEFORE sxoperand_apix.widget.text() = {}".format(sxoperand_apix.widget.text()))
+###						sxoperand_apix.register = sxconst_apix.register
+###						sxoperand_apix.register_widget.setText("%s" % sxoperand_apix.register)
+###						sxoperand_apix.widget.setText(sxoperand_apix.register)
+###						print("MRK_DEBUG: AFTER sxoperand_apix.register = {}".format(sxoperand_apix.register))
+###						print("MRK_DEBUG: AFTER sxoperand_apix.register_widget.text() = {}".format(sxoperand_apix.register_widget.text()))
+###						print("MRK_DEBUG: AFTER sxoperand_apix.widget.text() = {}".format(sxoperand_apix.widget.text()))
+						cmd_token.calculator_dialog.reflect_external_global_update_apix()
 
 		# Save the current state of GUI settings
 		if os.path.exists(SXLookFeelConst.project_dir) == False:
@@ -2198,6 +2948,706 @@ class SXInfoWidget(QWidget):
 		layout = QHBoxLayout(self)
 		layout.addWidget(widget)
 		layout.setContentsMargins(0, 0, 0, 0)
+
+"""
+# ========================================================================================
+class SXDialogCalculator(QDialog):
+	def __init__(self, parent = None):
+		super(QDialog, self).__init__(parent)
+		
+		self.setWindowModality(Qt.ApplicationModal)
+		
+		# self.setWindowTitle()
+		self.setWindowTitle("Absolute Frequency Calculator")
+
+		temp_label = QLabel("Calculate absolute frequency [1/Pixel] from resolution [A]", self)
+		temp_label.move(50,50)
+		
+		# Create label widget
+		temp_label = QLabel("Resolution [A]", self)
+		# temp_label.setMinimumWidth(token_label_min_width)
+		# grid_layout.addWidget(temp_label, grid_row, grid_col_origin, token_label_row_span, token_label_col_span)
+		temp_label.move(50,100)
+		self.edit_res = QLineEdit(self)
+		self.edit_res.setText('Enter Resolution Here')
+		self.edit_res.move(200,100)
+
+		temp_label = QLabel("Pixel Size [A/Pixel]", self)
+		# temp_label.setMinimumWidth(token_label_min_width)
+		# grid_layout.addWidget(temp_label, grid_row, grid_col_origin, token_label_row_span, token_label_col_span)
+		temp_label.move(50,200)
+		self.edit_apix = QLineEdit(self)
+		self.edit_apix.setText('Enter Pixel Size Here')
+		self.edit_apix.move(200,200)
+		
+		self.btn_apply = QPushButton("Apply", self)
+		self.btn_apply.move(50,300)
+		self.btn_cancel = QPushButton("Cancel", self)
+		self.btn_cancel.move(200,300)
+		# self.connect(cmd_token_restore_widget[widget_index], SIGNAL("clicked()"), partial(self.handle_restore_widget_event, cmd_token, widget_index))
+		
+		### self.show()
+"""
+
+class SXDialogCalculator(QDialog):
+	# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+	# static class variables
+	# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+	precision_apix = 7
+	precision_abs_freq = 7
+	precision_ares = 2
+
+	def __init__(self, sxconst_register_widget_apix, sxcmd_token_widget_abs_freq, sxcmd_token_subwidget_left_ares, parent = None):
+		super(QDialog, self).__init__(parent)
+		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+		# class variables
+		self.sxoperand_set = self.construct_sxoperand_set()
+		self.sxconst_register_widget_apix = sxconst_register_widget_apix # SXconst.register_widget of apix type
+		self.sxcmd_token_widget_abs_freq = sxcmd_token_widget_abs_freq
+		self.sxcmd_token_subwidget_left_ares = sxcmd_token_subwidget_left_ares
+		# This have to be set upon the construction order...
+		self.sxcmd_token_widget_apix = None                              # SXcmd_token.widget of apix type if this command has one
+		
+		# This should be a modal dialog
+		self.setWindowModality(Qt.ApplicationModal)
+
+		# Layout constants and variables
+		global_row_origin = 0; global_col_origin = 0
+		global_row_span = 4; global_col_span = 1
+
+		header_row_origin = 0; header_col_origin = 0
+		title_row_span = 1; title_col_span = 1
+		short_info_row_span = 1; short_info_col_span = 1
+		title_min_width = 300
+		short_info_min_width = 300
+		short_info_min_height = 80
+
+		operand_set_row_origin = 0; operand_set_col_origin = 0
+		operand_label_row_span = 1; operand_label_col_span = 1
+		operand_register_widget_row_span = 1; operand_register_widget_col_span = 1
+		operand_widget_row_span = 1; operand_widget_col_span = 1
+		operand_label_min_width = 150
+		operand_register_widget_min_width = operand_label_min_width
+		operand_widget_min_width = operand_label_min_width
+
+		btn_row_origin = 0; btn_col_origin = 0
+		func_btn_row_span = 1; func_btn_col_span = 1
+		register_btn_row_span = 1; register_btn_col_span = 2
+		func_btn_min_width = 50
+		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+		# background_image_file_path = '{0}sxgui_background.png'.format(get_image_directory())
+		# self.setStyleSheet('background-image: url("{0}")'.format(background_image_file_path))
+
+		# Set the background color of this widget
+		self.setAutoFillBackground(True)
+		palette = QPalette()
+		palette.setBrush(QPalette.Background, QBrush(SXLookFeelConst.default_bg_color_calculator))
+		self.setPalette(palette)
+
+		global_layout = QGridLayout()
+		global_layout.setMargin(SXLookFeelConst.grid_margin)
+		global_layout.setSpacing(SXLookFeelConst.grid_spacing)
+		global_layout.setRowStretch(global_row_span - 1, global_layout.rowStretch(global_row_origin) + 1)
+
+		header_layout = QGridLayout()
+		header_layout.setMargin(SXLookFeelConst.grid_margin)
+		header_layout.setSpacing(SXLookFeelConst.grid_spacing)
+
+		operand_layout = QGridLayout()
+		operand_layout.setMargin(SXLookFeelConst.grid_margin)
+		operand_layout.setSpacing(SXLookFeelConst.grid_spacing)
+
+		btn_layout = QGridLayout()
+		btn_layout.setMargin(SXLookFeelConst.grid_margin)
+		btn_layout.setSpacing(SXLookFeelConst.grid_spacing * 2)
+
+		global_grid_row = global_row_origin
+
+		# Start add title widgets to the grid layout
+		header_grid_row = header_row_origin
+
+		# Set a label and its position in this tab
+		temp_label = QLabel("<b>%s</b>" % (self.sxoperand_set.label))
+		temp_label.setMinimumWidth(title_min_width)
+		header_layout.addWidget(temp_label, header_grid_row, header_col_origin, title_row_span, title_col_span)
+
+		header_grid_row += 1
+
+		# NOTE: 2015/11/17 Toshio Moriya
+		# Necessary to separate "<b>%s</b>" from the information for avoiding to invoke the tag interpretations of string
+		# e.g. < becomes the escape character
+		temp_label = QLabel("%s" % (self.sxoperand_set.short_info))
+		temp_label.setWordWrap(True)
+		temp_label.setMinimumWidth(short_info_min_width)
+		temp_label.setMinimumHeight(short_info_min_height)
+		header_layout.addWidget(temp_label, header_grid_row, header_col_origin, short_info_row_span, short_info_col_span)
+
+		# Add const set grid layout to global layout
+		global_layout.addLayout(header_layout, global_grid_row, global_col_origin)
+		global_grid_row += 1
+
+		# Start add project parameter constant widgets to the grid layout
+		operand_grid_row = operand_set_row_origin
+
+		# Add widget for editing command args and options
+		for sxoperand in self.sxoperand_set.list:
+			# Create widget associated to this project constant parameter
+			temp_label = QLabel(sxoperand.label)
+			temp_label.setMinimumWidth(operand_label_min_width)
+			operand_layout.addWidget(temp_label, operand_grid_row, operand_set_col_origin, operand_label_row_span, operand_label_col_span)
+
+			sxoperand_register_widget = QPushButton("%s" % sxoperand.register)
+			sxoperand_register_widget.setMinimumWidth(operand_register_widget_min_width)
+			custom_style = ""
+			if sxoperand.is_input:
+				if sxoperand.type in ["apix"]:
+					custom_style = "QPushButton {color:green; }" # custom_style = "QPushButton {font: normal; color:black;}"
+					sxoperand_register_widget.setStyleSheet(custom_style)
+				sxoperand_register_widget.setToolTip('<FONT>'+"Retrieve this default value to edit box"+'</FONT>')
+				self.connect(sxoperand_register_widget, SIGNAL("clicked()"), partial(self.handle_regster_widget_event, sxoperand))
+			else:
+				assert (not sxoperand.is_input)
+				custom_style = "QPushButton {background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid;}"
+				sxoperand_register_widget.setStyleSheet(custom_style)
+				sxoperand_register_widget.setEnabled(False)
+			operand_layout.addWidget(sxoperand_register_widget, operand_grid_row, operand_set_row_origin + operand_label_col_span, operand_register_widget_row_span, operand_register_widget_col_span)
+
+			sxoperand_widget = QLineEdit()
+			sxoperand_widget.setMinimumWidth(operand_widget_min_width)
+			sxoperand_widget.setText(sxoperand.register)
+			sxoperand_widget.setToolTip('<FONT>'+sxoperand.help+'</FONT>')
+			operand_layout.addWidget(sxoperand_widget, operand_grid_row, operand_set_row_origin + operand_label_col_span + operand_register_widget_col_span, operand_widget_row_span, operand_widget_col_span)
+			if not sxoperand.is_input:
+				sxoperand_widget.setEnabled(False)
+				
+			operand_grid_row += 1
+
+			# Register this widget
+			sxoperand.register_widget = sxoperand_register_widget
+			sxoperand.widget = sxoperand_widget
+
+		# Add const set grid layout to global layout
+		global_layout.addLayout(operand_layout, global_grid_row, global_col_origin)
+		# global_grid_row += 1
+
+		# Start add buttons to the grid layout
+		btn_grid_row = btn_row_origin
+
+		# Add save project constant parameter settings button
+		self.convert_units_btn = QPushButton("Convert units")
+		self.convert_units_btn.setMinimumWidth(func_btn_min_width)
+		self.convert_units_btn.setToolTip('<FONT>'+"Calculate unit conversion"+'</FONT>')
+		self.convert_units_btn.setDefault(True);
+		self.connect(self.convert_units_btn, SIGNAL("clicked()"), self.handle_convert_units)
+		btn_layout.addWidget(self.convert_units_btn, btn_grid_row, btn_col_origin, func_btn_row_span, func_btn_col_span)
+
+		# Add load project constant parameter settings button
+		self.cancel_btn = QPushButton("Cancel")
+		self.cancel_btn.setMinimumWidth(func_btn_min_width)
+		self.cancel_btn.setToolTip('<FONT>'+"Cancel the unit convertion. Close the calculator dialog without applying the converted value to the associated edit box"+'</FONT>')
+		self.connect(self.cancel_btn, SIGNAL("clicked()"), self.close)
+		btn_layout.addWidget(self.cancel_btn, btn_grid_row, btn_col_origin + func_btn_col_span, func_btn_row_span, func_btn_col_span)
+
+		btn_grid_row += 1
+
+###		# For now, initialise with Nyquist resolution of 1.0 [A] pixel size
+###		self.apix_str = self.sxconst_register_widget_apix.text()
+###		self.abs_freq_str = self.sxcmd_token_widget_abs_freq.text()
+###		self.convert_abs_freq_to_ares()
+###		sxoperand_apix = self.sxoperand_set.dict["apix"]
+###		sxoperand_apix.register = apix_str
+###		sxoperand_apix.widget.setText(sxoperand_apix.register)
+###		sxoperand_ares = self.sxoperand_set.dict["ares"]
+###		sxoperand_ares.register = ares_str
+###		sxoperand_ares.widget.setText(sxoperand_ares.register)
+		
+		# Add a apply button
+		self.apply_btn = QPushButton("Apply this settings")
+		# make 3D textured push button look
+		custom_style = "QPushButton {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #8D0)} QPushButton:pressed {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #084)} QPushButton:focus {font: bold; color: #000;border: 2px solid #8D0;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #8D0)} QPushButton:disabled {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #ff0000)}"
+		self.apply_btn.setStyleSheet(custom_style)
+		self.apply_btn.setMinimumWidth(func_btn_min_width * register_btn_col_span)
+		self.apply_btn.setToolTip('<FONT>'+"Apply converted value to the corresponding command arguments and options"+'</FONT>')
+		self.connect(self.apply_btn, SIGNAL("clicked()"), self.handle_apply_unit_conversion)
+		btn_layout.addWidget(self.apply_btn, btn_grid_row, btn_col_origin, register_btn_row_span, register_btn_col_span)
+
+		btn_grid_row += 1
+
+		# Add button grid layout to global layout
+		# global_layout.addLayout(btn_layout, global_grid_row, global_col_origin) # Maybe later :)
+
+#		# Load the previously saved parameter setting of this sx command
+#		if os.path.exists(self.gui_settings_file_path):
+#			self.read_consts(self.gui_settings_file_path)
+
+		# Layout for a constant size
+		constant_height_layout = QVBoxLayout()
+		constant_height_layout.addLayout(global_layout)
+		constant_height_layout.addLayout(btn_layout)
+		constant_height_layout.addStretch(1)
+		constant_width_layout = QHBoxLayout(self)
+		constant_width_layout.addLayout(constant_height_layout)
+		constant_width_layout.addStretch(1)
+		
+		# Synchronise the initial status of operands in this dialog
+		self.handle_convert_units(is_enable_message = False)
+		
+	def construct_sxoperand_set(self):
+		sxoperand_set = SXoperand_set(); sxoperand_set.name = "sxc_calculator"; sxoperand_set.label = "Absolute Frequency Calculator"; sxoperand_set.short_info = "From resolution [A] (ares), calculate absolute frequency [1/Pixel] (abs_freq) using a give pixel size [A/Pixel] (apix), where abs_freq = apix/ares."
+		sxoperand = SXoperand(); sxoperand.key = "ares"; sxoperand.label = "Resolution [A]"; sxoperand.help = "Resolution [A] to calculate the corresponding absolute frequency [1/Pixel] using a given pixel size [A/Pixel]."; sxoperand.register = " -9999.9"; sxoperand.type = "float"; sxoperand_set.list.append(sxoperand); sxoperand_set.dict[sxoperand.key] = sxoperand
+		sxoperand = SXoperand(); sxoperand.key = "apix"; sxoperand.label = "Pixel size [A/Pixel]"; sxoperand.help = "Pixel size of dataset [A/Pixel]."; sxoperand.register = " -9999.9"; sxoperand.type = "apix"; sxoperand_set.list.append(sxoperand); sxoperand_set.dict[sxoperand.key] = sxoperand
+		sxoperand = SXoperand(); sxoperand.key = "abs_freq"; sxoperand.label = "Absolute Frequency [1/Pixel]"; sxoperand.help = "Absolute frquency [1/Pixel] corresponding to the given resolution [A/Pixel]."; sxoperand.register = " -9999.9"; sxoperand.type = "abs_freq"; sxoperand.is_input = False; sxoperand_set.list.append(sxoperand); sxoperand_set.dict[sxoperand.key] = sxoperand
+
+		# Store the project constant parameter set as a class data member
+		return sxoperand_set
+	
+	def handle_regster_widget_event(self, sxoperand):
+		sxoperand.widget.setText(sxoperand.register)
+		self.handle_convert_units()
+
+###	def handle_show_event(self):
+###		# Use current value of resolution [A] widget as a register value of resolution [A] operand upon showing this dialog
+###		sxoperand_ares = self.sxoperand_set.dict["ares"]
+###		sxoperand_ares.register = self.sxcmd_token_subwidget_left_ares.text()
+###		sxoperand_ares.register_widget.setText("%s" % sxoperand_ares.register)
+###		sxoperand_ares.widget.setText(sxoperand_ares.register)
+###		
+###		# Show this dialog
+###		self.show()
+
+###	def handle_abs_freq_editing_finished_event(self):
+###		apix_str = self.sxconst_register_widget_apix.text()
+###		abs_freq_str = sxcmd_token_widget_abs_freq.text()
+###		ares_str, is_valid_ares = selft.convert_abs_freq_to_ares(apix_str, abs_freq_str)
+###		sxoperand_
+###		print("MRK_DEBUG: ----- handle_abs_freq_editing_finished_event() ----- ")
+###		print("MRK_DEBUG: Input Abs. Freq. [1/Pixel] string ; abs_freq_str := {}".format(abs_freq_str))
+###		print("MRK_DEBUG: Input Pixel Size [A/Pixel] string ; apix_str := {}".format(apix_str))
+###		print("MRK_DEBUG: Output Resolution [A] string      ; ares_str:= {}".format(ares_str))
+###		if is_valid_ares:
+###			sxcmd_token_subwidget_left_ares.setText("{}[A]@{}[A/Pix]".format(ares_str, apix_str))
+###		else:
+###			sxcmd_token_subwidget_left_ares.setText("Mode {}".format(ares_str))
+	
+###	def convert_abs_freq_to_ares():
+###		# Initialise resolution [A] string to absolute frequency [1/Pixel] string
+###		self.ares_str = self.abs_freq_str
+###		self.is_valid_ares = False
+###		
+###		# Initialise resolution [A] and pixel size [A/Pixel] with invalid values
+###		self.abs_freq_str abs_freq = 0.0
+###		self.abs_freq_strapix = 0.0
+###		# Check data type of arguments
+###		try:
+###			self.apix = float(self.apix_str)
+###		except ValueError:
+###			# The text string can not be converted to float. This must be special value of this option
+###			assert (self.ares_str == self.abs_freq_str)
+###			assert (not self.is_valid_ares)
+###			return
+###		try:
+###			self.abs_freq = float(self.abs_freq_str)
+###		except ValueError:
+###			# The text string can not be converted to float. This must be special value of this option
+###			assert (self.ares_str == self.abs_freq_str)
+###			assert (not self.is_valid_ares)
+###			return
+###		# Check invalid values of arguments
+###		if self.apix <= 0.0:
+###			# The valid range of pixel size [A] is apix > 0.0. The valid value must have not been set yet.
+###			assert (self.ares_str == self.abs_freq_str)
+###			assert (not self.is_valid_ares)
+###			return ares_str, self.is_valid_ares
+###		assert (apix > 0.0)
+###		if abs_freq <= 0.0 or abs_freq > 0.5:
+###			# The valid range of absolut frequency is 0.0 < abs_freq <= 0.5. This must be special value of this option
+###			assert (ares_str == abs_freq_str)
+###			assert (not is_valid_ares)
+###			return ares_str, is_valid_ares
+###		assert (abs_freq > 0.0 or abs_freq <= 0.5)
+###		
+###		ares = round(apix/abs_freq, SXDialogCalculator.ares_precision)
+###		ares_str = "{}".format(ares)
+###		is_valid_ares = True
+###		
+###		print("MRK_DEBUG: ----- convert_abs_freq_to_ares() ----- ")
+###		print("MRK_DEBUG: Input Abs. Freq. [1/Pixel]   ; abs_freq := {}".format(abs_freq))
+###		print("MRK_DEBUG: Input Pixel Size [A/Pixel]   ; apix := {}".format(apix))
+###		print("MRK_DEBUG: Output Resolution [A]        ; ares:= {}".format(ares))
+###		print("MRK_DEBUG: Output Resolution [A] string ; ares_str:= {}".format(ares_str))
+###		
+###		return ares_str, is_valid_ares
+
+	def handle_convert_units(self, is_enable_message = True):
+		sxoperand_apix = self.sxoperand_set.dict["apix"]
+		apix_str = sxoperand_apix.widget.text()
+		apix = self.convert_str_to_float_apix(apix_str)
+		if apix is None:
+			sxoperand_apix.validated = None
+		else:
+			sxoperand_apix.validated = apix
+			assert (sxoperand_apix.validated is not None)
+		
+		sxoperand_ares = self.sxoperand_set.dict["ares"]
+		ares_str = sxoperand_ares.widget.text()
+		ares = self.convert_str_to_float_ares(ares_str)
+		if ares is None:
+			sxoperand_ares.validated = None
+		else:
+			sxoperand_ares.validated = ares
+			assert (sxoperand_ares.validated is not None)
+		
+		sxoperand_abs_freq = self.sxoperand_set.dict["abs_freq"]
+		
+		if sxoperand_apix.validated is None:
+			sxoperand_abs_freq.validated = None
+			sxoperand_abs_freq.widget.setText("Invalid Pixel Size {}".format(apix_str))
+			self.apply_btn.setEnabled(False)
+			if is_enable_message:
+				QMessageBox.warning(self, "Invalid Pixel Size [A/Pixel]", "Invalid Value {} for Pixel Size [A/Pixel] is provided. It must be a non-zero positive float value...".format(apix_str))
+		else:
+			assert (sxoperand_apix.validated is not None)
+			assert (apix > 0.0)
+			nyquist_res = 2.0 * apix
+			nyquist_res_str = "{}".format(nyquist_res)
+			if sxoperand_ares.validated is None:
+				sxoperand_abs_freq.validated = None
+				sxoperand_abs_freq.widget.setText("Invalid Resolution {}".format(ares_str))
+				self.apply_btn.setEnabled(False)
+				if is_enable_message:
+					QMessageBox.warning(self, "Invalid Resolution [A]", "Invalid Value {} for Resolution [A] is provided. It must be a float value, and larger than or equal to Nyquist resolution {} [A] (2.0 * Pixel Size [A/Pixel])...".format(ares_str, nyquist_res_str))
+			else:
+				assert (sxoperand_apix.validated is not None)
+				assert (nyquist_res * 2.0 )
+				abs_freq = round(apix/ares, self.precision_abs_freq)
+				# The valid range of absolute frequency [1/Pixel] is 0.0 < abs_freq <= 0.5
+				# If both pixel size and resolution values are valid, the absolute frequency must be always valid.
+				assert (abs_freq > 0.0 or abs_freq <= 0.5)
+				sxoperand_abs_freq.validated = abs_freq
+				abs_freq_str = "{}".format(abs_freq)
+				# Update widget associating to absolute frequency [1/Pixel] in this dialog
+				sxoperand_abs_freq.widget.setText(abs_freq_str)
+				self.apply_btn.setEnabled(True)
+		
+		print("MRK_DEBUG: ")
+		print("MRK_DEBUG: ----- SXDialogCalculator.handle_convert_units() ----- ")
+		print("MRK_DEBUG: Edit Widget Resolution [A]              ; sxoperand_ares.widget.text()              := \"{}\"".format(sxoperand_ares.widget.text()))
+		print("MRK_DEBUG: Edit Validated Resolution [A]           ; sxoperand_ares.validated                  := \"{}\"".format(sxoperand_ares.validated))
+		print("MRK_DEBUG: Register Widget Resolution [A]          ; sxoperand_ares.register_widget.text()     := \"{}\"".format(sxoperand_ares.register_widget.text()))
+		print("MRK_DEBUG: Register Validated Resolution [A]       ; sxoperand_ares.validated_register         := \"{}\"".format(sxoperand_ares.validated_register))
+
+		print("MRK_DEBUG: Edit Widget Pixel Size [A/Pixel]        ; sxoperand_apix.widget.text()              := \"{}\"".format(sxoperand_apix.widget.text()))
+		print("MRK_DEBUG: Edit Validated Abs. Freq. [1/Pixel]     ; sxoperand_apix.validated                  := \"{}\"".format(sxoperand_apix.validated))
+		print("MRK_DEBUG: Register Widget Pixel Size [A/Pixel]    ; sxoperand_apix.register_widget.text()     := \"{}\"".format(sxoperand_apix.register_widget.text()))
+		print("MRK_DEBUG: Register Validated Pixel Size [A/Pixel] ; sxoperand_apix.validated_register         := \"{}\"".format(sxoperand_apix.validated_register))
+
+		print("MRK_DEBUG: Edit Widget bs. Freq. [1/Pixel]         ; sxoperand_abs_freq.widget.text()          := \"{}\"".format(sxoperand_abs_freq.widget.text()))
+		print("MRK_DEBUG: Edit Validated Abs. Freq. [1/Pixel]     ; sxoperand_abs_freq.validated              := \"{}\"".format(sxoperand_abs_freq.validated))
+		print("MRK_DEBUG: Register Widget Abs. Freq. [1/Pixel]    ; sxoperand_abs_freq.register_widget.text() := \"{}\"".format(sxoperand_abs_freq.register_widget.text()))
+		print("MRK_DEBUG: Register Validated Abs. Freq. [1/Pixel] ; sxoperand_abs_freq.validated_register     := \"{}\"".format(sxoperand_abs_freq.validated_register))
+
+	def handle_apply_unit_conversion(self):
+		# Do the unit conversion first
+		self.handle_convert_units()
+		abs_freq = self.sxoperand_set.dict["abs_freq"].validated
+		ares = self.sxoperand_set.dict["ares"].validated
+		apix = self.sxoperand_set.dict["apix"].validated
+		# This button should have been disabled if all operands are valid
+		if abs_freq is None:
+			ERROR("Logical Error: Encountered unexpected condition in SXDialogCalculator.handle_apply_unit_conversion(). Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
+			self.sxcmd_token_widget_abs_freq.setText("Logical Error")
+			self.sxcmd_token_subwidget_left_ares.setText("Logical Error")
+		else:
+			assert (abs_freq is not None and ares is not None and apix is not None)
+			# Update command token subwidget associating to resolution [A] accordingly
+			self.sxcmd_token_widget_abs_freq.setText("{}".format(abs_freq))
+			self.sxcmd_token_subwidget_left_ares.setText("{}[A]@{}[A/Pix]".format(ares, apix))
+			
+			# Update the associated pixel size token of this command if there is any
+			if self.sxcmd_token_widget_apix is not None:
+				self.sxcmd_token_widget_apix.setText("{}".format(apix))
+		
+		self.close()
+
+	def convert_str_to_float_apix(self, apix_str):
+		# Initialise with easy-to-recognise invalid value, which won't be used.
+		apix = -9999.9 
+		# Check data type of string
+		try:
+			apix = float(apix_str)
+		except ValueError:
+			# The text string can not be converted to float.
+			return None
+		# round by predefined precision so that calculated resolution [A] is likely to be a simple float value (e.g. 3.0[A])
+		apix = round(apix, self.precision_apix)
+		# Check value validity. The valid range of pixel size [A] is apix > 0.0.
+		if apix <= 0.0:
+			return None
+		assert (apix > 0.0)
+		return apix
+
+	def register_operand_apix_str(self, apix_str):
+		# Validated the operand value
+		sxoperand_apix = self.sxoperand_set.dict["apix"]
+		sxoperand_apix.register = apix_str
+		apix = self.convert_str_to_float_apix(sxoperand_apix.register)
+		if apix is None:
+			sxoperand_apix.validated_register = None
+		else:
+			sxoperand_apix.validated_register = apix
+			assert (sxoperand_apix.validated_register is not None)
+		sxoperand_apix.validated = sxoperand_apix.validated_register
+		# Set the string regardless of the validity
+		# Update widgets associating to pixel size [A/Pixel] in this dialog
+		sxoperand_apix.register_widget.setText(sxoperand_apix.register)
+		sxoperand_apix.widget.setText(sxoperand_apix.register)
+
+	def edit_operand_apix_str(self, apix_str):
+		# Validated the operand value
+		sxoperand_apix = self.sxoperand_set.dict["apix"]
+		apix = self.convert_str_to_float_apix(apix_str)
+		if apix is None:
+			sxoperand_apix.validated = None
+		else:
+			sxoperand_apix.validated = apix
+			assert (sxoperand_apix.validated is not None)
+		# Set the string regardless of the validity
+		# Update widgets associating to pixel size [A/Pixel] in this dialog
+		sxoperand_apix.widget.setText(apix_str)
+
+	def convert_str_to_float_abs_freq(self, abs_freq_str):
+		# Initialise with easy-to-recognise invalid value, which won't be used.
+		abs_freq = -9999.9 
+		# Check data type of arguments
+		try:
+			abs_freq = float(abs_freq_str)
+		except ValueError:
+			# The text string can not be converted to float.
+			return None
+		# round by predefined precision so that calculated resolution [A] is likely to be a simple float value (e.g. 3.0[A])
+		abs_freq = round(abs_freq, self.precision_abs_freq)
+		# Check value validity. The valid range of absolut frequency is 0.0 < abs_freq <= 0.5. 
+		if abs_freq <= 0.0 or abs_freq > 0.5:
+			return None
+		assert (abs_freq > 0.0 or abs_freq <= 0.5)
+		return abs_freq
+
+	def register_operand_abs_freq_str(self, abs_freq_str):
+		# Validated the operand value
+		sxoperand_abs_freq = self.sxoperand_set.dict["abs_freq"]
+		sxoperand_abs_freq.register = abs_freq_str
+		abs_freq = self.convert_str_to_float_abs_freq(sxoperand_abs_freq.register)
+		if abs_freq is None:
+			sxoperand_abs_freq.validated_register = None
+		else:
+			sxoperand_abs_freq.validated_register = abs_freq
+			assert (sxoperand_abs_freq.validated_register is not None)
+		sxoperand_abs_freq.validated = sxoperand_abs_freq.validated_register
+		# Set the string regardless of the validity
+		# Update widgets associating to absolute frequency [1/Pixel] in this dialog
+		sxoperand_abs_freq.register_widget.setText(sxoperand_abs_freq.register)
+		sxoperand_abs_freq.widget.setText(sxoperand_abs_freq.register)
+
+	def convert_str_to_float_ares(self, ares_str, nyquist_res = 0.0):
+		# Initialise with easy-to-recognise invalid value, which won't be used.
+		ares = -9999.9 
+		# Check data type of arguments
+		try:
+			ares = float(ares_str)
+		except ValueError:
+			# The text string can not be converted to float. This must be special value of this option
+			return None
+		# Check value validity. The valid range of resolution is 0.0 < ares
+		# Here, we ignore Nyquist with pixel size.
+		ares = round(ares, self.precision_ares)
+		if ares <= nyquist_res:
+			return None
+		assert (ares > nyquist_res)
+		return ares
+
+	# def rigister_operand_ares_str(self, ares_str, nyquist_res = 0.0):
+	# 	sxoperand_ares = self.sxoperand_set.dict["ares"]
+	# 	sxoperand_ares.register = ares_str
+	# 	ares = self.convert_str_to_float_ares(sxoperand_ares.register, nyquist_res)
+	# 	if ares is None:
+	# 		sxoperand_ares.validated_register = None
+	# 		return
+	# 	sxoperand_ares.validated_register = ares
+	# 	assert (sxoperand_ares.validated_register is not None)
+	# 	return
+	
+	def synchronize_external_update_to_ares(self):
+		# print("MRK_DEBUG: ----- synchronize_external_update_to_ares ----- ")
+		sxoperand_apix = self.sxoperand_set.dict["apix"]
+		sxoperand_abs_freq = self.sxoperand_set.dict["abs_freq"]
+		sxoperand_ares = self.sxoperand_set.dict["ares"]
+		if sxoperand_abs_freq.validated is None:
+			# Use registered string of absolute frequency. This can be special value of this option (e.g. indicate lpf modes)
+			sxoperand_abs_freq.widget.setText("Mode {}".format(sxoperand_abs_freq.register))
+			sxoperand_ares.register = sxoperand_abs_freq.widget.text()
+			sxoperand_ares.validated_register = None
+		else:
+			assert (sxoperand_abs_freq.validated is not None)
+			if sxoperand_apix.validated is None:
+				# Invalid value to indicate the invalid pixel size but invalid absolute frequency value...
+				sxoperand_ares.validated_register = None
+				sxoperand_ares.register = "Invalid Pixel Size {}".format(sxoperand_apix.widget.text())
+				sxoperand_abs_freq.widget.setText(sxoperand_ares.register)
+			else:
+				assert (sxoperand_apix.validated is not None)
+				apix = sxoperand_apix.validated
+				abs_freq = sxoperand_abs_freq.validated
+				ares = round(apix/abs_freq, self.precision_ares)
+				# The valid range of resolution [A] is ares <= apix * 2.0 (Nyquist resolution)
+				# If both pixel size and absolute frequency values are valid, this must be always true.
+				assert (ares >= apix * 2.0 ) 
+				sxoperand_ares.validated_register = ares
+				sxoperand_ares.register = "{}".format(sxoperand_ares.validated_register)
+		sxoperand_ares.validated = sxoperand_ares.validated_register
+		
+		# Update widgets associating to resolution [A] in this dialog
+		# and command token subwidget associating to resolution [A]
+		if sxoperand_ares.validated_register is not None:
+			self.apply_btn.setEnabled(True)
+			sxoperand_ares.register_widget.setEnabled(True)
+			sxoperand_ares.register_widget.setText(sxoperand_ares.register)
+			sxoperand_ares.widget.setText(sxoperand_ares.register)
+			# Update widget of this command token for absolute frequency [1/Pixel] associating to this dialog
+			self.sxcmd_token_widget_abs_freq.setText("{}".format(sxoperand_abs_freq.register))
+			# Update left subwidget of this command token for absolute frequency [1/Pixel] associating to this dialog
+			self.sxcmd_token_subwidget_left_ares.setText("{}[A]@{}[A/Pix]".format(sxoperand_ares.validated, sxoperand_apix.validated))
+		else:
+			assert (sxoperand_ares.validated_register is None)
+			self.apply_btn.setEnabled(False)
+			sxoperand_ares.register_widget.setEnabled(False)
+			sxoperand_ares.register_widget.setText("No Default")
+			sxoperand_ares.widget.setText("")
+			self.sxcmd_token_subwidget_left_ares.setText("{}".format(sxoperand_ares.register))
+		
+		print("MRK_DEBUG: ")
+		print("MRK_DEBUG: ----- SXDialogCalculator.handle_convert_units() ----- ")
+		print("MRK_DEBUG: Edit Widget Resolution [A]              ; sxoperand_ares.widget.text()              := \"{}\"".format(sxoperand_ares.widget.text()))
+		print("MRK_DEBUG: Edit Validated Resolution [A]           ; sxoperand_ares.validated                  := \"{}\"".format(sxoperand_ares.validated))
+		print("MRK_DEBUG: Register Widget Resolution [A]          ; sxoperand_ares.register_widget.text()     := \"{}\"".format(sxoperand_ares.register_widget.text()))
+		print("MRK_DEBUG: Register Validated Resolution [A]       ; sxoperand_ares.validated_register         := \"{}\"".format(sxoperand_ares.validated_register))
+
+		print("MRK_DEBUG: Edit Widget Pixel Size [A/Pixel]        ; sxoperand_apix.widget.text()              := \"{}\"".format(sxoperand_apix.widget.text()))
+		print("MRK_DEBUG: Edit Validated Abs. Freq. [1/Pixel]     ; sxoperand_apix.validated                  := \"{}\"".format(sxoperand_apix.validated))
+		print("MRK_DEBUG: Register Widget Pixel Size [A/Pixel]    ; sxoperand_apix.register_widget.text()     := \"{}\"".format(sxoperand_apix.register_widget.text()))
+		print("MRK_DEBUG: Register Validated Pixel Size [A/Pixel] ; sxoperand_apix.validated_register         := \"{}\"".format(sxoperand_apix.validated_register))
+
+		print("MRK_DEBUG: Edit Widget bs. Freq. [1/Pixel]         ; sxoperand_abs_freq.widget.text()          := \"{}\"".format(sxoperand_abs_freq.widget.text()))
+		print("MRK_DEBUG: Edit Validated Abs. Freq. [1/Pixel]     ; sxoperand_abs_freq.validated              := \"{}\"".format(sxoperand_abs_freq.validated))
+		print("MRK_DEBUG: Register Widget Abs. Freq. [1/Pixel]    ; sxoperand_abs_freq.register_widget.text() := \"{}\"".format(sxoperand_abs_freq.register_widget.text()))
+		print("MRK_DEBUG: Register Validated Abs. Freq. [1/Pixel] ; sxoperand_abs_freq.validated_register     := \"{}\"".format(sxoperand_abs_freq.validated_register))
+		
+	def reflect_external_global_update_apix(self):
+		# print("MRK_DEBUG: ----- reflect_external_global_update_apix ----- ")
+		apix_str = self.sxconst_register_widget_apix.text()
+		self.register_operand_apix_str(apix_str)
+		self.synchronize_external_update_to_ares()
+
+	def reflect_external_local_update_apix(self):
+		# print("MRK_DEBUG: ----- reflect_external_local_update_apix ----- ")
+		apix_str = self.sxcmd_token_widget_apix.text()
+		self.edit_operand_apix_str(apix_str)
+		self.synchronize_external_update_to_ares()
+
+	def reflect_external_local_update_abs_freq(self):
+		# print("MRK_DEBUG: ----- reflect_external_local_update_abs_freq ----- ")
+		abs_freq_str = self.sxcmd_token_widget_abs_freq.text()
+		self.register_operand_abs_freq_str(abs_freq_str)
+		self.synchronize_external_update_to_ares()
+
+###	@staticmethod
+###	def convert_ares_to_abs_freq(apix_str, ares_str):
+###		# Initialise resolution [A] string to absolute frequency [1/Pixel] string
+###		abs_freq_str = ares_str
+###		is_valid_abs_freq = False
+###		
+###		# Initialise resolution [A] and pixel size [A/Pixel] with invalid values
+###		ares = 0.0
+###		apix = 0.0
+###		# Check data type of arguments
+###		try:
+###			apix = float(apix_str)
+###		except ValueError:
+###			# The text string can not be converted to float. This must be special value of this option
+###			assert (abs_freq_str == ares_str)
+###			assert (not is_valid_abs_freq)
+###			return abs_freq_str, is_valid_abs_freq
+###		try:
+###			ares = float(ares_str)
+###		except ValueError:
+###			# The text string can not be converted to float. This must be special value of this option
+###			assert (abs_freq_str == ares_str)
+###			assert (not is_valid_abs_freq)
+###			return abs_freq_str, is_valid_abs_freq
+###		if apix <= 0.0:
+###			# The valid range of pixel size [A] is apix > 0.0. The valid value must have not been set yet.
+###			assert (abs_freq_str == ares_str)
+###			assert (not is_valid_abs_freq)
+###			return abs_freq_str, is_valid_abs_freq
+###		assert (apix > 0.0)
+###		nyquist_res = apix * 2.0
+###		# Check invalid values of arguments
+###		if ares < nyquist_res:
+###			# The valid range of absolut frequency is 0.0 < abs_freq <= 0.5. This must be special value of this option
+###			assert (abs_freq_str == ares_str)
+###			assert (not is_valid_abs_freq)
+###			return abs_freq_str, is_valid_abs_freq
+###		assert (ares >= nyquist_res)
+###		
+###		abs_freq = round(apix/ares, SXDialogCalculator.abs_freq_precision)
+###		abs_freq_str = "{}".format(abs_freq)
+###		is_valid_abs_freq = True
+###		
+###		print("MRK_DEBUG: ----- convert_ares_to_abs_freq() ----- ")
+###		print("MRK_DEBUG: Input Abs. Freq. [1/Pixel]   ; abs_freq := {}".format(abs_freq))
+###		print("MRK_DEBUG: Input Pixel Size [A/Pixel]   ; apix := {}".format(apix))
+###		print("MRK_DEBUG: Output Resolution [A]        ; ares:= {}".format(ares))
+###		print("MRK_DEBUG: Output Resolution [A] string ; ares_str:= {}".format(ares_str))
+###		
+###		return abs_freq_str, is_valid_abs_freq
+
+###	def convert_units(self):
+###		# Initialise resolution [A] and pixel size [A/Pixel] with invalid values
+###		apix = 0.0
+###		ares = 0.0
+###		# Get resolution [A] and pixel size [A/Pixel] values from the edit boxes
+###		apix_str = self.sxoperand_set.dict["apix"].widget.text()
+###		ares_str = self.sxoperand_set.dict["ares"].widget.text()
+###		try:
+###			apix = float(apix_str)
+###		except ValueError:
+###			# Check invalid values make sure the text string can be converted to float
+###			QMessageBox.warning(self, "Invalid Value for Pixel Size [A/Pixel]", "Invalid Value {} for Pixel Size [A/Pixel] is provided. It must be a non-zero positive float value...".format(apix_str))
+###			return
+###		try:
+###			ares = float(ares_str)
+###		except ValueError:
+###			# Check invalid values make sure the text string can be converted to float
+###			QMessageBox.warning(self, "Invalid Value for Resolution [A]", "Invalid Value {} for Resolution [A] is provided. It must be a non-zero positive float value...".format(ares_str))
+###			return
+###		# Check invalid values
+###		if apix <= 0.0:
+###			QMessageBox.warning(self, "Invalid Value for Pixel Size [A/Pixel]", "Invalid Value {} for Pixel Size [A/Pixel] is provided. It must be a non-zero positive float value...".format(apix))
+###			return
+###		assert (apix > 0.0)
+###		nyquist_res = apix * 2.0
+###		if ares < nyquist_res:
+###			QMessageBox.warning(self, "Invalid Value for Resolution [A]", "Invalid Value {} for Resolution [A] is provided. It must be larger than or equal to the Nyquest resolution {} [A] of the provided pixel size {} [A/Pixel]...".format(ares, nyquist_res, apix))
+###			return
+###		assert (ares >= nyquist_res)
+###		
+###		self.abs_freq = round(apix/ares, self.abs_freq_precision)
+###		self.apply_btn.setText("Apply Abs. Freq. {} [1/Pixel]".format(self.abs_freq))
+###		
+###		print("MRK_DEBUG: ----- convert_units() ----- ")
+###		print("MRK_DEBUG: Input Resolution [A]       ; ares := {}".format(ares))
+###		print("MRK_DEBUG: Input Pixel Size [A/Pixel] ; apix := {}".format(apix))
+###		print("MRK_DEBUG: Output Abs. Freq. [1/Pixel]; self.abs_freq:= {}".format(self.abs_freq))
+###		print("MRK_DEBUG: Output Resolution [A]      ; self.abs_freq:= {}".format(round(apix/self.abs_freq, self.ares_precision)))
 
 # ========================================================================================
 # Main Window (started by class SXApplication)
@@ -2365,9 +3815,9 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		sxcmd_category_list.append(sxcmd_category)
 
 		sxcmd = SXcmd(); sxcmd.name = "sxcter"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "CTF Estimation"; sxcmd.short_info = "Automated estimation of CTF parameters with error assessment, including Volta phase shift."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_cter"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
-		token = SXcmd_token(); token.key_base = "input_image_path"; token.key_prefix = ""; token.label = "Input micrograph path pattern"; token.help = "Specify input micrographs path pattern with a wild card (*) for any of Micrograph Modes. Images of BDB format can not be used as input micrographs. As an advanced option, a particle stack file path can also be supplied here when using --stack_mode. However, Stack Mode is not supported by sxgui. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "any_image"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_image_path"; token.key_prefix = ""; token.label = "Input micrograph path pattern"; token.help = "Specify input micrographs path pattern with a wild card (*) for any of Micrograph Modes. Images of BDB format can not be used as input micrographs. As an advanced option, a particle stack file path can also be supplied here when using --stack_mode. However, Stack Mode is not supported by sxgui. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "mic_one"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_directory"; token.key_prefix = ""; token.label = "Output directory"; token.help = "The CTF parameters (partres file), rotationally averaged power spectra (rotinf), and micrograph thumbnails (thumb files) will be written here. This directory will be created automatically and it must not exist previously. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "selection_list"; token.key_prefix = "--"; token.label = "Micrograph selection file"; token.help = "Specify path of a micrograph selection list text file for Selected Micrographs Mode. The file extension must be '.txt'. Alternatively, the file name of a single micrograph can be specified for Single Micrograph Mode. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "any_micrograph"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "selection_list"; token.key_prefix = "--"; token.label = "Micrograph selection file"; token.help = "Specify path of a micrograph selection list text file for Selected Micrographs Mode. The file extension must be '.txt'. Alternatively, the file name of a single micrograph can be specified for Single Micrograph Mode. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "select_mic_one_ext"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "wn"; token.key_prefix = "--"; token.label = "CTF window size [Pixels]"; token.help = "The size should be slightly larger than particle box size. This will be ignored in Stack Mode. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "512"; token.restore = "512"; token.type = "ctfwin"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "apix"; token.key_prefix = "--"; token.label = "Pixel size [A]"; token.help = "The pixel size of input micrograph(s) or images in input particle stack. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "apix"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "Cs"; token.key_prefix = "--"; token.label = "Microscope spherical aberration (Cs) [mm]"; token.help = "The spherical aberration (Cs) of microscope used for imaging. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "2.0"; token.restore = "2.0"; token.type = "float"; sxcmd.token_list.append(token)
@@ -2394,29 +3844,29 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		sxcmd_list.append(sxcmd)
 
 		sxcmd = SXcmd(); sxcmd.name = "sxgui_cter"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "CTF Assessment"; sxcmd.short_info = "GUI tool to assess and sort micrographs using sxcter results."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_cter"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = False
-		token = SXcmd_token(); token.key_base = "cter_ctf_file"; token.key_prefix = ""; token.label = "File containing CTF parameters"; token.help = "This file is produced by sxcter and normally called partres.txt "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "txt"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "cter_ctf_file"; token.key_prefix = ""; token.label = "File containing CTF parameters"; token.help = "This file is produced by sxcter and normally called partres.txt "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "params_cter_txt"; sxcmd.token_list.append(token)
 
 		sxcmd_list.append(sxcmd)
 
 		sxcmd = SXcmd(); sxcmd.name = "e2display"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Display Data"; sxcmd.short_info = "Displays images, volumes, or 1D plots."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_cter"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = False
-		token = SXcmd_token(); token.key_base = "input_data_list"; token.key_prefix = ""; token.label = "Input files"; token.help = "List of input images, volumes, plots. Wild cards (e.g *) can be used to select a list of files. Not recommended when the list is too large. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "any_file_list"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_data_list"; token.key_prefix = ""; token.label = "Input files"; token.help = "List of input images, volumes, plots. Wild cards (e.g *) can be used to select a list of files. Not recommended when the list is too large. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "displayable_list"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "singleimage"; token.key_prefix = "--"; token.label = "Single image view"; token.help = "Displays a stack in a single image view: "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "fullrange"; token.key_prefix = "--"; token.label = "Use full range of pixel values"; token.help = "Instead of default auto-contrast, use full range of pixel values for the display of particles stacks and 2D images, "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "verbose"; token.key_prefix = "--"; token.label = "Verbose"; token.help = "Accepted values 0-9. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "0"; token.restore = "0"; token.type = "int"; sxcmd.token_list.append(token)
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "sxpipe"; sxcmd.subname = "organize_micrographs"; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Organize Micrographs"; sxcmd.short_info = "Organize micrographs by moving micrographs in a selecting file from a source directory (specified by source micrographs pattern) to a destination directory."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_cter"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
-		token = SXcmd_token(); token.key_base = "source_micrograph_pattern"; token.key_prefix = ""; token.label = "Source micrograph path pattern"; token.help = "Specify path pattern of source micrographs with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (') or double quotes ('). (Note: sxgui.py automatically adds single quotes (')). The substring at the variable part must be same between each associated pair of micrograph names. bdb files can not be selected as source micrographs. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "any_image"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "selection_list"; token.key_prefix = ""; token.label = "Micrograph selection file"; token.help = "Specify a path of text file containing a list of selected micrograph names or paths. The file extension must be '.txt'. The directory path of each entry will be ignored if there are any. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "txt"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "destination_directory"; token.key_prefix = ""; token.label = "Destination directory"; token.help = "The micrographs in selecting list will be moved to this directory. This directory will be created automatically if it does not exist. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "directory"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "reverse"; token.key_prefix = "--"; token.label = "Reverse operation"; token.help = "Move back micrographs from the destination directory to the source directory. Please use this option to restore the previously-moved micrographs. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "check_consistency"; token.key_prefix = "--"; token.label = "Check consistency of dataset"; token.help = "Create a text file containing the list of Micrograph ID entries might have inconsitency among the provided dataset. (i.e. mic_consistency_check_info.txt). "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
+		sxcmd = SXcmd(); sxcmd.name = "sxpipe"; sxcmd.subname = "organize_micrographs"; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Organize Micrographs/Movies"; sxcmd.short_info = "Organize micrographs/movies by moving micrographs/movies in a selecting file from a source directory (specified by source micrographs/movies pattern) to a destination directory."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_cter"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
+		token = SXcmd_token(); token.key_base = "source_micrograph_pattern"; token.key_prefix = ""; token.label = "Source micrograph/movies path pattern"; token.help = "Specify path pattern of source micrographs/movies with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (') or double quotes ('). (Note: sxgui.py automatically adds single quotes (')). The substring at the variable part must be same between each associated pair of micrograph/movie names. bdb files can not be selected as source micrographs/movies. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "mic_both"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "selection_list"; token.key_prefix = ""; token.label = "Micrograph/Movie selection file"; token.help = "Specify a path of text file containing a list of selected micrograph/movie names or paths. The file extension must be '.txt'. The directory path of each entry will be ignored if there are any. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "select_mic_both"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "destination_directory"; token.key_prefix = ""; token.label = "Destination directory"; token.help = "The micrographs/movies in selecting list will be moved to this directory. This directory will be created automatically if it does not exist. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "dir"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "reverse"; token.key_prefix = "--"; token.label = "Reverse operation"; token.help = "Move back micrographs/movies from the destination directory to the source directory. Please use this option to restore the previously-moved micrographs/movies. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "check_consistency"; token.key_prefix = "--"; token.label = "Check consistency of dataset"; token.help = "Create a text file containing the list of micrograph/movie ID entries might have inconsitency among the provided dataset. (i.e. mic_consistency_check_info.txt). "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 
 		sxcmd_list.append(sxcmd)
 
 		sxcmd = SXcmd(); sxcmd.name = "e2boxer_old"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Particle Coordinates"; sxcmd.short_info = "Generate files containing particle coordinates for all input micrographs by picking particles manual and/or automatically."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_window"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = False
-		token = SXcmd_token(); token.key_base = "input_micrograph_list"; token.key_prefix = ""; token.label = "Input micrographs"; token.help = "Wild cards (e.g. *) can be used to specify a list of micrographs. Not recommended if the number is very large. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "any_image_list"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_micrograph_list"; token.key_prefix = ""; token.label = "Input micrographs"; token.help = "Wild cards (e.g. *) can be used to specify a list of micrographs. Not recommended if the number is very large. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "mic_one_list"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "boxsize"; token.key_prefix = "--"; token.label = "Box size [Pixels]"; token.help = ""; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1"; token.restore = "-1"; token.type = "box"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "invert"; token.key_prefix = "--"; token.label = "Invert contrast"; token.help = ""; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "verbose"; token.key_prefix = "--"; token.label = "Verbose"; token.help = "Accepted values 0-9. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "0"; token.restore = "0"; token.type = "int"; sxcmd.token_list.append(token)
@@ -2424,11 +3874,11 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		sxcmd_list.append(sxcmd)
 
 		sxcmd = SXcmd(); sxcmd.name = "sxwindow"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Particle Extraction"; sxcmd.short_info = "Window particles from micrographs using the particle coordinates."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_window"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
-		token = SXcmd_token(); token.key_base = "input_micrograph_pattern"; token.key_prefix = ""; token.label = "Input micrograph path pattern"; token.help = "Specify path pattern of input micrographs with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (') or double quotes ('). (Note: sxgui.py automatically adds single quotes (')). The substring at the variable part must be same between the associated pair of input micrograph and coordinates file. bdb files can not be selected as input micrographs. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "any_image"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "input_coordinates_pattern"; token.key_prefix = ""; token.label = "Input coordinates path pattern"; token.help = "Specify path pattern of input coordinates files with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (') or double quotes ('). (Note: sxgui.py automatically adds single quotes (')). The substring at the variable part must be same between the associated pair of input micrograph and coordinates file. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "parameters"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "input_ctf_params_source"; token.key_prefix = ""; token.label = "CTF parameters source"; token.help = "Specify the file produced by sxcter and normally called partres.txt for cryo data. For negative staining data, enter pixel size [A/Pixels]. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "parameters"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_micrograph_pattern"; token.key_prefix = ""; token.label = "Input micrograph path pattern"; token.help = "Specify path pattern of input micrographs with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (') or double quotes ('). (Note: sxgui.py automatically adds single quotes (')). The substring at the variable part must be same between the associated pair of input micrograph and coordinates file. bdb files can not be selected as input micrographs. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "mic_one"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_coordinates_pattern"; token.key_prefix = ""; token.label = "Input coordinates path pattern"; token.help = "Specify path pattern of input coordinates files with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (') or double quotes ('). (Note: sxgui.py automatically adds single quotes (')). The substring at the variable part must be same between the associated pair of input micrograph and coordinates file. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "params_coords_any"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_ctf_params_source"; token.key_prefix = ""; token.label = "CTF parameters source"; token.help = "Specify the file produced by sxcter and normally called partres.txt for cryo data. For negative staining data, enter pixel size [A/Pixels]. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "params_cter_txt"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_directory"; token.key_prefix = ""; token.label = "Output directory"; token.help = "The results will be written here. This directory will be created automatically and it must not exist previously. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "selection_list"; token.key_prefix = "--"; token.label = "Micrograph selection file"; token.help = "Specify a name of micrograph selection list text file for Selected Micrographs Mode. The file extension must be '.txt'. Alternatively, the file name of a single micrograph can be specified for Single Micrograph Mode. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "any_micrograph"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "selection_list"; token.key_prefix = "--"; token.label = "Micrograph selection file"; token.help = "Specify a name of micrograph selection list text file for Selected Micrographs Mode. The file extension must be '.txt'. Alternatively, the file name of a single micrograph can be specified for Single Micrograph Mode. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "select_mic_one"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "coordinates_format"; token.key_prefix = "--"; token.label = "Coordinate file format"; token.help = "Allowed values are 'sphire', 'eman1', 'eman2', or 'spider'. The sphire, eman2, and spider formats use the particle center as coordinates. The eman1 format uses the lower left corner of the box as coordinates. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "eman1"; token.restore = "eman1"; token.type = "string"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "box_size"; token.key_prefix = "--"; token.label = "Particle box size [Pixels]"; token.help = "The x and y dimensions of square area to be windowed. The box size after resampling is assumed when resample_ratio < 1.0. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "256"; token.restore = "256"; token.type = "box"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "skip_invert"; token.key_prefix = "--"; token.label = "Invert image contrast"; token.help = "Indicate if image contrast should be inverted or not. Do not invert for negative staining data. By default, the image contrast will be inverted for cryo data. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
@@ -2440,13 +3890,13 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		sxcmd_list.append(sxcmd)
 
 		sxcmd = SXcmd(); sxcmd.name = "e2bdb"; sxcmd.subname = ""; sxcmd.mode = "makevstack"; sxcmd.subset_config = "fullset"; sxcmd.label = "Particle Stack"; sxcmd.short_info = "Make a 'virtual' BDB image stack with the specified name from one or more other stacks. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_window"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
-		token = SXcmd_token(); token.key_base = "makevstack"; token.key_prefix = "--"; token.label = "Output virtual image stack"; token.help = "Make a 'virtual' BDB image stack with the specified name from one or more other stacks. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "input_bdb_stack_pattern"; token.key_prefix = ""; token.label = "Input BDB image stack pattern"; token.help = "Specify file path pattern of stack subsets created in particle extraction using a wild card /'*/' (e.g. /'//sxwindow_output_dir//*/'). The stack subsets are located in the sxwindow output directory."; token.group = "main"; token.is_required = True; token.is_locked = None; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "any_directory"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "makevstack"; token.key_prefix = "--"; token.label = "Output virtual image stack"; token.help = "Make a 'virtual' BDB image stack with the specified name from one or more other stacks. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "output_bdb2d_stack"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_bdb_stack_pattern"; token.key_prefix = ""; token.label = "Input BDB image stack pattern"; token.help = "Specify file path pattern of stack subsets created in particle extraction using a wild card /'*/' (e.g. /'//sxwindow_output_dir//*/'). The stack subsets are located in the sxwindow output directory."; token.group = "main"; token.is_required = True; token.is_locked = None; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "dir_list"; sxcmd.token_list.append(token)
 
 		sxcmd_list.append(sxcmd)
 
 		sxcmd = SXcmd(); sxcmd.name = "e2boxer"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Particle Coordinates (NEW)"; sxcmd.short_info = "Generate files containing particle coordinates for all input micrographs by picking particles manual and/or automatically."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_window"; sxcmd.role = "sxr_alt"; sxcmd.is_submittable = False
-		token = SXcmd_token(); token.key_base = "input_micrograph_list"; token.key_prefix = ""; token.label = "Input micrograph list"; token.help = "Wild cards (e.g. *) can be used to specify a list of micrographs. Not recommended if the number is very large. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "any_image_list"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_micrograph_list"; token.key_prefix = ""; token.label = "Input micrograph list"; token.help = "Wild cards (e.g. *) can be used to specify a list of micrographs. Not recommended if the number is very large. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "mic_one_list"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "apix"; token.key_prefix = "--"; token.label = "Pixel size [A]"; token.help = "Angstroms per pixel for all images. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1"; token.restore = "-1"; token.type = "apix"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "boxsize"; token.key_prefix = "--"; token.label = "Box size [Pixels]"; token.help = "Box size in pixels. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1"; token.restore = "-1"; token.type = "box"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "ptclsize"; token.key_prefix = "--"; token.label = "Particle diameter [Pixels]"; token.help = "Longest axis of particle in pixels (diameter, not radius). "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1"; token.restore = "-1"; token.type = "int"; sxcmd.token_list.append(token)
@@ -2467,25 +3917,25 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		sxcmd_list.append(sxcmd)
 
 		sxcmd = SXcmd(); sxcmd.name = "e2display"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Display Data"; sxcmd.short_info = "Displays images, volumes, or 1D plots."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_window"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = False
-		token = SXcmd_token(); token.key_base = "input_data_list"; token.key_prefix = ""; token.label = "Input files"; token.help = "List of input images, volumes, plots. Wild cards (e.g *) can be used to select a list of files. Not recommended when the list is too large. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "any_file_list"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_data_list"; token.key_prefix = ""; token.label = "Input files"; token.help = "List of input images, volumes, plots. Wild cards (e.g *) can be used to select a list of files. Not recommended when the list is too large. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "displayable_list"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "singleimage"; token.key_prefix = "--"; token.label = "Single image view"; token.help = "Displays a stack in a single image view: "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "fullrange"; token.key_prefix = "--"; token.label = "Use full range of pixel values"; token.help = "Instead of default auto-contrast, use full range of pixel values for the display of particles stacks and 2D images, "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "verbose"; token.key_prefix = "--"; token.label = "Verbose"; token.help = "Accepted values 0-9. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "0"; token.restore = "0"; token.type = "int"; sxcmd.token_list.append(token)
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "sxpipe"; sxcmd.subname = "organize_micrographs"; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Organize Micrographs"; sxcmd.short_info = "Organize micrographs by moving micrographs in a selecting file from a source directory (specified by source micrographs pattern) to a destination directory."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_window"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
-		token = SXcmd_token(); token.key_base = "source_micrograph_pattern"; token.key_prefix = ""; token.label = "Source micrograph path pattern"; token.help = "Specify path pattern of source micrographs with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (') or double quotes ('). (Note: sxgui.py automatically adds single quotes (')). The substring at the variable part must be same between each associated pair of micrograph names. bdb files can not be selected as source micrographs. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "any_image"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "selection_list"; token.key_prefix = ""; token.label = "Micrograph selection file"; token.help = "Specify a path of text file containing a list of selected micrograph names or paths. The file extension must be '.txt'. The directory path of each entry will be ignored if there are any. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "txt"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "destination_directory"; token.key_prefix = ""; token.label = "Destination directory"; token.help = "The micrographs in selecting list will be moved to this directory. This directory will be created automatically if it does not exist. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "directory"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "reverse"; token.key_prefix = "--"; token.label = "Reverse operation"; token.help = "Move back micrographs from the destination directory to the source directory. Please use this option to restore the previously-moved micrographs. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "check_consistency"; token.key_prefix = "--"; token.label = "Check consistency of dataset"; token.help = "Create a text file containing the list of Micrograph ID entries might have inconsitency among the provided dataset. (i.e. mic_consistency_check_info.txt). "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
+		sxcmd = SXcmd(); sxcmd.name = "sxpipe"; sxcmd.subname = "organize_micrographs"; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Organize Micrographs/Movies"; sxcmd.short_info = "Organize micrographs/movies by moving micrographs/movies in a selecting file from a source directory (specified by source micrographs/movies pattern) to a destination directory."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_window"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
+		token = SXcmd_token(); token.key_base = "source_micrograph_pattern"; token.key_prefix = ""; token.label = "Source micrograph/movies path pattern"; token.help = "Specify path pattern of source micrographs/movies with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (') or double quotes ('). (Note: sxgui.py automatically adds single quotes (')). The substring at the variable part must be same between each associated pair of micrograph/movie names. bdb files can not be selected as source micrographs/movies. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "mic_both"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "selection_list"; token.key_prefix = ""; token.label = "Micrograph/Movie selection file"; token.help = "Specify a path of text file containing a list of selected micrograph/movie names or paths. The file extension must be '.txt'. The directory path of each entry will be ignored if there are any. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "select_mic_both"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "destination_directory"; token.key_prefix = ""; token.label = "Destination directory"; token.help = "The micrographs/movies in selecting list will be moved to this directory. This directory will be created automatically if it does not exist. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "dir"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "reverse"; token.key_prefix = "--"; token.label = "Reverse operation"; token.help = "Move back micrographs/movies from the destination directory to the source directory. Please use this option to restore the previously-moved micrographs/movies. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "check_consistency"; token.key_prefix = "--"; token.label = "Check consistency of dataset"; token.help = "Create a text file containing the list of micrograph/movie ID entries might have inconsitency among the provided dataset. (i.e. mic_consistency_check_info.txt). "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 
 		sxcmd_list.append(sxcmd)
 
 		sxcmd = SXcmd(); sxcmd.name = "sxisac2"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "ISAC - 2D Clustering"; sxcmd.short_info = "Iterative Stable Alignment and Clustering (ISAC) of a 2D image stack."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_isac"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
-		token = SXcmd_token(); token.key_base = "stack_file"; token.key_prefix = ""; token.label = "Input image stack"; token.help = "The images must to be square (''nx''=''ny''). The stack can be either in bdb or hdf format. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "output_directory"; token.key_prefix = ""; token.label = "Output directory"; token.help = "The directory will be automatically created and the results will be written here. If the directory already exists, results will be written there, possibly overwriting previous runs. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "stack_file"; token.key_prefix = ""; token.label = "Input image stack"; token.help = "The images must to be square (''nx''=''ny''). The stack can be either in bdb or hdf format. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "bdb2d_stack"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "output_directory"; token.key_prefix = ""; token.label = "Output directory"; token.help = "The directory will be automatically created and the results will be written here. If the directory already exists, results will be written there, possibly overwriting previous runs. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "output_continue"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "radius"; token.key_prefix = "--"; token.label = "Particle radius [Pixels]"; token.help = "Radius of the particle (pixels). There is no default value and so a sensible number has to be provided. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "radius"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "img_per_grp"; token.key_prefix = "--"; token.label = "Images per class"; token.help = "Number of images per class in an ideal situation. In practice, it defines the maximum size of the classes or the number of classes K= [total number of images]/[img_per_grp]. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "200"; token.restore = "200"; token.type = "int"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "CTF"; token.key_prefix = "--"; token.label = "CTF phase flipping"; token.help = "If set, the data will be phase-flipped using CTF information included in the image headers. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
@@ -2515,14 +3965,14 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd = SXcmd(); sxcmd.name = "sxcompute_isac_avg"; sxcmd.subname = ""; sxcmd.mode = "adjust_to_analytic_model"; sxcmd.subset_config = ""; sxcmd.label = "Beautifier - Adjust to Model"; sxcmd.short_info = "Beautify the ISAC 2D clustering result with the original pixel size. In addition, adjust the power spectrum of resultant average images to an analytical model."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_isac"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "adjust_to_analytic_model"; token.key_prefix = "--"; token.label = "Adjust to analytical model"; token.help = "Adjust the power spectrum of resultant average images to an analytical model. Specific to adjust to analytical model. "; token.group = "main"; token.is_required = True; token.is_locked = True; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "stack"; token.key_prefix = "--"; token.label = "Original image stack"; token.help = "Data stack that used for the associated ISAC run. The particle images in this stack are required to create the full-sized class averages. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "isac_dir"; token.key_prefix = "--"; token.label = "Isac run directory"; token.help = "Path to the output directory of the associated ISAC run. This is input directory for this command. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "directory"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "stack"; token.key_prefix = "--"; token.label = "Original image stack"; token.help = "Data stack that used for the associated ISAC run. The particle images in this stack are required to create the full-sized class averages. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "bdb2d_stack"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "isac_dir"; token.key_prefix = "--"; token.label = "Isac run directory"; token.help = "Path to the output directory of the associated ISAC run. This is input directory for this command. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "dir"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_dir"; token.key_prefix = "--"; token.label = "Output directory"; token.help = "The directory will be automatically created and the results will be written here. By default, the program uses sharpen_DATA_AND_TIME for the name. If this is the same as Isac run directory, the program automatically creates sharpen subdirectory under the Isac run directory. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "output"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "pixel_size"; token.key_prefix = "--"; token.label = "Pixel size [A]"; token.help = "The pixel size of particle images in input particle stack for the associated ISAC run. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "apix"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "radius"; token.key_prefix = "--"; token.label = "Particle radius [Pixels]"; token.help = "There is no default radius. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1"; token.restore = "-1"; token.type = "radius"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "noctf"; token.key_prefix = "--"; token.label = "CTF correction"; token.help = "Indicate if full CTF correction should be applied or not. Always use the CTF correction for cryo data, but not for negative stained data. By default, do full CTF correction. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "skip_local_alignment"; token.key_prefix = "--"; token.label = "Local alignment"; token.help = "Indicate if local alignment should be applied or not. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "fl"; token.key_prefix = "--"; token.label = "Low-pass filter frequency [1/Pixel]"; token.help = "Cutoff frequency of low-pass filter. =-1.0, do not apply the low-pass filter; =0.0, apply low pass filter to initial ISAC resolution; =1.0, to resolution after local alignment; else use user-provided cutoff in absolute frequency (>0.0 and <=0.45). "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "float"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "fl"; token.key_prefix = "--"; token.label = "Low-pass filter frequency [1/Pixel]"; token.help = "Cutoff frequency of low-pass filter. =-1.0, do not apply the low-pass filter; =0.0, apply low pass filter to initial ISAC resolution; =1.0, to resolution after local alignment; else use user-provided cutoff in absolute frequency (>0.0 and <=0.45). "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "xr"; token.key_prefix = "--"; token.label = "Local search range [Pixels]"; token.help = "Translational search range for local alignment. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "ts"; token.key_prefix = "--"; token.label = "Local search step [Pixels]"; token.help = "Translational search step for local alignment. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "1.0"; token.restore = "1.0"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "fh"; token.key_prefix = "--"; token.label = "High frequency search limit [1/Pixel]"; token.help = "High frequency search limit in absolute frequency for local alignment. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "float"; sxcmd.token_list.append(token)
@@ -2532,24 +3982,24 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		sxcmd_list.append(sxcmd)
 
 		sxcmd = SXcmd(); sxcmd.name = "sxpipe"; sxcmd.subname = "isac_substack"; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Create Stack Subset"; sxcmd.short_info = "Create virtual subset stack consisting from ISAC accounted particles by retrieving particle numbers associated with the ISAC or Beautifier class averages. The command also saves a list text file containing the retrieved original image numbers and 2D alingment parameters. In addition, it stores the 2D alingment parameters to stack header."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_isac"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
-		token = SXcmd_token(); token.key_base = "input_bdb_stack_path"; token.key_prefix = ""; token.label = "Input BDB image stack"; token.help = "Specify the same BDB image stack used for the associated ISAC run. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "bdb"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "input_run_dir"; token.key_prefix = ""; token.label = "ISAC or Beautifier run output directory"; token.help = "Specify output directory of an ISAC or Beautifier run as an input to this command. From this directory, the program extracts the shrink ratio and 2D alingment parameters of the ISAC run or local 2D alingment parameters of the Beautifier run. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "directory"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_bdb_stack_path"; token.key_prefix = ""; token.label = "Input BDB image stack"; token.help = "Specify the same BDB image stack used for the associated ISAC run. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "bdb2d_stack"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_run_dir"; token.key_prefix = ""; token.label = "ISAC or Beautifier run output directory"; token.help = "Specify output directory of an ISAC or Beautifier run as an input to this command. From this directory, the program extracts the shrink ratio and 2D alingment parameters of the ISAC run or local 2D alingment parameters of the Beautifier run. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "dir"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_directory"; token.key_prefix = ""; token.label = "Output directory"; token.help = "The results will be written here. This directory will be created automatically and it must not exist previously. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "isac_class_avgs_path"; token.key_prefix = "--"; token.label = "ISAC or Beautifier class averages path"; token.help = "Specify path to a file containg ISAC or Beautifier class averages. The calss averages can be fullset or selected subset, as long as they are associated with the input BDB image stack and contain class member information stored in the headers. By default, the program uses the same deafult name of ordered class averages in ISAC or Beautifier (i.e. ordered_class_averages.hdf). "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "image"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "isac_class_avgs_path"; token.key_prefix = "--"; token.label = "ISAC or Beautifier class averages path"; token.help = "Specify path to a file containg ISAC or Beautifier class averages. The calss averages can be fullset or selected subset, as long as they are associated with the input BDB image stack and contain class member information stored in the headers. By default, the program uses the same deafult name of ordered class averages in ISAC or Beautifier (i.e. ordered_class_averages.hdf). "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "data2d_one"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "substack_basename"; token.key_prefix = "--"; token.label = "Substack basename"; token.help = "Specify the basename of ISAC substack file. It cannot be empty string or only white spaces. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "isac_substack"; token.restore = "isac_substack"; token.type = "string"; sxcmd.token_list.append(token)
 
 		sxcmd_list.append(sxcmd)
 
 		sxcmd = SXcmd(); sxcmd.name = "sxcompute_isac_avg"; sxcmd.subname = ""; sxcmd.mode = "no_adjustment"; sxcmd.subset_config = ""; sxcmd.label = "Beautifier - No Adjust"; sxcmd.short_info = "Beautify the ISAC 2D clustering result using the original pixel size, without adjusting the power spectrum of resultant average images. Use this option to skip all power spectrum adjustment methods and simply compute class averages with the original pixel size."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_isac"; sxcmd.role = "sxr_alt"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "no_adjustment"; token.key_prefix = "--"; token.label = "No adjustment"; token.help = "Do not adjust the power spectrum of resultant average images. Use this option to skip all power spectrum adjustment methods and simply compute class averages with the original pixel size. Specific to no adjustment method. "; token.group = "main"; token.is_required = True; token.is_locked = True; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "stack"; token.key_prefix = "--"; token.label = "Original image stack"; token.help = "Data stack that used for the associated ISAC run. The particle images in this stack are required to create the full-sized class averages. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "isac_dir"; token.key_prefix = "--"; token.label = "Isac run directory"; token.help = "Path to the output directory of the associated ISAC run. This is input directory for this command. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "directory"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "stack"; token.key_prefix = "--"; token.label = "Original image stack"; token.help = "Data stack that used for the associated ISAC run. The particle images in this stack are required to create the full-sized class averages. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "bdb2d_stack"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "isac_dir"; token.key_prefix = "--"; token.label = "Isac run directory"; token.help = "Path to the output directory of the associated ISAC run. This is input directory for this command. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "dir"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_dir"; token.key_prefix = "--"; token.label = "Output directory"; token.help = "The directory will be automatically created and the results will be written here. By default, the program uses sharpen_DATA_AND_TIME for the name. If this is the same as Isac run directory, the program automatically creates sharpen subdirectory under the Isac run directory. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "output"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "pixel_size"; token.key_prefix = "--"; token.label = "Pixel size [A]"; token.help = "The pixel size of particle images in input particle stack for the associated ISAC run. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "apix"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "radius"; token.key_prefix = "--"; token.label = "Particle radius [Pixels]"; token.help = "There is no default radius. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1"; token.restore = "-1"; token.type = "radius"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "noctf"; token.key_prefix = "--"; token.label = "CTF correction"; token.help = "Indicate if full CTF correction should be applied or not. Always use the CTF correction for cryo data, but not for negative stained data. By default, do full CTF correction. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "skip_local_alignment"; token.key_prefix = "--"; token.label = "Local alignment"; token.help = "Indicate if local alignment should be applied or not. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "fl"; token.key_prefix = "--"; token.label = "Low-pass filter frequency [1/Pixel]"; token.help = "Cutoff frequency of low-pass filter. =-1.0, do not apply the low-pass filter; =0.0, apply low pass filter to initial ISAC resolution; =1.0, to resolution after local alignment; else use user-provided cutoff in absolute frequency (>0.0 and <=0.45). "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "float"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "fl"; token.key_prefix = "--"; token.label = "Low-pass filter frequency [1/Pixel]"; token.help = "Cutoff frequency of low-pass filter. =-1.0, do not apply the low-pass filter; =0.0, apply low pass filter to initial ISAC resolution; =1.0, to resolution after local alignment; else use user-provided cutoff in absolute frequency (>0.0 and <=0.45). "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "xr"; token.key_prefix = "--"; token.label = "Local search range [Pixels]"; token.help = "Translational search range for local alignment. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "ts"; token.key_prefix = "--"; token.label = "Local search step [Pixels]"; token.help = "Translational search step for local alignment. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "1.0"; token.restore = "1.0"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "fh"; token.key_prefix = "--"; token.label = "High frequency search limit [1/Pixel]"; token.help = "High frequency search limit in absolute frequency for local alignment. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "float"; sxcmd.token_list.append(token)
@@ -2560,15 +4010,15 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd = SXcmd(); sxcmd.name = "sxcompute_isac_avg"; sxcmd.subname = ""; sxcmd.mode = "adjust_to_given_pw2"; sxcmd.subset_config = ""; sxcmd.label = "Beautifier - Adjust to Rot. Avgs."; sxcmd.short_info = "Beautify the ISAC 2D clustering result with the original pixel size. In addition, adjust the power spectrum of resultant average images to the user-provided 1-D reference power spectrum."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_isac"; sxcmd.role = "sxr_alt"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "adjust_to_given_pw2"; token.key_prefix = "--"; token.label = "Adjust to rotational average"; token.help = "Adjust the power spectrum of resultant average images to the user-provided 1-D reference power spectrum. Specific to adjust to rotational average method. "; token.group = "main"; token.is_required = True; token.is_locked = True; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "modelpw"; token.key_prefix = "--"; token.label = "Reference 1D PW spectrum"; token.help = "A text file contains 1-D rotationally-averaged power spectrum of either PDB model or EM map sampled in the given pixel_size and in original image size (see Penczek Methods Enzymol 2010). Specific to adjust to rotational average method. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "parameters"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "stack"; token.key_prefix = "--"; token.label = "Original image stack"; token.help = "Data stack that used for the associated ISAC run. The particle images in this stack are required to create the full-sized class averages. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "isac_dir"; token.key_prefix = "--"; token.label = "Isac run directory"; token.help = "Path to the output directory of the associated ISAC run. This is input directory for this command. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "directory"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "modelpw"; token.key_prefix = "--"; token.label = "Reference 1D PW spectrum"; token.help = "A text file contains 1-D rotationally-averaged power spectrum of either PDB model or EM map sampled in the given pixel_size and in original image size (see Penczek Methods Enzymol 2010). Specific to adjust to rotational average method. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "spectrum1d"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "stack"; token.key_prefix = "--"; token.label = "Original image stack"; token.help = "Data stack that used for the associated ISAC run. The particle images in this stack are required to create the full-sized class averages. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "bdb2d_stack"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "isac_dir"; token.key_prefix = "--"; token.label = "Isac run directory"; token.help = "Path to the output directory of the associated ISAC run. This is input directory for this command. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "dir"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_dir"; token.key_prefix = "--"; token.label = "Output directory"; token.help = "The directory will be automatically created and the results will be written here. By default, the program uses sharpen_DATA_AND_TIME for the name. If this is the same as Isac run directory, the program automatically creates sharpen subdirectory under the Isac run directory. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "output"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "pixel_size"; token.key_prefix = "--"; token.label = "Pixel size [A]"; token.help = "The pixel size of particle images in input particle stack for the associated ISAC run. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "apix"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "radius"; token.key_prefix = "--"; token.label = "Particle radius [Pixels]"; token.help = "There is no default radius. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1"; token.restore = "-1"; token.type = "radius"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "noctf"; token.key_prefix = "--"; token.label = "CTF correction"; token.help = "Indicate if full CTF correction should be applied or not. Always use the CTF correction for cryo data, but not for negative stained data. By default, do full CTF correction. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "skip_local_alignment"; token.key_prefix = "--"; token.label = "Local alignment"; token.help = "Indicate if local alignment should be applied or not. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "fl"; token.key_prefix = "--"; token.label = "Low-pass filter frequency [1/Pixel]"; token.help = "Cutoff frequency of low-pass filter. =-1.0, do not apply the low-pass filter; =0.0, apply low pass filter to initial ISAC resolution; =1.0, to resolution after local alignment; else use user-provided cutoff in absolute frequency (>0.0 and <=0.45). "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "float"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "fl"; token.key_prefix = "--"; token.label = "Low-pass filter frequency [1/Pixel]"; token.help = "Cutoff frequency of low-pass filter. =-1.0, do not apply the low-pass filter; =0.0, apply low pass filter to initial ISAC resolution; =1.0, to resolution after local alignment; else use user-provided cutoff in absolute frequency (>0.0 and <=0.45). "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "xr"; token.key_prefix = "--"; token.label = "Local search range [Pixels]"; token.help = "Translational search range for local alignment. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "ts"; token.key_prefix = "--"; token.label = "Local search step [Pixels]"; token.help = "Translational search step for local alignment. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "1.0"; token.restore = "1.0"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "fh"; token.key_prefix = "--"; token.label = "High frequency search limit [1/Pixel]"; token.help = "High frequency search limit in absolute frequency for local alignment. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "float"; sxcmd.token_list.append(token)
@@ -2581,14 +4031,14 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		token = SXcmd_token(); token.key_base = "B_enhance"; token.key_prefix = "--"; token.label = "Adjust to B-factor"; token.help = "Adjust the power spectrum of resultant average images using B-factor to enhance averages. Specific to adjust to B-factor method. "; token.group = "main"; token.is_required = True; token.is_locked = True; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "B_start"; token.key_prefix = "--"; token.label = "B-factor lower limit [A]"; token.help = "Lower limit for B-factor estimation. Specific to adjust to B-factor method. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "10.0"; token.restore = "10.0"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "Bfactor"; token.key_prefix = "--"; token.label = "Use ad-hoc B-factor [A^2]"; token.help = "Skip the automatic estimation and use user-provided ad-hoc B-factor (e.g. 45.0[A^2]) for the enhancement. By default, the program automatically estimates B-factor. Specific to adjust to B-factor method. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "float"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "stack"; token.key_prefix = "--"; token.label = "Original image stack"; token.help = "Data stack that used for the associated ISAC run. The particle images in this stack are required to create the full-sized class averages. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "isac_dir"; token.key_prefix = "--"; token.label = "Isac run directory"; token.help = "Path to the output directory of the associated ISAC run. This is input directory for this command. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "directory"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "stack"; token.key_prefix = "--"; token.label = "Original image stack"; token.help = "Data stack that used for the associated ISAC run. The particle images in this stack are required to create the full-sized class averages. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "bdb2d_stack"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "isac_dir"; token.key_prefix = "--"; token.label = "Isac run directory"; token.help = "Path to the output directory of the associated ISAC run. This is input directory for this command. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "dir"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_dir"; token.key_prefix = "--"; token.label = "Output directory"; token.help = "The directory will be automatically created and the results will be written here. By default, the program uses sharpen_DATA_AND_TIME for the name. If this is the same as Isac run directory, the program automatically creates sharpen subdirectory under the Isac run directory. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "output"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "pixel_size"; token.key_prefix = "--"; token.label = "Pixel size [A]"; token.help = "The pixel size of particle images in input particle stack for the associated ISAC run. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "apix"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "radius"; token.key_prefix = "--"; token.label = "Particle radius [Pixels]"; token.help = "There is no default radius. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1"; token.restore = "-1"; token.type = "radius"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "noctf"; token.key_prefix = "--"; token.label = "CTF correction"; token.help = "Indicate if full CTF correction should be applied or not. Always use the CTF correction for cryo data, but not for negative stained data. By default, do full CTF correction. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "skip_local_alignment"; token.key_prefix = "--"; token.label = "Local alignment"; token.help = "Indicate if local alignment should be applied or not. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "fl"; token.key_prefix = "--"; token.label = "Low-pass filter frequency [1/Pixel]"; token.help = "Cutoff frequency of low-pass filter. =-1.0, do not apply the low-pass filter; =0.0, apply low pass filter to initial ISAC resolution; =1.0, to resolution after local alignment; else use user-provided cutoff in absolute frequency (>0.0 and <=0.45). "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "float"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "fl"; token.key_prefix = "--"; token.label = "Low-pass filter frequency [1/Pixel]"; token.help = "Cutoff frequency of low-pass filter. =-1.0, do not apply the low-pass filter; =0.0, apply low pass filter to initial ISAC resolution; =1.0, to resolution after local alignment; else use user-provided cutoff in absolute frequency (>0.0 and <=0.45). "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "xr"; token.key_prefix = "--"; token.label = "Local search range [Pixels]"; token.help = "Translational search range for local alignment. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "ts"; token.key_prefix = "--"; token.label = "Local search step [Pixels]"; token.help = "Translational search step for local alignment. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "1.0"; token.restore = "1.0"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "fh"; token.key_prefix = "--"; token.label = "High frequency search limit [1/Pixel]"; token.help = "High frequency search limit in absolute frequency for local alignment. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "float"; sxcmd.token_list.append(token)
@@ -2598,7 +4048,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		sxcmd_list.append(sxcmd)
 
 		sxcmd = SXcmd(); sxcmd.name = "e2display"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Display Data"; sxcmd.short_info = "Displays images, volumes, or 1D plots."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_isac"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = False
-		token = SXcmd_token(); token.key_base = "input_data_list"; token.key_prefix = ""; token.label = "Input files"; token.help = "List of input images, volumes, plots. Wild cards (e.g *) can be used to select a list of files. Not recommended when the list is too large. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "any_file_list"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_data_list"; token.key_prefix = ""; token.label = "Input files"; token.help = "List of input images, volumes, plots. Wild cards (e.g *) can be used to select a list of files. Not recommended when the list is too large. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "displayable_list"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "singleimage"; token.key_prefix = "--"; token.label = "Single image view"; token.help = "Displays a stack in a single image view: "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "fullrange"; token.key_prefix = "--"; token.label = "Use full range of pixel values"; token.help = "Instead of default auto-contrast, use full range of pixel values for the display of particles stacks and 2D images, "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "verbose"; token.key_prefix = "--"; token.label = "Verbose"; token.help = "Accepted values 0-9. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "0"; token.restore = "0"; token.type = "int"; sxcmd.token_list.append(token)
@@ -2606,8 +4056,8 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		sxcmd_list.append(sxcmd)
 
 		sxcmd = SXcmd(); sxcmd.name = "sxrviper"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Initial 3D Model - RVIPER"; sxcmd.short_info = "Reproducible ''ab initio'' 3D structure determination. The program is designed to determine a validated initial intermediate resolution structure using a small set (less than 100) of class averages produced by ISAC."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_viper"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
-		token = SXcmd_token(); token.key_base = "stack"; token.key_prefix = ""; token.label = "Input images stack"; token.help = "A small set (less than 100) of class averages produced by ISAC. The images must be square and the stack must be hdf format . "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "hdf"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "output_directory"; token.key_prefix = ""; token.label = "Output directory"; token.help = "The directory will be automatically created and the results will be written here. If the directory already exists, results will be written there, possibly overwriting previous runs. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "stack"; token.key_prefix = ""; token.label = "Input images stack"; token.help = "A small set (less than 100) of class averages produced by ISAC. The images must be square. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "data2d_one"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "output_directory"; token.key_prefix = ""; token.label = "Output directory"; token.help = "The directory will be automatically created and the results will be written here. If the directory already exists, results will be written there, possibly overwriting previous runs. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "output_continue"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "radius"; token.key_prefix = "--"; token.label = "Target particle radius [Pixels]"; token.help = "Use the same value as in ISAC. It has to be less than half the box size. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "29"; token.restore = "29"; token.type = "int"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "sym"; token.key_prefix = "--"; token.label = "Point-group symmetry"; token.help = ""; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "c1"; token.restore = "c1"; token.type = "sym"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "n_rv_runs"; token.key_prefix = "--"; token.label = "RVIPER iterations"; token.help = "Corresponds to main### output directory. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "10"; token.restore = "10"; token.type = "int"; sxcmd.token_list.append(token)
@@ -2627,7 +4077,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		token = SXcmd_token(); token.key_base = "center"; token.key_prefix = "--"; token.label = "Center 3D template"; token.help = "0: no centering; 1: center of gravity. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "maxit1"; token.key_prefix = "--"; token.label = "Maximum iterations - GA step"; token.help = ""; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "400"; token.restore = "400"; token.type = "int"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "maxit2"; token.key_prefix = "--"; token.label = "Maximum iterations - Finish step"; token.help = ""; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "50"; token.restore = "50"; token.type = "int"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "mask3D"; token.key_prefix = "--"; token.label = "3D mask"; token.help = ""; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "sphere"; token.restore = "sphere"; token.type = "image"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "mask3D"; token.key_prefix = "--"; token.label = "3D mask"; token.help = ""; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "sphere"; token.restore = "sphere"; token.type = "data3d_one"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "moon_elimination"; token.key_prefix = "--"; token.label = "Eliminate disconnected regions"; token.help = "Used to removed disconnected pieces from the model. It requires as argument a comma separated string with the mass in KDa and the pixel size. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "string"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "L2threshold"; token.key_prefix = "--"; token.label = "GA stop threshold"; token.help = "Defines the maximum relative dispersion of volumes' L2 norms. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "0.03"; token.restore = "0.03"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "ref_a"; token.key_prefix = "--"; token.label = "Projection generation method"; token.help = "Method for generating the quasi-uniformly distributed projection directions. S- Saff algorithm, or P - Penczek 1994 algorithm. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "S"; token.restore = "S"; token.type = "string"; sxcmd.token_list.append(token)
@@ -2635,13 +4085,13 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		token = SXcmd_token(); token.key_base = "doga"; token.key_prefix = "--"; token.label = "Threshold to start GA"; token.help = "Do GA when the fraction of orientation that changes less than 1.0 degrees is at least this fraction. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "0.1"; token.restore = "0.1"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "fl"; token.key_prefix = "--"; token.label = "Low-pass filter frequency [1/Pixels]"; token.help = "Using a hyperbolic tangent low-pass filter. Specify with absolute frequency. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "0.25"; token.restore = "0.25"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "aa"; token.key_prefix = "--"; token.label = "Low-pass filter fall-off [1/Pixels]"; token.help = "Fall-off of for the hyperbolic tangent low-pass filter. Specify with absolute frequency. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "0.1"; token.restore = "0.1"; token.type = "float"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "pwreference"; token.key_prefix = "--"; token.label = "Power spectrum reference"; token.help = "Text file containing a 1D reference power spectrum. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "parameters"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "pwreference"; token.key_prefix = "--"; token.label = "Power spectrum reference"; token.help = "Text file containing a 1D reference power spectrum. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "spectrum1d"; sxcmd.token_list.append(token)
 
 		sxcmd_list.append(sxcmd)
 
 		sxcmd = SXcmd(); sxcmd.name = "sxprocess"; sxcmd.subname = ""; sxcmd.mode = "changesize"; sxcmd.subset_config = ""; sxcmd.label = "Change Size of VIPER Model"; sxcmd.short_info = "Change size of image or volume (resample, decimation or interpolation up). The process also changes the pixel size and window size accordingly. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_viper"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "changesize"; token.key_prefix = "--"; token.label = "Change size of VIPER model"; token.help = "Change size of image or volume (resample, decimation or interpolation up). The process also changes the pixel size and window size accordingly. "; token.group = "main"; token.is_required = True; token.is_locked = True; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "input_stack"; token.key_prefix = ""; token.label = "Input Viper Model"; token.help = "Input Viper Model."; token.group = "main"; token.is_required = True; token.is_locked = None; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_stack"; token.key_prefix = ""; token.label = "Input Viper Model"; token.help = "Input Viper Model."; token.group = "main"; token.is_required = True; token.is_locked = None; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "data3d_one"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_stack"; token.key_prefix = ""; token.label = "Output Resized Viper Model"; token.help = "Output resized (decimated or interpolated up) Viper Model."; token.group = "main"; token.is_required = True; token.is_locked = None; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "ratio"; token.key_prefix = "--"; token.label = "Ratio of new to old image size"; token.help = "if < 1, the pixel size will increase and image size decrease. if > 1, the other way round. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "1.0"; token.restore = "1.0"; token.type = "float"; sxcmd.token_list.append(token)
 
@@ -2649,14 +4099,14 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd = SXcmd(); sxcmd.name = "e2proc3d"; sxcmd.subname = ""; sxcmd.mode = "clip"; sxcmd.subset_config = ""; sxcmd.label = "Window VIPER Model"; sxcmd.short_info = "Window (pad or clip) volume to the specific dimensions. Specify 1, 3 or 6 arguments; '<x>[,<y>,<z>[,<xc>,<yc>,<zc>]]'. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_viper"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "clip"; token.key_prefix = "--"; token.label = "Window to specified size [Pixels]"; token.help = "Window (pad or clip) volume to the specific dimensions. Specify 1, 3 or 6 arguments; '<x>[,<y>,<z>[,<xc>,<yc>,<zc>]]'. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "string"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "input_volume"; token.key_prefix = ""; token.label = "Input volume"; token.help = "Input volume file name."; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_volume"; token.key_prefix = ""; token.label = "Input volume"; token.help = "Input volume file name."; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "data3d_one"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_file"; token.key_prefix = ""; token.label = "Output windowed volume"; token.help = "Output windowed (clipped/padded) volume file name."; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 
 		sxcmd_list.append(sxcmd)
 
 		sxcmd = SXcmd(); sxcmd.name = "sxviper"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Initial 3D Model - VIPER"; sxcmd.short_info = "''ab initio'' 3D structure determination using Validation of Individual Parameter Reproducibility (VIPER). Designed to determine a validated initial model using a small set of class averages produced by ISAC."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_viper"; sxcmd.role = "sxr_alt"; sxcmd.is_submittable = True
-		token = SXcmd_token(); token.key_base = "stack"; token.key_prefix = ""; token.label = "Input images stack"; token.help = "A small set of Class averages produced by ISAC. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "directory"; token.key_prefix = ""; token.label = "Output directory"; token.help = "The directory will be automatically created and the results will be written here. If the directory already exists, results will be written there, possibly overwriting previous runs. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "stack"; token.key_prefix = ""; token.label = "Input images stack"; token.help = "A small set of class averages produced by ISAC. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "data2d_one"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "directory"; token.key_prefix = ""; token.label = "Output directory"; token.help = "The directory will be automatically created and the results will be written here. If the directory already exists, results will be written there, possibly overwriting previous runs. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "output_continue"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "radius"; token.key_prefix = "--"; token.label = "Target particle radius [Pixels]"; token.help = "Use the same value as in ISAC. It has to be less than half the box size. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "29"; token.restore = "29"; token.type = "int"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "sym"; token.key_prefix = "--"; token.label = "Point-group symmetry"; token.help = ""; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "c1"; token.restore = "c1"; token.type = "sym"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "ir"; token.key_prefix = "--"; token.label = "Inner rotational search radius [Pixels]"; token.help = ""; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "1"; token.restore = "1"; token.type = "int"; sxcmd.token_list.append(token)
@@ -2668,7 +4118,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		token = SXcmd_token(); token.key_base = "center"; token.key_prefix = "--"; token.label = "Center 3D template"; token.help = "0: no centering; 1: center of gravity "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "maxit1"; token.key_prefix = "--"; token.label = "Maximum iterations - GA step"; token.help = ""; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "400"; token.restore = "400"; token.type = "int"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "maxit2"; token.key_prefix = "--"; token.label = "Maximum iterations - Finish step"; token.help = ""; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "50"; token.restore = "50"; token.type = "int"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "mask3D"; token.key_prefix = "--"; token.label = "3D mask"; token.help = ""; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "sphere"; token.restore = "sphere"; token.type = "image"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "mask3D"; token.key_prefix = "--"; token.label = "3D mask"; token.help = ""; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "sphere"; token.restore = "sphere"; token.type = "data3d_one"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "moon_elimination"; token.key_prefix = "--"; token.label = "Eliminate disconnected regions"; token.help = "Used to removed disconnected pieces from the model. It requires as argument a comma separated string with the mass in KDa and the pixel size. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "string"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "L2threshold"; token.key_prefix = "--"; token.label = "GA stop threshold"; token.help = "Defines the maximum relative dispersion of volumes' L2 norms. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "0.03"; token.restore = "0.03"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "ref_a"; token.key_prefix = "--"; token.label = "Projection generation method"; token.help = "Method for generating the quasi-uniformly distributed projection directions. S- Saff algorithm, or P - Penczek 1994 algorithm. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "S"; token.restore = "S"; token.type = "string"; sxcmd.token_list.append(token)
@@ -2676,7 +4126,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		token = SXcmd_token(); token.key_base = "doga"; token.key_prefix = "--"; token.label = "Threshold to start GA"; token.help = "Do GA when the fraction of orientation that changes less than 1.0 degrees is at least this fraction. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "0.1"; token.restore = "0.1"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "fl"; token.key_prefix = "--"; token.label = "Low-pass filter frequency [1/Pixels]"; token.help = "Using a hyperbolic tangent low-pass filter. Specify with absolute frequency. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "0.25"; token.restore = "0.25"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "aa"; token.key_prefix = "--"; token.label = "Low-pass filter fall-off [1/Pixels]"; token.help = "Fall-off of for the hyperbolic tangent low-pass filter. Specify with absolute frequency. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "0.1"; token.restore = "0.1"; token.type = "float"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "pwreference"; token.key_prefix = "--"; token.label = "Power spectrum reference"; token.help = "Text file containing a 1D reference power spectrum. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "parameters"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "pwreference"; token.key_prefix = "--"; token.label = "Power spectrum reference"; token.help = "Text file containing a 1D reference power spectrum. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "spectrum1d"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "debug"; token.key_prefix = "--"; token.label = "Verbose"; token.help = "Print debug info. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 
 		sxcmd_list.append(sxcmd)
@@ -2689,13 +4139,13 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		token = SXcmd_token(); token.key_base = "het"; token.key_prefix = "--"; token.label = "Include hetero atoms"; token.help = "Otherwise the HETATM entries in the PDB file are ignored. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "center"; token.key_prefix = "--"; token.label = "Center model at the origin"; token.help = ": Specifies whether the atomic model should be moved to the origin before generating density map.  Available options are: c - Use the geometrical center of atoms; a - Use the center of mass (recommended); x,y,z - Vector to be subtracted for the coordinates. Default: no centering, in which case (0,0,0) in the PDB space will map to the center of the EM volume. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "n"; token.restore = "n"; token.type = "string"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "O"; token.key_prefix = "--"; token.label = "Apply additional rotation"; token.help = "This can be used to modify the orientation of the atomic model. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "tr0"; token.key_prefix = "--"; token.label = "Rotational matrix file"; token.help = ": This file must contain the 3x4 transformation matrix to be applied to the PDB coordinates after centering. The translation vector (last column of the matrix) must be specified in Angstrom. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "parameters"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "tr0"; token.key_prefix = "--"; token.label = "Rotational matrix file"; token.help = ": This file must contain the 3x4 transformation matrix to be applied to the PDB coordinates after centering. The translation vector (last column of the matrix) must be specified in Angstrom. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "rot_matrix"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "quiet"; token.key_prefix = "--"; token.label = "Silent mode"; token.help = "Does not print any information to the monitor. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 
 		sxcmd_list.append(sxcmd)
 
 		sxcmd = SXcmd(); sxcmd.name = "e2display"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Display Data"; sxcmd.short_info = "Displays images, volumes, or 1D plots."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_viper"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = False
-		token = SXcmd_token(); token.key_base = "input_data_list"; token.key_prefix = ""; token.label = "Input files"; token.help = "List of input images, volumes, plots. Wild cards (e.g *) can be used to select a list of files. Not recommended when the list is too large. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "any_file_list"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_data_list"; token.key_prefix = ""; token.label = "Input files"; token.help = "List of input images, volumes, plots. Wild cards (e.g *) can be used to select a list of files. Not recommended when the list is too large. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "displayable_list"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "singleimage"; token.key_prefix = "--"; token.label = "Single image view"; token.help = "Displays a stack in a single image view: "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "fullrange"; token.key_prefix = "--"; token.label = "Use full range of pixel values"; token.help = "Instead of default auto-contrast, use full range of pixel values for the display of particles stacks and 2D images, "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "verbose"; token.key_prefix = "--"; token.label = "Verbose"; token.help = "Accepted values 0-9. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "0"; token.restore = "0"; token.type = "int"; sxcmd.token_list.append(token)
@@ -2704,7 +4154,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd = SXcmd(); sxcmd.name = "sxprocess"; sxcmd.subname = ""; sxcmd.mode = "adaptive_mask"; sxcmd.subset_config = ""; sxcmd.label = "Adaptive 3D Mask"; sxcmd.short_info = "Create soft-edged 3D mask from reference volume. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_viper"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "adaptive_mask"; token.key_prefix = "--"; token.label = "Create soft-edged 3D mask"; token.help = "Create soft-edged 3D mask from reference volume. "; token.group = "main"; token.is_required = True; token.is_locked = True; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "input_volume"; token.key_prefix = ""; token.label = "Input volume"; token.help = "Input reference volume"; token.group = "main"; token.is_required = True; token.is_locked = None; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_volume"; token.key_prefix = ""; token.label = "Input volume"; token.help = "Input reference volume"; token.group = "main"; token.is_required = True; token.is_locked = None; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "data3d_one"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_mask3D"; token.key_prefix = ""; token.label = "Output mask"; token.help = "Output 3D mask"; token.group = "main"; token.is_required = True; token.is_locked = None; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "nsigma"; token.key_prefix = "--"; token.label = "Density standard deviation threshold"; token.help = "Defines the threshold used to find the main volume within the data. All voxels with density <= mean + nsigma standard deviation will be included into the main volume. This option will not be used if the option threshold is larger than -9999.0. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "1.0"; token.restore = "1.0"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "threshold"; token.key_prefix = "--"; token.label = "Binarization threshold"; token.help = "Below this value the data is assumed to not belong to the main volume. With the value lower than the default, the option will be ignored and the mask will be set according to nsigma. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-9999.0"; token.restore = "-9999.0"; token.type = "float"; sxcmd.token_list.append(token)
@@ -2716,7 +4166,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd = SXcmd(); sxcmd.name = "sxprocess"; sxcmd.subname = ""; sxcmd.mode = "angular_distribution"; sxcmd.subset_config = ""; sxcmd.label = "Angular Distribution"; sxcmd.short_info = "Create angular distribution file containing a 3D representation of the given angular distribution. It can be viewed with UCFS Chimera. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_viper"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "angular_distribution"; token.key_prefix = "--"; token.label = "Create angular distribution file"; token.help = "Create angular distribution file containing a 3D representation of the given angular distribution. It can be viewed with UCFS Chimera. "; token.group = "main"; token.is_required = True; token.is_locked = True; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "inputfile"; token.key_prefix = ""; token.label = "Alignment Parameter file"; token.help = "Alignment Parameter file created by a previous 3D reconstruction step (e.g. sxmeridien.py)"; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "any_file"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "inputfile"; token.key_prefix = ""; token.label = "Projection parameters file"; token.help = "Projection parameters file created by a 3D reconstruction step (typically, final_params_*.txt or main*/params_*.txt of sxmeridien.py)."; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "params_proj_txt"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "pixel_size"; token.key_prefix = "--"; token.label = "Pixel size [A]"; token.help = "Pixel size of input data. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "0.0"; token.restore = "0.0"; token.type = "apix"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "symmetry"; token.key_prefix = "--"; token.label = "Point-group symmetry"; token.help = "Point-group symmetry of the reconstructed structure. Acceptable values are: cn and dn, where n is multiplicity. In addition, icos, oct, and tet are supported. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "c1"; token.restore = "c1"; token.type = "sym"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "round_digit"; token.key_prefix = "--"; token.label = "Number precision"; token.help = "Decimal numbers will be rounded to this number of decimal points. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "5"; token.restore = "5"; token.type = "int"; sxcmd.token_list.append(token)
@@ -2728,11 +4178,11 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		sxcmd_list.append(sxcmd)
 
 		sxcmd = SXcmd(); sxcmd.name = "sxmeridien"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = "fresh"; sxcmd.label = "3D Refinement"; sxcmd.short_info = "Perform 3D structure refinement with standard default run or fresh run, which starts from exhaustive searches using initial reference volume."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_meridien"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
-		token = SXcmd_token(); token.key_base = "stack"; token.key_prefix = ""; token.label = "Input image stack"; token.help = "Input image stack. Required only for standard fresh run and local refinement from stack. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "stack"; token.key_prefix = ""; token.label = "Input image stack"; token.help = "Input image stack. Required only for standard fresh run and local refinement from stack. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "bdb2d_stack"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_directory"; token.key_prefix = ""; token.label = "Output directory"; token.help = "The results will be written here. This directory will be created automatically if it does not exist. By default, the program uses master_DATA_AND_TIME for the name. For standard continuation run, local refinement from iteration, and final reconstruction only, the directory must exists because this is also used as the input directory. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "output"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "initial_volume"; token.key_prefix = ""; token.label = "Initial 3D reference"; token.help = "The 3D reference used in the initial iteration of 3D refinement. Required only for standard fresh run. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "initial_volume"; token.key_prefix = ""; token.label = "Initial 3D reference"; token.help = "The 3D reference used in the initial iteration of 3D refinement. Required only for standard fresh run. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "data3d_one"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "radius"; token.key_prefix = "--"; token.label = "Particle radius [Pixels]"; token.help = "Outer radius in pixels of particles < int(boxsize/2)-1. Ignored in final reconstruction only. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1"; token.restore = "-1"; token.type = "radius"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "mask3D"; token.key_prefix = "--"; token.label = "3D mask file"; token.help = "Soft mask for the volume. If not given, a hard sphere of radius boxsize/2-1 will be used. Ignored in final reconstruction only. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "image"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "mask3D"; token.key_prefix = "--"; token.label = "3D mask file"; token.help = "Soft mask for the volume. If not given, a hard sphere of radius boxsize/2-1 will be used. Ignored in final reconstruction only. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "data3d_one"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "symmetry"; token.key_prefix = "--"; token.label = "Point-group symmetry"; token.help = "Point-group symmetry of the refined structure. Acceptable values are: cn and dn, where n is multiplicity. In addition, icos, oct, and tet are supported. Ignored in final reconstruction only. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "c1"; token.restore = "c1"; token.type = "sym"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "inires"; token.key_prefix = "--"; token.label = "Starting resolution [A]"; token.help = "Resolution of the initial volume used to start the refinement. Ignored in final reconstruction only. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "25.0"; token.restore = "25.0"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "delta"; token.key_prefix = "--"; token.label = "Initial angular sampling step [Degrees]"; token.help = "Initial angular sampling step. Ignored in final reconstruction only. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "7.5"; token.restore = "7.5"; token.type = "float"; sxcmd.token_list.append(token)
@@ -2748,7 +4198,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		token = SXcmd_token(); token.key_base = "small_memory"; token.key_prefix = "--"; token.label = "Keep data in memory"; token.help = "Indicate if data should be kept in memory or not. By default, data will be kept in memory. Ignored in final reconstruction only. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "ccfpercentage"; token.key_prefix = "--"; token.label = "Correlation peaks to be included [%]"; token.help = "Percentage of correlation peaks to be included. 0.0 corresponds to hard matching. Ignored in final reconstruction only. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "99.9"; token.restore = "99.9"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "nonorm"; token.key_prefix = "--"; token.label = "Apply image norm correction"; token.help = "Indicate if image norm correction should be applied or not. By default, apply image norm correction. Ignored in final reconstruction only. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "function"; token.key_prefix = "--"; token.label = "Reference preparation function"; token.help = "Specify name of function that program should use to prepare the reference volume after each iteration. Ignored in final reconstruction only. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "do_volume_mask"; token.restore = "do_volume_mask"; token.type = "function"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "function"; token.key_prefix = "--"; token.label = "Reference preparation function"; token.help = "Specify name of function that program should use to prepare the reference volume after each iteration. Ignored in final reconstruction only. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "do_volume_mask"; token.restore = "do_volume_mask"; token.type = "user_func"; sxcmd.token_list.append(token)
 
 		sxcmd_list.append(sxcmd)
 
@@ -2758,16 +4208,16 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd = SXcmd(); sxcmd.name = "sxprocess"; sxcmd.subname = ""; sxcmd.mode = "combinemaps"; sxcmd.subset_config = "halfset volumes"; sxcmd.label = "Sharpening of Halfset Volumes"; sxcmd.short_info = "Combine a pair of unfiltered odd & even halfset volumes, then enhance the power spectrum at high frequencies (Halfset Volumes Mode). B-factor can be estimated from these unfiltered halfset volumes. This mode is typically used with MERIDIEN outputs."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_meridien"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "combinemaps"; token.key_prefix = "--"; token.label = "Combine half volumes then enhance"; token.help = "Combine a pair of unfiltered odd & even halfset volumes, then enhance the power spectrum at high frequencies (Halfset Volumes Mode). B-factor can be automatically estimated from these unfiltered halfset volumes. This mode requires two arguments; typically use unfiltered halfset volumes produced by MERIDIEN."; token.group = "main"; token.is_required = True; token.is_locked = True; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "firstvolume"; token.key_prefix = ""; token.label = "First unfiltered halfset volume"; token.help = "Typically, generated by sxmeridien."; token.group = "main"; token.is_required = True; token.is_locked = None; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "secondvolume"; token.key_prefix = ""; token.label = "Second unfiltered halfset volume"; token.help = "Typically, generated by sxmeridien."; token.group = "main"; token.is_required = True; token.is_locked = None; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "firstvolume"; token.key_prefix = ""; token.label = "First unfiltered halfset volume"; token.help = "Typically, generated by sxmeridien."; token.group = "main"; token.is_required = True; token.is_locked = None; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "data3d_one"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "secondvolume"; token.key_prefix = ""; token.label = "Second unfiltered halfset volume"; token.help = "Typically, generated by sxmeridien."; token.group = "main"; token.is_required = True; token.is_locked = None; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "data3d_one"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_dir"; token.key_prefix = "--"; token.label = "Output directory"; token.help = "Specify path to the output directory for this sharpening process. By default, the program uses the current directory. However, GUI requires the path other than the current directory. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "pixel_size"; token.key_prefix = "--"; token.label = "Pixel size [A]"; token.help = "Pixel size of input data. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "0.0"; token.restore = "0.0"; token.type = "apix"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "mask"; token.key_prefix = "--"; token.label = "3D mask file"; token.help = "Path to user-provided mask. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "image"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "mask"; token.key_prefix = "--"; token.label = "3D mask file"; token.help = "Path to user-provided mask. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "data3d_one"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "do_adaptive_mask"; token.key_prefix = "--"; token.label = "Apply adaptive mask"; token.help = "Program creates mask adaptively with given density threshold. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "mask_threshold"; token.key_prefix = "--"; token.label = "Adaptive mask threshold"; token.help = "Density threshold for creating adaptive surface mask. Effective only with --do_adaptive_mask option. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "0.02"; token.restore = "0.02"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "consine_edge"; token.key_prefix = "--"; token.label = "Cosine edge width [Pixels]"; token.help = "Width of cosine transition area for soft-edge masking. Effective only with --do_adaptive_mask option. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "6.0"; token.restore = "6.0"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "dilation"; token.key_prefix = "--"; token.label = "surface dilation size [Pixels]"; token.help = "Size of surface dilation or erosion. Effective only with --do_adaptive_mask option. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "3.0"; token.restore = "3.0"; token.type = "float"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "mtf"; token.key_prefix = "--"; token.label = "MTF file"; token.help = "Path to file contains the MTF (modulation transfer function) of the detector used. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "parameters"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "mtf"; token.key_prefix = "--"; token.label = "MTF file"; token.help = "Path to file contains the MTF (modulation transfer function) of the detector used. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "mtf"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "fsc_adj"; token.key_prefix = "--"; token.label = "Apply FSC-based low-pass filter"; token.help = "Applies an FSC-based low-pass filter to the merged volume before the B-factor estimation. Effective only in Halfset Volumes Mode. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "B_enhance"; token.key_prefix = "--"; token.label = "B-factor enhancement"; token.help = "0.0: program automatically estimates B-factor using power spectrum at frequencies from B_start (usually 10 Angstrom) to the resolution determined by FSC143 (valid only in Halfset Volumes Mode; Non-zero positive value: program use the given value [A^2] to enhance map); -1.0: B-factor is not applied. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "0.0"; token.restore = "0.0"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "B_start"; token.key_prefix = "--"; token.label = "B-factor estimation lower limit [A]"; token.help = "Frequency in Angstrom defining lower boundary of B-factor estimation. Effective only in Halfset Volumes Mode with --B_enhance=0.0. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "10.0"; token.restore = "10.0"; token.type = "float"; sxcmd.token_list.append(token)
@@ -2782,7 +4232,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		token = SXcmd_token(); token.key_base = "local_refinement"; token.key_prefix = "--"; token.label = "Perform local refinement"; token.help = "Perform local refinement starting from (1) user-provided orientation parameters stored in the header of input image stack or (2) the last fully finished iteration of meridien fresh run. Specific to local refinement modes. "; token.group = "main"; token.is_required = True; token.is_locked = True; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_directory"; token.key_prefix = ""; token.label = "Meridien Fresh Run Directory"; token.help = "This directory must exist. The results will be written here."; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "output_continue"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "radius"; token.key_prefix = "--"; token.label = "Particle radius [Pixels]"; token.help = "Outer radius in pixels of particles < int(boxsize/2)-1. Ignored in final reconstruction only. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1"; token.restore = "-1"; token.type = "radius"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "mask3D"; token.key_prefix = "--"; token.label = "3D mask file"; token.help = "Soft mask for the volume. If not given, a hard sphere of radius boxsize/2-1 will be used. Ignored in final reconstruction only. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "image"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "mask3D"; token.key_prefix = "--"; token.label = "3D mask file"; token.help = "Soft mask for the volume. If not given, a hard sphere of radius boxsize/2-1 will be used. Ignored in final reconstruction only. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "data3d_one"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "symmetry"; token.key_prefix = "--"; token.label = "Point-group symmetry"; token.help = "Point-group symmetry of the refined structure. Acceptable values are: cn and dn, where n is multiplicity. In addition, icos, oct, and tet are supported. Ignored in final reconstruction only. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "c1"; token.restore = "c1"; token.type = "sym"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "inires"; token.key_prefix = "--"; token.label = "Starting resolution [A]"; token.help = "Resolution of the initial_volume volume. For local refinement, the program automatically calculates the initial resolution from inputs by default."; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "delta"; token.key_prefix = "--"; token.label = "Initial angular sampling step [Degrees]"; token.help = "Initial angular sampling step. For local refinement, the value has to be less than or equal to 3.75."; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "3.75"; token.restore = "3.75"; token.type = "float"; sxcmd.token_list.append(token)
@@ -2794,16 +4244,16 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		token = SXcmd_token(); token.key_base = "small_memory"; token.key_prefix = "--"; token.label = "Keep data in memory"; token.help = "Indicate if data should be kept in memory or not. By default, data will be kept in memory. Ignored in final reconstruction only. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "ccfpercentage"; token.key_prefix = "--"; token.label = "Correlation peaks to be included [%]"; token.help = "Percentage of correlation peaks to be included. 0.0 corresponds to hard matching. Ignored in final reconstruction only. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "99.9"; token.restore = "99.9"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "nonorm"; token.key_prefix = "--"; token.label = "Apply image norm correction"; token.help = "Indicate if image norm correction should be applied or not. By default, apply image norm correction. Ignored in final reconstruction only. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "function"; token.key_prefix = "--"; token.label = "Reference preparation function"; token.help = "Specify name of function that program should use to prepare the reference volume after each iteration. Ignored in final reconstruction only. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "do_volume_mask"; token.restore = "do_volume_mask"; token.type = "function"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "function"; token.key_prefix = "--"; token.label = "Reference preparation function"; token.help = "Specify name of function that program should use to prepare the reference volume after each iteration. Ignored in final reconstruction only. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "do_volume_mask"; token.restore = "do_volume_mask"; token.type = "user_func"; sxcmd.token_list.append(token)
 
 		sxcmd_list.append(sxcmd)
 
 		sxcmd = SXcmd(); sxcmd.name = "sxmeridien"; sxcmd.subname = ""; sxcmd.mode = "local_refinement"; sxcmd.subset_config = "stack"; sxcmd.label = "Local Refinement from Stack"; sxcmd.short_info = "Perform local refinement wherer the restricted search of 3D refinement restarts after the last fully finished iteration of meridien fresh run. One can change some parameters, but MPI settings have to be the same."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_meridien"; sxcmd.role = "sxr_alt"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "local_refinement"; token.key_prefix = "--"; token.label = "Perform local refinement"; token.help = "Perform local refinement starting from (1) user-provided orientation parameters stored in the header of input image stack or (2) the last fully finished iteration of meridien fresh run. Specific to local refinement modes. "; token.group = "main"; token.is_required = True; token.is_locked = True; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "stack"; token.key_prefix = ""; token.label = "Input image stack"; token.help = "The stack must have the header entry for 3D alignment parameters (xform.projection), which can be imporeted using sxheader.py."; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "output_directory"; token.key_prefix = ""; token.label = "Output directory"; token.help = "The results will be written here. This directory will be created automatically if it does not exist. By default, the program uses master_DATA_AND_TIME for the name. For standard continuation run, local refinement from iteration, and final reconstruction only, the directory must exists because this is also used as the input directory. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "output"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "stack"; token.key_prefix = ""; token.label = "Input image stack"; token.help = "The stack must have the header entry for 3D alignment parameters (xform.projection), which can be imporeted using sxheader.py."; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "bdb2d_stack"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "output_directory"; token.key_prefix = ""; token.label = "Output directory"; token.help = "The results will be written here. This directory will be created automatically if it does not exist. By default, the program uses master_DATA_AND_TIME for the name. For standard continuation run, local refinement from iteration, and final reconstruction only, the directory must exists because this is also used as the input directory. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "output_continue"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "radius"; token.key_prefix = "--"; token.label = "Particle radius [Pixels]"; token.help = "Outer radius in pixels of particles < int(boxsize/2)-1. Ignored in final reconstruction only. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1"; token.restore = "-1"; token.type = "radius"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "mask3D"; token.key_prefix = "--"; token.label = "3D mask file"; token.help = "Soft mask for the volume. If not given, a hard sphere of radius boxsize/2-1 will be used. Ignored in final reconstruction only. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "image"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "mask3D"; token.key_prefix = "--"; token.label = "3D mask file"; token.help = "Soft mask for the volume. If not given, a hard sphere of radius boxsize/2-1 will be used. Ignored in final reconstruction only. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "data3d_one"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "symmetry"; token.key_prefix = "--"; token.label = "Point-group symmetry"; token.help = "Point-group symmetry of the refined structure. Acceptable values are: cn and dn, where n is multiplicity. In addition, icos, oct, and tet are supported. Ignored in final reconstruction only. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "c1"; token.restore = "c1"; token.type = "sym"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "inires"; token.key_prefix = "--"; token.label = "Starting resolution [A]"; token.help = "Resolution of the initial_volume volume. For local refinement, the program automatically calculates the initial resolution from inputs by default."; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "delta"; token.key_prefix = "--"; token.label = "Initial angular sampling step [Degrees]"; token.help = "Initial angular sampling step. For local refinement, the value has to be less than or equal to 3.75."; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "3.75"; token.restore = "3.75"; token.type = "float"; sxcmd.token_list.append(token)
@@ -2815,14 +4265,14 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		token = SXcmd_token(); token.key_base = "small_memory"; token.key_prefix = "--"; token.label = "Keep data in memory"; token.help = "Indicate if data should be kept in memory or not. By default, data will be kept in memory. Ignored in final reconstruction only. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "ccfpercentage"; token.key_prefix = "--"; token.label = "Correlation peaks to be included [%]"; token.help = "Percentage of correlation peaks to be included. 0.0 corresponds to hard matching. Ignored in final reconstruction only. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "99.9"; token.restore = "99.9"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "nonorm"; token.key_prefix = "--"; token.label = "Apply image norm correction"; token.help = "Indicate if image norm correction should be applied or not. By default, apply image norm correction. Ignored in final reconstruction only. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "function"; token.key_prefix = "--"; token.label = "Reference preparation function"; token.help = "Specify name of function that program should use to prepare the reference volume after each iteration. Ignored in final reconstruction only. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "do_volume_mask"; token.restore = "do_volume_mask"; token.type = "function"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "function"; token.key_prefix = "--"; token.label = "Reference preparation function"; token.help = "Specify name of function that program should use to prepare the reference volume after each iteration. Ignored in final reconstruction only. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "do_volume_mask"; token.restore = "do_volume_mask"; token.type = "user_func"; sxcmd.token_list.append(token)
 
 		sxcmd_list.append(sxcmd)
 
 		sxcmd = SXcmd(); sxcmd.name = "sxmeridien"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = "continuation"; sxcmd.label = "3D Refinement Continuation"; sxcmd.short_info = "Perform continuation run of 3D refinement, where the 3D refinement restarts after the last fully finished iteration of meridien fresh run. One can change some parameters, but MPI settings have to be the same."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_meridien"; sxcmd.role = "sxr_alt"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "output_directory"; token.key_prefix = ""; token.label = "Meridien Fresh Run Directory"; token.help = "This directory must exist. The results will be written here."; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "output_continue"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "radius"; token.key_prefix = "--"; token.label = "Particle radius [Pixels]"; token.help = "Outer radius in pixels of particles < int(boxsize/2)-1. Ignored in final reconstruction only. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1"; token.restore = "-1"; token.type = "radius"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "mask3D"; token.key_prefix = "--"; token.label = "3D mask file"; token.help = "Soft mask for the volume. If not given, a hard sphere of radius boxsize/2-1 will be used. Ignored in final reconstruction only. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "image"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "mask3D"; token.key_prefix = "--"; token.label = "3D mask file"; token.help = "Soft mask for the volume. If not given, a hard sphere of radius boxsize/2-1 will be used. Ignored in final reconstruction only. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "data3d_one"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "symmetry"; token.key_prefix = "--"; token.label = "Point-group symmetry"; token.help = "Point-group symmetry of the refined structure. Acceptable values are: cn and dn, where n is multiplicity. In addition, icos, oct, and tet are supported. Ignored in final reconstruction only. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "c1"; token.restore = "c1"; token.type = "sym"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "inires"; token.key_prefix = "--"; token.label = "Starting resolution [A]"; token.help = "Resolution of the initial volume used to start the refinement. Ignored in final reconstruction only. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "25.0"; token.restore = "25.0"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "delta"; token.key_prefix = "--"; token.label = "Initial angular sampling step [Degrees]"; token.help = "Initial angular sampling step. Ignored in final reconstruction only. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "7.5"; token.restore = "7.5"; token.type = "float"; sxcmd.token_list.append(token)
@@ -2838,7 +4288,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		token = SXcmd_token(); token.key_base = "small_memory"; token.key_prefix = "--"; token.label = "Keep data in memory"; token.help = "Indicate if data should be kept in memory or not. By default, data will be kept in memory. Ignored in final reconstruction only. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "ccfpercentage"; token.key_prefix = "--"; token.label = "Correlation peaks to be included [%]"; token.help = "Percentage of correlation peaks to be included. 0.0 corresponds to hard matching. Ignored in final reconstruction only. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "99.9"; token.restore = "99.9"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "nonorm"; token.key_prefix = "--"; token.label = "Apply image norm correction"; token.help = "Indicate if image norm correction should be applied or not. By default, apply image norm correction. Ignored in final reconstruction only. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "function"; token.key_prefix = "--"; token.label = "Reference preparation function"; token.help = "Specify name of function that program should use to prepare the reference volume after each iteration. Ignored in final reconstruction only. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "do_volume_mask"; token.restore = "do_volume_mask"; token.type = "function"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "function"; token.key_prefix = "--"; token.label = "Reference preparation function"; token.help = "Specify name of function that program should use to prepare the reference volume after each iteration. Ignored in final reconstruction only. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "do_volume_mask"; token.restore = "do_volume_mask"; token.type = "user_func"; sxcmd.token_list.append(token)
 
 		sxcmd_list.append(sxcmd)
 
@@ -2850,7 +4300,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		sxcmd_list.append(sxcmd)
 
 		sxcmd = SXcmd(); sxcmd.name = "e2display"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Display Data"; sxcmd.short_info = "Displays images, volumes, or 1D plots."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_meridien"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = False
-		token = SXcmd_token(); token.key_base = "input_data_list"; token.key_prefix = ""; token.label = "Input files"; token.help = "List of input images, volumes, plots. Wild cards (e.g *) can be used to select a list of files. Not recommended when the list is too large. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "any_file_list"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_data_list"; token.key_prefix = ""; token.label = "Input files"; token.help = "List of input images, volumes, plots. Wild cards (e.g *) can be used to select a list of files. Not recommended when the list is too large. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "displayable_list"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "singleimage"; token.key_prefix = "--"; token.label = "Single image view"; token.help = "Displays a stack in a single image view: "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "fullrange"; token.key_prefix = "--"; token.label = "Use full range of pixel values"; token.help = "Instead of default auto-contrast, use full range of pixel values for the display of particles stacks and 2D images, "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "verbose"; token.key_prefix = "--"; token.label = "Verbose"; token.help = "Accepted values 0-9. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "0"; token.restore = "0"; token.type = "int"; sxcmd.token_list.append(token)
@@ -2859,7 +4309,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd = SXcmd(); sxcmd.name = "sxprocess"; sxcmd.subname = ""; sxcmd.mode = "adaptive_mask"; sxcmd.subset_config = ""; sxcmd.label = "Adaptive 3D Mask"; sxcmd.short_info = "Create soft-edged 3D mask from reference volume. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_meridien"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "adaptive_mask"; token.key_prefix = "--"; token.label = "Create soft-edged 3D mask"; token.help = "Create soft-edged 3D mask from reference volume. "; token.group = "main"; token.is_required = True; token.is_locked = True; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "input_volume"; token.key_prefix = ""; token.label = "Input volume"; token.help = "Input reference volume"; token.group = "main"; token.is_required = True; token.is_locked = None; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_volume"; token.key_prefix = ""; token.label = "Input volume"; token.help = "Input reference volume"; token.group = "main"; token.is_required = True; token.is_locked = None; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "data3d_one"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_mask3D"; token.key_prefix = ""; token.label = "Output mask"; token.help = "Output 3D mask"; token.group = "main"; token.is_required = True; token.is_locked = None; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "nsigma"; token.key_prefix = "--"; token.label = "Density standard deviation threshold"; token.help = "Defines the threshold used to find the main volume within the data. All voxels with density <= mean + nsigma standard deviation will be included into the main volume. This option will not be used if the option threshold is larger than -9999.0. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "1.0"; token.restore = "1.0"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "threshold"; token.key_prefix = "--"; token.label = "Binarization threshold"; token.help = "Below this value the data is assumed to not belong to the main volume. With the value lower than the default, the option will be ignored and the mask will be set according to nsigma. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-9999.0"; token.restore = "-9999.0"; token.type = "float"; sxcmd.token_list.append(token)
@@ -2871,7 +4321,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd = SXcmd(); sxcmd.name = "sxprocess"; sxcmd.subname = ""; sxcmd.mode = "angular_distribution"; sxcmd.subset_config = ""; sxcmd.label = "Angular Distribution"; sxcmd.short_info = "Create angular distribution file containing a 3D representation of the given angular distribution. It can be viewed with UCFS Chimera. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_meridien"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "angular_distribution"; token.key_prefix = "--"; token.label = "Create angular distribution file"; token.help = "Create angular distribution file containing a 3D representation of the given angular distribution. It can be viewed with UCFS Chimera. "; token.group = "main"; token.is_required = True; token.is_locked = True; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "inputfile"; token.key_prefix = ""; token.label = "Alignment Parameter file"; token.help = "Alignment Parameter file created by a previous 3D reconstruction step (e.g. sxmeridien.py)"; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "any_file"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "inputfile"; token.key_prefix = ""; token.label = "Projection parameters file"; token.help = "Projection parameters file created by a 3D reconstruction step (typically, final_params_*.txt or main*/params_*.txt of sxmeridien.py)."; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "params_proj_txt"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "pixel_size"; token.key_prefix = "--"; token.label = "Pixel size [A]"; token.help = "Pixel size of input data. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "0.0"; token.restore = "0.0"; token.type = "apix"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "symmetry"; token.key_prefix = "--"; token.label = "Point-group symmetry"; token.help = "Point-group symmetry of the reconstructed structure. Acceptable values are: cn and dn, where n is multiplicity. In addition, icos, oct, and tet are supported. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "c1"; token.restore = "c1"; token.type = "sym"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "round_digit"; token.key_prefix = "--"; token.label = "Number precision"; token.help = "Decimal numbers will be rounded to this number of decimal points. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "5"; token.restore = "5"; token.type = "int"; sxcmd.token_list.append(token)
@@ -2884,14 +4334,14 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd = SXcmd(); sxcmd.name = "sx3dvariability"; sxcmd.subname = ""; sxcmd.mode = "symmetrize"; sxcmd.subset_config = ""; sxcmd.label = "3D Variability Preprocess"; sxcmd.short_info = "Prepare input stack for handling symmetry. Please skip this preparation step if the structure is asymmetrical (i.e. c1), since it is required only when the structure has internal symmetry. Notice this step can be run with only one CPU and there is no MPI version for it. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_sort3d"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "symmetrize"; token.key_prefix = "--"; token.label = "Symmetrise input stack"; token.help = "Prepare input stack for handling symmetry. Please skip this preparation step if the structure is asymmetrical (i.e. c1), since it is required only when the structure has internal symmetry. Notice this step can be run with only one CPU and there is no MPI version for it. "; token.group = "main"; token.is_required = True; token.is_locked = True; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "prj_stack"; token.key_prefix = ""; token.label = "Input image stack"; token.help = "The images must containt the 3D orientation parameters in the header and optionally CTF information. The output image stack is bdb:sdata. Please use it as an input image stack of sx3dvariability."; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "prj_stack"; token.key_prefix = ""; token.label = "Input image stack"; token.help = "The images must containt the 3D orientation parameters in the header and optionally CTF information. The output image stack is bdb:sdata. Please use it as an input image stack of sx3dvariability."; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "bdb2d_stack"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_dir"; token.key_prefix = "--"; token.label = "Output directory"; token.help = "Specify path to the output directory of 3D Variability. By default, the program uses the current directory. However, GUI requires the path other than the current directory. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "sym"; token.key_prefix = "--"; token.label = "Point-group symmetry"; token.help = "If the structure has symmetry higher than c1, the command requires symmetrization of the dataset, using --symmetrize option, before computing 3D variability. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "c1"; token.restore = "c1"; token.type = "sym"; sxcmd.token_list.append(token)
 
 		sxcmd_list.append(sxcmd)
 
 		sxcmd = SXcmd(); sxcmd.name = "sx3dvariability"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "3D Variability Estimation"; sxcmd.short_info = "Calculate 3D variability using a set of aligned projection images as an input."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_sort3d"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
-		token = SXcmd_token(); token.key_base = "prj_stack"; token.key_prefix = ""; token.label = "Input image stack"; token.help = "The images must containt the 3D orientation parameters in the header and optionally CTF information. If the structure has a symmetry higher than c1, please specify the image stack which is prepared by the symmetrization using --symmetrize option. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "prj_stack"; token.key_prefix = ""; token.label = "Input image stack"; token.help = "The images must containt the 3D orientation parameters in the header and optionally CTF information. If the structure has a symmetry higher than c1, please specify the image stack which is prepared by the symmetrization using --symmetrize option. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "bdb2d_stack"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_dir"; token.key_prefix = "--"; token.label = "Output directory"; token.help = "Specify path to the output directory of 3D Variability. By default, the program uses the current directory. However, GUI requires the path other than the current directory. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "var3D"; token.key_prefix = "--"; token.label = "Output 3D variability"; token.help = "Specify a file name to indicate if the program should write the reconstructed 3D variability map to the disk. The 3D volume will contain, for each voxel, a measure of the variability in the dataset. Careful, time consuming! "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "output"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "ave3D"; token.key_prefix = "--"; token.label = "Output 3D average"; token.help = "Specify a file name to indicate if the program should write the reconstructed 3D average map to the disk. The 3D volume will be reconstructed from projections averaged within respective angular neighbourhood. It should be used to assess the resolvability and possible artifacts of the variability map. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "output"; sxcmd.token_list.append(token)
@@ -2913,11 +4363,11 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		sxcmd_list.append(sxcmd)
 
 		sxcmd = SXcmd(); sxcmd.name = "sxsort3d_depth"; sxcmd.subname = ""; sxcmd.mode = "refinement_dir"; sxcmd.subset_config = ""; sxcmd.label = "3D Clustering from Iteration - SORT3D_DEPTH"; sxcmd.short_info = "Run from a fully finished iteration of meridien run and imports data from there. This mode uses all meridien information (i.e., smear, normalizations and such)."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_sort3d"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
-		token = SXcmd_token(); token.key_base = "refinement_dir"; token.key_prefix = "--"; token.label = "Meridien run directory"; token.help = "Specify the path to meridien 3D refinement directory. From here, data will be imported. Specific to iteration mode. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "directory"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "output_dir"; token.key_prefix = "--"; token.label = "Output directory"; token.help = "The master output directory for 3D sorting. The results will be written here. This directory will be created automatically if it does not exist. By default, the program uses sort3d_DATA_AND_TIME for the name. Here, you can find a log.txt that describes the sequences of computations in the program. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "output"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "refinement_dir"; token.key_prefix = "--"; token.label = "Meridien run directory"; token.help = "Specify the path to meridien 3D refinement directory. From here, data will be imported. Specific to iteration mode. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "dir"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "output_dir"; token.key_prefix = "--"; token.label = "Output directory"; token.help = "The master output directory for 3D sorting. The results will be written here. This directory will be created automatically if it does not exist. By default, the program uses sort3d_DATA_AND_TIME for the name. Here, you can find a log.txt that describes the sequences of computations in the program. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "output_continue"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "niter_for_sorting"; token.key_prefix = "--"; token.label = "3D refinement iteration ID"; token.help = "Specify the iteration ID of 3D refinement for sorting. By default, it uses the iteration at which refinement achieved the best resolution. Specific to iteration mode. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1"; token.restore = "-1"; token.type = "int"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "mask3D"; token.key_prefix = "--"; token.label = "3D mask"; token.help = "File path of the global 3D mask for clustering. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "image"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "focus"; token.key_prefix = "--"; token.label = "Focus 3D mask"; token.help = "File path of a binary 3D mask for focused clustering. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "image"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "mask3D"; token.key_prefix = "--"; token.label = "3D mask"; token.help = "File path of the global 3D mask for clustering. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "data3d_one"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "focus"; token.key_prefix = "--"; token.label = "Focus 3D mask"; token.help = "File path of a binary 3D mask for focused clustering. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "data3d_one"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "radius"; token.key_prefix = "--"; token.label = "Estimated protein radius [Pixels]"; token.help = "The value must be smaller than half of the box size. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1"; token.restore = "-1"; token.type = "radius"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "sym"; token.key_prefix = "--"; token.label = "Point-group symmetry"; token.help = "Point group symmetry of the macromolecular structure. It can be inherited from refinement. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "c1"; token.restore = "c1"; token.type = "sym"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "img_per_grp"; token.key_prefix = "--"; token.label = "Number of images per group"; token.help = "User expected group size. This value is critical for a successful 3D clustering. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "1000"; token.restore = "1000"; token.type = "int"; sxcmd.token_list.append(token)
@@ -2937,15 +4387,15 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd = SXcmd(); sxcmd.name = "sxprocess"; sxcmd.subname = ""; sxcmd.mode = "combinemaps"; sxcmd.subset_config = "cluster volumes"; sxcmd.label = "Sharpening of Cluster Volumes"; sxcmd.short_info = "Enhance the power spectrum of the cluster volumes, produced by SORT3D_DEPTH, at high frequencies (Cluster Volumes Mode). Only ad-hoc low-pass filter cutoff and B-factor can be used. This mode is mainly used with SORT3D_DEPTH outputs, but also can enhance the power spectrum of ANY volumes."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_sort3d"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "combinemaps"; token.key_prefix = "--"; token.label = "Enhance cluster volumes"; token.help = "Enhance the power spectrum of cluster volumes, produced by SORT3D_DEPTH, at high frequencies (Cluster Volumes Mode). Only ad-hoc low-pass filter cutoff and B-factor can be used. This mode requires one argument (path pattern with wild card '*' can be used to specify a list of volumes). It is mainly used with SORT3D_DEPTH outputs but also can enhance the power spectrum of ANY volumes."; token.group = "main"; token.is_required = True; token.is_locked = True; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "input_cluster_volume_pattern"; token.key_prefix = ""; token.label = "Input cluster volume pattern"; token.help = "Specify path pattern of input cluster volumes, created by SORT3D_DEPTH, with a wild card (*). Use the wild card to indicate the place of variable part of the file names (typically, cluster ID; e.g. 'outdir_sort3d_depth/vol_cluster*.hdf'). The path pattern must be enclosed by single quotes (') or double quotes (') (Note: sxgui.py automatically adds single quotes (')). If the wild card is not used (i.e. a simple path is provided), the program process the single volume."; token.group = "main"; token.is_required = True; token.is_locked = None; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_cluster_volume_pattern"; token.key_prefix = ""; token.label = "Input cluster volume pattern"; token.help = "Specify path pattern of input cluster volumes, created by SORT3D_DEPTH, with a wild card (*). Use the wild card to indicate the place of variable part of the file names (typically, cluster ID; e.g. 'outdir_sort3d_depth/vol_cluster*.hdf'). The path pattern must be enclosed by single quotes (') or double quotes (') (Note: sxgui.py automatically adds single quotes (')). If the wild card is not used (i.e. a simple path is provided), the program process the single volume."; token.group = "main"; token.is_required = True; token.is_locked = None; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "data3d_one"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_dir"; token.key_prefix = "--"; token.label = "Output directory"; token.help = "Specify path to the output directory for this sharpening process. By default, the program uses the current directory. However, GUI requires the path other than the current directory. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "pixel_size"; token.key_prefix = "--"; token.label = "Pixel size [A]"; token.help = "Pixel size of input data. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "0.0"; token.restore = "0.0"; token.type = "apix"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "mask"; token.key_prefix = "--"; token.label = "3D mask file"; token.help = "Path to user-provided mask. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "image"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "mask"; token.key_prefix = "--"; token.label = "3D mask file"; token.help = "Path to user-provided mask. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "data3d_one"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "do_adaptive_mask"; token.key_prefix = "--"; token.label = "Apply adaptive mask"; token.help = "Program creates mask adaptively with given density threshold. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "mask_threshold"; token.key_prefix = "--"; token.label = "Adaptive mask threshold"; token.help = "Density threshold for creating adaptive surface mask. Effective only with --do_adaptive_mask option. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "0.02"; token.restore = "0.02"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "consine_edge"; token.key_prefix = "--"; token.label = "Cosine edge width [Pixels]"; token.help = "Width of cosine transition area for soft-edge masking. Effective only with --do_adaptive_mask option. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "6.0"; token.restore = "6.0"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "dilation"; token.key_prefix = "--"; token.label = "surface dilation size [Pixels]"; token.help = "Size of surface dilation or erosion. Effective only with --do_adaptive_mask option. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "3.0"; token.restore = "3.0"; token.type = "float"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "mtf"; token.key_prefix = "--"; token.label = "MTF file"; token.help = "Path to file contains the MTF (modulation transfer function) of the detector used. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "parameters"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "mtf"; token.key_prefix = "--"; token.label = "MTF file"; token.help = "Path to file contains the MTF (modulation transfer function) of the detector used. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "mtf"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "B_enhance"; token.key_prefix = "--"; token.label = "B-factor enhancement"; token.help = "Non-zero positive value: program use the given value [A^2] to enhance map; -1.0: B-factor is not applied."; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "fl"; token.key_prefix = "--"; token.label = "Low-pass filter frequency [A]"; token.help = "A value larger than 0.5: low-pass filter to the value in Angstrom; -1.0: no low-pass filter."; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "aa"; token.key_prefix = "--"; token.label = "Low-pass filter fall-off [1/Pixels]"; token.help = "Low-pass filter fall-off. Effective only when --fl option is not -1.0. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "0.01"; token.restore = "0.01"; token.type = "float"; sxcmd.token_list.append(token)
@@ -2954,18 +4404,18 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		sxcmd_list.append(sxcmd)
 
 		sxcmd = SXcmd(); sxcmd.name = "e2bdb"; sxcmd.subname = ""; sxcmd.mode = "makevstack"; sxcmd.subset_config = "subset"; sxcmd.label = "Cluster Stack Subset"; sxcmd.short_info = "Make a 'virtual' BDB image stack with the specified name from one or more other stacks. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_sort3d"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
-		token = SXcmd_token(); token.key_base = "makevstack"; token.key_prefix = "--"; token.label = "Output cluster stack subset"; token.help = "Make a 'virtual' BDB image stack with the specified name from one or more other stacks. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "input_bdb_stack_file"; token.key_prefix = ""; token.label = "Original image stack"; token.help = "Specify path to input BDB stack file used for the associated SORT3D_DEPTH run."; token.group = "main"; token.is_required = True; token.is_locked = None; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "bdb"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "list"; token.key_prefix = "--"; token.label = "Selection text file"; token.help = "Selection text file that contains indexes of the data subset. Typically, Cluster#.txt created by sxsort3d_depth (e.g. Cluster1.txt). "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "parameters"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "makevstack"; token.key_prefix = "--"; token.label = "Output cluster stack subset"; token.help = "Make a 'virtual' BDB image stack with the specified name from one or more other stacks. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "output_bdb2d_stack"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_bdb_stack_file"; token.key_prefix = ""; token.label = "Original image stack"; token.help = "Specify path to input BDB stack file used for the associated SORT3D_DEPTH run."; token.group = "main"; token.is_required = True; token.is_locked = None; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "bdb2d_stack"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "list"; token.key_prefix = "--"; token.label = "Selection text file"; token.help = "Selection text file that contains indexes of the data subset. Typically, Cluster#.txt created by sxsort3d_depth (e.g. Cluster1.txt). "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "select_data2d_stack"; sxcmd.token_list.append(token)
 
 		sxcmd_list.append(sxcmd)
 
 		sxcmd = SXcmd(); sxcmd.name = "sxmeridien"; sxcmd.subname = ""; sxcmd.mode = "local_refinement"; sxcmd.subset_config = "stack"; sxcmd.label = "Local Refinement from Stack"; sxcmd.short_info = "Perform local refinement wherer the restricted search of 3D refinement restarts after the last fully finished iteration of meridien fresh run. One can change some parameters, but MPI settings have to be the same."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_sort3d"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "local_refinement"; token.key_prefix = "--"; token.label = "Perform local refinement"; token.help = "Perform local refinement starting from (1) user-provided orientation parameters stored in the header of input image stack or (2) the last fully finished iteration of meridien fresh run. Specific to local refinement modes. "; token.group = "main"; token.is_required = True; token.is_locked = True; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "stack"; token.key_prefix = ""; token.label = "Input image stack"; token.help = "The stack must have the header entry for 3D alignment parameters (xform.projection), which can be imporeted using sxheader.py."; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "output_directory"; token.key_prefix = ""; token.label = "Output directory"; token.help = "The results will be written here. This directory will be created automatically if it does not exist. By default, the program uses master_DATA_AND_TIME for the name. For standard continuation run, local refinement from iteration, and final reconstruction only, the directory must exists because this is also used as the input directory. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "output"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "stack"; token.key_prefix = ""; token.label = "Input image stack"; token.help = "The stack must have the header entry for 3D alignment parameters (xform.projection), which can be imporeted using sxheader.py."; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "bdb2d_stack"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "output_directory"; token.key_prefix = ""; token.label = "Output directory"; token.help = "The results will be written here. This directory will be created automatically if it does not exist. By default, the program uses master_DATA_AND_TIME for the name. For standard continuation run, local refinement from iteration, and final reconstruction only, the directory must exists because this is also used as the input directory. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "output_continue"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "radius"; token.key_prefix = "--"; token.label = "Particle radius [Pixels]"; token.help = "Outer radius in pixels of particles < int(boxsize/2)-1. Ignored in final reconstruction only. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1"; token.restore = "-1"; token.type = "radius"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "mask3D"; token.key_prefix = "--"; token.label = "3D mask file"; token.help = "Soft mask for the volume. If not given, a hard sphere of radius boxsize/2-1 will be used. Ignored in final reconstruction only. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "image"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "mask3D"; token.key_prefix = "--"; token.label = "3D mask file"; token.help = "Soft mask for the volume. If not given, a hard sphere of radius boxsize/2-1 will be used. Ignored in final reconstruction only. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "data3d_one"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "symmetry"; token.key_prefix = "--"; token.label = "Point-group symmetry"; token.help = "Point-group symmetry of the refined structure. Acceptable values are: cn and dn, where n is multiplicity. In addition, icos, oct, and tet are supported. Ignored in final reconstruction only. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "c1"; token.restore = "c1"; token.type = "sym"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "inires"; token.key_prefix = "--"; token.label = "Starting resolution [A]"; token.help = "Resolution of the initial_volume volume. For local refinement, the program automatically calculates the initial resolution from inputs by default."; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "delta"; token.key_prefix = "--"; token.label = "Initial angular sampling step [Degrees]"; token.help = "Initial angular sampling step. For local refinement, the value has to be less than or equal to 3.75."; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "3.75"; token.restore = "3.75"; token.type = "float"; sxcmd.token_list.append(token)
@@ -2977,22 +4427,22 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		token = SXcmd_token(); token.key_base = "small_memory"; token.key_prefix = "--"; token.label = "Keep data in memory"; token.help = "Indicate if data should be kept in memory or not. By default, data will be kept in memory. Ignored in final reconstruction only. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "ccfpercentage"; token.key_prefix = "--"; token.label = "Correlation peaks to be included [%]"; token.help = "Percentage of correlation peaks to be included. 0.0 corresponds to hard matching. Ignored in final reconstruction only. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "99.9"; token.restore = "99.9"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "nonorm"; token.key_prefix = "--"; token.label = "Apply image norm correction"; token.help = "Indicate if image norm correction should be applied or not. By default, apply image norm correction. Ignored in final reconstruction only. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "function"; token.key_prefix = "--"; token.label = "Reference preparation function"; token.help = "Specify name of function that program should use to prepare the reference volume after each iteration. Ignored in final reconstruction only. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "do_volume_mask"; token.restore = "do_volume_mask"; token.type = "function"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "function"; token.key_prefix = "--"; token.label = "Reference preparation function"; token.help = "Specify name of function that program should use to prepare the reference volume after each iteration. Ignored in final reconstruction only. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "do_volume_mask"; token.restore = "do_volume_mask"; token.type = "user_func"; sxcmd.token_list.append(token)
 
 		sxcmd_list.append(sxcmd)
 
 		sxcmd = SXcmd(); sxcmd.name = "sxprocess"; sxcmd.subname = ""; sxcmd.mode = "combinemaps"; sxcmd.subset_config = "halfset volumes"; sxcmd.label = "Sharpening of Halfset Volumes"; sxcmd.short_info = "Combine a pair of unfiltered odd & even halfset volumes, then enhance the power spectrum at high frequencies (Halfset Volumes Mode). B-factor can be estimated from these unfiltered halfset volumes. This mode is typically used with MERIDIEN outputs."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_sort3d"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "combinemaps"; token.key_prefix = "--"; token.label = "Combine half volumes then enhance"; token.help = "Combine a pair of unfiltered odd & even halfset volumes, then enhance the power spectrum at high frequencies (Halfset Volumes Mode). B-factor can be automatically estimated from these unfiltered halfset volumes. This mode requires two arguments; typically use unfiltered halfset volumes produced by MERIDIEN."; token.group = "main"; token.is_required = True; token.is_locked = True; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "firstvolume"; token.key_prefix = ""; token.label = "First unfiltered halfset volume"; token.help = "Typically, generated by sxmeridien."; token.group = "main"; token.is_required = True; token.is_locked = None; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "secondvolume"; token.key_prefix = ""; token.label = "Second unfiltered halfset volume"; token.help = "Typically, generated by sxmeridien."; token.group = "main"; token.is_required = True; token.is_locked = None; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "firstvolume"; token.key_prefix = ""; token.label = "First unfiltered halfset volume"; token.help = "Typically, generated by sxmeridien."; token.group = "main"; token.is_required = True; token.is_locked = None; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "data3d_one"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "secondvolume"; token.key_prefix = ""; token.label = "Second unfiltered halfset volume"; token.help = "Typically, generated by sxmeridien."; token.group = "main"; token.is_required = True; token.is_locked = None; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "data3d_one"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_dir"; token.key_prefix = "--"; token.label = "Output directory"; token.help = "Specify path to the output directory for this sharpening process. By default, the program uses the current directory. However, GUI requires the path other than the current directory. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "pixel_size"; token.key_prefix = "--"; token.label = "Pixel size [A]"; token.help = "Pixel size of input data. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "0.0"; token.restore = "0.0"; token.type = "apix"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "mask"; token.key_prefix = "--"; token.label = "3D mask file"; token.help = "Path to user-provided mask. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "image"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "mask"; token.key_prefix = "--"; token.label = "3D mask file"; token.help = "Path to user-provided mask. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "data3d_one"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "do_adaptive_mask"; token.key_prefix = "--"; token.label = "Apply adaptive mask"; token.help = "Program creates mask adaptively with given density threshold. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "mask_threshold"; token.key_prefix = "--"; token.label = "Adaptive mask threshold"; token.help = "Density threshold for creating adaptive surface mask. Effective only with --do_adaptive_mask option. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "0.02"; token.restore = "0.02"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "consine_edge"; token.key_prefix = "--"; token.label = "Cosine edge width [Pixels]"; token.help = "Width of cosine transition area for soft-edge masking. Effective only with --do_adaptive_mask option. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "6.0"; token.restore = "6.0"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "dilation"; token.key_prefix = "--"; token.label = "surface dilation size [Pixels]"; token.help = "Size of surface dilation or erosion. Effective only with --do_adaptive_mask option. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "3.0"; token.restore = "3.0"; token.type = "float"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "mtf"; token.key_prefix = "--"; token.label = "MTF file"; token.help = "Path to file contains the MTF (modulation transfer function) of the detector used. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "parameters"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "mtf"; token.key_prefix = "--"; token.label = "MTF file"; token.help = "Path to file contains the MTF (modulation transfer function) of the detector used. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "mtf"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "fsc_adj"; token.key_prefix = "--"; token.label = "Apply FSC-based low-pass filter"; token.help = "Applies an FSC-based low-pass filter to the merged volume before the B-factor estimation. Effective only in Halfset Volumes Mode. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "B_enhance"; token.key_prefix = "--"; token.label = "B-factor enhancement"; token.help = "0.0: program automatically estimates B-factor using power spectrum at frequencies from B_start (usually 10 Angstrom) to the resolution determined by FSC143 (valid only in Halfset Volumes Mode; Non-zero positive value: program use the given value [A^2] to enhance map); -1.0: B-factor is not applied. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "0.0"; token.restore = "0.0"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "B_start"; token.key_prefix = "--"; token.label = "B-factor estimation lower limit [A]"; token.help = "Frequency in Angstrom defining lower boundary of B-factor estimation. Effective only in Halfset Volumes Mode with --B_enhance=0.0. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "10.0"; token.restore = "10.0"; token.type = "float"; sxcmd.token_list.append(token)
@@ -3004,11 +4454,11 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		sxcmd_list.append(sxcmd)
 
 		sxcmd = SXcmd(); sxcmd.name = "sxsort3d_depth"; sxcmd.subname = ""; sxcmd.mode = "instack"; sxcmd.subset_config = ""; sxcmd.label = "3D Clustering from Stack - SORT3D_DEPTH"; sxcmd.short_info = "Run from user-provided orientation parameters stored in stack header.  This mode uses only orientation parameters, which is useful for sorting data refined, say with relion."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_sort3d"; sxcmd.role = "sxr_alt"; sxcmd.is_submittable = True
-		token = SXcmd_token(); token.key_base = "instack"; token.key_prefix = "--"; token.label = "Input images stack"; token.help = "File path of input particle stack for sorting. Specific to stack mode. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "output_dir"; token.key_prefix = "--"; token.label = "Output directory"; token.help = "The master output directory for 3D sorting. The results will be written here. This directory will be created automatically if it does not exist. By default, the program uses sort3d_DATA_AND_TIME for the name. Here, you can find a log.txt that describes the sequences of computations in the program. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "output"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "instack"; token.key_prefix = "--"; token.label = "Input images stack"; token.help = "File path of input particle stack for sorting. Specific to stack mode. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "bdb2d_stack"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "output_dir"; token.key_prefix = "--"; token.label = "Output directory"; token.help = "The master output directory for 3D sorting. The results will be written here. This directory will be created automatically if it does not exist. By default, the program uses sort3d_DATA_AND_TIME for the name. Here, you can find a log.txt that describes the sequences of computations in the program. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "output_continue"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "nxinit"; token.key_prefix = "--"; token.label = "Initial image size"; token.help = "Image size used for MGSKmeans in case of starting sorting from a data stack. By default, the program determines window size. Specific to stack mode. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1"; token.restore = "-1"; token.type = "int"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "mask3D"; token.key_prefix = "--"; token.label = "3D mask"; token.help = "File path of the global 3D mask for clustering. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "image"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "focus"; token.key_prefix = "--"; token.label = "Focus 3D mask"; token.help = "File path of a binary 3D mask for focused clustering. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "image"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "mask3D"; token.key_prefix = "--"; token.label = "3D mask"; token.help = "File path of the global 3D mask for clustering. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "data3d_one"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "focus"; token.key_prefix = "--"; token.label = "Focus 3D mask"; token.help = "File path of a binary 3D mask for focused clustering. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "data3d_one"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "radius"; token.key_prefix = "--"; token.label = "Estimated protein radius [Pixels]"; token.help = "The value must be smaller than half of the box size. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1"; token.restore = "-1"; token.type = "radius"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "sym"; token.key_prefix = "--"; token.label = "Point-group symmetry"; token.help = "Point group symmetry of the macromolecular structure. It can be inherited from refinement. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "c1"; token.restore = "c1"; token.type = "sym"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "img_per_grp"; token.key_prefix = "--"; token.label = "Number of images per group"; token.help = "User expected group size. This value is critical for a successful 3D clustering. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "1000"; token.restore = "1000"; token.type = "int"; sxcmd.token_list.append(token)
@@ -3034,7 +4484,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		sxcmd_list.append(sxcmd)
 
 		sxcmd = SXcmd(); sxcmd.name = "e2display"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Display Data"; sxcmd.short_info = "Displays images, volumes, or 1D plots."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_sort3d"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = False
-		token = SXcmd_token(); token.key_base = "input_data_list"; token.key_prefix = ""; token.label = "Input files"; token.help = "List of input images, volumes, plots. Wild cards (e.g *) can be used to select a list of files. Not recommended when the list is too large. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "any_file_list"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_data_list"; token.key_prefix = ""; token.label = "Input files"; token.help = "List of input images, volumes, plots. Wild cards (e.g *) can be used to select a list of files. Not recommended when the list is too large. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "displayable_list"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "singleimage"; token.key_prefix = "--"; token.label = "Single image view"; token.help = "Displays a stack in a single image view: "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "fullrange"; token.key_prefix = "--"; token.label = "Use full range of pixel values"; token.help = "Instead of default auto-contrast, use full range of pixel values for the display of particles stacks and 2D images, "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "verbose"; token.key_prefix = "--"; token.label = "Verbose"; token.help = "Accepted values 0-9. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "0"; token.restore = "0"; token.type = "int"; sxcmd.token_list.append(token)
@@ -3043,7 +4493,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd = SXcmd(); sxcmd.name = "sxprocess"; sxcmd.subname = ""; sxcmd.mode = "adaptive_mask"; sxcmd.subset_config = ""; sxcmd.label = "Adaptive 3D Mask"; sxcmd.short_info = "Create soft-edged 3D mask from reference volume. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_sort3d"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "adaptive_mask"; token.key_prefix = "--"; token.label = "Create soft-edged 3D mask"; token.help = "Create soft-edged 3D mask from reference volume. "; token.group = "main"; token.is_required = True; token.is_locked = True; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "input_volume"; token.key_prefix = ""; token.label = "Input volume"; token.help = "Input reference volume"; token.group = "main"; token.is_required = True; token.is_locked = None; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_volume"; token.key_prefix = ""; token.label = "Input volume"; token.help = "Input reference volume"; token.group = "main"; token.is_required = True; token.is_locked = None; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "data3d_one"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_mask3D"; token.key_prefix = ""; token.label = "Output mask"; token.help = "Output 3D mask"; token.group = "main"; token.is_required = True; token.is_locked = None; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "nsigma"; token.key_prefix = "--"; token.label = "Density standard deviation threshold"; token.help = "Defines the threshold used to find the main volume within the data. All voxels with density <= mean + nsigma standard deviation will be included into the main volume. This option will not be used if the option threshold is larger than -9999.0. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "1.0"; token.restore = "1.0"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "threshold"; token.key_prefix = "--"; token.label = "Binarization threshold"; token.help = "Below this value the data is assumed to not belong to the main volume. With the value lower than the default, the option will be ignored and the mask will be set according to nsigma. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-9999.0"; token.restore = "-9999.0"; token.type = "float"; sxcmd.token_list.append(token)
@@ -3055,7 +4505,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd = SXcmd(); sxcmd.name = "sxprocess"; sxcmd.subname = ""; sxcmd.mode = "binary_mask"; sxcmd.subset_config = ""; sxcmd.label = "Binary 3D Mask"; sxcmd.short_info = "Create binary 3D mask from reference volume. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_sort3d"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "binary_mask"; token.key_prefix = "--"; token.label = "Create binary 3D mask"; token.help = "Create binary 3D mask from reference volume. "; token.group = "main"; token.is_required = True; token.is_locked = True; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "input_volume"; token.key_prefix = ""; token.label = "Input volume"; token.help = "Input reference volume"; token.group = "main"; token.is_required = True; token.is_locked = None; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_volume"; token.key_prefix = ""; token.label = "Input volume"; token.help = "Input reference volume"; token.group = "main"; token.is_required = True; token.is_locked = None; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "data3d_one"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_mask3D"; token.key_prefix = ""; token.label = "Output mask"; token.help = "Output 3D mask"; token.group = "main"; token.is_required = True; token.is_locked = None; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "bin_threshold"; token.key_prefix = "--"; token.label = "Binarization threshold"; token.help = "Below this value the data is assumed to not belong to the main volume. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "0.0"; token.restore = "0.0"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "ne"; token.key_prefix = "--"; token.label = "Erosion cycles"; token.help = "After initial binarization the volume is eroded to remove fragmented pieces of the volume. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "0"; token.restore = "0"; token.type = "int"; sxcmd.token_list.append(token)
@@ -3065,7 +4515,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd = SXcmd(); sxcmd.name = "sxprocess"; sxcmd.subname = ""; sxcmd.mode = "angular_distribution"; sxcmd.subset_config = ""; sxcmd.label = "Angular Distribution"; sxcmd.short_info = "Create angular distribution file containing a 3D representation of the given angular distribution. It can be viewed with UCFS Chimera. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_sort3d"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "angular_distribution"; token.key_prefix = "--"; token.label = "Create angular distribution file"; token.help = "Create angular distribution file containing a 3D representation of the given angular distribution. It can be viewed with UCFS Chimera. "; token.group = "main"; token.is_required = True; token.is_locked = True; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "inputfile"; token.key_prefix = ""; token.label = "Alignment Parameter file"; token.help = "Alignment Parameter file created by a previous 3D reconstruction step (e.g. sxmeridien.py)"; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "any_file"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "inputfile"; token.key_prefix = ""; token.label = "Projection parameters file"; token.help = "Projection parameters file created by a 3D reconstruction step (typically, final_params_*.txt or main*/params_*.txt of sxmeridien.py)."; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "params_proj_txt"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "pixel_size"; token.key_prefix = "--"; token.label = "Pixel size [A]"; token.help = "Pixel size of input data. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "0.0"; token.restore = "0.0"; token.type = "apix"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "symmetry"; token.key_prefix = "--"; token.label = "Point-group symmetry"; token.help = "Point-group symmetry of the reconstructed structure. Acceptable values are: cn and dn, where n is multiplicity. In addition, icos, oct, and tet are supported. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "c1"; token.restore = "c1"; token.type = "sym"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "round_digit"; token.key_prefix = "--"; token.label = "Number precision"; token.help = "Decimal numbers will be rounded to this number of decimal points. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "5"; token.restore = "5"; token.type = "int"; sxcmd.token_list.append(token)
@@ -3077,25 +4527,25 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		sxcmd_list.append(sxcmd)
 
 		sxcmd = SXcmd(); sxcmd.name = "sxlocres"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Local Resolution"; sxcmd.short_info = "Compute local resolution of a map."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = True; sxcmd.category = "sxc_localres"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
-		token = SXcmd_token(); token.key_base = "firstvolume"; token.key_prefix = ""; token.label = "First half-volume"; token.help = ""; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "secondvolume"; token.key_prefix = ""; token.label = "Second half-volume"; token.help = ""; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "maskfile"; token.key_prefix = ""; token.label = "3D mask"; token.help = "Defines the region where the local filtering should be applied. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "image"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "firstvolume"; token.key_prefix = ""; token.label = "First half-volume"; token.help = ""; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "data3d_one"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "secondvolume"; token.key_prefix = ""; token.label = "Second half-volume"; token.help = ""; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "data3d_one"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "maskfile"; token.key_prefix = ""; token.label = "3D mask"; token.help = "Defines the region where the local filtering should be applied. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "data3d_one"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "outputfile"; token.key_prefix = ""; token.label = "Output volume"; token.help = "Each voxel contains the resolution for this area in absolute frequency units. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "fsc"; token.key_prefix = "--"; token.label = "FSC output file"; token.help = "Contains the overall FSC curve computed by rotational averaging of local resolution values. It is truncated to res_overall. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "no curve"; token.restore = "no curve"; token.type = "string"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "wn"; token.key_prefix = "--"; token.label = "FSC window size [Pixels]"; token.help = "Defines the size of window where the local real-space FSC is computed. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "7"; token.restore = "7"; token.type = "int"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "step"; token.key_prefix = "--"; token.label = "Fourier shell step size [Pixels]"; token.help = ""; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "1.0"; token.restore = "1.0"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "cutoff"; token.key_prefix = "--"; token.label = "Local resolution criterion"; token.help = "Specify local resolution criterion in terms of the real-space FSC (i.e. CCC; cross-correlation coefficient). "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "0.5"; token.restore = "0.5"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "radius"; token.key_prefix = "--"; token.label = "Mask radius [Pixels]"; token.help = "In case no mask is provided, a hard sphere of this radius will be used. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1"; token.restore = "-1"; token.type = "radius"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "res_overall"; token.key_prefix = "--"; token.label = "Overall resolution [1/Pixel]"; token.help = "Specify overall (or global) resolution in absolute frequency (>=0.0 and <=0.5) for calibration of the average local resolution. Typically, use the absolute frequency corresponding to the conventional FSC resolution obtained by 3D refinement. See Description section in the wiki page for details. By default, the program will not calibrate the average local resolution. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "float"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "res_overall"; token.key_prefix = "--"; token.label = "Overall resolution [1/Pixel]"; token.help = "Specify overall (or global) resolution in absolute frequency (>=0.0 and <=0.5) for calibration of the average local resolution. Typically, use the absolute frequency corresponding to the conventional FSC resolution obtained by 3D refinement. See Description section in the wiki page for details. By default, the program will not calibrate the average local resolution. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "abs_freq"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "out_ang_res"; token.key_prefix = "--"; token.label = "Save Angstrom local resolution"; token.help = "Additionally creates a local resolution file in Angstroms. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "apix"; token.key_prefix = "--"; token.label = "Pixel size of half-volumes [A]"; token.help = "Effective only with --out_ang_res options. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "1.0"; token.restore = "1.0"; token.type = "apix"; sxcmd.token_list.append(token)
 
 		sxcmd_list.append(sxcmd)
 
 		sxcmd = SXcmd(); sxcmd.name = "sxfilterlocal"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "3D Local Filter"; sxcmd.short_info = "Locally filter maps according to the local resolution determined by sxlocres.py."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = True; sxcmd.category = "sxc_localres"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
-		token = SXcmd_token(); token.key_base = "input_volume"; token.key_prefix = ""; token.label = "Input volume"; token.help = ""; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "locres_volume"; token.key_prefix = ""; token.label = "Local resolution file"; token.help = "Volume file containing the local resolution estimate produced by sxlocres. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "maskfile"; token.key_prefix = ""; token.label = "3D mask"; token.help = "Defines the region where the local filtering should be applied. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "image"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_volume"; token.key_prefix = ""; token.label = "Input volume"; token.help = ""; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "data3d_one"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "locres_volume"; token.key_prefix = ""; token.label = "Local resolution file"; token.help = "Volume file containing the local resolution estimate produced by sxlocres. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "data3d_one"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "maskfile"; token.key_prefix = ""; token.label = "3D mask"; token.help = "Defines the region where the local filtering should be applied. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "data3d_one"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "outputfile"; token.key_prefix = ""; token.label = "Output volume"; token.help = ""; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "radius"; token.key_prefix = "--"; token.label = "Mask radius [Pixels]"; token.help = "In case no mask is provided, a hard sphere of this radius will be used. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1"; token.restore = "-1"; token.type = "radius"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "falloff"; token.key_prefix = "--"; token.label = "Low-pass filter fall-off [1/Pixels]"; token.help = "The program uses a tangent low-pass filter. Specify with absolute frequency. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "0.1"; token.restore = "0.1"; token.type = "float"; sxcmd.token_list.append(token)
@@ -3103,7 +4553,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		sxcmd_list.append(sxcmd)
 
 		sxcmd = SXcmd(); sxcmd.name = "e2display"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Display Data"; sxcmd.short_info = "Displays images, volumes, or 1D plots."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_localres"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = False
-		token = SXcmd_token(); token.key_base = "input_data_list"; token.key_prefix = ""; token.label = "Input files"; token.help = "List of input images, volumes, plots. Wild cards (e.g *) can be used to select a list of files. Not recommended when the list is too large. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "any_file_list"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_data_list"; token.key_prefix = ""; token.label = "Input files"; token.help = "List of input images, volumes, plots. Wild cards (e.g *) can be used to select a list of files. Not recommended when the list is too large. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "displayable_list"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "singleimage"; token.key_prefix = "--"; token.label = "Single image view"; token.help = "Displays a stack in a single image view: "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "fullrange"; token.key_prefix = "--"; token.label = "Use full range of pixel values"; token.help = "Instead of default auto-contrast, use full range of pixel values for the display of particles stacks and 2D images, "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "verbose"; token.key_prefix = "--"; token.label = "Verbose"; token.help = "Accepted values 0-9. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "0"; token.restore = "0"; token.type = "int"; sxcmd.token_list.append(token)
@@ -3112,7 +4562,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd = SXcmd(); sxcmd.name = "sxprocess"; sxcmd.subname = ""; sxcmd.mode = "adaptive_mask"; sxcmd.subset_config = ""; sxcmd.label = "Adaptive 3D Mask"; sxcmd.short_info = "Create soft-edged 3D mask from reference volume. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_localres"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "adaptive_mask"; token.key_prefix = "--"; token.label = "Create soft-edged 3D mask"; token.help = "Create soft-edged 3D mask from reference volume. "; token.group = "main"; token.is_required = True; token.is_locked = True; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "input_volume"; token.key_prefix = ""; token.label = "Input volume"; token.help = "Input reference volume"; token.group = "main"; token.is_required = True; token.is_locked = None; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_volume"; token.key_prefix = ""; token.label = "Input volume"; token.help = "Input reference volume"; token.group = "main"; token.is_required = True; token.is_locked = None; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "data3d_one"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_mask3D"; token.key_prefix = ""; token.label = "Output mask"; token.help = "Output 3D mask"; token.group = "main"; token.is_required = True; token.is_locked = None; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "nsigma"; token.key_prefix = "--"; token.label = "Density standard deviation threshold"; token.help = "Defines the threshold used to find the main volume within the data. All voxels with density <= mean + nsigma standard deviation will be included into the main volume. This option will not be used if the option threshold is larger than -9999.0. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "1.0"; token.restore = "1.0"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "threshold"; token.key_prefix = "--"; token.label = "Binarization threshold"; token.help = "Below this value the data is assumed to not belong to the main volume. With the value lower than the default, the option will be ignored and the mask will be set according to nsigma. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-9999.0"; token.restore = "-9999.0"; token.type = "float"; sxcmd.token_list.append(token)
@@ -3124,7 +4574,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd = SXcmd(); sxcmd.name = "sxprocess"; sxcmd.subname = ""; sxcmd.mode = "angular_distribution"; sxcmd.subset_config = ""; sxcmd.label = "Angular Distribution"; sxcmd.short_info = "Create angular distribution file containing a 3D representation of the given angular distribution. It can be viewed with UCFS Chimera. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_localres"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "angular_distribution"; token.key_prefix = "--"; token.label = "Create angular distribution file"; token.help = "Create angular distribution file containing a 3D representation of the given angular distribution. It can be viewed with UCFS Chimera. "; token.group = "main"; token.is_required = True; token.is_locked = True; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "inputfile"; token.key_prefix = ""; token.label = "Alignment Parameter file"; token.help = "Alignment Parameter file created by a previous 3D reconstruction step (e.g. sxmeridien.py)"; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "any_file"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "inputfile"; token.key_prefix = ""; token.label = "Projection parameters file"; token.help = "Projection parameters file created by a 3D reconstruction step (typically, final_params_*.txt or main*/params_*.txt of sxmeridien.py)."; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "params_proj_txt"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "pixel_size"; token.key_prefix = "--"; token.label = "Pixel size [A]"; token.help = "Pixel size of input data. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "0.0"; token.restore = "0.0"; token.type = "apix"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "symmetry"; token.key_prefix = "--"; token.label = "Point-group symmetry"; token.help = "Point-group symmetry of the reconstructed structure. Acceptable values are: cn and dn, where n is multiplicity. In addition, icos, oct, and tet are supported. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "c1"; token.restore = "c1"; token.type = "sym"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "round_digit"; token.key_prefix = "--"; token.label = "Number precision"; token.help = "Decimal numbers will be rounded to this number of decimal points. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "5"; token.restore = "5"; token.type = "int"; sxcmd.token_list.append(token)
@@ -3137,10 +4587,10 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd = SXcmd(); sxcmd.name = "sxunblur"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Micrograph Movie Alignment"; sxcmd.short_info = "Align frames of micrograph movies with Unblur."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_movie"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "unblur_path"; token.key_prefix = ""; token.label = "unblur executable path"; token.help = "Specify the file path of unblur executable. (This argument is specific to SPHIRE, and not directly used by unblur and summovie executables.) "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "exe"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "input_micrograph_pattern"; token.key_prefix = ""; token.label = "Input micrograph path pattern"; token.help = "Specify path pattern of input micrographs with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (') or double quotes ('). (Note: sxgui.py automatically adds single quotes (')). bdb files can not be selected as input micrographs. (This argument is specific to SPHIRE, and not directly used by unblur and summovie executables.) "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "any_image"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_micrograph_pattern"; token.key_prefix = ""; token.label = "Input movie path pattern"; token.help = "Specify path pattern of input micrograph movies with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (') or double quotes ('). (Note: sxgui.py automatically adds single quotes (')). bdb files can not be selected as input micrograph movies. (This argument is specific to SPHIRE, and not directly used by unblur and summovie executables.) "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "mic_stack"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_directory"; token.key_prefix = ""; token.label = "Output directory"; token.help = "The results will be written here. This directory will be created automatically and it must not exist previously. (This argument is specific to SPHIRE, and not directly used by unblur and summovie executables.) "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "summovie_path"; token.key_prefix = "--"; token.label = "summovie executable path"; token.help = "Specify the file path of summovie executable. (This option is specific to SPHIRE, and not directly used by unblur and summovie executables.) "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "exe"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "selection_list"; token.key_prefix = "--"; token.label = "Micrograph selection file"; token.help = "Specify a name of micrograph selection list text file. The file extension must be '.txt'. If this is not provided, all files matched with the micrograph name pattern will be processed. (This option is specific to SPHIRE, and not directly used by unblur and summovie executables.) "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "any_micrograph"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "selection_list"; token.key_prefix = "--"; token.label = "Movie selection file"; token.help = "Specify a name of micrograph movie selection list text file. The file extension must be '.txt'. If this is not provided, all files matched with the micrograph movie name pattern will be processed. (This option is specific to SPHIRE, and not directly used by unblur and summovie executables.) "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "select_mic_stack"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "nr_frames"; token.key_prefix = "--"; token.label = "Number of movie frames"; token.help = "The number of movie frames in each input micrograph. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "3"; token.restore = "3"; token.type = "int"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "pixel_size"; token.key_prefix = "--"; token.label = "Pixel size [A]"; token.help = "The pixel size of input micrographs. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "apix"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "voltage"; token.key_prefix = "--"; token.label = "Microscope voltage [kV]"; token.help = "The acceleration voltage of microscope used for imaging. Will be ignored when skip_dose_filter option is used. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "300.0"; token.restore = "300.0"; token.type = "float"; sxcmd.token_list.append(token)
@@ -3163,13 +4613,13 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		sxcmd_list.append(sxcmd)
 
 		sxcmd = SXcmd(); sxcmd.name = "sxgui_unblur"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Drift Assessment"; sxcmd.short_info = "Assess micrographs based on drift estimation produced by Unblur."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_movie"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = False
-		token = SXcmd_token(); token.key_base = "inputfile"; token.key_prefix = ""; token.label = "Shift files"; token.help = "A wild card * can be used to process multiple shift files. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "any_file"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "input_shift_list_file"; token.key_prefix = ""; token.label = "Input shift list file"; token.help = "Extension of input shift list file must be '.txt'. If this is not provided, all files matched with the micrograph name pattern will be processed. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "txt"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "inputfile"; token.key_prefix = ""; token.label = "Shift files"; token.help = "A wild card * can be used to process multiple shift files. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "params_drift_txt"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_shift_list_file"; token.key_prefix = ""; token.label = "Input shift list file"; token.help = "Extension of input shift list file must be '.txt'. If this is not provided, all files matched with the micrograph name pattern will be processed. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "select_drift_params"; sxcmd.token_list.append(token)
 
 		sxcmd_list.append(sxcmd)
 
 		sxcmd = SXcmd(); sxcmd.name = "e2display"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Display Data"; sxcmd.short_info = "Displays images, volumes, or 1D plots."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_movie"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = False
-		token = SXcmd_token(); token.key_base = "input_data_list"; token.key_prefix = ""; token.label = "Input files"; token.help = "List of input images, volumes, plots. Wild cards (e.g *) can be used to select a list of files. Not recommended when the list is too large. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "any_file_list"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_data_list"; token.key_prefix = ""; token.label = "Input files"; token.help = "List of input images, volumes, plots. Wild cards (e.g *) can be used to select a list of files. Not recommended when the list is too large. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "displayable_list"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "singleimage"; token.key_prefix = "--"; token.label = "Single image view"; token.help = "Displays a stack in a single image view: "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "fullrange"; token.key_prefix = "--"; token.label = "Use full range of pixel values"; token.help = "Instead of default auto-contrast, use full range of pixel values for the display of particles stacks and 2D images, "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "verbose"; token.key_prefix = "--"; token.label = "Verbose"; token.help = "Accepted values 0-9. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "0"; token.restore = "0"; token.type = "int"; sxcmd.token_list.append(token)
@@ -3178,10 +4628,10 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd = SXcmd(); sxcmd.name = "sxsummovie"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Micrograph Movie Summation"; sxcmd.short_info = "Sum micrograph movies with SumMovie."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_movie"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "summovie_path"; token.key_prefix = ""; token.label = "summovie executable path"; token.help = "Specify the file path of summovie executable. (This argument is specific to SPHIRE, and not directly used by summovie executable.) "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "exe"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "input_micrograph_pattern"; token.key_prefix = ""; token.label = "Input micrograph path pattern"; token.help = "Specify path pattern of input micrographs with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (') or double quotes ('). (Note: sxgui.py automatically adds single quotes (')). bdb files can not be selected as input micrographs. (This argument is specific to SPHIRE, and not directly used by summovie executable.) "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "any_image"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "input_shift_pattern"; token.key_prefix = ""; token.label = "Input shift path pattern"; token.help = "Specify path pattern of input shift files with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (') or double quotes ('). (Note: sxgui.py automatically adds single quotes (')). The substring at the variable part must be same between the associated pair of input micrograph and shift file. (This argument is specific to SPHIRE, and not directly used by summovie executable.) "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "parameters"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_micrograph_pattern"; token.key_prefix = ""; token.label = "Input movie path pattern"; token.help = "Specify path pattern of input micrograph movies with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (') or double quotes ('). (Note: sxgui.py automatically adds single quotes (')). bdb files can not be selected as input micrograph movies. (This argument is specific to SPHIRE, and not directly used by summovie executable.) "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "mic_stack"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_shift_pattern"; token.key_prefix = ""; token.label = "Input drift shift path pattern"; token.help = "Specify path pattern of input drift shift parameters files with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (') or double quotes ('). (Note: sxgui.py automatically adds single quotes (')). The substring at the variable part must be same between the associated pair of input micrograph and shift file. (This argument is specific to SPHIRE, and not directly used by summovie executable.) "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "params_drift_txt"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_directory"; token.key_prefix = ""; token.label = "Output directory"; token.help = "The results will be written here. This directory will be created automatically and it must not exist previously. (This argument is specific to SPHIRE, and not directly used by summovie executable.) "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "selection_list"; token.key_prefix = "--"; token.label = "Micrograph selection file"; token.help = "Specify a name of micrograph selection list text file. The file extension must be '.txt'. If this is not provided, all files matched with the micrograph name pattern will be processed. (This option is specific to SPHIRE, and not directly used by summovie executable.) "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "any_micrograph"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "selection_list"; token.key_prefix = "--"; token.label = "Movie selection file"; token.help = "Specify a name of micrograph movie selection list text file. The file extension must be '.txt'. If this is not provided, all files matched with the micrograph movie name pattern will be processed. (This option is specific to SPHIRE, and not directly used by summovie executable.) "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "select_mic_stack"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "nr_frames"; token.key_prefix = "--"; token.label = "Number of movie frames"; token.help = "The number of movie frames in each input micrograph. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "3"; token.restore = "3"; token.type = "int"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "first"; token.key_prefix = "--"; token.label = "First movie frame"; token.help = "First movie frame for summing. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "1"; token.restore = "1"; token.type = "int"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "last"; token.key_prefix = "--"; token.label = "Last movie frame"; token.help = "Last movie frame for summing. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1"; token.restore = "-1"; token.type = "int"; sxcmd.token_list.append(token)
@@ -3195,17 +4645,17 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "sxpipe"; sxcmd.subname = "organize_micrographs"; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Organize Micrographs"; sxcmd.short_info = "Organize micrographs by moving micrographs in a selecting file from a source directory (specified by source micrographs pattern) to a destination directory."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_movie"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
-		token = SXcmd_token(); token.key_base = "source_micrograph_pattern"; token.key_prefix = ""; token.label = "Source micrograph path pattern"; token.help = "Specify path pattern of source micrographs with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (') or double quotes ('). (Note: sxgui.py automatically adds single quotes (')). The substring at the variable part must be same between each associated pair of micrograph names. bdb files can not be selected as source micrographs. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "any_image"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "selection_list"; token.key_prefix = ""; token.label = "Micrograph selection file"; token.help = "Specify a path of text file containing a list of selected micrograph names or paths. The file extension must be '.txt'. The directory path of each entry will be ignored if there are any. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "txt"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "destination_directory"; token.key_prefix = ""; token.label = "Destination directory"; token.help = "The micrographs in selecting list will be moved to this directory. This directory will be created automatically if it does not exist. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "directory"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "reverse"; token.key_prefix = "--"; token.label = "Reverse operation"; token.help = "Move back micrographs from the destination directory to the source directory. Please use this option to restore the previously-moved micrographs. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "check_consistency"; token.key_prefix = "--"; token.label = "Check consistency of dataset"; token.help = "Create a text file containing the list of Micrograph ID entries might have inconsitency among the provided dataset. (i.e. mic_consistency_check_info.txt). "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
+		sxcmd = SXcmd(); sxcmd.name = "sxpipe"; sxcmd.subname = "organize_micrographs"; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Organize Micrographs/Movies"; sxcmd.short_info = "Organize micrographs/movies by moving micrographs/movies in a selecting file from a source directory (specified by source micrographs/movies pattern) to a destination directory."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_movie"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
+		token = SXcmd_token(); token.key_base = "source_micrograph_pattern"; token.key_prefix = ""; token.label = "Source micrograph/movies path pattern"; token.help = "Specify path pattern of source micrographs/movies with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (') or double quotes ('). (Note: sxgui.py automatically adds single quotes (')). The substring at the variable part must be same between each associated pair of micrograph/movie names. bdb files can not be selected as source micrographs/movies. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "mic_both"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "selection_list"; token.key_prefix = ""; token.label = "Micrograph/Movie selection file"; token.help = "Specify a path of text file containing a list of selected micrograph/movie names or paths. The file extension must be '.txt'. The directory path of each entry will be ignored if there are any. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "select_mic_both"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "destination_directory"; token.key_prefix = ""; token.label = "Destination directory"; token.help = "The micrographs/movies in selecting list will be moved to this directory. This directory will be created automatically if it does not exist. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "dir"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "reverse"; token.key_prefix = "--"; token.label = "Reverse operation"; token.help = "Move back micrographs/movies from the destination directory to the source directory. Please use this option to restore the previously-moved micrographs/movies. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "check_consistency"; token.key_prefix = "--"; token.label = "Check consistency of dataset"; token.help = "Create a text file containing the list of micrograph/movie ID entries might have inconsitency among the provided dataset. (i.e. mic_consistency_check_info.txt). "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 
 		sxcmd_list.append(sxcmd)
 
 		sxcmd = SXcmd(); sxcmd.name = "e2display"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Display Data"; sxcmd.short_info = "Displays images, volumes, or 1D plots."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_utilities"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = False
-		token = SXcmd_token(); token.key_base = "input_data_list"; token.key_prefix = ""; token.label = "Input files"; token.help = "List of input images, volumes, plots. Wild cards (e.g *) can be used to select a list of files. Not recommended when the list is too large. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "any_file_list"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_data_list"; token.key_prefix = ""; token.label = "Input files"; token.help = "List of input images, volumes, plots. Wild cards (e.g *) can be used to select a list of files. Not recommended when the list is too large. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "displayable_list"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "singleimage"; token.key_prefix = "--"; token.label = "Single image view"; token.help = "Displays a stack in a single image view: "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "fullrange"; token.key_prefix = "--"; token.label = "Use full range of pixel values"; token.help = "Instead of default auto-contrast, use full range of pixel values for the display of particles stacks and 2D images, "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "verbose"; token.key_prefix = "--"; token.label = "Verbose"; token.help = "Accepted values 0-9. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "0"; token.restore = "0"; token.type = "int"; sxcmd.token_list.append(token)
@@ -3220,15 +4670,15 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		token = SXcmd_token(); token.key_base = "het"; token.key_prefix = "--"; token.label = "Include hetero atoms"; token.help = "Otherwise the HETATM entries in the PDB file are ignored. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "center"; token.key_prefix = "--"; token.label = "Center model at the origin"; token.help = ": Specifies whether the atomic model should be moved to the origin before generating density map.  Available options are: c - Use the geometrical center of atoms; a - Use the center of mass (recommended); x,y,z - Vector to be subtracted for the coordinates. Default: no centering, in which case (0,0,0) in the PDB space will map to the center of the EM volume. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "n"; token.restore = "n"; token.type = "string"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "O"; token.key_prefix = "--"; token.label = "Apply additional rotation"; token.help = "This can be used to modify the orientation of the atomic model. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "tr0"; token.key_prefix = "--"; token.label = "Rotational matrix file"; token.help = ": This file must contain the 3x4 transformation matrix to be applied to the PDB coordinates after centering. The translation vector (last column of the matrix) must be specified in Angstrom. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "parameters"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "tr0"; token.key_prefix = "--"; token.label = "Rotational matrix file"; token.help = ": This file must contain the 3x4 transformation matrix to be applied to the PDB coordinates after centering. The translation vector (last column of the matrix) must be specified in Angstrom. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "rot_matrix"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "quiet"; token.key_prefix = "--"; token.label = "Silent mode"; token.help = "Does not print any information to the monitor. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 
 		sxcmd_list.append(sxcmd)
 
 		sxcmd = SXcmd(); sxcmd.name = "sxrelion2sphire"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "RELION to SPHIRE conversion"; sxcmd.short_info = "Create several types of parameter text files and a particle image stack in SPHIRE format from parameters stored in a RELION STAR file"; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_utilities"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
-		token = SXcmd_token(); token.key_base = "input_star_file"; token.key_prefix = ""; token.label = "Input RELION STAR file"; token.help = "Specify a STAR file generated by RELION. The file should contain parameters related to Micrographs, CTF Estimation, Particle Extraction, 3D Alignment, or/and Random Subset. Entries for Micrographs category are required. If it does not contain some entries associated with CTF Estimation, Particle Extraction, 3D Alignment, or/and Random Subset, then the script does not produced the related output file(s). "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "parameters"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_star_file"; token.key_prefix = ""; token.label = "Input RELION STAR file"; token.help = "Specify a STAR file generated by RELION. The file should contain parameters related to Micrographs, CTF Estimation, Particle Extraction, 3D Alignment, or/and Random Subset. Entries for Micrographs category are required. If it does not contain some entries associated with CTF Estimation, Particle Extraction, 3D Alignment, or/and Random Subset, then the script does not produced the related output file(s). "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "params_relion_star"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_directory"; token.key_prefix = ""; token.label = "Output directory"; token.help = "All the results will be written in here. This directory will be created automatically and it must not exist previously. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "star_section"; token.key_prefix = "--"; token.label = "Section title in STAR file"; token.help = "The section title in the RELION star file where the data should be extracted. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "'data_'"; token.restore = "'data_'"; token.type = "string"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "star_section"; token.key_prefix = "--"; token.label = "Section title in STAR file"; token.help = "The section title in the RELION star file where the data should be extracted. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "data_"; token.restore = "data_"; token.type = "string"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "box_size"; token.key_prefix = "--"; token.label = "Box size"; token.help = "Box size for particle extraction.  It also controls the saved coordinates file format. If the given value is > 0, store the eman1 format. coordinate file. The coordinates of eman1 format is particle box corner associated with this box size. The coordinates of sphire format is particle center. By default, use sphire format. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "0"; token.restore = "0"; token.type = "box"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "create_stack"; token.key_prefix = "--"; token.label = "Create particle stack"; token.help = "By default, the program does not generate the stack of particle images because it takes a long time and the file size is large. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 
@@ -3236,7 +4686,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd = SXcmd(); sxcmd.name = "sxprocess"; sxcmd.subname = ""; sxcmd.mode = "adaptive_mask"; sxcmd.subset_config = ""; sxcmd.label = "Adaptive 3D Mask"; sxcmd.short_info = "Create soft-edged 3D mask from reference volume. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_utilities"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "adaptive_mask"; token.key_prefix = "--"; token.label = "Create soft-edged 3D mask"; token.help = "Create soft-edged 3D mask from reference volume. "; token.group = "main"; token.is_required = True; token.is_locked = True; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "input_volume"; token.key_prefix = ""; token.label = "Input volume"; token.help = "Input reference volume"; token.group = "main"; token.is_required = True; token.is_locked = None; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_volume"; token.key_prefix = ""; token.label = "Input volume"; token.help = "Input reference volume"; token.group = "main"; token.is_required = True; token.is_locked = None; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "data3d_one"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_mask3D"; token.key_prefix = ""; token.label = "Output mask"; token.help = "Output 3D mask"; token.group = "main"; token.is_required = True; token.is_locked = None; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "nsigma"; token.key_prefix = "--"; token.label = "Density standard deviation threshold"; token.help = "Defines the threshold used to find the main volume within the data. All voxels with density <= mean + nsigma standard deviation will be included into the main volume. This option will not be used if the option threshold is larger than -9999.0. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "1.0"; token.restore = "1.0"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "threshold"; token.key_prefix = "--"; token.label = "Binarization threshold"; token.help = "Below this value the data is assumed to not belong to the main volume. With the value lower than the default, the option will be ignored and the mask will be set according to nsigma. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-9999.0"; token.restore = "-9999.0"; token.type = "float"; sxcmd.token_list.append(token)
@@ -3248,7 +4698,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd = SXcmd(); sxcmd.name = "sxprocess"; sxcmd.subname = ""; sxcmd.mode = "binary_mask"; sxcmd.subset_config = ""; sxcmd.label = "Binary 3D Mask"; sxcmd.short_info = "Create binary 3D mask from reference volume. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_utilities"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "binary_mask"; token.key_prefix = "--"; token.label = "Create binary 3D mask"; token.help = "Create binary 3D mask from reference volume. "; token.group = "main"; token.is_required = True; token.is_locked = True; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "input_volume"; token.key_prefix = ""; token.label = "Input volume"; token.help = "Input reference volume"; token.group = "main"; token.is_required = True; token.is_locked = None; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_volume"; token.key_prefix = ""; token.label = "Input volume"; token.help = "Input reference volume"; token.group = "main"; token.is_required = True; token.is_locked = None; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "data3d_one"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_mask3D"; token.key_prefix = ""; token.label = "Output mask"; token.help = "Output 3D mask"; token.group = "main"; token.is_required = True; token.is_locked = None; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "bin_threshold"; token.key_prefix = "--"; token.label = "Binarization threshold"; token.help = "Below this value the data is assumed to not belong to the main volume. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "0.0"; token.restore = "0.0"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "ne"; token.key_prefix = "--"; token.label = "Erosion cycles"; token.help = "After initial binarization the volume is eroded to remove fragmented pieces of the volume. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "0"; token.restore = "0"; token.type = "int"; sxcmd.token_list.append(token)
@@ -3258,7 +4708,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd = SXcmd(); sxcmd.name = "sxprocess"; sxcmd.subname = ""; sxcmd.mode = "changesize"; sxcmd.subset_config = ""; sxcmd.label = "Change Size of Image or Volume"; sxcmd.short_info = "Change size of image or volume (resample, decimation or interpolation up). The process also changes the pixel size and window size accordingly. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_utilities"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "changesize"; token.key_prefix = "--"; token.label = "Change size of image or volume"; token.help = "Change size of image or volume (resample, decimation or interpolation up). The process also changes the pixel size and window size accordingly. "; token.group = "main"; token.is_required = True; token.is_locked = True; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "input_stack"; token.key_prefix = ""; token.label = "Input image or volume"; token.help = "Input image or volume."; token.group = "main"; token.is_required = True; token.is_locked = None; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_stack"; token.key_prefix = ""; token.label = "Input image or volume"; token.help = "Input image or volume."; token.group = "main"; token.is_required = True; token.is_locked = None; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "data2d3d_both"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_stack"; token.key_prefix = ""; token.label = "Output resized image or volume"; token.help = "Resized (decimated or interpolated up) image or volume."; token.group = "main"; token.is_required = True; token.is_locked = None; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "ratio"; token.key_prefix = "--"; token.label = "Ratio of new to old image size"; token.help = "if < 1, the pixel size will increase and image size decrease. if > 1, the other way round. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "1.0"; token.restore = "1.0"; token.type = "float"; sxcmd.token_list.append(token)
 
@@ -3266,14 +4716,14 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd = SXcmd(); sxcmd.name = "e2proc3d"; sxcmd.subname = ""; sxcmd.mode = "clip"; sxcmd.subset_config = ""; sxcmd.label = "Window Image or Volume"; sxcmd.short_info = "Window (pad or clip) volume to the specific dimensions. Specify 1, 3 or 6 arguments; '<x>[,<y>,<z>[,<xc>,<yc>,<zc>]]'. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_utilities"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "clip"; token.key_prefix = "--"; token.label = "Window to specified size [Pixels]"; token.help = "Window (pad or clip) volume to the specific dimensions. Specify 1, 3 or 6 arguments; '<x>[,<y>,<z>[,<xc>,<yc>,<zc>]]'. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "string"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "input_volume"; token.key_prefix = ""; token.label = "Input image or volume"; token.help = "Path to input image or volume file."; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_volume"; token.key_prefix = ""; token.label = "Input image or volume"; token.help = "Path to input image or volume file."; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "data2d3d_both"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_file"; token.key_prefix = ""; token.label = "Output windowed image or volume"; token.help = "Path to output windowed (clipped/padded) image or volume file."; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 
 		sxcmd_list.append(sxcmd)
 
 		sxcmd = SXcmd(); sxcmd.name = "sxprocess"; sxcmd.subname = ""; sxcmd.mode = "angular_distribution"; sxcmd.subset_config = ""; sxcmd.label = "Angular Distribution"; sxcmd.short_info = "Create angular distribution file containing a 3D representation of the given angular distribution. It can be viewed with UCFS Chimera. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_utilities"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "angular_distribution"; token.key_prefix = "--"; token.label = "Create angular distribution file"; token.help = "Create angular distribution file containing a 3D representation of the given angular distribution. It can be viewed with UCFS Chimera. "; token.group = "main"; token.is_required = True; token.is_locked = True; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "inputfile"; token.key_prefix = ""; token.label = "Alignment Parameter file"; token.help = "Alignment Parameter file created by a previous 3D reconstruction step (e.g. sxmeridien.py)"; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "any_file"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "inputfile"; token.key_prefix = ""; token.label = "Projection parameters file"; token.help = "Projection parameters file created by a 3D reconstruction step (typically, final_params_*.txt or main*/params_*.txt of sxmeridien.py)."; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "params_proj_txt"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "pixel_size"; token.key_prefix = "--"; token.label = "Pixel size [A]"; token.help = "Pixel size of input data. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "0.0"; token.restore = "0.0"; token.type = "apix"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "symmetry"; token.key_prefix = "--"; token.label = "Point-group symmetry"; token.help = "Point-group symmetry of the reconstructed structure. Acceptable values are: cn and dn, where n is multiplicity. In addition, icos, oct, and tet are supported. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "c1"; token.restore = "c1"; token.type = "sym"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "round_digit"; token.key_prefix = "--"; token.label = "Number precision"; token.help = "Decimal numbers will be rounded to this number of decimal points. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "5"; token.restore = "5"; token.type = "int"; sxcmd.token_list.append(token)
@@ -3286,10 +4736,10 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd = SXcmd(); sxcmd.name = "sxunblur"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Micrograph Movie Alignment"; sxcmd.short_info = "Align frames of micrograph movies with Unblur."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_utilities"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "unblur_path"; token.key_prefix = ""; token.label = "unblur executable path"; token.help = "Specify the file path of unblur executable. (This argument is specific to SPHIRE, and not directly used by unblur and summovie executables.) "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "exe"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "input_micrograph_pattern"; token.key_prefix = ""; token.label = "Input micrograph path pattern"; token.help = "Specify path pattern of input micrographs with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (') or double quotes ('). (Note: sxgui.py automatically adds single quotes (')). bdb files can not be selected as input micrographs. (This argument is specific to SPHIRE, and not directly used by unblur and summovie executables.) "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "any_image"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_micrograph_pattern"; token.key_prefix = ""; token.label = "Input movie path pattern"; token.help = "Specify path pattern of input micrograph movies with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (') or double quotes ('). (Note: sxgui.py automatically adds single quotes (')). bdb files can not be selected as input micrograph movies. (This argument is specific to SPHIRE, and not directly used by unblur and summovie executables.) "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "mic_stack"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_directory"; token.key_prefix = ""; token.label = "Output directory"; token.help = "The results will be written here. This directory will be created automatically and it must not exist previously. (This argument is specific to SPHIRE, and not directly used by unblur and summovie executables.) "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "summovie_path"; token.key_prefix = "--"; token.label = "summovie executable path"; token.help = "Specify the file path of summovie executable. (This option is specific to SPHIRE, and not directly used by unblur and summovie executables.) "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "exe"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "selection_list"; token.key_prefix = "--"; token.label = "Micrograph selection file"; token.help = "Specify a name of micrograph selection list text file. The file extension must be '.txt'. If this is not provided, all files matched with the micrograph name pattern will be processed. (This option is specific to SPHIRE, and not directly used by unblur and summovie executables.) "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "any_micrograph"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "selection_list"; token.key_prefix = "--"; token.label = "Movie selection file"; token.help = "Specify a name of micrograph movie selection list text file. The file extension must be '.txt'. If this is not provided, all files matched with the micrograph movie name pattern will be processed. (This option is specific to SPHIRE, and not directly used by unblur and summovie executables.) "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "select_mic_stack"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "nr_frames"; token.key_prefix = "--"; token.label = "Number of movie frames"; token.help = "The number of movie frames in each input micrograph. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "3"; token.restore = "3"; token.type = "int"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "pixel_size"; token.key_prefix = "--"; token.label = "Pixel size [A]"; token.help = "The pixel size of input micrographs. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "apix"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "voltage"; token.key_prefix = "--"; token.label = "Microscope voltage [kV]"; token.help = "The acceleration voltage of microscope used for imaging. Will be ignored when skip_dose_filter option is used. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "300.0"; token.restore = "300.0"; token.type = "float"; sxcmd.token_list.append(token)
@@ -3313,10 +4763,10 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd = SXcmd(); sxcmd.name = "sxsummovie"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Micrograph Movie Summation"; sxcmd.short_info = "Sum micrograph movies with SumMovie."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_utilities"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "summovie_path"; token.key_prefix = ""; token.label = "summovie executable path"; token.help = "Specify the file path of summovie executable. (This argument is specific to SPHIRE, and not directly used by summovie executable.) "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "exe"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "input_micrograph_pattern"; token.key_prefix = ""; token.label = "Input micrograph path pattern"; token.help = "Specify path pattern of input micrographs with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (') or double quotes ('). (Note: sxgui.py automatically adds single quotes (')). bdb files can not be selected as input micrographs. (This argument is specific to SPHIRE, and not directly used by summovie executable.) "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "any_image"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "input_shift_pattern"; token.key_prefix = ""; token.label = "Input shift path pattern"; token.help = "Specify path pattern of input shift files with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (') or double quotes ('). (Note: sxgui.py automatically adds single quotes (')). The substring at the variable part must be same between the associated pair of input micrograph and shift file. (This argument is specific to SPHIRE, and not directly used by summovie executable.) "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "parameters"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_micrograph_pattern"; token.key_prefix = ""; token.label = "Input movie path pattern"; token.help = "Specify path pattern of input micrograph movies with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (') or double quotes ('). (Note: sxgui.py automatically adds single quotes (')). bdb files can not be selected as input micrograph movies. (This argument is specific to SPHIRE, and not directly used by summovie executable.) "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "mic_stack"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_shift_pattern"; token.key_prefix = ""; token.label = "Input drift shift path pattern"; token.help = "Specify path pattern of input drift shift parameters files with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (') or double quotes ('). (Note: sxgui.py automatically adds single quotes (')). The substring at the variable part must be same between the associated pair of input micrograph and shift file. (This argument is specific to SPHIRE, and not directly used by summovie executable.) "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "params_drift_txt"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_directory"; token.key_prefix = ""; token.label = "Output directory"; token.help = "The results will be written here. This directory will be created automatically and it must not exist previously. (This argument is specific to SPHIRE, and not directly used by summovie executable.) "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "selection_list"; token.key_prefix = "--"; token.label = "Micrograph selection file"; token.help = "Specify a name of micrograph selection list text file. The file extension must be '.txt'. If this is not provided, all files matched with the micrograph name pattern will be processed. (This option is specific to SPHIRE, and not directly used by summovie executable.) "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "any_micrograph"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "selection_list"; token.key_prefix = "--"; token.label = "Movie selection file"; token.help = "Specify a name of micrograph movie selection list text file. The file extension must be '.txt'. If this is not provided, all files matched with the micrograph movie name pattern will be processed. (This option is specific to SPHIRE, and not directly used by summovie executable.) "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "select_mic_stack"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "nr_frames"; token.key_prefix = "--"; token.label = "Number of movie frames"; token.help = "The number of movie frames in each input micrograph. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "3"; token.restore = "3"; token.type = "int"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "first"; token.key_prefix = "--"; token.label = "First movie frame"; token.help = "First movie frame for summing. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "1"; token.restore = "1"; token.type = "int"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "last"; token.key_prefix = "--"; token.label = "Last movie frame"; token.help = "Last movie frame for summing. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1"; token.restore = "-1"; token.type = "int"; sxcmd.token_list.append(token)
@@ -3331,18 +4781,18 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		sxcmd_list.append(sxcmd)
 
 		sxcmd = SXcmd(); sxcmd.name = "e2bdb"; sxcmd.subname = ""; sxcmd.mode = "makevstack"; sxcmd.subset_config = ""; sxcmd.label = "Create Virtual Stack"; sxcmd.short_info = "Make a 'virtual' BDB image stack with the specified name from one or more other stacks. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_utilities"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
-		token = SXcmd_token(); token.key_base = "makevstack"; token.key_prefix = "--"; token.label = "Output virtual image stack"; token.help = "Make a 'virtual' BDB image stack with the specified name from one or more other stacks. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "input_bdb_stack_file"; token.key_prefix = ""; token.label = "Input BDB image stack"; token.help = "Specify path to input BDB stack file. "; token.group = "main"; token.is_required = True; token.is_locked = None; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "bdb"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "list"; token.key_prefix = "--"; token.label = "File containing selection list of images"; token.help = "Input ASCII file containing a list of selected image names to creates a new virtual BDB image stack from an existed virtual stack. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "parameters"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "makevstack"; token.key_prefix = "--"; token.label = "Output virtual image stack"; token.help = "Make a 'virtual' BDB image stack with the specified name from one or more other stacks. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "output_bdb2d_stack"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_bdb_stack_file"; token.key_prefix = ""; token.label = "Input BDB image stack"; token.help = "Specify path to input BDB stack file. "; token.group = "main"; token.is_required = True; token.is_locked = None; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "bdb2d_stack"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "list"; token.key_prefix = "--"; token.label = "Image selection file"; token.help = "Input text file containing a list of selected image IDs to create a new virtual BDB image stack from an existed stack or virtual stack. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "select_data2d_stack"; sxcmd.token_list.append(token)
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "sxpipe"; sxcmd.subname = "organize_micrographs"; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Organize Micrographs"; sxcmd.short_info = "Organize micrographs by moving micrographs in a selecting file from a source directory (specified by source micrographs pattern) to a destination directory."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_utilities"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
-		token = SXcmd_token(); token.key_base = "source_micrograph_pattern"; token.key_prefix = ""; token.label = "Source micrograph path pattern"; token.help = "Specify path pattern of source micrographs with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (') or double quotes ('). (Note: sxgui.py automatically adds single quotes (')). The substring at the variable part must be same between each associated pair of micrograph names. bdb files can not be selected as source micrographs. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "any_image"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "selection_list"; token.key_prefix = ""; token.label = "Micrograph selection file"; token.help = "Specify a path of text file containing a list of selected micrograph names or paths. The file extension must be '.txt'. The directory path of each entry will be ignored if there are any. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "txt"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "destination_directory"; token.key_prefix = ""; token.label = "Destination directory"; token.help = "The micrographs in selecting list will be moved to this directory. This directory will be created automatically if it does not exist. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "directory"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "reverse"; token.key_prefix = "--"; token.label = "Reverse operation"; token.help = "Move back micrographs from the destination directory to the source directory. Please use this option to restore the previously-moved micrographs. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "check_consistency"; token.key_prefix = "--"; token.label = "Check consistency of dataset"; token.help = "Create a text file containing the list of Micrograph ID entries might have inconsitency among the provided dataset. (i.e. mic_consistency_check_info.txt). "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
+		sxcmd = SXcmd(); sxcmd.name = "sxpipe"; sxcmd.subname = "organize_micrographs"; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Organize Micrographs/Movies"; sxcmd.short_info = "Organize micrographs/movies by moving micrographs/movies in a selecting file from a source directory (specified by source micrographs/movies pattern) to a destination directory."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_utilities"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
+		token = SXcmd_token(); token.key_base = "source_micrograph_pattern"; token.key_prefix = ""; token.label = "Source micrograph/movies path pattern"; token.help = "Specify path pattern of source micrographs/movies with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (') or double quotes ('). (Note: sxgui.py automatically adds single quotes (')). The substring at the variable part must be same between each associated pair of micrograph/movie names. bdb files can not be selected as source micrographs/movies. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "mic_both"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "selection_list"; token.key_prefix = ""; token.label = "Micrograph/Movie selection file"; token.help = "Specify a path of text file containing a list of selected micrograph/movie names or paths. The file extension must be '.txt'. The directory path of each entry will be ignored if there are any. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "select_mic_both"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "destination_directory"; token.key_prefix = ""; token.label = "Destination directory"; token.help = "The micrographs/movies in selecting list will be moved to this directory. This directory will be created automatically if it does not exist. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "dir"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "reverse"; token.key_prefix = "--"; token.label = "Reverse operation"; token.help = "Move back micrographs/movies from the destination directory to the source directory. Please use this option to restore the previously-moved micrographs/movies. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "check_consistency"; token.key_prefix = "--"; token.label = "Check consistency of dataset"; token.help = "Create a text file containing the list of micrograph/movie ID entries might have inconsitency among the provided dataset. (i.e. mic_consistency_check_info.txt). "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 
 		sxcmd_list.append(sxcmd)
 
@@ -3357,7 +4807,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		for sxcmd in sxcmd_list:
 			for sxcmd_token in sxcmd.token_list:
 				# Handle very special cases
-				if sxcmd_token.type == "function":
+				if sxcmd_token.type == "user_func":
 					n_widgets = 2 # function type has two line edit boxes
 					sxcmd_token.label = [sxcmd_token.label, "Python script for user function"]
 					sxcmd_token.help = [sxcmd_token.help, "Please leave it blank if file is not external to sphire"]
