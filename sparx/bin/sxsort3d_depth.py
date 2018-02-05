@@ -290,7 +290,7 @@ def depth_clustering(work_dir, depth_order, initial_id_file, params, previous_pa
 				for nbox in xrange(0,n_cluster_boxes,2):
 					input_box_parti1 = os.path.join(depth_dir, "nbox%d"%nbox,     "partition.txt")
 					input_box_parti2 = os.path.join(depth_dir, "nbox%d"%(nbox+1), "partition.txt")
-					minimum_grp_size, maximum_grp_size, accounted_list, unaccounted_list, bad_clustering, stop_generation = \
+					minimum_grp_size, maximum_grp_size, accounted_list, unaccounted_list, bad_clustering, stop_generation, stat_list = \
 					do_boxes_two_way_comparison_new(nbox, input_box_parti1, input_box_parti2, depth_order - depth, log_main)
 					if( stop_generation ==1 ):
 						partition_per_box_per_layer_list = []
@@ -306,6 +306,7 @@ def depth_clustering(work_dir, depth_order, initial_id_file, params, previous_pa
 			partition_per_box_per_layer_list = wrap_mpi_bcast(partition_per_box_per_layer_list, Blockdata["main_node"], MPI_COMM_WORLD)
 			bad_clustering = bcast_number_to_all(bad_clustering, Blockdata["main_node"], MPI_COMM_WORLD)
 			stop_generation = bcast_number_to_all(stop_generation, Blockdata["main_node"], MPI_COMM_WORLD)
+			stat_list = wrap_mpi_bcast(stat_list, Blockdata["main_node"], MPI_COMM_WORLD)
 			Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
 			if(Blockdata["myid"] == Blockdata["main_node"]): mark_sorting_state(depth_dir, True, log_main)
 			if( bad_clustering == 1): break
@@ -319,7 +320,7 @@ def depth_clustering(work_dir, depth_order, initial_id_file, params, previous_pa
 			log_main.add(' ')
 			log_main.add(' ')
 			log_main.add('================================================================================================================')
-	return partition_per_box_per_layer_list, bad_clustering
+	return partition_per_box_per_layer_list, bad_clustering, stat_list
 
 def depth_box_initialization(box_dir, input_list1, input_list2, log_file):
 	global Tracker, Blockdata
@@ -3708,6 +3709,7 @@ def do_boxes_two_way_comparison_new(nbox, input_box_parti1, input_box_parti2, de
 	core2 = read_text_row(input_box_parti2)
 	ptp2, tmp2 = split_partition_into_ordered_clusters(core2)
 	#### before comparison we do a simulation
+	stat_list = []
 	NT = 1000
 	import numpy as np
 	
@@ -3815,6 +3817,7 @@ def do_boxes_two_way_comparison_new(nbox, input_box_parti1, input_box_parti2, de
 			nclass +=1
 			log_main.add('{:^14d} {:^10d} {:^8} {:^15.1f} {:^22.1f} {:^5.1f}'.format(index_of_any, len(any),'accepted', score3, \
 			       table_stat(clist[index_of_any])[0], sqrt(table_stat(clist[index_of_any])[1])))
+			stat_list.append([score3, table_stat(clist[index_of_any])[0], sqrt(table_stat(clist[index_of_any])[1])])
 		else:
 			log_main.add('{:^14d} {:^10d} {:^8} {:^15.1f} {:^22.1f} {:^5.1f}'.format(index_of_any, len(any), 'rejected', score3, \
 			       table_stat(clist[index_of_any])[0], sqrt(table_stat(clist[index_of_any])[1])))
@@ -3837,13 +3840,13 @@ def do_boxes_two_way_comparison_new(nbox, input_box_parti1, input_box_parti2, de
 			b = set(accounted_list)
 			unaccounted_list = sorted(list(a.difference(b)))
 			log_main.add('================================================================================================================\n')
-			return minimum_group_size, maximum_group_size, new_index, unaccounted_list, bad_clustering, stop_generation
+			return minimum_group_size, maximum_group_size, new_index, unaccounted_list, bad_clustering, stop_generation, stat_list
 		else:
 			bad_clustering = 1
 			log_main.add('There are no clusters larger than the user provided minimum group size %d.'%Tracker["constants"]["minimum_grp_size"])
 			log_main.add('The reason can be: (1) There are no groups in the data set. 2. Minimum group size set is too large. (3) Desired number of groups K is too large.')
 			log_main.add('================================================================================================================\n')
-			return minimum_group_size, maximum_group_size, [ ], full_list, bad_clustering, stop_generation
+			return minimum_group_size, maximum_group_size, [ ], full_list, bad_clustering, stop_generation, stat_list
 	elif nclass == 1: # Force to stop this generation, and output the cluster; do not do any other box comparison
 		stop_generation  = 1
 		accounted_list, new_index = merge_classes_into_partition_list(new_list)
@@ -3879,7 +3882,7 @@ def do_boxes_two_way_comparison_new(nbox, input_box_parti1, input_box_parti2, de
 		json.dump(freq_cutoff_dict3, fout)
 		fout.close()
 		log_main.add('================================================================================================================\n')
-		return minimum_group_size, maximum_group_size, new_index, unaccounted_list, bad_clustering, stop_generation
+		return minimum_group_size, maximum_group_size, new_index, unaccounted_list, bad_clustering, stop_generation, stat_list
 	else:
 		if len(new_list) >= len(list_stable)-1: # all passes size checking, even the outliers group
 			accounted_list, new_index = merge_classes_into_partition_list(new_list)
@@ -3930,7 +3933,7 @@ def do_boxes_two_way_comparison_new(nbox, input_box_parti1, input_box_parti2, de
 			log_main.add('================================================================================================================\n')
 		else:
 			log_main.add('================================================================================================================\n')
-		return minimum_group_size, maximum_group_size, new_index, unaccounted_list, bad_clustering, stop_generation
+		return minimum_group_size, maximum_group_size, new_index, unaccounted_list, bad_clustering, stop_generation, stat_list
 		
 def split_partition_into_ordered_clusters_split_ucluster(partition):
 	# split groupids from indexes of images
@@ -6645,7 +6648,7 @@ def check_sorting(total_data, keepsorting, log_file):
 		sort3d_init("initialization", log_file)
 	return keepsorting
 
-def copy_results(log_file):
+def copy_results(log_file, all_gen_stat_list):
 	global Tracker, Blockdata
 	import json
 	from   shutil import copyfile
@@ -6655,8 +6658,9 @@ def copy_results(log_file):
 		log_file.add('                     Final results saved in %s'%Tracker["constants"]["masterdir"])
 		log_file.add('----------------------------------------------------------------------------------------------------------------' )
 		nclusters = 0
-		log_file.add( '{:^8} {:^8} {:^24} {:^15} {:^20} '.format('Group ID', '  size  ','determined in generation', ' selection file',  \
-		  '       map file     '))
+		log_file.add( '{:^8} {:^8} {:^15} {:^22} {:^5}  {:^24} {:^15} {:^20} '.format('Group ID', '  size  ',\
+		      'reproducibility', 'random reproducibility', ' std ', 'determined in generation', ' selection file',  \
+		          '       map file     '))
 		clusters = []
 		NACC     = 0           
 		for element in Tracker["generation"].items():
@@ -6673,7 +6677,8 @@ def copy_results(log_file):
 				   "generation_%03d"%ig, "Cluster_%03d.txt"%ic))
 				cluster_file = "Cluster_%03d.txt"%nclusters
 				vol_file     = "vol_cluster%03d.hdf"%nclusters
-				msg = '{:^8} {:^8} {:^24} {:^15} {:^20} '.format(nclusters, len(cluster), ig,  cluster_file,  vol_file)
+				msg = '{:^8} {:^8} {:^15} {:^22} {:^5} {:^24} {:^15} {:^20} '.format(nclusters, len(cluster), ig, \
+				    round(all_gen_stat_list[ig][0],1), round(all_gen_stat_list[ig][1],1), round(all_gen_stat_list[ig][2],1), cluster_file,  vol_file)
 				nclusters +=1
 				NACC +=len(cluster)
 				log_file.add(msg)
@@ -6882,6 +6887,7 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 	Tracker["current_generation"] = -1
 	igen      = -1
 	my_pids   = os.path.join(Tracker["constants"]["masterdir"], "indexes.txt")
+	all_gen_stat_list = []
 	while keepsorting == 1:
 		Tracker["current_generation"] +=1
 		igen +=1
@@ -6905,7 +6911,8 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 				log_main.add('----------------------------------------------------------------------------------------------------------------')
 			params     = os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt")
 			previous_params = Tracker["previous_parstack"]
-			output_list, bad_clustering  = depth_clustering(work_dir, depth_order, my_pids, params, previous_params, log_main)
+			output_list, bad_clustering, stat_list  = depth_clustering(work_dir, depth_order, my_pids, params, previous_params, log_main)
+			all_gen_stat_list.append(stat_list)
 			keepsorting     = check_sorting(len(output_list[0][1]), keepsorting, log_main)
 			if keepsorting == 1:# do final box refilling
 				if Blockdata["myid"] == Blockdata["main_node"]:
@@ -6946,7 +6953,7 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 	Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
 	dump_tracker(os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%igen))
 	compute_final_map(work_dir)
-	copy_results(log_main)# all nodes function
+	copy_results(log_main, all_gen_stat_list)# all nodes function
 	time_of_sorting_h,  time_of_sorting_m = get_time(time_final_box_start)
 	if Blockdata["myid"] == Blockdata["main_node"]:log_main.add('SORT3D 3D reconstruction time: %d hours %d minutes'%(time_of_sorting_h, time_of_sorting_m))
 	return 
