@@ -6872,8 +6872,9 @@ def do_random_groups_simulation_mpi(ptp1, ptp2):
 	
 	return gave, gvar
 
-def sorting_main_mpi(log_main, depth_order, not_include_unaccounted, time_sorting_start):
+def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 	global Tracker, Blockdata
+	time_sorting_start = time.time()
 	Tracker["generation"]         = {}
 	Tracker["current_generation"] = 0
 	keepsorting  = 1
@@ -7141,7 +7142,6 @@ def main():
 	
 		continue_from_interuption = 0
 		# sorting starts...
-		time_sorting_start = time.time()
 	
 		if Tracker["constants"]["restart_from_generation"] == -1:
 			continue_from_interuption = sort3d_utils("create_masterdir", None)
@@ -7168,92 +7168,12 @@ def main():
 				read_tracker_mpi(Tracker["constants"]["masterdir"]) # a simple continuation, continue from the interrupted box
 		else: check_restart_from_given_depth_order(options.depth_order, options.restart_from_generation, \
 				 options.restart_from_depth_order, options.restart_from_nbox, log_main) # need a check !!!
-	
-		Tracker["generation"]         = {}
-		Tracker["current_generation"] = 0
-		igen         = 0
-		keepsorting  = 1
-		keepchecking = 1
-		Tracker["current_generation"] = -1
-		igen  = -1
-		my_pids      = os.path.join(Tracker["constants"]["masterdir"], "indexes.txt")
-		if Blockdata["myid"] == Blockdata["main_node"]:
-			particle_list = read_text_file(my_pids)
-		while keepsorting ==1:
-			Tracker["current_generation"] +=1
-			igen +=1
-			work_dir     = os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%igen)
-			if Blockdata["myid"] == Blockdata["main_node"]:
-				os.mkdir(work_dir)
-				freq_cutoff_dict = {}
-				fout = open(os.path.join(work_dir, "freq_cutoff.json"),'w')
-				json.dump(freq_cutoff_dict, fout)
-				fout.close()
-				keepchecking = check_sorting_state(work_dir, keepchecking, log_main)
-				time_generation_start = time.time()
-			else: keepchecking = 0
-			keepchecking = bcast_number_to_all(keepchecking, Blockdata["main_node"], MPI_COMM_WORLD)
-			if keepchecking == 0: # new, do it
-				if Blockdata["myid"] == Blockdata["main_node"]:
-					mark_sorting_state(work_dir, False, log_main)
-					log_main.add('================================================================================================================' )
-					log_main.add('                                    SORT3D IN-DEPTH generation %d'%igen)
-					log_main.add('----------------------------------------------------------------------------------------------------------------' )
-				params          = os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt")
-				previous_params = Tracker["previous_parstack"]
-				output_list, bad_clustering = depth_clustering(work_dir, options.depth_order, my_pids, params, previous_params, log_main)
-				keepsorting     = check_sorting(len(output_list[0][1]), keepsorting, log_main)
-				if(keepsorting ==1):
-					if Blockdata["myid"] == Blockdata["main_node"]:
-						clusters = output_clusters(work_dir, output_list[0][0], output_list[0][1], options.not_include_unaccounted, log_main)
-						Tracker["generation"][igen] = len(clusters)
-					else: Tracker = 0
-					Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
-					dump_tracker(work_dir)
-					if Blockdata["myid"] == Blockdata["main_node"]:
-						time_of_sorting_h,  time_of_sorting_m = get_time(time_sorting_start)
-						log_main.add('SORT3D 3D sorting time: %d hours %d minutes'%(time_of_sorting_h, time_of_sorting_m))						
-						time_rec3d_start = time.time()
-
-					compute_final_map(work_dir)
-					if Blockdata["myid"] == Blockdata["main_node"]:
-						time_of_rec3d_h,  time_of_rec3d_m = get_time(time_rec3d_start)
-						log_main.add('SORT3D 3D reconstruction time: %d hours %d minutes'%(time_of_sorting_h, time_of_sorting_m))
-						
-						mark_sorting_state(work_dir, True, log_main)
-						time_of_generation_h,  time_of_generation_m = get_time(time_generation_start)
-						log_main.add('SORT3D generation%d time: %d hours %d minutes'%(igen, time_of_generation_h, time_of_generation_m))
-						
-					work_dir = os.path.join( Tracker["constants"]["masterdir"], "generation_%03d"%igen)
-					my_pids = os.path.join(work_dir, 'indexes_next_generation.txt')
-					if Blockdata["myid"] == Blockdata["main_node"]:
-						mark_sorting_state(work_dir, True, log_main)
-						write_text_file(output_list[0][1], my_pids)
-					mpi_barrier(MPI_COMM_WORLD)
-			else:
-				read_tracker_mpi(work_dir)
-				work_dir = os.path.join( Tracker["constants"]["masterdir"], "generation_%03d"%igen)
-
-		time_final_box_start = time.time()
-		if Blockdata["myid"] == Blockdata["main_node"]:
-			clusters = output_clusters(os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%igen), \
-				output_list[0][0], output_list[0][1], options.not_include_unaccounted, log_main)
-			Tracker["generation"][igen] = len(clusters)
-		else: Tracker = 0
-		Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
-		dump_tracker( os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%igen))
-		compute_final_map(work_dir)
+				 
+		sorting_main_mpi(log_main, depth_order, not_include_unaccounted)
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			log_main.add('----------------------------------------------------------------------------------------------------------------' )
 			log_main.add('                                 SORT3D IN-DEPTH finished')
 			log_main.add('----------------------------------------------------------------------------------------------------------------' )
-			mark_sorting_state(work_dir, True, log_main)
-			time_of_sorting_h,  time_of_sorting_m = get_time(time_final_box_start)
-			log_main.add('SORT3D 3D reconstruction time: %d hours %d minutes'%(time_of_sorting_h, time_of_sorting_m))
-		
-		copy_results(log_main)# all nodes function
-
-
 		from mpi import mpi_finalize
 		mpi_finalize()
 		exit()
@@ -7405,7 +7325,6 @@ def main():
 	
 		continue_from_interuption = 0
 		# sorting starts...
-		time_sorting_start = time.time()
 		
 		continue_from_interuption = sort3d_utils("create_masterdir", None)
 		log_main = Logger(BaseLogger_Files())
@@ -7433,79 +7352,8 @@ def main():
 			else: read_tracker_mpi(Tracker["constants"]["masterdir"]) # a simple continuation, continue from the interrupted box
 		else: check_restart_from_given_depth_order(options.depth_order, options.restart_from_generation, \
 				 options.restart_from_depth_order, options.restart_from_nbox, log_main) # need a check !!!
-		'''
-		Tracker["generation"]         = {}
-		Tracker["current_generation"] = 0
-		keepsorting  = 1
-		keepchecking = 1
-		Tracker["current_generation"] = -1
-		igen  = -1
-		my_pids   = os.path.join(Tracker["constants"]["masterdir"], "indexes.txt")
-		while keepsorting == 1:
-			Tracker["current_generation"] +=1
-			igen +=1
-			work_dir  = os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%igen)
-			if Blockdata["myid"] == Blockdata["main_node"]:
-				os.mkdir(work_dir)
-				freq_cutoff_dict = {}
-				fout = open(os.path.join(work_dir, "freq_cutoff.json"),'w')
-				json.dump(freq_cutoff_dict, fout)
-				fout.close()
-				keepchecking = check_sorting_state(work_dir, keepchecking, log_main)
-				time_generation_start = time.time()	
-			else: keepchecking = 0
-			keepchecking = bcast_number_to_all(keepchecking, Blockdata["main_node"], MPI_COMM_WORLD)
-			if keepchecking == 0: # new, do it
-				if Blockdata["myid"] == Blockdata["main_node"]:
-					keepchecking = check_sorting_state(work_dir, keepchecking, log_main)
-					time_generation_start = time.time()
-					log_main.add('================================================================================================================')
-					log_main.add('                                    SORT3D IN-DEPTH   generation %d'%igen)
-					log_main.add('----------------------------------------------------------------------------------------------------------------')
-				params          = os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt")
-				previous_params = Tracker["previous_parstack"]
-				output_list, bad_clustering  = depth_clustering(work_dir, options.depth_order, my_pids, params, previous_params, log_main)
-				keepsorting     = check_sorting(len(output_list[0][1]), keepsorting, log_main)
-				if keepsorting == 1:# do final box refilling
-					if Blockdata["myid"] == Blockdata["main_node"]:
-						clusters = output_clusters(work_dir, output_list[0][0], output_list[0][1], options.not_include_unaccounted, log_main)
-						Tracker["generation"][igen] = len(clusters)
-					else: Tracker = 0
-					Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
-					dump_tracker(work_dir)
-					if Blockdata["myid"] == Blockdata["main_node"]:
-						time_of_sorting_h,  time_of_sorting_m = get_time(time_sorting_start)
-						log_main.add('SORT3D 3D sorting time: %d hours %d minutes'%(time_of_sorting_h, time_of_sorting_m))						
-						time_rec3d_start = time.time()
-					compute_final_map(work_dir)
-					if Blockdata["myid"] == Blockdata["main_node"]:
-						time_of_rec3d_h,  time_of_rec3d_m = get_time(time_rec3d_start)
-						log_main.add('SORT3D 3D reconstruction time: %d hours %d minutes'%(time_of_sorting_h, time_of_sorting_m))					
-						mark_sorting_state(work_dir, True, log_main)
-						time_of_generation_h,  time_of_generation_m = get_time(time_generation_start)
-						log_main.add('SORT3D generation%d time: %d hours %d minutes'%(igen, time_of_generation_h, time_of_generation_m))
-						
-					work_dir = os.path.join( Tracker["constants"]["masterdir"], "generation_%03d"%igen)
-					my_pids = os.path.join(work_dir, 'indexes_next_generation.txt')
-					if Blockdata["myid"] == Blockdata["main_node"]:
-						mark_sorting_state(work_dir, True, log_main)
-						write_text_file(output_list[0][1], my_pids)
-					mpi_barrier(MPI_COMM_WORLD)
-			else:
-				read_tracker_mpi(work_dir, log_main)
-				work_dir = os.path.join( Tracker["constants"]["masterdir"], "generation_%03d"%igen)
-		time_final_box_start = time.time()	
-		if Blockdata["myid"] == Blockdata["main_node"]:
-			clusters = output_clusters(os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%igen), \
-				output_list[0][0], output_list[0][1], options.not_include_unaccounted, log_main)
-			Tracker["generation"][igen] = len(clusters)
-		else: Tracker = 0
-		Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
-		dump_tracker( os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%igen))
-		compute_final_map(work_dir)
-		copy_results(log_main)# all nodes function
-		'''
-		sorting_main_mpi(log_main, options.depth_order, options.not_include_unaccounted, time_sorting_start)
+				 
+		sorting_main_mpi(log_main, options.depth_order, options.not_include_unaccounted)
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			log_main.add('----------------------------------------------------------------------------------------------------------------' )
 			log_main.add('                                 SORT3D IN-DEPTH finished')
