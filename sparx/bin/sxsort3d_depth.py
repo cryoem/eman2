@@ -6946,6 +6946,8 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted, time_sortin
 	dump_tracker(os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%igen))
 	compute_final_map(work_dir)
 	copy_results(log_main)# all nodes function
+	time_of_sorting_h,  time_of_sorting_m = get_time(time_final_box_start)
+	if Blockdata["myid"] == Blockdata["main_node"]:log_main.add('SORT3D 3D reconstruction time: %d hours %d minutes'%(time_of_sorting_h, time_of_sorting_m))
 	return 
 
 #  End of various utilities	
@@ -7508,8 +7510,6 @@ def main():
 			log_main.add('----------------------------------------------------------------------------------------------------------------' )
 			log_main.add('                                 SORT3D IN-DEPTH finished')
 			log_main.add('----------------------------------------------------------------------------------------------------------------' )
-			time_of_sorting_h,  time_of_sorting_m = get_time(time_final_box_start)
-			#log_main.add('SORT3D 3D reconstruction time: %d hours %d minutes'%(time_of_sorting_h, time_of_sorting_m))
 		from mpi import mpi_finalize
 		mpi_finalize()
 		exit()
