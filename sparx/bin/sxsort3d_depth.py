@@ -6679,7 +6679,7 @@ def copy_results(log_file, all_gen_stat_list):
 				cluster_file = "Cluster_%03d.txt"%nclusters
 				vol_file     = "vol_cluster%03d.hdf"%nclusters
 				msg = '{:^8} {:^8} {:^15} {:^22} {:^5} {:^24} {:^15} {:^20} '.format(nclusters, len(cluster), ig, \
-				    round(all_gen_stat_list[ig][0],1), round(all_gen_stat_list[ig][1],1), round(all_gen_stat_list[ig][2],1), cluster_file,  vol_file)
+				    round(all_gen_stat_list[ig][ic][0],1), round(all_gen_stat_list[ig][ic][1],1), round(all_gen_stat_list[ig][ic][2],1), cluster_file,  vol_file)
 				nclusters +=1
 				NACC +=len(cluster)
 				log_file.add(msg)
