@@ -7503,7 +7503,7 @@ def main():
 		compute_final_map(work_dir)
 		copy_results(log_main)# all nodes function
 		'''
-		sorting_main_mpi(log_main, options.depth_order, options.not_include_unaccounted, time_sorting_start))
+		sorting_main_mpi(log_main, options.depth_order, options.not_include_unaccounted, time_sorting_start)
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			log_main.add('----------------------------------------------------------------------------------------------------------------' )
 			log_main.add('                                 SORT3D IN-DEPTH finished')
