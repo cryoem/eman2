@@ -103,6 +103,7 @@ pipeline {
       when {
         not { expression { JOB_TYPE == "cron" } }
         not { expression { isRelease() } }
+        not { expression { isContinuousBuild() } }
       }
       
       parallel {
@@ -137,7 +138,7 @@ pipeline {
     stage('centos6') {
       when {
         anyOf {
-          expression { JOB_TYPE == "cron" }
+          expression { isContinuousBuild() }
           expression { isRelease() }
         }
         expression { SLAVE_OS == "linux" }
@@ -151,7 +152,7 @@ pipeline {
     stage('centos7') {
       when {
         anyOf {
-          expression { JOB_TYPE == "cron" }
+          expression { isContinuousBuild() }
           expression { isRelease() }
         }
         expression { SLAVE_OS == "linux" }
@@ -165,7 +166,7 @@ pipeline {
     stage('mac') {
       when {
         anyOf {
-          expression { JOB_TYPE == "cron" }
+          expression { isContinuousBuild() }
           expression { isRelease() }
         }
         expression { SLAVE_OS == "mac" }
