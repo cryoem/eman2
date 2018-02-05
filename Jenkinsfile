@@ -102,9 +102,7 @@ pipeline {
     // Stages triggered by cron or by a release branch
     stage('build-scripts-checkout') {
       when {
-        anyOf {
           expression { isContinuousBuild() }
-        }
       }
       
       steps {
@@ -114,9 +112,7 @@ pipeline {
     
     stage('centos6') {
       when {
-        anyOf {
           expression { isContinuousBuild() }
-        }
         expression { SLAVE_OS == "linux" }
       }
       
@@ -127,9 +123,7 @@ pipeline {
     
     stage('centos7') {
       when {
-        anyOf {
           expression { isContinuousBuild() }
-        }
         expression { SLAVE_OS == "linux" }
       }
       
@@ -140,9 +134,7 @@ pipeline {
     
     stage('mac') {
       when {
-        anyOf {
           expression { isContinuousBuild() }
-        }
         expression { SLAVE_OS == "mac" }
       }
       environment {
