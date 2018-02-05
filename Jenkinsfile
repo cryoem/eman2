@@ -43,7 +43,7 @@ def isRelease() {
 }
 
 def isContinuousBuild() {
-    return (GIT_BRANCH ==~ /origin\/master/) && (JOB_TYPE == "push")
+    return (GIT_BRANCH ==~ /origin\/master/)
 }
 
 def runCronJob() {
