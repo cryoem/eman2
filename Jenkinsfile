@@ -52,14 +52,6 @@ def runCronJob() {
       sh "rsync -avzh --stats ${INSTALLERS_DIR}/eman2.${STAGE_NAME}.unstable.sh ${DEPLOY_DEST}"
 }
 
-def setUploadFlag() {
-    if(isContinuousBuild()) {
-        return '0'
-    } else {
-        return '1'
-    }
-}
-
 def resetBuildScripts() {
     if(isContinuousBuild() || isRelease())
         sh 'cd ${HOME}/workspace/build-scripts-cron/ && git checkout -f master'
