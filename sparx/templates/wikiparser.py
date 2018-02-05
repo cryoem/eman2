@@ -60,125 +60,164 @@ def construct_keyword_dict():
 	# If a command token extracted from 'usage in command line' contains the keyword defined here
 	# the associated special data type will be assigned to this command token.
 	#
-	# - output          : Line edit box for formatted string type, and output info button.
-	#                     GUI also checks the existence of output directory/file before execution of the sx*.py
-	#                     GUI abort the execution if the directory/file exists already
-	# - output_continue : Line edit box for formatted string type, open directory button, and output info button.
-	#                     GUI also checks the existence of output directory/file before execution of the sx*.py
-	#                     GUI displays a YES/NO dialog to run continuous mode if the directory/file exists already
-	# - image           : Line edit box for formatted string type, and open file buttons for .hdf and .bdb
-	# - any_image       : Line edit box for formatted string type, and open file buttons for all file types (also mrc, tiff, and etc) and .bdb
-	# - any_micrograph  : Line edit box for formatted string type, and open file buttons for all file types (also mrc, tiff, and etc) and .txt
-	# - parameters      : Line edit box for formatted string type, and open file button for all file types
-	# - any_file        : Line edit box for formatted string type, and open file button for all file types
-	# - bdb             : Line edit box for formatted string type, and open file button for .bdb
-	# - hdf             : Line edit box for formatted string type, and open file button for .hdf
-	# - pdb             : Line edit box for formatted string type, and open file button for .pdb
-	# - mrc             : Line edit box for formatted string type, and open file button for .mrc
-	# - txt             : Line edit box for formatted string type, and open file button for .txt
-	# - exe             : Line edit box for formatted string type, and open file button for .exe and no extension
-	# - any_file_list   : Line edit box for formatted string type, and open file button for all file types and .bdb
-	#                     The string with space is interpreted as a list of any image file names upon command generation. (i.e. does not enclose the string with single quotes)
-	# - any_image_list  : Line edit box for formatted string type, and open file button for all file types (also mrc, tiff, and etc) and .bdb.
-	#                     The string with space is interpreted as a list of any image file names upon command generation. (i.e. does not enclose the string with single quotes)
-	# - function        : Two line edit boxes for formatted string type (function name & file path of the container script),
-	#                     and open file button for .py
-	# - directory       : Line edit box for formatted string type, and open directory button
-	# - any_directory   : Line edit box for formatted string type, and open directory button
-	#                     The string with space is interpreted as a list of any directory names upon command generation. (i.e. does not enclose the string with single quotes)
+	# - output              : Line edit box for formatted string type, and output info button.
+	#                         GUI also checks the existence of output directory/file before execution of the sx*.py
+	#                         GUI abort the execution if the directory/file exists already
+	# - output_continue     : Line edit box for formatted string type, open directory button, and output info button.
+	#                         GUI also checks the existence of output directory/file before execution of the sx*.py
+	#                         GUI displays a YES/NO dialog to run continuous mode if the directory/file exists already
+	# - output_bdb2d_stack  : Line edit box for formatted string type, and output info button. In addition, open file buttons for .bdb (bdb2d_stack)
+	#                         GUI also checks the existence of output directory/file before execution of the sx*.py
+	#                         GUI abort the execution if the directory/file exists already
+	# 
+	# - displayable_list    : Line edit box for formatted string type, and open file button  for all supported data formats: 2D image, 2D stack, 3D volume, and 3D stack as well as 1D graph (displayable_list with bdb path parser)
+	#                         The string with space is interpreted as a list of any data file names upon command generation. (i.e. does not enclose the string with single quotes)
+	# - data2d3d_both       : Line edit box for formatted string type, and open file button  for all supported data formats: 2D image, 2D stack, 3D volume, and 3D stack (data2d3d_both with bdb path parser)
+	# - mic_both            : Line edit box for formatted string type, and open file buttons for .mrc/.mrcs (mrc2d_mic_both) and all supported 2D image and 2D stack formats (mic_both with bdb path parser)
+	# - mic_one             : Line edit box for formatted string type, and open file buttons for .mrc/.mrcs (mrc2d_mic_one) and all supported 2D image formats (mic_one with bdb path parser)
+	# - mic_one_list        : Line edit box for formatted string type, and open file buttons for .mrc/.mrcs (mrc2d_mic_one_list) and all supported 2D image formats (mic_one_list with bdb path parser)
+	#                         The string with space is interpreted as a list of any 2D image file names upon command generation. (i.e. does not enclose the string with single quotes)
+	# - mic_stack           : Line edit box for formatted string type, and open file buttons for .mrcs/.mrc (mrc2d_mic_stack) and all supported 2D stack formats (mic_stack with bdb path parser)
+	# - data2d_one          : Line edit box for formatted string type, and open file buttons for .hdf (hdf2d_one) and all supported 2D image formats (data2d_one with bdb path parser)
+	# - bdb2d_stack         : Line edit box for formatted string type, and open file buttons for .bdb (bdb2d_stack)
+	# - data2d_stack        : Line edit box for formatted string type, and open file buttons for .bdb (bdb2d_stack) and all supported 2D stack formats (data2d_stack with bdb path parser) NOTE: Toshio Moriya 2018/01/25 Currently, this case is not used. Instead, using bdb2d_stack
+	# - data3d_one          : Line edit box for formatted string type, and open file buttons for .hdf (hdf3d_one) and all supported 3D volume formats (data3d_one with bdb path parser)
+	# - data3d_stack        : Line edit box for formatted string type, and open file buttons for .hdf (hdf3d_stack) and all supported 3D stack formats (with bdb path parser) NOTE: Toshio Moriya 2018/01/25 Currently, this case is not used. Instead, using bdb2d_stack
 	#
-	# - apix            : Project constant - float type
-	# - ctfwin          : Project constant - int type
-	# - box             : Project constant - int type
-	# - radius          : Project constant - int type
-	# - sym             : Project constant - formatted string type
-	# - mass            : Project constant - int type
+	# - select_mic_both     : Line edit box for formatted string type, and open file button  for micrograph/movie selection file (*.txt) with all files (*) (select_mic_both)
+	# - select_mic_one      : Line edit box for formatted string type, and open file button  for micrograph selection file (*.txt) with all files (*) (select_mic_one)
+	# - select_mic_one_ext  : Line edit box for formatted string type, and open file buttons for micrograph selection file (*.txt) with all files (*) (select_mic_one) and all supported 2D image formats (mic_one with bdb path parser)
+	# - select_mic_stack    : Line edit box for formatted string type, and open file button  for movie selection file (*.txt) with all files (*) (select_mic_one)
+	# - select_data2d_stack : Line edit box for formatted string type, and open file button  for 2D image selection file (*.txt) with all files (*) (select_data2d_stack)
+	# - select_drift_params : Line edit box for formatted string type, and open file button  for drift shit parameters selection file (*.txt) with all files (*) (select_drift_params)
 	#
+	# - params_any_txt      : Line edit box for formatted string type, and open file button  for parameters text file (*.txt) with all files (*) (params_any_txt)
+	# - params_proj_txt     : Line edit box for formatted string type, and open file button  for projection parameters text file (*.txt) with all files (*) (params_proj_txt)
+	# - params_coords_any   : Line edit box for formatted string type, and open file buttons for EMAN1 box coordinates file (*.box) (params_coords_box) and all coordinates formats (params_coords_any)
+	# - params_cter_txt     : Line edit box for formatted string type, and open file button  for CTER partres parameters text file (*.txt) (params_cter_txt)
+	# - params_drift_txt    : Line edit box for formatted string type, and open file button  for drift shit parameters text file (*.txt) with all files (*) (params_drift_txt)
+	# - params_relion_star  : Line edit box for formatted string type, and open file button  for RELION STAR file (*.star) with all files (*) (params_relion_star)
+	# 
+	# - spectrum1d          : Line edit box for formatted string type, and open file button  for 1D power spectrum file (*.txt) with all files (*) (spectrum1d) 
+	# - mtf                 : Line edit box for formatted string type, and open file button  for MTF data file (*.txt) with all files (*) (mtf) 
+	# - rot_matrix          : Line edit box for formatted string type, and open file button  for rotational matrix file (*.txt) with all files (*) (rot_matrix)
+	# - pdb                 : Line edit box for formatted string type, and open file button  for PDB data file (*.pdb *.pdb*) (pdb)
+	# - exe                 : Line edit box for formatted string type, and open file button  for executable file (*.exe) with all files (*) (exe)
+	# 
+	# - dir                 : Line edit box for formatted string type, and open directory button
+	# - dir_list            : Line edit box for formatted string type, and open directory button
+	#                         The string with space is interpreted as a list of any directory names upon command generation. (i.e. does not enclose the string with single quotes)
+	# 
+	# - user_func           : Two line edit boxes for formatted string type (function name & file path of the container script),
+	#                         and open file button for .py
+	# - abs_freq            : Line edit box for float type, label for float type of corresponding resolution [A], and convert button to show the calculator dialog 
+	#
+	# - apix                : Project constant - float type
+	# - ctfwin              : Project constant - int type
+	# - box                 : Project constant - int type
+	# - radius              : Project constant - int type
+	# - sym                 : Project constant - formatted string type
+	# - mass                : Project constant - int type
+	#
+###	# - any_micrograph  : Line edit box for formatted string type, and open file buttons for all file types (also mrc, tiff, and etc) and .txt      <= Should be removed in near future (2018/01/25 Toshio Moriya)
+###	# - any_image       : Line edit box for formatted string type, and open file buttons for all file types (also mrc, tiff, and etc) and .bdb      <= Should be removed in near future (2018/01/25 Toshio Moriya)
+###	# - any_image_list  : Line edit box for formatted string type, and open file button  for all file types (also mrc, tiff, and etc) and .bdb.    <= Should be removed in near future (2018/01/25 Toshio Moriya)
+###	#                     The string with space is interpreted as a list of any image file names upon command generation. (i.e. does not enclose the string with single quotes)
+###	# - any_file        : Line edit box for formatted string type, and open file button  for all file types                                         <= Should be removed in near future (2018/01/25 Toshio Moriya)
+###	# - any_file_list   : Line edit box for formatted string type, and open file button  for all file types and .bdb                                <= Should be removed in near future (2018/01/25 Toshio Moriya)
+###	#                     The string with space is interpreted as a list of any image file names upon command generation. (i.e. does not enclose the string with single quotes)
+###	# - image           : Line edit box for formatted string type, and open file buttons for .hdf and .bdb                                          <= Should be removed in near future (2018/01/25 Toshio Moriya)
+###	# - bdb             : Line edit box for formatted string type, and open file button  for .bdb                                                   <= Should be removed in near future (2018/01/25 Toshio Moriya)
+###	# - hdf             : Line edit box for formatted string type, and open file button  for .hdf                                                   <= Should be removed in near future (2018/01/25 Toshio Moriya)
+###	# - mrc             : Line edit box for formatted string type, and open file button  for .mrc                                                   <= Should be removed in near future (2018/01/25 Toshio Moriya)
+###	# - txt             : Line edit box for formatted string type, and open file button  for .txt
+	# 
 
 	keyword_dict = {}
 
 	# Use priority 0 to overrule the exceptional cases (This is a reason why priority is introduced...)
-###	keyword_dict["--use_latest_master_directory"] = SXkeyword_map(0, "bool")           # --use_latest_master_directory (contains keyworkd 'directory' but this should be bool type)
-	keyword_dict["--stack_mode"]                  = SXkeyword_map(0, "bool")           # stack_mode (contains keyworkd 'stack' but this should be bool type)
-	keyword_dict["--binary_mask"]                 = SXkeyword_map(0, "bool")           # --binary_mask (contains keyworkd 'mask' but this should be bool type)
-	keyword_dict["--symmetrize"]                  = SXkeyword_map(0, "bool")           # --symmetrize (contains keyworkd '--sym' but this should be bool type)
-	keyword_dict["--chunkdir"]                    = SXkeyword_map(0, "directory")      # --chunkdir=chunkdir (contains keyworkd 'chunk' but this should be directory type)
-	keyword_dict["destination_directory"]         = SXkeyword_map(0, "directory")      # destination_directory (contains keyworkd 'directory' but this should be directory type)
-	keyword_dict["--do_adaptive_mask"]            = SXkeyword_map(0, "bool")           # --do_adaptive_mask (contains keyworkd 'mask' but this should be bool type)
-	keyword_dict["--adaptive_mask"]               = SXkeyword_map(0, "bool")           # --adaptive_mask (contains keyworkd 'mask' but this should be bool type)
-###	keyword_dict["--skip_create_substack"]        = SXkeyword_map(0, "bool")           # --skip_create_substack (contains keyworkd 'stack' but this should be bool type)
-	keyword_dict["--no_virtual_stack"]            = SXkeyword_map(0, "bool")           # --no_virtual_stack (contains keyworkd 'stack' but this should be bool type)
-	keyword_dict["--create_stack"]                = SXkeyword_map(0, "bool")           # --create_stack (contains keyworkd 'stack' but this should be bool type)
-	keyword_dict["--mask_threshold"]              = SXkeyword_map(0, "float")           # --mask_threshold=MASK_THRESHOLD (contains keyworkd 'mask' but this should be bool type)
+	keyword_dict["--chunkdir"]                    = SXkeyword_map(0, "dir")                 # --chunkdir=chunkdir (contains keyworkd 'chunk' but this should be directory type)
+	keyword_dict["destination_directory"]         = SXkeyword_map(0, "dir")                 # destination_directory (contains keyworkd 'directory' but this should be directory type)
+###	keyword_dict["--use_latest_master_directory"] = SXkeyword_map(0, "bool")                # --use_latest_master_directory (contains keyworkd 'directory' but this should be bool type)
+	keyword_dict["--stack_mode"]                  = SXkeyword_map(0, "bool")                # stack_mode (contains keyworkd 'stack' but this should be bool type)
+	keyword_dict["--binary_mask"]                 = SXkeyword_map(0, "bool")                # --binary_mask (contains keyworkd 'mask' but this should be bool type)
+	keyword_dict["--symmetrize"]                  = SXkeyword_map(0, "bool")                # --symmetrize (contains keyworkd '--sym' but this should be bool type)
+	keyword_dict["--do_adaptive_mask"]            = SXkeyword_map(0, "bool")                # --do_adaptive_mask (contains keyworkd 'mask' but this should be bool type)
+	keyword_dict["--adaptive_mask"]               = SXkeyword_map(0, "bool")                # --adaptive_mask (contains keyworkd 'mask' but this should be bool type)
+###	keyword_dict["--skip_create_substack"]        = SXkeyword_map(0, "bool")                # --skip_create_substack (contains keyworkd 'stack' but this should be bool type)
+	keyword_dict["--no_virtual_stack"]            = SXkeyword_map(0, "bool")                # --no_virtual_stack (contains keyworkd 'stack' but this should be bool type)
+	keyword_dict["--create_stack"]                = SXkeyword_map(0, "bool")                # --create_stack (contains keyworkd 'stack' but this should be bool type)
+	keyword_dict["--mask_threshold"]              = SXkeyword_map(0, "float")               # --mask_threshold=MASK_THRESHOLD (contains keyworkd 'mask' but this should be bool type)
 	# Use priority 1 for output
-	keyword_dict["output"]                        = SXkeyword_map(1, "output")         # output_hdf, output_directory, outputfile, outputfile, --output=OUTPUT, output_stack, output_file
-	keyword_dict["outdir"]                        = SXkeyword_map(1, "output")         # outdir
-	keyword_dict["--ave3D"]                       = SXkeyword_map(1, "output")         # --ave3D
-	keyword_dict["--var3D"]                       = SXkeyword_map(1, "output")         # --var3D
-	keyword_dict["--ave2D"]                       = SXkeyword_map(1, "output")         # --ave2D
-	keyword_dict["--var2D"]                       = SXkeyword_map(1, "output")         # --var2D
-###	keyword_dict["--masterdir"]                   = SXkeyword_map(1, "output")         # --masterdir=master_dir
-	keyword_dict["locres_volume"]                 = SXkeyword_map(1, "output")         # locres_volume (this contained keyword "volume" also... This is another reason why priority is introduced...)
-	keyword_dict["directory"]                     = SXkeyword_map(1, "output")         # directory
-	keyword_dict["rotpw"]                         = SXkeyword_map(1, "output")         # rotpw
-	keyword_dict["--makevstack"]                  = SXkeyword_map(1, "output")         # --makevstack
-	keyword_dict["input_micrograph_list"]         = SXkeyword_map(1, "any_image_list") # input_micrograph_list (contains keyword 'input_micrograph' but this should be image_list type)
-	keyword_dict["--ctref_orgstack"]              = SXkeyword_map(1, "bdb")            # --ctref_orgstack=stack_for_continuation
-	keyword_dict["input_bdb_stack_path"]          = SXkeyword_map(1, "bdb")            # input_bdb_stack_path (contains keyword 'stack' but this should be bdb type)
-	keyword_dict["--substack_basename"]           = SXkeyword_map(1, "string")         # --substack_basename=SUBSTACK_BASENAME (contains keyword 'volume' but this should be string type)
+	keyword_dict["output"]                        = SXkeyword_map(1, "output")              # output_hdf, output_directory, outputfile, outputfile, --output=OUTPUT, output_stack, output_file
+	keyword_dict["outdir"]                        = SXkeyword_map(1, "output")              # outdir
+	keyword_dict["--ave3D"]                       = SXkeyword_map(1, "output")              # --ave3D
+	keyword_dict["--var3D"]                       = SXkeyword_map(1, "output")              # --var3D
+	keyword_dict["--ave2D"]                       = SXkeyword_map(1, "output")              # --ave2D
+	keyword_dict["--var2D"]                       = SXkeyword_map(1, "output")              # --var2D
+###	keyword_dict["--masterdir"]                   = SXkeyword_map(1, "output")              # --masterdir=master_dir
+	keyword_dict["locres_volume"]                 = SXkeyword_map(1, "output")              # locres_volume (this contained keyword "volume" also... This is another reason why priority is introduced...)
+	keyword_dict["directory"]                     = SXkeyword_map(1, "output")              # directory
+	keyword_dict["rotpw"]                         = SXkeyword_map(1, "output")              # rotpw
+	keyword_dict["--makevstack"]                  = SXkeyword_map(1, "output_bdb2d_stack")  # --makevstack
+	keyword_dict["input_micrograph_list"]         = SXkeyword_map(1, "mic_one_list")        # input_micrograph_list (contains keyword 'input_micrograph' but this should be image_list type)
+	keyword_dict["--ctref_orgstack"]              = SXkeyword_map(1, "bdb2d_stack")         # --ctref_orgstack=stack_for_continuation
+	keyword_dict["input_bdb_stack_path"]          = SXkeyword_map(1, "bdb2d_stack")         # input_bdb_stack_path (contains keyword 'stack' but this should be bdb type)
+	keyword_dict["--substack_basename"]           = SXkeyword_map(1, "string")              # --substack_basename=SUBSTACK_BASENAME (contains keyword 'volume' but this should be string type)
 	# Use priority 2 for the others
-	keyword_dict["stack"]                         = SXkeyword_map(2, "image")          # stack, prj_stack, input_stack, --instack=input_stack_file
-	keyword_dict["volume"]                        = SXkeyword_map(2, "image")          # initial_volume, firstvolume, secondvolume, input_volume
-	keyword_dict["mask"]                          = SXkeyword_map(2, "image")          # --mask3D=mask3D, maskfile, mask, --mask=MASK, --mask3D=mask3d_file
-	keyword_dict["--focus"]                       = SXkeyword_map(2, "image")          # --focus=3D_focus_mask, --focus=focus3d_file
-	keyword_dict["--input"]                       = SXkeyword_map(2, "image")          # --input=INPUT
-###	keyword_dict["isac_averages"]                 = SXkeyword_map(2, "image")          # isac_averages
-	keyword_dict["--ctref_initvol"]               = SXkeyword_map(2, "image")          # --ctref_initvol=restarting_initial_volume
-	keyword_dict["isac_class_avgs_path"]          = SXkeyword_map(2, "image")          # isac_class_avgs_path
-	keyword_dict["input_image_path"]              = SXkeyword_map(2, "any_image")      # input_image_path
-	keyword_dict["input_micrograph"]              = SXkeyword_map(2, "any_image")      # input_micrograph_pattern 
-	keyword_dict["source_micrograph"]             = SXkeyword_map(2, "any_image")      # source_micrograph_pattern
-	keyword_dict["selection_list"]                = SXkeyword_map(2, "any_micrograph") # selection_list
-	keyword_dict["--tr0"]                         = SXkeyword_map(2, "parameters")     # --tr0=matrix_file
-	keyword_dict["input_shift_pattern"]           = SXkeyword_map(2, "parameters")     # input_shift_pattern
-	keyword_dict["input_coordinates_pattern"]     = SXkeyword_map(2, "parameters")     # input_coordinates_pattern
-	keyword_dict["input_ctf_params_source"]       = SXkeyword_map(2, "parameters")     # input_ctf_params_source
-	keyword_dict["--importctf"]                   = SXkeyword_map(2, "parameters")     # --importctf=IMPORTCTF
-	keyword_dict["--modelpw"]                     = SXkeyword_map(2, "parameters")     # --modelpw=pw2_model_txt
-	keyword_dict["--pwreference"]                 = SXkeyword_map(2, "parameters")     # --pwreference=pwreference
-	keyword_dict["--PWadjustment"]                = SXkeyword_map(2, "parameters")     # --PWadjustment=PWadjustment, --PWadjustment=ref_pwspectrum1d_file 
-	keyword_dict["--mtf"]                         = SXkeyword_map(2, "parameters")     # --mtf=MTF_FILE_NAME
-	keyword_dict["--chunk"]                       = SXkeyword_map(2, "parameters")     # --chunk0=CHUNK0_FILE_NAME, --chunk1=CHUNK1_FILE_NAME
-	keyword_dict["--list"]                        = SXkeyword_map(2, "parameters")     # --list
-###	keyword_dict["--subset"]                      = SXkeyword_map(2, "parameters")     # --subset=subset_file_path
-	keyword_dict["--ctref_subset"]                = SXkeyword_map(2, "parameters")     # --ctref_subset=selection_file_path
-	keyword_dict["input_star_file"]               = SXkeyword_map(2, "parameters")     # input_star_file
-	keyword_dict["inputfile"]                     = SXkeyword_map(2, "any_file")       # inputfile
-	keyword_dict["unblur_path"]                   = SXkeyword_map(2, "exe")            # unblur_path
-	keyword_dict["summovie_path"]                 = SXkeyword_map(2, "exe")            # summovie_path
-	keyword_dict["input_pdb"]                     = SXkeyword_map(2, "pdb")            # input_pdb
-	keyword_dict["input_shift_list_file"]         = SXkeyword_map(2, "txt")            # input_shift_list_file
-	keyword_dict["cter_ctf_file"]                 = SXkeyword_map(2, "txt")            # cter_ctf_file
-###	keyword_dict["--resample_ratio_source"]       = SXkeyword_map(2, "txt")            # --resample_ratio_source
-	keyword_dict["input_data_list"]               = SXkeyword_map(2, "any_file_list")  # input_data_list
-	keyword_dict["--function"]                    = SXkeyword_map(2, "function")       # --function=user_function
-	keyword_dict["--isac_dir"]                    = SXkeyword_map(2, "directory")      # --isac_dir
-	keyword_dict["input_run_dir"]                 = SXkeyword_map(2, "directory")      # input_run_dir
-###	keyword_dict["--oldrefdir"]                   = SXkeyword_map(2, "directory")      # --oldrefdir=refine_dir_path
-	keyword_dict["--ctref_oldrefdir"]             = SXkeyword_map(2, "directory")      # --ctref_oldrefdir=refine_dir_path
-	keyword_dict["--refinement_dir"]              = SXkeyword_map(2, "directory")      # --refinement_dir=refinemen_out_dir
-	keyword_dict["--previous_run"]                = SXkeyword_map(2, "directory")      # --previous_run1=sort3d_run1_directory, --previous_run2=sort3d_run2_directory (need for sort3d.txt)
+	keyword_dict["input_data_list"]               = SXkeyword_map(2, "displayable_list")    # input_data_list
+	keyword_dict["--input"]                       = SXkeyword_map(2, "data2d3d_both")       # --input=INPUT
+	keyword_dict["input_image_path"]              = SXkeyword_map(2, "mic_one")             # input_image_path
+	keyword_dict["source_micrograph"]             = SXkeyword_map(2, "mic_both")            # source_micrograph_pattern
+	keyword_dict["input_micrograph"]              = SXkeyword_map(2, "mic_stack")           # input_micrograph_pattern 
+	keyword_dict["isac_class_avgs_path"]          = SXkeyword_map(2, "data2d_one")          # isac_class_avgs_path
+	keyword_dict["stack"]                         = SXkeyword_map(2, "bdb2d_stack")         # stack, prj_stack, input_stack, --instack=input_stack_file
+	keyword_dict["volume"]                        = SXkeyword_map(2, "data3d_one")          # initial_volume, firstvolume, secondvolume, input_volume
+	keyword_dict["mask"]                          = SXkeyword_map(2, "data3d_one")          # --mask3D=mask3D, maskfile, mask, --mask=MASK, --mask3D=mask3d_file
+	keyword_dict["--focus"]                       = SXkeyword_map(2, "data3d_one")          # --focus=3D_focus_mask, --focus=focus3d_file
+###	keyword_dict["isac_averages"]                 = SXkeyword_map(2, "data2d_one")          # isac_averages
+	keyword_dict["--ctref_initvol"]               = SXkeyword_map(2, "data3d_one")          # --ctref_initvol=restarting_initial_volume
+	keyword_dict["selection_list"]                = SXkeyword_map(2, "select_mic_stack")    # selection_list
+	keyword_dict["--chunk"]                       = SXkeyword_map(2, "select_data2d_stack") # --chunk0=CHUNK0_FILE_NAME, --chunk1=CHUNK1_FILE_NAME
+	keyword_dict["--ctref_subset"]                = SXkeyword_map(2, "select_data2d_stack") # --ctref_subset=selection_file_path
+	keyword_dict["--list"]                        = SXkeyword_map(2, "select_data2d_stack") # --list
+###	keyword_dict["--subset"]                      = SXkeyword_map(2, "select_data2d_stack") # --subset=subset_file_path
+	keyword_dict["input_shift_list_file"]         = SXkeyword_map(2, "select_drift_params") # input_shift_list_file
+###	keyword_dict["--resample_ratio_source"]       = SXkeyword_map(2, "params_any_txt")      # --resample_ratio_source
+	keyword_dict["input_coordinates_pattern"]     = SXkeyword_map(2, "params_coords_any")   # input_coordinates_pattern
+	keyword_dict["input_ctf_params_source"]       = SXkeyword_map(2, "params_cter_txt")     # input_ctf_params_source
+	keyword_dict["cter_ctf_file"]                 = SXkeyword_map(2, "params_cter_txt")     # cter_ctf_file
+	keyword_dict["--importctf"]                   = SXkeyword_map(2, "params_cter_txt")     # --importctf=IMPORTCTF  # NOTE: Toshio Moriya 2018/01/27 This is used by sxprocess.py but this function might be obsoleted at this point
+	keyword_dict["inputfile"]                     = SXkeyword_map(2, "params_drift_txt")    # inputfile
+	keyword_dict["input_shift_pattern"]           = SXkeyword_map(2, "params_drift_txt")    # input_shift_pattern
+	keyword_dict["input_star_file"]               = SXkeyword_map(2, "params_relion_star")  # input_star_file
+	keyword_dict["--modelpw"]                     = SXkeyword_map(2, "spectrum1d")          # --modelpw=pw2_model_txt
+	keyword_dict["--pwreference"]                 = SXkeyword_map(2, "spectrum1d")          # --pwreference=pwreference
+	keyword_dict["--PWadjustment"]                = SXkeyword_map(2, "spectrum1d")          # --PWadjustment=PWadjustment, --PWadjustment=ref_pwspectrum1d_file 
+	keyword_dict["--mtf"]                         = SXkeyword_map(2, "mtf")                 # --mtf=MTF_FILE_NAME
+	keyword_dict["--tr0"]                         = SXkeyword_map(2, "rot_matrix")          # --tr0=matrix_file
+	keyword_dict["input_pdb"]                     = SXkeyword_map(2, "pdb")                 # input_pdb
+	keyword_dict["unblur_path"]                   = SXkeyword_map(2, "exe")                 # unblur_path
+	keyword_dict["summovie_path"]                 = SXkeyword_map(2, "exe")                 # summovie_path
+	keyword_dict["--isac_dir"]                    = SXkeyword_map(2, "dir")                 # --isac_dir
+	keyword_dict["input_run_dir"]                 = SXkeyword_map(2, "dir")                 # input_run_dir
+###	keyword_dict["--oldrefdir"]                   = SXkeyword_map(2, "dir")                 # --oldrefdir=refine_dir_path
+	keyword_dict["--ctref_oldrefdir"]             = SXkeyword_map(2, "dir")                 # --ctref_oldrefdir=refine_dir_path
+	keyword_dict["--refinement_dir"]              = SXkeyword_map(2, "dir")                 # --refinement_dir=refinemen_out_dir
+	keyword_dict["--previous_run"]                = SXkeyword_map(2, "dir")                 # --previous_run1=sort3d_run1_directory, --previous_run2=sort3d_run2_directory (need for sort3d.txt)
+	keyword_dict["--function"]                    = SXkeyword_map(2, "user_func")           # --function=user_function
+	keyword_dict["--res_overall"]                 = SXkeyword_map(2, "abs_freq")            # --res_overall=overall_resolution
 
-	keyword_dict["--apix"]                        = SXkeyword_map(2, "apix")           # --apix=pixel_size, --apix, --apix=PIXEL_SIZE
-	keyword_dict["--pixel_size"]                  = SXkeyword_map(2, "apix")           # --pixel_size=PIXEL_SIZE
-	keyword_dict["--wn"]                          = SXkeyword_map(2, "ctfwin")         # --wn
-	keyword_dict["--box"]                         = SXkeyword_map(2, "box")            # --box=box_size, --box_size=box_size, --boxsize=BOX_SIZE
-	keyword_dict["--radius"]                      = SXkeyword_map(2, "radius")         # --radius=particle_radius, --radius=outer_radius, --radius=outer_radius, --radius=particle_radius, --radius=outer_radius, --radius=outer_radius
-	keyword_dict["--sym"]                         = SXkeyword_map(2, "sym")            # --sym=c1, --sym=symmetry, --sym=c4
-###	keyword_dict["--molecular_mass"]              = SXkeyword_map(2, "mass")           # --molecular_mass
+	keyword_dict["--apix"]                        = SXkeyword_map(2, "apix")                # --apix=pixel_size, --apix, --apix=PIXEL_SIZE
+	keyword_dict["--pixel_size"]                  = SXkeyword_map(2, "apix")                # --pixel_size=PIXEL_SIZE
+	keyword_dict["--wn"]                          = SXkeyword_map(2, "ctfwin")              # --wn
+	keyword_dict["--box"]                         = SXkeyword_map(2, "box")                 # --box=box_size, --box_size=box_size, --boxsize=BOX_SIZE
+	keyword_dict["--radius"]                      = SXkeyword_map(2, "radius")              # --radius=particle_radius, --radius=outer_radius, --radius=outer_radius, --radius=particle_radius, --radius=outer_radius, --radius=outer_radius
+	keyword_dict["--sym"]                         = SXkeyword_map(2, "sym")                 # --sym=c1, --sym=symmetry, --sym=c4
+###	keyword_dict["--molecular_mass"]              = SXkeyword_map(2, "mass")                # --molecular_mass
 	
 	# NOTE: 2016/02/23 Toshio Moriya
-	# Below might be useful to include
+	# Below might be useful to include for project settings
 	# reference power spectrum? --pwreference of viper, --pwreference of rviper, --PWadjustment of sort3d, --PWadjustment of rsort3d
 	#
 	# Below must be exceptional cases
@@ -193,28 +232,67 @@ def handle_exceptional_cases(sxcmd):
 	# DESIGN_NOTE: 2016/02/05 Toshio Moriya
 	# Handle exceptional cases due to the limitation of software design
 	# In future, we should remove these exception handling by reviewing the design
-###	if sxcmd.name == "sxisac_post_processing":
-###		assert(sxcmd.token_dict["stack_file"].key_base == "stack_file")
-###		assert(sxcmd.token_dict["stack_file"].type == "image")
-###		sxcmd.token_dict["stack_file"].type = "bdb"
-###	elif sxcmd.name in ["sxrviper"]:
-	if sxcmd.name == "sxrviper":
+	if sxcmd.name == "sxwindow":
+		# Typically, this is target particle radius used by ISAC.
+		assert(sxcmd.token_dict["input_micrograph_pattern"].key_base == "input_micrograph_pattern")
+		assert(sxcmd.token_dict["input_micrograph_pattern"].type == "mic_stack")
+		sxcmd.token_dict["input_micrograph_pattern"].type = "mic_one"
+		assert(sxcmd.token_dict["selection_list"].key_base == "selection_list")
+		assert(sxcmd.token_dict["selection_list"].type == "select_mic_stack")
+		sxcmd.token_dict["selection_list"].type = "select_mic_one"
+	elif sxcmd.name == "sxcter":
+		assert(sxcmd.token_dict["selection_list"].key_base == "selection_list")
+		assert(sxcmd.token_dict["selection_list"].type == "select_mic_stack")
+		sxcmd.token_dict["selection_list"].type = "select_mic_one_ext"
+	elif sxcmd.name == "sxisac2":
+		assert(sxcmd.token_dict["output_directory"].key_base == "output_directory")
+		assert(sxcmd.token_dict["output_directory"].type == "output")
+		sxcmd.token_dict["output_directory"].type = "output_continue"
+	elif sxcmd.name == "sxisac":
+		assert(sxcmd.token_dict["output_directory"].key_base == "output_directory")
+		assert(sxcmd.token_dict["output_directory"].type == "output")
+		sxcmd.token_dict["output_directory"].type = "output_continue"
+	elif sxcmd.name == "sxrviper":
 		assert(sxcmd.token_dict["stack"].key_base == "stack")
-		assert(sxcmd.token_dict["stack"].type == "image")
-		sxcmd.token_dict["stack"].type = "hdf"
+		assert(sxcmd.token_dict["stack"].type == "bdb2d_stack")
+		sxcmd.token_dict["stack"].type = "data2d_one"
 		# Typically, this is target particle radius used by ISAC.
 		assert(sxcmd.token_dict["radius"].key_base == "radius")
 		assert(sxcmd.token_dict["radius"].type == "radius")
 		sxcmd.token_dict["radius"].type = "int"
+		assert(sxcmd.token_dict["output_directory"].key_base == "output_directory")
+		assert(sxcmd.token_dict["output_directory"].type == "output")
+		sxcmd.token_dict["output_directory"].type = "output_continue"
 	elif sxcmd.name == "sxviper":
+		assert(sxcmd.token_dict["stack"].key_base == "stack")
+		assert(sxcmd.token_dict["stack"].type == "bdb2d_stack")
+		sxcmd.token_dict["stack"].type = "data2d_one"
 		# Typically, this is target particle radius used by ISAC.
 		assert(sxcmd.token_dict["radius"].key_base == "radius")
 		assert(sxcmd.token_dict["radius"].type == "radius")
 		sxcmd.token_dict["radius"].type = "int"
+		assert(sxcmd.token_dict["directory"].key_base == "directory")
+		assert(sxcmd.token_dict["directory"].type == "output")
+		sxcmd.token_dict["directory"].type = "output_continue"
+	elif sxcmd.name == "sxmeridien":
+		assert(sxcmd.token_dict["output_directory"].key_base == "output_directory")
+		assert(sxcmd.token_dict["output_directory"].type == "output")
+		sxcmd.token_dict["output_directory"].type = "output_continue"
 	elif sxcmd.name == "sxmeridien_20171120":
 		assert(sxcmd.token_dict["output_directory"].key_base == "output_directory")
 		assert(sxcmd.token_dict["output_directory"].type == "output")
 		sxcmd.token_dict["output_directory"].type = "output_continue"
+	elif sxcmd.name == "sxsort3d_depth":
+		assert(sxcmd.token_dict["output_dir"].key_base == "output_dir")
+		assert(sxcmd.token_dict["output_dir"].type == "output")
+		sxcmd.token_dict["output_dir"].type = "output_continue"
+	elif sxcmd.name == "sxsort3d":
+		assert(sxcmd.token_dict["wn"].key_base == "wn")
+		assert(sxcmd.token_dict["wn"].type == "ctfwin")
+		sxcmd.token_dict["wn"].type = "int"
+		assert(sxcmd.token_dict["outdir"].key_base == "outdir")
+		assert(sxcmd.token_dict["outdir"].type == "output")
+		sxcmd.token_dict["outdir"].type = "output_continue"
 	elif sxcmd.name == "sxrsort3d":
 		# 
 		# NOTE: Toshio Moriya 2017/11/15
@@ -241,10 +319,6 @@ def handle_exceptional_cases(sxcmd):
 ###		assert(sxcmd.token_dict["masterdir"].key_base == "masterdir")
 ###		assert(sxcmd.token_dict["masterdir"].is_required == False)
 ###		sxcmd.token_dict["masterdir"].is_required = True
-	elif sxcmd.name == "sxsort3d":
-		assert(sxcmd.token_dict["wn"].key_base == "wn")
-		assert(sxcmd.token_dict["wn"].type == "ctfwin")
-		sxcmd.token_dict["wn"].type = "int"
 	elif sxcmd.name == "sxlocres":
 		assert(sxcmd.token_dict["wn"].key_base == "wn")
 		assert(sxcmd.token_dict["wn"].type == "ctfwin")
@@ -252,12 +326,12 @@ def handle_exceptional_cases(sxcmd):
 	elif sxcmd.name == "sxfilterlocal":
 		assert(sxcmd.token_dict["locres_volume"].key_base == "locres_volume")
 		assert(sxcmd.token_dict["locres_volume"].type == "output")
-		sxcmd.token_dict["locres_volume"].type = "image"
+		sxcmd.token_dict["locres_volume"].type = "data3d_one"
 	elif sxcmd.name == "sxpipe":
 		if sxcmd.subname == "organize_micrographs":
 			assert(sxcmd.token_dict["selection_list"].key_base == "selection_list")
-			assert(sxcmd.token_dict["selection_list"].type == "any_micrograph")
-			sxcmd.token_dict["selection_list"].type = "txt"
+			assert(sxcmd.token_dict["selection_list"].type == "select_mic_stack")
+			sxcmd.token_dict["selection_list"].type = "select_mic_both"
 
 # ----------------------------------------------------------------------------------------
 def remove_MoinMoinWiki_makeup(target_text):
@@ -618,6 +692,7 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 
 	# Allocate memory for new SXcmd instance
 	sxcmd = SXcmd(sxcmd_config.category, sxcmd_config.role, sxcmd_config.is_submittable)
+	usage_token_list = []
 
 	# Define dictionary of keywords:
 	# The dictionary maps command token to special data types
@@ -625,17 +700,16 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 
 	# Define list of target sections for GUI and set current
 	section_lists = []
-	section_lists.append("====== Usage ======"); section_usage = len(section_lists) - 1;
-	section_lists.append("====== Typical usage ======"); section_typical = len(section_lists) - 1;
-	section_lists.append("====== Input ======"); section_input = len(section_lists) - 1;
-	section_lists.append("====== Output ======"); section_output = len(section_lists) - 1;
+	section_lists.append("===== Usage ====="); section_usage = len(section_lists) - 1;
+	section_lists.append("===== Typical usage ====="); section_typical = len(section_lists) - 1;
+	section_lists.append("===== Input ====="); section_input = len(section_lists) - 1;
 	current_section = section_usage
 
 	# Define list of subsections of input section and set current
 	group_lists = []
-	group_lists.append("=== Main Options ==="); group_main = len(group_lists) - 1;
-	group_lists.append("=== Advanced Options ==="); group_advanced = len(group_lists) - 1;
-	current_group_name = group_lists[group_main].replace("===", "").replace("Options", "").strip().lower()
+	group_lists.append("=== Main Parameters ==="); group_main = len(group_lists) - 1;
+	group_lists.append("=== Advanced Parameters ==="); group_advanced = len(group_lists) - 1;
+	current_group_name = group_lists[group_main].replace("===", "").replace("Parameters", "").strip().lower()
 
 	# Define States and set current
 	state_searching_header  = 0
@@ -659,14 +733,31 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 		if not line_wiki:
 			# This is empty line. Always ignore it regardless of state
 			continue
-		# print "MRK_DEBUG: line_wiki = %s" % (line_wiki)
+		if line_wiki == "\\":
+			# This is a line contains only a DokuWiki linebreak. Always ignore it regardless of state
+			continue
+		if line_wiki.find("~~NOTOC~~") != -1:
+			# This is DokuWiki control macro in the fist line of SPHIRE Wiki Document
+			continue
 
 		if current_state == state_searching_header:
 			# Extract the name of sxscript
-			target_operator = "======"
+			target_operator = "====="
 			if line_wiki[:len(target_operator)] != target_operator or line_wiki[-len(target_operator):] != target_operator:
-				ERROR("Wiki Format Error: The Wiki document must start from header section title defined by ====== COMMAND_NAME =======.", "%s in %s" % (__name__, os.path.basename(__file__)))
-			sxcmd.name = line_wiki.replace(target_operator, "").strip()
+#				print("MRK_DEBUG: line_wiki                         := %s" % (line_wiki))
+#				print("MRK_DEBUG: target_operator                   := %s" % (target_operator))
+#				print("MRK_DEBUG: line_wiki[:len(target_operator)]  := %s" % (line_wiki[:len(target_operator)]))
+#				print("MRK_DEBUG: line_wiki[-len(target_operator):] := %s" % (line_wiki[-len(target_operator):]))
+				ERROR("Wiki Format Error: The Wiki document must start from header section title defined by ===== COMMAND_NAME =====.", "%s in %s" % (__name__, os.path.basename(__file__)))
+			sxcmd_string = line_wiki.replace(target_operator, "").strip()
+			sxcmd_string_token_list = sxcmd_string.split()
+			n_sxcmd_string_token_list = len(sxcmd_string_token_list)
+			assert(len(sxcmd_string_token_list) > 0)
+			sxcmd.name = sxcmd_string_token_list[0]
+			if n_sxcmd_string_token_list == 2:
+				sxcmd.subname = sxcmd_string_token_list[1]
+			elif n_sxcmd_string_token_list > 2:
+				ERROR("Wiki Format Error: Command string should be only script file name or script file name plus subcommand", "%s in %s" % (__name__, os.path.basename(__file__)))
 			current_state = state_processing_header
 		elif current_state == state_processing_header:
 			# Extract the label of this sxscript
@@ -685,16 +776,20 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 			# else: just ignore this line
 		else:
 			if current_state != state_processing: ERROR("Logical Error: This condition should not happen! State setting must be incorrect.", "%s in %s" % (__name__, os.path.basename(__file__)))
-			target_operator = "======"
+			target_operator = "====="
 			if line_wiki[:len(target_operator)] == target_operator: # Assuming the section always starts with "======"
+#				print("MRK_DEBUG: line_wiki                          := %s" % (line_wiki))
+#				print("MRK_DEBUG: Old current_section                := %s" % (current_section))
+#				print("MRK_DEBUG: Old section_lists[current_section] := %s" % (section_lists[current_section]))
 				# Reached the next section (might be not target)
 				current_section += 1 # Update current target section
-				current_group_name = group_lists[group_main].replace("===", "").replace("Options", "").strip().lower()    # reset group (subsection) for '====== Input ======' and '====== Output ======' sections
 				if current_section == len(section_lists):
 					# All target sections are handled
 					current_state = state_done
 					break
-
+				current_group_name = group_lists[group_main].replace("===", "").replace("Parameters", "").strip().lower()    # reset group (subsection) for '====== Input ======' and '====== Output ======' sections
+#				print("MRK_DEBUG: New current_section                := %s" % (current_section))
+#				print("MRK_DEBUG: New section_lists[current_section] := %s" % (section_lists[current_section]))
 				if line_wiki.find(section_lists[current_section]) != -1:
 					# Found the current target section
 					if current_section >= len(section_lists): ERROR("Logical Error: This condition should not happen! Section setting must be incorrect.", "%s in %s" % (__name__, os.path.basename(__file__)))
@@ -707,69 +802,69 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 				if current_section == section_usage:
 					# Extract 'usage in command line' to identify each command token is either an argument (no-prefix) or option ('--' prefix)
 					# This information is also used to check consistency between 'usage in command line' and list in '== Input ==' and '== Output ==' sections
+					head_token_idx = 1
 					if line_wiki[0:len("sx")] == "sx" or line_wiki[0:len("e2")] == "e2":
-						usage_token_list = line_wiki.split()
-						if usage_token_list[0] != sxcmd.name + ".py": ERROR("Wiki Format Error: First token should be script name with .py (sx*.py or e2*.py)", "%s in %s" % (__name__, os.path.basename(__file__)))
+						usage_token_list_line = line_wiki.split()
+						if usage_token_list_line[0] != sxcmd.name + ".py": ERROR("Wiki Format Error: First token should be script name with .py (sx*.py or e2*.py)", "%s in %s" % (__name__, os.path.basename(__file__)))
+						if sxcmd.subname != "":
+							head_token_idx = 2
+							if usage_token_list_line[1] != sxcmd.subname: ERROR("Wiki Format Error: Second token of this command should be subname", "%s in %s" % (__name__, os.path.basename(__file__)))
 						# Register arguments and options
-						for usage_token in usage_token_list[1:]:
-							# Check if --MPI is used in this script
-							# NOTE: 2015/11/12 Toshio Moriya
-							# The following can be removed when --MPI flag is removed from all sx*.py scripts
-							if usage_token == "--MPI":
-								# ERROR("Warning: The 'usage in command line' contains --MPI flag. The flag will be removed in near future, so ignoring this line...'.","%s in %s" % (__name__, os.path.basename(__file__)), action = 0)
-								sxcmd.mpi_support = True
-								sxcmd.mpi_add_flag = True
-								continue
+						for usage_token in usage_token_list_line[head_token_idx:]:
 							# Allocate memory for new command token
 							token = SXcmd_token()
 							# Extract key of command token.
 							key = usage_token.split("=")[0] # Remove characters after '=' if token contains it (i.e. some options)
 							token.key_base = key.strip("-") # Get key base name by removing prefix ('--' or '-' for option)
 							token.key_prefix = key[0:len(key) - len(token.key_base)]
-							# Try to set the special type base on the keyword dictionary
-							best_keyword_map = SXkeyword_map(99, "")
-							for keyword in keyword_dict.keys():
-								if key.find(keyword) != -1:
-									# command token contains keyword
-									keyword_map = keyword_dict[keyword]
-									if best_keyword_map.priority > keyword_map.priority:
-										# Update keyword_map to one with a higher priority
-										best_keyword_map = keyword_map
-							token.type = best_keyword_map.token_type # If command token does not contains any keywords, its type stays with ""
-							# Register this command token to the list (ordered) and dictionary (unordered)
-							sxcmd.token_list.append(token)
-							sxcmd.token_dict[token.key_base] = token
+							# Register this command token to the usage token list (ordered)
+							usage_token_list.append(token)
 					# else: Ignore this line (must be comments).
 				elif current_section == section_typical:
 					target_operator = "mpirun"
 					if sxcmd.mpi_support == False and line_wiki.find(target_operator) > 1 and line_wiki.find(sxcmd.name + ".py") > 1:
 						sxcmd.mpi_support = True
 					# else: Ignore this line
-				elif current_section == section_input or current_section == section_output:
+				elif current_section == section_input:
 					if line_wiki.find(group_lists[group_advanced]) > -1:
 						# Reached the option subsection (argument subsection is done)
-						current_group_name = group_lists[group_advanced].replace("===", "").replace("Options", "").strip().lower()
+						current_group_name = group_lists[group_advanced].replace("===", "").replace("Parameters", "").strip().lower()
 					elif line_wiki[0] == ";":
-						# Option entry must start with ";"
-						line_buffer = line_wiki[1:]  # remove ";"
+						# Option entry must start with "; "
+						line_buffer = line_wiki[1:]  # remove "; "
 						# Extract key base name of command token
 						target_operator = ":"
 						item_tail = line_buffer.find(target_operator)
 						if item_tail == -1:
 							# ERROR("Warning: This line (%s) is missing key base name (maybe comment line?). Ignoring this line...'."  % (line_wiki),"%s in %s" % (__name__, os.path.basename(__file__)), action = 0)
 							continue
-						key_base = line_buffer[0:item_tail].strip()
-						if key_base == "MPI":
+						key = line_buffer[0:item_tail].strip()
+						key = key.replace("%%", "")
+						# Check if --MPI is used in this script
+						# NOTE: 2015/11/12 Toshio Moriya
+						# The following can be removed when --MPI flag is removed from all sx*.py scripts
+						if key == "--MPI":
 							# ERROR("Warning: This line (%s) contains MPI flag. The flag will be removed in near future, so ignoring this line...'."  % (line_wiki), "%s in %s" % (__name__, os.path.basename(__file__)), action = 0)
-							if sxcmd.mpi_support == False or sxcmd.mpi_add_flag == False: ERROR("Logical Error: Since MPI flag is found, the command should support MPI.", "%s in %s" % (__name__, os.path.basename(__file__)))
+							if sxcmd.mpi_support == False: ERROR("Logical Error: Since MPI flag is found, the command should support MPI.", "%s in %s" % (__name__, os.path.basename(__file__)))
+							sxcmd.mpi_add_flag = True
 							continue
+						# Allocate memory for new command token
+						token = SXcmd_token()
+						# Extract key of command token.
+						token.key_base = key.strip("-") # Get key base name by removing prefix ('--' or '-' for option)
+						token.key_prefix = key[0:len(key) - len(token.key_base)]
+						# Try to set the special type base on the keyword dictionary
+						best_keyword_map = SXkeyword_map(99, "")
+						for keyword in keyword_dict.keys():
+							if key.find(keyword) != -1:
+								# command token contains keyword
+								keyword_map = keyword_dict[keyword]
+								if best_keyword_map.priority > keyword_map.priority:
+									# Update keyword_map to one with a higher priority
+									best_keyword_map = keyword_map
+						token.type = best_keyword_map.token_type # If command token does not contains any keywords, its type stays with ""
 						line_buffer = line_buffer[item_tail + len(target_operator):].strip() # Get the rest of line
-						# check consistency between 'usage in command line' and this
-						if key_base not in sxcmd.token_dict.keys(): ERROR("Wiki Format Error: Key base (%s) is missing from 'usage in command line' in '====== Usage ======'." % key_base, "%s in %s" % (__name__, os.path.basename(__file__)))
-						# Get the reference to the command token object associated with this key base name
-						token = sxcmd.token_dict[key_base]
-						if token.key_base != key_base: ERROR("Logical Error: Registered command token with wrong key base name into the dictionary.", "%s in %s" % (__name__, os.path.basename(__file__)))
-						token.is_in_io = True # Set flag to tell this command token is find in input or output section
+###						token.is_in_io = True # Set flag to tell this command token is found in input section
 						token.group = current_group_name # Set group of command token according to the current subsection
 						# Extract label of command token
 						target_operator = ":"
@@ -796,6 +891,28 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 								# Type is still empty, meaning no special type is assigned
 								# Extract the data type (the rest of line)
 								token.type = default_value.replace("required", "").strip()
+						elif default_value.find("question reversed in GUI") != -1:
+							token.is_required = False
+							token.default = default_value.replace("question reversed in GUI", "").strip()
+							token.type = "bool"
+							if token.default == "True":
+								token.default = False # convert the default value to opposite boolean
+							elif token.default == "False":
+								token.default = True # convert the default value to opposite boolean
+							else:
+								assert (False)
+							assert (not token.is_reversed)
+						elif default_value.find("value reversed in GUI") != -1:
+							token.is_required = False
+							token.default = default_value.replace("value reversed in GUI", "").strip()
+							token.type = "bool"
+							if token.default == "True":
+								token.default = False # convert the default value to opposite boolean
+							elif token.default == "False":
+								token.default = True # convert the default value to opposite boolean
+							else:
+								assert (False)
+							token.is_reversed = True
 						else:
 							# This is not required command token and should have default value
 							token.is_required = False
@@ -825,6 +942,9 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 						if not token.is_locked:
 							token.restore = token.default
 						# Ignore the rest of line ...
+						# Register this command token to the list (ordered) and dictionary (unordered)
+						sxcmd.token_list.append(token)
+						sxcmd.token_dict[token.key_base] = token
 					# else:
 						# This is not option entry. Ignore this line
 				else:
@@ -832,42 +952,78 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 
 	if current_state != state_done: ERROR("Wiki Format Error: parser could not extract all information necessary. Please check if the Wiki format has all required sections.", "%s in %s" % (__name__, os.path.basename(__file__)))
 
-	# Make sure there are no extra arguments or options in 'usage in command line' of '====== Usage ======'
-	for token in sxcmd.token_list:
-		if token.is_in_io == False: ERROR("Wiki Format Error: An extra argument or option (%s) is found in 'usage in command line' of '====== Usage ======'." % token.key_base, "%s in %s" % (__name__, os.path.basename(__file__)))
+	for sxcmd_token_key_base in sxcmd.token_dict.keys():
+		# Make sure there are no extra arguments or options in command token dictionary compared with command token list.
+		is_found = False
+		for sxcmd_token in sxcmd.token_list:
+			if sxcmd_token.key_base == sxcmd_token_key_base:
+				is_found = True
+				break
+		if not is_found: ERROR("Logical Error: Registered key base name in the command token dictionary is not found in the command token list.", "%s in %s" % (__name__, os.path.basename(__file__)))
+		# Make sure there are no extra arguments or options in command token list compared with usage token list extracted from "usage in command line" of "====== Usage ======".
+		is_found = False
+		for usage_token in usage_token_list:
+			if usage_token.key_base == sxcmd_token_key_base:
+				is_found = True
+				break
+		if not is_found: ERROR("Wiki Format Error: An extra argument or option (%s) is found in the command token dictionary extracted from '===== Input =====' compared with 'usage in command line' of '====== Usage ======'." % sxcmd_token_key_base, "%s in %s" % (__name__, os.path.basename(__file__)))
+
+	for sxcmd_token in sxcmd.token_list:
+		# Make sure there are no extra arguments or options in command token list compared with command token dictionary.
+		if sxcmd_token.key_base not in sxcmd.token_dict.keys(): ERROR("Logical Error: Registered key base name in the command token list is not registered as key base name in the command token dictionary.", "%s in %s" % (__name__, os.path.basename(__file__)))
+		# Make sure there are no extra arguments or options in command token list compared with usage token list extracted from "usage in command line" of "====== Usage ======".
+		is_found = False
+		for usage_token in usage_token_list:
+			if usage_token.key_base == sxcmd_token.key_base:
+				is_found = True
+				break
+		if not is_found: ERROR("Wiki Format Error: An extra argument or option (%s) is found in the command token list extracted from '===== Input =====' compared with 'usage in command line' of '====== Usage ======'." % sxcmd_token.key_base, "%s in %s" % (__name__, os.path.basename(__file__)))
+
+	for usage_token in usage_token_list:
+		# Make sure there are no extra arguments or options in usage token list extracted from "usage in command line" of "====== Usage ======" compared with command token dictionary. 
+		if usage_token.key_base not in sxcmd.token_dict.keys(): ERROR("Wiki Format Error: An extra argument or option (%s) is found in 'usage in command line' of '====== Usage ======' compared with the command token dictionary extracted from '===== Input =====' ." % usage_token.key_base, "%s in %s" % (__name__, os.path.basename(__file__)))
+		# Make sure there are no extra arguments or options in usage token list extracted from "usage in command line" of "====== Usage ======" compared with command token list. 
+		is_found = False
+		for sxcmd_token in sxcmd.token_list:
+			if sxcmd_token.key_base == sxcmd_token_key_base:
+				is_found = True
+				break
+		if not is_found: ERROR("Wiki Format Error: An extra argument or option (%s) is found in 'usage in command line' of '====== Usage ======' compared with the command token list extracted from '===== Input =====' ." % usage_token.key_base, "%s in %s" % (__name__, os.path.basename(__file__)))
 
 	file_wiki.close()
 
 	handle_exceptional_cases(sxcmd)
 
-	print("Succeed to parse MoinMoinWiki document (%s as %s %s command)" % (sxcmd_config.wiki, sxcmd_config.category, sxcmd_config.role))
+	print("Succeed to parse DokuWiki document (%s as %s %s command)" % (sxcmd_config.wiki, sxcmd_config.category, sxcmd_config.role))
 
 	"""
 	# For DEBUG
-	if sxcmd.name == "sxmeridien":
-		print "><><>< DEBUG OUTPUT ><><><"
-		print ""
-		print "------"
-		print "GLOBAL"
-		print "------"
-		print "name            : %s" % sxcmd.name
-		print "mode            : %s" % sxcmd.mode
-		print "label           : %s" % sxcmd.label
-		print "short_info      : %s" % sxcmd.short_info
-		print "mpi_support     : %s" % sxcmd.mpi_support
-		print "mpi_add_flag    : %s" % sxcmd.mpi_add_flag
-		print "category        : %s" % sxcmd.category
-		print "role            : %s" % sxcmd.role
-		print "is_submittable  : %s" % sxcmd.is_submittable
-		print "len(token_list) : %d" % len(sxcmd.token_list)
-		print "len(token_dict) : %d" % len(sxcmd.token_dict)
-		print ""
-		print "--------------"
-		print "cmd_token_list"
-		print "--------------"
+	if sxcmd.name in ["sxrelion2sphire", "sxpipe"]:
+		print("><><>< DEBUG OUTPUT ><><><")
+		print("")
+		print("------")
+		print("GLOBAL")
+		print("------")
+		print("name            : \'{}\'".format(sxcmd.name))
+		print("subname         : \'{}\'".format(sxcmd.subname))
+		print("mode            : \'{}\'".format(sxcmd.mode))
+		print("subset_config   : \'{}\'".format(sxcmd.subset_config))
+		print("label           : \'{}\'".format(sxcmd.label))
+		print("short_info      : \'{}\'".format(sxcmd.short_info))
+		print("mpi_support     : \'{}\'".format(sxcmd.mpi_support))
+		print("mpi_add_flag    : \'{}\'".format(sxcmd.mpi_add_flag))
+		print("category        : \'{}\'".format(sxcmd.category))
+		print("role            : \'{}\'".format(sxcmd.role))
+		print("is_submittable  : \'{}\'".format(sxcmd.is_submittable))
+		print("len(token_list) : {}".format(len(sxcmd.token_list)))
+		print("len(token_dict) : {}".format(len(sxcmd.token_dict)))
+		print("")
+		print("--------------")
+		print("cmd_token_list")
+		print("--------------")
 		for token in sxcmd.token_list:
-			print "%s%s (group=%s, required=%s, default=%s, type=%s, restore=%s label=%s help=%s" % (token.key_prefix, token.key_base, token.group, token.is_required, token.default, token.type, token.restore, token.label, token.help)
-		print ""
+			print("\'{}{}\' (group=\'{}\', is_required=\'{}\', is_locked=\'{}\', is_reversed=\'{}\', default=\'{}\', restore=\'{}\', type=\'{}\', label=\'{}\', help=\'{}\'".format(token.key_prefix, token.key_base, token.group, token.is_required, token.is_locked, token.is_reversed, token.default, token.restore, token.type, token.label, token.help))
+		print("")
 	"""
 
 	return sxcmd
@@ -1043,7 +1199,7 @@ def insert_sxcmd_to_file(sxcmd, output_file, sxcmd_variable_name):
 def create_sxcmd_subconfig_window_makevstack():
 	token_edit_list = []
 	token_edit = SXcmd_token(); token_edit.initialize_edit("makevstack"); token_edit.is_required = True; token_edit.is_locked = False; token_edit.default = "none"; token_edit.restore = "none"; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("input_bdb_stack_pattern"); token_edit.key_prefix = ""; token_edit.label = "Input BDB image stack pattern"; token_edit.help = "Specify file path pattern of stack subsets created in particle extraction using a wild card /'*/' (e.g. /'//sxwindow_output_dir//*/'). The stack subsets are located in the sxwindow output directory."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "any_directory"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("input_bdb_stack_pattern"); token_edit.key_prefix = ""; token_edit.label = "Input BDB image stack pattern"; token_edit.help = "Specify file path pattern of stack subsets created in particle extraction using a wild card /'*/' (e.g. /'//sxwindow_output_dir//*/'). The stack subsets are located in the sxwindow output directory."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "dir_list"; token_edit_list.append(token_edit)
 
 	sxsubcmd_mpi_support = False
 	sxcmd_subconfig = SXsubcmd_config("Particle Stack", None, token_edit_list, sxsubcmd_mpi_support, subset_config="fullset")
@@ -1053,7 +1209,7 @@ def create_sxcmd_subconfig_window_makevstack():
 ### def create_sxcmd_subconfig_isacselect():
 ### 	token_edit_list = []
 ### 	token_edit = SXcmd_token(); token_edit.initialize_edit("isacselect"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
-### 	token_edit = SXcmd_token(); token_edit.initialize_edit("class_file_name"); token_edit.key_prefix = ""; token_edit.label = "ISAC class file name"; token_edit.help = "File name of the class averages. It is located in the ISAC output directory."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit)
+### 	token_edit = SXcmd_token(); token_edit.initialize_edit("class_file_name"); token_edit.key_prefix = ""; token_edit.label = "ISAC class file name"; token_edit.help = "File name of the class averages. It is located in the ISAC output directory."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "data2d_one"; token_edit_list.append(token_edit)
 ### 	token_edit = SXcmd_token(); token_edit.initialize_edit("output_list"); token_edit.key_prefix = ""; token_edit.label = "Output ISAC particle ID list"; token_edit.help = "Output text file containing retrieved member particle IDs of all ISAC classes."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "output"; token_edit_list.append(token_edit)
 ### 
 ### 	sxsubcmd_mpi_support = False
@@ -1064,7 +1220,7 @@ def create_sxcmd_subconfig_window_makevstack():
 ### def create_sxcmd_subconfig_isac_makevstack():
 ### 	token_edit_list = []
 ### 	token_edit = SXcmd_token(); token_edit.initialize_edit("makevstack"); token_edit.is_required = True; token_edit.is_locked = False; token_edit.default = "none"; token_edit.restore = "none"; token_edit_list.append(token_edit)
-### 	token_edit = SXcmd_token(); token_edit.initialize_edit("input_bdb_stack_file"); token_edit.key_prefix = ""; token_edit.label = "Input BDB image stack"; token_edit.help = "Specify path to input BDB stack file which is used for the input of the associated ISAC run."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "bdb"; token_edit_list.append(token_edit)
+### 	token_edit = SXcmd_token(); token_edit.initialize_edit("input_bdb_stack_file"); token_edit.key_prefix = ""; token_edit.label = "Input BDB image stack"; token_edit.help = "Specify path to input BDB stack file which is used for the input of the associated ISAC run."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "bdb2d_stack"; token_edit_list.append(token_edit)
 ### 	token_edit = SXcmd_token(); token_edit.initialize_edit("list"); token_edit_list.append(token_edit)
 ### 
 ### 	sxsubcmd_mpi_support = False
@@ -1142,7 +1298,7 @@ def create_sxcmd_subconfig_isac_beautifier_no_adjust():
 def create_sxcmd_subconfig_viper_changesize():
 	token_edit_list = []
 	token_edit = SXcmd_token(); token_edit.initialize_edit("changesize"); token_edit.label = "Change size of VIPER model"; token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("input_stack"); token_edit.key_prefix = ""; token_edit.label = "Input Viper Model"; token_edit.help = "Input Viper Model."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("input_stack"); token_edit.key_prefix = ""; token_edit.label = "Input Viper Model"; token_edit.help = "Input Viper Model."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "data3d_one"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("output_stack"); token_edit.key_prefix = ""; token_edit.label = "Output Resized Viper Model"; token_edit.help = "Output resized (decimated or interpolated up) Viper Model."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "output"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("ratio"); token_edit_list.append(token_edit)
 
@@ -1154,7 +1310,7 @@ def create_sxcmd_subconfig_viper_changesize():
 def create_sxcmd_subconfig_viper_window():
 	token_edit_list = []
 	token_edit = SXcmd_token(); token_edit.initialize_edit("clip"); token_edit.label = "Window to specified size [Pixels]"; token_edit.is_required = True; token_edit.is_locked = False; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("input_volume"); token_edit.key_prefix = ""; token_edit.label = "Input volume"; token_edit.help = "Input volume file name."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = "none"; token_edit.type = "image"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("input_volume"); token_edit.key_prefix = ""; token_edit.label = "Input volume"; token_edit.help = "Input volume file name."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = "none"; token_edit.type = "data3d_one"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("output_file"); token_edit.key_prefix = ""; token_edit.label = "Output windowed volume"; token_edit.help = "Output windowed (clipped/padded) volume file name."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = "none"; token_edit.type = "output"; token_edit_list.append(token_edit)
 
 	sxsubcmd_mpi_support = False
@@ -1166,7 +1322,7 @@ def create_sxcmd_subconfig_viper_window():
 # 	token_edit_list = []
 # 	token_edit = SXcmd_token(); token_edit.initialize_edit("scale"); token_edit.label = "Resample ratio"; token_edit.help = "Rescale the volume by the specified ratio before padding/clipping."; token_edit.is_required = True; token_edit_list.append(token_edit)
 # 	token_edit = SXcmd_token(); token_edit.initialize_edit("clip"); token_edit.label = "Pad/Clip volume to specified size [Pixels]"; token_edit.is_required = True; token_edit_list.append(token_edit)
-# 	token_edit = SXcmd_token(); token_edit.initialize_edit("input_volume"); token_edit.key_prefix = ""; token_edit.label = "Input volume"; token_edit.help = "Input volume file name."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = "none"; token_edit.type = "image"; token_edit_list.append(token_edit)
+# 	token_edit = SXcmd_token(); token_edit.initialize_edit("input_volume"); token_edit.key_prefix = ""; token_edit.label = "Input volume"; token_edit.help = "Input volume file name."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = "none"; token_edit.type = "data3d_one"; token_edit_list.append(token_edit)
 # 	token_edit = SXcmd_token(); token_edit.initialize_edit("output_file"); token_edit.key_prefix = ""; token_edit.label = "Output resampled volume"; token_edit.help = "Output resampled volume file name."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = "none"; token_edit.type = "output"; token_edit_list.append(token_edit)
 #
 # 	sxsubcmd_mpi_support = False
@@ -1177,7 +1333,7 @@ def create_sxcmd_subconfig_viper_window():
 def create_sxcmd_subconfig_adaptive_mask3d():
 	token_edit_list = []
 	token_edit = SXcmd_token(); token_edit.initialize_edit("adaptive_mask"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("input_volume"); token_edit.key_prefix = ""; token_edit.label = "Input volume"; token_edit.help = "Input reference volume"; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("input_volume"); token_edit.key_prefix = ""; token_edit.label = "Input volume"; token_edit.help = "Input reference volume"; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "data3d_one"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("output_mask3D"); token_edit.key_prefix = ""; token_edit.label = "Output mask"; token_edit.help = "Output 3D mask"; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "output"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("nsigma"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("threshold"); token_edit_list.append(token_edit)
@@ -1192,7 +1348,7 @@ def create_sxcmd_subconfig_adaptive_mask3d():
 def create_sxcmd_subconfig_binary_mask3d():
 	token_edit_list = []
 	token_edit = SXcmd_token(); token_edit.initialize_edit("binary_mask"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("input_volume"); token_edit.key_prefix = ""; token_edit.label = "Input volume"; token_edit.help = "Input reference volume"; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("input_volume"); token_edit.key_prefix = ""; token_edit.label = "Input volume"; token_edit.help = "Input reference volume"; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "data3d_one"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("output_mask3D"); token_edit.key_prefix = ""; token_edit.label = "Output mask"; token_edit.help = "Output 3D mask"; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "output"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("bin_threshold"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("ne"); token_edit_list.append(token_edit)
@@ -1205,8 +1361,8 @@ def create_sxcmd_subconfig_binary_mask3d():
 def create_sxcmd_subconfig_sharpen_halfset_vol():
 	token_edit_list = []
 	token_edit = SXcmd_token(); token_edit.initialize_edit("combinemaps"); token_edit.label = "Combine half volumes then enhance"; token_edit.help = "Combine a pair of unfiltered odd & even halfset volumes, then enhance the power spectrum at high frequencies (Halfset Volumes Mode). B-factor can be automatically estimated from these unfiltered halfset volumes. This mode requires two arguments; typically use unfiltered halfset volumes produced by MERIDIEN."; token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("firstvolume"); token_edit.key_prefix = ""; token_edit.label = "First unfiltered halfset volume"; token_edit.help = "Typically, generated by sxmeridien."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("secondvolume"); token_edit.key_prefix = ""; token_edit.label = "Second unfiltered halfset volume"; token_edit.help = "Typically, generated by sxmeridien."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("firstvolume"); token_edit.key_prefix = ""; token_edit.label = "First unfiltered halfset volume"; token_edit.help = "Typically, generated by sxmeridien."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "data3d_one"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("secondvolume"); token_edit.key_prefix = ""; token_edit.label = "Second unfiltered halfset volume"; token_edit.help = "Typically, generated by sxmeridien."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "data3d_one"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("output_dir"); token_edit_list.append(token_edit)
 	
 	token_edit = SXcmd_token(); token_edit.initialize_edit("pixel_size"); token_edit_list.append(token_edit)
@@ -1233,7 +1389,7 @@ def create_sxcmd_subconfig_sharpen_halfset_vol():
 def create_sxcmd_subconfig_shapen_cluster_vol():
 	token_edit_list = []
 	token_edit = SXcmd_token(); token_edit.initialize_edit("combinemaps"); token_edit.label = "Enhance cluster volumes"; token_edit.help = "Enhance the power spectrum of cluster volumes, produced by SORT3D_DEPTH, at high frequencies (Cluster Volumes Mode). Only ad-hoc low-pass filter cutoff and B-factor can be used. This mode requires one argument (path pattern with wild card '*' can be used to specify a list of volumes). It is mainly used with SORT3D_DEPTH outputs but also can enhance the power spectrum of ANY volumes."; token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("input_cluster_volume_pattern"); token_edit.key_prefix = ""; token_edit.label = "Input cluster volume pattern"; token_edit.help = "Specify path pattern of input cluster volumes, created by SORT3D_DEPTH, with a wild card (*). Use the wild card to indicate the place of variable part of the file names (typically, cluster ID; e.g. \'outdir_sort3d_depth/vol_cluster*.hdf\'). The path pattern must be enclosed by single quotes (\') or double quotes (\") (Note: sxgui.py automatically adds single quotes (\')). If the wild card is not used (i.e. a simple path is provided), the program process the single volume."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("input_cluster_volume_pattern"); token_edit.key_prefix = ""; token_edit.label = "Input cluster volume pattern"; token_edit.help = "Specify path pattern of input cluster volumes, created by SORT3D_DEPTH, with a wild card (*). Use the wild card to indicate the place of variable part of the file names (typically, cluster ID; e.g. \'outdir_sort3d_depth/vol_cluster*.hdf\'). The path pattern must be enclosed by single quotes (\') or double quotes (\") (Note: sxgui.py automatically adds single quotes (\')). If the wild card is not used (i.e. a simple path is provided), the program process the single volume."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "data3d_one"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("output_dir"); token_edit_list.append(token_edit)
 	
 	token_edit = SXcmd_token(); token_edit.initialize_edit("pixel_size"); token_edit_list.append(token_edit)
@@ -1257,7 +1413,7 @@ def create_sxcmd_subconfig_variability_preprocess():
 	token_edit_list = []
 	token_edit = SXcmd_token(); token_edit.initialize_edit("symmetrize"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
 
-	token_edit = SXcmd_token(); token_edit.initialize_edit("prj_stack"); token_edit.key_prefix = ""; token_edit.label = "Input image stack"; token_edit.help = "The images must containt the 3D orientation parameters in the header and optionally CTF information. The output image stack is bdb:sdata. Please use it as an input image stack of sx3dvariability."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("prj_stack"); token_edit.key_prefix = ""; token_edit.label = "Input image stack"; token_edit.help = "The images must containt the 3D orientation parameters in the header and optionally CTF information. The output image stack is bdb:sdata. Please use it as an input image stack of sx3dvariability."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "bdb2d_stack"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("output_dir"); token_edit_list.append(token_edit)
 
 	token_edit = SXcmd_token(); token_edit.initialize_edit("sym"); token_edit_list.append(token_edit)
@@ -1356,7 +1512,7 @@ def add_sxcmd_subconfig_meridien_local_shared_refine(token_edit_list):
 def create_sxcmd_subconfig_meridien_standard_fresh():
 	token_edit_list = []
 	token_edit = SXcmd_token(); token_edit.initialize_edit("stack"); token_edit.is_required = True; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("output_directory"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("output_directory"); token_edit.type = "output"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("initial_volume"); token_edit.is_required = True; token_edit_list.append(token_edit)
 
 	add_sxcmd_subconfig_meridien_standard_shared(token_edit_list)
@@ -1368,7 +1524,7 @@ def create_sxcmd_subconfig_meridien_standard_fresh():
 
 def create_sxcmd_subconfig_meridien_standard_continuation():
 	token_edit_list = []
-	token_edit = SXcmd_token(); token_edit.initialize_edit("output_directory"); token_edit.label = "Meridien Fresh Run Directory"; token_edit.help = "This directory must exist. The results will be written here."; token_edit.is_required = True; token_edit.type = "output_continue"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("output_directory"); token_edit.label = "Meridien Fresh Run Directory"; token_edit.help = "This directory must exist. The results will be written here."; token_edit.is_required = True; token_edit_list.append(token_edit)
 
 	add_sxcmd_subconfig_meridien_standard_shared(token_edit_list)
 
@@ -1382,7 +1538,7 @@ def create_sxcmd_subconfig_meridien_local_iteration():
 	token_edit_list = []
 	token_edit = SXcmd_token(); token_edit.initialize_edit("local_refinement"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
 
-	token_edit = SXcmd_token(); token_edit.initialize_edit("output_directory"); token_edit.label = "Meridien Fresh Run Directory"; token_edit.help = "This directory must exist. The results will be written here."; token_edit.is_required = True; token_edit.type = "output_continue"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("output_directory"); token_edit.label = "Meridien Fresh Run Directory"; token_edit.help = "This directory must exist. The results will be written here."; token_edit.is_required = True; token_edit_list.append(token_edit)
 
 	add_sxcmd_subconfig_meridien_local_shared_refine(token_edit_list)
 
@@ -1409,7 +1565,7 @@ def create_sxcmd_subconfig_meridien_final():
 	token_edit_list = []
 	token_edit = SXcmd_token(); token_edit.initialize_edit("do_final"); token_edit.is_required = True; token_edit.is_locked = False; token_edit.default = -1; token_edit.restore = -1; token_edit_list.append(token_edit)
 	
-	token_edit = SXcmd_token(); token_edit.initialize_edit("output_directory"); token_edit.label = "Meridien Fresh Run Directory"; token_edit.help = "This directory must exist. The results will be written here."; token_edit.is_required = True; token_edit.type = "output_continue"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("output_directory"); token_edit.label = "Meridien Fresh Run Directory"; token_edit.help = "This directory must exist. The results will be written here."; token_edit.is_required = True; token_edit_list.append(token_edit)
 	
 	token_edit = SXcmd_token(); token_edit.initialize_edit("memory_per_node"); token_edit_list.append(token_edit)
 
@@ -1421,7 +1577,7 @@ def create_sxcmd_subconfig_meridien_final():
 def create_sxcmd_subconfig_refine3d_angular_distribution():
 	token_edit_list = []
 	token_edit = SXcmd_token(); token_edit.initialize_edit("angular_distribution"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("inputfile"); token_edit.label = "Alignment Parameter file"; token_edit.help = "Alignment Parameter file created by a previous 3D reconstruction step (e.g. sxmeridien.py)"; token_edit.is_required = True; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("inputfile"); token_edit.label = "Projection parameters file"; token_edit.help = "Projection parameters file created by a 3D reconstruction step (typically, final_params_*.txt or main*/params_*.txt of sxmeridien.py)."; token_edit.is_required = True; token_edit.type = "params_proj_txt"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("pixel_size"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("symmetry"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("round_digit"); token_edit_list.append(token_edit)
@@ -1501,7 +1657,7 @@ def create_sxcmd_subconfig_sort3d_depth_stack():
 def create_sxcmd_subconfig_sort3d_makevstack():
 	token_edit_list = []
 	token_edit = SXcmd_token(); token_edit.initialize_edit("makevstack"); token_edit.label = "Output cluster stack subset"; token_edit.is_required = True; token_edit.is_locked = False; token_edit.default = "none"; token_edit.restore = "none"; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("input_bdb_stack_file"); token_edit.key_prefix = ""; token_edit.label = "Original image stack"; token_edit.help = "Specify path to input BDB stack file used for the associated SORT3D_DEPTH run."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "bdb"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("input_bdb_stack_file"); token_edit.key_prefix = ""; token_edit.label = "Original image stack"; token_edit.help = "Specify path to input BDB stack file used for the associated SORT3D_DEPTH run."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "bdb2d_stack"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("list"); token_edit.label = "Selection text file"; token_edit.help = "Selection text file that contains indexes of the data subset. Typically, Cluster#.txt created by sxsort3d_depth (e.g. Cluster1.txt). "; token_edit_list.append(token_edit)
 
 	sxsubcmd_mpi_support = False
@@ -1529,7 +1685,7 @@ def create_sxcmd_subconfig_sort3d_makevstack():
 def create_sxcmd_subconfig_utility_makevstack():
 	token_edit_list = []
 	token_edit = SXcmd_token(); token_edit.initialize_edit("makevstack"); token_edit.is_required = True; token_edit.is_locked = False; token_edit.default = "none"; token_edit.restore = "none"; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("input_bdb_stack_file"); token_edit.key_prefix = ""; token_edit.label = "Input BDB image stack"; token_edit.help = "Specify path to input BDB stack file. "; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "bdb"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("input_bdb_stack_file"); token_edit.key_prefix = ""; token_edit.label = "Input BDB image stack"; token_edit.help = "Specify path to input BDB stack file. "; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "bdb2d_stack"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("list"); token_edit_list.append(token_edit)
 
 	sxsubcmd_mpi_support = False
@@ -1540,7 +1696,7 @@ def create_sxcmd_subconfig_utility_makevstack():
 def create_sxcmd_subconfig_utility_changesize():
 	token_edit_list = []
 	token_edit = SXcmd_token(); token_edit.initialize_edit("changesize"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("input_stack"); token_edit.key_prefix = ""; token_edit.label = "Input image or volume"; token_edit.help = "Input image or volume."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("input_stack"); token_edit.key_prefix = ""; token_edit.label = "Input image or volume"; token_edit.help = "Input image or volume."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "data2d3d_both"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("output_stack"); token_edit.key_prefix = ""; token_edit.label = "Output resized image or volume"; token_edit.help = "Resized (decimated or interpolated up) image or volume."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "output"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("ratio"); token_edit_list.append(token_edit)
 
@@ -1552,7 +1708,7 @@ def create_sxcmd_subconfig_utility_changesize():
 def create_sxcmd_subconfig_utility_window():
 	token_edit_list = []
 	token_edit = SXcmd_token(); token_edit.initialize_edit("clip"); token_edit.label = "Window to specified size [Pixels]"; token_edit.is_required = True; token_edit.is_locked = False; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("input_volume"); token_edit.key_prefix = ""; token_edit.label = "Input image or volume"; token_edit.help = "Path to input image or volume file."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = "none"; token_edit.type = "image"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("input_volume"); token_edit.key_prefix = ""; token_edit.label = "Input image or volume"; token_edit.help = "Path to input image or volume file."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = "none"; token_edit.type = "data2d3d_both"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("output_file"); token_edit.key_prefix = ""; token_edit.label = "Output windowed image or volume"; token_edit.help = "Path to output windowed (clipped/padded) image or volume file."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = "none"; token_edit.type = "output"; token_edit_list.append(token_edit)
 
 	sxsubcmd_mpi_support = False
@@ -1560,7 +1716,7 @@ def create_sxcmd_subconfig_utility_window():
 
 	return sxcmd_subconfig
 
-
+# ========================================================================================
 def create_exclude_list_isac2():
 	exclude_list = []
 
@@ -1679,7 +1835,14 @@ def create_exclude_list_display():
 	return exclude_list
 
 # ========================================================================================
-def main(is_dev_mode = False):
+def main(is_dev_mode = False, is_dokuwiki_mode = False):
+
+	if is_dokuwiki_mode and not os.path.exists("../doc/DokuWiki"):
+		print("")
+		print("This mode is not available for public users." )
+		print("")
+		return
+	
 	# --------------------------------------------------------------------------------
 	# Define command categories used in GUI
 	# --------------------------------------------------------------------------------
@@ -1717,7 +1880,8 @@ def main(is_dev_mode = False):
 	sxcmd_role = "sxr_pipe"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2boxer_old.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_boxer_old(), is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/window.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
-	sxcmd_config_list.append(SXcmd_config("../doc/e2bdb.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_window_makevstack()))
+	if is_dokuwiki_mode: sxcmd_config_list.append(SXcmd_config("../doc/DokuWiki/DokuWiki_e2bdb.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_window_makevstack()))
+	else:                sxcmd_config_list.append(SXcmd_config("../doc/e2bdb.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_window_makevstack()))
 
 	sxcmd_role = "sxr_alt"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2boxer.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_boxer(), is_submittable = False))
@@ -1738,7 +1902,8 @@ def main(is_dev_mode = False):
 ### 	sxcmd_config_list.append(SXcmd_config("../doc/isac_post_processing.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 ###	sxcmd_config_list.append(SXcmd_config("../doc/compute_isac_avg.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/compute_isac_avg.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_isac_beautifier_to_model()))
-	sxcmd_config_list.append(SXcmd_config("../doc/pipe_isac_substack.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
+	if is_dokuwiki_mode: sxcmd_config_list.append(SXcmd_config("../doc/DokuWiki/DokuWiki_pipe_isac_substack.txt", "DokuWiki", sxcmd_category, sxcmd_role))
+	else :               sxcmd_config_list.append(SXcmd_config("../doc/pipe_isac_substack.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 
 	sxcmd_role = "sxr_alt"
 	sxcmd_config_list.append(SXcmd_config("../doc/compute_isac_avg.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_isac_beautifier_no_adjust()))
@@ -1853,7 +2018,8 @@ def main(is_dev_mode = False):
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/pdb2em.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
-	sxcmd_config_list.append(SXcmd_config("../doc/relion2sphire.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
+	if is_dokuwiki_mode: sxcmd_config_list.append(SXcmd_config("../doc/DokuWiki/DokuWiki_relion2sphire.txt", "DokuWiki", sxcmd_category, sxcmd_role))
+	else:                sxcmd_config_list.append(SXcmd_config("../doc/relion2sphire.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_adaptive_mask3d()))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_binary_mask3d()))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_utility_changesize()))
@@ -1867,7 +2033,7 @@ def main(is_dev_mode = False):
 
 #	token_edit_list = []
 #	token_edit = SXcmd_token(); token_edit.initialize_edit("stack_mode"); token_edit.group = "main"; token_edit.is_required = True; token_edit.default = True; token_edit_list.append(token_edit)
-#	token_edit = SXcmd_token(); token_edit.initialize_edit("stack"); token_edit.key_prefix = ""; token_edit.label = "2D images in a stack file (bdb or hdf)"; token_edit.help = ""; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit)
+#	token_edit = SXcmd_token(); token_edit.initialize_edit("stack"); token_edit.key_prefix = ""; token_edit.label = "2D images in a stack file (bdb or any supported 2D image formats)"; token_edit.help = ""; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "bdb2d_stack"; token_edit_list.append(token_edit)
 #	token_edit = SXcmd_token(); token_edit.initialize_edit("output_directory"); token_edit_list.append(token_edit)
 #	token_edit = SXcmd_token(); token_edit.initialize_edit("apix"); token_edit_list.append(token_edit)
 #	token_edit = SXcmd_token(); token_edit.initialize_edit("Cs"); token_edit_list.append(token_edit)
@@ -1901,10 +2067,12 @@ def main(is_dev_mode = False):
 	# --------------------------------------------------------------------------------
 	sxgui_template_file_path = "sxgui_template.py"
 
-#	output_file_path = "../bin/sxgui.py" # output_file_path = "sxgui_trial.py"
+#	output_file_path = "../bin/sxgui.py"
 	output_file_path = "./sxgui_auto.py"
 	if is_dev_mode:
 		output_file_path = "./sxgui_dev.py"
+	elif is_dokuwiki_mode:
+		output_file_path = "./sxgui_dokuwiki.py"
 
 	# remove the previous output
 	if os.path.exists(output_file_path):
@@ -1965,6 +2133,10 @@ if __name__ == '__main__':
 	print("==================== Creating development version ==================== " )
 	print("")
 	main(is_dev_mode = True)
+	print("")
+	print("==================== Creating DokuWiki version ==================== " )
+	print("")
+	main(is_dokuwiki_mode = True)
 
 # ========================================================================================
 # END OF SCRIPT
