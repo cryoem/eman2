@@ -496,13 +496,9 @@ def output_clusters(output_dir, partition, unaccounted_list, not_include_unaccou
 	nclasses, npart = split_partition_into_ordered_clusters(partition)
 	nc = 0
 	identified_clusters = []
-	log_main.add('================================================================================================================')
-	log_main.add('              Output group membership files Cluster*.txt are saved in the respective generation directory')
-	log_main.add(' ')
 	for ic in xrange(len(nclasses)):
 		if len(nclasses[ic])>= Tracker["constants"]["minimum_grp_size"]:
 			write_text_file(nclasses[ic], os.path.join(output_dir,"Cluster_%03d.txt"%nc))
-			log_main.add('Membership file Cluster_%03d.txt contains accounted for images'%nc)
 			nc +=1
 			identified_clusters.append(nclasses[ic])
 		else: unaccounted_list +=nclasses[ic]
@@ -510,7 +506,6 @@ def output_clusters(output_dir, partition, unaccounted_list, not_include_unaccou
 	if len(unaccounted_list)>1: 
 		unaccounted_list.sort()
 		write_text_file(unaccounted_list, os.path.join(output_dir, "Unaccounted.txt"))
-		#log_main.add('Group %d has size %d.  Written to %s'%(len(nclasses[ic]), os.path.join(output_dir,"Cluster_%03d.txt"%(ic,nc))))
 		
 	nclasses = copy.deepcopy(identified_clusters)
 	del identified_clusters
@@ -518,11 +513,6 @@ def output_clusters(output_dir, partition, unaccounted_list, not_include_unaccou
 	if len(unaccounted_list)>1:
 		if not not_include_unaccounted:
 			write_text_file(unaccounted_list, os.path.join(output_dir,"Cluster_%03d.txt"%nc))
-			log_main.add('Membership file Cluster_%03d.txt contains unaccounted for images'%nc +'\n')
-	else:
-		log_main.add('\n')
-
-	#do_analysis_on_identified_clusters(nclasses, log_main)
 	
 	if not not_include_unaccounted:
 		import copy
@@ -4578,7 +4568,7 @@ def steptwo_mpi(tvol, tweight, treg, cfsc = None, regularized = True, color = 0)
 	#  tvol is overwritten, meaning it is also an output
 	n_iter =10
 	ifi = mpi_iterefa( vol_data.__array_interface__['data'][0] ,  we_data.__array_interface__['data'][0] , nx, ny, nz, maxr2, \
-			Tracker["constants"]["nnxo"], Blockdata["myid_on_node"], color, Blockdata["no_of_processes_per_group"],  Blockdata["shared_comm"])###, n_iter)
+			Tracker["constants"]["nnxo"], Blockdata["myid_on_node"], color, Blockdata["no_of_processes_per_group"],  Blockdata["shared_comm"], n_iter)
 	if( Blockdata["myid_on_node"] == 0 ):
 		#  Either pad or window in F space to 2*nnxo
 		nx = tvol.get_ysize()
@@ -4647,7 +4637,7 @@ def steptwo_mpi_filter(tvol, tweight, treg, cfsc = None, cutoff_freq = 0.45, aa 
 	#  tvol is overwritten, meaning it is also an output
 	n_iter =10
 	ifi = mpi_iterefa( vol_data.__array_interface__['data'][0] ,  we_data.__array_interface__['data'][0] , nx, ny, nz, maxr2, \
-			Tracker["constants"]["nnxo"], Blockdata["myid_on_node"], color, Blockdata["no_of_processes_per_group"],  Blockdata["shared_comm"])###, n_iter)	
+			Tracker["constants"]["nnxo"], Blockdata["myid_on_node"], color, Blockdata["no_of_processes_per_group"],  Blockdata["shared_comm"], n_iter)	
 	if( Blockdata["myid_on_node"] == 0 ):
 		from filter       import  filt_tanl
 		#  Either pad or window in F space to 2*nnxo
@@ -6688,12 +6678,13 @@ def copy_results(log_file):
 	from   string import atoi
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		log_file.add('================================================================================================================')
-		log_file.add('                                                 Final results.')
+		log_file.add('                     Final results saved in %s'%Tracker["constants"]["masterdir"])
 		log_file.add('----------------------------------------------------------------------------------------------------------------' )
 		nclusters = 0
-		log_file.add('       Group          size')
-		clusters    = []
-		NACC = 0           
+		log_file.add( '{:^8} {:^8} {:^24} {:^15} {:^20} '.format('Group ID', '  size  ','determined in generation', ' selection file',  \
+		  '       map file     '))
+		clusters = []
+		NACC     = 0           
 		for element in Tracker["generation"].items():
 			ig    = element[0]
 			value = element[1]
@@ -6707,20 +6698,20 @@ def copy_results(log_file):
 					   os.path.join(Tracker["constants"]["masterdir"], "vol_cluster%03d.hdf"%nclusters))
 					cluster = read_text_file(os.path.join(Tracker["constants"]["masterdir"], \
 					   "generation_%03d"%ig, "Cluster_%03d.txt"%ic))
-					msg = "%5d    %10d"%(nclusters, len(cluster))
+					msg = '{:^8}} {:^8} {:^24} {:^15} {:^20}'.fomrat(nclusters, len(cluster), ig, "Cluster_%03d.txt"%nclusters,  "vol_cluster%03d.hdf"%nclusters)
 					nclusters +=1
 					NACC +=len(cluster)
-				except:
-					msg ="%s and associated files are not found "%cluster_file
+				except: msg ="Group %s and respective volume are not found "%cluster_file
 				log_file.add(msg)
-				
+		Unaccounted_file = os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%ig, "Unaccounted.txt")
+		copyfile(Unaccounted_file, os.path.join(Tracker["constants"]["masterdir"], "Unaccounted.txt"))
 		NUACC = Tracker["constants"]["total_stack"] - NACC
+		log_file.add('{:^7} {:^8} {:^22} {:^8} {:^24} {:^8} '.format(' Images', Tracker["constants"]["total_stack"], 'accounted for images: ', NACC, 'unaccounted for images: ', NUACC))
+		log_file.add('Unaccounted images saved in Unaccounted.txt')
 		do_analysis_on_identified_clusters(clusters, log_file)
 		fout = open(os.path.join(Tracker["constants"]["masterdir"], "Tracker.json"), 'w')
 		json.dump(Tracker, fout)
 		fout.close()
-		log_file.add('{:^12} {:^8} {:^22} {:^8} {:^24} {:^8} '.format(' Images', Tracker["constants"]["total_stack"], 'accounted for images: ', NACC, 'unaccounted for images: ', NUACC))
-		log_file.add('The last cluster of the last generation contains unaccounted for images\n')
 	mpi_barrier(MPI_COMM_WORLD)
 	return
 
@@ -7139,7 +7130,6 @@ def main():
 			Tracker["current_generation"] +=1
 			igen +=1
 			work_dir     = os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%igen)
-			my_pids = os.path.join(work_dir, "indexes.txt")
 			if Blockdata["myid"] == Blockdata["main_node"]:
 				os.mkdir(work_dir)
 				freq_cutoff_dict = {}
@@ -7152,7 +7142,6 @@ def main():
 			keepchecking = bcast_number_to_all(keepchecking, Blockdata["main_node"], MPI_COMM_WORLD)
 			if keepchecking == 0: # new, do it
 				if Blockdata["myid"] == Blockdata["main_node"]:
-					write_text_file(particle_list, my_pids)
 					mark_sorting_state(work_dir, False, log_main)
 					log_main.add('================================================================================================================' )
 					log_main.add('                                    SORT3D IN-DEPTH generation %d'%igen)
@@ -7183,12 +7172,11 @@ def main():
 						log_main.add('SORT3D generation%d time: %d hours %d minutes'%(igen, time_of_generation_h, time_of_generation_m))
 						
 					work_dir = os.path.join( Tracker["constants"]["masterdir"], "generation_%03d"%igen)
+					my_pids = os.path.join(work_dir, 'indexes_next_generation.txt')
 					if Blockdata["myid"] == Blockdata["main_node"]:
 						mark_sorting_state(work_dir, True, log_main)
-						partitcle_list = copy.deepcopy(output_list[0][1])
-					else:
-						partitcle_list = 0
-					partitcle_list = wrap_mpi_bcast(partitcle_list, Blockdata["main_node"], MPI_COMM_WORLD)
+						write_text_file(output_list[0][1], my_pids)
+					mpi_barrier(MPI_COMM_WORLD)
 			else:
 				read_tracker_mpi(work_dir)
 				work_dir = os.path.join( Tracker["constants"]["masterdir"], "generation_%03d"%igen)
@@ -7400,13 +7388,10 @@ def main():
 		Tracker["current_generation"] = -1
 		igen  = -1
 		my_pids   = os.path.join(Tracker["constants"]["masterdir"], "indexes.txt")
-		if Blockdata["myid"] == Blockdata["main_node"]:
-			particle_list = read_text_file(my_pids)
 		while keepsorting == 1:
 			Tracker["current_generation"] +=1
 			igen +=1
 			work_dir  = os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%igen)
-			my_pids = os.path.join(work_dir, "indexes.txt")
 			if Blockdata["myid"] == Blockdata["main_node"]:
 				os.mkdir(work_dir)
 				freq_cutoff_dict = {}
@@ -7419,7 +7404,6 @@ def main():
 			keepchecking = bcast_number_to_all(keepchecking, Blockdata["main_node"], MPI_COMM_WORLD)
 			if keepchecking == 0: # new, do it
 				if Blockdata["myid"] == Blockdata["main_node"]:
-					write_text_file(particle_list, my_pids)
 					keepchecking = check_sorting_state(work_dir, keepchecking, log_main)
 					time_generation_start = time.time()
 					log_main.add('================================================================================================================')
@@ -7451,12 +7435,11 @@ def main():
 						log_main.add('SORT3D generation%d time: %d hours %d minutes'%(igen, time_of_generation_h, time_of_generation_m))
 						
 					work_dir = os.path.join( Tracker["constants"]["masterdir"], "generation_%03d"%igen)
+					my_pids = os.path.join(work_dir, 'indexes_next_generation.txt')
 					if Blockdata["myid"] == Blockdata["main_node"]:
 						mark_sorting_state(work_dir, True, log_main)
-						partitcle_list = copy.deepcopy(output_list[0][1])
-					else:
-						partitcle_list = 0
-					partitcle_list = wrap_mpi_bcast(partitcle_list, Blockdata["main_node"], MPI_COMM_WORLD)
+						write_text_file(output_list[0][1], my_pids)
+					mpi_barrier(MPI_COMM_WORLD)
 			else:
 				read_tracker_mpi(work_dir, log_main)
 				work_dir = os.path.join( Tracker["constants"]["masterdir"], "generation_%03d"%igen)
