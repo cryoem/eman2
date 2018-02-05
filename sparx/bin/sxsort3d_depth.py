@@ -6562,7 +6562,7 @@ def do_final_maps(number_of_groups, minimum_size, selected_iter, refinement_dir,
 	return
 #####==========-------------------------Functions for post processing
 
-def compute_final_map(log_file, work_dir):
+def compute_final_map(work_dir):
 	global Tracker, Blockdata
 	Tracker["constants"]["orgres"]			 = 0.0
 	Tracker["constants"]["refinement_delta"] = 0.0
@@ -6681,7 +6681,7 @@ def copy_results(log_file):
 				   "generation_%03d"%ig, "Cluster_%03d.txt"%ic))
 				cluster_file = "Cluster_%03d.txt"%nclusters
 				vol_file     = "vol_cluster%03d.hdf"%nclusters
-				msg = '{:^8}} {:^8} {:^24} {:^15} {:^20}'.fomrat(nclusters, len(cluster), ig,  cluster_file,  vol_file)
+				msg = '{:^8}} {:^8} {:^24} {:^15} {:^20}'.format(nclusters, len(cluster), ig,  cluster_file,  vol_file)
 				nclusters +=1
 				NACC +=len(cluster)
 				log_file.add(msg)
