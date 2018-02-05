@@ -45,7 +45,7 @@ def runCronJob() {
 }
 
 def resetBuildScripts() {
-    if(isContinuousBuild() || isRelease())
+    if(isContinuousBuild())
         sh 'cd ${HOME}/workspace/build-scripts-cron/ && git checkout -f master'
 }
 
@@ -80,7 +80,6 @@ pipeline {
     
     stage('build') {
       when {
-        not { expression { isRelease() } }
         not { expression { isContinuousBuild() } }
         expression { false }
       }
@@ -105,7 +104,6 @@ pipeline {
       when {
         anyOf {
           expression { isContinuousBuild() }
-          expression { isRelease() }
         }
       }
       
@@ -118,7 +116,6 @@ pipeline {
       when {
         anyOf {
           expression { isContinuousBuild() }
-          expression { isRelease() }
         }
         expression { SLAVE_OS == "linux" }
       }
@@ -132,7 +129,6 @@ pipeline {
       when {
         anyOf {
           expression { isContinuousBuild() }
-          expression { isRelease() }
         }
         expression { SLAVE_OS == "linux" }
       }
@@ -146,7 +142,6 @@ pipeline {
       when {
         anyOf {
           expression { isContinuousBuild() }
-          expression { isRelease() }
         }
         expression { SLAVE_OS == "mac" }
       }
