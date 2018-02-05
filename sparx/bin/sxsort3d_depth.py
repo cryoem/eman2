@@ -3764,14 +3764,6 @@ def do_boxes_two_way_comparison_new(nbox, input_box_parti1, input_box_parti2, de
 				clist[j].append(float((np.intersect1d(new_clusters1[newindeces[j][0]], new_clusters2[newindeces[j][1]])).size)\
 				  /float((np.union1d(new_clusters1[newindeces[j][0]], new_clusters2[newindeces[j][1]])).size)*100.)
 	t = table_stat(tlist)
-	for ii in xrange(len(clist)):
-		print ('XXXX', table_stat(clist[ii]))
-	'''
-	for l in xrange(len(clist)):
-		if len(clist[l])>0:
-			log_main.add('Group random reproducibility: %5.1f%%   %8d '%(table_stat(clist[l])[0], (plist1[l][1]-plist1[l][0])))
-	msg = '***********************************************************************************'
-	'''
 	#
 	msg = 'P0      '
 	msg1 ='Group ID'
@@ -6926,7 +6918,7 @@ def sorting_main_mpi(log_main):
 					log_main.add('SORT3D 3D sorting time: %d hours %d minutes'%(time_of_sorting_h, time_of_sorting_m))						
 					time_rec3d_start = time.time()
 
-				compute_final_map(log_main, work_dir)
+				compute_final_map(work_dir)
 				if Blockdata["myid"] == Blockdata["main_node"]:
 					time_of_rec3d_h,  time_of_rec3d_m = get_time(time_rec3d_start)
 					log_main.add('SORT3D 3D reconstruction time: %d hours %d minutes'%(time_of_sorting_h, time_of_sorting_m))
@@ -6952,7 +6944,7 @@ def sorting_main_mpi(log_main):
 	else: Tracker = 0
 	Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
 	dump_tracker( os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%igen))
-	compute_final_map(log_main, work_dir)
+	compute_final_map(work_dir)
 	copy_results(log_main)# all nodes function
 	return 
 
@@ -7221,7 +7213,7 @@ def main():
 						log_main.add('SORT3D 3D sorting time: %d hours %d minutes'%(time_of_sorting_h, time_of_sorting_m))						
 						time_rec3d_start = time.time()
 
-					compute_final_map(log_main, work_dir)
+					compute_final_map(work_dir)
 					if Blockdata["myid"] == Blockdata["main_node"]:
 						time_of_rec3d_h,  time_of_rec3d_m = get_time(time_rec3d_start)
 						log_main.add('SORT3D 3D reconstruction time: %d hours %d minutes'%(time_of_sorting_h, time_of_sorting_m))
@@ -7248,7 +7240,7 @@ def main():
 		else: Tracker = 0
 		Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
 		dump_tracker( os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%igen))
-		compute_final_map(log_main, work_dir)
+		compute_final_map(work_dir)
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			log_main.add('----------------------------------------------------------------------------------------------------------------' )
 			log_main.add('                                 SORT3D IN-DEPTH finished')
@@ -7483,7 +7475,7 @@ def main():
 						time_of_sorting_h,  time_of_sorting_m = get_time(time_sorting_start)
 						log_main.add('SORT3D 3D sorting time: %d hours %d minutes'%(time_of_sorting_h, time_of_sorting_m))						
 						time_rec3d_start = time.time()
-					compute_final_map(log_main, work_dir)
+					compute_final_map(work_dir)
 					if Blockdata["myid"] == Blockdata["main_node"]:
 						time_of_rec3d_h,  time_of_rec3d_m = get_time(time_rec3d_start)
 						log_main.add('SORT3D 3D reconstruction time: %d hours %d minutes'%(time_of_sorting_h, time_of_sorting_m))					
@@ -7508,7 +7500,7 @@ def main():
 		else: Tracker = 0
 		Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
 		dump_tracker( os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%igen))
-		compute_final_map(log_main, work_dir)
+		compute_final_map(work_dir)
 		copy_results(log_main)# all nodes function
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			log_main.add('----------------------------------------------------------------------------------------------------------------' )
