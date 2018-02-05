@@ -53,7 +53,7 @@ def runCronJob() {
 }
 
 def setUploadFlag() {
-    if(getJobType() == "cron") {
+    if(isContinuousBuild()) {
         return '0'
     } else {
         return '1'
@@ -61,7 +61,7 @@ def setUploadFlag() {
 }
 
 def resetBuildScripts() {
-    if(JOB_TYPE == "cron" || isRelease())
+    if(isContinuousBuild() || isRelease())
         sh 'cd ${HOME}/workspace/build-scripts-cron/ && git checkout -f master'
 }
 
@@ -125,7 +125,7 @@ pipeline {
     stage('build-scripts-checkout') {
       when {
         anyOf {
-          expression { JOB_TYPE == "cron" }
+          expression { isContinuousBuild() }
           expression { isRelease() }
         }
       }
