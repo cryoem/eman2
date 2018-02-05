@@ -38,6 +38,10 @@ def isContinuousBuild() {
     return (GIT_BRANCH ==~ /.*\/master/) && (CI_BUILD == "1")
 }
 
+def isRunCurrentStage(os_name) {
+    return isContinuousBuild() && SLAVE_OS == os_name
+}
+
 def runCronJob() {
     sh "bash ${HOME}/workspace/build-scripts-cron/cronjob.sh $STAGE_NAME $GIT_BRANCH_SHORT"
     if(isContinuousBuild())
@@ -112,8 +116,7 @@ pipeline {
     
     stage('centos6') {
       when {
-        expression { isContinuousBuild() }
-        expression { SLAVE_OS == "linux" }
+        expression { isRunCurrentStage('linux') }
       }
       
       steps {
@@ -123,8 +126,7 @@ pipeline {
     
     stage('centos7') {
       when {
-        expression { isContinuousBuild() }
-        expression { SLAVE_OS == "linux" }
+        expression { isRunCurrentStage('linux') }
       }
       
       steps {
@@ -134,8 +136,7 @@ pipeline {
     
     stage('mac') {
       when {
-        expression { isContinuousBuild() }
-        expression { SLAVE_OS == "mac" }
+        expression { isRunCurrentStage('mac') }
       }
       environment {
         EMAN_TEST_SKIP=1
