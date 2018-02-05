@@ -6673,7 +6673,7 @@ def copy_results(log_file):
 				   "generation_%03d"%ig, "Cluster_%03d.txt"%ic))
 				cluster_file = "Cluster_%03d.txt"%nclusters
 				vol_file     = "vol_cluster%03d.hdf"%nclusters
-				msg = '{:^8}} {:^8} {:^24} {:^15} {:^20}'.format(nclusters, len(cluster), ig,  cluster_file,  vol_file)
+				msg = '{:^8} {:^8} {:^24} {:^15} {:^20} '.format(nclusters, len(cluster), ig,  cluster_file,  vol_file)
 				nclusters +=1
 				NACC +=len(cluster)
 				log_file.add(msg)
@@ -7431,7 +7431,7 @@ def main():
 			else: read_tracker_mpi(Tracker["constants"]["masterdir"]) # a simple continuation, continue from the interrupted box
 		else: check_restart_from_given_depth_order(options.depth_order, options.restart_from_generation, \
 				 options.restart_from_depth_order, options.restart_from_nbox, log_main) # need a check !!!
-	
+		'''
 		Tracker["generation"]         = {}
 		Tracker["current_generation"] = 0
 		keepsorting  = 1
@@ -7502,6 +7502,8 @@ def main():
 		dump_tracker( os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%igen))
 		compute_final_map(work_dir)
 		copy_results(log_main)# all nodes function
+		'''
+		sorting_main_mpi(log_main)
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			log_main.add('----------------------------------------------------------------------------------------------------------------' )
 			log_main.add('                                 SORT3D IN-DEPTH finished')
