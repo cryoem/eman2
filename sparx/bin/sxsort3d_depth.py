@@ -6872,7 +6872,7 @@ def do_random_groups_simulation_mpi(ptp1, ptp2):
 	
 	return gave, gvar
 
-def sorting_main_mpi(log_main):
+def sorting_main_mpi(log_main, depth_order, not_include_unaccounted, time_sorting_start):
 	global Tracker, Blockdata
 	Tracker["generation"]         = {}
 	Tracker["current_generation"] = 0
@@ -6904,11 +6904,11 @@ def sorting_main_mpi(log_main):
 				log_main.add('----------------------------------------------------------------------------------------------------------------')
 			params     = os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt")
 			previous_params = Tracker["previous_parstack"]
-			output_list, bad_clustering  = depth_clustering(work_dir, options.depth_order, my_pids, params, previous_params, log_main)
+			output_list, bad_clustering  = depth_clustering(work_dir, depth_order, my_pids, params, previous_params, log_main)
 			keepsorting     = check_sorting(len(output_list[0][1]), keepsorting, log_main)
 			if keepsorting == 1:# do final box refilling
 				if Blockdata["myid"] == Blockdata["main_node"]:
-					clusters = output_clusters(work_dir, output_list[0][0], output_list[0][1], options.not_include_unaccounted, log_main)
+					clusters = output_clusters(work_dir, output_list[0][0], output_list[0][1], not_include_unaccounted, log_main)
 					Tracker["generation"][igen] = len(clusters)
 				else: Tracker = 0
 				Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
@@ -6939,11 +6939,11 @@ def sorting_main_mpi(log_main):
 	time_final_box_start = time.time()	
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		clusters = output_clusters(os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%igen), \
-			output_list[0][0], output_list[0][1], options.not_include_unaccounted, log_main)
+			output_list[0][0], output_list[0][1], not_include_unaccounted, log_main)
 		Tracker["generation"][igen] = len(clusters)
 	else: Tracker = 0
 	Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
-	dump_tracker( os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%igen))
+	dump_tracker(os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%igen))
 	compute_final_map(work_dir)
 	copy_results(log_main)# all nodes function
 	return 
@@ -7503,7 +7503,7 @@ def main():
 		compute_final_map(work_dir)
 		copy_results(log_main)# all nodes function
 		'''
-		sorting_main_mpi(log_main)
+		sorting_main_mpi(log_main, options.depth_order, options.not_include_unaccounted, time_sorting_start))
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			log_main.add('----------------------------------------------------------------------------------------------------------------' )
 			log_main.add('                                 SORT3D IN-DEPTH finished')
