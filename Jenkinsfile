@@ -105,6 +105,7 @@ pipeline {
         not { expression { JOB_TYPE == "cron" } }
         not { expression { isRelease() } }
         not { expression { isContinuousBuild() } }
+        expression { false }
       }
       
       parallel {
