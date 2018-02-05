@@ -6663,7 +6663,7 @@ def copy_results(log_file):
 		log_file.add('                     Final results saved in %s'%Tracker["constants"]["masterdir"])
 		log_file.add('----------------------------------------------------------------------------------------------------------------' )
 		nclusters = 0
-		log_file.add( '{:^8} {:^8} {:^24} {:^15} {:^20} '.format('Group ID', '  size  ','determined in generation', ' selection file',  \
+		log_file.add( '{:^8s} {:^8s} {:^24s} {:^15s} {:^20s} '.format('Group ID', '  size  ','determined in generation', ' selection file',  \
 		  '       map file     '))
 		clusters = []
 		NACC     = 0           
@@ -6679,7 +6679,9 @@ def copy_results(log_file):
 				   os.path.join(Tracker["constants"]["masterdir"], "vol_cluster%03d.hdf"%nclusters))
 				cluster = read_text_file(os.path.join(Tracker["constants"]["masterdir"], \
 				   "generation_%03d"%ig, "Cluster_%03d.txt"%ic))
-				msg = '{:^8d}} {:^8d} {:^24d} {:^15} {:^20}'.fomrat(nclusters, len(cluster), ig, "Cluster_%03d.txt"%nclusters,  "vol_cluster%03d.hdf"%nclusters)
+				cluster_file = "Cluster_%03d.txt"%nclusters
+				vol_file     = "vol_cluster%03d.hdf"%nclusters
+				msg = '{:^8d}} {:^8d} {:^24d} {:^15} {:^20}'.fomrat(nclusters, len(cluster), ig,  cluster_file,  cluster_file)
 				nclusters +=1
 				NACC +=len(cluster)
 				log_file.add(msg)
