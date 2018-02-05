@@ -28,14 +28,6 @@ def notifyEmail() {
                  attachLog: true
                  )
     }
-    
-    if(JOB_TYPE == "cron") {
-        emailext(to: '$DEFAULT_RECIPIENTS',
-                 subject: '[JenkinsCI/$PROJECT_NAME/cron] ' + "($GIT_BRANCH_SHORT - ${GIT_COMMIT_SHORT})" + ' #$BUILD_NUMBER - $BUILD_STATUS!',
-                 body: '''${SCRIPT, template="groovy-text.template"}''',
-                 attachLog: true
-                 )
-    }
 }
 
 def isRelease() {
@@ -92,7 +84,6 @@ pipeline {
     
     stage('build') {
       when {
-        not { expression { JOB_TYPE == "cron" } }
         not { expression { isRelease() } }
         not { expression { isContinuousBuild() } }
         expression { false }
