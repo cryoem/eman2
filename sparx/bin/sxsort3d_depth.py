@@ -303,13 +303,14 @@ def depth_clustering(work_dir, depth_order, initial_id_file, params, previous_pa
 				bad_clustering   = 0
 				Tracker          = 0
 				stop_generation  = 0
+				stat_list        = 0
 			partition_per_box_per_layer_list = wrap_mpi_bcast(partition_per_box_per_layer_list, Blockdata["main_node"], MPI_COMM_WORLD)
 			bad_clustering = bcast_number_to_all(bad_clustering, Blockdata["main_node"], MPI_COMM_WORLD)
 			stop_generation = bcast_number_to_all(stop_generation, Blockdata["main_node"], MPI_COMM_WORLD)
 			stat_list = wrap_mpi_bcast(stat_list, Blockdata["main_node"], MPI_COMM_WORLD)
 			Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
 			if(Blockdata["myid"] == Blockdata["main_node"]): mark_sorting_state(depth_dir, True, log_main)
-			if( bad_clustering == 1): break
+			if( bad_clustering == 1):   break
 			if( stop_generation == 1 ): break ### only one cluster survives
 		else:
 			if(Blockdata["myid"] == Blockdata["main_node"]):
