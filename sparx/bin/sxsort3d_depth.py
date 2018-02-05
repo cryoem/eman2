@@ -6573,9 +6573,7 @@ def compute_final_map(log_file, work_dir):
 	number_of_groups = 0
 	
 	if(Blockdata["myid"] == Blockdata["main_node"]):
-		res_msg = ""
 		final_accounted_ptl = 0
-		#log_file.add('Group       size')
 		fout = open(os.path.join(work_dir, "Tracker.json"),'w')
 		json.dump(Tracker, fout)
 		fout.close()
@@ -6583,31 +6581,18 @@ def compute_final_map(log_file, work_dir):
 		while os.path.exists(os.path.join(work_dir, "Cluster_%03d.txt"%number_of_groups)):
 			class_in = read_text_file(os.path.join(work_dir, "Cluster_%03d.txt"%number_of_groups))
 			minimum_size = min(len(class_in), minimum_size)
-			#msg = "%10d    %10d   \n"%(number_of_groups, len(class_in))
-			#log_file.add(msg)
-			#res_msg +=msg
 			number_of_groups += 1
 			final_accounted_ptl +=len(class_in)
 			clusters.append(class_in)
 			del class_in
-		#msg = "Total number of images: %d;  number of groups: %d\n"%(final_accounted_ptl, number_of_groups)
-		#res_msg +=msg
-		#msg = "The last group contains unaccounted for images of this generation\n"
-		#res_msg +=msg
-		#fout = open(os.path.join(work_dir, "generation_clusters_summary.txt"),"w")
-		#fout.writelines(res_msg)
-		#fout.close()
-		#log_file.add(res_msg)
 		Tracker["total_stack"]      = final_accounted_ptl
 		Tracker["number_of_groups"] = number_of_groups
 		Tracker["nxinit"]           = Tracker["nxinit_refinement"]
 	else: Tracker = 0
-
 	number_of_groups = bcast_number_to_all(number_of_groups, Blockdata["main_node"], MPI_COMM_WORLD)
 	Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
 	if( number_of_groups == 0 ): ERROR("No clusters  found, the program terminates.", "do_final_maps", 1, Blockdata["myid"])
 	compute_noise( Tracker["nxinit"])
-	
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		alist, partition = merge_classes_into_partition_list(clusters)
 		write_text_row(partition, os.path.join(work_dir, "generation_partition.txt"))
@@ -6615,7 +6600,6 @@ def compute_final_map(log_file, work_dir):
 	params          = os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt")
 	previous_params = Tracker["previous_parstack"]
 	original_data, norm_per_particle  = read_data_for_sorting(parti_file, params, previous_params)
-	
 	if Tracker["nosmearing"]:
 		parameterstructure  = None
 		paramstructure_dict = None
@@ -6624,12 +6608,10 @@ def compute_final_map(log_file, work_dir):
 		paramstructure_dict = Tracker["paramstructure_dict"]
 		paramstructure_dir  = Tracker["paramstructure_dir"]
 		parameterstructure  = read_paramstructure_for_sorting(parti_file, paramstructure_dict, paramstructure_dir)
-		
 	mpi_barrier(MPI_COMM_WORLD)
 	Tracker["directory"]    = work_dir
 	compute_noise(Tracker["nxinit"])
 	cdata, rdata, fdata = downsize_data_for_sorting(original_data, preshift = True, npad = 1, norms = norm_per_particle)# pay attentions to shifts!
-	
 	mpi_barrier(MPI_COMM_WORLD)
 	srdata = precalculate_shifted_data_for_recons3D(rdata, parameterstructure, Tracker["refang"], Tracker["rshifts"], \
 	  Tracker["delta"], Tracker["avgnorm"], Tracker["nxinit"], Tracker["constants"]["nnxo"], Tracker["nosmearing"], \
@@ -6690,18 +6672,16 @@ def copy_results(log_file):
 			value = element[1]
 			for ic in xrange(value):
 				cluster_file = os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%ig, "Cluster_%03d.txt"%ic)
-				try:
-					copyfile(cluster_file, os.path.join(Tracker["constants"]["masterdir"], "Cluster_%03d.txt"%nclusters))
-					clusters.append(read_text_file(cluster_file))
-					copyfile(os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%ig, \
-					 "vol_grp%03d_iter000.hdf"%ic), \
-					   os.path.join(Tracker["constants"]["masterdir"], "vol_cluster%03d.hdf"%nclusters))
-					cluster = read_text_file(os.path.join(Tracker["constants"]["masterdir"], \
-					   "generation_%03d"%ig, "Cluster_%03d.txt"%ic))
-					msg = '{:^8}} {:^8} {:^24} {:^15} {:^20}'.fomrat(nclusters, len(cluster), ig, "Cluster_%03d.txt"%nclusters,  "vol_cluster%03d.hdf"%nclusters)
-					nclusters +=1
-					NACC +=len(cluster)
-				except: msg ="Group %s and respective volume are not found "%cluster_file
+				copyfile(cluster_file, os.path.join(Tracker["constants"]["masterdir"], "Cluster_%03d.txt"%nclusters))
+				clusters.append(read_text_file(cluster_file))
+				copyfile(os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%ig, \
+				 "vol_grp%03d_iter000.hdf"%ic), \
+				   os.path.join(Tracker["constants"]["masterdir"], "vol_cluster%03d.hdf"%nclusters))
+				cluster = read_text_file(os.path.join(Tracker["constants"]["masterdir"], \
+				   "generation_%03d"%ig, "Cluster_%03d.txt"%ic))
+				msg = '{:^8d}} {:^8d} {:^24d} {:^15} {:^20}'.fomrat(nclusters, len(cluster), ig, "Cluster_%03d.txt"%nclusters,  "vol_cluster%03d.hdf"%nclusters)
+				nclusters +=1
+				NACC +=len(cluster)
 				log_file.add(msg)
 		Unaccounted_file = os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%ig, "Unaccounted.txt")
 		copyfile(Unaccounted_file, os.path.join(Tracker["constants"]["masterdir"], "Unaccounted.txt"))
@@ -6895,9 +6875,86 @@ def do_random_groups_simulation_mpi(ptp1, ptp2):
 	else:
 		gave = 0
 		gvar = 0
+	
 	return gave, gvar
 
-#                     End of various utilities	
+def sorting_main_mpi(log_main):
+	global Tracker, Blockdata
+	Tracker["generation"]         = {}
+	Tracker["current_generation"] = 0
+	keepsorting  = 1
+	keepchecking = 1
+	Tracker["current_generation"] = -1
+	igen      = -1
+	my_pids   = os.path.join(Tracker["constants"]["masterdir"], "indexes.txt")
+	while keepsorting == 1:
+		Tracker["current_generation"] +=1
+		igen +=1
+		work_dir  = os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%igen)
+		if Blockdata["myid"] == Blockdata["main_node"]:
+			os.mkdir(work_dir)
+			freq_cutoff_dict = {}
+			fout = open(os.path.join(work_dir, "freq_cutoff.json"),'w')
+			json.dump(freq_cutoff_dict, fout)
+			fout.close()
+			keepchecking = check_sorting_state(work_dir, keepchecking, log_main)
+			time_generation_start = time.time()	
+		else: keepchecking = 0
+		keepchecking = bcast_number_to_all(keepchecking, Blockdata["main_node"], MPI_COMM_WORLD)
+		if keepchecking == 0: # new, do it
+			if Blockdata["myid"] == Blockdata["main_node"]:
+				keepchecking = check_sorting_state(work_dir, keepchecking, log_main)
+				time_generation_start = time.time()
+				log_main.add('================================================================================================================')
+				log_main.add('                                    SORT3D IN-DEPTH   generation %d'%igen)
+				log_main.add('----------------------------------------------------------------------------------------------------------------')
+			params     = os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt")
+			previous_params = Tracker["previous_parstack"]
+			output_list, bad_clustering  = depth_clustering(work_dir, options.depth_order, my_pids, params, previous_params, log_main)
+			keepsorting     = check_sorting(len(output_list[0][1]), keepsorting, log_main)
+			if keepsorting == 1:# do final box refilling
+				if Blockdata["myid"] == Blockdata["main_node"]:
+					clusters = output_clusters(work_dir, output_list[0][0], output_list[0][1], options.not_include_unaccounted, log_main)
+					Tracker["generation"][igen] = len(clusters)
+				else: Tracker = 0
+				Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
+				dump_tracker(work_dir)
+				if Blockdata["myid"] == Blockdata["main_node"]:
+					time_of_sorting_h,  time_of_sorting_m = get_time(time_sorting_start)
+					log_main.add('SORT3D 3D sorting time: %d hours %d minutes'%(time_of_sorting_h, time_of_sorting_m))						
+					time_rec3d_start = time.time()
+
+				compute_final_map(log_main, work_dir)
+				if Blockdata["myid"] == Blockdata["main_node"]:
+					time_of_rec3d_h,  time_of_rec3d_m = get_time(time_rec3d_start)
+					log_main.add('SORT3D 3D reconstruction time: %d hours %d minutes'%(time_of_sorting_h, time_of_sorting_m))
+				
+					mark_sorting_state(work_dir, True, log_main)
+					time_of_generation_h,  time_of_generation_m = get_time(time_generation_start)
+					log_main.add('SORT3D generation%d time: %d hours %d minutes'%(igen, time_of_generation_h, time_of_generation_m))
+				
+				work_dir = os.path.join( Tracker["constants"]["masterdir"], "generation_%03d"%igen)
+				my_pids = os.path.join(work_dir, 'indexes_next_generation.txt')
+				if Blockdata["myid"] == Blockdata["main_node"]:
+					mark_sorting_state(work_dir, True, log_main)
+					write_text_file(output_list[0][1], my_pids)
+				mpi_barrier(MPI_COMM_WORLD)
+		else:
+			read_tracker_mpi(work_dir, log_main)
+			work_dir = os.path.join( Tracker["constants"]["masterdir"], "generation_%03d"%igen)
+	time_final_box_start = time.time()	
+	if Blockdata["myid"] == Blockdata["main_node"]:
+		clusters = output_clusters(os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%igen), \
+			output_list[0][0], output_list[0][1], options.not_include_unaccounted, log_main)
+		Tracker["generation"][igen] = len(clusters)
+	else: Tracker = 0
+	Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
+	dump_tracker( os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%igen))
+	compute_final_map(log_main, work_dir)
+	copy_results(log_main)# all nodes function
+	return 
+
+#  End of various utilities	
 def main():
 	from optparse   import OptionParser
 	from global_def import SPARXVERSION
@@ -7424,12 +7481,10 @@ def main():
 						time_of_sorting_h,  time_of_sorting_m = get_time(time_sorting_start)
 						log_main.add('SORT3D 3D sorting time: %d hours %d minutes'%(time_of_sorting_h, time_of_sorting_m))						
 						time_rec3d_start = time.time()
-
 					compute_final_map(log_main, work_dir)
 					if Blockdata["myid"] == Blockdata["main_node"]:
 						time_of_rec3d_h,  time_of_rec3d_m = get_time(time_rec3d_start)
-						log_main.add('SORT3D 3D reconstruction time: %d hours %d minutes'%(time_of_sorting_h, time_of_sorting_m))
-						
+						log_main.add('SORT3D 3D reconstruction time: %d hours %d minutes'%(time_of_sorting_h, time_of_sorting_m))					
 						mark_sorting_state(work_dir, True, log_main)
 						time_of_generation_h,  time_of_generation_m = get_time(time_generation_start)
 						log_main.add('SORT3D generation%d time: %d hours %d minutes'%(igen, time_of_generation_h, time_of_generation_m))
