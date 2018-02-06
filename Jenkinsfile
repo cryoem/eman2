@@ -39,7 +39,7 @@ def isContinuousBuild() {
 }
 
 def isRunCurrentStage(os_name) {
-    return isContinuousBuild() && (SLAVE_OS == os_name && (CI_BUILD == "1" || (os_name == "win" && CI_BUILD_WIN == "1")))
+    return isContinuousBuild() && (SLAVE_OS == os_name && (CI_BUILD == "1" || (os_name == "win" && CI_BUILD_WIN == "1") || (os_name == "linux" && CI_BUILD_LINUX == "1") || (os_name == "mac" && CI_BUILD_MAC == "1")))
 }
 
 def runCronJob() {
@@ -87,6 +87,8 @@ pipeline {
     BUILD_SCRIPTS_BRANCH='master'
     CI_BUILD = sh(script: "! git log -1 | grep '.*\\[ci build\\].*'", returnStatus: true)
     CI_BUILD_WIN = sh(script: "! git log -1 | grep '.*\\[ci build win\\].*'", returnStatus: true)
+    CI_BUILD_LINUX = sh(script: "! git log -1 | grep '.*\\[ci build linux\\].*'", returnStatus: true)
+    CI_BUILD_MAC = sh(script: "! git log -1 | grep '.*\\[ci build mac\\].*'", returnStatus: true)
   }
   
   stages {
