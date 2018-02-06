@@ -1286,7 +1286,6 @@ def sort3d_init(to_be_decided, log_main):
 		ERROR("either too many cpus are used, or number of images is too small", "sort3d_init", 1, Blockdata["myid"])
 	Tracker["img_per_grp"]             = Tracker["constants"]["img_per_grp"]
 	Tracker["number_of_groups"]        = Tracker["total_stack"]//Tracker["constants"]["img_per_grp"]
-	Tracker["rnd_assign_group_size"]   = Tracker["constants"]["img_per_grp"]//Tracker["number_of_groups"]
 	Tracker["minimum_grp_size"] = Tracker["constants"]["minimum_grp_size"]
 	if Tracker["constants"]["minimum_grp_size"]>Tracker["img_per_grp"]:
 		ERROR("img_per_grp is less than minimum_grp_size", "sort3d_init", 1, Blockdata["myid"])
@@ -4036,7 +4035,7 @@ def do_withinbox_two_way_comparison(partition_dir, nbox, nrun, niter):
 	score_list = [ ]
 	nclass     = 0
 	log_list.append('               Post-matching results.')
-	log_list.append('{:^12} {:^10} {:^17} {:^8} {:^15}'.format('    Group', '   size', 'min random size', ' status ',   'reproducibility'))
+	log_list.append('{:^12} {:>10} {:>17} {:>8} {:>15}'.format('    Group', '   size', 'min random size', ' status ',   'reproducibility'))
 	current_MGR = get_MGR_from_two_way_comparison(newindeces, ptp1, ptp2, total_data)
 	stable_clusters   = []
 	selected_clusters = []
@@ -4054,10 +4053,10 @@ def do_withinbox_two_way_comparison(partition_dir, nbox, nrun, niter):
 			minimum_group_size = min(minimum_group_size, len(any))
 			maximum_group_size = max(maximum_group_size, len(any))
 			nclass +=1
-			log_list.append('{:^12d} {:^10d} {:^17d} {:^8} {:^15.1f}'.format(index_of_any, len(any), current_MGR[index_of_any],'accepted', score3))
+			log_list.append('{:^12d} {:>10d} {:>17d} {:>8} {:>15.1f}'.format(index_of_any, len(any), current_MGR[index_of_any],'accepted', score3))
 			selected_clusters.append(any)
 		else:
-			log_list.append('{:^12d} {:^10d} {:^17d} {:^8}  {:^15.1f}'.format(index_of_any, len(any), current_MGR[index_of_any], 'rejected', score3))
+			log_list.append('{:^12d} {:>10d} {:>17d} {:>8}  {:>15.1f}'.format(index_of_any, len(any), current_MGR[index_of_any], 'rejected', score3))
 			
 	accounted_list, new_index = merge_classes_into_partition_list(selected_clusters)
 	a = set(full_list)
@@ -4577,7 +4576,7 @@ def steptwo_mpi(tvol, tweight, treg, cfsc = None, regularized = True, color = 0)
 	#  tvol is overwritten, meaning it is also an output
 	n_iter =10
 	ifi = mpi_iterefa( vol_data.__array_interface__['data'][0] ,  we_data.__array_interface__['data'][0] , nx, ny, nz, maxr2, \
-			Tracker["constants"]["nnxo"], Blockdata["myid_on_node"], color, Blockdata["no_of_processes_per_group"],  Blockdata["shared_comm"])###, n_iter)
+			Tracker["constants"]["nnxo"], Blockdata["myid_on_node"], color, Blockdata["no_of_processes_per_group"],  Blockdata["shared_comm"], n_iter)
 	if( Blockdata["myid_on_node"] == 0 ):
 		#  Either pad or window in F space to 2*nnxo
 		nx = tvol.get_ysize()
@@ -4646,7 +4645,7 @@ def steptwo_mpi_filter(tvol, tweight, treg, cfsc = None, cutoff_freq = 0.45, aa 
 	#  tvol is overwritten, meaning it is also an output
 	n_iter =10
 	ifi = mpi_iterefa( vol_data.__array_interface__['data'][0] ,  we_data.__array_interface__['data'][0] , nx, ny, nz, maxr2, \
-			Tracker["constants"]["nnxo"], Blockdata["myid_on_node"], color, Blockdata["no_of_processes_per_group"],  Blockdata["shared_comm"])###, n_iter)	
+			Tracker["constants"]["nnxo"], Blockdata["myid_on_node"], color, Blockdata["no_of_processes_per_group"],  Blockdata["shared_comm"], n_iter)	
 	if( Blockdata["myid_on_node"] == 0 ):
 		from filter       import  filt_tanl
 		#  Either pad or window in F space to 2*nnxo
@@ -6788,8 +6787,8 @@ def do_random_groups_simulation_mpi(ptp1, ptp2):
 	# return two lists: group avgs and group stds. The last one of two lists are the total avg and std.
 	if (len(ptp1)>=50) or (len(ptp2)>=50):
 		if(Blockdata["myid"] == Blockdata["main_node"]):
-			print('Warning: the number of groups is too large for simuliaton')	
-	Nloop = 200
+			print('Warning: the number of groups is too large for simuliaton')
+	Nloop = max(200//Blockdata["nproc"], 1)
 	NT    = 1000
 	a     = []
 	b     = []
