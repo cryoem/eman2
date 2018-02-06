@@ -6659,7 +6659,7 @@ def copy_results(log_file, all_gen_stat_list):
 		log_file.add('                     Final results saved in %s'%Tracker["constants"]["masterdir"])
 		log_file.add('----------------------------------------------------------------------------------------------------------------' )
 		nclusters = 0
-		log_file.add( '{:^8} {:^8} {:^24}  {:^15} {:^5}  {:^22} {:^15} {:^20} '.format('Group ID', '  size  ','determined in generation', \
+		log_file.add( '{:^8} {:^8} {:^24}  {:^15} {:^22} {:^5} {:^15} {:^20} '.format('Group ID', '  size  ','determined in generation', \
 		      'reproducibility', 'random reproducibility', ' std ', ' selection file',  \
 		          '       map file     '))
 		clusters = []
