@@ -28,40 +28,28 @@ def notifyEmail() {
                  attachLog: true
                  )
     }
-    
-    if(JOB_TYPE == "cron") {
-        emailext(to: '$DEFAULT_RECIPIENTS',
-                 subject: '[JenkinsCI/$PROJECT_NAME/cron] ' + "($GIT_BRANCH_SHORT - ${GIT_COMMIT_SHORT})" + ' #$BUILD_NUMBER - $BUILD_STATUS!',
-                 body: '''${SCRIPT, template="groovy-text.template"}''',
-                 attachLog: true
-                 )
-    }
 }
 
 def isRelease() {
-    return (GIT_BRANCH ==~ /.*\/release.*/) && (JOB_TYPE == "push")
+    return GIT_BRANCH ==~ /.*\/release.*/
 }
 
 def isContinuousBuild() {
     return (GIT_BRANCH ==~ /.*\/master/) && (CI_BUILD == "1")
 }
 
+def isRunCurrentStage(os_name) {
+    return isContinuousBuild() && SLAVE_OS == os_name
+}
+
 def runCronJob() {
     sh "bash ${HOME}/workspace/build-scripts-cron/cronjob.sh $STAGE_NAME $GIT_BRANCH_SHORT"
     if(isContinuousBuild())
-      sh "rsync -avzh --stats ${INSTALLERS_DIR}/eman2.${STAGE_NAME}.unstable.sh ${DEPLOY_DEST}"
-}
-
-def setUploadFlag() {
-    if(isContinuousBuild()) {
-        return '0'
-    } else {
-        return '1'
-    }
+      sh "rsync -avzh --stats ${INSTALLERS_DIR}/eman2.${SLAVE_OS}.sh ${DEPLOY_DEST}/eman2.${STAGE_NAME}.unstable.sh"
 }
 
 def resetBuildScripts() {
-    if(isContinuousBuild() || isRelease())
+    if(isContinuousBuild())
         sh 'cd ${HOME}/workspace/build-scripts-cron/ && git checkout -f master'
 }
 
@@ -70,10 +58,9 @@ pipeline {
     node { label 'jenkins-slave-1' }
   }
   
-  options { disableConcurrentBuilds() }
-  
-  triggers {
-    cron('0 3 * * *')
+  options {
+    disableConcurrentBuilds()
+    timestamps()
   }
   
   environment {
@@ -90,10 +77,6 @@ pipeline {
   stages {
     // Stages triggered by GitHub pushes
     stage('notify-pending') {
-      when {
-        expression { JOB_TYPE == "push" }
-      }
-      
       steps {
         notifyGitHub('PENDING')
       }
@@ -101,8 +84,6 @@ pipeline {
     
     stage('build') {
       when {
-        not { expression { JOB_TYPE == "cron" } }
-        not { expression { isRelease() } }
         not { expression { isContinuousBuild() } }
         expression { false }
       }
@@ -125,10 +106,7 @@ pipeline {
     // Stages triggered by cron or by a release branch
     stage('build-scripts-checkout') {
       when {
-        anyOf {
-          expression { isContinuousBuild() }
-          expression { isRelease() }
-        }
+        expression { isContinuousBuild() }
       }
       
       steps {
@@ -138,11 +116,7 @@ pipeline {
     
     stage('centos6') {
       when {
-        anyOf {
-          expression { isContinuousBuild() }
-          expression { isRelease() }
-        }
-        expression { SLAVE_OS == "linux" }
+        expression { isRunCurrentStage('linux') }
       }
       
       steps {
@@ -152,11 +126,7 @@ pipeline {
     
     stage('centos7') {
       when {
-        anyOf {
-          expression { isContinuousBuild() }
-          expression { isRelease() }
-        }
-        expression { SLAVE_OS == "linux" }
+        expression { isRunCurrentStage('linux') }
       }
       
       steps {
@@ -166,11 +136,7 @@ pipeline {
     
     stage('mac') {
       when {
-        anyOf {
-          expression { isContinuousBuild() }
-          expression { isRelease() }
-        }
-        expression { SLAVE_OS == "mac" }
+        expression { isRunCurrentStage('mac') }
       }
       environment {
         EMAN_TEST_SKIP=1
