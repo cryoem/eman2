@@ -7124,8 +7124,6 @@ def main():
 				from mpi import mpi_finalize
 				mpi_finalize()
 				exit()
-		else:
-			read_tracker_mpi(Tracker["constants"]["masterdir"]) # a simple continuation, continue from the interrupted box
 		else: check_restart_from_given_depth_order(options.depth_order, options.restart_from_generation, \
 				 options.restart_from_depth_order, options.restart_from_nbox, log_main) # need a check !!!
 				 
@@ -7301,7 +7299,6 @@ def main():
 				from mpi import mpi_finalize
 				mpi_finalize()
 				exit()
-			else: read_tracker_mpi(Tracker["constants"]["masterdir"]) # a simple continuation, continue from the interrupted box
 		else: check_restart_from_given_depth_order(options.depth_order, options.restart_from_generation, \
 				 options.restart_from_depth_order, options.restart_from_nbox, log_main) # need a check !!!
 		sorting_main_mpi(log_main, options.depth_order, options.not_include_unaccounted)
