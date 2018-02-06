@@ -537,24 +537,14 @@ def do_analysis_on_identified_clusters(clusters, log_main):
 	if norms:          tmpres1, tmpres2 = do_one_way_anova_scipy(clusters, norms, name_of_variable="norm", log_main = log_main)
 	
 def check_sorting_state(current_dir, keepchecking, log_file):
-	# single processor job
 	import json
 	try:
 		fout = open(os.path.join(current_dir, "state.json"),'r')
 		current_state = convert_json_fromunicode(json.load(fout))
 		fout.close()
-		if current_state["done"]: 
-			keepchecking = 1
-			#msg = "directory %s is done already"%current_dir
-			#log_file.add(msg)
-		else:  
-			keepchecking = 0
-			#msg = "directory %s is not finished yet"%current_dir
-			#log_file.add(msg)
-	except:
-		keepchecking = 0
-		#msg = "directory %s is not finished yet"%current_dir
-		#log_file.add(msg)
+		if current_state["done"]:keepchecking = 1
+		else: keepchecking = 0
+	except:   keepchecking = 0
 	return keepchecking
 	
 def read_tracker_mpi(current_dir):
@@ -6835,10 +6825,10 @@ def do_random_groups_simulation_mpi(ptp1, ptp2):
 def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 	global Tracker, Blockdata
 	time_sorting_start = time.time()
-	Tracker["generation"]         = {}
-	Tracker["current_generation"] = 0
-	keepsorting                   = 1
-	keepchecking                  = 1
+	Tracker["generation"]         =  {}
+	Tracker["current_generation"] =  0
+	keepsorting                   =  1
+	keepchecking                  =  1
 	Tracker["current_generation"] = -1
 	igen              = -1
 	my_pids           = os.path.join(Tracker["constants"]["masterdir"], "indexes.txt")
@@ -6893,7 +6883,7 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 						write_text_file(output_list[0][1], my_pids)
 						write_text_row(stat_list, os.path.join(work_dir, 'gen_rep.txt'))
 					mpi_barrier(MPI_COMM_WORLD)
-		else:
+		else: # restart run
 			work_dir = os.path.join( Tracker["constants"]["masterdir"], "generation_%03d"%igen)
 			read_tracker_mpi(work_dir, log_main)
 			my_pids  = os.path.join( work_dir, 'indexes_next_generation.txt')
@@ -6902,6 +6892,7 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 			else: stat_list = 0
 			stat_list = wrap_mpi_bcast(stat_list, Blockdata["main_node"], MPI_COMM_WORLD)
 			all_gen_stat_list.append(stat_list)
+			
 	time_final_box_start = time.time()
 	if bad_clustering == 0:
 		if Blockdata["myid"] == Blockdata["main_node"]:
@@ -7123,10 +7114,7 @@ def main():
 			if keepsorting == 0:
 				from mpi import mpi_finalize
 				mpi_finalize()
-				exit()
-		else: check_restart_from_given_depth_order(options.depth_order, options.restart_from_generation, \
-				 options.restart_from_depth_order, options.restart_from_nbox, log_main) # need a check !!!
-				 
+				exit()				 
 		sorting_main_mpi(log_main, options.depth_order, options.not_include_unaccounted)
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			log_main.add('----------------------------------------------------------------------------------------------------------------' )
@@ -7299,8 +7287,6 @@ def main():
 				from mpi import mpi_finalize
 				mpi_finalize()
 				exit()
-		else: check_restart_from_given_depth_order(options.depth_order, options.restart_from_generation, \
-				 options.restart_from_depth_order, options.restart_from_nbox, log_main) # need a check !!!
 		sorting_main_mpi(log_main, options.depth_order, options.not_include_unaccounted)
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			log_main.add('----------------------------------------------------------------------------------------------------------------' )
