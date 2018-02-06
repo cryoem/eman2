@@ -35,11 +35,11 @@ def isRelease() {
 }
 
 def isContinuousBuild() {
-    return (GIT_BRANCH ==~ /.*\/master/) && (CI_BUILD == "1")
+    return (GIT_BRANCH ==~ /.*master.*/)
 }
 
 def isRunCurrentStage(os_name) {
-    return isContinuousBuild() && SLAVE_OS == os_name
+    return isContinuousBuild() && (SLAVE_OS == os_name && (CI_BUILD == "1" || (os_name == "win" && CI_BUILD_WIN == "1")))
 }
 
 def runCronJob() {
@@ -72,6 +72,7 @@ pipeline {
     NUMPY_VERSION='1.9'
     BUILD_SCRIPTS_BRANCH='master'
     CI_BUILD = sh(script: "! git log -1 | grep '.*\\[ci build\\].*'", returnStatus: true)
+    CI_BUILD_WIN = sh(script: "! git log -1 | grep '.*\\[ci build win\\].*'", returnStatus: true)
   }
   
   stages {
