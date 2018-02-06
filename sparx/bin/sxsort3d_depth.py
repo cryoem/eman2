@@ -3745,12 +3745,12 @@ def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1, input_box_parti2, de
 				maximum_group_size = max(maximum_group_size, len(any))
 				new_list.append(any)
 				nclass +=1
-				log_main.add('{:>8} {:>8d} {:^8}   {:>7.1f}        {:>10.1f}          {:>5.1f}'.format(index_of_any, len(any),'accepted', score3, \
+				log_main.add('{:>8} {:>8d} {:^8}   {:>7.1f}      {:>15.1f}           {:>5.1f}'.format(index_of_any, len(any),'accepted', score3, \
 					    gave[index_of_any], gvar[index_of_any]))
 				stat_list.append([score3,  gave[index_of_any], gvar[index_of_any]])
 				tmp_list.append(len(any)*(-1))
 			else:
-				log_main.add('{:>8} {:>8d} {:^8}   {:>7.1f}        {:>10.1f}           {:>5.1f}'.format(index_of_any, len(any), 'rejected', score3, \
+				log_main.add('{:>8} {:>8d} {:^8}   {:>7.1f}      {:>15.1f}            {:>5.1f}'.format(index_of_any, len(any), 'rejected', score3, \
 					   gave[index_of_any], gvar[index_of_any]))
 		###
 		if len(tmp_list)>1:
@@ -6642,7 +6642,7 @@ def copy_results(log_file, all_gen_stat_list):
 		log_file.add('                     Final results saved in %s'%Tracker["constants"]["masterdir"])
 		log_file.add('----------------------------------------------------------------------------------------------------------------' )
 		nclusters = 0
-		log_file.add( '{:^8} {:^8} {:^24}  {:^15} {:^22} {:^5} {:^15} {:^20} '.format('Group ID', '  size  ','determined in generation', \
+		log_file.add( '{:^8} {:>8}   {:^24}  {:>15} {:^22} {:^5} {:^15} {:^20} '.format('Group ID', '  size  ','determined in generation', \
 		      'reproducibility', 'random reproducibility', ' std ', ' selection file',  \
 		          '       map file     '))
 		clusters = []
@@ -6661,7 +6661,7 @@ def copy_results(log_file, all_gen_stat_list):
 				   "generation_%03d"%ig, "Cluster_%03d.txt"%ic))
 				cluster_file = "Cluster_%03d.txt"%nclusters
 				vol_file     = "vol_cluster%03d.hdf"%nclusters
-				msg = '{:^8} {:^8} {:^24} {:^15} {:^22} {:^5} {:^15} {:^20} '.format(nclusters, len(cluster), ig, \
+				msg = '{:^8} {:>8}   {:^24} {:^6}          {:^6}        {:>5}  {:^15} {:^20} '.format(nclusters, len(cluster), ig, \
 				    round(all_gen_stat_list[ig][ic][0],1), round(all_gen_stat_list[ig][ic][1],1), round(all_gen_stat_list[ig][ic][2],1), cluster_file,  vol_file)
 				nclusters +=1
 				NACC +=len(cluster)
@@ -7155,11 +7155,11 @@ def main():
 				log_main.add('================================================================================================================')
 				
 			if continue_from_interuption == 0:
-				sort3d_utils("import_data",   log_main)
-				sort3d_utils("print_command", log_main)
-				sort3d_utils("check_mask3d",  log_main)
-				sort3d_utils("check_mpi_settings", log_main)
-				keepsorting = sort3d_utils("initialization", log_main)
+				import_data(log_main)
+				print_shell_command(sys.argv, log_main)
+				check_3dmask(log_main)
+				check_mpi_settings(log_main)
+				keepsorting = sort3d_init("initialization", log_main)
 				dump_tracker(Tracker["constants"]["masterdir"])
 				if not keepsorting:
 					from mpi import mpi_finalize
@@ -7340,11 +7340,11 @@ def main():
 				log_main.add('================================================================================================================\n')
 			
 			if continue_from_interuption == 0:
-				sort3d_utils("import_data",   log_main)
-				sort3d_utils("print_command", log_main)
-				sort3d_utils("check_mask3d",  log_main)
-				sort3d_utils("check_mpi_settings", log_main)
-				keepsorting = sort3d_utils("initialization", log_main)
+				import_data(log_main)
+				print_shell_command(sys.argv, log_main)
+				check_3dmask(log_main)
+				check_mpi_settings(log_main)
+				keepsorting = sort3d_init("initialization", log_main)
 				dump_tracker(Tracker["constants"]["masterdir"])
 				if not keepsorting:
 					from mpi import mpi_finalize
