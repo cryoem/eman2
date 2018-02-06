@@ -113,9 +113,9 @@ options are independent of each others.
 --B_enhance        : =0.0, program estimates B-factor from B_start (usually 10 Angstrom) to the resolution determined by FSC 0.143; >0.0, program uses the given value to enhance map; =-1.0, B-factor is not applied.
 --fl               : =0.0, low-pass filter to resolution; >=0.5, low-pass filter to the given Angstrom; >0.0 AND <=0.5, low-pass filter to the given absolute frequency; =-1.0, no low-pass filter.
 
-''' sxprocess.py  --combinemaps  vol_0_unfil.hdf vol_1_unfil.hdf  --output_dir=outdir_sharpen_haflset  --output=spharpen_fullset_vol3d.hdf  --pixel_size=1.12  --mask=mask3d.hdf   --mtf=mtf.txt  --fl=-1   --fsc_adj '''
-''' sxprocess.py  --combinemaps  vol_0_unfil.hdf vol_1_unfil.hdf  --output_dir=outdir_sharpen  --pixel_size=1.12  --mask=mask3d.hdf   --mtf=aa.txt  --fl=4.7  --aa=0.02 --fsc_adj '''
-''' sxprocess.py  --combinemaps  vol_0_unfil.hdf vol_1_unfil.hdf  --output_dir=outdir_sharpen  --output=spharpen_fullset_vol3d.hdf  --pixel_size=1.12  --do_adaptive_mask  --mtf=mtf.txt  --fl=3.9  --aa=0.01  --B_enhance=280 '''
+''' sxprocess.py  --combinemaps  vol_0_unfil.hdf vol_1_unfil.hdf  --output_dir=outdir_postrefine_haflset  --output=spharpen_fullset_vol3d.hdf  --pixel_size=1.12  --mask=mask3d.hdf   --mtf=mtf.txt  --fl=-1   --fsc_adj '''
+''' sxprocess.py  --combinemaps  vol_0_unfil.hdf vol_1_unfil.hdf  --output_dir=outdir_postrefine  --pixel_size=1.12  --mask=mask3d.hdf   --mtf=aa.txt  --fl=4.7  --aa=0.02 --fsc_adj '''
+''' sxprocess.py  --combinemaps  vol_0_unfil.hdf vol_1_unfil.hdf  --output_dir=outdir_postrefine  --output=spharpen_fullset_vol3d.hdf  --pixel_size=1.12  --do_adaptive_mask  --mtf=mtf.txt  --fl=3.9  --aa=0.01  --B_enhance=280 '''
 
 (2) Cluster Volumes Mode:
 For cluster volumes produced by SORT3D_DEPTH, this command executes the following processes:
@@ -128,12 +128,15 @@ options are independent of each others.
 --mtf              : For those high resolution maps, mtf correction would significantly enhance structural features.
 --B_enhance        : >0.0, program uses the given value to enhance map; =-1.0, B-factor is not applied.
 --fl               : >=0.5, low-pass filter to the given Angstrom; >0.0 AND <=0.5, low-pass filter to the given absolute frequency; =-1.0, no low-pass filter.
- This mode is mainly used with SORT3D_DEPTH outputs but also can enhance the power spectrum of ANY volumes.
+ 
+''' sxprocess.py  --combinemaps  vol_cluster*.hdf    --output_dir=outdir_postrefine_cluster  --output=spharpen_cluster_vol3d.hdf  --pixel_size=1.12  --do_adaptive_mask  --mtf=mtf.txt  --fl=3.9  --aa=0.01  --B_enhance=280 '''
 
-''' sxprocess.py  --combinemaps  vol_cluster*.hdf    --output_dir=outdir_sharpen_cluster  --output=spharpen_cluster_vol3d.hdf  --pixel_size=1.12  --do_adaptive_mask  --mtf=mtf.txt  --fl=3.9  --aa=0.01  --B_enhance=280 '''
-''' sxprocess.py  --combinemaps  vol_cluster000.hdf  --output_dir=outdir_sharpen_cluster  --output=spharpen_cluster_vol3d.hdf  --pixel_size=1.12  --do_adaptive_mask  --mtf=mtf.txt  --fl=3.9  --aa=0.01  --B_enhance=280 '''
+(3) Single Volume Mode:
+For any single volume, this command executes the same processes as Cluster Volumes Mode above but on a single volume:
 
-(3) Images Mode - for 2D images
+''' sxprocess.py  --combinemaps  vol.hdf  --output_dir=outdir_postrefine_cluster  --output=spharpen_cluster_vol3d.hdf  --pixel_size=1.12  --do_adaptive_mask  --mtf=mtf.txt  --fl=3.9  --aa=0.01  --B_enhance=280 '''
+
+(4) Images Mode - for 2D images
 Calculate B-factor and apply negative B-factor to 2D images.
 
 15. Window stack file -reduce size of images without changing the pixel size.
@@ -184,9 +187,9 @@ Calculate B-factor and apply negative B-factor to 2D images.
     ne:: Erosion cycles: After initial binarization the volume is eroded to remove fragmented pieces of the volume. (default 0)
     nd:: Dilation cycles: After erosing the binary volume is dilated back to smooth the surface and match the original size. (default 0)
 
-    combinemaps:: Sharpen volumes or images: Sharpen volumes or images by enhancing the power spectrum. Available modes are (1) Halfset Volumes Mode, (2) Cluster Volumes Mode, and (3) Images Mode. (1) The Halfset Volumes Mode combines a pair of unfiltered odd & even 3D density maps, then enhance the power spectrum at high frequencies. B-factor can be automatically estimated from these unfiltered halfset volumes. This mode requires two arguments; typically use unfiltered halfset volumes produced by MERIDIEN. (2) The Cluster Volumes Mode enhances the power spectrum of cluster volumes, produced by SORT3D_DEPTH, at high frequencies. Only ad-hoc low-pass filter cutoff and B-factor can be used. This mode requires one argument (path pattern with wild card '*' can be used to specify a list of single maps). It is mainly used with SORT3D_DEPTH outputs but also can enhance the power spectrum of ANY volumes. (default False)
-    output_dir:: Output directory: Specify path to the output directory for this sharpening process. By default, the program uses the current directory. However, GUI requires the path other than the current directory. (default required string)
-    output:: Output volume file name: File name of output final sharpened volume. (default vol_combined.hdf)
+    combinemaps:: PostRefiner for volumes or images: Post-refine volumes or images by enhances the power spectrum. Available modes are (1) Halfset Volumes Mode, (2) Cluster Volumes Mode, and (3) Images Mode. (1) The Halfset Volumes Mode combines a pair of unfiltered odd & even 3D density maps, then enhance the power spectrum at high frequencies. B-factor can be automatically estimated from these unfiltered halfset volumes. This mode requires two arguments; typically use unfiltered halfset volumes produced by MERIDIEN. (2) The Cluster Volumes Mode enhances the power spectrum of cluster volumes, produced by SORT3D_DEPTH, at high frequencies. Only ad-hoc low-pass filter cutoff and B-factor can be used. This mode requires one argument (path pattern with wild card '*' can be used to specify a list of single maps). It is mainly used with SORT3D_DEPTH outputs but also can enhance the power spectrum of ANY volumes. (default False)
+    output_dir:: Output directory: Specify path to the output directory for this PostRefiner process. By default, the program uses the current directory. However, GUI requires the path other than the current directory. (default required string)
+    output:: Output volume file name: File name of output final post-refined volume. (default vol_combined.hdf)
     pixel_size:: Pixel size [A]: Pixel size of input data. (default 0.0)
     mask:: 3D mask file: Path to user-provided mask. (default none)
     do_adaptive_mask:: Apply adaptive mask: Program creates mask adaptively with given density threshold. (default False)
