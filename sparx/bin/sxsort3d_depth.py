@@ -1268,17 +1268,20 @@ def create_masterdir(log_main):
 
 def sort3d_init(to_be_decided, log_main):
 	global Tracker, Blockdata
+	keepsorting = 1
 	if Tracker["constants"]["img_per_grp"]<= 2:
-		ERROR("Number of images per group is too small", "sort3d_init", 1, Blockdata["myid"])
+		#ERROR("Number of images per group is too small", "sort3d_init", 1, Blockdata["myid"])
+		keepsorting = 0
 	if Tracker["total_stack"] <= Blockdata["nproc"]*2:
-		ERROR("Either user requires too many processors, or number of images is too small", "sort3d_init", 1, Blockdata["myid"])
+		#ERROR("Either user requires too many processors, or number of images is too small", "sort3d_init", 1, Blockdata["myid"])
+		keepsorting = 0
 	Tracker["img_per_grp"]             = Tracker["constants"]["img_per_grp"]
 	Tracker["number_of_groups"]        = Tracker["total_stack"]//Tracker["constants"]["img_per_grp"]
 	Tracker["minimum_grp_size"] = Tracker["constants"]["minimum_grp_size"]
 	if Tracker["constants"]["minimum_grp_size"]>Tracker["img_per_grp"]:
 		ERROR("Number of groups is less than minimum group size", "sort3d_init", 1, Blockdata["myid"])
-	if Blockdata["myid"] == Blockdata["main_node"]: print_dict(Tracker, to_be_decided)
-	return
+		keepsorting = 0
+	return keepsorting
 
 def print_shell_command(args_list, log_main):
 	global Tracker, Blockdata
@@ -6781,12 +6784,12 @@ def do_random_groups_simulation_mpi(ptp1, ptp2):
 		nsize2 += max(int(float(len(ptp2[i1]))/tsize*100.), 1)
 		
 	if len(ptp1)>len(ptp2):
-		for j in xrange(len(len(ptp1)-len(ptp2))):
+		for j in xrange(len(ptp1)-len(ptp2)):
 			plist2.append([nsize2, nsize2+1])
 			nsize2 += 1
 			
 	elif len(ptp2)>len(ptp1):
-		for j in xrange(len(len(ptp2)-len(ptp1))):
+		for j in xrange(len(ptp2)-len(ptp1)):
 			plist1.append([nsize1, nsize1+1])
 			nsize1 += 1
 				
