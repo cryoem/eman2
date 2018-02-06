@@ -131,6 +131,7 @@ class SXcmd_token(object):
 		self.subwidget_left = None    # <Used only in sxgui.py> Subwidget instance at the left associating with the helper utility of this command token (e.g. conversion calculator)
 		self.subwidget_right = None   # <Used only in sxgui.py> SubWidget instance at the right associating with the helper utility of this command token (e.g. conversion calculator)
 		self.calculator_dialog = None # <Used only in sxgui.py> Calculator dialog instance associating with the helper utility of this command token (e.g. conversion calculator)
+		self.other_dialog_list = []   # <Used only in sxgui.py> List of the other calculator dialog instances associating with this command (e.g. conversion calculator)
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 
 	def initialize_edit(self, key_base):
@@ -964,6 +965,7 @@ class SXCmdWidget(QWidget):
 		if line_in.find("@@@@@ %s gui settings" % (self.sxcmd.get_mode_name_for("human"))) != -1:
 			n_function_type_lines = 2
 			function_type_line_counter = 0
+			cmd_token_apix = None
 			# loop through the rest of lines
 			for line_in in file_in:
 				# Extract label (which should be left of "=="). Also strip the ending spaces
@@ -1009,7 +1011,6 @@ class SXCmdWidget(QWidget):
 							cmd_token.widget[function_type_line_counter].setText(val_str_in)
 							function_type_line_counter += 1
 							function_type_line_counter %= n_function_type_lines # function have two line edit boxes
-						# Then, handle the other cases
 						else:
 							if cmd_token.type == "bool":
 								# construct new widget(s) for this command token
@@ -1017,10 +1018,27 @@ class SXCmdWidget(QWidget):
 									cmd_token.widget.setChecked(Qt.Checked)
 								else: # val_str_in == "NO"
 									cmd_token.widget.setChecked(Qt.Unchecked)
+							# Then, handle the other cases
 							else:
 								# For now, use line edit box for the other type
 								cmd_token.widget.setText(val_str_in)
-
+								if cmd_token.type == "apix":
+									cmd_token_apix = cmd_token 
+			if cmd_token_apix is not None:
+				assert (cmd_token_apix.type == "apix")
+				# if len(cmd_token_apix.other_dialog_list) > 0:
+				# 	print("MRK_DEBUG: ")
+				# 	print("MRK_DEBUG: ----- SXCmdWidget.read_params() ----- ")
+				# 	print("MRK_DEBUG: cmd_token_apix.widget.text() := \"{}\"".format(cmd_token_apix.widget.text()))
+				# 	print("MRK_DEBUG: len(cmd_token_apix.other_dialog_list) := \"{}\"".format(len(cmd_token_apix.other_dialog_list)))
+				for sxcmd_token_apix_other_dialog in cmd_token_apix.other_dialog_list:
+				# 	print("MRK_DEBUG: BEFORE sxcmd_token_apix_other_dialog.sxconst_register_widget_apix.text() := \"{}\"".format(sxcmd_token_apix_other_dialog.sxconst_register_widget_apix.text()))
+				# 	print("MRK_DEBUG: BEFORE sxcmd_token_apix_other_dialog.sxcmd_token_widget_apix.text() := \"{}\"".format(sxcmd_token_apix_other_dialog.sxcmd_token_widget_apix.text()))
+				# 	print("MRK_DEBUG: BEFORE sxcmd_token_apix_other_dialog.sxcmd_token_widget_abs_freq.text() := \"{}\"".format(sxcmd_token_apix_other_dialog.sxcmd_token_widget_abs_freq.text()))
+					sxcmd_token_apix_other_dialog.reflect_external_local_update_apix_and_abs_freq()
+				# 	print("MRK_DEBUG: AFTER sxcmd_token_apix_other_dialog.sxconst_register_widget_apix.text() := \"{}\"".format(sxcmd_token_apix_other_dialog.sxconst_register_widget_apix.text()))
+				# 	print("MRK_DEBUG: AFTER sxcmd_token_apix_other_dialog.sxcmd_token_widget_apix.text() := \"{}\"".format(sxcmd_token_apix_other_dialog.sxcmd_token_widget_apix.text()))
+				# 	print("MRK_DEBUG: AFTER sxcmd_token_apix_other_dialog.sxcmd_token_widget_abs_freq.text() := \"{}\"".format(sxcmd_token_apix_other_dialog.sxcmd_token_widget_abs_freq.text()))
 		else:
 			QMessageBox.warning(self, "Fail to load parameters", "The specified file is not parameter file for %s." % self.sxcmd.get_mode_name_for("human"))
 
@@ -1498,13 +1516,13 @@ class SXCmdTab(QWidget):
 
 		# Add widget for editing command args and options
 		cmd_token_apix = None
-		cmd_token_abs_freq = None
+		cmd_token_abs_freq_list = []
 		for cmd_token in self.sxcmdwidget.sxcmd.token_list:
 			# Keep some command tokens for further setting after the loop
 			if cmd_token.type == "apix":
 				cmd_token_apix = cmd_token
 			elif cmd_token.type == "abs_freq":
-				cmd_token_abs_freq = cmd_token
+				cmd_token_abs_freq_list.append(cmd_token)
 			# else: # Do nothing
 			
 			if cmd_token.group == tab_group:
@@ -2221,23 +2239,57 @@ class SXCmdTab(QWidget):
 				cmd_token.calculator_dialog = cmd_token_calculator_dialog
 		
 		is_necessary_to_connet_now = True
-		if cmd_token_abs_freq is None:
+		if len(cmd_token_abs_freq_list) == 0:
 			is_necessary_to_connet_now = False
-		elif cmd_token_abs_freq.calculator_dialog is None:
+		if is_necessary_to_connet_now and len(cmd_token_abs_freq_list) > 0:
+			for cmd_token_abs_freq in cmd_token_abs_freq_list:
+				if cmd_token_abs_freq.calculator_dialog is None:
+					is_necessary_to_connet_now = False
+					break
+		if is_necessary_to_connet_now and cmd_token_apix is None:
 			is_necessary_to_connet_now = False
-		elif cmd_token_apix is None:
-			is_necessary_to_connet_now = False
-		elif cmd_token_apix.widget is None:
+		if is_necessary_to_connet_now and cmd_token_apix.widget is None:
 			is_necessary_to_connet_now = False
 		# else: # Do nothing
+		
 		if is_necessary_to_connet_now:
-			# Associated the widget of apix command token to the calculator dialog
-			assert (cmd_token_abs_freq.calculator_dialog is not None and cmd_token_apix.widget is not None)
-			cmd_token_abs_freq.calculator_dialog.sxcmd_token_widget_apix = cmd_token_apix.widget
-			cmd_token_apix.calculator_dialog = cmd_token_abs_freq.calculator_dialog
-			cmd_token_apix.calculator_dialog.reflect_external_local_update_apix()
+			# Associated the widget of apix command token to the calculator dialog each other
+			assert (cmd_token_apix.type == "apix")
+			assert (cmd_token_apix.widget is not None)
+			# Loop through all absolute frequency tokens of this command
+			# print("MRK_DEBUG: ")
+			# print("MRK_DEBUG: ----- SXConstSetWidget Constructor ----- ")
+			# print("MRK_DEBUG: self.sxcmdwidget.sxcmd.name          := {}".format(self.sxcmdwidget.sxcmd.name))
+			# print("MRK_DEBUG: self.sxcmdwidget.sxcmd.subname       := {}".format(self.sxcmdwidget.sxcmd.subname))
+			# print("MRK_DEBUG: self.sxcmdwidget.sxcmd.mode          := {}".format(self.sxcmdwidget.sxcmd.mode))
+			# print("MRK_DEBUG: self.sxcmdwidget.sxcmd.subset_config := {}".format(self.sxcmdwidget.sxcmd.subset_config))
+			for cmd_token_abs_freq in cmd_token_abs_freq_list:
+				assert (cmd_token_abs_freq.type == "abs_freq")
+				# Register the calculator dialogs of all the other absolute frequency tokens
+				# by looping through all the other absolute frequency tokens
+				for other_cmd_token_abs_freq in cmd_token_abs_freq_list:
+					assert (other_cmd_token_abs_freq.type == "abs_freq")
+					# Exclude itself
+					if cmd_token_abs_freq.key_base != other_cmd_token_abs_freq.key_base:
+						cmd_token_abs_freq.other_dialog_list.append(other_cmd_token_abs_freq.calculator_dialog)
+						cmd_token_abs_freq.calculator_dialog.sxcmd_token_other_dialog_list_abs_freq.append(other_cmd_token_abs_freq.calculator_dialog)
+				# Register pixel size token widget to this absolut frequency calculator dialog
+				# if cmd_token_abs_freq is None:
+				# 	print("MRK_DEBUG: cmd_token_abs_freq is None")
+				# if cmd_token_abs_freq.calculator_dialog is None:
+				# 	print("MRK_DEBUG: cmd_token_abs_freq.calculator_dialog is None")
+				# 	print("MRK_DEBUG: cmd_token_abs_freq.key_base := {}".format(cmd_token_abs_freq.key_base))
+				# 	print("MRK_DEBUG: cmd_token_abs_freq.type     := {}".format(cmd_token_abs_freq.type))
+				cmd_token_abs_freq.calculator_dialog.sxcmd_token_widget_apix = cmd_token_apix.widget
+				# Register this absolut frequency calculator dialog to pixel size token
+				cmd_token_apix.other_dialog_list.append(cmd_token_abs_freq.calculator_dialog)
+			
+			# print("MRK_DEBUG: len(cmd_token_apix.other_dialog_list) := \"{}\"".format(len(cmd_token_apix.other_dialog_list)))
+			
+			# Initialise pixel size of all calculate dialogs
+			self.handle_apix_token_editing_finished_event(cmd_token_apix)
 			# Connect the apix command token widget "editing finished" event to the calculator dialog
-			cmd_token_apix.widget.editingFinished.connect(cmd_token_apix.calculator_dialog.reflect_external_local_update_apix)
+			cmd_token_apix.widget.editingFinished.connect(partial(self.handle_apix_token_editing_finished_event, cmd_token_apix))
 		
 		if tab_group == "main":
 			# Add space
@@ -2426,12 +2478,23 @@ class SXCmdTab(QWidget):
 			else:
 				sxcmd_token.widget.setText("%s" % sxcmd_token.restore)
 				if sxcmd_token.type == "abs_freq":
-					assert (sxcmd_token.calculator_dialog is not None)
 					sxcmd_token.calculator_dialog.reflect_external_local_update_abs_freq()
+					for sxcmd_token_other_dialog in sxcmd_token.other_dialog_list:
+						sxcmd_token_other_dialog.reflect_external_local_update_abs_freq()
 				elif sxcmd_token.type == "apix":
-					if sxcmd_token.calculator_dialog is not None:
-						sxcmd_token.calculator_dialog.reflect_external_local_update_apix()
-	
+					for sxcmd_token_other_dialog in sxcmd_token.other_dialog_list:
+						sxcmd_token_other_dialog.reflect_external_local_update_apix()
+
+	def handle_apix_token_editing_finished_event(self, sxcmd_token_apix):
+		assert (sxcmd_token_apix.type == "apix")
+		# print("MRK_DEBUG: ")
+		# print("MRK_DEBUG: ----- SXCmdTab.handle_apix_token_editing_finished_event() ----- ")
+		# print("MRK_DEBUG: len(sxcmd_token_apix.other_dialog_list) := \"{}\"".format(len(sxcmd_token_apix.other_dialog_list)))
+		for cmd_token_calculator_dialog_abs_freq in sxcmd_token_apix.other_dialog_list:
+			# print("MRK_DEBUG: cmd_token_calculator_dialog_abs_freq := \"{}\"".format(cmd_token_calculator_dialog_abs_freq))
+			if cmd_token_calculator_dialog_abs_freq is not None:
+				cmd_token_calculator_dialog_abs_freq.reflect_external_local_update_apix()
+
 ###	def handle_abs_freq_editing_finished_event(self, sxcmd_token_widget_abs_freq, sxcmd_token_subwidget_left_ares):
 ###		apix_str = self.sxcmdwidget.sxconst_set.dict["apix"].register
 ###		abs_freq_str = sxcmd_token_widget_abs_freq.text()
@@ -2871,7 +2934,6 @@ class SXConstSetWidget(QWidget):
 					QMessageBox.warning(self, "Invalid Project Settings File Format", "Invalid entry key for project settings \"%s\" is found in line (%s). This project settings file might be imcompatible with the current version. Please save the project settings file again." % (key, line_in))
 				sxconst = self.sxconst_set.dict[key]
 				sxconst.widget.setText(val_str_in)
-
 		else:
 			QMessageBox.warning(self, "Fail to load project settings", "The specified file is not project settings file.")
 
@@ -3007,6 +3069,7 @@ class SXDialogCalculator(QDialog):
 		self.sxcmd_token_subwidget_left_ares = sxcmd_token_subwidget_left_ares
 		# This have to be set upon the construction order...
 		self.sxcmd_token_widget_apix = None                              # SXcmd_token.widget of apix type if this command has one
+		self.sxcmd_token_other_dialog_list_abs_freq = []                 # SXcmd_token.other_dialog_list of the associated abs_freq type token if this command has more than one abs_freq type tokens
 		
 		# This should be a modal dialog
 		self.setWindowModality(Qt.ApplicationModal)
@@ -3281,44 +3344,36 @@ class SXDialogCalculator(QDialog):
 	def handle_convert_units(self, is_enable_message = True):
 		sxoperand_apix = self.sxoperand_set.dict["apix"]
 		apix_str = sxoperand_apix.widget.text()
-		apix = self.convert_str_to_float_apix(apix_str)
-		if apix is None:
-			sxoperand_apix.validated = None
-		else:
-			sxoperand_apix.validated = apix
-			assert (sxoperand_apix.validated is not None)
-		
 		sxoperand_ares = self.sxoperand_set.dict["ares"]
 		ares_str = sxoperand_ares.widget.text()
-		ares = self.convert_str_to_float_ares(ares_str)
-		if ares is None:
-			sxoperand_ares.validated = None
-		else:
-			sxoperand_ares.validated = ares
-			assert (sxoperand_ares.validated is not None)
-		
 		sxoperand_abs_freq = self.sxoperand_set.dict["abs_freq"]
 		
-		if sxoperand_apix.validated is None:
+		apix = self.convert_str_to_float_apix(apix_str)
+		
+		if apix is None:
+			sxoperand_apix.validated = None
+			sxoperand_ares.validated = None
 			sxoperand_abs_freq.validated = None
 			sxoperand_abs_freq.widget.setText("Invalid Pixel Size {}".format(apix_str))
 			self.apply_btn.setEnabled(False)
 			if is_enable_message:
 				QMessageBox.warning(self, "Invalid Pixel Size [A/Pixel]", "Invalid Value {} for Pixel Size [A/Pixel] is provided. It must be a non-zero positive float value...".format(apix_str))
 		else:
-			assert (sxoperand_apix.validated is not None)
-			assert (apix > 0.0)
+			assert (apix is not None)
+			sxoperand_apix.validated = apix
 			nyquist_res = 2.0 * apix
 			nyquist_res_str = "{}".format(nyquist_res)
-			if sxoperand_ares.validated is None:
+			ares = self.convert_str_to_float_ares(ares_str, nyquist_res)
+			if ares is None:
+				sxoperand_ares.validated = None
 				sxoperand_abs_freq.validated = None
 				sxoperand_abs_freq.widget.setText("Invalid Resolution {}".format(ares_str))
 				self.apply_btn.setEnabled(False)
 				if is_enable_message:
 					QMessageBox.warning(self, "Invalid Resolution [A]", "Invalid Value {} for Resolution [A] is provided. It must be a float value, and larger than or equal to Nyquist resolution {} [A] (2.0 * Pixel Size [A/Pixel])...".format(ares_str, nyquist_res_str))
 			else:
-				assert (sxoperand_apix.validated is not None)
-				assert (nyquist_res * 2.0 )
+				assert (ares >= nyquist_res)
+				sxoperand_ares.validated = ares
 				abs_freq = round(apix/ares, self.precision_abs_freq)
 				# The valid range of absolute frequency [1/Pixel] is 0.0 < abs_freq <= 0.5
 				# If both pixel size and resolution values are valid, the absolute frequency must be always valid.
@@ -3329,29 +3384,67 @@ class SXDialogCalculator(QDialog):
 				sxoperand_abs_freq.widget.setText(abs_freq_str)
 				self.apply_btn.setEnabled(True)
 		
-		print("MRK_DEBUG: ")
-		print("MRK_DEBUG: ----- SXDialogCalculator.handle_convert_units() ----- ")
-		print("MRK_DEBUG: Edit Widget Resolution [A]              ; sxoperand_ares.widget.text()              := \"{}\"".format(sxoperand_ares.widget.text()))
-		print("MRK_DEBUG: Edit Validated Resolution [A]           ; sxoperand_ares.validated                  := \"{}\"".format(sxoperand_ares.validated))
-		print("MRK_DEBUG: Register Widget Resolution [A]          ; sxoperand_ares.register_widget.text()     := \"{}\"".format(sxoperand_ares.register_widget.text()))
-		print("MRK_DEBUG: Register Validated Resolution [A]       ; sxoperand_ares.validated_register         := \"{}\"".format(sxoperand_ares.validated_register))
-
-		print("MRK_DEBUG: Edit Widget Pixel Size [A/Pixel]        ; sxoperand_apix.widget.text()              := \"{}\"".format(sxoperand_apix.widget.text()))
-		print("MRK_DEBUG: Edit Validated Abs. Freq. [1/Pixel]     ; sxoperand_apix.validated                  := \"{}\"".format(sxoperand_apix.validated))
-		print("MRK_DEBUG: Register Widget Pixel Size [A/Pixel]    ; sxoperand_apix.register_widget.text()     := \"{}\"".format(sxoperand_apix.register_widget.text()))
-		print("MRK_DEBUG: Register Validated Pixel Size [A/Pixel] ; sxoperand_apix.validated_register         := \"{}\"".format(sxoperand_apix.validated_register))
-
-		print("MRK_DEBUG: Edit Widget bs. Freq. [1/Pixel]         ; sxoperand_abs_freq.widget.text()          := \"{}\"".format(sxoperand_abs_freq.widget.text()))
-		print("MRK_DEBUG: Edit Validated Abs. Freq. [1/Pixel]     ; sxoperand_abs_freq.validated              := \"{}\"".format(sxoperand_abs_freq.validated))
-		print("MRK_DEBUG: Register Widget Abs. Freq. [1/Pixel]    ; sxoperand_abs_freq.register_widget.text() := \"{}\"".format(sxoperand_abs_freq.register_widget.text()))
-		print("MRK_DEBUG: Register Validated Abs. Freq. [1/Pixel] ; sxoperand_abs_freq.validated_register     := \"{}\"".format(sxoperand_abs_freq.validated_register))
+		
+#		if sxoperand_apix.validated is None:
+#			sxoperand_abs_freq.validated = None
+#			sxoperand_abs_freq.widget.setText("Invalid Pixel Size {}".format(apix_str))
+#			self.apply_btn.setEnabled(False)
+#			if is_enable_message:
+#				QMessageBox.warning(self, "Invalid Pixel Size [A/Pixel]", "Invalid Value {} for Pixel Size [A/Pixel] is provided. It must be a non-zero positive float value...".format(apix_str))
+#		else:
+#			assert (sxoperand_apix.validated is not None)
+#			assert (apix > 0.0)
+#			nyquist_res = 2.0 * apix
+#			nyquist_res_str = "{}".format(nyquist_res)
+#			if sxoperand_ares.validated is None:
+#				sxoperand_abs_freq.validated = None
+#				sxoperand_abs_freq.widget.setText("Invalid Resolution {}".format(ares_str))
+#				self.apply_btn.setEnabled(False)
+#				if is_enable_message:
+#					QMessageBox.warning(self, "Invalid Resolution [A]", "Invalid Value {} for Resolution [A] is provided. It must be a float value, and larger than or equal to Nyquist resolution {} [A] (2.0 * Pixel Size [A/Pixel])...".format(ares_str, nyquist_res_str))
+#			else:
+#				assert (sxoperand_apix.validated is not None)
+#				assert (nyquist_res * 2.0 )
+#				abs_freq = round(apix/ares, self.precision_abs_freq)
+#				# The valid range of absolute frequency [1/Pixel] is 0.0 < abs_freq <= 0.5
+#				# If both pixel size and resolution values are valid, the absolute frequency must be always valid.
+#				assert (abs_freq > 0.0 or abs_freq <= 0.5)
+#				sxoperand_abs_freq.validated = abs_freq
+#				abs_freq_str = "{}".format(abs_freq)
+#				# Update widget associating to absolute frequency [1/Pixel] in this dialog
+#				sxoperand_abs_freq.widget.setText(abs_freq_str)
+#				self.apply_btn.setEnabled(True)
+		
+		# print("MRK_DEBUG: ")
+		# print("MRK_DEBUG: ----- SXDialogCalculator.handle_convert_units() ----- ")
+		# print("MRK_DEBUG: Edit Widget Resolution [A]              ; sxoperand_ares.widget.text()              := \"{}\"".format(sxoperand_ares.widget.text()))
+		# print("MRK_DEBUG: Edit Validated Resolution [A]           ; sxoperand_ares.validated                  := \"{}\"".format(sxoperand_ares.validated))
+		# print("MRK_DEBUG: Register Widget Resolution [A]          ; sxoperand_ares.register_widget.text()     := \"{}\"".format(sxoperand_ares.register_widget.text()))
+		# print("MRK_DEBUG: Register Validated Resolution [A]       ; sxoperand_ares.validated_register         := \"{}\"".format(sxoperand_ares.validated_register))
+		# print("MRK_DEBUG: Register Resolution [A]                 ; sxoperand_ares.register                   := \"{}\"".format(sxoperand_ares.register))
+		# 
+		# print("MRK_DEBUG: Edit Widget Pixel Size [A/Pixel]        ; sxoperand_apix.widget.text()              := \"{}\"".format(sxoperand_apix.widget.text()))
+		# print("MRK_DEBUG: Edit Validated Abs. Freq. [1/Pixel]     ; sxoperand_apix.validated                  := \"{}\"".format(sxoperand_apix.validated))
+		# print("MRK_DEBUG: Register Widget Pixel Size [A/Pixel]    ; sxoperand_apix.register_widget.text()     := \"{}\"".format(sxoperand_apix.register_widget.text()))
+		# print("MRK_DEBUG: Register Validated Pixel Size [A/Pixel] ; sxoperand_apix.validated_register         := \"{}\"".format(sxoperand_apix.validated_register))
+		# print("MRK_DEBUG: Register Pixel Size [A/Pixel]           ; sxoperand_apix.register                   := \"{}\"".format(sxoperand_apix.register))
+		# 
+		# print("MRK_DEBUG: Edit Widget bs. Freq. [1/Pixel]         ; sxoperand_abs_freq.widget.text()          := \"{}\"".format(sxoperand_abs_freq.widget.text()))
+		# print("MRK_DEBUG: Edit Validated Abs. Freq. [1/Pixel]     ; sxoperand_abs_freq.validated              := \"{}\"".format(sxoperand_abs_freq.validated))
+		# print("MRK_DEBUG: Register Widget Abs. Freq. [1/Pixel]    ; sxoperand_abs_freq.register_widget.text() := \"{}\"".format(sxoperand_abs_freq.register_widget.text()))
+		# print("MRK_DEBUG: Register Validated Abs. Freq. [1/Pixel] ; sxoperand_abs_freq.validated_register     := \"{}\"".format(sxoperand_abs_freq.validated_register))
+		# print("MRK_DEBUG: Register Abs. Freq. [1/Pixel]           ; sxoperand_abs_freq.register               := \"{}\"".format(sxoperand_abs_freq.register))
 
 	def handle_apply_unit_conversion(self):
 		# Do the unit conversion first
 		self.handle_convert_units()
-		abs_freq = self.sxoperand_set.dict["abs_freq"].validated
-		ares = self.sxoperand_set.dict["ares"].validated
-		apix = self.sxoperand_set.dict["apix"].validated
+		sxoperand_abs_freq = self.sxoperand_set.dict["abs_freq"]
+		sxoperand_ares = self.sxoperand_set.dict["ares"]
+		sxoperand_apix = self.sxoperand_set.dict["apix"]
+		
+		abs_freq = sxoperand_abs_freq.validated
+		ares = sxoperand_ares.validated
+		apix = sxoperand_apix.validated
 		# This button should have been disabled if all operands are valid
 		if abs_freq is None:
 			ERROR("Logical Error: Encountered unexpected condition in SXDialogCalculator.handle_apply_unit_conversion(). Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
@@ -3359,13 +3452,49 @@ class SXDialogCalculator(QDialog):
 			self.sxcmd_token_subwidget_left_ares.setText("Logical Error")
 		else:
 			assert (abs_freq is not None and ares is not None and apix is not None)
+			# Update register, validated_register, and register_widget of absolute frequency [1/Pixel]
+			sxoperand_abs_freq.validated_register = abs_freq
+			sxoperand_abs_freq.register = "{}".format(sxoperand_abs_freq.validated_register)
+			sxoperand_abs_freq.register_widget.setText(sxoperand_abs_freq.register)
+
+			# Update register, validated_register, and register_widget of resolution [A]
+			sxoperand_ares.validated_register = ares
+			sxoperand_ares.register = "{}".format(sxoperand_ares.validated_register)
+			sxoperand_ares.register_widget.setText(sxoperand_ares.register)
+
+			# DO NOT update register, validated_register, and register_widget of pixel size [A/Pixel]
+			# These should be updated through only project constants settings
+			
 			# Update command token subwidget associating to resolution [A] accordingly
-			self.sxcmd_token_widget_abs_freq.setText("{}".format(abs_freq))
+			self.sxcmd_token_widget_abs_freq.setText(sxoperand_abs_freq.register)
 			self.sxcmd_token_subwidget_left_ares.setText("{}[A]@{}[A/Pix]".format(ares, apix))
 			
 			# Update the associated pixel size token of this command if there is any
 			if self.sxcmd_token_widget_apix is not None:
 				self.sxcmd_token_widget_apix.setText("{}".format(apix))
+			for sxcmd_token_other_dialog_abs_freq in self.sxcmd_token_other_dialog_list_abs_freq:
+				assert (sxcmd_token_other_dialog_abs_freq is not self)
+				sxcmd_token_other_dialog_abs_freq.reflect_external_local_update_apix()
+		
+		# print("MRK_DEBUG: ")
+		# print("MRK_DEBUG: ----- SXDialogCalculator.handle_apply_unit_conversion() ----- ")
+		# print("MRK_DEBUG: Edit Widget Resolution [A]              ; sxoperand_ares.widget.text()              := \"{}\"".format(sxoperand_ares.widget.text()))
+		# print("MRK_DEBUG: Edit Validated Resolution [A]           ; sxoperand_ares.validated                  := \"{}\"".format(sxoperand_ares.validated))
+		# print("MRK_DEBUG: Register Widget Resolution [A]          ; sxoperand_ares.register_widget.text()     := \"{}\"".format(sxoperand_ares.register_widget.text()))
+		# print("MRK_DEBUG: Register Validated Resolution [A]       ; sxoperand_ares.validated_register         := \"{}\"".format(sxoperand_ares.validated_register))
+		# print("MRK_DEBUG: Register Resolution [A]                 ; sxoperand_ares.register                   := \"{}\"".format(sxoperand_ares.register))
+		# 
+		# print("MRK_DEBUG: Edit Widget Pixel Size [A/Pixel]        ; sxoperand_apix.widget.text()              := \"{}\"".format(sxoperand_apix.widget.text()))
+		# print("MRK_DEBUG: Edit Validated Abs. Freq. [1/Pixel]     ; sxoperand_apix.validated                  := \"{}\"".format(sxoperand_apix.validated))
+		# print("MRK_DEBUG: Register Widget Pixel Size [A/Pixel]    ; sxoperand_apix.register_widget.text()     := \"{}\"".format(sxoperand_apix.register_widget.text()))
+		# print("MRK_DEBUG: Register Validated Pixel Size [A/Pixel] ; sxoperand_apix.validated_register         := \"{}\"".format(sxoperand_apix.validated_register))
+		# print("MRK_DEBUG: Register Pixel Size [A/Pixel]           ; sxoperand_apix.register                   := \"{}\"".format(sxoperand_apix.register))
+		# 
+		# print("MRK_DEBUG: Edit Widget bs. Freq. [1/Pixel]         ; sxoperand_abs_freq.widget.text()          := \"{}\"".format(sxoperand_abs_freq.widget.text()))
+		# print("MRK_DEBUG: Edit Validated Abs. Freq. [1/Pixel]     ; sxoperand_abs_freq.validated              := \"{}\"".format(sxoperand_abs_freq.validated))
+		# print("MRK_DEBUG: Register Widget Abs. Freq. [1/Pixel]    ; sxoperand_abs_freq.register_widget.text() := \"{}\"".format(sxoperand_abs_freq.register_widget.text()))
+		# print("MRK_DEBUG: Register Validated Abs. Freq. [1/Pixel] ; sxoperand_abs_freq.validated_register     := \"{}\"".format(sxoperand_abs_freq.validated_register))
+		# print("MRK_DEBUG: Register Abs. Freq. [1/Pixel]           ; sxoperand_abs_freq.register               := \"{}\"".format(sxoperand_abs_freq.register))
 		
 		self.close()
 
@@ -3460,9 +3589,9 @@ class SXDialogCalculator(QDialog):
 		# Check value validity. The valid range of resolution is 0.0 < ares
 		# Here, we ignore Nyquist with pixel size.
 		ares = round(ares, self.precision_ares)
-		if ares <= nyquist_res:
+		if ares < nyquist_res:
 			return None
-		assert (ares > nyquist_res)
+		assert (ares >= nyquist_res)
 		return ares
 
 	# def rigister_operand_ares_str(self, ares_str, nyquist_res = 0.0):
@@ -3484,7 +3613,8 @@ class SXDialogCalculator(QDialog):
 		if sxoperand_abs_freq.validated is None:
 			# Use registered string of absolute frequency. This can be special value of this option (e.g. indicate lpf modes)
 			sxoperand_abs_freq.widget.setText("Mode {}".format(sxoperand_abs_freq.register))
-			sxoperand_ares.register = sxoperand_abs_freq.widget.text()
+			# sxoperand_ares.register = sxoperand_abs_freq.widget.text()
+			sxoperand_ares.register = "No Default"
 			sxoperand_ares.validated_register = None
 		else:
 			assert (sxoperand_abs_freq.validated is not None)
@@ -3520,41 +3650,66 @@ class SXDialogCalculator(QDialog):
 			assert (sxoperand_ares.validated_register is None)
 			self.apply_btn.setEnabled(False)
 			sxoperand_ares.register_widget.setEnabled(False)
-			sxoperand_ares.register_widget.setText("No Default")
+			# sxoperand_ares.register_widget.setText("No Default")
+			sxoperand_ares.register_widget.setText(sxoperand_ares.register)
 			sxoperand_ares.widget.setText("")
-			self.sxcmd_token_subwidget_left_ares.setText("{}".format(sxoperand_ares.register))
+			if sxoperand_abs_freq.validated is None:
+				self.sxcmd_token_subwidget_left_ares.setText("Mode {}".format(sxoperand_abs_freq.register))
+			else:
+				assert (sxoperand_abs_freq.validated is not None)
+				self.sxcmd_token_subwidget_left_ares.setText("{}".format(sxoperand_ares.register))
 		
-		print("MRK_DEBUG: ")
-		print("MRK_DEBUG: ----- SXDialogCalculator.handle_convert_units() ----- ")
-		print("MRK_DEBUG: Edit Widget Resolution [A]              ; sxoperand_ares.widget.text()              := \"{}\"".format(sxoperand_ares.widget.text()))
-		print("MRK_DEBUG: Edit Validated Resolution [A]           ; sxoperand_ares.validated                  := \"{}\"".format(sxoperand_ares.validated))
-		print("MRK_DEBUG: Register Widget Resolution [A]          ; sxoperand_ares.register_widget.text()     := \"{}\"".format(sxoperand_ares.register_widget.text()))
-		print("MRK_DEBUG: Register Validated Resolution [A]       ; sxoperand_ares.validated_register         := \"{}\"".format(sxoperand_ares.validated_register))
-
-		print("MRK_DEBUG: Edit Widget Pixel Size [A/Pixel]        ; sxoperand_apix.widget.text()              := \"{}\"".format(sxoperand_apix.widget.text()))
-		print("MRK_DEBUG: Edit Validated Abs. Freq. [1/Pixel]     ; sxoperand_apix.validated                  := \"{}\"".format(sxoperand_apix.validated))
-		print("MRK_DEBUG: Register Widget Pixel Size [A/Pixel]    ; sxoperand_apix.register_widget.text()     := \"{}\"".format(sxoperand_apix.register_widget.text()))
-		print("MRK_DEBUG: Register Validated Pixel Size [A/Pixel] ; sxoperand_apix.validated_register         := \"{}\"".format(sxoperand_apix.validated_register))
-
-		print("MRK_DEBUG: Edit Widget bs. Freq. [1/Pixel]         ; sxoperand_abs_freq.widget.text()          := \"{}\"".format(sxoperand_abs_freq.widget.text()))
-		print("MRK_DEBUG: Edit Validated Abs. Freq. [1/Pixel]     ; sxoperand_abs_freq.validated              := \"{}\"".format(sxoperand_abs_freq.validated))
-		print("MRK_DEBUG: Register Widget Abs. Freq. [1/Pixel]    ; sxoperand_abs_freq.register_widget.text() := \"{}\"".format(sxoperand_abs_freq.register_widget.text()))
-		print("MRK_DEBUG: Register Validated Abs. Freq. [1/Pixel] ; sxoperand_abs_freq.validated_register     := \"{}\"".format(sxoperand_abs_freq.validated_register))
+		# print("MRK_DEBUG: ")
+		# print("MRK_DEBUG: ----- SXDialogCalculator.synchronize_external_update_to_ares() ----- ")
+		# print("MRK_DEBUG: Edit Widget Resolution [A]              ; sxoperand_ares.widget.text()              := \"{}\"".format(sxoperand_ares.widget.text()))
+		# print("MRK_DEBUG: Edit Validated Resolution [A]           ; sxoperand_ares.validated                  := \"{}\"".format(sxoperand_ares.validated))
+		# print("MRK_DEBUG: Register Widget Resolution [A]          ; sxoperand_ares.register_widget.text()     := \"{}\"".format(sxoperand_ares.register_widget.text()))
+		# print("MRK_DEBUG: Register Validated Resolution [A]       ; sxoperand_ares.validated_register         := \"{}\"".format(sxoperand_ares.validated_register))
+		# print("MRK_DEBUG: Register Resolution [A]                 ; sxoperand_ares.register                   := \"{}\"".format(sxoperand_ares.register))
+		# 
+		# print("MRK_DEBUG: Edit Widget Pixel Size [A/Pixel]        ; sxoperand_apix.widget.text()              := \"{}\"".format(sxoperand_apix.widget.text()))
+		# print("MRK_DEBUG: Edit Validated Abs. Freq. [1/Pixel]     ; sxoperand_apix.validated                  := \"{}\"".format(sxoperand_apix.validated))
+		# print("MRK_DEBUG: Register Widget Pixel Size [A/Pixel]    ; sxoperand_apix.register_widget.text()     := \"{}\"".format(sxoperand_apix.register_widget.text()))
+		# print("MRK_DEBUG: Register Validated Pixel Size [A/Pixel] ; sxoperand_apix.validated_register         := \"{}\"".format(sxoperand_apix.validated_register))
+		# print("MRK_DEBUG: Register Pixel Size [A/Pixel]           ; sxoperand_apix.register                   := \"{}\"".format(sxoperand_apix.register))
+		# 
+		# print("MRK_DEBUG: Edit Widget bs. Freq. [1/Pixel]         ; sxoperand_abs_freq.widget.text()          := \"{}\"".format(sxoperand_abs_freq.widget.text()))
+		# print("MRK_DEBUG: Edit Validated Abs. Freq. [1/Pixel]     ; sxoperand_abs_freq.validated              := \"{}\"".format(sxoperand_abs_freq.validated))
+		# print("MRK_DEBUG: Register Widget Abs. Freq. [1/Pixel]    ; sxoperand_abs_freq.register_widget.text() := \"{}\"".format(sxoperand_abs_freq.register_widget.text()))
+		# print("MRK_DEBUG: Register Validated Abs. Freq. [1/Pixel] ; sxoperand_abs_freq.validated_register     := \"{}\"".format(sxoperand_abs_freq.validated_register))
+		# print("MRK_DEBUG: Register Abs. Freq. [1/Pixel]           ; sxoperand_abs_freq.register               := \"{}\"".format(sxoperand_abs_freq.register))
 		
 	def reflect_external_global_update_apix(self):
-		# print("MRK_DEBUG: ----- reflect_external_global_update_apix ----- ")
+		# print("MRK_DEBUG: ")
+		# print("MRK_DEBUG: ----- SXDialogCalculator.reflect_external_global_update_apix() ----- ")
+		# print("MRK_DEBUG: self.sxconst_register_widget_apix.text() := \"{}\"".format(self.sxconst_register_widget_apix.text()))
 		apix_str = self.sxconst_register_widget_apix.text()
 		self.register_operand_apix_str(apix_str)
 		self.synchronize_external_update_to_ares()
 
 	def reflect_external_local_update_apix(self):
-		# print("MRK_DEBUG: ----- reflect_external_local_update_apix ----- ")
+		# print("MRK_DEBUG: ")
+		# print("MRK_DEBUG: ----- SXDialogCalculator.reflect_external_local_update_apix() ----- ")
+		# print("MRK_DEBUG: self.sxcmd_token_widget_apix.text() := \"{}\"".format(self.sxcmd_token_widget_apix.text()))
 		apix_str = self.sxcmd_token_widget_apix.text()
 		self.edit_operand_apix_str(apix_str)
 		self.synchronize_external_update_to_ares()
 
 	def reflect_external_local_update_abs_freq(self):
-		# print("MRK_DEBUG: ----- reflect_external_local_update_abs_freq ----- ")
+		# print("MRK_DEBUG: ")
+		# print("MRK_DEBUG: ----- SXDialogCalculator.reflect_external_local_update_abs_freq() ----- ")
+		# print("MRK_DEBUG: self.sxcmd_token_widget_abs_freq.text() := \"{}\"".format(self.sxcmd_token_widget_abs_freq.text()))
+		abs_freq_str = self.sxcmd_token_widget_abs_freq.text()
+		self.register_operand_abs_freq_str(abs_freq_str)
+		self.synchronize_external_update_to_ares()
+
+	def reflect_external_local_update_apix_and_abs_freq(self):
+		# print("MRK_DEBUG: ")
+		# print("MRK_DEBUG: ----- SXDialogCalculator.reflect_external_local_update_apix_and_abs_freq() ----- ")
+		# print("MRK_DEBUG: self.sxcmd_token_widget_apix.text() := \"{}\"".format(self.sxcmd_token_widget_apix.text()))
+		# print("MRK_DEBUG: self.sxcmd_token_widget_abs_freq.text() := \"{}\"".format(self.sxcmd_token_widget_abs_freq.text()))
+		apix_str = self.sxcmd_token_widget_apix.text()
+		self.edit_operand_apix_str(apix_str)
 		abs_freq_str = self.sxcmd_token_widget_abs_freq.text()
 		self.register_operand_abs_freq_str(abs_freq_str)
 		self.synchronize_external_update_to_ares()
@@ -3972,10 +4127,10 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		token = SXcmd_token(); token.key_base = "radius"; token.key_prefix = "--"; token.label = "Particle radius [Pixels]"; token.help = "There is no default radius. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1"; token.restore = "-1"; token.type = "radius"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "noctf"; token.key_prefix = "--"; token.label = "CTF correction"; token.help = "Indicate if full CTF correction should be applied or not. Always use the CTF correction for cryo data, but not for negative stained data. By default, do full CTF correction. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "skip_local_alignment"; token.key_prefix = "--"; token.label = "Local alignment"; token.help = "Indicate if local alignment should be applied or not. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "fl"; token.key_prefix = "--"; token.label = "Low-pass filter frequency [1/Pixel]"; token.help = "Cutoff frequency of low-pass filter. =-1.0, do not apply the low-pass filter; =0.0, apply low pass filter to initial ISAC resolution; =1.0, to resolution after local alignment; else use user-provided cutoff in absolute frequency (>0.0 and <=0.45). "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "float"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "fl"; token.key_prefix = "--"; token.label = "Low-pass filter frequency [1/Pixel]"; token.help = "Cutoff frequency of low-pass filter. =-1.0, do not apply the low-pass filter; =0.0, apply low pass filter to initial ISAC resolution; =1.0, to resolution after local alignment; else use user-provided cutoff in absolute frequency (>0.0 and <=0.45). "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "abs_freq"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "xr"; token.key_prefix = "--"; token.label = "Local search range [Pixels]"; token.help = "Translational search range for local alignment. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "ts"; token.key_prefix = "--"; token.label = "Local search step [Pixels]"; token.help = "Translational search step for local alignment. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "1.0"; token.restore = "1.0"; token.type = "float"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "fh"; token.key_prefix = "--"; token.label = "High frequency search limit [1/Pixel]"; token.help = "High frequency search limit in absolute frequency for local alignment. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "float"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "fh"; token.key_prefix = "--"; token.label = "High frequency search limit [1/Pixel]"; token.help = "High frequency search limit in absolute frequency for local alignment. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "abs_freq"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "maxit"; token.key_prefix = "--"; token.label = "Local alignment iterations"; token.help = "The number of iterations for local aligment. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "5"; token.restore = "5"; token.type = "int"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "navg"; token.key_prefix = "--"; token.label = "Number of averages"; token.help = "The number of averages to be process, starting from the first image. By default, uses all ISAC average images. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1"; token.restore = "-1"; token.type = "int"; sxcmd.token_list.append(token)
 
@@ -3999,10 +4154,10 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		token = SXcmd_token(); token.key_base = "radius"; token.key_prefix = "--"; token.label = "Particle radius [Pixels]"; token.help = "There is no default radius. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1"; token.restore = "-1"; token.type = "radius"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "noctf"; token.key_prefix = "--"; token.label = "CTF correction"; token.help = "Indicate if full CTF correction should be applied or not. Always use the CTF correction for cryo data, but not for negative stained data. By default, do full CTF correction. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "skip_local_alignment"; token.key_prefix = "--"; token.label = "Local alignment"; token.help = "Indicate if local alignment should be applied or not. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "fl"; token.key_prefix = "--"; token.label = "Low-pass filter frequency [1/Pixel]"; token.help = "Cutoff frequency of low-pass filter. =-1.0, do not apply the low-pass filter; =0.0, apply low pass filter to initial ISAC resolution; =1.0, to resolution after local alignment; else use user-provided cutoff in absolute frequency (>0.0 and <=0.45). "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "float"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "fl"; token.key_prefix = "--"; token.label = "Low-pass filter frequency [1/Pixel]"; token.help = "Cutoff frequency of low-pass filter. =-1.0, do not apply the low-pass filter; =0.0, apply low pass filter to initial ISAC resolution; =1.0, to resolution after local alignment; else use user-provided cutoff in absolute frequency (>0.0 and <=0.45). "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "abs_freq"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "xr"; token.key_prefix = "--"; token.label = "Local search range [Pixels]"; token.help = "Translational search range for local alignment. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "ts"; token.key_prefix = "--"; token.label = "Local search step [Pixels]"; token.help = "Translational search step for local alignment. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "1.0"; token.restore = "1.0"; token.type = "float"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "fh"; token.key_prefix = "--"; token.label = "High frequency search limit [1/Pixel]"; token.help = "High frequency search limit in absolute frequency for local alignment. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "float"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "fh"; token.key_prefix = "--"; token.label = "High frequency search limit [1/Pixel]"; token.help = "High frequency search limit in absolute frequency for local alignment. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "abs_freq"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "maxit"; token.key_prefix = "--"; token.label = "Local alignment iterations"; token.help = "The number of iterations for local aligment. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "5"; token.restore = "5"; token.type = "int"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "navg"; token.key_prefix = "--"; token.label = "Number of averages"; token.help = "The number of averages to be process, starting from the first image. By default, uses all ISAC average images. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1"; token.restore = "-1"; token.type = "int"; sxcmd.token_list.append(token)
 
@@ -4018,10 +4173,10 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		token = SXcmd_token(); token.key_base = "radius"; token.key_prefix = "--"; token.label = "Particle radius [Pixels]"; token.help = "There is no default radius. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1"; token.restore = "-1"; token.type = "radius"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "noctf"; token.key_prefix = "--"; token.label = "CTF correction"; token.help = "Indicate if full CTF correction should be applied or not. Always use the CTF correction for cryo data, but not for negative stained data. By default, do full CTF correction. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "skip_local_alignment"; token.key_prefix = "--"; token.label = "Local alignment"; token.help = "Indicate if local alignment should be applied or not. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "fl"; token.key_prefix = "--"; token.label = "Low-pass filter frequency [1/Pixel]"; token.help = "Cutoff frequency of low-pass filter. =-1.0, do not apply the low-pass filter; =0.0, apply low pass filter to initial ISAC resolution; =1.0, to resolution after local alignment; else use user-provided cutoff in absolute frequency (>0.0 and <=0.45). "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "float"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "fl"; token.key_prefix = "--"; token.label = "Low-pass filter frequency [1/Pixel]"; token.help = "Cutoff frequency of low-pass filter. =-1.0, do not apply the low-pass filter; =0.0, apply low pass filter to initial ISAC resolution; =1.0, to resolution after local alignment; else use user-provided cutoff in absolute frequency (>0.0 and <=0.45). "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "abs_freq"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "xr"; token.key_prefix = "--"; token.label = "Local search range [Pixels]"; token.help = "Translational search range for local alignment. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "ts"; token.key_prefix = "--"; token.label = "Local search step [Pixels]"; token.help = "Translational search step for local alignment. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "1.0"; token.restore = "1.0"; token.type = "float"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "fh"; token.key_prefix = "--"; token.label = "High frequency search limit [1/Pixel]"; token.help = "High frequency search limit in absolute frequency for local alignment. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "float"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "fh"; token.key_prefix = "--"; token.label = "High frequency search limit [1/Pixel]"; token.help = "High frequency search limit in absolute frequency for local alignment. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "abs_freq"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "maxit"; token.key_prefix = "--"; token.label = "Local alignment iterations"; token.help = "The number of iterations for local aligment. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "5"; token.restore = "5"; token.type = "int"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "navg"; token.key_prefix = "--"; token.label = "Number of averages"; token.help = "The number of averages to be process, starting from the first image. By default, uses all ISAC average images. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1"; token.restore = "-1"; token.type = "int"; sxcmd.token_list.append(token)
 
@@ -4038,10 +4193,10 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		token = SXcmd_token(); token.key_base = "radius"; token.key_prefix = "--"; token.label = "Particle radius [Pixels]"; token.help = "There is no default radius. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1"; token.restore = "-1"; token.type = "radius"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "noctf"; token.key_prefix = "--"; token.label = "CTF correction"; token.help = "Indicate if full CTF correction should be applied or not. Always use the CTF correction for cryo data, but not for negative stained data. By default, do full CTF correction. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "skip_local_alignment"; token.key_prefix = "--"; token.label = "Local alignment"; token.help = "Indicate if local alignment should be applied or not. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "fl"; token.key_prefix = "--"; token.label = "Low-pass filter frequency [1/Pixel]"; token.help = "Cutoff frequency of low-pass filter. =-1.0, do not apply the low-pass filter; =0.0, apply low pass filter to initial ISAC resolution; =1.0, to resolution after local alignment; else use user-provided cutoff in absolute frequency (>0.0 and <=0.45). "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "float"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "fl"; token.key_prefix = "--"; token.label = "Low-pass filter frequency [1/Pixel]"; token.help = "Cutoff frequency of low-pass filter. =-1.0, do not apply the low-pass filter; =0.0, apply low pass filter to initial ISAC resolution; =1.0, to resolution after local alignment; else use user-provided cutoff in absolute frequency (>0.0 and <=0.45). "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "abs_freq"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "xr"; token.key_prefix = "--"; token.label = "Local search range [Pixels]"; token.help = "Translational search range for local alignment. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "ts"; token.key_prefix = "--"; token.label = "Local search step [Pixels]"; token.help = "Translational search step for local alignment. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "1.0"; token.restore = "1.0"; token.type = "float"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "fh"; token.key_prefix = "--"; token.label = "High frequency search limit [1/Pixel]"; token.help = "High frequency search limit in absolute frequency for local alignment. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "float"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "fh"; token.key_prefix = "--"; token.label = "High frequency search limit [1/Pixel]"; token.help = "High frequency search limit in absolute frequency for local alignment. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "abs_freq"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "maxit"; token.key_prefix = "--"; token.label = "Local alignment iterations"; token.help = "The number of iterations for local aligment. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "5"; token.restore = "5"; token.type = "int"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "navg"; token.key_prefix = "--"; token.label = "Number of averages"; token.help = "The number of averages to be process, starting from the first image. By default, uses all ISAC average images. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "-1"; token.restore = "-1"; token.type = "int"; sxcmd.token_list.append(token)
 
@@ -4348,7 +4503,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		token = SXcmd_token(); token.key_base = "img_per_grp"; token.key_prefix = "--"; token.label = "Number of projections"; token.help = "Specify the number of images from the angular neighbourhood that will be used to estimate 2D variance for each projection data. The larger the number the less noisy the estimate, but the lower the resolution. Usage of large number also results in rotational artifacts in variances that will be visible in 3D variability volume. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "10"; token.restore = "10"; token.type = "int"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "sym"; token.key_prefix = "--"; token.label = "Point-group symmetry"; token.help = "If the structure has symmetry higher than c1, the command requires symmetrization of the dataset, using --symmetrize option, before computing 3D variability. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "c1"; token.restore = "c1"; token.type = "sym"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "CTF"; token.key_prefix = "--"; token.label = "Use CTF"; token.help = "If set to true, the a CTF correction will be applied using the parameters found in the image headers. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = True; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "fl"; token.key_prefix = "--"; token.label = "Low-pass filter frequency [1/Pixel]"; token.help = "Stop-band frequency of the low-pass filter to be applied to the images prior to variability calculation. Specify it in absolute frequency (> 0.0 and <= 0.5). By default, no filtering. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "0.0"; token.restore = "0.0"; token.type = "float"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "fl"; token.key_prefix = "--"; token.label = "Low-pass filter frequency [1/Pixel]"; token.help = "Stop-band frequency of the low-pass filter to be applied to the images prior to variability calculation. Specify it in absolute frequency (> 0.0 and <= 0.5). By default, no filtering. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "0.0"; token.restore = "0.0"; token.type = "abs_freq"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "aa"; token.key_prefix = "--"; token.label = "Low-pass filter fall-off [1/Pixel]"; token.help = "Fall-off width of the low-pass filter to be applied to the images prior to variability calculation. Specify it in absolute frequency (> 0.0 and <= 0.5). 0.01 works in most of cases. Effective only with --fl > 0.0 and --aa > 0.0 has to be specified. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "0.0"; token.restore = "0.0"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "ave2D"; token.key_prefix = "--"; token.label = "Output 2D averages"; token.help = "Specify a file name to indicate if the program should write the stack of computed 2D averages to the disk. Useful for debugging. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "output"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "var2D"; token.key_prefix = "--"; token.label = "Output 2D variances"; token.help = "Specify a file name to indicate if the program should write the stack of computed 2D variances to the disk. Useful for debugging. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "output"; sxcmd.token_list.append(token)
