@@ -298,6 +298,8 @@ def depth_clustering(work_dir, depth_order, initial_id_file, params, previous_pa
 					break
 				else:
 					partition_per_box_per_layer_list.append([accounted_list, unaccounted_list])
+			mpi_barrier(MPI_COMM_WORLD)
+			if(Blockdata["myid"] != Blockdata["main_node"]): Tracker = 0
 			'''
 			else: 
 				partition_per_box_per_layer_list = 0
@@ -315,8 +317,7 @@ def depth_clustering(work_dir, depth_order, initial_id_file, params, previous_pa
 			if( bad_clustering == 1):   break
 			if( stop_generation == 1 ): break ### only one cluster survives
 		else:
-			if(Blockdata["myid"] == Blockdata["main_node"]):
-				log_main.add('Layer %d comleted'%depth)
+			if(Blockdata["myid"] == Blockdata["main_node"]):log_main.add('Layer %d comleted'%depth)
 		time_of_sorting_h,  time_of_sorting_m = get_time(time_layer_start)
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			log_main.add('            Execution of layer %d took %d hours %d minutes'%(depth, time_of_sorting_h, time_of_sorting_m))
