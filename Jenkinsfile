@@ -77,7 +77,6 @@ pipeline {
   }
   
   environment {
-    SKIP_UPLOAD = setUploadFlag()
     JOB_TYPE = getJobType()
     GIT_BRANCH_SHORT = sh(returnStdout: true, script: 'echo ${GIT_BRANCH##origin/}').trim()
     GIT_COMMIT_SHORT = sh(returnStdout: true, script: 'echo ${GIT_COMMIT:0:7}').trim()
