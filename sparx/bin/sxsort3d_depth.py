@@ -3757,6 +3757,7 @@ def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1, input_box_parti2, de
 		score_list = [ ]
 		nclass = 0
 		stat_list = []
+		tmp_list  = []
 		log_main.add('               Post-matching results.')
 		log_main.add('{:^14} {:^10}  {:^8} {:^15} {:^22}  {:^5}'.format('    Group', '   size',  ' status ',   'reproducibility', 'random reproducibility', ' std '))
 		from math import sqrt
