@@ -6879,7 +6879,8 @@ def do_random_groups_simulation_mpi(ptp1, ptp2):
 	k = len(plist1)
 	gave  = [ 0.0 for i in xrange(k)]
 	gvar  = [ 0.0 for i in xrange(k)]
-	
+	svar = 0.0
+	save = 0.0
 	for iloop in xrange(Nloop):
 		tlist = []
 		clist = [[] for i in xrange(k)]
