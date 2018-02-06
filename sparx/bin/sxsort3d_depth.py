@@ -3711,12 +3711,12 @@ def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1, input_box_parti2, de
 				maximum_group_size = max(maximum_group_size, len(any))
 				new_list.append(any)
 				nclass +=1
-				log_main.add('{:<8} {:>8d}   {:^8}      {:>7.1f}      {:>15.1f}           {:>5.1f}'.format(index_of_any, len(any),'accepted', score3, \
+				log_main.add('{:>8} {:>8d}   {:^8}      {:>7.1f}      {:>15.1f}           {:>5.1f}'.format(index_of_any, len(any),'accepted', score3, \
 					    gave[index_of_any], gvar[index_of_any]))
 				stat_list.append([score3,  gave[index_of_any], gvar[index_of_any]])
 				tmp_list.append(len(any)*(-1))
 			else:
-				log_main.add('{:>8} {:>8d}   {:^8}      {:>7.1f}      {:>15.1f}            {:>5.1f}'.format(index_of_any, len(any), 'rejected', score3, \
+				log_main.add('{:>8} {:>8d}   {:^8}      {:>7.1f}      {:>15.1f}           {:>5.1f}'.format(index_of_any, len(any), 'rejected', score3, \
 					   gave[index_of_any], gvar[index_of_any]))
 		###
 		if len(tmp_list)>1:
@@ -6724,7 +6724,7 @@ def do_random_groups_simulation_mpi(ptp1, ptp2):
 	if (len(ptp1)>=50) or (len(ptp2)>=50):
 		if(Blockdata["myid"] == Blockdata["main_node"]):
 			print('Warning: the number of groups is too large for simuliaton')
-	Nloop = max(200//Blockdata["nproc"], 1)
+	Nloop = max(1000//Blockdata["nproc"], 1)
 	NT    = 1000
 	a     = []
 	b     = []
@@ -7105,29 +7105,27 @@ def main():
 		continue_from_interuption = 0
 		# sorting starts...
 	
-		if Tracker["constants"]["restart_from_generation"] == -1:
-			continue_from_interuption = create_masterdir()
-			log_main = Logger(BaseLogger_Files())
-			log_main.prefix = Tracker["constants"]["masterdir"]+"/"
-			
+	
+		continue_from_interuption = create_masterdir()
+		log_main = Logger(BaseLogger_Files())
+		log_main.prefix = Tracker["constants"]["masterdir"]+"/"
+		if continue_from_interuption == 0:
 			if Blockdata["myid"] == Blockdata["main_node"]:
 				log_main.add('================================================================================================================')
 				log_main.add('                                 SORT3D IN-DEPTH v1.0')
 				log_main.add('================================================================================================================')
-				
-			if continue_from_interuption == 0:
-				import_data(log_main)
-				print_shell_command(sys.argv, log_main)
-				check_3dmask(log_main)
-				check_mpi_settings(log_main)
-				keepsorting = sort3d_init("initialization", log_main)
-				dump_tracker(Tracker["constants"]["masterdir"])
-				if not keepsorting:
-					from mpi import mpi_finalize
-					mpi_finalize()
-					exit()
-			else:
-				read_tracker_mpi(Tracker["constants"]["masterdir"]) # a simple continuation, continue from the interrupted box
+			import_data(log_main)
+			print_shell_command(sys.argv, log_main)
+			check_3dmask(log_main)
+			check_mpi_settings(log_main)
+			keepsorting = sort3d_init("initialization", log_main)
+			dump_tracker(Tracker["constants"]["masterdir"])
+			if not keepsorting:
+				from mpi import mpi_finalize
+				mpi_finalize()
+				exit()
+		else:
+			read_tracker_mpi(Tracker["constants"]["masterdir"]) # a simple continuation, continue from the interrupted box
 		else: check_restart_from_given_depth_order(options.depth_order, options.restart_from_generation, \
 				 options.restart_from_depth_order, options.restart_from_nbox, log_main) # need a check !!!
 				 
@@ -7288,29 +7286,24 @@ def main():
 		log_main = Logger(BaseLogger_Files())
 		log_main.prefix = Tracker["constants"]["masterdir"]+"/"
 		
-		if Tracker["constants"]["restart_from_generation"] == -1:	
-			#if Blockdata["myid"] == Blockdata["main_node"]:
-			#	print("continue_from_interuption", continue_from_interuption, Blockdata["myid"])
+		if continue_from_interuption == 0:
 			if Blockdata["myid"] == Blockdata["main_node"]:
 				log_main.add('================================================================================================================')
 				log_main.add('                                  SORT3D IN-DEPTH v1.0')
-				log_main.add('================================================================================================================\n')
-			
-			if continue_from_interuption == 0:
-				import_data(log_main)
-				print_shell_command(sys.argv, log_main)
-				check_3dmask(log_main)
-				check_mpi_settings(log_main)
-				keepsorting = sort3d_init("initialization", log_main)
-				dump_tracker(Tracker["constants"]["masterdir"])
-				if not keepsorting:
-					from mpi import mpi_finalize
-					mpi_finalize()
-					exit()
+				log_main.add('================================================================================================================\n')			
+			import_data(log_main)
+			print_shell_command(sys.argv, log_main)
+			check_3dmask(log_main)
+			check_mpi_settings(log_main)
+			keepsorting = sort3d_init("initialization", log_main)
+			dump_tracker(Tracker["constants"]["masterdir"])
+			if not keepsorting:
+				from mpi import mpi_finalize
+				mpi_finalize()
+				exit()
 			else: read_tracker_mpi(Tracker["constants"]["masterdir"]) # a simple continuation, continue from the interrupted box
 		else: check_restart_from_given_depth_order(options.depth_order, options.restart_from_generation, \
 				 options.restart_from_depth_order, options.restart_from_nbox, log_main) # need a check !!!
-				 
 		sorting_main_mpi(log_main, options.depth_order, options.not_include_unaccounted)
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			log_main.add('----------------------------------------------------------------------------------------------------------------' )
