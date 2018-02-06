@@ -6838,6 +6838,7 @@ def print_matching_pairs(pair_list, log_file):
 	
 def do_random_groups_simulation_mpi(ptp1, ptp2):
 	global Tracker, Blockdata
+	import numpy as np
 	# return two lists: group avgs and group stds. The last one of two lists are the total avg and std.
 	if (len(ptp1)>=50) or (len(ptp2)>=50):
 		if(Blockdata["myid"] == Blockdata["main_node"]):
