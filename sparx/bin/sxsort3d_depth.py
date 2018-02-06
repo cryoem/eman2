@@ -4175,7 +4175,7 @@ def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1, input_box_parti2, de
 			fout.close()
 			log_main.add('================================================================================================================\n')
 		else:
-			minimum_group_size, maximum_group_size, new_index, unaccounted_list, bad_clustering, stop_generation, stat_list = 0, 0, 0, 0, 0, 0
+			minimum_group_size, maximum_group_size, new_index, unaccounted_list, bad_clustering, stop_generation, stat_list = 0, 0, 0, 0, 0, 0, 0
 		unaccounted_list = wrap_mpi_bcast(unaccounted_list, Blockdata["main_node"], MPI_COMM_WORLD)
 		new_index = wrap_mpi_bcast(new_index, Blockdata["main_node"], MPI_COMM_WORLD)
 		stat_list = wrap_mpi_bcast(stat_list, Blockdata["main_node"], MPI_COMM_WORLD)
@@ -4236,7 +4236,7 @@ def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1, input_box_parti2, de
 			else:
 				log_main.add('================================================================================================================\n')
 		else:
-			minimum_group_size, maximum_group_size, new_index, unaccounted_list, bad_clustering, stop_generation, stat_list = 0, 0, 0, 0, 0, 0
+			minimum_group_size, maximum_group_size, new_index, unaccounted_list, bad_clustering, stop_generation, stat_list = 0, 0, 0, 0, 0, 0, 0
 		unaccounted_list = wrap_mpi_bcast(unaccounted_list, Blockdata["main_node"], MPI_COMM_WORLD)
 		new_index = wrap_mpi_bcast(new_index, Blockdata["main_node"], MPI_COMM_WORLD)
 		stat_list = wrap_mpi_bcast(stat_list, Blockdata["main_node"], MPI_COMM_WORLD)
