@@ -3698,62 +3698,70 @@ def patch_to_do_k_means_match_clusters_asg_new(ptp1, ptp2):
 		a.tolist()
 		if len(a)>0: new_list_stable.append(a) # remove empty ones
 	return newindeces, new_list_stable, nb_tot_objs, patch_elements
-	
-def do_boxes_two_way_comparison_new(nbox, input_box_parti1, input_box_parti2, depth, log_main):
+		
+def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1, input_box_parti2, depth, log_main):
 	global Tracker, Blockdata
 	import json
 	import numpy as np
-	stop_generation  = 0
-	log_main.add('================================================================================================================')
-	log_main.add(' Two-way comparison of generation %d and layer %d computed between two pairs of independent runs: %d and %d.'%(Tracker["current_generation"],Tracker["depth"],nbox, nbox+1))
-	log_main.add('----------------------------------------------------------------------------------------------------------------')
-	bad_clustering =  0
-	ipair = 0
-	core1 = read_text_row(input_box_parti1)
-	ptp1, tmp1 = split_partition_into_ordered_clusters(core1)
-	core2 = read_text_row(input_box_parti2)
-	ptp2, tmp2 = split_partition_into_ordered_clusters(core2)
+	NT = 1000
+	if Blockdata["myid"]==Blockdata["main_node"]:
+		stop_generation  = 0
+		log_main.add('================================================================================================================')
+		log_main.add(' Two-way comparison of generation %d and layer %d computed between two pairs of independent runs: %d and %d.'%(\
+		      Tracker["current_generation"],Tracker["depth"],nbox, nbox+1))
+		log_main.add('----------------------------------------------------------------------------------------------------------------')
+		bad_clustering =  0
+		ipair = 0
+		core1 = read_text_row(input_box_parti1)
+		ptp1, tmp1 = split_partition_into_ordered_clusters(core1)
+		core2 = read_text_row(input_box_parti2)
+		ptp2, tmp2 = split_partition_into_ordered_clusters(core2)
+	else:
+		ptp1 = 0
+		ptp2 = 0
+	ptp1 = wrap_mpi_bcast(ptp1, Blockdata["main_node"], MPI_COMM_WORLD)
+	ptp2 = wrap_mpi_bcast(ptp2, Blockdata["main_node"], MPI_COMM_WORLD)
 	#### before comparison we do a simulation
+	gave, gvar = do_random_groups_simulation_mpi(ptp1, ptp2)
+	'''
 	stat_list = []
 	tmp_list  = []
-	NT = 1000
-	alist   = []
-	blist   = []
-	plist1  = []
-	plist2  = []
-	
+	alist     = []
+	blist     = []
+	plist1    = []
+	plist2    = []
+
 	for i1 in xrange(len(ptp1)):
 		alist += ptp1[i1]
-	
+
 	for i1 in xrange(len(ptp2)):
 		blist += ptp2[i1]
+
 	
-		
 	tsize = float(len(set(alist+blist)))
-	
-	
+
+
 	k = min(len(ptp1), len(ptp2))
 
 	nsize1 = 0
 	for i1 in xrange(len(ptp1)):
 		plist1.append([nsize1, nsize1 + max(int(float(len(ptp1[i1]))/tsize*100.), 1)])
 		nsize1 += max(int(float(len(ptp1[i1]))/tsize*100.), 1)
-		
+	
 	nsize2 = 0
 	for i1 in xrange(len(ptp2)):
 		plist2.append([nsize2, nsize2 + max(int(float(len(ptp2[i1]))/tsize*100.), 1)])
 		nsize2 += max(int(float(len(ptp2[i1]))/tsize*100.), 1)
-	
+
 	alist = range(100)
 	blist = range(100)
-	
+
 	alist = np.array(alist, "int32")
 	blist = np.array(blist, "int32")
-	
+
 	k =len(ptp1)
 	tlist = []
 	clist = [[] for i in xrange(k)]
-	
 	for iter_simu in xrange(NT):
 		new_clusters1 = []
 		new_clusters2 = []
@@ -3770,260 +3778,9 @@ def do_boxes_two_way_comparison_new(nbox, input_box_parti1, input_box_parti2, de
 				clist[j].append(float((np.intersect1d(new_clusters1[newindeces[j][0]], new_clusters2[newindeces[j][1]])).size)\
 				  /float((np.union1d(new_clusters1[newindeces[j][0]], new_clusters2[newindeces[j][1]])).size)*100.)
 	t = table_stat(tlist)
-	#
-	msg = 'P0      '
-	msg1 ='Group ID'
-	length = max(len(ptp1), len(ptp2))
-	for im in xrange(length):
-		try:    msg +='{:8d} '.format(len(ptp1[im]))
-		except: pass
-		msg1 +='{:8d} '.format(im)
-	log_main.add(msg1)	
-	log_main.add(msg)
-	msg = 'P1      '
-	for im in xrange(len(ptp2)): msg +='{:8d} '.format(len(ptp2[im]))
-	log_main.add(msg)
-	
-	if(len(core1) != len(core2)):  ERROR("Two partitions have different lengths", "do_boxes_two_way_comparison", 1, 0)
-
-	full_list  = []
-	for a in core1: full_list.append(a[1])
-	full_list.sort()
-	total_data = len(full_list)
-	minimum_group_size = total_data
-	maximum_group_size = 0
-	
-	newindeces, list_stable, nb_tot_objs, patch_elements = patch_to_do_k_means_match_clusters_asg_new(ptp1, ptp2)
-	ratio_unaccounted  = 100. - nb_tot_objs/float(total_data)*100.
-	ratio_accounted    = nb_tot_objs/float(total_data)*100.
-	new_list           = []
-	print_matching_pairs(newindeces, log_main)
-	
-	Tracker["current_iter_ratio"] = ratio_accounted
-	score_list = [ ]
-	nclass = 0
-	log_main.add('               Post-matching results.')
-	log_main.add('{:^14} {:^10}  {:^8} {:^15} {:^22}  {:^5}'.format('    Group', '   size',  ' status ',   'reproducibility', 'random reproducibility', ' std '))
-	from math import sqrt
-	for index_of_any in xrange(len(list_stable)):
-		any = list_stable[index_of_any]
-		any.tolist()
-		any.sort()
-		score1 = float(len(any))*100./float(len(ptp1[newindeces[index_of_any][0]]))
-		score2 = float(len(any))*100./float(len(ptp2[newindeces[index_of_any][1]]))
-		score3 = float((np.intersect1d(ptp1[newindeces[index_of_any][0]], ptp2[newindeces[index_of_any][1]])).size)\
-			  /float((np.union1d(ptp1[newindeces[index_of_any][0]], ptp2[newindeces[index_of_any][1]])).size)*100.
-		if( len(any) >= Tracker["constants"]["minimum_grp_size"] ):
-			score_list.append([score1, score2])
-			minimum_group_size = min(minimum_group_size, len(any))
-			maximum_group_size = max(maximum_group_size, len(any))
-			new_list.append(any)
-			nclass +=1
-			log_main.add('{:^14d} {:^10d} {:^8} {:^15.1f} {:^22.1f} {:^5.1f}'.format(index_of_any, len(any),'accepted', score3, \
-			       table_stat(clist[index_of_any])[0], sqrt(table_stat(clist[index_of_any])[1])))
-			stat_list.append([score3, table_stat(clist[index_of_any])[0], sqrt(table_stat(clist[index_of_any])[1])])
-			tmp_list.append(len(any)*(-1))
-		else:
-			log_main.add('{:^14d} {:^10d} {:^8} {:^15.1f} {:^22.1f} {:^5.1f}'.format(index_of_any, len(any), 'rejected', score3, \
-			       table_stat(clist[index_of_any])[0], sqrt(table_stat(clist[index_of_any])[1])))
-	###
-	if len(tmp_list)>1:
-		tmp_new_list = []
-		tmp_stat_list = []
-		tmp_list = np.array(tmp_list, "int32")
-		tmp_list = np.argsort(tmp_list)
-		for ik in xrange(len(tmp_list)): 
-			tmp_stat_list.append(stat_list[tmp_list[ik]])
-			tmp_new_list.append(new_list[tmp_list[ik]])
-		new_list[:]    = tmp_new_list[:]
-		stat_list[:]   = tmp_stat_list[:]
-		
-	if nclass == 0:
-		### redo two way comparison
-		if depth >1:
-			log_main.add('There are no clusters larger than the user provided minimum group size %d.'%Tracker["constants"]["minimum_grp_size"])
-			log_main.add('However, sorting keeps the old results, eliminates the smallest one, and continues')
-
-			ptp1, ucluster1 = split_partition_into_ordered_clusters_split_ucluster(core1)
-			ptp2, ucluster2 = split_partition_into_ordered_clusters_split_ucluster(core2)
-			newindeces, list_stable, nb_tot_objs, patch_elements = patch_to_do_k_means_match_clusters_asg_new(ptp1, ptp2)
-			if len(list_stable)>3:# No change for two groups
-				fake_list = sorted(list_stable, key=len)
-				list_stable.remove(fake_list[0])
-			list_stable = sorted(list_stable, key=len, reverse=True)
-			accounted_list, new_index = merge_classes_into_partition_list(list_stable)
-			a = set(full_list)
-			b = set(accounted_list)
-			unaccounted_list = sorted(list(a.difference(b)))
-			log_main.add('================================================================================================================\n')
-			return minimum_group_size, maximum_group_size, new_index, unaccounted_list, bad_clustering, stop_generation, stat_list
-		else:
-			bad_clustering = 1
-			log_main.add('There are no clusters larger than the user provided minimum group size %d.'%Tracker["constants"]["minimum_grp_size"])
-			log_main.add('The reason can be: (1) There are no groups in the data set. 2. Minimum group size set is too large. (3) Desired number of groups K is too large.')
-			log_main.add('================================================================================================================\n')
-			return minimum_group_size, maximum_group_size, [ ], full_list, bad_clustering, stop_generation, stat_list
-	elif nclass == 1: # Force to stop this generation, and output the cluster; do not do any other box comparison
-		stop_generation  = 1
-		accounted_list, new_index = merge_classes_into_partition_list(new_list)
-		a = set(full_list)
-		b = set(accounted_list)
-		unaccounted_list = sorted(list(a.difference(b)))
-		log_main.add('Only one group found. The program will output it and stop executing the current generation.')
-
-		box1_dir =  os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%Tracker["current_generation"], "layer%d"%Tracker["depth"], "nbox%d"%nbox)
-		box2_dir =  os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%Tracker["current_generation"], "layer%d"%Tracker["depth"], "nbox%d"%(nbox+1))
-		gendir   =  os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%Tracker["current_generation"])
-		fout = open(os.path.join(box1_dir,"freq_cutoff.json"),'r')
-		freq_cutoff_dict1 = convert_json_fromunicode(json.load(fout))
-		fout.close()
-		fout = open(os.path.join(box2_dir,"freq_cutoff.json"),'r')
-		freq_cutoff_dict2 = convert_json_fromunicode(json.load(fout))
-		fout.close()
-		try:
-			fout = open(os.path.join(gendir,"freq_cutoff.json"),'r')
-			freq_cutoff_dict3 = convert_json_fromunicode(json.load(fout))
-			fout.close()
-			freq_cutoff_dict3 = {}
-		except: freq_cutoff_dict3 = {}
-		ncluster = 0
-		for im in xrange(len(newindeces)):
-			try:
-				f1 = freq_cutoff_dict1["Cluster_%03d.txt"%newindeces[im][0]] 
-				f2 = freq_cutoff_dict2["Cluster_%03d.txt"%newindeces[im][1]]
-				freq_cutoff_dict3["Cluster_%03d.txt"%ncluster] = min(f1, f2)
-				ncluster +=1
-			except: pass
-		fout = open(os.path.join(gendir,"freq_cutoff.json"),'w')
-		json.dump(freq_cutoff_dict3, fout)
-		fout.close()
-		log_main.add('================================================================================================================\n')
-		return minimum_group_size, maximum_group_size, new_index, unaccounted_list, bad_clustering, stop_generation, stat_list
-	else:
-		if len(new_list) >= len(list_stable)-1: # all passes size checking, even the outliers group
-			accounted_list, new_index = merge_classes_into_partition_list(new_list)
-			a = set(full_list)
-			b = set(accounted_list)
-			unaccounted_list = sorted(list(a.difference(b)))
-			#msg ='all non-unaccounted groups pass the size checking'
-		else:#drop off the smallest one, and decrease K by one
-			if len(list_stable) >3:
-				fake_list = sorted(list_stable, key=len)
-				list_stable.remove(fake_list[0])
-			list_stable = sorted(list_stable, key=len, reverse=True)
-			accounted_list, new_index = merge_classes_into_partition_list(list_stable)
-			a = set(full_list)
-			b = set(accounted_list)
-			unaccounted_list = sorted(list(a.difference(b)))
-
-		log_main.add(' {} {} {} {}'.format('  The number of accounted for images:', len(accounted_list),'  The number of unaccounted for images:', len(unaccounted_list)))
-		log_main.add('  The current minimum group size: %d and the maximum group size: %d'%(minimum_group_size, maximum_group_size))
-		
-		if depth <= 1: # the last layer
-			box1_dir =  os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%Tracker["current_generation"], "layer%d"%Tracker["depth"], "nbox%d"%nbox)
-			box2_dir =  os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%Tracker["current_generation"], "layer%d"%Tracker["depth"], "nbox%d"%(nbox+1))
-			gendir   =  os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%Tracker["current_generation"])
-			fout = open(os.path.join(box1_dir,"freq_cutoff.json"),'r')
-			freq_cutoff_dict1 = convert_json_fromunicode(json.load(fout))
-			fout.close()
-			fout = open(os.path.join(box2_dir,"freq_cutoff.json"),'r')
-			freq_cutoff_dict2 = convert_json_fromunicode(json.load(fout))
-			fout.close()
-			try:
-				fout = open(os.path.join(gendir,"freq_cutoff.json"),'r')
-				freq_cutoff_dict3 = convert_json_fromunicode(json.load(fout))
-				fout.close()
-				freq_cutoff_dict3 = {}
-			except: freq_cutoff_dict3 = {}
-			ncluster = 0
-			for im in xrange(len(newindeces)):
-				try:
-					f1 = freq_cutoff_dict1["Cluster_%03d.txt"%newindeces[im][0]] 
-					f2 = freq_cutoff_dict2["Cluster_%03d.txt"%newindeces[im][1]]
-					freq_cutoff_dict3["Cluster_%03d.txt"%ncluster] = min(f1, f2)
-					ncluster +=1
-				except: pass
-			fout = open(os.path.join(gendir,"freq_cutoff.json"),'w')
-			json.dump(freq_cutoff_dict3, fout)
-			fout.close()
-			log_main.add('================================================================================================================\n')
-		else:
-			log_main.add('================================================================================================================\n')
-		return minimum_group_size, maximum_group_size, new_index, unaccounted_list, bad_clustering, stop_generation, stat_list
-		
-def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1, input_box_parti2, depth, log_main):
-	global Tracker, Blockdata
-	import json
-	import numpy as np
+	'''
 	if Blockdata["myid"]==Blockdata["main_node"]:
-		stop_generation  = 0
-		log_main.add('================================================================================================================')
-		log_main.add(' Two-way comparison of generation %d and layer %d computed between two pairs of independent runs: %d and %d.'%(Tracker["current_generation"],Tracker["depth"],nbox, nbox+1))
-		log_main.add('----------------------------------------------------------------------------------------------------------------')
-		bad_clustering =  0
-		ipair = 0
-		core1 = read_text_row(input_box_parti1)
-		ptp1, tmp1 = split_partition_into_ordered_clusters(core1)
-		core2 = read_text_row(input_box_parti2)
-		ptp2, tmp2 = split_partition_into_ordered_clusters(core2)
-		#### before comparison we do a simulation
-		stat_list = []
-		tmp_list  = []
-		NT = 1000
-		alist   = []
-		blist   = []
-		plist1  = []
-		plist2  = []
-	
-		for i1 in xrange(len(ptp1)):
-			alist += ptp1[i1]
-	
-		for i1 in xrange(len(ptp2)):
-			blist += ptp2[i1]
-	
-		
-		tsize = float(len(set(alist+blist)))
-	
-	
-		k = min(len(ptp1), len(ptp2))
-
-		nsize1 = 0
-		for i1 in xrange(len(ptp1)):
-			plist1.append([nsize1, nsize1 + max(int(float(len(ptp1[i1]))/tsize*100.), 1)])
-			nsize1 += max(int(float(len(ptp1[i1]))/tsize*100.), 1)
-		
-		nsize2 = 0
-		for i1 in xrange(len(ptp2)):
-			plist2.append([nsize2, nsize2 + max(int(float(len(ptp2[i1]))/tsize*100.), 1)])
-			nsize2 += max(int(float(len(ptp2[i1]))/tsize*100.), 1)
-	
-		alist = range(100)
-		blist = range(100)
-	
-		alist = np.array(alist, "int32")
-		blist = np.array(blist, "int32")
-	
-		k =len(ptp1)
-		tlist = []
-		clist = [[] for i in xrange(k)]
-	
-		for iter_simu in xrange(NT):
-			new_clusters1 = []
-			new_clusters2 = []
-			np.random.shuffle(alist)
-			np.random.shuffle(blist)	
-			for j in xrange(k):new_clusters1.append(alist[plist1[j][0]:plist1[j][1]])
-			for j in xrange(k):new_clusters2.append(blist[plist2[j][0]:plist2[j][1]])
-			for j in xrange(k): new_clusters1[j] = np.sort(new_clusters1[j])
-			for j in xrange(k): new_clusters2[j] = np.sort(new_clusters2[j])
-			newindeces, list_stable, nb_tot_objs = k_means_match_clusters_asg_new(new_clusters1,new_clusters2)
-			tlist.append(nb_tot_objs/float((np.union1d(alist, blist)).size)*100.)	
-			for j in xrange(len(newindeces)):
-				if list_stable[j].size > 0:
-					clist[j].append(float((np.intersect1d(new_clusters1[newindeces[j][0]], new_clusters2[newindeces[j][1]])).size)\
-					  /float((np.union1d(new_clusters1[newindeces[j][0]], new_clusters2[newindeces[j][1]])).size)*100.)
-		t = table_stat(tlist)
-		#
+		#####
 		msg = 'P0      '
 		msg1 ='Group ID'
 		length = max(len(ptp1), len(ptp2))
@@ -4073,12 +3830,12 @@ def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1, input_box_parti2, de
 				new_list.append(any)
 				nclass +=1
 				log_main.add('{:^14d} {:^10d} {:^8} {:^15.1f} {:^22.1f} {:^5.1f}'.format(index_of_any, len(any),'accepted', score3, \
-					   table_stat(clist[index_of_any])[0], sqrt(table_stat(clist[index_of_any])[1])))
-				stat_list.append([score3, table_stat(clist[index_of_any])[0], sqrt(table_stat(clist[index_of_any])[1])])
+					    gave[index_of_any], gvar[index_of_any]))
+				stat_list.append([score3,  gave[index_of_any], gvar[index_of_any]])
 				tmp_list.append(len(any)*(-1))
 			else:
 				log_main.add('{:^14d} {:^10d} {:^8} {:^15.1f} {:^22.1f} {:^5.1f}'.format(index_of_any, len(any), 'rejected', score3, \
-					   table_stat(clist[index_of_any])[0], sqrt(table_stat(clist[index_of_any])[1])))
+					   gave[index_of_any], gvar[index_of_any]))
 		###
 		if len(tmp_list)>1:
 			tmp_new_list = []
@@ -7185,6 +6942,8 @@ def do_random_groups_simulation_mpi(ptp1, ptp2):
 	else:
 		gave = 0
 		gvar = 0
+	gave = wrap_mpi_bcast(gave, Blockdata["main_node"], MPI_COMM_WORLD)
+	gvar = wrap_mpi_bcast(gvar, Blockdata["main_node"], MPI_COMM_WORLD)
 	return gave, gvar
 
 def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
