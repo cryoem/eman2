@@ -1279,7 +1279,7 @@ def sort3d_init(to_be_decided, log_main):
 	Tracker["number_of_groups"]        = Tracker["total_stack"]//Tracker["constants"]["img_per_grp"]
 	Tracker["minimum_grp_size"] = Tracker["constants"]["minimum_grp_size"]
 	if Tracker["constants"]["minimum_grp_size"]>Tracker["img_per_grp"]:
-		ERROR("Number of groups is less than minimum group size", "sort3d_init", 1, Blockdata["myid"])
+		#ERROR("Number of groups is less than minimum group size", "sort3d_init", 1, Blockdata["myid"])
 		keepsorting = 0
 	return keepsorting
 
@@ -1291,43 +1291,6 @@ def print_shell_command(args_list, log_main):
 		for a in args_list: line +=(a + " ")
 		log_main.add(line)
 	mpi_barrier(MPI_COMM_WORLD)
-	return
-
-def sort3d_utils(to_be_decided, log_main = None, input_file1 = None):
-	global Tracker, Blockdata
-	from utilities import get_number_of_groups
-	### global initialization
-	
-	try:    Tracker["sort3d_counter"] +=1
-	except: Tracker["sort3d_counter"]  =0
-		
-	#if Blockdata["myid"] == Blockdata["main_node"]:
-	#	#msg = "sort3d_step  %d  "%Tracker["sort3d_counter"]+ to_be_decided
-	#	#
-	#	#if log_main != None: log_main.add(msg)
-		
-	if to_be_decided == "initialization":
-		sort3d_init(to_be_decided, log_main)
-		return True
-		
-	elif to_be_decided == "check_mpi_settings":
-		check_mpi_settings(log_main)
-		return
-		
-	elif to_be_decided =="check_mask3d":
-		check_3dmask(log_main)
-		return
-
-	elif to_be_decided =="import_data":
-		import_data(log_main)
-		return
-		
-	elif to_be_decided =="create_masterdir":
-		return create_masterdir(log_main)
-		
-	elif to_be_decided =="print_command":
-		print_shell_command(sys.argv, log_main)
-		return
 	return
 	
 def reset_assignment_to_previous_groups(assignment, match_pairs):
@@ -2390,7 +2353,7 @@ def read_paramstructure_for_sorting(partids, paramstructure_dict_file, paramstru
 ###7 copy oldparamstructures from meridien
 def copy_oldparamstructure_from_meridien_MPI(selected_iteration, log_main):
 	global Tracker, Blockdata
-	from utilities    import read_text_row, cmdexecute, write_text_row, read_text_file,wrap_mpi_bcast
+	from utilities    import read_text_row, write_text_row, read_text_file,wrap_mpi_bcast
 	from applications import MPI_start_end
 	import json
 	Tracker["directory"] = os.path.join(Tracker["constants"]["masterdir"], "main%03d"%selected_iteration)
@@ -3732,7 +3695,7 @@ def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1, input_box_parti2, de
 		stat_list = []
 		tmp_list  = []
 		log_main.add('               Post-matching results.')
-		log_main.add('{:>8} {:>8}  {:^8}   {:>15} {:>22}  {:>5}'.format('   Group', '    size',  ' status ',   'reproducibility', 'random reproducibility', ' std '))
+		log_main.add('{:>8} {:>8}  {:^8}   {:>15} {:>22}  {:>5}'.format('Group   ', '    size',  ' status ',   'reproducibility', 'random reproducibility', ' std '))
 		from math import sqrt
 		for index_of_any in xrange(len(list_stable)):
 			any = list_stable[index_of_any]
@@ -5478,7 +5441,6 @@ def do3d_sorting_groups_rec3d(iteration, masterdir, log_main):
 	#if(Blockdata["myid"] == Blockdata["nodes"][0]):
 	#	cmd = "{} {}".format("mkdir", os.path.join(Tracker["directory"], "tempdir"))
 	#	if os.path.exists(os.path.join(Tracker["directory"], "tempdir")): print("tempdir exists")
-	#	else:                                                             cmdexecute(cmd)
 	### ====	
 	fsc143                          =   0
 	fsc05                           =   0
@@ -6632,7 +6594,7 @@ def check_sorting(total_data, keepsorting, log_file):
 		else: keepsorting     = 0
 	if keepsorting ==1:
 		Tracker["total_stack"] = total_data
-		sort3d_init("initialization", log_file)
+		keepsorting = sort3d_init("initialization", log_file)
 	return keepsorting
 
 def copy_results(log_file, all_gen_stat_list):
@@ -6645,7 +6607,7 @@ def copy_results(log_file, all_gen_stat_list):
 		log_file.add('                     Final results saved in %s'%Tracker["constants"]["masterdir"])
 		log_file.add('----------------------------------------------------------------------------------------------------------------' )
 		nclusters = 0
-		log_file.add( '{:^8} {:>8}   {:^24}  {:>15} {:^22} {:^5} {:^15} {:^20} '.format('Group ID', '  size  ','determined in generation', \
+		log_file.add( '{:^8} {:>8}   {:^24}  {:>15} {:^22} {:^5} {:^15} {:^20} '.format('Group ID', '    size','determined in generation', \
 		      'reproducibility', 'random reproducibility', ' std ', ' selection file',  \
 		          '       map file     '))
 		clusters = []
@@ -6664,7 +6626,7 @@ def copy_results(log_file, all_gen_stat_list):
 				   "generation_%03d"%ig, "Cluster_%03d.txt"%ic))
 				cluster_file = "Cluster_%03d.txt"%nclusters
 				vol_file     = "vol_cluster%03d.hdf"%nclusters
-				msg = '{:^8} {:>8}   {:^24} {:^6}          {:^6}        {:>5}  {:^15} {:^20} '.format(nclusters, len(cluster), ig, \
+				msg = '{:^8} {:>8}   {:^24}        {:^6}          {:^6}        {:>5}  {:^15} {:^20} '.format(nclusters, len(cluster), ig, \
 				    round(all_gen_stat_list[ig][ic][0],1), round(all_gen_stat_list[ig][ic][1],1), round(all_gen_stat_list[ig][ic][2],1), cluster_file,  vol_file)
 				nclusters +=1
 				NACC +=len(cluster)
@@ -7133,8 +7095,7 @@ def main():
 		
 		#                            imported functions
 		from statistics 	import k_means_match_clusters_asg_new,k_means_stab_bbenum
-		from utilities 		import get_im,bcast_number_to_all,cmdexecute,write_text_file,read_text_file,wrap_mpi_bcast, get_params_proj, write_text_row
-		from utilities 		import get_number_of_groups
+		from utilities 		import get_im,bcast_number_to_all, write_text_file,read_text_file,wrap_mpi_bcast, get_params_proj, write_text_row
 		from filter			import filt_tanl
 		from time           import sleep
 		from logger         import Logger,BaseLogger_Files
@@ -7317,8 +7278,7 @@ def main():
 	
 		#                        mported functions
 		from statistics 	import k_means_match_clusters_asg_new,k_means_stab_bbenum
-		from utilities 		import get_im,bcast_number_to_all,cmdexecute,write_text_file,read_text_file,wrap_mpi_bcast, get_params_proj, write_text_row
-		from utilities 		import get_number_of_groups
+		from utilities 		import get_im,bcast_number_to_all, write_text_file,read_text_file,wrap_mpi_bcast, get_params_proj, write_text_row
 		from filter			import filt_tanl
 		from time           import sleep
 		from logger         import Logger,BaseLogger_Files
