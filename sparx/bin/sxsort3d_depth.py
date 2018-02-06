@@ -6866,7 +6866,7 @@ def do_random_groups_simulation_mpi(ptp1, ptp2):
 		
 	if len(ptp1)>len(ptp2):
 		for j in xrange(len(len(ptp1)-len(ptp2))):
-			plist2.append([nsize2, nsize2+ 1])
+			plist2.append([nsize2, nsize2+1])
 			nsize2 += 1
 			
 	elif len(ptp2)>len(ptp1):
@@ -6936,7 +6936,7 @@ def do_random_groups_simulation_mpi(ptp1, ptp2):
 		save = save/float(Blockdata["nproc"]*Nloop)
 		print (svar, save)
 		for i in xrange(k):
-			gave[i] = gave/float(Blockdata["nproc"]*Nloop)
+			gave[i] = gave[i]/float(Blockdata["nproc"]*Nloop)
 			gvar[i] = sqrt(gvar[i]/float(Blockdata["nproc"]*Nloop))
 		gave.append(save)
 		gvar.append(svar)
