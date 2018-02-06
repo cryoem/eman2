@@ -223,9 +223,6 @@ def depth_clustering(work_dir, depth_order, initial_id_file, params, previous_pa
 	
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		if not os.path.exists(init_layer_dir): os.mkdir(init_layer_dir)
-		#msg = "depth_clustering starts"
-		#log_main.add(msg)
-		#
 	
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		partition_per_box_per_layer_list = []
@@ -6843,6 +6840,7 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 		keepchecking = bcast_number_to_all(keepchecking, Blockdata["main_node"], MPI_COMM_WORLD)
 		if keepchecking == 0: # new, do it
 			if Blockdata["myid"] == Blockdata["main_node"]:
+				time_generation_start = time.time()
 				os.mkdir(work_dir)
 				freq_cutoff_dict = {}
 				fout = open(os.path.join(work_dir, "freq_cutoff.json"),'w')
