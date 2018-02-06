@@ -3723,62 +3723,6 @@ def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1, input_box_parti2, de
 	ptp2 = wrap_mpi_bcast(ptp2, Blockdata["main_node"], MPI_COMM_WORLD)
 	#### before comparison we do a simulation
 	gave, gvar = do_random_groups_simulation_mpi(ptp1, ptp2)
-	'''
-	stat_list = []
-	tmp_list  = []
-	alist     = []
-	blist     = []
-	plist1    = []
-	plist2    = []
-
-	for i1 in xrange(len(ptp1)):
-		alist += ptp1[i1]
-
-	for i1 in xrange(len(ptp2)):
-		blist += ptp2[i1]
-
-	
-	tsize = float(len(set(alist+blist)))
-
-
-	k = min(len(ptp1), len(ptp2))
-
-	nsize1 = 0
-	for i1 in xrange(len(ptp1)):
-		plist1.append([nsize1, nsize1 + max(int(float(len(ptp1[i1]))/tsize*100.), 1)])
-		nsize1 += max(int(float(len(ptp1[i1]))/tsize*100.), 1)
-	
-	nsize2 = 0
-	for i1 in xrange(len(ptp2)):
-		plist2.append([nsize2, nsize2 + max(int(float(len(ptp2[i1]))/tsize*100.), 1)])
-		nsize2 += max(int(float(len(ptp2[i1]))/tsize*100.), 1)
-
-	alist = range(100)
-	blist = range(100)
-
-	alist = np.array(alist, "int32")
-	blist = np.array(blist, "int32")
-
-	k =len(ptp1)
-	tlist = []
-	clist = [[] for i in xrange(k)]
-	for iter_simu in xrange(NT):
-		new_clusters1 = []
-		new_clusters2 = []
-		np.random.shuffle(alist)
-		np.random.shuffle(blist)	
-		for j in xrange(k):new_clusters1.append(alist[plist1[j][0]:plist1[j][1]])
-		for j in xrange(k):new_clusters2.append(blist[plist2[j][0]:plist2[j][1]])
-		for j in xrange(k): new_clusters1[j] = np.sort(new_clusters1[j])
-		for j in xrange(k): new_clusters2[j] = np.sort(new_clusters2[j])
-		newindeces, list_stable, nb_tot_objs = k_means_match_clusters_asg_new(new_clusters1,new_clusters2)
-		tlist.append(nb_tot_objs/float((np.union1d(alist, blist)).size)*100.)	
-		for j in xrange(len(newindeces)):
-			if list_stable[j].size > 0:
-				clist[j].append(float((np.intersect1d(new_clusters1[newindeces[j][0]], new_clusters2[newindeces[j][1]])).size)\
-				  /float((np.union1d(new_clusters1[newindeces[j][0]], new_clusters2[newindeces[j][1]])).size)*100.)
-	t = table_stat(tlist)
-	'''
 	if Blockdata["myid"]==Blockdata["main_node"]:
 		#####
 		msg = 'P0      '
@@ -3812,6 +3756,7 @@ def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1, input_box_parti2, de
 		Tracker["current_iter_ratio"] = ratio_accounted
 		score_list = [ ]
 		nclass = 0
+		stat_list = []
 		log_main.add('               Post-matching results.')
 		log_main.add('{:^14} {:^10}  {:^8} {:^15} {:^22}  {:^5}'.format('    Group', '   size',  ' status ',   'reproducibility', 'random reproducibility', ' std '))
 		from math import sqrt
