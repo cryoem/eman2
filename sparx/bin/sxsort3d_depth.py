@@ -1236,7 +1236,7 @@ def import_data(log_main):
 		ERROR("Minimum_grp_size is too large", "sxsort3d_depth.py", 1,  Blockdata["myid"])
 	return
 	
-def create_masterdir(log_main):
+def create_masterdir():
 	global Tracker, Blockdata
 	masterdir = Tracker["constants"]["masterdir"]
 	restart   = 0
@@ -7109,7 +7109,7 @@ def main():
 		# sorting starts...
 	
 		if Tracker["constants"]["restart_from_generation"] == -1:
-			continue_from_interuption = sort3d_utils("create_masterdir", None)
+			continue_from_interuption = create_masterdir()
 			log_main = Logger(BaseLogger_Files())
 			log_main.prefix = Tracker["constants"]["masterdir"]+"/"
 			
@@ -7290,7 +7290,7 @@ def main():
 		continue_from_interuption = 0
 		# sorting starts...
 		
-		continue_from_interuption = sort3d_utils("create_masterdir", None)
+		continue_from_interuption = create_masterdir()
 		log_main = Logger(BaseLogger_Files())
 		log_main.prefix = Tracker["constants"]["masterdir"]+"/"
 		
