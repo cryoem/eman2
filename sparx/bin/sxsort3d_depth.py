@@ -1270,16 +1270,16 @@ def sort3d_init(to_be_decided, log_main):
 	global Tracker, Blockdata
 	keepsorting = 1
 	if Tracker["constants"]["img_per_grp"]<= 2:
-		#ERROR("Number of images per group is too small", "sort3d_init", 1, Blockdata["myid"])
+		log_main.add("Number of images per group is too small")
 		keepsorting = 0
 	if Tracker["total_stack"] <= Blockdata["nproc"]*2:
-		#ERROR("Either user requires too many processors, or number of images is too small", "sort3d_init", 1, Blockdata["myid"])
+		log_main.add("Either user requires too many processors, or number of images is too small")
 		keepsorting = 0
 	Tracker["img_per_grp"]             = Tracker["constants"]["img_per_grp"]
 	Tracker["number_of_groups"]        = Tracker["total_stack"]//Tracker["constants"]["img_per_grp"]
-	Tracker["minimum_grp_size"] = Tracker["constants"]["minimum_grp_size"]
+	Tracker["minimum_grp_size"]        = Tracker["constants"]["minimum_grp_size"]
 	if Tracker["constants"]["minimum_grp_size"]>Tracker["img_per_grp"]:
-		#ERROR("Number of groups is less than minimum group size", "sort3d_init", 1, Blockdata["myid"])
+		log_main.add("Number of groups is less than minimum group size")
 		keepsorting = 0
 	return keepsorting
 
@@ -3695,7 +3695,7 @@ def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1, input_box_parti2, de
 		stat_list = []
 		tmp_list  = []
 		log_main.add('               Post-matching results.')
-		log_main.add('{:>8} {:>8}  {:^8}   {:>15} {:>22}  {:>5}'.format('Group   ', '    size',  ' status ',   'reproducibility', 'random reproducibility', ' std '))
+		log_main.add('{:>5} {:>8}  {:^8}   {:>15} {:>22}  {:>5}'.format('Group', '    size',  ' status ',   'reproducibility', 'random reproducibility', ' std '))
 		from math import sqrt
 		for index_of_any in xrange(len(list_stable)):
 			any = list_stable[index_of_any]
@@ -3711,12 +3711,12 @@ def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1, input_box_parti2, de
 				maximum_group_size = max(maximum_group_size, len(any))
 				new_list.append(any)
 				nclass +=1
-				log_main.add('{:>8} {:>8d}   {:^8}      {:>7.1f}      {:>15.1f}           {:>5.1f}'.format(index_of_any, len(any),'accepted', score3, \
+				log_main.add('{:>5} {:>8d}   {:^8}      {:>7.1f}      {:>15.1f}           {:>5.1f}'.format(index_of_any, len(any),'accepted', score3, \
 					    gave[index_of_any], gvar[index_of_any]))
 				stat_list.append([score3,  gave[index_of_any], gvar[index_of_any]])
 				tmp_list.append(len(any)*(-1))
 			else:
-				log_main.add('{:>8} {:>8d}   {:^8}      {:>7.1f}      {:>15.1f}           {:>5.1f}'.format(index_of_any, len(any), 'rejected', score3, \
+				log_main.add('{:>5} {:>8d}   {:^8}      {:>7.1f}      {:>15.1f}           {:>5.1f}'.format(index_of_any, len(any), 'rejected', score3, \
 					   gave[index_of_any], gvar[index_of_any]))
 		###
 		if len(tmp_list)>1:
@@ -3972,7 +3972,7 @@ def do_withinbox_two_way_comparison(partition_dir, nbox, nrun, niter):
 	score_list = [ ]
 	nclass     = 0
 	log_list.append('               Post-matching results.')
-	log_list.append('{:^12} {:>10} {:>17} {:>8} {:>15}'.format('    Group', '   size', 'min random size', ' status ',   'reproducibility'))
+	log_list.append('{:>8} {:>10} {:>17} {:>8} {:>15}'.format('Group ID', '   size', 'min random size', ' status ',   'reproducibility'))
 	current_MGR = get_MGR_from_two_way_comparison(newindeces, ptp1, ptp2, total_data)
 	stable_clusters   = []
 	selected_clusters = []
@@ -3990,10 +3990,10 @@ def do_withinbox_two_way_comparison(partition_dir, nbox, nrun, niter):
 			minimum_group_size = min(minimum_group_size, len(any))
 			maximum_group_size = max(maximum_group_size, len(any))
 			nclass +=1
-			log_list.append('{:^12d} {:>10d} {:>10d}        {:>8} {:>8.1f}       '.format(index_of_any, len(any), current_MGR[index_of_any],'accepted', score3))
+			log_list.append('{:>8} {:>10d} {:>10d}        {:>8} {:>8.1f}       '.format(index_of_any, len(any), current_MGR[index_of_any],'accepted', score3))
 			selected_clusters.append(any)
 		else:
-			log_list.append('{:^12d} {:>10d} {:>10d}        {:>8}  {:>8.1f}       '.format(index_of_any, len(any), current_MGR[index_of_any], 'rejected', score3))
+			log_list.append('{:>8} {:>10d} {:>10d}        {:>8}  {:>8.1f}       '.format(index_of_any, len(any), current_MGR[index_of_any], 'rejected', score3))
 			
 	accounted_list, new_index = merge_classes_into_partition_list(selected_clusters)
 	a = set(full_list)
@@ -7120,7 +7120,7 @@ def main():
 			check_mpi_settings(log_main)
 			keepsorting = sort3d_init("initialization", log_main)
 			dump_tracker(Tracker["constants"]["masterdir"])
-			if not keepsorting:
+			if keepsorting == 0:
 				from mpi import mpi_finalize
 				mpi_finalize()
 				exit()
@@ -7295,7 +7295,7 @@ def main():
 			check_mpi_settings(log_main)
 			keepsorting = sort3d_init("initialization", log_main)
 			dump_tracker(Tracker["constants"]["masterdir"])
-			if not keepsorting:
+			if keepsorting ==0:
 				from mpi import mpi_finalize
 				mpi_finalize()
 				exit()
