@@ -3825,14 +3825,14 @@ def do_boxes_two_way_comparison_new(nbox, input_box_parti1, input_box_parti2, de
 			       table_stat(clist[index_of_any])[0], sqrt(table_stat(clist[index_of_any])[1])))
 	###
 	if len(tmp_list)>1:
-		tmp_list_stable = []
+		tmp_new_list = []
 		tmp_stat_list = []
 		tmp_list = np.array(tmp_list, "int32")
 		tmp_list = np.argsort(tmp_list)
 		for ik in xrange(len(tmp_list)): 
 			tmp_stat_list.append(stat_list[tmp_list[ik]])
-			tmp_list_stable.append(list_stable[tmp_list[ik]])
-		list_stable[:] = tmp_list_stable[:]
+			tmp_new_list.append(new_list[tmp_list[ik]])
+		new_list[:]    = tmp_new_list[:]
 		stat_list[:]   = tmp_stat_list[:]
 		
 	if nclass == 0:
