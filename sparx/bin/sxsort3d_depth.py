@@ -3711,12 +3711,12 @@ def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1, input_box_parti2, de
 				maximum_group_size = max(maximum_group_size, len(any))
 				new_list.append(any)
 				nclass +=1
-				log_main.add('{:>8} {:>8d} {:^8}   {:>7.1f}      {:>15.1f}           {:>5.1f}'.format(index_of_any, len(any),'accepted', score3, \
+				log_main.add('{:<8} {:>8d}   {:^8}      {:>7.1f}      {:>15.1f}           {:>5.1f}'.format(index_of_any, len(any),'accepted', score3, \
 					    gave[index_of_any], gvar[index_of_any]))
 				stat_list.append([score3,  gave[index_of_any], gvar[index_of_any]])
 				tmp_list.append(len(any)*(-1))
 			else:
-				log_main.add('{:>8} {:>8d} {:^8}   {:>7.1f}      {:>15.1f}            {:>5.1f}'.format(index_of_any, len(any), 'rejected', score3, \
+				log_main.add('{:>8} {:>8d}   {:^8}      {:>7.1f}      {:>15.1f}            {:>5.1f}'.format(index_of_any, len(any), 'rejected', score3, \
 					   gave[index_of_any], gvar[index_of_any]))
 		###
 		if len(tmp_list)>1:
@@ -6626,7 +6626,7 @@ def copy_results(log_file, all_gen_stat_list):
 				   "generation_%03d"%ig, "Cluster_%03d.txt"%ic))
 				cluster_file = "Cluster_%03d.txt"%nclusters
 				vol_file     = "vol_cluster%03d.hdf"%nclusters
-				msg = '{:^8} {:>8}   {:^24}        {:^6}          {:^6}        {:>5}  {:^15} {:^20} '.format(nclusters, len(cluster), ig, \
+				msg = '{:>8} {:>8}   {:^24}        {:^6}          {:^6}          {:>5}  {:^15} {:^20} '.format(nclusters, len(cluster), ig, \
 				    round(all_gen_stat_list[ig][ic][0],1), round(all_gen_stat_list[ig][ic][1],1), round(all_gen_stat_list[ig][ic][2],1), cluster_file,  vol_file)
 				nclusters +=1
 				NACC +=len(cluster)
@@ -6836,8 +6836,8 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 	time_sorting_start = time.time()
 	Tracker["generation"]         = {}
 	Tracker["current_generation"] = 0
-	keepsorting  = 1
-	keepchecking = 1
+	keepsorting                   = 1
+	keepchecking                  = 1
 	Tracker["current_generation"] = -1
 	igen              = -1
 	my_pids           = os.path.join(Tracker["constants"]["masterdir"], "indexes.txt")
@@ -6972,9 +6972,6 @@ def main():
 		parser.add_option("--swap_ratio",                        type   ="float",         default =1.0,                    help="randomness ratio of swapping accounted elements with unaccounted elemetns per cluster")
 		parser.add_option("--notapplybckgnoise",                 action ="store_true",    default =False,                  help="do not applynoise")
 		parser.add_option("--do_swap_au",                        action ="store_true",    default =False,                  help="swap flag")
-		#parser.add_option("--restart_from_generation",		     type   ="int",           default =-1,					   help="restart from this geneartion,  the defalut value implies there is no restart")
-		#parser.add_option("--restart_from_depth_order",		 type   ="int",           default =-1,					   help="restart from this depth order, the defalut value implies there is no restart")
-		#parser.add_option("--restart_from_nbox",				 type   ="int",           default = 0,					   help="restart from the nubmer of box in the specified depth level")
 		(options, args) = parser.parse_args(sys.argv[1:])
 		from utilities import bcast_number_to_all
 		### Sanity check
@@ -7161,9 +7158,6 @@ def main():
 		parser.add_option("--swap_ratio",                        type   ="float",         default =1.0,                    help="randomness ratio of swapping accounted elements with unaccounted elemetns per cluster")
 		parser.add_option("--notapplybckgnoise",                 action ="store_true",    default =False,                  help="flag to turn off background noise")
 		parser.add_option("--do_swap_au",                        action ="store_true",    default =False,                  help="swap flag")
-		#parser.add_option("--restart_from_generation",		     type   ="int",           default =-1,					   help="restart from this geneartion,  the defalut value implies there is no restart")
-		#parser.add_option("--restart_from_depth_order",		 type   ="int",           default =-1,					   help="restart from this depth order, the defalut value implies there is no restart")
-		#parser.add_option("--restart_from_nbox",				 type   ="int",           default = 0,					   help="restart from the nubmer of box in the specified depth level")
 		(options, args) = parser.parse_args(sys.argv[1:])
 		from utilities import bcast_number_to_all
 		### Sanity check
