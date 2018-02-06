@@ -3699,6 +3699,7 @@ def patch_to_do_k_means_match_clusters_asg_new(ptp1, ptp2):
 def do_boxes_two_way_comparison_new(nbox, input_box_parti1, input_box_parti2, depth, log_main):
 	global Tracker, Blockdata
 	import json
+	import numpy as np
 	stop_generation  = 0
 	log_main.add('================================================================================================================')
 	log_main.add(' Two-way comparison of generation %d and layer %d computed between two pairs of independent runs: %d and %d.'%(Tracker["current_generation"],Tracker["depth"],nbox, nbox+1))
@@ -3711,9 +3712,8 @@ def do_boxes_two_way_comparison_new(nbox, input_box_parti1, input_box_parti2, de
 	ptp2, tmp2 = split_partition_into_ordered_clusters(core2)
 	#### before comparison we do a simulation
 	stat_list = []
+	tmp_list  = []
 	NT = 1000
-	import numpy as np
-	
 	alist   = []
 	blist   = []
 	plist1  = []
@@ -3819,10 +3819,17 @@ def do_boxes_two_way_comparison_new(nbox, input_box_parti1, input_box_parti2, de
 			log_main.add('{:^14d} {:^10d} {:^8} {:^15.1f} {:^22.1f} {:^5.1f}'.format(index_of_any, len(any),'accepted', score3, \
 			       table_stat(clist[index_of_any])[0], sqrt(table_stat(clist[index_of_any])[1])))
 			stat_list.append([score3, table_stat(clist[index_of_any])[0], sqrt(table_stat(clist[index_of_any])[1])])
+			tmp_list.append(len(any)*(-1))
 		else:
 			log_main.add('{:^14d} {:^10d} {:^8} {:^15.1f} {:^22.1f} {:^5.1f}'.format(index_of_any, len(any), 'rejected', score3, \
 			       table_stat(clist[index_of_any])[0], sqrt(table_stat(clist[index_of_any])[1])))
-	
+	###
+	if len(tmp_list>1:
+		tmp_stat_list = []
+		tmp_list = np.array(tmp_list, "int32")
+		tmp_list = np.argsort(tmp_list)
+		for ik in xrange(len(tmp_ist)): tmp_stat_list.append(stat_list[tmp_ist[ik]])
+		stat_list[:] = tmp_list[:]
 	if nclass == 0:
 		### redo two way comparison
 		if depth >1:
@@ -6875,7 +6882,6 @@ def do_random_groups_simulation_mpi(ptp1, ptp2):
 	else:
 		gave = 0
 		gvar = 0
-	
 	return gave, gvar
 
 def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
