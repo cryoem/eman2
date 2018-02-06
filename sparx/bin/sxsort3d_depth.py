@@ -839,7 +839,7 @@ def check_mpi_settings(log_main):
 	if( Blockdata["myid"] == Blockdata["main_node"]):
 		log_main.add('\n')
 		log_main.add('----------------------------------------------------------------------------------------------------------------' )
-		log_main.add('                 =======      Number of input images and memory information      =====')
+		log_main.add('                 =======>     Number of input images and memory information     <=====')
 		log_main.add('----------------------------------------------------------------------------------------------------------------' )
 		log_main.add("Number of processes: %d  node number:  %d.  Number of processes per group:  %d."%(Blockdata["nproc"], Blockdata["no_of_groups"], Blockdata["no_of_processes_per_group"]))
 	try:
@@ -4128,9 +4128,8 @@ def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1, input_box_parti2, de
 				log_main.add('The reason can be: (1) There are no groups in the data set. 2. Minimum group size set is too large. (3) Desired number of groups K is too large.')
 				log_main.add('================================================================================================================\n')
 			else: 
-				minimum_group_size, maximum_group_size, new_index, unaccounted_list, bad_clustering, stop_generation, stat_list = 0, 0, 0, 0, 0, 0, 0
-			new_index = wrap_mpi_bcast(new_index, Blockdata["main_node"], MPI_COMM_WORLD)
-			unaccounted_list = wrap_mpi_bcast(unaccounted_list, Blockdata["main_node"], MPI_COMM_WORLD)
+				minimum_group_size, maximum_group_size, full_list, bad_clustering, stop_generation, stat_list = 0, 0, 0, 0, 0, 0
+			full_list = wrap_mpi_bcast(full_list, Blockdata["main_node"], MPI_COMM_WORLD)
 			stat_list = wrap_mpi_bcast(stat_list, Blockdata["main_node"], MPI_COMM_WORLD)
 			bad_clustering = bcast_number_to_all(bad_clustering, Blockdata["main_node"], MPI_COMM_WORLD)
 			stop_generation = bcast_number_to_all(stop_generation, Blockdata["main_node"], MPI_COMM_WORLD)
@@ -4175,9 +4174,8 @@ def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1, input_box_parti2, de
 			fout.close()
 			log_main.add('================================================================================================================\n')
 		else:
-			minimum_group_size, maximum_group_size, new_index, unaccounted_list, bad_clustering, stop_generation, stat_list = 0, 0, 0, 0, 0, 0, 0
-		new_index = wrap_mpi_bcast(new_index, Blockdata["main_node"], MPI_COMM_WORLD)
-		unaccounted_list = wrap_mpi_bcast(unaccounted_list, Blockdata["main_node"], MPI_COMM_WORLD)
+			minimum_group_size, maximum_group_size, full_list, bad_clustering, stop_generation, stat_list = 0, 0, 0, 0, 0, 0
+		full_list = wrap_mpi_bcast(full_list, Blockdata["main_node"], MPI_COMM_WORLD)
 		stat_list = wrap_mpi_bcast(stat_list, Blockdata["main_node"], MPI_COMM_WORLD)
 		bad_clustering = bcast_number_to_all(bad_clustering, Blockdata["main_node"], MPI_COMM_WORLD)
 		stop_generation = bcast_number_to_all(stop_generation, Blockdata["main_node"], MPI_COMM_WORLD)
@@ -4236,9 +4234,8 @@ def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1, input_box_parti2, de
 			else:
 				log_main.add('================================================================================================================\n')
 		else:
-			minimum_group_size, maximum_group_size, new_index, unaccounted_list, bad_clustering, stop_generation, stat_list = 0, 0, 0, 0, 0, 0, 0
-		new_index = wrap_mpi_bcast(new_index, Blockdata["main_node"], MPI_COMM_WORLD)
-		unaccounted_list = wrap_mpi_bcast(unaccounted_list, Blockdata["main_node"], MPI_COMM_WORLD)
+			minimum_group_size, maximum_group_size, full_list, bad_clustering, stop_generation, stat_list = 0, 0, 0, 0, 0, 0
+		full_list = wrap_mpi_bcast(full_list, Blockdata["main_node"], MPI_COMM_WORLD)
 		stat_list = wrap_mpi_bcast(stat_list, Blockdata["main_node"], MPI_COMM_WORLD)
 		bad_clustering = bcast_number_to_all(bad_clustering, Blockdata["main_node"], MPI_COMM_WORLD)
 		stop_generation = bcast_number_to_all(stop_generation, Blockdata["main_node"], MPI_COMM_WORLD)
