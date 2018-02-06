@@ -6852,16 +6852,16 @@ def do_random_groups_simulation_mpi(ptp1, ptp2):
 	tsize = float(len(set(a+b)))
 	
 	nsize1   = 0
-	plist1   = [ None for i in xrange(len(ptp1))]
+	plist1   = []
 	for i1 in xrange(len(ptp1)):
-		plist1[i] = [nsize1, nsize1+ max(int(float(len(ptp1[i1]))/tsize*100.), 1)]
+		plist1.append([nsize1, nsize1+ max(int(float(len(ptp1[i1]))/tsize*100.), 1)])
 		nsize1 += max(int(float(len(ptp1[i1]))/tsize*100.), 1)
 		
 	nsize2   = 0
-	plist2   = [ None for i in xrange(len(ptp2))]
+	plist2   = []
 	
-	for i in xrange(len(ptp2)):
-		plist2[i] = [nsize2, nsize2 + max(int(float(len(ptp2[i1]))/tsize*100.), 1)]
+	for i1 in xrange(len(ptp2)):
+		plist2.append([nsize2, nsize2 + max(int(float(len(ptp2[i1]))/tsize*100.), 1)])
 		nsize2 += max(int(float(len(ptp2[i1]))/tsize*100.), 1)
 		
 	if len(ptp1)>len(ptp2):
