@@ -4175,14 +4175,15 @@ def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1, input_box_parti2, de
 			fout.close()
 			log_main.add('================================================================================================================\n')
 		else:
-			minimum_group_size, maximum_group_size, full_list, bad_clustering, stop_generation, stat_list = 0, 0, 0, 0, 0, 0
-		full_list = wrap_mpi_bcast(full_list, Blockdata["main_node"], MPI_COMM_WORLD)
+			minimum_group_size, maximum_group_size, new_index, unaccounted_list, bad_clustering, stop_generation, stat_list = 0, 0, 0, 0, 0, 0
+		unaccounted_list = wrap_mpi_bcast(unaccounted_list, Blockdata["main_node"], MPI_COMM_WORLD)
+		new_index = wrap_mpi_bcast(new_index, Blockdata["main_node"], MPI_COMM_WORLD)
 		stat_list = wrap_mpi_bcast(stat_list, Blockdata["main_node"], MPI_COMM_WORLD)
 		bad_clustering = bcast_number_to_all(bad_clustering, Blockdata["main_node"], MPI_COMM_WORLD)
 		stop_generation = bcast_number_to_all(stop_generation, Blockdata["main_node"], MPI_COMM_WORLD)
 		maximum_group_size = bcast_number_to_all(maximum_group_size, Blockdata["main_node"], MPI_COMM_WORLD)
 		minimum_group_size = bcast_number_to_all(minimum_group_size, Blockdata["main_node"], MPI_COMM_WORLD)
-		return minimum_group_size, maximum_group_size, [ ], full_list, bad_clustering, stop_generation, stat_list
+		return minimum_group_size, maximum_group_size, new_index, unaccounted_list, bad_clustering, stop_generation, stat_list
 	else:
 		if Blockdata["myid"]==Blockdata["main_node"]:
 			if len(new_list) >= len(list_stable)-1: # all passes size checking, even the outliers group
@@ -4235,16 +4236,16 @@ def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1, input_box_parti2, de
 			else:
 				log_main.add('================================================================================================================\n')
 		else:
-			minimum_group_size, maximum_group_size, full_list, bad_clustering, stop_generation, stat_list = 0, 0, 0, 0, 0, 0
-		full_list = wrap_mpi_bcast(full_list, Blockdata["main_node"], MPI_COMM_WORLD)
+			minimum_group_size, maximum_group_size, new_index, unaccounted_list, bad_clustering, stop_generation, stat_list = 0, 0, 0, 0, 0, 0
+		unaccounted_list = wrap_mpi_bcast(unaccounted_list, Blockdata["main_node"], MPI_COMM_WORLD)
+		new_index = wrap_mpi_bcast(new_index, Blockdata["main_node"], MPI_COMM_WORLD)
 		stat_list = wrap_mpi_bcast(stat_list, Blockdata["main_node"], MPI_COMM_WORLD)
 		bad_clustering = bcast_number_to_all(bad_clustering, Blockdata["main_node"], MPI_COMM_WORLD)
 		stop_generation = bcast_number_to_all(stop_generation, Blockdata["main_node"], MPI_COMM_WORLD)
 		maximum_group_size = bcast_number_to_all(maximum_group_size, Blockdata["main_node"], MPI_COMM_WORLD)
 		minimum_group_size = bcast_number_to_all(minimum_group_size, Blockdata["main_node"], MPI_COMM_WORLD)
-		return minimum_group_size, maximum_group_size, [ ], full_list, bad_clustering, stop_generation, stat_list
+		return minimum_group_size, maximum_group_size, new_index, unaccounted_list, bad_clustering, stop_generation, stat_list
 		
-
 def split_partition_into_ordered_clusters_split_ucluster(partition):
 	# split groupids from indexes of images
 	# reindex groups
