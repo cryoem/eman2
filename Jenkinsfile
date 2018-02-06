@@ -43,7 +43,7 @@ def isRelease() {
 }
 
 def isContinuousBuild() {
-    return (GIT_BRANCH ==~ /origin\/master/)
+    return (GIT_BRANCH ==~ /origin\/master/) && (CI_BUILD == "1")
 }
 
 def runCronJob() {
@@ -85,6 +85,7 @@ pipeline {
     DEPLOY_DEST    = 'zope@ncmi.grid.bcm.edu:/home/zope/zope-server/extdata/reposit/ncmi/software/counter_222/software_136/'
     NUMPY_VERSION='1.9'
     BUILD_SCRIPTS_BRANCH='master'
+    CI_BUILD = sh(script: "! git log -1 | grep '.*\\[ci build\\].*'", returnStatus: true)
   }
   
   stages {
@@ -104,6 +105,7 @@ pipeline {
         not { expression { JOB_TYPE == "cron" } }
         not { expression { isRelease() } }
         not { expression { isContinuousBuild() } }
+        expression { false }
       }
       
       parallel {
