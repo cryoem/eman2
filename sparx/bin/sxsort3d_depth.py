@@ -3828,8 +3828,8 @@ def do_boxes_two_way_comparison_new(nbox, input_box_parti1, input_box_parti2, de
 		tmp_stat_list = []
 		tmp_list = np.array(tmp_list, "int32")
 		tmp_list = np.argsort(tmp_list)
-		for ik in xrange(len(tmp_ist)): tmp_stat_list.append(stat_list[tmp_ist[ik]])
-		stat_list[:] = tmp_list[:]
+		for ik in xrange(len(tmp_list)): tmp_stat_list.append(stat_list[tmp_list[ik]])
+		stat_list[:] = tmp_stat_list[:]
 	if nclass == 0:
 		### redo two way comparison
 		if depth >1:
