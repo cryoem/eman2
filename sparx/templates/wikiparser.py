@@ -206,7 +206,14 @@ def construct_keyword_dict():
 	keyword_dict["--refinement_dir"]              = SXkeyword_map(2, "dir")                 # --refinement_dir=refinemen_out_dir
 	keyword_dict["--previous_run"]                = SXkeyword_map(2, "dir")                 # --previous_run1=sort3d_run1_directory, --previous_run2=sort3d_run2_directory (need for sort3d.txt)
 	keyword_dict["--function"]                    = SXkeyword_map(2, "user_func")           # --function=user_function
+	# keyword_dict["--FL"]                        = SXkeyword_map(2, "abs_freq")            # (--FL=FL); This is ISAC & advanced that We do NOT supported at this point because of pixel size reduction by target radius
+	# keyword_dict["--FH"]                        = SXkeyword_map(2, "abs_freq")            # (--FH=FH); This is ISAC & advanced that We do NOT supported at this point because of pixel size reduction by target radius
+	# keyword_dict["--FF"]                        = SXkeyword_map(2, "abs_freq")            # (--FF=FF); This is ISAC & falloff that we do NOT supported at this point (see below NOTE: 2018/02/06 Toshio Moriya)
+	keyword_dict["--fl"]                          = SXkeyword_map(2, "abs_freq")            # --fl=cutoff_frequency, (--fl=fl), (--fl=fl), (--fl=lpf_cutoff_freq), --fl=LPF_CUTOFF_FREQ
+	# keyword_dict["--aa"]                        = SXkeyword_map(2, "abs_freq")            # (--aa=aa), (--aa=aa), (--aa=lpf_falloff), (--aa=LPF_FALLOFF_WIDTH); This is falloff that we do NOT supported at this point (see below NOTE: 2018/02/06 Toshio Moriya)
+	keyword_dict["--fh"]                          = SXkeyword_map(2, "abs_freq")            # --fh=fh
 	keyword_dict["--res_overall"]                 = SXkeyword_map(2, "abs_freq")            # --res_overall=overall_resolution
+	# keyword_dict["--falloff"]                   = SXkeyword_map(2, "abs_freq")            # --falloff=falloff; This is falloff that we do NOT supported at this point (see below NOTE: 2018/02/06 Toshio Moriya)
 
 	keyword_dict["--apix"]                        = SXkeyword_map(2, "apix")                # --apix=pixel_size, --apix, --apix=PIXEL_SIZE
 	keyword_dict["--pixel_size"]                  = SXkeyword_map(2, "apix")                # --pixel_size=PIXEL_SIZE
@@ -215,7 +222,30 @@ def construct_keyword_dict():
 	keyword_dict["--radius"]                      = SXkeyword_map(2, "radius")              # --radius=particle_radius, --radius=outer_radius, --radius=outer_radius, --radius=particle_radius, --radius=outer_radius, --radius=outer_radius
 	keyword_dict["--sym"]                         = SXkeyword_map(2, "sym")                 # --sym=c1, --sym=symmetry, --sym=c4
 ###	keyword_dict["--molecular_mass"]              = SXkeyword_map(2, "mass")                # --molecular_mass
-	
+
+	# NOTE: 2018/02/06 Toshio Moriya
+	# Low-pass filter fall-off width does not make sense to convert to resolution [A] directly. 
+	# It might make more sense to compute Angstrom range from the given cutoff, falloff width, and pixel size
+	# For example, fall-off range of 0.1 [1/pix] fall-off width with 2.5[A] cutoff is
+	# 1.0[A/Pix]/2.5[A] + 0.1 [1/pix]/2 = 0.45 [1/pix] => 2.2222[A]
+	# 1.0[A/Pix]/2.5[A] - 0.1 [1/pix]/2 = 0.35 [1/pix] => 2.8571[A]
+	# 
+	# Reversely, we can also convert from Angstrom range (e.g. Width from 2.0 to 4.0[A]@1.0[A/Pix]) to absolute frequenyc [A]
+	# 1.0[A/Pix]/2.0[A] - 1.0[A/Pix]/4.0[A] = 0.5[1/pix] - 0.25[1/pix] = 0.25[1/pix]
+	# In this case, the cut off will be around 
+	# 1.0[A/Pix]/4.0[A] + 0.25[1/pix]/2 = 0.25[1/pix] + 0.25[1/pix]/2 = 0.375 [1/Pix] =>  2.6667[A]
+	# 
+	# NOTE: 2018/02/06 Toshio Moriya
+	# At this point, the options related to abs_freq are:
+	# sxisac2.py (with target_radius): [MAIN] [ADVINCED] (--FL), (--FH), (--FF fall off)
+	# sxcompute_isac_avg.py (with apix): [MAIN] --fl [ADVINCED] --fh
+	# sxrviper.py (with target_radius & apix for moon?): [MAIN] [ADVINCED] (--fl), (--aa fall off)
+	# sxviper.py (with target_radius & apix for moon?): [MAIN] [ADVINCED] (--fl), (--aa fall off)
+	# sxprocess.py --combinemap (with apix): [MAIN] (--fl in [A]) [ADVINCED] (--aa fall off)
+	# sx3dvariability.py (with decimate): [MAIN] --fl (--aa fall off) [ADVINCED]
+	# sxlocres.py (with apix): [MAIN] --res_overall [ADVINCED]
+	# sxfilterlocal.py: [MAIN] (--falloff fall off) [ADVINCED]
+	# 
 	# NOTE: 2016/02/23 Toshio Moriya
 	# Below might be useful to include for project settings
 	# reference power spectrum? --pwreference of viper, --pwreference of rviper, --PWadjustment of sort3d, --PWadjustment of rsort3d
@@ -263,6 +293,9 @@ def handle_exceptional_cases(sxcmd):
 		assert(sxcmd.token_dict["output_directory"].key_base == "output_directory")
 		assert(sxcmd.token_dict["output_directory"].type == "output")
 		sxcmd.token_dict["output_directory"].type = "output_continue"
+		assert(sxcmd.token_dict["fl"].key_base == "fl")
+		assert(sxcmd.token_dict["fl"].type == "abs_freq")
+		sxcmd.token_dict["fl"].type = "float"
 	elif sxcmd.name == "sxviper":
 		assert(sxcmd.token_dict["stack"].key_base == "stack")
 		assert(sxcmd.token_dict["stack"].type == "bdb2d_stack")
@@ -274,6 +307,9 @@ def handle_exceptional_cases(sxcmd):
 		assert(sxcmd.token_dict["directory"].key_base == "directory")
 		assert(sxcmd.token_dict["directory"].type == "output")
 		sxcmd.token_dict["directory"].type = "output_continue"
+		assert(sxcmd.token_dict["fl"].key_base == "fl")
+		assert(sxcmd.token_dict["fl"].type == "abs_freq")
+		sxcmd.token_dict["fl"].type = "float"
 	elif sxcmd.name == "sxmeridien":
 		assert(sxcmd.token_dict["output_directory"].key_base == "output_directory")
 		assert(sxcmd.token_dict["output_directory"].type == "output")
@@ -1358,7 +1394,7 @@ def create_sxcmd_subconfig_binary_mask3d():
 
 	return sxcmd_subconfig
 
-def create_sxcmd_subconfig_sharpen_halfset_vol():
+def create_sxcmd_subconfig_postrefiner_halfset_vol():
 	token_edit_list = []
 	token_edit = SXcmd_token(); token_edit.initialize_edit("combinemaps"); token_edit.label = "Combine half volumes then enhance"; token_edit.help = "Combine a pair of unfiltered odd & even halfset volumes, then enhance the power spectrum at high frequencies (Halfset Volumes Mode). B-factor can be automatically estimated from these unfiltered halfset volumes. This mode requires two arguments; typically use unfiltered halfset volumes produced by MERIDIEN."; token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("firstvolume"); token_edit.key_prefix = ""; token_edit.label = "First unfiltered halfset volume"; token_edit.help = "Typically, generated by sxmeridien."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "data3d_one"; token_edit_list.append(token_edit)
@@ -1377,19 +1413,19 @@ def create_sxcmd_subconfig_sharpen_halfset_vol():
 	token_edit = SXcmd_token(); token_edit.initialize_edit("B_start"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("B_stop"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
 #	token_edit = SXcmd_token(); token_edit.initialize_edit("randomphasesafter"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("fl"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("fl"); token_edit.type = "float"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("aa"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("output"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
 	
 	sxsubcmd_mpi_support = False
-	sxcmd_subconfig = SXsubcmd_config("Sharpening of Halfset Volumes", "Combine a pair of unfiltered odd & even halfset volumes, then enhance the power spectrum at high frequencies (Halfset Volumes Mode). B-factor can be estimated from these unfiltered halfset volumes. This mode is typically used with MERIDIEN outputs.", token_edit_list, sxsubcmd_mpi_support, subset_config="halfset volumes")
+	sxcmd_subconfig = SXsubcmd_config("PostRefiner of Halfset Volumes", "Combine a pair of unfiltered odd & even halfset volumes, then enhance the power spectrum at high frequencies (Halfset Volumes Mode). B-factor can be estimated from these unfiltered halfset volumes. This mode is typically used with MERIDIEN outputs.", token_edit_list, sxsubcmd_mpi_support, subset_config="halfset volumes")
 
 	return sxcmd_subconfig
 
-def create_sxcmd_subconfig_shapen_cluster_vol():
+def create_sxcmd_subconfig_postrefiner_cluster_vol():
 	token_edit_list = []
-	token_edit = SXcmd_token(); token_edit.initialize_edit("combinemaps"); token_edit.label = "Enhance cluster volumes"; token_edit.help = "Enhance the power spectrum of cluster volumes, produced by SORT3D_DEPTH, at high frequencies (Cluster Volumes Mode). Only ad-hoc low-pass filter cutoff and B-factor can be used. This mode requires one argument (path pattern with wild card '*' can be used to specify a list of volumes). It is mainly used with SORT3D_DEPTH outputs but also can enhance the power spectrum of ANY volumes."; token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("input_cluster_volume_pattern"); token_edit.key_prefix = ""; token_edit.label = "Input cluster volume pattern"; token_edit.help = "Specify path pattern of input cluster volumes, created by SORT3D_DEPTH, with a wild card (*). Use the wild card to indicate the place of variable part of the file names (typically, cluster ID; e.g. \'outdir_sort3d_depth/vol_cluster*.hdf\'). The path pattern must be enclosed by single quotes (\') or double quotes (\") (Note: sxgui.py automatically adds single quotes (\')). If the wild card is not used (i.e. a simple path is provided), the program process the single volume."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "data3d_one"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("combinemaps"); token_edit.label = "Enhance cluster volumes"; token_edit.help = "Enhance the power spectrum of cluster volumes, produced by SORT3D_DEPTH, at high frequencies (Cluster Volumes Mode). Only ad-hoc low-pass filter cutoff and B-factor can be used. This mode requires one argument; path pattern with wild card '*' can be used to specify a list of volumes. It is mainly used with SORT3D_DEPTH outputs."; token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("input_cluster_volume_pattern"); token_edit.key_prefix = ""; token_edit.label = "Input cluster volume pattern"; token_edit.help = "Specify path pattern of input cluster volumes, created by SORT3D_DEPTH, with a wild card (*). Use the wild card to indicate the place of variable part of the file names (typically, cluster ID; e.g. \'outdir_sort3d_depth/vol_cluster*.hdf\'). The path pattern must be enclosed by single quotes (\') or double quotes (\") (Note: sxgui.py automatically adds single quotes (\'))."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "data3d_one"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("output_dir"); token_edit_list.append(token_edit)
 	
 	token_edit = SXcmd_token(); token_edit.initialize_edit("pixel_size"); token_edit_list.append(token_edit)
@@ -1400,14 +1436,38 @@ def create_sxcmd_subconfig_shapen_cluster_vol():
 	token_edit = SXcmd_token(); token_edit.initialize_edit("dilation"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("mtf"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("B_enhance"); token_edit.is_required = True; token_edit.help = "Non-zero positive value: program use the given value [A^2] to enhance map; -1.0: B-factor is not applied."; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("fl"); token_edit.is_required = True; token_edit.help = "A value larger than 0.5: low-pass filter to the value in Angstrom; -1.0: no low-pass filter."; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("fl"); token_edit.is_required = True; token_edit.help = "A value larger than 0.5: low-pass filter to the value in Angstrom; -1.0: no low-pass filter."; token_edit.type = "float"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("aa"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("output"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
 	
 	sxsubcmd_mpi_support = False
-	sxcmd_subconfig = SXsubcmd_config("Sharpening of Cluster Volumes", "Enhance the power spectrum of the cluster volumes, produced by SORT3D_DEPTH, at high frequencies (Cluster Volumes Mode). Only ad-hoc low-pass filter cutoff and B-factor can be used. This mode is mainly used with SORT3D_DEPTH outputs, but also can enhance the power spectrum of ANY volumes.", token_edit_list, sxsubcmd_mpi_support, subset_config="cluster volumes")
+	sxcmd_subconfig = SXsubcmd_config("PostRefiner of Cluster Volumes", "Enhance the power spectrum of the cluster volumes, produced by SORT3D_DEPTH, at high frequencies (Cluster Volumes Mode). Only ad-hoc low-pass filter cutoff and B-factor can be used. This mode is mainly used with SORT3D_DEPTH outputs, but also can enhance the power spectrum of ANY volumes.", token_edit_list, sxsubcmd_mpi_support, subset_config="cluster volumes")
 	
 	return sxcmd_subconfig
+
+def create_sxcmd_subconfig_postrefiner_single_vol():
+	token_edit_list = []
+	token_edit = SXcmd_token(); token_edit.initialize_edit("combinemaps"); token_edit.label = "Enhance single volume"; token_edit.help = "Enhance the power spectrum of any single volume at high frequencies (Single Volume Mode). Only ad-hoc low-pass filter cutoff and B-factor can be used. This mode requires one argument; path to the single volume."; token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("input_volume"); token_edit.key_prefix = ""; token_edit.label = "Input volume"; token_edit.help = "Specify path to single volume file."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "data3d_one"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("output_dir"); token_edit_list.append(token_edit)
+	
+	token_edit = SXcmd_token(); token_edit.initialize_edit("pixel_size"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("mask"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("do_adaptive_mask"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("mask_threshold"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("consine_edge"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("dilation"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("mtf"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("B_enhance"); token_edit.is_required = True; token_edit.help = "Non-zero positive value: program use the given value [A^2] to enhance map; -1.0: B-factor is not applied."; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("fl"); token_edit.is_required = True; token_edit.help = "A value larger than 0.5: low-pass filter to the value in Angstrom; -1.0: no low-pass filter."; token_edit.type = "float"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("aa"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("output"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
+	
+	sxsubcmd_mpi_support = False
+	sxcmd_subconfig = SXsubcmd_config("PostRefiner of Single Volume", "Enhance the power spectrum of any single volume at high frequencies (Single Volume Mode). Only ad-hoc low-pass filter cutoff and B-factor can be used.", token_edit_list, sxsubcmd_mpi_support, subset_config="single volume")
+	
+	return sxcmd_subconfig
+
 
 def create_sxcmd_subconfig_variability_preprocess():
 	token_edit_list = []
@@ -1610,8 +1670,8 @@ def add_sxcmd_subconfig_sort3d_depth_shared_sorting(token_edit_list):
 	token_edit = SXcmd_token(); token_edit.initialize_edit("notapplybckgnoise"); token_edit_list.append(token_edit)
 
 ### # NOTE: 2018/01/08 Toshio Moriya
-### # post-sort3d sharpening is removed recently.
-### def add_sxcmd_subconfig_sort3d_depth_shared_sharpen(token_edit_list):
+### # post-refiner embedded sort3d_depth is removed recently.
+### def add_sxcmd_subconfig_sort3d_depth_shared_postrefiner(token_edit_list):
 ### 	token_edit = SXcmd_token(); token_edit.initialize_edit("mtf"); token_edit_list.append(token_edit)
 ### 	token_edit = SXcmd_token(); token_edit.initialize_edit("B_enhance"); token_edit_list.append(token_edit)
 ### 	token_edit = SXcmd_token(); token_edit.initialize_edit("fl"); token_edit_list.append(token_edit)
@@ -1629,8 +1689,8 @@ def create_sxcmd_subconfig_sort3d_depth_iteration():
 	token_edit = SXcmd_token(); token_edit.initialize_edit("niter_for_sorting"); token_edit_list.append(token_edit)
 	add_sxcmd_subconfig_sort3d_depth_shared_sorting(token_edit_list)
 ###	# NOTE: 2018/01/08 Toshio Moriya
-###	# post-sort3d sharpening is removed recently.
-###	add_sxcmd_subconfig_sort3d_depth_shared_sharpen(token_edit_list)
+###	# post-refiner embedded sort3d_depth is removed recently.
+###	add_sxcmd_subconfig_sort3d_depth_shared_postrefiner(token_edit_list)
 
 	sxsubcmd_mpi_support = True
 	sxcmd_subconfig = SXsubcmd_config("3D Clustering from Iteration - SORT3D_DEPTH", "Run from a fully finished iteration of meridien run and imports data from there. This mode uses all meridien information (i.e., smear, normalizations and such).", token_edit_list, sxsubcmd_mpi_support)
@@ -1646,8 +1706,8 @@ def create_sxcmd_subconfig_sort3d_depth_stack():
 	token_edit = SXcmd_token(); token_edit.initialize_edit("nxinit"); token_edit_list.append(token_edit)
 	add_sxcmd_subconfig_sort3d_depth_shared_sorting(token_edit_list)
 ###	# NOTE: 2018/01/08 Toshio Moriya
-###	# post-sort3d sharpening is removed recently.
-###	add_sxcmd_subconfig_sort3d_depth_shared_sharpen(token_edit_list)
+###	# post-refiner embedded sort3d_depth is removed recently.
+###	add_sxcmd_subconfig_sort3d_depth_shared_postrefiner(token_edit_list)
 
 	sxsubcmd_mpi_support = True
 	sxcmd_subconfig = SXsubcmd_config("3D Clustering from Stack - SORT3D_DEPTH", "Run from user-provided orientation parameters stored in stack header.  This mode uses only orientation parameters, which is useful for sorting data refined, say with relion.", token_edit_list, sxsubcmd_mpi_support)
@@ -1666,8 +1726,8 @@ def create_sxcmd_subconfig_sort3d_makevstack():
 	return sxcmd_subconfig
 
 ### # NOTE: 2018/01/08 Toshio Moriya
-### # post-sort3d sharpening is removed recently.
-### def create_sxcmd_subconfig_sort3d_depth_sharpen():
+### # post-refiner embedded sort3d_depth is removed recently.
+### def create_sxcmd_subconfig_sort3d_depth_postrefiner():
 ### 	token_edit_list = []
 ### 	token_edit = SXcmd_token(); token_edit.initialize_edit("post_sorting_sharpen"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
 ### 
@@ -1675,10 +1735,10 @@ def create_sxcmd_subconfig_sort3d_makevstack():
 ### 
 ### 	token_edit = SXcmd_token(); token_edit.initialize_edit("niter_for_sorting"); token_edit_list.append(token_edit)
 ### 	token_edit = SXcmd_token(); token_edit.initialize_edit("memory_per_node"); token_edit_list.append(token_edit)
-### 	add_sxcmd_subconfig_sort3d_depth_shared_sharpen(token_edit_list)
+### 	add_sxcmd_subconfig_sort3d_depth_shared_postrefiner(token_edit_list)
 ### 
 ### 	sxsubcmd_mpi_support = True
-### 	sxcmd_subconfig = SXsubcmd_config("Post-Sorting Sharpening", "Reconstruct unfiltered maps from a list of selection files and merge the two halves maps, so that users can adjust B-factors and low-pass filter to have proper visualization.", token_edit_list, sxsubcmd_mpi_support)
+### 	sxcmd_subconfig = SXsubcmd_config("PostRefiner of Cluster Volume", "Reconstruct unfiltered maps from a list of selection files and merge the two halves maps, so that users can adjust B-factors and low-pass filter to have proper visualization.", token_edit_list, sxsubcmd_mpi_support)
 ### 
 ### 	return sxcmd_subconfig
 
@@ -1940,7 +2000,7 @@ def main(is_dev_mode = False, is_dokuwiki_mode = False):
 	# sxcmd_config_list.append(SXcmd_config("../doc/meridien_20171120.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_meridien_20171120()))
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_standard_fresh()))
 	sxcmd_config_list.append(SXcmd_config("../doc/gui_meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, is_submittable = False))
-	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_sharpen_halfset_vol()))
+	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_postrefiner_halfset_vol()))
 
 	sxcmd_role = "sxr_alt"
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_local_iteration()))
@@ -1965,10 +2025,10 @@ def main(is_dev_mode = False, is_dokuwiki_mode = False):
 ###	sxcmd_config_list.append(SXcmd_config("../doc/sort3d_new.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_sort3d_new()))
 	sxcmd_config_list.append(SXcmd_config("../doc/sort3d_depth.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_sort3d_depth_iteration()))
 ###	sxcmd_config_list.append(SXcmd_config("../doc/meridien_20171120.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_20171120_local()))
-	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_shapen_cluster_vol()))
+	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_postrefiner_cluster_vol()))
 	sxcmd_config_list.append(SXcmd_config("../doc/e2bdb.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_sort3d_makevstack()))
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_local_stack()))
-	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_sharpen_halfset_vol()))
+	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_postrefiner_halfset_vol()))
 
 	sxcmd_role = "sxr_alt"
 	if is_dev_mode:
@@ -1976,8 +2036,8 @@ def main(is_dev_mode = False, is_dokuwiki_mode = False):
 		sxcmd_config_list.append(SXcmd_config("../doc/rsort3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_rsort3d()))
 	sxcmd_config_list.append(SXcmd_config("../doc/sort3d_depth.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_sort3d_depth_stack()))
 ### # NOTE: 2018/01/08 Toshio Moriya
-### # post-sort3d sharpening is removed recently.
-###	sxcmd_config_list.append(SXcmd_config("../doc/sort3d_depth.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_sort3d_depth_sharpen()))
+### # post-refiner embedded sort3d_depth is removed recently.
+###	sxcmd_config_list.append(SXcmd_config("../doc/sort3d_depth.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_sort3d_depth_postrefiner()))
 	if is_dev_mode:
 		sxcmd_config_list.append(SXcmd_config("../doc/meridien_20171120.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_20171120_local()))
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_final()))
@@ -2025,6 +2085,7 @@ def main(is_dev_mode = False, is_dokuwiki_mode = False):
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_utility_changesize()))
 	sxcmd_config_list.append(SXcmd_config("../doc/e2proc3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_utility_window()))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_refine3d_angular_distribution()))
+	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_postrefiner_single_vol()))
 	sxcmd_config_list.append(SXcmd_config("../doc/unblur.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/summovie.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/e2bdb.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_utility_makevstack()))

@@ -1,0 +1,78 @@
+= Name =
+sxheader - Perform operations on headers of hdf or bdb file
+
+= Usage =
+
+''Usage in command lines'':
+
+sxheader.py stack.hdf --params="parm1 parm2 ..." --zero --one --randomize -- rand_alpha --import=filename --export=filename --print --backup --restore --suffix --delete
+
+''Usage in python programming'':
+
+header(stack, params, zero, one, randomize, rand_alpha,  fimport, fexport, fprint, backup, suffix, restore, delete)
+
+== Input ==
+ stack:: image stack file (can be bdb or hdf)
+
+== Options ==
+ params:: list of parameters to perform operations on.
+
+If operating on 2D alignment parameters, use "xform.align2d", which automatically includes the parameters "alpha", "sx", "sy", "mirror" and "scale".   
+
+If operating on projection alignment parameters, use "xform.projection", which automatically includes the parameters "phi", "theta", "psi", "s2x" and "s2y".   
+
+If operating on 3D alignment parameters, use "xform.align3d", which automatically includes the parameters "phi", "theta", "psi", "s3x", "s3y", "s3z", "mirror" and "scale".
+
+Contrast Transfer Function is accessible as object "ctf" and involves six parameters: defocus [microns], cs [mm], voltage [kV], apix [A], bfactor [A^2], ampcont [%], astigmatism amplitude, astigmatism angle.
+
+See description of parameters http://sparx-em.org/sparxwiki/I_O
+ zero:: set all parameters to zero.
+ one:: set all parameters to one (not applicable to xform.align2d, xform.proj or xform.align3d, since it doesn't make sense).
+ randomize:: set all parameters to randomized value (only works for xform.align2d, xform.proj and xform.align3d, there is little need to randomize other parameters, and it is also difficult to guess the random range beforehand.)
+ rand_alpha:: set all angles to randomized value
+ import:: import parameters from file.
+ export:: export parameters to file.
+ print:: whether print parameters to screen. 
+ backup:: backup all parameters
+ restore:: restore all parameters
+ suffix:: suffix which will be added to the name of a parameter or removed during restore.
+ delete:: delete all parameters
+
+= Typical usage =
+Print parameterrs:
+ . sxheader.py bdb:file --print --params=xform.projection
+
+Export ctf values to a text file:
+ . sxheader.py bdb:file --export=ctf.txt --params=ctf
+
+Import ctf values from a text file and set them to headers:
+ . sxheader.py bdb:file --import=ctf.txt --params=ctf
+
+Backup current alignment parameters:
+ . sxheader.py bdb:file --backup --suffix=_original --params=xform.projection
+
+Restore original alignment parameters:
+ . sxheader.py bdb:file --restore --params=xform.projection_original
+ . '''Note''': command will recognize the valid name of a parameters and truncate the suffix, thus in this case the restored parameter will be xform_projection.
+
+Delete parameters:
+ . sxheader.py bdb:file --delete --params=xform.projection_original
+ . '''Note''': the parameters will be permanently deleted and cannot be recovered.
+
+= Description =
+This program now works for both hdf and bdb files.
+
+= Author / Maintainer =
+Wei Zhang, Zhengfan Yang
+
+= Keywords =
+ category 1::  APPLICATIONS
+
+= Files =
+applications.py
+
+= Maturity =
+ stable:: works for most people, has been tested; test cases/examples available.
+
+= Bugs =
+None.  It is perfect.
