@@ -1251,9 +1251,8 @@ def create_masterdir():
 			li =len(masterdir)
 		else:
 			li =len(masterdir)
-			if os.path.exists(os.path.join(Tracker["constants"]["masterdir"], "layer0")): restart = 1
-			if os.path.exists(os.path.join(Tracker["constants"]["masterdir"], "Tracker.json")): restart = 1
-			#print("restart", restart)
+			if os.path.exists(os.path.join(Tracker["constants"]["masterdir"], "generation_000")): restart = 1
+			if os.path.exists(os.path.join(Tracker["constants"]["masterdir"], "Tracker.json")):   restart = 1
 	else: 
 		restart = 0
 		li = 0
@@ -3990,10 +3989,12 @@ def do_withinbox_two_way_comparison(partition_dir, nbox, nrun, niter):
 			minimum_group_size = min(minimum_group_size, len(any))
 			maximum_group_size = max(maximum_group_size, len(any))
 			nclass +=1
-			log_list.append('{:>8} {:>10d} {:>10d}        {:>8} {:>8.1f}       '.format(index_of_any, len(any), current_MGR[index_of_any],'accepted', score3))
+			log_list.append('{:>8} {:>10d} {:>10d}        {:>8} {:>8.1f}       '.format(index_of_any, \
+			     len(any), current_MGR[index_of_any],'accepted', score3))
 			selected_clusters.append(any)
 		else:
-			log_list.append('{:>8} {:>10d} {:>10d}        {:>8}  {:>8.1f}       '.format(index_of_any, len(any), current_MGR[index_of_any], 'rejected', score3))
+			log_list.append('{:>8} {:>10d} {:>10d}        {:>8}  {:>8.1f}       '.format(index_of_any, \
+			     len(any), current_MGR[index_of_any], 'rejected', score3))
 			
 	accounted_list, new_index = merge_classes_into_partition_list(selected_clusters)
 	a = set(full_list)
@@ -7105,7 +7106,6 @@ def main():
 		continue_from_interuption = 0
 		# sorting starts...
 	
-	
 		continue_from_interuption = create_masterdir()
 		log_main = Logger(BaseLogger_Files())
 		log_main.prefix = Tracker["constants"]["masterdir"]+"/"
@@ -7255,7 +7255,7 @@ def main():
 		Tracker["constants"]["selected_iter"]     = -1
 		Tracker["nosmearing"]     = True
 		
-		checking_flag = 0 # reset
+		checking_flag             = 0 # reset
 		Blockdata["fftwmpi"]      = True
 		Blockdata["symclass"]     = symclass(Tracker["constants"]["symmetry"])
 		
@@ -7293,7 +7293,7 @@ def main():
 			print_shell_command(sys.argv, log_main)
 			check_3dmask(log_main)
 			check_mpi_settings(log_main)
-			keepsorting = sort3d_init("initialization", log_main)
+			keepsorting = sort3d_init("Initialization", log_main)
 			dump_tracker(Tracker["constants"]["masterdir"])
 			if keepsorting ==0:
 				from mpi import mpi_finalize
