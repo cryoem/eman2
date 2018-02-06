@@ -6849,20 +6849,20 @@ def do_random_groups_simulation_mpi(ptp1, ptp2):
 	b     = []
 	for ic in xrange(len(ptp1)): a+=ptp1[ic]
 	for ic in xrange(len(ptp2)): b+=ptp2[ic]
-	tsize = len(set(a+b))
+	tsize = float(len(set(a+b)))
 	
 	nsize1   = 0
 	plist1   = [ None for i in xrange(len(ptp1))]
-	for i in xrange(len(ptp1)):
-		plist1[i] = [nsize1, nsize1+ int(len(ptp1[i])/float(tsize)*100.)]
-		nsize1 += int(len(ptp1[i])/float(tsize)*100.)
+	for i1 in xrange(len(ptp1)):
+		plist1[i] = [nsize1, nsize1+ max(int(float(len(ptp1[i1]))/tsize*100.), 1)])
+		nsize1 += max(int(float(len(ptp1[i1]))/tsize*100.), 1)
 		
 	nsize2   = 0
 	plist2   = [ None for i in xrange(len(ptp2))]
 	
 	for i in xrange(len(ptp2)):
-		plist2[i] = [nsize2, nsize2+ int(len(ptp2[i])/float(tsize)*100.)]
-		nsize2 += int(len(ptp2[i])/float(tsize)*100.)
+		plist2[i] = [nsize2, nsize2 + max(int(float(len(ptp2[i1]))/tsize*100.), 1)])
+		nsize2 += max(int(float(len(ptp2[i1]))/tsize*100.), 1)
 		
 	if len(ptp1)>len(ptp2):
 		for j in xrange(len(len(ptp1)-len(ptp2))):
@@ -6881,6 +6881,8 @@ def do_random_groups_simulation_mpi(ptp1, ptp2):
 	gvar  = [ 0.0 for i in xrange(k)]
 	svar = 0.0
 	save = 0.0
+	alist = np.array(alist, "int32")
+	blist = np.array(blist, "int32")	
 	for iloop in xrange(Nloop):
 		tlist = []
 		clist = [[] for i in xrange(k)]
