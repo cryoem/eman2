@@ -2077,7 +2077,7 @@ class SXCmdTab(QWidget):
 							grid_layout.addWidget(cmd_token_subwidget_left, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							# Create button to show the associated calculator dialog.
 							cmd_token_subwidget_right = QPushButton("Use resolution [A]")
-							cmd_token_subwidget_right.setToolTip('<FONT>'+"Display calculator dailog to use the resolution [A] instead of absolute frequency [1/Pixel] </FONT>")
+							cmd_token_subwidget_right.setToolTip('<FONT>'+"Display calculator dailog to use the resolution [A] instead of absolute frequency [1/Pixel]. It calculates absolute frequency [1/Pixel] (abs_freq) From resolution [A] (ares) using a give pixel size [A/Pixel] (apix), where abs_freq = apix/ares. </FONT>")
 							cmd_token_subwidget_right.setMinimumWidth(func_btn_min_width)
 							grid_layout.addWidget(cmd_token_subwidget_right, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
 							# Associated this subwidget to open the calculator dialog
@@ -3073,6 +3073,7 @@ class SXDialogCalculator(QDialog):
 		
 		# This should be a modal dialog
 		self.setWindowModality(Qt.ApplicationModal)
+		self.setWindowTitle("%s" % (self.sxoperand_set.label))
 
 		# Layout constants and variables
 		global_row_origin = 0; global_col_origin = 0
@@ -3112,9 +3113,9 @@ class SXDialogCalculator(QDialog):
 		global_layout.setSpacing(SXLookFeelConst.grid_spacing)
 		global_layout.setRowStretch(global_row_span - 1, global_layout.rowStretch(global_row_origin) + 1)
 
-		header_layout = QGridLayout()
-		header_layout.setMargin(SXLookFeelConst.grid_margin)
-		header_layout.setSpacing(SXLookFeelConst.grid_spacing)
+#		header_layout = QGridLayout()
+#		header_layout.setMargin(SXLookFeelConst.grid_margin)
+#		header_layout.setSpacing(SXLookFeelConst.grid_spacing)
 
 		operand_layout = QGridLayout()
 		operand_layout.setMargin(SXLookFeelConst.grid_margin)
@@ -3126,28 +3127,28 @@ class SXDialogCalculator(QDialog):
 
 		global_grid_row = global_row_origin
 
-		# Start add title widgets to the grid layout
-		header_grid_row = header_row_origin
+#		# Start add title widgets to the grid layout
+#		header_grid_row = header_row_origin
+#
+#		# Set a label and its position in this dialog
+#		temp_label = QLabel("<b>%s</b>" % (self.sxoperand_set.label))
+#		temp_label.setMinimumWidth(title_min_width)
+#		header_layout.addWidget(temp_label, header_grid_row, header_col_origin, title_row_span, title_col_span)
+#
+#		header_grid_row += 1
 
-		# Set a label and its position in this tab
-		temp_label = QLabel("<b>%s</b>" % (self.sxoperand_set.label))
-		temp_label.setMinimumWidth(title_min_width)
-		header_layout.addWidget(temp_label, header_grid_row, header_col_origin, title_row_span, title_col_span)
-
-		header_grid_row += 1
-
-		# NOTE: 2015/11/17 Toshio Moriya
-		# Necessary to separate "<b>%s</b>" from the information for avoiding to invoke the tag interpretations of string
-		# e.g. < becomes the escape character
-		temp_label = QLabel("%s" % (self.sxoperand_set.short_info))
-		temp_label.setWordWrap(True)
-		temp_label.setMinimumWidth(short_info_min_width)
-		temp_label.setMinimumHeight(short_info_min_height)
-		header_layout.addWidget(temp_label, header_grid_row, header_col_origin, short_info_row_span, short_info_col_span)
-
-		# Add const set grid layout to global layout
-		global_layout.addLayout(header_layout, global_grid_row, global_col_origin)
-		global_grid_row += 1
+#		# NOTE: 2015/11/17 Toshio Moriya
+#		# Necessary to separate "<b>%s</b>" from the information for avoiding to invoke the tag interpretations of string
+#		# e.g. < becomes the escape character
+#		temp_label = QLabel("%s" % (self.sxoperand_set.short_info))
+#		temp_label.setWordWrap(True)
+#		temp_label.setMinimumWidth(short_info_min_width)
+#		temp_label.setMinimumHeight(short_info_min_height)
+#		header_layout.addWidget(temp_label, header_grid_row, header_col_origin, short_info_row_span, short_info_col_span)
+#
+#		# Add const set grid layout to global layout
+#		global_layout.addLayout(header_layout, global_grid_row, global_col_origin)
+#		global_grid_row += 1
 
 		# Start add project parameter constant widgets to the grid layout
 		operand_grid_row = operand_set_row_origin
