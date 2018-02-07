@@ -6548,9 +6548,7 @@ def copy_results(log_file, all_gen_stat_list):
 		log_file.add('                     Final results saved in %s'%Tracker["constants"]["masterdir"])
 		log_file.add('----------------------------------------------------------------------------------------------------------------' )
 		nclusters = 0
-		log_file.add( '{:^8} {:>8}   {:^24}  {:>15} {:^22} {:^5} {:^15} {:^20} '.format('Group ID', '    size','determined in generation', \
-		      'reproducibility', 'random reproducibility', ' std ', ' selection file',  \
-		          '       map file     '))
+		log_file.add( '{:^8} {:>8}   {:^24}  {:>15} {:^22} {:^5} {:^15} {:^20} '.format('Group ID', '    size','determined in generation', 'reproducibility', 'random reproducibility', ' std ', ' selection file', '       map file     '))
 		clusters = []
 		NACC     = 0           
 		for element in Tracker["generation"].items():
@@ -6560,15 +6558,11 @@ def copy_results(log_file, all_gen_stat_list):
 				cluster_file = os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%ig, "Cluster_%03d.txt"%ic)
 				copyfile(cluster_file, os.path.join(Tracker["constants"]["masterdir"], "Cluster_%03d.txt"%nclusters))
 				clusters.append(read_text_file(cluster_file))
-				copyfile(os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%ig, \
-				 "vol_grp%03d_iter000.hdf"%ic), \
-				   os.path.join(Tracker["constants"]["masterdir"], "vol_cluster%03d.hdf"%nclusters))
-				cluster = read_text_file(os.path.join(Tracker["constants"]["masterdir"], \
-				   "generation_%03d"%ig, "Cluster_%03d.txt"%ic))
+				copyfile(os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%ig, "vol_grp%03d_iter000.hdf"%ic), os.path.join(Tracker["constants"]["masterdir"], "vol_cluster%03d.hdf"%nclusters))
+				cluster = read_text_file(os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%ig, "Cluster_%03d.txt"%ic))
 				cluster_file = "Cluster_%03d.txt"%nclusters
 				vol_file     = "vol_cluster%03d.hdf"%nclusters
-				msg = '{:>8} {:>8}   {:^24}        {:^6}          {:^6}          {:>5}  {:^15} {:^20} '.format(nclusters, len(cluster), ig, \
-				    round(all_gen_stat_list[ig][ic][0],1), round(all_gen_stat_list[ig][ic][1],1), round(all_gen_stat_list[ig][ic][2],1), cluster_file,  vol_file)
+				msg = '{:>8} {:>8}   {:^24}        {:^6}          {:^6}          {:>5}  {:^15} {:^20} '.format(nclusters, len(cluster), ig, round(all_gen_stat_list[ig][ic][0],1), round(all_gen_stat_list[ig][ic][1],1), round(all_gen_stat_list[ig][ic][2],1), cluster_file,  vol_file)
 				nclusters +=1
 				NACC +=len(cluster)
 				log_file.add(msg)
