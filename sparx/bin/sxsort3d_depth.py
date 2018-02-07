@@ -6841,6 +6841,11 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 			else: stat_list = 0
 			stat_list = wrap_mpi_bcast(stat_list, Blockdata["main_node"], MPI_COMM_WORLD)
 			all_gen_stat_list.append(stat_list)
+			if Blockdata["myid"] == Blockdata["main_node"]:			
+				log_main.add('================================================================================================================')
+				log_main.add('                                    SORT3D IN-DEPTH   generation %d completed'%igen)
+				log_main.add('----------------------------------------------------------------------------------------------------------------')
+
 			
 	if bad_clustering == 0:
 		if Blockdata["myid"] == Blockdata["main_node"]:
