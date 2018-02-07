@@ -6797,6 +6797,7 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 				time_generation_start = time.time()
 				if not os.path.exists(work_dir):
 					os.mkdir(work_dir)# need check each box
+					within_generation_restart = 0
 				else:
 					within_generation_restart = 1
  				freq_cutoff_dict = {}
