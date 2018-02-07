@@ -4949,11 +4949,7 @@ def get_input_from_sparx_ref3d(log_main):# case one
 	checking_flag = bcast_number_to_all(checking_flag, Blockdata["main_node"], MPI_COMM_WORLD)
 	if checking_flag: ERROR("SPARX refinement dir does not exist", "get_input_from_sparx_ref3d", 1, Blockdata["myid"])
 	if Blockdata["myid"] == Blockdata["main_node"]:
-		#msg = "Import results from SPARX 3-D refinement"
-		#log_main.add(msg)
 		if Tracker["constants"]["niter_for_sorting"] == -1: # take the best solution to do sorting
-			#msg = "Search in the directory %s ......"%Tracker["constants"]["refinement_dir"]
-			#log_main.add(msg)
 			niter_refinement = 0
 			while os.path.exists(os.path.join(Tracker["constants"]["refinement_dir"], "main%03d"%niter_refinement)) and os.path.exists(os.path.join(Tracker["constants"]["refinement_dir"],"main%03d"%niter_refinement, "Tracker_%03d.json"%niter_refinement)):
 				niter_refinement +=1
@@ -4965,9 +4961,6 @@ def get_input_from_sparx_ref3d(log_main):# case one
 				selected_iter = Tracker_refinement["constants"]["best"]
 			else: import_from_sparx_refinement = 0
 		else:
-			#msg = "Try to load json file ...%s"%os.path.join(Tracker["constants"]["refinement_dir"],"main%03d"%Tracker["constants"]["niter_for_sorting"],\
-			# "Tracker_%03d.json"%Tracker["constants"]["niter_for_sorting"])
-			#log_main.add(msg)
 			try:
 				fout = open(os.path.join(Tracker["constants"]["refinement_dir"],"main%03d"%Tracker["constants"]["niter_for_sorting"], \
 				"Tracker_%03d.json"%Tracker["constants"]["niter_for_sorting"]),'r')
@@ -4979,7 +4972,7 @@ def get_input_from_sparx_ref3d(log_main):# case one
 	selected_iter = bcast_number_to_all(selected_iter, Blockdata["main_node"], MPI_COMM_WORLD)
 	import_from_sparx_refinement = bcast_number_to_all(import_from_sparx_refinement, source_node = Blockdata["main_node"])
 	if import_from_sparx_refinement == 0:	
-		ERROR("The best solution is not found","get_input_from_sparx_ref3d", "get_input_from_sparx_ref3d", 1, Blockdata["myid"])
+		ERROR("The best solution is not found","get_input_from_sparx_ref3d", 1, Blockdata["myid"])
 		from mpi import mpi_finalize
 		mpi_finalize()
 		exit()			
@@ -5030,7 +5023,7 @@ def get_input_from_sparx_ref3d(log_main):# case one
 		else: import_from_sparx_refinement = 0
 		Tracker["constants"]["selected_iter"] = selected_iter
 	import_from_sparx_refinement = bcast_number_to_all(import_from_sparx_refinement, source_node = Blockdata["main_node"])
-	if import_from_sparx_refinement == 0:ERROR("The parameter file of the best solution is not accessible", "get_input_from_sparx_ref3d", 1, Blockdata["myid"])
+	if import_from_sparx_refinement == 0: ERROR("The parameter file of the best solution is not accessible", "get_input_from_sparx_ref3d", 1, Blockdata["myid"])
 		
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		if os.path.exists(os.path.join(Tracker["constants"]["refinement_dir"], "main%03d"%selected_iter, "bckgnoise.hdf")):
