@@ -6838,6 +6838,7 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 						mark_sorting_state(work_dir, True, log_main)
 						shutil.rmtree(os.path.join(work_dir, 'tempdir'))
 					mpi_barrier(MPI_COMM_WORLD)
+				else: break # restart requires
 		else: # restart run
 			work_dir = os.path.join( Tracker["constants"]["masterdir"], "generation_%03d"%igen)
 			read_tracker_mpi(work_dir)
