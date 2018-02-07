@@ -164,6 +164,7 @@ def construct_keyword_dict():
 	keyword_dict["--ctref_orgstack"]              = SXkeyword_map(1, "bdb2d_stack")         # --ctref_orgstack=stack_for_continuation
 	keyword_dict["input_bdb_stack_path"]          = SXkeyword_map(1, "bdb2d_stack")         # input_bdb_stack_path (contains keyword 'stack' but this should be bdb type)
 	keyword_dict["--substack_basename"]           = SXkeyword_map(1, "string")              # --substack_basename=SUBSTACK_BASENAME (contains keyword 'volume' but this should be string type)
+	keyword_dict["--importctf"]                   = SXkeyword_map(1, "params_cter_txt")     # --importctf=IMPORTCTF (contains keyword '--import' but this should be params_cter_txt type) # NOTE: Toshio Moriya 2018/01/27 This is used by sxprocess.py but this function might be obsoleted at this point
 	# Use priority 2 for the others
 	keyword_dict["input_data_list"]               = SXkeyword_map(2, "displayable_list")    # input_data_list
 	keyword_dict["--input"]                       = SXkeyword_map(2, "data2d3d_both")       # --input=INPUT
@@ -184,10 +185,11 @@ def construct_keyword_dict():
 ###	keyword_dict["--subset"]                      = SXkeyword_map(2, "select_data2d_stack") # --subset=subset_file_path
 	keyword_dict["input_shift_list_file"]         = SXkeyword_map(2, "select_drift_params") # input_shift_list_file
 ###	keyword_dict["--resample_ratio_source"]       = SXkeyword_map(2, "params_any_txt")      # --resample_ratio_source
+	keyword_dict["--import"]                      = SXkeyword_map(2, "params_any_txt")      # --import=INPUT_PARAMS_PATH
+	keyword_dict["--export"]                      = SXkeyword_map(2, "params_any_txt")      # --export==OUTPUT_PARAMS_FILE
 	keyword_dict["input_coordinates_pattern"]     = SXkeyword_map(2, "params_coords_any")   # input_coordinates_pattern
 	keyword_dict["input_ctf_params_source"]       = SXkeyword_map(2, "params_cter_txt")     # input_ctf_params_source
 	keyword_dict["cter_ctf_file"]                 = SXkeyword_map(2, "params_cter_txt")     # cter_ctf_file
-	keyword_dict["--importctf"]                   = SXkeyword_map(2, "params_cter_txt")     # --importctf=IMPORTCTF  # NOTE: Toshio Moriya 2018/01/27 This is used by sxprocess.py but this function might be obsoleted at this point
 	keyword_dict["inputfile"]                     = SXkeyword_map(2, "params_drift_txt")    # inputfile
 	keyword_dict["input_shift_pattern"]           = SXkeyword_map(2, "params_drift_txt")    # input_shift_pattern
 	keyword_dict["input_star_file"]               = SXkeyword_map(2, "params_relion_star")  # input_star_file
@@ -1650,6 +1652,17 @@ def create_sxcmd_subconfig_refine3d_angular_distribution():
 
 	return sxcmd_subconfig
 
+def create_sxcmd_subconfig_sort3d_header_import_xform_projection():
+	token_edit_list = []
+	token_edit = SXcmd_token(); token_edit.initialize_edit("import"); token_edit.is_required = True; token_edit.is_locked = False; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("stack"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("params"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = "xform.projection"; token_edit.restore = "xform.projection"; token_edit_list.append(token_edit)
+
+	sxsubcmd_mpi_support = False
+	sxcmd_subconfig = SXsubcmd_config("Import 3D Alignment Parameters", "Import 3D alignment parameters from a file created by a meridien run to header of the input stack, which required by 3DVARIABILITY.py and SORT3D_DEPTH Stack Mode.", token_edit_list, sxsubcmd_mpi_support)
+
+	return sxcmd_subconfig
+
 def add_sxcmd_subconfig_sort3d_depth_shared_sorting(token_edit_list):
 	token_edit = SXcmd_token(); token_edit.initialize_edit("mask3D"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("focus"); token_edit_list.append(token_edit)
@@ -2017,6 +2030,7 @@ def main(is_dev_mode = False, is_dokuwiki_mode = False):
 	sxcmd_category = "sxc_sort3d"
 
 	sxcmd_role = "sxr_pipe"
+	sxcmd_config_list.append(SXcmd_config("../doc/header.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_sort3d_header_import_xform_projection()))
 	sxcmd_config_list.append(SXcmd_config("../doc/3dvariability.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_variability_preprocess()))
 	sxcmd_config_list.append(SXcmd_config("../doc/3dvariability.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list=["symmetrize"]))
 ###	sxcmd_config_list.append(SXcmd_config("../doc/sort3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_sort3d()))
@@ -2090,6 +2104,7 @@ def main(is_dev_mode = False, is_dokuwiki_mode = False):
 	sxcmd_config_list.append(SXcmd_config("../doc/summovie.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/e2bdb.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_utility_makevstack()))
 	sxcmd_config_list.append(SXcmd_config("../doc/pipe_organize_micrographs.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/header.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 	# sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 
 #	token_edit_list = []
