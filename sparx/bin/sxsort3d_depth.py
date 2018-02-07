@@ -306,7 +306,7 @@ def depth_clustering(work_dir, depth_order, initial_id_file, params, previous_pa
 			if(Blockdata["myid"] == Blockdata["main_node"]):
 				log_main.add('Layer %d sorting has completed. Recompute two_way comparison'%depth)
 			partition_per_box_per_layer_list = []	
-			for nbox in xrange(0,n_cluster_boxes,2):
+			for nbox in xrange(0, n_cluster_boxes,2):
 				input_box_parti1 = os.path.join(depth_dir, "nbox%d"%nbox,     "partition.txt")
 				input_box_parti2 = os.path.join(depth_dir, "nbox%d"%(nbox+1), "partition.txt")
 				minimum_grp_size, maximum_grp_size, accounted_list, unaccounted_list, bad_clustering, stop_generation, stat_list = \
