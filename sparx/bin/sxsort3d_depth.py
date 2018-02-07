@@ -1109,12 +1109,12 @@ def do_one_way_anova_scipy(clusters, value_list, name_of_variable="variable", lo
 	log_main.add('{:5} {:12.2f} {:12.2f}'.format('ANOVA', res[0], res[1]))
 	log_main.add(' ')
 
-	log_main.add('ANOVA:  %s mean of all clusters: %f'%(name_of_variable, global_mean/(float(nsamples))))
+	log_main.add('ANOVA:  %s mean of all clusters: %f'%(name_of_variable, round(global_mean/(float(nsamples))), 4))
 	log_main.add('ANOVA:  Group averages')
 	log_main.add('{:5} {:^7} {:^8} {:^12} {:^12} '.format('ANOVA', 'GID', 'N',  'mean',   'std'))
 	from math import sqrt
 	for i in xrange(K):
-		log_main.add('{:5} {:^7d} {:^8d} {:12.2f} {:12.2f}'.format('ANOVA', i, len(replicas[i]), res_table_stat[i][0], sqrt(res_table_stat[i][1])))
+		log_main.add('{:5} {:^7d} {:^8d} {:12.4f} {:12.4f}'.format('ANOVA', i, len(replicas[i]), res_table_stat[i][0], sqrt(res_table_stat[i][1])))
 	log_main.add(' ')
 	log_main.add('ANOVA  Pair-wise tests')
 	log_main.add('{:5} {:^3} {:^3} {:^12} {:^12} {:^12} {:^12}'.format('ANOVA', 'A', 'B', 'avgA','avgB', 'P_value', 'f-value')) 
