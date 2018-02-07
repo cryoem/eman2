@@ -1124,7 +1124,6 @@ def do_one_way_anova_scipy(clusters, value_list, name_of_variable="variable", lo
 			log_main.add('{:5} {:^3d} {:^3d} {:12.4f} {:12.4f} {:12.3f} {:12.4f} '.format('ANOVA', ires, jres, avgs[ires], avgs[jres], cres[0], cres[1]))
 	log_main.add(' ')
 	log_main.add('================================================================================================================\n')
-
 	return res[0], res[1]
 
 def check_3dmask(log_main):
@@ -6834,7 +6833,7 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 					mpi_barrier(MPI_COMM_WORLD)
 		else: # restart run
 			work_dir = os.path.join( Tracker["constants"]["masterdir"], "generation_%03d"%igen)
-			read_tracker_mpi(work_dir, log_main)
+			read_tracker_mpi(work_dir)
 			my_pids  = os.path.join( work_dir, 'indexes_next_generation.txt')
 			if Blockdata["myid"] == Blockdata["main_node"]:
 				stat_list = read_text_row( os.path.join(work_dir, 'gen_rep.txt'))
