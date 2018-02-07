@@ -6555,7 +6555,7 @@ def copy_results(log_file, all_gen_stat_list):
 			ig    = element[0]
 			value = element[1]
 			for ic in xrange(value):
-				cluster_file = os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%ig, "Cluster_%03d.txt"%ic)
+				cluster_file = os.path.join(Tracker["constants"]["masterdir"], "generation_%03s"%ig, "Cluster_%03d.txt"%ic)
 				copyfile(cluster_file, os.path.join(Tracker["constants"]["masterdir"], "Cluster_%03d.txt"%nclusters))
 				clusters.append(read_text_file(cluster_file))
 				copyfile(os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%ig, "vol_grp%03d_iter000.hdf"%ic), os.path.join(Tracker["constants"]["masterdir"], "vol_cluster%03d.hdf"%nclusters))
@@ -6849,7 +6849,9 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 			clusters = output_clusters(os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%igen), \
 				output_list[0][0], output_list[0][1], not_include_unaccounted, log_main)
 			Tracker["generation"][igen] = len(clusters)
-		else: Tracker = 0
+		else:
+			Tracker["generation"][igen] = 0 
+			Tracker = 0
 		Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
 		dump_tracker(os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%igen))
 		if Blockdata["myid"] == Blockdata["main_node"]:time_rec3d_start = time.time()
