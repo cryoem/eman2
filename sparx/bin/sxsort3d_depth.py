@@ -303,7 +303,21 @@ def depth_clustering(work_dir, depth_order, initial_id_file, params, previous_pa
 			if( bad_clustering == 1):   break
 			if( stop_generation == 1 ): break ### only one cluster survives
 		else:
-			if(Blockdata["myid"] == Blockdata["main_node"]):log_main.add('Layer %d completed'%depth)
+			if(Blockdata["myid"] == Blockdata["main_node"]):
+				log_main.add('Layer %d completed. Recompute two_way comparison'%depth)
+			partition_per_box_per_layer_list = []	
+			for nbox in xrange(0,n_cluster_boxes,2):
+				input_box_parti1 = os.path.join(depth_dir, "nbox%d"%nbox,     "partition.txt")
+				input_box_parti2 = os.path.join(depth_dir, "nbox%d"%(nbox+1), "partition.txt")
+				minimum_grp_size, maximum_grp_size, accounted_list, unaccounted_list, bad_clustering, stop_generation, stat_list = \
+				do_boxes_two_way_comparison_mpi(nbox, input_box_parti1, input_box_parti2, depth_order - depth, log_main)
+				if( stop_generation ==1 ):
+					partition_per_box_per_layer_list = []
+					partition_per_box_per_layer_list.append([accounted_list, unaccounted_list])
+					break
+				else:
+					partition_per_box_per_layer_list.append([accounted_list, unaccounted_list])
+			mpi_barrier(MPI_COMM_WORLD)
 		time_of_sorting_h,  time_of_sorting_m = get_time(time_layer_start)
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			log_main.add('            Execution of layer %d took %d hours %d minutes'%(depth, time_of_sorting_h, time_of_sorting_m))
