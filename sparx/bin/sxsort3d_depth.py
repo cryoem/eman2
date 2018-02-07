@@ -6554,7 +6554,7 @@ def copy_results(log_file, all_gen_stat_list):
 		clusters = []
 		NACC     = 0           
 		for element in Tracker["generation"].items():
-			ig    = atoi(element[0])
+			ig    = element[0]
 			value = element[1]
 			for ic in xrange(value):
 				cluster_file = os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%ig, "Cluster_%03d.txt"%ic)
