@@ -6483,7 +6483,7 @@ def compute_final_map(work_dir):
 		alist, partition = merge_classes_into_partition_list(clusters)
 		write_text_row(partition, os.path.join(work_dir, "generation_partition.txt"))
 	parti_file = os.path.join(work_dir, "generation_partition.txt")
-	params          = os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt")
+	params = os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt")
 	previous_params = Tracker["previous_parstack"]
 	original_data, norm_per_particle  = read_data_for_sorting(parti_file, params, previous_params)
 	if Tracker["nosmearing"]:
@@ -6495,7 +6495,7 @@ def compute_final_map(work_dir):
 		paramstructure_dir  = Tracker["paramstructure_dir"]
 		parameterstructure  = read_paramstructure_for_sorting(parti_file, paramstructure_dict, paramstructure_dir)
 	mpi_barrier(MPI_COMM_WORLD)
-	Tracker["directory"]    = work_dir
+	Tracker["directory"] = work_dir
 	compute_noise(Tracker["nxinit"])
 	cdata, rdata, fdata = downsize_data_for_sorting(original_data, preshift = True, npad = 1, norms = norm_per_particle)# pay attentions to shifts!
 	mpi_barrier(MPI_COMM_WORLD)
@@ -6821,7 +6821,7 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 					compute_final_map(work_dir)
 					if Blockdata["myid"] == Blockdata["main_node"]:
 						time_of_rec3d_h,  time_of_rec3d_m = get_time(time_rec3d_start)
-						log_main.add('SORT3D 3D reconstruction time: %d hours %d minutes'%(time_of_sorting_h, time_of_sorting_m))
+						log_main.add('SORT3D 3D reconstruction time: %d hours %d minutes'%(time_of_rec3d_h, time_of_rec3d_m))
 						time_of_generation_h,  time_of_generation_m = get_time(time_generation_start)
 						log_main.add('SORT3D generation%d time: %d hours %d minutes'%(igen, time_of_generation_h, time_of_generation_m))
 				
@@ -6944,7 +6944,8 @@ def main():
 			if checking_flag ==1: ERROR("The specified mask3D file does not exist", "sort3d", 1, Blockdata["myid"])
 		
 		if options.img_per_grp <=1: ERROR("Improperiate input paramter for img_per_grp", "sort3d", 1, Blockdata["myid"])
-		elif options.img_per_grp < options.minimum_grp_size: ERROR("Parameter img_per_grp should be always larger than parameter minimum_grp_size", "sort3d", 1, Blockdata["myid"])
+		elif options.img_per_grp < options.minimum_grp_size: 
+			ERROR("Parameter img_per_grp should be always larger than parameter minimum_grp_size", "sort3d", 1, Blockdata["myid"])
 	
 		#--- Fill input parameters into dictionary Constants
 		Constants		                         = {}
@@ -7014,7 +7015,8 @@ def main():
 		Tracker["minimum_ptl_number"]   = 20
 		### ------------=====< option for proteins images that have preferred orientations
 		 # for orientation groups
-		if    Tracker["constants"]["memory_per_node"] == -1 or Tracker["constants"]["memory_per_node"] <32.: Tracker["constants"]["small_memory"] = True
+		if    Tracker["constants"]["memory_per_node"] == -1 or Tracker["constants"]["memory_per_node"] <32.: 
+			Tracker["constants"]["small_memory"] = True
 		else: Tracker["constants"]["small_memory"] = False
 	
 		## additional check
@@ -7026,7 +7028,7 @@ def main():
 		
 		Blockdata["fftwmpi"]      = True
 		try : 
-			Blockdata["symclass"]                      = symclass(Tracker["constants"]["symmetry"])
+			Blockdata["symclass"] = symclass(Tracker["constants"]["symmetry"])
 			from string import atoi
 			Tracker["constants"]["orientation_groups"] = max(4, 100//Blockdata["symclass"].nsym)
 			
