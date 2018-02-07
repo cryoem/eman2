@@ -6852,6 +6852,7 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 		if Blockdata["myid"] == Blockdata["main_node"]:time_rec3d_start = time.time()
 		compute_final_map(work_dir)
 		if Blockdata["myid"] == Blockdata["main_node"]:
+			write_text_row(stat_list, os.path.join(work_dir, 'gen_rep.txt'))
 			mark_sorting_state(work_dir, True, log_main)
 			time_of_rec3d_h,  time_of_rec3d_m = get_time(time_rec3d_start)
 			log_main.add('SORT3D 3D reconstruction time: %d hours %d minutes'%(time_of_rec3d_h, time_of_rec3d_m))
