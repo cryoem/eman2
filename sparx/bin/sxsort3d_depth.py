@@ -6795,8 +6795,8 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 		if keepchecking == 0: # new, do it
 			if Blockdata["myid"] == Blockdata["main_node"]:
 				time_generation_start = time.time()
-				os.mkdir(work_dir)
-				freq_cutoff_dict = {}
+				if not os.path.exists(work_dir):os.mkdir(work_dir)# need check each box
+ 				freq_cutoff_dict = {}
 				fout = open(os.path.join(work_dir, "freq_cutoff.json"),'w')
 				json.dump(freq_cutoff_dict, fout)
 				fout.close()
@@ -6809,7 +6809,7 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 			all_gen_stat_list.append(stat_list)
 			keepsorting     = check_sorting(len(output_list[0][1]), keepsorting, log_main)
 			if bad_clustering !=1:
-				if keepsorting == 1:# do final box refilling
+				if keepsorting == 1:
 					if Blockdata["myid"] == Blockdata["main_node"]:
 						clusters = output_clusters(work_dir, output_list[0][0], output_list[0][1], not_include_unaccounted, log_main)
 						Tracker["generation"][igen] = len(clusters)
@@ -6830,6 +6830,7 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 						write_text_file(output_list[0][1], my_pids)
 						write_text_row(stat_list, os.path.join(work_dir, 'gen_rep.txt'))
 						mark_sorting_state(work_dir, True, log_main)
+						shutil.rmtree(os.path.join(work_dir, 'tempdir'))
 					mpi_barrier(MPI_COMM_WORLD)
 		else: # restart run
 			work_dir = os.path.join( Tracker["constants"]["masterdir"], "generation_%03d"%igen)
@@ -6854,13 +6855,15 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			write_text_row(stat_list, os.path.join(work_dir, 'gen_rep.txt'))
 			mark_sorting_state(work_dir, True, log_main)
+			shutil.rmtree(os.path.join(work_dir, 'tempdir'))
 			time_of_rec3d_h,  time_of_rec3d_m = get_time(time_rec3d_start)
 			log_main.add('SORT3D 3D reconstruction time: %d hours %d minutes'%(time_of_rec3d_h, time_of_rec3d_m))
 			time_of_generation_h,  time_of_generation_m = get_time(time_generation_start)
 			log_main.add('SORT3D generation%d time: %d hours %d minutes'%(igen, time_of_generation_h, time_of_generation_m))
 	copy_results(log_main, all_gen_stat_list)# all nodes function
 	if Blockdata["myid"] == Blockdata["main_node"]:
-		shutil.rmtree(os.path.join(Tracker["constants"]["masterdir"], 'tempdir'))
+		if os.path.exists(os.path.join(Tracker["constants"]["masterdir"], 'tempdir')):
+			shutil.rmtree(os.path.join(Tracker["constants"]["masterdir"], 'tempdir'))
 		time_of_sorting_h,  time_of_sorting_m = get_time(time_sorting_start)
 		log_main.add('SORT3D costs time: %d hours %d minutes'%(time_of_sorting_h, time_of_sorting_m))
 	return
