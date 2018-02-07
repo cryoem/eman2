@@ -19,7 +19,6 @@ Notices on options:
 
 a. --do_swap_au  --swap_ratio=5.   : Ratio of the elements of determined clusters that are exchanged with the unaccounted elements.
 b. --stop_mgskmeans_percentage=15. : criterion to stop Kmeans run.
-c. --orientation_groups=50:  user defined number of orientation groups within an asymmetric unit.
 
 Nomenclatures in sorting intermediate results:
 
@@ -273,7 +272,10 @@ def depth_clustering(work_dir, depth_order, initial_id_file, params, previous_pa
 							log_main.add(msg)
 							shutil.rmtree(nbox_dir)
 							os.mkdir(nbox_dir)
-							mark_sorting_state(nbox_dir, False, log_main)	
+							mark_sorting_state(nbox_dir, False, log_main)
+						else:
+							msg ="Box %d is completed"%nbox
+							log_main.add(msg)
 				else: checkingbox = 0
 				checkingbox = bcast_number_to_all(checkingbox, Blockdata["main_node"], MPI_COMM_WORLD)
 				# Code structure of the box
