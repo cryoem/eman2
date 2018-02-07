@@ -304,7 +304,7 @@ def depth_clustering(work_dir, depth_order, initial_id_file, params, previous_pa
 			if( stop_generation == 1 ): break ### only one cluster survives
 		else:
 			if(Blockdata["myid"] == Blockdata["main_node"]):
-				log_main.add('Layer %d completed. Recompute two_way comparison'%depth)
+				log_main.add('Layer %d sorting has completed. Recompute two_way comparison'%depth)
 			partition_per_box_per_layer_list = []	
 			for nbox in xrange(0,n_cluster_boxes,2):
 				input_box_parti1 = os.path.join(depth_dir, "nbox%d"%nbox,     "partition.txt")
