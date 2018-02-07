@@ -268,13 +268,13 @@ def depth_clustering(work_dir, depth_order, initial_id_file, params, previous_pa
 					else:
 						checkingbox = check_sorting_state(nbox_dir, checkingbox, log_main)
 						if checkingbox == 0:# found not finished box
-							msg ="Phase %d is not finished. Remove it and recompute..."%nbox
+							msg ="Pair %d is not finished. Remove it and recompute..."%nbox
 							log_main.add(msg)
 							shutil.rmtree(nbox_dir)
 							os.mkdir(nbox_dir)
 							mark_sorting_state(nbox_dir, False, log_main)
 						else:
-							msg ="Phase %d is completed"%nbox
+							msg ="Pair %d is completed"%nbox
 							log_main.add(msg)
 				else: checkingbox = 0
 				checkingbox = bcast_number_to_all(checkingbox, Blockdata["main_node"], MPI_COMM_WORLD)
