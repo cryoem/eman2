@@ -142,6 +142,7 @@ class SXcmd_token(object):
 		self.group = None
 		self.is_required = None
 		self.is_locked = None
+		self.is_reversed = None
 		self.default = None
 		self.restore = None
 		self.type = None

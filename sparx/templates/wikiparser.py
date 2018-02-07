@@ -402,7 +402,6 @@ def remove_MoinMoinWiki_makeup(target_text):
 
 	return target_text
 
-
 # ----------------------------------------------------------------------------------------
 def construct_token_list_from_MoinMoinWiki(sxcmd_config):
 
@@ -594,8 +593,11 @@ def construct_token_list_from_MoinMoinWiki(sxcmd_config):
 								# Type is still empty, meaning no special type is assigned
 								# Extract the data type (the rest of line)
 								token.type = default_value.replace("required", "").strip()
+							assert (token.is_required)
+							assert (not token.is_locked)
+							assert (not token.is_reversed)
 						elif default_value.find("question reversed in GUI") != -1:
-							token.is_required = False
+							# token.is_required = False
 							token.default = default_value.replace("question reversed in GUI", "").strip()
 							token.type = "bool"
 							if token.default == "True":
@@ -604,9 +606,12 @@ def construct_token_list_from_MoinMoinWiki(sxcmd_config):
 								token.default = True # convert the default value to opposite boolean
 							else:
 								assert (False)
+							assert (not token.is_required)
+							assert (not token.is_locked)
 							assert (not token.is_reversed)
 						elif default_value.find("value reversed in GUI") != -1:
-							token.is_required = False
+							# token.is_required = False
+							token.is_reversed = True
 							token.default = default_value.replace("value reversed in GUI", "").strip()
 							token.type = "bool"
 							if token.default == "True":
@@ -615,10 +620,12 @@ def construct_token_list_from_MoinMoinWiki(sxcmd_config):
 								token.default = True # convert the default value to opposite boolean
 							else:
 								assert (False)
-							token.is_reversed = True
+							assert (not token.is_required)
+							assert (not token.is_locked)
+							assert (token.is_reversed)
 						else:
 							# This is not required command token and should have default value
-							token.is_required = False
+							# token.is_required = False
 							token.default = default_value
 
 							if not token.type:
@@ -641,9 +648,18 @@ def construct_token_list_from_MoinMoinWiki(sxcmd_config):
 										else:
 											token.type = "string"
 							# else: keep the special type
-						# Initialise restore value with default value
-						if not token.is_locked:
-							token.restore = token.default
+							assert (not token.is_required)
+							assert (not token.is_locked)
+							assert (not token.is_reversed)
+						### Initialise restore value with default value
+						### if not token.is_locked:
+						### 	token.restore = token.default
+						# 
+						# NOTE: Toshio Moriya 2018/02/07
+						# Currently, lock status can be set only through the subcommand configuration
+						# Therefore, the lock should be always False yet at this point
+						assert (not token.is_locked)
+						token.restore = token.default
 						# Ignore the rest of line ...
 				else:
 					ERROR("Logical Error: This section is invalid. Did you assigne an invalid section?", "%s in %s" % (__name__, os.path.basename(__file__)))
@@ -929,8 +945,11 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 								# Type is still empty, meaning no special type is assigned
 								# Extract the data type (the rest of line)
 								token.type = default_value.replace("required", "").strip()
+							assert (token.is_required)
+							assert (not token.is_locked)
+							assert (not token.is_reversed)
 						elif default_value.find("question reversed in GUI") != -1:
-							token.is_required = False
+							# token.is_required = False
 							token.default = default_value.replace("question reversed in GUI", "").strip()
 							token.type = "bool"
 							if token.default == "True":
@@ -939,9 +958,12 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 								token.default = True # convert the default value to opposite boolean
 							else:
 								assert (False)
+							assert (not token.is_required)
+							assert (not token.is_locked)
 							assert (not token.is_reversed)
 						elif default_value.find("value reversed in GUI") != -1:
-							token.is_required = False
+							# token.is_required = False
+							token.is_reversed = True
 							token.default = default_value.replace("value reversed in GUI", "").strip()
 							token.type = "bool"
 							if token.default == "True":
@@ -950,10 +972,12 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 								token.default = True # convert the default value to opposite boolean
 							else:
 								assert (False)
-							token.is_reversed = True
+							assert (not token.is_required)
+							assert (not token.is_locked)
+							assert (token.is_reversed)
 						else:
 							# This is not required command token and should have default value
-							token.is_required = False
+							# token.is_required = False
 							token.default = default_value
 
 							if not token.type:
@@ -976,6 +1000,9 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 										else:
 											token.type = "string"
 							# else: keep the special type
+							assert (not token.is_required)
+							assert (not token.is_locked)
+							assert (not token.is_reversed)
 						# Initialise restore value with default value
 						if not token.is_locked:
 							token.restore = token.default
@@ -1125,37 +1152,59 @@ def apply_sxsubcmd_config(sxsubcmd_config, sxcmd):
 	# Reconstruct token list
 	for token_edit in sxsubcmd_config.token_edit_list:
 		# print "MRK_DEBUG: token_edit.key_base = %s" % (token_edit.key_base)
+		if token_edit.key_base is None: ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. Invalid None Key (%s)." % (token_edit.key_base) , "%s in %s" % (__name__, os.path.basename(__file__)))
+		if token_edit.key_base == "": ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. Invalid empty string Key (%s)." % (token_edit.key_base) , "%s in %s" % (__name__, os.path.basename(__file__)))
+		
 		token = None
 		if token_edit.key_base not in fullset_token_dict.keys():
 			# token key base is not found in fullset. This must be an argument to be added
-			if token_edit.key_prefix != "": ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. Key (%s) should be argument." % (token_edit.key_base) , "%s in %s" % (__name__, os.path.basename(__file__)))
-			token = token_edit
+			if token_edit.key_prefix is None: ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. Prefix (%s) for Key (%s) should NOT be None." % (token_edit.key_prefix, token_edit.key_base) , "%s in %s" % (__name__, os.path.basename(__file__)))
+			if token_edit.key_prefix != "": ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. Key (%s) should be argument (Prefix (%s) should be empty string)." % (token_edit.key_base, token_edit.key_prefix) , "%s in %s" % (__name__, os.path.basename(__file__)))
+			# token = token_edit
+			token = SXcmd_token()
+			token.key_base = token_edit.key_base
 		else:
 			# token key base is found in fullset. This must be an option.
 			token = fullset_token_dict[token_edit.key_base]
-			if token_edit.key_prefix != None:
-				token.key_prefix = token_edit.key_prefix
-			if token_edit.label != None:
-				token.label = token_edit.label
-			if token_edit.help != None:
-				token.help = token_edit.help
-			if token_edit.group != None:
-				token.group = token_edit.group
-			if token_edit.is_required != None:
-				token.is_required = token_edit.is_required
-			if token_edit.is_locked != None:
-				token.is_locked = token_edit.is_locked
-			if token_edit.is_reversed != None:
-				token.is_reversed = token_edit.is_reversed
-			if token_edit.default != None:
-				token.default = token_edit.default
-			if token_edit.restore != None:
-				token.restore = token_edit.restore
-			if token_edit.type != None:
-				token.type = token_edit.type
-		assert(token != None)
+		assert(token is not None)
+		
+		if token_edit.key_prefix is not None:
+			token.key_prefix = token_edit.key_prefix
+		if token_edit.label is not None:
+			token.label = token_edit.label
+		if token_edit.help is not None:
+			token.help = token_edit.help
+		if token_edit.group is not None:
+			token.group = token_edit.group
+		if token_edit.is_required is not None:
+			token.is_required = token_edit.is_required
+		if token_edit.is_locked is not None:
+			token.is_locked = token_edit.is_locked
+		if token_edit.is_reversed is not None:
+			token.is_reversed = token_edit.is_reversed
+		if token_edit.default is not None:
+			token.default = token_edit.default
+		if token_edit.restore is not None:
+			token.restore = token_edit.restore
+		if token_edit.type is not None:
+			token.type = token_edit.type
+		
 		if not token.is_locked:
 			token.restore = token.default
+		
+		# Make sure all fields of token are not None
+		if token.key_base is None: ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. token.key_base should NOT be None.", "%s in %s" % (__name__, os.path.basename(__file__)))
+		if token.key_prefix is None: ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. token.key_prefix should NOT be None.", "%s in %s" % (__name__, os.path.basename(__file__)))
+		if token.label is None: ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. token.label should NOT be None.", "%s in %s" % (__name__, os.path.basename(__file__)))
+		if token.help is None: ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. token.help should NOT be None.", "%s in %s" % (__name__, os.path.basename(__file__)))
+		if token.group is None: ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. token.group should NOT be None.", "%s in %s" % (__name__, os.path.basename(__file__)))
+		if token.is_required is None: ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. token.is_required should NOT be None.", "%s in %s" % (__name__, os.path.basename(__file__)))
+		if token.is_locked is None: ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. token.is_locked should NOT be None.", "%s in %s" % (__name__, os.path.basename(__file__)))
+		if token.is_reversed is None: ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. token.is_reversed should NOT be None.", "%s in %s" % (__name__, os.path.basename(__file__)))
+		if token.default is None: ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. token.default should NOT be None.", "%s in %s" % (__name__, os.path.basename(__file__)))
+		if token.restore is None: ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. token.restore should NOT be None.", "%s in %s" % (__name__, os.path.basename(__file__)))
+		if token.type is None: ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. token.type should NOT be None.", "%s in %s" % (__name__, os.path.basename(__file__)))
+
 		sxcmd.token_list.append(token)
 		sxcmd.token_dict[token_edit.key_base] = (token)
 
@@ -1539,13 +1588,13 @@ def add_sxcmd_subconfig_meridien_standard_shared(token_edit_list):
 	token_edit = SXcmd_token(); token_edit.initialize_edit("symmetry"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("inires"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("delta"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("initialshifts"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("skip_prealignment"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("memory_per_node"); token_edit_list.append(token_edit)
 
 	token_edit = SXcmd_token(); token_edit.initialize_edit("xr"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("ts"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("an"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("skip_prealignment"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("initialshifts"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("center_method"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("target_radius"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("shake"); token_edit_list.append(token_edit)
