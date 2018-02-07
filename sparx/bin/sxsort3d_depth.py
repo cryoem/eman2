@@ -301,7 +301,7 @@ def depth_clustering(work_dir, depth_order, initial_id_file, params, previous_pa
 			if( bad_clustering == 1):   break
 			if( stop_generation == 1 ): break ### only one cluster survives
 		else:
-			if(Blockdata["myid"] == Blockdata["main_node"]):log_main.add('Layer %d comleted'%depth)
+			if(Blockdata["myid"] == Blockdata["main_node"]):log_main.add('Layer %d completed'%depth)
 		time_of_sorting_h,  time_of_sorting_m = get_time(time_layer_start)
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			log_main.add('            Execution of layer %d took %d hours %d minutes'%(depth, time_of_sorting_h, time_of_sorting_m))
@@ -6853,13 +6853,14 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 		if Blockdata["myid"] == Blockdata["main_node"]:time_rec3d_start = time.time()
 		compute_final_map(work_dir)
 		if Blockdata["myid"] == Blockdata["main_node"]:
+			mark_sorting_state(work_dir, True, log_main)
 			time_of_rec3d_h,  time_of_rec3d_m = get_time(time_rec3d_start)
 			log_main.add('SORT3D 3D reconstruction time: %d hours %d minutes'%(time_of_rec3d_h, time_of_rec3d_m))
 			time_of_generation_h,  time_of_generation_m = get_time(time_generation_start)
 			log_main.add('SORT3D generation%d time: %d hours %d minutes'%(igen, time_of_generation_h, time_of_generation_m))
-	
 	copy_results(log_main, all_gen_stat_list)# all nodes function
 	if Blockdata["myid"] == Blockdata["main_node"]:
+		shutil.rmtree(os.path.join(Tracker["constants"]["masterdir"], 'tempdir'))
 		time_of_sorting_h,  time_of_sorting_m = get_time(time_sorting_start)
 		log_main.add('SORT3D costs time: %d hours %d minutes'%(time_of_sorting_h, time_of_sorting_m))
 	return
