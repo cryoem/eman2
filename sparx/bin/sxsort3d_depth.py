@@ -6554,7 +6554,7 @@ def copy_results(log_file, all_gen_stat_list):
 		clusters = []
 		NACC     = 0           
 		for element in Tracker["generation"].items():
-			ig    = element[0]
+			ig    = atoi(element[0])
 			value = element[1]
 			for ic in xrange(value):
 				cluster_file = os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%ig, "Cluster_%03d.txt"%ic)
@@ -6814,7 +6814,6 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 			output_list, bad_clustering, stat_list  = depth_clustering(work_dir, depth_order, my_pids, params, previous_params, log_main)
 			all_gen_stat_list.append(stat_list)
 			keepsorting     = check_sorting(len(output_list[0][1]), keepsorting, log_main)
-			print("XXXXXX", keepsorting)
 			if bad_clustering !=1:
 				if keepsorting == 1:
 					if Blockdata["myid"] == Blockdata["main_node"]:
