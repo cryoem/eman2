@@ -6795,7 +6795,10 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 		if keepchecking == 0: # new, do it
 			if Blockdata["myid"] == Blockdata["main_node"]:
 				time_generation_start = time.time()
-				if not os.path.exists(work_dir):os.mkdir(work_dir)# need check each box
+				if not os.path.exists(work_dir):
+					os.mkdir(work_dir)# need check each box
+				else:
+					within_generation_restart = 1
  				freq_cutoff_dict = {}
 				fout = open(os.path.join(work_dir, "freq_cutoff.json"),'w')
 				json.dump(freq_cutoff_dict, fout)
@@ -6803,6 +6806,9 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 				log_main.add('================================================================================================================')
 				log_main.add('                                    SORT3D IN-DEPTH   generation %d'%igen)
 				log_main.add('----------------------------------------------------------------------------------------------------------------')
+			else: within_generation_restart = 0
+			within_generation_restart = bcast_number_to_all(within_generation_restart, Blockdata["main_node"], MPI_COMM_WORLD)
+			if within_generation_restart ==1:read_tracker_mpi(work_dir)
 			params          = os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt")
 			previous_params = Tracker["previous_parstack"]
 			output_list, bad_clustering, stat_list  = depth_clustering(work_dir, depth_order, my_pids, params, previous_params, log_main)
