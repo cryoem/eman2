@@ -6551,8 +6551,8 @@ def copy_results(log_file, all_gen_stat_list):
 		log_file.add( '{:^8} {:>8}   {:^24}  {:>15} {:^22} {:^5} {:^15} {:^20} '.format('Group ID', '    size','determined in generation', 'reproducibility', 'random reproducibility', ' std ', ' selection file', '       map file     '))
 		clusters = []
 		NACC     = 0           
-		for ig, value in Tracker["generation"].items():
-			ig = atoi('s%'%ig)
+		for ig1, value in Tracker["generation"].items():
+			ig = atoi('%s'%ig1)
 			for ic in xrange(value):
 				cluster_file = os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%ig, "Cluster_%03d.txt"%ic)
 				copyfile(cluster_file, os.path.join(Tracker["constants"]["masterdir"], "Cluster_%03d.txt"%nclusters))
