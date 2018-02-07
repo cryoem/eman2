@@ -282,7 +282,6 @@ def depth_clustering(work_dir, depth_order, initial_id_file, params, previous_pa
 					if(Blockdata["myid"] == Blockdata["main_node"]): mark_sorting_state(nbox_dir, True, log_main)
 				else: continue
 			partition_per_box_per_layer_list = []
-			#if(Blockdata["myid"] == Blockdata["main_node"]):
 			stop_generation = 0
 			for nbox in xrange(0,n_cluster_boxes,2):
 				input_box_parti1 = os.path.join(depth_dir, "nbox%d"%nbox,     "partition.txt")
@@ -387,26 +386,18 @@ def output_iter_results(box_dir, ncluster, NACC, NUACC, minimum_grp_size, list_o
 		freq_cutoff_dict = convert_json_fromunicode(json.load(fout))
 		fout.close()
 	except: freq_cutoff_dict = {}
-	
-	#msg ='--- Save iteration results: group size smaller than %d will be set as an empty group ---'%minimum_grp_size
-	#log_main.add(msg)
-	
 	for index_of_any in xrange(len(list_of_stable)):
 		any = list_of_stable[index_of_any]
 		any.tolist()
 		if len(any) >= minimum_grp_size:
 			any.sort()
 			new_list.append(any)
-			#msg = 'Cluster %d  with size %d is saved '%(index_of_any, len(any))
-			#log_main.add(msg)
 			write_text_file(any, os.path.join(box_dir, "Cluster_%03d.txt"%ncluster))
 			freq_cutoff_dict["Cluster_%03d.txt"%ncluster] = Tracker["freq_fsc143_cutoff"]
 			ncluster += 1
 			nc       += 1
 			NACC +=len(any)
 		else:
-			#msg ='Group %d with size %d is rejected because of size smaller than minimum_grp_size %d and elements are sent back into unaccounted ones'%(index_of_any, len(any), minimum_grp_size)
-			#log_main.add(msg)
 			for element in any: unaccounted_list.append(element)
 	unaccounted_list.sort()
 	NUACC = len(unaccounted_list)
@@ -516,10 +507,6 @@ def output_clusters(output_dir, partition, unaccounted_list, not_include_unaccou
 	
 def do_analysis_on_identified_clusters(clusters, log_main):
 	global Tracker, Blockdata
-	'''
-	dummy = output_micrograph_number_per_cluster(Tracker["constants"]["orgstack"], \
-		os.path.join(Tracker["constants"]["masterdir"], "indexes.txt"), clusters, log_main = log_main)
-	'''
 	if Tracker["nosmearing"]:
 		vs, ds, ss, norms = get_params_for_analysis(Tracker["constants"]["orgstack"], \
 				os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt"),\
@@ -572,10 +559,6 @@ def mark_sorting_state(current_dir, sorting_done, log_file):
 	else: current_state["done"] = False
 	json.dump(current_state, fout)
 	fout.close()
-	#if sorting_done: msg = "directory %s is marked as done"%current_dir
-	#else:    msg = "directory %s is marked as not finished"%current_dir
-	#log_file.add(msg)
-	#
 	return
 
 def depth_clustering_box(work_dir, input_accounted_file, input_unaccounted_file, params, previous_params, nbox, log_main):
@@ -586,7 +569,8 @@ def depth_clustering_box(work_dir, input_accounted_file, input_unaccounted_file,
 	from   shutil import copyfile
 	from   math   import sqrt
 	import time
-	box_niter = 5
+	box_niter      = 5
+	no_groups_runs = 0
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		if not os.path.exists(work_dir): os.mkdir(work_dir)
 		freq_cutoff_dict = {}
@@ -753,25 +737,14 @@ def depth_clustering_box(work_dir, input_accounted_file, input_unaccounted_file,
 		NACC         = bcast_number_to_all(NACC,     Blockdata["main_node"], MPI_COMM_WORLD)
 		NUACC        = bcast_number_to_all(NUACC,    Blockdata["main_node"], MPI_COMM_WORLD)
 		unaccounted_list = wrap_mpi_bcast(unaccounted_list, Blockdata["main_node"], MPI_COMM_WORLD)
-		if new_clusters >0: no_cluster = False
-		else:               no_cluster = True
+		if new_clusters >0: 
+			no_cluster     = False
+			no_groups_runs = 0
+		else:               
+			no_cluster = True
+			no_groups_runs +=1
 		keepgoing, nruns, total_stack, current_number_of_groups = \
 		   check_state_within_box_run(keepgoing, nruns, img_per_grp, minimum_grp_size, unaccounted_list, no_cluster)
-		'''
-		if keepgoing == 1:
-			within_box_run_dir = os.path.join(work_dir, "run%d"%nruns)
-			unaccounted_file = os.path.join(within_box_run_dir, "Unaccounted_from_previous_run.txt")
-			if(Blockdata["myid"] == Blockdata["main_node"]):
-				os.mkdir(within_box_run_dir)
-				write_text_file(unaccounted_list, unaccounted_file)# new starting point
-			nreassign_list  = []
-			assignment_list = create_nrandom_lists(unaccounted_file, current_number_of_groups, 2)
-			if(Blockdata["myid"] == Blockdata["main_node"]):
-				for indep in xrange(2):
-						write_text_row(assignment_list[indep], os.path.join(within_box_run_dir,\
-						 "independent_index_%03d.txt"%indep))
-			run_id_file = os.path.join(within_box_run_dir, "independent_index_000.txt")
-		'''
 		if Blockdata["myid"] == Blockdata["main_node"]:# report current state
 			if new_clusters>0:
 				log_main.add(' ')
@@ -779,12 +752,12 @@ def depth_clustering_box(work_dir, input_accounted_file, input_unaccounted_file,
 				for itable in xrange(len(info_table)): log_main.add(info_table[itable])
 	partition = get_box_partition(work_dir, ncluster, unaccounted_list)
 	if(Blockdata["myid"] == Blockdata["main_node"]):
-		if ncluster>0:
-			if(ncluster == 1):  log_main.add('In phase  %d, the program found %d group'%(nbox, ncluster))
-			else: log_main.add('In phase  %d, the program found %d groups'%(nbox, ncluster))
+		if ncluster > 0:
+			if(ncluster == 1):  log_main.add('In independent run  %d, the program found %d group'%(nbox, ncluster))
+			else: log_main.add('In independent run  %d, the program found %d groups'%(nbox, ncluster))
 			bad_clustering = 0
 		else:
-			log_main.add('No reproducible groups were found '%nbox)
+			log_main.add('In independent run  %d, no reproducible groups were found '%nbox)
 			bad_clustering = 1
 		log_main.add('----------------------------------------------------------------------------------------------------------------\n')
 		write_text_row(partition, os.path.join(work_dir, "partition.txt"))
@@ -984,25 +957,6 @@ def get_params_for_analysis(orgstack, ali3d_params, smearing_file, smearing_numb
 	else: smearing_list = None
 	##
 	return vecs_list, defo_list, smearing_list, norm_list
-	
-def orien_analysis(veclist, cluster_id, log_main):
-	mean_vec = [0.0, 0.0, 0.0]
-	for im in xrange(len(veclist)):
-		for jm in xrange(len(mean_vec)):
-			mean_vec[jm] +=veclist[im][jm]
-	lsum = 0.0
-	for jm in xrange(len(mean_vec)):
-		mean_vec[jm]/=float(len(veclist))
-		lsum += mean_vec[jm]**2
-	from math import sqrt
-	lsum =sqrt(lsum)
-	max_value = max(mean_vec[0], mean_vec[1], mean_vec[2])
-	msg = "%5d  %f   %f  %f  %f"%\
-	   (cluster_id, mean_vec[0], mean_vec[1], mean_vec[2], lsum) +"\n"+\
-	   "%5s  %f   %f  %f  "%\
-	   (" ", mean_vec[0]/max_value, mean_vec[1]/max_value, mean_vec[2]/max_value)
-	log_main.add(msg)
-	return mean_vec
 
 def do_one_way_anova_scipy(clusters, value_list, name_of_variable="variable", log_main = None):
 	# single cpu program
@@ -6821,6 +6775,7 @@ def do_random_groups_simulation_mpi(ptp1, ptp2):
 
 def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 	global Tracker, Blockdata
+	
 	time_sorting_start = time.time()
 	Tracker["generation"]         =  {}
 	Tracker["current_generation"] =  0
@@ -6862,11 +6817,7 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 					else: Tracker = 0
 					Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
 					dump_tracker(work_dir)
-					if Blockdata["myid"] == Blockdata["main_node"]:
-						time_of_sorting_h,  time_of_sorting_m = get_time(time_sorting_start)
-						log_main.add('SORT3D 3D sorting time: %d hours %d minutes'%(time_of_sorting_h, time_of_sorting_m))						
-						time_rec3d_start = time.time()
-
+					if Blockdata["myid"] == Blockdata["main_node"]:time_rec3d_start = time.time()
 					compute_final_map(work_dir)
 					if Blockdata["myid"] == Blockdata["main_node"]:
 						time_of_rec3d_h,  time_of_rec3d_m = get_time(time_rec3d_start)
@@ -6877,9 +6828,9 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 					work_dir = os.path.join( Tracker["constants"]["masterdir"], "generation_%03d"%igen)
 					my_pids  = os.path.join( work_dir, 'indexes_next_generation.txt')
 					if Blockdata["myid"] == Blockdata["main_node"]:
-						mark_sorting_state(work_dir, True, log_main)
 						write_text_file(output_list[0][1], my_pids)
 						write_text_row(stat_list, os.path.join(work_dir, 'gen_rep.txt'))
+						mark_sorting_state(work_dir, True, log_main)
 					mpi_barrier(MPI_COMM_WORLD)
 		else: # restart run
 			work_dir = os.path.join( Tracker["constants"]["masterdir"], "generation_%03d"%igen)
@@ -6891,7 +6842,6 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 			stat_list = wrap_mpi_bcast(stat_list, Blockdata["main_node"], MPI_COMM_WORLD)
 			all_gen_stat_list.append(stat_list)
 			
-	time_final_box_start = time.time()
 	if bad_clustering == 0:
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			clusters = output_clusters(os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%igen), \
@@ -6900,12 +6850,19 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 		else: Tracker = 0
 		Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
 		dump_tracker(os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%igen))
+		if Blockdata["myid"] == Blockdata["main_node"]:time_rec3d_start = time.time()
 		compute_final_map(work_dir)
-		
+		if Blockdata["myid"] == Blockdata["main_node"]:
+			time_of_rec3d_h,  time_of_rec3d_m = get_time(time_rec3d_start)
+			log_main.add('SORT3D 3D reconstruction time: %d hours %d minutes'%(time_of_sorting_h, time_of_sorting_m))
+			time_of_generation_h,  time_of_generation_m = get_time(time_generation_start)
+			log_main.add('SORT3D generation%d time: %d hours %d minutes'%(igen, time_of_generation_h, time_of_generation_m))
+	
 	copy_results(log_main, all_gen_stat_list)# all nodes function
-	time_of_sorting_h,  time_of_sorting_m = get_time(time_final_box_start)
-	if Blockdata["myid"] == Blockdata["main_node"]:log_main.add('SORT3D 3D reconstruction time: %d hours %d minutes'%(time_of_sorting_h, time_of_sorting_m))
-	return 
+	if Blockdata["myid"] == Blockdata["main_node"]:
+		time_of_sorting_h,  time_of_sorting_m = get_time(time_sorting_start)
+		log_main.add('SORT3D costs time: %d hours %d minutes'%(time_of_sorting_h, time_of_sorting_m))
+	return
 
 #  End of various utilities	
 def main():
@@ -7093,8 +7050,6 @@ def main():
 		#
 	
 		continue_from_interuption = 0
-		# sorting starts...
-	
 		continue_from_interuption = create_masterdir()
 		log_main = Logger(BaseLogger_Files())
 		log_main.prefix = Tracker["constants"]["masterdir"]+"/"
@@ -7264,8 +7219,6 @@ def main():
 		from string         import split, atoi, atof
 	
 		continue_from_interuption = 0
-		# sorting starts...
-		
 		continue_from_interuption = create_masterdir()
 		log_main = Logger(BaseLogger_Files())
 		log_main.prefix = Tracker["constants"]["masterdir"]+"/"
