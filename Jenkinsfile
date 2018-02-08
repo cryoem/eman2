@@ -35,22 +35,38 @@ def isRelease() {
 }
 
 def isContinuousBuild() {
-    return (GIT_BRANCH ==~ /.*\/master/) && (CI_BUILD == "1")
+    return (GIT_BRANCH ==~ /.*master.*/)
 }
 
 def isRunCurrentStage(os_name) {
-    return isContinuousBuild() && SLAVE_OS == os_name
+    return isContinuousBuild() && (SLAVE_OS == os_name && (CI_BUILD == "1" || (os_name == "win" && CI_BUILD_WIN == "1") || (os_name == "linux" && CI_BUILD_LINUX == "1") || (os_name == "mac" && CI_BUILD_MAC == "1")))
 }
 
 def runCronJob() {
-    sh "bash ${HOME}/workspace/build-scripts-cron/cronjob.sh $STAGE_NAME $GIT_BRANCH_SHORT"
-    if(isContinuousBuild())
-      sh "rsync -avzh --stats ${INSTALLERS_DIR}/eman2.${SLAVE_OS}.sh ${DEPLOY_DEST}/eman2.${STAGE_NAME}.unstable.sh"
+    sh 'bash ${HOME_DIR}/workspace/build-scripts-cron/cronjob.sh $STAGE_NAME $GIT_BRANCH_SHORT'
+    if(isContinuousBuild()) {
+        if(SLAVE_OS != 'win')
+            sh "rsync -avzh --stats ${INSTALLERS_DIR}/eman2.${SLAVE_OS}.sh ${DEPLOY_DEST}/eman2.${STAGE_NAME}.unstable.sh"
+        else
+            bat 'ci_support\\rsync_wrapper.bat'
+    }
 }
 
 def resetBuildScripts() {
     if(isContinuousBuild())
-        sh 'cd ${HOME}/workspace/build-scripts-cron/ && git checkout -f master'
+        sh 'cd ${BUILD_SCRIPTS_DIR} && git checkout -f master'
+}
+
+def getHomeDir() {
+    def result = ''
+    if(SLAVE_OS == "win") {
+        result = "${USERPROFILE}"
+    }
+    else {
+        result = "${HOME}"
+    }
+    
+    return result
 }
 
 pipeline {
@@ -67,11 +83,16 @@ pipeline {
     JOB_TYPE = getJobType()
     GIT_BRANCH_SHORT = sh(returnStdout: true, script: 'echo ${GIT_BRANCH##origin/}').trim()
     GIT_COMMIT_SHORT = sh(returnStdout: true, script: 'echo ${GIT_COMMIT:0:7}').trim()
-    INSTALLERS_DIR = '${HOME}/workspace/${STAGE_NAME}-installers'
+    HOME_DIR = getHomeDir()
+    BUILD_SCRIPTS_DIR = "${HOME_DIR}/workspace/build-scripts-cron/"
+    INSTALLERS_DIR = '${HOME_DIR}/workspace/${STAGE_NAME}-installers'
     DEPLOY_DEST    = 'zope@ncmi.grid.bcm.edu:/home/zope/zope-server/extdata/reposit/ncmi/software/counter_222/software_136/'
     NUMPY_VERSION='1.9'
     BUILD_SCRIPTS_BRANCH='master'
-    CI_BUILD = sh(script: "! git log -1 | grep '.*\\[ci build\\].*'", returnStatus: true)
+    CI_BUILD       = sh(script: "! git log -1 | grep '.*\\[ci build\\].*'",       returnStatus: true)
+    CI_BUILD_WIN   = sh(script: "! git log -1 | grep '.*\\[ci build win\\].*'",   returnStatus: true)
+    CI_BUILD_LINUX = sh(script: "! git log -1 | grep '.*\\[ci build linux\\].*'", returnStatus: true)
+    CI_BUILD_MAC   = sh(script: "! git log -1 | grep '.*\\[ci build mac\\].*'",   returnStatus: true)
   }
   
   stages {
@@ -110,7 +131,7 @@ pipeline {
       }
       
       steps {
-        sh 'cd ${HOME}/workspace/build-scripts-cron/ && git fetch --prune && (git checkout -f $BUILD_SCRIPTS_BRANCH || git checkout -t origin/$BUILD_SCRIPTS_BRANCH) && git pull --rebase'
+        sh 'cd ${BUILD_SCRIPTS_DIR} && git fetch --prune && (git checkout -f $BUILD_SCRIPTS_BRANCH || git checkout -t origin/$BUILD_SCRIPTS_BRANCH) && git pull --rebase'
       }
     }
     
@@ -140,6 +161,16 @@ pipeline {
       }
       environment {
         EMAN_TEST_SKIP=1
+      }
+      
+      steps {
+        runCronJob()
+      }
+    }
+    
+    stage('win') {
+      when {
+        expression { isRunCurrentStage('win') }
       }
       
       steps {
