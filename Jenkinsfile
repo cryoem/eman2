@@ -38,8 +38,28 @@ def isContinuousBuild() {
     return (GIT_BRANCH ==~ /.*master.*/)
 }
 
-def isRunCurrentStage(os_name) {
-    return isContinuousBuild() && (SLAVE_OS == os_name && (CI_BUILD == "1" || (os_name == "win" && CI_BUILD_WIN == "1") || (os_name == "linux" && CI_BUILD_LINUX == "1") || (os_name == "mac" && CI_BUILD_MAC == "1")))
+def stage_name_to_os(stage_name) {
+    def result = ['centos6': 'linux',
+                  'centos7': 'linux',
+                  'mac':     'mac',
+                  'win':     'win'
+                  ]
+    
+    return result[stage_name]
+}
+
+def isBuildStage() {
+    def buildStage = ['centos6': CI_BUILD_LINUX,
+                      'centos7': CI_BUILD_LINUX,
+                      'mac':     CI_BUILD_MAC,
+                      'win':     CI_BUILD_WIN
+                      ]
+    
+    return (stage_name_to_os(STAGE_NAME) == SLAVE_OS && (CI_BUILD == "1" || buildStage[STAGE_NAME] == "1"))
+}
+
+def isRunCurrentStage() {
+    return isContinuousBuild() && isBuildStage()
 }
 
 def runCronJob() {
@@ -137,7 +157,7 @@ pipeline {
     
     stage('centos6') {
       when {
-        expression { isRunCurrentStage('linux') }
+        expression { isRunCurrentStage() }
       }
       
       steps {
@@ -147,7 +167,7 @@ pipeline {
     
     stage('centos7') {
       when {
-        expression { isRunCurrentStage('linux') }
+        expression { isRunCurrentStage() }
       }
       
       steps {
@@ -157,7 +177,7 @@ pipeline {
     
     stage('mac') {
       when {
-        expression { isRunCurrentStage('mac') }
+        expression { isRunCurrentStage() }
       }
       environment {
         EMAN_TEST_SKIP=1
@@ -170,7 +190,7 @@ pipeline {
     
     stage('win') {
       when {
-        expression { isRunCurrentStage('win') }
+        expression { isRunCurrentStage() }
       }
       
       steps {
