@@ -65,5 +65,6 @@ constructor --version
 conda install conda-build=2 --no-deps --yes
 
 bash "${docker_eman_repo_dir}"/ci_support/conda_build.sh "${docker_eman_repo_dir}"/recipes/eman
+bash "${docker_eman_repo_dir}"/ci_support/package.sh "${docker_installers_dir}" ${docker_eman_repo_dir}/ci_support/
 
 EOF

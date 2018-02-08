@@ -60,6 +60,7 @@ def isRequestedBuildStage() {
 
 def runJob() {
     sh 'bash ci_support/conda_build.sh recipes/eman'
+    sh "bash ci_support/package.sh ${INSTALLERS_DIR} " + '${WORKSPACE}/ci_support/'
     
     if(isContinuousBuild()) {
         if(SLAVE_OS != 'win')

@@ -1,0 +1,30 @@
+name: EMAN2
+version: 2.21
+
+installer_filename: eman2.mac.sh    # [osx]
+installer_filename: eman2.linux.sh  # [linux]
+installer_filename: eman2.win.exe   # [win]
+
+channels:
+    - https://conda.anaconda.org/cryoem
+    - http://repo.continuum.io/pkgs/free/
+    - http://conda.anaconda.org/anaconda
+    - https://conda.anaconda.org/conda-forge/
+    - http://repo.continuum.io/pkgs/msys2          # [win]
+    - file:///place_holder_conda_prefix/conda-bld
+
+keep_pkgs: True
+ignore_duplicate_files: True
+
+specs:
+  - eman2 2.21
+  - libgfortran 1.0       # [linux]
+  - conda
+  - conda-build
+  - pip
+  - console_shortcut  # [win]
+  - menuinst          # [win]
+
+welcome_image: images/EMAN2Icon.png    # [win]
+icon_image:    images/eman.ico         # [win]
+post_install:  cluster_message.sh      # [unix]
