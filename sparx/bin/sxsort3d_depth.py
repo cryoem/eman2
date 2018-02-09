@@ -769,7 +769,7 @@ def depth_clustering_box(work_dir, input_accounted_file, input_unaccounted_file,
 	partition = get_box_partition(work_dir, ncluster, unaccounted_list)
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		if ncluster > 0:
-			if(ncluster == 1):  log_main.add('In independent run  %d, the program found %d group'%(nbox, ncluster))
+			if(ncluster == 1):  log_main.add('In independent run  %d, the program found %d group.'%(nbox, ncluster))
 			else: log_main.add('In independent run  %d, the program found %d groups'%(nbox, ncluster))
 			bad_clustering = 0
 		else:
