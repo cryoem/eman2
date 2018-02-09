@@ -166,6 +166,8 @@ def main():
 		
 		print("Using --iter=",options.iter)
 
+	logid=E2init(sys.argv,options.ppid)
+
 	if options.anisotropy>=0 :
 		print("Anisotropy evaluation mode")
 
@@ -356,7 +358,6 @@ def main():
 
 		if options.verbose: print("{} even and {} odd particles in classmx".format(nptcl[0],nptcl[1]))
 
-		logid=E2init(sys.argv,options.ppid)
 
 		# path to the even/odd particles used for the refinement
 		cptcl=jsparm["input"]
@@ -619,7 +620,6 @@ def main():
 	if options.evalclassqual:
 		print("Class quality evaluation mode")
 
-		logid=E2init(sys.argv,options.ppid)
 
 		classes=["{}/classes_{:02d}_{}.hdf".format(args[0],options.iter,i) for i in ("even","odd")]
 		projections=["{}/projections_{:02d}_{}.hdf".format(args[0],options.iter,i) for i in ("even","odd")]
@@ -635,11 +635,12 @@ def main():
 		apix=timg["apix_x"]
 
 		rings=[int(2*nx*apix/res) for res in (100,30,15,8,3)]
-		print(("Frequency Bands: {lowest},{low},{mid},{high},{highest}".format(lowest=rings[0],low=rings[1],mid=rings[2],high=rings[3],highest=rings[4])))
+#		rings=[int(2*nx*apix/res) for res in (100,60,30,15,10,6,4)]
+		print(("Frequency Bands: {}".format(rings)))
 
 		classfsc="classfsc_{}_{}.txt".format(args[0][-2:],options.iter)
 		fout=open(classfsc,"w")
-		fout.write("# 100-30 A; 30-15 A; 15-8 A; 8-3 A; Nptcl; az; alt; phi; SSNR/Nptcl 100-30 A; SSNR/Nptcl 30-15 A; SSNR/Nptcl 15-8 A\n")
+		fout.write("# 100-30 A; 30-12 A; 12-7 A; 7-3 A; (30-12)/(100-30); Nptcl; az; alt; phi; SSNR/Nptcl 100-30 A; SSNR/Nptcl 30-15 A; SSNR/Nptcl 15-8 A\n")
 		for eo in xrange(2):
 			for i in xrange(n):
 				cl=EMData(classes[eo],i)
@@ -654,8 +655,10 @@ def main():
 
 				third = len(fsc)/3
 				fsc=array(fsc[third:third*2])
+				#sums=[sum(fsc[rings[k]:rings[k+1]])/(rings[k+1]-rings[k]) for k in xrange(4)]		# sum the fsc into 5 range values
+				#fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{};{};{}\n".format(sums[0],sums[1],sums[2],sums[3],cl["ptcl_repr"],alt,az,phi,sums[0]/(1.0001-sums[0])/(cl["ptcl_repr"]+0.01),sums[1]/(1.0001-sums[1])/(cl["ptcl_repr"]+0.01),sums[2]/(1.0001-sums[2])/(cl["ptcl_repr"]+0.01),i,classes[eo],i,projections[eo]))
 				sums=[sum(fsc[rings[k]:rings[k+1]])/(rings[k+1]-rings[k]) for k in xrange(4)]		# sum the fsc into 5 range values
-				fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{};{};{}\n".format(sums[0],sums[1],sums[2],sums[3],cl["ptcl_repr"],alt,az,phi,sums[0]/(1.0001-sums[0])/(cl["ptcl_repr"]+0.01),sums[1]/(1.0001-sums[1])/(cl["ptcl_repr"]+0.01),sums[2]/(1.0001-sums[2])/(cl["ptcl_repr"]+0.01),i,classes[eo],i,projections[eo]))
+				fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{};{};{}\n".format(sums[0],sums[1],sums[2],sums[3],sums[1]/sums[0],cl["ptcl_repr"],alt,az,phi,sums[0]/(1.0001-sums[0])/(cl["ptcl_repr"]+0.01),sums[1]/(1.0001-sums[1])/(cl["ptcl_repr"]+0.01),sums[2]/(1.0001-sums[2])/(cl["ptcl_repr"]+0.01),i,classes[eo],i,projections[eo]))
 
 				if options.evalclassdetail and eo==0:
 					out=open("cfsc{:04d}.txt".format(i),"w")

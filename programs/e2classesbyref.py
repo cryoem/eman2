@@ -210,8 +210,9 @@ def main():
 				quals=array([p[1] for p in clsinfo[i]])
 				avg["class_ptcl_qual"]=quals.mean()
 				avg["class_ptcl_qual_sigma"]=quals.std()
-#				avg["class_qual"]=avg.cmp("frc",refs[i],{"maxres":8})
-				avg["class_qual"]=avg.cmp("ccc",refs[i])	# since we are doing SNR below now, frc seems unnecessary, particularly since ccc is used in e2classaverage
+#				avg["class_qual"]=avg.cmp("frc",refs[i],{"minres":25,"maxres":10})
+#				avg["class_qual"]=avg.cmp("ccc",refs[i])	# since we are doing SNR below now, frc seems unnecessary, particularly since ccc is used in e2classaverage
+				avg["class_qual"]=avg.cmp("frc",refs[i],{"minres":30,"maxres":10})/avg.cmp("frc",refs[i],{"minres":100,"maxres":30})	# Trying something new 2/7/18. This ratio seems pretty effective at identifying bad class-averages. A bit slow, should consider writing something specifically for this
 				
 				# We compute a smoothed SSNR curve by comparing to the reference. We keep overwriting ssnr to gradually produce what we're after
 				ssnr=avg.calc_fourier_shell_correlation(refs[i])

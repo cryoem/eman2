@@ -471,8 +471,9 @@ def class_average_withali(images,ptcl_info,xform,ref,averager=("mean",{}),normpr
 			avg-=avg.get_edge_mean()
 		else : avg.process_inplace("normalize.toimage",{"to":ref})
 
-		avg["class_qual"]=avg.cmp("ccc",ref)
-
+		#avg["class_qual"]=avg.cmp("ccc",ref)
+		avg["class_qual"]=avg.cmp("frc",ref,{"minres":30,"maxres":10})/avg.cmp("frc",ref,{"minres":100,"maxres":30})
+		
 		# We compute a smoothed SSNR curve by comparing to the reference. We keep overwriting ssnr to gradually produce what we're after
 		ssnr=avg.calc_fourier_shell_correlation(ref)
 		third=len(ssnr)/3
