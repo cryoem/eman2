@@ -369,8 +369,13 @@ class SXLookFeelConst(object):
 	def generate_sxcmd_wiki_url(sxcmd, wiki_type = "SPHIRE"):
 		if wiki_type == "SPHIRE":
 			# First, handle exceptional cases
-			if sxcmd.name in ["sxprocess", "sxsummovie", "e2bdb", "e2proc3d", "e2display", "sxpdb2em"] :
+			if sxcmd.name in ["e2display", "sxpdb2em", "sxrelion2sphire", "sxprocess", "e2proc3d", "sxheader", "e2bdb", "sxunblur", "sxsummovie"]:
 				sxcmd_category_name = "utilities"
+			elif sxcmd.name in ["sxpipe"]:
+				if sxcmd.subname in ["organize_micrographs"]:
+					sxcmd_category_name = "utilities"
+			elif sxcmd.name in ["sxmeridien"]:
+				sxcmd_category_name = "meridien"
 			else:
 				sxcmd_category_name = sxcmd.category.replace("sxc_", "")
 			# URL Format: "http://sphire.mpg.de/wiki/doku.php?id=pipeline:CMD_CATEGORY:CMD_BASE
