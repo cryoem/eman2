@@ -6785,6 +6785,8 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 	Tracker["current_generation"] = -1
 	igen              = -1
 	my_pids           = os.path.join(Tracker["constants"]["masterdir"], "indexes.txt")
+	params            = os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt")
+	previous_params   = Tracker["previous_parstack"]
 	all_gen_stat_list = []
 	bad_clustering    = 0
 	while (keepsorting == 1) and (bad_clustering==0) :
