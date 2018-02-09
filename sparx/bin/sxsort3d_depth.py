@@ -563,7 +563,7 @@ def read_tracker_mpi(current_dir):
 		if(Blockdata["myid"] != Blockdata["main_node"]): Tracker = 0
 		Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
 	else:
-		 ERROR("Fail to load tracker", "read_tracker_mpi", 1, Blockdata["myid"])
+		 ERROR("Fail to load tracker", "%s"%current_dir, 1, Blockdata["myid"])
 	return
 
 def mark_sorting_state(current_dir, sorting_done, log_file):
