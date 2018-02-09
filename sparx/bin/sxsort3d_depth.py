@@ -806,7 +806,7 @@ def check_mpi_settings(log_main):
 		log_main.add('----------------------------------------------------------------------------------------------------------------' )
 		log_main.add('                 =======>     Number of input images and memory information     <=====')
 		log_main.add('----------------------------------------------------------------------------------------------------------------' )
-		log_main.add("Number of processes: %d  node number:  %d.  Number of processes per group:  %d."%(Blockdata["nproc"], Blockdata["no_of_groups"], Blockdata["no_of_processes_per_group"]))
+		log_main.add("Number of processes: %d number of nodes:  %d.  Number of processes per node:  %d."%(Blockdata["nproc"], Blockdata["no_of_groups"], Blockdata["no_of_processes_per_group"]))
 	try:
 		image_org_size     = Tracker["constants"]["nnxo"]
 		image_in_core_size = nxinit
