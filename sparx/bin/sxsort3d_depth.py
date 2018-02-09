@@ -6813,9 +6813,8 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 				log_main.add('----------------------------------------------------------------------------------------------------------------')
 			else: within_generation_restart = 0
 			within_generation_restart = bcast_number_to_all(within_generation_restart, Blockdata["main_node"], MPI_COMM_WORLD)
-			if within_generation_restart ==1:read_tracker_mpi(work_dir)
-			params          = os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt")
-			previous_params = Tracker["previous_parstack"]
+			if within_generation_restart ==1: read_tracker_mpi(work_dir)
+			else: dump_tracker(work_dir)
 			output_list, bad_clustering, stat_list  = depth_clustering(work_dir, depth_order, my_pids, params, previous_params, log_main)
 			all_gen_stat_list.append(stat_list)
 			keepsorting     = check_sorting(len(output_list[0][1]), keepsorting, log_main)
