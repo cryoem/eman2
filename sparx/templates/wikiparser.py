@@ -399,7 +399,10 @@ def remove_MoinMoinWiki_makeup(target_text):
 
 		# Try to find the next
 		item_head = target_text.find(makeup_begin)
-
+	
+	target_text = target_text.replace("\'\'", "")
+	target_text = target_text.replace("\'\'\'", "")
+	
 	return target_text
 
 # ----------------------------------------------------------------------------------------
@@ -540,7 +543,7 @@ def construct_token_list_from_MoinMoinWiki(sxcmd_config):
 					# else: Ignore this line (must be comments).
 				elif current_section == section_typical:
 					target_operator = "mpirun"
-					if sxcmd.mpi_support == False and line_wiki.find(target_operator) > 1 and line_wiki.find(sxcmd.name + ".py") > 1:
+					if sxcmd.mpi_support == False and line_wiki.find(target_operator) > -1 and line_wiki.find(sxcmd.name + ".py") > -1:
 						sxcmd.mpi_support = True
 					# else: Ignore this line
 				elif current_section == section_input or current_section == section_output:
@@ -664,7 +667,7 @@ def construct_token_list_from_MoinMoinWiki(sxcmd_config):
 				else:
 					ERROR("Logical Error: This section is invalid. Did you assigne an invalid section?", "%s in %s" % (__name__, os.path.basename(__file__)))
 
-	if current_state != state_done: ERROR("Wiki Format Error: parser could not extract all information necessary. Please check if the Wiki format has all required sections.", "%s in %s" % (__name__, os.path.basename(__file__)))
+	if current_state != state_done: ERROR("Wiki Format Error: parser could not extract all information necessary (current state %d). Please check if the Wiki format has all required sections." % (current_state), "%s in %s" % (__name__, os.path.basename(__file__)))
 
 	# Make sure there are no extra arguments or options in 'usage in command line' of '= Usage ='
 	for token in sxcmd.token_list:
@@ -734,8 +737,13 @@ def remove_DokuWiki_makeup(target_text):
 		# Try to find the next
 		item_head = target_text.find(makeup_begin)
 
-	return target_text
+	target_text = target_text.replace("\'\'", "")
+	target_text = target_text.replace("\'\'\'", "")
+	target_text = target_text.replace("**", "")  # Bold
+	target_text = target_text.replace("//", "")  # Italic
+	target_text = target_text.replace("%%", "")  # Literal
 
+	return target_text
 
 # ----------------------------------------------------------------------------------------
 def construct_token_list_from_DokuWiki(sxcmd_config):
@@ -876,7 +884,7 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 					# else: Ignore this line (must be comments).
 				elif current_section == section_typical:
 					target_operator = "mpirun"
-					if sxcmd.mpi_support == False and line_wiki.find(target_operator) > 1 and line_wiki.find(sxcmd.name + ".py") > 1:
+					if sxcmd.mpi_support == False and line_wiki.find(target_operator) > -1 and line_wiki.find(sxcmd.name + ".py") > -1:
 						sxcmd.mpi_support = True
 					# else: Ignore this line
 				elif current_section == section_input:
@@ -1015,7 +1023,7 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 				else:
 					ERROR("Logical Error: This section is invalid. Did you assigne an invalid section?", "%s in %s" % (__name__, os.path.basename(__file__)))
 
-	if current_state != state_done: ERROR("Wiki Format Error: parser could not extract all information necessary. Please check if the Wiki format has all required sections.", "%s in %s" % (__name__, os.path.basename(__file__)))
+	if current_state != state_done: ERROR("Wiki Format Error: parser could not extract all information necessary (current state %d). Please check if the Wiki format has all required sections." % (current_state), "%s in %s" % (__name__, os.path.basename(__file__)))
 
 	for sxcmd_token_key_base in sxcmd.token_dict.keys():
 		# Make sure there are no extra arguments or options in command token dictionary compared with command token list.
@@ -1629,7 +1637,7 @@ def create_sxcmd_subconfig_meridien_standard_fresh():
 	add_sxcmd_subconfig_meridien_standard_shared(token_edit_list)
 
 	sxsubcmd_mpi_support = True
-	sxcmd_subconfig = SXsubcmd_config("3D Refinement", "Perform 3D structure refinement with standard default run or fresh run, which starts from exhaustive searches using initial reference volume.", token_edit_list, sxsubcmd_mpi_support, is_modeless = True, subset_config="fresh")
+	sxcmd_subconfig = SXsubcmd_config("3D Refinement", "Perform 3D structure refinement as standard fresh run (default run), which starts from exhaustive searches using initial reference volume.", token_edit_list, sxsubcmd_mpi_support, is_modeless = True, subset_config="fresh")
 
 	return sxcmd_subconfig
 
@@ -1640,7 +1648,7 @@ def create_sxcmd_subconfig_meridien_standard_continuation():
 	add_sxcmd_subconfig_meridien_standard_shared(token_edit_list)
 
 	sxsubcmd_mpi_support = True
-	sxcmd_subconfig = SXsubcmd_config("3D Refinement Continuation", "Perform continuation run of 3D refinement, where the 3D refinement restarts after the last fully finished iteration of meridien fresh run. One can change some parameters, but MPI settings have to be the same.", token_edit_list, sxsubcmd_mpi_support, is_modeless = True, subset_config="continuation")
+	sxcmd_subconfig = SXsubcmd_config("3D Refinement Continuation", "Perform continuation run of 3D refinement, where the 3D refinement restarts after the last fully finished iteration of meridien fresh run or local refinement run. One can change some parameters, but MPI settings have to be the same.", token_edit_list, sxsubcmd_mpi_support, is_modeless = True, subset_config="continuation")
 
 	return sxcmd_subconfig
 
@@ -1654,7 +1662,7 @@ def create_sxcmd_subconfig_meridien_local_iteration():
 	add_sxcmd_subconfig_meridien_local_shared_refine(token_edit_list)
 
 	sxsubcmd_mpi_support = True
-	sxcmd_subconfig = SXsubcmd_config("Local Refinement from Iteration", "Perform local refinement where the restricted search of 3D refinement starts from user-provided orientation parameters stored in stack header. Note that delta has to be less than or equal to 3.75[A].", token_edit_list, sxsubcmd_mpi_support, subset_config="iteration")
+	sxcmd_subconfig = SXsubcmd_config("Local Refinement from Iteration", "Perform local refinement where the restricted search of 3D refinement restarts after the last fully finished iteration of meridien fresh run or local refinement run. One can change some parameters, but MPI settings have to be the same.", token_edit_list, sxsubcmd_mpi_support, subset_config="iteration")
 
 	return sxcmd_subconfig
 
@@ -1668,7 +1676,7 @@ def create_sxcmd_subconfig_meridien_local_stack():
 	add_sxcmd_subconfig_meridien_local_shared_refine(token_edit_list)
 
 	sxsubcmd_mpi_support = True
-	sxcmd_subconfig = SXsubcmd_config("Local Refinement from Stack", "Perform local refinement wherer the restricted search of 3D refinement restarts after the last fully finished iteration of meridien fresh run. One can change some parameters, but MPI settings have to be the same.", token_edit_list, sxsubcmd_mpi_support, subset_config="stack")
+	sxcmd_subconfig = SXsubcmd_config("Local Refinement from Stack", "Perform local refinement where the restricted search of 3D refinement starts from user-provided orientation parameters stored in stack header. Note that delta has to be less than or equal to 3.75[A].", token_edit_list, sxsubcmd_mpi_support, subset_config="stack")
 	
 	return sxcmd_subconfig
 
@@ -1681,7 +1689,7 @@ def create_sxcmd_subconfig_meridien_final():
 	token_edit = SXcmd_token(); token_edit.initialize_edit("memory_per_node"); token_edit_list.append(token_edit)
 
 	sxsubcmd_mpi_support = True
-	sxcmd_subconfig = SXsubcmd_config("Final 3D Reconstruction Only", "Do only final 3D reconstruction using a fully finished iteration of meridien fresh run.", token_edit_list, sxsubcmd_mpi_support)
+	sxcmd_subconfig = SXsubcmd_config("Final 3D Reconstruction Only", "Do only final 3D reconstruction using a fully finished iteration of meridien fresh run or local refinement run.", token_edit_list, sxsubcmd_mpi_support)
 
 	return sxcmd_subconfig
 
@@ -1998,7 +2006,6 @@ def build_config_list_MoinMoinWiki():
 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/isac2.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_isac2()))
 ### 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_isacselect()))
 ### 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/e2bdb.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_isac_makevstack()))
-### 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/pipeline_isac_substack.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 ### 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/isac_post_processing.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 ###	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/compute_isac_avg.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/compute_isac_avg.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_isac_beautifier_to_model()))
@@ -2035,7 +2042,6 @@ def build_config_list_MoinMoinWiki():
 	sxcmd_category = "sxc_meridien"
 
 	sxcmd_role = "sxr_pipe"
-	# sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/meridien.doku.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	# sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/meridien_20171120.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_meridien_20171120()))
 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_standard_fresh()))
 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/gui_meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, is_submittable = False))
@@ -2122,9 +2128,9 @@ def build_config_list_MoinMoinWiki():
 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_postrefiner_single_vol()))
 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/unblur.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/summovie.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/header.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/e2bdb.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_utility_makevstack()))
 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/pipe_organize_micrographs.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
-	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/header.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 	# sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 
 #	token_edit_list = []
@@ -2166,7 +2172,7 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
-	sxcmd_config_list.append(SXcmd_config("../doc/pipe_organize_micrographs.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/pipe_organize_micrographs.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 
 	# --------------------------------------------------------------------------------
 	sxcmd_category = "sxc_window"
@@ -2174,35 +2180,32 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_role = "sxr_pipe"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2boxer_old.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_boxer_old(), is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/window.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
-###	sxcmd_config_list.append(SXcmd_config("../doc/DokuWiki/DokuWiki_e2bdb.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_window_makevstack()))
 	sxcmd_config_list.append(SXcmd_config("../doc/e2bdb.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_window_makevstack()))
 
 	sxcmd_role = "sxr_alt"
-	sxcmd_config_list.append(SXcmd_config("../doc/e2boxer.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_boxer(), is_submittable = False))
+	sxcmd_config_list.append(SXcmd_config("../doc/e2boxer.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_boxer(), is_submittable = False))
 
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
-	sxcmd_config_list.append(SXcmd_config("../doc/pipe_organize_micrographs.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/pipe_organize_micrographs.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 
 	# --------------------------------------------------------------------------------
 	sxcmd_category = "sxc_isac"
 
 	sxcmd_role = "sxr_pipe"
 ### 	sxcmd_config_list.append(SXcmd_config("../doc/isac.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
-	sxcmd_config_list.append(SXcmd_config("../doc/isac2.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_isac2()))
+	sxcmd_config_list.append(SXcmd_config("../doc/isac2.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_isac2()))
 ### 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_isacselect()))
-### ### 	sxcmd_config_list.append(SXcmd_config("../doc/e2bdb.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_isac_makevstack()))
 ### 	sxcmd_config_list.append(SXcmd_config("../doc/e2bdb.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_isac_makevstack()))
-### 	sxcmd_config_list.append(SXcmd_config("../doc/pipeline_isac_substack.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 ### 	sxcmd_config_list.append(SXcmd_config("../doc/isac_post_processing.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
-###	sxcmd_config_list.append(SXcmd_config("../doc/compute_isac_avg.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
-	sxcmd_config_list.append(SXcmd_config("../doc/compute_isac_avg.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_isac_beautifier_to_model()))
-	sxcmd_config_list.append(SXcmd_config("../doc/DokuWiki/DokuWiki_pipe_isac_substack.txt", "DokuWiki", sxcmd_category, sxcmd_role))
+###	sxcmd_config_list.append(SXcmd_config("../doc/compute_isac_avg.txt", "DokuWiki", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/compute_isac_avg.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_isac_beautifier_to_model()))
+	sxcmd_config_list.append(SXcmd_config("../doc/pipe_isac_substack.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 
 	sxcmd_role = "sxr_alt"
-	sxcmd_config_list.append(SXcmd_config("../doc/compute_isac_avg.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_isac_beautifier_no_adjust()))
-	sxcmd_config_list.append(SXcmd_config("../doc/compute_isac_avg.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_isac_beautifier_to_rot_avg()))
-	sxcmd_config_list.append(SXcmd_config("../doc/compute_isac_avg.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_isac_beautifier_to_bfactor()))
+	sxcmd_config_list.append(SXcmd_config("../doc/compute_isac_avg.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_isac_beautifier_no_adjust()))
+	sxcmd_config_list.append(SXcmd_config("../doc/compute_isac_avg.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_isac_beautifier_to_rot_avg()))
+	sxcmd_config_list.append(SXcmd_config("../doc/compute_isac_avg.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_isac_beautifier_to_bfactor()))
 
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
@@ -2230,17 +2233,16 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_category = "sxc_meridien"
 
 	sxcmd_role = "sxr_pipe"
-	# sxcmd_config_list.append(SXcmd_config("../doc/meridien.doku.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	# sxcmd_config_list.append(SXcmd_config("../doc/meridien_20171120.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_meridien_20171120()))
-	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_standard_fresh()))
-	sxcmd_config_list.append(SXcmd_config("../doc/gui_meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, is_submittable = False))
+	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_standard_fresh()))
+	sxcmd_config_list.append(SXcmd_config("../doc/gui_meridien.txt", "DokuWiki", sxcmd_category, sxcmd_role, is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_postrefiner_halfset_vol()))
 
 	sxcmd_role = "sxr_alt"
-	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_local_iteration()))
-	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_local_stack()))
-	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_standard_continuation()))
-	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_final()))
+	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_local_iteration()))
+	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_local_stack()))
+	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_standard_continuation()))
+	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_final()))
 	
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
@@ -2251,32 +2253,31 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_category = "sxc_sort3d"
 
 	sxcmd_role = "sxr_pipe"
-	sxcmd_config_list.append(SXcmd_config("../doc/header.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_sort3d_header_import_xform_projection()))
+	sxcmd_config_list.append(SXcmd_config("../doc/header.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_sort3d_header_import_xform_projection()))
 	sxcmd_config_list.append(SXcmd_config("../doc/3dvariability.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_variability_preprocess()))
 	sxcmd_config_list.append(SXcmd_config("../doc/3dvariability.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list=["symmetrize"]))
 ###	sxcmd_config_list.append(SXcmd_config("../doc/sort3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_sort3d()))
 ###	sxcmd_config_list.append(SXcmd_config("../doc/rsort3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_rsort3d()))
 ### sxcmd_config_list.append(SXcmd_config("../doc/rsort3d-1105.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_rsort3d_1105()))
 ###	sxcmd_config_list.append(SXcmd_config("../doc/sort3d_new.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_sort3d_new()))
-	sxcmd_config_list.append(SXcmd_config("../doc/sort3d_depth.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_sort3d_depth_iteration()))
+	sxcmd_config_list.append(SXcmd_config("../doc/sort3d_depth.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_sort3d_depth_iteration()))
 ###	sxcmd_config_list.append(SXcmd_config("../doc/meridien_20171120.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_20171120_local()))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_postrefiner_cluster_vol()))
-###	sxcmd_config_list.append(SXcmd_config("../doc/e2bdb.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_sort3d_makevstack()))
 	sxcmd_config_list.append(SXcmd_config("../doc/e2bdb.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_sort3d_makevstack()))
-	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_local_stack()))
+	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_local_stack()))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_postrefiner_halfset_vol()))
 
 	sxcmd_role = "sxr_alt"
 	if is_dev_mode:
 		sxcmd_config_list.append(SXcmd_config("../doc/sort3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_sort3d()))
 		sxcmd_config_list.append(SXcmd_config("../doc/rsort3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_rsort3d()))
-	sxcmd_config_list.append(SXcmd_config("../doc/sort3d_depth.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_sort3d_depth_stack()))
+	sxcmd_config_list.append(SXcmd_config("../doc/sort3d_depth.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_sort3d_depth_stack()))
 ### # NOTE: 2018/01/08 Toshio Moriya
 ### # post-refiner embedded sort3d_depth is removed recently.
-###	sxcmd_config_list.append(SXcmd_config("../doc/sort3d_depth.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_sort3d_depth_postrefiner()))
+###	sxcmd_config_list.append(SXcmd_config("../doc/sort3d_depth.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_sort3d_depth_postrefiner()))
 	if is_dev_mode:
 		sxcmd_config_list.append(SXcmd_config("../doc/meridien_20171120.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_20171120_local()))
-	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_final()))
+	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_final()))
 
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
@@ -2306,7 +2307,7 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/summovie.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
-	sxcmd_config_list.append(SXcmd_config("../doc/pipe_organize_micrographs.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/pipe_organize_micrographs.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 
 	# --------------------------------------------------------------------------------
 	sxcmd_category = "sxc_utilities"
@@ -2314,7 +2315,7 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/pdb2em.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
-	sxcmd_config_list.append(SXcmd_config("../doc/DokuWiki/DokuWiki_relion2sphire.txt", "DokuWiki", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/relion2sphire.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_adaptive_mask3d()))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_binary_mask3d()))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_utility_changesize()))
@@ -2323,10 +2324,9 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_postrefiner_single_vol()))
 	sxcmd_config_list.append(SXcmd_config("../doc/unblur.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/summovie.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
-###	sxcmd_config_list.append(SXcmd_config("../doc/e2bdb.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_utility_makevstack()))
+	sxcmd_config_list.append(SXcmd_config("../doc/header.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/e2bdb.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_utility_makevstack()))
-	sxcmd_config_list.append(SXcmd_config("../doc/pipe_organize_micrographs.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
-	sxcmd_config_list.append(SXcmd_config("../doc/header.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/pipe_organize_micrographs.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	# sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 
 #	token_edit_list = []
