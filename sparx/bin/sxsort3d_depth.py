@@ -1225,16 +1225,16 @@ def sort3d_init(to_be_decided, log_main):
 	global Tracker, Blockdata
 	keepsorting = 1
 	if Tracker["constants"]["img_per_grp"]<= 2:
-		log_main.add("Number of images per group is too small")
+		log_main.add("Number of images per group is too small.")
 		keepsorting = 0
 	if Tracker["total_stack"] <= Blockdata["nproc"]*2:
-		log_main.add("Either user requires too many processors, or number of images is too small")
+		log_main.add("Either user requires too many processors, or number of images is too small.")
 		keepsorting = 0
 	Tracker["img_per_grp"]             = Tracker["constants"]["img_per_grp"]
 	Tracker["number_of_groups"]        = Tracker["total_stack"]//Tracker["constants"]["img_per_grp"]
 	Tracker["minimum_grp_size"]        = Tracker["constants"]["minimum_grp_size"]
 	if Tracker["constants"]["minimum_grp_size"]>Tracker["img_per_grp"]:
-		log_main.add("Number of groups is less than minimum group size")
+		log_main.add("Number of groups is less than minimum group size.")
 		keepsorting = 0
 	return keepsorting
 
@@ -1291,7 +1291,7 @@ def AI_MGSKmeans(iter_assignment, last_iter_assignment, best_assignment, keepgoi
 			best_assignment = copy.copy(iter_assignment)
 		if changed_nptls < stopercnt: keepgoing = 0
 	else:
-		msg ="Unicorn cluster is found. shuffle assignment"
+		msg ="Unicorn cluster is found. shuffle assignment."
 		log_file.add(msg)
 		
 		iter_assignment = shuffle_assignment(iter_assignment, number_of_groups)
