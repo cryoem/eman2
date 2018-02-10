@@ -742,7 +742,8 @@ def depth_clustering_box(work_dir, input_accounted_file, input_unaccounted_file,
 			ncluster, NACC, NUACC, unaccounted_list, new_clusters = output_iter_results(\
 			    work_dir, ncluster, NACC, NUACC, Tracker["constants"]["minimum_grp_size"], \
 			            list_of_stable, unaccounted_list, log_main)
-			shutil.rmtree(os.path.join(work_dir, 'run%d'%nruns, 'tempdir'))
+			if os.path.exists(os.path.join(work_dir, 'run%d'%nruns, 'tempdir')):
+				shutil.rmtree(os.path.join(work_dir, 'run%d'%nruns, 'tempdir'))
 		else:
 			ncluster = 0
 			NACC  = 0
