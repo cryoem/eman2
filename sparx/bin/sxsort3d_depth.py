@@ -335,7 +335,6 @@ def depth_box_initialization(box_dir, input_list1, input_list2, log_file):
 		for one in input_list1:
 			if one[0] not in groups: groups.append(one[0]) # safe in speed when the number of groups is not large.
 		number_of_groups = len(groups)
-		if number_of_groups< total_stack//img_per_grp: number_of_groups = total_stack//img_per_grp
 		minimum_grp_size = Tracker["constants"]["minimum_grp_size"]
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			msg = "Number of groups found in initialization: %d, the largest possible number of groups: %d"%(number_of_groups, total_stack//img_per_grp)
@@ -742,6 +741,7 @@ def depth_clustering_box(work_dir, input_accounted_file, input_unaccounted_file,
 			ncluster, NACC, NUACC, unaccounted_list, new_clusters = output_iter_results(\
 			    work_dir, ncluster, NACC, NUACC, Tracker["constants"]["minimum_grp_size"], \
 			            list_of_stable, unaccounted_list, log_main)
+			# remove tempdir
 			if os.path.exists(os.path.join(work_dir, 'run%d'%nruns, 'tempdir')):
 				shutil.rmtree(os.path.join(work_dir, 'run%d'%nruns, 'tempdir'))
 		else:
@@ -3662,7 +3662,8 @@ def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1, input_box_parti2, de
 			score2 = float(len(any))*100./float(len(ptp2[newindeces[index_of_any][1]]))
 			score3 = float((np.intersect1d(ptp1[newindeces[index_of_any][0]], ptp2[newindeces[index_of_any][1]])).size)\
 				  /float((np.union1d(ptp1[newindeces[index_of_any][0]], ptp2[newindeces[index_of_any][1]])).size)*100.
-			if( len(any) >= Tracker["constants"]["minimum_grp_size"] ):
+			if( len(any) >= Tracker["constants"]["minimum_grp_size"] ) and \
+			           (score3 > gave[index_of_any]+Tracker["constants"]["random_group_elimination_threshold"]*gvar[index_of_any]):
 				score_list.append([score1, score2])
 				minimum_group_size = min(minimum_group_size, len(any))
 				maximum_group_size = max(maximum_group_size, len(any))
@@ -3677,15 +3678,15 @@ def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1, input_box_parti2, de
 					   gave[index_of_any], gvar[index_of_any]))
 		###
 		if len(tmp_list)>1:
-			tmp_new_list = []
+			tmp_new_list  = []
 			tmp_stat_list = []
 			tmp_list = np.array(tmp_list, "int32")
 			tmp_list = np.argsort(tmp_list)
 			for ik in xrange(len(tmp_list)): 
 				tmp_stat_list.append(stat_list[tmp_list[ik]])
 				tmp_new_list.append(new_list[tmp_list[ik]])
-			new_list[:]    = tmp_new_list[:]
-			stat_list[:]   = tmp_stat_list[:]
+			new_list[:]   = tmp_new_list[:]
+			stat_list[:]  = tmp_stat_list[:]
 	else: nclass = 0
 	nclass = bcast_number_to_all(nclass, Blockdata["main_node"], MPI_COMM_WORLD)
 		
@@ -3782,22 +3783,10 @@ def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1, input_box_parti2, de
 		return minimum_group_size, maximum_group_size, new_index, unaccounted_list, bad_clustering, stop_generation, stat_list
 	else:
 		if Blockdata["myid"]==Blockdata["main_node"]:
-			if len(new_list) >= len(list_stable)-1: # all passes size checking, even the outliers group
-				accounted_list, new_index = merge_classes_into_partition_list(new_list)
-				a = set(full_list)
-				b = set(accounted_list)
-				unaccounted_list = sorted(list(a.difference(b)))
-				#msg ='all non-unaccounted groups pass the size checking'
-			else:#drop off the smallest one, and decrease K by one
-				if len(list_stable) >3:
-					fake_list = sorted(list_stable, key=len)
-					list_stable.remove(fake_list[0])
-				list_stable = sorted(list_stable, key=len, reverse=True)
-				accounted_list, new_index = merge_classes_into_partition_list(list_stable)
-				a = set(full_list)
-				b = set(accounted_list)
-				unaccounted_list = sorted(list(a.difference(b)))
-
+			accounted_list, new_index = merge_classes_into_partition_list(new_list)
+			a = set(full_list)
+			b = set(accounted_list)
+			unaccounted_list = sorted(list(a.difference(b)))
 			log_main.add(' {} {} {} {}'.format('  The number of accounted for images:', len(accounted_list),'  The number of unaccounted for images:', len(unaccounted_list)))
 			log_main.add('  The current minimum group size: %d and the maximum group size: %d'%(minimum_group_size, maximum_group_size))
 		
@@ -3837,7 +3826,7 @@ def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1, input_box_parti2, de
 		new_index = wrap_mpi_bcast(new_index, Blockdata["main_node"], MPI_COMM_WORLD)
 		stat_list = wrap_mpi_bcast(stat_list, Blockdata["main_node"], MPI_COMM_WORLD)
 		bad_clustering = bcast_number_to_all(bad_clustering, Blockdata["main_node"], MPI_COMM_WORLD)
-		stop_generation = bcast_number_to_all(stop_generation, Blockdata["main_node"], MPI_COMM_WORLD)
+		stop_generation    = bcast_number_to_all(stop_generation,    Blockdata["main_node"], MPI_COMM_WORLD)
 		maximum_group_size = bcast_number_to_all(maximum_group_size, Blockdata["main_node"], MPI_COMM_WORLD)
 		minimum_group_size = bcast_number_to_all(minimum_group_size, Blockdata["main_node"], MPI_COMM_WORLD)
 		return minimum_group_size, maximum_group_size, new_index, unaccounted_list, bad_clustering, stop_generation, stat_list
@@ -6594,6 +6583,7 @@ def copy_results(log_file, all_gen_stat_list):
 			log_file.add('No groups are found.\n')
 	return
 
+
 def get_MGR_from_two_way_comparison(newindeces, clusters1, clusters2, N):
 	rnd_grp_sizes = {}
 	K = len(newindeces)
@@ -6786,6 +6776,7 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 	global Tracker, Blockdata
 	
 	time_sorting_start = time.time()
+	read_tracker_mpi(Tracker["constants"]["masterdir"])
 	Tracker["generation"]         =  {}
 	Tracker["current_generation"] =  0
 	keepsorting                   =  1
@@ -6949,6 +6940,7 @@ def main():
 		parser.add_option("--swap_ratio",                        type   ="float",         default =1.0,                    help="randomness ratio of swapping accounted elements with unaccounted elemetns per cluster")
 		parser.add_option("--notapplybckgnoise",                 action ="store_true",    default =False,                  help="do not applynoise")
 		parser.add_option("--do_swap_au",                        action ="store_true",    default =False,                  help="swap flag")
+		parser.add_option("--random_group_elimination_threshold",  type   ="float",      default =2.0,                    help="number of random group reproducibility standard deviation for eliminating random groups")
 		(options, args) = parser.parse_args(sys.argv[1:])
 		from utilities import bcast_number_to_all
 		### Sanity check
@@ -6984,6 +6976,7 @@ def main():
 		Constants["orgstack"]                    = options.instack
 		Constants["masterdir"]                   = options.output_dir
 		Constants["refinement_dir"]              = options.refinement_dir
+		Constants["random_group_elimination_threshold"]  = options.random_group_elimination_threshold
 	
 		if options.mask3D == '': Constants["mask3D"] = False
 		else:   Constants["mask3D"] = options.mask3D
@@ -7088,7 +7081,7 @@ def main():
 		if continue_from_interuption == 0:
 			if Blockdata["myid"] == Blockdata["main_node"]:
 				log_main.add('================================================================================================================')
-				log_main.add('                                 SORT3D IN-DEPTH v1.0')
+				log_main.add('                                 SORT3D IN-DEPTH v1.1')
 				log_main.add('================================================================================================================')
 			import_data(log_main)
 			print_shell_command(sys.argv, log_main)
@@ -7127,6 +7120,7 @@ def main():
 		parser.add_option("--swap_ratio",                        type   ="float",         default =1.0,                    help="randomness ratio of swapping accounted elements with unaccounted elemetns per cluster")
 		parser.add_option("--notapplybckgnoise",                 action ="store_true",    default =False,                  help="flag to turn off background noise")
 		parser.add_option("--do_swap_au",                        action ="store_true",    default =False,                  help="swap flag")
+		parser.add_option("--random_group_elimination_threshold",  type   ="float",      default =2.0,                    help="number of random group reproducibility standard deviation for eliminating random groups")
 		(options, args) = parser.parse_args(sys.argv[1:])
 		from utilities import bcast_number_to_all
 		### Sanity check
@@ -7153,7 +7147,8 @@ def main():
 		Constants["memory_per_node"]             = options.memory_per_node
 		Constants["orgstack"]                    = options.instack
 		Constants["masterdir"]                   = options.output_dir
-	
+		Constants["random_group_elimination_threshold"]  = options.random_group_elimination_threshold
+		
 		if options.mask3D == '': Constants["mask3D"] = False
 		else:   Constants["mask3D"] = options.mask3D
 		if options.focus!='':   Constants["focus3D"] = options.focus
@@ -7258,7 +7253,7 @@ def main():
 		if continue_from_interuption == 0:
 			if Blockdata["myid"] == Blockdata["main_node"]:
 				log_main.add('================================================================================================================')
-				log_main.add('                                  SORT3D IN-DEPTH v1.0')
+				log_main.add('                                  SORT3D IN-DEPTH v1.1')
 				log_main.add('================================================================================================================\n')			
 			import_data(log_main)
 			print_shell_command(sys.argv, log_main)
