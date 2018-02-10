@@ -742,6 +742,7 @@ def depth_clustering_box(work_dir, input_accounted_file, input_unaccounted_file,
 			ncluster, NACC, NUACC, unaccounted_list, new_clusters = output_iter_results(\
 			    work_dir, ncluster, NACC, NUACC, Tracker["constants"]["minimum_grp_size"], \
 			            list_of_stable, unaccounted_list, log_main)
+			shutil.rmtree(os.path.join(work_dir, 'run%d'%nruns, 'tempdir')
 		else:
 			ncluster = 0
 			NACC  = 0
@@ -3958,7 +3959,7 @@ def do_withinbox_two_way_comparison(partition_dir, nbox, nrun, niter):
 	unaccounted_list = sorted(list(a.difference(b)))
 	write_text_row(new_index, os.path.join(partition_dir, "Accounted.txt"))
 	write_text_file(unaccounted_list, os.path.join(partition_dir, "Unaccounted.txt"))
-	log_list.append('  The overall reproducibility is %5.1f%%'%ratio_accounted)
+	log_list.append('  The overall reproducibility is %5.1f%%.'%ratio_accounted)
 	log_list.append('  The number of accounted for images: %d.  The number of unaccounted for images: %d.'%(len(accounted_list), len(unaccounted_list)))
 	log_list.append('  The current minimum group size: %d and the maximum group size: %d.'%(minimum_group_size, maximum_group_size))
 	log_list.append('----------------------------------------------------------------------------------------------------------------')
