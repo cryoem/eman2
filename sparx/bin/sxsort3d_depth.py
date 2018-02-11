@@ -6730,8 +6730,10 @@ def do_random_groups_simulation_mpi(ptp1, ptp2):
 		svar +=table_stat(tlist)[0]
 		save +=table_stat(tlist)[1]
 		for j in xrange(k):
-			gvar[j] +=table_stat(clist[j])[1]
-			gave[j] +=table_stat(clist[j])[0]
+			try: gvar[j] +=table_stat(clist[j])[1]
+			except: gvar[j] +=0.0
+			try: gave[j] +=table_stat(clist[j])[0]
+			except: gave[j] +=0.0
 			
 	save = mpi_reduce(save, 1, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD)
 	svar = mpi_reduce(svar, 1, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD)
