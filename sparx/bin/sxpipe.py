@@ -997,7 +997,7 @@ def organize_micrographs(args):
 	# --------------------------------------------------------------------------------
 	if not os.path.exists(dst_dir):
 		print(" ")
-		print_progress("Creating the destination directory (%)..."%(dst_dir))
+		print_progress("Creating the destination directory (%s)..."%(dst_dir))
 		os.mkdir(dst_dir)
 	assert (os.path.exists(dst_dir))
 
