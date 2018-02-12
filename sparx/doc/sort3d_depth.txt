@@ -8,7 +8,7 @@
 
 Usage in command line
 
-  sxsort3d_depth.py  --refinement_dir=DIR  --instack=STACK_FILE  --output_dir=DIR  --niter_for_sorting=NUM_OF_ITERATIONS  --nxinit=INITIAL_IMAGE_SIZE  --mask3D=MASK3D_FILE  --focus=FOCUS3D_FILE  --radius=PARTICLE_RADIUS  --sym=SYMMETRY  --img_per_grp=NUM_OF_IMAGES  --minimum_grp_size=GROUP_SIZE  --memory_per_node=MEMORY_SIZE  --depth_order=DEPTH_ORDER  --stop_mgskmeans_percentage=PERCENTAGE  --nsmear=NUM_OF_SMEARS  --orientation_groups=NUM_OF_GROUPS  --swap_ratio=RATIO  --not_include_unaccounted  --do_swap_au  --shake=PERTURBATION_FACTOR  --notapplybckgnoise 
+  sxsort3d_depth.py  --refinement_dir=DIR  --instack=STACK_FILE  --output_dir=DIR  --niter_for_sorting=NUM_OF_ITERATIONS  --nxinit=INITIAL_IMAGE_SIZE  --mask3D=MASK3D_FILE  --focus=FOCUS3D_FILE  --radius=PARTICLE_RADIUS  --sym=SYMMETRY  --img_per_grp=NUM_OF_IMAGES  --minimum_grp_size=GROUP_SIZE  --memory_per_node=MEMORY_SIZE  --do_swap_au  --swap_ratio=RATIO  --depth_order=DEPTH_ORDER  --stop_mgskmeans_percentage=PERCENTAGE  --nsmear=NUM_OF_SMEARS  --orientation_groups=NUM_OF_GROUPS  --not_include_unaccounted  --shake=PERTURBATION_FACTOR  --notapplybckgnoise  --random_group_elimination_threshold
 
 \\
 ===== Typical usage =====
@@ -42,15 +42,16 @@ There are two ways of running this command.
 
 \\
 === Advanced Parameters ===
+  ; %%--%%do_swap_au : Swap flag: Swap a certain number of accounted elements per cluster with the unaccounted elements. (default False)
+  ; %%--%%swap_ratio : Swap percentage [%]: Specify a swap percentage between 0.0[%] and 50.0[%]. Effective only with --do_swap_au. Without --do_swap_au, the program automatically sets --swap_ratio to 0.0. (default 1.0)
   ; %%--%%depth_order : Depth order: The value defines the number of initial independent MGSKmeans runs (2^depth_order). (default 2)
-  ; %%--%%stop_mgskmeans_percentage : Stop MGSKmeans Percentage [%]: Particle change percentage for stopping minimum group size K-means. (default 10.0)
+  ; %%--%%stop_mgskmeans_percentage : Stop MGSKmeans percentage [%]: Particle change percentage for stopping minimum group size K-means. (default 10.0)
   ; %%--%%nsmear : Number of smears for sorting: Fill it with 1 if user does not want to use all smears. (default -1)
   ; %%--%%orientation_groups : Number of orientation groups: Number of orientation groups in the asymmetric unit. (default 100)
   ; %%--%%not_include_unaccounted : Do unaccounted reconstruction: Do not reconstruct unaccounted elements in each generation. (default False question reversed in GUI)
-  ; %%--%%do_swap_au : Swap flag: Swap a certain number of accounted elements per cluster with the unaccounted elements. (default False)
-  ; %%--%%swap_ratio : Swap ratio: Specify a float number between 0.0 and 50. Effective only with --do_swap_au. Without --do_swap_au, the program automatically sets --swap_ratio to 0.0. (default 1.0)
   ; %%--%%shake : Perturbation factor: Perturbation factor applied to orientation groups. Specify a float number between 0.0 and 0.5. (default 0.0)
   ; %%--%%notapplybckgnoise : Use background noise flag: Flag to turn off background noise. (default False question reversed in GUI)
+  ; %%--%%random_group_elimination_threshold : Random group elimination threshold: Specify the threshold as a factor of the random group reproducibility standard deviation for eliminating random groups. (default 2.0)
 
 \\
 ===== Output =====
