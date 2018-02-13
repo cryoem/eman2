@@ -1,8 +1,7 @@
 #!/usr/bin/env python
-from __future__ import print_function
 '''
 ====================
-Author: Jesus Galaz - nov/2017, Last update: nov/2017
+Author: Jesus Galaz - nov/2017, Last update: jan/2018
 ====================
 
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -30,8 +29,7 @@ Author: Jesus Galaz - nov/2017, Last update: nov/2017
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 '''
-
-#from optparse import OptionParser
+from __future__ import print_function
 from EMAN2 import *
 from EMAN2jsondb import JSTask,jsonclasses
 from EMAN2_utils import *
@@ -55,10 +53,16 @@ def main():
 	
 	parser.add_argument("--intonly", action='store_true', default=False, help="default=Flase. If on, this will allow integer translations only.")
 
+	parser.add_argument("--lowpass", type=str, default=None, help="default=None. Lowpass filter to apply (see e2help.py processors for available filters).")
+
+	parser.add_argument("--mask", type=str, default=None, help="default=None. Masking processor to apply (see e2help.py processors for available masks).")
+
 	parser.add_argument("--masked", action='store_true', default=False, help="default=False. treat zero pixels in --ref as a mask for normalization.")
 	
 	parser.add_argument("--maxshift", type=int, default=0, help="default=0 (not used). Maximum allowable translation in pixels.")
 	
+	parser.add_argument("--normproc", type=str, default=None, help="default=None. Normalization processor to apply (see e2help.py processors for available processors).")
+
 	parser.add_argument("--nozero", action='store_true', default=False, help="default=False. Zero translations not permitted (useful for CCD images)")
 	
 	parser.add_argument("--subset",type=int,default=0, help="""default=0 (not used). Subset of particles to align translationally.""")
@@ -93,6 +97,8 @@ def main():
 	
 	options = makepath(options,'spttranslate')
 
+	options = sptOptionsParser(options)
+
 	if options.verbose:
 		print('\ncreated path')
 
@@ -115,6 +121,18 @@ def main():
 		img = EMData(options.input,i)
 		if options.verbose:
 			print('\naligning image {}'.format(i))
+
+		if options.normproc:
+			img.process_inplace(options.normproc[0],options.normproc[1])
+			print("\nnormalized particle")
+
+		if options.mask:
+			img.process_inplace(options.mask[0],options.mask[1])
+			print("\nmasked particle")
+
+		if options.lowpass:
+			img.process_inplace(options.lowpass[0],options.lowpass[1])
+			print("\nlowpassed particle")
 
 		ccf = ref.calc_ccf(img)
 		#print('\ncalculated ccf')
