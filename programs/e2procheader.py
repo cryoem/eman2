@@ -2,7 +2,7 @@
 from __future__ import print_function
 
 #
-# Author: Jesus Galaz, 28/March/2013. Updated: 07/Nov/2017
+# Author: Jesus Galaz, 28/March/2013. Updated: Feb/2018
 # Copyright (c) 2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -109,7 +109,7 @@ def main():
 
 	k=0
 	for fyle in files2process:
-		extension = '.'+fyle.split('.')[-1]
+		extension = '.'+fyle[-6:].split('.')[-1]
 		outputbase = os.path.basename( fyle ).split('.')[0]
 		
 		print("extension is",extension)
@@ -184,7 +184,7 @@ def fixer(fyle, options):
 		print("\n(e2fixheader)(fixer) reading --refheader from", options.refheader)
 	
 	n = 1
-	if fyle[-4:] == '.hdf' or fyle[-4:] == '.mrcs':
+	if fyle[-4:] == '.hdf' or fyle[-5:] == '.mrcs':
 		n = EMUtil.get_image_count( fyle )
 	
 	for i in range(n):
@@ -199,8 +199,8 @@ def fixer(fyle, options):
 			indx=0
 				
 		imgHdr = EMData(fyle,indx,True)
-		print("\n(e2fixheader)(fixer) type of imgHdr is", type(imgHdr))
-		print("\n(e2fixheader)(fixer) and imgHdr is", imgHdr)
+		#print("\n(e2fixheader)(fixer) type of imgHdr is", type(imgHdr))
+		#print("\n(e2fixheader)(fixer) and imgHdr is", imgHdr)
 		
 		existingps = imgHdr.get_attr_dict()
 		print("\n(e2fixheader)(fixer) existingps are", existingps)
@@ -239,7 +239,7 @@ def fixer(fyle, options):
 						print("latter was not present already!")
 						p2add.append( p )
 			
-				if len(p2add) > 0 and fyle[-4:] in nonhdfformats:
+				if len(p2add) > 0 and fyle[-4:] != '.hdf':
 					tmp = options.input.split('.')[0] + '.hdf'
 					cmd = 'e2proc3d.py ' + fyle + ' ' + tmp
 					p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -296,7 +296,7 @@ def fixer(fyle, options):
 						sys.exit()
 				
 					print("""\n\nOutput format will the be same as the input format (changed 
-						to HDF by default if new parameters here added), which is""", outputformat)
+						to HDF by default if new parameters are added), which is""", outputformat)
 			
 				else:
 					outindx = 0
@@ -314,7 +314,7 @@ def fixer(fyle, options):
 				except:
 					if not options.stemval:
 						print("ERROR: If supplying --stem, you must also supply --stemval.")
-						sys.exit()	
+						sys.exit(1)	
 			
 			
 				for param in existingps:
@@ -340,12 +340,12 @@ def fixer(fyle, options):
 							imgHdr.write_image(fyle,-1,EMUtil.ImageType.IMAGE_MRC, True, None, EMUtil.EMDataType.EM_SHORT)
 						else:
 							print("ERROR: Only MRC (.mrc, .rec, .ali, .st) and HDF (.hdf) formats supported.")
-							sys.exit()
+							sys.exit(1)
 				
 					else:
 						img = EMData(fyle,indx)
-						print("\nType of imgHdr is", type(imgHdr))
-						print("\n\n\nand imgHdr is", imgHdr)
+						#print("\nType of imgHdr is", type(imgHdr))
+						#print("\n\n\nand imgHdr is", imgHdr)
 						img.set_attr_dict(imgHdr.get_attr_dict())
 						img.write_image(options.output,indx)	
 				else:
