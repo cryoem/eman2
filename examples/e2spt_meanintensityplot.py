@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 #
 # Author: Jesus Galaz, 2011?2012? - Last change 12/Jan/2015
 # Copyright (c) 2011 Baylor College of Medicine
@@ -29,7 +28,7 @@ from __future__ import print_function
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
-
+from __future__ import print_function
 import os
 from EMAN2 import *
 from sys import argv
