@@ -1,5 +1,5 @@
 = Name =
-sxviper - Initial 3D Model - VIPER: ''ab initio'' 3D structure determination using Validation of Individual Parameter Reproducibility (VIPER). Designed to determine a validated initial model using a small set of class averages produced by [[sxisac|ISAC]].
+sxviper - Initial 3D Model - VIPER: ''ab initio'' 3D structure determination using Validation of Individual Parameter Reproducibility (VIPER). Designed to determine a validated initial model using a small set of class averages produced by [[sxisac2|ISAC2]].
 
 
 = Usage =
@@ -27,9 +27,9 @@ Since VIPER makes use of group of processors working together, it is important f
 
 
 == Input ==
-    stack:: Input images stack: A small set of class averages produced by ISAC. (default required string)
+    stack:: Input images stack: A small set of class averages produced by ISAC2. (default required string)
 
-    radius:: Target particle radius [Pixels]: Use the same value as in ISAC. It has to be less than half the box size. (default 29)
+    radius:: Target particle radius [Pixels]: Use the same value as in ISAC2. It has to be less than half the box size. (default 29)
     sym:: Point-group symmetry: (default c1)
     moon_elimination:: Eliminate disconnected regions: Used to removed disconnected pieces from the model. It requires as argument a comma separated string with the mass in KDa and the pixel size. (default none)
 

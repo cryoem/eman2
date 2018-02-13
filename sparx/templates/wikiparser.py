@@ -208,9 +208,9 @@ def construct_keyword_dict():
 	keyword_dict["--refinement_dir"]              = SXkeyword_map(2, "dir")                 # --refinement_dir=refinemen_out_dir
 	keyword_dict["--previous_run"]                = SXkeyword_map(2, "dir")                 # --previous_run1=sort3d_run1_directory, --previous_run2=sort3d_run2_directory (need for sort3d.txt)
 	keyword_dict["--function"]                    = SXkeyword_map(2, "user_func")           # --function=user_function
-	# keyword_dict["--FL"]                        = SXkeyword_map(2, "abs_freq")            # (--FL=FL); This is ISAC & advanced that We do NOT supported at this point because of pixel size reduction by target radius
-	# keyword_dict["--FH"]                        = SXkeyword_map(2, "abs_freq")            # (--FH=FH); This is ISAC & advanced that We do NOT supported at this point because of pixel size reduction by target radius
-	# keyword_dict["--FF"]                        = SXkeyword_map(2, "abs_freq")            # (--FF=FF); This is ISAC & falloff that we do NOT supported at this point (see below NOTE: 2018/02/06 Toshio Moriya)
+	# keyword_dict["--FL"]                        = SXkeyword_map(2, "abs_freq")            # (--FL=FL); This is ISAC2 & advanced that We do NOT supported at this point because of pixel size reduction by target radius
+	# keyword_dict["--FH"]                        = SXkeyword_map(2, "abs_freq")            # (--FH=FH); This is ISAC2 & advanced that We do NOT supported at this point because of pixel size reduction by target radius
+	# keyword_dict["--FF"]                        = SXkeyword_map(2, "abs_freq")            # (--FF=FF); This is ISAC2 & falloff that we do NOT supported at this point (see below NOTE: 2018/02/06 Toshio Moriya)
 	keyword_dict["--fl"]                          = SXkeyword_map(2, "abs_freq")            # --fl=cutoff_frequency, (--fl=fl), (--fl=fl), (--fl=lpf_cutoff_freq), --fl=LPF_CUTOFF_FREQ
 	# keyword_dict["--aa"]                        = SXkeyword_map(2, "abs_freq")            # (--aa=aa), (--aa=aa), (--aa=lpf_falloff), (--aa=LPF_FALLOFF_WIDTH); This is falloff that we do NOT supported at this point (see below NOTE: 2018/02/06 Toshio Moriya)
 	keyword_dict["--fh"]                          = SXkeyword_map(2, "abs_freq")            # --fh=fh
@@ -265,7 +265,7 @@ def handle_exceptional_cases(sxcmd):
 	# Handle exceptional cases due to the limitation of software design
 	# In future, we should remove these exception handling by reviewing the design
 	if sxcmd.name == "sxwindow":
-		# Typically, this is target particle radius used by ISAC.
+		# Typically, this is target particle radius used by ISAC2.
 		assert(sxcmd.token_dict["input_micrograph_pattern"].key_base == "input_micrograph_pattern")
 		assert(sxcmd.token_dict["input_micrograph_pattern"].type == "mic_stack")
 		sxcmd.token_dict["input_micrograph_pattern"].type = "mic_one"
@@ -288,7 +288,7 @@ def handle_exceptional_cases(sxcmd):
 		assert(sxcmd.token_dict["stack"].key_base == "stack")
 		assert(sxcmd.token_dict["stack"].type == "bdb2d_stack")
 		sxcmd.token_dict["stack"].type = "data2d_one"
-		# Typically, this is target particle radius used by ISAC.
+		# Typically, this is target particle radius used by ISAC2.
 		assert(sxcmd.token_dict["radius"].key_base == "radius")
 		assert(sxcmd.token_dict["radius"].type == "radius")
 		sxcmd.token_dict["radius"].type = "int"
@@ -302,7 +302,7 @@ def handle_exceptional_cases(sxcmd):
 		assert(sxcmd.token_dict["stack"].key_base == "stack")
 		assert(sxcmd.token_dict["stack"].type == "bdb2d_stack")
 		sxcmd.token_dict["stack"].type = "data2d_one"
-		# Typically, this is target particle radius used by ISAC.
+		# Typically, this is target particle radius used by ISAC2.
 		assert(sxcmd.token_dict["radius"].key_base == "radius")
 		assert(sxcmd.token_dict["radius"].type == "radius")
 		sxcmd.token_dict["radius"].type = "int"
@@ -1304,18 +1304,18 @@ def create_sxcmd_subconfig_window_makevstack():
 ### def create_sxcmd_subconfig_isacselect():
 ### 	token_edit_list = []
 ### 	token_edit = SXcmd_token(); token_edit.initialize_edit("isacselect"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
-### 	token_edit = SXcmd_token(); token_edit.initialize_edit("class_file_name"); token_edit.key_prefix = ""; token_edit.label = "ISAC class file name"; token_edit.help = "File name of the class averages. It is located in the ISAC output directory."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "data2d_one"; token_edit_list.append(token_edit)
-### 	token_edit = SXcmd_token(); token_edit.initialize_edit("output_list"); token_edit.key_prefix = ""; token_edit.label = "Output ISAC particle ID list"; token_edit.help = "Output text file containing retrieved member particle IDs of all ISAC classes."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "output"; token_edit_list.append(token_edit)
+### 	token_edit = SXcmd_token(); token_edit.initialize_edit("class_file_name"); token_edit.key_prefix = ""; token_edit.label = "ISAC2 class file name"; token_edit.help = "File name of the class averages. It is located in the ISAC2 output directory."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "data2d_one"; token_edit_list.append(token_edit)
+### 	token_edit = SXcmd_token(); token_edit.initialize_edit("output_list"); token_edit.key_prefix = ""; token_edit.label = "Output ISAC2 particle ID list"; token_edit.help = "Output text file containing retrieved member particle IDs of all ISAC2 classes."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "output"; token_edit_list.append(token_edit)
 ### 
 ### 	sxsubcmd_mpi_support = False
-### 	sxcmd_subconfig = SXsubcmd_config("Get ISAC Particles", None, token_edit_list, sxsubcmd_mpi_support)
+### 	sxcmd_subconfig = SXsubcmd_config("Get ISAC2 Particles", None, token_edit_list, sxsubcmd_mpi_support)
 ### 
 ### 	return sxcmd_subconfig
 
 ### def create_sxcmd_subconfig_isac_makevstack():
 ### 	token_edit_list = []
 ### 	token_edit = SXcmd_token(); token_edit.initialize_edit("makevstack"); token_edit.is_required = True; token_edit.is_locked = False; token_edit.default = "none"; token_edit.restore = "none"; token_edit_list.append(token_edit)
-### 	token_edit = SXcmd_token(); token_edit.initialize_edit("input_bdb_stack_file"); token_edit.key_prefix = ""; token_edit.label = "Input BDB image stack"; token_edit.help = "Specify path to input BDB stack file which is used for the input of the associated ISAC run."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "bdb2d_stack"; token_edit_list.append(token_edit)
+### 	token_edit = SXcmd_token(); token_edit.initialize_edit("input_bdb_stack_file"); token_edit.key_prefix = ""; token_edit.label = "Input BDB image stack"; token_edit.help = "Specify path to input BDB stack file which is used for the input of the associated ISAC2 run."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "bdb2d_stack"; token_edit_list.append(token_edit)
 ### 	token_edit = SXcmd_token(); token_edit.initialize_edit("list"); token_edit_list.append(token_edit)
 ### 
 ### 	sxsubcmd_mpi_support = False
@@ -1350,7 +1350,7 @@ def create_sxcmd_subconfig_isac_beautifier_to_bfactor():
 	add_sxcmd_subconfig_isac_beautifier_shared(token_edit_list)
 
 	sxsubcmd_mpi_support = True
-	sxcmd_subconfig = SXsubcmd_config("Beautifier - Adjust to B-factor", "Beautify the ISAC 2D clustering result with the original pixel size. In addition, adjust the power spectrum of resultant average images using B-factor to enhance averages.", token_edit_list, sxsubcmd_mpi_support)
+	sxcmd_subconfig = SXsubcmd_config("Beautifier - Adjust to B-factor", "Beautify the ISAC2 2D clustering result with the original pixel size. In addition, adjust the power spectrum of resultant average images using B-factor to enhance averages.", token_edit_list, sxsubcmd_mpi_support)
 
 	return sxcmd_subconfig
 
@@ -1364,7 +1364,7 @@ def create_sxcmd_subconfig_isac_beautifier_to_rot_avg():
 	add_sxcmd_subconfig_isac_beautifier_shared(token_edit_list)
 
 	sxsubcmd_mpi_support = True
-	sxcmd_subconfig = SXsubcmd_config("Beautifier - Adjust to Rot. Avgs.", "Beautify the ISAC 2D clustering result with the original pixel size. In addition, adjust the power spectrum of resultant average images to the user-provided 1-D reference power spectrum.", token_edit_list, sxsubcmd_mpi_support)
+	sxcmd_subconfig = SXsubcmd_config("Beautifier - Adjust to Rot. Avgs.", "Beautify the ISAC2 2D clustering result with the original pixel size. In addition, adjust the power spectrum of resultant average images to the user-provided 1-D reference power spectrum.", token_edit_list, sxsubcmd_mpi_support)
 
 	return sxcmd_subconfig
 
@@ -1375,7 +1375,7 @@ def create_sxcmd_subconfig_isac_beautifier_to_model():
 	add_sxcmd_subconfig_isac_beautifier_shared(token_edit_list)
 
 	sxsubcmd_mpi_support = True
-	sxcmd_subconfig = SXsubcmd_config("Beautifier - Adjust to Model", "Beautify the ISAC 2D clustering result with the original pixel size. In addition, adjust the power spectrum of resultant average images to an analytical model.", token_edit_list, sxsubcmd_mpi_support)
+	sxcmd_subconfig = SXsubcmd_config("Beautifier - Adjust to Model", "Beautify the ISAC2 2D clustering result with the original pixel size. In addition, adjust the power spectrum of resultant average images to an analytical model.", token_edit_list, sxsubcmd_mpi_support)
 
 	return sxcmd_subconfig
 
@@ -1386,7 +1386,7 @@ def create_sxcmd_subconfig_isac_beautifier_no_adjust():
 	add_sxcmd_subconfig_isac_beautifier_shared(token_edit_list)
 
 	sxsubcmd_mpi_support = True
-	sxcmd_subconfig = SXsubcmd_config("Beautifier - No Adjust", "Beautify the ISAC 2D clustering result using the original pixel size, without adjusting the power spectrum of resultant average images. Use this option to skip all power spectrum adjustment methods and simply compute class averages with the original pixel size.", token_edit_list, sxsubcmd_mpi_support)
+	sxcmd_subconfig = SXsubcmd_config("Beautifier - No Adjust", "Beautify the ISAC2 2D clustering result using the original pixel size, without adjusting the power spectrum of resultant average images. Use this option to skip all power spectrum adjustment methods and simply compute class averages with the original pixel size.", token_edit_list, sxsubcmd_mpi_support)
 
 	return sxcmd_subconfig
 
@@ -1673,7 +1673,29 @@ def create_sxcmd_subconfig_meridien_standard_continuation():
 	token_edit_list = []
 	token_edit = SXcmd_token(); token_edit.initialize_edit("output_directory"); token_edit.label = "Meridien Fresh Run Directory"; token_edit.help = "This directory must exist. The results will be written here."; token_edit.is_required = True; token_edit_list.append(token_edit)
 
-	add_sxcmd_subconfig_meridien_standard_shared(token_edit_list)
+###	add_sxcmd_subconfig_meridien_standard_shared(token_edit_list)
+	# All options should be in advanced tab
+	token_edit = SXcmd_token(); token_edit.initialize_edit("radius"); token_edit.group = "advanced"; token_edit.type = "int"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("mask3D"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("symmetry"); token_edit.group = "advanced"; token_edit.type = "string"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("inires"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("delta"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("xr"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("ts"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
+	# NOTE: Toshio Moriya 200148/02/13 These initialshifts and skip_prealignment options are not used in this mode. They are used only for initial 2D alignment
+	# token_edit = SXcmd_token(); token_edit.initialize_edit("initialshifts"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
+	# token_edit = SXcmd_token(); token_edit.initialize_edit("skip_prealignment"); token_edit.group ="advanced"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("memory_per_node"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
+
+	token_edit = SXcmd_token(); token_edit.initialize_edit("an"); token_edit_list.append(token_edit)
+	# NOTE: Toshio Moriya 200148/02/13 These center_method and target_radius options is not used in this mode. It is used only for initial 2D alignment
+	# token_edit = SXcmd_token(); token_edit.initialize_edit("center_method"); token_edit_list.append(token_edit)
+	# token_edit = SXcmd_token(); token_edit.initialize_edit("target_radius"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("shake"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("small_memory"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("ccfpercentage"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("nonorm"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("function"); token_edit_list.append(token_edit)
 
 	sxsubcmd_mpi_support = True
 	sxcmd_subconfig = SXsubcmd_config("3D Refinement Continuation", "Perform continuation run of 3D refinement, where the 3D refinement restarts after the last fully finished iteration of meridien fresh run or local refinement run. One can change some parameters, but MPI settings have to be the same.", token_edit_list, sxsubcmd_mpi_support, is_modeless = True, subset_config="continuation")
@@ -1744,7 +1766,7 @@ def create_sxcmd_subconfig_sort3d_header_import_xform_projection():
 	token_edit = SXcmd_token(); token_edit.initialize_edit("params"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = "xform.projection"; token_edit.restore = "xform.projection"; token_edit_list.append(token_edit)
 
 	sxsubcmd_mpi_support = False
-	sxcmd_subconfig = SXsubcmd_config("Import 3D Alignment Parameters", "Import 3D alignment parameters from a file created by a meridien run to header of the input stack, which required by 3DVARIABILITY.py and SORT3D_DEPTH Stack Mode.", token_edit_list, sxsubcmd_mpi_support)
+	sxcmd_subconfig = SXsubcmd_config("Import Projection Parameters", "Import projection parameters from a file created by a meridien run to header of the input stack, which required by 3DVARIABILITY.py and SORT3D_DEPTH Stack Mode.", token_edit_list, sxsubcmd_mpi_support)
 
 	return sxcmd_subconfig
 
@@ -1755,10 +1777,10 @@ def add_sxcmd_subconfig_sort3d_depth_shared_sorting(token_edit_list):
 	token_edit = SXcmd_token(); token_edit.initialize_edit("sym"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("img_per_grp"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("minimum_grp_size"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("memory_per_node"); token_edit_list.append(token_edit)
-
 	token_edit = SXcmd_token(); token_edit.initialize_edit("do_swap_au"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("swap_ratio"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("memory_per_node"); token_edit_list.append(token_edit)
+
 	token_edit = SXcmd_token(); token_edit.initialize_edit("depth_order"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("stop_mgskmeans_percentage"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("nsmear"); token_edit_list.append(token_edit)
@@ -1815,12 +1837,12 @@ def create_sxcmd_subconfig_sort3d_depth_stack():
 
 def create_sxcmd_subconfig_sort3d_makevstack():
 	token_edit_list = []
-	token_edit = SXcmd_token(); token_edit.initialize_edit("makevstack"); token_edit.label = "Output cluster stack subset"; token_edit.is_required = True; token_edit.is_locked = False; token_edit.default = "none"; token_edit.restore = "none"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("makevstack"); token_edit.label = "Output stack subset"; token_edit.is_required = True; token_edit.is_locked = False; token_edit.default = "none"; token_edit.restore = "none"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("input_bdb_stack_file"); token_edit.key_prefix = ""; token_edit.label = "Original image stack"; token_edit.help = "Specify path to input BDB stack file used for the associated SORT3D_DEPTH run."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "bdb2d_stack"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("list"); token_edit.label = "Image selection file"; token_edit.help = "Input selection text file containing a list of selected image IDs (or indexes of the data subset) to create a new virtual BDB image stack from an existed stack or virtual stack. Typically, Cluster#.txt created by sxsort3d_depth (e.g. Cluster1.txt)."; token_edit_list.append(token_edit)
 
 	sxsubcmd_mpi_support = False
-	sxcmd_subconfig = SXsubcmd_config("Cluster Stack Subset", None, token_edit_list, sxsubcmd_mpi_support, subset_config="subset")
+	sxcmd_subconfig = SXsubcmd_config("SORT3D_DEPTH Stack Subset", None, token_edit_list, sxsubcmd_mpi_support, subset_config="subset")
 
 	return sxcmd_subconfig
 
@@ -2397,15 +2419,15 @@ def main(is_dev_mode = False, is_MoinMoinWiki_mode = False):
 	# Define command categories used in GUI
 	# --------------------------------------------------------------------------------
 	sxcmd_category_list = []
-	sxcmd_category_list.append(SXcmd_category("sxc_cter", "CTF", "ctf estinatim, and ctf assessment"))
-	sxcmd_category_list.append(SXcmd_category("sxc_window", "Particle Stack", "particle picking, and particle windowing"))
-	sxcmd_category_list.append(SXcmd_category("sxc_isac", "2D Clustering", "2d clustering with isac, and post-processing"))
-	sxcmd_category_list.append(SXcmd_category("sxc_viper", "Initial 3D Modeling", "initial 3d modeling with viper/rviper"))
-	sxcmd_category_list.append(SXcmd_category("sxc_meridien", "3D Refinement", "3d refinement and post-processing"))
-	sxcmd_category_list.append(SXcmd_category("sxc_sort3d", "3D Clustering", "3d variability, and 3d clustering protocol I & II"))
-	sxcmd_category_list.append(SXcmd_category("sxc_localres", "Local Resolution", "local resolution, and local filter"))
-	sxcmd_category_list.append(SXcmd_category("sxc_movie", "Movie Micrograph", "movie frame alignemnt, and drift assessment"))
-	sxcmd_category_list.append(SXcmd_category("sxc_utilities", "Utilities", "miscellaneous utlitity commands"))
+	sxcmd_category_list.append(SXcmd_category("sxc_cter", "CTF", "CTF Estinatim and CTF Assessment"))
+	sxcmd_category_list.append(SXcmd_category("sxc_window", "Particle Stack", "Particle Coordinates and Particle Extraction"))
+	sxcmd_category_list.append(SXcmd_category("sxc_isac", "2D Clustering", "ISAC2 2D Clustering and Beautifier"))
+	sxcmd_category_list.append(SXcmd_category("sxc_viper", "Initial 3D Modeling", "Initial 3D modeling with VIPER/RVIPER"))
+	sxcmd_category_list.append(SXcmd_category("sxc_meridien", "3D Refinement", "MERIDIEN 3d Refinement and PostRefiner"))
+	sxcmd_category_list.append(SXcmd_category("sxc_sort3d", "3D Clustering", "3D Variability and SROT3D_DEPTH 3D Clustering"))
+	sxcmd_category_list.append(SXcmd_category("sxc_localres", "Local Resolution", "Local Resolution, and Local Filtering"))
+	sxcmd_category_list.append(SXcmd_category("sxc_movie", "Movie Micrograph", "Micrograph Movie Alignemnt and Drift Assessment"))
+	sxcmd_category_list.append(SXcmd_category("sxc_utilities", "Utilities", "Miscellaneous Utlitity Commands"))
 
 	# --------------------------------------------------------------------------------
 	# Build configuration list

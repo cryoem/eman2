@@ -1,5 +1,5 @@
 = Name =
-sxrviper - Initial 3D Model - RVIPER: Reproducible ''ab initio'' 3D structure determination. The program is designed to determine a validated initial intermediate resolution structure using a small set (less than 100) of class averages produced by [[sxisac|ISAC]].
+sxrviper - Initial 3D Model - RVIPER: Reproducible ''ab initio'' 3D structure determination. The program is designed to determine a validated initial intermediate resolution structure using a small set (less than 100) of class averages produced by [[sxisac2|ISAC2]].
 
 
 = Usage =
@@ -28,9 +28,9 @@ On our cluster, it takes about 6 hours to process 400 88x88 particles on 64 proc
 
 
 == Input ==
-    stack:: Input images stack: A small set (less than 100) of class averages produced by ISAC. The images must be square. (default required string)
+    stack:: Input images stack: A small set (less than 100) of class averages produced by ISAC2. The images must be square. (default required string)
 
-    radius:: Target particle radius [Pixels]: Use the same value as in ISAC. It has to be less than half the box size. (default 29)
+    radius:: Target particle radius [Pixels]: Use the same value as in ISAC2. It has to be less than half the box size. (default 29)
     sym:: Point-group symmetry: (default c1)
     n_rv_runs:: RVIPER iterations: Corresponds to main### output directory. (default 10)
     iteration_start:: Restarting iteration: Iteration from which to restart the program. 0 means go to the most recent one. (default 0)
