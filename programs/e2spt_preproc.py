@@ -240,18 +240,18 @@ class Preproc3DTask(JSTask):
 		i = self.classoptions['ptclnum']
 		#image=self.data["image"]
 		#print "simage is", simagefile
-		print("ptclnum is i",i)
+		print("\n(e2spt_preproc)(Preproc3DTask) ptclnum is i",i)
 		
 		if isinstance(self.data["image"],EMData):
 			simage=self.data["image"]
 		else: 
 			simage=EMData(self.data["image"][1],self.data["image"][2])
-			print("image was actually file",image)
+			print("\n(e2spt_preproc)(Preproc3DTask) image was actually file",image)
 			
 		#simage = self.data['image']
 		
 		if options.verbose:
-			print("in class, outname %s and i=%d " %(outname, i))
+			print("\n(e2spt_preproc)(Preproc3DTask) outname %s and i=%d " %(outname, i))
 		
 		
 		preprocfunc( simage, options, i, outname )
