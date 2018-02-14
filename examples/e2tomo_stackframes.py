@@ -132,9 +132,9 @@ def main():
 	for angle in angles:
 		print("\nstacking frames for angle {}/{}, angle={}".format(count+1,ntilts,angle))
 		if float(angle) < 0.0:
-			angletag = 'angle_' + str(angle).zfill(5)
+			angletag = 'angle_' + str(angle).zfill(5) + '_stacked'
 		elif float(angle) >= 0.0:
-			angletag = 'angle_+' + str(angle).zfill(4)
+			angletag = 'angle_+' + str(angle).zfill(4) + '_stacked'
 
 		output = outputroot.replace(options.extension,'_' + angletag + options.extension)
 		
