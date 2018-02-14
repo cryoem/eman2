@@ -61,6 +61,7 @@ def main():
 	parser.add_argument("--output", type=str, default=None, help="""File to write the fixed stack to. If not provided, the stack in --input will be overwritten.""")
 	
 	parser.add_argument("--params", type=str, default=None, help="""Comma separated pairs of parameter:value. The parameter will be changed to the value specified.""")
+	
 	parser.add_argument("--ppid", type=int, default=-1, help="Set the PID of the parent process, used for cross platform PPID")
 
 	parser.add_argument("--refheader",type=str, default=None, help="""If supplied, the header of this image will be copied to the header of all images in --input.""")	
