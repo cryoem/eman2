@@ -95,7 +95,7 @@ class DriverFileReader(QObject):
         :return: list of string with mainXXX folder names
         """
         main_dict = []
-        for dict in os.listdir(path):
+        for dict in sorted(os.listdir(path)):
             combined_path = os.path.join(str(path),dict)
 
 
