@@ -239,11 +239,16 @@ def AI( fff, anger, shifter, chout = False):
 		else:   Tracker["large_at_Nyquist"] = fff[Tracker["nxinit"]//2-1] > 0.2
 
 
-		if( Tracker["mainiteration"] == 2 ):  maxres = Tracker["constants"]["inires"]
-		else:                                 maxres = max(l05, 5)  #  5 is minimum resolution of the map, could be set by the user
-
-		if( maxres >= Tracker["bestres"]):
+		if( Tracker["mainiteration"] == 2 ):  
+			maxres     = Tracker["constants"]["inires"]
+			maxres_143 = l01 
+		else:                                 
+			maxres     = max(l05, 5)  #  5 is minimum resolution of the map, could be set by the user
+			maxres_143 = max(l01, l05)
+			 
+		if (maxres >= Tracker["bestres"]) and (maxres_143 >=Tracker["bestres_143"]):
 			Tracker["bestres"]				= maxres
+			Tracker["bestres_143"]          = maxres_143
 			Tracker["constants"]["best"] 	= max(Tracker["mainiteration"]-1, 3)#
 
 		if( maxres > Tracker["currentres"]):
@@ -252,7 +257,7 @@ def AI( fff, anger, shifter, chout = False):
 		else:    Tracker["no_improvement"] += 1
 
 		Tracker["currentres"] = maxres
-		Tracker["fsc143"] = l01
+		Tracker["fsc143"]     = maxres_143
 
 		params_changes = anger >= 1.03*Tracker["anger"] and shifter >= 1.03*Tracker["shifter"]
 
@@ -364,13 +369,15 @@ def AI_continuation(fff, anger = -1.0, shifter = -1.0, chout = False):
 				Tracker["currentres"], Tracker["fsc143"], Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"]), \
 				Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"])))
 	else:
-		Tracker["nxstep"] = max(Tracker["nxstep"], l01-l05+5)
+		if(Tracker["mainiteration"] > 3):  Tracker["nxstep"] = max(Tracker["nxstep"], l01-l05+5)
 		if(Tracker["state"] == "FINAL" or Tracker["state"] == "RESTRICTED"): Tracker["large_at_Nyquist"] = (fff[Tracker["nxinit"]//2] > 0.1 or fff[Tracker["nxinit"]//2-1] > 0.2)
 		else:   Tracker["large_at_Nyquist"] = fff[Tracker["nxinit"]//2-1] > 0.2
 
-		maxres = max(l05, 5)
-		if( maxres >= Tracker["bestres"]):
+		maxres      = max(l05, 5)
+		maxres_143 = max(l01, l05)
+		if( maxres >= Tracker["bestres"]) and  (maxres_143 >= Tracker["bestres_143"]):
 			Tracker["bestres"]				= maxres
+			Tracker["bestres_143"]			= maxres_143
 			Tracker["constants"]["best"] 	= max(Tracker["mainiteration"]-1, 3)
 
 		if( maxres > Tracker["currentres"]):
@@ -379,7 +386,7 @@ def AI_continuation(fff, anger = -1.0, shifter = -1.0, chout = False):
 		else:    Tracker["no_improvement"] += 1
 
 		Tracker["currentres"] = maxres
-		Tracker["fsc143"] = l01
+		Tracker["fsc143"]     = maxres_143
 
 		params_changes = anger >= 1.03*Tracker["anger"] and shifter >= 1.03*Tracker["shifter"]
 
@@ -1571,27 +1578,27 @@ def calculate_2d_params_for_centering(kwargs):
 	main_node = kwargs["main_node"]
 	number_of_images_in_stack = kwargs["number_of_images_in_stack"]
 	nproc = kwargs["nproc"]
-	
+
 	target_radius = kwargs["target_radius"]
 	# target_nx = kwargs["target_nx"]
 	radi = kwargs["radi"]
-	
+
 	center_method = kwargs["center_method"]
-	
+
 	nxrsteps = kwargs["nxrsteps"]
-	
-	
+
+
 	# stack_processed_by_ali2d_base__filename = kwargs["stack_processed_by_ali2d_base__filename"]
 	command_line_provided_stack_filename = kwargs["command_line_provided_stack_filename"]
-	
+
 	# masterdir = kwargs["masterdir"]
-	
+
 	options_skip_prealignment = kwargs["options_skip_prealignment"]
 	options_CTF = kwargs["options_CTF"]
-	
+
 	mpi_comm = kwargs["mpi_comm"]
 	#################################################################################################################################################################
-	
+
 	if options_skip_prealignment:
 		if(Blockdata["myid"] == 0):
 			print("=========================================")
@@ -9043,7 +9050,7 @@ def rec3d_tmp(mainiteration, original_data):
 		Tracker["nxinit"]     = nfsc_143*2+30  # will be figured in first AI.
 		Tracker["fsc143"]     = nfsc_143
 		Tracker["currentres"] = nfsc_half
-		if Tracker["currentres"] >= Tracker["bestres"]:
+		if (Tracker["currentres"] >= Tracker["bestres"]) and (Tracker["fsc143"] >=Tracker["bestres_143"]):
 			Tracker["bestres"] = Tracker["currentres"]
 			Tracker["constants"]["best"] = mainiteration
 		if( Blockdata["myid"] == Blockdata["main_node"]):
@@ -9317,6 +9324,7 @@ def init_Tracker_mpi(option_initvol = None):
 	Tracker["constants"]["best"]    = 0
 	Tracker["keepfirst"]            = -1
 	Tracker["bestres"]          	= -1
+	Tracker["bestres_143"]          = -1
 	Tracker["directory"]         	= ""
 	Tracker["previousoutputdir"] 	= ""
 	Tracker["mainiteration"]     	= 0
@@ -9436,6 +9444,7 @@ def continuation_read_subset_data(masterdir, option_old_refinement_dir, option_s
 		#Tracker["constants"]["symmetry"]  = sym
 		Tracker["best"]                   = selected_iter +2 # reset the best to arbitrary iteration
 		Tracker["bestres"]                = 0
+		Tracker["bestres_143"]            = 0
 		Tracker["no_improvement"]         = 0
 		Tracker["no_params_changes"]      = 0
 		Tracker["pixercutoff"]            = 0
@@ -9854,6 +9863,7 @@ def continuation_rec3d_faked_iter(masterdir, selected_iter=-1, comm = -1):
 	Tracker["lentop"]				= 2000
 	Tracker["constants"]["best"]	= -1
 	Tracker["bestres"]              = -1
+	Tracker["bestres_143"]          = -1
 	Tracker["fsc143"]               = -1
 	if not Tracker["constants"]["small_memory"]: return original_data
 	else: return None
@@ -10233,6 +10243,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			Tracker["nima_per_chunk"]    	= [0,0]
 			###<<<----state 
 			Tracker["bestres"]          	= 0
+			Tracker["bestres_143"]          = 0
 			Blockdata["bckgnoise"]          = None
 			Blockdata["accumulatepw"]       = [[],[]]
 
@@ -11103,6 +11114,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			Tracker["nima_per_chunk"]    	= [0,0]
 			###<<<----state 
 			Tracker["bestres"]          	= 0
+			Tracker["bestres_143"]          = 0
 			Blockdata["bckgnoise"]          = None
 			Blockdata["accumulatepw"]       = [[],[]]
 
