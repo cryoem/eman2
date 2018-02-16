@@ -48,7 +48,7 @@ def stage_name_to_os(stage_name) {
     return result[stage_name]
 }
 
-def isBuildStage() {
+def isRequestedBuildStage() {
     def buildStage = ['centos6': CI_BUILD_LINUX,
                       'centos7': CI_BUILD_LINUX,
                       'mac':     CI_BUILD_MAC,
@@ -59,7 +59,7 @@ def isBuildStage() {
 }
 
 def isRunCurrentStage() {
-    return isContinuousBuild() && isBuildStage()
+    return isContinuousBuild() && isRequestedBuildStage()
 }
 
 def runJob() {
