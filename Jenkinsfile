@@ -62,7 +62,7 @@ def isRunCurrentStage() {
     return isContinuousBuild() && isBuildStage()
 }
 
-def runCronJob() {
+def runJob() {
     if(isContinuousBuild()) {
         if(SLAVE_OS != 'win')
             sh "rsync -avzh --stats ${INSTALLERS_DIR}/eman2.${SLAVE_OS}.sh ${DEPLOY_DEST}/eman2.${STAGE_NAME}.unstable.sh"
@@ -143,7 +143,7 @@ pipeline {
       }
       
       steps {
-        runCronJob()
+        runJob()
       }
     }
     
@@ -153,7 +153,7 @@ pipeline {
       }
       
       steps {
-        runCronJob()
+        runJob()
       }
     }
     
@@ -166,7 +166,7 @@ pipeline {
       }
       
       steps {
-        runCronJob()
+        runJob()
       }
     }
     
@@ -176,7 +176,7 @@ pipeline {
       }
       
       steps {
-        runCronJob()
+        runJob()
       }
     }
   }
