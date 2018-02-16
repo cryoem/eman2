@@ -63,18 +63,12 @@ def isRunCurrentStage() {
 }
 
 def runCronJob() {
-    sh 'bash ${HOME_DIR}/workspace/build-scripts-cron/cronjob.sh $STAGE_NAME $GIT_BRANCH_SHORT'
     if(isContinuousBuild()) {
         if(SLAVE_OS != 'win')
             sh "rsync -avzh --stats ${INSTALLERS_DIR}/eman2.${SLAVE_OS}.sh ${DEPLOY_DEST}/eman2.${STAGE_NAME}.unstable.sh"
         else
             bat 'ci_support\\rsync_wrapper.bat'
     }
-}
-
-def resetBuildScripts() {
-    if(isContinuousBuild())
-        sh 'cd ${BUILD_SCRIPTS_DIR} && git checkout -f master'
 }
 
 def getHomeDir() {
@@ -104,11 +98,10 @@ pipeline {
     GIT_BRANCH_SHORT = sh(returnStdout: true, script: 'echo ${GIT_BRANCH##origin/}').trim()
     GIT_COMMIT_SHORT = sh(returnStdout: true, script: 'echo ${GIT_COMMIT:0:7}').trim()
     HOME_DIR = getHomeDir()
-    BUILD_SCRIPTS_DIR = "${HOME_DIR}/workspace/build-scripts-cron/"
     INSTALLERS_DIR = '${HOME_DIR}/workspace/${STAGE_NAME}-installers'
     DEPLOY_DEST    = 'zope@ncmi.grid.bcm.edu:/home/zope/zope-server/extdata/reposit/ncmi/software/counter_222/software_136/'
     NUMPY_VERSION='1.9'
-    BUILD_SCRIPTS_BRANCH='master'
+
     CI_BUILD       = sh(script: "! git log -1 | grep '.*\\[ci build\\].*'",       returnStatus: true)
     CI_BUILD_WIN   = sh(script: "! git log -1 | grep '.*\\[ci build win\\].*'",   returnStatus: true)
     CI_BUILD_LINUX = sh(script: "! git log -1 | grep '.*\\[ci build linux\\].*'", returnStatus: true)
@@ -141,17 +134,6 @@ pipeline {
             sh 'source $(conda info --root)/bin/activate eman-env && bash ci_support/build_no_recipe.sh'
           }
         }
-      }
-    }
-    
-    // Stages triggered by cron or by a release branch
-    stage('build-scripts-checkout') {
-      when {
-        expression { isContinuousBuild() }
-      }
-      
-      steps {
-        sh 'cd ${BUILD_SCRIPTS_DIR} && git fetch --prune && (git checkout -f $BUILD_SCRIPTS_BRANCH || git checkout -t origin/$BUILD_SCRIPTS_BRANCH) && git pull --rebase'
       }
     }
     
@@ -214,7 +196,6 @@ pipeline {
     
     always {
       notifyEmail()
-      resetBuildScripts()
     }
   }
 }
