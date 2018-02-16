@@ -35,7 +35,7 @@ def isRelease() {
 }
 
 def isContinuousBuild() {
-    return (GIT_BRANCH ==~ /.*master.*/)
+    return GIT_BRANCH ==~ /.*\/master/
 }
 
 def stage_name_to_os(stage_name) {
