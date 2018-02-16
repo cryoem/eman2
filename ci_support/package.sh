@@ -16,8 +16,9 @@ export PYTHONUNBUFFERED=1
 mkdir -p ${OUTPUT_DIR} && cd ${OUTPUT_DIR}
 
 CONSTRUCT_YAML="${CONSTRUCT_YAML_DIR}/construct.yaml"
-CONDA_PREFIX_NEW=$(echo ${CONDA_PREFIX} | sed "s~^/\(.\)/~\1:/~")
-sed -i.bak "s~\(^.*file:///\)\(.*$\)~\1${CONDA_PREFIX_NEW}/conda-bld/~" ${CONSTRUCT_YAML}
+CONDA_ROOT_DIR="$(conda info --root)"
+CONDA_ROOT_DIR=${CONDA_ROOT_DIR//\\/\\\\}
+sed -i.bak "s~place_holder_conda_prefix~"${CONDA_ROOT_DIR}"~" ${CONSTRUCT_YAML}
 cat ${CONSTRUCT_YAML}
 constructor --clean -v --cache-dir=${HOME_DIR}/.conda/constructor
 constructor ${CONSTRUCT_YAML_DIR} -v --cache-dir=${HOME_DIR}/.conda/constructor
