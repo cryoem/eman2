@@ -58,10 +58,6 @@ def isRequestedBuildStage() {
     return (stage_name_to_os(STAGE_NAME) == SLAVE_OS && (CI_BUILD == "1" || buildStage[STAGE_NAME] == "1"))
 }
 
-def isRunCurrentStage() {
-    return isContinuousBuild() && isRequestedBuildStage()
-}
-
 def runJob() {
     if(isContinuousBuild()) {
         if(SLAVE_OS != 'win')
@@ -139,7 +135,7 @@ pipeline {
     
     stage('centos6') {
       when {
-        expression { isRunCurrentStage() }
+        expression { isRequestedBuildStage() }
       }
       
       steps {
@@ -149,7 +145,7 @@ pipeline {
     
     stage('centos7') {
       when {
-        expression { isRunCurrentStage() }
+        expression { isRequestedBuildStage() }
       }
       
       steps {
@@ -159,7 +155,7 @@ pipeline {
     
     stage('mac') {
       when {
-        expression { isRunCurrentStage() }
+        expression { isRequestedBuildStage() }
       }
       environment {
         EMAN_TEST_SKIP=1
@@ -172,7 +168,7 @@ pipeline {
     
     stage('win') {
       when {
-        expression { isRunCurrentStage() }
+        expression { isRequestedBuildStage() }
       }
       
       steps {
