@@ -30,7 +30,7 @@ def notifyEmail() {
     }
 }
 
-def isRelease() {
+def isReleaseBuild() {
     return GIT_BRANCH ==~ /.*\/release.*/
 }
 
