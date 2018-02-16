@@ -33,8 +33,8 @@ For structures that have symmetries:
     img_per_grp:: Number of projections: Specify the number of images from the angular neighbourhood that will be used to estimate 2D variance for each projection data. The larger the number the less noisy the estimate, but the lower the resolution. Usage of large number also results in rotational artifacts in variances that will be visible in 3D variability volume. (default 10)
     sym:: Point-group symmetry: If the structure has symmetry higher than c1, the command requires symmetrization of the dataset, using --symmetrize option, before computing 3D variability. (default c1)
     CTF:: Use CTF: If set to true, the a CTF correction will be applied using the parameters found in the image headers. (default False value reversed in GUI) 
-    fl:: Low-pass filter frequency [1/Pixel]: Stop-band frequency of the low-pass filter to be applied to the images prior to variability calculation. Specify with absolute frequency. By default, no filtering. (default 0.0)
-    aa:: Low-pass filter fall-off [1/Pixel]: Fall-off width of the low-pass filter to be applied to the images prior to variability calculation. Specify with absolute frequency. By default, no filtering. (default 0.0) 
+    fl:: Low-pass filter frequency [1/Pixel]: Stop-band frequency of the low-pass filter to be applied to the images prior to variability calculation. Specify it in absolute frequency (> 0.0 and <= 0.5). By default, no filtering. (default 0.0)
+    aa:: Low-pass filter fall-off [1/Pixel]: Fall-off width of the low-pass filter to be applied to the images prior to variability calculation. Specify it in absolute frequency (> 0.0 and <= 0.5). 0.01 works in most of cases. Effective only with --fl > 0.0 and --aa > 0.0 has to be specified. (default 0.0) 
     symmetrize:: Symmetrise input stack: Prepare input stack for handling symmetry. Please skip this preparation step if the structure is asymmetrical (i.e. c1), since it is required only when the structure has internal symmetry. Notice this step can be run with only one CPU and there is no MPI version for it. (default False)
 
     * The remaining parameters are optional.

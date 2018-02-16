@@ -41,13 +41,16 @@ from math import *
 import os
 import sys
 
+
 def stacktoanim(stack,outpath,ntk):
 	"""Takes an input list of images and and output pathname. Converts each image to a standard 2D image
 	format, then produces a GIF animation. Requires functional ImageMagick installation."""
+	global contrast
+
 	for i in range(ntk+1):
 		im=stack[i]
-		im.set_attr("render_min",im.get_attr("mean")-im.get_attr("sigma")*3.0)
-		im.set_attr("render_max",im.get_attr("mean")+im.get_attr("sigma")*3.0)
+		im.set_attr("render_min",im.get_attr("mean")-im.get_attr("sigma")*3.0/contrast)
+		im.set_attr("render_max",im.get_attr("mean")+im.get_attr("sigma")*3.0/contrast)
 		im.write_image("tmp_img-%03d.pgm"%i)
 		print("%d. %1.3f - %1.3f"%(i,im.get_attr("render_min"),im.get_attr("render_max")))
 	os.system("convert -delay 10 tmp_img-*.pgm %s "%outpath)
@@ -65,6 +68,7 @@ def main():
 
 	parser.add_argument("--scale", "-S", type=float, help="Scale factor",default=1.0)
 	parser.add_argument("--pingpong",action="store_true",default=False,help="Cycle through the sequence forwards then backwards")
+	parser.add_argument("--contrast","-C", type=float, help="Relative setting. Try 0.75 if images too bright. Default 1.0 ",default=1.0)
 	parser.add_argument("--last","-M", type=int, help="Number of last image to use",default=0)
 #	parser.add_argument("--mode",type=str,help="centering mode 'modeshift', 'censym' or 'region,<x>,<y>,<clipsize>,<alisize>",default="censym")
 #	parser.add_argument("--twopass",action="store_true",default=False,help="Skip automatic tilt axis location, use fixed angle from x")
@@ -73,6 +77,8 @@ def main():
 	
 	(options, args) = parser.parse_args()
 	if len(args)<2 : parser.error("Input and output files required")
+	global contrast
+	contrast=options.contrast
 	
 	a=EMData.read_images(args[0])
 	if options.last>0 and options.last<len(a): ntk=options.last

@@ -1,5 +1,5 @@
 = Name =
-sxviper - Initial 3D Model - VIPER: ''ab initio'' 3D structure determination using Validation of Individual Parameter Reproducibility (VIPER). Designed to determine a validated initial model using a small set of class averages produced by [[sxisac|ISAC]].
+sxviper - Initial 3D Model - VIPER: ''ab initio'' 3D structure determination using Validation of Individual Parameter Reproducibility (VIPER). Designed to determine a validated initial model using a small set of class averages produced by [[sxisac2|ISAC2]].
 
 
 = Usage =
@@ -27,10 +27,11 @@ Since VIPER makes use of group of processors working together, it is important f
 
 
 == Input ==
-    stack:: Input images stack: A small set of Class averages produced by ISAC. (default required string)
+    stack:: Input images stack: A small set of class averages produced by ISAC2. (default required string)
 
-    radius:: Target particle radius [Pixels]: Use the same value as in ISAC. It has to be less than half the box size. (default 29)
+    radius:: Target particle radius [Pixels]: Use the same value as in ISAC2. It has to be less than half the box size. (default 29)
     sym:: Point-group symmetry: (default c1)
+    moon_elimination:: Eliminate disconnected regions: Used to removed disconnected pieces from the model. It requires as argument a comma separated string with the mass in KDa and the pixel size. (default none)
 
     * The remaining parameters are optional.
     ir:: Inner rotational search radius [Pixels]: (default 1)
@@ -43,7 +44,6 @@ Since VIPER makes use of group of processors working together, it is important f
     maxit1:: Maximum iterations - GA step: (default 400)
     maxit2:: Maximum iterations - Finish step: (default 50)
     mask3D:: 3D mask: (default sphere)
-    moon_elimination:: Eliminate disconnected regions: Used to removed disconnected pieces from the model. It requires as argument a comma separated string with the mass in KDa and the pixel size. (default none)
     L2threshold:: GA stop threshold: Defines the maximum relative dispersion of volumes' L2 norms. (default 0.03)
     ref_a:: Projection generation method: Method for generating the quasi-uniformly distributed projection directions. S- Saff algorithm, or P - Penczek 1994 algorithm. (default S)
     nruns:: GA population size: This defines the number of quasi-independent volumes generated. (default 6)

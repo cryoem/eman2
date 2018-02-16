@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -31,14 +29,12 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 #
-
 # $Id$
-
 # todo: verify the processors who have the same names in proc3d
 #	   and proc2d have the same implementation
 #
 # todo: lp, hp, tlp vs apix
-
+from __future__ import print_function
 from EMAN2 import *
 from optparse import OptionParser
 import sys
@@ -92,64 +88,67 @@ def main():
 """
 	parser = OptionParser(usage)
 
-	parser.add_option("--medianshrink", metavar="n", type="int", action="append",
-								help="Downsamples the volume by a factor of n by computing the local median")
-	parser.add_option("--meanshrink", metavar="n", type="int", action="append",
-								help="Downsamples the volume by a factor of n by computing the local average")
-	parser.add_option("--meanshrinkbig", metavar="n", type="int", default=0,
-								help="Downsamples the volume by a factor of n without reading the entire volume into RAM. The output file (after shrinking) must fit into RAM. If specified, this must be the ONLY option on the command line. Any other options will be ignored. Output data type will match input data type. Works only on single image files, not stack files.")
-	parser.add_option("--fouriershrink", metavar="n", type=float, action="append", help="Reduce an image size by an arbitrary scaling factor by clipping in Fourier space. eg - 2 will reduce image size to 1/2.")
-
-#    parser.add_option("--tomoshrink", metavar="n", type="int", action="append",
-#                                help="Mean shrinks the image but is careful of memory - reads small pixel blocks from disk and slowly builds up the result")
-	parser.add_option("--scale", metavar="n", type="float", action="append", help="Rescales the data in the image by 'n', opposite behavior of 'shrink' above. Scaling is done by interpolation in real-space. Box size unchanged. See '--clip'")
-	parser.add_option("--sym", dest = "sym", action="append", help = "Symmetry to impose - choices are: c<n>, d<n>, h<n>, tet, oct, icos")
-	parser.add_option("--averager", type="string", default="mean", help="Averager used for --average and --sym options")
-	parser.add_option("--clip", metavar="x[,y,z[,xc,yc,zc]]", type='string', action="callback", callback=intvararg_callback, help="Make the output have this size by padding/clipping. 1, 3 or 6 arguments. ")
-	parser.add_option("--fftclip", metavar="x, y, z", type="string", action="callback", callback=floatvararg_callback, help="Make the output have this size, rescaling by padding FFT.")
-	parser.add_option("--process", metavar="processor_name:param1=value1:param2=value2", type="string", action="append", help="apply a processor named 'processorname' with all its parameters/values.")
-	parser.add_option("--apix", type="float", help="A/pixel for S scaling")
-	parser.add_option("--origin", metavar="x, y, z", type="string", action="callback", callback=floatvararg_callback, help="Set the coordinates for the pixel (0,0,0) for Chimera. THIS HAS NO IMPACT ON IMAGE PROCESSING !")
-	parser.add_option("--mult", metavar="f", type="float", help="Scales the densities by a fixed number in the output")
-	parser.add_option("--multfile", type="string", action="append", help="Multiplies the volume by another volume of identical size. This can be used to apply masks, etc.")
-	parser.add_option("--matchto", type="string", action="append", help="Match filtration of input volume to this specified volume.")
-	parser.add_option("--outmode",type="string", default="float", help="All EMAN2 programs write images with 4-byte floating point values when possible by default. This allows specifying an alternate format when supported (int8, int16, int32, uint8, uint16, uint32). Values are rescaled to fill MIN-MAX range.")
-	parser.add_option("--outnorescale",action="store_true",default=False,help="If specified, floating point values will not be rescaled when writing data as integers. Values outside of range are truncated.")
-	parser.add_option("--mrc16bit",  action="store_true", default=False, help="(deprecated, use --outmode instead) output as 16 bit MRC file")
-	parser.add_option("--mrc8bit",  action="store_true", default=False, help="(deprecated, use --outmode instead) output as 8 bit MRC file")
-
 	parser.add_option("--add", metavar="f", type="float", help="Adds a constant 'f' to the densities")
 	parser.add_option("--addfile", type="string", action="append", help="Adds the volume to another volume of identical size")
+	parser.add_option("--align", metavar="aligner_name:param1=value1:param2=value2", type="string", action="append", help="Align input map to reference specified with --alignref. As with processors, a sequence of aligners is permitted")
+	parser.add_option("--alignctod", type=str ,action="append", help="Rotates a map already aligned for C symmetry so the best 2-fold is positioned for specified D symmetry. Does not impose specified symmetry.")
+	parser.add_option("--alignref", metavar="filename", type="string", default=None, help="Alignment reference volume. May only be specified once.")
+	parser.add_option("--apix", type="float", default=None, help="Default=None (not used). A/pixel for S scaling. Also sets/resets the apix of an image to this value.")
+	parser.add_option("--append", action="store_true", help="Append output image, i.e., do not write inplace.")
+	parser.add_option("--average", action="store_true", help="Computes the average of a stack of 3D volumes", default=False)	
+	parser.add_option("--averager", type="string", default="mean", help="Averager used for --average and --sym options")
+
 	parser.add_option("--calcfsc", type="string", metavar="with input", help="Calculate a FSC curve between two models. Output is a txt file. This option is the name of the second volume.")
-	parser.add_option("--filtertable", type="string", action="append",help="Applies a 2 column (S,amp) file as a filter in Fourier space, assumed 0 outside the defined range.")
 	parser.add_option("--calcsf", type="string", metavar="outputfile", help="Calculate a radial structure factor. Must specify apix.")
 	parser.add_option("--calcradial", type="int",default=-1,help="Calculate the radial density by shell. Output file becomes a text file. 0 - mean amp, 2 - min, 3 - max, 4 - sigma")
-	parser.add_option("--setsf", type="string", metavar="inputfile", help="Set the radial structure factor. Must specify apix.")
-	parser.add_option("--tophalf", action="store_true", help="The output only keeps the top half map")
-	parser.add_option("--inputto1", action="store_true",help="All voxels in the input file are set to 1 after reading. This can be used with mask.* processors to produce a mask file of the correct size.")
-	parser.add_option("--icos5fhalfmap", action="store_true", help="The input is the icos 5f top half map generated by the 'tophalf' option")
-	parser.add_option("--outtype", metavar="image-type", type="string", help="Set output image format, mrc, imagic, hdf, etc")
+	parser.add_option("--clip", metavar="x[,y,z[,xc,yc,zc]]", type='string', action="callback", callback=intvararg_callback, help="Make the output have this size by padding/clipping. 1, 3 or 6 arguments. ")
+
+	parser.add_option("--fftclip", metavar="x, y, z", type="string", action="callback", callback=floatvararg_callback, help="Make the output have this size, rescaling by padding FFT.")
+	parser.add_option("--filtertable", type="string", action="append",help="Applies a 2 column (S,amp) file as a filter in Fourier space, assumed 0 outside the defined range.")
 	parser.add_option("--first", metavar="n", type="int", default=0, help="the first image in the input to process [0 - n-1])")
-	parser.add_option("--trans", metavar="dx,dy,dz", type="string", action="append", help="Translate map by dx,dy,dz ")
-	parser.add_option("--resetxf",action="store_true",help="Reset an existing transform matrix to the identity matrix")
-	parser.add_option("--align", metavar="aligner_name:param1=value1:param2=value2", type="string", action="append", help="Align input map to reference specified with --alignref. As with processors, a sequence of aligners is permitted")
-	parser.add_option("--ralignzphi", type=str ,action="append", help="Refine Z alignment within +-10 pixels  and phi +-15 degrees (for C symmetries), specify name of alignment reference here not with --alignref")
-	parser.add_option("--alignref", metavar="filename", type="string", default=None, help="Alignment reference volume. May only be specified once.")
-	parser.add_option("--alignctod", type=str ,action="append", help="Rotates a map already aligned for C symmetry so the best 2-fold is positioned for specified D symmetry. Does not impose specified symmetry.")
+	parser.add_option("--fouriershrink", metavar="n", type=float, action="append", help="Reduce an image size by an arbitrary scaling factor by clipping in Fourier space. eg - 2 will reduce image size to 1/2.")
 
-	parser.add_option("--rot",type=str,metavar="az,alt,phi or convention:par=val:...",help="Rotate map. Specify az,alt,phi or convention:par=val:par=val:...  eg - mrc:psi=22:theta=15:omega=7", action="append",default=None)
-
-	parser.add_option("--icos5to2",action="store_true",help="Rotate an icosahedral map from 5-fold on Z (EMAN standard) to 2-fold on Z (MRC standard) orientation")
 	parser.add_option("--icos2to5",action="store_true",help="Rotate an icosahedral map from 2-fold on Z (MRC standard) to 5-fold on Z (EMAN standard)  orientation")
+	parser.add_option("--icos5fhalfmap", action="store_true", help="The input is the icos 5f top half map generated by the 'tophalf' option")
+	parser.add_option("--icos5to2",action="store_true",help="Rotate an icosahedral map from 5-fold on Z (EMAN standard) to 2-fold on Z (MRC standard) orientation")
+	parser.add_option("--inputto1", action="store_true",help="All voxels in the input file are set to 1 after reading. This can be used with mask.* processors to produce a mask file of the correct size.")
+	
 	parser.add_option("--last", metavar="n", type="int", default=-1, help="the last image in the input to process")
-	parser.add_option("--swap", action="store_true", help="Swap the byte order", default=False)
-	parser.add_option("--average", action="store_true", help="Computes the average of a stack of 3D volumes", default=False)
-	parser.add_option("--append", action="store_true", help="Append output image, i.e., do not write inplace.")
+	
+	parser.add_option("--matchto", type="string", action="append", help="Match filtration of input volume to this specified volume.")	
+	parser.add_option("--medianshrink", metavar="n", type="int", action="append", help="Downsamples the volume by a factor of n by computing the local median")
+	parser.add_option("--meanshrink", metavar="n", type="int", action="append", help="Downsamples the volume by a factor of n by computing the local average")
+	parser.add_option("--meanshrinkbig", metavar="n", type="int", default=0, help="Downsamples the volume by a factor of n without reading the entire volume into RAM. The output file (after shrinking) must fit into RAM. If specified, this must be the ONLY option on the command line. Any other options will be ignored. Output data type will match input data type. Works only on single image files, not stack files.")
+	parser.add_option("--mrc16bit",  action="store_true", default=False, help="(deprecated, use --outmode instead) output as 16 bit MRC file")
+	parser.add_option("--mrc8bit",  action="store_true", default=False, help="(deprecated, use --outmode instead) output as 8 bit MRC file")	
+	parser.add_option("--mult", metavar="f", type="float", help="Scales the densities by a fixed number in the output")
+	parser.add_option("--multfile", type="string", action="append", help="Multiplies the volume by another volume of identical size. This can be used to apply masks, etc.")
+	
+	parser.add_option("--origin", metavar="x, y, z", type="string", action="callback", callback=floatvararg_callback, help="Set the coordinates for the pixel (0,0,0) for Chimera. THIS HAS NO IMPACT ON IMAGE PROCESSING !")	
+	parser.add_option("--outmode",type="string", default="float", help="All EMAN2 programs write images with 4-byte floating point values when possible by default. This allows specifying an alternate format when supported (int8, int16, int32, uint8, uint16, uint32). Values are rescaled to fill MIN-MAX range.")
+	parser.add_option("--outnorescale",action="store_true",default=False,help="If specified, floating point values will not be rescaled when writing data as integers. Values outside of range are truncated.")
+	parser.add_option("--outtype", metavar="image-type", type="string", help="Set output image format, mrc, imagic, hdf, etc")
+
 	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
-	parser.add_option("--unstacking", action="store_true", help="Process a stack of 3D images, then output a a series of numbered single image files", default=False)
-	parser.add_option("--tomoprep", action="store_true", help="Produces a special HDF file designed for rapid interactive tomography annotation. This option should be used alone.", default=False)
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_option("--process", metavar="processor_name:param1=value1:param2=value2", type="string", action="append", help="apply a processor named 'processorname' with all its parameters/values.")	
+
+	parser.add_option("--resetxf",action="store_true",help="Reset an existing transform matrix to the identity matrix")
+	parser.add_option("--ralignzphi", type=str ,action="append", help="Refine Z alignment within +-10 pixels  and phi +-15 degrees (for C symmetries), specify name of alignment reference here not with --alignref")
+	parser.add_option("--rot",type=str,metavar="az,alt,phi or convention:par=val:...",help="Rotate map. Specify az,alt,phi or convention:par=val:par=val:...  eg - mrc:psi=22:theta=15:omega=7", action="append",default=None)
+	
+	parser.add_option("--scale", metavar="n", type="float", action="append", help="Rescales the data in the image by 'n', opposite behavior of 'shrink' above. Scaling is done by interpolation in real-space. Box size unchanged. See '--clip'")
+	parser.add_option("--setsf", type=str, metavar="inputfile", help="Set the radial structure factor. Must specify apix.")
 	parser.add_option("--step",type=str,default=None,help="Specify <init>,<step>. Processes only a subset of the input data. For example, 0,2 would process only the even numbered particles")
+	parser.add_option("--swap", action="store_true", help="Swap the byte order", default=False)
+	parser.add_option("--sym", dest = "sym", action="append", help = "Symmetry to impose - choices are: c<n>, d<n>, h<n>, tet, oct, icos")
+
+	parser.add_option("--tomoprep", action="store_true", help="Produces a special HDF file designed for rapid interactive tomography annotation. This option should be used alone.", default=False)
+	parser.add_option("--tophalf", action="store_true", help="The output only keeps the top half map")	
+	parser.add_option("--trans", metavar="dx,dy,dz", type="string", action="append", help="Translate map by dx,dy,dz ")
+
+	parser.add_option("--unstacking", action="store_true", help="Process a stack of 3D images, then output a a series of numbered single image files", default=False)
+
+	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	append_options = ["clip", "fftclip", "process", "filter", "filtertable",  "meanshrink", "medianshrink", "fouriershrink", "scale", "sym", "multfile", "addfile", "trans", "rot", "align","ralignzphi","alignctod"]
 
@@ -321,27 +320,11 @@ def main():
 			pass
 
 		avg.write_image(outfile,0)
-		sys.exit()
-
-
-		#ptcls = []
-		#for i in range(n0,n1+1,n2):
-		#	ptcls.append(EMData(infile,i))
-		#avg = sum(ptcls)/len(ptcls)
-		#try :
-		#	avg["ptcl_repr"]=sum([i["ptcl_repr"] for i in ptcls])
-		#except:
-		#	pass
-
-#		avg.process_inplace('normalize.edgemean')
-		#avg.write_image(outfile,0)
-		#sys.exit()
-
+		sys.exit(1)
 
 	index_d = {}
 	for append_option in append_options:
 		index_d[append_option] = 0
-
 
 	if(n0 < 0 or n0 > nimg):
 		print("Your first index is out of range, changed to zero")
@@ -356,7 +339,7 @@ def main():
 	# Steve:  why are all of the images being read at once !?!?. This is nuts
 	# modified so for multiple volumes, returns header-only
 	
-	datlst = parse_infile(infile, n0, n1, n2)
+	datlst = parse_infile(infile, n0, n1, n2, options.apix)
 	
 	#datlst = parse_infile(infile, indxs)
 
@@ -775,7 +758,7 @@ def main():
 
 
 #parse_file() will read the input image file and return a list of EMData() object
-def parse_infile(infile, first, last, step):
+def parse_infile(infile, first, last, step, apix=None):
 	#def parse_infile(infile, indxs):
 	if infile[0]==":" :
 		parm=infile.split(":")
@@ -797,6 +780,11 @@ def parse_infile(infile, first, last, step):
 		x = d.get_xsize()
 		y = d.get_ysize()
 		z = d.get_zsize()
+		
+		apixdata = d['apix_x']
+		if not apix:
+			apix = apixdata
+
 		if (z == 1):
 			print("the images are 2D - I will now make a 3D image out of the 2D images")
 			data = []
@@ -805,6 +793,10 @@ def parse_infile(infile, first, last, step):
 			for i in range(0, nimg):
 				d.read_image(infile, i)
 				return_data.insert_clip(d, (0, 0, i))
+			if apix:
+				return_data['apix_x']=apix
+				return_data['apix_y']=apix
+				return_data['apix_z']=apix
 			data.append(return_data)
 			return data
 		else:

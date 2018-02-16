@@ -185,7 +185,7 @@ def get_helix_from_coords(micrograph, x1, y1, x2, y2, width):
 	tr.set_rotation({"type":"2d", "alpha":rot_angle})
 	helix_dimensions = ( int(round(width)), int(round(length)), 1 )
 	helix = micrograph.get_rotated_clip( tr, helix_dimensions )
-	helix["ptcl_helix_coords"] = (x1, y1, x2, y2, width)
+	helix["ptcl_helix_coords"] = (int(x1), int(y1), int(x2), int(y2), width)
 	helix["xform.align2d"] = tr
 	helix["xform.projection"] = Transform()
 	return helix
@@ -224,7 +224,7 @@ def get_particle_centroids(helix_coords, px_overlap, px_length, px_width):
 	ptcl_coords = []
 	while l < helix_length - px_length/2.0 + px_step:
 		(x,y) = (x1 + l*l_uvect[0], y1 + l*l_uvect[1])
-		ptcl_coords.append((x,y))
+		ptcl_coords.append((int(x),int(y)))
 		l += px_step
 
 	return ptcl_coords
@@ -234,7 +234,7 @@ def get_rotated_particles( micrograph, helix_coords, px_overlap = None, px_lengt
 	Gets the overlapping square/rectangular "particles" with "lengths" (could be less than "widths")
 	parallel to the helical axis. They are then rotated so the "lengths" are vertical.
 	@param micrograph: EMData object for the micrograph
-	@param helix_coords: (x1,y1,x2,y2,width) tuple for a helix
+	@param helix_coords: (x1,y1,x2,y2,width) list for a helix
 	@param px_overlap: length of overlap in pixels of the rectangular particles, measured along the line connecting particle centroids, defaults to 0.9*px_length
 	@param px_length: distance in pixels between the centroids of two adjacent particles, defaults to the width of the helix
 	@param px_width: width of the particles in pixels, defaults to px_length
@@ -314,8 +314,8 @@ def get_rotated_particles( micrograph, helix_coords, px_overlap = None, px_lengt
 			#cut it
 			ptcl = ptcl + mean1
 			ptcl = Util.window( ptcl, side1, side1, 1, 0, 0, 0)
-		ptcl["ptcl_helix_coords"] = tuple(helix_coords)
-		ptcl["ptcl_source_coord"] = tuple(centroid)
+		ptcl["ptcl_helix_coords"] = list(helix_coords)
+		ptcl["ptcl_source_coord"] = list(centroid)
 		ptcl["xform.align2d"] = tr
 		ptcl["xform.projection"] = Transform()
 		ptcl["ptcl_source_image"]=mic_name
@@ -327,7 +327,7 @@ def get_unrotated_particles(micrograph, helix_coords, px_overlap = None, px_leng
 	"""
 	Gets the image data for each particle, without first rotating the helix and its corresponding particles to be vertical.
 	@param micrograph: EMData object that holds the image data for the helix
-	@param helix_coords: the (x1, y1, x2, y2, width) tuple (in pixels) that specifies the helix on the micrograph
+	@param helix_coords: the (x1, y1, x2, y2, width) list (in pixels) that specifies the helix on the micrograph
 	@param px_overlap: the number of pixels of overlap between consecutive particles, overlap measured along the long-axis of the helix, defaults to 90% of max(px_length, px_width)
 	@param px_length: the distance between consecutive particle midpoints in pixels, chosen to correspond with rotated case, defaults to helix width
 	@param px_width: corresponds to particle width in the rotated case, in the unrotated case only used to set length of the square to max(px_width, px_length), defaults to px_length
@@ -351,8 +351,8 @@ def get_unrotated_particles(micrograph, helix_coords, px_overlap = None, px_leng
 	tr = Transform({"type":"eman","alt":90,"phi":rot_angle}) #How to rotate a cylinder that is oriented along the z-axis to align it along the boxed helix
 	for centroid in centroids:
 		ptcl= micrograph.get_clip( Region(centroid[0]-side/2.0, centroid[1]-side/2.0, side, side) )
-		ptcl["ptcl_helix_coords"] = tuple(helix_coords)
-		ptcl["ptcl_source_coord"] = tuple(centroid)
+		ptcl["ptcl_helix_coords"] = list(helix_coords)
+		ptcl["ptcl_source_coord"] = list(centroid)
 		ptcl["xform.projection"] = tr
 		ptcl["xform.align2d"] = Transform()
 		ptcl["ptcl_source_image"]=mic_name
@@ -367,7 +367,7 @@ def load_helix_coords(coords_filepath, specified_width=None):
 		x2-r    y2-r    w    w    -2
 	@param coords_filepath: file path to a tab-delimited text file specifying helix coordinates as in the EMAN1 *.box format
 	@param specified_width: force all helix coordinates to have the specified width
-	@return a list of tuples [(x0, x1, y1, y2, width), ...]
+	@return a list of lists [(x0, x1, y1, y2, width), ...]
 	"""
 	data = []
 	datum = [None]*5
@@ -391,7 +391,7 @@ def load_helix_coords(coords_filepath, specified_width=None):
 			datum[3] = line[1] + r
 			w = None
 			r = None
-			data.append(tuple(datum))
+			data.append(list(datum))
 			datum = [None]*5
 
 	return data
@@ -401,7 +401,7 @@ def save_helix_coords(coords_list, output_filepath, helix_width = None):
 	Uses the EMAN1 *.box file format (r is half the width (w) of the boxes)
 		x1-r    y1-r    w    w    -1
 		x2-r    y2-r    w    w    -2
-	@param coords_list: a list of tuples (x1, y1, x2, y2, width), with each tuple corresponding to a helix
+	@param coords_list: a list of lists (x1, y1, x2, y2, width), with each list corresponding to a helix
 	@param output_filepath: the directory and file name in which to save the coordinates
 	@param helix_width: if specified, it replaces the widths in coords_list as the width for each helix
 	"""
@@ -450,8 +450,8 @@ def save_particle_coords(helix_particle_coords_dict, output_filepath, micrograph
 	out_file.write("#particle length: " + str(ptcl_length) + "\n")
 	out_file.write("#particle width: " + str(ptcl_width) + "\n")
 	for helix_coords in helix_particle_coords_dict.keys():
-		out_file.write("#helix: " + str(tuple(helix_coords[0:2])) + "," + str(tuple(helix_coords[2:4])) + "," + str(helix_coords[4]) + "\n")
-		particle_list = helix_particle_coords_dict[helix_coords]
+		out_file.write("#helix: " + str(list(helix_coords[0:2])) + "," + str(list(helix_coords[2:4])) + "," + str(helix_coords[4]) + "\n")
+		particle_list = helix_particle_coords_dict[tuple(helix_coords)]
 		for ptcl_center in particle_list:
 			out_file.write(str(ptcl_center[0]) + "\t" + str(ptcl_center[1]) + "\n")
 	out_file.close()
@@ -579,7 +579,7 @@ def db_load_helix_coords(micrograph_filepath, coords_filepath, keep_current_boxe
 	if keep_current_boxes:
 		db_coords = db_get_item(micrograph_filepath, "helixboxes")
 		if specified_width:
-			db_coords = [tuple( list(coords[:4]) + [specified_width] ) for coords in db_coords]
+			db_coords = [list( list(coords[:4]) + [specified_width] ) for coords in db_coords]
 		for coords in coords_list:
 			if not coords in db_coords:
 				db_coords.append(coords)
@@ -1148,7 +1148,7 @@ if ENABLE_GUI:
 				self.main_image.add_shape(key, emshape)
 				helix = get_helix_from_coords(self.main_image.get_data(), *coords)
 				helix["ptcl_source_image"] = self.micrograph_filepath
-				self.helices_dict[coords] = helix
+				self.helices_dict[tuple(coords)] = helix
 				self.add_box_to_db(coords)
 
 			self.main_image.updateGL()
@@ -1162,8 +1162,8 @@ if ENABLE_GUI:
 			"""
 			self.edit_mode = None #Values are in {None, "new", "move", "2nd_point", "1st_point", "delete"}
 			self.current_boxkey = None
-			self.initial_helix_box_data_tuple = None
-			self.click_loc = None #Will be (x,y) tuple
+			self.initial_helix_box_data_list = None
+			self.click_loc = None #Will be (x,y) list
 
 			if not self.main_image:
 				self.main_image = EMImage2DWidget(application=self.app)
@@ -1274,20 +1274,14 @@ if ENABLE_GUI:
 			#resize current boxes
 			#TODO: this is similar to part of self.mouse_up ==> make both methods call a function with common code
 			shapes = self.main_image.get_shapes() #an EMShapeDict of EMShapes
+			newcoords=[]
 			for box_key in shapes.keys():
-				old_emshape = shapes.get(box_key)
-				old_coords = old_emshape.getShape()[4:9]
-				new_coords = (old_coords[0], old_coords[1], old_coords[2], old_coords[3], width)
-				helix = get_helix_from_coords( self.main_image.get_data(), *new_coords )
-				helix["ptcl_source_image"] = self.micrograph_filepath
-
-				self.remove_box_from_db(old_coords)
-				self.add_box_to_db(new_coords)
-				self.helices_dict.pop(tuple(old_coords))
-				self.helices_dict[new_coords] = helix
-
-				new_emshape = EMShape( ["rectline", self.color[0], self.color[1], self.color[2], new_coords[0], new_coords[1], new_coords[2], new_coords[3], new_coords[4], 2] )
-				shapes[box_key] = new_emshape
+				shape=shapes.get(box_key)
+				shape[9]=width
+				newcoords.append(shape[4:9])
+				
+			db = js_open_dict(info_name(self.micrograph_filepath))
+			db["helixboxes"]=newcoords
 
 			self.main_image.shapechange=1
 			self.main_image.updateGL()
@@ -1366,7 +1360,7 @@ if ENABLE_GUI:
 			db = js_open_dict(info_name(self.micrograph_filepath))
 			try: boxList = db["helixboxes"] #Get a copy of the db in memory
 			except: boxList=[]
-			boxList.append(tuple(box_coords))
+			boxList.append(list(box_coords))
 			db["helixboxes"] = boxList #Needed to save changes to disk
 		def remove_box_from_db(self, box_coords):
 			"""
@@ -1377,7 +1371,7 @@ if ENABLE_GUI:
 			db = js_open_dict(info_name(self.micrograph_filepath))
 
 			boxList = db["helixboxes"] #Get a copy of the db in memory
-			boxList.remove(tuple(box_coords))
+			boxList.remove(list(box_coords))
 			db["helixboxes"] = boxList #Needed to save changes to disk
 
 		def mouse_down(self, event, click_loc):
@@ -1440,7 +1434,7 @@ if ENABLE_GUI:
 
 			if self.edit_mode == "new" or not self.edit_mode:
 				self.current_boxkey = None
-				self.initial_helix_box_data_tuple = None
+				self.initial_helix_box_data_list = None
 			elif self.edit_mode == "delete":
 				box_coords = self.main_image.get_shapes().get(box_key).getShape()[4:9]
 				self.remove_box_from_db(box_coords)
@@ -1453,7 +1447,7 @@ if ENABLE_GUI:
 				self.micrograph_table.item(row,col).setText(str(num_boxes-1))
 			else:
 				self.current_boxkey = box_key
-				self.initial_helix_box_data_tuple = tuple( self.main_image.get_shapes().get(box_key).getShape()[4:9] )
+				self.initial_helix_box_data_list = list( self.main_image.get_shapes().get(box_key).getShape()[4:9] )
 
 		def mouse_drag(self, event, cursor_loc):
 			"""
@@ -1467,16 +1461,16 @@ if ENABLE_GUI:
 				if self.edit_mode == "new":
 					if self.click_loc[0] != cursor_loc[0] or self.click_loc[1] != cursor_loc[1]: #Don't make a zero-sized box
 						self.current_boxkey = self.generate_emshape_key()
-						emshape_tuple = ( "rectline",self.color[0], self.color[1], self.color[2],
+						emshape_list = ( "rectline",self.color[0], self.color[1], self.color[2],
 											self.click_loc[0], self.click_loc[1], cursor_loc[0], cursor_loc[1], self.get_width(), 2 )
 
-						emshape_box = EMShape(emshape_tuple)
+						emshape_box = EMShape(emshape_list)
 						self.main_image.add_shape(self.current_boxkey, emshape_box)
 						self.main_image.updateGL()
-						self.initial_helix_box_data_tuple = emshape_tuple[4:9]
+						self.initial_helix_box_data_list = emshape_list[4:9]
 						self.edit_mode = "2nd_point"
 
-						helix = get_helix_from_coords( self.main_image.get_data(), *self.initial_helix_box_data_tuple )
+						helix = get_helix_from_coords( self.main_image.get_data(), *self.initial_helix_box_data_list )
 						helix["ptcl_source_image"] = self.micrograph_filepath
 						self.display_helix(helix)
 						(row, col) = (self.micrograph_table.currentRow(), 1)
@@ -1486,9 +1480,9 @@ if ENABLE_GUI:
 				elif self.edit_mode == "delete":
 					pass
 				else:
-					first = self.initial_helix_box_data_tuple[:2]
-					second = self.initial_helix_box_data_tuple[2:4]
-					width = self.initial_helix_box_data_tuple[4]
+					first = self.initial_helix_box_data_list[:2]
+					second = self.initial_helix_box_data_list[2:4]
+					width = self.initial_helix_box_data_list[4]
 					move = (cursor_loc[0] - self.click_loc[0], cursor_loc[1]-self.click_loc[1])
 
 					if self.edit_mode == "move":
@@ -1507,7 +1501,7 @@ if ENABLE_GUI:
 					self.main_image.shapechange=1
 					self.main_image.updateGL()
 
-					box_coords = tuple( box.getShape()[4:9] )
+					box_coords = list( box.getShape()[4:9] )
 					helix = get_helix_from_coords( self.main_image.get_data(), *box_coords )
 					helix["ptcl_source_image"] = self.micrograph_filepath
 					self.display_helix(helix)
@@ -1522,15 +1516,15 @@ if ENABLE_GUI:
 			"""
 
 			if self.current_boxkey and self.edit_mode != "delete":
-				if self.initial_helix_box_data_tuple in self.helices_dict:
-					self.helices_dict.pop(self.initial_helix_box_data_tuple)
-				if self.initial_helix_box_data_tuple in self.get_db_item("helixboxes"):
-					self.remove_box_from_db(self.initial_helix_box_data_tuple)
+				if tuple(self.initial_helix_box_data_list) in self.helices_dict:
+					self.helices_dict.pop(tuple(self.initial_helix_box_data_list))
+				if tuple(self.initial_helix_box_data_list) in self.get_db_item("helixboxes"):
+					self.remove_box_from_db(tuple(self.initial_helix_box_data_list))
 				box = self.main_image.get_shapes().get(self.current_boxkey)
-				box_coords = tuple( box.getShape()[4:9] )
+				box_coords = list( box.getShape()[4:9] )
 				helix = get_helix_from_coords( self.main_image.get_data(), *box_coords )
 				helix["ptcl_source_image"] = self.micrograph_filepath
-				self.helices_dict[box_coords] = helix
+				self.helices_dict[tuple(box_coords)] = helix
 
 				self.add_box_to_db(box_coords)
 				self.display_helix(helix)
@@ -1538,7 +1532,7 @@ if ENABLE_GUI:
 			self.click_loc = None
 			self.edit_mode = None
 			self.current_boxkey = None #We are done editing the box
-			self.initial_helix_box_data_tuple = None
+			self.initial_helix_box_data_list = None
 
 if __name__ == '__main__':
 	main()

@@ -282,7 +282,7 @@ def save_model(convnet, fname, options=None):
 			e=from_numpy(wi)
 			e.write_image(fname,k)
 			k+=1
-
+	print("Saving finished.")
 
 	
 def load_model(fname):

@@ -1155,28 +1155,20 @@ def get_sym(symmetry):
 	"""
 	get a list of point-group symmetry angles, symmetry="c3"
 	"""
-	RA   = Transform()
-	NTot = RA.get_nsym(symmetry)
-	angs = []
-	for j in xrange(NTot):
-		RNow  = RA.get_sym(symmetry, j)
-		RNowE = RNow.get_rotation('spider')
-		angs.append([RNowE['phi'], RNowE['theta'], RNowE['psi']])
-
-	return angs
+	from fundamentals import symclass
+	scl = symclass(symmetry)
+	return scl.symangles
 
 def get_symt(symmetry):
 	"""
 	get a list of point-group symmetry transformations, symmetry="c3"
 	"""
-
-	RA   = Transform()
-	NTot = RA.get_nsym(symmetry)
-	angs = []
-	for j in xrange(NTot):
-		angs.append(RA.get_sym(symmetry, j))
-
-	return angs
+	from fundamentals import symclass
+	scl = symclass(symmetry)
+	trans = []
+	for q in scl.symangles:
+		trans.append(Transform({"type":"spider","phi":q[0],"theta":q[1],"psi":q[2]}))
+	return trans
 
 def get_textimage(fname):
 	"""
@@ -3587,8 +3579,7 @@ def assign_projangles_slow(projangles, refangles):
 
 def nearest_many_full_k_projangles(reference_normals, angles, howmany = 1, sym_class=None):
 	# 
-	from utilities import getfvec
-	from utilities import angles_to_normals
+	from utilities import getfvec, angles_to_normals
 	#refnormal = normals[:]
 	assignments = [-1]*len(angles)
 	if( sym_class.sym[:2] == "c1"):
@@ -3602,29 +3593,6 @@ def nearest_many_full_k_projangles(reference_normals, angles, howmany = 1, sym_c
 
 	return assignments
 
-'''
-def Xnearest_many_full_k_projangles(reference_ang, angles, howmany = 1, sym="c1"):
-	# We assume angles can be on the list of normals
-	from utilities import getfvec
-	from utilities import angles_to_normals, symmetry_neighbors
-	#refnormal = normals[:]
-	assignments = [-1]*len(angles)
-	reference_normals = angles_to_normals(reference_ang)
-
-	if( sym == "c1"):
-		for i,q in enumerate(angles):
-			ref = getfvec(q[0],q[1])
-			assignments[i] = Util.nearest_fang_select(reference_normals, ref[0],ref[1],ref[2], howmany)
-	elif( sym[:1] == "c" or  sym[:1] == "d" ):
-		for i,q in enumerate(angles):
-			angles_sym_normals = angles_to_normals(symmetry_neighbors([q], sym))
-			assignments[i] = Util.nearest_fang_sym(angles_sym_normals, reference_normals, len(angles_sym_normals), howmany)
-	else:
-		ERROR("  ERROR:  symmetry not supported  "+sym,"nearest_many_full_k_projangles",1)
-		assignments = []
-
-	return assignments
-'''
 
 def nearestk_projangles(projangles, whichone = 0, howmany = 1, sym="c1"):
 	# In both cases mirrored should be treated the same way as straight as they carry the same structural information
@@ -3727,21 +3695,17 @@ def nearestk_projangles(projangles, whichone = 0, howmany = 1, sym="c1"):
 	return assignments
 
 
-def nearest_full_k_projangles(reference_ang, angles, howmany = 1, sym="c1"):
+def nearest_full_k_projangles(reference_ang, angles, howmany = 1, sym_class=None):
 	# We assume angles can be on the list of normals
-	from utilities import getfvec
-	from utilities import angles_to_normals, symmetry_neighbors
+	from utilities import getfvec, angles_to_normals
 	reference_normals = angles_to_normals(reference_ang)
 
-	if( sym == "c1"):
+	if( sym_class.sym[:2] == "c1"):
 		ref = getfvec(angles[0],angles[1])
 		assignments = Util.nearest_fang_select(reference_normals, ref[0],ref[1],ref[2], howmany)
-	elif( sym[:1] == "c" or  sym[:1] == "d" ):
-		angles_sym_normals = angles_to_normals(symmetry_neighbors([angles], sym))
-		assignments = Util.nearest_fang_sym(angles_sym_normals, reference_normals, len(angles_sym_normals), howmany)
 	else:
-		ERROR("  ERROR:  symmetry not supported  "+sym,"nearest_full_k_projangles",1)
-		assignments = []
+		ancordir = angles_to_normals(sym_class.symmetry_neighbors([angles[:3]]))
+		assignments = Util.nearest_fang_sym(ancordir, reference_normals, len(ancordir), howmany)
 
 	return assignments
 
@@ -4041,16 +4005,11 @@ def cone_vectors( normvectors, phi, tht, ant ):
 '''
 
 #  Wrappers for new angular functions
-def reduce_to_asymmetric_list(angles, symmetry):
-	temp = Util.reduce_to_asymmetric_list(angles, symmetry)
-	nt = len(angles[0])
-	return [[temp[l*nt+i] for i in xrange(nt)] for l in xrange(len(angles)) ]
-
 def angles_to_normals(angles):
 	temp = Util.angles_to_normals(angles)
 	return [[temp[l*3+i] for i in xrange(3)] for l in xrange(len(angles)) ]
-
-def symmetry_related(angles, symmetry):
+"""
+def symmetry_related(angles, symmetry):  # replace by s.symmetry_related
 	if( (symmetry[0] == "c") or (symmetry[0] == "d") ):
 		temp = Util.symmetry_related(angles, symmetry)
 		nt = len(temp)/3
@@ -4073,7 +4032,7 @@ def symmetry_related_normals(angles, symmetry):
 	for p in junk:
 		neighbors.append(p.get_matrix()[8:11])
 	return neighbors
-
+"""
 
 def symmetry_neighbors(angles, symmetry):
 	#  input is a list of lists  [[phi0,theta0,psi0],[phi1,theta1,psi1],...]
@@ -4567,6 +4526,9 @@ def lacos(x):
 	"""
 	from math import degrees, acos
 	return  degrees(acos(max(-1.0,min(1.0,x))))
+
+def mulvec(v1,v2):
+	return v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2]
 
 def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 	from utilities import getfvec
@@ -7009,17 +6971,34 @@ def search_lowpass(fsc):
 def angular_distribution(inputfile, options, output):
 	import numpy
 
-	print('Loading data')
+	#print('Loading data')
 	# Import data
 	listDType = [
 		('Phi', '<f8'),
 		('Theta', '<f8'),
 	]
-	arrData = numpy.genfromtxt(inputfile, dtype=listDType, usecols=(0, 1))
+	#arrData = numpy.genfromtxt(inputfile, dtype=listDType, usecols=(0, 1))
+	# The following two lines are in case there is no symmetry option in sxprocess, to be simiplified
+	try: sym = options.symmetry
+	except: sym = "c1"
+	from fundamentals import symclass
+	from utilities import read_text_row
+	if( sym == "c0" ):
+		angs = read_text_row(inputfile)
+	else:
+		scs = symclass(sym)
+		angs = scs.reduce_anglesets(read_text_row(inputfile),0)
+		del scs
+	nang = len(angs)
 
 	# Load angle Data
-	arrPhi = numpy.round(arrData['Phi'], options.round_digit)
-	arrTheta = numpy.round(arrData['Theta'], options.round_digit)
+	# below makes no sense
+	#arrPhi = numpy.round(arrData['Phi'], options.round_digit)
+	#arrTheta = numpy.round(arrData['Theta'], options.round_digit)
+
+	arrPhi   = numpy.array([numpy.round(angs[i][0], options.round_digit) for i in xrange(nang)])
+	arrTheta = numpy.array([numpy.round(angs[i][1], options.round_digit) for i in xrange(nang)])
+	del angs
 
 	# Set the vectors for transformation and plotting
 	vectorInital = numpy.array([0, 0, 1])
@@ -7029,13 +7008,13 @@ def angular_distribution(inputfile, options, output):
 		options.box_size
 	])
 
-	print('Calculate vector length')
+	#print('Calculate vector length')
 	# Create array for the angles
 	dtype = [
 		('alpha', '<f8'),
 		('beta', '<f8')
 	]
-	arrayAngles = numpy.empty(len(arrData), dtype=dtype)
+	arrayAngles = numpy.empty(nang, dtype=dtype)
 	arrayAngles['alpha'] = numpy.radians(arrTheta)
 	arrayAngles['beta'] = numpy.radians(arrPhi)
 
@@ -7082,7 +7061,7 @@ def angular_distribution(inputfile, options, output):
 	arrayAnglesRadius['beta'] = uniqueArray['beta']
 	arrayAnglesRadius['radius'] = arrayRadius
 
-	print('Write output')
+	#print('Write output')
 	# Create vectors for chimera
 	with open(output, 'w') as f:
 		for vector in arrayAnglesRadius:

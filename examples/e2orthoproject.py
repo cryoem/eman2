@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-
 '''
 ====================
 Author: Jesus Galaz - whoknows-2012, Last update: 07/Nov/2017
@@ -31,8 +29,8 @@ Author: Jesus Galaz - whoknows-2012, Last update: 07/Nov/2017
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 '''
-
-from optparse import OptionParser
+from __future__ import print_function
+#from optparse import OptionParser
 from EMAN2 import *
 from EMAN2_utils import *
 import sys
@@ -79,15 +77,6 @@ def main():
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness.")
 
 	(options, args) = parser.parse_args()	
-	
-	#if not options.input:
-	#	try:
-	#		options.input = sys.argv[1]
-	#		EMData(options.input,0,True)
-	#	except:
-	#		print("\nERROR: input file {} seems to have an invalid format".format( options.input ))
-	#		parser.print_help()
-	#		sys.exit(1)
 	
 	options = checkinput( options )
 	

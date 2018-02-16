@@ -213,6 +213,14 @@ def main():
 				plotname = fileid + modetag + '.png'
 				
 			kk=0
+			maxvallocs_pixels=[]
+			maxvallocs_angs=[]
+			
+			maxslope_pixels=[]
+			maxslope_postmax_pixels=[]
+			maxslope_postlastpeak_pixels=[]
+
+			minslope_pixels=[]
 			for index in range(n):
 
 				
@@ -242,6 +250,8 @@ def main():
 
 				maxval = max(values)
 				maxvalloc = values.index(maxval)
+				maxvallocs_pixels.append(maxvalloc)
+				maxvallocs_angs.append(maxvalloc*apix)
 
 				uniquetag = thisfile +'_indextag' + str(index) #i=filename, f=index of img in filename
 				maxima = maxsall[uniquetag]
@@ -260,18 +270,22 @@ def main():
 				
 				max_slope = max(diflist)
 				indexmaxslope = diflist.index(max_slope)
+				maxslope_pixels.append(indexmaxslope)
 
 				max_slope_postmax = max(diflistpostmax)
 				indexmaxslope_postmax = diflist.index(max_slope_postmax)
+				maxslope_postmax_pixels.append(indexmaxslope_postmax)
 
-				max_slope_postlastpeak = indexmaxslope_postlastpeak = None
+				#max_slope_postlastpeak = indexmaxslope_postlastpeak = None
 				
 				try:
 					max_slope_postlastpeak = max(diflistpostlastpeak)
 					indexmaxslope_postlastpeak = diflist.index(max_slope_postlastpeak)
+					maxslope_postlastpeak_pixels.append(indexmaxslope_postlastpeak)
+
 				except:
 					if options.verbose:
-						print('\nERROR computing slope after last peak')
+						print('\n\n!!!!!ERROR computing slope after last peak; skipping particle')
 				
 				if options.verbose:
 					print("\nmaxpeak at pixel={}; maxslope at pixel={}; after maxpeak, maxslope at pixel={}; after lastpeak, maxslope at pixel={}".format(maxvalloc,indexmaxslope,indexmaxslope_postmax,indexmaxslope_postlastpeak))
@@ -289,6 +303,7 @@ def main():
 					for ii in range(nm):
 						peakloc = maxima[ii][0]*apix
 						peaklocs.append(peakloc)
+						
 
 						peakval = maxima[ii][1]
 						peakvals.append(peakval)
@@ -299,7 +314,7 @@ def main():
 					maxtxtname = options.path + '/' + thisfile.split('.')[0] + modetag + str(kk).zfill(len(str(n))) + '_maxima.txt'
 
 					textwriter(peakvals,options,maxtxtname,0,peaklocs)
-				
+
 				if not options.singleplotperfile and not options.singlefinalplot:
 					#plotname=i.split('.')[0]+str(kk).zfill(len(str(n))) + '.png'
 					plotname=id.split('.')[0] + '.png'
@@ -340,6 +355,22 @@ def main():
 				kk+=1
 				cc+=1
 			
+			
+			maxtxtname_pixels = options.path + '/' + thisfile.split('.')[0] + modetag + str(kk).zfill(len(str(n))) + '_maxima_pixels.txt'
+			textwriter(maxvallocs_pixels,options,maxtxtname_pixels,0)
+
+			maxtxtname_angs = options.path + '/' + thisfile.split('.')[0] + modetag + str(kk).zfill(len(str(n))) + '_maxima_angstroms.txt'
+			textwriter(maxvallocs_angs,options,maxtxtname_angs,0)
+
+			maxslopetxtname_pixels = options.path + '/' + thisfile.split('.')[0] + modetag + str(kk).zfill(len(str(n))) + '_maxslope_pixels.txt'
+			textwriter(maxslope_pixels,options,maxslopetxtname_pixels,0)
+
+			maxslopetxtname_postmax_pixels = options.path + '/' + thisfile.split('.')[0] + modetag + str(kk).zfill(len(str(n))) + '_maxslope_postmax_pixels.txt'
+			textwriter(maxslope_postmax_pixels,options,maxslopetxtname_postmax_pixels,0)
+
+			maxslopetxtname_postlastpeak_pixels = options.path + '/' + thisfile.split('.')[0] + modetag + str(kk).zfill(len(str(n))) + '_maxslope_postlastpeak_pixels.txt'
+			textwriter(maxslope_postlastpeak_pixels,options,maxslopetxtname_postlastpeak_pixels,0)
+
 			if options.singleplotperfile:
 				if options.path not in plotname:
 					plotname = options.path + '/' + plotname

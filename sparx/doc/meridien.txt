@@ -1,102 +1,103 @@
-= Name =
-sxmeridien - 3D Refinement: Perform 3D structure refinement.
+~~NOTOC~~
 
+===== sxmeridien =====
+3D Refinement: Perform 3D structure refinement.
 
-= Usage =
+\\
+===== Usage =====
 
-''usage in command line''
+Usage in command line
 
-sxmeridien.py  stack  output_directory  initial_volume  --do_final=MERIDIEN_ITERATION_ID  --local_refinement  --radius=particle_radius  --mask3D=MASK3D  --symmetry=SYMMETRY  --inires=INITIAL_RESOLUTION  --delta=DELTA  --memory_per_node=MEMORY_PER_NODE  --xr=XR  --ts=TS  --skip_prealignment  --initialshifts  --center_method=CENTER_METHOD  --target_radius=TARGET_RADIUS  --an=ANGULAR_NEIGHBORHOOD  --shake=SHAKE  --small_memory  --ccfpercentage=CCFPERCENTAGE  --nonorm  --function=USER_FUNCTION
+  sxmeridien.py  stack  output_directory  initial_volume  --do_final=MERIDIEN_ITERATION_ID  --local_refinement  --radius=particle_radius  --mask3D=MASK3D  --symmetry=SYMMETRY  --inires=INITIAL_RESOLUTION  --delta=DELTA  --xr=XR  --ts=TS  --initialshifts  --skip_prealignment  --memory_per_node=MEMORY_PER_NODE  --center_method=CENTER_METHOD  --target_radius=TARGET_RADIUS  --an=ANGULAR_NEIGHBORHOOD  --shake=SHAKE  --small_memory  --ccfpercentage=CCFPERCENTAGE  --nonorm  --function=USER_FUNCTION
 
-
-=== Typical usage ===
+\\
+===== Typical usage =====
 
 sxmeridien exists only in MPI version (Running MPI version does not require --MPI flag).
 
 There are five ways to run the program:
 
-    1. Standard fresh run: The 3D refinement starts from exhaustive searches using initial reference volume.::
+\\ __1. Standard fresh run__: The 3D refinement starts from exhaustive searches using initial reference volume.
+  mpirun -np 64 sxmeridien.py bdb:sparx_stack meridien_fresh_outdir ref3d.hdf --sym=c5  --initialshifts  --radius=120  --mask3D=mask3d.hdf
 
-    ''' mpirun -np 64 sxmeridien.py bdb:sparx_stack meridien_fresh_outdir ref3d.hdf --sym=c5  --initialshifts  --radius=120  --mask3D=mask3d.hdf ''' <<BR>><<BR>>
+\\ __2. Standard continuation run__: Simple restart where the 3D refinement restarts after the last fully finished iteration of meridien fresh run or local refinement run. One can change some parameters, but that MPI settings have to be the same.
+  mpirun -np 64 sxmeridien.py meridien_fresh_outdir --radius=100
 
-    2. Standard continuation run: Simple restart where the 3D refinement restarts after the last fully finished iteration of meridien fresh run. One can change some parameters, but that MPI settings have to be the same.::
+\\ __3. Local refinement from stack__: The restricted search of 3D refinement starts from user-provided orientation parameters stored in stack header. Note that delta has to be %%<=%% 3.75.
+  mpirun -np 64 sxmeridien.py --local_refinement bdb:sparx_stack meridien_local_outdir --delta=1.875 --xr=2.0  --inires=5.5  --sym=c5  --radius=120  --mask3D=mask3d.hdf
 
-    ''' mpirun -np 64 sxmeridien.py meridien_fresh_outdir --radius=100 ''' <<BR>><<BR>>
+\\ __4. Local refinement from meridien iteration__: The restricted search of 3D refinement restarts after the last fully finished iteration of meridien fresh run or local refinement run. One can change some parameters, but MPI settings have to be the same.
+  mpirun -np 64 sxmeridien.py --local_refinement meridien_fresh_outdir  --xr=0.6
 
-    3. Local refinement from stack: The restricted search of 3D refinement starts from user-provided orientation parameters stored in stack header. Note that delta has to be <= 3.75.::
+\\ __5. Final reconstruction only__: Do only final reconstruction using a fully finished iteration of meridien fresh run or local refinement run.
+  mpirun -np 64 sxmeridien.py --do_final=21 meridien_fresh_outdir
 
-    ''' mpirun -np 64 sxmeridien.py --local_refinement bdb:sparx_stack meridien_local_outdir --delta=1.875 --xr=2.0  --inires=5.5  --sym=c5  --radius=120  --mask3D=mask3d.hdf ''' <<BR>><<BR>>
+\\
+===== Input =====
+=== Main Parameters ===
+  ; stack : Input image stack: Input image stack. Required only for standard fresh run and local refinement from stack. (default none)
+  ; output_directory : Output directory: The results will be written here. This directory will be created automatically if it does not exist. By default, the program uses master_DATA_AND_TIME for the name. For standard continuation run, local refinement from iteration, and final reconstruction only, the directory must exists because this is also used as the input directory. (default none)
+  ; initial_volume : Initial 3D reference: The 3D reference used in the initial iteration of 3D refinement. Required only for standard fresh run. (default none)
 
-    4. Local refinement from meridien iteration: The restricted search of 3D refinement restarts after the last fully finished iteration of meridien fresh run. One can change some parameters, but MPI settings have to be the same.::
+  ; %%--%%do_final : Do only final reconstruction: Specify the iteration where you wish to perform only final reconstruction using the alignment parameters. By setting to 0, program searches the iteration which achieved the best resolution, then performs only final reconstruction using the alignment parameters. Value must be zero or positive. Specific to final reconstruction only. (default -1)
+  ; %%--%%local_refinement : Perform local refinement: Perform local refinement starting from (1) user-provided orientation parameters stored in the header of input image stack or (2) the last fully finished iteration of meridien fresh run or local refinement run. Specific to local refinement modes. (default False)
 
-    ''' mpirun -np 64 sxmeridien.py --local_refinement meridien_fresh_outdir  --xr=0.6 ''' <<BR>><<BR>>
+  ; %%--%%radius : Particle radius [Pixels]: Outer radius in pixels of particles < int(boxsize/2)-1. Ignored in final reconstruction only. (default -1) 
+  ; %%--%%mask3D : 3D mask file: Soft mask for the volume. If not given, a hard sphere of radius boxsize/2-1 will be used. Ignored in final reconstruction only. (default none)
+  ; %%--%%symmetry : Point-group symmetry: Point-group symmetry of the refined structure. Acceptable values are: cn and dn, where n is multiplicity. In addition, icos, oct, and tet are supported. Ignored in final reconstruction only. (default c1)
+  ; %%--%%inires : Starting resolution [A]: Resolution of the initial volume used to start the refinement. Ignored in final reconstruction only. (default 25.0)
+  ; %%--%%delta : Initial angular sampling step [Degrees]: Initial angular sampling step. Ignored in final reconstruction only. (default 7.5)
+  ; %%--%%xr : Search range [Pixels]: Range for translation search in both directions. Search is +/-+xr. It can be fractional. Ignored in final reconstruction only. (default 5.0) 
+  ; %%--%%ts : Search step size [Pixels]: Step size of translation search in both directions. Search is within a circle of radius xr on a grid with steps ts. It can be fractional. Ignored in final reconstruction only. (default 1.0)
+  ; %%--%%initialshifts : Read shifts from header: Start refinement using orientation parameters in the input file header to jumpstart the procedure. Specific to standard run mode. Specific to standard run modes. (default False value reversed in GUI)
+  ; %%--%%skip_prealignment : Do 2D pre-alignment step: Indicate if pre-alignment should be used or not. Do not use 2D pre-alignment if images are already centered. By default, do 2D pre-alignment. Specific to standard run modes. (default False question reversed in GUI)
+  ; %%--%%memory_per_node : Memory per node [GB]: User provided information about memory per node in GB (NOT per CPU). By default, it uses 2GB * (number of CPUs per node). Used in all modes. (default -1.0)
 
-    5. Final reconstruction only: Do only final reconstruction using a fully finished iteration of meridien fresh run.::
+\\
+=== Advanced Parameters ===
+  ; %%--%%an : Angular neighborhood: Angular neighborhood for local search. Ignored in final reconstruction only. (default -1.0)
+  ; %%--%%center_method : Centering method: Method for centering averages during initial 2D prealignment of data (0: no centering; -1: average shift method; For 1-7, see center_2D in utilities.py). Specific to standard run modes. (default -1)
+  ; %%--%%target_radius : Target particle radius [Pixels]: For 2D prealignment, images will be shrank or enlarged to this radius. Specific to standard run modes. (default 29)
+  ; %%--%%shake : Shake: Shake. Ignored in final reconstruction only. (default 0.5)
+  ; %%--%%small_memory : Keep data in memory: Indicate if data should be kept in memory or not. By default, data will be kept in memory. Ignored in final reconstruction only. (default False question reversed in GUI)
+  ; %%--%%ccfpercentage : Correlation peaks to be included [%]: Percentage of correlation peaks to be included. 0.0 corresponds to hard matching. Ignored in final reconstruction only. (default 99.9)
+  ; %%--%%nonorm : Apply image norm correction: Indicate if image norm correction should be applied or not. By default, apply image norm correction. Ignored in final reconstruction only. (default False question reversed in GUI)
+  ; %%--%%function : Reference preparation function: Specify name of function that program should use to prepare the reference volume after each iteration. Ignored in final reconstruction only. (default do_volume_mask)
 
-    ''' mpirun -np 64 sxmeridien.py --do_final=21 meridien_fresh_outdir ''' <<BR>><<BR>>
+\\
+===== Output =====
 
+\\
+===== Description =====
 
-== Input ==
-    stack:: Input image stack: Input image stack. Required only for standard fresh run and local refinement from stack. (default none)
-    initial_volume:: Initial 3D reference: The 3D reference used in the initial iteration of 3D refinement. Required only for standard fresh run. (default none)
+\\
+==== Method ====
 
-    do_final::Do only final reconstruction: Specify the iteration where you wish to perform only final reconstruction using the alignment parameters. By setting to 0, program searches the iteration which achieved the best resolution, then performs only final reconstruction using the alignment parameters. Value must be zero or positive. Specific to final reconstruction only. (default -1)
-    local_refinement::Perform local refinement: Perform local refinement starting from (1) user-provided orientation parameters stored in the header of input image stack or (2) the last fully finished iteration of meridien fresh run. Specific to local refinement modes. (default False)
+\\
+==== Reference ====
 
-    radius:: Particle radius [Pixels]: Outer radius in pixels of particles < int(boxsize/2)-1. Ignored in final reconstruction only. (default -1) 
-    mask3D:: 3D mask file: Soft mask for the volume. If not given, a hard sphere of radius boxsize/2-1 will be used. Ignored in final reconstruction only. (default none)
-    symmetry:: Point-group symmetry: Point-group symmetry of the refined structure. Acceptable values are: cn and dn, where n is multiplicity. In addition, icos, oct, and tet are supported. Ignored in final reconstruction only. (default c1)
-    inires:: Starting resolution [A]: Resolution of the initial volume used to start the refinement. Ignored in final reconstruction only. (default 25.0)
-    delta:: Initial angular sampling step [Degrees]: Initial angular sampling step. Ignored in final reconstruction only. (default 7.5)
-    memory_per_node:: Memory per node [GB]: User provided information about memory per node in GB (NOT per CPU). By default, it uses 2GB * (number of CPUs per node). Used in all modes. (default -1.0)
-
-    * The remaining parameters are optional.
-    xr:: Search range [Pixels]: Range for translation search in both directions. Search is +/-+xr. It can be fractional. Ignored in final reconstruction only. (default 5.0) 
-    ts:: Search step size [Pixels]: Step size of translation search in both directions. Search is within a circle of radius xr on a grid with steps ts. It can be fractional. Ignored in final reconstruction only. (default 1.0)
-    an:: Angular neighborhood: Angular neighborhood for local search. Ignored in final reconstruction only. (default -1.0)
-    skip_prealignment:: Do 2D pre-alignment step: Indicate if pre-alignment should be used or not. Do not use 2D pre-alignment if images are already centered. By default, do 2D pre-alignment. Specific to standard run modes. (default False question reversed in GUI)
-    initialshifts:: Read shifts from header: Start refinement using orientation parameters in the input file header to jumpstart the procedure. Specific to standard run mode. Specific to standard run modes. (default False)
-    center_method:: Centering method: Method for centering averages during initial 2D prealignment of data (0: no centering; -1: average shift method; For 1-7, see center_2D in utilities.py). Specific to standard run modes. (default -1)
-    target_radius:: Target particle radius [Pixels]: For 2D prealignment, images will be shrank or enlarged to this radius. Specific to standard run modes. (default 29)
-    shake:: Shake: Shake. Ignored in final reconstruction only. (default 0.5)
-    small_memory:: Keep data in memory: Indicate if data should be kept in memory or not. By default, data will be kept in memory. Ignored in final reconstruction only. (default False question reversed in GUI)
-    ccfpercentage:: Correlation peaks to be included [%]: Percentage of correlation peaks to be included. 0.0 corresponds to hard matching. Ignored in final reconstruction only. (default 99.9)
-    nonorm:: Apply image norm correction: Indicate if image norm correction should be applied or not. By default, apply image norm correction. Ignored in final reconstruction only. (default False question reversed in GUI)
-    function:: Reference preparation function: Specify name of function that program should use to prepare the reference volume after each iteration. Ignored in final reconstruction only. (default do_volume_mask)
-
-
-== Output ==
-    output_directory:: Output directory: The results will be written here. This directory will be created automatically if it does not exist. By default, the program uses master_DATA_AND_TIME for the name. For standard continuation run, local refinement from iteration, and final reconstruction only, the directory must exists because this is also used as the input directory. (default none)
-
-
-= Description =
-
-
-= Method =
-
-
-= Reference =
-
-
-= Author / Maintainer =
+\\
+==== Author / Maintainer ====
 Pawel A. Penczek
 
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
 
-= Keywords =
-category 1:: APPLICATIONS
-
-
-= Files =
+\\
+==== Files ====
 sparx/bin/sxmeridien.py
 
-
-= See also =
+\\
+==== See also ====
 References to relevant other routines.
 
-
-= Maturity =
+\\
+==== Maturity ====
 Beta:: Under evaluation and testing. Please let us know if there are any bugs.
 
+\\
+==== Bugs ====
+There are no known bugs so far.
 
-=== Bugs ===
-
+\\

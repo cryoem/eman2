@@ -257,9 +257,10 @@ def checkinput(options):
 	if not options.input:
 		try:
 			options.input = sys.argv[1]
+			print("\ntrying to read input from sys.argv[1]={}".format(options.input))
 			EMData(options.input,0,True)
 		except:
-			print("\nERROR: input file {} seems to have an invalid format".format( options.input ))
+			print("\n(EMAN2_utils)(checkinput) ERROR: input file {} seems to have an invalid format or doesn't exist; verify that the filename is correct.".format( options.input ))
 			#parser.print_help()
 			sys.exit(1)
 	return options

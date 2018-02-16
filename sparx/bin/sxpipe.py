@@ -234,14 +234,14 @@ def isac_substack(args):
 		ERROR(error_message, subcommand_name) # action=1 - fatal error, exit
 	assert (len(isac_missing_path_list) == 0 or len(beautifier_missing_path_list) == 0)
 	
-	# Define enumerators for indices of xform 2D alignment parameter (xform.align2d)
+	# Define enumerators for indices of 2D alignment parameters header entry (xform.align2d)
 	i_enum = -1
-	i_enum += 1; idx_xform_align2d_alpha  = i_enum # 2D rotation (in-plane rotation)
-	i_enum += 1; idx_xform_align2d_tx     = i_enum # x-translation or x-shift
-	i_enum += 1; idx_xform_align2d_ty     = i_enum # y-translation or y-shift
-	i_enum += 1; idx_xform_align2d_mirror = i_enum # mirror
-	i_enum += 1; idx_xform_align2d_scale  = i_enum # scale
-	i_enum += 1; n_idx_xform_align2d      = i_enum
+	i_enum += 1; idx_header_align2d_alpha  = i_enum # 2D rotation (in-plane rotation)
+	i_enum += 1; idx_header_align2d_tx     = i_enum # x-translation or x-shift
+	i_enum += 1; idx_header_align2d_ty     = i_enum # y-translation or y-shift
+	i_enum += 1; idx_header_align2d_mirror = i_enum # mirror
+	i_enum += 1; idx_header_align2d_scale  = i_enum # scale
+	i_enum += 1; n_idx_header_align2d      = i_enum
 
 	# Define enumerators for indices of ISAC 2D alignment parameter
 	# Note: ISAC does not stores "scale" to output files
@@ -326,15 +326,15 @@ def isac_substack(args):
 			if len(shrunk_core_align2d) != n_idx_isac_align2d:
 				ERROR("Invalid number of columns {} at entry #{} in {}. It should be {}. The parameter file might be corrupted. Please consider to rerun ISAC.".format(len(shrunk_core_align2d), fullstack_img_id, fullstack_shrunk_core_align2d_path, n_idx_isac_align2d), subcommand_name) # action=1 - fatal error, exit
 			if shrunk_core_align2d[idx_isac_align2d_mirror] != -1: # An accounted particle
-				alpha1  = prealign2d[idx_isac_align2d_alpha]
-				sx1     = prealign2d[idx_isac_align2d_tx]
-				sy1     = prealign2d[idx_isac_align2d_ty]
-				mirror1 = prealign2d[idx_isac_align2d_mirror]
-				alpha2  = shrunk_core_align2d[idx_isac_align2d_alpha]
-				sx2     = shrunk_core_align2d[idx_isac_align2d_tx]/isac_shrink_ratio # Need to apply the shrink ratio to ISAC x-shift
-				sy2     = shrunk_core_align2d[idx_isac_align2d_ty]/isac_shrink_ratio # Need to apply the shrink ratio to ISAC y-shift
-				mirror2 = shrunk_core_align2d[idx_isac_align2d_mirror]
-				isac_total_align2d = combine_params2(alpha1, sx1, sy1, mirror1, alpha2, sx2, sy2, mirror2)
+				alpha1  = float(prealign2d[idx_isac_align2d_alpha])
+				sx1     = float(prealign2d[idx_isac_align2d_tx])
+				sy1     = float(prealign2d[idx_isac_align2d_ty])
+				mirror1 = int(prealign2d[idx_isac_align2d_mirror])
+				alpha2  = float(shrunk_core_align2d[idx_isac_align2d_alpha])
+				sx2     = float(shrunk_core_align2d[idx_isac_align2d_tx])/isac_shrink_ratio # Need to apply the shrink ratio to ISAC x-shift
+				sy2     = float(shrunk_core_align2d[idx_isac_align2d_ty])/isac_shrink_ratio # Need to apply the shrink ratio to ISAC y-shift
+				mirror2 = int(shrunk_core_align2d[idx_isac_align2d_mirror])
+				isac_total_align2d = list(combine_params2(alpha1, sx1, sy1, mirror1, alpha2, sx2, sy2, mirror2)) # return value is tuple type but we want to list! 
 				
 				fullstack_total_align2d_list[fullstack_img_id] = isac_total_align2d
 				assert(len(fullstack_total_align2d_list[fullstack_img_id]) == n_idx_isac_align2d)
@@ -380,15 +380,15 @@ def isac_substack(args):
 			if len(local_total_param2d) != n_idx_beautifier_align2d:
 				ERROR("Invalid number of columns {} at entry #{} in {}. It should be {}. The parameter file might be corrupted. Please consider to rerun ISAC.".format(len(local_total_param2d), accounted_img_id, accounted_local_total_align2d_path, n_idx_beautifier_align2d), subcommand_name) # action=1 - fatal error, exit
 			if local_total_param2d[idx_beautifier_align2d_mirror] == -1: # An Unaccounted Particle
-				ERROR("Invalid alignment paramters of an unaccounted particle is detected at entry #{} in {}. The parameter files might be corrupted. Please consider to rerun Beautifier.".format(accounted_img_id, accounted_local_total_align2d_path), subcommand_name) # action=1 - fatal error, exit
+				ERROR("Invalid alignment parameters of an unaccounted particle is detected at entry #{} in {}. The parameter files might be corrupted. Please consider to rerun Beautifier.".format(accounted_img_id, accounted_local_total_align2d_path), subcommand_name) # action=1 - fatal error, exit
 			assert (local_total_param2d[idx_beautifier_align2d_mirror] != -1)
 			
-			fullstack_img_id  = local_total_param2d[idx_beautifier_align2d_fullstack_img_id]
-			alpha             = local_total_param2d[idx_beautifier_align2d_alpha]
-			sx                = local_total_param2d[idx_beautifier_align2d_tx]
-			sy                = local_total_param2d[idx_beautifier_align2d_ty]
-			mirror            = local_total_param2d[idx_beautifier_align2d_mirror]
-			scale             = local_total_param2d[idx_beautifier_align2d_scale]
+			fullstack_img_id  = int(local_total_param2d[idx_beautifier_align2d_fullstack_img_id])
+			alpha             = float(local_total_param2d[idx_beautifier_align2d_alpha])
+			sx                = float(local_total_param2d[idx_beautifier_align2d_tx])
+			sy                = float(local_total_param2d[idx_beautifier_align2d_ty])
+			mirror            = int(local_total_param2d[idx_beautifier_align2d_mirror])
+			scale             = float(local_total_param2d[idx_beautifier_align2d_scale])
 			
 			fullstack_total_align2d_list[fullstack_img_id] = [alpha, sx, sy, mirror]
 			assert(len(fullstack_total_align2d_list[fullstack_img_id]) == n_idx_isac_align2d)
@@ -401,11 +401,11 @@ def isac_substack(args):
 		align2d_avg_basename = "ali2d_local_params_avg"
 		
 	if len(fullstack_total_align2d_list) == 0:
-		ERROR("No alignment paramters are detected. Please check the contents of ISAC or Beautifier run output directory.", subcommand_name) # action=1 - fatal error, exit
+		ERROR("No alignment parameters are detected. Please check the contents of ISAC or Beautifier run output directory.", subcommand_name) # action=1 - fatal error, exit
 	assert (len(fullstack_total_align2d_list) != 0 and len(fullstack_total_align2d_list) == n_fullstack_img)
 
 	if len(accounted_total_align2d_list) == 0:
-		ERROR("No alignment paramters of accounted particles are detected. Please check the contents of ISAC or Beautifier run output directory.", subcommand_name) # action=1 - fatal error, exit
+		ERROR("No alignment parameters of accounted particles are detected. Please check the contents of ISAC or Beautifier run output directory.", subcommand_name) # action=1 - fatal error, exit
 	assert (len(accounted_total_align2d_list) != 0 and len(accounted_total_align2d_list) == n_accounted_img and n_accounted_img <= n_fullstack_img)
 
 	# Save the 2D alignment parameters of all particles to file, using the same format as ISAC 2D alignment file (all_parameters.txt)
@@ -482,8 +482,8 @@ def isac_substack(args):
 	print_progress("Saved original fullstack particle IDs of all members listed in ISAC class averages to {}.".format(fullstack_img_id_path_of_isac_substack))
 	
 	print(" ")
-	print_progress("Converting 2D alignment parameters of all members listed in ISAC class averages to xform.align2d format...")
-	isac_substack_total_xform_align2d_list = []
+	print_progress("Converting 2D alignment parameters of all members listed in ISAC class averages to 2D alignment parameters header entry format...")
+	isac_substack_total_header_align2d_list = []
 	for isac_substack_img_id in xrange(n_isac_substack_img):
 		fullstack_img_id = fullstack_img_id_list_of_isac_substack[isac_substack_img_id]
 		# Get 2D alignment parameters associated with this particle and conver to 3D alignment parameters
@@ -491,15 +491,15 @@ def isac_substack(args):
 		assert (total_align2d[idx_isac_align2d_mirror] != -1) # all class member particles should be accounted!!!
 		# Register total_align2d to the list in xform.align2d format
 		scale = 1.0 # because this 2D alignment parameters are scaled back!
-		isac_substack_total_xform_align2d_list.append([total_align2d[idx_isac_align2d_alpha], total_align2d[idx_isac_align2d_tx], total_align2d[idx_isac_align2d_ty], total_align2d[idx_isac_align2d_mirror], scale])
-		assert (len(isac_substack_total_xform_align2d_list[-1]) == n_idx_xform_align2d)
-	assert(len(isac_substack_total_xform_align2d_list) == n_isac_substack_img)
+		isac_substack_total_header_align2d_list.append([total_align2d[idx_isac_align2d_alpha], total_align2d[idx_isac_align2d_tx], total_align2d[idx_isac_align2d_ty], total_align2d[idx_isac_align2d_mirror], scale])
+		assert (len(isac_substack_total_header_align2d_list[-1]) == n_idx_header_align2d)
+	assert(len(isac_substack_total_header_align2d_list) == n_isac_substack_img)
 	
 	# Save the 2D alignment parameters of all members listed in ISAC class averages to file, using the xform.align2d header entry format.
-	isac_substack_total_xform_align2d_path = os.path.join(args.output_directory, "{}_xform_align2d.txt".format(args.substack_basename))
-	write_text_row(isac_substack_total_xform_align2d_list, isac_substack_total_xform_align2d_path)
+	isac_substack_total_header_align2d_path = os.path.join(args.output_directory, "{}_header_align2d.txt".format(args.substack_basename))
+	write_text_row(isac_substack_total_header_align2d_list, isac_substack_total_header_align2d_path)
 	print(" ")
-	print_progress("Saved the converted 2D alignment parameters to {}.".format(isac_substack_total_xform_align2d_path))
+	print_progress("Saved the converted 2D alignment parameters to {}.".format(isac_substack_total_header_align2d_path))
 	
 	# Create virtual stack for ISAC substack
 	assert (args.output_directory != "")
@@ -513,23 +513,23 @@ def isac_substack(args):
 	
 	# Import the total 2D alignment parameters to xform.align2d
 	print(" ")
-	print_progress("Importing the total 2D alignment parameters in the original scale to xform.align2d...")
-	cmd_line = "sxheader.py {} --import={} --params=xform.align2d".format(virtual_bdb_substack_path, isac_substack_total_xform_align2d_path)
+	print_progress("Importing the total 2D alignment parameters in the original scale to the header entry...")
+	cmd_line = "sxheader.py {} --import={} --params=xform.align2d".format(virtual_bdb_substack_path, isac_substack_total_header_align2d_path)
 	status = cmdexecute(cmd_line)
 	if status == 0: ERROR("\"{}\" execution failed. Exiting...".format(cmd_line), subcommand_name) # action=1 - fatal error, exit
 	
 	# Transform xform.align2d to xform.projection
 	print(" ")
-	print_progress("Transforming imported xform.align2d to xform.projection...")
+	print_progress("Creating projection parameters header entry from imported 2D alignment parameters using 2D-to-3D transformation...")
 	cmd_line = "sxparams_2D_to_3D.py {}".format(virtual_bdb_substack_path)
 	status = cmdexecute(cmd_line)
 	if status == 0: ERROR("\"{}\" execution failed. Exiting...".format(cmd_line), subcommand_name) # action=1 - fatal error, exit
 	
 	# Export projection parameters from xform.projection
 	print(" ")
-	print_progress("Exporting projection parameters from xform.projection...")
-	isac_substack_total_xform_projection_path = os.path.join(args.output_directory, "{}_xform_projection.txt".format(args.substack_basename))
-	cmd_line = "sxheader.py {} --export={} --params=xform.projection".format(virtual_bdb_substack_path, isac_substack_total_xform_projection_path)
+	print_progress("Exporting projection parameters from the header entry...")
+	isac_substack_total_header_projection_path = os.path.join(args.output_directory, "{}_header_projection.txt".format(args.substack_basename))
+	cmd_line = "sxheader.py {} --export={} --params=xform.projection".format(virtual_bdb_substack_path, isac_substack_total_header_projection_path)
 	status = cmdexecute(cmd_line)
 	if status == 0: ERROR("\"{}\" execution failed. Exiting...".format(cmd_line), subcommand_name) # action=1 - fatal error, exit
 	
@@ -997,7 +997,7 @@ def organize_micrographs(args):
 	# --------------------------------------------------------------------------------
 	if not os.path.exists(dst_dir):
 		print(" ")
-		print_progress("Creating the destination directory (%)..."%(dst_dir))
+		print_progress("Creating the destination directory (%s)..."%(dst_dir))
 		os.mkdir(dst_dir)
 	assert (os.path.exists(dst_dir))
 

@@ -622,13 +622,16 @@ namespace EMAN
 		int nimg;
 	};
 
-	/** 
-	* VarianceAverager computes the pixel-wise variance of a list of images.
-        */
-        class VarianceAverager:public Averager
+
+/** SigmaAverager averages a list of images. It optionally makes
+     * a sigma image.
+     *@param sigma sigma value
+     *@param ignore0 if set, ignore zero value pixels
+     */
+	class SigmaAverager:public Averager
 	{
 	  public:
-		VarianceAverager();
+		SigmaAverager();
 
 		void add_image( EMData * image);
 		EMData * finish();
@@ -640,17 +643,20 @@ namespace EMAN
 
 		string get_desc() const
 		{
-			return "Pixel-wise variance of images";
+			return "Computes the standard deviation of images";
 		}
 
 		static Averager *NEW()
 		{
-			return new VarianceAverager();
+			return new SigmaAverager();
 		}
 
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
+			//d.put("sigma", EMObject::EMDATA, "sigma value");
+			d.put("normimage", EMObject::EMDATA, "In conjunction with ignore0, the number of non zero values for each pixel will be stored in this image.");
+			d.put("ignore0", EMObject::INT, "if set, ignore zero value pixels");
 			return d;
 		}
 
@@ -659,14 +665,62 @@ namespace EMAN
 		static const string NAME;
 		
 	private:
-		EMData *mean;
+		EMData *mean_image,*normimage;
+		int ignore0;
 		int nimg;
+		int freenorm;
 	};
+
+
+	// /** 
+	// * VarianceAverager computes the pixel-wise variance of a list of images.
+ //        */
+ //        class VarianceAverager:public Averager
+	// {
+	//   public:
+	// 	VarianceAverager();
+
+	// 	void add_image( EMData * image);
+	// 	EMData * finish();
+
+	// 	string get_name() const
+	// 	{
+	// 		return NAME;
+	// 	}
+
+	// 	string get_desc() const
+	// 	{
+	// 		return "Pixel-wise variance of images";
+	// 	}
+
+	// 	static Averager *NEW()
+	// 	{
+	// 		return new VarianceAverager();
+	// 	}
+
+	// 	TypeDict get_param_types() const
+	// 	{
+	// 		TypeDict d;
+	// 		return d;
+	// 	}
+
+	// 	virtual void mult(const float&) { }
+
+	// 	static const string NAME;
+		
+	// private:
+	// 	EMData *mean;
+	// 	int nimg;
+	// };
 
 	template <> Factory < Averager >::Factory();
 
 	void dump_averagers();
 	map<string, vector<string> > dump_averagers_list();
 }
+
+
+	
+
 
 #endif

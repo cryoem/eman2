@@ -3478,7 +3478,7 @@ def do_ctrefromsort3d_get_subset_data(masterdir, option_old_refinement_dir, opti
 			Tracker["refvol"]                 = os.path.join(iter_dir, "vol_0_%03d.hdf"%selected_iter)
 			Tracker["mainiteration"]          = selected_iter
 			if shell_line_command: update_tracker(shell_line_command) # the updated could be any refinement parameters that user wish to make change
-			error_angles, error_shifts = params_changes((new_params_chunk_one + new_params_chunk_two), (new_params_chunk_one_last_iter + new_params_chunk_two_last_iter))
+			#error_angles, error_shifts = params_changes((new_params_chunk_one + new_params_chunk_two), (new_params_chunk_one_last_iter + new_params_chunk_two_last_iter))
 			# varibles in Tracker to be updated
 			if Tracker["constants"]["mask3D"]: 
 				Tracker["constants"]["mask3D"] = os.path.join(option_old_refinement_dir, "../", Tracker["constants"]["mask3D"])
@@ -3495,7 +3495,7 @@ def do_ctrefromsort3d_get_subset_data(masterdir, option_old_refinement_dir, opti
 			write_text_file(new_chunk_one, os.path.join(iter_dir, "chunk_0_%03d.txt"%selected_iter))
 			write_text_file(new_chunk_two, os.path.join(iter_dir, "chunk_1_%03d.txt"%selected_iter))
 			write_text_row(new_params, os.path.join(iter_dir, "params_%03d.txt"%selected_iter))
-			write_text_row([[error_angles, error_shifts]], os.path.join(iter_dir, "error_thresholds_%03d.txt"%selected_iter))		
+			#write_text_row([[error_angles, error_shifts]], os.path.join(iter_dir, "error_thresholds_%03d.txt"%selected_iter))		
 			Tracker["nima_per_chunk"] = [len(new_chunk_one), len(new_chunk_two)]
 			Tracker["avgvaradj"][0] /=float(len(new_chunk_one))
 			Tracker["avgvaradj"][1] /=float(len(new_chunk_two))
@@ -3757,41 +3757,6 @@ def out_fsc(f):
 	print(" ")
 	
 ### functions for faked rec3d from subsets
-def params_changes( params, oldparams ):
-	#  Indexes contain list of images processed - sorted integers, subset of the full range.
-	#  params - contain parameters associated with these images
-	#  Both lists can be of different sizes, so we have to find a common subset
-	#  We do not compensate for random changes of grids.
-	from utilities    	import getang3
-	from utilities    	import rotate_shift_params
-	from pixel_error  	import max_3D_pixel_error
-	from EMAN2        	import Vec2f
-	from math 			import sqrt
-	import sets
-	n = len(params)
-	anger       = 0.0
-	shifter     = 0.0
-	#  The shifter is given in the full scale displacement
-	for i in xrange(n):
-		shifter     += (params[i][3] - oldparams[i][3] )**2 + (params[i][4] - oldparams[i][4] )**2
-		anger += get_anger(params[i][0:3], oldparams[i][0:3],Tracker["constants"]["symmetry"])
-	return round(anger/n,5), round(sqrt(shifter/n),5)
-	
-def get_anger(angle1, angle2, sym="c1"):
-	from math import acos, pi
-	R1               = Transform({"type":"spider","phi":  angle1[0], "theta":  angle1[1],  "psi": angle1[2]})
-	R2               = Transform({"type":"spider","phi":  angle2[0], "theta":  angle2[1],  "psi": angle2[2]})
-	R2               = R2.get_sym_proj(sym)
-	axes_dis_min     = 1.0e23
-	for isym in xrange(len(R2)):
-		A1 		         = R1.get_matrix()
-		A2 		         = R2[isym].get_matrix()
-		X1               = A1[0]*A2[0] + A1[1]*A2[1] + A1[2]*A2[2] 
-		X2               = A1[4]*A2[4] + A1[5]*A2[5] + A1[6]*A2[6]
-		X3               = A1[8]*A2[8] + A1[9]*A2[9] + A1[10]*A2[10] 
-		axes_dis         = acos(max(min(X1,1.),-1.0))*180./pi +acos(max(min(X2,1.),-1.0))*180./pi +acos(max(min(X3,1.),-1.0))*180./pi/3.0
-		axes_dis_min     = min(axes_dis_min, axes_dis)
-	return axes_dis_min
 
 def compute_sigma(projdata, params, first_procid, dryrun = False, myid = -1, mpi_comm = -1):
 	global Tracker, Blockdata

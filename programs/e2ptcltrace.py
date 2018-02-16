@@ -56,6 +56,7 @@ def main():
 	parser.add_argument("--output",type=str,help="Name of output file.", default="ptcltrace.txt")
 	parser.add_argument("--refine",help="Specify a refinement directory as an alternative to providing classmx files. Even and odd subsets will be interleaved based on input set.", default=None)
 	parser.add_argument("--sym",type=str,help="Symmetry to be used in searching adjacent unit cells", default="c1")
+	parser.add_argument("--printbad",type=float,help="Print the particle number if the orientation mismatch is larger than the specified angle in the last pair of files",default=180.0)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
@@ -157,6 +158,7 @@ def main():
 					ort2p=ort2*t
 					diffs.append((ort1*ort2p.inverse()).get_rotation("spin")["omega"])
 				diff=min(diffs) # The angular error for the best-agreeing orientation
+				if i==len(cls)-1 and diff>options.printbad : print("{}\t{}".format(p,diff))
 
 				cls1 = int(cls[i-1][0][0,p])
 				e1 = ort1.get_rotation("eman")
