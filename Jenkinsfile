@@ -88,7 +88,7 @@ pipeline {
     INSTALLERS_DIR = '${HOME_DIR}/workspace/${STAGE_NAME}-installers'
     DEPLOY_DEST    = 'zope@ncmi.grid.bcm.edu:/home/zope/zope-server/extdata/reposit/ncmi/software/counter_222/software_136/'
     NUMPY_VERSION='1.9'
-    BUILD_SCRIPTS_BRANCH='jenkins-refactor-win'
+    BUILD_SCRIPTS_BRANCH='win-binary-release-2.21a'
     CI_BUILD       = sh(script: "! git log -1 | grep '.*\\[ci build\\].*'",       returnStatus: true)
     CI_BUILD_WIN   = sh(script: "! git log -1 | grep '.*\\[ci build win\\].*'",   returnStatus: true)
     CI_BUILD_LINUX = sh(script: "! git log -1 | grep '.*\\[ci build linux\\].*'", returnStatus: true)
