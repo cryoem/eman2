@@ -59,6 +59,8 @@ def isRequestedBuildStage() {
 }
 
 def runJob() {
+    sh 'bash ci_support/conda_build.sh recipes/eman'
+    
     if(isContinuousBuild()) {
         if(SLAVE_OS != 'win')
             sh "rsync -avzh --stats ${INSTALLERS_DIR}/eman2.${SLAVE_OS}.sh ${DEPLOY_DEST}/eman2.${STAGE_NAME}.unstable.sh"
