@@ -10,7 +10,6 @@ set -xe
 EMAN_RECIPE_DIR=$1
 
 export PYTHONUNBUFFERED=1
-source activate root
 
 # Build eman recipe
 conda info -a
