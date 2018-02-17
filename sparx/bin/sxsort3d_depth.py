@@ -993,7 +993,9 @@ def do_one_way_anova_scipy(clusters, value_list, name_of_variable="variable", lo
 	for ic in xrange(K):
 		ll = copy.deepcopy(clusters[ic])
 		ll1 = [None for i in xrange(len(ll))]
-		for ie in xrange(len(ll)): ll1[ie] = value_list[ll[ie]]
+		for ie in xrange(len(ll)): 
+			ll1[ie] = value_list[ll[ie]]
+		if name_of_variable == "defocus": ll1 = list(set(ll1))
 		replicas.append(ll1)
 	x0 = replicas[0]
 	x1 = replicas[1]
