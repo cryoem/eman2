@@ -62,13 +62,7 @@ def runJob() {
     sh 'bash ci_support/conda_build.sh recipes/eman'
     sh "bash ci_support/package.sh ${INSTALLERS_DIR} " + '${WORKSPACE}/ci_support/'
     testPackage()
-    
-    if(isContinuousBuild()) {
-        if(SLAVE_OS != 'win')
-            sh "rsync -avzh --stats ${INSTALLERS_DIR}/eman2.${SLAVE_OS}.sh ${DEPLOY_DEST}/eman2.${STAGE_NAME}.unstable.sh"
-        else
-            bat 'ci_support\\rsync_wrapper.bat'
-    }
+    deployPackage()
 }
 
 def testPackage() {
@@ -76,6 +70,15 @@ def testPackage() {
         sh "bash tests/test_binary_installation.sh ${INSTALLERS_DIR} eman2.${SLAVE_OS}.sh"
     else
         sh 'ci_support/test_wrapper.sh'
+}
+
+def deployPackage() {
+    if(isContinuousBuild()) {
+        if(SLAVE_OS != 'win')
+            sh "rsync -avzh --stats ${INSTALLERS_DIR}/eman2.${SLAVE_OS}.sh ${DEPLOY_DEST}/eman2.${STAGE_NAME}.unstable.sh"
+        else
+            bat 'ci_support\\rsync_wrapper.bat'
+    }
 }
 
 def getHomeDir() {
@@ -151,6 +154,7 @@ pipeline {
       
       steps {
         sh "bash ci_support/run_docker_build.sh cryoem/centos6:working . ${INSTALLERS_DIR}"
+        deployPackage()
       }
     }
     
