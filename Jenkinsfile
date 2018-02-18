@@ -58,6 +58,15 @@ def isRequestedBuildStage() {
     return (stage_name_to_os(STAGE_NAME) == SLAVE_OS && (CI_BUILD == "1" || buildStage[STAGE_NAME] == "1"))
 }
 
+def isSimpleBuild() {
+    def buildOS = ['linux': CI_BUILD_LINUX,
+                   'mac':   CI_BUILD_MAC,
+                   'win':   CI_BUILD_WIN
+                  ]
+    
+    return (CI_BUILD != "1" && buildOS[SLAVE_OS] != "1")
+}
+
 def runJob() {
     sh 'bash ci_support/conda_build.sh recipes/eman'
     sh "bash ci_support/package.sh ${INSTALLERS_DIR} " + '${WORKSPACE}/ci_support/'
@@ -128,8 +137,7 @@ pipeline {
     
     stage('build') {
       when {
-        not { expression { isContinuousBuild() } }
-        expression { false }
+        expression { isSimpleBuild() }
       }
       
       parallel {
