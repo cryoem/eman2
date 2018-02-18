@@ -66,5 +66,6 @@ conda install conda-build=2 --no-deps --yes
 
 bash "${docker_eman_repo_dir}"/ci_support/conda_build.sh "${docker_eman_repo_dir}"/recipes/eman
 bash "${docker_eman_repo_dir}"/ci_support/package.sh "${docker_installers_dir}" ${docker_eman_repo_dir}/ci_support/
+bash "${docker_eman_repo_dir}"/tests/test_binary_installation.sh "${docker_installers_dir}" "eman2.${SLAVE_OS}.sh"
 
 EOF
