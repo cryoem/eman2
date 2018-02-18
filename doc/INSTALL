@@ -1,3 +1,12 @@
+These instructions are extremely out of date, and predate the current Anaconda-based install
+we have adopted with EMAN2.2.
+
+Please see:
+http://eman2.org
+
+We leave these old instructions here in case someone has a need to come up with a non-Anaconda
+based install. They will not work as shown, but are a place to start...
+
 EMAN 2
 ------
 
