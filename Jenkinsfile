@@ -148,6 +148,10 @@ pipeline {
         }
         
         stage('no_recipe') {
+          when {
+            expression { SLAVE_OS != 'win' }
+          }
+          
           steps {
             sh 'source $(conda info --root)/bin/activate eman-env && bash ci_support/build_no_recipe.sh'
           }
