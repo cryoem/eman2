@@ -17,6 +17,9 @@ export CPU_COUNT=2
 
 export SRC_DIR=${PWD}
 export PREFIX=${PWD}
+
+rm -v ${CONDA_PREFIX}/bin/e2*.py
+
 bash ${SRC_DIR}/recipes/eman/build.sh
 
 # Run tests
