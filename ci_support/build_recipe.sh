@@ -7,7 +7,6 @@ if [ ! -z ${CI} ];then
 fi
 
 export CPU_COUNT=2
-export NUMPY_VERSION=1.9
 
 if [ "$(uname -s)" != "Darwin" ];then
     conda build recipes/eman -c cryoem -c defaults -c conda-forge

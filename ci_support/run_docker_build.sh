@@ -45,7 +45,6 @@ docker run -i \
             -v "$eman_repo_dir":"$docker_eman_repo_dir" \
             -v "$installers_dir":"$docker_installers_dir" \
             -v /etc/localtime:/etc/localtime \
-            -e NUMPY_VERSION="$NUMPY_VERSION" \
             -a stdin -a stdout -a stderr \
             $docker_image \
             bash << EOF

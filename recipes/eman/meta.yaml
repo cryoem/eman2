@@ -11,8 +11,7 @@ requirements:
             "python 2.7.*",
             "boost 1.63.*",
             "fftw-mpi",
-            "numpy " ~ os.environ.get('NUMPY_VERSION') ~ ".*",  # [not win]
-            "numpy 1.11.*",                                     # [win]
+            "numpy 1.13.*",
             "ftgl",
             "freetype",
             "gsl",
