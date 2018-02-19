@@ -8,7 +8,7 @@ source:
 requirements:
     {% set reqs_common = [
             "msinttypes",  # [win]
-            "python 2.7.*",
+            "python 2.7.14",
             "boost 1.63.*",
             "fftw-mpi",
             "numpy 1.13.*",
@@ -19,15 +19,14 @@ requirements:
             "jpeg",
             "libtiff 4.0.9",            # [not win]
             "libtiff 4.0.9 hafacce9_0",  # [win]
-            "libpng 1.6.17",  # [linux]
-            "libpng 1.6.32",  # [osx]
+            "libpng 1.6.34",
             "zlib",
             "matplotlib",
             "scipy 1.*",
             "ipython",
             "pyqt 4.*",
             "pyopengl 3.1.0",
-            "theano 0.9.*",
+            "theano 1.0.*",
             "scikit-learn 0.19.*",
             "bsddb",          # [not win]
             "openmpi 2.0.2",  # [not win]
