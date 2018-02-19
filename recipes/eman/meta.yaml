@@ -13,7 +13,8 @@ requirements:
             "fftw-mpi",
             "numpy 1.13.*",
             "ftgl",
-            "freetype",
+            "freetype 2.8.*",  # [osx]
+            "freetype 2.7.*",  # [not osx]
             "gsl",
             "hdf5 1.8.18",
             "jpeg",
