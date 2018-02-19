@@ -22,7 +22,8 @@ requirements:
             "libtiff 4.0.9 hafacce9_0",  # [win]
             "libpng 1.6.34",
             "zlib",
-            "matplotlib",
+            "matplotlib 2.1.*",  # [osx]
+            "matplotlib 1.5.*",  # [not osx]
             "scipy 1.*",
             "ipython",
             "pyqt 4.*",
