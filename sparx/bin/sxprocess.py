@@ -1075,64 +1075,64 @@ def main():
 
 		else: # 3D case High pass filter should always come along with low-pass filter. 
 			log_main.add("-------->>> settings given by all options <<<-------")
-			log_main.add("pixle_size        :"+str(options.pixel_size))
-			log_main.add("mask              :"+str(options.mask))
-			log_main.add("fsc_adj           :"+str(options.fsc_adj))
+			log_main.add("Pixle_size        :"+str(options.pixel_size))
+			log_main.add("Mask              :"+str(options.mask))
+			log_main.add("Fsc_adj           :"+str(options.fsc_adj))
 			log_main.add("B_enhance         :"+str(options.B_enhance))
-			log_main.add("low_pass_filter   :"+str(options.fl))
+			log_main.add("Low_pass_filter   :"+str(options.fl))
 			log_main.add("aa                :"+str(options.aa))
 			log_main.add("B_start           :"+str(options.B_start))
 			log_main.add("B_stop            :"+str(options.B_stop))
-			log_main.add("mtf               :"+str(options.mtf))
-			log_main.add("output            :"+str(options.output))
-			log_main.add("do_adaptive_mask  :"+str(options.do_adaptive_mask))
-			log_main.add("cosine_edge       :"+str(options.consine_edge))
-			log_main.add("dilation          :"+str(options.dilation))
+			log_main.add("Mtf               :"+str(options.mtf))
+			log_main.add("Output            :"+str(options.output))
+			log_main.add("Do_adaptive_mask  :"+str(options.do_adaptive_mask))
+			log_main.add("Cosine_edge       :"+str(options.consine_edge))
+			log_main.add("Dilation          :"+str(options.dilation))
 			# log_main.add("randomphasesafter :"+str(options.randomphasesafter))
 			log_main.add("------------->>> processing <<<-----------------------")
 			log_main.add("3-D refinement combinemaps")
 			single_map = True
 			map2_path = None
 			if nargs ==1: # 3D single map case or 3D single maps case
-				log_main.add("combinemaps enhances single map")
+				log_main.add("Combinemaps has single input map")
 				# Check error condition of input 3D density map file path list
 				if options.fl == 0.0: 
-					ERROR("low-pass filter to resolution (--fl=0.0) cannot be used with cluster volumes mode", "--combinemaps option for 3-D", 1)
+					ERROR("Low-pass filter to resolution (--fl=0.0) cannot be used with cluster volumes mode", "--combinemaps option for 3-D", 1)
 				if options.B_enhance == 0.0: 
-					ERROR("automatic B-factor estimation (--B_enhance=0.0) cannot be used with cluster volumes mode", "--combinemaps option for 3-D", 1)
+					ERROR("Automatic B-factor estimation (--B_enhance=0.0) cannot be used with cluster volumes mode", "--combinemaps option for 3-D", 1)
 				if len(input_path_list) > 1:
-					log_main.add("using 3D density map path pattern (found %d files in %s)"%(len(input_path_list), os.path.dirname(args[0])))
+					log_main.add("Using 3D density map path pattern (found %d files in %s)"%(len(input_path_list), os.path.dirname(args[0])))
 				else:
-					log_main.add("using a single file path")
+					log_main.add("Using a single file path")
 			elif nargs ==2:  # 3D two maps case
-				log_main.add("combinemaps enhances odd and even map")
+				log_main.add("Combinemaps has two input maps")
 				single_map = False
 				map2_path = args[1]
 			elif nargs >=3: 
-				ERROR("too many inputs!", "--combinemaps option for 3-D", 1)
-			else: ERROR("incorrected number of inputs", "--combinemaps option for 3-D", 1) # This should be unreachable
+				ERROR("Too many input maps!", "--combinemaps option for 3-D", 1)
+			else: ERROR("Incorrected number of inputs", "--combinemaps option for 3-D", 1) # This should be unreachable
 			
 			for map1_path in input_path_list:
 				log_main.add("-------------------------------------------------------")
 				log_main.add("------------->>> %s <<<-----------------------" % map1_path)
-				log_main.add("the first input volume: %s"%map1_path)
+				log_main.add("The first input volume: %s"%map1_path)
 				try: map1 = get_im(map1_path)
 				except:
-					ERROR("sphire combinemaps fails to read the first map " + map1_path, "--combinemaps option for 3-D")
+					ERROR("Sphire combinemaps fails to read the first map " + map1_path, "--combinemaps option for 3-D")
 					exit()
 			
 				if single_map:
-					log_main.add("no second input volume")
+					log_main.add("No second input volume")
 				else:
-					log_main.add("the second input volume: %s"%map2_path)
+					log_main.add("The second input volume: %s"%map2_path)
 					try:
 						map2 = get_im(map2_path)
 					except:
-						ERROR("sphire combinemaps fails to read the second map " + map2_path, "--combinemaps option for 3-D")
+						ERROR("Sphire combinemaps fails to read the second map " + map2_path, "--combinemaps option for 3-D")
 						exit()
 				
 					if (map2.get_xsize() != map1.get_xsize()) or (map2.get_ysize() != map1.get_ysize()) or (map2.get_zsize() != map1.get_zsize()):
-						ERROR(" two input maps have different image size", "--combinemaps option for 3-D", 1)
+						ERROR("Two input maps have different image size", "--combinemaps option for 3-D", 1)
 				
 				suffix = ""
 				if suffix_patten is not None:
@@ -1158,29 +1158,29 @@ def main():
 
 				## prepare mask 
 				if options.mask != None and options.do_adaptive_mask:
-					ERROR("wrong options, use either adaptive_mask or user provided mask", " options.mask and options.do_adaptive_mask ", 1)
+					ERROR("Wrong options, use either adaptive_mask or user provided mask", " options.mask and options.do_adaptive_mask ", 1)
 
 				if options.mask != None:
-					log_main.add("user provided mask: %s"%options.mask)
+					log_main.add("User provided mask: %s"%options.mask)
 					try: m = get_im(options.mask)
 					except:
-						ERROR("sphire combinemaps fails to read mask file " + options.mask, "--combinemaps option for 3-D")
+						ERROR("Sphire combinemaps fails to read mask file " + options.mask, "--combinemaps option for 3-D")
 						exit()
 					if (m.get_xsize() != map1.get_xsize()) or (m.get_ysize() != map1.get_ysize()) or (m.get_zsize() != map1.get_zsize()):
-						ERROR(" mask file  "+options.mask+" has different size with input image  ", "--combinemaps for mask "+options.mask), 1
+						ERROR(" Mask file  "+options.mask+" has different size with input image  ", "--combinemaps for mask "+options.mask), 1
 
 				elif options.do_adaptive_mask:
 					if not single_map:
 						map1 +=map2
 						map1 /=2.
-					log_main.add("create an adaptive mask, let's wait...")
-					log_main.add("options.mask_threshold, options.dilation, options.consine_edge %f %5.2f %5.2f"%(options.mask_threshold, options.dilation, options.consine_edge))
+					log_main.add("Create an adaptive mask, let's wait...")
+					log_main.add("Options.mask_threshold, options.dilation, options.consine_edge %f %5.2f %5.2f"%(options.mask_threshold, options.dilation, options.consine_edge))
 					m = Util.adaptive_mask(map1, options.mask_threshold, options.dilation, options.consine_edge)
 					m.write_image(os.path.join(options.output_dir, "vol_adaptive_mask%s.hdf"%suffix))
 					map1 = get_im(map1_path) # re-read map1
 				else:
 					m = None
-					log_main.add("no mask is applied")
+					log_main.add("No mask is applied")
 				## prepare FSC
 				from math import sqrt
 				resolution_FSC143   = 0.5 # for single volume, this is the default resolution
@@ -1401,7 +1401,7 @@ def main():
 								else: fsc_true[1][i]=(fsct-fscn)/(1.-fscn)
 						else:
 					"""
-					log_main.add("adjust FSC to the full dataset by: 2.*FSC/(FSC+1.)")
+					log_main.add("Adjust FSC to the full dataset by: 2.*FSC/(FSC+1.)")
 					fsc_true[1] = map(scale_fsc, fsc_true[1])
 
 					## Determine 05/143 resolution from corrected FSC, RH correction of FSC from masked volumes
@@ -1477,7 +1477,7 @@ def main():
 				else: log_main.add("MTF is not applied")
 
 				if options.fsc_adj and not single_map:# limit resolution #2
-					log_main.add("sqrt(FSC) is multiplied to adjust power spectrum of the summed volumes")
+					log_main.add("Sqrt(FSC) is multiplied to adjust power spectrum of the summed volumes")
 					#log_main.add("Notice: FSC adjustment of powerspectrum will increase B-factor 2-3 times than not!")
 					#### FSC adjustment ((2.*fsc)/(1+fsc)) to the powerspectrum;
 					fil = len(fsc_true[1])*[None]
@@ -1502,18 +1502,18 @@ def main():
 						freq_min = 1./options.B_start  # given frequencies in Angstrom unit, say, B_start is 10 Angstrom, or 15  Angstrom
 						if options.B_stop!=0.0: freq_max = 1./options.B_stop 
 						if freq_min>= freq_max:
-							log_main.add("your B_start is too high! Decrease it and rerun the program!")
-							ERROR("your B_start is too high! Decrease it and re-run the program!", "--combinemaps option", 1)
+							log_main.add("Your B_start is too high! Decrease it and rerun the program!")
+							ERROR("Your B_start is too high! Decrease it and re-run the program!", "--combinemaps option", 1)
 						b, junk, ifreqmin, ifreqmax = compute_bfactor(guinierline, freq_min, freq_max, options.pixel_size)
 						global_b = 4.*b # Just a convention!
 						cc = pearson(junk[1],logguinierline)
-						log_main.add("similarity between the fitted line and 1-D rotationally average power spectrum within [%d, %d] is %5.3f"%(\
+						log_main.add("Similarity between the fitted line and 1-D rotationally average power spectrum within [%d, %d] is %5.3f"%(\
 							  ifreqmin, ifreqmax, pearson(junk[1][ifreqmin:ifreqmax],logguinierline[ifreqmin:ifreqmax])))
-						log_main.add("the slope is %6.2f[A^2]"%(round(-b,2)))
+						log_main.add("The slope is %6.2f[A^2]"%(round(-b,2)))
 						sigma_of_inverse = sqrt(2./(global_b/options.pixel_size**2))
 					else: # User provided value
 						#log_main.add( " apply user provided B-factor to enhance map!")
-						log_main.add("user provided B-factor is %6.2f[A^2]"%options.B_enhance)
+						log_main.add("User provided B-factor is %6.2f[A^2]"%options.B_enhance)
 						sigma_of_inverse = sqrt(2./((abs(options.B_enhance))/options.pixel_size**2))
 						global_b = options.B_enhance
 
@@ -1538,11 +1538,11 @@ def main():
 						elif options.fl>0.0 and options.fl< 0.5:  # input is in absolution frequency
 							map1   = filt_tanl(map1,options.fl, min(options.aa,.1))
 							cutoff = options.pixel_size/options.fl
-							log_main.add("low-pass filter to user provided %f[A]"%cutoff)
+							log_main.add("Low-pass filter to user provided %f[A]"%cutoff)
 						else: # low-pass filter to resolution determined by FSC0.143
 							map1   = filt_tanl(map1,resolution_FSC143, options.aa)
 							cutoff = options.pixel_size/resolution_FSC143
-							log_main.add("low-pass filter to FSC0.143 resolution (%f[A])!"%cutoff)
+							log_main.add("Low-pass filter to FSC0.143 resolution (%f[A])!"%cutoff)
 					else:
 						### # NOTE: Toshio Moriya 2018/01/11
 						### # Remove "enforce low-pass filter"
@@ -1553,7 +1553,7 @@ def main():
 						### else:
 						### 	cutoff = 0.0 
 						### 	log_main.add("low-pass filter is not applied to map!")
-						log_main.add("low-pass filter is not applied to map!")
+						log_main.add("Low-pass filter is not applied to map!")
 				else:
 					if options.fl == -1.0: 
 						log_main.add("User does not apply low pass filter in single map enhancement")
@@ -1567,32 +1567,32 @@ def main():
 							cutoff = options.pixel_size/options.fl
 							"""
 							ERROR("User provides incorrect low pass filter. Low pass filter should be in Angstrom", "combinemaps", 1)
-						log_main.add("low-pass filter to user provided %f[A]"%cutoff)
+						log_main.add("Low-pass filter to user provided %f[A]"%cutoff)
 					
 				map1 = fft(map1)
 				file_name, file_ext = os.path.splitext(options.output)
 				if file_ext =='': file_ext = ".hdf"
 				file_path_nomask = os.path.join(options.output_dir, file_name+suffix+"_nomask"+file_ext)
 				map1.write_image(file_path_nomask)
-				log_main.add("the enhanced map without masking is saved as %s"%(file_path_nomask))
+				log_main.add("The enhanced map without masking is saved as %s"%(file_path_nomask))
 				if m: map1 *=m
-				else: log_main.add("the final map is not masked!")
+				else: log_main.add("The final map is not masked!")
 				file_path_final = os.path.join(options.output_dir, file_name+suffix+file_ext)
 				map1.write_image(file_path_final)
-				log_main.add("---------- >>> summary <<<------------")
+				log_main.add("---------- >>> Summary <<<------------")
 				if not single_map:
-					log_main.add("resolution 0.5/0.143 are %5.2f/%5.2f[A]"%(round((options.pixel_size/resolution_FSChalf),3), round((options.pixel_size/resolution_FSC143),3)))
+					log_main.add("Resolution 0.5/0.143 are %5.2f/%5.2f[A]"%(round((options.pixel_size/resolution_FSChalf),3), round((options.pixel_size/resolution_FSC143),3)))
 					if dip_at_fsc: log_main.add("There is a dip in your fsc in the region between 0.5 and 0.143, and you might consider ploting your fsc curve")
 				if options.B_enhance !=-1:  log_main.add( "B-factor is %6.2f[A^2]"%(round((-global_b),2)))
 				else:log_main.add( "B-factor is not applied")
 				if not single_map:
 					output_names = [plot_name.replace(' ', '_') for plot_name in plot_names]
 					log_main.add("FSC curves are saved in {0}.txt ".format('.txt, '.join(output_names).lower()))
-				log_main.add("the final volume is " + file_path_final)
+				log_main.add("The final volume is " + file_path_final)
 				file_path_guinierlines = os.path.join(options.output_dir, "guinierlines"+suffix+".txt")
-				log_main.add("guinierlines in logscale are saved in "+file_path_guinierlines)
+				log_main.add("Guinierlines in logscale are saved in "+file_path_guinierlines)
 				if options.fl !=-1: log_main.add("tanl low-pass filter is applied to cutoff high frequencies from 1/%5.2f[1/A]" %round(cutoff,2))
-				else: log_main.add("the final volume is not low-pass filtered. ")
+				else: log_main.add("The final volume is not low-pass filtered. ")
 				write_text_file(outtext, file_path_guinierlines)
 
 				# evaluation of enhancement: values, values.index(max(values)), max(values), index_zero, int(index_zero - cutoff*N*2)
@@ -1602,17 +1602,17 @@ def main():
 					### log_main.add("B_factor:  %f   cutoff:   %f[A]  (%f[absolute]) aa: [absolute]:  %f  Maximum enhancement ocurs in %d pixels. Maximum enhancement ratio is %f. After %d pixel, power spectrum is set to zero. Fallall width is %d pixels"%\
 					###    (global_b, cutoff, options.pixel_size/cutoff, options.aa, mindex, mavlue, index_zero, pfall_off))
 					log_main.add("B_factor                   :  %f"%(global_b))
-					log_main.add("low-pass filter cutoff     :  %f[A] (%f[absolute])"%(cutoff, options.pixel_size/cutoff))
-					log_main.add("low-pass filter falloff    :  %f[absolute]"%(options.aa))
-					log_main.add("max enhancement point      :  %d[pixels]"%(mindex))
-					log_main.add("max enhancement ratio      :  %f"%(mavlue))
+					log_main.add("Low-pass filter cutoff     :  %f[A] (%f[absolute])"%(cutoff, options.pixel_size/cutoff))
+					log_main.add("Low-pass filter falloff    :  %f[absolute]"%(options.aa))
+					log_main.add("Max enhancement point      :  %d[pixels]"%(mindex))
+					log_main.add("Max enhancement ratio      :  %f"%(mavlue))
 					log_main.add("1st zero pw spectrum point :  %d[pixels]"%(index_zero))
-					log_main.add("fallall width              :  %d[pixels]"%(pfall_off))
+					log_main.add("Fallall width              :  %d[pixels]"%(pfall_off))
 					if mindex == 0:
-						msg = "enhancement has no maximum value, check your input parameters!"
+						msg = "Enhancement has no maximum value, check your input parameters!"
 						log_main.add(msg)
 					if index_zero>map1.get_xsize()//2:
-						msg = "enhancement exceeds nyquist frequency, you might change the input parameters, such as either reduce aa or B_factor, or both, and rerun the command "
+						msg = "Enhancement exceeds nyquist frequency, you might change the input parameters, such as either reduce aa or B_factor, or both, and rerun the command "
 						log_main.add(msg)
 			log_main.add("-------------------------------------------------------")
 			log_main.add("---------- >>> DONE!!! <<<------------")
