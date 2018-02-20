@@ -4005,8 +4005,8 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "sxgui_cter"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "CTF Assessment"; sxcmd.short_info = "GUI tool to assess and sort micrographs using sxcter results."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_cter"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = False
-		token = SXcmd_token(); token.key_base = "cter_ctf_file"; token.key_prefix = ""; token.label = "File containing CTF parameters"; token.help = "This file is produced by sxcter and normally called partres.txt "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "params_cter_txt"; sxcmd.token_list.append(token)
+		sxcmd = SXcmd(); sxcmd.name = "sxgui_cter"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "CTF Assessment"; sxcmd.short_info = "GUI tool to assess and sort micrographs based on their CTF parameters estimated by sxcter."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_cter"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = False
+		token = SXcmd_token(); token.key_base = "cter_ctf_file"; token.key_prefix = ""; token.label = "File containing CTF parameters"; token.help = "This file is produced by sxcter and normally called partres.txt. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "params_cter_txt"; sxcmd.token_list.append(token)
 
 		sxcmd_list.append(sxcmd)
 
