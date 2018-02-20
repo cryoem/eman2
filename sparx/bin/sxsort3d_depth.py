@@ -1126,7 +1126,7 @@ def do_one_way_anova_scipy(clusters, value_list, name_of_variable="variable", lo
 	f_ratio = msa/mse
 	log_main.add('                              ANOVA of %s'%name_of_variable)
 	log_main.add('{:5} {:^12} {:^12} '.format('ANOVA', 'F-value',  'Significance'))
-	log_main.add('{:5} {:12.2f} {:12.2f}'.format('ANOVA', res[0], res[1]))
+	log_main.add('{:5} {:12.2f} {:12.2f}'.format('ANOVA', res[0], res[1]*100.))
 	log_main.add(' ')
 
 	log_main.add('ANOVA:  %s mean of all clusters: %f'%(name_of_variable, round(global_mean/(float(nsamples)), 4)))
@@ -1141,7 +1141,7 @@ def do_one_way_anova_scipy(clusters, value_list, name_of_variable="variable", lo
 	for ires in xrange(K-1):
 		for jres in xrange(ires+1, K):
 			cres = stats.f_oneway(replicas[ires], replicas[jres])
-			log_main.add('{:5} {:^3d} {:^3d} {:12.4f} {:12.4f} {:12.3f} {:12.4f} '.format('ANOVA', ires, jres, avgs[ires], avgs[jres], cres[0], cres[1]))
+			log_main.add('{:5} {:^3d} {:^3d} {:12.4f} {:12.4f} {:12.3f} {:12.4f} '.format('ANOVA', ires, jres, avgs[ires], avgs[jres], cres[0], cres[1]*100.))
 	log_main.add(' ')
 	log_main.add('================================================================================================================\n')
 	return res[0], res[1]
