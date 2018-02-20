@@ -49,6 +49,9 @@ sxpipe organize_micrographs does not support MPI.
 ==== Reference ====
 
 \\
+==== Developer Notes ====
+
+\\
 ==== Author / Maintainer ====
 Toshio Moriya
 
