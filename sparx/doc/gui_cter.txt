@@ -1,65 +1,65 @@
-= Name =
-sxgui_cter - CTF Assessment: GUI tool to assess and sort micrographs using sxcter results.
+~~NOTOC~~
 
+===== sxgui_cter =====
+CTF Assessment: GUI tool to assess and sort micrographs based on their estimated CTF by [[:pipeline:cter:sxcter | sxcter]].
 
-= Usage =
+\\
+===== Usage =====
 
-''usage in command line''
+Usage in command line
 
-sxgui_cter.py  cter_ctf_file 
+  sxgui_cter.py  cter_ctf_file 
 
+\\
+===== Typical usage =====
 
-=== Typical usage ===
+sxgui_cter GUI tool can be run as a stand-alone program or from the SPHIRE GUI.
 
-sxgui_cter GUI tool can be run as a stand-alone program or run from sxgui.py.
+  sxgui_cter.py  outdir_cter/partres.txt
 
-''' sxgui_cter.py  outdir_cter/partres.txt''' 
+\\
+===== Input =====
 
+\\
+=== Main Parameters===
 
-== Input ==
-    cter_ctf_file:: File containing CTF parameters: This file is produced by sxcter and normally called partres.txt (default none)
+  ; cter_ctf_file : CTF parameter file: This file is produced by sxcter and normally called partres.txt. (default none)
 
+\\
+===== Output =====
 
-== Output ==
+\\
+===== Description =====
 
+=== Developer Notes ===
 
-== Description ==
-
-
-= Method =
-
-
-= Reference =
-
-
-= Developer Notes =
-NOTE: 2017/12/07 Toshio Moriya
+== NOTE: 2017/12/07 Toshio Moriya ==
 The format of partres.txt is changed. The old format is also supported for now, but will be removed in near future.
-Please also refer [[http://sparx-em.org/sparxwiki/sxcter|sxcter]].
+Please also refer [[:pipeline:cter:sxcter|sxcter]].
 
-
-== Author / Maintainer ==
+\\
+==== Author / Maintainer ====
 Toshio Moriya
 
-
-=== Attachments ===
-
-
-== Keywords ==
+\\
+==== Keywords ====
 category 1:: APPLICATIONS
 
-
-== Files ==
+\\
+==== Files ====
 sparx/bin/sxgui_cter.py
 
+\\
+==== See also ====
+[[:pipeline:cter:sxcter|sxcter]], [[:pipeline:window:sxwindow|sxwindow]]
 
-=== See also ===
-[[http://sparx-em.org/sparxwiki/sxcter|sxcter]], [[http://sparx-em.org/sparxwiki/sxwindow|sxwindow]]
-
-
-=== Maturity ===
+\\
+==== Maturity ====
 Beta:: Under evaluation and testing. Please let us know if there are any bugs.
 
+\\
 
-=== Bugs ===
+==== Known Bugs ====
 There are no known bugs so far.
+
+\\
