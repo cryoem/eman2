@@ -1041,12 +1041,12 @@ def main():
 					m = get_im(options.mask)
 					log_main.add("user provided mask is %s"%options.mask)
 				except:
-					ERROR("mask image %s does not exists"%options.mask, " --combinemaps for 2-D")
+					ERROR("Mask image %s does not exists"%options.mask, " --combinemaps for 2-D")
 					exit()
 			else:
 				m = None
-				log_main.add("mask is not used")
-			log_main.add("total number of average images is %d"%nimage)
+				log_main.add("Mask is not used")
+			log_main.add("Total number of average images is %d"%nimage)
 			for i in xrange(nimage):
 				e1 = get_im(input_path_list[0],i)
 				if m: e1 *=m
@@ -1067,20 +1067,20 @@ def main():
 				sigma_of_inverse = sqrt(2./global_b)
 				e1 = filt_gaussinv(e1,sigma_of_inverse)
 				if options.fl > 0.0 and options.fl < 0.5:
-					log_main.add("low-pass filter ff %   aa  %f"%(options.fl, options.aa))
+					log_main.add("Low-pass filter ff %   aa  %f"%(options.fl, options.aa))
 					e1 =filt_tanl(e1,options.fl, options.aa)
 				elif options.fl > 0.5:
 					e1 =filt_tanl(e1,options.fl/option.pixel_size, options.aa)
 				e1.write_image(options.output)
 
 		else: # 3D case High pass filter should always come along with low-pass filter. 
-			log_main.add("-------->>> settings given by all options <<<-------")
+			log_main.add("-------->>>Settings given by all options <<<-------")
 			log_main.add("Pixle_size        :"+str(options.pixel_size))
 			log_main.add("Mask              :"+str(options.mask))
 			log_main.add("Fsc_adj           :"+str(options.fsc_adj))
 			log_main.add("B_enhance         :"+str(options.B_enhance))
 			log_main.add("Low_pass_filter   :"+str(options.fl))
-			log_main.add("aa                :"+str(options.aa))
+			log_main.add("Aa                :"+str(options.aa))
 			log_main.add("B_start           :"+str(options.B_start))
 			log_main.add("B_stop            :"+str(options.B_stop))
 			log_main.add("Mtf               :"+str(options.mtf))
@@ -1440,7 +1440,7 @@ def main():
 
 					## output resolution
 					if resolution_FSC143_left != resolution_FSC143_right: log_main.add("there is a dip between 0.5 to 0.143 in FSC!")
-					else:log_main.add("fsc smoothly falls from 0.5 to 0.143 !")
+					else:log_main.add("Fsc smoothly falls from 0.5 to 0.143 !")
 
 					resolution_FSC143 = resolution_FSC143_right
 					nfreq143 = nfreq143_right
@@ -1486,7 +1486,7 @@ def main():
 					guinierline = rot_avg_table(power(periodogram(map1),.5))
 					outtext.append(["LogFSCadj"])
 					for ig in xrange(len(guinierline)):outtext[-1].append("%10.6f"%log(guinierline[ig]))
-				else: log_main.add("fsc_adj is not applied")
+				else: log_main.add("Fsc_adj is not applied")
 
 				map1 = fft(map1)
 				if options.B_enhance !=-1: #3 One specifies and then apply B-factor sharpen
@@ -1591,14 +1591,14 @@ def main():
 				log_main.add("The final volume is " + file_path_final)
 				file_path_guinierlines = os.path.join(options.output_dir, "guinierlines"+suffix+".txt")
 				log_main.add("Guinierlines in logscale are saved in "+file_path_guinierlines)
-				if options.fl !=-1: log_main.add("tanl low-pass filter is applied to cutoff high frequencies from 1/%5.2f[1/A]" %round(cutoff,2))
+				if options.fl !=-1: log_main.add("Tanl low-pass filter is applied to cutoff high frequencies from 1/%5.2f[1/A]" %round(cutoff,2))
 				else: log_main.add("The final volume is not low-pass filtered. ")
 				write_text_file(outtext, file_path_guinierlines)
 
 				# evaluation of enhancement: values, values.index(max(values)), max(values), index_zero, int(index_zero - cutoff*N*2)
 				if cutoff !=0.0:
 					pvalues, mindex, mavlue, index_zero, pfall_off = filter_product(global_b, options.pixel_size, cutoff, options.aa, map1.get_xsize())
-					log_main.add("---->>> analysis of enhancement <<<-----")
+					log_main.add("---->>> Analysis of enhancement <<<-----")
 					### log_main.add("B_factor:  %f   cutoff:   %f[A]  (%f[absolute]) aa: [absolute]:  %f  Maximum enhancement ocurs in %d pixels. Maximum enhancement ratio is %f. After %d pixel, power spectrum is set to zero. Fallall width is %d pixels"%\
 					###    (global_b, cutoff, options.pixel_size/cutoff, options.aa, mindex, mavlue, index_zero, pfall_off))
 					log_main.add("B_factor                   :  %f"%(global_b))
