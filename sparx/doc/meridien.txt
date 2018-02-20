@@ -17,19 +17,24 @@ sxmeridien exists only in MPI version (Running MPI version does not require --MP
 
 There are five ways to run the program:
 
-\\ __1. Standard fresh run__: The 3D refinement starts from exhaustive searches using initial reference volume.
+\\ __1. Standard fresh run:__
+\\ The 3D refinement starts from exhaustive searches using initial reference volume.
   mpirun -np 64 sxmeridien.py bdb:sparx_stack meridien_fresh_outdir ref3d.hdf --sym=c5  --initialshifts  --radius=120  --mask3D=mask3d.hdf
 
-\\ __2. Standard continuation run__: Simple restart where the 3D refinement restarts after the last fully finished iteration of meridien fresh run or local refinement run. One can change some parameters, but that MPI settings have to be the same.
+\\ __2. Standard continuation run:__
+\\ Simple restart where the 3D refinement restarts after the last fully finished iteration of meridien fresh run or local refinement run. One can change some parameters, but that MPI settings have to be the same.
   mpirun -np 64 sxmeridien.py meridien_fresh_outdir --radius=100
 
-\\ __3. Local refinement from stack__: The restricted search of 3D refinement starts from user-provided orientation parameters stored in stack header. Note that delta has to be %%<=%% 3.75.
+\\ __3. Local refinement from stack:__
+\\ The restricted search of 3D refinement starts from user-provided orientation parameters stored in stack header. Note that delta has to be %%<=%% 3.75.
   mpirun -np 64 sxmeridien.py --local_refinement bdb:sparx_stack meridien_local_outdir --delta=1.875 --xr=2.0  --inires=5.5  --sym=c5  --radius=120  --mask3D=mask3d.hdf
 
-\\ __4. Local refinement from meridien iteration__: The restricted search of 3D refinement restarts after the last fully finished iteration of meridien fresh run or local refinement run. One can change some parameters, but MPI settings have to be the same.
+\\ __4. Local refinement from meridien iteration:__
+\\ The restricted search of 3D refinement restarts after the last fully finished iteration of meridien fresh run or local refinement run. One can change some parameters, but MPI settings have to be the same.
   mpirun -np 64 sxmeridien.py --local_refinement meridien_fresh_outdir  --xr=0.6
 
-\\ __5. Final reconstruction only__: Do only final reconstruction using a fully finished iteration of meridien fresh run or local refinement run.
+\\ __5. Final reconstruction only:__
+\\ Do only final reconstruction using a fully finished iteration of meridien fresh run or local refinement run.
   mpirun -np 64 sxmeridien.py --do_final=21 meridien_fresh_outdir
 
 \\
@@ -75,6 +80,9 @@ There are five ways to run the program:
 
 \\
 ==== Reference ====
+
+\\
+==== Developer Notes ====
 
 \\
 ==== Author / Maintainer ====
