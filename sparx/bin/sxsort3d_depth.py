@@ -1125,7 +1125,7 @@ def do_one_way_anova_scipy(clusters, value_list, name_of_variable="variable", lo
 	mst = sst/float(n1)
 	f_ratio = msa/mse
 	log_main.add('                              ANOVA of %s'%name_of_variable)
-	log_main.add('{:5} {:^12} {:^12} '.format('ANOVA', 'F_value',  'P_value'))
+	log_main.add('{:5} {:^12} {:^12} '.format('ANOVA', 'F-value',  'Significance'))
 	log_main.add('{:5} {:12.2f} {:12.2f}'.format('ANOVA', res[0], res[1]))
 	log_main.add(' ')
 
@@ -1137,7 +1137,7 @@ def do_one_way_anova_scipy(clusters, value_list, name_of_variable="variable", lo
 		log_main.add('{:5} {:^7d} {:^8d} {:12.4f} {:12.4f}'.format('ANOVA', i, len(replicas[i]), res_table_stat[i][0], sqrt(res_table_stat[i][1])))
 	log_main.add(' ')
 	log_main.add('ANOVA  Pair-wise tests')
-	log_main.add('{:5} {:^3} {:^3} {:^12} {:^12} {:^12} {:^12}'.format('ANOVA', 'A', 'B', 'avgA','avgB', 'F_value', 'P_value')) 
+	log_main.add('{:5} {:^3} {:^3} {:^12} {:^12} {:^12} {:^12}'.format('ANOVA', 'A', 'B', 'avgA','avgB', 'F-value', 'Significance')) 
 	for ires in xrange(K-1):
 		for jres in xrange(ires+1, K):
 			cres = stats.f_oneway(replicas[ires], replicas[jres])
