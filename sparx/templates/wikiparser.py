@@ -2220,7 +2220,7 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_category = "sxc_cter"
 
 	sxcmd_role = "sxr_pipe"
-	sxcmd_config_list.append(SXcmd_config("../doc/cter.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list=["stack_mode"]))
+	sxcmd_config_list.append(SXcmd_config("../doc/cter.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list=["stack_mode"]))
 	sxcmd_config_list.append(SXcmd_config("../doc/gui_cter.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, is_submittable = False))
 
 	sxcmd_role = "sxr_util"
@@ -2402,7 +2402,7 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 #	token_edit = SXcmd_token(); token_edit.initialize_edit("debug"); token_edit_list.append(token_edit)
 #	sxsubcmd_mpi_support = False
 #	sxcmd_subconfig = SXsubcmd_config("CTF Estimation (Stack Mode)", None, token_edit_list, sxsubcmd_mpi_support)
-#	sxcmd_config_list.append(SXcmd_config("../doc/cter.txt", "MoinMoinWiki", "sxr_util", subconfig = sxcmd_subconfig))
+#	sxcmd_config_list.append(SXcmd_config("../doc/cter.txt", "DokuWiki", "sxr_util", subconfig = sxcmd_subconfig))
 
 	return sxcmd_config_list
 
