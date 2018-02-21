@@ -42,10 +42,10 @@ sxpipe reboxing does not support MPI.
 \\
 ===== Description =====
 This command executes the following processes:
-  - Extract the following information stored in the headers of each particle image
-    * source micrograph path 
-    * box center coordinates within the micrograph
-    * projection parameters 
+  - Extract the following information stored in the header of each particle image.
+    * source micrograph path.
+    * box center coordinates within the micrograph.
+    * projection parameters.
   - Convert the center coordinates to EMAN1 box coordinates format, and then save the results to output files.
   - Transform the coordinates based on the projection parameters and user-provided 3D shift, and then save the results to output files.
   - Save the list of extracted micrograph names to an output file.
