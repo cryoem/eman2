@@ -6969,6 +6969,8 @@ def search_lowpass(fsc):
 
 
 def angular_distribution(inputfile, options, output):
+	ERROR("Code disabled, please use sxplot_projs_distrib.py instead","angular_distribution",1)
+	"""
 	import numpy
 
 	#print('Loading data')
@@ -7097,6 +7099,7 @@ def angular_distribution(inputfile, options, output):
 				)
 			)
 	print(('All done! Saved output to: {0}'.format(output)))
+	"""
 
 #####---------------------------------------------------
 # used in new meridien
