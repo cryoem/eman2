@@ -1,0 +1,85 @@
+~~NOTOC~~
+
+===== sxpipe reboxing =====
+Reboxing: Generate coordinates files and micrograph selection text file based on information stored in the image headers of SPHIRE particle stack file, by extracting coordinates from the input stack, then center them according to projection parameters in the header and user-provided 3D shift.
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  sxpipe.py  reboxing  input_stack_path  output_directory  --box_size=BOX_SIZE  --shift3d_x=SHIFT3D_X  --shift3d_y=SHIFT3D_Y  --shift3d_z=SHIFT3D_Z
+
+\\
+===== Typical usage =====
+
+sxpipe reboxing does not support MPI. 
+
+  sxpipe.py reboxing 'bdb:outdir_window#data' 'outdir_pipe_reboxing'  --box_size=352  --shift3d_z=15
+
+\\
+===== Input =====
+=== Main Parameters ===
+  ; input_stack_path : Input image stack: Specify path to input particle stack. (default required string)
+  ; output_directory : Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)
+
+  ; %%--%%box_size : Particle box size [Pixels]: The x and y dimensions of square area to be windowed. (default 0)
+  ; %%--%%shift3d_x : 3D x-shift [Pixels]: User-provided 3D x-shift corresponding to shifting the 3D volume along x-axis. (default 0)
+  ; %%--%%shift3d_y : 3D y-shift [Pixels]: User-provided 3D y-shift corresponding to shifting the 3D volume along y-axis. (default 0)
+  ; %%--%%shift3d_z : 3D z-shift [Pixels]: User-provided 3D z-shift corresponding to shifting the 3D volume along z-axis. (default 0)
+
+\\
+=== Advanced Parameters ===
+
+\\
+===== Output =====
+=== List of output Files ===
+|| **File Name** || **Discription** ||
+|| original/${MICROGRAPH_ROOTNAME}_original.box || The list of original coordinates stored in the headers of particle images in the stack. These files can be used as inputs of [[pipeline:window:sxwindow|sxwindow]] ||
+|| centered/${MICROGRAPH_ROOTNAME}_centered.box || The list of centered (or transformed) coordinates. . These files can be used as inputs of [[pipeline:window:sxwindow|sxwindow]] ||
+|| micrographs.txt || Micrograph selection text file containing the list of extracted micrograph basenames. This file can be used as micrograph selection text file for [[pipeline:cter:sxcter|sxcter]], [[pipeline:cter:sxgui_cter|sxgui_cter]], [[pipeline:window:sxwindow|sxwindow]], [[pipeline:utilities:sxpipe_organize_micrographs|sxpipe organize_micrographs]], and [[pipeline:utilities:e2bdb|e2bdb]]  ||
+
+\\
+===== Description =====
+
+\\
+==== Method ====
+
+\\
+==== Reference ====
+
+\\
+==== Developer Notes ====
+=== 2018/02/21 Toshio Moriya ===
+Wish list:
+  * Add %%--%%proj_params to use the projection parameter files stored in a text file instead of image headers.
+  * Setting %%--%%box_size to zero (default value) should save the coordinates file in SPHIRE format
+  * Save adjusted shifts to files
+  * Save projection parameters
+  * Save CTF parameters
+
+\\
+==== Author / Maintainer ====
+Christos Gatsogiannis and Toshio Moriya
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+sparx/bin/sxpipe.py
+
+\\
+==== See also ====
+[[pipeline:window:sxwindow|sxwindow]], [[pipeline:cter:sxcter|sxcter]], [[pipeline:cter:sxgui_cter|sxgui_cter]], [[pipeline:window:sxwindow|sxwindow]], [[pipeline:utilities:sxpipe_organize_micrographs|sxpipe organize_micrographs]], [[pipeline:utilities:e2bdb|e2bdb]]
+
+\\
+==== Maturity ====
+Alpha:: Under development.
+
+\\
+==== Bugs ====
+There are no known bugs so far.
+
+\\

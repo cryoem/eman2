@@ -1255,7 +1255,7 @@ def main():
 	parser_organize_micrographs.set_defaults(func=organize_micrographs)
 	
 	# create the subparser for the "reboxing" subcommand
-	parser_reboxing = subparsers.add_parser("reboxing", help="Reboxing: Extract coordinates from the input stack, then center them according to projection parameters in the header and user-provided 3D shift")
+	parser_reboxing = subparsers.add_parser("reboxing", help="Reboxing: Extract coordinates from the input stack, then center them according to projection parameters in the header and user-provided 3D shift.")
 	parser_reboxing.add_argument("input_stack_path",    type=str,                  help="Input image stack: Specify path to input particle stack. (default required string)")
 	parser_reboxing.add_argument("output_directory",    type=str,                  help="Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)")
 	parser_reboxing.add_argument("--box_size",          type=int,    default=0,    help="Particle box size [Pixels]: The x and y dimensions of square area to be windowed. (default 0)")
