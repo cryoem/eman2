@@ -2053,7 +2053,7 @@ def build_config_list_MoinMoinWiki():
 	sxcmd_category = "sxc_isac"
 
 	sxcmd_role = "sxr_pipe"
-### 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/isac.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
+###	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/isac.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/isac2.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_isac2()))
 ### 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_isacselect()))
 ### 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/e2bdb.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_isac_makevstack()))
@@ -2246,7 +2246,7 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_category = "sxc_isac"
 
 	sxcmd_role = "sxr_pipe"
-### 	sxcmd_config_list.append(SXcmd_config("../doc/isac.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
+###	sxcmd_config_list.append(SXcmd_config("../doc/isac.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/isac2.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_isac2()))
 ### 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_isacselect()))
 ### 	sxcmd_config_list.append(SXcmd_config("../doc/e2bdb.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_isac_makevstack()))
