@@ -142,7 +142,7 @@ programs/e2bdb.py
 
 \\
 ==== See also ====
-Eman2DataStorage (http://blake.grid.bcm.edu/emanwiki/Eman2DataStorage?highlight=%28select%5C.selectname%29) 
+[[http://blake.grid.bcm.edu/emanwiki/Eman2DataStorage?highlight=%28select%5C.selectname%29|Image Data files in EMAN2]]
 
 \\
 ==== Maturity ====
