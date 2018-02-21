@@ -1599,7 +1599,7 @@ def main():
 				if cutoff !=0.0:
 					pvalues, mindex, mavlue, index_zero, pfall_off = filter_product(global_b, options.pixel_size, cutoff, options.aa, map1.get_xsize())
 					log_main.add("---->>> Analysis of enhancement <<<-----")
-					### log_main.add("B_factor:  %f   cutoff:   %f[A]  (%f[absolute]) aa: [absolute]:  %f  Maximum enhancement ocurs in %d pixels. Maximum enhancement ratio is %f. After %d pixel, power spectrum is set to zero. Fallall width is %d pixels"%\
+					### log_main.add("B_factor:  %f   cutoff:   %f[A]  (%f[absolute]) aa: [absolute]:  %f  Maximum enhancement ocurs in %d pixels. Maximum enhancement ratio is %f. After %d pixel, power spectrum is set to zero. Falloff width is %d pixels"%\
 					###    (global_b, cutoff, options.pixel_size/cutoff, options.aa, mindex, mavlue, index_zero, pfall_off))
 					log_main.add("B_factor                   :  %f"%(global_b))
 					log_main.add("Low-pass filter cutoff     :  %f[A] (%f[absolute])"%(cutoff, options.pixel_size/cutoff))
@@ -1607,7 +1607,7 @@ def main():
 					log_main.add("Max enhancement point      :  %d[pixels]"%(mindex))
 					log_main.add("Max enhancement ratio      :  %f"%(mavlue))
 					log_main.add("1st zero pw spectrum point :  %d[pixels]"%(index_zero))
-					log_main.add("Fallall width              :  %d[pixels]"%(pfall_off))
+					log_main.add("Falloff width              :  %d[pixels]"%(pfall_off))
 					if mindex == 0:
 						msg = "Enhancement has no maximum value, check your input parameters!"
 						log_main.add(msg)
