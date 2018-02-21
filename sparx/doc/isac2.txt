@@ -161,6 +161,7 @@ sparx/bin/sxisac2.py, sparx/bin/sxisac.py, sparx/bin/isac.py
 
 \\
 ==== See also ====
+[[pipeline:isac:sxcompute_isac_avg|sxcompute_isac_avg]], [[pipeline:isac:sxpipe_isac_substack|sxpipe isac_substack]], and [[pipeline:isac:sxisac|sxisac]]
 
 \\
 ==== Maturity ====
