@@ -79,37 +79,6 @@ The second phase is where the actual class averages are generated (OBSOLETE?!!, 
 
 \\
 ===== Description =====
-=== Time and Memory ===
-
-Unfortunately, ISAC2 is very time- and memory-consuming. (OBSLETE?!! For example, on my cluster, it takes 15 hours to process 50,000 64x64 particles on 256 processors. Therefore, before embarking on the big dataset, it is recommended to run a test dataset (about 2,000~5,000 particles) first to get a rough idea of timing.)
-
-\\
-=== Retrieval of images signed to selected group averages ===
-  - Open in e2display.py file class_averages.hdf located in the main directory.
-  - Delete averages whose member particles should not be included in the output. 
-  - Save the selected subset under a new name,say select1.hdf
-  - Retrieve IDs of member particles and store them in a text file ohk.txt:
-    * $ sxprocess.py --isacselect class_averages.hdf ok.txt
-  - Create a vritual stack containng selected particles:
-    * $ e2bdb.py bdb:data --makevstack:bdb:select1  --list=ohk.txt
-
-The same steps can be performed on files containing candidate class averages.
-
-\\
-=== RCT information retrieval ===
-Let us assume we would want to generate a RCT reconstruction using as a basis group number 12 from ISAC2 generation number 3.  We have to do the following steps:
-
-  - Retrieve original image numbers in the selected ISAC2 group.  The output is list3_12.txt, which will contain image numbers in the main stack (bdb:test) and thus of the tilted counterparts in the tilted stack.  First, change directory to the subdirectory of the main run that contains results of the generation 3.  Note bdb:../data is the file in the main output directory containing original (reduced size) particles.
-    * $ cd generation_0003
-    * $ sxprocess.py  bdb:../data class_averages_generation_3.hdf  list3_12.txt  --isacgroup=12  --params=originalid
-  - Extract the identified images from the main stack (into subdirectory RCT, has to be created):
-    * $ e2bdb.py bdb:test  --makevstack=bdb:RCT/group3_12  --list=list3_12.txt
-  - Extract the class average from the stack (NOTE the awkward numbering of the output file!).
-    * $ e2proc2d.py --split=12 --first=12 --last=12 class_averages_generation3.hdf  group3_12.hdf
-  - Align particles using the corresponding class average from ISAC2 as a template (please adjust the parameters):
-    * $ sxali2d.py bdb:RCT/group3_12 None --ou=28 --xr=3 --ts=1 --maxit=1  --template=group3_12.12.hdf
-  - Extract the needed alignment parameters.  The order is phi,sx,sy,mirror.  sx and mirror are used to transfer to tilted images.
-    * $ sxheader.py  group3_12.12.hdf  --params=xform.align2d  --export=params_group3_12.txt
 
 \\
 ==== Method ====
@@ -136,7 +105,40 @@ The program will perform the following steps (to save computation time, in case 
 Also see the reference below.
 
 \\
-===== Developer Notes =====
+==== Time and Memory ====
+
+Unfortunately, ISAC2 is very time- and memory-consuming. (OBSLETE?!! For example, on my cluster, it takes 15 hours to process 50,000 64x64 particles on 256 processors. Therefore, before embarking on the big dataset, it is recommended to run a test dataset (about 2,000~5,000 particles) first to get a rough idea of timing.)
+
+\\
+==== Retrieval of images signed to selected group averages ====
+  - Open in e2display.py file class_averages.hdf located in the main directory.
+  - Delete averages whose member particles should not be included in the output. 
+  - Save the selected subset under a new name,say select1.hdf
+  - Retrieve IDs of member particles and store them in a text file ohk.txt:
+    * $ sxprocess.py --isacselect class_averages.hdf ok.txt
+  - Create a vritual stack containng selected particles:
+    * $ e2bdb.py bdb:data --makevstack:bdb:select1  --list=ohk.txt
+
+The same steps can be performed on files containing candidate class averages.
+
+\\
+==== RCT information retrieval ====
+Let us assume we would want to generate a RCT reconstruction using as a basis group number 12 from ISAC2 generation number 3.  We have to do the following steps:
+
+  - Retrieve original image numbers in the selected ISAC2 group.  The output is list3_12.txt, which will contain image numbers in the main stack (bdb:test) and thus of the tilted counterparts in the tilted stack.  First, change directory to the subdirectory of the main run that contains results of the generation 3.  Note bdb:../data is the file in the main output directory containing original (reduced size) particles.
+    * $ cd generation_0003
+    * $ sxprocess.py  bdb:../data class_averages_generation_3.hdf  list3_12.txt  --isacgroup=12  --params=originalid
+  - Extract the identified images from the main stack (into subdirectory RCT, has to be created):
+    * $ e2bdb.py bdb:test  --makevstack=bdb:RCT/group3_12  --list=list3_12.txt
+  - Extract the class average from the stack (NOTE the awkward numbering of the output file!).
+    * $ e2proc2d.py --split=12 --first=12 --last=12 class_averages_generation3.hdf  group3_12.hdf
+  - Align particles using the corresponding class average from ISAC2 as a template (please adjust the parameters):
+    * $ sxali2d.py bdb:RCT/group3_12 None --ou=28 --xr=3 --ts=1 --maxit=1  --template=group3_12.12.hdf
+  - Extract the needed alignment parameters.  The order is phi,sx,sy,mirror.  sx and mirror are used to transfer to tilted images.
+    * $ sxheader.py  group3_12.12.hdf  --params=xform.align2d  --export=params_group3_12.txt
+
+\\
+==== Developer Notes ====
 === 2017/05/27 Toshio Moriya ===
   * The meaning of the following option might changed from ISAC to ISAC2.
     * init_iter:: SAC initialization iterations: Number of ab-initio-within-cluster alignment runs used for stability evaluation during SAC initialization. (default 3)
