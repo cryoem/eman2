@@ -2267,7 +2267,7 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_category = "sxc_viper"
 
 	sxcmd_role = "sxr_pipe"
-	sxcmd_config_list.append(SXcmd_config("../doc/rviper.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/rviper.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_viper_changesize()))
 	sxcmd_config_list.append(SXcmd_config("../doc/e2proc3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_viper_window()))
 #	sxcmd_config_list.append(SXcmd_config("../doc/e2proc3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_scale_clip()))
