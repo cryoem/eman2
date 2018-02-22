@@ -218,7 +218,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		# --------------------------------------------------------------------------------
 		# Check the number of arguments. If OK, then prepare variables for them
 		# --------------------------------------------------------------------------------
-		if len(args) != 4:
+		if error_status is None and len(args) != 4:
 			error_status = ("Please check usage for number of arguments.\n Usage: " + usage + "\n" + "Please run %s -h for help." % (program_name), getframeinfo(currentframe()))
 			break
 		
@@ -231,31 +231,31 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		# --------------------------------------------------------------------------------
 		# Check error conditions of arguments
 		# --------------------------------------------------------------------------------
-		if mic_pattern[:len("bdb:")].lower() == "bdb":
+		if error_status is None and mic_pattern[:len("bdb:")].lower() == "bdb":
 			error_status = ("BDB file can not be selected as input micrographs. Please convert the format, and restart the program. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
 			break
 		
-		if mic_pattern.find("*") == -1:
+		if error_status is None and mic_pattern.find("*") == -1:
 			error_status = ("Input micrograph file name pattern must contain wild card (*). Please check input_micrograph_pattern argument. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
 			break
 		
-		if coords_pattern.find("*") == -1:
+		if error_status is None and coords_pattern.find("*") == -1:
 			error_status = ("Input coordinates file name pattern must contain wild card (*). Please check input_coordinates_pattern argument. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
 			break
 		
 		if not is_float(ctf_params_src):
 			assert (type(ctf_params_src) is str)
 			# This should be string for CTER partres (CTF parameter) file
-			if os.path.exists(ctf_params_src) == False:
+			if error_status is None and os.path.exists(ctf_params_src) == False:
 				error_status = ("Specified CTER partres file is not found. Please check input_ctf_params_source argument. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
 				break
 		else:
 			assert (is_float(ctf_params_src))
-			if float(ctf_params_src) <= 0.0:
+			if error_status is None and float(ctf_params_src) <= 0.0:
 				error_status = ("Specified pixel size is not larger than 0.0. Please check input_ctf_params_source argument. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
 				break
 		
-		if os.path.exists(root_out_dir):
+		if error_status is None and os.path.exists(root_out_dir):
 			error_status = ("Output directory exists. Please change the name and restart the program.", getframeinfo(currentframe()))
 			break
 		
@@ -263,15 +263,19 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		# Check error conditions of options
 		# --------------------------------------------------------------------------------
 		if options.selection_list != None:
-			if not os.path.exists(options.selection_list): 
+			if error_status is None and not os.path.exists(options.selection_list): 
 				error_status = ("File specified by selection_list option does not exists. Please check selection_list option. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
 				break
 		
-		if options.coordinates_format.lower() not in ["sphire", "eman1", "eman2", "spider"]:
+		if error_status is None and options.coordinates_format.lower() not in ["sphire", "eman1", "eman2", "spider"]:
 			error_status = ("Invalid option value: --coordinates_format=%s. Please run %s -h for help." % (options.coordinates_format, program_name), getframeinfo(currentframe()))
 			break
 		
-		if (options.resample_ratio <= 0.0 or options.resample_ratio > 1.0):
+		if error_status is None and (options.box_size <= 0):
+			error_status = ("Invalid option value: --box_size=%s. The box size must be an interger larger than zero. Please run %s -h for help." % (options.box_size, program_name), getframeinfo(currentframe()))
+			break
+		
+		if error_status is None and (options.resample_ratio <= 0.0 or options.resample_ratio > 1.0):
 			error_status = ("Invalid option value: --resample_ratio=%s. Please run %s -h for help." % (options.resample_ratio, program_name), getframeinfo(currentframe()))
 			break
 		
@@ -409,7 +413,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		input_mic_path_list = glob.glob(mic_pattern)
 		# Check error condition of input micrograph file path list
 		print("Found %d microgarphs in %s." % (len(input_mic_path_list), os.path.dirname(mic_pattern)))
-		if len(input_mic_path_list) == 0:
+		if error_status is None and len(input_mic_path_list) == 0:
 			error_status = ("No micrograph files are found in the directory specified by micrograph path pattern (%s). Please check input_micrograph_pattern argument. Run %s -h for help." % (os.path.dirname(mic_pattern), program_name), getframeinfo(currentframe()))
 			break
 		assert (len(input_mic_path_list) > 0)
@@ -452,8 +456,12 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 				
 				# Check error condition of micrograph entry lists
 				print("Found %d microgarph entries in %s." % (len(selected_mic_path_list), options.selection_list))
-				if len(selected_mic_path_list) == 0:
+				if error_status is None and len(selected_mic_path_list) == 0:
 					error_status = ("No micrograph entries are found in the selection list file. Please check selection_list option. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
+					break
+				assert (len(selected_mic_path_list) > 1)
+				if error_status is None and not isinstance(selected_mic_path_list[0], basestring):
+					error_status = ("Invalid format of the selection list file. The first column must contain micrograph paths in string type. Please check selection_list option. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
 					break
 			else:
 				print(" ")
@@ -475,7 +483,9 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 			selected_mic_basename = os.path.basename(selected_mic_path)
 			mic_id_substr_tail_idx = selected_mic_basename.index(mic_basename_tokens[1])
 			mic_id_substr = selected_mic_basename[mic_id_substr_head_idx:mic_id_substr_tail_idx]
-			assert (selected_mic_basename == mic_basename_pattern.replace("*", mic_id_substr))
+			if error_status is None and selected_mic_basename != mic_basename_pattern.replace("*", mic_id_substr):
+				error_status = ("A micrograph name (%s) in the input directory (%s) does not match with input micrograph basename pattern (%s) (The wild card replacement with \'%s\' resulted in \'%s\'). Please correct input micrograph path pattern. Run %s -h for help." % (selected_mic_basename, os.path.dirname(mic_pattern), mic_basename_pattern, mic_id_substr, mic_basename_pattern.replace("*", mic_id_substr), program_name), getframeinfo(currentframe()))
+				break
 			if not mic_id_substr in global_entry_dict:
 				# print("MRK_DEBUG: Added new mic_id_substr (%s) to global_entry_dict from selected_mic_path_list " % (mic_id_substr))
 				global_entry_dict[mic_id_substr] = {}
@@ -497,7 +507,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		
 		# Check error condition of coordinates file path list
 		print("Found %d coordinates files in %s directory." % (len(coords_path_list), os.path.dirname(coords_pattern)))
-		if len(coords_path_list) == 0:
+		if error_status is None and len(coords_path_list) == 0:
 			error_status = ("No coordinates files are found in the directory specified by coordinates file path pattern (%s). Please check input_coordinates_pattern argument. Run %s -h for help." % (os.path.dirname(coords_pattern), program_name), getframeinfo(currentframe()))
 			break
 		assert (len(coords_path_list) > 0)
@@ -528,7 +538,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 			
 			# Check error condition of CTER partres entry list
 			print("Found %d CTER partres entries in %s." % (len(cter_entry_list), ctf_params_src))
-			if len(cter_entry_list) == 0:
+			if error_status is None and len(cter_entry_list) == 0:
 				error_status = ("No CTER partres entries are found in %s. Please check input_ctf_params_source argument. Run %s -h for help." % (ctf_params_src, program_name), getframeinfo(currentframe()))
 				break
 			assert (len(cter_entry_list) > 0)
@@ -537,7 +547,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 			# NOTE: 2017/12/05 Toshio Moriya
 			# The following code is to support the old format of CTER partres file. It should be removed near future
 			# 
-			if len(cter_entry_list[0]) != n_idx_cter and len(cter_entry_list[0]) != n_idx_old_cter:
+			if error_status is None and len(cter_entry_list[0]) != n_idx_cter and len(cter_entry_list[0]) != n_idx_old_cter:
 				error_status = ("The number of columns (%d) has to be %d in %s." % (len(cter_entry_list[0]), n_idx_cter, ctf_params_src), getframeinfo(currentframe()))
 				break
 			assert len(cter_entry_list[0]) == n_idx_cter or len(cter_entry_list[0]) == n_idx_old_cter
@@ -555,7 +565,9 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 					mic_id_substr_tail_idx = cter_mic_basename.index(mic_basename_tokens[1])
 					mic_id_substr = cter_mic_basename[mic_id_substr_head_idx:mic_id_substr_tail_idx]
 					# Between cter_mic_path and mic_path, directory paths might be different but the basenames should be same!
-					assert (cter_mic_basename == mic_basename_pattern.replace("*", mic_id_substr))
+					if error_status is None and cter_mic_basename != mic_basename_pattern.replace("*", mic_id_substr):
+						error_status = ("A micrograph name (%s) in the CTER partres file (%s) does not match with input micrograph basename pattern (%s) (The wild card replacement with \'%s\' resulted in \'%s\'). Please check the CTER partres file and correct input micrograph path pattern. Run %s -h for help." % (cter_mic_basename, ctf_params_src, mic_basename_pattern, mic_id_substr, mic_basename_pattern.replace("*", mic_id_substr), program_name), getframeinfo(currentframe()))
+						break
 				
 					if(cter_entry[idx_cter_sd_astig_ang] > options.astigmatism_error):
 						print("    NOTE: Astigmatism angular SD of %s (%f degree) exceeds specified limit (%f degree). Resetting astigmatism parameters to zeros..." % (cter_mic_basename, cter_entry[idx_cter_sd_astig_ang], options.astigmatism_error))
@@ -615,7 +627,9 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 					mic_id_substr_tail_idx = cter_mic_basename.index(mic_basename_tokens[1])
 					mic_id_substr = cter_mic_basename[mic_id_substr_head_idx:mic_id_substr_tail_idx]
 					# Between cter_mic_path and mic_path, directory paths might be different but the basenames should be same!
-					assert (cter_mic_basename == mic_basename_pattern.replace("*", mic_id_substr))
+					if error_status is None and cter_mic_basename != mic_basename_pattern.replace("*", mic_id_substr):
+						error_status = ("A micrograph name (%s) in the CTER partres file (%s) does not match with input micrograph basename pattern (%s) (The wild card replacement with \'%s\' resulted in \'%s\'). Please check the CTER partres file and correct input micrograph path pattern. Run %s -h for help." % (cter_mic_basename, ctf_params_src, mic_basename_pattern, mic_id_substr, mic_basename_pattern.replace("*", mic_id_substr), program_name), getframeinfo(currentframe()))
+						break
 				
 					if(cter_entry[idx_cter_sd_astig_ang] > options.astigmatism_error):
 						print("    NOTE: Astigmatism angular SD of %s (%f degree) exceeds specified limit (%f degree). Resetting astigmatism parameters to zeros..." % (cter_mic_basename, cter_entry[idx_cter_sd_astig_ang], options.astigmatism_error))
@@ -800,7 +814,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		# --------------------------------------------------------------------------------
 		# Check MPI error condition
 		# --------------------------------------------------------------------------------
-		if len(valid_mic_id_substr_list) < n_mpi_procs:
+		if error_status is None and len(valid_mic_id_substr_list) < n_mpi_procs:
 			error_status = ("Number of MPI processes (%d) supplied by --np in mpirun cannot be greater than %d (number of valid micrographs that satisfy all criteria to be processed)." % (n_mpi_procs, len(valid_mic_id_substr_list)), getframeinfo(currentframe()))
 			break
 		
