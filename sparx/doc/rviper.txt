@@ -15,7 +15,7 @@ sxrviper exists only in MPI version.
 
   mpirun --npernode 16 -np 48 --host node1,node2,node3 sxrviper.py  stack output_directory --radius=outer_radius --outlier_percentile=95 --fl=0.25 --xr=2 --moon_elimination=750,4.84
 
-sxrviper needs MPI environment to work properly. Importantly, the umber of used MPI processes **must be** a multiple of --n_shc_runs (default = 4).
+The RVIPER program needs MPI environment to work properly. Importantly, the number of used MPI processes **must be** a multiple of --n_shc_runs (default = 4).
 
 Since RVIPER makes use of group of processors working together, it is important from a time efficiency point of view to have processors within a group being allocated on the same node. This way any data exchange within the group does not use network traffic. The --npernode option of mpirun is useful in accomplishing this goal. As shown in the example below when --npernode is used  mpi allocates the ranks of the processors sequentially, not moving to the next node until the current one is filled.  If --npernode is not used then processors are allocated in a round robin fashion (i.e. jumping to the next node with each allocation). Since in VIPER, groups contain consecutively ranked processors, it is important to provide  --npernode XX, where XX is the number of processors per node.
 
@@ -24,13 +24,14 @@ Since RVIPER makes use of group of processors working together, it is important 
 \\
 ===== Input =====
 === Main Parameters ===
-  ; stack : Input images stack: A small set (<100) of class averages produced by ISAC. The images must be square and the stack must be hdf format . (default required string)
-  ; radius : Target particle radius [Pixels]: Use the same value as in ISAC. It has to be less than half the box size. (default 29)
+  ; stack : Input images stack: A small set (less than 100) of class averages produced by ISAC2. The images must be square. (default required string)
+
+  ; radius : Target particle radius [Pixels]: Use the same value as in ISAC2. It has to be less than half the box size. (default 29)
   ; sym : Point-group symmetry: (default c1)
   ; n_rv_runs : RVIPER iterations: Corresponds to main### output directory. (default 10)
   ; iteration_start : Restarting iteration: Iteration from which to restart the program. 0 means go to the most recent one. (default 0)
   ; moon_elimination : Eliminate disconnected regions: Used to removed disconnected pieces from the model. It requires as argument a comma separated string with the mass in KDa and the pixel size. (default none)
-  
+
 \\
 === Advanced Parameters ===
   ; n_v_runs : Minimun VIPER runs per RVIPER iterations: Corresponds to run### output directory. (default 3)
@@ -44,7 +45,7 @@ Since RVIPER makes use of group of processors working together, it is important 
   ; xr : X search range [Pixels]: The translational search range in the x direction will take place in a +/xr range. (default '0')
   ; yr : Y search range [Pixels]: The translational search range in the y direction. If omitted it will be xr. (default '0')
   ; ts : Translational search step [Pixels]: The search will be performed in -xr, -xr+ts, 0, xr-ts, xr, can be fractional. (default '1.0')
-  ; delta :  Projection angular step [Degree]: (default '2.0')
+  ; delta :  Projection angular step [Degrees]: (default '2.0')
   ; center : Center 3D template: 0: no centering; 1: center of gravity. (default -1.0)
   ; maxit1 : Maximum iterations - GA step: (default 400)
   ; maxit2 : Maximum iterations - Finish step: (default 50)
@@ -53,8 +54,8 @@ Since RVIPER makes use of group of processors working together, it is important 
   ; ref_a : Projection generation method: Method for generating the quasi-uniformly distributed projection directions. S- Saff algorithm, or P - Penczek 1994 algorithm. (default S)
   ; n_shc_runs : GA population size: This defines the number of quasi-independent volumes generated. (same as '--nruns' parameter from [[:pipeline:viper:sxviper]]). (default 4)
   ; doga : Threshold to start GA: Do GA when the fraction of orientation that changes less than 1.0 degrees is at least this fraction. (default 0.1)
-  ; fl : Low-pass filter frequency [1/Pixel]: Using a hyperbolic tangent low-pass filter. (default 0.25)
-  ; aa : Low-pass filter fall-off: Fall-off of for the hyperbolic tangent low-pass filter. (default 0.1)
+  ; fl : Low-pass filter frequency [1/Pixels]: Using a hyperbolic tangent low-pass filter. Specify with absolute frequency. (default 0.25)
+  ; aa : Low-pass filter fall-off [1/Pixels]: Fall-off of for the hyperbolic tangent low-pass filter. Specify with absolute frequency. (default 0.1)
   ; pwreference : Power spectrum reference: Text file containing a 1D reference power spectrum. (default none)
 
 \\
@@ -67,16 +68,16 @@ Since RVIPER makes use of group of processors working together, it is important 
 
 \\
 ===== Description =====
-This program uses multiple VIPER runs to find unstable projections. Based on the user chosen criterion it eliminates the unstable projections and reruns again until all projections are stable. Since VIPER is used as a building block, all its requirements must be satisfied. Attributes xform.projection have to be set in the header of each file.  If their values are not known, all should be set to zero.
-Determining whether the --n_v_runs reconstructed volumes in the current RVIPER iteration have a core set of stable projections is done using one of the following criteria shown in the figures below. The y axis represents the error angle. For example, if a projection has the following assigned angles in three different reconstructed volumes 30,45 and 55 then the error associated with this image is abs(30-45) + abs(30-55) + abs(45-55))/3 = 16.6. The x axis represents the image index of the sorted array of error angles.  
+This program uses multiple VIPER runs to find unstable projections. Based on the user chosen criterion it eliminates the unstable projections and reruns again until all projections are stable. Since VIPER is used as a building block, all requirements from VIPER must be satisfied. Attributes xform.projection have to be set in the header of each file.  If their values are not known, all should be set to zero.
+Determining whether the %%--%%n_v_runs reconstructed volumes in the current RVIPER iteration have a core set of stable projections is done using one of the following criteria shown in the figures below. The y axis represents the error angle. For example, if a projection has the following assigned angles in three different reconstructed volumes 30,45 and 55 then the error associated with this image is abs(30-45) + abs(30-55) + abs(45-55))/3 = 16.6. The x axis represents the image index of the sorted array of error angles.  
 
 {{:viper:criterion01.png?400}} 
 {{:viper:criterion02_1.png?415}}
 
-The first criterion, called "80th percentile" (left image) is satisfied when the 80th percentile is less or equal to 20% of the maximum. The second criterion, called "fastest increase in the last quartile" is satisfied when the last quartile has a length greater than 20% of the maximum. If the finishing criterion is not met after executing 10 VIPER runs, (the criterion fails for all combinations of --n_v_runs (default=3)  taken by 10 (120 in total)) then the program stops.
+The first criterion, called "80th percentile" (left image) is satisfied when the 80th percentile is less or equal to 20% of the maximum. The second criterion, called "fastest increase in the last quartile" is satisfied when the last quartile has a length greater than 20% of the maximum. If finishing criterion is not met after executing 10 VIPER runs, (the criterion fails for all combinations of %%--%%n_v_runs (default=3)  taken by 10 (120 in total)) then the program stops.
 
 Once a criterion is met, a decision is made regarding which images to keep. Currently there are three options implemented:
-  - __Percentile__: All images, with error below "outlier_percentile" given in the command line are kept for the next iteration.
+  - __Percentile__: All images (sorted by their angle error) with error below "outlier_percentile" given in the command line are kept for the next iteration.
   - __Angle_measure__: All images that have angle error below "angle_threshold" given in the command line are kept for the next iteration.
   - __Discontinuity_in_derivative__: As shown in the figure below, two lines (green and red) are fitted together against the error curve (blue) while their common point moves along the x axis between 80th percentile and "outlier_percentile" (provided in the command line). The point on the x coordinate where the projections of the best fit lines meet is chosen as the outlier index threshold. All images before it are kept for the next iteration.
 
@@ -107,7 +108,7 @@ Category 3:: GRIDDING
 
 \\
 ==== Files ====
-sxrviper.py
+sparx/bin/sxrviper.py
 
 \\
 ==== See also ====
@@ -119,6 +120,6 @@ beta:: works for author, often works for others.
 
 \\
 ==== Known Bugs ====
-None.
+Did not discover any yet.
 
 \\
