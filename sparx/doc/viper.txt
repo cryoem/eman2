@@ -1,7 +1,7 @@
 ~~NOTOC~~
 
 ===== sxviper =====
-Initial 3D Model - VIPER: ''ab initio'' 3D structure determination using Validation of Individual Parameter Reproducibility (VIPER). Designed to determine a validated initial model using a small set of class averages produced by [[:pipeline:isac:sxisac|ISAC]].
+Initial 3D Model - VIPER: ''ab initio'' 3D structure determination using Validation of Individual Parameter Reproducibility (VIPER). Designed to determine a validated initial model using a small set of class averages produced by [[pipeline:isac:sxisac2|ISAC2]].
 
 \\
 ===== Usage =====
@@ -27,8 +27,9 @@ Since VIPER makes use of group of processors working together, it is important f
 \\
 ===== Input =====
 === Main Options ===
-  ; stack : Input images stack: A small set of Class averages produced by ISAC. (default required string)
-  ; radius : Target particle radius [Pixels]: Use the same value as in ISAC. It has to be less than half the box size. (default 29)
+  ; stack : Input images stack: A small set of class averages produced by ISAC2. (default required string)
+
+  ; radius : Target particle radius [Pixels]: Use the same value as in ISAC2. It has to be less than half the box size. (default 29)
   ; sym : Point-group symmetry: (default c1)
   ; moon_elimination : Eliminate disconnected regions: Used to removed disconnected pieces from the model. It requires as argument a comma separated string with the mass in KDa and the pixel size. (default none)
 
@@ -39,7 +40,7 @@ Since VIPER makes use of group of processors working together, it is important f
   ; xr : X search range [Pixels]: The translational search range in the x direction will take place in a +/xr range. (default '0')
   ; yr : Y search range [Pixels]: The translational search range in the y direction. If omitted it will be xr. (default '0')
   ; ts : Translational search step [Pixels]: The search will be performed in -xr, -xr+ts, 0, xr-ts, xr, can be fractional. (default '1.0')
-  ; delta :  Projection angular step [Degree]: (default '2.0')
+  ; delta :  Projection angular step [Degrees]: (default '2.0')
   ; center : Center 3D template: 0: no centering; 1: center of gravity (default -1.0)
   ; maxit1 : Maximum iterations - GA step: (default 400)
   ; maxit2 : Maximum iterations - Finish step: (default 50)
@@ -48,8 +49,8 @@ Since VIPER makes use of group of processors working together, it is important f
   ; ref_a : Projection generation method: Method for generating the quasi-uniformly distributed projection directions. S- Saff algorithm, or P - Penczek 1994 algorithm. (default S)
   ; nruns : GA population size: This defines the number of quasi-independent volumes generated. (default 6)
   ; doga : Threshold to start GA: Do GA when the fraction of orientation that changes less than 1.0 degrees is at least this fraction. (default 0.1)
-  ; fl : Low-pass filter frequency [1/Pixel]: Using a hyperbolic tangent low-pass filter. (default 0.25)
-  ; aa : Low-pass filter fall-off: Fall-off of for the hyperbolic tangent low-pass filter. (default 0.1)
+  ; fl : Low-pass filter frequency [1/Pixels]: Using a hyperbolic tangent low-pass filter. Specify with absolute frequency. (default 0.25)
+  ; aa : Low-pass filter fall-off [1/Pixels]: Fall-off of for the hyperbolic tangent low-pass filter. Specify with absolute frequency. (default 0.1)
   ; pwreference : Power spectrum reference: Text file containing a 1D reference power spectrum. (default none)
   ; debug : Verbose: Print debug info. (default False)
 
