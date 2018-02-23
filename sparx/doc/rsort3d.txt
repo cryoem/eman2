@@ -100,7 +100,7 @@ sparx/bin/sxrsort3d.py
 
 \\
 ==== See also ====
-[[pipeline:utilities:sxheader|sxheader]], [[[pipeline:sort3d:sx3dvariability|sx3dvariability]], [[pipeline:sort3d:sxsort3d|sxsort3d]] and [[pipeline:sort3d:sxsort3d_depth|sxsort3d_depth]]
+[[pipeline:meridien:sxmeridien|sxmeridien]], [[pipeline:utilities:sxheader|sxheader]], [[[pipeline:sort3d:sx3dvariability|sx3dvariability]], [[pipeline:sort3d:sxsort3d|sxsort3d]], and [[pipeline:sort3d:sxsort3d_depth|sxsort3d_depth]].
 
 \\
 ==== Maturity ====
