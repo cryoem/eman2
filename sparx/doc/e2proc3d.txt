@@ -25,15 +25,15 @@ For specific details on various options, use 'e2proc3d.py --help'.
 
  2. Apply a 10 A low-pass filter to a volume and write output to a new file.
 
-  e2proc3d.py threed.hdf threed.filt.hdf --process=filter.lowpass.gauss:cutoff_freq=0.1 
+  e2proc3d.py threed.hdf threed.filt.hdf --process=filter.lowpass.gauss:cutoff_freq=0.1
 
  3. Extract a reconstruction from a refinement directory as an HDF file usable with Chimera.
 
-  e2proc3d.py bdb:refine_02#threed_filt_04 map_02_04.hdf 
+  e2proc3d.py bdb:refine_02#threed_filt_04 map_02_04.hdf
 
  4. Create a new 64x64x64 volume, initialize it as 1, then apply a hard spherical mask to 0.
 
-  e2proc3d.py :64:64:64:1 myvol.hdf --process mask.sharp:outer_radius=25 
+  e2proc3d.py :64:64:64:1 myvol.hdf --process mask.sharp:outer_radius=25
 
 'e2help.py processors -v 2' for a detailed list of available procesors.
 
@@ -48,7 +48,7 @@ For specific details on various options, use 'e2proc3d.py --help'.
   ; scale : Rescale volume: Rescale the volume by '<n>'. Generally use with --clip option. (default 1.0)
   ; sym : Symmetry to impose: Point-group symmetry to impose. Choices are:'c<n>', 'd<n>', 'h<n>', 'tet', 'oct', and 'icos'. (default c1)
   ; averager : Averager: Averager used for --average and --sym options. (default mean)
-  ; clip : Pad or clip volume to the specific dimensions. Specify 1, 3 or 6 arguments. (default none)
+  ; clip : Window to specific size [Pixels]: Window (pad or clip) volume to the specific dimensions. Specify 1, 3 or 6 arguments; '<x>[,<y>,<z>[,<xc>,<yc>,<zc>]]'. (default none)
   ; fftclip : Rescale by padding FFT: Make the output have this size with rescaling by padding FFT. The argument format is '<x>,<y>,<z>'. (default none)
   ; process : Apply processor: Apply a processor named 'processor_name' with all its parameters/values;'<processor_name>:<param1>=<value1>:<param2>=<value2>'. Type 'e2help.py processors -v 2' to see available processors. (default none)
   ; apix : Pixels size [A/pixel] for S scaling: Pixels size [A/pixel] for S scaling. (default 0.0)
@@ -90,7 +90,7 @@ For specific details on various options, use 'e2proc3d.py --help'.
 
 \\
 ===== Output =====
-  ; output_file : Output file name. Type of output file depends on the option settings. (default required string)
+  ; output_file : Output file: Output file name. Type of output file depends on the option settings. (default required string)
 
 \\
 ===== Description =====
