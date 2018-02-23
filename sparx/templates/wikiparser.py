@@ -2254,7 +2254,7 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 #	sxcmd_config_list.append(SXcmd_config("../doc/pipeline_viper_ref3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 
 	sxcmd_role = "sxr_alt"
-	sxcmd_config_list.append(SXcmd_config("../doc/viper.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/viper.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/pdb2em.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 
 	sxcmd_role = "sxr_util"
