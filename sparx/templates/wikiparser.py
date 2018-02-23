@@ -2186,26 +2186,6 @@ def build_config_list_MoinMoinWiki():
 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/pipe_organize_micrographs.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 	# sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 
-#	token_edit_list = []
-#	token_edit = SXcmd_token(); token_edit.initialize_edit("stack_mode"); token_edit.group = "main"; token_edit.is_required = True; token_edit.default = True; token_edit_list.append(token_edit)
-#	token_edit = SXcmd_token(); token_edit.initialize_edit("stack"); token_edit.key_prefix = ""; token_edit.label = "2D images in a stack file (bdb or any supported 2D image formats)"; token_edit.help = ""; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "bdb2d_stack"; token_edit_list.append(token_edit)
-#	token_edit = SXcmd_token(); token_edit.initialize_edit("output_directory"); token_edit_list.append(token_edit)
-#	token_edit = SXcmd_token(); token_edit.initialize_edit("apix"); token_edit_list.append(token_edit)
-#	token_edit = SXcmd_token(); token_edit.initialize_edit("Cs"); token_edit_list.append(token_edit)
-#	token_edit = SXcmd_token(); token_edit.initialize_edit("voltage"); token_edit_list.append(token_edit)
-#	token_edit = SXcmd_token(); token_edit.initialize_edit("ac"); token_edit_list.append(token_edit)
-#	token_edit = SXcmd_token(); token_edit.initialize_edit("f_start"); token_edit_list.append(token_edit)
-#	token_edit = SXcmd_token(); token_edit.initialize_edit("f_stop"); token_edit_list.append(token_edit)
-#	# token_edit = SXcmd_token(); token_edit.initialize_edit("kboot"); token_edit_list.append(token_edit)
-#	# token_edit = SXcmd_token(); token_edit.initialize_edit("overlap_x"); token_edit_list.append(token_edit)
-#	# token_edit = SXcmd_token(); token_edit.initialize_edit("overlap_y"); token_edit_list.append(token_edit)
-#	# token_edit = SXcmd_token(); token_edit.initialize_edit("edge_x"); token_edit_list.append(token_edit)
-#	# token_edit = SXcmd_token(); token_edit.initialize_edit("edge_y"); token_edit_list.append(token_edit)
-#	token_edit = SXcmd_token(); token_edit.initialize_edit("debug"); token_edit_list.append(token_edit)
-#	sxsubcmd_mpi_support = False
-#	sxcmd_subconfig = SXsubcmd_config("CTF Estimation (Stack Mode)", None, token_edit_list, sxsubcmd_mpi_support)
-#	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/cter.txt", "MoinMoinWiki", "sxr_util", subconfig = sxcmd_subconfig))
-
 	return sxcmd_config_list
 
 # ========================================================================================
@@ -2388,26 +2368,6 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_config_list.append(SXcmd_config("../doc/e2bdb.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_utility_makevstack()))
 	sxcmd_config_list.append(SXcmd_config("../doc/pipe_organize_micrographs.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	# sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
-
-#	token_edit_list = []
-#	token_edit = SXcmd_token(); token_edit.initialize_edit("stack_mode"); token_edit.group = "main"; token_edit.is_required = True; token_edit.default = True; token_edit_list.append(token_edit)
-#	token_edit = SXcmd_token(); token_edit.initialize_edit("stack"); token_edit.key_prefix = ""; token_edit.label = "2D images in a stack file (bdb or any supported 2D image formats)"; token_edit.help = ""; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "bdb2d_stack"; token_edit_list.append(token_edit)
-#	token_edit = SXcmd_token(); token_edit.initialize_edit("output_directory"); token_edit_list.append(token_edit)
-#	token_edit = SXcmd_token(); token_edit.initialize_edit("apix"); token_edit_list.append(token_edit)
-#	token_edit = SXcmd_token(); token_edit.initialize_edit("Cs"); token_edit_list.append(token_edit)
-#	token_edit = SXcmd_token(); token_edit.initialize_edit("voltage"); token_edit_list.append(token_edit)
-#	token_edit = SXcmd_token(); token_edit.initialize_edit("ac"); token_edit_list.append(token_edit)
-#	token_edit = SXcmd_token(); token_edit.initialize_edit("f_start"); token_edit_list.append(token_edit)
-#	token_edit = SXcmd_token(); token_edit.initialize_edit("f_stop"); token_edit_list.append(token_edit)
-#	# token_edit = SXcmd_token(); token_edit.initialize_edit("kboot"); token_edit_list.append(token_edit)
-#	# token_edit = SXcmd_token(); token_edit.initialize_edit("overlap_x"); token_edit_list.append(token_edit)
-#	# token_edit = SXcmd_token(); token_edit.initialize_edit("overlap_y"); token_edit_list.append(token_edit)
-#	# token_edit = SXcmd_token(); token_edit.initialize_edit("edge_x"); token_edit_list.append(token_edit)
-#	# token_edit = SXcmd_token(); token_edit.initialize_edit("edge_y"); token_edit_list.append(token_edit)
-#	token_edit = SXcmd_token(); token_edit.initialize_edit("debug"); token_edit_list.append(token_edit)
-#	sxsubcmd_mpi_support = False
-#	sxcmd_subconfig = SXsubcmd_config("CTF Estimation (Stack Mode)", None, token_edit_list, sxsubcmd_mpi_support)
-#	sxcmd_config_list.append(SXcmd_config("../doc/cter.txt", "DokuWiki", "sxr_util", subconfig = sxcmd_subconfig))
 
 	return sxcmd_config_list
 
