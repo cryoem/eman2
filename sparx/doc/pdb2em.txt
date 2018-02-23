@@ -1,6 +1,6 @@
 ~~NOTOC~~
 
-===== e2pdb2em =====
+===== sxpdb2em =====
 PDB File Conversion: Converts an atomic model into a simulated density map 
 
 \\
@@ -20,7 +20,7 @@ sxpdb2em does not support MPI.
 
 \\
 === Main Parameters ===
-  ; input_pdb : Input PDB file: Starting atomic coordinates: (default required string) 
+  ; input_pdb : Input PDB file: Starting atomic coordinates: (default required string)
   ; apix : Pixel size of the output map [A]: (default 1.0)
   ; box : Output box size [Voxels]: If not given, the program will find the minimum box size fitting the structure. Be aware that this will most likely result in a rectangular box. (default required int)
   ; het : Include hetero atoms: Otherwise the HETATM entries in the PDB file are ignored. (default False)
@@ -50,10 +50,10 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-e2pdb2em.py
+sxpdb2em.py
 
 \\
 ==== Maturity ====
-Works perfectly well.
+Work perfectly well.
 
 \\
