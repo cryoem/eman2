@@ -7,7 +7,7 @@ Local Resolution: Compute local resolution of a map.
 ===== Usage =====
 Usage in command line:
 
-  sxlocres.py  firstvolume  secondvolume  maskfile  outputfile  --wn=window_size  --step=shell_step_size  --cutoff=res_cutoff --res_overall=overall_resolution --radius=radius  --fsc=output_file_name  --MPI
+  sxlocres.py  firstvolume  secondvolume  maskfile  outputfile  --fsc=output_file_name  --wn=window_size  --step=shell_step_size  --cutoff=res_cutoff  --radius=radius  --res_overall=overall_resolution  --out_ang_res=output_angstrom_resolution  --apix=pixel_size  --MPI
 
 \\
 ===== Typical usage =====
@@ -23,28 +23,36 @@ sxlocres exists in for both MPI and non-MPI versions.
   ; firstvolume : First half-volume: (default required string)
   ; secondvolume : Second half-volume: (default required string)
   ; maskfile : 3D mask: Defines the region where the local filtering should be applied. (default none)
-  ; wn : FSC window size: Defines the size of window where the local real-space FSC is computed. (default 7)
+
+  ; wn : FSC window size [Pixels]: Defines the size of window where the local real-space FSC is computed. (default 7)
   ; step : Fourier shell step size [Pixels]: (default 1.0)
-  ; cutoff : Resolution cut-off [1/Pixel]: Cut-off for the FSC. By default it goes to the Nyquist frequencies. (default 0.5)
+  ; cutoff : Local resolution criterion: Specify local resolution criterion in terms of the real-space FSC (i.e. CCC; cross-correlation coefficient). (default 0.5)
   ; radius : Mask radius [Pixels]: In case no mask is provided, a hard sphere of this radius will be used. (default -1)
-  ; res_overall : Overall resolution [1/Pixel]: A value between 0 to 0.5 for calibration of the average local resolution. See Description section in the wiki page for details. (default -1.0)
+  ; res_overall : Overall resolution [1/Pixel]: Specify overall (or global) resolution in absolute frequency (>=0.0 and <=0.5) for calibration of the average local resolution. Typically, use the absolute frequency corresponding to the conventional FSC resolution obtained by 3D refinement. See Description section in the wiki page for details. By default, the program will not calibrate the average local resolution. (default -1.0)
+
+\\
+=== Advanced Parameters===
+  ; out_ang_res : Save Angstrom local resolution: Additionally creates a local resolution file in Angstroms. (default False)
+  ; apix : Pixel size of half-volumes [A]: Effective only with --out_ang_res options. (default 1.0)
   ; MPI : Use MPI: (default False)
 
 \\
 ===== Output =====
-  ; outputfile : Output volume: Each voxel contains the resolution for this area in [[:Definitions:absolute_frequency_units|absolute frequency]] units. (default required string)
+  ; outputfile : Output volume: Each voxel contains the resolution for this area in [[definitions:absolute_frequency_units|absolute frequency]] units. (default required string)
   ; fsc : FSC output file: Contains the overall FSC curve computed by rotational averaging of local resolution values. It is truncated to res_overall. (default no curve) 
+
 
 \\
 ===== Description =====
 Local resolution values are computed within small windowed areas (size wn<sup>3<\sup>). Due to small sample size the values are inaccurate and tend to underestimate resolution.
 Therefore, the option --res_overall allows to calibrate the average value of all local resolutions to the overall resolution, as estimated by the FSC between two full size volumes.
-This value has to be independently obtained by the user, for example using sximgstat.py to compute (masked) FSC from half-volumes and reading the absolute frequency corresponding
+This value has to be independently obtained by the user - for example using sximgstat.py to compute (masked) FSC from half-volumes and reading the absolute frequency corresponding
 to 0.5 (or other) cut-off value.
 
 \\
 ==== Author / Maintainer ====
 Pawel Penczek
+
 
 \\
 ==== Keywords ====
