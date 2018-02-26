@@ -877,6 +877,9 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 							token = SXcmd_token()
 							# Extract key of command token.
 							key = usage_token.split("=")[0] # Remove characters after '=' if token contains it (i.e. some options)
+							if key == "--MPI":
+								print("### Found a --MPI flag \"%s\". Ignoring this key..." % (key))
+								continue
 							token.key_base = key.strip("-") # Get key base name by removing prefix ('--' or '-' for option)
 							token.key_prefix = key[0:len(key) - len(token.key_base)]
 							# Register this command token to the usage token list (ordered)
@@ -2329,7 +2332,7 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 
 	sxcmd_role = "sxr_pipe"
 	sxcmd_config_list.append(SXcmd_config("../doc/locres.txt", "DokuWiki", sxcmd_category, sxcmd_role))
-	sxcmd_config_list.append(SXcmd_config("../doc/filterlocal.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/filterlocal.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
