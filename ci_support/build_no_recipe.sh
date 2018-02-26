@@ -20,6 +20,9 @@ export PREFIX=${PWD}
 
 rm -vf ${CONDA_PREFIX}/bin/e2*.py
 
+conda info -a
+conda list
+
 bash ${SRC_DIR}/recipes/eman/build.sh
 
 # Run tests
