@@ -1,7 +1,7 @@
 ~~NOTOC~~
 
 ===== sxfilterlocal =====
-3D Local Filter: Locally filter maps according to the local resolution determined by [[sxlocres|sxlocres.py]].
+3D Local Filter: Locally filter maps according to the local resolution determined by [[pipeline:localres:sxlocres|sxlocres]].
 
 \\
 ===== Usage =====
@@ -23,7 +23,10 @@ sxlocres exists in for both MPI and non-MPI versions.
   ; locres_volume : Local resolution file: Volume file containing the local resolution estimate produced by [[sxlocres]]. (default required string)
   ; maskfile : 3D mask: Defines the region where the local filtering should be applied. (default none)
   ; radius : Mask radius [Pixels]: In case no mask is provided, a hard sphere of this radius will be used. (default -1)
-  ; falloff : Low-pass filter fall-off: The program uses a tangent low-pass filter. (default 0.1)
+  ; falloff : Low-pass filter fall-off [1/Pixels]: The program uses a tangent low-pass filter. Specify with absolute frequency. (default 0.1)
+
+\\
+=== Advanced Parameters ===
   ; MPI : Use MPI: (default False)
 
 \\
