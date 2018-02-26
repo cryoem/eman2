@@ -1,58 +1,56 @@
-= Name =
-sxfilterlocal - 3D Local Filter: Locally filter maps according to the local resolution determined by [[sxlocres.py]].
+~~NOTOC~~
 
-= Usage =
+===== sxfilterlocal =====
+3D Local Filter: Locally filter maps according to the local resolution determined by [[sxlocres|sxlocres.py]].
 
+\\
+===== Usage =====
+Usage in command lines
 
-''Usage in command lines'':
+  sxfilterlocal.py  input_volume  locres_volume  maskfile  outputfile  --radius=radius  --falloff=falloff  --MPI
 
-sxfilterlocal.py  input_volume  locres_volume  maskfile  outputfile  --radius=radius  --falloff=falloff  --MPI
-
-
-=== Typical usage ===
-
+\\
+===== Typical usage =====
 sxlocres exists in for both MPI and non-MPI versions.
 
-''' mpirun -np 32 sxfilterlocal.py refinementdir/main002/vol0.hdf locres.hdf locfilt.hdf --radius=28 --MPI '''
+  mpirun -np 32 sxfilterlocal.py refinementdir/main002/vol0.hdf locres.hdf locfilt.hdf --radius=28 --MPI
 
+\\
+===== Input =====
+=== Main Options ===
 
-== Input ==
-    input_volume:: Input volume: (default required string)
-    locres_volume:: Local resolution file: Volume file containing the local resolution estimate produced by [[sxlocres]]. (default required string)
-    maskfile:: 3D mask: Defines the region where the local filtering should be applied. (default none)
-     
-    radius:: Mask radius [Pixels]: In case no mask is provided, a hard sphere of this radius will be used. (default -1)
-    falloff:: Low-pass filter fall-off [1/Pixels]: The program uses a [[filt_tanl|tangent low-pass filter]]. Specify with absolute frequency. (default 0.1)
-    
-    * The remaining parameters are optional.
-    MPI:: Use MPI: (default False)
+  ; input_volume : Input volume: (default required string)
+  ; locres_volume : Local resolution file: Volume file containing the local resolution estimate produced by [[sxlocres]]. (default required string)
+  ; maskfile : 3D mask: Defines the region where the local filtering should be applied. (default none)
+  ; radius : Mask radius [Pixels]: In case no mask is provided, a hard sphere of this radius will be used. (default -1)
+  ; falloff : Low-pass filter fall-off: The program uses a tangent low-pass filter. (default 0.1)
+  ; MPI : Use MPI: (default False)
 
+\\
+===== Output =====
+  ; outputfile : Output volume: (default required string)
 
-== Output ==
-    outputfile:: Output volume: (default required string)
+\\
+===== Description =====
 
-
-= Description =
-
-= Method =
-
-= Reference =
-
-= Author / Maintainer =
+\\
+==== Author / Maintainer ====
 Pawel Penczek
 
-= Keywords =
-    category 1:: APPLICATIONS
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
 
-= Files =
+\\
+==== Files ====
 sxfilterlocal.py
 
-= See also =
+\\
+==== Maturity ====
+Stable:: works for most people and has been tested. Test cases/examples available.
 
-= Maturity =
+\\
+==== Known Bugs ====
+None.
 
-
-    stable:: works for most people, has been tested; test cases/examples available.
-
-= Bugs =
-None.  It is perfect.
+\\
