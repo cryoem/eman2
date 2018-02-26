@@ -30,7 +30,7 @@ sxlocres exists in for both MPI and non-MPI versions.
   ; %%--%%step : Fourier shell step size [Pixels]: Defines the finess of resolution measure. (default 1.0)
   ; %%--%%cutoff : Local resolution criterion: Specify local resolution criterion in terms of the real-space FSC (i.e. real-space CCC; cross-correlation coefficient). (default 0.5)
   ; %%--%%radius : Mask radius [Pixels]: In case no mask is provided, a hard sphere of this radius will be used. (default -1)
-  ; %%--%%res_overall : Overall resolution [1/Pixel]: Specify overall (or global) resolution in absolute frequency (>=0.0 and <=0.5) for calibration of the average local resolution. Typically, use the absolute frequency corresponding to the conventional FSC resolution obtained by 3D refinement. See Description section in the wiki page for details. By default, the program will not calibrate the average local resolution. (default -1.0)
+  ; %%--%%res_overall : Overall resolution [1/Pixel]: Specify overall (or global) resolution in absolute frequency (%%>=%%0.0 and %%<=%%0.5) for calibration of the average local resolution. Typically, use the absolute frequency corresponding to the conventional FSC resolution obtained by 3D refinement. See Description section in the wiki page for details. By default, the program will not calibrate the average local resolution. (default -1.0)
 
 \\
 === Advanced Parameters ===
