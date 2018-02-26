@@ -2266,7 +2266,7 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_category = "sxc_meridien"
 
 	sxcmd_role = "sxr_pipe"
-	# sxcmd_config_list.append(SXcmd_config("../doc/meridien_20171120.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_meridien_20171120()))
+	# sxcmd_config_list.append(SXcmd_config("../doc/meridien_20171120.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_meridien_20171120()))
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_standard_fresh()))
 	sxcmd_config_list.append(SXcmd_config("../doc/gui_meridien.txt", "DokuWiki", sxcmd_category, sxcmd_role, is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_postrefiner_halfset_vol()))
@@ -2297,7 +2297,7 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 ### sxcmd_config_list.append(SXcmd_config("../doc/rsort3d-1105.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_rsort3d_1105()))
 ###	sxcmd_config_list.append(SXcmd_config("../doc/sort3d_new.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_sort3d_new()))
 	sxcmd_config_list.append(SXcmd_config("../doc/sort3d_depth.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_sort3d_depth_iteration()))
-###	sxcmd_config_list.append(SXcmd_config("../doc/meridien_20171120.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_20171120_local()))
+###	sxcmd_config_list.append(SXcmd_config("../doc/meridien_20171120.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_20171120_local()))
 ###	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_postrefiner_cluster_vol()))
 	sxcmd_config_list.append(SXcmd_config("../doc/e2bdb.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_sort3d_makevstack()))
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_local_stack()))
@@ -2312,7 +2312,7 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 ### # post-refiner embedded sort3d_depth is removed recently.
 ###	sxcmd_config_list.append(SXcmd_config("../doc/sort3d_depth.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_sort3d_depth_postrefiner()))
 	if is_dev_mode:
-		sxcmd_config_list.append(SXcmd_config("../doc/meridien_20171120.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_20171120_local()))
+		sxcmd_config_list.append(SXcmd_config("../doc/meridien_20171120.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_20171120_local()))
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_final()))
 	if is_dev_mode:
 		sxcmd_config_list.append(SXcmd_config("../doc/pipe_reboxer.txt", "DokuWiki", sxcmd_category, sxcmd_role))
