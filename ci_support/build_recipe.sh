@@ -13,4 +13,4 @@ if [ "$(uname -s)" == "Darwin" ];then
     export EMAN_TEST_SKIP=1
 fi
 
-conda build recipes/eman -c cryoem -c defaults -c conda-forge
+conda build recipes/eman -c cryoem -c defaults -c conda-forge --quiet
