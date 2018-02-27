@@ -369,7 +369,7 @@ class SXLookFeelConst(object):
 	def generate_sxcmd_wiki_url(sxcmd, wiki_type = "SPHIRE"):
 		if wiki_type == "SPHIRE":
 			# First, handle exceptional cases
-			if sxcmd.name in ["e2display", "sxpdb2em", "sxrelion2sphire", "sxprocess", "e2proc3d", "sxheader", "e2bdb", "sxunblur", "sxsummovie"]:
+			if sxcmd.name in ["e2display", "sxpdb2em", "sxrelion2sphire", "sxprocess", "e2proc3d", "sxheader", "e2bdb"]:
 				sxcmd_category_name = "utilities"
 			elif sxcmd.name in ["sxpipe"] and sxcmd.subname in ["organize_micrographs"]:
 				sxcmd_category_name = "utilities"
