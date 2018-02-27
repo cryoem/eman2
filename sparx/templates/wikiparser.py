@@ -2194,7 +2194,7 @@ def build_config_list_MoinMoinWiki():
 # ========================================================================================
 def build_config_list_DokuWiki(is_dev_mode = False):
 	# --------------------------------------------------------------------------------
-	# Get all necessary informations from wiki documents of sx*.py scripts in MoinMoinWiki format
+	# Get all necessary informations from wiki documents of sx*.py scripts in DokuWiki format
 	# and create gui generation parameter
 	# --------------------------------------------------------------------------------
 	sxcmd_config_list = []
