@@ -70,19 +70,19 @@ Run Unblur with dose-filtering, and then run Summovie without dose-filtering wit
 ===== Output =====
 The program automatically creates the following subdirectories in the specified output directory.
 
-__Run without dose-filtering__:
-  * Sum files will be written to the "corrsum" directory.
-  * Log files will be written to the "logfiles" directory.
-  * Aligned frames will be written to the "corrsum" directory.
-  * Shift files  will be written to the "shift" directory.
-  * FRC files will be written to the "frc" directory.
+\\ __Run without dose-filtering__:
+  * Sum files will be written to the ''corrsum'' directory.
+  * Log files will be written to the ''logfiles'' directory.
+  * Aligned frames will be written to the ''corrsum'' directory.
+  * Shift files  will be written to the ''shift'' directory.
+  * FRC files will be written to the ''frc'' directory.
 
-__Run with dose-filtering (as without dose-filtering plus)__:
-  * Dose filtered sum files will be written to the "corrsum_dose_filtered" directory.
-  * Log files will be written to the "logfiles" directory.
-  * Dose filtered aligned frames will be written to the "corrsum_dose_filtered" directory.
-  * Shift files  will be written to the "shift" directory.
-  * FRC files will be written to the "frc" directory.
+\\ __Run with dose-filtering (as without dose-filtering plus)__:
+  * Dose filtered sum files will be written to the ''corrsum_dose_filtered'' directory.
+  * Log files will be written to the ''logfiles'' directory.
+  * Dose filtered aligned frames will be written to the ''corrsum_dose_filtered'' directory.
+  * Shift files  will be written to the ''shift'' directory.
+  * FRC files will be written to the ''frc'' directory.
 
 \\
 ===== Description =====
