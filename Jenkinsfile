@@ -22,7 +22,7 @@ def notifyGitHub(status) {
 
 def notifyEmail() {
     if(JOB_TYPE == "push") {
-        emailext(recipientProviders: [[$class: 'DevelopersRecipientProvider']],  
+        emailext(to: "$GIT_AUTHOR_EMAIL",  
                  subject: '[JenkinsCI/$PROJECT_NAME/push] ' + "($GIT_BRANCH_SHORT - ${GIT_COMMIT_SHORT})" + ' #$BUILD_NUMBER - $BUILD_STATUS!',
                  body: '''${SCRIPT, template="groovy-text.template"}''',
                  attachLog: true
@@ -116,6 +116,7 @@ pipeline {
     JOB_TYPE = getJobType()
     GIT_BRANCH_SHORT = sh(returnStdout: true, script: 'echo ${GIT_BRANCH##origin/}').trim()
     GIT_COMMIT_SHORT = sh(returnStdout: true, script: 'echo ${GIT_COMMIT:0:7}').trim()
+    GIT_AUTHOR_EMAIL = sh(returnStdout: true, script: 'git log -1 --format="%ae"').trim()
     HOME_DIR = getHomeDir()
     INSTALLERS_DIR = '${HOME_DIR}/workspace/${STAGE_NAME}-installers'
     DEPLOY_DEST    = 'zope@ncmi.grid.bcm.edu:/home/zope/zope-server/extdata/reposit/ncmi/software/counter_222/software_136/'
