@@ -398,8 +398,13 @@ class SXLookFeelConst(object):
 	@staticmethod
 	def generate_sxmenu_item_wiki_url(sxmenu_item):
 		# First, handle exceptional cases
-		# URL Format: "http://sphire.mpg.de/wiki/doku.php?id=pipeline:CMD_CATEGORY:start"
-		sxmenu_item_wiki_url = "http://sphire.mpg.de/wiki/doku.php?id=pipeline:%s:start" % (sxmenu_item.name.replace("sxc_", ""))
+		sxmenu_item_wiki_url = None
+		if sxmenu_item.name in ["sxc_gui_info"]:
+			sxmenu_item_wiki_url = "http://sphire.mpg.de/wiki/doku.php?id=start"
+		else:
+			# URL Format: "http://sphire.mpg.de/wiki/doku.php?id=pipeline:CMD_CATEGORY:start"
+			sxmenu_item_wiki_url = "http://sphire.mpg.de/wiki/doku.php?id=pipeline:%s:start" % (sxmenu_item.name.replace("sxc_", ""))
+		assert (sxmenu_item_wiki_url is not None)
 		
 		return sxmenu_item_wiki_url
 
@@ -3935,7 +3940,8 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		self.setFocus()
 
 	def construct_sxinfo(self):
-		sxinfo = SXmenu_item(); sxinfo.name = "GUI Information"; sxinfo.label = "GUI Appliation Information"; sxinfo.short_info = "DUMMY STRING"
+###		sxinfo = SXmenu_item(); sxinfo.name = "GUI Information"; sxinfo.label = "GUI Appliation Information"; sxinfo.short_info = "DUMMY STRING"
+		sxinfo = SXmenu_item(); sxinfo.name = "sxc_gui_info"; sxinfo.label = "GUI Appliation Information"; sxinfo.short_info = "DUMMY STRING"
 
 		# Store GUI application information as a class data member
 		self.sxinfo = sxinfo
