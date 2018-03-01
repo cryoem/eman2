@@ -66,7 +66,7 @@ map to the center of the volume."""
 	parser.add_option("--apix", "-A", type="float",        help="Angstrom/voxel", default=1.0)
 	parser.add_option("--box",  "-B", type="string",       help="Box size in pixels, <xyz> or <x,y,z>")
 	parser.add_option("--het",        action="store_true", help="Include HET atoms in the map", default=False)
-	#parser.add_option("--chains",type="string",help="String list of chain identifiers to include, eg 'ABEFG'")
+	parser.add_option("--chains",     type="string",       help="String list of chain identifiers to include, eg 'ABEFG'", default='')
 	parser.add_option("--center",     type="string",       default="n", help="center: c - coordinates; a - center of gravity; <x,y,z> - a vector (in Angstrom) to substract from all coordinates; default: n - no" )
 	parser.add_option("--O",          action="store_true", default=False, help="use O system of coordinates")
 	parser.add_option("--quiet",      action="store_true", default=False, help="Verbose is the default")
@@ -79,7 +79,8 @@ map to the center of the volume."""
 	if global_def.CACHE_DISABLE:
 		from utilities import disable_bdb_cache
 		disable_bdb_cache()
-	chains=None
+	chains = options.chains
+	if chains == '': chains = None
 	
 	try : infile=open(args[0],"r")
 	except : parser.error("Cannot open input file")
@@ -106,8 +107,7 @@ map to the center of the volume."""
 	# parse the pdb file and pull out relevant atoms
 	for line in infile:
 		if (line[:4]=='ATOM' or (line[:6]=='HETATM' and options.het)) :
-			if chains and not (line[21] in chains) : continue
-			
+			if chains and (line[21] not in chains): continue
 			try:
 				a=line[12:14].strip()
 				aseq=int(line[6:11].strip())
@@ -148,7 +148,6 @@ map to the center of the volume."""
 				asig[0] += x**2
 				asig[1] += y**2
 				asig[2] += z**2
-			
 	infile.close()
 
 	if(options.center == "a"):
