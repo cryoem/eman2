@@ -66,7 +66,7 @@ map to the center of the volume."""
 	parser.add_option("--apix", "-A", type="float",        help="Angstrom/voxel", default=1.0)
 	parser.add_option("--box",  "-B", type="string",       help="Box size in pixels, <xyz> or <x,y,z>")
 	parser.add_option("--het",        action="store_true", help="Include HET atoms in the map", default=False)
-	parser.add_option("--chains",     type="string",       help="String list of chain identifiers to include, eg 'ABEFG'", default='')
+	parser.add_option("--chains",     type="string",       help="String list of chain identifiers to include, e.g. 'ABEFG'; default: include all chains", default='')
 	parser.add_option("--center",     type="string",       default="n", help="center: c - coordinates; a - center of gravity; <x,y,z> - a vector (in Angstrom) to substract from all coordinates; default: n - no" )
 	parser.add_option("--O",          action="store_true", default=False, help="use O system of coordinates")
 	parser.add_option("--quiet",      action="store_true", default=False, help="Verbose is the default")
