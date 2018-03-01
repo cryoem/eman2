@@ -376,7 +376,7 @@ def main():
 		nx=ptclmask["nx"]
 		apix=threed[0]["apix_x"]
 
-		rings=[int(2*nx*apix/res) for res in (100,30,18,10,4)]
+		rings=[int(2*nx*apix/res) for res in (100,30,15,8,4)]
 		print(("Frequency Bands: {lowest},{low},{mid},{high},{highest}".format(lowest=rings[0],low=rings[1],mid=rings[2],high=rings[3],highest=rings[4])))
 
 		# We expand the mask a bit, since we want to consider problems with "touching" particles
@@ -435,7 +435,7 @@ def main():
 			t.join()
 	 
 		fout=open(ptclfsc,"w")
-		fout.write("# 100-30 it1; 30-18 it1; 18-10 it1; 10-4 it1; 100-30 it2; 30-18 it2; 18-10 it2; 10-4 it2; it12rmsd; alt1; az1; cls1; alt2; az2; cls2; defocus\n")
+		fout.write("# 100-30 it1; 30-15 it1; 15-8 it1; 8-4 it1; 100-30 it2; 30-15 it2; 15-8 it2; 8-4 it2; it12rmsd; (30-8)/(100-30) alt1; az1; cls1; alt2; az2; cls2; defocus\n")
 		# loop over all particles and print results
 		rmsds=[]
 		for j in xrange(nptcl[0]+nptcl[1]):
@@ -453,9 +453,9 @@ def main():
 			rmsd=sqrt((r[0]-r[8])**2+(r[1]-r[9])**2+(r[2]-r[10])**2+(r[3]-r[11])**2)
 			rmsds.append(rmsd)
 			if options.includeprojs:
-				fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{};{};{}\n".format(r[0],r[1],r[2],r[3],r[8],r[9],r[10],r[11],rmsd,r[4],r[5],r[6],r[12],r[13],r[14],r[15],jj,cptcl[eo],j,pf))
+				fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{};{};{}\n".format(r[0],r[1],r[2],r[3],r[8],r[9],r[10],r[11],rmsd,(r[9]+r[10])/r[8],r[4],r[5],r[6],r[12],r[13],r[14],r[15],jj,cptcl[eo],j,pf))
 			else:
-				fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{}\n".format(r[0],r[1],r[2],r[3],r[8],r[9],r[10],r[11],rmsd,r[4],r[5],r[6],r[12],r[13],r[14],r[15],jj,cptcl[eo]))
+				fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{}\n".format(r[0],r[1],r[2],r[3],r[8],r[9],r[10],r[11],rmsd,(r[9]+r[10])/r[8],r[4],r[5],r[6],r[12],r[13],r[14],r[15],jj,cptcl[eo]))
 
 		fout.close()
 
@@ -521,101 +521,6 @@ def main():
 		print("Evaluation complete.\nParticles best resembling results from {} at low/intermediate resolution have been saved in {} and can be used in further refinements.\nNote that this method will identify the worst particles as bad, regardless of whether they actually are (bad), and that it may be wise to do your own classification on these results instead, as described in the tutorial.".format(args[0],nameg))
 
 
-		# TODO: This is Michael's code, not mine, I just uncommented it again after fixing some of the above
-		# a bit silly that it re-reads the data we already have in RAM. Should be rewritten --steve
-		#bname = base_name(ptclfsc)
-
-		#print("Generating new sets.")
-
-		#nseg = 2
-		#if apix>2.5 : axes=[0,4,5]
-		#else : axes = [0,4,5,6]
-
-		#fscs = []
-		#cmts = []
-		#with open(ptclfsc,'r') as ptclfsc_handle:
-			#for line in ptclfsc_handle:
-				#if line[0]=="#": continue
-				#if line != "":
-					#fsc,cmt = line.strip().split("#")
-					#fscs.append(fsc.split())
-					#cmts.append(cmt.strip())
-
-		#d = np.asarray(fscs).astype(float)
-		##d /= np.std(d,axis=0)
-		#(nrow,ncol) = d.shape
-
-		#imdata = []
-		#for r in range(nrow):
-			#imdata.append(EMData(ncol,1,1))
-			#for ax in axes:
-				#imdata[r][ax]=d[r][ax]
-
-		#an=Analyzers.get("kmeans")
-		#an.set_params({"ncls":nseg,"minchange":nrow//100,"verbose":0,"slowseed":0,"mininclass":5})
-		#an.insert_images_list(imdata)
-		#centers=an.analyze()
-
-		#results=[[[] for i in range(ncol)] for j in range(nseg)]
-		#resultc=[[] for j in range(nseg)]
-		##resultt=[[] for t in range(nseg)]
-
-		#d1 = []
-		#d2 = []
-
-		#try: os.unlink(tfn)
-		#except: pass
-
-		#for r in range(nrow):
-			#s=imdata[r]["class_id"]
-			#if s == 0: d1.append(d[r])
-			#else: d2.append(d[r])
-			#for c in xrange(ncol):
-				#results[s][c].append(imdata[c][r])
-			#resultc[s].append(cmts[r])
-			##resultt[s].append(tfs[r])
-
-		#d1 = np.asarray(d1)
-		#d2 = np.asarray(d2)
-
-		## need to *consistently* label the "best" and "worst" cluster
-		#d1s = np.max(d1)
-		#d2s = np.max(d2)
-		#lstfs = {}
-		#if d1s > d2s:
-			#lstfs[0] = "{}_good.lst".format(bname)
-			#lstfs[1] = "{}_bad.lst".format(bname)
-		#else:
-			#lstfs[0] = "{}_bad.lst".format(bname)
-			#lstfs[1] = "{}_good.lst".format(bname)
-
-		#lsx={}
-		#for s in [0,1]:#range(len(results)):
-			#outf = "sets/{}".format(lstfs[s])
-			#try: os.unlink(outf) # try to remove file if it already exists
-			#except: pass
-			#out=LSXFile(outf)
-			#for r,cmt in enumerate(resultc[s]):
-				#imn,imf=cmt.split(";")[:2]
-				#imn=int(imn)
-				#if not lsx.has_key(imf):
-					#lsx[imf]=LSXFile(imf,True)	# open the LSX file for reading
-				#val=lsx[imf][imn]
-				##val[2] = str(resultt[s][r]) # comment is a string dictionary, required to make3d_rawptcls.
-				##out[r]=[val[0],val[1],str(resultt[s][r])]
-				#out[r]=[val[0],val[1]]
-
-		# OLD 'MANUAL' INFO
-		#print("Evaluation complete. Each column in the resulting text file includes information at a different resolution range. Columns 0 and 1 are almost always useful,
-		# and column 2 is useful for high resolution data. Column 3 is only useful for near-atomic resolution, and even then, not always.
-		#\n\ne2display.py --plot ptclfsc_{}.txt\n\nwill allow you to visualize the data, and apply various segmentation methods through the control-panel. You can also
-		#mouse-over specific data points to see the particle each represents. See one of the single particle analysis tutorials for more details.".format(args[0][-2:]))
-
-		# NEW AUTOMATED INFO
-		#print("Evaluation complete.\nParticles best resembling results from {ref} at low/intermediate resolution have been saved in 'sets/{bn}_good.lst' and can be used in further refinements.\nHowever, please note that some additional columns have been added to the data ".format(ref=args[0],bn=bname))
-
-		#E2end(logid)
-		#sys.exit(0)
 
 	if options.evalclassqual:
 		print("Class quality evaluation mode")
@@ -634,7 +539,7 @@ def main():
 		nx=timg["nx"]
 		apix=timg["apix_x"]
 
-		rings=[int(2*nx*apix/res) for res in (100,30,15,8,3)]
+		rings=[int(2*nx*apix/res) for res in (100,30,12,7,3)]
 #		rings=[int(2*nx*apix/res) for res in (100,60,30,15,10,6,4)]
 		print(("Frequency Bands: {}".format(rings)))
 

@@ -102,8 +102,8 @@ The CTF parameter file, ''partres.txt'', contains 22 columns with the following 
 || 10 || Standard deviation of total amplitude contrast [%] ||
 || 11 || Standard deviation of astigmatism amplitude [um] ||
 || 12 || Standard deviation of astigmatism angle [degrees] ||
-|| 13 || Coefficient of variation of defocus [um] ||
-|| 14 || Coefficient of variation of astigmatism amplitude [um] ||
+|| 13 || Coefficient of variation of defocus [%] ||
+|| 14 || Coefficient of variation of astigmatism amplitude [%] ||
 || 15 || Frequency at which the signal drops by 50% due to estimated error of defocus alone [1/A] ||
 || 16 || Frequency at which the signal drops by 50% due to estimated error of defocus and astigmatism [1/A] ||
 || 17 || Frequency at which the CTF oscillation can no longer be modelled correctly due the pixel size of the image [1/A] ||
@@ -167,8 +167,8 @@ The old format of the CTF parameter file, ''partres.txt'', contains 19 columns w
 || 10 || Standard deviation of amplitude contrast [%] ||
 || 11 || Standard deviation of astigmatism amplitude [um] ||
 || 12 || Standard deviation of astigmatism angle [degrees] ||
-|| 13 || Coefficient of variation of defocus [um] ||
-|| 14 || Coefficient of variation of astigmatism amplitude [um] ||
+|| 13 || Coefficient of variation of defocus [%] ||
+|| 14 || Coefficient of variation of astigmatism amplitude [%] ||
 || 15 || Mean difference between the experimental rotational averages calculated with and without considering astigmatism. The subtraction is only performed at frequencies where the CTF model has a local minimum or maximum. ||
 || 16 || Frequency at which the signal drops by 50% due to estimated error of defocus alone [1/A] ||
 || 17 || Frequency at which the signal drops by 50% due to estimated error of defocus and astigmatism [1/A] ||

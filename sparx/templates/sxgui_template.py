@@ -379,6 +379,8 @@ class SXLookFeelConst(object):
 				sxcmd_category_name = "meridien"
 			elif sxcmd.name in ["sxmeridien_20171120"]:
 				sxcmd_category_name = "meridien"
+			elif sxcmd.name in ["sxunblur", "sxsummovie"]:
+				sxcmd_category_name = "movie"
 			else:
 				sxcmd_category_name = sxcmd.category.replace("sxc_", "")
 			# URL Format: "http://sphire.mpg.de/wiki/doku.php?id=pipeline:CMD_CATEGORY:CMD_BASE
