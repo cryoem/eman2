@@ -71,6 +71,7 @@ map to the center of the volume."""
 	parser.add_option("--O",          action="store_true", default=False, help="use O system of coordinates")
 	parser.add_option("--quiet",      action="store_true", default=False, help="Verbose is the default")
 	parser.add_option("--tr0",        type="string",       default="none", help="Filename of initial 3x4 transformation matrix")
+	parser.add_option("--set_apix_value",    action="store_true", help="Include HET atoms in the map", default=False)
 
 	(options, args) = parser.parse_args()
 	if len(args)<2 : parser.error("Input and output files required")
@@ -287,10 +288,11 @@ map to the center of the volume."""
 	"""
 	(filename_path, filextension) = os.path.splitext(args[1])
 	if filextension == ".hdf" :
-		outmap.set_attr("apix_x",options.apix)
-		outmap.set_attr("apix_y",options.apix)
-		outmap.set_attr("apix_z",options.apix)
-		outmap.set_attr("pixel_size",options.apix)
+		if options.set_apix_value:
+			outmap.set_attr("apix_x",options.apix)
+			outmap.set_attr("apix_y",options.apix)
+			outmap.set_attr("apix_z",options.apix)
+			outmap.set_attr("pixel_size",options.apix)
 		outmap.write_image(args[1],0, EMUtil.ImageType.IMAGE_HDF)
 	elif filextension == ".spi": outmap.write_image(args[1],0, EMUtil.ImageType.IMAGE_SINGLE_SPIDER)
 	else:   ERROR("unknown image type","sxpdb2em",1)
