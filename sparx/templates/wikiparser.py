@@ -402,6 +402,8 @@ def remove_MoinMoinWiki_makeup(target_text):
 	
 	target_text = target_text.replace("\'\'", "")
 	target_text = target_text.replace("\'\'\'", "")
+	target_text = target_text.replace("<", "&lt;")  # rich text tag
+	target_text = target_text.replace(">", "&gt;")  # rich text tag
 	
 	return target_text
 
@@ -737,11 +739,13 @@ def remove_DokuWiki_makeup(target_text):
 		# Try to find the next
 		item_head = target_text.find(makeup_begin)
 
-	target_text = target_text.replace("\'\'", "")
-	target_text = target_text.replace("\'\'\'", "")
-	target_text = target_text.replace("**", "")  # Bold
-	target_text = target_text.replace("//", "")  # Italic
-	target_text = target_text.replace("%%", "")  # Literal
+	target_text = target_text.replace("\'\'", "")   # Might not be necessary for DokuWiki (only for MoinMoinWiki?)
+	target_text = target_text.replace("\'\'\'", "") # Might not be necessary for DokuWiki (only for MoinMoinWiki?)
+	target_text = target_text.replace("**", "")     # Bold
+	target_text = target_text.replace("//", "")     # Italic
+	target_text = target_text.replace("%%", "")     # Literal
+	target_text = target_text.replace("<", "&lt;")  # rich text tag
+	target_text = target_text.replace(">", "&gt;")  # rich text tag
 
 	return target_text
 
