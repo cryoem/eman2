@@ -71,7 +71,7 @@ map to the center of the volume."""
 	parser.add_option("--O",          action="store_true", default=False, help="use O system of coordinates")
 	parser.add_option("--quiet",      action="store_true", default=False, help="Verbose is the default")
 	parser.add_option("--tr0",        type="string",       default="none", help="Filename of initial 3x4 transformation matrix")
-	parser.add_option("--set_apix_value",    action="store_true", help="Include HET atoms in the map", default=False)
+	parser.add_option("--set_apix_value",    action="store_true", help="Set apix value in header of the ouput map", default=False)
 
 	(options, args) = parser.parse_args()
 	if len(args)<2 : parser.error("Input and output files required")
@@ -293,6 +293,7 @@ map to the center of the volume."""
 			outmap.set_attr("apix_y",options.apix)
 			outmap.set_attr("apix_z",options.apix)
 			outmap.set_attr("pixel_size",options.apix)
+		else: print("Pixel_size is not set in the header!")
 		outmap.write_image(args[1],0, EMUtil.ImageType.IMAGE_HDF)
 	elif filextension == ".spi": outmap.write_image(args[1],0, EMUtil.ImageType.IMAGE_SINGLE_SPIDER)
 	else:   ERROR("unknown image type","sxpdb2em",1)
