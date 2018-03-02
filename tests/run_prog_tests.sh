@@ -2,7 +2,11 @@
 
 # Run e2 programs by running the commands with -h
 
-set -xe
+set -e
+
+if [ -z ${CONDA_PREFIX+x} ];then
+    source activate root
+fi
 
 # Gather programs from CONDA_PREFIX
 if [ -d "${CONDA_PREFIX}"/bin ];then
@@ -10,12 +14,17 @@ if [ -d "${CONDA_PREFIX}"/bin ];then
 else
     PROGS_DIR="${CONDA_PREFIX}"/Library/bin
 fi
+
 progs=$(find "${PROGS_DIR}" -name 'e2*.py' | xargs -n 1 basename)
+
+if [ -z ${progs+x} ];then
+    echo "Cannot find any e2 programs in ${PROGS_DIR}"
+    echo "CONDA_PREFIX: ${CONDA_PREFIX-:<not set>}"
+fi
+
 # Remove programs listed in "programs_no_test.txt"
 MYDIR="$(cd "$(dirname "$0")"; pwd -P)"
 progs_exclude=$(cat "${MYDIR}"/programs_no_test.txt | awk '{print $1}')
-
-set +x
 
 echo; echo "Removing programs from test list..."
 for f in ${progs_exclude[@]};do

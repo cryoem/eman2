@@ -49,6 +49,9 @@ sxpipe organize_micrographs does not support MPI.
 ==== Reference ====
 
 \\
+==== Developer Notes ====
+
+\\
 ==== Author / Maintainer ====
 Toshio Moriya
 
@@ -62,6 +65,7 @@ sparx/bin/sxpipe.py
 
 \\
 ==== See also ====
+[[pipeline:cter:sxgui_cter|sxgui_cter]] and [[pipeline:movie:sxgui_unblur|sxgui_unblur]]
 
 \\
 ==== Maturity ====

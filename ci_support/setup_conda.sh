@@ -12,4 +12,4 @@ bash $MINICONDA_FILE -b
 source ${HOME}/miniconda2/bin/activate root
 conda config --set show_channel_urls true
 
-conda install cmake nose -c defaults --yes --quiet
+conda install cmake=3.9 -c defaults --yes --quiet

@@ -92,7 +92,15 @@ sxsort3d_depth finds out stable members by carrying out two-way comparison of tw
 105,247 particles with image size 360*360 with K=5. It took about 13 hours using 96 CPUs of our cluster, which is about twice the time it took to refine this set. The command for this run is given in case 1. We were able to sort out missing helix and missing domain. (See the attached movie and figure).
 
 \\
-===== Developer Notes =====
+==== Method ====
+K-means, MGSK-means, reproducibility, two-way comparison.
+
+\\
+==== Reference ====
+Not published yet.
+
+\\
+==== Developer Notes ====
 === 2017/12/19 Toshio Moriya ===
 The following is old descriptions, and will be deleted in near future.
 
@@ -109,14 +117,6 @@ Some examples for timing:
 In general, reconstruction costs more than 80% of time for each sorting. 
 
 \\
-==== Method ====
-K-means, MGSK-means, reproducibility, two-way comparison.
-
-\\
-==== Reference ====
-Not published yet.
-
-\\
 ==== Author / Maintainer ====
 Zhong Huang
 
@@ -130,7 +130,7 @@ sparx/bin/sxsort3d_depth.py
 
 \\
 ==== See also ====
-[[http://sparx-em.org/sparxwiki/sxsort3d|sxsort3d]]
+[[pipeline:meridien:sxmeridien|sxmeridien]], [[pipeline:utilities:sxheader|sxheader]], [[[pipeline:sort3d:sx3dvariability|sx3dvariability]], [[pipeline:sort3d:sxsort3d|sxsort3d]], and [[pipeline:sort3d:sxrsort3d|sxrsort3d]].
 
 \\
 ==== Maturity ====

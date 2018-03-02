@@ -8,9 +8,8 @@ fi
 
 export CPU_COUNT=2
 
-if [ "$(uname -s)" != "Darwin" ];then
-    conda build recipes/eman -c cryoem -c defaults -c conda-forge
-else
+if [ "$(uname -s)" == "Darwin" ];then
     export EMAN_TEST_SKIP=1
-    conda build recipes/eman -c cryoem -c defaults -c conda-forge
 fi
+
+conda build recipes/eman -c cryoem -c defaults -c conda-forge --quiet

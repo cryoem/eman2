@@ -61,6 +61,9 @@ e2boxer exists in non-MPI version.
 ==== Reference ====
 
 \\
+==== Developer Notes ====
+
+\\
 ==== Author / Maintainer ====
 EMAN2 Group
 

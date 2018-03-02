@@ -20,10 +20,10 @@ install:
 
     - conda config --set show_channel_urls true
 
-    - conda install -n root --yes --quiet vs2008_express_vc_python_patch -c conda-forge
+    - conda install -n root vs2008_express_vc_python_patch -c conda-forge --yes --quiet
     - call setup_x64
 
-    - conda install --quiet --yes conda-build=2
+    - conda install conda-build=2 --yes --quiet
 
     - conda info
     - conda config --get
@@ -33,4 +33,4 @@ install:
 build: off
 
 test_script:
-    - conda build %APPVEYOR_BUILD_FOLDER%\recipes\eman -c cryoem -c defaults -c conda-forge
+    - conda build %APPVEYOR_BUILD_FOLDER%\recipes\eman -c cryoem -c defaults -c conda-forge --quiet

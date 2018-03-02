@@ -1,56 +1,78 @@
-= Name =
-sxgui_unblur - Drift Assessment: Assess micrographs based on drift estimation produced by Unblur.
+~~NOTOC~~
 
+===== sxgui_unblur =====
+Drift Assessment: Assess micrographs based on drift estimation produced by [[http://grigoriefflab.janelia.org/unblur|Unblur]].
 
-= Usage =
+\\
+===== Usage =====
 
+Usage in command line
 
-''usage in command line''
+  sxgui_unblur.py  inputfile  input_shift_list_file
 
-sxgui_unblur.py inputfile input_shift_list_file
+\\
+===== Typical usage =====
 
+sxgui_unblur does not support MPI. 
 
-=== Typical usage ===
+This GUI tool can be run as a stand-alone program or from the SPHIRE GUI.
 
-sxgui_unblur GUI tool can be run as a stand-alone program or run from sxgui.py.
+  sxgui_unblur.py
 
-sxgui_unblur.py
+  sxgui_unblur.py 'example-*_shift.txt'
 
-sxgui_unblur.py 'example-*_shift.txt'
-sxgui_unblur.py 'example-list'
-sxgui_unblur.py 'example-*_shift.txt' 'example-list'
+  sxgui_unblur.py 'example-list'
 
+  sxgui_unblur.py 'example-*_shift.txt' 'example-list'
 
-== Input ==
+\\
+===== Input =====
+=== Main Parameters ===
+  ; inputfile : Shift files: A wild card (*) can be used to process multiple shift files. (default none)
+  ; input_shift_list_file : Input shift list file: Extension of input shift list file must be '.txt'. If this is not provided, all files matched with the micrograph name pattern will be processed. (default none)
 
-inputfile::Shift files: A wild card * can be used to process multiple shift files. (default none)
-input_shift_list_file:: Input shift list file: Extension of input shift list file must be '.txt'. If this is not provided, all files matched with the micrograph name pattern will be processed. (default none)
+\\
+=== Advanced Parameters ===
 
-== Output ==
+\\
+===== Output =====
 
+\\
+===== Description =====
 
-== Description ==
+\\
+==== Method ====
 
-''''This is in progress 03/11/2016''''
+\\
+==== Reference ====
 
+\\
+==== Developer Notes ====
+=== 2016/12/16 Markus Stabrin ===
+We are preparing a detailed descriptions of the usage and features of this tool.
 
-= Method =
-
-= Reference =
-
-== Author / Maintainer ==
+\\
+==== Author / Maintainer ====
 Markus Stabrin
 
-=== Attachments ===
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
 
-== Keywords ==
-    category 1:: APPLICATIONS
-
-== Files ==
+\\
+==== Files ====
 sparx/bin/sxgui_unblur.py
 
-=== See also ===
+\\
+==== See also ====
+[[pipeline:movie:sxunblur|sxunblur]] and [[http://grigoriefflab.janelia.org/unblur|Unblur & Summovie]].
 
+\\
+==== Maturity ====
+Alpha:: Under development. Please let us know if there are any bugs.
 
-=== Maturity ===
- alpha:: in development
+\\
+==== Bugs ====
+There are no known bugs so far.
+
+\\

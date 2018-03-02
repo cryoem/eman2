@@ -1125,8 +1125,8 @@ def do_one_way_anova_scipy(clusters, value_list, name_of_variable="variable", lo
 	mst = sst/float(n1)
 	f_ratio = msa/mse
 	log_main.add('                              ANOVA of %s'%name_of_variable)
-	log_main.add('{:5} {:^12} {:^12} '.format('ANOVA', 'F-value',  'p_value'))
-	log_main.add('{:5} {:12.2f} {:12.2f}'.format('ANOVA', res[0], res[1]))
+	log_main.add('{:5} {:^12} {:^12} '.format('ANOVA', 'F-value',  'Significance'))
+	log_main.add('{:5} {:12.2f} {:12.2f}'.format('ANOVA', res[0], res[1]*100.))
 	log_main.add(' ')
 
 	log_main.add('ANOVA:  %s mean of all clusters: %f'%(name_of_variable, round(global_mean/(float(nsamples)), 4)))
@@ -1137,11 +1137,11 @@ def do_one_way_anova_scipy(clusters, value_list, name_of_variable="variable", lo
 		log_main.add('{:5} {:^7d} {:^8d} {:12.4f} {:12.4f}'.format('ANOVA', i, len(replicas[i]), res_table_stat[i][0], sqrt(res_table_stat[i][1])))
 	log_main.add(' ')
 	log_main.add('ANOVA  Pair-wise tests')
-	log_main.add('{:5} {:^3} {:^3} {:^12} {:^12} {:^12} {:^12}'.format('ANOVA', 'A', 'B', 'avgA','avgB', 'P_value', 'f-value')) 
+	log_main.add('{:5} {:^3} {:^3} {:^12} {:^12} {:^12} {:^12}'.format('ANOVA', 'A', 'B', 'avgA','avgB', 'F_value', 'Significance')) 
 	for ires in xrange(K-1):
 		for jres in xrange(ires+1, K):
 			cres = stats.f_oneway(replicas[ires], replicas[jres])
-			log_main.add('{:5} {:^3d} {:^3d} {:12.4f} {:12.4f} {:12.3f} {:12.4f} '.format('ANOVA', ires, jres, avgs[ires], avgs[jres], cres[0], cres[1]))
+			log_main.add('{:5} {:^3d} {:^3d} {:12.4f} {:12.4f} {:12.3f} {:12.4f} '.format('ANOVA', ires, jres, avgs[ires], avgs[jres], cres[0], cres[1]*100.))
 	log_main.add(' ')
 	log_main.add('================================================================================================================\n')
 	return res[0], res[1]
@@ -5175,9 +5175,13 @@ def get_input_from_sparx_ref3d(log_main):# case one
 	from string import atoi
 	if Tracker["constants"]["minimum_grp_size"] ==-1:
 		Tracker["constants"]["minimum_grp_size"] = Tracker["constants"]["total_stack"]//Tracker["constants"]["img_per_grp"]*(100//Blockdata["symclass"].nsym)
-	else: 
-		Tracker["constants"]["minimum_grp_size"] = max(Tracker["constants"]["minimum_grp_size"], \
-		   Tracker["constants"]["total_stack"]//Tracker["constants"]["img_per_grp"]*100//Blockdata["symclass"].nsym)
+	else:
+		if Tracker["constants"]["minimum_grp_size"] < Tracker["constants"]["total_stack"]//Tracker["constants"]["img_per_grp"]*(100//Blockdata["symclass"].nsym):
+			Tracker["constants"]["minimum_grp_size"] = Tracker["constants"]["total_stack"]//Tracker["constants"]["img_per_grp"]*(100//Blockdata["symclass"].nsym)
+			if(Blockdata["myid"] == Blockdata["main_node"]):
+				log_main.add("User provided minimum_grp_size is replaced by %d"%Tracker["constants"]["minimum_grp_size"])		
+	if Tracker["constants"]["minimum_grp_size"] >= Tracker["constants"]["img_per_grp"]:
+		ERROR("User provided img_per_grp is too small", "get_input_from_sparx_ref3d", 1, Blockdata["myid"])
 	# Now copy oldparamstruture
 	copy_oldparamstructure_from_meridien_MPI(selected_iter, log_main)
 	return import_from_sparx_refinement
@@ -5224,9 +5228,13 @@ def get_input_from_datastack(log_main):# Case three
 	
 	if Tracker["constants"]["minimum_grp_size"] ==-1:
 		Tracker["constants"]["minimum_grp_size"] = Tracker["constants"]["total_stack"]//Tracker["constants"]["img_per_grp"]*(100//Blockdata["symclass"].nsym)
-	else: 
-		Tracker["constants"]["minimum_grp_size"] = max(Tracker["constants"]["minimum_grp_size"], \
-		   Tracker["constants"]["total_stack"]//Tracker["constants"]["img_per_grp"]*100//Blockdata["symclass"].nsym)
+	else:
+		if Tracker["constants"]["minimum_grp_size"] < Tracker["constants"]["total_stack"]//Tracker["constants"]["img_per_grp"]*(100//Blockdata["symclass"].nsym):
+			Tracker["constants"]["minimum_grp_size"] = Tracker["constants"]["total_stack"]//Tracker["constants"]["img_per_grp"]*(100//Blockdata["symclass"].nsym)
+			if(Blockdata["myid"] == Blockdata["main_node"]):
+				log_main.add("User provided minimum_grp_size is replaced by %d"%Tracker["constants"]["minimum_grp_size"])		
+	if Tracker["constants"]["minimum_grp_size"] >= Tracker["constants"]["img_per_grp"]:
+		ERROR("User provided img_per_grp is too small", "get_input_from_sparx_ref3d", 1, Blockdata["myid"])
 
 	###
 	Tracker["refang"], Tracker["rshifts"], Tracker["delta"] = None, None, None

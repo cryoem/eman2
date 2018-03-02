@@ -369,13 +369,18 @@ class SXLookFeelConst(object):
 	def generate_sxcmd_wiki_url(sxcmd, wiki_type = "SPHIRE"):
 		if wiki_type == "SPHIRE":
 			# First, handle exceptional cases
-			if sxcmd.name in ["e2display", "sxpdb2em", "sxrelion2sphire", "sxprocess", "e2proc3d", "sxheader", "e2bdb", "sxunblur", "sxsummovie"]:
+			if sxcmd.name in ["e2display", "sxpdb2em", "sxrelion2sphire", "sxprocess", "e2proc3d", "sxheader", "e2bdb"]:
 				sxcmd_category_name = "utilities"
-			elif sxcmd.name in ["sxpipe"]:
-				if sxcmd.subname in ["organize_micrographs"]:
-					sxcmd_category_name = "utilities"
+			elif sxcmd.name in ["sxpipe"] and sxcmd.subname in ["organize_micrographs"]:
+				sxcmd_category_name = "utilities"
+			elif sxcmd.name in ["sxpipe"] and sxcmd.subname in ["reboxing"]:
+				sxcmd_category_name = "meridien"
 			elif sxcmd.name in ["sxmeridien"]:
 				sxcmd_category_name = "meridien"
+			elif sxcmd.name in ["sxmeridien_20171120"]:
+				sxcmd_category_name = "meridien"
+			elif sxcmd.name in ["sxunblur", "sxsummovie"]:
+				sxcmd_category_name = "movie"
 			else:
 				sxcmd_category_name = sxcmd.category.replace("sxc_", "")
 			# URL Format: "http://sphire.mpg.de/wiki/doku.php?id=pipeline:CMD_CATEGORY:CMD_BASE
@@ -4101,7 +4106,7 @@ def main():
 
 	# Define the main window (class SXMainWindow)
 	sxmain_window = SXMainWindow()
-	sxmain_window.setWindowTitle("SPHIRE-GUI Main (Beta Version)")
+	sxmain_window.setWindowTitle("SPHIRE-GUI Main Version 1.0")
 	sxmain_window.setMinimumWidth(SXLookFeelConst.sxmain_window_width)
 	sxmain_window.setMinimumHeight(SXLookFeelConst.sxmain_window_height)
 	sxmain_window.resize(SXLookFeelConst.sxmain_window_width, SXLookFeelConst.sxmain_window_height)

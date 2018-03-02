@@ -37,18 +37,18 @@ sxpipe isac_substack does not support MPI.
 ===== Description =====
 
 \\
-===== Developer Notes =====
+==== Method ====
+
+\\
+==== Reference ====
+
+\\
+==== Developer Notes ====
 === 2018/01/13 Toshio Moriya ===
 The following options are not implemented yet.
   ; %%--%%isac_class_id : ISAC2 class average ID: Retrieve only particle members of the specifed ISAC2 class. By default, retrieve from all classes. (default -1)
   ; %%--%%no_virtual_stack : Do not create virtual stack: Use this option to create only the particle ID list text file associated with the ISAC2 class averages. (default False)
   ; %%--%%no_import_align2d : Do not import alignment:  (default False)
-
-\\
-==== Method ====
-
-\\
-==== Reference ====
 
 \\
 ==== Author / Maintainer ====
@@ -64,7 +64,7 @@ sparx/bin/sxpipe.py
 
 \\
 ==== See also ====
-[[http://sparx-em.org/sparxwiki/sxisac|sxisac]]
+[[pipeline:isac:sxisac2|sxisac2]]
 
 \\
 ==== Maturity ====
