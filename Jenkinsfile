@@ -153,7 +153,7 @@ pipeline {
           }
           
           steps {
-            sh 'source $(conda info --root)/bin/activate eman-deps-8 && bash ci_support/build_no_recipe.sh'
+            sh 'source $(conda info --root)/bin/activate eman-deps-9 && bash ci_support/build_no_recipe.sh'
           }
         }
       }
