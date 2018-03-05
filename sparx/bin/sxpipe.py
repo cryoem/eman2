@@ -1115,7 +1115,7 @@ def reboxing(args):
 	# print(" ")
 	print_progress("Found {} particle images in the input stack {}".format(n_img, args.input_stack_path))
 
-	# Define variables onstants used in the loop
+	# Define variables and constants used in the loop
 	global_coordinates_dict = {} # mic basename is the key. contains original and centered box coordinates in EMAN1 format
 	eman1_dummy = -1             # For 5th column of EMAN1 boxer format
 	img = EMData()
@@ -1184,31 +1184,31 @@ def reboxing(args):
 		mic_list_file.write("{}\n".format(mic_basename))
 		
 		mic_rootname, mic_extension = os.path.splitext(mic_basename)
-		mic_coordinates = global_coordinates_dict[mic_basename]
-		assert (len(mic_coordinates.eman1_original) == len(mic_coordinates.eman1_centered))
+		mic_entry = global_coordinates_dict[mic_basename]
+		assert (len(mic_entry.eman1_original) == len(mic_entry.eman1_centered))
 		
 		# Save the original coordinates to output file; original EMAN1 box coordinate file or this micrograph
 		eman1_original_coordinates_path = os.path.join(args.output_directory, eman1_original_coordinates_subdir, "{}{}".format(mic_rootname, eman1_original_coordinates_suffix))
 		eman1_original_coordinates_file = open(eman1_original_coordinates_path, "w")
-		for original_particle_coordinates in mic_coordinates.eman1_original:
+		for original_particle_coordinates in mic_entry.eman1_original:
 			eman1_original_coordinates_file.write(original_particle_coordinates)
 		eman1_original_coordinates_file.close()
 		
 		# Save the centered coordinates to output file; centered EMAN1 box coordinate file or this micrograph
 		eman1_centered_coordinates_path = os.path.join(args.output_directory, eman1_centered_coordinates_subdir, "{}{}".format(mic_rootname, eman1_centered_coordinates_suffix))
 		eman1_centered_coordinates_file = open(eman1_centered_coordinates_path, "w")
-		for centered_particle_coordinates in mic_coordinates.eman1_centered:
+		for centered_particle_coordinates in mic_entry.eman1_centered:
 			eman1_centered_coordinates_file.write(centered_particle_coordinates)
 		eman1_centered_coordinates_file.close()
 		
 		# print(" ")
 		# print_progress("Micrograph summary...")
 		# print_progress("  Micrograph Name                : {}".format(mic_basename))
-		# print_progress("  Extracted original coordinates : {:6d}".format(len(mic_coordinates.eman1_original)))
-		# print_progress("  Extracted centered coordinates : {:6d}".format(len(mic_coordinates.eman1_centered)))
+		# print_progress("  Extracted original coordinates : {:6d}".format(len(mic_entry.eman1_original)))
+		# print_progress("  Extracted centered coordinates : {:6d}".format(len(mic_entry.eman1_centered)))
 		# print_progress("  Saved original coordinates to  : {}".format(eman1_original_coordinates_path))
 		# print_progress("  Saved centered coordinates to  : {}".format(eman1_centered_coordinates_path))
-		print_progress(" {:6d} particle coordinates for {}...".format(len(mic_coordinates.eman1_original), mic_basename))
+		print_progress(" {:6d} particle coordinates for {}...".format(len(mic_entry.eman1_original), mic_basename))
 	
 	mic_list_file.close()
 	
@@ -1217,6 +1217,466 @@ def reboxing(args):
 	print_progress("Processed particles                : {:6d}".format(n_img))
 	print_progress("Extracted micrographs              : {:6d}".format(len(global_coordinates_list)))
 	print_progress("Saved extracted micrograph list to : {}".format(mic_list_file_path))
+
+# ----------------------------------------------------------------------------------------
+# Author 1: Christos Gatsogiannis 12/23/2015 (Christos.Gatsogiannis@mpi-dortmund.mpg.de)
+# Author 2: Toshio Moriya 03/02/2018 (toshio.moriya@mpi-dortmund.mpg.de)
+# 
+# --- Reboxing ---
+# Generate coordinates files and micrograph selection text file
+# based on information in the image headers of SPHIRE particle stack file
+# 
+# This command executes the following processes:
+# (1) Extract the following information stored in the headers of each particle image
+#     - source micrograph path 
+#     - box center coordinates within the micrograph
+#     - projection parameters 
+# (2) Convert the center coordinates to EMAN1 box coordinates format
+#     and save the results to output files.
+# (3) Transform the coordinates based on the projection parameters and user-provided 3D shift
+#     and save the results to output files.
+# (4) Save the list of extracted micrograph names to an output file.
+# 
+# ----------------------------------------------------------------------------------------
+# TEST COMMAND
+# cd /home/moriya/mrk_qa/mrktest_pipeline
+#
+# sxpipe.py restacking --help
+# 
+# rm -rf debug_mrkout_sxpipe_restacking_fullset; sxpipe.py restacking 'bdb:mrkout_pipe02_sxwindow#data_meridien' 'debug_mrkout_sxpipe_restacking_fullset' --reboxing --rb_box_size=352
+# rm -rf debug_mrkout_sxpipe_restacking_isac_substack; sxpipe.py restacking 'bdb:mrkout_pipe03_sxisac/mrkout_sxpipe_isac_substack#isac_substack' 'debug_mrkout_sxpipe_restacking_isac_substack' --reboxing --rb_box_size=352
+# rm -rf debug_mrkout_sxpipe_restacking_sort3d_substack; sxpipe.py restacking 'bdb:mrkout_pipe09_sxsort3d_depth_isac_subset_c5/mrkout_pipe09o02_e2bdb_makevstack#sort3d_depth_substack' 'debug_mrkout_sxpipe_restacking_sort3d_substack' --reboxing --rb_box_size=352
+# 
+# rm -rf debug_mrkout_sxpipe_restacking_fullset_vstack; sxpipe.py restacking 'bdb:mrkout_pipe02_sxwindow#data_meridien' 'debug_mrkout_sxpipe_restacking_fullset_vstack' --reboxing --rb_box_size=352 --save_vstack 
+# e2iminfo.py bdb:debug_mrkout_sxpipe_restacking_fullset_vstack#vstack
+# rm -rf debug_mrkout_sxpipe_restacking_fullset_vstack; sxpipe.py restacking 'bdb:mrkout_pipe02_sxwindow#data_meridien' 'debug_mrkout_sxpipe_restacking_fullset_vstack' --reboxing --rb_box_size=352 --save_vstack  --sv_vstack_basename=mrkdebug_vstack
+# e2iminfo.py bdb:debug_mrkout_sxpipe_restacking_fullset_vstack#mrkdebug_vstack
+# 
+# rm -rf debug_mrkout_sxpipe_restacking_fullset_selection; sxpipe.py restacking 'bdb:mrkout_pipe02_sxwindow#data_meridien' 'debug_mrkout_sxpipe_restacking_fullset_selection' --selection_list='debug_micrographs.txt' --reboxing --rb_box_size=352 --save_vstack  --sv_vstack_basename=mrkdebug_vstack
+# e2iminfo.py bdb:debug_mrkout_sxpipe_restacking_fullset_selection#mrkdebug_vstack
+# 
+# rm -rf debug_mrkout_sxpipe_restacking_fullset_shift3d; sxpipe.py restacking 'bdb:mrkout_pipe02_sxwindow#data_meridien' 'debug_mrkout_sxpipe_restacking_fullset_shift3d' --selection_list='debug_micrographs.txt' --reboxing --rb_box_size=352 --save_vstack  --sv_vstack_basename=mrkdebug_vstack --shift3d_z=20
+# e2iminfo.py bdb:debug_mrkout_sxpipe_restacking_fullset_shift3d#mrkdebug_vstack
+# 
+# rm -rf debug_mrkout_sxpipe_restacking_fullset_invalid_entry; sxpipe.py restacking 'bdb:mrkout_pipe02_sxwindow#data_meridien' 'debug_mrkout_sxpipe_restacking_fullset_invalid_entry' --selection_list='debug_micrographs_invalid_entry.txt' --reboxing --rb_box_size=352 --save_vstack  --sv_vstack_basename=mrkdebug_vstack
+# e2iminfo.py bdb:debug_mrkout_sxpipe_restacking_fullset_vstack#mrkdebug_vstack
+#
+# ----------------------------------------------------------------------------------------
+def restacking(args):
+	# from sys import  *
+	# import csv
+	# import glob
+	# import traceback
+	# import math
+	from EMAN2db   import db_check_dict
+	from utilities import get_im, get_params_proj
+	
+	# ========================================================================================
+	class SX_mic_entry(object):
+		def __init__(self, mic_basename):
+			# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+			# class variables
+			self.mic_basename = mic_basename
+			self.is_in_stack = False
+			self.is_in_list = False
+			self.img_id_list = []
+			self.original_proj_params_list = []
+			self.original_coords_list = []
+			self.centered_proj_params_list = []
+			self.centered_coords_list = []
+			# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+
+	# To make the execution exit upon fatal error by ERROR in global_def.py
+	global_def.BATCH = True 
+	
+	# Define the name of this subcommand
+	subcommand_name = "restacking"
+	
+	# Check error conditions of arguments
+	if not db_check_dict(args.input_bdb_stack_path, readonly=True):
+		ERROR("Input BDB image stack file does not exist. Please check the input stack path and restart the program.", subcommand_name) # action=1 - fatal error, exit
+	if os.path.exists(args.output_directory):
+		ERROR("Output directory exists. Please change the name and restart the program.", subcommand_name) # action=1 - fatal error, exit
+	
+	# Check error conditions of options
+	if args.selection_list is not None:
+		if not os.path.exists(args.selection_list):
+			ERROR("Micrograph selecting list does not exist. Please check the micrograph selecting list path and restart the program.", subcommand_name) # action=1 - fatal error, exit
+		if os.path.splitext(args.selection_list)[1] != ".txt":
+			ERROR("The extention of micrograph selecting list file must be .txt. Please check the micrograph selecting list path and restart the program.", subcommand_name) # action=1 - fatal error, exit
+		args.sv_vstack_basename = args.sv_vstack_basename.strip()
+		if args.sv_vstack_basename == "":
+			ERROR("Output virtual stack basename cannot be empty string or only white spaces.", subcommand_name) # action=1 - fatal error, exit
+	if not args.reboxing:
+		img = EMData()
+		img.read_image(args.input_bdb_stack_path, 0, True)
+		img_size = img.get_xsize()
+		assert (img.get_xsize() == img.get_ysize())
+		if abs(args.shift3d_x) >= img_size//2:
+			ERROR("Invalid 3D x-shift {}. 3D x-shift must be smaller than half of image size {}. Please provide valid values for x-shift and/or box size. Then, restart the program.".format(args.shift3d_x, args.img_size//2), subcommand_name) # action=1 - fatal error, exit
+		if abs(args.shift3d_y) >= img_size//2:
+			ERROR("Invalid 3D y-shift {}. 3D y-shift must be smaller than half of image size {}. Please provide valid values for y-shift and/or box size. Then, restart the program.".format(args.shift3d_y, args.img_size//2), subcommand_name) # action=1 - fatal error, exit
+		if abs(args.shift3d_z) >= img_size//2:
+			ERROR("Invalid 3D z-shift {}. 3D z-shift must be smaller than half of image size {}. Please provide valid values for z-shift and/or box size. Then, restart the program.".format(args.shift3d_z, args.img_size//2), subcommand_name) # action=1 - fatal error, exit
+	if args.reboxing:
+		if args.rb_box_size <= 0:
+			ERROR("Invalid box size {}. Box size must be larger than zero. Please provide valid box size and restart the program.".format(args.rb_box_size), subcommand_name) # action=1 - fatal error, exit
+		if abs(args.shift3d_x) >= args.rb_box_size//2:
+			ERROR("Invalid 3D x-shift {}. 3D x-shift must be smaller than half of box size {}. Please provide valid values for x-shift and/or box size. Then, restart the program.".format(args.shift3d_x, args.rb_box_size//2), subcommand_name) # action=1 - fatal error, exit
+		if abs(args.shift3d_y) >= args.rb_box_size//2:
+			ERROR("Invalid 3D y-shift {}. 3D y-shift must be smaller than half of box size {}. Please provide valid values for y-shift and/or box size. Then, restart the program.".format(args.shift3d_y, args.rb_box_size//2), subcommand_name) # action=1 - fatal error, exit
+		if abs(args.shift3d_z) >= args.rb_box_size//2:
+			ERROR("Invalid 3D z-shift {}. 3D z-shift must be smaller than half of box size {}. Please provide valid values for z-shift and/or box size. Then, restart the program.".format(args.shift3d_z, args.rb_box_size//2), subcommand_name) # action=1 - fatal error, exit
+	
+	# args.scale=1.0
+	
+	# --------------------------------------------------------------------------------
+	# Register micrograph basename found in the selection list
+	# to the global entry dictionary
+	# --------------------------------------------------------------------------------
+	global_mic_dict = {}   # mic basename is the key. Organize the particle image information according to associated micrographs
+	selected_mic_path_list = []
+	# Generate micrograph lists according to the execution mode
+	if args.selection_list is not None:
+		assert (os.path.exists(args.selection_list))
+		assert (os.path.splitext(args.selection_list)[1] == ".txt")
+		
+		# Generate the list of selected micrograph paths in the selection file
+		print(" ")
+		print_progress("----- Running with Selected Micrographs Mode -----")
+		print(" ")
+		print_progress("Checking the selection list {}...".format(args.selection_list))
+		selected_mic_path_list = read_text_file(args.selection_list)
+		
+		# Check error condition of micrograph entry lists
+		print("Found %d microgarph entries in %s." % (len(selected_mic_path_list), args.selection_list))
+		if len(selected_mic_path_list) == 0:
+			ERROR("No micrograph entries are found in the selection list file. Please check the micrograph selecting list and restart the program.", subcommand_name) # action=1 - fatal error, exit
+		assert (len(selected_mic_path_list) > 0)
+		if not isinstance(selected_mic_path_list[0], basestring):
+			ERROR("Invalid format of the selection list file. The first column must contain micrograph paths in string type. Please check the micrograph selecting list and restart the program.", subcommand_name) # action=1 - fatal error, exit
+		
+		assert (len(selected_mic_path_list) > 0)
+		selected_mic_directory = os.path.dirname(selected_mic_path_list[0])
+		if selected_mic_directory != "":
+			print_progress("    NOTE: Program disregards the directory paths in the selection list ({}).".format(selected_mic_directory))
+		
+		# Register micrograph basename found in the selection list
+		# to the global entry dictionary
+		print(" ")
+		print_progress("Registering all micrographs in the selection list {}...".format(args.selection_list))
+		for mic_path in selected_mic_path_list:
+			mic_basename = os.path.basename(mic_path)
+			if mic_basename in global_mic_dict:
+				print_progress("WARNING!!! Micrograph {} is duplicated in the selection list {}. Ignoring this duplicated entry...".format(mic_path, args.selection_list))
+				continue
+			
+			assert (mic_basename not in global_mic_dict)
+			global_mic_dict[mic_basename] = SX_mic_entry(mic_basename)
+			global_mic_dict[mic_basename].is_in_list = True
+			assert (global_mic_dict[mic_basename].mic_basename == mic_basename)
+			assert (global_mic_dict[mic_basename].is_in_stack == False)
+			assert (global_mic_dict[mic_basename].is_in_list == True)
+			# print_progress("Found new micrograph {}. Detected {} micrographs so far...".format(mic_basename, len(global_mic_dict)))
+	else:
+		assert (args.selection_list is None)
+		print(" ")
+		print_progress("----- Running with All Micrographs Mode -----")
+
+	# --------------------------------------------------------------------------------
+	# Register micrograph basename found in the selection list
+	# to the global entry dictionary
+	# --------------------------------------------------------------------------------
+	print(" ")
+	print_progress("Checking the input stack {}...".format(args.input_bdb_stack_path))
+	n_img = EMUtil.get_image_count(args.input_bdb_stack_path)
+	# print(" ")
+	print_progress("Found {} particle images in the input stack {}".format(n_img, args.input_bdb_stack_path))
+	
+	# --------------------------------------------------------------------------------
+	# Register micrograph basenames found in the stack to the global micrographs dictionary
+	# --------------------------------------------------------------------------------
+	# Define variables and constants used in the loop
+	eman1_dummy = -1       # For 5th column of EMAN1 boxer format
+	missing_proj_params_counter = 0
+	img = EMData()
+	for img_id in xrange(n_img):
+		# Load images 
+		# img = get_im(args.input_bdb_stack_path, img_id)
+		img.read_image(args.input_bdb_stack_path, img_id, True)
+		# Extract associated source micrograph path name from the image header
+		mic_path = str(img.get_attr("ptcl_source_image"))
+		mic_basename = os.path.basename(mic_path)
+		# Case 1: This micrograph has been not registered yet.
+		if mic_basename not in global_mic_dict:
+			mic_entry = SX_mic_entry(mic_basename)
+			assert (mic_entry.mic_basename == mic_basename)
+			assert (not mic_entry.is_in_stack)
+			mic_entry.is_in_stack = True
+			assert (mic_entry.is_in_stack)
+			if args.selection_list is None:
+				# If selection list is not provided, process as if all micrographs in the input stack are selected
+				assert (not mic_entry.is_in_list)
+				mic_entry.is_in_list = True
+				assert (mic_entry.is_in_list)
+			global_mic_dict[mic_basename] = mic_entry
+			assert (global_mic_dict[mic_basename].mic_basename == mic_basename)
+			# print_progress("Found new micrograph {}. Detected {} micrographs so far...".format(mic_basename, len(global_mic_dict)))
+		# Case 2: This micrograph has been registered already. (1) This is in the selection list or (2) Not first incidence in the input stack
+		else:
+			assert (mic_basename in global_mic_dict)
+			mic_entry = global_mic_dict[mic_basename]
+			if not mic_entry.is_in_stack:
+				mic_entry.is_in_stack = True
+			assert (mic_entry.is_in_stack)
+			
+		global_mic_dict[mic_basename].img_id_list.append(img_id)
+		
+		# Extract the projection parameters from the image header
+		proj_phi   = 0.0
+		proj_theta = 0.0
+		proj_psi   = 0.0
+		proj_tx    = 0.0
+		proj_ty    = 0.0
+		if img.has_attr("xform.projection"):
+			proj_phi, proj_theta, proj_psi, proj_tx, proj_ty = get_params_proj(img)
+		else:
+			missing_proj_params_counter += 1
+			
+		# Register original projection parameters to global micrograph dictionary
+		global_mic_dict[mic_basename].original_proj_params_list.append("{:15.5f} {:15.5f} {:15.5f} {:15.5f} {:15.5f} ".format(proj_phi, proj_theta, proj_psi, proj_tx, proj_ty))
+		
+		# Transform the coordinates according to projection parameters and user-provided 3D shift (corresponding to shifting the 3D volume)
+		trans3x3 = Transform({"phi":float(proj_phi), "theta":float(proj_theta), "psi":float(proj_psi), "tx":float(proj_tx), "ty":float(proj_ty), "tz":0.0, "type":"spider"})
+		origin_vec3d = Vec3f(float(args.shift3d_x), float(args.shift3d_y), float(args.shift3d_z))
+		transformed_vec3d = trans3x3 * origin_vec3d
+		shift2d_x = -1 * transformed_vec3d[0]
+		shift2d_y = -1 * transformed_vec3d[1]
+		
+		# Register centered projection parameters to global micrograph dictionary
+		global_mic_dict[mic_basename].centered_proj_params_list.append("{:15.5f} {:15.5f} {:15.5f} {:15.5f} {:15.5f} ".format(proj_phi, proj_theta, proj_psi, 0.0, 0.0))
+		
+		if args.reboxing:
+			# Extract the associated coordinates from the image header
+			center_coordinate_x, center_coordinate_y = img.get_attr("ptcl_source_coord")
+			# Compute the left bottom coordinates of box (EMAN1 box file format)
+			assert(args.rb_box_size > 0)
+			# original_coordinate_x = center_coordinate_x - (args.rb_box_size//2+1)
+			# original_coordinate_y = center_coordinate_y - (args.rb_box_size//2+1)
+			# NOTE: 2018/02/21 Toshio Moriya
+			# Currently, the following the way e2boxer.py calculates EMAN1 box format from particle center coordinates.
+			original_coordinate_x = center_coordinate_x - (args.rb_box_size//2)
+			original_coordinate_y = center_coordinate_y - (args.rb_box_size//2)
+			global_mic_dict[mic_basename].original_coords_list.append("{:6d} {:6d} {:6d} {:6d} {:6d}\n".format(original_coordinate_x, original_coordinate_y, args.rb_box_size, args.rb_box_size, eman1_dummy))
+			
+			# Transform and center the coordinates according to projection parameters and user-provided 3D shift (corresponding to shifting the 3D volume)
+			centered_coordinate_x = int(round(original_coordinate_x + shift2d_x))
+			centered_coordinate_y = int(round(original_coordinate_y + shift2d_y))
+			global_mic_dict[mic_basename].centered_coords_list.append("{:6d} {:6d} {:6d} {:6d} {:6d}\n".format(centered_coordinate_x, centered_coordinate_y, args.rb_box_size, args.rb_box_size, eman1_dummy))
+			
+#	print(" ")
+#	print_progress("Found total of {} assocaited micrographs in the input stack {}.".format(len(global_mic_dict), args.input_bdb_stack_path))
+	
+	if missing_proj_params_counter > 0:
+		print(" ")
+		print_progress("WARNING!!! The projection parameters (xform.projection header entry) are missing from {} out of {} particle images in the input stack {}.".format(missing_proj_params_counter, n_img, args.input_bdb_stack_path))
+
+	mic_basename_list_of_input_stack = []
+	mic_basename_list_of_output_stack = []
+	
+	print(" ")
+	print_progress("Checking consistency of the provided dataset ...")
+		
+	# Loop over all registed micrograph basename
+	for mic_basename in global_mic_dict:
+		mic_entry = global_mic_dict[mic_basename]
+		assert (mic_entry.mic_basename == mic_basename)
+		
+		if mic_entry.is_in_stack:
+			mic_basename_list_of_input_stack.append(mic_basename)
+			if mic_entry.is_in_list:
+				# This is only condition (expected typical case) where we have to output the info of this micrograph
+				mic_basename_list_of_output_stack.append(mic_basename)
+			else:
+				assert (not mic_entry.is_in_list)
+				print_progress("    Micrograph {} is in the stack but not in the selection list.".format(mic_basename))
+		else:
+			assert (not mic_entry.is_in_stack)
+			if mic_entry.is_in_list:
+				print_progress("    Micrograph {} is in the selection list but not in the stack.".format(mic_basename))
+			else:
+				assert (not mic_entry.is_in_list)
+				assert ("Unreachable!!! This condition should never happen!")
+	
+	assert (not os.path.exists(args.output_directory))
+	os.mkdir(args.output_directory)
+
+	print(" ")
+	print_progress("Found total of {} micrographs in the input stack {}.".format(len(mic_basename_list_of_input_stack), args.input_bdb_stack_path))
+	
+	mic_basename_list_of_input_stack.sort()
+	mic_basename_list_of_output_stack.sort()
+	
+	assert (len(mic_basename_list_of_input_stack) >= len(mic_basename_list_of_output_stack))
+	assert (len(global_mic_dict) >= len(mic_basename_list_of_input_stack))  # Extra micrographs might be only selection file
+	assert (len(global_mic_dict) >= len(mic_basename_list_of_output_stack))
+	
+	if args.selection_list is not None:
+		print(" ")
+		print_progress("Found total of {} valid micrographs for the output.".format(len(mic_basename_list_of_output_stack)))
+	else: 
+		assert (args.selection_list is None)
+		assert (len(mic_basename_list_of_input_stack) == len(mic_basename_list_of_output_stack))
+	
+	print(" ")
+	input_mic_list_file_name = "micrographs_in_input_stack.txt"
+	input_mic_list_file_path = os.path.join(args.output_directory, input_mic_list_file_name)
+	print_progress("Saving the list of micrographs found in the input stack {} to {}...".format(args.input_bdb_stack_path, input_mic_list_file_path))
+	input_mic_list_file = open(input_mic_list_file_path, "w")
+	for mic_basename in mic_basename_list_of_input_stack:
+		# Write the mic base name to output file; micrograph selection text file
+		input_mic_list_file.write("{}\n".format(mic_basename))
+	input_mic_list_file.close()
+
+	print(" ")
+	output_mic_list_file_name = "micrographs_in_output_dataset.txt"
+	output_mic_list_file_path = os.path.join(args.output_directory, output_mic_list_file_name)
+	print_progress("Saving the list of valid micrograph names for the output to {}...".format(output_mic_list_file_path))
+	output_mic_list_file = open(output_mic_list_file_path, "w")
+	for mic_basename in mic_basename_list_of_output_stack:
+		# Write the mic base name to output file; micrograph selection text file
+		output_mic_list_file.write("{}\n".format(mic_basename))
+	output_mic_list_file.close()
+
+	original_proj_params_list_file_name = "original_proj_params_for_output_dataset.txt"
+	original_proj_params_list_file_path = os.path.join(args.output_directory, original_proj_params_list_file_name)
+	original_proj_params_list_file = open(original_proj_params_list_file_path, "w")
+
+	centered_proj_params_list_file_name = "centered_proj_params_for_output_dataset.txt"
+	centered_proj_params_list_file_path = os.path.join(args.output_directory, centered_proj_params_list_file_name)
+	centered_proj_params_list_file = open(centered_proj_params_list_file_path, "w")
+
+	if args.reboxing:
+		original_coords_list_subdir = "original"
+		original_coords_list_suffix = '_original.box'
+		os.mkdir(os.path.join(args.output_directory, original_coords_list_subdir))
+	
+		centered_coords_list_subdir = "centered"
+		centered_coords_list_suffix = '_centered.box'
+		os.mkdir(os.path.join(args.output_directory, centered_coords_list_subdir))
+
+	global_output_image_id_list = []
+	global_original_proj_params_counters = 0
+	global_centered_proj_params_counters = 0
+	global_original_coords_counters = 0
+	global_centered_coords_counters = 0
+	print(" ")
+	for mic_basename in mic_basename_list_of_output_stack:
+		mic_entry = global_mic_dict[mic_basename]
+		assert (mic_basename == mic_entry.mic_basename)
+		
+		# Append particle ID list to global output stack particle ID list
+		global_output_image_id_list += mic_entry.img_id_list
+		
+		# Count up total number of project parameters
+		assert (len(mic_entry.original_proj_params_list) == len(mic_entry.img_id_list))
+		assert (len(mic_entry.centered_proj_params_list) == len(mic_entry.img_id_list))
+		global_original_proj_params_counters += len(mic_entry.original_proj_params_list)
+		global_centered_proj_params_counters += len(mic_entry.centered_proj_params_list)
+		assert (global_original_proj_params_counters == len(global_output_image_id_list))
+		assert (global_centered_proj_params_counters == len(global_output_image_id_list))
+		
+		for original_proj_params in mic_entry.original_proj_params_list:
+			original_proj_params_list_file.write("{}\n".format(original_proj_params))
+		
+		for centered_proj_params in mic_entry.centered_proj_params_list:
+			centered_proj_params_list_file.write("{}\n".format(centered_proj_params))
+
+		if args.reboxing:
+			mic_rootname, mic_extension = os.path.splitext(mic_basename)
+			assert (len(mic_entry.original_coords_list) == len(mic_entry.img_id_list))
+			assert (len(mic_entry.centered_coords_list) == len(mic_entry.img_id_list))
+			# Count up total number of coordinates
+			global_original_coords_counters += len(mic_entry.original_coords_list)
+			global_centered_coords_counters += len(mic_entry.centered_coords_list)
+			assert (global_original_coords_counters == len(global_output_image_id_list))
+			assert (global_centered_coords_counters == len(global_output_image_id_list))
+		
+			# Save the original coordinates to output file; original EMAN1 box coordinate file or this micrograph
+			original_coords_list_path = os.path.join(args.output_directory, original_coords_list_subdir, "{}{}".format(mic_rootname, original_coords_list_suffix))
+			original_coords_list_file = open(original_coords_list_path, "w")
+			for original_coords in mic_entry.original_coords_list:
+				original_coords_list_file.write(original_coords)
+			original_coords_list_file.close()
+		
+			# Save the centered coordinates to output file; centered EMAN1 box coordinate file or this micrograph
+			centered_coords_list_path = os.path.join(args.output_directory, centered_coords_list_subdir, "{}{}".format(mic_rootname, centered_coords_list_suffix))
+			centered_coords_list_file = open(centered_coords_list_path, "w")
+			for centered_particle_coordinates in mic_entry.centered_coords_list:
+				centered_coords_list_file.write(centered_particle_coordinates)
+			centered_coords_list_file.close()
+		
+		# print(" ")
+		# print_progress("Micrograph summary...")
+		# print_progress("  Micrograph Name                : {}".format(mic_basename))
+		# print_progress("  Extracted particle image ID    : {:6d}".format(len(mic_entry.img_id_list)))
+		# print_progress("  Original projection parameters : {:6d}".format(len(mic_entry.original_proj_params_list)))
+		# print_progress("  Centered projection parameters : {:6d}".format(len(mic_entry.centered_proj_params_list)))
+		print_progress(" {:6d} particles in {}...".format(len(mic_entry.img_id_list), mic_basename))
+		if args.reboxing:
+		#	print_progress("  Extracted original coordinates : {:6d}".format(len(mic_entry.original_coords_list)))
+		#	print_progress("  Extracted centered coordinates : {:6d}".format(len(mic_entry.centered_coords_list)))
+		#	print_progress("  Saved original coordinates to  : {}".format(original_coords_list_path))
+		#	print_progress("  Saved centered coordinates to  : {}".format(centered_coords_list_path))
+		#	print_progress(" {:6d} particle coordinates for {}...".format(len(mic_entry.original_coords_list), mic_basename))
+			assert (len(mic_entry.original_coords_list) == len(mic_entry.img_id_list))
+	
+	original_proj_params_list_file.close()
+	centered_proj_params_list_file.close()
+		
+	print(" ")
+	output_particle_id_list_file_name = "input_stack_particle_id_for_output_dataset.txt"
+	output_particle_id_list_file_path = os.path.join(args.output_directory, output_particle_id_list_file_name)
+	print_progress("Saving the list of input stack particle IDs for the output dataset to {}...".format(output_particle_id_list_file_path))
+	output_particle_id_list_file = open(output_particle_id_list_file_path, "w")
+	for output_image_id_list in global_output_image_id_list:
+		# Write the mic base name to output file; micrograph selection text file
+		output_particle_id_list_file.write("{}\n".format(output_image_id_list))
+	output_particle_id_list_file.close()
+
+	if args.save_vstack:
+		# Create virtual stack for output stack
+		assert (args.output_directory != "")
+		print(" ")
+		print_progress("Creating output stack as a virtual stack...")
+		virtual_bdb_stack_path = "bdb:{}#{}".format(args.output_directory, args.sv_vstack_basename)
+		cmd_line = "e2bdb.py {} --makevstack={} --list={}".format(args.input_bdb_stack_path, virtual_bdb_stack_path, output_particle_id_list_file_path)
+		status = cmdexecute(cmd_line)
+		if status == 0: ERROR("\"{}\" execution failed. Exiting...".format(cmd_line), subcommand_name) # action=1 - fatal error, exit
+		assert (EMUtil.get_image_count(virtual_bdb_stack_path) == len(global_output_image_id_list))
+
+	print(" ")
+	print_progress("Global summary of processing...")
+	print_progress("Num. of extracted micrographs in selection list       : {:6d}".format(len(selected_mic_path_list)))
+	print_progress("Num. of extracted micrographs in input stack          : {:6d}".format(len(mic_basename_list_of_input_stack)))
+	print_progress("Saved input stack micrograph list to                  : {}".format(input_mic_list_file_path))
+	print_progress("Num. of valid micrographs for output dataset          : {:6d}".format(len(mic_basename_list_of_output_stack)))
+	print_progress("Saved output dataset micrograph list to               : {}".format(output_mic_list_file_path))
+	print_progress(" ")
+	print_progress("Num. of detected input stack particles                : {:6d}".format(n_img))
+	print_progress("Num. of particle IDs in output dataset                : {:6d}".format(len(global_output_image_id_list)))
+	print_progress("Saved particle ID list of output dataset to           : {}".format(output_particle_id_list_file_path))
+	print_progress("Num. of original proj. params in output dataset       : {:6d}".format(global_original_proj_params_counters))
+	print_progress("Saved original proj. params list of output dataset to : {}".format(original_proj_params_list_file_path))
+	print_progress("Num. of ceneterd proj. params in output dataset       : {:6d}".format(global_centered_proj_params_counters))
+	print_progress("Saved ceneterd proj. params list of output dataset to : {}".format(centered_proj_params_list_file_path))
+	if args.reboxing:
+		print_progress("Num. of original coordinates in output dataset        : {:6d}".format(global_original_coords_counters))
+		print_progress("Saved original coordinates files in                   : {}".format(os.path.join(args.output_directory, original_coords_list_subdir)))
+		print_progress("Num. of centered coordinates in output dataset        : {:6d}".format(global_centered_coords_counters))
+		print_progress("Saved centered coordinates files in                   : {}".format(os.path.join(args.output_directory, centered_coords_list_subdir)))
+	if args.save_vstack:
+		print_progress("Save output stack as                                  : {}".format(virtual_bdb_stack_path))
 
 # ========================================================================================
 # Main function
@@ -1231,12 +1691,12 @@ def main():
 	subparsers = parser.add_subparsers(help="sub-command help")	
 
 	# create the subparser for the "isac_substack" subcommand
-	parser_isac_subset = subparsers.add_parser("isac_substack", help="Create Stack Subset: Create virtual subset stack consisting from ISAC accounted particles by retrieving particle numbers associated with the ISAC or Beautifier class averages. The command also saves a list text file containing the retrieved original image numbers and 2D alingment parameters. In addition, it stores the 2D alingment parameters to stack header.")
-	parser_isac_subset.add_argument("input_bdb_stack_path",          type=str,                            help="Input BDB image stack: Specify the same BDB image stack used for the associated ISAC run. (default required string)")
-	parser_isac_subset.add_argument("input_run_dir",                 type=str,                            help="ISAC or Beautifier run output directory: Specify output directory of an ISAC or Beautifier run as an input to this command. From this directory, the program extracts the shrink ratio and 2D alingment parameters of the ISAC run or local 2D alingment parameters of the Beautifier run. (default required string)")
+	parser_isac_subset = subparsers.add_parser("isac_substack", help="ISAC2 Stack Subset: Create virtual subset stack consisting from ISAC2 accounted particles by retrieving particle numbers associated with the ISAC2 or Beautifier class averages. The command also saves a list text file containing the retrieved original image numbers and 2D alingment parameters. In addition, it stores the 2D alingment parameters to stack header.")
+	parser_isac_subset.add_argument("input_bdb_stack_path",          type=str,                            help="Input BDB image stack: Specify the same BDB image stack used for the associated ISAC2 run. (default required string)")
+	parser_isac_subset.add_argument("input_run_dir",                 type=str,                            help="ISAC2 or Beautifier run output directory: Specify output directory of an ISAC2 or Beautifier run as an input to this command. From this directory, the program extracts the shrink ratio and 2D alingment parameters of the ISAC2 run or local 2D alingment parameters of the Beautifier run. (default required string)")
 	parser_isac_subset.add_argument("output_directory",              type=str,                            help="Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)")
-	parser_isac_subset.add_argument("--isac_class_avgs_path",        type=str,  default="",               help="ISAC or Beautifier class averages path: Specify path to a file containg ISAC or Beautifier class averages. The calss averages can be fullset or selected subset, as long as they are associated with the input BDB image stack and contain class member information stored in the headers. By default, the program uses the same deafult name of ordered class averages in ISAC or Beautifier (i.e. ordered_class_averages.hdf). (default none)")
-	parser_isac_subset.add_argument("--substack_basename",           type=str,  default="isac_substack",  help="Substack basename: Specify the basename of ISAC substack file. It cannot be empty string or only white spaces. (default isac_substack)")
+	parser_isac_subset.add_argument("--isac_class_avgs_path",        type=str,  default="",               help="ISAC2 or Beautifier class averages path: Specify path to a file containg ISAC2 or Beautifier class averages. The calss averages can be fullset or selected subset, as long as they are associated with the input BDB image stack and contain class member information stored in the headers. By default, the program uses the same deafult name of ordered class averages in ISAC2 or Beautifier (i.e. ordered_class_averages.hdf). (default none)")
+	parser_isac_subset.add_argument("--substack_basename",           type=str,  default="isac_substack",  help="Stack subset basename: Specify the basename of ISAC2 stack subset file. It cannot be empty string or only white spaces. (default isac_substack)")
 	### 
 	### NOTE: Toshio Moriya 2018/01/13
 	### The following options are not implemented yet.
@@ -1246,16 +1706,16 @@ def main():
 	parser_isac_subset.set_defaults(func=isac_substack)
 	
 	# create the subparser for the "organize_micrographs" subcommand
-	parser_organize_micrographs = subparsers.add_parser("organize_micrographs", help="Organize micrographs: Organize micrographs by moving micrographs in a selecting file from a source directory (specified by source micrographs pattern) to a destination directory.")
-	parser_organize_micrographs.add_argument("source_micrograph_pattern",    type=str,                                help="Source micrograph path pattern: Specify path pattern of source micrographs with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (\') or double quotes (\"). (Note: sxgui.py automatically adds single quotes (\')). The substring at the variable part must be same between each associated pair of micrograph names. bdb files can not be selected as source micrographs. (default required string)")
-	parser_organize_micrographs.add_argument("selection_list",               type=str,                                help="Micrograph selecting list: Specify a name of text file containing a list of selected micrograph names or paths. The file extension must be \'.txt\'. The directory path of each entry will be ignored if there are any. (default required string)")
-	parser_organize_micrographs.add_argument("destination_directory",        type=str,                                help="Destination directory: The micrographs in selecting list will be moved to this directory. This directory will be created automatically if it does not exist. (default required string)")
-	parser_organize_micrographs.add_argument("--reverse",                    action="store_true",  default=False,     help="Reverse operation: Move back micrographs from the destination directory to the source directory. Please use this option to restore the previously-moved micrographs. (default False)")
-	parser_organize_micrographs.add_argument("--check_consistency",          action="store_true",  default=False,     help="Check consistency of dataset: Create a text file containing the list of Micrograph ID entries might have inconsitency among the provided dataset. (i.e. mic_consistency_check_info_TIMESTAMP.txt). (default False)")
+	parser_organize_micrographs = subparsers.add_parser("organize_micrographs", help="Organize Micrographs/Movies: Organize micrographs/movies by moving micrographs/movies in a selecting file from a source directory (specified by source micrographs/movies pattern) to a destination directory.")
+	parser_organize_micrographs.add_argument("source_micrograph_pattern",    type=str,                                help="Source micrograph/movies path pattern: Specify path pattern of source micrographs/movies with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (\') or double quotes (\"). (Note: sxgui.py automatically adds single quotes (\')). The substring at the variable part must be same between each associated pair of micrograph/movie names. bdb files can not be selected as source micrographs/movies. (default required string)")
+	parser_organize_micrographs.add_argument("selection_list",               type=str,                                help="Micrograph/Movie selection file: Specify a path of text file containing a list of selected micrograph/movie names or paths. The file extension must be \'.txt\'. The directory path of each entry will be ignored if there are any. (default required string)")
+	parser_organize_micrographs.add_argument("destination_directory",        type=str,                                help="Destination directory: The micrographs/movies in selecting list will be moved to this directory. This directory will be created automatically if it does not exist. (default required string)")
+	parser_organize_micrographs.add_argument("--reverse",                    action="store_true",  default=False,     help="Reverse operation: Move back micrographs/movies from the destination directory to the source directory. Please use this option to restore the previously-moved micrographs/movies. (default False)")
+	parser_organize_micrographs.add_argument("--check_consistency",          action="store_true",  default=False,     help="Check consistency of dataset: Create a text file containing the list of micrograph/movie ID entries might have inconsitency among the provided dataset. (i.e. mic_consistency_check_info.txt). (default False)")
 	parser_organize_micrographs.set_defaults(func=organize_micrographs)
 	
 	# create the subparser for the "reboxing" subcommand
-	parser_reboxing = subparsers.add_parser("reboxing", help="Reboxing: Extract coordinates from the input stack, then center them according to projection parameters in the header and user-provided 3D shift.")
+	parser_reboxing = subparsers.add_parser("reboxing", help="Reboxing: Extract coordinates from the input stack, then center them according to projection parameters in the header and user-provided 3D shift")
 	parser_reboxing.add_argument("input_stack_path",    type=str,                  help="Input image stack: Specify path to input particle stack. (default required string)")
 	parser_reboxing.add_argument("output_directory",    type=str,                  help="Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)")
 	parser_reboxing.add_argument("--box_size",          type=int,    default=0,    help="Particle box size [Pixels]: The x and y dimensions of square area to be windowed. (default 0)")
@@ -1263,6 +1723,21 @@ def main():
 	parser_reboxing.add_argument("--shift3d_y",         type=int,    default=0,    help="3D y-shift [Pixels]: User-provided 3D y-shift corresponding to shifting the 3D volume along y-axis. (default 0)")
 	parser_reboxing.add_argument("--shift3d_z",         type=int,    default=0,    help="3D z-shift [Pixels]: User-provided 3D z-shift corresponding to shifting the 3D volume along z-axis. (default 0)")
 	parser_reboxing.set_defaults(func=reboxing)
+
+	# create the subparser for the "restacking" subcommand
+	parser_restacking = subparsers.add_parser("restacking", help="Restacking: Restack the input stack by appling micrograph selection list, 3D shift, projection parameter estimated by 3D refinement. Also, this subcommand can be used to generate all parameters files for reboxing.")
+	parser_restacking.add_argument("input_bdb_stack_path",    type=str,                                help="Input BDB image stack: Specify the input BDB image stack. (default required string)")
+	parser_restacking.add_argument("output_directory",        type=str,                                help="Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)")
+	parser_restacking.add_argument("--selection_list",        type=str,             default=None,      help="Micrograph/Movie selection file: Specify path to text file containing a list of selected micrograph/movie names or paths. The particles associated with the micrographs/movies in this list will be processed. The file extension must be \'.txt\'. The directory path of each entry will be ignored if there are any. (default none)")
+	parser_restacking.add_argument("--shift3d_x",             type=int,             default=0,         help="3D x-shift [Pixels]: Provide 3D x-shift corresponding to shifting the 3D volume along x-axis. (default 0)")
+	parser_restacking.add_argument("--shift3d_y",             type=int,             default=0,         help="3D y-shift [Pixels]: Provide 3D y-shift corresponding to shifting the 3D volume along y-axis. (default 0)")
+	parser_restacking.add_argument("--shift3d_z",             type=int,             default=0,         help="3D z-shift [Pixels]: Provide 3D z-shift corresponding to shifting the 3D volume along z-axis. (default 0)")
+	parser_restacking.add_argument("--save_vstack",           action="store_true",  default=False,     help="Save virtual stack: Use this option to save the virtual stack. By default, the virtual stack will not be generated. (default False)")
+	parser_restacking.add_argument("--sv_vstack_basename",    type=str,             default="vstack",  help="Virtual stack basename: For --save_vstack, specify the basename of output virtual stack file. It cannot be empty string or only white spaces. (default vstack)")
+	parser_restacking.add_argument("--reboxing",              action="store_true",  default=False,     help="reboxing: Prepare reboxing by extracting coordinates from the input stack headers, then center them according to projection parameters in the header and user-provided 3D shift. If the headers do not contain projection parameters, the program assumes the prjection parameters are all zeros (null alignment). (default False)")
+	parser_restacking.add_argument("--rb_box_size",           type=int,             default=0,         help="Particle box size [Pixels]: For --reboxing option, specify the x and y dimensions of square area to be windowed. (default 0)")
+
+	parser_restacking.set_defaults(func=restacking)
 
 	# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 	# Run specified subcommand
