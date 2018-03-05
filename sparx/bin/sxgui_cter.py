@@ -328,6 +328,7 @@ class SXGuiCter(QtGui.QWidget):
 		# Define enumerators for mapping of sorting items (combo box widget)
 		i_enum = -1
 		i_enum += 1; self.idx_sort_id           = i_enum
+		i_enum += 1; self.idx_sort_mic_names    = i_enum
 		i_enum += 1; self.idx_sort_def          = i_enum
 		i_enum += 1; self.idx_sort_total_ac     = i_enum
 		i_enum += 1; self.idx_sort_astig_amp    = i_enum
@@ -357,6 +358,7 @@ class SXGuiCter(QtGui.QWidget):
 		# Includes mapping from idx_sort to idx_cter
 		self.sort_map_list = [None] * self.n_idx_sort
 		self.sort_map_list[self.idx_sort_id]           = [self.idx_cter_id]
+		self.sort_map_list[self.idx_sort_mic_names]    = [self.idx_cter_mic_name]
 		self.sort_map_list[self.idx_sort_def]          = [self.idx_cter_def]
 		self.sort_map_list[self.idx_sort_total_ac]     = [self.idx_cter_total_ac]
 		self.sort_map_list[self.idx_sort_astig_amp]    = [self.idx_cter_astig_amp]
@@ -1716,7 +1718,11 @@ class SXGuiCter(QtGui.QWidget):
 		
 		# sort CTER partres entry list
 		assert self.cter_entry_list != None, "MRK_DEBUG"
-		self.cter_entry_list = sorted(self.cter_entry_list, key=lambda x: x[self.sort_map_list[self.cursort][self.idx_sort_item_idx_cter]], reverse=self.cursortoder)
+		if self.cursort != self.idx_sort_mic_names:
+			self.cter_entry_list = sorted(self.cter_entry_list, key=lambda x: x[self.sort_map_list[self.cursort][self.idx_sort_item_idx_cter]], reverse=self.cursortoder)
+		else:
+			assert (self.cursort == self.idx_sort_mic_names)
+			self.cter_entry_list = sorted(self.cter_entry_list, key=lambda x: os.path.basename(x[self.sort_map_list[self.cursort][self.idx_sort_item_idx_cter]]), reverse=self.cursortoder)
 		
 		if self.cursortselect: 
 			# Additionaly, sort cter entry list by select state
