@@ -373,8 +373,10 @@ class SXLookFeelConst(object):
 				sxcmd_category_name = "utilities"
 			elif sxcmd.name in ["sxpipe"] and sxcmd.subname in ["organize_micrographs"]:
 				sxcmd_category_name = "utilities"
-			elif sxcmd.name in ["sxpipe"] and sxcmd.subname in ["reboxing"]:
-				sxcmd_category_name = "meridien"
+			elif sxcmd.name in ["sxpipe"] and sxcmd.subname in ["restacking"]:
+				sxcmd_category_name = "utilities"
+			# elif sxcmd.name in ["sxpipe"] and sxcmd.subname in ["reboxing"]:
+			# 	sxcmd_category_name = "meridien"
 			elif sxcmd.name in ["sxmeridien"]:
 				sxcmd_category_name = "meridien"
 			elif sxcmd.name in ["sxmeridien_20171120"]:

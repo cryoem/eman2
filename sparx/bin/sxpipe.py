@@ -1284,6 +1284,7 @@ def restacking(args):
 			self.is_in_stack = False
 			self.is_in_list = False
 			self.img_id_list = []
+			self.ctf_params_list = []
 			self.original_proj_params_list = []
 			self.original_coords_list = []
 			self.centered_proj_params_list = []
@@ -1402,6 +1403,7 @@ def restacking(args):
 	# --------------------------------------------------------------------------------
 	# Define variables and constants used in the loop
 	eman1_dummy = -1       # For 5th column of EMAN1 boxer format
+	missing_ctf_params_counter = 0
 	missing_proj_params_counter = 0
 	img = EMData()
 	for img_id in xrange(n_img):
@@ -1435,6 +1437,24 @@ def restacking(args):
 			assert (mic_entry.is_in_stack)
 			
 		global_mic_dict[mic_basename].img_id_list.append(img_id)
+		
+		# Initialise CTF parameters same way as the dummy CTF of sxwindow.py
+		defocus = 0.0
+		cs      = 0.0
+		voltage = 300.0
+		apix    = 1.0
+		bfactor = 0.0
+		ampcont = 100.0
+		dfdiff  = 0.0
+		dfang   = 0.0
+		# Extract the CTF parameters from the image header
+		if img.has_attr("ctf"):
+			defocus, cs, voltage, apix, bfactor, ampcont, dfdiff, dfang = get_ctf(img)
+		else:
+			missing_ctf_params_counter += 1
+		
+		# Register CTF parameters to global micrograph dictionary
+		global_mic_dict[mic_basename].ctf_params_list.append("{:15.5f} {:15.5f} {:15.5f} {:15.5f} {:15.5f} {:15.5f} {:15.5f} {:15.5f}".format(defocus, cs, voltage, apix, bfactor, ampcont, dfdiff, dfang))
 		
 		# Extract the projection parameters from the image header
 		proj_phi   = 0.0
@@ -1481,9 +1501,15 @@ def restacking(args):
 #	print(" ")
 #	print_progress("Found total of {} assocaited micrographs in the input stack {}.".format(len(global_mic_dict), args.input_bdb_stack_path))
 	
+	if missing_ctf_params_counter > 0:
+		print(" ")
+		print_progress("WARNING!!! The CTF parameters (ctf header entry) are missing from {} out of {} particle images in the input stack {}.".format(missing_proj_params_counter, n_img, args.input_bdb_stack_path))
+		print_progress("           The program automatically sets dummy CTF parameters for these particle images.")
+		
 	if missing_proj_params_counter > 0:
 		print(" ")
 		print_progress("WARNING!!! The projection parameters (xform.projection header entry) are missing from {} out of {} particle images in the input stack {}.".format(missing_proj_params_counter, n_img, args.input_bdb_stack_path))
+		print_progress("           The program automtically set the prjection parameters to all zeros (null alignment).")
 
 	mic_basename_list_of_input_stack = []
 	mic_basename_list_of_output_stack = []
@@ -1552,6 +1578,10 @@ def restacking(args):
 		output_mic_list_file.write("{}\n".format(mic_basename))
 	output_mic_list_file.close()
 
+	ctf_params_list_file_name = "ctf_params_for_output_dataset.txt"
+	ctf_params_list_file_path = os.path.join(args.output_directory, ctf_params_list_file_name)
+	ctf_params_list_file = open(ctf_params_list_file_path, "w")
+
 	original_proj_params_list_file_name = "original_proj_params_for_output_dataset.txt"
 	original_proj_params_list_file_path = os.path.join(args.output_directory, original_proj_params_list_file_name)
 	original_proj_params_list_file = open(original_proj_params_list_file_path, "w")
@@ -1570,6 +1600,7 @@ def restacking(args):
 		os.mkdir(os.path.join(args.output_directory, centered_coords_list_subdir))
 
 	global_output_image_id_list = []
+	global_ctf_params_counters = 0
 	global_original_proj_params_counters = 0
 	global_centered_proj_params_counters = 0
 	global_original_coords_counters = 0
@@ -1582,6 +1613,11 @@ def restacking(args):
 		# Append particle ID list to global output stack particle ID list
 		global_output_image_id_list += mic_entry.img_id_list
 		
+		# Count up total number of CTF parameters
+		assert (len(mic_entry.ctf_params_list) == len(mic_entry.img_id_list))
+		global_ctf_params_counters += len(mic_entry.ctf_params_list)
+		assert (global_ctf_params_counters == len(global_output_image_id_list))
+		
 		# Count up total number of project parameters
 		assert (len(mic_entry.original_proj_params_list) == len(mic_entry.img_id_list))
 		assert (len(mic_entry.centered_proj_params_list) == len(mic_entry.img_id_list))
@@ -1589,6 +1625,9 @@ def restacking(args):
 		global_centered_proj_params_counters += len(mic_entry.centered_proj_params_list)
 		assert (global_original_proj_params_counters == len(global_output_image_id_list))
 		assert (global_centered_proj_params_counters == len(global_output_image_id_list))
+		
+		for ctf_params in mic_entry.ctf_params_list:
+			ctf_params_list_file.write("{}\n".format(ctf_params))
 		
 		for original_proj_params in mic_entry.original_proj_params_list:
 			original_proj_params_list_file.write("{}\n".format(original_proj_params))
@@ -1635,6 +1674,7 @@ def restacking(args):
 		#	print_progress(" {:6d} particle coordinates for {}...".format(len(mic_entry.original_coords_list), mic_basename))
 			assert (len(mic_entry.original_coords_list) == len(mic_entry.img_id_list))
 	
+	ctf_params_list_file.close()
 	original_proj_params_list_file.close()
 	centered_proj_params_list_file.close()
 		
@@ -1670,6 +1710,8 @@ def restacking(args):
 	print_progress("Num. of detected input stack particles                : {:6d}".format(n_img))
 	print_progress("Num. of particle IDs in output dataset                : {:6d}".format(len(global_output_image_id_list)))
 	print_progress("Saved particle ID list of output dataset to           : {}".format(output_particle_id_list_file_path))
+	print_progress("Num. of CTF params in output dataset                  : {:6d}".format(global_ctf_params_counters))
+	print_progress("Saved CTF params list of output dataset to            : {}".format(ctf_params_list_file_path))
 	print_progress("Num. of original proj. params in output dataset       : {:6d}".format(global_original_proj_params_counters))
 	print_progress("Saved original proj. params list of output dataset to : {}".format(original_proj_params_list_file_path))
 	print_progress("Num. of ceneterd proj. params in output dataset       : {:6d}".format(global_centered_proj_params_counters))
@@ -1732,7 +1774,7 @@ def main():
 ###	parser_reboxing.set_defaults(func=reboxing)
 
 	# create the subparser for the "restacking" subcommand
-	parser_restacking = subparsers.add_parser("restacking", help="Restacking: Restack the input stack by appling micrograph selection list, 3D shift, projection parameter estimated by 3D refinement. Also, this subcommand can be used to generate all parameters files for reboxing.")
+	parser_restacking = subparsers.add_parser("restacking", help="Restacking: Generate all necessary information to restack the input stack (i.e. particle image ID list and projection parameters list) while appling micrograph selection list. Optinally, the command can directly output the virtual stack.  Also, this command can be used to generate all parameters files for reboxing (i.e. original/centered particle coordinates list files, original/centered projection parameters list as well as micrograph selection file). Optionally, user can provided a 3D shift to recenter the projection parameters and so the particle coordinates.")
 	parser_restacking.add_argument("input_bdb_stack_path",    type=str,                                help="Input BDB image stack: Specify the input BDB image stack. (default required string)")
 	parser_restacking.add_argument("output_directory",        type=str,                                help="Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)")
 	parser_restacking.add_argument("--selection_list",        type=str,             default=None,      help="Micrograph/Movie selection file: Specify path to text file containing a list of selected micrograph/movie names or paths. The particles associated with the micrographs/movies in this list will be processed. The file extension must be \'.txt\'. The directory path of each entry will be ignored if there are any. (default none)")
@@ -1741,7 +1783,7 @@ def main():
 	parser_restacking.add_argument("--shift3d_z",             type=int,             default=0,         help="3D z-shift [Pixels]: Provide 3D z-shift corresponding to shifting the 3D volume along z-axis. (default 0)")
 	parser_restacking.add_argument("--save_vstack",           action="store_true",  default=False,     help="Save virtual stack: Use this option to save the virtual stack. By default, the virtual stack will not be generated. (default False)")
 	parser_restacking.add_argument("--sv_vstack_basename",    type=str,             default="vstack",  help="Virtual stack basename: For --save_vstack, specify the basename of output virtual stack file. It cannot be empty string or only white spaces. (default vstack)")
-	parser_restacking.add_argument("--reboxing",              action="store_true",  default=False,     help="reboxing: Prepare reboxing by extracting coordinates from the input stack headers, then center them according to projection parameters in the header and user-provided 3D shift. If the headers do not contain projection parameters, the program assumes the prjection parameters are all zeros (null alignment). (default False)")
+	parser_restacking.add_argument("--reboxing",              action="store_true",  default=False,     help="Generate reboxing information: Prepare reboxing by extracting coordinates from the input stack headers, then center them according to projection parameters in the header and user-provided 3D shift. If the headers do not contain projection parameters, the program assumes the prjection parameters are all zeros (null alignment). (default False)")
 	parser_restacking.add_argument("--rb_box_size",           type=int,             default=0,         help="Particle box size [Pixels]: For --reboxing option, specify the x and y dimensions of square area to be windowed. (default 0)")
 
 	parser_restacking.set_defaults(func=restacking)
