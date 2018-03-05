@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 
+set -x
+
 if [ ! -z ${CI} ];then
     source ci_support/setup_conda.sh
 
     # Following Wiki instructions at
     # http://blake.bcm.edu/emanwiki/EMAN2/COMPILE_EMAN2_ANACONDA
-    conda install eman-deps=8 -c cryoem -c defaults -c conda-forge --yes --quiet
+    conda install eman-deps=9 -c cryoem -c defaults -c conda-forge --yes --quiet
 fi
 
 # Build and install eman2

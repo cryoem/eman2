@@ -15,4 +15,4 @@ export PYTHONUNBUFFERED=1
 conda info -a
 conda render ${EMAN_RECIPE_DIR}
 conda build purge-all
-conda build ${EMAN_RECIPE_DIR} -c cryoem -c defaults -c conda-forge
+conda build ${EMAN_RECIPE_DIR} -c cryoem -c defaults -c conda-forge --quiet
