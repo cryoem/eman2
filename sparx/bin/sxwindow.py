@@ -993,7 +993,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 			continue
 		
 		# --------------------------------------------------------------------------------
-		# Move to the Fourier spsace processing
+		# Move to the Fourier space processing
 		# --------------------------------------------------------------------------------
 		fftip(mic_img) # In-place fft
 		
