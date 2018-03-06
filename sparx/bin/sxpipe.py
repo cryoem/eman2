@@ -1226,20 +1226,33 @@ def organize_micrographs(args):
 # Author 1: Christos Gatsogiannis 12/23/2015 (Christos.Gatsogiannis@mpi-dortmund.mpg.de)
 # Author 2: Toshio Moriya 03/02/2018 (toshio.moriya@mpi-dortmund.mpg.de)
 # 
-# --- Reboxing ---
-# Generate coordinates files and micrograph selection text file
-# based on information in the image headers of SPHIRE particle stack file
+# --- Restacking ---
+# Generate all necessary information to restack the input stack 
+# (i.e. particle image ID list, CTF parameters list, projection parameters list) 
+# while appling micrograph selection list. 
+# Optionally, the command can directly output the virtual stack.  
+# In addition, this command can be used to generate all parameters files for reboxing 
+# (i.e. original/centered particle coordinates list files, CTF parameters list, 
+# original/centered projection parameters list as well as micrograph selection file). 
+# Optionally, user can provided a 3D shift to recenter the projection parameters and so the particle coordinates.
 # 
 # This command executes the following processes:
-# (1) Extract the following information stored in the headers of each particle image
-#     - source micrograph path 
-#     - box center coordinates within the micrograph
-#     - projection parameters 
-# (2) Convert the center coordinates to EMAN1 box coordinates format
-#     and save the results to output files.
-# (3) Transform the coordinates based on the projection parameters and user-provided 3D shift
-#     and save the results to output files.
-# (4) Save the list of extracted micrograph names to an output file.
+#  1. Extract the following information stored in the header of each particle image.
+#     - source micrograph path (ptcl_source_image).
+#     - CTF parameters if exist (ctf).
+#     - projection parameters if exist (xform.projection).
+#     - box center coordinates within the micrograph (ptcl_source_coord).
+#  2. Save the list of extracted micrograph names to an output file.
+#  3. If provided, apply the selection list to extracted micrographs.
+#  4. Save the list of selected micrograph names to an output file.
+#  5. Extract only particle image associating to selected micrographs.
+#  6. Save the list of selected particle image IDs to an output file.
+#  7. Save the CTF parameters of selected particle images to output file.
+#  8. Save the original projection parameters of selected particle images to output file.
+#  9. Transform the projection parameters of selected particle images  based on user-provided 3D shift, and then save the results to output files.
+# 10. Convert the center coordinates to EMAN1 box coordinates format, and then save the results to output files.
+# 11. Transform the coordinates based on the projection parameters and user-provided 3D shift, and then save the results to output files.
+# 12. Create the output virtual stack if necessary
 # 
 # ----------------------------------------------------------------------------------------
 # TEST COMMAND
@@ -1686,6 +1699,7 @@ def restacking(args):
 	for output_image_id_list in global_output_image_id_list:
 		# Write the mic base name to output file; micrograph selection text file
 		output_particle_id_list_file.write("{}\n".format(output_image_id_list))
+	output_particle_id_list_file.flush()
 	output_particle_id_list_file.close()
 
 	if args.save_vstack:
