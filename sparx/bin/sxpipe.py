@@ -71,6 +71,48 @@ def get_time_stamp_suffix():
 	time_stamp_suffix = strftime("%Y%m%d_%H%M%S", localtime())
 	return time_stamp_suffix
 
+# ----------------------------------------------------------------------------------------
+# MPI run class
+# ----------------------------------------------------------------------------------------
+class SXmpi_run(object):
+	# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+	# static class variables
+	# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+	RUNNING_UNDER_MPI = False
+	main_mpi_proc = 0
+	my_mpi_proc_id = 0
+	n_mpi_procs = 1
+	# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+	
+	# Set up MPI related variables
+	@staticmethod
+	def setup():
+		# Detect if program is running under MPI
+		SXmpi_run.RUNNING_UNDER_MPI = "OMPI_COMM_WORLD_SIZE" in os.environ
+	
+		SXmpi_run.main_mpi_proc = 0
+		if SXmpi_run.RUNNING_UNDER_MPI:
+			from mpi import mpi_init
+			from mpi import MPI_COMM_WORLD, mpi_comm_rank, mpi_comm_size
+		
+			mpi_init(0, [])
+			SXmpi_run.my_mpi_proc_id = mpi_comm_rank(MPI_COMM_WORLD)
+			SXmpi_run.n_mpi_procs = mpi_comm_size(MPI_COMM_WORLD)
+		else:
+			assert (SXmpi_run.my_mpi_proc_id == 0)
+			assert (SXmpi_run.n_mpi_procs == 1)
+	
+	@staticmethod
+	def cleanup():
+		if SXmpi_run.RUNNING_UNDER_MPI:
+			from mpi import MPI_COMM_WORLD, mpi_barrier, mpi_finalize
+			mpi_barrier(MPI_COMM_WORLD)
+			mpi_finalize()
+	
+	@staticmethod
+	def is_main_proc():
+		return (SXmpi_run.my_mpi_proc_id == SXmpi_run.main_mpi_proc)
+
 # ========================================================================================
 # Subcommand functions
 # ========================================================================================
@@ -109,11 +151,20 @@ def isac_substack(args):
 	# from EMAN2db import db_open_dict, db_check_dict
 	# from e2bdb import makerelpath
 	
+	# Check MPI execution
+	if SXmpi_run.n_mpi_procs > 1:
+		assert (SXmpi_run.RUNNING_UNDER_MPI)
+		error_status = ("The {} subcommand supports only a single process.".format(subcommand_name), getframeinfo(currentframe()))
+		if_error_then_all_processes_exit_program(error_status)
+	
 	# To make the execution exit upon fatal error by ERROR in global_def.py
 	global_def.BATCH = True 
 	
 	# Check error conditions of arguments
-	subcommand_name = "isac_substack"
+	# subcommand_name = "isac_substack"
+	command_script_basename = os.path.basename(sys.argv[0])
+	subcommand_name = "{} {}".format(command_script_basename, args.subcommand)
+	
 	args.input_bdb_stack_path = args.input_bdb_stack_path.strip()
 	if not db_check_dict(args.input_bdb_stack_path, readonly=True):
 		ERROR("Input BDB image stack file does not exist. Please check the file path and restart the program.", subcommand_name) # action=1 - fatal error, exit
@@ -548,6 +599,479 @@ def isac_substack(args):
 
 # ----------------------------------------------------------------------------------------
 # TEST COMMAND
+#
+# cd /home/moriya/mrk_qa/mrktest_pipeline
+#
+# sxpipe.py resample_micrographs --help
+# 
+# rm -rf debug_mrkout_sxpipe_resample_micographs; time mpirun -np 10 sxpipe.py resample_micrographs 'mrkout_pipe00_inputs/micrographs/corrsum_dose_filtered/TcdA1-sialic-*_frames_sum.mrc' 'debug_mrkout_sxpipe_resample_micographs' --resample_ratio=0.5 --selection_list='debug_micrographs.txt' --check_consistency
+#
+# ----------------------------------------------------------------------------------------
+def resample_micrographs(args):
+	import glob
+	import shutil
+	from applications import MPI_start_end
+	from inspect import currentframe, getframeinfo
+
+	# ====================================================================================
+	# Prepare processing
+	# ====================================================================================
+	# ------------------------------------------------------------------------------------
+	# Check MPI execution
+	# ------------------------------------------------------------------------------------
+	if SXmpi_run.RUNNING_UNDER_MPI:
+		from mpi import MPI_COMM_WORLD, mpi_barrier, mpi_reduce, MPI_INT, MPI_SUM
+
+	# ------------------------------------------------------------------------------------
+	# Set up SPHIRE global definitions
+	# ------------------------------------------------------------------------------------
+	if global_def.CACHE_DISABLE:
+		from utilities import disable_bdb_cache
+		disable_bdb_cache()
+	
+	command_script_basename = os.path.basename(sys.argv[0])
+	program_name = "{} {}".format(command_script_basename, args.subcommand)
+	
+	# Change the name log file for error message
+	original_logfilename = global_def.LOGFILE
+	# global_def.LOGFILE = os.path.splitext(program_name)[0] + '_' + original_logfilename + '.txt'
+	global_def.LOGFILE = os.path.splitext(command_script_basename)[0] + args.subcommand + '_' + original_logfilename + '.txt'
+	
+	# # To make the execution exit upon fatal error by ERROR in global_def.py
+	# global_def.BATCH = True 
+	
+	# ------------------------------------------------------------------------------------
+	# Check error conditions of arguments and options, then prepare variables for arguments
+	# ------------------------------------------------------------------------------------
+	mic_pattern = None
+	root_out_dir = None
+	# Not a real while, each "if" statement has the opportunity to use break when errors need to be reported
+	error_status = None
+	while True:
+		mic_pattern = args.input_micrograph_pattern
+		root_out_dir = args.output_directory
+		
+		# --------------------------------------------------------------------------------
+		# Check error conditions of arguments
+		# --------------------------------------------------------------------------------
+		if error_status is None and mic_pattern is None:
+			error_status = ("Missing required argument input_micrograph_pattern. Please run %s -h for help." % (program_name), getframeinfo(currentframe()))
+			break
+
+		if error_status is None and mic_pattern[:len("bdb:")].lower() == "bdb":
+			error_status = ("BDB file can not be selected as input micrographs. Please convert the format, and restart the program. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
+			break
+		
+		if error_status is None and mic_pattern.find("*") == -1:
+			error_status = ("Input micrograph file name pattern must contain wild card (*). Please check input_micrograph_pattern argument. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
+			break
+		
+		if error_status is None and root_out_dir is None:
+			error_status = ("Missing required argument output_directory. Please run %s -h for help." % (program_name), getframeinfo(currentframe()))
+			break
+
+		if error_status is None and os.path.exists(root_out_dir):
+			error_status = ("Output directory exists. Please change the name and restart the program.", getframeinfo(currentframe()))
+			break
+		
+		# --------------------------------------------------------------------------------
+		# Check error conditions of options
+		# --------------------------------------------------------------------------------
+		if error_status is None and args.resample_ratio is None:
+			error_status = ("Missing required option --resample_ratio. Please run %s -h for help." % (program_name), getframeinfo(currentframe()))
+			break
+		
+		if error_status is None and (args.resample_ratio <= 0.0 or args.resample_ratio >= 1.0):
+			error_status = ("Invalid option value: --resample_ratio=%s. Please run %s -h for help." % (args.resample_ratio, program_name), getframeinfo(currentframe()))
+			break
+		
+		if args.selection_list != None:
+			if error_status is None and not os.path.exists(args.selection_list): 
+				error_status = ("File specified by --selection_list option does not exists. Please check --selection_list option. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
+				break
+		
+		break
+	if_error_then_all_processes_exit_program(error_status)
+	assert (mic_pattern != None)
+	assert (root_out_dir != None)
+	
+	# ------------------------------------------------------------------------------------
+	# Prepare the variables for all sections
+	# ------------------------------------------------------------------------------------
+	# Micrograph basename pattern (directory path is removed from micrograph path pattern)
+	mic_basename_pattern = os.path.basename(mic_pattern)
+	
+	# Global entry dictionary (all possible entries from all lists) for all mic id substring
+	global_entry_dict = {} # mic id substring is the key
+	subkey_input_mic_path = "Input Micrograph Path"
+	subkey_selected_mic_basename = "Selected Micrograph Basename"
+	
+	# List keeps only id substrings of micrographs whose all necessary information are available
+	valid_mic_id_substr_list = [] 
+	
+	# ====================================================================================
+	# Obtain the list of micrograph id sustrings using a single CPU (i.e. main mpi process)
+	# ====================================================================================
+	# NOTE: Toshio Moriya 2016/10/24
+	# The below is not a real while.  
+	# It gives if-statements an opportunity to use break when errors need to be reported
+	# However, more elegant way is to use 'raise' statement of exception mechanism...
+	# 
+	error_status = None
+	while SXmpi_run.is_main_proc():
+		# --------------------------------------------------------------------------------
+		# Prepare variables for this section
+		# --------------------------------------------------------------------------------
+		# Prefix and suffix of micrograph basename pattern 
+		# to find the head/tail indices of micrograph id substring
+		mic_basename_tokens = mic_basename_pattern.split('*')
+		assert (len(mic_basename_tokens) == 2)
+		# Find head index of micrograph id substring
+		mic_id_substr_head_idx = len(mic_basename_tokens[0])
+		
+		# --------------------------------------------------------------------------------
+		# Register micrograph id substrings found in the input directory (specified by micrograph path pattern)
+		# to the global entry dictionary
+		# --------------------------------------------------------------------------------
+		# Generate the list of micrograph paths in the input directory
+		print(" ")
+		print("Checking the input directory...")
+		input_mic_path_list = glob.glob(mic_pattern)
+		# Check error condition of input micrograph file path list
+		print("Found %d microgarphs in %s." % (len(input_mic_path_list), os.path.dirname(mic_pattern)))
+		if error_status is None and len(input_mic_path_list) == 0:
+			error_status = ("No micrograph files are found in the directory specified by micrograph path pattern (%s). Please check input_micrograph_pattern argument. Run %s -h for help." % (os.path.dirname(mic_pattern), program_name), getframeinfo(currentframe()))
+			break
+		assert (len(input_mic_path_list) > 0)
+		
+		# Register micrograph id substrings to the global entry dictionary
+		for input_mic_path in input_mic_path_list:
+			# Find tail index of micrograph id substring and extract the substring from the micrograph name
+			input_mic_basename = os.path.basename(input_mic_path)
+			mic_id_substr_tail_idx = input_mic_basename.index(mic_basename_tokens[1])
+			mic_id_substr = input_mic_basename[mic_id_substr_head_idx:mic_id_substr_tail_idx]
+			assert (input_mic_path == mic_pattern.replace("*", mic_id_substr))
+			if not mic_id_substr in global_entry_dict:
+				# print("MRK_DEBUG: Added new mic_id_substr (%s) to global_entry_dict from input_mic_path_list " % (mic_id_substr))
+				global_entry_dict[mic_id_substr] = {}
+			assert (mic_id_substr in global_entry_dict)
+			global_entry_dict[mic_id_substr][subkey_input_mic_path] = input_mic_path
+		assert (len(global_entry_dict) > 0)
+		
+		# --------------------------------------------------------------------------------
+		# Register micrograph id substrings found in the selection list
+		# to the global entry dictionary
+		# --------------------------------------------------------------------------------
+		# Generate the list of selected micrograph paths in the selection file
+		selected_mic_path_list = []
+		# Generate micrograph lists according to the execution mode
+		if args.selection_list == None:
+			print(" ")
+			print("----- Running with All Micrographs Mode -----")
+			# Treat all micrographs in the input directory as selected ones
+			selected_mic_path_list = input_mic_path_list
+		else:
+			assert (args.selection_list != None)
+			if os.path.splitext(args.selection_list)[1] == ".txt":
+				print(" ")
+				print("----- Running with Selected Micrographs Mode -----")
+				print(" ")
+				print("Checking the selection list...")
+				assert (os.path.exists(args.selection_list))
+				selected_mic_path_list = read_text_file(args.selection_list)
+				
+				# Check error condition of micrograph entry lists
+				print("Found %d microgarph entries in %s." % (len(selected_mic_path_list), args.selection_list))
+				if error_status is None and len(selected_mic_path_list) == 0:
+					error_status = ("No micrograph entries are found in the selection list file. Please check selection_list option. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
+					break
+				assert (len(selected_mic_path_list) > 1)
+				if error_status is None and not isinstance(selected_mic_path_list[0], basestring):
+					error_status = ("Invalid format of the selection list file. The first column must contain micrograph paths in string type. Please check selection_list option. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
+					break
+			else:
+				print(" ")
+				print("----- Running with Single Micrograph Mode -----")
+				print(" ")
+				print("Processing a single micorgprah: %s..." % (args.selection_list))
+				selected_mic_path_list = [args.selection_list]
+			assert (len(selected_mic_path_list) > 0)
+			
+			selected_mic_directory = os.path.dirname(selected_mic_path_list[0])
+			if selected_mic_directory != "":
+				print("    NOTE: Program disregards the directory paths in the selection list (%s)." % (selected_mic_directory))
+			
+		assert (len(selected_mic_path_list) > 0)
+		
+		# Register micrograph id substrings to the global entry dictionary
+		for selected_mic_path in selected_mic_path_list:
+			# Find tail index of micrograph id substring and extract the substring from the micrograph name
+			selected_mic_basename = os.path.basename(selected_mic_path)
+			mic_id_substr_tail_idx = selected_mic_basename.index(mic_basename_tokens[1])
+			mic_id_substr = selected_mic_basename[mic_id_substr_head_idx:mic_id_substr_tail_idx]
+			if error_status is None and selected_mic_basename != mic_basename_pattern.replace("*", mic_id_substr):
+				error_status = ("A micrograph name (%s) in the input directory (%s) does not match with input micrograph basename pattern (%s) (The wild card replacement with \'%s\' resulted in \'%s\'). Please correct input micrograph path pattern. Run %s -h for help." % (selected_mic_basename, os.path.dirname(mic_pattern), mic_basename_pattern, mic_id_substr, mic_basename_pattern.replace("*", mic_id_substr), program_name), getframeinfo(currentframe()))
+				break
+			if not mic_id_substr in global_entry_dict:
+				# print("MRK_DEBUG: Added new mic_id_substr (%s) to global_entry_dict from selected_mic_path_list " % (mic_id_substr))
+				global_entry_dict[mic_id_substr] = {}
+			assert (mic_id_substr in global_entry_dict)
+			global_entry_dict[mic_id_substr][subkey_selected_mic_basename] = selected_mic_basename
+		assert (len(global_entry_dict) > 0)
+		
+		del selected_mic_path_list # Do not need this anymore
+		del input_mic_path_list # Do not need this anymore
+		
+		# --------------------------------------------------------------------------------
+		# Clean up variables related to registration to the global entry dictionary
+		# --------------------------------------------------------------------------------
+		del mic_basename_tokens
+		del mic_id_substr_head_idx
+		
+		# --------------------------------------------------------------------------------
+		# Create the list containing only valid micrograph id substrings
+		# --------------------------------------------------------------------------------
+		# Prepare lists to keep track of invalid (rejected) micrographs 
+		no_input_mic_id_substr_list = []
+		
+		print(" ")
+		print("Checking consistency of the provided dataset ...")
+		
+		# Loop over substring id list
+		for mic_id_substr in global_entry_dict:
+			mic_id_entry = global_entry_dict[mic_id_substr]
+			
+			warinnig_messages = []
+			# selected micrograph basename must have been registed always .
+			if subkey_selected_mic_basename in mic_id_entry: 
+				# Check if associated input micrograph exists
+				if not subkey_input_mic_path in mic_id_entry:
+					input_mic_path = mic_pattern.replace("*", mic_id_substr)
+					warinnig_messages.append("    associated input micrograph %s." % (input_mic_path))
+					no_input_mic_id_substr_list.append(mic_id_substr)
+				
+				if len(warinnig_messages) > 0:
+					print("WARNING!!! Micrograph ID %s does not have:" % (mic_id_substr))
+					for warinnig_message in warinnig_messages:
+						print(warinnig_message)
+					print("    Ignores this as an invalid entry.")
+				else:
+					# print("MRK_DEBUG: adding mic_id_substr := ", mic_id_substr)
+					valid_mic_id_substr_list.append(mic_id_substr)
+			# else:
+			# 	assert (not subkey_selected_mic_basename in mic_id_entry)
+			# 	# This entry is not in the selection list. Do nothing
+			
+		# Check the input dataset consistency and save the result to a text file, if necessary.
+		if args.check_consistency:
+			# Create output directory
+			assert (not os.path.exists(root_out_dir))
+			os.mkdir(root_out_dir)
+			
+			# Open the consistency check file
+			mic_consistency_check_info_path = os.path.join(root_out_dir, "mic_consistency_check_info_%s.txt"%(get_time_stamp_suffix()))
+			print(" ")
+			print("Generating consistency report of the provided dataset in %s..."%(mic_consistency_check_info_path))
+			mic_consistency_check_info_file = open(mic_consistency_check_info_path, "w")
+			mic_consistency_check_info_file.write("# The consistency information about micrograph IDs that might have problmes with consistency among the provided dataset.\n")
+			mic_consistency_check_info_file.write("# \n")
+			# Loop over substring id list
+			for mic_id_substr in global_entry_dict:
+				mic_id_entry = global_entry_dict[mic_id_substr]
+				
+				consistency_messages = []
+				# Check if associated input micrograph path exists
+				if not subkey_input_mic_path in mic_id_entry:
+					input_mic_path = mic_pattern.replace("*", mic_id_substr)
+					consistency_messages.append("    associated input micrograph %s." % (input_mic_path))
+				
+				# Check if associated selected micrograph basename exists
+				if not subkey_selected_mic_basename in mic_id_entry:
+					input_mic_path = mic_pattern.replace("*", mic_id_substr)
+					consistency_messages.append("    associated selected micrograph %s." % (input_mic_path))
+				
+				if len(consistency_messages) > 0:
+					mic_consistency_check_info_file.write("Micrograph ID %s might have problems with consistency among the provided dataset:\n"%(mic_id_substr))
+					for consistency_message in consistency_messages:
+						mic_consistency_check_info_file.write(consistency_message)
+						mic_consistency_check_info_file.write("\n")
+			
+			# Close the consistency check file, if necessary
+			mic_consistency_check_info_file.flush()
+			mic_consistency_check_info_file.close()
+			
+		# Since mic_id_substr is once stored as the key of global_entry_dict and extracted with the key order
+		# we need sort the valid_mic_id_substr_list here
+		# print("MRK_DEBUG: before sort, valid_mic_id_substr_list := ", valid_mic_id_substr_list)
+		valid_mic_id_substr_list.sort()
+		# print("MRK_DEBUG: after sort, valid_mic_id_substr_list := ", valid_mic_id_substr_list)
+		
+		# --------------------------------------------------------------------------------
+		# Print out the summary of input consistency
+		# --------------------------------------------------------------------------------
+		print(" ")
+		print("Summary of dataset consistency check...")
+		print("Detected                           : %6d" % (len(global_entry_dict)))
+		print("Valid                              : %6d" % (len(valid_mic_id_substr_list)))
+			
+		# --------------------------------------------------------------------------------
+		# Clean up variables related to tracking of invalid (rejected) micrographs 
+		# --------------------------------------------------------------------------------
+		del no_input_mic_id_substr_list
+		
+		# --------------------------------------------------------------------------------
+		# Check MPI error condition
+		# --------------------------------------------------------------------------------
+		if error_status is None and len(valid_mic_id_substr_list) < SXmpi_run.n_mpi_procs:
+			error_status = ("Number of MPI processes (%d) supplied by --np in mpirun cannot be greater than %d (number of valid micrographs that satisfy all criteria to be processed)." % (SXmpi_run.n_mpi_procs, len(valid_mic_id_substr_list)), getframeinfo(currentframe()))
+			break
+		
+		break
+	# 
+	# NOTE: Toshio Moriya 2016/10/24
+	# The following function takes care of the case when an if-statement uses break for occurence of an error.
+	# However, more elegant way is to use 'exception' statement of exception mechanism...
+	# 
+	if_error_then_all_processes_exit_program(error_status)
+	
+	# ====================================================================================
+	# Obtain the list of micrograph id sustrings
+	# ====================================================================================
+	# --------------------------------------------------------------------------------
+	# Prepare variables for this section
+	# --------------------------------------------------------------------------------
+	# Prepare variables related to options
+	resample_ratio = args.resample_ratio
+	
+	# Micrograph baseroot pattern (extension are removed from micrograph basename pattern)
+	# for substack file names
+	mic_baseroot_pattern = os.path.splitext(mic_basename_pattern)[0]  
+	
+	# Prepare the counters for the global summary of micrographs
+	n_mic_process = 0
+	
+	# keep a copy of the root output directory where the final bdb will be created
+	unsliced_valid_serial_id_list = valid_mic_id_substr_list
+	if SXmpi_run.RUNNING_UNDER_MPI:
+		mpi_barrier(MPI_COMM_WORLD)
+		# All mpi processes should know global entry directory and valid micrograph id substring list
+		global_entry_dict = wrap_mpi_bcast(global_entry_dict, SXmpi_run.main_mpi_proc)
+		valid_mic_id_substr_list = wrap_mpi_bcast(valid_mic_id_substr_list, SXmpi_run.main_mpi_proc)
+		
+		# Slice the list of valid micrograph id substrings for this mpi process
+		mic_start, mic_end = MPI_start_end(len(valid_mic_id_substr_list), SXmpi_run.n_mpi_procs, SXmpi_run.my_mpi_proc_id)
+		valid_mic_id_substr_list = valid_mic_id_substr_list[mic_start:mic_end]
+		
+	if SXmpi_run.is_main_proc():
+		print(" ")
+		print("Micrographs processed by main process (including percent of progress):")
+		progress_percent_step = len(valid_mic_id_substr_list)/100.0 # the number of micrograms for main node divided by 100
+		
+		# Create output directory
+		# 
+		# NOTE: Toshio Moriya 2017/12/12
+		# This might not be necessary since particle_img.write_image() will automatically create all directory tree necessary to save the file.
+		# However, it is side-effect of the function, so we will explicitly make root output directory here.
+		# 
+		if not os.path.exists(root_out_dir):
+			os.mkdir(root_out_dir)
+
+	# All node should wait for main node to create root output directory
+	if SXmpi_run.RUNNING_UNDER_MPI:
+		mpi_barrier(MPI_COMM_WORLD) # all MPI processes should wait until the directory is created by main process
+		# 
+		# NOTE: 2017/12/12 Toshio Moriya
+		# To walk-around synchronisation problem between all MPI nodes and a file server,
+		# we use exception to assert the existence of directory.
+		# 
+		try: 
+			os.mkdir(root_out_dir)
+			assert False, "Unreachable code..."
+		except OSError as err:
+			pass
+	else: 
+		assert os.path.exists(root_out_dir)
+	
+	# ------------------------------------------------------------------------------------
+	# Starting main parallel execution
+	# ------------------------------------------------------------------------------------
+	for mic_id_substr_idx, mic_id_substr in enumerate(valid_mic_id_substr_list):
+		
+		# --------------------------------------------------------------------------------
+		# Print out progress if necessary
+		# --------------------------------------------------------------------------------
+		mic_basename = global_entry_dict[mic_id_substr][subkey_selected_mic_basename]
+		assert (mic_basename == mic_basename_pattern.replace("*", mic_id_substr))
+		if SXmpi_run.is_main_proc():
+			print("%s ---> % 2.2f%%" % (mic_basename, mic_id_substr_idx / progress_percent_step))
+		
+		# --------------------------------------------------------------------------------
+		# Read micrograph
+		# --------------------------------------------------------------------------------
+		mic_path = global_entry_dict[mic_id_substr][subkey_input_mic_path]
+		assert (mic_path == mic_pattern.replace("*", mic_id_substr))
+		try:
+			mic_img = get_im(mic_path)
+		except:
+			print("Failed to read the associate micrograph %s for %s. The file might be corrupted. Skipping..." % (mic_path, mic_basename))
+			continue
+		
+		# --------------------------------------------------------------------------------
+		# Resample micrograph, map coordinates, and window segments from resampled micrograph using new coordinates
+		# after resampling by resample_ratio, resampled pixel size = src_pixel_size/resample_ratio
+		# --------------------------------------------------------------------------------
+		# NOTE: 2015/04/13 Toshio Moriya
+		# resample() efficiently takes care of the case resample_ratio = 1.0 but
+		# it does not set apix_*. Even though it sets apix_* when resample_ratio < 1.0...
+		mic_img = resample(mic_img, resample_ratio)
+		
+		# --------------------------------------------------------------------------------
+		# Generate the output file path of particle stack for this mpi process
+		# --------------------------------------------------------------------------------
+		mic_basename = mic_basename_pattern.replace("*", mic_id_substr)
+		output_mic_path = os.path.join(root_out_dir, mic_basename)
+		mic_img.write_image(output_mic_path) 
+		
+		# --------------------------------------------------------------------------------
+		# Prepare coordinates loop variables
+		# --------------------------------------------------------------------------------
+		# Update the counters for the global summary of micrographs
+		n_mic_process += 1
+	
+	# ------------------------------------------------------------------------------------
+	# Print out summary of processing
+	# ------------------------------------------------------------------------------------
+	if SXmpi_run.RUNNING_UNDER_MPI:
+		n_mic_process = mpi_reduce(n_mic_process, 1, MPI_INT, MPI_SUM, SXmpi_run.main_mpi_proc, MPI_COMM_WORLD)
+	
+	# Print out the summary of all micrographs
+	if SXmpi_run.is_main_proc():
+		print(" ")
+		print("Summary of process...")
+		print("Valid                              : %6d" % (len(unsliced_valid_serial_id_list)))
+		print("Processed                          : %6d" % (n_mic_process))
+	
+	if SXmpi_run.RUNNING_UNDER_MPI:
+		mpi_barrier(MPI_COMM_WORLD)
+	
+	if SXmpi_run.is_main_proc():
+		print(" ")
+		print("DONE!!!")
+		print(" ")
+	
+	# ====================================================================================
+	# Clean up
+	# ====================================================================================
+	# ------------------------------------------------------------------------------------
+	# Reset SPHIRE global definitions
+	# ------------------------------------------------------------------------------------
+	global_def.LOGFILE = original_logfilename
+	
+	sys.stdout.flush()
+
+
+# ----------------------------------------------------------------------------------------
+# TEST COMMAND
 # cd /home/moriya/SPHIRE-demo/Precalculated-Results
 # 
 # ls -l CorrectedSums/MRK_DISCARDED
@@ -577,6 +1101,12 @@ def organize_micrographs(args):
 	import shutil
 	from utilities import read_text_file
 	
+	# Check MPI execution
+	if SXmpi_run.n_mpi_procs > 1:
+		assert (SXmpi_run.RUNNING_UNDER_MPI)
+		error_status = ("The {} subcommand supports only a single process.".format(subcommand_name), getframeinfo(currentframe()))
+		if_error_then_all_processes_exit_program(error_status)
+	
 	# To make the execution exit upon fatal error by ERROR in global_def.py
 	global_def.BATCH = True 
 	
@@ -591,7 +1121,9 @@ def organize_micrographs(args):
 	# ------------------------------------------------------------------------------------
 	# Check error conditions
 	# ------------------------------------------------------------------------------------
-	subcommand_name = "organize_micrographs"
+	# subcommand_name = "organize_micrographs"
+	command_script_basename = os.path.basename(sys.argv[0])
+	subcommand_name = "{} {}".format(command_script_basename, args.subcommand)
 	
 	if src_mic_pattern.find("*") == -1:
 		ERROR("The source micrograph path pattern must contain wild card (*). Please correct source_micrograph_pattern argument and restart the program.", subcommand_name) # action=1 - fatal error, exit
@@ -1304,11 +1836,19 @@ def restacking(args):
 			self.centered_coords_list = []
 			# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 
+	# Check MPI execution
+	if SXmpi_run.n_mpi_procs > 1:
+		assert (SXmpi_run.RUNNING_UNDER_MPI)
+		error_status = ("The {} subcommand supports only a single process.".format(subcommand_name), getframeinfo(currentframe()))
+		if_error_then_all_processes_exit_program(error_status)
+	
 	# To make the execution exit upon fatal error by ERROR in global_def.py
 	global_def.BATCH = True 
 	
 	# Define the name of this subcommand
-	subcommand_name = "restacking"
+	# subcommand_name = "restacking"
+	command_script_basename = os.path.basename(sys.argv[0])
+	subcommand_name = "{} {}".format(command_script_basename, args.subcommand)
 	
 	# Check error conditions of arguments
 	if not db_check_dict(args.input_bdb_stack_path, readonly=True):
@@ -1747,8 +2287,8 @@ def main():
 	# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 	parser = argparse.ArgumentParser(description="The collection of SPHIRE small pipleline tools.")
 	parser.add_argument("--version", action="version", version=SPARXVERSION)
-	# subparsers = parser.add_subparsers(title="subcommands", description="valid subcommands", help="additional help")	
-	subparsers = parser.add_subparsers(help="sub-command help")	
+	# subparsers = parser.add_subparsers(title="subcommands", description="valid subcommands", help="additional help")
+	subparsers = parser.add_subparsers(help="sub-command help", dest="subcommand")
 
 	# create the subparser for the "isac_substack" subcommand
 	parser_isac_subset = subparsers.add_parser("isac_substack", help="ISAC2 Stack Subset: Create virtual subset stack consisting from ISAC2 accounted particles by retrieving particle numbers associated with the ISAC2 or Beautifier class averages. The command also saves a list text file containing the retrieved original image numbers and 2D alingment parameters. In addition, it stores the 2D alingment parameters to stack header.")
@@ -1765,6 +2305,15 @@ def main():
 	### parser_isac_subset.add_argument("--no_import_align2d",           action="store_true",  default=False,  help="Do not import alignment:  (default False)")
 	parser_isac_subset.set_defaults(func=isac_substack)
 	
+	# create the subparser for the "resample_micrographs" subcommand
+	parser_resample_micrographs = subparsers.add_parser("resample_micrographs", help="Resample Micrographs: Resample micrographs in input directory specified by input micrograph pattern. Resampling chages the image dimensitions and the pixel size.")
+	parser_resample_micrographs.add_argument("input_micrograph_pattern",  type=str,                             help="Input micrograph path pattern: Specify path pattern of input micrographs with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (\') or double quotes (\"). (Note: sxgui.py automatically adds single quotes (\')). The substring at the variable part must be same between the associated pair of input micrograph and coordinates file. bdb files can not be selected as input micrographs. (default required string)")
+	parser_resample_micrographs.add_argument("output_directory",          type=str,                             help="Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)")
+	parser_resample_micrographs.add_argument("--resample_ratio",          type=float,           default=None,   help="Ratio between new and original pixel size: Use a value between 0.0 and 1.0 (exclusive both ends). (default required float)")
+	parser_resample_micrographs.add_argument("--selection_list",          type=str,             default=None,   help="Micrograph selecting list: Specify a name of micrograph selection list text file for Selected Micrographs Mode. The file extension must be \'.txt\'. Alternatively, the file name of a single micrograph can be specified for Single Micrograph Mode. (default none)")
+	parser_resample_micrographs.add_argument("--check_consistency",       action="store_true",  default=False,  help="Check consistency of dataset: Create a text file containing the list of Micrograph ID entries might have inconsitency among the provided dataset. (i.e. mic_consistency_check_info_TIMESTAMP.txt). (default False)")
+	parser_resample_micrographs.set_defaults(func=resample_micrographs)
+
 	# create the subparser for the "organize_micrographs" subcommand
 	parser_organize_micrographs = subparsers.add_parser("organize_micrographs", help="Organize Micrographs/Movies: Organize micrographs/movies by moving micrographs/movies in a selecting file from a source directory (specified by source micrographs/movies pattern) to a destination directory.")
 	parser_organize_micrographs.add_argument("source_micrograph_pattern",    type=str,                                help="Source micrograph/movies path pattern: Specify path pattern of source micrographs/movies with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (\') or double quotes (\"). (Note: sxgui.py automatically adds single quotes (\')). The substring at the variable part must be same between each associated pair of micrograph/movie names. bdb files can not be selected as source micrographs/movies. (default required string)")
@@ -1809,17 +2358,34 @@ def main():
 	# args_dict = vars(parser.parse_args()) # convert it to dictionary object
 	# print (args_dict)
 	
-	print(" ")
-	print_progress(get_cmd_line())
-	print(" ")
+	# ------------------------------------------------------------------------------------
+	# Set up MPI related variables
+	# ------------------------------------------------------------------------------------
+	# Detect if program is running under MPI
+	SXmpi_run.setup()
+	
+	# ------------------------------------------------------------------------------------
+	# Execute command
+	# ------------------------------------------------------------------------------------
+	# Print command line
+	if SXmpi_run.is_main_proc():
+		print(" ")
+		print_progress(get_cmd_line())
+		print(" ")
 	
 	# Call the associated function of the specified subcommand
 	args.func(args)
 
-	print(" ")
-	print_progress("DONE!!!")
-	print(" ")
+	if SXmpi_run.is_main_proc():
+		print(" ")
+		print_progress("DONE!!!")
+		print(" ")
 
+	# ------------------------------------------------------------------------------------
+	# Clean up MPI related variables
+	# ------------------------------------------------------------------------------------
+	SXmpi_run.cleanup()
+	
 # ----------------------------------------------------------------------------------------
 if __name__ == "__main__":
 	main()
