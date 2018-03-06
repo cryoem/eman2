@@ -371,15 +371,11 @@ class SXLookFeelConst(object):
 			# First, handle exceptional cases
 			if sxcmd.name in ["e2display", "sxpdb2em", "sxrelion2sphire", "sxprocess", "e2proc3d", "sxheader", "e2bdb"]:
 				sxcmd_category_name = "utilities"
-			elif sxcmd.name in ["sxpipe"] and sxcmd.subname in ["organize_micrographs"]:
-				sxcmd_category_name = "utilities"
-			elif sxcmd.name in ["sxpipe"] and sxcmd.subname in ["restacking"]:
+			elif sxcmd.name in ["sxpipe"] and sxcmd.subname in ["resample_micrographs", "organize_micrographs", "restacking"]:
 				sxcmd_category_name = "utilities"
 			# elif sxcmd.name in ["sxpipe"] and sxcmd.subname in ["reboxing"]:
 			# 	sxcmd_category_name = "meridien"
-			elif sxcmd.name in ["sxmeridien"]:
-				sxcmd_category_name = "meridien"
-			elif sxcmd.name in ["sxmeridien_20171120"]:
+			elif sxcmd.name in ["sxmeridien", "sxmeridien_20171120"]:
 				sxcmd_category_name = "meridien"
 			elif sxcmd.name in ["sxunblur", "sxsummovie"]:
 				sxcmd_category_name = "movie"
