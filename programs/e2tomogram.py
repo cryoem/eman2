@@ -448,7 +448,7 @@ def calc_global_trans(imgs, options, excludes=[]):
 
 #### Find tilt axis by common line
 def calc_tltax_rot(imgs, options):
-	print("Calculateing tilt axis rotation...")
+	print("Calculating tilt axis rotation...")
 	
 	num=len(imgs)
 	sz=options.minsz
