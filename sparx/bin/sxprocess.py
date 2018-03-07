@@ -720,7 +720,8 @@ def main():
 		from filter import filt_gaussl, filt_ctf
 		from utilities import drop_spider_doc, even_angles, model_gauss, delete_bdb, model_blank,pad,model_gauss_noise,set_params2D, set_params_proj
 		from projection import prep_vol,prgs
-		seed(14567)
+		from time import time
+		seed(int(time()))
 		delta = 29
 		angles = even_angles(delta, 0.0, 89.9, 0.0, 359.9, "S")
 		nangle = len(angles)
