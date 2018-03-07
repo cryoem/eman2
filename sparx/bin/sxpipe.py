@@ -712,7 +712,7 @@ def resample_micrographs(args):
 	# ====================================================================================
 	# Obtain the list of micrograph id sustrings using a single CPU (i.e. main mpi process)
 	# ====================================================================================
-	# NOTE: Toshio Moriya 2016/10/24
+	# NOTE: Toshio Moriya 2018/03/06
 	# The below is not a real while.  
 	# It gives if-statements an opportunity to use break when errors need to be reported
 	# However, more elegant way is to use 'raise' statement of exception mechanism...
@@ -928,7 +928,7 @@ def resample_micrographs(args):
 		
 		break
 	# 
-	# NOTE: Toshio Moriya 2016/10/24
+	# NOTE: Toshio Moriya 2018/03/06
 	# The following function takes care of the case when an if-statement uses break for occurence of an error.
 	# However, more elegant way is to use 'exception' statement of exception mechanism...
 	# 
@@ -969,7 +969,7 @@ def resample_micrographs(args):
 		
 		# Create output directory
 		# 
-		# NOTE: Toshio Moriya 2017/12/12
+		# NOTE: Toshio Moriya 2018/03/06
 		# This might not be necessary since particle_img.write_image() will automatically create all directory tree necessary to save the file.
 		# However, it is side-effect of the function, so we will explicitly make root output directory here.
 		# 
@@ -980,7 +980,7 @@ def resample_micrographs(args):
 	if SXmpi_run.RUNNING_UNDER_MPI:
 		mpi_barrier(MPI_COMM_WORLD) # all MPI processes should wait until the directory is created by main process
 		# 
-		# NOTE: 2017/12/12 Toshio Moriya
+		# NOTE: Toshio Moriya 2018/03/06
 		# To walk-around synchronisation problem between all MPI nodes and a file server,
 		# we use exception to assert the existence of directory.
 		# 
@@ -1020,7 +1020,7 @@ def resample_micrographs(args):
 		# Resample micrograph, map coordinates, and window segments from resampled micrograph using new coordinates
 		# after resampling by resample_ratio, resampled pixel size = src_pixel_size/resample_ratio
 		# --------------------------------------------------------------------------------
-		# NOTE: 2015/04/13 Toshio Moriya
+		# NOTE: Toshio Moriya 2018/03/06
 		# resample() efficiently takes care of the case resample_ratio = 1.0 but
 		# it does not set apix_*. Even though it sets apix_* when resample_ratio < 1.0...
 		mic_img = resample(mic_img, resample_ratio)
