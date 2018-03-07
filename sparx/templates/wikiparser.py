@@ -147,6 +147,7 @@ def construct_keyword_dict():
 ###	keyword_dict["--skip_create_substack"]        = SXkeyword_map(0, "bool")                # --skip_create_substack (contains keyworkd 'stack' but this should be bool type)
 	keyword_dict["--no_virtual_stack"]            = SXkeyword_map(0, "bool")                # --no_virtual_stack (contains keyworkd 'stack' but this should be bool type)
 	keyword_dict["--create_stack"]                = SXkeyword_map(0, "bool")                # --create_stack (contains keyworkd 'stack' but this should be bool type)
+	keyword_dict["--save_vstack"]                 = SXkeyword_map(0, "bool")                # --save_vstack (contains keyworkd 'stack' but this should be bool type)
 	keyword_dict["--mask_threshold"]              = SXkeyword_map(0, "float")               # --mask_threshold=MASK_THRESHOLD (contains keyworkd 'mask' but this should be bool type)
 	# Use priority 1 for output
 	keyword_dict["output"]                        = SXkeyword_map(1, "output")              # output_hdf, output_directory, outputfile, outputfile, --output=OUTPUT, output_stack, output_file
