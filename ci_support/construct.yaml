@@ -18,7 +18,6 @@ ignore_duplicate_files: True
 
 specs:
   - eman2 2.21
-  - libgfortran 1.0       # [linux]
   - conda
   - conda-build
   - pip

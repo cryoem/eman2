@@ -11,6 +11,6 @@ fi
 
 set -xe
 
-numpy_verison=${1//.}
+numpy_version=${1//.}
 
-conda install eman2=2.2=np${numpy_verison}py27_0 --use-local
+conda install "eman2=*=np${numpy_version}*" --use-local

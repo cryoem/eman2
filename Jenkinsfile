@@ -120,7 +120,6 @@ pipeline {
     HOME_DIR = getHomeDir()
     INSTALLERS_DIR = '${HOME_DIR}/workspace/${STAGE_NAME}-installers'
     DEPLOY_DEST    = 'zope@ncmi.grid.bcm.edu:/home/zope/zope-server/extdata/reposit/ncmi/software/counter_222/software_136/'
-    NUMPY_VERSION='1.9'
 
     CI_BUILD       = sh(script: "! git log -1 | grep '.*\\[ci build\\].*'",       returnStatus: true)
     CI_BUILD_WIN   = sh(script: "! git log -1 | grep '.*\\[ci build win\\].*'",   returnStatus: true)
@@ -154,7 +153,7 @@ pipeline {
           }
           
           steps {
-            sh 'source $(conda info --root)/bin/activate eman-env && bash ci_support/build_no_recipe.sh'
+            sh 'source $(conda info --root)/bin/activate eman-deps-9 && bash ci_support/build_no_recipe.sh'
           }
         }
       }

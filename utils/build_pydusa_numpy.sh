@@ -3,7 +3,7 @@
 # Builds user-specified numpy version from optionally-specified branch
 
 function print_usage(){
-    printf "\e\033[35m\n  Usage: $(basename ${0}) %s %s %s\n\n\033[0m" "{1.5|...|1.12}" "[branch-to-checkout]" "[--conda-build-opt1] [--conda-build-opt2] ..." >&2
+    printf "\e\033[35m\n  Usage: $(basename ${0}) %s %s %s\n\n\033[0m" "{1.5|...|1.13}" "[branch-to-checkout]" "[--conda-build-opt1] [--conda-build-opt2] ..." >&2
     exit 64
 }
 
