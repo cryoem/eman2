@@ -23,7 +23,7 @@ def notifyGitHub(status) {
 def notifyEmail() {
     if(JOB_TYPE == "push") {
         emailext(to: "$GIT_AUTHOR_EMAIL",  
-                 subject: '[JenkinsCI/$PROJECT_NAME/push] ' + "($GIT_BRANCH_SHORT - ${GIT_COMMIT_SHORT})" + ' #$BUILD_NUMBER - $BUILD_STATUS!',
+                 subject: '[JenkinsCI/$PROJECT_NAME] ' + "($GIT_BRANCH_SHORT - ${GIT_COMMIT_SHORT})" + ' #$BUILD_NUMBER - $BUILD_STATUS!',
                  body: '''${SCRIPT, template="groovy-text.template"}''',
                  attachLog: true
                  )
