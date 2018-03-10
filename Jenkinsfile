@@ -119,6 +119,7 @@ pipeline {
     stage('build-local') {
       when {
         not { expression { isBinaryBuild() } }
+        expression { JOB_NAME != 'Win' }
       }
       
       steps {
