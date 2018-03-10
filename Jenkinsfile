@@ -132,6 +132,7 @@ pipeline {
     stage('notify-pending') {
       steps {
         notifyGitHub('PENDING')
+        sh 'env | sort'
       }
     }
     
