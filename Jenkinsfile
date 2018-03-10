@@ -38,26 +38,6 @@ def isContinuousBuild() {
     return GIT_BRANCH ==~ /.*\/master/
 }
 
-def stage_name_to_os(stage_name) {
-    def result = ['centos6': 'linux',
-                  'centos7': 'linux',
-                  'mac':     'mac',
-                  'win':     'win'
-                  ]
-    
-    return result[stage_name]
-}
-
-def isRequestedBuildStage() {
-    def buildStage = ['centos6': CI_BUILD_LINUX,
-                      'centos7': CI_BUILD_LINUX,
-                      'mac':     CI_BUILD_MAC,
-                      'win':     CI_BUILD_WIN
-                      ]
-    
-    return (stage_name_to_os(STAGE_NAME) == SLAVE_OS && (CI_BUILD == "1" || buildStage[STAGE_NAME] == "1"))
-}
-
 def isSimpleBuild() {
     def buildOS = ['linux': CI_BUILD_LINUX,
                    'mac':   CI_BUILD_MAC,
