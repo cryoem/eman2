@@ -1160,6 +1160,7 @@ EMData *FourierReconstructor::finish(bool doift)
 	
 	bool sqrtnorm=params.set_default("sqrtnorm",false);
 	normalize_threed(sqrtnorm);
+//	printf("%f\t%f\t%f\n",tmp_data->get_value_at(67,19,1),image->get_value_at(135,19,1),image->get_value_at(134,19,1));
 	
 // This compares single precision sum to double precision sum near the origin
 #ifdef RECONDEBUG

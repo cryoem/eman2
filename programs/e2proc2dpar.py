@@ -144,7 +144,7 @@ def main():
 				print("{} done with {} ptcls. ".format(rd[0],len(rd[1])), end=' ')
 
 
-	logid = E2end(options.ppid)
+	E2end(logid)
 	
 	
 def procfn(jsd,args,options,thrn,n0,n1):

@@ -99,7 +99,7 @@ def main():
 	parser.add_argument("--no_wt", action="store_true", dest="no_wt", default=False, help="This argument turns automatic weighting off causing all images to be weighted by 1. If this argument is not specified images inserted into the reconstructed volume are weighted by the number of particles that contributed to them (i.e. as in class averages), which is extracted from the image header (as the ptcl_repr attribute).")
 	parser.add_argument("--sqrt_wt", action="store_true", default=False, help="Normally class-averages are weighted into the reconstruction based on the number of particles in the average. This option causes the sqrt of the number of particles to be used instead.")
 	parser.add_argument("--usessnr", action="store_true", default=False, help="Makes use of the class_ssnr header data to weight each slice during insertion, instead of the default behavior of just using the number of particles in the average as a global weight.")
-	parser.add_argument("--mode", type=str, default="gauss_2", help="Fourier reconstruction 'mode' to use. The default should not normally be changed. default='gauss_2'")
+	parser.add_argument("--mode", type=str, default="gridding_5", help="Fourier reconstruction 'mode' to use. The default should not normally be changed. default='gridding_5'")
 	parser.add_argument("--noradcor", action="store_true",default=False, help="Normally a radial correction will be applied based on the --mode used. This option disables that correction.")
 	parser.add_argument("--seedmap",type=str, default = None, help="If specified this volume will be used as a starting point for the reconstruction, filling any missing values in Fourier space. experimental.")
 	parser.add_argument("--seedweight", type=float, default=1.0, help="If seedmap specified, this is how strongly the seedmap will bias existing values. 1 is default, and is equivalent to a one particle weight.")
@@ -273,6 +273,8 @@ def main():
 		cor={"gauss_2":4.0,"gauss_3":6.4,"gauss_4":8.8,"gauss_5":10.4,"gauss_5_slow":10.4}		# Gaussian widths for different reconstruction modes
 		if options.mode in cor :
 			output.process_inplace("math.gausskernelfix",{"gauss_width":cor[options.mode]})
+		elif options.mode in ["gridding_5","gridding_7"]:
+			output.process_inplace("math.gridkernelfix",{"mode":options.mode})
 		else:
 			print("Warning: no radial correction applied for this mode")
 

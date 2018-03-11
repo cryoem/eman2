@@ -3853,6 +3853,40 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 		float slice_value;
 	};
 
+	/**Multiplies image by a 'linear pyramid'
+       1-(|x-xsize/2|*|y-ysize/2|*4/(xsize*ysize))
+       This is useful in averaging together boxed out regions with 50% overlap.
+	 */
+	class GridKernelFixProcessor:public Processor
+	{
+	  public:
+		string get_name() const
+		{
+			return NAME;
+		}
+
+		void process_inplace(EMData *image);
+
+		static Processor *NEW()
+		{
+			return new GridKernelFixProcessor();
+		}
+
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("mode", EMObject::STRING);
+			return d;
+		}
+
+		string get_desc() const
+		{
+			return "This corrects the real-space effects of using one of the gridding insertion functions on the Fourier reconstructor. Valid options for mode are 'gridding_5' and 'gridding7'.";
+		}
+
+		static const string NAME;
+	};
+
 
 	/**Multiplies image by a 'linear pyramid'
        1-(|x-xsize/2|*|y-ysize/2|*4/(xsize*ysize))

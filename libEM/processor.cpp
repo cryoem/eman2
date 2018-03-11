@@ -32,6 +32,7 @@
 #include "processor.h"
 #include "sparx/processor_sparx.h"
 #include "plugins/processor_template.h"
+#include "reconstructor_tools.h"
 #include "cmp.h"
 #include "ctf.h"
 #include "xydata.h"
@@ -146,6 +147,7 @@ const string MaskGaussProcessor::NAME = "mask.gaussian";
 const string MaskAzProcessor::NAME = "mask.cylinder";
 const string MaskGaussNonuniformProcessor::NAME = "mask.gaussian.nonuniform";
 const string MaskGaussInvProcessor::NAME = "math.gausskernelfix";
+const string GridKernelFixProcessor::NAME = "math.gridkernelfix";
 const string LinearPyramidProcessor::NAME = "math.linearpyramid";
 const string MakeRadiusSquaredProcessor::NAME = "math.toradiussqr";
 const string MakeRadiusProcessor::NAME = "math.toradius";
@@ -391,6 +393,7 @@ template <> Factory < Processor >::Factory()
 	force_add<MaskGaussProcessor>();
 	force_add<MaskGaussNonuniformProcessor>();
 	force_add<MaskGaussInvProcessor>();
+	force_add<GridKernelFixProcessor>();
 	force_add<MaskAzProcessor>();
 
 	force_add<MaxShrinkProcessor>();
@@ -758,6 +761,60 @@ void FourierAnlProcessor::process_inplace(EMData * image)
 	}
 
 	image->update();
+}
+
+// Looks like this hasn't actually been written yet...
+void GridKernelFixProcessor::process_inplace(EMData *image)
+{
+	if (!image) {
+		LOGWARN("NULL Image");
+		return;
+	}
+
+	string mode=(string)params["mode"];
+
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+
+	// make an empty FFT object. 
+	EMData *fft=new EMData((nx&0xfffffffe)+2,ny,nz);
+	fft->set_complex(1);
+	fft->set_ri(1);
+	if (nx&1) fft->set_fftpad(1);
+	fft->to_zero();
+	
+	// Copy the kernel. Note that the kernel is 3x oversampled, so we are just computing an approximate kernel locally
+	if (mode=="gridding_5") {
+		for (int z=-2; z<3; z++) {
+			for (int y=-2; y<3; y++) {
+				for (int x=0; x<3; x++) {
+					fft->set_complex_at(x,y,z,FourierInserter3DMode7::kernel[x*3][abs(y)*3][abs(z)*3]);
+				}
+			}
+		}
+	}
+	else if (mode=="gridding_7") {
+		for (int z=-3; z<4; z++) {
+			for (int y=-3; y<4; y++) {
+				for (int x=0; x<4; x++) {
+					fft->set_complex_at(x,y,z,FourierInserter3DMode11::kernel[x*3][abs(y)*3][abs(z)*3]);
+				}
+			}
+		}
+	}
+	else throw InvalidParameterException("Gridding kernel correction of unknown mode, only gridding_5 or gridding_7 allowed");
+	
+	EMData *real=fft->do_ift();					// this is the kernel ift
+	real->process_inplace("xform.phaseorigin.tocenter");
+	real->mult(2.0f/(float)real->get_attr("maximum"));
+	real->process_inplace("math.reciprocal");	// reciprocal to make a correction volume
+	real->process_inplace("threshold.clampminmax",Dict("minval",-4.0f,"maxval",4.0f));	// block overcorrection of noise near the edges
+//	real->write_image("invkernel.hdf");
+	
+	image->mult(*real);		// apply the correction
+	delete real;
+	delete fft;
 }
 
 // Looks like this hasn't actually been written yet...

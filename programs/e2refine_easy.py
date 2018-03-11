@@ -589,14 +589,14 @@ important to use an angular step which is 90/integer.</p>")
 		else : options.classcmp="ccc"
 
 	if options.pad<nx :
-		options.pad=good_size(nx*1.7)
+		options.pad=good_size(nx*1.2)
 		if options.pad>1024 :
 			print("Warning: padding for Fourier reconstruction is now {}, meaning quite a lot of memory will \
 be required for reconstructions, and they may be very slow. Padding in Fourier space is largely performed to avoid high-radius \
 Fourier artifacts, and a gradual radial density falloff. If you feel this value is too large, you can manually specify a value \
 with the --pad option.".format(options.pad))
 	else :
-		if options.pad<nx*1.4 :
+		if options.pad<nx*1.2 :
 			print("Warning: the --pad value you specified is less than 1.4x the box size. We normlly recommend using a --pad \
 value at least 1.5x the box size to avoid Fourier artifacts in the reconstruction, particularly at high radius. If you already \
 have a box which is large compared to the particle, then a smaller value may be fine. Also, if your particle is very large and there \
@@ -890,7 +890,7 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 
 		if not options.m3dold :
 			cmd="e2make3dpar.py --input {path}/classes_{itr:02d}_even.hdf --sym {sym} --output {path}/threed_{itr:02d}_even.hdf {preprocess} \
- --keep {m3dkeep} {keepsig} --apix {apix} --pad {m3dpad} --mode gauss_var --usessnr --threads {threads} {verbose}".format(
+ --keep {m3dkeep} {keepsig} --apix {apix} --pad {m3dpad} --mode gridding_5 --usessnr --threads {threads} {verbose}".format(
 			path=options.path, itr=it, sym=m3dsym, recon=options.recon, preprocess=m3dpreprocess,  m3dkeep=options.m3dkeep, keepsig=m3dkeepsig,
 			m3dpad=options.pad,fillangle=astep ,threads=options.threads, apix=apix, verbose=verbose)
 		else:
@@ -910,7 +910,7 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 
 		if not options.m3dold :
 			cmd="e2make3dpar.py --input {path}/classes_{itr:02d}_odd.hdf --sym {sym} --output {path}/threed_{itr:02d}_odd.hdf {preprocess} \
- --keep {m3dkeep} {keepsig} --apix {apix} --pad {m3dpad} --mode gauss_var --usessnr --threads {threads} {verbose}".format(
+ --keep {m3dkeep} {keepsig} --apix {apix} --pad {m3dpad} --mode gridding_5 --usessnr --threads {threads} {verbose}".format(
 			path=options.path, itr=it, sym=m3dsym, recon=options.recon, preprocess=m3dpreprocess, m3dkeep=options.m3dkeep, keepsig=m3dkeepsig,
 			m3dpad=options.pad, apix=apix, fillangle=astep ,threads=options.threads, verbose=verbose)
 		else:

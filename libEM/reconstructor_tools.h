@@ -345,7 +345,10 @@ namespace EMAN
 	 */
 	class FourierInserter3DMode7 : public FourierPixelInserter3D
 	{
-		public:
+
+	public:
+			static const float kernel[9][9][9];
+			
 			FourierInserter3DMode7() {}
 			virtual ~FourierInserter3DMode7() {}
 
@@ -363,7 +366,7 @@ namespace EMAN
 
 			virtual string get_desc() const
 			{
-				return "Hypergeometric kernel 5x5x5";
+				return "5x5x5 gridding kernel with numerically computed kernel";
 			}
 
 			static const string NAME;
@@ -373,6 +376,7 @@ namespace EMAN
 			FourierInserter3DMode7( const FourierInserter3DMode7& );
 			FourierInserter3DMode7& operator=( const FourierInserter3DMode7& );
 	};
+	
 
 	/** FourierPixelInserter3DMode8  - encapsulates "method 8" for inserting a 2D Fourier slice into a 3D volume
 	 * See comments in FourierPixelInserter3D for explanations
@@ -492,7 +496,43 @@ namespace EMAN
 	// Factory for FourierPixelInserter3D
 	template <> Factory < FourierPixelInserter3D >::Factory();
 
-} // namespace EMAN
+	/** FourierPixelInserter3DMode7  - encapsulates "method 7" for inserting a 2D Fourier slice into a 3D volume
+	 * See comments in FourierPixelInserter3D for explanations
+	 */
+	class FourierInserter3DMode11 : public FourierPixelInserter3D
+	{
 
+	public:
+			static const float kernel[12][12][12];
+			
+			FourierInserter3DMode11() {}
+			virtual ~FourierInserter3DMode11() {}
+
+			virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const std::complex<float> dt, const float& weight=1.0);
+
+			static FourierPixelInserter3D *NEW()
+			{
+				return new FourierInserter3DMode11();
+			}
+
+			virtual string get_name() const
+			{
+				return NAME;
+			}
+
+			virtual string get_desc() const
+			{
+				return "7x7x7 gridding kernel with numerically computed kernel";
+			}
+
+			static const string NAME;
+
+		private:
+		// Disallow copy and assignment by default
+			FourierInserter3DMode11( const FourierInserter3DMode11& );
+			FourierInserter3DMode11& operator=( const FourierInserter3DMode11& );
+	};
+
+} // namespace EMAN
 
 #endif // eman_reconstructor_tools_h__
