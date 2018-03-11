@@ -165,7 +165,7 @@ pipeline {
       }
       
       steps {
-        sh "bash ci_support/run_docker_build.sh cryoem/centos6:working . ${INSTALLERS_DIR}"
+        sh "bash ci_support/run_docker_build.sh cryoem/centos6:8 . ${INSTALLERS_DIR}"
         deployPackage()
       }
     }

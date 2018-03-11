@@ -51,18 +51,6 @@ docker run -i \
 
 set -ex
 
-# Install constructor that is customized for eman
-curl -v -L https://github.com/cryoem/constructor/archive/eman.tar.gz -o constructor-eman.tar.gz
-tar xzvf constructor-eman.tar.gz
-
-cd constructor-eman/
-conda remove constructor --yes
-conda install constructor --yes
-python setup.py install
-conda update ruamel_yaml --no-deps --yes
-constructor --version
-conda install conda-build=2 --no-deps --yes
-
 bash "${docker_eman_repo_dir}"/ci_support/conda_build.sh "${docker_eman_repo_dir}"/recipes/eman
 bash "${docker_eman_repo_dir}"/ci_support/package.sh "${docker_installers_dir}" ${docker_eman_repo_dir}/ci_support/
 bash "${docker_eman_repo_dir}"/tests/test_binary_installation.sh "${docker_installers_dir}" "eman2.${SLAVE_OS}.sh"
