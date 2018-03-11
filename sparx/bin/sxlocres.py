@@ -42,16 +42,13 @@ def makeAngRes(freqvol, nx, ny, nz, pxSize):
 	if (pxSize == 1.0):
 		print("Using a value of 1 for the pixel size. Are you sure this is correct?")
 
-	outAngResVol = EMData()
-	outAngResVol.set_size(nx,ny,nz)
+	outAngResVol = model_blank(nx,ny,nz)
 	for x in range(nx):
 		for y in range(ny):
 			for z in range(nz):
 				#All voxels to apix/ absolute Resolution. If 0 then leave as it is.
-				if (freqvol[x,y,z] == 0):
-					outAngResVol[x,y,z] = 0
-				else:
-					outAngResVol[x,y,z] = pxSize / freqvol[x,y,z]
+				qt = freqvol.get_value_at(x,y,z)
+				if(qt > 0.0): outAngResVol.set_value_at_fast(x,y,z, pxSize/qt )
 
 	return outAngResVol
 
