@@ -5,7 +5,7 @@ set -x
 if [ ! -z ${CI} ];then
     source ci_support/setup_conda.sh
 
-    conda install conda-build=2 -c defaults --yes --quiet
+    conda install conda-build=3 -c defaults --yes --quiet
 fi
 
 export CPU_COUNT=2
