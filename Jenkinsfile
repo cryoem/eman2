@@ -23,7 +23,7 @@ def notifyGitHub(status) {
 def notifyEmail() {
     if(JOB_TYPE == "push") {
         emailext(to: "$GIT_AUTHOR_EMAIL",  
-                 subject: '[JenkinsCI/$PROJECT_NAME/push] ' + "($GIT_BRANCH_SHORT - ${GIT_COMMIT_SHORT})" + ' #$BUILD_NUMBER - $BUILD_STATUS!',
+                 subject: '[JenkinsCI/$PROJECT_NAME] ' + "($GIT_BRANCH_SHORT - ${GIT_COMMIT_SHORT})" + ' #$BUILD_NUMBER - $BUILD_STATUS!',
                  body: '''${SCRIPT, template="groovy-text.template"}''',
                  attachLog: true
                  )
@@ -38,33 +38,13 @@ def isContinuousBuild() {
     return GIT_BRANCH ==~ /.*\/master/
 }
 
-def stage_name_to_os(stage_name) {
-    def result = ['centos6': 'linux',
-                  'centos7': 'linux',
-                  'mac':     'mac',
-                  'win':     'win'
-                  ]
-    
-    return result[stage_name]
-}
-
-def isRequestedBuildStage() {
-    def buildStage = ['centos6': CI_BUILD_LINUX,
-                      'centos7': CI_BUILD_LINUX,
-                      'mac':     CI_BUILD_MAC,
-                      'win':     CI_BUILD_WIN
-                      ]
-    
-    return (stage_name_to_os(STAGE_NAME) == SLAVE_OS && (CI_BUILD == "1" || buildStage[STAGE_NAME] == "1"))
-}
-
-def isSimpleBuild() {
+def isBinaryBuild() {
     def buildOS = ['linux': CI_BUILD_LINUX,
                    'mac':   CI_BUILD_MAC,
                    'win':   CI_BUILD_WIN
                   ]
     
-    return (CI_BUILD != "1" && buildOS[SLAVE_OS] != "1")
+    return (CI_BUILD == "1" || buildOS[SLAVE_OS] == "1")
 }
 
 def runJob() {
@@ -104,7 +84,7 @@ def getHomeDir() {
 
 pipeline {
   agent {
-    node { label 'jenkins-slave-1' }
+    node { label "${JOB_NAME}-slave" }
   }
   
   options {
@@ -118,7 +98,7 @@ pipeline {
     GIT_COMMIT_SHORT = sh(returnStdout: true, script: 'echo ${GIT_COMMIT:0:7}').trim()
     GIT_AUTHOR_EMAIL = sh(returnStdout: true, script: 'git log -1 --format="%ae"').trim()
     HOME_DIR = getHomeDir()
-    INSTALLERS_DIR = '${HOME_DIR}/workspace/${STAGE_NAME}-installers'
+    INSTALLERS_DIR = '${HOME_DIR}/workspace/${JOB_NAME}-installers'
     DEPLOY_DEST    = 'zope@ncmi.grid.bcm.edu:/home/zope/zope-server/extdata/reposit/ncmi/software/counter_222/software_136/'
 
     CI_BUILD       = sh(script: "! git log -1 | grep '.*\\[ci build\\].*'",       returnStatus: true)
@@ -132,74 +112,54 @@ pipeline {
     stage('notify-pending') {
       steps {
         notifyGitHub('PENDING')
+        sh 'env | sort'
       }
     }
     
-    stage('build') {
+    stage('build-local') {
       when {
-        expression { isSimpleBuild() }
-      }
-      
-      parallel {
-        stage('recipe') {
-          steps {
-            sh 'bash ci_support/build_recipe.sh'
-          }
-        }
-        
-        stage('no_recipe') {
-          when {
-            expression { SLAVE_OS != 'win' }
-          }
-          
-          steps {
-            sh 'source $(conda info --root)/bin/activate eman-deps-9 && bash ci_support/build_no_recipe.sh'
-          }
-        }
-      }
-    }
-    
-    stage('centos6') {
-      when {
-        expression { isRequestedBuildStage() }
+        not { expression { isBinaryBuild() } }
+        expression { JOB_NAME != 'Win' }
       }
       
       steps {
-        sh "bash ci_support/run_docker_build.sh cryoem/centos6:8 . ${INSTALLERS_DIR}"
+        sh 'source $(conda info --root)/bin/activate eman-deps-9 && bash ci_support/build_no_recipe.sh'
+      }
+    }
+    
+    stage('build-recipe') {
+      steps {
+        sh 'bash ci_support/build_recipe.sh'
+      }
+    }
+    
+    stage('package') {
+      when {
+        expression { isBinaryBuild() }
+      }
+      
+      steps {
+        sh "bash ci_support/package.sh ${INSTALLERS_DIR} " + '${WORKSPACE}/ci_support/'
+      }
+    }
+    
+    stage('test-package') {
+      when {
+        expression {isBinaryBuild() }
+      }
+      
+      steps {
+        testPackage()
+      }
+    }
+    
+    stage('deploy') {
+      when {
+        expression {isBinaryBuild() }
+      }
+      
+      steps {
         deployPackage()
-      }
-    }
-    
-    stage('centos7') {
-      when {
-        expression { isRequestedBuildStage() }
-      }
-      
-      steps {
-        runJob()
-      }
-    }
-    
-    stage('mac') {
-      when {
-        expression { isRequestedBuildStage() }
-      }
-      environment {
-        EMAN_TEST_SKIP=1
-      }
-      
-      steps {
-        runJob()
-      }
-    }
-    
-    stage('win') {
-      when {
-        expression { isRequestedBuildStage() }
-      }
-      
-      steps {
-        runJob()
       }
     }
   }
