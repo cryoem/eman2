@@ -6,7 +6,7 @@ source:
     path: {{ RECIPE_DIR }}/../..
 
 requirements:
-    {% set reqs_common = [
+    {% set reqs_host = [
             "msinttypes",  # [win]
             "python 2.7.14",
             "boost 1.63.*",
@@ -25,7 +25,11 @@ requirements:
     ] %}
     
     build:
-        {% for req in reqs_common %}
+        - cmake
+        - {{ compiler('cxx') }}
+
+    host:
+        {% for req in reqs_host %}
         - {{ req }}
         {% endfor %}
     
