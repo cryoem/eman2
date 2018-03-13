@@ -271,7 +271,7 @@ def main():
 			ERROR("PCA option not implemented", "sx3dvariability", 1, myid)
 			exit()
 		if options.nvec > 0 and options.ave3D == None:
-			ERROR("When doing PCA analysis, one must set ave3D", "sx3dvariability", myid=myid)
+			ERROR("When doing PCA analysis, one must set ave3D", "sx3dvariability", 1, myid)
 			exit()
 		import string
 		options.sym = options.sym.lower()
