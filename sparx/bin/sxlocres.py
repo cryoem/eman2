@@ -206,7 +206,7 @@ def main():
 		for i in xrange(1,lp):
 			fl = step*i
 			fh = fl+step
-			print(lp,i,step,fl,fh)
+			#print(lp,i,step,fl,fh)
 			v = fft(filt_tophatb( vf, fl, fh))
 			u = fft(filt_tophatb( uf, fl, fh))
 			tmp1 = Util.muln_img(v,v)
@@ -249,7 +249,7 @@ def main():
 								else:
 									bailout = False
 			if(bailout):  break
-		print(len(resolut))
+		#print(len(resolut))
 		if res_overall !=-1.0:
 			freqvol += (res_overall- Util.infomask(freqvol, m, True)[0])
 			for ifreq in xrange(len(resolut)):
