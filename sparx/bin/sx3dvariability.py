@@ -40,48 +40,6 @@ from	EMAN2 		import EMUtil
 import	os
 import	sys
 from 	time		import	time
-def image_decimate_window_xform_ctf(img, decimation = 0.5, window_size = 0, CTF = False):
-	from filter       import filt_btwl
-	from fundamentals import smallprime,window2d
-	from utilities    import get_image,get_params_proj,set_params_proj,get_ctf, set_ctf
-	nx = img.get_xsize()
-	ny = img.get_ysize()
-	nz = img.get_zsize()
-	if( nz > 1): ERROR("This command works only for 2-D images", "image_decimate", 1)
-	if nx < window_size or ny < window_size: ERROR("Image size is less than window size", "image_decimate_window_xform_ctf", 1)
-	if CTF:
-		[defocus,cs,voltage,pixel_size,bfactor,ampconst,dfdiff,dfang] = get_ctf(img)
-		ctf_params =[defocus,cs,voltage,pixel_size*decimation,bfactor,ampconst,dfdiff,dfang]
-	[phi,theta, psi, tx, ty] = get_params_proj(img)
-	new_params = [phi, theta, psi, tx*decimation,ty*decimation]
-	if decimation ==1:
-		if window_size ==0: return img
-		else:
-			img = Util.window(img, window_size, window_size,1, 0, 0, 0)
-			if CTF: set_ctf(img,ctf_params)
-			set_params_proj(img,new_params)
-			return img
-	elif decimation < 1: # reduce image size 
-		frequency_low     = 0.5*decimation-0.02
-		if frequency_low <= 0 : ERROR("Butterworth passband frequency is too low","image_decimation",1)
-		frequency_high    = min(0.5*decimation + 0.02, 0.499)
-		if window_size >0:img = Util.window(img, window_size, window_size, 1, 0, 0, 0)
-		decimated_image = Util.decimate(filt_btwl(img, frequency_low, frequency_high), int(1./decimation), int(1./decimation), 1)
-	else: #increase image size
-		if window_size ==0:
-			new_nx = int(nx*decimation+0.5)
-			new_ny = int(ny*decimation+0.5)
-			e, kb  = prepi(Util.pad(img, new_nx, new_ny, 1, 0, 0, 0, "circumference"))
-			decimated_image = e.rot_scale_conv_new(0.0, 0.0, 0.0, kb, decimation)
-		else:
-			img = Util.window(img, window_size, window_size,1, 0, 0, 0)
-			new_nx = int(window_size*decimation+0.5)
-			new_ny = int(window_size*decimation+0.5)
-			e, kb = prepi(Util.pad(img, new_nx, new_ny, 1, 0, 0, 0, "circumference"))
-			decimated_image = e.rot_scale_conv_new(0.0, 0.0, 0.0, kb, decimation)
-	set_params_proj(decimated_image,new_params)
-	if CTF: set_ctf(decimated_image,ctf_params)
-	return decimated_image
 	
 def main():
 
@@ -118,8 +76,8 @@ def main():
 	#parser.add_option("--abs", 		type="float"   ,        default=0.0  ,				help="minimum average absolute change of voxels' values (stop criterion of reconstruction process)" )
 	#parser.add_option("--squ", 		type="float"   ,	    default=0.0  ,				help="minimum average squared change of voxels' values (stop criterion of reconstruction process)" )
 	parser.add_option("--VAR" , 		action="store_true",	default=False,				help="stack on input consists of 2D variances (Default False)")
-	parser.add_option("--decimate",     type="float",           default= 1.0,               help="image decimate rate, a number larger (expand image) or less (shrink image) than 1. default is 1")
-	parser.add_option("--window",       type="int",             default=0,                  help="reduce images to a small image size without changing pixel_size. Default value is zero.")
+	parser.add_option("--decimate",     type="float",           default= 1.0,               help="image decimate rate, a number less than 1. default is 1")
+	parser.add_option("--window",       type="int",             default=0,                  help="reduce image size by windowing. Default value is zero.")
 	#parser.add_option("--SND",			action="store_true",	default=False,				help="compute squared normalized differences (Default False)")
 	parser.add_option("--nvec",			type="int"         ,	default=0    ,				help="number of eigenvectors, default = 0 meaning no PCA calculated")
 	parser.add_option("--symmetrize",	action="store_true",	default=False,				help="Prepare input stack for handling symmetry (Default False)")
