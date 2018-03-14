@@ -287,8 +287,8 @@ def main():
 			if int(options.decimate*min(nx, ny)+0.5)<options.window:keepgoing = 0
 		keepgoing = bcast_number_to_all(keepgoing, main_node, MPI_COMM_WORLD)
 		if keepgoing ==0:
-			ERROR("window size is larger than the deimiated image", "sx3dvariability", 1, myid)
-			
+			ERROR("The target window size cannot be larger than the size of decimated image", "sx3dvariability", 1, myid)
+
 		import string
 		options.sym = options.sym.lower()
 		 
