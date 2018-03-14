@@ -741,6 +741,7 @@ def main():
 			# if( radiusvar < 0 ):  radiusvar = nx//2 -3
 			res = recons3d_4nn_MPI(myid, varList, symmetry=options.sym, npad=options.npad)
 			#res = recons3d_em_MPI(varList, vol_stack, options.iter, radiusvar, options.abs, True, options.sym, options.squ)
+			
 			if myid == main_node:
 				from fundamentals import fpol
 				res =fpol(res, Tracker["nx"], Tracker["nx"], Tracker["nx"])
@@ -760,7 +761,8 @@ def main():
 				log_main.add("%-70s:  %.2f\n"%("Total time for these computations [s]", time()-t0))
 				log_main.add("sx3dvariability finishes")
 				
-				log_main.add("To desplay %s in chimera when window option is applied, set the origin index of chimera as following values: %d  %d %d "%(options.var3D, -int((int(org_nx*options.decimate+0.5) - nx)/2.+0.5), \
+				log_main.add("To desplay %s in chimera, set the origin index of chimera as following values: %d  %d %d to match the orignal image size"%\
+				    (options.var3D, -int((int(org_nx*options.decimate+0.5) - nx)/2.+0.5), \
 				   -int((int(org_ny*options.decimate+0.5) - ny)/2.+0.5), -int((int(org_nz*options.decimate+0.5) - ny)/2.+0.5)))
 	
 		from mpi import mpi_finalize
