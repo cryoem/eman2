@@ -533,7 +533,7 @@ def main():
 			#imgdata = EMData.read_images(stack, all_proj)
 			imgdata = []
 			
-			if myid==0: print(get_im(stack, 0).get_attr_dict())
+			#if myid==0: print(get_im(stack, 0).get_attr_dict())
 			for index_of_proj in xrange(len(all_proj)):
 				#img     = EMData()
 				#img.read_image(stack, all_proj[index_of_proj])
@@ -547,7 +547,7 @@ def main():
 					if options.window ==0: imgdata.append(get_im(stack, all_proj[index_of_proj]))
 					else:  imgdata.append(window2d(get_im(stack, all_proj[index_of_proj]), options.window, options.window))
 			
-			if myid ==0 : print(imgdata[0].get_attr_dict())
+			#if myid ==0 : print(imgdata[0].get_attr_dict())
 			if options.VERBOSE:
 				print("Reading images on processor %d done, time = %.2f"%(myid, time()-ttt))
 				print("On processor %d, we got %d images"%(myid, len(imgdata)))
