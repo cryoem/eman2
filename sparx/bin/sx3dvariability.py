@@ -744,27 +744,13 @@ def main():
 			
 			if myid == main_node:
 				from fundamentals import fpol
-				res =fpol(res, Tracker["nx"], Tracker["nx"], Tracker["nx"])
-				#set voxel size
-				res.set_attr('apix_x', round(1./options.decimate,3))
-				res.set_attr('apix_y', round(1./options.decimate,3))
-				res.set_attr('apix_z', round(1./options.decimate,3))
-				res.set_attr("pixel_size", round(1./options.decimate,3))
-				# set origins 
-				
-				res.set_attr('origin_x', int((int(org_nx*options.decimate+0.5) - nx)/2.+0.5))
-				res.set_attr('origin_y', int((int(org_ny*options.decimate+0.5) - ny)/2.+0.5))
-				res.set_attr('origin_z', int((int(org_nz*options.decimate+0.5) - ny)/2.+0.5))
-				
+				res = fpol(res, int(org_nx*options.decimate+0.5),  int(org_ny*options.decimate+0.5),  int(org_nz*options.decimate+0.5))
+				res	= resample(res, 1./options.decimate)
+				set_pixel_size(res, 1.0)
 				res.write_image(os.path.join(options.output_dir, options.var3D))
 				log_main.add("%-70s:  %.2f\n"%("Reconstructing 3D variability took [s]", time()-t6))
 				log_main.add("%-70s:  %.2f\n"%("Total time for these computations [s]", time()-t0))
-				log_main.add("sx3dvariability finishes")
-				
-				log_main.add("To desplay %s in chimera, set the origin index of chimera as following values: %d  %d %d to match the orignal image size"%\
-				    (options.var3D, -int((int(org_nx*options.decimate+0.5) - nx)/2.+0.5), \
-				   -int((int(org_ny*options.decimate+0.5) - ny)/2.+0.5), -int((int(org_nz*options.decimate+0.5) - ny)/2.+0.5)))
-	
+				log_main.add("sx3dvariability finishes")	
 		from mpi import mpi_finalize
 		mpi_finalize()
 		
