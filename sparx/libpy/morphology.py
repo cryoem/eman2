@@ -2435,6 +2435,11 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 		#from sys import exit
 		#exit()
 		ad1, ad2, ad3, ad4 = table_stat(adefocus) # return values: average, variance, minimum, maximum
+		if ad2 <= 0.0:
+			print(("    %s %s: Detected the variance less than zero (defocus statics: avg = %f, var = %f, min = %f, max = %f)." % (img_type, img_name, ad1, ad2, ad3, ad4)))
+			print(("           The program ignores this estimate..."))
+			continue
+		
 		reject = []
 		thr = 3 * sqrt(ad2)
 		for i in xrange(len(adefocus)):
@@ -3503,6 +3508,11 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 		#from sys import exit
 		#exit()
 		ad1, ad2, ad3, ad4 = table_stat(adefocus) # return values: average, variance, minimum, maximum
+		if ad2 <= 0.0:
+			print(("    %s %s: Detected the variance less than zero (defocus statics: avg = %f, var = %f, min = %f, max = %f)." % (img_type, img_name, ad1, ad2, ad3, ad4)))
+			print(("           The program ignores this estimate..."))
+			continue
+		
 		reject = []
 		thr = 3 * sqrt(ad2)
 		for i in xrange(len(adefocus)):
@@ -5818,6 +5828,11 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 		#print  "  xxx2  ", nboot,(time()-at)/60.0
 
 		ad1, ad2, ad3, ad4 = table_stat(adefocus) # return values: average, variance, minimum, maximum
+		if ad2 <= 0.0:
+			print(("    %s %s: Detected the variance less than zero (defocus statics: avg = %f, var = %f, min = %f, max = %f)." % (img_type, img_name, ad1, ad2, ad3, ad4)))
+			print(("           The program ignores this estimate..."))
+			continue
+		
 		reject = []
 		thr = 3 * sqrt(ad2)
 		for i in xrange(len(adefocus)):
