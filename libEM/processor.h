@@ -2988,6 +2988,7 @@ The basic design of EMAN Processors: <br>\
 			TypeDict d;
 			d.put("range", EMObject::FLOAT, "The range about 'value' which will be collapsed to 'value'");
 			d.put("value", EMObject::FLOAT, "The pixel value where the focus of the collapse operation is");
+			d.put("clamponly", EMObject::BOOL, "Leaves values outside the collapse range at their original value, setting pixels in the range to 'value'");			
 			return d;
 		}
 

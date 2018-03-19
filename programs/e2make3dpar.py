@@ -99,6 +99,7 @@ def main():
 	parser.add_argument("--no_wt", action="store_true", dest="no_wt", default=False, help="This argument turns automatic weighting off causing all images to be weighted by 1. If this argument is not specified images inserted into the reconstructed volume are weighted by the number of particles that contributed to them (i.e. as in class averages), which is extracted from the image header (as the ptcl_repr attribute).")
 	parser.add_argument("--sqrt_wt", action="store_true", default=False, help="Normally class-averages are weighted into the reconstruction based on the number of particles in the average. This option causes the sqrt of the number of particles to be used instead.")
 	parser.add_argument("--iterative", action="store_true", default=False, help="Uses iterative interpolation in Fourier space instead of single step gridding or interpolation. --mode and --usessnr are ignored with this option.")
+	parser.add_argument("--itermask",type=str, default = None, help="Used in iterative mode to define a mask to apply between iterations. The resulting reconstruction won't be masked per-se, but will be biased towards lower densities outside the mask.")
 	parser.add_argument("--usessnr", action="store_true", default=False, help="Makes use of the class_ssnr header data to weight each slice during insertion, instead of the default behavior of just using the number of particles in the average as a global weight.")
 	parser.add_argument("--mode", type=str, default="gauss_var", help="Fourier reconstruction 'mode' to use. The default should not normally be changed. default='gauss_var'")
 	parser.add_argument("--noradcor", action="store_true",default=False, help="Normally a radial correction will be applied based on the --mode used. This option disables that correction.")
@@ -223,12 +224,16 @@ def main():
 
 	if options.verbose: print("After filter, %d images"%len(data))
 
+	if options.itermask:
+		itmask=EMData(options.itermask)
+		itmask=itmask.get_clip(Region((itmask["nx"]-options.pad[1])/2,(itmask["ny"]-options.pad[1])/2,(itmask["nz"]-options.pad[1])/2,options.pad[1],options.pad[1],options.pad[1]))
+
 	# Get the reconstructor and initialize it correctly
 	if options.iterative :
 		a = {"size":padvol,"sym":options.sym,"verbose":options.verbose-1}
 		if options.savenorm!=None : a["savenorm"]=options.savenorm
 		recon=Reconstructors.get("fourier_iter", a)
-		niter=8
+		niter=4
 	else :
 		a = {"size":padvol,"sym":options.sym,"mode":options.mode,"usessnr":options.usessnr,"verbose":options.verbose-1}
 		if options.savenorm!=None : a["savenorm"]=options.savenorm
@@ -263,8 +268,18 @@ def main():
 
 #		output = recon.finish(it==niter-1)		# only return real-space on the final pass
 		output = recon.finish(True)
+
+		if options.verbose:
+			print("Iteration ",it)
+			output.write_image("it{}.hdf".format(it))
+			#if options.verbose>2 and it!=niter-1: 
+				#output.process("xform.phaseorigin.tocenter").do_ift().write_image("it{}.hdf".format(it))
+
 		if it<niter-1 :
-			output.process_inplace("threshold.compress",{"range":output["sigma"],"value":output["mean_nonzero"]})
+			if options.itermask:
+				output.mult(itmask)
+			else:
+				output.process_inplace("threshold.compress",{"range":output["sigma"],"value":output["mean"],"clamponly":True})
 		
 		if options.verbose:
 			print("Iteration ",it)
