@@ -641,7 +641,7 @@ int FourierIterReconstructor::insert_slice(const EMData* const slice, const Tran
 	
 	
 	delete rotation; rotation=0;
-
+	return 0;
 }
 
 int FourierIterReconstructor::determine_slice_agreement(EMData*  input_slice, const Transform & arg, const float weight,bool sub) { return 0; }
