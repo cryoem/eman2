@@ -98,6 +98,7 @@ def main():
 	parser.add_argument("--keepabs",action="store_true",default=False, dest="keepabs", help="If set, keep will refer to the absolute quality of the class-average, not a local quality relative to other similar sized classes.")
 	parser.add_argument("--no_wt", action="store_true", dest="no_wt", default=False, help="This argument turns automatic weighting off causing all images to be weighted by 1. If this argument is not specified images inserted into the reconstructed volume are weighted by the number of particles that contributed to them (i.e. as in class averages), which is extracted from the image header (as the ptcl_repr attribute).")
 	parser.add_argument("--sqrt_wt", action="store_true", default=False, help="Normally class-averages are weighted into the reconstruction based on the number of particles in the average. This option causes the sqrt of the number of particles to be used instead.")
+	parser.add_argument("--iterative", action="store_true", default=False, help="Uses iterative interpolation in Fourier space instead of single step gridding or interpolation. --mode and --usessnr are ignored with this option.")
 	parser.add_argument("--usessnr", action="store_true", default=False, help="Makes use of the class_ssnr header data to weight each slice during insertion, instead of the default behavior of just using the number of particles in the average as a global weight.")
 	parser.add_argument("--mode", type=str, default="gauss_var", help="Fourier reconstruction 'mode' to use. The default should not normally be changed. default='gauss_var'")
 	parser.add_argument("--noradcor", action="store_true",default=False, help="Normally a radial correction will be applied based on the --mode used. This option disables that correction.")
@@ -223,35 +224,54 @@ def main():
 	if options.verbose: print("After filter, %d images"%len(data))
 
 	# Get the reconstructor and initialize it correctly
-	a = {"size":padvol,"sym":options.sym,"mode":options.mode,"usessnr":options.usessnr,"verbose":options.verbose-1}
-#	a = {"size":padvol,"sym":options.sym,"mode":options.mode,"verbose":options.verbose-1}
-	if options.savenorm!=None : a["savenorm"]=options.savenorm
-	recon=Reconstructors.get("fourier", a)
-
+	if options.iterative :
+		a = {"size":padvol,"sym":options.sym,"verbose":options.verbose-1}
+		if options.savenorm!=None : a["savenorm"]=options.savenorm
+		recon=Reconstructors.get("fourier_iter", a)
+		niter=8
+	else :
+		a = {"size":padvol,"sym":options.sym,"mode":options.mode,"usessnr":options.usessnr,"verbose":options.verbose-1}
+		if options.savenorm!=None : a["savenorm"]=options.savenorm
+		recon=Reconstructors.get("fourier", a)
+		niter=1
 	#########################################################
 	# The actual reconstruction
 
-	threads=[threading.Thread(target=reconstruct,args=(data[i::options.threads],recon,options.preprocess,options.pad,
-			options.fillangle,max(options.verbose-1,0))) for i in xrange(options.threads)]
+	for it in range(niter):
+		threads=[threading.Thread(target=reconstruct,args=(data[i::options.threads],recon,options.preprocess,options.pad,
+				options.fillangle,max(options.verbose-1,0))) for i in xrange(options.threads)]
 
-	if options.seedmap!=None :
-		seed=EMData(options.seedmap)
-#		seed.process_inplace("normalize.edgemean")
-		seed.clip_inplace(Region((nx-padvol[0])/2,(ny-padvol[1])/2,(nslice-padvol[2])/2,padvol[0],padvol[1],padvol[2]))
-		seed.do_fft_inplace()
-		if options.seedweightmap==None:  recon.setup_seed(seed,options.seedweight)
+		if it==0:
+			if options.seedmap!=None :
+				seed=EMData(options.seedmap)
+		#		seed.process_inplace("normalize.edgemean")
+				seed.clip_inplace(Region((nx-padvol[0])/2,(ny-padvol[1])/2,(nslice-padvol[2])/2,padvol[0],padvol[1],padvol[2]))
+				seed.do_fft_inplace()
+				if options.seedweightmap==None:  recon.setup_seed(seed,options.seedweight)
+				else:
+					seedweightmap=EMData(seedweightmap,0)
+					recon.setup_seedandweights(seed,seedweightmap)
+			else : recon.setup()
 		else:
-			seedweightmap=EMData(seedweightmap,0)
-			recon.setup_seedandweights(seed,seedweightmap)
-	else : recon.setup()
+			recon.setup_seed(output,1.0)
 
-	for i,t in enumerate(threads):
-		if options.verbose>1: print("started thread ",i)
-		t.start()
+		for i,t in enumerate(threads):
+			if options.verbose>1: print("started thread ",i)
+			t.start()
 
-	for t in threads: t.join()
+		for t in threads: t.join()
 
-	output = recon.finish(True)
+#		output = recon.finish(it==niter-1)		# only return real-space on the final pass
+		output = recon.finish(True)
+		if it<niter-1 :
+			output.process_inplace("threshold.compress",{"range":output["sigma"],"value":output["mean_nonzero"]})
+		
+		if options.verbose:
+			print("Iteration ",it)
+			output.write_image("it{}.hdf".format(it))
+			#if options.verbose>2 and it!=niter-1: 
+				#output.process("xform.phaseorigin.tocenter").do_ift().write_image("it{}.hdf".format(it))
+			
 
 	if options.verbose>0 : print("Finished Reconstruction")
 

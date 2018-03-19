@@ -75,7 +75,7 @@ template < typename T > void checked_delete( T*& x )
 }
 
 const string FourierReconstructor::NAME = "fourier";
-const string FourierPlaneReconstructor::NAME = "fourier_plane";
+const string FourierIterReconstructor::NAME = "fourier_iter";
 const string FourierReconstructorSimple2D::NAME = "fouriersimple2D";
 const string WienerFourierReconstructor::NAME = "wiener_fourier";
 const string BackProjectionReconstructor::NAME = "back_projection";
@@ -91,7 +91,7 @@ const string nnSSNR_ctfReconstructor::NAME = "nnSSNR_ctf";
 template <> Factory < Reconstructor >::Factory()
 {
 	force_add<FourierReconstructor>();
-	force_add<FourierPlaneReconstructor>();
+	force_add<FourierIterReconstructor>();
 	force_add<FourierReconstructorSimple2D>();
 //	force_add(&BaldwinWoolfordReconstructor::NEW);
 	force_add<WienerFourierReconstructor>();
@@ -422,20 +422,263 @@ void ReconstructorVolumeData::normalize_threed(const bool sqrt_damp,const bool w
 // 	}
 }
 
-void FourierPlaneReconstructor::load_default_settings() {}
-void FourierPlaneReconstructor::free_memory() {}
-void FourierPlaneReconstructor::load_inserter() {}
-void FourierPlaneReconstructor::setup() {}
-void FourierPlaneReconstructor::setup_seed(EMData* seed,float seed_weight) {}
-void FourierPlaneReconstructor::clear() {}
-EMData* FourierPlaneReconstructor::preprocess_slice( const EMData* const slice,  const Transform& t ) { return NULL; }
-int FourierPlaneReconstructor::insert_slice(const EMData* const input_slice, const Transform & arg, const float weight) { return 0; }
-void FourierPlaneReconstructor::do_insert_slice_work(const EMData* const input_slice, const Transform & arg,const float weight) {}
-int FourierPlaneReconstructor::determine_slice_agreement(EMData*  input_slice, const Transform & arg, const float weight,bool sub) { return 0; }
-void FourierPlaneReconstructor::do_compare_slice_work(EMData* input_slice, const Transform & arg,float weight) {}
-bool FourierPlaneReconstructor::pixel_at(const float& xx, const float& yy, const float& zz, float *dt) { return false; }
-EMData *FourierPlaneReconstructor::finish(bool doift) { return NULL; }
+////// FourierIterReconstructor - Steve Ludtke  3/17/18
+void FourierIterReconstructor::setup() {
+	// default setting behavior - does not override if the parameter is already set
+	params.set_default("verbose",(int)0);
+	
+	vector<int> size=params["size"];
 
+	nx = size[0]+2;
+	ny = size[1];
+	nz = size[2];
+	nx2=nx/2-2;
+	ny2=ny/2;
+	nz2=nz/2;
+	
+	subnx=nx; subny=ny; subnz=nz;
+	subx0=suby0=subz0=0;
+
+	if (nx%2==1) throw ImageDimensionException("ERROR: FourierIterReconstructor only supports even box sizes");
+
+	// The fourier volume where the reconstruction lives
+	if (image) delete image;
+	image = new EMData(nx,ny,nz);
+	image->set_complex(true);
+	image->set_fftodd(false);
+	image->set_ri(true);
+	image->to_zero();
+	
+	// This is the normalization volume
+	if (tmp_data) delete tmp_data;
+	tmp_data = new EMData(nx/2,ny,nz);
+	tmp_data->to_zero();
+	
+	// this is the reference volume used to define the interpolation kernel
+	// regular "setup" doesn't have one, in which case we default to a local gaussian kernel
+	// This should only happen during the first iteration
+	if (ref_vol) { delete ref_vol; ref_vol=0; }
+//  	ref_vol = new EMData(nx,ny,nz);
+//  	ref_vol->set_complex(true);
+//  	ref_vol->set_fftodd(false);
+//  	ref_vol->set_ri(true);
+//  	ref_vol->to_one();
+	
+	
+	
+	if ( (bool) params["verbose"] )
+	{
+		cout << "3D Fourier dimensions are " << nx << " " << ny << " " << nz << endl;
+		cout << "3D Fourier subvolume is " << subnx << " " << subny << " " << subnz << endl;
+		printf ("You will require approximately %1.3g GB of memory to reconstruct this volume\n",((float)subnx*subny*subnz*sizeof(float)*2.5)/1000000000.0);
+	}
+	
+}
+void FourierIterReconstructor::setup_seed(EMData* seed,float seed_weight) {
+	setup();		// ok, a little dumb to initialize ref_vol then immediately delete it
+	if (seed->is_complex()) ref_vol=seed->copy();	// we assume tocorner was called properly and dimensions are correct
+	else {
+		ref_vol=seed->do_fft();
+		ref_vol->process_inplace("xform.phaseorigin.tocorner");
+	}
+}
+
+void FourierIterReconstructor::setup_seedandweights(EMData* seed,EMData* weight) {
+	setup();		// ok, a little dumb to initialize ref_vol then immediately delete it
+	if (seed->is_complex()) ref_vol=seed->copy();	// we assume tocorner was called properly and dimensions are correct
+	else {
+		ref_vol=seed->do_fft();
+		ref_vol->process_inplace("xform.phaseorigin.tocorner");
+	}
+	printf("Warning: FourierIterReconstructor ignores seed weights");
+}
+
+// warning: this clears any existing seed volume
+void FourierIterReconstructor::clear() {
+	setup();
+}
+
+EMData* FourierIterReconstructor::preprocess_slice( const EMData* const slice,  const Transform& t ) { 
+	// Shift the image pixels so the real space origin is now located at the phase origin (at the bottom left of the image)
+	EMData* return_slice = 0;
+	Transform tmp(t);
+	tmp.set_rotation(Dict("type","eman")); // resets the rotation to 0 implicitly, this way we only do 2d translation,scaling and mirroring
+
+	if (tmp.is_identity()) return_slice=slice->copy();
+	else return_slice = slice->process("xform",Dict("transform",&tmp));
+
+	return_slice->process_inplace("xform.phaseorigin.tocorner");
+	return_slice->do_fft_inplace();
+	return_slice->mult((float)sqrt(1.0f/(return_slice->get_ysize())*return_slice->get_xsize()));
+
+	return_slice->set_attr("reconstruct_preproc",(int)1);
+	return return_slice;
+}
+
+int FourierIterReconstructor::insert_slice(const EMData* const slice, const Transform & arg, const float weight) { 
+	Transform * rotation;
+	rotation = new Transform(arg); // assignment operator
+	// We must use only the rotational component of the transform, scaling, translation and mirroring
+	// are not implemented in Fourier space, but are in preprocess_slice
+	rotation->set_scale(1.0);
+	rotation->set_mirror(false);
+	rotation->set_trans(0,0,0);
+
+//	if (slice->get_attr_default("reconstruct_preproc",(int) 0)) throw ImageDimensionException("ERROR: FourierIterReconstructor requires preprocess_slice() to be called in advance");
+
+	vector<Transform> syms = Symmetry3D::get_symmetries((string)params["sym"]);
+
+	float inx=(float)(slice->get_xsize());		// x/y dimensions of the input image
+	float iny=(float)(slice->get_ysize());
+	size_t ny2sq=ny*ny/4;
+	
+	for ( vector<Transform>::const_iterator it = syms.begin(); it != syms.end(); ++it ) {
+		Transform t3d = (*rotation)*(*it);
+		for (int y = -iny/2; y < iny/2; y++) {
+			for (int x = 0; x < inx/2; x++) {
+
+				float rx = (float) x/(inx-2.0f);	// coords relative to Nyquist=.5
+				float ry = (float) y/iny;
+				int r=Util::hypot_fast_int(x,y);
+				if (r>iny/2+3 && abs(inx-iny)<3) continue;	// no filling in Fourier corners...
+
+				Vec3f coord(rx,ry,0);
+				coord = coord*t3d; // transpose multiplication
+				float xx = coord[0]; // transformed coordinates in terms of Nyquist
+				float yy = coord[1];
+				float zz = coord[2];
+
+				// Map back to real pixel coordinates in output volume
+				xx=xx*(nx-2);
+				yy=yy*ny;
+				zz=zz*nz;
+				
+				
+				int x0 = (int) floor(xx-2.5);
+				int y0 = (int) floor(yy-2.5);
+				int z0 = (int) floor(zz-2.5);
+
+				std::complex<float>dt=slice->get_complex_at(x,y);			// The data value we want to insert
+
+				if (x0<-nx2-4 || y0<-ny2-4 || z0<-nz2-4 || x0>nx2+3 || y0>ny2+3 || z0>nz2+3 ) continue;
+
+				// no error checking on add_complex_fast, so we need to be careful here
+				int x1=x0+5;
+				int y1=y0+5;
+				int z1=z0+5;
+				if (x0<-nx2) x0=-nx2;
+				if (x1>nx2) x1=nx2;
+				if (y0<-ny2) y0=-ny2;
+				if (y1>ny2) y1=ny2;
+				if (z0<-nz2) z0=-nz2;
+				if (z1>nz2) z1=nz2;
+
+				if (ref_vol) {
+					// The value in the reference volume at the center insertion location (nearest voxel)
+//					std::complex<float>nodt=ref_vol->get_complex_at(Util::round(xx),Util::round(yy),Util::round(zz));		
+
+					// Here we trilinear interpolate the point value from the reference volume
+					float xx0=floor(xx);
+					float yy0=floor(yy);
+					float zz0=floor(zz);
+					std::complex<float>nodt=Util::trilinear_interpolate_complex(
+						ref_vol->get_complex_at(xx0,yy0,zz0),
+						ref_vol->get_complex_at(xx0+1,yy0,zz0),
+						ref_vol->get_complex_at(xx0,yy0+1,zz0),
+						ref_vol->get_complex_at(xx0+1,yy0+1,zz0),
+						ref_vol->get_complex_at(xx0,yy0,zz0+1),
+						ref_vol->get_complex_at(xx0+1,yy0,zz0+1),
+						ref_vol->get_complex_at(xx0,yy0+1,zz0+1),
+						ref_vol->get_complex_at(xx0+1,yy0+1,zz0+1),
+						xx-xx0,yy-yy0,zz-zz0);
+					
+//					float h=1.0f/EMConsts::I5G;
+					float h=1.0f/2.0f;		// This value was optimized empirically for a specific test case
+					float gg=1.0;	//default no radial weight
+					for (int k = z0 ; k <= z1; k++) {
+						for (int j = y0 ; j <= y1; j++) {
+							for (int i = x0; i <= x1; i ++) {
+								if ((size_t)i*i+j*j+k*k>ny2sq) continue;
+								std::complex<float>ntdt=ref_vol->get_complex_at(i,j,k);
+								//gg=abs(nodt);			// we use this as a weight
+								//if (gg==0) continue;
+								//gg=1.0;			// turn off local weight
+								//std::complex<float>updt=dt*ntdt/nodt;		// This is the unweighted target value for i,j,k
+								std::complex<float>updt=dt+ntdt-nodt;
+								
+ 								float rl = Util::hypot3sq((float) i - xx, j - yy, k - zz);
+ 								gg = Util::fast_exp(-rl *h);
+								
+								size_t off;
+								off=image->add_complex_at_fast(i,j,k,updt*gg*weight);
+								tmp_data->get_data()[off/2]+=gg*weight;
+							}
+						}
+					}
+				} else {
+					float h=1.0f/((Util::hypot3sq(xx,yy,zz)/4000)+.15);		// gaussian kernel is used as a weight not a kernel. We increase radius of integration with resolution. Changed away from this on 11/10/17
+					h=h<0.1?0.1:h;	// new formula has h from 0.2 to 5
+
+					float rl, gg;
+					for (int k = z0 ; k <= z1; k++) {
+						for (int j = y0 ; j <= y1; j++) {
+							for (int i = x0; i <= x1; i ++) {
+								rl = Util::hypot3sq((float) i - xx, j - yy, k - zz);
+								gg = Util::fast_exp(-rl *h);
+
+								size_t off;
+								off=image->add_complex_at_fast(i,j,k,dt*gg*weight);
+								//if (off==image->get_size()) 
+								//printf("%d %d %d\t%g %g %g %g\t%ld\n",i,j,k,dt.real(),dt.imag(),gg,weight,off);
+								tmp_data->get_data()[off/2]+=gg*weight;		// This is for interpolation rather than gridding
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	
+	delete rotation; rotation=0;
+
+}
+
+int FourierIterReconstructor::determine_slice_agreement(EMData*  input_slice, const Transform & arg, const float weight,bool sub) { return 0; }
+
+EMData *FourierIterReconstructor::finish(bool doift) {
+	normalize_threed(0);
+	
+	if (doift) {
+		image->do_ift_inplace();
+		image->depad();
+		image->process_inplace("xform.phaseorigin.tocenter");
+	}
+
+	image->update();
+	
+	if (params.has_key("savenorm") && strlen((const char *)params["savenorm"])>0) {
+		if (tmp_data->get_ysize()%2==0 && tmp_data->get_zsize()%2==0) tmp_data->process_inplace("xform.fourierorigin.tocenter");
+		tmp_data->write_image((const char *)params["savenorm"]);
+	}
+
+	//Since we give up the ownership of the pointer to-be-returned,	it's caller's responsibility to delete the returned image.
+	//So we wrap this function with return_value_policy< manage_new_object >() in libpyReconstructor2.cpp to hand over ownership to Python.
+	EMData *ret=image;
+	image=0;
+	
+	return ret;
+}
+
+void FourierIterReconstructor::free_memory() {
+	if (image) delete image;
+	if (tmp_data) delete tmp_data;
+	if (ref_vol) delete ref_vol;
+	image=tmp_data=ref_vol=0;
+}
+
+
+////// FourierReconstructor
 void FourierReconstructor::load_default_settings()
 {
 	inserter=0;

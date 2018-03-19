@@ -670,63 +670,26 @@ namespace EMAN
 	 * are used to determine if a slice should be inserted into the 3D in each subsequent iteration.
 	 * The client creates a Fourier reconstructor to insert real images into a 3D volume. The return image is a real space image
 	 *
-	 *
-	 * This reconstructor is based on EMAN1's Fourier reconstructor with a handful of modifications including
-	 * 1. - Fourier ring correlation (FRC) as opposed to the mean phase residual is used to estimate slice quality.
-	 *		The FRC of the slice in the 3D volume is determined - but the slice is removed from the 3D volume before
-	 * 		doing this so the score reflects the extent to which the slice agrees with the contribution of the other
-	 *		slices in the 3D volume. The FRC is converted to SNR using the relationship described by Penczek
-	 *		( Three-dimensional spectral signal to noise ratio for a class of reconstruction algorithms, JSB 2002 138 (24-46) )
-	 *		FRC = S/(sqrt(S+N1)sqrt(S+N2))
-	 *		Where N1 is the noise in the slice of the 3D volume and N2 is the noise in the image slice being inserted.
-	 *		We make the assumption that the noise in the 3D volume is 0 (N1=0) to get
-	 *		FRC^2 = SNR/(1+SNR)
-	 *		which gives a spectral SNR plot - we then divide each SNR value by the number of particles in the class average
-	 *		(seeing as SNR should scale linearly with the number of particles) to get the estimated SNR per contributing particle
-	 * 		in this class average. If the particles that have been averaged are not homogenous this score should be low etc.
-	 *		The scaled SNR curve is then converted back to a FRC curve and integrated. This integral is the similarity metric,
-	 *		and depends on how far information extends to in Fourier space - typical values range from 0.05 to 0.2, but can vary
-	 *		substantially depending on the data.
-	 *
-	 * 2 - 	Uses half of the memory used by EMAN1's equivalent reconstruction algorithm
+	 * This reconstructor works in Fourier space using a hardcoded 5x5x5 interpolation kernel based on the local environment from a
+	 * previous iteration. That is, it uses interpolation, not gridding, but rather than using a fixed interpolation kernel, it
+	 * bases the kernel on a previous estimate of the Fourier volume. It is designed to be used iteratively, being passed the
+	 * results of the previous round as a starting volume in each pass. The starting volume does not get directly incorporated into
+	 * the result, but is only used to define the local interpolation kernel. 
 	 *
 	 *
 	 * - Fourier reconstructor usage
-	 * @ingroup CUDA_ENABLED
-	 *@code
-	 *	Reconstructor* r = Factory<Reconstructor>::get("fourier", params);
-	 *	r->setup();
-	 *	for k in 0:num_iterations-1
-	 *		// First do a round of slice quality (metric) determination - only possible if a 3D volume has
-	 *		// already been generated (k>0)
-	 *		if ( k  > 0 )
-	 *			// Determine the agreement of the slices with the previous reconstructed volume (in memory)
-	 *			for i in 0:num_slices-1
-	 *				r->determine_slice_agreement(image[i], image[i].euler_orientation);
-	 *
-	 *		// Insert the slices into the 3D volume
-	 *		// Will decide not to insert the slice if the its "quality" is not good enough
-	 *		for i in 0:num_slices-1
-	 *			int failure = r->insert_slice(image[i], image[i].euler_orientation);
-	 *			if ( failure ) cout << "Slice was not inserted due to poor quality" << endl;
-	 *
-	 *	// Get the resulting volume
-	 *	EMData* result = r->finish();
-	 *	result->write_image("threed.mrc");
-	@endcode
 	 */
-	class FourierPlaneReconstructor : public Reconstructor, public ReconstructorVolumeData
+	class FourierIterReconstructor : public Reconstructor, public ReconstructorVolumeData
 	{
 	  public:
 		/** Default constructor
-		* calls load_default_settings()
 		*/
-		FourierPlaneReconstructor() { load_default_settings(); }
+		FourierIterReconstructor(): ref_vol(0) { }
 
 		/** Deconstructor
 		* calls free_memory()
 		*/
-		virtual ~FourierPlaneReconstructor() { free_memory(); }
+		virtual ~FourierIterReconstructor() { free_memory(); }
 
 		/** Setup the Fourier reconstructor
 		* @exception InvalidValueException When one of the input parameters is invalid
@@ -742,6 +705,7 @@ namespace EMAN
 		* @exception InvalidValueException When one of the input parameters is invalid
 		*/
 		virtual void setup_seed(EMData* seed,float seed_weight);
+		virtual void setup_seedandweights(EMData* seed,EMData* weight);
 
 	  	/** Preprocess the slice prior to insertion into the 3D volume
 		 * this Fourier tranforms the slice and make sure all the pixels are in the right position
@@ -806,7 +770,7 @@ namespace EMAN
 		*/
 		virtual string get_desc() const
 		{
-			return "Reconstruction via direct Fourier methods using one of a variety of different kernels, most of which are Gaussian based";
+			return "Reconstruction via Fourier interpolation using an iterative strategy to define the interpolation kernel";
 		}
 
 		/** Factory incorporation uses the pointer of this function
@@ -814,7 +778,7 @@ namespace EMAN
 		*/
 		static Reconstructor *NEW()
 		{
-			return new FourierPlaneReconstructor();
+			return new FourierIterReconstructor();
 		}
 
 		/** Get the parameter types of this object
@@ -825,58 +789,28 @@ namespace EMAN
 			TypeDict d;
 			d.put("size", EMObject::INTARRAY, "Required. The dimensions of the real-space output volume, including any padding (must be handled by the calling application). Assumed that apix x/y/z identical.");
 			d.put("sym", EMObject::STRING, "Optional. The symmetry of the reconstructed volume, c?, d?, oct, tet, icos, h?. Default is c1, ie - an asymmetric object");
-			d.put("mode", EMObject::STRING, "Optional. Fourier pixel insertion mode name (nearest_neighbor, gauss_2, gauss_3, gauss_5, gauss_5_slow, gypergeom_5, experimental) gauss_2 is the default.");
-			d.put("sqrtnorm", EMObject::BOOL, "Optional. When normalizing, additionally divides by the sqrt of the normalization factor to damp exaggerated features. Is this justifyable ? No idea (yet). Default is false.");
 			d.put("verbose", EMObject::BOOL, "Optional. Toggles writing useful information to standard out. Default is false.");
-			d.put("quiet", EMObject::BOOL, "Optional. If false, print verbose information.");
 			return d;
 		}
 		
 		static const string NAME;
 
 	  protected:
-		/** Load default settings
-		*/
-		virtual void load_default_settings();
 
 		/** Frees the memory owned by this object (but not parent objects)
 		 * Deletes the FourierPixelInserter3D pointer
 		 */
 		virtual void free_memory();
-
-		/** Load the pixel inserter based on the information in params
-		 */
-		virtual void load_inserter();
-
-		/** A function to perform the nuts and bolts of inserting an image slice
-		 * @param input_slice the slice to insert into the 3D volume
-		 * @param euler a transform storing the slice euler angle
-		 * @param weight weighting factor for this slice (usually number of particles in a class-average)
-		 */
-		virtual void do_insert_slice_work(const EMData* const input_slice, const Transform & euler,const float weight);
-
-		/** A function to perform the nuts and bolts of comparing an image slice
-		 * @param input_slice the slice to insert into the 3D volume
-		 * @param euler a transform storing the slice euler angle
-		 */
-		virtual void do_compare_slice_work(EMData* input_slice, const Transform & euler,float weight);
-
-		/** This is a mode-2 pixel extractor
-		 * @param xx,yy,zz voxel coordinates (need not be integers)
-		 * @param dt float pointer with 3 floats allocated for returned complex value and weight sum
-		 */
-		virtual bool pixel_at(const float& xx, const float& yy, const float& zz, float *dt);
-
-		/// A pixel inserter pointer which inserts pixels into the 3D volume using one of a variety of insertion methods
-		FourierPixelInserter3D* inserter;
+		
+		EMData *ref_vol;
 
 	  private:
 		 /** Disallow copy construction
   		 */
-  		FourierPlaneReconstructor( const FourierPlaneReconstructor& that );
+  		FourierIterReconstructor( const FourierIterReconstructor& that );
   		/**Disallow assignment
   		 */
-  		FourierPlaneReconstructor& operator=( const FourierPlaneReconstructor& );
+  		FourierIterReconstructor& operator=( const FourierIterReconstructor& );
 
 	};
 
