@@ -556,7 +556,7 @@ def main():
 						img_particle.set_attr('ptcl_source_coord', [relion_coordinate_x, relion_coordinate_y]) # No conversion is necessary from RELION to SPHIRE foramts
 						img_particle.set_attr('ptcl_source_coord_id', sphire_local_particle_id)
 						img_particle.set_attr('data_n', sphire_local_particle_id)  # NOTE: Toshio Moriya 2017/11/20: same as ptcl_source_coord_id but the other program uses this header entry key...
-						particle_img.set_attr('resample_ratio', 1.0)
+						img_particle.set_attr('resample_ratio', 1.0)
 						# 
 						# NOTE: 2017/12/05 Toshio Moriya 
 						# Add header entries so that it consistent with sxwindow.py (refer note in sxwindow.py about why these are set to 1.0[A])
@@ -616,9 +616,9 @@ def main():
 				print('# WARNING!!! The number of particles in generated stack (%d) is different from the number of entries in input RELION STAR file (%d)!!!' % (i_relion_particle, i_sphire_stack_particle_img))
 				print('#            Please check if there are all images specified by _rlnImageName in STAR file')
 			else:
-				assert i_sphire_stack_particle_img != i_relion_particle, '# The number of particles must always match at this point of code.'
-				assert not os.path.exists(file_path_sphire_stack), '# The SPHIRE stack must not exists at this point of code.'
-				assert i_sphire_stack_particle_img != EMUtil.get_image_count(file_path_sphire_stack), '# The numbers of particles should match always at this point of code' 
+				assert i_sphire_stack_particle_img == i_relion_particle, '# The number of particles must always match at this point of code.'
+				assert os.path.exists(file_path_sphire_stack), '# The SPHIRE stack must exist at this point of code.'
+				assert i_sphire_stack_particle_img == EMUtil.get_image_count(file_path_sphire_stack), '# The numbers of particles should match always at this point of code' 
 				
 		# Write box coordinate to files (doing here to avoid repeating open/close files in loop)
 		if box_size > 0:
