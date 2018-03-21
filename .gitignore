@@ -172,3 +172,9 @@ CVS/
 # Gradle:
 # .idea/gradle.xml
 # .idea/libraries
+#
+
+# SPHIRE Tutorial
+sparx/doc/Tutorial/*.docx
+sparx/doc/Tutorial/log.txt
+sparx/doc/Tutorial/build/*

@@ -50,7 +50,7 @@ def replace_tags(lines, replace_dict):
         re_check_list.append(re.compile('(?<!\|)(?:\|{{1,2}}|\|{{4,5}}|\|{{7,}}){0}(?:\|{{3}}|\|{{6}})(?!\|)'.format(name_raw)))
         re_check_list.append(re.compile('(?<!\|)(?:\|{{3}}|\|{{6}}){0}(?:\|{{1,2}}|\|{{4,5}}|\|{{7,}})(?!\|)'.format(name_raw)))
         re_check_list.append(re.compile('(?<!\|)(?:\|{{1,2}}|\|{{4,5}}|\|{{7,}}){0}(?:\|{{1,2}}|\|{{4,5}}|\|{{7,}})(?!\|)'.format(name_raw)))
-        for idx, line in enumerate(new_lines):
+        for idx, line in enumerate(lines.split('\n')):
             for entry in re_check_list:
                 match_list = entry.findall(line)
                 for match in match_list:
