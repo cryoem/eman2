@@ -180,7 +180,7 @@
 \newpagestyle{first}{
 \setheadrule{0.4pt}{}
 \sethead% even
-{}{}{\textit{Written by Christos Gatsogiannis with input from the \sphire{} team, format by Markus Stabrin}}% odd
+{}{}{\textit{Written by Christos Gatsogiannis with input from the \sphire{} team; Latex document by Markus Stabrin}}% odd
 
 \setfoot% even
 {}{\textsl{\thepage}}{}% odd
