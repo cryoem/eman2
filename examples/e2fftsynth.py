@@ -181,6 +181,9 @@ class GUIFourierSynth(QtGui.QWidget):
 	
 		if index==0 : 
 			self.targfn=None
+			nsin=int(self.vnsin.getValue())
+			for i in xrange(nsin): self.wamp[i].setValue(0)
+
 		else :
 			nx=int(self.vcell.getValue())
 			self.targfn=EMData(nx,1)

@@ -1317,9 +1317,9 @@ class EMPolarPlot2DWidget(EMGLWidget):
 		if not quiet: self.updateGL()
 		#if self.inspector: self.inspector.datachange()
 
-		def setDataLabelsColor(self, color):
-			""" Set the color of the data labels """
-			self.datalabelscolor = color
+	def setDataLabelsColor(self, color):
+		""" Set the color of the data labels """
+		self.datalabelscolor = color
 
 	def setScatterColor(self, color):
 		""" Set a matplotlib color or list of colors. One list for each data set """
