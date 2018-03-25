@@ -1556,12 +1556,17 @@ def main(args):
 					junk = cmdexecute(cmd)
 					if(main_iter>1):
 						#  It may be restart from unfinished main, so replace files in master
-						cmd = "{} {} {} {} {}".format("cp -Rp", \
+						cmd = "{} {} {} {}".format("cp -Rp", \
 						os.path.join(Blockdata["masterdir"], "main%03d"%(main_iter-1), "processed_images.txt" ), \
-						os.path.join(Blockdata["masterdir"], "main%03d"%(main_iter-1), "not_processed_images.txt" ), \
 						os.path.join(Blockdata["masterdir"], "main%03d"%(main_iter-1), "class_averages.hdf" ), \
 						os.path.join(Blockdata["masterdir"]) )
 						junk = cmdexecute(cmd)
+						junk = os.path.join(Blockdata["masterdir"], "main%03d"%(main_iter-1), "not_processed_images.txt" )
+						if( os.path.exists( junk ) ):
+							cmd = "{} {} {}".format("cp -Rp", \
+							junk, \
+							os.path.join(Blockdata["masterdir"]) )
+							junk = cmdexecute(cmd)
 
 
 					if( os.path.exists( os.path.join(Blockdata["masterdir"], "not_processed_images.txt") ) ):
@@ -1605,12 +1610,17 @@ def main(args):
 						# Preserve results obtained so far
 						if( not keepdoing_generation ):
 							if( Blockdata["myid"] == 0):
-								cmd = "{} {} {} {} {}".format("cp -Rp", \
+								cmd = "{} {} {} {}".format("cp -Rp", \
 								os.path.join(Blockdata["masterdir"], "processed_images.txt" ), \
-								os.path.join(Blockdata["masterdir"], "not_processed_images.txt" ), \
 								os.path.join(Blockdata["masterdir"], "class_averages.hdf" ), \
 								os.path.join(Blockdata["masterdir"], "main%03d"%main_iter) )
 								junk = cmdexecute(cmd)
+								junk = os.path.join(Blockdata["masterdir"], "not_processed_images.txt" )
+								if( os.path.exists( junk ) ):
+									cmd = "{} {} {}".format("cp -Rp", \
+									junk, \
+									os.path.join(Blockdata["masterdir"], "main%03d"%main_iter) )
+									junk = cmdexecute(cmd)
 
 	mpi_barrier(MPI_COMM_WORLD)
 	if( Blockdata["myid"] == 0):
