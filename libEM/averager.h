@@ -258,6 +258,45 @@ namespace EMAN
 		int fourier;
 	};
 
+	/** IterAverager performs iterative averaging of 3x3 pixel zones around each pixel, computing the mean of the 9 pixels initially, then
+	 * iteratively refining the average to produce something self-consistent, but hopefully less noisy.
+     */
+	class IterAverager:public Averager
+	{
+	  public:
+		IterAverager();
+
+		void add_image( EMData * image);
+		EMData * finish();
+
+		string get_name() const
+		{
+			return NAME;
+		}
+
+		string get_desc() const
+		{
+			return "An iterative averager making use of local correlations for noise reduction";
+		}
+
+		static Averager *NEW()
+		{
+			return new IterAverager();
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			return d;
+		}
+
+		static const string NAME;
+		
+	private:
+		std::vector<EMData*> images;
+	};
+
+	
 	/** FourierWeightAverager makes an average of a set of images in Fourier space using a per-image radial weight. The provided XYData object for each inserted
 	 * image should range from x=0 - 0.5*sqrt(2), and contains the radial weights from 0 - Nyquist at the point. If the x range is insufficient, values will be
 	 * clamped at the ends of the available x-range. 2-D Images only, but will work with rectangular images.
@@ -435,36 +474,6 @@ namespace EMAN
 		int nimg;
 	};
 
-	/** IterationAverager averages images by doing the smoothing iteration.
-     */
-	class IterationAverager:public Averager
-	{
-	  public:
-		IterationAverager();
-		void add_image( EMData * image);
-		EMData * finish();
-
-		string get_name() const
-		{
-			return NAME;
-		}
-
-		string get_desc() const
-		{
-			return "Unknown";
-		}
-
-		static Averager *NEW()
-		{
-			return new IterationAverager();
-		}
-		
-		static const string NAME;
-		
-	private:
-		EMData * sigma_image;
-		int nimg;
-	};
 
 	/** CtfWtAverager
      */
