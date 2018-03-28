@@ -38,6 +38,7 @@ import os,sys
 from EMAN2 import *
 from PyQt4 import QtGui,QtCore
 from emimagemx import EMImageMXModule
+from emglobjects import EM3DGLWidget
 
 	
 def main():
