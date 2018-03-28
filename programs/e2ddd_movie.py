@@ -234,7 +234,7 @@ def main():
 						if options.verbose:
 							sys.stdout.write("({}/{})   \r".format(i+1,nd))
 							sys.stdout.flush()
-						if options.dark != "" and options.dark[-4:].lower() in (".mrc") :
+						if options.gain != "" and options.gain[-4:].lower() in (".mrc") :
 							t=EMData(options.gain,0,False,Region(0,0,i,nx,ny,1))
 						else:
 							t=EMData(options.gain,i)
