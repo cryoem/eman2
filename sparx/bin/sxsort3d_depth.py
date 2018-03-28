@@ -427,7 +427,7 @@ def output_iter_results(box_dir, ncluster, NACC, NUACC, minimum_grp_size, list_o
 			for element in any: unaccounted_list.append(element)
 	unaccounted_list.sort()
 	NUACC = len(unaccounted_list)
-	fout = open(os.path.join(box_dir, "freq_cutoff.json"),'w')
+	fout  = open(os.path.join(box_dir, "freq_cutoff.json"),'w')
 	json.dump(freq_cutoff_dict, fout)
 	fout.close()
 	return ncluster, NACC, NUACC, unaccounted_list, nc
@@ -836,13 +836,13 @@ def check_mpi_settings(log_main):
 		log_main.add('----------------------------------------------------------------------------------------------------------------' )
 		log_main.add("Number of processes: %d number of nodes:  %d.  Number of processes per node:  %d."%(Blockdata["nproc"], Blockdata["no_of_groups"], Blockdata["no_of_processes_per_group"]))
 	try:
-		image_org_size     = Tracker["constants"]["nnxo"]
-		image_in_core_size = nxinit
-		ratio = float(nxinit)/float(image_org_size)
-		raw_data_size = float(Tracker["constants"]["total_stack"]*image_org_size*image_org_size)*4.0/1.e9
-		raw_data_size_per_node = float(Tracker["constants"]["total_stack"]*image_org_size*image_org_size)*4.0/1.e9/Blockdata["no_of_groups"]
+		image_org_size             = Tracker["constants"]["nnxo"]
+		image_in_core_size         = nxinit
+		ratio                      = float(nxinit)/float(image_org_size)
+		raw_data_size              = float(Tracker["constants"]["total_stack"]*image_org_size*image_org_size)*4.0/1.e9
+		raw_data_size_per_node     = float(Tracker["constants"]["total_stack"]*image_org_size*image_org_size)*4.0/1.e9/Blockdata["no_of_groups"]
 		sorting_data_size_per_node = raw_data_size_per_node + 2.*raw_data_size_per_node*ratio**2
-		volume_size_per_node = (4.*image_in_core_size**3*8.)*Blockdata["no_of_processes_per_group"]/1.e9
+		volume_size_per_node       = (4.*image_in_core_size**3*8.)*Blockdata["no_of_processes_per_group"]/1.e9
 	except:  current_mpi_settings_is_bad = 1
 	if current_mpi_settings_is_bad == 1:   ERROR("Initial info is not provided", "check_mpi_settings", 1, Blockdata["myid"])
 	try:
@@ -909,6 +909,7 @@ def get_sorting_image_size(original_data, partids, number_of_groups, sparamstruc
 	for iproc in xrange(Blockdata["nproc"]):
 		iproc_image_start, iproc_image_end = MPI_start_end(Tracker["total_stack"], Blockdata["nproc"], iproc)
 		proc_list[iproc] = [iproc_image_start, iproc_image_end]
+	
 	compute_noise(Tracker["nxinit_refinement"])
 	rdata = downsize_data_for_rec3D(original_data, Tracker["nxinit_refinement"], return_real = False, npad = 1)
 	update_rdata_assignment(iter_assignment, proc_list, Blockdata["myid"], rdata)
@@ -1180,7 +1181,7 @@ def check_3dmask(log_main):
 	###########################################################################	
 	Tracker["nxinit"]     = Tracker["nxinit_refinement"]
 	Tracker["currentres"] = float(Tracker["constants"]["fsc05"])/float(Tracker["nxinit"])
-	#              hrinkage, current resolution, fuse_freq
+	#   shrinkage, current resolution, fuse_freq
 	Tracker["total_stack"] = Tracker["constants"]["total_stack"]
 	Tracker["shrinkage"]   = float(Tracker["nxinit"])/Tracker["constants"]["nnxo"]
 	Tracker["radius"]      = Tracker["constants"]["radius"]*Tracker["shrinkage"]
@@ -1244,8 +1245,8 @@ def create_masterdir():
 		restart = 0
 		li = 0
 	restart = bcast_number_to_all(restart, Blockdata["main_node"], MPI_COMM_WORLD)
-	li                                    = mpi_bcast(li,1,MPI_INT,Blockdata["main_node"],MPI_COMM_WORLD)[0]
-	masterdir                             = mpi_bcast(masterdir,li,MPI_CHAR,Blockdata["main_node"],MPI_COMM_WORLD)
+	li                                    = mpi_bcast(li,       1,   MPI_INT,  Blockdata["main_node"],MPI_COMM_WORLD)[0]
+	masterdir                             = mpi_bcast(masterdir,li,  MPI_CHAR, Blockdata["main_node"],MPI_COMM_WORLD)
 	masterdir                             = string.join(masterdir,"")
 	if not Tracker["constants"]["masterdir"]: Tracker["constants"]["masterdir"]  = masterdir
 	Tracker["constants"]["chunk_0"]  = os.path.join(Tracker["constants"]["masterdir"],"chunk_0.txt")
@@ -4145,7 +4146,7 @@ def get_orien_assignment_mpi(angle_step, partids, params, log_main):
 			ptls_in_orien_groups = reassign_ptls_in_orien_groups(ptls_in_orien_groups, matched_pairs)
 	else: ptls_in_orien_groups = 0
 	zero_member_group_found = bcast_number_to_all(zero_member_group_found, Blockdata["main_node"], MPI_COMM_WORLD)
-	ptls_in_orien_groups = wrap_mpi_bcast(ptls_in_orien_groups, Blockdata["main_node"], MPI_COMM_WORLD)
+	ptls_in_orien_groups = wrap_mpi_bcast(ptls_in_orien_groups,            Blockdata["main_node"], MPI_COMM_WORLD)
 	
 	del refa_vecs, refa
 	del local_orien_group_assignment
@@ -4309,9 +4310,9 @@ def steptwo_mpi(tvol, tweight, treg, cfsc = None, regularized = True, color = 0)
 		ny    = 0
 		nx    = 0
 		maxr2 = 0
-	nx    = bcast_number_to_all(nx, source_node = 0, mpi_comm = Blockdata["shared_comm"])
-	ny    = bcast_number_to_all(ny, source_node = 0, mpi_comm = Blockdata["shared_comm"])
-	nz    = bcast_number_to_all(nz, source_node = 0, mpi_comm = Blockdata["shared_comm"])
+	nx    = bcast_number_to_all(nx, source_node = 0,    mpi_comm = Blockdata["shared_comm"])
+	ny    = bcast_number_to_all(ny, source_node = 0,    mpi_comm = Blockdata["shared_comm"])
+	nz    = bcast_number_to_all(nz, source_node = 0,    mpi_comm = Blockdata["shared_comm"])
 	maxr2 = bcast_number_to_all(maxr2, source_node = 0, mpi_comm = Blockdata["shared_comm"])
 
 	vol_data = get_image_data(tvol)
@@ -4323,7 +4324,7 @@ def steptwo_mpi(tvol, tweight, treg, cfsc = None, regularized = True, color = 0)
 	if( Blockdata["myid_on_node"] == 0 ):
 		#  Either pad or window in F space to 2*nnxo
 		nx = tvol.get_ysize()
-		if( nx > 2*Tracker["constants"]["nnxo"]): tvol = fdecimate(tvol, 2*Tracker["constants"]["nnxo"], 2*Tracker["constants"]["nnxo"], 2*Tracker["constants"]["nnxo"], False, False)
+		if( nx > 2*Tracker["constants"]["nnxo"]):  tvol = fdecimate(tvol, 2*Tracker["constants"]["nnxo"], 2*Tracker["constants"]["nnxo"], 2*Tracker["constants"]["nnxo"], False, False)
 		elif(nx < 2*Tracker["constants"]["nnxo"]): tvol = fpol(tvol, 2*Tracker["constants"]["nnxo"], 2*Tracker["constants"]["nnxo"], 2*Tracker["constants"]["nnxo"], RetReal = False, normalize = False)
 		tvol = fft(tvol)
 		tvol = cyclic_shift(tvol,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
@@ -4658,9 +4659,9 @@ def do3d_sorting_groups_trl_iter(data, iteration):
 					tweight2 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_0_%d.hdf")%index_of_group)
 					treg2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_0_%d.hdf")%index_of_group)
 					tag         = 7007
-					send_EMData(tvol2, sub_main_node_list[index_of_colors], tag,MPI_COMM_WORLD)
-					send_EMData(tweight2, sub_main_node_list[index_of_colors], tag,MPI_COMM_WORLD)
-					send_EMData(treg2, sub_main_node_list[index_of_colors], tag,MPI_COMM_WORLD)
+					send_EMData(tvol2, sub_main_node_list[index_of_colors],    tag, MPI_COMM_WORLD)
+					send_EMData(tweight2, sub_main_node_list[index_of_colors], tag, MPI_COMM_WORLD)
+					send_EMData(treg2, sub_main_node_list[index_of_colors],    tag, MPI_COMM_WORLD)
 				elif (Blockdata["myid"] == sub_main_node_list[index_of_colors]):
 					tag      = 7007
 					tvol2    = recv_EMData(Blockdata["last_node"], tag, MPI_COMM_WORLD)
@@ -5096,9 +5097,9 @@ def get_input_from_datastack(log_main):# Case three
 
 	###
 	Tracker["refang"], Tracker["rshifts"], Tracker["delta"] = None, None, None
-	Tracker["avgnorm"] =1.0
-	chunk_dict = {}
-	chunk_list = []
+	Tracker["avgnorm"] = 1.0
+	chunk_dict         = {}
+	chunk_list         = []
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		chunk_dict  = {}
 		tlist = range(total_stack)
@@ -5182,7 +5183,7 @@ def get_input_from_datastack(log_main):# Case three
 			tweight1 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_1.hdf"))
 			Util.fuse_low_freq(tvol0, tvol1, tweight0, tweight1, 2*Tracker["fuse_freq"])
 			tag = 7007
-			send_EMData(tvol1, Blockdata["nodes"][0], tag, MPI_COMM_WORLD)
+			send_EMData(tvol1, Blockdata["nodes"][0],    tag, MPI_COMM_WORLD)
 			send_EMData(tweight1, Blockdata["nodes"][0], tag, MPI_COMM_WORLD)
 			shrank0 	= stepone(tvol0, tweight0)
 			send_EMData(shrank0, Blockdata["nodes"][0], tag, MPI_COMM_WORLD)
@@ -6187,6 +6188,7 @@ def _VmB(VmKey):
         return 0.0  # invalid format?
      # convert Vm value to bytes
     return float(v[1]) * _scale[v[2]]
+    
 def memory(since=0.0):
     '''Return memory usage in bytes.
     '''
@@ -6200,6 +6202,7 @@ def stacksize(since=0.0):
     '''Return stack size in bytes.
     '''
     return _VmB('VmStk:') - since
+    
 def memory_check(s="check_memory"):
 	import os
 	print(s)
@@ -6242,14 +6245,8 @@ def do_final_maps(number_of_groups, minimum_size, selected_iter, refinement_dir,
 	create_subgroup()
 	fuse_freq = Tracker["fuse_freq"] # sort does it already
 	mask3D    = Tracker["constants"]["mask3D"]
-	mtf       = Tracker["constants"]["mtf"]
-	fsc_adj   = Tracker["constants"]["fsc_adj"]
-	Bstart    = Tracker["constants"]["B_start"]
-	Bstop     = Tracker["constants"]["B_stop"]
 	aa        = Tracker["constants"]["aa"]
 	total_stack                 = Tracker["constants"]["total_stack"]
-	postlowpassfilter           = Tracker["constants"]["postlowpassfilter"]
-	B_enhance                   = Tracker["constants"]["B_enhance"]
 	memory_per_node             = Tracker["constants"]["memory_per_node"]
 	Blockdata["fftwmpi"]        = True
 	Tracker["number_of_groups"] = number_of_groups
@@ -6289,18 +6286,14 @@ def do_final_maps(number_of_groups, minimum_size, selected_iter, refinement_dir,
 			mpi_barrier(MPI_COMM_WORLD)
 		mpi_barrier(MPI_COMM_WORLD)
 		
-		Tracker["constants"]["B_enhance"] = B_enhance
-		Tracker["constants"]["B_start"]   = Bstart    
-		Tracker["constants"]["B_stop"]    = Bstop    
-		Tracker["constants"]["aa"]        = aa  
-		Tracker["constants"]["postlowpassfilter"] = postlowpassfilter  
-		Tracker["constants"]["fsc_adj"]=fsc_adj
-		Tracker["constants"]["mtf"]    = mtf
-		Tracker["constants"]["mask3D"]              = mask3D
-		Tracker["nxinit"]              = rec3d_image_size 
-		Tracker["number_of_groups"]    = number_of_groups
-		Tracker["fuse_freq"]           = fuse_freq # reset
-		Tracker["constants"]["memory_per_node"] = memory_per_node
+		Tracker["constants"]["B_enhance"] = B_enhance 
+		Tracker["constants"]["aa"]        = aa
+		Tracker["constants"]["mtf"]            = mtf
+		Tracker["constants"]["mask3D"]         = mask3D
+		Tracker["nxinit"]                      = rec3d_image_size 
+		Tracker["number_of_groups"]            = number_of_groups
+		Tracker["fuse_freq"]                   = fuse_freq # reset
+		Tracker["constants"]["memory_per_node"]= memory_per_node
 		Tracker["constants"]["total_stack"] = total_stack
 		
 		# Using all CPUS to do step two
@@ -6343,14 +6336,14 @@ def compute_final_map(work_dir):
 		Tracker["nxinit"]           = Tracker["nxinit_refinement"]
 	else: Tracker = 0
 	number_of_groups = bcast_number_to_all(number_of_groups, Blockdata["main_node"], MPI_COMM_WORLD)
-	Tracker          = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
+	Tracker          = wrap_mpi_bcast(Tracker,               Blockdata["main_node"], MPI_COMM_WORLD)
 	if( number_of_groups == 0 ): ERROR("No clusters  found, the program terminates.", "do_final_maps", 1, Blockdata["myid"])
 	compute_noise( Tracker["nxinit"])
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		alist, partition = merge_classes_into_partition_list(clusters)
 		write_text_row(partition, os.path.join(work_dir, "generation_partition.txt"))
-	parti_file = os.path.join(work_dir, "generation_partition.txt")
-	params = os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt")
+	parti_file      = os.path.join(work_dir, "generation_partition.txt")
+	params          = os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt")
 	previous_params = Tracker["previous_parstack"]
 	original_data, norm_per_particle  = read_data_for_sorting(parti_file, params, previous_params)
 	
@@ -6368,6 +6361,7 @@ def compute_final_map(work_dir):
 	compute_noise(Tracker["nxinit"])
 	cdata, rdata, fdata = downsize_data_for_sorting(original_data, preshift = True, npad = 1, norms = norm_per_particle)# pay attentions to shifts!
 	mpi_barrier(MPI_COMM_WORLD)
+	
 	srdata = precalculate_shifted_data_for_recons3D(rdata, parameterstructure, Tracker["refang"], Tracker["rshifts"], \
 	  Tracker["delta"], Tracker["avgnorm"], Tracker["nxinit"], Tracker["constants"]["nnxo"], Tracker["nosmearing"], \
 	      norm_per_particle,  Tracker["constants"]["nsmear"])
@@ -6453,8 +6447,7 @@ def copy_results(log_file, all_gen_stat_list):
 			fout.close()
 		mpi_barrier(MPI_COMM_WORLD)
 	else:
-		if Blockdata["myid"] == Blockdata["main_node"]:
-			log_file.add('No groups are found.\n')
+		if Blockdata["myid"] == Blockdata["main_node"]: log_file.add('No groups are found.\n')
 	return
 
 def get_MGR_from_two_way_comparison(newindeces, clusters1, clusters2, N):
@@ -6803,24 +6796,24 @@ def main():
 	
 	if initiate_from_meridien_mode:
 		if Blockdata["myid"] == Blockdata["main_node"]: print("initiate_from_meridien_mode")
-		parser.add_option("--output_dir",                        type   ="string",        default ='',					   help="sort3d output directory name")
-		parser.add_option("--niter_for_sorting",                 type   ="int",           default =-1,					   help="user specified iteration number of 3D refinement for sorting")
+		parser.add_option("--output_dir",                        type   ="string",        default ='',					   help="Sort3d output directory name")
+		parser.add_option("--niter_for_sorting",                 type   ="int",           default =-1,					   help="User specified iteration number of 3D refinement for sorting")
 		parser.add_option("--focus",                             type   ="string",        default ='',                     help="Focus 3D mask. File path of a binary 3D mask for focused clustering ")
 		parser.add_option("--mask3D",                            type   ="string",        default ='',                     help="3D mask. File path of the global 3D mask for clustering")
 		parser.add_option("--radius",                            type   ="int",           default =-1,	                   help="Estimated protein radius in pixels")
-		parser.add_option("--sym",                               type   ="string",        default ='c1',                   help="point-group symmetry")
-		parser.add_option("--img_per_grp",                       type   ="int",           default =1000,                   help="number of images per group")
-		parser.add_option("--nsmear",                            type   ="float",         default =-1.,                    help="number of smears used in sorting. Fill it with 1 if user does not want to use all smears")
-		parser.add_option("--minimum_grp_size",				     type   ="int",           default =-1,					   help="cluster selection size")
-		parser.add_option("--depth_order",				         type   ="int",           default =2,					   help="depth order. A number defines the number of initial independent MGSKmeans runs (2^depth_order)")
-		parser.add_option("--memory_per_node",                   type   ="float",         default =-1.0,                   help="memory_per_node, the number used for computing the CPUs/NODE settings given by user")
-		parser.add_option("--orientation_groups",                type   ="int",           default =100,                    help="mumber of orientation groups in the asymmetric unit")
-		parser.add_option("--not_include_unaccounted",           action ="store_true",    default =False,                  help="do not reconstruct unaccounted elements in each generation")
-		parser.add_option("--stop_mgskmeans_percentage",         type   ="float",         default =10.0,                   help="swap ratio. A float number between 0.0 and 50")
-		parser.add_option("--swap_ratio",                        type   ="float",         default =1.0,                    help="randomness ratio of swapping accounted elements with unaccounted elemetns per cluster")
-		parser.add_option("--notapplybckgnoise",                 action ="store_true",    default =False,                  help="do not applynoise")
-		parser.add_option("--do_swap_au",                        action ="store_true",    default =False,                  help="swap flag")
-		parser.add_option("--random_group_elimination_threshold",  type   ="float",       default =2.0,                    help="number of random group reproducibility standard deviation for eliminating random groups")
+		parser.add_option("--sym",                               type   ="string",        default ='c1',                   help="Point-group symmetry")
+		parser.add_option("--img_per_grp",                       type   ="int",           default =1000,                   help="Number of images per group")
+		parser.add_option("--nsmear",                            type   ="float",         default =-1.,                    help="Number of smears used in sorting. Fill it with 1 if user does not want to use all smears")
+		parser.add_option("--minimum_grp_size",				     type   ="int",           default =-1,					   help="Cluster selection size")
+		parser.add_option("--depth_order",				         type   ="int",           default =2,					   help="Depth order. A number defines the number of initial independent MGSKmeans runs (2^depth_order)")
+		parser.add_option("--memory_per_node",                   type   ="float",         default =-1.0,                   help="Memory_per_node, the number used for computing the CPUs/NODE settings given by user")
+		parser.add_option("--orientation_groups",                type   ="int",           default =100,                    help="Number of orientation groups in the asymmetric unit")
+		parser.add_option("--not_include_unaccounted",           action ="store_true",    default =False,                  help="Do not reconstruct unaccounted elements in each generation")
+		parser.add_option("--stop_mgskmeans_percentage",         type   ="float",         default =10.0,                   help="Swap ratio. A float number between 0.0 and 50")
+		parser.add_option("--swap_ratio",                        type   ="float",         default =1.0,                    help="Randomness ratio of swapping accounted elements with unaccounted elemetns per cluster")
+		parser.add_option("--notapplybckgnoise",                 action ="store_true",    default =False,                  help="Do not applynoise")
+		parser.add_option("--do_swap_au",                        action ="store_true",    default =False,                  help="Flag to turn on swapping the accounted for images with the unaccounted for images")
+		parser.add_option("--random_group_elimination_threshold",  type   ="float",       default =2.0,                    help="Number of random group reproducibility standard deviation for eliminating random groups")
 		(options, args) = parser.parse_args(sys.argv[1:])
 		from utilities import bcast_number_to_all
 		### Sanity check
@@ -6983,23 +6976,23 @@ def main():
 			
 	elif initiate_from_data_stack_mode:
 		parser.add_option("--nxinit",                            type   ="int",           default =-1,                     help="User provided image size")
-		parser.add_option("--output_dir",                        type   ="string",        default ='',					   help="name of the sort3d directory")
+		parser.add_option("--output_dir",                        type   ="string",        default ='',					   help="Name of the sort3d directory")
 		parser.add_option("--focus",                             type   ="string",        default ='',                     help="Focus 3D mask. File path of a binary 3D mask for focused clustering ")
 		parser.add_option("--mask3D",                            type   ="string",        default ='',                     help="3D mask. File path of the global 3D mask for clustering")
 		parser.add_option("--radius",                            type   ="int",           default =-1,	                   help="Estimated protein radius in pixels")
-		parser.add_option("--sym",                               type   ="string",        default ='c1',                   help="point-group symmetry")
-		parser.add_option("--img_per_grp",                       type   ="int",           default =1000,                   help="number of images per group")
-		parser.add_option("--nsmear",                            type   ="float",         default =-1.,                    help="number of smears used in sorting. Fill it with 1 if user does not want to use all smears")
-		parser.add_option("--minimum_grp_size",				     type   ="int",           default =-1,					   help="cluster selection size")
-		parser.add_option("--depth_order",				         type   ="int",           default =2,					   help="depth order. A number defines the number of initial independent MGSKmeans runs (2^depth_order)")
-		parser.add_option("--memory_per_node",                   type   ="float",         default =-1.0,                   help="memory_per_node, the number used for computing the CPUs/NODE settings given by user")
-		parser.add_option("--orientation_groups",                type   ="int",           default =100,                    help="mumber of orientation groups in the asymmetric unit")
-		parser.add_option("--not_include_unaccounted",           action ="store_true",    default =False,                  help="do not reconstruct unaccounted elements in each generation")
-		parser.add_option("--stop_mgskmeans_percentage",         type   ="float",         default =10.0,                   help="swap ratio. A float number between 0.0 and 50")
-		parser.add_option("--swap_ratio",                        type   ="float",         default =1.0,                    help="randomness ratio of swapping accounted elements with unaccounted elemetns per cluster")
-		parser.add_option("--notapplybckgnoise",                 action ="store_true",    default =False,                  help="flag to turn off background noise")
-		parser.add_option("--do_swap_au",                        action ="store_true",    default =False,                  help="swap flag")
-		parser.add_option("--random_group_elimination_threshold",  type   ="float",       default =2.0,                    help="number of random group reproducibility standard deviation for eliminating random groups")
+		parser.add_option("--sym",                               type   ="string",        default ='c1',                   help="Point-group symmetry")
+		parser.add_option("--img_per_grp",                       type   ="int",           default =1000,                   help="Number of images per group")
+		parser.add_option("--nsmear",                            type   ="float",         default =-1.,                    help="Number of smears used in sorting. Fill it with 1 if user does not want to use all smears")
+		parser.add_option("--minimum_grp_size",				     type   ="int",           default =-1,					   help="Cluster selection size")
+		parser.add_option("--depth_order",				         type   ="int",           default =2,					   help="Depth order. A number defines the number of initial independent MGSKmeans runs (2^depth_order)")
+		parser.add_option("--memory_per_node",                   type   ="float",         default =-1.0,                   help="Memory_per_node, the number used for computing the CPUs/NODE settings given by user")
+		parser.add_option("--orientation_groups",                type   ="int",           default =100,                    help="Number of orientation groups in the asymmetric unit")
+		parser.add_option("--not_include_unaccounted",           action ="store_true",    default =False,                  help="Do not reconstruct unaccounted elements in each generation")
+		parser.add_option("--stop_mgskmeans_percentage",         type   ="float",         default =10.0,                   help="Swap ratio. A float number between 0.0 and 50.0")
+		parser.add_option("--swap_ratio",                        type   ="float",         default =1.0,                    help="Randomness ratio of swapping accounted elements with unaccounted elemetns per cluster")
+		parser.add_option("--notapplybckgnoise",                 action ="store_true",    default =False,                  help="Flag to turn off background noise")
+		parser.add_option("--do_swap_au",                        action ="store_true",    default =False,                  help="Flag to turn on swapping the accounted for images with the unaccounted for images")
+		parser.add_option("--random_group_elimination_threshold",  type   ="float",       default =2.0,                    help="Number of random group reproducibility standard deviation for eliminating random groups")
 		(options, args) = parser.parse_args(sys.argv[1:])
 		from utilities import bcast_number_to_all
 		### Sanity check
@@ -7112,7 +7105,7 @@ def main():
 		Blockdata["nsubset"]      = Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
 		create_subgroup()
 	
-		#                        mported functions
+		# 
 		from statistics 	import k_means_match_clusters_asg_new,k_means_stab_bbenum
 		from utilities 		import get_im,bcast_number_to_all, write_text_file,read_text_file,wrap_mpi_bcast, get_params_proj, write_text_row
 		from filter			import filt_tanl
@@ -7132,7 +7125,7 @@ def main():
 			if Blockdata["myid"] == Blockdata["main_node"]:
 				log_main.add('================================================================================================================')
 				log_main.add('                                  SORT3D IN-DEPTH v1.1')
-				log_main.add('================================================================================================================\n')			
+				log_main.add('================================================================================================================\n')	
 			import_data(log_main)
 			print_shell_command(sys.argv, log_main)
 			check_3dmask(log_main)
