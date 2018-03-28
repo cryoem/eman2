@@ -293,9 +293,9 @@ def depth_clustering(work_dir, depth_order, initial_id_file, params, previous_pa
 					input_box_parti2 = os.path.join(depth_dir, "nbox%d"%(nbox+1), "partition.txt")
 					minimum_grp_size, maximum_grp_size, accounted_list, unaccounted_list, bad_clustering, stop_generation, stat_list = \
 					do_boxes_two_way_comparison_mpi(nbox, input_box_parti1, input_box_parti2, depth_order - depth, log_main)
-					if( stop_generation ==1 ):
+					if( stop_generation == 1):
 						partition_per_box_per_layer_list = []
-						partition_per_box_per_layer_list.append([accounted_list, unaccounted_list])
+						partition_per_box_per_layer_list.append([accounted_list, []])
 						break
 					else:
 						partition_per_box_per_layer_list.append([accounted_list, unaccounted_list])
@@ -316,9 +316,9 @@ def depth_clustering(work_dir, depth_order, initial_id_file, params, previous_pa
 				minimum_grp_size, maximum_grp_size, accounted_list, unaccounted_list, bad_clustering, stop_generation, stat_list = \
 				do_boxes_two_way_comparison_mpi(nbox, input_box_parti1, input_box_parti2, depth_order - depth, log_main)
 				
-				if( stop_generation ==1 ):
+				if(stop_generation == 1):
 					partition_per_box_per_layer_list = []
-					partition_per_box_per_layer_list.append([accounted_list, unaccounted_list])
+					partition_per_box_per_layer_list.append([accounted_list, []])
 					break
 				else:
 					partition_per_box_per_layer_list.append([accounted_list, unaccounted_list])
@@ -803,6 +803,7 @@ def depth_clustering_box(work_dir, input_accounted_file, input_unaccounted_file,
 		else:
 			log_main.add('In independent run  %d, no reproducible groups were found '%nbox)
 			bad_clustering = 1
+			partition      =[]
 		log_main.add('----------------------------------------------------------------------------------------------------------------\n')
 		write_text_row(partition, os.path.join(work_dir, "partition.txt"))
 	else: bad_clustering = 0
