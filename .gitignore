@@ -1,6 +1,11 @@
 # EMAN2 libs
 lib/
 libpy*.dylib
+.eman2settings
+.browsercache.json
+.eman2log.txt
+info
+e2boxercache
 
 # Visual Studio files
 *.sdf
@@ -178,3 +183,7 @@ CVS/
 sparx/doc/Tutorial/*.docx
 sparx/doc/Tutorial/log.txt
 sparx/doc/Tutorial/build/*
+
+# Pytest
+.cache
+.pytest_cache
