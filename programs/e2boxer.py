@@ -276,7 +276,7 @@ def main():
 			print("=====================================")
 			print("ERROR: GUI mode unavailable without PyQt4")
 			sys.exit(1)
-		from emapplication import EMApp
+		from eman2_gui.emapplication import EMApp
 		app=EMApp()
 		gui=GUIBoxer(args,options.voltage,options.apix,options.cs,options.ac,options.boxsize,options.ptclsize,options.threads)
 		gui.show()

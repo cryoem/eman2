@@ -66,7 +66,7 @@ A simple CTF simulation program.
 
 	(options, args) = parser.parse_args()
 
-	from emapplication import EMApp
+	from eman2_gui.emapplication import EMApp
 	app=EMApp()
 	gui=GUIctfsim(app,options.apix,options.voltage,options.cs,options.ac,options.samples,options.apply)
 	gui.show_guis()

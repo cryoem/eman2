@@ -58,7 +58,7 @@ def main():
 	(options, args) = parser.parse_args()
 	
 	if options.gui:
-		from emapplication import EMApp
+		from eman2_gui.emapplication import EMApp
 		app = EMApp()
 		hist = HistoryForm(app,os.getcwd())
 		app.show()

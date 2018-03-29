@@ -2094,7 +2094,7 @@ first upgrade the project with e2projectupdate21.py. You can still use the e2dis
 GUI directly to browse the contents of old-style projects.""")
 		sys.exit(1)
 
-	from emapplication import EMApp
+	from eman2_gui.emapplication import EMApp
 	app = EMApp()
 	#app = QtGui.QApplication(sys.argv)
 	pm = EMProjectManager()
