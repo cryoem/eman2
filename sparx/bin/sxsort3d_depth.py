@@ -3756,51 +3756,7 @@ def convertasi(asig, number_of_groups):
 		l.sort()
 		p.append(l)
 	return p
-
-def extract_groups_from_partitions(partition_list, number_of_groups):
-	# Given multiple partitions in partition_list
-	ptp=[None]*len(partition_list)
-	for ipt in xrange(len(partition_list)):
-		assignment  =[-1]*len(partition_list[ipt])
-		for index_of_particle in xrange(len(partition_list[ipt])): assignment[index_of_particle] = partition_list[ipt][index_of_particle][0]
-		ptp[ipt] = convertasi(assignment, number_of_groups)
-	org_id = []
-	for a in partition_list[0]:# extract org id from the first partition
-		org_id.append(a[1])
-	org_id = sorted(org_id)
-	return ptp, org_id
-		
-def update_data_partition(cdata, rdata, partids):
-	# update particle clustering partitions of independent EQKmeans run
-	global Tracker, Blockdata
-	from utilities import wrap_mpi_bcast
-	import copy
-	if( Blockdata["myid"] == Blockdata["main_node"]):
-		lpartids = read_text_file(partids, -1)
-		if len(lpartids) == 1:
-			lpartids = lpartids[0]
-			groupids = len(lpartids)*[-1]
-		else:
-			groupids = lpartids[0]
-			lpartids = lpartids[1]
-	else:  	
-		lpartids   = 0
-		groupids   = 0
-	lpartids = wrap_mpi_bcast(lpartids, Blockdata["main_node"])
-	groupids = wrap_mpi_bcast(groupids, Blockdata["main_node"])
-	
-	assignment = copy.copy(groupids)
-	try: assert(Tracker["total_stack"] == len(groupids))
-	except: ERROR("Total stack in Tracker does not agree with the one is just read in", "update_data_partition", 1, Blockdata["myid"])
-	image_start, image_end = MPI_start_end(Tracker["total_stack"], Blockdata["nproc"], Blockdata["myid"])	
-	nima = image_end - image_start
-	assert(nima == len(cdata))
-	groupids  = groupids[image_start:image_end]
-	for im in xrange(nima):
-		cdata[im].set_attr("group",groupids[im])
-		rdata[im].set_attr("group",groupids[im])
-	return assignment
-	
+			
 def partition_data_into_orientation_groups_nompi(refa_vecs, data_vecs):
 	orien_assignment = [ None for im in xrange(len(data_vecs))]
 	for im in xrange(len(data_vecs)):
@@ -3943,7 +3899,7 @@ def get_angle_step_from_number_of_orien_groups(orien_groups):
 	del sym_class
 	return angle_step
 	
-#####   =================--------------orientation groups	
+##### ================= orientation groups	
 def compare_two_iterations(assignment1, assignment2, number_of_groups):
 	# compare two assignments during clustering, either iteratively or independently
 	import numpy as np
@@ -4316,15 +4272,15 @@ def do3d_sorting(procid, data, myid, mpi_comm = -1):
 			if(procid == 0):
 				if not os.path.exists(os.path.join(Tracker["directory"], "tempdir")):os.mkdir(os.path.join(Tracker["directory"],"tempdir"))
 			tvol.set_attr("is_complex",0)
-			tvol.write_image(os.path.join(Tracker["directory"], "tempdir", "tvol_%01d.hdf"%procid))
+			tvol.write_image(os.path.join(Tracker["directory"],    "tempdir", "tvol_%01d.hdf"%procid))
 			tweight.write_image(os.path.join(Tracker["directory"], "tempdir", "tweight_%01d.hdf"%procid))
-			trol.write_image(os.path.join(Tracker["directory"], "tempdir", "trol_%01d.hdf"%procid))
+			trol.write_image(os.path.join(Tracker["directory"],    "tempdir", "trol_%01d.hdf"%procid))
 	else:
 		if myid == Blockdata["main_node"]:
 			tvol.set_attr("is_complex",0)
-			tvol.write_image(os.path.join(Tracker["directory"], "tempdir", "tvol_%01d.hdf"%procid))
+			tvol.write_image(os.path.join(Tracker["directory"],    "tempdir", "tvol_%01d.hdf"%procid))
 			tweight.write_image(os.path.join(Tracker["directory"], "tempdir", "tweight_%01d.hdf"%procid))
-			trol.write_image(os.path.join(Tracker["directory"], "tempdir", "trol_%01d.hdf"%procid))
+			trol.write_image(os.path.join(Tracker["directory"],    "tempdir", "trol_%01d.hdf"%procid))
 	mpi_barrier(mpi_comm)
 	return
 			
@@ -4341,9 +4297,9 @@ def do3d_sorting_group_insertion(data, randomset=2):
 				
 				if(Blockdata["myid"] == Blockdata["nodes"][procid]):
 					tvol.set_attr("is_complex",0)
-					tvol.write_image(os.path.join(Tracker["directory"], "tempdir", "tvol_%d_%d.hdf"%(procid, index_of_groups)))
+					tvol.write_image(os.path.join(Tracker["directory"],    "tempdir", "tvol_%d_%d.hdf"%(procid, index_of_groups)))
 					tweight.write_image(os.path.join(Tracker["directory"], "tempdir", "tweight_%d_%d.hdf"%(procid, index_of_groups)))
-					trol.write_image(os.path.join(Tracker["directory"], "tempdir", "trol_%d_%d.hdf"%(procid, index_of_groups)))
+					trol.write_image(os.path.join(Tracker["directory"],    "tempdir", "trol_%d_%d.hdf"%(procid, index_of_groups)))
 				mpi_barrier(MPI_COMM_WORLD)
 	else:
 		for index_of_groups in xrange(Tracker["number_of_groups"]):
@@ -4364,9 +4320,9 @@ def do3d_sorting_group_insertion(data, randomset=2):
 					tvol    = recv_EMData(Blockdata["nodes"][procid], tag, MPI_COMM_WORLD)
 					tweight = recv_EMData(Blockdata["nodes"][procid], tag, MPI_COMM_WORLD)
 					trol    = recv_EMData(Blockdata["nodes"][procid], tag, MPI_COMM_WORLD)
-					tvol.write_image(os.path.join(Tracker["directory"], "tempdir", "tvol_%d_%d.hdf"%(procid, index_of_groups)))
+					tvol.write_image(os.path.join(Tracker["directory"],    "tempdir", "tvol_%d_%d.hdf"%(procid,    index_of_groups)))
 					tweight.write_image(os.path.join(Tracker["directory"], "tempdir", "tweight_%d_%d.hdf"%(procid, index_of_groups)))
-					trol.write_image(os.path.join(Tracker["directory"], "tempdir", "trol_%d_%d.hdf"%(procid, index_of_groups)))
+					trol.write_image(os.path.join(Tracker["directory"],    "tempdir", "trol_%d_%d.hdf"%(procid,    index_of_groups)))
 				mpi_barrier(MPI_COMM_WORLD)
 			mpi_barrier(MPI_COMM_WORLD)
 		mpi_barrier(MPI_COMM_WORLD)
@@ -4722,7 +4678,8 @@ def get_input_from_sparx_ref3d(log_main):# case one
 	
 	# copy all relavant parameters into sorting tracker
 	if Blockdata["myid"] == Blockdata["main_node"]:
-		if Tracker["constants"]["radius"] == -1: Tracker["constants"]["radius"] = Tracker_refinement["constants"]["radius"]
+		if Tracker["constants"]["radius"] == -1: 
+			Tracker["constants"]["radius"] = Tracker_refinement["constants"]["radius"]
 		Tracker["constants"]["nnxo"]       = Tracker_refinement["constants"]["nnxo"]
 		Tracker["constants"]["orgres"]     = Tracker_refinement["bestres"]
 		Tracker["delta"]                   = Tracker_refinement["delta"]
@@ -4730,9 +4687,9 @@ def get_input_from_sparx_ref3d(log_main):# case one
 		Tracker["xr"]                      = Tracker_refinement["xr"]
 		Tracker["constants"]["pixel_size"] = Tracker_refinement["constants"]["pixel_size"]
 		Tracker["avgnorm"]                 = Tracker_refinement["avgvaradj"]
-		if Tracker["constants"]["nxinit"]<0: Tracker["nxinit_refinement"] = Tracker_refinement["nxinit"] #Sphire window size
+		if Tracker["constants"]["nxinit"]<0: 
+			Tracker["nxinit_refinement"] = Tracker_refinement["nxinit"] #Sphire window size
 		else:  Tracker["nxinit_refinement"] = Tracker["constants"]["nxinit"] #User defined window size
-		
 		
 		try:     sym =  Tracker_refinement["constants"]["sym"]
 		except:  sym =  Tracker_refinement["constants"]["symmetry"]
@@ -4740,17 +4697,22 @@ def get_input_from_sparx_ref3d(log_main):# case one
 			Tracker["constants"]["symmetry"] = sym
 			update_sym = 1
 		else: update_sym = 0
+		
 		if not Tracker["constants"]["mask3D"]:
 			if Tracker_refinement["constants"]["mask3D"] and (not Tracker["constants"]["do_not_use_3dmask"]):
 				refinement_mask3D_path, refinement_mask3D_file = os.path.split(Tracker_refinement["constants"]["mask3D"])# MRK_DEBUG
 				copyfile( os.path.join(refinement_dir_path, Tracker_refinement["constants"]["mask3D"]), \
 				os.path.join(Tracker["constants"]["masterdir"], refinement_mask3D_file))
 				Tracker["constants"]["mask3D"] = os.path.join(Tracker["constants"]["masterdir"], refinement_mask3D_file)
-	else: update_sym  = 0
+	else: 
+		update_sym  = 0
+		Tracker     = 0 
 	Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], communicator = MPI_COMM_WORLD)
-	import_from_sparx_refinement = bcast_number_to_all(import_from_sparx_refinement, source_node = Blockdata["main_node"])
+	#import_from_sparx_refinement = bcast_number_to_all(import_from_sparx_refinement, source_node = Blockdata["main_node"])
 	update_sym = bcast_number_to_all(update_sym, source_node = Blockdata["main_node"])
-	if not import_from_sparx_refinement:ERROR("Import parameters from SPARX refinement failed", "get_input_from_sparx_ref3d", 1,  Blockdata["myid"])
+	
+	#if import_from_sparx_refinement ==0:
+	#	ERROR("Import parameters from SPARX refinement failed", "get_input_from_sparx_ref3d", 1,  Blockdata["myid"])
 	if update_sym ==1:
 		Blockdata["symclass"] = symclass(Tracker["constants"]["symmetry"])
 		Tracker["constants"]["orientation_groups"] = max(4, Tracker["constants"]["orientation_groups"]//Blockdata["symclass"].nsym)
