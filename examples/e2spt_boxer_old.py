@@ -44,15 +44,15 @@ from EMAN2 import *
 '''
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
-from emapplication import get_application, EMApp
-from emimage2d import EMImage2DWidget
-from emimagemx import EMImageMXWidget
-from emimage3d import EMImage3DWidget
-from emscene3d import EMScene3D
-from emdataitem3d import EMDataItem3D, EMIsosurface
-from emshape import EMShape
+from eman2_gui.emapplication import get_application, EMApp
+from eman2_gui.emimage2d import EMImage2DWidget
+from eman2_gui.emimagemx import EMImageMXWidget
+from eman2_gui.emimage3d import EMImage3DWidget
+from eman2_gui.emscene3d import EMScene3D
+from eman2_gui.emdataitem3d import EMDataItem3D, EMIsosurface
+from eman2_gui.emshape import EMShape
 '''
-#from valslider import *
+#from eman2_gui.valslider import *
 
 
 from sys import argv
@@ -205,13 +205,13 @@ def main():
 		'''
 		from PyQt4 import QtCore, QtGui
 		from PyQt4.QtCore import Qt
-		from emapplication import get_application, EMApp
-		from emimage2d import EMImage2DWidget
-		from emimagemx import EMImageMXWidget
-		from emimage3d import EMImage3DWidget
-		from emscene3d import EMScene3D
-		from emdataitem3d import EMDataItem3D, EMIsosurface
-		from emshape import EMShape
+		from eman2_gui.emapplication import get_application, EMApp
+		from eman2_gui.emimage2d import EMImage2DWidget
+		from eman2_gui.emimagemx import EMImageMXWidget
+		from eman2_gui.emimage3d import EMImage3DWidget
+		from eman2_gui.emscene3d import EMScene3D
+		from eman2_gui.emdataitem3d import EMDataItem3D, EMIsosurface
+		from eman2_gui.emshape import EMShape
 
 
 		if options.path and options.verbose:
@@ -920,14 +920,14 @@ def sptboxergui(options,args):
 
 	from PyQt4 import QtCore, QtGui
 	from PyQt4.QtCore import Qt
-	from emapplication import get_application, EMApp
-	from emimage2d import EMImage2DWidget
-	from emimagemx import EMImageMXWidget
-	from emimage3d import EMImage3DWidget
-	from emscene3d import EMScene3D
-	from emdataitem3d import EMDataItem3D, EMIsosurface
-	from emshape import EMShape
-	from valslider import ValSlider, ValBox
+	from eman2_gui.emapplication import get_application, EMApp
+	from eman2_gui.emimage2d import EMImage2DWidget
+	from eman2_gui.emimagemx import EMImageMXWidget
+	from eman2_gui.emimage3d import EMImage3DWidget
+	from eman2_gui.emscene3d import EMScene3D
+	from eman2_gui.emdataitem3d import EMDataItem3D, EMIsosurface
+	from eman2_gui.emshape import EMShape
+	from eman2_gui.valslider import ValSlider, ValBox
 
 	class EMAverageViewer(QtGui.QWidget):
 		"""This is a multi-paned view showing a single boxed out particle from a larger tomogram"""

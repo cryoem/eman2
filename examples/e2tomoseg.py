@@ -32,13 +32,13 @@ from __future__ import print_function
 #
 
 from EMAN2 import *
-from emapplication import EMApp
-from emdataitem3d import EMDataItem3D, EMIsosurface
-from emimage2d import EMImage2DWidget
-from emimagemx import EMImageMXWidget
-from emscene3d import EMScene3D, EMInspector3D, EMQTreeWidget
+from eman2_gui.emapplication import EMApp
+from eman2_gui.emdataitem3d import EMDataItem3D, EMIsosurface
+from eman2_gui.emimage2d import EMImage2DWidget
+from eman2_gui.emimagemx import EMImageMXWidget
+from eman2_gui.emscene3d import EMScene3D, EMInspector3D, EMQTreeWidget
 import os
-from valslider import ValSlider, EMANToolButton, EMSpinWidget, EMQTColorWidget
+from eman2_gui.valslider import ValSlider, EMANToolButton, EMSpinWidget, EMQTColorWidget
 import weakref
 
 from PyQt4 import QtCore

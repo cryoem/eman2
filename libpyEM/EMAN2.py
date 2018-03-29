@@ -732,7 +732,7 @@ def display(img,force_2d=False,force_plot=False):
 	"""Generic display function for images or sets of images. You can force images to be displayed in 2-D or as a plot with
 	the optional flags"""
 	if GUIMode:
-		import emimage
+		from eman2_gui import emimage
 		if isinstance(img,tuple) : img=list(img)
 		image = emimage.EMImageWidget(img,None,app,force_2d,force_plot)
 		image.show()
@@ -778,7 +778,7 @@ def euler_display(emdata_list):
 
 def browse():
 	if GUIMode:
-		from emselector import EMBrowser
+		from eman2_gui.emselector import EMBrowser
 		browser = EMBrowser()
 		browser.show()
 		#app.attach_child(browser)
@@ -793,7 +793,7 @@ class EMImage(object):
 		old= is provided, and of the appropriate type, it will be used rather than creating
 		a new instance."""
 		if GUIMode:
-			import emimage
+			from eman2_gui import emimage
 			image = emimage.EMImageWidget(data,old,app)
 			image.show()
 			#app.show_specific(image)
@@ -822,7 +822,7 @@ def plot_image_similarity(im1,im2,skipzero=True,skipnearzero=False):
 def plot(data,data2=None,data3=None,show=1,size=(800,600),path="plot.png"):
 	"""plots an image or an array using the matplotlib library"""
 	if GUIMode:
-		from emplot2d import EMPlot2DWidget
+		from eman2_gui.emplot2d import EMPlot2DWidget
 		plotw=EMPlot2DWidget(application=app)
 		plotw.set_data(data,"interactive")
 		if data2!=None : plotw.set_data(data2,"interactive2")

@@ -40,12 +40,12 @@ from sys import argv
 from EMAN2 import *
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
-from emapplication import get_application, EMApp
-from emimage2d import EMImage2DWidget
-from emimagemx import EMImageMXWidget
-from valslider import *
+from eman2_gui.emapplication import get_application, EMApp
+from eman2_gui.emimage2d import EMImage2DWidget
+from eman2_gui.emimagemx import EMImageMXWidget
+from eman2_gui.valslider import *
 import Queue
-import embrowser
+from eman2_gui import embrowser
 
 def main():
 	progname = os.path.basename(sys.argv[0])

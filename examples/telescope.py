@@ -32,7 +32,7 @@ from __future__ import print_function
 #
 
 from EMAN2 import *
-from emimage import *
+from eman2_gui.emimage import *
 import time
 
 def live():

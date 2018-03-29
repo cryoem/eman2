@@ -34,8 +34,8 @@ from __future__ import print_function
 
 from EMAN2 import *
 from PyQt4 import QtCore
-from emapplication import EMApp
-from emimage2d import EMImage2DWidget
+from eman2_gui.emapplication import EMApp
+from eman2_gui.emimage2d import EMImage2DWidget
 
 def main():
 	global cur_data,data,imdisp

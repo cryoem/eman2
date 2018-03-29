@@ -42,7 +42,7 @@ import sys
 from math import *
 try:
 	import wx
-	from emimage import *
+	from eman2_gui.emimage import *
 except:
 	print("no wx")
 

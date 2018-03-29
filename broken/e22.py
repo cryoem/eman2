@@ -34,11 +34,11 @@ from __future__ import print_function
 
 import EMAN2
 from EMAN2 import *
-from emimage import image_update
+from eman2_gui.emimage import image_update
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 import threading
-from emapplication import EMApp
+from eman2_gui.emapplication import EMApp
 
 from IPython.frontend.terminal.ipapp import launch_new_instance
 ttx=False

@@ -33,7 +33,7 @@ from __future__ import print_function
 
 from EMAN2 import *
 import sys
-from emboxerbase import *
+from eman2_gui.emboxerbase import *
 import subprocess as sp
 
 def main():
@@ -350,7 +350,7 @@ class ErasingPanel: # copied for ideas for the morph panel
 
 			hbl = QtGui.QHBoxLayout()
 			hbl.addWidget(QtGui.QLabel("Erase Radius:"))
-			from valslider import ValSlider
+			from eman2_gui.valslider import ValSlider
 			self.erase_rad_edit = ValSlider(None,(0.0,1000.0),"")
 			self.erase_rad_edit.setValue(int(self.erase_radius))
 			self.erase_rad_edit.setEnabled(True)

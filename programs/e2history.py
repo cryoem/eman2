@@ -58,7 +58,7 @@ def main():
 	(options, args) = parser.parse_args()
 	
 	if options.gui:
-		from emapplication import EMApp
+		from eman2_gui.emapplication import EMApp
 		app = EMApp()
 		hist = HistoryForm(app,os.getcwd())
 		app.show()
@@ -73,7 +73,7 @@ class HistoryForm:
 		'''
 		self.wd = wd
 		
-		from emform import EMFormWidget
+		from eman2_gui.emform import EMFormWidget
 		self.form = EMFormWidget(params=self.get_history_table())
 		self.form.setWindowTitle("EMAN2 history")
 		
@@ -85,7 +85,7 @@ class HistoryForm:
 		
 		
 	def get_history_table(self):
-		from emdatastorage import ParamDef
+		from eman2_gui.emdatastorage import ParamDef
 		try:
 			import EMAN2db
 			db=EMAN2db.EMAN2DB.open_db()
@@ -103,7 +103,7 @@ class HistoryForm:
 		if db == None or n == 0:
 			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits="There appears to be no history in this directory",choices=None))
 		else:
-			from emform import EMParamTable
+			from eman2_gui.emform import EMParamTable
 			start = []
 			duration = []
 			prgargs = []

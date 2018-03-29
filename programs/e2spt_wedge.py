@@ -33,9 +33,9 @@ from __future__ import print_function
 from EMAN2 import *
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
-from emapplication import EMApp
-import emscene3d
-import emdataitem3d 
+from eman2_gui.emapplication import EMApp
+from eman2_gui import emscene3d
+from eman2_gui import emdataitem3d 
 
 def main():
 	progname = os.path.basename(sys.argv[0])

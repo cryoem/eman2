@@ -45,14 +45,14 @@ try:
 	if get_platform()=="Linux" and os.getenv("DISPLAY")==None: raise Exception
 
 	from PyQt4 import QtCore, QtGui, QtOpenGL
-	from emapplication import EMApp
+	from eman2_gui.emapplication import EMApp
 	import IPython.lib.inputhook
 
 
 	app=EMApp()
 	IPython.lib.inputhook.enable_qt4(app)
 
-	from emimage import image_update
+	from eman2_gui.emimage import image_update
 
 	def ipy_on_timer():
 		image_update()
