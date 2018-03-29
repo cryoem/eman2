@@ -295,7 +295,7 @@ def depth_clustering(work_dir, depth_order, initial_id_file, params, previous_pa
 					do_boxes_two_way_comparison_mpi(nbox, input_box_parti1, input_box_parti2, depth_order - depth, log_main)
 					if( stop_generation == 1):
 						partition_per_box_per_layer_list = []
-						partition_per_box_per_layer_list.append([accounted_list, []])
+						partition_per_box_per_layer_list.append([accounted_list, unaccounted_list])
 						break
 					else:
 						partition_per_box_per_layer_list.append([accounted_list, unaccounted_list])
@@ -318,7 +318,7 @@ def depth_clustering(work_dir, depth_order, initial_id_file, params, previous_pa
 				
 				if(stop_generation == 1):
 					partition_per_box_per_layer_list = []
-					partition_per_box_per_layer_list.append([accounted_list, []])
+					partition_per_box_per_layer_list.append([accounted_list, unaccounted_list])
 					break
 				else:
 					partition_per_box_per_layer_list.append([accounted_list, unaccounted_list])
@@ -411,7 +411,6 @@ def output_iter_results(box_dir, ncluster, NACC, NUACC, minimum_grp_size, list_o
 		freq_cutoff_dict = convert_json_fromunicode(json.load(fout))
 		fout.close()
 	except: freq_cutoff_dict = {}
-	
 	for index_of_any in xrange(len(list_of_stable)):
 		any = list_of_stable[index_of_any]
 		any.tolist()
@@ -6384,19 +6383,16 @@ def check_sorting(total_data, keepsorting, log_file):
 	import json
 	
 	if Blockdata["myid"] == Blockdata["main_node"]:
-		fout = open(os.path.join(Tracker["constants"]["masterdir"],"Tracker.json"),'r')
+		fout         = open(os.path.join(Tracker["constants"]["masterdir"],"Tracker.json"),'r')
 		Tracker_main = convert_json_fromunicode(json.load(fout))
 		fout.close()
 	else: Tracker_main = 0
 	Tracker_main = wrap_mpi_bcast(Tracker_main, Blockdata["main_node"])
-	
-	minimum_grp_size = max(Tracker["constants"]["img_per_grp"]//4, Tracker_main["constants"]["minimum_grp_size"])
-	
+	minimum_grp_size = max(Tracker_main["constants"]["img_per_grp"]//4, Tracker_main["constants"]["minimum_grp_size"])
 	if total_data//Tracker_main["constants"]["img_per_grp"] >=2:
 		Tracker["number_of_groups"] = total_data//Tracker_main["constants"]["img_per_grp"]
 		keepsorting = 1
 	else:
-	
 		if total_data//minimum_grp_size>=2:
 			Tracker["number_of_groups"] = total_data//minimum_grp_size 
 			keepsorting = 1
