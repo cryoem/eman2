@@ -3040,10 +3040,10 @@ def fill_large_groups_and_unaccounted_to_m_and_rclusters_mpi(\
         large_groups, unaccounted_list, empty_clusters, other_clusters, NUACC, NACC):
 	global Tracker, Blockdata
 	clusters = []
-	L = len(large_groups)
-	m = len(empty_clusters)
-	r = len(other_clusters)
-	N =  NUACC + NACC
+	L        = len(large_groups)
+	m        = len(empty_clusters)
+	r        = len(other_clusters)
+	N        =  NUACC + NACC
 	number_of_groups = L + m + r
 	avg_size   =  N//number_of_groups
 	mlist      = [0 for i in xrange(L)]
@@ -5985,96 +5985,6 @@ def memory_check(s="check_memory"):
 	print(s +" resident  ", resident()/1.e9)
 	print(s +" stacksize ", stacksize()/1.e9)
 	
-####=====<----do final maps ---->>>
-def do_final_maps(number_of_groups, minimum_size, selected_iter, refinement_dir, masterdir, rec3d_image_size, log_main):
-	global Tracker, Blockdata
-	import shutil
-	from   shutil import copyfile
-	for icluster  in xrange(number_of_groups):
-		clusterdir = os.path.join(masterdir, "Cluster%d"%icluster)
-		if os.path.exists(clusterdir):
-			if Blockdata["myid"] == icluster: shutil.rmtree(clusterdir)
-	mpi_barrier(MPI_COMM_WORLD)
-	if( Blockdata["myid"] == Blockdata["main_node"]):
-		log_main.add('----------------------------------------------------------------------------------------------------------------' )
-		log_main.add('                                           Memory check')
-		log_main.add('----------------------------------------------------------------------------------------------------------------' )
-	basic_memory_per_cpu    = 1.0
-	total_data_in_mem       = Tracker["constants"]["nnxo"]*Tracker["constants"]["nnxo"]*Tracker["constants"]["total_stack"]*4./1.e9
-	one_volume_in_mem       = Tracker["constants"]["nnxo"]*Tracker["constants"]["nnxo"]*Tracker["constants"]["nnxo"]*4.*8./1.e9
-	nproc_do_final_per_node =(Tracker["constants"]["memory_per_node"] - total_data_in_mem -1.0)/(basic_memory_per_cpu + one_volume_in_mem)
-	if( Blockdata["myid"] == Blockdata["main_node"]):
-		log_main.add("Memory per node: %5.1f GB"%Tracker["constants"]["memory_per_node"])
-		
-	nproc_do_final_per_node = int(nproc_do_final_per_node)
-	if nproc_do_final_per_node > Blockdata["nproc"] //Blockdata["no_of_groups"]:
-		nproc_do_final_per_node = Blockdata["nproc"] //Blockdata["no_of_groups"]
-	if Blockdata["nproc_previous"] > 0: nproc_do_final_per_node = min(nproc_do_final_per_node, Blockdata["nproc_previous"]//Blockdata["no_of_groups"])
-	ncpu_per_node = min(minimum_size//5//Blockdata["no_of_groups"]//2, nproc_do_final_per_node)
-	ncpu_per_node = max(ncpu_per_node, 2)
-	if( Blockdata["myid"] == Blockdata["main_node"]):
-		log_main.add('Number of processors per node to be used: %d'%ncpu_per_node)
-		
-	Blockdata["ncpuspernode"] = ncpu_per_node
-	Blockdata["nsubset"]        = Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
-	create_subgroup()
-	fuse_freq                   = Tracker["fuse_freq"] # sort does it already
-	mask3D                      = Tracker["constants"]["mask3D"]
-	total_stack                 = Tracker["constants"]["total_stack"]
-	memory_per_node             = Tracker["constants"]["memory_per_node"]
-	Blockdata["fftwmpi"]        = True
-	Tracker["number_of_groups"] = number_of_groups
-	if Tracker["nosmearing"]:
-		if(Blockdata["myid"] == Blockdata["main_node"]):
-			map_dir = os.path.join(masterdir, "maps_dir")
-			if not os.path.exists(map_dir): os.mkdir(map_dir)
-		else:  map_dir = 0
-		map_dir = wrap_mpi_bcast(map_dir, Blockdata["main_node"], MPI_COMM_WORLD)
-		Tracker["directory"] = map_dir
-		Tracker["nxinit"]    = Tracker["constants"]["nnxo"]
-		compute_noise(Tracker["nxinit"])
-		data = get_shrink_data_sorting(os.path.join(masterdir, "final_partition.txt"), \
-		os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt"), \
-		return_real = False, preshift = True, apply_mask = False)
-		do3d_sorting_groups_trl_iter(data, 0)
-		del data
-		if(Blockdata["myid"] == Blockdata["main_node"]):
-			for icluster in xrange(number_of_groups):
-				copyfile(os.path.join(Tracker["directory"], "vol_unfiltered_0_grp%03d_iter000.hdf"%icluster), \
-				os.path.join(masterdir, "vol_unfiltered_0_grp%03d.hdf"%icluster))
-				copyfile(os.path.join(Tracker["directory"], "vol_unfiltered_1_grp%03d_iter000.hdf"%icluster), \
-				os.path.join(masterdir, "vol_unfiltered_1_grp%03d.hdf"%icluster))
-			shutil.rmtree(map_dir)
-		mpi_barrier(MPI_COMM_WORLD)
-	else:
-		for icluster in xrange(Tracker["number_of_groups"]):
-			cluster_masterdir = os.path.join(masterdir,"Cluster%d"%icluster)
-			if(Blockdata["myid"] == Blockdata["main_node"]): 
-				if not os.path.exists(cluster_masterdir): os.mkdir(cluster_masterdir)
-			mpi_barrier(MPI_COMM_WORLD)
-			do_ctrefromsort3d_get_subset_data(cluster_masterdir, refinement_dir, \
-			  os.path.join(masterdir,"Cluster_%03d.txt"%icluster), selected_iter, None, Blockdata["subgroup_comm"])
-			Tracker["constants"]["small_memory"] = False
-			ctrefromsorting_rec3d_faked_iter(cluster_masterdir, selected_iter, rec3d_image_size, Blockdata["subgroup_comm"])
-			mpi_barrier(MPI_COMM_WORLD)
-		mpi_barrier(MPI_COMM_WORLD)
-		Tracker["constants"]["mask3D"]         = mask3D
-		Tracker["nxinit"]                      = rec3d_image_size 
-		Tracker["number_of_groups"]            = number_of_groups
-		Tracker["fuse_freq"]                   = fuse_freq # reset
-		Tracker["constants"]["memory_per_node"]= memory_per_node
-		Tracker["constants"]["total_stack"] = total_stack
-		
-		# Using all CPUS to do step two
-		Blockdata["ncpuspernode"] = Blockdata["nproc"]//Blockdata["no_of_groups"]
-		Blockdata["nsubset"]  = Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
-		create_subgroup()
-		do3d_sorting_groups_rec3d(selected_iter, masterdir, log_main)
-		if(Blockdata["myid"] == Blockdata["main_node"]):
-			for icluster in xrange(Tracker["number_of_groups"]):
-				cluster_masterdir = os.path.join(masterdir,"Cluster%d"%icluster)
-				if os.path.exists(cluster_masterdir): shutil.rmtree(cluster_masterdir)
-	return
 #####==========-------------------------Functions for post processing
 
 def compute_final_map(work_dir):
