@@ -2635,7 +2635,8 @@ def downsize_data_for_rec3D(original_data, particle_size, return_real = False, n
 	return rdata
 ### end of downsize
 
-###=====<--- comparison	    
+###=====<--- comparison
+
 def compare_two_images_eucd(data, ref_vol, fdata):
 	global Tracker, Blockdata
 	peaks   = len(data)*[None]
@@ -2788,19 +2789,6 @@ def find_smallest_group(clusters):
 		elif len(cluster[ic]) == min_size[0]: min_size[1].append(ic)
 	if len(min_size[1])>=1: shuffle(min_size[1])
 	return min_size[1][0]
-
-def assign_unaccounted_elements(glist, clusters):
-	# assign unaccounted images by group probabilities
-	import random
-	import copy
-	ulist = copy.deepcopy(glist)
-	while len(ulist)>0:
-		shuffle(ulist)
-		im = find_smallest_group(clusters)
-		clusters[im].append(ulist[0])
-		del ulist[0]
-	del ulist
-	return clusters
 	
 def assign_unaccounted_elements_mpi(glist, clusters, img_per_grp):
 	# assign unaccounted images by group probabilities
@@ -2867,7 +2855,7 @@ def assign_unaccounted_elements_mpi(glist, clusters, img_per_grp):
 			else:
 				slist    = 0 
 				clusters = 0
-			slist    = wrap_mpi_bcast(slist, Blockdata["main_node"], MPI_COMM_WORLD)
+			slist    = wrap_mpi_bcast(slist,    Blockdata["main_node"], MPI_COMM_WORLD)
 			clusters = wrap_mpi_bcast(clusters, Blockdata["main_node"], MPI_COMM_WORLD)
 	return clusters
 	
@@ -2901,7 +2889,7 @@ def refilling_global_scheme_mpi(clusters, unaccounted_list, number_of_clusters, 
 		else:
 			unaccounted_list = 0
 			clusters         = 0
-		clusters = wrap_mpi_bcast(clusters, Blockdata["main_node"], MPI_COMM_WORLD)
+		clusters         = wrap_mpi_bcast(clusters,         Blockdata["main_node"], MPI_COMM_WORLD)
 		unaccounted_list = wrap_mpi_bcast(unaccounted_list, Blockdata["main_node"], MPI_COMM_WORLD)
 	
 	avg_size = N//number_of_clusters
@@ -3072,7 +3060,7 @@ def fill_large_groups_and_unaccounted_to_m_and_rclusters_mpi(\
 			else: 
 				clusters = 0
 				unaccounted_list = 0
-			clusters = wrap_mpi_bcast(clusters, Blockdata["main_node"], MPI_COMM_WORLD)
+			clusters         = wrap_mpi_bcast(clusters,         Blockdata["main_node"], MPI_COMM_WORLD)
 			unaccounted_list = wrap_mpi_bcast(unaccounted_list, Blockdata["main_node"], MPI_COMM_WORLD)
 			for il in xrange(L): mlist[il] = int(len(large_groups[il])/float(NACC_large)*(m-J))+1
 			nacc_large_clusters = []
@@ -3097,8 +3085,8 @@ def fill_large_groups_and_unaccounted_to_m_and_rclusters_mpi(\
 				ucluster = 0
 				clusters = 0
 				other_clusters = 0
-			clusters       = wrap_mpi_bcast(clusters, Blockdata["main_node"], MPI_COMM_WORLD)
-			ucluster       = wrap_mpi_bcast(ucluster, Blockdata["main_node"], MPI_COMM_WORLD)
+			clusters       = wrap_mpi_bcast(clusters,       Blockdata["main_node"], MPI_COMM_WORLD)
+			ucluster       = wrap_mpi_bcast(ucluster,       Blockdata["main_node"], MPI_COMM_WORLD)
 			other_clusters = wrap_mpi_bcast(other_clusters, Blockdata["main_node"], MPI_COMM_WORLD)
 			other_clusters = assign_unaccounted_elements_mpi(ucluster, other_clusters, avg_size)
 			for cluster in other_clusters: clusters.append(cluster)
@@ -3131,8 +3119,8 @@ def fill_large_groups_and_unaccounted_to_m_and_rclusters_mpi(\
 				other_clusters = 0
 				clusters       = 0
 			other_clusters = wrap_mpi_bcast(other_clusters, Blockdata["main_node"], MPI_COMM_WORLD)	
-			ucluster = wrap_mpi_bcast(ucluster, Blockdata["main_node"], MPI_COMM_WORLD)
-			clusters = wrap_mpi_bcast(clusters, Blockdata["main_node"], MPI_COMM_WORLD)	
+			ucluster       = wrap_mpi_bcast(ucluster,       Blockdata["main_node"], MPI_COMM_WORLD)
+			clusters       = wrap_mpi_bcast(clusters,       Blockdata["main_node"], MPI_COMM_WORLD)	
 			other_clusters = assign_unaccounted_elements_mpi(ucluster, other_clusters, avg_size)
 			for cluster in other_clusters: clusters.append(cluster)
 	else:
@@ -3143,9 +3131,9 @@ def fill_large_groups_and_unaccounted_to_m_and_rclusters_mpi(\
 				unaccounted_list +=ulist
 		else:
 			unaccounted_list = 0
-			clusters   = 0
+			clusters         = 0
 		unaccounted_list = wrap_mpi_bcast(unaccounted_list, Blockdata["main_node"], MPI_COMM_WORLD)
-		clusters = wrap_mpi_bcast(clusters, Blockdata["main_node"], MPI_COMM_WORLD)
+		clusters         = wrap_mpi_bcast(clusters,         Blockdata["main_node"], MPI_COMM_WORLD)
 		other_clusters = assign_unaccounted_elements_mpi(unaccounted_list, other_clusters, avg_size)
 		for cluster in other_clusters: clusters.append(cluster)
 	return clusters
@@ -3168,7 +3156,7 @@ def fill_no_large_groups_and_unaccounted_to_m_and_rcluster_mpi(\
 			shuffle(unaccounted_list)
 		else: unaccounted_list = 0
 		unaccounted_list = wrap_mpi_bcast(unaccounted_list, Blockdata["main_node"], MPI_COMM_WORLD)
-		clusters     = wrap_mpi_bcast(clusters, Blockdata["main_node"], MPI_COMM_WORLD)
+		clusters         = wrap_mpi_bcast(clusters,         Blockdata["main_node"], MPI_COMM_WORLD)
 		tmp_clusters = []
 		if m > 0:
 			if Blockdata["myid"] == Blockdata["main_node"]:
@@ -3176,7 +3164,7 @@ def fill_no_large_groups_and_unaccounted_to_m_and_rcluster_mpi(\
 					cluster, unaccounted_list = select_fixed_size_cluster_from_alist(unaccounted_list, avg_size//2)
 					tmp_clusters.append(cluster)
 			else: tmp_clusters = 0
-			tmp_clusters     = wrap_mpi_bcast(tmp_clusters, Blockdata["main_node"], MPI_COMM_WORLD)
+			tmp_clusters     = wrap_mpi_bcast(tmp_clusters,     Blockdata["main_node"], MPI_COMM_WORLD)
 			unaccounted_list = wrap_mpi_bcast(unaccounted_list, Blockdata["main_node"], MPI_COMM_WORLD)	 
 		if len(tmp_clusters)>0:
 			for cluster in tmp_clusters: clusters.append(cluster)
@@ -3872,12 +3860,6 @@ def get_orien_assignment_mpi(angle_step, partids, params, log_main):
 	from applications import MPI_start_end
 	from utilities    import wrap_mpi_recv, wrap_mpi_bcast, wrap_mpi_send, read_text_row, read_text_file, getvec
 	sym_class = Blockdata["symclass"]
-	"""
-	if Blockdata["myid"] == Blockdata["main_node"]:
-		msg = " Generate sampling orientations for MGSKmeans with angular step %f  "%(angle_step)
-		log_main.add(msg)
-		
-	"""
 	image_start, image_end = MPI_start_end(Tracker["total_stack"], Blockdata["nproc"], Blockdata["myid"])
 	
 	if Blockdata["myid"] == Blockdata["main_node"]:
@@ -3886,15 +3868,13 @@ def get_orien_assignment_mpi(angle_step, partids, params, log_main):
 	refa = sym_class.even_angles(angle_step, theta1 = Tracker["tilt1"], theta2 = Tracker["tilt2"])
 	
 	refa_vecs = []
-	for i in xrange(len(refa)):
-		tmp = getvec(refa[i][0], refa[i][1])
-		refa_vecs.append(tmp)
+	for i in xrange(len(refa)): refa_vecs.append(getvec(refa[i][0], refa[i][1]))
 		
 	if Blockdata["main_node"] == Blockdata["myid"]:
 		params  = read_text_row(params)
 		partids = read_text_file(partids, -1)
 		if len(partids) == 1: partids = partids[0]
-		else: partids = partids[1]
+		else:                 partids = partids[1]
 		data_angles = [[None, None] for im in xrange(len(partids))]
 		for im in xrange(len(partids)): 
 			data_angles[im] = getvec(params[partids[im]][0], params[partids[im]][1])
@@ -3924,10 +3904,9 @@ def get_orien_assignment_mpi(angle_step, partids, params, log_main):
 	
 	for iorien in xrange(len(refa_vecs)):
 		if iorien%Blockdata["nproc"]!= Blockdata["main_node"]:
-			if iorien%Blockdata["nproc"]==Blockdata["myid"]: wrap_mpi_send(ptls_in_orien_groups[iorien], Blockdata["main_node"], MPI_COMM_WORLD)
+			if iorien%Blockdata["nproc"]==Blockdata["myid"]: wrap_mpi_send(ptls_in_orien_groups[iorien], Blockdata["main_node"],   MPI_COMM_WORLD)
 			if Blockdata["myid"] ==Blockdata["main_node"]: ptls_in_orien_groups[iorien] = wrap_mpi_recv(iorien%Blockdata["nproc"], MPI_COMM_WORLD)
 		mpi_barrier(MPI_COMM_WORLD)	
-	mpi_barrier(MPI_COMM_WORLD)
 	mpi_barrier(MPI_COMM_WORLD)
 	zero_member_group_found = 0
 	
