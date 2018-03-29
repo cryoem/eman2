@@ -35,16 +35,16 @@ from __future__ import print_function
 
 import os,sys
 from PyQt4 import QtGui,QtCore
-from valslider import ValSlider
+from eman2_gui.valslider import ValSlider
 
 from e2eulerxplor import get_eulers_from
-from emimagemx import EMImageMXWidget
-from emimage2d import EMImage2DWidget
-from emplot2d import EMPlot2DWidget
+from eman2_gui.emimagemx import EMImageMXWidget
+from eman2_gui.emimage2d import EMImage2DWidget
+from eman2_gui.emplot2d import EMPlot2DWidget
 from EMAN2db import db_convert_path, db_open_dict, db_check_dict, db_list_dicts
-from emapplication import EMApp, get_application
-from emglobjects import EM3DGLWidget
-from emimage3dsym import EM3DSymModel,EMSymInspector, EMSymViewerWidget
+from eman2_gui.emapplication import EMApp, get_application
+from eman2_gui.emglobjects import EM3DGLWidget
+from eman2_gui.emimage3dsym import EM3DSymModel,EMSymInspector, EMSymViewerWidget
 from EMAN2 import *
 
 def main():

@@ -437,9 +437,9 @@ def run(command):
 try:
 	from PyQt4 import QtCore, QtGui, QtOpenGL
 	from PyQt4.QtCore import Qt
-	from emshape import *
-	from valslider import ValSlider
-	from emplot2d import EMPolarPlot2DWidget
+	from eman2_gui.emshape import *
+	from eman2_gui.valslider import ValSlider
+	from eman2_gui.emplot2d import EMPolarPlot2DWidget
 except:
 	class dummy:
 		pass
@@ -451,8 +451,8 @@ except:
 	QtGui.QWidget=QWidget
 
 def display_validation_plots(path, radcut, planethres, plotdatalabels=False, color='#00ff00', plotzaxiscolor=False):
-	from emimage2d import EMImage2DWidget
-	from emapplication import EMApp
+	from eman2_gui.emimage2d import EMImage2DWidget
+	from eman2_gui.emapplication import EMApp
 	r = []
 	theta = []
 	datap = []

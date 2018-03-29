@@ -37,12 +37,12 @@ from optparse import OptionParser
 try:
 	from PyQt4 import QtCore, QtGui, QtOpenGL
 	from PyQt4.QtCore import Qt
-	from emshape import *
-	from valslider import ValSlider,ValBox
-	from emimage import EMImageWidget
-	from emimage2d import EMImage2DWidget
-	from emplot2d import EMPlot2DWidget
-	from emapplication import EMApp
+	from eman2_gui.emshape import *
+	from eman2_gui.valslider import ValSlider,ValBox
+	from eman2_gui.emimage import EMImageWidget
+	from eman2_gui.emimage2d import EMImage2DWidget
+	from eman2_gui.emplot2d import EMPlot2DWidget
+	from eman2_gui.emapplication import EMApp
 except:
 	print("Unable to import Python GUI libraries, PYTHONPATH ?")
 	sys.exit(1)

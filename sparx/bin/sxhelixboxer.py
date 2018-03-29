@@ -40,10 +40,10 @@ import os
 
 try:
 	from PyQt4 import QtGui, QtCore
-	from emapplication import EMApp, get_application
-	from emimage2d import EMImage2DWidget
-	from emselector import EMSelectorDialog
-	from emshape import EMShape, EMShapeDict
+	from eman2_gui.emapplication import EMApp, get_application
+	from eman2_gui.emimage2d import EMImage2DWidget
+	from eman2_gui.emselector import EMSelectorDialog
+	from eman2_gui.emshape import EMShape, EMShapeDict
 	
 	ENABLE_GUI = True
 	

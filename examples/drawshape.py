@@ -6,9 +6,9 @@ import numpy as np
 import weakref
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
-from emapplication import get_application, EMApp
-from emimage2d import EMImage2DWidget
-from emshape import EMShape
+from eman2_gui.emapplication import get_application, EMApp
+from eman2_gui.emimage2d import EMImage2DWidget
+from eman2_gui.emshape import EMShape
 
 def main():
 	

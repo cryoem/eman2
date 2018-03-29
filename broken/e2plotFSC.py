@@ -33,9 +33,9 @@ from __future__ import print_function
 
 from EMAN2 import *
 from EMAN2fsc import *
-from emplot2d import EMPlot2DWidget,colortypes
-from empmwidgets import PMFSCTableWidget
-from emapplication import EMApp
+from eman2_gui.emplot2d import EMPlot2DWidget,colortypes
+from eman2_gui.empmwidgets import PMFSCTableWidget
+from eman2_gui.emapplication import EMApp
 
 def main():
 	progname = os.path.basename(sys.argv[0])
