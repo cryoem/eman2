@@ -245,7 +245,7 @@ def main():
    	 	sxprocess.py  vol.hdf pw.txt   avol.hdf < 0.25 0.2> --adjpw
 
     8.  Generate a 1D rotationally averaged power spectrum of an image.
-		sxprocess.py  vol.hdf --rotwp=rotpw.txt
+		sxprocess.py  vol.hdf --rotpw=rotpw.txt
     	# Output will contain three columns:
        (1) rotationally averaged power spectrum
        (2) logarithm of the rotationally averaged power spectrum
