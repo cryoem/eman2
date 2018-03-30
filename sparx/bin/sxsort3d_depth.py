@@ -370,14 +370,14 @@ def output_iter_results(box_dir, ncluster, NACC, NUACC, minimum_grp_size, list_o
 	
 def check_state_within_box_run(keepgoing, nruns, img_per_grp, minimum_grp_size, unaccounted_list, no_cluster_last_run):
 	global Tracker, Blockdata
-	total_stack = len(unaccounted_list)
+	total_stack             = len(unaccounted_list)
 	current_image_per_group = max( Tracker["constants"]["img_per_grp"]//4, Tracker["constants"]["minimum_grp_size"])
 	
 	if total_stack//img_per_grp <=1:
 		number_of_groups = 2
-		if total_stack/float(current_image_per_group) <= 2.0: 
+		if total_stack/float(current_image_per_group) <= 2.0:
 			keepgoing = 0 # otherwise sorting will fall into endless loop
-		else: number_of_groups = total_stack//current_image_per_group -1
+		else: number_of_groups = max(total_stack//current_image_per_group -1, 2)
 	else: number_of_groups = total_stack//img_per_grp
 	
 	if keepgoing ==1: nruns +=1
@@ -407,9 +407,7 @@ def output_clusters(output_dir, partition, unaccounted_list, not_include_unaccou
 	nclasses, npart = split_partition_into_ordered_clusters(partition)
 	nc              = 0
 	identified_clusters = []
-	
-	for ic in xrange(len(nclasses)):
-	
+	for ic in xrange(len(nclasses)):	
 		if len(nclasses[ic])>=max(Tracker["constants"]["img_per_grp"]//4, min(Tracker["constants"]["minimum_grp_size"], Tracker["constants"]["img_per_grp"]*0.75)):
 			write_text_file(nclasses[ic], os.path.join(output_dir,"Cluster_%03d.txt"%nc))
 			nc +=1
@@ -423,11 +421,11 @@ def output_clusters(output_dir, partition, unaccounted_list, not_include_unaccou
 	nclasses = copy.deepcopy(identified_clusters)
 	del identified_clusters
 	
-	if len(unaccounted_list)>1:
+	if len(unaccounted_list)>1: # output unaccounted as the last cluster
 		if not not_include_unaccounted:
 			write_text_file(unaccounted_list, os.path.join(output_dir,"Cluster_%03d.txt"%nc))
 	
-	if not not_include_unaccounted:
+	if not not_include_unaccounted: 
 		import copy
 		unclasses = copy.deepcopy(nclasses)
 		unclasses.append(unaccounted_list)
@@ -439,7 +437,6 @@ def output_clusters(output_dir, partition, unaccounted_list, not_include_unaccou
 	
 def do_analysis_on_identified_clusters(clusters, log_main):
 	global Tracker, Blockdata
-	
 	if Tracker["nosmearing"]:
 		vs, ds, ss, norms = get_params_for_analysis(Tracker["constants"]["orgstack"], \
 				os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt"),\
@@ -449,7 +446,7 @@ def do_analysis_on_identified_clusters(clusters, log_main):
 			os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt"),\
 			os.path.join(Tracker["constants"]["masterdir"], "all_smearing.txt"), Tracker["constants"]["nsmear"])
 
-	tmpres1, tmpres2 = do_one_way_anova_scipy(clusters, ds, name_of_variable="defocus", log_main = log_main)
+	tmpres1, tmpres2 = do_one_way_anova_scipy(clusters, ds,                       name_of_variable="defocus",  log_main = log_main)
 	if ss is not None: tmpres1, tmpres2 = do_one_way_anova_scipy(clusters, ss,    name_of_variable="smearing", log_main = log_main)
 	if norms:          tmpres1, tmpres2 = do_one_way_anova_scipy(clusters, norms, name_of_variable="norm",     log_main = log_main)
 	return
@@ -463,7 +460,7 @@ def check_sorting_state(current_dir, keepchecking, log_file):
 		if current_state["done"]:keepchecking = 1
 		else: keepchecking = 0
 	except:   keepchecking = 0
-	return keepchecking
+	return    keepchecking
 	
 def read_tracker_mpi(current_dir):
 	global Tracker, Blockdata
