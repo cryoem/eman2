@@ -252,7 +252,7 @@ def main():
        (3) integer line number (from zero to approximately to half the image size)
 
     9.  Apply 3D transformation (rotation and/or shift) to a set of orientation parameters associated with projection data.
-    	sxprocess.py  --transfromparams=phi,theta,psi,tx,ty,tz      input.txt  output.txt
+    	sxprocess.py  --transformparams=phi,theta,psi,tx,ty,tz      input.txt  output.txt
     	The output file is then imported and 3D transformed volume computed:
     	sxheader.py  bdb:p  --params=xform.projection  --import=output.txt
     	mpirun -np 2 sxrecons3d_n.py  bdb:p tvol.hdf --MPI
