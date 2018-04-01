@@ -6128,39 +6128,6 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 				log_main.add('                                    SORT3D IN-DEPTH   generation %d completed'%igen)
 				log_main.add('----------------------------------------------------------------------------------------------------------------')
 	
-	'''
-	if bad_clustering == 0:
-	
-		if Blockdata["myid"] == Blockdata["main_node"]:
-			clusters, nclusters, nuacc = output_clusters(os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%igen), \
-				output_list[0][0], output_list[0][1], not_include_unaccounted, log_main)
-			Tracker["generation"][igen] = len(clusters)
-		else:
-			Tracker["generation"][igen] = 0 
-			Tracker   = 0
-			nclusters = 0
-			nuacc     = 0
-		Tracker   = wrap_mpi_bcast(Tracker,        Blockdata["main_node"], MPI_COMM_WORLD)
-		nclusters = bcast_number_to_all(nclusters, Blockdata["main_node"], MPI_COMM_WORLD)
-		nuacc     = bcast_number_to_all(nuacc,     Blockdata["main_node"], MPI_COMM_WORLD)
-		dump_tracker(os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%igen))
-		
-		if nclusters == 0:
-			if Blockdata["myid"] == Blockdata["main_node"]:
-				log_main.add('No cluster is found in generation %d'%igen)
-		else:
-			if Blockdata["myid"] == Blockdata["main_node"]:time_rec3d_start = time.time()
-			compute_final_map(work_dir)
-			
-		if Blockdata["myid"] == Blockdata["main_node"]:
-			write_text_row(stat_list, os.path.join(work_dir, 'gen_rep.txt'))
-			mark_sorting_state(work_dir, True, log_main)
-			shutil.rmtree(os.path.join(work_dir, 'tempdir'))
-			time_of_rec3d_h,  time_of_rec3d_m = get_time(time_rec3d_start)
-			log_main.add('SORT3D 3D reconstruction time: %d hours %d minutes.'%(time_of_rec3d_h, time_of_rec3d_m))
-			time_of_generation_h,  time_of_generation_m = get_time(time_generation_start)
-			log_main.add('SORT3D generation%d time: %d hours %d minutes.'%(igen, time_of_generation_h, time_of_generation_m))
-	'''
 	copy_results(log_main, all_gen_stat_list)# all nodes function	
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		if os.path.exists(os.path.join(Tracker["constants"]["masterdir"], 'tempdir')):
