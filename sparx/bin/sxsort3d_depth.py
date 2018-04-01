@@ -6127,7 +6127,8 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 				log_main.add('================================================================================================================')
 				log_main.add('                                    SORT3D IN-DEPTH   generation %d completed'%igen)
 				log_main.add('----------------------------------------------------------------------------------------------------------------')
-
+	
+	'''
 	if bad_clustering == 0:
 	
 		if Blockdata["myid"] == Blockdata["main_node"]:
@@ -6159,7 +6160,7 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 			log_main.add('SORT3D 3D reconstruction time: %d hours %d minutes.'%(time_of_rec3d_h, time_of_rec3d_m))
 			time_of_generation_h,  time_of_generation_m = get_time(time_generation_start)
 			log_main.add('SORT3D generation%d time: %d hours %d minutes.'%(igen, time_of_generation_h, time_of_generation_m))
-			
+	'''
 	copy_results(log_main, all_gen_stat_list)# all nodes function	
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		if os.path.exists(os.path.join(Tracker["constants"]["masterdir"], 'tempdir')):
