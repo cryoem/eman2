@@ -316,10 +316,10 @@ def depth_box_initialization(box_dir, input_list1, input_list2, log_file):
 		total_stack = len(input_list1)
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			write_text_file(input_list1, os.path.join(box_dir, "previous_all_indexes.txt"))
+		
+		number_of_groups = total_stack//Tracker["current_img_per_grp"]				
+		if number_of_groups<2: ERROR("number_of_groups should be at least larger than 1", "depth_box_initialization", 1, Blockdata["myid"])
 			
-		number_of_groups = total_stack//img_per_grp
-		if number_of_groups < 2:
-			number_of_groups = total_stack//max(Tracker["constants"]["minimum_grp_size"], img_per_grp//4) # No less than 1/4 of expected group size		
 		new_assignment = create_nrandom_lists_from_given_pids(box_dir, os.path.join(box_dir, \
 		      "previous_all_indexes.txt"), number_of_groups, 2)
 	
@@ -337,7 +337,7 @@ def depth_iter_initialization(run_id_file):
 	
 def output_iter_results(box_dir, ncluster, NACC, NUACC, minimum_grp_size, list_of_stable, unaccounted_list, img_per_grp, log_main):
 	### single node
-	iter_cutoff = min(max(minimum_grp_size, img_per_grp//4), img_per_grp*.75)
+	iter_cutoff = min(minimum_grp_size, img_per_grp*0.75)
 	new_list    = []
 	nc          = 0
 	NACC        = 0
@@ -366,24 +366,18 @@ def output_iter_results(box_dir, ncluster, NACC, NUACC, minimum_grp_size, list_o
 	fout.close()
 	return ncluster, NACC, NUACC, unaccounted_list, nc
 	
-def check_state_within_box_run(keepgoing, nruns, img_per_grp, minimum_grp_size, unaccounted_list, no_cluster_last_run):
+def check_state_within_box_run(keepgoing, nruns, unaccounted_list, no_cluster_last_run):
 	global Tracker, Blockdata
 	total_stack             = len(unaccounted_list)
-	current_image_per_group = max( Tracker["constants"]["img_per_grp"]//4, Tracker["constants"]["minimum_grp_size"])# in case minimum_grp_size is very small
-	
-	if total_stack//img_per_grp <=1:
-		number_of_groups = 2
-		if total_stack/float(current_image_per_group) <= 2.0:
-			keepgoing = 0 # otherwise sorting will fall into endless loop
-		else: number_of_groups = max(total_stack//current_image_per_group -1, 2)
-	else: number_of_groups = total_stack//img_per_grp
-	
+	number_of_groups        = total_stack//Tracker["current_img_per_grp"]
+	if number_of_groups>=2: keepgoing = 1
+	else:                   keepgoing = 0
 	if keepgoing ==1: nruns +=1
 	else:
 		total_stack      = 0
 		number_of_groups = 0
-	if no_cluster_last_run: number_of_groups -=1
-	if number_of_groups<=1 : keepgoing = 0
+	if no_cluster_last_run:  number_of_groups -=1
+	if number_of_groups<=1:  keepgoing         =0
 	return keepgoing, nruns, total_stack, number_of_groups
 	
 def get_box_partition(box_dir, ncluster, unaccounted_list):
@@ -476,8 +470,7 @@ def read_tracker_mpi(current_dir):
 	if open_tracker ==1:
 		if(Blockdata["myid"] != Blockdata["main_node"]): Tracker = 0
 		Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
-	else:
-		 ERROR("Fail to load tracker", "%s"%current_dir, 1, Blockdata["myid"])
+	else: ERROR("Fail to load tracker", "%s"%current_dir, 1, Blockdata["myid"])
 	return
 
 def mark_sorting_state(current_dir, sorting_done, log_file):
@@ -524,9 +517,11 @@ def depth_clustering_box(work_dir, input_accounted_file, input_unaccounted_file,
 	total_stack              = total_stack_init
 	current_number_of_groups = number_of_groups_init
 	unaccounted_list         = new_assignment[:]
+	
 	while (keepgoing ==1):
+	
 		within_box_run_dir = os.path.join(work_dir, "run%d"%nruns)
-		unaccounted_file = os.path.join(within_box_run_dir, "Unaccounted_from_previous_run.txt")
+		unaccounted_file   = os.path.join(within_box_run_dir, "Unaccounted_from_previous_run.txt")
 		if(Blockdata["myid"] == Blockdata["main_node"]):
 			time_box_start = time.time()
 			os.mkdir(within_box_run_dir)
@@ -600,6 +595,7 @@ def depth_clustering_box(work_dir, input_accounted_file, input_unaccounted_file,
 		minimum_grp_size            = minimum_grp_size_init
 		iter_previous_iter_ratio    = 0.0
 		iter_current_iter_ratio     = 0.0
+		
 		while((iter < box_niter) and (converged == 0)):
 			for indep_run_iter in xrange(2):
 				Tracker["directory"] = os.path.join(iter_dir, "MGSKmeans_%03d"%indep_run_iter)
@@ -658,15 +654,15 @@ def depth_clustering_box(work_dir, input_accounted_file, input_unaccounted_file,
 
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			ncluster, NACC, NUACC, unaccounted_list, new_clusters = output_iter_results(\
-			    work_dir, ncluster, NACC, NUACC, Tracker["constants"]["minimum_grp_size"], \
+			    work_dir, ncluster, NACC, NUACC, Tracker["current_img_per_grp"], \
 			            list_of_stable, unaccounted_list, Tracker["constants"]["img_per_grp"], log_main)
 			# remove tempdir
 			if os.path.exists(os.path.join(work_dir, 'run%d'%nruns, 'tempdir')):
 				shutil.rmtree(os.path.join(work_dir, 'run%d'%nruns, 'tempdir'))
 		else:
 			ncluster = 0
-			NACC  = 0
-			NUACC = 0
+			NACC     = 0
+			NUACC    = 0
 			unaccounted_list = 0
 			new_clusters     = 0
 			
@@ -684,7 +680,8 @@ def depth_clustering_box(work_dir, input_accounted_file, input_unaccounted_file,
 			no_groups_runs +=1
 			
 		keepgoing, nruns, total_stack, current_number_of_groups = \
-		   check_state_within_box_run(keepgoing, nruns, img_per_grp, Tracker["constants"]["minimum_grp_size"], unaccounted_list, no_cluster)
+		   check_state_within_box_run(keepgoing, nruns, unaccounted_list, no_cluster)
+		   
 		if Blockdata["myid"] == Blockdata["main_node"]:# report current state
 			if new_clusters > 0:
 				log_main.add(' ')
@@ -4542,7 +4539,7 @@ def get_input_from_sparx_ref3d(log_main):# case one
 	#		if(Blockdata["myid"] == Blockdata["main_node"]):
 	#			log_main.add("User provided minimum_grp_size is replaced by %d"%Tracker["constants"]["minimum_grp_size"])		
 	if Tracker["constants"]["minimum_grp_size"] > Tracker["constants"]["img_per_grp"]:
-		ERROR("User provided img_per_grp is too small", "get_input_from_sparx_ref3d", 1, Blockdata["myid"])
+		ERROR("User provided img_per_grp is smaller than minimum_grp_size", "get_input_from_sparx_ref3d", 1, Blockdata["myid"])
 	# Now copy oldparamstruture
 	copy_oldparamstructure_from_meridien_MPI(selected_iter, log_main)
 	return import_from_sparx_refinement
@@ -4597,7 +4594,7 @@ def get_input_from_datastack(log_main):# Case three
 				log_main.add("User provided minimum_grp_size is replaced by %d"%Tracker["constants"]["minimum_grp_size"])
 	"""		
 	if Tracker["constants"]["minimum_grp_size"] > Tracker["constants"]["img_per_grp"]:
-		ERROR("User provided img_per_grp is too small", "get_input_from_sparx_ref3d", 1, Blockdata["myid"])
+		ERROR("User provided img_per_grp is smaller than minimum_grp_size", "get_input_from_sparx_ref3d", 1, Blockdata["myid"])
 
 	###
 	Tracker["refang"], Tracker["rshifts"], Tracker["delta"] = None, None, None
@@ -5781,20 +5778,41 @@ def check_sorting(total_data, keepsorting, log_file):
 	else: Tracker_main = 0
 	Tracker_main = wrap_mpi_bcast(Tracker_main, Blockdata["main_node"])
 	
-	minimum_grp_size = max(Tracker_main["constants"]["img_per_grp"]//4, Tracker_main["constants"]["minimum_grp_size"])# Take img_per_grp/4 when user defined minimum_grp_size is too small
-	
 	if total_data//Tracker_main["constants"]["img_per_grp"] >=2:
-		Tracker["number_of_groups"] = total_data//Tracker_main["constants"]["img_per_grp"]
+		Tracker["number_of_groups"]    = total_data//Tracker_main["constants"]["img_per_grp"]
+		Tracker["current_img_per_grp"] = Tracker_main["constants"]["img_per_grp"]
 		keepsorting = 1
-	else:
-		if total_data//minimum_grp_size>=2:
-			Tracker["number_of_groups"] = total_data//minimum_grp_size 
-			keepsorting = 1
-		else: keepsorting = 0
 		
+	else:
+		if Tracker_main["constants"]["img_per_grp"]//2> Tracker_main["constants"]["minimum_grp_size"]:
+			Tracker["number_of_groups"] = (2*total_data)//Tracker_main["constants"]["img_per_grp"]
+			if Tracker["number_of_groups"] >=2:
+				Tracker["current_img_per_grp"] = Tracker_main["constants"]["img_per_grp"]//2
+				keepsorting = 1
+			else:
+				if Tracker_main["constants"]["img_per_grp"]//4 >=Tracker_main["constants"]["minimum_grp_size"]:
+					Tracker["number_of_groups"] = (4*total_data)//Tracker_main["constants"]["img_per_grp"]
+					if Tracker["number_of_groups"]>=2:
+						Tracker["current_img_per_grp"] = Tracker_main["constants"]["img_per_grp"]//4
+						keepsorting = 1
+					else: keepsorting = 0
+				else:
+					Tracker["number_of_groups"] = total_data//Tracker_main["constants"]["minimum_grp_size"]
+					if Tracker["number_of_groups"]>=2:
+						Tracker["current_img_per_grp"] = Tracker_main["constants"]["minimum_grp_size"]
+						keepsorting = 1
+					else: keepsorting = 0
+		else:
+			Tracker["number_of_groups"] = total_data//Tracker_main["constants"]["minimum_grp_size"]
+			if Tracker["number_of_groups"]>=2:
+				Tracker["current_img_per_grp"] = Tracker_main["constants"]["minimum_grp_size"]
+				keepsorting = 1
+			else: keepsorting = 0
+						
 	if keepsorting ==1:
 		Tracker["total_stack"] = total_data
-		keepsorting = sort3d_init("initialization", log_file)
+		keepsorting            = sort3d_init("initialization", log_file)
+		
 	return keepsorting
 
 def copy_results(log_file, all_gen_stat_list):
@@ -6050,7 +6068,7 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 	previous_params   = Tracker["previous_parstack"]
 	all_gen_stat_list = []  
 	bad_clustering    = 0
-	
+	Tracker["current_img_per_grp"] = Tracker["constants"]["img_per_grp"]
 	while (keepsorting == 1) and (bad_clustering== 0):
 		Tracker["current_generation"] +=1
 		igen +=1
@@ -6064,8 +6082,7 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 				if not os.path.exists(work_dir):
 					os.mkdir(work_dir)# need check each box
 					within_generation_restart = 0
-				else:
-					within_generation_restart = 1
+				else: within_generation_restart = 1
  				freq_cutoff_dict = {}
 				fout = open(os.path.join(work_dir, "freq_cutoff.json"),'w')
 				json.dump(freq_cutoff_dict, fout)
