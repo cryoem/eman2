@@ -151,6 +151,7 @@ def depth_clustering(work_dir, depth_order, initial_id_file, params, previous_pa
 	global Tracker, Blockdata
 	keepchecking   = 1
 	bad_clustering = 0
+	stat_list      = []
 	init_layer_dir = os.path.join(work_dir, "layer0")
 	
 	if(Blockdata["myid"] == Blockdata["main_node"]):
@@ -181,7 +182,7 @@ def depth_clustering(work_dir, depth_order, initial_id_file, params, previous_pa
 				mark_sorting_state(depth_dir, False, log_main)
 			else: 
 				keepchecking = check_sorting_state(depth_dir, keepchecking, log_main)
-				if keepchecking == 0: mark_sorting_state(depth_dir, False, log_main)
+				if keepchecking == 0: mark_sorting_state(depth_dir, False,  log_main)
 		else: keepchecking = 0
 		keepchecking = bcast_number_to_all(keepchecking, Blockdata["main_node"], MPI_COMM_WORLD)
 		## box loop
@@ -215,8 +216,7 @@ def depth_clustering(work_dir, depth_order, initial_id_file, params, previous_pa
 				if checkingbox == 0:
 					bad_box = depth_clustering_box(nbox_dir, input_accounted_file, input_unaccounted_file, params, previous_params, nbox, log_main)
 					if(Blockdata["myid"] == Blockdata["main_node"]): mark_sorting_state(nbox_dir, True, log_main)
-				else: 
-					continue
+				else: continue
 				if bad_box == 1: bad_clustering = 1
 			if bad_clustering !=1:
 				partition_per_box_per_layer_list = []
@@ -226,6 +226,7 @@ def depth_clustering(work_dir, depth_order, initial_id_file, params, previous_pa
 					input_box_parti2 = os.path.join(depth_dir, "nbox%d"%(nbox+1), "partition.txt")
 					minimum_grp_size, maximum_grp_size, accounted_list, unaccounted_list, bad_clustering, stop_generation, stat_list = \
 					do_boxes_two_way_comparison_mpi(nbox, input_box_parti1, input_box_parti2, depth_order - depth, log_main)
+					
 					if( stop_generation == 1):
 						partition_per_box_per_layer_list = []
 						partition_per_box_per_layer_list.append([accounted_list, unaccounted_list])
@@ -235,14 +236,14 @@ def depth_clustering(work_dir, depth_order, initial_id_file, params, previous_pa
 				mpi_barrier(MPI_COMM_WORLD)
 			if(Blockdata["myid"] != Blockdata["main_node"]): Tracker = 0
 			Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
-			if(Blockdata["myid"] == Blockdata["main_node"]): 
-				mark_sorting_state(depth_dir, True, log_main)
+			
+			if(Blockdata["myid"] == Blockdata["main_node"]): mark_sorting_state(depth_dir, True, log_main)
 			if( bad_clustering == 1):   break
 			if( stop_generation == 1 ): break ### only one cluster survives
 		else:
 			if(Blockdata["myid"] == Blockdata["main_node"]):
 				log_main.add('Layer %d sorting has completed. Recompute two_way comparison'%depth)
-			partition_per_box_per_layer_list = []	
+			partition_per_box_per_layer_list = []
 			for nbox in xrange(0, n_cluster_boxes,2):
 				input_box_parti1 = os.path.join(depth_dir, "nbox%d"%nbox,     "partition.txt")
 				input_box_parti2 = os.path.join(depth_dir, "nbox%d"%(nbox+1), "partition.txt")
@@ -5780,7 +5781,7 @@ def check_sorting(total_data, keepsorting, log_file):
 	else: Tracker_main = 0
 	Tracker_main = wrap_mpi_bcast(Tracker_main, Blockdata["main_node"])
 	
-	minimum_grp_size = max(Tracker_main["constants"]["img_per_grp"]//4, Tracker_main["constants"]["minimum_grp_size"])
+	minimum_grp_size = max(Tracker_main["constants"]["img_per_grp"]//4, Tracker_main["constants"]["minimum_grp_size"])# Take img_per_grp/4 when user defined minimum_grp_size is too small
 	
 	if total_data//Tracker_main["constants"]["img_per_grp"] >=2:
 		Tracker["number_of_groups"] = total_data//Tracker_main["constants"]["img_per_grp"]
@@ -5810,8 +5811,8 @@ def copy_results(log_file, all_gen_stat_list):
 			log_file.add('----------------------------------------------------------------------------------------------------------------' )
 			nclusters = 0
 			log_file.add( '{:^8} {:>8}   {:^24}  {:>15} {:^22} {:^5} {:^15} {:^20} '.format('Group ID', '    size','determined in generation', 'reproducibility', 'random reproducibility', ' std ', ' selection file', '       map file     '))
-			clusters = []
-			NACC     = 0           
+			clusters  = []
+			NACC      = 0           
 			for ig1, value in Tracker["generation"].items():
 				ig = atoi('%s'%ig1)
 				for ic in xrange(value):
@@ -5923,7 +5924,7 @@ def do_random_groups_simulation_mpi(ptp1, ptp2):
 	# return two lists: group avgs and group stds. The last one of two lists are the total avg and std.
 	if (len(ptp1)>=50) or (len(ptp2)>=50):
 		if(Blockdata["myid"] == Blockdata["main_node"]):
-			print('Warning: the number of groups is too large for simuliaton')
+			print('Warning: too many simulaton groups')
 	Nloop = max(1000//Blockdata["nproc"], 1)
 	NT    = 1000
 	a     = []
@@ -6047,7 +6048,7 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 	my_pids           = os.path.join(Tracker["constants"]["masterdir"], "indexes.txt")
 	params            = os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt")
 	previous_params   = Tracker["previous_parstack"]
-	all_gen_stat_list = []
+	all_gen_stat_list = []  
 	bad_clustering    = 0
 	
 	while (keepsorting == 1) and (bad_clustering== 0):
@@ -6078,6 +6079,7 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 			else: dump_tracker(work_dir)
 			output_list, bad_clustering, stat_list  = depth_clustering(work_dir, depth_order, my_pids, params, previous_params, log_main)
 			all_gen_stat_list.append(stat_list)
+			
 			if bad_clustering !=1:
 				if Blockdata["myid"] == Blockdata["main_node"]:
 					clusters, nclusters, nuacc  = output_clusters(work_dir, output_list[0][0], output_list[0][1], not_include_unaccounted, log_main)
@@ -6089,22 +6091,20 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 				Tracker   = wrap_mpi_bcast(Tracker,        Blockdata["main_node"], MPI_COMM_WORLD)
 				nclusters = bcast_number_to_all(nclusters, Blockdata["main_node"], MPI_COMM_WORLD)
 				nuacc     = bcast_number_to_all(nuacc,     Blockdata["main_node"], MPI_COMM_WORLD)
-					
+				dump_tracker(work_dir)
+				
 				if nclusters == 0:
 					if Blockdata["myid"] == Blockdata["main_node"]:
 						log_main.add('No cluster is found in generation %d'%igen)
 					break
 				else:
-					dump_tracker(work_dir)
 					if Blockdata["myid"] == Blockdata["main_node"]:time_rec3d_start = time.time()
 					compute_final_map(work_dir)
 					if Blockdata["myid"] == Blockdata["main_node"]:
-						time_of_rec3d_h,  time_of_rec3d_m = get_time(time_rec3d_start)
+						time_of_rec3d_h, time_of_rec3d_m = get_time(time_rec3d_start)
 						log_main.add('SORT3D 3D reconstruction time: %d hours %d minutes.'%(time_of_rec3d_h, time_of_rec3d_m))
 						time_of_generation_h,  time_of_generation_m = get_time(time_generation_start)
 						log_main.add('SORT3D generation%d time: %d hours %d minutes.'%(igen, time_of_generation_h, time_of_generation_m))
-			
-					work_dir = os.path.join( Tracker["constants"]["masterdir"], "generation_%03d"%igen)
 					my_pids  = os.path.join( work_dir, 'indexes_next_generation.txt')
 					if Blockdata["myid"] == Blockdata["main_node"]:
 						write_text_file(output_list[0][1], my_pids)
@@ -6112,14 +6112,12 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 						mark_sorting_state(work_dir, True, log_main)
 						shutil.rmtree(os.path.join(work_dir, 'tempdir'))
 					mpi_barrier(MPI_COMM_WORLD)
-				keepsorting     = check_sorting(nuacc, keepsorting, log_main)
-				if keepsorting != 1: break # restart requires
+				keepsorting = check_sorting(nuacc, keepsorting, log_main)
+				if keepsorting != 1: break #
 		else: # restart run
-			work_dir = os.path.join( Tracker["constants"]["masterdir"], "generation_%03d"%igen)
 			read_tracker_mpi(work_dir)
 			my_pids  = os.path.join( work_dir, 'indexes_next_generation.txt')
-			if Blockdata["myid"] == Blockdata["main_node"]:
-				stat_list = read_text_row( os.path.join(work_dir, 'gen_rep.txt'))
+			if Blockdata["myid"] == Blockdata["main_node"]: stat_list = read_text_row( os.path.join(work_dir, 'gen_rep.txt'))
 			else: stat_list = 0
 			stat_list = wrap_mpi_bcast(stat_list, Blockdata["main_node"], MPI_COMM_WORLD)
 			all_gen_stat_list.append(stat_list)
@@ -6299,12 +6297,13 @@ def main():
 		checking_flag = 0 # reset
 		
 		Blockdata["fftwmpi"]             = True
+		
 		try : 
 			Blockdata["symclass"] = symclass(Tracker["constants"]["symmetry"])
 			from string import atoi
 			Tracker["constants"]["orientation_groups"] = max(4, Tracker["constants"]["orientation_groups"]//Blockdata["symclass"].nsym)
-			
 		except: pass
+		
 		get_angle_step_from_number_of_orien_groups(Tracker["constants"]["orientation_groups"])
 		Blockdata["ncpuspernode"] = Blockdata["no_of_processes_per_group"]
 		Blockdata["nsubset"]      = Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
@@ -6325,7 +6324,7 @@ def main():
 	
 		continue_from_interuption = 0
 		continue_from_interuption = create_masterdir()
-		log_main = Logger(BaseLogger_Files())
+		log_main        = Logger(BaseLogger_Files())
 		log_main.prefix = Tracker["constants"]["masterdir"]+"/"
 		if continue_from_interuption == 0:
 			if Blockdata["myid"] == Blockdata["main_node"]:
@@ -6470,11 +6469,11 @@ def main():
 		Tracker["rshifts"]                        = None
 		Tracker["paramstructure_dict"]            = None
 		Tracker["constants"]["selected_iter"]     = -1
-		Tracker["nosmearing"]     = True
+		Tracker["nosmearing"]                     = True
 		
-		checking_flag             = 0 # reset
-		Blockdata["fftwmpi"]      = True
-		Blockdata["symclass"]     = symclass(Tracker["constants"]["symmetry"])
+		checking_flag                              = 0 # reset
+		Blockdata["fftwmpi"]                       = True
+		Blockdata["symclass"]                      = symclass(Tracker["constants"]["symmetry"])
 		Tracker["constants"]["orientation_groups"] = max(4, Tracker["constants"]["orientation_groups"]//Blockdata["symclass"].nsym)
 		
 		get_angle_step_from_number_of_orien_groups(Tracker["constants"]["orientation_groups"])
