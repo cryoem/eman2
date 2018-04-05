@@ -203,7 +203,7 @@ def make_model(jsd,myid, options):
 		
 		mapnew.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1./options.targetres})
 		#mapnew.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.3})
-		mapnew.process_inplace("mask.auto3d",{"radius":boxsize/6,"threshold":map0["sigma_nonzero"]*.85,"nmaxseed":30,"nshells":boxsize/20,"nshellsgauss":boxsize/20})
+		#mapnew.process_inplace("mask.auto3d",{"radius":boxsize/6,"threshold":map0["sigma_nonzero"]*.85,"nmaxseed":30,"nshells":boxsize/20,"nshellsgauss":boxsize/20})
 		ddmap=mapnew-map0
 		ddmap.mult(ddmap)
 		if options.verbose>0:print(myid, it, ddmap["mean"])
