@@ -9,6 +9,7 @@ import os
 from EMAN2 import *
 import importlib
 import sys
+from scipy.interpolate import interp1d
 
 amino_dict= {0: 'ALA', 1: 'ARG', 2: 'ASN', 3: 'ASP', 4: 'CYS', 5: 'GLU', 6: 'GLN', 7: 'GLY', 8: 'HIS', 9: 'ILE', 10: 'LEU', 11: 'LYS', 12: 'MET', 13: 'PHE', 14: 'PRO', 15: 'SER', 16: 'THR', 17: 'TRP', 18: 'TYR', 19: 'VAL', 20: 'ASX', 21:'GLX'}
 amino_dict.update(dict((v, k) for k, v in amino_dict.iteritems()))
