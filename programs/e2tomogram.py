@@ -112,7 +112,7 @@ def main():
 	tltax=calc_tltax_rot(img_tali, options)
 	print("tilt axis:  {:.2f}".format(tltax))
 	options.tltax=tltax
-
+	
 	pretrans*=4
 	num=options.num=len(imgs_500)
 	ttparams=np.zeros((num, 5))
@@ -129,6 +129,7 @@ def main():
 	options.fid_mindist=16
 	options.fid_maxval=-10
 	options.bxsz=32
+	
 	
 	
 	#### image scale, m3diter, fidkeep
@@ -204,7 +205,7 @@ def main():
 	except: pass
 	sfx=""
 	if options.binfac>1:
-		sfx+="__bin{:d}".format(options.binfac)
+		sfx+="__bin{:d}".format(int(options.binfac*2))
 		
 	tomoname=os.path.join("tomograms", options.basename+sfx+".hdf")
 	threed.write_image(tomoname)
@@ -369,6 +370,7 @@ def make_tomogram(imgs, tltpm, options, outname=None, premask=True, padr=1.2, cl
 		print("\t Image size: {:d} x {:d}".format(nx, ny))
 		print("\tPadded volume to: {:d} x {:d} x {:d}".format(pad, pad, zthick))
 	recon=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,zthick], "mode":options.reconmode})
+	#recon=Reconstructors.get("fourier_iter", {"size":[pad,pad,zthick]})
 	recon.setup()
 	jobs=[]
 	
@@ -543,6 +545,7 @@ def make_samples(imgs, allparams, options, refinepos=False, outname=None, errtlt
 	for pid in range(npk):
 		pad=good_size(bx*4)
 		recon=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,pad]})
+		#recon=Reconstructors.get("fourier_iter", {"size":[pad,pad,pad]})
 		recon.setup()
 
 		for nid in nrange:
@@ -735,9 +738,11 @@ def refine_one_iter(imgs, allparams, options, idx=[]):
 	apms=make_samples(imgs, allparams, options, refinepos=True);
 	ttparams, pks=get_params(apms, options)
 	ptclpos=ali_ptcls(imgs, apms, options, doali=True)
+	
+	pmlabel=["trans_x", "trans_y", "tlt_z", "tilt_y", "tilt_x"]
 	if len(idx)==0:
 		res=minimize(global_rot, 0, (ptclpos, apms, options), method='Powell',options={'ftol': 1e-4, 'disp': False, "maxiter":30})
-		print("refine tlt ax {:.2f}, loss {:.2f} -> {:.2f}".format(
+		print("refine global tilt_z {:.2f}, loss {:.2f} -> {:.2f}".format(
 			float(res.x)*.5, float(global_rot(0,ptclpos,apms, options)),
 			float(global_rot(res.x,ptclpos,apms, options))))
 		ttparams[:,2]-=res.x*.5
@@ -760,7 +765,8 @@ def refine_one_iter(imgs, allparams, options, idx=[]):
 			loss[nid]=get_loss_pm(res.x*.5, nid, apms, options, idx, ptclpos)
 			loss0[nid]=get_loss_pm(tminit, nid, apms, options, idx, ptclpos)
 			
-		print("refine {}, loss: {:.2f} -> {:.2f}".format(idx, np.mean(loss0), np.mean(loss)))
+		ipm=[pmlabel[i] for i in idx]
+		print("refine {}, loss: {:.2f} -> {:.2f}".format(ipm, np.mean(loss0), np.mean(loss)))
 		ttparams=ttpm_new
 		
 	allparams=np.hstack([ttparams.flatten(), pks.flatten()])
