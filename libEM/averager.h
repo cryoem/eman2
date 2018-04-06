@@ -276,7 +276,7 @@ namespace EMAN
 
 		string get_desc() const
 		{
-			return "An iterative averager making use of local correlations for noise reduction";
+			return "EXPERIMENTAL!  Not suggested for normal use. An iterative averager making use of local correlations for noise reduction";
 		}
 
 		static Averager *NEW()

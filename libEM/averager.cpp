@@ -681,7 +681,7 @@ void IterAverager::add_image(EMData * image)
 {
 	if (!image) return;
 	
-	images.push_back(image->copy());
+	images.push_back(image->do_fft());
 }
 
 EMData *IterAverager::finish()
@@ -695,25 +695,25 @@ EMData *IterAverager::finish()
 	if (nz!=1) throw ImageDimensionException("IterAverager is for 2-D images only");
 	
 	if (result) delete result;
-	result=new EMData(nx,ny,nz);
+	result=new EMData(nx-2,ny,nz,0);
 	result -> to_zero();
 	
-	EMData *tmp=new EMData(nx,ny,nz);
+	EMData *tmp=new EMData(nx-2,ny,nz,0);
 	tmp -> to_zero();
 
 	for (int it=0; it<4; it++) {
-		for (int y=2; y<ny-2; y++) {
-			for (int x=2; x<nx-2; x++) {
-				double nv=0;
+		for (int y=-ny/2+1; y<ny/2-1; y++) {
+			for (int x=0; x<nx-2; x++) {
+				std::complex<double> nv=0;
 				// put the vector on the inside, then we can accumulate into a double easily
 				for (vector<EMData *>::iterator im=images.begin(); im<images.end(); im++) {
-					for (int yy=y-2; yy<=y+2; yy++) {
-						for (int xx=x-2; xx<=x+2; xx++) {
-							nv+=(*im)->get_value_at(xx,yy)+tmp->get_value_at(x,y)-tmp->get_value_at(xx,yy);
+					for (int yy=y-1; yy<=y+1; yy++) {
+						for (int xx=x-1; xx<=x+1; xx++) {
+							nv+=(*im)->get_complex_at(xx,yy)+tmp->get_complex_at(x,y)-tmp->get_complex_at(xx,yy);
 						}
 					}
 				}
-				result->set_value_at(x,y,float(nv/(25.0*images.size())));
+				result->set_complex_at(x,y,std::complex<float>(nv/(9.0*images.size())));
 			}
 		}
 		// Swap the pointers
@@ -727,7 +727,9 @@ EMData *IterAverager::finish()
 	result=0;
 	for (vector<EMData *>::iterator im=images.begin(); im<images.end(); im++) delete (*im);
 	images.clear();
-	return tmp;
+	result=tmp->do_ift();
+	delete tmp;
+	return result;
 }
 
 
