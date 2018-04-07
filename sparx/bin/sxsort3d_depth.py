@@ -5544,14 +5544,16 @@ def compute_final_map(work_dir):
 	Tracker["directory"] = work_dir
 	compute_noise(Tracker["nxinit"])
 	cdata, rdata, fdata = downsize_data_for_sorting(original_data, preshift = True, npad = 1, norms = norm_per_particle)# pay attentions to shifts!
+	del cdata, fdata, original_data
 	mpi_barrier(MPI_COMM_WORLD)
 	
 	srdata = precalculate_shifted_data_for_recons3D(rdata, parameterstructure, Tracker["refang"], Tracker["rshifts"], \
 	  Tracker["delta"], Tracker["avgnorm"], Tracker["nxinit"], Tracker["constants"]["nnxo"], Tracker["nosmearing"], \
 	      norm_per_particle,  Tracker["constants"]["nsmear"])
-	del rdata
+	del rdata, parameterstructure, norm_per_particle
 	mpi_barrier(MPI_COMM_WORLD)
 	do3d_sorting_groups_nofsc_smearing_iter(srdata, False, iteration = 0)
+	del srdata
 	mpi_barrier(MPI_COMM_WORLD)
 	return
 #####==========----various utilities
@@ -5561,54 +5563,6 @@ def get_time(time_start):
 	current_time_h = current_time // 3600
 	current_time_m = (current_time - current_time_h*3600)// 60
 	return int(current_time_h), int(current_time_m)
-
-'''
-def check_sorting(total_data, keepsorting, log_file):
-	global Tracker, Blockdata
-	import json
-	if Blockdata["myid"] == Blockdata["main_node"]:
-		fout         = open(os.path.join(Tracker["constants"]["masterdir"],"Tracker.json"),'r')
-		Tracker_main = convert_json_fromunicode(json.load(fout))
-		fout.close()
-	else: Tracker_main = 0
-	Tracker_main = wrap_mpi_bcast(Tracker_main, Blockdata["main_node"])
-	
-	if total_data//Tracker_main["constants"]["img_per_grp"] >=2:
-		Tracker["number_of_groups"]    = total_data//Tracker_main["constants"]["img_per_grp"]
-		Tracker["current_img_per_grp"] = Tracker_main["constants"]["img_per_grp"]
-		keepsorting = 1
-		
-	else:
-		if Tracker_main["constants"]["img_per_grp"]//2> Tracker_main["constants"]["minimum_grp_size"]:
-			Tracker["number_of_groups"] = (2*total_data)//Tracker_main["constants"]["img_per_grp"]
-			if Tracker["number_of_groups"] >=2:
-				Tracker["current_img_per_grp"] = Tracker_main["constants"]["img_per_grp"]//2
-				keepsorting = 1
-			else:
-				if Tracker_main["constants"]["img_per_grp"]//4 >=Tracker_main["constants"]["minimum_grp_size"]:
-					Tracker["number_of_groups"] = (4*total_data)//Tracker_main["constants"]["img_per_grp"]
-					if Tracker["number_of_groups"]>=2:
-						Tracker["current_img_per_grp"] = Tracker_main["constants"]["img_per_grp"]//4
-						keepsorting = 1
-					else: keepsorting = 0
-				else:
-					Tracker["number_of_groups"] = total_data//Tracker_main["constants"]["minimum_grp_size"]
-					if Tracker["number_of_groups"]>=2:
-						Tracker["current_img_per_grp"] = Tracker_main["constants"]["minimum_grp_size"]
-						keepsorting = 1
-					else: keepsorting = 0
-		else:
-			Tracker["number_of_groups"] = total_data//Tracker_main["constants"]["minimum_grp_size"]
-			if Tracker["number_of_groups"]>=2:
-				Tracker["current_img_per_grp"] = Tracker_main["constants"]["minimum_grp_size"]
-				keepsorting = 1
-			else: keepsorting = 0
-						
-	if keepsorting ==1:
-		Tracker["total_stack"] = total_data
-		keepsorting            = sort3d_init("initialization", log_file)
-	return keepsorting
-'''	
 	
 def check_sorting(total_data, keepsorting, log_file):
 	global Tracker, Blockdata
