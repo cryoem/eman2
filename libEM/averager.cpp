@@ -47,7 +47,7 @@ const string SigmaAverager::NAME = "sigma";
 const string TomoAverager::NAME = "mean.tomo";
 const string MinMaxAverager::NAME = "minmax";
 const string AbsMaxMinAverager::NAME = "absmaxmin";
-const string IterationAverager::NAME = "iteration";
+const string IterAverager::NAME = "iterative";
 const string CtfCWautoAverager::NAME = "ctfw.auto";
 const string CtfCAutoAverager::NAME = "ctf.auto";
 const string CtfWtAverager::NAME = "ctf.weight";
@@ -62,7 +62,7 @@ template <> Factory < Averager >::Factory()
 	force_add<MinMaxAverager>();
 	force_add<AbsMaxMinAverager>();
 	force_add<LocalWeightAverager>();
-	force_add<IterationAverager>();
+	force_add<IterAverager>();
 	force_add<CtfCWautoAverager>();
 	force_add<CtfCAutoAverager>();
 	force_add<CtfWtAverager>();
@@ -329,6 +329,8 @@ EMData * ImageAverager::finish()
 
 	return result;
 }
+
+
 
 
 SigmaAverager::SigmaAverager()
@@ -670,6 +672,66 @@ EMData * LocalWeightAverager::finish()
 	
 }
 
+IterAverager::IterAverager()
+{
+
+}
+
+void IterAverager::add_image(EMData * image)
+{
+	if (!image) return;
+	
+	images.push_back(image->do_fft());
+}
+
+EMData *IterAverager::finish()
+{
+	if (images.size()==0) return NULL;
+	
+	int nx = images.front()->get_xsize();
+	int ny = images.front()->get_ysize();
+	int nz = images.front()->get_zsize();
+	
+	if (nz!=1) throw ImageDimensionException("IterAverager is for 2-D images only");
+	
+	if (result) delete result;
+	result=new EMData(nx-2,ny,nz,0);
+	result -> to_zero();
+	
+	EMData *tmp=new EMData(nx-2,ny,nz,0);
+	tmp -> to_zero();
+
+	for (int it=0; it<4; it++) {
+		for (int y=-ny/2+1; y<ny/2-1; y++) {
+			for (int x=0; x<nx-2; x++) {
+				std::complex<double> nv=0;
+				// put the vector on the inside, then we can accumulate into a double easily
+				for (vector<EMData *>::iterator im=images.begin(); im<images.end(); im++) {
+					for (int yy=y-1; yy<=y+1; yy++) {
+						for (int xx=x-1; xx<=x+1; xx++) {
+							nv+=(*im)->get_complex_at(xx,yy)+tmp->get_complex_at(x,y)-tmp->get_complex_at(xx,yy);
+						}
+					}
+				}
+				result->set_complex_at(x,y,std::complex<float>(nv/(9.0*images.size())));
+			}
+		}
+		// Swap the pointers
+		result->write_image("dbug.hdf",-1);
+		EMData *swp=tmp;
+		tmp=result;
+		result=swp;
+	}
+	
+	delete result;
+	result=0;
+	for (vector<EMData *>::iterator im=images.begin(); im<images.end(); im++) delete (*im);
+	images.clear();
+	result=tmp->do_ift();
+	delete tmp;
+	return result;
+}
+
 
 #if 0
 EMData *ImageAverager::average(const vector < EMData * >&image_list) const
@@ -901,119 +963,6 @@ EMData *AbsMaxMinAverager::finish()
 	if (result && nimg > 1) return result;
 
 	return NULL;
-}
-
-IterationAverager::IterationAverager() : nimg(0)
-{
-
-}
-
-void IterationAverager::add_image( EMData * image)
-{
-	if (!image) {
-		return;
-	}
-
-	if (nimg >= 1 && !EMUtil::is_same_size(image, result)) {
-		LOGERR("%sAverager can only process same-size Image",
-							 get_name().c_str());
-		return;
-	}
-
-	nimg++;
-
-	int nx = image->get_xsize();
-	int ny = image->get_ysize();
-	int nz = image->get_zsize();
-	size_t image_size = (size_t)nx * ny * nz;
-
-	if (nimg == 1) {
-		result = image->copy_head();
-		result->set_size(nx, ny, nz);
-		sigma_image = image->copy_head();
-		sigma_image->set_size(nx, ny, nz);
-	}
-
-	float *image_data = image->get_data();
-	float *result_data = result->get_data();
-	float *sigma_image_data = sigma_image->get_data();
-
-	for (size_t j = 0; j < image_size; ++j) {
-		float f = image_data[j];
-		result_data[j] += f;
-		sigma_image_data[j] += f * f;
-	}
-
-
-}
-
-EMData * IterationAverager::finish()
-{
-	if (nimg < 1) {
-		return result;
-	}
-
-	int nx = result->get_xsize();
-	int ny = result->get_ysize();
-	int nz = result->get_zsize();
-	size_t image_size = (size_t)nx * ny * nz;
-
-	float *result_data = result->get_data();
-	float *sigma_image_data = sigma_image->get_data();
-
-	for (size_t j = 0; j < image_size; ++j) {
-		result_data[j] /= nimg;
-		float f1 = sigma_image_data[j] / nimg;
-		float f2 = result_data[j];
-		sigma_image_data[j] = sqrt(f1 - f2 * f2) / sqrt((float)nimg);
-	}
-
-	result->update();
-	sigma_image->update();
-
-	result->append_image("iter.hed");
-	float sigma = sigma_image->get_attr("sigma");
-	float *sigma_image_data2 = sigma_image->get_data();
-	float *result_data2 = result->get_data();
-	float *d2 = new float[nx * ny];
-	size_t sec_size = nx * ny * sizeof(float);
-
-	memcpy(d2, result_data2, sec_size);
-	memcpy(sigma_image_data2, result_data2, sec_size);
-
-	printf("Iter sigma=%f\n", sigma);
-
-	for (int k = 0; k < 1000; k++) {
-		for (int i = 1; i < nx - 1; i++) {
-			for (int j = 1; j < ny - 1; j++) {
-				int l = i + j * nx;
-				float c1 = (d2[l - 1] + d2[l + 1] + d2[l - nx] + d2[l + nx]) / 4.0f - d2[l];
-				float c2 = fabs(result_data2[l] - sigma_image_data2[l]) / sigma;
-				result_data2[l] += c1 * Util::eman_erfc(c2) / 100.0f;
-			}
-		}
-
-		memcpy(d2, result_data2, sec_size);
-	}
-
-	if( d2 )
-	{
-		delete[]d2;
-		d2 = 0;
-	}
-
-	sigma_image->update();
-	if( sigma_image )
-	{
-		delete sigma_image;
-		sigma_image = 0;
-	}
-
-	result->update();
-	result->append_image("iter.hed");
-
-
-	return result;
 }
 
 CtfCWautoAverager::CtfCWautoAverager()
