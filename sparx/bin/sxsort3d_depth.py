@@ -398,25 +398,22 @@ def output_clusters(output_dir, partition, unaccounted_list, not_include_unaccou
 	nclasses, npart = split_partition_into_ordered_clusters(partition)
 	nc              = 0
 	identified_clusters = []
-	
-	for ic in xrange(len(nclasses)):	
-		if len(nclasses[ic])>=max(Tracker["constants"]["img_per_grp"]//4, min(Tracker["constants"]["minimum_grp_size"], Tracker["constants"]["img_per_grp"]*0.75)):
+	for ic in xrange(len(nclasses)):
+		if len(nclasses[ic])>=max(Tracker["constants"]["img_per_grp"]//2**Tracker["constants"]["img_per_grp_split_rate"], \
+		        min(Tracker["constants"]["minimum_grp_size"], Tracker["constants"]["img_per_grp"]*0.75)):
 			write_text_file(nclasses[ic], os.path.join(output_dir,"Cluster_%03d.txt"%nc))
 			nc +=1
 			identified_clusters.append(nclasses[ic])
 		else: unaccounted_list +=nclasses[ic]
-	
 	if len(unaccounted_list)>1:
 		unaccounted_list.sort()
 		write_text_file(unaccounted_list, os.path.join(output_dir, "Unaccounted.txt"))
-		
 	nclasses = copy.deepcopy(identified_clusters)
 	del identified_clusters
 	
 	if len(unaccounted_list)>1: # output unaccounted as the last cluster
 		if not not_include_unaccounted:
 			write_text_file(unaccounted_list, os.path.join(output_dir,"Cluster_%03d.txt"%nc))
-	
 	if not not_include_unaccounted: 
 		import copy
 		unclasses = copy.deepcopy(nclasses)
@@ -5565,6 +5562,7 @@ def get_time(time_start):
 	current_time_m = (current_time - current_time_h*3600)// 60
 	return int(current_time_h), int(current_time_m)
 
+'''
 def check_sorting(total_data, keepsorting, log_file):
 	global Tracker, Blockdata
 	import json
@@ -5606,6 +5604,40 @@ def check_sorting(total_data, keepsorting, log_file):
 				keepsorting = 1
 			else: keepsorting = 0
 						
+	if keepsorting ==1:
+		Tracker["total_stack"] = total_data
+		keepsorting            = sort3d_init("initialization", log_file)
+	return keepsorting
+'''	
+	
+def check_sorting(total_data, keepsorting, log_file):
+	global Tracker, Blockdata
+	import json
+	if Blockdata["myid"] == Blockdata["main_node"]:
+		fout         = open(os.path.join(Tracker["constants"]["masterdir"],"Tracker.json"),'r')
+		Tracker_main = convert_json_fromunicode(json.load(fout))
+		fout.close()
+	else: Tracker_main = 0
+	Tracker_main = wrap_mpi_bcast(Tracker_main, Blockdata["main_node"])
+	n            = 0
+	keepsorting  = 0
+	while n <= Tracker_main["constants"]["img_per_grp_split_rate"]:
+		if Tracker_main["constants"]["img_per_grp"]//2**n> Tracker_main["constants"]["minimum_grp_size"]:
+			Tracker["number_of_groups"] = (2**n*total_data)//Tracker_main["constants"]["img_per_grp"]
+			if Tracker["number_of_groups"] >=2:
+				Tracker["current_img_per_grp"] = Tracker_main["constants"]["img_per_grp"]//2**n
+				keepsorting = 1
+		else:
+			Tracker["number_of_groups"] = total_data//Tracker_main["constants"]["minimum_grp_size"]
+			if Tracker["number_of_groups"]>=2:
+				Tracker["current_img_per_grp"] = Tracker_main["constants"]["minimum_grp_size"]
+				keepsorting = 1
+			else: keepsorting = 0
+			
+		if Tracker["number_of_groups"] >=2:
+			keepsorting = 1
+			break
+		else: n+=1
 	if keepsorting ==1:
 		Tracker["total_stack"] = total_data
 		keepsorting            = sort3d_init("initialization", log_file)
@@ -5992,6 +6024,7 @@ def main():
 		parser.add_option("--radius",                            type   ="int",           default =-1,	                   help="Estimated protein radius in pixels")
 		parser.add_option("--sym",                               type   ="string",        default ='c1',                   help="Point-group symmetry")
 		parser.add_option("--img_per_grp",                       type   ="int",           default =1000,                   help="Number of images per group")
+		parser.add_option("--img_per_grp_split_rate",            type   ="int",           default =1,                      help="rate for splitting img_per_grp")
 		parser.add_option("--nsmear",                            type   ="float",         default =-1.,                    help="Number of smears used in sorting. Fill it with 1 if user does not want to use all smears")
 		parser.add_option("--minimum_grp_size",				     type   ="int",           default =-1,					   help="Cluster selection size")
 		parser.add_option("--depth_order",				         type   ="int",           default =2,					   help="Depth order. A number defines the number of initial independent MGSKmeans runs (2^depth_order)")
@@ -6047,6 +6080,7 @@ def main():
 	
 		Constants["depth_order"]                 = options.depth_order
 		Constants["img_per_grp"]                 = options.img_per_grp
+		Constants["img_per_grp_split_rate"]      = options.img_per_grp_split_rate
 		Constants["minimum_grp_size"]      		 = options.minimum_grp_size
 		Constants["radius"]              		 = options.radius
 		Constants["sym"]                         = options.sym
@@ -6171,6 +6205,7 @@ def main():
 		parser.add_option("--radius",                            type   ="int",           default =-1,	                   help="Estimated protein radius in pixels")
 		parser.add_option("--sym",                               type   ="string",        default ='c1',                   help="Point-group symmetry")
 		parser.add_option("--img_per_grp",                       type   ="int",           default =1000,                   help="Number of images per group")
+		parser.add_option("--img_per_grp_split_rate",            type   ="int",           default =1,                      help="rate for splitting img_per_grp")
 		parser.add_option("--nsmear",                            type   ="float",         default =-1.,                    help="Number of smears used in sorting. Fill it with 1 if user does not want to use all smears")
 		parser.add_option("--minimum_grp_size",				     type   ="int",           default =-1,					   help="Cluster selection size")
 		parser.add_option("--depth_order",				         type   ="int",           default =2,					   help="Depth order. A number defines the number of initial independent MGSKmeans runs (2^depth_order)")
@@ -6218,6 +6253,7 @@ def main():
 		Constants["nsmear"]                      = 1
 		Constants["depth_order"]                 = options.depth_order
 		Constants["img_per_grp"]                 = options.img_per_grp
+		Constants["img_per_grp_split_rate"]      = options.img_per_grp_split_rate
 		Constants["minimum_grp_size"]      		 = options.minimum_grp_size
 		Constants["radius"]              		 = options.radius
 		Constants["sym"]                         = options.sym
