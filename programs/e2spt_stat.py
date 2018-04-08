@@ -64,6 +64,8 @@ This program will look in an spt_XX folder at particle_parms_xx.json and show a 
 
 	if options.extract:
 		out=open("{}/particle_parms_{:02d}.txt".format(options.path,options.iter),"w")
+		out.write("# num; score; ref coverage; az; alt; phi\n")
+
 		k=angs.keys()
 		k.sort(key=lambda i:int(eval(i)[1]))
 		for i in k:
