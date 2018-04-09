@@ -72,6 +72,16 @@ def get_time_stamp_suffix():
 	return time_stamp_suffix
 
 # ----------------------------------------------------------------------------------------
+#  Data type checker
+# ----------------------------------------------------------------------------------------
+def is_float(value):
+	try:
+		float(value)
+		return True
+	except ValueError:
+		return False
+
+# ----------------------------------------------------------------------------------------
 # MPI run class
 # ----------------------------------------------------------------------------------------
 class SXmpi_run(object):
@@ -151,6 +161,11 @@ def isac_substack(args):
 	# from EMAN2db import db_open_dict, db_check_dict
 	# from e2bdb import makerelpath
 	
+	# Define the name of this subcommand
+	# subcommand_name = "isac_substack"
+	command_script_basename = os.path.basename(sys.argv[0])
+	subcommand_name = "{} {}".format(command_script_basename, args.subcommand)
+	
 	# Check MPI execution
 	if SXmpi_run.n_mpi_procs > 1:
 		assert (SXmpi_run.RUNNING_UNDER_MPI)
@@ -161,10 +176,6 @@ def isac_substack(args):
 	global_def.BATCH = True 
 	
 	# Check error conditions of arguments
-	# subcommand_name = "isac_substack"
-	command_script_basename = os.path.basename(sys.argv[0])
-	subcommand_name = "{} {}".format(command_script_basename, args.subcommand)
-	
 	args.input_bdb_stack_path = args.input_bdb_stack_path.strip()
 	if not db_check_dict(args.input_bdb_stack_path, readonly=True):
 		ERROR("Input BDB image stack file does not exist. Please check the file path and restart the program.", subcommand_name) # action=1 - fatal error, exit
@@ -616,6 +627,10 @@ def resample_micrographs(args):
 	# ====================================================================================
 	# Prepare processing
 	# ====================================================================================
+	# Define the name of this subcommand
+	command_script_basename = os.path.basename(sys.argv[0])
+	program_name = "{} {}".format(command_script_basename, args.subcommand)
+	
 	# ------------------------------------------------------------------------------------
 	# Check MPI execution
 	# ------------------------------------------------------------------------------------
@@ -628,9 +643,6 @@ def resample_micrographs(args):
 	if global_def.CACHE_DISABLE:
 		from utilities import disable_bdb_cache
 		disable_bdb_cache()
-	
-	command_script_basename = os.path.basename(sys.argv[0])
-	program_name = "{} {}".format(command_script_basename, args.subcommand)
 	
 	# Change the name log file for error message
 	original_logfilename = global_def.LOGFILE
@@ -1047,7 +1059,7 @@ def resample_micrographs(args):
 	# Print out the summary of all micrographs
 	if SXmpi_run.is_main_proc():
 		print(" ")
-		print("Summary of process...")
+		print("Summary of processing...")
 		print("Valid                              : %6d" % (len(unsliced_valid_serial_id_list)))
 		print("Processed                          : %6d" % (n_mic_process))
 	
@@ -1101,6 +1113,11 @@ def organize_micrographs(args):
 	import shutil
 	from utilities import read_text_file
 	
+	# Define the name of this subcommand
+	# subcommand_name = "organize_micrographs"
+	command_script_basename = os.path.basename(sys.argv[0])
+	subcommand_name = "{} {}".format(command_script_basename, args.subcommand)
+	
 	# Check MPI execution
 	if SXmpi_run.n_mpi_procs > 1:
 		assert (SXmpi_run.RUNNING_UNDER_MPI)
@@ -1121,10 +1138,6 @@ def organize_micrographs(args):
 	# ------------------------------------------------------------------------------------
 	# Check error conditions
 	# ------------------------------------------------------------------------------------
-	# subcommand_name = "organize_micrographs"
-	command_script_basename = os.path.basename(sys.argv[0])
-	subcommand_name = "{} {}".format(command_script_basename, args.subcommand)
-	
 	if src_mic_pattern.find("*") == -1:
 		ERROR("The source micrograph path pattern must contain wild card (*). Please correct source_micrograph_pattern argument and restart the program.", subcommand_name) # action=1 - fatal error, exit
 	
@@ -1832,10 +1845,17 @@ def restacking(args):
 			self.ctf_params_list = []
 			self.original_proj_params_list = []
 			self.original_coords_list = []
+			self.original_rebox_coords_list = [] # contains both original coordinates and original projection paramters
 			self.centered_proj_params_list = []
 			self.centered_coords_list = []
+			self.centered_rebox_coords_list = [] # contains both centered coordinates and centered projection paramters
 			# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
-
+	
+	# Define the name of this subcommand
+	# subcommand_name = "restacking"
+	command_script_basename = os.path.basename(sys.argv[0])
+	subcommand_name = "{} {}".format(command_script_basename, args.subcommand)
+	
 	# Check MPI execution
 	if SXmpi_run.n_mpi_procs > 1:
 		assert (SXmpi_run.RUNNING_UNDER_MPI)
@@ -1844,11 +1864,6 @@ def restacking(args):
 	
 	# To make the execution exit upon fatal error by ERROR in global_def.py
 	global_def.BATCH = True 
-	
-	# Define the name of this subcommand
-	# subcommand_name = "restacking"
-	command_script_basename = os.path.basename(sys.argv[0])
-	subcommand_name = "{} {}".format(command_script_basename, args.subcommand)
 	
 	# Check error conditions of arguments
 	if not db_check_dict(args.input_bdb_stack_path, readonly=True):
@@ -2021,7 +2036,7 @@ def restacking(args):
 			missing_proj_params_counter += 1
 			
 		# Register original projection parameters to global micrograph dictionary
-		global_mic_dict[mic_basename].original_proj_params_list.append("{:15.5f} {:15.5f} {:15.5f} {:15.5f} {:15.5f} ".format(proj_phi, proj_theta, proj_psi, proj_tx, proj_ty))
+		global_mic_dict[mic_basename].original_proj_params_list.append("{:15.5f} {:15.5f} {:15.5f} {:15.5f} {:15.5f}".format(proj_phi, proj_theta, proj_psi, proj_tx, proj_ty))
 		
 		# Transform the coordinates according to projection parameters and user-provided 3D shift (corresponding to shifting the 3D volume)
 		trans3x3 = Transform({"phi":float(proj_phi), "theta":float(proj_theta), "psi":float(proj_psi), "tx":float(proj_tx), "ty":float(proj_ty), "tz":0.0, "type":"spider"})
@@ -2031,7 +2046,7 @@ def restacking(args):
 		shift2d_y = -1 * transformed_vec3d[1]
 		
 		# Register centered projection parameters to global micrograph dictionary
-		global_mic_dict[mic_basename].centered_proj_params_list.append("{:15.5f} {:15.5f} {:15.5f} {:15.5f} {:15.5f} ".format(proj_phi, proj_theta, proj_psi, 0.0, 0.0))
+		global_mic_dict[mic_basename].centered_proj_params_list.append("{:15.5f} {:15.5f} {:15.5f} {:15.5f} {:15.5f}".format(proj_phi, proj_theta, proj_psi, 0.0, 0.0))
 		
 		if args.reboxing:
 			# Extract the associated coordinates from the image header
@@ -2046,10 +2061,16 @@ def restacking(args):
 			original_coordinate_y = center_coordinate_y - (args.rb_box_size//2)
 			global_mic_dict[mic_basename].original_coords_list.append("{:6d} {:6d} {:6d} {:6d} {:6d}\n".format(original_coordinate_x, original_coordinate_y, args.rb_box_size, args.rb_box_size, eman1_dummy))
 			
+			global_mic_dict[mic_basename].original_rebox_coords_list.append("{:6d} {:6d} {:15.5f} {:15.5f} {:15.5f} {:15.5f} {:15.5f}\n".format(center_coordinate_x, center_coordinate_y, proj_phi, proj_theta, proj_psi, 0.0, 0.0))
+			
 			# Transform and center the coordinates according to projection parameters and user-provided 3D shift (corresponding to shifting the 3D volume)
 			centered_coordinate_x = int(round(original_coordinate_x + shift2d_x))
 			centered_coordinate_y = int(round(original_coordinate_y + shift2d_y))
 			global_mic_dict[mic_basename].centered_coords_list.append("{:6d} {:6d} {:6d} {:6d} {:6d}\n".format(centered_coordinate_x, centered_coordinate_y, args.rb_box_size, args.rb_box_size, eman1_dummy))
+			
+			centered_center_coordinate_x = int(round(center_coordinate_x + shift2d_x))
+			centered_center_coordinate_y = int(round(center_coordinate_y + shift2d_y))
+			global_mic_dict[mic_basename].centered_rebox_coords_list.append("{:6d} {:6d} {:15.5f} {:15.5f} {:15.5f} {:15.5f} {:15.5f}\n".format(centered_center_coordinate_x, centered_center_coordinate_y, proj_phi, proj_theta, proj_psi, 0.0, 0.0))
 			
 #	print(" ")
 #	print_progress("Found total of {} assocaited micrographs in the input stack {}.".format(len(global_mic_dict), args.input_bdb_stack_path))
@@ -2147,17 +2168,27 @@ def restacking(args):
 		original_coords_list_subdir = "original"
 		original_coords_list_suffix = '_original.box'
 		os.mkdir(os.path.join(args.output_directory, original_coords_list_subdir))
-	
+		
+		original_rebox_coords_list_subdir = "original_rebox"
+		original_rebox_coords_list_suffix = '_original_rebox.srb' # SPHIRE rebox coordinate format
+		os.mkdir(os.path.join(args.output_directory, original_rebox_coords_list_subdir))
+		
 		centered_coords_list_subdir = "centered"
 		centered_coords_list_suffix = '_centered.box'
 		os.mkdir(os.path.join(args.output_directory, centered_coords_list_subdir))
-
+		
+		centered_rebox_coords_list_subdir = "centered_rebox"
+		centered_rebox_coords_list_suffix = '_centered_rebox.srb' # SPHIRE rebox coordinate format
+		os.mkdir(os.path.join(args.output_directory, centered_rebox_coords_list_subdir))
+	
 	global_output_image_id_list = []
 	global_ctf_params_counters = 0
 	global_original_proj_params_counters = 0
-	global_centered_proj_params_counters = 0
 	global_original_coords_counters = 0
+	global_original_rebox_coords_counters = 0
+	global_centered_proj_params_counters = 0
 	global_centered_coords_counters = 0
+	global_centered_rebox_coords_counters = 0
 	print(" ")
 	for mic_basename in mic_basename_list_of_output_stack:
 		mic_entry = global_mic_dict[mic_basename]
@@ -2191,39 +2222,64 @@ def restacking(args):
 		if args.reboxing:
 			mic_rootname, mic_extension = os.path.splitext(mic_basename)
 			assert (len(mic_entry.original_coords_list) == len(mic_entry.img_id_list))
+			assert (len(mic_entry.original_rebox_coords_list) == len(mic_entry.img_id_list))
 			assert (len(mic_entry.centered_coords_list) == len(mic_entry.img_id_list))
+			assert (len(mic_entry.centered_rebox_coords_list) == len(mic_entry.img_id_list))
+
 			# Count up total number of coordinates
 			global_original_coords_counters += len(mic_entry.original_coords_list)
+			global_original_rebox_coords_counters += len(mic_entry.original_rebox_coords_list)
 			global_centered_coords_counters += len(mic_entry.centered_coords_list)
+			global_centered_rebox_coords_counters += len(mic_entry.centered_rebox_coords_list)
 			assert (global_original_coords_counters == len(global_output_image_id_list))
+			assert (global_original_rebox_coords_counters == len(global_output_image_id_list))
 			assert (global_centered_coords_counters == len(global_output_image_id_list))
+			assert (global_centered_rebox_coords_counters == len(global_output_image_id_list))
 		
-			# Save the original coordinates to output file; original EMAN1 box coordinate file or this micrograph
+			# Save the original coordinates to output file; original EMAN1 box coordinate file for this micrograph
 			original_coords_list_path = os.path.join(args.output_directory, original_coords_list_subdir, "{}{}".format(mic_rootname, original_coords_list_suffix))
 			original_coords_list_file = open(original_coords_list_path, "w")
 			for original_coords in mic_entry.original_coords_list:
 				original_coords_list_file.write(original_coords)
 			original_coords_list_file.close()
+			
+			# Save the original rebox coordinates to output file; original SPHIRE rebox coordinate for this micrograph
+			original_rebox_coords_list_path = os.path.join(args.output_directory, original_rebox_coords_list_subdir, "{}{}".format(mic_rootname, original_rebox_coords_list_suffix))
+			original_rebox_coords_list_file = open(original_rebox_coords_list_path, "w")
+			for original_rebox_coords in mic_entry.original_rebox_coords_list:
+				original_rebox_coords_list_file.write(original_rebox_coords)
+			original_rebox_coords_list_file.close()
 		
-			# Save the centered coordinates to output file; centered EMAN1 box coordinate file or this micrograph
+			# Save the centered coordinates to output file; centered EMAN1 box coordinate file for this micrograph
 			centered_coords_list_path = os.path.join(args.output_directory, centered_coords_list_subdir, "{}{}".format(mic_rootname, centered_coords_list_suffix))
 			centered_coords_list_file = open(centered_coords_list_path, "w")
 			for centered_particle_coordinates in mic_entry.centered_coords_list:
 				centered_coords_list_file.write(centered_particle_coordinates)
 			centered_coords_list_file.close()
 		
+			# Save the centered rebox coordinates to output file; centered SPHIRE rebox coordinate file for this micrograph
+			centered_rebox_coords_list_path = os.path.join(args.output_directory, centered_rebox_coords_list_subdir, "{}{}".format(mic_rootname, centered_rebox_coords_list_suffix))
+			centered_rebox_coords_list_file = open(centered_rebox_coords_list_path, "w")
+			for centered_rebox_particle_coordinates in mic_entry.centered_rebox_coords_list:
+				centered_rebox_coords_list_file.write(centered_rebox_particle_coordinates)
+			centered_rebox_coords_list_file.close()
+		
 		# print(" ")
 		# print_progress("Micrograph summary...")
-		# print_progress("  Micrograph Name                : {}".format(mic_basename))
-		# print_progress("  Extracted particle image ID    : {:6d}".format(len(mic_entry.img_id_list)))
-		# print_progress("  Original projection parameters : {:6d}".format(len(mic_entry.original_proj_params_list)))
-		# print_progress("  Centered projection parameters : {:6d}".format(len(mic_entry.centered_proj_params_list)))
+		# print_progress("  Micrograph Name                      : {}".format(mic_basename))
+		# print_progress("  Extracted particle image ID          : {:6d}".format(len(mic_entry.img_id_list)))
+		# print_progress("  Original projection parameters       : {:6d}".format(len(mic_entry.original_proj_params_list)))
+		# print_progress("  Centered projection parameters       : {:6d}".format(len(mic_entry.centered_proj_params_list)))
 		print_progress(" {:6d} particles in {}...".format(len(mic_entry.img_id_list), mic_basename))
 		if args.reboxing:
-		#	print_progress("  Extracted original coordinates : {:6d}".format(len(mic_entry.original_coords_list)))
-		#	print_progress("  Extracted centered coordinates : {:6d}".format(len(mic_entry.centered_coords_list)))
-		#	print_progress("  Saved original coordinates to  : {}".format(original_coords_list_path))
-		#	print_progress("  Saved centered coordinates to  : {}".format(centered_coords_list_path))
+		#	print_progress("  Extracted original coordinates       : {:6d}".format(len(mic_entry.original_coords_list)))
+		#	print_progress("  Saved original coordinates to        : {}".format(original_coords_list_path))
+		#	print_progress("  Extracted original rebox coordinates : {:6d}".format(len(mic_entry.original_rebox_coords_list)))
+		#	print_progress("  Saved original rebox coordinates to  : {}".format(original_rebox_coords_list_path))
+		#	print_progress("  Extracted centered coordinates       : {:6d}".format(len(mic_entry.centered_coords_list)))
+		#	print_progress("  Saved centered coordinates to        : {}".format(centered_coords_list_path))
+		#	print_progress("  Extracted centered rebox coordinates : {:6d}".format(len(mic_entry.centered_rebox_coords_list)))
+		#	print_progress("  Saved centered rebox coordinates to  : {}".format(centered_rebox_coords_list_path))
 		#	print_progress(" {:6d} particle coordinates for {}...".format(len(mic_entry.original_coords_list), mic_basename))
 			assert (len(mic_entry.original_coords_list) == len(mic_entry.img_id_list))
 	
@@ -2273,10 +2329,802 @@ def restacking(args):
 	if args.reboxing:
 		print_progress("Num. of original coordinates in output dataset        : {:6d}".format(global_original_coords_counters))
 		print_progress("Saved original coordinates files in                   : {}".format(os.path.join(args.output_directory, original_coords_list_subdir)))
+		print_progress("Num. of original rebox coordinates in output dataset  : {:6d}".format(global_original_rebox_coords_counters))
+		print_progress("Saved original rebox coordinates files in             : {}".format(os.path.join(args.output_directory, original_rebox_coords_list_subdir)))
 		print_progress("Num. of centered coordinates in output dataset        : {:6d}".format(global_centered_coords_counters))
 		print_progress("Saved centered coordinates files in                   : {}".format(os.path.join(args.output_directory, centered_coords_list_subdir)))
+		print_progress("Num. of centered rebox coordinates in output dataset  : {:6d}".format(global_centered_rebox_coords_counters))
+		print_progress("Saved centered rebox coordinates files in             : {}".format(os.path.join(args.output_directory, centered_rebox_coords_list_subdir)))
 	if args.save_vstack:
 		print_progress("Save output stack as                                  : {}".format(virtual_bdb_stack_path))
+
+# ----------------------------------------------------------------------------------------
+# TEST COMMAND
+# 
+# cd /home/moriya/mrk_qa/mrktest_pipeline
+# 
+# sxpipe.py moon_elimination --help
+# 
+# rm -rf debug_mrkout_sxpipe_moon_elimination_viper; sxpipe.py moon_elimination 'mrkout_pipe05_sxrviper_c5/main003/average_volume.hdf' 'debug_mrkout_sxpipe_moon_elimination_viper' --mol_mass=1400 --pixel_size=1.12 --moon_distance=3 --falloff_speed=3.0  --resample_ratio='mrkout_pipe03_sxisac'  --generate_mask='gauss'  --gm_edge_width=6  --gm_falloff_speed=3.0
+# 
+# cd /home/moriya/mrk_qa/mrktest_pipeline/debug_mrkout_sxpipe_moon_elimination
+# 
+# rm -rf mrkout_d3_fs3o00_mask_gauss_w6_fs3o00; sxpipe.py moon_elimination 'vol3d.hdf' 'mrkout_d3_fs3o00_mask_gauss_w6_fs3o00' --mol_mass=1400 --pixel_size=1.12 --moon_distance=3 --falloff_speed=3.0  --generate_mask='gauss'  --gm_edge_width=6  --gm_falloff_speed=3.0
+# rm -rf mrkout_d3_fs3o00_mask_gauss_w6_fs3o00; sxpipe.py moon_elimination 'vol3d.hdf' 'mrkout_d3_fs3o00_mask_gauss_w6_fs3o00' --mol_mass=1400 --pixel_size=1.12 --moon_distance=3 --falloff_speed=3.0  --generate_mask='gauss'  --gm_edge_width=6  --gm_falloff_speed=3.0  --gm_mask3d_name='my_mask3d.hdf'
+# rm -rf mrkout_d3_fs3o00_mask_consine_w6; sxpipe.py moon_elimination 'vol3d.hdf' 'mrkout_d3_fs3o00_mask_consine_w6' --mol_mass=1400 --pixel_size=1.12 --moon_distance=3 --falloff_speed=3.0  --generate_mask='consine'  --gm_edge_width=6
+# rm -rf mrkout_d3_fs3o00_zflip; sxpipe.py moon_elimination 'vol3d.hdf' 'mrkout_d3_fs3o00_zflip' --mol_mass=1400 --pixel_size=1.12 --moon_distance=3 --falloff_speed=3.0  --invert_handedness
+# 
+# Very nice balance!!!
+# rm -rf mrkout_d6_fs5o00; sxpipe.py moon_elimination 'vol3d.hdf' 'mrkout_d6_fs5o00' --mol_mass=1400 --pixel_size=1.12 --moon_distance=6 --falloff_speed=5.0
+# 
+# Very nice balance!!!
+# rm -rf mrkout_d6_fs3o00; sxpipe.py moon_elimination 'vol3d.hdf' 'mrkout_d6_fs3o00' --mol_mass=1400 --pixel_size=1.12 --moon_distance=6 --falloff_speed=3.0
+# 
+# falloff_speed is too fast for this moon_distance! 
+# Density Histogram of ref3d.hdf have a strange dent
+# rm -rf mrkout_d3_fs5o00; sxpipe.py moon_elimination 'vol3d.hdf' 'mrkout_d3_fs5o00' --mol_mass=1400 --pixel_size=1.12 --moon_distance=3 --falloff_speed=5.0
+# 
+# Very nice balance!!!
+# rm -rf mrkout_d3_fs3o00; sxpipe.py moon_elimination 'vol3d.hdf' 'mrkout_d3_fs3o00' --mol_mass=1400 --pixel_size=1.12 --moon_distance=3 --falloff_speed=3.0
+# 
+# -> Maybe, sigma should be at least larger than 1[pixel] (large)!!!
+#    If samller, density Histogram of ref3d.hdf will have a strange dent!!!
+# 
+# ----------------------------------------------------------------------------------------
+# Author 1: Felipe Merino 01/26/2018 (felipe.merino@mpi-dortmund.mpg.de)
+# Author 2: Toshio Moriya 03/07/2018 (toshio.moriya@mpi-dortmund.mpg.de)
+# ----------------------------------------------------------------------------------------
+class SXDalton(object):
+	# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+	# static class variables
+	# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+	# Define Physical coefficient
+	the_avagadro = 6.023 * pow(10.0, 23.0)
+	the_density_protein = 1.36
+	the_R = 0.61803399
+	the_C = 1.0 - the_R
+	# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+	
+	# Compute molecular mass corresponds to the volume [Voxels] where the density value is higher than or equal to the threshold
+	@staticmethod
+	def compute_mol_mass_from_density_threshold(vol3d, density_threshold, pixel_size):
+		vol_voxels = SXDalton.compute_vol_voxels_from_density_threshold(vol3d, density_threshold, pixel_size)
+		mol_mass = SXDalton.compute_mol_mass_from_vol_voxels(vol_voxels, pixel_size)
+		
+		return mol_mass
+	
+	@staticmethod
+	def compute_density_threshold_from_mol_mass(vol3d, mol_mass, pixel_size):
+		density_threshold = vol3d.find_3d_threshold(mol_mass, pixel_size)
+		
+		return density_threshold
+
+	# Count the number of voxels whose density value is higher than or equal to the threshold
+	@staticmethod
+	def compute_vol_voxels_from_density_threshold(vol3d, density_threshold, pixel_size):
+		from morphology import binarize
+		
+		mask3d = None
+		# mask3d = None : Find statistics of all voxels
+		flip_mask3d = False
+		# flip_mask = True : Find statistics inside the mask (mask >0.5)
+		# flip_mask = False: Find statistics ourside the mask (mask <0.5)
+		
+		# Count the number of voxels whose density value is higher than or equal to the threshold
+		bin3d = binarize(vol3d, density_threshold)
+		bin3d_stats = Util.infomask(bin3d, mask3d, flip_mask3d)
+		# bin3d_stats[0] : average
+		# bin3d_stats[1] : sigma (standard deviation)
+		# bin3d_stats[2] : minimum voxel value
+		# bin3d_stats[3] : maximum voxel value
+		nx = bin3d.get_xsize()
+		ny = bin3d.get_ysize()
+		nz = bin3d.get_zsize()
+		n_voxels = nx * ny * nz
+		vol_voxels = int(bin3d_stats[0] * n_voxels)
+		
+		return vol_voxels
+
+	# Compute the density threshold where the number of voxels whose density value is higher than or equal to the threshold
+	@staticmethod
+	def compute_density_threshold_from_vol_voxels(vol3d, vol_voxels, pixel_size):
+		mol_mass = SXDalton.compute_mol_mass_from_vol_voxels(vol_voxels, pixel_size)
+		density_threshold = vol3d.find_3d_threshold(mol_mass, pixel_size)
+		
+		return density_threshold
+	
+	# Convert the number of voxels to molecular mass [kDa] with a given pixel size [A/Pixel]
+	@staticmethod
+	def compute_mol_mass_from_vol_voxels(vol_voxels, pixel_size):
+		# Shorten the variable names for readability
+		avagadro = SXDalton.the_avagadro
+		density_protein = SXDalton.the_density_protein
+		R = SXDalton.the_R
+		C = SXDalton.the_C
+		
+		# Convert the number of voxels to molecular mass [kDa] with a given pixel size [A/Pixel]
+		vol_angstrom = vol_voxels * pow(pixel_size, 3.0)
+		vol_1_mole = vol_angstrom / pow(pow(10.0, 8.0), 3.0)
+		density_1_mole = vol_1_mole * density_protein
+		mol_mass = density_1_mole * avagadro / 1000.0 # Kilodalton
+	
+		return mol_mass;
+	
+	# Convert molecular mass [kDa] to the number of voxels with a given pixel size [A/Pixel]
+	@staticmethod
+	def compute_vol_voxels_from_mol_mass(mol_mass, pixel_size):
+		# Shorten the variable names for readability
+		avagadro = SXDalton.the_avagadro
+		density_protein = SXDalton.the_density_protein
+		R = SXDalton.the_R
+		C = SXDalton.the_C
+		
+		# Convert molecular mass [kDa] to the number of voxels with a given pixel size [A/Pixel]
+		density_1_mole = mol_mass * 1000.0 / avagadro
+		vol_1_mole =  density_1_mole / density_protein
+		vol_angstrom =  vol_1_mole * pow(pow(10.0, 8.0), 3.0)
+		vol_voxels = vol_angstrom / pow(pixel_size, 3.0)
+		
+		return vol_voxels;
+
+# ----------------------------------------------------------------------------------------
+def mrk_binarize_non_zero_positive(vol3d):
+	from morphology import binarize
+	
+	vol3d_inv = -1 * vol3d
+	bin3d_inv = binarize(vol3d_inv)
+	bin3d = (-1 * bin3d_inv) + 1
+	
+	return bin3d
+
+# ----------------------------------------------------------------------------------------
+def mrk_sphere_dilation(bin3d, dilation_radius):
+	from utilities import model_circle
+	from EMAN2 import rsconvolution
+	
+	print_progress("MRK_DEBUG: ")
+	print_progress("MRK_DEBUG: mrk_sphere_dilation()")
+	print_progress("MRK_DEBUG:   dilation_radius := {}".format(dilation_radius))
+	
+	bin3d_stats = Util.infomask(bin3d, None, False)
+	assert (bin3d.get_ndim() == 3)
+	assert (bin3d_stats[2] >= 0.0)
+	assert (bin3d_stats[3] <= 1.0)
+	
+	dilation_kernel_size = int(dilation_radius * 2 + 1)
+	sphere_kernel = model_circle(dilation_radius, dilation_kernel_size, dilation_kernel_size, dilation_kernel_size)
+	bin3d_dilated = rsconvolution(bin3d, sphere_kernel)
+	
+	bin3d_dilated = binarize(bin3d_dilated, 1.0)
+
+	return bin3d_dilated
+
+# ----------------------------------------------------------------------------------------
+# NOTE: Toshio Moriya 2018/03/13
+# This function is not currently used
+def mrk_sphere_gauss_edge(bin3d, gauss_kernel_radius, gauss_sigma):
+	# smooth bin3d with Gaussian function
+	# 1. The sharp-edge image is convoluted with a gassian kernel
+	# 2. The convolution normalized
+	from utilities import model_gauss, model_circle
+	from EMAN2 import rsconvolution
+	
+	assert (bin3d.get_ndim() == 3)
+	
+	print_progress("MRK_DEBUG: ")
+	print_progress("MRK_DEBUG: mrk_sphere_gauss_edge()")
+	print_progress("MRK_DEBUG:   gauss_kernel_radius := {}".format(gauss_kernel_radius))
+	print_progress("MRK_DEBUG:   gauss_sigma         := {}".format(gauss_sigma))
+	
+	gauss_kernel_size = int(gauss_kernel_radius * 2 + 1)
+	
+	# dilate the volume by soft-edge width
+	bin3d_dilated = mrk_sphere_dilation(bin3d, gauss_kernel_radius)
+	circular_mask = model_circle(gauss_kernel_radius, gauss_kernel_size, gauss_kernel_size, gauss_kernel_size)
+	gauss_kernel = model_gauss(gauss_sigma, gauss_kernel_size, gauss_kernel_size, gauss_kernel_size)
+	circular_gauss_kernel = gauss_kernel * circular_mask
+	
+	aves = Util.infomask(circular_gauss_kernel, None, False)
+	nx = circular_gauss_kernel.get_xsize()
+	ny = circular_gauss_kernel.get_ysize()
+	nz = circular_gauss_kernel.get_zsize()
+	circular_gauss_kernel /= (aves[0]*nx*ny*nz)
+	
+	mask3d_gauss_edged = rsconvolution(bin3d_dilated, circular_gauss_kernel)
+	
+	return mask3d_gauss_edged, bin3d_dilated
+
+# ----------------------------------------------------------------------------------------
+# Use sphere dilation and sphere Gaussian soft-edging (aka surface mask)
+# 
+def mrk_eliminate_moons_sphire_gaussian_edge(vol3d, density_threshold, gauss_kernel_radius, gauss_sigma, threshold_adjustment = 1.0):
+	from morphology import binarize
+	from utilities import gauss_edge
+	
+	print_progress("MRK_DEBUG: ")
+	print_progress("MRK_DEBUG: mrk_eliminate_moons_sphire_gaussian_edge()")
+	print_progress("MRK_DEBUG:   density_threshold    := {}".format(density_threshold))
+	print_progress("MRK_DEBUG:   gauss_kernel_radius  := {}".format(gauss_kernel_radius))
+	print_progress("MRK_DEBUG:   gauss_sigma          := {}".format(gauss_sigma))
+	print_progress("MRK_DEBUG:   threshold_adjustment := {}".format(threshold_adjustment))
+	
+	# Defined the local constants
+	# 
+	# NOTE: Toshio Moriya 2018/03/12
+	# This threshold_adjustment must be synchronised with the parameter settings of gauss_edge() or mrk_sphere_gauss_edge()
+	adjusted_density_threshold = density_threshold * threshold_adjustment
+	
+	bin3d = binarize(vol3d, adjusted_density_threshold)
+	# bin3d.write_image ("bin3d.hdf")
+	bin3d_no_moons = Util.get_biggest_cluster(bin3d)
+	# bin3d_no_moons.write_image("bin3d_no_moons.hdf")
+	bin3d_diff = bin3d - bin3d_no_moons
+	# bin3d_diff.write_image("bin3d_diff.hdf")
+
+	# The difference are supposed to contain only moons!
+	# If all differences are zero, there should be no effect of moon elimination on the input volume.
+	# In this case, return the original volume.
+	vol3d_no_moons = vol3d
+	# Create Gaussian soft-edged binary mask with no moons 
+	mask3d_no_moons, bin3d_no_moons_dilated = mrk_sphere_gauss_edge(bin3d_no_moons, gauss_kernel_radius, gauss_sigma)
+	if bin3d_diff.get_value_at(bin3d_diff.calc_max_index()) != 0 or bin3d_diff.get_value_at(bin3d_diff.calc_min_index()) != 0:
+		# Eliminate moons from the original volume and soften the volume edge by apply the soft-edged binary mask with no moons to the original volume.
+		vol3d_no_moons = mask3d_no_moons * vol3d
+	
+	return vol3d_no_moons, bin3d_no_moons, mask3d_no_moons, adjusted_density_threshold, bin3d_no_moons_dilated
+
+# ----------------------------------------------------------------------------------------
+# NOTE: Toshio Moriya 2018/03/16
+# Unfortunately, there might be bug in Util.adaptive_mask()
+# vol3d_no_moons will have a strange gap in the middle part of the density histogram.
+#
+# Use Zhong's adaptive mask (aka surface mask)
+# 
+# def mrk_eliminate_moons_surface_mask(vol3d, density_threshold, threshold_adjustment = 1.0, dilation = 3.0, consine_edge = 6.0):
+def mrk_eliminate_moons_surface_mask(vol3d, density_threshold, threshold_adjustment = 1.0, dilation = 1.0, consine_edge = 5.0):
+	from morphology import binarize
+	from utilities import gauss_edge
+	
+	# Defined the local constants
+	# 
+	# NOTE: Toshio Moriya 2018/03/16
+	# This threshold_adjustment must be synchronised with the parameter settings of Util.adaptive_mask()
+	adjusted_density_threshold = density_threshold * threshold_adjustment
+	
+	bin3d = binarize(vol3d, adjusted_density_threshold)
+	# bin3d.write_image ("bin3d.hdf")
+	bin3d_no_moons = Util.get_biggest_cluster(bin3d)
+	# bin3d_no_moons.write_image("bin3d_no_moons.hdf")
+	bin3d_diff = bin3d - bin3d_no_moons
+	# bin3d_diff.write_image("bin3d_diff.hdf")
+
+	# The difference are supposed to contain only moons!
+	# If all differences are zero, there should be no effect of moon elimination on the input volume.
+	# In this case, return the original volume.
+	vol3d_no_moons = vol3d
+	# Create soft-edged binary mask with no moons 
+	mask3d_no_moons = Util.adaptive_mask(bin3d_no_moons, 0.0, dilation, consine_edge)
+	if bin3d_diff.get_value_at(bin3d_diff.calc_max_index()) != 0 or bin3d_diff.get_value_at(bin3d_diff.calc_min_index()) != 0:
+		# Eliminate moons from the original volume and soften the volume edge by apply the soft-edged binary mask with no moons to the original volume.
+		print_progress("MRK_DEBUG: Fond effect of moon elimination")
+		vol3d_no_moons = mask3d_no_moons * vol3d
+	
+	return vol3d_no_moons, bin3d_no_moons, mask3d_no_moons, adjusted_density_threshold
+
+# ----------------------------------------------------------------------------------------
+# NOTE: Toshio Moriya 2018/03/16
+# This method is OK but changes the absolute density values a lot by mask3d_no_moons 
+#
+# Let's start from the copy of eliminate_moons() from utilites.py
+# 
+def mrk_eliminate_moons(vol3d, density_threshold, threshold_adjustment = 1.1, gauss_kernel_size = 7, gauss_sigma = 3):
+	from morphology import binarize
+	from utilities import gauss_edge
+	
+	# Defined the local constants
+	# 
+	# NOTE: Toshio Moriya 2018/03/12
+	# This threshold_adjustment must be synchronised with the parameter settings of gauss_edge()
+	adjusted_density_threshold = density_threshold * threshold_adjustment
+	
+	bin3d = binarize(vol3d, adjusted_density_threshold)
+	# bin3d.write_image ("bin3d.hdf")
+	bin3d_no_moons = Util.get_biggest_cluster(bin3d)
+	# bin3d_no_moons.write_image("bin3d_no_moons.hdf")
+	bin3d_diff = bin3d - bin3d_no_moons
+	# bin3d_diff.write_image("bin3d_diff.hdf")
+
+	# The difference are supposed to contain only moons!
+	# If all differences are zero, there should be no effect of moon elimination on the input volume.
+	# In this case, return the original volume.
+	vol3d_no_moons = vol3d
+	# Create Gaussian soft-edged binary mask with no moons 
+	# By default gauss_edge() uses
+	# - kernel_size = 7
+	# - sigma =3
+	mask3d_no_moons = gauss_edge(bin3d_no_moons, gauss_kernel_size, gauss_sigma)
+	if bin3d_diff.get_value_at(bin3d_diff.calc_max_index()) != 0 or bin3d_diff.get_value_at(bin3d_diff.calc_min_index()) != 0:
+		# Eliminate moons from the original volume and soften the volume edge by apply the soft-edged binary mask with no moons to the original volume.
+		vol3d_no_moons = mask3d_no_moons * vol3d
+	
+	return vol3d_no_moons, bin3d_no_moons, mask3d_no_moons, adjusted_density_threshold
+
+"""
+# NOTE: Toshio Moriya 2018/03/13
+# I don't like the output of gaussian edge. This reduces the density too much...
+def mrk_create_gauss_edged_mask_repeat(vol3d, gauss_kernel_size = 7, gauss_sigma = 3, dilation_repeat = 1):
+	from utilities import gauss_edge
+	
+	# Binarize 3D volume
+	# By default binarize() uses
+	# - minval = 0.0
+	bin3d = mrk_binarize_non_zero_positive(vol3d)
+	bin3d.write_image("mrkdebug_bin3d.hdf")
+	# Soften edge by applying gaussian filter
+	# By default mrk_sphere_gauss_edge() uses
+	# - kernel_size = 7
+	# - gauss_sigma =3
+	mask3d_circular_gauss_edge = mrk_sphere_gauss_edge(bin3d, gauss_kernel_size, gauss_sigma)
+	mask3d_circular_gauss_edge.write_image("mrkdebug_mask3d_circular_gauss_edge.hdf")
+
+	mask3d_gauss_edge = gauss_edge(bin3d, gauss_kernel_size, gauss_sigma)
+	mask3d_gauss_edge.write_image("mrkdebug_mask3d_gauss_edge.hdf")
+	
+	# # Do Gaussian dilation using FWHM (Full width at half maximum () of Gaussian Distribution
+	# for i_dilation in xrange(dilation_repeat):
+	# 	# Binarize 3D volume
+	# 	bin3d_gauss_edge = mrk_binarize_non_zero_positive(mask3d_gauss_edge)
+	# 	bin3d_gauss_edge.write_image("mrkdebug_bin3d_gauss_edge_{:02d}.hdf".format(i_dilation))
+	# 	# Soften edge by applying gaussian filter
+	# 	mask3d_gauss_edge = mrk_sphere_gauss_edge(bin3d_gauss_edge, gauss_kernel_size, gauss_sigma)
+	# 	mask3d_gauss_edge.write_image("mrkdebug_mask3d_gauss_edge_{:02d}.hdf".format(i_dilation))
+	
+	return mask3d_gauss_edge
+"""
+
+"""
+# NOTE: Toshio Moriya 2018/03/13
+# Using resolution does not work well. This reduces the density too much...
+def mrk_create_gauss_edged_mask_resolution(vol3d, resolution, pixel_size):
+	from morphology import binarize
+	
+	assert (resolution > 0.0)
+	assert (pixel_size > 0.0)
+	assert (resolution >= 2 * pixel_size)
+	
+	# Compute Standard Deviation and Kernel size from resolution and pixel size
+	# Compute FWHM (Full width at half maximum) of Gaussian distribution from resolution and pixel size
+	FWHM = resolution / pixel_size
+	
+	# Compute sigma of Gaussian filter from the FWHM
+	# FWHM = 2*sigma*sqrt(2*ln(2)) ~= 2.35*sigma
+	# => sigma ~= FWHM/2.35
+	gauss_sigma= ceil(FWHM/2.35)
+	# Compute kernel size of Gaussian filter from the FWHM
+	kernel_size = 2 * (3 * gauss_sigma) + 1
+	
+	# Binarize 3D volume
+	# By default binarize() uses
+	# - minval = 0.0
+	bin3d = mrk_binarize_non_zero_positive(vol3d)
+	
+	# Do Gaussian dilation using FWHM (Full width at half maximum () of Gaussian Distribution
+	bin3d_gauss_dilation = mrk_sphere_gauss_edge(bin3d, kernel_size, gauss_sigma)
+	bin3d_gauss_dilation = mrk_binarize_non_zero_positive(bin3d_gauss_dilation)
+	
+	# Soften edge by applying gaussian filter
+	# kernel_size = 2 * gauss_sigma + 1
+	mask3d_gauss_edge = mrk_sphere_gauss_edge(bin3d_gauss_dilation, kernel_size, gauss_sigma)
+	
+	return mask3d_gauss_edge
+"""
+
+# ----------------------------------------------------------------------------------------
+def moon_elimination(args):
+	from fundamentals import resample
+	
+	# define debug flag for development
+	args.debug = True
+	
+	# Define the name of this subcommand
+	# subcommand_name = "isac_substack"
+	command_script_basename = os.path.basename(sys.argv[0])
+	subcommand_name = "{} {}".format(command_script_basename, args.subcommand)
+	
+	# Check MPI execution
+	if SXmpi_run.n_mpi_procs > 1:
+		assert (SXmpi_run.RUNNING_UNDER_MPI)
+		error_status = ("The {} subcommand supports only a single process.".format(subcommand_name), getframeinfo(currentframe()))
+		if_error_then_all_processes_exit_program(error_status)
+
+	# To make the execution exit upon fatal error by ERROR in global_def.py
+	global_def.BATCH = True 
+	
+	# ------------------------------------------------------------------------------------
+	# Check error conditions
+	# ------------------------------------------------------------------------------------
+	# Check error conditions of arguments
+	args.input_volume_path = args.input_volume_path.strip()
+	if not os.path.exists(args.input_volume_path):
+		ERROR("Input volume file {} does not exist. Please check the file path and restart the program.".format(args.input_volume_path), subcommand_name) # action=1 - fatal error, exit
+	assert (os.path.exists(args.input_volume_path))
+
+	args.output_directory = args.output_directory.strip()
+	if os.path.exists(args.output_directory):
+		ERROR("Output directory {} exists. Please change the name and restart the program.".format(args.output_directory), subcommand_name) # action=1 - fatal error, exit
+	assert (not os.path.exists(args.output_directory))
+	
+	# Check error conditions of options
+	if args.pixel_size is None:
+		ERROR("Pixel size [A] is required. Please set a pasitive value larger than 0.0 to --pixel_size option.", subcommand_name) # action=1 - fatal error, exit
+	else:
+		assert (args.pixel_size is not None)
+		if args.pixel_size <= 0.0:
+			ERROR("Invalid pixel size {}[A]. Please set a pasitive value larger than 0.0 to --pixel_size option.".format(args.pixel_size), subcommand_name) # action=1 - fatal error, exit
+	assert (args.pixel_size > 0.0)
+	
+	nyquist_res = args.pixel_size * 2
+	assert (nyquist_res > 0.0)
+	
+	if args.mol_mass is None:
+		ERROR("Molecular mass [kDa] is required. Please set a pasitive value larger than 0.0 to --mol_mass option.", subcommand_name) # action=1 - fatal error, exit
+	else:
+		assert (args.mol_mass is not None)
+		if args.mol_mass <= 0.0:
+			ERROR("Invalid molecular mass {}[A]. Please set a pasitive value larger than 0.0 to --mol_mass option.".format(args.mol_mass), subcommand_name) # action=1 - fatal error, exit
+	assert (args.mol_mass > 0.0)
+	
+	if args.use_density_threshold is not None:
+		if args.use_density_threshold <= 0.0:
+			ERROR("Invalid density threshold {}. Please set a pasitive value larger than 0.0 to --use_density_threshold option.".format(args.use_density_threshold), subcommand_name) # action=1 - fatal error, exit
+		assert (args.use_density_threshold > 0.0)
+
+	if args.threshold_adjustment <= 0.0:
+		ERROR("Invalid density threshold adjustment factor {}. Please set a value larger than 0.0.".format(args.threshold_adjustment), subcommand_name) # action=1 - fatal error, exit
+	assert (args.threshold_adjustment > 0.0)
+
+	isac_shrink_path = None
+	if not is_float(args.resample_ratio):
+		assert (type(args.resample_ratio) is str)
+		
+		# This should be string for the output directory path of an ISAC2 run
+		if not os.path.exists(args.resample_ratio):
+			ERROR("Specified ISAC2 run output directory {} does not exist. Please check --resample_ratio option.".format(args.resample_ratio), subcommand_name) # action=1 - fatal error, exit
+		assert (os.path.exists(args.resample_ratio))
+		
+		isac_shrink_path = os.path.join(args.resample_ratio, "README_shrink_ratio.txt")
+		if not os.path.exists(isac_shrink_path):
+			ERROR("{} does not exist in the specified ISAC2 run output directory. Please check ISAC2 run directory and --resample_ratio option.".format(isac_shrink_path), subcommand_name) # action=1 - fatal error, exit
+		assert (os.path.exists(isac_shrink_path))
+	else:
+		assert (is_float(args.resample_ratio))
+		if float(args.resample_ratio) <= 0.0:
+			ERROR("Invalid resample ratio {}. Please set a value larger than 0.0 to --resample_ratio option.".format(args.resample_ratio), subcommand_name) # action=1 - fatal error, exit
+		assert (float(args.resample_ratio) > 0.0)
+	
+	if args.box_size is not None:
+		if args.box_size <= 0.0:
+			ERROR("Invalid box size {}[Pixels]. Please set a pasitive value larger than 0 to --box_size option.".format(args.box_size), subcommand_name) # action=1 - fatal error, exit
+		assert (args.box_size > 0.0)
+		
+	if args.fl != -1.0:
+		if args.fl < nyquist_res:
+			ERROR("Invalid low-pass filter resolution {}[A]. Please set a value larger than or equal to Nyquist resolution {}[A].".format(args.fl, nyquist_res), subcommand_name) # action=1 - fatal error, exit
+		assert (args.fl >= nyquist_res)
+	
+	# ------------------------------------------------------------------------------------
+	# Preparation
+	# ------------------------------------------------------------------------------------
+	# Load volume
+	print(" ")
+	print_progress("Loading input 3D volume...")
+	vol3d = get_im(args.input_volume_path)
+	
+	vol3d_dims = vol3d.get_xsize()
+	assert (vol3d_dims == vol3d.get_xsize())
+	assert (vol3d_dims == vol3d.get_ysize())
+	assert (vol3d_dims == vol3d.get_zsize())
+	print_progress("  The dimensions of input 3D volume : {}".format(vol3d_dims))
+	
+	# Create output directory
+	print(" ")
+	print_progress("Creating output directory {}...".format(args.output_directory))
+	assert (not os.path.exists(args.output_directory))
+	os.mkdir(args.output_directory)
+
+	# ------------------------------------------------------------------------------------
+	# Step 1: Extract resample ratio first
+	# ------------------------------------------------------------------------------------
+	resample_ratio = 0.0
+	if isac_shrink_path is not None:
+		assert (os.path.exists(isac_shrink_path))
+		isac_shrink_file = open(isac_shrink_path, "r")
+		isac_shrink_lines = isac_shrink_file.readlines()
+		isac_shrink_ratio = float(isac_shrink_lines[5])  # 6th line: shrink ratio (= [target particle radius]/[particle radius]) used in the ISAC run
+		isac_radius = float(isac_shrink_lines[6])        # 7th line: particle radius at original pixel size used in the ISAC run
+		isac_shrink_file.close()
+		print(" ")
+		print_progress("ISAC2 run directory path is specified with --resample_ratio option...")
+		print_progress("Extracted parameter values")
+		print_progress("  ISAC shrink ratio    : {}".format(isac_shrink_ratio))
+		print_progress("  ISAC particle radius : {}".format(isac_radius))
+		resample_ratio = 1.0 / isac_shrink_ratio
+	else:
+		assert (is_float(args.resample_ratio))
+		resample_ratio = float(args.resample_ratio)
+		if resample_ratio != 1.0:
+			print(" ")
+			print_progress("Resample ratio {} is specified with --resample_ratio option...".format(resample_ratio))
+		else:
+			assert (resample_ratio == 1.0)
+			print(" ")
+			print_progress("Resample ratio is {}. The program does not resample the input volume...".format(resample_ratio))
+	assert (resample_ratio > 0.0)
+	
+	# ------------------------------------------------------------------------------------
+	# Step 2: Resample and window the volume (Mainly, designed for R-VIPER models)
+	# ------------------------------------------------------------------------------------
+	# Resample input volume with specified resample ratio
+	if resample_ratio != 1.0:
+		print(" ")
+		print_progress("Resampling the input volume with resample ratio {}...".format(resample_ratio))
+		vol3d = resample(vol3d, resample_ratio)
+		
+		vol3d_dims = vol3d.get_xsize()
+		assert (vol3d_dims == vol3d.get_xsize())
+		assert (vol3d_dims == vol3d.get_ysize())
+		assert (vol3d_dims == vol3d.get_zsize())
+		print_progress("  The dimensions of resampled 3D volume : {}".format(vol3d_dims))
+		
+	# 
+	# NOTE: 2018/04/09 Toshio Moriya 
+	# apix_* attributes are updated by resample() only when resample_ratio != 1.0
+	# Let's make sure header info is consistent by setting apix_* = 1.0 
+	# regardless of options, so it is not passed down the processing line
+	# 
+	vol3d.set_attr("apix_x", 1.0)
+	vol3d.set_attr("apix_y", 1.0)
+	vol3d.set_attr("apix_z", 1.0)
+	
+	# Window the volume to specified dimensions
+	if args.box_size is not None:
+		assert (args.box_size > 0.0)
+		if args.box_size != vol3d_dims:
+			print(" ")
+			print_progress("Adjusting the dimensions of 3D volume to {}...".format(args.box_size))
+			if args.box_size > vol3d_dims:
+				vol3d = Util.pad(vol3d, args.box_size, args.box_size, args.box_size, 0, 0, 0, "circumference")
+			else:
+				assert (args.box_size < vol3d_dims)
+				vol3d = Util.window(vol3d, args.box_size, args.box_size, args.box_size, 0, 0)
+		else:
+			assert (args.box_size == vol3d_dims)
+		
+		vol3d_dims = vol3d.get_xsize()
+		assert (vol3d_dims == vol3d.get_xsize())
+		assert (vol3d_dims == vol3d.get_ysize())
+		assert (vol3d_dims == vol3d.get_zsize())
+		print_progress("  The dimensions of adjusted 3D volume : {}".format(vol3d_dims))
+	
+	if args.debug:
+		vol3d_step2_file_path = os.path.join(args.output_directory, "mrkdebug_vol3d_step2.hdf")
+		vol3d.write_image(vol3d_step2_file_path)
+	
+	# ------------------------------------------------------------------------------------
+	# Step 3: Invart handedness if necessary.
+	# ------------------------------------------------------------------------------------
+	# Flip the volume along z-axis
+	filter_name = "xform.flip"
+	filter_params = {"axis": "z"}
+	print(" ")
+	print_progress("Inverting the handedness of input volume...")
+	print_progress("  filter_name = {}".format(filter_name))
+	print_progress("  filter_params = {}".format(filter_params))
+	vol3d.process_inplace(filter_name, filter_params)
+	# Rotate the volume upside down
+	vol3d = rot_shift3D(vol3d, theta = 180.0) 
+	
+	if args.debug:
+		vol3d_step3_file_path = os.path.join(args.output_directory, "mrkdebug_vol3d_step3.hdf")
+		vol3d.write_image(vol3d_step3_file_path)
+	
+	# ------------------------------------------------------------------------------------
+	# Step 4: Apply low-pass filter to the input volume before moon elimination if necessary.
+	# ------------------------------------------------------------------------------------
+	if args.fl != -1.0:
+		assert (args.fl >= nyquist_res)
+		print(" ")
+		print_progress("Applying low-pass filter to input volume with Low-pass filter cutoff resolution {}[A] with falloff width {}[1/Pixels]...".format(args.fl, args.aa))
+		vol3d = filt_tanl(vol3d, args.pixel_size/args.fl, args.aa)
+	else:
+		print(" ")
+		print_progress("Low-pass filter cutoff resolution is {}[A]. The program does not apply the low-pass filter to the input volume before eliminating moons...".format(args.fl))
+	
+	if args.debug:
+		vol3d_step4_file_path = os.path.join(args.output_directory, "mrkdebug_vol3d_step4.hdf")
+		vol3d.write_image(vol3d_step4_file_path)
+	
+	# ------------------------------------------------------------------------------------
+	# Step 5: Create reference 3D volumes by eliminating the moons from the input volume
+	# ------------------------------------------------------------------------------------
+	print(" ")
+	print_progress("Computing correspoding volume [Voxels] of the specified molecular mass {}[kDa]...".format(args.mol_mass))
+	computed_vol_voxels_from_mass = SXDalton.compute_vol_voxels_from_mol_mass(args.mol_mass, args.pixel_size)
+	print_progress("  Computed corresponing volume [Voxels] from this molecular mass         : {}".format(computed_vol_voxels_from_mass))
+	
+	density_threshold = None
+	if args.use_density_threshold is None:
+		print(" ")
+		print_progress("Finding density threshold corresponing to the specified molecular mass {}[kDa] using pixel size {}[A/Pixels]...".format(args.mol_mass, args.pixel_size))
+		computed_density_threshold_from_mass = SXDalton.compute_density_threshold_from_mol_mass(vol3d, args.mol_mass, args.pixel_size)
+		print_progress("  Found corresponing density threshold                                   : {}".format(computed_density_threshold_from_mass))
+		density_threshold = computed_density_threshold_from_mass
+	else:
+		assert (args.use_density_threshold > 0.0)
+		print(" ")
+		print_progress("Using user-provided ad-hoc density threshold {} instead of the molecular mass {}[kDa]...".format(args.use_density_threshold, args.mol_mass))
+		density_threshold = args.use_density_threshold
+	assert (density_threshold is not None)
+	
+	computed_mol_mass_from_density = SXDalton.compute_mol_mass_from_density_threshold(vol3d, density_threshold, args.pixel_size)
+	computed_vol_voxels_from_density = SXDalton.compute_vol_voxels_from_density_threshold(vol3d, density_threshold, args.pixel_size)
+	print_progress("  Computed corresponing molecular mass [kDa] from this density threshold : {}".format(computed_mol_mass_from_density))
+	print_progress("  Percentage of corresponing molecular mass [kDa] relative to specified  : {}".format(computed_mol_mass_from_density/args.mol_mass * 100))
+	print_progress("  Computed corresponing volume [Voxels] from this density threshold      : {}".format(computed_vol_voxels_from_density))
+	print_progress("  Percentage of corresponing volume [Voxels] relative to specified       : {}".format(computed_vol_voxels_from_density/computed_vol_voxels_from_mass * 100))
+	
+	# -----------------------
+	# Begin eliminating moons
+	# -----------------------
+	# use_this_function = "mrk_eliminate_moons"                    # This method is OK but changes the absolute density values a lot by mask3d_no_moons. (Toshio 2018/03/16)
+	# use_this_function = "mrk_eliminate_moons_surface_mask"       # Unfortunately, there might be bug in Util.adaptive_mask(); vol3d_no_moons will have a strange gap in the middle part of the density histogram. (Toshio 2018/03/16)
+	use_this_function = "mrk_eliminate_moons_sphire_gaussian_edge" 
+	adjusted_density_threshold = 1.0
+	if use_this_function == "mrk_eliminate_moons_sphire_gaussian_edge":
+		print(" ")
+		print_progress("Eliminating moons of the input volume using density threshold of {}...".format(density_threshold))
+		# NOTE: Toshio Moriya 2018/04/01
+		# Let's try to use pixel size to decide the distance of the nearest moons...
+		gauss_kernel_radius = args.moon_distance
+		gauss_sigma = args.moon_distance / args.falloff_speed
+		vol3d_no_moons, bin3d_no_moons, mask3d_no_moons, adjusted_density_threshold, bin3d_no_moons_dilated = mrk_eliminate_moons_sphire_gaussian_edge(vol3d, density_threshold, gauss_kernel_radius, gauss_sigma)
+	elif use_this_function == "mrk_eliminate_moons_surface_mask":
+		print(" ")
+		print_progress("Eliminating moons of the input volume using density threshold of {}...".format(density_threshold))
+		vol3d_no_moons, bin3d_no_moons, mask3d_no_moons, adjusted_density_threshold = mrk_eliminate_moons_surface_mask(vol3d, density_threshold)
+	elif use_this_function == "mrk_eliminate_moons":
+		print(" ")
+		print_progress("Eliminating moons of the input volume using density threshold of {}...".format(density_threshold))
+		vol3d_no_moons, bin3d_no_moons, mask3d_no_moons, adjusted_density_threshold = mrk_eliminate_moons(vol3d, density_threshold, args.threshold_adjustment)
+	else:
+		assert (False)
+	
+	if adjusted_density_threshold != 1.0:
+		print(" ")
+		print_progress("The density threshold is adjusted in mrk_eliminate_moons()...")
+		computed_mol_mass_from_adjusted_density = SXDalton.compute_mol_mass_from_density_threshold(vol3d, adjusted_density_threshold, args.pixel_size)
+		computed_vol_voxels_from_adjusted_density = SXDalton.compute_vol_voxels_from_density_threshold(vol3d, adjusted_density_threshold, args.pixel_size)
+		print_progress("  Density threshold adjustment factor                                    : {}".format(args.threshold_adjustment))
+		print_progress("  Adjusted density threshold                                             : {}".format(adjusted_density_threshold))
+		print_progress("  Computed corresponing molecular mass [kDa] from this density threshold : {}".format(computed_mol_mass_from_adjusted_density))
+		print_progress("  Percentage of corresponing molecular mass [kDa] relative to specified  : {}".format(computed_mol_mass_from_adjusted_density/args.mol_mass * 100))
+		print_progress("  Computed corresponing volume [Voxels] from this density threshold      : {}".format(computed_vol_voxels_from_adjusted_density))
+		print_progress("  Percentage of corresponing volume [Voxels] relative to specified       : {}".format(computed_vol_voxels_from_adjusted_density/computed_vol_voxels_from_mass * 100))
+	# ---------------------
+	# End eliminating moons
+	# ---------------------
+	
+	ref3d = vol3d_no_moons
+	ref3d_file_path = os.path.join(args.output_directory, args.ref3d_name)
+	print(" ")
+	print_progress("Saving 3D reference wih no-mooons to {}...".format(ref3d_file_path))
+	ref3d.write_image(ref3d_file_path)
+	
+	if args.debug:
+		bin3d_no_moons_file_path = os.path.join(args.output_directory, "mrkdebug_bin3d_no_moons.hdf")
+		bin3d_no_moons.write_image(bin3d_no_moons_file_path)
+		mask3d_no_moons_file_path = os.path.join(args.output_directory, "mrkdebug_mask3d_no_moons.hdf")
+		mask3d_no_moons.write_image(mask3d_no_moons_file_path)
+		if use_this_function == "mrk_eliminate_moons_sphire_gaussian_edge":
+			bin3d_no_moons_dilated_file_path = os.path.join(args.output_directory, "mrkdebug_bin3d_no_moons_dilated.hdf")
+			bin3d_no_moons_dilated.write_image(bin3d_no_moons_dilated_file_path)
+	
+	# ------------------------------------------------------------------------------------
+	# Step 6: Create 3D mask from the 3D reference if necessary
+	# ------------------------------------------------------------------------------------
+	if args.generate_mask is not None:
+		print(" ")
+		print_progress("Generating soft-edge mask from the 3D binary volume corresponding to the specified molecular mass or density threshold with specified option parameters...")
+		print_progress("  Soft-edge type : {}".format(args.generate_mask ))
+		gm_mask3d_no_moons_soft_edged = None
+		gm_bin3d_no_moons_dilated = None
+		if args.generate_mask == "gauss":
+			sgm_gauss_sigma = args.gm_edge_width / args.gm_falloff_speed
+			gm_mask3d_no_moons_soft_edged, gm_bin3d_no_moons_dilated = mrk_sphere_gauss_edge(bin3d_no_moons, args.gm_edge_width, sgm_gauss_sigma)
+		elif args.generate_mask == "consine":
+			# Use consine soft-edged which is same as PostRefiner
+			scm_threshold = 0.5
+			scm_dilation = 0.0
+			scm_consine_width = float(args.gm_edge_width)
+			print_progress("MRK_DEBUG: ")
+			print_progress("MRK_DEBUG: Util.adaptive_mask()")
+			print_progress("MRK_DEBUG:   scm_threshold     := {}".format(scm_threshold))
+			print_progress("MRK_DEBUG:   scm_dilation      := {}".format(scm_dilation))
+			print_progress("MRK_DEBUG:   scm_consine_width := {}".format(scm_consine_width))
+			gm_mask3d_no_moons_soft_edged = Util.adaptive_mask(bin3d_no_moons, scm_threshold, scm_dilation, scm_consine_width)
+		else:
+			assert (False)
+		assert (gm_mask3d_no_moons_soft_edged is not None)
+		
+		gm_mask3d_file_path = os.path.join(args.output_directory, args.gm_mask3d_name)
+		print(" ")
+		print_progress("Saving 3D mask to {}...".format(gm_mask3d_file_path))
+		gm_mask3d_no_moons_soft_edged.write_image(gm_mask3d_file_path)
+		
+		if args.debug:
+			if gm_bin3d_no_moons_dilated is not None:
+				gm_bin3d_no_moons_dilated_file_path = os.path.join(args.output_directory, "mrkdebug_gm_bin3d_no_moons_dilated.hdf")
+				gm_bin3d_no_moons_dilated.write_image(gm_bin3d_no_moons_dilated_file_path)
+		
+		"""
+		# NOTE: Toshio Moriya 2018/04/01
+		# Util.adaptive_mask might have a bug....
+		print(" ")
+		print_progress("Generate adaptive mask from the moon-elminated 3D volume...")
+		# Use the same masking function as PostRefiner
+		mask3d = Util.adaptive_mask(vol3d_no_moons, args.gm_threshold, args.gm_dilation, args.gm_consine_edge)
+		
+		mask3d_file_path = os.path.join(args.output_directory, args.gm_mask3d_name)
+		print(" ")
+		print_progress("Saving 3D mask to {}...".format(mask3d_file_path))
+		mask3d.write_image(mask3d_file_path)
+		"""
+	
+		"""
+		# NOTE: Toshio Moriya 2018/03/13
+		# I don't like the output of gaussian edge. This reduces the density too much...
+		print(" ")
+		print_progress("Generate Gauss-edged mask from the moon-elminated 3D volume...")
+		# Use the same masking function as PostRefiner
+		mask3d = mrk_create_gauss_edged_mask_repeat(ref3d)
+		
+		mask3d_file_path = os.path.join(args.output_directory, args.gm_mask3d_name)
+		print(" ")
+		print_progress("Saving 3D mask to {}...".format(mask3d_file_path))
+		mask3d.write_image(mask3d_file_path)
+		"""
+
+		"""
+		# NOTE: Toshio Moriya 2018/03/13
+		# Using resolution does not work well. This reduces the density too much...
+		print(" ")
+		print_progress("Generate Gauss-edged mask from the moon-elminated 3D volume...")
+		# Use the same masking function as PostRefiner
+		mask3d = mrk_create_gauss_edged_mask_resolution(ref3d, args.resolution, args.pixel_size)
+		
+		mask3d_file_path = os.path.join(args.output_directory, args.gm_mask3d_name)
+		print(" ")
+		print_progress("Saving 3D mask to {}...".format(mask3d_file_path))
+		mask3d.write_image(mask3d_file_path)
+		"""
+		
+	print(" ")
+	print_progress("Summary of processing...")
+	print_progress("  Provided expected molecular mass [kDa]    : {}".format(args.mol_mass))
+	if args.use_density_threshold is None:
+		print_progress("  Corresponding volume [voxels]             : {}".format(computed_vol_voxels_from_mass))
+		print_progress("  Corresponding density threshold           : {}".format(computed_density_threshold_from_mass))
+	else:
+		assert (args.use_density_threshold is not None)
+		print_progress("  User-provided ad-hoc density threshold    : {}".format(args.use_density_threshold))
+	print_progress("  Applied density threshold                 : {}".format(density_threshold))
+	print_progress("  Computed molecular mass [kDa] of density  : {}".format(computed_mol_mass_from_density))
+	print_progress("  Percentage of this molecular mass [kDa]   : {}".format(computed_mol_mass_from_density/args.mol_mass * 100))
+	print_progress("  Computed volume [Voxels] of density       : {}".format(computed_vol_voxels_from_density))
+	print_progress("  Percentage of this volume [Voxels]        : {}".format(computed_vol_voxels_from_density/computed_vol_voxels_from_mass * 100))
+	print_progress("  Saved 3D reference with no-moons to       : {}".format(ref3d_file_path))
+	if args.generate_mask:
+		print_progress("  Saved 3D mask with no-moons to            : {}".format(gm_mask3d_file_path))
 
 # ========================================================================================
 # Main function
@@ -2348,8 +3196,34 @@ def main():
 	parser_restacking.add_argument("--sv_vstack_basename",    type=str,             default="vstack",  help="Virtual stack basename: For --save_vstack, specify the basename of output virtual stack file. It cannot be empty string or only white spaces. (default vstack)")
 	parser_restacking.add_argument("--reboxing",              action="store_true",  default=False,     help="Generate reboxing information: Prepare reboxing by extracting coordinates from the input stack headers, then center them according to projection parameters in the header and user-provided 3D shift. If the headers do not contain projection parameters, the program assumes the prjection parameters are all zeros (null alignment). (default False)")
 	parser_restacking.add_argument("--rb_box_size",           type=int,             default=0,         help="Particle box size [Pixels]: For --reboxing option, specify the x and y dimensions of square area to be windowed. (default 0)")
-
 	parser_restacking.set_defaults(func=restacking)
+
+	# create the subparser for the "moon_elimination" subcommand
+	parser_moon_elimination = subparsers.add_parser("moon_elimination", help="Moons eliminated masking: Elminate moons (or remove the dust) from a 3D density map based on the expected molecular mass.")
+	parser_moon_elimination.add_argument("input_volume_path",       type=str,                                            help="Input volume path: Path to input volume file containing the 3D density map. (default required string)")
+	parser_moon_elimination.add_argument("output_directory",        type=str,                                            help="Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)")
+	parser_moon_elimination.add_argument("--mol_mass",              type=float,           default=None,                  help="Molecular mass [kDa]: The estimated molecular mass of the target particle in kilodalton. (default required float)")
+	parser_moon_elimination.add_argument("--pixel_size",            type=float,           default=None,                  help="Output pixel size [A]: The original pixel size of dataset. This must be the pixel size after resampling when resample_ratio != 1.0. That is, it will be the pixel size of the output volume. (default required float)")
+#	parser_moon_elimination.add_argument("--resolution",            type=float,           default=None,                  help="Estimated resolution [A]: The estimate resolution of input volume. The recommended values are 10-15[A] for R-VIPER Model, FSC resolution for refined volume. (default required float)")
+	parser_moon_elimination.add_argument("--moon_distance",         type=int,             default=3,                     help="Distance to the nearest moons [Pixels]: The moons further than this distance from the density surface will be elminated. (default 1)")
+	parser_moon_elimination.add_argument("--falloff_speed",         type=float,           default=3.0,                   help="Falloff speed: Larger the value, faster the falloff. (default 1)")
+	parser_moon_elimination.add_argument("--use_density_threshold", type=float,           default=None,                  help="Use ad-hoc density threshold: Use user-provided ad-hoc density threshold, instead of computing the value for molecular mass.  Below this density value, the data is assumed to not belong to the main volume. (default none)")
+	parser_moon_elimination.add_argument("--threshold_adjustment",  type=float,           default=1.0,                   help="Density threshold adjustment: (default 1.0)")
+	parser_moon_elimination.add_argument("--resample_ratio",        type=str,             default='1.0',                 help="Resample ratio: Specify a value larger than 0.0. By default, the program does not resmaple the input volume (i.e. resample ratio is 1). Use this option maily to restore the original dimensions or pixel size of a VIPER or R-VIPER model. Alternatively, specify the path to the output directory of an ISAC2 run. The program automatically extract the resampling ratio used by the ISAC2 run. (default '1.0')")
+	parser_moon_elimination.add_argument("--box_size",              type=int,             default=None,                  help="Output box size [Pixels]: The x, y, and z dimensions of cubic area to be windowed from input 3D volume for output 3D volumes. This must be the box size after resampling when resample_ratio != 1.0. (default none)")
+	parser_moon_elimination.add_argument("--invert_handedness",     action="store_true",  default=False,                 help="Invart handedness: Invart the handedness of the 3D volume. (default -1.0)")
+	parser_moon_elimination.add_argument("--fl",                    type=float,           default=-1.0,                  help="Low-pass filter resolution [A]: > 0.0: low-pass filter to the value in Angstrom; =-1.0: no low-pass filter. The program applies this low-pass filter before the moon elimination. (default -1.0)")
+	parser_moon_elimination.add_argument("--aa",                    type=float,           default=0.1,                   help="Low-pass filter fall-off [1/Pixels]: Low-pass filter fall-off in absolute frequency. Effective only when --fl >= 0.0. The program applies this low-pass filter before the moon elimination. (default 0.1)" )
+	parser_moon_elimination.add_argument("--ref3d_name",            type=str,             default="ref3d.hdf",           help="3D reference file name: Specify the file name of output 3D reference volume with no-moons. It cannot be empty string or only white spaces. (default vol3d_no_moons.hdf)")
+	parser_moon_elimination.add_argument("--generate_mask",         type=str,             default=None,                  help="Generate adaptive mask: Generate a soft-edged mask with specified method from the 3D binary volume corresponding to the specified molecular mass or density threshold, using the values provided through --gm_edge_width and --gm_falloff_speed. Availabel methods are (1) \'gauss\'- gaussian soft-edge and (2) \'consine\': consine soft-edged which is same as PostRefiner. (default none)")
+	parser_moon_elimination.add_argument("--gm_edge_width",         type=int,             default=6,                     help="Surface dilation size [Pixels]: Size of surface dilation or erosion. Effective only with --generate_mask option. (default 3.0)")
+	parser_moon_elimination.add_argument("--gm_falloff_speed",      type=float,           default=3.0,                   help="Soft-edge width: Corresponding to Gaussian sigma or width of cosine transition area for soft-edge masking.. (default 3)")
+#	parser_moon_elimination.add_argument("--gm_threshold",          type=float,           default=0.0,                   help="Adaptive mask threshold: Density threshold for creating adaptive surface mask. Effective only with --generate_mask option. (default 0.0)")
+#	parser_moon_elimination.add_argument("--gm_dilation",           type=float,           default=3.0,                   help="Surface dilation size [Pixels]: Size of surface dilation or erosion. Effective only with --generate_mask option. (default 3.0)")
+#	parser_moon_elimination.add_argument("--gm_consine_edge",       type=float,           default=6.0,                   help="Cosine edge width [Pixels]: Width of cosine transition area for soft-edge masking. Effective only with --generate_mask option. (default 6.0)")
+	parser_moon_elimination.add_argument("--gm_mask3d_name",        type=str,             default="mask3d.hdf",          help="3D mask file name: Specify the file name of output soft-edged 3D mask. It cannot be empty string or only white spaces. (default mask3d.hdf)")
+	parser_moon_elimination.add_argument("--debug",                 action="store_true",  default=False,                 help="Run with debug mode: Mainly for developer. (default false)")
+	parser_moon_elimination.set_defaults(func=moon_elimination)
 
 	# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 	# Run specified subcommand
