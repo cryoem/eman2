@@ -1231,7 +1231,6 @@ class GUIBoxer(QtGui.QWidget):
 		self.gbl.addWidget(self.setlist,0,0,12,2)
 
 		self.setlist.currentRowChanged[int].connect(self.newSet)
-		self.setlist.keypress.connect(self.listKey)
 		
 		# Mouse Modes
 		self.mmode="manual"
@@ -1842,22 +1841,6 @@ class GUIBoxer(QtGui.QWidget):
 			self.wparticles.set_data(self.particles)
 			self.__updateCount()
 
-	def listKey(self,event):
-		pass
-
-		#if event.key()>=Qt.Key_0 and event.key()<=Qt.Key_9 :
-			#q=int(event.key())-Qt.Key_0
-			#self.squality.setValue(q)
-		#elif event.key() == Qt.Key_Left:
-			#self.sdefocus.setValue(self.sdefocus.getValue()-0.03)
-		#elif event.key() == Qt.Key_Right:
-			#self.sdefocus.setValue(self.sdefocus.getValue()+0.03)
-		#elif event.key()==Qt.Key_I :
-			#self.doImport()
-		#elif event.key()==Qt.Key_U :
-			#self.unImport()
-
-		
 	def doAutoBox(self,b):
 		"""Autobox button pressed, find the right algorithm and call it"""
 		
