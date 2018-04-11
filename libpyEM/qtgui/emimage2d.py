@@ -69,7 +69,7 @@ class EMImage2DWidget(EMGLWidget):
 	"""
 	"""
 	origin_update = QtCore.pyqtSignal(tuple)
-	set_scale = QtCore.pyqtSignal(float)
+	signal_set_scale = QtCore.pyqtSignal(float)
 	mousedown = QtCore.pyqtSignal(QtGui.QMouseEvent,tuple)
 	mousedrag = QtCore.pyqtSignal(QtGui.QMouseEvent,tuple)
 	mousemove = QtCore.pyqtSignal(QtGui.QMouseEvent,tuple)
@@ -695,7 +695,7 @@ class EMImage2DWidget(EMGLWidget):
 		try:
 			self.origin=(newscale/self.scale*(self.width()/2.0+self.origin[0])-self.width()/2.0,newscale/self.scale*(self.height()/2.0+self.origin[1])-self.height()/2.0)
 			self.scale=newscale
-			if not quiet : self.set_scale.emit(newscale)
+			if not quiet : self.signal_set_scale.emit(newscale)
 			self.updateGL()
 		except: pass
 
