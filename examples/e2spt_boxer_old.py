@@ -1300,19 +1300,19 @@ def sptboxergui(options,args):
 			self.xyview.mousedrag.connect(self.xy_drag)
 			self.xyview.mouseup.connect(self.xy_up)
 			self.xyview.mousewheel.connect(self.xy_wheel)
-			self.xyview.set_scale.connect(self.xy_scale)
+			self.xyview.signal_set_scale.connect(self.xy_scale)
 			self.xyview.origin_update.connect(self.xy_origin)
 
 			self.xzview.mousedown.connect(self.xz_down)
 			self.xzview.mousedrag.connect(self.xz_drag)
 			self.xzview.mouseup.connect(self.xz_up)
-			self.xzview.set_scale.connect(self.xz_scale)
+			self.xzview.signal_set_scale.connect(self.xz_scale)
 			self.xzview.origin_update.connect(self.xz_origin)
 
 			self.zyview.mousedown.connect(self.zy_down)
 			self.zyview.mousedrag.connect(self.zy_drag)
 			self.zyview.mouseup.connect(self.zy_up)
-			self.zyview.set_scale.connect(self.zy_scale)
+			self.zyview.signal_set_scale.connect(self.zy_scale)
 			self.zyview.origin_update.connect(self.zy_origin)
 
 			if datafile!=None:
