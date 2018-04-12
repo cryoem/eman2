@@ -1,0 +1,137 @@
+~~NOTOC~~
+
+===== sxpipe moon_eliminator =====
+Moon eliminator: Eliminate moons or remove dusts from the background of a 3D density map based on the expected molecular mass. Optionally, create 3D mask also.
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  sxpipe.py  moon_eliminator  input_volume_path  output_directory  --mol_mass=KILODALTON  --pixel_size=PIXEL_SIZE  --moon_distance=PIXEL_DISTANCE  --falloff_speed=FALLOFF_SPEED  --use_density_threshold=THRESHOLD  --resample_ratio=RATIO_OR_DIR_PATH  --box_size=BOX_SIZE  --invert_handedness  --fl=LPF_CUTOFF_FREQ  --aa=LPF_FALLOFF_WIDTH  --generate_mask=SOFT_EDGE_TYPE  --gm_edge_width=MASK_EDGE_PIXEL_WIDTH  --gm_falloff_speed=MASK_EDGE_FALLOFF_SPEED  --outputs_root=FILE_ROOT  --debug
+
+\\
+===== Typical usage =====
+
+sxpipe moon_eliminator does not support MPI. 
+
+Create reference 3D volume and 3D mask from R-VIPER 3D model with the resample ratio used in ISAC2 using an expected molecular mass [kDa].
+
+  sxpipe.py moon_eliminator 'outdir_rviper/main001/average_volume.hdf' 'outdir_pipe_moon_eliminator' --mol_mass=1400 --pixel_size=1.12 --resample_ratio='outdir_isac2' --box_size=352 --generate_mask 
+
+Create reference 3D volume and 3D mask from R-VIPER 3D model with the resample ratio used in ISAC2 using ad-hoc density threshold instead of the expected molecular mass [kDa].
+
+  sxpipe.py moon_eliminator 'outdir_rviper/main001/average_volume.hdf' 'outdir_pipe_moon_eliminator' --mol_mass=1400 --pixel_size=1.12 --use_density_threshold=13.2 --resample_ratio='outdir_isac2' --box_size=352 --generate_mask 
+
+Create reference 3D volume and 3D mask from post-refined MERIDIEN 3D model using the expected molecular mass [kDa].
+
+  sxpipe.py moon_eliminator 'outdir_postrefiner/postrefine3d.hdf' 'outdir_pipe_moon_eliminator' --mol_mass=1400 --pixel_size=1.12 --generate_mask 
+
+
+\\
+===== Input =====
+=== Main Parameters ===
+  ; input_volume_path : Input volume path: Path to input volume file containing the 3D density map. (default required string)
+  ; output_directory : Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)
+
+  ; %%--%%mol_mass : Molecular mass [kDa]: The estimated molecular mass of the target particle in kilodalton. (default required float)
+  ; %%--%%pixel_size : Output pixel size [A]: The original pixel size of dataset. This must be the pixel size after resampling when resample_ratio != 1.0. That is, it will be the pixel size of the output volume. (default required float)
+  ; %%--%%moon_distance : Distance to the nearest moon [Pixels]: The moons further than this distance from the density surface will be elminated. The value smaller than the default is not recommended because it is difficult to avoid the stair-like gray level change at the edge of the density surface. (default 3)
+  ; %%--%%falloff_speed : Falloff speed: Falloff speed of edge of the output 3D reference volume. The value corresponds to Gaussian sigma factor relative to the moon distance (i.e. gauss_sigma = moon_distance/falloff_speed). Therefore, larger the value, faster the falloff. The value larger than the %%--%%moon_distance is not recommended because the settings likely yield the stair-like gray level change at the edge of the density surface. (default 3.0)
+  ; %%--%%use_density_threshold : Use ad-hoc density threshold: Use user-provided ad-hoc density threshold, instead of computing the value from the molecular mass. Below this density value, the data is assumed not to belong to the main body of the particle density. (default none)
+  ; %%--%%resample_ratio : Resample ratio: Specify a value larger than 0.0. By default, the program does not resmaple the input volume (i.e. resample ratio is 1.0). Use this option maily to restore the original dimensions or pixel size of VIPER or R-VIPER model. Alternatively, specify the path to the output directory of an ISAC2 run. The program automatically extracts the resampling ratio used by the ISAC2 run. (default '1.0')
+  ; %%--%%box_size : Output box size [Pixels]: The x, y, and z dimensions of cubic area to be windowed from input 3D volume for output 3D volumes. This must be the box size after resampling when resample_ratio != 1.0. (default none)
+  ; %%--%%invert_handedness : Invert handedness: Invert the handedness of the 3D volume. (default False)
+  ; %%--%%fl : Low-pass filter resolution [A]: >0.0: low-pass filter to the value in Angstrom; =-1.0: no low-pass filter. The program applies this low-pass filter before the moon elimination. (default -1.0)
+  ; %%--%%aa : Low-pass filter fall-off [1/Pixels]: Low-pass filter fall-off in absolute frequency. The program applies this low-pass filter before the moon elimination. Effective only when %%--%%fl > 0.0. (default 0.1)
+  ; %%--%%generate_mask : Generate soft-edged mask: Generate a soft-edged mask with specified method from the 3D binary volume corresponding to the specified molecular mass or density threshold, using the values provided through %%--%%gm_edge_width and/or %%--%%gm_falloff_speed. Available methods are (1) 'gauss' for gaussian soft-edge and (2) 'cosine' for cosine soft-edged (used in PostRefiner). (default none)
+
+\\
+=== Advanced Parameters ===
+  ; %%--%%gm_edge_width : Soft-edge width [Pixels]: The pixel width of transition area for soft-edged masking. Effective only with %%--%%generate_mask option. (default 6)
+  ; %%--%%gm_falloff_speed : Soft-edge falloff speed: Falloff speed of soft-edge masking. Effective only when %%--%%generate_mask='gauss'. The value corresponds to Gaussian sigma factor relative to the soft-edge width (i.e. gauss_sigma = gm_edge_width/gm_falloff_speed). (default 3.0)
+  ; %%--%%outputs_root : Root name of outputs: Specify the root name of all outputs. It cannot be empty string or only white spaces. (default vol3d)
+  ; %%--%%debug : Run with debug mode: Mainly for developer. (default False)
+
+\\
+===== Output =====
+=== List of output Files ===
+|| **File Name** || **Discription** ||
+|| *_ref_moon_eliminated.hdf || File containing the moon eliminated 3D reference. ||
+|| *_mask_moon_elminator.hdf || File containing the moon elminator 3D mask. ||
+|| *_bin_mol_mass.hdf || File containing the 3D bainary corresponding to the molecular mass. ||
+|| *_mask_moon_eliminated.hdf || File containing the moon eliminated 3D mask. ||
+
+\\
+===== Description =====
+This command executes the following processes:
+  - Extract resample ratio from ISAC run directory if necessary (mainly for R-VIPER models).
+  - Resample and window the volume if necessary (mainly for R-VIPER models)
+  - Invert the handedness if necessary.
+  - Apply low-pass filter to the input volume before the moon elimination if necessary.
+  - Create reference 3D volume by eliminating the moons from the input volume and save the results.
+  - Create 3D mask from the 3D bainary corresponding to the molecular mass and save the result if necessary 
+
+\\
+==== Method ====
+
+\\
+==== Reference ====
+
+\\
+==== Developer Notes ====
+=== 2018/04/12 Toshio Moriya ===
+Tips about balancing settings of moon_distance and falloff_speed options.
+  * moon_distance 
+    * A shorter moon distance should be better (e.g. 3[Pixels] is better than 6[Pixels]).
+    * If it is too long, the moons will be connected and creates strange low density shape at the edge of the monn distance.
+    * On the other hand, if it is too short, soft-edge will have the stair-like gray level change because of quantization or digitization.
+  * falloff_speed
+    * The falloff speed seems to have be smaller (or slower) than moon_distance, so that Gaussian sigma will be at least larger than 1[pixel].
+    * If it is larger (or faster), the density distribution of moon eliminator 3D mask won't be smooth (spiky) because of quantization or digitization.
+    * In addition, moon-eliminated reference 3D volume will have a strange dent near zero.
+  * Tested combinations with a density map at 1.12 [A/Pixels]
+    * moon_distance=3 & falloff_speed=3.0 (gauss_sigma = 1.0[Pixels])
+      * Very nice balance!
+    * moon_distance=3 & falloff_speed=5.0 (gauss_sigma = 0.6[Pixels])
+      * NG. The density distribution of moon eliminator 3D mask is not smooth. 
+      * The moon-eliminated reference 3D volume has a strange dent near zero. 
+      * That is, falloff_speed must be too fast for this moon_distance! 
+    * moon_distance=6 & falloff_speed=3.0 (gauss_sigma = 2.0[Pixels])
+      * OK but created strange low density shape at the edge of the monn distance.
+    * moon_distance=6 & falloff_speed=5.0 (gauss_sigma = 1.2[Pixels])
+      * OK but created strange low density shape at the edge of the monn distance.
+
+Tips about balancing settings of gm_edge_width and gm_falloff_speed for Gaussian soft-edge.
+  * gm_edge_width 
+    * A wider edge seems to be better. If it is too narrow, soft-edge will have the stair-like gray level change because of quantization or digitization.
+    * However, if it is too long, the soft-edge might touch the box boundary and create strange low density shape there.
+  * gm_falloff_speed
+    * The falloff speed seems to have be smaller than the edge width, so that Gaussian sigma will be at least larger than 1[pixel].
+    * If it is larger, the density distribution of moon-eliminated 3D mask won't be smooth (spiky) because of quantization or digitization.  
+
+\\
+==== Author / Maintainer ====
+Felipe Merino and Toshio Moriya
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+sparx/bin/sxpipe.py
+
+\\
+==== See also ====
+[[pipeline:viper:sxrviper|sxrviper]], [[pipeline:viper:sxviper|sxviper]], [[pipeline:isac:sxisac2|sxisac2]], [[pipeline:utilities:sxprocess|sxprocess]], [[pipeline:meridien:sxmeridien|sxmeridien]], [[pipeline:sort3d:sxsort3d_depth|sxsort3d_depth]], and [[pipeline:localres:sxfilterlocal|sxfilterlocal]].
+
+\\
+==== Maturity ====
+Alpha:: Under development.
+
+\\
+==== Bugs ====
+There are no known bugs so far.
+
+\\

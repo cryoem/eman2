@@ -140,6 +140,7 @@ def construct_keyword_dict():
 	keyword_dict["destination_directory"]         = SXkeyword_map(0, "dir")                 # destination_directory (contains keyworkd 'directory' but this should be directory type)
 ###	keyword_dict["--use_latest_master_directory"] = SXkeyword_map(0, "bool")                # --use_latest_master_directory (contains keyworkd 'directory' but this should be bool type)
 	keyword_dict["--stack_mode"]                  = SXkeyword_map(0, "bool")                # stack_mode (contains keyworkd 'stack' but this should be bool type)
+	keyword_dict["--generate_mask"]               = SXkeyword_map(0, "string")              # --generate_mask=SOFT_EDGE_TYPE (contains keyworkd 'mask' but this should be string type)
 	keyword_dict["--binary_mask"]                 = SXkeyword_map(0, "bool")                # --binary_mask (contains keyworkd 'mask' but this should be bool type)
 	keyword_dict["--symmetrize"]                  = SXkeyword_map(0, "bool")                # --symmetrize (contains keyworkd '--sym' but this should be bool type)
 	keyword_dict["--do_adaptive_mask"]            = SXkeyword_map(0, "bool")                # --do_adaptive_mask (contains keyworkd 'mask' but this should be bool type)
@@ -224,7 +225,7 @@ def construct_keyword_dict():
 	keyword_dict["--box"]                         = SXkeyword_map(2, "box")                 # --box=box_size, --box_size=box_size, --boxsize=BOX_SIZE
 	keyword_dict["--radius"]                      = SXkeyword_map(2, "radius")              # --radius=particle_radius, --radius=outer_radius, --radius=outer_radius, --radius=particle_radius, --radius=outer_radius, --radius=outer_radius
 	keyword_dict["--sym"]                         = SXkeyword_map(2, "sym")                 # --sym=c1, --sym=symmetry, --sym=c4
-###	keyword_dict["--molecular_mass"]              = SXkeyword_map(2, "mass")                # --molecular_mass
+	keyword_dict["--mol_mass"]                    = SXkeyword_map(2, "mass")                # --mol_mass=KILODALTON
 
 	# NOTE: 2018/02/06 Toshio Moriya
 	# Low-pass filter fall-off width does not make sense to convert to resolution [A] directly. 
@@ -371,6 +372,13 @@ def handle_exceptional_cases(sxcmd):
 			assert(sxcmd.token_dict["selection_list"].key_base == "selection_list")
 			assert(sxcmd.token_dict["selection_list"].type == "select_mic_stack")
 			sxcmd.token_dict["selection_list"].type = "select_mic_both"
+		elif sxcmd.subname == "moon_eliminator":
+			assert(sxcmd.token_dict["resample_ratio"].key_base == "resample_ratio")
+			assert(sxcmd.token_dict["resample_ratio"].type == "string")
+			sxcmd.token_dict["resample_ratio"].type = "dir"
+			assert(sxcmd.token_dict["fl"].key_base == "fl")
+			assert(sxcmd.token_dict["fl"].type == "abs_freq")
+			sxcmd.token_dict["fl"].type = "float"
 
 # ----------------------------------------------------------------------------------------
 def remove_MoinMoinWiki_makeup(target_text):
@@ -2269,6 +2277,8 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
+	if is_dev_mode:
+		sxcmd_config_list.append(SXcmd_config("../doc/pipe_moon_eliminator.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_adaptive_mask3d()))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_refine3d_angular_distribution()))
 
@@ -2293,6 +2303,8 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
+	if is_dev_mode:
+		sxcmd_config_list.append(SXcmd_config("../doc/pipe_moon_eliminator.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_adaptive_mask3d()))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_refine3d_angular_distribution()))
 
@@ -2331,6 +2343,8 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
+	if is_dev_mode:
+		sxcmd_config_list.append(SXcmd_config("../doc/pipe_moon_eliminator.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_adaptive_mask3d()))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_binary_mask3d()))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_refine3d_angular_distribution()))
@@ -2345,6 +2359,8 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
+	if is_dev_mode:
+		sxcmd_config_list.append(SXcmd_config("../doc/pipe_moon_eliminator.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_adaptive_mask3d()))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_refine3d_angular_distribution()))
 
@@ -2367,6 +2383,8 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/pdb2em.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/relion2sphire.txt", "DokuWiki", sxcmd_category, sxcmd_role))
+	if is_dev_mode:
+		sxcmd_config_list.append(SXcmd_config("../doc/pipe_moon_eliminator.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_adaptive_mask3d()))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_binary_mask3d()))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_utility_changesize()))
