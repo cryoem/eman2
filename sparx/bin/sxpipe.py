@@ -2341,19 +2341,26 @@ def restacking(args):
 # ----------------------------------------------------------------------------------------
 # TEST COMMAND
 # 
-# cd /home/moriya/mrk_qa/mrktest_pipeline
+# cd /home/moriya/mrk_qa/mrktest_pipeline/debug_mrkout_sxpipe_moon_eliminator
 # 
 # sxpipe.py moon_eliminator --help
 # 
-# rm -rf debug_mrkout_sxpipe_moon_eliminator_viper; sxpipe.py moon_eliminator 'mrkout_pipe05_sxrviper_c5/main003/average_volume.hdf' 'debug_mrkout_sxpipe_moon_eliminator_viper' --mol_mass=1400 --pixel_size=1.12 --moon_distance=3 --falloff_speed=3.0  --resample_ratio='mrkout_pipe03_sxisac'  --generate_mask='gauss'  --gm_edge_width=6  --gm_falloff_speed=3.0  --debug
-# 
-# cd /home/moriya/mrk_qa/mrktest_pipeline/debug_mrkout_sxpipe_moon_eliminator
-# 
-# rm -rf mrkout_d3_fs3o00_mask_gauss_w6_fs3o00; sxpipe.py moon_eliminator 'vol3d.hdf' 'mrkout_d3_fs3o00_mask_gauss_w6_fs3o00' --mol_mass=1400 --pixel_size=1.12 --moon_distance=3 --falloff_speed=3.0  --generate_mask='gauss'  --gm_edge_width=6  --gm_falloff_speed=3.0  --debug
+# rm -rf mrkout_viper_d3_fs3o00_gauss_w6_fs3o00; sxpipe.py moon_eliminator '../mrkout_pipe05_sxrviper_c5/main003/average_volume.hdf' 'mrkout_viper_d3_fs3o00_gauss_w6_fs3o00' --mol_mass=1400 --pixel_size=1.12 --moon_distance=3 --falloff_speed=3.0  --resample_ratio='../mrkout_pipe03_sxisac'  --generate_mask='gauss'  --gm_edge_width=6  --gm_falloff_speed=3.0  --debug
+#
 # rm -rf mrkout_d3_fs3o00_mask_gauss_w6_fs3o00; sxpipe.py moon_eliminator 'vol3d.hdf' 'mrkout_d3_fs3o00_mask_gauss_w6_fs3o00' --mol_mass=1400 --pixel_size=1.12 --moon_distance=3 --falloff_speed=3.0  --generate_mask='gauss'  --gm_edge_width=6  --gm_falloff_speed=3.0  --outputs_root='my_vol3d'  --debug
 # rm -rf mrkout_d3_fs3o00_mask_cosine_w6; sxpipe.py moon_eliminator 'vol3d.hdf' 'mrkout_d3_fs3o00_mask_cosine_w6' --mol_mass=1400 --pixel_size=1.12 --moon_distance=3 --falloff_speed=3.0  --generate_mask='cosine'  --gm_edge_width=6  --debug
 # rm -rf mrkout_d3_fs3o00_zflip; sxpipe.py moon_eliminator 'vol3d.hdf' 'mrkout_d3_fs3o00_zflip' --mol_mass=1400 --pixel_size=1.12 --moon_distance=3 --falloff_speed=3.0  --invert_handedness  --debug
 # 
+# rm -rf mrkout_viper_d3_fs3o00_sz06; sxpipe.py moon_eliminator '../mrkout_pipe05_sxrviper_c5/main003/average_volume.hdf' 'mrkout_viper_d3_fs3o00_sz06' --mol_mass=1400 --pixel_size=1.12 --moon_distance=3 --falloff_speed=3.0  --resample_ratio='../mrkout_pipe03_sxisac'  --shift3d_z=6  --debug
+# rm -rf mrkout_viper_d3_fs3o00_sz06_zflip; sxpipe.py moon_eliminator '../mrkout_pipe05_sxrviper_c5/main003/average_volume.hdf' 'mrkout_viper_d3_fs3o00_sz06_zflip' --mol_mass=1400 --pixel_size=1.12 --moon_distance=3 --falloff_speed=3.0  --resample_ratio='../mrkout_pipe03_sxisac'  --shift3d_z=6  --invert_handedness  --debug
+# rm -rf mrkout_viper_d3_fs3o00_resz30; sxpipe.py moon_eliminator '../mrkout_pipe05_sxrviper_c5/main003/average_volume.hdf' 'mrkout_viper_d3_fs3o00_resz30' --mol_mass=1400 --pixel_size=1.12 --moon_distance=3 --falloff_speed=3.0  --resample_ratio='../mrkout_pipe03_sxisac'  --resampled_shift3d  --shift3d_z=30  --debug
+# rm -rf mrkout_viper_d3_fs3o00_resz30_zflip; sxpipe.py moon_eliminator '../mrkout_pipe05_sxrviper_c5/main003/average_volume.hdf' 'mrkout_viper_d3_fs3o00_resz30_zflip' --mol_mass=1400 --pixel_size=1.12 --moon_distance=3 --falloff_speed=3.0  --resample_ratio='../mrkout_pipe03_sxisac'  --resampled_shift3d  --shift3d_z=30  --invert_handedness  --debug
+#
+# rm -rf mrkout_d3_fs3o00_sz30; sxpipe.py moon_eliminator 'vol3d.hdf' 'mrkout_d3_fs3o00_sz30' --mol_mass=1400 --pixel_size=1.12 --moon_distance=3 --falloff_speed=3.0  --shift3d_z=30  --debug
+# rm -rf mrkout_d3_fs3o00_sz30_zflip; sxpipe.py moon_eliminator 'vol3d.hdf' 'mrkout_d3_fs3o00_sz30_zflip' --mol_mass=1400 --pixel_size=1.12 --moon_distance=3 --falloff_speed=3.0  --shift3d_z=30  --invert_handedness  --debug
+# rm -rf mrkout_d3_fs3o00_resz30; sxpipe.py moon_eliminator 'vol3d.hdf' 'mrkout_d3_fs3o00_resz30' --mol_mass=1400 --pixel_size=1.12 --moon_distance=3 --falloff_speed=3.0  --resampled_shift3d --shift3d_z=30  --debug
+# rm -rf mrkout_d3_fs3o00_resz30_zflip; sxpipe.py moon_eliminator 'vol3d.hdf' 'mrkout_d3_fs3o00_resz30_zflip' --mol_mass=1400 --pixel_size=1.12 --moon_distance=3 --falloff_speed=3.0  --resampled_shift3d --shift3d_z=30  --invert_handedness  --debug
+#
 # Very nice balance!!!
 # rm -rf mrkout_d6_fs5o00; sxpipe.py moon_eliminator 'vol3d.hdf' 'mrkout_d6_fs5o00' --mol_mass=1400 --pixel_size=1.12 --moon_distance=6 --falloff_speed=5.0  --debug
 # 
@@ -2561,7 +2568,7 @@ def mrk_eliminate_moons_sphire_gaussian_edge(vol3d, density_threshold, gauss_ker
 
 # ----------------------------------------------------------------------------------------
 def moon_eliminator(args):
-	from fundamentals import resample
+	from fundamentals import resample, rot_shift3D
 	
 	# Define the name of this subcommand
 	# subcommand_name = "isac_substack"
@@ -2747,12 +2754,31 @@ def moon_eliminator(args):
 		print_progress("  The dimensions of adjusted 3D volume : {}".format(vol3d_dims))
 	
 	if args.debug:
-		vol3d_step2_file_path = os.path.join(args.output_directory, "mrkdebug{:02d}_vol3d_restore_dim.hdf".format(debug_output_id))
-		vol3d.write_image(vol3d_step2_file_path)
+		vol3d_restore_dim_file_path = os.path.join(args.output_directory, "mrkdebug{:02d}_vol3d_restore_dim.hdf".format(debug_output_id))
+		vol3d.write_image(vol3d_restore_dim_file_path)
 		debug_output_id += 1
 	
 	# ------------------------------------------------------------------------------------
-	# Step 3: Invart handedness if necessary.
+	# Step 3: Shift 3D volume if necessary.
+	# ------------------------------------------------------------------------------------
+	if not (args.shift3d_x == 0 and args.shift3d_y == 0 and args.shift3d_z == 0):
+		print(" ")
+		print_progress("Shifting the 3D volume...")
+		if not args.resampled_shift3d and resample_ratio != 1.0:
+			print_progress("  Resampling provided 3D shift (x, y, z) = ({}, {}, {}) with resample ratio {}...".format(args.shift3d_x, args.shift3d_y, args.shift3d_z, resample_ratio))
+			args.shift3d_x *= resample_ratio
+			args.shift3d_y *= resample_ratio
+			args.shift3d_z *= resample_ratio
+		print_progress("  Applying 3D shift (x, y, z) = ({}, {}, {}) to the volume...".format(args.shift3d_x, args.shift3d_y, args.shift3d_z))
+		vol3d = rot_shift3D(vol3d, sx = args.shift3d_x, sy = args.shift3d_y, sz = args.shift3d_z)
+	
+	if args.debug:
+		vol3d_shift_file_path = os.path.join(args.output_directory, "mrkdebug{:02d}_vol3d_shift.hdf".format(debug_output_id))
+		vol3d.write_image(vol3d_shift_file_path)
+		debug_output_id += 1
+	
+	# ------------------------------------------------------------------------------------
+	# Step 4: Invert handedness if necessary.
 	# ------------------------------------------------------------------------------------
 	if args.invert_handedness:
 		# Flip the volume along z-axis
@@ -2760,19 +2786,19 @@ def moon_eliminator(args):
 		filter_params = {"axis": "z"}
 		print(" ")
 		print_progress("Inverting the handedness of input volume...")
-		print_progress("  filter_name = {}".format(filter_name))
-		print_progress("  filter_params = {}".format(filter_params))
+		# print_progress("MRK_DEBUG: filter_name = {}".format(filter_name))
+		# print_progress("MRK_DEBUG: filter_params = {}".format(filter_params))
 		vol3d.process_inplace(filter_name, filter_params)
 		# Rotate the volume upside down
 		vol3d = rot_shift3D(vol3d, theta = 180.0) 
 	
 	if args.debug:
-		vol3d_step3_file_path = os.path.join(args.output_directory, "mrkdebug{:02d}_vol3d_invert_hand.hdf".format(debug_output_id))
-		vol3d.write_image(vol3d_step3_file_path)
+		vol3d_invert_hand_file_path = os.path.join(args.output_directory, "mrkdebug{:02d}_vol3d_invert_hand.hdf".format(debug_output_id))
+		vol3d.write_image(vol3d_invert_hand_file_path)
 		debug_output_id += 1
 	
 	# ------------------------------------------------------------------------------------
-	# Step 4: Apply low-pass filter to the input volume before moon elimination if necessary.
+	# Step 5: Apply low-pass filter to the input volume before moon elimination if necessary.
 	# ------------------------------------------------------------------------------------
 	if args.fl != -1.0:
 		assert (args.fl >= nyquist_res)
@@ -2784,12 +2810,12 @@ def moon_eliminator(args):
 		print_progress("Low-pass filter cutoff resolution is {}[A]. The program does not apply the low-pass filter to the input volume before eliminating moons...".format(args.fl))
 	
 	if args.debug:
-		vol3d_step4_file_path = os.path.join(args.output_directory, "mrkdebug{:02d}_vol3d_lpf.hdf".format(debug_output_id))
-		vol3d.write_image(vol3d_step4_file_path)
+		vol3d_lpf_file_path = os.path.join(args.output_directory, "mrkdebug{:02d}_vol3d_lpf.hdf".format(debug_output_id))
+		vol3d.write_image(vol3d_lpf_file_path)
 		debug_output_id += 1
 	
 	# ------------------------------------------------------------------------------------
-	# Step 5: Create reference 3D volumes by eliminating the moons from the input volume
+	# Step 6: Create reference 3D volumes by eliminating the moons from the input volume
 	# ------------------------------------------------------------------------------------
 	print(" ")
 	print_progress("Computing correspoding volume [Voxels] of the specified molecular mass {}[kDa]...".format(args.mol_mass))
@@ -2847,7 +2873,7 @@ def moon_eliminator(args):
 		debug_output_id += 1
 	
 	# ------------------------------------------------------------------------------------
-	# Step 6: Create 3D mask from the 3D reference if necessary
+	# Step 7: Create 3D mask from the 3D reference if necessary
 	# ------------------------------------------------------------------------------------
 	if args.generate_mask is not None:
 		print(" ")
@@ -2976,23 +3002,27 @@ def main():
 
 	# create the subparser for the "moon_eliminator" subcommand
 	parser_moon_eliminator = subparsers.add_parser("moon_eliminator", help="Moon eliminator: Eliminate moons or remove dusts from the background of a 3D density map based on the expected molecular mass. Optionally, create 3D mask also.")
-	parser_moon_eliminator.add_argument("input_volume_path",       type=str,                                            help="Input volume path: Path to input volume file containing the 3D density map. (default required string)")
-	parser_moon_eliminator.add_argument("output_directory",        type=str,                                            help="Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)")
-	parser_moon_eliminator.add_argument("--mol_mass",              type=float,           default=None,                  help="Molecular mass [kDa]: The estimated molecular mass of the target particle in kilodalton. (default required float)")
-	parser_moon_eliminator.add_argument("--pixel_size",            type=float,           default=None,                  help="Output pixel size [A]: The original pixel size of dataset. This must be the pixel size after resampling when resample_ratio != 1.0. That is, it will be the pixel size of the output volume. (default required float)")
-	parser_moon_eliminator.add_argument("--moon_distance",         type=int,             default=3,                     help="Distance to the nearest moon [Pixels]: The moons further than this distance from the density surface will be elminated. The value smaller than the default is not recommended because it is difficult to avoid the stair-like gray level change at the edge of the density surface. (default 3)")
-	parser_moon_eliminator.add_argument("--falloff_speed",         type=float,           default=3.0,                   help="Falloff speed: Falloff speed of edge of the output 3D reference volume. The value corresponds to Gaussian sigma factor relative to the moon distance (i.e. gauss_sigma = moon_distance/falloff_speed). Therefore, larger the value, faster the falloff. The value larger than the --moon_distance is not recommended because the settings likely yield the stair-like gray level change at the edge of the density surface. (default 3.0)")
-	parser_moon_eliminator.add_argument("--use_density_threshold", type=float,           default=None,                  help="Use ad-hoc density threshold: Use user-provided ad-hoc density threshold, instead of computing the value from the molecular mass. Below this density value, the data is assumed not to belong to the main body of the particle density. (default none)")
-	parser_moon_eliminator.add_argument("--resample_ratio",        type=str,             default='1.0',                 help="Resample ratio: Specify a value larger than 0.0. By default, the program does not resmaple the input volume (i.e. resample ratio is 1.0). Use this option maily to restore the original dimensions or pixel size of VIPER or R-VIPER model. Alternatively, specify the path to the output directory of an ISAC2 run. The program automatically extracts the resampling ratio used by the ISAC2 run. (default '1.0')")
-	parser_moon_eliminator.add_argument("--box_size",              type=int,             default=None,                  help="Output box size [Pixels]: The x, y, and z dimensions of cubic area to be windowed from input 3D volume for output 3D volumes. This must be the box size after resampling when resample_ratio != 1.0. (default none)")
-	parser_moon_eliminator.add_argument("--invert_handedness",     action="store_true",  default=False,                 help="Invert handedness: Invert the handedness of the 3D volume. (default False)")
-	parser_moon_eliminator.add_argument("--fl",                    type=float,           default=-1.0,                  help="Low-pass filter resolution [A]: >0.0: low-pass filter to the value in Angstrom; =-1.0: no low-pass filter. The program applies this low-pass filter before the moon elimination. (default -1.0)")
-	parser_moon_eliminator.add_argument("--aa",                    type=float,           default=0.1,                   help="Low-pass filter fall-off [1/Pixels]: Low-pass filter fall-off in absolute frequency. The program applies this low-pass filter before the moon elimination. Effective only when --fl > 0.0. (default 0.1)")
-	parser_moon_eliminator.add_argument("--generate_mask",         type=str,             default=None,                  help="Generate soft-edged mask: Generate a soft-edged mask with specified method from the 3D binary volume corresponding to the specified molecular mass or density threshold, using the values provided through --gm_edge_width and/or --gm_falloff_speed. Available methods are (1) \'gauss\' for gaussian soft-edge and (2) \'cosine\' for cosine soft-edged (used in PostRefiner). (default none)")
-	parser_moon_eliminator.add_argument("--gm_edge_width",         type=int,             default=6,                     help="Soft-edge width [Pixels]: The pixel width of transition area for soft-edged masking. Effective only with --generate_mask option. (default 6)")
-	parser_moon_eliminator.add_argument("--gm_falloff_speed",      type=float,           default=3.0,                   help="Soft-edge falloff speed: Falloff speed of soft-edge masking. Effective only when --generate_mask=\'gauss\'. The value corresponds to Gaussian sigma factor relative to the soft-edge width (i.e. gauss_sigma = gm_edge_width/gm_falloff_speed). (default 3.0)")
-	parser_moon_eliminator.add_argument("--outputs_root",          type=str,             default='vol3d',               help="Root name of outputs: Specify the root name of all outputs. It cannot be empty string or only white spaces. (default vol3d)")
-	parser_moon_eliminator.add_argument("--debug",                 action="store_true",  default=False,                 help="Run with debug mode: Mainly for developer. (default False)")
+	parser_moon_eliminator.add_argument("input_volume_path",       type=str,                              help="Input volume path: Path to input volume file containing the 3D density map. (default required string)")
+	parser_moon_eliminator.add_argument("output_directory",        type=str,                              help="Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)")
+	parser_moon_eliminator.add_argument("--mol_mass",              type=float,           default=None,    help="Molecular mass [kDa]: The estimated molecular mass of the target particle in kilodalton. (default required float)")
+	parser_moon_eliminator.add_argument("--pixel_size",            type=float,           default=None,    help="Output pixel size [A]: The original pixel size of dataset. This must be the pixel size after resampling when resample_ratio != 1.0. That is, it will be the pixel size of the output volume. (default required float)")
+	parser_moon_eliminator.add_argument("--moon_distance",         type=int,             default=3,       help="Distance to the nearest moon [Pixels]: The moons further than this distance from the density surface will be elminated. The value smaller than the default is not recommended because it is difficult to avoid the stair-like gray level change at the edge of the density surface. (default 3)")
+	parser_moon_eliminator.add_argument("--falloff_speed",         type=float,           default=3.0,     help="Falloff speed: Falloff speed of edge of the output 3D reference volume. The value corresponds to Gaussian sigma factor relative to the moon distance (i.e. gauss_sigma = moon_distance/falloff_speed). Therefore, larger the value, faster the falloff. The value larger than the --moon_distance is not recommended because the settings likely yield the stair-like gray level change at the edge of the density surface. (default 3.0)")
+	parser_moon_eliminator.add_argument("--use_density_threshold", type=float,           default=None,    help="Use ad-hoc density threshold: Use user-provided ad-hoc density threshold, instead of computing the value from the molecular mass. Below this density value, the data is assumed not to belong to the main body of the particle density. (default none)")
+	parser_moon_eliminator.add_argument("--resample_ratio",        type=str,             default='1.0',   help="Resample ratio: Specify a value larger than 0.0. By default, the program does not resmaple the input volume (i.e. resample ratio is 1.0). Use this option maily to restore the original dimensions or pixel size of VIPER or R-VIPER model. Alternatively, specify the path to the output directory of an ISAC2 run. The program automatically extracts the resampling ratio used by the ISAC2 run. (default '1.0')")
+	parser_moon_eliminator.add_argument("--box_size",              type=int,             default=None,    help="Output box size [Pixels]: The x, y, and z dimensions of cubic area to be windowed from input 3D volume for output 3D volumes. This must be the box size after resampling when resample_ratio != 1.0. (default none)")
+	parser_moon_eliminator.add_argument("--resampled_shift3d",     action="store_true",  default=False,   help="Providing resampled 3D shifts: Use this option when you are providing the resampled 3D shifts (using pixel size of outputs) when --resample_ratio!=1.0. By default, the program assums the provided shifts are not resampled. (default False)")
+	parser_moon_eliminator.add_argument("--shift3d_x",             type=int,             default=0,       help="3D x-shift [Pixels]: Provide 3D x-shift corresponding to shifting the 3D volume along x-axis. (default 0)")
+	parser_moon_eliminator.add_argument("--shift3d_y",             type=int,             default=0,       help="3D y-shift [Pixels]: Provide 3D y-shift corresponding to shifting the 3D volume along y-axis. (default 0)")
+	parser_moon_eliminator.add_argument("--shift3d_z",             type=int,             default=0,       help="3D z-shift [Pixels]: Provide 3D z-shift corresponding to shifting the 3D volume along z-axis. (default 0)")
+	parser_moon_eliminator.add_argument("--invert_handedness",     action="store_true",  default=False,   help="Invert handedness: Invert the handedness of the 3D volume. (default False)")
+	parser_moon_eliminator.add_argument("--fl",                    type=float,           default=-1.0,    help="Low-pass filter resolution [A]: >0.0: low-pass filter to the value in Angstrom; =-1.0: no low-pass filter. The program applies this low-pass filter before the moon elimination. (default -1.0)")
+	parser_moon_eliminator.add_argument("--aa",                    type=float,           default=0.1,     help="Low-pass filter fall-off [1/Pixels]: Low-pass filter fall-off in absolute frequency. The program applies this low-pass filter before the moon elimination. Effective only when --fl > 0.0. (default 0.1)")
+	parser_moon_eliminator.add_argument("--generate_mask",         type=str,             default=None,    help="Generate soft-edged mask: Generate a soft-edged mask with specified method from the 3D binary volume corresponding to the specified molecular mass or density threshold, using the values provided through --gm_edge_width and/or --gm_falloff_speed. Available methods are (1) \'gauss\' for gaussian soft-edge and (2) \'cosine\' for cosine soft-edged (used in PostRefiner). (default none)")
+	parser_moon_eliminator.add_argument("--gm_edge_width",         type=int,             default=6,       help="Soft-edge width [Pixels]: The pixel width of transition area for soft-edged masking. Effective only with --generate_mask option. (default 6)")
+	parser_moon_eliminator.add_argument("--gm_falloff_speed",      type=float,           default=3.0,     help="Soft-edge falloff speed: Falloff speed of soft-edge masking. Effective only when --generate_mask=\'gauss\'. The value corresponds to Gaussian sigma factor relative to the soft-edge width (i.e. gauss_sigma = gm_edge_width/gm_falloff_speed). (default 3.0)")
+	parser_moon_eliminator.add_argument("--outputs_root",          type=str,             default='vol3d', help="Root name of outputs: Specify the root name of all outputs. It cannot be empty string or only white spaces. (default vol3d)")
+	parser_moon_eliminator.add_argument("--debug",                 action="store_true",  default=False,   help="Run with debug mode: Mainly for developer. (default False)")
 	parser_moon_eliminator.set_defaults(func=moon_eliminator)
 
 	# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
