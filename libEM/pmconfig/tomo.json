@@ -147,7 +147,7 @@
         "ICON": "single_image_3d",
         "MODE":"align",
         "PROGRAM": "e2spt_project.py",
-        "NAME": "Generate Z Projections",
+        "NAME": "Generate Z-Projections",
         "CHILDREN": []
       },
       {
