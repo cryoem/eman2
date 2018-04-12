@@ -141,7 +141,9 @@ def dump_tracker(path_of_the_tracker):
 	global Tracker, Blockdata
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		fout = open(os.path.join(path_of_the_tracker, "Tracker.json"),'w')
+		fout.seek(0)
 		json.dump(Tracker, fout)
+		fout.truncate()
 		fout.close()
 	mpi_barrier(MPI_COMM_WORLD)
 	return
