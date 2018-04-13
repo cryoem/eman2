@@ -346,6 +346,7 @@ def output_iter_results(box_dir, ncluster, NACC, NUACC, minimum_grp_size, list_o
 		freq_cutoff_dict = convert_json_fromunicode(json.load(fout))
 		fout.close()
 	except: freq_cutoff_dict = {}
+	
 	for index_of_any in xrange(len(list_of_stable)):
 		any = list_of_stable[index_of_any]
 		any.tolist()
@@ -377,8 +378,7 @@ def check_state_within_box_run(keepgoing, nruns, unaccounted_list, no_cluster_la
 		total_stack      = 0
 		number_of_groups = 0
 	if no_cluster_last_run:  number_of_groups -=1
-	if number_of_groups<=1:  
-		keepgoing =0
+	if number_of_groups<=1:  keepgoing =0
 	return keepgoing, nruns, total_stack, number_of_groups
 	
 def get_box_partition(box_dir, ncluster, unaccounted_list):
@@ -390,7 +390,7 @@ def get_box_partition(box_dir, ncluster, unaccounted_list):
 			clusters_in_box.append(one_cluster)
 		if len(unaccounted_list)>0: clusters_in_box.append(unaccounted_list)
 		alist, plist = merge_classes_into_partition_list(clusters_in_box)
-	else: plist = []
+	else:  plist = []
 	return plist
 				
 def output_clusters(output_dir, partition, unaccounted_list, not_include_unaccounted, log_main):
@@ -4765,8 +4765,6 @@ def do3d_sorting_groups_nofsc_smearing_iter(srdata, partial_rec3d, iteration):
 			del tweight
 			del trol
 	mpi_barrier(MPI_COMM_WORLD)
-	#fsc143            = 0
-	#fsc05             = 0
 	Tracker["fsc143"]  = 0
 	Tracker["fsc05"]   = 0
 	Tracker["maxfrad"] = Tracker["nxinit"]//2
@@ -5716,8 +5714,7 @@ def do_random_groups_simulation_mpi(ptp1, ptp2):
 	import numpy as np
 	# return two lists: group avgs and group stds. The last one of two lists are the total avg and std.
 	if (len(ptp1)>=50) or (len(ptp2)>=50):
-		if(Blockdata["myid"] == Blockdata["main_node"]):
-			print('Warning: too many simulaton groups')
+		if(Blockdata["myid"] == Blockdata["main_node"]): print('Warning: too many simulaton groups')
 	Nloop = max(1000//Blockdata["nproc"], 1)
 	NT    = 1000
 	a     = []
@@ -5748,14 +5745,17 @@ def do_random_groups_simulation_mpi(ptp1, ptp2):
 		for j in xrange(len(ptp2)-len(ptp1)):
 			plist1.append([nsize1, nsize1+1])
 			nsize1 += 1
-				
-	alist = range(100)
-	blist = range(100)
-	k = len(plist1)
+	if (len(ptp1)>=50) or (len(ptp2)>=50):# will under-estimate random reproducibility
+		alist = range(3*max(len(ptp1), len(ptp2)))
+		blist = range(3*max(len(ptp1), len(ptp2)))
+	else:
+		alist = range(100)
+		blist = range(100)
+	k     = len(plist1)
 	gave  = [ 0.0 for i in xrange(k)]
 	gvar  = [ 0.0 for i in xrange(k)]
-	svar = 0.0
-	save = 0.0
+	svar  = 0.0
+	save  = 0.0
 	alist = np.array(alist, "int32")
 	blist = np.array(blist, "int32")	
 	for iloop in xrange(Nloop):
@@ -6084,17 +6084,15 @@ def main():
 		else: Tracker["constants"]["small_memory"] = False
 	
 		## additional check
-		Tracker["constants"]["hardmask"] = True
-		Tracker["applymask"]             = True
-		Tracker["constants"]["refinement_method"] ="SPARX" 
-		Tracker["nosmearing"]            = False
-		checking_flag = 0 # reset
-		
-		Blockdata["fftwmpi"]             = True
+		Tracker["constants"]["hardmask"]          = True
+		Tracker["applymask"]                      = True
+		Tracker["constants"]["refinement_method"] = "SPARX" 
+		Tracker["nosmearing"]                     = False
+		checking_flag                             = 0 # reset
+		Blockdata["fftwmpi"]                      = True
 		
 		try : 
 			Blockdata["symclass"] = symclass(Tracker["constants"]["symmetry"])
-			from string import atoi
 			Tracker["constants"]["orientation_groups"] = max(4, Tracker["constants"]["orientation_groups"]//Blockdata["symclass"].nsym)
 		except: pass
 		
@@ -6118,8 +6116,8 @@ def main():
 	
 		continue_from_interuption = 0
 		continue_from_interuption = create_masterdir()
-		log_main        = Logger(BaseLogger_Files())
-		log_main.prefix = Tracker["constants"]["masterdir"]+"/"
+		log_main                  = Logger(BaseLogger_Files())
+		log_main.prefix           = Tracker["constants"]["masterdir"]+"/"
 		if continue_from_interuption == 0:
 			if Blockdata["myid"] == Blockdata["main_node"]:
 				log_main.add('================================================================================================================')
