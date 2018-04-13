@@ -8,26 +8,6 @@
     "NAME": "Raw Data",
     "CHILDREN": [
       {
-        "ICON": "multiple_images",
-        "MODE": "tomo",
-        "PROGRAM": "e2ddd_movie.py",
-        "NAME": "Process DDD Movies",
-        "CHILDREN": []
-      },
-      {
-        "ICON": "multiple_images",
-        "PROGRAM": "e2buildstacks.py",
-        "MODE": "tomo",
-        "NAME": "Combine Tilt Images",
-        "CHILDREN": []
-      },
-      {
-        "ICON": "multiple_images",
-        "PROGRAM": "e2spt_tiltstacker.py",
-        "NAME": "Combine Tilt Images",
-        "CHILDREN": []
-      },
-      {
         "ICON": "green_boxes",
         "NAME": "Import Tools",
         "CHILDREN": [
@@ -61,6 +41,20 @@
             "CHILDREN": []
           }
         ]
+      },
+      {
+        "ICON": "multiple_images",
+        "MODE": "tomo",
+        "PROGRAM": "e2ddd_movie.py",
+        "NAME": "Process DDD Movies",
+        "CHILDREN": []
+      },
+      {
+        "ICON": "multiple_images",
+        "PROGRAM": "e2buildstacks.py",
+        "MODE": "tomo",
+        "NAME": "Combine Tilt Images",
+        "CHILDREN": []
       }
     ]
   },
@@ -127,13 +121,13 @@
       {
         "ICON": "single_image_3d",
         "PROGRAM": "e2spt_sgd.py",
-        "NAME": "Make Initial Model",
+        "NAME": "Generate Initial Model",
         "CHILDREN": []
       },
       {
         "ICON": "tomo_hunter",
         "PROGRAM": "e2spt_align.py",
-        "NAME": "Align to Reference",
+        "NAME": "Reference-based Alignment",
         "CHILDREN": []
       },
       {
