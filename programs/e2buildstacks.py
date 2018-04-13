@@ -33,6 +33,7 @@ from __future__ import print_function
 #
 import os, re
 from EMAN2 import *
+import numpy as np
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -51,50 +52,126 @@ def main():
 	
 	The output file will be emptied and overwritten!
 	"""
-	
+
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	
-	parser.add_pos_argument(name="stack_files",help="List building material (sets) here.", default="", guitype='filebox', browser="EMParticlesEditTable(withmodal=True,multiselect=True)",  row=0, col=0,rowspan=1, colspan=2, nosharedb=True)
-	parser.add_argument("--stackname",type=str,help="Name of the stack to build", default=None, guitype='strbox',row=2, col=0, rowspan=1, colspan=1)
+
+	parser.add_pos_argument(name="stack_files",help="List of images to be stacked", default="", guitype='filebox', browser="EMParticlesEditTable(withmodal=True,multiselect=True)",  row=0, col=0,rowspan=1, colspan=3, nosharedb=True,mode="default")
+	parser.add_pos_argument(name="tilt_images",help="List of images to be stacked", default="", guitype='filebox', browser="EMTiltsTable(withmodal=True,multiselect=True)",  row=0, col=0,rowspan=1, colspan=3, nosharedb=True,mode="tomo")
+	parser.add_argument("--output",type=str,help="Name of the output stack to build (including file extension).", default=None, guitype='strbox',row=2, col=0, rowspan=1, colspan=1, mode="default,tomo")
+	parser.add_argument("--tilts",action="store_true",default=False,help="Write results to 'tiltseries' directory in current project.", guitype='boolbox',row=4, col=0, rowspan=1, colspan=1,mode="tomo[True]")
+	parser.add_argument("--rawtlt",type=str,help="Name of tilt angles text file.\nNote, angles must correspond to stack file names in alphabetical/numerical order.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=True)",row=3, col=0, rowspan=1, colspan=1, mode="tomo")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, help="verbose level [0-9], higner number means higher level of verboseness",default=1)
-	
-	(options, args) = parser.parse_args()
-	
-	if options.stackname==None :
-		print("--stackname is required (output file)")
-		sys.exit(1)
-	
-	# remove existing output file
-	if os.path.exists(options.stackname) :
-		try: os.unlink(options.stackname)
-		except:
-			print("ERROR: Unable to remove ",options.stackname,". Cannot proceed")
-			sys.exit(1)
-			
-	# if output is LSX format, we handle it differently, with a specific object for these files
-	if options.stackname[-4:].lower()==".lst" :
-		outfile=LSXFile(options.stackname)
-	else: outfile=None
-	
-	n=0		# number of images in output file
-	for infile in args:
-		nimg = EMUtil.get_image_count(infile)		# number of images in each input file as it is processed
-		
-		if options.verbose : 
-			if nimg==1 : print(infile)
-			else : print(infile,nimg)
 
-		for i in xrange(nimg):
-			if outfile!=None:
-				outfile.write(n,i,infile)
+	(options, args) = parser.parse_args()
+
+	if options.output==None:
+		print("--output is required (output file)")
+		sys.exit(1)
+
+	if options.tilts:
+
+		stdir = os.path.join(".","tiltseries")
+		if not os.access(stdir, os.R_OK):
+			os.mkdir(stdir)
+
+		options.output = "{}/{}".format(stdir,options.output)
+
+		if options.output.split(".")[-1] not in [".hdf",".mrc",".mrcs"]:
+			options.output = options.output + ".hdf"
+
+		# remove existing output file
+		if os.path.exists(options.output) :
+			print("The file {} already exists.".format(options.output))
+			print("Please move, rename, or remove this file to generate an alternate version with this program.")
+			sys.exit(1)
+
+		n=0		# number of images in output file
+
+		if options.rawtlt:
+
+			angles = np.loadtxt(options.angles)
+
+			try:
+				angles = np.loadtxt(options.angles)
+			except:
+				print("Error: Could not read tilt angles from {}".format(options.angles))
+				sys.exit(1)
+			if len(angles) != len(args):
+				print("Error: There are not enough tilt angles in this tilt angles file.")
+				sys.exit(1)
+
+		tlt_assoc = {}
+		for i,arg in enumerate(args):
+			if options.angles:
+				tlt_assoc[angles[i]] = arg
 			else:
+				db=js_open_dict(info_name(arg,nodir=True))
+				ang = float(db["tilt_angle"])
+				tlt_assoc[ang] = arg
+				db.close()
+
+		ordered_angles = sorted([float(a) for a in tlt_assoc.keys()])
+		sorted_args = [tlt_assoc[a] for a in ordered_angles] # order args according to tilt angle parameter
+
+		for angle,infile in zip(ordered_angles,sorted_args):
+			nimg = EMUtil.get_image_count(infile) # number of images in each input file as it is processed
+
+			if options.verbose:
+				if nimg==1: print(infile)
+				else: print(infile,nimg)
+
+			for i in xrange(nimg):
+
 				img=EMData(infile,i)
-				img.write_image(options.stackname,n)
-			n+=1
-			
-	if options.verbose : print(n," total images written to ",options.stackname)
-			
-			
+				img["tilt_angle"] = angle
+
+				db=js_open_dict(info_name(infile,nodir=True))
+				try: # this data may already be present
+					img["SerialEM.tilt_angle"] = db["tilt_angle"]
+					img["SerialEM.intensity"] = db["intensity"]
+					img["SerialEM.exposure_time"] = db["exposure_time"]
+					img["SerialEM.exposure_dose"] = db["exposure_dose"]
+					img["SerialEM.sub_frame_count"] = db["sub_frame_count"]
+					img["SerialEM.prior_record_dose"] = db["prior_record_dose"]
+					img["SerialEM.frames_per_second"] = db["frames_per_second"]
+				except: pass
+				db.close()
+
+				img.write_image(options.output,n)
+				n+=1
+	else:
+
+		# remove existing output file
+		if os.path.exists(options.output) :
+			try: os.unlink(options.output)
+			except:
+				print("ERROR: Unable to remove ",options.output,". Cannot proceed")
+				sys.exit(1)
+
+		# if output is LSX format, we handle it differently, with a specific object for these files
+		if options.output[-4:].lower()==".lst" :
+			outfile=LSXFile(options.output)
+		else: outfile=None
+
+		n=0		# number of images in output file
+		for infile in args:
+			nimg = EMUtil.get_image_count(infile)		# number of images in each input file as it is processed
+
+			if options.verbose :
+				if nimg==1 : print(infile)
+				else : print(infile,nimg)
+
+			for i in xrange(nimg):
+				if outfile!=None:
+					outfile.write(n,i,infile)
+				else:
+					img=EMData(infile,i)
+					img.write_image(options.output,n)
+				n+=1
+
+		if options.verbose : print(n," total images written to ",options.output)
+
+
 if __name__ == "__main__":
 	main()
