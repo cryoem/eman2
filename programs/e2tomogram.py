@@ -39,6 +39,7 @@ def main():
 	
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
+	time0=time.time()
 
 	inputname=args[0]
 	options.inputname=inputname
@@ -73,8 +74,8 @@ def main():
 	cmd="e2proc2d.py {} {} --inplace ".format(inputname, inppath)
 	binfac=max(1, int(np.round(e["nx"]/2048.)))
 	cmd+=" --process threshold.clampminmax.nsigma:nsigma=10"
-	if binfac>1:
-		cmd+=" --meanshrink {}".format(binfac)
+	#if binfac>1:
+		#cmd+=" --meanshrink {}".format(binfac)
 	options.binfac=binfac
 
 	if e["nz"]>1:
@@ -83,7 +84,11 @@ def main():
 	run(cmd)
 		
 	## now prepare tilt series 
-	imgs_2k=EMData.read_images(inppath)
+	imgs_full=EMData.read_images(inppath)
+	if binfac==1:
+		imgs_2k=imgs_full
+	else:
+		imgs_2k=[img.process("math.meanshrink", {"n":binfac}).process("normalize") for img in imgs_full]
 	imgs_1k=[img.process("math.meanshrink", {"n":2}).process("normalize") for img in imgs_2k]
 	imgs_500=[]
 	for p in imgs_1k:
@@ -98,6 +103,7 @@ def main():
 	options.apix_init=float(imgs_2k[0]["apix_x"])
 	if (options.rawtlt!=None) : tlts=np.loadtxt(options.rawtlt)
 	else: tlts=np.arange(-len(imgs_2k)*options.tiltstep/2,len(imgs_2k)*options.tiltstep/2,options.tiltstep)
+	
 	np.savetxt(options.tmppath+"rawtilt.txt", tlts)
 	zeroid=options.zeroid=np.argmin(abs(tlts))
 	
@@ -202,6 +208,7 @@ def main():
 		
 	
 	threed=make_tomogram(imgs_1k, ttparams, options, premask=False, outname=path+"tomo_final.hdf", clipz=True, errtlt=loss0)
+	make_ali(imgs_full, ttparams, options)
 	
 	try: os.mkdir("tomograms")
 	except: pass
@@ -220,6 +227,9 @@ def main():
 	js=js_open_dict(path+"0_tomorecon_params.json")
 	js.update(vars(options))
 	js.close()
+	
+	dtime=time.time()-time0
+	print("Finished. Total time: {:.1f}s".format(dtime))
 	
 	E2end(logid)
 
@@ -371,7 +381,7 @@ def make_tomogram(imgs, tltpm, options, outname=None, premask=True, padr=1.2, cl
 	if options.verbose:
 		print("\t Image size: {:d} x {:d}".format(nx, ny))
 		print("\tPadded volume to: {:d} x {:d} x {:d}".format(pad, pad, zthick))
-	recon=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,zthick], "mode":options.reconmode})
+	recon=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,zthick], "mode":"gauss_2"})
 	#recon=Reconstructors.get("fourier_iter", {"size":[pad,pad,zthick]})
 	recon.setup()
 	jobs=[]
@@ -470,14 +480,13 @@ def make_ali(imgs, tpm, options):
 
 		pxf=get_xf_pos(ttparams[nid], [0,0,0])
 		m=im.process("normalize")
-		xform=Transform({"type":"xyz","ztilt":tpm[2],"ytilt":tpm[3], "xtilt":tpm[4], "tx":-pxf[0], "ty":-pxf[1]})
-		p2=m.get_clip(Region(m["nx"]/2-pad/2,m["ny"]/2-pad/2, pad, pad), fill=0)
 		
-		rr=xform.get_params("xyz")
+		p2=m.get_clip(Region(m["nx"]/2-pad/2,m["ny"]/2-pad/2, pad, pad), fill=0)
 		po=p2.copy()
-		rr=xform.get_params("xyz")
-		po.translate(rr["tx"], rr["ty"],0)
-		po.rotate(-rr["ztilt"],0,0)
+		po.translate(-pxf[0], -pxf[1], 0)
+		po.rotate(-tpm[2],0,0)
+		xform=Transform({"type":"xyz","ytilt":tpm[3],"xtilt":tpm[4]})
+		po["xform.projection"]=xform
 		po.write_image(fname, nid)
 
 def find_landmark(threed, options):
@@ -668,11 +677,7 @@ def ali_ptcls(imgs, allpms, options, outname=None, doali=True):
 	ny=imgs[0]["ny"]
 	fidptcls=[]
 	bx=options.bxsz/2
-	#gdsz=options.fidsz*10.
 	apix=imgs[0]["apix_x"]
-	#gdsz/=apix
-	#g=EMData(bx*2,bx*2)
-	#g.to_one()
 	lowres=(scale>1.5)
 
 	ptclpos=[]
@@ -688,8 +693,11 @@ def ali_ptcls(imgs, allpms, options, outname=None, doali=True):
 			pxf[1]+=ny/2
 
 			if nid!=zeroid:
-				pxf[0]-=trans[nrange[ii-1],0]
-				pxf[1]-=trans[nrange[ii-1],1]
+				tlast=trans[nrange[ii-1]]
+				pxf[0]-=tlast[0]
+				pxf[1]-=tlast[1]
+			else:
+				tlast=np.array([0,0])
 
 			e=imgs[nid].get_clip(Region(pxf[0]-bx,pxf[1]-bx, bx*2, bx*2)).process("normalize")
 
@@ -697,30 +705,12 @@ def ali_ptcls(imgs, allpms, options, outname=None, doali=True):
 			if doali:# and nid!=zeroid:
 				
 				tx=get_center(e, lowres)
-				
-				#if lowres and nid!=zeroid:
-					
-					##m=e.numpy()
-					##px,py=np.unravel_index(np.argmin(m.flatten()), m.shape)
-					#tx=[bx-pk[0], bx-pk[1]]
-				#else:
-					#e.mult(-1)
-					#e.process_inplace("filter.lowpass.gauss",{"cutoff_freq":.02})
-					#e.process_inplace("normalize")
-					#pk=e.calc_center_of_mass(2)
-					#if np.isnan(pk).any():
-						#pk=[bx,bx]
-					#tx=[bx-pk[0], bx-pk[1]]
-					##c=e.align("translational", g, {"maxshift":bx/2})
-					##tx=c["xform.align2d"].get_trans()
-					
+				trans[nid]=tlast+np.array([tx[0], tx[1]])
 				
 				if nid!=zeroid:
-					trans[nid]=trans[nrange[ii-1]]+np.array([tx[0], tx[1]])
+					
 					if outname:
 						e=imgs[nid].get_clip(Region(pxf[0]-bx-tx[0],pxf[1]-bx-tx[1], bx*2, bx*2)).process("normalize")
-
-
 
 			if outname:
 				e["score"]=trans[nid].tolist()
