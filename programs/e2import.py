@@ -307,9 +307,23 @@ with the same name, you should specify only the .hed files (no renaming is neces
 					newname=os.path.join(tomosdir,os.path.basename(filename[:tpos]+shrinkstr+'.hdf'))
 				else:
 					newname=os.path.join(tomosdir,os.path.basename(filename))
+				hdr=EMData(filename,0,True)
 				cmd="e2proc3d.py {} {} ".format(filename, newname)
+				
+				# shrink, and clip from the origin to give us a good box size. Done from origin so segmentation results will be positioned well for scaling
 				if options.shrink>1:
-					cmd+=" --meanshrink {:d} ".format(options.shrink)
+					nx=good_size(hdr["nx"]/options.shrink)*options.shrink
+					ny=good_size(hdr["ny"]/options.shrink)*options.shrink
+					nz=good_size(hdr["nz"]/options.shrink)*options.shrink
+#					cmd+="--clip {},{},{},{},{},{} --meanshrink {:d} ".format(nx,ny,nz,nx/2,ny/2,nz/2,options.shrink)
+					cmd+="--clip {},{},{} --meanshrink {:d} ".format(nx,ny,nz,options.shrink)		# no origin shift. If result is scaled up and clipped to original size this may work better
+				else:
+					nx=good_size(hdr["nx"])
+					ny=good_size(hdr["ny"])
+					nz=good_size(hdr["nz"])
+#					cmd+="--clip {},{},{},{},{},{} ".format(nx,ny,nz,nx/2,ny/2,nz/2,options.shrink)
+					cmd+="--clip {},{},{} ".format(nx,ny,nz,options.shrink)
+					
 				if options.invert:
 					cmd+=" --mult -1 --process normalize "
 				if options.tomoseg_auto:

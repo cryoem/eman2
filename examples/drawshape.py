@@ -27,6 +27,7 @@ def main():
 
 
 	drawer.show()
+	drawer.raise_()
 	app.execute()
 	E2end(logid)
 	

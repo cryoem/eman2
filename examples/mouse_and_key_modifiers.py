@@ -40,4 +40,5 @@ if __name__ == "__main__":
 	app = QtGui.QApplication(sys.argv)
 	window = MouseAndKeyModifiers()
 	window.show()
+	window.raise_()
 	sys.exit(app.exec_())

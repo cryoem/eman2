@@ -280,6 +280,7 @@ def main():
 		app=EMApp()
 		gui=GUIBoxer(args,options.voltage,options.apix,options.cs,options.ac,options.boxsize,options.ptclsize,options.threads)
 		gui.show()
+		gui.raise_()
 		app.exec_()
 
 	if options.write_dbbox:

@@ -125,6 +125,7 @@ def main():
 			app = EMApp()
 			helixboxer = EMHelixBoxerWidget(args, app, options.helix_width,options.save_ext)
 			helixboxer.show()
+			helixboxer.raise_()
 			app.execute()
 			E2end(logid)
 		else:
