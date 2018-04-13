@@ -2544,25 +2544,37 @@ def mrk_eliminate_moons_sphire_gaussian_edge(vol3d, density_threshold, gauss_ker
 	from morphology import binarize
 	from utilities import gauss_edge
 	
-	# print_progress("MRK_DEBUG: ")
-	# print_progress("MRK_DEBUG: mrk_eliminate_moons_sphire_gaussian_edge()")
+	print_progress("MRK_DEBUG: ")
+	print_progress("MRK_DEBUG: mrk_eliminate_moons_sphire_gaussian_edge()")
 	# print_progress("MRK_DEBUG:   density_threshold    := {}".format(density_threshold))
 	# print_progress("MRK_DEBUG:   gauss_kernel_radius  := {}".format(gauss_kernel_radius))
 	# print_progress("MRK_DEBUG:   gauss_sigma          := {}".format(gauss_sigma))
 	
 	bin3d = binarize(vol3d, density_threshold)
 	bin3d_mol_mass = Util.get_biggest_cluster(bin3d)
-	bin3d_diff = bin3d - bin3d_mol_mass
-
+	# Create Gaussian soft-edged binary mask with no moons 
+	mask3d_moon_elminator, bin3d_mol_mass_dilated = mrk_sphere_gauss_edge(bin3d_mol_mass, gauss_kernel_radius, gauss_sigma)
+	# 
 	# The difference are supposed to contain only moons!
 	# If all differences are zero, there should be no effect of moon elimination on the input volume.
 	# In this case, return the original volume.
-	ref3d_moon_eliminated = vol3d
-	# Create Gaussian soft-edged binary mask with no moons 
-	mask3d_moon_elminator, bin3d_mol_mass_dilated = mrk_sphere_gauss_edge(bin3d_mol_mass, gauss_kernel_radius, gauss_sigma)
-	if bin3d_diff.get_value_at(bin3d_diff.calc_max_index()) != 0 or bin3d_diff.get_value_at(bin3d_diff.calc_min_index()) != 0:
-		# Eliminate moons from the original volume and soften the volume edge by apply the soft-edged binary mask with no moons to the original volume.
-		ref3d_moon_eliminated = mask3d_moon_elminator * vol3d
+	# 
+	# NOTE: Toshio Moriya 2018/04/12
+	# Somehow, the following condition happend when I applied filter to the 3D volume, 
+	# and did not remove moons of very week density...
+	# The value must be too close to zero for this type of check!!
+	# Let's apply moon eliminator always since it does not harm anything...
+	# 
+	# ref3d_moon_eliminated = vol3d
+	# bin3d_diff = bin3d - bin3d_mol_mass
+	# if bin3d_diff.get_value_at(bin3d_diff.calc_max_index()) != 0.0 or bin3d_diff.get_value_at(bin3d_diff.calc_min_index()) != 0.0:
+	# 	# Eliminate moons from the original volume and soften the volume edge by apply the soft-edged binary mask with no moons to the original volume.
+	# 	ref3d_moon_eliminated = mask3d_moon_elminator * vol3d
+	# 
+	ref3d_moon_eliminated = mask3d_moon_elminator * vol3d
+	# bin3d_diff = bin3d - bin3d_mol_mass
+	# if bin3d_diff.get_value_at(bin3d_diff.calc_max_index()) == 0.0 and bin3d_diff.get_value_at(bin3d_diff.calc_min_index()) == 0.0:
+	# 	print_progress("MRK_DEBUG:   There was no effect of the moon elimination")
 	
 	return ref3d_moon_eliminated, mask3d_moon_elminator, bin3d_mol_mass_dilated, bin3d_mol_mass
 
