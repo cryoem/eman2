@@ -268,6 +268,8 @@ NOTE: This program should be run from the project directory, not from within the
 		app=EMApp()
 		gui=GUIctf(app,img_sets,options.autohp,options.nosmooth)
 		gui.show_guis()
+		gui.show()
+		gui.raise_()
 		app.exec_()
 
 #		print "done execution"

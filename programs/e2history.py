@@ -61,6 +61,8 @@ def main():
 		from eman2_gui.emapplication import EMApp
 		app = EMApp()
 		hist = HistoryForm(app,os.getcwd())
+		hist.form.show()
+		hist.form.raise_()
 		app.show()
 		app.execute()
 		
