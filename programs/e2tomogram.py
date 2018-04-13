@@ -20,6 +20,7 @@ def main():
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--rawtlt", type=str,help="Text file contains raw tilt angles", default=None)
+	parser.add_argument("--tiltstep", type=float,help="Alternative to --rawtlt, if stack contains sequential tilts with fixed angle", default=2.0)
 	#parser.add_argument("--loadparam", type=str,help="Load from existing param file", default=None)
 	#parser.add_argument("--zeroid", type=int,help="Index of the center tilt. Ignored when rawtlt is provided.", default=-1)
 	parser.add_argument("--npk", type=int,help="Number of landmarks to use.", default=40)
@@ -95,7 +96,8 @@ def main():
 	
 	
 	options.apix_init=float(imgs_2k[0]["apix_x"])
-	tlts=np.loadtxt(options.rawtlt)
+	if (options.rawtlt!=None) : tlts=np.loadtxt(options.rawtlt)
+	else: tlts=np.arange(-len(imgs_2k)*options.tiltstep/2,len(imgs_2k)*options.tiltstep/2,options.tiltstep)
 	np.savetxt(options.tmppath+"rawtilt.txt", tlts)
 	zeroid=options.zeroid=np.argmin(abs(tlts))
 	
