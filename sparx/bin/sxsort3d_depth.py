@@ -4093,13 +4093,13 @@ def get_input_from_sparx_ref3d(log_main):# case one
 	from  shutil import copyfile
 	from  string import split, atoi
 	import_from_sparx_refinement = 1
-	selected_iter      = 0
-	Tracker_refinement = 0
-	checking_flag      = 0
+	selected_iter                = 0
+	Tracker_refinement           = 0
+	checking_flag                = 0
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		if not os.path.exists (Tracker["constants"]["refinement_dir"]): checking_flag = 1
 	checking_flag = bcast_number_to_all(checking_flag, Blockdata["main_node"], MPI_COMM_WORLD)
-	if checking_flag: ERROR("SPARX refinement dir does not exist", "get_input_from_sparx_ref3d", 1, Blockdata["myid"])
+	if checking_flag ==1: ERROR("SPARX refinement directory does not exist", "get_input_from_sparx_ref3d", 1, Blockdata["myid"])
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		if Tracker["constants"]["niter_for_sorting"] == -1: # take the best solution to do sorting
 			niter_refinement = 0
@@ -4120,43 +4120,36 @@ def get_input_from_sparx_ref3d(log_main):# case one
 				fout.close()
 				selected_iter = Tracker["constants"]["niter_for_sorting"]
 			except:	import_from_sparx_refinement = 0
-	else: selected_iter = -1	
+	else: selected_iter = -1
 	selected_iter = bcast_number_to_all(selected_iter, Blockdata["main_node"], MPI_COMM_WORLD)
 	import_from_sparx_refinement = bcast_number_to_all(import_from_sparx_refinement, source_node = Blockdata["main_node"])
-	if import_from_sparx_refinement == 0:	
+	if import_from_sparx_refinement == 0:
 		ERROR("The best solution is not found","get_input_from_sparx_ref3d", 1, Blockdata["myid"])
 		from mpi import mpi_finalize
 		mpi_finalize()
-		exit()			
+		exit()
 	Tracker_refinement = wrap_mpi_bcast(Tracker_refinement, Blockdata["main_node"], communicator = MPI_COMM_WORLD)
+	
 	# Check orgstack, set correct path
 	
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		refinement_dir_path, refinement_dir_name = os.path.split(Tracker["constants"]["refinement_dir"])	
-		if Tracker_refinement["constants"]["stack"][0:4]=="bdb:": refinement_stack = "bdb:"+os.path.join(refinement_dir_path, Tracker_refinement["constants"]["stack"][4:])
-		else: refinement_stack = os.path.join(refinement_dir_path, Tracker_refinement["constants"]["stack"])
-		if not Tracker["constants"]["orgstack"]: # Use refinement stack if instack is not provided
-			Tracker["constants"]["orgstack"] = refinement_stack #Tracker_refinement["constants"]["stack"]
-			try: image = get_im(Tracker["constants"]["orgstack"], 0)
-			except: import_from_sparx_refinement = 0
-		else:
-			if Tracker["constants"]["orgstack"] == Tracker_refinement["constants"]["stack"]: # instack and refinement data stack is the same
-				if not os.path.exists(Tracker["constants"]["orgstack"]): import_from_sparx_refinement = 0
-			else: # complicated cases
-				if (not os.path.exists(Tracker["constants"]["orgstack"])) and (not os.path.exists(Tracker_refinement["constants"]["stack"])): 
-					import_from_sparx_refinement = 0
-				elif (not os.path.exists(Tracker["constants"]["orgstack"])) and os.path.exists(Tracker_refinement["constants"]["stack"]):
-					old_stack = Tracker["constants"]["stack"]
-					if old_stack[0:3] == "bdb":
-						Tracker["constants"]["orgstack"] = "bdb:" + Tracker["constants"]["refinement_dir"]+"/../"+old_stack[4:]
-					else: Tracker["constants"]["orgstack"] = os.path.join(option_old_refinement_dir, "../", old_stack)
-		total_stack   = EMUtil.get_image_count(Tracker["constants"]["orgstack"])
+		if Tracker_refinement["constants"]["stack"][0:4]=="bdb:": refinement_stack = "bdb:" + os.path.join(refinement_dir_path, Tracker_refinement["constants"]["stack"][4:])
+		else:                                                     refinement_stack = os.path.join(refinement_dir_path, Tracker_refinement["constants"]["stack"]) # very rare case
+		
+		if not Tracker["constants"]["orgstack"]: Tracker["constants"]["orgstack"] = refinement_stack
+		try:    image = get_im(Tracker["constants"]["orgstack"], 0)
+		except: import_from_sparx_refinement = 0
+		try:    total_stack   = EMUtil.get_image_count(Tracker["constants"]["orgstack"])
+		except: total_stack   = 0
 	else: total_stack = 0
-	import_from_sparx_refinement = bcast_number_to_all(import_from_sparx_refinement, source_node = Blockdata["main_node"])
 	
+		
+	import_from_sparx_refinement = bcast_number_to_all(import_from_sparx_refinement, source_node = Blockdata["main_node"])
 	if import_from_sparx_refinement == 0:ERROR("The data stack is not accessible","get_input_from_sparx_ref3d",1, Blockdata["myid"])
 	total_stack = bcast_number_to_all(total_stack, source_node = Blockdata["main_node"])			
-	Tracker["constants"]["total_stack"] = total_stack	
+	Tracker["constants"]["total_stack"] = total_stack
+	
 	# Now copy relevant refinement files to sorting directory:
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		if os.path.exists(os.path.join(Tracker["constants"]["refinement_dir"], "main%03d"%selected_iter, "params_%03d.txt"%selected_iter)):
@@ -4211,7 +4204,7 @@ def get_input_from_sparx_ref3d(log_main):# case one
 		if os.path.exists(os.path.join(Tracker["constants"]["refinement_dir"], "main000/indexes_000.txt")):
 			copyfile(os.path.join(Tracker["constants"]["refinement_dir"], "main000/indexes_000.txt"), \
 			os.path.join(Tracker["constants"]["masterdir"], "indexes.txt"))
-		else:	import_from_sparx_refinement = 0
+		else: import_from_sparx_refinement = 0
 	import_from_sparx_refinement = bcast_number_to_all(import_from_sparx_refinement, source_node = Blockdata["main_node"])
 	
 	if import_from_sparx_refinement == 0: ERROR("The index file of the best solution are not accessible","get_input_from_sparx_ref3d", 1, Blockdata["myid"])
@@ -4268,12 +4261,9 @@ def get_input_from_sparx_ref3d(log_main):# case one
 	else: 
 		update_sym  = 0
 		Tracker     = 0 
-	Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], communicator = MPI_COMM_WORLD)
-	#import_from_sparx_refinement = bcast_number_to_all(import_from_sparx_refinement, source_node = Blockdata["main_node"])
-	update_sym = bcast_number_to_all(update_sym, source_node = Blockdata["main_node"])
+	Tracker    = wrap_mpi_bcast(Tracker,         Blockdata["main_node"], MPI_COMM_WORLD)
+	update_sym = bcast_number_to_all(update_sym, Blockdata["main_node"], MPI_COMM_WORLD)
 	
-	#if import_from_sparx_refinement ==0:
-	#	ERROR("Import parameters from SPARX refinement failed", "get_input_from_sparx_ref3d", 1,  Blockdata["myid"])
 	if update_sym ==1:
 		Blockdata["symclass"] = symclass(Tracker["constants"]["symmetry"])
 		Tracker["constants"]["orientation_groups"] = max(4, Tracker["constants"]["orientation_groups"]//Blockdata["symclass"].nsym)
