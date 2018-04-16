@@ -47,13 +47,6 @@ def isBinaryBuild() {
     return (CI_BUILD == "1" || buildOS[SLAVE_OS] == "1")
 }
 
-def runJob() {
-    sh 'bash ci_support/conda_build.sh recipes/eman'
-    sh "bash ci_support/package.sh ${INSTALLERS_DIR} " + '${WORKSPACE}/ci_support/'
-    testPackage()
-    deployPackage()
-}
-
 def testPackage() {
     if(SLAVE_OS != 'win')
         sh "bash tests/test_binary_installation.sh ${INSTALLERS_DIR} eman2.${SLAVE_OS}.sh"
