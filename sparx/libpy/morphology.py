@@ -2158,7 +2158,11 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 				continue
 
 			mic = get_im(img_name)
-			pw2 = tilemic(mic, win_size = wn, overlp_x = overlap_x, overlp_y = overlap_y, edge_x = edge_x, edge_y = edge_y)
+			try:
+				pw2 = tilemic(mic, win_size = wn, overlp_x = overlap_x, overlp_y = overlap_y, edge_x = edge_x, edge_y = edge_y)
+			except:
+				print("MRK_DEBUG: tilemic() in cter_mrk() raised an exception. The micrographs {} might have a problem. Please check it and remove it if necessary.".format(img_name))
+				raise
 			# # NOTE: 2017/07/24 Toshio Moriya 
 			# # Writing thumbnail at this timing causes exception with MPI processing for some micrographs
 			# # RuntimeError:     FileAccessException at EMAN2_SRC_DIR/eman2/libEM/hdfio2.cpp:517: 
@@ -3242,7 +3246,11 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 				continue
 
 			mic = get_im(img_name)
-			pw2 = tilemic(mic, win_size = wn, overlp_x = overlap_x, overlp_y = overlap_y, edge_x = edge_x, edge_y = edge_y)
+			try:
+				pw2 = tilemic(mic, win_size = wn, overlp_x = overlap_x, overlp_y = overlap_y, edge_x = edge_x, edge_y = edge_y)
+			except:
+				print("MRK_DEBUG: tilemic() in cter_pap() raised an exception. The micrographs {} might have a problem. Please check it and remove it if necessary.".format(img_name))
+				raise
 			# # NOTE: 2017/07/24 Toshio Moriya 
 			# # Writing thumbnail at this timing causes exception with MPI processing for some micrographs
 			# # RuntimeError:     FileAccessException at EMAN2_SRC_DIR/eman2/libEM/hdfio2.cpp:517: 
@@ -5607,7 +5615,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 		mpi_barrier(MPI_COMM_WORLD)
 	
 	# Set up loop variables depending on the cter mode
-	if stack == None:		
+	if stack == None:
 		if RUNNING_UNDER_MPI:
 			set_start, set_end = MPI_start_end(len(namics), n_mpi_procs, my_mpi_proc_id)
 		else:
@@ -5648,7 +5656,11 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 				print("    %s %s: Can not find this file. Skipping the estimation and CTF parameters are not stored..." % (img_type, img_name))
 				continue
 			mic = get_im(img_name)
-			pw2 = tilemic(mic, win_size = wn, overlp_x = overlap_x, overlp_y = overlap_y, edge_x = edge_x, edge_y = edge_y)
+			try:
+				pw2 = tilemic(mic, win_size = wn, overlp_x = overlap_x, overlp_y = overlap_y, edge_x = edge_x, edge_y = edge_y)
+			except:
+				print("MRK_DEBUG: tilemic() in cter_vpp() raised an exception. The micrographs {} might have a problem. Please check it and remove it if necessary.".format(img_name))
+				raise
 			# # NOTE: 2017/07/24 Toshio Moriya 
 			# # Writing thumbnail at this timing causes exception with MPI processing for some micrographs
 			# # RuntimeError:     FileAccessException at EMAN2_SRC_DIR/eman2/libEM/hdfio2.cpp:517: 
