@@ -15,20 +15,20 @@
             "ICON": "multiple_images",
             "MODE": "refs",
             "PROGRAM": "e2ddd_movie.py",
-            "NAME": "Import DDD References",
-            "CHILDREN": []
-          },
-          {
-            "ICON": "multiple_images",
-            "PROGRAM": "e2import.py",
-            "MODE": "movies",
-            "NAME": "Import DDD Movies",
+            "NAME": "Process DDD References",
             "CHILDREN": []
           },
           {
             "ICON": "multiple_images",
             "PROGRAM": "e2import.py",
             "MODE": "tilts",
+            "NAME": "Import Tilt Images",
+            "CHILDREN": []
+          },
+          {
+            "ICON": "multiple_images",
+            "PROGRAM": "e2import.py",
+            "MODE": "rawtilts",
             "NAME": "Import Tiltseries",
             "CHILDREN": []
           },
