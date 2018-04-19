@@ -58,6 +58,8 @@ class PMComboBox(QtGui.QComboBox):
 
 class PMBaseWidget(QtGui.QWidget):
 	""" A base widget upon which all the other PM widgets are derived """
+	pmmessage = QtCore.pyqtSignal(QString)
+
 	def __init__(self, name, mode="",returnNone=False):
 		QtGui.QWidget.__init__(self)
 
@@ -119,7 +121,6 @@ class PMBaseWidget(QtGui.QWidget):
 
 class PMIntEntryWidget(PMBaseWidget):
 	""" A Widget for geting Int values. Type and range is checked """
-	pmmessage = QtCore.pyqtSignal(QString)
 
 	@staticmethod
 	def copyWidget(widget):
@@ -180,7 +181,6 @@ class PMIntEntryWidget(PMBaseWidget):
 
 class PMShrinkEntryWidget(PMIntEntryWidget):
 	""" A widget for shink options. If this entry is set to <= 1 then no argument is returned """
-	pmmessage = QtCore.pyqtSignal(QString)
 
 	@staticmethod
 	def copyWidget(widget):
@@ -216,7 +216,6 @@ class PMShrinkEntryWidget(PMIntEntryWidget):
 
 class PMFloatEntryWidget(PMBaseWidget):
 	""" A Widget for geting Float values. Type and range is checked """
-	pmmessage = QtCore.pyqtSignal(QString)
 
 	@staticmethod
 	def copyWidget(widget):
@@ -383,7 +382,6 @@ class PMBoolWidget(PMBaseWidget):
 class PMFileNameWidget(PMBaseWidget):
 	""" A Widget for geting filenames. Type is checked """
 	pmfilename = QtCore.pyqtSignal(QString)
-	pmmessage = QtCore.pyqtSignal(QString)
 	@staticmethod
 	def copyWidget(widget):
 		""" Basically a copy constructor to get around QT and python limitations """
@@ -550,7 +548,6 @@ class PMDirectoryWidget(PMBaseWidget):
 
 class PMComboWidget(PMBaseWidget):
 	""" A Widget for combo boxes. Type is checked """
-	pmmessage = QtCore.pyqtSignal(QString)
 
 	@staticmethod
 	def copyWidget(widget):
@@ -599,7 +596,6 @@ class PMComboWidget(PMBaseWidget):
 
 class PMComboParamsWidget(PMBaseWidget):
 	""" A Widget for combo boxes. Type is checked. For the combobox with params the datatype is always str """
-	pmmessage = QtCore.pyqtSignal(QString)
 
 	@staticmethod
 	def copyWidget(widget):
@@ -665,7 +661,6 @@ class PMComboParamsWidget(PMBaseWidget):
 
 class PMSymWidget(PMBaseWidget):
 	""" A widget for getting/setting symmetry input """
-	pmmessage = QtCore.pyqtSignal(QString)
 
 	@staticmethod
 	def copyWidget(widget):
@@ -730,7 +725,6 @@ class PMSymWidget(PMBaseWidget):
 
 class PMAutoMask3DWidget(PMBaseWidget):
 	""" A Widget for getting automask 3D input """
-	pmmessage = QtCore.pyqtSignal(QString)
 
 	@staticmethod
 	def copyWidget(widget):
