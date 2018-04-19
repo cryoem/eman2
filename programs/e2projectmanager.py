@@ -1646,7 +1646,7 @@ class PMQListWidgetItem(QtWidgets.QListWidgetItem):
 
 class PMProgramWidget(QtWidgets.QTabWidget):
 	"""
-	Creates a program interface for each e2 program, for each mode, etc. This is a tab widget and there are three tabs, a GUI tab, a comand line tab and a help tab
+	Creates a program interface for each e2 program, for each mode, etc. This is a tab widget and there are three tabs, a GUI tab, a command line tab and a help tab
 	"""
 	def __init__(self, options, program, pm, mode):
 		QtWidgets.QTabWidget.__init__(self)
@@ -1708,13 +1708,13 @@ class PMProgramWidget(QtWidgets.QTabWidget):
 class PMGUIWidget(QtWidgets.QScrollArea):
 	"""
 	Creates a GUI widget using a dict derived from the e2program options. Instances of this widget are added to the QStackedWidget on the right hand side of the PM.
-	When the user clicks on a leaf node in the workflow tree an instace of this class is created, if it doesn't already exists, and added to the stckedwidget. If it
+	When the user clicks on a leaf node in the workflow tree an instance of this class is created, if it doesn't already exists, and added to the stackedwidget. If it
 	already exists, then it is rendered visible.
 	"""
 	def __init__(self, options, program, pm, mode):
 		QtWidgets.QScrollArea.__init__(self)
 		self.errorstate = False
-		# I need both an ordered list and an associavite means of accessing the widgets
+		# I need both an ordered list and an associative means of accessing the widgets
 		self.widgetlist = []
 		self.widgethash = {}
 		self.cwd  = pm.pm_cwd	# The working directory that were in
@@ -1787,7 +1787,7 @@ class PMGUIWidget(QtWidgets.QScrollArea):
 		return colspan
 
 	def getDefault(self, option, nodb = False):
-		""" return the default value according to the folowing rules"""
+		""" return the default value according to the following rules"""
 		# If there is a DB and its usage is desired the default will be the DB value
 		k=option['name']+self.getSharingMode(option)
 		if not nodb and k in self.db: return self.db[k]	# Return the default if it exists in the DB
@@ -1820,7 +1820,7 @@ class PMGUIWidget(QtWidgets.QScrollArea):
 
 	def getPositional(self, option):
 		# See if the arugment is positional or not
-		positional = False	# Defult if not provided
+		positional = False	# Default if not provided
 		if 'positional' in option: positional = option['positional']
 		return positional
 
@@ -1851,7 +1851,7 @@ class PMGUIWidget(QtWidgets.QScrollArea):
 		return browser
 
 	def getreturnNone(self, option):
-		""" Sets whether or not we will actuall return None as an argument or leave it blank. Only some args can accpt None, others crash if this is input """
+		""" Sets whether or not we will actually return None as an argument or leave it blank. Only some args can accept None, others crash if this is input """
 		if 'returnNone' in option:
 			return True
 		else:
@@ -1863,7 +1863,7 @@ class PMGUIWidget(QtWidgets.QScrollArea):
 		if thiscwd != self.cwd:
 			self.cwd = thiscwd
 			self.db = js_open_dict("{}/info/pm/{}.json".format(str(self.cwd),self.program))
-		# Might enable serval dbs to be loaded, but we will implment this later
+		# Might enable serval dbs to be loaded, but we will implement this later
 		for widget in self.widgetlist:
 			# If this is not a value holding widget continue (bool widget, herader, etc)
 			if widget.getArgument() == None: continue
@@ -1900,7 +1900,7 @@ class PMGUIWidget(QtWidgets.QScrollArea):
 			if isinstance(widget, PMBoolWidget):
 				self._setValueJournaling(widget, False)
 				continue
-			#process arguments, if postional widget
+			#process arguments, if positional widget
 			if widget.getPositional():
 				posargs.append(widget)
 				continue
