@@ -453,7 +453,7 @@ class TreeClassifyTask(JSTask):
 	def __init__(self,ptcl,ptid,nodes,align=None,alicmp=("dot",{}),cmp=("dot",{}), ralign=None, alircmp=("dot",{}),cmptmp=None,masktmp=None):
 		rt=EMUtil.get_image_count(nodes)
 		if cmptmp==None or masktmp==None:
-			### Compare to the two children seperately 
+			### Compare to the two children separately 
 			data={"images":["cache",ptcl,ptid], "nodes":["cache",nodes,0,rt]}
 			cmpdiff=False
 		else:

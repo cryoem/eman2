@@ -384,7 +384,7 @@ def write_particles(files,boxsize,verbose):
 ##########
 
 class boxerByRef(QtCore.QObject):
-	"""Simple reference-based cross-corrlation picker with exhaustive rotational search"""
+	"""Simple reference-based cross-correlation picker with exhaustive rotational search"""
 	@staticmethod
 	def setup_gui(gridlay,boxerwindow=None):
 		boxerByRef.threshold=ValSlider(None,(0.1,8),"Threshold",1.5,90)

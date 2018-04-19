@@ -44,7 +44,7 @@ def main():
 	
 	If the output name has a ".lst" extension:
 	the output is a formatted text file, one line per image, describing the file containing the actual
-	image data in a searchable form. .lst files can be used as if they conatined actual images in any
+	image data in a searchable form. .lst files can be used as if they contained actual images in any
 	EMAN2 programs.
 	
 	If the output is a normal image file (.hdf, .spi, etc.) then the images will be copied into the
