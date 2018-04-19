@@ -1599,7 +1599,7 @@ class Boxable(object):
 		return self.__quality
 		
 	def check_store_image_name_db(self):
-		#print "in cheack and Store image tag in db"
+		#print "in check and Store image tag in db"
 		project_db = EMProjectDB()
 		data = project_db[self.get_dd_key()]
 		if data == None:
@@ -1678,7 +1678,7 @@ class Boxable(object):
 				box.update_position_from_data(movedboxes)
 			self.boxes.append(box)
 		
-		# Sometimes an exclusion area is added after the autoboxing has occured, in which case
+		# Sometimes an exclusion area is added after the autoboxing has occurred, in which case
 		# autoboxes in the db will be in the excluded area and hence we have to make sure they 
 		# are not included
 		self.update_excluded_boxes()	
@@ -2218,7 +2218,7 @@ class Boxable(object):
 		elif flag == Boxable.UNERASE:
 			val = 0
 		else:
-			print("error - unknow flag:",flag,"doing nothing")
+			print("error - unknown flag:",flag,"doing nothing")
 			return
 		
 		BoxingTools.set_region(self.get_exclusion_image(),mask,xx,yy,val)
@@ -2764,7 +2764,7 @@ class AutoBoxer(object):
 		raise Exception
 		
 	def get_template_object(self):
-		''' Must be able to return a template object which will in turn return the EMData template andd
+		''' Must be able to return a template object which will in turn return the EMData template and
 		a time stample - i.e. Must return an object of type Template (look at the class definition above)
 		
 		template_object = autoboxer.get_template_object()
@@ -2779,7 +2779,7 @@ class AutoBoxer(object):
 		'''
 		This is the minimum size the window can be in the subsampled image, the number is required byt the 
 		SincBlackmamSubsampledImage.  In other words the size of the object in the subsampled image must be 
-		atleast (or approximately) this number. At the moment it is hard coded to 20.
+		at least (or approximately) this number. At the moment it is hard coded to 20.
 		'''
 		return 20
 	
@@ -2799,7 +2799,7 @@ class AutoBoxer(object):
 	def get_search_radius(self):
 		'''
 		 Returns a pixel radius value that limits the search area when the correlation profile is
-		 genereated. This should be less than the radius of the box_size in the subsampled image
+		 generated. This should be less than the radius of the box_size in the subsampled image
 		'''
 		raise Exception
 	
@@ -2946,7 +2946,7 @@ class AutoBoxer(object):
 
 	def name(self):
 		'''
-		Every autoboxer should return a unique name. All though this is never caleld?
+		Every autoboxer should return a unique name. Although this is never called?
 		'''
 		raise Exception
 
@@ -3457,8 +3457,8 @@ class SwarmAutoBoxer(AutoBoxer):
 		self.mode = SwarmAutoBoxer.DYNAPIX
 		self.refupdate = False # this is a flag used when self.mode is USERDRIVEN
 		self.permissablemodes = [SwarmAutoBoxer.DYNAPIX,SwarmAutoBoxer.USERDRIVEN,SwarmAutoBoxer.COMMANDLINE]
-		self.permissablecmp_modes = [BoxingTools.CmpMode.SWARM_RATIO,BoxingTools.CmpMode.SWARM_DIFFERENCE, BoxingTools.CmpMode.SWARM_AVERAGE_RATIO]  # the permissiable peak profile comparitor modes - for convenience when double
-		self.permissableselection_modes = [SwarmAutoBoxer.THRESHOLD,SwarmAutoBoxer.SELECTIVE,SwarmAutoBoxer.MORESELECTIVE]  # the permissiable selection modes - for convenience when double checking the calling program is setting the selectionmode explicitly (through set_selection_mode )
+		self.permissablecmp_modes = [BoxingTools.CmpMode.SWARM_RATIO,BoxingTools.CmpMode.SWARM_DIFFERENCE, BoxingTools.CmpMode.SWARM_AVERAGE_RATIO]  # the permissible peak profile comparitor modes - for convenience when double
+		self.permissableselection_modes = [SwarmAutoBoxer.THRESHOLD,SwarmAutoBoxer.SELECTIVE,SwarmAutoBoxer.MORESELECTIVE]  # the permissible selection modes - for convenience when double checking the calling program is setting the selection mode explicitly (through set_selection_mode )
 		#self.regressiveflag = False	# flags a force removal of non references in the Boxable in auto_box
 		
 		self.dummy_box = None
