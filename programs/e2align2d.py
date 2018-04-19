@@ -52,7 +52,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
 	parser.add_argument("--output", type=str, help="The name of the output class stack", default=None)
-	parser.add_argument("--ref", type=str, help="Reference imageimage to use for alignment. Required", default=None)
+	parser.add_argument("--ref", type=str, help="Reference image to use for alignment. Required", default=None)
 	parser.add_argument("--refn", type=int, help="Number of the reference image in 'ref'. Default=0", default=0)
 	parser.add_argument("--align",type=str,help="This is the aligner used to align particles to the previous class average. Default is None.", default="rotate_translate_flip")
 	parser.add_argument("--aligncmp",type=str,help="The comparitor used for the --align aligner. Default is dot.",default="ccc")
