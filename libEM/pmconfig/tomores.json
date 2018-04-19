@@ -2,7 +2,7 @@
 [
   {
     "TITLE":"e2tomoresolution",
-    "INST":"This Wizard is to Help users estimate resolution for thier subtomogram average using e2tomoresolution.py, which splits the aligned subtomograms into two half sets, makes two subtomogram averages and then computes an FSC",
+    "INST":"This Wizard is to Help users estimate resolution for their subtomogram average using e2tomoresolution.py, which splits the aligned subtomograms into two half sets, makes two subtomogram averages and then computes an FSC",
     "WIDGETS":[]
   },
   {
@@ -14,14 +14,14 @@
   },
   {
     "TITLE":"Choose an averager",
-    "INST":"Choose a averager for computing the average, use 'mean' in almost all cases.",
+    "INST":"Choose an averager for computing the average, use 'mean' in almost all cases.",
     "WIDGETS":[
       "averager"
     ]
   },
   {
     "TITLE":"Subtomogram symmetry",
-    "INST":"Set the symmetry of the subtomogram. After the two half volumes are created by averagering the two half sets, symmetry is applied. This will usuaqlly give a more optimistic resolution estimate",
+    "INST":"Set the symmetry of the subtomogram. After the two half volumes are created by averaging the two half sets, symmetry is applied. This will usually give a more optimistic resolution estimate",
     "WIDGETS":[
       "sym"
     ]
