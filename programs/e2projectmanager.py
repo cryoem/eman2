@@ -1119,7 +1119,7 @@ class TheHelp(QtWidgets.QWidget):
 		self.textbox.setHtml(helpdoc)
 
 	def hideEvent(self, event):
-		""" This remebers the geometry when we hide the widget """
+		""" This remembers the geometry when we hide the widget """
 		QtWidgets.QWidget.hideEvent(self, event)
 		self.widgetgeometry = self.geometry()
 
@@ -1136,7 +1136,7 @@ class NoteBook(QtWidgets.QWidget):
 	"""
 	The Notebook for PM. The note book will reflect top levels jobs run, even if they were run on the command line. This class needs some work, b/c the notebook exhibits some funny font and color
 	behaviour. This is probably because the cursor is not a strict observer of the NoteBook state.
-	When jobs are laucned the command is recorded in this widget. In addition this widget saves its text as an HTML file named. pmnotes.html in the local project directory
+	When jobs are launched the command is recorded in this widget. In addition this widget saves its text as an HTML file named. pmnotes.html in the local project directory
 	"""
 	def __init__(self, pm):
 		QtWidgets.QWidget.__init__(self)
@@ -1307,7 +1307,7 @@ class NoteBook(QtWidgets.QWidget):
 		self.close()
 
 	def hideEvent(self, event):
-		""" This remebers the geometry when we hide the widget """
+		""" This remembers the geometry when we hide the widget """
 		QtWidgets.QWidget.hideEvent(self, event)
 		self.widgetgeometry = self.geometry()
 
@@ -1375,8 +1375,8 @@ class PMTextEdit(QtWidgets.QTextEdit):
 
 class TaskManager(QtWidgets.QWidget):
 	"""
-	The Task manager for PM, unlike e2workflow.py, this actualy works. Well sort of... Is uses a SIGTERM soft kill, which when it works is nice because EMAN2 jobs are
-	processed by EMAN2 eveent handlers, thus producing clean kills. Oftern though the job completely ignores SIGTERM and keeps on humming. Perhaps SIGTERM shoudl
+	The Task manager for PM, unlike e2workflow.py, this actualy works. Well sort of... It uses a SIGTERM soft kill, which when it works is nice because EMAN2 jobs are
+	processed by EMAN2 eveent handlers, thus producing clean kills. Often though the job completely ignores SIGTERM and keeps on humming. Perhaps SIGTERM should
 	be replaced with SIGKILL to hard kill it. Downside is that the kill could be dirty and corrupt. On the up side your jobs will actually be killed!
 	"""
 	def __init__(self, pm):
@@ -1581,7 +1581,7 @@ class TaskManager(QtWidgets.QWidget):
 							os.kill(task[1], killsig)
 							self._recursivekill(task[1], killsig)
 					## now parent
-					print("KIlling parent")
+					print("Killing parent")
 					os.kill(curppid,killsig)
 					
 				## The PID Mafia occurs below: # Kill all children and siblings
@@ -1606,7 +1606,7 @@ class TaskManager(QtWidgets.QWidget):
 				self._recursivekill(task[1])
 
 	def hideEvent(self, event):
-		""" This remebers the geometry when we hide the widget """
+		""" This remembers the geometry when we hide the widget """
 		QtWidgets.QWidget.hideEvent(self, event)
 		self.widgetgeometry = self.geometry()
 
