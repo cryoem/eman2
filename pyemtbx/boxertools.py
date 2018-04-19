@@ -3526,7 +3526,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		if mode in self.permissablemodes:
 			self.mode = mode
 		else:
-			print("error, that mode:", mode, "was not in the list of permissable modes")
+			print("error, that mode:", mode, "was not in the list of permissible modes")
 			exit(1)
 
 	def set_interactive_mode(self,real_time_auto_boxing=False):
@@ -3685,8 +3685,8 @@ class SwarmAutoBoxer(AutoBoxer):
 	def reference_moved(self,box):
 		'''
 		If a reference was moved interactively in the interface this is the function that should be called
-		The return value is whether or not autoboxing occured and hence whether or not display should be updated
-		A -1 is returned if an error occured
+		The return value is whether or not autoboxing occurred and hence whether or not display should be updated
+		A -1 is returned if an error occurred
 		'''
 		if self.mode == SwarmAutoBoxer.DYNAPIX:
 			
@@ -3738,7 +3738,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		self.box_size = box_size
 		self.get_subsample_rate(True)
 		
-		# changing the box size of all assocated Boxables should change the box size of the references
+		# changing the box size of all associated Boxables should change the box size of the references
 		self.template.change_box_size(box_size)
 		
 		project_db = EMProjectDB()
@@ -3840,7 +3840,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		
 		# auto boxing will occur if:
 		# 1. The Boxable is not currently autoboxed by this Autoboxer
-		# 2. The Boxable has been boxed by this Autoboxer previously, but changes to this Autoboxer have occured and autoboxing needs to be redone
+		# 2. The Boxable has been boxed by this Autoboxer previously, but changes to this Autoboxer have occurred and autoboxing needs to be redone
 		# 3. The Boxable has never been boxed before
 		# 4. The force flag is True
 		if old_autoboxer_state_ts == -1 or old_autoboxer_state_ts != self.state_ts or boxable.get_autoboxer_id() != self.get_unique_stamp() or force:
@@ -3870,7 +3870,7 @@ class SwarmAutoBoxer(AutoBoxer):
 				
 			#self.write_image_specific_references_to_db(boxable.get_image_name()) # 
 			
-			boxable.get_auto_selected_from_db() # tell the autoboxer that its boxes are ready. True, this is unneccessarily expensive, could easily just say boxable.append_autoboxes(boxes) and avoid a database access. For the time being leave as is and change if the expense is obviously bad
+			boxable.get_auto_selected_from_db() # tell the autoboxer that its boxes are ready. True, this is unnecessarily expensive, could easily just say boxable.append_autoboxes(boxes) and avoid a database access. For the time being leave as is and change if the expense is obviously bad
 				
 			return 1
 
@@ -4060,7 +4060,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		# To determine the threshold from what we've got, iterate through all of the reference
 		# boxes and use the lowest correlation score as the correlation threshold
 		#print 'current params are, using a total of',len(self.refboxes),'references'
-		#print 'threshod:',self.opt_threshold
+		#print 'threshold:',self.opt_threshold
 		#print 'profile:',self.opt_profile
 		#print 'optrad:',self.opt_profile_radius
 	
@@ -4139,7 +4139,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		
 		self.__plot_update()
 		#print 'NOW THEY ARE'
-		#print 'threshod:',self.opt_threshold
+		#print 'threshold:',self.opt_threshold
 		#print 'profile:',self.opt_profile			
 		#print 'optrad:',self.opt_profile_radius
 		return True
@@ -4166,6 +4166,6 @@ class SwarmAutoBoxer(AutoBoxer):
 			# shrink them to the small correlation image coordinates
 			xx /= self.get_subsample_rate()
 			yy /= self.get_subsample_rate()
-			# Set a positive circle into the exclusionimage
+			# Set a positive circle into the exclusion image
 			BoxingTools.set_radial_non_zero(exclusionimage,int(xx),int(yy),searchradius)
 			
