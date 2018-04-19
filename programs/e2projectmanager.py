@@ -1908,7 +1908,7 @@ class PMGUIWidget(QtWidgets.QScrollArea):
 			# otherwise set to none	because the user deleted it
 			self._setValueJournaling(widget, '')
 
-		#loop through pos args. The stadard is that ither there is one arg per widget or one widget and many args
+		#loop through pos args. The standard is that either there is one arg per widget or one widget and many args
 		if len(posargs) == len(args):
 			for posarg in posargs:
 				self._setValueJournaling(posarg, (args.pop())[1:])
@@ -1925,7 +1925,7 @@ class PMGUIWidget(QtWidgets.QScrollArea):
 
 
 	def getCommand(self):
-		""" Loop and check for errors and set the DB. If errors are encountered, then Retrun None """
+		""" Loop and check for errors and set the DB. If errors are encountered, then Return None """
 		self.errorstate = False
 		args = self.program
 		for widget in self.widgetlist:
@@ -1957,7 +1957,7 @@ class PMGUIWidget(QtWidgets.QScrollArea):
 
 class PMQTreeWidgetItem(QtWidgets.QTreeWidgetItem):
 	"""
-	Custon QTreeWidget for PM, holds a bunch of properites relating to the e2program(or table) it represnsts.
+	Custom QTreeWidget for PM, holds a bunch of properties relating to the e2program(or table) it represents.
 	"""
 	def __init__(self, qstring):
 		QtWidgets.QTreeWidgetItem.__init__(self, qstring)
@@ -2014,9 +2014,9 @@ class PMQTreeWidgetItem(QtWidgets.QTreeWidgetItem):
 	def setExpertMode(self, state):
 		"""
 		Sets the expert mode state
-		0 = not avialable
+		0 = not available
 		1 = available, but turned off
-		2 = avaialble and turned on
+		2 = available and turned on
 		"""
 		self.exmodestate = state
 
@@ -2024,7 +2024,7 @@ class PMQTreeWidgetItem(QtWidgets.QTreeWidgetItem):
 		return self.exmodestate
 
 class PMToolButton(QtWidgets.QToolButton):
-	""" Create a toogle button """
+	""" Create a toggle button """
 	stateChanged = QtCore.pyqtSignal(bool)
 
 	def __init__(self):
@@ -2057,7 +2057,7 @@ class ProjectDialog(QtWidgets.QDialog):
 		grid = QtWidgets.QGridLayout()
 		# add intro
 		textbox = QtWidgets.QTextEdit("")
-		textbox.setHtml("Welcome to the EMAN2 project manager. Please add project specific paramters below. For Questions email: <a href='mailto:sludtke@bcm.edu'>sludtke@bcm.edu<\a>")
+		textbox.setHtml("Welcome to the EMAN2 project manager. Please add project specific parameters below. For Questions email: <a href='mailto:sludtke@bcm.edu'>sludtke@bcm.edu<\a>")
 		textbox.setMaximumHeight(66)
 		textbox.setReadOnly(True)
 		textbox.viewport().setCursor(QtCore.Qt.ArrowCursor)
