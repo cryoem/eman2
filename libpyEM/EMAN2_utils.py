@@ -380,7 +380,7 @@ def checkinput(options):
 
 def runcmd(options,cmd,cmdsfilepath=''):
 	"""
-	Version of runcmd (below) with verbose feedback and option to save the executed commnad to a commands file for record keeping
+	Version of runcmd (below) with verbose feedback and option to save the executed command to a commands file for record keeping
 	Author: Jesus Montoya, jgalaz@gmail.com
 	"""
 	if options.verbose > 9:
@@ -399,7 +399,7 @@ def runcmd(options,cmd,cmdsfilepath=''):
 
 def runcmdbasic(cmd):
 	"""
-	Runs commands "properly" at the commnad line, April 2019
+	Runs commands "properly" at the command line, April 2019
 	Author: Jesus Montoya, jgalaz@gmail.com
 	"""
 	p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -811,7 +811,7 @@ def writeParameters( options, program, tag ):
 	Used by many SPT programs. Function to write the parameters used for every run of the program to parameters.txt inside the path specified by --path.
 	Unfortunately, the usability of the .eman2log.txt file is limited when it is overcrowded with commands; e.g., a program that iteratively runs other EMAN2 programs at the command line
 	will SWARM the log file with commands that will obscure the command you wanted to log. Having a parameters file explicitly record what was the state of every parameter used by the program
-	is useful, as it also explicitly records values for parameters that were used by DEFAULT and not set by the user at the commnadline.
+	is useful, as it also explicitly records values for parameters that were used by DEFAULT and not set by the user at the commandline.
 
 	Author: Jesus Montoya, jgalaz@gmail.com
 	'''
