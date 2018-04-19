@@ -62,7 +62,7 @@ def main():
 	parser.add_argument("--sep", type=int, help="The number of classes a particle can contribute towards (default is 1)", default=1)
 	parser.add_argument("--simvec",action="store_true",help="Instead of using the class for the peak value, uses the pattern of similarities for each orientation for assignment.",default=False)
 	parser.add_argument("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists")
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--nofilecheck",action="store_true",help="Turns file checking off in the check functionality - used by e2refine.py.",default=False)
 	parser.add_argument("--check","-c",action="store_true",help="Performs a command line argument check only.",default=False)
 	parser.add_argument("--noalign",action="store_true",help="Ignore the alignments",default=False)

@@ -71,7 +71,7 @@ improved with time."""
 	parser.add_argument("--size",type=int,help="Size of particles, 192 default for comparisons",default=192)
 	parser.add_argument("--simpleout",action="store_true",help="Simpler 2 column output file (appends)")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 

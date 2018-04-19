@@ -59,7 +59,7 @@ def print_usage():
 def main():
 	parser=OptionParser(usage=get_usage())
 	parser.add_option("--align",type="string",help="This is the aligner used to align particles to the previous class average. Default is None.", default="translational:nozero=1")
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 	align=parsemodopt(options.align)

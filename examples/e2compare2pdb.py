@@ -16,7 +16,7 @@ def main():
 	parser.add_argument("--pdb", default=None,required=True, type=str, help="Image stack containing phase-flipped particles used for alignment")
 	parser.add_argument("--sym", default="c1", type=str, help = "Specify symmetry - choices are: c<n>, d<n>, tet, oct, icos.")
 	#parser.add_argument("--flip", action="store_true", default=False,help = "Use the traditional e2make3d program instead of the new e2make3dpar program")
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 

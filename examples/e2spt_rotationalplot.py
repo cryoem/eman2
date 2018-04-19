@@ -91,7 +91,7 @@ def main():
 	parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default="thread:1")
 	
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness.")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness.")
 	#parser.add_argument("--plotonly",type=str, help="Provide .txt files for a given alt, with 2 columns (az ccc) with the values to plot. For example, --plotonly=alt000.txt,alt180.txt", default=None)
 	parser.add_argument("--normalizeplot",action="store_true", help="Make maximum correlation value on plot equal to 1 and scale all other values accordingly.", default=False)
 	parser.add_argument("--plot2d",action="store_true", help="Produces 2D plot if both az and alt are varied.", default=False)

@@ -97,7 +97,7 @@ def main():
 	parser.add_argument("--parallel", default=None, help="parallelism argument")
 	parser.add_argument("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists.")
 	parser.add_argument("--saveali",action="store_true",help="Writes aligned particle images to aligned.hdf. Normally resultmx produces more useful informtation. This can be used for debugging.",default=False)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--debug","-d",action="store_true",help="Print debugging infromation while the program is running. Default is off.",default=False)
 	parser.add_argument("--nofilecheck",action="store_true",help="Turns file checking off in the check functionality - used by e2refine.py.",default=False)
 	parser.add_argument("--check","-c",action="store_true",help="Performs a command line argument check only.",default=False)

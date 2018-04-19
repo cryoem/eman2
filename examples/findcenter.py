@@ -73,7 +73,7 @@ def main():
 	parser.add_argument("--step", type=int, help="Specify the step size for computing projections (1 every N degrees). The default 30.",default=30)
 	parser.add_argument("--threshold", type=float, help="Set the minval to threshold in wavelet space or after filtering via a radial basis function.",default=10.0)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 

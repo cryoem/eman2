@@ -59,7 +59,7 @@ def main():
 	
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	
 	parser.add_argument("--testn",type=int,default=6,help="""default=6. size of dataset to run tests with; cannot be < 6, since initial model generation with HAC for gold-standard refinement requires at least 3 particles for the even set and 3 for the odd set.""")
 	

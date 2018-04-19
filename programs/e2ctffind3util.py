@@ -57,7 +57,7 @@ For more information on ctffind3 please see: Mindell, JA, Grigorieff N.  2003.  
 	parser.add_argument("--cs", default=0.0, type=float,help="The spherical aberration of the microscope", guitype='floatbox', row=3, col=1, rowspan=1, colspan=1, mode="import,run")
 	parser.add_argument("--voltage", default=0.0, type=float,help="The voltage (in kV) of the microscope", guitype='floatbox', row=4, col=0, rowspan=1, colspan=1, mode="import,run")
 	parser.add_argument("--ac", default=0.0, type=float,help="The amplitude contrast of the micrographs", guitype='floatbox', row=4, col=1, rowspan=1, colspan=1, mode="import,run")
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness", guitype='intbox', row=5, col=0, rowspan=1, colspan=1, mode="import,run")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness", guitype='intbox', row=5, col=0, rowspan=1, colspan=1, mode="import,run")
 	parser.add_argument("--importrelionstar", default=False, action="store_true",help="Import CTFFIND3 data in Relion STAR format. Put STAR files in 'ctffind3' folder", guitype='boolbox', row=6, col=0, rowspan=1, colspan=1, mode='import[True]')
 	parser.add_argument("--importctffind3", default=False, action="store_true",help="Import ctffind3 data?", guitype='boolbox', row=6, col=0, rowspan=1, colspan=1, mode='import[True]')
 	parser.add_argument("--importctffind4", default=False, action="store_true",help="Import ctffind4 data?", guitype='boolbox', row=6, col=1, rowspan=1, colspan=1, mode='import[False]')

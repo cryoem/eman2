@@ -100,7 +100,7 @@ def main():
 							by e2spt_classaverage3d.py respect to the simulated transforms.""") 
 	
 	parser.add_argument("--ppid", default=-1, type=int, help="Set the PID of the parent process, used for cross platform PPID")
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	
 	#parser.add_argument("--shrink", type=int,default=0,help="""If the 'solution transform'
 	#	storied in the header parameter 'xform.align3d' was derived from particles that 
