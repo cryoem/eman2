@@ -462,7 +462,7 @@ if __name__ == "__main__":
 
  		#if options.verbose: print("processing {} ({} images)".format(arg, EMUtil.get_image_count(arg)))
 
-		#Averaging can be outsorced to e2proc2d via the command line, and the average can be read in as the new input
+		#Averaging can be outsourced to e2proc2d via the command line, and the average can be read in as the new input
 		#if options.average:
 
 		#	newarg = arg.replace('.hdf','_avg.hdf')

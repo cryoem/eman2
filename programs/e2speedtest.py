@@ -52,7 +52,7 @@ def main():
 This program runs a set of speed tests on the current machine
 
 This program runs a set of speed tests in the current computer. It should
-have at least 1 unloaded processor, and minimal i/o occuring when this
+have at least 1 unloaded processor, and minimal i/o occurring when this
 is run. It will give a single value which should be generally proportional
 to how fast single particle refinement will run on a given computer. It is a 'real world' test,
 in that it tests a variety of actual operations performed by a
