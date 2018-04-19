@@ -44,7 +44,7 @@ from eman2_gui.valslider import EMQTColorWidget
 from eman2_gui.embrowser import EMBrowserWidget
 
 class EMProjectManager(QtWidgets.QMainWindow):
-	""" The EM Project Manager is a QT application to provide a GUI for EMAN2 job managment.
+	""" The EM Project Manager is a QT application to provide a GUI for EMAN2 job management.
 	See the wiki for more details. For documentation see the EMAN2 WIKI """
 	def __init__(self):
 		QtWidgets.QMainWindow.__init__(self)
@@ -73,7 +73,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		centralwidget = QtWidgets.QWidget()
 		vsplitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
 
-		# Make the tiltebars
+		# Make the titlebars
 		grid = QtWidgets.QGridLayout()
 		grid.addWidget(self.makeTilteBarWidget(), 0, 0, 1, 3)
 		#grid.addWidget(workflowcontrollabel, 1,0)
@@ -96,7 +96,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		# Make status bar
 		self.statusbar = EMAN2StatusBar("Welcome to the EMAN2 Project Manager","font-weight:bold;")
 		centralwidget.setLayout(grid)
-		# Add splitter to adjust statsus bar
+		# Add splitter to adjust status bar
 		vsplitter.addWidget(centralwidget)
 		vsplitter.addWidget(self.statusbar)
 		vsplitter.setSizes([1000,100])
@@ -124,7 +124,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 
 	def _load_icons(self):
 		"""
-		Load icons used for the tree. Additonal icons can be added using icons.json
+		Load icons used for the tree. Additional icons can be added using icons.json
 		"""
 		self.icons = {}
 		EMAN2DIR = e2getinstalldir()
@@ -325,7 +325,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		self.logbutton.setToolTip("Display the note book")
 		self.logbutton.setIcon(QtGui.QIcon(QtGui.QPixmap(noteicon)))
 		self.taskmanagerbutton = PMToolButton()
-		self.taskmanagerbutton.setToolTip("Diaplay the task manager")
+		self.taskmanagerbutton.setToolTip("Display the task manager")
 		self.taskmanagerbutton.setIcon(QtGui.QIcon(QtGui.QPixmap(taskicon)))
 		tbox.addWidget(self.browsebutton)
 		tbox.addWidget(self.helpbutton)
@@ -455,10 +455,10 @@ class EMProjectManager(QtWidgets.QMainWindow):
 
 	def _on_expertmodechanged(self, state):
 		"""
-		Change the GUI upon expert mode toogling
+		Change the GUI upon expert mode toggling
 		"""
 		if self.gui_stacked_widget.currentIndex() >= 1:	# First widget in the stack is the blank widget
-			self.setProgramExpertMode(int(state)+1)	# If we are able to set the state, then button is avaialble(state = 0), hence we toggle betwen '1', availible and OFF or '2', availible and ON
+			self.setProgramExpertMode(int(state)+1)	# If we are able to set the state, then button is available (state = 0), hence we toggle between '1', available and OFF or '2', available and ON
 			self._set_GUI(self.getProgram(), self.getProgramMode())
 
 	def loadWiki(self):
@@ -626,7 +626,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		try:
 			jsonfile = open(filename, 'r')
 		except:
-			self.statusbar.setMessage("Can't open configureation file '%s'"%filename,"color:red;")
+			self.statusbar.setMessage("Can't open configuration file '%s'"%filename,"color:red;")
 			return
 		data = jsonfile.read()
 		data = self.json_strip_comments(data)
@@ -641,7 +641,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 			if "ICON" in toplevel: qtreewidget.setIcon(0, self.icons[toplevel["ICON"]])
 			# optional program
 			if "PROGRAM" in toplevel: qtreewidget.setProgram(toplevel["PROGRAM"])
-			# optional table to diaply rather than a program
+			# optional table to display rather than a program
 			if "TABLE" in toplevel: qtreewidget.setTable(toplevel["TABLE"])
 			# Optional mode for the program to run in. The default is to have no mode
 			if "MODE" in toplevel: qtreewidget.setMode(toplevel["MODE"])
