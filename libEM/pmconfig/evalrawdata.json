@@ -7,7 +7,7 @@
   },
   {
     "TITLE":"Select micrograph files",
-    "INST":"Select micrograph files. This will be a space delimted list of files to process",
+    "INST":"Select micrograph files. This will be a space delimited list of files to process",
     "WIDGETS":[
       "image"
     ]
@@ -23,7 +23,7 @@
   },
   {
     "TITLE":"Amplitude contrast",
-    "INST":"Almsost always the amplitude constrast should be 10",
+    "INST":"Almost always the amplitude contrast should be 10",
     "WIDGETS":[
       "ac"
     ]
