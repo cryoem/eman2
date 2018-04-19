@@ -56,7 +56,7 @@ def main():
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_pos_argument(name="files",help="List the files to import here.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=True)",  row=0, col=0, rowspan=1, colspan=2, nosharedb=True, mode='coords,parts,tomos,eman1,movies,tilts,meta,rawtilts')
+	parser.add_pos_argument(name="files",help="List the files to import here.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=True)",  row=0, col=0, rowspan=1, colspan=3, nosharedb=True, mode='coords,parts,tomos,eman1,movies,rawtilts,meta,tiltseries')
 
 	parser.add_header(name="filterheader", help='Options below this label are specific to e2import', title="### e2import options ###", row=2, col=0, rowspan=1, colspan=2, mode='coords,parts')
 
@@ -66,23 +66,27 @@ def main():
 	parser.add_argument("--darkrefs",help="Specify a comma separated list of dark refereence stacks/images to import. Files will be placed in movierefs_raw. See --importation for additional options.",default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=True)", row=4, col=0, rowspan=1, colspan=2, mode='movies')
 	parser.add_argument("--gainrefs",help="Specify a comma separated list of gain refereence stacks/images to import. Files will be placed in movierefs_raw. See --importation for additional options.",default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=True)", row=5, col=0, rowspan=1, colspan=2, mode='movies')
 
-	parser.add_argument("--import_tilts",action="store_true",help="Import tilt images",default=False, guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode='rawtilts[True]')
-	parser.add_argument("--import_tiltseries",action="store_true",help="Import tiltseries",default=False, guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode='tilts[True]')
-	parser.add_argument("--import_tomos",action="store_true",help="Import tomograms for segmentation and/or subtomogram averaging",default=False, guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode='tomos[True]')
+	parser.add_argument("--import_rawtilts",action="store_true",help="Import tilt images",default=False, guitype='boolbox', row=4, col=2, rowspan=1, colspan=1, mode='rawtilts[True]')
+	parser.add_argument("--import_tiltseries",action="store_true",help="Import tiltseries",default=False, guitype='boolbox', row=4, col=2, rowspan=1, colspan=1, mode='tiltseries[True]')
+	parser.add_argument("--import_tomos",action="store_true",help="Import tomograms for segmentation and/or subtomogram averaging",default=False, guitype='boolbox', row=4, col=2, rowspan=1, colspan=1, mode='tomos[True]')
 
-	parser.add_argument("--serialem_mdoc",action="store_true",help="Import metadata from corresponding SerialEM '.mdoc' files.",default=False, guitype='boolbox', row=1, col=0, rowspan=1, colspan=3, mode='meta')
-	parser.add_argument("--fei_tomo",action="store_true",help="Import metadata from corresponding FEI tomography files.",default=False, guitype='boolbox', row=2, col=0, rowspan=1, colspan=3, mode='meta')
-	parser.add_argument("--ucsf_tomo",action="store_true",help="Import metadata from corresponding UCSF Tomo files.",default=False, guitype='boolbox', row=3, col=0, rowspan=1, colspan=3, mode='meta')
+	#parser.add_pos_argument(name="tilt_angles",help="Specify a file containing tilt angles corresponding to the input tilt images.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=True)",  row=0, col=0, rowspan=1, colspan=2, nosharedb=True, mode='rawtilts')
+
+	parser.add_pos_argument(name="rawtlts",help="List the text files containing tilt angles for the tiltseries to be imported.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=True)",  row=3, col=0, rowspan=1, colspan=3, nosharedb=True, mode='tiltseries')
+
+	# parser.add_argument("--serialem_mdoc",action="store_true",help="Import metadata from corresponding SerialEM '.mdoc' files.",default=False, guitype='boolbox', row=1, col=0, rowspan=1, colspan=3, mode='meta')
+	# parser.add_argument("--fei_tomo",action="store_true",help="Import metadata from corresponding FEI tomography files.",default=False, guitype='boolbox', row=2, col=0, rowspan=1, colspan=3, mode='meta')
+	# parser.add_argument("--ucsf_tomo",action="store_true",help="Import metadata from corresponding UCSF Tomo files.",default=False, guitype='boolbox', row=3, col=0, rowspan=1, colspan=3, mode='meta')
 
 	parser.add_argument("--import_particles",action="store_true",help="Import particles",default=False, guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode='parts[True]')
 	parser.add_argument("--import_eman1",action="store_true",help="This will import a phase-flipped particle stack from EMAN1",default=False, guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode='eman1[True]')
 
-	parser.add_argument("--importation",help="Specify import mode: move, copy or link",default='copy',guitype='combobox',choicelist='["move","copy","link"]',row=3,col=1,rowspan=1,colspan=1, mode='tomos["copy"],tilts["copy"],movies["move"],rawtilts["copy"]',choices=["move","copy","link"])
+	parser.add_argument("--importation",help="Specify import mode: move, copy or link",default='copy',guitype='combobox',choicelist='["move","copy","link"]',row=8,col=0,rowspan=1,colspan=2, mode='tomos["copy"],rawtilts["copy"],movies["move"],tiltseries["copy"]',choices=["move","copy","link"])
 
-	parser.add_argument("--invert",action="store_true",help="Invert the contrast before importing tomograms",default=False, guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode='tomos,tilts,rawtilts')
-	parser.add_argument("--tomoseg_auto",action="store_true",help="Default process for tomogram segmentation, including lowpass, highpass, normalize, clampminmax.",default=True, guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode='tomos,tilts,rawtilts')
-	parser.add_argument("--shrink",type=int,help="Shrink tomograms before importing. Dose not work while not copying.",default=1, guitype='floatbox', row=4, col=2, rowspan=1, colspan=1, mode='tomos')
-	parser.add_argument("--preprocess",type=str,help="Other pre-processing operation before importing tomograms. Dose not work while not copying.",default="", guitype='strbox', row=5, col=0, rowspan=1, colspan=2, mode='tomos,tilts,rawtilts')
+	parser.add_argument("--invert",action="store_true",help="Invert the contrast before importing tomograms",default=False, guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode='tomos,rawtilts,tiltseries')
+	parser.add_argument("--tomoseg_auto",action="store_true",help="Default process for tomogram segmentation, including lowpass, highpass, normalize, clampminmax.",default=True, guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode='tomos,rawtilts,tiltseries')
+	parser.add_argument("--shrink",type=int,help="Shrink tomograms before importing. Dose not work while not copying.",default=1.0, guitype='floatbox', row=6, col=0, rowspan=1, colspan=1, mode='tomos')
+	parser.add_argument("--preprocess",type=str,help="Other pre-processing operation before importing tomograms. Dose not work while not copying.",default="", guitype='strbox', row=5, col=0, rowspan=1, colspan=2, mode='tomos,rawtilts,tiltseries')
 
 	parser.add_argument("--import_boxes",action="store_true",help="Import boxes",default=False, guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode='coords[True]')
 	parser.add_argument("--extension",type=str,help="Extension of the micrographs that the boxes match", default='dm3')
@@ -363,9 +367,9 @@ with the same name, you should specify only the .hed files (no renaming is neces
 		print("Done.")
 
 	# Import tilts
-	if options.import_tilts:
+	if options.import_rawtilts:
 
-		stdir = os.path.join(".","tilts")
+		stdir = os.path.join(".","raw_tilts")
 		if not os.access(stdir, os.R_OK):
 			os.mkdir("tilts")
 
@@ -445,100 +449,100 @@ with the same name, you should specify only the .hed files (no renaming is neces
 			if options.importation == "link":
 				os.symlink(filename,os.path.join(tomosdir,os.path.basename(filename)))
 
-	# Import serialEM metadata
-	if options.serialem_mdoc:
-		for fn in args:
-			mdoc = read_mdoc(fn)
-			# check and correct project parameters from MDOC file contents
-			d = js_open_dict("info/project.json")
-			try: d.setval("global.apix",mdoc["PixelSpacing"],deferupdate=True)
-			except: pass
-			try: d.setval("global.microscope_voltage",mdoc["Voltage"],deferupdate=True)
-			except: pass
-			d.close()
-			# for each referenced image, append pertinent keys/values to corresponding info.json
-			for z in range(mdoc["zval"]+1):
-				tlt = mdoc[z]["SubFramePath"].rsplit("\\")[-1]+"_RawImages"
-				d = js_open_dict(info_name(tlt))
-				for k in mdoc[z].keys():
-					d.setval(k,mdoc[z][k],deferupdate=True)
-				d.close()
-
-	# Import FEI metadata
-	if options.fei_tomo:
-		print("FEI tomography metadata not yet handled by this program.")
-		sys.exit(1)
-
-	# Import UCSF tomo metadata
-	if options.ucsf_tomo:
-		print("UCSF tomography metadata not yet handled by this program.")
-		sys.exit(1)
+	# # Import serialEM metadata
+	# if options.serialem_mdoc:
+	# 	for fn in args:
+	# 		mdoc = read_mdoc(fn)
+	# 		# check and correct project parameters from MDOC file contents
+	# 		d = js_open_dict("info/project.json")
+	# 		try: d.setval("global.apix",mdoc["PixelSpacing"],deferupdate=True)
+	# 		except: pass
+	# 		try: d.setval("global.microscope_voltage",mdoc["Voltage"],deferupdate=True)
+	# 		except: pass
+	# 		d.close()
+	# 		# for each referenced image, append pertinent keys/values to corresponding info.json
+	# 		for z in range(mdoc["zval"]+1):
+	# 			tlt = mdoc[z]["SubFramePath"].rsplit("\\")[-1]+"_RawImages"
+	# 			d = js_open_dict(info_name(tlt))
+	# 			for k in mdoc[z].keys():
+	# 				d.setval(k,mdoc[z][k],deferupdate=True)
+	# 			d.close()
+	#
+	# # Import FEI metadata
+	# if options.fei_tomo:
+	# 	print("FEI tomography metadata not yet handled by this program.")
+	# 	sys.exit(1)
+	#
+	# # Import UCSF tomo metadata
+	# if options.ucsf_tomo:
+	# 	print("UCSF tomography metadata not yet handled by this program.")
+	# 	sys.exit(1)
 
 	E2end(logid)
 
-def read_mdoc(mdoc):
-	movie = {}
-	frames = {}
-	zval = -1
-	frames[zval] = {}
-	frames["misc"] = []
-	frames["labels"] = []
-	with open(mdoc) as mdocf:
-		for l in mdocf.readlines():
-			p = l.strip()
-			if "ZValue" in p:
-				zval+=1
-				frames[zval] = {}
-			elif p != "":
-				x,y = p.split("=")[:2]
-				x = x.strip()
-				if x == "TiltAngle": frames[zval]["tilt_angle"]=float(y)
-				elif x == "Magnification": frames[zval]["magnification"] = int(y)
-				elif x == "Intensity": frames[zval]["intensity"]=float(y)
-				elif x == "SpotSize": frames[zval]["spot_size"]=int(y)
-				elif x == "Defocus": frames[zval]["defocus"]=float(y)
-				elif x == "ExposureTime": frames[zval]["exposure_time"]=float(y)
-				elif x == "Binning": frames[zval]["binning"]=float(y)
-				elif x == "ExposureDose": frames[zval]["exposure_dose"]=float(y)
-				elif x == "RotationAngle": frames[zval]["rotation_angle"]=float(y)
-				elif x == "StageZ": frames[zval]["stage_z"]=float(y)
-				elif x == "CameraIndex": frames[zval]["camera_index"]=int(y)
-				elif x == "DividedBy2": frames[zval]["divide_by_2"]=int(y)
-				elif x == "MagIndex": frames[zval]["mag_index"]=int(y)
-				elif x == "TargetDefocus": frames[zval]["target_defocus"]=float(y)
-				elif x == "ImageShift": frames[zval]["image_shift"]=map(float,y.split())
-				elif x == "StagePosition": frames[zval]["stage_position"]=map(float,y.split())
-				elif x == "MinMaxMean":
-					vals = map(float,y.split())
-					frames[zval]["min"]=vals[0]
-					frames[zval]["max"]=vals[1]
-					frames[zval]["mean"]=vals[2]
-				elif x == "SubFramePath":
-					sfp = base_name(y).split("-")[-1]
-					frames[zval]["SubFramePath"]=sfp
-				elif x == "DateTime": frames[zval]["date_time"]=y
-				elif x == "PixelSpacing": frames["global.apix"] = float(y)
-				elif x == "Voltage": frames["global.microscope_voltage"] = float(y)
-				elif x == "ImageFile": frames["image_file"] = str(y)
-				elif x == "ImageSize": frames["image_size"] = y.split()
-				elif x == "DataMode": frames["data_mode"] = y
-				elif x == "PriorRecordDose": frames["prior_record_dose"] = y
-				elif x == "FrameDosesAndNumber": frames["frame_doses_and_number"] = y
-				elif x == "[T": frames["labels"].append(y.replace("]",""))
-				elif "PreexposureTime" in x: frames[zval]["preexposure_time"] = float(y)
-				elif "TotalNumberOfFrames" in x: frames[zval]["frame_count"] = int(y)
-				elif "FramesPerSecond" in x: frames[zval]["frames_per_second"] = float(y)
-				elif "ProtectionCoverMode" in x: frames[zval]["protection_cover_mode"] = y
-				elif "ProtectionCoverOpenDelay" in x: frames[zval]["protection_cover_open_delay"] = float(y)
-				elif "TemperatureDetector" in x: frames[zval]["detector_temperature"] = float(y)
-				elif "FaradayPlatePeakReading" in x: frames[zval]["faraday_plate_peak_reading"] = float(y)
-				elif "SensorModuleSerialNumber" in x: frames[zval]["sensor_module_serial_number"] = y
-				elif "ServerSoftwareVersion" in x: frames[zval]["server_software_version"] = y
-				elif "SensorReadoutDelay" in x: frames[zval]["sensor_readout_delay"] = y
-				else: frames["misc"].append(y) # catches any missed parameters
-
-	frames["zval"] = zval
-	return frames
+# def read_mdoc(mdoc):
+# 	movie = {}
+# 	frames = {}
+# 	zval = -1
+# 	frames[zval] = {}
+# 	frames["misc"] = []
+# 	frames["labels"] = []
+# 	with open(mdoc) as mdocf:
+# 		for l in mdocf.readlines():
+# 			p = l.strip()
+# 			if "ZValue" in p:
+# 				zval+=1
+# 				frames[zval] = {}
+# 			elif p != "":
+# 				x,y = p.split("=")[:2]
+# 				x = x.strip()
+# 				if x == "TiltAngle": frames[zval]["tilt_angle"]=float(y)
+# 				elif x == "Magnification": frames[zval]["magnification"] = int(y)
+# 				elif x == "Intensity": frames[zval]["intensity"]=float(y)
+# 				elif x == "SpotSize": frames[zval]["spot_size"]=int(y)
+# 				elif x == "Defocus": frames[zval]["defocus"]=float(y)
+# 				elif x == "ExposureTime": frames[zval]["exposure_time"]=float(y)
+# 				elif x == "Binning": frames[zval]["binning"]=float(y)
+# 				elif x == "ExposureDose": frames[zval]["exposure_dose"]=float(y)
+# 				elif x == "RotationAngle": frames[zval]["rotation_angle"]=float(y)
+# 				elif x == "StageZ": frames[zval]["stage_z"]=float(y)
+# 				elif x == "CameraIndex": frames[zval]["camera_index"]=int(y)
+# 				elif x == "DividedBy2": frames[zval]["divide_by_2"]=int(y)
+# 				elif x == "MagIndex": frames[zval]["mag_index"]=int(y)
+# 				elif x == "TargetDefocus": frames[zval]["target_defocus"]=float(y)
+# 				elif x == "ImageShift": frames[zval]["image_shift"]=map(float,y.split())
+# 				elif x == "StagePosition": frames[zval]["stage_position"]=map(float,y.split())
+# 				elif x == "MinMaxMean":
+# 					vals = map(float,y.split())
+# 					frames[zval]["min"]=vals[0]
+# 					frames[zval]["max"]=vals[1]
+# 					frames[zval]["mean"]=vals[2]
+# 				elif x == "SubFramePath":
+# 					sfp = base_name(y).split("-")[-1]
+# 					frames[zval]["SubFramePath"]=sfp
+# 				elif x == "DateTime": frames[zval]["date_time"]=y
+# 				elif x == "PixelSpacing": frames["global.apix"] = float(y)
+# 				elif x == "Voltage": frames["global.microscope_voltage"] = float(y)
+# 				elif x == "ImageFile": frames["image_file"] = str(y)
+# 				elif x == "ImageSize": frames["image_size"] = y.split()
+# 				elif x == "DataMode": frames["data_mode"] = y
+# 				elif x == "PriorRecordDose": frames["prior_record_dose"] = y
+# 				elif x == "FrameDosesAndNumber": frames["frame_doses_and_number"] = y
+# 				elif x == "[T": frames["labels"].append(y.replace("]",""))
+# 				elif "PreexposureTime" in x: frames[zval]["preexposure_time"] = float(y)
+# 				elif "TotalNumberOfFrames" in x: frames[zval]["frame_count"] = int(y)
+# 				elif "FramesPerSecond" in x: frames[zval]["frames_per_second"] = float(y)
+# 				elif "ProtectionCoverMode" in x: frames[zval]["protection_cover_mode"] = y
+# 				elif "ProtectionCoverOpenDelay" in x: frames[zval]["protection_cover_open_delay"] = float(y)
+# 				elif "TemperatureDetector" in x: frames[zval]["detector_temperature"] = float(y)
+# 				elif "FaradayPlatePeakReading" in x: frames[zval]["faraday_plate_peak_reading"] = float(y)
+# 				elif "SensorModuleSerialNumber" in x: frames[zval]["sensor_module_serial_number"] = y
+# 				elif "ServerSoftwareVersion" in x: frames[zval]["server_software_version"] = y
+# 				elif "SensorReadoutDelay" in x: frames[zval]["sensor_readout_delay"] = y
+# 				else: frames["misc"].append(y) # catches any missed parameters
+#
+# 	frames["zval"] = zval
+# 	return frames
 
 def run(command):
 	"Mostly here for debugging, allows you to control how commands are executed (os.system is normal)"
