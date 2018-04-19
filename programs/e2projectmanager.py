@@ -600,7 +600,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 			if "ICON" in  child: qtreewidget.setIcon(0, self.icons[child["ICON"]])
 			# optional program
 			if "PROGRAM" in child: qtreewidget.setProgram(child["PROGRAM"])
-			# optional table to diaply rather than a program
+			# optional table to display rather than a program
 			if "TABLE" in child: qtreewidget.setTable(child["TABLE"])
 			# Optional mode for the program to run in. The default is to have no mode
 			if "MODE" in child: qtreewidget.setMode(child["MODE"])
@@ -669,7 +669,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		return data
 
 	def _tree_widget_click(self, item, col):
-		# Display the progrma GUI
+		# Display the program GUI
 		if item.getProgram():
 			self._set_GUI(item.getProgram(), item.getMode())
 			self.updateProject()
@@ -710,7 +710,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 
 	def _read_e2program(self, e2program, mode):
 		"""
-		This a a pseudo import function to load paser info
+		This a a pseudo import function to load parser info
 		"""
 		parser = EMArgumentParser()
 		try:
@@ -801,7 +801,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 
 	def getProgramExpertMode(self):
 		"""
-		Return expert mode 0 = not available, 1 = availble but not used, 2 = available and used
+		Return expert mode 0 = not available, 1 = available but not used, 2 = available and used
 		"""
 		try:
 			return self.tree_stacked_widget.currentWidget().currentItem().getExpertMode()
@@ -906,7 +906,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 
 class EMPopen(subprocess.Popen):
 	"""
-	This was originally done to implement realtime STDOUT feed to the PM statusbar. UNfortunaly this caused Broken Pipe errors causing PM to crash. I am experimenting with named pipes
+	This was originally done to implement realtime STDOUT feed to the PM statusbar. Unfortunately this caused Broken Pipe errors causing PM to crash. I am experimenting with named pipes
 	but this is still a work in progress
 	"""
 	def __init__(self, args, bufsize=0, executable=None,stdin=None, stdout=None, stderr=None,preexec_fn=None, close_fds=False, shell=False,cwd=None, env=None, universal_newlines=False,startupinfo=None, creationflags=0):
@@ -932,13 +932,13 @@ class EMPopen(subprocess.Popen):
 				print("\n\nDONE\n\n")
 				break
 
-			# A HACK to prevent broken pipes(this may be a bit buggy, but it fixes an appaernt bug in subprocess module
+			# A HACK to prevent broken pipes(this may be a bit buggy, but it fixes an apparent bug in subprocess module
 			# Some sort of syncronization issue
 			time.sleep(0.1)
 
 class EMAN2StatusBar(QtWidgets.QTextEdit):
 	"""
-	The Stats bar for PM
+	The Status bar for PM
 	"""
 	def __init__(self, text, style):
 		QtWidgets.QTextEdit.__init__(self)
