@@ -1,4 +1,4 @@
-/* JSON file to make the bluildstacks wizard */
+/* JSON file to make the buildstacks wizard */
 [
   {
     "TITLE":"e2buildparticlesets Wizard",
@@ -15,7 +15,7 @@
   },
   {
     "TITLE":"Stack options",
-    "INST":"Choose the file type for output. Best option is 'BDB', which causes a virtual stack to be written (this saves space). HDF is also a decent choise but makes copies of the images eating up space. Spider is the worst coice as much metadata will not be conserved. Checking 'excludebad' causes bad particles to be omited from the stack.",
+    "INST":"Choose the file type for output. Best option is 'BDB', which causes a virtual stack to be written (this saves space). HDF is also a decent choice but makes copies of the images eating up space. Spider is the worst choice as much metadata will not be conserved. Checking 'excludebad' causes bad particles to be omitted from the stack.",
     "WIDGETS":[
       "filetype",
       "excludebad"
