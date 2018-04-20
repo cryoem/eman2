@@ -401,8 +401,8 @@ def output_clusters(output_dir, partition, unaccounted_list, not_include_unaccou
 	nc              = 0
 	identified_clusters = []
 	for ic in xrange(len(nclasses)):
-		if len(nclasses[ic])>=max(Tracker["constants"]["img_per_grp"]//2**Tracker["constants"]["img_per_grp_split_rate"], \
-		        min(Tracker["constants"]["minimum_grp_size"], Tracker["constants"]["img_per_grp"]*0.75)):
+		if len(nclasses[ic])>=max(Tracker["constants"]["img_per_grp"]//2**max(Tracker["constants"]["img_per_grp_split_rate"],1)\
+		     , min(Tracker["constants"]["minimum_grp_size"], Tracker["constants"]["img_per_grp"]*0.75)):
 			write_text_file(nclasses[ic], os.path.join(output_dir,"Cluster_%03d.txt"%nc))
 			nc +=1
 			identified_clusters.append(nclasses[ic])
@@ -5499,8 +5499,8 @@ def compute_final_map(work_dir):
 		fout.close()
 		clusters = []
 		while os.path.exists(os.path.join(work_dir, "Cluster_%03d.txt"%number_of_groups)):
-			class_in = read_text_file(os.path.join(work_dir, "Cluster_%03d.txt"%number_of_groups))
-			minimum_size = min(len(class_in), minimum_size)
+			class_in          = read_text_file(os.path.join(work_dir, "Cluster_%03d.txt"%number_of_groups))
+			minimum_size      = min(len(class_in), minimum_size)
 			number_of_groups += 1
 			final_accounted_ptl +=len(class_in)
 			clusters.append(class_in)
@@ -5511,7 +5511,7 @@ def compute_final_map(work_dir):
 	else: Tracker = 0
 	number_of_groups = bcast_number_to_all(number_of_groups, Blockdata["main_node"], MPI_COMM_WORLD)
 	Tracker          = wrap_mpi_bcast(Tracker,               Blockdata["main_node"], MPI_COMM_WORLD)
-	if( number_of_groups == 0 ): ERROR("No clusters  found, the program terminates.", "do_final_maps", 1, Blockdata["myid"])
+	if(number_of_groups == 0): ERROR("No clusters  found, the program terminates.", "compute_final_map", 1, Blockdata["myid"])
 	compute_noise( Tracker["nxinit"])
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		alist, partition = merge_classes_into_partition_list(clusters)
@@ -5533,18 +5533,159 @@ def compute_final_map(work_dir):
 	
 	Tracker["directory"] = work_dir
 	compute_noise(Tracker["nxinit"])
-	cdata, rdata, fdata = downsize_data_for_sorting(original_data, preshift = True, npad = 1, norms = norm_per_particle)# pay attentions to shifts!
-	del cdata, fdata, original_data
+	rdata = downsize_data_for_rec3D(original_data, Tracker["nxinit"], False, 1)# pay attentions to shifts!
+	for im in xrange(len(original_data)): rdata[im].set_attr('group', original_data[im].get_attr('group'))
+	del original_data
 	mpi_barrier(MPI_COMM_WORLD)
 	
-	srdata = precalculate_shifted_data_for_recons3D(rdata, parameterstructure, Tracker["refang"], Tracker["rshifts"], \
-	  Tracker["delta"], Tracker["avgnorm"], Tracker["nxinit"], Tracker["constants"]["nnxo"], Tracker["nosmearing"], \
-	      norm_per_particle,  Tracker["constants"]["nsmear"])
-	del rdata, parameterstructure, norm_per_particle
+	#srdata = precalculate_shifted_data_for_recons3D(rdata, parameterstructure, Tracker["refang"], Tracker["rshifts"], \
+	#  Tracker["delta"], Tracker["avgnorm"], Tracker["nxinit"], Tracker["constants"]["nnxo"], Tracker["nosmearing"], \
+	#      norm_per_particle,  Tracker["constants"]["nsmear"])
+	#del rdata, parameterstructure, norm_per_particle
+	#mpi_barrier(MPI_COMM_WORLD)
+	do3d_sorting_groups_nofsc_final(rdata, parameterstructure, norm_per_particle)
+	del rdata
+	import  shutil
+	if Blockdata["myid"] == Blockdata["main_node"]:
+		if os.path.exists(os.path.join(Tracker["constants"]["masterdir"], 'tempdir')):
+			shutil.rmtree(os.path.join(Tracker["constants"]["masterdir"], 'tempdir'))
 	mpi_barrier(MPI_COMM_WORLD)
-	do3d_sorting_groups_nofsc_smearing_iter(srdata, False, iteration = 0)
-	del srdata
+	return
+### final rec3d
+def do3d_sorting_groups_nofsc_final(rdata, parameterstructure, norm_per_particle):
+	global Tracker, Blockdata
+	keepgoing = 1
+	if(Blockdata["myid"] == Blockdata["last_node"]):
+		if not os.path.exists(os.path.join(Tracker["directory"], "tempdir")):os.mkdir(os.path.join(Tracker["directory"], "tempdir"))
+		try:
+			fout = open(os.path.join(Tracker["directory"],"freq_cutoff.json"),'r')
+			freq_cutoff_dict = convert_json_fromunicode(json.load(fout))
+			fout.close()
+		except: freq_cutoff_dict = 0
+	else: freq_cutoff_dict = 0
+	freq_cutoff_dict = wrap_mpi_bcast(freq_cutoff_dict, Blockdata["last_node"], MPI_COMM_WORLD)
+		
+	for index_of_groups in xrange(Tracker["number_of_groups"]):
+		tvol, tweight, trol = recons3d_trl_struct_group_MPI(Blockdata["myid"], Blockdata["last_node"], rdata, 2, index_of_groups, parameterstructure, norm_per_particle, \
+      True, None, Tracker["constants"]["CTF"], (2*Tracker["nxinit"]+3), Tracker["nosmearing"])
+		if(Blockdata["myid"] == Blockdata["last_node"]):
+			tvol.set_attr("is_complex",0)
+			tvol.write_image(os.path.join(Tracker["directory"], "tempdir", "tvol_2_%d.hdf"%index_of_groups))
+			tweight.write_image(os.path.join(Tracker["directory"], "tempdir", "tweight_2_%d.hdf"%index_of_groups))
+			trol.write_image(os.path.join(Tracker["directory"], "tempdir", "trol_2_%d.hdf"%index_of_groups))
+			del tvol
+			del tweight
+			del trol
 	mpi_barrier(MPI_COMM_WORLD)
+	Tracker["fsc143"]  = 0
+	Tracker["fsc05"]   = 0
+	Tracker["maxfrad"] = Tracker["nxinit"]//2
+	if Blockdata["no_of_groups"]>1:
+	 	# new starts
+		sub_main_node_list = [ -1 for i in xrange(Blockdata["no_of_groups"])]
+		for index_of_colors in xrange(Blockdata["no_of_groups"]):
+			for iproc in xrange(Blockdata["nproc"]-1):
+				if Blockdata["myid"]== iproc:
+					if Blockdata["color"] == index_of_colors and Blockdata["myid_on_node"] == 0:
+						sub_main_node_list[index_of_colors] = Blockdata["myid"]
+					wrap_mpi_send(sub_main_node_list, Blockdata["last_node"], MPI_COMM_WORLD)
+				if Blockdata["myid"] == Blockdata["last_node"]:
+					dummy = wrap_mpi_recv(iproc, MPI_COMM_WORLD)
+					for im in xrange(len(dummy)):
+						if dummy[im]>-1: sub_main_node_list[im] = dummy[im]
+				mpi_barrier(MPI_COMM_WORLD)
+			mpi_barrier(MPI_COMM_WORLD)
+		mpi_barrier(MPI_COMM_WORLD)
+		wrap_mpi_bcast(sub_main_node_list, Blockdata["last_node"], MPI_COMM_WORLD)
+		if Tracker["number_of_groups"]%Blockdata["no_of_groups"]== 0: 
+			nbig_loop = Tracker["number_of_groups"]//Blockdata["no_of_groups"]
+		else: nbig_loop = Tracker["number_of_groups"]//Blockdata["no_of_groups"]+1
+	
+		big_loop_colors = [[] for i in xrange(nbig_loop)]
+		big_loop_groups = [[] for i in xrange(nbig_loop)]
+		nc = 0
+		while nc <Tracker["number_of_groups"]:
+			im =  nc//Blockdata["no_of_groups"]
+			jm =  nc%Blockdata["no_of_groups"]
+			big_loop_colors[im].append(jm)
+			big_loop_groups[im].append(nc)
+			nc +=1
+		for iloop in xrange(nbig_loop):
+			for im in xrange(len(big_loop_colors[iloop])):
+				index_of_group  = big_loop_groups[iloop][im]
+				index_of_colors = big_loop_colors[iloop][im]
+			
+				if(Blockdata["myid"] == Blockdata["last_node"]):
+					tvol2    = get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_2_%d.hdf")%index_of_group)
+					tweight2 = get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_2_%d.hdf")%index_of_group)
+					treg2 	 = get_im(os.path.join(Tracker["directory"], "tempdir", "trol_2_%d.hdf"%index_of_group))
+					tvol2.set_attr_dict( {"is_complex":1, "is_fftodd":1, 'is_complex_ri': 1, 'is_fftpad': 1})
+					tag = 7007
+					send_EMData(tvol2,    sub_main_node_list[index_of_colors], tag, MPI_COMM_WORLD)
+					send_EMData(tweight2, sub_main_node_list[index_of_colors], tag, MPI_COMM_WORLD)
+					send_EMData(treg2,    sub_main_node_list[index_of_colors], tag, MPI_COMM_WORLD)
+				
+				elif (Blockdata["myid"] == sub_main_node_list[index_of_colors]):
+					tag      = 7007
+					tvol2    = recv_EMData(Blockdata["last_node"], tag, MPI_COMM_WORLD)
+					tweight2 = recv_EMData(Blockdata["last_node"], tag, MPI_COMM_WORLD)
+					treg2    = recv_EMData(Blockdata["last_node"], tag, MPI_COMM_WORLD)
+				mpi_barrier(MPI_COMM_WORLD)
+			mpi_barrier(MPI_COMM_WORLD)
+			
+			for im in xrange(len(big_loop_colors[iloop])):
+				index_of_group  = big_loop_groups[iloop][im]
+				index_of_colors = big_loop_colors[iloop][im]
+				try: 
+					Tracker["freq_fsc143_cutoff"] = freq_cutoff_dict["Cluster_%03d.txt"%index_of_group]
+				except: pass	
+				if Blockdata["color"] == index_of_colors:  # It has to be 1 to avoid problem with tvol1 not closed on the disk 							
+					if(Blockdata["myid_on_node"] != 0): 
+						tvol2     = model_blank(1)
+						tweight2  = model_blank(1)
+						treg2     = model_blank(1)
+					tvol2 = steptwo_mpi_filter(tvol2, tweight2, treg2,  None,  Tracker["freq_fsc143_cutoff"], 0.01, False, color = index_of_colors) # has to be False!!!
+					del tweight2, treg2
+			mpi_barrier(MPI_COMM_WORLD)
+		
+			for im in xrange(len(big_loop_colors[iloop])):
+				index_of_group  = big_loop_groups[iloop][im]
+				index_of_colors = big_loop_colors[iloop][im]
+				if (Blockdata["color"] == index_of_colors) and (Blockdata["myid_on_node"] == 0):
+					tag = 7007
+					send_EMData(tvol2, Blockdata["last_node"], tag, MPI_COMM_WORLD)
+				elif(Blockdata["myid"] == Blockdata["last_node"]):
+					tag = 7007
+					tvol2    = recv_EMData(sub_main_node_list[index_of_colors], tag, MPI_COMM_WORLD)
+					tvol2.write_image(os.path.join(Tracker["directory"], "vol_cluster%03d.hdf"%index_of_group))
+					del tvol2
+			mpi_barrier(MPI_COMM_WORLD)
+		mpi_barrier(MPI_COMM_WORLD)
+		
+	else:# loop over all groups for single node
+		for index_of_group in xrange(Tracker["number_of_groups"]):
+			if(Blockdata["myid_on_node"] == 0):
+				tvol2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_2_%d.hdf")%index_of_group)
+				tweight2 	= get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_2_%d.hdf")%index_of_group)
+				treg2 		= get_im(os.path.join(Tracker["directory"], "tempdir", "trol_2_%d.hdf"%index_of_group))
+				tvol2.set_attr_dict( {"is_complex":1, "is_fftodd":1, 'is_complex_ri': 1, 'is_fftpad': 1})
+			else:
+				tvol2 		= model_blank(1)
+				tweight2 	= model_blank(1)
+				treg2		= model_blank(1)
+			try: 
+				Tracker["freq_fsc143_cutoff"] = freq_cutoff_dict["Cluster_%03d.txt"%index_of_group]
+			except: pass
+			tvol2 = steptwo_mpi_filter(tvol2, tweight2, treg2, None, Tracker["freq_fsc143_cutoff"], 0.01, False) # has to be False!!!
+			del tweight2, treg2
+			if(Blockdata["myid_on_node"] == 0):
+				tvol2.write_image(os.path.join(Tracker["directory"], "vol_cluster%03d.hdf"%index_of_group))
+				del tvol2
+			mpi_barrier(MPI_COMM_WORLD)
+	mpi_barrier(MPI_COMM_WORLD)
+	keepgoing = bcast_number_to_all(keepgoing, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD) # always check 
+	Tracker   = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
+	if not keepgoing: ERROR("do3d_sorting_groups_nofsc_final  %s"%os.path.join(Tracker["directory"], "tempdir"),"do3d_sorting_groups_nofsc_final", 1, Blockdata["myid"])
 	return
 #####==========----various utilities
 
@@ -5609,7 +5750,7 @@ def copy_results(log_file, all_gen_stat_list):
 					cluster_file = os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%ig, "Cluster_%03d.txt"%ic)
 					copyfile(cluster_file, os.path.join(Tracker["constants"]["masterdir"], "Cluster_%03d.txt"%nclusters))
 					clusters.append(read_text_file(cluster_file))
-					copyfile(os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%ig, "vol_grp%03d_iter000.hdf"%ic), os.path.join(Tracker["constants"]["masterdir"], "vol_cluster%03d.hdf"%nclusters))
+					#copyfile(os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%ig, "vol_grp%03d_iter000.hdf"%ic), os.path.join(Tracker["constants"]["masterdir"], "vol_cluster%03d.hdf"%nclusters))
 					cluster      = read_text_file(os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%ig, "Cluster_%03d.txt"%ic))
 					cluster_file = "Cluster_%03d.txt"%nclusters
 					vol_file     = "vol_cluster%03d.hdf"%nclusters
@@ -5846,7 +5987,7 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 	Tracker["current_img_per_grp"] = Tracker["constants"]["img_per_grp"]
 	while (keepsorting == 1) and (bad_clustering== 0):
 		Tracker["current_generation"] +=1
-		igen +=1
+		igen     +=1
 		work_dir  = os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%igen)
 		if Blockdata["myid"] == Blockdata["main_node"]: keepchecking = check_sorting_state(work_dir, keepchecking, log_main)
 		else: keepchecking = 0
@@ -5875,6 +6016,8 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 			if bad_clustering !=1:
 				if Blockdata["myid"] == Blockdata["main_node"]:
 					clusters, nclusters, nuacc  = output_clusters(work_dir, output_list[0][0], output_list[0][1], not_include_unaccounted, log_main)
+					try:  del Tracker["generation"][str(igen)]
+					except: pass 
 					Tracker["generation"][igen] = len(clusters)
 				else: 
 					Tracker   = 0
@@ -5884,17 +6027,12 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 				nclusters = bcast_number_to_all(nclusters, Blockdata["main_node"], MPI_COMM_WORLD)
 				nuacc     = bcast_number_to_all(nuacc,     Blockdata["main_node"], MPI_COMM_WORLD)
 				dump_tracker(work_dir)
-				
 				if nclusters == 0:
 					if Blockdata["myid"] == Blockdata["main_node"]:
 						log_main.add('No cluster is found in generation %d'%igen)
 					break
 				else:
-					if Blockdata["myid"] == Blockdata["main_node"]:time_rec3d_start = time.time()
-					compute_final_map(work_dir)
 					if Blockdata["myid"] == Blockdata["main_node"]:
-						time_of_rec3d_h, time_of_rec3d_m = get_time(time_rec3d_start)
-						log_main.add('SORT3D 3D reconstruction time: %d hours %d minutes.'%(time_of_rec3d_h, time_of_rec3d_m))
 						time_of_generation_h,  time_of_generation_m = get_time(time_generation_start)
 						log_main.add('SORT3D generation%d time: %d hours %d minutes.'%(igen, time_of_generation_h, time_of_generation_m))
 					my_pids  = os.path.join( work_dir, 'indexes_next_generation.txt')
@@ -5902,7 +6040,6 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 						write_text_file(output_list[0][1], my_pids)
 						write_text_row(stat_list, os.path.join(work_dir, 'gen_rep.txt'))
 						mark_sorting_state(work_dir, True, log_main)
-						shutil.rmtree(os.path.join(work_dir, 'tempdir'))
 					mpi_barrier(MPI_COMM_WORLD)
 				keepsorting = check_sorting(nuacc, keepsorting, log_main)
 				if keepsorting != 1: break #
@@ -5918,10 +6055,9 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 				log_main.add('                                    SORT3D IN-DEPTH   generation %d completed'%igen)
 				log_main.add('----------------------------------------------------------------------------------------------------------------')
 	
-	copy_results(log_main, all_gen_stat_list)# all nodes function	
+	copy_results(log_main, all_gen_stat_list)# all nodes function
+	compute_final_map(Tracker["constants"]["masterdir"])
 	if Blockdata["myid"] == Blockdata["main_node"]:
-		if os.path.exists(os.path.join(Tracker["constants"]["masterdir"], 'tempdir')):
-			shutil.rmtree(os.path.join(Tracker["constants"]["masterdir"], 'tempdir'))
 		time_of_sorting_h,  time_of_sorting_m = get_time(time_sorting_start)
 		log_main.add('SORT3D execution time: %d hours %d minutes.'%(time_of_sorting_h, time_of_sorting_m))
 	return
