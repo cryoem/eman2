@@ -1610,10 +1610,10 @@ def main():
 					log_main.add("1st zero pw spectrum point :  %d[pixels]"%(index_zero))
 					log_main.add("Falloff width              :  %d[pixels]"%(pfall_off))
 					if mindex == 0:
-						msg = "Enhancement has no maximum value. Reduce aa or increase B_factor, and then rerun the command "
+						msg = "Enhancement has no maximum value. Inspect your mask, or reduce aa, or decrease fl to a lower frequency, and then rerun the command "
 						log_main.add(msg)
 					if index_zero>map1.get_xsize()//2:
-						msg = "Enhancement exceeds Nyquist frequency. Decrease fl to a lower frequency, or reduce aa or increase B_factor, and then rerun the command "
+						msg = "Enhancement exceeds Nyquist frequency. Inspect your mask, or decrease fl to a lower frequency, or reduce aa, and then rerun the command "
 						log_main.add(msg)
 			log_main.add("-------------------------------------------------------")
 			log_main.add("---------- >>> DONE!!! <<<------------")
