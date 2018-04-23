@@ -8,7 +8,7 @@ Moon eliminator: Eliminate moons or remove dusts from the background of a 3D den
 
 Usage in command line
 
-  sxpipe.py  moon_eliminator  input_volume_path  output_directory  --mol_mass=KILODALTON  --pixel_size=PIXEL_SIZE  --moon_distance=PIXEL_DISTANCE  --falloff_speed=FALLOFF_SPEED  --use_density_threshold=THRESHOLD  --resample_ratio=RATIO_OR_DIR_PATH  --box_size=BOX_SIZE  --resampled_shift3d  --shift3d_x=SHIFT3D_X  --shift3d_y=SHIFT3D_Y  --shift3d_z=SHIFT3D_Z  --invert_handedness  --fl=LPF_CUTOFF_FREQ  --aa=LPF_FALLOFF_WIDTH  --generate_mask=SOFT_EDGE_TYPE  --gm_edge_width=MASK_EDGE_PIXEL_WIDTH  --gm_falloff_speed=MASK_EDGE_FALLOFF_SPEED  --outputs_root=FILE_ROOT  --debug
+  sxpipe.py  moon_eliminator  input_volume_path  output_directory  --mol_mass=KILODALTON  --pixel_size=PIXEL_SIZE  --moon_distance=PIXEL_DISTANCE  --falloff_speed=FALLOFF_SPEED  --use_density_threshold=THRESHOLD  --resample_ratio=RATIO_OR_DIR_PATH  --box_size=BOX_SIZE  --resampled_shift3d  --shift3d_x=SHIFT3D_X  --shift3d_y=SHIFT3D_Y  --shift3d_z=SHIFT3D_Z  --invert_handedness  --fl=LPF_CUTOFF_FREQ  --aa=LPF_FALLOFF_WIDTH  --generate_mask=SOFT_EDGE_TYPE  --gm_edge_width=MASK_EDGE_PIXEL_WIDTH  --gm_falloff_speed=MASK_EDGE_FALLOFF_SPEED  --outputs_root=FILE_ROOT  --allow_disconnect  --debug
 
 \\
 ===== Typical usage =====
@@ -55,6 +55,7 @@ Create reference 3D volume and 3D mask from post-refined MERIDIEN 3D model using
   ; %%--%%gm_edge_width : Soft-edge width [Pixels]: The pixel width of transition area for soft-edged masking. Effective only with %%--%%generate_mask option. (default 6)
   ; %%--%%gm_falloff_speed : Soft-edge falloff speed: Falloff speed of soft-edge masking. Effective only when %%--%%generate_mask='gauss'. The value corresponds to Gaussian sigma factor relative to the soft-edge width (i.e. gauss_sigma = gm_edge_width/gm_falloff_speed). (default 3.0)
   ; %%--%%outputs_root : Root name of outputs: Specify the root name of all outputs. It cannot be empty string or only white spaces. (default vol3d)
+  ; %%--%%allow_disconnect : Allow disconnection: Allow disconnection of density maps. Only for very special cases. (default False)
   ; %%--%%debug : Run with debug mode: Mainly for developer. (default False)
 
 \\

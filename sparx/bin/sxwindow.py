@@ -54,7 +54,8 @@ from global_def import *
 # This way, switch statement is unnecessary inside of the coordinates loop.
 # ========================================================================================
 def read_sphire_coords_file(coords_path):
-	coords_list = read_text_row(coords_path)
+# 	coords_list = read_text_row(coords_path)
+	coords_list = read_text_row(coords_path, skip="#")
 	return coords_list
 
 def read_eman1_coords_file(coords_path):

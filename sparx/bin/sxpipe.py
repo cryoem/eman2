@@ -1682,15 +1682,15 @@ def organize_micrographs(args):
 ### 			# print_progress("Found new micrograph {}. Detected {} micrographs so far...".format(mic_basename, len(global_coordinates_dict)))
 ### 		
 ### 		# Extract the associated coordinates from the image header
-### 		center_coordinate_x, center_coordinate_y = img.get_attr("ptcl_source_coord")
+### 		ptcl_source_coordinate_x, ptcl_source_coordinate_y = img.get_attr("ptcl_source_coord")
 ### 		# Compute the left bottom coordinates of box (EMAN1 box file format)
 ### 		assert(args.box_size > 0)
-### 		# eman1_original_coordinate_x = center_coordinate_x - (args.box_size//2+1)
-### 		# eman1_original_coordinate_y = center_coordinate_y - (args.box_size//2+1)
+### 		# eman1_original_coordinate_x = ptcl_source_coordinate_x - (args.box_size//2+1)
+### 		# eman1_original_coordinate_y = ptcl_source_coordinate_y - (args.box_size//2+1)
 ### 		# NOTE: 2018/02/21 Toshio Moriya
 ### 		# Currently, the following the way e2boxer.py calculates EMAN1 box format from particle center coordinates.
-### 		eman1_original_coordinate_x = center_coordinate_x - (args.box_size//2)
-### 		eman1_original_coordinate_y = center_coordinate_y - (args.box_size//2)
+### 		eman1_original_coordinate_x = ptcl_source_coordinate_x - (args.box_size//2)
+### 		eman1_original_coordinate_y = ptcl_source_coordinate_y - (args.box_size//2)
 ### 		global_coordinates_dict[mic_basename].eman1_original.append("{:6d} {:6d} {:6d} {:6d} {:6d}\n".format(eman1_original_coordinate_x, eman1_original_coordinate_y, args.box_size, args.box_size, eman1_dummy))
 ### 		
 ### 		# Extract the projection parameters from the image header
@@ -2006,6 +2006,10 @@ def restacking(args):
 			
 		global_mic_dict[mic_basename].img_id_list.append(img_id)
 		
+		# Get micrograph resampling ratio of previous sxwindow run
+		assert (img.has_attr("resample_ratio"))
+		ptcl_source_resample_ratio = img.get_attr("resample_ratio")
+			
 		# Initialise CTF parameters same way as the dummy CTF of sxwindow.py
 		defocus = 0.0
 		cs      = 0.0
@@ -2034,13 +2038,27 @@ def restacking(args):
 			proj_phi, proj_theta, proj_psi, proj_tx, proj_ty = get_params_proj(img)
 		else:
 			missing_proj_params_counter += 1
-			
+		
 		# Register original projection parameters to global micrograph dictionary
 		global_mic_dict[mic_basename].original_proj_params_list.append("{:15.5f} {:15.5f} {:15.5f} {:15.5f} {:15.5f}".format(proj_phi, proj_theta, proj_psi, proj_tx, proj_ty))
 		
+		# The particle coordinates are stored with the original pixel size.
+		# Therefore, the projection shifts and 3D shifts have to be resampled back to the original pixel size.
+		resampled_proj_tx = proj_tx
+		resampled_proj_ty = proj_ty
+		resampled_shift3d_x = args.shift3d_x
+		resampled_shift3d_y = args.shift3d_y
+		resampled_shift3d_z = args.shift3d_z
+		if ptcl_source_resample_ratio > 0.0 and ptcl_source_resample_ratio != 1.0:
+			resampled_proj_tx /= ptcl_source_resample_ratio
+			resampled_proj_ty /= ptcl_source_resample_ratio
+			resampled_shift3d_x /= ptcl_source_resample_ratio
+			resampled_shift3d_y /= ptcl_source_resample_ratio
+			resampled_shift3d_z /= ptcl_source_resample_ratio
+		
 		# Transform the coordinates according to projection parameters and user-provided 3D shift (corresponding to shifting the 3D volume)
-		trans3x3 = Transform({"phi":float(proj_phi), "theta":float(proj_theta), "psi":float(proj_psi), "tx":float(proj_tx), "ty":float(proj_ty), "tz":0.0, "type":"spider"})
-		origin_vec3d = Vec3f(float(args.shift3d_x), float(args.shift3d_y), float(args.shift3d_z))
+		trans3x3 = Transform({"phi":float(proj_phi), "theta":float(proj_theta), "psi":float(proj_psi), "tx":float(resampled_proj_tx), "ty":float(resampled_proj_ty), "tz":0.0, "type":"spider"})
+		origin_vec3d = Vec3f(float(resampled_shift3d_x), float(resampled_shift3d_y), float(resampled_shift3d_z))
 		transformed_vec3d = trans3x3 * origin_vec3d
 		shift2d_x = -1 * transformed_vec3d[0]
 		shift2d_y = -1 * transformed_vec3d[1]
@@ -2050,27 +2068,86 @@ def restacking(args):
 		
 		if args.reboxing:
 			# Extract the associated coordinates from the image header
-			center_coordinate_x, center_coordinate_y = img.get_attr("ptcl_source_coord")
+			assert (img.has_attr("ptcl_source_coord_id"))
+			ptcl_source_coord_id = img.get_attr("ptcl_source_coord_id")
+			assert (img.has_attr("ptcl_source_coord"))
+			ptcl_source_coordinate_x, ptcl_source_coordinate_y = img.get_attr("ptcl_source_coord")
+			
 			# Compute the left bottom coordinates of box (EMAN1 box file format)
 			assert(args.rb_box_size > 0)
-			# original_coordinate_x = center_coordinate_x - (args.rb_box_size//2+1)
-			# original_coordinate_y = center_coordinate_y - (args.rb_box_size//2+1)
+			# original_coordinate_x = ptcl_source_coordinate_x - (args.rb_box_size//2+1)
+			# original_coordinate_y = ptcl_source_coordinate_y - (args.rb_box_size//2+1)
 			# NOTE: 2018/02/21 Toshio Moriya
 			# Currently, the following the way e2boxer.py calculates EMAN1 box format from particle center coordinates.
-			original_coordinate_x = center_coordinate_x - (args.rb_box_size//2)
-			original_coordinate_y = center_coordinate_y - (args.rb_box_size//2)
+			original_coordinate_x = ptcl_source_coordinate_x - (args.rb_box_size//2)
+			original_coordinate_y = ptcl_source_coordinate_y - (args.rb_box_size//2)
 			global_mic_dict[mic_basename].original_coords_list.append("{:6d} {:6d} {:6d} {:6d} {:6d}\n".format(original_coordinate_x, original_coordinate_y, args.rb_box_size, args.rb_box_size, eman1_dummy))
 			
-			global_mic_dict[mic_basename].original_rebox_coords_list.append("{:6d} {:6d} {:15.5f} {:15.5f} {:15.5f} {:15.5f} {:15.5f}\n".format(center_coordinate_x, center_coordinate_y, proj_phi, proj_theta, proj_psi, 0.0, 0.0))
+			assert (img.has_attr("ctf"))
+			ctf_params = img.get_attr("ctf")
+			
+			particle_defocus_error = 0.0
+			if img.has_attr("particle_defocus_error"):
+				particle_defocus_error = img.get_attr("particle_defocus_error")
+			
+			particle_resample_ratio = 1.0
+			if img.has_attr("particle_resample_ratio"):
+				particle_resample_ratio = img.get_attr("particle_resample_ratio")
+			
+###			global_mic_dict[mic_basename].original_rebox_coords_list.append("{:6d} {:6d} {:15.5f} {:15.5f} {:15.5f} {:15.5f} {:15.5f}\n".format(ptcl_source_coordinate_x, ptcl_source_coordinate_y, proj_phi, proj_theta, proj_psi, 0.0, 0.0))
+			line = ""
+			line += " {:6d}".format(ptcl_source_coord_id)          # idx_params_mic_coord_id
+			line += " {:6d}".format(ptcl_source_coordinate_x)      # idx_params_mic_coord_x
+			line += " {:6d}".format(ptcl_source_coordinate_y)      # idx_params_mic_coord_y
+			line += " {:15.5f}".format(ptcl_source_resample_ratio) # idx_params_mic_resample_ratio
+			line += " {:15.5f}".format(ctf_params.defocus)         # idx_params_ctf_defocus
+			line += " {:15.5f}".format(ctf_params.cs)              # idx_params_ctf_cs
+			line += " {:15.5f}".format(ctf_params.voltage)         # idx_params_ctf_voltage
+			line += " {:15.5f}".format(ctf_params.apix)            # idx_params_ctf_apix
+			line += " {:15.5f}".format(ctf_params.bfactor)         # idx_params_ctf_bfactor
+			line += " {:15.5f}".format(ctf_params.ampcont)         # idx_params_ctf_ampcont
+			line += " {:15.5f}".format(ctf_params.dfdiff)          # idx_params_ctf_dfdiff
+			line += " {:15.5f}".format(ctf_params.dfang)           # idx_params_ctf_dfang
+			line += " {:15.5f}".format(proj_phi)                   # idx_params_proj_phi
+			line += " {:15.5f}".format(proj_theta)                 # idx_params_proj_theta
+			line += " {:15.5f}".format(proj_psi)                   # idx_params_proj_psi
+			line += " {:15.5f}".format(proj_tx)                    # idx_params_proj_sx
+			line += " {:15.5f}".format(proj_ty)                    # idx_params_proj_sy
+			line += " {:15.5f}".format(particle_defocus_error)     # idx_params_defocus_error
+			line += " {:15.5f}".format(particle_resample_ratio)    # idx_params_resample_ratio
+			line += " \n"
+			global_mic_dict[mic_basename].original_rebox_coords_list.append(line)
 			
 			# Transform and center the coordinates according to projection parameters and user-provided 3D shift (corresponding to shifting the 3D volume)
 			centered_coordinate_x = int(round(original_coordinate_x + shift2d_x))
 			centered_coordinate_y = int(round(original_coordinate_y + shift2d_y))
 			global_mic_dict[mic_basename].centered_coords_list.append("{:6d} {:6d} {:6d} {:6d} {:6d}\n".format(centered_coordinate_x, centered_coordinate_y, args.rb_box_size, args.rb_box_size, eman1_dummy))
 			
-			centered_center_coordinate_x = int(round(center_coordinate_x + shift2d_x))
-			centered_center_coordinate_y = int(round(center_coordinate_y + shift2d_y))
-			global_mic_dict[mic_basename].centered_rebox_coords_list.append("{:6d} {:6d} {:15.5f} {:15.5f} {:15.5f} {:15.5f} {:15.5f}\n".format(centered_center_coordinate_x, centered_center_coordinate_y, proj_phi, proj_theta, proj_psi, 0.0, 0.0))
+			centered_center_coordinate_x = int(round(ptcl_source_coordinate_x + shift2d_x))
+			centered_center_coordinate_y = int(round(ptcl_source_coordinate_y + shift2d_y))
+###			global_mic_dict[mic_basename].centered_rebox_coords_list.append("{:6d} {:6d} {:15.5f} {:15.5f} {:15.5f} {:15.5f} {:15.5f}\n".format(centered_center_coordinate_x, centered_center_coordinate_y, proj_phi, proj_theta, proj_psi, 0.0, 0.0))
+			line = ""
+			line += " {:6d}".format(ptcl_source_coord_id)          # idx_params_mic_coord_id
+			line += " {:6d}".format(centered_center_coordinate_x)  # idx_params_mic_coord_x
+			line += " {:6d}".format(centered_center_coordinate_y)  # idx_params_mic_coord_y
+			line += " {:15.5f}".format(ptcl_source_resample_ratio) # idx_params_mic_resample_ratio
+			line += " {:15.5f}".format(ctf_params.defocus)         # idx_params_ctf_defocus
+			line += " {:15.5f}".format(ctf_params.cs)              # idx_params_ctf_cs
+			line += " {:15.5f}".format(ctf_params.voltage)         # idx_params_ctf_voltage
+			line += " {:15.5f}".format(ctf_params.apix)            # idx_params_ctf_apix
+			line += " {:15.5f}".format(ctf_params.bfactor)         # idx_params_ctf_bfactor
+			line += " {:15.5f}".format(ctf_params.ampcont)         # idx_params_ctf_ampcont
+			line += " {:15.5f}".format(ctf_params.dfdiff)          # idx_params_ctf_dfdiff
+			line += " {:15.5f}".format(ctf_params.dfang)           # idx_params_ctf_dfang
+			line += " {:15.5f}".format(proj_phi)                   # idx_params_proj_phi
+			line += " {:15.5f}".format(proj_theta)                 # idx_params_proj_theta
+			line += " {:15.5f}".format(proj_psi)                   # idx_params_proj_psi
+			line += " {:15.5f}".format(0.0)                        # idx_params_proj_sx
+			line += " {:15.5f}".format(0.0)                        # idx_params_proj_sy
+			line += " {:15.5f}".format(particle_defocus_error)     # idx_params_defocus_error
+			line += " {:15.5f}".format(particle_resample_ratio)    # idx_params_resample_ratio
+			line += " \n"
+			global_mic_dict[mic_basename].centered_rebox_coords_list.append(line)
 			
 #	print(" ")
 #	print_progress("Found total of {} assocaited micrographs in the input stack {}.".format(len(global_mic_dict), args.input_bdb_stack_path))
@@ -2170,7 +2247,7 @@ def restacking(args):
 		os.mkdir(os.path.join(args.output_directory, original_coords_list_subdir))
 		
 		original_rebox_coords_list_subdir = "original_rebox"
-		original_rebox_coords_list_suffix = '_original_rebox.srb' # SPHIRE rebox coordinate format
+		original_rebox_coords_list_suffix = '_original_rebox.rbx' # SPHIRE rebox coordinate format
 		os.mkdir(os.path.join(args.output_directory, original_rebox_coords_list_subdir))
 		
 		centered_coords_list_subdir = "centered"
@@ -2178,7 +2255,7 @@ def restacking(args):
 		os.mkdir(os.path.join(args.output_directory, centered_coords_list_subdir))
 		
 		centered_rebox_coords_list_subdir = "centered_rebox"
-		centered_rebox_coords_list_suffix = '_centered_rebox.srb' # SPHIRE rebox coordinate format
+		centered_rebox_coords_list_suffix = '_centered_rebox.rbx' # SPHIRE rebox coordinate format
 		os.mkdir(os.path.join(args.output_directory, centered_rebox_coords_list_subdir))
 	
 	global_output_image_id_list = []
@@ -2540,7 +2617,7 @@ def mrk_sphere_gauss_edge(bin3d, gauss_kernel_radius, gauss_sigma):
 # ----------------------------------------------------------------------------------------
 # Use sphere dilation and sphere Gaussian soft-edging (aka surface mask)
 # 
-def mrk_eliminate_moons_sphire_gaussian_edge(vol3d, density_threshold, gauss_kernel_radius, gauss_sigma):
+def mrk_eliminate_moons_sphire_gaussian_edge(vol3d, density_threshold, gauss_kernel_radius, gauss_sigma, allow_disconnect):
 	from morphology import binarize
 	from utilities import gauss_edge
 	
@@ -2551,7 +2628,13 @@ def mrk_eliminate_moons_sphire_gaussian_edge(vol3d, density_threshold, gauss_ker
 	# print_progress("MRK_DEBUG:   gauss_sigma          := {}".format(gauss_sigma))
 	
 	bin3d = binarize(vol3d, density_threshold)
-	bin3d_mol_mass = Util.get_biggest_cluster(bin3d)
+	bin3d_mol_mass = None
+	if not allow_disconnect:
+		bin3d_mol_mass = Util.get_biggest_cluster(bin3d)
+	else:
+		bin3d_mol_mass = bin3d
+	assert (bin3d_mol_mass is not None)
+	
 	# Create Gaussian soft-edged binary mask with no moons 
 	mask3d_moon_elminator, bin3d_mol_mass_dilated = mrk_sphere_gauss_edge(bin3d_mol_mass, gauss_kernel_radius, gauss_sigma)
 	# 
@@ -2862,7 +2945,7 @@ def moon_eliminator(args):
 	# Let's try to use pixel size to decide the distance of the nearest moons...
 	gauss_kernel_radius = args.moon_distance
 	gauss_sigma = args.moon_distance / args.falloff_speed
-	ref3d_moon_eliminated, mask3d_moon_elminator, bin3d_mol_mass_dilated, bin3d_mol_mass = mrk_eliminate_moons_sphire_gaussian_edge(vol3d, density_threshold, gauss_kernel_radius, gauss_sigma)
+	ref3d_moon_eliminated, mask3d_moon_elminator, bin3d_mol_mass_dilated, bin3d_mol_mass = mrk_eliminate_moons_sphire_gaussian_edge(vol3d, density_threshold, gauss_kernel_radius, gauss_sigma, args.allow_disconnect)
 	
 	ref3d_moon_eliminated_file_path = os.path.join(args.output_directory, "{}_ref_moon_eliminated.hdf".format(args.outputs_root))
 	print(" ")
@@ -3034,6 +3117,7 @@ def main():
 	parser_moon_eliminator.add_argument("--gm_edge_width",         type=int,             default=6,       help="Soft-edge width [Pixels]: The pixel width of transition area for soft-edged masking. Effective only with --generate_mask option. (default 6)")
 	parser_moon_eliminator.add_argument("--gm_falloff_speed",      type=float,           default=3.0,     help="Soft-edge falloff speed: Falloff speed of soft-edge masking. Effective only when --generate_mask=\'gauss\'. The value corresponds to Gaussian sigma factor relative to the soft-edge width (i.e. gauss_sigma = gm_edge_width/gm_falloff_speed). (default 3.0)")
 	parser_moon_eliminator.add_argument("--outputs_root",          type=str,             default='vol3d', help="Root name of outputs: Specify the root name of all outputs. It cannot be empty string or only white spaces. (default vol3d)")
+	parser_moon_eliminator.add_argument("--allow_disconnect",      action="store_true",  default=False,   help="Allow disconnection: Allow disconnection of density maps. Only for very special cases. (default False)")
 	parser_moon_eliminator.add_argument("--debug",                 action="store_true",  default=False,   help="Run with debug mode: Mainly for developer. (default False)")
 	parser_moon_eliminator.set_defaults(func=moon_eliminator)
 
