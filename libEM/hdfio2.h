@@ -115,6 +115,9 @@ namespace EMAN
 		 * @return attribute value as an EMObject */
 		EMObject read_attr(hid_t attr);
 
+		// this one is only defined in classes that implement it
+		int read_data_8bit(unsigned char *data, int image_index = 0, const Region * area = 0, bool is_3d = false, float minval = 0.0f, float maxval = 0.0f);
+
 		/** Return the file id
 		 * For single attribute read/write*/
 		hid_t get_fileid() const {return file;}
