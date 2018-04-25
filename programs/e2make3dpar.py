@@ -96,6 +96,7 @@ def main():
 	parser.add_argument("--keep", type=float, dest="keep", help="The fraction of slices to keep, based on quality scores (1.0 = use all slices). See keepsig.",default=1.0)
 	parser.add_argument("--keepsig",action="store_true",default=False, dest="keepsig", help="If set, keep will be interpreted as a standard deviation coefficient instead of as a percentage.")
 	parser.add_argument("--keepabs",action="store_true",default=False, dest="keepabs", help="If set, keep will refer to the absolute quality of the class-average, not a local quality relative to other similar sized classes.")
+	parser.add_argument("--altedgemask",action="store_true",default=False, dest="altedgemask", help="If set, assumes tomographic data with a thin specimen, and masks out the +-X edges based on the alt Euler angle.")
 	parser.add_argument("--no_wt", action="store_true", dest="no_wt", default=False, help="This argument turns automatic weighting off causing all images to be weighted by 1. If this argument is not specified images inserted into the reconstructed volume are weighted by the number of particles that contributed to them (i.e. as in class averages), which is extracted from the image header (as the ptcl_repr attribute).")
 	parser.add_argument("--sqrt_wt", action="store_true", default=False, help="Normally class-averages are weighted into the reconstruction based on the number of particles in the average. This option causes the sqrt of the number of particles to be used instead.")
 	parser.add_argument("--iterative", action="store_true", default=False, help="Uses iterative interpolation in Fourier space instead of single step gridding or interpolation. --mode and --usessnr are ignored with this option.")
@@ -200,6 +201,8 @@ def main():
 		exit(1)
 
 	data=initialize_data(options.input,options.input_model,options.tlt,options.pad,options.no_wt,options.preprocess)
+	
+			
 
 	# Filter out averages/images which aren't good enough
 	if options.verbose: print("Filtering data, %d images ->"%len(data), end=' ')
@@ -244,7 +247,7 @@ def main():
 
 	for it in range(niter):
 		threads=[threading.Thread(target=reconstruct,args=(data[i::options.threads],recon,options.preprocess,options.pad,
-				options.fillangle,max(options.verbose-1,0))) for i in xrange(options.threads)]
+				options.fillangle,options.altedgemask,max(options.verbose-1,0))) for i in xrange(options.threads)]
 
 		if it==0:
 			if options.seedmap!=None :
@@ -488,7 +491,7 @@ def get_processed_image(filename,nim,nsl,preprocess,pad,nx=0,ny=0):
 
 	return ret
 
-def reconstruct(data,recon,preprocess,pad,fillangle,verbose=0):
+def reconstruct(data,recon,preprocess,pad,fillangle,altmask,verbose=0):
 	"""Do an actual reconstruction using an already allocated reconstructor, and a data list as produced
 	by initialize_data(). preprocess is a list of processor strings to be applied to the image data in the
 	event that it hasn't already been read into the data array. start and startweight are optional parameters
@@ -525,6 +528,11 @@ def reconstruct(data,recon,preprocess,pad,fillangle,verbose=0):
 			if elem["fileslice"]>=0 : img=get_processed_image(elem["filename"],elem["filenum"],elem["fileslice"],preprocess,pad,elem["nx"],elem["ny"])
 			else : img=get_processed_image(elem["filename"],elem["filenum"],-1,preprocess,pad)
 			if img["sigma"]==0 : continue
+			if altmask:
+				pxl=img["nx"]*(1.0-cos(elem["xform"].get_rotation("eman")["alt"]*pi/180.0))/2
+#				print(elem["filenum"],elem["xform"].get_rotation("eman")["alt"],1.0/cos(elem["xform"].get_rotation("eman")["alt"]*pi/180.0),pxl)
+				img.process_inplace("mask.zeroedge2d",{"x0":pxl,"x1":pxl})
+				img.write_image("masked.hdf",elem["filenum"])
 			img=recon.preprocess_slice(img,elem["xform"])	# no caching here, with the lowmem option
 #		img["n"]=i
 #		if i==7 : display(img)

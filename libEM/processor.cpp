@@ -4121,12 +4121,17 @@ void ZeroEdgeRowProcessor::process_inplace(EMData * image)
 	int ny = image->get_ysize();
 
 	float *d = image->get_data();
-	int top_nrows = params["y0"];
-	int bottom_nrows = params.set_default("y1",top_nrows);
+	int apodize = params.set_default("apodize",0);
+	if (apodize>0) throw InvalidValueException(apodize," apodize not yet supported.");
+	
+	int top_nrows = std::max(0,params.set_default("y0",0)-apodize);
+	int bottom_nrows = std::max(0,params.set_default("y1",top_nrows)-apodize);
 
-	int left_ncols = params["x0"];
-	int right_ncols = params.set_default("x1",left_ncols);
+	int left_ncols = std::max(0,params.set_default("x0",0)-apodize);
+	int right_ncols = std::max(0,params.set_default("x1",left_ncols)-apodize);
 
+	
+	
 	size_t row_size = nx * sizeof(float);
 
 	memset(d, 0, top_nrows * row_size);
