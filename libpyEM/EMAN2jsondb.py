@@ -716,7 +716,7 @@ of the path is stored as self.normpath"""
 
 		### Write entire dict to file
 		# If we have unprocessed changes, we need to apply them and write back to disk
-		if len(self.changes)>0:
+		if len(self.changes)>0 or len(self.delkeys)>0:
 			try:
 				os.rename(self.normpath,self.normpath[:-5]+"_tmp.json")		# we back up the original file, just in case
 			except:
