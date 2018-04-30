@@ -34,10 +34,6 @@ def isReleaseBuild() {
     return GIT_BRANCH ==~ /.*\/release.*/
 }
 
-def isContinuousBuild() {
-    return GIT_BRANCH ==~ /.*\/master/
-}
-
 def isBinaryBuild() {
     def buildOS = ['linux': CI_BUILD_LINUX,
                    'mac':   CI_BUILD_MAC,
@@ -59,7 +55,7 @@ def deployPackage() {
                                'Centos7': 'centos7',
                                'MacOSX' : 'mac',
                               ]
-    if(isContinuousBuild()) {
+    if(isBinaryBuild()) {
         if(SLAVE_OS != 'win')
             sh "rsync -avzh --stats ${INSTALLERS_DIR}/eman2.${SLAVE_OS}.sh ${DEPLOY_DEST}/eman2." + installer_base_name[JOB_NAME] + ".unstable.sh"
         else
