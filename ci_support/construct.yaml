@@ -7,10 +7,10 @@ installer_filename: eman2.win.exe   # [win]
 
 channels:
     - https://conda.anaconda.org/cryoem
-    - http://repo.continuum.io/pkgs/free/
-    - http://conda.anaconda.org/anaconda
+    - https://repo.continuum.io/pkgs/main
+    - https://repo.continuum.io/pkgs/free
     - https://conda.anaconda.org/conda-forge/
-    - http://repo.continuum.io/pkgs/msys2          # [win]
+    - https://repo.continuum.io/pkgs/msys2          # [win]
     - file:///place_holder_conda_prefix/conda-bld
 
 keep_pkgs: True
