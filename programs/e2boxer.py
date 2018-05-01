@@ -107,7 +107,7 @@ def main():
 	parser.add_argument("--write_ptcls",action="store_true",default=False,help="Extract selected particles from micrographs and write to disk", guitype='boolbox', row=3, col=1, rowspan=1, colspan=1, mode="extraction[True]")
 	parser.add_argument("--invert",action="store_true",help="If specified, inverts input contrast. Particles MUST be white on a darker background.",default=False, guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode="extraction")
 	parser.add_argument("--no_ctf",action="store_true",default=False,help="Disable CTF determination", guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode="extraction, boxing")
-	parser.add_argument("--suffix",type=str,help="Suffix of the micrographs used for particle picking (i.e. suffix=goodali will use micrographs end with __goodali.hdf). It is only useful when [allmicrographs] is True.",default="", guitype='strbox', row=16, col=0, rowspan=1, colspan=2, mode="boxing,extraction")
+	parser.add_argument("--suffix",type=str,help="Suffix of the micrographs used for particle picking (i.e. suffix=goodali will use micrographs end with __goodali.hdf). It is only useful when [allmicrographs] is True.",default="", guitype='strbox', row=16, col=0, rowspan=1, colspan=1, mode="boxing,extraction")
 
 	
 	parser.add_argument("--apix",type=float,help="Angstroms per pixel for all images",default=-1, guitype='floatbox', row=14, col=0, rowspan=1, colspan=1, mode="autofit['self.pm().getAPIX()'],boxing,extraction")
@@ -118,7 +118,7 @@ def main():
 	parser.add_argument("--gui", action="store_true", default=False, help="Interactive GUI mode", guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode="boxing[True]")
 	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful",guitype='intbox', row=14, col=1, rowspan=1, colspan=1,mode="boxing")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--device", type=str, help="For Convnet training only. Pick a device to use. chose from cpu, gpu, or gpuX (X=0,1,...) when multiple gpus are available. default is cpu",default="cpu")
+	parser.add_argument("--device", type=str, help="For Convnet training only. Pick a device to use. chose from cpu, gpu, or gpuX (X=0,1,...) when multiple gpus are available. default is cpu",default="cpu",guitype='strbox', row=14, col=2, rowspan=1, colspan=1,mode="boxing")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
