@@ -21,6 +21,14 @@ def import_theano():
 		from theano.tensor.nnet.conv import conv2d
 	from theano.tensor.signal import pool
 
+def import_tensorflow(gpuid=""):
+	import os
+	global tf
+	if len(gpuid)>0: #### decide which gpu to use
+		os.environ["CUDA_VISIBLE_DEVICES"]=str(gpuid)
+	import tensorflow as tf
+	os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' #### reduce log output
+
 
 def main():
 
@@ -110,7 +118,7 @@ def main():
 	
 	if options.from_trained!=None:
 		convnet=load_model(options.from_trained)
-		convnet.update_shape(image_shape)
+		self.update_shape(image_shape)
 	else:
 		print("setting up model")
 		convnet = StackedConvNet(
@@ -129,7 +137,7 @@ def main():
 	if (options.niter>0):	
 		print("training the convolutional network...")
 		
-		classify=convnet.get_classify_func(train_set_x,labels,batch_size)
+		classify=self.get_classify_func(train_set_x,labels,batch_size)
 			
 		learning_rate=options.learnrate
 		n_train_batches = train_set_x.get_value(borrow=True).shape[0] / batch_size
@@ -178,18 +186,18 @@ def main():
 		
 		
 	#######################################
-	#print convnet.clslayer.W.get_value()
-	#print convnet.clslayer.b.get_value()
+	#print self.clslayer.W.get_value()
+	#print self.clslayer.b.get_value()
 			
 	if options.trainout:
 		print("Generating results ...")
 		nsample=100
-		convnet.update_shape((nsample, shape[2], shape[0],shape[1]))
+		self.update_shape((nsample, shape[2], shape[0],shape[1]))
 		test_cls = theano.function(
 			inputs=[],
-			outputs=convnet.clslayer.get_image(False),
+			outputs=self.clslayer.get_image(False),
 			givens={
-				convnet.x: train_set_x[:nsample]
+				self.x: train_set_x[:nsample]
 			}
 		)
 		if options.netout.endswith(".hdf"):
@@ -198,7 +206,7 @@ def main():
 			fname="trainout_{}.hdf".format(options.netout)
 		try:os.remove(fname)
 		except: pass
-		#print convnet.outsize,shape
+		#print self.outsize,shape
 		mid=test_cls()
 		
 		ipt= train_set_x[:nsample]
@@ -218,26 +226,26 @@ def main():
 			e0.write_image(fname,-1)
 			
 			#### manual annotation
-			img=lb[t].reshape(convnet.outsize,convnet.outsize)
+			img=lb[t].reshape(self.outsize,self.outsize)
 			e1 = from_numpy(img.astype("float32"))
-			e1=e1.get_clip(Region((convnet.outsize-shape[0])/2,(convnet.outsize-shape[0])/2,shape[0],shape[0]))
-			e1.scale(float(shape[0])/float(convnet.outsize))
+			e1=e1.get_clip(Region((self.outsize-shape[0])/2,(self.outsize-shape[0])/2,shape[0],shape[0]))
+			e1.scale(float(shape[0])/float(self.outsize))
 			e1.process_inplace("threshold.binary", {"value":.67})
 			e1.write_image(fname,-1)
 			
 			#### neural net output
-			img=mid[t].reshape(convnet.outsize,convnet.outsize)
+			img=mid[t].reshape(self.outsize,self.outsize)
 			e2 = from_numpy(img.astype("float32"))
-			e2=e2.get_clip(Region((convnet.outsize-shape[0])/2,(convnet.outsize-shape[0])/2,shape[0],shape[0]))
-			#print float(shape[0])/float(convnet.outsize)
-			e2.scale(float(shape[0])/float(convnet.outsize))
+			e2=e2.get_clip(Region((self.outsize-shape[0])/2,(self.outsize-shape[0])/2,shape[0],shape[0]))
+			#print float(shape[0])/float(self.outsize)
+			e2.scale(float(shape[0])/float(self.outsize))
 			e2.write_image(fname,-1)
 			
 			#### measure the amplitude of the neural network output by comparing it to the label
 			e2.mult(e1)
 			amp.append(e2["mean_nonzero"])
 		print("amplitude: ", np.mean(amp))
-		convnet.amplitude=np.mean(amp)
+		self.amplitude=np.mean(amp)
 		print("Writing output on training set in {}".format(fname))
 		
 	save_model(convnet, options.netout, options)
@@ -252,14 +260,14 @@ def run(cmd):
 def save_model(convnet, fname, options=None):
 	print("Saving the trained net to {}...".format(fname))
 	#fname="nnet_save.hdf"
-	sz=int(convnet.convlayers[0].W.shape[-1].eval())
+	sz=int(self.convlayers[0].W.shape[-1].eval())
 
 	hdr=EMData(sz,sz)
-	hdr["nkernel"]=convnet.n_kernel
-	hdr["ksize"]=convnet.ksize
-	hdr["poolsz"]=convnet.poolsz
-	hdr["imageshape"]=convnet.image_shape
-	hdr["amplitude"]=convnet.amplitude
+	hdr["nkernel"]=self.n_kernel
+	hdr["ksize"]=self.ksize
+	hdr["poolsz"]=self.poolsz
+	hdr["imageshape"]=self.image_shape
+	hdr["amplitude"]=self.amplitude
 	if options:
 		if options.trainset:
 			hdr["trainset_src"]=options.trainset
@@ -268,9 +276,9 @@ def save_model(convnet, fname, options=None):
 	hdr.write_image(fname,0)
 
 	k=1
-	for i in range(convnet.n_convlayers):
-		w=convnet.convlayers[i].W.get_value()        
-		b=convnet.convlayers[i].b.get_value()
+	for i in range(self.n_convlayers):
+		w=self.convlayers[i].W.get_value()        
+		b=self.convlayers[i].b.get_value()
 		s=w.shape
 		
 		e=from_numpy(b)
@@ -331,7 +339,7 @@ def load_model(fname):
 	return savenet
 
 #def dream(convnet,options):
-	#convz=convnet.image_shape[1]
+	#convz=self.image_shape[1]
 	
 	#print "Dreaming....."
 	#try: 
@@ -342,7 +350,7 @@ def load_model(fname):
 	#sz=500
 	#shape=[sz,sz,convz]
 	#img=np.random.randn(shape[2],shape[0],shape[1])
-	#convnet.update_shape((1, shape[2], shape[0],shape[1]))
+	#self.update_shape((1, shape[2], shape[0],shape[1]))
 	#e=from_numpy(img)
 	#e.write_image(options.output,-1)
 	
@@ -366,18 +374,18 @@ def load_model(fname):
 		##print "Applying the convolution net..."
 		#test_imgs = theano.function(
 			#inputs=[],
-			#outputs=convnet.clslayer.get_image(),
+			#outputs=self.clslayer.get_image(),
 			#givens={
-				#convnet.x: data
+				#self.x: data
 			#}
 		#)
 			
 		#img=test_imgs()
 		##print np.shape(img)
-		#img=img.reshape(convnet.outsize,convnet.outsize).T
+		#img=img.reshape(self.outsize,self.outsize).T
 		
 		#e = from_numpy(img)
-		#e.process_inplace("math.fft.resample",{"n":float(1./convnet.labelshrink)})
+		#e.process_inplace("math.fft.resample",{"n":float(1./self.labelshrink)})
 		#e.process_inplace("normalize")
 		#e.write_image(options.output,-1)
 		#if convz>1:
@@ -566,124 +574,6 @@ def do_convolve(jsd, job):
 	#imgs[0].write_image(outname, idx)
 	return# (idx,imgs[0])
 	
-#def do_saveimg(job):
-	#job[1].write_image(
-
-#def apply_neuralnet_theano(options):
-	
-	#tt0=time.time()
-	#import_theano()
-	
-	#convnet=load_model(options.from_trained)
-	
-	#convz=convnet.image_shape[1]
-	
-	#try: 
-		#os.remove(options.output)
-		#print "Overwriting the output.."
-	#except: pass
-	
-	
-	#nframe=EMUtil.get_image_count(options.tomograms)
-	#is3d=False
-	#### deal with 3D volume or image stack
-	#e=EMData(options.tomograms, 0, True)
-	#if nframe==1:
-		#nframe=e["nz"]
-		#if nframe>1:
-			##### input data is 3D volume
-			##esz=max(e["nx"],e["ny"])
-			#is3d=True
-			
-	#esz=max(e["nx"],e["ny"])
-	#enx=e["nx"]
-	#eny=e["ny"]
-	#shape=[esz,esz,convz]
-	#convnet.update_shape((1, shape[2], shape[0],shape[1]))
-	#for nf in range(nframe):
-		#if is3d:
-			#e=EMData(options.tomograms,0,False,Region(0,0,nf,esz,esz,convz))
-		#else:
-			#e=EMData(options.tomograms,nf, False, Region(0,0,esz,esz))
-		
-		#print "Applying the convolution net on image No {}...".format(nf)
-
-		##### prepare inputs
-		##e.process_inplace("normalize")
-		#enp=e.numpy()
-		##print enp.shape
-		##exit()
-		#enp[enp>3.0]=3.0
-		#enp/=3
-		#ar=enp.reshape((convz,shape[0]*shape[1]))
-		
-		
-		#data=theano.shared(np.asarray(ar,dtype=theano.config.floatX),borrow=True)
-		
-	
-		##### input is one 2D slice: just test the performance.
-		##### write input when testing...
-		#if nframe==1:
-			#img=data[0].eval().reshape(shape[0],shape[1]).T
-			#e = EMNumPy.numpy2em(img.astype("float32"))
-			##e.process_inplace("normalize")
-			#newshp=convnet.outsize
-			#scl=float(convnet.outsize)/float(esz)
-			#e.scale(scl)
-			#e.clip_inplace(Region((esz-newshp)/2,(esz-newshp)/2,enx*scl,eny*scl))
-			##e=e.get_clip(Region((shape[0]-newshp)/2,(shape[0]-newshp)/2,newshp,newshp))
-			#e.process_inplace("normalize")
-			#e.write_image(options.output,-1)
-			##print (esz-newshp)/2,enx,eny, float(convnet.outsize)/float(esz), img.shape
-		##exit()
-		##### Applying the convolution net...
-		#test_imgs = theano.function(
-			#inputs=[],
-			#outputs=convnet.clslayer.get_image(),
-			#givens={
-				#convnet.x: data
-			#}
-		#)
-		
-		#img=test_imgs()
-		##print np.shape(img)
-		#img=img.reshape(convnet.outsize,convnet.outsize).T
-		#e = EMNumPy.numpy2em(img.astype("float32"))
-		#scl=float(convnet.outsize)/float(esz)
-		#e.clip_inplace(Region(0,0,enx*scl,eny*scl))
-		##print e["nx"], e["ny"], img.shape
-		#if nframe==1:
-			#e.process_inplace("normalize")
-		#e.write_image(options.output,-1)
-		
-		##exit()
-	#if nframe>1:
-		#ss=options.output
-		#fout=ss[:ss.rfind('.')]+"_pp.hdf"
-		##### unbin the output and copy the header
-		
-		#try: os.remove(fout)
-		#except: pass
-		#if is3d:
-			#run("e2proc2d.py {} {} --process math.fft.resample:n={} --twod2threed".format(ss,fout,float(1./convnet.labelshrink)))
-			
-			#e=EMData(options.tomograms,0,True)
-			#e.write_image(fout)
-			
-		#else:
-			#run("e2proc2d.py {} {} --process math.fft.resample:n={}".format(ss,fout,float(1./convnet.labelshrink)))
-			#for ni in range(nframe):
-				#e=EMData(options.tomograms,ni,True)
-				##e.set_size(shape[0],shape[1],1)
-				#a=EMData(fout,ni,True)
-				#a.set_attr_dict(e.get_attr_dict())
-				#a.write_image(fout,ni)
-			
-		#print "Output written to {}.".format(fout)
-	#else:
-		#print "Output written to {}.".format(options.output)
-	
-	#print "Total time:", time.time()-tt0
 	
 def load_particles(ptcls,labelshrink,ncopy=5, rng=None):
 	if rng==None:
@@ -741,6 +631,183 @@ def load_particles(ptcls,labelshrink,ncopy=5, rng=None):
 	header=EMData(ptcls,0,True)
 	shape=[header["nx"],header["ny"],header["nz"]]
 	return shared_x,shared_y,shape, ntrain
+
+class StackedConvNet_tf(object):
+		
+	def __init__(self, kernels, imgsz=64, batchsz=10, meanout=False):
+		
+		convnet = type('convnet', (), {})() ### an empty object
+		nlayer=len(kernels)
+		outsz=(imgsz/np.prod([k[2] for k in kernels]))
+		tf_data = tf.placeholder(tf.float32, shape=[None, imgsz*imgsz], name="tfdata")
+		if meanout:
+			tf_label = tf.placeholder(tf.float32, shape=[None], name="tflabel")
+		else:
+			tf_label = tf.placeholder(tf.float32, shape=[None, outsz**2], name="tflabel")
+		dataset = tf.contrib.data.Dataset.from_tensor_slices((tf_data, tf_label))
+		dataset_batch=dataset.batch(batchsz)
+		iterator = dataset_batch.make_initializable_iterator()
+		data_inp, data_tar=iterator.get_next()
+		
+		k0=1
+		wts=[]
+		bss=[]
+		layerout=[tf.reshape(data_inp, (-1, imgsz,imgsz, 1), name="reshape_input")]
+		for i in range(nlayer):
+			x=layerout[-1]
+			nk, ks, pl=kernels[i]
+			w=tf_make_weight((ks,ks,k0,nk), pl)
+			b=tf_make_bias([nk])
+			convout=tf_conv2d(x, w)
+			if pl==2:
+				poolout=max_pool_2x2(convout)
+			else:
+				poolout=convout
+				
+			if i<nlayer-1:
+				actout=tf.nn.relu(poolout+b)
+			else:
+		#		 actout=tf.minimum(1.,poolout+b)
+				actout=poolout+b
+			
+			layerout.append(actout)
+			k0=nk
+			wts.append(w)
+			bss.append(b)
+			
+		if meanout:
+			y=tf.reshape(layerout[-1], (-1, outsz**2), name="reshape_output")
+			yout=tf.maximum(-1.,(tf.reduce_mean(y, axis=1)))
+			yout=tf.minimum(1., yout)
+			loss=tf.reduce_mean((data_tar-yout)**2)
+		else:
+			y=tf.reshape(tf.minimum(1.,layerout[-1]), (-1, outsz**2), name="reshape_output")
+			loss=tf.log(tf.reduce_mean((data_tar-y)**2))
+			
+			
+		self.dataset=dataset
+		self.kernels=kernels
+		self.batchsize=batchsz
+		self.wts=wts
+		self.bss=bss
+		self.outsz=outsz
+		self.imgsz=imgsz
+		self.layerout=layerout
+		self.data=tf_data
+		self.label=tf_label
+		
+		self.batch_in=data_inp
+		self.batch_out=y
+		self.batch_tar=data_tar
+		
+		self.loss=loss
+		self.iterator=iterator
+		
+
+	def do_training(self, data, label, session, shuffle=False, learnrate=1e-4, niter=10):
+		train_step = tf.train.AdamOptimizer(learnrate).minimize(self.loss)
+		session.run(tf.global_variables_initializer())
+		
+		for it in range(niter):
+			if shuffle:
+				self.dataset.shuffle(10000)
+			session.run(self.iterator.initializer,
+				feed_dict={self.data: data, self.label: label})
+			cost=[]
+			while True:
+				try:
+					cost.append(session.run((train_step, self.loss))[1])
+				except tf.errors.OutOfRangeError:
+					break
+					
+			print("iteration {}, cost {:.3f}".format(it, np.mean(cost)))
+		
+		session.run(self.iterator.initializer, feed_dict={self.data: data, self.label: label})
+		
+		
+	def save_network(self, fname, session):
+		try: os.remove(fname)
+		except: pass
+		print("Saving the trained net to {}...".format(fname))
+		weights=session.run(self.wts)
+		bias=session.run(self.bss)
+		wsz=int(weights[0].shape[0])
+
+		hdr=EMData(wsz,wsz)
+		hdr["nkernel"]=[k[0] for k in self.kernels]
+		hdr["ksize"]=[k[1] for k in self.kernels]
+		hdr["poolsz"]=[k[2] for k in self.kernels]
+		hdr["imageshape"]=(10,1,64,64)
+		hdr["amplitude"]=1
+		nlayer=len(self.kernels)
+
+
+
+		hdr.write_image(fname,0)
+
+		k=1
+		for i in range(nlayer):
+			w=weights[i].copy()
+			b=bias[i]
+			w=w.transpose(3,2,0,1).copy()
+			s=w.shape
+
+			e=from_numpy(b)
+			e["w_shape"]=s
+			e.write_image(fname,k)
+			k+=1
+			w=w.reshape(s[0]*s[1], s[2], s[3])
+			for wi in w:
+				e=from_numpy(wi)
+				e.write_image(fname,k)
+				k+=1
+
+	def write_output_train(self, outfile, session, ncopy=10):
+		sz=self.imgsz
+		outsz=self.outsz
+		try: os.remove(outfile)
+		except: pass
+		for nc in range(ncopy):
+			outx, outy =session.run((self.batch_in, self.batch_out))
+			for i in range(len(outx)):
+				ox=outx[i].reshape((sz,sz))
+				oy=outy[i].reshape((outsz, outsz))
+
+				e0=from_numpy(ox.copy())
+				e0.process_inplace("normalize")
+				e0.write_image(outfile, -1)
+
+				e1=from_numpy(oy.copy())
+				e1=e1.get_clip(Region(-(sz-outsz)/2,-(sz-outsz)/2,sz,sz))
+				e1.scale(sz/outsz)
+
+				e1.write_image(outfile, -1)
+
+	
+	
+def tf_make_weight(shape, pz=1, small=.01):
+	initial = tf.truncated_normal(shape, stddev=small)
+	return tf.Variable(initial)
+
+def tf_make_bias(shape, small=0.0):
+	initial = tf.constant(small, shape=shape)
+	return tf.Variable(initial)
+
+def tf_conv2d(x, W):
+	return tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding='SAME')
+
+def max_pool_2x2(x):
+	return tf.nn.max_pool(x, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
+
+	
+	
+
+####################### theano version
+
+
+
+
+
 
 class StackedConvNet(object):
 	

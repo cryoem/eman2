@@ -370,7 +370,12 @@ def initialize_data(inputfile,inputmodel,tltfile,pad,no_weights,preprocess):
 			tmp.read_image(inputfile,i,True)
 			if getlst:
 				lstinfo=lst.read(i)
-				elem={"xform":Transform(eval(lstinfo[2]))}
+				dc=eval(lstinfo[2])
+				if dc.has_key("score"):
+					score=dc.pop("score")
+				else:
+					score=2
+				elem={"xform":Transform(dc)}
 			else:
 			
 				try: elem={"xform":tmp["xform.projection"]}
@@ -392,6 +397,15 @@ def initialize_data(inputfile,inputmodel,tltfile,pad,no_weights,preprocess):
 			except:
 				try: elem["quality"]=1.0/(elem["weight"]+.00001)
 				except: elem["quality"]=1.0
+				
+			if getlst:
+				if score<2:
+					elem["quality"]=-abs(score)
+					elem["weight"]=abs(score)
+				else:
+					elem["quality"]=1.0
+					elem["weight"]=1.0
+					
 			elem["filename"]=inputfile
 			elem["filenum"]=i
 			elem["fileslice"]=-1
@@ -469,6 +483,7 @@ def reconstruct(data,recon,preprocess,pad,fillangle,verbose=0):
 			if img["sigma"]==0 : continue
 			xf=Transform(elem["xform"])
 			xf.set_rotation({"type":"eman"})
+			#### inverse the translation so make3d matches projection 
 			xf=xf.inverse()
 			img=recon.preprocess_slice(img,xf)	# no caching here, with the lowmem option
 #		img["n"]=i
