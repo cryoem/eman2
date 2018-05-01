@@ -366,6 +366,7 @@ gold standard resolution assessment is not valid, and you need to re-refine, sta
 #					print "eosplit ",options.input.split("__ctf_flip")[0]+"__ctf_flip_bispec.lst","\n\n"
 					bsinput=image_eosplit(options.input.split("__ctf_flip")[0]+"__ctf_flip_bispec.lst")
 				except: 
+					traceback.print_exc()
 					bsinput=options.input.rsplit(".",1)[0]+"_bispec.hdf"
 					if not os.path.exists(bsinput) :
 						com="e2proc2dpar.py {} {} --process filter.highpass.gauss:cutoff_freq=0.01 --process normalize.edgemean --process math.bispectrum.slice:size={}:fp={} --threads {}".format(options.input,bsinput,bispec_invar_parm[0],bispec_invar_parm[1],options.threads)

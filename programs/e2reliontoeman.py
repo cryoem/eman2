@@ -50,8 +50,8 @@ def main():
 This program will take data from a Relion project and convert it into a basic EMAN2 project. Provide 
 the name of the Relion STAR file associated with the raw particle data. An eman2 subdirectory will be
 created, and the images, and available metadata will be copied into the new project. CTF parameters
-will be extracted from the STAR file and will be automatically processed through EMAN2's CTF procedure
-(this takes most of the time the script will require).
+will be extracted from the STAR file and stored as frame CTF parameters. You will still need to run
+CTF autoprocessing after importing is complete.
 
 """
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
@@ -64,9 +64,6 @@ will be extracted from the STAR file and will be automatically processed through
 	parser.add_pos_argument(name="star_file",help="Select STAR file", default="", guitype='filebox', browser="EMParticlesEditTable(withmodal=True,multiselect=False)",  row=6, col=0,rowspan=1, colspan=3)
 	parser.add_argument("--apix", default=0, type=float,help="The angstrom per pixel of the input particles.", guitype='floatbox', row=8, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-	parser.add_argument("--fixeddefocus",  action="store_true", help="Defocus and astigmatism are used unchanged from STAR file",default=False,guitype='boolbox', row=10, col=0, rowspan=1, colspan=1)
-	parser.add_argument("--refinedefocus",  action="store_true", help="Will refit defocus to +-0.1 micron then further optimize using SSNR",default=False,guitype='boolbox', row=10, col=2, rowspan=1, colspan=1,mode="[True]")
-	parser.add_argument("--refitdefocus",  action="store_true", help="Will use EMAN2 CTF fitting to refit the defocus values within +-0.1 micron, astigmatism unchanged",default=False,guitype='boolbox', row=10, col=1, rowspan=1, colspan=1)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
@@ -100,7 +97,10 @@ will be extracted from the STAR file and will be automatically processed through
 		print("V={} Cs={}".format(prj["global.microscope_voltage"],prj["global.microscope_cs"]))
 	except:
 		print("Did not find Voltage and Cs in Relion file")
-		
+	
+	if star.has_key("rlnMicrographName") : difkey="rlnMicrographName"
+	else: difkey="rlnDefocusU"
+	
 	oldname=""
 	olddf=-1.0
 	micronum=0		# number of micrograph
@@ -116,7 +116,7 @@ will be extracted from the STAR file and will be automatically processed through
 			oldname=name
 			if options.verbose>0 : print("Particle dimensions: {}x{}".format(nx,ny))
 		
-		if i==0 or star["rlnDefocusU"][i-1]!=star["rlnDefocusU"][i]:
+		if i==0 or star[difkey][i-1]!=star[difkey][i]:
 			if micronum>0 and options.verbose>0 : print("Image {}: {} particles processed, df={}".format(micronum,fnum,ctf.defocus))
 			micronum+=1
 			fnum=0
@@ -137,20 +137,6 @@ will be extracted from the STAR file and will be automatically processed through
 		img.write_image(microname,fnum)
 		fnum+=1
 
-	if options.refinedefocus : 
-		dfopt="--curdefocushint --refinebysnr"
-		if options.verbose>0 : print("Defocus Refit and SSNR Refinement to +-0.1 micron")
-	elif options.refitdefocus : 
-		dfopt="--curdefocushint"
-		if options.verbose>0 : print("Defocus Refit to +-0.1 micron from Relion values")
-	elif options.fixeddefocus: 
-		dfopt="--curdefocusfix"
-		if options.verbose>0 : print("Computing particle SNRs")
-	else:
-		dfopt=" "
-		if options.verbose>0 : print("Full refit of CTF parameters")
-
-	launch_childprocess("e2ctf.py --voltage {} --cs {} --ac {} --apix {} --allparticles --autofit {} -v {}".format(ctf.voltage,ctf.cs,ctf.ampcont,ctf.apix,dfopt,options.verbose-1))
 	
 	E2end(logid)
 

@@ -232,8 +232,8 @@ NOTE: This program should be run from the project directory, not from within the
 
 	options.filenames = args
 
-	### Power spectrum and CTF fitting
-	if nthreads>1:
+	# This is where threading occurs, we call ourselves recursively here if we have --threads
+	if nthreads>1 and not options.gui and not options.computesf:
 		print("Fitting in parallel with ",nthreads," threads")
 		chunksize=int(ceil(float(len(args))/nthreads))
 #		print " ".join(sys.argv+["--chunk={},{}".format(chunksize,0)])
@@ -243,13 +243,14 @@ NOTE: This program should be run from the project directory, not from within the
 		print("Parallel fitting complete")
 		E2end(logid)
 		sys.exit(0)
-	else:
-		img_sets=None
-		if options.autofit:
-			img_sets=pspec_and_ctf_fit(options,debug) # converted to a function so to work with the workflow
+		
+	### Power spectrum and CTF fitting
+	img_sets=None
+	if options.autofit:
+		img_sets=pspec_and_ctf_fit(options,debug) # converted to a function so to work with the workflow
 
-			if options.constbfactor>0:
-				for i in img_sets: i[1].bfactor=options.constbfactor
+		if options.constbfactor>0:
+			for i in img_sets: i[1].bfactor=options.constbfactor
 
 	### GUI - user can update CTF parameters interactively
 	if options.gui :
