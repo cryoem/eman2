@@ -118,13 +118,31 @@ def main():
 	parser.add_argument("--gui", action="store_true", default=False, help="Interactive GUI mode", guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode="boxing[True]")
 	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful",guitype='intbox', row=14, col=1, rowspan=1, colspan=1,mode="boxing")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--gpuid", type=str, help="For Convnet training only. Pick a GPU to use when multiple GPUs are available",default=-1)
+	parser.add_argument("--device", type=str, help="For Convnet training only. Pick a device to use. chose from cpu, gpu, or gpuX (X=0,1,...) when multiple gpus are available. default is cpu",default="cpu")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 	
-	if options.gpuid>=0:
-		os.environ["CUDA_VISIBLE_DEVICES"]=options.gpuid
+	if os.environ.has_key("CUDA_VISIBLE_DEVICES"):
+		print("CUDA_VISIBLE_DEVICES is already set as environment variable. This will overwrite the device option...")
+	else:
+		if options.device=="gpu":
+			print("Using GPU...")
+		elif options.device.startswith("gpu"):
+			try:
+				gid=int(options.device[3:])
+				print("Using GPU #{}..".format(gid))
+				os.environ["CUDA_VISIBLE_DEVICES"]="{}".format(gid)
+			except:
+				print("Cannot parse {}, will use CPU instead...".format(options.device))
+				os.environ["CUDA_VISIBLE_DEVICES"]=""
+			
+		elif options.device=="cpu":
+			print("Using CPU...")
+			os.environ["CUDA_VISIBLE_DEVICES"]=""
+		else:
+			print("Cannot parse {}, will use CPU instead...".format(options.device))
+			os.environ["CUDA_VISIBLE_DEVICES"]=""
 	
 	global invert_on_read
 	if options.invert : invert_on_read = True
@@ -722,13 +740,18 @@ class boxerConvNet(QtCore.QObject):
 		global tf, StackedConvNet_tf
 		import os
 		
-		try: gpuid=os.environ["CUDA_VISIBLE_DEVICES"]
-		except: gpuid=""
 			
 		import tensorflow as tf
 		os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' #### reduce log output
 		from e2tomoseg_convnet import StackedConvNet_tf, import_tensorflow
-		import_tensorflow(gpuid)
+		
+		try: 
+			gpuid=os.environ["CUDA_VISIBLE_DEVICES"]
+			import_tensorflow(gpuid)
+		except: 
+			import_tensorflow()
+		
+		
 		boxerConvNet.import_done=True
 		#try:
 		

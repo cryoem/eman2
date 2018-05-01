@@ -21,10 +21,10 @@ def import_theano():
 		from theano.tensor.nnet.conv import conv2d
 	from theano.tensor.signal import pool
 
-def import_tensorflow(gpuid=""):
+def import_tensorflow(gpuid=None):
 	import os
 	global tf
-	if len(gpuid)>0: #### decide which gpu to use
+	if gpuid!=None: #### decide which gpu to use
 		os.environ["CUDA_VISIBLE_DEVICES"]=str(gpuid)
 	import tensorflow as tf
 	os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' #### reduce log output
@@ -644,7 +644,11 @@ class StackedConvNet_tf(object):
 			tf_label = tf.placeholder(tf.float32, shape=[None], name="tflabel")
 		else:
 			tf_label = tf.placeholder(tf.float32, shape=[None, outsz**2], name="tflabel")
-		dataset = tf.contrib.data.Dataset.from_tensor_slices((tf_data, tf_label))
+		#dataset = tf.contrib.data.Dataset.from_tensor_slices((tf_data, tf_label))
+		try:
+			dataset = tf.contrib.data.Dataset.from_tensor_slices((tf_data, tf_label))
+		except:
+			dataset = tf.data.Dataset.from_tensor_slices((tf_data, tf_label))
 		dataset_batch=dataset.batch(batchsz)
 		iterator = dataset_batch.make_initializable_iterator()
 		data_inp, data_tar=iterator.get_next()
