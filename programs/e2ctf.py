@@ -346,7 +346,7 @@ def init_sfcurve(opt):
 def get_gui_arg_img_sets(filenames):
 	'''
 	returns the img_sets list required to intialize the GUI correctly. Each set has
-	filename,EMAN2CTF,im_1d,bg_1d,im_2d,bg_2d,qual,bg_1d_low
+	filename,EMAN2CTF,im_1d,bg_1d,im_2d,bg_2d,qual,bg_1d_low,"ctf_microbox"
 	'''
 
 	img_sets = []
@@ -720,7 +720,7 @@ def refine_and_smoothsnr(options,strfact,debug=False):
 
 		ctf.defocus=best[1]
 		ctf.snr=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_SNR_SMOOTH,strfact)
-		js_parms["ctf"]=[ctf]+orig[1:]
+		js_parms["ctf"]=[ctf]+orig[1:4]
 
 		if logid : E2progress(logid,float(i+1)/len(options.filenames))
 
@@ -2494,6 +2494,7 @@ class GUIctf(QtGui.QWidget):
 #			print "error, the db doesn't exist:",name
 #
 
+#		print(self.data[val][1],self.data[val][6])
 		tmp=js_parms["ctf"]
 		tmp[0]=self.data[val][1]	# EMAN2CTF object
 		js_parms["ctf"]=tmp
@@ -2686,7 +2687,7 @@ class GUIctf(QtGui.QWidget):
 			# This means we have a whole micrograph curve
 			try:									# El Capitan seems to have an issue with this block. very mysterious, should come back to it sometime later
 				if len(self.data[val])>8:
-					print(self.data[val][8])
+					#print("# ",self.data[val][8])
 					bgsub2=[self.data[val][8][i]-self.data[val][3][i] for i in range(len(self.data[val][2]))]
 					self.guiplot.set_data((s,bgsub2),"micro-bg",False,True,color=2,linetype=2)
 			except:
