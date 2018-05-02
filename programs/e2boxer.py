@@ -753,19 +753,6 @@ class boxerConvNet(QtCore.QObject):
 		
 		
 		boxerConvNet.import_done=True
-		#try:
-		
-			#global StackedConvNet, theano,T,conv,pool, save_model, load_model
-			#import theano
-			#import theano.tensor as T
-			#from theano.tensor.nnet import conv
-			#from theano.tensor.signal import pool
-			#from e2tomoseg_convnet import import_theano, StackedConvNet, save_model, load_model
-			#import_theano()
-			#boxerConvNet.import_done=True
-			#return True
-		#except: 
-			#return False
 	
 	@staticmethod
 	def do_training(args=None):
