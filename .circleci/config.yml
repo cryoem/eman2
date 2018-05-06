@@ -8,7 +8,7 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - v4.4.10-miniconda-cache
+            - mini-eman-deps-11.0
       - run: bash ci_support/build_no_recipe.sh
 
   build_recipe:
@@ -18,7 +18,7 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - v4.4.10-miniconda-cache
+            - mini-eman-deps-11.0
       - run: bash ci_support/build_recipe.sh
 
 workflows:
