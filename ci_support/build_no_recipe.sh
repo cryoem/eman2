@@ -11,17 +11,21 @@ if [ ! -z ${CI} ];then
 fi
 
 # Build and install eman2
-export CPU_COUNT=2
-
-export SRC_DIR=${PWD}
-export PREFIX=${PWD}
-
 rm -vf ${CONDA_PREFIX}/bin/e2*.py
 
 conda info -a
 conda list
 
-bash ${SRC_DIR}/recipes/eman/build.sh
+build_dir="../build_eman"
+src_dir=${PWD}
+
+rm -rf $build_dir
+mkdir -p $build_dir
+cd $build_dir
+
+cmake ${src_dir}
+make -j4
+make install
 
 # Run tests
-bash ${SRC_DIR}/tests/run_tests.sh
+bash ${src_dir}/tests/run_tests.sh
