@@ -7,8 +7,7 @@ if(OpenGL_FOUND AND NOT TARGET OpenGL)
 	add_library(OpenGL INTERFACE)
 	add_library(OpenGL::OpenGL ALIAS OpenGL)
 	set_target_properties(OpenGL PROPERTIES
-						  INTERFACE_INCLUDE_DIRECTORIES "${OPENGL_INCLUDE_DIR}"
-						  INTERFACE_LINK_LIBRARIES      "${OPENGL_LIBRARIES}"
 						  INTERFACE_COMPILE_DEFINITIONS USE_OPENGL
 						  )
+	target_link_libraries(OpenGL INTERFACE OpenGL::GL OpenGL::GLU)
 endif()
