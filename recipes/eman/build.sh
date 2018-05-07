@@ -8,6 +8,8 @@ rm -rf $build_dir
 mkdir -p $build_dir
 cd $build_dir
 
+LDFLAGS=${LDFLAGS/-Wl,-dead_strip_dylibs/}
+
 cmake $SRC_DIR
 
 make -j${CPU_COUNT}
