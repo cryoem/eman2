@@ -25,17 +25,17 @@ def main():
 
 	parser.add_header(name="orblock1", help='Just a visual separation', title="Optional:", row=1, col=0, rowspan=1, colspan=2,mode="easy")
 
-	parser.add_argument("--rawtlt", type=str,help="Override tilt angles stored in project metadata and tiltseries header. Text file contains raw tilt angles.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", filecheck=False, row=3, col=0, rowspan=1, colspan=2)#,mode="easy")
+	parser.add_argument("--rawtlt", type=str,help="Specify a text file contains raw tilt angles. This will override any previously imported tilt angles.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", filecheck=False, row=3, col=0, rowspan=1, colspan=2)#,mode="easy")
 
 	parser.add_argument("--zeroid", type=int,help="Index of the center tilt. Ignored when rawtlt is provided.", default=-1,guitype='intbox',row=4, col=0, rowspan=1, colspan=1)
-	parser.add_argument("--tltstep", type=float,help="Step between tilts. Ignored when rawtlt is provided.", default=1,guitype='floatbox',row=4, col=1, rowspan=1, colspan=1)
+	parser.add_argument("--tltstep", type=float,help="Step between tilts. Ignored when rawtlt is provided. Default is 2.0.", default=2.0,guitype='floatbox',row=4, col=1, rowspan=1, colspan=1)
 
-	parser.add_argument("--loadparam", type=str,help="Load from existing param file", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", filecheck=False, row=5, col=0, rowspan=1, colspan=2)
+	#parser.add_argument("--loadparam", type=str,help="Load from existing param file", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", filecheck=False, row=5, col=0, rowspan=1, colspan=2)
 
 	parser.add_argument("--tltax", type=float,help="Angle of the tilt axis. The program will calculate one if this option is not provided", default=None,guitype='floatbox',row=6, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--tltkeep", type=float,help="Fraction of tilts to keep in the reconstruction.", default=.9,guitype='floatbox',row=6, col=1, rowspan=1, colspan=1,mode="easy")
 
-	parser.add_argument("--npk", type=int,help="Number of landmarks to use.", default=20,guitype='intbox',row=7, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--npk", type=int,help="Number of landmarks to use. Default is 40.", default=40,guitype='intbox',row=7, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--pkeep", type=float,help="Fraction of landmarks to keep in the tracking.", default=.5,guitype='floatbox',row=7, col=1, rowspan=1, colspan=1)
 
 	parser.add_argument("--bxsz", type=int,help="Box size of the particles for tracking", default=-1,guitype='intbox',row=8, col=0, rowspan=1, colspan=1)
@@ -47,14 +47,18 @@ def main():
 
 	parser.add_argument("--niter", type=str,help="Number of iterations for bin8, bin4, bin2 images. Default if 2,1,1", default="2,1,1",guitype='strbox',row=10, col=0, rowspan=1, colspan=1,mode='easy[2,1,1]')
 
-	parser.add_argument("--writetmp", action="store_true",help="Write intermidiate files", default=False,guitype='boolbox',row=10, col=1, rowspan=1, colspan=1,mode="easy[True]")
+	# parser.add_argument("--writetmp", action="store_true",help="Write intermidiate files", default=False,guitype='boolbox',row=10, col=1, rowspan=1, colspan=1,mode="easy[True]")
 
-	parser.add_argument("--shrink", type=float,help="Mean-shrink tilt images by this integer value. We suggest using a value that converts image dimensions to approximately 1024x1024. The default is 4.", default=4, guitype='floatbox', row=6, col=0, rowspan=1, colspan=1, mode="easy[4]")
+	# parser.add_argument("--shrink", type=float,help="Mean-shrink tilt images by this integer value. We suggest using a value that converts image dimensions to approximately 1024x1024. The default is 4.", default=4, guitype='floatbox', row=6, col=0, rowspan=1, colspan=1, mode="easy[4]")
 	parser.add_argument("--reconmode", type=str,help="Reconstruction mode. Choose from nearest_neighbor, gauss_2, gauss_3, and gauss_5.", default="gauss_2", choices=["gauss_2","gauss_3","gauss_5"], choicelist='["gauss_2","gauss_3","gauss_5"]', guitype='combobox', row=11, col=1, rowspan=1, colspan=1)
 
 	parser.add_argument("--tmppath", type=str,help="Temporary path", default=None)
 
 	parser.add_argument("--threads", type=int,help="Number of threads", default=12,guitype='intbox',row=12, col=0, rowspan=1, colspan=1,mode="easy")
+
+	parser.add_argument("--savenorm", action="store_true",help="Save normalization volume from reconstruction.", default=False, guitype='boolbox',row=18, col=0, rowspan=1, colspan=1,mode="easy")
+
+
 	parser.add_argument("--verbose","-v", type=int,help="Verbose", default=0, mode="easy[3]", guitype="intbox", row=12,col=1, rowspan=1, colspan=1)
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
@@ -78,9 +82,6 @@ def main():
 	bname=base_name(inputname)
 
 	options.basename=bname
-
-
-
 
 	#### make a folder to write tmp files
 	if options.tmppath:
@@ -115,11 +116,17 @@ def main():
 	run(cmd)
 
 	## now prepare tilt series
-	imgs_2k=EMData.read_images(inppath)
+	imgs_full=EMData.read_images(inppath)
+
+	if binfac==1:
+		imgs_2k=imgs_full
+	else:
+		imgs_2k=[img.process("math.meanshrink", {"n":binfac}).process("normalize") for img in imgs_full]
 	imgs_1k=[img.process("math.meanshrink", {"n":2}).process("normalize") for img in imgs_2k]
+
 	imgs_500=[]
 	for p in imgs_1k:
-		m=p.process("math.minshrink", {"n":options.shrink})
+		m=p.process("math.minshrink", {"n":2})
 		m.process_inplace("filter.highpass.gauss",{"cutoff_pixels":3})
 		m.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.25})
 		m.process_inplace("normalize.edgemean")
@@ -427,7 +434,10 @@ def make_tomogram(imgs, tltpm, options, outname=None, premask=True, padr=1.2, cl
 	if options.verbose:
 		print("\t Image size: {:d} x {:d}".format(nx, ny))
 		print("\tPadded volume to: {:d} x {:d} x {:d}".format(pad, pad, zthick))
-	recon=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,zthick], "mode":"gauss_2"})
+	if options.savenorm:
+		recon=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,zthick], "mode":"gauss_2","savenorm":options.tmppath+"/normvol.hdf"})
+	else:
+		recon=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,zthick], "mode":"gauss_2"})
 	#recon=Reconstructors.get("fourier_iter", {"size":[pad,pad,zthick]})
 	recon.setup()
 	jobs=[]

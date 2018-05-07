@@ -8,39 +8,11 @@
     "NAME": "Raw Data",
     "CHILDREN": [
       {
-        "ICON": "green_boxes",
-        "NAME": "Import Tools",
-        "CHILDREN": [
-          {
-            "ICON": "multiple_images",
-            "MODE": "refs",
-            "PROGRAM": "e2ddd_movie.py",
-            "NAME": "Process DDD References",
-            "CHILDREN": []
-          },
-          {
-            "ICON": "multiple_images",
-            "PROGRAM": "e2import.py",
-            "MODE": "tilts",
-            "NAME": "Import Tilt Images",
-            "CHILDREN": []
-          },
-          {
-            "ICON": "multiple_images",
-            "PROGRAM": "e2import.py",
-            "MODE": "rawtilts",
-            "NAME": "Import Tiltseries",
-            "CHILDREN": []
-          },
-          {
-            "ICON": "single_image_3d",
-            "PROGRAM": "e2import.py",
-            "MODE": "tomos",
-            "WIZARD":"/lib/pmconfig/tomoimport.json",
-            "NAME": "Import Tomograms",
-            "CHILDREN": []
-          }
-        ]
+        "ICON": "multiple_images",
+        "MODE": "refs",
+        "PROGRAM": "e2ddd_movie.py",
+        "NAME": "Process DDD References",
+        "CHILDREN": []
       },
       {
         "ICON": "multiple_images",
@@ -51,10 +23,50 @@
       },
       {
         "ICON": "multiple_images",
+        "PROGRAM": "e2import.py",
+        "MODE": "rawtilts",
+        "NAME": "Import Individual Tilts",
+        "CHILDREN": []
+      },
+      {
+        "ICON": "multiple_images",
         "PROGRAM": "e2buildstacks.py",
         "MODE": "tomo",
-        "NAME": "Combine Tilt Images",
+        "NAME": "Generate Tiltseries",
         "CHILDREN": []
+      },
+      {
+        "ICON": "multiple_images",
+        "PROGRAM": "e2import.py",
+        "MODE": "tiltseries",
+        "NAME": "Import Tiltseries",
+        "CHILDREN": []
+      },
+      {
+        "ICON": "single_image_3d",
+        "PROGRAM": "e2import.py",
+        "MODE": "tomos",
+        "WIZARD": "/lib/pmconfig/tomoimport.json",
+        "NAME": "Import Tomograms",
+        "CHILDREN": []
+      },
+      {
+        "ICON": "tomo_hunter",
+        "NAME": "Extract from IMOD",
+        "CHILDREN": [
+          {
+            "ICON": "tomo_hunter",
+            "PROGRAM": "e2spt_subtilt_from_imod.py",
+            "NAME": "Extract 2D particles",
+            "CHILDREN": []
+          },
+          {
+            "ICON": "single_image_3d",
+            "PROGRAM": "e2spt_make3d.py",
+            "NAME": "Reconstruction from 2D particles",
+            "CHILDREN": []
+          }
+        ]
       }
     ]
   },
@@ -179,48 +191,30 @@
             "CHILDREN": []
           }
         ]
+      }
+    ]
+  },
+  {
+    "ICON":"resolution",
+    "NAME":"Validation and Analysis",
+    "CHILDREN":[
+      {
+        "ICON": "green_boxes",
+        "PROGRAM": "e2spt_simulation.py",
+        "NAME": "Tomo Simulation",
+        "CHILDREN": []
       },
       {
-        "ICON": "tomo_hunter",
-        "NAME": "Extract from IMOD",
-        "CHILDREN": [
-          {
-            "ICON": "tomo_hunter",
-            "PROGRAM": "e2spt_subtilt_from_imod.py",
-            "NAME": "Extract 2D particles",
-            "CHILDREN": []
-          },
-          {
-            "ICON": "single_image_3d",
-            "PROGRAM": "e2spt_make3d.py",
-            "NAME": "Reconstruction from 2D particles",
-            "CHILDREN": []
-          }
-        ]
+        "ICON": "resolution",
+        "PROGRAM": "e2spt_resolutionplot.py",
+        "NAME": "Calc Multiple FSC",
+        "CHILDREN": []
       },
       {
-        "ICON":"resolution",
-        "NAME":"Validation and Analysis",
-        "CHILDREN":[
-          {
-            "ICON": "green_boxes",
-            "PROGRAM": "e2spt_simulation.py",
-            "NAME": "Tomo Simulation",
-            "CHILDREN": []
-          },
-          {
-            "ICON": "resolution",
-            "PROGRAM": "e2spt_resolutionplot.py",
-            "NAME": "Calc Multiple FSC",
-            "CHILDREN": []
-          },
-          {
-            "ICON": "resolution",
-            "PROGRAM": "e2spt_stat.py",
-            "NAME": "Calc Quality vs. Reference",
-            "CHILDREN": []
-          }
-        ]
+        "ICON": "resolution",
+        "PROGRAM": "e2spt_stat.py",
+        "NAME": "Calc Quality vs. Reference",
+        "CHILDREN": []
       }
     ]
   }

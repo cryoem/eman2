@@ -949,11 +949,20 @@ class EMRawDataTable(EMBrowserWidget):
 
 class EMRawTiltsTable(EMBrowserWidget):
 	""" Widget to display raw tilt images """
-	def __init__(self, withmodal=False, multiselect=False, startpath="./rawtilts"):
+	def __init__(self, withmodal=False, multiselect=False, startpath="./raw_tilts"):
 		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath=startpath)
 
 	def setPath(self,path,silent=False):
 		super(EMRawTiltsTable, self).setPath(path,silent=silent,inimodel=EMRawDataModel)
+
+
+class EMTiltsTable(EMBrowserWidget):
+	""" Widget to display Raw Data """
+	def __init__(self, withmodal=False, multiselect=False, startpath="./raw_tilts"):
+		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath=startpath)
+
+	def setPath(self,path,silent=False):
+		super(EMTiltsTable, self).setPath(path,silent=silent,inimodel=EMRawDataModel)
 
 
 class EMTiltseriesTable(EMBrowserWidget):
