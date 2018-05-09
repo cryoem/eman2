@@ -232,8 +232,8 @@ NOTE: This program should be run from the project directory, not from within the
 
 	options.filenames = args
 
-	### Power spectrum and CTF fitting
-	if nthreads>1:
+	# This is where threading occurs, we call ourselves recursively here if we have --threads
+	if nthreads>1 and not options.gui and not options.computesf:
 		print("Fitting in parallel with ",nthreads," threads")
 		chunksize=int(ceil(float(len(args))/nthreads))
 #		print " ".join(sys.argv+["--chunk={},{}".format(chunksize,0)])
@@ -243,13 +243,14 @@ NOTE: This program should be run from the project directory, not from within the
 		print("Parallel fitting complete")
 		E2end(logid)
 		sys.exit(0)
-	else:
-		img_sets=None
-		if options.autofit:
-			img_sets=pspec_and_ctf_fit(options,debug) # converted to a function so to work with the workflow
+		
+	### Power spectrum and CTF fitting
+	img_sets=None
+	if options.autofit:
+		img_sets=pspec_and_ctf_fit(options,debug) # converted to a function so to work with the workflow
 
-			if options.constbfactor>0:
-				for i in img_sets: i[1].bfactor=options.constbfactor
+		if options.constbfactor>0:
+			for i in img_sets: i[1].bfactor=options.constbfactor
 
 	### GUI - user can update CTF parameters interactively
 	if options.gui :
@@ -352,14 +353,13 @@ def get_gui_arg_img_sets(filenames):
 	for fsp in filenames:
 		try:
 			js_parms=js_open_dict(info_name(fsp))
-			img_set=js_parms["ctf"]
+			img_set=js_parms["ctf"][:3]
 			# new style info file, splits image data into separate fields
-			while len(img_set)<5: img_set.append(None)
-			try: img_set[3]=js_parms["ctf_im2d"]
-			except: pass
-			try: img_set[4]=js_parms["ctf_bg2d"]
-			except: pass
-			if not isinstance(img_set[4],EMData): print("Error: ",img_set[4])
+			try: img_set.append(js_parms["ctf_im2d"])
+			except: img_set.append(None)
+			try: img_set.append(js_parms["ctf_bg2d"])
+			except: img_set.append(None)
+			if not isinstance(img_set[4],EMData): print("Error: no particle power spectra found for ",img_set[4])
 		except:
 			print("Warning, you must run auto-fit before running the GUI. No parameters for ",info_name(fsp))
 #			traceback.print_exc()
@@ -2494,7 +2494,7 @@ class GUIctf(QtGui.QWidget):
 #
 
 #		print(self.data[val][1],self.data[val][6])
-		tmp=js_parms["ctf"]
+		tmp=js_parms["ctf"][:3]
 		tmp[0]=self.data[val][1]	# EMAN2CTF object
 		js_parms["ctf"]=tmp
 
@@ -2519,6 +2519,7 @@ class GUIctf(QtGui.QWidget):
 
 	def on_refit(self):
 		# self.data[n] contains filename,EMAN2CTF,im_1d,bg_1d,im_2d,bg_2d,qual
+#		print(len(js_open_dict(info_name(str(self.setlist.item(self.curset).text())))["ctf"]))
 		tmp=list(self.data[self.curset])
 
 		dfdiff=self.sdfdiff.value
@@ -2546,8 +2547,11 @@ class GUIctf(QtGui.QWidget):
 #			print "error, the db doesn't exist:",name
 #
 
-		tmp=js_parms["ctf"]
+#		print("***",info_name(str(self.setlist.item(val).text())))
+		tmp=js_parms["ctf"][:3]		# [:3] should not be necessary, but for some reason there is sometimes a corruption
+#		print(len(tmp))
 		tmp[0]=ctf	# EMAN2CTF object
+#		print(len(tmp))
 		js_parms["ctf"]=tmp
 
 		self.data[self.curset][1]=ctf
@@ -2866,6 +2870,7 @@ class GUIctf(QtGui.QWidget):
 	def newSet(self,val):
 		"called when a new data set is selected from the list"
 		self.curset=val
+#		print(len(js_open_dict(info_name(str(self.setlist.item(self.curset).text())))["ctf"]))
 
 		self.sdefocus.setValue(self.data[val][1].defocus,True)
 		self.sbfactor.setValue(self.data[val][1].bfactor,True)

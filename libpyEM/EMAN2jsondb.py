@@ -927,7 +927,8 @@ def obj_to_json(obj):
 	if isinstance(obj,EMData) :
 		try: fnm = (obj["json_path"],obj["json_n"])
 		except: 
-			print("ERROR: Cannot store image. Images cannot be embedded in lists.")
+			traceback.print_stack()
+			print("ERROR: Cannot store image in JSON list. This should never happen and indicates a coding error.")
 			fnm=["BAD_JSON.hdf",0]
 		obj.write_image(fnm[0],fnm[1])
 		return {"__image__":fnm}

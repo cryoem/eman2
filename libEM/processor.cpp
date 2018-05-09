@@ -7232,11 +7232,12 @@ void CTFCorrProcessor::process_inplace(EMData * image)
 	float ac = params.set_default("ac",10.0);
 	float voltage = params.set_default("voltage",300.0);
 	float apix = params.set_default("apix",image->get_attr("apix_x"));
+	int useheader = params.set_default("useheader",1);
 
 
 	int ny = image->get_ysize();
 	EMAN2Ctf ctf;
-	if (image->has_attr("ctf")){
+	if (image->has_attr("ctf") && useheader){
 		
 		ctf.copy_from((Ctf *)(image->get_attr("ctf")));
 	}

@@ -6806,6 +6806,7 @@ correction is not possible, this will allow you to approximate the correction to
 			d.put("ac", EMObject::FLOAT, "Amplitude contrast in % (default 10%)");
 			d.put("voltage", EMObject::FLOAT, "Microscope Voltage in Kv (default 300)");
 			d.put("apix", EMObject::FLOAT, "A/pix (default value from image header)");
+			d.put("useheader", EMObject::INT,"Use CTF header values if present, default true");
 			return d;
 		}
 

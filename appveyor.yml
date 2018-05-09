@@ -18,19 +18,19 @@ install:
     - set PYTHONUNBUFFERED=1
     - set CPU_COUNT=2
 
-    - conda config --set show_channel_urls true
+    - conda.exe config --set show_channel_urls true
 
-    - conda install -n root vs2008_express_vc_python_patch -c conda-forge --yes --quiet
+    - conda.exe install -n root vs2008_express_vc_python_patch -c conda-forge --yes --quiet
     - call setup_x64
 
-    - conda install conda-build=3 --yes --quiet
+    - conda.exe install conda-build=3 --yes --quiet
 
-    - conda info
-    - conda config --get
+    - conda.exe info
+    - conda.exe config --get
 
 
 # Skip .NET project specific build phase.
 build: off
 
 test_script:
-    - conda build %APPVEYOR_BUILD_FOLDER%\recipes\eman -c cryoem -c defaults -c conda-forge --quiet
+    - conda.exe build %APPVEYOR_BUILD_FOLDER%\recipes\eman -c cryoem -c defaults -c conda-forge --quiet
