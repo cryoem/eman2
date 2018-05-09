@@ -57,7 +57,7 @@ def deployPackage() {
                               ]
     if(isBinaryBuild()) {
         if(SLAVE_OS != 'win')
-            sh "rsync -avzh --stats ${INSTALLERS_DIR}/eman2.${SLAVE_OS}.sh ${DEPLOY_DEST}/eman2." + installer_base_name[JOB_NAME] + ".unstable.sh"
+            sh "rsync -avzh --stats ${INSTALLERS_DIR}/eman2.${SLAVE_OS}.sh ${DEPLOY_DEST}/continuous_build/eman2." + installer_base_name[JOB_NAME] + ".unstable.sh"
         else
             bat 'ci_support\\rsync_wrapper.bat'
     }
