@@ -673,22 +673,26 @@ class StackedConvNet_tf(object):
 	
 		amp=[]
 		for nc in range(ncopy):
-			outx, outtar, outy =session.run((self.batch_in,self.batch_tar,self.batch_out_rl))
+			if writelabel:
+				outx, outtar, outy =session.run((self.batch_in,self.batch_tar,self.batch_out_rl))
+			else:
+				outx, outy =session.run((self.batch_in,self.batch_out_rl))
 			for i in range(len(outx)):
 				ox=outx[i].reshape((sz,sz))
-				ot=outtar[i].reshape((outsz, outsz))
+				
 				oy=outy[i].reshape((outsz, outsz))
 				
-				lb=ot>.7
-				if np.sum(lb)>0:
-					amp.append(np.mean(oy[lb]))
+				
 
 				e0=from_numpy(ox.copy())
 				e0.process_inplace("normalize")
 				e0.write_image(outfile, -1)
 				
 				if writelabel:
-					
+					ot=outtar[i].reshape((outsz, outsz))
+					lb=ot>.7
+					if np.sum(lb)>0:
+						amp.append(np.mean(oy[lb]))
 					e1=from_numpy(ot.copy())
 					e1=e1.get_clip(Region(-(sz-outsz)/2,-(sz-outsz)/2,sz,sz))
 					e1.scale(sz/outsz)
