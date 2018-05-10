@@ -21,25 +21,28 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--rawtlt", type=str,help="Text file contains raw tilt angles", default=None)
 	parser.add_argument("--tiltstep", type=float,help="Alternative to --rawtlt, if stack contains sequential tilts with fixed angle", default=2.0)
-	#parser.add_argument("--loadparam", type=str,help="Load from existing param file", default=None)
-	#parser.add_argument("--zeroid", type=int,help="Index of the center tilt. Ignored when rawtlt is provided.", default=-1)
-	parser.add_argument("--npk", type=int,help="Number of landmarks to use.", default=40)
-	#parser.add_argument("--fidsz", type=float,help="Radius of gold fiducials in nm.", default=5.)
 	parser.add_argument("--tltax", type=float,help="Angle of the tilt axis. The program will calculate one if this option is not provided", default=None)
 	parser.add_argument("--tltkeep", type=float,help="Fraction of tilts to keep in the reconstruction.", default=.9)
-	#parser.add_argument("--minloss", type=float,help="Stop refinement when the loss is lower than this value.", default=1.)
-	#parser.add_argument("--bxsz", type=int,help="Box size of the particles for tracking", default=32)
+	parser.add_argument("--npk", type=int,help="Number of landmarks to use.", default=40)
+	parser.add_argument("--pk_mindist", type=float,help="Minimum distance between landmarks in nm.", default=-1)
+	parser.add_argument("--pk_maxval", type=float,help="Maximum Density value of landmarks (n sigma). Default is -10", default=-10.)
+	parser.add_argument("--pkkeep", type=float,help="Fraction of landmarks to keep for tracking.", default=.9)
+	parser.add_argument("--bxsz", type=int,help="Box size of the particles for tracking", default=32)
 	parser.add_argument("--tmppath", type=str,help="Temporary path", default=None)
-	#parser.add_argument("--rmgold", action="store_true",help="Remove gold fiducials.", default=False)
-	#parser.add_argument("--nofiducial", action="store_true",help="Fiducial-less mode. This will change a few internal parameters to make it work.", default=False)
-	parser.add_argument("--reconmode", type=str,help="Reconstruction mode. Choose from nearest_neighbor, gauss_2, gauss_3, and gauss_5.", default="gauss_2")
+	parser.add_argument("--notmp", action="store_true",help="Do not write temporary files.", default=False)
+	parser.add_argument("--badzero", action="store_true",help="In case the 0 degree tilt is bad for some reason...", default=False)
+	parser.add_argument("--load", action="store_true",help="load existing tilt parameters.", default=False)
+	parser.add_argument("--clipz", type=float,help="How aggressive should it be when clipping the final tomogram output. default is 0.6, (-1 means not clipping at all)", default=0.6)
+
 	parser.add_argument("--threads", type=int,help="Number of threads", default=12)
-	#parser.add_argument("--niter", type=int,help="Number of iterations", default=3)
+	parser.add_argument("--niter", type=str,help="Number of iterations for bin8, bin4, bin2 images. Default if 2,1,1,1", default="2,1,1,1")
 	parser.add_argument("--verbose", type=int,help="Verbose", default=0)
 	
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	time0=time.time()
+	itnum=[int(i) for i in options.niter.split(',')]
+	#print(itnum)
 
 	inputname=args[0]
 	options.inputname=inputname
@@ -50,41 +53,48 @@ def main():
 	bname=base_name(inputname)
 	
 	options.basename=bname
+	options.writetmp=not options.notmp
 	
-	#### make a folder to write tmp files
-	if options.tmppath:
-		path=options.tmppath
-	else:
-		for i in range(100):
-			try:
-				path="tomorecon_{:02d}/".format(i)
-				os.mkdir(path)
-				options.tmppath=path
-				break
-			except:
-				continue
+	if options.writetmp:
+		#### make a folder to write tmp files
+		if options.tmppath:
+			path=options.tmppath
 		else:
-			print("Too many tomorecon folders in the project, or something odd happened....Exit.")
-			exit()
-		
-	print("Temporary files will be written in {}".format(options.tmppath))
+			for i in range(100):
+				try:
+					path="tomorecon_{:02d}/".format(i)
+					os.mkdir(path)
+					options.tmppath=path
+					break
+				except:
+					continue
+			else:
+				print("Too many tomorecon folders in the project, or something odd happened....Exit.")
+				exit()
+			
+		print("Temporary files will be written in {}".format(options.tmppath))
 	
-	e=EMData(inputname, 0, True)
-	inppath=options.tmppath+"tltseries_input.hdf"
-	cmd="e2proc2d.py {} {} --inplace ".format(inputname, inppath)
-	binfac=max(1, int(np.round(e["nx"]/2048.)))
-	cmd+=" --process threshold.clampminmax.nsigma:nsigma=10"
-	#if binfac>1:
-		#cmd+=" --meanshrink {}".format(binfac)
-	options.binfac=binfac
-
-	if e["nz"]>1:
-		cmd+=" --threed2twod"
-
-	run(cmd)
+	#e=EMData(inputname, 0, True)
+	
+	
+	img=EMData(inputname,0)
+	if img["nz"]>1:
+		imgs=[img.get_clip(Region(0, 0, i, img["nx"], img["ny"], 1)).copy() for i in range(img["nz"])]
+	else:
+		imgs=EMData.read_images(inputname)
 		
+	for m in imgs: 
+		m.process_inplace("threshold.clampminmax.nsigma", {"nsigma":10})
+		m.process_inplace("normalize")
+	
+	binfac=max(1, int(np.round(img["nx"]/2048.)))
+	options.binfac=binfac
+	if options.writetmp:
+		inppath=options.tmppath+"tltseries_input.hdf"
+		for i,m in enumerate(imgs): m.write_image(inppath, i)
+	
 	## now prepare tilt series 
-	imgs_full=EMData.read_images(inppath)
+	imgs_full=imgs#EMData.read_images(inppath)
 	if binfac==1:
 		imgs_2k=imgs_full
 	else:
@@ -92,7 +102,7 @@ def main():
 	imgs_1k=[img.process("math.meanshrink", {"n":2}).process("normalize") for img in imgs_2k]
 	imgs_500=[]
 	for p in imgs_1k:
-		m=p.process("math.minshrink", {"n":2})
+		m=p.process("math.meanshrink", {"n":2})
 		m.process_inplace("filter.highpass.gauss",{"cutoff_pixels":3})
 		m.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.25})
 		m.process_inplace("normalize.edgemean")
@@ -101,57 +111,92 @@ def main():
 	
 	
 	options.apix_init=float(imgs_2k[0]["apix_x"])
-	if (options.rawtlt!=None) : tlts=np.loadtxt(options.rawtlt)
-	else: tlts=np.arange(-len(imgs_2k)*options.tiltstep/2,len(imgs_2k)*options.tiltstep/2,options.tiltstep)
-	
-	np.savetxt(options.tmppath+"rawtilt.txt", tlts)
-	zeroid=options.zeroid=np.argmin(abs(tlts))
-	
-	
-	#### here we always assume the center tilt is at 0 degree
-	tlts-=tlts[options.zeroid]
-	
-	#### course alignment
-	img_tali, pretrans=calc_global_trans(imgs_500, options)
-	for i,m in enumerate(img_tali):
-		m.write_image(options.tmppath+"tltseries_transali.hdf", i)
-	
-	#### initial tilt axis
-	tltax=calc_tltax_rot(img_tali, options)
-	print("tilt axis:  {:.2f}".format(tltax))
-	options.tltax=tltax
-	
-	pretrans*=4
 	num=options.num=len(imgs_500)
-	ttparams=np.zeros((num, 5))
-	ttparams[:,0]=-pretrans[:,0] # tx
-	ttparams[:,1]=-pretrans[:,1] # ty
-	ttparams[:,2]=tltax # rot
-	ttparams[:,3]=tlts.copy() # ytilt
-	ttparams[:,4]=0 # off axis tilt
+	
+	if options.pk_mindist<0:
+		options.pk_mindist=20
+		print("Minimum fiducial distance: {:.1f} nm".format(
+			options.pk_mindist*8*options.apix_init/10))
+	else:
+		options.pk_mindist=options.pk_mindist*10./options.apix_init/8
+		
+	if options.load:
+		jsname=info_name(options.inputname)
+		print("Loading parameters from {}...".format(jsname))
+		js=js_open_dict(jsname)
+		if js["tlt_file"]!=options.inputname:
+			print("Failed to load saved parameterss. Exit.")
+			return
+		
+		tpm=np.array(js["tlt_params"])
+		tpm[:,:2]/=options.binfac
+		ttparams=tpm.copy()
+		js.close()
+		tlts=ttparams[:,3].copy()
+		options.zeroid=zeroid=np.argmin(abs(tlts))
+	else:
+		if (options.rawtlt!=None) :
+			tlts=np.loadtxt(options.rawtlt)
+		else: 
+			tlts=np.arange(-len(imgs_2k)*options.tiltstep/2,len(imgs_2k)*options.tiltstep/2,options.tiltstep)
+		
+		if options.writetmp: np.savetxt(options.tmppath+"rawtilt.txt", tlts)
+		
+		zeroid=np.argmin(abs(tlts))
+		if options.badzero:
+			zeroid+=2
+		
+		options.zeroid=zeroid
+		
+		#### here we always assume the center tilt is at 0 degree
+		tlts-=tlts[options.zeroid]
+		
+		#### course alignment
+		img_tali, pretrans=calc_global_trans(imgs_500, options)
+		if options.writetmp:
+			for i,m in enumerate(img_tali):
+				m.write_image(options.tmppath+"tltseries_transali.hdf", i)
+		
+		#### initial tilt axis
+		if options.tltax==None:
+			tltax=calc_tltax_rot(img_tali, options)
+			
+			options.tltax=tltax
+		else:
+			tltax=options.tltax
+		print("tilt axis:  {:.2f}".format(tltax))
+		
+		pretrans*=4
+		
+		ttparams=np.zeros((num, 5))
+		ttparams[:,0]=-pretrans[:,0] # tx
+		ttparams[:,1]=-pretrans[:,1] # ty
+		ttparams[:,2]=tltax # rot
+		ttparams[:,3]=tlts.copy() # ytilt
+		ttparams[:,4]=0 # off axis tilt
+		
 	pks=np.zeros((options.npk, 3))
 	#### pack parameters together so it is easier to pass around
 	allparams=np.hstack([ttparams.flatten(), pks.flatten()])
 	
 	#### some fixed parameters..
-	options.fid_mindist=16
-	options.fid_maxval=-10
-	options.bxsz=32
+	#options.bxsz=32
 	
 	
 	
 	#### image scale, m3diter, fidkeep
 	#### refinement sequence []:global tilt axis, 0:tx, 1:ty, 2:tilt axis, 3: tilt, 4: off axis tilt
-	scaleiter=[(imgs_500, 2, .6, [[0,1], [], [0,1],[], [0,1],[3],[4],[2],[0,1]]),
-			   (imgs_1k, 1, .7, [[0,1],[], [0,1],[3],[4],[2],[0,1]]),
-			   (imgs_2k, 1, .8, [[0,1],[], [0,1],[3],[4],[2],[0,1]])]
+	scaleiter=[(imgs_500, itnum[0], options.pkkeep*.8, [[0,1], [], [0,1],[], [0,1]]),
+			   (imgs_1k, itnum[1], options.pkkeep*.9, [[0,1],[], [0,1],[3],[4],[2],[0,1]]),
+			   (imgs_2k, itnum[2], options.pkkeep, [[0,1],[], [0,1],[3],[4],[2],[0,1]]),
+			   (imgs_full, itnum[3], options.pkkeep, [[0,1], [0,1],[3],[4],[2],[0,1]])]
 	
 	loss0=[]
-	js=js_open_dict(path+"0_tomorecon_params.json")
-	js.update(vars(options))
-	js.close()
+
+	yrot=0
 	for niter, siter in enumerate(scaleiter):
 		imgs_, n_m3d, options.fidkeep, rfseq = siter
+		if n_m3d==0: continue
 		apix=float(imgs_[0]["apix_x"])
 		binx=apix/options.apix_init*options.binfac
 		print("\n******************************")
@@ -161,71 +206,93 @@ def main():
 			print("Low resolution mode. Using peak positon of landmarks for alignment")
 		else:
 			print("High resolution mode. Using center of mass of landmarks for alignment")
-
+		if options.writetmp:
+			name_tomo=path+"tomo_{:02d}.hdf".format(niter)
+			name_sample=path+"samples_{:02d}.hdf".format(niter)
+			name_ali=path+"ali_{:02d}.hdf".format(niter)
+			name_ptclali=path+"ptclali_{:02d}.hdf".format(niter)
+		else:
+			name_tomo=name_sample=name_ali=name_ptclali=None
+			
+		
 		#### make tomogram loop
 		for m3diter in range(n_m3d):
 
 			#### make tomogram, always use 500x500
-			threed=make_tomogram(imgs_500, ttparams, options, premask=True, errtlt=loss0)
 			
-			rot=fix_rotation(threed)
-			ttparams[:,3]+=rot
-			zeroid=options.zeroid=np.argmin(abs(ttparams[:,3]))
-			ttparams[:,3]-=ttparams[options.zeroid,3]
 			
-			threed=make_tomogram(imgs_500, ttparams, options, premask=True, outname=path+"tomo_{:02d}.hdf".format(niter), errtlt=loss0)
+			if niter==0:
+				threed=make_tomogram(imgs_500, ttparams, options, premask=False, errtlt=loss0)
+				rot=fix_rotation(threed)
+				yrot+=rot
+				ttparams[:,3]+=rot
+				zeroid=options.zeroid=np.argmin(abs(ttparams[:,3]))
+				ttparams[:,3]-=ttparams[options.zeroid,3]
 			
+			threed=make_tomogram(imgs_500, ttparams, options, premask=False, outname=name_tomo, errtlt=loss0)
+
 			pks=find_landmark(threed, options)
 			allparams=np.hstack([ttparams.flatten(), pks.flatten()])
-			if niter==0 and m3diter==0:
-				make_samples(imgs_, allparams, options, outname=path+"samples_init.hdf", refinepos=False);
 			
-			#ptclpos=ali_ptcls(imgs_, allparams, options,path+"ptclali_{:02d}.hdf".format(niter), True)
-			#rfseq=[[0,1],[],[0,1]]
+			allparams=make_samples(imgs_, allparams, options, refinepos=True);
+			allparams=make_samples(imgs_, allparams, options, refinepos=True);
+			#if m3diter==0:
+			if niter==0 and m3diter==0 and options.writetmp:
+				make_samples(imgs_, allparams, options, outname=path+"samples_init.hdf", refinepos=True);
 
 			for idx in rfseq:
 				allparams=refine_one_iter(imgs_, allparams, options, idx)
 				
 			ttparams, pks=get_params(allparams, options)
 
-		make_samples(imgs_, allparams, options, outname=path+"samples_{:02d}.hdf".format(niter), refinepos=False);
+		make_samples(imgs_, allparams, options, outname=name_sample, refinepos=False);
 		ttparams, pks=get_params(allparams, options)
+		make_ali(imgs_2k, ttparams, options, outname=name_ali)
 
-		ptclpos=ali_ptcls(imgs_, allparams, options,path+"ptclali_{:02d}.hdf".format(niter), True)
+		ptclpos=ali_ptcls(imgs_, allparams, options, outname=name_ptclali, doali=True)
 		loss0=np.zeros(num)
 		tpm=ttparams.copy()
 		for nid in range(num):
 			loss0[nid]=get_loss_pm([0], nid, allparams, options, [0], ptclpos)
 			
 		print("Iteration {} finished. Final average loss {:.2f} nm".format(
-			niter+1, np.mean(loss0)))
+			niter, np.mean(loss0)))
 	
 		#### always save parameters at the full scale (4k)
 		tpm[:,:2]*=options.binfac
-		np.savetxt(path+"landmarks_{:02d}.txt".format(niter), pks*options.binfac, fmt="%.1f")
-		np.savetxt(path+"tltparams_{:02d}.txt".format(niter), tpm, fmt="%.2f")
-		np.savetxt(path+"loss_{:02d}.txt".format(niter), np.vstack([np.arange(len(loss0)), loss0]).T, fmt="%.2f")
+		tpm=np.hstack([np.arange(len(tpm))[:,None], tpm])
+		if options.writetmp:
+			np.savetxt(path+"landmarks_{:02d}.txt".format(niter), pks*options.binfac, fmt="%.1f")
+			np.savetxt(path+"tltparams_{:02d}.txt".format(niter), tpm, fmt="%.3f")
+			np.savetxt(path+"loss_{:02d}.txt".format(niter), np.vstack([np.arange(len(loss0)), loss0]).T, fmt="%.2f")
 		
 	
-	threed=make_tomogram(imgs_1k, ttparams, options, premask=False, outname=path+"tomo_final.hdf", clipz=True, errtlt=loss0)
-	make_ali(imgs_full, ttparams, options)
-	
+	threed=make_tomogram(imgs_1k, ttparams, options, premask=False, outname=None, errtlt=loss0)
+	if options.writetmp:
+		threed.write_image(path+"tomo_final.hdf")
+		make_ali(imgs_full, ttparams, options, outname=path+"tiltseries_ali.hdf")
+		
+		js=js_open_dict(path+"0_tomorecon_params.json")
+		js.update(vars(options))
+		js.close()
+		
+		
 	try: os.mkdir("tomograms")
 	except: pass
 	sfx=""
 	if options.binfac>1:
 		sfx+="__bin{:d}".format(int(options.binfac*2))
-		
+	
+	threed["ytilt"]=yrot
 	tomoname=os.path.join("tomograms", options.basename+sfx+".hdf")
 	threed.write_image(tomoname)
 	print("Tomogram written to {}".format(tomoname))
+	tpm=ttparams.copy()
+	tpm[:,:2]*=options.binfac
 	js=js_open_dict(info_name(tomoname))
-	js["tlt_params"]=ttparams.tolist()
+	js["tlt_params"]=tpm.tolist()
 	js["tlt_file"]=options.inputname
-	js.close()
-	
-	js=js_open_dict(path+"0_tomorecon_params.json")
-	js.update(vars(options))
+	js["ali_loss"]=loss0.tolist()
 	js.close()
 	
 	dtime=time.time()-time0
@@ -352,16 +419,17 @@ def calc_tltax_rot(imgs, options):
 	vs[0]=vs[180]=0
 	tltax=angs[np.argmax(vs)]
 	e=from_numpy(sm)
-	e.write_image(options.tmppath+"commonline.hdf")
-	np.savetxt(options.tmppath+"tltrot.txt", np.vstack([angs, vs]).T)
+	if options.writetmp: 
+		e.write_image(options.tmppath+"commonline.hdf")
+		np.savetxt(options.tmppath+"tltrot.txt", np.vstack([angs, vs]).T)
 	return tltax
 
 #### reconstruct tomogram...
-def make_tomogram(imgs, tltpm, options, outname=None, premask=True, padr=1.2, clipz=False, errtlt=[]):
+def make_tomogram(imgs, tltpm, options, outname=None, premask=False, padr=1.2,  errtlt=[]):
 	
 	num=len(imgs)
 	scale=imgs[0]["apix_x"]/options.apix_init
-	print("Making bin{:d} tomogram...".format(int(np.round(scale))))
+	print("Making bin{:d} tomogram...".format(int(options.binfac*np.round(scale))))
 	ttparams=tltpm.copy()
 	ttparams[:,:2]/=scale
 	
@@ -396,7 +464,7 @@ def make_tomogram(imgs, tltpm, options, outname=None, premask=True, padr=1.2, cl
 
 		pxf=get_xf_pos(ttparams[nid], [0,0,0])
 
-		xform=Transform({"type":"xyz","ztilt":tpm[2],"ytilt":tpm[3], "xtilt":tpm[4], "tx":-pxf[0], "ty":-pxf[1]})
+		xform={"type":"xyz","ztilt":tpm[2],"ytilt":tpm[3], "xtilt":tpm[4], "tx":pxf[0], "ty":pxf[1]}
 		#tltinfo.append({"xform.projection":xform, "alignment.score":errtlt[nid]})
 		jobs.append([nid,imgs[nid],  recon, pad, xform, premask, exclude, options])
 		
@@ -418,13 +486,15 @@ def make_tomogram(imgs, tltpm, options, outname=None, premask=True, padr=1.2, cl
 	
 	threed=recon.finish(True)
 	threed.process_inplace("normalize")
+	threed.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.4})
 	
-	if clipz:
+	if options.clipz>0:
+		
 		p0=np.min(threed.numpy(), axis=1)
 		z0=np.min(p0, axis=1)
 		zp=np.where(z0<np.mean(z0))[0]
 		zcent=int(zp[0]+zp[-1])/2
-		zthk=int((zp[-1]-zp[0])*.6)
+		zthk=int((zp[-1]-zp[0])*options.clipz)
 		zthk=np.min([zthk, zthick-zcent, zcent])-1
 		#if options.verbose:
 		print("Z axis center at {:d}, thickness {:d} pixels".format(zcent, zthk*2))
@@ -451,27 +521,40 @@ def make_tomogram(imgs, tltpm, options, outname=None, premask=True, padr=1.2, cl
 
 #### reconstruction function for the subprocesses
 def reconstruct(nid, img, recon, pad, xform, premask, exclude, options):
+	m=img.copy()
+	m.process_inplace("filter.ramp")
+	m.process_inplace("normalize")
+	m.process_inplace("mask.decayedge2d", {"width":int(pad/20)})
+	p2=m.get_clip(Region(m["nx"]/2-pad/2,m["ny"]/2-pad/2, pad, pad), fill=0)
+	p2.translate(-int(xform["tx"]), -int(xform["ty"]), 0)
+	p2.rotate(-xform["ztilt"],0,0)
+	xf=Transform({"type":"xyz","ytilt":xform["ytilt"],"xtilt":xform["xtilt"]})
 	
-	maxsz=max(img["nx"], img["ny"])
-	p2=img.get_clip(Region(img["nx"]/2-pad/2,img["ny"]/2-pad/2, pad, pad))
-	rr=xform.get_params("xyz")
-	if premask:
-		p2.process_inplace("mask.soft",{"outer_radius":maxsz/2-1, "width":16, "dx":rr["tx"], "dy":rr["ty"]})
-		#p2.write_image(options.tmppath+"tmpimg.hdf",nid)
+	dy=p2["nx"]/2-np.cos(xform["ytilt"]*np.pi/180.)*m["nx"]/2
+	msk=p2.copy()
+	msk.to_one()
+	edge=int(pad/20)
+	msk.process_inplace("mask.zeroedge2d",{"x0":dy+edge, "x1":dy+edge, "y0":edge, "y1":edge})
+	msk.process_inplace("mask.addshells.gauss",{"val1":0, "val2":edge})
+	p2.mult(msk)
+	
+	#p2.write_image(options.tmppath+"tmpimg.hdf",nid)
+	
 	if not exclude:
 		
-		p3=recon.preprocess_slice(p2, xform)
-		recon.insert_slice(p3,xform,1)
+		p3=recon.preprocess_slice(p2, xf)
+		recon.insert_slice(p3,xf,1)
 
 
-def make_ali(imgs, tpm, options):
+def make_ali(imgs, tpm, options, outname=None):
+	if outname==None:
+		return
 	
 	scale=imgs[0]["apix_x"]/options.apix_init
 	ttparams=tpm.copy()
 	ttparams[:,:2]/=scale
 	
-	fname=options.tmppath+"tltseries_ali.hdf"
-	try:os.remove(fname)
+	try:os.remove(outname)
 	except:pass
 	pad=imgs[0]["nx"]*1.
 	mskrd=min(imgs[0]["nx"],imgs[0]["ny"])/2
@@ -487,7 +570,7 @@ def make_ali(imgs, tpm, options):
 		po.rotate(-tpm[2],0,0)
 		xform=Transform({"type":"xyz","ytilt":tpm[3],"xtilt":tpm[4]})
 		po["xform.projection"]=xform
-		po.write_image(fname, nid)
+		po.write_image(outname, nid)
 
 def find_landmark(threed, options):
 	print("Searching for landmarks...")
@@ -498,9 +581,9 @@ def find_landmark(threed, options):
 	asrt= np.argsort(mapnp.flatten())
 
 	pts=[]
-	dthr=options.fid_mindist
-	vthr=options.fid_maxval
-	for i in range(50000):
+	dthr=options.pk_mindist
+	vthr=options.pk_maxval
+	for i in range(len(asrt)):
 		aid=asrt[i]
 		pt=np.unravel_index(aid, mapnp.shape)
 	#	 mapnp[pt]=np.inf
@@ -512,9 +595,8 @@ def find_landmark(threed, options):
 		pts.append(pt)
 		if mapnp[pt]>vthr:
 			break
-
-		bx=options.bxsz/2
-		if len(pts)>=options.npk*1.5:
+		#print(mapnp[pt])
+		if len(pts)>=options.npk*1.2:
 			break
 
 	
@@ -522,7 +604,7 @@ def find_landmark(threed, options):
 		print("Found only {} landmarks".format(len(pts)))
 		options.npk=len(pts)
 	else:
-		np.random.shuffle(pts)
+		#np.random.shuffle(pts)
 		pts=pts[:options.npk]
 
 	pks=(np.array(pts)-np.array(mapnp.shape)/2.)
@@ -547,12 +629,15 @@ def make_samples(imgs, allparams, options, refinepos=False, outname=None, errtlt
 	ttparams[:,:2]/=scale
 	pks/=scale
 	lowres=(scale>1.5)
-	
 	if len(errtlt)==0:
 		nrange=range(num)
 	else:
 		nrange=np.argsort(errtlt)[:int(num*options.tltkeep)]
 	bx=options.bxsz/2
+	if not lowres:
+		bx=int(bx*1.5/(scale))
+		#print("scale{}, box size {}".format(scale, bx*2))
+		
 	for pid in range(npk):
 		pad=good_size(bx*4)
 		recon=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,pad]})
@@ -567,8 +652,11 @@ def make_samples(imgs, allparams, options, refinepos=False, outname=None, errtlt
 
 			pxf[0]+=imgs[nid]["nx"]/2
 			pxf[1]+=imgs[nid]["ny"]/2
+			
+			xf=Transform({"type":"2d","tx":pxf[0],"ty":pxf[1]})
+			e=imgs[nid].get_rotated_clip(xf,(pad,pad,1))
 
-			e=imgs[nid].get_clip(Region(pxf[0]-pad/2,pxf[1]-pad/2, pad, pad))
+			#e=imgs[nid].get_clip(Region(pxf[0]-pad/2,pxf[1]-pad/2, pad, pad))
 			e.process_inplace("normalize")
 			p2=e
 			rot=Transform({"type":"xyz","ztilt":tpm[2],"ytilt":tpm[3], "xtilt":tpm[4]})
@@ -587,13 +675,6 @@ def make_samples(imgs, allparams, options, refinepos=False, outname=None, errtlt
 		#### center particles by the minima position in projections in fiducial mode
 		if refinepos:
 			zsft=get_center(pj, lowres)
-			#pjc=pj.copy()
-			
-			#pjc.mult(-1)
-			#pjc.process_inplace("mask.gaussian", {"outer_radius":bx*.5})
-			#pjc.process_inplace("filter.lowpass.gauss",{"cutoff_freq":.01})
-			#p=pjc.calc_max_location()
-			#zsft=[p[0]-bx, p[1]-bx]
 
 			pks[pid, 2]-=zsft[1]
 
@@ -608,12 +689,6 @@ def make_samples(imgs, allparams, options, refinepos=False, outname=None, errtlt
 
 		if refinepos:
 			xysft=get_center(pj1, lowres)
-			#pjc=pj1.copy()
-			#pjc.mult(-1)
-			#pjc.process_inplace("mask.gaussian", {"outer_radius":bx*.5})
-			#pjc.process_inplace("filter.lowpass.gauss",{"cutoff_freq":.01})
-			
-			#p=pjc.calc_max_location()
 			#xysft=[p[0]-bx, p[1]-bx]
 			pks[pid, 0]-=(xysft[0]+zsft[0])/2.
 			pks[pid, 1]-=xysft[1]
@@ -648,7 +723,7 @@ def get_center(img, lowres=True):
 	
 	#### high resolution mode: use center of mass
 	else:
-		e.process_inplace("filter.lowpass.gauss",{"cutoff_freq":.02})
+		e.process_inplace("filter.lowpass.gauss",{"cutoff_freq":.01})
 		e.process_inplace("mask.gaussian",{"outer_radius":bx*.5})
 		e.process_inplace("normalize")
 		pk=e.calc_center_of_mass(2)
@@ -679,6 +754,8 @@ def ali_ptcls(imgs, allpms, options, outname=None, doali=True):
 	bx=options.bxsz/2
 	apix=imgs[0]["apix_x"]
 	lowres=(scale>1.5)
+	if not lowres:
+		bx=int(bx*1.5/(scale))
 
 	ptclpos=[]
 	for pid in prange:
@@ -699,7 +776,10 @@ def ali_ptcls(imgs, allpms, options, outname=None, doali=True):
 			else:
 				tlast=np.array([0,0])
 
-			e=imgs[nid].get_clip(Region(pxf[0]-bx,pxf[1]-bx, bx*2, bx*2)).process("normalize")
+			#e=imgs[nid].get_clip(Region(pxf[0]-bx,pxf[1]-bx, bx*2, bx*2)).process("normalize")
+			xf=Transform({"type":"2d","tx":pxf[0],"ty":pxf[1]})
+			e=imgs[nid].get_rotated_clip(xf,(bx*2,bx*2,1)).process("normalize")
+			e["apix_x"]=e["apix_y"]=e["apix_z"]=imgs[0]["apix_x"]
 
 			ts=[0,0]
 			if doali:# and nid!=zeroid:
@@ -710,7 +790,10 @@ def ali_ptcls(imgs, allpms, options, outname=None, doali=True):
 				if nid!=zeroid:
 					
 					if outname:
-						e=imgs[nid].get_clip(Region(pxf[0]-bx-tx[0],pxf[1]-bx-tx[1], bx*2, bx*2)).process("normalize")
+						xf=Transform({"type":"2d","tx":pxf[0]-tx[0],"ty":pxf[1]-tx[1]})
+						e=imgs[nid].get_rotated_clip(xf,(bx*2,bx*2,1)).process("normalize")
+						e["apix_x"]=e["apix_y"]=e["apix_z"]=imgs[0]["apix_x"]
+						#e=imgs[nid].get_clip(Region(pxf[0]-bx-tx[0],pxf[1]-bx-tx[1], bx*2, bx*2)).process("normalize")
 
 			if outname:
 				e["score"]=trans[nid].tolist()
