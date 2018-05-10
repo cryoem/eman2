@@ -132,7 +132,7 @@ def main():
 		if options.tltrefine:# and itr%2==0:
 			
 			os.system("rm {}/mask*.hdf {}/*unmasked.hdf".format(options.path, options.path))
-			cmd="spt_tltrefine.py --path {} --iter {} --threads {} --sym {} --maxres {} --keep {}".format(options.path, itr, options.threads, options.sym, rs, options.tkeep)
+			cmd="e2spt_tltrefine.py --path {} --iter {} --threads {} --sym {} --maxres {} --keep {}".format(options.path, itr, options.threads, options.sym, rs, options.tkeep)
 			if options.tltrefine_unmask:
 				cmd+=" --unmask "
 			run(cmd)
