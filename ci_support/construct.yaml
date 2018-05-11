@@ -24,6 +24,10 @@ specs:
   - console_shortcut  # [win]
   - menuinst          # [win]
 
+exclude:
+  - cudatoolkit     # [linux]
+  - cudnn           # [linux]
+
 welcome_image: images/EMAN2Icon.png    # [win]
 icon_image:    images/eman.ico         # [win]
 post_install:  cluster_message.sh      # [unix]

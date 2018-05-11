@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 
-cat <<EOF 
+source ${PREFIX}/bin/activate
+
+conda info -a
+conda list
+
+if [ "$(uname -s)" == "Linux" ];then
+    conda install "cudatoolkit=8.*" "cudnn 7.*" -y
+fi
+
+cat <<EOF
 
 INSTALLATION IS NOW COMPLETE
 
