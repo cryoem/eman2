@@ -35,12 +35,7 @@ def isReleaseBuild() {
 }
 
 def isBinaryBuild() {
-    def buildOS = ['linux': CI_BUILD_LINUX,
-                   'mac':   CI_BUILD_MAC,
-                   'win':   CI_BUILD_WIN
-                  ]
-    
-    return (CI_BUILD == "1" || buildOS[SLAVE_OS] == "1")
+    return CI_BUILD == "1"
 }
 
 def testPackage() {
@@ -94,9 +89,6 @@ pipeline {
     INSTALLERS_DIR = '${HOME_DIR}/workspace/${JOB_NAME}-installers'
 
     CI_BUILD       = sh(script: "! git log -1 | grep '.*\\[ci build\\].*'",       returnStatus: true)
-    CI_BUILD_WIN   = sh(script: "! git log -1 | grep '.*\\[ci build win\\].*'",   returnStatus: true)
-    CI_BUILD_LINUX = sh(script: "! git log -1 | grep '.*\\[ci build linux\\].*'", returnStatus: true)
-    CI_BUILD_MAC   = sh(script: "! git log -1 | grep '.*\\[ci build mac\\].*'",   returnStatus: true)
   }
   
   stages {
