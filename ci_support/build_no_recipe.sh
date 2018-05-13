@@ -16,6 +16,12 @@ rm -vf ${CONDA_PREFIX}/bin/e2*.py
 conda info -a
 conda list
 
+if [ -z "$JENKINS_HOME" ];then
+    CPU_COUNT=4
+else
+    CPU_COUNT=2
+fi
+
 build_dir="../build_eman"
 src_dir=${PWD}
 
@@ -24,7 +30,7 @@ mkdir -p $build_dir
 cd $build_dir
 
 cmake ${src_dir}
-make -j4
+make -j${CPU_COUNT}
 make install
 
 # Run tests
