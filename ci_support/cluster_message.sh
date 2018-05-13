@@ -6,7 +6,7 @@ conda info -a
 conda list
 
 if [ "$(uname -s)" == "Linux" ];then
-    conda install "cudatoolkit=8.*" "cudnn 7.*" -y
+    conda install "cudatoolkit=8.*" "cudnn=7.*" -y
 fi
 
 cat <<EOF
