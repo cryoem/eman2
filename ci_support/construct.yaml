@@ -18,6 +18,7 @@ ignore_duplicate_files: True
 
 specs:
   - eman2 2.21
+  - defaults::funcsigs  # [linux]
   - conda
   - conda-build
   - pip
