@@ -6,10 +6,8 @@ installer_filename: eman2.linux.sh  # [linux]
 installer_filename: eman2.win.exe   # [win]
 
 channels:
-    - https://conda.anaconda.org/cryoem
     - https://repo.continuum.io/pkgs/main
     - https://repo.continuum.io/pkgs/free
-    - https://conda.anaconda.org/conda-forge/
     - https://repo.continuum.io/pkgs/msys2          # [win]
     - file:///place_holder_conda_prefix/conda-bld
 
@@ -18,16 +16,11 @@ ignore_duplicate_files: True
 
 specs:
   - eman2 2.21
-  - defaults::funcsigs  # [linux]
   - conda
   - conda-build
   - pip
   - console_shortcut  # [win]
   - menuinst          # [win]
-
-exclude:
-  - cudatoolkit     # [linux]
-  - cudnn           # [linux]
 
 welcome_image: images/EMAN2Icon.png      # [win]
 icon_image:    images/eman.ico           # [win]
