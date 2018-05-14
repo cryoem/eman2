@@ -16,7 +16,7 @@ ignore_duplicate_files: True
 
 specs:
   - eman2 2.21
-  - conda
+  - conda * py27*
   - conda-build
   - pip
   - console_shortcut  # [win]
