@@ -8,7 +8,7 @@ Local Resolution: Compute local resolution of a map.
 
 Usage in command line
 
-  sxlocres.py  firstvolume  secondvolume  maskfile  outputfile  --fsc=OUTPUT_FILE_PATH  --wn=WINDOW_SIZE  --step=SHELL_STEP_SIZE  --cutoff=RES_CRITERION  --radius=RADIUS  --res_overall=RESOLUTION  --out_ang_res=OUTPUT_FILE_PATH  --apix=PIXEL_SIZE  --MPI
+  sxlocres.py  firstvolume  secondvolume  maskfile  outputfile  --wn=WINDOW_SIZE  --step=SHELL_STEP_SIZE  --cutoff=RES_CRITERION  --radius=RADIUS  --fsc=OUTPUT_FILE_PATH  --res_overall=RESOLUTION  --out_ang_res=OUTPUT_FILE_PATH  --apix=PIXEL_SIZE  --MPI
 
 \\
 ===== Typical usage =====
@@ -25,11 +25,11 @@ sxlocres exists in for both MPI and non-MPI versions.
   ; maskfile : 3D mask: Defines the region where the local filtering should be applied. (default none)
   ; outputfile : Output volume: Each voxel contains the resolution for this area in [[definitions:absolute_frequency_units|absolute frequency]] units. (default required string)
 
-  ; %%--%%fsc : FSC output file: Contains the overall FSC curve computed by rotational averaging of local resolution values. It is truncated to %%--%%res_overall. (default no curve) 
   ; %%--%%wn : FSC window size [Pixels]: Defines the size of window where the local real-space FSC (i.e. real-space CCC; cross-correlation coefficient) is computed. (default 7)
   ; %%--%%step : Fourier shell step size [Pixels]: Defines the finess of resolution measure. (default 1.0)
   ; %%--%%cutoff : Local resolution criterion: Specify local resolution criterion in terms of the real-space FSC (i.e. real-space CCC; cross-correlation coefficient). (default 0.5)
-  ; %%--%%radius : Mask radius [Pixels]: In case no mask is provided, a hard sphere of this radius will be used. (default -1)
+  ; %%--%%radius : Mask radius [Pixels]: In case no mask is provided, a hard sphere of this radius will be used. By default, radius = box_size/2 - (%%--%%wn). (default -1)
+  ; %%--%%fsc : FSC output file: Contains the overall FSC curve computed by rotational averaging of local resolution values. It is truncated to %%--%%res_overall. By default, the program does not save the FSC curve. (default no curve) 
   ; %%--%%res_overall : Overall resolution [1/Pixel]: Specify overall (or global) resolution in absolute frequency (%%>=%%0.0 and %%<=%%0.5) for calibration of the average local resolution. Typically, use the absolute frequency corresponding to the conventional FSC resolution obtained by 3D refinement. See Description section in the wiki page for details. By default, the program will not calibrate the average local resolution. (default -1.0)
 
 \\
