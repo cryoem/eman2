@@ -23,7 +23,7 @@ RECIPES_DIR=$(cd $(dirname $0)/../recipes && pwd -P)
 case ${#args[@]} in
     1|2) numpy_versions=${args[0]}
         
-        export GIT_PYDUSA_BRANCH=${args[1]:-"v20180115"}
+        export GIT_PYDUSA_BRANCH=${args[1]:-"v20180515"}
         ;;
 
     *) print_usage
