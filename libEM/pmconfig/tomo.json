@@ -71,11 +71,31 @@
     ]
   },
   {
-    "ICON": "multiple_images",
-    "PROGRAM": "e2tomogram.py",
-    "MODE": "easy",
+    "ICON": "green_boxes",
     "NAME": "3D Reconstruction",
-    "CHILDREN": []
+    "CHILDREN": [
+      {
+        "ICON": "multiple_images",
+        "PROGRAM": "e2tomogram.py",
+        "MODE": "easy",
+        "NAME": "3D Reconstruction",
+        "CHILDREN": []
+      },
+      {
+        "ICON": "multiple_images",
+        "PROGRAM": "e2tomoeval.py",
+        "MODE": "easy",
+        "NAME": "Evaluate tomograms",
+        "CHILDREN": []
+      },
+      {
+        "ICON": "multiple_images",
+        "PROGRAM": "e2tomo_showali.py",
+        "MODE": "easy",
+        "NAME": "Examine fiducial error",
+        "CHILDREN": []
+      }
+    ]
   },
   {
     "ICON": "single_image",
@@ -115,6 +135,20 @@
         "MODE": "test",
         "NAME": "Apply the neural network",
         "CHILDREN": []
+      },
+      {
+        "ICON": "web",
+        "PROGRAM": "e2tomo_drawcurve.py",
+        "MODE": "test",
+        "NAME": "Draw curves",
+        "CHILDREN": []
+      },
+      {
+        "ICON": "web",
+        "PROGRAM": "e2tomo_drawcontour.py",
+        "MODE": "test",
+        "NAME": "Draw contours",
+        "CHILDREN": []
       }
     ]
   },
@@ -125,9 +159,16 @@
       {
         "ICON": "green_boxes",
         "MODE": "boxing",
+        "PROGRAM": "e2spt_tempmatch.py",
+        "NAME": "Reference-based Boxing",
+        "CHILDREN": []
+      },
+      {
+        "ICON": "green_boxes",
+        "MODE": "boxing",
         "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2spt_boxer",
         "PROGRAM": "e2spt_boxer.py",
-        "NAME": "Box Subtomograms",
+        "NAME": "Manual Boxing",
         "CHILDREN": []
       },
       {
@@ -138,59 +179,39 @@
       },
       {
         "ICON": "tomo_hunter",
-        "PROGRAM": "e2spt_align.py",
-        "NAME": "Reference-based Alignment",
-        "CHILDREN": []
-      },
-      {
-        "ICON": "single_image_3d",
-        "MODE":"align",
-        "PROGRAM": "e2spt_average.py",
-        "NAME": "Average Aligned Volumes",
-        "CHILDREN": []
-      },
-      {
-        "ICON": "single_image_3d",
-        "MODE":"align",
-        "PROGRAM": "e2spt_project.py",
-        "NAME": "Generate Z-Projections",
-        "CHILDREN": []
-      },
-      {
-        "ICON": "single_image_3d",
-        "PROGRAM": "e2refine_postprocess.py",
-        "NAME": "Post-processing",
+        "PROGRAM": "spt_refine.py",
+        "NAME": "3D refinement",
         "CHILDREN": []
       },
       {
         "ICON": "ctf",
-        "PROGRAM": "e2spt_tomoctf.py",
+        "PROGRAM": "spt_tomoctf.py",
         "NAME": "CTF Correction",
         "CHILDREN": []
       },
       {
-        "ICON":"green_boxes",
-        "NAME":"Heterogeneity Analysis",
-        "CHILDREN":[
-          {
-            "ICON": "green_boxes",
-            "PROGRAM": "e2spt_classaverage.py",
-            "NAME": "3D Class Averaging",
-            "CHILDREN": []
-          },
-          {
-            "ICON": "green_boxes",
-            "PROGRAM": "e2spt_refinemulti.py",
-            "NAME": "Mult-Reference Refinement",
-            "CHILDREN": []
-          },
-          {
-            "ICON": "green_boxes",
-            "PROGRAM": "e2spt_average_multi.py",
-            "NAME": "Mult-Reference Averaging",
-            "CHILDREN": []
-          }
-        ]
+        "ICON": "tomo_hunter",
+        "PROGRAM": "spt_getptcls.py",
+        "NAME": "Sub-tilt refinement",
+        "CHILDREN": []
+      },
+      {
+        "ICON": "green_boxes",
+        "PROGRAM": "e2spt_classaverage.py",
+        "NAME": "3D Class Averaging",
+        "CHILDREN": []
+      },
+      {
+        "ICON": "green_boxes",
+        "PROGRAM": "e2spt_refinemulti.py",
+        "NAME": "Mult-Reference Refinement",
+        "CHILDREN": []
+      },
+      {
+        "ICON": "green_boxes",
+        "PROGRAM": "e2spt_average_multi.py",
+        "NAME": "Mult-Reference Averaging",
+        "CHILDREN": []
       }
     ]
   },
@@ -200,8 +221,8 @@
     "CHILDREN":[
       {
         "ICON": "green_boxes",
-        "PROGRAM": "e2spt_simulation.py",
-        "NAME": "Tomo Simulation",
+        "PROGRAM": "e2tomoeval.py",
+        "NAME": "Evaluate tomograms",
         "CHILDREN": []
       },
       {
