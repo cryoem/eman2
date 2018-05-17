@@ -837,6 +837,8 @@ def calc_ccf_wrapper(options,N,box,step,dataa,datab,out,locs,ii,fsp):
 
 	for i in range(len(dataa)):
 		c=dataa[i].calc_ccf(datab[i],fp_flag.CIRCULANT,True)
+		c.process_inplace("xform.phaseorigin.tocenter")
+		c.process_inplace("normalize.edgemean")
 		try: csum.add(c)
 		except: csum=c
 
@@ -856,21 +858,22 @@ def calc_ccf_wrapper(options,N,box,step,dataa,datab,out,locs,ii,fsp):
 	xx,yy = np.meshgrid(xx,yy)
 
 	popt,ccpeakval = bimodal_peak_model(options,csum)
+
 	if popt == None:
-		csum = from_numpy(np.zeros((box,box))).process("normalize.edgemean")
+		csum = from_numpy(np.zeros((box,box)))#.process("normalize.edgemean")
 		locs.put((N,[]))
 		out.put((N,csum))
 	else:
 		#if ii>=0: csum.process("normalize.edgemean").write_image("ccf_models.hdf",ii)
-		if options.phaseplate:
-			ncc = csum.numpy().copy()
-			pcsum = neighbormean_origin(ncc)
-			csum = from_numpy(pcsum)
-			locs.put((N,[popt[0],popt[1],ccpeakval,csum["maximum"]]))
-		else:
-			cc_model = correlation_peak_model((xx,yy),popt[0],popt[1],popt[2],popt[3]).reshape(box,box)
-			csum = from_numpy(cc_model)
-			locs.put((N,[popt[0],popt[1],popt[2],popt[3],popt[4],popt[5],ccpeakval,csum["maximum"]]))
+		# if options.phaseplate:
+		# 	ncc = csum.numpy().copy()
+		# 	pcsum = neighbormean_origin(ncc)
+		# 	csum = from_numpy(pcsum)
+		# 	locs.put((N,[popt[0],popt[1],ccpeakval,csum["maximum"]]))
+		#else:
+		cc_model = correlation_peak_model((xx,yy),popt[0],popt[1],popt[2],popt[3]).reshape(box,box)
+		csum = from_numpy(cc_model)
+		locs.put((N,[popt[0],popt[1],popt[2],popt[3],popt[4],popt[5],ccpeakval,csum["maximum"]]))
 		out.put((N,csum))
 	if ii>=0 and options.debug:
 		if fsp[-5:] == ".mrcs":
@@ -906,6 +909,9 @@ def split_fft(options,img,i,box,step,out):
 	for dx in range(box/2,nx-box,step):
 		for dy in range(box/2,ny-box,step):
 			clp = img.get_clip(Region(dx,dy,box,box))
+			clp.process_inplace("filter.xyaxes0",{"neighbor":1})
+			clp.process_inplace("filter.highpass.gauss",{"cutoff_abs":.002})
+
 			#if options.normalize: clp.process_inplace("normalize.edgemean")
 			#if box >= 512:
 			#	if not options.tomo:
@@ -956,26 +962,33 @@ def twod_bimodal(x_y,x1,y1,sig1,amp1,sig2,amp2):
 
 def neighbormean_origin(a): # replace origin pixel with mean of surrounding pixels
 	proc = a.copy()
-	if a.shape[0] % 2 == 0:
-		ac = proc.shape[0]/2
-		r = proc[ac-2:ac+2,ac-2:ac+2].copy()
-		rc = r.shape[0]/2
-		r[rc,rc] = np.nan
-		r[rc,rc-1] = np.nan
-		r[rc-1,rc] = np.nan
-		r[rc-1,rc-1] = np.nan
-		nm = np.nanmean(r)
-		proc[ac,ac] = nm
-		proc[ac,ac-1] = nm
-		proc[ac-1,ac] = nm
-		proc[ac-1,ac-1] = nm
-	else:
-		ac = proc.shape[0]/2
-		r = proc[ac-2:ac+1,ac-2:ac+1].copy()
-		plt.imshow(r)
-		rc = r.shape[0]/2
-		r[rc,rc] = np.nan
-		proc[ac,ac] = np.nanmean(r)
+	# if a.shape[0] % 2 == 0:
+	# 	ac = proc.shape[0]/2
+	# 	r = proc[ac-2:ac+2,ac-2:ac+2].copy()
+	# 	rc = r.shape[0]/2
+	# 	r[rc,rc] = np.nan
+	# 	r[rc,rc-1] = np.nan
+	# 	r[rc-1,rc] = np.nan
+	# 	r[rc-1,rc-1] = np.nan
+	# 	nm = np.nanmean(r)
+	# 	proc[ac,ac] = nm
+	# 	proc[ac,ac-1] = nm
+	# 	proc[ac-1,ac] = nm
+	# 	proc[ac-1,ac-1] = nm
+	# else:
+	# 	ac = proc.shape[0]/2
+	# 	r = proc[ac-2:ac+1,ac-2:ac+1].copy()
+	# 	plt.imshow(r)
+	# 	rc = r.shape[0]/2
+	# 	r[rc,rc] = np.nan
+	# 	proc[ac,ac] = np.nanmean(r)
+	
+	dx = a["nx"]/2
+	dy = a["ny"]/2 # the 'false peak' should always be at the origin, ie - no translation
+	mn=(a[dx-2,dy-2]+a[dx+2,dy+2]+a[dx-2,dy+2]+a[dx+2,dy-2])/4.0
+	for x in xrange(dx-1,dx+2):
+		for y in xrange(dy-1,dy+2):
+			proc[x,y]=mn		# exclude from COM
 	return proc
 
 def find_com(ccf): # faster alternative to gaussian fitting...less robust in theory.
@@ -1016,6 +1029,7 @@ def bimodal_peak_model(options,ccf):
 		#mval = edgemean(ncc)
 		#ix,iy = ncc.shape
 		pncc = neighbormean_origin(ncc)
+
 		x1,y1 = find_com(pncc)
 		x1 = x1+nxx/2
 		y1 = y1+nxx/2
@@ -1026,16 +1040,19 @@ def bimodal_peak_model(options,ccf):
 		# 	except:
 		# 		from_numpy(pncc).write_image("tmp.hdf",0)
 		return [x1,y1],ccf.sget_value_at_interp(x1,y1)
-	# try: # run optimization
-	# 	bds = [(-np.inf, -np.inf,  0.01, 0.01),(np.inf, np.inf, 100.0, 100000.0)]
-	# 	#bds = [(-bs/2, -bs/2,  0.0, 0.0),(bs/2, bs/2, 100.0, 100000.0)]
-	# 	popt,pcov=optimize.curve_fit(correlation_peak_model,(xx,yy),ncc.ravel(),p0=initial_guess,bounds=bds,method='dogbox',max_nfev=50)#,xtol=0.1)#,ftol=0.0001,gtol=0.0001)
-	# except:
-	# 	return None, -1
+		# try: # run optimization
+		# 	bds = [(-np.inf, -np.inf,  0.01, 0.01),(np.inf, np.inf, 100.0, 100000.0)]
+		# 	#bds = [(-bs/2, -bs/2,  0.0, 0.0),(bs/2, bs/2, 100.0, 100000.0)]
+		# 	popt,pcov=optimize.curve_fit(correlation_peak_model,(xx,yy),ncc.ravel(),p0=initial_guess,bounds=bds,method='dogbox',max_nfev=50)#,xtol=0.1)#,ftol=0.0001,gtol=0.0001)
+		# except:
+		# 	return None, -1
+
 	elif options.optccf == "ccfmax": # only useful for extremely high contrast frames
-		yc,xc = np.where(ncc==ncc.max())
+		xc,yc,zc = ccfreg.calc_max_location()
+		#yc,xc = np.where(ncc==ncc.max())
 		popt = [float(xc[0]+nxx/2),float(yc[0]+nxx/2),ncc.max(),1.,0.,0.]
 		return popt,ccf.sget_value_at_interp(popt[0],popt[1])
+	
 	elif options.optccf == "robust":
 		initial_guess = [x1,y1,s1,a1,s2,a2]
 		bds = [(-bs/2, -bs/2, 0.01, 0.01, 0.6, 0.01),(bs/2, bs/2, 100.0, 20000.0, 2.5, 100000.0)]
@@ -1048,6 +1065,9 @@ def bimodal_peak_model(options,ccf):
 		popt[0] = popt[0] + nxx/2 - bs/2
 		popt[1] = popt[1] + nxx/2 - bs/2
 		popt[2] = np.abs(popt[2])
+
+		#dx,dy,dz = tot.calc_max_location()
+
 		return popt,ccf.sget_value_at_interp(popt[0],popt[1])
 
 def qsum(imlist):
@@ -1079,6 +1099,7 @@ def run(command):
 	if ret !=0 :
 		print("Error running: ",command)
 		sys.exit(1)
+
 
 if __name__ == "__main__":
 	main()
