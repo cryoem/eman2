@@ -95,6 +95,7 @@ pipeline {
     GIT_COMMIT_SHORT = sh(returnStdout: true, script: 'echo ${GIT_COMMIT:0:7}').trim()
     GIT_AUTHOR_EMAIL = sh(returnStdout: true, script: 'git log -1 --format="%ae"').trim()
     HOME_DIR = getHomeDir()
+    HOME = "${HOME_DIR}"     // on Windows HOME is set to something like C:\Program Files\home\eman
     INSTALLERS_DIR = '${HOME_DIR}/workspace/${JOB_NAME}-installers'
 
     CI_BUILD       = sh(script: "! git log -1 | grep '.*\\[ci build\\].*'",       returnStatus: true)
