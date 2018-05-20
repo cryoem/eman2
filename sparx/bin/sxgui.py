@@ -1017,7 +1017,7 @@ class SXCmdWidget(QWidget):
 					key_base = label_in[0:item_tail]
 					# Get corresponding cmd_token
 					if key_base not in self.sxcmd.token_dict.keys():
-						QMessageBox.warning(self, "Invalid Parameter File Format", "Invalid base name of command token \"%s\" is found in line (%s) of file (%s). This parameter file might be imcompatible with the current version. Please save the paramater file again." % (key_base, line_in, file_path_in))
+						QMessageBox.warning(self, "Invalid Parameter File Format", "Invalid base name of command token \"%s\" is found in line (%s) of file (%s). This parameter file might be incompatible with the current version. Please save the paramater file again." % (key_base, line_in, file_path_in))
 					cmd_token = self.sxcmd.token_dict[key_base]
 					if not cmd_token.is_locked: 
 						# First, handle very special cases
@@ -2945,7 +2945,7 @@ class SXConstSetWidget(QWidget):
 				key = label_in[0:item_tail]
 				# Get corresponding sxconst
 				if key not in self.sxconst_set.dict.keys():
-					QMessageBox.warning(self, "Invalid Project Settings File Format", "Invalid entry key for project settings \"%s\" is found in line (%s). This project settings file might be imcompatible with the current version. Please save the project settings file again." % (key, line_in))
+					QMessageBox.warning(self, "Invalid Project Settings File Format", "Invalid entry key for project settings \"%s\" is found in line (%s). This project settings file might be incompatible with the current version. Please save the project settings file again." % (key, line_in))
 				sxconst = self.sxconst_set.dict[key]
 				sxconst.widget.setText(val_str_in)
 		else:
