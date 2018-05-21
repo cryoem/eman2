@@ -11809,7 +11809,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 		if( options.memory_per_node < 0.0 ): options.memory_per_node = 2.0*Blockdata["no_of_processes_per_group"]
 	
 		Blockdata["accumulatepw"]       = [[],[]]
-		recons3d_final(masterdir, options.do_final, options.memory_per_node, options.orgstack)
+		recons3d_final(masterdir, options.do_final, options.memory_per_node, orgstack)
 		mpi_finalize()
 		exit()
 	else:
