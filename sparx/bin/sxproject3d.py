@@ -51,7 +51,7 @@ def main():
 	parser.add_option("--noise",    type="float",   default=None,    help="add Gaussian noise with standard deviation s and zero mean")
 	parser.add_option("--CTF",      type="string",  default=None,    help="list of CTF parameters")
 	parser.add_option("--realspace",action="store_true", default=False,   help="real space projection")
-	parser.add_option("--relion",   action="store_true", default=False,   help="relion projection")
+	parser.add_option("--tril",     action="store_true", default=False,   help="trilinear interpolation projection")
 
 	(options, args) = parser.parse_args()
 	if(len(args) < 2 or len(args) > 3):
@@ -69,7 +69,7 @@ def main():
 		from   applications import project3d
 		global_def.BATCH = True
 		project3d(args[0], args[1], mask, options.delta, options.method, options.phiEqpsi, options.symmetry, options.angles, \
-		  listctfs=options.CTF, noise=options.noise, realsp=options.realspace, relionmode=options.relion)
+		  listctfs=options.CTF, noise=options.noise, realsp=options.realspace, trillinear=options.tril)
 		global_def.BATCH = False
 
 if __name__ == "__main__":
