@@ -69,7 +69,7 @@ def main():
 		from   applications import project3d
 		global_def.BATCH = True
 		project3d(args[0], args[1], mask, options.delta, options.method, options.phiEqpsi, options.symmetry, options.angles, \
-		  listctfs=options.CTF, noise=options.noise, realsp=options.realspace, relion=options.relion)
+		  listctfs=options.CTF, noise=options.noise, realsp=options.realspace, relionmode=options.relion)
 		global_def.BATCH = False
 
 if __name__ == "__main__":
