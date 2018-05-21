@@ -23,10 +23,11 @@ install:
     - conda.exe install -n root vs2008_express_vc_python_patch -c conda-forge --yes --quiet
     - call setup_x64
 
-    - conda.exe install conda-build=3 --yes --quiet
+    - conda.exe install conda-build=3.10.3 --yes --quiet
 
-    - conda.exe info
+    - conda.exe info -a
     - conda.exe config --get
+    - conda.exe render %APPVEYOR_BUILD_FOLDER%\recipes\eman
 
 
 # Skip .NET project specific build phase.
