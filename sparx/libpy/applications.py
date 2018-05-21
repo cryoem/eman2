@@ -13837,18 +13837,18 @@ def iso_kmeans(images, out_dir, parameter, K=None, mask=None, init_method="Rando
 		res[1].write_image(out_dir+"/Isodata_kmeans_variance_"+m+".spi",k)
 '''
 
-def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqpsi = "Minus", symmetry = "c1", listagls = None , listctfs = None, noise = None, realsp = False, relionmode = False):
+def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqpsi = "Minus", symmetry = "c1", listagls = None , listctfs = None, noise = None, realsp = False, trillinear = False):
 	from projection    import   prgs, prep_vol, project
 	from utilities     import   even_angles, read_text_row, set_params_proj, model_gauss_noise, info
 	from string        import   split
 	from filter        import   filt_ctf,filt_gaussl
 	import os
 	import types
-	if relionmode:
+	if trillinear:
 		from fundamentals import fft
 		from projection   import prgl
 		from morphology   import ctf_img_real
-	if relionmode and realsp:
+	if trillinear and realsp:
 		ERROR("Both relion mode and realsp mode are specified","project3d", 1)
 	
 	if listagls is None:
@@ -13899,7 +13899,7 @@ def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqp
 		
 		if realsp:
 			volft = vol
-		elif relionmode:
+		elif trillinear:
 			volft = prep_vol(vol, npad = 2, interpolation_method = 1)
 		else:
 			if(nx==nz&ny==nz):
@@ -13923,7 +13923,7 @@ def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqp
 		
 		if realsp:
 			volft = vol
-		elif relionmode:
+		elif trillinear:
 			volft = prep_vol(vol, npad = 2, interpolation_method = 1)
 		else:
 			if(nx==nz & ny==nz):
@@ -13945,7 +13945,7 @@ def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqp
 		if(len(angles[i]) == 3):
 			if realsp:
 				proj = project(volft, [angles[i][0], angles[i][1], angles[i][2], 0.0, 0.0], 10*nx)
-			elif relionmode:
+			elif trillinear:
 				if ctfs is not None: proj = prgl(volft, [angles[i][0], angles[i][1], angles[i][2], 0.0, 0.0], 1, False)
 				else:                proj = prgl(volft, [angles[i][0], angles[i][1], angles[i][2], 0.0, 0.0], 1, True)
 			else:
@@ -13957,7 +13957,7 @@ def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqp
 		else:
 			if realsp:
 				proj = project(volft, [angles[i][0], angles[i][1], angles[i][2], -angles[i][3], -angles[i][4]], 10*nx)
-			elif relionmode:
+			elif trillinear:
 				if ctfs is not None: proj = prgl(volft, [angles[i][0], angles[i][1], angles[i][2], -angles[i][3], -angles[i][4]], 1, False)
 				else:                proj = prgl(volft, [angles[i][0], angles[i][1], angles[i][2], -angles[i][3], -angles[i][4]], 1, True)
 			else:
@@ -13992,7 +13992,7 @@ def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqp
 				# there are no ctf values, so ignore this and set no values
 				ERROR("Incorrect ctf values","project3d",1)
 			# setting of values worked, so apply ctf and set the header info correctly
-			if relionmode:
+			if trillinear:
 				proj.set_attr_dict({"is_complex": 0})
 				Util.mulclreal(proj, ctf_img_real(proj.get_ysize(), ctf))
 				proj.set_attr_dict({"padffted":1, "is_complex":1})
