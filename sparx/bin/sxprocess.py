@@ -333,11 +333,6 @@ def main():
 
    17. Create angular distribution .build file
         sxprocess.py --angular_distribution  inputfile=example/path/params.txt --pixel_size=1.0  --round_digit=5  --box_size=500  --particle_radius=175  --cylinder_width=1  --cylinder_length=10000
-   
-   18. Create projections for signal subtraction
-   
-   	   sxprocess.py  run1_class001_30s.mrc  --signal_subtraction --params_file=refinement/main20/params_20.txt   --orgstack=bdb:data  --do_subtraction  --output_stack=bdb:sproj/data
-   	   
         
 
 """
@@ -422,15 +417,7 @@ def main():
 	parser.add_option('--box_size',             type='int',           default=500,                   help='box size in pixel used for calculating the center of the particle [px] (default 500)')
 	parser.add_option('--particle_radius',      type='int',           default=175,                   help='particle radius [Pixels] (default 175)')
 	parser.add_option('--cylinder_width',       type='int',           default=1,                     help='width of the cylinder (default 1)')
-	parser.add_option('--cylinder_length',      type='int',           default=10000,                 help='length of the cylinder (default 10000)')
-	
-	# Options for signal subtraction
-	parser.add_option("--signal_subtraction",    action="store_true",  default=False,                 help="flag to turn on signal subtraction")
-	parser.add_option("--do_subtraction",        action="store_true",  default=False,                 help="if true do signal subtraction else do projections only")
-	parser.add_option("--params_file",           type="string",        default="",                    help="parameters file")
-	parser.add_option("--orgstack",              type="string",        default="",                    help="orignal  particles stack")
-	parser.add_option("--output_stack",          type="string",		   default="bdb:sproj/data",      help="projections or signal subtracted stack")
-	
+	parser.add_option('--cylinder_length',      type='int',           default=10000,                 help='length of the cylinder (default 10000)')	
 	
 	(options, args) = parser.parse_args()
 
@@ -1699,36 +1686,6 @@ def main():
 				options.pixel_size = 1
 			angular_distribution(inputfile=strInput, options=options, output=strOutput)
 			
-	elif options.signal_subtraction:
-		if nargs !=1:
-			ERROR('Wrong inputs are given, see usage and restart the program!',"sxprocess.py",1)
-		else:
-			if not os.path.exists(sys.argv[1]):
-				ERROR('Incorrected input volume','sxprocess.py',1)
-					 
-			ref_vol = prep_vol(get_im(sys.argv[1]), npad = 2, interpolation_method = 1)
-			
-			if not os.path.exists(options.params_file): 
-				ERROR('Incorrected parameters file','sxprocess.py',1)
-			try:
-				image = get_im(options.orgstack, 0)
-			except:
-				ERROR('Incorrected orgstack','sxprocess.py',1)
-				
-			params  = read_text_row(options.params_file)
-			for im in range(len(params_file)):
-				rtemp = prgl(ref_vol, params[im][0:5], 1, False)
-				image = get_im(options.orgstack, im)
-				ctf   = image.get_attr('ctf')
-				rtemp.set_attr_dict({"is_complex": 0})
-				Util.mulclreal(rtemp, ctf_img_real(rtemp.get_ysize(), ctf))
-				rtemp.set_attr_dict({"padffted":1, "is_complex":1})
-				if options.do_subtraction: image = (image - fft(rtemp))
-				else: image = fft(rtemp)
-				image.set_attr('ctf_applied', 0)
-				image.set_attr('ctf', ctf)
-				image.write_image(options.output_stack, im)
-	
 	else:  ERROR("Please provide option name","sxprocess.py",1)
 
 if __name__ == "__main__":
