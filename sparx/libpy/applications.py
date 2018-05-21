@@ -13837,14 +13837,20 @@ def iso_kmeans(images, out_dir, parameter, K=None, mask=None, init_method="Rando
 		res[1].write_image(out_dir+"/Isodata_kmeans_variance_"+m+".spi",k)
 '''
 
-def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqpsi = "Minus", symmetry = "c1", listagls = None , listctfs = None, noise = None, realsp = False):
+def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqpsi = "Minus", symmetry = "c1", listagls = None , listctfs = None, noise = None, realsp = False, relion = False):
 	from projection    import   prgs, prep_vol, project
 	from utilities     import   even_angles, read_text_row, set_params_proj, model_gauss_noise, info
 	from string        import   split
 	from filter        import   filt_ctf,filt_gaussl
 	import os
 	import types
-
+	if relion:
+		from fundamentals import fft
+		from projection   import prgl
+		from morphology   import ctf_img_real
+	if relion and realsp:
+		ERROR("Both relion mode and realsp mode are specified","project3d", 1)
+	
 	if listagls is None:
 		angles = even_angles(delta, symmetry = symmetry, method = method, phiEqpsi = phiEqpsi)
 	elif(type(listagls) is bytes):
@@ -13893,6 +13899,8 @@ def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqp
 		
 		if realsp:
 			volft = vol
+		elif relion:
+			volft = prep_vol(vol, npad = 2, interpolation_method = 1)
 		else:
 			if(nx==nz&ny==nz):
 				volft, kb = prep_vol(vol)
@@ -13915,8 +13923,10 @@ def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqp
 		
 		if realsp:
 			volft = vol
+		elif relion:
+			volft = prep_vol(vol, npad = 2, interpolation_method = 1)
 		else:
-			if(nx==nz&ny==nz):
+			if(nx==nz & ny==nz):
 				volft, kb = prep_vol(vol)
 			else:
 				volft, kbx,kby,kbz = prep_vol(vol)
@@ -13935,15 +13945,21 @@ def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqp
 		if(len(angles[i]) == 3):
 			if realsp:
 				proj = project(volft, [angles[i][0], angles[i][1], angles[i][2], 0.0, 0.0], 10*nx)
+			elif relion:
+				ctfs is not None: proj = prgl(ref_vol, [angles[i][0], angles[i][1], angles[i][2], 0.0, 0.0], 1, False)
+				else:             proj = prgl(ref_vol, [angles[i][0], angles[i][1], angles[i][2], 0.0, 0.0], 1, True)
 			else:
-				if(nx==nz&ny==nz):
+				if(nx==nz & ny==nz):
 					proj = prgs(volft, kb, [angles[i][0], angles[i][1], angles[i][2], 0.0, 0.0])
 				else:
-					proj = prgs(volft, kbz, [angles[i][0], angles[i][1], angles[i][2], 0.0, 0.0],kbx,kby)
+					proj = prgs(volft, kbz, [angles[i][0], angles[i][1], angles[i][2], 0.0, 0.0], kbx, kby)
 			set_params_proj(proj, [angles[i][0], angles[i][1], angles[i][2], 0.0, 0.0])
 		else:
 			if realsp:
 				proj = project(volft, [angles[i][0], angles[i][1], angles[i][2], -angles[i][3], -angles[i][4]], 10*nx)
+			elif relion:
+				if ctfs is not None: proj = prgl(ref_vol, [angles[i][0], angles[i][1], angles[i][2], -angles[i][3], -angles[i][4]], 1, False)
+				else:                proj = prgl(ref_vol, [angles[i][0], angles[i][1], angles[i][2], -angles[i][3], -angles[i][4]], 1, True)
 			else:
 				if(nx==nz&ny==nz):
 					proj = prgs(volft, kb, [angles[i][0], angles[i][1], angles[i][2], -angles[i][3], -angles[i][4]])
@@ -13969,14 +13985,19 @@ def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqp
 		if ctfs is not None:
 			try:
 				from utilities import generate_ctf
-				if(len(ctfs[i]) == 6):  ctf = generate_ctf([ctfs[i][0], ctfs[i][1], ctfs[i][2], ctfs[i][3], ctfs[i][4], ctfs[i][5]])
+				if(len(ctfs[i]) == 6):    ctf = generate_ctf([ctfs[i][0], ctfs[i][1], ctfs[i][2], ctfs[i][3], ctfs[i][4], ctfs[i][5]])
 				elif(len(ctfs[i]) == 8):  ctf = generate_ctf([ctfs[i][0], ctfs[i][1], ctfs[i][2], ctfs[i][3], ctfs[i][4], ctfs[i][5], ctfs[i][6], ctfs[i][7]])
 				else:  1.0/0.0
 			except:
 				# there are no ctf values, so ignore this and set no values
 				ERROR("Incorrect ctf values","project3d",1)
 			# setting of values worked, so apply ctf and set the header info correctly
-			proj = filt_ctf(proj,ctf)
+			if relion:
+				proj.set_attr_dict({"is_complex": 0})
+				Util.mulclreal(proj, ctf_img_real(proj.get_ysize(), ctf))
+				proj.set_attr_dict({"padffted":1, "is_complex":1})
+				proj = fft(proj)
+			else: proj = filt_ctf(proj,ctf)
 			proj.set_attr( "ctf",ctf)
 			proj.set_attr( "ctf_applied",0)
 
