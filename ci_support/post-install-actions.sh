@@ -5,9 +5,7 @@ source ${PREFIX}/bin/activate
 conda info -a
 conda list
 
-if [ "$(uname -s)" == "Linux" ];then
-    conda install "cudatoolkit=8.*" "cudnn=7.*" -y
-fi
+conda install eman-deps=10.1 -c cryoem -c defaults -c conda-forge -y
 
 cat <<EOF
 
