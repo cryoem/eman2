@@ -13946,8 +13946,8 @@ def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqp
 			if realsp:
 				proj = project(volft, [angles[i][0], angles[i][1], angles[i][2], 0.0, 0.0], 10*nx)
 			elif relionmode:
-				if ctfs is not None: proj = prgl(ref_vol, [angles[i][0], angles[i][1], angles[i][2], 0.0, 0.0], 1, False)
-				else:                proj = prgl(ref_vol, [angles[i][0], angles[i][1], angles[i][2], 0.0, 0.0], 1, True)
+				if ctfs is not None: proj = prgl(volft, [angles[i][0], angles[i][1], angles[i][2], 0.0, 0.0], 1, False)
+				else:                proj = prgl(volft, [angles[i][0], angles[i][1], angles[i][2], 0.0, 0.0], 1, True)
 			else:
 				if(nx==nz & ny==nz):
 					proj = prgs(volft, kb, [angles[i][0], angles[i][1], angles[i][2], 0.0, 0.0])
@@ -13958,8 +13958,8 @@ def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqp
 			if realsp:
 				proj = project(volft, [angles[i][0], angles[i][1], angles[i][2], -angles[i][3], -angles[i][4]], 10*nx)
 			elif relionmode:
-				if ctfs is not None: proj = prgl(ref_vol, [angles[i][0], angles[i][1], angles[i][2], -angles[i][3], -angles[i][4]], 1, False)
-				else:                proj = prgl(ref_vol, [angles[i][0], angles[i][1], angles[i][2], -angles[i][3], -angles[i][4]], 1, True)
+				if ctfs is not None: proj = prgl(volft, [angles[i][0], angles[i][1], angles[i][2], -angles[i][3], -angles[i][4]], 1, False)
+				else:                proj = prgl(volft, [angles[i][0], angles[i][1], angles[i][2], -angles[i][3], -angles[i][4]], 1, True)
 			else:
 				if(nx==nz&ny==nz):
 					proj = prgs(volft, kb, [angles[i][0], angles[i][1], angles[i][2], -angles[i][3], -angles[i][4]])
