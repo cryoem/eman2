@@ -1703,7 +1703,11 @@ def main():
 		if nargs !=1:
 			ERROR('Wrong inputs are given, see usage and restart the program!',"sxprocess.py",1)
 		else:
+			if not os.path.exists(sys.argv[1]):
+				ERROR('Incorrected input volume','sxprocess.py',1)
+					 
 			ref_vol = prep_vol(get_im(sys.argv[1]), npad = 2, interpolation_method = 1)
+			
 			if not os.path.exists(options.params_file): 
 				ERROR('Incorrected parameters file','sxprocess.py',1)
 			try:
