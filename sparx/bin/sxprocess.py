@@ -334,6 +334,9 @@ def main():
    17. Create angular distribution .build file
         sxprocess.py --angular_distribution  inputfile=example/path/params.txt --pixel_size=1.0  --round_digit=5  --box_size=500  --particle_radius=175  --cylinder_width=1  --cylinder_length=10000
         
+   18. Subtract a partilce stack for input stack, and keep ctf parameters in the headers of the result stack if there is ctf pareameters in the orignial stack
+   
+   		sxprocess.py bdb:orgstack bdb:newproj/data  bdb:sproj/data --subtract_stack
 
 """
 
@@ -418,6 +421,9 @@ def main():
 	parser.add_option('--particle_radius',      type='int',           default=175,                   help='particle radius [Pixels] (default 175)')
 	parser.add_option('--cylinder_width',       type='int',           default=1,                     help='width of the cylinder (default 1)')
 	parser.add_option('--cylinder_length',      type='int',           default=10000,                 help='length of the cylinder (default 10000)')	
+	
+	parser.add_option('--subtract_stack',       action="store_true",  default=False,                 help='direct subtraction of subtrahend stack from minuend_stack')
+
 	
 	(options, args) = parser.parse_args()
 
@@ -1685,6 +1691,40 @@ def main():
 			if options.pixel_size == 0:
 				options.pixel_size = 1
 			angular_distribution(inputfile=strInput, options=options, output=strOutput)
+			
+	elif options.subtract_stack:
+		nargs = len(args)
+		if nargs<2 or nargs>3:
+			ERROR('Too many inputs are given, see usage and restart the program!','sxprocess.py',1)
+		else:
+			minuend_stack = args[0]
+			try:
+				image = get_im(minuend_stack, 0)
+			except:
+				ERROR('Incorrect minuend stack, see usage and restart the program!', 'sxprocess.py',1)
+			subtrahend_stack = args[1]
+			try:
+				image = get_im(subtrahend_stack, 0)
+			except:
+				ERROR('Incorrect subtrahend stack, see usage and restart the program!', 'sxprocess.py',1)
+			if nargs ==3: result_stack = args[2]
+			else: result_stack = 'bdb:sproj/data'
+			
+			nimages = EMUtil.get_image_count(minuend_stack)
+			mimages = EMUtil.get_image_count(subtrahend_stack)
+			if nimages != mimages:
+				ERROR('minuend_stack and subtrahend_stack have different number of images', 'sxprocess.py',1)
+			else:
+				for im in range(nimages):
+					image  = get_im(minuend_stack, im)
+					simage = get_im(subtrahend_stack, im)
+					try: ctf = image.get_attr('ctf')
+					except: pass
+					image = image -simage		
+					if ctf:
+						image.set_attr('ctf_applied', 0)
+						image.set_attr('ctf', ctf)
+					image.write_image(result_stack, im)
 			
 	else:  ERROR("Please provide option name","sxprocess.py",1)
 
