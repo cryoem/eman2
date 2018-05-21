@@ -1719,8 +1719,12 @@ def main():
 				for im in range(nimages):
 					image  = get_im(minuend_stack, im)
 					simage = get_im(subtrahend_stack, im)
-					try: ctf = image.get_attr('ctf')
-					except: pass
+					try: 
+						ctf = image.get_attr('ctf')
+					except: 
+						try:
+							ctf = simage.get_attr('ctf')
+						except: pass
 					image = image -simage		
 					if ctf:
 						image.set_attr('ctf_applied', 0)
