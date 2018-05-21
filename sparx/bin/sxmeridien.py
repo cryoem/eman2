@@ -5500,12 +5500,6 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 
 	###if(Blockdata["myid"] == Blockdata["main_node"]): print("   TRETR  ",Tracker["constants"]["nnxo"],Tracker["nxinit"],reachpw,n_coarse_ang,coarse_delta,n_coarse_psi,m_coarse_psi,c_coarse_psi,n_coarse_shifts)
 
-	"""
-	ny = projdata[0].get_ysize()
-	mask = Util.unrollmask(ny)
-	nxt = 2*(mask.get_xsize())
-	"""
-
 	#if(Blockdata["myid"] == Blockdata["main_node"]):
 	#	print( original_data[0].get_attr("identifier") )
 	#	print( original_data[1].get_attr("identifier") )
@@ -6513,12 +6507,6 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 
 	###if(Blockdata["myid"] == Blockdata["main_node"]): print("   TRETR  ",Tracker["constants"]["nnxo"],Tracker["nxinit"],reachpw,n_coarse_ang,coarse_delta,n_coarse_psi,m_coarse_psi,c_coarse_psi,n_coarse_shifts)
 
-	"""
-	ny = projdata[0].get_ysize()
-	mask = Util.unrollmask(ny)
-	nxt = 2*(mask.get_xsize())
-	"""
-
 	#if(Blockdata["myid"] == Blockdata["main_node"]):
 	#	print( original_data[0].get_attr("identifier") )
 	#	print( original_data[1].get_attr("identifier") )
@@ -7456,7 +7444,6 @@ def cerrs(params, ctfs, particle_groups):
 	interpolation_method = 1
 	ref_vol = prep_vol(ref_vol, npad = 2, interpolation_method = interpolation_method )
 
-	mask = Util.unrollmask(Tracker["nxinit"])
 	lb = Blockdata["bckgnoise"].get_xsize()
 	acc_rot = 0.0
 	acc_trans = 0.0
@@ -7825,12 +7812,6 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 		coarse_shifts_shrank[ib] = [coarse_shifts[ib][0]*shrinkage,coarse_shifts[ib][1]*shrinkage]
 
 	###if(Blockdata["myid"] == Blockdata["main_node"]): print("   TRETR  ",Tracker["constants"]["nnxo"],Tracker["nxinit"],reachpw,n_coarse_ang,coarse_delta,n_coarse_psi,m_coarse_psi,c_coarse_psi,n_coarse_shifts)
-
-	"""
-	ny = projdata[0].get_ysize()
-	mask = Util.unrollmask(ny)
-	nxt = 2*(mask.get_xsize())
-	"""
 
 	#if(Blockdata["myid"] == Blockdata["main_node"]):
 	#	print( original_data[0].get_attr("identifier") )
