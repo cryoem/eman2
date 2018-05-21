@@ -7672,7 +7672,7 @@ def do_final_rec3d(partids, partstack, original_data, oldparams, oldparamstructu
 	mpi_barrier(MPI_COMM_WORLD)
 	return
 
-def recons3d_final(masterdir, do_final_iter_init, memory_per_node):
+def recons3d_final(masterdir, do_final_iter_init, memory_per_node, orgstack = None):
 	global Tracker, Blockdata
 	# search for best solution, load its tracker 
 	carryon  = 1
@@ -7705,6 +7705,7 @@ def recons3d_final(masterdir, do_final_iter_init, memory_per_node):
 			Tracker = convert_json_fromunicode(json.load(fout))
 			fout.close()
 		except: carryon = 0
+		if orgstack: Tracker["constants"]["stack"] = orgstack
 	else: Tracker = 0
 	carryon = bcast_number_to_all(carryon)
 	if carryon == 0: ERROR("Failed to load Tracker file %s, program terminates "%os.path.join(final_dir,"Tracker_%03d.json"%do_final_iter), "recons3d_final",1, Blockdata["myid"])
@@ -11761,10 +11762,11 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 		#global Tracker, Blockdata
 		#print( "  args  ",args)
 		checking_flag = 1
+		orgstack      = None
 		if( len(args) == 3):
 			ERROR("do_final option requires only one or two arguments ","meridien", 1, Blockdata["myid"])
 
-		elif(len(args) == 2):
+		elif(len(args) == 2): # option for signal subtraction 
 			masterdir = args[1]
 			orgstack  = args[0]
 			if Blockdata["myid"] == Blockdata["main_node"]:
@@ -11807,7 +11809,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 		if( options.memory_per_node < 0.0 ): options.memory_per_node = 2.0*Blockdata["no_of_processes_per_group"]
 	
 		Blockdata["accumulatepw"]       = [[],[]]
-		recons3d_final(masterdir, options.do_final, options.memory_per_node)
+		recons3d_final(masterdir, options.do_final, options.memory_per_node, options.orgstack)
 		mpi_finalize()
 		exit()
 	else:
