@@ -424,6 +424,10 @@ def main():
 	
 	parser.add_option('--subtract_stack',       action="store_true",  default=False,                 help='direct subtraction of subtrahend stack from minuend_stack')
 	parser.add_option('--params_file',          type="string",        default="",                    help='parameters file')
+	parser.add_option('--center_2d',            action="store_true",  default=False,                 help='directly center signal subtracted 2D particles')
+	parser.add_option('--center_3d',            type="string",        default="",                    help='center signal subtracted 2D particles using the shifts obtained from their 3D structure prior centering')
+	
+	
 	
 	(options, args) = parser.parse_args()
 
@@ -1693,7 +1697,7 @@ def main():
 			angular_distribution(inputfile=strInput, options=options, output=strOutput)
 			
 	elif options.subtract_stack:
-		from utilities  import get_im, set_params_proj, get_params_proj, write_text_row
+		from utilities  import get_im, set_params_proj, get_params_proj, write_text_row, compose_transform3
 		from statistics import center_of_gravity_phase 
 		nargs = len(args)
 		if nargs<2 or nargs>3:
@@ -1729,10 +1733,20 @@ def main():
 							ctf = simage.get_attr('ctf')
 						except: pass
 					image = image - simage
-					[sxf, syf, sxn, syn ] = center_of_gravity_phase(image)
-					s2x, s2y = s2x - sxf, s2y -syf # includes fractional part also
-					set_params_proj(image, [phi, theta, psi, s2x, s2y])
-					if options.params_file: params.append([phi, theta, psi, s2x, s2y])
+					if options.center_2d:
+						[sxf, syf, sxn, syn ] = center_of_gravity_phase(image)
+						set_params_proj(image, [phi, theta, psi, s2x - sxf, s2y - syf])
+						if options.params_file: params.append([phi, theta, psi, s2x - sxf, s2y - syf])
+					elif options.center_3d:
+						vol_prior_centering = get_im(options.center_3d)
+						[s3x, s3y, s3z, ns3x, ns3y, ns3z ] = center_of_gravity_phase(vol_prior_centering)
+						nphi, ntheta, npsi, nsx, nsy, nsz, nscale = compose_transform3 \
+					 		( 0.0, 0.0, 0.0, -s3x, -s3y, -s3z, 1.0, phi, theta, psi, 0.0, 0.0, 0.0, 1.0)
+						set_params_proj(image, [phi, theta, psi, s2x + nsx, s2y + nsy])
+						if options.params_file: params.append([phi, theta, psi, s2x + nsx, s2y + nsy])
+					else:
+						set_params_proj(image, [phi, theta, psi, s2x, s2y])
+						if options.params_file: params.append([phi, theta, psi, s2x, s2y])
 					if ctf:
 						image.set_attr('ctf_applied', 0)
 						image.set_attr('ctf', ctf)
