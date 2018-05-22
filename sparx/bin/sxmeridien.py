@@ -1496,15 +1496,16 @@ def steptwo_mpi(tvol, tweight, treg, cfsc = None, regularized = True, color = 0)
 		tvol.set_attr("is_complex",1)
 		if regularized:
 			nr = len(cfsc)
+			ovol = [0.0]*nr
 			limitres = 0
 			for i in xrange(nr):
-				cfsc[i] = min(max(cfsc[i], 0.0), 0.999)
+				ovol[i] = min(max(cfsc[i], 0.0), 0.999)
 				#print( i,cfsc[i] )
-				if( cfsc[i] == 0.0 ):
+				if( ovol[i] == 0.0 ):
 					limitres = i-1
 					break
 			if( limitres == 0 ): limitres = nr-2;
-			ovol = reshape_1d(cfsc, nr, 2*nr)
+			ovol = reshape_1d(ovol, nr, 2*nr)
 			limitres = 2*min(limitres, Tracker["maxfrad"])  # 2 on account of padding, which is always on
 			maxr2 = limitres**2
 			for i in xrange(limitres+1, len(ovol), 1):   ovol[i] = 0.0
