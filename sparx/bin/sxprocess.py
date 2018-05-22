@@ -1693,7 +1693,7 @@ def main():
 			angular_distribution(inputfile=strInput, options=options, output=strOutput)
 			
 	elif options.subtract_stack:
-		from utilities  import get_im, set_params_proj, get_params_proj
+		from utilities  import get_im, set_params_proj, get_params_proj, write_text_row
 		from statistics import center_of_gravity_phase 
 		nargs = len(args)
 		if nargs<2 or nargs>3:
