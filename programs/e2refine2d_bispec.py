@@ -175,8 +175,9 @@ def main():
 	fpbasis=options.path+"/basis_00.hdf"
 	if n>10000 : step="--step 0,{}".format((n+10000)//20000)
 	else: step=""
+	# 5/18/18 removed --normalize. Seems to cause MSA algorithm to screw up (non decreasing eigen vals) with bispectra?
 	#run("e2msa.py %s %s --normalize --nbasis=%0d --scratchfile=%s/msa_scratch.bin %s"%(fpfile,fpbasis,options.nbasisfp,options.path,step))
-	run("e2msa.py %s %s --nbasis=%0d --scratchfile=%s/msa_scratch.bin %s"%(fpfile,fpbasis,options.nbasisfp,options.path,step))
+	run("e2msa.py %s %s  --nbasis=%0d --scratchfile=%s/msa_scratch.bin %s"%(fpfile,fpbasis,options.nbasisfp,options.path,step))
 	proc_tally += 1.0
 	if logid : E2progress(logid,proc_tally/total_procs)
 
@@ -207,8 +208,8 @@ def main():
 		# first we sort and align the class-averages from the last step
 
 		# MSA on class-average bispectra
+		run("e2msa.py %s/classes_fp_%02d.hdf %s/basis_%02d.hdf --nbasis=%0d --scratchfile=%s/msa_scratch.bin"%(options.path,it-1,options.path,it,options.nbasisfp,options.path))
 		#run("e2msa.py %s/classes_fp_%02d.hdf %s/basis_%02d.hdf  --normalize --nbasis=%0d --scratchfile=%s/msa_scratch.bin"%(options.path,it-1,options.path,it,options.nbasisfp,options.path))
-		run("e2msa.py %s/classes_fp_%02d.hdf %s/basis_%02d.hdf  --nbasis=%0d --scratchfile=%s/msa_scratch.bin"%(options.path,it-1,options.path,it,options.nbasisfp,options.path))
 		proc_tally += 1.0
 		if logid : E2progress(logid,proc_tally/total_procs)
 
