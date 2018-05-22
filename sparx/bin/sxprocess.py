@@ -1732,12 +1732,12 @@ def main():
 					[sxf, syf, sxn, syn ] = center_of_gravity_phase(image)
 					s2x, s2y = s2x - sxf, s2y -syf # includes fractional part also
 					set_params_proj(image, [phi, theta, psi, s2x, s2y])
-					if options.params: params.append([phi, theta, psi, s2x, s2y])
+					if options.params_file: params.append([phi, theta, psi, s2x, s2y])
 					if ctf:
 						image.set_attr('ctf_applied', 0)
 						image.set_attr('ctf', ctf)
 					image.write_image(result_stack, im)
-				if options.params: write_text_row(params, options.params)
+				if options.params_file: write_text_row(params, options.params)
 	else:  ERROR("Please provide option name","sxprocess.py",1)
 
 if __name__ == "__main__":
