@@ -1700,6 +1700,10 @@ def main():
 		from utilities  import get_im, set_params_proj, get_params_proj, write_text_row, compose_transform3
 		from statistics import center_of_gravity_phase 
 		nargs = len(args)
+		
+		if options.center_3d and options.center_2d:
+			ERROR('Too many centering methods are given, pick up only one!','sxprocess.py',1)
+			
 		if nargs<2 or nargs>3:
 			ERROR('Too many inputs are given, see usage and restart the program!','sxprocess.py',1)
 		else:
@@ -1722,6 +1726,9 @@ def main():
 			if nimages != mimages:
 				ERROR('minuend_stack and subtrahend_stack have different number of images', 'sxprocess.py',1)
 			else:
+				if options.center_3d: 
+					vol_prior_centering = get_im(options.center_3d)
+					[s3x, s3y, s3z, ns3x, ns3y, ns3z ] = center_of_gravity_phase(vol_prior_centering)
 				for im in range(nimages):
 					image  = get_im(minuend_stack, im)
 					simage = get_im(subtrahend_stack, im)
@@ -1738,8 +1745,6 @@ def main():
 						set_params_proj(image, [phi, theta, psi, s2x - sxf, s2y - syf])
 						if options.params_file: params.append([phi, theta, psi, s2x - sxf, s2y - syf])
 					elif options.center_3d:
-						vol_prior_centering = get_im(options.center_3d)
-						[s3x, s3y, s3z, ns3x, ns3y, ns3z ] = center_of_gravity_phase(vol_prior_centering)
 						nphi, ntheta, npsi, nsx, nsy, nsz, nscale = compose_transform3 \
 					 		( 0.0, 0.0, 0.0, -s3x, -s3y, -s3z, 1.0, phi, theta, psi, 0.0, 0.0, 0.0, 1.0)
 						set_params_proj(image, [phi, theta, psi, s2x + nsx, s2y + nsy])
