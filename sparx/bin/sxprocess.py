@@ -1737,7 +1737,7 @@ def main():
 						image.set_attr('ctf_applied', 0)
 						image.set_attr('ctf', ctf)
 					image.write_image(result_stack, im)
-				if options.params_file: write_text_row(params, options.params)
+				if options.params_file: write_text_row(params, options.params_file)
 	else:  ERROR("Please provide option name","sxprocess.py",1)
 
 if __name__ == "__main__":
