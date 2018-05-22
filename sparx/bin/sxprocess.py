@@ -423,7 +423,7 @@ def main():
 	parser.add_option('--cylinder_length',      type='int',           default=10000,                 help='length of the cylinder (default 10000)')	
 	
 	parser.add_option('--subtract_stack',       action="store_true",  default=False,                 help='direct subtraction of subtrahend stack from minuend_stack')
-
+	parser.add_option('--params_file',          type="string",        default="",                    help='parameters file')
 	
 	(options, args) = parser.parse_args()
 
@@ -1698,6 +1698,7 @@ def main():
 		if nargs<2 or nargs>3:
 			ERROR('Too many inputs are given, see usage and restart the program!','sxprocess.py',1)
 		else:
+			if options.params_file:  params = []
 			minuend_stack = args[0]
 			try:
 				image = get_im(minuend_stack, 0)
@@ -1719,18 +1720,23 @@ def main():
 				for im in range(nimages):
 					image  = get_im(minuend_stack, im)
 					simage = get_im(subtrahend_stack, im)
+					phi, theta, psi, s2x, s2y = get_params_proj(simage)
 					try: 
 						ctf = image.get_attr('ctf')
 					except: 
 						try:
 							ctf = simage.get_attr('ctf')
 						except: pass
-					image = image -simage		
+					image = image - simage
+					[sxf, syf, sxn, syn ] = center_of_gravity_phase(image)
+					s2x, s2y = s2x - sxf, s2y -syf # includes fractional part also
+					set_params_proj(image, [phi, theta, psi, s2x, s2y])
+					if options.params: params.append([phi, theta, psi, s2x, s2y])
 					if ctf:
 						image.set_attr('ctf_applied', 0)
 						image.set_attr('ctf', ctf)
 					image.write_image(result_stack, im)
-			
+				if options.params: write_text_row(params, options.params)
 	else:  ERROR("Please provide option name","sxprocess.py",1)
 
 if __name__ == "__main__":
