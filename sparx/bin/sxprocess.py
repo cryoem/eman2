@@ -1746,9 +1746,9 @@ def main():
 						if options.params_file: params.append([phi, theta, psi, s2x - sxf, s2y - syf])
 					elif options.center_3d:
 						nphi, ntheta, npsi, nsx, nsy, nsz, nscale = compose_transform3 \
-					 		( 0.0, 0.0, 0.0, -s3x, -s3y, -s3z, 1.0, phi, theta, psi, 0.0, 0.0, 0.0, 1.0)
-						set_params_proj(image, [phi, theta, psi, s2x + nsx, s2y + nsy])
-						if options.params_file: params.append([phi, theta, psi, s2x + nsx, s2y + nsy])
+					 		( 0.0, 0.0, 0.0, -s3x, -s3y, -s3z, 1.0, phi, theta, psi, s2x, s2y, 0.0, 1.0)
+						set_params_proj(image, [phi, theta, psi, nsx, nsy])
+						if options.params_file: params.append([phi, theta, psi, nsx, nsy])
 					else:
 						set_params_proj(image, [phi, theta, psi, s2x, s2y])
 						if options.params_file: params.append([phi, theta, psi, s2x, s2y])
