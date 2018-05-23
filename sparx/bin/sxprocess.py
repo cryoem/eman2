@@ -422,11 +422,7 @@ def main():
 	parser.add_option('--cylinder_width',       type='int',           default=1,                     help='width of the cylinder (default 1)')
 	parser.add_option('--cylinder_length',      type='int',           default=10000,                 help='length of the cylinder (default 10000)')	
 	
-	parser.add_option('--subtract_stack',       action="store_true",  default=False,                 help='direct subtraction of subtrahend stack from minuend_stack')
-	parser.add_option('--params_file',          type="string",        default="",                    help='parameters file')
-	parser.add_option('--center_2d',            action="store_true",  default=False,                 help='directly center signal subtracted 2D particles')
-	parser.add_option('--center_3d',            type="string",        default="",                    help='center signal subtracted 2D particles using the shifts obtained from their 3D structure prior centering')
-	
+	parser.add_option('--subtract_stack',       action="store_true",  default=False,                 help='direct subtraction of subtrahend stack from minuend_stack')	
 	
 	
 	(options, args) = parser.parse_args()
@@ -1697,17 +1693,12 @@ def main():
 			angular_distribution(inputfile=strInput, options=options, output=strOutput)
 			
 	elif options.subtract_stack:
-		from utilities  import get_im, set_params_proj, get_params_proj, write_text_row, compose_transform3
-		from statistics import center_of_gravity_phase 
+		from utilities  import get_im, set_params_proj, get_params_proj, write_text_row
 		nargs = len(args)
-		
-		if options.center_3d and options.center_2d:
-			ERROR('Too many centering methods are given, pick up only one!','sxprocess.py',1)
-			
+				
 		if nargs<2 or nargs>3:
 			ERROR('Too many inputs are given, see usage and restart the program!','sxprocess.py',1)
 		else:
-			if options.params_file:  params = []
 			minuend_stack = args[0]
 			try:
 				image = get_im(minuend_stack, 0)
@@ -1726,9 +1717,6 @@ def main():
 			if nimages != mimages:
 				ERROR('minuend_stack and subtrahend_stack have different number of images', 'sxprocess.py',1)
 			else:
-				if options.center_3d: 
-					vol_prior_centering = get_im(options.center_3d)
-					[s3x, s3y, s3z, ns3x, ns3y, ns3z ] = center_of_gravity_phase(vol_prior_centering)
 				for im in range(nimages):
 					image  = get_im(minuend_stack, im)
 					simage = get_im(subtrahend_stack, im)
@@ -1739,24 +1727,10 @@ def main():
 						try:
 							ctf = simage.get_attr('ctf')
 						except: pass
-					image = image - simage
-					if options.center_2d:
-						[sxf, syf, sxn, syn ] = center_of_gravity_phase(image)
-						set_params_proj(image, [phi, theta, psi, s2x - sxf, s2y - syf])
-						if options.params_file: params.append([phi, theta, psi, s2x - sxf, s2y - syf])
-					elif options.center_3d:
-						nphi, ntheta, npsi, nsx, nsy, nsz, nscale = compose_transform3 \
-					 		( 0.0, 0.0, 0.0, -s3x, -s3y, -s3z, 1.0, phi, theta, psi, s2x, s2y, 0.0, 1.0)
-						set_params_proj(image, [phi, theta, psi, nsx, nsy])
-						if options.params_file: params.append([phi, theta, psi, nsx, nsy])
-					else:
-						set_params_proj(image, [phi, theta, psi, s2x, s2y])
-						if options.params_file: params.append([phi, theta, psi, s2x, s2y])
 					if ctf:
 						image.set_attr('ctf_applied', 0)
 						image.set_attr('ctf', ctf)
 					image.write_image(result_stack, im)
-				if options.params_file: write_text_row(params, options.params_file)
 	else:  ERROR("Please provide option name","sxprocess.py",1)
 
 if __name__ == "__main__":
