@@ -337,6 +337,8 @@ def main():
    18. Subtract a partilce stack for input stack, and keep ctf parameters in the headers of the result stack if there is ctf pareameters in the orignial stack
    
    		sxprocess.py bdb:orgstack bdb:newproj/data  bdb:sproj/data --subtract_stack
+   
+   19. Center xform.projection parameters with an off-centered structure.
 
 """
 
@@ -424,6 +426,10 @@ def main():
 	
 	parser.add_option('--subtract_stack',       action="store_true",  default=False,                 help='direct subtraction of subtrahend stack from minuend_stack')	
 	
+	parser.add_option("--center_params",        type="string",        default="",                    help="xform.projection parameters to be centered")
+	parser.add_option("--off_center_map",       type="string",        default="",                    help="off-center map reconstructed from parameters to be centered")
+	parser.add_option("--output_params",        type="string",        default="cparams.txt",         help="centered xform.projection parameters")
+
 	
 	(options, args) = parser.parse_args()
 
@@ -1697,25 +1703,25 @@ def main():
 		nargs = len(args)
 				
 		if nargs<2 or nargs>3:
-			ERROR('Too many inputs are given, see usage and restart the program!','sxprocess.py',1)
+			ERROR('Too many inputs are given, see usage and restart the program!','options.subtract_stack',1)
 		else:
 			minuend_stack = args[0]
 			try:
 				image = get_im(minuend_stack, 0)
 			except:
-				ERROR('Incorrect minuend stack, see usage and restart the program!', 'sxprocess.py',1)
+				ERROR('Incorrect minuend stack, see usage and restart the program!', 'options.subtract_stack',1)
 			subtrahend_stack = args[1]
 			try:
 				image = get_im(subtrahend_stack, 0)
 			except:
-				ERROR('Incorrect subtrahend stack, see usage and restart the program!', 'sxprocess.py',1)
+				ERROR('Incorrect subtrahend stack, see usage and restart the program!', 'options.subtract_stack',1)
 			if nargs ==3: result_stack = args[2]
 			else: result_stack = 'bdb:sproj/data'
 			
 			nimages = EMUtil.get_image_count(minuend_stack)
 			mimages = EMUtil.get_image_count(subtrahend_stack)
 			if nimages != mimages:
-				ERROR('minuend_stack and subtrahend_stack have different number of images', 'sxprocess.py',1)
+				ERROR('minuend_stack and subtrahend_stack have different number of images', 'options.subtract_stack',1)
 			else:
 				for im in range(nimages):
 					image  = get_im(minuend_stack, im)
@@ -1731,6 +1737,25 @@ def main():
 						image.set_attr('ctf_applied', 0)
 						image.set_attr('ctf', ctf)
 					image.write_image(result_stack, im)
+	elif options.center_params:
+		from statistics import center_of_gravity_phase
+		from utilities  import get_im, read_text_row, write_text_row, compose_transform3
+		try:
+			parameters = read_text_row(options.center_params)
+		except:
+			ERROR("Incorrect parameter file", "options.center_params", 1)
+		try:
+			image = get_im(options.off_center_map)
+		except:
+			ERROR("Incorrect off_center_map", "options.center_params", 1)
+		[s3x, s3y, s3z, ns3x, ns3y, ns3z ] = center_of_gravity_phase(image)
+		for im in range(len(parameters)):
+			phi, theta, psi, s2x, s2y             = parameters[im][0:5]
+			# Equivalent to the old combine_params3 that has been already removed from the system. Code is tested!
+			phi, theta, psi, s2x, s2y, s2z, scale = \
+			compose_transform3(0.0, 0.0, 0.0, -s3x, -s3y, -s3z, 1.0, phi, theta, psi, s2x, s2y, 0.0, 1.0) 
+			parameters[im][0:5]         = [phi, theta, psi, s2x, s2y]
+		write_text_row(parameters, options.output_params)
 	else:  ERROR("Please provide option name","sxprocess.py",1)
 
 if __name__ == "__main__":
