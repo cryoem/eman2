@@ -425,7 +425,11 @@ def main():
 	parser.add_option('--cylinder_length',      type='int',           default=10000,                 help='length of the cylinder (default 10000)')	
 	
 	parser.add_option('--subtract_stack',       action="store_true",  default=False,                 help='Subtract from images in the first stack images in the second stack')	
+	parser.add_option('--maxres',               type='float',         default=-1.0,                  help='Maximum resolution in absolute unit for image difference measurement')	
+	parser.add_option('--maxresaa',             type='float',         default=0.02,                  help='Low pass filter falloff for maxium resolution')
+	parser.add_option('--comparison_radius',    type='float',         default=-1.0,                  help='Particle radius in pixel for comparion particles with their projections')
 	
+
 	(options, args) = parser.parse_args()
 
 	global_def.BATCH = True
@@ -1695,29 +1699,42 @@ def main():
 			
 	elif options.subtract_stack:
 		from utilities  import get_im, set_params_proj, get_params_proj, write_text_row
+		from filter     import filt_tanl
+		from statistics import im_diff
 		nargs = len(args)
 				
 		if nargs<2 or nargs>4:
 			ERROR('Three stack names required, see usage and restart the program!','options.subtract_stack',1)
 		else:
-			minuend_stack = args[0]
+			minuend_stack    = args[0]
 			subtrahend_stack = args[1]
-			result_stack = args[2]
-			
+			result_stack     = args[2]
+
 			nimages = EMUtil.get_image_count(minuend_stack)
 			mimages = EMUtil.get_image_count(subtrahend_stack)
+			if options.comparison_radius>0.5:
+				ERROR('Incorrect maximum resolution', 'options.subtract_stack',1)
 			if nimages != mimages:
 				ERROR('Two input stacks have different number of images', 'options.subtract_stack',1)
 			else:
 				for im in range(nimages):
 					image  = get_im(minuend_stack, im)
 					simage = get_im(subtrahend_stack, im)
+					if im == 0:
+						if options.comparison_radius !=-1:
+							mask = model_circle(options.comparison_radius, image.get_xsize(), image.get_ysize())
+						else: mask = None
+					if options.maxres !=-1:
+						temp_diff, a, b = im_diff(filt_tanl(image, options.maxres, options.maxresaa, mask), simage)						
+					else: temp_diff, a, b = im_diff(image, simage, mask)
+					image *=a
+					image -=b
 					ssimage =  Util.subn_img(image, simage)
 					try: 
 						ctf = image.get_attr('ctf')
 						ssimage.set_attr('ctf_applied', 0)
 						ssimage.set_attr('ctf', ctf)
-					except: 
+					except:
 						pass
 					try: 
 						ctf = image.get_attr('xform.projection')
