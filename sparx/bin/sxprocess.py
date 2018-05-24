@@ -1726,7 +1726,8 @@ def main():
 						else: mask = None
 					if options.maxres !=-1:
 						temp_diff, a, b = im_diff(filt_tanl(image, options.maxres, options.maxresaa, mask), simage)						
-					else: temp_diff, a, b = im_diff(image, simage, mask)
+					else: 
+						temp_diff, a, b = im_diff(image, simage, mask)
 					image *=a
 					image -=b
 					ssimage =  Util.subn_img(image, simage)
@@ -1744,7 +1745,6 @@ def main():
 
 					ssimage.write_image(result_stack, im)
 
-		write_text_row(parameters, options.output_params)
 	else:  ERROR("Please provide option name","sxprocess.py",1)
 
 if __name__ == "__main__":
