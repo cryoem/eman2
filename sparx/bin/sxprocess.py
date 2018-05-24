@@ -334,11 +334,11 @@ def main():
    17. Create angular distribution .build file
         sxprocess.py --angular_distribution  inputfile=example/path/params.txt --pixel_size=1.0  --round_digit=5  --box_size=500  --particle_radius=175  --cylinder_width=1  --cylinder_length=10000
         
-   18. Subtract a partilce stack for input stack, and keep ctf parameters in the headers of the result stack if there is ctf pareameters in the orignial stack
+   18. Subtract from images in the first stack images in the second stack and write results to the third stack.
+       If the name of the output stack is the same as the second stack, the resultswill be writteon to the second
+       stack (it will be overwritten).
    
-   		sxprocess.py bdb:orgstack bdb:newproj/data  bdb:sproj/data --subtract_stack
-   
-   19. Center xform.projection parameters with an off-centered structure.
+   		sxprocess.py bdb:orgstack bdb:proj/data  bdb:proj/sdata bdb:proj/odata --subtract_stack
 
 """
 
@@ -424,12 +424,7 @@ def main():
 	parser.add_option('--cylinder_width',       type='int',           default=1,                     help='width of the cylinder (default 1)')
 	parser.add_option('--cylinder_length',      type='int',           default=10000,                 help='length of the cylinder (default 10000)')	
 	
-	parser.add_option('--subtract_stack',       action="store_true",  default=False,                 help='direct subtraction of subtrahend stack from minuend_stack')	
-	
-	parser.add_option("--center_params",        type="string",        default="",                    help="xform.projection parameters to be centered")
-	parser.add_option("--off_center_map",       type="string",        default="",                    help="off-center map reconstructed from parameters to be centered")
-	parser.add_option("--output_params",        type="string",        default="cparams.txt",         help="centered xform.projection parameters")
-
+	parser.add_option('--subtract_stack',       action="store_true",  default=False,                 help='Subtract from images in the first stack images in the second stack')	
 	
 	(options, args) = parser.parse_args()
 
@@ -643,7 +638,7 @@ def main():
 			return
 		from utilities import read_text_row, write_text_row
 		transf = [0.0]*6
-		spl=options.transformparams.split(',')
+		spl = options.transformparams.split(',')
 		for i in xrange(len(spl)):  transf[i] = float(spl[i])
 
 		write_text_row( rotate_shift_params(read_text_row(args[0]), transf)	, args[1])
@@ -1702,70 +1697,36 @@ def main():
 		from utilities  import get_im, set_params_proj, get_params_proj, write_text_row
 		nargs = len(args)
 				
-		if nargs<2 or nargs>3:
-			ERROR('Too many inputs are given, see usage and restart the program!','options.subtract_stack',1)
+		if nargs<2 or nargs>4:
+			ERROR('Three stack names required, see usage and restart the program!','options.subtract_stack',1)
 		else:
 			minuend_stack = args[0]
-			try:
-				image = get_im(minuend_stack, 0)
-			except:
-				ERROR('Incorrect minuend stack, see usage and restart the program!', 'options.subtract_stack',1)
 			subtrahend_stack = args[1]
-			try:
-				image = get_im(subtrahend_stack, 0)
-			except:
-				ERROR('Incorrect subtrahend stack, see usage and restart the program!', 'options.subtract_stack',1)
-			if nargs ==3: result_stack = args[2]
-			else: result_stack = 'bdb:sproj/data'
+			result_stack = args[2]
 			
 			nimages = EMUtil.get_image_count(minuend_stack)
 			mimages = EMUtil.get_image_count(subtrahend_stack)
 			if nimages != mimages:
-				ERROR('minuend_stack and subtrahend_stack have different number of images', 'options.subtract_stack',1)
+				ERROR('Two input stacks have different number of images', 'options.subtract_stack',1)
 			else:
 				for im in range(nimages):
 					image  = get_im(minuend_stack, im)
 					simage = get_im(subtrahend_stack, im)
-					phi, theta, psi, s2x, s2y = get_params_proj(simage)
+					ssimage =  Util.subn_img(image, simage)
 					try: 
 						ctf = image.get_attr('ctf')
-					except: 
-						try:
-							ctf = simage.get_attr('ctf')
-						except: pass
-					ssimage =  image - simage
-					set_params_proj(ssimage, [phi, theta, psi, s2x, s2y])
-					if ctf:
 						ssimage.set_attr('ctf_applied', 0)
 						ssimage.set_attr('ctf', ctf)
+					except: 
+						pass
+					try: 
+						ctf = image.get_attr('xform.projection')
+						ssimage.set_attr('xform.projection', ctf)
+					except: 
+						pass
+
 					ssimage.write_image(result_stack, im)
-	elif options.center_params:
-		from statistics import center_of_gravity_phase
-		from utilities  import get_im, read_text_row, write_text_row, compose_transform3
-		try:
-			parameters = read_text_row(options.center_params)
-		except:
-			ERROR("Incorrect parameter file", "options.center_params", 1)
-		if os.path.exists(options.off_center_map):
-			try:
-				image = get_im(options.off_center_map)
-			except:
-				ERROR("Incorrect off_center_map", "options.center_params", 1)
-			[s3x, s3y, s3z, ns3x, ns3y, ns3z ] = center_of_gravity_phase(image)
-		else:
-			if options.off_center_map:
-				from string import split, atof
-				shift = split(options.off_center_map)
-				for i in range(len(shift)):
-					if shift[i][0] == '-': shift[i] = -atof(shift[i][1:])
-					else:                  shift[i] =  atof(shift[i])
-				s3x, s3y, s3z = shift[0], shift[1], shift[2]
-		for im in range(len(parameters)):
-			phi, theta, psi, s2x, s2y             = parameters[im][0:5]
-			# Equivalent to the old combine_params3 that has been already removed from the system. Code is tested!
-			phi, theta, psi, s2x, s2y, s2z, scale = \
-			compose_transform3(0.0, 0.0, 0.0, -s3x, -s3y, -s3z, 1.0, phi, theta, psi, s2x, s2y, 0.0, 1.0) 
-			parameters[im][0:5]         = [phi, theta, psi, s2x, s2y]
+
 		write_text_row(parameters, options.output_params)
 	else:  ERROR("Please provide option name","sxprocess.py",1)
 
