@@ -28,4 +28,12 @@ if(OpenGL_FOUND AND NOT TARGET OpenGL)
 						  INTERFACE_COMPILE_DEFINITIONS USE_OPENGL
 						  )
 	target_link_libraries(OpenGL INTERFACE OpenGL::GL OpenGL::GLU)
+		
+	# Symlink to GL. When the value is /usr/include, cmake ignores it.
+	# So, this is a workaround to include OpenGL headers
+	if(CMAKE_SYSTEM_NAME MATCHES "Linux")
+		execute_process(
+				COMMAND ${CMAKE_COMMAND} -E create_symlink ${OPENGL_INCLUDE_DIR}/GL ${CMAKE_CURRENT_BINARY_DIR}/GL
+		)
+	endif()
 endif()
