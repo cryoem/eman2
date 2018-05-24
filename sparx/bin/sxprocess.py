@@ -1724,6 +1724,9 @@ def main():
 						if options.comparison_radius !=-1:
 							mask = model_circle(options.comparison_radius, image.get_xsize(), image.get_ysize())
 						else: mask = None
+					st = Util.infomask(image, mask2D, False)
+					image -= st[0]
+					image /= st[1]
 					if options.maxres !=-1:
 						temp_diff, a, b = im_diff(filt_tanl(image, options.maxres, options.maxresaa, mask), simage)						
 					else: 
