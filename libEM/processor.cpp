@@ -12930,12 +12930,16 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 // 						int ky=jky-jy;
 						int jkx=jx+kx;
 						int jky=jy+ky;
+						//int jkx2=jx-kx;
+						//int jky2=jy-ky;
 	
 //						if (abs(jkx)>nkx || abs(jky)>nky) continue;
 						complex<double> v1 = (complex<double>)cimage2->get_complex_at(jx,jy);
 						complex<double> v2 = (complex<double>)cimage2->get_complex_at(kx,ky);
 						complex<double> v3 = (complex<double>)cimage2->get_complex_at(jkx,jky);
 						ret->add_complex_at(jx,jy,0,(complex<float>)(v1*v2*std::conj(v3)));
+						//complex<double> v4 = (complex<double>)cimage2->get_complex_at(jkx2,jky2);	// This is based on Phil's point that the v1,v2,v3 computation lacks Friedel symmetry
+						//ret->add_complex_at(jx,jy,0,(complex<float>)(v1*(v2*std::conj(v3)+std::conj(v2)*std::conj(v4))));
 					}
 				}
 				delete cimage2;
