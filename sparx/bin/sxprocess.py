@@ -1723,7 +1723,6 @@ def main():
 			if nimages != mimages:
 				ERROR('minuend_stack and subtrahend_stack have different number of images', 'options.subtract_stack',1)
 			else:
-				print(subtrahend_stack, minuend_stack)
 				for im in range(nimages):
 					image  = get_im(minuend_stack, im)
 					simage = get_im(subtrahend_stack, im)
@@ -1747,11 +1746,17 @@ def main():
 			parameters = read_text_row(options.center_params)
 		except:
 			ERROR("Incorrect parameter file", "options.center_params", 1)
-		try:
-			image = get_im(options.off_center_map)
-		except:
-			ERROR("Incorrect off_center_map", "options.center_params", 1)
-		[s3x, s3y, s3z, ns3x, ns3y, ns3z ] = center_of_gravity_phase(image)
+		if os.path.exists(options.off_center_map):
+			try:
+				image = get_im(options.off_center_map)
+			except:
+				ERROR("Incorrect off_center_map", "options.center_params", 1)
+			[s3x, s3y, s3z, ns3x, ns3y, ns3z ] = center_of_gravity_phase(image)
+		else:
+			if options.off_center_map:
+				from string import split, atof
+				shift = split(options.off_center_map)
+				s3x, s3y, s3z = atof(shift[0]), atof(shift[1]), atof(shift[2])
 		for im in range(len(parameters)):
 			phi, theta, psi, s2x, s2y             = parameters[im][0:5]
 			# Equivalent to the old combine_params3 that has been already removed from the system. Code is tested!
