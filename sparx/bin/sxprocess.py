@@ -1723,6 +1723,7 @@ def main():
 			if nimages != mimages:
 				ERROR('minuend_stack and subtrahend_stack have different number of images', 'options.subtract_stack',1)
 			else:
+				print(subtrahend_stack, minuend_stack)
 				for im in range(nimages):
 					image  = get_im(minuend_stack, im)
 					simage = get_im(subtrahend_stack, im)
@@ -1733,10 +1734,12 @@ def main():
 						try:
 							ctf = simage.get_attr('ctf')
 						except: pass
+					ssimage =  image - simage
+					set_params_proj(ssimage, [phi, theta, psi, s2x, s2y])
 					if ctf:
-						image.set_attr('ctf_applied', 0)
-						image.set_attr('ctf', ctf)
-					image.write_image(result_stack, im)
+						ssimage.set_attr('ctf_applied', 0)
+						ssimage.set_attr('ctf', ctf)
+					ssimage.write_image(result_stack, im)
 	elif options.center_params:
 		from statistics import center_of_gravity_phase
 		from utilities  import get_im, read_text_row, write_text_row, compose_transform3
