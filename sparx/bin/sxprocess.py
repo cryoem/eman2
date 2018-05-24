@@ -1723,8 +1723,9 @@ def main():
 					if im == 0:
 						if options.comparison_radius !=-1:
 							mask = model_circle(options.comparison_radius, image.get_xsize(), image.get_ysize())
-						else: mask = None
-					st = Util.infomask(image, mask2D, False)
+						else: 
+							mask = model_circle(options.comparison_radius, image.get_xsize()//2-1, image.get_ysize()//2-1)
+					st = Util.infomask(image, mask, False)
 					image -= st[0]
 					image /= st[1]
 					if options.maxres !=-1:
