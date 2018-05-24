@@ -7,7 +7,7 @@ if [ ! -z ${TRAVIS} ];then
 
     # Following Wiki instructions at
     # http://blake.bcm.edu/emanwiki/EMAN2/COMPILE_EMAN2_ANACONDA
-    conda install eman-deps=11.1 -c cryoem -c defaults -c conda-forge --yes --quiet
+    conda install eman-deps=11.2 -c cryoem -c defaults -c conda-forge --yes --quiet
 fi
 
 if [ ! -z ${CIRCLECI} ];then
