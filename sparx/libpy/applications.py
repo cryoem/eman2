@@ -13994,8 +13994,9 @@ def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqp
 				ERROR("Incorrect ctf values","project3d",1)
 			# setting of values worked, so apply ctf and set the header info correctly
 			if trillinear:
-				proj.set_attr_dict({"is_complex": 0})
-				Util.mulclreal(proj, ctf_img_real(proj.get_ysize(), ctf))
+				if ctfs is not None:
+					proj.set_attr_dict({"is_complex": 0})
+					Util.mulclreal(proj, ctf_img_real(proj.get_ysize(), ctf))
 				proj.set_attr_dict({"padffted":1, "is_complex":1})
 				proj = fft(proj)
 			else: proj = filt_ctf(proj,ctf)
