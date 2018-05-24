@@ -1756,7 +1756,10 @@ def main():
 			if options.off_center_map:
 				from string import split, atof
 				shift = split(options.off_center_map)
-				s3x, s3y, s3z = atof(shift[0]), atof(shift[1]), atof(shift[2])
+				for i in range(len(shift)):
+					if shift[i][0] == '-': shift[i] = -atof(shift[i][1:])
+					else:                  shift[i] =  atof(shift[i])
+				s3x, s3y, s3z = shift[0], shift[1], shift[2]
 		for im in range(len(parameters)):
 			phi, theta, psi, s2x, s2y             = parameters[im][0:5]
 			# Equivalent to the old combine_params3 that has been already removed from the system. Code is tested!
