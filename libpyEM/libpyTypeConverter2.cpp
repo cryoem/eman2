@@ -34,7 +34,6 @@
 
 // Boost Includes ==============================================================
 #include <boost/python.hpp>
-#include <boost/shared_ptr.hpp>
 
 // Includes ====================================================================
 #include <typeconverter.h>

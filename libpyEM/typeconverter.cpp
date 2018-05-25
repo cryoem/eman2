@@ -36,7 +36,6 @@
 #endif	//_WIN32
 
 #include <Python.h>
-#include <boost/python/tuple.hpp>
 #include "typeconverter.h"
 #include "emdata.h"
 
