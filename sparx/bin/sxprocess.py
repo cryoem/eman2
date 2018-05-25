@@ -1705,7 +1705,7 @@ def main():
 		from filter     import filt_tanl
 		from statistics import im_diff
 		nargs = len(args)
-				
+
 		if nargs<2 or nargs>4:
 			ERROR('Three stack names required, see usage and restart the program!','options.subtract_stack',1)
 		else:
@@ -1740,22 +1740,22 @@ def main():
 					'''
 					if options.maxres !=-1:
 						temp_diff, a, b = im_diff(filt_tanl(image, options.maxres, options.maxresaa), simage, mask)						
-					else: 
+					else:
 						temp_diff, a, b = im_diff(image, simage, mask)
 					image *=a
 					image -=b
 					'''
-					ssimage =  Util.subn_img(image, simage)
-					try: 
+					ssimage = Util.subn_img(image, simage)
+					try:
 						ctf = image.get_attr('ctf')
 						ssimage.set_attr('ctf_applied', 0)
 						ssimage.set_attr('ctf', ctf)
 					except:
 						pass
-					try: 
+					try:
 						ctf = image.get_attr('xform.projection')
 						ssimage.set_attr('xform.projection', ctf)
-					except: 
+					except:
 						pass
 
 					ssimage.write_image(result_stack, im)
