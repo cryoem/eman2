@@ -425,10 +425,11 @@ def main():
 	parser.add_option('--cylinder_length',      type='int',           default=10000,                 help='length of the cylinder (default 10000)')	
 	
 	parser.add_option('--subtract_stack',       action="store_true",  default=False,                 help='Subtract from images in the first stack images in the second stack')	
+	'''
 	parser.add_option('--maxres',               type='float',         default=-1.0,                  help='Maximum resolution in absolute unit for image difference measurement')	
 	parser.add_option('--maxresaa',             type='float',         default=0.02,                  help='Low pass filter falloff for maxium resolution')
 	parser.add_option('--comparison_radius',    type='float',         default=-1.0,                  help='Particle radius in pixel for comparion particles with their projections')
-	
+	'''
 
 	(options, args) = parser.parse_args()
 
@@ -1712,8 +1713,10 @@ def main():
 
 			nimages = EMUtil.get_image_count(minuend_stack)
 			mimages = EMUtil.get_image_count(subtrahend_stack)
+			'''
 			if options.comparison_radius>0.5:
 				ERROR('Incorrect maximum resolution', 'options.subtract_stack',1)
+			'''
 			if nimages != mimages:
 				ERROR('Two input stacks have different number of images', 'options.subtract_stack',1)
 			else:
@@ -1721,19 +1724,24 @@ def main():
 					image  = get_im(minuend_stack, im)
 					simage = get_im(subtrahend_stack, im)
 					if im == 0:
+						'''
 						if options.comparison_radius !=-1:
 							mask = model_circle(options.comparison_radius, image.get_xsize(), image.get_ysize())
-						else: 
-							mask = model_circle(image.get_xsize()//2-1, image.get_xsize(), image.get_ysize())
+						else:
+						'''
+						radius = image.get_xsize()//2-1 
+						mask = model_circle(radius, image.get_xsize(), image.get_ysize())
 					st = Util.infomask(image, mask, False)
 					image -= st[0]
 					image /= st[1]
+					'''
 					if options.maxres !=-1:
-						temp_diff, a, b = im_diff(filt_tanl(image, options.maxres, options.maxresaa, mask), simage)						
+						temp_diff, a, b = im_diff(filt_tanl(image, options.maxres, options.maxresaa), simage, mask)						
 					else: 
 						temp_diff, a, b = im_diff(image, simage, mask)
 					image *=a
 					image -=b
+					'''
 					ssimage =  Util.subn_img(image, simage)
 					try: 
 						ctf = image.get_attr('ctf')
