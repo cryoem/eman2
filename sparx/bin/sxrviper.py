@@ -52,9 +52,7 @@ def calculate_list_of_independent_viper_run_indices_used_for_outlier_elimination
 		if (my_rank == idx % no_of_processors):
 			list_of_viper_run_indices = list(tuple_of_projection_indices) + [no_of_viper_runs_analyzed_together - 1]
 			criterion_measure[idx] = measure_for_outlier_criterion(criterion_name, masterdir, rviper_iter, list_of_viper_run_indices, symc)
-			### NOTE: 2017/05/04 Toshio moriya
-			### Temporary disabled the this function because of Anaconda Installer Issue
-			### plot_errors_between_any_number_of_projections(masterdir, rviper_iter, list_of_viper_run_indices, criterion_measure[idx])
+			plot_errors_between_any_number_of_projections(masterdir, rviper_iter, list_of_viper_run_indices, criterion_measure[idx], symc)
 
 	criterion_measure = mpi_reduce(criterion_measure, number_of_additional_combinations_for_this_viper_iteration, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD)
 
@@ -148,10 +146,9 @@ def identify_outliers(myid, main_node, rviper_iter, no_of_viper_runs_analyzed_to
 
 	return no_of_viper_runs_analyzed_together_must_be_incremented
 
-### NOTE: 2017/05/04 Toshio moriya
-### Temporary disabled the this function because of Anaconda Installer Issue
-'''
-def plot_errors_between_any_number_of_projections(masterdir, rviper_iter, list_of_projection_indices, error_value):
+def plot_errors_between_any_number_of_projections(masterdir, rviper_iter, list_of_projection_indices, error_value, symc):
+	import matplotlib
+	matplotlib.use('agg')
 	import matplotlib.pyplot as plt
 
 	# # for debugging purposes
@@ -167,7 +164,7 @@ def plot_errors_between_any_number_of_projections(masterdir, rviper_iter, list_o
 	for i1 in list_of_projection_indices:
 		p.append(read_text_row(mainoutputdir + NAME_OF_RUN_DIR + "%03d"%(i1) + DIR_DELIM + "params.txt"))
 
-	ti1, ti3, out = find_common_subset(p,0)
+	ti1, ti3, out = find_common_subset(p, 0, symmetry_class=symc)
 	u = []
 	for i in xrange(len(ti3)):
 		u.append([ti3[i],i])
@@ -190,14 +187,14 @@ def plot_errors_between_any_number_of_projections(masterdir, rviper_iter, list_o
 	plt.savefig(mainoutputdir + '/sorted_errors_between_projections' + which_projections.getvalue() + '.png')
 	which_projections.close()
 	plt.close()
-'''
 
-### NOTE: 2017/05/22 Toshio moriya
-### Temporary disabled matplotlib.pyplot because of Anaconda Installer Issue
 def find_index_of_discontinuity_in_derivative(error_curve_func, list_of_projection_indices, mainoutputdir,
 	outlier_percentile):
-
+	
 	import numpy as np
+	import matplotlib
+	matplotlib.use('agg')
+	import matplotlib.pyplot as plt
 
 	resolution = 100
 	split_point_resolution = 29
@@ -227,20 +224,19 @@ def find_index_of_discontinuity_in_derivative(error_curve_func, list_of_projecti
 			minimum_goodness_of_fit_for_both_lines = goodness_of_fit_for_both_lines
 			optimized_split_point = split_point
 
-###		import matplotlib.pyplot as plt
 		# split_point = optimized_split_point
-###		plt.plot(range(len(error_curve_func)),error_curve_func)
+		plt.plot(range(len(error_curve_func)),error_curve_func)
 
 		first_line_x = map(int, np.linspace(0,split_point,resolution)*data_set_length)
 		first_line_y = np.array([error_curve_func[x] for x in first_line_x])
 		first_line_z = np.poly1d( np.polyfit(first_line_x, first_line_y, degree_of_the_fitting_polynomial) )
 
-###		plt.plot(first_line_x,first_line_z(first_line_x))
+		plt.plot(first_line_x,first_line_z(first_line_x))
 
 		second_line_x = map(int, np.linspace(split_point,1, resolution)*data_set_length)
 		second_line_y = np.array([error_curve_func[x-1] for x in second_line_x])
 		second_line_z = np.poly1d( np.polyfit(second_line_x, second_line_y, degree_of_the_fitting_polynomial) )
-###		plt.plot(second_line_x,second_line_z(second_line_x))
+		plt.plot(second_line_x,second_line_z(second_line_x))
 
 		import StringIO
 		which_projections = StringIO.StringIO()
@@ -248,24 +244,23 @@ def find_index_of_discontinuity_in_derivative(error_curve_func, list_of_projecti
 		for p_i in list_of_projection_indices: which_projections.write("_" + "%03d"%p_i)
 		for p_i in list_of_projection_indices: which_projections.write("___" + "%03d"%get_already_processed_viper_runs.r_permutation[p_i])
 
-###		plt.title(mainoutputdir + '/sorted_errors' + which_projections.getvalue() + '.png')
-###		plt.savefig(mainoutputdir + '/sorted_errors' + which_projections.getvalue() + '.png')
-###		plt.close()
+		plt.title(mainoutputdir + '/sorted_errors' + which_projections.getvalue() + '.png')
+		plt.savefig(mainoutputdir + '/sorted_errors' + which_projections.getvalue() + '.png')
+		plt.close()
 
-###	import matplotlib.pyplot as plt
 	split_point = optimized_split_point
-###	plt.plot(range(len(error_curve_func)),error_curve_func)
+	plt.plot(range(len(error_curve_func)),error_curve_func)
 
 	first_line_x = map(int, np.linspace(0,split_point,resolution)*data_set_length)
 	first_line_y = np.array([error_curve_func[x] for x in first_line_x])
 	first_line_z = np.poly1d( np.polyfit(first_line_x, first_line_y, degree_of_the_fitting_polynomial) )
 
-###	plt.plot(first_line_x,first_line_z(first_line_x))
+	plt.plot(first_line_x,first_line_z(first_line_x))
 
 	second_line_x = map(int, np.linspace(split_point,1, resolution)*data_set_length)
 	second_line_y = np.array([error_curve_func[x-1] for x in second_line_x])
 	second_line_z = np.poly1d( np.polyfit(second_line_x, second_line_y, degree_of_the_fitting_polynomial) )
-###	plt.plot(second_line_x,second_line_z(second_line_x))
+	plt.plot(second_line_x,second_line_z(second_line_x))
 
 	import StringIO
 	which_projections = StringIO.StringIO()
@@ -273,9 +268,9 @@ def find_index_of_discontinuity_in_derivative(error_curve_func, list_of_projecti
 	for p_i in list_of_projection_indices: which_projections.write("_" + "%03d"%p_i)
 	for p_i in list_of_projection_indices: which_projections.write("___" + "%03d"%get_already_processed_viper_runs.r_permutation[p_i])
 
-###	plt.title(mainoutputdir + '/optimized_errors' + which_projections.getvalue() + '.png')
-###	plt.savefig(mainoutputdir + '/optimized_errors' + which_projections.getvalue() + '.png')
-###	plt.close()
+	plt.title(mainoutputdir + '/optimized_errors' + which_projections.getvalue() + '.png')
+	plt.savefig(mainoutputdir + '/optimized_errors' + which_projections.getvalue() + '.png')
+	plt.close()
 
 	if optimized_split_point < 0:
 		return -1
@@ -364,6 +359,8 @@ def found_outliers(list_of_projection_indices, outlier_percentile, rviper_iter, 
 	index_outliers = [i[1] for i in error_values_and_indices[outlier_index_threshold:]]
 
 	# print "error_values_and_indices: %f"%error_values_and_indices
+	print("outlier_index_threshold_method: ", outlier_index_threshold_method)
+	print("error_values_and_indices: ", error_values_and_indices)
 	print("index_outliers: ", index_outliers)
 
 	import copy
