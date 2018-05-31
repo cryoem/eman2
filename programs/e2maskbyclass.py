@@ -77,9 +77,10 @@ once complete, bispectra can be recomputed based on the masked particles, or the
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	parser.add_argument("--classes",type=str,default=None,help="Path to a class-average file (must be EMAN2 HDF averages)")
-	parser.add_argument("--threads", default=4,type=int,help="Number of alignment threads to run in parallel on a single computer. This is the only parallelism supported by e2spt_align at present.", guitype='intbox', row=24, col=2, rowspan=1, colspan=1, mode="refinement")
+	parser.add_argument("--threads", default=4,type=int,help="Number of alignment threads to run in parallel on a single computer.", guitype='intbox', row=24, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--nofullresok",action="store_true",help="Overrides the requirement that the class-averages be made from _fullres particle images.",default=False)
 	parser.add_argument("--redobispec",action="store_true",help="Recomputes bispectra from masked particles",default=False)
+	parser.add_argument("--gui",action="store_true",help="Permits interactive adjustment of mask parameters",default=False, guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode="tuning[True]")
 # 	parser.add_argument("--iter",type=int,help="Iteration number within path. Default = start a new iteration",default=0)
 # 	parser.add_argument("--goldstandard",type=float,help="If specified, will phase randomize the even and odd references past the specified resolution (in A, not 1/A)",default=0)
 # 	parser.add_argument("--goldcontinue",action="store_true",help="Will use even/odd refs corresponding to specified reference to continue refining without phase randomizing again",default=False)
@@ -96,9 +97,13 @@ once complete, bispectra can be recomputed based on the masked particles, or the
 	classes=EMData.read_images(options.classes)		# read all class-averages
 	nx=classes[0]["nx"]
 
+	if options.gui:
+		parm=maskparmgui(classes)
+	else: parm=(0.03,8,nx//8,0.3)
+
 	# Make a mask for each class-average
-	for c in classes: c.process_inplace("filter.lowpass.gauss",{"cutoff_freq":0.05})
-	masks=[c.process("mask.auto2d",{"nmaxseed":12,"nshells":nx/12,"radius":nx/10,"return_mask":1,"sigma":0.1}) for c in classes]
+	for c in classes: c.process_inplace("filter.lowpass.gauss",{"cutoff_freq":parm[0]})
+	masks=[c.process("mask.auto2d",{"nmaxseed":parm[1],"nshells":parm[2],"radius":nx/10,"return_mask":1,"sigma":parm[3]}) for c in classes]
 	for i in masks: i.process_inplace("filter.lowpass.gauss",{"cutoff_freq":0.03})
 
 	# Find all of the particles
@@ -156,6 +161,89 @@ once complete, bispectra can be recomputed based on the masked particles, or the
 	if options.verbose: print("Finished processing ",len(ptcls), "particle files")
 	E2end(logid)
 
+def maskparmgui(classes):
+	try:
+		from eman2_gui.emapplication import EMApp
+		from PyQt4 import QtCore, QtGui, QtOpenGL
+		from PyQt4.QtCore import Qt
+		from OpenGL import GL,GLUT
+		from eman2_gui.valslider import ValSlider,CheckBox
+		from eman2_gui.emimagemx import EMImageMXWidget
+		
+	except:
+		print("Error: PyQt4 must be usable to use the --gui option")
+		sys.exit(1)
+
+
+	class GUImask(QtGui.QWidget):
+		def __init__(self,app,classes):
+			"""Effectively a modal dialog for selecting masking parameters interactively
+			"""
+			self.app=app
+			QtGui.QWidget.__init__(self,None)
+			nx=classes[0]["nx"]
+			
+			self.classes=classes
+			self.classview=EMImageMXWidget(self,classes)
+			
+			self.vbl = QtGui.QVBoxLayout(self)
+			self.vbl.addWidget(self.classview)
+			
+			self.hbl = QtGui.QHBoxLayout()
+			
+			self.cmode=CheckBox(self,"orig",value=1)
+			self.hbl.addWidget(self.cmode)
+
+			self.slpres=ValSlider(self,(0.001,0.2),"Low-pass Filter:",0.03,90)
+			self.hbl.addWidget(self.slpres)
+			
+			self.snmax=ValSlider(self,(0,20),"NMax:",5,90)
+			self.snmax.intonly=1
+			self.hbl.addWidget(self.snmax)
+			
+			self.sshells=ValSlider(self,(0,40),"NShells:",nx//8,90)
+			self.sshells.intonly=1
+			self.hbl.addWidget(self.sshells)
+			
+			self.ssigma=ValSlider(self,(0,2),"Sigma:",0.333,90)
+			self.hbl.addWidget(self.ssigma)
+			
+			self.bok=QtGui.QPushButton("OK")
+			self.hbl.addWidget(self.bok)
+
+			self.vbl.addLayout(self.hbl)
+
+			QtCore.QObject.connect(self.cmode, QtCore.SIGNAL("valueChanged"), self.newParm)
+			QtCore.QObject.connect(self.slpres, QtCore.SIGNAL("valueChanged"), self.newParm)
+			QtCore.QObject.connect(self.snmax, QtCore.SIGNAL("valueChanged"), self.newParm)
+			QtCore.QObject.connect(self.sshells, QtCore.SIGNAL("valueChanged"), self.newParm)
+			QtCore.QObject.connect(self.ssigma, QtCore.SIGNAL("valueChanged"), self.newParm)
+			QtCore.QObject.connect(self.bok,QtCore.SIGNAL("clicked(bool)"),self.close)
+	
+			self.newParm()
+
+		def quit(self):
+			self.app.close_specific(self)
+			
+		def newParm(self):
+			if self.cmode.getValue(): 
+				self.classview.set_data(self.classes)
+				return
+			self.masked=[i.process("filter.lowpass.gauss",{"cutoff_freq":self.slpres.value}) for i in self.classes]
+			nx=self.masked[0]["nx"]
+			for i,im in enumerate(self.masked):
+				im.process_inplace("mask.auto2d",{"nmaxseed":int(self.snmax.value),"nshells":int(self.sshells.value),"radius":nx/10,"return_mask":1,"sigma":self.ssigma.value})
+				im.process_inplace("filter.lowpass.gauss",{"cutoff_freq":0.03})
+				im.mult(self.classes[i])
+				
+			self.classview.set_data(self.masked)
+	app=EMApp()
+	gui=GUImask(app,classes)
+	gui.show()
+	gui.raise_()
+	app.exec_()
+	
+	return((gui.slpres.value,gui.snmax.value,gui.sshells.value,gui.ssigma.value))
 
 if __name__ == "__main__":
 	main()
