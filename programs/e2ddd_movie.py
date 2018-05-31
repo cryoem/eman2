@@ -127,7 +127,7 @@ def main():
 	parser.add_argument("--fixbadpixels",action="store_true",default=False,help="Tries to identify bad pixels in the dark/gain reference, and fills images in with sane values instead", guitype='boolbox', row=17, col=1, rowspan=1, colspan=1, mode='align[True]')
 	# parser.add_argument("--normaxes",action="store_true",default=False,help="Tries to erase vertical/horizontal line artifacts in Fourier space by replacing them with the mean of their neighboring values.",guitype='boolbox', row=17, col=2, rowspan=1, colspan=1, mode='align')
 	#parser.add_argument("--frames",action="store_true",default=False,help="Save the dark/gain corrected frames. Note that frames will be overwritten if identical --suffix is already present.", guitype='boolbox', row=19, col=0, rowspan=1, colspan=1, mode="align,tomo")
-	#parser.add_argument("--suffix",type=str,default="proc",help="Specify a unique suffix for output frames. Default is 'proc'. Note that the output of --frames will be overwritten if identical suffix is already present.",guitype='strbox', row=19, col=2, rowspan=1, colspan=1, mode="align,tomo")
+	parser.add_argument("--suffix",type=str,default="proc",help="Specify a unique suffix for output frames. Default is 'proc'. Note that the output of --frames will be overwritten if identical suffix is already present.",guitype='strbox', row=19, col=2, rowspan=1, colspan=1, mode="align,tomo")
 	#parser.add_argument("--highdose", default=False, help="Use this flag when aligning high dose data (where features in each frame can be distinguished visually).",action="store_true",guitype='boolbox', row=18, col=0, rowspan=1, colspan=1,mode='align')
 	#parser.add_argument("--phaseplate", default=False, help="Use this flag when aligning phase plate frames.",action="store_true",guitype='boolbox', row=18, col=1, rowspan=1, colspan=1,mode='align')
 	# parser.add_argument('--import_movies', action="store_true",default=False,help="List the references to import into 'movies' directory without additional processing.", default="", guitype='boolbox', row=0, col=0,rowspan=1, colspan=3, mode="import[True],default[False]")
@@ -231,7 +231,8 @@ def main():
 			nx = dark_hdr["nx"]
 			ny = dark_hdr["ny"]
 			nd = dark_hdr["nz"]
-			dark=EMData(options.dark,0,False,Region(0,0,0,nx,ny,1))
+			if nd == 1: dark = EMData(options.dark)
+			else: dark=EMData(options.dark,0,False,Region(0,0,0,nx,ny,1))
 		else:
 			nd=EMUtil.get_image_count(options.dark)
 			dark = EMData(options.dark,0)
@@ -262,9 +263,17 @@ def main():
 		dark.process_inplace("threshold.clampminmax.nsigma",{"nsigma":3.0})
 		#dark2=dark.process("normalize.unitlen")
 
-		if options.rotate_dark and dark != None:
-			tf = Transform({"type":"2d","alpha":int(options.rotate_dark)})
-			dark.process_inplace("xform",{"transform":tf})
+		if options.rotate_dark!="0" and dark != None:
+			# tf = Transform({"type":"2d","alpha":int(options.rotate_dark)})
+			# dark.process_inplace("xform",{"transform":tf})\
+			dim = [dark["nx"],dark["ny"]]
+			maxdim = max(dim[0],dim[1])
+			dark.set_size(maxdim,maxdim)
+			dark.rotate(0,0,int(options.rotate_dark))
+			if options.rotate_dark == 0 or options.rotate_dark == 180:
+				dark.set_size(dim[0],dim[1])
+			else:
+				dark.set_size(dim[1],dim[0])
 
 		if options.reverse_dark: dark.process_inplace("xform.reverse",{"axis":"y"})
 
@@ -282,9 +291,9 @@ def main():
 				nx = gain_hdr["nx"]
 				ny = gain_hdr["ny"]
 				nd = gain_hdr["nz"]
-				gain=EMData(options.gain,0,False,Region(0,0,0,nx,ny,1))
+				if nd == 1: gain = EMData(options.gain)
+				else: gain=EMData(options.gain,0,False,Region(0,0,0,nx,ny,1))
 			else:
-
 				nd=EMUtil.get_image_count(options.gain)
 				gain = EMData(options.gain,0)
 				nx = gain["nx"]
@@ -321,7 +330,7 @@ def main():
 			#gain.mult(1.0/99.0)
 			#gain.process_inplace("threshold.clampminmax.nsigma",{"nsigma":3.0})
 
-		if dark!="" and options.gain != "" and options.gain_darkcorrected == False: gain.sub(dark) # dark correct the gain-reference
+		if options.dark!="" and options.gain != "" and options.gain_darkcorrected == False: gain.sub(dark) # dark correct the gain-reference
 
 		if options.de64:
 			mean_val = gain["mean"]
@@ -332,9 +341,17 @@ def main():
 
 		if options.invert_gain: gain.process_inplace("math.reciprocal")
 
-		if options.rotate_gain and gain != None:
-			tf = Transform({"type":"2d","alpha":int(options.rotate_gain)})
-			gain.process_inplace("xform",{"transform":tf})
+		if options.rotate_gain!="0" and gain != None:
+			# tf = Transform({"type":"2d","alpha":int(options.rotate_gain)})
+			# gain.process_inplace("xform",{"transform":tf})
+			dim = [gain["nx"],gain["ny"]]
+			maxdim = max(dim[0],dim[1])
+			gain.set_size(maxdim,maxdim)
+			gain.rotate(0,0,int(options.rotate_gain))
+			if options.rotate_gain == 0 or options.rotate_gain == 180:
+				gain.set_size(dim[0],dim[1])
+			else:
+				gain.set_size(dim[1],dim[0])
 
 		if options.reverse_gain: gain.process_inplace("xform.reverse",{"axis":"y"})
 
@@ -420,16 +437,12 @@ def main():
 			#	db["ddd_fixbadpixels"] = options.fixbadpixels
 		db.close()
 
-		n = EMUtil.get_image_count(fsp)
-
+		hdr = EMData(fsp, 0, True)
+		try: n = EMUtil.get_image_count(fsp)
+		except: n = hdr["nz"]
 		if n < 3 :
-			hdr = EMData(fsp, 0, True)
-
-			if hdr["nz"] < 2 :
-				print("ERROR: {} has only {} images. Min 3 required.".format(fsp, n))
-				continue
-
-			n = hdr["nz"]
+			print("ERROR: {} has only {} images. Min 3 required.".format(fsp, n))
+			continue
 
 		if last <= 0 : flast = n
 		else : flast = last
@@ -449,8 +462,8 @@ def process_movie(options,fsp,dark,gain,first,flast,step,idx,angle):
 	
 	if options.frames:
 		if options.ext == "mrc":
-			outname="{}/{}_proc.mrcs".format(cwd,base_name(fsp,nodir=True))#,options.suffix,"mrcs") #Output contents vary with options
-		else: outname="{}/{}_proc.{}".format(cwd,base_name(fsp,nodir=True),options.suffix,options.ext) #Output contents vary with options
+			outname="{}/{}_{}.{}".format(cwd,base_name(fsp,nodir=True),options.suffix,"mrcs") #Output contents vary with options
+		else: outname="{}/{}_{}.{}".format(cwd,base_name(fsp,nodir=True),options.suffix,options.ext) #Output contents vary with options
 	else: outname="{}/{}.{}".format(cwd,base_name(fsp,nodir=True),options.ext)
 
 	if fsp[-4:].lower() in (".mrc"):
