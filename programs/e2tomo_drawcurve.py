@@ -292,8 +292,8 @@ class EMDrawWindow(QtGui.QMainWindow):
 		self.imgview.shapes = {0:self.contour}
 
 
-		QtCore.QObject.connect(self.imgview,QtCore.SIGNAL("mouseup"),self.mouseup  )
-		QtCore.QObject.connect(self.imgview,QtCore.SIGNAL("keypress"),self.key_press)
+		self.imgview.mouseup.connect(self.mouseup)
+		self.imgview.keypress.connect(self.key_press)
 
 		glEnable(GL_POINT_SMOOTH)
 		glEnable( GL_LINE_SMOOTH );
