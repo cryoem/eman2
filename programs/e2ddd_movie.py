@@ -264,16 +264,22 @@ def main():
 		#dark2=dark.process("normalize.unitlen")
 
 		if options.rotate_dark!="0" and dark != None:
-			# tf = Transform({"type":"2d","alpha":int(options.rotate_dark)})
-			# dark.process_inplace("xform",{"transform":tf})\
-			dim = [dark["nx"],dark["ny"]]
-			maxdim = max(dim[0],dim[1])
-			dark.set_size(maxdim,maxdim)
-			dark.rotate(0,0,int(options.rotate_dark))
-			if options.rotate_dark == 0 or options.rotate_dark == 180:
-				dark.set_size(dim[0],dim[1])
+			if options.rotate_dark == "90":
+				dark.process_inplace("xform.transpose")
+				dark.process_inplace("xform.mirror",{"axis":"y"})
+			elif options.rotate_dark == "180":
+				dark.rotate(180,0,0)
 			else:
-				dark.set_size(dim[1],dim[0])
+				dark.rotate(180,0,0)
+				dark.process_inplace("xform.transpose")
+				dark.process_inplace("xform.mirror",{"axis":"y"})
+			# nrot = int(options.rotate_dark)/90
+			# for i in range(nrot):
+			# 	dark.process_inplace("xform.transpose")
+			# 	dark.process_inplace("xform.reverse")#,{"axis":"x"})
+			#dark.set_size(maxdim,maxdim)
+			#dark.process_inplace("xform.scale",{"clip":maxdim,"scale":1})
+			#dark.rotate(0,0,int(options.rotate_dark))
 
 		if options.reverse_dark: dark.process_inplace("xform.reverse",{"axis":"y"})
 
@@ -342,18 +348,30 @@ def main():
 		if options.invert_gain: gain.process_inplace("math.reciprocal")
 
 		if options.rotate_gain!="0" and gain != None:
-			# tf = Transform({"type":"2d","alpha":int(options.rotate_gain)})
-			# gain.process_inplace("xform",{"transform":tf})
-			dim = [gain["nx"],gain["ny"]]
-			maxdim = max(dim[0],dim[1])
-			gain.set_size(maxdim,maxdim)
-			gain.rotate(0,0,int(options.rotate_gain))
-			if options.rotate_gain == 0 or options.rotate_gain == 180:
-				gain.set_size(dim[0],dim[1])
+			if options.rotate_gain == "90":
+				gain.process_inplace("xform.transpose")
+				gain.process_inplace("xform.mirror",{"axis":"y"})
+			elif options.rotate_gain == "180":
+				gain.rotate(180,0,0)
 			else:
-				gain.set_size(dim[1],dim[0])
+				gain.rotate(180,0,0)
+				gain.process_inplace("xform.transpose")
+				gain.process_inplace("xform.mirror",{"axis":"y"})
+			# nrot = int(options.rotate_gain)/90
+			# for i in range(nrot):
+			# 	gain.process_inplace("xform.transpose")
+			# 	gain.process_inplace("xform.reverse")
+			# dim = [gain["nx"],gain["ny"]]
+			# maxdim = max(dim[0],dim[1])
+			# gain.set_size(maxdim,maxdim)
+			# gain.rotate(0,0,int(options.rotate_gain))
+			# if options.rotate_gain == 0 or options.rotate_gain == 180:
+			# 	gain.set_size(dim[0],dim[1])
+			# else:
+			# 	gain.set_size(dim[1],dim[0])
 
-		if options.reverse_gain: gain.process_inplace("xform.reverse",{"axis":"y"})
+		if options.reverse_gain:
+			gain.process_inplace("xform.reverse",{"axis":"y"})
 
 		options.gain = "movierefs/{}.hdf".format(base_name(options.gain,nodir=True))
 		gain.write_image(options.gain,0)
