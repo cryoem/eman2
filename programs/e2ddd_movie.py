@@ -266,13 +266,15 @@ def main():
 		if options.rotate_dark!="0" and dark != None:
 			if options.rotate_dark == "90":
 				dark.process_inplace("xform.transpose")
-				dark.process_inplace("xform.mirror",{"axis":"y"})
+				dark.process_inplace("xform.reverse",{"axis":"y"})
 			elif options.rotate_dark == "180":
-				dark.rotate(180,0,0)
-			else:
-				dark.rotate(180,0,0)
 				dark.process_inplace("xform.transpose")
-				dark.process_inplace("xform.mirror",{"axis":"y"})
+				dark.process_inplace("xform.reverse",{"axis":"y"})
+				dark.process_inplace("xform.transpose")
+				dark.process_inplace("xform.reverse",{"axis":"y"})
+			else:
+				dark.process_inplace("xform.transpose")
+				dark.process_inplace("xform.reverse",{"axis":"x"}) #reversing over X axis for 270 deg rotate
 			# nrot = int(options.rotate_dark)/90
 			# for i in range(nrot):
 			# 	dark.process_inplace("xform.transpose")
@@ -350,13 +352,15 @@ def main():
 		if options.rotate_gain!="0" and gain != None:
 			if options.rotate_gain == "90":
 				gain.process_inplace("xform.transpose")
-				gain.process_inplace("xform.mirror",{"axis":"y"})
+				gain.process_inplace("xform.reverse",{"axis":"y"})
 			elif options.rotate_gain == "180":
-				gain.rotate(180,0,0)
-			else:
-				gain.rotate(180,0,0)
 				gain.process_inplace("xform.transpose")
-				gain.process_inplace("xform.mirror",{"axis":"y"})
+				gain.process_inplace("xform.reverse",{"axis":"y"})
+				gain.process_inplace("xform.transpose")
+				gain.process_inplace("xform.reverse",{"axis":"y"})
+			else:
+				gain.process_inplace("xform.transpose")
+				gain.process_inplace("xform.reverse",{"axis":"x"}) #reversing over X axis for 270 deg rotate
 			# nrot = int(options.rotate_gain)/90
 			# for i in range(nrot):
 			# 	gain.process_inplace("xform.transpose")
