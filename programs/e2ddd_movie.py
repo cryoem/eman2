@@ -125,11 +125,11 @@ def main():
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 
 	parser.add_argument("--fixbadpixels",action="store_true",default=False,help="Tries to identify bad pixels in the dark/gain reference, and fills images in with sane values instead", guitype='boolbox', row=17, col=1, rowspan=1, colspan=1, mode='align[True]')
-	# parser.add_argument("--normaxes",action="store_true",default=False,help="Tries to erase vertical/horizontal line artifacts in Fourier space by replacing them with the mean of their neighboring values.",guitype='boolbox', row=17, col=2, rowspan=1, colspan=1, mode='align')
+	#parser.add_argument("--normaxes",action="store_true",default=False,help="Tries to erase vertical/horizontal line artifacts in Fourier space by replacing them with the mean of their neighboring values.",guitype='boolbox', row=17, col=2, rowspan=1, colspan=1, mode='align')
 	#parser.add_argument("--frames",action="store_true",default=False,help="Save the dark/gain corrected frames. Note that frames will be overwritten if identical --suffix is already present.", guitype='boolbox', row=19, col=0, rowspan=1, colspan=1, mode="align,tomo")
 	parser.add_argument("--suffix",type=str,default="proc",help="Specify a unique suffix for output frames. Default is 'proc'. Note that the output of --frames will be overwritten if identical suffix is already present.",guitype='strbox', row=19, col=2, rowspan=1, colspan=1, mode="align,tomo")
 	#parser.add_argument("--highdose", default=False, help="Use this flag when aligning high dose data (where features in each frame can be distinguished visually).",action="store_true",guitype='boolbox', row=18, col=0, rowspan=1, colspan=1,mode='align')
-	#parser.add_argument("--phaseplate", default=False, help="Use this flag when aligning phase plate frames.",action="store_true",guitype='boolbox', row=18, col=1, rowspan=1, colspan=1,mode='align')
+	parser.add_argument("--phaseplate", default=False, help="Use this flag when aligning phase plate frames.",action="store_true",guitype='boolbox', row=18, col=1, rowspan=1, colspan=1,mode='align')
 	# parser.add_argument('--import_movies', action="store_true",default=False,help="List the references to import into 'movies' directory without additional processing.", default="", guitype='boolbox', row=0, col=0,rowspan=1, colspan=3, mode="import[True],default[False]")
 
 	(options, args) = parser.parse_args()
@@ -543,6 +543,7 @@ def process_movie(options,fsp,dark,gain,first,flast,step,idx,angle):
 
 		start = time()
 
+		n=len(outim)
 		nx=outim[0]["nx"]
 		ny=outim[0]["ny"]
 
@@ -550,10 +551,6 @@ def process_movie(options,fsp,dark,gain,first,flast,step,idx,angle):
 		if md <= 2048:
 			print("This program does not facilitate alignment of movies with frames smaller than 2048x2048 pixels.")
 			sys.exit(1)
-
-		n=len(outim)
-		nx=outim[0]["nx"]
-		ny=outim[0]["ny"]
 
 		print("{} frames read {} x {}".format(n,nx,ny))
 
@@ -806,6 +803,8 @@ def process_movie(options,fsp,dark,gain,first,flast,step,idx,angle):
 					dx = float(locs[i*2])
 					dy = float(locs[i*2+1])
 					im.translate(dx,dy,0)
+				if options.debug or options.verbose > 5:
+					print("{}\t{}\t{}".format(i,dx,dy))
 
 			#if options.normaxes:
 			#	for f in outim:
@@ -941,16 +940,19 @@ def split_fft(options,img,i,box,step,out):
 	for dx in range(box/2,nx-box,step):
 		for dy in range(box/2,ny-box,step):
 			clp = img.get_clip(Region(dx,dy,box,box))
+			clp.process_inplace("math.fft.resample",{"n":4})
 			#if options.normalize: clp.process_inplace("normalize.edgemean")
 			#if box >= 512:
 			#	if not options.tomo:
 			#		if img["apix_x"] == 1.0: # likely an image with incorrect header or simulated data
 			#			clp.process_inplace("filter.highpass.gauss",{"cutoff_pixels":2})
 			#		else: 
-			#	clp.process_inplace("filter.highpass.gauss",{"cutoff_abs":0.01})
-				#clp.process_inplace("math.fft.resample",{"n":1.})
-				#if options.tomo:
-				#	clp.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.3})
+			#clp.process_inplace("math.meanshrink",{"n":4.})
+			
+			#clp.process_inplace("mask.soft",{"outer_radius":(nx-box/2)/2,"width":box/8})
+			clp.process_inplace("filter.xyaxes0",{"neighbor":1})
+			clp.process_inplace("filter.highpass.gauss",{"cutoff_pixels":2})
+			clp.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.4})
 			clp.process_inplace("normalize.edgemean")
 			#if options.debug:
 			#	clp["patch_id"] = patchid
@@ -1046,7 +1048,7 @@ def bimodal_peak_model(options,ccf):
 	s2 = 0.6
 
 	if options.optccf == "centerofmass":
-		initial_guess = [x1,y1,s1,a1]
+		#initial_guess = [x1,y1,s1,a1,s2,a2]
 		# drop the origin (replace with perimeter mean)
 		#mval = edgemean(ncc)
 		#ix,iy = ncc.shape
@@ -1060,7 +1062,7 @@ def bimodal_peak_model(options,ccf):
 		# 		from_numpy(pncc).write_image("tmp.hdf",ii)`
 		# 	except:
 		# 		from_numpy(pncc).write_image("tmp.hdf",0)
-		return [x1,y1],ccf.sget_value_at_interp(x1,y1)
+		return [x1,y1,s1,a1,s2,a2],ccf.sget_value_at_interp(x1,y1)
 		# try: # run optimization
 		# 	bds = [(-np.inf, -np.inf,  0.01, 0.01),(np.inf, np.inf, 100.0, 100000.0)]
 		# 	#bds = [(-bs/2, -bs/2,  0.0, 0.0),(bs/2, bs/2, 100.0, 100000.0)]
@@ -1073,9 +1075,9 @@ def bimodal_peak_model(options,ccf):
 		return popt,ccf.sget_value_at_interp(popt[0],popt[1])
 	elif options.optccf == "robust":
 		initial_guess = [x1,y1,s1,a1,s2,a2]
-		bds = [(-bs/2, -bs/2, 0.01, 0.01, 0.6, 0.01),(bs/2, bs/2, 100.0, 20000.0, 2.5, 100000.0)]
+		bds = [(-bs/2, -bs/2, 0.6, 0.01, 0.01, 0.01),(bs/2, bs/2, 1000.0, 20000.0, 2.5, 100000.0)]
 		try:
-			popt,pcov=optimize.curve_fit(twod_bimodal,(xx,yy),ncc.ravel(),p0=initial_guess,bounds=bds,method="dogbox",max_nfev=100,xtol=1e-6,ftol=1e-8,loss='linear')
+			popt,pcov=optimize.curve_fit(twod_bimodal,(xx,yy),ncc.ravel(),p0=initial_guess,bounds=bds,method="dogbox",max_nfev=250,xtol=1e-3,ftol=1e-6,loss='linear')
 		except RuntimeError:
 			return None,-1
 
