@@ -1143,8 +1143,7 @@ def main():
 					try:
 						map2 = get_im(map2_path)
 					except:
-						ERROR("Sphire combinemaps fails to read the second map " + map2_path, "--combinemaps option for 3-D")
-						exit()
+						ERROR("Sphire combinemaps fails to read the second map " + map2_path, "--combinemaps option for 3-D", 1)
 				
 					if (map2.get_xsize() != map1.get_xsize()) or (map2.get_ysize() != map1.get_ysize()) or (map2.get_zsize() != map1.get_zsize()):
 						ERROR("Two input maps have different image size", "--combinemaps option for 3-D", 1)
@@ -1173,7 +1172,7 @@ def main():
 
 				## prepare mask 
 				if options.mask != None and options.do_adaptive_mask:
-					ERROR("Wrong options, use either adaptive_mask or user provided mask", " options.mask and options.do_adaptive_mask ", 1)
+					ERROR("Wrong options, use either adaptive_mask or supply a mask", " options.mask and options.do_adaptive_mask ", 1)
 
 				if options.mask != None:
 					log_main.add("User provided mask: %s"%options.mask)
@@ -1185,14 +1184,13 @@ def main():
 						ERROR(" Mask file  "+options.mask+" has different size with input image  ", "--combinemaps for mask "+options.mask), 1
 
 				elif options.do_adaptive_mask:
-					if not single_map:
-						map1 +=map2
-						map1 /=2.
 					log_main.add("Create an adaptive mask, let's wait...")
 					log_main.add("Options.mask_threshold, options.dilation, options.consine_edge %f %5.2f %5.2f"%(options.mask_threshold, options.dilation, options.consine_edge))
-					m = Util.adaptive_mask(map1, options.mask_threshold, options.dilation, options.consine_edge)
+					if single_map:
+						m = Util.adaptive_mask(map1, options.mask_threshold, options.dilation, options.consine_edge)
+					else:
+						m = Util.adaptive_mask((map1+map2)/2.0, options.mask_threshold, options.dilation, options.consine_edge)
 					m.write_image(os.path.join(options.output_dir, "vol_adaptive_mask%s.hdf"%suffix))
-					map1 = get_im(map1_path) # re-read map1
 				else:
 					m = None
 					log_main.add("No mask is applied")
@@ -1232,7 +1230,7 @@ def main():
 
 				def calculate_fsc_criterion(fsc, criterion):
 					"""
-					Calculate the fsc for the specified criterion
+					Calculate fsc for the specified criterion
 					"""
 					resolution_left = fsc[0][len(fsc[1])-1]
 					idx_crit_left = len(fsc[1])-1
@@ -1252,7 +1250,7 @@ def main():
 
 				def scale_fsc(x):
 					"""
-					Scale funtion to adjust the FSC to the full dataset
+					Scale function to adjust the FSC to the full dataset
 					"""
 					return 2. * x / (1 + x)
 
@@ -1275,30 +1273,16 @@ def main():
 							)
 						)
 
-				def adjust_zeros(value):
-					"""
-					Adjust zero values to 0.0001 to avoid DivisionByZero errors
-					"""
-					assert isinstance(value, (float, int))
-					if value == 0.0:
-						value = 0.0001
-					else:
-						pass
-					return value
-
 				def freq_to_angstrom(values, pixel_size):
 					"""
 					Convert spatial frequency to angstrom
 					"""
-					if isinstance(values, list):
-						pass
-					else:
-						values = [values]
-					adjust_values = [adjust_zeros(entry) for entry in values]
-					spatial = [1/float(entry) for entry in adjust_values]
-					angstrom = [pixel_size * entry for entry in spatial]
+					if( type(values) != list):  values = [values]
+					angstrom = [999.0]*len(values)
+					for i,q in enumerate(values):
+						if(q>0.0):  angstrom[i] = pixel_size/q
 					return angstrom
-				
+
 				### for two maps
 				dip_at_fsc = False
 				if not single_map:
@@ -1319,12 +1303,12 @@ def main():
 					fsc_true[1][0] = 1.0  # always reset fsc of zero frequency as 1.0
 					plot_curves.append(fsc_true)
 					plot_names.append(r'FSC halves')
-					# map fsc obtained from two halves to full maps
+					# map fsc obtained from halves to full maps
 					plot_curves.append([fsc_true[0], map(scale_fsc, fsc_true[1])])
 					plot_names.append(r'FSC full')
 					if m is not None:
 						fsc_mask = fsc(map1*m, map2*m, 1)
-						fsc_mask[1][0] = 1.0  # always reset fsc of zero frequency as 1.0
+						fsc_mask[1][0] = 1.0  # always reset fsc of zero frequency to 1.0
 						plot_curves.append(fsc_mask)
 						plot_names.append(r'FSC masked halves')
 						# map fsc obtained from masked two halves to full maps
@@ -1466,11 +1450,10 @@ def main():
 						if ifreq ==nfreq143+1: fsc_true[1][ifreq] = (fsc_true[1][nfreq143-2] + fsc_true[1][nfreq143-1])/5.
 						elif ifreq ==nfreq143+2: fsc_true[1][ifreq] = (fsc_true[1][nfreq143-1])/5.
 						else:  fsc_true[1][ifreq] = 0.0
-					# NOTE: Toshio Moriya 2018/01/11
-					# Here, program re-reads map1 and map2 and combine them.
-					# However, re-reading might not be necessary....
-					map1 = (get_im(map1_path)+get_im(map2_path))/2.0
-				
+					Util.add_img(map1, map2)
+					del map2
+					Util.mul_scalar(map1, 0.5)
+
 				outtext     = [["Squaredfreq"],[ "LogOrig"]]
 				guinierline = rot_avg_table(power(periodogram(map1),.5))
 				from math import log
@@ -1517,8 +1500,8 @@ def main():
 						freq_min = 1./options.B_start  # given frequencies in Angstrom unit, say, B_start is 10 Angstrom, or 15  Angstrom
 						if options.B_stop!=0.0: freq_max = 1./options.B_stop 
 						if freq_min>= freq_max:
-							log_main.add("Your B_start is too high! Decrease it and rerun the program!")
-							ERROR("Your B_start is too high! Decrease it and re-run the program!", "--combinemaps option", 1)
+							log_main.add("B_start is too high! Decrease it and rerun the program!")
+							ERROR("B_start is too high! Decrease it and re-run the program!", "--combinemaps option", 1)
 						b, junk, ifreqmin, ifreqmax = compute_bfactor(guinierline, freq_min, freq_max, options.pixel_size)
 						global_b = 4.*b # Just a convention!
 						cc = pearson(junk[1],logguinierline)
@@ -1528,7 +1511,7 @@ def main():
 						sigma_of_inverse = sqrt(2./(global_b/options.pixel_size**2))
 					else: # User provided value
 						#log_main.add( " apply user provided B-factor to enhance map!")
-						log_main.add("User provided B-factor is %6.2f[A^2]"%options.B_enhance)
+						log_main.add("User-provided B-factor is %6.2f[A^2]"%options.B_enhance)
 						sigma_of_inverse = sqrt(2./((abs(options.B_enhance))/options.pixel_size**2))
 						global_b = options.B_enhance
 
@@ -1542,18 +1525,18 @@ def main():
 							last_non_zero = log(guinierline[ig])
 						else: outtext[-1].append("%10.6f"%last_non_zero)
 				else: log_main.add("B-factor enhancement is not applied to map!")
-			
+
 				cutoff = 0.0
 				if not single_map:
 					if options.fl !=-1.: # User provided low-pass filter #4.
 						if options.fl>0.5: # Input is in Angstrom 
 							map1   = filt_tanl(map1,options.pixel_size/options.fl, min(options.aa,.1))
 							cutoff = options.fl
-							log_main.add("low-pass filter to user provided %f[A]"%cutoff)
+							log_main.add("low-pass filter to user-provided %f[A]"%cutoff)
 						elif options.fl>0.0 and options.fl< 0.5:  # input is in absolution frequency
 							map1   = filt_tanl(map1,options.fl, min(options.aa,.1))
 							cutoff = options.pixel_size/options.fl
-							log_main.add("Low-pass filter to user provided %f[A]"%cutoff)
+							log_main.add("Low-pass filter to user-provided %f[A]"%cutoff)
 						else: # low-pass filter to resolution determined by FSC0.143
 							map1   = filt_tanl(map1,resolution_FSC143, options.aa)
 							cutoff = options.pixel_size/resolution_FSC143
@@ -1571,17 +1554,17 @@ def main():
 						log_main.add("Low-pass filter is not applied to map!")
 				else:
 					if options.fl == -1.0: 
-						log_main.add("User does not apply low pass filter in single map enhancement")
+						log_main.add("There is no low-pass filteration in single map enhancement")
 					else:
 						if options.fl>0.5: # Input is in Angstrom 
-							map1   = filt_tanl(map1,options.pixel_size/options.fl, min(options.aa,.1))
+							map1   = filt_tanl(map1, options.pixel_size/options.fl, min(options.aa,.1))
 							cutoff = options.fl
 						else:
 							"""
 							map1   = filt_tanl(map1,options.fl, min(options.aa,.1))
 							cutoff = options.pixel_size/options.fl
 							"""
-							ERROR("User provides incorrect low pass filter. Low pass filter should be in Angstrom", "combinemaps", 1)
+							ERROR("Incorrect low-pass filter value, it should be in Angstroms", "combinemaps", 1)
 						log_main.add("Low-pass filter to user provided %f[A]"%cutoff)
 					
 				map1 = fft(map1)
@@ -1597,7 +1580,7 @@ def main():
 				log_main.add("---------- >>> Summary <<<------------")
 				if not single_map:
 					log_main.add("Resolution 0.5/0.143 are %5.2f/%5.2f[A]"%(round((options.pixel_size/resolution_FSChalf),3), round((options.pixel_size/resolution_FSC143),3)))
-					if dip_at_fsc: log_main.add("There is a dip in your fsc in the region between 0.5 and 0.143, and you might consider ploting your fsc curve")
+					if dip_at_fsc: log_main.add("There is a dip in the fsc curve in the region between 0.5 and 0.143, and you might consider ploting your fsc curve")
 				if options.B_enhance !=-1:  log_main.add( "B-factor is %6.2f[A^2]"%(round((-global_b),2)))
 				else:log_main.add( "B-factor is not applied")
 				if not single_map:
@@ -1606,7 +1589,7 @@ def main():
 				log_main.add("The final volume is " + file_path_final)
 				file_path_guinierlines = os.path.join(options.output_dir, "guinierlines"+suffix+".txt")
 				log_main.add("Guinierlines in logscale are saved in "+file_path_guinierlines)
-				if options.fl !=-1: log_main.add("Tanl low-pass filter is applied to cutoff high frequencies from 1/%5.2f[1/A]" %round(cutoff,2))
+				if options.fl !=-1: log_main.add("Tanl low-pass filter is applied using cutoff frequency 1/%5.2f[1/A]" %round(cutoff,2))
 				else: log_main.add("The final volume is not low-pass filtered. ")
 				write_text_file(outtext, file_path_guinierlines)
 
@@ -1616,18 +1599,18 @@ def main():
 					log_main.add("---->>> Analysis of enhancement <<<-----")
 					### log_main.add("B_factor:  %f   cutoff:   %f[A]  (%f[absolute]) aa: [absolute]:  %f  Maximum enhancement ocurs in %d pixels. Maximum enhancement ratio is %f. After %d pixel, power spectrum is set to zero. Falloff width is %d pixels"%\
 					###    (global_b, cutoff, options.pixel_size/cutoff, options.aa, mindex, mavlue, index_zero, pfall_off))
-					log_main.add("B_factor                   :  %f"%(global_b))
-					log_main.add("Low-pass filter cutoff     :  %f[A] (%f[absolute])"%(cutoff, options.pixel_size/cutoff))
-					log_main.add("Low-pass filter falloff    :  %f[absolute]"%(options.aa))
-					log_main.add("Max enhancement point      :  %d[pixels]"%(mindex))
-					log_main.add("Max enhancement ratio      :  %f"%(mavlue))
-					log_main.add("1st zero pw spectrum point :  %d[pixels]"%(index_zero))
-					log_main.add("Falloff width              :  %d[pixels]"%(pfall_off))
+					log_main.add("B_factor                     :  %f"%(global_b))
+					log_main.add("Low-pass filter cutoff       :  %f[A] (%f[absolute])"%(cutoff, options.pixel_size/cutoff))
+					log_main.add("Low-pass filter falloff      :  %f[absolute]"%(options.aa))
+					log_main.add("Max enhancement point        :  %d[pixels]"%(mindex))
+					log_main.add("Max enhancement ratio        :  %f"%(mavlue))
+					log_main.add("First zero pw spectrum point :  %d[pixels]"%(index_zero))
+					log_main.add("Falloff width                :  %d[pixels]"%(pfall_off))
 					if mindex == 0:
-						msg = "Enhancement has no maximum value. Inspect your mask, or reduce aa, or decrease fl to a lower frequency, and then rerun the command "
+						msg = "Enhancement has no maximum value. Inspect the mask, reduce aa, or decrease fl to a lower frequency, and then rerun the command "
 						log_main.add(msg)
 					if index_zero>map1.get_xsize()//2:
-						msg = "Enhancement exceeds Nyquist frequency. Inspect your mask, or decrease fl to a lower frequency, or reduce aa, and then rerun the command "
+						msg = "Enhancement exceeds Nyquist frequency. Inspect the mask, decrease fl to a lower frequency, or reduce aa, and then rerun the command "
 						log_main.add(msg)
 			log_main.add("-------------------------------------------------------")
 			log_main.add("---------- >>> DONE!!! <<<------------")
