@@ -338,7 +338,7 @@ def main():
 			#gain.mult(1.0/99.0)
 			#gain.process_inplace("threshold.clampminmax.nsigma",{"nsigma":3.0})
 
-		if options.dark!="" and options.gain != "" and options.gain_darkcorrected == False: gain.sub(dark) # dark correct the gain-reference
+		if options.dark!="" and options.gain_darkcorrected == False: gain.sub(dark) # dark correct the gain-reference
 
 		if options.de64:
 			mean_val = gain["mean"]
@@ -347,7 +347,7 @@ def main():
 
 		gain.mult(1.0/gain["mean"])
 
-		if options.invert_gain: gain.process_inplace("math.reciprocal")
+		if options.invert_gain: gain.process_inplace("math.reciprocal",{"zero_to":0.0})
 
 		if options.rotate_gain!="0" and gain != None:
 			if options.rotate_gain == "90":
