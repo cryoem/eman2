@@ -269,8 +269,8 @@ def main():
 	
 	threed=make_tomogram(imgs_1k, ttparams, options, premask=False, outname=None, errtlt=loss0)
 	if options.writetmp:
-		threed.write_image(path+"tomo_final.hdf")
 		make_ali(imgs_full, ttparams, options, outname=path+"tiltseries_ali.hdf")
+		threed.write_image(path+"tomo_final.hdf")
 		
 		js=js_open_dict(path+"0_tomorecon_params.json")
 		js.update(vars(options))
