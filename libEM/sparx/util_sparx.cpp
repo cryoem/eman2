@@ -19943,8 +19943,8 @@ void Util::mad_scalar(EMData* img, EMData* img1, float scalar)
 	size_t size = (size_t)nx*ny*nz;
 	float *img_ptr  = img->get_data();
 	float *img1_ptr = img1->get_data();
-	for (size_t i=0;i<size;++i)img_ptr[i] += img1_ptr[i]*scalar;
-	img1->update();
+	for (size_t i=0;i<size;++i)  img_ptr[i] += img1_ptr[i]*scalar;
+	img->update();
 
 	EXITFUNC;
 }
