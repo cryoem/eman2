@@ -379,7 +379,7 @@ class EMImage2DWidget(EMGLWidget):
 	def get_data(self):
 		return self.data
 
-	def set_data(self,incoming_data,file_name="",retain_current_settings=True):
+	def set_data(self,incoming_data,file_name="",retain_current_settings=True, keepcontrast=False):
 		"""You may pass a single 2D image or a list of images"""
 		from emimagemx import EMDataListCache,EMLightWeightParticleCache
 		#if self.data != None and self.file_name != "":
@@ -459,8 +459,9 @@ class EMImage2DWidget(EMGLWidget):
 				self.fft = None
 
 		self.image_change_count = 0
-
-		self.auto_contrast(inspector_update=False,display_update=False)
+		
+		if not keepcontrast:
+			self.auto_contrast(inspector_update=False,display_update=False)
 
 		#if not retain_current_settings:
 			#self.__load_display_settings_from_db(inspector_update=False,display_update=False)

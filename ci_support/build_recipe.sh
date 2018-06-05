@@ -2,10 +2,14 @@
 
 set -x
 
-if [ ! -z ${CI} ];then
+if [ ! -z ${TRAVIS} ];then
     source ci_support/setup_conda.sh
 
     conda install conda-build=3 -c defaults --yes --quiet
+fi
+
+if [ ! -z ${CIRCLECI} ];then
+    source ${HOME}/miniconda2/bin/activate root
 fi
 
 export CPU_COUNT=2
@@ -17,5 +21,6 @@ fi
 conda info -a
 conda list
 conda render recipes/eman
+conda build purge-all
 
 conda build recipes/eman -c cryoem -c defaults -c conda-forge --quiet

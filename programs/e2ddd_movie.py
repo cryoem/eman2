@@ -105,11 +105,13 @@ def main():
 	parser.add_argument("--bestali", default=False, help="Average of best aligned frames.",action="store_true", guitype='boolbox', row=20, col=1, rowspan=1, colspan=1, mode="align,tomo")
 	# parser.add_argument("--ali4to14", default=False, help="Average of frames from 4 to 14.",action="store_true",guitype='boolbox', row=13, col=2, rowspan=1, colspan=1, mode="align,tomo")
 
+	parser.add_argument("--groupby", type=int,help="Combine every N frames using a moving window approach.",default=1,  guitype='intbox', row=23, col=1, rowspan=1, colspan=1, mode="align,tomo")
+
 	parser.add_header(name="orblock6", help='Just a visual separation', title="Optimization: ", row=21, col=0, rowspan=2, colspan=3, mode="align,tomo")
 
-	parser.add_argument("--optbox", type=int,help="Box size to use during alignment optimization. Default is 256.",default=256, guitype='intbox', row=23, col=0, rowspan=1, colspan=1, mode="align,tomo")
-	parser.add_argument("--optstep", type=int,help="Step size to use during alignment optimization. Default is 224.",default=224,  guitype='intbox', row=23, col=1, rowspan=1, colspan=1, mode="align,tomo")
-	parser.add_argument("--optalpha", type=float,help="Penalization to apply during robust regression. Default is 0.1. If 0.0, unpenalized least squares will be performed (i.e., no trajectory smoothing).",default=0.1, guitype='floatbox', row=24, col=0, rowspan=1, colspan=1, mode="align,tomo")
+	parser.add_argument("--optbox", type=int,help="Box size to use during alignment optimization. Default is 1024.",default=512, guitype='intbox', row=23, col=0, rowspan=1, colspan=1, mode="align,tomo")
+	parser.add_argument("--optstep", type=int,help="Step size to use during alignment optimization. Default is 800.",default=400,  guitype='intbox', row=23, col=1, rowspan=1, colspan=1, mode="align,tomo")
+	parser.add_argument("--optalpha", type=float,help="Penalization to apply during robust regression. Default is 0.5. If 0.0, unpenalized least squares will be performed (i.e., no trajectory smoothing).",default=0.5, guitype='floatbox', row=24, col=0, rowspan=1, colspan=1, mode="align,tomo")
 	parser.add_argument("--optccf",default="robust",type=str, choices=["robust","centerofmass","ccfmax"],help="Use this approach to determine relative frame translations.\nNote: 'robust' utilizes a bimodal Gaussian to robustly determine CCF peaks between pairs of frames in the presence of a fixed background.", guitype='combobox', row=24, col=1, rowspan=1, colspan=2, mode='align["robust"],tomo["robust"]',choicelist='["robust","centerofmass","ccfmax"]')
 
 	parser.add_header(name="orblock5", help='Just a visual separation', title="Optional: ", row=25, col=0, rowspan=2, colspan=3, mode="align,tomo")
@@ -120,16 +122,16 @@ def main():
 
 	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel. The default is 4, and our alignment routine requires 2+ threads. Using more threads will result in faster processing times.", guitype='intbox', row=28, col=0, rowspan=1, colspan=1, mode="align,tomo")
 
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness",guitype="intbox",row=28,col=1,rowspan=1,colspan=1,mode="align,tomo")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=4, help="verbose level [0-9], higner number means higher level of verboseness",guitype="intbox",row=28,col=1,rowspan=1,colspan=1,mode="align,tomo")
 	parser.add_argument("--debug", default=False, action="store_true", help="run with debugging output")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 
 	parser.add_argument("--fixbadpixels",action="store_true",default=False,help="Tries to identify bad pixels in the dark/gain reference, and fills images in with sane values instead", guitype='boolbox', row=17, col=1, rowspan=1, colspan=1, mode='align[True]')
-	# parser.add_argument("--normaxes",action="store_true",default=False,help="Tries to erase vertical/horizontal line artifacts in Fourier space by replacing them with the mean of their neighboring values.",guitype='boolbox', row=17, col=2, rowspan=1, colspan=1, mode='align')
+	#parser.add_argument("--normaxes",action="store_true",default=False,help="Tries to erase vertical/horizontal line artifacts in Fourier space by replacing them with the mean of their neighboring values.",guitype='boolbox', row=17, col=2, rowspan=1, colspan=1, mode='align')
 	#parser.add_argument("--frames",action="store_true",default=False,help="Save the dark/gain corrected frames. Note that frames will be overwritten if identical --suffix is already present.", guitype='boolbox', row=19, col=0, rowspan=1, colspan=1, mode="align,tomo")
-	#parser.add_argument("--suffix",type=str,default="proc",help="Specify a unique suffix for output frames. Default is 'proc'. Note that the output of --frames will be overwritten if identical suffix is already present.",guitype='strbox', row=19, col=2, rowspan=1, colspan=1, mode="align,tomo")
+	parser.add_argument("--suffix",type=str,default="proc",help="Specify a unique suffix for output frames. Default is 'proc'. Note that the output of --frames will be overwritten if identical suffix is already present.",guitype='strbox', row=19, col=2, rowspan=1, colspan=1, mode="align,tomo")
 	#parser.add_argument("--highdose", default=False, help="Use this flag when aligning high dose data (where features in each frame can be distinguished visually).",action="store_true",guitype='boolbox', row=18, col=0, rowspan=1, colspan=1,mode='align')
-	#parser.add_argument("--phaseplate", default=False, help="Use this flag when aligning phase plate frames.",action="store_true",guitype='boolbox', row=18, col=1, rowspan=1, colspan=1,mode='align')
+	parser.add_argument("--phaseplate", default=False, help="Use this flag when aligning phase plate frames.",action="store_true",guitype='boolbox', row=18, col=1, rowspan=1, colspan=1,mode='align')
 	# parser.add_argument('--import_movies', action="store_true",default=False,help="List the references to import into 'movies' directory without additional processing.", default="", guitype='boolbox', row=0, col=0,rowspan=1, colspan=3, mode="import[True],default[False]")
 
 	(options, args) = parser.parse_args()
@@ -139,7 +141,7 @@ def main():
 		parser.error("Specify input DDD stack to be processed.")
 
 	if options.frames == False and options.noali == False and options.align_frames == False:
-		print("No outputs specified. See --frames, --noali, or --align_frames. Exiting.")
+		print("No outputs specified. See --frames, --noali, or --align_frames. Exiting.") 
 		sys.exit(1)
 
 	if options.align_frames == True:
@@ -150,13 +152,13 @@ def main():
 	# moviesdir = os.path.join(".","movies")
 	# if not os.access(moviesdir, os.R_OK):
 	# 	os.mkdir(moviesdir)
-	#print("Error: Could not locate movie data. Please import movie stacks using e2import.py.")
-	#sys.exit(1)
+		#print("Error: Could not locate movie data. Please import movie stacks using e2import.py.")
+		#sys.exit(1)
 
 	if options.bad_columns == "":
 		options.bad_columns = []
-	else:
-		try:
+	else: 
+		try: 
 			options.bad_columns = [int(c) for c in options.bad_columns.split(",")]
 		except:
 			print("Error: --bad_columns contains nonnumeric input.")
@@ -165,7 +167,7 @@ def main():
 	if options.bad_rows == "":
 		options.bad_rows = []
 	else:
-		try:
+		try: 
 			options.bad_rows = [int(r) for r in options.bad_rows.split(",")]
 		except:
 			print("Error: --bad_rows contains nonnumeric input.")
@@ -231,7 +233,8 @@ def main():
 			nx = dark_hdr["nx"]
 			ny = dark_hdr["ny"]
 			nd = dark_hdr["nz"]
-			dark=EMData(options.dark,0,False,Region(0,0,0,nx,ny,1))
+			if nd == 1: dark = EMData(options.dark)
+			else: dark=EMData(options.dark,0,False,Region(0,0,0,nx,ny,1))
 		else:
 			nd=EMUtil.get_image_count(options.dark)
 			dark = EMData(options.dark,0)
@@ -262,9 +265,25 @@ def main():
 		dark.process_inplace("threshold.clampminmax.nsigma",{"nsigma":3.0})
 		#dark2=dark.process("normalize.unitlen")
 
-		if options.rotate_dark and dark != None:
-			tf = Transform({"type":"2d","alpha":int(options.rotate_dark)})
-			dark.process_inplace("xform",{"transform":tf})
+		if options.rotate_dark!="0" and dark != None:
+			if options.rotate_dark == "90":
+				dark.process_inplace("xform.transpose")
+				dark.process_inplace("xform.reverse",{"axis":"y"})
+			elif options.rotate_dark == "180":
+				dark.process_inplace("xform.transpose")
+				dark.process_inplace("xform.reverse",{"axis":"y"})
+				dark.process_inplace("xform.transpose")
+				dark.process_inplace("xform.reverse",{"axis":"y"})
+			else:
+				dark.process_inplace("xform.transpose")
+				dark.process_inplace("xform.reverse",{"axis":"x"}) #reversing over X axis for 270 deg rotate
+			# nrot = int(options.rotate_dark)/90
+			# for i in range(nrot):
+			# 	dark.process_inplace("xform.transpose")
+			# 	dark.process_inplace("xform.reverse")#,{"axis":"x"})
+			#dark.set_size(maxdim,maxdim)
+			#dark.process_inplace("xform.scale",{"clip":maxdim,"scale":1})
+			#dark.rotate(0,0,int(options.rotate_dark))
 
 		if options.reverse_dark: dark.process_inplace("xform.reverse",{"axis":"y"})
 
@@ -282,9 +301,9 @@ def main():
 				nx = gain_hdr["nx"]
 				ny = gain_hdr["ny"]
 				nd = gain_hdr["nz"]
-				gain=EMData(options.gain,0,False,Region(0,0,0,nx,ny,1))
+				if nd == 1: gain = EMData(options.gain)
+				else: gain=EMData(options.gain,0,False,Region(0,0,0,nx,ny,1))
 			else:
-
 				nd=EMUtil.get_image_count(options.gain)
 				gain = EMData(options.gain,0)
 				nx = gain["nx"]
@@ -318,10 +337,10 @@ def main():
 				gain.process_inplace( "threshold.clampminmax", { "minval" : gain[ 'mean' ] - 8.0 * gain[ 'sigma' ], "maxval" : gain[ 'mean' ] + 8.0 * gain[ 'sigma' ], "tomean" : True } )
 			else:
 				gain.process_inplace("math.reciprocal",{"zero_to":0.0})
-		#gain.mult(1.0/99.0)
-		#gain.process_inplace("threshold.clampminmax.nsigma",{"nsigma":3.0})
+			#gain.mult(1.0/99.0)
+			#gain.process_inplace("threshold.clampminmax.nsigma",{"nsigma":3.0})
 
-		if dark!="" and options.gain != "" and options.gain_darkcorrected == False: gain.sub(dark) # dark correct the gain-reference
+		if options.dark!="" and options.gain_darkcorrected == False: gain.sub(dark) # dark correct the gain-reference
 
 		if options.de64:
 			mean_val = gain["mean"]
@@ -330,13 +349,35 @@ def main():
 
 		gain.mult(1.0/gain["mean"])
 
-		if options.invert_gain: gain.process_inplace("math.reciprocal")
+		if options.invert_gain: gain.process_inplace("math.reciprocal",{"zero_to":0.0})
 
-		if options.rotate_gain and gain != None:
-			tf = Transform({"type":"2d","alpha":int(options.rotate_gain)})
-			gain.process_inplace("xform",{"transform":tf})
+		if options.rotate_gain!="0" and gain != None:
+			if options.rotate_gain == "90":
+				gain.process_inplace("xform.transpose")
+				gain.process_inplace("xform.reverse",{"axis":"y"})
+			elif options.rotate_gain == "180":
+				gain.process_inplace("xform.transpose")
+				gain.process_inplace("xform.reverse",{"axis":"y"})
+				gain.process_inplace("xform.transpose")
+				gain.process_inplace("xform.reverse",{"axis":"y"})
+			else:
+				gain.process_inplace("xform.transpose")
+				gain.process_inplace("xform.reverse",{"axis":"x"}) #reversing over X axis for 270 deg rotate
+			# nrot = int(options.rotate_gain)/90
+			# for i in range(nrot):
+			# 	gain.process_inplace("xform.transpose")
+			# 	gain.process_inplace("xform.reverse")
+			# dim = [gain["nx"],gain["ny"]]
+			# maxdim = max(dim[0],dim[1])
+			# gain.set_size(maxdim,maxdim)
+			# gain.rotate(0,0,int(options.rotate_gain))
+			# if options.rotate_gain == 0 or options.rotate_gain == 180:
+			# 	gain.set_size(dim[0],dim[1])
+			# else:
+			# 	gain.set_size(dim[1],dim[0])
 
-		if options.reverse_gain: gain.process_inplace("xform.reverse",{"axis":"y"})
+		if options.reverse_gain:
+			gain.process_inplace("xform.reverse",{"axis":"y"})
 
 		options.gain = "movierefs/{}.hdf".format(base_name(options.gain,nodir=True))
 		gain.write_image(options.gain,0)
@@ -351,14 +392,14 @@ def main():
 		db["tilt_angles"] = angles
 		if gain:
 			db["ddd_gainref"] = options.gain
-		# if options.rotate_gain:
-		# 	db["ddd_rotate_gain"] = options.rotate_gain
-		# if options.reverse_gain:
-		# 	db["ddd_reverse_gain"] = options.reverse_gain
-		# if options.invert_gain:
-		# 	db["ddd_invert_gain"] = options.invert_gain
-		# if options.gain_darkcorrected:
-		# 	db["ddd_gain_darkcorrected"] = options.gain_darkcorrected
+			# if options.rotate_gain:
+			# 	db["ddd_rotate_gain"] = options.rotate_gain
+			# if options.reverse_gain:
+			# 	db["ddd_reverse_gain"] = options.reverse_gain
+			# if options.invert_gain:
+			# 	db["ddd_invert_gain"] = options.invert_gain
+			# if options.gain_darkcorrected:
+			# 	db["ddd_gain_darkcorrected"] = options.gain_darkcorrected
 		if dark:
 			db["ddd_darkref"] = options.dark
 		# 	if options.rotate_dark:
@@ -394,14 +435,14 @@ def main():
 			db["data_source"]=fsp
 			if gain:
 				db["ddd_gainref"] = options.gain
-			# if options.rotate_gain:
-			# 	db["ddd_rotate_gain"] = options.rotate_gain
-			# if options.reverse_gain:
-			# 	db["ddd_reverse_gain"] = options.reverse_gain
-			# if options.invert_gain:
-			# 	db["ddd_invert_gain"] = options.invert_gain
-			# if options.gain_darkcorrected:
-			# 	db["ddd_gain_darkcorrected"] = options.gain_darkcorrected
+				# if options.rotate_gain:
+				# 	db["ddd_rotate_gain"] = options.rotate_gain
+				# if options.reverse_gain:
+				# 	db["ddd_reverse_gain"] = options.reverse_gain
+				# if options.invert_gain:
+				# 	db["ddd_invert_gain"] = options.invert_gain
+				# if options.gain_darkcorrected:
+				# 	db["ddd_gain_darkcorrected"] = options.gain_darkcorrected
 			if dark:
 				db["ddd_darkref"] = options.dark
 			# 	if options.rotate_dark:
@@ -416,20 +457,16 @@ def main():
 				db["ddd_bad_rows"] = options.bad_rows
 			if options.bad_columns:
 				db["ddd_bad_columns"] = options.bad_columns
-		#if options.fixbadpixels:
-		#	db["ddd_fixbadpixels"] = options.fixbadpixels
+			#if options.fixbadpixels:
+			#	db["ddd_fixbadpixels"] = options.fixbadpixels
 		db.close()
 
-		n = EMUtil.get_image_count(fsp)
-
+		hdr = EMData(fsp, 0, True)
+		try: n = EMUtil.get_image_count(fsp)
+		except: n = hdr["nz"]
 		if n < 3 :
-			hdr = EMData(fsp, 0, True)
-
-			if hdr["nz"] < 2 :
-				print("ERROR: {} has only {} images. Min 3 required.".format(fsp, n))
-				continue
-
-			n = hdr["nz"]
+			print("ERROR: {} has only {} images. Min 3 required.".format(fsp, n))
+			continue
 
 		if last <= 0 : flast = n
 		else : flast = last
@@ -446,13 +483,17 @@ def main():
 
 def process_movie(options,fsp,dark,gain,first,flast,step,idx,angle):
 	cwd = os.getcwd()
+	
+	# format outname
+	if options.frames: outname="{}/{}_{}".format(cwd,base_name(fsp,nodir=True),options.suffix) #Output contents vary with options
+	else: outname="{}/{}".format(cwd,base_name(fsp,nodir=True))
+	
+	if options.groupby > 1: outname = "{}_group{}".format(outname,options.groupby)
+	
+	if options.ext == "mrc": outname = "{}.mrcs".format(outname)
+	else: outname = "{}.{}".format(outname,options.ext)
 
-	if options.frames:
-		if options.ext == "mrc":
-			outname="{}/{}_proc.mrcs".format(cwd,base_name(fsp,nodir=True))#,options.suffix,"mrcs") #Output contents vary with options
-		else: outname="{}/{}_proc.{}".format(cwd,base_name(fsp,nodir=True),options.suffix,options.ext) #Output contents vary with options
-	else: outname="{}/{}.{}".format(cwd,base_name(fsp,nodir=True),options.ext)
-
+	# prepare to read file
 	if fsp[-4:].lower() in (".mrc"):
 		hdr=EMData(fsp,0,True)			# read header
 		nx,ny=hdr["nx"],hdr["ny"]
@@ -467,7 +508,7 @@ def process_movie(options,fsp,dark,gain,first,flast,step,idx,angle):
 			sys.stdout.flush()
 
 		if fsp[-4:].lower() in (".mrc") :
-			#if fsp[-4:].lower() in (".mrc") :
+		#if fsp[-4:].lower() in (".mrc") :
 			im=EMData(fsp,0,False,Region(0,0,ii,nx,ny,1))
 		else: im=EMData(fsp,ii)
 
@@ -478,18 +519,15 @@ def process_movie(options,fsp,dark,gain,first,flast,step,idx,angle):
 		#if options.fixbadpixels : im.process_inplace("threshold.outlier.localmean",{"sigma":3.5,"fix_zero":1}) # fixes clear outliers as well as values which were exactly zero
 
 		#im.process_inplace("threshold.clampminmax.nsigma",{"nsigma":3.0})
-		#			im.mult(-1.0)
-		#if options.normalize: im.process_inplace("normalize.edgemean")
+#			im.mult(-1.0)
+		#if options.normalize: im.process_inplace("normalize.edgemean") 
 
 		if options.bad_rows != [] or options.bad_columns != []:
 			im = im.process("math.xybadlines",{"rows":options.bad_rows,"cols":options.bad_columns})
 
-		if options.frames: im.write_image(outname,ii-first)
-
 		outim.append(im)
 
-	if options.frames and options.ext == "mrc":
-		os.rename(outname,outname.replace(".mrcs",".mrc"))
+	nfs_read = len(outim)
 
 	if options.noali:
 		out=qsum(outim)
@@ -499,7 +537,33 @@ def process_movie(options,fsp,dark,gain,first,flast,step,idx,angle):
 		else:
 			alioutname = os.path.join(".","micrographs","{}__noali.hdf".format(base_name(fsp,nodir=True)))
 			out.write_image(alioutname,0) #write out the unaligned average movie
+ 
+	# group frames by moving window
+	if options.groupby > 1:
+		print("Grouping frames")
+		grouped = []
+		for i in range(len(outim)):
+			avgr = Averagers.get("mean")
+			avgr.add_image_list(outim[i:i+options.groupby])
+			avg = avgr.finish()
+			if options.frames: avg.write_image(outname,i)
+			grouped.append(avg)
+		outim = grouped
 
+	# # group frames
+	# if options.groupby > 1:
+	# 	print("Grouping frames")
+	# 	grouped = []
+	# 	for i in range(0,len(outim)-options.groupby,options.groupby):
+	# 		avgr = Averagers.get("mean")
+	# 		avgr.add_image_list(outim[i:i+options.groupby])
+	# 		grouped.append(avg)
+			
+	# 		if options.frames: avg.write_image(outname,ii-first)
+	# 	outim = grouped
+
+	if options.frames and options.ext == "mrc":
+		os.rename(outname,outname.replace(".mrcs",".mrc"))
 
 	t1 = time()-t
 	print("{:.1f} s".format(time()-t))
@@ -508,6 +572,7 @@ def process_movie(options,fsp,dark,gain,first,flast,step,idx,angle):
 
 		start = time()
 
+		n=len(outim)
 		nx=outim[0]["nx"]
 		ny=outim[0]["ny"]
 
@@ -516,11 +581,7 @@ def process_movie(options,fsp,dark,gain,first,flast,step,idx,angle):
 			print("This program does not facilitate alignment of movies with frames smaller than 2048x2048 pixels.")
 			sys.exit(1)
 
-		n=len(outim)
-		nx=outim[0]["nx"]
-		ny=outim[0]["ny"]
-
-		print("{} frames read {} x {}".format(n,nx,ny))
+		print("{} frames read ({} x {}). Grouped by {}.".format(nfs_read,nx,ny,options.groupby,n))
 
 		ccfs=Queue.Queue(0)
 
@@ -633,9 +694,9 @@ def process_movie(options,fsp,dark,gain,first,flast,step,idx,angle):
 					bx[ima] = peak_locs[(i,j)][0]
 					by[ima] = peak_locs[(i,j)][1]
 					A[ima,imb] = 1
-				#A[ima,imb] = float(n-np.fabs(i-j))/n
-				#A[ima,imb] = np.exp(1-peak_locs[(i,j)][3])
-				#A[ima,imb] = sqrt(float(n-fabs(i-j))/n)
+					#A[ima,imb] = float(n-np.fabs(i-j))/n
+					#A[ima,imb] = np.exp(1-peak_locs[(i,j)][3])
+					#A[ima,imb] = sqrt(float(n-fabs(i-j))/n)
 				except:
 					pass # CCF peak was not found
 		b = np.c_[bx,by]
@@ -708,7 +769,7 @@ def process_movie(options,fsp,dark,gain,first,flast,step,idx,angle):
 			drs.append(dr)
 			reldr = hypot(dx-dxlast,dy-dylast)
 			reldrs.append(reldr)
-		#out.write("{}\t{}\t{}\t{}\t{}\t{}\n".format(i,dx,dy,dr,reldr,quals[i]))
+			#out.write("{}\t{}\t{}\t{}\t{}\t{}\n".format(i,dx,dy,dr,reldr,quals[i]))
 		#out.close
 
 		# store alignment parameters
@@ -732,25 +793,25 @@ def process_movie(options,fsp,dark,gain,first,flast,step,idx,angle):
 			db["ddd_alignment_optalpha"]=options.optalpha
 		db.close()
 
-	# if options.plot:
-	# 	import matplotlib.pyplot as plt
-	# 	fig,ax = plt.subplots(1,3,figsize=(12,3))
-	# 	ax[0].plot(traj[:,0],traj[:,1],c='b',alpha=0.5)
-	# 	ax[0].scatter(traj[:,0],traj[:,1],c='b',alpha=0.5)
-	# 	ax[0].set_title("Trajectory (x/y pixels)")
-	# 	ax[1].set_title("Quality (cumulative pairwise ccf value)")
-	# 	ax[1].plot(quals,'k')
-	# 	for k in peak_locs.keys():
-	# 		try:
-	# 			p = peak_locs[k]
-	# 			ax[2].scatter(p[0],p[1])
-	# 		except: pass
-	# 	ax[2].set_title("CCF Peak Coordinates")
-	#	plt.show()
+		# if options.plot:
+		# 	import matplotlib.pyplot as plt
+		# 	fig,ax = plt.subplots(1,3,figsize=(12,3))
+		# 	ax[0].plot(traj[:,0],traj[:,1],c='b',alpha=0.5)
+		# 	ax[0].scatter(traj[:,0],traj[:,1],c='b',alpha=0.5)
+		# 	ax[0].set_title("Trajectory (x/y pixels)")
+		# 	ax[1].set_title("Quality (cumulative pairwise ccf value)")
+		# 	ax[1].plot(quals,'k')
+		# 	for k in peak_locs.keys():
+		# 		try:
+		# 			p = peak_locs[k]
+		# 			ax[2].scatter(p[0],p[1])
+		# 		except: pass
+		# 	ax[2].set_title("CCF Peak Coordinates")
+		#	plt.show()
 
 	if options.align_frames or options.realign:
-		try:
-			# Load previous/current alignment params (or input translations) (BOX FORMAT, tab separated values):
+		try: 
+		# Load previous/current alignment params (or input translations) (BOX FORMAT, tab separated values):
 			if options.tomo:
 				db=js_open_dict(info_name(options.tomo_name,nodir=True))
 				locs = db[angle]["ddd_alignment_trans"]
@@ -771,11 +832,13 @@ def process_movie(options,fsp,dark,gain,first,flast,step,idx,angle):
 					dx = float(locs[i*2])
 					dy = float(locs[i*2+1])
 					im.translate(dx,dy,0)
+				if options.debug or options.verbose > 5:
+					print("{}\t{}\t{}".format(i,dx,dy))
 
 			#if options.normaxes:
 			#	for f in outim:
 			#		f.process_inplace("filter.xyaxes0",{"neighbor":1})
-			# or try padding before averaging and clip result to original box size?
+				# or try padding before averaging and clip result to original box size?
 
 			if options.allali:
 				out=qsum(outim)
@@ -837,8 +900,6 @@ def calc_ccf_wrapper(options,N,box,step,dataa,datab,out,locs,ii,fsp):
 
 	for i in range(len(dataa)):
 		c=dataa[i].calc_ccf(datab[i],fp_flag.CIRCULANT,True)
-		c.process_inplace("xform.phaseorigin.tocenter")
-		c.process_inplace("normalize.edgemean")
 		try: csum.add(c)
 		except: csum=c
 
@@ -858,22 +919,21 @@ def calc_ccf_wrapper(options,N,box,step,dataa,datab,out,locs,ii,fsp):
 	xx,yy = np.meshgrid(xx,yy)
 
 	popt,ccpeakval = bimodal_peak_model(options,csum)
-
 	if popt == None:
-		csum = from_numpy(np.zeros((box,box)))#.process("normalize.edgemean")
+		csum = from_numpy(np.zeros((box,box))).process("normalize.edgemean")
 		locs.put((N,[]))
 		out.put((N,csum))
 	else:
 		#if ii>=0: csum.process("normalize.edgemean").write_image("ccf_models.hdf",ii)
-		# if options.phaseplate:
-		# 	ncc = csum.numpy().copy()
-		# 	pcsum = neighbormean_origin(ncc)
-		# 	csum = from_numpy(pcsum)
-		# 	locs.put((N,[popt[0],popt[1],ccpeakval,csum["maximum"]]))
-		#else:
-		cc_model = correlation_peak_model((xx,yy),popt[0],popt[1],popt[2],popt[3]).reshape(box,box)
-		csum = from_numpy(cc_model)
-		locs.put((N,[popt[0],popt[1],popt[2],popt[3],popt[4],popt[5],ccpeakval,csum["maximum"]]))
+		if options.phaseplate:
+			ncc = csum.numpy().copy()
+			pcsum = neighbormean_origin(ncc)
+			csum = from_numpy(pcsum)
+			locs.put((N,[popt[0],popt[1],ccpeakval,csum["maximum"]]))
+		else:
+			cc_model = correlation_peak_model((xx,yy),popt[0],popt[1],popt[2],popt[3]).reshape(box,box)
+			csum = from_numpy(cc_model)
+			locs.put((N,[popt[0],popt[1],popt[2],popt[3],popt[4],popt[5],ccpeakval,csum["maximum"]]))
 		out.put((N,csum))
 	if ii>=0 and options.debug:
 		if fsp[-5:] == ".mrcs":
@@ -906,23 +966,29 @@ def split_fft(options,img,i,box,step,out):
 	#img.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.4})
 	#proc.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.3})
 	#patchid = 0
+	
+	# img.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.45})
+	
 	for dx in range(box/2,nx-box,step):
 		for dy in range(box/2,ny-box,step):
 			clp = img.get_clip(Region(dx,dy,box,box))
-			clp.process_inplace("filter.xyaxes0",{"neighbor":1})
-			clp.process_inplace("filter.highpass.gauss",{"cutoff_abs":.002})
 
+			#clp.process_inplace("math.fft.resample",{"n":4})
+			clp.process_inplace("math.meanshrink",{"n":4.})
+			clp.process_inplace("filter.highpass.gauss",{"cutoff_pixels":3})
 			#if options.normalize: clp.process_inplace("normalize.edgemean")
 			#if box >= 512:
 			#	if not options.tomo:
 			#		if img["apix_x"] == 1.0: # likely an image with incorrect header or simulated data
 			#			clp.process_inplace("filter.highpass.gauss",{"cutoff_pixels":2})
-			#		else:
-			#	clp.process_inplace("filter.highpass.gauss",{"cutoff_abs":0.01})
-			#clp.process_inplace("math.fft.resample",{"n":1.})
-			#if options.tomo:
-			#	clp.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.3})
-			clp.process_inplace("normalize.edgemean")
+			#		else: 
+			
+			
+			#clp.process_inplace("mask.soft",{"outer_radius":(nx-box/2)/2,"width":box/8})
+			clp.process_inplace("filter.xyaxes0",{"neighbor":1})
+			#clp.process_inplace("filter.highpass.gauss",{"cutoff_pixels":2})
+			#clp.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.45})
+			clp.process_inplace("normalize")
 			#if options.debug:
 			#	clp["patch_id"] = patchid
 			#	clp["frame_id"] = i
@@ -933,7 +999,7 @@ def split_fft(options,img,i,box,step,out):
 
 def correlation_peak_model(x_y, xo, yo, sigma, amp):
 	x, y = x_y
-	if sigma <= 0: return np.zeros_like(x)
+	if sigma <= 0: return np.ones_like(x)*np.inf
 	xo = float(xo)
 	yo = float(yo)
 	g = amp*np.exp(-(((x-xo)**2)+((y-yo)**2))/(2.*sigma**2))
@@ -941,7 +1007,7 @@ def correlation_peak_model(x_y, xo, yo, sigma, amp):
 
 def fixedbg_peak_model(x_y, sigma, amp):
 	x, y = x_y
-	if sigma <= 0: return np.zeros_like(x)
+	if sigma <= 0: return np.ones_like(x)*np.inf
 	xo = float(len(x)/2)
 	yo = float(len(y)/2)
 	g = amp*np.exp(-(((x-xo)**2)+((y-yo)**2))/(2.*sigma**2))
@@ -949,7 +1015,7 @@ def fixedbg_peak_model(x_y, sigma, amp):
 
 def twod_bimodal(x_y,x1,y1,sig1,amp1,sig2,amp2):
 	x, y = x_y
-	if sig1 <= 0 or sig2 <= 0: return np.zeros_like(x)
+	if sig1 <= 0 or sig2 <= 0: return np.ones_like(x)*np.inf #np.zeros_like(x)
 	#correlation_peak = correlation_peak_model((x,y),x1,y1,sig1,amp1)
 	cp = amp1*np.exp(-(((x-x1)**2+(y-y1)**2))/(2.*sig1**2))
 	#fixedbg_peak = fixedbg_peak_model((x,y),sig2,amp2)
@@ -962,33 +1028,26 @@ def twod_bimodal(x_y,x1,y1,sig1,amp1,sig2,amp2):
 
 def neighbormean_origin(a): # replace origin pixel with mean of surrounding pixels
 	proc = a.copy()
-	# if a.shape[0] % 2 == 0:
-	# 	ac = proc.shape[0]/2
-	# 	r = proc[ac-2:ac+2,ac-2:ac+2].copy()
-	# 	rc = r.shape[0]/2
-	# 	r[rc,rc] = np.nan
-	# 	r[rc,rc-1] = np.nan
-	# 	r[rc-1,rc] = np.nan
-	# 	r[rc-1,rc-1] = np.nan
-	# 	nm = np.nanmean(r)
-	# 	proc[ac,ac] = nm
-	# 	proc[ac,ac-1] = nm
-	# 	proc[ac-1,ac] = nm
-	# 	proc[ac-1,ac-1] = nm
-	# else:
-	# 	ac = proc.shape[0]/2
-	# 	r = proc[ac-2:ac+1,ac-2:ac+1].copy()
-	# 	plt.imshow(r)
-	# 	rc = r.shape[0]/2
-	# 	r[rc,rc] = np.nan
-	# 	proc[ac,ac] = np.nanmean(r)
-	
-	dx = a["nx"]/2
-	dy = a["ny"]/2 # the 'false peak' should always be at the origin, ie - no translation
-	mn=(a[dx-2,dy-2]+a[dx+2,dy+2]+a[dx-2,dy+2]+a[dx+2,dy-2])/4.0
-	for x in xrange(dx-1,dx+2):
-		for y in xrange(dy-1,dy+2):
-			proc[x,y]=mn		# exclude from COM
+	if a.shape[0] % 2 == 0:
+		ac = proc.shape[0]/2
+		r = proc[ac-2:ac+2,ac-2:ac+2].copy()
+		rc = r.shape[0]/2
+		r[rc,rc] = np.nan
+		r[rc,rc-1] = np.nan
+		r[rc-1,rc] = np.nan
+		r[rc-1,rc-1] = np.nan
+		nm = np.nanmean(r)
+		proc[ac,ac] = nm
+		proc[ac,ac-1] = nm
+		proc[ac-1,ac] = nm
+		proc[ac-1,ac-1] = nm
+	else:
+		ac = proc.shape[0]/2
+		r = proc[ac-2:ac+1,ac-2:ac+1].copy()
+		plt.imshow(r)
+		rc = r.shape[0]/2
+		r[rc,rc] = np.nan
+		proc[ac,ac] = np.nanmean(r)
 	return proc
 
 def find_com(ccf): # faster alternative to gaussian fitting...less robust in theory.
@@ -1018,18 +1077,17 @@ def bimodal_peak_model(options,ccf):
 
 	x1 = int(bs/2.)
 	y1 = int(bs/2.)
-	a1 = 1000.0
+	a1 = ncc.mean()#.0
 	s1 = 10.0
-	a2 = 20000.0
+	a2 = ncc.max()
 	s2 = 0.6
 
 	if options.optccf == "centerofmass":
-		initial_guess = [x1,y1,s1,a1]
+		#initial_guess = [x1,y1,s1,a1,s2,a2]
 		# drop the origin (replace with perimeter mean)
 		#mval = edgemean(ncc)
 		#ix,iy = ncc.shape
 		pncc = neighbormean_origin(ncc)
-
 		x1,y1 = find_com(pncc)
 		x1 = x1+nxx/2
 		y1 = y1+nxx/2
@@ -1039,25 +1097,23 @@ def bimodal_peak_model(options,ccf):
 		# 		from_numpy(pncc).write_image("tmp.hdf",ii)`
 		# 	except:
 		# 		from_numpy(pncc).write_image("tmp.hdf",0)
-		return [x1,y1],ccf.sget_value_at_interp(x1,y1)
+		return [x1,y1,s1,a1,s2,a2],ccf.sget_value_at_interp(x1,y1)
 		# try: # run optimization
 		# 	bds = [(-np.inf, -np.inf,  0.01, 0.01),(np.inf, np.inf, 100.0, 100000.0)]
 		# 	#bds = [(-bs/2, -bs/2,  0.0, 0.0),(bs/2, bs/2, 100.0, 100000.0)]
 		# 	popt,pcov=optimize.curve_fit(correlation_peak_model,(xx,yy),ncc.ravel(),p0=initial_guess,bounds=bds,method='dogbox',max_nfev=50)#,xtol=0.1)#,ftol=0.0001,gtol=0.0001)
 		# except:
 		# 	return None, -1
-
 	elif options.optccf == "ccfmax": # only useful for extremely high contrast frames
-		xc,yc,zc = ccfreg.calc_max_location()
-		#yc,xc = np.where(ncc==ncc.max())
+		yc,xc = np.where(ncc==ncc.max())
 		popt = [float(xc[0]+nxx/2),float(yc[0]+nxx/2),ncc.max(),1.,0.,0.]
 		return popt,ccf.sget_value_at_interp(popt[0],popt[1])
-	
+
 	elif options.optccf == "robust":
 		initial_guess = [x1,y1,s1,a1,s2,a2]
-		bds = [(-bs/2, -bs/2, 0.01, 0.01, 0.6, 0.01),(bs/2, bs/2, 100.0, 20000.0, 2.5, 100000.0)]
+		bds = [(-bs/2, -bs/2, 0.6, ncc.min(), 0.6, 0.01),(bs/2, bs/2, 1000.0, ncc.max(), 2.0, ncc.max())]
 		try:
-			popt,pcov=optimize.curve_fit(twod_bimodal,(xx,yy),ncc.ravel(),p0=initial_guess,bounds=bds,method="dogbox",max_nfev=100,xtol=1e-6,ftol=1e-8,loss='linear')
+			popt,pcov=optimize.curve_fit(twod_bimodal,(xx,yy),ncc.ravel(),p0=initial_guess,bounds=bds,method="dogbox",max_nfev=250,xtol=1e-3,ftol=1e-6,loss='linear')
 		except RuntimeError:
 			return None,-1
 
@@ -1065,10 +1121,21 @@ def bimodal_peak_model(options,ccf):
 		popt[0] = popt[0] + nxx/2 - bs/2
 		popt[1] = popt[1] + nxx/2 - bs/2
 		popt[2] = np.abs(popt[2])
-
-		#dx,dy,dz = tot.calc_max_location()
-
 		return popt,ccf.sget_value_at_interp(popt[0],popt[1])
+	# elif options.optccf == "robust":
+	# 	initial_guess = [x1,y1,s1,a1]
+	# 	bds = [(-bs/2, -bs/2, 0.6, ncc.min()),(bs/2, bs/2, 100.0, ncc.max())]
+	# 	try:
+	# 		popt,pcov=optimize.curve_fit(correlation_peak_model,(xx,yy),ncc.ravel(),p0=initial_guess,bounds=bds,method="dogbox",max_nfev=250,xtol=1e-3,ftol=1e-6,loss='linear')
+	# 	except RuntimeError:
+	# 		return None,-1
+
+	# 	popt = [p for p in popt]
+	# 	popt[0] = popt[0] + nxx/2 - bs/2
+	# 	popt[1] = popt[1] + nxx/2 - bs/2
+	# 	popt[2] = np.abs(popt[2])
+	# 	popt.extend([s2,a2])
+	# 	return popt,ccf.sget_value_at_interp(popt[0],popt[1])
 
 def qsum(imlist):
 	avg=Averagers.get("mean")
@@ -1099,7 +1166,6 @@ def run(command):
 	if ret !=0 :
 		print("Error running: ",command)
 		sys.exit(1)
-
 
 if __name__ == "__main__":
 	main()

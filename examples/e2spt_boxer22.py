@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 
 # LAST update: May/2017 by Muyuan Chen
 # Author: Steven Ludtke  2/8/2011 (rewritten)
@@ -45,7 +44,7 @@ from PyQt4.QtCore import Qt
 from eman2_gui.emapplication import get_application, EMApp
 from eman2_gui.emimage2d import EMImage2DWidget
 from eman2_gui.emimagemx import EMImageMXWidget
-from eman2_gui.emimage3d import EMImage3DWidget
+#from emimage3d import EMImage3DWidget
 from eman2_gui.emscene3d import EMScene3D
 from eman2_gui.emdataitem3d import EMDataItem3D, EMIsosurface
 from eman2_gui.emshape import EMShape
@@ -53,7 +52,7 @@ from eman2_gui.valslider import ValSlider, ValBox
 
 	
 def run(cmd):
-	print(cmd)
+	print cmd
 	launch_childprocess(cmd)
 	
 def main():
@@ -61,15 +60,12 @@ def main():
 	usage=""" !!! Experimental program....
 	Cleaned and modified version of e2spt_boxer.py. Allow multiple type of features in one tomogram and save metadata in the new EMAN2 tomogram framework.
 	
-	[prog] <tomogram input> --inmemory --invert
+	[prog] <tomogram input>
 	
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	#parser.add_argument("--path", type=str,help="path", default=None)	
-	#parser.add_argument("--shrink", type=int,help="shrink", default=1)	
-	parser.add_argument("--apix", type=float,help="apix", default=-1)	
-	parser.add_argument('--invert', action="store_true", default=False, help='''This means you want the contrast to me inverted while boxing, AND for the extracted sub-volumes.\nRemember that EMAN2 **MUST** work with "white" protein. You can very easily figure out what the original color\nof the protein is in your data by looking at the gold fiducials or the edge of the carbon hole in your tomogram.\nIf they look black you MUST specify this option''', guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode="boxing")
-	parser.add_argument("--inmemory",action="store_true",default=False,help="This will read the entire tomogram into memory. Much faster, but you must have enough ram !", guitype='boolbox', row=2, col=1, rowspan=1, colspan=1, mode="boxing")
+	parser.add_argument("--ppid", type=int,help="ppid", default=1)	
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -82,8 +78,7 @@ def main():
 	img=args[0]
 
 	imghdr = EMData(img,0,True)
-	if options.apix<=0:
-		options.apix = imghdr['apix_x']
+	options.apix = imghdr['apix_x']
 
 	box = 32
 	
@@ -109,12 +104,11 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.apix=options.apix
 		self.currentset=0
 		self.shrink=1#options.shrink
-		self.invert=options.invert
+		self.invert=True
 		self.center=None
 		self.normalize=None
 		self.setWindowTitle("Main Window (e2spt_boxer.py)")
 
-#		self.setWindowTitle("e2spt_boxer.py")
 
 		# Menu Bar
 		self.mfile=self.menuBar().addMenu("File")
@@ -124,10 +118,10 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.mfile_save_boxes_stack=self.mfile.addAction("Save Boxes as Stack")
 		self.mfile_quit=self.mfile.addAction("Quit")
 
-		self.mwin=self.menuBar().addMenu("Window")
-		self.mwin_boxes=self.mwin.addAction("Particles")
-		self.mwin_single=self.mwin.addAction("Single Particle")
-		self.mwin_average=self.mwin.addAction("Averaging")
+		#self.mwin=self.menuBar().addMenu("Window")
+		#self.mwin_boxes=self.mwin.addAction("Particles")
+		#self.mwin_single=self.mwin.addAction("Single Particle")
+		#self.mwin_average=self.mwin.addAction("Averaging")
 
 
 		self.setCentralWidget(QtGui.QWidget())
@@ -177,6 +171,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		# Local boxes in side view
 		self.wlocalbox=QtGui.QCheckBox("Limit Side Boxes")
 		self.gbl2.addWidget(self.wlocalbox,3,0)
+		self.wlocalbox.setChecked(True)
 
 		# scale factor
 		self.wscale=ValSlider(rng=(.1,2),label="Sca:",value=1.0)
@@ -206,8 +201,8 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		QtCore.QObject.connect(self.mfile_quit,QtCore.SIGNAL("triggered(bool)")  ,self.menu_file_quit)
 
 		# window menu
-		QtCore.QObject.connect(self.mwin_boxes,QtCore.SIGNAL("triggered(bool)")  ,self.menu_win_boxes  )
-		QtCore.QObject.connect(self.mwin_single,QtCore.SIGNAL("triggered(bool)")  ,self.menu_win_single  )
+		#QtCore.QObject.connect(self.mwin_boxes,QtCore.SIGNAL("triggered(bool)")  ,self.menu_win_boxes  )
+		#QtCore.QObject.connect(self.mwin_single,QtCore.SIGNAL("triggered(bool)")  ,self.menu_win_single  )
 #		QtCore.QObject.connect(self.mwin_average,QtCore.SIGNAL("triggered(bool)")  ,self.menu_win_average  )
 
 		# all other widgets
@@ -251,11 +246,8 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		else:
 			self.filetag="__"
 			
-		if options.inmemory:
-			data=EMData(datafile)
-			self.set_data(data)
-		else:
-			self.set_datafile(datafile)		# This triggers a lot of things to happen, so we do it last
+		data=EMData(datafile)
+		self.set_data(data)
 
 		# Boxviewer subwidget (details of a single box)
 		self.boxviewer=EMBoxViewer()
@@ -289,7 +281,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		info=js_open_dict(self.jsonfile)
 		self.sets={}
 		self.boxsize={}
-		if "class_list" in info:
+		if info.has_key("class_list"):
 			clslst=info["class_list"]
 			for k in sorted(clslst.keys()):
 				if type(clslst[k])==dict:
@@ -307,7 +299,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.setcolors=[clr("blue"),clr("green"),clr("red"),clr("cyan"),clr("purple"),clr("orange"), clr("yellow"),clr("hotpink"),clr("gold")]
 		self.sets_visible={}
 		
-		if "boxes_3d" in info:
+		if info.has_key("boxes_3d"):
 			box=info["boxes_3d"]
 			for i,b in enumerate(box):
 				#### X-center,Y-center,Z-center,method,[score,[class #]]
@@ -331,45 +323,12 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.setspanel.update_sets()
 	
 		self.e = None
-		print(self.sets)
+		print self.sets
 		for i in range(len(self.boxes)):
 			self.update_box(i)
 		
 		self.update_all()
 		self.initialized=True
-
-	def menu_win_boxes(self) : self.boxesviewer.show()
-	def menu_win_single(self) : self.boxviewer.show()
-#	def menu_win_average(self) : self.averageviewer.show()
-
-	def set_datafile(self,datafile):
-		print("\nIn set_datafile, received datafile", datafile)
-		if datafile==None :
-			self.datafile=None
-			self.data=None
-			self.xyview.set_data(None)
-			self.xzview.set_data(None)
-			self.zyview.set_data(None)
-			return
-
-		self.data=None
-		self.datafile=datafile
-
-		#print "\nDatafile set, see!", self.datafile, type(self.datafile)
-
-		imgh=EMData(datafile,0,1)
-
-		if self.yshort:
-			self.datasize=(imgh["nx"],imgh["nz"],imgh["ny"])
-		else:
-			self.datasize=(imgh["nx"],imgh["ny"],imgh["nz"])
-
-		self.wdepth.setRange(0,self.datasize[2]-1)
-		self.boxes=[]
-		self.curbox=-1
-
-		self.wdepth.setValue(self.datasize[2]/2)
-		self.update_all()
 
 	def set_data(self,data):
 		if data==None :
@@ -381,12 +340,10 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			return
 
 		self.data=data
+		self.apix=data["apix_x"]
 		self.datafile=None
 
-		if self.yshort:
-			self.datasize=(data["nx"],data["nz"],data["ny"])
-		else:
-			self.datasize=(data["nx"],data["ny"],data["nz"])
+		self.datasize=(data["nx"],data["ny"],data["nz"])
 
 		self.wdepth.setRange(0,self.datasize[2]-1)
 		self.boxes=[]
@@ -410,27 +367,13 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			bz=1
 		else:
 			bz=bs
-		if self.yshort:
-			if self.data!=None:
-				r=self.data.get_clip(Region(x-bs/2,z-bz/2,y-bs/2,bs,bz,bs))
-				if options.normproc:
-					r.process_inplace(options.normproc)
-				r.process_inplace("xform",{"transform":Transform({"type":"eman","alt":90.0})})
-				r.process_inplace("xform.mirror",{"axis":"z"})
-			elif self.datafile!=None:
-				r=EMData(self.datafile,0,0,Region(x-bs/2,z-bz/2,y-bs/2,bs,bz,bs))
-				if options.normproc:
-					r.process_inplace(options.normproc)
-				r.process_inplace("xform",{"transform":Transform({"type":"eman","alt":90.0})})
-				r.process_inplace("xform.mirror",{"axis":"z"})
-			else: return None
-
-		else :
-			if self.data!=None:
-				r=self.data.get_clip(Region(x-bs/2,y-bs/2,z-bz/2,bs,bs,bz))
-			elif self.datafile!=None:
-				r=EMData(self.datafile,0,0,Region(x-bs/2,y-bs/2,z-bz/2,bs,bs,bz))
-			else: return None
+		
+	
+		if self.data!=None:
+			r=self.data.get_clip(Region(x-bs/2,y-bs/2,z-bz/2,bs,bs,bz))
+		elif self.datafile!=None:
+			r=EMData(self.datafile,0,0,Region(x-bs/2,y-bs/2,z-bz/2,bs,bs,bz))
+		else: return None
 
 		if self.apix!=0 :
 			r["apix_x"]=self.apix
@@ -548,7 +491,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			try:
 				ret= int(self.boxsize[clsid])
 			except:
-				print("No box size saved for {}..".format(clsid))
+				print "No box size saved for {}..".format(clsid)
 				ret=32
 			return ret
 
@@ -592,7 +535,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 	def menu_file_read_boxloc(self):
 		fsp=str(QtGui.QFileDialog.getOpenFileName(self, "Select output text file"))
 
-		f=open(fsp,"r")
+		f=file(fsp,"r")
 		for b in f:
 			b2=[int(float(i))/self.shrink for i in b.split()[:3]]
 			bdf=[0,0,0,"manual",0.0, self.currentset]
@@ -607,14 +550,13 @@ class EMTomoBoxer(QtGui.QMainWindow):
 
 		fsp=str(QtGui.QFileDialog.getSaveFileName(self, "Select output text file"))
 
-		out=open(fsp,"w")
+		out=file(fsp,"w")
 		if self.helixboxer:
 			for b in self.helixboxes:
 				out.write("%d\t%d\t%d\t%d\t%d\t%d\n"%(b[0]*shrinkf,b[1]*shrinkf,b[2]*shrinkf,b[3]*shrinkf,b[4]*shrinkf,b[5]*shrinkf))
 		else:
 			for b in self.boxes:
-				if b[5] in self.sets_visible:
-					out.write("%d\t%d\t%d\n"%(b[0]*shrinkf,b[1]*shrinkf,b[2]*shrinkf))
+				out.write("%d\t%d\t%d\n"%(b[0]*shrinkf,b[1]*shrinkf,b[2]*shrinkf))
 		out.close()
 
 
@@ -637,12 +579,12 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				os.mkdir(dr)
 		
 		fsp=os.path.join("particles3d",self.basename)+name
-		fspprjs=os.path.join("particles",self.basename)+name.replace('.hdf','_prjs.hdf')
-		print("Saving 3D particles to {},\n Saving particle projections to {}".format(fsp, fspprjs))
-		for f in [fsp, fspprjs]:
-			if os.path.isfile(f):
-				print("{} exist. Overwritting...".format(f))
-				os.remove(f)
+		#fspprjs=os.path.join("particles",self.basename)+name.replace('.hdf','_prjs.hdf')
+		print "Saving 3D particles to {}".format(fsp)
+		#for f in [fsp, fspprjs]:
+		if os.path.isfile(fsp):
+			print "{} exist. Overwritting...".format(fsp)
+			os.remove(fsp)
 		
 		progress = QtGui.QProgressDialog("Saving", "Abort", 0, len(self.boxes),None)
 		
@@ -659,11 +601,10 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				boxsz=bs
 			else:
 				if boxsz!=bs:
-					print("Inconsistant box size in the particles to save.. Using {:d}..".format(boxsz))
+					print "Inconsistant box size in the particles to save.. Using {:d}..".format(boxsz)
 					bs=boxsz
 			
-			sz=[0,0,0]
-			#sz=[s/2 for s in self.datasize]
+			sz=[s/2 for s in self.datasize]
 			img=self.get_cube(b[0], b[1], b[2], boxsz=bs)
 			img.process_inplace('normalize')
 			
@@ -678,7 +619,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			prj["ptcl_source_coord"]=(b[0]-sz[0], b[1]-sz[1], b[2]-sz[2])
 			
 			img.write_image(fsp,-1)
-			prj.write_image(fspprjs,-1)
+			#prj.write_image(fspprjs,-1)
 
 			progress.setValue(i+1)
 			if progress.wasCanceled():
@@ -831,7 +772,10 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		if self.wfilt.getValue()!=0.0:
 
 			av.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/self.wfilt.getValue(),"apix":self.apix})
-		self.xyview.set_data(av)
+		if self.initialized:
+			self.xyview.set_data(av, keepcontrast=True)
+		else:
+			self.xyview.set_data(av)
 
 	def update_all(self):
 		"""redisplay of all widgets"""
@@ -955,22 +899,6 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			return
 		bs2=self.get_boxsize(box[5])/2
 
-		#if self.curbox!=n :
-			#self.xzview.scroll_to(None,box[2])
-			#self.zyview.scroll_to(box[2],None)
-
-
-		# Boxes may not extend outside the tomogram
-		if box[0]<bs2 : box[0]=bs2
-		if box[0]>self.datasize[0]-bs2 : box[0]=self.datasize[0]-bs2
-		if box[1]<bs2 : box[1]=bs2
-		if box[1]>self.datasize[1]-bs2 : box[1]=self.datasize[1]-bs2
-		#box[2]=bs2
-		#if box[2]<bs2 : box[2]=bs2
-		#if box[2]>self.datasize[2]-bs2 : box[2]=self.datasize[2]-bs2
-#		print self.boxes
-
-		
 		
 		color=self.setcolors[box[5]%len(self.setcolors)].getRgbF()
 		
@@ -1018,6 +946,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			
 		if self.initialized:
 			self.update_boximgs()
+			self.SaveJson()
 
 			if n!=self.curbox and not self.helixboxer:
 				self.boxesviewer.set_selected((n,),True)
@@ -1048,7 +977,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			self.setspanel.update_sets()
 
 	def add_helix_box(self, xf, yf, zf, xi, yi, zi):
-		print(xf, yf, zf, xi, yi, zi)
+		print xf, yf, zf, xi, yi, zi
 		if options.yshort:
 			self.helixboxes.append([xf, zf, yf, xi, zi, yi])
 		else:
@@ -1396,9 +1325,8 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		else:
 			self.emit(QtCore.SIGNAL("keypress"), event)
 
-	
-	def closeEvent(self,event):
-		print("Exiting")
+	def SaveJson(self):
+		
 		info=js_open_dict(self.jsonfile)
 		info["boxes_3d"]=self.boxes
 		clslst={}
@@ -1409,6 +1337,10 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				}
 		info["class_list"]=clslst
 		info.close()
+	
+	def closeEvent(self,event):
+		print "Exiting"
+		self.SaveJson()
 		
 		self.boxviewer.close()
 		self.boxesviewer.close()
@@ -1417,14 +1349,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.xzview.close()
 		self.zyview.close()
 		
-#		self.averageviewer.close()
-		#event.accept()
-		#self.app().close_specific(self)
 		self.emit(QtCore.SIGNAL("module_closed")) # this signal is important when e2ctf is being used by a program running its own event loop
-
-	#def closeEvent(self,event):
-		#self.target().done()
-		
 
 def parse_setname(name):
 	p0=name.find('::')
@@ -1478,25 +1403,7 @@ class EMBoxViewer(QtGui.QWidget):
 		self.gbl.setRowStretch(2,1)
 		self.gbl.setRowStretch(0,5)
 		self.gbl.setRowStretch(1,5)
-		#QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mousedown"),self.xy_down)
-		#QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mousedrag"),self.xy_drag)
-		#QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mouseup")  ,self.xy_up  )
-
-		#QtCore.QObject.connect(self.xzview,QtCore.SIGNAL("mousedown"),self.xz_down)
-		#QtCore.QObject.connect(self.xzview,QtCore.SIGNAL("mousedrag"),self.xz_drag)
-		#QtCore.QObject.connect(self.xzview,QtCore.SIGNAL("mouseup")  ,self.xz_up  )
-
-		#QtCore.QObject.connect(self.zyview,QtCore.SIGNAL("mousedown"),self.zy_down)
-		#QtCore.QObject.connect(self.zyview,QtCore.SIGNAL("mousedrag"),self.zy_drag)
-		#QtCore.QObject.connect(self.zyview,QtCore.SIGNAL("mouseup")  ,self.zy_up  )
-
-#		self.setSizeGripEnabled(True)
-
-#		if get_platform() == "Darwin": # because OpenGL widgets in Qt don't leave room in the bottom right hand corner for the resize tool
-#			self.status = QtGui.QStatusBar()
-#			self.gbl.addWidget(self.status,3,0,1,2)
-#			self.margin = 0
-
+		
 	def set_data(self,data):
 		"""Sets the current volume to display"""
 
@@ -1654,7 +1561,7 @@ class EMTomoSetsPanel(QtGui.QWidget):
 		if not ok : return
 		name=str(name)
 		if name in self.target().sets :
-			print("Set name exists")
+			print "Set name exists"
 			return
 
 		self.target().new_set(name)
@@ -1670,7 +1577,7 @@ class EMTomoSetsPanel(QtGui.QWidget):
 		name=str(name)
 		
 		if name in self.target().sets :
-			print("Set name exists")
+			print "Set name exists"
 			return
 		
 		self.target().rename_set(sels[0], name)

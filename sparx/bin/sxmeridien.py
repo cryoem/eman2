@@ -1496,15 +1496,16 @@ def steptwo_mpi(tvol, tweight, treg, cfsc = None, regularized = True, color = 0)
 		tvol.set_attr("is_complex",1)
 		if regularized:
 			nr = len(cfsc)
+			ovol = [0.0]*nr
 			limitres = 0
 			for i in xrange(nr):
-				cfsc[i] = min(max(cfsc[i], 0.0), 0.999)
+				ovol[i] = min(max(cfsc[i], 0.0), 0.999)
 				#print( i,cfsc[i] )
-				if( cfsc[i] == 0.0 ):
+				if( ovol[i] == 0.0 ):
 					limitres = i-1
 					break
 			if( limitres == 0 ): limitres = nr-2;
-			ovol = reshape_1d(cfsc, nr, 2*nr)
+			ovol = reshape_1d(ovol, nr, 2*nr)
 			limitres = 2*min(limitres, Tracker["maxfrad"])  # 2 on account of padding, which is always on
 			maxr2 = limitres**2
 			for i in xrange(limitres+1, len(ovol), 1):   ovol[i] = 0.0
@@ -1542,7 +1543,7 @@ def steptwo_mpi(tvol, tweight, treg, cfsc = None, regularized = True, color = 0)
 	we_data = get_image_data(tweight)
 	#  tvol is overwritten, meaning it is also an output
 	ifi = mpi_iterefa( vol_data.__array_interface__['data'][0] ,  we_data.__array_interface__['data'][0] , nx, ny, nz, maxr2, \
-			Tracker["constants"]["nnxo"], Blockdata["myid_on_node"], color, Blockdata["no_of_processes_per_group"],  Blockdata["shared_comm"])#HERE#, n_iter)
+			Tracker["constants"]["nnxo"], Blockdata["myid_on_node"], color, Blockdata["no_of_processes_per_group"],  Blockdata["shared_comm"], n_iter)
 	#Util.iterefa(tvol, tweight, maxr2, Tracker["constants"]["nnxo"])
 
 	if( Blockdata["myid_on_node"] == 0 ):
@@ -5500,12 +5501,6 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 
 	###if(Blockdata["myid"] == Blockdata["main_node"]): print("   TRETR  ",Tracker["constants"]["nnxo"],Tracker["nxinit"],reachpw,n_coarse_ang,coarse_delta,n_coarse_psi,m_coarse_psi,c_coarse_psi,n_coarse_shifts)
 
-	"""
-	ny = projdata[0].get_ysize()
-	mask = Util.unrollmask(ny)
-	nxt = 2*(mask.get_xsize())
-	"""
-
 	#if(Blockdata["myid"] == Blockdata["main_node"]):
 	#	print( original_data[0].get_attr("identifier") )
 	#	print( original_data[1].get_attr("identifier") )
@@ -6513,12 +6508,6 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 
 	###if(Blockdata["myid"] == Blockdata["main_node"]): print("   TRETR  ",Tracker["constants"]["nnxo"],Tracker["nxinit"],reachpw,n_coarse_ang,coarse_delta,n_coarse_psi,m_coarse_psi,c_coarse_psi,n_coarse_shifts)
 
-	"""
-	ny = projdata[0].get_ysize()
-	mask = Util.unrollmask(ny)
-	nxt = 2*(mask.get_xsize())
-	"""
-
 	#if(Blockdata["myid"] == Blockdata["main_node"]):
 	#	print( original_data[0].get_attr("identifier") )
 	#	print( original_data[1].get_attr("identifier") )
@@ -7456,7 +7445,6 @@ def cerrs(params, ctfs, particle_groups):
 	interpolation_method = 1
 	ref_vol = prep_vol(ref_vol, npad = 2, interpolation_method = interpolation_method )
 
-	mask = Util.unrollmask(Tracker["nxinit"])
 	lb = Blockdata["bckgnoise"].get_xsize()
 	acc_rot = 0.0
 	acc_trans = 0.0
@@ -7672,7 +7660,7 @@ def do_final_rec3d(partids, partstack, original_data, oldparams, oldparamstructu
 	mpi_barrier(MPI_COMM_WORLD)
 	return
 
-def recons3d_final(masterdir, do_final_iter_init, memory_per_node):
+def recons3d_final(masterdir, do_final_iter_init, memory_per_node, orgstack = None):
 	global Tracker, Blockdata
 	# search for best solution, load its tracker 
 	carryon  = 1
@@ -7705,6 +7693,7 @@ def recons3d_final(masterdir, do_final_iter_init, memory_per_node):
 			Tracker = convert_json_fromunicode(json.load(fout))
 			fout.close()
 		except: carryon = 0
+		if orgstack: Tracker["constants"]["stack"] = orgstack
 	else: Tracker = 0
 	carryon = bcast_number_to_all(carryon)
 	if carryon == 0: ERROR("Failed to load Tracker file %s, program terminates "%os.path.join(final_dir,"Tracker_%03d.json"%do_final_iter), "recons3d_final",1, Blockdata["myid"])
@@ -7824,12 +7813,6 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 		coarse_shifts_shrank[ib] = [coarse_shifts[ib][0]*shrinkage,coarse_shifts[ib][1]*shrinkage]
 
 	###if(Blockdata["myid"] == Blockdata["main_node"]): print("   TRETR  ",Tracker["constants"]["nnxo"],Tracker["nxinit"],reachpw,n_coarse_ang,coarse_delta,n_coarse_psi,m_coarse_psi,c_coarse_psi,n_coarse_shifts)
-
-	"""
-	ny = projdata[0].get_ysize()
-	mask = Util.unrollmask(ny)
-	nxt = 2*(mask.get_xsize())
-	"""
 
 	#if(Blockdata["myid"] == Blockdata["main_node"]):
 	#	print( original_data[0].get_attr("identifier") )
@@ -11761,10 +11744,11 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 		#global Tracker, Blockdata
 		#print( "  args  ",args)
 		checking_flag = 1
+		orgstack      = None
 		if( len(args) == 3):
 			ERROR("do_final option requires only one or two arguments ","meridien", 1, Blockdata["myid"])
 
-		elif(len(args) == 2):
+		elif(len(args) == 2): # option for signal subtraction 
 			masterdir = args[1]
 			orgstack  = args[0]
 			if Blockdata["myid"] == Blockdata["main_node"]:
@@ -11807,7 +11791,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 		if( options.memory_per_node < 0.0 ): options.memory_per_node = 2.0*Blockdata["no_of_processes_per_group"]
 	
 		Blockdata["accumulatepw"]       = [[],[]]
-		recons3d_final(masterdir, options.do_final, options.memory_per_node)
+		recons3d_final(masterdir, options.do_final, options.memory_per_node, orgstack)
 		mpi_finalize()
 		exit()
 	else:

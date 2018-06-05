@@ -5310,6 +5310,7 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 			d.put("x1", EMObject::INT, "The number of columns to zero from right");
 			d.put("y0", EMObject::INT, "The number of rows to zero from the bottom");
 			d.put("y1", EMObject::INT, "The number of rows to zero from the top");
+			d.put("apodize", EMObject::INT, "Number of layers linearly apodized to zero, but only on edges where >0 layers are zeroed. Default 0");
 			return d;
 		}
 
@@ -6805,6 +6806,7 @@ correction is not possible, this will allow you to approximate the correction to
 			d.put("ac", EMObject::FLOAT, "Amplitude contrast in % (default 10%)");
 			d.put("voltage", EMObject::FLOAT, "Microscope Voltage in Kv (default 300)");
 			d.put("apix", EMObject::FLOAT, "A/pix (default value from image header)");
+			d.put("useheader", EMObject::INT,"Use CTF header values if present, default true");
 			return d;
 		}
 

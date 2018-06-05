@@ -179,6 +179,24 @@ namespace EMAN
 		virtual int read_data(float *data, int image_index = 0,
 							  const Region * area = 0, bool is_3d = false) = 0;
 
+		/** Read the data from an image as an 8 bit array, regardless of format.
+		 *
+		 * @param data An array to store the data. It should be
+		 *        created outside of this function.
+		 * @param image_index The index of the image to read (image number in file).
+		 * @param area If provided reads only the specified region.
+		 * @param is_3d Whether to treat the image as a single 3D or a
+		 *        set of 2Ds. This is a hint for certain image formats which
+		 *        has no difference between 3D image and set of 2Ds.
+		 * @param minval image value to map to 0 in the returned unsigned char
+		 * @param maxval image value to map to 255 in the returned unsigned char. If minval==maxval, autoscaling will be used.
+		 * @return 0 if OK; 1 if error.
+		 */
+		virtual int read_data_8bit(unsigned char *data, int image_index = 0,
+							  const Region * area = 0, bool is_3d = false, float minval = 0.0f, float maxval = 0.0f) {
+			throw ImageFormatException("8 bit reading not supported for this format");
+		}
+
 		/** Write data to an image.
 		 *
 		 * @param data An array storing the data.

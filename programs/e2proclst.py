@@ -63,8 +63,10 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 	parser.add_argument("--merge", type=str, default=None, help="Specify the output name here. This will concatenate all of the input .lst files into a single output")
 	parser.add_argument("--mergesort", type=str, default=None, help="Specify the output name here. This will merge all of the input .lst files into a single (resorted) output")
 	parser.add_argument("--mergeeo", action="store_true", default=False, help="Merge even odd lst.")
-	parser.add_argument("--minhisnr", type=float, help="Integrated SNR from 1/10-1/4 1/A must be larger than this",default=0,guitype='floatbox', row=8, col=1)
-	parser.add_argument("--minlosnr", type=float, help="Integrated SNR from 1/200-1/20 1/A must be larger than this",default=0,guitype='floatbox', row=8, col=0)
+	parser.add_argument("--minhisnr", type=float, help="Integrated SNR from 1/10-1/4 1/A must be larger than this",default=-1,guitype='floatbox', row=8, col=1)
+	parser.add_argument("--minlosnr", type=float, help="Integrated SNR from 1/200-1/20 1/A must be larger than this",default=-1,guitype='floatbox', row=8, col=0)
+	parser.add_argument("--mindf", type=float, help="Minimum defocus",default=-1,guitype='floatbox', row=8, col=1)
+	parser.add_argument("--maxdf", type=float, help="Maximum defocus",default=-1,guitype='floatbox', row=8, col=0)
 	
 	parser.add_argument("--numaslist", type=str, default=None, help="extract the particle indexes (numbers) only from an lst file into a text file (one number per line).")
 	
@@ -226,7 +228,7 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 
 
 	if options.retype != None:
-		if options.minlosnr>0 or options.minhisnr>0 :
+		if options.minlosnr>0 or options.minhisnr>0 or options.mindf>0 or options.maxdf>0 :
 			print("ERROR: --minlosnr and --minhisnr not compatible with --retype")
 			sys.exit(1)
 
@@ -260,7 +262,7 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 
 	if options.merge!=None:
 
-		if options.minlosnr>0 or options.minhisnr>0 :
+		if options.minlosnr>0 or options.minhisnr>0 or options.mindf>0 or options.maxdf>0 :
 			print("ERROR: --minlosnr and --minhisnr not compatible with --merge. Please use --mergesort instead.")
 			sys.exit(1)
 
@@ -299,7 +301,7 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 		ptcls.sort()
 
 		# remove particles in files not meeting our criteria
-		if options.minlosnr>0 or options.minhisnr>0 :
+		if options.minlosnr>0 or options.minhisnr>0 or options.mindf>0 or options.maxdf>0 :
 			# the list conversion here is so we are iterating over a copy and not modifying the set while we iterate over it
 			for pfile in list(pfiles):
 				js=js_open_dict(info_name(pfile))
@@ -311,9 +313,9 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 				r4=int(ceil(1.0/(4.0*ctf.dsbg)))
 				losnr=sum(ctf.snr[r1:r2])/(r2-r1)
 				hisnr=sum(ctf.snr[r3:r4])/(r4-r3)
-				if losnr<options.minlosnr or hisnr<options.minhisnr:
+				if losnr<options.minlosnr or hisnr<options.minhisnr or (options.mindf>0 and ctf.defocus<options.mindf) or (options.maxdf>0 and ctf.defocus>options.maxdf) :
 					pfiles.remove(pfile)
-					if options.verbose: print(pfile," removed due to SNR criteria")
+					if options.verbose: print(pfile," removed due to SNR or defocus limits")
 
 		nwrt=0
 		for i in ptcls:

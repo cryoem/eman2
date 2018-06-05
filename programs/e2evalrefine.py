@@ -230,11 +230,11 @@ def main():
 
 			alt=eulers[i].get_rotation("eman")["alt"]
 			az=eulers[i].get_rotation("eman")["az"]
-			best=(0,0,1.01)
+			best=(0,0,1.02)
 
 			for angle in xrange(0,180,5):
 				rt=Transform({"type":"2d","alpha":angle})
-				xf=rt*Transform([1.01,0,0,0,0,1/1.01,0,0,0,0,1,0])*rt.inverse()
+				xf=rt*Transform([1.02,0,0,0,0,1/1.02,0,0,0,0,1,0])*rt.inverse()
 				esum=0
 
 				for eo in range(2):
@@ -271,12 +271,12 @@ def main():
 							print(ring,fsc)
 							sys.exit(1)
 
-						best=max(best,(esum,angle,1.01))
+						best=max(best,(esum,angle,1.02))
 	#					snr=fsc/(1.0-fsc)
 	#					sums=[sum(fsc[rings[k]:rings[k+1]])/(rings[k+1]-rings[k]) for k in xrange(4)]		# sum the fsc into 5 range values
 	#					sums=[sum(snr[rings[k]:rings[k+1]])/(rings[k+1]-rings[k]) for k in xrange(4)]		# sum the fsc into 5 range values
 	#					fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{}\n".format(sums[0],sums[1],sums[2],sums[3],alt,az,i,defocus,j,cptcl[eo]))
-				fout.write("{}\t{}\t{}\n".format(angle,1.01,esum))
+				fout.write("{}\t{}\t{}\n".format(angle,1.02,esum/(nptcl[0]+nptcl[1])))
 
 			if options.verbose>1 : print("--- Class %d"%i)
 
@@ -321,7 +321,7 @@ def main():
 
 						best=max(best,(esum,angle,ai))
 
-				fout.write("{}\t{}\t{}\n".format(angle,ai,esum))
+				fout.write("{}\t{}\t{}\n".format(angle,ai,esum/(nptcl[0]+nptcl[1])))
 
 			print(best)
 

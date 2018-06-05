@@ -716,7 +716,7 @@ of the path is stored as self.normpath"""
 
 		### Write entire dict to file
 		# If we have unprocessed changes, we need to apply them and write back to disk
-		if len(self.changes)>0:
+		if len(self.changes)>0 or len(self.delkeys)>0:
 			try:
 				os.rename(self.normpath,self.normpath[:-5]+"_tmp.json")		# we back up the original file, just in case
 			except:
@@ -927,7 +927,8 @@ def obj_to_json(obj):
 	if isinstance(obj,EMData) :
 		try: fnm = (obj["json_path"],obj["json_n"])
 		except: 
-			print("ERROR: Cannot store image. Images cannot be embedded in lists.")
+			traceback.print_stack()
+			print("ERROR: Cannot store image in JSON list. This should never happen and indicates a coding error.")
 			fnm=["BAD_JSON.hdf",0]
 		obj.write_image(fnm[0],fnm[1])
 		return {"__image__":fnm}

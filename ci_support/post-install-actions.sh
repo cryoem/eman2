@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 
-cat <<EOF 
+source ${PREFIX}/bin/activate
+
+conda info -a
+conda list
+
+conda install eman-deps=11.3 -c cryoem -c defaults -c conda-forge -y
+
+cat <<EOF
 
 INSTALLATION IS NOW COMPLETE
 

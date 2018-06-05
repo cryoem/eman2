@@ -4121,12 +4121,17 @@ void ZeroEdgeRowProcessor::process_inplace(EMData * image)
 	int ny = image->get_ysize();
 
 	float *d = image->get_data();
-	int top_nrows = params["y0"];
-	int bottom_nrows = params.set_default("y1",top_nrows);
+	int apodize = params.set_default("apodize",0);
+	if (apodize>0) throw InvalidValueException(apodize," apodize not yet supported.");
+	
+	int top_nrows = std::max(0,params.set_default("y0",0)-apodize);
+	int bottom_nrows = std::max(0,params.set_default("y1",top_nrows)-apodize);
 
-	int left_ncols = params["x0"];
-	int right_ncols = params.set_default("x1",left_ncols);
+	int left_ncols = std::max(0,params.set_default("x0",0)-apodize);
+	int right_ncols = std::max(0,params.set_default("x1",left_ncols)-apodize);
 
+	
+	
 	size_t row_size = nx * sizeof(float);
 
 	memset(d, 0, top_nrows * row_size);
@@ -7227,11 +7232,12 @@ void CTFCorrProcessor::process_inplace(EMData * image)
 	float ac = params.set_default("ac",10.0);
 	float voltage = params.set_default("voltage",300.0);
 	float apix = params.set_default("apix",image->get_attr("apix_x"));
+	int useheader = params.set_default("useheader",1);
 
 
 	int ny = image->get_ysize();
 	EMAN2Ctf ctf;
-	if (image->has_attr("ctf")){
+	if (image->has_attr("ctf") && useheader){
 		
 		ctf.copy_from((Ctf *)(image->get_attr("ctf")));
 	}
@@ -12924,12 +12930,16 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 // 						int ky=jky-jy;
 						int jkx=jx+kx;
 						int jky=jy+ky;
+						//int jkx2=jx-kx;
+						//int jky2=jy-ky;
 	
 //						if (abs(jkx)>nkx || abs(jky)>nky) continue;
 						complex<double> v1 = (complex<double>)cimage2->get_complex_at(jx,jy);
 						complex<double> v2 = (complex<double>)cimage2->get_complex_at(kx,ky);
 						complex<double> v3 = (complex<double>)cimage2->get_complex_at(jkx,jky);
 						ret->add_complex_at(jx,jy,0,(complex<float>)(v1*v2*std::conj(v3)));
+						//complex<double> v4 = (complex<double>)cimage2->get_complex_at(jkx2,jky2);	// This is based on Phil's point that the v1,v2,v3 computation lacks Friedel symmetry
+						//ret->add_complex_at(jx,jy,0,(complex<float>)(v1*(v2*std::conj(v3)+std::conj(v2)*std::conj(v4))));
 					}
 				}
 				delete cimage2;

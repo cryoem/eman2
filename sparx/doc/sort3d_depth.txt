@@ -8,7 +8,7 @@
 
 Usage in command line
 
-  sxsort3d_depth.py  --refinement_dir=DIR  --instack=STACK_FILE  --output_dir=DIR  --niter_for_sorting=NUM_OF_ITERATIONS  --nxinit=INITIAL_IMAGE_SIZE  --mask3D=MASK3D_FILE  --focus=FOCUS3D_FILE  --radius=PARTICLE_RADIUS  --sym=SYMMETRY  --img_per_grp=NUM_OF_IMAGES  --minimum_grp_size=GROUP_SIZE  --do_swap_au  --swap_ratio=RATIO  --memory_per_node=MEMORY_SIZE  --depth_order=DEPTH_ORDER  --stop_mgskmeans_percentage=PERCENTAGE  --nsmear=NUM_OF_SMEARS  --orientation_groups=NUM_OF_GROUPS  --not_include_unaccounted  --shake=PERTURBATION_FACTOR  --notapplybckgnoise  --random_group_elimination_threshold
+  sxsort3d_depth.py  --refinement_dir=DIR  --instack=STACK_FILE  --output_dir=DIR  --niter_for_sorting=NUM_OF_ITERATIONS  --nxinit=INITIAL_IMAGE_SIZE  --mask3D=MASK3D_FILE  --focus=FOCUS3D_FILE  --radius=PARTICLE_RADIUS  --sym=SYMMETRY  --img_per_grp=NUM_OF_IMAGES  --img_per_grp_split_rate=SPLIT_RATE  --minimum_grp_size=GROUP_SIZE  --do_swap_au  --swap_ratio=RATIO  --memory_per_node=MEMORY_SIZE  --depth_order=DEPTH_ORDER  --stop_mgskmeans_percentage=PERCENTAGE  --nsmear=NUM_OF_SMEARS  --orientation_groups=NUM_OF_GROUPS  --not_include_unaccounted  --notapplybckgnoise  --random_group_elimination_threshold
 
 \\
 ===== Typical usage =====
@@ -34,11 +34,12 @@ There are two ways of running this command.
   ; %%--%%nxinit : Initial image size: Image size used for MGSKmeans in case of starting sorting from a data stack. By default, the program determines window size. Specific to stack mode. (default -1) 
   ; %%--%%mask3D : 3D mask: File path of the global 3D mask for clustering. (default none)
   ; %%--%%focus : Focus 3D mask: File path of a binary 3D mask for focused clustering. (default none)
-  ; %%--%%radius : Estimated protein radius [Pixels]: The value must be smaller than half of the box size. (default -1)
+  ; %%--%%radius : Estimated particle radius [Pixels]: The value must be smaller than half of the box size. (default -1)
   ; %%--%%sym : Point-group symmetry: Point group symmetry of the macromolecular structure. It can be inherited from refinement. (default c1) 
   ; %%--%%img_per_grp : Number of images per group: User expected group size. This value is critical for a successful 3D clustering. (default 1000)
+  ; %%--%%img_per_grp_split_rate : Group splitting rate: Rate for splitting the number of images per group (%%--%%img_per_grp). (default 1)
   ; %%--%%minimum_grp_size : Minimum size of reproducible class: It serves as the minimum size of selected or accounted clusters as well as the minimum group size constraint in MGSKmeans. However this value must be smaller than the number of images per a group (img_per_grp). By default, the program uses half number of the images per group.  (default -1)
-  ; %%--%%do_swap_au : Swap flag: Swap a certain number of accounted elements per cluster with the unaccounted elements. If the processing with the default values are extremely slow or stalled, please use this --do_swap_au option and set --swap_ratio to a large value (15.0[%] is a good start point). (default False)
+  ; %%--%%do_swap_au : Swap flag: Randomly swap a certain number of accounted elements per cluster with the unaccounted elements. If the processing with the default values are extremely slow or stalled, please use this --do_swap_au option and set --swap_ratio to a large value (15.0[%] is a good start point). (default False)
   ; %%--%%swap_ratio : Swap percentage [%]: Specify a swap percentage between 0.0[%] and 50.0[%]. Effective only with --do_swap_au. Without --do_swap_au, the program automatically sets --swap_ratio to 0.0. If the processing with the default values are extremely slow or stalled, please use --do_swap_au and set this --swap_ratio option to a large value (15.0[%] is a good start point). (default 1.0)
   ; %%--%%memory_per_node : Memory per node [GB]: User provided information about memory per node in GB (NOT per CPU). It will be used to evaluate the number of CPUs per node from user-provided MPI setting. By default, it uses 2GB * (number of CPUs per node). (default -1.0)
 
@@ -49,7 +50,6 @@ There are two ways of running this command.
   ; %%--%%nsmear : Number of smears for sorting: Fill it with 1 if user does not want to use all smears. (default -1)
   ; %%--%%orientation_groups : Number of orientation groups: Number of orientation groups in the asymmetric unit. (default 100)
   ; %%--%%not_include_unaccounted : Do unaccounted reconstruction: Do not reconstruct unaccounted elements in each generation. (default False question reversed in GUI)
-  ; %%--%%shake : Perturbation factor: Perturbation factor applied to orientation groups. Specify a float number between 0.0 and 0.5. (default 0.0)
   ; %%--%%notapplybckgnoise : Use background noise flag: Flag to turn off background noise. (default False question reversed in GUI)
   ; %%--%%random_group_elimination_threshold : Random group elimination threshold: Specify the threshold as a factor of the random group reproducibility standard deviation for eliminating random groups. (default 2.0)
 

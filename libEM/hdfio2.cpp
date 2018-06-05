@@ -648,7 +648,7 @@ int HdfIO2::read_header(Dict & dict, int image_index, const Region * area, bool)
 		sprintf(msg,"Image %d does not exist",image_index); // yes, sprintf(), terrible I know
 		throw ImageReadException(filename,msg);
 	}
-	
+
 	int nattr=H5Aget_num_attrs(igrp);
 	char name[ATTR_NAME_LEN];
 
@@ -793,6 +793,252 @@ int HdfIO2::erase_header(int image_index)
 	return 0;
 }
 
+// TODO : incomplete
+int HdfIO2::read_data_8bit(unsigned char *data, int image_index, const Region *area, bool is_3d, float minval, float maxval) {
+	ENTERFUNC;
+#ifdef DEBUGHDF
+	printf("HDF: read_data_8bit %d\n",image_index);
+#endif
+
+	char ipath[50];
+	sprintf(ipath,"/MDF/images/%d/image",image_index);
+	hid_t ds = H5Dopen(file,ipath);
+
+	if (ds < 0) throw ImageWriteException(filename,"Image does not exist");
+
+	hid_t spc=H5Dget_space(ds);
+	hid_t dt = H5Dget_type(ds);
+
+	hsize_t dims_out[3];
+	hsize_t rank = H5Sget_simple_extent_ndims(spc);
+
+	H5Sget_simple_extent_dims(spc, dims_out, NULL);
+
+	if (rank == 1) {
+		nx = dims_out[0];
+		ny = 1;
+		nz = 1;
+	}
+	else if (rank == 2) {
+		nx = dims_out[1];
+		ny = dims_out[0];
+		nz = 1;
+	}
+	else if (rank == 3) {
+		nx = dims_out[2];
+		ny = dims_out[1];
+		nz = dims_out[0];
+	}
+
+	if (area) {
+		hid_t memoryspace = 0;
+
+ 		/* Get the file dataspace - the region we want to read in the file */
+
+		int x0 = 0, y0 = 0, z0 = 0;		// the coordinates for up left corner, trim to be within image bound
+		int x1 = 0, y1 = 0, z1 = 0;		// the coordinates for down right corner, trim to be within image bound
+		int nx1 = 1, ny1 = 1, nz1 = 1;	// dimensions of the sub-region, actual region read from file
+
+ 		if (rank == 3) {
+			hsize_t     doffset[3];       /* hyperslab offset in the file */
+
+			doffset[2] = (hsize_t)(area->x_origin() < 0 ? 0 : area->x_origin());
+			doffset[1] = (hsize_t)(area->y_origin() < 0 ? 0 : area->y_origin());
+			doffset[0] = (hsize_t)(area->z_origin() < 0 ? 0 : area->z_origin());
+
+			x0 = (int)doffset[0];
+			y0 = (int)doffset[1];
+			z0 = (int)doffset[2];
+
+			z1 = (int)(area->x_origin() + area->get_width());
+			z1 = (int)(z1 > static_cast<int>(nx) ? nx : z1);
+
+			y1 = (int)(area->y_origin() + area->get_height());
+			y1 = (int)(y1 > static_cast<int>(ny) ? ny : y1);
+
+			if (y1 <= 0) {
+				y1 = 1;
+			}
+
+			x1 = (int)(area->z_origin() + area->get_depth());
+
+			x1 = (int)(x1 > static_cast<int>(nz) ? nz : x1);
+			if (x1 <= 0) {
+				x1 = 1;
+			}
+
+			if (x1 < x0 || y1< y0 || z1 < z0) return 0; //out of bounds, this is fine, nothing happens
+
+			hsize_t     dcount[3];              /* size of the hyperslab in the file */
+
+			dcount[0] = x1 - doffset[0];
+			dcount[1] = y1 - doffset[1];
+			dcount[2] = z1 - doffset[2];
+
+			H5Sselect_hyperslab (spc, H5S_SELECT_SET, (const hsize_t*)doffset, NULL,
+						(const hsize_t*)dcount, NULL);
+
+			/* Define memory dataspace - the memory we will created for the region */
+
+			hsize_t     dims[3];              /* size of the region in the memory */
+
+			dims[0] = dcount[2]?dcount[2]:1;
+			dims[1]	= dcount[1]?dcount[1]:1;
+			dims[2] = dcount[0]?dcount[0]:1;
+
+			nx1 = (int)dims[0];
+			ny1 = (int)dims[1];
+			nz1 = (int)dims[2];
+
+			memoryspace = H5Screate_simple(3, dims, NULL);
+ 		}
+ 		else if (rank == 2) {
+ 			hsize_t     doffset[2];             /* hyperslab offset in the file */
+
+			doffset[1] = (hsize_t)(area->x_origin() < 0 ? 0 : area->x_origin());
+			doffset[0] = (hsize_t)(area->y_origin() < 0 ? 0 : area->y_origin());
+
+			x0 = (int)doffset[0];
+			y0 = (int)doffset[1];
+			z0 = 1;
+
+			y1 = (int)(area->x_origin() + area->get_width());
+			y1 = (int)(y1 > static_cast<int>(nx) ? nx : y1);
+
+			x1 = (int)(area->y_origin() + area->get_height());
+			x1 = (int)(x1 > static_cast<int>(ny) ? ny : x1);
+
+			if (x1 <= 0) {
+				x1 = 1;
+			}
+
+			z1 = 1;
+
+			if (x1 < x0 || y1< y0) return 0; // out of bounds, this is fine, nothing happens
+
+			hsize_t     dcount[2];              /* size of the hyperslab in the file */
+			dcount[0] = x1 - doffset[0];
+			dcount[1] = y1 - doffset[1];
+
+			H5Sselect_none(spc);
+			H5Sselect_hyperslab (spc, H5S_SELECT_SET, (const hsize_t*)doffset, NULL,
+						(const hsize_t*)dcount, NULL);
+
+			/* Define memory dataspace - the memory we will created for the region */
+
+			hsize_t     dims[2];              /* size of the region in the memory */
+
+			dims[0] = (hsize_t)(dcount[1]?dcount[1]:1);
+			dims[1]	= (hsize_t)(dcount[0]?dcount[0]:1);
+
+			nx1 = (int)dims[0];
+			ny1 = (int)dims[1];
+			nz1 = 1;
+
+			memoryspace = H5Screate_simple(2, dims, NULL);
+ 		}
+
+ 		if ((area->x_origin()>=0) && (area->y_origin()>=0) && (area->z_origin()>=0) &&
+			((hsize_t)(area->x_origin() + area->get_width())<=nx) &&
+			((hsize_t)(area->y_origin() + area->get_height())<=ny) &&
+			((hsize_t)(area->z_origin() + area->get_depth())<=nz)) {	// the region is in boundary
+
+ 			H5Dread(ds,H5T_NATIVE_FLOAT,memoryspace,spc,H5P_DEFAULT,data);
+ 		}
+ 		else {	//  the region are partial out of boundary
+ 			/* When the requested region has some part out of image boundary,
+ 			 * we need read the sub-area which is within image,
+ 			 * and fill the out of boundary part with zero.
+ 			 * We actually read the sub-region from HDF by hyperslab I/O,
+ 			 * then copy it back to the pre-allocated region. */
+
+ 			float * subdata = new float[nx1*ny1*nz1];
+
+ 			H5Dread(ds,H5T_NATIVE_FLOAT,memoryspace,spc,H5P_DEFAULT,subdata);
+
+ 			int xd0=0, yd0=0, zd0=0;	// The coordinates of the top-left corner sub-region in region
+ 			size_t clipped_row_size = 0;
+
+ 			if (rank == 3) {
+				xd0 = (int) (area->x_origin() < 0 ? -area->x_origin() : 0);
+				yd0 = (int) (area->y_origin() < 0 ? -area->y_origin() : 0);
+				zd0 = (int) (area->z_origin() < 0 ? -area->z_origin() : 0);
+ 				clipped_row_size = (z1-z0)* sizeof(float);
+ 			}
+ 			else if (rank == 2) {
+ 				xd0 = (int) (area->x_origin() < 0 ? -area->x_origin() : 0);
+ 				yd0 = (int) (area->y_origin() < 0 ? -area->y_origin() : 0);
+ 				clipped_row_size = (y1-y0)* sizeof(float);
+ 			}
+
+ 			int src_secsize = nx1 * ny1;
+ 			int dst_secsize = (int)(area->get_width())*(int)(area->get_height());
+
+ 			float * src = subdata;
+ 			unsigned char * dst = data + zd0*dst_secsize + yd0*(int)(area->get_width()) + xd0;
+
+ 			int src_gap = src_secsize - (y1-y0) * nx1;
+ 			int dst_gap = dst_secsize - (y1-y0) * (int)(area->get_width());
+
+ 			for (int i = 0; i<nz1; ++i) {
+ 				for (int j = 0; j<ny1; ++j) {
+ 					EMUtil::em_memcpy(dst, src, clipped_row_size);
+
+ 					src += nx1;
+ 					dst += (int)(area->get_width());
+ 				}
+
+ 				src += src_gap;
+ 				dst += dst_gap;
+ 			}
+
+ 			delete [] subdata;
+ 		}
+
+ 		H5Sclose(memoryspace);
+	} else {
+		hsize_t size = (hsize_t)nx*ny*nz;
+		hsize_t i=0;
+		hsize_t j=0;
+
+		unsigned short *usdata = (unsigned short *) data;
+		unsigned char   *cdata = (unsigned char *) data;
+
+		switch(H5Tget_size(dt)) {
+		case 4:
+			H5Dread(ds,H5T_NATIVE_FLOAT,spc,spc,H5P_DEFAULT,data);
+
+			break;
+		case 2:
+			H5Dread(ds,H5T_NATIVE_USHORT,spc,spc,H5P_DEFAULT,usdata);
+
+			for (i = 0; i < size; ++i) {
+				j = size - 1 - i;
+				data[j] = static_cast < float >(usdata[j]);
+			}
+
+			break;
+		case 1:
+			H5Dread(ds,H5T_NATIVE_UCHAR,spc,spc,H5P_DEFAULT,cdata);
+
+			for (i = 0; i < size; ++i) {
+				j = size - 1 - i;
+				data[j] = static_cast < float >(cdata[j]);
+			}
+
+			break;
+		default:
+			throw ImageReadException(filename, "EMAN does not support this data type.");
+		}
+	}
+
+	H5Tclose(dt);
+	H5Sclose(spc);
+	H5Dclose(ds);
+
+	EXITFUNC;
+	return 0;
+}
 int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
 {
 	ENTERFUNC;

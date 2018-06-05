@@ -71,6 +71,7 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 	parser.add_argument("--maxalt",type=float,help="Maximum alignment altitude to include. Deafult=180",default=180)
 	parser.add_argument("--maxtilt",type=float,help="Explicitly zeroes data beyond specified tilt angle. Assumes tilt axis exactly on Y and zero tilt in X-Y plane. Default 90 (no limit).",default=90.0)
 	parser.add_argument("--listfile",type=str,help="Specify a filename containing a list of integer particle numbers to include in the average, one per line, first is 0. Additional exclusions may apply.",default=None)
+	parser.add_argument("--automaskexpand", default=-1, type=int,help="Default=boxsize/20. Specify number of voxels to expand mask before soft edge. Use this if low density peripheral features are cut off by the mask.",guitype='intbox', row=12, col=1, rowspan=1, colspan=1, mode="refinement[-1]" )
 	parser.add_argument("--symalimasked",type=str,default=None,help="This will translationally realign each asymmetric unit to the specified (usually masked) reference ")
 	parser.add_argument("--sym",type=str,default=None,help="Symmetry of the input. Must be aligned in standard orientation to work properly.")
 	parser.add_argument("--path",type=str,default=None,help="Path to a folder containing current results (default = highest spt_XX)")
@@ -186,7 +187,55 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 	cmd="e2proc3d.py {evenfile} {path}/fsc_unmasked_{itr:02d}.txt --calcfsc={oddfile}".format(path=options.path,itr=options.iter,evenfile=evenfile,oddfile=oddfile)
 	launch_childprocess(cmd)
 
+	# final volume at this point is Wiener filtered
 	launch_childprocess("e2proc3d.py {combfile} {combfile} --process=filter.wiener.byfsc:fscfile={path}/fsc_unmasked_{itr:02d}.txt:snrmult=2".format(path=options.path,itr=options.iter,combfile=combfile))
+
+	# New version of automasking based on a more intelligent interrogation of the volume
+	vol=EMData(combfile)
+	nx=vol["nx"]
+	apix=vol["apix_x"]
+	md=vol.calc_radial_dist(nx/2,0,1,3)	# radial max value per shell in real space
+
+	rmax=int(nx/2.2)	# we demand at least 10% padding
+	vmax=max(md[:rmax])	# max value within permitted radius
+
+	# this finds the first radius where the max value @ r falls below overall max/4
+	# this becomes the new maximum mask radius
+	act=0
+	mv=0,0
+	for i in xrange(rmax):
+		if md[i]>mv[0] : mv=md[i],i             # find the radius of the  max val in range
+		if not act and md[i]<0.9*vmax : continue
+		act=True
+		if md[i]<0.2*vmax :
+			rmax=i
+			break
+
+	rmaxval=mv[1]
+	vmax=mv[0]
+
+	# excludes any spurious high values at large radius
+	vol.process_inplace("mask.sharp",{"outer_radius":rmax})
+
+	# automask
+	mask=vol.process("mask.auto3d",{"threshold":vmax*.15,"radius":0,"nshells":int(nx*0.05+0.5+20/apix)+options.automaskexpand,"nmaxseed":24,"return_mask":1})
+
+	mask.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/(40.0)})
+	mask.write_image("{path}/mask.hdf".format(path=options.path),0)
+
+	# compute masked fsc and refilter
+	ave.mult(mask)
+	ave.write_image("{path}/tmp_even.hdf".format(path=options.path),0)
+	avo.mult(mask)
+	avo.write_image("{path}/tmp_odd.hdf".format(path=options.path),0)
+	av.mult(mask)
+	av.write_image(combfile,0)
+
+	cmd="e2proc3d.py {path}/tmp_even.hdf {path}/fsc_masked_{itr:02d}.txt --calcfsc={path}/tmp_odd.hdf".format(path=options.path,itr=options.iter)
+	launch_childprocess(cmd)
+
+	# final volume is premasked and Wiener filtered based on the masked FSC
+	launch_childprocess("e2proc3d.py {combfile} {combfile} --process=filter.wiener.byfsc:fscfile={path}/fsc_masked_{itr:02d}.txt:snrmult=2".format(path=options.path,itr=options.iter,combfile=combfile))
 
 
 	E2end(logid)
