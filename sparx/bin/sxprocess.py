@@ -979,11 +979,9 @@ def main():
 		if os.path.exists(os.path.join(options.output_dir, "log.txt")): os.remove(os.path.join(options.output_dir, "log.txt"))
 		log_main=Logger(BaseLogger_Files())
 		log_main.prefix = os.path.join(options.output_dir, "./")
-		print_msg ="--------------------------------------------"
 		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		log_main.add(print_msg)
-		print_msg="------->>> sphire combinemaps <<<-------"
-		log_main.add(print_msg)
+		log_main.add("--------------------------------------------")
+		log_main.add("------->>> SPHIRE combinemaps <<<-------")
 		from utilities    	import get_im, write_text_file, read_text_file
 		from fundamentals 	import rot_avg_table, fft
 		from morphology   	import compute_bfactor,power
@@ -993,11 +991,9 @@ def main():
 		
 		nargs = len(args)
 		if nargs < 1:
-			ERROR("too few inputs", " --combinemaps option")
-			exit()
+			ERROR("too few inputs", " --combinemaps option", 1)
 		if options.pixel_size <= 0.0:
-			ERROR("set a valid value to pixel_size first! There is no default value for pixel_size", " --combinemaps option")
-			exit()
+			ERROR("set a valid value to pixel_size first! There is no default value for pixel_size", " --combinemaps option", 1)
 		
 		input_path_list = []
 		suffix_patten = None
@@ -1026,8 +1022,7 @@ def main():
 		try:
 			e1 = get_im(input_path_list[0],0)
 		except:
-			ERROR(input_path_list[0]+" does not exist", " --combinemaps option")
-			exit()
+			ERROR(input_path_list[0]+" does not exist", " --combinemaps option", 1)
 		
 		nx = e1.get_xsize()
 		ny = e1.get_ysize()
@@ -1056,8 +1051,7 @@ def main():
 					m = get_im(options.mask)
 					log_main.add("user provided mask is %s"%options.mask)
 				except:
-					ERROR("Mask image %s does not exists"%options.mask, " --combinemaps for 2-D")
-					exit()
+					ERROR("Mask image %s does not exists"%options.mask, " --combinemaps for 2-D", 1)
 			else:
 				m = None
 				log_main.add("Mask is not used")
@@ -1260,18 +1254,8 @@ def main():
 					"""
 					fsc_out = []
 					for ifreq, value in enumerate(fsc[1]):
-						fsc_out.append("%5d   %7.2f   %7.3f"%(
-							ifreq,
-							resolution[ifreq],
-							value
-							))
-					write_text_file(
-						fsc_out,
-						os.path.join(
-							output_dir,
-							'{0}.txt'.format(name)
-							)
-						)
+						fsc_out.append("%5d   %7.2f   %7.3f"%(ifreq, resolution[ifreq], value))
+					write_text_file( fsc_out, os.path.join( output_dir, '{0}.txt'.format(name)))
 
 				def freq_to_angstrom(values, pixel_size):
 					"""
@@ -1613,7 +1597,7 @@ def main():
 						msg = "Enhancement exceeds Nyquist frequency. Inspect the mask, decrease fl to a lower frequency, or reduce aa, and then rerun the command "
 						log_main.add(msg)
 			log_main.add("-------------------------------------------------------")
-			log_main.add("---------- >>> DONE!!! <<<------------")
+			log_main.add("----------             >>> DONE <<<        ------------")
 			log_main.add("-------------------------------------------------------")
 
 	elif options.window_stack:
