@@ -945,15 +945,51 @@ class EMRawDataTable(EMBrowserWidget):
 
 	def setPath(self,path,silent=False):
 		super(EMRawDataTable, self).setPath(path,silent=silent,inimodel=EMRawDataModel)
-		
+
+
+class EMRawTiltsTable(EMBrowserWidget):
+	""" Widget to display raw tilt images """
+	def __init__(self, withmodal=False, multiselect=False, startpath="./raw_tilts"):
+		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath=startpath)
+
+	def setPath(self,path,silent=False):
+		super(EMRawTiltsTable, self).setPath(path,silent=silent,inimodel=EMRawDataModel)
+
+
+class EMTiltsTable(EMBrowserWidget):
+	""" Widget to display Raw Data """
+	def __init__(self, withmodal=False, multiselect=False, startpath="./raw_tilts"):
+		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath=startpath)
+
+	def setPath(self,path,silent=False):
+		super(EMTiltsTable, self).setPath(path,silent=silent,inimodel=EMRawDataModel)
+
+
+class EMTiltseriesTable(EMBrowserWidget):
+	""" Widget to display tiltseries """
+	def __init__(self, withmodal=False, multiselect=False, startpath="./tiltseries"):
+		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath=startpath)
+
+	def setPath(self,path,silent=False):
+		super(EMTiltseriesTable, self).setPath(path,silent=silent,inimodel=EMRawDataModel)
+
 
 class EMMovieDataTable(EMBrowserWidget):
-	""" Widget to display Raw Data """
+	""" Widget to display Movie Data """
 	def __init__(self, withmodal=False, multiselect=False, startpath="./movies"):
 		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath=startpath)
 
 	def setPath(self,path,silent=False):
 		super(EMMovieDataTable, self).setPath(path,silent=silent,inimodel=EMRawDataModel)
+
+
+class EMMovieRefsTable(EMBrowserWidget):
+	""" Widget to display Movie References"""
+	def __init__(self, withmodal=False, multiselect=False, startpath="./movierefs"):
+		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath=startpath)
+
+	def setPath(self,path,silent=False):
+		super(EMMovieRefsTable, self).setPath(path,silent=silent,inimodel=EMRawDataModel)
 
 
 class EMRawDataModel(EMFileItemModel):
@@ -1041,6 +1077,15 @@ class EMRawDataEntry(EMDirEntry):
 
 
 #################################################################################################################################
+
+class EMTomogramTable(EMBrowserWidget):
+	""" Widget to display Raw Data """
+	def __init__(self, withmodal=False, multiselect=False):
+		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath="./tomograms")
+
+	def setPath(self,path,silent=False):
+		super(EMTomogramTable, self).setPath(path,silent=silent,inimodel=EMTomoDataModel)
+
 
 class EMTomoDataTable(EMBrowserWidget):
 	""" Widget to display Raw Data """
