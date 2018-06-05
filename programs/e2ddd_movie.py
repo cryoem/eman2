@@ -105,11 +105,13 @@ def main():
 	parser.add_argument("--bestali", default=False, help="Average of best aligned frames.",action="store_true", guitype='boolbox', row=20, col=1, rowspan=1, colspan=1, mode="align,tomo")
 	# parser.add_argument("--ali4to14", default=False, help="Average of frames from 4 to 14.",action="store_true",guitype='boolbox', row=13, col=2, rowspan=1, colspan=1, mode="align,tomo")
 
+	parser.add_argument("--groupby", type=int,help="Combine every N frames using a moving window approach.",default=1,  guitype='intbox', row=23, col=1, rowspan=1, colspan=1, mode="align,tomo")
+
 	parser.add_header(name="orblock6", help='Just a visual separation', title="Optimization: ", row=21, col=0, rowspan=2, colspan=3, mode="align,tomo")
 
-	parser.add_argument("--optbox", type=int,help="Box size to use during alignment optimization. Default is 256.",default=256, guitype='intbox', row=23, col=0, rowspan=1, colspan=1, mode="align,tomo")
-	parser.add_argument("--optstep", type=int,help="Step size to use during alignment optimization. Default is 224.",default=224,  guitype='intbox', row=23, col=1, rowspan=1, colspan=1, mode="align,tomo")
-	parser.add_argument("--optalpha", type=float,help="Penalization to apply during robust regression. Default is 0.1. If 0.0, unpenalized least squares will be performed (i.e., no trajectory smoothing).",default=0.1, guitype='floatbox', row=24, col=0, rowspan=1, colspan=1, mode="align,tomo")
+	parser.add_argument("--optbox", type=int,help="Box size to use during alignment optimization. Default is 1024.",default=512, guitype='intbox', row=23, col=0, rowspan=1, colspan=1, mode="align,tomo")
+	parser.add_argument("--optstep", type=int,help="Step size to use during alignment optimization. Default is 800.",default=400,  guitype='intbox', row=23, col=1, rowspan=1, colspan=1, mode="align,tomo")
+	parser.add_argument("--optalpha", type=float,help="Penalization to apply during robust regression. Default is 0.5. If 0.0, unpenalized least squares will be performed (i.e., no trajectory smoothing).",default=0.5, guitype='floatbox', row=24, col=0, rowspan=1, colspan=1, mode="align,tomo")
 	parser.add_argument("--optccf",default="robust",type=str, choices=["robust","centerofmass","ccfmax"],help="Use this approach to determine relative frame translations.\nNote: 'robust' utilizes a bimodal Gaussian to robustly determine CCF peaks between pairs of frames in the presence of a fixed background.", guitype='combobox', row=24, col=1, rowspan=1, colspan=2, mode='align["robust"],tomo["robust"]',choicelist='["robust","centerofmass","ccfmax"]')
 
 	parser.add_header(name="orblock5", help='Just a visual separation', title="Optional: ", row=25, col=0, rowspan=2, colspan=3, mode="align,tomo")
@@ -120,7 +122,7 @@ def main():
 
 	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel. The default is 4, and our alignment routine requires 2+ threads. Using more threads will result in faster processing times.", guitype='intbox', row=28, col=0, rowspan=1, colspan=1, mode="align,tomo")
 
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness",guitype="intbox",row=28,col=1,rowspan=1,colspan=1,mode="align,tomo")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=4, help="verbose level [0-9], higner number means higher level of verboseness",guitype="intbox",row=28,col=1,rowspan=1,colspan=1,mode="align,tomo")
 	parser.add_argument("--debug", default=False, action="store_true", help="run with debugging output")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 
@@ -482,12 +484,16 @@ def main():
 def process_movie(options,fsp,dark,gain,first,flast,step,idx,angle):
 	cwd = os.getcwd()
 	
-	if options.frames:
-		if options.ext == "mrc":
-			outname="{}/{}_{}.{}".format(cwd,base_name(fsp,nodir=True),options.suffix,"mrcs") #Output contents vary with options
-		else: outname="{}/{}_{}.{}".format(cwd,base_name(fsp,nodir=True),options.suffix,options.ext) #Output contents vary with options
-	else: outname="{}/{}.{}".format(cwd,base_name(fsp,nodir=True),options.ext)
+	# format outname
+	if options.frames: outname="{}/{}_{}".format(cwd,base_name(fsp,nodir=True),options.suffix) #Output contents vary with options
+	else: outname="{}/{}".format(cwd,base_name(fsp,nodir=True))
+	
+	if options.groupby > 1: outname = "{}_group{}".format(outname,options.groupby)
+	
+	if options.ext == "mrc": outname = "{}.mrcs".format(outname)
+	else: outname = "{}.{}".format(outname,options.ext)
 
+	# prepare to read file
 	if fsp[-4:].lower() in (".mrc"):
 		hdr=EMData(fsp,0,True)			# read header
 		nx,ny=hdr["nx"],hdr["ny"]
@@ -519,12 +525,9 @@ def process_movie(options,fsp,dark,gain,first,flast,step,idx,angle):
 		if options.bad_rows != [] or options.bad_columns != []:
 			im = im.process("math.xybadlines",{"rows":options.bad_rows,"cols":options.bad_columns})
 
-		if options.frames: im.write_image(outname,ii-first)
-
 		outim.append(im)
 
-	if options.frames and options.ext == "mrc":
-		os.rename(outname,outname.replace(".mrcs",".mrc"))
+	nfs_read = len(outim)
 
 	if options.noali:
 		out=qsum(outim)
@@ -534,7 +537,33 @@ def process_movie(options,fsp,dark,gain,first,flast,step,idx,angle):
 		else:
 			alioutname = os.path.join(".","micrographs","{}__noali.hdf".format(base_name(fsp,nodir=True)))
 			out.write_image(alioutname,0) #write out the unaligned average movie
+ 
+	# group frames by moving window
+	if options.groupby > 1:
+		print("Grouping frames")
+		grouped = []
+		for i in range(len(outim)):
+			avgr = Averagers.get("mean")
+			avgr.add_image_list(outim[i:i+options.groupby])
+			avg = avgr.finish()
+			if options.frames: avg.write_image(outname,i)
+			grouped.append(avg)
+		outim = grouped
 
+	# # group frames
+	# if options.groupby > 1:
+	# 	print("Grouping frames")
+	# 	grouped = []
+	# 	for i in range(0,len(outim)-options.groupby,options.groupby):
+	# 		avgr = Averagers.get("mean")
+	# 		avgr.add_image_list(outim[i:i+options.groupby])
+	# 		grouped.append(avg)
+			
+	# 		if options.frames: avg.write_image(outname,ii-first)
+	# 	outim = grouped
+
+	if options.frames and options.ext == "mrc":
+		os.rename(outname,outname.replace(".mrcs",".mrc"))
 
 	t1 = time()-t
 	print("{:.1f} s".format(time()-t))
@@ -552,7 +581,7 @@ def process_movie(options,fsp,dark,gain,first,flast,step,idx,angle):
 			print("This program does not facilitate alignment of movies with frames smaller than 2048x2048 pixels.")
 			sys.exit(1)
 
-		print("{} frames read {} x {}".format(n,nx,ny))
+		print("{} frames read ({} x {}). Grouped by {}.".format(nfs_read,nx,ny,options.groupby,n))
 
 		ccfs=Queue.Queue(0)
 
@@ -937,23 +966,29 @@ def split_fft(options,img,i,box,step,out):
 	#img.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.4})
 	#proc.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.3})
 	#patchid = 0
+	
+	# img.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.45})
+	
 	for dx in range(box/2,nx-box,step):
 		for dy in range(box/2,ny-box,step):
 			clp = img.get_clip(Region(dx,dy,box,box))
-			clp.process_inplace("math.fft.resample",{"n":4})
+
+			#clp.process_inplace("math.fft.resample",{"n":4})
+			clp.process_inplace("math.meanshrink",{"n":4.})
+			clp.process_inplace("filter.highpass.gauss",{"cutoff_pixels":3})
 			#if options.normalize: clp.process_inplace("normalize.edgemean")
 			#if box >= 512:
 			#	if not options.tomo:
 			#		if img["apix_x"] == 1.0: # likely an image with incorrect header or simulated data
 			#			clp.process_inplace("filter.highpass.gauss",{"cutoff_pixels":2})
 			#		else: 
-			#clp.process_inplace("math.meanshrink",{"n":4.})
+			
 			
 			#clp.process_inplace("mask.soft",{"outer_radius":(nx-box/2)/2,"width":box/8})
 			clp.process_inplace("filter.xyaxes0",{"neighbor":1})
-			clp.process_inplace("filter.highpass.gauss",{"cutoff_pixels":2})
-			clp.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.4})
-			clp.process_inplace("normalize.edgemean")
+			#clp.process_inplace("filter.highpass.gauss",{"cutoff_pixels":2})
+			#clp.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.45})
+			clp.process_inplace("normalize")
 			#if options.debug:
 			#	clp["patch_id"] = patchid
 			#	clp["frame_id"] = i
@@ -964,7 +999,7 @@ def split_fft(options,img,i,box,step,out):
 
 def correlation_peak_model(x_y, xo, yo, sigma, amp):
 	x, y = x_y
-	if sigma <= 0: return np.zeros_like(x)
+	if sigma <= 0: return np.ones_like(x)*np.inf
 	xo = float(xo)
 	yo = float(yo)
 	g = amp*np.exp(-(((x-xo)**2)+((y-yo)**2))/(2.*sigma**2))
@@ -972,7 +1007,7 @@ def correlation_peak_model(x_y, xo, yo, sigma, amp):
 
 def fixedbg_peak_model(x_y, sigma, amp):
 	x, y = x_y
-	if sigma <= 0: return np.zeros_like(x)
+	if sigma <= 0: return np.ones_like(x)*np.inf
 	xo = float(len(x)/2)
 	yo = float(len(y)/2)
 	g = amp*np.exp(-(((x-xo)**2)+((y-yo)**2))/(2.*sigma**2))
@@ -980,7 +1015,7 @@ def fixedbg_peak_model(x_y, sigma, amp):
 
 def twod_bimodal(x_y,x1,y1,sig1,amp1,sig2,amp2):
 	x, y = x_y
-	if sig1 <= 0 or sig2 <= 0: return np.zeros_like(x)
+	if sig1 <= 0 or sig2 <= 0: return np.ones_like(x)*np.inf #np.zeros_like(x)
 	#correlation_peak = correlation_peak_model((x,y),x1,y1,sig1,amp1)
 	cp = amp1*np.exp(-(((x-x1)**2+(y-y1)**2))/(2.*sig1**2))
 	#fixedbg_peak = fixedbg_peak_model((x,y),sig2,amp2)
@@ -1042,9 +1077,9 @@ def bimodal_peak_model(options,ccf):
 
 	x1 = int(bs/2.)
 	y1 = int(bs/2.)
-	a1 = 1000.0
+	a1 = ncc.mean()#.0
 	s1 = 10.0
-	a2 = 20000.0
+	a2 = ncc.max()
 	s2 = 0.6
 
 	if options.optccf == "centerofmass":
@@ -1073,9 +1108,10 @@ def bimodal_peak_model(options,ccf):
 		yc,xc = np.where(ncc==ncc.max())
 		popt = [float(xc[0]+nxx/2),float(yc[0]+nxx/2),ncc.max(),1.,0.,0.]
 		return popt,ccf.sget_value_at_interp(popt[0],popt[1])
+
 	elif options.optccf == "robust":
 		initial_guess = [x1,y1,s1,a1,s2,a2]
-		bds = [(-bs/2, -bs/2, 0.6, 0.01, 0.01, 0.01),(bs/2, bs/2, 1000.0, 20000.0, 2.5, 100000.0)]
+		bds = [(-bs/2, -bs/2, 0.6, ncc.min(), 0.6, 0.01),(bs/2, bs/2, 1000.0, ncc.max(), 2.0, ncc.max())]
 		try:
 			popt,pcov=optimize.curve_fit(twod_bimodal,(xx,yy),ncc.ravel(),p0=initial_guess,bounds=bds,method="dogbox",max_nfev=250,xtol=1e-3,ftol=1e-6,loss='linear')
 		except RuntimeError:
@@ -1086,6 +1122,20 @@ def bimodal_peak_model(options,ccf):
 		popt[1] = popt[1] + nxx/2 - bs/2
 		popt[2] = np.abs(popt[2])
 		return popt,ccf.sget_value_at_interp(popt[0],popt[1])
+	# elif options.optccf == "robust":
+	# 	initial_guess = [x1,y1,s1,a1]
+	# 	bds = [(-bs/2, -bs/2, 0.6, ncc.min()),(bs/2, bs/2, 100.0, ncc.max())]
+	# 	try:
+	# 		popt,pcov=optimize.curve_fit(correlation_peak_model,(xx,yy),ncc.ravel(),p0=initial_guess,bounds=bds,method="dogbox",max_nfev=250,xtol=1e-3,ftol=1e-6,loss='linear')
+	# 	except RuntimeError:
+	# 		return None,-1
+
+	# 	popt = [p for p in popt]
+	# 	popt[0] = popt[0] + nxx/2 - bs/2
+	# 	popt[1] = popt[1] + nxx/2 - bs/2
+	# 	popt[2] = np.abs(popt[2])
+	# 	popt.extend([s2,a2])
+	# 	return popt,ccf.sget_value_at_interp(popt[0],popt[1])
 
 def qsum(imlist):
 	avg=Averagers.get("mean")
