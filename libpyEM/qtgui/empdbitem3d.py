@@ -1213,4 +1213,3 @@ if __name__ == '__main__' :
 	browser = EMBrowserWidget(withmodal = False, multiselect = False)
 	browser.show()
 	app.execute()
-	

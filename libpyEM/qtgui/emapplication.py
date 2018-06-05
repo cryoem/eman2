@@ -405,4 +405,3 @@ class EMErrorMessageDisplay:
 		msg.exec_()
 	
 	run = staticmethod(run)
-			

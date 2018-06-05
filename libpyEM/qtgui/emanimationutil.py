@@ -431,4 +431,3 @@ class OrientationListAnimation(Animatable):
 		self.target.arc_animation_update(self.arc_points)
 		
 	def transform(self):pass
-		

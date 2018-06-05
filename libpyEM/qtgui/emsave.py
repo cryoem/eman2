@@ -868,4 +868,3 @@ class EMDBTmpFileHandle(EMTmpFileHandleBase):
 		raise NotImplementedError("Woops waiting on an email")
 
 	def get_final_file_name(self): return self.__orig_db_name
-	

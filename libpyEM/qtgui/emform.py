@@ -2137,5 +2137,3 @@ if __name__ == '__main__':
 	
 	em_app.show()
 	em_app.execute()
-	
-	

@@ -1094,4 +1094,3 @@ class Record(DictMixin):
 	def commentable(self):
 		"""Does user have level 1 permissions? Required to comment or link."""
 		return self.__ptest[1]	
-

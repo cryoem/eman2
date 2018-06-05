@@ -606,5 +606,3 @@ class EMMetaDataTable(object):
 		
 		form = EMFormWidget(parent,params,disable_ok_cancel=True)
 		return form
-	
-	
