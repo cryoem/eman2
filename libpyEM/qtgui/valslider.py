@@ -928,7 +928,6 @@ class EMQTColorWidget(QtGui.QWidget):
 			self.colrodialog.currentColorChanged[QColor].connect(self._on_colorchange)
 			self.colrodialog.colorSelected[QColor].connect(self._on_colorselect)
 			self.colrodialog.canceled.connect(self._on_cancel)
-			self.colrodialog.newconnection.connect(self._on_additonal_connect)
 		else:
 			self._dragdrop(event)
 			
@@ -949,19 +948,12 @@ class EMQTColorWidget(QtGui.QWidget):
 		self.update()
 		self.newcolor.emit(self.color)
 		
-	def _on_additonal_connect(self):
-		self.colrodialog.currentColorChanged[QColor].disconnect(self._on_colorchange)
-		self.colrodialog.colorSelected[QColor].disconnect(self._on_colorselect)
-		self.colrodialog.canceled.disconnect(self._on_cancel)
-		self.colrodialog.newconnection.disconnect(self._on_additonal_connect)
-
 def singleton(cls):
 	instances = {}
 	def getinstance(inicolor):
 		if cls not in instances:
 			instances[cls] = cls(inicolor)
 		else:
-			instances[cls].newconnection.emit()
 			instances[cls].setCurrentColor(inicolor)
 			if instances[cls].hidden:
 				instances[cls].show()
