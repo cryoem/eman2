@@ -83,8 +83,7 @@
       },
       {
         "ICON": "multiple_images",
-        "PROGRAM": "e2tomoeval.py",
-        "MODE": "easy",
+        "PROGRAM": "e2tomo_eval.py",
         "NAME": "Evaluate tomograms",
         "CHILDREN": []
       },
@@ -179,19 +178,19 @@
       },
       {
         "ICON": "tomo_hunter",
-        "PROGRAM": "spt_refine.py",
+        "PROGRAM": "e2spt_refine.py",
         "NAME": "3D refinement",
         "CHILDREN": []
       },
       {
         "ICON": "ctf",
-        "PROGRAM": "spt_tomoctf.py",
+        "PROGRAM": "e2spt_tomoctf.py",
         "NAME": "CTF Correction",
         "CHILDREN": []
       },
       {
         "ICON": "tomo_hunter",
-        "PROGRAM": "spt_getptcls.py",
+        "PROGRAM": "e2spt_getptcls.py",
         "NAME": "Sub-tilt refinement",
         "CHILDREN": []
       },
@@ -221,7 +220,7 @@
     "CHILDREN":[
       {
         "ICON": "green_boxes",
-        "PROGRAM": "e2tomoeval.py",
+        "PROGRAM": "e2tomo_eval.py",
         "NAME": "Evaluate tomograms",
         "CHILDREN": []
       },
