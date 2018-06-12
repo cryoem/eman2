@@ -106,9 +106,9 @@ def main():
 			if options.angles:
 				tlt_assoc[angles[i]] = arg
 			else:
-			db=js_open_dict(info_name(arg,nodir=True))
-			ang = float(db["tilt_angle"])
-			tlt_assoc[ang] = arg
+				db=js_open_dict(info_name(arg,nodir=True))
+				ang = float(db["tilt_angle"])
+				tlt_assoc[ang] = arg
 			db.close()
 
 		ordered_angles = sorted([float(a) for a in tlt_assoc.keys()])
