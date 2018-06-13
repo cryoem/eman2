@@ -146,7 +146,6 @@ class GUIctfsim(QtGui.QWidget):
 		self.guiplot=EMPlot2DWidget(application=self.app())
 #		self.guirealim=EMImage2DWidget(application=self.app())	# This will show the original particle images
 
-#		self.guirealim.connect(self.guirealim,QtCore.SIGNAL("keypress"),self.realimgkey)
 		self.guiim.mousedown.connect(self.imgmousedown)
 		self.guiim.mousedrag.connect(self.imgmousedrag)
 		self.guiim.mouseup.connect(self.imgmouseup)
@@ -462,23 +461,6 @@ class GUIctfsim(QtGui.QWidget):
 			self.img.set_complex(1)
 			self.guiim.set_data(self.img)
 		self.update_plot()
-
-
-	def realimgkey(self,event):
-		"""Keypress in the image display window"""
-
-		if event.key()==Qt.Key_I:			# if user presses I in this window we invert the stack on disk
-			fsp=self.data[self.curset][0]
-			n=EMUtil.get_image_count(fsp)
-			print("Inverting images in %s"%fsp)
-			for i in xrange(n):
-				img=EMData(fsp,i)
-				img.mult(-1.0)
-				img.write_image(fsp,i)
-
-			#self.ptcldata=EMData.read_images(fsp,range(0,20))
-			#self.guirealim.set_data(self.ptcldata)
-
 
 	def imgmousedown(self,event) :
 		m=self.guiim.scr_to_img((event.x(),event.y()))
