@@ -973,6 +973,13 @@ class EMTiltseriesTable(EMBrowserWidget):
 	def setPath(self,path,silent=False):
 		super(EMTiltseriesTable, self).setPath(path,silent=silent,inimodel=EMRawDataModel)
 
+class EMTomoTable(EMBrowserWidget):
+	""" Widget to display Movie References"""
+	def __init__(self, withmodal=False, multiselect=False, startpath="./tomograms"):
+		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath=startpath)
+
+	def setPath(self,path,silent=False):
+		super(EMTomoTable, self).setPath(path,silent=silent,inimodel=EMRawDataModel)
 
 class EMMovieDataTable(EMBrowserWidget):
 	""" Widget to display Movie Data """
