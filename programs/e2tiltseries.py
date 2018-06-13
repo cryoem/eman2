@@ -38,18 +38,18 @@ import numpy as np
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options] --stackname myfile.hdf <image1> <image2> <image3> ...
-	This program will combine many image files into a single output file. 
-	
+	This program will combine many image files into a single output file.
+
 	If the output name has a ".lst" extension:
 	the output is a formatted text file, one line per image, describing the file containing the actual
 	image data in a searchable form. .lst files can be used as if they conatined actual images in any
 	EMAN2 programs.
-	
+
 	If the output is a normal image file (.hdf, .spi, etc.) then the images will be copied into the
 	output file sequentially in the order provided on the command-line. Some file formats will not
 	support multiple images, or multiple volumes. Appropriate errors will be raised in these cases.
 	HDF is the only format supporting full metadata retention for stacks of images or volumes.
-	
+
 	The output file will be emptied and overwritten!
 	"""
 
@@ -105,10 +105,10 @@ def main():
 		for i,arg in enumerate(args):
 			if options.angles:
 				tlt_assoc[angles[i]] = arg
-			else:11ww
-			db=js_open_dict(info_name(arg,nodir=True))
-			ang = float(db["tilt_angle"])
-			tlt_assoc[ang] = arg
+			else:
+				db=js_open_dict(info_name(arg,nodir=True))
+				ang = float(db["tilt_angle"])
+				tlt_assoc[ang] = arg
 			db.close()
 
 		ordered_angles = sorted([float(a) for a in tlt_assoc.keys()])
