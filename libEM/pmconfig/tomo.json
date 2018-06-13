@@ -49,52 +49,21 @@
         "WIZARD": "/lib/pmconfig/tomoimport.json",
         "NAME": "Import Tomograms",
         "CHILDREN": []
-      },
-      {
-        "ICON": "tomo_hunter",
-        "NAME": "Extract from IMOD",
-        "CHILDREN": [
-          {
-            "ICON": "tomo_hunter",
-            "PROGRAM": "e2spt_subtilt_from_imod.py",
-            "NAME": "Extract 2D particles",
-            "CHILDREN": []
-          },
-          {
-            "ICON": "single_image_3d",
-            "PROGRAM": "e2spt_make3d.py",
-            "NAME": "Reconstruction from 2D particles",
-            "CHILDREN": []
-          }
-        ]
       }
     ]
   },
   {
-    "ICON": "green_boxes",
+    "ICON": "multiple_images",
+    "PROGRAM": "e2tomogram.py",
+    "MODE": "easy",
     "NAME": "3D Reconstruction",
-    "CHILDREN": [
-      {
-        "ICON": "multiple_images",
-        "PROGRAM": "e2tomogram.py",
-        "MODE": "easy",
-        "NAME": "3D Reconstruction",
-        "CHILDREN": []
-      },
-      {
-        "ICON": "multiple_images",
-        "PROGRAM": "e2tomo_eval.py",
-        "NAME": "Evaluate tomograms",
-        "CHILDREN": []
-      },
-      {
-        "ICON": "multiple_images",
-        "PROGRAM": "e2tomo_showali.py",
-        "MODE": "easy",
-        "NAME": "Examine fiducial error",
-        "CHILDREN": []
-      }
-    ]
+    "CHILDREN": []
+  },
+  {
+    "ICON": "green_boxes",
+    "PROGRAM": "e2tomo_eval.py",
+    "NAME": "Evaluate tomograms",
+    "CHILDREN": []
   },
   {
     "ICON": "single_image",
@@ -211,6 +180,24 @@
         "PROGRAM": "e2spt_average_multi.py",
         "NAME": "Mult-Reference Averaging",
         "CHILDREN": []
+      },
+      {
+        "ICON": "tomo_hunter",
+        "NAME": "Extract from IMOD",
+        "CHILDREN": [
+          {
+            "ICON": "tomo_hunter",
+            "PROGRAM": "e2spt_subtilt_from_imod.py",
+            "NAME": "Extract 2D particles",
+            "CHILDREN": []
+          },
+          {
+            "ICON": "single_image_3d",
+            "PROGRAM": "e2spt_make3d.py",
+            "NAME": "Reconstruction from 2D particles",
+            "CHILDREN": []
+          }
+        ]
       }
     ]
   },
@@ -219,9 +206,10 @@
     "NAME":"Validation and Analysis",
     "CHILDREN":[
       {
-        "ICON": "green_boxes",
-        "PROGRAM": "e2tomo_eval.py",
-        "NAME": "Evaluate tomograms",
+        "ICON": "multiple_images",
+        "PROGRAM": "e2tomo_showali.py",
+        "MODE": "easy",
+        "NAME": "Examine fiducial error",
         "CHILDREN": []
       },
       {

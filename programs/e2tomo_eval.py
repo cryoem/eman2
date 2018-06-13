@@ -19,7 +19,11 @@ def main():
 	usage=" "
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--ppid", type=int,help="", default=None)
-	(options, args) = parser.parse_args()
+
+	parser.add_header(name="orblock1", help='', title="Click launch to evaluate reconstructed tomograms", row=1, col=0, rowspan=1, colspan=2, mode="")
+
+
+(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 
 	if not os.path.isdir("tomograms"): os.mkdir("tomograms")
