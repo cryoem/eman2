@@ -146,6 +146,14 @@
         "CHILDREN": []
       },
       {
+        "ICON": "green_boxes",
+        "MODE": "coords",
+        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2spt_boxer",
+        "PROGRAM": "e2spt_boxer.py",
+        "NAME": "Extract from Coords",
+        "CHILDREN": []
+      },
+      {
         "ICON": "single_image_3d",
         "PROGRAM": "e2spt_sgd.py",
         "NAME": "Generate Initial Model",
