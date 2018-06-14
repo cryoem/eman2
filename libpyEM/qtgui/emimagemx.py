@@ -50,6 +50,7 @@ import numpy
 from emimageutil import ImgHistogram, EMParentWin
 from weakref import WeakKeyDictionary
 from pickle import dumps,loads
+from PyQt4 import QtGui
 from PyQt4.QtGui import QImage
 from PyQt4.QtCore import QTimer
 from libpyGLUtils2 import *
@@ -203,14 +204,14 @@ class EMMatrixPanel:
 class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 	setsChanged = QtCore.pyqtSignal()
-	mx_boxdeleted = QtCore.pyqtSignal()
-	set_scale = QtCore.pyqtSignal()
-	origin_update = QtCore.pyqtSignal()
-	mx_image_selected = QtCore.pyqtSignal()
-	mx_image_double = QtCore.pyqtSignal()
-	mx_mousedrag = QtCore.pyqtSignal()
-	mx_mouseup = QtCore.pyqtSignal()
-	set_origin = QtCore.pyqtSignal()
+	mx_boxdeleted = QtCore.pyqtSignal(QtGui.QMouseEvent, list, bool)
+	set_scale = QtCore.pyqtSignal(float, float, bool)
+	origin_update = QtCore.pyqtSignal(float, float)
+	mx_image_selected = QtCore.pyqtSignal(QtGui.QMouseEvent, tuple)
+	mx_image_double = QtCore.pyqtSignal(QtGui.QMouseEvent, tuple)
+	mx_mousedrag = QtCore.pyqtSignal(QtGui.QMouseEvent, float)
+	mx_mouseup = QtCore.pyqtSignal(QtGui.QMouseEvent, tuple)
+	set_origin = QtCore.pyqtSignal(float, float, bool)
 
 	def __init__(self, data=None,application=None,winid=None, parent=None, title=""):
 		self.emit_events = False
