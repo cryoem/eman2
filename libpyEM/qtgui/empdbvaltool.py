@@ -44,7 +44,7 @@ class EMPDBValWidget(QtGui.QWidget):
 	'''
 	EMPDB versus isosurface visual evaluation
 	'''
-	run_validate = QtCore.pyqtSignal()
+	run_validate = QtCore.pyqtSignal(str, str, int, float)
 
 	def __init__(self):
 		QtGui.QWidget.__init__(self)
