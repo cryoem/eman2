@@ -11,7 +11,7 @@
         "ICON": "multiple_images",
         "MODE": "refs",
         "PROGRAM": "e2ddd_movie.py",
-        "NAME": "Process DDD References",
+        "NAME": "Import DDD References",
         "CHILDREN": []
       },
       {
@@ -105,18 +105,24 @@
         "CHILDREN": []
       },
       {
-        "ICON": "web",
-        "PROGRAM": "e2tomo_drawcurve.py",
-        "MODE": "test",
-        "NAME": "Draw curves",
-        "CHILDREN": []
-      },
-      {
-        "ICON": "web",
-        "PROGRAM": "e2tomo_drawcontour.py",
-        "MODE": "test",
-        "NAME": "Draw contours",
-        "CHILDREN": []
+        "ICON": "single_image",
+        "NAME": "Manual segmentation",
+        "CHILDREN": [
+          {
+            "ICON": "single_image",
+            "PROGRAM": "e2tomo_drawcurve.py",
+            "MODE": "tomoseg",
+            "NAME": "Draw curves",
+            "CHILDREN": []
+          },
+          {
+            "ICON": "single_image",
+            "PROGRAM": "e2tomo_drawcontour.py",
+            "MODE": "tomoseg",
+            "NAME": "Draw contours",
+            "CHILDREN": []
+          }
+        ]
       }
     ]
   },
@@ -127,16 +133,16 @@
       {
         "ICON": "green_boxes",
         "MODE": "boxing",
-        "PROGRAM": "e2spt_tempmatch.py",
-        "NAME": "Reference-based Boxing",
+        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2spt_boxer",
+        "PROGRAM": "e2spt_boxer.py",
+        "NAME": "Manual Boxing",
         "CHILDREN": []
       },
       {
         "ICON": "green_boxes",
         "MODE": "boxing",
-        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2spt_boxer",
-        "PROGRAM": "e2spt_boxer.py",
-        "NAME": "Manual Boxing",
+        "PROGRAM": "e2spt_tempmatch.py",
+        "NAME": "Reference-based Boxing",
         "CHILDREN": []
       },
       {
