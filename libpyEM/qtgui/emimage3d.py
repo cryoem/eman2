@@ -59,7 +59,7 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 	""" 
 	A QT widget for rendering 3D EMData objects
 	"""
-	set_perspective = QtCore.pyqtSignal()
+	set_perspective = QtCore.pyqtSignal(bool)
 	allim=weakref.WeakKeyDictionary()
 	def add_model(self,model,num=0):
 		model.set_gl_widget(self)

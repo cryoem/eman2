@@ -55,7 +55,7 @@ from emimageutil import ImgHistogram, EMTransformPanel
 MAG_INCREMENT_FACTOR = 1.1
 
 class EMIsosurfaceModel(EM3DModel):
-	set_threshold = QtCore.pyqtSignal()
+	set_threshold = QtCore.pyqtSignal(float)
 
 	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
 		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
