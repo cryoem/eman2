@@ -105,14 +105,14 @@ def main():
 	parser.add_argument("--bestali", default=False, help="Average of best aligned frames.",action="store_true", guitype='boolbox', row=20, col=1, rowspan=1, colspan=1, mode="align,tomo")
 	# parser.add_argument("--ali4to14", default=False, help="Average of frames from 4 to 14.",action="store_true",guitype='boolbox', row=13, col=2, rowspan=1, colspan=1, mode="align,tomo")
 
-	parser.add_argument("--groupby", type=int,help="Combine every N frames using a moving window approach.",default=1,  guitype='intbox', row=23, col=1, rowspan=1, colspan=1, mode="align,tomo")
+	parser.add_argument("--groupby", type=int,help="Combine every N frames using a moving window approach.",default=1,  guitype='intbox', row=20, col=2, rowspan=1, colspan=1, mode="align,tomo")
 
 	parser.add_header(name="orblock6", help='Just a visual separation', title="Optimization: ", row=21, col=0, rowspan=2, colspan=3, mode="align,tomo")
 
-	parser.add_argument("--optbox", type=int,help="Box size to use during alignment optimization. Default is 1024.",default=512, guitype='intbox', row=23, col=0, rowspan=1, colspan=1, mode="align,tomo")
-	parser.add_argument("--optstep", type=int,help="Step size to use during alignment optimization. Default is 800.",default=400,  guitype='intbox', row=23, col=1, rowspan=1, colspan=1, mode="align,tomo")
-	parser.add_argument("--optalpha", type=float,help="Penalization to apply during robust regression. Default is 0.5. If 0.0, unpenalized least squares will be performed (i.e., no trajectory smoothing).",default=0.5, guitype='floatbox', row=24, col=0, rowspan=1, colspan=1, mode="align,tomo")
-	parser.add_argument("--optccf",default="robust",type=str, choices=["robust","centerofmass","ccfmax"],help="Use this approach to determine relative frame translations.\nNote: 'robust' utilizes a bimodal Gaussian to robustly determine CCF peaks between pairs of frames in the presence of a fixed background.", guitype='combobox', row=24, col=1, rowspan=1, colspan=2, mode='align["robust"],tomo["robust"]',choicelist='["robust","centerofmass","ccfmax"]')
+	parser.add_argument("--optbox", type=int,help="Box size to use during alignment optimization. Default is 512.",default=512, guitype='intbox', row=23, col=0, rowspan=1, colspan=1, mode="align,tomo")
+	parser.add_argument("--optstep", type=int,help="Step size to use during alignment optimization. Default is 400.",default=400,  guitype='intbox', row=23, col=1, rowspan=1, colspan=1, mode="align,tomo")
+	parser.add_argument("--optalpha", type=float,help="Penalization to apply during robust regression. Default is 0.5. If 0.0, unpenalized least squares will be performed (i.e., no trajectory smoothing).",default=0.5, guitype='floatbox', row=23, col=2, rowspan=1, colspan=1, mode="align,tomo")
+	parser.add_argument("--optccf",default="robust",type=str, choices=["robust","centerofmass","ccfmax"],help="Use this approach to determine relative frame translations.\nNote: 'robust' utilizes a bimodal Gaussian to robustly determine CCF peaks between pairs of frames in the presence of a fixed background.", guitype='combobox', row=24, col=0, rowspan=1, colspan=2, mode='align["robust"],tomo["robust"]',choicelist='["robust","centerofmass","ccfmax"]')
 
 	parser.add_header(name="orblock5", help='Just a visual separation', title="Optional: ", row=25, col=0, rowspan=2, colspan=3, mode="align,tomo")
 
@@ -129,7 +129,7 @@ def main():
 	parser.add_argument("--fixbadpixels",action="store_true",default=False,help="Tries to identify bad pixels in the dark/gain reference, and fills images in with sane values instead", guitype='boolbox', row=17, col=1, rowspan=1, colspan=1, mode='align[True]')
 	#parser.add_argument("--normaxes",action="store_true",default=False,help="Tries to erase vertical/horizontal line artifacts in Fourier space by replacing them with the mean of their neighboring values.",guitype='boolbox', row=17, col=2, rowspan=1, colspan=1, mode='align')
 	#parser.add_argument("--frames",action="store_true",default=False,help="Save the dark/gain corrected frames. Note that frames will be overwritten if identical --suffix is already present.", guitype='boolbox', row=19, col=0, rowspan=1, colspan=1, mode="align,tomo")
-	parser.add_argument("--suffix",type=str,default="proc",help="Specify a unique suffix for output frames. Default is 'proc'. Note that the output of --frames will be overwritten if identical suffix is already present.",guitype='strbox', row=19, col=2, rowspan=1, colspan=1, mode="align,tomo")
+	parser.add_argument("--suffix",type=str,default="proc",help="Specify a unique suffix for output frames. Default is 'proc'. Note that the output of --frames will be overwritten if identical suffix is already present.",guitype='strbox', row=28, col=2, rowspan=1, colspan=1, mode="align,tomo")
 	#parser.add_argument("--highdose", default=False, help="Use this flag when aligning high dose data (where features in each frame can be distinguished visually).",action="store_true",guitype='boolbox', row=18, col=0, rowspan=1, colspan=1,mode='align')
 	parser.add_argument("--phaseplate", default=False, help="Use this flag when aligning phase plate frames.",action="store_true",guitype='boolbox', row=18, col=1, rowspan=1, colspan=1,mode='align')
 	# parser.add_argument('--import_movies', action="store_true",default=False,help="List the references to import into 'movies' directory without additional processing.", default="", guitype='boolbox', row=0, col=0,rowspan=1, colspan=3, mode="import[True],default[False]")
