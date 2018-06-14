@@ -269,6 +269,30 @@ def linchange(a, fct):
 		o[i] = (1.0-dx)*a[j] + dx*a[j+1]
 	return o
 
+## Fitting of "ideal" 3D FSC, as elaborated in Resolution, Meth Enz, 2010, Eq.3.25
+"""
+def ideal_fsc(n,a,N,B,g):
+	#  Note number of image N and scaling factor for SSNR are equivalent
+	o=[]
+	for i in xrange(n/2):
+		s=float(i)/n/a
+		#  For 2D float(i) has to be replaced by 1.0.
+		o.append(N*exp(-B*s*s/4.)/(N*exp(-B*s*s/4.)+float(i)/g))
+	return o
+
+def difsc(args,data):
+	z=ideal_fsc(360,1.34,50000,args[0],args[1])
+	vv = 0.0
+	for l in xrange(len(z)):
+		vv -= (data[0][l] - z[l])**2
+	print(args,vv)
+	return vv
+
+##amoeba(arg, [1.0,0.1], difsc, data=data)
+##z=ideal_fsc(360,1.34,50000,202.,.05);write_text_file(z,"zz.txt")
+"""
+
+
 ## CTF related functions
 def rotavg_ctf(img, defocus, Cs, voltage, Pixel_size, amp = 0.0, ang = 0.0):
 	"""1D rotational average of a 2D power spectrum (img)
