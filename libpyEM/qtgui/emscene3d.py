@@ -727,9 +727,9 @@ class EMScene3D(EMItem3D, EMGLWidget):
 	"""
 	Widget for rendering 3D objects. Uses a scne graph for rendering
 	"""
-	sgmousepress = QtCore.pyqtSignal()
-	sgmousemove = QtCore.pyqtSignal()
-	sgmouserelease = QtCore.pyqtSignal()
+	sgmousepress = QtCore.pyqtSignal(float, float)
+	sgmousemove = QtCore.pyqtSignal(float, float)
+	sgmouserelease = QtCore.pyqtSignal(float, float)
 	name = "SG"
 	def __init__(self, parentwidget=None, SGactivenodeset=set(), scalestep=0.5):
 		"""

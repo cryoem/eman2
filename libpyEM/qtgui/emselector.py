@@ -280,7 +280,7 @@ def EMSelectorBaseTemplate(Type):
 	Types currently in use are the QtGui.QWidget and the QtGui.QDialog
 	'''
 	class EMSelectorBase(Type):
-		ok = QtCore.pyqtSignal()
+		ok = QtCore.pyqtSignal(list)
 		oky = QtCore.pyqtSignal()
 		cancel = QtCore.pyqtSignal()
 
