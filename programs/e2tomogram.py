@@ -40,7 +40,7 @@ def main():
 	parser.add_argument("--pkkeep", type=float,help="Fraction of landmarks to keep in the tracking.", default=.9,guitype='floatbox',row=7, col=1, rowspan=1, colspan=1)
 
 	parser.add_argument("--pk_mindist", type=float,help="Minimum distance between landmarks in nm.", default=-1)
-	parser.add_argument("--pk_maxval", type=float,help="Maximum Density value of landmarks (n sigma). Default is -10", default=-10.)
+	parser.add_argument("--pk_maxval", type=float,help="Maximum Density value of landmarks (n sigma). Default is -5", default=-5.)
 
 	parser.add_argument("--clipz", type=float,help="How aggressive should it be when clipping the final tomogram output. default is 0.6, (-1 means not clipping at all)", default=0.6)
 
@@ -57,7 +57,6 @@ def main():
 	parser.add_argument("--notmp", action="store_true",help="Do not write temporary files.", default=False)
 
 	# parser.add_argument("--shrink", type=float,help="Mean-shrink tilt images by this integer value. We suggest using a value that converts image dimensions to approximately 1024x1024. The default is 4.", default=4, guitype='floatbox', row=6, col=0, rowspan=1, colspan=1, mode="easy[4]")
-	parser.add_argument("--reconmode", type=str,help="Reconstruction mode. Choose from nearest_neighbor, gauss_2, gauss_3, and gauss_5.", default="gauss_2", choices=["gauss_2","gauss_3","gauss_5"], choicelist='["gauss_2","gauss_3","gauss_5"]', guitype='combobox', row=11, col=1, rowspan=1, colspan=1)
 
 	parser.add_argument("--tmppath", type=str,help="Temporary path", default=None)
 
@@ -66,6 +65,10 @@ def main():
 	parser.add_argument("--savenorm", action="store_true",help="Save normalization volume from reconstruction.", default=False, guitype='boolbox',row=18, col=0, rowspan=1, colspan=1,mode="easy")
 
 	parser.add_argument("--badzero", action="store_true",help="In case the 0 degree tilt is bad for some reason...", default=False)
+
+	parser.add_argument("--bytile", action="store_true",help="make final tomogram by tiles.. ", default=False)
+
+	parser.add_argument("--outsize", type=str,help="Size of output tomograms. choose from 1k and 2k. default is 1k", default="1k")
 
 	parser.add_argument("--verbose","-v", type=int,help="Verbose", default=0, mode="easy[3]", guitype="intbox", row=12,col=1, rowspan=1, colspan=1)
 
@@ -141,66 +144,46 @@ def main():
 		imgs=[img.get_clip(Region(0, 0, i, img["nx"], img["ny"], 1)).copy() for i in range(img["nz"])]
 	else:
 		imgs=EMData.read_images(inputname)
-		
+			
 	for m in imgs: 
 		m.process_inplace("threshold.clampminmax.nsigma", {"nsigma":10})
 		m.process_inplace("normalize")
-	
-	binfac=max(1, int(np.round(img["nx"]/2048.)))
+	img=None
+	binfac=max(1, int(np.round(imgs[0]["nx"]/2048.)))
 	options.binfac=binfac
 	if options.writetmp:
 		inppath=options.tmppath+"tltseries_input.hdf"
 		for i,m in enumerate(imgs): m.write_image(inppath, i)
 	
 	## now prepare tilt series 
-	imgs_full=imgs#EMData.read_images(inppath)
-
 	if binfac==1:
-		imgs_2k=imgs_full
+		#### 2k or smaller input. skip 4k refinement
+		imgs_2k=imgs_4k=imgs
+		itnum[3]=0
 	else:
-		imgs_2k=[img.process("math.meanshrink", {"n":binfac}).process("normalize") for img in imgs_full]
+		imgs_2k=[img.process("math.meanshrink", {"n":binfac}).process("normalize") for img in imgs]
+	
+		if binfac==2:
+			#### 4k input
+			imgs_4k=imgs
+			
+		else:
+			#### even larger images..
+			imgs_4k=[img.process("math.meanshrink", {"n":binfac/2}).process("normalize") for img in imgs]
+			imgs=None
+			
 	imgs_1k=[img.process("math.meanshrink", {"n":2}).process("normalize") for img in imgs_2k]
 
 	imgs_500=[]
 	for p in imgs_1k:
 		m=p.process("math.meanshrink", {"n":2})
-		m.process_inplace("filter.highpass.gauss",{"cutoff_pixels":3})
+		m.process_inplace("filter.highpass.gauss",{"cutoff_pixels":5})
 		m.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.25})
 		m.process_inplace("normalize.edgemean")
 		m["apix_x"]=m["apix_y"]=p["apix_x"]*2.
 		imgs_500.append(m)
 
 	options.apix_init=float(imgs_2k[0]["apix_x"])
-
-	# if options.rawtlt == "":
-	# 	jsd = js_open_dict(info_name(inputname))
-	# 	try:
-	# 		tlts = np.asarray(jsd["tilt_angles"])
-	# 	except:
-	# 		print(""""ERROR: Could not locate tilt angles. Either import using raw data
-	# 		import tools or specify a rawtlt file containing one tilt angle per line
-	# 		(corresponding to the tilt series to be reconstructed).""")
-	# 		sys.exit(1)
-	# else:
-	# 	tlts=np.loadtxt(options.rawtlt)
-	# np.savetxt(options.tmppath+"rawtilt.txt", tlts)
-	# zeroid=options.zeroid=np.argmin(abs(tlts))
-	#
-	#
-	# #### here we always assume the center tilt is at 0 degree
-	# tlts-=tlts[options.zeroid]
-	#
-	# #### course alignment
-	# img_tali, pretrans=calc_global_trans(imgs_500, options)
-	# for i,m in enumerate(img_tali):
-	# 	m.write_image(options.tmppath+"tltseries_transali.hdf", i)
-	#
-	# #### initial tilt axis
-	# tltax=calc_tltax_rot(img_tali, options)
-	# print("tilt axis:  {:.2f}".format(tltax))
-	# options.tltax=tltax
-	#
-	# pretrans*=4
 
 	num=options.num=len(imgs_500)
 	
@@ -211,6 +194,8 @@ def main():
 	else:
 		options.pk_mindist=options.pk_mindist*10./options.apix_init/8
 		
+		
+	loss0=[]
 	if options.load:
 		jsname=info_name(options.inputname)
 		print("Loading parameters from {}...".format(jsname))
@@ -224,6 +209,8 @@ def main():
 		ttparams=tpm.copy()
 		js.close()
 		tlts=ttparams[:,3].copy()
+		try: loss0=np.array(js["ali_loss"])
+		except: pass
 		options.zeroid=zeroid=np.argmin(abs(tlts))
 	else:
 		if (options.rawtlt!=None) :
@@ -247,7 +234,7 @@ def main():
 		if options.writetmp:
 			for i,m in enumerate(img_tali):
 				m.write_image(options.tmppath+"tltseries_transali.hdf", i)
-		
+
 		#### initial tilt axis
 		if options.tltax==None:
 			tltax=calc_tltax_rot(img_tali, options)
@@ -269,25 +256,6 @@ def main():
 	pks=np.zeros((options.npk, 3))
 	#### pack parameters together so it is easier to pass around
 	allparams=np.hstack([ttparams.flatten(), pks.flatten()])
-
-	#### some fixed parameters..
-	# options.fid_mindist=16
-	# options.fid_maxval=-10
-	# options.bxsz=32
-	#
-	#
-	#
-	# #### image scale, m3diter, fidkeep
-	# #### refinement sequence []:global tilt axis, 0:tx, 1:ty, 2:tilt axis, 3: tilt, 4: off axis tilt
-	# scaleiter=[(imgs_500, itnum[0], .6, [[0,1], [], [0,1],[], [0,1]]),
-	# 		   (imgs_1k, itnum[1], .7, [[0,1],[], [0,1],[3],[4],[2],[0,1]]),
-	# 		   (imgs_2k, itnum[2], .8, [[0,1],[], [0,1],[3],[4],[2],[0,1]])]
-	#
-	# loss0=[]
-	# js=js_open_dict(path+"0_tomorecon_params.json")
-	# js.update(vars(options))
-	# js.close()
-	#options.bxsz=32
 	
 
 	#### image scale, m3diter, fidkeep
@@ -295,9 +263,9 @@ def main():
 	scaleiter=[(imgs_500, itnum[0], options.pkkeep*.8, [[0,1], [], [0,1],[], [0,1]]),
 			   (imgs_1k, itnum[1], options.pkkeep*.9, [[0,1],[], [0,1],[3],[4],[2],[0,1]]),
 			   (imgs_2k, itnum[2], options.pkkeep, [[0,1],[], [0,1],[3],[4],[2],[0,1]]),
-			   (imgs_full, itnum[3], options.pkkeep, [[0,1], [0,1],[3],[4],[2],[0,1]])]
+			   (imgs_4k, itnum[3], options.pkkeep, [[0,1], [0,1],[3],[4],[2],[0,1]])]
 	
-	loss0=[]
+	
 
 	yrot=0
 	for niter, siter in enumerate(scaleiter):
@@ -327,14 +295,14 @@ def main():
 			#### make tomogram, always use 500x500
 
 			if niter==0:
-				threed=make_tomogram(imgs_500, ttparams, options, premask=False, errtlt=loss0)
+				threed=make_tomogram(imgs_500, ttparams, options, errtlt=loss0)
 				rot=fix_rotation(threed)
 				yrot+=rot
 				ttparams[:,3]+=rot
 				zeroid=options.zeroid=np.argmin(abs(ttparams[:,3]))
 				ttparams[:,3]-=ttparams[options.zeroid,3]
 			
-			threed=make_tomogram(imgs_500, ttparams, options, premask=False, outname=name_tomo, errtlt=loss0)
+			threed=make_tomogram(imgs_500, ttparams, options, outname=name_tomo, errtlt=loss0)
 
 			pks=find_landmark(threed, options)
 			allparams=np.hstack([ttparams.flatten(), pks.flatten()])
@@ -370,11 +338,26 @@ def main():
 			np.savetxt(path+"landmarks_{:02d}.txt".format(niter), pks*options.binfac, fmt="%.1f")
 			np.savetxt(path+"tltparams_{:02d}.txt".format(niter), tpm, fmt="%.3f")
 			np.savetxt(path+"loss_{:02d}.txt".format(niter), np.vstack([np.arange(len(loss0)), loss0]).T, fmt="%.2f")
-
+		
+	
+	if options.outsize=="2k":
+		imgout=imgs_2k
+		bf=1
+	else:
+		imgout=imgs_1k
+		bf=2
+		
+	#print(imgout[0]["nx"])
+	if options.bytile:
+		threed=make_tomogram_tile(imgout, ttparams, options, errtlt=loss0)
+	else:
+		threed=make_tomogram(imgout, ttparams, options, errtlt=loss0)
+		
 	threed=make_tomogram(imgs_1k, ttparams, options, premask=False, outname=None, errtlt=loss0)
+
 	if options.writetmp:
-		make_ali(imgs_full, ttparams, options, outname=path+"tiltseries_ali.hdf")
 		threed.write_image(path+"tomo_final.hdf")
+		make_ali(imgs_4k, ttparams, options, outname=path+"tiltseries_ali.hdf")
 		
 		js=js_open_dict(path+"0_tomorecon_params.json")
 		js.update(vars(options))
@@ -384,8 +367,8 @@ def main():
 	except: pass
 	sfx=""
 	if options.binfac>1:
-		sfx+="__bin{:d}".format(int(options.binfac*2))
-
+		sfx+="__bin{:d}".format(int(options.binfac*bf))
+		
 	threed["ytilt"]=yrot
 	tomoname=os.path.join("tomograms", options.basename+sfx+".hdf")
 	threed.write_image(tomoname)
@@ -470,21 +453,31 @@ def calc_global_trans(imgs, options, excludes=[]):
 			if nid in excludes: continue
 			e0=imgout[options.zeroid+i*dr]
 			e1=imgs[nid].copy()
-			e1.clip_inplace(Region(e1["nx"]/2-sz/2, e1["ny"]/2-sz/2, sz,sz))
+			lastx=pretrans[options.zeroid+i*dr]
+			e1.clip_inplace(Region(e1["nx"]/2-sz/2-lastx[0], e1["ny"]/2-sz/2-lastx[1], sz,sz))
 			e1.process_inplace("mask.gaussian",{"outer_radius":sz/4})
 
 			e1a=e1.align("translational", e0)
 
+			xf=e1a["xform.align2d"]
+			xf.translate(lastx[0], lastx[1], 0)
+			
 			e1=imgs[nid].copy()
-			e1.transform(e1a["xform.align2d"])
+			e1.transform(xf)
 			e1.clip_inplace(Region(e1["nx"]/2-sz/2, e1["ny"]/2-sz/2, sz,sz))
 			e1.process_inplace("mask.gaussian",{"outer_radius":sz/4})
 
 			imgout[nid]=e1
-			ts=e1a["xform.align2d"].get_trans()
+			ts=xf.get_trans()
 			if options.verbose: print("\t{:d}: {:.1f}, {:.1f}".format(nid, ts[0], ts[1]))
 			pretrans[nid, 0]=ts[0]
 			pretrans[nid, 1]=ts[1]
+			
+	#txmean=np.mean(pretrans, axis=0)
+	#pretrans-=txmean
+	#for m in imgout:
+		#m.translate(-txmean[0], -txmean[1], 0)
+		
 	return imgout,pretrans
 
 
@@ -527,8 +520,138 @@ def calc_tltax_rot(imgs, options):
 		np.savetxt(options.tmppath+"tltrot.txt", np.vstack([angs, vs]).T)
 	return tltax
 
+def make_tile(args):
+	imgs, tpm, sz, pad, stepx, stepy, step=args
+	recon=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,pad], "mode":"gauss_2"})
+	recon.setup()
+
+	for i in range(len(imgs)):
+		t=tpm[i]
+		m=imgs[i]
+		if m["nx"]==1:
+			continue
+		m.process_inplace("filter.ramp")
+#		 m.process_inplace("normalize")
+		
+		m.rotate(-t[2],0,0)
+#		 m.process_inplace("mask.decayedge2d", {"width":32})
+		xf=Transform({"type":"xyz","ytilt":t[3],"xtilt":t[4]})
+
+		dy=pad/2-np.cos(t[3]*np.pi/180.)*pad/2
+		msk=EMData(pad, pad)
+		msk.to_one()
+		edge=sz/10
+		msk.process_inplace("mask.zeroedge2d",{"x0":dy+edge, "x1":dy+edge, "y0":edge, "y1":edge})
+		msk.process_inplace("mask.addshells.gauss",{"val1":0, "val2":edge})
+	
+		m.mult(msk)
+
+		mp=recon.preprocess_slice(m, xf)
+		recon.insert_slice(mp,xf,1)
+	threed=recon.finish(True)
+	threed.clip_inplace(Region((pad-sz)/2, (pad-sz)/2, (pad-sz)/2, sz, sz, sz))
+	
+	threed.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.5})
+#	 full3d.insert_scaled_sum(threed, (outxy/2+stepx*step, outxy/2+stepy*step, outz/2))
+#	 threed.to_one()
+#	 full3d_mlt.insert_scaled_sum(threed, (outxy/2+stepx*step, outxy/2+stepy*step, outz/2))
+	return [stepx, stepy, threed]
+
+
+def make_tomogram_tile(imgs, tltpm, options, errtlt=[]):
+
+	num=len(imgs)
+	scale=imgs[0]["apix_x"]/options.apix_init
+	if imgs[0]["nx"]<=1024*1.1:
+		b=1
+	elif imgs[0]["nx"]<=2048*1.1:
+		b=2
+	else:
+		print("tiling only support for 1k and 2k tomograms...")
+		return make_tomogram(imgs, tltpm, options, errtlt=errtlt)
+	
+	print("Making bin{:d} tomogram by tiling...".format(int(options.binfac*np.round(scale))))
+	tpm=tltpm.copy()
+	tpm[:,:2]/=scale
+	
+	if len(errtlt)==0:
+		errtlt=np.zeros(num)
+		nrange=range(num)
+	else:
+		nrange=np.argsort(errtlt)[:int(num*options.tltkeep)]
+		
+	print("Using {} out of {} tilts..".format(len(nrange), num))
+
+	outxy=1024*b
+	outz=zthick=256*b
+	full3d=EMData(outxy, outxy, outz)
+	full3d_mlt=full3d.copy()
+	#tpm[:,:2]/=2/b
+	step=240*b
+
+	sz=260*b
+	pad=360*b
+
+	jobs=[]
+	for stepx in range(-2,3):
+		for stepy in range(-2,3):
+			tiles=[]
+			for i in range(num):
+				if i in nrange:
+					t=tpm[i]
+					pxf=get_xf_pos(t, [stepx*step,stepy*step,0])
+					img=imgs[i]
+					m=img.get_clip(Region(img["nx"]/2-pad/2+pxf[0],img["ny"]/2-pad/2+pxf[1], pad, pad), fill=0)
+					tiles.append(m)
+				else:
+					tiles.append(EMData(1,1))
+
+			jobs.append((tiles, tpm, sz, pad, stepx, stepy, step))
+	
+	from multiprocessing import Pool
+	
+	pl=Pool(options.threads)
+	ret=pl.map(make_tile, jobs)
+		
+	full3d=EMData(outxy, outxy, outz)
+	for r in ret:
+		sx, sy, threed=r
+		
+		full3d.insert_clip(threed,
+			(int(sx*step+outxy/2-threed["nx"]/2), int(sy*step+outxy/2-threed["nx"]/2), outz/2-threed["nz"]/2))
+	
+	threed=full3d
+	threed.process_inplace("normalize")
+	if options.clipz>0:
+		
+		p0=np.min(threed.numpy(), axis=1)
+		z0=np.min(p0, axis=1)
+		zp=np.where(z0<np.mean(z0))[0]
+		zcent=int(zp[0]+zp[-1])/2
+		zthk=int((zp[-1]-zp[0])*options.clipz)
+		zthk=np.min([zthk, zthick-zcent, zcent])-1
+		#if options.verbose:
+		print("Z axis center at {:d}, thickness {:d} pixels".format(zcent, zthk*2))
+		threed.clip_inplace(Region(0, 0, zcent-zthk, outxy, outxy, zthk*2))
+		threed["zshift"]=float(zthick/2-zcent)*scale*options.binfac
+		#for nid in range(num):
+			#tltinfo[nid]["xform.projection"].translate(0, 0, zthick/2-zcent)
+		
+	else:
+		
+		#threed.clip_inplace(Region((pad-outxy)/2, (pad-outxy)/2, 0, outxy, outxy, zthick))
+		threed["zshift"]=0
+	
+	apix=imgs[0]["apix_x"]
+	threed["apix_x"]=threed["apix_y"]=threed["apix_z"]=apix
+	pl.close()
+	#pl.terminate()
+	pl.join()
+	
+	return threed
+
 #### reconstruct tomogram...
-def make_tomogram(imgs, tltpm, options, outname=None, premask=False, padr=1.2,  errtlt=[]):
+def make_tomogram(imgs, tltpm, options, outname=None, padr=1.2,  errtlt=[]):
 	num=len(imgs)
 	scale=imgs[0]["apix_x"]/options.apix_init
 	print("Making bin{:d} tomogram...".format(int(options.binfac*np.round(scale))))
@@ -571,9 +694,9 @@ def make_tomogram(imgs, tltpm, options, outname=None, premask=False, padr=1.2,  
 
 		xform={"type":"xyz","ztilt":tpm[2],"ytilt":tpm[3], "xtilt":tpm[4], "tx":pxf[0], "ty":pxf[1]}
 		#tltinfo.append({"xform.projection":xform, "alignment.score":errtlt[nid]})
-		jobs.append([nid,imgs[nid],  recon, pad, xform, premask, exclude, options])
-
-
+		jobs.append([nid,imgs[nid],  recon, pad, xform, exclude, options])
+		
+	
 	thrds=[threading.Thread(target=reconstruct,args=(i)) for i in jobs]
 	thrtolaunch=0
 	tsleep=threading.active_count()
@@ -591,8 +714,7 @@ def make_tomogram(imgs, tltpm, options, outname=None, premask=False, padr=1.2,  
 
 	threed=recon.finish(True)
 	threed.process_inplace("normalize")
-
-	threed.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.4})
+	threed.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.5})
 	
 	if options.clipz>0:
 		p0=np.min(threed.numpy(), axis=1)
@@ -625,7 +747,7 @@ def make_tomogram(imgs, tltpm, options, outname=None, premask=False, padr=1.2,  
 	return threed
 
 #### reconstruction function for the subprocesses
-def reconstruct(nid, img, recon, pad, xform, premask, exclude, options):
+def reconstruct(nid, img, recon, pad, xform,  exclude, options):
 	m=img.copy()
 	m.process_inplace("filter.ramp")
 	m.process_inplace("normalize")
