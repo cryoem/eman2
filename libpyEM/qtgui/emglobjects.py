@@ -1161,9 +1161,9 @@ class Camera2:
 	Then call 'position' in your main OpenGL draw function before drawing anything.
 	
 	"""
-	scale_delta = QtCore.pyqtSignal()
-	apply_rotation = QtCore.pyqtSignal()
-	apply_translation = QtCore.pyqtSignal()
+	scale_delta = QtCore.pyqtSignal(float)
+	apply_rotation = QtCore.pyqtSignal(float)
+	apply_translation = QtCore.pyqtSignal(float)
 
 	def __init__(self,parent):
 		self.emit_events = False
