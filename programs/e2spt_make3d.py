@@ -46,11 +46,16 @@ def main():
 	
 	usage=" "
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--ptclin", type=str,help="2d particle input", default=None)
-	parser.add_argument("--ptclout", type=str,help="3d particle output", default=None)
-	parser.add_argument("--clip", type=int,help="final output size", default=-1)
-	parser.add_argument("--mask", type=str,help="mask on the final output", default=None)
-	parser.add_argument("--threads", type=int,help="Number of threads to use", default=5)
+	parser.add_argument("--ptclin", default=None, type=str, help="2D particle input",guitype='filebox',browser="EMRawDataTable(withmodal=True,multiselect=False)", row=1, col=0, rowspan=1, colspan=2,mode='tomo')
+	parser.add_argument("--ptclout", default=None, help="3D particle output.",type=str, guitype='strbox', row=3, col=0, rowspan=1, colspan=2, mode="tomo")
+	parser.add_argument("--clip", type=int, help="Final output size.",default=-1, guitype='intbox', row=5, col=0, rowspan=1, colspan=1, mode="tomo")
+	parser.add_argument("--mask", default=None, help="Mask on the final output.",type=str, guitype='strbox', row=5, col=1, rowspan=1, colspan=1, mode="tomo")
+	parser.add_argument("--threads", type=int,help="Number of threads to use.",default=5, guitype='intbox', row=7, col=0, rowspan=1, colspan=1, mode="tomo")
+	#parser.add_argument("--clip", type=int,help="final output size", default=-1)
+	#parser.add_argument("--mask", type=str,help="mask on the final output", default=None)
+	#parser.add_argument("--threads", type=int,help="Number of threads to use", default=5)
+	#parser.add_argument("--ptclin", type=str,help="2d particle input", default=None)
+	#parser.add_argument("--ptclout", type=str,help="3d particle output", default=None)
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	

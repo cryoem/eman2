@@ -1,75 +1,229 @@
-/* JSON file to configure the project manager SPR mode */
+/* JSON file to configure the project manager TOMO mode */
 /* The ICON string needs to correspond to a dict key listed in the PM */
-/* The available keys can be found by browsing the JSON files of looking at e2 projectmanager.py */ 
-[
+/* The available keys can be found by browsing the JSON files of looking at e2 projectmanager.py */
 
-  {
-    "ICON": "single_image_3d",
-    "WIZARD":"/lib/pmconfig/tomoimport.json",
-    "PROGRAM": "e2import.py", 
-    "MODE": "tomos", 
-    "NAME": "Import Tomogram Files",
-    "CHILDREN": [] 
-  }, 
+[
   {
     "ICON": "green_boxes",
-    "WIZARD":"/lib/pmconfig/tomoboxer.json",
-    "MODE": "boxing",
-    "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2spt_boxer",
-    "PROGRAM": "e2spt_boxer.py", 
-    "NAME": "Box Tomogram Files", 
-    "CHILDREN": [] 
+    "NAME": "Raw Data",
+    "CHILDREN": [
+      {
+        "ICON": "multiple_images",
+        "MODE": "refs",
+        "PROGRAM": "e2ddd_movie.py",
+        "NAME": "Process DDD References",
+        "CHILDREN": []
+      },
+      {
+        "ICON": "multiple_images",
+        "MODE": "tomo",
+        "PROGRAM": "e2ddd_movie.py",
+        "NAME": "Process DDD Movies",
+        "CHILDREN": []
+      },
+      {
+        "ICON": "multiple_images",
+        "PROGRAM": "e2import.py",
+        "MODE": "rawtilts",
+        "NAME": "Import Individual Tilts",
+        "CHILDREN": []
+      },
+      {
+        "ICON": "multiple_images",
+        "PROGRAM": "e2buildstacks.py",
+        "MODE": "tomo",
+        "NAME": "Generate Tiltseries",
+        "CHILDREN": []
+      },
+      {
+        "ICON": "multiple_images",
+        "PROGRAM": "e2import.py",
+        "MODE": "tiltseries",
+        "NAME": "Import Tiltseries",
+        "CHILDREN": []
+      },
+      {
+        "ICON": "single_image_3d",
+        "PROGRAM": "e2import.py",
+        "MODE": "tomos",
+        "WIZARD": "/lib/pmconfig/tomoimport.json",
+        "NAME": "Import Tomograms",
+        "CHILDREN": []
+      }
+    ]
+  },
+  {
+    "ICON": "multiple_images",
+    "PROGRAM": "e2tomogram.py",
+    "MODE": "easy",
+    "NAME": "3D Reconstruction",
+    "CHILDREN": []
   },
   {
     "ICON": "green_boxes",
-    "WIZARD":"/lib/pmconfig/wedge.json",
-    "PROGRAM": "e2wedge.py", 
-    "NAME": "Examine Missing Wedges", 
-    "CHILDREN": [] 
+    "PROGRAM": "e2tomo_eval.py",
+    "NAME": "Evaluate tomograms",
+    "CHILDREN": []
   },
   {
-    "ICON": "tomo_hunter",
-    "WIZARD":"/lib/pmconfig/classaverage3d.json",
-    "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2spt_classaverage",
-    "PROGRAM": "e2spt_classaverage.py",
-    "MODE": "alignment", 
-    "NAME": "Tomogram Alignment and Averaging", 
-    "NOTELEVEL": "1",
-    "CHILDREN": [] 
+    "ICON": "single_image",
+    "NAME": "Segmentation",
+    "CHILDREN": [
+      {
+        "ICON": "green_boxes",
+        "PROGRAM": "e2tomoseg_buildtrainset.py",
+        "MODE": "box",
+        "NAME": "Box training references",
+        "CHILDREN": []
+      },
+      {
+        "ICON": "single_image_3d",
+        "PROGRAM": "e2tomoseg_buildtrainset.py",
+        "MODE": "seg",
+        "NAME": "Segment training references",
+        "CHILDREN": []
+      },
+      {
+        "ICON": "green_boxes",
+        "PROGRAM": "e2tomoseg_buildtrainset.py",
+        "MODE": "set",
+        "NAME": "Build training set",
+        "CHILDREN": []
+      },
+      {
+        "ICON": "web",
+        "PROGRAM": "e2tomoseg_convnet.py",
+        "MODE": "train",
+        "NAME": "Train the neural network",
+        "CHILDREN": []
+      },
+      {
+        "ICON": "web",
+        "PROGRAM": "e2tomoseg_convnet.py",
+        "MODE": "test",
+        "NAME": "Apply the neural network",
+        "CHILDREN": []
+      },
+      {
+        "ICON": "web",
+        "PROGRAM": "e2tomo_drawcurve.py",
+        "MODE": "test",
+        "NAME": "Draw curves",
+        "CHILDREN": []
+      },
+      {
+        "ICON": "web",
+        "PROGRAM": "e2tomo_drawcontour.py",
+        "MODE": "test",
+        "NAME": "Draw contours",
+        "CHILDREN": []
+      }
+    ]
   },
   {
-    "ICON": "tomo_hunter",
-    "WIZARD":"/lib/pmconfig/breaksym.json",
-    "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2spt_classaverage",
-    "PROGRAM": "e2spt_classaverage.py",
-    "MODE": "breaksym", 
-    "NAME": "Tomogram Alignment, Break Sym", 
-    "NOTELEVEL": "1",
-    "CHILDREN": [] 
+    "ICON":"tomo_hunter",
+    "NAME":"Subtomogram Averaging",
+    "CHILDREN":[
+      {
+        "ICON": "green_boxes",
+        "MODE": "boxing",
+        "PROGRAM": "e2spt_tempmatch.py",
+        "NAME": "Reference-based Boxing",
+        "CHILDREN": []
+      },
+      {
+        "ICON": "green_boxes",
+        "MODE": "boxing",
+        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2spt_boxer",
+        "PROGRAM": "e2spt_boxer.py",
+        "NAME": "Manual Boxing",
+        "CHILDREN": []
+      },
+      {
+        "ICON": "single_image_3d",
+        "PROGRAM": "e2spt_sgd.py",
+        "NAME": "Generate Initial Model",
+        "CHILDREN": []
+      },
+      {
+        "ICON": "tomo_hunter",
+        "PROGRAM": "e2spt_refine.py",
+        "NAME": "3D refinement",
+        "CHILDREN": []
+      },
+      {
+        "ICON": "ctf",
+        "PROGRAM": "e2spt_tomoctf.py",
+        "NAME": "CTF Correction",
+        "CHILDREN": []
+      },
+      {
+        "ICON": "tomo_hunter",
+        "PROGRAM": "e2spt_getptcls.py",
+        "NAME": "Sub-tilt refinement",
+        "CHILDREN": []
+      },
+      {
+        "ICON": "green_boxes",
+        "PROGRAM": "e2spt_classaverage.py",
+        "NAME": "3D Class Averaging",
+        "CHILDREN": []
+      },
+      {
+        "ICON": "green_boxes",
+        "PROGRAM": "e2spt_refinemulti.py",
+        "NAME": "Mult-Reference Refinement",
+        "CHILDREN": []
+      },
+      {
+        "ICON": "green_boxes",
+        "PROGRAM": "e2spt_average_multi.py",
+        "NAME": "Mult-Reference Averaging",
+        "CHILDREN": []
+      },
+      {
+        "ICON": "tomo_hunter",
+        "NAME": "Extract from IMOD",
+        "CHILDREN": [
+          {
+            "ICON": "tomo_hunter",
+            "PROGRAM": "e2spt_subtilt_from_imod.py",
+            "NAME": "Extract 2D particles",
+            "CHILDREN": []
+          },
+          {
+            "ICON": "single_image_3d",
+            "PROGRAM": "e2spt_make3d.py",
+            "NAME": "Reconstruction from 2D particles",
+            "CHILDREN": []
+          }
+        ]
+      }
+    ]
   },
   {
-    "ICON": "tomo_hunter",
-    "WIZARD":"/lib/pmconfig/symaligner.json",
-    "PROGRAM": "e2classaveragebysym.py",
-    "NAME": "Tomogram Alignment, Using Symmetry", 
-    "NOTELEVEL": "1",
-    "CHILDREN": [] 
-  },
-  {
-    "ICON": "single_image_3d",
-    "MODE":"align",
-    "WIZARD":"/lib/pmconfig/symsearch.json",
-    "PROGRAM": "e2symsearch3d.py", 
-    "NAME": "Align to Symmetry Axis",
-    "NOTELEVEL": "1",
-    "CHILDREN": [] 
-  },
-  {
-    "ICON": "single_image_3d",
-    "WIZARD":"/lib/pmconfig/tomores.json",
-    "PROGRAM": "e2tomoresolution.py", 
-    "NAME": "Estimate Resolution via FSC",
-    "NOTELEVEL": "1",
-    "CHILDREN": [] 
+    "ICON":"resolution",
+    "NAME":"Validation and Analysis",
+    "CHILDREN":[
+      {
+        "ICON": "multiple_images",
+        "PROGRAM": "e2tomo_showali.py",
+        "MODE": "easy",
+        "NAME": "Examine fiducial error",
+        "CHILDREN": []
+      },
+      {
+        "ICON": "resolution",
+        "PROGRAM": "e2spt_resolutionplot.py",
+        "NAME": "Calc Multiple FSC",
+        "CHILDREN": []
+      },
+      {
+        "ICON": "resolution",
+        "PROGRAM": "e2spt_stat.py",
+        "NAME": "Calc Quality vs. Reference",
+        "CHILDREN": []
+      }
+    ]
   }
 ]

@@ -278,7 +278,7 @@ def AI( fff, anger, shifter, chout = False):
 			inc += Tracker["nxstep"]
 			tmp = min(2*inc, Tracker["constants"]["nnxo"] )  #  Cannot exceed image size
 
-		if( chout ): print("  IN AI nxstep, large at Nyq, outcoming current res, adjusted current, estimated image size",Tracker["nxstep"],Tracker["large_at_Nyquist"],Tracker["currentres"],inc,tmp)
+		if( chout ): print("  IN AI: nxstep, large at Nyq, outcoming current res, adjusted current, inc, estimated image size",Tracker["nxstep"],Tracker["large_at_Nyquist"],Tracker["currentres"],inc,tmp)
 
 		Tracker["nxinit"] = tmp
 		#  decide angular step and translations
@@ -407,7 +407,7 @@ def AI_continuation(fff, anger = -1.0, shifter = -1.0, chout = False):
 			inc += Tracker["nxstep"]
 			tmp = min(2*inc, Tracker["constants"]["nnxo"] )  #  Cannot exceed image size
 
-		if( chout ): print("  IN AI nxstep, large at Nyq, outcoming current res, adjusted current, estimated image size",Tracker["nxstep"],Tracker["large_at_Nyquist"],Tracker["currentres"],inc,tmp)
+		if( chout ): print("  IN AI: nxstep, large at Nyq, outcoming current res, adjusted current, inc, estimated image size",Tracker["nxstep"],Tracker["large_at_Nyquist"],Tracker["currentres"],inc,tmp)
 
 		Tracker["nxinit"] = tmp
 		#  decide angular step and translations

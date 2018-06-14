@@ -8,20 +8,20 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 from PyQt4 import QtGui, QtCore, QtOpenGL
 from PyQt4.QtCore import Qt
-from emapplication import get_application, EMApp
-from emimage2d import EMImage2DWidget
-from emshape import EMShape
+from eman2_gui.emapplication import get_application, EMApp
+from eman2_gui.emimage2d import EMImage2DWidget
+from eman2_gui.emshape import EMShape
 import scipy.spatial.distance as scipydist
 
 def main():
-	
+
 	usage="This shows the alignment result from e2tomogram.py uing the information from a tomorecon_xx folder. "
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--path", type=str,help="path", default=None)
 	parser.add_argument("--iter", type=int,help="iteration number", default=2)
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
-	
+
 	fname=os.path.join(options.path, "ali_{:02d}.hdf".format(options.iter))
 	pname=os.path.join(options.path, "landmarks_{:02d}.txt".format(options.iter))
 	pks=np.loadtxt(pname)
@@ -31,8 +31,8 @@ def main():
 	for i,m in enumerate(imgs):
 		img.insert_clip(m, (0,0,i))
 		xfs.append(m["xform.projection"])
-	
-	
+
+
 	aname=os.path.join(options.path, "ptclali_{:02d}.hdf".format(options.iter))
 	n=EMUtil.get_image_count(aname)
 	dirs=np.zeros((len(imgs),len(pks),2))
@@ -50,17 +50,17 @@ def main():
 	drawer.show()
 	app.execute()
 	E2end(logid)
-	
+
 def run(cmd):
 	print cmd
 	launch_childprocess(cmd)
-	
+
 def get_circle(p,r):
 	t=np.arange(0, np.pi*2, np.pi/10)
 	pts=r*np.vstack([np.cos(t), np.sin(t)]).T
 	pts+=p
 	return pts
-	
+
 class Boxes(EMShape):
 	def __init__(self, img, pks, xfs, dirs):
 		self.isanimated = False
@@ -70,9 +70,9 @@ class Boxes(EMShape):
 		self.xfs=xfs
 		self.dirs=dirs
 		#self.triangles=[]
-		
-		
-		
+
+
+
 	def draw(self,d2s=None,col=None):
 		mi=self.image.list_idx
 		xf=self.xfs[mi]
@@ -91,7 +91,7 @@ class Boxes(EMShape):
 			ps.append(ptx)
 			a=np.array(ptx)+self.dirs[mi, pid]
 			ps.append(a.tolist())
-			
+
 			lns=get_circle(ptx, 32)
 			#print(lns)
 			glColor3f( 1., 1., 1. );
@@ -99,7 +99,7 @@ class Boxes(EMShape):
 			glEnableClientState(GL_VERTEX_ARRAY)
 			glVertexPointerf(lns)
 			glDrawArrays(GL_LINES, 0, len(lns))
-			
+
 			#arr=[ptx]
 			#a=np.array(pt)+self.dirs[mi, pid]
 			#arr.append(a.tolist())
@@ -107,9 +107,9 @@ class Boxes(EMShape):
 			#glEnableClientState(GL_VERTEX_ARRAY)
 			#glVertexPointerf(arr)
 			#glDrawArrays(GL_LINES, 0, len(arr))
-			
-			
-			
+
+
+
 		glEnableClientState(GL_VERTEX_ARRAY)
 		glVertexPointerf(ps)
 		glDrawArrays(GL_LINES, 0, len(ps))
@@ -117,9 +117,9 @@ class Boxes(EMShape):
 		glEnableClientState(GL_VERTEX_ARRAY)
 		glVertexPointerf([ps[i] for i in range(0,len(ps),2)])
 		glDrawArrays(GL_POINTS, 0, len(ps)/2)
-		
+
 		return
-		
+
 
 class EMDrawWindow(QtGui.QMainWindow):
 
@@ -128,31 +128,31 @@ class EMDrawWindow(QtGui.QMainWindow):
 		self.imgview = EMImage2DWidget()
 		self.setCentralWidget(QtGui.QWidget())
 		self.gbl = QtGui.QGridLayout(self.centralWidget())
-		
+
 		self.gbl.addWidget(self.imgview,0,0)
 		self.options=options
 		self.app=weakref.ref(application)
-		
+
 		self.datafile=datafile
 		self.imgview.set_data(datafile)
-		
+
 		#self.all_shapes=[]
 		#self.all_points=[]
-		
+
 		self.boxes=Boxes(self.imgview, pks, xfs, dirs)
 		self.shape_index = 0
 		self.imgview.shapes = {0:self.boxes}
 
-		
-		
-		glEnable(GL_POINT_SMOOTH) 
+
+
+		glEnable(GL_POINT_SMOOTH)
 		glEnable( GL_LINE_SMOOTH );
 		glEnable( GL_POLYGON_SMOOTH );
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		
-	
-	
+
+
+
 if __name__ == '__main__':
 	main()
-	
+
