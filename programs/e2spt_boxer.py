@@ -91,14 +91,13 @@ def main():
 
 	parser.add_argument('--cshrink', type=int, default=1, help='''Default=1 (not used; no scaling of --coords). Used to extract particles without the GUI. Requires --coords. Specifies the factor by which to multiply the coordinates in --coords, so that they can be at the same scale as the RAW tomogram (or whatever tomogram you intend for the particles to be extracted from).\nFor example, provide --cshrink=2 if the coordinates were determined in a binned-by-2 (shrunk-by-2) tomogram,\nbut you want to extract the subvolumes from a tomogram without binning/shrinking (which should be 2x larger).''',guitype='intbox',row=4, col=1, rowspan=1, colspan=1, mode="coords")
 
-parser.add_argument('--subset', type=int, default=0, help='''Default=0 (not used). Used to extract particles without the GUI. Requires --coords. Specify how many subvolumes from --coords you want to extract; e.g, if you specify 10, the first 10 particles will be extracted.\n0 means "box them all" because it makes no sense to box none.''',guitype='strbox',row=4, col=2, rowspan=1, colspan=1, mode="coords")
+	parser.add_argument('--subset', type=int, default=0, help='''Default=0 (not used). Used to extract particles without the GUI. Requires --coords. Specify how many subvolumes from --coords you want to extract; e.g, if you specify 10, the first 10 particles will be extracted.\n0 means "box them all" because it makes no sense to box none.''',guitype='strbox',row=4, col=2, rowspan=1, colspan=1, mode="coords")
 
 	parser.add_argument("--normproc",type=str,default='normalize',help="""Default=normalize. Used to extract particles without the GUI. Requires --coords. Normalization processor applied to particles before extraction. Use --normproc=normalize.edgemean if the particles have a clear solvent background (i.e., they're not part of a larger complex or embeded in a membrane.""",guitype='strbox',row=5, col=0, rowspan=1, colspan=2, mode="coords")
 
 	parser.add_argument("--path",default='',type=str,help="Default=none (not used). Used to extract particles without the GUI. Requires --coords. Name of directory to save data to.",guitype='strbox',row=8, col=0, rowspan=1, colspan=3, mode="coords")
 
-
-parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 
