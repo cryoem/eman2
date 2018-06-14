@@ -106,20 +106,20 @@
       },
       {
         "ICON": "single_image",
-        "NAME": "Manual segmentation",
+        "NAME": "Manual Segmentation",
         "CHILDREN": [
           {
             "ICON": "single_image",
             "PROGRAM": "e2tomo_drawcurve.py",
             "MODE": "tomoseg",
-            "NAME": "Draw curves",
+            "NAME": "Draw Curves",
             "CHILDREN": []
           },
           {
             "ICON": "single_image",
             "PROGRAM": "e2tomo_drawcontour.py",
             "MODE": "tomoseg",
-            "NAME": "Draw contours",
+            "NAME": "Draw Contours",
             "CHILDREN": []
           }
         ]
@@ -133,9 +133,9 @@
       {
         "ICON": "green_boxes",
         "MODE": "boxing",
-        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2spt_boxer",
-        "PROGRAM": "e2spt_boxer.py",
-        "NAME": "Manual Boxing",
+        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2spt_boxer22",
+        "PROGRAM": "e2spt_boxer22.py",
+        "NAME": "Box Particles",
         "CHILDREN": []
       },
       {
@@ -150,7 +150,7 @@
         "MODE": "coords",
         "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2spt_boxer",
         "PROGRAM": "e2spt_boxer.py",
-        "NAME": "Extract from Coords",
+        "NAME": "Extract Particles",
         "CHILDREN": []
       },
       {
@@ -162,7 +162,7 @@
       {
         "ICON": "tomo_hunter",
         "PROGRAM": "e2spt_refine.py",
-        "NAME": "3D refinement",
+        "NAME": "3D Refinement",
         "CHILDREN": []
       },
       {
