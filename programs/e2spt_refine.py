@@ -21,9 +21,7 @@ def main():
 	parser.add_argument("--setsf", type=str,help="structure factor", default=None, guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=5, col=1,rowspan=1, colspan=2, mode="model")
 	parser.add_argument("--mask", type=str,help="Mask file to be applied to initial model", default=None, guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=3, col=0,rowspan=1, colspan=3, mode="model")
 
-
-
-parser.add_argument("--path", type=str,help="path", default=None)
+	parser.add_argument("--path", type=str,help="path", default=None)
 	#parser.add_argument("--niter", type=int,help="iterations", default=10)
 	parser.add_argument("--threads", type=int,help="threads", default=12)
 	#parser.add_argument("--mass", type=float,help="mass", default=500)
