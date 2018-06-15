@@ -11,15 +11,17 @@ def main():
 	
 	usage=" "
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	#parser.add_argument("--output", type=str,help="output file name", default=None)
-	#parser.add_argument("--output2d", type=str,help="2D output file name", default=None)
-	parser.add_argument("--threads", type=int,help="threads", default=12)
-	parser.add_argument("--maxtilt", type=int,help="max tilt", default=100)
-	parser.add_argument("--padby", type=float,help="padding factor", default=2.0)
-	parser.add_argument("--boxsz", type=int,help="box size in binned tomogram", default=-1)
-	parser.add_argument("--tag", type=str,help="only extract particle with this name", default=None)
+	parser.add_pos_argument(name="particles",help="Specify particles on which you want to perform sub-tilt refinement.", default="", guitype='filebox', browser="EMSPTParticleTable(withmodal=True,multiselect=False)", row=0, col=0,rowspan=1, colspan=2, mode="model")
+
+	parser.add_header(name="orblock1", help='Just a visual separation', title="** Subtilt Refinement Options **", row=2, col=0, rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--boxsz", type=int,help="box size in binned tomogram", default=1, guitype='intbox',row=6, col=0,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--threads", type=int,help="threads", default=1, guitype='intbox',row=6, col=1,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--maxtilt", type=int,help="max tilt", default=100, guitype='intbox',row=6, col=2, rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--padby", type=float,help="padding factor", default=2.0, guitype='floatbox',row=7, col=1, rowspan=1, colspan=1, mode="model")
+	
+	parser.add_argument("--tag", type=str,help="only extract particle with this name", default=None, guitype='strbox',row=8, col=1, rowspan=1, colspan=2, mode="model")
 	parser.add_argument("--dotest", action="store_true", default=False ,help="only make 1 batch of subtomograms for testing")
-	parser.add_argument("--noctf", action="store_true", default=False ,help="skip ctf correction..")
+	parser.add_argument("--noctf", action="store_true", default=False ,help="skip ctf correction..", guitype='boolbox',row=9, col=1, rowspan=1, colspan=1, mode="model")
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	
