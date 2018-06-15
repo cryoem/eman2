@@ -30,7 +30,7 @@ def main():
 
 	parser.add_header(name="orblock1", help='Just a visual separation', title="** Initial Model Options **", row=1, col=1, rowspan=1, colspan=1, mode="model")
 
-	parser.add_argument('--ref', type=str, default=None, help="""3D reference for initial model generation. No reference is used by default.""", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=2, col=0,rowspan=1, colspan=3, mode="model")
+	parser.add_argument('--reference','--ref', type=str, default=None, help="""3D reference for initial model generation. No reference is used by default.""", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=2, col=0,rowspan=1, colspan=3, mode="model")
 
 	parser.add_argument("--mask", type=str,help="Mask file to be applied to initial model", default=None, guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=3, col=0,rowspan=1, colspan=3, mode="model")
 
