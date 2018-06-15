@@ -157,6 +157,7 @@
         "ICON": "single_image_3d",
         "PROGRAM": "e2spt_sgd.py",
         "NAME": "Generate Initial Model",
+        "MODE": "model",
         "CHILDREN": []
       },
       {
