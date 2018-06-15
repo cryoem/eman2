@@ -7,28 +7,45 @@ def main():
 	
 	usage=" "
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--path", type=str,help="path", default=None)
-	parser.add_argument("--niter", type=int,help="iterations", default=10)
+
+	parser.add_pos_argument(name="particles",help="Specify particles to use to generate an initial model.", default="", guitype='filebox', browser="EMSPTParticleTable(withmodal=True,multiselect=False)", row=0, col=0,rowspan=1, colspan=3, mode="model")
+
+	parser.add_pos_argument(name="ref",help="""3D reference for initial model generation. No reference is used by default.""", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=0, col=0,rowspan=1, colspan=3, mode="model")
+
+	parser.add_argument("--niter", type=int,help="Number of iterations", default=5,guitype='intbox',row=9, col=1,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--sym", type=str,help="symmetry", default="c1", guitype='strbox',row=4, col=0,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--gaussz", type=float,help="Extra gauss filter at z direction", default=-1, guitype='floatbox',row=4, col=1,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--mass", type=float,help="mass", default=500.0, guitype='floatbox',row=4, col=2,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--tarres", type=float,help="target resolution", default=10, guitype='floatbox',row=5, col=0,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--localfilter", action="store_true", default=False ,help="use tophat local", guitype='boolbox',row=6, col=1,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--setsf", type=str,help="structure factor", default=None, guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=5, col=1,rowspan=1, colspan=2, mode="model")
+	parser.add_argument("--mask", type=str,help="Mask file to be applied to initial model", default=None, guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=3, col=0,rowspan=1, colspan=3, mode="model")
+
+
+
+parser.add_argument("--path", type=str,help="path", default=None)
+	#parser.add_argument("--niter", type=int,help="iterations", default=10)
 	parser.add_argument("--threads", type=int,help="threads", default=12)
-	parser.add_argument("--mass", type=float,help="mass", default=500)
-	parser.add_argument("--tarres", type=float,help="target resolution", default=10)
-	parser.add_argument("--gaussz", type=float,help="extra gauss filter at z direction", default=-1)
+	#parser.add_argument("--mass", type=float,help="mass", default=500)
+	#parser.add_argument("--tarres", type=float,help="target resolution", default=10)
+	#parser.add_argument("--gaussz", type=float,help="extra gauss filter at z direction", default=-1)
 	parser.add_argument("--goldstandard", type=int,help="initial resolution for gold standard refinement", default=-1)
 	parser.add_argument("--goldcontinue", action="store_true", default=False ,help="continue from an existing gold standard refinement")
-	parser.add_argument("--sym", type=str,help="sym", default='c1')
-	parser.add_argument("--setsf", type=str,help="structure factor", default=None)
+	#parser.add_argument("--sym", type=str,help="sym", default='c1')
+	#parser.add_argument("--setsf", type=str,help="structure factor", default=None)
 	parser.add_argument("--pkeep", type=float,help="fraction of particles to keep", default=1.)
 	parser.add_argument("--tkeep", type=float,help="fraction of tilt to keep. only used when tltrefine is specified. default is 0.5", default=0.5)
 	parser.add_argument("--maxtilt",type=float,help="Explicitly zeroes data beyond specified tilt angle. Assumes tilt axis exactly on Y and zero tilt in X-Y plane. Default 90 (no limit).",default=90.0)
-	parser.add_argument("--mask", type=str,help="mask", default='')
+	#parser.add_argument("--mask", type=str,help="mask", default='')
 	parser.add_argument("--tltrefine", action="store_true", default=False ,help="refine individual subtilts")
 	parser.add_argument("--tltrefine_unmask", action="store_true", default=False ,help="use unmasked maps for tilt refinement")
-	parser.add_argument("--localfilter", action="store_true", default=False ,help="use tophat local")
+	#parser.add_argument("--localfilter", action="store_true", default=False ,help="use tophat local")
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	ptcls=args[0]
 	ref=args[1]
+
 	if options.path==None:
 		for i in range(100):
 			pname="spt_{:02d}".format(i)

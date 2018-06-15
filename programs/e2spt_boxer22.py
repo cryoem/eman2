@@ -66,7 +66,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	#parser.add_argument("--path", type=str,help="path", default=None)
 	parser.add_pos_argument(name="tomogram",help="Specify a tomogram from which you want to extract particles.", default="", guitype='filebox', browser="EMTomoTable(withmodal=True,multiselect=False)", row=0, col=0,rowspan=1, colspan=2, mode="boxing")
-	parser.add_argument("--low_memory",action="store_true",default=False,help="Default=False. If on, the tomogram will not be read into memory. Note, this will significantly affect performance, greatly slowing down the process of manually boxing particles.", guitype='boolbox', row=1, col=0, rowspan=1, colspan=1, mode="boxing")
+	# parser.add_argument("--low_memory",action="store_true",default=False,help="Default=False. If on, the tomogram will not be read into memory. Note, this will significantly affect performance, greatly slowing down the process of manually boxing particles.", guitype='boolbox', row=1, col=0, rowspan=1, colspan=1, mode="boxing")
 	parser.add_argument("--ppid", type=int,help="ppid", default=-2)
 
 	(options, args) = parser.parse_args()
@@ -250,14 +250,14 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		else:
 			self.filetag="__"
 			
-		# data=EMData(datafile)
-		# self.set_data(data)
+		data=EMData(datafile)
+		self.set_data(data)
 
-		if options.low_memory:
-			self.set_datafile(datafile) # This triggers a lot of things to happen, so we do it last
-		else:
-			data=EMData(datafile)
-			self.set_data(data)
+		#if options.low_memory:
+		#	self.set_datafile(datafile) # This triggers a lot of things to happen, so we do it last
+		#else:
+		#	data=EMData(datafile)
+		#	self.set_data(data)
 
 		# Boxviewer subwidget (details of a single box)
 		self.boxviewer=EMBoxViewer()
