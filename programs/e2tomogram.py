@@ -352,8 +352,6 @@ def main():
 		threed=make_tomogram_tile(imgout, ttparams, options, errtlt=loss0)
 	else:
 		threed=make_tomogram(imgout, ttparams, options, errtlt=loss0)
-		
-	threed=make_tomogram(imgs_1k, ttparams, options, premask=False, outname=None, errtlt=loss0)
 
 	if options.writetmp:
 		threed.write_image(path+"tomo_final.hdf")

@@ -80,7 +80,7 @@ def main():
 	usage=" "
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_pos_argument(name="tiltseries",help="Specify tiltseries you want to apply CTF correction.", default="", guitype='filebox', browser="EMTiltseriesTable(withmodal=True,multiselect=False)", row=0, col=0,rowspan=1, colspan=3, mode="model")
-	parser.add_header(name="orblock1", help='Just a visual separation', title="** Tomo CTF Options **", row=2, col=1, rowspan=1, colspan=1, mode="model")
+	parser.add_header(name="orblock1", help='Just a visual separation', title="** Options **", row=2, col=1, rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--dfrange", type=str,help="Search range of defocus (start, end, step). default is 0.5, 10, 0.1", default="0.5,10.,0.1", guitype='strbox',row=4, col=0,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--psrange", type=str,help="phase shift range (start, end, step). default is 0, 120, 5", default="0,120,5", guitype='strbox',row=4, col=1,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--tilesize", type=int,help="Size of tile to calculate FFT, default is 256", default=256, guitype='intbox',row=4, col=2,rowspan=1, colspan=1, mode="model")

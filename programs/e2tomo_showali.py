@@ -15,10 +15,16 @@ import scipy.spatial.distance as scipydist
 
 def main():
 
-	usage="This shows the alignment result from e2tomogram.py uing the information from a tomorecon_xx folder. "
+	usage="""This shows the alignment result from e2tomogram.py uing the information from a tomorecon_xx folder.
+	
+	Example: e2tomo_showali.py --path <tomorecon_xx> --iter <iteration number>
+	
+	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
+	parser.add_pos_argument(name="tomorecon",help="Specify a tomorecon_xx directory to examine fiducial error.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=0, col=0,rowspan=1, colspan=2, mode="fiderr")
+	parser.add_argument("--iteration","--iter", type=int,help="Refinement iteration number", default=2,guitype="intbox",row=1, col=0, rowspan=1, colspan=1,mode="fiderr")
 	parser.add_argument("--path", type=str,help="path", default=None)
-	parser.add_argument("--iter", type=int,help="iteration number", default=2)
+	parser.add_argument("--ppid", type=int,help="ppid", default=-2)
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 

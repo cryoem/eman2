@@ -9,15 +9,20 @@ def main():
 	
 	usage=" "
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
+
+	parser.add_pos_argument(name="particles",help="Specify particles to use to generate an initial model.", default="", guitype='filebox', browser="EMSPTParticleTable(withmodal=True,multiselect=False)", row=0, col=0, rowspan=1, colspan=3,mode="multi")
+	parser.add_argument("--references","--refs", type=str,help="3D reference volumes", default=None, guitype="filebox", browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=1, col=0,rowspan=1, colspan=3,mode="multi")
+
+	parser.add_header(name="orblock1", help='Just a visual separation', title="** Options **", row=2, col=1, rowspan=1, colspan=1,mode="multi")
+
+	parser.add_argument("--mask", type=str,help="mask", default='', guitype="filebox", browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=3, col=0, rowspan=1, colspan=3, mode="multi")
+	parser.add_argument("--niter", type=int,help="iterations", default=3, guitype="intbox", row=4, col=0,rowspan=1, colspan=1,mode="multi")
+	parser.add_argument("--sym", type=str,help="sym", default="c1", guitype="strbox", row=4, col=1,rowspan=1, colspan=1,mode="multi")
+	parser.add_argument("--tarres", type=float,help="target resolution", default=20.0, guitype="floatbox", row=4, col=2,rowspan=1, colspan=1,mode="multi")
+	parser.add_argument("--mass", type=float,help="mass", default=500, guitype="floatbox", row=5, col=0,rowspan=1, colspan=1,mode="multi")
+	parser.add_argument("--localfilter", action="store_true", default=False ,help="use tophat local", guitype="boolbox", row=5, col=1,rowspan=1, colspan=1,mode="multi")
+	parser.add_argument("--threads", type=int,help="threads", default=12, guitype="intbox", row=5, col=2,rowspan=1, colspan=1,mode="multi")
 	parser.add_argument("--path", type=str,help="path", default=None)
-	parser.add_argument("--niter", type=int,help="iterations", default=3)
-	parser.add_argument("--threads", type=int,help="threads", default=12)
-	parser.add_argument("--mass", type=float,help="mass", default=500)
-	parser.add_argument("--tarres", type=float,help="target resolution", default=20)
-	parser.add_argument("--localfilter", action="store_true", default=False ,help="use tophat local")
-	parser.add_argument("--mask", type=str,help="mask", default='')
-	parser.add_argument("--sym", type=str,help="sym", default="c1")
-	parser.add_argument("--refs", type=str,help="references", default=None)
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	

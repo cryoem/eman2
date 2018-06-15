@@ -13,10 +13,13 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_pos_argument(name="tomograms",help="Specify tomograms containing reference-like particles to be exctracted.", default="", guitype='filebox', browser="EMTomoTable(withmodal=True,multiselect=True)", row=0, col=0,rowspan=1, colspan=2, mode="boxing")
 	parser.add_pos_argument(name="reference",help="Specify a 3D reference volume.", default="", guitype='filebox', browser="EMMovieDataTable(withmodal=True,multiselect=False)", row=1, col=0,rowspan=1, colspan=2, mode="boxing")
-	parser.add_argument("--delta", type=float,help="delta angle", default=30.0, guitype='floatbox', row=2, col=0,rowspan=1, colspan=1, mode="boxing")
-	parser.add_argument("--dthr", type=float,help="distance threshold", default=16.0, guitype='floatbox', row=2, col=1,rowspan=1, colspan=1, mode="boxing")
-	parser.add_argument("--vthr", type=float,help="value threshold (n sigma)", default=2.0, guitype='floatbox', row=3, col=0,rowspan=1, colspan=1, mode="boxing")
-	parser.add_argument("--nptcl", type=int,help="maximum number of particles", default=500, guitype='intbox', row=3, col=1,rowspan=1, colspan=1, mode="boxing")
+
+	parser.add_header(name="orblock1", help='Just a visual separation', title="** Options **", row=2, col=0, rowspan=1, colspan=1, mode="boxing")
+
+	parser.add_argument("--delta", type=float,help="delta angle", default=30.0, guitype='floatbox', row=3, col=0,rowspan=1, colspan=1, mode="boxing")
+	parser.add_argument("--dthr", type=float,help="distance threshold", default=16.0, guitype='floatbox', row=3, col=1,rowspan=1, colspan=1, mode="boxing")
+	parser.add_argument("--vthr", type=float,help="value threshold (n sigma)", default=2.0, guitype='floatbox', row=4, col=0,rowspan=1, colspan=1, mode="boxing")
+	parser.add_argument("--nptcl", type=int,help="maximum number of particles", default=500, guitype='intbox', row=4, col=1,rowspan=1, colspan=1, mode="boxing")
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	

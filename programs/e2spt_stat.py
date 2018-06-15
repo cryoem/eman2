@@ -25,19 +25,17 @@ This program will look in an spt_XX folder at particle_parms_xx.json and show a 
 """
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-
-	parser.add_argument("--path",type=str,default=None,help="Path to a folder containing current results (default = highest spt_XX)")
-	parser.add_argument("--iter",type=int,help="Iteration number within path. Default = auto",default=0)
-	parser.add_argument("--bins",type=int,help="Number of bins to use in the histogram",default=100)
-	parser.add_argument("--gui",action="store_true",help="If set will open an interactive plot with the results",default=False)
-	parser.add_argument("--mode",type=str,default="score",help="Which variable to histogram, score, coverage, alt, az, phi, dx, dy, dz. default=score")
-	parser.add_argument("--extract",action="store_true",help="If set, will convert the .json file to a .txt file suitable for plotting. No histogramming is involved, this is a per-particle conversion",default=False)
+	parser.add_argument("--path", type=str, default=None, help="Path to a folder containing current results (default = highest spt_XX)", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=0, col=0, rowspan=1, colspan=2,mode="gui")
+	parser.add_argument("--iter",type=int,help="Iteration number within path. Default = auto",default=0, guitype="intbox", row=1, col=0, rowspan=1, colspan=1,mode="gui")
+	parser.add_argument("--bins",type=int,help="Number of bins to use in the histogram",default=100, guitype="intbox", row=1, col=1, rowspan=1, colspan=1,mode="gui")
+	parser.add_argument("--mode",  default = "score", type=str,help="Which variable to histogram, score, coverage, alt, az, phi, dx, dy, dz. default=score.",guitype='strbox', row=2, col=0, rowspan=1, colspan=2, mode="gui")
 	#parser.add_argument("--threads", default=4,type=int,help="Number of alignment threads to run in parallel on a single computer. This is the only parallelism supported by e2spt_align at present.", guitype='intbox', row=24, col=2, rowspan=1, colspan=1, mode="refinement")
 	#parser.add_argument("--goldstandard",type=float,help="If specified, will phase randomize the even and odd references past the specified resolution (in A, not 1/A)",default=0)
 	#parser.add_argument("--saveali",action="store_true",help="Save a stack file (aliptcls.hdf) containing the aligned subtomograms.",default=False)
+	parser.add_argument("--extract",action="store_true",help="If set, will convert the .json file to a .txt file suitable for plotting. No histogramming is involved, this is a per-particle conversion",default=False, guitype="boolbox", row=3, col=0, rowspan=1, colspan=1,mode="gui")
+	parser.add_argument("--gui",action="store_true",help="If set will open an interactive plot with the results", default=False, guitype="boolbox", row=3, col=1, rowspan=1, colspan=1,mode='gui[True]')
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-
 	(options, args) = parser.parse_args()
 
 	if options.path == None:
