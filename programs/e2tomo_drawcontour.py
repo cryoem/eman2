@@ -245,7 +245,7 @@ class EMDrawWindow(QtGui.QMainWindow):
 		self.imgview.shapes = {0:self.contour}
 
 
-		self.imgview.mouseup.connect(self.mouseup)
+		self.imgview.mouseup.connect(self.on_mouseup)
 		self.imgview.keypress.connect(self.key_press)
 
 		glEnable(GL_POINT_SMOOTH)
@@ -271,7 +271,7 @@ class EMDrawWindow(QtGui.QMainWindow):
 			self.imgview.shapechange=1
 			self.imgview.updateGL()
 
-	def mouseup(self, event):
+	def on_mouseup(self, event):
 		x,y=self.imgview.scr_to_img((event.x(),event.y()))
 		#if event.button()&Qt.LeftButton:
 

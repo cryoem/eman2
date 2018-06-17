@@ -326,7 +326,7 @@ class ParticlesWindow:
 		self.window.mx_mousedrag.connect(self.box_moved)
 		self.window.mx_mouseup.connect(self.box_released)
 		self.window.mx_boxdeleted.connect(self.box_image_deleted)
-		self.window.module_closed.connect(self.module_closed)
+		self.window.module_closed.connect(self.on_module_closed)
 			
 	def box_selected(self,event,lc):
 		if lc == None or lc[0] == None: return
@@ -355,7 +355,7 @@ class ParticlesWindow:
 			window.update_mainwin()
 			window.update_particles()
 		
-	def module_closed(self):
+	def on_module_closed(self):
 		E2saveappwin("e2rctboxer","particles",self.window.qt_parent)
 		pass
 		#if not self.closed:
@@ -389,7 +389,7 @@ class MainWin:
 		self.window.keypress.connect(self.key_press)
 		self.window.mousewheel.connect(self.mouse_wheel)
 		self.window.mousemove.connect(self.mouse_move)
-		self.window.module_closed.connect(self.module_closed)
+		self.window.module_closed.connect(self.on_module_closed)
 	
 	def paint_mask(self,v1x,v1y,v2x,v2y,v3x,v3y,v4x,v4y):
 		if self.masktype == "None":
@@ -479,7 +479,7 @@ class MainWin:
 	def mouse_move(self, event):
 		pass
 		
-	def module_closed(self):
+	def on_module_closed(self):
 
 		E2saveappwin("e2rctboxer",self.name,self.window.qt_parent)
 		self.boxes.close_db()

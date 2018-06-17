@@ -272,7 +272,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 			if len(combo_entries) > 0:
 				au = combo_entries[0]
 				cls = self.au_data[au][0][0]
-				self.au_selected(au,cls)
+				self.on_au_selected(au, cls)
 				self.mirror_eulers = True
 
 		self.init_lock = False
@@ -371,11 +371,11 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 				self.inspector=EMAsymmetricUnitInspector(self,True,True)
 			else:
 				self.inspector=EMAsymmetricUnitInspector(self)
-			self.inspector.au_selected.connect(self.au_selected)
+			self.inspector.au_selected.connect(self.on_au_selected)
 		return self.inspector
 
 
-	def au_selected(self,refine_dir,cls):
+	def on_au_selected(self, refine_dir, cls):
 		self.refine_dir = refine_dir
 		get_application().setOverrideCursor(Qt.BusyCursor)
 		data = []
@@ -480,7 +480,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 #			self.proj_class_viewer = EMImage2DWidget(image=None,application=get_application())
 			self.proj_class_viewer.module_closed.connect(self.on_mx_view_closed)
 #			self.proj_class_viewer.set_mouse_mode("App" )
-			self.proj_class_viewer.mx_image_selected.connect(self.mx_image_selected)
+			self.proj_class_viewer.mx_image_selected.connect(self.on_mx_image_selected)
 			get_application().show_specific(self.proj_class_viewer)
 
 			self.proj_class_single = EMImage2DWidget(image=None,application=get_application())
@@ -519,7 +519,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 		self.proj_class_viewer.updateGL()
 		self.proj_class_single.updateGL()
 		if self.particle_viewer != None:
-			self.mx_image_selected(None,None)
+			self.on_mx_image_selected(None, None)
 		if first: self.proj_class_viewer.optimally_resize()
 
 		if i != self.special_euler:
@@ -573,7 +573,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 
 			self.alignment_time_animation(transforms)
 
-	def mx_image_selected(self,event,lc):
+	def on_mx_image_selected(self, event, lc):
 #		self.arc_anim_points = None
 		get_application().setOverrideCursor(Qt.BusyCursor)
 		if lc != None: self.sel = lc[0]

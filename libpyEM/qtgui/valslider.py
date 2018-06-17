@@ -155,8 +155,8 @@ class ValSlider(QtGui.QWidget):
 		
 		self.text.editingFinished.connect(self.textChange)
 		self.slider.valueChanged[int].connect(self.sliderChange)
-		self.slider.sliderReleased.connect(self.sliderReleased)
-		self.slider.sliderPressed.connect(self.sliderPressed)
+		self.slider.sliderReleased.connect(self.on_sliderReleased)
+		self.slider.sliderPressed.connect(self.on_sliderPressed)
 		
 		self.updateboth()
 		if showenable>=0 : self.setEnabled(showenable)
@@ -265,10 +265,10 @@ class ValSlider(QtGui.QWidget):
 		if self.value!=self.oldvalue: self.valueChanged.emit(self.value)
 		self.oldvalue=self.value
 	
-	def sliderReleased(self):
+	def on_sliderReleased(self):
 		self.sliderReleased.emit(self.value)
 		
-	def sliderPressed(self):
+	def on_sliderPressed(self):
 		self.sliderPressed.emit(self.value)
 	
 	def setLabel(self,label):

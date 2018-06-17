@@ -60,7 +60,7 @@ class EMDrawWindow(QtGui.QMainWindow):
 
 		print("imgnum,x,y,major,minor,angle")
 		
-		self.imgview.mouseup.connect(self.mouseup)
+		self.imgview.mouseup.connect(self.on_mouseup)
 		self.imgview.mousemove.connect(self.mousemv)
 		
 		
@@ -75,7 +75,7 @@ class EMDrawWindow(QtGui.QMainWindow):
 		self.imgview.shapechange=1
 		self.imgview.updateGL()
 		
-	def mouseup(self, event):
+	def on_mouseup(self, event):
 		x,y=self.imgview.scr_to_img((event.x(),event.y()))
 		#x,y=int(x),int(y)
 		if self.state==0:

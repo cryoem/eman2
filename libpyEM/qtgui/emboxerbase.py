@@ -179,7 +179,7 @@ class ThumbsEventHandler:
 		'''
 		from PyQt4 import QtCore
 		self.thumbs_window().mx_mouseup.connect(self.thumb_image_selected)
-		self.thumbs_window().module_closed.connect(self.module_closed)
+		self.thumbs_window().module_closed.connect(self.on_module_closed)
 
 	def thumb_image_selected(self,event,lc):
 		if lc == None: return
@@ -189,7 +189,7 @@ class ThumbsEventHandler:
 			self.target().get_2d_window().updateGL()
 		except: pass #window is closed
 
-	def module_closed(self):
+	def on_module_closed(self):
 
 		self.target().thumbs_window_closed()
 
@@ -968,7 +968,7 @@ class Main2DWindowEventHandler(BoxEventsHandler):
 		self.main_2d_window.keypress.connect(self.key_press)
 		self.main_2d_window.mousewheel.connect(self.mouse_wheel)
 		self.main_2d_window.mousemove.connect(self.mouse_move)
-		self.main_2d_window.module_closed.connect(self.module_closed)
+		self.main_2d_window.module_closed.connect(self.on_module_closed)
 
 	def boxes_erased(self,rm_boxes):
 		'''
@@ -1086,7 +1086,7 @@ class ParticlesWindowEventHandler(BoxEventsHandler):
 		self.particle_window.mx_mousedrag.connect(self.box_moved)
 		self.particle_window.mx_mouseup.connect(self.box_released)
 		self.particle_window.mx_boxdeleted.connect(self.box_image_deleted)
-		self.particle_window.module_closed.connect(self.module_closed)
+		self.particle_window.module_closed.connect(self.on_module_closed)
 
 	def box_selected(self,event,lc):
 		if self.mouse_handler == None: return

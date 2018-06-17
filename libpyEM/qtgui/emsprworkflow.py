@@ -5698,7 +5698,7 @@ post-process - This is an optional filter to apply to the model as a final step,
 		
 		self.imt = E2InitialModelsTool()
 		p1,n1 = self.imt.get_initial_models_table(makebutton=0) # Do not add a Browse to Add button, it just created a headache
-		p1.updateform.connect(self.updateform)
+		p1.updateform.connect(self.on_updateform)
 		
 		p1.enable_multiple_selection = False
 		params.append(p1)
@@ -5735,7 +5735,7 @@ post-process - This is an optional filter to apply to the model as a final step,
 		
 		return ["Model",params]
 	
-	def updateform(self):
+	def on_updateform(self):
 		#print "CLICKED"
 		#self.on_form_cancel()
 		#self.run_form()

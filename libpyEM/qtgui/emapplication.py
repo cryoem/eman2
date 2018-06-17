@@ -58,18 +58,18 @@ class ModuleEventsManager:
 		except AttributeError:
 			emitter = self.module() #Ross's hack to get this to work with QWidget's as well
 			
-		emitter.module_closed.connect(self.module_closed)
-		emitter.module_idle.connect(self.module_idle)
+		emitter.module_closed.connect(self.on_module_closed)
+		emitter.module_idle.connect(self.on_module_idle)
 	
 		emitter.ok.connect(self.module_ok) # yes, redundant, but time is short
 		emitter.cancel.connect(self.module_cancel) # yes, redundant, but time is short
 		
 	
-	def module_closed(self):
+	def on_module_closed(self):
 		self.disconnect_object()
 		self.target().module_closed(self.module())
 		
-	def module_idle(self):
+	def on_module_idle(self):
 		self.disconnect_object()
 		self.target().module_idle(self.module())
 		
@@ -88,8 +88,8 @@ class ModuleEventsManager:
 		except AttributeError:
 			emitter = self.module() #Ross's hack to get this to work with QWidget's as well
 			
-		emitter.module_closed.disconnect(self.module_closed)
-		emitter.module_idle.disconnect(self.module_idle)
+		emitter.module_closed.disconnect(self.on_module_closed)
+		emitter.module_idle.disconnect(self.on_module_idle)
 	
 		emitter.ok.disconnect(self.module_ok) # yes, redundant, but time is short
 		emitter.cancel.disconnect(self.module_cancel) # yes, redundant, but time is short

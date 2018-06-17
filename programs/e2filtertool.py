@@ -528,10 +528,10 @@ class EMFilterTool(QtGui.QMainWindow):
 		epw=EMProcessorWidget(self.processorpanel,tag=after)
 		self.processorlist.insert(after,epw)
 		self.vbl.insertWidget(after,epw)
-		epw.upPress.connect(self.upPress)
-		epw.downPress.connect(self.downPress)
-		epw.plusPress.connect(self.plusPress)
-		epw.minusPress.connect(self.minusPress)
+		epw.upPress.connect(self.on_upPress)
+		epw.downPress.connect(self.on_downPress)
+		epw.plusPress.connect(self.on_plusPress)
+		epw.minusPress.connect(self.on_minusPress)
 		epw.processorChanged.connect(self.procChange)
 
 		# Make sure all the tags are correct
@@ -556,19 +556,19 @@ class EMFilterTool(QtGui.QMainWindow):
 		# Make sure all the tags are correct
 		for i in range(len(self.processorlist)): self.processorlist[i].setTag(i)
 
-	def upPress(self,tag):
+	def on_upPress(self,tag):
 		if tag==0 : return
 		self.swapProcessors(tag)
 
-	def downPress(self,tag):
+	def on_downPress(self,tag):
 		if tag==len(self.processorlist)-1 : return
 
 		self.swapProcessors(tag+1)
 
-	def plusPress(self,tag):
+	def on_plusPress(self,tag):
 		self.addProcessor(tag)
 
-	def minusPress(self,tag):
+	def on_minusPress(self,tag):
 		if len(self.processorlist)==1 : return		# Can't delete the last processor
 		self.delProcessor(tag)
 
