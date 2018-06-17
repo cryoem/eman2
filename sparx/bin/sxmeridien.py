@@ -227,13 +227,13 @@ def AI( fff, anger, shifter, chout = False):
 			if(fff[i] < 0.5):
 				l05 = i-1
 				break
-		for i in xrange(len(fff)):
+		for i in xrange(l05+1, len(fff)):
 			if(fff[i] < 0.143):
 				l01 = i-1
 				break
 		l01 = max(l01,-1)
 
-		if( chout ): print("  AI: Tracker[nxstep], TR[currentres], Tracker[fsc143], l05, l01, fff[Tracker[nxinit]//2-1]:",Tracker["nxstep"],Tracker["currentres"],Tracker["fsc143"], l05, l01,fff[Tracker["nxinit"]//2-1])
+		if( chout ): print("  AI: TR[nxstep], TR[currentres], TR[fsc143], l05, l01, fff[Tracker[nxinit]//2-1]:",Tracker["nxstep"],Tracker["currentres"],Tracker["fsc143"], l05, l01,fff[Tracker["nxinit"]//2-1])
 		Tracker["nxstep"] = max(Tracker["nxstep"], l01-l05+5)
 		if(Tracker["state"] == "FINAL" or Tracker["state"] == "RESTRICTED"): Tracker["large_at_Nyquist"] = (fff[Tracker["nxinit"]//2] > 0.1 or fff[Tracker["nxinit"]//2-1] > 0.2)
 		else:   Tracker["large_at_Nyquist"] = fff[Tracker["nxinit"]//2-1] > 0.2
@@ -241,11 +241,11 @@ def AI( fff, anger, shifter, chout = False):
 
 		if( Tracker["mainiteration"] == 2 ):  
 			maxres     = Tracker["constants"]["inires"]
-			maxres_143 = l01 
+			maxres_143 = l01
 		else:                                 
 			maxres     = max(l05, 5)  #  5 is minimum resolution of the map, could be set by the user
-			maxres_143 = max(l01, l05)
-			 
+			maxres_143 = l01
+
 		if (maxres >= Tracker["bestres"]) and (maxres_143 >=Tracker["bestres_143"]):
 			Tracker["bestres"]				= maxres
 			Tracker["bestres_143"]          = maxres_143
@@ -340,7 +340,7 @@ def AI_continuation(fff, anger = -1.0, shifter = -1.0, chout = False):
 		if(fff[i] < 0.5):
 			l05 = i-1
 			break
-	for i in xrange(len(fff)):
+	for i in xrange(l05+1, len(fff)):
 		if(fff[i] < 0.143):
 			l01 = i-1
 			break
@@ -373,8 +373,8 @@ def AI_continuation(fff, anger = -1.0, shifter = -1.0, chout = False):
 		if(Tracker["state"] == "FINAL" or Tracker["state"] == "RESTRICTED"): Tracker["large_at_Nyquist"] = (fff[Tracker["nxinit"]//2] > 0.1 or fff[Tracker["nxinit"]//2-1] > 0.2)
 		else:   Tracker["large_at_Nyquist"] = fff[Tracker["nxinit"]//2-1] > 0.2
 
-		maxres      = max(l05, 5)
-		maxres_143 = max(l01, l05)
+		maxres     = max(l05, 5)
+		maxres_143 = l01
 		if( maxres >= Tracker["bestres"]) and  (maxres_143 >= Tracker["bestres_143"]):
 			Tracker["bestres"]				= maxres
 			Tracker["bestres_143"]			= maxres_143
