@@ -3404,7 +3404,7 @@ def generate_ctf(p):
 	  generate EMAN2 CTF object using values of CTF parameters given in the list p
 	  order of parameters:
         [defocus, cs, voltage, apix, bfactor, ampcont, astigmatism_amplitude, astigmatism_angle]
-	    [ microns, mm, kV, Angstroms, A^2, microns, radians]
+	    [ microns, mm, kV, Angstroms, A^2, microns, microns, radians]
 	"""
 	from EMAN2 import EMAN2Ctf
 
@@ -3435,8 +3435,7 @@ def set_ctf(ima, p):
         [defocus, cs, voltage, apix, bfactor, ampcont, astigmatism amplitude, astigmatism angle]
 	"""
 	from utilities import generate_ctf
-	ctf = generate_ctf( p )
-	ima.set_attr( "ctf", ctf )
+	ima.set_attr( "ctf", generate_ctf( p ) )
 
 def delete_bdb(name):
 	"""
