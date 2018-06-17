@@ -149,7 +149,7 @@ class TrackerControl(QtGui.QWidget):
 		self.im2d.mousedown.connect(self.down)
 		self.im2d.mousedrag.connect(self.drag)
 		self.im2d.mouseup.connect(self.up)
-		self.im2d.increment_list_data.connect(self.change_tilt)
+		self.im2d.signal_increment_list_data.connect(self.change_tilt)
 	
 		self.imagefile=None
 		self.imageparm=None

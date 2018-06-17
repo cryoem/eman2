@@ -75,7 +75,7 @@ class EMImage2DWidget(EMGLWidget):
 	mousemove = QtCore.pyqtSignal(QtGui.QMouseEvent,tuple)
 	mouseup = QtCore.pyqtSignal(QtGui.QMouseEvent,tuple)
 	mousewheel = QtCore.pyqtSignal(QtGui.QMouseEvent)
-	increment_list_data = QtCore.pyqtSignal(float)
+	signal_increment_list_data = QtCore.pyqtSignal(float)
 	keypress = QtCore.pyqtSignal(QtGui.QKeyEvent)
 
 	allim=WeakKeyDictionary()
@@ -1802,7 +1802,7 @@ class EMImage2DWidget(EMGLWidget):
 				self.updateGL()
 #			else:
 #				self.__key_mvt_animation(0,self.height()*.1)
-			self.increment_list_data.emit(1)
+			self.signal_increment_list_data.emit(1)
 
 		elif event.key() == Qt.Key_Down:
 			if self.list_data != None:
@@ -1810,7 +1810,7 @@ class EMImage2DWidget(EMGLWidget):
 				self.updateGL()
 #			else:
 #				self.__key_mvt_animation(0,-self.height()*.1)
-			self.increment_list_data.emit(-1)
+			self.signal_increment_list_data.emit(-1)
 
 		elif event.key() == Qt.Key_Right:
 			self.__key_mvt_animation(self.width()*.1,0)
