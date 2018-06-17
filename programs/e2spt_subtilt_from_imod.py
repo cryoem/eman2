@@ -18,18 +18,20 @@ def main():
 	
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--tomo", default="", type=str, help="File name of reconstructed tomogram.",guitype='filebox',browser="EMTomoTable(withmodal=True,multiselect=False)", row=1, col=0, rowspan=1, colspan=2,mode='tomo')
-	parser.add_argument("--ptclin", default="", type=str, help="File name of input 3D particles.",guitype='filebox',browser="EMRawDataTable(withmodal=True,multiselect=False)", row=3, col=0, rowspan=1, colspan=2,mode='tomo')
-	parser.add_argument("--edf", default="", type=str, help="IMOD .edf file name.",guitype='filebox',browser="EMRawDataTable(withmodal=True,multiselect=False)", row=5, col=0, rowspan=1, colspan=2,mode='tomo')
+	parser.add_argument("--tomo", default="", type=str, help="File name of reconstructed tomogram.",guitype='filebox',browser="EMTomoTable(withmodal=True,multiselect=False)", row=0, col=0, rowspan=1, colspan=2,mode='tomo')
+	parser.add_header(name="orblock1", help='Just a visual separation', title="OR", row=1, col=0, rowspan=1, colspan=2, mode="model")
+	parser.add_argument("--ptclin", default="", type=str, help="File name of input 3D particles.",guitype='filebox',browser="EMRawDataTable(withmodal=True,multiselect=False)", row=2, col=0, rowspan=1, colspan=2,mode='tomo')
+	parser.add_header(name="orblock1", help='Just a visual separation', title="AND", row=3, col=0, rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--edf", default="", type=str, help="IMOD .edf file name.",guitype='filebox',browser="EMRawDataTable(withmodal=True,multiselect=False)", row=4, col=0, rowspan=1, colspan=2,mode='tomo')
+	parser.add_argument("--ptclout", default=None, help="File name of output 2D extracted particles.",type=str, guitype='strbox', row=5, col=0, rowspan=1, colspan=2, mode="tomo")
 	#parser.add_argument("--tlt", type=str,help="imod tlt file name", default=None)
 	#parser.add_argument("--xtilt", type=float,help="imod xtilt value (from tomopitch.log)", default=0)
+	parser.add_header(name="orblock1", help='Just a visual separation', title="** Options **", row=6, col=0, rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--unbin", type=float,help="Unbin factor from input particles/tomogram to raw tilt. If unspecified, the program will calculate from the Apix of the header.",default=-1, guitype='floatbox', row=7, col=0, rowspan=1, colspan=1, mode="tomo")
 	parser.add_argument("--boxsz", type=int,help="Box size of extracted 2D particles.",default=-1, guitype='intbox', row=7, col=1, rowspan=1, colspan=1, mode="tomo")
-	parser.add_argument("--ptclout", default=None, help="File name of output 2D extracted particles.",type=str, guitype='strbox', row=9, col=0, rowspan=1, colspan=1, mode="tomo")
-	parser.add_argument("--ctffile", default=None, help="Estimated CTF",type=str, guitype='strbox', row=9, col=1, rowspan=1, colspan=1, mode="tomo")
-	parser.add_argument("--defcol", type=int,help="Which column of ctf file is the defocus",default=2, guitype='intbox', row=11, col=0, rowspan=1, colspan=1, mode="tomo")
-	parser.add_argument("--weight", default=False, help="Weight the particles by the variance of defocus.",action="store_true",guitype='boolbox', row=11, col=1, rowspan=1, colspan=1, mode="tomo")
-
+	parser.add_argument("--defcol", type=int,help="Which column of ctf file is the defocus",default=2, guitype='intbox', row=8, col=0, rowspan=1, colspan=1, mode="tomo")
+	parser.add_argument("--weight", default=False, help="Weight the particles by the variance of defocus.",action="store_true",guitype='boolbox', row=8, col=1, rowspan=1, colspan=1, mode="tomo")
+	parser.add_argument("--ctffile", default=None, help="Estimated CTF",type=str,guitype='filebox',browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=9, col=0, rowspan=1, colspan=2,mode='tomo')
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	

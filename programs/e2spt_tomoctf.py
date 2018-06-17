@@ -79,15 +79,16 @@ def main():
 	
 	usage=" "
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--dfrange", type=str,help="Search range of defocus (start, end, step). default is 0.5, 10, 0.1", default="0.5,10.,0.1")
-	parser.add_argument("--psrange", type=str,help="phase shift range (start, end, step). default is 0, 120, 5", default="0,120,5")
-	parser.add_argument("--tilesize", type=int,help="Size of tile to calculate FFT, default is 256", default=256)
-	parser.add_argument("--voltage", type=int,help="Voltage of microscope in kV", default=200)
-	parser.add_argument("--cs", type=float,help="Cs of microscope in kV", default=2.)
-	parser.add_argument("--stepx", type=int,help="Number of tiles to generate on x-axis (different defocus)", default=20)
-	parser.add_argument("--stepy", type=int,help="Number of tiles to generate on y-axis (same defocus)", default=40)
-	parser.add_argument("--nref", type=int,help="Using N tilt images near the center tilt to estimate the range of defocus for all images. Default is 15", default=15)
-	
+	parser.add_pos_argument(name="tiltseries",help="Specify tiltseries you want to apply CTF correction.", default="", guitype='filebox', browser="EMTiltseriesTable(withmodal=True,multiselect=False)", row=0, col=0,rowspan=1, colspan=3, mode="model")
+	parser.add_header(name="orblock1", help='Just a visual separation', title="** Options **", row=2, col=1, rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--dfrange", type=str,help="Search range of defocus (start, end, step). default is 0.5, 10, 0.1", default="0.5,10.,0.1", guitype='strbox',row=4, col=0,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--psrange", type=str,help="phase shift range (start, end, step). default is 0, 120, 5", default="0,120,5", guitype='strbox',row=4, col=1,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--tilesize", type=int,help="Size of tile to calculate FFT, default is 256", default=256, guitype='intbox',row=4, col=2,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--voltage", type=int,help="Voltage of microscope in kV", default=200, guitype='intbox',row=6, col=0,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--cs", type=float,help="Cs of microscope in kV", default=2.0, guitype='floatbox',row=6, col=1,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--nref", type=int,help="Using N tilt images near the center tilt to estimate the range of defocus for all images. Default is 15", default=15, guitype='intbox',row=6, col=2,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--stepx", type=int,help="Number of tiles to generate on x-axis (different defocus)", default=20, guitype='intbox',row=8, col=0,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--stepy", type=int,help="Number of tiles to generate on y-axis (same defocus)", default=40, guitype='intbox',row=8, col=1,rowspan=1, colspan=1, mode="model")
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	

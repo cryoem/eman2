@@ -25,24 +25,52 @@ def main():
 	
 	usage=" "
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
+
+	parser.add_pos_argument(name="particles",help="Specify particles to use to generate an initial model.", default="", guitype='filebox', browser="EMSPTParticleTable(withmodal=True,multiselect=False)", row=0, col=0,rowspan=1, colspan=3, mode="model")
+
+	parser.add_header(name="orblock1", help='Just a visual separation', title="** Options **", row=1, col=1, rowspan=1, colspan=1, mode="model")
+
+	parser.add_argument('--reference','--ref', type=str, default=None, help="""3D reference for initial model generation. No reference is used by default.""", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=2, col=0,rowspan=1, colspan=3, mode="model")
+
+	parser.add_argument("--mask", type=str,help="Mask file to be applied to initial model", default=None, guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=3, col=0,rowspan=1, colspan=3, mode="model")
+
+	parser.add_argument("--sym", type=str,help="symmetry", default="c1", guitype='strbox',row=4, col=0,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--gaussz", type=float,help="Extra gauss filter at z direction", default=-1, guitype='floatbox',row=4, col=1,rowspan=1, colspan=1, mode="model")
+
+	parser.add_argument("--mass", type=float,help="mass", default=500.0, guitype='floatbox',row=4, col=2,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--tarres", type=float,help="target resolution", default=10, guitype='floatbox',row=5, col=0,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--setsf", type=str,help="structure factor", default=None, guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=5, col=1,rowspan=1, colspan=2, mode="model")
+
+	parser.add_argument("--filterto", type=float,help="Fiter map to frequency after each iteration. Default is 0.02", default=.02, guitype='floatbox',row=6, col=0,rowspan=1, colspan=1, mode="model")
+
+	parser.add_argument("--localfilter", action="store_true", default=False ,help="use tophat local", guitype='boolbox',row=6, col=1,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--fourier", action="store_true", default=False ,help="gradient descent in fourier space", guitype='boolbox',row=6, col=2,rowspan=1, colspan=1, mode="model")
+
+	parser.add_argument("--batchsize", type=int,help="SGD batch size", default=12,guitype='intbox',row=9, col=0,rowspan=1, colspan=1, mode="model")
+
+	parser.add_argument("--niter", type=int,help="Number of iterations", default=5,guitype='intbox',row=9, col=1,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--nbatch", type=int,help="Number of batches per iteration", default=10,guitype='intbox',row=9, col=2,rowspan=1, colspan=1, mode="model")
+
 	parser.add_argument("--path", type=str,help="path of output", default=None)
-	parser.add_argument("--ref", type=str,help="ref", default=None)
-	parser.add_argument("--mask", type=str,help="mask file", default=None)
-	parser.add_argument("--sym", type=str,help="symmetry", default="c1")
-	parser.add_argument("--batchsize", type=int,help="batch size", default=12)
-	parser.add_argument("--gaussz", type=float,help="extra gauss filter at z direction", default=-1)
-	parser.add_argument("--niter", type=int,help="Number of iterations.", default=5)
-	parser.add_argument("--nbatch", type=int,help="Number of batches per iteration.", default=10)
-	parser.add_argument("--learnrate", type=float,help="Learning rate. Default is 0.1", default=.1)
-	parser.add_argument("--filterto", type=float,help="Fiter map to frequency after each iteration. Default is 0.02", default=.02)
-	parser.add_argument("--mass", type=float,help="mass", default=500)
-	parser.add_argument("--tarres", type=float,help="target resolution", default=10)
-	parser.add_argument("--setsf", type=str,help="structure factor", default=None)
-	parser.add_argument("--localfilter", action="store_true", default=False ,help="use tophat local")
-	parser.add_argument("--fourier", action="store_true", default=False ,help="gradient descent in fourier space")
-	
+	#parser.add_argument("--ref", type=str,help="ref", default=None)
+	#parser.add_argument("--mask", type=str,help="mask file", default=None)
+	#parser.add_argument("--sym", type=str,help="symmetry", default="c1")
+	#parser.add_argument("--batchsize", type=int,help="batch size", default=12)
+	#parser.add_argument("--gaussz", type=float,help="extra gauss filter at z direction", default=-1)
+	#parser.add_argument("--niter", type=int,help="Number of iterations.", default=5)
+	# parser.add_argument("--nbatch", type=int,help="Number of batches per iteration.", default=10)
+	# parser.add_argument("--learnrate", type=float,help="Learning rate. Default is 0.1", default=.1)
+	# parser.add_argument("--filterto", type=float,help="Fiter map to frequency after each iteration. Default is 0.02", default=.02)
+	# parser.add_argument("--mass", type=float,help="mass", default=500)
+	# parser.add_argument("--tarres", type=float,help="target resolution", default=10)
+	# parser.add_argument("--setsf", type=str,help="structure factor", default=None)
+	# parser.add_argument("--localfilter", action="store_true", default=False ,help="use tophat local")
+	# parser.add_argument("--fourier", action="store_true", default=False ,help="gradient descent in fourier space")
+	#
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-	
+
+	parser.add_argument("--ppid", type=int,help="ppid", default=-2)
+
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	
