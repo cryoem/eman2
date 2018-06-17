@@ -20514,7 +20514,7 @@ vector<float> Util::sqednormbckg( EMData* img, EMData* proj, EMData* ctfs, EMDat
     float* dtcount     = tcount->get_data();
 
 	vector<float> rotav(nx+2);
-	for (int i=0; i<nx; i++)  rotav[i] = 0.0f; 
+	for (int i=0; i<nx; i++)  rotav[i] = 0.0f;
 
 	float edis = 0.0f, wdis = 0.0f;
 
