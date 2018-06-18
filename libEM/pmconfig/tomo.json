@@ -23,13 +23,6 @@
       },
       {
         "ICON": "multiple_images",
-        "PROGRAM": "e2import.py",
-        "MODE": "rawtilts",
-        "NAME": "Import Individual Tilts",
-        "CHILDREN": []
-      },
-      {
-        "ICON": "multiple_images",
         "PROGRAM": "e2buildstacks.py",
         "MODE": "tomo",
         "NAME": "Generate Tiltseries",
@@ -57,12 +50,6 @@
     "PROGRAM": "e2tomogram.py",
     "MODE": "easy",
     "NAME": "3D Reconstruction",
-    "CHILDREN": []
-  },
-  {
-    "ICON": "green_boxes",
-    "PROGRAM": "e2tomo_eval.py",
-    "NAME": "Evaluate tomograms",
     "CHILDREN": []
   },
   {
@@ -210,6 +197,12 @@
     "NAME":"Validation and Analysis",
     "CHILDREN":[
       {
+        "ICON": "green_boxes",
+        "PROGRAM": "e2tomo_eval.py",
+        "NAME": "Evaluate tomograms",
+        "CHILDREN": []
+      },
+      {
         "ICON": "multiple_images",
         "PROGRAM": "e2tomo_showali.py",
         "MODE": "fiderr",
@@ -221,12 +214,6 @@
         "PROGRAM": "e2spt_stat.py",
         "NAME": "Calc Quality vs. Reference",
         "MODE": "gui",
-        "CHILDREN": []
-      },
-      {
-        "ICON": "resolution",
-        "PROGRAM": "e2spt_resolutionplot.py",
-        "NAME": "Calc Multiple FSC",
         "CHILDREN": []
       }
     ]

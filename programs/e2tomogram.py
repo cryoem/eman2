@@ -27,13 +27,13 @@ def main():
 
 	parser.add_argument("--rawtlt", type=str,help="Specify a text file contains raw tilt angles. This will override any previously imported tilt angles.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", filecheck=False, row=3, col=0, rowspan=1, colspan=2)#,mode="easy")
 
-	parser.add_argument("--zeroid", type=int,help="Index of the center tilt. Ignored when rawtlt is provided.", default=-1,guitype='intbox',row=4, col=0, rowspan=1, colspan=1)
-	parser.add_argument("--tltstep", type=float,help="Step between tilts. Ignored when rawtlt is provided. Default is 2.0.", default=2.0,guitype='floatbox',row=4, col=1, rowspan=1, colspan=1)
+	parser.add_argument("--zeroid", type=int,help="Index of the center tilt. Ignored when rawtlt is provided.", default=-1)#,guitype='intbox',row=4, col=0, rowspan=1, colspan=1,mode="easy")
+	parser.add_argument("--tltstep", type=float,help="Step between tilts. Ignored when rawtlt is provided. Default is 2.0.", default=2.0)#,guitype='floatbox',row=4, col=1, rowspan=1, colspan=1,mode="easy")
 
 	#parser.add_argument("--loadparam", type=str,help="Load from existing param file", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", filecheck=False, row=5, col=0, rowspan=1, colspan=2)
-	parser.add_argument("--load", action="store_true",help="load existing tilt parameters.", default=False)
+	parser.add_argument("--load", action="store_true",help="load existing tilt parameters.", default=False,guitype='boolbox',row=10, col=1, rowspan=1, colspan=1,mode="easy")
 
-	parser.add_argument("--tltax", type=float,help="Angle of the tilt axis. The program will calculate one if this option is not provided", default=None,guitype='floatbox',row=6, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--tltax", type=float,help="Angle of the tilt axis. The program will calculate one if this option is not provided", default=None,guitype='floatbox',row=6, col=0, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--tltkeep", type=float,help="Fraction of tilts to keep in the reconstruction.", default=.9,guitype='floatbox',row=6, col=1, rowspan=1, colspan=1,mode="easy")
 
 	parser.add_argument("--npk", type=int,help="Number of landmarks to use. Default is 40.", default=40,guitype='intbox',row=7, col=0, rowspan=1, colspan=1)
@@ -42,14 +42,14 @@ def main():
 	parser.add_argument("--pk_mindist", type=float,help="Minimum distance between landmarks in nm.", default=-1)
 	parser.add_argument("--pk_maxval", type=float,help="Maximum Density value of landmarks (n sigma). Default is -5", default=-5.)
 
-	parser.add_argument("--clipz", type=float,help="How aggressive should it be when clipping the final tomogram output. default is 0.6, (-1 means not clipping at all)", default=0.6)
+	parser.add_argument("--clipz", type=float,help="How aggressive should it be when clipping the final tomogram output. default is 0.6, (-1 means not clipping at all)", default=0.6)#,guitype='floatbox',row=8, col=1, rowspan=1, colspan=1)
 
-	parser.add_argument("--bxsz", type=int,help="Box size of the particles for tracking", default=32,guitype='intbox',row=8, col=0, rowspan=1, colspan=1)
-	parser.add_argument("--minloss", type=float,help="Stop refinement when the loss is lower than this value.", default=1.,guitype='floatbox',row=8, col=1, rowspan=1, colspan=1)
+	parser.add_argument("--bxsz", type=int,help="Box size of the particles for tracking", default=32)#,guitype='intbox',row=8, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--minloss", type=float,help="Stop refinement when the loss is lower than this value.", default=1.)#,guitype='floatbox',row=8, col=1, rowspan=1, colspan=1)
 
-	parser.add_argument("--fidsz", type=float,help="Radius of gold fiducials in nm.", default=5.)
-	parser.add_argument("--rmgold", action="store_true",help="Remove gold fiducials.", default=False,guitype='boolbox',row=9, col=0, rowspan=1, colspan=1,mode="easy")
-	parser.add_argument("--nofiducial", action="store_true",help="Fiducial-less mode. This will change a few internal parameters to make it work.", default=False, guitype='boolbox',row=9, col=1, rowspan=1, colspan=1,mode="easy")
+	parser.add_argument("--fidsz", type=float,help="Radius of gold fiducials in nm.", default=5.)#,guitype='floatbox',row=10, col=0, rowspan=1, colspan=1,mode="easy")
+	parser.add_argument("--rmgold", action="store_true",help="Remove gold fiducials.", default=False,guitype='boolbox',row=9, col=1, rowspan=1, colspan=1,mode="easy")
+	parser.add_argument("--nofiducial", action="store_true",help="Fiducial-less mode. This will change a few internal parameters to make it work.", default=False, guitype='boolbox',row=9, col=0, rowspan=1, colspan=1,mode="easy")
 
 	parser.add_argument("--niter", type=str,help="Number of iterations for bin8, bin4, bin2 images. Default if 2,1,1,1", default="2,1,1,1",guitype='strbox',row=10, col=0, rowspan=1, colspan=1,mode='easy[2,1,1,1]')
 
@@ -60,17 +60,17 @@ def main():
 
 	parser.add_argument("--tmppath", type=str,help="Temporary path", default=None)
 
-	parser.add_argument("--threads", type=int,help="Number of threads", default=12,guitype='intbox',row=12, col=0, rowspan=1, colspan=1,mode="easy")
+	parser.add_argument("--threads", type=int,help="Number of threads", default=12,guitype='intbox',row=24, col=0, rowspan=1, colspan=1,mode="easy")
 
-	parser.add_argument("--savenorm", action="store_true",help="Save normalization volume from reconstruction.", default=False, guitype='boolbox',row=18, col=0, rowspan=1, colspan=1,mode="easy")
+	#parser.add_argument("--savenorm", action="store_true",help="Save normalization volume from reconstruction.", default=False, guitype='boolbox',row=18, col=0, rowspan=1, colspan=1,mode="easy")
 
-	parser.add_argument("--badzero", action="store_true",help="In case the 0 degree tilt is bad for some reason...", default=False)
+	parser.add_argument("--badzero", action="store_true",help="In case the 0 degree tilt is bad for some reason...", default=False, guitype='boolbox',row=19, col=0, rowspan=1, colspan=1,mode="easy")
 
-	parser.add_argument("--bytile", action="store_true",help="make final tomogram by tiles.. ", default=False)
+	parser.add_argument("--bytile", action="store_true",help="make final tomogram by tiles.. ", default=False, guitype='boolbox',row=19, col=1, rowspan=1, colspan=1,mode="easy")
 
 	parser.add_argument("--outsize", type=str,help="Size of output tomograms. choose from 1k and 2k. default is 1k", default="1k")
 
-	parser.add_argument("--verbose","-v", type=int,help="Verbose", default=0, mode="easy[3]", guitype="intbox", row=12,col=1, rowspan=1, colspan=1)
+	parser.add_argument("--verbose","-v", type=int,help="Verbose", default=0, mode="easy[3]", guitype="intbox", row=24,col=1, rowspan=1, colspan=1)
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 
@@ -672,10 +672,10 @@ def make_tomogram(imgs, tltpm, options, outname=None, padr=1.2,  errtlt=[]):
 	if options.verbose:
 		print("\t Image size: {:d} x {:d}".format(nx, ny))
 		print("\tPadded volume to: {:d} x {:d} x {:d}".format(pad, pad, zthick))
-	if options.savenorm:
-		recon=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,zthick], "mode":"gauss_2","savenorm":options.tmppath+"/normvol.hdf"})
-	else:
-		recon=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,zthick], "mode":"gauss_2"})
+	#if options.savenorm:
+	#	recon=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,zthick], "mode":"gauss_2","savenorm":options.tmppath+"/normvol.hdf"})
+	#else:
+	recon=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,zthick], "mode":"gauss_2"})
 	#recon=Reconstructors.get("fourier_iter", {"size":[pad,pad,zthick]})
 	recon.setup()
 	jobs=[]

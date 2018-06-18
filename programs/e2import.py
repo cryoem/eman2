@@ -84,7 +84,7 @@ def main():
 	parser.add_argument("--importation",help="Specify import mode: move, copy or link",default='copy',guitype='combobox',choicelist='["move","copy","link"]',row=8,col=0,rowspan=1,colspan=2, mode='tomos["copy"],rawtilts["copy"],movies["move"],tiltseries["copy"]',choices=["move","copy","link"])
 
 	parser.add_argument("--invert",action="store_true",help="Invert the contrast before importing tomograms",default=False, guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode='tomos,rawtilts,tiltseries')
-	parser.add_argument("--tomoseg_auto",action="store_true",help="Default process for tomogram segmentation, including lowpass, highpass, normalize, clampminmax.",default=True, guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode='tomos,rawtilts,tiltseries')
+	#parser.add_argument("--tomoseg_auto",action="store_true",help="Default process for tomogram segmentation, including lowpass, highpass, normalize, clampminmax.",default=True, guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode='tomos,rawtilts,tiltseries')
 	parser.add_argument("--shrink",type=int,help="Shrink tomograms before importing. Dose not work while not copying.",default=1.0, guitype='floatbox', row=6, col=0, rowspan=1, colspan=1, mode='tomos')
 	parser.add_argument("--preprocess",type=str,help="Other pre-processing operation before importing tomograms. Dose not work while not copying.",default="", guitype='strbox', row=5, col=0, rowspan=1, colspan=2, mode='tomos,rawtilts,tiltseries')
 
@@ -383,8 +383,8 @@ with the same name, you should specify only the .hed files (no renaming is neces
 				else: newname=os.path.join(stdir,os.path.basename(filename))
 				cmd="e2proc2d.py {} {} ".format(filename, newname)
 				if options.invert: cmd+=" --mult -1 --process normalize "
-				if options.tomoseg_auto:
-					cmd+=" --process filter.lowpass.gauss:cutoff_abs=.25 --process filter.highpass.gauss:cutoff_pixels=5 --process threshold.clampminmax.nsigma:nsigma=3 "
+				#if options.tomoseg_auto:
+				#	cmd+=" --process filter.lowpass.gauss:cutoff_abs=.25 --process filter.highpass.gauss:cutoff_pixels=5 --process threshold.clampminmax.nsigma:nsigma=3 "
 				cmd+=options.preprocess
 				run(cmd)
 				print("Done.")
@@ -408,8 +408,8 @@ with the same name, you should specify only the .hed files (no renaming is neces
 				else: newname=os.path.join(stdir,os.path.basename(filename))
 				cmd="e2proc2d.py {} {} ".format(filename, newname)
 				if options.invert: cmd+=" --mult -1 --process normalize "
-				if options.tomoseg_auto:
-					cmd+=" --process filter.lowpass.gauss:cutoff_abs=.25 --process filter.highpass.gauss:cutoff_pixels=5 --process threshold.clampminmax.nsigma:nsigma=3 "
+				#if options.tomoseg_auto:
+				#	cmd+=" --process filter.lowpass.gauss:cutoff_abs=.25 --process filter.highpass.gauss:cutoff_pixels=5 --process threshold.clampminmax.nsigma:nsigma=3 "
 				cmd+=options.preprocess
 				run(cmd)
 				print("Done.")
@@ -454,8 +454,8 @@ with the same name, you should specify only the .hed files (no renaming is neces
 					
 				if options.invert:
 					cmd+=" --mult -1 --process normalize "
-				if options.tomoseg_auto:
-					cmd+=" --process filter.lowpass.gauss:cutoff_abs=.25 --process filter.highpass.gauss:cutoff_pixels=5 --process normalize --process threshold.clampminmax.nsigma:nsigma=3 "
+				#if options.tomoseg_auto:
+				#	cmd+=" --process filter.lowpass.gauss:cutoff_abs=.25 --process filter.highpass.gauss:cutoff_pixels=5 --process normalize --process threshold.clampminmax.nsigma:nsigma=3 "
 				cmd+=options.preprocess
 				run(cmd)
 				print("Done.")
