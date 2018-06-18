@@ -41,6 +41,7 @@ from EMAN2 import *
 from sparx import *
 import global_def
 from global_def import *
+from time import time
 
 # ========================================================================================
 # Helper Functions
@@ -2422,37 +2423,38 @@ def restacking(args):
 # 
 # sxpipe.py moon_eliminator --help
 # 
-# rm -rf mrkout_viper_d3_fs3o00_gauss_w6_fs3o00; sxpipe.py moon_eliminator '../mrkout_pipe05_sxrviper_c5/main003/average_volume.hdf' 'mrkout_viper_d3_fs3o00_gauss_w6_fs3o00' --mol_mass=1400 --pixel_size=1.12 --moon_distance=3 --falloff_speed=3.0  --resample_ratio='../mrkout_pipe03_sxisac'  --generate_mask='gauss'  --gm_edge_width=6  --gm_falloff_speed=3.0  --debug
-#
-# rm -rf mrkout_d3_fs3o00_mask_gauss_w6_fs3o00; sxpipe.py moon_eliminator 'vol3d.hdf' 'mrkout_d3_fs3o00_mask_gauss_w6_fs3o00' --mol_mass=1400 --pixel_size=1.12 --moon_distance=3 --falloff_speed=3.0  --generate_mask='gauss'  --gm_edge_width=6  --gm_falloff_speed=3.0  --outputs_root='my_vol3d'  --debug
-# rm -rf mrkout_d3_fs3o00_mask_cosine_w6; sxpipe.py moon_eliminator 'vol3d.hdf' 'mrkout_d3_fs3o00_mask_cosine_w6' --mol_mass=1400 --pixel_size=1.12 --moon_distance=3 --falloff_speed=3.0  --generate_mask='cosine'  --gm_edge_width=6  --debug
-# rm -rf mrkout_d3_fs3o00_zflip; sxpipe.py moon_eliminator 'vol3d.hdf' 'mrkout_d3_fs3o00_zflip' --mol_mass=1400 --pixel_size=1.12 --moon_distance=3 --falloff_speed=3.0  --invert_handedness  --debug
+# [CASE-01]
+# rm -rf mrkout_gauss_md6o0_dl3o5_sd1o2 mrkjob_gauss_md6o0_dl3o5_sd1o2.txt; sxpipe.py moon_eliminator 'vol3d.hdf' 'mrkout_gauss_md6o0_dl3o5_sd1o2' --pixel_size=1.12 --mol_mass=1400 --moon_distance=6.0 --dilation=3.5  --edge_sigma=1.2 --edge_type='gauss' --debug 2>&1 | tee mrkjob_gauss_md6o0_dl3o5_sd1o2.txt
+# -> Very nice balance!!!
 # 
-# rm -rf mrkout_viper_d3_fs3o00_sz06; sxpipe.py moon_eliminator '../mrkout_pipe05_sxrviper_c5/main003/average_volume.hdf' 'mrkout_viper_d3_fs3o00_sz06' --mol_mass=1400 --pixel_size=1.12 --moon_distance=3 --falloff_speed=3.0  --resample_ratio='../mrkout_pipe03_sxisac'  --shift3d_z=6  --debug
-# rm -rf mrkout_viper_d3_fs3o00_sz06_zflip; sxpipe.py moon_eliminator '../mrkout_pipe05_sxrviper_c5/main003/average_volume.hdf' 'mrkout_viper_d3_fs3o00_sz06_zflip' --mol_mass=1400 --pixel_size=1.12 --moon_distance=3 --falloff_speed=3.0  --resample_ratio='../mrkout_pipe03_sxisac'  --shift3d_z=6  --invert_handedness  --debug
-# rm -rf mrkout_viper_d3_fs3o00_resz30; sxpipe.py moon_eliminator '../mrkout_pipe05_sxrviper_c5/main003/average_volume.hdf' 'mrkout_viper_d3_fs3o00_resz30' --mol_mass=1400 --pixel_size=1.12 --moon_distance=3 --falloff_speed=3.0  --resample_ratio='../mrkout_pipe03_sxisac'  --resampled_shift3d  --shift3d_z=30  --debug
-# rm -rf mrkout_viper_d3_fs3o00_resz30_zflip; sxpipe.py moon_eliminator '../mrkout_pipe05_sxrviper_c5/main003/average_volume.hdf' 'mrkout_viper_d3_fs3o00_resz30_zflip' --mol_mass=1400 --pixel_size=1.12 --moon_distance=3 --falloff_speed=3.0  --resample_ratio='../mrkout_pipe03_sxisac'  --resampled_shift3d  --shift3d_z=30  --invert_handedness  --debug
-#
-# rm -rf mrkout_d3_fs3o00_sz30; sxpipe.py moon_eliminator 'vol3d.hdf' 'mrkout_d3_fs3o00_sz30' --mol_mass=1400 --pixel_size=1.12 --moon_distance=3 --falloff_speed=3.0  --shift3d_z=30  --debug
-# rm -rf mrkout_d3_fs3o00_sz30_zflip; sxpipe.py moon_eliminator 'vol3d.hdf' 'mrkout_d3_fs3o00_sz30_zflip' --mol_mass=1400 --pixel_size=1.12 --moon_distance=3 --falloff_speed=3.0  --shift3d_z=30  --invert_handedness  --debug
-# rm -rf mrkout_d3_fs3o00_resz30; sxpipe.py moon_eliminator 'vol3d.hdf' 'mrkout_d3_fs3o00_resz30' --mol_mass=1400 --pixel_size=1.12 --moon_distance=3 --falloff_speed=3.0  --resampled_shift3d --shift3d_z=30  --debug
-# rm -rf mrkout_d3_fs3o00_resz30_zflip; sxpipe.py moon_eliminator 'vol3d.hdf' 'mrkout_d3_fs3o00_resz30_zflip' --mol_mass=1400 --pixel_size=1.12 --moon_distance=3 --falloff_speed=3.0  --resampled_shift3d --shift3d_z=30  --invert_handedness  --debug
-#
-# Very nice balance!!!
-# rm -rf mrkout_d6_fs5o00; sxpipe.py moon_eliminator 'vol3d.hdf' 'mrkout_d6_fs5o00' --mol_mass=1400 --pixel_size=1.12 --moon_distance=6 --falloff_speed=5.0  --debug
+# [CASE-02]
+# rm -rf mrkout_gauss_md6o0_dl3o0_sd2o0 mrkjob_gauss_md6o0_dl3o0_sd2o0.txt; sxpipe.py moon_eliminator 'vol3d.hdf' 'mrkout_gauss_md6o0_dl3o0_sd2o0' --pixel_size=1.12 --mol_mass=1400 --moon_distance=6.0 --dilation=3.0  --edge_sigma=2.0 --edge_type='gauss' --debug 2>&1 | tee mrkjob_gauss_md6o0_dl3o0_sd2o0.txt
+# -> Very nice balance!!!
 # 
-# Very nice balance!!!
-# rm -rf mrkout_d6_fs3o00; sxpipe.py moon_eliminator 'vol3d.hdf' 'mrkout_d6_fs3o00' --mol_mass=1400 --pixel_size=1.12 --moon_distance=6 --falloff_speed=3.0  --debug
+# [CASE-03]
+# rm -rf mrkout_gauss_md6o0_dl0o0_sd2o0 mrkjob_gauss_md6o0_dl0o0_sd2o0.txt; sxpipe.py moon_eliminator 'vol3d.hdf' 'mrkout_gauss_md6o0_dl0o0_sd2o0' --pixel_size=1.12 --mol_mass=1400 --moon_distance=6.0 --dilation=0.0  --edge_sigma=2.0 --edge_type='gauss' --debug 2>&1 | tee mrkjob_gauss_md6o0_dl0o0_sd2o0.txt
+# -> Very nice balance!!! However, mask@1.0 is too small...
 # 
-# falloff_speed is too fast for this moon_distance! 
-# Density Histogram of ref3d.hdf have a strange dent
-# rm -rf mrkout_d3_fs5o00; sxpipe.py moon_eliminator 'vol3d.hdf' 'mrkout_d3_fs5o00' --mol_mass=1400 --pixel_size=1.12 --moon_distance=3 --falloff_speed=5.0  --debug
+# [CASE-04]
+# rm -rf mrkout_gauss_md3o0_dl2o0_sd0o6 mrkjob_gauss_md3o0_dl2o0_sd0o6.txt; sxpipe.py moon_eliminator 'vol3d.hdf' 'mrkout_gauss_md3o0_dl2o0_sd0o6' --pixel_size=1.12 --mol_mass=1400 --moon_distance=3.0 --dilation=2.0  --edge_sigma=0.6 --edge_type='gauss' --debug 2>&1 | tee mrkjob_gauss_md3o0_dl2o0_sd0o6.txt
+# -> NG!!!  This creates a little jaggy moon eliminator mask and strange obvious dent in density histogram of moon eliminated volume.
+#    Sigma is too small....
 # 
-# Very nice balance!!!
-# rm -rf mrkout_d3_fs3o00; sxpipe.py moon_eliminator 'vol3d.hdf' 'mrkout_d3_fs3o00' --mol_mass=1400 --pixel_size=1.12 --moon_distance=3 --falloff_speed=3.0  --debug
+# [CASE-05]
+# rm -rf mrkout_gauss_md3o0_dl1o5_sd1o0 mrkjob_gauss_md3o0_dl1o5_sd1o0.txt; sxpipe.py moon_eliminator 'vol3d.hdf' 'mrkout_gauss_md3o0_dl1o5_sd1o0' --pixel_size=1.12 --mol_mass=1400 --moon_distance=3.0 --dilation=1.5  --edge_sigma=1.0 --edge_type='gauss' --debug 2>&1 | tee mrkjob_gauss_md3o0_dl1o5_sd1o0.txt
+# -> NG!!! This creates a little jaggy moon eliminator mask and strange dent (very small though) in density histogram of moon eliminated volume.
+#    Sigma is too small....
 # 
+# [CASE-06]
+# rm -rf mrkout_gauss_md3o0_dl0o0_sd1o0 mrkjob_gauss_md3o0_dl0o0_sd1o0.txt; sxpipe.py moon_eliminator 'vol3d.hdf' 'mrkout_gauss_md3o0_dl0o0_sd1o0' --pixel_size=1.12 --mol_mass=1400 --moon_distance=3.0 --dilation=0.0  --edge_sigma=1.0 --edge_type='gauss' --debug 2>&1 | tee mrkjob_gauss_md3o0_dl0o0_sd1o0.txt
+# -> NG!!! This creates a little jaggy moon eliminator mask and strange dent (very small though) in density histogram of moon eliminated volume.
+#    Sigma is too small....
+# 
+# [NOTES]
 # -> Maybe, sigma should be at least larger than 1[pixel] (large)!!!
 #    If samller, density Histogram of ref3d.hdf will have a strange dent!!!
+# -> Set dilation = moon_distance/2 when you want to mask@1.0 equal to the bin3d_mol_mass.
+# -> Set dilation = 0 when you want to mask@0.5 equal to the bin3d_mol_mass.
 # 
 # ----------------------------------------------------------------------------------------
 # Author 1: Felipe Merino 01/26/2018 (felipe.merino@mpi-dortmund.mpg.de)
@@ -2502,7 +2504,7 @@ class SXDalton(object):
 		# bin3d_stats[2] : minimum voxel value
 		# bin3d_stats[3] : maximum voxel value
 		nx = bin3d.get_xsize()
-		ny = bin3d.get_ysize()
+		ny = bin3d.get_ysize() 
 		nz = bin3d.get_zsize()
 		n_voxels = nx * ny * nz
 		vol_voxels = int(bin3d_stats[0] * n_voxels)
@@ -2562,28 +2564,47 @@ def mrk_binarize_non_zero_positive(vol3d):
 	return bin3d
 
 # ----------------------------------------------------------------------------------------
-def mrk_sphere_dilation(bin3d, dilation_radius):
+def mrk_sphere_dilation(bin3d, dilation, debug = False):
 	from utilities import model_circle
 	from EMAN2 import rsconvolution
 	
-	# print_progress("MRK_DEBUG: ")
-	# print_progress("MRK_DEBUG: mrk_sphere_dilation()")
-	# print_progress("MRK_DEBUG:   dilation_radius := {}".format(dilation_radius))
+	if debug:
+		print_progress("MRK_DEBUG: ")
+		print_progress("MRK_DEBUG: mrk_sphere_dilation()")
+		print_progress("MRK_DEBUG:   dilation             := {}".format(dilation))
 	
-	bin3d_stats = Util.infomask(bin3d, None, False)
-	assert (bin3d.get_ndim() == 3)
-	assert (bin3d_stats[2] >= 0.0)
-	assert (bin3d_stats[3] <= 1.0)
+	if dilation > 0:
+		dilation_kernel_size = int(ceil(dilation)) * 2 + 1
+		
+		if debug:
+			print_progress("MRK_DEBUG:   dilation_kernel_size := {}".format(dilation_kernel_size))
+			# print_progress("MRK_DEBUG:   dilation_kernel_size % 2 := {}".format(dilation_kernel_size % 2))
+			# print_progress("MRK_DEBUG:   type(dilation_kernel_size) := {}".format(type(dilation_kernel_size)))
+		
+		assert (dilation_kernel_size % 2 == 1)
+		assert (type(dilation_kernel_size) is int)
+		
+		bin3d_stats = Util.infomask(bin3d, None, False)
+		assert (bin3d.get_ndim() == 3)
+		assert (bin3d_stats[2] >= 0.0)
+		assert (bin3d_stats[3] <= 1.0)
 	
-	dilation_kernel_size = int(dilation_radius * 2 + 1)
-	sphere_kernel = model_circle(dilation_radius, dilation_kernel_size, dilation_kernel_size, dilation_kernel_size)
-	bin3d_dilated = rsconvolution(bin3d, sphere_kernel)
-	bin3d_dilated = binarize(bin3d_dilated, 1.0)
+		sphere_kernel = model_circle(dilation, dilation_kernel_size, dilation_kernel_size, dilation_kernel_size)
+		bin3d_dilated = rsconvolution(bin3d, sphere_kernel)
+		### # NOTE: Toshio Moriya 2018/05/29
+		### # The following method is not working.
+		### bin3d_dilated = bin3d.copy()
+		### bin3d_dilated.process_inplace("math.convolution", {"with":sphere_kernel})
+		bin3d_dilated = binarize(bin3d_dilated, 1.0)
+	else:
+		if debug:
+			print_progress("MRK_DEBUG:  Provided dilation size is not non-zero positive value. Returning the copy of input bainary 3D volume...")
+		bin3d_dilated = bin3d.copy()
 	
 	return bin3d_dilated
 
 # ----------------------------------------------------------------------------------------
-def mrk_sphere_gauss_edge(bin3d, gauss_kernel_radius, gauss_sigma):
+def mrk_sphere_gauss_edge(bin3d, dilation, gauss_kernel_radius, gauss_sigma, debug = False):
 	# smooth bin3d with Gaussian function
 	# 1. The sharp-edge image is convoluted with a gassian kernel
 	# 2. The convolution normalized
@@ -2592,40 +2613,138 @@ def mrk_sphere_gauss_edge(bin3d, gauss_kernel_radius, gauss_sigma):
 	
 	assert (bin3d.get_ndim() == 3)
 	
-	# print_progress("MRK_DEBUG: ")
-	# print_progress("MRK_DEBUG: mrk_sphere_gauss_edge()")
-	# print_progress("MRK_DEBUG:   gauss_kernel_radius := {}".format(gauss_kernel_radius))
-	 #print_progress("MRK_DEBUG:   gauss_sigma         := {}".format(gauss_sigma))
+	gauss_kernel_size = int(ceil(gauss_kernel_radius)) * 2 + 1
 	
-	gauss_kernel_size = int(gauss_kernel_radius * 2 + 1)
+	if debug:
+		print_progress("MRK_DEBUG: ")
+		print_progress("MRK_DEBUG: mrk_sphere_gauss_edge()")
+		print_progress("MRK_DEBUG:   dilation            := {}".format(dilation))
+		print_progress("MRK_DEBUG:   gauss_kernel_radius := {}".format(gauss_kernel_radius))
+		print_progress("MRK_DEBUG:   gauss_kernel_size   := {}".format(gauss_kernel_size))
+		print_progress("MRK_DEBUG:   gauss_sigma         := {}".format(gauss_sigma))
+		# print_progress("MRK_DEBUG:   gauss_kernel_size % 2 := {}".format(gauss_kernel_size % 2))
+		# print_progress("MRK_DEBUG:   type(gauss_kernel_size) := {}".format(type(gauss_kernel_size)))
+	
+	assert (gauss_kernel_size % 2 == 1)
+	assert (type(gauss_kernel_size) is int)
+	
 	# dilate the volume by soft-edge width
-	bin3d_dilated = mrk_sphere_dilation(bin3d, gauss_kernel_radius)
+	sphere_dilation_start_time = time()
+	bin3d_dilated = mrk_sphere_dilation(bin3d, dilation, debug)
+	print_progress("  Sphere Dilation took {:7.2f} sec...".format(time() - sphere_dilation_start_time))
+	
+	### debug_adaptive_mask_start_time = time()
+	### consine_width = 0.0
+	### binarize_threshold = 0.0
+	### bin3d_dilated = Util.adaptive_mask(bin3d, binarize_threshold, dilation, consine_width)
+	### print_progress("MRK_DEBUG:   Adaptive mask took {} sec...".format(time() - debug_adaptive_mask_start_time))
+	
 	circular_mask = model_circle(gauss_kernel_radius, gauss_kernel_size, gauss_kernel_size, gauss_kernel_size)
 	gauss_kernel = model_gauss(gauss_sigma, gauss_kernel_size, gauss_kernel_size, gauss_kernel_size)
 	circular_gauss_kernel = gauss_kernel * circular_mask
 	
-	aves = Util.infomask(circular_gauss_kernel, None, False)
+	### aves = Util.infomask(circular_gauss_kernel, None, False)
+	### nx = circular_gauss_kernel.get_xsize()
+	### ny = circular_gauss_kernel.get_ysize()
+	### nz = circular_gauss_kernel.get_zsize()
+	### circular_gauss_kernel /= (aves[0]*nx*ny*nz)
+	
+	### nx = circular_gauss_kernel.get_xsize()
+	### ny = circular_gauss_kernel.get_ysize()
+	### nz = circular_gauss_kernel.get_zsize()
+	### n_voxel = nx * ny * nz
+	###
+	### original_sum = 0.0
+	###  for i_voxel in xrange(n_voxel):
+	### 	original_sum += circular_gauss_kernel.get_value_at(i_voxel)
+	### circular_gauss_kernel /= original_sum
+	###
+	### norm_sum = 0.0
+	### for i_voxel in xrange(n_voxel):
+	###	norm_sum += circular_gauss_kernel.get_value_at(i_voxel)
+	### norm_sum_error = 1.0 - norm_sum
+	###
+	### final_sum = 0.0
+	### for i_voxel in xrange(n_voxel):
+	### 	final_sum += circular_gauss_kernel.get_value_at(i_voxel)
+	### final_center_value = circular_gauss_kernel.get_value_at(nx//2, ny//2, nz//2)
+	
 	nx = circular_gauss_kernel.get_xsize()
 	ny = circular_gauss_kernel.get_ysize()
 	nz = circular_gauss_kernel.get_zsize()
-	circular_gauss_kernel /= (aves[0]*nx*ny*nz)
 	
+	original_vector = circular_gauss_kernel.get_data_as_vector()
+	original_sum = sum(original_vector)
+	circular_gauss_kernel /= original_sum
+	
+	norm_vector = circular_gauss_kernel.get_data_as_vector()
+	norm_sum = sum(norm_vector)
+	norm_sum_error = 1.0 - norm_sum
+	
+	norm_center_value = circular_gauss_kernel.get_value_at(nx//2, ny//2, nz//2)
+	circular_gauss_kernel.set_value_at(nx//2, ny//2, nz//2, norm_center_value + norm_sum_error)
+	
+	gauss_convolution_start_time = time()
 	mask3d_gauss_edged = rsconvolution(bin3d_dilated, circular_gauss_kernel)
+	print_progress("  Gauss Convolution took {:7.2f} sec...".format(time() - gauss_convolution_start_time))
+	### # NOTE: Toshio Moriya 2018/05/29
+	### # The following method is not working.
+	### mask3d_gauss_edged = bin3d_dilated.copy()
+	### mask3d_gauss_edged.process_inplace("math.convolution", {"with":circular_gauss_kernel})
+	
+	if debug:
+		final_vector = circular_gauss_kernel.get_data_as_vector()
+		final_sum = sum(final_vector)
+		final_sum_error = 1.0 - final_sum
+		final_center_value = circular_gauss_kernel.get_value_at(nx//2, ny//2, nz//2)
+		
+		original_max_val = max(original_vector)
+		original_max_idx = original_vector.index(original_max_val)
+		norm_max_val = max(norm_vector)
+		norm_max_idx = norm_vector.index(norm_max_val)
+		final_max_val = max(final_vector)
+		final_max_idx = final_vector.index(final_max_val)
+		
+		n_voxel = nx * ny * nz
+		
+		print_progress("MRK_DEBUG: ")
+		print_progress("MRK_DEBUG: mrk_sphere_gauss_edge()")
+		print_progress("MRK_DEBUG:   original_sum       := {}".format(original_sum))
+		print_progress("MRK_DEBUG:   norm_sum           := {}".format(norm_sum))
+		print_progress("MRK_DEBUG:   norm_sum_error     := {}".format(norm_sum_error))
+		print_progress("MRK_DEBUG:   norm_center_value  := {}".format(norm_center_value))
+		print_progress("MRK_DEBUG:   final_sum          := {}".format(final_sum))
+		print_progress("MRK_DEBUG:   final_sum_error    := {}".format(final_sum_error))
+		print_progress("MRK_DEBUG:   final_center_value := {}".format(final_center_value))
+		print_progress("MRK_DEBUG: ")
+		print_progress("MRK_DEBUG:   original_max_val   := {}".format(original_max_val))
+		print_progress("MRK_DEBUG:   original_max_idx   := {}".format(original_max_idx))
+		print_progress("MRK_DEBUG:   norm_max_val       := {}".format(norm_max_val))
+		print_progress("MRK_DEBUG:   norm_max_idx       := {}".format(norm_max_idx))
+		print_progress("MRK_DEBUG:   final_max_val      := {}".format(final_max_val))
+		print_progress("MRK_DEBUG:   final_max_idx      := {}".format(final_max_idx))
+		print_progress("MRK_DEBUG: ")
+		print_progress("MRK_DEBUG:   n_voxel            := {}".format(n_voxel))
+		print_progress("MRK_DEBUG:   nx                 := {}".format(nx))
+		print_progress("MRK_DEBUG:   ny                 := {}".format(ny))
+		print_progress("MRK_DEBUG:   nz                 := {}".format(nz))
 	
 	return mask3d_gauss_edged, bin3d_dilated
 
 # ----------------------------------------------------------------------------------------
-# Use sphere dilation and sphere Gaussian soft-edging (aka surface mask)
-# 
-def mrk_eliminate_moons_sphire_gaussian_edge(vol3d, density_threshold, gauss_kernel_radius, gauss_sigma, allow_disconnect):
+def mrk_eliminate_moons(vol3d, density_threshold, edge_type, moon_distance, dilation, gauss_sigma, allow_disconnect, debug = False):
 	from morphology import binarize
 	from utilities import gauss_edge
 	
-	print_progress("MRK_DEBUG: ")
-	print_progress("MRK_DEBUG: mrk_eliminate_moons_sphire_gaussian_edge()")
-	# print_progress("MRK_DEBUG:   density_threshold    := {}".format(density_threshold))
-	# print_progress("MRK_DEBUG:   gauss_kernel_radius  := {}".format(gauss_kernel_radius))
-	# print_progress("MRK_DEBUG:   gauss_sigma          := {}".format(gauss_sigma))
+	if debug:
+		print_progress("MRK_DEBUG: ")
+		print_progress("MRK_DEBUG: mrk_eliminate_moons()")
+		print_progress("MRK_DEBUG:   density_threshold := {}".format(density_threshold))
+		print_progress("MRK_DEBUG:   edge_type         := {}".format(edge_type))
+		print_progress("MRK_DEBUG:   moon_distance     := {}".format(moon_distance))
+		print_progress("MRK_DEBUG:   dilation          := {}".format(dilation))
+		print_progress("MRK_DEBUG:   gauss_sigma       := {}".format(gauss_sigma))
+		print_progress("MRK_DEBUG:   allow_disconnect  := {}".format(allow_disconnect))
 	
 	bin3d = binarize(vol3d, density_threshold)
 	bin3d_mol_mass = None
@@ -2635,8 +2754,31 @@ def mrk_eliminate_moons_sphire_gaussian_edge(vol3d, density_threshold, gauss_ker
 		bin3d_mol_mass = bin3d
 	assert (bin3d_mol_mass is not None)
 	
-	# Create Gaussian soft-edged binary mask with no moons 
-	mask3d_moon_elminator, bin3d_mol_mass_dilated = mrk_sphere_gauss_edge(bin3d_mol_mass, gauss_kernel_radius, gauss_sigma)
+	mask3d_moon_elminator = None
+	bin3d_mol_mass_dilated = None
+	soft_edging_start_time = time()
+	if edge_type == "cosine":
+		# Create cosine soft-edged binary mask with no moons (Same as PostRefiner)
+		binarize_threshold = 0.5
+		consine_width = (moon_distance - dilation) * 2.0
+		if debug:
+			print_progress("MRK_DEBUG: ")
+			print_progress("MRK_DEBUG: Util.adaptive_mask()")
+			print_progress("MRK_DEBUG:   binarize_threshold := {}".format(binarize_threshold))
+			print_progress("MRK_DEBUG:   dilation           := {}".format(dilation))
+			print_progress("MRK_DEBUG:   consine_width      := {}".format(consine_width))
+		mask3d_moon_elminator = Util.adaptive_mask(bin3d_mol_mass, binarize_threshold, dilation, consine_width)
+		assert (bin3d_mol_mass_dilated is None)
+	elif edge_type == "gauss":
+		# Create Gaussian soft-edged binary mask with no moons
+		gauss_kernel_radius = moon_distance - dilation
+		mask3d_moon_elminator, bin3d_mol_mass_dilated = mrk_sphere_gauss_edge(bin3d_mol_mass, dilation, gauss_kernel_radius, gauss_sigma, debug)
+		assert (bin3d_mol_mass_dilated is not None)
+	else:
+		assert (False) # Unreachable code. The invalid value of edge_type should not reach here.
+	assert (mask3d_moon_elminator is not None)
+	print_progress("  Totally, {} soft-edging of 3D mask moon eliminator took {:7.2f} sec...".format(edge_type.upper(), time() - soft_edging_start_time))
+	
 	# 
 	# The difference are supposed to contain only moons!
 	# If all differences are zero, there should be no effect of moon elimination on the input volume.
@@ -2660,6 +2802,55 @@ def mrk_eliminate_moons_sphire_gaussian_edge(vol3d, density_threshold, gauss_ker
 	# 	print_progress("MRK_DEBUG:   There was no effect of the moon elimination")
 	
 	return ref3d_moon_eliminated, mask3d_moon_elminator, bin3d_mol_mass_dilated, bin3d_mol_mass
+
+"""
+# ----------------------------------------------------------------------------------------
+# Use sphere dilation and sphere Gaussian soft-edging (aka surface mask)
+# 
+def mrk_eliminate_moons_sphire_gaussian_edge(vol3d, density_threshold, gauss_kernel_radius, gauss_sigma, allow_disconnect, debug):
+	from morphology import binarize
+	from utilities import gauss_edge
+	
+	print_progress("MRK_DEBUG: ")
+	print_progress("MRK_DEBUG: mrk_eliminate_moons_sphire_gaussian_edge()")
+	# print_progress("MRK_DEBUG:   density_threshold    := {}".format(density_threshold))
+	# print_progress("MRK_DEBUG:   gauss_kernel_radius  := {}".format(gauss_kernel_radius))
+	# print_progress("MRK_DEBUG:   gauss_sigma          := {}".format(gauss_sigma))
+	
+	bin3d = binarize(vol3d, density_threshold)
+	bin3d_mol_mass = None
+	if not allow_disconnect:
+		bin3d_mol_mass = Util.get_biggest_cluster(bin3d)
+	else:
+		bin3d_mol_mass = bin3d
+	assert (bin3d_mol_mass is not None)
+	
+	# Create Gaussian soft-edged binary mask with no moons 
+	mask3d_moon_elminator, bin3d_mol_mass_dilated = mrk_sphere_gauss_edge(bin3d_mol_mass, gauss_kernel_radius, gauss_sigma, debug)
+	# 
+	# The difference are supposed to contain only moons!
+	# If all differences are zero, there should be no effect of moon elimination on the input volume.
+	# In this case, return the original volume.
+	# 
+	# NOTE: Toshio Moriya 2018/04/12
+	# Somehow, the following condition happend when I applied filter to the 3D volume, 
+	# and did not remove moons of very week density...
+	# The value must be too close to zero for this type of check!!
+	# Let's apply moon eliminator always since it does not harm anything...
+	# 
+	# ref3d_moon_eliminated = vol3d
+	# bin3d_diff = bin3d - bin3d_mol_mass
+	# if bin3d_diff.get_value_at(bin3d_diff.calc_max_index()) != 0.0 or bin3d_diff.get_value_at(bin3d_diff.calc_min_index()) != 0.0:
+	# 	# Eliminate moons from the original volume and soften the volume edge by apply the soft-edged binary mask with no moons to the original volume.
+	# 	ref3d_moon_eliminated = mask3d_moon_elminator * vol3d
+	# 
+	ref3d_moon_eliminated = mask3d_moon_elminator * vol3d
+	# bin3d_diff = bin3d - bin3d_mol_mass
+	# if bin3d_diff.get_value_at(bin3d_diff.calc_max_index()) == 0.0 and bin3d_diff.get_value_at(bin3d_diff.calc_min_index()) == 0.0:
+	# 	print_progress("MRK_DEBUG:   There was no effect of the moon elimination")
+	
+	return ref3d_moon_eliminated, mask3d_moon_elminator, bin3d_mol_mass_dilated, bin3d_mol_mass
+"""
 
 # ----------------------------------------------------------------------------------------
 def moon_eliminator(args):
@@ -2774,6 +2965,16 @@ def moon_eliminator(args):
 	assert (not os.path.exists(args.output_directory))
 	os.mkdir(args.output_directory)
 	
+	if args.dilation < 0.0:
+		args.dilation = args.moon_distance / 2.0
+		print(" ")
+		print_progress("Setting default dilation for moon eliminator to {}...".format(args.dilation))
+	
+	if args.generate_mask and args.gm_dilation < 0.0:
+		args.gm_dilation = args.gm_edge_width / 2.0
+		print(" ")
+		print_progress("Setting default dilation for mask generation to {}...".format(args.gm_dilation))
+	
 	# ------------------------------------------------------------------------------------
 	# Step 1: Extract resample ratio from ISAC run directory if necessary (mainly designed for R-VIPER models).
 	# ------------------------------------------------------------------------------------
@@ -2881,8 +3082,9 @@ def moon_eliminator(args):
 		filter_params = {"axis": "z"}
 		print(" ")
 		print_progress("Inverting the handedness of input volume...")
-		# print_progress("MRK_DEBUG: filter_name = {}".format(filter_name))
-		# print_progress("MRK_DEBUG: filter_params = {}".format(filter_params))
+		if args.debug:
+			print_progress("MRK_DEBUG: filter_name = {}".format(filter_name))
+			print_progress("MRK_DEBUG: filter_params = {}".format(filter_params))
 		vol3d.process_inplace(filter_name, filter_params)
 		# Rotate the volume upside down
 		vol3d = rot_shift3D(vol3d, theta = 180.0) 
@@ -2913,7 +3115,7 @@ def moon_eliminator(args):
 	# Step 6: Create reference 3D volumes by eliminating the moons from the input volume
 	# ------------------------------------------------------------------------------------
 	print(" ")
-	print_progress("Computing correspoding volume [Voxels] of the specified molecular mass {}[kDa]...".format(args.mol_mass))
+	print_progress("Computing correspoding volume [Voxels] of the specified molecular mass {}[kDa] using pixel size {}[A/Pixels]...".format(args.mol_mass, args.pixel_size))
 	computed_vol_voxels_from_mass = SXDalton.compute_vol_voxels_from_mol_mass(args.mol_mass, args.pixel_size)
 	print_progress("  Computed corresponing volume [Voxels] from this molecular mass         : {}".format(computed_vol_voxels_from_mass))
 	
@@ -2940,12 +3142,10 @@ def moon_eliminator(args):
 	
 	# Eliminate moons
 	print(" ")
-	print_progress("Eliminating moons of the input volume using density threshold of {}...".format(density_threshold))
+	print_progress("Eliminating moons of the input volume using density threshold of {} with {} edge...".format(density_threshold, args.edge_type))
 	# NOTE: Toshio Moriya 2018/04/01
 	# Let's try to use pixel size to decide the distance of the nearest moons...
-	gauss_kernel_radius = args.moon_distance
-	gauss_sigma = args.moon_distance / args.falloff_speed
-	ref3d_moon_eliminated, mask3d_moon_elminator, bin3d_mol_mass_dilated, bin3d_mol_mass = mrk_eliminate_moons_sphire_gaussian_edge(vol3d, density_threshold, gauss_kernel_radius, gauss_sigma, args.allow_disconnect)
+	ref3d_moon_eliminated, mask3d_moon_elminator, bin3d_mol_mass_dilated, bin3d_mol_mass = mrk_eliminate_moons(vol3d, density_threshold, args.edge_type, args.moon_distance, args.dilation, args.edge_sigma, args.allow_disconnect, args.debug)
 	
 	ref3d_moon_eliminated_file_path = os.path.join(args.output_directory, "{}_ref_moon_eliminated.hdf".format(args.outputs_root))
 	print(" ")
@@ -2963,41 +3163,45 @@ def moon_eliminator(args):
 	bin3d_mol_mass.write_image(bin3d_mol_mass_file_path)
 	
 	if args.debug:
-		bin3d_mol_mass_dilated_file_path = os.path.join(args.output_directory, "mrkdebug{:02d}_bin3d_mol_mass_dilated.hdf".format(debug_output_id))
-		bin3d_mol_mass_dilated.write_image(bin3d_mol_mass_dilated_file_path)
-		debug_output_id += 1
+		if bin3d_mol_mass_dilated is not None:
+			bin3d_mol_mass_dilated_file_path = os.path.join(args.output_directory, "mrkdebug{:02d}_bin3d_mol_mass_dilated.hdf".format(debug_output_id))
+			bin3d_mol_mass_dilated.write_image(bin3d_mol_mass_dilated_file_path)
+			debug_output_id += 1
 	
 	# ------------------------------------------------------------------------------------
 	# Step 7: Create 3D mask from the 3D reference if necessary
 	# ------------------------------------------------------------------------------------
-	if args.generate_mask is not None:
+	if args.generate_mask:
 		print(" ")
 		print_progress("Generating mooon elimnated soft-edged 3D mask from the 3D binary volume corresponding to the specified molecular mass or density threshold with specified option parameters...")
-		print_progress("  Soft-edge type : {}".format(args.generate_mask ))
-		gm_mask3d_moon_eliminatedd = None
+		print_progress("  Soft-edge type : {}".format(args.edge_type ))
+		gm_mask3d_moon_eliminated = None
 		gm_bin3d_mol_mass_dilated = None
-		if args.generate_mask == "gauss":
-			sgm_gauss_sigma = args.gm_edge_width / args.gm_falloff_speed
-			gm_mask3d_moon_eliminatedd, gm_bin3d_mol_mass_dilated = mrk_sphere_gauss_edge(bin3d_mol_mass, args.gm_edge_width, sgm_gauss_sigma)
-		elif args.generate_mask == "cosine":
+		gm_soft_edging_start_time = time()
+		if args.edge_type == "cosine":
 			# Use cosine soft-edged which is same as PostRefiner
-			scm_threshold = 0.5
-			scm_dilation = 0.0
-			scm_cosine_width = float(args.gm_edge_width)
-			# print_progress("MRK_DEBUG: ")
-			# print_progress("MRK_DEBUG: Util.adaptive_mask()")
-			# print_progress("MRK_DEBUG:   scm_threshold     := {}".format(scm_threshold))
-			# print_progress("MRK_DEBUG:   scm_dilation      := {}".format(scm_dilation))
-			# print_progress("MRK_DEBUG:   scm_cosine_width := {}".format(scm_cosine_width))
-			gm_mask3d_moon_eliminatedd = Util.adaptive_mask(bin3d_mol_mass, scm_threshold, scm_dilation, scm_cosine_width)
+			gm_binarize_threshold = 0.5
+			if args.debug:
+				print_progress("MRK_DEBUG: ")
+				print_progress("MRK_DEBUG: Util.adaptive_mask()")
+				print_progress("MRK_DEBUG:   gm_binarize_threshold  := {}".format(gm_binarize_threshold))
+				print_progress("MRK_DEBUG:   args.gm_dilation       := {}".format(args.gm_dilation))
+				print_progress("MRK_DEBUG:   args.gm_edge_width     := {}".format(args.gm_edge_width))
+			gm_mask3d_moon_eliminated = Util.adaptive_mask(bin3d_mol_mass, gm_binarize_threshold, args.gm_dilation, args.gm_edge_width)
+			assert (gm_bin3d_mol_mass_dilated is None)
+		elif args.edge_type == "gauss":
+			gm_gauss_kernel_radius = args.gm_edge_width - args.gm_dilation
+			gm_mask3d_moon_eliminated, gm_bin3d_mol_mass_dilated = mrk_sphere_gauss_edge(bin3d_mol_mass, args.gm_dilation, gm_gauss_kernel_radius, args.gm_edge_sigma, args.debug)
+			assert (gm_bin3d_mol_mass_dilated is not None)
 		else:
-			assert (False)
-		assert (gm_mask3d_moon_eliminatedd is not None)
+			assert (False) # Unreachable code. The invalid value of edge_type should not reach here.
+		assert (gm_mask3d_moon_eliminated is not None)
+		print_progress("  Totally, {} soft-edging of 3D mask took {:7.2f} sec...".format(args.edge_type.upper(), time() - gm_soft_edging_start_time))
 		
-		gm_mask3d_moon_eliminatedd_file_path = os.path.join(args.output_directory, "{}_mask_moon_eliminated.hdf".format(args.outputs_root))
+		gm_mask3d_moon_eliminated_file_path = os.path.join(args.output_directory, "{}_mask_moon_eliminated.hdf".format(args.outputs_root))
 		print(" ")
-		print_progress("Saving moon eliminated 3D mask to {}...".format(gm_mask3d_moon_eliminatedd_file_path))
-		gm_mask3d_moon_eliminatedd.write_image(gm_mask3d_moon_eliminatedd_file_path)
+		print_progress("Saving moon eliminated 3D mask to {}...".format(gm_mask3d_moon_eliminated_file_path))
+		gm_mask3d_moon_eliminated.write_image(gm_mask3d_moon_eliminated_file_path)
 		
 		if args.debug:
 			if gm_bin3d_mol_mass_dilated is not None:
@@ -3021,7 +3225,7 @@ def moon_eliminator(args):
 	print_progress("  Percentage of this volume [Voxels]          : {}".format(computed_vol_voxels_from_density/computed_vol_voxels_from_mass * 100))
 	print_progress("  Saved moon eliminated 3D reference to       : {}".format(ref3d_moon_eliminated_file_path))
 	if args.generate_mask:
-		print_progress("  Saved mooon elimnated soft-edged 3D mask to : {}".format(gm_mask3d_moon_eliminatedd_file_path))
+		print_progress("  Saved mooon elimnated soft-edged 3D mask to : {}".format(gm_mask3d_moon_eliminated_file_path))
 
 # ========================================================================================
 # Main function
@@ -3099,11 +3303,12 @@ def main():
 	parser_moon_eliminator = subparsers.add_parser("moon_eliminator", help="Moon eliminator: Eliminate moons or remove dusts from the background of a 3D density map based on the expected molecular mass. Optionally, create 3D mask also.")
 	parser_moon_eliminator.add_argument("input_volume_path",       type=str,                              help="Input volume path: Path to input volume file containing the 3D density map. (default required string)")
 	parser_moon_eliminator.add_argument("output_directory",        type=str,                              help="Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)")
-	parser_moon_eliminator.add_argument("--mol_mass",              type=float,           default=None,    help="Molecular mass [kDa]: The estimated molecular mass of the target particle in kilodalton. (default required float)")
 	parser_moon_eliminator.add_argument("--pixel_size",            type=float,           default=None,    help="Output pixel size [A]: The original pixel size of dataset. This must be the pixel size after resampling when resample_ratio != 1.0. That is, it will be the pixel size of the output volume. (default required float)")
-	parser_moon_eliminator.add_argument("--moon_distance",         type=int,             default=3,       help="Distance to the nearest moon [Pixels]: The moons further than this distance from the density surface will be elminated. The value smaller than the default is not recommended because it is difficult to avoid the stair-like gray level change at the edge of the density surface. (default 3)")
-	parser_moon_eliminator.add_argument("--falloff_speed",         type=float,           default=3.0,     help="Falloff speed: Falloff speed of edge of the output 3D reference volume. The value corresponds to Gaussian sigma factor relative to the moon distance (i.e. gauss_sigma = moon_distance/falloff_speed). Therefore, larger the value, faster the falloff. The value larger than the --moon_distance is not recommended because the settings likely yield the stair-like gray level change at the edge of the density surface. (default 3.0)")
+	parser_moon_eliminator.add_argument("--mol_mass",              type=float,           default=None,    help="Molecular mass [kDa]: The estimated molecular mass of the target particle in kilodalton. (default required float)")
 	parser_moon_eliminator.add_argument("--use_density_threshold", type=float,           default=None,    help="Use ad-hoc density threshold: Use user-provided ad-hoc density threshold, instead of computing the value from the molecular mass. Below this density value, the data is assumed not to belong to the main body of the particle density. (default none)")
+	parser_moon_eliminator.add_argument("--moon_distance",         type=float,           default=3.0,     help="Distance to the nearest moon [Pixels]: The moons further than this distance from the density surface will be elminated. The value smaller than the default is not recommended because it is difficult to avoid the stair-like gray level change at the edge of the density surface. (default 3.0)")
+	parser_moon_eliminator.add_argument("--dilation",              type=float,           default=-1.0,    help="Dilation width [Pixels]: The pixel width to dilate the 3D binary volume corresponding to the specified molecular mass or density threshold prior to softening the edge. By default, it is set to half of --moon_distance so that the voxels with 1.0 values in the mask are same as the hard-edged molecular-mass binary volume. (default -1.0)")
+	parser_moon_eliminator.add_argument("--edge_sigma",            type=float,           default=1.0,     help="Edge sigma [Pixels]: The Gaussian sigma of transition area for soft-edge of the moon eliminator 3D mask. This value controls the falloff speed of soft-edge; The samller the sigma, the faster the falloff. Effective only with --edge_type=\'gauss\'. (default 1.0)")
 	parser_moon_eliminator.add_argument("--resample_ratio",        type=str,             default='1.0',   help="Resample ratio: Specify a value larger than 0.0. By default, the program does not resmaple the input volume (i.e. resample ratio is 1.0). Use this option maily to restore the original dimensions or pixel size of VIPER or R-VIPER model. Alternatively, specify the path to the output directory of an ISAC2 run. The program automatically extracts the resampling ratio used by the ISAC2 run. (default '1.0')")
 	parser_moon_eliminator.add_argument("--box_size",              type=int,             default=None,    help="Output box size [Pixels]: The x, y, and z dimensions of cubic area to be windowed from input 3D volume for output 3D volumes. This must be the box size after resampling when resample_ratio != 1.0. (default none)")
 	parser_moon_eliminator.add_argument("--resampled_shift3d",     action="store_true",  default=False,   help="Providing resampled 3D shifts: Use this option when you are providing the resampled 3D shifts (using pixel size of outputs) when --resample_ratio!=1.0. By default, the program assums the provided shifts are not resampled. (default False)")
@@ -3113,11 +3318,13 @@ def main():
 	parser_moon_eliminator.add_argument("--invert_handedness",     action="store_true",  default=False,   help="Invert handedness: Invert the handedness of the 3D volume. (default False)")
 	parser_moon_eliminator.add_argument("--fl",                    type=float,           default=-1.0,    help="Low-pass filter resolution [A]: >0.0: low-pass filter to the value in Angstrom; =-1.0: no low-pass filter. The program applies this low-pass filter before the moon elimination. (default -1.0)")
 	parser_moon_eliminator.add_argument("--aa",                    type=float,           default=0.1,     help="Low-pass filter fall-off [1/Pixels]: Low-pass filter fall-off in absolute frequency. The program applies this low-pass filter before the moon elimination. Effective only when --fl > 0.0. (default 0.1)")
-	parser_moon_eliminator.add_argument("--generate_mask",         type=str,             default=None,    help="Generate soft-edged mask: Generate a soft-edged mask with specified method from the 3D binary volume corresponding to the specified molecular mass or density threshold, using the values provided through --gm_edge_width and/or --gm_falloff_speed. Available methods are (1) \'gauss\' for gaussian soft-edge and (2) \'cosine\' for cosine soft-edged (used in PostRefiner). (default none)")
-	parser_moon_eliminator.add_argument("--gm_edge_width",         type=int,             default=6,       help="Soft-edge width [Pixels]: The pixel width of transition area for soft-edged masking. Effective only with --generate_mask option. (default 6)")
-	parser_moon_eliminator.add_argument("--gm_falloff_speed",      type=float,           default=3.0,     help="Soft-edge falloff speed: Falloff speed of soft-edge masking. Effective only when --generate_mask=\'gauss\'. The value corresponds to Gaussian sigma factor relative to the soft-edge width (i.e. gauss_sigma = gm_edge_width/gm_falloff_speed). (default 3.0)")
+	parser_moon_eliminator.add_argument("--generate_mask",         action="store_true",  default=False,   help="Generate soft-edged mask: Generate soft-edged mask with specified method from the 3D binary volume corresponding to the specified molecular mass or density threshold, using the values provided through --gm_dilation, --gm_edge_width, and --gm_edge_sigma. Available methods are (1) \'gauss\' for gaussian soft-edge and (2) \'cosine\' for cosine soft-edged (used in PostRefiner). (default none)")
+	parser_moon_eliminator.add_argument("--gm_dilation",           type=float,           default=-1.0,    help="Soft-edge dilation [Pixels]: The pixel width to dilate the 3D binary volume corresponding to the specified molecular mass or density threshold prior to softening the edge. By default, it is set to half of --gm_edge_width so that the voxels with 1.0 values in the mask are same as the hard-edged binary volume with the threadhold. (default -1.0)")
+	parser_moon_eliminator.add_argument("--gm_edge_width",         type=float,           default=6.0,     help="Soft-edge width [Pixels]: The pixel width of transition area for soft-edged masking. Effective only with --generate_mask option. (default 6)")
+	parser_moon_eliminator.add_argument("--gm_edge_sigma",         type=float,           default=2.0,     help="Soft-edge sigma [Pixels]: The Gaussian sigma of transition area for soft-edged masking. This value controls the fall-speed of soft-edge; The samller the sigma, the faster the falloff. Effective only with --generate_mask and --generate_mask=\'gauss\'. (default 6 )")
 	parser_moon_eliminator.add_argument("--outputs_root",          type=str,             default='vol3d', help="Root name of outputs: Specify the root name of all outputs. It cannot be empty string or only white spaces. (default vol3d)")
 	parser_moon_eliminator.add_argument("--allow_disconnect",      action="store_true",  default=False,   help="Allow disconnection: Allow disconnection of density maps. Only for very special cases. (default False)")
+	parser_moon_eliminator.add_argument("--edge_type",             type=str,             default='cosine',help="Soft-edge type: The type of soft-edge for moon-eliminator 3D mask and a moon-eliminated soft-edged 3D mask. Available methods are (1) \'cosine\' for cosine soft-edged (used in PostRefiner) and (2) \'gauss\' for gaussian soft-edge. (default cosine)")
 	parser_moon_eliminator.add_argument("--debug",                 action="store_true",  default=False,   help="Run with debug mode: Mainly for developer. (default False)")
 	parser_moon_eliminator.set_defaults(func=moon_eliminator)
 
