@@ -8,8 +8,8 @@ Moon eliminator: Eliminate moons or remove dusts from the background of a 3D den
 
 Usage in command line
 
-  sxpipe.py  moon_eliminator  input_volume_path  output_directory  --mol_mass=KILODALTON  --pixel_size=PIXEL_SIZE  --moon_distance=PIXEL_DISTANCE  --falloff_speed=FALLOFF_SPEED  --use_density_threshold=THRESHOLD  --resample_ratio=RATIO_OR_DIR_PATH  --box_size=BOX_SIZE  --resampled_shift3d  --shift3d_x=SHIFT3D_X  --shift3d_y=SHIFT3D_Y  --shift3d_z=SHIFT3D_Z  --invert_handedness  --fl=LPF_CUTOFF_FREQ  --aa=LPF_FALLOFF_WIDTH  --generate_mask=SOFT_EDGE_TYPE  --gm_edge_width=MASK_EDGE_PIXEL_WIDTH  --gm_falloff_speed=MASK_EDGE_FALLOFF_SPEED  --outputs_root=FILE_ROOT  --allow_disconnect  --debug
-
+  sxpipe.py  moon_eliminator  input_volume_path  output_directory  --pixel_size=PIXEL_SIZE  --mol_mass=KILODALTON  --use_density_threshold=THRESHOLD  --moon_distance=PIXEL_DISTANCE  --dilation=DILATION_PIXEL_WIDTH  --edge_sigma=SIGMA_PIXEL_WIDTH  --resample_ratio=RATIO_OR_DIR_PATH  --box_size=BOX_SIZE  --resampled_shift3d  --shift3d_x=SHIFT3D_X  --shift3d_y=SHIFT3D_Y  --shift3d_z=SHIFT3D_Z  --invert_handedness  --fl=LPF_CUTOFF_FREQ  --aa=LPF_FALLOFF_WIDTH  --generate_mask  --gm_dilation=DILATION_PIXEL_WIDTH  --gm_edge_width=MASK_EDGE_PIXEL_WIDTH  --gm_edge_sigma=SIGMA_PIXEL_WIDTH  --outputs_root=FILE_ROOT  --allow_disconnect  --edge_type=SOFT_EDGE_TYPE  --debug
+ 
 \\
 ===== Typical usage =====
 
@@ -27,18 +27,18 @@ Create reference 3D volume and 3D mask from post-refined MERIDIEN 3D model using
 
   sxpipe.py moon_eliminator 'outdir_postrefiner/postrefine3d.hdf' 'outdir_pipe_moon_eliminator' --mol_mass=1400 --pixel_size=1.12 --generate_mask 
 
-
 \\
 ===== Input =====
 === Main Parameters ===
   ; input_volume_path : Input volume path: Path to input volume file containing the 3D density map. (default required string)
   ; output_directory : Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)
 
-  ; %%--%%mol_mass : Molecular mass [kDa]: The estimated molecular mass of the target particle in kilodalton. (default required float)
   ; %%--%%pixel_size : Output pixel size [A]: The original pixel size of dataset. This must be the pixel size after resampling when resample_ratio != 1.0. That is, it will be the pixel size of the output volume. (default required float)
-  ; %%--%%moon_distance : Distance to the nearest moon [Pixels]: The moons further than this distance from the density surface will be elminated. The value smaller than the default is not recommended because it is difficult to avoid the stair-like gray level change at the edge of the density surface. (default 3)
-  ; %%--%%falloff_speed : Falloff speed: Falloff speed of edge of the output 3D reference volume. The value corresponds to Gaussian sigma factor relative to the moon distance (i.e. gauss_sigma = moon_distance/falloff_speed). Therefore, larger the value, faster the falloff. The value larger than the %%--%%moon_distance is not recommended because the settings likely yield the stair-like gray level change at the edge of the density surface. (default 3.0)
+  ; %%--%%mol_mass : Molecular mass [kDa]: The estimated molecular mass of the target particle in kilodalton. (default required float)
   ; %%--%%use_density_threshold : Use ad-hoc density threshold: Use user-provided ad-hoc density threshold, instead of computing the value from the molecular mass. Below this density value, the data is assumed not to belong to the main body of the particle density. (default none)
+  ; %%--%%moon_distance : Distance to the nearest moon [Pixels]: The moons further than this distance from the density surface will be elminated. The value smaller than the default is not recommended because it is difficult to avoid the stair-like gray level change at the edge of the density surface. (default 3.0)
+  ; %%--%%dilation : Dilation width [Pixels]: The pixel width to dilate the 3D binary volume corresponding to the specified molecular mass or density threshold prior to softening the edge. By default, it is set to half of %%--%%moon_distance so that the voxels with 1.0 values in the mask are same as the hard-edged molecular-mass binary volume. (default -1.0)
+  ; %%--%%edge_sigma : Edge sigma [Pixels]: The Gaussian sigma of transition area for soft-edge of the moon eliminator 3D mask. This value controls the falloff speed of soft-edge; The samller the sigma, the faster the falloff. Effective only with %%--%%edge_type='gauss'. (default 1.0)
   ; %%--%%resample_ratio : Resample ratio: Specify a value larger than 0.0. By default, the program does not resmaple the input volume (i.e. resample ratio is 1.0). Use this option maily to restore the original dimensions or pixel size of VIPER or R-VIPER model. Alternatively, specify the path to the output directory of an ISAC2 run. The program automatically extracts the resampling ratio used by the ISAC2 run. (default '1.0')
   ; %%--%%box_size : Output box size [Pixels]: The x, y, and z dimensions of cubic area to be windowed from input 3D volume for output 3D volumes. This must be the box size after resampling when resample_ratio != 1.0. (default none)
   ; %%--%%resampled_shift3d : Providing resampled 3D shifts: Use this option when you are providing the resampled 3D shifts (using pixel size of outputs) when %%--%%resample_ratio!=1.0. By default, the program assums the provided shifts are not resampled. (default False)
@@ -48,14 +48,16 @@ Create reference 3D volume and 3D mask from post-refined MERIDIEN 3D model using
   ; %%--%%invert_handedness : Invert handedness: Invert the handedness of the 3D volume. (default False)
   ; %%--%%fl : Low-pass filter resolution [A]: >0.0: low-pass filter to the value in Angstrom; =-1.0: no low-pass filter. The program applies this low-pass filter before the moon elimination. (default -1.0)
   ; %%--%%aa : Low-pass filter fall-off [1/Pixels]: Low-pass filter fall-off in absolute frequency. The program applies this low-pass filter before the moon elimination. Effective only when %%--%%fl > 0.0. (default 0.1)
-  ; %%--%%generate_mask : Generate soft-edged mask: Generate a soft-edged mask with specified method from the 3D binary volume corresponding to the specified molecular mass or density threshold, using the values provided through %%--%%gm_edge_width and/or %%--%%gm_falloff_speed. Available methods are (1) 'gauss' for gaussian soft-edge and (2) 'cosine' for cosine soft-edged (used in PostRefiner). (default none)
+  ; %%--%%generate_mask : Generate soft-edged mask: Generate soft-edged mask with specified method from the 3D binary volume corresponding to the specified molecular mass or density threshold, using the values provided through %%--%%gm_dilation, %%--%%gm_edge_width, and %%--%%gm_edge_sigma. Available methods are (1) 'gauss' for gaussian soft-edge and (2) 'cosine' for cosine soft-edged (used in PostRefiner). (default none)
 
 \\
 === Advanced Parameters ===
+  ; %%--%%gm_dilation : Soft-edge dilation [Pixels]: The pixel width to dilate the 3D binary volume corresponding to the specified molecular mass or density threshold prior to softening the edge. By default, it is set to half of %%--%%gm_edge_width so that the voxels with 1.0 values in the mask are same as the hard-edged binary volume with the threadhold. (default -1.0)
   ; %%--%%gm_edge_width : Soft-edge width [Pixels]: The pixel width of transition area for soft-edged masking. Effective only with %%--%%generate_mask option. (default 6)
-  ; %%--%%gm_falloff_speed : Soft-edge falloff speed: Falloff speed of soft-edge masking. Effective only when %%--%%generate_mask='gauss'. The value corresponds to Gaussian sigma factor relative to the soft-edge width (i.e. gauss_sigma = gm_edge_width/gm_falloff_speed). (default 3.0)
+  ; %%--%%gm_edge_sigma : Soft-edge sigma [Pixels]: The Gaussian sigma of transition area for soft-edged masking. This value controls the fall-speed of soft-edge; The samller the sigma, the faster the falloff. Effective only with %%--%%generate_mask and %%--%%generate_mask='gauss'. (default 6 )
   ; %%--%%outputs_root : Root name of outputs: Specify the root name of all outputs. It cannot be empty string or only white spaces. (default vol3d)
   ; %%--%%allow_disconnect : Allow disconnection: Allow disconnection of density maps. Only for very special cases. (default False)
+  ; %%--%%edge_type : Soft-edge type: The type of soft-edge for moon-eliminator 3D mask and a moon-eliminated soft-edged 3D mask. Available methods are (1) 'cosine' for cosine soft-edged (used in PostRefiner) and (2) 'gauss' for gaussian soft-edge. (default cosine)
   ; %%--%%debug : Run with debug mode: Mainly for developer. (default False)
 
 \\
@@ -86,35 +88,39 @@ This command executes the following processes:
 
 \\
 ==== Developer Notes ====
-=== 2018/04/12 Toshio Moriya ===
-Tips about balancing settings of moon_distance and falloff_speed options.
-  * moon_distance 
-    * A shorter moon distance should be better (e.g. 3[Pixels] is better than 6[Pixels]).
-    * If it is too long, the moons will be connected and creates strange low density shape at the edge of the monn distance.
-    * On the other hand, if it is too short, soft-edge will have the stair-like gray level change because of quantization or digitization.
-  * falloff_speed
-    * The falloff speed seems to have be smaller (or slower) than moon_distance, so that Gaussian sigma will be at least larger than 1[pixel].
-    * If it is larger (or faster), the density distribution of moon eliminator 3D mask won't be smooth (spiky) because of quantization or digitization.
-    * In addition, moon-eliminated reference 3D volume will have a strange dent near zero.
-  * Tested combinations with a density map at 1.12 [A/Pixels]
-    * moon_distance=3 & falloff_speed=3.0 (gauss_sigma = 1.0[Pixels])
-      * Very nice balance!
-    * moon_distance=3 & falloff_speed=5.0 (gauss_sigma = 0.6[Pixels])
-      * NG. The density distribution of moon eliminator 3D mask is not smooth. 
-      * The moon-eliminated reference 3D volume has a strange dent near zero. 
-      * That is, falloff_speed must be too fast for this moon_distance! 
-    * moon_distance=6 & falloff_speed=3.0 (gauss_sigma = 2.0[Pixels])
-      * OK but created strange low density shape at the edge of the monn distance.
-    * moon_distance=6 & falloff_speed=5.0 (gauss_sigma = 1.2[Pixels])
-      * OK but created strange low density shape at the edge of the monn distance.
+=== 2018/06/18 Toshio Moriya ===
 
-Tips about balancing settings of gm_edge_width and gm_falloff_speed for Gaussian soft-edge.
+Wish
+  * Add options for 3D rotation of the volume.
+
+=== 2018/06/18 Toshio Moriya ===
+
+Tips about balancing settings of moon_distance, dilation, and edge_sigma options for Gaussian soft-edge.
+  * moon_distance 
+    * In principle, shorter moon_distance is better (e.g. 3[Pixels] is better than 6[Pixels]).
+    * If moon_distance is too long, the moons will be connected and creates strange low density shape at the edge of the moon_distance.
+    * On the other hand, if it is too short, soft-edge will have the stair-like gray level change because of quantization or digitization.
+  * dilation
+    * Setting dilation to half of moon_distance generates mask where the voxels with 1.0 values are same as the hard-edged molecular-mass binary volume (default behaviour).
+    * Setting dilation to smaller than half of moon_distance generates mask where the voxels with 1.0 values are smaller than the hard-edged molecular-mass binary volume.
+  * edge_sigma
+    * In principle, smaller edge_sigma is better.
+    * However, edge_sigma must be at least larger than 1[pixel]. 
+    * If not, the density distribution of moon eliminator 3D mask won't be smooth (spiky) because of quantization or digitization.
+    * In addition, moon-eliminated reference 3D volume will have a strange dent near zero.
+
+Tips about balancing settings of gm_dilation, gm_edge_width, and gm_edge_sigma options for Gaussian soft-edge.
+  * gm_dilation
+    * Setting dilation to half of gm_edge_width generates mask where the voxels with 1.0 values are same as the hard-edged molecular-mass binary volume (default behaviour).
+    * Setting dilation to smaller than half of gm_edge_width generates mask where the voxels with 1.0 values are smaller than the hard-edged molecular-mass binary volume.
   * gm_edge_width 
-    * A wider edge seems to be better. If it is too narrow, soft-edge will have the stair-like gray level change because of quantization or digitization.
-    * However, if it is too long, the soft-edge might touch the box boundary and create strange low density shape there.
-  * gm_falloff_speed
-    * The falloff speed seems to have be smaller than the edge width, so that Gaussian sigma will be at least larger than 1[pixel].
-    * If it is larger, the density distribution of moon-eliminated 3D mask won't be smooth (spiky) because of quantization or digitization.  
+    * A wider gm_edge_width is better. If it is too narrow, soft-edge will have the stair-like gray level change because of quantization or digitization.
+    * However, if it is too wide, the soft-edge might touch the box boundary and create strange low density shape there.
+  * gm_edge_sigma
+    * In principle, smaller gm_edge_sigma is better.
+    * However, gm_edge_sigma must be at least larger than 1[pixel]. 
+    * If not, the density distribution of moon eliminator 3D mask won't be smooth (spiky) because of quantization or digitization.
+    * In addition, moon-eliminated reference 3D volume will have a strange dent near zero.
 
 \\
 ==== Author / Maintainer ====
