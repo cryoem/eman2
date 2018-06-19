@@ -185,7 +185,7 @@ def main():
 		except: pass
 		options.zeroid=zeroid=np.argmin(abs(tlts))
 	else:
-		if (options.rawtlt!=None) :
+		if (options.rawtlt!=None and len(options.rawtlt)>0) :
 			tlts=np.loadtxt(options.rawtlt)
 		else: 
 			tlts=np.arange(-len(imgs_2k)*options.tiltstep/2,len(imgs_2k)*options.tiltstep/2,options.tiltstep)
