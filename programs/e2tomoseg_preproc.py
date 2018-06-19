@@ -66,7 +66,7 @@ def main():
 	proc4 = parsemodopt(options.proc4)
 	proc5 = parsemodopt(options.proc5)
 
-	if not options.invert and proc1[0] == None proc2[0] == None and proc3[0] == None and proc4[0] == None and proc5[0] == None:
+	if not options.invert and proc1[0] == None and proc2[0] == None and proc3[0] == None and proc4[0] == None and proc5[0] == None:
 		print("No processing specified. Exiting.")
 		sys.exit(1)
 
