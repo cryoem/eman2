@@ -30,7 +30,6 @@ from __future__ import print_function
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
-#
 
 from EMAN2 import *
 
@@ -66,7 +65,7 @@ def main():
 	proc4 = parsemodopt(options.proc4)
 	proc5 = parsemodopt(options.proc5)
 
-	if not options.invert and proc1[0] == None proc2[0] == None and proc3[0] == None and proc4[0] == None and proc5[0] == None:
+	if not options.invert and proc1[0] == None and proc2[0] == None and proc3[0] == None and proc4[0] == None and proc5[0] == None:
 		print("No processing specified. Exiting.")
 		sys.exit(1)
 
