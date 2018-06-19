@@ -188,7 +188,7 @@ def main():
 		if (options.rawtlt!=None and len(options.rawtlt)>0) :
 			tlts=np.loadtxt(options.rawtlt)
 		else: 
-			tlts=np.arange(-len(imgs_2k)*options.tiltstep/2,len(imgs_2k)*options.tiltstep/2,options.tiltstep)
+			tlts=np.arange(-len(imgs_2k)*options.tltstep/2,len(imgs_2k)*options.tltstep/2,options.tltstep)
 		
 		if options.writetmp: np.savetxt(options.tmppath+"rawtilt.txt", tlts)
 		
