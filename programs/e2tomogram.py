@@ -78,6 +78,7 @@ def main():
 		opt=' '.join([s for s in cmd if s.startswith("-")])
 		for a in args:
 			run("{} {} {}".format(cmd[0], a, opt))
+		return
 		
 	options.inputname=inputname
 
@@ -592,25 +593,25 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[]):
 	
 	threed=full3d
 	threed.process_inplace("normalize")
-	if options.clipz>0:
+	#if options.clipz>0:
 		
-		p0=np.min(threed.numpy(), axis=1)
-		z0=np.min(p0, axis=1)
-		zp=np.where(z0<np.mean(z0))[0]
-		zcent=int(zp[0]+zp[-1])/2
-		zthk=int((zp[-1]-zp[0])*options.clipz)
-		zthk=np.min([zthk, zthick-zcent, zcent])-1
-		#if options.verbose:
-		print("Z axis center at {:d}, thickness {:d} pixels".format(zcent, zthk*2))
-		threed.clip_inplace(Region(0, 0, zcent-zthk, outxy, outxy, zthk*2))
-		threed["zshift"]=float(zthick/2-zcent)*scale*options.binfac
-		#for nid in range(num):
-			#tltinfo[nid]["xform.projection"].translate(0, 0, zthick/2-zcent)
+		#p0=np.min(threed.numpy(), axis=1)
+		#z0=np.min(p0, axis=1)
+		#zp=np.where(z0<np.mean(z0))[0]
+		#zcent=int(zp[0]+zp[-1])/2
+		#zthk=int((zp[-1]-zp[0])*options.clipz)
+		#zthk=np.min([zthk, zthick-zcent, zcent])-1
+		##if options.verbose:
+		#print("Z axis center at {:d}, thickness {:d} pixels".format(zcent, zthk*2))
+		#threed.clip_inplace(Region(0, 0, zcent-zthk, outxy, outxy, zthk*2))
+		#threed["zshift"]=float(zthick/2-zcent)*scale*options.binfac
+		##for nid in range(num):
+			##tltinfo[nid]["xform.projection"].translate(0, 0, zthick/2-zcent)
 		
-	else:
+	#else:
 		
 		#threed.clip_inplace(Region((pad-outxy)/2, (pad-outxy)/2, 0, outxy, outxy, zthick))
-		threed["zshift"]=0
+	threed["zshift"]=0
 	
 	apix=imgs[0]["apix_x"]
 	threed["apix_x"]=threed["apix_y"]=threed["apix_z"]=apix

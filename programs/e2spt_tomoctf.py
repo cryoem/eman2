@@ -79,7 +79,7 @@ def main():
 	
 	usage=" "
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_pos_argument(name="tiltseries",help="Specify tiltseries you want to apply CTF correction.", default="", guitype='filebox', browser="EMTiltseriesTable(withmodal=True,multiselect=False)", row=0, col=0,rowspan=1, colspan=3, mode="model")
+	parser.add_pos_argument(name="tiltseries",help="Specify tiltseries you want to apply CTF correction.", default="", guitype='filebox', browser="EMTiltseriesTable(withmodal=True,multiselect=True)", row=0, col=0,rowspan=1, colspan=3, mode="model")
 	parser.add_header(name="orblock1", help='Just a visual separation', title="** Options **", row=2, col=1, rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--dfrange", type=str,help="Search range of defocus (start, end, step). default is 0.5, 10, 0.1", default="0.5,10.,0.1", guitype='strbox',row=4, col=0,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--psrange", type=str,help="phase shift range (start, end, step). default is 0, 120, 5", default="0,120,5", guitype='strbox',row=4, col=1,rowspan=1, colspan=1, mode="model")
@@ -89,9 +89,20 @@ def main():
 	parser.add_argument("--nref", type=int,help="Using N tilt images near the center tilt to estimate the range of defocus for all images. Default is 15", default=15, guitype='intbox',row=6, col=2,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--stepx", type=int,help="Number of tiles to generate on x-axis (different defocus)", default=20, guitype='intbox',row=8, col=0,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--stepy", type=int,help="Number of tiles to generate on y-axis (same defocus)", default=40, guitype='intbox',row=8, col=1,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
+	
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	
+	if len(args)==1:
+		print("Reading tilt series {}...".format(args[0]))
+	else:
+		print("Processing {} tilt series in sequence..".format(len(args)))
+		cmd=sys.argv
+		opt=' '.join([s for s in cmd if s.startswith("-")])
+		for a in args:
+			run("{} {} {}".format(cmd[0], a, opt))
+		return
 	
 	tfile=args[0]
 	js=js_open_dict(info_name(tfile))
@@ -223,9 +234,10 @@ def main():
 		#### get enough references
 		if len(dfs)==nref: 
 			print("In the first {} image, defocus mean {:.2f}, std {:.2f}".format(nref, np.mean(dfs), np.std(dfs)))
-			if (np.mean(dfs)+np.std(dfs)*3>defrg[int(len(defrg)*.9)]):
-				print ("Something seems to be wrong...")
-				return
+			#if (np.mean(dfs)+np.std(dfs)*3>defrg[int(len(defrg)*.9)]):
+			if (np.std(dfs)>1):
+				print ("Warning: variance of defocus estimation is larger than normal. Something may be wrong...")
+				#return
 			
 			searchrg=min(max(np.std(dfs)*3, 3), 1.5)
 			dfsel=abs(defrg-np.mean(dfs))<searchrg
