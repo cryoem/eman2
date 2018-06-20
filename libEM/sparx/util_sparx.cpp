@@ -24553,7 +24553,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 
 void Util::version()
 {
- cout <<"  Source modification date: 05/25/2018  13:34 PM " <<  endl;
+ cout <<"  Source modification date: 06/20/2018  12:34 PM " <<  endl;
 }
 
 
@@ -24987,8 +24987,10 @@ EMData* Util::ctf_rimg(int nx, int ny, int nz, float dz, float ps, float voltage
 	/*
 	sign"
 	 +1  =  positive CTF
+	 +2  =  positive binary CTF (values -1 or +1)
 	 -1  =  negative CTF (as per physics)
 	  0  =  absolute |CTF|
+	 -2  = 
 	*/
 	int    ix, iy, iz;
 	int    i,  j, k;
@@ -24996,10 +24998,16 @@ EMData* Util::ctf_rimg(int nx, int ny, int nz, float dz, float ps, float voltage
 	float  scx, scy, scz;
 	float signa = sign;
 	bool  doabs;
-	if( sign == 0.0f ) {
-		signa = 1.0;
+	if( sign == 0.0f or sign == 1.0f) {
+		signa = 1.0f;
 		doabs = true;
-	} else doabs = false;
+	} else if (sign == -1.0f) {
+		signa = -1.0f;
+		doabs = false;
+	} else if (sign == 2.0f) {
+		signa = 2.0f;
+		doabs = false;
+	} else throw InvalidValueException(sign, "Incorrect sign value");
 	float lambda=12.398f/sqrt(voltage*(1022.0f+voltage));
 	EMData* ctf_img1 = new EMData();
 	ctf_img1->set_size(nx, ny, nz);
@@ -25041,6 +25049,13 @@ EMData* Util::ctf_rimg(int nx, int ny, int nz, float dz, float ps, float voltage
 				ix = nx - i - nod;
 				if(ix<nx)  ctf_img1_ptr(ix,jy,kz) = ctf_img1_ptr(i,j,k);
 			}
+		}
+	}
+	if( signa == -1.0f )  for(i=0; i<nx*ny*nz; i++) ctf_img1_ptr[i] *= -1;
+	else if( signa == 2.0f ) {
+		for(i=0; i<nx*ny*nz; i++) {
+			if( ctf_img1_ptr[i]<0.0f ) ctf_img1_ptr[i] = -1.0f;
+			else ctf_img1_ptr[i] = 1.0f;
 		}
 	}
 	ctf_img1->update();
