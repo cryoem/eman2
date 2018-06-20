@@ -1364,7 +1364,7 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 		del prms
 
 	error = bcast_number_to_all(error, source_node = 0)
-	if(error == 1): ERROR("multi_shc","Angular step too large, decrease delta", 1, my_rank)
+	if(error == 1): ERROR("multi_shc","Angular step too large, decrease delta", 1, mpi_rank)
 
 
 	###from sys import exit

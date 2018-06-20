@@ -5,41 +5,41 @@
 [
   {
     "ICON": "green_boxes",
-    "NAME": "Raw Data",
+    "NAME": "Raw data",
     "CHILDREN": [
       {
         "ICON": "multiple_images",
         "MODE": "refs",
         "PROGRAM": "e2ddd_movie.py",
-        "NAME": "Import DDD References",
+        "NAME": "Import DDD references",
         "CHILDREN": []
       },
       {
         "ICON": "multiple_images",
         "MODE": "tomo",
         "PROGRAM": "e2ddd_movie.py",
-        "NAME": "Process DDD Movies",
-        "CHILDREN": []
-      },
-      {
-        "ICON": "multiple_images",
-        "PROGRAM": "e2import.py",
-        "MODE": "rawtilts",
-        "NAME": "Import Individual Tilts",
+        "NAME": "Process DDD movies",
         "CHILDREN": []
       },
       {
         "ICON": "multiple_images",
         "PROGRAM": "e2buildstacks.py",
         "MODE": "tomo",
-        "NAME": "Generate Tiltseries",
+        "NAME": "Generate tiltseries",
         "CHILDREN": []
       },
       {
         "ICON": "multiple_images",
         "PROGRAM": "e2import.py",
         "MODE": "tiltseries",
-        "NAME": "Import Tiltseries",
+        "NAME": "Import tiltseries",
+        "CHILDREN": []
+      },
+      {
+        "ICON": "multiple_images",
+        "PROGRAM": "e2tomo_tiltpreproc.py",
+        "MODE": "proc",
+        "NAME": "Preprocess tiltseries",
         "CHILDREN": []
       },
       {
@@ -47,7 +47,7 @@
         "PROGRAM": "e2import.py",
         "MODE": "tomos",
         "WIZARD": "/lib/pmconfig/tomoimport.json",
-        "NAME": "Import Tomograms",
+        "NAME": "Import tomograms",
         "CHILDREN": []
       }
     ]
@@ -56,7 +56,7 @@
     "ICON": "multiple_images",
     "PROGRAM": "e2tomogram.py",
     "MODE": "easy",
-    "NAME": "3D Reconstruction",
+    "NAME": "3D reconstruction",
     "CHILDREN": []
   },
   {
@@ -69,6 +69,13 @@
     "ICON": "single_image",
     "NAME": "Segmentation",
     "CHILDREN": [
+      {
+        "ICON": "single_image_3d",
+        "PROGRAM": "e2tomoseg_preproc.py",
+        "MODE": "proc",
+        "NAME": "Preprocess tomograms",
+        "CHILDREN": []
+      },
       {
         "ICON": "green_boxes",
         "PROGRAM": "e2tomoseg_buildtrainset.py",
@@ -112,14 +119,14 @@
             "ICON": "single_image",
             "PROGRAM": "e2tomo_drawcurve.py",
             "MODE": "tomoseg",
-            "NAME": "Draw Curves",
+            "NAME": "Draw curves",
             "CHILDREN": []
           },
           {
             "ICON": "single_image",
             "PROGRAM": "e2tomo_drawcontour.py",
             "MODE": "tomoseg",
-            "NAME": "Draw Contours",
+            "NAME": "Draw contours",
             "CHILDREN": []
           }
         ]
@@ -135,14 +142,14 @@
         "MODE": "boxing",
         "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2spt_boxer22",
         "PROGRAM": "e2spt_boxer22.py",
-        "NAME": "Box Particles",
+        "NAME": "Box particles",
         "CHILDREN": []
       },
       {
         "ICON": "green_boxes",
         "MODE": "boxing",
         "PROGRAM": "e2spt_tempmatch.py",
-        "NAME": "Reference-based Boxing",
+        "NAME": "Reference-based boxing",
         "CHILDREN": []
       },
       {
@@ -150,38 +157,38 @@
         "MODE": "extract",
         "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2spt_boxer",
         "PROGRAM": "e2spt_extract.py",
-        "NAME": "Extract Particles",
+        "NAME": "Extract particles",
         "CHILDREN": []
       },
       {
         "ICON": "single_image_3d",
         "PROGRAM": "e2spt_sgd.py",
-        "NAME": "Generate Initial Model",
+        "NAME": "Generate initial model",
         "MODE": "model",
         "CHILDREN": []
       },
       {
         "ICON": "tomo_hunter",
         "PROGRAM": "e2spt_refine.py",
-        "NAME": "3D Refinement",
+        "NAME": "3D refinement",
         "CHILDREN": []
       },
       {
         "ICON": "multiple_images",
         "PROGRAM": "e2spt_tiltrefine.py",
-        "NAME": "Sub-tilt Refinement",
+        "NAME": "Sub-tilt refinement",
         "CHILDREN": []
       },
       {
         "ICON": "ctf",
         "PROGRAM": "e2spt_tomoctf.py",
-        "NAME": "CTF Correction",
+        "NAME": "CTF correction",
         "CHILDREN": []
       },
       {
         "ICON": "tomo_hunter",
         "PROGRAM": "e2spt_classify.py",
-        "NAME": "Multi-reference Refinement",
+        "NAME": "Multi-reference refinement",
         "MODE": "multi",
         "CHILDREN": []
       },
@@ -210,6 +217,12 @@
     "NAME":"Validation and Analysis",
     "CHILDREN":[
       {
+        "ICON": "green_boxes",
+        "PROGRAM": "e2tomo_eval.py",
+        "NAME": "Evaluate tomograms",
+        "CHILDREN": []
+      },
+      {
         "ICON": "multiple_images",
         "PROGRAM": "e2tomo_showali.py",
         "MODE": "fiderr",
@@ -219,14 +232,8 @@
       {
         "ICON": "resolution",
         "PROGRAM": "e2spt_stat.py",
-        "NAME": "Calc Quality vs. Reference",
+        "NAME": "Calc quality vs. reference",
         "MODE": "gui",
-        "CHILDREN": []
-      },
-      {
-        "ICON": "resolution",
-        "PROGRAM": "e2spt_resolutionplot.py",
-        "NAME": "Calc Multiple FSC",
         "CHILDREN": []
       }
     ]

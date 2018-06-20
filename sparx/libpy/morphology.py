@@ -2164,7 +2164,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 		print("Estimating CTF parameters...")
 		if stack == None:
 			print("  Micrographs processed by main process (including percent of progress):")
-			progress_percent_step = len(namics)/100.0 # the number of micrograms for main mpi processer divided by 100
+			progress_percent_step = (set_end - set_start)/100.0 # the number of micrograms for main mpi processer divided by 100
 	
 	totresi = []
 	missing_img_names = []
@@ -2179,7 +2179,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			img_name = namics[ifi]
 			
 			if my_mpi_proc_id == main_mpi_proc:
-				print(("    Processing %s ---> %6.2f%%" % (img_name, ifi / progress_percent_step * 100)))
+				print(("    Processing %s ---> %6.2f%%" % (img_name, (ifi - set_start) / progress_percent_step)))
 			
 			if not os.path.exists(img_name):
 				missing_img_names.append(img_name)
@@ -3233,7 +3233,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 		print("Estimating CTF parameters...")
 		if stack == None:
 			print("  Micrographs processed by main process (including percent of progress):")
-			progress_percent_step = len(namics)/100.0 # the number of micrograms for main mpi processer divided by 100
+			progress_percent_step = (set_end - set_start)/100.0 # the number of micrograms for main mpi processer divided by 100
 
 	totresi = []
 	missing_img_names = []
@@ -3248,7 +3248,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 			img_name = namics[ifi]
 			
 			if my_mpi_proc_id == main_mpi_proc:
-				print(("    Processing %s ---> %6.2f%%" % (img_name, ifi / progress_percent_step * 100)))
+				print(("    Processing %s ---> %6.2f%%" % (img_name, (ifi - set_start) / progress_percent_step)))
 			
 			if not os.path.exists(img_name):
 				missing_img_names.append(img_name)
@@ -5652,7 +5652,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 		print("Estimating CTF parameters...")
 		if stack == None:
 			print("  Micrographs processed by main process (including percent of progress):")
-			progress_percent_step = len(namics)/100.0 # the number of micrograms for main mpi processer divided by 100
+			progress_percent_step = (set_end - set_start)/100.0 # the number of micrograms for main mpi processer divided by 100
 	
 	totresi = []
 	missing_img_names = []
@@ -5664,7 +5664,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			img_basename_root = os.path.splitext(os.path.basename(img_name))[0]
 			
 			if my_mpi_proc_id == main_mpi_proc:
-				print(("    Processing %s ---> %6.2f%%" % (img_name, ifi / progress_percent_step * 100)))
+				print(("    Processing %s ---> %6.2f%%" % (img_name, (ifi - set_start) / progress_percent_step)))
 			
 			if not os.path.exists(img_name):
 				missing_img_names.append(img_name)
