@@ -140,7 +140,7 @@ def construct_keyword_dict():
 	keyword_dict["destination_directory"]         = SXkeyword_map(0, "dir")                 # destination_directory (contains keyworkd 'directory' but this should be directory type)
 ###	keyword_dict["--use_latest_master_directory"] = SXkeyword_map(0, "bool")                # --use_latest_master_directory (contains keyworkd 'directory' but this should be bool type)
 	keyword_dict["--stack_mode"]                  = SXkeyword_map(0, "bool")                # stack_mode (contains keyworkd 'stack' but this should be bool type)
-	keyword_dict["--generate_mask"]               = SXkeyword_map(0, "string")              # --generate_mask=SOFT_EDGE_TYPE (contains keyworkd 'mask' but this should be string type)
+	keyword_dict["--generate_mask"]               = SXkeyword_map(0, "bool")                # --generate_mask (contains keyworkd 'mask' but this should be bool type)
 	keyword_dict["--binary_mask"]                 = SXkeyword_map(0, "bool")                # --binary_mask (contains keyworkd 'mask' but this should be bool type)
 	keyword_dict["--symmetrize"]                  = SXkeyword_map(0, "bool")                # --symmetrize (contains keyworkd '--sym' but this should be bool type)
 	keyword_dict["--do_adaptive_mask"]            = SXkeyword_map(0, "bool")                # --do_adaptive_mask (contains keyworkd 'mask' but this should be bool type)
