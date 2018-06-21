@@ -185,7 +185,6 @@ def main():
 
 				ddm=dmap*dmap
 				cc.append(ddm["mean_nonzero"])
-
 				if options.reference==None:
 					ref.process_inplace("xform.centerofmass")
 				if options.mask:
@@ -279,7 +278,7 @@ def make_ref(fname, options):
 	num=EMUtil.get_image_count(fname)
 	refs=[]
 	rfile="{}/ref.hdf".format(options.path)
-	if options.reference == None:
+	if not options.reference:
 		print("Making random references...")
 		for ie in [0,1]:
 			tt=parsesym("c1")
@@ -319,8 +318,6 @@ def make_ref(fname, options):
 					run("e2proc3d.py {} {}/ref.hdf --scale {} --clip {} {}".format(options.reference, options.path,  rs, ep["nx"], pp))
 			else:
 				run("e2proc3d.py {} {}/ref.hdf {}".format(options.reference, options.path, pp))
-
-
 		refs=[EMData(rfile, 0), EMData(rfile,1)]
 
 	return refs
