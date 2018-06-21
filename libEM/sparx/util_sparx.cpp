@@ -24998,9 +24998,12 @@ EMData* Util::ctf_rimg(int nx, int ny, int nz, float dz, float ps, float voltage
 	float  scx, scy, scz;
 	float signa = sign;
 	bool  doabs;
-	if( sign == 0.0f or sign == 1.0f) {
+	if( sign == 0.0f ) {
 		signa = 1.0f;
 		doabs = true;
+	} else if( sign == 1.0f ) {
+		signa = 1.0f;
+		doabs = false;
 	} else if (sign == -1.0f) {
 		signa = -1.0f;
 		doabs = false;
