@@ -9026,6 +9026,7 @@ correction is not possible, this will allow you to approximate the correction to
 			TypeDict d;
 			d.put("thresh", EMObject::FLOAT, "The threshold to binarize the map.");
 			d.put("nmaj", EMObject::INT, "Number of neighbors needed to set to white.");
+			d.put("return_neighbor", EMObject::BOOL, "Return number of neighbor for each pixel.");
 			return d;
 		}
 		static const string NAME;
@@ -9034,12 +9035,18 @@ correction is not possible, this will allow you to approximate the correction to
 		void process_pixel(float *pixel, const float *array, int n) const
 		{
 			float thresh=params.set_default("thresh",0);
+			bool retnb=params.set_default("return_neighbor",false);
 			int nmaj=params.set_default("nmaj",n/2+1);
+			int nb=0;
 			for (int i=0; i<n; i++){
 				if (array[i]>thresh)
-					nmaj--;
+					nb++;
+// 					nmaj--;
 			}
-			*pixel=nmaj<=0?1:0;
+			if (retnb)
+				*pixel=nb;
+			else
+				*pixel=nb>=nmaj?1:0;
 		}
 	};
 
