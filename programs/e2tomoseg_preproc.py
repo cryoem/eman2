@@ -39,25 +39,17 @@ def main():
 	prog <tomograms> [options]
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_pos_argument(name="tomograms",help="List the tomograms you want to process.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=True)",  filecheck=False, row=0, col=0,rowspan=1, colspan=3, mode='proc')
-	parser.add_argument("--all_tomograms",action="store_true",help="If specified, this program will attempt to process all tomograms stored in the tomograms subdirectory (no list of files required).",default=False, guitype='boolbox',row=1, col=0, mode='proc[True]')
-	parser.add_argument("--invert",action="store_true",help="Invert the contrast of the tomograms in output files (default false). If specified __proc tomograms will be generated.",default=False, guitype='boolbox', row=1, col=1, rowspan=1, colspan=1, mode='proc[False]')
+	parser.add_pos_argument(name="tomograms",help="List the tomograms you want to process.", default="", guitype='filebox', browser="EMTomoTable(withmodal=True,multiselect=True)",  filecheck=False, row=0, col=0,rowspan=1, colspan=3, mode='proc')
+	parser.add_argument("--invert",action="store_true",help="Invert the contrast of the tomograms in output files (default false). If specified _proctag tomograms will be generated.",default=False, guitype='boolbox', row=1, col=1, rowspan=1, colspan=1, mode='proc[False]')
 	parser.add_argument("--proctag",help="Tag added to the name of each tomogram when using the proc options. Default is 'seg'.",default="seg", guitype='strbox', row=1, col=2, rowspan=1, colspan=1, mode='proc["seg"]')
-	parser.add_argument("--proc1",help="If specified __proc files will be generated. Typical = filter.lowpass.gauss:cutoff_abs=.25",default="filter.lowpass.gauss:cutoff_abs=.25", guitype='strbox', row=2, col=0, rowspan=1, colspan=3, mode='proc["filter.lowpass.gauss:cutoff_abs=.25"]')
-	parser.add_argument("--proc2",help="If specified __proc tomograms will be generated. Typical = filter.highpass.gauss:cutoff_pixels=5",default="filter.highpass.gauss:cutoff_pixels=5", guitype='strbox', row=3, col=0, rowspan=1, colspan=3, mode='proc["filter.highpass.gauss:cutoff_pixels=5"]')
-	parser.add_argument("--proc3",help="If specified __proc tomograms will be generated. Typical = threshold.clampminmax.nsigma:nsigma=3",default="threshold.clampminmax.nsigma:nsigma=3", guitype='strbox', row=4, col=0, rowspan=1, colspan=3, mode='proc["threshold.clampminmax.nsigma:nsigma=3"]')
-	parser.add_argument("--proc4",help="If specified __proc tomograms will be generated.",default="", guitype='strbox', row=12, col=0, rowspan=1, colspan=3, mode='proc[""]')
-	parser.add_argument("--proc5",help="If specified __proc tomograms will be generated.",default="", guitype='strbox', row=14, col=0, rowspan=1, colspan=3, mode='proc[""]')
+	parser.add_argument("--proc1",help="If specified _proctag files will be generated. Typical = filter.lowpass.gauss:cutoff_abs=.25",default="filter.lowpass.gauss:cutoff_abs=.25", guitype='strbox', row=2, col=0, rowspan=1, colspan=3, mode='proc["filter.lowpass.gauss:cutoff_abs=.25"]')
+	parser.add_argument("--proc2",help="If specified _proctag tomograms will be generated. Typical = filter.highpass.gauss:cutoff_pixels=5",default="filter.highpass.gauss:cutoff_pixels=5", guitype='strbox', row=3, col=0, rowspan=1, colspan=3, mode='proc["filter.highpass.gauss:cutoff_pixels=5"]')
+	parser.add_argument("--proc3",help="If specified _proctag tomograms will be generated. Typical = threshold.clampminmax.nsigma:nsigma=3",default="threshold.clampminmax.nsigma:nsigma=3", guitype='strbox', row=4, col=0, rowspan=1, colspan=3, mode='proc["threshold.clampminmax.nsigma:nsigma=3"]')
+	parser.add_argument("--proc4",help="If specified _proctag tomograms will be generated.",default="", guitype='strbox', row=12, col=0, rowspan=1, colspan=3, mode='proc[""]')
+	parser.add_argument("--proc5",help="If specified _proctag tomograms will be generated.",default="", guitype='strbox', row=14, col=0, rowspan=1, colspan=3, mode='proc[""]')
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	(options, args) = parser.parse_args()
-
-	if options.all_tomograms:
-		args=["tomograms/"+i for i in os.listdir("tomograms") if "__proc" not in i]
-		args.sort()
-		if options.verbose : print("%d tomograms identified"%len(args))
-
-	options.filenames = args
 
 	proc1 = parsemodopt(options.proc1)
 	proc2 = parsemodopt(options.proc2)
@@ -69,12 +61,9 @@ def main():
 		print("No processing specified. Exiting.")
 		sys.exit(1)
 
-	for i,filename in enumerate(options.filenames):
-		name = base_name(filename)
-		if options.proctag:
-			procout=["tomograms/{}__proc_{}.hdf".format(name,options.proctag)]
-		else: 
-			procout=["tomograms/{}__proc.hdf".format(name)]
+	for i,filename in enumerate(args):
+		name = os.path.basename(name).split(".")[0]
+		procout=["tomograms/{}_{}.hdf".format(name,options.proctag)]
 
 		if proc1[0] != None: procout.append(proc1)
 		if proc2[0] != None: procout.append(proc2)
@@ -82,9 +71,8 @@ def main():
 		if proc4[0] != None: procout.append(proc4)
 		if proc5[0] != None: procout.append(proc5)
 
-
 		im = EMData(filename,i)
-		if invert: im.mult(-1.0)
+		if options.invert: im.mult(-1.0)
 
 		if len(procout) > 1:
 			for op in procout[1:]: # we take a sequence of processor option 2-tuples
