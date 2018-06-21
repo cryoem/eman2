@@ -23,12 +23,14 @@ def main():
 
 	parser.add_pos_argument(name="tiltseries",help="Specify the tilt series you intend to reconstruct.", default="", guitype='filebox', browser="EMTiltseriesTable(withmodal=True,multiselect=True)", filecheck=False, row=0, col=0,rowspan=1, colspan=2,nosharedb=True,mode="easy")
 
-	parser.add_header(name="orblock1", help='Just a visual separation', title="Specify either rawtlt or tltstep:", row=1, col=0, rowspan=1, colspan=2,mode="easy")
-
-	parser.add_argument("--rawtlt", type=str,help="Specify a text file contains raw tilt angles.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", filecheck=False, row=3, col=0, rowspan=1, colspan=2)#,mode="easy")
+	parser.add_header(name="orblock1", help='Just a visual separation', title="Specify either zeroid/tltstep OR rawtlt:", row=1, col=0, rowspan=1, colspan=2,mode="easy")
 
 	parser.add_argument("--zeroid", type=int,help="Index of the center tilt. Ignored when rawtlt is provided.", default=-1,guitype='intbox',row=4, col=0, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--tltstep", type=float,help="Step between tilts. Ignored when rawtlt is provided. Default is 2.0.", default=2.0,guitype='floatbox',row=4, col=1, rowspan=1, colspan=1,mode="easy")
+
+	parser.add_argument("--rawtlt", type=str,help="Specify a text file contains raw tilt angles.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", filecheck=False, row=3, col=0, rowspan=1, colspan=2)#,mode="easy")
+
+	parser.add_header(name="orblock1", help='Just a visual separation', title="** Options **", row=5, col=0, rowspan=1, colspan=2,mode="easy")
 
 	parser.add_argument("--tltax", type=float,help="Angle of the tilt axis. The program will calculate one if this option is not provided", default=None,guitype='floatbox',row=6, col=0, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--tltkeep", type=float,help="Fraction of tilts to keep in the reconstruction.", default=.9,guitype='floatbox',row=6, col=1, rowspan=1, colspan=1,mode="easy")

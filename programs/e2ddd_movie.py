@@ -65,13 +65,14 @@ def main():
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_pos_argument(name="movies",help="List the movies to align.", default="", guitype='filebox', browser="EMMovieDataTable(withmodal=True,multiselect=True)",  row=0, col=0,rowspan=1, colspan=3, mode="align,tomo")
+	parser.add_pos_argument(name="movies",help="List the movies to align.", default="", guitype='filebox', browser="EMMovieDataTable(withmodal=True,multiselect=True)",  row=0, col=0,rowspan=1, colspan=3, mode="align")
+	parser.add_pos_argument(name="movies",help="List the tilt modies to align. Note: You must specify images in tilt angle order (negative to positive).", default="", guitype='filebox', browser="EMMovieDataTable(withmodal=True,multiselect=True)",  row=0, col=0,rowspan=1, colspan=3, mode="tomo")
 
 	parser.add_header(name="orblock1", help='Just a visual separation', title="Tomography", row=1, col=0, rowspan=1, colspan=1, mode="tomo")
 
-	parser.add_argument("--rawtlt", default="", help="Specify a text file containing tilt angles that correspond to the input movies in alphabetical/numerical order.",guitype='filebox',browser="EMMovieRefsTable(withmodal=True,multiselect=False)", row=3, col=0, rowspan=1, colspan=3,mode='tomo')
-	parser.add_argument("--tomo_name", default="", help="Specify a name for the tilt series to be generated from the input movies.",guitype='strbox', row=4, col=0, rowspan=1, colspan=1,mode='tomo')
-	parser.add_argument("--tomo", default=False, help="Process input movies as tilts from a tomogram. This requires a tilt angles file (see --tilt_angles)",action="store_true", guitype='boolbox', row=4, col=2, rowspan=1, colspan=1, mode='tomo[True]')
+	#parser.add_argument("--rawtlt", default="", help="Specify a text file containing tilt angles that correspond to the input movies in alphabetical/numerical order.",guitype='filebox',browser="EMMovieRefsTable(withmodal=True,multiselect=False)", row=3, col=0, rowspan=1, colspan=3,mode='tomo')
+	parser.add_argument("--tiltseries_name", default="", help="Specify a name for the tilt series to be generated from the input movies.",guitype='strbox', row=4, col=0, rowspan=1, colspan=1,mode='tomo')
+	parser.add_argument("--tomo", default=False, help="Process input movies as tilts from a tomogram.",action="store_true", guitype='boolbox', row=4, col=2, rowspan=1, colspan=1, mode='tomo[True]')
 
 	parser.add_header(name="orblock1", help='Just a visual separation', title="Corrections", row=5, col=0, rowspan=1, colspan=1, mode="align,tomo")
 
@@ -385,11 +386,11 @@ def main():
 	else: gain=None
 
 	if options.tomo:
-		with open(options.rawtlt) as tlt:
-			angles = [a for a in np.loadtxt(tlt)]
+		#with open(options.rawtlt) as tlt:
+		#	angles = [a for a in np.loadtxt(tlt)]
 		db=js_open_dict(info_name(options.tomo_name,nodir=True))
-		db["rawtlt_source"] = options.rawtlt
-		db["tilt_angles"] = angles
+		#db["rawtlt_source"] = options.rawtlt
+		#db["tilt_angles"] = angles
 		if gain:
 			db["ddd_gainref"] = options.gain
 			# if options.rotate_gain:
@@ -417,8 +418,8 @@ def main():
 		#db["ddd_bad_pixel_file"] =
 		#if options.fixbadpixels:
 		#	db["ddd_fixbadpixels"] = options.fixbadpixels
-		for a in angles:
-			db[a] = {}
+		#for a in angles:
+		#	db[a] = {}
 		db.close()
 
 	# the user may provide multiple movies to process at once
@@ -427,9 +428,9 @@ def main():
 
 		if options.tomo:
 			# write reference image info to corresponding movie info.json files
-			angle = angles[idx]
+			#angle = angles[idx]
 			db=js_open_dict(info_name(options.tomo_name,nodir=True))
-			db[angle] = {"data_source":fsp}
+			#db[angle] = {"data_source":fsp}
 		else:
 			db=js_open_dict(info_name(fsp,nodir=True))
 			db["data_source"]=fsp
@@ -473,15 +474,13 @@ def main():
 
 		if flast > n : flast = n
 
-		if not options.tomo: angle=None
-
-		process_movie(options, fsp, dark, gain, first, flast, step, idx, angle)
+		process_movie(options, fsp, dark, gain, first, flast, step, idx)
 
 	print("Done")
 	E2end(pid)
 
 
-def process_movie(options,fsp,dark,gain,first,flast,step,idx,angle):
+def process_movie(options,fsp,dark,gain,first,flast,step,idx):
 	cwd = os.getcwd()
 	
 	# format outname
@@ -775,13 +774,13 @@ def process_movie(options,fsp,dark,gain,first,flast,step,idx,angle):
 		# store alignment parameters
 		if options.tomo:
 			db=js_open_dict(info_name(options.tomo_name,nodir=True))
-			db[angle]["ddd_alignment_trans"]=[i for i in locs]
-			db[angle]["ddd_alignment_qual"]=[q for q in quals]
-			db[angle]["ddd_alignment_time"]=runtime
-			db[angle]["ddd_alignment_precision"]=options.round
-			db[angle]["ddd_alignment_optbox"]=options.optbox
-			db[angle]["ddd_alignment_optstep"]=options.optstep
-			db[angle]["ddd_alignment_optalpha"]=options.optalpha
+			db[idx]["ddd_alignment_trans"]=[i for i in locs]
+			db[idx]["ddd_alignment_qual"]=[q for q in quals]
+			db[idx]["ddd_alignment_time"]=runtime
+			db[idx]["ddd_alignment_precision"]=options.round
+			db[idx]["ddd_alignment_optbox"]=options.optbox
+			db[idx]["ddd_alignment_optstep"]=options.optstep
+			db[idx]["ddd_alignment_optalpha"]=options.optalpha
 		else:
 			db=js_open_dict(info_name(fsp,nodir=True))
 			db["ddd_alignment_trans"]=[i for i in locs]
@@ -814,7 +813,7 @@ def process_movie(options,fsp,dark,gain,first,flast,step,idx,angle):
 		# Load previous/current alignment params (or input translations) (BOX FORMAT, tab separated values):
 			if options.tomo:
 				db=js_open_dict(info_name(options.tomo_name,nodir=True))
-				locs = db[angle]["ddd_alignment_trans"]
+				locs = db[idx]["ddd_alignment_trans"]
 				db.close()
 			else:
 				db=js_open_dict(info_name(fsp,nodir=True))

@@ -20,6 +20,8 @@ def main():
 	parser.add_argument("--dthr", type=float,help="distance threshold", default=16.0, guitype='floatbox', row=3, col=1,rowspan=1, colspan=1, mode="boxing")
 	parser.add_argument("--vthr", type=float,help="value threshold (n sigma)", default=2.0, guitype='floatbox', row=4, col=0,rowspan=1, colspan=1, mode="boxing")
 	parser.add_argument("--nptcl", type=int,help="maximum number of particles", default=500, guitype='intbox', row=4, col=1,rowspan=1, colspan=1, mode="boxing")
+	parser.add_argument("--ppid", type=int,help="ppid", default=-2)
+
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	

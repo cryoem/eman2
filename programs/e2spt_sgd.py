@@ -47,9 +47,10 @@ def main():
 	parser.add_argument("--fourier", action="store_true", default=False ,help="gradient descent in fourier space", guitype='boolbox',row=6, col=2,rowspan=1, colspan=1, mode="model")
 
 	parser.add_argument("--batchsize", type=int,help="SGD batch size", default=12,guitype='intbox',row=9, col=0,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--learnrate", type=float,help="Learning rate. Default is 0.1", default=.1,guitype='floatbox',row=9, col=1,rowspan=1, colspan=1, mode="model")
 
-	parser.add_argument("--niter", type=int,help="Number of iterations", default=5,guitype='intbox',row=9, col=1,rowspan=1, colspan=1, mode="model")
-	parser.add_argument("--nbatch", type=int,help="Number of batches per iteration", default=10,guitype='intbox',row=9, col=2,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--niter", type=int,help="Number of iterations", default=5, guitype='intbox',row=10, col=0,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--nbatch", type=int,help="Number of batches per iteration", default=10,guitype='intbox',row=10, col=1,rowspan=1, colspan=1, mode="model")
 
 	parser.add_argument("--path", type=str,help="path of output", default=None)
 	#parser.add_argument("--ref", type=str,help="ref", default=None)
@@ -59,7 +60,6 @@ def main():
 	#parser.add_argument("--gaussz", type=float,help="extra gauss filter at z direction", default=-1)
 	#parser.add_argument("--niter", type=int,help="Number of iterations.", default=5)
 	# parser.add_argument("--nbatch", type=int,help="Number of batches per iteration.", default=10)
-	# parser.add_argument("--learnrate", type=float,help="Learning rate. Default is 0.1", default=.1)
 	# parser.add_argument("--filterto", type=float,help="Fiter map to frequency after each iteration. Default is 0.02", default=.02)
 	# parser.add_argument("--mass", type=float,help="mass", default=500)
 	# parser.add_argument("--tarres", type=float,help="target resolution", default=10)
@@ -178,7 +178,7 @@ def main():
 				ddm=dmap*dmap
 				cc.append(ddm["mean_nonzero"])
 				
-				if options.ref==None:
+				if options.reference==None:
 					ref.process_inplace("xform.centerofmass")
 				if options.mask:
 					ref.process_inplace("mask.fromfile", {"filename": options.mask})
@@ -194,7 +194,7 @@ def main():
 		jspast=jspm.data.copy()
 		jspm=None
 		#### if symmetry exist, first align to symmetry axis
-		if options.sym!="c1" and options.ref==None:
+		if options.sym!="c1" and options.reference==None:
 			evenali=sym_search(newmap[0], options.sym)
 		else:
 			evenali=newmap[0].copy()
@@ -267,7 +267,7 @@ def make_ref(fname, options):
 	num=EMUtil.get_image_count(fname)
 	refs=[]
 	rfile="{}/ref.hdf".format(options.path)
-	if not options.ref:
+	if options.reference == None:
 		print("Making random references...")
 		for ie in [0,1]:
 			tt=parsesym("c1")
@@ -287,10 +287,10 @@ def make_ref(fname, options):
 			ref.write_image(rfile,ie)
 			refs.append(ref)
 	else:
-		er=EMData(options.ref)
+		er=EMData(options.reference)
 		ep=EMData(fname,0)
 		pp=" --process filter.lowpass.gauss:cutoff_freq={:.3f} --process filter.lowpass.randomphase:cutoff_freq={:.3f} --process normalize".format(options.filterto, options.filterto)
-		if EMUtil.get_image_count(options.ref)==1:
+		if EMUtil.get_image_count(options.reference)==1:
 			itr=2
 			pp+=" --append"
 		else:
@@ -302,11 +302,11 @@ def make_ref(fname, options):
 				rs=er["apix_x"]/ep["apix_x"]
 				
 				if rs>1.:
-					run("e2proc3d.py {} {}/ref.hdf --clip {} --scale {} {}".format(options.ref, options.path, ep["nx"], rs, pp))
+					run("e2proc3d.py {} {}/ref.hdf --clip {} --scale {} {}".format(options.reference, options.path, ep["nx"], rs, pp))
 				else:
-					run("e2proc3d.py {} {}/ref.hdf --scale {} --clip {} {}".format(options.ref, options.path,  rs, ep["nx"], pp))
+					run("e2proc3d.py {} {}/ref.hdf --scale {} --clip {} {}".format(options.reference, options.path,  rs, ep["nx"], pp))
 			else:
-				run("e2proc3d.py {} {}/ref.hdf {}".format(options.ref, options.path, pp))
+				run("e2proc3d.py {} {}/ref.hdf {}".format(options.reference, options.path, pp))
 		
 		
 		refs=[EMData(rfile, 0), EMData(rfile,1)]
