@@ -52,8 +52,8 @@ def main():
 	parser.add_argument("--niter", type=int,help="Number of iterations", default=5, guitype='intbox',row=10, col=0,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--nbatch", type=int,help="Number of batches per iteration", default=10,guitype='intbox',row=10, col=1,rowspan=1, colspan=1, mode="model")
 
-        parser.add_argument("--nogs", action="store_true", default=True ,help="do not use gold standard refinement..", guitype='boolbox',row=11, col=0,rowspan=1, colspan=1, mode="model")
-	parser.add_argument("--applysym", action="store_true", default=False ,help="apply symmetry", guitype='boolbox',row=11, col=1,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--nogs", action="store_true", default=True ,help="do not use gold standard refinement..", guitype='boolbox',row=9, col=2,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--applysym", action="store_true", default=False ,help="apply symmetry", guitype='boolbox',row=10, col=2,rowspan=1, colspan=1, mode="model")
 
 	parser.add_argument("--path", type=str,help="path of output", default=None)
 	#parser.add_argument("--ref", type=str,help="ref", default=None)
