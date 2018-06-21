@@ -1327,7 +1327,8 @@ def model_gauss_noise(sigma, nx, ny=1, nz=1):
 	"""
 	e = EMData()
 	e.set_size(nx, ny, nz)
-	e.process_inplace("testimage.noise.gauss", {"sigma":sigma})
+	if(sigma == 0.0): e.to_zero()
+	else: e.process_inplace("testimage.noise.gauss", {"sigma":sigma})
 	return e
 
 def model_blank(nx, ny=1, nz=1, bckg = 0.0):
