@@ -47,7 +47,8 @@ def main():
 	parser.add_argument("--fourier", action="store_true", default=False ,help="gradient descent in fourier space", guitype='boolbox',row=6, col=2,rowspan=1, colspan=1, mode="model")
 
 	parser.add_argument("--batchsize", type=int,help="SGD batch size", default=12,guitype='intbox',row=9, col=0,rowspan=1, colspan=1, mode="model")
-
+	parser.add_argument("--nogs", action="store_true", default=True ,help="do not use gold standard refinement..", guitype='boolbox',row=7, col=2,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--applysym", action="store_true", default=False ,help="apply symmetry", guitype='boolbox',row=7, col=1,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--niter", type=int,help="Number of iterations", default=5,guitype='intbox',row=9, col=1,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--nbatch", type=int,help="Number of batches per iteration", default=10,guitype='intbox',row=9, col=2,rowspan=1, colspan=1, mode="model")
 
@@ -102,8 +103,12 @@ def main():
 	learnrate=options.learnrate
 	#lrmult=.98
 	#print("iteration, learning rate, mean gradient")
-	
-	idxs=[np.arange(0, num, 2), np.arange(1, num, 2)]
+	if options.nogs:
+		idxs=[np.arange(num)]
+		eoiter=["full"]
+	else:
+		idxs=[np.arange(0, num, 2), np.arange(1, num, 2)]
+		eoiter=["even","odd"]
 	options.threads=options.batchsize
 	#nbatch=len(idxs[0])/batchsize
 	
@@ -120,7 +125,7 @@ def main():
 		if itr>1:
 			jspm.update(jspast)
 		
-		for ieo, eo in enumerate(["even", "odd"]):
+		for ieo, eo in enumerate(eoiter):
 			
 			print("Iteration {}, {}:".format(itr, eo))
 			
@@ -157,11 +162,12 @@ def main():
 				if options.gaussz>0:
 					avg.process_inplace('filter.lowpass.gauss', {"cutoff_freq":options.gaussz})
 				avg.process_inplace('normalize')
-				#avg.process_inplace("xform.applysym",{"sym":options.sym})
+				if options.applysym:
+					avg.process_inplace("xform.applysym",{"sym":options.sym,"averager":"mean.tomo"})
 				if options.fourier:
 					avgft=avg.do_fft()
 					refft=ref.do_fft()
-					avgft.process_inplace("mask.wedgefill",{"fillsource":refft, "thresh_sigma":.9})
+					avgft.process_inplace("mask.wedgefill",{"fillsource":refft, "thresh_sigma":1})
 					
 					dmap=avgft-refft
 					refft=refft+learnrate*dmap
@@ -199,32 +205,36 @@ def main():
 		else:
 			evenali=newmap[0].copy()
 		
-		oddali=newmap[1].align("rotate_translate_3d_tree", evenali)
-		evenali.write_image("{}/threed_{:02d}_even.hdf".format(path, itr))
 		evenali.write_image("{}/threed_{:02d}_raw.hdf".format(path, itr), 0)
-		oddali.write_image("{}/threed_{:02d}_odd.hdf".format(path, itr))
-		oddali.write_image("{}/threed_{:02d}_raw.hdf".format(path, itr), 1)
 		
-		refs=[evenali, oddali]
-		
-		s=" --align --automask3d mask.soft:outer_radius=-1 "
-		if options.setsf:
-			s+=" --setsf {}".format(options.setsf)
+		if options.nogs:
+			refs=[evenali]
+		else:
+			oddali=newmap[1].align("rotate_translate_3d_tree", evenali)
+			evenali.write_image("{}/threed_{:02d}_even.hdf".format(path, itr))
+			oddali.write_image("{}/threed_{:02d}_odd.hdf".format(path, itr))
+			oddali.write_image("{}/threed_{:02d}_raw.hdf".format(path, itr), 1)
 			
-		if options.localfilter:
-			s+=" --tophat local "
-		ppcmd="e2refine_postprocess.py --even {} --odd {} --output {} --iter {:d} --mass {} --restarget {} --threads {} --sym {} {} ".format(
-			os.path.join(path, "threed_{:02d}_even.hdf".format(itr)),
-			os.path.join(path, "threed_{:02d}_odd.hdf".format(itr)),
-			os.path.join(path, "threed_{:02d}.hdf".format(itr)),
-			itr, options.mass, options.tarres, options.threads, options.sym, s)
-		run(ppcmd)
-		fsc=np.loadtxt(os.path.join(path, "fsc_unmasked_{:02d}.txt".format(itr)))
-		rs=fsc[fsc[:,1]<0.3, 0]
-		if len(rs)>0: rs=rs[0]
-		else: rs=options.filterto
-		print("Resolution (FSC<0.3) is ~{:.1f} A".format(1./rs))
-		filterto=min(rs, options.filterto)
+			refs=[evenali, oddali]
+			
+			s=" --align --automask3d mask.soft:outer_radius=-1 "
+			if options.setsf:
+				s+=" --setsf {}".format(options.setsf)
+				
+			if options.localfilter:
+				s+=" --tophat local "
+			ppcmd="e2refine_postprocess.py --even {} --odd {} --output {} --iter {:d} --mass {} --restarget {} --threads {} --sym {} {} ".format(
+				os.path.join(path, "threed_{:02d}_even.hdf".format(itr)),
+				os.path.join(path, "threed_{:02d}_odd.hdf".format(itr)),
+				os.path.join(path, "threed_{:02d}.hdf".format(itr)),
+				itr, options.mass, options.tarres, options.threads, options.sym, s)
+			run(ppcmd)
+			fsc=np.loadtxt(os.path.join(path, "fsc_unmasked_{:02d}.txt".format(itr)))
+			rs=fsc[fsc[:,1]<0.3, 0]
+			if len(rs)>0: rs=rs[0]
+			else: rs=options.filterto
+			print("Resolution (FSC<0.3) is ~{:.1f} A".format(1./rs))
+			filterto=min(rs, options.filterto)
 	
 	#ref.write_image(os.path.join(path,"output.hdf"))
 	print("Done")
@@ -312,7 +322,6 @@ def make_ref(fname, options):
 		refs=[EMData(rfile, 0), EMData(rfile,1)]
 		
 	return refs
-
 def run(cmd):
 	print(cmd)
 	launch_childprocess(cmd)
