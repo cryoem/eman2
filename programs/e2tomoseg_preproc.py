@@ -64,14 +64,17 @@ def main():
 	for i,filename in enumerate(args):
 		name = os.path.basename(filename).split(".")[0]
 		procout=["tomograms/{}_{}.hdf".format(name,options.proctag)]
-
+		
+		sys.stdout.write("\r{}/{}".format(i+1,len(args)))
+		sys.stdout.flush()
+		
 		if proc1[0] != None: procout.append(proc1)
 		if proc2[0] != None: procout.append(proc2)
 		if proc3[0] != None: procout.append(proc3)
 		if proc4[0] != None: procout.append(proc4)
 		if proc5[0] != None: procout.append(proc5)
 
-		im = EMData(filename,i)
+		im = EMData(filename,0)
 		if options.invert: im.mult(-1.0)
 
 		if len(procout) > 1:
@@ -79,7 +82,7 @@ def main():
 				if op[0] != None: 
 					im.process_inplace(op[0],op[1])
 		
-		im.write_image(procout[0],i)
+		im.write_image(procout[0],0)
 
 if __name__ == "__main__":
 	main()

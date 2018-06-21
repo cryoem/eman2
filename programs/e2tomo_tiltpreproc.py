@@ -62,7 +62,7 @@ def main():
 		print("No processing specified. Exiting.")
 		sys.exit(1)
 
-	for i,filename in enumerate(options.args):
+	for filename in options.args:
 		name = os.path.basename(filename).split(".")[0]
 		if options.proctag:
 			procout=["tiltseries/{}__{}.hdf".format(name,options.proctag)]
@@ -75,16 +75,18 @@ def main():
 		if proc4[0] != None: procout.append(proc4)
 		if proc5[0] != None: procout.append(proc5)
 
+		nimg = EMUtil.get_image_count(filename)
 
-		im = EMData(filename,i)
-		if invert: im.mult(-1.0)
+		for i in range(nimg):
+			im = EMData(filename,i)
+			if invert: im.mult(-1.0)
 
-		if len(procout) > 1:
-			for op in procout[1:]: # we take a sequence of processor option 2-tuples
-				if op[0] != None: 
-					im.process_inplace(op[0],op[1])
-		
-		im.write_image(procout[0],i)
+			if len(procout) > 1:
+				for op in procout[1:]: # we take a sequence of processor option 2-tuples
+					if op[0] != None: 
+						im.process_inplace(op[0],op[1])
+			
+			im.write_image(procout[0],i)
 
 if __name__ == "__main__":
 	main()
