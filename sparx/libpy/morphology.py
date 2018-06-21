@@ -4866,7 +4866,7 @@ def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.
 	
 			#  next modified for test
 			fb[imi] = fft( prgs(volft, kb, [phi,theta,psi,-tx,-ty]) )   #fa[imi].copy()#
-			fbc[imi] = fb[imi].conjg()
+			#fbc[imi] = fb[imi].conjg()  #  THIS IS WRONG PAP 06/19/2018
 			# next is test
 			#fa[imi] = filt_ctf(fa[imi] , generate_ctf([defold, Cs, voltage, Pixel_size, 0.0, wgh, 0.9, 77.]),False) + fft(model_gauss_noise(2., nx,nx)) 
 
