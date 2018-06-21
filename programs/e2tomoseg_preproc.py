@@ -62,7 +62,7 @@ def main():
 		sys.exit(1)
 
 	for i,filename in enumerate(args):
-		name = os.path.basename(name).split(".")[0]
+		name = os.path.basename(filename).split(".")[0]
 		procout=["tomograms/{}_{}.hdf".format(name,options.proctag)]
 
 		if proc1[0] != None: procout.append(proc1)

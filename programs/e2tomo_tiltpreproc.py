@@ -52,8 +52,6 @@ def main():
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	(options, args) = parser.parse_args()
 
-	options.filenames = args
-
 	proc1 = parsemodopt(options.proc1)
 	proc2 = parsemodopt(options.proc2)
 	proc3 = parsemodopt(options.proc3)
@@ -64,8 +62,8 @@ def main():
 		print("No processing specified. Exiting.")
 		sys.exit(1)
 
-	for i,filename in enumerate(options.filenames):
-		name = os.path.basename(name).split(".")[0]
+	for i,filename in enumerate(options.args):
+		name = os.path.basename(filename).split(".")[0]
 		if options.proctag:
 			procout=["tiltseries/{}__{}.hdf".format(name,options.proctag)]
 		else:

@@ -22,7 +22,7 @@ def alifn(jsd,fsp,i,a,options):
 
 
 def main():
-	
+
 	usage=" "
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
@@ -47,10 +47,13 @@ def main():
 	parser.add_argument("--fourier", action="store_true", default=False ,help="gradient descent in fourier space", guitype='boolbox',row=6, col=2,rowspan=1, colspan=1, mode="model")
 
 	parser.add_argument("--batchsize", type=int,help="SGD batch size", default=12,guitype='intbox',row=9, col=0,rowspan=1, colspan=1, mode="model")
-	parser.add_argument("--nogs", action="store_true", default=True ,help="do not use gold standard refinement..", guitype='boolbox',row=7, col=2,rowspan=1, colspan=1, mode="model")
-	parser.add_argument("--applysym", action="store_true", default=False ,help="apply symmetry", guitype='boolbox',row=7, col=1,rowspan=1, colspan=1, mode="model")
-	parser.add_argument("--niter", type=int,help="Number of iterations", default=5,guitype='intbox',row=9, col=1,rowspan=1, colspan=1, mode="model")
-	parser.add_argument("--nbatch", type=int,help="Number of batches per iteration", default=10,guitype='intbox',row=9, col=2,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--learnrate", type=float,help="Learning rate. Default is 0.1", default=.1,guitype='floatbox',row=9, col=1,rowspan=1, colspan=1, mode="model")
+
+	parser.add_argument("--niter", type=int,help="Number of iterations", default=5, guitype='intbox',row=10, col=0,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--nbatch", type=int,help="Number of batches per iteration", default=10,guitype='intbox',row=10, col=1,rowspan=1, colspan=1, mode="model")
+
+	parser.add_argument("--nogs", action="store_true", default=True ,help="do not use gold standard refinement..", guitype='boolbox',row=9, col=2,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--applysym", action="store_true", default=False ,help="apply symmetry", guitype='boolbox',row=10, col=2,rowspan=1, colspan=1, mode="model")
 
 	parser.add_argument("--path", type=str,help="path of output", default=None)
 	#parser.add_argument("--ref", type=str,help="ref", default=None)
@@ -60,7 +63,6 @@ def main():
 	#parser.add_argument("--gaussz", type=float,help="extra gauss filter at z direction", default=-1)
 	#parser.add_argument("--niter", type=int,help="Number of iterations.", default=5)
 	# parser.add_argument("--nbatch", type=int,help="Number of batches per iteration.", default=10)
-	parser.add_argument("--learnrate", type=float,help="Learning rate. Default is 0.1", default=.1)
 	# parser.add_argument("--filterto", type=float,help="Fiter map to frequency after each iteration. Default is 0.02", default=.02)
 	# parser.add_argument("--mass", type=float,help="mass", default=500)
 	# parser.add_argument("--tarres", type=float,help="target resolution", default=10)
@@ -74,7 +76,7 @@ def main():
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
-	
+
 	if options.path==None:
 		for i in range(100):
 			pname="sptsgd_{:02d}".format(i)
@@ -91,13 +93,13 @@ def main():
 		else:
 			print("Overwritting {}...".format(options.path))
 			os.system("rm {}/*".format(options.path))
-		
+
 	path=options.path
 	print("Writing in {}..".format(path))
 	fname=args[0]
-	
+
 	refs=make_ref(fname, options)
-	
+
 	num=EMUtil.get_image_count(fname)
 	batchsize=options.batchsize
 	learnrate=options.learnrate
@@ -111,31 +113,31 @@ def main():
 		eoiter=["even","odd"]
 	options.threads=options.batchsize
 	#nbatch=len(idxs[0])/batchsize
-	
+
 	jspast=None
 	filterto=options.filterto
 	for itr in range(1, options.niter+1):
-	
+
 		nbatch=options.nbatch
 		if itr==1: nbatch*=2
 		print('#'*nbatch)
-			
+
 		newmap=[]
 		jspm=js_open_dict("{}/particle_parms_{:02d}.json".format(options.path,itr))
 		if itr>1:
 			jspm.update(jspast)
-		
+
 		for ieo, eo in enumerate(eoiter):
-			
+
 			print("Iteration {}, {}:".format(itr, eo))
-			
+
 			ref=refs[ieo].copy()
-			
+
 			tmpout=os.path.join(path,"tmpout_{:02d}_{}.hdf".format(itr, eo))
 			ref.write_image(tmpout,-1)
 			cc=[]
 			for ib in range(nbatch):
-				
+
 				jsd=Queue.Queue(0)
 				idx=idxs[ieo].copy()
 				np.random.shuffle(idx)
@@ -168,7 +170,7 @@ def main():
 					avgft=avg.do_fft()
 					refft=ref.do_fft()
 					avgft.process_inplace("mask.wedgefill",{"fillsource":refft, "thresh_sigma":1})
-					
+
 					dmap=avgft-refft
 					refft=refft+learnrate*dmap
 					refnew=refft.do_ift()
@@ -176,27 +178,26 @@ def main():
 					dmap=refnew-ref
 					ref=refnew.copy()
 				else:
-					
+
 					dmap=avg-ref
 					ref=ref+learnrate*dmap
 					ref.process_inplace('normalize')
-				
+
 				ddm=dmap*dmap
 				cc.append(ddm["mean_nonzero"])
-				
 				if options.reference==None:
 					ref.process_inplace("xform.centerofmass")
 				if options.mask:
 					ref.process_inplace("mask.fromfile", {"filename": options.mask})
-					
+
 				ref.write_image(tmpout,-1)
 				ref.write_image(os.path.join(path,"output.hdf"), ieo)
 				sys.stdout.write('#')
 				sys.stdout.flush()
-		
+
 			newmap.append(ref)
 			print("  mean gradient {:.3f}".format(np.mean(cc)))
-		
+
 		jspast=jspm.data.copy()
 		jspm=None
 		#### if symmetry exist, first align to symmetry axis
@@ -204,9 +205,9 @@ def main():
 			evenali=sym_search(newmap[0], options.sym)
 		else:
 			evenali=newmap[0].copy()
-		
+
 		evenali.write_image("{}/threed_{:02d}_raw.hdf".format(path, itr), 0)
-		
+
 		if options.nogs:
 			refs=[evenali]
 		else:
@@ -214,13 +215,13 @@ def main():
 			evenali.write_image("{}/threed_{:02d}_even.hdf".format(path, itr))
 			oddali.write_image("{}/threed_{:02d}_odd.hdf".format(path, itr))
 			oddali.write_image("{}/threed_{:02d}_raw.hdf".format(path, itr), 1)
-			
+
 			refs=[evenali, oddali]
-			
+
 			s=" --align --automask3d mask.soft:outer_radius=-1 "
 			if options.setsf:
 				s+=" --setsf {}".format(options.setsf)
-				
+
 			if options.localfilter:
 				s+=" --tophat local "
 			ppcmd="e2refine_postprocess.py --even {} --odd {} --output {} --iter {:d} --mass {} --restarget {} --threads {} --sym {} {} ".format(
@@ -235,23 +236,23 @@ def main():
 			else: rs=options.filterto
 			print("Resolution (FSC<0.3) is ~{:.1f} A".format(1./rs))
 			filterto=min(rs, options.filterto)
-	
+
 	#ref.write_image(os.path.join(path,"output.hdf"))
 	print("Done")
 	E2end(logid)
-	
+
 
 def sym_search(e, sym):
 	print("Align to symmetry axis...")
 	ntry=20
-	
+
 	s=parsesym(sym)
 	oris=s.gen_orientations("rand",{"n":ntry, "phitoo":True})
 	jsd=Queue.Queue(0)
 	thrds=[threading.Thread(target=sym_ali,args=([e, o, sym, jsd])) for o in oris]
 	for t in thrds: t.start()
 	for t in thrds: t.join()
-	
+
 	alis=[]
 	while not jsd.empty():
 		alis.append(jsd.get())
@@ -265,7 +266,7 @@ def sym_search(e, sym):
 	#outname=fname[:-4]+"_sym.hdf"
 	#a.write_image(outname)
 	return a
-	
+
 def sym_ali(e,o,sym,jsd):
 	s=e["nx"]/4
 	a=e.align("symalignquat", e, {"sym":sym, "xform.align3d":o,"maxshift":s}, "ccc.tomo.thresh")
@@ -273,7 +274,7 @@ def sym_ali(e,o,sym,jsd):
 
 
 def make_ref(fname, options):
-	
+
 	num=EMUtil.get_image_count(fname)
 	refs=[]
 	rfile="{}/ref.hdf".format(options.path)
@@ -306,27 +307,25 @@ def make_ref(fname, options):
 		else:
 			itr=1
 		for i in range(itr):
-			
+
 			if ep["apix_x"]!=er["apix_x"]:
 				if i==0: print("apix mismatch {:.2f} vs {:.2f}".format(ep["apix_x"], er["apix_x"]))
 				rs=er["apix_x"]/ep["apix_x"]
-				
+
 				if rs>1.:
 					run("e2proc3d.py {} {}/ref.hdf --clip {} --scale {} {}".format(options.reference, options.path, ep["nx"], rs, pp))
 				else:
 					run("e2proc3d.py {} {}/ref.hdf --scale {} --clip {} {}".format(options.reference, options.path,  rs, ep["nx"], pp))
 			else:
 				run("e2proc3d.py {} {}/ref.hdf {}".format(options.reference, options.path, pp))
-		
-		
 		refs=[EMData(rfile, 0), EMData(rfile,1)]
-		
+
 	return refs
 def run(cmd):
 	print(cmd)
 	launch_childprocess(cmd)
-	
-	
+
+
 if __name__ == '__main__':
 	main()
-	
+
