@@ -112,23 +112,73 @@ def main():
 	global classmx,nptcl,cmxtx,cmxty,cmxalpha,cmxmirror,eulers,threed,ptclmask,rings,pf,cptcl
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options] [refine_xx]
-	Use --evalptclqual to assess particle quality. e2display.py ptclfsc_*.txt --plot """
+	This program performs various assessments of e2refine_easy (or similar) runs, and operates in one of several possible modes.
+	A refine_xx folder name must always be provided, except for resolution_all or resolution_vsref, which operate on all 
+	refine_xx folders:
+
+	--timing
+		will report how long each refinement took to complete as well as individual tasks within the refinement
+		
+	--timingbypath
+		will report total timing information for each refine_xx folder, along with useful refinement parameters
+		
+	--resolution
+		Computes per-iteration FSCs for a single refine_xx folder
+		
+	--resolution_all
+		Computes FSC curves for the final iteration of every refine_xx folder
+		
+	--resolution_vsref
+		Computes FSC curve for the final iteration of each refine_xx folder vs a provided reference volume. 
+		
+	--evalptclqual
+		This provides the ability to assess the agreement between individual particles used for a refinement and the 
+		final refinement itself in several critical ways. Using this option will automatically generate two new sets/ 
+		containing "good" and "bad" particles from the population used to run the specified refinement. The assessment
+		is made using a set of heuristics. A multicolumn text file is also produced containing detailed results of
+		the per-particle comparison (ptclfsc_XX.txt). The first line of this text file contains details about the
+		meaning of each column:
+		0 - 100-30 it1 (integrated FSC from 100-30 A resolution for second to last iteration)
+		1 - 30-18 it1
+		2 - 18-10 it1
+		3 - 10-4 it1
+		4 - 100-30 it2 (integrated FSC from 100-30 A resolution for last iteration)
+		5 - 30-18 it2
+		6 - 18-10 it2
+		7 - 10-4 it2
+		8 - it12rmsd (RMSD between it1 and it2 integrated FSCs)
+		9-11 - alt1, az1, cls1  (orientation parameters for second to last iteration)
+		12-14 - alt2, az2, cls2 ( " for last iteration)
+		15 - defocus
+		
+		e2display.py --plot ptclfsc*txt		(then adjust columns the plot displays, eg- 4 vs 5, 4 vs 6, 0 vs 4, 1 vs 5)
+
+	--evalclassqual
+		similar analysis to evalptclqual but for class-averages vs projections
+		
+	--anisotropy
+		Assesses the amount and direction of any magnification anisotropy present in a raw data set by considering
+		particles in a range of different orientations. Works best with large particles. Specify a class-average number
+		for a class containing many particles (within a particular refine_xx folder). It is a good idea to compare results
+		among classes in different highly occupied orientations.
+
+	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	parser.add_pos_argument(name="refine_xx",help="Name of a completed refine_xx folder.", default="", guitype='filebox', browser="EMRefine2dTable(withmodal=True,multiselect=False)",  filecheck=False, row=0, col=0,rowspan=1, colspan=2, mode='evalptcl')
-	parser.add_argument("--evalptclqual", default=False, action="store_true", help="Evaluates the particle-map agreement using the refine_xx folder name. This may be used to identify bad particles.",guitype='boolbox', row=8, col=1, rowspan=1, colspan=1, mode='evalptcl[True]')
-	parser.add_argument("--evalclassqual", default=False, action="store_true", help="Evaluates the class-average-projection agreement using the refine_xx folder name.",guitype='boolbox', row=8, col=2, rowspan=1, colspan=1, mode='evalptcl[False]')
-	parser.add_argument("--evalclassdetail", default=False, action="store_true", help="If specified with evalclassqual, will generate individual FRC curves for each class average in the even subset")
-	parser.add_argument("--includeprojs", default=False, action="store_true", help="If specified with --evalptclqual, projections will be written to disk for easy comparison.",guitype='boolbox', row=8, col=0, rowspan=1, colspan=1, mode='evalptcl[True]')
-	parser.add_argument("--anisotropy", type=int, default=-1, help="Specify a class-number (more particles better). Will use that class to evaluate magnification anisotropy in the data. ")
-	parser.add_argument("--iter", type=int, default=None, help="If a refine_XX folder is being used, this selects a particular refinement iteration. Otherwise the last complete iteration is used.")
-	parser.add_argument("--mask",type=str,help="Mask to be used to focus --evalptclqual. May be useful for separating heterogeneous data.", default=None)
-	parser.add_argument("--sym",type=str,help="Symmetry to be used in searching adjacent unit cells", default="c1")
 	parser.add_argument("--timing", default=False, action="store_true", help="Report on the time required for each step of each refinement run")
 	parser.add_argument("--timingbypath", default=False, action="store_true", help="Report on the CPU time required in each refine_xx folder")
 	parser.add_argument("--resolution", default=False, action="store_true", help="generates a resolution and convergence plot for a single refinement run.")
 	parser.add_argument("--resolution_all", default=False, action="store_true", help="generates resolution plot with the last iteration of all refine_xx directories")
 	parser.add_argument("--resolution_vsref", type=str, default=None, help="Computes the FSC between the last iteration of each refine_xx directory and a specified reference map. Map must be aligned, but will be rescaled if necessary.")
+	parser.add_argument("--evalptclqual", default=False, action="store_true", help="Evaluates the particle-map agreement using the refine_xx folder name. This may be used to identify bad particles.",guitype='boolbox', row=8, col=1, rowspan=1, colspan=1, mode='evalptcl[True]')
+	parser.add_argument("--evalclassqual", default=False, action="store_true", help="Evaluates the class-average-projection agreement using the refine_xx folder name.",guitype='boolbox', row=8, col=2, rowspan=1, colspan=1, mode='evalptcl[False]')
+	parser.add_argument("--anisotropy", type=int, default=-1, help="Specify a class-number (more particles better). Will use that class to evaluate magnification anisotropy in the data. ")
+	parser.add_argument("--evalclassdetail", default=False, action="store_true", help="If specified with evalclassqual, will generate individual FRC curves for each class average in the even subset")
+	parser.add_argument("--includeprojs", default=False, action="store_true", help="If specified with --evalptclqual, projections will be written to disk for easy comparison.",guitype='boolbox', row=8, col=0, rowspan=1, colspan=1, mode='evalptcl[True]')
+	parser.add_argument("--iter", type=int, default=None, help="If a refine_XX folder is being used, this selects a particular refinement iteration. Otherwise the last complete iteration is used.")
+	parser.add_argument("--mask",type=str,help="Mask to be used to focus --evalptclqual and other options. May be useful for separating heterogeneous data.", default=None)
+	parser.add_argument("--sym",type=str,help="Symmetry to be used in searching adjacent unit cells", default="c1")
 	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful",guitype='intbox', row=9, col=0, rowspan=1, colspan=1, mode='evalptcl[4]')
 	#parser.add_argument("--parmcmp",  default=False, action="store_true",help="Compare parameters used in different refinement rounds")
 	#parser.add_argument("--parmpair",default=None,type=str,help="Specify iter,iter to compare the parameters used between 2 itertions.")
