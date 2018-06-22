@@ -29,33 +29,37 @@ def main():
 	parser.add_argument("--tltstep", type=float,help="Step between tilts. Ignored when rawtlt is provided. Default is 2.0.", default=2.0,guitype='floatbox',row=3, col=1, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--rawtlt", type=str,help="Specify a text file contains raw tilt angles.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", filecheck=False, row=4, col=0, rowspan=1, colspan=2)#,mode="easy")
 
-	parser.add_header(name="orblock1", help='Just a visual separation', title="** Options **", row=5, col=0, rowspan=1, colspan=2,mode="easy")
+	parser.add_header(name="orblock1", help='Just a visual separation', title="Options", row=5, col=0, rowspan=1, colspan=2,mode="easy")
 
-	parser.add_argument("--tltax", type=float,help="Angle of the tilt axis. The program will calculate one if this option is not provided", default=None,guitype='floatbox',row=6, col=0, rowspan=1, colspan=1,mode="easy")
-	parser.add_argument("--tltkeep", type=float,help="Fraction of tilts to keep in the reconstruction.", default=.9,guitype='floatbox',row=6, col=1, rowspan=1, colspan=1,mode="easy")
+	parser.add_argument("--tltax", type=float,help="Angle of the tilt axis. The program will calculate one if this option is not provided", default=None)#,guitype='floatbox',row=6, col=0, rowspan=1, colspan=1,mode="easy")
+	
+	parser.add_argument("--tltkeep", type=float,help="Fraction of tilts to keep in the reconstruction.", default=.9,guitype='floatbox',row=6, col=0, rowspan=1, colspan=1,mode="easy")
+	parser.add_argument("--tltrange", type=str,help="Include only tilts between 'START' and 'STOP', i.e. -40.0,40.0. Default behavior is to include all tilts.", default=None, guitype='strbox',row=6, col=1, rowspan=1, colspan=1,mode="easy")
 
-	parser.add_argument("--npk", type=int,help="Number of landmarks to use. Default is 40.", default=40,guitype='intbox',row=7, col=0, rowspan=1, colspan=1, mode="easy")
-	parser.add_argument("--pkkeep", type=float,help="Fraction of landmarks to keep in the tracking.", default=.9,guitype='floatbox',row=7, col=1, rowspan=1, colspan=1,mode="easy")
-	parser.add_argument("--threads", type=int,help="Number of threads", default=12,guitype='intbox',row=10, col=1, rowspan=1, colspan=1,mode="easy")
-	parser.add_argument("--niter", type=str,help="Number of iterations for bin8, bin4, bin2 images. Default if 2,1,1,1", default="2,1,1,1",guitype='strbox',row=10, col=0, rowspan=1, colspan=1,mode='easy[2,1,1,1]')
-	parser.add_argument("--outsize", type=str,help="Size of output tomograms. choose from 1k and 2k. default is 1k", default="1k",guitype='strbox',row=11, col=0, rowspan=1, colspan=1,mode="easy")
+	parser.add_argument("--outsize", type=str,help="Size of output tomograms. choose from 1k and 2k. default is 1k", default="1k",guitype='strbox',row=7, col=0, rowspan=1, colspan=1,mode="easy")
+	parser.add_argument("--niter", type=str,help="Number of iterations for bin8, bin4, bin2 images. Default if 2,1,1,1", default="2,1,1,1",guitype='strbox',row=7, col=1, rowspan=1, colspan=1,mode='easy[2,1,1,1]')
+	
+	parser.add_argument("--badzero", action="store_true",help="In case the 0 degree tilt is bad for some reason...", default=False, guitype='boolbox',row=8, col=0, rowspan=1, colspan=1,mode="easy")
+	parser.add_argument("--bytile", action="store_true",help="make final tomogram by tiles.. ", default=False, guitype='boolbox',row=8, col=1, rowspan=1, colspan=1,mode="easy")
+	
+	parser.add_argument("--load", action="store_true",help="load existing tilt parameters.", default=False,guitype='boolbox',row=9, col=0, rowspan=1, colspan=1,mode="easy")
+	parser.add_argument("--notmp", action="store_true",help="Do not write temporary files.", default=False, mode="easy[True]", guitype="boolbox", row=9,col=1, rowspan=1, colspan=1)
 
-	parser.add_argument("--pk_mindist", type=float,help="Minimum distance between landmarks in nm.", default=-1)
-	parser.add_argument("--pk_maxval", type=float,help="Maximum Density value of landmarks (n sigma). Default is -5", default=-5.)
-	parser.add_argument("--load", action="store_true",help="load existing tilt parameters.", default=False,guitype='boolbox',row=24, col=1, rowspan=1, colspan=1,mode="easy")
+	parser.add_argument("--npk", type=int,help="Number of landmarks to use. Default is 40.", default=40,guitype='intbox',row=10, col=0, rowspan=1, colspan=1, mode="easy")
+	parser.add_argument("--pkkeep", type=float,help="Fraction of landmarks to keep in the tracking.", default=.9,guitype='floatbox',row=10, col=1, rowspan=1, colspan=1,mode="easy")
+
 	parser.add_argument("--clipz", type=float,help="How aggressive should it be when clipping the final tomogram output. default is 0.6, (-1 means not clipping at all)", default=0.6)#,guitype='floatbox',row=8, col=1, rowspan=1, colspan=1)
 	parser.add_argument("--bxsz", type=int,help="Box size of the particles for tracking. Do not change this unless necessary..", default=32)#,guitype='intbox',row=8, col=0, rowspan=1, colspan=1)
-	parser.add_argument("--notmp", action="store_true",help="Do not write temporary files.", default=False, mode="easy[False]", guitype="boolbox", row=24,col=0, rowspan=1, colspan=1)
+	parser.add_argument("--pk_mindist", type=float,help="Minimum distance between landmarks in nm.", default=-1)
+	parser.add_argument("--pk_maxval", type=float,help="Maximum Density value of landmarks (n sigma). Default is -5", default=-5.)
+
+	parser.add_argument("--threads", type=int,help="Number of threads", default=11,guitype='intbox',row=11, col=0, rowspan=1, colspan=1,mode="easy")
 
 	# parser.add_argument("--shrink", type=float,help="Mean-shrink tilt images by this integer value. We suggest using a value that converts image dimensions to approximately 1024x1024. The default is 4.", default=4, guitype='floatbox', row=6, col=0, rowspan=1, colspan=1, mode="easy[4]")
 
 	parser.add_argument("--tmppath", type=str,help="Temporary path", default=None)
 
 	#parser.add_argument("--savenorm", action="store_true",help="Save normalization volume from reconstruction.", default=False, guitype='boolbox',row=18, col=0, rowspan=1, colspan=1,mode="easy")
-
-	parser.add_argument("--badzero", action="store_true",help="In case the 0 degree tilt is bad for some reason...", default=False, guitype='boolbox',row=19, col=0, rowspan=1, colspan=1,mode="easy")
-
-	parser.add_argument("--bytile", action="store_true",help="make final tomogram by tiles.. ", default=False, guitype='boolbox',row=19, col=1, rowspan=1, colspan=1,mode="easy")
 
 
 	parser.add_argument("--verbose","-v", type=int,help="Verbose", default=0)
@@ -81,6 +85,15 @@ def main():
 		return
 		
 	options.inputname=inputname
+
+	if options.tltrange != None:
+		try: 
+			options.tltrange = map(float,options.tltrange.split(","))
+		except:
+			print("Could not interpret --tltrange: {} \nAn example of the correct format is: -50.0,50.0".format(options.tltrange))
+			sys.exit(1)
+	else: 
+		options.tltrange = [-90.0,90.0] # all plausible tilts
 
 	dotpos=inputname.rfind('.')
 	linepos=inputname.rfind('__')
@@ -550,7 +563,7 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[]):
 		nrange=range(num)
 	else:
 		nrange=np.argsort(errtlt)[:int(num*options.tltkeep)]
-		
+
 	print("Using {} out of {} tilts..".format(len(nrange), num))
 
 	outxy=1024*b
@@ -633,8 +646,11 @@ def make_tomogram(imgs, tltpm, options, outname=None, padr=1.2,  errtlt=[]):
 		errtlt=np.zeros(num)
 		nrange=range(num)
 	else:
+		for nid in range(num):
+			ytlt=ttparams[nid][3]
+			if ytlt < options.tltrange[0] or ytlt > options.tltrange[1]:
+				errtlt[nid] = np.inf # ensure this tilt is excluded if outside desired tilt range
 		nrange=np.argsort(errtlt)[:int(num*options.tltkeep)]
-
 
 	nx=imgs[0]["nx"]
 	ny=imgs[0]["ny"]
@@ -663,10 +679,12 @@ def make_tomogram(imgs, tltpm, options, outname=None, padr=1.2,  errtlt=[]):
 
 		pxf=get_xf_pos(ttparams[nid], [0,0,0])
 
+		#if tpm[3] < options.tltrange[0] or tpm[3] > options.tltrange[1]: exclude = True
+
 		xform={"type":"xyz","ztilt":tpm[2],"ytilt":tpm[3], "xtilt":tpm[4], "tx":pxf[0], "ty":pxf[1]}
 		#tltinfo.append({"xform.projection":xform, "alignment.score":errtlt[nid]})
 		jobs.append([nid,imgs[nid],  recon, pad, xform, exclude, options])
-		
+			
 	
 	thrds=[threading.Thread(target=reconstruct,args=(i)) for i in jobs]
 	thrtolaunch=0
