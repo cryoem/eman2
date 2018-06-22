@@ -17,10 +17,14 @@ def main():
 
 	parser.add_header(name="orblock1", help='Just a visual separation', title="** Options **", row=2, col=0, rowspan=1, colspan=1, mode="boxing")
 
-	parser.add_argument("--delta", type=float,help="delta angle", default=30.0, guitype='floatbox', row=3, col=0,rowspan=1, colspan=1, mode="boxing")
-	parser.add_argument("--dthr", type=float,help="distance threshold", default=16.0, guitype='floatbox', row=3, col=1,rowspan=1, colspan=1, mode="boxing")
-	parser.add_argument("--vthr", type=float,help="value threshold (n sigma)", default=2.0, guitype='floatbox', row=4, col=0,rowspan=1, colspan=1, mode="boxing")
-	parser.add_argument("--nptcl", type=int,help="maximum number of particles", default=500, guitype='intbox', row=4, col=1,rowspan=1, colspan=1, mode="boxing")
+	parser.add_argument("--label", type=str,help="Assign unique label to particles resembling specified reference. This allows specific particles to be extracted in the next step and aids project organization with easily interpreted filenames.\nIf --label is not specified, this set of particles will be labeled according to the file name of the reference without file extension.", default=None, guitype='strbox',row=3, col=0, rowspan=1, colspan=1, mode="boxing")
+	parser.add_argument("--nptcl", type=int,help="maximum number of particles", default=500, guitype='intbox', row=3, col=1,rowspan=1, colspan=1, mode="boxing")
+
+	parser.add_argument("--dthr", type=float,help="distance threshold", default=16.0, guitype='floatbox', row=4, col=0,rowspan=1, colspan=1, mode="boxing")
+	parser.add_argument("--vthr", type=float,help="value threshold (n sigma)", default=2.0, guitype='floatbox', row=4, col=1,rowspan=1, colspan=1, mode="boxing")
+
+	parser.add_argument("--delta", type=float,help="delta angle", default=30.0, guitype='floatbox', row=5, col=0,rowspan=1, colspan=1, mode="boxing")
+
 	parser.add_argument("--ppid", type=int,help="ppid", default=-2)
 
 	(options, args) = parser.parse_args()
@@ -68,9 +72,11 @@ def main():
 				cf=jsd.get()
 				ccc.process_inplace("math.max", {"with":cf})
 				ndone+=1
-				if ndone%10==0:
-					print("{}/{} finished.".format(ndone, len(oris)))
-		
+				#if ndone%10==0:
+				sys.stdout.write("\r{}/{} finished.".format(ndone, len(oris)))
+				sys.stdout.flush()
+		print("")
+
 		cbin=ccc.process("math.maxshrink", {"n":2})
 		cc=cbin.numpy().copy()
 		cshp=cc.shape
@@ -101,12 +107,16 @@ def main():
 		n=min(options.nptcl, len(pts))
 		if js.has_key("class_list"):
 			clst=js['class_list']
-			kid=max([int(k) for k in clst.keys()])+1
+			try: kid=max([int(k) for k in clst.keys()])+1
+			except: kid=0 # In case someone manually edited the info file. Unlikely.
 		else:
 			clst={}
 			kid=0
-			
-		clst[str(kid)]={"boxsize":sz*4, "name":base_name(tmpname)}
+		
+		if options.label:
+			clst[str(kid)]={"boxsize":sz*4, "name":options.label}
+		else:
+			clst[str(kid)]={"boxsize":sz*4, "name":base_name(tmpname)}
 		js["class_list"]=clst
 		if js.has_key("boxes_3d"):
 			bxs=js["boxes_3d"]
