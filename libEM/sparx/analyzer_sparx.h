@@ -119,7 +119,7 @@ namespace EMAN
 		
 		string get_desc() const
 		{
-			return "Principal component analysis";
+			return "Principal component analysis - Warning, have detected anomalous results from this algorithm with specific inputs. Python/NumPy routine now used in most EMAN2 code.";
 		}
 		
 		static Analyzer * NEW()

@@ -63,9 +63,10 @@ def main():
 	parser.add_argument("--path",type=str,default=None,help="Path for the refinement, default=auto")
 	parser.add_argument("--input", default=None,type=str, help="The name of the file containing the particle data", browser='EMSetsTable(withmodal=True,multiselect=False)', guitype='filebox', row=0, col=0, rowspan=1, colspan=3, mode="spr")
 	parser.add_argument("--ncls", default=32, type=int, help="Number of classes to generate", guitype='intbox', row=1, col=0, rowspan=1, colspan=1, mode="spr")
+	parser.add_argument("--alignsort", default=False, action="store_true",help="This will align and sort the final class-averages based on mutual similarity. For large numbers of class-averages this can significantly increase runtimes.", guitype='boolbox', row=1, col=1, rowspan=1, colspan=1, mode="spr[False]")
 #	parser.add_argument("--normproj", default=False, action="store_true",help="Normalizes each projected vector into the MSA subspace. Note that this is different from normalizing the input images since the subspace is not expected to fully span the image", guitype='boolbox', row=1, col=1, rowspan=1, colspan=1, mode="spr[True]")
 #	parser.add_argument("--fastseed", action="store_true", default=False,help="Will seed the k-means loop quickly, but may produce less consistent results. Always use this when generating >~100 classes.",guitype='boolbox', row=1, col=2, rowspan=1, colspan=1, mode="spr[True]")
-	parser.add_argument("--iter", type=int, default=3, help = "The total number of refinement iterations to perform", guitype='intbox', row=2, col=0, rowspan=1, colspan=1, mode="spr")
+	parser.add_argument("--iter", type=int, default=0, help = "The total number of refinement iterations to perform")  #, guitype='intbox', row=2, col=0, rowspan=1, colspan=1, mode="spr")
 	parser.add_argument("--nbasisfp",type=int,default=8,help="Number of MSA basis vectors to use when classifying particles", guitype='intbox', row=2, col=1, rowspan=1, colspan=1, mode="spr")
 #	parser.add_argument("--automask",default=False, action="store_true",help="Automasking during class-averaging to help with centering when particle density is high",guitype="boolbox", row=2,col=2,rowspan=1,colspan=1,mode="spr")
 #	parser.add_argument("--naliref", default=5, type=int, help="Number of alignment references to when determining particle orientations", guitype='intbox', row=3, col=0, rowspan=1, colspan=1, mode="spr")
@@ -194,7 +195,7 @@ def main():
 	if logid : E2progress(logid,proc_tally/total_procs)
 
 	# Make class averages
-	cls_cmd = "e2classaverage.py --input=%s --classmx=%s/classmx_00.hdf --output=%s/classes_00.hdf --iter=3 --force --bootstrap --center=%s" %(options.input,options.path,options.path,options.center)
+	cls_cmd = "e2classaverage.py --input=%s --classmx=%s/classmx_00.hdf --output=%s/classes_00.hdf --iter=%d --force --bootstrap --center=%s" %(options.input,options.path,options.path,options.classiter,options.center)
 	cls_cmd += get_classaverage_extras(options)
 	run (cls_cmd)
 
@@ -203,7 +204,7 @@ def main():
 	proc_tally += 1.0
 	if logid : E2progress(logid,proc_tally/total_procs)
 
-	# this is the main refinement loop
+	# this is the iterative refinement loop, but the default with bispectra is to not run any iterative refinement
 	for it in range(1,options.iter+1) :
 		# first we sort and align the class-averages from the last step
 
@@ -225,7 +226,7 @@ def main():
 
 
 		# Make class averages
-		cls_cmd = "e2classaverage.py --input=%s --classmx=%s/classmx_%02d.hdf --output=%s/classes_%02d.hdf --iter=5 --force --bootstrap --center=%s" %(options.input,options.path,it,options.path,it,options.center)
+		cls_cmd = "e2classaverage.py --input=%s --classmx=%s/classmx_%02d.hdf --output=%s/classes_%02d.hdf --iter=%d --force --bootstrap --center=%s" %(options.input,options.path,it,options.path,it,options.classiter,options.center)
 		cls_cmd += get_classaverage_extras(options)
 		run (cls_cmd)
 		proc_tally += 1.0
@@ -245,6 +246,9 @@ def class_postproc(options,it):
 	run("e2proc2dpar.py {}/classes_{:02d}.hdf {}/classes_fp_{:02d}.hdf --process math.bispectrum.slice:fp={}:size={} --threads {}".format(options.path,it,options.path,it,bispec_invar_parm[1],bispec_invar_parm[0],options.threads))
 
 	run("e2stacksort.py %s/classes_fp_%02d.hdf %s/classes_fp_%02d.hdf %s/classes_%02d.hdf %s/classes_%02d.hdf --simcmp=ccc --seqalicen"%(options.path,it,options.path,it,options.path,it,options.path,it))
+	
+	if options.alignsort:
+		run("e2stacksort.py %s/classes_%02d.hdf %s/classes_sort_%02d.hdf --simcmp=sqeuclidean:normto=1 --simalign=rotate_translate_tree:maxres=15 --useali --iterative"%(options.path,it,options.path,it))
 
 
 def get_classaverage_extras(options):
