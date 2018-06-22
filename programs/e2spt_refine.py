@@ -7,7 +7,7 @@ def main():
 	
 	usage=" "
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_pos_argument(name="particles",help="Specify particles to use to generate an initial model.", default="", guitype='filebox', browser="EMSPTParticleTable(withmodal=True,multiselect=False)", row=0, col=0,rowspan=1, colspan=3, mode="model")
+	parser.add_pos_argument(name="particles",help="Specify particles to use to generate an initial model.", default="", guitype='filebox', browser="EMSetsTable(withmodal=True,multiselect=False)", row=0, col=0,rowspan=1, colspan=3, mode="model")
 	parser.add_pos_argument(name="reference",help="""3D reference for initial model generation. No reference is used by default.""", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=1, col=0,rowspan=1, colspan=3, mode="model")
 
 	parser.add_header(name="orblock1", help='Just a visual separation', title="** Options **", row=2, col=1, rowspan=1, colspan=1, mode="model")
@@ -39,6 +39,9 @@ def main():
 	parser.add_argument("--threads", type=int,help="threads", default=12, guitype='intbox',row=9, col=2,rowspan=1, colspan=1, mode="model")
 
 	parser.add_argument("--path", type=str,help="path", default=None)
+
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
+
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	ptcls=args[0]

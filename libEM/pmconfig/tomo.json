@@ -176,6 +176,13 @@
       },
       {
         "ICON": "single_image_3d",
+        "PROGRAM": "e2spt_buildsets.py",
+        "NAME": "Build sets",
+        "MODE": "sets",
+        "CHILDREN": []
+      },
+      {
+        "ICON": "single_image_3d",
         "PROGRAM": "e2spt_sgd.py",
         "NAME": "Generate initial model",
         "MODE": "model",
