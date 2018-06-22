@@ -19,7 +19,7 @@ def main():
 	parser.add_argument("--padby", type=float,help="padding factor", default=2.0, guitype='floatbox',row=4, col=1, rowspan=1, colspan=1, mode="extract")
 	parser.add_argument("--dotest", action="store_true", default=False ,help="only make 1 batch of subtomograms for testing")
 	parser.add_argument("--noctf", action="store_true", default=False ,help="skip ctf correction..", guitype='boolbox',row=5, col=1, rowspan=1, colspan=1, mode="extract")
-	parser.add_argument("--tag", type=str,help="Only extract particle with this name. Leave blank to extract all particles.", default=None, guitype='strbox',row=5, col=0, rowspan=1, colspan=2, mode="extract")
+	parser.add_argument("--label", type=str,help="Only extract particle with this name. Leave blank to extract all particles.", default=None, guitype='strbox',row=5, col=0, rowspan=1, colspan=2, mode="extract")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	
 	(options, args) = parser.parse_args()
@@ -79,8 +79,8 @@ def main():
 			boxes=js["boxes_3d"]
 			for ky in clslst.keys():
 				val=clslst[ky]
-				if options.tag:
-					if str(val["name"])!=options.tag:
+				if options.label:
+					if str(val["name"])!=options.label:
 						continue
 						
 				bxs=np.array([[b[0], b[1], b[2]] for b in boxes if b[5]==int(ky)], dtype=float)
@@ -208,12 +208,13 @@ def main():
 				threed.write_image(options.output, pid)
 				ndone+=1
 				#if ndone%10==0:
-				print("{}/{} finished.".format(ndone, nptcl))
+				sys.stdout.write("\r{}/{} finished.".format(ndone, nptcl))
+				sys.stdout.flush()
 
 		for t in thrds: t.join()
-		
 			
 		print("Particles written to {}".format(options.output))
+	
 	E2end(logid)
 	
 
