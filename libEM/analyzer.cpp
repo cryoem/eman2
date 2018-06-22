@@ -559,7 +559,7 @@ vector<EMData*> PCAlarge::analyze()
         int nx = ncov;
 
         // the definition of kstep is purely a heuristic for right now
-	int kstep = nvec + 20;
+	int kstep = nvec*2 + 20;
 	if (kstep > nimages) kstep = nimages;
 
 	float *diag    = new float[kstep];

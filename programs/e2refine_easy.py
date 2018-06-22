@@ -861,7 +861,8 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 			print("Warning: Not using structure factor amplitude correction, so disabling classrefsf option")
 			append_html("<p>Warning: classrefsf option requires 'strucfac' amplitude correction. Since this is not being used either by intent or due to the high resolution of the map, 'classrefsf' has been disabled.</p>")
 
-		if not options.bispec or classiter!=0 :
+#		if not options.bispec or classiter!=0 :
+		try:
 			append_html("<p>* Iteratively align and average all of the particles within each class, discarding the worst fraction</p>",True)
 			cmd="e2classaverage.py {inputfile} --classmx {path}/classmx_{itr:02d}_even.hdf --decayedge --storebad --output {path}/classes_{itr:02d}_even.hdf --ref {path}/projections_{itr:02d}_even.hdf --iter {classiter} \
 	-f --resultmx {path}/cls_result_{itr:02d}_even.hdf --normproc {normproc} --averager {averager} {classrefsf} {classautomask} --keep {classkeep} {classkeepsig} --cmp {classcmp} \
@@ -877,6 +878,8 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 				classautomask=classautomask,classkeep=options.classkeep, classkeepsig=classkeepsig, classcmp=options.classcmp, classalign=options.classalign, classaligncmp=options.classaligncmp,
 				classralign=classralign, prefilt=prefilt, verbose=verbose, parallel=parallel)
 			run(cmd)
+		except:
+			print("classaverage error")
 		progress += 1.0
 		E2progress(logid,progress/total_procs)
 
