@@ -422,7 +422,8 @@ def main():
 		threed=[EMData("{}/threed_{:02d}.hdf".format(args[0],options.iter-1),0),EMData("{}/threed_{:02d}.hdf".format(args[0],options.iter),0)]
 
 		# The mask applied to the reference volume, used for 2-D masking of particles for better power spectrum matching, we'll assume the mask doesn't change much
-		ptclmask=EMData(args[0]+"/mask.hdf",0)
+		if options.mask: ptclmask=EMData(options.mask,0)
+		else: ptclmask=EMData(args[0]+"/mask.hdf",0)
 		nx=ptclmask["nx"]
 		apix=threed[0]["apix_x"]
 
