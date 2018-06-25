@@ -222,6 +222,7 @@ const string SNRProcessor::NAME = "eman1.filter.snr";
 const string FileFourierProcessor::NAME = "eman1.filter.byfile";
 const string FSCFourierProcessor::NAME = "filter.wiener.byfsc";
 const string SymSearchProcessor::NAME = "misc.symsearch";
+const string MaskPackProcessor::NAME = "misc.mask.pack";
 const string LocalNormProcessor::NAME = "normalize.local";
 const string StripeXYProcessor::NAME = "math.xystripefix";
 const string BadLineXYProcessor::NAME = "math.xybadlines";
@@ -506,6 +507,7 @@ template <> Factory < Processor >::Factory()
 //	force_add<FileFourierProcessor>();
 
 	force_add<SymSearchProcessor>();
+	force_add<MaskPackProcessor>();
 	force_add<StripeXYProcessor>();
 	force_add<BadLineXYProcessor>();
 	force_add<LocalNormProcessor>();
@@ -761,6 +763,38 @@ void FourierAnlProcessor::process_inplace(EMData * image)
 	}
 
 	image->update();
+}
+
+EMData* MaskPackProcessor::process(const EMData *image) {
+	EMData *mask=(EMData *)params["mask"];
+	bool unpack = (int)params.set_default("unpack",0);
+	
+	if ((float)mask->get_attr("mean_nonzero")!=1.0f) throw InvalidParameterException("MaskPackProcessor requires a binary mask");
+
+	int n_nz=(int)mask->get_attr("square_sum");		// true only for a binary mask
+	
+	EMData *ret = 0;
+	if (unpack) {
+		ret = new EMData(mask->get_xsize(),mask->get_ysize(),mask->get_zsize());
+		ret->to_zero();
+		
+		size_t ix=0;
+		for (size_t i=0; i<ret->get_size(); i++) {
+			if (mask->get_value_at_index(i)) ret->set_value_at_index(i,image->get_value_at_index(ix++));
+		}
+		
+	} else {
+		ret = new EMData(n_nz,1,1);
+		ret->to_zero();
+		
+		size_t ix=0;
+		for (size_t i=0; i<image->get_size(); i++) {
+			if (mask->get_value_at_index(i)) ret->set_value_at_index(ix++,image->get_value_at_index(i));
+		}
+	}
+	
+	ret->update();
+	return ret;
 }
 
 // Looks like this hasn't actually been written yet...
