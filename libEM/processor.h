@@ -6463,8 +6463,12 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("threshold1", EMObject::FLOAT);
-			d.put("threshold2", EMObject::FLOAT);
+			d.put("threshold1", EMObject::FLOAT, "High initial threshold for seeding.");
+			d.put("threshold2", EMObject::FLOAT, "Lower secondary threshold to define boundary.");
+			d.put("nshells", EMObject::INT, "Number of 1-voxel shells to expand the mask by.");
+			d.put("nshellsgauss", EMObject::INT, "Width in voxels of a Gaussian decay at the edge of the mask.");
+			d.put("return_mask", EMObject::BOOL, "If true the result of the operation will produce the mask, not the masked volume.");
+
 			return d;
 		}
 
@@ -6472,9 +6476,6 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 		{
 			return "Tries to mask out only interesting density";
 		}
-
-		static void search_nearby(float *dat, float *dat2, int nx, int ny, int nz, float thr);
-		static void fill_nearby(float *dat2, int nx, int ny, int nz);
 
 		static const string NAME;
 	};

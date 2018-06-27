@@ -7909,224 +7909,59 @@ void SmartMaskProcessor::process_inplace(EMData * image)
 	image->update();
 }
 
-void AutoMask3DProcessor::search_nearby(float *dat, float *dat2, int nx, int ny, int nz, float threshold)
-{
-	Assert(dat != 0);
-	Assert(dat2 != 0);
-	Assert(nx > 0);
-	Assert(ny > 0);
-
-	bool done = false;
-	int nxy = nx * ny;
-
-	while (!done) {
-		done = true;
-		for (int k = 1; k < nz - 1; k++) {
-			size_t k2 = (size_t)k * nxy;
-			for (int j = 1; j < ny - 1; j++) {
-				size_t l = j * nx + k2 + 1;
-
-				for (int i = 1; i < nx - 1; i++) {
-					if (dat[l] >= threshold || dat2[l]) {
-						if (dat2[l - 1] || dat2[l + 1] ||
-							dat2[l - nx] || dat2[l + nx] || dat2[l - nxy] || dat2[l + nxy]) {
-							dat2[l] = 1.0f;
-							done = false;
-						}
-					}
-					++l;
-				}
-			}
-		}
-	}
-}
-
-void AutoMask3DProcessor::fill_nearby(float *dat2, int nx, int ny, int nz)
-{
-	Assert(dat2 != 0);
-	Assert(nx > 0);
-	Assert(ny > 0);
-	Assert(nz >= 0);
-
-	int nxy = nx * ny;
-	size_t idx;
-	for (int i = 0; i < nx; ++i) {
-		for (int j = 0; j < ny; ++j) {
-			int j2 = j * nx + i;
-			int k0 = 0;
-			for (int k = 0; k < nz; ++k) {
-				idx = j2 + (size_t)k * nxy;
-				if (dat2[idx]) {
-					k0 = k;
-					break;
-				}
-			}
-
-			if (k0 != nz) {
-				int k1 = nz - 1;
-				for (int k = nz - 1; k >= 0; --k) {
-					idx = j2 + (size_t)k * nxy;
-					if (dat2[idx]) {
-						k1 = k;
-						break;
-					}
-				}
-
-				for (int k = k0 + 1; k < k1; ++k) {
-					idx = j2 + (size_t)k * nxy;
-					dat2[idx] = 1.0f;
-				}
-			}
-		}
-	}
-
-	for (int i = 0; i < nx; ++i) {
-		for (int j = 0; j < nz; ++j) {
-			size_t j2 = (size_t)j * nxy + i;
-			int k0 = 0;
-			for (int k = 0; k < ny; ++k) {
-				idx = (size_t)k * nx + j2;
-				if (dat2[idx]) {
-					k0 = k;
-					break;
-				}
-			}
-
-			if (k0 != ny) {
-				int k1 = ny - 1;
-				for (int k = ny - 1; k >= 0; --k) {
-					idx = (size_t)k * nx + j2;
-					if (dat2[idx]) {
-						k1 = k;
-						break;
-					}
-				}
-
-				for (int k = k0 + 1; k < k1; ++k) {
-					idx = (size_t)k * nx + j2;
-					dat2[idx] = 1.0f;
-				}
-			}
-		}
-	}
-
-	for (int i = 0; i < ny; ++i) {
-		for (int j = 0; j < nz; ++j) {
-			size_t j2 = i * nx + (size_t)j * nxy;
-			int k0 = 0;
-			for (int k = 0; k < nx; ++k) {
-				if (dat2[k + j2]) {
-					k0 = k;
-					break;
-				}
-			}
-			if (k0 != nx) {
-				int k1 = nx - 1;
-				for (int k = nx - 1; k >= 0; --k) {
-					if (dat2[k + j2]) {
-						k1 = k;
-						break;
-					}
-				}
-
-				for (int k = k0 + 1; k < k1; ++k) {
-					dat2[k + j2] = 1.0f;
-				}
-			}
-		}
-	}
-
-}
-
+// updated 2018-06-26 by Muyuan
 void AutoMask3DProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
 		return;
 	}
+	
 
-	int nx = image->get_xsize();
-	int ny = image->get_ysize();
-	int nz = image->get_zsize();
+	float sig = image->get_attr("sigma");
+	float mean = image->get_attr("mean");
 
-	EMData *amask = new EMData();
-	amask->set_size(nx, ny, nz);
-
-	float sig = 0;
-	float mean = 0;
-
-	if (params.has_key("threshold1") && params.has_key("threshold2")) {
-		sig = image->get_attr("sigma");
-		mean = image->get_attr("mean");
+	float thr1 = params.set_default("threshold1",mean + sig * 2);
+	float thr2 = params.set_default("threshold2",mean + sig * 1);
+	
+	EMData *mask=image->copy();
+	mask->process_inplace("threshold.binary",Dict("value",thr1));
+	
+	EMData *mask2=image->copy();
+	mask2->process_inplace("threshold.binary",Dict("value",thr2));
+	float maskmean=mask->get_attr("mean");
+	for (int i=0; i<1000; i++){
+		mask->process_inplace("mask.addshells",Dict("nshells",2));
+		mask->mult(*mask2);
+		if (float(mask->get_attr("mean"))==maskmean) 
+			break;
+		maskmean=mask->get_attr("mean");
+// 		printf("%d\t%f\n", i, maskmean);
+	}
+	
+	
+	// below copied from mask.auto3d
+	int nshells = params["nshells"];
+	int nshellsgauss = params["nshellsgauss"];
+	
+	mask->process_inplace("mask.addshells.gauss", Dict("val1", (int)(nshells+nshellsgauss/2),"val2",0));
+	if (nshellsgauss>0) 
+		mask->process_inplace("filter.lowpass.gauss", Dict("cutoff_abs", (float)(1.0f/(float)nshellsgauss)));
+	
+	mask->process_inplace("threshold.belowtozero", Dict("minval",(float)0.002));	// this makes the value exactly 0 beyond ~2.5 sigma
+	
+	bool return_mask = params.set_default("return_mask",false);
+	if (return_mask) {
+		// Yes there is probably a much more efficient way of getting the mask itself, but I am only providing a stop gap at the moment.
+		float *dat = image->get_data();
+		float *dat2 = mask->get_data();
+		memcpy(dat,dat2,image->get_size()*sizeof(float));
+	} else {
+		image->mult(*mask);
 	}
 
-	float *dat = image->get_data();
-	float *dat2 = amask->get_data();
-
-	float t = 0;
-	if (params.has_key("threshold1")) {
-		t = params["threshold1"];
-	}
-	else {
-		t = mean + sig * 2.5f;
-	}
-
-	size_t l = 0;
-	for (int k = 0; k < nz; ++k) {
-		for (int j = 0; j < ny; ++j) {
-			for (int i = 0; i < nx; ++i) {
-				if (dat[l] > t) {
-					dat2[l] = 1.0f;
-				}
-				++l;
-			}
-		}
-	}
-
-
-	if (params.has_key("threshold2")) {
-		t = params["threshold2"];
-	}
-	else {
-		t = mean + sig * 0.5f;
-	}
-
-	search_nearby(dat, dat2, nx, ny, nz, t);
-
-	int nxy = nx * ny;
-
-	for (int k = 1; k < nz - 1; ++k) {
-		for (int j = 1; j < ny - 1; ++j) {
-			size_t l = j * nx + (size_t)k * nxy + 1;
-			for (int i = 1; i < nx - 1; ++i, ++l) {
-				if (dat2[l - 1] == 1.0f || dat2[l + 1] == 1.0f ||
-					dat2[l - nx] == 1.0f || dat2[l + nx] == 1.0f ||
-					dat2[l - nxy] == 1.0f || dat2[l + nxy] == 1.0f) {
-					dat2[l] = 2.0f;
-				}
-			}
-		}
-	}
-
-	size_t size = (size_t)nx * ny * nz;
-	for (size_t i = 0; i < size; ++i) {
-		if (dat2[i] == 2.0f) {
-			dat2[i] = 1.0f;
-		}
-	}
-
-	fill_nearby(dat2, nx, ny, nz);
-
-	image->update();
-	amask->update();
-
-	image->mult(*amask);
-	amask->write_image("mask.mrc", 0, EMUtil::IMAGE_MRC);
-	if( amask )
-	{
-		delete amask;
-		amask = 0;
-	}
+	delete mask;
+	delete mask2;
 }
 
 // Originally this was done recursively, but there were issues with exceeding the maximum recursion depth,
