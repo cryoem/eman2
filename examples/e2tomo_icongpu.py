@@ -76,11 +76,11 @@ def main():
 	
 	parser.add_argument("--gpus", type=str, default="-1", help="""default=-1 (all available GPUs will be used). To select specific GPUs to use, provide them as a comma-separated list of integers.""")
 	
-	parser.add_argument("--highpasspixels", type=int, default=4, help="""Default=4. Number of Fourier pixels to zero out during highpass filtering. Provide 'None' or '0' to disactivate.""")
+	parser.add_argument("--highpasspixels", type=int, default=4, help="""Default=4. Number of Fourier pixels to zero out during highpass filtering AFTER reconstruction (postprocessing). Provide 'None' or '0' to disactivate.""")
 	
 	parser.add_argument("--iconpreproc", action='store_true', default=False, help="""default=False. If on, this will trigger a call to ICONPreProcess on the .st file supplied through --tiltseries.""")
 
-	parser.add_argument("--lowpassresolution", type=float, default=100.0, help="""Default=100. Resolution in angstroms to lowpass filter to. Type 'None' or '0' to disactivate.""")
+	parser.add_argument("--lowpassresolution", type=float, default=100.0, help="""Default=100. Resolution in angstroms to lowpass filter the tomogram AFTER reconstruction (postprocessing). Type 'None' or '0' to disactivate.""")
 
 	parser.add_argument("--path", type=str, default='icongpu', help="""Default=icongpu. Name of the directory where to store the output results. Only works when reconstructing the .ali file (preprocessing of the .st file will output the preprocessed tiltseries to the current directory). A numbered series of 'icongpu' directories will be created (i.e., if the program is run more than once, results will be stored in iconpu_01, icongpu_02, etc., directories, to avoid overwriting data).""")
 	parser.add_argument("--ppid", type=int, default=-1, help="Default=-1. Set the PID of the parent process, used for cross platform PPID")
