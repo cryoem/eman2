@@ -92,7 +92,7 @@ def main():
 			options.tltrange = map(float,options.tltrange.split(","))
 		except:
 			print("Could not interpret --tltrange: {} \nAn example of the correct format is: -50.0,50.0".format(options.tltrange))
-			sys.exit(1)
+			return
 	else: 
 		options.tltrange = [-90.0,90.0] # all plausible tilts
 
@@ -122,21 +122,7 @@ def main():
 				exit()
 			
 		print("Temporary files will be written in {}".format(options.tmppath))
-	
-
-	if options.rawtlt!=None and len(options.rawtlt)>0:
-		numimages=EMUtil.get_image_count(inputname)
-		numangles=0
-		with open(options.rawtlt) as f:
-			for line in f:
-				if line.strip():
-					numangles+=1
-		if numimages!=numangles:
-			print("Number of tilt angles and tilt images do no match. Your inputs have {} tilt angles and {} tilt images.\nStopping reconstruction.".format(numangles,numimages))
-			sys.exit(1)		
-	#e=EMData(inputname, 0, True)
-	
-	
+		
 	img=EMData(inputname,0)
 	if img["nz"]>1:
 		imgs=[img.get_clip(Region(0, 0, i, img["nx"], img["ny"], 1)).copy() for i in range(img["nz"])]
@@ -213,6 +199,10 @@ def main():
 	else:
 		if (options.rawtlt!=None and len(options.rawtlt)>0) :
 			tlts=np.loadtxt(options.rawtlt)
+			
+			if len(tlts)!=len(imgs_500):
+				print("Number of tilt angles and tilt images do no match. Your inputs have {} tilt angles and {} tilt images.\nStopping reconstruction.".format(len(tlts),len(imgs_500)))
+				return
 		else: 
 			tlts=np.arange(-len(imgs_2k)*options.tltstep/2,len(imgs_2k)*options.tltstep/2,options.tltstep)
 		
