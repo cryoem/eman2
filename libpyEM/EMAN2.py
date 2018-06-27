@@ -265,6 +265,19 @@ def E2loadappwin(app,key,win):
 		win.move(geom[0],geom[1])
 	except: return
 
+def E2saveprojtype(app,key,win):
+	"""stores the project type using the application default mechanism for later restoration. Note that
+	this will only work with Qt windows"""
+	try: E2setappval(app,key,win.modeCB.currentIndex())
+	except: print("Error saving project type")
+
+def E2loadprojtype(app,key,win):
+	"""restores project type saved with E2saveappwin"""
+	try:
+		idx=E2getappval(app,key)
+		win.modeCB.setCurrentIndex(idx)
+		win._onModeChange(idx)
+	except: return
 
 def E2setappval(app,key,value):
 	"""E2setappval

@@ -676,7 +676,6 @@ class EMBoxesTable(EMBrowserWidget):
 	def setPath(self,path,silent=False):
 		super(EMBoxesTable, self).setPath(path,silent=silent,inimodel=EMBoxesModel)
 
-
 class EMBoxesModel(EMFileItemModel):
 	""" Item model for the raw data """
 
@@ -750,6 +749,105 @@ class EMBoxesEntry(EMDirEntry):
 
 			try:
 				boxdb=db["boxes"]
+				self.boxcount=len(boxdb)
+			except:
+				self.boxcount="-"
+
+		if old&1 :
+			# get image counts
+			try:
+				self.nimg = EMUtil.get_image_count(self.path())
+				if self.nimg==1 : self.filetype="Image"
+			except:
+				self.filetype="-"
+
+		# Set cache
+		if cache!=None : cache.setval(cachename,(time.time(),self.boxcount,self.filetype,self.quality),True)
+
+		return 1
+
+#############################################################################################################################
+
+class EMTomoBoxesTable(EMBrowserWidget):
+	""" Widget to display junk from e2boxercache """
+	def __init__(self, withmodal=False, multiselect=False):
+		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath="./tomograms")
+
+	def setPath(self,path,silent=False):
+		super(EMTomoBoxesTable, self).setPath(path,silent=silent,inimodel=EMTomoBoxesModel)
+
+class EMTomoBoxesModel(EMFileItemModel):
+	""" Item model for the raw data """
+
+	headers=("Row","Raw Data Files","Stored Boxes", "Quality")
+
+	def __init__(self,startpath=None,dirregex=None):
+		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMTomoBoxesEntry,dirregex=dirregex)
+
+	def columnCount(self,parent):
+		"Always 4 columns"
+		#print "EMFileItemModel.columnCount()=6"
+		return 4
+
+	def data(self,index,role):
+		"Returns the data for a specific location as a string"
+
+		if not index.isValid() : return None
+		if role!=Qt.DisplayRole : return None
+
+		data=index.internalPointer()
+		if data==None :
+			print("Error with index ",index.row(),index.column())
+			return "XXX"
+		#if index.column()==0 : print "EMFileItemModel.data(%d %d %s)=%s"%(index.row(),index.column(),index.parent(),str(data.__dict__))
+
+		col=index.column()
+		if col==0:
+			return nonone(data.index)
+		elif col==1 :
+			if data.isbdb : return "bdb:"+data.name
+			return nonone(data.name)
+		elif col==2 :
+			if data.boxcount==0 : return "-"
+			return nonone(data.boxcount)
+		elif col==3 :
+			if data.quality==0 : return "-"
+			return nonone(data.quality)
+
+class EMTomoBoxesEntry(EMDirEntry):
+	""" Subclassing of EMDirEntry to provide functionality"""
+
+	col=(lambda x:int(x.index),lambda x:x.name,lambda x:safe_int(x.boxcount), lambda x:safe_int(x.quality), lambda x:safe_int(x.mgquality))
+
+	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
+		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot,dirregex=dirregex)
+		self.boxcount=None
+		self.quality=None
+		self.mgquality=None
+
+	def fillDetails(self):
+		"""Fills in the expensive metadata about this entry. Returns False if no update was necessary."""
+		if self.filetype!=None : return 0		# must all ready be filled in
+
+		# Check the cache for metadata
+		cache=None
+		cachename=self.name+"!boxes_3d"
+		try:
+			cache=js_open_dict(self.root+"/.browsercache.json")
+			self.updtime,self.boxcount,self.filetype,self.quality=cache[cachename]		# try to read the cache for the current file
+			old=self.cache_old()
+			if old==0 : return 2 		# current cache, no further update necessary
+		except:
+			old=3
+
+		if old&2 :
+			try:
+				db=js_open_dict(info_name(self.path()))
+				self.quality=db["quality"]
+			except: self.quality="-"
+
+			try:
+				boxdb=db["boxes_3d"]
 				self.boxcount=len(boxdb)
 			except:
 				self.boxcount="-"
@@ -945,15 +1043,66 @@ class EMRawDataTable(EMBrowserWidget):
 
 	def setPath(self,path,silent=False):
 		super(EMRawDataTable, self).setPath(path,silent=silent,inimodel=EMRawDataModel)
-		
+
+
+class EMRawTiltsTable(EMBrowserWidget):
+	""" Widget to display raw tilt images """
+	def __init__(self, withmodal=False, multiselect=False, startpath="./raw_tilts"):
+		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath=startpath)
+
+	def setPath(self,path,silent=False):
+		super(EMRawTiltsTable, self).setPath(path,silent=silent,inimodel=EMRawDataModel)
+
+
+class EMTiltsTable(EMBrowserWidget):
+	""" Widget to display Raw Data """
+	def __init__(self, withmodal=False, multiselect=False, startpath="./raw_tilts"):
+		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath=startpath)
+
+	def setPath(self,path,silent=False):
+		super(EMTiltsTable, self).setPath(path,silent=silent,inimodel=EMRawDataModel)
+
+
+class EMTiltseriesTable(EMBrowserWidget):
+	""" Widget to display tiltseries """
+	def __init__(self, withmodal=False, multiselect=False, startpath="./tiltseries"):
+		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath=startpath)
+
+	def setPath(self,path,silent=False):
+		super(EMTiltseriesTable, self).setPath(path,silent=silent,inimodel=EMRawDataModel)
+
+class EMTomoTable(EMBrowserWidget):
+	""" Widget to display Tomograms directory"""
+	def __init__(self, withmodal=False, multiselect=False, startpath="./tomograms"):
+		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath=startpath)
+
+	def setPath(self,path,silent=False):
+		super(EMTomoTable, self).setPath(path,silent=silent,inimodel=EMRawDataModel)
+
+class EMSPTParticleTable(EMBrowserWidget):
+	""" Widget to display particles3d directory"""
+	def __init__(self, withmodal=False, multiselect=False, startpath="./particles3d"):
+		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath=startpath)
+
+	def setPath(self,path,silent=False):
+		super(EMSPTParticleTable, self).setPath(path,silent=silent,inimodel=EMRawDataModel)
 
 class EMMovieDataTable(EMBrowserWidget):
-	""" Widget to display Raw Data """
+	""" Widget to display Movie Data """
 	def __init__(self, withmodal=False, multiselect=False, startpath="./movies"):
 		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath=startpath)
 
 	def setPath(self,path,silent=False):
 		super(EMMovieDataTable, self).setPath(path,silent=silent,inimodel=EMRawDataModel)
+
+
+class EMMovieRefsTable(EMBrowserWidget):
+	""" Widget to display Movie References"""
+	def __init__(self, withmodal=False, multiselect=False, startpath="./movierefs"):
+		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath=startpath)
+
+	def setPath(self,path,silent=False):
+		super(EMMovieRefsTable, self).setPath(path,silent=silent,inimodel=EMRawDataModel)
 
 
 class EMRawDataModel(EMFileItemModel):
@@ -1041,6 +1190,15 @@ class EMRawDataEntry(EMDirEntry):
 
 
 #################################################################################################################################
+
+class EMTomogramTable(EMBrowserWidget):
+	""" Widget to display Raw Data """
+	def __init__(self, withmodal=False, multiselect=False):
+		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath="./tomograms")
+
+	def setPath(self,path,silent=False):
+		super(EMTomogramTable, self).setPath(path,silent=silent,inimodel=EMTomoDataModel)
+
 
 class EMTomoDataTable(EMBrowserWidget):
 	""" Widget to display Raw Data """

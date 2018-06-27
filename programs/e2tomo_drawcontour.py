@@ -7,18 +7,26 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 from PyQt4 import QtGui, QtCore, QtOpenGL
 from PyQt4.QtCore import Qt
-from emapplication import get_application, EMApp
-from emimage2d import EMImage2DWidget
-from emshape import EMShape
+from eman2_gui.emapplication import get_application, EMApp
+from eman2_gui.emimage2d import EMImage2DWidget
+from eman2_gui.emshape import EMShape
 import scipy.spatial.distance as scipydist
 
 def main():
-	
+
 	usage=" "
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--load", type=str,help="load text", default=None)
+	parser.add_pos_argument(name="tomogram",help="Specify the tomogram to be segmented.", default="", guitype='filebox', browser="EMTomoTable(withmodal=True,multiselect=False)",  row=0, col=0,rowspan=1, colspan=2, mode="tomoseg")
+	parser.add_argument("--load", type=str,help="Load previous contour segmentation.", default=None, guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)",  row=1, col=0,rowspan=1, colspan=2, mode="tomoseg")
 	#parser.add_argument("--noupdate", action="store_true",help="do not erase shapes", default=False)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
+
 	(options, args) = parser.parse_args()
+
+	if len(args) == 0:
+		print("You must specify a tomogram")
+		sys.exit(1)
+
 	logid=E2init(sys.argv)
 	img = EMData(args[0])
 
@@ -30,11 +38,11 @@ def main():
 	drawer.show()
 	app.execute()
 	E2end(logid)
-	
+
 def run(cmd):
 	print cmd
 	launch_childprocess(cmd)
-	
+
 class Contour(EMShape):
 	def __init__(self, img=None, points=[]):
 		self.points=points
@@ -43,36 +51,36 @@ class Contour(EMShape):
 		self.image=img
 		self.triangles=[]
 		#self.lines=[]
-		
+
 #		if len(points)>3:
-			
+
 #		self.make_triangle()
-		
-	
+
+
 	def add_point(self, newpt=[], newcontour=False):
-		
-		
-		
+
+
+
 		zpos=self.image.list_idx
-		
+
 		pts=np.array(self.points)
 		if len(pts)>=3:
 			pts=pts[pts[:,2]==zpos,:]
-		
+
 		if len(pts)<3:
 			if len(newpt)>0:
 				self.points.append([newpt[0], newpt[1], zpos, 0])
-		
+
 		else:
-			
+
 			thr=1000.
-			
-			
-			
+
+
+
 			if newcontour==False:
-			
+
 				cid=np.unique(pts[:,3])
-				
+
 				if len(newpt)>0:
 					#### add a point
 					dst=np.array(scipydist.cdist([newpt], pts[:,:2])[0])
@@ -82,11 +90,11 @@ class Contour(EMShape):
 						rg[idx[-1]]=idx[0]
 					#print rg
 					dst+=dst[rg]
-					
+
 					mi=np.argmin(dst)
 					ci=pts[mi, 3]
 					pts=np.insert(pts, mi+1, np.append(newpt, [zpos, ci]), axis=0)
-					
+
 
 				allpts=[]
 				for ci in cid:
@@ -101,7 +109,7 @@ class Contour(EMShape):
 						niter=2000
 					else:
 						niter=0
-					
+
 					calc_dist=lambda path: np.sum([dmat[path[i], path[(i+1)%len(path)]] for i in range(len(path))])
 					dst=calc_dist(path)
 					nochange=0
@@ -122,17 +130,17 @@ class Contour(EMShape):
 
 
 					allpts.extend([[pp[i][0], pp[i][1], zpos, ci] for i in path])
-					
+
 				self.points=[p for p in self.points if p[2]!=zpos]
 				self.points.extend(allpts)
-				
+
 			else:
 					#### start a new contour
 					ci=np.max(pts[:,3])+1
 					self.points.append([newpt[0], newpt[1], zpos, ci])
-					
+
 		np.savetxt("pts.save", self.points, fmt='%d')
-			
+
 	def next_slice(self):
 		pts=np.array(self.points)
 		mi=self.image.list_idx
@@ -142,8 +150,8 @@ class Contour(EMShape):
 		pts=pts[pts[:,2]==last]
 		print mi, last, pts.shape
 		img=self.image.data.numpy()
-		
-		vec=[]		
+
+		vec=[]
 		cid=np.unique(pts[:,3])
 		rg0=np.arange(len(pts), dtype=int)-1
 		rg1=np.arange(len(pts), dtype=int)+1
@@ -151,7 +159,7 @@ class Contour(EMShape):
 			idx=np.where(pts[:,3]==ci)[0]
 			rg1[idx[-1]]=idx[0]
 			rg0[idx[0]]=idx[-1]
-			
+
 		#for i in range(len(pts)):
 		vec= pts[rg0]-pts[rg1]
 		vec=np.vstack([vec[:,1], -vec[:,0]]).T
@@ -181,9 +189,9 @@ class Contour(EMShape):
 		self.points.extend(p1.tolist())
 
 
-		
+
 	def draw(self,d2s=None,col=None):
-		
+
 		#print "aaaaaaaa"
 		zpos=self.image.list_idx
 		allpts=[[p[0], p[1], p[3]] for p in self.points if p[2]==zpos]
@@ -201,8 +209,8 @@ class Contour(EMShape):
 			glEnableClientState(GL_VERTEX_ARRAY)
 			glVertexPointerf(pts)
 			glDrawArrays(GL_LINE_STRIP, 0, len(pts))
-		
-		
+
+
 			glColor3f( .3, .3, 1 );
 			glPointSize(7.)
 			glEnableClientState(GL_VERTEX_ARRAY)
@@ -217,60 +225,60 @@ class EMDrawWindow(QtGui.QMainWindow):
 		self.imgview = EMImage2DWidget()
 		self.setCentralWidget(QtGui.QWidget())
 		self.gbl = QtGui.QGridLayout(self.centralWidget())
-		
+
 		self.gbl.addWidget(self.imgview,0,0)
 		self.options=options
 		self.app=weakref.ref(application)
-		
+
 		self.datafile=datafile
 		self.imgview.set_data(datafile)
-		
+
 		#self.all_shapes=[]
 		#self.all_points=[]
 		pts=[]
 		if options.load:
 			pts=np.loadtxt(options.load).tolist()
-			
+
 		self.contour=Contour(img=self.imgview, points=pts)
 		self.shape_index = 0
 		self.imgview.shapes = {0:self.contour}
 
-		
+
 		QtCore.QObject.connect(self.imgview,QtCore.SIGNAL("mouseup"),self.mouseup  )
 		QtCore.QObject.connect(self.imgview,QtCore.SIGNAL("keypress"),self.key_press)
-		
-		glEnable(GL_POINT_SMOOTH) 
+
+		glEnable(GL_POINT_SMOOTH)
 		glEnable( GL_LINE_SMOOTH );
 		glEnable( GL_POLYGON_SMOOTH );
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		
+
 	#def update_view(self):
 		#self.contour.cur_z=self.imgview.list_idx
 		#print self.imgview.list_idx
 		#pts=Contour(self.all_points)
 		#shps={0:pts}
-		
-		
+
+
 		#self.imgview.shapes=shps
 		#self.imgview.shapechange=1
 		#self.imgview.updateGL()
-	
+
 	def key_press(self, event):
 		if event.key()==Qt.Key_Shift:
 			self.contour.next_slice()
 			self.imgview.shapechange=1
 			self.imgview.updateGL()
-	
+
 	def mouseup(self, event):
 		x,y=self.imgview.scr_to_img((event.x(),event.y()))
 		#if event.button()&Qt.LeftButton:
-		
+
 		if event.modifiers()&Qt.ControlModifier:
 			#### interpolate curve from previous slices
 			print 'new contour'
-			self.contour.add_point([x, y], True)			
-			
+			self.contour.add_point([x, y], True)
+
 		elif event.modifiers()&Qt.ShiftModifier:
 			#### remove point
 			pts=np.array(self.contour.points)
@@ -288,7 +296,7 @@ class EMDrawWindow(QtGui.QMainWindow):
 			self.contour.add_point([x, y]) #, self.imgview.list_idx
 		self.imgview.shapechange=1
 		self.imgview.updateGL()
-	
+
 if __name__ == '__main__':
 	main()
-	
+

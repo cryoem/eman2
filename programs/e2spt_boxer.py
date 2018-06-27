@@ -72,30 +72,20 @@ def main():
 	
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	#parser.add_argument("--path", type=str,help="path", default=None)	
-	#parser.add_argument("--shrink", type=int,help="shrink", default=1)	
-	parser.add_argument("--apix", type=float,help="apix", default=0.0)	
-	
-	parser.add_argument("--boxsize","-B",type=int,default=0,help="Default=0. Used to extract particles without the GUI. Requires --coords. Box size in pixels",)
-	parser.add_argument('--bruteaverage', action="store_true", default=False, help='Default=False. If specified, this will generate an "as is" average of all the subvolumes (no alignment performed). This can be useful to see if, on average, particles correspond to the desired specimen and are reasonably centered.')
-
-	parser.add_argument('--coords', type=str, default='', help="""Default=None. Used to extract particles without the GUI. Provide a coordinates file that contains the center coordinates of the subvolumes you want to extract from the command line (without bringing up the GUI).""")
-	parser.add_argument('--cshrink', type=int, default=1, help='''Default=1 (not used; no scaling of --coords). Used to extract particles without the GUI. Requires --coords. Specifies the factor by which to multiply the coordinates in --coords, so that they can be at the same scale as the RAW tomogram (or whatever tomogram you intend for the particles to be extracted from).\nFor example, provide --cshrink=2 if the coordinates were determined in a binned-by-2 (shrunk-by-2) tomogram,\nbut you want to extract the subvolumes from a tomogram without binning/shrinking (which should be 2x larger).''')
-
-	parser.add_argument('--invert', action="store_true", default=False, help='''Default=False. If on, this option means you want the contrast to me inverted while boxing, AND for the extracted sub-volumes.\nRemember that EMAN2 **MUST** work with "white" protein. You can very easily figure out what the original color\nof the protein is in your data by looking at the gold fiducials or the edge of the carbon hole in your tomogram.\nIf they look black you MUST specify this option''', guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode="boxing")
-	parser.add_argument("--inmemory",action="store_true",default=False,help="Default=False. If on, this option will read the entire tomogram into memory. Much faster than reading 'from disk', but you must have enough RAM!", guitype='boolbox', row=2, col=1, rowspan=1, colspan=1, mode="boxing")
-
-	parser.add_argument("--normproc",type=str,default='normalize',help="""Default=normalize. Used to extract particles without the GUI. Requires --coords. Normalization processor applied to particles before extraction. Use --normproc=normalize.edgemean if the particles have a clear solvent background (i.e., they're not part of a larger complex or embeded in a membrane.""")
-	
-	parser.add_argument('--output', type=str, default='', help="Default=None. Used to extract particles without the GUI. Requires --coords. If not specified, the suffix '_ptlcs' will be attached to the name of the input tomogram. Otherwise, specify here the name of the stack file where to write the extracted subvolumes.")
-
-	parser.add_argument("--path",default='',type=str,help="Default=none (not used). Used to extract particles without the GUI. Requires --coords. Name of directory to save data to.")
-
-	parser.add_argument('--subset', type=int, default=0, help='''Default=0 (not used). Used to extract particles without the GUI. Requires --coords. Specify how many subvolumes from --coords you want to extract; e.g, if you specify 10, the first 10 particles will be extracted.\n0 means "box them all" because it makes no sense to box none.''')
-		
+	parser.add_pos_argument(name="tomogram",help="Specify a tomogram from which you want to extract particles.", default="", guitype='filebox', browser="EMTomoTable(withmodal=True,multiselect=False)",  row=0, col=0,rowspan=1, colspan=3, mode="boxing, coords")
+	parser.add_argument('--coords', type=str, default='', help="""Default=None. Used to extract particles without the GUI. Provide a coordinates file that contains the center coordinates of the subvolumes you want to extract from the command line (without bringing up the GUI).""", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=1, col=0,rowspan=1, colspan=3, mode="coords")
+	parser.add_argument('--output', type=str, default='', help="Default=None. Used to extract particles without the GUI. Requires --coords. If not specified, the suffix '_ptlcs' will be attached to the name of the input tomogram. Otherwise, specify here the name of the stack file where to write the extracted subvolumes.",guitype='strbox',row=2, col=0, rowspan=1, colspan=3, mode="coords")
+	parser.add_argument("--inmemory",action="store_true",default=False,help="Default=False. If on, this option will read the entire tomogram into memory. Much faster than reading 'from disk', but you must have enough RAM!", guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode="boxing")
+	parser.add_argument('--invert', action="store_true", default=False, help='''Default=False. If on, this option means you want the contrast to me inverted while boxing, AND for the extracted sub-volumes.\nRemember that EMAN2 **MUST** work with "white" protein. You can very easily figure out what the original color\nof the protein is in your data by looking at the gold fiducials or the edge of the carbon hole in your tomogram.\nIf they look black you MUST specify this option''', guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode="boxing, coords")
+	parser.add_argument("--apix", type=float,help="apix", default=0.0, guitype='floatbox', row=3, col=2, rowspan=1, colspan=1, mode="boxing, coords")
+	parser.add_argument('--bruteaverage', action="store_true", default=False, help='Default=False. If specified, this will generate an "as is" average of all the subvolumes (no alignment performed). This can be useful to see if, on average, particles correspond to the desired specimen and are reasonably centered.',guitype='boolbox',row=3, col=1, rowspan=1, colspan=1, mode="boxing, coords")
+	parser.add_argument("--boxsize","-B",type=int,default=0,help="Default=0. Used to extract particles without the GUI. Requires --coords. Box size in pixels",guitype='intbox',row=4, col=0, rowspan=1, colspan=1, mode="coords")
+	parser.add_argument('--cshrink', type=int, default=1, help='''Default=1 (not used; no scaling of --coords). Used to extract particles without the GUI. Requires --coords. Specifies the factor by which to multiply the coordinates in --coords, so that they can be at the same scale as the RAW tomogram (or whatever tomogram you intend for the particles to be extracted from).\nFor example, provide --cshrink=2 if the coordinates were determined in a binned-by-2 (shrunk-by-2) tomogram,\nbut you want to extract the subvolumes from a tomogram without binning/shrinking (which should be 2x larger).''',guitype='intbox',row=4, col=1, rowspan=1, colspan=1, mode="coords")
+	parser.add_argument('--subset', type=int, default=0, help='''Default=0 (not used). Used to extract particles without the GUI. Requires --coords. Specify how many subvolumes from --coords you want to extract; e.g, if you specify 10, the first 10 particles will be extracted.\n0 means "box them all" because it makes no sense to box none.''',guitype='strbox',row=4, col=2, rowspan=1, colspan=1, mode="coords")
+	parser.add_argument("--normproc",type=str,default='normalize',help="""Default=normalize. Used to extract particles without the GUI. Requires --coords. Normalization processor applied to particles before extraction. Use --normproc=normalize.edgemean if the particles have a clear solvent background (i.e., they're not part of a larger complex or embeded in a membrane.""",guitype='strbox',row=5, col=0, rowspan=1, colspan=2, mode="coords")
+	parser.add_argument("--path",default='',type=str,help="Default=none (not used). Used to extract particles without the GUI. Requires --coords. Name of directory to save data to.",guitype='strbox',row=8, col=0, rowspan=1, colspan=3, mode="coords")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-
-
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	(options, args) = parser.parse_args()
 	
 	logid=E2init(sys.argv)

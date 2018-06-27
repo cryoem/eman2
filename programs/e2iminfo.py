@@ -159,18 +159,18 @@ def main():
 				except:
 					print("Error with CTF on ",imagefile,i)
 			else:
-				print("%d. "%i, end=' ')
+				print("%d. "%i, end='')
 				try:
 					print("%d ptcl\t"%d["ptcl_repr"], end=' ')
 					nptcl+=d["ptcl_repr"]
 				except:
-					print("\t")
+					print("\t",end='')
 			
 			if options.stat :
-				print("apix=%1.2f\tmin=%1.4g\tmax=%1.4g\tmean=%1.4g\tsigma=%1.4g\tskewness=%1.4g \tkurtosis=%1.4g"%(d["apix_x"],d["minimum"],d["maximum"],d["mean"],d["sigma"],d["skewness"],d["kurtosis"]), end=' ')
+				print("apix=%-5.2f min=%-10.4g max=%-10.4g mean=%-10.4g sigma=%-9.4g skewness=%-9.4g kurtosis=%-9.4g"%(d["apix_x"],d["minimum"],d["maximum"],d["mean"],d["sigma"],d["skewness"],d["kurtosis"]), end=' ')
 				try:
 					c=d["ctf"]
-					print("\tdefocus=%1.2f\tB=%1.0f"%(c.defocus,c.bfactor))
+					print("   defocus=%-6.2f B=%-1.0f"%(c.defocus,c.bfactor))
 				except:
 					print(" ")
 						

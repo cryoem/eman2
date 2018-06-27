@@ -18,7 +18,7 @@ def main():
 	#parser.add_header(name="tmpheader", help='temp label', title="### This program is NOT avaliable yet... ###", row=0, col=0, rowspan=1, colspan=2, mode="box,seg,set")
 	#### boxing ####
 	parser.add_argument("--boxing",action="store_true",help="Boxing particles.",default=False, guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode='box[True]')
-	parser.add_pos_argument(name="micrographs",help="List the file to process with e2boxer here.", default="", guitype='filebox', browser="EMRawDataTable(withmodal=True,startpath=\"rawtomograms\")",  row=1, col=0,rowspan=1, colspan=3, mode="box")
+	parser.add_pos_argument(name="tomograms",help="List the file to process with e2spt_boxer here.", default="", guitype='filebox', browser="EMTomoTable(withmodal=True,multiselect=True,startpath=\"tomograms\")",  row=1, col=0,rowspan=1, colspan=3, mode="box")
 	parser.add_argument("--boxsize","-B",type=int,help="Box size in pixels",default=-1, guitype='intbox', row=3, col=0, rowspan=1, colspan=3, mode="box")
 	
 	#### segment ####
@@ -26,7 +26,6 @@ def main():
 	parser.add_argument("--segment",action="store_true",help="Segment particles.",default=False, guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode='seg[True]')
 	parser.add_pos_argument(name="particles",help="Particle file.", default="", guitype='filebox', browser="EMParticlesTable(withmodal=True)",  row=1, col=0,rowspan=1, colspan=3, mode="seg")
 	parser.add_argument("--output", type=str,help="output file name. Default is the input particle file name plus _seg.hdf", default=None,guitype='strbox', row=3, col=0, rowspan=1, colspan=3, mode="seg")
-	
 	
 	#### build set ####
 	parser.add_argument("--buildset",action="store_true",help="Segment particles.",default=False, guitype='boolbox', row=7, col=0, rowspan=1, colspan=1, mode='set[True]')

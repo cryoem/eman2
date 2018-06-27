@@ -177,6 +177,7 @@ not need to specify any of the following other than the ones already listed abov
 	parser.add_argument("--mass", default=0, type=float,help="The ~mass of the particle in kilodaltons, used to run normalize.bymass. Due to resolution effects, not always the true mass.", guitype='floatbox', row=12, col=0, rowspan=1, colspan=1, mode="refinement['self.pm().getMass()']")
 	parser.add_header(name="optional", help='Just a visual separation', title="Optional:", row=14, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--bispec",default=False, action="store_true", help="Will use bispectra for orientation determination (EXPERIMENTAL).",guitype='boolbox', row=18, col=2, rowspan=1, colspan=1, mode="refinement")
+	parser.add_argument("--mirror",default=False, action="store_true", help="Default for non bispectrum refinement is to handle mirrored projections by permitting flips in 2-D alignment. This will force the normal refinement to make explict mirrored projections")
 	parser.add_argument("--apix", default=0, type=float,help="The angstrom per pixel of the input particles. Normally set to 0, which will read the value from the header of the input file", guitype='floatbox', row=16, col=0, rowspan=1, colspan=1, mode="refinement[0]")
 	parser.add_argument("--sep", type=int, help="The number of classes each particle can contribute towards (normally 1). Increasing will improve SNR, but produce rotational blurring.", default=-1)
 	parser.add_argument("--classkeep",type=float,help="The fraction of particles to keep in each class, based on the similarity score. (default=0.9 -> 90%%)", default=0.9, guitype='floatbox', row=18, col=0, rowspan=1, colspan=1, mode="refinement")
@@ -261,6 +262,11 @@ not need to specify any of the following other than the ones already listed abov
 		print("ERROR : You must specify --input and --model  OR  --startfrom\n")
 		parser.print_help()
 		sys.exit(1)
+
+	if options.mirror:
+		if options.simalign!="rotate_translate_tree" :
+			print("WARNING: mirror option selected, but simalign specified. Critical that simalign NOT check mirrors. Please insure that the specified aligner obeys this.")
+		else : options.simalign="rotate_translate_tree:flip=0"
 
 	if options.m3dpreprocess==None:
 		if not options.m3dold : m3dpreprocess=""
@@ -469,7 +475,7 @@ the actual map quality. This can achieve maximum liklihood-like effects without 
 are really required to achieve the targeted resolution, you may consider manually specifiying --sep 1, which will override this automatic behavior.</p>".format(sep=options.sep))
 
 	# in bispectrum mode, we make classes for the full sphere
-	if options.bispec: incmir=1
+	if options.bispec or options.mirror: incmir=1
 	else: incmir=0
 	
 	if options.orientgen==None :
@@ -794,6 +800,7 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 			E2progress(logid,progress/total_procs)
 		elif options.bispec:
 			### FIXME - hard-coded rotate_translate aligner here due to odd irreproducible memory related crashes with rotate_translate_tree:flip=0   8/22/17
+			### At some point this was changed back to rotate_translate_tree with flipping. May be ok since it would recover some mis-classified handedness related particles?  5/29/18
 			append_html("<p>* Computing similarity of each particle to the set of projections using bispectra. This avoids alignment, and permits classification in a single step.</p>",True)
 			cmd = "e2classesbyref.py {path}/projections_{itr:02d}_even.hdf {inputfile} --classmx {path}/classmx_{itr:02d}_even.hdf --classinfo {path}/classinfo_{itr:02d}_even.json --classes {path}/classes_{itr:02}_even.hdf --averager {averager} --cmp {simcmp} --align rotate_translate_tree --aligncmp {simaligncmp} {simralign} {verbose} --sep {sep} --threads {threads}".format(
 				path=options.path,itr=it,inputfile=options.input[0],simcmp=options.simcmp,simalign=options.simalign,simaligncmp=options.simaligncmp,simralign=simralign,sep=options.sep,averager=options.classaverager,
@@ -854,7 +861,8 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 			print("Warning: Not using structure factor amplitude correction, so disabling classrefsf option")
 			append_html("<p>Warning: classrefsf option requires 'strucfac' amplitude correction. Since this is not being used either by intent or due to the high resolution of the map, 'classrefsf' has been disabled.</p>")
 
-		if not options.bispec or classiter!=0 :
+#		if not options.bispec or classiter!=0 :
+		try:
 			append_html("<p>* Iteratively align and average all of the particles within each class, discarding the worst fraction</p>",True)
 			cmd="e2classaverage.py {inputfile} --classmx {path}/classmx_{itr:02d}_even.hdf --decayedge --storebad --output {path}/classes_{itr:02d}_even.hdf --ref {path}/projections_{itr:02d}_even.hdf --iter {classiter} \
 	-f --resultmx {path}/cls_result_{itr:02d}_even.hdf --normproc {normproc} --averager {averager} {classrefsf} {classautomask} --keep {classkeep} {classkeepsig} --cmp {classcmp} \
@@ -870,6 +878,8 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 				classautomask=classautomask,classkeep=options.classkeep, classkeepsig=classkeepsig, classcmp=options.classcmp, classalign=options.classalign, classaligncmp=options.classaligncmp,
 				classralign=classralign, prefilt=prefilt, verbose=verbose, parallel=parallel)
 			run(cmd)
+		except:
+			print("classaverage error")
 		progress += 1.0
 		E2progress(logid,progress/total_procs)
 

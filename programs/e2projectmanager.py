@@ -100,6 +100,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		vsplitter.setSizes([1000,100])
 
 		self.setCentralWidget(vsplitter)
+		E2loadprojtype("e2projectmanager","main",self)
 		E2loadappwin("e2projectmanager","main",self)
 		#Update the project are construction
 		self.updateProject()
@@ -107,6 +108,7 @@ class EMProjectManager(QtGui.QMainWindow):
 	def closeEvent(self, event):
 		""" Upon PM close, close the taskmanager and the logbook """
 		E2saveappwin("e2projectmanager","main",self)
+		E2saveprojtype("e2projectmanager","main",self)
 		if self.notebook: self.notebook.close()
 		if self.taskmanager: self.taskmanager.close()
 		if self.thehelp: self.thehelp.close()
@@ -200,8 +202,8 @@ class EMProjectManager(QtGui.QMainWindow):
 		self.modeCB = QtGui.QComboBox()
 		# To add a new mode add an item to the list, and then add the json file in fuction: makeStackedWidget
 		self.modeCB.addItem("SPR")
-		self.modeCB.addItem("SPT")
-		self.modeCB.addItem("TomoSeg")
+		self.modeCB.addItem("Tomo")
+		#self.modeCB.addItem("SPT")
 
 		box.addWidget(workflowcontrollabel)
 		box.addWidget(self.modeCB)
@@ -213,6 +215,13 @@ class EMProjectManager(QtGui.QMainWindow):
 
 	def _onModeChange(self, idx):
 		self.tree_stacked_widget.setCurrentIndex(idx)
+		if idx == 1: self.pm_icon = get_image_directory() + "tomoseg.png"
+		elif idx == 2: self.pm_icon = get_image_directory() + "EMAN2Icon.png"
+		else: self.pm_icon = get_image_directory() + "subtomo.png"
+
+		self.pm_projects_db["project_icon"] = self.pm_icon
+
+		self.updateProject()
 		self._on_cmd_cancel()
 
 	def _on_openproject(self):
@@ -274,15 +283,9 @@ class EMProjectManager(QtGui.QMainWindow):
 		"""
 		self.tree_stacked_widget = QtGui.QStackedWidget()
 		self.tree_stacked_widget.setMinimumWidth(300)
-		self.tree_stacked_widget.addWidget(self.makeTreeWidget(os.getenv("EMAN2DIR")+'/lib/pmconfig/spr.json', 'SPR'))
-		#self.tree_stacked_widget.addWidget(self.makeTreeWidget(os.getenv("EMAN2DIR")+'/lib/pmconfig/spt.json', 'SPT'))
-
+		self.tree_stacked_widget.addWidget(self.makeTreeWidget(os.getenv("EMAN2DIR")+'/lib/pmconfig/spr.json', 'Single Particle Refinement'))
 		self.tree_stacked_widget.addWidget(self.makeTreeWidget(os.getenv("EMAN2DIR")+'/lib/pmconfig/tomo.json', 'Tomography'))
-		try :
-			self.tree_stacked_widget.addWidget(self.makeTreeWidget(os.getenv("EMAN2DIR")+'/lib/pmconfig/tomosegpanel.json', 'TomogramSegmentation'))
-		except :
-			pass
-		#Jesus
+		#self.tree_stacked_widget.addWidget(self.makeTreeWidget(os.getenv("EMAN2DIR")+'/lib/pmconfig/spt.json', 'Subtomogram Averaging'))
 
 		return self.tree_stacked_widget
 
@@ -346,8 +349,8 @@ class EMProjectManager(QtGui.QMainWindow):
 		win=EMBrowserWidget(withmodal=False,multiselect=False)
 		win.show()
 		win.setAttribute(QtCore.Qt.WA_DeleteOnClose)
-		#self.window = EMBrowserWidget(withmodal=False,multiselect=False)
-		#self.window.show()
+	#self.window = EMBrowserWidget(withmodal=False,multiselect=False)
+	#self.window.show()
 
 	def _on_helpbutton(self, state):
 		"""
@@ -447,7 +450,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		QtCore.QObject.connect(self.wizardbutton,QtCore.SIGNAL("clicked()"),self._on_wizardbutton)
 		QtCore.QObject.connect(self.expertbutton,QtCore.SIGNAL("stateChanged(bool)"),self._on_expertmodechanged)
 
-		#return programtoolwidget
+	#return programtoolwidget
 
 	def _on_expertmodechanged(self, state):
 		"""
@@ -1839,10 +1842,10 @@ class PMGUIWidget(QtGui.QScrollArea):
 				continue
 			if len(ov) == 2:
 				self._setValueJournaling(self.widgethash[ov[0][3:]], ov[1])
-				#self.widgethash[ov[0][2:]].setValue(ov[1])
+			#self.widgethash[ov[0][2:]].setValue(ov[1])
 			else:
 				self._setValueJournaling(self.widgethash[ov[0][3:]], True)
-				#self.widgethash[ov[0][2:]].setValue(True)
+			#self.widgethash[ov[0][2:]].setValue(True)
 			# pop the widget off a copy of the hash
 			del(widgethash[ov[0][3:]])
 

@@ -68,7 +68,7 @@ handled this way."""
 	parser.add_argument("--maskfile","-M",type=str,help="File containing a mask defining the pixels to include in the Eigenimages")
 	parser.add_argument("--mask",type=int,help="Mask radius",default=-2)
 	parser.add_argument("--varimax",action="store_true",help="Perform a 'rotation' of the basis set to produce a varimax basis",default=False)
-#	parser.add_argument("--lowmem","-L",action="store_true",help="Try to use less memory, with a possible speed penalty",default=False)
+	parser.add_argument("--small",action="store_true",help="Loads all data into RAM using a different method",default=False)
 	parser.add_argument("--simmx",type=str,help="Will use transformations from simmx on each particle prior to analysis")
 	parser.add_argument("--scratchfile",type=str,help="Specify an explicit scratch file to avoid multi-process conflicts",default="msa_scratch")
 	parser.add_argument("--normalize",action="store_true",help="Perform a careful normalization of input images before MSA. Otherwise normalization is not modified until after mean subtraction.",default=False)
@@ -88,9 +88,9 @@ handled this way."""
 
 	if options.verbose>0 : print("Beginning MSA")
 	if options.gsl : mode="svd_gsl"
+	#else : mode="pca_large"
+	elif options.small : mode="pca"
 	else : mode="pca_large"
-	#elif options.lowmem : mode="pca_large"
-	#else : mode="pca"
 
 	try : options.step = int(options.step.split(",")[0]),int(options.step.split(",")[1])	# convert strings to tuple
 	except:
@@ -139,7 +139,9 @@ pca,pca_large or svd_gsl"""
 
 	n=(EMUtil.get_image_count(images)-step[0])/step[1]
 	if mode=="svd_gsl" : pca=Analyzers.get(mode,{"mask":mask,"nvec":nbasis,"nimg":n})
-	else : pca=Analyzers.get(mode,{"mask":mask,"nvec":nbasis,"tmpfile":scratchfile})
+#	else : pca=Analyzers.get(mode,{"mask":mask,"nvec":nbasis,"tmpfile":scratchfile})
+	elif mode=="pca_large" : pca=Analyzers.get(mode,{"mask":mask,"nvec":nbasis,"tmpfile":scratchfile})
+	else : pca=Analyzers.get(mode,{"mask":mask,"nvec":nbasis})
 
 	mean=EMData(images,0)
 	for i in range(1,n):
@@ -211,7 +213,9 @@ pca,pca_large or svd_gsl"""
 	if isinstance(images,str) :
 		n=(EMUtil.get_image_count(images)-step[0])/step[1]
 		if mode=="svd_gsl" : pca=Analyzers.get(mode,{"mask":mask,"nvec":nbasis,"nimg":n})
-		else : pca=Analyzers.get(mode,{"mask":mask,"nvec":nbasis,"tmpfile":scratchfile})
+		elif mode=="pca_large" : pca=Analyzers.get(mode,{"mask":mask,"nvec":nbasis,"tmpfile":scratchfile})
+		else : pca=Analyzers.get(mode,{"mask":mask,"nvec":nbasis})
+#		else : pca=Analyzers.get(mode,{"mask":mask,"nvec":nbasis,"tmpfile":scratchfile})
 
 		mean=EMData(images,0)
 		mean.to_zero()
@@ -236,7 +240,9 @@ pca,pca_large or svd_gsl"""
 			sys.exit(1)
 		n = len(images)
 		if mode=="svd_gsl" : pca=Analyzers.get(mode,{"mask":mask,"nvec":nbasis,"nimg":n})
+		elif mode=="pca_large" : pca=Analyzers.get(mode,{"mask":mask,"nvec":nbasis,"tmpfile":scratchfile})
 		else : pca=Analyzers.get(mode,{"mask":mask,"nvec":nbasis})
+		#else : pca=Analyzers.get(mode,{"mask":mask,"nvec":nbasis})
 
 		mean=images[0]
 		mean.to_zero()

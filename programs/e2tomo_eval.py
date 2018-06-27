@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # Muyuan Chen 2018-04
 from EMAN2 import *
+import os
 import numpy as np
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
@@ -17,9 +18,16 @@ def main():
 	
 	usage=" "
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	#parser.add_argument("--path", type=str,help="path", default="")
+	parser.add_argument("--ppid", type=int,help="", default=None)
+
+	parser.add_header(name="orblock1", help='', title="Click launch to evaluate reconstructed tomograms", row=1, col=0, rowspan=1, colspan=2, mode="")
+
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
+
+	if not os.path.isdir("tomograms"): os.mkdir("tomograms")
+		#print("No tomograms found. You must perform at least one reconstruction or manually populate the 'tomograms' directory with at least one reconstruction.")
+		#sys.exit()
 
 	app=EMApp()
 	gui=TomoEvalGUI(options)
@@ -193,8 +201,7 @@ class TomoEvalGUI(QtGui.QWidget):
 							else:
 								ptclcls[vname]=[1,n]
 				
-				
-				dic["basename"]=base_name(name)
+				dic["basename"]= os.path.basename(name).split(".")[0] #base_name(name)
 				dic["filename"]=name
 				dic["nbox"]=nbox
 				dic["boxcls"]=bxcls

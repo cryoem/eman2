@@ -94,7 +94,7 @@ The CTF parameter file, ''partres.txt'', contains 22 columns with the following 
 || 2 || Microscope spherical aberration [mm] ||
 || 3 || Microscope voltage [kV] ||
 || 4 || Pixel size [A] ||
-|| 5 || B-factor [A^2] ||
+|| 5 || B-factor [A%%^%%2] ||
 || 6 || Total amplitude contrast [%], which can include estimated Volta phase shift ||
 || 7 || Astigmatism amplitude [um] ||
 || 8 || Astigmatism angle [degrees] ||
@@ -159,7 +159,7 @@ The old format of the CTF parameter file, ''partres.txt'', contains 19 columns w
 || 2 || Microscope spherical aberration [mm] ||
 || 3 || Microscope voltage [kV] ||
 || 4 || Pixel size [A] ||
-|| 5 || B-factor [A^2] ||
+|| 5 || B-factor [A%%^%%2] ||
 || 6 || Amplitude contrast [%] ||
 || 7 || Astigmatism amplitude [um] ||
 || 8 || Astigmatism angle [degrees] ||

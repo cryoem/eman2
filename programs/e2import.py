@@ -30,7 +30,7 @@ from __future__ import print_function
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
-#
+
 import os, shutil, glob
 from EMAN2 import *
 from EMAN2star import StarFile
@@ -41,31 +41,63 @@ def main():
 	usage = """prog [options] files
 	This program performs a variety of tasks for getting data or metadata from other programs into an EMAN2 project.
 
+	import_movies - imports DDD movie data for a cryoEM project (--importation copy recommended)
+
 	import_particles - will simply copy a set of per-micrograph particle files into EMAN2.1's preferred HDF format in particles/
 	import_boxes - will read EMAN1 '.box' files (text files containing coordinates) into appropriate info/*json files (see --box_type)
-	import_tomos - imports subtomogams for a SPT project (see also --importation)
 	import_eman1 - will convert a typical EMAN1 phase-flipped start.hed/img file into an EMAN2 project (converting files, fixing CTF, splitting, ...)
-"""
+
+	import_tomos - flag to handle imported files as subtomogams for a SPT project (see also --importation)
+	import_serialem - flag to handle imported files as SerialEM mdoc files
+	import_fei - flag to handle imported files as FEI tomography metadata files
+	import_ucsftomo - flag to handle imported files as UCSF tomo metadata files
+	import_tiltseries - imports tilt series for a tomography project (--importation copy recommended)
+	"""
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_pos_argument(name="import_files",help="List the files to import here.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=True)",  row=0, col=0, rowspan=1, colspan=2, nosharedb=True, mode='coords,parts,tomos,eman1')
-	parser.add_header(name="filterheader", help='Options below this label are specific to e2import', title="### e2import options ###", row=1, col=0, rowspan=1, colspan=2, mode='coords,parts,tomos')
-	parser.add_argument("--import_particles",action="store_true",help="Import particles",default=False, guitype='boolbox', row=2, col=0, rowspan=1, colspan=1, mode='parts[True]')
-	parser.add_argument("--import_eman1",action="store_true",help="This will import a phase-flipped particle stack from EMAN1",default=False, guitype='boolbox', row=2, col=0, rowspan=1, colspan=1, mode='eman1[True]')
-	parser.add_argument("--import_tomos",action="store_true",help="Import tomograms",default=False, guitype='boolbox', row=2, col=0, rowspan=1, colspan=1, mode='tomos[True]')
-	parser.add_argument("--shrink",type=int,help="Shrink tomograms before importing. Dose not work while not copying.",default=1, guitype='intbox', row=3, col=0, rowspan=1, colspan=1, mode='tomos')
-	parser.add_argument("--invert",action="store_true",help="Invert the contrast before importing tomograms",default=False, guitype='boolbox', row=3, col=1, rowspan=1, colspan=1, mode='tomos')
-	parser.add_argument("--tomoseg_auto",action="store_true",help="Default process for tomogram segmentation, including lowpass, highpass, normalize, clampminmax.",default=True, guitype='boolbox', row=3, col=2, rowspan=1, colspan=1, mode='tomos')
-	parser.add_argument("--importation",help="Specify mode move, copy or link, for importing tomograms only",default='copy',guitype='combobox',choicelist='["move","copy","link"]',row=2,col=1,rowspan=1,colspan=1, mode='tomos')
-	parser.add_argument("--preprocess",type=str,help="Other pre-processing operation before importing tomograms. Dose not work while not copying.",default="", guitype='strbox', row=4, col=0, rowspan=1, colspan=2, mode='tomos')
-	parser.add_argument("--import_boxes",action="store_true",help="Import boxes",default=False, guitype='boolbox', row=2, col=0, rowspan=1, colspan=1, mode='coords[True]')
+	parser.add_pos_argument(name="files",help="List the files to import here.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=True)",  row=0, col=0, rowspan=1, colspan=3, nosharedb=True, mode='coords,parts,tomos,eman1,movies,rawtilts,meta,tiltseries')
+
+	parser.add_header(name="filterheader", help='Options below this label are specific to e2import', title="### e2import options ###", row=2, col=0, rowspan=1, colspan=2, mode='coords,parts')
+
+	# Type Flags
+	parser.add_argument("--import_movies",action="store_true",help="Import DDD movies",default=False, guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode='movies[True]')
+
+	parser.add_argument("--darkrefs",help="Specify a comma separated list of dark refereence stacks/images to import. Files will be placed in movierefs_raw. See --importation for additional options.",default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=True)", row=4, col=0, rowspan=1, colspan=2, mode='movies')
+	parser.add_argument("--gainrefs",help="Specify a comma separated list of gain refereence stacks/images to import. Files will be placed in movierefs_raw. See --importation for additional options.",default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=True)", row=5, col=0, rowspan=1, colspan=2, mode='movies')
+
+	#parser.add_argument("--import_rawtilts",action="store_true",help="Import tilt images",default=False, guitype='boolbox', row=4, col=2, rowspan=1, colspan=1, mode='rawtilts[True]')
+	parser.add_argument("--import_tiltseries",action="store_true",help="Import tiltseries",default=False, guitype='boolbox', row=5, col=1, rowspan=1, colspan=1, mode='tiltseries[True]')
+	parser.add_argument("--import_tomos",action="store_true",help="Import tomograms for segmentation and/or subtomogram averaging",default=False, guitype='boolbox', row=4, col=2, rowspan=1, colspan=1, mode='tomos[True]')
+
+	#parser.add_pos_argument(name="tilt_angles",help="Specify a file containing tilt angles corresponding to the input tilt images.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=True)",  row=0, col=0, rowspan=1, colspan=2, nosharedb=True, mode='rawtilts')
+
+	#parser.add_argument(name="--rawtlt",help="List the text file containing tilt angles for the tiltseries to be imported.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)",  row=3, col=0, rowspan=1, colspan=3, nosharedb=True, mode='tiltseries')
+	#parser.add_argument(name="--start",help="First tilt angle. Increment determined by number of tilts. Custom tilt angles can be specified by a tilt angles text file.", default="", guitype='floatbox', row=4, col=0, rowspan=1, colspan=3, nosharedb=True, mode='tiltseries')
+	#parser.add_argument(name="--stop",help="Final tilt angle. Increment determined by number of tilts. Custom tilt angles can be specified by a tilt angles text file.", default="", guitype='floatbox', row=4, col=1, rowspan=1, colspan=3, nosharedb=True, mode='tiltseries')
+
+	# parser.add_argument("--serialem_mdoc",action="store_true",help="Import metadata from corresponding SerialEM '.mdoc' files.",default=False, guitype='boolbox', row=1, col=0, rowspan=1, colspan=3, mode='meta')
+	# parser.add_argument("--fei_tomo",action="store_true",help="Import metadata from corresponding FEI tomography files.",default=False, guitype='boolbox', row=2, col=0, rowspan=1, colspan=3, mode='meta')
+	# parser.add_argument("--ucsf_tomo",action="store_true",help="Import metadata from corresponding UCSF Tomo files.",default=False, guitype='boolbox', row=3, col=0, rowspan=1, colspan=3, mode='meta')
+
+	parser.add_argument("--import_particles",action="store_true",help="Import particles",default=False, guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode='parts[True]')
+	parser.add_argument("--import_eman1",action="store_true",help="This will import a phase-flipped particle stack from EMAN1",default=False, guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode='eman1[True]')
+
+	parser.add_argument("--importation",help="Specify import mode: move, copy or link",default='copy',guitype='combobox',choicelist='["move","copy","link"]',row=9,col=0,rowspan=1,colspan=2, mode='tomos["copy"],rawtilts["copy"],movies["move"],tiltseries["copy"]',choices=["move","copy","link"])
+
+	parser.add_argument("--invert",action="store_true",help="Invert the contrast before importing tomograms",default=False, guitype='boolbox', row=5, col=0, rowspan=1, colspan=1, mode='tomos,rawtilts,tiltseries')
+	#parser.add_argument("--tomoseg_auto",action="store_true",help="Default process for tomogram segmentation, including lowpass, highpass, normalize, clampminmax.",default=True, guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode='tomos,rawtilts,tiltseries')
+	parser.add_argument("--shrink",type=int,help="Shrink tomograms before importing. Does not work while not copying.",default=1.0, guitype='floatbox', row=6, col=0, rowspan=1, colspan=1, mode='tomos')
+	#parser.add_argument("--preprocess",type=str,help="Other pre-processing operation before importing tomograms. Dose not work while not copying.",default="", guitype='strbox', row=6, col=0, rowspan=1, colspan=2, mode='tomos,rawtilts,tiltseries')
+
+	parser.add_argument("--import_boxes",action="store_true",help="Import boxes",default=False, guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode='coords[True]')
 	parser.add_argument("--extension",type=str,help="Extension of the micrographs that the boxes match", default='dm3')
-	parser.add_argument("--box_type",help="Type of boxes to import, normally boxes, but for tilted data use tiltedboxes, and untiltedboxes for the tilted  particle partner",default="boxes",guitype='combobox',choicelist='["boxes","coords","relion_star","tiltedboxes","untiltedboxes"]',row=2,col=1,rowspan=1,colspan=1, mode="coords['boxes']")
+	parser.add_argument("--box_type",help="Type of boxes to import, normally boxes, but for tilted data use tiltedboxes, and untiltedboxes for the tilted  particle partner",default="boxes",guitype='combobox',choicelist='["boxes","coords","relion_star","tiltedboxes","untiltedboxes"]',row=3,col=1,rowspan=1,colspan=1, mode="coords['boxes']")
 	parser.add_argument("--boxsize",help="Specify the boxsize for each particle.",type=int,default=256)
-	parser.add_argument("--curdefocushint",action="store_true",help="Used with import_eman1, will use EMAN1 defocus as starting point",default=False, guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode='eman1[True]')
-	parser.add_argument("--curdefocusfix",action="store_true",help="Used with import_eman1, will use EMAN1 defocus unchanged (+-.001 um)",default=False, guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode='eman1[False]')
-	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful",guitype='intbox', row=6, col=0, rowspan=1, colspan=1, mode='eman1[1]')
+	parser.add_argument("--curdefocushint",action="store_true",help="Used with import_eman1, will use EMAN1 defocus as starting point",default=False, guitype='boolbox', row=5, col=0, rowspan=1, colspan=1, mode='eman1[True]')
+	parser.add_argument("--curdefocusfix",action="store_true",help="Used with import_eman1, will use EMAN1 defocus unchanged (+-.001 um)",default=False, guitype='boolbox', row=5, col=1, rowspan=1, colspan=1, mode='eman1[False]')
+
+	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful",guitype='intbox', row=7, col=0, rowspan=1, colspan=1, mode='eman1[1]')
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
@@ -286,22 +318,122 @@ with the same name, you should specify only the .hed files (no renaming is neces
 				run("e2proc2d.py {} particles/{}.hdf --threed2twod --inplace".format(fsp,base_name(fsp)))
 			else: run("e2proc2d.py {} particles/{}.hdf --inplace".format(fsp,base_name(fsp)))
 
+	if options.gainrefs != "" or options.darkrefs != "":
+		refsdir = os.path.join(".","movierefs")
+		if not os.access(refsdir, os.R_OK):
+			os.mkdir(refsdir)
+
+	if options.gainrefs != "":
+		for ref in options.gainrefs.split(","):
+			refname=os.path.join(refsdir,os.path.basename(ref))
+			if refname[-4:] == ".mrc": refname+="s"
+			if not os.path.isfile(refname):
+				if options.importation == "move":
+					os.rename(ref,refname)
+				elif options.importation == "link":
+					print("Movie references must be moved or copied. Linking is not supported.")
+					sys.exit(1)
+				elif options.importation == "copy":
+					run("e2proc2d.py {} {} ".format(ref, refname))
+
+	if options.darkrefs != "":
+		for ref in options.darkrefs.split(","):
+			refname=os.path.join(refsdir,os.path.basename(ref))
+			if refname[-4:] == ".mrc": refname+="s"
+			if not os.path.isfile(refname):
+				if options.importation == "move":
+					os.rename(ref,refname)
+				elif options.importation == "link":
+					print("Movie references must be moved or copied. Linking is not supported.")
+					sys.exit(1)
+				elif options.importation == "copy":
+					run("e2proc2d.py {} {} ".format(ref, refname))
+
+
+	if options.import_movies:
+
+		moviesdir = os.path.join(".","movies")
+		if not os.access(moviesdir, os.R_OK):
+			os.mkdir(moviesdir)
+
+		for filename in args:
+			newname=os.path.join(moviesdir,os.path.basename(filename))
+			if not os.path.isfile(newname):
+				if newname[-4:] == ".mrc": newname+="s"
+				if options.importation == "move":
+					os.rename(filename,newname)
+				if options.importation == "copy":
+					run("e2proc2d.py {} {} ".format(filename, newname))
+				if options.importation == "link":
+					os.symlink(filename,newname)
+		print("Done.")
+
+	# Import tilts
+	# if options.import_rawtilts:
+
+	# 	stdir = os.path.join(".","raw_tilts")
+	# 	if not os.access(stdir, os.R_OK):
+	# 		os.mkdir("tilts")
+
+	# 	for filename in args:
+	# 		newname=os.path.join(stdir,os.path.basename(filename))
+	# 		if options.importation == "move":
+	# 			os.rename(filename,newname)
+	# 		if options.importation == "copy":
+	# 			tpos=filename.rfind('.')
+	# 			if tpos>0: newname=os.path.join(stdir,os.path.basename(filename[:tpos]+'.hdf'))
+	# 			else: newname=os.path.join(stdir,os.path.basename(filename))
+	# 			cmd="e2proc2d.py {} {} ".format(filename, newname)
+	# 			if options.invert: cmd+=" --mult -1 --process normalize "
+	# 			#if options.tomoseg_auto:
+	# 			#	cmd+=" --process filter.lowpass.gauss:cutoff_abs=.25 --process filter.highpass.gauss:cutoff_pixels=5 --process threshold.clampminmax.nsigma:nsigma=3 "
+	# 			cmd+=options.preprocess
+	# 			run(cmd)
+	# 			print("Done.")
+	# 		if options.importation == "link":
+	# 			os.symlink(filename,newname)
+
+	# Import tilt series
+	if options.import_tiltseries:
+
+		stdir = os.path.join(".","tiltseries")
+		if not os.access(stdir, os.R_OK):
+			os.mkdir("tiltseries")
+
+		for filename in args:
+			newname=os.path.join(stdir,os.path.basename(filename))
+			if options.importation == "move":
+				os.rename(filename,newname)
+			if options.importation == "copy":
+				tpos=filename.rfind('.')
+				if tpos>0: newname=os.path.join(stdir,os.path.basename(filename[:tpos]+'.hdf'))
+				else: newname=os.path.join(stdir,os.path.basename(filename))
+				cmd="e2proc2d.py {} {} ".format(filename, newname)
+				if options.invert: cmd+=" --mult -1 --process normalize "
+				#if options.tomoseg_auto:
+				#	cmd+=" --process filter.lowpass.gauss:cutoff_abs=.25 --process filter.highpass.gauss:cutoff_pixels=5 --process threshold.clampminmax.nsigma:nsigma=3 "
+				cmd+=options.preprocess
+				run(cmd)
+				print("Done.")
+			if options.importation == "link":
+				os.symlink(filename,newname)
+
+			# PLACE ANGLES IN METADATA
+
 	# Import tomograms
 	if options.import_tomos:
-		tomosdir = os.path.join(".","rawtomograms")
+		tomosdir = os.path.join(".","tomograms")
 		if not os.access(tomosdir, os.R_OK):
-			os.mkdir("rawtomograms")
+			os.mkdir("tomograms")
 		for filename in args:
 			if options.importation == "move":
 				os.rename(filename,os.path.join(tomosdir,os.path.basename(filename)))
 			if options.importation == "copy":
 				### use hdf file as output
-				
 				if options.shrink>1:
 					shrinkstr="_bin{:d}".format(options.shrink)
 				else:
 					shrinkstr=""
-					
 				tpos=filename.rfind('.')
 				if tpos>0:
 					newname=os.path.join(tomosdir,os.path.basename(filename[:tpos]+shrinkstr+'.hdf'))
@@ -326,15 +458,109 @@ with the same name, you should specify only the .hed files (no renaming is neces
 					
 				if options.invert:
 					cmd+=" --mult -1 --process normalize "
-				if options.tomoseg_auto:
-					cmd+=" --process filter.lowpass.gauss:cutoff_abs=.25 --process filter.highpass.gauss:cutoff_pixels=5 --process normalize --process threshold.clampminmax.nsigma:nsigma=3 "
+				#if options.tomoseg_auto:
+				#	cmd+=" --process filter.lowpass.gauss:cutoff_abs=.25 --process filter.highpass.gauss:cutoff_pixels=5 --process normalize --process threshold.clampminmax.nsigma:nsigma=3 "
 				cmd+=options.preprocess
 				run(cmd)
 				print("Done.")
-				#shutil.copy(filename,os.path.join(tomosdir,os.path.basename(filename)))
+			#shutil.copy(filename,os.path.join(tomosdir,os.path.basename(filename)))
 			if options.importation == "link":
 				os.symlink(filename,os.path.join(tomosdir,os.path.basename(filename)))
+
+	# # Import serialEM metadata
+	# if options.serialem_mdoc:
+	# 	for fn in args:
+	# 		mdoc = read_mdoc(fn)
+	# 		# check and correct project parameters from MDOC file contents
+	# 		d = js_open_dict("info/project.json")
+	# 		try: d.setval("global.apix",mdoc["PixelSpacing"],deferupdate=True)
+	# 		except: pass
+	# 		try: d.setval("global.microscope_voltage",mdoc["Voltage"],deferupdate=True)
+	# 		except: pass
+	# 		d.close()
+	# 		# for each referenced image, append pertinent keys/values to corresponding info.json
+	# 		for z in range(mdoc["zval"]+1):
+	# 			tlt = mdoc[z]["SubFramePath"].rsplit("\\")[-1]+"_RawImages"
+	# 			d = js_open_dict(info_name(tlt))
+	# 			for k in mdoc[z].keys():
+	# 				d.setval(k,mdoc[z][k],deferupdate=True)
+	# 			d.close()
+	#
+	# # Import FEI metadata
+	# if options.fei_tomo:
+	# 	print("FEI tomography metadata not yet handled by this program.")
+	# 	sys.exit(1)
+	#
+	# # Import UCSF tomo metadata
+	# if options.ucsf_tomo:
+	# 	print("UCSF tomography metadata not yet handled by this program.")
+	# 	sys.exit(1)
+
 	E2end(logid)
+
+# def read_mdoc(mdoc):
+# 	movie = {}
+# 	frames = {}
+# 	zval = -1
+# 	frames[zval] = {}
+# 	frames["misc"] = []
+# 	frames["labels"] = []
+# 	with open(mdoc) as mdocf:
+# 		for l in mdocf.readlines():
+# 			p = l.strip()
+# 			if "ZValue" in p:
+# 				zval+=1
+# 				frames[zval] = {}
+# 			elif p != "":
+# 				x,y = p.split("=")[:2]
+# 				x = x.strip()
+# 				if x == "TiltAngle": frames[zval]["tilt_angle"]=float(y)
+# 				elif x == "Magnification": frames[zval]["magnification"] = int(y)
+# 				elif x == "Intensity": frames[zval]["intensity"]=float(y)
+# 				elif x == "SpotSize": frames[zval]["spot_size"]=int(y)
+# 				elif x == "Defocus": frames[zval]["defocus"]=float(y)
+# 				elif x == "ExposureTime": frames[zval]["exposure_time"]=float(y)
+# 				elif x == "Binning": frames[zval]["binning"]=float(y)
+# 				elif x == "ExposureDose": frames[zval]["exposure_dose"]=float(y)
+# 				elif x == "RotationAngle": frames[zval]["rotation_angle"]=float(y)
+# 				elif x == "StageZ": frames[zval]["stage_z"]=float(y)
+# 				elif x == "CameraIndex": frames[zval]["camera_index"]=int(y)
+# 				elif x == "DividedBy2": frames[zval]["divide_by_2"]=int(y)
+# 				elif x == "MagIndex": frames[zval]["mag_index"]=int(y)
+# 				elif x == "TargetDefocus": frames[zval]["target_defocus"]=float(y)
+# 				elif x == "ImageShift": frames[zval]["image_shift"]=map(float,y.split())
+# 				elif x == "StagePosition": frames[zval]["stage_position"]=map(float,y.split())
+# 				elif x == "MinMaxMean":
+# 					vals = map(float,y.split())
+# 					frames[zval]["min"]=vals[0]
+# 					frames[zval]["max"]=vals[1]
+# 					frames[zval]["mean"]=vals[2]
+# 				elif x == "SubFramePath":
+# 					sfp = base_name(y).split("-")[-1]
+# 					frames[zval]["SubFramePath"]=sfp
+# 				elif x == "DateTime": frames[zval]["date_time"]=y
+# 				elif x == "PixelSpacing": frames["global.apix"] = float(y)
+# 				elif x == "Voltage": frames["global.microscope_voltage"] = float(y)
+# 				elif x == "ImageFile": frames["image_file"] = str(y)
+# 				elif x == "ImageSize": frames["image_size"] = y.split()
+# 				elif x == "DataMode": frames["data_mode"] = y
+# 				elif x == "PriorRecordDose": frames["prior_record_dose"] = y
+# 				elif x == "FrameDosesAndNumber": frames["frame_doses_and_number"] = y
+# 				elif x == "[T": frames["labels"].append(y.replace("]",""))
+# 				elif "PreexposureTime" in x: frames[zval]["preexposure_time"] = float(y)
+# 				elif "TotalNumberOfFrames" in x: frames[zval]["frame_count"] = int(y)
+# 				elif "FramesPerSecond" in x: frames[zval]["frames_per_second"] = float(y)
+# 				elif "ProtectionCoverMode" in x: frames[zval]["protection_cover_mode"] = y
+# 				elif "ProtectionCoverOpenDelay" in x: frames[zval]["protection_cover_open_delay"] = float(y)
+# 				elif "TemperatureDetector" in x: frames[zval]["detector_temperature"] = float(y)
+# 				elif "FaradayPlatePeakReading" in x: frames[zval]["faraday_plate_peak_reading"] = float(y)
+# 				elif "SensorModuleSerialNumber" in x: frames[zval]["sensor_module_serial_number"] = y
+# 				elif "ServerSoftwareVersion" in x: frames[zval]["server_software_version"] = y
+# 				elif "SensorReadoutDelay" in x: frames[zval]["sensor_readout_delay"] = y
+# 				else: frames["misc"].append(y) # catches any missed parameters
+#
+# 	frames["zval"] = zval
+# 	return frames
 
 def run(command):
 	"Mostly here for debugging, allows you to control how commands are executed (os.system is normal)"

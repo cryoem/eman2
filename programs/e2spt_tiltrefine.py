@@ -27,17 +27,24 @@ def main():
 	
 	usage=" "
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--path", type=str,help="path", default=None)
-	parser.add_argument("--sym", type=str,help="symmetry", default="c1")
-	parser.add_argument("--threads", type=int,help="threads", default=12)
-	parser.add_argument("--padby", type=float,help="pad by factor. default is 2", default=2.)
-	parser.add_argument("--keep", type=float,help="propotion of tilts to keep. default is 0.5", default=0.5)
-	parser.add_argument("--maxres", type=float,help="max resolution for comparison", default=20)
-	parser.add_argument("--maxalt", type=float,help="max altitude to insert to volume", default=90)
-	parser.add_argument("--iter", type=int,help="iteration", default=1)
-	parser.add_argument("--dopostp", action="store_true", default=False ,help="do post process")
-	parser.add_argument("--unmask", action="store_true", default=False ,help="use unmasked map as references")
 
+	parser.add_pos_argument(name="particles",help="Specify particles to use to generate an initial model.", default="", guitype='filebox', browser="EMSPTParticleTable(withmodal=True,multiselect=False)", row=0, col=0,rowspan=1, colspan=3, mode="model")
+
+	parser.add_header(name="orblock1", help='Just a visual separation', title="** Options **", row=1, col=1, rowspan=1, colspan=1)
+
+	parser.add_argument("--maxres", type=float,help="max resolution for comparison", default=20.0, guitype='floatbox',row=2, col=0,rowspan=1, colspan=1)
+	parser.add_argument("--iter", type=int,help="iteration", default=1, guitype='intbox',row=2, col=1,rowspan=1, colspan=1)
+	parser.add_argument("--sym", type=str,help="symmetry", default="c1", guitype='strbox',row=2, col=2,rowspan=1, colspan=1)
+
+	parser.add_argument("--padby", type=float,help="pad by factor. default is 2", default=2., guitype='floatbox',row=3, col=0,rowspan=1, colspan=1)
+	parser.add_argument("--keep", type=float,help="propotion of tilts to keep. default is 0.5", default=0.5, guitype='floatbox',row=3, col=1,rowspan=1, colspan=1)
+	parser.add_argument("--maxalt", type=float,help="max altitude to insert to volume", default=90.0, guitype='floatbox',row=3, col=2,rowspan=1, colspan=1)
+
+	parser.add_argument("--dopostp", action="store_true", default=False ,help="Do post processing routine", guitype='boolbox',row=4, col=0,rowspan=1, colspan=1)
+	parser.add_argument("--unmask", action="store_true", default=False ,help="use unmasked map as references", guitype='boolbox',row=4, col=1,rowspan=1, colspan=1)
+	parser.add_argument("--threads", type=int,help="threads", default=12, guitype='intbox',row=4, col=2,rowspan=1, colspan=1)
+
+	parser.add_argument("--path", type=str,help="path", default=None)
 	parser.add_argument("--ppid", type=int,help="ppid...", default=-1)
 
 	(options, args) = parser.parse_args()
