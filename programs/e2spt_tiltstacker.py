@@ -33,8 +33,6 @@ from EMAN2 import *
 import sys
 import math
 
-print("imported stuff")
-
 def main():
 
 	usage = """e2spt_tiltstacker.py <options> . 
@@ -56,7 +54,7 @@ def main():
 			
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)	
 	
-	parser.add_argument("--anglesindxinfilename",type=int,default=None,help="""Default=None. The filename of the images will be split at any occurence of the following delimiters: '_','-',',',' ' (the last one is a blank space). Provide the index (position) of the angle in the split filename. For example, if the filename of an image is "my_specimen-oct-10-2015_-50_deg-from_k2 camera.mrc", it will be split into ['my','specimen','oct','10','2015','','50','deg','from','k2','camera','mrc']. The angle '-50', is at position 6 (starting from 0). Therefore, you would provide --anglesindxinfilename=6, assuming all images to be stacked/processed are similarly named. No worries about the minus sign disappearing. The program will look at whether there's a minus sign immediately preceeding the position where the angle info is.""")
+	parser.add_argument("--anglesindxinfilename",type=int,default=None,help="""Default=None. The filename of the images will be split at any occurence of the following delimiters: '_', '-', '+', '[' , ']' , ',' , ' ' (the two last ones are a comma and a blank space). Provide the index (position) of the angle in the split filename. For example, if the filename of an image is "my_specimen-oct-10-2015_-50_deg-from_k2 camera.mrc", it will be split into ['my','specimen','oct','10','2015','','50','deg','from','k2','camera','mrc']. The angle '-50', is at position 6 (starting from 0). Therefore, you would provide --anglesindxinfilename=6, assuming all images to be stacked/processed are similarly named. No worries about the minus sign disappearing. The program will look at whether there's a minus sign immediately preceeding the position where the angle info is.""")
 	parser.add_argument("--apix",type=float,default=0.0,help="""True apix of images to be written on final stack.""")
 
 	parser.add_argument("--bidirectional",action='store_true',default=False,help="""This will assume the first image is at 0 degrees and will stack images from --lowerend through 0, and then will stack the rest from 0+tiltstep throgh --upperend. If --negativetiltseries is supplied, images will be stacked from --upperend through 0, then from 0-tiltstep through --lowerend.""")
@@ -129,7 +127,7 @@ def main():
 
 	if options.unstack:
 		if options.tltfile:
-			usntacker( options )
+			unstacker( options )
 		else:
 			print("ERROR: --tltfile required when using --unstack")
 			sys.exit()
@@ -424,9 +422,19 @@ def findtiltimgfiles( options ):
 					
 					#k will serve to compensate for damage.
 					#It indicates the order in which data collection occured
-	print("\n(e2spt_tiltstacker.py)(findtiltimgfiles) These many img files were found", len( intilts ))		
-	intilts.sort()
-	print("\nand they've been sorted")
+	print("\n(e2spt_tiltstacker.py)(findtiltimgfiles) These many img files were found n={}".format(len( intilts )))		
+	
+	#try:
+	#	sorted(intilts, key=lambda s: float(s.split("_")[options.anglesindxinfilename].replace('.mrc','')))
+	#except:
+	#try:
+	import re
+	intilts.sort(key = lambda s: float(re.search('(\+|-)\d+(\.\d+)?', s).group()))
+	#except:
+	#print("\nWARNING: sorting input files WITHOUT --anglesindxinfilename; if the tiltangles are preceeded + or -, regular sorting based on the filename may not work and might require --anglesindxinfilename.")
+	#intilts.sort()
+
+	print("\nand they've been sorted input files={}".format(intilts))
 		
 	return intilts
 
@@ -529,22 +537,32 @@ def organizetilts( options, intilts, raworder=False ):
 		collectionindex=0
 		anglesdict = {}
 		for intilt in intilts:
+			
+			extension = os.path.splitext(os.path.basename(intilt))[-1]
 
-			parsedname = intilt.replace(',',' ').replace('-',' ').replace('_',' ').replace('.mrcs',' ').replace('.mrc',' ').split()
+			parsedname = intilt.replace(extension,'').replace(',',' ').replace('-',' ').replace('_',' ').replace('[',' ').replace(']',' ').replace('+',' ').split()
 			#dividerstoadd = options.anglesindxinfilename - 1
 			print('parsedname is',parsedname)
+			
 			charsum = 0
 			for i in range(options.anglesindxinfilename):
 				charsum += len(parsedname[i])
-				if len(parsedname[i]) == 0:
-					charsum += 1 
-			charsum += options.anglesindxinfilename
+				#if len(parsedname[i]) == 0:
+				charsum += 1 
+			#charsum += options.anglesindxinfilename
 
-			sign = intilt[charsum+1]
-			print("by position %d sign is %s" % (charsum+1,sign))
+			#sign = intilt[charsum+1]
+			sign = intilt[charsum]
+			print("\nby position %d sign is %s" % (charsum+1,sign))
+
 			angle = float(parsedname[options.anglesindxinfilename])
+			print("angle is".format(angle))
+			print("sign is".format(sign))
+
 			if sign == '-':
 				angle *= -1
+			print("\ntherfore corrected angle is".format(angle))
+
 			
 			#sign2 = intilt.split(str(angle))[0][-1]
 			#print "by other means, sign2 is",sign2
@@ -710,7 +728,7 @@ def organizetilts( options, intilts, raworder=False ):
 	return intiltsdict
 
 
-def usntacker( options ):
+def unstacker( options ):
 	
 	#print "\n(e2spt_tiltstacker)(unstacker) options.unstack is".format(options.unstack)
 	
