@@ -72,9 +72,10 @@ handled this way."""
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_argument("--mode",type=str,help="Mode should be one of: pca, fastica, lda",default="pca")
+	parser.add_argument("--mode",type=str,help="Mode should be one of: pca, sparsepca, fastica, lda, nmf",default="pca")
 	parser.add_argument("--nbasis","-n",type=int,help="Number of basis images to generate.",default=20)
 	parser.add_argument("--maskfile","-M",type=str,help="File containing a mask defining the pixels to include in the Eigenimages")
+	parser.add_argument("--projin",type=str,default=None,help="When generating subspace projections, use this file instead of the input used for the MSA")
 	parser.add_argument("--mask",type=int,help="Mask radius, negative values imply ny/2+1+mask, --mask=0 disables, --maskfile overrides",default=0)
 	parser.add_argument("--simmx",type=str,help="Will use transformations from simmx on each particle prior to analysis")
 	parser.add_argument("--normalize",action="store_true",help="Perform a careful normalization of input images before MSA. Otherwise normalization is not modified until after mean subtraction.",default=False)
@@ -148,14 +149,61 @@ handled this way."""
 		msa=skdc.PCA(n_components=options.nbasis)
 #		print(data.shape)
 		msa.fit(data)
+	elif options.mode=="sparsepca":
+		msa=skdc.SparsePCA(n_components=options.nbasis)
+#		print(data.shape)
+		msa.fit(data)
 	elif options.mode=="fastica":
 		msa=skdc.FastICA(n_components=options.nbasis,algorithm="parallel",max_iter=500,tol=0.001)
 		msa.fit(data)
 	elif options.mode=="lda":
-		shift=max(-data.min()+data.std()*0.1,data.std()*4.0-data.mean())	# we need positivity
+		shift=max(-data.min()+data.std()*0.5,data.std()*4.0-data.mean())	# we need positivity
+		# if we are processing projections later, we need to try to insure that they will be positive as well
+		if options.projin:
+			nfile2=EMUtil.get_image_count(options.projin)
+			pmin=0
+			pstd=0
+			pmean=0
+			pn=0
+			for i in range(0,nfile2,nfile2//256):		# read a scattering of images
+				tmp=EMData(options.projin)
+				pmin=min(pmin,tmp["minimum"])
+				pstd=max(pstd,tmp["sigma_nonzero"])
+				pmean+=tmp["mean"]
+				pn+=1
+			pmean/=pn
+			shiftp=max(pmin+pstd*0.5,pstd*4.0-pmean)
+			shift=max(shift,shiftp)
+
 		data+=shift
-		msa=skdc.LatentDirichletAllocation(n_components=options.nbasis,learning_method="online",verbose=2)
+		msa=skdc.LatentDirichletAllocation(n_components=options.nbasis,learning_method="online",verbose=1)
 		msa.fit(data)
+	elif options.mode=="nmf":
+		shift=max(-data.min()+data.std()*1.5,data.std()*4.0-data.mean())	# we need positivity
+		# if we are processing projections later, we need to try to insure that they will be positive as well
+		if options.projin:
+			nfile2=EMUtil.get_image_count(options.projin)
+			pmin=0
+			pstd=0
+			pmean=0
+			pn=0
+			for i in range(0,nfile2,nfile2//256):		# read a scattering of images
+				tmp=EMData(options.projin)
+				pmin=min(pmin,tmp["minimum"])
+				pstd=max(pstd,tmp["sigma_nonzero"])
+				pmean+=tmp["mean"]
+				pn+=1
+			pmean/=pn
+			shiftp=max(pmin+pstd*0.5,pstd*4.0-pmean)
+			shift=max(shift,shiftp)
+
+		data+=shift
+		msa=skdc.NMF(n_components=options.nbasis,init="nndsvd")
+		msa.fit(data)
+
+	# write mask
+	from_numpy(mean).process("misc.mask.pack",{"mask":mask,"unpack":1}).write_image(args[1],0)
+
 		
 #	print(msa.components_.shape)
 #	c=from_numpy(msa.components_.copy()).write_image("z.hdf",0)
@@ -180,18 +228,31 @@ handled this way."""
 		try: os.unlink(args[2])
 		except: pass
 	
+		if options.projin!=None :
+			images=options.projin
+			nfile2=EMUtil.get_image_count(images)
+			step2=[0,1,nfile2]
+		else:
+			nfile2=nfile
+			step2=step
+			images=args[0]
+	
 		if options.verbose: print("Reprojecting input data into subspace")
-		chunksize=min(max(2,250000000//nval),step[2])		# limiting memory usage for this step to ~2G
-		out=EMData(options.nbasis,step[2])		# we hold the full set of reprojections in memory, though
+		chunksize=min(max(2,250000000//nval),step2[2])		# limiting memory usage for this step to ~2G
+		out=EMData(options.nbasis,step2[2])		# we hold the full set of reprojections in memory, though
 		start=0
-		while (start<step[2]):
-			step2=[start,1,min(step[2],start+chunksize)]
-			if options.verbose: print(step2)
+		while (start<step2[2]):
+			stept=[start,1,min(step2[2],start+chunksize)]
+			if options.verbose: print(stept)
 			
 			# read a chunk of data
-			if options.simmx : chunk=simmx_get(args[0],options.simmx,mask,step2)
-			else : chunk=normal_get(args[0],mask,step2)
-			if shift!=0 : chunk+=shift					# for methods requiring positivity
+			if options.simmx : chunk=simmx_get(images,options.simmx,mask,stept)
+			else : chunk=normal_get(images,mask,stept)
+			if shift!=0 : 
+				chunk+=shift					# for methods requiring positivity
+				if chunk.min()<=0 :
+					print("ERROR: Results invalid, negative values. Shifting to prevent crash. Chunk ",stept," has mean=",chunk.mean(),"std=",chunk.std(),"min=",chunk.min())
+					chunk+= -chunk.min()
 			
 			proj=msa.transform(chunk)		# into subspace
 			im=from_numpy(proj.copy())
@@ -202,7 +263,7 @@ handled this way."""
 		out.write_image(args[2],0)
 
 	E2end(logid)
-	if options.mode not in ("pca","fastica") :
+	if options.mode not in ("pca","sparsepca","fastica") :
 		print("WARNING: While projection vectors are reliable, use of modes other than PCA or ICA may involve nonlinarities, meaning the 'Eigenimages' may not be interpretable in this way.")
 
 def simmx_get(images,simmxpath,mask,step):
