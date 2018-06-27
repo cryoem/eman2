@@ -123,6 +123,17 @@ def main():
 			
 		print("Temporary files will be written in {}".format(options.tmppath))
 	
+
+	if options.rawtlt!=None and len(options.rawtlt)>0:
+		numimages=EMUtil.get_image_count(inputname)
+		numangles=0
+		with open(options.rawtlt) as f:
+			for line in f:
+				if line.strip():
+					numangles+=1
+		if numimages!=numangles:
+			print("Number of tilt angles and tilt images do no match. Your inputs have {} tilt angles and {} tilt images.\nStopping reconstruction.".format(numangles,numimages))
+			sys.exit(1)		
 	#e=EMData(inputname, 0, True)
 	
 	
@@ -470,7 +481,7 @@ def calc_global_trans(imgs, options, excludes=[]):
 
 #### Find tilt axis by common line
 def calc_tltax_rot(imgs, options):
-	print("Calculateing tilt axis rotation...")
+	print("Calculating tilt axis rotation...")
 
 	num=len(imgs)
 	sz=min(imgs[0]["nx"], imgs[0]["ny"])

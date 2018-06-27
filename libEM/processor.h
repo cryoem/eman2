@@ -723,6 +723,48 @@ The basic design of EMAN Processors: <br>\
 			static const string NAME;
 	};
 	
+	/**
+	 * This processor will take a mask and extract the values inside the mask as a new 1-D image
+	 * as well as performing the inverse operation.
+	 *@author Steve Ludtke
+	 *@date 2018/06/25
+	 *@param unpack If true, will perform the inverse operation, expecting a 1-D input
+	 *@param mask the binary mask (which must be the same size as the image input or output)
+	 */
+	class MaskPackProcessor : public Processor
+	{
+		public:
+			MaskPackProcessor() {}
+
+			string get_name() const
+			{
+				return NAME;
+			}
+
+			void process_inplace(EMData *image) { throw InvalidCallException("inplace operation not supported"); }
+			
+			virtual EMData* process(const EMData* const image);
+			
+			static Processor *NEW()
+			{
+				return new MaskPackProcessor();
+			}
+
+			string get_desc() const
+			{
+				return "Given a mask, will return a 1-D image containing values from the original image inside the mask. If unpack is set, then the inverse operation is performed.";
+			}
+
+			TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("unpack", EMObject::INT, "If set, image should be 1-D and return will match the dimensions of the mask");
+				d.put("mask", EMObject::EMDATA, "The mask indicating which pixels to extract. Required");
+				return d;
+			}
+
+			static const string NAME;
+	};
 	
 
 	/** Determines the partial derivatives in the x direction
