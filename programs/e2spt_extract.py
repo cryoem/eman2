@@ -57,7 +57,7 @@ def main():
 	apix_ptcl=ptcl["apix_x"]
 	apix_tlt=img["apix_x"]
 	zshift=ptcl["zshift"]#/2
-	yt=ptcl["ytilt"]
+	#yt=ptcl["ytilt"]
 	yt=0
 	#options.ytilt=ttparams[np.argmin(abs(ttparams[:,3]-yt)),3]
 	options.ytilt=0
