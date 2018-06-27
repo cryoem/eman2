@@ -216,7 +216,7 @@ class EMProjectManager(QtGui.QMainWindow):
 	def _onModeChange(self, idx):
 		self.tree_stacked_widget.setCurrentIndex(idx)
 		if idx == 1: self.pm_icon = get_image_directory() + "tomoseg.png"
-		elif idx == 2: self.pm_icon = get_image_directory() + "EMAN2Icon.png"
+		elif idx == 0: self.pm_icon = get_image_directory() + "EMAN2Icon.png"
 		else: self.pm_icon = get_image_directory() + "subtomo.png"
 
 		self.pm_projects_db["project_icon"] = self.pm_icon
