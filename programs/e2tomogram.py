@@ -6,7 +6,8 @@ import numpy as np
 from scipy.optimize import minimize
 import scipy.spatial.distance as scidist
 from EMAN2_utils import *
-from multiprocessing import Pool
+import Queue
+#from multiprocessing import Pool
 from sklearn.decomposition import PCA
 
 def main():
@@ -505,7 +506,8 @@ def calc_tltax_rot(imgs, options):
 	return tltax
 
 def make_tile(args):
-	imgs, tpm, sz, pad, stepx, stepy, step=args
+	jsd, imgs, tpm, sz, pad, stepx, stepy, outz=args
+	#print("start {}, {}".format(stepx, stepy))
 	recon=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,pad], "mode":"gauss_2"})
 	recon.setup()
 
@@ -516,8 +518,8 @@ def make_tile(args):
 			continue
 		m.process_inplace("filter.ramp")
 #		 m.process_inplace("normalize")
-		
-		m.rotate(-t[2],0,0)
+		m.process_inplace("xform",{"alpha":-t[2]})
+		#m.rotate(-t[2],0,0)
 #		 m.process_inplace("mask.decayedge2d", {"width":32})
 		xf=Transform({"type":"xyz","ytilt":t[3],"xtilt":t[4]})
 
@@ -532,14 +534,15 @@ def make_tile(args):
 
 		mp=recon.preprocess_slice(m, xf)
 		recon.insert_slice(mp,xf,1)
-	threed=recon.finish(True)
-	threed.clip_inplace(Region((pad-sz)/2, (pad-sz)/2, (pad-sz)/2, sz, sz, sz))
+		
 	
-	threed.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.5})
-#	 full3d.insert_scaled_sum(threed, (outxy/2+stepx*step, outxy/2+stepy*step, outz/2))
-#	 threed.to_one()
-#	 full3d_mlt.insert_scaled_sum(threed, (outxy/2+stepx*step, outxy/2+stepy*step, outz/2))
-	return [stepx, stepy, threed]
+	threed=recon.finish(True)
+	threed.clip_inplace(Region((pad-sz)/2, (pad-sz)/2, (pad-outz)/2, sz, sz, outz))
+	
+	threed.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.4})
+	jsd.put( [stepx, stepy, threed])
+	
+	return
 
 
 def make_tomogram_tile(imgs, tltpm, options, errtlt=[]):
@@ -567,18 +570,20 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[]):
 	print("Using {} out of {} tilts..".format(len(nrange), num))
 
 	outxy=1024*b
-	outz=zthick=256*b
-	full3d=EMData(outxy, outxy, outz)
-	full3d_mlt=full3d.copy()
-	#tpm[:,:2]/=2/b
-	step=240*b
+	outz=zthick=outxy/4
+	full3d=[EMData(outxy, outxy, outz) for i in [0,1]]
+	#full3d_mlt=full3d.copy()
+	
+	#step=240*b #### distance between each tile
+	step=128*b #### distance between each tile
 
-	sz=260*b
-	pad=360*b
-
+	sz=step*2 #### this is the output 3D size 
+	pad=good_boxsize(sz*1.2) #### this is the padded size in fourier space
+	jsd=Queue.Queue(0)
 	jobs=[]
-	for stepx in range(-2,3):
-		for stepy in range(-2,3):
+	nstep=int(outxy/step/2)
+	for stepx in range(-nstep,nstep+1):
+		for stepy in range(-nstep,nstep+1):
 			tiles=[]
 			for i in range(num):
 				if i in nrange:
@@ -590,22 +595,60 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[]):
 				else:
 					tiles.append(EMData(1,1))
 
-			jobs.append((tiles, tpm, sz, pad, stepx, stepy, step))
+			jobs.append((jsd, tiles, tpm, sz, pad, stepx, stepy, outz))
 	
-	from multiprocessing import Pool
 	
-	pl=Pool(options.threads)
-	ret=pl.map(make_tile, jobs)
+	thrds=[threading.Thread(target=make_tile,args=([i])) for i in jobs]
+	#from multiprocessing import Pool
+	print("now start threads...")
+	#thrds=[threading.Thread(target=reconstruct,args=(i)) for i in jobs]
+	thrtolaunch=0
+	tsleep=threading.active_count()
+	while thrtolaunch<len(thrds) or threading.active_count()>tsleep or jsd.empty()==False:
+		if thrtolaunch<len(thrds) :
+			while (threading.active_count()==options.threads ) : time.sleep(.1)
+			thrds[thrtolaunch].start()
+			thrtolaunch+=1
+		else: time.sleep(1)
 		
-	full3d=EMData(outxy, outxy, outz)
-	for r in ret:
-		sx, sy, threed=r
-		
-		full3d.insert_clip(threed,
-			(int(sx*step+outxy/2-threed["nx"]/2), int(sy*step+outxy/2-threed["nx"]/2), outz/2-threed["nz"]/2))
+		if not jsd.empty():
+			stepx, stepy, threed=jsd.get()
+			full3d[stepx%2].insert_clip(
+				threed,
+				(int(stepx*step+outxy/2-threed["nx"]/2),
+				int(stepy*step+outxy/2-threed["nx"]/2), 
+				outz/2-threed["nz"]/2))
+			#full3d.insert_scaled_sum(
+				#threed,(outxy/2+stepx*step, outxy/2+stepy*step, outz/2))
+			#threed.to_one()
+			#full3d_mlt.insert_scaled_sum(
+				#threed,(outxy/2+stepx*step, outxy/2+stepy*step, outz/2))
+
+	for t in thrds: t.join()
 	
-	threed=full3d
-	threed.process_inplace("normalize")
+	#full3d[0].write_image("tmp00_full.hdf")
+	#full3d[1].write_image("tmp01_full.hdf")
+	
+	full3d=full3d[0]+full3d[1]
+	full3d.div(2)
+	#full3d_mlt.process_inplace("threshold.belowtominval",{"minval":1, "newval":1})
+	#full3d.div(full3d_mlt)
+	
+	#for t in thrds: t.start()
+	#for t in thrds: t.join()
+	#pl=Pool(options.threads)
+	#ret=pl.map(make_tile, jobs)
+	#pl.close()
+	#pl.join()
+	
+	#print("collecting results...")
+	#while not jsd.empty():
+		#sx, sy, threed=jsd.get()
+		
+		#full3d.insert_clip(threed,
+			#(int(sx*step+outxy/2-threed["nx"]/2), int(sy*step+outxy/2-threed["nx"]/2), outz/2-threed["nz"]/2))
+	
+	full3d.process_inplace("normalize")
 	#if options.clipz>0:
 		
 		#p0=np.min(threed.numpy(), axis=1)
@@ -624,15 +667,12 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[]):
 	#else:
 		
 		#threed.clip_inplace(Region((pad-outxy)/2, (pad-outxy)/2, 0, outxy, outxy, zthick))
-	threed["zshift"]=0
+	full3d["zshift"]=0
 	
 	apix=imgs[0]["apix_x"]
-	threed["apix_x"]=threed["apix_y"]=threed["apix_z"]=apix
-	pl.close()
-	#pl.terminate()
-	pl.join()
-	
-	return threed
+	full3d["apix_x"]=full3d["apix_y"]=full3d["apix_z"]=apix
+	print("Done. Now writting tomogram to disk...")
+	return full3d
 
 #### reconstruct tomogram...
 def make_tomogram(imgs, tltpm, options, outname=None, padr=1.2,  errtlt=[]):
