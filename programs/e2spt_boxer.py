@@ -91,6 +91,13 @@ def main():
 	logid=E2init(sys.argv)
 
 	img = args[0]
+	print("\n(e2spt_boxer)(main) --tomogram={}".format(img))
+
+	try:
+		imghdr = EMData( img, 0, True )
+	except:
+		print("\nERROR: could not load tomogram. Exiting.")
+		sys.exit(1)
 	
 	if options.coords:
 		

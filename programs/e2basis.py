@@ -45,9 +45,6 @@ def main():
 Performs various options with basis sets, such as the orthogonal
 basis produced by e2msa.py. 
 
-varimax <basis input> <basis output>
-	Performs a varimax rotation on an input basis set
-	
 project <basis input> <image input> <projection output>
 	Projects a set of images into the input basis subspace. The default
 	is to normalize the individual basis vectors, but not the final resulting
@@ -321,16 +318,17 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 	
 	# Apply the varimax rotation to a set of basis vectors
 	elif args[0]=="varimax" :
-		mask=basis[0].copy()
-		mask.to_one()
-		pca=Analyzers.get("varimax",{"mask":mask})
+		print("Varimax is no longer supported, please consider using a PCA alternative in e2msa.py")
+		#mask=basis[0].copy()
+		#mask.to_one()
+		#pca=Analyzers.get("varimax",{"mask":mask})
 		
-		for im in basis:
-			pca.insert_image(im)
+		#for im in basis:
+			#pca.insert_image(im)
 		
-		results=pca.analyze()
-		for im in results: im.write_image(args[2],-1)
-	else: print("Valid commands are project, varimax and projectrot")
+		#results=pca.analyze()
+		#for im in results: im.write_image(args[2],-1)
+	else: print("Valid commands are project and projectrot")
 	
 	E2end(logid)
 

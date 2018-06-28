@@ -3378,6 +3378,8 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 					aap["ty"]=0;
 					aap["tz"]=0;
 					t.set_params(aap);
+					t.invert();
+					aap=t.get_params("eman");
 
 					// somewhat strangely, rotations are actually much more expensive than FFTs, so we use a CCF for translation
 					EMData *stt=small_this->process("xform",Dict("transform",EMObject(&t),"zerocorners",1));

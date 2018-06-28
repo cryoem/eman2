@@ -48,7 +48,7 @@ def main():
 
 	WARNING: experimental program
 
-	This program traces the orientation of particles through multiple iterations. Specify a list of classify_xx files for the comparison.
+	This program traces the orientation of particles through multiple iterations. Specify a list of classmx_xx.hdf files for the comparison. Clearly the files to be compared must refer to exactly the same particles.
 """
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)

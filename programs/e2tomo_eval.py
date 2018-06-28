@@ -201,8 +201,7 @@ class TomoEvalGUI(QtGui.QWidget):
 							else:
 								ptclcls[vname]=[1,n]
 				
-				
-				dic["basename"]=base_name(name)
+				dic["basename"]= os.path.basename(name).split(".")[0] #base_name(name)
 				dic["filename"]=name
 				dic["nbox"]=nbox
 				dic["boxcls"]=bxcls
@@ -229,8 +228,8 @@ class TomoEvalGUI(QtGui.QWidget):
 		#### update file list
 		self.imglst.clear()
 		self.imglst.setRowCount(len(self.imginfo))
-		self.imglst.setColumnCount(5)
-		self.imglst.setHorizontalHeaderLabels(["ID", "file name", "#box", "loss", "defocus"])
+		self.imglst.setColumnCount(4)
+		self.imglst.setHorizontalHeaderLabels(["ID", "file name", "#box", "loss"])
 		for i,info in enumerate(self.imginfo):
 			#### use Qt.EditRole so we can sort them as numbers instead of strings
 			it=QtGui.QTableWidgetItem()
@@ -252,15 +251,6 @@ class TomoEvalGUI(QtGui.QWidget):
 			it=QtGui.QTableWidgetItem()
 			it.setData(Qt.EditRole, float(loss))
 			self.imglst.setItem(i,3, it)
-			
-			if len(info["defocus"])==0:
-				df=-1
-			else: 
-				df=np.round(np.mean(info["defocus"]), 1)
-			it=QtGui.QTableWidgetItem()
-			it.setData(Qt.EditRole, float(df))
-			self.imglst.setItem(i,4, it)
-			
 		
 	def get_id_info(self):
 		crow=self.imglst.currentRow()
