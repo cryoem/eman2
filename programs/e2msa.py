@@ -73,6 +73,7 @@ handled this way."""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	parser.add_argument("--mode",type=str,help="Mode should be one of: pca, sparsepca, fastica, lda, nmf",default="pca")
+	parser.add_argument("--nomean",action="store_true",help="Suppress writing the average image as the first output image",default=False)
 	parser.add_argument("--nbasis","-n",type=int,help="Number of basis images to generate.",default=20)
 	parser.add_argument("--maskfile","-M",type=str,help="File containing a mask defining the pixels to include in the Eigenimages")
 	parser.add_argument("--projin",type=str,default=None,help="When generating subspace projections, use this file instead of the input used for the MSA")
@@ -201,8 +202,8 @@ handled this way."""
 		msa=skdc.NMF(n_components=options.nbasis,init="nndsvd")
 		msa.fit(data)
 
-	# write mask
-	from_numpy(mean).process("misc.mask.pack",{"mask":mask,"unpack":1}).write_image(args[1],0)
+	# write mean
+	if not options.nomean: from_numpy(mean).process("misc.mask.pack",{"mask":mask,"unpack":1}).write_image(args[1],0)
 
 		
 #	print(msa.components_.shape)
@@ -211,6 +212,8 @@ handled this way."""
 	if options.verbose>0 : print("MSA complete")
 
 	# write other basis vectors
+	if options.nomean: offset=0
+	else: offset=1
 	for i,v in enumerate(msa.components_):
 		im=from_numpy(v.copy()).process("misc.mask.pack",{"mask":mask,"unpack":1})
 		if options.mode=="pca":
@@ -219,12 +222,12 @@ handled this way."""
 			if options.verbose : print("Explained variance: ",im["explvarfrac"],"\tSingular Value: ",im["eigval"])
 		elif options.mode=="fastica":
 			im.mult(1.0/im["sigma"])	# fastica seems to produce very small vector lengths
-		im.write_image(args[1],i+1)
+		im.write_image(args[1],i+offset)
 		
 	# if requested we use the model to generate reprojections of the full set of input images
 	# into the new subspace. This permits use of nonlinear algorithms (the components_ output 
 	# is not directly usable)
-	if args>2:
+	if len(args)>2:
 		try: os.unlink(args[2])
 		except: pass
 	
