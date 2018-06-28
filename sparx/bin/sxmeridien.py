@@ -10034,7 +10034,7 @@ def main():
 	There are five ways to run the program:
 
 1. Standard default run, starts from exhaustive searches, uses initial reference volume
-mpirun -np 64 --hostfile four_nodes.txt  psxmeridien.py  bdb:sparx_stack vton1 mask15.hdf --sym=c5  --initialshifts  --radius=120  --mask3D=mask15.hdf    >1ovotn &
+mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py  bdb:sparx_stack vton1 mask15.hdf --sym=c5  --initialshifts  --radius=120  --mask3D=mask15.hdf    >1ovotn &
 
 2. Restart after the last fully finished iteration, one can change some parameters (MPI settings have to be the same)
 mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py  vton1 --radius=100 >2ovotn &
