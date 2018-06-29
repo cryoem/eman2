@@ -520,8 +520,6 @@ def make_tile(args):
 		m.process_inplace("filter.ramp")
 #		 m.process_inplace("normalize")
 		m.process_inplace("xform",{"alpha":-t[2]})
-		#m.rotate(-t[2],0,0)
-#		 m.process_inplace("mask.decayedge2d", {"width":32})
 		xf=Transform({"type":"xyz","ytilt":t[3],"xtilt":t[4]})
 
 		dy=pad/2-np.cos(t[3]*np.pi/180.)*pad/2
@@ -600,9 +598,7 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[]):
 	
 	
 	thrds=[threading.Thread(target=make_tile,args=([i])) for i in jobs]
-	#from multiprocessing import Pool
 	print("now start threads...")
-	#thrds=[threading.Thread(target=reconstruct,args=(i)) for i in jobs]
 	thrtolaunch=0
 	tsleep=threading.active_count()
 	while thrtolaunch<len(thrds) or threading.active_count()>tsleep or jsd.empty()==False:
@@ -619,12 +615,7 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[]):
 				(int(stepx*step+outxy/2-threed["nx"]/2),
 				int(stepy*step+outxy/2-threed["nx"]/2), 
 				outz/2-threed["nz"]/2))
-			#full3d.insert_scaled_sum(
-				#threed,(outxy/2+stepx*step, outxy/2+stepy*step, outz/2))
-			#threed.to_one()
-			#full3d_mlt.insert_scaled_sum(
-				#threed,(outxy/2+stepx*step, outxy/2+stepy*step, outz/2))
-
+				
 	for t in thrds: t.join()
 	
 	#full3d[0].write_image("tmp00_full.hdf")
@@ -632,42 +623,8 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[]):
 	
 	full3d=full3d[0]+full3d[1]
 	full3d.div(2)
-	#full3d_mlt.process_inplace("threshold.belowtominval",{"minval":1, "newval":1})
-	#full3d.div(full3d_mlt)
-	
-	#for t in thrds: t.start()
-	#for t in thrds: t.join()
-	#pl=Pool(options.threads)
-	#ret=pl.map(make_tile, jobs)
-	#pl.close()
-	#pl.join()
-	
-	#print("collecting results...")
-	#while not jsd.empty():
-		#sx, sy, threed=jsd.get()
-		
-		#full3d.insert_clip(threed,
-			#(int(sx*step+outxy/2-threed["nx"]/2), int(sy*step+outxy/2-threed["nx"]/2), outz/2-threed["nz"]/2))
-	
 	full3d.process_inplace("normalize")
-	#if options.clipz>0:
-		
-		#p0=np.min(threed.numpy(), axis=1)
-		#z0=np.min(p0, axis=1)
-		#zp=np.where(z0<np.mean(z0))[0]
-		#zcent=int(zp[0]+zp[-1])/2
-		#zthk=int((zp[-1]-zp[0])*options.clipz)
-		#zthk=np.min([zthk, zthick-zcent, zcent])-1
-		##if options.verbose:
-		#print("Z axis center at {:d}, thickness {:d} pixels".format(zcent, zthk*2))
-		#threed.clip_inplace(Region(0, 0, zcent-zthk, outxy, outxy, zthk*2))
-		#threed["zshift"]=float(zthick/2-zcent)*scale*options.binfac
-		##for nid in range(num):
-			##tltinfo[nid]["xform.projection"].translate(0, 0, zthick/2-zcent)
-		
-	#else:
-		
-		#threed.clip_inplace(Region((pad-outxy)/2, (pad-outxy)/2, 0, outxy, outxy, zthick))
+	
 	full3d["zshift"]=0
 	
 	apix=imgs[0]["apix_x"]
