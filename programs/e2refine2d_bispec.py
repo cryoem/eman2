@@ -64,6 +64,7 @@ def main():
 	parser.add_argument("--input", default=None,type=str, help="The name of the file containing the particle data", browser='EMSetsTable(withmodal=True,multiselect=False)', guitype='filebox', row=0, col=0, rowspan=1, colspan=3, mode="spr")
 	parser.add_argument("--ncls", default=32, type=int, help="Number of classes to generate", guitype='intbox', row=1, col=0, rowspan=1, colspan=1, mode="spr")
 	parser.add_argument("--alignsort", default=False, action="store_true",help="This will align and sort the final class-averages based on mutual similarity. For large numbers of class-averages this can significantly increase runtimes.", guitype='boolbox', row=1, col=1, rowspan=1, colspan=1, mode="spr[False]")
+	parser.add_argument("--msamode",default="pca",type=str,help="e2msa can use a variety of different dimensionality reduction algorithms, the default is Principal Component Analysis (PCA), but others are available, see e2msa.py")
 #	parser.add_argument("--normproj", default=False, action="store_true",help="Normalizes each projected vector into the MSA subspace. Note that this is different from normalizing the input images since the subspace is not expected to fully span the image", guitype='boolbox', row=1, col=1, rowspan=1, colspan=1, mode="spr[True]")
 #	parser.add_argument("--fastseed", action="store_true", default=False,help="Will seed the k-means loop quickly, but may produce less consistent results. Always use this when generating >~100 classes.",guitype='boolbox', row=1, col=2, rowspan=1, colspan=1, mode="spr[True]")
 	parser.add_argument("--iter", type=int, default=0, help = "The total number of refinement iterations to perform")  #, guitype='intbox', row=2, col=0, rowspan=1, colspan=1, mode="spr")
@@ -120,6 +121,8 @@ def main():
 	subverbose=options.verbose-1
 	if subverbose<0: subverbose=0
 
+	msamode=options.msamode
+	
 	if options.parallel :
 		parstr="--parallel="+options.parallel
 		if options.parallel[:6]=="thread" :
@@ -174,17 +177,16 @@ def main():
 
 	# MSA on the footprints
 	fpbasis=options.path+"/basis_00.hdf"
+	inputproj=options.path+"/basis_proj_00.hdf"
 	if n>10000 : step="--step 0,{}".format((n+10000)//20000)
 	else: step=""
-	# 5/18/18 removed --normalize. Seems to cause MSA algorithm to screw up (non decreasing eigen vals) with bispectra?
 	#run("e2msa.py %s %s --normalize --nbasis=%0d --scratchfile=%s/msa_scratch.bin %s"%(fpfile,fpbasis,options.nbasisfp,options.path,step))
-	run("e2msa.py %s %s  --nbasis=%0d --scratchfile=%s/msa_scratch.bin %s"%(fpfile,fpbasis,options.nbasisfp,options.path,step))
+	run("e2msa.py %s %s %s --nbasis %0d %s --mode %s --nomean"%(fpfile,fpbasis,inputproj,options.nbasisfp,step,msamode))
 	proc_tally += 1.0
 	if logid : E2progress(logid,proc_tally/total_procs)
 
 	# reproject the particle footprints into the basis subspace
-	inputproj=options.path+"/basis_proj_00.hdf"
-	run("e2basis.py project %s %s %s --oneout --mean1 --verbose=%d"%(fpbasis,fpfile,inputproj,subverbose))
+#	run("e2basis.py project %s %s %s --oneout --mean1 --verbose=%d"%(fpbasis,fpfile,inputproj,subverbose))
 	proc_tally += 1.0
 	if logid : E2progress(logid,proc_tally/total_procs)
 
@@ -209,15 +211,15 @@ def main():
 		# first we sort and align the class-averages from the last step
 
 		# MSA on class-average bispectra
-		run("e2msa.py %s/classes_fp_%02d.hdf %s/basis_%02d.hdf --nbasis=%0d --scratchfile=%s/msa_scratch.bin"%(options.path,it-1,options.path,it,options.nbasisfp,options.path))
+		run("e2msa.py {path}/classes_fp_{it1:02d}.hdf {path}/basis_{it:02d}.hdf {path}/basis_proj_{it:02d}.hdf --projin {fpfile} --nbasis {nbasis} --mode {mode} --nomean".format(path=options.path,it1=it-1,it=it,nbasis=options.nbasisfp,mode=msamode,fpfile=fpfile))
 		#run("e2msa.py %s/classes_fp_%02d.hdf %s/basis_%02d.hdf  --normalize --nbasis=%0d --scratchfile=%s/msa_scratch.bin"%(options.path,it-1,options.path,it,options.nbasisfp,options.path))
 		proc_tally += 1.0
 		if logid : E2progress(logid,proc_tally/total_procs)
 
 		# now project original image bispectra into class-average basis space
-		run("e2basis.py project %s/basis_%02d.hdf %s %s/basis_proj_%02d.hdf --oneout --mean1 --verbose=%d"%(options.path,it,fpfile,options.path,it,subverbose))
-		proc_tally += 1.0
-		if logid : E2progress(logid,proc_tally/total_procs)
+		#run("e2basis.py project %s/basis_%02d.hdf %s %s/basis_proj_%02d.hdf --oneout --mean1 --verbose=%d"%(options.path,it,fpfile,options.path,it,subverbose))
+		#proc_tally += 1.0
+		#if logid : E2progress(logid,proc_tally/total_procs)
 
 		# Classification
 		run("e2classifykmeans.py %s/basis_proj_%02d.hdf --original=%s --mininclass=2 --ncls=%d --clsmx=%s/classmx_%02d.hdf --onein --fastseed"%(options.path,it,options.input,options.ncls,options.path,it))
