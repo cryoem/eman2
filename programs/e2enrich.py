@@ -60,11 +60,12 @@ def enrich(thr,jsd,imfile,lsx,proj,nenrich,redobispec,i0,i1,verbose):
 		avg["enrich_quals"]=sim
 		avg["class_ptcl_idxs"]=[i]+best
 		if avg["sigma"]==0 : print("Error: {} : {}".format(i,best))
-		ret.append((avg,af.split("__")[0]+"__ctf_flip_enrich{}.hdf".format(nenrich),an))
 
 		if redobispec:
 			bspec=avg.process("math.bispectrum.slice",{"fp":bispec_invar_parm[1],"size":bispec_invar_parm[0]})
-			bspec.write_image(af.split("__")[0]+"__ctf_flip_bispec.hdf",an)
+			ret.append((avg,af.split("__")[0]+"__ctf_flip_enrich{}.hdf".format(nenrich),an,bspec,af.split("__")[0]+"__ctf_flip_bispec.hdf"))
+		else:
+			ret.append((avg,af.split("__")[0]+"__ctf_flip_enrich{}.hdf".format(nenrich),an))
 
 
 	if verbose: print("Thread complete for particles {} - {}".format(i0,i1))
@@ -134,16 +135,18 @@ autoprocessing prior to using this program, but no other processing is required.
 			rd=jsd.get()
 			
 			# file writing only in the controlling thread
-			for im,fsp,i in rd[1]:
-				im.write_image(fsp,i)
+			if options.redobispec:
+				for im,fsp,i,bsp,bspfsp in rd[1]:
+					im.write_image(fsp,i)
+					bsp.write_image(bspfsp,i)
+			else:
+				for im,fsp,i in rd[1]:
+					im.write_image(fsp,i)
 				
 			thrds[rd[0]].join()
 			thrds[rd[0]]=None
 			
-			
-	for t in thrds:
-		t.join()
-	
+
 	if options.verbose: print("All jobs complete")
 
 	E2end(logid)
