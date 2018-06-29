@@ -335,7 +335,7 @@ def main():
         sxprocess.py --angular_distribution  inputfile=example/path/params.txt --pixel_size=1.0  --round_digit=5  --box_size=500  --particle_radius=175  --cylinder_width=1  --cylinder_length=10000
         
    18. Subtract from images in the first stack images in the second stack and write results to the third stack.
-       If the name of the output stack is the same as the second stack, the resultswill be writteon to the second
+       If the name of the output stack is the same as the second stack, the results will be written to the second
        stack (it will be overwritten).
    
    		sxprocess.py bdb:orgstack bdb:proj/data  bdb:proj/sdata bdb:proj/odata --subtract_stack
