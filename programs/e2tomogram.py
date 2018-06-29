@@ -584,7 +584,7 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[]):
 	jobs=[]
 	nstep=int(outxy/step/2)
 	for stepx in range(-nstep,nstep+1):
-		for stepy in range(-nstep,nstep+1):
+		for stepy in range(-nstep+stepx%2,nstep+1,2):
 			tiles=[]
 			for i in range(num):
 				if i in nrange:

@@ -91,7 +91,7 @@ def main():
 				if options.boxsz<0:
 					sz=int(val["boxsize"])*scale/2
 				else:
-					sz=int(options.boxsz/2*scale)
+					sz=int(np.round(options.boxsz/2.*scale))
 				towrite.append((bxs, outname, sz))
 				print("{} : {} boxes, box size {}".format(val["name"], len(bxs), int(sz))) 
 		
@@ -180,7 +180,6 @@ def main():
 		thrds=[threading.Thread(target=make3d,args=(i)) for i in jobs]
 		thrtolaunch=0
 		tsleep=threading.active_count()
-		print(len(jobs))
 		ndone=0
 		while thrtolaunch<len(thrds) or threading.active_count()>tsleep:
 			if thrtolaunch<len(thrds):
