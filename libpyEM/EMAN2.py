@@ -919,7 +919,7 @@ def kill_process(pid):
 		except:
 			return 0
 
-def launch_childprocess(cmd):
+def launch_childprocess(cmd,handle_err=0):
 	'''
 	Convenience function to lauch child processes
 	'''
@@ -930,6 +930,10 @@ def launch_childprocess(cmd):
 	else:
 		error = os.waitpid(p.pid, 0)[1]
 
+	if error and handle_err: 
+		print("Error {} running: {}".format(error,cmd))
+		sys.exit(1)
+		
 	return error
 
 def process_running(pid):

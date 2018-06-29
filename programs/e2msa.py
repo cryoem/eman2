@@ -77,6 +77,7 @@ handled this way."""
 	parser.add_argument("--nbasis","-n",type=int,help="Number of basis images to generate.",default=20)
 	parser.add_argument("--maskfile","-M",type=str,help="File containing a mask defining the pixels to include in the Eigenimages")
 	parser.add_argument("--projin",type=str,default=None,help="When generating subspace projections, use this file instead of the input used for the MSA")
+	parser.add_argument("--normproj",action="store_true",help="When generating subspace projections, normalize each projection vector to unit length",default=False)
 	parser.add_argument("--mask",type=int,help="Mask radius, negative values imply ny/2+1+mask, --mask=0 disables, --maskfile overrides",default=0)
 	parser.add_argument("--simmx",type=str,help="Will use transformations from simmx on each particle prior to analysis")
 	parser.add_argument("--normalize",action="store_true",help="Perform a careful normalization of input images before MSA. Otherwise normalization is not modified until after mean subtraction.",default=False)
@@ -258,6 +259,8 @@ handled this way."""
 					chunk+= -chunk.min()
 			
 			proj=msa.transform(chunk)		# into subspace
+			if options.normproj:
+				for i in range(len(proj)): proj[i]/=np.linalg.norm(proj[i])
 			im=from_numpy(proj.copy())
 			out.insert_clip(im,(0,start,0))
 			start+=chunksize
