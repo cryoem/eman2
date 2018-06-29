@@ -403,7 +403,7 @@ def main():
 	parser.add_option("--B_start",              type="float",         default=10.0,                  help="starting frequency in Angstrom for B-factor estimation (effective only in Halfset Volumes Mode with --B_enhance=0.0)")
 	parser.add_option("--B_stop",               type="float",         default=0.0,                   help="cutoff frequency in Angstrom for B-factor estimation. recommended to set cutoff to the frequency where fsc < 0.0. by default, the program uses Nyquist frequency. (effective only in Halfset Volumes Mode with --B_enhance=0.0)")
 	parser.add_option("--do_adaptive_mask",     action="store_true",  default=False,                 help="generate adaptive mask with the given threshold")
-	parser.add_option("--mask_threshold",       type="float",         default=0.02,                  help="the threshold for adaptive_mask (effective only with --do_adaptive_mask)")
+	parser.add_option("--mask_threshold",       type="float",         default=5.0,                   help="the threshold (number of sigmas of summed two halves ) for adaptive_mask (effective only with --do_adaptive_mask)")
 	parser.add_option("--consine_edge",         type="float",         default=6.0,                   help="the width for cosine transition area (effective only with --do_adaptive_mask)")
 	parser.add_option("--dilation",             type="float",         default=3.0,                   help="the pixels for dilate or erosion of binary mask (effective only with --do_adaptive_mask)")
 	#parser.add_option("--randomphasesafter",   type="float",         default=0.8,                   help=" set Fourier pixels random phases after FSC value ")
@@ -1180,10 +1180,16 @@ def main():
 				elif options.do_adaptive_mask:
 					log_main.add("Create an adaptive mask, let's wait...")
 					log_main.add("Options.mask_threshold, options.dilation, options.consine_edge %f %5.2f %5.2f"%(options.mask_threshold, options.dilation, options.consine_edge))
+					from utilities import model_circle
+					cm = model_circle(map1.get_xsize()//2-1, map1.get_xsize(), map1.get_ysize(), map1.get_zsize())
 					if single_map:
-						m = Util.adaptive_mask(map1, options.mask_threshold, options.dilation, options.consine_edge)
+						st = Util.infomask(map1, cm, True)
+						del cm
+						m = Util.adaptive_mask(map1, st[0]+options.mask_threshold*st[1], options.dilation, options.consine_edge)
 					else:
-						m = Util.adaptive_mask((map1+map2)/2.0, options.mask_threshold, options.dilation, options.consine_edge)
+						st = Util.infomask((map1+map2)/2.0, cm, True)
+						del cm
+						m = Util.adaptive_mask((map1+map2)/2.0, st[0]+options.mask_threshold*st[1], options.dilation, options.consine_edge)
 					m.write_image(os.path.join(options.output_dir, "vol_adaptive_mask%s.hdf"%suffix))
 				else:
 					m = None
