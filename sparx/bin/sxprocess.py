@@ -405,7 +405,7 @@ def main():
 	parser.add_option("--do_adaptive_mask",     action="store_true",  default=False,                 help="generate adaptive mask with the given threshold")
 	parser.add_option("--mask_threshold",       type="float",         default=5.0,                   help="=5.0, the threshold (number of sigmas of summed two halves over avg) for adaptive_mask (effective only with --do_adaptive_mask)")
 	parser.add_option("--consine_edge",         type="float",         default=6.0,                   help="=6.0, the width in pixels for cosine transition area (effective only with --do_adaptive_mask)")
-	parser.add_option("--dilation",             type="float",         default=3.0,                   help="=3.0, the pixels for dilate or erosion of binary mask (effective only with --do_adaptive_mask)")
+	parser.add_option("--dilation",             type="float",         default=6.0,                   help="=6.0, the pixels for dilate or erosion of binary mask (effective only with --do_adaptive_mask)")
 	#parser.add_option("--randomphasesafter",   type="float",         default=0.8,                   help=" set Fourier pixels random phases after FSC value ")
 	# window
 	parser.add_option("--window_stack",         action="store_true",  default=False,                 help="window stack images using a smaller window size")
